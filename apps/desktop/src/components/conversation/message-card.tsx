@@ -33,6 +33,7 @@ import { canForkMessage, canShowForkMessage } from "@/lib/fork-eligibility";
 import type {
   ConversationMessageSnapshot,
   DesktopModelReasoningEffort,
+  DesktopModelReasoningMode,
   DesktopSnapshot,
   ModelRef,
   PendingAssistantAux,
@@ -70,6 +71,7 @@ function MessageCardImpl({
   onRewindDrop,
   onModelSelect,
   onModelReasoningEffortSelect,
+  onModelReasoningModeSelect,
   onModelThinkingEnabledSelect,
   onAgentModeChange,
   pendingAuxState,
@@ -151,6 +153,7 @@ function MessageCardImpl({
   onRewindDrop(event: ReactDragEvent<HTMLElement>): void;
   onModelSelect(ref: ModelRef): void;
   onModelReasoningEffortSelect(ref: ModelRef, reasoningEffort: DesktopModelReasoningEffort): void;
+  onModelReasoningModeSelect?(ref: ModelRef, reasoningMode: DesktopModelReasoningMode): void;
   onModelThinkingEnabledSelect?(ref: ModelRef, enabled: boolean): void | Promise<boolean>;
   onAgentModeChange(mode: DesktopAgentMode): void;
   readManagedImagePreviewDataUrl: ReadManagedImagePreview;
@@ -276,6 +279,7 @@ function MessageCardImpl({
             loopEnabled={false}
             onModelSelect={onModelSelect}
             onModelReasoningEffortSelect={onModelReasoningEffortSelect}
+            onModelReasoningModeSelect={onModelReasoningModeSelect}
             onModelThinkingEnabledSelect={onModelThinkingEnabledSelect}
             onAgentModeChange={onAgentModeChange}
             onLoopEnabledChange={() => {}}

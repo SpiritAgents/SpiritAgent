@@ -28,6 +28,7 @@ import {
 import {
   normalizeModelReasoningEffort,
   resolveModelReasoningEffortForContext,
+  resolveModelReasoningMode,
 } from '@spiritagent/agent-core/reasoning-effort';
 import {
   assertSpiritConfigSchemaVersion,
@@ -1110,16 +1111,19 @@ function normalizeModelEntry(
   const contextLength = parseModelContextLength(record.contextLength);
   const supportsThinkingType = record.supportsThinkingType === 'only' ? 'only' as const : undefined;
   const supportsThinkingSwitch = record.supportsThinkingSwitch === true ? true as const : undefined;
+  const reasoningContext = {
+    provider,
+    model: name,
+    ...(transportKind ? { transportKind } : {}),
+    ...(supportedReasoningEfforts !== undefined ? { supportedEfforts: supportedReasoningEfforts } : {}),
+    ...(supportsThinkingType ? { supportsThinkingType } : {}),
+    ...(supportsThinkingSwitch ? { supportsThinkingSwitch } : {}),
+  };
+  const resolvedReasoningMode = resolveModelReasoningMode(record.reasoningMode, reasoningContext);
   return {
     name,
-    reasoningEffort: resolveModelReasoningEffortForContext(record.reasoningEffort, {
-      provider,
-      model: name,
-      ...(transportKind ? { transportKind } : {}),
-      ...(supportedReasoningEfforts !== undefined ? { supportedEfforts: supportedReasoningEfforts } : {}),
-      ...(supportsThinkingType ? { supportsThinkingType } : {}),
-      ...(supportsThinkingSwitch ? { supportsThinkingSwitch } : {}),
-    }) as ModelEntryV2['reasoningEffort'],
+    reasoningEffort: resolveModelReasoningEffortForContext(record.reasoningEffort, reasoningContext) as ModelEntryV2['reasoningEffort'],
+    ...(resolvedReasoningMode === 'pro' ? { reasoningMode: 'pro' as const } : {}),
     ...(supportedReasoningEfforts !== undefined
       ? { supportedReasoningEfforts: supportedReasoningEfforts as ModelEntryV2['supportedReasoningEfforts'] }
       : {}),

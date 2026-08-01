@@ -91,6 +91,7 @@ import { finishTaskStreamingPreviewReady } from '../finish-task-preview.js';
 import {
   buildOpenAiRequestTrace,
   openAiReasoningEffort,
+  openAiReasoningMode,
   openAiVendorChatCompletionBodyExtras,
   openAiStreamingUsageBodyExtras,
   resolveOpenAiModelCompatibilityProfile,
@@ -98,6 +99,7 @@ import {
   type OpenAiTransportConfig,
   type OpenAiVideoGenerationConfig,
 } from './openai-compat.js';
+import { modelSupportsOpenAiGpt56ReasoningControls } from './gpt-reasoning-controls.js';
 import {
   buildGatewayMinimaxProviderOptions,
   isGatewayMinimaxModel,
@@ -1259,17 +1261,29 @@ function buildAiSdkProviderOptions(
     return {};
   }
 
+  if (
+    modelSupportsOpenAiGpt56ReasoningControls({
+      ...(config.llmVendor ? { provider: config.llmVendor } : {}),
+      model: config.model,
+    })
+  ) {
+    // GPT-5.6+ reasoning 经 fetch 包装器写入嵌套 reasoning 对象；勿再通过 AI SDK openai.* 注入顶层 reasoning_effort。
+    return {};
+  }
+
   const reasoningEffort = openAiReasoningEffort(config) as
     | OpenAICompatibleLanguageModelChatOptions['reasoningEffort']
     | undefined;
+  const reasoningMode = openAiReasoningMode(config);
 
-  if (reasoningEffort === undefined) {
+  if (reasoningEffort === undefined && reasoningMode === undefined) {
     return {};
   }
 
   return {
     openai: {
-      reasoningEffort,
+      ...(reasoningEffort !== undefined ? { reasoningEffort } : {}),
+      ...(reasoningMode !== undefined ? { reasoningMode } : {}),
     } as JsonObject,
   };
 }

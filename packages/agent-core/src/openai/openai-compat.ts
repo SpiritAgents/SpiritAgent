@@ -1,6 +1,11 @@
 import type { JsonObject, JsonValue } from '../ports.js';
 import type { LlmModelCapabilities, TransportRequestProfile } from '../llm-provider-shared.js';
 import { resolveOpenAiTransportReasoningEffortForContext } from '../reasoning-effort.js';
+import {
+  modelSupportsOpenAiGpt56ReasoningControls,
+  resolveOpenAiTransportReasoningModeForContext,
+  type ModelReasoningMode,
+} from '../openai/gpt-reasoning-controls.js';
 import { cloneJsonValue } from '../tool-agent.js';
 import { isMinimaxM3ThinkingSwitchModel } from './gateway-minimax-thinking.js';
 import { isThinkingSwitchDisabledModel } from './thinking-switch-disabled-models.js';
@@ -113,6 +118,7 @@ export interface OpenAiTransportConfig {
    * 非 `default` 时直接走 OpenAI chat.completions 官方字段 `reasoning_effort`。
    */
   reasoningEffort?: 'default' | 'minimal' | 'none' | 'low' | 'medium' | 'high' | 'xhigh' | 'max';
+  reasoningMode?: ModelReasoningMode;
   /**
    * 仅对 `deepseek` / `moonshot-ai`：是否在所有经本 transport 的 chat.completions 请求体中加入
    * `thinking: { type: 'enabled' | 'disabled' }`（含主对话、工具轮与历史压缩）。
@@ -227,12 +233,44 @@ export function openAiReasoningEffort(
   });
 }
 
+export function openAiReasoningMode(
+  config: Pick<OpenAiTransportConfig, 'llmVendor' | 'model' | 'reasoningMode'>,
+): ModelReasoningMode | undefined {
+  return resolveOpenAiTransportReasoningModeForContext(config.reasoningMode, {
+    ...(config.llmVendor ? { provider: config.llmVendor } : {}),
+    model: config.model,
+  });
+}
+
+function buildOpenAiGpt56ReasoningBody(
+  config: Pick<OpenAiTransportConfig, 'llmVendor' | 'model' | 'reasoningEffort' | 'reasoningMode'>,
+): Record<string, unknown> | undefined {
+  if (!modelSupportsOpenAiGpt56ReasoningControls({
+    ...(config.llmVendor ? { provider: config.llmVendor } : {}),
+    model: config.model,
+  })) {
+    return undefined;
+  }
+
+  const mode = openAiReasoningMode(config);
+  const effort = openAiReasoningEffort(config);
+  if (mode === undefined && effort === undefined) {
+    return undefined;
+  }
+
+  return {
+    ...(mode !== undefined ? { mode } : {}),
+    ...(effort !== undefined ? { effort } : {}),
+  };
+}
+
 export function openAiVendorChatCompletionBodyExtras(
   config: Pick<
     OpenAiTransportConfig,
     | 'llmVendor'
     | 'model'
     | 'reasoningEffort'
+    | 'reasoningMode'
     | 'vendorExtendedThinking'
     | 'transportRequestProfile'
     | 'supportsThinkingSwitch'
@@ -274,6 +312,11 @@ export function openAiVendorChatCompletionBodyExtras(
   const openRouterReasoning = buildOpenRouterClaudeReasoningBody(config);
   if (openRouterReasoning !== undefined) {
     extras.reasoning = openRouterReasoning;
+  } else {
+    const gpt56Reasoning = buildOpenAiGpt56ReasoningBody(config);
+    if (gpt56Reasoning !== undefined) {
+      extras.reasoning = gpt56Reasoning;
+    }
   }
 
   return extras;
@@ -303,7 +346,10 @@ export function buildOpenAiRequestTrace(
   stream = false,
 ): JsonValue[] {
   const openRouterClaude = isOpenRouterAnthropicClaudeModel(config.llmVendor, config.model);
-  const reasoningEffort = openRouterClaude ? undefined : openAiReasoningEffort(config);
+  const gpt56Reasoning = openRouterClaude ? undefined : buildOpenAiGpt56ReasoningBody(config);
+  const reasoningEffort = openRouterClaude || gpt56Reasoning !== undefined
+    ? undefined
+    : openAiReasoningEffort(config);
   const vendorExtras = openAiVendorChatCompletionBodyExtras(config);
   const streamingUsageExtras = openAiStreamingUsageBodyExtras(config, stream);
   const trace: OpenAiRequestTrace = {
@@ -312,6 +358,7 @@ export function buildOpenAiRequestTrace(
     model: config.model,
     stream,
     ...(reasoningEffort === undefined ? {} : { reasoning_effort: reasoningEffort }),
+    ...(gpt56Reasoning !== undefined ? { reasoning: gpt56Reasoning as JsonValue } : {}),
     ...(openRouterClaude && vendorExtras.reasoning !== undefined
       ? { reasoning: vendorExtras.reasoning as JsonValue }
       : {}),

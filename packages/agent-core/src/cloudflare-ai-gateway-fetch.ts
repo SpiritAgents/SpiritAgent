@@ -35,11 +35,31 @@ export function patchCloudflareAiGatewayChatCompletionsBody(
   if (!requestHasFunctionTools(body)) {
     return body;
   }
-  const effort = body.reasoning_effort;
-  if (effort === undefined || effort === null || effort === 'none') {
+
+  const topLevelEffort = body.reasoning_effort;
+  const reasoning = body.reasoning;
+  const nestedEffort = isJsonRecord(reasoning) ? reasoning.effort : undefined;
+  const hasNonNoneEffort =
+    (topLevelEffort !== undefined && topLevelEffort !== null && topLevelEffort !== 'none')
+    || (nestedEffort !== undefined && nestedEffort !== null && nestedEffort !== 'none');
+
+  if (!hasNonNoneEffort) {
     return body;
   }
-  return { ...body, reasoning_effort: 'none' };
+
+  const patched: Record<string, unknown> = {
+    ...body,
+    reasoning_effort: 'none',
+  };
+
+  if (isJsonRecord(reasoning) && nestedEffort !== undefined && nestedEffort !== null && nestedEffort !== 'none') {
+    patched.reasoning = {
+      ...reasoning,
+      effort: 'none',
+    };
+  }
+
+  return patched;
 }
 
 function resolveRequestUrl(input: RequestInfo | URL): string {

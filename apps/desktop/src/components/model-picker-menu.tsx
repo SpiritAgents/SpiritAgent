@@ -35,7 +35,11 @@ import {
   modelDisplayTitleFromMap,
 } from "@/lib/model-catalog-detail";
 import { toolCardSecondaryTextClass } from "@/lib/file-tool-lsp-diagnostics-display";
-import { modelReasoningEffortLabel } from "@spiritagent/agent-core/reasoning-effort";
+import {
+  modelReasoningEffortLabel,
+  modelSupportsReasoningModeControl,
+  resolveModelReasoningMode,
+} from "@spiritagent/agent-core/reasoning-effort";
 import {
   modelSupportsThinkingSwitch,
   resolveModelThinkingEnabled,
@@ -44,6 +48,7 @@ import { groupModelsForPicker } from "@/lib/model-picker-groups";
 import { DESKTOP_MENU_TRIGGER_TEXT_CLASS } from "@/lib/desktop-typography";
 import type {
   DesktopModelReasoningEffort,
+  DesktopModelReasoningMode,
   DesktopSnapshot,
   ModelProfileSnapshot,
   ModelRef,
@@ -131,6 +136,7 @@ export type ModelPickerMenuProps = {
   onOpenChange?(open: boolean): void;
   onModelSelect(ref: ModelRef): void;
   onModelReasoningEffortSelect?(ref: ModelRef, reasoningEffort: DesktopModelReasoningEffort): void;
+  onModelReasoningModeSelect?(ref: ModelRef, reasoningMode: DesktopModelReasoningMode): void;
   onModelThinkingEnabledSelect?(ref: ModelRef, enabled: boolean): void | Promise<boolean>;
   triggerClassName?: string;
   menuContentClassName?: string;
@@ -147,6 +153,7 @@ export function ModelPickerMenu({
   onOpenChange,
   onModelSelect,
   onModelReasoningEffortSelect,
+  onModelReasoningModeSelect,
   onModelThinkingEnabledSelect,
   triggerClassName,
   menuContentClassName,
@@ -394,6 +401,13 @@ export function ModelPickerMenu({
                     setModelFilter("");
                     setModelMenuOpen(false);
                   }}
+                  onReasoningModeChange={(modelRef, mode) => {
+                    onModelReasoningModeSelect?.(modelRef, mode);
+                    dismissOpenListTooltip();
+                    onModelSelect(modelRef);
+                    setModelFilter("");
+                    setModelMenuOpen(false);
+                  }}
                   onThinkingEnabledChange={(modelRef, enabled) => {
                     onModelThinkingEnabledSelect?.(modelRef, enabled);
                   }}
@@ -433,19 +447,31 @@ function ModelPickerTriggerLabel({
       ? { supportsThinkingSwitch: true as const }
       : {}),
   };
+  const supportsReasoningMode = modelSupportsReasoningModeControl(modelContext);
+  const reasoningMode = resolveModelReasoningMode(model.reasoningMode, modelContext);
   const supportsThinkingSwitch = modelSupportsThinkingSwitch(modelContext);
   const thinkingEnabled = resolveModelThinkingEnabled(model.thinkingEnabled);
-  const secondaryLabel =
+
+  const secondaryLabels: string[] = [];
+  if (supportsReasoningMode && reasoningMode === 'pro') {
+    secondaryLabels.push(t('app.modelPickerReasoningModePro'));
+  }
+
+  const effortOrThinkingLabel =
     supportsThinkingSwitch && !thinkingEnabled
-      ? t("app.modelPickerNotThinking")
+      ? t('app.modelPickerNotThinking')
       : modelReasoningEffortLabel(reasoningEffort);
+
+  secondaryLabels.push(effortOrThinkingLabel);
 
   return (
     <span className="inline-flex min-w-0 max-w-full items-baseline gap-1.5">
       <span className="min-w-0 truncate">{name}</span>
-      <span className={cn("shrink-0", toolCardSecondaryTextClass)}>
-        {secondaryLabel}
-      </span>
+      {secondaryLabels.map((label) => (
+        <span key={label} className={cn('shrink-0', toolCardSecondaryTextClass)}>
+          {label}
+        </span>
+      ))}
     </span>
   );
 }

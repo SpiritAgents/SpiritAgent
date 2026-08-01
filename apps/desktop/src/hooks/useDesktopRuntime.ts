@@ -61,6 +61,7 @@ import type {
   DeleteSkillRequest,
   DesktopApprovalDecision,
   DesktopModelReasoningEffort,
+  DesktopModelReasoningMode,
   DesktopAutomationDetail,
   DesktopAutomationListItem,
   DesktopCreateAutomationRequest,
@@ -2291,6 +2292,49 @@ export function useDesktopRuntime() {
     [api, applySnapshot, snapshot],
   );
 
+  const setModelReasoningMode = useCallback(
+    async (modelRef: ModelRef, reasoningMode: DesktopModelReasoningMode) => {
+      if (!api || !snapshot) {
+        return;
+      }
+
+      const model = snapshot.config.models.find((item) =>
+        modelRefsEqual(
+          item.ref ?? { groupId: item.groupId ?? "", name: item.name },
+          modelRef,
+        ),
+      );
+      if (!model) {
+        return;
+      }
+
+      const next = {
+        ...settingsRef.current,
+        activeModel: modelRef,
+        apiBase: model.apiBase,
+      };
+      settingsRef.current = next;
+      setSettings(next);
+
+      try {
+        const res = await api.updateConfig({
+          ...updateConfigFromSettingsForm(next, {
+            enabled: next.webHostEnabled,
+            host: next.webHostHost,
+            port: next.webHostPort,
+          }),
+          reasoningMode,
+        });
+        applySnapshot(res);
+        setRuntimeError("");
+        setSettings((current) => ({ ...current, apiKey: "" }));
+      } catch (error) {
+        setRuntimeError(describeError(error));
+      }
+    },
+    [api, applySnapshot, snapshot],
+  );
+
   const setModelThinkingEnabled = useCallback(
     async (modelRef: ModelRef, enabled: boolean): Promise<boolean> => {
       if (!api || !snapshot) {
@@ -3773,6 +3817,7 @@ export function useDesktopRuntime() {
     approvalGuidance,
     setActiveModel,
     setModelReasoningEffort,
+    setModelReasoningMode,
     setModelThinkingEnabled,
     setApprovalGuidance,
     setAgentModeChipDismissed,

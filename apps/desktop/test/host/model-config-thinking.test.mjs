@@ -218,3 +218,40 @@ test('buildPrimaryTransportConfig keeps direct Xiaomi chat thinking switch', () 
   assert.equal(config.vendorExtendedThinking, false);
   assert.equal(config.reasoningEffort, undefined);
 });
+
+test('buildPrimaryTransportConfig wires gpt-5.6 pro max reasoning mode', () => {
+  const config = buildPrimaryTransportConfig({
+    apiKey: 'test-key',
+    model: 'openai/gpt-5.6-sol',
+    baseUrl: 'https://gateway.ai.vercel.com/v1',
+    workspaceRoot: '/tmp',
+    profile: {
+      provider: 'vercel-ai-gateway',
+      transportKind: 'open-responses',
+      reasoningEffort: 'max',
+      reasoningMode: 'pro',
+      capabilities: ['chat'],
+    },
+  });
+  assert.equal(config.transportKind, 'open-responses');
+  assert.equal(config.reasoningEffort, 'max');
+  assert.equal(config.reasoningMode, 'pro');
+});
+
+test('buildPrimaryTransportConfig omits reasoning mode for gpt-5.6 standard', () => {
+  const config = buildPrimaryTransportConfig({
+    apiKey: 'test-key',
+    model: 'gpt-5.6-sol',
+    baseUrl: 'https://api.openai.com/v1',
+    workspaceRoot: '/tmp',
+    profile: {
+      provider: 'openai',
+      transportKind: 'open-responses',
+      reasoningEffort: 'medium',
+      reasoningMode: 'standard',
+      capabilities: ['chat'],
+    },
+  });
+  assert.equal(config.reasoningEffort, 'medium');
+  assert.equal(config.reasoningMode, undefined);
+});

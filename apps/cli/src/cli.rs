@@ -350,6 +350,7 @@ pub fn handle_model_cli(action: ModelCommand) -> Result<()> {
                 let entry = ModelEntry {
                     name: name.clone(),
                     reasoning_effort: reasoning_effort.clone(),
+                    reasoning_mode: None,
                     thinking_enabled: None,
                     supported_reasoning_efforts: None,
                     capabilities: if capabilities.is_empty() {

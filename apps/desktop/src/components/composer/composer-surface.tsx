@@ -36,7 +36,7 @@ import { instantHoverMotionClass } from "@/lib/desktop-chrome";
 import { desktopComposerSurfaceBackdropClass } from "@/lib/desktop-mica-surface";
 import { cn } from "@/lib/utils";
 import { segmentsToPlainText } from "@/lib/composer-segment-model";
-import type { DesktopModelReasoningEffort, DesktopSnapshot, ModelRef } from "@/types";
+import type { DesktopModelReasoningEffort, DesktopModelReasoningMode, DesktopSnapshot, ModelRef } from "@/types";
 
 function isComposerChromeInteractiveTarget(target: EventTarget | null): boolean {
   if (!(target instanceof HTMLElement)) {
@@ -70,6 +70,7 @@ export type ComposerSurfaceProps = {
   onAbort?(): void;
   onModelSelect(ref: ModelRef): void;
   onModelReasoningEffortSelect(ref: ModelRef, reasoningEffort: DesktopModelReasoningEffort): void;
+  onModelReasoningModeSelect?(ref: ModelRef, reasoningMode: DesktopModelReasoningMode): void;
   onModelThinkingEnabledSelect?(ref: ModelRef, enabled: boolean): void | Promise<boolean>;
   onAgentModeChange(mode: DesktopAgentMode): void;
   onLoopEnabledChange?(enabled: boolean): void;
@@ -115,6 +116,7 @@ export function ComposerSurface({
   onAbort,
   onModelSelect,
   onModelReasoningEffortSelect,
+  onModelReasoningModeSelect,
   onModelThinkingEnabledSelect,
   onAgentModeChange,
   onLoopEnabledChange,
@@ -271,6 +273,7 @@ export function ComposerSurface({
               disabled={readOnly}
               onModelSelect={onModelSelect}
               onModelReasoningEffortSelect={onModelReasoningEffortSelect}
+              onModelReasoningModeSelect={onModelReasoningModeSelect}
               onModelThinkingEnabledSelect={onModelThinkingEnabledSelect}
               triggerClassName="max-w-[min(12rem,100%)] pr-0.5 pl-1"
               menuContentClassName="z-[100]"

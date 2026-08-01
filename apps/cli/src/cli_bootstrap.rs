@@ -164,6 +164,7 @@ mod tests {
             .map(|name| ModelEntry {
                 name: (*name).to_string(),
                 reasoning_effort: None,
+                reasoning_mode: None,
                 thinking_enabled: None,
                 supported_reasoning_efforts: None,
                 capabilities: None,

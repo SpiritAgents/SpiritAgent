@@ -17,6 +17,19 @@ import {
   resolveRoutedAnthropicClaudeCapabilities,
 } from './openai/routed-anthropic-claude-capabilities.js';
 import type { OpenAiTransportConfig } from './openai/openai-compat.js';
+import { modelSupportsOpenAiGpt56ReasoningControls } from './openai/gpt-reasoning-controls.js';
+
+export {
+  isOpenAiGpt56OrLaterModel,
+  modelSupportsOpenAiGpt56ReasoningControls,
+  modelSupportsReasoningModeControl,
+  normalizeModelReasoningMode,
+  openAiGpt56SupportedReasoningEfforts,
+  resolveModelReasoningMode,
+  resolveOpenAiTransportReasoningModeForContext,
+  type ModelReasoningMode,
+  type OpenAiGpt56ReasoningEffort,
+} from './openai/gpt-reasoning-controls.js';
 
 export type ModelReasoningProvider =
   | 'deepseek'
@@ -60,7 +73,8 @@ export type OpenAiCompatibleReasoningEffort =
   | 'low'
   | 'medium'
   | 'high'
-  | 'xhigh';
+  | 'xhigh'
+  | 'max';
 
 export type DeepSeekV4ReasoningEffort = 'default' | 'high' | 'max';
 
@@ -103,6 +117,18 @@ export const OPENAI_COMPATIBLE_REASONING_EFFORT_OPTIONS: ReadonlyArray<
   { value: 'medium', label: 'Medium' },
   { value: 'high', label: 'High' },
   { value: 'xhigh', label: 'Xhigh' },
+];
+
+export const GPT56_REASONING_EFFORT_OPTIONS: ReadonlyArray<
+  ModelReasoningEffortOption<OpenAiCompatibleReasoningEffort>
+> = [
+  { value: 'default', label: 'Default' },
+  { value: 'none', label: 'None' },
+  { value: 'low', label: 'Low' },
+  { value: 'medium', label: 'Medium' },
+  { value: 'high', label: 'High' },
+  { value: 'xhigh', label: 'Xhigh' },
+  { value: 'max', label: 'Max' },
 ];
 
 export const DEEPSEEK_V4_REASONING_EFFORT_OPTIONS: ReadonlyArray<
@@ -188,6 +214,7 @@ const DEEPSEEK_V4_REASONING_MODEL_IDS = new Set(['deepseek-v4-pro', 'deepseek-v4
 
 const ALL_REASONING_EFFORT_OPTIONS = dedupeReasoningEffortOptions([
   ...OPENAI_COMPATIBLE_REASONING_EFFORT_OPTIONS,
+  ...GPT56_REASONING_EFFORT_OPTIONS,
   ...DEEPSEEK_V4_REASONING_EFFORT_OPTIONS,
   ...MOONSHOT_REASONING_EFFORT_OPTIONS,
   ...MOONSHOT_K3_REASONING_EFFORT_OPTIONS,
@@ -200,6 +227,10 @@ const ALL_REASONING_EFFORT_OPTIONS = dedupeReasoningEffortOptions([
 
 const ALL_REASONING_EFFORT_VALUES = new Set<string>(
   ALL_REASONING_EFFORT_OPTIONS.map((option) => option.value),
+);
+
+const GPT56_REASONING_EFFORT_VALUES = new Set<string>(
+  GPT56_REASONING_EFFORT_OPTIONS.map((option) => option.value),
 );
 
 const OPENAI_COMPATIBLE_REASONING_EFFORT_VALUES = new Set<string>(
@@ -358,6 +389,10 @@ export function modelReasoningEffortOptions(
 
   if (isTokenHubReasoningEffortModel(context)) {
     return OPENAI_COMPATIBLE_REASONING_EFFORT_OPTIONS;
+  }
+
+  if (modelSupportsOpenAiGpt56ReasoningControls(context)) {
+    return gpt56ReasoningEffortOptionsForContext(context);
   }
 
   return OPENAI_COMPATIBLE_REASONING_EFFORT_OPTIONS;
@@ -689,6 +724,17 @@ function resolveCompatibleModelReasoningEffort(
     return 'default';
   }
 
+  if (modelSupportsOpenAiGpt56ReasoningControls(context)) {
+    const supportedEfforts = normalizeSupportedReasoningEfforts(context?.supportedEfforts);
+    if (supportedEfforts && supportedEfforts.size > 0) {
+      return gpt56ReasoningEffortValueForContext(normalized, supportedEfforts)
+        ?? DEFAULT_MODEL_REASONING_EFFORT;
+    }
+    return GPT56_REASONING_EFFORT_VALUES.has(normalized)
+      ? normalized
+      : DEFAULT_MODEL_REASONING_EFFORT;
+  }
+
   if (normalized === 'max') {
     return 'xhigh';
   }
@@ -798,6 +844,34 @@ function moonshotReasoningEffortOptionsForSupportedEfforts(
   return MOONSHOT_REASONING_EFFORT_OPTIONS.filter(
     (option) => option.value === 'default' || supported.has(option.value),
   );
+}
+
+function gpt56ReasoningEffortValueForContext(
+  normalized: ModelReasoningEffort,
+  supportedEfforts?: ReadonlySet<string>,
+): ModelReasoningEffort | undefined {
+  if (!GPT56_REASONING_EFFORT_VALUES.has(normalized)) {
+    return undefined;
+  }
+  if (!supportedEfforts) {
+    return normalized;
+  }
+  return normalized === 'default' || supportedEfforts.has(normalized)
+    ? normalized
+    : undefined;
+}
+
+function gpt56ReasoningEffortOptionsForContext(
+  context?: ModelReasoningEffortContext,
+): ReadonlyArray<ModelReasoningEffortOption<ModelReasoningEffort>> {
+  const supportedEfforts = normalizeSupportedReasoningEfforts(context?.supportedEfforts);
+  if (supportedEfforts && supportedEfforts.size > 0) {
+    return GPT56_REASONING_EFFORT_OPTIONS.filter(
+      (option) => option.value === 'default' || supportedEfforts.has(option.value),
+    );
+  }
+
+  return GPT56_REASONING_EFFORT_OPTIONS;
 }
 
 function normalizeSupportedReasoningEfforts(

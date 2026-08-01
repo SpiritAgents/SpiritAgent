@@ -11,6 +11,10 @@ import {
   isOpenRouterAnthropicClaudeModel,
 } from '../openai/openrouter-anthropic-reasoning.js';
 import { resolveOpenAiTransportReasoningEffortForContext } from '../reasoning-effort.js';
+import {
+  resolveOpenAiTransportReasoningModeForContext,
+  type ModelReasoningMode,
+} from '../openai/gpt-reasoning-controls.js';
 import { extractAzureResourceNameFromApiBase } from '../azure-resource.js';
 import { cloneJsonValue } from '../tool-agent.js';
 
@@ -45,6 +49,7 @@ export interface OpenResponsesTransportConfig {
   /** @deprecated 由 responsesUsesStoredState 决定；保留字段仅为兼容旧配置序列化。 */
   previousResponseMode?: OpenResponsesPreviousResponseMode;
   reasoningEffort?: 'default' | 'minimal' | 'none' | 'low' | 'medium' | 'high' | 'xhigh' | 'max';
+  reasoningMode?: ModelReasoningMode;
   reasoningSummary?: OpenResponsesReasoningSummary;
   truncation?: 'disabled' | 'auto';
   /** Host run mode; Ask disables apply_patch injection. */
@@ -221,10 +226,19 @@ export function resolveOpenResponsesReasoningSummary(
   return 'auto';
 }
 
+export function openResponsesReasoningMode(
+  config: Pick<OpenResponsesTransportConfig, 'llmVendor' | 'model' | 'reasoningMode'>,
+): ModelReasoningMode | undefined {
+  return resolveOpenAiTransportReasoningModeForContext(config.reasoningMode, {
+    ...(config.llmVendor ? { provider: config.llmVendor } : {}),
+    model: config.model,
+  });
+}
+
 export function openResponsesReasoningTrace(
   config: Pick<
     OpenResponsesTransportConfig,
-    'llmVendor' | 'model' | 'reasoningEffort' | 'reasoningSummary'
+    'llmVendor' | 'model' | 'reasoningEffort' | 'reasoningMode' | 'reasoningSummary'
   >,
 ): JsonObject | undefined {
   if (isGatewayAnthropicClaudeModel(config.llmVendor, config.model)) {
@@ -237,13 +251,15 @@ export function openResponsesReasoningTrace(
   }
 
   const effort = openResponsesReasoningEffort(config);
+  const mode = openResponsesReasoningMode(config);
   const summary = resolveOpenResponsesReasoningSummary(config);
-  if (effort === undefined && summary === undefined) {
+  if (effort === undefined && mode === undefined && summary === undefined) {
     return undefined;
   }
 
   return {
     ...(effort !== undefined ? { effort } : {}),
+    ...(mode !== undefined ? { mode } : {}),
     ...(summary !== undefined ? { summary } : {}),
   };
 }

@@ -80,6 +80,7 @@ import { responsesUsesStoredState } from './responses-incremental-input.js';
 import {
   openResponsesPostUrl,
   openResponsesReasoningEffort,
+  openResponsesReasoningMode,
   resolveOpenResponsesLanguageModelId,
   resolveOpenResponsesReasoningSummary,
   resolveOpenResponsesSdkProvider,
@@ -259,6 +260,7 @@ export function buildResponsesProviderOptions(
   previousResponseId?: string,
 ): Record<string, JsonObject> {
   const reasoningEffort = openResponsesReasoningEffort(config);
+  const reasoningMode = openResponsesReasoningMode(config);
   const reasoningSummary = resolveOpenResponsesReasoningSummary(config);
 
   if (shouldUseGatewayWebSearch(config)) {
@@ -433,6 +435,10 @@ export function buildResponsesProviderOptions(
 
   if (reasoningEffort !== undefined) {
     openaiOptions.reasoningEffort = reasoningEffort;
+  }
+
+  if (reasoningMode !== undefined) {
+    openaiOptions.reasoningMode = reasoningMode;
   }
 
   if (reasoningSummary !== undefined) {

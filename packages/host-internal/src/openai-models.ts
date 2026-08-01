@@ -169,7 +169,7 @@ export function parseOpenAiCompatibleModelEntriesPayload(
       entries.push({ id: id.trim() });
     }
   }
-  return entries;
+  return entries.map(attachGatewayModelReasoningEfforts);
 }
 
 const SKIPPED_TENCENT_TOKENHUB_MODEL_STATUSES = new Set(['pre-offline']);
@@ -1775,12 +1775,84 @@ function attachGatewayMoonshotReasoningEfforts(
   };
 }
 
+const OPENAI_GPT56_REASONING_EFFORTS = ['none', 'low', 'medium', 'high', 'xhigh', 'max'] as const;
+
+function normalizeListedOpenAiModelIdForVersionCheck(modelId: string): string {
+  const trimmed = modelId.trim();
+  const lower = trimmed.toLowerCase();
+  if (lower.startsWith('openai/')) {
+    return trimmed.slice('openai/'.length).trim();
+  }
+  if (lower.startsWith('openai.')) {
+    return trimmed.slice('openai.'.length).trim();
+  }
+  return trimmed;
+}
+
+function parseListedOpenAiGptModelVersion(
+  modelId: string,
+): { major: number; minor: number } | undefined {
+  const normalized = normalizeListedOpenAiModelIdForVersionCheck(modelId).toLowerCase();
+
+  const versioned = /^gpt-(\d+)\.(\d+)/.exec(normalized);
+  if (versioned) {
+    return {
+      major: Number.parseInt(versioned[1] ?? '', 10),
+      minor: Number.parseInt(versioned[2] ?? '', 10),
+    };
+  }
+
+  const majorOnly = /^gpt-(\d+)(?:$|[-_])/.exec(normalized);
+  if (majorOnly) {
+    return {
+      major: Number.parseInt(majorOnly[1] ?? '', 10),
+      minor: 0,
+    };
+  }
+
+  return undefined;
+}
+
+function isListedOpenAiGpt56OrLaterModel(modelId: string): boolean {
+  const version = parseListedOpenAiGptModelVersion(modelId);
+  if (!version) {
+    return false;
+  }
+
+  if (version.major > 5) {
+    return true;
+  }
+
+  return version.major === 5 && version.minor >= 6;
+}
+
+function attachGatewayOpenAiGpt56ReasoningEfforts(
+  modelEntry: ProviderListedModelEntry,
+): ProviderListedModelEntry {
+  const normalizedId = modelEntry.id.trim().toLowerCase();
+  const isGatewayOpenAiRoute = normalizedId.startsWith('openai/');
+  const isDirectOpenAiGpt = !normalizedId.includes('/') && normalizedId.startsWith('gpt-');
+  if (!isGatewayOpenAiRoute && !isDirectOpenAiGpt) {
+    return modelEntry;
+  }
+  if (!isListedOpenAiGpt56OrLaterModel(modelEntry.id)) {
+    return modelEntry;
+  }
+
+  return {
+    ...modelEntry,
+    supportedReasoningEfforts: [...OPENAI_GPT56_REASONING_EFFORTS],
+  };
+}
+
 function attachGatewayModelReasoningEfforts(
   modelEntry: ProviderListedModelEntry,
 ): ProviderListedModelEntry {
-  return attachGatewayMoonshotReasoningEfforts(
-    attachGatewayGeminiReasoningEfforts(
-      attachGatewayAnthropicReasoningEfforts(modelEntry),
+  return attachGatewayOpenAiGpt56ReasoningEfforts(
+    attachGatewayMoonshotReasoningEfforts(
+      attachGatewayGeminiReasoningEfforts(
+        attachGatewayAnthropicReasoningEfforts(modelEntry),
+      ),
     ),
   );
 }

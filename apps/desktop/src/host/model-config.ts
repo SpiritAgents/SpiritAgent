@@ -10,6 +10,7 @@ import {
   isXiaomiResponsesReasoningEffortContext,
   resolveAnthropicTransportReasoningEffortForContext,
   resolveOpenAiTransportReasoningEffortForContext,
+  resolveOpenAiTransportReasoningModeForContext,
   type ModelReasoningEffortContext,
 } from '@spiritagent/agent-core/reasoning-effort';
 import {
@@ -242,6 +243,7 @@ type AgentModelProfileFields = Pick<
   | 'provider'
   | 'transportKind'
   | 'reasoningEffort'
+  | 'reasoningMode'
   | 'supportedReasoningEfforts'
   | 'thinkingEnabled'
   | 'supportsThinkingType'
@@ -289,6 +291,18 @@ function resolveAgentOpenAiReasoningEffort(
   return resolveOpenAiTransportReasoningEffortForContext(profile?.reasoningEffort, context);
 }
 
+function resolveAgentOpenAiReasoningMode(
+  profile: AgentModelProfileFields | undefined,
+  model: string,
+  transportKind: NonNullable<ModelReasoningEffortContext['transportKind']>,
+) {
+  const context = {
+    ...buildAgentModelReasoningContext(profile, model),
+    transportKind,
+  };
+  return resolveOpenAiTransportReasoningModeForContext(profile?.reasoningMode, context);
+}
+
 function resolveAgentVendorExtendedThinking(
   profile: AgentModelProfileFields | undefined,
   model: string,
@@ -322,6 +336,7 @@ export function buildPrimaryTransportConfig(input: {
     | 'transportKind'
     | 'capabilities'
     | 'reasoningEffort'
+    | 'reasoningMode'
     | 'supportedReasoningEfforts'
     | 'thinkingEnabled'
     | 'awsRegion'
@@ -406,6 +421,11 @@ export function buildPrimaryTransportConfig(input: {
       input.model,
       'open-responses',
     );
+    const normalizedReasoningMode = resolveAgentOpenAiReasoningMode(
+      input.profile,
+      input.model,
+      'open-responses',
+    );
     const responsesProvider: OpenResponsesSdkProvider | undefined =
       input.profile?.provider === 'openai' || input.profile?.provider === 'fireworks-ai'
         ? 'openai'
@@ -438,6 +458,7 @@ export function buildPrimaryTransportConfig(input: {
         ? { modelCapabilities: modelCapabilitiesFromConfig(input.profile.capabilities) }
         : {}),
       ...(normalizedReasoningEffort ? { reasoningEffort: normalizedReasoningEffort } : {}),
+      ...(normalizedReasoningMode ? { reasoningMode: normalizedReasoningMode } : {}),
       ...(reasoningSummary ? { reasoningSummary } : {}),
       ...(vendorExtendedThinking === false ? { vendorExtendedThinking: false as const } : {}),
     };
@@ -526,6 +547,11 @@ export function buildPrimaryTransportConfig(input: {
     input.model,
     'openai-compatible',
   );
+  const normalizedReasoningMode = resolveAgentOpenAiReasoningMode(
+    input.profile,
+    input.model,
+    'openai-compatible',
+  );
   const vendorExtendedThinking = resolveAgentVendorExtendedThinking(input.profile, input.model);
   const vertexCredentials = input.googleVertexCredentials;
   const vertexProject = input.profile?.vertexProject?.trim();
@@ -548,6 +574,7 @@ export function buildPrimaryTransportConfig(input: {
       ? { modelCapabilities: modelCapabilitiesFromConfig(input.profile.capabilities) }
       : {}),
     ...(normalizedReasoningEffort ? { reasoningEffort: normalizedReasoningEffort } : {}),
+    ...(normalizedReasoningMode ? { reasoningMode: normalizedReasoningMode } : {}),
     ...(vendorExtendedThinking === false ? { vendorExtendedThinking: false as const } : {}),
     ...(input.profile?.supportsThinkingSwitch === true ? { supportsThinkingSwitch: true } : {}),
   };
