@@ -32,10 +32,12 @@ import {
   STREAM_STALL_TIMEOUT_MS,
 } from './runtime/constants.js';
 import {
+  buildToolContinuationStateFromHistory,
   cloneHistory,
   createTurnContext,
   enqueueDeferredToolOutputGuidance,
   enqueueDeferredUserGuidance,
+  hasUnansweredAssistantToolCalls,
   formatPendingMcpResourceContext,
   formatPendingWorkspaceFileContext,
   pendingMcpResourceFromReadResult,
@@ -338,6 +340,47 @@ export class AgentRuntime<
       content,
     );
     return this.options.appendToolResultMessage(state, toolCallId, preparedContent);
+  }
+
+  private hasOutstandingToolTurnWorkForResume(): boolean {
+    const outstanding = this.readOutstandingToolTurnFlags();
+    return outstanding.hasPendingContinuation
+      || this.pendingBackgroundToolExecution !== undefined
+      || outstanding.deferredBgCount > 0;
+  }
+
+  private async resumeToolTurnAfterResolvedDenial(
+    turn: RuntimeTurnContext<ToolRequest>,
+    pendingUserInput: string,
+    resumeAsStreaming: boolean,
+    streamingEmitBeginResponse: boolean,
+  ): Promise<void> {
+    if (this.hasOutstandingToolTurnWorkForResume()) {
+      return;
+    }
+
+    if (hasUnansweredAssistantToolCalls(this.historyStore)) {
+      return;
+    }
+
+    const continuationState = buildToolContinuationStateFromHistory(
+      this.options,
+      this.historyStore,
+      pendingUserInput,
+    );
+    this.advanceTurnToolState(turn, continuationState);
+
+    if (resumeAsStreaming) {
+      await this.startStreamingRound(
+        continuationState,
+        pendingUserInput,
+        turn,
+        streamingEmitBeginResponse,
+      );
+      return;
+    }
+
+    this.startToolAgentRoundAsync(continuationState, pendingUserInput, turn);
   }
 
   history(): readonly LlmMessage[] {
@@ -1340,11 +1383,12 @@ export class AgentRuntime<
         pending.toolName,
         guidanceText,
       );
-      let resumedState = this.options.appendToolResultMessage(
+      let resumedState = await this.appendToolResultMessageWithOutputTruncation(
         pending.state,
         pending.toolCallId,
         guidanceText,
       );
+      this.advanceTurnToolState(pending.turn, resumedState);
 
       if (!guidanceMessage) {
         if (pending.remainingCalls.length > 0) {
@@ -1360,17 +1404,12 @@ export class AgentRuntime<
           return;
         }
 
-        if (pending.resumeAsStreaming) {
-          await this.startStreamingRound(
-            resumedState,
-            pending.pendingUserInput,
-            pending.turn,
-            pending.streamingEmitBeginResponse,
-          );
-          return;
-        }
-
-        this.startToolAgentRoundAsync(resumedState, pending.pendingUserInput, pending.turn);
+        await this.resumeToolTurnAfterResolvedDenial(
+          pending.turn,
+          pending.pendingUserInput,
+          pending.resumeAsStreaming,
+          pending.streamingEmitBeginResponse,
+        );
         return;
       }
 
@@ -1389,17 +1428,12 @@ export class AgentRuntime<
         return;
       }
 
-      if (pending.resumeAsStreaming) {
-        await this.startStreamingRound(
-          resumedState,
-          pending.pendingUserInput,
-          pending.turn,
-          true,
-        );
-        return;
-      }
-
-      this.startToolAgentRoundAsync(resumedState, pending.pendingUserInput, pending.turn);
+      await this.resumeToolTurnAfterResolvedDenial(
+        pending.turn,
+        pending.pendingUserInput,
+        pending.resumeAsStreaming,
+        true,
+      );
       return;
     }
 
@@ -1414,11 +1448,12 @@ export class AgentRuntime<
       pending.toolName,
       deniedText,
     );
-    const resumedState = this.options.appendToolResultMessage(
+    const resumedState = await this.appendToolResultMessageWithOutputTruncation(
       pending.state,
       pending.toolCallId,
       deniedText,
     );
+    this.advanceTurnToolState(pending.turn, resumedState);
 
     if (pending.remainingCalls.length > 0) {
       this.queuePendingToolCallContinuation(
@@ -1433,17 +1468,12 @@ export class AgentRuntime<
       return;
     }
 
-    if (pending.resumeAsStreaming) {
-      await this.startStreamingRound(
-        resumedState,
-        pending.pendingUserInput,
-        pending.turn,
-        pending.streamingEmitBeginResponse,
-      );
-      return;
-    }
-
-    this.startToolAgentRoundAsync(resumedState, pending.pendingUserInput, pending.turn);
+    await this.resumeToolTurnAfterResolvedDenial(
+      pending.turn,
+      pending.pendingUserInput,
+      pending.resumeAsStreaming,
+      pending.streamingEmitBeginResponse,
+    );
   }
 
   async continuePendingQuestions(
@@ -2222,6 +2252,7 @@ export class AgentRuntime<
     streamingEmitBeginResponse = true,
     earlyToolExecutions?: Map<string, PendingEarlyToolExecution<ToolRequest>>,
   ): void {
+    this.advanceTurnToolState(turn, state);
     this.pendingToolCallContinuation = {
       pendingUserInput,
       state,

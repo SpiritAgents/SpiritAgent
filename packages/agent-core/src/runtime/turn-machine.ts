@@ -1420,7 +1420,7 @@ export async function processToolCallsAsync<
       );
       runtime.pendingApproval = {
         pendingUserInput,
-        state: runtime.resolveTurnToolState?.(turn, currentState) ?? currentState,
+        state: currentState,
         request,
         prompt: approvalGate.prompt,
         ...(approvalGate.trustTarget !== undefined
@@ -1460,7 +1460,7 @@ export async function processToolCallsAsync<
       const questions = createQuestions(request, call.id, call.name, authorization.questions);
       runtime.pendingQuestions = {
         pendingUserInput,
-        state: runtime.resolveTurnToolState?.(turn, currentState) ?? currentState,
+        state: currentState,
         request,
         questions: authorization.questions,
         toolCallId: call.id,
