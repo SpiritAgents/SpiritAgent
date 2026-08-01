@@ -587,13 +587,15 @@ pub(in crate::ui) fn draw_ask_questions_form(
                 draw_bottom_form_text_field(
                     frame,
                     row_area,
-                    &question.custom_input.label,
-                    "",
-                    &question.custom_input.value,
-                    &question.custom_input.placeholder,
-                    question.custom_input.cursor,
-                    row_selected,
-                    false,
+                    DrawBottomFormTextFieldParams {
+                        label: &question.custom_input.label,
+                        help: "",
+                        value: &question.custom_input.value,
+                        placeholder: &question.custom_input.placeholder,
+                        cursor_chars: question.custom_input.cursor,
+                        is_selected: row_selected,
+                        disabled: false,
+                    },
                 )
             };
             if row_selected {
@@ -1111,13 +1113,15 @@ pub(in crate::ui) fn draw_bottom_form(
             } => draw_bottom_form_text_field(
                 frame,
                 field_area,
-                &field.label,
-                &field.help,
-                value,
-                placeholder,
-                *cursor,
-                index == form.selected_field,
-                *disabled,
+                DrawBottomFormTextFieldParams {
+                    label: &field.label,
+                    help: &field.help,
+                    value,
+                    placeholder,
+                    cursor_chars: *cursor,
+                    is_selected: index == form.selected_field,
+                    disabled: *disabled,
+                },
             ),
             BottomFormFieldEditorView::Choice { options, selected } => {
                 draw_bottom_form_choice_field(
@@ -1423,17 +1427,30 @@ pub(in crate::ui) fn draw_bottom_form_section_field(
     frame.render_widget(Paragraph::new(lines), area);
 }
 
+pub(in crate::ui) struct DrawBottomFormTextFieldParams<'a> {
+    pub label: &'a str,
+    pub help: &'a str,
+    pub value: &'a str,
+    pub placeholder: &'a str,
+    pub cursor_chars: usize,
+    pub is_selected: bool,
+    pub disabled: bool,
+}
+
 pub(in crate::ui) fn draw_bottom_form_text_field(
     frame: &mut ratatui::Frame<'_>,
     area: Rect,
-    label: &str,
-    help: &str,
-    value: &str,
-    placeholder: &str,
-    cursor_chars: usize,
-    is_selected: bool,
-    disabled: bool,
+    params: DrawBottomFormTextFieldParams<'_>,
 ) -> Option<(u16, u16)> {
+    let DrawBottomFormTextFieldParams {
+        label,
+        help,
+        value,
+        placeholder,
+        cursor_chars,
+        is_selected,
+        disabled,
+    } = params;
     // 自 `next_y` 到 `area` 下边的剩余行，须与底部 footer（快捷键提示）错开，不可画出区域外。
     let bottom_exclusive = area.y.saturating_add(area.height);
     let mut next_y = area.y;

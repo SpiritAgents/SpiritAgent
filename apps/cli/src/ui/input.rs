@@ -376,8 +376,7 @@ pub(in crate::ui) fn maybe_log_input_cursor_diagnostics(
 
 pub(in crate::ui) fn sanitize_input_log_preview(text: &str, max_chars: usize) -> String {
     let mut preview = String::new();
-    let mut emitted = 0usize;
-    for ch in text.chars() {
+    for (emitted, ch) in text.chars().enumerate() {
         if emitted >= max_chars {
             preview.push('…');
             break;
@@ -387,7 +386,6 @@ pub(in crate::ui) fn sanitize_input_log_preview(text: &str, max_chars: usize) ->
             '\r' => preview.push_str("\\r"),
             _ => preview.push(ch),
         }
-        emitted += 1;
     }
     preview
 }

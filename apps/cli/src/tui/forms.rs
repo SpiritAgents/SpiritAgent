@@ -408,19 +408,19 @@ impl TuiShell {
                     .model_name
                     .as_ref()
                     .expect("parse_model_add_connection sets name when not bulk");
-                match self.apply_model_add_and_switch(
-                    name.as_str(),
-                    parsed.api_base.as_str(),
-                    parsed.api_key.as_str(),
-                    Some(parsed.provider),
-                    parsed.transport_kind,
-                    parsed.context_length,
-                    parsed.azure_resource_name.as_deref(),
-                    parsed.cloudflare_account_id.as_deref(),
-                    parsed.cloudflare_gateway_id.as_deref(),
-                    parsed.provider_site.as_deref(),
-                    parsed.alibaba_workspace_id.as_deref(),
-                ) {
+                match self.apply_model_add_and_switch(ApplyModelAddParams {
+                    name: name.as_str(),
+                    api_base: parsed.api_base.as_str(),
+                    api_key: parsed.api_key.as_str(),
+                    provider: Some(parsed.provider),
+                    transport_kind: parsed.transport_kind,
+                    context_length: parsed.context_length,
+                    azure_resource_name: parsed.azure_resource_name.as_deref(),
+                    cloudflare_account_id: parsed.cloudflare_account_id.as_deref(),
+                    cloudflare_gateway_id: parsed.cloudflare_gateway_id.as_deref(),
+                    provider_site: parsed.provider_site.as_deref(),
+                    alibaba_workspace_id: parsed.alibaba_workspace_id.as_deref(),
+                }) {
                     Ok(()) => {
                         self.messages.push(ChatMessage {
                             role: MessageRole::Agent,

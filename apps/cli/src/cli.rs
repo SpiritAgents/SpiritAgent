@@ -21,21 +21,23 @@ use crate::{
 
 const ENV_API_KEY: &str = "SPIRIT_API_KEY";
 
+pub struct ModelAddCommand {
+    pub name: String,
+    pub api_base: Option<String>,
+    pub provider: Option<String>,
+    pub transport_kind: Option<String>,
+    pub reasoning_effort: Option<String>,
+    pub capabilities: Vec<String>,
+    pub context_length: Option<u64>,
+    pub key: Option<String>,
+    pub azure_resource_name: Option<String>,
+    pub provider_site: Option<String>,
+    pub alibaba_workspace_id: Option<String>,
+}
+
 pub enum ModelCommand {
     List,
-    Add {
-        name: String,
-        api_base: Option<String>,
-        provider: Option<String>,
-        transport_kind: Option<String>,
-        reasoning_effort: Option<String>,
-        capabilities: Vec<String>,
-        context_length: Option<u64>,
-        key: Option<String>,
-        azure_resource_name: Option<String>,
-        provider_site: Option<String>,
-        alibaba_workspace_id: Option<String>,
-    },
+    Add(Box<ModelAddCommand>),
     Remove {
         name: String,
     },
@@ -168,19 +170,20 @@ pub fn handle_model_cli(action: ModelCommand) -> Result<()> {
                 );
             }
         }
-        ModelCommand::Add {
-            name,
-            api_base,
-            provider,
-            transport_kind,
-            reasoning_effort,
-            capabilities,
-            context_length,
-            key,
-            azure_resource_name,
-            provider_site,
-            alibaba_workspace_id,
-        } => {
+        ModelCommand::Add(add) => {
+            let ModelAddCommand {
+                name,
+                api_base,
+                provider,
+                transport_kind,
+                reasoning_effort,
+                capabilities,
+                context_length,
+                key,
+                azure_resource_name,
+                provider_site,
+                alibaba_workspace_id,
+            } = *add;
             if cfg.has_model_name(&name) {
                 println!("{}", t!("cli.model.already_exists", name = name));
             } else {

@@ -24,8 +24,8 @@ use std::{
 use spirit_agent::view::MarketplaceFlowStep;
 use spirit_agent::{
     bootstrap_config, print_skills_stub, run_headless_prompt, ConfigCommand, ExtensionCommand,
-    GlobalCliOptions, HookCommand, KeyCommand, MarketplaceCommand, McpCommand, ModelCommand,
-    TuiShell, handle_config_cli, handle_extension_cli, handle_hooks_cli, handle_mcp_cli,
+    GlobalCliOptions, HookCommand, KeyCommand, MarketplaceCommand, McpCommand, ModelAddCommand,
+    ModelCommand, TuiShell, handle_config_cli, handle_extension_cli, handle_hooks_cli, handle_mcp_cli,
     handle_model_cli, logging, ui,
 };
 
@@ -103,6 +103,8 @@ enum Commands {
 }
 
 #[derive(Subcommand)]
+// clap derive 无法对 Add 子命令字段做 Box 堆分配，否则无法保持 Subcommand 派生
+#[allow(clippy::large_enum_variant)]
 enum ModelAction {
     List,
     Add {
@@ -338,7 +340,7 @@ fn into_model_command(action: ModelAction) -> ModelCommand {
             azure_resource_name,
             provider_site,
             alibaba_workspace_id,
-        } => ModelCommand::Add {
+        } => ModelCommand::Add(Box::new(ModelAddCommand {
             name,
             api_base,
             provider,
@@ -350,7 +352,7 @@ fn into_model_command(action: ModelAction) -> ModelCommand {
             azure_resource_name,
             provider_site,
             alibaba_workspace_id,
-        },
+        })),
         ModelAction::Remove { name } => ModelCommand::Remove { name },
         ModelAction::Use { name } => ModelCommand::Use { name },
         ModelAction::Current => ModelCommand::Current,

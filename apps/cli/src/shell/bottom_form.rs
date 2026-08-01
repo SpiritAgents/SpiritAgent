@@ -81,6 +81,7 @@ fn model_add_cloudflare_provider_index() -> usize {
         .unwrap_or(10)
 }
 
+#[cfg(test)]
 fn model_add_deepseek_provider_index() -> usize {
     model_add_picker_order_ids()
         .iter()
@@ -88,6 +89,7 @@ fn model_add_deepseek_provider_index() -> usize {
         .unwrap_or(6)
 }
 
+#[cfg(test)]
 fn model_add_azure_provider_index() -> usize {
     model_add_picker_order_ids()
         .iter()

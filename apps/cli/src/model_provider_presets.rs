@@ -173,23 +173,6 @@ pub(crate) fn cloudflare_ai_gateway_api_base_from_account_id(account_id: &str) -
     )
 }
 
-pub(crate) fn extract_cloudflare_account_id_from_api_base(base_url: &str) -> Option<String> {
-    let normalized = base_url.trim().trim_end_matches('/');
-    let lower = normalized.to_ascii_lowercase();
-    let prefix = "https://api.cloudflare.com/client/v4/accounts/";
-    if !lower.starts_with(prefix) {
-        return None;
-    }
-    let rest = &normalized[prefix.len()..];
-    let account_end = rest.find('/').unwrap_or(rest.len());
-    let account_id = rest[..account_end].trim();
-    if is_valid_cloudflare_account_id(account_id) {
-        Some(account_id.to_string())
-    } else {
-        None
-    }
-}
-
 pub(crate) fn model_add_picker_order_ids() -> &'static [String] {
     &presets().picker_order
 }

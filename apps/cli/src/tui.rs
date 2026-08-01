@@ -129,6 +129,20 @@ pub struct TuiShell {
     file_reference_index_loading: bool,
 }
 
+pub(crate) struct ApplyModelAddParams<'a> {
+    pub name: &'a str,
+    pub api_base: &'a str,
+    pub api_key: &'a str,
+    pub provider: Option<ModelProvider>,
+    pub transport_kind: crate::model_registry::ModelTransportKind,
+    pub context_length: Option<u64>,
+    pub azure_resource_name: Option<&'a str>,
+    pub cloudflare_account_id: Option<&'a str>,
+    pub cloudflare_gateway_id: Option<&'a str>,
+    pub provider_site: Option<&'a str>,
+    pub alibaba_workspace_id: Option<&'a str>,
+}
+
 impl TuiShell {
     pub fn apply_cli_approval_level(&mut self, raw: &str) -> Result<()> {
         crate::cli_bootstrap::apply_approval_level(&mut self.runtime, raw)
@@ -517,18 +531,21 @@ impl TuiShell {
     /// Adds a model, saves API key, sets it as `active_model`, and persists config.
     fn apply_model_add_and_switch(
         &mut self,
-        name: &str,
-        api_base: &str,
-        api_key: &str,
-        provider: Option<ModelProvider>,
-        transport_kind: crate::model_registry::ModelTransportKind,
-        context_length: Option<u64>,
-        azure_resource_name: Option<&str>,
-        cloudflare_account_id: Option<&str>,
-        cloudflare_gateway_id: Option<&str>,
-        provider_site: Option<&str>,
-        alibaba_workspace_id: Option<&str>,
+        params: ApplyModelAddParams<'_>,
     ) -> Result<(), String> {
+        let ApplyModelAddParams {
+            name,
+            api_base,
+            api_key,
+            provider,
+            transport_kind,
+            context_length,
+            azure_resource_name,
+            cloudflare_account_id,
+            cloudflare_gateway_id,
+            provider_site,
+            alibaba_workspace_id,
+        } = params;
         let mut config = self.runtime.config().clone();
         if config.has_model_name(name) {
             return Err(t!("tui.model_add.duplicate", name = name).into_owned());
@@ -1160,8 +1177,7 @@ fn should_log_input_edit(text: &str) -> bool {
 
 fn truncate_input_log_preview(text: &str, max_chars: usize) -> String {
     let mut preview = String::new();
-    let mut emitted = 0usize;
-    for ch in text.chars() {
+    for (emitted, ch) in text.chars().enumerate() {
         if emitted >= max_chars {
             preview.push('…');
             break;
@@ -1171,7 +1187,6 @@ fn truncate_input_log_preview(text: &str, max_chars: usize) -> String {
             '\r' => preview.push_str("\\r"),
             _ => preview.push(ch),
         }
-        emitted += 1;
     }
     preview
 }
