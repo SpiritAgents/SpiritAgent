@@ -87,6 +87,9 @@ function cloneRowForPersistence(row: DesktopTimelineRowSnapshot): PersistedDeskt
   };
 
   if (row.kind === 'assistant-text') {
+    if (row.aux?.turnErrorRetry !== undefined) {
+      return undefined;
+    }
     if (!hasTrimmedContent(row.content)) {
       return undefined;
     }
