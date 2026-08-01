@@ -13,6 +13,7 @@ import {
 import {
   defaultModelReasoningEffort,
   resolveModelReasoningEffortForContext,
+  resolveModelReasoningMode,
   type ModelReasoningEffort,
 } from '@spiritagent/agent-core/reasoning-effort';
 import { shouldPinReasoningEffortToDefault } from '@spiritagent/agent-core/model-thinking-controls';
@@ -29,6 +30,7 @@ import type {
   DesktopModelCapability,
   DesktopModelProvider,
   DesktopModelReasoningEffort,
+  DesktopModelReasoningMode,
   DesktopProviderConnectSiteId,
   DesktopSnapshot,
   DesktopTransportKind,
@@ -171,6 +173,29 @@ function asModelEntryReasoningEffort(
   value: ModelReasoningEffort,
 ): ModelEntryV2['reasoningEffort'] {
   return value as ModelEntryV2['reasoningEffort'];
+}
+
+function asModelEntryReasoningMode(
+  value: DesktopModelReasoningMode,
+): NonNullable<ModelEntryV2['reasoningMode']> {
+  return value;
+}
+
+function applyModelReasoningModeToEntry(
+  model: ModelEntryV2,
+  reasoningMode: DesktopModelReasoningMode | undefined,
+  modelContext: Parameters<typeof resolveModelReasoningMode>[1],
+): void {
+  if (reasoningMode === undefined) {
+    return;
+  }
+
+  const resolved = resolveModelReasoningMode(reasoningMode, modelContext);
+  if (resolved === 'pro') {
+    model.reasoningMode = asModelEntryReasoningMode('pro');
+  } else {
+    delete model.reasoningMode;
+  }
 }
 
 function asModelEntrySupportedReasoningEfforts(
@@ -399,6 +424,7 @@ export async function updateConfigCommand(
       ? {
           thinkingEnabled: prevActiveModelProfile.thinkingEnabled,
           reasoningEffort: prevActiveModelProfile.reasoningEffort,
+          reasoningMode: prevActiveModelProfile.reasoningMode,
         }
       : undefined;
 
@@ -409,6 +435,7 @@ export async function updateConfigCommand(
     const activeRef = request.activeModel;
     const apiBase = request.apiBase.trim();
     const reasoningEffort = request.reasoningEffort;
+    const reasoningMode = request.reasoningMode;
     const thinkingEnabled = request.thinkingEnabled;
     let activeEntry: ModelEntryLocation | null = null;
     if (!isEmptyModelRef(activeRef)) {
@@ -437,6 +464,13 @@ export async function updateConfigCommand(
             ? { supportedEfforts: resolved.supportedReasoningEfforts }
             : {}),
         }));
+      }
+      if (reasoningMode !== undefined) {
+        applyModelReasoningModeToEntry(model, reasoningMode, {
+          ...(resolved.provider ? { provider: resolved.provider } : {}),
+          model: model.name,
+          ...(resolved.transportKind ? { transportKind: resolved.transportKind } : {}),
+        });
       }
       if (thinkingEnabled !== undefined) {
         const modelContext = {
@@ -653,6 +687,7 @@ export async function updateConfigCommand(
       && (
         activeModelProfile.thinkingEnabled !== prevActiveModelInference.thinkingEnabled
         || activeModelProfile.reasoningEffort !== prevActiveModelInference.reasoningEffort
+        || activeModelProfile.reasoningMode !== prevActiveModelInference.reasoningMode
       );
     const deferRuntimeRefresh =
       wasBusy

@@ -1263,9 +1263,7 @@ function buildAiSdkProviderOptions(
   const reasoningEffort = openAiReasoningEffort(config) as
     | OpenAICompatibleLanguageModelChatOptions['reasoningEffort']
     | undefined;
-  const reasoningMode = openAiReasoningMode(config) as
-    | OpenAICompatibleLanguageModelChatOptions['reasoningMode']
-    | undefined;
+  const reasoningMode = openAiReasoningMode(config);
 
   if (reasoningEffort === undefined && reasoningMode === undefined) {
     return {};

@@ -591,6 +591,7 @@ export const ComposerDock = forwardRef<HTMLDivElement, ComposerDockProps>(functi
                   runtime.setActiveModel(ref);
                 }}
                 onModelReasoningEffortSelect={runtime.setModelReasoningEffort}
+                onModelReasoningModeSelect={runtime.setModelReasoningMode}
                 onModelThinkingEnabledSelect={runtime.setModelThinkingEnabled}
                 onAgentModeChange={onComposerAgentModeChange}
                 onLoopEnabledChange={(enabled) => {

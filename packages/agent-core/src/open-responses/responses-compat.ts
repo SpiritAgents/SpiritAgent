@@ -232,7 +232,6 @@ export function openResponsesReasoningMode(
   return resolveOpenAiTransportReasoningModeForContext(config.reasoningMode, {
     ...(config.llmVendor ? { provider: config.llmVendor } : {}),
     model: config.model,
-    transportKind: 'open-responses',
   });
 }
 

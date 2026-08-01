@@ -4,6 +4,8 @@ import { useTranslation } from 'react-i18next';
 import {
   modelReasoningEffortLabel,
   modelReasoningEffortOptions,
+  modelSupportsReasoningModeControl,
+  resolveModelReasoningMode,
 } from '@spiritagent/agent-core/reasoning-effort';
 import {
   modelEffortControlLabelKind,
@@ -28,6 +30,7 @@ import {
 } from '@/lib/desktop-chrome';
 import type {
   DesktopModelReasoningEffort,
+  DesktopModelReasoningMode,
   ModelProfileSnapshot,
   ModelRef,
   PreviewModelCatalogEntry,
@@ -61,6 +64,9 @@ export function modelPickerInspectorNeedsWideLayout(
   if (modelSupportsThinkingSwitch(modelContext)) {
     return true;
   }
+  if (modelSupportsReasoningModeControl(modelContext)) {
+    return true;
+  }
   const thinkingEnabled = resolveModelThinkingEnabled(model.thinkingEnabled);
   if (!modelShowsReasoningEffortControl(modelContext, thinkingEnabled)) {
     return false;
@@ -74,6 +80,7 @@ type ModelPickerInspectorPanelProps = {
   providerLabel: string;
   density?: 'default' | 'list';
   onReasoningEffortChange: (modelRef: ModelRef, effort: DesktopModelReasoningEffort) => void;
+  onReasoningModeChange?: (modelRef: ModelRef, mode: DesktopModelReasoningMode) => void;
   onThinkingEnabledChange?: (modelRef: ModelRef, enabled: boolean) => void | Promise<boolean>;
 };
 
@@ -83,6 +90,7 @@ export function ModelPickerInspectorPanel({
   providerLabel,
   density = 'default',
   onReasoningEffortChange,
+  onReasoningModeChange,
   onThinkingEnabledChange,
 }: ModelPickerInspectorPanelProps) {
   const { t } = useTranslation();
@@ -111,6 +119,8 @@ export function ModelPickerInspectorPanel({
     pendingThinkingEnabled ?? resolveModelThinkingEnabled(model.thinkingEnabled);
   const showReasoningEffort = modelShowsReasoningEffortControl(modelContext, thinkingEnabled);
   const effortOptions = showReasoningEffort ? modelReasoningEffortOptions(modelContext) : [];
+  const showReasoningMode = modelSupportsReasoningModeControl(modelContext);
+  const reasoningMode = resolveModelReasoningMode(model.reasoningMode, modelContext);
   const effortLabelKey =
     modelEffortControlLabelKind(modelContext) === 'effort'
       ? 'app.modelPickerEffort'
@@ -121,7 +131,7 @@ export function ModelPickerInspectorPanel({
     : 'h-8 w-auto border-0 bg-transparent px-0 text-xs shadow-none [&_span]:justify-end';
 
   const modelControls =
-    supportsThinkingSwitch || effortOptions.length > 1 ? (
+    supportsThinkingSwitch || effortOptions.length > 1 || showReasoningMode ? (
       <div className="space-y-2">
         {supportsThinkingSwitch ? (
           <div className="flex items-center justify-between gap-2">
@@ -164,6 +174,29 @@ export function ModelPickerInspectorPanel({
                     {option.label}
                   </SelectItem>
                 ))}
+              </SelectContent>
+            </Select>
+          </div>
+        ) : null}
+        {showReasoningMode ? (
+          <div className="flex items-center justify-between gap-2">
+            <Label className={labelClass}>{t('app.modelPickerReasoningMode')}</Label>
+            <Select
+              value={reasoningMode}
+              onValueChange={(value) => {
+                onReasoningModeChange?.(modelRef, value as DesktopModelReasoningMode);
+              }}
+            >
+              <SelectTrigger className={selectTriggerClass}>
+                <SelectValue>
+                  {reasoningMode === 'pro'
+                    ? t('app.modelPickerReasoningModePro')
+                    : t('app.modelPickerReasoningModeStandard')}
+                </SelectValue>
+              </SelectTrigger>
+              <SelectContent className="z-[110]">
+                <SelectItem value="standard">{t('app.modelPickerReasoningModeStandard')}</SelectItem>
+                <SelectItem value="pro">{t('app.modelPickerReasoningModePro')}</SelectItem>
               </SelectContent>
             </Select>
           </div>

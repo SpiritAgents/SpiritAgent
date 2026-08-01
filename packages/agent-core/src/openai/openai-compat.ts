@@ -239,7 +239,6 @@ export function openAiReasoningMode(
   return resolveOpenAiTransportReasoningModeForContext(config.reasoningMode, {
     ...(config.llmVendor ? { provider: config.llmVendor } : {}),
     model: config.model,
-    transportKind: 'openai-compatible',
   });
 }
 

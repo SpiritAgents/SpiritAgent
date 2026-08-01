@@ -51,6 +51,7 @@ export function resolveModelProfileFromParts(
     name: model.name,
     apiBase: group.apiBase,
     reasoningEffort: model.reasoningEffort as DesktopModelReasoningEffort,
+    ...(model.reasoningMode === 'pro' ? { reasoningMode: 'pro' as const } : {}),
     ...(model.thinkingEnabled === false ? { thinkingEnabled: false } : {}),
     ...(model.supportedReasoningEfforts !== undefined
       ? { supportedReasoningEfforts: model.supportedReasoningEfforts as DesktopModelReasoningEffort[] }

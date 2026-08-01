@@ -69,6 +69,7 @@ export interface UpdateConfigRequest {
   lightweightChatModel?: ModelRef;
   apiBase: string;
   reasoningEffort?: DesktopModelReasoningEffort;
+  reasoningMode?: DesktopModelReasoningMode;
   /** 厂商 extended thinking；false 关闭。缺省不修改。 */
   thinkingEnabled?: boolean;
   uiLocale?: string;
@@ -169,6 +170,9 @@ export type DesktopTransportKind = 'openai-compatible' | 'open-responses' | 'ant
 
 /** 模型推理强度字符串；具体允许值由 provider / transportKind 在 agent-core 中约束。 */
 export type DesktopModelReasoningEffort = ModelReasoningEffort;
+
+/** GPT-5.6+ OpenAI 路由模型的 reasoning.mode（standard / pro）。 */
+export type DesktopModelReasoningMode = 'standard' | 'pro';
 
 export type DesktopModelCapability = 'chat' | 'image' | 'video' | 'imageGeneration' | 'videoGeneration';
 
@@ -1374,6 +1378,7 @@ export interface ModelProfileSnapshot {
   name: string;
   apiBase: string;
   reasoningEffort: DesktopModelReasoningEffort;
+  reasoningMode?: DesktopModelReasoningMode;
   /** 厂商 extended thinking；缺省 true。仅 thinking 型模型持久化 false。 */
   thinkingEnabled?: boolean;
   supportedReasoningEfforts?: DesktopModelReasoningEffort[];

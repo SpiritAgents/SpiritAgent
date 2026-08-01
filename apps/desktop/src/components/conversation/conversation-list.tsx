@@ -564,6 +564,7 @@ export function ConversationList({
         onRewindDrop={onRewindDrop}
         onModelSelect={runtime.setActiveModel}
         onModelReasoningEffortSelect={runtime.setModelReasoningEffort}
+        onModelReasoningModeSelect={runtime.setModelReasoningMode}
         onModelThinkingEnabledSelect={runtime.setModelThinkingEnabled}
         onAgentModeChange={onComposerAgentModeChange}
         readManagedImagePreviewDataUrl={runtime.readManagedImagePreviewDataUrl}
