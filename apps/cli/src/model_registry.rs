@@ -212,6 +212,13 @@ pub struct ModelEntry {
     )]
     pub reasoning_effort: Option<String>,
     #[serde(
+        rename = "reasoningMode",
+        alias = "reasoning_mode",
+        default,
+        skip_serializing_if = "Option::is_none"
+    )]
+    pub reasoning_mode: Option<String>,
+    #[serde(
         rename = "thinkingEnabled",
         default,
         skip_serializing_if = "Option::is_none"
@@ -364,6 +371,13 @@ pub struct ModelProfile {
         skip_serializing_if = "Option::is_none"
     )]
     pub reasoning_effort: Option<String>,
+    #[serde(
+        rename = "reasoningMode",
+        alias = "reasoning_mode",
+        default,
+        skip_serializing_if = "Option::is_none"
+    )]
+    pub reasoning_mode: Option<String>,
     #[serde(
         rename = "contextLength",
         default,
@@ -892,6 +906,7 @@ pub fn resolve_model_profile_from_parts(
         api_base: group.api_base.clone(),
         provider: Some(group.provider),
         reasoning_effort: model.reasoning_effort.clone(),
+        reasoning_mode: model.reasoning_mode.clone(),
         context_length: model.context_length,
         extra,
     })
@@ -1264,6 +1279,7 @@ pub fn make_test_app_config_with_models(
             ModelEntry {
                 name: (*name).to_string(),
                 reasoning_effort: None,
+                reasoning_mode: None,
                 thinking_enabled: None,
                 supported_reasoning_efforts: None,
                 capabilities: None,
@@ -1516,6 +1532,9 @@ pub(crate) fn normalize_reasoning_effort_value(
             }
             _ => match normalized.as_str() {
                 "default" | "none" | "low" | "medium" | "high" | "xhigh" => normalized,
+                "max" if model_supports_openai_gpt56_reasoning_controls(provider, model_name) => {
+                    normalized
+                }
                 "minimal" => "default".to_string(),
                 "max" => "xhigh".to_string(),
                 _ => "medium".to_string(),
@@ -1530,6 +1549,112 @@ fn normalize_optional_string(value: Option<String>) -> Option<String> {
         None
     } else {
         Some(trimmed)
+    }
+}
+
+fn normalize_gateway_openai_model_id(model: &str) -> Option<String> {
+    let trimmed = model.trim();
+    let lower = trimmed.to_ascii_lowercase();
+    let prefix = "openai/";
+    if lower.starts_with(prefix) {
+        let id = trimmed[prefix.len()..].trim();
+        if !id.is_empty() {
+            return Some(id.to_string());
+        }
+    }
+    None
+}
+
+fn resolve_openai_model_id_for_version_check(model_id: &str) -> String {
+    if let Some(gateway_id) = normalize_gateway_openai_model_id(model_id) {
+        return gateway_id;
+    }
+
+    let trimmed = model_id.trim();
+    let lower = trimmed.to_ascii_lowercase();
+    let openrouter_prefix = "openai/";
+    if lower.starts_with(openrouter_prefix) {
+        return trimmed[openrouter_prefix.len()..].trim().to_string();
+    }
+
+    trimmed.to_string()
+}
+
+pub(crate) fn parse_openai_gpt_model_version(model_id: &str) -> Option<(u32, u32)> {
+    let trimmed = resolve_openai_model_id_for_version_check(model_id).to_ascii_lowercase();
+
+    if let Some(rest) = trimmed.strip_prefix("openai.") {
+        return parse_openai_gpt_model_version(rest);
+    }
+
+    if let Some(rest) = trimmed.strip_prefix("gpt-") {
+        if let Some(dot) = rest.find('.') {
+            let major_part = &rest[..dot];
+            let minor_part: String = rest[dot + 1..]
+                .chars()
+                .take_while(|c| c.is_ascii_digit())
+                .collect();
+            if let (Ok(major), Ok(minor)) = (major_part.parse::<u32>(), minor_part.parse::<u32>()) {
+                return Some((major, minor));
+            }
+        }
+
+        let major_end = rest
+            .find(|c| c == '-' || c == '_')
+            .unwrap_or(rest.len());
+        let major_part = &rest[..major_end];
+        if let Ok(major) = major_part.parse::<u32>() {
+            return Some((major, 0));
+        }
+    }
+
+    None
+}
+
+pub(crate) fn is_openai_gpt56_or_later_model(model_id: &str) -> bool {
+    let Some((major, minor)) = parse_openai_gpt_model_version(model_id) else {
+        return false;
+    };
+
+    major > 5 || (major == 5 && minor >= 6)
+}
+
+fn model_supports_openai_gpt56_reasoning_controls(
+    provider: Option<ModelProvider>,
+    model_name: &str,
+) -> bool {
+    let Some(provider) = provider else {
+        return false;
+    };
+
+    if !matches!(
+        provider,
+        ModelProvider::Openai
+            | ModelProvider::Azure
+            | ModelProvider::VercelAiGateway
+            | ModelProvider::CloudflareAiGateway
+            | ModelProvider::Openrouter
+    ) {
+        return false;
+    }
+
+    is_openai_gpt56_or_later_model(model_name)
+}
+
+pub(crate) fn normalize_reasoning_mode_value(
+    value: Option<String>,
+    provider: Option<ModelProvider>,
+    model_name: &str,
+) -> Option<String> {
+    if !model_supports_openai_gpt56_reasoning_controls(provider, model_name) {
+        return None;
+    }
+
+    let normalized = normalize_optional_string(value)?.to_ascii_lowercase();
+    if normalized == "pro" {
+        Some("pro".to_string())
+    } else {
+        None
     }
 }
 
@@ -1748,9 +1873,9 @@ fn load_model_api_key_from_keyring(model_name: &str) -> Result<String> {
 #[cfg(test)]
 mod tests {
     use super::{
-        deserialize_config, normalize_reasoning_effort_value, resolve_cli_attribution,
-        serialize_config, AppConfig, ModelEntry, ModelProvider, ModelRef, ModelTransportKind,
-        ProviderGroupConnectDraft, SPIRIT_CONFIG_SCHEMA_VERSION,
+        deserialize_config, normalize_reasoning_effort_value, normalize_reasoning_mode_value,
+        resolve_cli_attribution, serialize_config, AppConfig, ModelEntry, ModelProvider, ModelRef,
+        ModelTransportKind, ProviderGroupConnectDraft, SPIRIT_CONFIG_SCHEMA_VERSION,
     };
     use serde_json::Value;
     use std::path::Path;
@@ -1767,6 +1892,7 @@ mod tests {
             api_base: api_base.to_string(),
             provider: Some(provider),
             reasoning_effort: None,
+            reasoning_mode: None,
             context_length: None,
             extra: serde_json::Map::new(),
         }
@@ -1800,6 +1926,56 @@ mod tests {
                 "kimi-for-coding",
             ),
             Some("high".to_string()),
+        );
+    }
+
+    #[test]
+    fn normalize_reasoning_effort_preserves_max_for_gpt56_openai() {
+        assert_eq!(
+            normalize_reasoning_effort_value(
+                Some("max".to_string()),
+                Some(ModelProvider::Openai),
+                ModelTransportKind::OpenResponses,
+                "gpt-5.6-sol",
+            ),
+            Some("max".to_string()),
+        );
+        assert_eq!(
+            normalize_reasoning_effort_value(
+                Some("max".to_string()),
+                Some(ModelProvider::Openai),
+                ModelTransportKind::OpenResponses,
+                "gpt-5.5",
+            ),
+            Some("xhigh".to_string()),
+        );
+    }
+
+    #[test]
+    fn normalize_reasoning_mode_only_for_gpt56_pro() {
+        assert_eq!(
+            normalize_reasoning_mode_value(
+                Some("pro".to_string()),
+                Some(ModelProvider::Openai),
+                "gpt-5.6-sol",
+            ),
+            Some("pro".to_string()),
+        );
+        assert_eq!(
+            normalize_reasoning_mode_value(
+                Some("pro".to_string()),
+                Some(ModelProvider::Openai),
+                "gpt-5.5",
+            ),
+            None,
+        );
+        assert_eq!(
+            normalize_reasoning_mode_value(
+                Some("standard".to_string()),
+                Some(ModelProvider::Openai),
+                "gpt-5.6-sol",
+            ),
+            None,
         );
     }
 
@@ -2239,6 +2415,7 @@ mod tests {
             ModelEntry {
                 name: "plain".to_string(),
                 reasoning_effort: None,
+                reasoning_mode: None,
                 thinking_enabled: None,
                 supported_reasoning_efforts: None,
                 capabilities: None,
@@ -2493,6 +2670,7 @@ mod tests {
             ModelEntry {
                 name: "glm-4.7".to_string(),
                 reasoning_effort: None,
+                reasoning_mode: None,
                 thinking_enabled: None,
                 supported_reasoning_efforts: None,
                 capabilities: None,
@@ -2514,6 +2692,7 @@ mod tests {
             ModelEntry {
                 name: "glm-4.7".to_string(),
                 reasoning_effort: None,
+                reasoning_mode: None,
                 thinking_enabled: None,
                 supported_reasoning_efforts: None,
                 capabilities: None,
@@ -2540,6 +2719,7 @@ mod tests {
             ModelEntry {
                 name: "gpt-4o-mini".to_string(),
                 reasoning_effort: Some("medium".to_string()),
+                reasoning_mode: None,
                 thinking_enabled: None,
                 supported_reasoning_efforts: None,
                 capabilities: Some(vec!["chat".to_string()]),

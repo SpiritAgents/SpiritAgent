@@ -9,6 +9,7 @@ use crate::{
     model_registry::{
         AppConfig, ModelProvider, load_group_access_key_id_from_keyring,
         load_group_secret_access_key_from_keyring, normalize_reasoning_effort_value,
+        normalize_reasoning_mode_value,
     },
     ts_bridge::constants::{ENV_API_BASE, ENV_API_KEY},
 };
@@ -32,12 +33,13 @@ pub(crate) fn build_mcp_only_transport_config(workspace_root: &Path) -> Value {
     })
 }
 
-fn profile_transport_signature(profile: &crate::model_registry::ModelProfile) -> (String, Option<ModelProvider>, crate::model_registry::ModelTransportKind, Option<String>) {
+fn profile_transport_signature(profile: &crate::model_registry::ModelProfile) -> (String, Option<ModelProvider>, crate::model_registry::ModelTransportKind, Option<String>, Option<String>) {
     (
         profile.api_base.clone(),
         profile.provider,
         profile.transport_kind(),
         profile.reasoning_effort.clone(),
+        profile.reasoning_mode.clone(),
     )
 }
 
@@ -239,6 +241,11 @@ pub(crate) fn resolve_transport_config_json_for(host: &TransportHost<'_>, config
         active.transport_kind(),
         &active.name,
     );
+    let normalized_reasoning_mode = normalize_reasoning_mode_value(
+        active.reasoning_mode.clone(),
+        active.provider,
+        &active.name,
+    );
 
     let mut transport =
         if active.transport_kind() == crate::model_registry::ModelTransportKind::Anthropic {
@@ -391,6 +398,10 @@ pub(crate) fn resolve_transport_config_json_for(host: &TransportHost<'_>, config
             && let Some(obj) = transport.as_object_mut() {
                 obj.insert("reasoningEffort".to_string(), json!(reasoning_effort));
             }
+        if let Some(reasoning_mode) = normalized_reasoning_mode.as_deref()
+            && let Some(obj) = transport.as_object_mut() {
+                obj.insert("reasoningMode".to_string(), json!(reasoning_mode));
+            }
     } else if active.transport_kind() == crate::model_registry::ModelTransportKind::Bedrock
         && !(active.provider == Some(ModelProvider::AmazonBedrock)
             && crate::bedrock_mantle::is_bedrock_mantle_openai_model(&active.name))
@@ -410,6 +421,10 @@ pub(crate) fn resolve_transport_config_json_for(host: &TransportHost<'_>, config
         if let Some(reasoning_effort) = normalized_reasoning_effort.as_deref()
             && let Some(obj) = transport.as_object_mut() {
                 obj.insert("reasoningEffort".to_string(), json!(reasoning_effort));
+            }
+        if let Some(reasoning_mode) = normalized_reasoning_mode.as_deref()
+            && let Some(obj) = transport.as_object_mut() {
+                obj.insert("reasoningMode".to_string(), json!(reasoning_mode));
             }
     }
     attach_image_generation_config(host, &mut transport, config)?;

@@ -183,6 +183,7 @@ fn validate_config_change_allows_non_transport_updates_while_busy() {
         ModelEntry {
             name: "gpt-4.1".to_string(),
             reasoning_effort: None,
+            reasoning_mode: None,
             thinking_enabled: None,
             supported_reasoning_efforts: None,
             capabilities: None,
@@ -246,6 +247,7 @@ fn resolve_transport_config_json_includes_video_generation_model_for_open_respon
         ModelEntry {
             name: "seedance-video".to_string(),
             reasoning_effort: None,
+            reasoning_mode: None,
             thinking_enabled: None,
             supported_reasoning_efforts: None,
             capabilities: Some(vec!["videoGeneration".to_string()]),
@@ -298,6 +300,7 @@ fn resolve_transport_config_json_includes_image_generation_model() {
         ModelEntry {
             name: "image-model".to_string(),
             reasoning_effort: None,
+            reasoning_mode: None,
             thinking_enabled: None,
             supported_reasoning_efforts: None,
             capabilities: Some(vec!["imageGeneration".to_string()]),
@@ -369,6 +372,7 @@ fn resolve_transport_config_json_includes_image_generation_for_open_responses() 
         ModelEntry {
             name: "black-forest-labs/FLUX.1-schnell".to_string(),
             reasoning_effort: None,
+            reasoning_mode: None,
             thinking_enabled: None,
             supported_reasoning_efforts: None,
             capabilities: Some(vec!["imageGeneration".to_string()]),
@@ -458,6 +462,7 @@ fn resolve_transport_config_json_uses_azure_official_responses_provider() {
         ModelEntry {
             name: "my-gpt4o-deploy".to_string(),
             reasoning_effort: None,
+            reasoning_mode: None,
             thinking_enabled: None,
             supported_reasoning_efforts: None,
             capabilities: None,
@@ -535,6 +540,7 @@ fn resolve_transport_config_json_recomputes_azure_base_url_from_resource_name() 
         ModelEntry {
             name: "my-gpt4o-deploy".to_string(),
             reasoning_effort: None,
+            reasoning_mode: None,
             thinking_enabled: None,
             supported_reasoning_efforts: None,
             capabilities: None,
@@ -589,6 +595,7 @@ fn resolve_transport_config_json_routes_bedrock_mantle_openai_to_open_responses(
         ModelEntry {
             name: "openai.gpt-5.5".to_string(),
             reasoning_effort: None,
+            reasoning_mode: None,
             thinking_enabled: None,
             supported_reasoning_efforts: None,
             capabilities: None,
@@ -692,6 +699,7 @@ fn transport_config_change_detects_model_knobs() {
         ModelEntry {
             name: "image-model".to_string(),
             reasoning_effort: None,
+            reasoning_mode: None,
             thinking_enabled: None,
             supported_reasoning_efforts: None,
             capabilities: Some(vec!["imageGeneration".to_string()]),

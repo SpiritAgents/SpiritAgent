@@ -4,6 +4,7 @@ import test from 'node:test';
 import {
   isGatewayOpenAiRoutedModel,
   normalizeGatewayOpenAiModelId,
+  openResponsesReasoningTrace,
   resolveAzureResourceName,
   resolveOpenResponsesLanguageModelId,
   resolveOpenResponsesSdkProvider,
@@ -153,4 +154,40 @@ test('extractAzureResourceNameFromApiBase rejects invalid resource segments', ()
 test('isGatewayOpenAiRoutedModel', () => {
   assert.equal(isGatewayOpenAiRoutedModel('openai/gpt-5.1'), true);
   assert.equal(isGatewayOpenAiRoutedModel('gpt-5.1'), false);
+});
+
+test('openResponsesReasoningTrace gpt-5.6 pro max includes mode and effort', () => {
+  assert.deepEqual(
+    openResponsesReasoningTrace({
+      llmVendor: 'vercel-ai-gateway',
+      model: 'openai/gpt-5.6-sol',
+      reasoningEffort: 'max',
+      reasoningMode: 'pro',
+    }),
+    { effort: 'max', mode: 'pro', summary: 'auto' },
+  );
+});
+
+test('openResponsesReasoningTrace gpt-5.6 standard omits mode', () => {
+  assert.deepEqual(
+    openResponsesReasoningTrace({
+      llmVendor: 'openai',
+      model: 'gpt-5.6-sol',
+      reasoningEffort: 'medium',
+      reasoningMode: 'standard',
+    }),
+    { effort: 'medium', summary: 'auto' },
+  );
+});
+
+test('openResponsesReasoningTrace gpt-5.5 ignores mode and downgrades max', () => {
+  assert.deepEqual(
+    openResponsesReasoningTrace({
+      llmVendor: 'openai',
+      model: 'gpt-5.5',
+      reasoningEffort: 'max',
+      reasoningMode: 'pro',
+    }),
+    { effort: 'xhigh', summary: 'auto' },
+  );
 });

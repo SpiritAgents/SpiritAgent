@@ -91,6 +91,7 @@ import { finishTaskStreamingPreviewReady } from '../finish-task-preview.js';
 import {
   buildOpenAiRequestTrace,
   openAiReasoningEffort,
+  openAiReasoningMode,
   openAiVendorChatCompletionBodyExtras,
   openAiStreamingUsageBodyExtras,
   resolveOpenAiModelCompatibilityProfile,
@@ -1262,14 +1263,18 @@ function buildAiSdkProviderOptions(
   const reasoningEffort = openAiReasoningEffort(config) as
     | OpenAICompatibleLanguageModelChatOptions['reasoningEffort']
     | undefined;
+  const reasoningMode = openAiReasoningMode(config) as
+    | OpenAICompatibleLanguageModelChatOptions['reasoningMode']
+    | undefined;
 
-  if (reasoningEffort === undefined) {
+  if (reasoningEffort === undefined && reasoningMode === undefined) {
     return {};
   }
 
   return {
     openai: {
-      reasoningEffort,
+      ...(reasoningEffort !== undefined ? { reasoningEffort } : {}),
+      ...(reasoningMode !== undefined ? { reasoningMode } : {}),
     } as JsonObject,
   };
 }

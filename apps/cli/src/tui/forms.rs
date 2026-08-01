@@ -597,6 +597,7 @@ impl TuiShell {
                 crate::model_registry::ModelEntry {
                     name: id.clone(),
                     reasoning_effort: None,
+                    reasoning_mode: None,
                     thinking_enabled: None,
                     supported_reasoning_efforts: None,
                     capabilities: None,
