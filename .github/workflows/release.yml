@@ -18,8 +18,8 @@ permissions:
 
 env:
   RELEASE_VERSION: ${{ inputs.version }}
-  NODE_VERSION: '22'
-  SPIRIT_RELEASE_NODE_MAJOR: '22'
+  NODE_VERSION: '24'
+  SPIRIT_RELEASE_NODE_MAJOR: '24'
 
 jobs:
   verify:
@@ -59,10 +59,6 @@ jobs:
           - os: windows-latest
             rust_target: x86_64-pc-windows-msvc
             package_target: windows-x64
-            builder: cargo
-          - os: windows-latest
-            rust_target: i686-pc-windows-msvc
-            package_target: windows-ia32
             builder: cargo
           - os: windows-latest
             rust_target: aarch64-pc-windows-msvc
@@ -228,10 +224,6 @@ jobs:
             platform: win
             arch: x64
             package_target: windows-x64
-          - os: windows-latest
-            platform: win
-            arch: ia32
-            package_target: windows-ia32
           - os: windows-latest
             platform: win
             arch: arm64
@@ -574,13 +566,6 @@ jobs:
           # _authToken=${NODE_AUTH_TOKEN} (often GitHub token), which skips OIDC and breaks publish.
           cache: npm
           cache-dependency-path: package-lock.json
-
-      - name: Upgrade npm for Trusted Publishing
-        run: |
-          set -euo pipefail
-          # Node 22 ships npm 10.x; Trusted Publishing requires npm >= 11.5.1.
-          npm install -g npm@11
-          npm --version
 
       - name: Download release bundle
         uses: actions/download-artifact@v4

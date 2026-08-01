@@ -155,7 +155,7 @@ node path/to/packages/acp-server/dist/src/stdio-entry.js --setup
 
 ## 개발
 
-**요구 사항:** Node.js 22+, npm. CLI 빌드에는 Rust 툴체인 필요.
+**요구 사항:** Node.js 24+, npm. CLI 빌드에는 Rust 툴체인 필요.
 
 | 명령 | 설명 |
 | --- | --- |

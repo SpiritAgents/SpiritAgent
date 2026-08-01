@@ -29,7 +29,7 @@
     "notice:production": "node scripts/gen-notice.mjs --production"
   },
   "engines": {
-    "node": ">=22"
+    "node": ">=24"
   },
   "dependencies": {
     "@agentclientprotocol/sdk": "^0.25.1",

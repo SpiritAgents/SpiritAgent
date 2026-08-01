@@ -10,7 +10,7 @@
   },
   "type": "module",
   "engines": {
-    "node": ">=22"
+    "node": ">=24"
   },
   "scripts": {
     "build:deps": "npm --prefix ../../packages/agent-core run build && npm --prefix ../../packages/host-internal run build:tsc",

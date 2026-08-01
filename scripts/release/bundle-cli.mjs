@@ -17,14 +17,6 @@ const targetMap = {
     nodeArchiveExt: 'zip',
     archiveExt: 'zip',
   },
-  'i686-pc-windows-msvc': {
-    packageTarget: 'windows-ia32',
-    binaryName: 'spirit.exe',
-    nodePlatform: 'win',
-    nodeArch: 'x86',
-    nodeArchiveExt: 'zip',
-    archiveExt: 'zip',
-  },
   'aarch64-pc-windows-msvc': {
     packageTarget: 'windows-arm64',
     binaryName: 'spirit.exe',
@@ -112,7 +104,7 @@ async function resolveNodeReleaseVersion() {
     return process.env.SPIRIT_RELEASE_NODE_VERSION.replace(/^v/, '');
   }
 
-  const major = process.env.SPIRIT_RELEASE_NODE_MAJOR ?? '22';
+  const major = process.env.SPIRIT_RELEASE_NODE_MAJOR ?? '24';
   const response = await fetch('https://nodejs.org/dist/index.json');
   if (!response.ok) {
     throw new Error(`无法查询 Node.js ${major}.x 版本: ${response.status}`);
