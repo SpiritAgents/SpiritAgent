@@ -453,20 +453,16 @@ function ModelPickerTriggerLabel({
   const thinkingEnabled = resolveModelThinkingEnabled(model.thinkingEnabled);
 
   const secondaryLabels: string[] = [];
-  if (supportsReasoningMode) {
-    if (reasoningMode === 'pro') {
-      secondaryLabels.push(t('app.modelPickerReasoningModePro'));
-      if (!(supportsThinkingSwitch && !thinkingEnabled)) {
-        secondaryLabels.push(modelReasoningEffortLabel(reasoningEffort));
-      } else {
-        secondaryLabels.push(t('app.modelPickerNotThinking'));
-      }
-    }
-  } else if (supportsThinkingSwitch && !thinkingEnabled) {
-    secondaryLabels.push(t('app.modelPickerNotThinking'));
-  } else {
-    secondaryLabels.push(modelReasoningEffortLabel(reasoningEffort));
+  if (supportsReasoningMode && reasoningMode === 'pro') {
+    secondaryLabels.push(t('app.modelPickerReasoningModePro'));
   }
+
+  const effortOrThinkingLabel =
+    supportsThinkingSwitch && !thinkingEnabled
+      ? t('app.modelPickerNotThinking')
+      : modelReasoningEffortLabel(reasoningEffort);
+
+  secondaryLabels.push(effortOrThinkingLabel);
 
   return (
     <span className="inline-flex min-w-0 max-w-full items-baseline gap-1.5">
