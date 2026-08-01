@@ -152,6 +152,45 @@ test('parseVercelAiGatewayModelEntriesPayload infers kimi-k3 reasoning efforts',
   ]);
 });
 
+test('parseVercelAiGatewayModelEntriesPayload infers max effort for gpt-5.6 openai models', () => {
+  const entries = parseVercelAiGatewayModelEntriesPayload({
+    data: [
+      {
+        id: 'openai/gpt-5.6-sol',
+        type: 'language',
+      },
+    ],
+  });
+
+  assert.deepEqual(entries, [
+    {
+      id: 'openai/gpt-5.6-sol',
+      supportedReasoningEfforts: ['none', 'low', 'medium', 'high', 'xhigh', 'max'],
+    },
+  ]);
+});
+
+test('parseOpenAiCompatibleModelEntriesPayload infers max effort for direct gpt-5.6 models', () => {
+  const entries = parseOpenAiCompatibleModelEntriesPayload({
+    data: [{ id: 'gpt-5.6-sol' }],
+  });
+
+  assert.deepEqual(entries, [
+    {
+      id: 'gpt-5.6-sol',
+      supportedReasoningEfforts: ['none', 'low', 'medium', 'high', 'xhigh', 'max'],
+    },
+  ]);
+});
+
+test('parseOpenAiCompatibleModelEntriesPayload leaves gpt-5.5 without gpt56 effort list', () => {
+  const entries = parseOpenAiCompatibleModelEntriesPayload({
+    data: [{ id: 'gpt-5.5' }],
+  });
+
+  assert.deepEqual(entries, [{ id: 'gpt-5.5' }]);
+});
+
 test('parseKimiCodeModelEntriesPayload maps Kimi Code model trait fields', () => {
   const entries = parseKimiCodeModelEntriesPayload({
     object: 'list',
