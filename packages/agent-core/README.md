@@ -13,7 +13,7 @@ TypeScript core runtime for [Spirit Agent](https://github.com/SpiritAgents/Spiri
 
 ## Requirements
 
-- Node.js 22+
+- Node.js 24+
 
 ## Related packages
 

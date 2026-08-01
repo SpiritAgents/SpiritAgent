@@ -12,7 +12,7 @@ Shared **host-side implementation** for [Spirit Agent](https://github.com/Spirit
 
 ## Requirements
 
-- Node.js 22+
+- Node.js 24+
 - [`@spiritagent/agent-core`](https://www.npmjs.com/package/@spiritagent/agent-core) at a matching version
 
 ## Related packages

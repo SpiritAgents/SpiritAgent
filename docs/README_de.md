@@ -155,7 +155,7 @@ node path/to/packages/acp-server/dist/src/stdio-entry.js --setup
 
 ## Entwicklung
 
-**Anforderungen:** Node.js 22+, npm. Rust-Toolchain für CLI-Builds.
+**Anforderungen:** Node.js 24+, npm. Rust-Toolchain für CLI-Builds.
 
 | Befehl | Beschreibung |
 | --- | --- |

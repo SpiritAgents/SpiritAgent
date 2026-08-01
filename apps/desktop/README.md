@@ -47,7 +47,7 @@ Docked panels attach to the active workspace:
 
 ## Requirements
 
-- **Node.js** 22 or newer
+- **Node.js** 24 or newer
 - **npm** (comes with Node)
 - **Rust toolchain** — only when building the CLI from the monorepo root; not required for Desktop-only development after dependencies are built
 - **Windows, macOS, or Linux** — Electron targets all three; some features (embedded shell, in-app browser) require the Electron shell

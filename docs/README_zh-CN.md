@@ -155,7 +155,7 @@ node path/to/packages/acp-server/dist/src/stdio-entry.js --setup
 
 ## 开发
 
-**环境要求：** Node.js 22+、npm。构建 CLI 需要 Rust 工具链。
+**环境要求：** Node.js 24+、npm。构建 CLI 需要 Rust 工具链。
 
 | 命令 | 说明 |
 | --- | --- |
