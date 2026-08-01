@@ -98,11 +98,10 @@ pub(crate) fn default_commands() -> Vec<String> {
 
 pub(crate) fn slash_commands_for_shell(shell: &TuiShell) -> Vec<String> {
     let mut commands = default_commands();
-    if shell.has_active_plan() {
-        if let Some(index) = commands.iter().position(|command| command == "/compact") {
+    if shell.has_active_plan()
+        && let Some(index) = commands.iter().position(|command| command == "/compact") {
             commands.insert(index, START_IMPLEMENTING_SLASH.to_string());
         }
-    }
     commands
 }
 

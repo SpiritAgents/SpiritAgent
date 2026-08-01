@@ -110,7 +110,7 @@ fn apply_patch_operation_object(request: &ToolUiRequest) -> Option<&Map<String, 
         .and_then(Value::as_object)
 }
 
-fn apply_patch_path<'a>(request: &'a ToolUiRequest) -> Option<&'a str> {
+fn apply_patch_path(request: &ToolUiRequest) -> Option<&str> {
     apply_patch_operation_object(request)?
         .get("path")
         .and_then(Value::as_str)
@@ -235,18 +235,16 @@ fn preview_summary_for_tool(tool_name: &str, request: &ToolUiRequest) -> (String
             let mut lines = vec![path.to_string()];
             if let Some(old) = string_arg(request, "old_text") {
                 lines.push(format!("旧文本: {} 字符", old.chars().count()));
-            } else if let Some(chars) = u64_arg(request, "old_text_chars") {
-                if chars > 0 {
+            } else if let Some(chars) = u64_arg(request, "old_text_chars")
+                && chars > 0 {
                     lines.push(format!("旧文本: 流式生成中… {} 字符", chars));
                 }
-            }
             if let Some(new) = string_arg(request, "new_text") {
                 lines.push(format!("新文本: {} 字符", new.chars().count()));
-            } else if let Some(chars) = u64_arg(request, "new_text_chars") {
-                if chars > 0 {
+            } else if let Some(chars) = u64_arg(request, "new_text_chars")
+                && chars > 0 {
                     lines.push(format!("新文本: 流式生成中… {} 字符", chars));
                 }
-            }
             ("编辑".to_string(), lines)
         }
         "create_file" => {
@@ -254,11 +252,10 @@ fn preview_summary_for_tool(tool_name: &str, request: &ToolUiRequest) -> (String
             let mut lines = vec![path.to_string()];
             if let Some(content) = string_arg(request, "content") {
                 lines.push(format!("内容: {} 字符", content.chars().count()));
-            } else if let Some(chars) = u64_arg(request, "content_chars") {
-                if chars > 0 {
+            } else if let Some(chars) = u64_arg(request, "content_chars")
+                && chars > 0 {
                     lines.push(format!("内容: 流式生成中… {} 字符", chars));
                 }
-            }
             ("创建".to_string(), lines)
         }
         "apply_patch" => {

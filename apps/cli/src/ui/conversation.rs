@@ -181,11 +181,10 @@ pub(in crate::ui) fn build_history_render_result(
         }
     }
 
-    if !inserted_standalone_block {
-        if let Some(standalone_block) = standalone_block {
+    if !inserted_standalone_block
+        && let Some(standalone_block) = standalone_block {
             rendered_blocks.push((None, standalone_block, None));
         }
-    }
 
     let mut message_ranges = Vec::new();
     let mut image_blocks = Vec::new();
@@ -202,15 +201,14 @@ pub(in crate::ui) fn build_history_render_result(
         }
         lines.extend(block_lines);
         let end_line = lines.len().saturating_sub(1);
-        if let Some(message_id) = message_id {
-            if start_line <= end_line {
+        if let Some(message_id) = message_id
+            && start_line <= end_line {
                 message_ranges.push(ConversationMessageRenderRange {
                     message_id,
                     start_line,
                     end_line,
                 });
             }
-        }
         if idx + 1 < rendered_count {
             lines.push(Line::from(""));
         }
@@ -932,9 +930,9 @@ pub(in crate::ui) fn render_tool_card_lines(
         ]));
     }
 
-    if expand_details {
-        if let Some(ref args) = tool.args_excerpt {
-            if !args.trim().is_empty() {
+    if expand_details
+        && let Some(ref args) = tool.args_excerpt
+            && !args.trim().is_empty() {
                 out.push(Line::from(vec![
                     Span::raw(indent),
                     Span::styled(rail_sym, rail),
@@ -952,12 +950,10 @@ pub(in crate::ui) fn render_tool_card_lines(
                     ]));
                 }
             }
-        }
-    }
 
-    if expand_details {
-        if let Some(ref output) = tool.output_excerpt {
-            if !output.trim().is_empty() {
+    if expand_details
+        && let Some(ref output) = tool.output_excerpt
+            && !output.trim().is_empty() {
                 out.push(Line::from(vec![
                     Span::raw(indent),
                     Span::styled(rail_sym, rail),
@@ -993,8 +989,6 @@ pub(in crate::ui) fn render_tool_card_lines(
                     ]));
                 }
             }
-        }
-    }
 
     out
 }

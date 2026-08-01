@@ -103,18 +103,32 @@ pub fn list_chat_files() -> Result<Vec<PathBuf>> {
     Ok(files)
 }
 
-pub fn save_chat(
-    path_arg: Option<&str>,
-    messages: &[(String, String)],
-    assistant_aux: &[crate::ports::AssistantAuxArchiveEntry],
-    llm_history: &[crate::ports::ArchivedLlmMessage],
-    loop_enabled: bool,
-    approval_level: &str,
-    subagent_sessions: &[crate::ports::SubagentSessionArchiveEntry],
-    rewind: Option<&Value>,
-    desktop_messages: Option<&[ConversationMessageSnapshot]>,
-    session_display_name_override: Option<&str>,
-) -> Result<PathBuf> {
+pub struct SaveChatParams<'a> {
+    pub path_arg: Option<&'a str>,
+    pub messages: &'a [(String, String)],
+    pub assistant_aux: &'a [crate::ports::AssistantAuxArchiveEntry],
+    pub llm_history: &'a [crate::ports::ArchivedLlmMessage],
+    pub loop_enabled: bool,
+    pub approval_level: &'a str,
+    pub subagent_sessions: &'a [crate::ports::SubagentSessionArchiveEntry],
+    pub rewind: Option<&'a Value>,
+    pub desktop_messages: Option<&'a [ConversationMessageSnapshot]>,
+    pub session_display_name_override: Option<&'a str>,
+}
+
+pub fn save_chat(params: SaveChatParams<'_>) -> Result<PathBuf> {
+    let SaveChatParams {
+        path_arg,
+        messages,
+        assistant_aux,
+        llm_history,
+        loop_enabled,
+        approval_level,
+        subagent_sessions,
+        rewind,
+        desktop_messages,
+        session_display_name_override,
+    } = params;
     let path = resolve_save_path(path_arg)?;
     if let Some(parent) = path.parent() {
         fs::create_dir_all(parent)
@@ -472,18 +486,18 @@ mod tests {
             },
         ];
 
-        let saved = save_chat(
-            Some(file_path.to_string_lossy().as_ref()),
-            &messages,
-            &assistant_aux,
-            &llm_history,
-            true,
-            "default",
-            &[],
-            None,
-            Some(&desktop_messages),
-            None,
-        )
+        let saved = save_chat(SaveChatParams {
+            path_arg: Some(file_path.to_string_lossy().as_ref()),
+            messages: &messages,
+            assistant_aux: &assistant_aux,
+            llm_history: &llm_history,
+            loop_enabled: true,
+            approval_level: "default",
+            subagent_sessions: &[],
+            rewind: None,
+            desktop_messages: Some(&desktop_messages),
+            session_display_name_override: None,
+        })
         .expect("save chat");
 
         let raw = fs::read_to_string(&saved).expect("read saved chat");

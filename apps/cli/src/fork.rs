@@ -6,15 +6,14 @@ use crate::{
 /// Stackable fork title: `My Chat` → `(1) My Chat` → `(2) My Chat`.
 pub fn derive_forked_session_display_name(source_display_name: &str) -> String {
     let trimmed = source_display_name.trim();
-    if let Some(rest) = trimmed.strip_prefix('(') {
-        if let Some(close_paren) = rest.find(')') {
+    if let Some(rest) = trimmed.strip_prefix('(')
+        && let Some(close_paren) = rest.find(')') {
             let number_text = rest[..close_paren].trim();
             if let Ok(current) = number_text.parse::<u32>() {
                 let base = rest[close_paren + 1..].trim_start();
                 return format!("({}) {}", current + 1, base);
             }
         }
-    }
     format!("(1) {}", source_display_name)
 }
 

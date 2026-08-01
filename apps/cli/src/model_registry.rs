@@ -1382,7 +1382,7 @@ fn normalize_config(cfg: &mut AppConfig) {
             .transport_kind
             .as_deref()
             .and_then(|value| value.parse().ok())
-            .unwrap_or_else(|| match provider {
+            .unwrap_or(match provider {
                 ModelProvider::Anthropic => ModelTransportKind::Anthropic,
                 ModelProvider::AmazonBedrock => ModelTransportKind::Bedrock,
                 ModelProvider::Azure | ModelProvider::Openai => ModelTransportKind::OpenResponses,
@@ -1536,6 +1536,213 @@ fn normalize_optional_string(value: Option<String>) -> Option<String> {
 fn is_deepseek_v4_reasoning_model(model: &str) -> bool {
     let normalized = model.trim().to_ascii_lowercase();
     normalized == "deepseek-v4-pro" || normalized == "deepseek-v4-flash"
+}
+
+pub fn keyring_entry() -> Result<keyring::Entry> {
+    keyring::Entry::new(KEYRING_SERVICE, KEYRING_ACCOUNT_API_KEY).context("初始化 keyring 条目失败")
+}
+
+fn keyring_entry_for_account(account: &str) -> Result<keyring::Entry> {
+    keyring::Entry::new(KEYRING_SERVICE, account)
+        .with_context(|| format!("初始化 keyring 条目失败: {}", account))
+}
+
+fn model_key_account(model_name: &str) -> String {
+    format!("model::{}", model_name)
+}
+
+fn group_key_account(group_id: &str) -> String {
+    format!("group::{}", group_id)
+}
+
+fn group_access_key_id_account(group_id: &str) -> String {
+    format!("group::{group_id}::access-key-id")
+}
+
+fn group_secret_access_key_account(group_id: &str) -> String {
+    format!("group::{group_id}::secret-access-key")
+}
+
+fn group_vertex_client_email_account(group_id: &str) -> String {
+    format!("group::{group_id}::client-email")
+}
+
+fn group_vertex_private_key_account(group_id: &str) -> String {
+    format!("group::{group_id}::private-key")
+}
+
+pub fn load_group_api_key_from_keyring(group_id: &str) -> Result<String> {
+    let entry = keyring_entry_for_account(&group_key_account(group_id))?;
+    entry
+        .get_password()
+        .with_context(|| format!("读取 provider group {} 的 API Key 失败", group_id))
+}
+
+pub fn load_group_access_key_id_from_keyring(group_id: &str) -> Result<String> {
+    let entry = keyring_entry_for_account(&group_access_key_id_account(group_id))?;
+    entry.get_password().with_context(|| {
+        format!("读取 provider group {group_id} 的 IAM Access Key ID 失败")
+    })
+}
+
+pub fn load_group_secret_access_key_from_keyring(group_id: &str) -> Result<String> {
+    let entry = keyring_entry_for_account(&group_secret_access_key_account(group_id))?;
+    entry.get_password().with_context(|| {
+        format!("读取 provider group {group_id} 的 IAM Secret Access Key 失败")
+    })
+}
+
+pub fn has_bedrock_runtime_credentials_in_keyring(group_id: &str) -> Result<bool> {
+    if load_group_api_key_from_keyring(group_id)
+        .map(|value| !value.trim().is_empty())
+        .unwrap_or(false)
+    {
+        return Ok(true);
+    }
+
+    let access_key_id = load_group_access_key_id_from_keyring(group_id)
+        .map(|value| !value.trim().is_empty())
+        .unwrap_or(false);
+    let secret_access_key = load_group_secret_access_key_from_keyring(group_id)
+        .map(|value| !value.trim().is_empty())
+        .unwrap_or(false);
+    Ok(access_key_id && secret_access_key)
+}
+
+pub fn load_group_vertex_client_email_from_keyring(group_id: &str) -> Result<String> {
+    let entry = keyring_entry_for_account(&group_vertex_client_email_account(group_id))?;
+    entry.get_password().with_context(|| {
+        format!("读取 provider group {group_id} 的 Vertex client email 失败")
+    })
+}
+
+pub fn load_group_vertex_private_key_from_keyring(group_id: &str) -> Result<String> {
+    let entry = keyring_entry_for_account(&group_vertex_private_key_account(group_id))?;
+    entry.get_password().with_context(|| {
+        format!("读取 provider group {group_id} 的 Vertex private key 失败")
+    })
+}
+
+pub fn has_google_vertex_service_account_in_keyring(group_id: &str) -> Result<bool> {
+    let client_email = load_group_vertex_client_email_from_keyring(group_id)
+        .map(|value| !value.trim().is_empty())
+        .unwrap_or(false);
+    let private_key = load_group_vertex_private_key_from_keyring(group_id)
+        .map(|value| !value.trim().is_empty())
+        .unwrap_or(false);
+    Ok(client_email && private_key)
+}
+
+pub fn has_google_vertex_runtime_credentials(
+    api_key: &str,
+    vertex_project: Option<&str>,
+    vertex_location: Option<&str>,
+    group_id: &str,
+) -> bool {
+    if !api_key.trim().is_empty() {
+        return true;
+    }
+    let has_project_location = vertex_project.is_some_and(|value| !value.trim().is_empty())
+        && vertex_location.is_some_and(|value| !value.trim().is_empty());
+    if !has_project_location {
+        return false;
+    }
+    if has_google_vertex_service_account_in_keyring(group_id).unwrap_or(false) {
+        return true;
+    }
+    true
+}
+
+pub fn save_group_api_key(group_id: &str, api_key: &str) -> Result<()> {
+    let entry = keyring_entry_for_account(&group_key_account(group_id))?;
+    entry
+        .set_password(api_key.trim())
+        .with_context(|| format!("保存 provider group {group_id} 的 API Key 失败"))
+}
+
+pub fn save_group_vertex_credentials(
+    group_id: &str,
+    client_email: &str,
+    private_key: &str,
+) -> Result<()> {
+    let client_email = client_email.trim();
+    let private_key = private_key.trim();
+    let email_entry = keyring_entry_for_account(&group_vertex_client_email_account(group_id))?;
+    email_entry
+        .set_password(client_email)
+        .with_context(|| format!("保存 provider group {group_id} 的 Vertex client email 失败"))?;
+    let key_entry = keyring_entry_for_account(&group_vertex_private_key_account(group_id))?;
+    key_entry
+        .set_password(private_key)
+        .with_context(|| format!("保存 provider group {group_id} 的 Vertex private key 失败"))
+}
+
+pub fn save_model_api_key(model_name: &str, api_key: &str) -> Result<()> {
+    let entry = keyring_entry_for_account(&model_key_account(model_name))?;
+    entry
+        .set_password(api_key.trim())
+        .with_context(|| format!("保存模型 {} 的 API Key 失败", model_name))
+}
+
+pub fn remove_model_api_key(model_name: &str) -> Result<()> {
+    let entry = keyring_entry_for_account(&model_key_account(model_name))?;
+    match entry.delete_password() {
+        Ok(_) | Err(keyring::Error::NoEntry) => Ok(()),
+        Err(err) => Err(anyhow::anyhow!(
+            "删除模型 {} 的 API Key 失败: {}",
+            model_name,
+            err
+        )),
+    }
+}
+
+pub fn has_model_api_key(model_name: &str) -> Result<bool> {
+    let entry = keyring_entry_for_account(&model_key_account(model_name))?;
+    match entry.get_password() {
+        Ok(v) => Ok(!v.trim().is_empty()),
+        Err(keyring::Error::NoEntry) => Ok(false),
+        Err(err) => Err(anyhow::anyhow!(
+            "读取模型 {} 的 API Key 失败: {}",
+            model_name,
+            err
+        )),
+    }
+}
+
+pub fn resolve_api_key_for_model(group_id: &str, model_name: &str) -> Result<String> {
+    if let Ok(value) = env::var(ENV_API_KEY) {
+        let trimmed = value.trim();
+        if !trimmed.is_empty() {
+            return Ok(trimmed.to_string());
+        }
+    }
+
+    if let Ok(value) = load_group_api_key_from_keyring(group_id) {
+        let trimmed = value.trim();
+        if !trimmed.is_empty() {
+            return Ok(trimmed.to_string());
+        }
+    }
+
+    if let Ok(value) = load_model_api_key_from_keyring(model_name) {
+        return Ok(value);
+    }
+
+    load_api_key_from_keyring()
+}
+
+fn load_api_key_from_keyring() -> Result<String> {
+    let entry = keyring_entry()?;
+    entry
+        .get_password()
+        .context("读取 keyring 中的 API Key 失败")
+}
+
+fn load_model_api_key_from_keyring(model_name: &str) -> Result<String> {
+    let entry = keyring_entry_for_account(&model_key_account(model_name))?;
+    entry
+        .get_password()
+        .with_context(|| format!("读取模型 {} 的 API Key 失败", model_name))
 }
 
 #[cfg(test)]
@@ -2351,211 +2558,4 @@ mod tests {
         assert_eq!(active.api_base, "https://api.openai.com/v1");
         assert_eq!(active.provider, Some(ModelProvider::Openai));
     }
-}
-
-pub fn keyring_entry() -> Result<keyring::Entry> {
-    keyring::Entry::new(KEYRING_SERVICE, KEYRING_ACCOUNT_API_KEY).context("初始化 keyring 条目失败")
-}
-
-fn keyring_entry_for_account(account: &str) -> Result<keyring::Entry> {
-    keyring::Entry::new(KEYRING_SERVICE, account)
-        .with_context(|| format!("初始化 keyring 条目失败: {}", account))
-}
-
-fn model_key_account(model_name: &str) -> String {
-    format!("model::{}", model_name)
-}
-
-fn group_key_account(group_id: &str) -> String {
-    format!("group::{}", group_id)
-}
-
-fn group_access_key_id_account(group_id: &str) -> String {
-    format!("group::{group_id}::access-key-id")
-}
-
-fn group_secret_access_key_account(group_id: &str) -> String {
-    format!("group::{group_id}::secret-access-key")
-}
-
-fn group_vertex_client_email_account(group_id: &str) -> String {
-    format!("group::{group_id}::client-email")
-}
-
-fn group_vertex_private_key_account(group_id: &str) -> String {
-    format!("group::{group_id}::private-key")
-}
-
-pub fn load_group_api_key_from_keyring(group_id: &str) -> Result<String> {
-    let entry = keyring_entry_for_account(&group_key_account(group_id))?;
-    entry
-        .get_password()
-        .with_context(|| format!("读取 provider group {} 的 API Key 失败", group_id))
-}
-
-pub fn load_group_access_key_id_from_keyring(group_id: &str) -> Result<String> {
-    let entry = keyring_entry_for_account(&group_access_key_id_account(group_id))?;
-    entry.get_password().with_context(|| {
-        format!("读取 provider group {group_id} 的 IAM Access Key ID 失败")
-    })
-}
-
-pub fn load_group_secret_access_key_from_keyring(group_id: &str) -> Result<String> {
-    let entry = keyring_entry_for_account(&group_secret_access_key_account(group_id))?;
-    entry.get_password().with_context(|| {
-        format!("读取 provider group {group_id} 的 IAM Secret Access Key 失败")
-    })
-}
-
-pub fn has_bedrock_runtime_credentials_in_keyring(group_id: &str) -> Result<bool> {
-    if load_group_api_key_from_keyring(group_id)
-        .map(|value| !value.trim().is_empty())
-        .unwrap_or(false)
-    {
-        return Ok(true);
-    }
-
-    let access_key_id = load_group_access_key_id_from_keyring(group_id)
-        .map(|value| !value.trim().is_empty())
-        .unwrap_or(false);
-    let secret_access_key = load_group_secret_access_key_from_keyring(group_id)
-        .map(|value| !value.trim().is_empty())
-        .unwrap_or(false);
-    Ok(access_key_id && secret_access_key)
-}
-
-pub fn load_group_vertex_client_email_from_keyring(group_id: &str) -> Result<String> {
-    let entry = keyring_entry_for_account(&group_vertex_client_email_account(group_id))?;
-    entry.get_password().with_context(|| {
-        format!("读取 provider group {group_id} 的 Vertex client email 失败")
-    })
-}
-
-pub fn load_group_vertex_private_key_from_keyring(group_id: &str) -> Result<String> {
-    let entry = keyring_entry_for_account(&group_vertex_private_key_account(group_id))?;
-    entry.get_password().with_context(|| {
-        format!("读取 provider group {group_id} 的 Vertex private key 失败")
-    })
-}
-
-pub fn has_google_vertex_service_account_in_keyring(group_id: &str) -> Result<bool> {
-    let client_email = load_group_vertex_client_email_from_keyring(group_id)
-        .map(|value| !value.trim().is_empty())
-        .unwrap_or(false);
-    let private_key = load_group_vertex_private_key_from_keyring(group_id)
-        .map(|value| !value.trim().is_empty())
-        .unwrap_or(false);
-    Ok(client_email && private_key)
-}
-
-pub fn has_google_vertex_runtime_credentials(
-    api_key: &str,
-    vertex_project: Option<&str>,
-    vertex_location: Option<&str>,
-    group_id: &str,
-) -> bool {
-    if !api_key.trim().is_empty() {
-        return true;
-    }
-    let has_project_location = vertex_project.is_some_and(|value| !value.trim().is_empty())
-        && vertex_location.is_some_and(|value| !value.trim().is_empty());
-    if !has_project_location {
-        return false;
-    }
-    if has_google_vertex_service_account_in_keyring(group_id).unwrap_or(false) {
-        return true;
-    }
-    true
-}
-
-pub fn save_group_api_key(group_id: &str, api_key: &str) -> Result<()> {
-    let entry = keyring_entry_for_account(&group_key_account(group_id))?;
-    entry
-        .set_password(api_key.trim())
-        .with_context(|| format!("保存 provider group {group_id} 的 API Key 失败"))
-}
-
-pub fn save_group_vertex_credentials(
-    group_id: &str,
-    client_email: &str,
-    private_key: &str,
-) -> Result<()> {
-    let client_email = client_email.trim();
-    let private_key = private_key.trim();
-    let email_entry = keyring_entry_for_account(&group_vertex_client_email_account(group_id))?;
-    email_entry
-        .set_password(client_email)
-        .with_context(|| format!("保存 provider group {group_id} 的 Vertex client email 失败"))?;
-    let key_entry = keyring_entry_for_account(&group_vertex_private_key_account(group_id))?;
-    key_entry
-        .set_password(private_key)
-        .with_context(|| format!("保存 provider group {group_id} 的 Vertex private key 失败"))
-}
-
-pub fn save_model_api_key(model_name: &str, api_key: &str) -> Result<()> {
-    let entry = keyring_entry_for_account(&model_key_account(model_name))?;
-    entry
-        .set_password(api_key.trim())
-        .with_context(|| format!("保存模型 {} 的 API Key 失败", model_name))
-}
-
-pub fn remove_model_api_key(model_name: &str) -> Result<()> {
-    let entry = keyring_entry_for_account(&model_key_account(model_name))?;
-    match entry.delete_password() {
-        Ok(_) | Err(keyring::Error::NoEntry) => Ok(()),
-        Err(err) => Err(anyhow::anyhow!(
-            "删除模型 {} 的 API Key 失败: {}",
-            model_name,
-            err
-        )),
-    }
-}
-
-pub fn has_model_api_key(model_name: &str) -> Result<bool> {
-    let entry = keyring_entry_for_account(&model_key_account(model_name))?;
-    match entry.get_password() {
-        Ok(v) => Ok(!v.trim().is_empty()),
-        Err(keyring::Error::NoEntry) => Ok(false),
-        Err(err) => Err(anyhow::anyhow!(
-            "读取模型 {} 的 API Key 失败: {}",
-            model_name,
-            err
-        )),
-    }
-}
-
-pub fn resolve_api_key_for_model(group_id: &str, model_name: &str) -> Result<String> {
-    if let Ok(value) = env::var(ENV_API_KEY) {
-        let trimmed = value.trim();
-        if !trimmed.is_empty() {
-            return Ok(trimmed.to_string());
-        }
-    }
-
-    if let Ok(value) = load_group_api_key_from_keyring(group_id) {
-        let trimmed = value.trim();
-        if !trimmed.is_empty() {
-            return Ok(trimmed.to_string());
-        }
-    }
-
-    if let Ok(value) = load_model_api_key_from_keyring(model_name) {
-        return Ok(value);
-    }
-
-    load_api_key_from_keyring()
-}
-
-fn load_api_key_from_keyring() -> Result<String> {
-    let entry = keyring_entry()?;
-    entry
-        .get_password()
-        .context("读取 keyring 中的 API Key 失败")
-}
-
-fn load_model_api_key_from_keyring(model_name: &str) -> Result<String> {
-    let entry = keyring_entry_for_account(&model_key_account(model_name))?;
-    entry
-        .get_password()
-        .with_context(|| format!("读取模型 {} 的 API Key 失败", model_name))
 }

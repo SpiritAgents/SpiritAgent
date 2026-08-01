@@ -81,19 +81,19 @@ impl TuiShell {
                 });
             }
             ["add", model, api_base, api_key] => {
-                match self.apply_model_add_and_switch(
-                    model,
+                match self.apply_model_add_and_switch(ApplyModelAddParams {
+                    name: model,
                     api_base,
                     api_key,
-                    None,
-                    crate::model_registry::ModelTransportKind::OpenAiCompatible,
-                    None,
-                    None,
-                    None,
-                    None,
-                    None,
-                    None,
-                ) {
+                    provider: None,
+                    transport_kind: crate::model_registry::ModelTransportKind::OpenAiCompatible,
+                    context_length: None,
+                    azure_resource_name: None,
+                    cloudflare_account_id: None,
+                    cloudflare_gateway_id: None,
+                    provider_site: None,
+                    alibaba_workspace_id: None,
+                }) {
                     Ok(()) => {
                         self.messages.push(ChatMessage {
                             role: MessageRole::Agent,

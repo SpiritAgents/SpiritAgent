@@ -274,7 +274,7 @@ impl McpStatusSnapshot {
     pub fn welcome_line(&self) -> String {
         #[cfg(feature = "tui")]
         {
-            return match self.state {
+            match self.state {
                 McpStatusState::Idle => t!("mcp.status.idle").into_owned(),
                 McpStatusState::Loading => {
                     if self.configured_servers == 0 {
@@ -307,7 +307,7 @@ impl McpStatusSnapshot {
                         .into_owned()
                     }
                 }
-            };
+            }
         }
 
         #[cfg(not(feature = "tui"))]

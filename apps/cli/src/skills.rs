@@ -484,19 +484,17 @@ fn parse_skill_frontmatter_fallback(frontmatter: &str) -> Option<ParsedSkillFron
             continue;
         }
 
-        if parsed.name.is_none() {
-            if let Some(value) = trimmed.strip_prefix("name:") {
+        if parsed.name.is_none()
+            && let Some(value) = trimmed.strip_prefix("name:") {
                 parsed.name = Some(unquote_yaml_scalar(value.trim()));
                 continue;
             }
-        }
 
-        if parsed.description.is_none() {
-            if let Some(value) = trimmed.strip_prefix("description:") {
+        if parsed.description.is_none()
+            && let Some(value) = trimmed.strip_prefix("description:") {
                 parsed.description = Some(unquote_yaml_scalar(value.trim()));
                 continue;
             }
-        }
     }
 
     if parsed.name.is_none() && parsed.description.is_none() {

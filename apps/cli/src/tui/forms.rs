@@ -408,19 +408,19 @@ impl TuiShell {
                     .model_name
                     .as_ref()
                     .expect("parse_model_add_connection sets name when not bulk");
-                match self.apply_model_add_and_switch(
-                    name.as_str(),
-                    parsed.api_base.as_str(),
-                    parsed.api_key.as_str(),
-                    Some(parsed.provider),
-                    parsed.transport_kind,
-                    parsed.context_length,
-                    parsed.azure_resource_name.as_deref(),
-                    parsed.cloudflare_account_id.as_deref(),
-                    parsed.cloudflare_gateway_id.as_deref(),
-                    parsed.provider_site.as_deref(),
-                    parsed.alibaba_workspace_id.as_deref(),
-                ) {
+                match self.apply_model_add_and_switch(ApplyModelAddParams {
+                    name: name.as_str(),
+                    api_base: parsed.api_base.as_str(),
+                    api_key: parsed.api_key.as_str(),
+                    provider: Some(parsed.provider),
+                    transport_kind: parsed.transport_kind,
+                    context_length: parsed.context_length,
+                    azure_resource_name: parsed.azure_resource_name.as_deref(),
+                    cloudflare_account_id: parsed.cloudflare_account_id.as_deref(),
+                    cloudflare_gateway_id: parsed.cloudflare_gateway_id.as_deref(),
+                    provider_site: parsed.provider_site.as_deref(),
+                    alibaba_workspace_id: parsed.alibaba_workspace_id.as_deref(),
+                }) {
                     Ok(()) => {
                         self.messages.push(ChatMessage {
                             role: MessageRole::Agent,
@@ -613,15 +613,14 @@ impl TuiShell {
                     ) {
                         return Err(t!("tui.model_add.key_save_failed", err = err.to_string()).into_owned());
                     }
-                } else if parsed.vertex_client_email.is_some() && parsed.vertex_private_key.is_some() {
-                    if let Err(err) = crate::model_registry::save_group_vertex_credentials(
+                } else if parsed.vertex_client_email.is_some() && parsed.vertex_private_key.is_some()
+                    && let Err(err) = crate::model_registry::save_group_vertex_credentials(
                         &group_id,
                         parsed.vertex_client_email.as_deref().unwrap_or(""),
                         parsed.vertex_private_key.as_deref().unwrap_or(""),
                     ) {
                         return Err(t!("tui.model_add.key_save_failed", err = err.to_string()).into_owned());
                     }
-                }
             } else if let Err(err) =
                 crate::model_registry::save_group_api_key(&group_id, parsed.api_key.as_str())
             {

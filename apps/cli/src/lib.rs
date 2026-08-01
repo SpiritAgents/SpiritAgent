@@ -50,7 +50,7 @@ rust_i18n::i18n!("locales", fallback = "en");
 
 pub use cli::{
     ConfigCommand, ExtensionCommand, HookCommand, KeyCommand, MarketplaceCommand, McpCommand,
-    ModelCommand, handle_config_cli, handle_extension_cli, handle_hooks_cli, handle_mcp_cli,
+    ModelAddCommand, ModelCommand, handle_config_cli, handle_extension_cli, handle_hooks_cli, handle_mcp_cli,
     handle_model_cli,
 };
 pub use cli_bootstrap::{bootstrap_config, print_skills_stub, GlobalCliOptions};

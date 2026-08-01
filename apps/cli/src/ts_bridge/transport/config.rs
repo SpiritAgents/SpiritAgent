@@ -142,19 +142,17 @@ pub(crate) fn attach_image_generation_config(
         "model": image_profile.name,
         "baseUrl": resolve_profile_api_base(&image_profile),
     });
-    if let Some(provider) = image_profile.provider {
-        if let Some(obj) = image_generation.as_object_mut() {
+    if let Some(provider) = image_profile.provider
+        && let Some(obj) = image_generation.as_object_mut() {
             obj.insert(
                 "llmVendor".to_string(),
                 json!(model_provider_vendor(provider)),
             );
         }
-    }
-    if let Some(model_capabilities) = model_capabilities_json(&image_profile) {
-        if let Some(obj) = image_generation.as_object_mut() {
+    if let Some(model_capabilities) = model_capabilities_json(&image_profile)
+        && let Some(obj) = image_generation.as_object_mut() {
             obj.insert("modelCapabilities".to_string(), model_capabilities);
         }
-    }
     if let Some(obj) = transport.as_object_mut() {
         obj.insert("imageGeneration".to_string(), image_generation);
     }
@@ -187,19 +185,17 @@ pub(crate) fn attach_video_generation_config(
         "model": video_profile.name,
         "baseUrl": resolve_profile_api_base(&video_profile),
     });
-    if let Some(provider) = video_profile.provider {
-        if let Some(obj) = video_generation.as_object_mut() {
+    if let Some(provider) = video_profile.provider
+        && let Some(obj) = video_generation.as_object_mut() {
             obj.insert(
                 "llmVendor".to_string(),
                 json!(model_provider_vendor(provider)),
             );
         }
-    }
-    if let Some(model_capabilities) = model_capabilities_json(&video_profile) {
-        if let Some(obj) = video_generation.as_object_mut() {
+    if let Some(model_capabilities) = model_capabilities_json(&video_profile)
+        && let Some(obj) = video_generation.as_object_mut() {
             obj.insert("modelCapabilities".to_string(), model_capabilities);
         }
-    }
     if let Some(obj) = transport.as_object_mut() {
         obj.insert("videoGeneration".to_string(), video_generation);
     }
@@ -211,7 +207,7 @@ pub(crate) fn resolve_transport_config_json_for(host: &TransportHost<'_>, config
         .active_model_profile()
         .filter(|profile| !profile.name.trim().is_empty())
     else {
-        return Ok(build_mcp_only_transport_config(&host.workspace_root));
+        return Ok(build_mcp_only_transport_config(host.workspace_root));
     };
 
     let api_key = if let Ok(value) = env::var(ENV_API_KEY) {
@@ -261,14 +257,13 @@ pub(crate) fn resolve_transport_config_json_for(host: &TransportHost<'_>, config
                 "baseUrl": api_base,
                 "workspaceRoot": host.workspace_root,
             });
-            if let Some(responses_provider) = open_responses_sdk_provider(active.provider) {
-                if let Some(obj) = transport.as_object_mut() {
+            if let Some(responses_provider) = open_responses_sdk_provider(active.provider)
+                && let Some(obj) = transport.as_object_mut() {
                     obj.insert(
                         "responsesProvider".to_string(),
                         json!(responses_provider),
                     );
                 }
-            }
             if active.provider == Some(ModelProvider::Azure) {
                 let resource_name = resolve_azure_resource_name(
                     active.azure_resource_name(),
@@ -308,14 +303,13 @@ pub(crate) fn resolve_transport_config_json_for(host: &TransportHost<'_>, config
                     }
                 } else                 if let Ok(access_key_id) =
                     load_group_access_key_id_from_keyring(&active.group_id)
-                {
-                    if let Ok(secret_access_key) = load_group_secret_access_key_from_keyring(
+                    && let Ok(secret_access_key) = load_group_secret_access_key_from_keyring(
                         &active.group_id,
                     ) {
                         let access_key_id = access_key_id.trim();
                         let secret_access_key = secret_access_key.trim();
-                        if !access_key_id.is_empty() && !secret_access_key.is_empty() {
-                            if let Some(obj) = transport.as_object_mut() {
+                        if !access_key_id.is_empty() && !secret_access_key.is_empty()
+                            && let Some(obj) = transport.as_object_mut() {
                                 obj.insert(
                                     "bedrockMantleIam".to_string(),
                                     json!({
@@ -325,9 +319,7 @@ pub(crate) fn resolve_transport_config_json_for(host: &TransportHost<'_>, config
                                     }),
                                 );
                             }
-                        }
                     }
-                }
                 transport
             } else {
             let region = active.aws_region().ok_or_else(|| {
@@ -340,30 +332,26 @@ pub(crate) fn resolve_transport_config_json_for(host: &TransportHost<'_>, config
                 "baseUrl": api_base,
                 "workspaceRoot": host.workspace_root,
             });
-            if !api_key.trim().is_empty() {
-                if let Some(obj) = transport.as_object_mut() {
+            if !api_key.trim().is_empty()
+                && let Some(obj) = transport.as_object_mut() {
                     obj.insert("apiKey".to_string(), json!(api_key));
                 }
-            }
                 if let Ok(access_key_id) =
                     load_group_access_key_id_from_keyring(&active.group_id)
-                {
-                    if let Ok(secret_access_key) = load_group_secret_access_key_from_keyring(
+                    && let Ok(secret_access_key) = load_group_secret_access_key_from_keyring(
                         &active.group_id,
                     ) {
                     let access_key_id = access_key_id.trim();
                     let secret_access_key = secret_access_key.trim();
-                    if !access_key_id.is_empty() && !secret_access_key.is_empty() {
-                        if let Some(obj) = transport.as_object_mut() {
+                    if !access_key_id.is_empty() && !secret_access_key.is_empty()
+                        && let Some(obj) = transport.as_object_mut() {
                             obj.insert("accessKeyId".to_string(), json!(access_key_id));
                             obj.insert(
                                 "secretAccessKey".to_string(),
                                 json!(secret_access_key),
                             );
                         }
-                    }
                 }
-            }
             transport
             }
         } else {
@@ -375,62 +363,54 @@ pub(crate) fn resolve_transport_config_json_for(host: &TransportHost<'_>, config
             })
         };
 
-    if let Some(model_capabilities) = model_capabilities_json(&active) {
-        if let Some(obj) = transport.as_object_mut() {
+    if let Some(model_capabilities) = model_capabilities_json(&active)
+        && let Some(obj) = transport.as_object_mut() {
             obj.insert("modelCapabilities".to_string(), model_capabilities);
         }
-    }
 
     if active.transport_kind() == crate::model_registry::ModelTransportKind::Anthropic {
-        if let Some(effort) = anthropic_effort_value(normalized_reasoning_effort.as_deref()) {
-            if let Some(obj) = transport.as_object_mut() {
+        if let Some(effort) = anthropic_effort_value(normalized_reasoning_effort.as_deref())
+            && let Some(obj) = transport.as_object_mut() {
                 obj.insert("effort".to_string(), json!(effort));
             }
-        }
     } else if active.transport_kind() == crate::model_registry::ModelTransportKind::OpenResponses
         || (active.provider == Some(ModelProvider::AmazonBedrock)
             && crate::bedrock_mantle::is_bedrock_mantle_openai_model(&active.name))
     {
         let is_mantle_openai = active.provider == Some(ModelProvider::AmazonBedrock)
             && crate::bedrock_mantle::is_bedrock_mantle_openai_model(&active.name);
-        if !is_mantle_openai {
-            if let Some(provider) = active.provider {
-                if let Some(obj) = transport.as_object_mut() {
+        if !is_mantle_openai
+            && let Some(provider) = active.provider
+                && let Some(obj) = transport.as_object_mut() {
                     obj.insert(
                         "llmVendor".to_string(),
                         json!(model_provider_vendor(provider)),
                     );
                 }
-            }
-        }
-        if let Some(reasoning_effort) = normalized_reasoning_effort.as_deref() {
-            if let Some(obj) = transport.as_object_mut() {
+        if let Some(reasoning_effort) = normalized_reasoning_effort.as_deref()
+            && let Some(obj) = transport.as_object_mut() {
                 obj.insert("reasoningEffort".to_string(), json!(reasoning_effort));
             }
-        }
     } else if active.transport_kind() == crate::model_registry::ModelTransportKind::Bedrock
         && !(active.provider == Some(ModelProvider::AmazonBedrock)
             && crate::bedrock_mantle::is_bedrock_mantle_openai_model(&active.name))
     {
-        if let Some(reasoning_effort) = normalized_reasoning_effort.as_deref() {
-            if let Some(obj) = transport.as_object_mut() {
+        if let Some(reasoning_effort) = normalized_reasoning_effort.as_deref()
+            && let Some(obj) = transport.as_object_mut() {
                 obj.insert("reasoningEffort".to_string(), json!(reasoning_effort));
             }
-        }
     } else {
-        if let Some(provider) = active.provider {
-            if let Some(obj) = transport.as_object_mut() {
+        if let Some(provider) = active.provider
+            && let Some(obj) = transport.as_object_mut() {
                 obj.insert(
                     "llmVendor".to_string(),
                     json!(model_provider_vendor(provider)),
                 );
             }
-        }
-        if let Some(reasoning_effort) = normalized_reasoning_effort.as_deref() {
-            if let Some(obj) = transport.as_object_mut() {
+        if let Some(reasoning_effort) = normalized_reasoning_effort.as_deref()
+            && let Some(obj) = transport.as_object_mut() {
                 obj.insert("reasoningEffort".to_string(), json!(reasoning_effort));
             }
-        }
     }
     attach_image_generation_config(host, &mut transport, config)?;
     attach_google_vertex_transport_fields(&mut transport, &active)?;

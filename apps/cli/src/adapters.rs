@@ -18,6 +18,12 @@ pub struct DefaultAppPaths {
     workspace_root: PathBuf,
 }
 
+impl Default for DefaultAppPaths {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl DefaultAppPaths {
     pub fn new() -> Self {
         Self {
@@ -136,18 +142,18 @@ impl ChatRepository for JsonChatRepository {
     }
 
     fn save(&self, path: Option<&str>, archive: &ChatArchive) -> Result<PathBuf> {
-        chat_store::save_chat(
-            path,
-            &archive.messages,
-            &archive.assistant_aux,
-            &archive.llm_history,
-            archive.loop_enabled,
-            &archive.approval_level,
-            &archive.subagent_sessions,
-            archive.rewind.as_ref(),
-            archive.desktop_messages.as_deref(),
-            archive.session_display_name.as_deref(),
-        )
+        chat_store::save_chat(chat_store::SaveChatParams {
+            path_arg: path,
+            messages: &archive.messages,
+            assistant_aux: &archive.assistant_aux,
+            llm_history: &archive.llm_history,
+            loop_enabled: archive.loop_enabled,
+            approval_level: &archive.approval_level,
+            subagent_sessions: &archive.subagent_sessions,
+            rewind: archive.rewind.as_ref(),
+            desktop_messages: archive.desktop_messages.as_deref(),
+            session_display_name_override: archive.session_display_name.as_deref(),
+        })
     }
 
     fn load(&self, path: &str) -> Result<ChatArchive> {

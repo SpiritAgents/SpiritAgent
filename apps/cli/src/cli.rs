@@ -21,21 +21,23 @@ use crate::{
 
 const ENV_API_KEY: &str = "SPIRIT_API_KEY";
 
+pub struct ModelAddCommand {
+    pub name: String,
+    pub api_base: Option<String>,
+    pub provider: Option<String>,
+    pub transport_kind: Option<String>,
+    pub reasoning_effort: Option<String>,
+    pub capabilities: Vec<String>,
+    pub context_length: Option<u64>,
+    pub key: Option<String>,
+    pub azure_resource_name: Option<String>,
+    pub provider_site: Option<String>,
+    pub alibaba_workspace_id: Option<String>,
+}
+
 pub enum ModelCommand {
     List,
-    Add {
-        name: String,
-        api_base: Option<String>,
-        provider: Option<String>,
-        transport_kind: Option<String>,
-        reasoning_effort: Option<String>,
-        capabilities: Vec<String>,
-        context_length: Option<u64>,
-        key: Option<String>,
-        azure_resource_name: Option<String>,
-        provider_site: Option<String>,
-        alibaba_workspace_id: Option<String>,
-    },
+    Add(Box<ModelAddCommand>),
     Remove {
         name: String,
     },
@@ -168,19 +170,20 @@ pub fn handle_model_cli(action: ModelCommand) -> Result<()> {
                 );
             }
         }
-        ModelCommand::Add {
-            name,
-            api_base,
-            provider,
-            transport_kind,
-            reasoning_effort,
-            capabilities,
-            context_length,
-            key,
-            azure_resource_name,
-            provider_site,
-            alibaba_workspace_id,
-        } => {
+        ModelCommand::Add(add) => {
+            let ModelAddCommand {
+                name,
+                api_base,
+                provider,
+                transport_kind,
+                reasoning_effort,
+                capabilities,
+                context_length,
+                key,
+                azure_resource_name,
+                provider_site,
+                alibaba_workspace_id,
+            } = *add;
             if cfg.has_model_name(&name) {
                 println!("{}", t!("cli.model.already_exists", name = name));
             } else {
@@ -197,11 +200,10 @@ pub fn handle_model_cli(action: ModelCommand) -> Result<()> {
                         t!("cli.model.error.azure_resource_name_required")
                     ));
                 }
-                if provider == Some(ModelProvider::Azure) {
-                    if let Some(resource_name) = azure_resource_name.as_deref() {
+                if provider == Some(ModelProvider::Azure)
+                    && let Some(resource_name) = azure_resource_name.as_deref() {
                         validate_azure_resource_name(resource_name).map_err(anyhow::Error::msg)?;
                     }
-                }
                 if provider == Some(ModelProvider::Azure)
                     && transport_kind != ModelTransportKind::OpenResponses
                 {
@@ -221,9 +223,9 @@ pub fn handle_model_cli(action: ModelCommand) -> Result<()> {
                 {
                     return Err(anyhow!("{}", t!("cli.model.error.endpoint_empty")));
                 }
-                if provider == Some(ModelProvider::Alibaba) {
-                    if let Some(site) = provider_site.as_deref().map(str::trim).filter(|value| !value.is_empty()) {
-                        if model_add_alibaba_site_requires_workspace_id(site)
+                if provider == Some(ModelProvider::Alibaba)
+                    && let Some(site) = provider_site.as_deref().map(str::trim).filter(|value| !value.is_empty())
+                        && model_add_alibaba_site_requires_workspace_id(site)
                             && alibaba_workspace_id.as_deref().map(str::trim).is_none_or(str::is_empty)
                         {
                             return Err(anyhow!(
@@ -231,93 +233,73 @@ pub fn handle_model_cli(action: ModelCommand) -> Result<()> {
                                 t!("cli.model.error.alibaba_workspace_id_required")
                             ));
                         }
-                    }
-                }
                 let api_base = api_base.unwrap_or_else(|| {
                     if provider == Some(ModelProvider::Azure) {
                         return azure_api_base_from_resource_name(
                             azure_resource_name.as_deref().unwrap_or(""),
                         );
                     }
-                    if provider == Some(ModelProvider::Siliconflow) {
-                        if let Some(site) = provider_site
+                    if provider == Some(ModelProvider::Siliconflow)
+                        && let Some(site) = provider_site
                             .as_deref()
                             .map(str::trim)
                             .filter(|value| !value.is_empty())
-                        {
-                            if let Some(base) = model_add_siliconflow_site_api_base(site) {
+                            && let Some(base) = model_add_siliconflow_site_api_base(site) {
                                 return base;
                             }
-                        }
-                    }
-                    if provider == Some(ModelProvider::Moonshot) {
-                        if let Some(site) = provider_site
+                    if provider == Some(ModelProvider::Moonshot)
+                        && let Some(site) = provider_site
                             .as_deref()
                             .map(str::trim)
                             .filter(|value| !value.is_empty())
-                        {
-                            if let Some(base) = model_add_moonshot_site_api_base(site) {
+                            && let Some(base) = model_add_moonshot_site_api_base(site) {
                                 return base;
                             }
-                        }
-                    }
-                    if provider == Some(ModelProvider::TencentTokenhub) {
-                        if let Some(site) = provider_site
+                    if provider == Some(ModelProvider::TencentTokenhub)
+                        && let Some(site) = provider_site
                             .as_deref()
                             .map(str::trim)
                             .filter(|value| !value.is_empty())
-                        {
-                            if let Some(base) = model_add_tencent_tokenhub_site_api_base(site) {
+                            && let Some(base) = model_add_tencent_tokenhub_site_api_base(site) {
                                 return base;
                             }
-                        }
-                    }
-                    if provider == Some(ModelProvider::KimiCode) {
-                        if let Some(base) = model_add_kimi_code_api_base(transport_kind) {
+                    if provider == Some(ModelProvider::KimiCode)
+                        && let Some(base) = model_add_kimi_code_api_base(transport_kind) {
                             return base;
                         }
-                    }
-                    if provider == Some(ModelProvider::Minimax) {
-                        if let Some(site) = provider_site
+                    if provider == Some(ModelProvider::Minimax)
+                        && let Some(site) = provider_site
                             .as_deref()
                             .map(str::trim)
                             .filter(|value| !value.is_empty())
-                        {
-                            if let Some(base) = model_add_minimax_site_api_base(site, transport_kind) {
+                            && let Some(base) = model_add_minimax_site_api_base(site, transport_kind) {
                                 return base;
                             }
-                        }
-                    }
-                    if provider == Some(ModelProvider::Alibaba) {
-                        if let Some(site) = provider_site
+                    if provider == Some(ModelProvider::Alibaba)
+                        && let Some(site) = provider_site
                             .as_deref()
                             .map(str::trim)
                             .filter(|value| !value.is_empty())
-                        {
-                            if let Some(base) = model_add_alibaba_site_api_base(
+                            && let Some(base) = model_add_alibaba_site_api_base(
                                 site,
                                 alibaba_workspace_id.as_deref().unwrap_or(""),
                                 transport_kind,
                             ) {
                                 return base;
                             }
-                        }
-                    }
-                    if let Some(provider) = provider {
-                        if let Some(preset) = model_add_preset_api_base_by_provider(provider) {
+                    if let Some(provider) = provider
+                        && let Some(preset) = model_add_preset_api_base_by_provider(provider) {
                             return preset;
                         }
-                    }
                     match transport_kind {
                         ModelTransportKind::Anthropic => {
                             model_add_default_custom_api_base(ModelTransportKind::Anthropic)
                         }
                         ModelTransportKind::Bedrock => {
-                            if let Some(provider) = provider {
-                                if let Some(preset) = model_add_preset_api_base_by_provider(provider) {
+                            if let Some(provider) = provider
+                                && let Some(preset) = model_add_preset_api_base_by_provider(provider) {
                                     return preset;
                                 }
-                            }
                             "https://bedrock.us-east-1.amazonaws.com".to_string()
                         }
                         ModelTransportKind::OpenResponses | ModelTransportKind::OpenAiCompatible => {
@@ -734,10 +716,8 @@ fn parse_model_transport_kind(
                 | ModelProvider::VercelAiGateway
                 | ModelProvider::Openrouter
                 | ModelProvider::FireworksAi
-                | ModelProvider::TogetherAi
                 | ModelProvider::HuggingFace
                 | ModelProvider::Baseten
-                | ModelProvider::Cohere
                 | ModelProvider::Volcengine
                 | ModelProvider::Custom
                 | ModelProvider::CloudflareAiGateway

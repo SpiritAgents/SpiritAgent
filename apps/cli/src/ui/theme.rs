@@ -9,7 +9,7 @@ use crate::view::{
 };
 
 thread_local! {
-    static ACTIVE_CLI_UI_HOOKS: RefCell<Vec<CliUiHookView>> = RefCell::new(Vec::new());
+    static ACTIVE_CLI_UI_HOOKS: RefCell<Vec<CliUiHookView>> = const { RefCell::new(Vec::new()) };
 }
 
 pub(in crate::ui) fn set_active_cli_ui_hooks(hooks: Vec<CliUiHookView>) {

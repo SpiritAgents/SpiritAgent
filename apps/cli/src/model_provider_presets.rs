@@ -148,7 +148,7 @@ pub(crate) fn is_valid_cloudflare_account_id(account_id: &str) -> bool {
 
 pub(crate) fn is_valid_cloudflare_gateway_id(gateway_id: &str) -> bool {
     let trimmed = gateway_id.trim();
-    if trimmed.len() < 1 || trimmed.len() > 64 {
+    if trimmed.is_empty() || trimmed.len() > 64 {
         return false;
     }
     let bytes = trimmed.as_bytes();
@@ -171,23 +171,6 @@ pub(crate) fn cloudflare_ai_gateway_api_base_from_account_id(account_id: &str) -
     format!(
         "https://api.cloudflare.com/client/v4/accounts/{trimmed}/ai/v1"
     )
-}
-
-pub(crate) fn extract_cloudflare_account_id_from_api_base(base_url: &str) -> Option<String> {
-    let normalized = base_url.trim().trim_end_matches('/');
-    let lower = normalized.to_ascii_lowercase();
-    let prefix = "https://api.cloudflare.com/client/v4/accounts/";
-    if !lower.starts_with(prefix) {
-        return None;
-    }
-    let rest = &normalized[prefix.len()..];
-    let account_end = rest.find('/').unwrap_or(rest.len());
-    let account_id = rest[..account_end].trim();
-    if is_valid_cloudflare_account_id(account_id) {
-        Some(account_id.to_string())
-    } else {
-        None
-    }
 }
 
 pub(crate) fn model_add_picker_order_ids() -> &'static [String] {
@@ -427,14 +410,13 @@ pub(crate) fn model_add_requires_manual_single_provider(
 pub(crate) fn resolve_profile_api_base(profile: &crate::model_registry::ModelProfile) -> String {
     use crate::model_registry::{ModelProvider, DEFAULT_API_BASE};
 
-    if profile.provider == Some(ModelProvider::AmazonBedrock) {
-        if let Some(region) = profile.aws_region() {
+    if profile.provider == Some(ModelProvider::AmazonBedrock)
+        && let Some(region) = profile.aws_region() {
             if crate::bedrock_mantle::is_bedrock_mantle_openai_model(&profile.name) {
                 return crate::bedrock_mantle::bedrock_mantle_api_base_from_region(&region);
             }
             return bedrock_api_base_from_region(&region);
         }
-    }
 
     if profile.provider == Some(ModelProvider::GoogleVertexAi) {
         if let (Some(project), Some(location)) = (
@@ -475,13 +457,11 @@ pub(crate) fn resolve_profile_api_base(profile: &crate::model_registry::ModelPro
         return cloudflare_ai_gateway_api_base_from_account_id("");
     }
 
-    if profile.provider == Some(ModelProvider::Alibaba) {
-        if profile.alibaba_billing_mode().as_deref() == Some("token-plan") {
-            if let Some(base) = model_add_alibaba_token_plan_api_base(profile.transport_kind()) {
+    if profile.provider == Some(ModelProvider::Alibaba)
+        && profile.alibaba_billing_mode().as_deref() == Some("token-plan")
+            && let Some(base) = model_add_alibaba_token_plan_api_base(profile.transport_kind()) {
                 return base;
             }
-        }
-    }
 
     if profile.provider == Some(ModelProvider::Stepfun) {
         let step_plan = profile.stepfun_billing_mode().as_deref() == Some("step-plan");
@@ -504,8 +484,8 @@ pub(crate) fn resolve_profile_api_base(profile: &crate::model_registry::ModelPro
         }
     }
 
-    if let Some(provider) = profile.provider {
-        if provider != ModelProvider::Custom {
+    if let Some(provider) = profile.provider
+        && provider != ModelProvider::Custom {
             return default_api_base_for_transport(
                 provider,
                 profile.transport_kind(),
@@ -513,7 +493,6 @@ pub(crate) fn resolve_profile_api_base(profile: &crate::model_registry::ModelPro
                 profile.alibaba_workspace_id().as_deref().unwrap_or(""),
             );
         }
-    }
 
     let trimmed = profile.api_base.trim();
     if trimmed.is_empty() {
@@ -533,16 +512,14 @@ fn default_api_base_for_transport(
     site: Option<&str>,
     workspace_id: &str,
 ) -> String {
-    if provider == crate::model_registry::ModelProvider::KimiCode {
-        if let Some(base) = model_add_kimi_code_api_base(transport_kind) {
+    if provider == crate::model_registry::ModelProvider::KimiCode
+        && let Some(base) = model_add_kimi_code_api_base(transport_kind) {
             return base;
         }
-    }
-    if let Some(site) = site {
-        if let Some(base) = resolve_site_api_base(provider, transport_kind, site, workspace_id) {
+    if let Some(site) = site
+        && let Some(base) = resolve_site_api_base(provider, transport_kind, site, workspace_id) {
             return base;
         }
-    }
     model_add_preset_api_base_by_provider(provider)
         .unwrap_or_else(|| model_add_default_custom_api_base(transport_kind))
 }

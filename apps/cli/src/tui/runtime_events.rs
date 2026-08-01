@@ -93,11 +93,10 @@ pub(super) fn apply_runtime_events(shell: &mut TuiShell) {
                 }
             }
             RuntimeEvent::AssistantChunk(chunk) => {
-                if let Some(idx) = shell.pending_assistant_msg_index {
-                    if let Some(msg) = shell.messages.get_mut(idx) {
+                if let Some(idx) = shell.pending_assistant_msg_index
+                    && let Some(msg) = shell.messages.get_mut(idx) {
                         msg.content.push_str(&chunk);
                     }
-                }
             }
             RuntimeEvent::ReplacePendingAssistant(content) => {
                 if let Some(idx) = shell.pending_assistant_msg_index {

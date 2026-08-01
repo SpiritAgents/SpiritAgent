@@ -52,14 +52,7 @@ pub(in crate::ui) fn picker_selection_prefix(is_selected: bool) -> &'static str 
 }
 
 pub(in crate::ui) fn inline_picker_area(area: Rect) -> Rect {
-    let offset = if area.width >= 12 {
-        1
-    } else if area.width >= 6 {
-        0
-    } else {
-        0
-    }
-    .min(area.width.saturating_sub(1));
+    let offset = (if area.width >= 12 { 1 } else { 0 }).min(area.width.saturating_sub(1));
 
     Rect {
         x: area.x.saturating_add(offset),
@@ -441,8 +434,7 @@ pub(in crate::ui) fn build_model_picker_lines(
     let (start, end) = inline_picker_bounds(total, selected, max_items);
 
     let mut lines = Vec::new();
-    for idx in start..end {
-        let model = &models[idx];
+    for (idx, model) in models.iter().enumerate().take(end).skip(start) {
         let is_selected = idx == selected;
         let is_active = model.group_id == app.config.active_model.group_id
             && model.name == app.config.active_model.name;
@@ -615,11 +607,7 @@ pub(in crate::ui) fn build_language_picker_lines(
         .min(locales.len().saturating_sub(1));
     let total = locales.len();
     let window = max_items.max(1);
-    let start = if selected + 1 > window {
-        selected + 1 - window
-    } else {
-        0
-    };
+    let start = (selected + 1).saturating_sub(window);
     let end = (start + window).min(total);
 
     let current_locale = rust_i18n::locale().to_string();
@@ -671,11 +659,7 @@ pub(in crate::ui) fn build_image_picker_lines(
         .min(app.image_picker_files.len().saturating_sub(1));
     let total = app.image_picker_files.len();
     let window = max_items.max(1);
-    let start = if selected + 1 > window {
-        selected + 1 - window
-    } else {
-        0
-    };
+    let start = (selected + 1).saturating_sub(window);
     let end = (start + window).min(total);
 
     let mut lines = Vec::new();
