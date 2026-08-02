@@ -397,7 +397,7 @@ export class AiSdkAnthropicTransport
         model: createAnthropicLanguageModel(compactConfig),
         messages: promptMessages as any,
         allowSystemInMessages: true,
-        providerOptions: buildAnthropicProviderOptions(compactConfig),
+        providerOptions: buildAnthropicTransportProviderOptions(compactConfig),
         maxRetries: 2,
       });
       summary = result.text;
