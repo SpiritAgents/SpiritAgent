@@ -94,6 +94,12 @@ function applyAnthropicCodeCompletionProfile(
       vendorExtendedThinking: false,
     };
   }
+  if (config.llmVendor === 'minimax') {
+    return {
+      ...withCodeCompletionProfile(config),
+      vendorExtendedThinking: false,
+    };
+  }
   return {
     ...withCodeCompletionProfile(config),
     thinking: { type: 'disabled' },

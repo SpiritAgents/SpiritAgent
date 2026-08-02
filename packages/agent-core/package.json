@@ -115,6 +115,7 @@
     "@ai-sdk/google-vertex": "^5.0.1",
     "@ai-sdk/groq": "^3.0.55",
     "@ai-sdk/huggingface": "^2.0.17",
+    "@ai-sdk/minimax": "^3.0.2",
     "@ai-sdk/moonshotai": "^3.0.1",
     "@ai-sdk/open-responses": "^2.0.0",
     "@ai-sdk/openai": "^4.0.1",

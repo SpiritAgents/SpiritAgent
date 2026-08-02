@@ -3,6 +3,7 @@ import { isMeituanAnthropicThinkingSwitchConfig } from '../meituan/meituan-anthr
 import type { JsonObject, JsonValue } from '../ports.js';
 import { cloneJsonValue } from '../tool-agent.js';
 import type { LlmModelCapabilities, TransportRequestProfile } from '../llm-provider-shared.js';
+import { buildMinimaxProviderOptions } from './minimax-provider-options.js';
 
 export const DEFAULT_ANTHROPIC_BASE_URL = 'https://api.anthropic.com/v1';
 
@@ -152,7 +153,10 @@ export function buildAnthropicRequestTrace(
   tools: readonly unknown[],
   stream = false,
 ): JsonValue[] {
-  const providerOptions = buildAnthropicProviderOptions(config);
+  const providerOptions = {
+    ...buildAnthropicProviderOptions(config),
+    ...buildMinimaxProviderOptions(config),
+  };
   const trace: AnthropicRequestTrace = {
     kind: 'anthropic_sdk_messages',
     stepIndex,
@@ -162,7 +166,7 @@ export function buildAnthropicRequestTrace(
     ...(tools.length > 0
       ? { tools: tools.map((tool) => cloneJsonValue(tool as JsonValue)) }
       : {}),
-    ...(Object.keys(providerOptions.anthropic ?? {}).length > 0
+    ...(Object.keys(providerOptions).length > 0
       ? { providerOptions: providerOptions as JsonValue }
       : {}),
   };

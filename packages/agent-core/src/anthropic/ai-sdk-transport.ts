@@ -2,6 +2,7 @@ import { readFileSync } from 'node:fs';
 import { basename, extname, isAbsolute, resolve } from 'node:path';
 
 import { createAnthropic } from '@ai-sdk/anthropic';
+import { createMiniMax } from '@ai-sdk/minimax';
 
 import { getLlmFetch } from '../llm-fetch.js';
 import { wrapFetchForCloudflareAiGateway } from '../cloudflare-ai-gateway-fetch.js';
@@ -66,6 +67,7 @@ import {
   DEFAULT_ANTHROPIC_BASE_URL,
   type AnthropicTransportConfig,
 } from './anthropic-compat.js';
+import { buildMinimaxProviderOptions } from './minimax-provider-options.js';
 import {
   isMinimaxAnthropicConfig,
   mapMinimaxAnthropicImageContentPart,
@@ -157,7 +159,7 @@ export class AiSdkAnthropicTransport
         allowSystemInMessages: true,
         schema: jsonSchema(request.schema as Record<string, unknown>),
         schemaName: request.schemaName,
-        providerOptions: buildAnthropicProviderOptions(config),
+        providerOptions: buildAnthropicTransportProviderOptions(config),
         maxRetries: 2,
       });
       const output = cloneJsonValue(result.object as JsonValue) as T;
@@ -208,7 +210,7 @@ export class AiSdkAnthropicTransport
               tools: buildAiSdkTools(normalizedTools) as any,
               toolChoice: 'auto' as const,
             }),
-        providerOptions: buildAnthropicProviderOptions(config),
+        providerOptions: buildAnthropicTransportProviderOptions(config),
         maxRetries: 2,
       });
 
@@ -291,7 +293,7 @@ export class AiSdkAnthropicTransport
               tools: buildAiSdkTools(normalizedTools) as any,
               toolChoice: 'auto' as const,
             }),
-        providerOptions: buildAnthropicProviderOptions(config),
+        providerOptions: buildAnthropicTransportProviderOptions(config),
         include: { rawChunks: false },
         maxRetries: 2,
         abortSignal: abortController.signal,
@@ -365,7 +367,7 @@ export class AiSdkAnthropicTransport
           model: createAnthropicLanguageModel(compactConfig),
           messages: promptMessages as any,
           allowSystemInMessages: true,
-          providerOptions: buildAnthropicProviderOptions(compactConfig),
+          providerOptions: buildAnthropicTransportProviderOptions(compactConfig),
           maxRetries: 2,
         });
 
@@ -451,6 +453,15 @@ export class AiSdkAnthropicTransport
   }
 }
 
+function buildAnthropicTransportProviderOptions(
+  config: AnthropicTransportConfig,
+): Record<string, JsonObject> {
+  return {
+    ...buildAnthropicProviderOptions(config),
+    ...buildMinimaxProviderOptions(config),
+  };
+}
+
 function createAnthropicLanguageModel(config: AnthropicTransportConfig): any {
   const baseFetch = wrapFetchForCloudflareAiGateway(config.cloudflareGatewayId, getLlmFetch());
   let fetch = isStepfunAnthropicBaseUrl(config.baseUrl)
@@ -458,6 +469,14 @@ function createAnthropicLanguageModel(config: AnthropicTransportConfig): any {
     : baseFetch;
   if (config.llmVendor === 'meituan' && config.supportsThinkingSwitch === true) {
     fetch = createMeituanAnthropicAwareFetch(fetch, config);
+  }
+
+  if (config.llmVendor === 'minimax') {
+    return createMiniMax({
+      apiKey: config.apiKey,
+      ...(config.baseUrl ? { baseURL: config.baseUrl } : {}),
+      fetch,
+    }).chat(config.model);
   }
 
   return createAnthropic({
