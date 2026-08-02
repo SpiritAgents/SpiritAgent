@@ -31,7 +31,7 @@ import type {
 import type { ToolExecutionResult } from './tool-execution.js';
 import type { EarlyInternalToolCallResult, TurnMachineRuntime } from './turn-machine.js';
 import { prepareStateForContextRetryAsync } from './compaction.js';
-import { isResponsesBuiltInToolName } from '../open-responses/responses-built-in-tools.js';
+import { isResponsesBuiltInToolName, resolveResponsesBuiltInToolStreamPhaseFromArgumentsJson } from '../open-responses/responses-built-in-tools.js';
 import { findLatestProviderBuiltinToolRoundInState } from '../open-responses/sdk-provider-web-search-loop.js';
 import { shouldSkipEarlyExecutionForManagedProviderTool } from '../moonshot/formula/moonshot-formula-turn-handler.js';
 import type { ToolAgentState } from '../tool-agent.js';
@@ -78,6 +78,8 @@ export interface StreamingRuntime<
   thinkingTextStore: string;
   /** Set when a tool preview appears in the current streaming round (cleared with streaming UI state). */
   toolPreviewSeenInStreamRoundStore: boolean;
+  /** Set when a provider built-in tool reaches a terminal preview in the current streaming round. */
+  providerBuiltinToolTerminalSeenInStreamRoundStore: boolean;
   compactionTextStore: string;
   pendingStartedAtStore: number | undefined;
   pendingLastEventAtStore: number | undefined;
@@ -354,7 +356,8 @@ export function currentAuxKind<
       runtime.pendingAssistantTextStore.trim() &&
       !runtime.thinkingTextStore.trim() &&
       !runtime.compactionTextStore.trim() &&
-      !runtime.pendingBackgroundToolStatusStore?.trim()
+      !runtime.pendingBackgroundToolStatusStore?.trim() &&
+      !runtime.providerBuiltinToolTerminalSeenInStreamRoundStore
     ) {
       return undefined;
     }
@@ -453,6 +456,7 @@ export function clearStreamingUiState<
   runtime.thinkingTextStore = '';
   runtime.compactionTextStore = '';
   runtime.toolPreviewSeenInStreamRoundStore = false;
+  runtime.providerBuiltinToolTerminalSeenInStreamRoundStore = false;
 }
 
 export function clearPendingStreamingState<
@@ -515,6 +519,12 @@ export async function handlePendingStreamEvent<
 
   if (event.kind === 'streaming-tool-preview') {
     runtime.toolPreviewSeenInStreamRoundStore = true;
+    if (isResponsesBuiltInToolName(event.toolName)) {
+      const phase = resolveResponsesBuiltInToolStreamPhaseFromArgumentsJson(event.argumentsJson);
+      if (phase === 'succeeded' || phase === 'failed') {
+        runtime.providerBuiltinToolTerminalSeenInStreamRoundStore = true;
+      }
+    }
     if (runtime.thinkingTextStore.trim()) {
       finalizeInFlightStreamThinking(runtime);
     }
