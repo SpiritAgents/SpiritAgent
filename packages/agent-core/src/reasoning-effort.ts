@@ -318,6 +318,10 @@ export function defaultModelReasoningEffort(
     return 'default';
   }
 
+  if (isGroqReasoningEffortModel(context)) {
+    return defaultGroqModelReasoningEffort(context);
+  }
+
   return DEFAULT_MODEL_REASONING_EFFORT;
 }
 
@@ -394,6 +398,10 @@ export function modelReasoningEffortOptions(
 
   if (modelSupportsOpenAiGpt56ReasoningControls(context)) {
     return gpt56ReasoningEffortOptionsForContext(context);
+  }
+
+  if (isGroqReasoningEffortModel(context)) {
+    return groqReasoningEffortOptionsForSupportedEfforts(context!.supportedEfforts!);
   }
 
   return OPENAI_COMPATIBLE_REASONING_EFFORT_OPTIONS;
@@ -721,6 +729,10 @@ function resolveCompatibleModelReasoningEffort(
     }
   }
 
+  if (isGroqReasoningEffortModel(context)) {
+    return groqReasoningEffortValueForContext(normalized, context?.supportedEfforts) ?? 'default';
+  }
+
   if (normalized === 'minimal') {
     return 'default';
   }
@@ -845,6 +857,82 @@ function moonshotReasoningEffortOptionsForSupportedEfforts(
   return MOONSHOT_REASONING_EFFORT_OPTIONS.filter(
     (option) => option.value === 'default' || supported.has(option.value),
   );
+}
+
+const GROQ_REASONING_EFFORT_LABELS: Record<string, string> = {
+  none: 'None',
+  default: 'Default',
+  low: 'Low',
+  medium: 'Medium',
+  high: 'High',
+};
+
+export function isGroqReasoningEffortModel(
+  context?: ModelReasoningEffortContext,
+): boolean {
+  return context?.provider === 'groq'
+    && context.supportedEfforts !== undefined
+    && context.supportedEfforts.length > 0;
+}
+
+function defaultGroqModelReasoningEffort(
+  context?: ModelReasoningEffortContext,
+): ModelReasoningEffort {
+  const supported = readGroqSupportedReasoningEffortSet(context?.supportedEfforts);
+  if (supported.has('default')) {
+    return 'default';
+  }
+  if (supported.has('medium')) {
+    return 'medium';
+  }
+  return supported.values().next().value ?? DEFAULT_MODEL_REASONING_EFFORT;
+}
+
+function readGroqSupportedReasoningEffortSet(
+  supportedEfforts: readonly ModelReasoningEffort[] | undefined,
+): ReadonlySet<string> {
+  if (!supportedEfforts) {
+    return new Set<string>();
+  }
+  const normalized = new Set<string>();
+  for (const value of supportedEfforts) {
+    const effort = normalizeModelReasoningEffort(value) ?? value;
+    if (effort) {
+      normalized.add(effort);
+    }
+  }
+  return normalized;
+}
+
+function groqReasoningEffortValueForContext(
+  normalized: ModelReasoningEffort,
+  supportedEfforts: readonly ModelReasoningEffort[] | undefined,
+): ModelReasoningEffort | undefined {
+  const supported = readGroqSupportedReasoningEffortSet(supportedEfforts);
+  if (supported.has(normalized)) {
+    return normalized;
+  }
+  if (normalized === 'minimal') {
+    if (supported.has('default')) {
+      return 'default';
+    }
+    if (supported.has('low')) {
+      return 'low';
+    }
+  }
+  return undefined;
+}
+
+function groqReasoningEffortOptionsForSupportedEfforts(
+  supportedEfforts: readonly ModelReasoningEffort[],
+): ReadonlyArray<ModelReasoningEffortOption<ModelReasoningEffort>> {
+  return supportedEfforts.map((value) => {
+    const effort = normalizeModelReasoningEffort(value) ?? value;
+    return {
+      value: effort,
+      label: GROQ_REASONING_EFFORT_LABELS[effort] ?? effort,
+    };
+  });
 }
 
 function gpt56ReasoningEffortValueForContext(
