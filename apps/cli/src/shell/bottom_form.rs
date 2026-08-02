@@ -666,6 +666,7 @@ fn model_add_transport_kind(form: &BottomFormView, provider: ModelProvider) -> M
             _ => ModelTransportKind::OpenAiCompatible,
         },
         ModelProvider::Azure | ModelProvider::Openai => ModelTransportKind::OpenResponses,
+        ModelProvider::Minimax => ModelTransportKind::Anthropic,
         _ => ModelTransportKind::OpenAiCompatible,
     }
 }
@@ -3300,10 +3301,10 @@ mod tests {
 
         let parsed = parse_model_add_connection(&form).expect("parse");
         assert_eq!(parsed.provider, ModelProvider::Minimax);
-        assert_eq!(parsed.transport_kind, ModelTransportKind::OpenAiCompatible);
+        assert_eq!(parsed.transport_kind, ModelTransportKind::Anthropic);
         assert!(parsed.bulk);
         assert!(parsed.model_name.is_none());
-        assert_eq!(parsed.api_base, "https://api.minimax.io/v1");
+        assert_eq!(parsed.api_base, "https://api.minimax.io/anthropic/v1");
         assert_eq!(parsed.provider_site.as_deref(), Some("intl"));
         assert_eq!(parsed.api_key, "sk-mm");
     }

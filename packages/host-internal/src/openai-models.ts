@@ -2634,6 +2634,14 @@ export async function listProviderModels(
     });
   }
 
+  if (options.provider === 'minimax' && options.transportKind === 'anthropic') {
+    return listMinimaxModels({
+      baseUrl: resolveProviderConnectApiBase('minimax', 'openai-compatible'),
+      apiKey: options.apiKey,
+      ...(options.signal !== undefined ? { signal: options.signal } : {}),
+    });
+  }
+
   if (options.provider === 'siliconflow') {
     return listSiliconFlowModels(options);
   }

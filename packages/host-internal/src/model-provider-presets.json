@@ -7,7 +7,7 @@
     "kimi-code": "https://api.kimi.com/coding/v1",
     "z-ai": "https://api.z.ai/api/paas/v4",
     "zhipu-ai": "https://open.bigmodel.cn/api/paas/v4",
-    "minimax": "https://api.minimax.io/v1",
+    "minimax": "https://api.minimax.io/anthropic/v1",
     "alibaba": "https://dashscope.aliyuncs.com/compatible-mode/v1",
     "anthropic": "https://api.anthropic.com/v1",
     "vercel-ai-gateway": "https://ai-gateway.vercel.sh/v1",

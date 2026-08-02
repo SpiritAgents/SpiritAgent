@@ -634,7 +634,7 @@ mod tests {
         );
         assert_eq!(
             model_add_preset_api_base_by_choice_index(19).as_deref(),
-            Some("https://api.minimax.io/v1")
+            Some("https://api.minimax.io/anthropic/v1")
         );
         assert_eq!(
             model_add_preset_api_base_by_choice_index(20).as_deref(),
