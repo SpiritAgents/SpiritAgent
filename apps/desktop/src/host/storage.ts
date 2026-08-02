@@ -1002,9 +1002,7 @@ function normalizeProviderGroup(raw: unknown): ProviderGroupV2 | null {
     return null;
   }
   const label = typeof record.label === 'string' && record.label.trim() ? record.label.trim() : undefined;
-  if (provider === 'custom' && !label) {
-    return null;
-  }
+  const resolvedLabel = provider === 'custom' && !label ? id : label;
   const apiBase = typeof record.apiBase === 'string' && record.apiBase.trim()
     ? record.apiBase.trim()
     : DEFAULT_API_BASE;
@@ -1074,7 +1072,7 @@ function normalizeProviderGroup(raw: unknown): ProviderGroupV2 | null {
   return {
     id,
     provider,
-    ...(label ? { label } : {}),
+    ...(resolvedLabel ? { label: resolvedLabel } : {}),
     apiBase,
     ...(transportKind ? { transportKind } : {}),
     ...(providerSite ? { providerSite } : {}),

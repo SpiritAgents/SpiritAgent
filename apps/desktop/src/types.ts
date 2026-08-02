@@ -281,6 +281,8 @@ export interface AddProviderModelsRequest {
   vertexLocation?: string;
   vertexClientEmail?: string;
   vertexPrivateKey?: string;
+  /** 自定义提供商连接显示名；`custom` 时用于生成 groupId 并写入 `ProviderGroupV2.label`。 */
+  customGroupLabel?: string;
 }
 
 /** 快照附带：某 apiBase 在本地 `model-catalog-cache` 中的最近一次列模型结果（供主界面分组与排序）。 */

@@ -272,8 +272,8 @@ function buildProviderGroupConnect(
     apiBase,
   };
   const label = input.customGroupLabel?.trim();
-  if (provider === 'custom' && label) {
-    group.label = label;
+  if (provider === 'custom') {
+    group.label = label || input.groupId?.trim() || defaultPresetProviderGroupId('custom');
   }
   if (transportKind === 'anthropic' || transportKind === 'open-responses' || transportKind === 'bedrock') {
     group.transportKind = transportKind;
@@ -1088,6 +1088,9 @@ export async function addProviderModelsCommand(
     const connectInput: ConnectRequestFields = {
       groupId: request.groupId,
       ...(provider !== undefined ? { provider } : {}),
+      ...(request.customGroupLabel?.trim()
+        ? { customGroupLabel: request.customGroupLabel.trim() }
+        : {}),
       transportKind,
       apiBase: request.apiBase,
       ...(awsRegion ? { awsRegion } : {}),

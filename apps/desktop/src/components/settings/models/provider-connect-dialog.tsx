@@ -350,6 +350,9 @@ export function ProviderConnectDialog({
       ...(connectZhipuBillingModeForRequest
         ? { zhipuBillingMode: connectZhipuBillingModeForRequest }
         : {}),
+      ...(provider === "custom" && connectCustomGroupLabel.trim()
+        ? { customGroupLabel: connectCustomGroupLabel.trim() }
+        : {}),
     };
     await onAddProviderModels(bulk);
     onOpenChange(false);
