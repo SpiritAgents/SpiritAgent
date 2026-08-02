@@ -4,10 +4,10 @@ import { buildResponsesBuiltInToolArgumentsJson } from '../open-responses/respon
 
 export type MinimaxWebSearchResult = {
   type: 'web_search_result';
-  title?: string;
-  url?: string;
-  content?: string;
-  page_age?: string;
+  title?: string | undefined;
+  url?: string | undefined;
+  content?: string | undefined;
+  page_age?: string | undefined;
 };
 
 function readNonEmptyString(value: unknown): string | undefined {

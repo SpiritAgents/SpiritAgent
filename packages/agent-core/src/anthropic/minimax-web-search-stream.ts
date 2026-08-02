@@ -136,12 +136,17 @@ function handleRawMinimaxWebSearchChunk(
   state: MinimaxWebSearchStreamState,
   events: LlmStreamEvent[],
 ): boolean {
-  if (!isJsonObject(rawValue as JsonValue) || rawValue.type !== 'content_block_start') {
+  if (!isJsonObject(rawValue as JsonValue)) {
     return false;
   }
 
-  const contentBlock = isJsonObject(rawValue.content_block as JsonValue)
-    ? (rawValue.content_block as JsonObject)
+  const chunk = rawValue as JsonObject;
+  if (chunk.type !== 'content_block_start') {
+    return false;
+  }
+
+  const contentBlock = isJsonObject(chunk.content_block as JsonValue)
+    ? (chunk.content_block as JsonObject)
     : undefined;
   if (!contentBlock || typeof contentBlock.type !== 'string') {
     return false;
@@ -288,14 +293,18 @@ export function filterAnthropicHostToolCalls<T extends { id: string; name: strin
     return [...calls];
   }
 
-  return filterPendingHostToolCalls(
-    calls.map((call) => ({
-      id: call.id,
-      name: call.name,
-      argumentsJson: '',
-    })),
-    state.executedProviderBuiltinToolCallIds,
-  ) as T[];
+  const filteredIds = new Set(
+    filterPendingHostToolCalls(
+      calls.map((call) => ({
+        id: call.id,
+        name: call.name,
+        argumentsJson: '',
+      })),
+      state.executedProviderBuiltinToolCallIds,
+    ).map((call) => call.id),
+  );
+
+  return calls.filter((call) => filteredIds.has(call.id));
 }
 
 export function appendStreamingTextAnthropicBlock(
@@ -308,9 +317,12 @@ export function appendStreamingTextAnthropicBlock(
   }
 
   const lastBlock = state.anthropicContentBlocks.at(-1);
-  if (isJsonObject(lastBlock as JsonValue) && lastBlock.type === 'text' && typeof lastBlock.text === 'string') {
-    lastBlock.text = `${lastBlock.text}${text}`;
-    return;
+  if (lastBlock !== undefined && isJsonObject(lastBlock as JsonValue)) {
+    const textBlock = lastBlock as JsonObject;
+    if (textBlock.type === 'text' && typeof textBlock.text === 'string') {
+      textBlock.text = `${textBlock.text}${text}`;
+      return;
+    }
   }
 
   state.anthropicContentBlocks.push({ type: 'text', text });

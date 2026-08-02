@@ -36,6 +36,13 @@ applyTo: "**/*"
 - **不在** `host-internal` 注册可执行 `web_search`；执行留在 `agent-core`（`kimi-code/`、`stepfun/`），经 managed provider turn handler。
 - UI：可展开 preview（与 StepFun 共用 `_spiritUi`，无 `suppressExpand`）。
 
+## MiniMax Server Tools（Anthropic Messages）
+
+- **MiniMax 直连**（`llmVendor: minimax`，`transportKind: anthropic`）：经 Messages API 注入 Server Tool `{ type: web_search_20250305, name: web_search }`（文档来源 [minimax.io server-tools](https://platform.minimaxi.io/docs/guides/server-tools.md)，版本 `20250305`）；**仅 Messages API**，不走 Chat Completions。
+- 响应块 `server_tool_use` / `web_search_tool_result` 由 `agent-core` `anthropic/minimax-web-search-stream.ts` 解析；服务端执行搜索，宿主**不**回传 `tool_result`。
+- **不在** `host-internal` 注册可执行 `web_search`；注入与流映射留在 `agent-core` `anthropic/minimax-server-tools.ts`。
+- UI：复用 Responses built-in `web_search` 卡（`toolName: web_search` + `_spiritUi`）；Detail 显示搜索关键词，展开 Input/Output 与 Vercel AI Gateway 联网搜索卡片一致。
+
 ## 术语
 
 ### 工具定义

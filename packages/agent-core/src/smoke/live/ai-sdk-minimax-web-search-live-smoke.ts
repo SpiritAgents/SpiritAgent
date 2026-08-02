@@ -1,0 +1,122 @@
+import { execSync } from 'node:child_process';
+
+import { AiSdkAnthropicTransport } from '../../anthropic/ai-sdk-transport.js';
+import type { AnthropicTransportConfig } from '../../anthropic/anthropic-compat.js';
+import {
+  parseResponsesBuiltInToolUiFromArgumentsJson,
+  resolveResponsesBuiltInToolStreamPhaseFromArgumentsJson,
+} from '../../open-responses/responses-built-in-tools.js';
+import type { LlmStreamEvent } from '../../ports.js';
+import { startOpenAiToolAgentState } from '../../openai/tool-agent-helpers.js';
+
+import { printSmokeSection } from '../shared/print.js';
+import { shouldRunLiveSmoke } from './env.js';
+
+function resolveMinimaxApiKey(): string | undefined {
+  const fromEnv = process.env.MINIMAX_API_KEY?.trim();
+  if (fromEnv) {
+    return fromEnv;
+  }
+
+  if (process.platform !== 'darwin') {
+    return undefined;
+  }
+
+  try {
+    const value = execSync(
+      'security find-generic-password -s SpiritAgent -a "group::minimax" -w 2>/dev/null',
+      { encoding: 'utf8' },
+    ).trim();
+    return value.length > 0 ? value : undefined;
+  } catch {
+    return undefined;
+  }
+}
+
+function createLiveMinimaxWebSearchSmokeConfig(apiKey: string): AnthropicTransportConfig {
+  return {
+    transportKind: 'anthropic',
+    apiKey,
+    model: process.env.MINIMAX_MODEL?.trim() || 'MiniMax-M3',
+    baseUrl: process.env.MINIMAX_BASE_URL?.trim() || 'https://api.minimaxi.com/anthropic/v1',
+    llmVendor: 'minimax',
+  };
+}
+
+async function collectStreamEvents(
+  stream: AsyncIterable<LlmStreamEvent>,
+): Promise<LlmStreamEvent[]> {
+  const events: LlmStreamEvent[] = [];
+  for await (const event of stream) {
+    events.push(event);
+  }
+  return events;
+}
+
+async function main(): Promise<void> {
+  if (!shouldRunLiveSmoke()) {
+    return;
+  }
+
+  const apiKey = resolveMinimaxApiKey();
+  if (!apiKey) {
+    console.log('未找到 MINIMAX_API_KEY 或 SpiritAgent Keychain 凭据，跳过 minimax web_search live smoke。');
+    return;
+  }
+
+  const config = createLiveMinimaxWebSearchSmokeConfig(apiKey);
+  const transport = new AiSdkAnthropicTransport();
+  const state = startOpenAiToolAgentState(
+    [],
+    'You MUST use web_search. Search the web for Shanghai weather today and reply in one English sentence.',
+    process.cwd(),
+    [],
+    [],
+    config.model,
+  );
+
+  const started = await transport.startToolAgentRoundStreaming(config, state, []);
+  const events = await collectStreamEvents(started.eventStream);
+  const completion = await started.completion;
+
+  printSmokeSection('live minimax web_search smoke', {
+    model: config.model,
+    baseUrl: config.baseUrl,
+    completionKind: completion.kind,
+    previewCount: events.filter((event) => event.kind === 'streaming-tool-preview').length,
+  });
+
+  if (completion.kind !== 'success') {
+    throw new Error(`minimax web_search live smoke 失败: ${completion.error}`);
+  }
+
+  if (completion.result.step.kind === 'tool-calls') {
+    throw new Error('minimax web_search live smoke 不应进入宿主 tool-calls。');
+  }
+
+  const webSearchPreviews = events.filter(
+    (event): event is Extract<LlmStreamEvent, { kind: 'streaming-tool-preview' }> =>
+      event.kind === 'streaming-tool-preview' && event.toolName === 'web_search',
+  );
+  if (webSearchPreviews.length === 0) {
+    throw new Error('minimax web_search live smoke 未收到 web_search streaming-tool-preview。');
+  }
+
+  const succeededPreview = webSearchPreviews.find(
+    (event) => resolveResponsesBuiltInToolStreamPhaseFromArgumentsJson(event.argumentsJson) === 'succeeded',
+  );
+  if (!succeededPreview) {
+    throw new Error('minimax web_search live smoke 未收到 succeeded 终态卡片。');
+  }
+
+  const ui = parseResponsesBuiltInToolUiFromArgumentsJson(succeededPreview.argumentsJson);
+  if (!ui?.sourceCount || ui.sourceCount < 1) {
+    throw new Error('minimax web_search live smoke 终态卡片缺少来源数量。');
+  }
+}
+
+main().catch((error: unknown) => {
+  const message = error instanceof Error ? error.message : String(error);
+  console.error(`live minimax web_search smoke failed: ${message}`);
+  process.exitCode = 1;
+});

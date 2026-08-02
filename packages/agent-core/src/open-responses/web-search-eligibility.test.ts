@@ -179,3 +179,37 @@ test('buildProviderWebSearchPromptSection omits alibaba', () => {
     undefined,
   );
 });
+
+test('resolveProviderWebSearchMode enables minimax anthropic server tools', () => {
+  assert.equal(
+    resolveProviderWebSearchMode({
+      transportKind: 'anthropic',
+      apiKey: 'k',
+      model: 'MiniMax-M3',
+      baseUrl: 'https://api.minimaxi.com/anthropic/v1',
+      llmVendor: 'minimax',
+    }),
+    'minimax-server-tools-web-search',
+  );
+  assert.equal(
+    shouldUseProviderWebSearch({
+      transportKind: 'anthropic',
+      apiKey: 'k',
+      model: 'MiniMax-M3',
+      baseUrl: 'https://api.minimaxi.com/anthropic/v1',
+      llmVendor: 'minimax',
+    }),
+    true,
+  );
+});
+
+test('resolveProviderWebSearchMode excludes minimax openai-compatible chat', () => {
+  assert.equal(
+    resolveProviderWebSearchMode({
+      apiKey: 'k',
+      model: 'MiniMax-M3',
+      llmVendor: 'minimax',
+    }),
+    undefined,
+  );
+});
