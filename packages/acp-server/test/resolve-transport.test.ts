@@ -7,6 +7,7 @@ import test from 'node:test';
 import { loadBaseConfig } from '../src/config.js';
 import {
   providerAccessKeyIdAccount,
+  providerKeyAccount,
   providerSecretAccessKeyAccount,
   providerVertexClientEmailAccount,
   providerVertexPrivateKeyAccount,
@@ -112,6 +113,55 @@ test('resolveTransportConfig builds vertex transport from service account creden
       assert.equal(transport.vertexLocation, 'us-central1');
       assert.equal(transport.vertexClientEmail, 'sa@my-project.iam.gserviceaccount.com');
       assert.ok(transport.vertexPrivateKey?.includes('BEGIN PRIVATE KEY'));
+    }
+  } finally {
+    setKeyringStoreForTests(undefined);
+  }
+});
+
+test('resolveTransportConfig defaults minimax to anthropic transport with llmVendor', () => {
+  const modelName = 'MiniMax-M3';
+  const dir = mkdtempSync(join(tmpdir(), 'spirit-acp-minimax-'));
+  writeFileSync(
+    join(dir, 'config.json'),
+    JSON.stringify(v2ConfigFixture({
+      groups: [{
+        id: 'minimax',
+        provider: 'minimax',
+        apiBase: 'https://api.minimaxi.com/anthropic/v1',
+        providerSite: 'cn',
+        models: [{
+          name: modelName,
+          reasoningEffort: 'medium',
+          capabilities: ['chat'],
+        }],
+      }],
+      activeModel: { groupId: 'minimax', name: modelName },
+    })),
+    'utf8',
+  );
+
+  const passwords = new Map<string, string>();
+  setKeyringStoreForTests({
+    getPassword: (_service, account) => passwords.get(account),
+    setPassword: (_service, account, password) => {
+      passwords.set(account, password);
+    },
+    deletePassword: (_service, account) => {
+      passwords.delete(account);
+    },
+  });
+  passwords.set(providerKeyAccount('minimax'), 'stored-key');
+
+  try {
+    const config = loadBaseConfig();
+    config.spiritDataDir = dir;
+    const transport = resolveTransportConfig(config);
+    assert.equal(transport.transportKind, 'anthropic');
+    if (transport.transportKind === 'anthropic') {
+      assert.equal(transport.llmVendor, 'minimax');
+      assert.equal(transport.baseUrl, 'https://api.minimaxi.com/anthropic/v1');
+      assert.equal(transport.apiKey, 'stored-key');
     }
   } finally {
     setKeyringStoreForTests(undefined);

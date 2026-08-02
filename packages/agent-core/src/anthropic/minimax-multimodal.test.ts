@@ -8,6 +8,7 @@ import {
 } from './minimax-multimodal.js';
 
 test('isMinimaxAnthropicConfig matches minimax anthropic base URLs', () => {
+  assert.equal(isMinimaxAnthropicConfig({ llmVendor: 'minimax', baseUrl: 'https://example.com/v1' }), true);
   assert.equal(isMinimaxAnthropicConfig({ baseUrl: 'https://api.minimax.io/anthropic/v1' }), true);
   assert.equal(isMinimaxAnthropicConfig({ baseUrl: 'https://api.minimaxi.com/anthropic/v1' }), true);
   assert.equal(isMinimaxAnthropicConfig({ baseUrl: 'https://api.anthropic.com/v1' }), false);

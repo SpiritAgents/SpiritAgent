@@ -182,12 +182,14 @@ function buildTransportFromProfile(
       },
     );
     const cloudflareGatewayId = profile.cloudflareGatewayId?.trim();
+    const llmVendor = openAiCompatibleVendorFromProvider(profile.provider);
     return {
       transportKind: 'anthropic',
       apiKey,
       model,
       baseUrl,
       workspaceRoot,
+      ...(llmVendor ? { llmVendor } : {}),
       ...(cloudflareGatewayId ? { cloudflareGatewayId } : {}),
       ...(profile.capabilities
         ? { modelCapabilities: modelCapabilitiesFromConfig(profile.capabilities) }

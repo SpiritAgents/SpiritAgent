@@ -11,6 +11,7 @@ import {
   providerSupportsSiteSelection,
   resolveProviderConnectApiBase,
   resolveProviderConnectSiteApiBase,
+  resolveConnectApiBase,
 } from './model-provider-presets.js';
 import { cloudflareAiGatewayApiBaseFromAccountId } from './cloudflare-ai-gateway-resource.js';
 
@@ -380,6 +381,10 @@ test('resolveProviderConnectApiBase prefers site apiBase for minimax', () => {
   assert.equal(
     resolveProviderConnectApiBase('minimax', 'openai-compatible'),
     'https://api.minimax.io/v1',
+  );
+  assert.equal(
+    resolveConnectApiBase('minimax', ''),
+    'https://api.minimax.io/anthropic/v1',
   );
 });
 

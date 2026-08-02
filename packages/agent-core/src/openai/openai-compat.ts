@@ -7,7 +7,6 @@ import {
   type ModelReasoningMode,
 } from '../openai/gpt-reasoning-controls.js';
 import { cloneJsonValue } from '../tool-agent.js';
-import { isMinimaxM3ThinkingSwitchModel } from './gateway-minimax-thinking.js';
 import { isThinkingSwitchDisabledModel } from './thinking-switch-disabled-models.js';
 import {
   buildOpenRouterClaudeReasoningBody,
@@ -286,10 +285,7 @@ export function openAiVendorChatCompletionBodyExtras(
   >,
 ): Record<string, unknown> {
   const extras: Record<string, unknown> = {};
-  if (config.llmVendor === 'minimax' && isMinimaxM3ThinkingSwitchModel(config.model)) {
-    const enabled = config.vendorExtendedThinking !== false;
-    extras.thinking = { type: enabled ? 'adaptive' : 'disabled' };
-  } else if (
+  if (
     config.llmVendor === 'meituan'
     && config.supportsThinkingSwitch === true
   ) {

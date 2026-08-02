@@ -17,7 +17,6 @@ const OPENAI_COMPAT_THINKING_TYPE_VENDORS = new Set<OpenAiLlmVendor>([
   'moonshot-ai',
   'z-ai',
   'zhipu-ai',
-  'minimax',
   'xiaomi',
   'volcengine',
   'tencent-tokenhub',
@@ -73,8 +72,6 @@ function applyOpenAiCompatibleCodeCompletionProfile(
       || (vendor === 'meituan' && config.supportsThinkingSwitch === true)
     )
   ) {
-    // MiniMax：M3 默认关闭 thinking，可用 adaptive 开启；M2.x 无法关闭。
-    // 文档：https://platform.minimaxi.com/docs/api-reference/text-openai-api
     // Moonshot/DeepSeek 等与 thinking.type 互斥，补全路径不写 reasoning_effort（default → 不传）。
     return {
       ...profiled,
@@ -89,6 +86,12 @@ function applyAnthropicCodeCompletionProfile(
   config: AnthropicTransportConfig,
 ): AnthropicTransportConfig {
   if (config.llmVendor === 'meituan' && config.supportsThinkingSwitch === true) {
+    return {
+      ...withCodeCompletionProfile(config),
+      vendorExtendedThinking: false,
+    };
+  }
+  if (config.llmVendor === 'minimax') {
     return {
       ...withCodeCompletionProfile(config),
       vendorExtendedThinking: false,

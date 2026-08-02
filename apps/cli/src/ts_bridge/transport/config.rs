@@ -380,6 +380,15 @@ pub(crate) fn resolve_transport_config_json_for(host: &TransportHost<'_>, config
             && let Some(obj) = transport.as_object_mut() {
                 obj.insert("effort".to_string(), json!(effort));
             }
+        if let Some(provider) = active.provider
+            && provider != ModelProvider::Anthropic
+            && provider != ModelProvider::AmazonBedrock
+            && let Some(obj) = transport.as_object_mut() {
+                obj.insert(
+                    "llmVendor".to_string(),
+                    json!(model_provider_vendor(provider)),
+                );
+            }
     } else if active.transport_kind() == crate::model_registry::ModelTransportKind::OpenResponses
         || (active.provider == Some(ModelProvider::AmazonBedrock)
             && crate::bedrock_mantle::is_bedrock_mantle_openai_model(&active.name))

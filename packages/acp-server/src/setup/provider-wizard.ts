@@ -39,6 +39,9 @@ export function resolveSetupTransportKind(
   if (provider === 'anthropic') {
     return 'anthropic';
   }
+  if (provider === 'minimax') {
+    return 'anthropic';
+  }
   if (provider === 'amazon-bedrock') {
     return 'bedrock';
   }
