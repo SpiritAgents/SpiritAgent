@@ -355,35 +355,22 @@ export function readAnthropicAssistantContentBlocks(message: JsonObject): JsonVa
   return blocks;
 }
 
-export function anthropicAssistantContentBlocksToAiSdkParts(
+export function resolveMinimaxWebSearchAssistantReplayText(
+  message: JsonObject,
   blocks: readonly JsonValue[],
-): Array<Record<string, unknown>> {
+): string {
+  if (typeof message.content === 'string' && message.content.trim().length > 0) {
+    return message.content;
+  }
+
   return blocks.flatMap((block) => {
-    if (!isJsonObject(block) || typeof block.type !== 'string') {
+    if (!isJsonObject(block as JsonValue)) {
       return [];
     }
-
-    if (block.type === 'text' && typeof block.text === 'string') {
-      return [{ type: 'text', text: block.text }];
+    const record = block as JsonObject;
+    if (record.type !== 'text' || typeof record.text !== 'string') {
+      return [];
     }
-
-    if (block.type === 'server_tool_use') {
-      return [{
-        type: 'server_tool_use',
-        id: block.id,
-        name: block.name,
-        input: block.input ?? {},
-      }];
-    }
-
-    if (block.type === 'web_search_tool_result') {
-      return [{
-        type: 'web_search_tool_result',
-        tool_use_id: block.tool_use_id,
-        content: block.content ?? [],
-      }];
-    }
-
-    return [block as Record<string, unknown>];
-  });
+    return [record.text];
+  }).join('\n\n').trim();
 }

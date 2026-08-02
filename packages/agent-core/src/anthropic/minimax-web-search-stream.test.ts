@@ -11,6 +11,7 @@ import {
   ANTHROPIC_ASSISTANT_CONTENT_BLOCKS_KEY,
   createMinimaxWebSearchStreamState,
   handleMinimaxWebSearchStreamPart,
+  resolveMinimaxWebSearchAssistantReplayText,
   shouldSuppressMinimaxWebSearchStreamError,
 } from './minimax-web-search-stream.js';
 
@@ -121,6 +122,16 @@ test('handleMinimaxWebSearchStreamPart records anthropic content blocks', () => 
   assert.equal(
     (state.anthropicContentBlocks[0] as { type?: string }).type,
     'server_tool_use',
+  );
+});
+
+test('resolveMinimaxWebSearchAssistantReplayText prefers message.content', () => {
+  assert.match(
+    resolveMinimaxWebSearchAssistantReplayText(
+      { role: 'assistant', content: 'Full merged answer.' },
+      [{ type: 'text', text: 'partial' }],
+    ),
+    /Full merged answer/,
   );
 });
 

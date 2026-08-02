@@ -74,7 +74,6 @@ import {
   shouldUseMinimaxServerToolsWebSearch,
 } from './minimax-server-tools.js';
 import {
-  anthropicAssistantContentBlocksToAiSdkParts,
   appendStreamingTextAnthropicBlock,
   buildMinimaxWebSearchAssistantMessageFields,
   createMinimaxWebSearchStreamState,
@@ -82,6 +81,7 @@ import {
   handleMinimaxWebSearchStreamPart,
   isMinimaxProviderBuiltinWebSearchToolName,
   readAnthropicAssistantContentBlocks,
+  resolveMinimaxWebSearchAssistantReplayText,
   shouldSuppressMinimaxWebSearchStreamError,
 } from './minimax-web-search-stream.js';
 import {
@@ -747,11 +747,11 @@ function userContentToAiSdkContent(
 function assistantMessageToAiSdkMessage(message: JsonObject): Record<string, unknown> | undefined {
   const anthropicBlocks = readAnthropicAssistantContentBlocks(message);
   if (anthropicBlocks) {
-    const blockParts = anthropicAssistantContentBlocksToAiSdkParts(anthropicBlocks);
-    if (blockParts.length > 0) {
+    const replayText = resolveMinimaxWebSearchAssistantReplayText(message, anthropicBlocks);
+    if (replayText.length > 0) {
       return {
         role: 'assistant',
-        content: blockParts,
+        content: replayText,
       };
     }
   }
