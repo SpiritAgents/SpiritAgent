@@ -91,6 +91,21 @@ export function anthropicModelsListUrl(baseUrl: string): string {
   return `${normalizeOpenAiApiBase(baseUrl)}${ANTHROPIC_MODELS_PATH}`;
 }
 
+/** MiniMax Messages transport lists models via OpenAI-compatible GET /v1/models on the same site origin. */
+export function minimaxOpenAiCompatibleListingBaseFromConnectBase(baseUrl: string): string {
+  const trimmed = baseUrl.trim().replace(/\/+$/, '');
+  if (!trimmed) {
+    return resolveProviderConnectApiBase('minimax', 'openai-compatible');
+  }
+
+  const withoutAnthropic = trimmed.replace(/\/anthropic\/v1$/i, '/v1');
+  if (withoutAnthropic !== trimmed) {
+    return withoutAnthropic;
+  }
+
+  return trimmed.endsWith('/v1') ? trimmed : `${trimmed}/v1`;
+}
+
 /**
  * Extract model ids from a JSON body shaped like OpenAI's list models response.
  * Tolerates missing `data` by returning an empty list.
@@ -2636,7 +2651,7 @@ export async function listProviderModels(
 
   if (options.provider === 'minimax' && options.transportKind === 'anthropic') {
     return listMinimaxModels({
-      baseUrl: resolveProviderConnectApiBase('minimax', 'openai-compatible'),
+      baseUrl: minimaxOpenAiCompatibleListingBaseFromConnectBase(options.baseUrl),
       apiKey: options.apiKey,
       ...(options.signal !== undefined ? { signal: options.signal } : {}),
     });

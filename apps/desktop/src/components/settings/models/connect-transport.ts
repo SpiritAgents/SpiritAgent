@@ -136,8 +136,12 @@ export function resolveConnectTransportKindForProvider(
     return "open-responses";
   }
 
-  if (provider === null || !providerSupportsConnectTransportPicker(provider)) {
+  if (provider === null) {
     return undefined;
+  }
+
+  if (!providerSupportsConnectTransportPicker(provider)) {
+    return connectTransportKind;
   }
 
   return connectTransportKind;

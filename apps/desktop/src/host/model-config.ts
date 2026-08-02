@@ -177,7 +177,9 @@ export function resolveDesktopTransportKind(
 
   return profile?.provider === 'anthropic'
     ? 'anthropic'
-    : profile?.provider === 'amazon-bedrock'
+    : profile?.provider === 'minimax'
+      ? 'anthropic'
+      : profile?.provider === 'amazon-bedrock'
       ? 'bedrock'
       : profile?.provider === 'azure' || profile?.provider === 'openai'
         ? 'open-responses'

@@ -55,6 +55,33 @@ test('resolveDesktopTransportKind forces openai to open-responses', () => {
   );
 });
 
+test('resolveDesktopTransportKind defaults minimax to anthropic', () => {
+  assert.equal(
+    resolveDesktopTransportKind({
+      provider: 'minimax',
+    }),
+    'anthropic',
+  );
+});
+
+test('buildPrimaryTransportConfig routes minimax to anthropic transport', () => {
+  const config = buildPrimaryTransportConfig({
+    apiKey: 'test-key',
+    model: 'MiniMax-M3',
+    baseUrl: 'https://api.minimaxi.com/anthropic/v1',
+    workspaceRoot: '/tmp',
+    profile: {
+      provider: 'minimax',
+      transportKind: 'anthropic',
+      providerSite: 'cn',
+      capabilities: ['chat'],
+    },
+  });
+
+  assert.equal(config.transportKind, 'anthropic');
+  assert.equal(config.llmVendor, 'minimax');
+});
+
 test('resolveProfileApiBase routes Bedrock mantle OpenAI models to bedrock-mantle endpoint', () => {
   assert.equal(
     resolveProfileApiBase({
