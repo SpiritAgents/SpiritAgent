@@ -73,8 +73,8 @@ test('getToolCallSummaryParts: shell prefixes reason and keeps command as detail
       detailLines: [],
     }),
     {
-      headline: '运行 执行并发命令',
-      shellSummary: { verb: '运行', reason: '执行并发命令' },
+      headline: '运行中 执行并发命令',
+      shellSummary: { verb: '运行中', reason: '执行并发命令' },
       detail: 'echo abc',
     },
   );
@@ -86,7 +86,7 @@ test('getToolCallSummaryParts: shell prefixes reason and keeps command as detail
       headlineDetail: 'npm install',
       detailLines: [],
     }),
-    { headline: i18n.t('tool.runCommand'), detail: 'npm install' },
+    { headline: i18n.t('tool.runCommand', { context: 'running' }), detail: 'npm install' },
   );
 });
 
@@ -137,7 +137,7 @@ test('getToolCallSummaryParts: dynamic re-translation on language switch', async
   // While still in Chinese, headline should remain Chinese
   assert.deepEqual(
     getToolCallSummaryParts(tool),
-    { headline: '创建', detail: 'App.tsx' },
+    { headline: '已创建', detail: 'App.tsx' },
   );
 
   // Switch to English — same snapshot should now render in English
@@ -176,7 +176,7 @@ test('getToolCallSummaryParts: grep detail re-translates on language switch', as
   }
 
   assert.deepEqual(getToolCallSummaryParts(tool), {
-    headline: '搜索',
+    headline: '已搜索',
     detail: 'ratatui 于 apps/cli/**/*.{rs,toml}',
   });
 });
@@ -199,6 +199,11 @@ test('getToolCallSummaryParts: apply_patch headline re-translates across locales
   } finally {
     await i18n.changeLanguage('zh-CN');
   }
+
+  assert.deepEqual(
+    getToolCallSummaryParts(tool),
+    { headline: '编辑中', detail: 'main.rs' },
+  );
 });
 
 test('getToolCallSummaryParts: shell default headline re-translates', async () => {
@@ -220,6 +225,11 @@ test('getToolCallSummaryParts: shell default headline re-translates', async () =
   } finally {
     await i18n.changeLanguage('zh-CN');
   }
+
+  assert.deepEqual(
+    getToolCallSummaryParts(tool),
+    { headline: '已运行命令', detail: 'ls -la' },
+  );
 });
 
 test('getToolCallSummaryParts: read_file SKILL.md prefers frontmatter name from output', async () => {
@@ -323,7 +333,7 @@ test('getToolCallSummaryParts: legacy Chinese "查看" headline still parsed and
       headline: '查看 src/App.tsx',
       detailLines: [],
     }),
-    { headline: '读取', detail: 'src/App.tsx' },
+    { headline: '已读取', detail: 'src/App.tsx' },
   );
 });
 
@@ -396,7 +406,7 @@ test('getToolCallSummaryParts: todo_write recomputes incremental detail from sna
       todoWriteBeforeTodos: [{ title: 'Inject haiku into main.rs', status: 'pending' }],
       detailLines: [],
     }),
-    { headline: '写入 TODO', detail: '完成 1 个' },
+    { headline: '已写入 TODO', detail: '完成 1 个' },
   );
 });
 
@@ -418,7 +428,7 @@ test('getToolCallSummaryParts: todo_write keeps snapshot detail when before snap
       }),
       detailLines: [],
     }),
-    { headline: '写入 TODO', detail: '完成 5 个' },
+    { headline: '已写入 TODO', detail: '完成 5 个' },
   );
 });
 
@@ -439,7 +449,7 @@ test('getToolCallSummaryParts: todo_write preview prefers snapshot over unreliab
       ],
       detailLines: [],
     }),
-    { headline: '写入 TODO', detail: '完成 5 个' },
+    { headline: '写入 TODO中', detail: '完成 5 个' },
   );
 });
 
@@ -516,11 +526,11 @@ test('getToolCallSummaryParts: lazy gateway tools re-translate on language switc
   };
 
   assert.deepEqual(getToolCallSummaryParts(describeTool), {
-    headline: '读取工具 schema',
+    headline: '已读取工具 schema',
     detail: 'mcp / microsoft-learn / microsoft_docs_search',
   });
   assert.deepEqual(getToolCallSummaryParts(callTool), {
-    headline: '调用工具',
+    headline: '调用工具中',
     detail: 'mcp / microsoft-learn / microsoft_docs_search',
   });
 
@@ -567,6 +577,42 @@ test('getToolCallSummaryParts: shell verb uses tense in English', async () => {
       {
         headline: 'Ran Install deps',
         shellSummary: { verb: 'Ran', reason: 'Install deps' },
+        detail: 'npm install',
+      },
+    );
+  } finally {
+    await i18n.changeLanguage('zh-CN');
+  }
+});
+
+test('getToolCallSummaryParts: shell verb uses tense in Chinese', async () => {
+  await i18n.changeLanguage('zh-CN');
+  try {
+    assert.deepEqual(
+      getToolCallSummaryParts({
+        toolName: 'shell',
+        phase: 'running',
+        headline: '安装依赖',
+        headlineDetail: 'npm install',
+        detailLines: [],
+      }),
+      {
+        headline: '运行中 安装依赖',
+        shellSummary: { verb: '运行中', reason: '安装依赖' },
+        detail: 'npm install',
+      },
+    );
+    assert.deepEqual(
+      getToolCallSummaryParts({
+        toolName: 'shell',
+        phase: 'succeeded',
+        headline: '安装依赖',
+        headlineDetail: 'npm install',
+        detailLines: [],
+      }),
+      {
+        headline: '已运行 安装依赖',
+        shellSummary: { verb: '已运行', reason: '安装依赖' },
         detail: 'npm install',
       },
     );

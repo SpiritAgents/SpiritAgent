@@ -196,7 +196,7 @@ test('toolCallSummaryForPhase: lazyToolGateway execution request preserves MCP d
     }),
   };
   assert.deepEqual(toolCallSummaryForPhase('running', 'tool_call', lazyRequest), {
-    headline: '调用工具',
+    headline: '调用工具中',
     headlineDetail: 'mcp / microsoft-learn / microsoft_docs_search',
   });
   assert.deepEqual(toolCallSummaryForPhase('succeeded', 'tool_describe', {
@@ -208,7 +208,7 @@ test('toolCallSummaryForPhase: lazyToolGateway execution request preserves MCP d
       tool: 'microsoft_docs_fetch',
     }),
   }), {
-    headline: '读取工具 schema',
+    headline: '已读取工具 schema',
     headlineDetail: 'mcp / microsoft-learn / microsoft_docs_fetch',
   });
 });
@@ -367,7 +367,7 @@ test('toolCallSummaryCopyForRequest: todo_write shows incremental delta detail',
         todosBeforeWrite: [{ title: 'Old task', status: 'pending' }],
       },
     ),
-    { headline: '写入 TODO', headlineDetail: '增加 2 个，移除 1 个' },
+    { headline: '已写入 TODO', headlineDetail: '增加 2 个，移除 1 个' },
   );
   assert.deepEqual(
     toolCallSummaryCopyForRequest(
@@ -378,7 +378,7 @@ test('toolCallSummaryCopyForRequest: todo_write shows incremental delta detail',
         todosBeforeWrite: [{ title: 'Only one item', status: 'pending' }],
       },
     ),
-    { headline: '写入 TODO', headlineDetail: '移除 1 个' },
+    { headline: '已写入 TODO', headlineDetail: '移除 1 个' },
   );
 });
 
@@ -395,7 +395,7 @@ test('toolCallSummaryForPhase: todo_write succeeded uses before snapshot and out
         todosBeforeWrite: [{ title: 'Draft', status: 'pending' }],
       },
     ),
-    { headline: '写入 TODO', headlineDetail: '完成 1 个' },
+    { headline: '已写入 TODO', headlineDetail: '完成 1 个' },
   );
 });
 
@@ -406,7 +406,7 @@ test('toolCallSummaryForPhase: read_file splits headline and path detail', () =>
       offset: 1,
       limit: 50,
     }),
-    { headline: '读取', headlineDetail: 'App.tsx 1 - 50' },
+    { headline: '已读取', headlineDetail: 'App.tsx 1 - 50' },
   );
 });
 
@@ -417,7 +417,7 @@ test('toolCallSummaryForPhase: read_file tool-output-archives uses tool output d
       offset: 1,
       limit: 5,
     }),
-    { headline: '读取', headlineDetail: '工具输出 1 - 5' },
+    { headline: '已读取', headlineDetail: '工具输出 1 - 5' },
   );
 });
 
@@ -536,16 +536,16 @@ test('finishTaskNoticePreviewFromArguments streams partial summary text', () => 
   );
 });
 
-test('toolCallSummaryCopyForRequest: Chinese verbs unchanged across phases', () => {
+test('toolCallSummaryCopyForRequest: Chinese verbs use tense across phases', () => {
   const running = toolCallSummaryCopyForRequest('create_file', { path: 'a.ts' }, 'running');
   const succeeded = toolCallSummaryCopyForRequest('create_file', { path: 'a.ts' }, 'succeeded');
-  assert.equal(running.headline, '创建');
-  assert.equal(succeeded.headline, '创建');
+  assert.equal(running.headline, '创建中');
+  assert.equal(succeeded.headline, '已创建');
 
   const viewRunning = toolCallSummaryForPhase('running', 'read_file', { path: 'b.ts' });
   const viewDone = toolCallSummaryForPhase('succeeded', 'read_file', { path: 'b.ts' });
-  assert.equal(viewRunning.headline, '读取');
-  assert.equal(viewDone.headline, '读取');
+  assert.equal(viewRunning.headline, '读取中');
+  assert.equal(viewDone.headline, '已读取');
 });
 
 test('toolCallSummaryCopyForRequest: English verbs use progressive in running phase', async () => {
@@ -584,6 +584,40 @@ test('toolCallSummaryCopyForRequest: English verbs use progressive in running ph
   }
 });
 
+test('toolCallSummaryCopyForRequest: Chinese verbs use progressive in running phase', () => {
+  assert.deepEqual(
+    toolCallSummaryCopyForRequest('create_file', { path: 'a.ts' }, 'running'),
+    { headline: '创建中', headlineDetail: 'a.ts' },
+  );
+  assert.deepEqual(
+    toolCallSummaryCopyForRequest('edit_file', { path: 'b.ts' }, 'running'),
+    { headline: '编辑中', headlineDetail: 'b.ts' },
+  );
+  assert.deepEqual(
+    toolCallSummaryCopyForRequest('delete_file', { path: 'c.ts' }, 'running'),
+    { headline: '删除中', headlineDetail: 'c.ts' },
+  );
+  assert.deepEqual(
+    toolCallSummaryCopyForRequest('ls', { path: 'src/' }, 'running'),
+    { headline: '列出中', headlineDetail: 'src/' },
+  );
+});
+
+test('toolCallSummaryCopyForRequest: Chinese verbs use past tense in succeeded phase', () => {
+  assert.deepEqual(
+    toolCallSummaryCopyForRequest('create_file', { path: 'a.ts' }, 'succeeded'),
+    { headline: '已创建', headlineDetail: 'a.ts' },
+  );
+  assert.deepEqual(
+    toolCallSummaryCopyForRequest('edit_file', { path: 'b.ts' }, 'succeeded'),
+    { headline: '已编辑', headlineDetail: 'b.ts' },
+  );
+  assert.deepEqual(
+    toolCallSummaryCopyForRequest('ls', { path: 'src/' }, 'succeeded'),
+    { headline: '已列出', headlineDetail: 'src/' },
+  );
+});
+
 test('toolCallSummaryCopyForRequest: English verbs use past tense in succeeded phase', async () => {
   await i18n.changeLanguage('en');
   try {
@@ -613,7 +647,7 @@ test('toolCallSummaryCopyForRequest: ls uses relative path within workspace', ()
       'succeeded',
       { workspaceRoot },
     ),
-    { headline: '列出', headlineDetail: 'apps/cli' },
+    { headline: '已列出', headlineDetail: 'apps/cli' },
   );
   assert.deepEqual(
     toolCallSummaryCopyForRequest(
@@ -622,7 +656,7 @@ test('toolCallSummaryCopyForRequest: ls uses relative path within workspace', ()
       'running',
       { workspaceRoot },
     ),
-    { headline: '列出', headlineDetail: '.' },
+    { headline: '列出中', headlineDetail: '.' },
   );
   assert.deepEqual(
     toolCallSummaryCopyForRequest(
@@ -631,7 +665,7 @@ test('toolCallSummaryCopyForRequest: ls uses relative path within workspace', ()
       'succeeded',
       { workspaceRoot },
     ),
-    { headline: '列出', headlineDetail: '/tmp/foo' },
+    { headline: '已列出', headlineDetail: '/tmp/foo' },
   );
   assert.deepEqual(
     toolCallSummaryCopyForRequest(
@@ -640,7 +674,7 @@ test('toolCallSummaryCopyForRequest: ls uses relative path within workspace', ()
       'succeeded',
       { workspaceRoot },
     ),
-    { headline: '列出', headlineDetail: 'apps/' },
+    { headline: '已列出', headlineDetail: 'apps/' },
   );
 });
 
@@ -654,7 +688,7 @@ test('toolCallSummaryForStreamingPreview: ls uses relative path within workspace
       { path: '/Users/yu/proj/apps' },
       { workspaceRoot },
     ),
-    { headline: '列出', headlineDetail: 'apps' },
+    { headline: '列出中', headlineDetail: 'apps' },
   );
 });
 
@@ -676,7 +710,7 @@ description: Developer debug access
     toolCallSummaryForPhase('succeeded', 'read_file', {
       path: 'skills/wrong-folder/SKILL.md',
     }, { executionOutput: skillMarkdown }),
-    { headline: '使用', headlineDetail: 'llm-debug' },
+    { headline: '已使用', headlineDetail: 'llm-debug' },
   );
 });
 
@@ -685,7 +719,7 @@ test('toolCallSummaryForPhase: read_file SKILL.md omits detail without frontmatt
     toolCallSummaryForPhase('succeeded', 'read_file', {
       path: 'skills/git-commit/SKILL.md',
     }),
-    { headline: '使用' },
+    { headline: '已使用' },
   );
 
   await i18n.changeLanguage('en');
