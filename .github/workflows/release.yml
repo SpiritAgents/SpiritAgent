@@ -18,8 +18,6 @@ permissions:
 
 env:
   RELEASE_VERSION: ${{ inputs.version }}
-  NODE_VERSION: '24'
-  SPIRIT_RELEASE_NODE_MAJOR: '24'
 
 jobs:
   verify:
@@ -32,7 +30,7 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: ${{ env.NODE_VERSION }}
+          node-version-file: '.nvmrc'
           registry-url: https://registry.npmjs.org/
 
       - name: Require Desktop GitHub OAuth Client ID secret
@@ -89,7 +87,7 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: ${{ env.NODE_VERSION }}
+          node-version-file: '.nvmrc'
           registry-url: https://registry.npmjs.org/
           cache: npm
           cache-dependency-path: package-lock.json
@@ -251,7 +249,7 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: ${{ env.NODE_VERSION }}
+          node-version-file: '.nvmrc'
           registry-url: https://registry.npmjs.org/
           cache: npm
           cache-dependency-path: |
@@ -498,7 +496,7 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: ${{ env.NODE_VERSION }}
+          node-version-file: '.nvmrc'
 
       # Two scoped downloads rather than one bulk fetch: the unnotarized-* staging artifacts carry
       # the same filenames as their notarized replacements and must not reach the release.
@@ -561,7 +559,7 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: ${{ env.NODE_VERSION }}
+          node-version-file: '.nvmrc'
           # No registry-url: Trusted Publishing uses OIDC. setup-node registry-url injects
           # _authToken=${NODE_AUTH_TOKEN} (often GitHub token), which skips OIDC and breaks publish.
           cache: npm
