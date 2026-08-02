@@ -83,8 +83,9 @@ const TOOL_VERB_KEY_MAP: Record<string, string> = {
  * any locale) vs a custom model-supplied reason.
  */
 const RUN_COMMAND_DEFAULT_HEADLINES = new Set([
-  // zh-CN (base key; no _running/_succeeded variants → same value)
   '运行命令',
+  '运行命令中',
+  '已运行命令',
   // en base + context variants
   'Run command',
   'Running command',
@@ -93,9 +94,9 @@ const RUN_COMMAND_DEFAULT_HEADLINES = new Set([
 
 /** Reverse-map an apply_patch headline back to its verb key. */
 const APPLY_PATCH_VERB_VARIANTS: ReadonlyArray<{ key: string; values: Set<string> }> = [
-  { key: 'tool.create', values: new Set(['创建', 'Create', 'Creating', 'Created']) },
-  { key: 'tool.edit', values: new Set(['编辑', 'Edit', 'Editing', 'Edited']) },
-  { key: 'tool.delete', values: new Set(['删除', 'Delete', 'Deleting', 'Deleted']) },
+  { key: 'tool.create', values: new Set(['创建', '创建中', '已创建', 'Create', 'Creating', 'Created']) },
+  { key: 'tool.edit', values: new Set(['编辑', '编辑中', '已编辑', 'Edit', 'Editing', 'Edited']) },
+  { key: 'tool.delete', values: new Set(['删除', '删除中', '已删除', 'Delete', 'Deleting', 'Deleted']) },
 ];
 
 function shellToolSummaryFromReason(
