@@ -2804,6 +2804,8 @@ class DesktopHostService {
         ? azureResourceNameReady && Boolean(apiKey)
         : activeProfile?.provider === 'cloudflare-ai-gateway'
           ? cloudflareConnectReady && Boolean(apiKey)
+        : activeProfile?.provider === 'custom'
+          ? true
         : Boolean(apiKey);
     this.activeApiKeyConfigured = runtimeAuthReady;
     const extensionSystemPrompts = this.extensionWarmup.systemPromptsCache;
@@ -2833,6 +2835,8 @@ class DesktopHostService {
       await this.refreshModelKeyPresence();
       return;
     }
+
+    this.lastRuntimeError = '';
 
     let runtimeTransportConfig = buildPrimaryTransportConfig({
       apiKey: apiKey ?? bedrockCredentials?.apiKey ?? '',

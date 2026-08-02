@@ -370,9 +370,6 @@ export function ProviderConnectDialog({
     if (!connectApiBase.trim()) {
       throw new Error(t('settings.endpointRequired'));
     }
-    if (!connectApiKey.trim()) {
-      throw new Error(t('settings.apiKeyRequired'));
-    }
     const contextLengthRaw = connectContextLength.trim();
     let contextLength: number | undefined;
     if (contextLengthRaw) {
@@ -1205,8 +1202,7 @@ export function ProviderConnectDialog({
                     busy ||
                     previewBusy ||
                     !connectName.trim() ||
-                    !connectApiBase.trim() ||
-                    !connectApiKey.trim()
+                    !connectApiBase.trim()
                   }
                   onClick={() => {
                     void (async () => {
@@ -1230,7 +1226,6 @@ export function ProviderConnectDialog({
                     busy
                     || previewBusy
                     || !connectApiBase.trim()
-                    || !connectApiKey.trim()
                   }
                   onClick={() => {
                     void (async () => {

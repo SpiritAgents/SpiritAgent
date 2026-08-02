@@ -605,8 +605,10 @@ impl TuiShell {
             return Err(err.to_string());
         }
 
-        if let Err(err) = self.secret_store.save_model_api_key(name, api_key) {
-            return Err(t!("tui.model_add.key_save_failed", err = err).into_owned());
+        if !api_key.trim().is_empty() {
+            if let Err(err) = self.secret_store.save_model_api_key(name, api_key) {
+                return Err(t!("tui.model_add.key_save_failed", err = err).into_owned());
+            }
         }
 
         if let Err(err) = self.config_store.save(&config) {

@@ -622,10 +622,12 @@ impl TuiShell {
                     ) {
                         return Err(t!("tui.model_add.key_save_failed", err = err.to_string()).into_owned());
                     }
-            } else if let Err(err) =
-                crate::model_registry::save_group_api_key(&group_id, parsed.api_key.as_str())
-            {
-                return Err(t!("tui.model_add.key_save_failed", err = err.to_string()).into_owned());
+            } else if !parsed.api_key.trim().is_empty() {
+                if let Err(err) =
+                    crate::model_registry::save_group_api_key(&group_id, parsed.api_key.as_str())
+                {
+                    return Err(t!("tui.model_add.key_save_failed", err = err.to_string()).into_owned());
+                }
             }
             added += 1;
             if first_new.is_none() {

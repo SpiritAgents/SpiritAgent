@@ -1780,9 +1780,18 @@ pub fn has_google_vertex_runtime_credentials(
 
 pub fn save_group_api_key(group_id: &str, api_key: &str) -> Result<()> {
     let entry = keyring_entry_for_account(&group_key_account(group_id))?;
-    entry
-        .set_password(api_key.trim())
-        .with_context(|| format!("保存 provider group {group_id} 的 API Key 失败"))
+    if api_key.trim().is_empty() {
+        match entry.delete_password() {
+            Ok(_) | Err(keyring::Error::NoEntry) => Ok(()),
+            Err(err) => Err(anyhow::anyhow!(
+                "删除 provider group {group_id} 的 API Key 失败: {err}"
+            )),
+        }
+    } else {
+        entry
+            .set_password(api_key.trim())
+            .with_context(|| format!("保存 provider group {group_id} 的 API Key 失败"))
+    }
 }
 
 pub fn save_group_vertex_credentials(

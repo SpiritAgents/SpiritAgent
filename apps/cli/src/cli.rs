@@ -313,7 +313,8 @@ pub fn handle_model_cli(action: ModelCommand) -> Result<()> {
                     None => rpassword::prompt_password(&t!("cli.model.prompt_api_key"))
                         .context(t!("cli.model.api_key_read_failed").into_owned())?,
                 };
-                if key_value.trim().is_empty() {
+                let resolved_provider = provider.unwrap_or(ModelProvider::Custom);
+                if key_value.trim().is_empty() && resolved_provider != ModelProvider::Custom {
                     return Err(anyhow!("{}", t!("cli.model.error.api_key_empty")));
                 }
                 let context_length = match context_length {
@@ -327,7 +328,6 @@ pub fn handle_model_cli(action: ModelCommand) -> Result<()> {
                     Some(value) => Some(value),
                 };
 
-                let resolved_provider = provider.unwrap_or(ModelProvider::Custom);
                 let group_id = default_preset_provider_group_id(resolved_provider);
                 let connect = ProviderGroupConnectDraft {
                     transport_kind: (transport_kind == ModelTransportKind::Anthropic
@@ -388,7 +388,9 @@ pub fn handle_model_cli(action: ModelCommand) -> Result<()> {
                     cfg.video_generation_model = Some(model_ref.clone());
                 }
                 cfg.active_model = model_ref;
-                save_group_api_key(&group_id, &key_value)?;
+                if !key_value.trim().is_empty() {
+                    save_group_api_key(&group_id, &key_value)?;
+                }
                 config_store.save(&cfg)?;
                 println!("{}", t!("cli.model.added_and_active", name = name));
                 println!("api_base: {}", api_base);

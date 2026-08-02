@@ -378,6 +378,10 @@ async function saveGroupCredentials(
     });
     return;
   }
+  if (!input.apiKey.trim()) {
+    await removeProviderApiKey(groupId);
+    return;
+  }
   await saveApiKeyForProvider(groupId, input.apiKey);
 }
 
@@ -1021,7 +1025,7 @@ export async function previewModelsCommand(request: PreviewModelsRequest): Promi
       vertexProject,
       vertexLocation,
     });
-  } else if (provider !== 'cloudflare-ai-gateway' && !apiKey) {
+  } else if (provider !== 'cloudflare-ai-gateway' && provider !== 'custom' && !apiKey) {
     throw new Error(i18n.t('error.apiKeyRequired'));
   }
   const result = await loadPreviewModelsForTransport({
@@ -1123,7 +1127,7 @@ export async function addProviderModelsCommand(
         vertexProject,
         vertexLocation,
       });
-    } else if (provider !== 'cloudflare-ai-gateway' && !apiKey) {
+    } else if (provider !== 'cloudflare-ai-gateway' && provider !== 'custom' && !apiKey) {
       throw new Error(i18n.t('error.apiKeyRequired'));
     }
 
@@ -1370,7 +1374,7 @@ export async function addModelCommand(
       });
     } else if (provider === 'azure' && /\s/u.test(name)) {
       throw new Error(i18n.t('error.azureDeploymentNameWhitespace'));
-    } else if (provider !== 'cloudflare-ai-gateway' && !apiKey) {
+    } else if (provider !== 'cloudflare-ai-gateway' && provider !== 'custom' && !apiKey) {
       throw new Error(i18n.t('error.apiKeyRequired'));
     }
     if (modelExistsInGroup(state.config, groupId, name)) {

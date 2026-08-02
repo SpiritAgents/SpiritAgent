@@ -63,9 +63,6 @@ pub fn list_openai_compatible_model_ids(
     api_key: &str,
 ) -> Result<Vec<String>, String> {
     let key = api_key.trim();
-    if key.is_empty() {
-        return Err("API Key 不能为空。".to_string());
-    }
 
     let url = openai_compatible_models_list_url(api_base);
     let client = reqwest::blocking::Client::builder()
@@ -73,9 +70,11 @@ pub fn list_openai_compatible_model_ids(
         .build()
         .map_err(|e| format!("HTTP 客户端初始化失败：{e}"))?;
 
-    let response = client
-        .get(&url)
-        .header("Authorization", format!("Bearer {key}"))
+    let mut request = client.get(&url);
+    if !key.is_empty() {
+        request = request.header("Authorization", format!("Bearer {key}"));
+    }
+    let response = request
         .send()
         .map_err(|e| format!("列模型请求失败：{e}"))?;
 
@@ -114,9 +113,6 @@ pub fn list_openai_compatible_model_ids(
 
 pub fn list_anthropic_model_ids(api_base: &str, api_key: &str) -> Result<Vec<String>, String> {
     let key = api_key.trim();
-    if key.is_empty() {
-        return Err("API Key 不能为空。".to_string());
-    }
 
     let url = anthropic_models_list_url(api_base);
     let client = reqwest::blocking::Client::builder()
@@ -124,10 +120,13 @@ pub fn list_anthropic_model_ids(api_base: &str, api_key: &str) -> Result<Vec<Str
         .build()
         .map_err(|e| format!("HTTP 客户端初始化失败：{e}"))?;
 
-    let response = client
+    let mut request = client
         .get(&url)
-        .header("x-api-key", key)
-        .header("anthropic-version", ANTHROPIC_VERSION)
+        .header("anthropic-version", ANTHROPIC_VERSION);
+    if !key.is_empty() {
+        request = request.header("x-api-key", key);
+    }
+    let response = request
         .send()
         .map_err(|e| format!("列模型请求失败：{e}"))?;
 

@@ -2123,6 +2123,17 @@ export interface ListProviderModelIdsOptions {
   signal?: AbortSignal;
 }
 
+function requireApiKeyForModelListing(apiKey: string, provider?: ModelProviderId): void {
+  if (!apiKey.trim() && provider !== 'custom') {
+    throw new Error('API Key 不能为空。');
+  }
+}
+
+function bearerAuthHeaders(apiKey: string): Record<string, string> {
+  const key = apiKey.trim();
+  return key ? { Authorization: `Bearer ${key}` } : {};
+}
+
 /**
  * `GET {baseUrl}/models` with Bearer auth; returns sorted unique ids.
  * @throws Error with a short Chinese message on network/HTTP/parse failure.
@@ -2188,9 +2199,9 @@ async function fetchModelsListJson(url: string, init: RequestInit): Promise<unkn
 }
 
 export async function listOpenAiCompatibleModels(
-  options: ListOpenAiCompatibleModelIdsOptions,
+  options: ListOpenAiCompatibleModelIdsOptions & { provider?: ModelProviderId },
 ): Promise<ProviderListedModelEntry[]> {
-  return listOpenAiCompatibleModelsForProvider(options);
+  return listOpenAiCompatibleModelsForProvider(options, options.provider);
 }
 
 async function listOpenAiCompatibleModelsForProvider(
@@ -2198,14 +2209,9 @@ async function listOpenAiCompatibleModelsForProvider(
   provider?: ModelProviderId,
 ): Promise<ProviderListedModelEntry[]> {
   const url = openAiCompatibleModelsListUrl(options.baseUrl);
-  const key = options.apiKey.trim();
-  if (!key) {
-    throw new Error('API Key 不能为空。');
-  }
+  requireApiKeyForModelListing(options.apiKey, provider);
 
-  const headers: Record<string, string> = {
-    Authorization: `Bearer ${key}`,
-  };
+  const headers: Record<string, string> = bearerAuthHeaders(options.apiKey);
 
   const init: RequestInit = { method: 'GET', headers };
   if (options.signal !== undefined) {
@@ -2225,17 +2231,14 @@ export async function listAnthropicModelIds(
 }
 
 export async function listAnthropicModels(
-  options: ListAnthropicModelIdsOptions,
+  options: ListAnthropicModelIdsOptions & { provider?: ModelProviderId },
 ): Promise<ProviderListedModelEntry[]> {
   const url = anthropicModelsListUrl(options.baseUrl);
-  const key = options.apiKey.trim();
-  if (!key) {
-    throw new Error('API Key 不能为空。');
-  }
+  requireApiKeyForModelListing(options.apiKey, options.provider);
 
   const headers: Record<string, string> = {
-    'x-api-key': key,
     'anthropic-version': ANTHROPIC_VERSION,
+    ...(options.apiKey.trim() ? { 'x-api-key': options.apiKey.trim() } : {}),
   };
 
   const init: RequestInit = { method: 'GET', headers };

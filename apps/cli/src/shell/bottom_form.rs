@@ -1993,7 +1993,7 @@ pub(crate) fn parse_model_add_connection(
             vertex_client_email = Some(client_email);
             vertex_private_key = Some(private_key);
         }
-    } else if api_key.is_empty() {
+    } else if api_key.is_empty() && provider != ModelProvider::Custom {
         return Err(t!("form.model.validation.api_key_empty").into_owned());
     }
 

@@ -289,6 +289,7 @@ export function resolveTransportConfig(config: AcpServerConfig): LlmTransportCon
   } else if (
     !apiKey.trim()
     && profile.provider !== 'amazon-bedrock'
+    && profile.provider !== 'custom'
   ) {
     throw new Error(`No API key found for model "${profile.name}". Run --setup again.`);
   }
