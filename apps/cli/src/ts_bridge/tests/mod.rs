@@ -667,6 +667,33 @@ fn resolve_transport_config_json_uses_anthropic_union_shape() {
 }
 
 #[test]
+fn resolve_transport_config_json_sets_llm_vendor_for_minimax_anthropic() {
+    let Some(runtime) = make_test_runtime() else {
+        return;
+    };
+
+    let mut next = runtime.config().clone();
+    if let Some(group) = next.active_provider_group_mut() {
+        group.provider = ModelProvider::Minimax;
+        group.transport_kind = Some("anthropic".to_string());
+        group.api_base = "https://api.minimaxi.com/anthropic/v1".to_string();
+    }
+
+    let transport = runtime
+        .resolve_transport_config_json_for(&next)
+        .expect("resolve transport config");
+
+    assert_eq!(
+        transport.get("transportKind").and_then(Value::as_str),
+        Some("anthropic")
+    );
+    assert_eq!(
+        transport.get("llmVendor").and_then(Value::as_str),
+        Some("minimax")
+    );
+}
+
+#[test]
 fn transport_config_change_detects_model_knobs() {
     let Some(runtime) = make_test_runtime() else {
         return;
