@@ -3,7 +3,8 @@ import { test } from 'node:test';
 
 import { applyCodeCompletionTransportProfile } from '../code-completion/transport-profile.js';
 import { setLlmFetchTransportOverrideForTests } from '../llm-fetch.js';
-import { AiSdkAnthropicTransport } from './ai-sdk-transport.js';
+import { AiSdkAnthropicTransport, convertAnthropicToolStateMessagesForTests } from './ai-sdk-transport.js';
+import { ANTHROPIC_ASSISTANT_CONTENT_BLOCKS_KEY } from './minimax-web-search-stream.js';
 
 test('MiniMax anthropic transport uses minimax anthropic endpoint', async () => {
   const capturedUrls: string[] = [];
@@ -58,4 +59,47 @@ test('MiniMax anthropic code-completion profile disables M3 thinking', () => {
   if (profiled.transportKind === 'anthropic') {
     assert.equal(profiled.vendorExtendedThinking, false);
   }
+});
+
+test('MiniMax web search replay keeps reasoning parts in follow-up AI SDK messages', () => {
+  const minimaxConfig = {
+    transportKind: 'anthropic' as const,
+    apiKey: 'test-key',
+    model: 'MiniMax-M3',
+    baseUrl: 'https://api.minimax.io/anthropic/v1',
+    llmVendor: 'minimax' as const,
+    workspaceRoot: process.cwd(),
+  };
+
+  const converted = convertAnthropicToolStateMessagesForTests([
+    { role: 'user', content: 'Beijing weather' },
+    {
+      role: 'assistant',
+      content: 'Here is the weather summary.',
+      reasoning_parts: [{
+        type: 'reasoning',
+        text: 'I should search for current weather first.',
+      }],
+      [ANTHROPIC_ASSISTANT_CONTENT_BLOCKS_KEY]: [
+        {
+          type: 'server_tool_use',
+          id: 'call_search',
+          name: 'web_search',
+          input: { query: 'Beijing weather' },
+        },
+        { type: 'text', text: 'ignored block text' },
+      ],
+    },
+    { role: 'user', content: 'Thanks, what about tomorrow?' },
+  ], minimaxConfig);
+
+  const replayedAssistant = converted.find((message) => message.role === 'assistant');
+  assert.ok(replayedAssistant);
+  assert.ok(Array.isArray(replayedAssistant.content));
+  const content = replayedAssistant.content as Array<Record<string, unknown>>;
+  assert.equal(content.length, 2);
+  assert.equal(content[0]?.type, 'reasoning');
+  assert.match(String(content[0]?.text), /search for current weather/);
+  assert.equal(content[1]?.type, 'text');
+  assert.match(String(content[1]?.text), /weather summary/);
 });

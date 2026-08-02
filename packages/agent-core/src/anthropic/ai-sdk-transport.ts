@@ -749,6 +749,22 @@ function assistantMessageToAiSdkMessage(message: JsonObject): Record<string, unk
   if (anthropicBlocks) {
     const replayText = resolveMinimaxWebSearchAssistantReplayText(message, anthropicBlocks);
     if (replayText.length > 0) {
+      const reasoningParts = extractStoredAnthropicReasoningParts(message);
+      const reasoningText = extractAssistantReasoningContentFromJson(message);
+      if (reasoningParts.length > 0 || reasoningText.length > 0) {
+        const contentParts: Array<Record<string, unknown>> = [];
+        if (reasoningParts.length > 0) {
+          contentParts.push(...reasoningParts);
+        } else {
+          contentParts.push({ type: 'reasoning', text: reasoningText });
+        }
+        contentParts.push({ type: 'text', text: replayText });
+        return {
+          role: 'assistant',
+          content: contentParts,
+        };
+      }
+
       return {
         role: 'assistant',
         content: replayText,
@@ -1564,3 +1580,6 @@ function isAnthropicToolCallDeltaPart(
     && typeof (part as { toolName?: unknown }).toolName === 'string'
     && typeof (part as { argsTextDelta?: unknown }).argsTextDelta === 'string';
 }
+
+/** @internal Exported for unit tests only. */
+export const convertAnthropicToolStateMessagesForTests = toolStateMessagesToAiSdkMessages;
