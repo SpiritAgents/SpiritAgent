@@ -35,6 +35,15 @@ test('classifyProcessToolCategory: apply_patch uses headline verb', () => {
   assert.equal(classifyProcessToolCategory('apply_patch', '删除'), 'delete');
 });
 
+test('classifyProcessToolCategory: apply_patch recognizes zh-CN tense headlines', () => {
+  assert.equal(classifyProcessToolCategory('apply_patch', '已创建'), 'create');
+  assert.equal(classifyProcessToolCategory('apply_patch', '创建中'), 'create');
+  assert.equal(classifyProcessToolCategory('apply_patch', '已编辑'), 'edit');
+  assert.equal(classifyProcessToolCategory('apply_patch', '编辑中'), 'edit');
+  assert.equal(classifyProcessToolCategory('apply_patch', '已删除'), 'delete');
+  assert.equal(classifyProcessToolCategory('apply_patch', '删除中'), 'delete');
+});
+
 test('aggregateProcessToolCounts counts each tool once', () => {
   const counts = aggregateProcessToolCounts([
     { toolName: 'read_file', headline: 'Viewed' },

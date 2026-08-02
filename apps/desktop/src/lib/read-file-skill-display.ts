@@ -113,6 +113,8 @@ export function parseReadFileRequestRecordFromArgsExcerpt(
 
 const STORED_READ_FILE_USE_HEADLINES = new Set([
   '使用',
+  '使用中',
+  '已使用',
   'Use',
   'Using',
   'Used',

@@ -60,9 +60,9 @@ export function isProcessGroupExcludedToolName(toolName: string): boolean {
   return PROCESS_GROUP_EXCLUDED_TOOL_NAMES.has(toolName);
 }
 
-const APPLY_PATCH_CREATE = new Set(['创建', 'Create', 'Creating', 'Created']);
-const APPLY_PATCH_EDIT = new Set(['编辑', 'Edit', 'Editing', 'Edited']);
-const APPLY_PATCH_DELETE = new Set(['删除', 'Delete', 'Deleting', 'Deleted']);
+const APPLY_PATCH_CREATE = new Set(['创建', '创建中', '已创建', 'Create', 'Creating', 'Created']);
+const APPLY_PATCH_EDIT = new Set(['编辑', '编辑中', '已编辑', 'Edit', 'Editing', 'Edited']);
+const APPLY_PATCH_DELETE = new Set(['删除', '删除中', '已删除', 'Delete', 'Deleting', 'Deleted']);
 
 export function emptyProcessToolCounts(): ProcessToolCounts {
   return {

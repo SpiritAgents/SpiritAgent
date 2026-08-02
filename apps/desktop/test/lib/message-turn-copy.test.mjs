@@ -50,7 +50,7 @@ test('formatAssistantTurnCopyText preserves body and tool order without thinking
 
   assert.equal(
     formatAssistantTurnCopyText(messages, 3),
-    ['读取 foo.txt', 'Here is the summary.'].join('\n\n'),
+    ['已读取 foo.txt', 'Here is the summary.'].join('\n\n'),
   );
 });
 
@@ -89,7 +89,7 @@ test('formatToolCallSummaryPlainText: read_file uses headline and detail', () =>
       headlineDetail: 'foo.txt',
       detailLines: [],
     }),
-    '读取 foo.txt',
+    '已读取 foo.txt',
   );
 });
 
@@ -102,7 +102,7 @@ test('formatToolCallSummaryPlainText: shell with reason and command', () => {
       headlineDetail: 'echo abc',
       detailLines: [],
     }),
-    '运行 执行并发命令 echo abc',
+    '运行中 执行并发命令 echo abc',
   );
 });
 
