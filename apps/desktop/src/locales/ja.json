@@ -362,6 +362,8 @@
     "selectProviderDescription": "プロバイダを選択し、接続情報を入力してください。",
     "customConnection": "カスタム接続",
     "customConnectionDescription": "最初にAPIタイプを選択し、その後エンドポイントとキーを入力してください。",
+    "customGroupLabel": "プロバイダー名",
+    "customGroupLabelPlaceholder": "例: My Local API",
     "providerConnectionDescription": "最初にAPIタイプを選択し、その後APIキーを入力してください。",
     "volcengineConnectionDescription": "APIタイプを選択し、APIキーを入力してください。",
     "providerSimpleDescription": "APIキーを入力して接続します。",

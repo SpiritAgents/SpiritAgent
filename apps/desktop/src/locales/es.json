@@ -362,6 +362,8 @@
     "selectProviderDescription": "Selecciona un proveedor e ingresa la información de conexión.",
     "customConnection": "Conexión personalizada",
     "customConnectionDescription": "Primero selecciona el tipo de API, luego ingresa el endpoint y la clave.",
+    "customGroupLabel": "Nombre del proveedor",
+    "customGroupLabelPlaceholder": "p. ej. My Local API",
     "providerConnectionDescription": "Primero selecciona el tipo de API, luego ingresa la clave de API.",
     "volcengineConnectionDescription": "Selecciona el tipo de API, luego ingresa la clave de API.",
     "providerSimpleDescription": "Ingresa la clave de API para conectar.",

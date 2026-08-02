@@ -362,6 +362,8 @@
     "selectProviderDescription": "选择后填写连接信息。",
     "customConnection": "自定义连接",
     "customConnectionDescription": "先选择 API 类型，再填写端点与密钥。",
+    "customGroupLabel": "提供商名称",
+    "customGroupLabelPlaceholder": "例如 My Local API",
     "providerConnectionDescription": "先选择 API 类型，再填写 API Key。",
     "volcengineConnectionDescription": "先选择 API 类型，再填写 API Key。",
     "providerSimpleDescription": "填写 API Key 即可连接。",

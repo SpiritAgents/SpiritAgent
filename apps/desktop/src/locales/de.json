@@ -362,6 +362,8 @@
     "selectProviderDescription": "Wählen Sie einen Anbieter aus und geben Sie Verbindungsinformationen ein.",
     "customConnection": "Benutzerdefinierte Verbindung",
     "customConnectionDescription": "Wählen Sie zuerst den API-Typ, dann geben Sie Endpunkt und Schlüssel ein.",
+    "customGroupLabel": "Anbietername",
+    "customGroupLabelPlaceholder": "z. B. My Local API",
     "providerConnectionDescription": "Wählen Sie zuerst den API-Typ, dann geben Sie den API-Schlüssel ein.",
     "volcengineConnectionDescription": "API-Typ auswählen, dann API-Schlüssel eingeben.",
     "providerSimpleDescription": "API-Schlüssel eingeben, um eine Verbindung herzustellen.",

@@ -362,6 +362,8 @@
     "selectProviderDescription": "選擇一個提供商並填寫連線資訊。",
     "customConnection": "自訂連線",
     "customConnectionDescription": "先選擇 API 類型，再填寫端點和金鑰。",
+    "customGroupLabel": "提供商名稱",
+    "customGroupLabelPlaceholder": "例如 My Local API",
     "providerConnectionDescription": "先選擇 API 類型，再填寫 API 金鑰。",
     "volcengineConnectionDescription": "選擇 API 類型，然後輸入 API 金鑰。",
     "providerSimpleDescription": "填寫 API 金鑰即可連線。",

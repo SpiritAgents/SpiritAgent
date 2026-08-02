@@ -362,6 +362,8 @@
     "selectProviderDescription": "Выберите провайдера и укажите параметры подключения.",
     "customConnection": "Пользовательское подключение",
     "customConnectionDescription": "Сначала выберите тип API, затем укажите endpoint и ключ.",
+    "customGroupLabel": "Название провайдера",
+    "customGroupLabelPlaceholder": "например, My Local API",
     "providerConnectionDescription": "Сначала выберите тип API, затем укажите API-ключ.",
     "volcengineConnectionDescription": "Выберите тип API, затем укажите API-ключ.",
     "providerSimpleDescription": "Укажите API-ключ для подключения.",

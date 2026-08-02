@@ -362,6 +362,8 @@
     "selectProviderDescription": "Select a provider and fill in connection info.",
     "customConnection": "Custom Connection",
     "customConnectionDescription": "First select API type, then fill in endpoint and key.",
+    "customGroupLabel": "Provider name",
+    "customGroupLabelPlaceholder": "e.g. My Local API",
     "providerConnectionDescription": "First select API type, then fill in API Key.",
     "volcengineConnectionDescription": "Select API type, then enter API Key.",
     "providerSimpleDescription": "Fill in API Key to connect.",
