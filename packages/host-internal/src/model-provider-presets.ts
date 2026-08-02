@@ -19,6 +19,7 @@ export type ModelProviderId =
   | 'openrouter'
   | 'fireworks-ai'
   | 'together-ai'
+  | 'groq'
   | 'hugging-face'
   | 'baseten'
   | 'openai'
@@ -59,6 +60,7 @@ const CANONICAL_PICKER_ORDER: readonly ModelProviderId[] = [
   'openrouter',
   'fireworks-ai',
   'together-ai',
+  'groq',
   'baseten',
   'hugging-face',
   'moonshot-ai',
@@ -96,7 +98,7 @@ function assertCanonicalPickerOrder(order: readonly string[]): asserts order is 
     order.some((id, index) => id !== CANONICAL_PICKER_ORDER[index])
   ) {
     throw new Error(
-      'model-provider-presets.json: pickerOrder must be exactly ["openai","anthropic","google","xai","vercel-ai-gateway","cloudflare-ai-gateway","deepseek","openrouter","fireworks-ai","together-ai","baseten","hugging-face","moonshot-ai","kimi-code","z-ai","zhipu-ai","alibaba","minimax","xiaomi","siliconflow","stepfun","volcengine","meituan","tencent-tokenhub","mistral","cohere","azure","amazon-bedrock","google-vertex-ai","custom"]',
+      'model-provider-presets.json: pickerOrder must be exactly ["openai","anthropic","google","xai","vercel-ai-gateway","cloudflare-ai-gateway","deepseek","openrouter","fireworks-ai","together-ai","groq","baseten","hugging-face","moonshot-ai","kimi-code","z-ai","zhipu-ai","alibaba","minimax","xiaomi","siliconflow","stepfun","volcengine","meituan","tencent-tokenhub","mistral","cohere","azure","amazon-bedrock","google-vertex-ai","custom"]',
     );
   }
 }
@@ -195,6 +197,7 @@ interface ParsedModelProviderPresets {
     | 'openrouter'
     | 'fireworks-ai'
     | 'together-ai'
+    | 'groq'
     | 'hugging-face'
     | 'baseten'
     | 'openai'
@@ -407,6 +410,7 @@ function parseModelProviderPresetsJson(data: unknown): ParsedModelProviderPreset
     openrouter: requireStringField(presetRaw, 'openrouter'),
     'fireworks-ai': requireStringField(presetRaw, 'fireworks-ai'),
     'together-ai': requireStringField(presetRaw, 'together-ai'),
+    groq: requireStringField(presetRaw, 'groq'),
     'hugging-face': requireStringField(presetRaw, 'hugging-face'),
     baseten: requireStringField(presetRaw, 'baseten'),
     openai: requireStringField(presetRaw, 'openai'),
@@ -494,6 +498,7 @@ const cloudflareAiGatewayBase = raw.presetApiBaseByProvider['cloudflare-ai-gatew
 const openrouterBase = raw.presetApiBaseByProvider.openrouter;
 const fireworksAiBase = raw.presetApiBaseByProvider['fireworks-ai'];
 const togetherAiBase = raw.presetApiBaseByProvider['together-ai'];
+const groqBase = raw.presetApiBaseByProvider.groq;
 const huggingFaceBase = raw.presetApiBaseByProvider['hugging-face'];
 const basetenBase = raw.presetApiBaseByProvider.baseten;
 const openaiBase = raw.presetApiBaseByProvider.openai;
@@ -525,6 +530,7 @@ export const PROVIDER_PRESET_API_BASE = {
   openrouter: openrouterBase,
   'fireworks-ai': fireworksAiBase,
   'together-ai': togetherAiBase,
+  groq: groqBase,
   'hugging-face': huggingFaceBase,
   baseten: basetenBase,
   openai: openaiBase,
@@ -791,6 +797,8 @@ export function resolveConnectApiBase(
       return PROVIDER_PRESET_API_BASE['fireworks-ai'];
     case 'together-ai':
       return PROVIDER_PRESET_API_BASE['together-ai'];
+    case 'groq':
+      return PROVIDER_PRESET_API_BASE.groq;
     case 'hugging-face':
       return PROVIDER_PRESET_API_BASE['hugging-face'];
     case 'baseten':

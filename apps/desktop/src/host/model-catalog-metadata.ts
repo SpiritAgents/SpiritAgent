@@ -86,6 +86,7 @@ export function usesProviderListedModelCatalogMetadata(input: {
     || input.provider === 'openrouter'
     || input.provider === 'fireworks-ai'
     || input.provider === 'together-ai'
+    || input.provider === 'groq'
     || input.provider === 'hugging-face'
     || input.provider === 'baseten'
     || input.provider === 'volcengine'

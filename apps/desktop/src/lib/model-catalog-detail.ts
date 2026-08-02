@@ -18,6 +18,7 @@ const PROVIDERS_PRESERVE_RAW_MODEL_ID_WITHOUT_CATALOG = new Set<DesktopModelProv
   'openrouter',
   'fireworks-ai',
   'together-ai',
+  'groq',
   'hugging-face',
   'baseten',
   'cohere',

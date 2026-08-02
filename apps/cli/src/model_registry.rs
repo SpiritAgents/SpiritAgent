@@ -43,6 +43,7 @@ pub enum ModelProvider {
     FireworksAi,
     #[serde(rename = "together-ai")]
     TogetherAi,
+    Groq,
     #[serde(rename = "hugging-face")]
     HuggingFace,
     Baseten,
@@ -83,6 +84,7 @@ impl ModelProvider {
             Self::Openrouter => "openrouter",
             Self::FireworksAi => "fireworks-ai",
             Self::TogetherAi => "together-ai",
+            Self::Groq => "groq",
             Self::HuggingFace => "hugging-face",
             Self::Baseten => "baseten",
             Self::Openai => "openai",
@@ -122,6 +124,7 @@ impl FromStr for ModelProvider {
             "openrouter" => Ok(Self::Openrouter),
             "fireworks-ai" => Ok(Self::FireworksAi),
             "together-ai" => Ok(Self::TogetherAi),
+            "groq" => Ok(Self::Groq),
             "hugging-face" => Ok(Self::HuggingFace),
             "baseten" => Ok(Self::Baseten),
             "openai" => Ok(Self::Openai),
@@ -434,6 +437,7 @@ impl ModelProfile {
             | Some(ModelProvider::Openrouter)
             | Some(ModelProvider::FireworksAi)
             | Some(ModelProvider::TogetherAi)
+            | Some(ModelProvider::Groq)
             | Some(ModelProvider::HuggingFace)
             | Some(ModelProvider::Baseten)
             | Some(ModelProvider::Cohere)

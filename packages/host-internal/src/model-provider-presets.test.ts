@@ -33,6 +33,7 @@ test('parse model provider helpers accept canonical ids and reject invalid value
   assert.equal(parseModelProviderId('siliconflow'), 'siliconflow');
   assert.equal(parseModelProviderId('fireworks-ai'), 'fireworks-ai');
   assert.equal(parseModelProviderId('together-ai'), 'together-ai');
+  assert.equal(parseModelProviderId('groq'), 'groq');
   assert.equal(parseModelProviderId('hugging-face'), 'hugging-face');
   assert.equal(parseModelProviderId('baseten'), 'baseten');
   assert.equal(parseModelProviderId('cohere'), 'cohere');
@@ -133,6 +134,13 @@ test('resolveProviderConnectApiBase returns Baseten preset base', () => {
   assert.equal(
     resolveProviderConnectApiBase('baseten', 'openai-compatible'),
     'https://inference.baseten.co/v1',
+  );
+});
+
+test('resolveProviderConnectApiBase returns Groq preset base', () => {
+  assert.equal(
+    resolveProviderConnectApiBase('groq', 'openai-compatible'),
+    'https://api.groq.com/openai/v1',
   );
 });
 
