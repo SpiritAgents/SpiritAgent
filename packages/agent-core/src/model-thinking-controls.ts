@@ -3,6 +3,7 @@ import type { ModelReasoningEffortContext, ModelReasoningProvider } from './reas
 import {
   isDeepSeekV4ReasoningEffortModel,
   isGoogleReasoningEffortModel,
+  isGroqReasoningEffortModel,
   isKimiCodeReasoningEffortModel,
   isKimiCodeThinkingOnlyModel,
   isMoonshotReasoningEffortModel,
@@ -215,6 +216,9 @@ export function modelUsesReasoningEffortPrimaryControl(
     return true;
   }
   if (isGoogleReasoningEffortModel(context)) {
+    return true;
+  }
+  if (isGroqReasoningEffortModel(context)) {
     return true;
   }
   if (isGatewayReasoningEffortPrimaryControlModel(context)) {

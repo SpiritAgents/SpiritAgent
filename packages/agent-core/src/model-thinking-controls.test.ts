@@ -478,3 +478,16 @@ test('resolveVendorExtendedThinking maps enabled default to undefined wire omiss
   assert.equal(resolveVendorExtendedThinking(true), undefined);
   assert.equal(resolveVendorExtendedThinking(false), false);
 });
+
+test('Groq reasoning models use reasoning effort primary control', () => {
+  const context = {
+    provider: 'groq' as const,
+    model: 'qwen/qwen3.6-27b',
+    transportKind: 'openai-compatible' as const,
+    supportedEfforts: ['none', 'default'],
+  };
+  assert.equal(modelUsesReasoningEffortPrimaryControl(context), true);
+  assert.equal(modelSupportsThinkingSwitch(context), false);
+  assert.equal(modelShowsReasoningEffortControl(context, true), true);
+  assert.equal(modelShowsReasoningEffortControl(context, false), true);
+});
