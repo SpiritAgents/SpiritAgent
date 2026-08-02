@@ -598,81 +598,89 @@ mod tests {
         );
         assert_eq!(
             model_add_preset_api_base_by_choice_index(10).as_deref(),
-            Some("https://inference.baseten.co/v1")
+            Some("https://api.groq.com/openai/v1")
         );
         assert_eq!(
             model_add_preset_api_base_by_choice_index(11).as_deref(),
-            Some("https://router.huggingface.co/v1")
+            Some("https://api.deepinfra.com/v1/openai")
         );
         assert_eq!(
             model_add_preset_api_base_by_choice_index(12).as_deref(),
-            Some("https://api.moonshot.ai/v1")
+            Some("https://inference.baseten.co/v1")
         );
         assert_eq!(
             model_add_preset_api_base_by_choice_index(13).as_deref(),
-            Some("https://api.kimi.com/coding/v1")
+            Some("https://router.huggingface.co/v1")
         );
         assert_eq!(
             model_add_preset_api_base_by_choice_index(14).as_deref(),
-            Some("https://api.z.ai/api/paas/v4")
+            Some("https://api.moonshot.ai/v1")
         );
         assert_eq!(
             model_add_preset_api_base_by_choice_index(15).as_deref(),
-            Some("https://open.bigmodel.cn/api/paas/v4")
+            Some("https://api.kimi.com/coding/v1")
         );
         assert_eq!(
             model_add_preset_api_base_by_choice_index(16).as_deref(),
-            Some("https://dashscope.aliyuncs.com/compatible-mode/v1")
+            Some("https://api.z.ai/api/paas/v4")
         );
         assert_eq!(
             model_add_preset_api_base_by_choice_index(17).as_deref(),
-            Some("https://api.minimax.io/v1")
+            Some("https://open.bigmodel.cn/api/paas/v4")
         );
         assert_eq!(
             model_add_preset_api_base_by_choice_index(18).as_deref(),
-            Some("https://api.xiaomimimo.com/v1")
+            Some("https://dashscope.aliyuncs.com/compatible-mode/v1")
         );
         assert_eq!(
             model_add_preset_api_base_by_choice_index(19).as_deref(),
-            Some("https://api.siliconflow.com/v1")
+            Some("https://api.minimax.io/v1")
         );
         assert_eq!(
             model_add_preset_api_base_by_choice_index(20).as_deref(),
-            Some("https://api.stepfun.com/v1")
+            Some("https://api.xiaomimimo.com/v1")
         );
         assert_eq!(
             model_add_preset_api_base_by_choice_index(21).as_deref(),
-            Some("https://ark.cn-beijing.volces.com/api/v3")
+            Some("https://api.siliconflow.com/v1")
         );
         assert_eq!(
             model_add_preset_api_base_by_choice_index(22).as_deref(),
-            Some("https://api.longcat.chat/openai/v1")
+            Some("https://api.stepfun.com/v1")
         );
         assert_eq!(
             model_add_preset_api_base_by_choice_index(23).as_deref(),
-            Some("https://tokenhub.tencentmaas.com/v1")
+            Some("https://ark.cn-beijing.volces.com/api/v3")
         );
         assert_eq!(
             model_add_preset_api_base_by_choice_index(24).as_deref(),
-            Some("https://api.mistral.ai/v1")
+            Some("https://api.longcat.chat/openai/v1")
         );
         assert_eq!(
             model_add_preset_api_base_by_choice_index(25).as_deref(),
-            Some("https://api.cohere.com/v2")
+            Some("https://tokenhub.tencentmaas.com/v1")
         );
         assert_eq!(
             model_add_preset_api_base_by_choice_index(26).as_deref(),
-            Some("https://YOUR_RESOURCE_NAME.openai.azure.com/openai/v1")
+            Some("https://api.mistral.ai/v1")
         );
         assert_eq!(
             model_add_preset_api_base_by_choice_index(27).as_deref(),
-            Some("https://bedrock.us-east-1.amazonaws.com")
+            Some("https://api.cohere.com/v2")
         );
         assert_eq!(
             model_add_preset_api_base_by_choice_index(28).as_deref(),
+            Some("https://YOUR_RESOURCE_NAME.openai.azure.com/openai/v1")
+        );
+        assert_eq!(
+            model_add_preset_api_base_by_choice_index(29).as_deref(),
+            Some("https://bedrock.us-east-1.amazonaws.com")
+        );
+        assert_eq!(
+            model_add_preset_api_base_by_choice_index(30).as_deref(),
             Some("https://us-central1-aiplatform.googleapis.com/v1/projects/YOUR_PROJECT_ID/locations/us-central1")
         );
-        assert!(model_add_preset_api_base_by_choice_index(29).is_none());
+        assert!(model_add_preset_api_base_by_choice_index(31).is_none());
     }
 
     #[test]

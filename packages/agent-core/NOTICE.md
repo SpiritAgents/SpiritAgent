@@ -6,8 +6,8 @@ Scope constraint: exclude workspace-local/internal dependencies resolved via `wo
 
 ## Summary
 
-- Apache-2.0: 21 package(s)
-- MIT: 4 package(s)
+- Apache-2.0: 23 package(s)
+- MIT: 5 package(s)
 - BSD-3-Clause: 1 package(s)
 
 ## Components
@@ -24,6 +24,8 @@ Scope constraint: exclude workspace-local/internal dependencies resolved via `wo
   - https://github.com/vercel/ai
 - **@ai-sdk/cohere** 4.0.15 — Apache-2.0
   - https://github.com/vercel/ai
+- **@ai-sdk/deepinfra** 3.0.20 — Apache-2.0
+  - https://github.com/vercel/ai
 - **@ai-sdk/deepseek** 3.0.0 — Apache-2.0
   - https://github.com/vercel/ai
 - **@ai-sdk/fireworks** 3.0.8 — Apache-2.0
@@ -33,6 +35,8 @@ Scope constraint: exclude workspace-local/internal dependencies resolved via `wo
 - **@ai-sdk/google** 4.0.1 — Apache-2.0
   - https://github.com/vercel/ai
 - **@ai-sdk/google-vertex** 5.0.1 — Apache-2.0
+  - https://github.com/vercel/ai
+- **@ai-sdk/groq** 3.0.55 — Apache-2.0
   - https://github.com/vercel/ai
 - **@ai-sdk/huggingface** 2.0.17 — Apache-2.0
   - https://github.com/vercel/ai
@@ -60,6 +64,8 @@ Scope constraint: exclude workspace-local/internal dependencies resolved via `wo
   - https://github.com/vercel/ai
 - **license-checker-rseidelsohn** 5.0.1 — BSD-3-Clause
   - https://github.com/RSeidelsohn/license-checker-rseidelsohn
+- **tsx** 4.23.1 — MIT
+  - https://github.com/privatenumber/tsx
 - **typescript** 5.9.3 — Apache-2.0
   - https://github.com/microsoft/TypeScript
 - **undici** 7.28.0 — MIT
@@ -76,11 +82,13 @@ Scope constraint: exclude workspace-local/internal dependencies resolved via `wo
 - @ai-sdk/azure 4.0.1
 - @ai-sdk/baseten 2.0.17
 - @ai-sdk/cohere 4.0.15
+- @ai-sdk/deepinfra 3.0.20
 - @ai-sdk/deepseek 3.0.0
 - @ai-sdk/fireworks 3.0.8
 - @ai-sdk/gateway 4.0.3
 - @ai-sdk/google 4.0.1
 - @ai-sdk/google-vertex 5.0.1
+- @ai-sdk/groq 3.0.55
 - @ai-sdk/huggingface 2.0.17
 - @ai-sdk/moonshotai 3.0.1
 - @ai-sdk/open-responses 2.0.0
@@ -470,6 +478,35 @@ SOFTWARE.
     LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
     OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
     SOFTWARE
+```
+
+### MIT
+
+**Used by:**
+- tsx 4.23.1
+
+```
+MIT License
+
+Copyright (c) Hiroki Osame <hiroki.osame@gmail.com>
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.
 ```
 
 ### MIT

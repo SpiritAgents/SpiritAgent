@@ -32,6 +32,8 @@ const DIRECT_THINKING_SWITCH_PROVIDERS = new Set([
   'alibaba',
   'siliconflow',
   'tencent-tokenhub',
+  // DeepInfra 经扁平 reasoning_effort / reasoning.enabled 运行时字段关思考（OpenAPI 层保证）。
+  'deepinfra',
 ]);
 
 const GATEWAY_REASONING_EFFORT_SLUGS = new Set([

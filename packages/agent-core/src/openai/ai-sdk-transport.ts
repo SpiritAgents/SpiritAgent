@@ -24,6 +24,9 @@ import {
   type DeepSeekLanguageModelOptions,
 } from '@ai-sdk/deepseek';
 import {
+  createDeepInfra,
+} from '@ai-sdk/deepinfra';
+import {
   createGoogle,
   type GoogleLanguageModelOptions,
 } from '@ai-sdk/google';
@@ -173,6 +176,7 @@ import {
 } from './openai-multimodal-messages.js';
 import { resolveXiaomiVideoUrlsInOpenAiMessages } from './xiaomi-video-messages.js';
 import { resolveMinimaxVideoUrlsInOpenAiMessages } from './minimax-video-messages.js';
+import { resolveDeepInfraVideoUrlsInOpenAiMessages } from './deepinfra-video-messages.js';
 import { normalizeMoonshotApiBase } from './moonshot-files.js';
 import {
   buildMoonshotFormulaTraceToolEntries,
@@ -193,6 +197,7 @@ import {
 const DEFAULT_OPENAI_COMPATIBLE_BASE_URL = 'https://api.openai.com/v1';
 const DEFAULT_XAI_BASE_URL = 'https://api.x.ai/v1';
 const DEFAULT_GOOGLE_BASE_URL = 'https://generativelanguage.googleapis.com/v1beta';
+const DEFAULT_DEEPINFRA_BASE_URL = 'https://api.deepinfra.com/v1';
 const STREAMING_TOOL_CALL_PLACEHOLDER_PREFIX = 'stream-tool-call-';
 
 type AiSdkToolCall = {
@@ -805,6 +810,10 @@ function createAiSdkLanguageModel(config: OpenAiTransportConfig): any {
     return createAiSdkGroqProvider(config)(config.model);
   }
 
+  if (isDeepInfraOfficialAiSdkProvider(config)) {
+    return createAiSdkDeepInfraProvider(config)(config.model);
+  }
+
   if (isCohereOfficialAiSdkProvider(config)) {
     return createAiSdkCohereProvider(config)(config.model);
   }
@@ -1061,6 +1070,82 @@ function createAiSdkGroqProvider(
     apiKey: config.apiKey,
     ...(config.baseUrl ? { baseURL: config.baseUrl } : {}),
     fetch: getLlmFetch(),
+  });
+}
+
+/**
+ * baseURL 双轨：连接配置存 OpenAI 兼容根（如 https://api.deepinfra.com/v1/openai），
+ * 而 @ai-sdk/deepinfra 的 baseURL 期望 https://api.deepinfra.com/v1（SDK 语言模型自拼 /openai/...）。
+ * 故剥掉尾部 /openai 后缀；自定义根不带该后缀时原样透传。
+ */
+function normalizeDeepInfraSdkBaseUrl(baseUrl: string | undefined): string | undefined {
+  const trimmed = baseUrl?.trim().replace(/\/+$/, '');
+  if (!trimmed) {
+    return undefined;
+  }
+  return trimmed.endsWith('/openai') ? trimmed.slice(0, -'/openai'.length) : trimmed;
+}
+
+const DEEPINFRA_REASONING_EFFORTS = new Set(['none', 'minimal', 'low', 'medium', 'high', 'xhigh', 'max']);
+
+/**
+ * 仅用户显式选择档位时注入；未设置时不带字段走服务端默认
+ * （不用 openAiReasoningEffort 的 medium 兜底，避免对非 reasoning 模型误传）。
+ */
+function resolveDeepInfraReasoningEffort(
+  config: Pick<OpenAiTransportConfig, 'reasoningEffort'>,
+): string | undefined {
+  const raw = config.reasoningEffort;
+  if (typeof raw !== 'string') {
+    return undefined;
+  }
+  const normalized = raw.trim().toLowerCase();
+  return DEEPINFRA_REASONING_EFFORTS.has(normalized) ? normalized : undefined;
+}
+
+function createAiSdkDeepInfraProvider(config: OpenAiTransportConfig) {
+  const isCodeCompletion = isCodeCompletionTransportProfile(config);
+  const reasoningEffort = isCodeCompletion ? undefined : resolveDeepInfraReasoningEffort(config);
+  const thinkingDisabled = isCodeCompletion || config.vendorExtendedThinking === false;
+  // deepinfra 走官方 SDK 而非 createAiSdkOpenAiCompatibleProvider，stash 还原须在本 wrapper 内兼任。
+  const needsVideoStash = usesOpenAiCompatibleVideoMessageStash(config.llmVendor);
+  const needsFetchWrapper = needsVideoStash || reasoningEffort !== undefined || thinkingDisabled;
+  const fetchWrapper = !needsFetchWrapper
+    ? undefined
+    : async (input: RequestInfo | URL, init?: RequestInit) => {
+        const body = tryParseRequestBody(init?.body);
+        if (!isJsonObject(body)) {
+          return getLlmFetch()(input, init);
+        }
+
+        const requestUrl =
+          typeof input === 'string'
+            ? input
+            : input instanceof URL
+              ? input.toString()
+              : 'request';
+        if (!requestUrl.includes('/chat/completions')) {
+          return getLlmFetch()(input, init);
+        }
+
+        // DeepInfra OpenAPI 支持扁平 reasoning_effort 与 reasoning.enabled 关思考；
+        // 以运行时字段为准（比 /models/list 的 can-disable-reasoning tag 可靠），故不读 tag。
+        const stashedMessages = needsVideoStash ? takeMoonshotChatCompletionMessages() : undefined;
+        return getLlmFetch()(input, {
+          ...init,
+          body: JSON.stringify({
+            ...body,
+            ...(reasoningEffort === undefined ? {} : { reasoning_effort: reasoningEffort }),
+            ...(thinkingDisabled ? { reasoning: { enabled: false } } : {}),
+            ...(stashedMessages ? { messages: stashedMessages } : {}),
+          }),
+        });
+      };
+
+  return createDeepInfra({
+    apiKey: config.apiKey,
+    baseURL: normalizeDeepInfraSdkBaseUrl(config.baseUrl) ?? DEFAULT_DEEPINFRA_BASE_URL,
+    fetch: fetchWrapper ?? getLlmFetch(),
   });
 }
 
@@ -1981,6 +2066,7 @@ async function resolveOpenAiCompatibleVideoInputsInMessages(
   await resolveMoonshotVideoUrlsInOpenAiMessages(config, messages, assetRoot);
   resolveXiaomiVideoUrlsInOpenAiMessages(config, messages, assetRoot);
   await resolveMinimaxVideoUrlsInOpenAiMessages(config, messages, assetRoot);
+  resolveDeepInfraVideoUrlsInOpenAiMessages(config, messages, assetRoot);
 }
 
 function prepareMoonshotChatCompletionRequest(
@@ -2004,7 +2090,7 @@ function clearMoonshotChatCompletionRequest(config: OpenAiTransportConfig): void
 function usesOpenAiCompatibleVideoMessageStash(
   vendor: OpenAiTransportConfig['llmVendor'],
 ): boolean {
-  return vendor === 'moonshot-ai' || vendor === 'xiaomi' || vendor === 'minimax';
+  return vendor === 'moonshot-ai' || vendor === 'xiaomi' || vendor === 'minimax' || vendor === 'deepinfra';
 }
 
 function normalizeMessagesForRequest(
@@ -2036,13 +2122,12 @@ function sanitizeMessageForCompatibility(
     );
   }
 
-  if (content !== cloned.content) {
-    const textParts = content.filter(
-      (part) => isJsonObject(part) && part.type === 'text' && typeof part.text === 'string',
-    );
+  // filter 恒产生新数组，引用变化不代表真有 part 被裁；
+  // 仅在确有 part 被裁时收敛，且收敛保留未被裁减的 part（如仍受支持的 video_url），而非只留文本。
+  if (content.length !== cloned.content.length) {
     return {
       ...cloned,
-      content: textParts.length > 0 ? textParts : '',
+      content: content.length > 0 ? content : '',
     };
   }
 
@@ -2075,6 +2160,10 @@ function isBasetenOfficialAiSdkProvider(config: OpenAiTransportConfig): boolean 
 
 function isGroqOfficialAiSdkProvider(config: OpenAiTransportConfig): boolean {
   return config.llmVendor === 'groq';
+}
+
+function isDeepInfraOfficialAiSdkProvider(config: OpenAiTransportConfig): boolean {
+  return config.llmVendor === 'deepinfra';
 }
 
 function resolveGroqProviderReasoningEffort(

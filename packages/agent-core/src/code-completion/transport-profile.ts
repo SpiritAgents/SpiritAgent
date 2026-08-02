@@ -69,6 +69,7 @@ function applyOpenAiCompatibleCodeCompletionProfile(
     vendor !== undefined
     && (
       OPENAI_COMPAT_THINKING_TYPE_VENDORS.has(vendor)
+      || vendor === 'deepinfra'
       || (vendor === 'meituan' && config.supportsThinkingSwitch === true)
     )
   ) {

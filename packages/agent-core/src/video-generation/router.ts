@@ -10,6 +10,7 @@ import { OpenRouterVideosBackend } from './openrouter-videos-backend.js';
 import { VolcengineArkVideoBackend } from './volcengine-ark-backend.js';
 import { SiliconFlowVideoBackend } from './siliconflow-backend.js';
 import { TogetherVideosBackend } from './together-videos-backend.js';
+import { DeepInfraVideosBackend } from './deepinfra-videos-backend.js';
 import { HuggingFaceVideoBackend } from './huggingface-backend.js';
 import type { VideoGenerationBackend } from './types.js';
 
@@ -18,6 +19,7 @@ const openRouterVideosBackend = new OpenRouterVideosBackend();
 const aiSdkGatewayBackend = new AiSdkGatewayVideoBackend();
 const siliconFlowVideoBackend = new SiliconFlowVideoBackend();
 const togetherVideosBackend = new TogetherVideosBackend();
+const deepInfraVideosBackend = new DeepInfraVideosBackend();
 const huggingFaceVideoBackend = new HuggingFaceVideoBackend();
 
 export function isSiliconFlowApiBase(baseUrl: string | undefined): boolean {
@@ -72,6 +74,19 @@ export function isHuggingFaceApiBase(baseUrl: string | undefined): boolean {
   }
 }
 
+export function isDeepInfraApiBase(baseUrl: string | undefined): boolean {
+  if (!baseUrl) {
+    return false;
+  }
+
+  try {
+    const hostname = new URL(baseUrl).hostname.toLowerCase();
+    return hostname.includes('deepinfra.com');
+  } catch {
+    return false;
+  }
+}
+
 export function resolveVideoGenerationBackend(
   config: OpenAiVideoGenerationConfig,
 ): VideoGenerationBackend {
@@ -87,6 +102,10 @@ export function resolveVideoGenerationBackend(
     return togetherVideosBackend;
   }
 
+  if (config.llmVendor === 'deepinfra' || isDeepInfraApiBase(config.baseUrl)) {
+    return deepInfraVideosBackend;
+  }
+
   if (config.llmVendor === 'hugging-face' || isHuggingFaceApiBase(config.baseUrl)) {
     return huggingFaceVideoBackend;
   }
@@ -100,7 +119,7 @@ export function resolveVideoGenerationBackend(
   }
 
   throw new Error(
-    'No video generation backend is configured for the selected video model. Use Volcengine Ark, Vercel AI Gateway, OpenRouter, SiliconFlow, Together AI, or Hugging Face.',
+    'No video generation backend is configured for the selected video model. Use Volcengine Ark, Vercel AI Gateway, OpenRouter, SiliconFlow, Together AI, DeepInfra, or Hugging Face.',
   );
 }
 

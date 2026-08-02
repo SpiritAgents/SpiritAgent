@@ -53,6 +53,7 @@ export function connectTransportOptionsForProvider(provider: DesktopModelProvide
     case "cohere":
     case "together-ai":
     case "groq":
+    case "deepinfra":
     case "baseten":
       return [connectTransportOptionCatalog.chatCompletions];
     case "hugging-face":

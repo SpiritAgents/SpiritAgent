@@ -4,6 +4,19 @@ import test from 'node:test';
 import { applyCodeCompletionTransportProfile } from '../code-completion/transport-profile.js';
 import { openAiVendorChatCompletionBodyExtras } from './openai-compat.js';
 
+test('DeepInfra code-completion profile disables thinking via vendorExtendedThinking', () => {
+  const config = applyCodeCompletionTransportProfile({
+    apiKey: 'k',
+    model: 'meta-llama/Meta-Llama-3.1-8B-Instruct-Turbo',
+    llmVendor: 'deepinfra',
+    reasoningEffort: 'medium',
+  }) as import('./openai-compat.js').OpenAiTransportConfig;
+
+  assert.equal(config.transportRequestProfile, 'code-completion');
+  assert.equal(config.vendorExtendedThinking, false);
+  assert.equal(config.reasoningEffort, 'default');
+});
+
 test('DeepSeek code-completion profile disables thinking via vendorExtendedThinking', () => {
   const config = applyCodeCompletionTransportProfile({
     apiKey: 'k',

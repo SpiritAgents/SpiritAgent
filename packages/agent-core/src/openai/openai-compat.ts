@@ -33,6 +33,7 @@ export type OpenAiLlmVendor =
   | 'fireworks-ai'
   | 'together-ai'
   | 'groq'
+  | 'deepinfra'
   | 'hugging-face'
   | 'baseten'
   | 'cohere'
@@ -195,6 +196,13 @@ export function resolveOpenAiModelCompatibilityProfile(
   }
 
   if (config.llmVendor === 'xiaomi') {
+    return {
+      hasExplicitCapabilities: true,
+      capabilities: {},
+    };
+  }
+
+  if (config.llmVendor === 'deepinfra') {
     return {
       hasExplicitCapabilities: true,
       capabilities: {},

@@ -19,6 +19,7 @@ const PROVIDERS_PRESERVE_RAW_MODEL_ID_WITHOUT_CATALOG = new Set<DesktopModelProv
   'fireworks-ai',
   'together-ai',
   'groq',
+  'deepinfra',
   'hugging-face',
   'baseten',
   'cohere',
