@@ -262,12 +262,22 @@ pub fn list_model_ids(
     api_base: &str,
     api_key: &str,
     transport_kind: ModelTransportKind,
+    provider: Option<crate::model_registry::ModelProvider>,
 ) -> Result<Vec<String>, String> {
     match transport_kind {
         ModelTransportKind::OpenAiCompatible | ModelTransportKind::OpenResponses => {
             list_openai_compatible_model_ids(api_base, api_key)
         }
-        ModelTransportKind::Anthropic => list_anthropic_model_ids(api_base, api_key),
+        ModelTransportKind::Anthropic => {
+            if provider == Some(crate::model_registry::ModelProvider::Minimax) {
+                list_openai_compatible_model_ids(
+                    minimax_openai_compatible_listing_base_from_connect_base(api_base).as_str(),
+                    api_key,
+                )
+            } else {
+                list_anthropic_model_ids(api_base, api_key)
+            }
+        }
         ModelTransportKind::Bedrock => Err(
             "Amazon Bedrock 模型列表请使用 Desktop 连接向导导入，或读取 Desktop 写入的 catalog cache"
                 .to_string(),
@@ -275,10 +285,51 @@ pub fn list_model_ids(
     }
 }
 
+/// MiniMax Messages transport lists models via OpenAI-compatible GET /v1/models on the same site origin.
+pub fn minimax_openai_compatible_listing_base_from_connect_base(api_base: &str) -> String {
+    let trimmed = api_base.trim().trim_end_matches('/');
+    if trimmed.is_empty() {
+        return "https://api.minimax.io/v1".to_string();
+    }
+
+    const ANTHROPIC_SUFFIX: &str = "/anthropic/v1";
+    if trimmed.len() >= ANTHROPIC_SUFFIX.len()
+        && trimmed[trimmed.len() - ANTHROPIC_SUFFIX.len()..].eq_ignore_ascii_case(ANTHROPIC_SUFFIX)
+    {
+        return format!("{}/v1", &trimmed[..trimmed.len() - ANTHROPIC_SUFFIX.len()]);
+    }
+
+    if trimmed.ends_with("/v1") {
+        trimmed.to_string()
+    } else {
+        format!("{trimmed}/v1")
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
     use serde_json::json;
+
+    #[test]
+    fn minimax_openai_compatible_listing_base_preserves_site_from_anthropic_connect_base() {
+        assert_eq!(
+            minimax_openai_compatible_listing_base_from_connect_base(
+                "https://api.minimaxi.com/anthropic/v1"
+            ),
+            "https://api.minimaxi.com/v1"
+        );
+        assert_eq!(
+            minimax_openai_compatible_listing_base_from_connect_base(
+                "https://api.minimax.io/anthropic/v1"
+            ),
+            "https://api.minimax.io/v1"
+        );
+        assert_eq!(
+            minimax_openai_compatible_listing_base_from_connect_base("https://api.minimaxi.com/v1"),
+            "https://api.minimaxi.com/v1"
+        );
+    }
 
     #[test]
     fn parse_openai_models_payload_reads_data_ids() {

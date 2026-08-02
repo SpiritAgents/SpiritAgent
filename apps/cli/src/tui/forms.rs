@@ -376,6 +376,7 @@ impl TuiShell {
                         parsed.api_base.as_str(),
                         parsed.api_key.as_str(),
                         parsed.transport_kind,
+                        Some(parsed.provider),
                     )
                 };
                 match list_result {
