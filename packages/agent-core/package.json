@@ -76,6 +76,7 @@
     "smoke:live:anthropic": "npm run build && node dist/smoke/live/ai-sdk-anthropic-live-smoke.js",
     "smoke:live:bedrock": "npm run build && node dist/smoke/live/ai-sdk-bedrock-live-smoke.js",
     "smoke:live:openai-compatible": "npm run build && node dist/smoke/live/ai-sdk-openai-compatible-live-smoke.js",
+    "smoke:live:minimax-web-search": "npm run build && node dist/smoke/live/ai-sdk-minimax-web-search-live-smoke.js",
     "eval:scenario:validate": "npm run build && node dist/eval/validate-scenario.js",
     "eval:compare:dry-run": "npm run build && node dist/eval/compare-dry-run.js",
     "smoke:ai-sdk:openai:runtime": "npm run build && node dist/smoke/runtime/ai-sdk-openai-runtime-smoke.js",

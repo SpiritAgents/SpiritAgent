@@ -69,6 +69,22 @@ import {
 } from './anthropic-compat.js';
 import { buildMinimaxProviderOptions } from './minimax-provider-options.js';
 import {
+  buildMinimaxWebSearchServerToolEntry,
+  createMinimaxAnthropicServerToolsFetch,
+  shouldUseMinimaxServerToolsWebSearch,
+} from './minimax-server-tools.js';
+import {
+  appendStreamingTextAnthropicBlock,
+  buildMinimaxWebSearchAssistantMessageFields,
+  createMinimaxWebSearchStreamState,
+  filterAnthropicHostToolCalls,
+  handleMinimaxWebSearchStreamPart,
+  isMinimaxProviderBuiltinWebSearchToolName,
+  readAnthropicAssistantContentBlocks,
+  resolveMinimaxWebSearchAssistantReplayText,
+  shouldSuppressMinimaxWebSearchStreamError,
+} from './minimax-web-search-stream.js';
+import {
   isMinimaxAnthropicConfig,
   mapMinimaxAnthropicImageContentPart,
   mapMinimaxAnthropicVideoContentPart,
@@ -273,11 +289,15 @@ export class AiSdkAnthropicTransport
       anthropicTransportAssetRoot(config),
     );
     const normalizedTools = normalizeToolDefinitions(tools);
+    const minimaxWebSearchEnabled = shouldUseMinimaxServerToolsWebSearch(config);
+    const traceTools = minimaxWebSearchEnabled
+      ? [...normalizedTools, buildMinimaxWebSearchServerToolEntry()]
+      : normalizedTools;
     const requestTrace = buildAnthropicRequestTrace(
       config,
       nextState.steps,
       normalizedRequestMessages,
-      normalizedTools,
+      traceTools,
       true,
     );
     const abortController = new AbortController();
@@ -294,7 +314,7 @@ export class AiSdkAnthropicTransport
               toolChoice: 'auto' as const,
             }),
         providerOptions: buildAnthropicTransportProviderOptions(config),
-        include: { rawChunks: false },
+        ...(minimaxWebSearchEnabled ? { include: { rawChunks: true } } : {}),
         maxRetries: 2,
         abortSignal: abortController.signal,
       });
@@ -302,6 +322,7 @@ export class AiSdkAnthropicTransport
 
       return {
         eventStream: anthropicEventStreamToRuntimeEvents(
+          config,
           result.stream,
           result,
           nextState,
@@ -472,6 +493,9 @@ function createAnthropicLanguageModel(config: AnthropicTransportConfig): any {
   }
 
   if (config.llmVendor === 'minimax') {
+    if (shouldUseMinimaxServerToolsWebSearch(config)) {
+      fetch = createMinimaxAnthropicServerToolsFetch(fetch, { webSearchEnabled: true });
+    }
     return createMiniMax({
       apiKey: config.apiKey,
       ...(config.baseUrl ? { baseURL: config.baseUrl } : {}),
@@ -721,6 +745,33 @@ function userContentToAiSdkContent(
 }
 
 function assistantMessageToAiSdkMessage(message: JsonObject): Record<string, unknown> | undefined {
+  const anthropicBlocks = readAnthropicAssistantContentBlocks(message);
+  if (anthropicBlocks) {
+    const replayText = resolveMinimaxWebSearchAssistantReplayText(message, anthropicBlocks);
+    if (replayText.length > 0) {
+      const reasoningParts = extractStoredAnthropicReasoningParts(message);
+      const reasoningText = extractAssistantReasoningContentFromJson(message);
+      if (reasoningParts.length > 0 || reasoningText.length > 0) {
+        const contentParts: Array<Record<string, unknown>> = [];
+        if (reasoningParts.length > 0) {
+          contentParts.push(...reasoningParts);
+        } else {
+          contentParts.push({ type: 'reasoning', text: reasoningText });
+        }
+        contentParts.push({ type: 'text', text: replayText });
+        return {
+          role: 'assistant',
+          content: contentParts,
+        };
+      }
+
+      return {
+        role: 'assistant',
+        content: replayText,
+      };
+    }
+  }
+
   const reasoningParts = extractStoredAnthropicReasoningParts(message);
   const reasoningText = extractAssistantReasoningContentFromJson(message);
   const toolCallParts = extractAssistantToolCallParts(message);
@@ -865,6 +916,7 @@ function buildAssistantMessageFromGenerateTextResult(
 }
 
 async function* anthropicEventStreamToRuntimeEvents(
+  config: AnthropicTransportConfig,
   stream: AsyncIterable<TextStreamPart<any>>,
   result: Parameters<typeof readAiSdkUsage>[0] & {
     reasoning?: PromiseLike<unknown>;
@@ -873,6 +925,10 @@ async function* anthropicEventStreamToRuntimeEvents(
   requestTrace: JsonValue[],
   completion: Deferred<ToolAgentRoundCompletion<ToolAgentState>>,
 ): AsyncGenerator<LlmStreamEvent, void, undefined> {
+  const minimaxWebSearchEnabled = shouldUseMinimaxServerToolsWebSearch(config);
+  const minimaxWebSearchState = minimaxWebSearchEnabled
+    ? createMinimaxWebSearchStreamState()
+    : undefined;
   const toolCalls = new Map<string, StreamingToolCallAccumulator>();
   const toolCallOrder: string[] = [];
   let assistantContent = '';
@@ -881,10 +937,40 @@ async function* anthropicEventStreamToRuntimeEvents(
 
   try {
     for await (const part of stream) {
+      if (minimaxWebSearchState) {
+        const minimaxEvents: LlmStreamEvent[] = [];
+        const minimaxResult = handleMinimaxWebSearchStreamPart(
+          part,
+          minimaxWebSearchState,
+          minimaxEvents,
+        );
+        for (const event of minimaxEvents) {
+          yield event;
+        }
+        if (minimaxResult.sawAnswerOrToolOutput) {
+          sawAnswerOrToolOutput = true;
+        }
+        if (
+          part.type === 'error'
+          && shouldSuppressMinimaxWebSearchStreamError(
+            (part as { error?: unknown }).error,
+            minimaxWebSearchState,
+          )
+        ) {
+          continue;
+        }
+        if (minimaxResult.handled) {
+          continue;
+        }
+      }
+
       const rawType = (part as { type?: unknown }).type;
 
       if (rawType === 'tool-call-streaming-start') {
         const streamingStart = part as unknown as AnthropicToolCallStreamingStartPart;
+        if (isMinimaxProviderBuiltinWebSearchToolName(streamingStart.toolName)) {
+          continue;
+        }
         sawAnswerOrToolOutput = true;
         if (!toolCalls.has(streamingStart.toolCallId)) {
           toolCalls.set(streamingStart.toolCallId, {
@@ -900,6 +986,9 @@ async function* anthropicEventStreamToRuntimeEvents(
 
       if (rawType === 'tool-call-delta') {
         const toolCallDelta = part as unknown as AnthropicToolCallDeltaPart;
+        if (isMinimaxProviderBuiltinWebSearchToolName(toolCallDelta.toolName)) {
+          continue;
+        }
         sawAnswerOrToolOutput = true;
         const current = toolCalls.get(toolCallDelta.toolCallId) ?? {
           toolCallId: toolCallDelta.toolCallId,
@@ -958,10 +1047,17 @@ async function* anthropicEventStreamToRuntimeEvents(
           }
           sawAnswerOrToolOutput = true;
           assistantContent += normalizedText;
+          if (minimaxWebSearchState) {
+            appendStreamingTextAnthropicBlock(minimaxWebSearchState, normalizedText);
+          }
           yield { kind: 'assistant-chunk', text: normalizedText };
           break;
         }
         case 'tool-call': {
+          if (isMinimaxProviderBuiltinWebSearchToolName(part.toolName)) {
+            sawAnswerOrToolOutput = true;
+            break;
+          }
           sawAnswerOrToolOutput = true;
           const argumentsJson = JSON.stringify(part.input);
           const current = toolCalls.get(part.toolCallId) ?? {
@@ -1004,10 +1100,16 @@ async function* anthropicEventStreamToRuntimeEvents(
         await result.reasoning,
         toolCalls,
         toolCallOrder,
+        minimaxWebSearchState,
       ),
     );
 
-    const calls = extractToolCallsFromStreamingMap(toolCalls, toolCallOrder);
+    const calls = minimaxWebSearchState
+      ? filterAnthropicHostToolCalls(
+          extractToolCallsFromStreamingMap(toolCalls, toolCallOrder),
+          minimaxWebSearchState,
+        )
+      : extractToolCallsFromStreamingMap(toolCalls, toolCallOrder);
     const usage = await readAiSdkUsage(result);
     completion.resolve({
       kind: 'success',
@@ -1046,10 +1148,17 @@ function buildStreamingAssistantMessage(
   reasoning: unknown,
   toolCalls: Map<string, StreamingToolCallAccumulator>,
   order: readonly string[],
+  minimaxWebSearchState?: ReturnType<typeof createMinimaxWebSearchStreamState>,
 ): JsonValue {
   const functionToolCalls = order
     .map((toolCallId) => toolCalls.get(toolCallId))
     .filter((call): call is StreamingToolCallAccumulator => call !== undefined)
+    .filter(
+      (call) => !(
+        minimaxWebSearchState?.executedProviderBuiltinToolCallIds.has(call.toolCallId)
+        && isMinimaxProviderBuiltinWebSearchToolName(call.toolName)
+      ),
+    )
     .map((call) => ({
       id: call.toolCallId,
       type: 'function',
@@ -1065,6 +1174,9 @@ function buildStreamingAssistantMessage(
         role: 'assistant',
         content: assistantContent || null,
         ...(functionToolCalls.length > 0 ? { tool_calls: functionToolCalls } : {}),
+        ...(minimaxWebSearchState
+          ? buildMinimaxWebSearchAssistantMessageFields(minimaxWebSearchState, assistantContent)
+          : {}),
       },
       normalizeAiSdkReasoningParts(reasoning),
     ),
@@ -1468,3 +1580,6 @@ function isAnthropicToolCallDeltaPart(
     && typeof (part as { toolName?: unknown }).toolName === 'string'
     && typeof (part as { argsTextDelta?: unknown }).argsTextDelta === 'string';
 }
+
+/** @internal Exported for unit tests only. */
+export const convertAnthropicToolStateMessagesForTests = toolStateMessagesToAiSdkMessages;

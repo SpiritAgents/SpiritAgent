@@ -1,4 +1,5 @@
 import type { JsonObject } from '../ports.js';
+import { shouldUseMinimaxServerToolsWebSearch } from '../anthropic/minimax-server-tools.js';
 import {
   isOpenResponsesTransportConfig,
   type LlmTransportConfig,
@@ -21,7 +22,8 @@ export type ProviderWebSearchMode =
   | 'openai-sdk-web-search'
   | 'xai-sdk-web-search'
   | 'gateway-sdk-web-search'
-  | 'alibaba-responses-built-in-tools';
+  | 'alibaba-responses-built-in-tools'
+  | 'minimax-server-tools-web-search';
 
 export function shouldUseProviderWebSearch(config: LlmTransportConfig): boolean {
   return resolveProviderWebSearchMode(config) !== undefined || shouldUseAlibabaBuiltInTools(config);
@@ -30,6 +32,10 @@ export function shouldUseProviderWebSearch(config: LlmTransportConfig): boolean 
 export function resolveProviderWebSearchMode(
   config: LlmTransportConfig,
 ): ProviderWebSearchMode | undefined {
+  if (shouldUseMinimaxServerToolsWebSearch(config)) {
+    return 'minimax-server-tools-web-search';
+  }
+
   if (!isOpenResponsesTransportConfig(config)) {
     return undefined;
   }
