@@ -255,6 +255,19 @@ test('applyCodeCompletionTransportProfile disables Meituan anthropic thinking vi
   assert.equal((result as AnthropicTransportConfig).thinking, undefined);
 });
 
+test('applyCodeCompletionTransportProfile disables MiniMax anthropic thinking via vendorExtendedThinking', () => {
+  const input: AnthropicTransportConfig = {
+    transportKind: 'anthropic',
+    apiKey: 'k',
+    model: 'MiniMax-M3',
+    llmVendor: 'minimax',
+  };
+  const result = applyCodeCompletionTransportProfile(input);
+  assert.equal(result.transportRequestProfile, 'code-completion');
+  assert.equal((result as AnthropicTransportConfig).vendorExtendedThinking, false);
+  assert.equal((result as AnthropicTransportConfig).thinking, undefined);
+});
+
 test('applyCodeCompletionTransportProfile disables Bedrock reasoning on code completion', () => {
   const input: BedrockTransportConfig = {
     transportKind: 'bedrock',

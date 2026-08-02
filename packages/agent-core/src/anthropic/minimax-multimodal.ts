@@ -1,8 +1,12 @@
 import type { AnthropicTransportConfig } from './anthropic-compat.js';
 
 export function isMinimaxAnthropicConfig(
-  config: Pick<AnthropicTransportConfig, 'baseUrl'>,
+  config: Pick<AnthropicTransportConfig, 'baseUrl' | 'llmVendor'>,
 ): boolean {
+  if (config.llmVendor === 'minimax') {
+    return true;
+  }
+
   const base = config.baseUrl?.trim().toLowerCase() ?? '';
   return base.includes('minimax');
 }

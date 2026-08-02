@@ -4,7 +4,6 @@ import { isMinimaxAnthropicConfig } from '../anthropic/minimax-multimodal.js';
 import { isMinimaxM3ThinkingSwitchModel } from './gateway-minimax-thinking.js';
 import { uploadMinimaxVideoFile } from './minimax-files.js';
 import type { OpenAiTransportConfig } from './openai-compat.js';
-import { resolveOpenAiModelCompatibilityProfile } from './openai-compat.js';
 import { resolveLocalMediaPath } from './openai-multimodal-media-path.js';
 
 function isJsonObject(value: JsonValue): value is JsonObject {
@@ -59,7 +58,7 @@ async function resolveMinimaxVideoUrlsInMessages(
 
 /** MiniMax Anthropic Messages API：本地视频上传为 mm_file:// 引用。 */
 export async function resolveMinimaxVideoInAnthropicMessages(
-  config: Pick<AnthropicTransportConfig, 'apiKey' | 'baseUrl' | 'model' | 'modelCapabilities'>,
+  config: Pick<AnthropicTransportConfig, 'apiKey' | 'baseUrl' | 'model' | 'modelCapabilities' | 'llmVendor'>,
   messages: JsonValue[],
   assetRoot = process.cwd(),
 ): Promise<void> {
@@ -68,28 +67,6 @@ export async function resolveMinimaxVideoInAnthropicMessages(
   }
 
   if (!config.modelCapabilities?.videoInput) {
-    return;
-  }
-
-  if (!isMinimaxM3ThinkingSwitchModel(config.model)) {
-    return;
-  }
-
-  await resolveMinimaxVideoUrlsInMessages(config, messages, assetRoot);
-}
-
-/** MiniMax OpenAI-compatible Chat Completions：本地视频上传为 mm_file:// 引用。 */
-export async function resolveMinimaxVideoUrlsInOpenAiMessages(
-  config: OpenAiTransportConfig,
-  messages: JsonValue[],
-  assetRoot = process.cwd(),
-): Promise<void> {
-  if (config.llmVendor !== 'minimax') {
-    return;
-  }
-
-  const profile = resolveOpenAiModelCompatibilityProfile(config);
-  if (!profile.capabilities.videoInput) {
     return;
   }
 
