@@ -531,7 +531,7 @@ function CommitGraphRowWithHover({
       data-commit-oid={row.commit.oid}
       onPointerEnter={onPointerEnter}
     >
-      <span className="min-w-0 flex-1 truncate text-xs font-normal leading-snug text-foreground/80">
+      <span className="min-w-0 flex-1 truncate text-xs font-normal leading-snug text-foreground">
         {row.commit.subject}
       </span>
     </button>

@@ -23,7 +23,7 @@ const questionRowIndexClass = "text-muted-foreground [font-variant-numeric:linin
 const questionRowLayoutClass =
   "grid grid-cols-[1.125rem_minmax(0,1fr)] items-start gap-x-1";
 
-const questionRowTextClass = "text-foreground/80";
+const questionRowTextClass = "text-card-foreground";
 
 const questionOptionClass = cn(
   questionRowLayoutClass,
@@ -180,12 +180,7 @@ export function PendingQuestionsCard({
                 >
                   <span className={questionRowIndexClass}>{optionIndex + 1}.</span>
                   <div className="min-w-0 flex-1 space-y-0.5">
-                    <span
-                      className={cn(
-                        "font-normal",
-                        selected ? "text-foreground/90" : questionRowTextClass,
-                      )}
-                    >
+                    <span className="font-normal text-card-foreground">
                       {option.label}
                     </span>
                     {option.summary ? (
