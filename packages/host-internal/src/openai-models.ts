@@ -17,6 +17,7 @@ import {
 import { bedrockApiBaseFromRegion, extractAwsRegionFromBedrockApiBase } from './bedrock-region.js';
 import { extractVertexProjectAndLocationFromApiBase } from './google-vertex-endpoints.js';
 import { normalizeOpenAiApiBase } from './openai-api-base.js';
+import { formatModelDisplayNameFromId } from './model-display-name.js';
 
 export { normalizeOpenAiApiBase } from './openai-api-base.js';
 
@@ -1121,6 +1122,138 @@ export async function listBasetenModels(
   };
   const json = await fetchModelsListJson(url, init);
   const entries = parseBasetenModelEntriesPayload(json);
+  return dedupeProviderListedModelEntries(entries).sort((a, b) => a.id.localeCompare(b.id));
+}
+
+const GROQ_NON_CHAT_MODEL_ID_PATTERNS = [
+  /^whisper-/i,
+  /^distil-whisper-/i,
+  /^playai-tts/i,
+] as const;
+
+const GROQ_VISION_MODEL_IDS = new Set([
+  'qwen/qwen3.6-27b',
+  'meta-llama/llama-4-scout-17b-16e-instruct',
+  'meta-llama/llama-4-maverick-17b-128e-instruct',
+]);
+
+const GROQ_GPT_OSS_REASONING_MODEL_IDS = new Set([
+  'openai/gpt-oss-20b',
+  'openai/gpt-oss-120b',
+  'openai/gpt-oss-safeguard-20b',
+]);
+
+const GROQ_QWEN_REASONING_MODEL_IDS = new Set([
+  'qwen/qwen3.6-27b',
+]);
+
+function isGroqNonChatModelId(id: string): boolean {
+  const trimmed = id.trim();
+  return GROQ_NON_CHAT_MODEL_ID_PATTERNS.some((pattern) => pattern.test(trimmed));
+}
+
+function groqSupportedReasoningEfforts(id: string): string[] | undefined {
+  const normalized = id.trim();
+  if (GROQ_GPT_OSS_REASONING_MODEL_IDS.has(normalized)) {
+    return ['low', 'medium', 'high'];
+  }
+  if (GROQ_QWEN_REASONING_MODEL_IDS.has(normalized)) {
+    return ['none', 'default'];
+  }
+  return undefined;
+}
+
+export function resolveGroqDisplayNameFromId(modelId: string): string {
+  const segment = resolveHuggingFaceDisplayNameFromId(modelId);
+  const formatted = formatModelDisplayNameFromId(segment);
+  return formatted.length > 0 ? formatted : modelId.trim();
+}
+
+function isGroqListedChatModel(record: Record<string, unknown>): boolean {
+  const object = readOptionalTrimmedString(record.object)?.toLowerCase();
+  if (object !== 'model') {
+    return false;
+  }
+  return readBooleanModelTrait(record, 'active') === true;
+}
+
+function readGroqModelsArray(body: unknown): unknown[] {
+  if (Array.isArray(body)) {
+    return body;
+  }
+  if (!isJsonObject(body)) {
+    return [];
+  }
+  const data = body.data;
+  return Array.isArray(data) ? data : [];
+}
+
+export function parseGroqModelEntriesPayload(body: unknown): ProviderListedModelEntry[] {
+  const raw = readGroqModelsArray(body);
+  const entries: ProviderListedModelEntry[] = [];
+
+  for (const item of raw) {
+    if (!isJsonObject(item)) {
+      continue;
+    }
+    if (!isGroqListedChatModel(item)) {
+      continue;
+    }
+
+    const id = readOptionalTrimmedString(item.id);
+    if (!id || isGroqNonChatModelId(id)) {
+      continue;
+    }
+
+    const modelEntry: ProviderListedModelEntry = {
+      id,
+      displayName: resolveGroqDisplayNameFromId(id),
+    };
+
+    const contextLength = readPositiveIntegerModelTrait(item, 'context_window');
+    if (contextLength !== undefined) {
+      modelEntry.contextLength = contextLength;
+    }
+
+    const maxCompletionTokens = readPositiveIntegerModelTrait(item, 'max_completion_tokens');
+    if (maxCompletionTokens !== undefined) {
+      modelEntry.maxCompletionTokens = maxCompletionTokens;
+    }
+
+    if (GROQ_VISION_MODEL_IDS.has(id)) {
+      modelEntry.supportsImageInput = true;
+    }
+
+    const supportedReasoningEfforts = groqSupportedReasoningEfforts(id);
+    if (supportedReasoningEfforts !== undefined) {
+      modelEntry.supportsReasoning = true;
+      modelEntry.supportedReasoningEfforts = supportedReasoningEfforts;
+    }
+
+    entries.push(modelEntry);
+  }
+
+  return entries;
+}
+
+export async function listGroqModels(
+  options: ListOpenAiCompatibleModelIdsOptions,
+): Promise<ProviderListedModelEntry[]> {
+  const url = openAiCompatibleModelsListUrl(options.baseUrl);
+  const key = options.apiKey.trim();
+  if (!key) {
+    throw new Error('API Key 不能为空。');
+  }
+
+  const init: RequestInit = {
+    method: 'GET',
+    headers: {
+      Authorization: `Bearer ${key}`,
+    },
+    ...(options.signal !== undefined ? { signal: options.signal } : {}),
+  };
+  const json = await fetchModelsListJson(url, init);
+  const entries = parseGroqModelEntriesPayload(json);
   return dedupeProviderListedModelEntries(entries).sort((a, b) => a.id.localeCompare(b.id));
 }
 
@@ -2315,6 +2448,10 @@ export async function listProviderModels(
 
   if (options.provider === 'together-ai') {
     return listTogetherAiModels(options);
+  }
+
+  if (options.provider === 'groq') {
+    return listGroqModels(options);
   }
 
   if (options.provider === 'baseten') {
