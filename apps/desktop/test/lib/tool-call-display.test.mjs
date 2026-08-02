@@ -302,6 +302,29 @@ test('getToolCallSummaryParts: read_file SKILL.md re-translates from stored Chin
   }
 });
 
+test('getToolCallSummaryParts: read_file SKILL stored 已使用 headline keeps skill verb', () => {
+  assert.deepEqual(
+    getToolCallSummaryParts({
+      toolName: 'read_file',
+      phase: 'succeeded',
+      headline: '已使用',
+      headlineDetail: 'git-commit',
+      detailLines: [],
+    }),
+    { headline: '已使用', detail: 'git-commit' },
+  );
+  assert.deepEqual(
+    getToolCallSummaryParts({
+      toolName: 'read_file',
+      phase: 'running',
+      headline: '使用中',
+      headlineDetail: 'git-commit',
+      detailLines: [],
+    }),
+    { headline: '使用中', detail: 'git-commit' },
+  );
+});
+
 test('getToolCallSummaryParts: read_file tool-output-archives uses tool output detail', async () => {
   await i18n.changeLanguage('en');
   try {
