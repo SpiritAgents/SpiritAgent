@@ -99,12 +99,22 @@ async function downloadFile(url, destination) {
   await writeFile(destination, Buffer.from(await response.arrayBuffer()));
 }
 
+async function readNvmrcMajor() {
+  const content = await readFile(path.join(repoRoot, '.nvmrc'), 'utf8');
+  const spec = content.trim().split('\n')[0].trim().replace(/^v/, '');
+  const major = spec.split('.')[0];
+  if (!/^\d+$/.test(major)) {
+    throw new Error(`.nvmrc 必须包含数字主版本，当前为: ${spec}`);
+  }
+  return major;
+}
+
 async function resolveNodeReleaseVersion() {
   if (process.env.SPIRIT_RELEASE_NODE_VERSION) {
     return process.env.SPIRIT_RELEASE_NODE_VERSION.replace(/^v/, '');
   }
 
-  const major = process.env.SPIRIT_RELEASE_NODE_MAJOR ?? '24';
+  const major = process.env.SPIRIT_RELEASE_NODE_MAJOR ?? (await readNvmrcMajor());
   const response = await fetch('https://nodejs.org/dist/index.json');
   if (!response.ok) {
     throw new Error(`无法查询 Node.js ${major}.x 版本: ${response.status}`);
