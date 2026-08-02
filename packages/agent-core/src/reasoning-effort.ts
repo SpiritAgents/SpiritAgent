@@ -50,6 +50,7 @@ export type ModelReasoningProvider =
   | 'fireworks-ai'
   | 'together-ai'
   | 'groq'
+  | 'deepinfra'
   | 'hugging-face'
   | 'baseten'
   | 'cohere'
