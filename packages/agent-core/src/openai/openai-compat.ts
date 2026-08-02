@@ -32,6 +32,7 @@ export type OpenAiLlmVendor =
   | 'openrouter'
   | 'fireworks-ai'
   | 'together-ai'
+  | 'groq'
   | 'hugging-face'
   | 'baseten'
   | 'cohere'

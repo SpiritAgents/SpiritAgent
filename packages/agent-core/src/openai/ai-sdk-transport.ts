@@ -10,6 +10,10 @@ import {
   createBaseten,
 } from '@ai-sdk/baseten';
 import {
+  createGroq,
+  type GroqLanguageModelOptions,
+} from '@ai-sdk/groq';
+import {
   createTogetherAI,
 } from '@ai-sdk/togetherai';
 import {
@@ -797,6 +801,10 @@ function createAiSdkLanguageModel(config: OpenAiTransportConfig): any {
     return createAiSdkBasetenProvider(config)(config.model);
   }
 
+  if (isGroqOfficialAiSdkProvider(config)) {
+    return createAiSdkGroqProvider(config)(config.model);
+  }
+
   if (isCohereOfficialAiSdkProvider(config)) {
     return createAiSdkCohereProvider(config)(config.model);
   }
@@ -1045,6 +1053,17 @@ function createAiSdkBasetenProvider(
   });
 }
 
+function createAiSdkGroqProvider(
+  config: Pick<OpenAiTransportConfig, 'apiKey' | 'baseUrl'>,
+) {
+  // SDK 默认 https://api.groq.com/openai/v1；连接配置须显式覆盖 baseURL。
+  return createGroq({
+    apiKey: config.apiKey,
+    ...(config.baseUrl ? { baseURL: config.baseUrl } : {}),
+    fetch: getLlmFetch(),
+  });
+}
+
 function createAiSdkCohereProvider(
   config: Pick<OpenAiTransportConfig, 'apiKey' | 'baseUrl'>,
 ) {
@@ -1261,6 +1280,21 @@ function buildAiSdkProviderOptions(
     return {};
   }
 
+  if (isGroqOfficialAiSdkProvider(config)) {
+    const reasoningEffort = resolveGroqProviderReasoningEffort(config);
+    if (reasoningEffort === undefined) {
+      return {};
+    }
+
+    const groqOptions = {
+      reasoningEffort,
+    } satisfies GroqLanguageModelOptions;
+
+    return {
+      groq: groqOptions as JsonObject,
+    };
+  }
+
   if (
     modelSupportsOpenAiGpt56ReasoningControls({
       ...(config.llmVendor ? { provider: config.llmVendor } : {}),
@@ -1286,6 +1320,12 @@ function buildAiSdkProviderOptions(
       ...(reasoningMode !== undefined ? { reasoningMode } : {}),
     } as JsonObject,
   };
+}
+
+export function buildAiSdkProviderOptionsForTests(
+  config: OpenAiTransportConfig,
+): Record<string, JsonObject> {
+  return buildAiSdkProviderOptions(config);
 }
 
 function normalizeToolDefinitions(tools: JsonValue): OpenAiFunctionToolDefinition[] {
@@ -2031,6 +2071,32 @@ function isTogetherOfficialAiSdkProvider(config: OpenAiTransportConfig): boolean
 
 function isBasetenOfficialAiSdkProvider(config: OpenAiTransportConfig): boolean {
   return config.llmVendor === 'baseten';
+}
+
+function isGroqOfficialAiSdkProvider(config: OpenAiTransportConfig): boolean {
+  return config.llmVendor === 'groq';
+}
+
+function resolveGroqProviderReasoningEffort(
+  config: Pick<OpenAiTransportConfig, 'reasoningEffort'>,
+): GroqLanguageModelOptions['reasoningEffort'] | undefined {
+  const raw = config.reasoningEffort;
+  if (raw === undefined || raw === 'minimal') {
+    return undefined;
+  }
+
+  // Groq Qwen 须显式传 default；不可经 openAiReasoningEffort 把 default 映射为 undefined。
+  const normalized = typeof raw === 'string' ? raw.trim().toLowerCase() : '';
+  switch (normalized) {
+    case 'none':
+    case 'default':
+    case 'low':
+    case 'medium':
+    case 'high':
+      return normalized;
+    default:
+      return undefined;
+  }
 }
 
 function isCohereOfficialAiSdkProvider(config: OpenAiTransportConfig): boolean {

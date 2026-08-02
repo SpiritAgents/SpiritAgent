@@ -657,6 +657,7 @@ fn parse_model_transport_kind(
                 | ModelProvider::Mistral
                 | ModelProvider::Cohere
                 | ModelProvider::TogetherAi
+                | ModelProvider::Groq
                 | ModelProvider::Xiaomi
                 | ModelProvider::Alibaba
                 | ModelProvider::Stepfun
@@ -721,6 +722,7 @@ fn parse_model_transport_kind(
                 | ModelProvider::FireworksAi
                 | ModelProvider::HuggingFace
                 | ModelProvider::Baseten
+                | ModelProvider::Groq
                 | ModelProvider::Volcengine
                 | ModelProvider::Custom
                 | ModelProvider::CloudflareAiGateway

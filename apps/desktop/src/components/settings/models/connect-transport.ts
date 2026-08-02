@@ -52,6 +52,7 @@ export function connectTransportOptionsForProvider(provider: DesktopModelProvide
     case "mistral":
     case "cohere":
     case "together-ai":
+    case "groq":
     case "baseten":
       return [connectTransportOptionCatalog.chatCompletions];
     case "hugging-face":

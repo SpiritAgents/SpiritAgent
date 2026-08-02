@@ -43,6 +43,7 @@ pub enum ModelProvider {
     FireworksAi,
     #[serde(rename = "together-ai")]
     TogetherAi,
+    Groq,
     #[serde(rename = "hugging-face")]
     HuggingFace,
     Baseten,
@@ -83,6 +84,7 @@ impl ModelProvider {
             Self::Openrouter => "openrouter",
             Self::FireworksAi => "fireworks-ai",
             Self::TogetherAi => "together-ai",
+            Self::Groq => "groq",
             Self::HuggingFace => "hugging-face",
             Self::Baseten => "baseten",
             Self::Openai => "openai",
@@ -122,6 +124,7 @@ impl FromStr for ModelProvider {
             "openrouter" => Ok(Self::Openrouter),
             "fireworks-ai" => Ok(Self::FireworksAi),
             "together-ai" => Ok(Self::TogetherAi),
+            "groq" => Ok(Self::Groq),
             "hugging-face" => Ok(Self::HuggingFace),
             "baseten" => Ok(Self::Baseten),
             "openai" => Ok(Self::Openai),
@@ -423,6 +426,7 @@ impl ModelProfile {
             Some(ModelProvider::KimiCode) => false,
             Some(ModelProvider::Xiaomi) => false,
             Some(ModelProvider::Siliconflow) => false,
+            Some(ModelProvider::Groq) => false,
             Some(ModelProvider::Xai)
             | Some(ModelProvider::ZAi)
             | Some(ModelProvider::ZhipuAi)
@@ -2137,6 +2141,24 @@ mod tests {
 
         assert!(!mimo_without_capabilities.supports_image_input());
         assert!(mimo_with_image.supports_image_input());
+    }
+
+    #[test]
+    fn model_profile_supports_image_input_uses_explicit_capabilities_for_groq() {
+        let groq_without_capabilities = test_profile(
+            "groq",
+            "llama-3.3-70b-versatile",
+            "https://api.groq.com/openai/v1",
+            ModelProvider::Groq,
+        );
+        let mut groq_with_image = groq_without_capabilities.clone();
+        groq_with_image.extra.insert(
+            "capabilities".to_string(),
+            serde_json::json!(["chat", "image"]),
+        );
+
+        assert!(!groq_without_capabilities.supports_image_input());
+        assert!(groq_with_image.supports_image_input());
     }
 
     #[test]

@@ -29,6 +29,8 @@ import {
   mergeHuggingFaceListedModelEntries,
   resolveHuggingFaceDisplayNameFromId,
   parseBasetenModelEntriesPayload,
+  parseGroqModelEntriesPayload,
+  resolveGroqDisplayNameFromId,
   cohereModelsListUrl,
   mergeCohereModelPages,
   parseCohereModelEntriesPayload,
@@ -1311,6 +1313,119 @@ test('parseBasetenModelEntriesPayload accepts bare array and falls back display 
       supportsImageInput: true,
     },
   ]);
+});
+
+test('parseGroqModelEntriesPayload maps chat models with vision and reasoning allowlists', () => {
+  const entries = parseGroqModelEntriesPayload({
+    object: 'list',
+    data: [
+      {
+        id: 'llama-3.3-70b-versatile',
+        object: 'model',
+        created: 1693721698,
+        owned_by: 'Meta',
+        active: true,
+        context_window: 131072,
+        public_apps: null,
+      },
+      {
+        id: 'openai/gpt-oss-20b',
+        object: 'model',
+        active: true,
+        context_window: 131072,
+        max_completion_tokens: 65536,
+      },
+      {
+        id: 'qwen/qwen3.6-27b',
+        object: 'model',
+        active: true,
+        context_window: 131072,
+      },
+      {
+        id: 'meta-llama/llama-4-scout-17b-16e-instruct',
+        object: 'model',
+        active: true,
+        context_window: 131072,
+      },
+      {
+        id: 'whisper-large-v3',
+        object: 'model',
+        active: true,
+        context_window: 448,
+      },
+      {
+        id: 'playai-tts',
+        object: 'model',
+        active: true,
+      },
+      {
+        id: 'llama-guard-3-8b',
+        object: 'model',
+        active: false,
+      },
+      {
+        id: 'not-a-model',
+        object: 'list',
+        active: true,
+      },
+    ],
+  });
+
+  assert.deepEqual(entries, [
+    {
+      id: 'llama-3.3-70b-versatile',
+      displayName: 'Llama 3.3 70b Versatile',
+      contextLength: 131072,
+    },
+    {
+      id: 'openai/gpt-oss-20b',
+      displayName: 'Gpt Oss 20b',
+      contextLength: 131072,
+      maxCompletionTokens: 65536,
+      supportsReasoning: true,
+      supportedReasoningEfforts: ['low', 'medium', 'high'],
+    },
+    {
+      id: 'qwen/qwen3.6-27b',
+      displayName: 'Qwen3.6 27b',
+      contextLength: 131072,
+      supportsImageInput: true,
+      supportsReasoning: true,
+      supportedReasoningEfforts: ['none', 'default'],
+    },
+    {
+      id: 'meta-llama/llama-4-scout-17b-16e-instruct',
+      displayName: 'Llama 4 Scout 17b 16e Instruct',
+      contextLength: 131072,
+      supportsImageInput: true,
+    },
+  ]);
+});
+
+test('parseGroqModelEntriesPayload omits pricing and skips non-vision chat models', () => {
+  const entries = parseGroqModelEntriesPayload({
+    object: 'list',
+    data: [
+      {
+        id: 'llama-3.1-8b-instant',
+        object: 'model',
+        active: true,
+        context_window: 131072,
+        pricing: { input: 0.05 },
+      },
+    ],
+  });
+
+  assert.equal(entries.length, 1);
+  assert.equal(entries[0]?.supportsImageInput, undefined);
+  assert.equal(entries[0]?.pricing, undefined);
+});
+
+test('resolveGroqDisplayNameFromId formats id segment', () => {
+  assert.equal(
+    resolveGroqDisplayNameFromId('meta-llama/llama-4-maverick-17b-128e-instruct'),
+    'Llama 4 Maverick 17b 128e Instruct',
+  );
 });
 
 test('mergeFireworksAiGatewayModelPages dedupes across pages', () => {

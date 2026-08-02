@@ -2,10 +2,12 @@ import assert from 'node:assert/strict';
 import test from 'node:test';
 
 import {
+  defaultModelReasoningEffort,
   modelReasoningEffortOptions,
   resolveAnthropicTransportReasoningEffortForContext,
   resolveModelReasoningEffortForContext,
   resolveOpenAiTransportReasoningEffortForContext,
+  resolveGroqTransportReasoningEffortForContext,
 } from './reasoning-effort.js';
 
 test('generic openai-compatible models normalize minimal to default', () => {
@@ -326,5 +328,70 @@ test('openrouter claude models use anthropic effort options filtered by model ca
       transportKind: 'open-responses',
     }),
     'medium',
+  );
+});
+
+test('groq qwen models expose none/default effort options and default to default', () => {
+  const context = {
+    provider: 'groq' as const,
+    model: 'qwen/qwen3.6-27b',
+    transportKind: 'openai-compatible' as const,
+    supportedEfforts: ['none', 'default'],
+  };
+
+  assert.deepEqual(
+    modelReasoningEffortOptions(context).map((option) => option.value),
+    ['none', 'default'],
+  );
+  assert.equal(defaultModelReasoningEffort(context), 'default');
+  assert.equal(resolveModelReasoningEffortForContext('medium', context), 'default');
+});
+
+test('groq gpt-oss models expose low/medium/high effort options and default to medium', () => {
+  const context = {
+    provider: 'groq' as const,
+    model: 'openai/gpt-oss-20b',
+    transportKind: 'openai-compatible' as const,
+    supportedEfforts: ['low', 'medium', 'high'],
+  };
+
+  assert.deepEqual(
+    modelReasoningEffortOptions(context).map((option) => option.value),
+    ['low', 'medium', 'high'],
+  );
+  assert.equal(defaultModelReasoningEffort(context), 'medium');
+  assert.equal(
+    resolveOpenAiTransportReasoningEffortForContext('default', context),
+    undefined,
+  );
+  assert.equal(
+    resolveGroqTransportReasoningEffortForContext(undefined, context),
+    'medium',
+  );
+  assert.equal(
+    resolveModelReasoningEffortForContext('default', context),
+    'default',
+  );
+});
+
+test('groq qwen transport preserves default reasoning effort for API', () => {
+  const context = {
+    provider: 'groq' as const,
+    model: 'qwen/qwen3.6-27b',
+    transportKind: 'openai-compatible' as const,
+    supportedEfforts: ['none', 'default'],
+  };
+
+  assert.equal(
+    resolveOpenAiTransportReasoningEffortForContext('default', context),
+    undefined,
+  );
+  assert.equal(
+    resolveGroqTransportReasoningEffortForContext('default', context),
+    'default',
+  );
+  assert.equal(
+    resolveGroqTransportReasoningEffortForContext(undefined, context),
+    'default',
   );
 });
