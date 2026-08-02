@@ -439,6 +439,28 @@ export function resolveOpenAiTransportReasoningEffortForContext(
   }
 }
 
+/** Groq Qwen 须向 API 显式传 default；不可沿用 OpenAI 兼容 transport 的 default→undefined 映射。 */
+export function resolveGroqTransportReasoningEffortForContext(
+  value: unknown,
+  context?: ModelReasoningEffortContext,
+): OpenAiTransportConfig['reasoningEffort'] | undefined {
+  const normalized = resolveModelReasoningEffortForContext(value, {
+    ...context,
+    transportKind: context?.transportKind ?? 'openai-compatible',
+  });
+
+  switch (normalized) {
+    case 'none':
+    case 'default':
+    case 'low':
+    case 'medium':
+    case 'high':
+      return normalized;
+    default:
+      return undefined;
+  }
+}
+
 export function resolveAnthropicTransportReasoningEffortForContext(
   value: unknown,
   context?: ModelReasoningEffortContext,

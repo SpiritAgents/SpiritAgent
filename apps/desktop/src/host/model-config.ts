@@ -9,6 +9,7 @@ import {
 import {
   isXiaomiResponsesReasoningEffortContext,
   resolveAnthropicTransportReasoningEffortForContext,
+  resolveGroqTransportReasoningEffortForContext,
   resolveOpenAiTransportReasoningEffortForContext,
   resolveOpenAiTransportReasoningModeForContext,
   type ModelReasoningEffortContext,
@@ -287,6 +288,9 @@ function resolveAgentOpenAiReasoningEffort(
     && shouldPinReasoningEffortToDefault(thinkingEnabled, context)
   ) {
     return undefined;
+  }
+  if (context.provider === 'groq') {
+    return resolveGroqTransportReasoningEffortForContext(profile?.reasoningEffort, context);
   }
   return resolveOpenAiTransportReasoningEffortForContext(profile?.reasoningEffort, context);
 }

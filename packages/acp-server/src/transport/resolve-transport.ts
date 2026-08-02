@@ -7,6 +7,7 @@ import {
 } from '@spiritagent/agent-core';
 import {
   resolveAnthropicTransportReasoningEffortForContext,
+  resolveGroqTransportReasoningEffortForContext,
   resolveOpenAiTransportReasoningEffortForContext,
 } from '@spiritagent/agent-core/reasoning-effort';
 import {
@@ -231,14 +232,14 @@ function buildTransportFromProfile(
   }
 
   const llmVendor = openAiCompatibleVendorFromProvider(profile.provider);
-  const normalizedReasoningEffort = resolveOpenAiTransportReasoningEffortForContext(
-    profile.reasoningEffort,
-    {
-      ...(profile.provider ? { provider: profile.provider } : {}),
-      ...(profile.transportKind ? { transportKind: profile.transportKind } : {}),
-      model,
-    },
-  );
+  const reasoningEffortContext = {
+    ...(profile.provider ? { provider: profile.provider } : {}),
+    ...(profile.transportKind ? { transportKind: profile.transportKind } : {}),
+    model,
+  };
+  const normalizedReasoningEffort = profile.provider === 'groq'
+    ? resolveGroqTransportReasoningEffortForContext(profile.reasoningEffort, reasoningEffortContext)
+    : resolveOpenAiTransportReasoningEffortForContext(profile.reasoningEffort, reasoningEffortContext);
   const vertexCredentials = profile.provider === 'google-vertex-ai'
     ? readGoogleVertexCredentials('google-vertex-ai')
     : undefined;
