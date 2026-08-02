@@ -44,6 +44,7 @@ pub enum ModelProvider {
     #[serde(rename = "together-ai")]
     TogetherAi,
     Groq,
+    Deepinfra,
     #[serde(rename = "hugging-face")]
     HuggingFace,
     Baseten,
@@ -85,6 +86,7 @@ impl ModelProvider {
             Self::FireworksAi => "fireworks-ai",
             Self::TogetherAi => "together-ai",
             Self::Groq => "groq",
+            Self::Deepinfra => "deepinfra",
             Self::HuggingFace => "hugging-face",
             Self::Baseten => "baseten",
             Self::Openai => "openai",
@@ -125,6 +127,7 @@ impl FromStr for ModelProvider {
             "fireworks-ai" => Ok(Self::FireworksAi),
             "together-ai" => Ok(Self::TogetherAi),
             "groq" => Ok(Self::Groq),
+            "deepinfra" => Ok(Self::Deepinfra),
             "hugging-face" => Ok(Self::HuggingFace),
             "baseten" => Ok(Self::Baseten),
             "openai" => Ok(Self::Openai),
@@ -427,6 +430,7 @@ impl ModelProfile {
             Some(ModelProvider::Xiaomi) => false,
             Some(ModelProvider::Siliconflow) => false,
             Some(ModelProvider::Groq) => false,
+            Some(ModelProvider::Deepinfra) => false,
             Some(ModelProvider::Xai)
             | Some(ModelProvider::ZAi)
             | Some(ModelProvider::ZhipuAi)

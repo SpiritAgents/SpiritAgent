@@ -34,6 +34,7 @@ import {
   cohereModelsListUrl,
   mergeCohereModelPages,
   parseCohereModelEntriesPayload,
+  parseDeepInfraModelEntriesPayload,
 } from './openai-models.js';
 
 test('parseAnthropicModelEntriesPayload extracts image input and supported effort levels', () => {
@@ -1426,6 +1427,183 @@ test('resolveGroqDisplayNameFromId formats id segment', () => {
     resolveGroqDisplayNameFromId('meta-llama/llama-4-maverick-17b-128e-instruct'),
     'Llama 4 Maverick 17b 128e Instruct',
   );
+});
+
+test('parseDeepInfraModelEntriesPayload maps chat image video types with tags and pricing', () => {
+  const entries = parseDeepInfraModelEntriesPayload([
+    {
+      model_name: 'acme/omni-chat-large',
+      type: 'text-generation',
+      description: 'Omni chat model.',
+      tags: ['openai', 'tools', 'multimodal', 'input-video'],
+      pricing: {
+        type: 'tokens',
+        cents_per_input_token: 0.00013,
+        cents_per_output_token: 0.00026,
+        rate_per_input_token_cached: 0.07692308,
+      },
+      max_tokens: 262144,
+      deprecated: null,
+      is_partner: false,
+    },
+    {
+      model_name: 'acme/partner-chat',
+      type: 'text-generation',
+      description: 'Partner chat model.',
+      tags: ['openai', 'multimodal'],
+      pricing: { type: 'tokens', cents_per_input_token: 0.0003, cents_per_output_token: 0.0015 },
+      max_tokens: 200000,
+      deprecated: null,
+      is_partner: true,
+    },
+    {
+      model_name: 'acme/plain-chat',
+      type: 'text-generation',
+      tags: ['openai', 'tools'],
+      max_tokens: 131072,
+      deprecated: null,
+      is_partner: false,
+    },
+    {
+      model_name: 'acme/image-gen',
+      type: 'text-to-image',
+      description: 'Image generation model.',
+      tags: ['no-free-anon'],
+      pricing: { type: 'image_units', cents_per_image_unit: 4 },
+      max_tokens: null,
+      deprecated: null,
+      is_partner: false,
+    },
+    {
+      model_name: 'acme/video-gen',
+      type: 'text-to-video',
+      description: 'Video generation model.',
+      pricing: { type: 'output_length', cents_per_output_sec: 5 },
+      max_tokens: null,
+      deprecated: null,
+      is_partner: false,
+    },
+    {
+      model_name: 'acme/world-sim',
+      type: 'world-model',
+      description: 'World model treated as text-to-video.',
+      pricing: { type: 'output_length', cents_per_output_sec: 8 },
+      deprecated: null,
+      is_partner: false,
+    },
+    {
+      model_name: 'acme/unknown-pricing-chat',
+      type: 'text-generation',
+      tags: [],
+      pricing: { type: 'input_length', cents_per_input_token: 1 },
+      deprecated: null,
+      is_partner: false,
+    },
+    {
+      model_name: 'acme/deprecated-chat',
+      type: 'text-generation',
+      tags: ['multimodal'],
+      deprecated: 1784240987,
+      is_partner: false,
+    },
+    {
+      model_name: 'acme/embedder',
+      type: 'embeddings',
+      deprecated: null,
+      is_partner: false,
+    },
+    {
+      model_name: 'acme/reranker',
+      type: 'reranker',
+      deprecated: null,
+      is_partner: false,
+    },
+  ]);
+
+  assert.deepEqual(entries, [
+    {
+      id: 'acme/omni-chat-large',
+      description: 'Omni chat model.',
+      contextLength: 262144,
+      supportsImageInput: true,
+      supportsVideoInput: true,
+      isPartner: false,
+      pricing: {
+        inputPerTokenUsd: '0.0000013',
+        outputPerTokenUsd: '0.0000026',
+        cachedInputPerTokenUsd: '0.0000001',
+      },
+    },
+    {
+      id: 'acme/partner-chat',
+      description: 'Partner chat model.',
+      contextLength: 200000,
+      supportsImageInput: true,
+      isPartner: true,
+      pricing: {
+        inputPerTokenUsd: '0.000003',
+        outputPerTokenUsd: '0.000015',
+      },
+    },
+    {
+      id: 'acme/plain-chat',
+      contextLength: 131072,
+      isPartner: false,
+    },
+    {
+      id: 'acme/image-gen',
+      description: 'Image generation model.',
+      supportsImageGeneration: true,
+      isPartner: false,
+      pricing: {
+        imagePerUnitUsd: '0.04',
+      },
+    },
+    {
+      id: 'acme/video-gen',
+      description: 'Video generation model.',
+      supportsVideoGeneration: true,
+      isPartner: false,
+      pricing: {
+        videoDurationPricing: [{ resolution: 'default', costPerSecondUsd: '0.05' }],
+      },
+    },
+    {
+      id: 'acme/world-sim',
+      description: 'World model treated as text-to-video.',
+      supportsVideoGeneration: true,
+      isPartner: false,
+      pricing: {
+        videoDurationPricing: [{ resolution: 'default', costPerSecondUsd: '0.08' }],
+      },
+    },
+    {
+      id: 'acme/unknown-pricing-chat',
+      isPartner: false,
+    },
+  ]);
+});
+
+test('parseDeepInfraModelEntriesPayload tolerates data wrapper and malformed entries', () => {
+  const entries = parseDeepInfraModelEntriesPayload({
+    data: [
+      {
+        model_name: 'acme/chat',
+        type: 'text-generation',
+        deprecated: null,
+      },
+      'garbage',
+      { type: 'text-generation' },
+      { model_name: '   ', type: 'text-generation' },
+      { model_name: 'acme/no-type' },
+      { model_name: 'acme/deprecated', type: 'text-generation', deprecated: 1 },
+    ],
+  });
+
+  assert.deepEqual(entries, [{ id: 'acme/chat' }]);
+  assert.deepEqual(parseDeepInfraModelEntriesPayload(null), []);
+  assert.deepEqual(parseDeepInfraModelEntriesPayload({}), []);
+  assert.deepEqual(parseDeepInfraModelEntriesPayload([]), []);
 });
 
 test('mergeFireworksAiGatewayModelPages dedupes across pages', () => {

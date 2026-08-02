@@ -25,6 +25,7 @@ const MODELS_DEV_LOGO_ID_ALIASES: Partial<Record<DesktopModelProvider, string>> 
   'google-vertex-ai': 'google-vertex',
   'together-ai': 'togetherai',
   groq: 'groq',
+  deepinfra: 'deepinfra',
   'hugging-face': 'huggingface',
   baseten: 'baseten',
 };

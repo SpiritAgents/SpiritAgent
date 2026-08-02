@@ -218,6 +218,8 @@ export interface PreviewModelCatalogEntry {
   supportsThinkingSwitch?: boolean;
   /** Hugging Face Hub 媒体模型：Inference Providers 路由 hint。 */
   inferenceProvider?: string;
+  /** DeepInfra `is_partner`：partner 模型（数据转发第三方）；首版仅作 catalog metadata，不过滤。 */
+  isPartner?: boolean;
 }
 
 /** 预览某端点下列出的模型 id（带本地 TTL 缓存）。 */

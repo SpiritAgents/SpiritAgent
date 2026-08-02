@@ -87,6 +87,7 @@ export function usesProviderListedModelCatalogMetadata(input: {
     || input.provider === 'fireworks-ai'
     || input.provider === 'together-ai'
     || input.provider === 'groq'
+    || input.provider === 'deepinfra'
     || input.provider === 'hugging-face'
     || input.provider === 'baseten'
     || input.provider === 'volcengine'
@@ -125,6 +126,7 @@ export function previewModelCatalogForTransport(input: {
       : {}),
     ...(entry.supportsThinkingSwitch === true ? { supportsThinkingSwitch: true } : {}),
     ...(entry.inferenceProvider !== undefined ? { inferenceProvider: entry.inferenceProvider } : {}),
+    ...(entry.isPartner !== undefined ? { isPartner: entry.isPartner } : {}),
   }));
 }
 
@@ -166,6 +168,7 @@ export function previewCatalogMapForTransport(input: {
           : {}),
         ...(entry.supportsThinkingSwitch === true ? { supportsThinkingSwitch: true } : {}),
         ...(entry.inferenceProvider !== undefined ? { inferenceProvider: entry.inferenceProvider } : {}),
+        ...(entry.isPartner !== undefined ? { isPartner: entry.isPartner } : {}),
       },
     ]);
   }

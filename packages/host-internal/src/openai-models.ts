@@ -68,6 +68,8 @@ export interface ProviderListedModelEntry {
   supportedReasoningEfforts?: string[];
   /** Hugging Face Hub 媒体模型：Inference Providers 路由 hint（供 backend 可选使用）。 */
   inferenceProvider?: string;
+  /** DeepInfra `is_partner`：partner 模型（数据转发第三方）；首版仅作 catalog metadata，不过滤。 */
+  isPartner?: boolean;
 }
 
 export const OPENAI_MODELS_PATH = '/models';
@@ -1254,6 +1256,200 @@ export async function listGroqModels(
   };
   const json = await fetchModelsListJson(url, init);
   const entries = parseGroqModelEntriesPayload(json);
+  return dedupeProviderListedModelEntries(entries).sort((a, b) => a.id.localeCompare(b.id));
+}
+
+/** DeepInfra 模型目录 `GET /models/list`（无鉴权）；不以其 `/v1/openai/models` 子集作主 catalog 源。 */
+export const DEEPINFRA_MODELS_LIST_URL = 'https://api.deepinfra.com/models/list';
+
+const DEEPINFRA_CHAT_MODEL_TYPE = 'text-generation';
+const DEEPINFRA_IMAGE_GENERATION_TYPES = new Set(['text-to-image']);
+// `world-model` 仅 2 条，按 text-to-video 处理。
+const DEEPINFRA_VIDEO_GENERATION_TYPES = new Set(['text-to-video', 'world-model']);
+
+function deepInfraModelsListUrl(baseUrl: string): string {
+  // `/models/list` 挂在站点根而非 `/v1/openai` 下，按 origin 推导；baseUrl 异常时回退官方常量。
+  try {
+    return new URL('/models/list', baseUrl).toString();
+  } catch {
+    return DEEPINFRA_MODELS_LIST_URL;
+  }
+}
+
+function readDeepInfraModelsArray(body: unknown): unknown[] {
+  if (Array.isArray(body)) {
+    return body;
+  }
+  if (isJsonObject(body) && Array.isArray(body.data)) {
+    return body.data;
+  }
+  return [];
+}
+
+function readDeepInfraTags(value: unknown): ReadonlySet<string> {
+  const tags = new Set<string>();
+  if (!Array.isArray(value)) {
+    return tags;
+  }
+  for (const item of value) {
+    if (typeof item === 'string' && item.trim().length > 0) {
+      tags.add(item.trim().toLowerCase());
+    }
+  }
+  return tags;
+}
+
+/** DeepInfra pricing 数值单位为「小数 cents」（如 0.0003 cents/token = $3/M），÷100 转 USD。 */
+function readDeepInfraPositiveNumber(value: unknown): number | undefined {
+  if (typeof value !== 'number' || !Number.isFinite(value) || value <= 0) {
+    return undefined;
+  }
+  return value;
+}
+
+/** USD 金额格式化为普通十进制字符串，避免浮点噪声与科学计数法（同 Baseten 格式化思路）。 */
+function formatDeepInfraUsdAmount(value: number): string {
+  return value.toFixed(12).replace(/\.?0+$/, '');
+}
+
+function readDeepInfraCentsAsUsd(value: unknown): string | undefined {
+  const cents = readDeepInfraPositiveNumber(value);
+  return cents !== undefined ? formatDeepInfraUsdAmount(cents / 100) : undefined;
+}
+
+/** `rate_per_input_token_cached` 是 input 价倍率（非绝对 cents），须乘 `cents_per_input_token` 再 ÷100。 */
+function readDeepInfraCachedInputUsd(pricing: Record<string, unknown>): string | undefined {
+  const inputCents = readDeepInfraPositiveNumber(pricing.cents_per_input_token);
+  const rate = readDeepInfraPositiveNumber(pricing.rate_per_input_token_cached);
+  if (inputCents === undefined || rate === undefined) {
+    return undefined;
+  }
+  return formatDeepInfraUsdAmount((inputCents * rate) / 100);
+}
+
+function readDeepInfraPricing(record: Record<string, unknown>): ProviderListedModelPricing | undefined {
+  const pricing = asRecord(record.pricing);
+  if (!pricing) {
+    return undefined;
+  }
+  const type = readOptionalTrimmedString(pricing.type)?.toLowerCase();
+
+  if (type === 'tokens') {
+    const inputPerTokenUsd = readDeepInfraCentsAsUsd(pricing.cents_per_input_token);
+    const outputPerTokenUsd = readDeepInfraCentsAsUsd(pricing.cents_per_output_token);
+    const cachedInputPerTokenUsd = readDeepInfraCachedInputUsd(pricing);
+    return buildProviderListedModelPricing({
+      ...(inputPerTokenUsd ? { inputPerTokenUsd } : {}),
+      ...(outputPerTokenUsd ? { outputPerTokenUsd } : {}),
+      ...(cachedInputPerTokenUsd ? { cachedInputPerTokenUsd } : {}),
+    });
+  }
+
+  if (type === 'image_units') {
+    const imagePerUnitUsd = readDeepInfraCentsAsUsd(pricing.cents_per_image_unit);
+    return buildProviderListedModelPricing({
+      ...(imagePerUnitUsd ? { imagePerUnitUsd } : {}),
+    });
+  }
+
+  if (type === 'output_length') {
+    const costPerSecondUsd = readDeepInfraCentsAsUsd(pricing.cents_per_output_sec);
+    return buildProviderListedModelPricing({
+      ...(costPerSecondUsd
+        ? { videoDurationPricing: [{ resolution: 'default', costPerSecondUsd }] }
+        : {}),
+    });
+  }
+
+  // 未知 pricing.type：跳过 pricing，不阻塞 catalog。
+  return undefined;
+}
+
+export function parseDeepInfraModelEntriesPayload(body: unknown): ProviderListedModelEntry[] {
+  const raw = readDeepInfraModelsArray(body);
+  const entries: ProviderListedModelEntry[] = [];
+
+  for (const item of raw) {
+    if (!isJsonObject(item)) {
+      continue;
+    }
+    // `deprecated` 为 Unix 时间戳或 null，truthy 即跳过。
+    if (item.deprecated) {
+      continue;
+    }
+
+    const id = readOptionalTrimmedString(item.model_name);
+    if (!id) {
+      continue;
+    }
+
+    const type = readOptionalTrimmedString(item.type)?.toLowerCase();
+    const isChat = type === DEEPINFRA_CHAT_MODEL_TYPE;
+    const isImageGeneration = type !== undefined && DEEPINFRA_IMAGE_GENERATION_TYPES.has(type);
+    const isVideoGeneration = type !== undefined && DEEPINFRA_VIDEO_GENERATION_TYPES.has(type);
+    // 其余 type（embeddings / TTS / ASR / reranker / …）首版不进选择器。
+    if (!isChat && !isImageGeneration && !isVideoGeneration) {
+      continue;
+    }
+
+    const modelEntry: ProviderListedModelEntry = { id };
+
+    const description = readOptionalTrimmedString(item.description);
+    if (description) {
+      modelEntry.description = description;
+    }
+
+    const contextLength = readPositiveIntegerModelTrait(item, 'max_tokens');
+    if (contextLength !== undefined) {
+      modelEntry.contextLength = contextLength;
+    }
+
+    if (isImageGeneration) {
+      modelEntry.supportsImageGeneration = true;
+    }
+    if (isVideoGeneration) {
+      modelEntry.supportsVideoGeneration = true;
+    }
+
+    // Chat 能力仅认 tags，不从 tag 推断 reasoning（以运行时 reasoning API 为准）。
+    if (isChat) {
+      const tags = readDeepInfraTags(item.tags);
+      if (tags.has('multimodal')) {
+        modelEntry.supportsImageInput = true;
+      }
+      if (tags.has('input-video')) {
+        modelEntry.supportsVideoInput = true;
+      }
+    }
+
+    const isPartner = readBooleanModelTrait(item, 'is_partner');
+    if (isPartner !== undefined) {
+      modelEntry.isPartner = isPartner;
+    }
+
+    const pricing = readDeepInfraPricing(item);
+    if (pricing) {
+      modelEntry.pricing = pricing;
+    }
+
+    entries.push(modelEntry);
+  }
+
+  return entries;
+}
+
+export async function listDeepInfraModels(
+  options: ListOpenAiCompatibleModelIdsOptions,
+): Promise<ProviderListedModelEntry[]> {
+  // `/models/list` 无需鉴权；有 key 时仍带 Bearer（`bearerAuthHeaders` 空 key 自动省略）。
+  const url = deepInfraModelsListUrl(options.baseUrl);
+  const init: RequestInit = {
+    method: 'GET',
+    headers: bearerAuthHeaders(options.apiKey),
+    ...(options.signal !== undefined ? { signal: options.signal } : {}),
+  };
+  const json = await fetchModelsListJson(url, init);
+  const entries = parseDeepInfraModelEntriesPayload(json);
   return dedupeProviderListedModelEntries(entries).sort((a, b) => a.id.localeCompare(b.id));
 }
 
@@ -2454,6 +2650,10 @@ export async function listProviderModels(
     return listGroqModels(options);
   }
 
+  if (options.provider === 'deepinfra') {
+    return listDeepInfraModels(options);
+  }
+
   if (options.provider === 'baseten') {
     return listBasetenModels(options);
   }
@@ -2814,6 +3014,7 @@ function dedupeProviderListedModelEntries(
       ...(entry.supportedReasoningEfforts !== undefined
         ? { supportedReasoningEfforts: [...entry.supportedReasoningEfforts] }
         : {}),
+      ...(entry.isPartner !== undefined ? { isPartner: entry.isPartner } : {}),
     });
   }
   return deduped;
