@@ -6,6 +6,7 @@ import { test } from 'node:test';
 
 import { setLlmFetchTransportOverrideForTests } from '../llm-fetch.js';
 import { clearMoonshotChatCompletionMessages } from './moonshot-chat-completion-messages.js';
+import { applyCodeCompletionTransportProfile } from '../code-completion/transport-profile.js';
 import { AiSdkOpenAiCompatibleTransport } from './ai-sdk-transport.js';
 import type { OpenAiTransportConfig } from './openai-compat.js';
 
@@ -96,6 +97,21 @@ test('DeepInfra transport injects reasoning.enabled=false when thinking is disab
     reasoningEffort: 'default',
     vendorExtendedThinking: false,
   });
+  assert.deepEqual(captured[0]?.body.reasoning, { enabled: false });
+  assert.equal('reasoning_effort' in captured[0]!.body, false);
+});
+
+test('DeepInfra code-completion profile omits reasoning_effort and disables reasoning', async () => {
+  const captured = await runDeepInfraChatRound(
+    applyCodeCompletionTransportProfile({
+      apiKey: 'test-key',
+      model: 'meta-llama/Meta-Llama-3.1-8B-Instruct-Turbo',
+      baseUrl: 'https://api.deepinfra.com/v1/openai',
+      llmVendor: 'deepinfra',
+      reasoningEffort: 'medium',
+      workspaceRoot: process.cwd(),
+    }) as OpenAiTransportConfig,
+  );
   assert.deepEqual(captured[0]?.body.reasoning, { enabled: false });
   assert.equal('reasoning_effort' in captured[0]!.body, false);
 });

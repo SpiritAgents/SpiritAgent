@@ -1104,8 +1104,9 @@ function resolveDeepInfraReasoningEffort(
 }
 
 function createAiSdkDeepInfraProvider(config: OpenAiTransportConfig) {
-  const reasoningEffort = resolveDeepInfraReasoningEffort(config);
-  const thinkingDisabled = config.vendorExtendedThinking === false;
+  const isCodeCompletion = isCodeCompletionTransportProfile(config);
+  const reasoningEffort = isCodeCompletion ? undefined : resolveDeepInfraReasoningEffort(config);
+  const thinkingDisabled = isCodeCompletion || config.vendorExtendedThinking === false;
   // deepinfra 走官方 SDK 而非 createAiSdkOpenAiCompatibleProvider，stash 还原须在本 wrapper 内兼任。
   const needsVideoStash = usesOpenAiCompatibleVideoMessageStash(config.llmVendor);
   const needsFetchWrapper = needsVideoStash || reasoningEffort !== undefined || thinkingDisabled;
