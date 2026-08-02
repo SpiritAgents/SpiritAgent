@@ -412,6 +412,7 @@ impl ModelProfile {
             Some(ModelProvider::AmazonBedrock) => {
                 parsed.unwrap_or(ModelTransportKind::Bedrock)
             }
+            Some(ModelProvider::Minimax) => parsed.unwrap_or(ModelTransportKind::Anthropic),
             _ => parsed.unwrap_or(ModelTransportKind::OpenAiCompatible),
         }
     }
@@ -2645,6 +2646,17 @@ mod tests {
         assert_eq!(model.provider, Some(ModelProvider::Minimax));
         assert_eq!(model.provider_site().as_deref(), Some("intl"));
         assert_eq!(model.transport_kind(), ModelTransportKind::Anthropic);
+    }
+
+    #[test]
+    fn minimax_transport_kind_defaults_to_anthropic_without_explicit_kind() {
+        let profile = test_profile(
+            "minimax",
+            "MiniMax-M3",
+            "https://api.minimaxi.com/anthropic/v1",
+            ModelProvider::Minimax,
+        );
+        assert_eq!(profile.transport_kind(), ModelTransportKind::Anthropic);
     }
 
     #[test]
