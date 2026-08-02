@@ -426,6 +426,7 @@ impl ModelProfile {
             Some(ModelProvider::KimiCode) => false,
             Some(ModelProvider::Xiaomi) => false,
             Some(ModelProvider::Siliconflow) => false,
+            Some(ModelProvider::Groq) => false,
             Some(ModelProvider::Xai)
             | Some(ModelProvider::ZAi)
             | Some(ModelProvider::ZhipuAi)
@@ -437,7 +438,6 @@ impl ModelProfile {
             | Some(ModelProvider::Openrouter)
             | Some(ModelProvider::FireworksAi)
             | Some(ModelProvider::TogetherAi)
-            | Some(ModelProvider::Groq)
             | Some(ModelProvider::HuggingFace)
             | Some(ModelProvider::Baseten)
             | Some(ModelProvider::Cohere)
@@ -2141,6 +2141,24 @@ mod tests {
 
         assert!(!mimo_without_capabilities.supports_image_input());
         assert!(mimo_with_image.supports_image_input());
+    }
+
+    #[test]
+    fn model_profile_supports_image_input_uses_explicit_capabilities_for_groq() {
+        let groq_without_capabilities = test_profile(
+            "groq",
+            "llama-3.3-70b-versatile",
+            "https://api.groq.com/openai/v1",
+            ModelProvider::Groq,
+        );
+        let mut groq_with_image = groq_without_capabilities.clone();
+        groq_with_image.extra.insert(
+            "capabilities".to_string(),
+            serde_json::json!(["chat", "image"]),
+        );
+
+        assert!(!groq_without_capabilities.supports_image_input());
+        assert!(groq_with_image.supports_image_input());
     }
 
     #[test]
