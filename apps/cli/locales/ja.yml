@@ -192,7 +192,7 @@ form.extensions.footer_hint: "↑/↓ 移動  マウスホイールでスクロ�
 form.model.title: "モデルを接続"
 form.model.field.provider.label: "プロバイダー"
 form.model.provider.deepseek: "DeepSeek"
-form.model.provider.xai: "xAI"
+form.model.provider.xai: "SpaceXAI"
 form.model.provider.moonshot-ai: "Moonshot AI"
 form.model.provider.kimi-code: "Kimi Code"
 form.model.provider.moonshot-ai.site.cn: "中国"

@@ -58,7 +58,7 @@ Agent Core маршрутизирует inference через несколько 
 | Транспорт | Типичные провайдеры |
 | --- | --- |
 | **OpenAI-compatible** | OpenAI, DeepSeek, Moonshot, MiniMax, Volcengine, пользовательские endpoints |
-| **Open Responses** | OpenAI, xAI, Vercel AI Gateway, OpenRouter, Alibaba (Bailian) |
+| **Open Responses** | OpenAI, SpaceXAI, Vercel AI Gateway, OpenRouter, Alibaba (Bailian) |
 | **Anthropic** | Claude через Messages API |
 
 Нативные возможности провайдера (веб-поиск Open Responses, встроенный поиск и интерпретатор кода Alibaba и т. д.) инжектируются через поле `tools`.

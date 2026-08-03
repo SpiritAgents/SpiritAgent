@@ -58,7 +58,7 @@ Agent Core roteia inferência por vários transportes atrás de um runtime unifi
 | Transporte | Provedores típicos |
 | --- | --- |
 | **OpenAI-compatible** | OpenAI, DeepSeek, Moonshot, MiniMax, Volcengine, endpoints personalizados |
-| **Open Responses** | OpenAI, xAI, Vercel AI Gateway, OpenRouter, Alibaba (Bailian) |
+| **Open Responses** | OpenAI, SpaceXAI, Vercel AI Gateway, OpenRouter, Alibaba (Bailian) |
 | **Anthropic** | Claude via Messages API |
 
 Capacidades nativas do provedor (busca web no Open Responses, busca e interpretador de código Alibaba, etc.) são injetadas pelo campo `tools`.

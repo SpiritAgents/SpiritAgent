@@ -58,7 +58,7 @@ Agent Core leitet Inferenz über mehrere Transports hinter einer Runtime:
 | Transport | Typische Anbieter |
 | --- | --- |
 | **OpenAI-compatible** | OpenAI, DeepSeek, Moonshot, MiniMax, Volcengine, benutzerdefinierte Endpunkte |
-| **Open Responses** | OpenAI, xAI, Vercel AI Gateway, OpenRouter, Alibaba (Bailian) |
+| **Open Responses** | OpenAI, SpaceXAI, Vercel AI Gateway, OpenRouter, Alibaba (Bailian) |
 | **Anthropic** | Claude über Messages API |
 
 Anbieter-native Fähigkeiten (z. B. Websuche bei Open Responses, Alibaba-Suche und Code-Interpreter) werden über das `tools`-Feld injiziert.

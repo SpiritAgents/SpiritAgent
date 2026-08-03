@@ -192,7 +192,7 @@ form.extensions.footer_hint: "↑/↓ Bewegen  Mausrad scrollen  Enter Platzhalt
 form.model.title: "Modelle verbinden"
 form.model.field.provider.label: "Anbieter"
 form.model.provider.deepseek: "DeepSeek"
-form.model.provider.xai: "xAI"
+form.model.provider.xai: "SpaceXAI"
 form.model.provider.moonshot-ai: "Moonshot AI"
 form.model.provider.kimi-code: "Kimi Code"
 form.model.provider.moonshot-ai.site.cn: "China"

@@ -540,5 +540,5 @@ async function* emptyResponsesEventStream(): AsyncGenerator<
 > {}
 
 function xaiResponsesLocalToolsUnsupportedMessage(): string {
-  return 'xAI Responses API 暂不支持本地 function tools，请改用 Chat Completions transport。';
+  return 'SpaceXAI Responses API 暂不支持本地 function tools，请改用 Chat Completions transport。';
 }

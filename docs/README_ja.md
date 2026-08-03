@@ -58,7 +58,7 @@ Agent Core は単一ランタイムの背後で複数の推論トランスポー
 | トランスポート | 代表的なプロバイダ |
 | --- | --- |
 | **OpenAI-compatible** | OpenAI、DeepSeek、Moonshot、MiniMax、Volcengine、カスタムエンドポイント |
-| **Open Responses** | OpenAI、xAI、Vercel AI Gateway、OpenRouter、Alibaba（百煉） |
+| **Open Responses** | OpenAI、SpaceXAI、Vercel AI Gateway、OpenRouter、Alibaba（百煉） |
 | **Anthropic** | Messages API 経由の Claude |
 
 プロバイダー固有機能（Open Responses の Web 検索、Alibaba の組み込み検索・コードインタプリタなど）はリクエストの `tools` フィールド経由で注入されます。

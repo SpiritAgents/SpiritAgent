@@ -191,7 +191,7 @@
     },
     "xai": {
       "labelKey": "providers.xai",
-      "fallbackLabel": "xAI"
+      "fallbackLabel": "SpaceXAI"
     },
     "moonshot-ai": {
       "labelKey": "providers.moonshotAi",

@@ -58,7 +58,7 @@ Agent Core는 단일 런타임 뒤에서 여러 추론 트랜스포트를 라우
 | 트랜스포트 | 대표 프로바이더 |
 | --- | --- |
 | **OpenAI-compatible** | OpenAI, DeepSeek, Moonshot, MiniMax, Volcengine, 사용자 정의 엔드포인트 |
-| **Open Responses** | OpenAI, xAI, Vercel AI Gateway, OpenRouter, Alibaba(百炼) |
+| **Open Responses** | OpenAI, SpaceXAI, Vercel AI Gateway, OpenRouter, Alibaba(百炼) |
 | **Anthropic** | Messages API를 통한 Claude |
 
 프로바이더 네이티브 기능(예: Open Responses 웹 검색, Alibaba 내장 검색·코드 인터프리터)은 요청의 `tools` 필드로 주입됩니다.
