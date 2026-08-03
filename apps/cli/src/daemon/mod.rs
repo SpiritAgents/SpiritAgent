@@ -1,6 +1,6 @@
 mod client;
 mod resolve;
+mod runtime;
 mod ws;
 
-pub(crate) use client::DaemonClient;
-pub(crate) use resolve::ensure_daemon;
+pub(crate) use runtime::DaemonRuntime;

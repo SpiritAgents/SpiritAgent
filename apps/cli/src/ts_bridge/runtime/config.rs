@@ -11,8 +11,8 @@ use crate::{
 
 impl TsBridgeRuntime {
         pub(crate) fn apply_transport_to_bridge(&mut self) {
-        let pending_images = self.session.pending_image_paths().to_vec();
-        let pending_resources = self.session.pending_mcp_resources().to_vec();
+        let pending_images = self.sync.session.pending_image_paths().to_vec();
+        let pending_resources = self.sync.session.pending_mcp_resources().to_vec();
         let transport_config = match self.resolve_transport_config_json() {
             Ok(value) => value,
             Err(err) => {
@@ -51,7 +51,7 @@ impl TsBridgeRuntime {
         if !self.deferred_transport_replace {
             return;
         }
-        if self.is_busy_cache || self.session.pending_user_turn().is_some() {
+        if self.sync.is_busy_cache || self.sync.session.pending_user_turn().is_some() {
             return;
         }
         self.deferred_transport_replace = false;
@@ -61,7 +61,7 @@ impl TsBridgeRuntime {
     pub fn replace_config(&mut self, config: AppConfig) {
         let transport_config_changed = self.transport_config_will_change(&config);
         if let Err(err) = self.validate_config_change(&config) {
-            self.events
+            self.sync.events
                 .push_back(RuntimeEvent::PushMessage(ChatMessage::new(
                     MessageRole::Agent,
                     err.to_string(),
@@ -80,7 +80,7 @@ impl TsBridgeRuntime {
             return;
         }
 
-        let busy_defer = self.is_busy_cache || self.session.pending_user_turn().is_some();
+        let busy_defer = self.sync.is_busy_cache || self.sync.session.pending_user_turn().is_some();
         self.config = config;
         if let Err(err) = self.apply_llm_http_version_from_config() {
             self.handle_bridge_error(err);

@@ -149,6 +149,30 @@ applyTo: "**/*"
 
 apps 必须尽量薄，避免 CLI 与 Desktop 再次分叉。
 
+### 2.5 server（daemon 层）
+
+`packages/server` 是可选的共享后端：把 `agent-core` runtime 与宿主内部库的执行面跑在一个长期驻留的 daemon 进程里，CLI / Desktop / Web 以 WebSocket（JSON-RPC 2.0）作为 thin client 连接。
+
+它负责：
+
+- 会话生命周期与 turn 编排（每会话一个 `AgentRuntime`，daemon 内 25ms 泵驱动 `poll`）
+- 流式事件与 snapshot 的推送（`runtime.event` / `session.snapshot` / `session.turnFinished`）
+- 审批 / 提问 / 工作区能力信任的客户端路由（广播，先到先得；末客户端断连自动 deny/skip）
+- 工具在 daemon 进程内执行（`NodeHostToolService` + 按 workspace 共享的 `McpService`）
+- 宿主配置与凭证的进程内读取（`config.json` + OS keyring，密钥不过 WS）
+- `host.*` 工作区/配置管理 RPC（rules/skills/hooks/extensions/marketplace/todos/MCP 管理）
+- instance registry（随机端口 + `{spiritDataDir}/server/instances/`）与 home 级 bearer token
+
+它不负责：
+
+- 再定义一份模型可见语义（工具契约、系统提示词仍在 `agent-core`）
+- 再实现一份宿主执行（调用宿主内部库，不 fork）
+- 客户端 UI 与平台能力（窗口、TUI 渲染、文件选择器等仍在 apps）
+
+结论：
+
+server 是 runtime 的宿主位置，不是第四个语义层；apps 退化为 client 后仍须保持薄。
+
 ## 所有权表
 
 | 资产 | 归属 |
@@ -173,6 +197,8 @@ apps 必须尽量薄，避免 CLI 与 Desktop 再次分叉。
 | CLI / Desktop UI 与平台接线 | apps |
 | Desktop 梦境设置页、后台调度与 Commit 消费 | apps |
 | Desktop / CLI Composer TODO 卡片与条带 UI | apps |
+| 共享后端的会话/turn/审批单一真相源 | `packages/server` |
+| 共享后端的 instance registry、client 鉴权与 WS 传输 | `packages/server` |
 
 ## 强约束
 
@@ -192,6 +218,8 @@ apps 必须尽量薄，避免 CLI 与 Desktop 再次分叉。
 - `packages/host-internal` 承载梦境工具执行、dream store 与日志目录等宿主能力。
 - `packages/host-internal/src/lsp/` 承载 LSP 宿主实现（多语言 server 进程、`LspOrchestrator` 按后缀路由、provider 发现/安装、写后诊断 append、workspace cache）。
 - `packages/agent-core/src/lsp/` 仅保留 LSP 工具契约（`get_diagnostics` 按路径后缀自动路由）、支持后缀常量与 LLM 可见诊断格式化。
+- `packages/server` 承载共享 daemon：会话/turn/审批的单一真相源、WS 传输与 instance registry；CLI 默认作为 client 连接（`SPIRIT_INPROCESS_HOST=1` 为迁移期回退）。
+- `packages/host-internal/src/credentials/` 承载共享配置与凭证读取（`config.json` + OS keyring，`group::{groupId}` 为规范账号方案），供 server 与 acp-server 进程内解析 transport。
 - `apps/desktop` 承载梦境设置、后台调度与 Commit 消费。
 - CLI 与 Desktop 当前重复的宿主工具实现、rules / skills / plan 发现与管理逻辑，应收敛到宿主内部库。
 - `agent-core` 不应吸收这些发现与管理实现，因为那会把 Host / UI 责任错误抬升成 Agent SDK 的一部分。

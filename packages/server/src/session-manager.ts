@@ -1,14 +1,15 @@
 import { randomUUID } from 'node:crypto';
 
-import type { JsonValue, RuntimeEvent, SpiritAgentMode } from '@spiritagent/agent-core';
+import type { JsonValue, LlmActiveSkill, RuntimeEvent, SpiritAgentMode } from '@spiritagent/agent-core';
 import type { BridgeRuntimeSnapshot } from '@spiritagent/agent-core/host-bridge';
-import type { ApprovalLevel } from '@spiritagent/host-internal';
+import { createHostTodoStore, type ApprovalLevel } from '@spiritagent/host-internal';
 
 import {
   createServerRuntime,
   type ServerClientKind,
   type ServerRuntimeResult,
 } from './runtime-factory.js';
+import { McpRegistry } from './mcp-registry.js';
 import { buildServerSnapshot } from './snapshot-projector.js';
 
 export type TurnStopReason = 'completed' | 'failed' | 'cancelled';
@@ -27,7 +28,7 @@ export interface ServerSessionInfo {
 interface QueuedUserTurn {
   text: string;
   explicitImages: string[];
-  activeSkills: Parameters<ServerRuntimeResult['runtime']['startUserTurnStreaming']>[3];
+  activeSkills: LlmActiveSkill[];
 }
 
 export interface WorkspaceCapabilityTrustRequestPayload {
@@ -57,6 +58,11 @@ interface ServerSession {
   /** Ticks spent idle while turnActive — guards against result-less endings. */
   idleTicksWhileActive: number;
   polling: boolean;
+  /** Skills activated out-of-turn (slash); consumed by the next turn. */
+  pendingActiveSkills: LlmActiveSkill[];
+  createParams: CreateSessionParams;
+  /** Current todo store scope key. */
+  todoSessionKey: string;
 }
 
 export interface SessionManagerCallbacks {
@@ -72,6 +78,8 @@ export interface SessionManagerCallbacks {
     requestId: string,
     request: WorkspaceCapabilityTrustRequestPayload,
   ) => void;
+  /** Tool-written file change (clients keep rewind bookkeeping). */
+  broadcastFileChange: (sessionId: string, change: unknown) => void;
   log?: (message: string) => void;
 }
 
@@ -79,12 +87,14 @@ export interface CreateSessionParams {
   workspaceRoot: string;
   hostKind: ServerClientKind;
   approvalLevel?: ApprovalLevel;
+  /** Todo store scope override (defaults to the new session id). */
+  todoSessionKey?: string;
 }
 
 export interface SubmitUserTurnParams {
   text: string;
   explicitImages?: string[];
-  activeSkills?: QueuedUserTurn['activeSkills'];
+  activeSkills?: LlmActiveSkill[];
 }
 
 export type SubmitUserTurnOutcome =
@@ -116,6 +126,8 @@ export class SessionManager {
   private readonly sessions = new Map<string, ServerSession>();
   private readonly pendingTrustRequests = new Map<string, PendingTrustRequest>();
   private readonly spiritDataDir: string;
+  /** Shared per-workspace MCP services (also serve host.mcp* management RPCs). */
+  readonly mcpRegistry = new McpRegistry();
 
   constructor(
     spiritDataDir: string,
@@ -130,9 +142,12 @@ export class SessionManager {
       workspaceRoot: params.workspaceRoot,
       spiritDataDir: this.spiritDataDir,
       sessionKey: sessionId,
+      ...(params.todoSessionKey?.trim() ? { todoSessionKey: params.todoSessionKey.trim() } : {}),
+      mcpService: this.mcpRegistry.forWorkspace(params.workspaceRoot),
       hostKind: params.hostKind === 'web' ? 'cli' : params.hostKind,
       approvalLevel: params.approvalLevel ?? 'default',
       onEvent: (event) => this.handleRuntimeEvent(sessionId, event),
+      onFileChange: (change) => this.callbacks.broadcastFileChange(sessionId, change),
       requestWorkspaceCapabilityTrust: (request) =>
         this.requestWorkspaceCapabilityTrust(sessionId, request),
       ...(this.callbacks.log ? { log: this.callbacks.log } : {}),
@@ -156,6 +171,9 @@ export class SessionManager {
       turnActive: false,
       idleTicksWhileActive: 0,
       polling: false,
+      pendingActiveSkills: [],
+      createParams: params,
+      todoSessionKey: params.todoSessionKey?.trim() || sessionId,
     };
     session.pump = setInterval(() => this.tickSession(session), PUMP_INTERVAL_MS);
     session.pump.unref();
@@ -302,13 +320,28 @@ export class SessionManager {
     session.info.isBusy = true;
     session.turnGeneration += 1;
 
+    // Skills activated out-of-turn (slash) merge with per-turn activations.
+    const pending = session.pendingActiveSkills ?? [];
+    const merged = [...pending, ...(turn.activeSkills ?? [])];
+    const seen = new Set<string>();
+    const activeSkills = merged.filter((skill) => {
+      if (seen.has(skill.id)) {
+        return false;
+      }
+      seen.add(skill.id);
+      return true;
+    });
+    session.pendingActiveSkills = [];
+
     await runtime.startUserTurnStreaming(
       turn.text,
       turn.explicitImages,
       [],
-      turn.activeSkills,
+      activeSkills,
     );
     // The session pump (25ms) drives poll() and harvests the turn result.
+    // Push the busy edge immediately so clients see the turn start.
+    this.callbacks.broadcastSnapshot(session.info.sessionId, buildServerSnapshot(session.runtimeResult));
   }
 
   private finishTurn(session: ServerSession, generation: number, stopReason: TurnStopReason): void {
@@ -406,6 +439,13 @@ export class SessionManager {
     session.turnActive = false;
     session.runtimeResult.runtime.replaceHistory([]);
     session.info.isBusy = false;
+    // Match the legacy bridge's fresh-session semantics: todos reset with it.
+    void createHostTodoStore({
+      spiritDataDir: this.spiritDataDir,
+      scope: { sessionKey: session.todoSessionKey },
+    })
+      .purge()
+      .catch(() => {});
     this.callbacks.broadcastSnapshot(sessionId, buildServerSnapshot(session.runtimeResult));
   }
 
@@ -417,6 +457,196 @@ export class SessionManager {
     } else {
       delete session.info.title;
     }
+  }
+
+  // ---------------------------------------------------- archive / restore
+
+  replaceFromArchive(sessionId: string, archive: unknown): void {
+    const session = this.requireSession(sessionId);
+    session.runtimeResult.runtime.replaceFromArchive(archive as never);
+  }
+
+  exportArchive(sessionId: string, messages: unknown, assistantAux: unknown): unknown {
+    const session = this.requireSession(sessionId);
+    return session.runtimeResult.runtime.toArchive(messages as never, assistantAux as never);
+  }
+
+  async exportState(sessionId: string): Promise<unknown> {
+    const session = this.requireSession(sessionId);
+    return session.runtimeResult.exportState();
+  }
+
+  // ---------------------------------------------------------- skills / MCP
+
+  activateSkill(sessionId: string, skill: LlmActiveSkill): void {
+    const session = this.requireSession(sessionId);
+    const pending = session.pendingActiveSkills.filter((entry) => entry.id !== skill.id);
+    pending.push(skill);
+    session.pendingActiveSkills = pending;
+  }
+
+  addPendingImage(sessionId: string, path: string): void {
+    this.requireSession(sessionId).runtimeResult.runtime.addPendingImage(path);
+  }
+
+  clearPendingImages(sessionId: string): number {
+    const { runtime } = this.requireSession(sessionId).runtimeResult;
+    const count = runtime.pendingImagePaths().length;
+    runtime.clearPendingImages();
+    return count;
+  }
+
+  async attachMcpResource(sessionId: string, server: string, uri: string): Promise<string> {
+    return this.requireSession(sessionId).runtimeResult.runtime.attachMcpResource(server, uri);
+  }
+
+  clearPendingMcpResources(sessionId: string): number {
+    const { runtime } = this.requireSession(sessionId).runtimeResult;
+    const count = runtime.pendingMcpResources().length;
+    runtime.clearPendingMcpResources();
+    return count;
+  }
+
+  async applyMcpPrompt(
+    sessionId: string,
+    server: string,
+    prompt: string,
+    argsJson?: string,
+    userMessage?: string,
+  ): Promise<string> {
+    const session = this.requireSession(sessionId);
+    await session.runtimeResult.toolExecutor.refreshCaches();
+    session.turnActive = true;
+    session.idleTicksWhileActive = 0;
+    session.turnGeneration += 1;
+    return session.runtimeResult.runtime.startApplyMcpPrompt(server, prompt, argsJson, userMessage);
+  }
+
+  /** MCP management/read pass-throughs to the session's tool executor. */
+  async mcpCall(sessionId: string, action: string, params: Record<string, unknown>): Promise<unknown> {
+    const { toolExecutor, runtime } = this.requireSession(sessionId).runtimeResult;
+    switch (action) {
+      case 'listMcpServers':
+        return toolExecutor.listMcpServers();
+      case 'inspectMcpServer':
+        return toolExecutor.inspectMcpServer(String(params['name'] ?? ''));
+      case 'listMcpTools':
+        return toolExecutor.listMcpTools(String(params['name'] ?? ''));
+      case 'listMcpResources':
+        return toolExecutor.listMcpResources(String(params['name'] ?? ''));
+      case 'listMcpPrompts':
+        return toolExecutor.listMcpPrompts(String(params['name'] ?? ''));
+      case 'listCachedMcpPrompts':
+        return toolExecutor.listCachedMcpPrompts(String(params['name'] ?? ''));
+      case 'getMcpPrompt':
+        return toolExecutor.getMcpPrompt(
+          String(params['server'] ?? ''),
+          String(params['prompt'] ?? ''),
+          typeof params['argsJson'] === 'string' ? params['argsJson'] : undefined,
+        );
+      case 'callMcpTool':
+        return toolExecutor.callMcpTool(
+          String(params['server'] ?? ''),
+          String(params['tool'] ?? ''),
+          typeof params['argsJson'] === 'string' ? params['argsJson'] : undefined,
+        );
+      case 'readMcpResource':
+        return toolExecutor.readMcpResource(
+          String(params['server'] ?? ''),
+          String(params['uri'] ?? ''),
+        );
+      case 'mcpStatusSnapshot':
+        return toolExecutor.mcpStatusSnapshot();
+      case 'startMcpBackgroundRefresh':
+        toolExecutor.startMcpBackgroundRefresh();
+        return toolExecutor.mcpStatusSnapshot();
+      case 'startManualMcpTool': {
+        const request = await toolExecutor.createMcpToolRequest(
+          String(params['server'] ?? ''),
+          String(params['tool'] ?? ''),
+          typeof params['argsJson'] === 'string' ? params['argsJson'] : undefined,
+        );
+        return runtime.startManualToolRequestDirect(request, 'manual');
+      }
+      default:
+        throw new Error(`unknown mcp action: ${action}`);
+    }
+  }
+
+  // -------------------------------------------------------- manual tools
+
+  async startManualToolCommand(sessionId: string, message: string): Promise<unknown> {
+    const { runtime } = this.requireSession(sessionId).runtimeResult;
+    const result = await runtime.startManualToolCommand(message);
+    return { result, snapshot: this.snapshot(sessionId) };
+  }
+
+  async continuePendingManualToolApproval(sessionId: string, decision: unknown): Promise<unknown> {
+    const { runtime } = this.requireSession(sessionId).runtimeResult;
+    const result = await runtime.continuePendingManualToolApproval(decision as never);
+    return { result, snapshot: this.snapshot(sessionId) };
+  }
+
+  takeCompletedManualToolCommandResult(sessionId: string): unknown {
+    return this.requireSession(sessionId).runtimeResult.runtime.takeCompletedManualToolCommandResult() ?? null;
+  }
+
+  // ------------------------------------------------------------ subagents
+
+  subagentSessionArchive(sessionId: string, subagentSessionId: string): unknown {
+    return this.requireSession(sessionId).runtimeResult.runtime.childSessionArchive(subagentSessionId) ?? null;
+  }
+
+  subagentPendingAuxState(sessionId: string, subagentSessionId: string): unknown {
+    return this.requireSession(sessionId).runtimeResult.runtime.childSessionPendingAuxState(subagentSessionId) ?? null;
+  }
+
+  // ------------------------------------------------- config / hooks / mode
+
+  /** Re-resolve the transport from config.json and rebuild the runtime, preserving history. */
+  async replaceConfig(sessionId: string): Promise<void> {
+    const session = this.requireSession(sessionId);
+    const old = session.runtimeResult;
+    await old.runSessionEnd('switch');
+    old.runtime.abort();
+    const history = [...old.runtime.history()];
+
+    const fresh = await createServerRuntime({
+      workspaceRoot: session.createParams.workspaceRoot,
+      spiritDataDir: this.spiritDataDir,
+      sessionKey: sessionId,
+      hostKind: session.createParams.hostKind === 'web' ? 'cli' : session.createParams.hostKind,
+      approvalLevel: session.info.approvalLevel,
+      onEvent: (event) => this.handleRuntimeEvent(sessionId, event),
+      onFileChange: (change) => this.callbacks.broadcastFileChange(sessionId, change),
+      requestWorkspaceCapabilityTrust: (request) =>
+        this.requestWorkspaceCapabilityTrust(sessionId, request),
+      ...(this.callbacks.log ? { log: this.callbacks.log } : {}),
+    });
+    fresh.runtime.replaceHistory(history);
+    fresh.setLoopEnabled(old.runtime.loopEnabled());
+    session.runtimeResult = fresh;
+    await fresh.runSessionStart('resume');
+  }
+
+  async reloadHostMetadata(sessionId: string, mode: SpiritAgentMode): Promise<void> {
+    const session = this.requireSession(sessionId);
+    await session.runtimeResult.reloadHostMetadata(mode);
+    session.runtimeResult.toolExecutor.setAgentModeToolExposure(mode);
+  }
+
+  async runSessionStart(sessionId: string, source: 'startup' | 'resume' | 'open'): Promise<void> {
+    await this.requireSession(sessionId).runtimeResult.runSessionStart(source);
+  }
+
+  setAttribution(sessionId: string, attribution: { commitEnabled?: boolean; prEnabled?: boolean }): void {
+    this.requireSession(sessionId).runtimeResult.setAttribution(attribution);
+  }
+
+  setTodoSessionKey(sessionId: string, sessionKey: string): void {
+    const session = this.requireSession(sessionId);
+    session.todoSessionKey = sessionKey;
+    session.runtimeResult.setTodoSessionKey(sessionKey);
   }
 
   // ------------------------------------------------------ interactions
@@ -498,6 +728,13 @@ export class SessionManager {
       this.pendingTrustRequests.delete(requestId);
       clearTimeout(pending.timer);
       pending.resolve('deny');
+    }
+  }
+
+  /** Re-read installed extensions into every live session (post install/remove). */
+  async refreshExtensions(): Promise<void> {
+    for (const session of this.sessions.values()) {
+      await session.runtimeResult.refreshExtensions();
     }
   }
 

@@ -130,7 +130,7 @@ npm run dev:cli    # cargo run -p spirit-agent
 - **Bearer auth** — home-level token at `{spiritDataDir}/server.token` (mode 0600), accepted via `Authorization` header or `?token=` query; `spirit-server rotate-token` rotates it for new connections.
 - **No new dependencies** — the WebSocket layer (RFC 6455) is implemented in-package.
 
-The daemon is under active migration (see [Epic #274](https://github.com/SpiritAgents/SpiritAgent/issues/274)); the session/streaming RPC surface lands in phases. Remote access (`--hostname 0.0.0.0`) is reserved for a future phase and off by default.
+The daemon is under active migration (see [Epic #274](https://github.com/SpiritAgents/SpiritAgent/issues/274)): the **CLI already runs on it by default** (headless and TUI; `SPIRIT_INPROCESS_HOST=1` selects the legacy sidecar during the migration window), while Desktop still embeds its runtime in-process and migrates in a later phase. Remote access (`--hostname 0.0.0.0`) is reserved for a future phase and off by default.
 
 ## ACP Server
 

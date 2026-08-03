@@ -2,6 +2,12 @@ import { randomUUID } from 'node:crypto';
 import { createServer, type Server as HttpServer } from 'node:http';
 import type { Socket } from 'node:net';
 
+import {
+  configureLlmClientVersion,
+  configureLlmHttpVersion,
+  normalizeLlmHttpVersion,
+} from '@spiritagent/agent-core';
+
 import { loadOrCreateToken, readCurrentToken, tokenEquals } from './auth-token.js';
 import {
   registerInstance,
@@ -19,23 +25,46 @@ import {
   SERVER_HEALTH,
   SERVER_INITIALIZE,
   SESSION_ABORT,
+  SESSION_ACTIVATE_SKILL,
+  SESSION_ADD_PENDING_IMAGE,
+  SESSION_APPLY_MCP_PROMPT,
+  SESSION_ATTACH_MCP_RESOURCE,
+  SESSION_CLEAR_PENDING_IMAGES,
+  SESSION_CLEAR_PENDING_MCP_RESOURCES,
   SESSION_CLOSE,
   SESSION_COMPACT_HISTORY,
   SESSION_CONTINUE_COMPLETION,
+  SESSION_CONTINUE_MANUAL_APPROVAL,
   SESSION_CREATE,
+  SESSION_EXPORT_ARCHIVE,
+  SESSION_EXPORT_STATE,
   SESSION_LIST,
+  SESSION_MCP,
   SESSION_POLL,
   SESSION_RENAME,
   SESSION_REPLY_PENDING_APPROVAL,
   SESSION_REPLY_PENDING_QUESTIONS,
   SESSION_REPLY_TRUST,
   SESSION_RESET,
+  SESSION_REPLACE_CONFIG,
+  SESSION_REPLACE_FROM_ARCHIVE,
+  SESSION_RUN_SESSION_START,
+  SESSION_RELOAD_METADATA,
   SESSION_SET_APPROVAL_LEVEL,
+  SESSION_SET_ATTRIBUTION,
+  SESSION_SET_TODO_SESSION_KEY,
   SESSION_SET_LOOP_ENABLED,
   SESSION_SET_MODE,
   SESSION_SNAPSHOT,
+  SESSION_START_MANUAL_TOOL_COMMAND,
+  SESSION_SUBAGENT_ARCHIVE,
+  SESSION_SUBAGENT_AUX,
   SESSION_SUBMIT_USER_TURN,
+  SESSION_TAKE_MANUAL_RESULT,
   SESSION_TURN_FINISHED,
+  SESSION_FILE_CHANGED,
+  SERVER_SET_LLM_CLIENT_VERSION,
+  SERVER_SET_LLM_HTTP_VERSION,
   WORKSPACE_TRUST_REQUESTED,
   errorResponse,
   isJsonRpcRequest,
@@ -46,6 +75,7 @@ import {
   type ServerInitializeResult,
 } from './protocol/index.js';
 import { SessionManager } from './session-manager.js';
+import { HostService, HOST_METHODS } from './host-service.js';
 
 const SESSION_METHODS = new Set([
   SESSION_CREATE,
@@ -64,6 +94,31 @@ const SESSION_METHODS = new Set([
   SESSION_REPLY_PENDING_APPROVAL,
   SESSION_REPLY_PENDING_QUESTIONS,
   SESSION_REPLY_TRUST,
+  SESSION_REPLACE_FROM_ARCHIVE,
+  SESSION_EXPORT_ARCHIVE,
+  SESSION_EXPORT_STATE,
+  SESSION_ACTIVATE_SKILL,
+  SESSION_ADD_PENDING_IMAGE,
+  SESSION_CLEAR_PENDING_IMAGES,
+  SESSION_ATTACH_MCP_RESOURCE,
+  SESSION_CLEAR_PENDING_MCP_RESOURCES,
+  SESSION_APPLY_MCP_PROMPT,
+  SESSION_MCP,
+  SESSION_START_MANUAL_TOOL_COMMAND,
+  SESSION_CONTINUE_MANUAL_APPROVAL,
+  SESSION_TAKE_MANUAL_RESULT,
+  SESSION_SUBAGENT_ARCHIVE,
+  SESSION_SUBAGENT_AUX,
+  SESSION_REPLACE_CONFIG,
+  SESSION_RELOAD_METADATA,
+  SESSION_RUN_SESSION_START,
+  SESSION_SET_ATTRIBUTION,
+  SESSION_SET_TODO_SESSION_KEY,
+]);
+
+const SERVER_METHODS = new Set([
+  SERVER_SET_LLM_HTTP_VERSION,
+  SERVER_SET_LLM_CLIENT_VERSION,
 ]);
 import {
   acceptUpgrade,
@@ -151,8 +206,13 @@ export async function startDaemon(options: DaemonOptions): Promise<RunningDaemon
     broadcastTrustRequest: (sessionId, requestId, request) => {
       broadcast(WORKSPACE_TRUST_REQUESTED, { sessionId, requestId, request });
     },
+    broadcastFileChange: (sessionId, change) => {
+      broadcast(SESSION_FILE_CHANGED, { sessionId, change });
+    },
     log,
   });
+
+  const hostService = new HostService(dataDir, sessionManager);
 
   /** Params readers with strict-but-minimal validation at the RPC boundary. */
   const readSessionId = (params: Record<string, unknown>): string => {
@@ -179,11 +239,15 @@ export async function startDaemon(options: DaemonOptions): Promise<RunningDaemon
           throw new Error('missing workspaceRoot');
         }
         const approvalLevel = params['approvalLevel'];
+        const todoSessionKey = params['todoSessionKey'];
         const info = await sessionManager.createSession({
           workspaceRoot,
           hostKind: clientStates.get(conn)?.clientKind ?? 'cli',
           ...(approvalLevel === 'auto-approval' || approvalLevel === 'full-approval' || approvalLevel === 'default'
             ? { approvalLevel }
+            : {}),
+          ...(typeof todoSessionKey === 'string' && todoSessionKey.trim()
+            ? { todoSessionKey: todoSessionKey.trim() }
             : {}),
         });
         return info;
@@ -265,6 +329,87 @@ export async function startDaemon(options: DaemonOptions): Promise<RunningDaemon
         sessionManager.replyWorkspaceCapabilityTrust(requestId, decision);
         return { ok: true };
       }
+      case SESSION_REPLACE_FROM_ARCHIVE:
+        sessionManager.replaceFromArchive(readSessionId(params), params['archive']);
+        return { ok: true };
+      case SESSION_EXPORT_ARCHIVE:
+        return sessionManager.exportArchive(readSessionId(params), params['messages'], params['assistantAux']);
+      case SESSION_EXPORT_STATE:
+        return sessionManager.exportState(readSessionId(params));
+      case SESSION_ACTIVATE_SKILL:
+        sessionManager.activateSkill(readSessionId(params), params['skill'] as never);
+        return { ok: true };
+      case SESSION_ADD_PENDING_IMAGE:
+        sessionManager.addPendingImage(readSessionId(params), String(params['path'] ?? ''));
+        return { ok: true };
+      case SESSION_CLEAR_PENDING_IMAGES:
+        return { cleared: sessionManager.clearPendingImages(readSessionId(params)) };
+      case SESSION_ATTACH_MCP_RESOURCE:
+        return {
+          label: await sessionManager.attachMcpResource(
+            readSessionId(params),
+            String(params['server'] ?? ''),
+            String(params['uri'] ?? ''),
+          ),
+        };
+      case SESSION_CLEAR_PENDING_MCP_RESOURCES:
+        return { cleared: sessionManager.clearPendingMcpResources(readSessionId(params)) };
+      case SESSION_APPLY_MCP_PROMPT:
+        return {
+          notice: await sessionManager.applyMcpPrompt(
+            readSessionId(params),
+            String(params['server'] ?? ''),
+            String(params['prompt'] ?? ''),
+            typeof params['argsJson'] === 'string' ? params['argsJson'] : undefined,
+            typeof params['userMessage'] === 'string' ? params['userMessage'] : undefined,
+          ),
+        };
+      case SESSION_MCP:
+        return sessionManager.mcpCall(
+          readSessionId(params),
+          String(params['action'] ?? ''),
+          (params['params'] ?? {}) as Record<string, unknown>,
+        );
+      case SESSION_START_MANUAL_TOOL_COMMAND:
+        return sessionManager.startManualToolCommand(readSessionId(params), String(params['message'] ?? ''));
+      case SESSION_CONTINUE_MANUAL_APPROVAL:
+        return sessionManager.continuePendingManualToolApproval(readSessionId(params), params['decision']);
+      case SESSION_TAKE_MANUAL_RESULT:
+        return sessionManager.takeCompletedManualToolCommandResult(readSessionId(params));
+      case SESSION_SUBAGENT_ARCHIVE:
+        return sessionManager.subagentSessionArchive(readSessionId(params), String(params['subagentSessionId'] ?? ''));
+      case SESSION_SUBAGENT_AUX:
+        return sessionManager.subagentPendingAuxState(readSessionId(params), String(params['subagentSessionId'] ?? ''));
+      case SESSION_REPLACE_CONFIG:
+        await sessionManager.replaceConfig(readSessionId(params));
+        return { ok: true };
+      case SESSION_RELOAD_METADATA: {
+        const mode = params['mode'];
+        await sessionManager.reloadHostMetadata(
+          readSessionId(params),
+          mode === 'plan' || mode === 'ask' || mode === 'debug' ? mode : 'agent',
+        );
+        return { ok: true };
+      }
+      case SESSION_RUN_SESSION_START: {
+        const source = params['source'];
+        if (source !== 'startup' && source !== 'resume' && source !== 'open') {
+          throw new Error('invalid source');
+        }
+        await sessionManager.runSessionStart(readSessionId(params), source);
+        return { ok: true };
+      }
+      case SESSION_SET_ATTRIBUTION:
+        sessionManager.setAttribution(readSessionId(params), (params['attribution'] ?? {}) as never);
+        return { ok: true };
+      case SESSION_SET_TODO_SESSION_KEY: {
+        const sessionKey = params['sessionKey'];
+        if (typeof sessionKey !== 'string' || !sessionKey.trim()) {
+          throw new Error('missing sessionKey');
+        }
+        sessionManager.setTodoSessionKey(readSessionId(params), sessionKey.trim());
+        return { ok: true };
+      }
       default:
         throw new Error(`unknown session method: ${method}`);
     }
@@ -325,8 +470,26 @@ export async function startDaemon(options: DaemonOptions): Promise<RunningDaemon
           return;
         }
         default:
+          if (SERVER_METHODS.has(parsed.method)) {
+            if (parsed.method === SERVER_SET_LLM_HTTP_VERSION) {
+              const params = (parsed.params ?? {}) as Record<string, unknown>;
+              configureLlmHttpVersion(normalizeLlmHttpVersion(params['llmHttpVersion']));
+            } else if (parsed.method === SERVER_SET_LLM_CLIENT_VERSION) {
+              const params = (parsed.params ?? {}) as Record<string, unknown>;
+              if (typeof params['clientVersion'] === 'string') {
+                configureLlmClientVersion(params['clientVersion']);
+              }
+            }
+            conn.send(JSON.stringify(successResponse(parsed.id, null)));
+            return;
+          }
           if (SESSION_METHODS.has(parsed.method)) {
             const result = await handleSessionRpc(conn, parsed.method, parsed.params);
+            conn.send(JSON.stringify(successResponse(parsed.id, result ?? null)));
+            return;
+          }
+          if (HOST_METHODS.has(parsed.method)) {
+            const result = await hostService.handle(parsed.method, parsed.params);
             conn.send(JSON.stringify(successResponse(parsed.id, result ?? null)));
             return;
           }

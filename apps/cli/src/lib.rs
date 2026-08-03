@@ -29,6 +29,8 @@ pub mod plan;
 pub mod ports;
 pub mod fork;
 pub mod rewind;
+#[cfg(feature = "tui")]
+pub mod runtime_sync;
 pub mod rules;
 pub mod runtime_handle;
 pub mod serve;

@@ -5,14 +5,14 @@ use crate::{
     logging,
     mcp::spirit_agent_data_dir,
     plan,
-    ports::{ChatArchive, SubagentSessionSummary},
+    ports::ChatArchive,
     rewind,
     ts_bridge::{
         archive::chat_archive_to_bridge_json,
         types::bridge::{
             BridgeDrainEventsResult, BridgeManualToolCommandStartResult, BridgeRuntimeSnapshot,
         },
-        PendingApprovalKind, TsBridgeRuntime,
+        TsBridgeRuntime,
     },
 };
 
@@ -55,7 +55,7 @@ impl TsBridgeRuntime {
         if self.bridge_failed {
             return Ok(());
         }
-        self.subagent_message_cache.clear();
+        self.sync.subagent_message_cache.clear();
         self.call_bridge(
             "runtime.replaceFromArchive",
             Some(chat_archive_to_bridge_json(archive)),
@@ -83,60 +83,11 @@ impl TsBridgeRuntime {
     }
 
     pub(crate) fn apply_snapshot(&mut self, snapshot: BridgeRuntimeSnapshot) {
-        self.session.clear_pending_user_turn();
-        self.session.clear_pending_images();
-        self.session.clear_pending_mcp_resources();
-        self.session.set_loop_enabled(snapshot.loop_enabled);
-        self.session
-            .set_approval_level(snapshot.approval_level.as_str());
-        if let Some(turn) = snapshot.pending_user_turn {
-            self.session.set_pending_user_turn(turn);
-        }
-        for path in snapshot.pending_image_paths {
-            self.session.add_pending_image(path);
-        }
-        for resource in snapshot.pending_mcp_resources {
-            self.session.add_pending_mcp_resource(resource);
-        }
-
-        self.pending_aux_state = snapshot.pending_aux_state;
-        self.current_pending_approval = snapshot.current_pending_approval;
-        self.pending_approval_kind = if snapshot.has_pending_approval {
-            Some(if snapshot.has_pending_manual_approval {
-                PendingApprovalKind::Manual
-            } else {
-                PendingApprovalKind::Tool
-            })
-        } else {
-            None
-        };
-        self.child_sessions_cache = snapshot
-            .child_sessions
-            .into_iter()
-            .map(|summary| SubagentSessionSummary {
-                session_id: summary.session_id,
-                parent_tool_call_id: summary.parent_tool_call_id,
-                title: summary.title,
-                status: summary.status,
-                started_at_unix_ms: summary.started_at_unix_ms,
-                updated_at_unix_ms: summary.updated_at_unix_ms,
-                completed_at_unix_ms: summary.completed_at_unix_ms,
-                latest_message: summary.latest_message,
-                final_output: summary.final_output,
-                error: summary.error,
-            })
-            .collect();
-        self.subagent_message_cache.retain(|session_id, _| {
-            self.child_sessions_cache
-                .iter()
-                .any(|summary| summary.session_id == *session_id)
-        });
-        self.pending_questions_active = snapshot.has_pending_questions;
-        self.is_busy_cache = snapshot.is_busy;
+        self.sync.apply_snapshot(snapshot);
         self.flush_deferred_transport_replace();
     }
 
     pub(crate) fn should_poll_bridge(&self) -> bool {
-        self.is_busy_cache && self.pending_approval_kind.is_none() && !self.pending_questions_active
+        self.sync.is_busy_cache && self.sync.pending_approval_kind.is_none() && !self.sync.pending_questions_active
     }
 }

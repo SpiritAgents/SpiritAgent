@@ -56,6 +56,7 @@ describe('SessionManager', () => {
         broadcastTurnFinished: () => {},
         broadcastSnapshot: () => {},
         broadcastTrustRequest: () => {},
+        broadcastFileChange: () => {},
       });
 
       const created = await manager.createSession({
@@ -93,6 +94,7 @@ describe('SessionManager', () => {
         broadcastTurnFinished: () => {},
         broadcastSnapshot: () => {},
         broadcastTrustRequest: () => {},
+        broadcastFileChange: () => {},
       });
       const created = await manager.createSession({
         workspaceRoot: tmpdir(),
@@ -119,6 +121,7 @@ describe('SessionManager', () => {
         broadcastTurnFinished: () => {},
         broadcastSnapshot: () => {},
         broadcastTrustRequest: () => {},
+        broadcastFileChange: () => {},
       });
       const created = await manager.createSession({
         workspaceRoot: tmpdir(),

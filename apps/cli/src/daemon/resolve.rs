@@ -103,14 +103,21 @@ pub(crate) fn ensure_daemon(workspace_root: &Path) -> Result<(DaemonInstance, St
     let log_file = fs::File::create(log_dir.join("daemon.log"))?;
     let log_err = log_file.try_clone()?;
 
-    let child = Command::new(node)
+    let mut command = Command::new(node);
+    command
         .arg(entry)
         .arg("serve")
         .stdin(Stdio::null())
         .stdout(Stdio::from(log_file))
-        .stderr(Stdio::from(log_err))
-        .spawn()
-        .context("spawn spirit-server daemon")?;
+        .stderr(Stdio::from(log_err));
+    // Detach from the CLI's process group so the daemon survives the client
+    // (terminal close / SIGHUP to the group must not take the daemon down).
+    #[cfg(unix)]
+    {
+        use std::os::unix::process::CommandExt;
+        command.process_group(0);
+    }
+    let child = command.spawn().context("spawn spirit-server daemon")?;
     let child_pid = child.id();
     // Deliberately not holding/waiting the child: the daemon outlives the CLI.
     drop(child);

@@ -5,9 +5,14 @@ use std::{collections::BTreeMap, env, path::PathBuf, sync::Arc};
 
 use crate::{
     adapters::{DefaultAppPaths, JsonConfigStore, KeyringSecretStore},
+    daemon::DaemonRuntime,
     mcp::{
         example_github_mcp_config, load_mcp_config, save_mcp_config, set_server_enabled,
         user_mcp_config_path, workspace_mcp_config_path,
+    },
+    mcp_types::{
+        ManagedMcpServer, McpDiscoveredPrompt, McpDiscoveredResource, McpDiscoveredTool,
+        McpServerInspection,
     },
     model_provider_presets::{azure_api_base_from_resource_name, model_add_alibaba_site_api_base, model_add_alibaba_site_requires_workspace_id, model_add_default_custom_api_base, model_add_kimi_code_api_base, model_add_minimax_site_api_base, model_add_moonshot_site_api_base, model_add_preset_api_base_by_provider, model_add_siliconflow_site_api_base, model_add_tencent_tokenhub_site_api_base, validate_azure_resource_name},
     model_registry::{
@@ -16,7 +21,11 @@ use crate::{
         model_refs_equal, save_group_api_key,
     },
     ports::{AppPaths, ConfigStore, SecretStore},
-    ts_bridge::TsBridgeRuntime,
+    runtime_handle::prefer_inprocess_host,
+    ts_bridge::{
+        CliExtensionEntry, CliMarketplaceCatalogItem, CliMarketplaceDetail,
+        CliMarketplacePreparedInstall, TsBridgeRuntime,
+    },
 };
 
 const ENV_API_KEY: &str = "SPIRIT_API_KEY";
@@ -1287,12 +1296,129 @@ pub fn handle_marketplace_cli(action: MarketplaceCommand) -> Result<()> {
     Ok(())
 }
 
-fn new_mcp_cli_runtime(workspace_root: PathBuf) -> Result<TsBridgeRuntime> {
-    TsBridgeRuntime::new_mcp_only(Arc::new(KeyringSecretStore), workspace_root)
+fn new_mcp_cli_runtime(workspace_root: PathBuf) -> Result<ManagementRuntime> {
+    if prefer_inprocess_host() {
+        return Ok(ManagementRuntime::Bridge(TsBridgeRuntime::new_mcp_only(
+            Arc::new(KeyringSecretStore),
+            workspace_root,
+        )?));
+    }
+    Ok(ManagementRuntime::Daemon(DaemonRuntime::new_host_only(
+        workspace_root,
+    )?))
 }
 
-fn new_extension_cli_runtime(workspace_root: PathBuf) -> Result<TsBridgeRuntime> {
-    TsBridgeRuntime::new_mcp_only(Arc::new(KeyringSecretStore), workspace_root)
+fn new_extension_cli_runtime(workspace_root: PathBuf) -> Result<ManagementRuntime> {
+    new_mcp_cli_runtime(workspace_root)
+}
+
+/// Management subcommands (mcp/extension) run host-service RPCs only — no
+/// session runtime. Daemon by default, legacy sidecar behind the migration
+/// escape hatch.
+enum ManagementRuntime {
+    Bridge(TsBridgeRuntime),
+    Daemon(DaemonRuntime),
+}
+
+macro_rules! management_dispatch {
+    ($runtime:ident . $method:ident ( $($arg:expr),* $(,)? )) => {
+        match &mut *$runtime {
+            ManagementRuntime::Bridge(runtime) => runtime.$method($($arg),*),
+            ManagementRuntime::Daemon(runtime) => runtime.$method($($arg),*),
+        }
+    };
+}
+
+impl ManagementRuntime {
+    fn list_mcp_servers(&mut self) -> Result<Vec<ManagedMcpServer>> {
+        management_dispatch!(self.list_mcp_servers())
+    }
+
+    fn inspect_mcp_server(&mut self, name: &str) -> Result<McpServerInspection> {
+        management_dispatch!(self.inspect_mcp_server(name))
+    }
+
+    fn list_mcp_tools(&mut self, name: &str) -> Result<Vec<McpDiscoveredTool>> {
+        management_dispatch!(self.list_mcp_tools(name))
+    }
+
+    fn call_mcp_tool_value(
+        &mut self,
+        server: &str,
+        tool_name: &str,
+        args_json: Option<&str>,
+    ) -> Result<serde_json::Value> {
+        management_dispatch!(self.call_mcp_tool_value(server, tool_name, args_json))
+    }
+
+    fn list_mcp_resources(&mut self, name: &str) -> Result<Vec<McpDiscoveredResource>> {
+        management_dispatch!(self.list_mcp_resources(name))
+    }
+
+    fn list_mcp_prompts(&mut self, name: &str) -> Result<Vec<McpDiscoveredPrompt>> {
+        management_dispatch!(self.list_mcp_prompts(name))
+    }
+
+    fn read_mcp_resource_value(&mut self, server: &str, uri: &str) -> Result<serde_json::Value> {
+        management_dispatch!(self.read_mcp_resource_value(server, uri))
+    }
+
+    fn get_mcp_prompt_value(
+        &mut self,
+        server: &str,
+        prompt: &str,
+        args_json: Option<&str>,
+    ) -> Result<serde_json::Value> {
+        management_dispatch!(self.get_mcp_prompt_value(server, prompt, args_json))
+    }
+
+    fn list_extensions(&mut self) -> Result<Vec<CliExtensionEntry>> {
+        management_dispatch!(self.list_extensions())
+    }
+
+    fn import_extension_archive(
+        &mut self,
+        archive_bytes: &[u8],
+        file_name: Option<&str>,
+    ) -> Result<CliExtensionEntry> {
+        management_dispatch!(self.import_extension_archive(archive_bytes, file_name))
+    }
+
+    fn delete_extension(&mut self, id: &str) -> Result<()> {
+        management_dispatch!(self.delete_extension(id))
+    }
+
+    fn list_marketplace_extensions(&mut self) -> Result<Vec<CliMarketplaceCatalogItem>> {
+        management_dispatch!(self.list_marketplace_extensions())
+    }
+
+    fn get_marketplace_extension_detail(
+        &mut self,
+        extension_id: &str,
+    ) -> Result<CliMarketplaceDetail> {
+        management_dispatch!(self.get_marketplace_extension_detail(extension_id))
+    }
+
+    fn get_marketplace_extension_readme(&mut self, extension_id: &str) -> Result<String> {
+        management_dispatch!(self.get_marketplace_extension_readme(extension_id))
+    }
+
+    fn prepare_marketplace_extension_install(
+        &mut self,
+        extension_id: &str,
+        version: Option<&str>,
+    ) -> Result<CliMarketplacePreparedInstall> {
+        management_dispatch!(self.prepare_marketplace_extension_install(extension_id, version))
+    }
+
+    fn install_marketplace_extension(
+        &mut self,
+        extension_id: &str,
+        version: Option<&str>,
+        review_acknowledged: bool,
+    ) -> Result<CliExtensionEntry> {
+        management_dispatch!(self.install_marketplace_extension(extension_id, version, review_acknowledged))
+    }
 }
 
 fn print_marketplace_detail(detail: &crate::ts_bridge::CliMarketplaceDetail) {

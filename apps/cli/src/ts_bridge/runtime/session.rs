@@ -11,7 +11,7 @@ use crate::{
 
 impl TsBridgeRuntime {
     pub fn pending_aux_state(&self) -> Option<PendingAssistantAux> {
-        self.pending_aux_state.clone()
+        self.sync.pending_aux_state.clone()
     }
 
     pub fn submit_user_turn(

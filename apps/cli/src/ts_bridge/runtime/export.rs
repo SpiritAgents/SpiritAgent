@@ -30,7 +30,7 @@ impl TsBridgeRuntime {
     }
 
     pub fn session(&self) -> &SessionModel {
-        &self.session
+        &self.sync.session
     }
 
     pub fn export_llm_state(&mut self) -> Result<RuntimeExportState> {

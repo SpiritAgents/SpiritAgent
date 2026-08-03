@@ -7,19 +7,17 @@ use std::{
 };
 
 use crate::{
-    adapters::{DefaultAppPaths, KeyringSecretStore},
+    adapters::{DefaultAppPaths, JsonConfigStore, KeyringSecretStore},
     cli_bootstrap::{apply_approval_level, GlobalCliOptions},
-    daemon::{DaemonClient, ensure_daemon},
+    daemon::DaemonRuntime,
     host_runtime::RuntimeEvent,
     model_registry::AppConfig,
-    ports::{AppPaths, SecretStore},
+    ports::{AppPaths, ConfigStore, SecretStore},
     runtime_handle::RuntimeHandle,
-    ts_bridge::BridgeRuntimeEvent,
 };
 
 const POLL_INTERVAL: Duration = Duration::from_millis(50);
 const DEFAULT_TURN_TIMEOUT: Duration = Duration::from_secs(60 * 30);
-const DAEMON_NOTIFICATION_POLL: Duration = Duration::from_millis(500);
 
 /// Run a single non-interactive turn. stdout receives only the final assistant text.
 pub fn run_headless_prompt(
@@ -151,128 +149,85 @@ fn run_headless_prompt_inprocess(
     Ok(())
 }
 
-/// Daemon path: attach to (or spawn) the shared Spirit Server and run the turn
-/// over WebSocket. The daemon owns the runtime; the CLI only streams events.
+/// Daemon path: same event loop as the in-process path, but the runtime
+/// lives in the shared Spirit Server daemon (events arrive via WS push).
 fn run_headless_prompt_via_daemon(trimmed: &str, options: &GlobalCliOptions) -> Result<()> {
-    let workspace_root = std::env::current_dir()?;
-    let (instance, token) = ensure_daemon(&workspace_root)?;
-    let mut client = DaemonClient::connect(&instance.host, instance.port, &token)?;
+    let app_paths = DefaultAppPaths::new();
+    let secret_store: Arc<dyn SecretStore> = Arc::new(KeyringSecretStore);
+    let workspace_root = app_paths.workspace_root();
+    let config = JsonConfigStore.load()?;
+    let mut runtime = DaemonRuntime::new(config, secret_store, workspace_root)?;
 
-    // The daemon greets each connection with server.connected.
-    let hello = client.next_notification(Duration::from_secs(5))?;
-    match hello {
-        Some(value)
-            if value.get("method").and_then(serde_json::Value::as_str)
-                == Some("server.connected") => {}
-        _ => return Err(anyhow!("daemon 握手失败：未收到 server.connected")),
-    }
-
-    client.call(
-        "server.initialize",
-        serde_json::json!({
-            "clientKind": "cli",
-            "workspaceRoot": workspace_root.to_string_lossy(),
-        }),
-    )?;
-
-    let mut create_params = serde_json::json!({
-        "workspaceRoot": workspace_root.to_string_lossy(),
-    });
     if let Some(approval) = options.approval.as_deref() {
-        create_params["approvalLevel"] = serde_json::Value::String(approval.to_string());
+        let level = crate::cli_bootstrap::parse_cli_approval_level(approval)?;
+        runtime.set_approval_level(&level)?;
     }
-    let created = client.call("session.create", create_params)?;
-    let session_id = created
-        .get("sessionId")
-        .and_then(serde_json::Value::as_str)
-        .map(str::to_string)
-        .ok_or_else(|| anyhow!("session.create 未返回 sessionId"))?;
 
-    let result = run_daemon_turn(&mut client, &session_id, trimmed);
-    let _ = client.call("session.close", serde_json::json!({ "sessionId": session_id }));
-    client.close();
+    runtime.run_session_start("startup")?;
+    runtime.submit_user_turn(trimmed.to_string(), None)?;
+
+    let deadline = Instant::now() + DEFAULT_TURN_TIMEOUT;
+    let result = run_daemon_headless_turn(&mut runtime, deadline);
+    // Headless sessions are ephemeral — never leave them parked in the daemon.
+    runtime.close_session();
     result
 }
 
-fn run_daemon_turn(
-    client: &mut DaemonClient,
-    session_id: &str,
-    text: &str,
-) -> Result<()> {
-    client.call(
-        "session.submitUserTurn",
-        serde_json::json!({ "sessionId": session_id, "text": text }),
-    )?;
-
+fn run_daemon_headless_turn(runtime: &mut DaemonRuntime, deadline: Instant) -> Result<()> {
     let mut pending_assistant = String::new();
     let mut final_assistant = String::new();
     let mut has_pending_assistant = false;
-    let deadline = Instant::now() + DEFAULT_TURN_TIMEOUT;
 
     loop {
         if Instant::now() > deadline {
             return Err(anyhow!("{}", t!("cli.headless.timeout")));
         }
-        let Some(message) = client.next_notification(DAEMON_NOTIFICATION_POLL)? else {
-            continue;
-        };
-        let method = message.get("method").and_then(serde_json::Value::as_str);
-        let params = message.get("params").cloned().unwrap_or(serde_json::Value::Null);
-        let params_session = params.get("sessionId").and_then(serde_json::Value::as_str);
 
-        match method {
-            Some("runtime.event") if params_session == Some(session_id) => {
-                let event_value = params.get("event").cloned().unwrap_or(serde_json::Value::Null);
-                let Ok(event) = serde_json::from_value::<BridgeRuntimeEvent>(event_value) else {
-                    continue;
-                };
-                match event {
-                    BridgeRuntimeEvent::BeginAssistantResponse => {
-                        pending_assistant.clear();
-                        has_pending_assistant = true;
+        for event in runtime.drain_events() {
+            match event {
+                RuntimeEvent::BeginAssistantResponse => {
+                    pending_assistant.clear();
+                    has_pending_assistant = true;
+                }
+                RuntimeEvent::AssistantChunk(chunk) => {
+                    if has_pending_assistant {
+                        pending_assistant.push_str(&chunk);
                     }
-                    BridgeRuntimeEvent::AssistantChunk { text: chunk } => {
-                        if has_pending_assistant {
-                            pending_assistant.push_str(&chunk);
-                        }
-                    }
-                    BridgeRuntimeEvent::ReplacePendingAssistant { text: content } => {
-                        pending_assistant = content;
-                        has_pending_assistant = true;
-                    }
-                    BridgeRuntimeEvent::AssistantResponseCompleted => {
-                        if has_pending_assistant {
-                            final_assistant = pending_assistant.clone();
-                            has_pending_assistant = false;
-                        }
-                    }
-                    BridgeRuntimeEvent::RemovePendingAssistant => {
-                        pending_assistant.clear();
+                }
+                RuntimeEvent::ReplacePendingAssistant(content) => {
+                    pending_assistant = content;
+                    has_pending_assistant = true;
+                }
+                RuntimeEvent::AssistantResponseCompleted => {
+                    if has_pending_assistant {
+                        final_assistant = pending_assistant.clone();
                         has_pending_assistant = false;
                     }
-                    BridgeRuntimeEvent::ApprovalRequested { .. } => {
-                        // Headless parity with the sidecar path: decline and stop.
-                        let _ = client.call(
-                            "session.replyPendingApproval",
-                            serde_json::json!({
-                                "sessionId": session_id,
-                                "decision": {
-                                    "kind": "deny",
-                                    "resultText": "Headless mode cannot approve tool calls.",
-                                },
-                            }),
-                        );
-                        return Err(anyhow!("{}", t!("cli.headless.blocked_approval")));
-                    }
-                    BridgeRuntimeEvent::QuestionsRequested { .. } => {
-                        return Err(anyhow!("{}", t!("cli.headless.blocked_questions")));
-                    }
-                    _ => {}
                 }
+                RuntimeEvent::RemovePendingAssistant => {
+                    pending_assistant.clear();
+                    has_pending_assistant = false;
+                }
+                _ => {}
             }
-            Some("session.turnFinished") if params_session == Some(session_id) => break,
-            _ => {}
         }
+
+        if runtime.has_pending_tool_approval() {
+            // Headless parity with the sidecar path: decline and stop. The
+            // daemon session is closed so no runtime parks on the answer.
+            runtime.respond_to_pending_tool_approval("n");
+            return Err(anyhow!("{}", t!("cli.headless.blocked_approval")));
+        }
+
+        if runtime.pending_subagent_approval().is_some() {
+            return Err(anyhow!("{}", t!("cli.headless.blocked_approval")));
+        }
+
+        if !runtime.is_busy() {
+            break;
+        }
+
+        thread::sleep(POLL_INTERVAL);
     }
 
     if final_assistant.trim().is_empty() && !pending_assistant.trim().is_empty() {

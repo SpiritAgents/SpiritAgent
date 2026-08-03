@@ -1,7 +1,12 @@
 pub(crate) mod bridge;
 pub mod cli_public;
 
-pub(crate) use bridge::BridgeRuntimeEvent;
+pub(crate) use bridge::{
+    BridgeChatArchive, BridgeExportState, BridgeManualToolCommandStartResult,
+    BridgePendingApproval, BridgeRuntimeEvent, BridgeRuntimeSnapshot,
+    BridgeSubagentSessionArchiveEntry, BridgeWorkspaceFileReferenceSuggestions,
+    LocalMcpToolFailedEvent, LocalMcpToolResultEvent,
+};
 pub use bridge::{
     WorkspaceCapabilityTrustDecision, WorkspaceCapabilityTrustHookEntry,
     WorkspaceCapabilityTrustPrompter, WorkspaceCapabilityTrustRequest,

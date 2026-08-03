@@ -7,15 +7,15 @@ use crate::{
 
 impl TsBridgeRuntime {
     pub fn has_pending_tool_approval(&self) -> bool {
-        self.pending_approval_kind.is_some()
+        self.sync.pending_approval_kind.is_some()
     }
 
     pub fn is_busy(&self) -> bool {
-        self.is_busy_cache
+        self.sync.is_busy_cache
     }
 
     pub fn loop_enabled(&self) -> bool {
-        self.session.loop_enabled()
+        self.sync.session.loop_enabled()
     }
 
     pub fn set_loop_enabled(&mut self, enabled: bool) -> Result<()> {
@@ -33,7 +33,7 @@ impl TsBridgeRuntime {
     }
 
     pub fn approval_level(&self) -> &str {
-        self.session.approval_level()
+        self.sync.session.approval_level()
     }
 
     pub fn set_approval_level(&mut self, approval_level: &str) -> Result<()> {
@@ -56,7 +56,7 @@ impl TsBridgeRuntime {
             return;
         }
         let decision = approval_decision_from_input(message);
-        let pending_kind = self.pending_approval_kind;
+        let pending_kind = self.sync.pending_approval_kind;
         let method = match pending_kind {
             Some(PendingApprovalKind::Manual) => "runtime.continuePendingManualToolApproval",
             Some(PendingApprovalKind::Tool) => "runtime.respondToPendingApproval",

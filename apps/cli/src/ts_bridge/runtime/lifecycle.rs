@@ -1,10 +1,6 @@
 use anyhow::{Result, anyhow};
 use serde_json::{Value, json};
-use std::{
-    collections::{HashMap, VecDeque},
-    path::PathBuf,
-    sync::Arc,
-};
+use std::{path::PathBuf, sync::Arc};
 
 use crate::{
     host_runtime::RuntimeEvent,
@@ -12,7 +8,7 @@ use crate::{
     model_registry::AppConfig,
     ports::SecretStore,
     rewind,
-    session::SessionModel,
+    runtime_sync::RuntimeSyncState,
     ts_bridge::{
         archive::llm_history_to_json,
         json_rpc::{is_json_rpc_response, JsonRpcProcess, resolve_bridge_script},
@@ -33,21 +29,12 @@ impl TsBridgeRuntime {
             config,
             secret_store,
             workspace_root,
-            session: SessionModel::new(),
             rewind: rewind::create_desktop_rewind_metadata(),
             enabled_rules: Vec::new(),
             enabled_skill_catalog: Vec::new(),
             plan_metadata: bootstrap_plan_metadata(),
             active_plan_path: None,
-            pending_aux_state: None,
-            pending_approval_kind: None,
-            current_pending_approval: None,
-            pending_questions_active: false,
-            pending_assistant_has_output: false,
-            is_busy_cache: false,
-            child_sessions_cache: Vec::new(),
-            subagent_message_cache: HashMap::new(),
-            events: VecDeque::new(),
+            sync: RuntimeSyncState::new(),
             bridge_failed: false,
             deferred_transport_replace: false,
             workspace_capability_trust_prompter: None,
@@ -72,21 +59,12 @@ impl TsBridgeRuntime {
             config: AppConfig::default(),
             secret_store,
             workspace_root,
-            session: SessionModel::new(),
             rewind: rewind::create_desktop_rewind_metadata(),
             enabled_rules: Vec::new(),
             enabled_skill_catalog: Vec::new(),
             plan_metadata: bootstrap_plan_metadata(),
             active_plan_path: None,
-            pending_aux_state: None,
-            pending_approval_kind: None,
-            current_pending_approval: None,
-            pending_questions_active: false,
-            pending_assistant_has_output: false,
-            is_busy_cache: false,
-            child_sessions_cache: Vec::new(),
-            subagent_message_cache: HashMap::new(),
-            events: VecDeque::new(),
+            sync: RuntimeSyncState::new(),
             bridge_failed: false,
             deferred_transport_replace: false,
             workspace_capability_trust_prompter: None,
@@ -120,7 +98,7 @@ impl TsBridgeRuntime {
     }
 
     pub fn drain_events(&mut self) -> Vec<RuntimeEvent> {
-        self.events.drain(..).collect()
+        self.sync.events.drain(..).collect()
     }
 
     pub fn tick_thinking_spinner(&mut self) {
@@ -177,16 +155,16 @@ impl TsBridgeRuntime {
             "runtime.init",
             Some(json!({
                 "transportConfig": transport_config,
-                "history": llm_history_to_json(self.session.llm_history()),
+                "history": llm_history_to_json(self.sync.session.llm_history()),
                 "enabledRules": self.enabled_rules,
                 "enabledSkillCatalog": self.enabled_skill_catalog,
                 "planMetadata": self.plan_metadata,
-                "loopEnabled": self.session.loop_enabled(),
+                "loopEnabled": self.sync.session.loop_enabled(),
                 "attribution": {
                     "commitEnabled": commit_attribution,
                     "prEnabled": pr_attribution,
                 },
-                "approvalLevel": self.session.approval_level(),
+                "approvalLevel": self.sync.session.approval_level(),
                 "todoSessionKey": self.rewind.session_id,
             })),
         )?;

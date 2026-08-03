@@ -46,6 +46,45 @@ export const SESSION_COMPACT_HISTORY = 'session.compactHistory';
 export const SESSION_POLL = 'session.poll';
 /** RPC: answer a workspace capability trust prompt (first reply wins). */
 export const SESSION_REPLY_TRUST = 'session.replyWorkspaceCapabilityTrust';
+/** RPC: restore a session from a chat archive. */
+export const SESSION_REPLACE_FROM_ARCHIVE = 'session.replaceFromArchive';
+/** RPC: export the session as a chat archive. */
+export const SESSION_EXPORT_ARCHIVE = 'session.exportArchive';
+/** RPC: export api messages + request trace + system prompts. */
+export const SESSION_EXPORT_STATE = 'session.exportState';
+/** RPC: activate a skill for the next turn (slash). */
+export const SESSION_ACTIVATE_SKILL = 'session.activateSkill';
+/** RPC: queue an image for the next turn. */
+export const SESSION_ADD_PENDING_IMAGE = 'session.addPendingImage';
+export const SESSION_CLEAR_PENDING_IMAGES = 'session.clearPendingImages';
+/** RPC: attach an MCP resource to the next turn. */
+export const SESSION_ATTACH_MCP_RESOURCE = 'session.attachMcpResource';
+export const SESSION_CLEAR_PENDING_MCP_RESOURCES = 'session.clearPendingMcpResources';
+/** RPC: apply an MCP prompt as a turn. */
+export const SESSION_APPLY_MCP_PROMPT = 'session.applyMcpPrompt';
+/** RPC: MCP management/read pass-through (`action` selects the operation). */
+export const SESSION_MCP = 'session.mcp';
+/** RPC: manual tool command (`!command` / MCP tool run). */
+export const SESSION_START_MANUAL_TOOL_COMMAND = 'session.startManualToolCommand';
+export const SESSION_CONTINUE_MANUAL_APPROVAL = 'session.continuePendingManualToolApproval';
+export const SESSION_TAKE_MANUAL_RESULT = 'session.takeCompletedManualToolCommandResult';
+/** RPC: subagent archive / aux state accessors. */
+export const SESSION_SUBAGENT_ARCHIVE = 'session.subagentSessionArchive';
+export const SESSION_SUBAGENT_AUX = 'session.subagentPendingAuxState';
+/** RPC: re-resolve transport from config.json, preserving history. */
+export const SESSION_REPLACE_CONFIG = 'session.replaceConfig';
+/** RPC: re-run rules/skills/plan discovery. */
+export const SESSION_RELOAD_METADATA = 'session.reloadHostMetadata';
+/** RPC: run the sessionStart hook (startup | resume | open). */
+export const SESSION_RUN_SESSION_START = 'session.runSessionStart';
+/** RPC: attribution toggles for future turns. */
+export const SESSION_SET_ATTRIBUTION = 'session.setAttribution';
+/** RPC: re-scope the todo store (CLI keys todos by its chat session id). */
+export const SESSION_SET_TODO_SESSION_KEY = 'session.setTodoSessionKey';
+
+/** RPC: process-global LLM fetch knobs (match the legacy bridge semantics). */
+export const SERVER_SET_LLM_HTTP_VERSION = 'server.setLlmHttpVersion';
+export const SERVER_SET_LLM_CLIENT_VERSION = 'server.setLlmClientVersion';
 
 /** Notification: one agent-core RuntimeEvent for a session. */
 export const RUNTIME_EVENT = 'runtime.event';
@@ -55,6 +94,8 @@ export const SESSION_TURN_FINISHED = 'session.turnFinished';
 export const SESSION_SNAPSHOT = 'session.snapshot';
 /** Notification: hooks ask for workspace capability trust. */
 export const WORKSPACE_TRUST_REQUESTED = 'workspace.trustRequested';
+/** Notification: a tool wrote/changed a file (rewind bookkeeping). */
+export const SESSION_FILE_CHANGED = 'session.fileChanged';
 
 export type ClientKind = 'cli' | 'desktop' | 'web';
 

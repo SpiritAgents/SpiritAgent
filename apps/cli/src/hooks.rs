@@ -5,8 +5,10 @@ use rust_i18n::t;
 
 use crate::{
     adapters::{DefaultAppPaths, KeyringSecretStore},
+    daemon::DaemonRuntime,
     hooks_types::{HookListItem, HooksValidationReport},
     ports::AppPaths,
+    runtime_handle::prefer_inprocess_host,
     ts_bridge::TsBridgeRuntime,
 };
 
@@ -24,20 +26,30 @@ pub fn handle_hooks_cli(action: HookCommand) -> Result<()> {
     match action {
         HookCommand::List { workspace } => {
             let workspace_root = workspace.unwrap_or_else(|| app_paths.workspace_root());
-            let mut runtime = TsBridgeRuntime::new_mcp_only(
-                std::sync::Arc::new(KeyringSecretStore),
-                workspace_root.clone(),
-            )?;
-            let items = runtime.list_hook_entries(Some(workspace_root.to_string_lossy().as_ref()))?;
+            let items = if prefer_inprocess_host() {
+                let mut runtime = TsBridgeRuntime::new_mcp_only(
+                    std::sync::Arc::new(KeyringSecretStore),
+                    workspace_root.clone(),
+                )?;
+                runtime.list_hook_entries(Some(workspace_root.to_string_lossy().as_ref()))?
+            } else {
+                let mut runtime = DaemonRuntime::new_host_only(workspace_root.clone())?;
+                runtime.list_hook_entries(Some(workspace_root.to_string_lossy().as_ref()))?
+            };
             print_hooks_list(&items);
         }
         HookCommand::Validate { workspace } => {
             let workspace_root = workspace.unwrap_or_else(|| app_paths.workspace_root());
-            let mut runtime = TsBridgeRuntime::new_mcp_only(
-                std::sync::Arc::new(KeyringSecretStore),
-                workspace_root.clone(),
-            )?;
-            let report = runtime.validate_hooks(Some(workspace_root.to_string_lossy().as_ref()))?;
+            let report = if prefer_inprocess_host() {
+                let mut runtime = TsBridgeRuntime::new_mcp_only(
+                    std::sync::Arc::new(KeyringSecretStore),
+                    workspace_root.clone(),
+                )?;
+                runtime.validate_hooks(Some(workspace_root.to_string_lossy().as_ref()))?
+            } else {
+                let mut runtime = DaemonRuntime::new_host_only(workspace_root.clone())?;
+                runtime.validate_hooks(Some(workspace_root.to_string_lossy().as_ref()))?
+            };
             print_hooks_validation_report(&report);
         }
     }

@@ -9,7 +9,7 @@ use crate::{
 
 impl TsBridgeRuntime {
     pub fn subagent_sessions(&self) -> &[SubagentSessionSummary] {
-        &self.child_sessions_cache
+        &self.sync.child_sessions_cache
     }
 
     pub fn subagent_session_archive(
@@ -64,14 +64,14 @@ impl TsBridgeRuntime {
     }
 
     pub fn subagent_live_messages(&self, session_id: &str) -> Vec<ChatMessage> {
-        self.subagent_message_cache
+        self.sync.subagent_message_cache
             .get(session_id)
             .cloned()
             .unwrap_or_default()
     }
 
     pub fn pending_subagent_approval(&self) -> Option<PendingSubagentApprovalView> {
-        let approval = self.current_pending_approval.as_ref()?;
+        let approval = self.sync.current_pending_approval.as_ref()?;
         let session_id = approval.subagent_session_id.clone()?;
         Some(PendingSubagentApprovalView {
             session_id,
