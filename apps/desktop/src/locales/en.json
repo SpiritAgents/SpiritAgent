@@ -361,7 +361,6 @@
     "deleteProviderGroup": "Delete Provider Model Group",
     "deleteProviderGroupConfirm": "Are you sure you want to delete all models under \"{{provider}}\"? Configuration and key will be removed together.",
     "selectProvider": "Select Provider",
-    "selectProviderDescription": "Select a provider and fill in connection info.",
     "customConnection": "Custom Connection",
     "customConnectionDescription": "First select API type, then fill in endpoint and key.",
     "customGroupLabel": "Provider name",

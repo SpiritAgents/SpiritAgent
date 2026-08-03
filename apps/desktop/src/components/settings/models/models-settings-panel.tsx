@@ -908,10 +908,9 @@ export function ModelsSettingsPanel({
           }
         }}
       >
-        <DialogContent className="sm:max-w-md" showCloseButton>
+        <DialogContent className="sm:max-w-xl" showCloseButton>
           <DialogHeader>
             <DialogTitle>{t('settings.selectProvider')}</DialogTitle>
-            <DialogDescription>{t('settings.selectProviderDescription')}</DialogDescription>
           </DialogHeader>
           <div className="grid gap-3 py-1">
             <DesktopFormInput
@@ -922,8 +921,8 @@ export function ModelsSettingsPanel({
               placeholder={t('common.search')}
               autoComplete="off"
             />
-            <ScrollArea className="h-56 rounded-md border border-dialog-panel-border">
-              <div ref={providerListRef} className="p-1" onKeyDown={handleProviderListKeyDown}>
+            <ScrollArea className="h-80">
+              <div ref={providerListRef} className="px-0.5" onKeyDown={handleProviderListKeyDown}>
                 {filteredProviders.length === 0 ? (
                   <p className="px-2 py-6 text-center text-sm text-muted-foreground">{t('app.noMatches')}</p>
                 ) : (

@@ -361,7 +361,6 @@
     "deleteProviderGroup": "プロバイダモデルグループを削除",
     "deleteProviderGroupConfirm": "「{{provider}}」のすべてのモデルを削除してもよろしいですか？設定とキーも一緒に削除されます。",
     "selectProvider": "プロバイダを選択",
-    "selectProviderDescription": "プロバイダを選択し、接続情報を入力してください。",
     "customConnection": "カスタム接続",
     "customConnectionDescription": "最初にAPIタイプを選択し、その後エンドポイントとキーを入力してください。",
     "customGroupLabel": "プロバイダー名",

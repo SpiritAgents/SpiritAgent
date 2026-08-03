@@ -361,7 +361,6 @@
     "deleteProviderGroup": "Eliminar grupo de modelos del proveedor",
     "deleteProviderGroupConfirm": "¿Estás seguro de que deseas eliminar todos los modelos bajo \"{{provider}}\"? Se eliminarán la configuración y la clave.",
     "selectProvider": "Seleccionar proveedor",
-    "selectProviderDescription": "Selecciona un proveedor e ingresa la información de conexión.",
     "customConnection": "Conexión personalizada",
     "customConnectionDescription": "Primero selecciona el tipo de API, luego ingresa el endpoint y la clave.",
     "customGroupLabel": "Nombre del proveedor",

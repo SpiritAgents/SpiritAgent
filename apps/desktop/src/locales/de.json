@@ -361,7 +361,6 @@
     "deleteProviderGroup": "Anbietermodellgruppe löschen",
     "deleteProviderGroupConfirm": "Möchten Sie wirklich alle Modelle unter \"{{provider}}\" löschen? Konfiguration und Schlüssel werden zusammen entfernt.",
     "selectProvider": "Anbieter auswählen",
-    "selectProviderDescription": "Wählen Sie einen Anbieter aus und geben Sie Verbindungsinformationen ein.",
     "customConnection": "Benutzerdefinierte Verbindung",
     "customConnectionDescription": "Wählen Sie zuerst den API-Typ, dann geben Sie Endpunkt und Schlüssel ein.",
     "customGroupLabel": "Anbietername",
