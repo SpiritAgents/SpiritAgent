@@ -111,7 +111,7 @@ Desktop 專屬開發與目錄說明見 [apps/desktop/README.md](../apps/desktop/
 [Rust CLI](../apps/cli)（`spirit-agent`）提供終端優先的宿主，可選 Ratatui 介面。透過 Node 橋接共享同一套 Agent Core 執行時，適合腳本化、SSH 工作階段與極簡環境。
 
 ```bash
-npm run dev:cli    # 建置 TS 套件，然後 cargo run -p spirit-agent
+npm run dev:cli    # cargo run -p spirit-agent
 ```
 
 ## ACP Server

@@ -111,7 +111,7 @@ Desktop 전용 개발 및 레이아웃은 [apps/desktop/README.md](../apps/deskt
 [Rust CLI](../apps/cli)(`spirit-agent`)는 터미널 우선 호스트로 선택적 Ratatui UI를 제공합니다. Node 브리지를 통해 동일 Agent Core 런타임을 공유하며, 스크립팅, SSH 세션, 최소 환경에 적합합니다.
 
 ```bash
-npm run dev:cli    # TS 패키지 빌드 후 cargo run -p spirit-agent
+npm run dev:cli    # cargo run -p spirit-agent
 ```
 
 ## ACP Server

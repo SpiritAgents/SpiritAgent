@@ -111,7 +111,7 @@ Agent Core определяет, как модель видит контекст
 [Rust CLI](../apps/cli) (`spirit-agent`) — terminal-first хост с опциональным Ratatui UI. Делит тот же Agent Core runtime через Node bridge; подходит для скриптов, SSH-сессий и минимальных окружений.
 
 ```bash
-npm run dev:cli    # сборка TS-пакетов, затем cargo run -p spirit-agent
+npm run dev:cli    # cargo run -p spirit-agent
 ```
 
 ## ACP Server

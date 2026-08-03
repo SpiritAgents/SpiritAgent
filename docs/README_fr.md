@@ -111,7 +111,7 @@ Voir [apps/desktop/README.md](../apps/desktop/README.md) pour le développement 
 La [CLI Rust](../apps/cli) (`spirit-agent`) offre un hôte terminal-first avec UI Ratatui optionnelle. Elle partage le même runtime Agent Core via le pont Node, idéale pour scripts, sessions SSH et environnements minimaux.
 
 ```bash
-npm run dev:cli    # build des packages TS, puis cargo run -p spirit-agent
+npm run dev:cli    # cargo run -p spirit-agent
 ```
 
 ## ACP Server
