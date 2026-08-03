@@ -151,20 +151,20 @@ export const DESKTOP_OVERLAY_LIST_WIDTH =
 export const DESKTOP_OVERLAY_LIST_FILTER_HEADER =
   "shrink-0 border-b border-border/40 p-1.5";
 
-/** 表单控件默认边框：与扩展卡片 border-border/60 对齐 */
-export const DESKTOP_CONTROL_BORDER = "border-control-border transition-colors";
+/** 表单控件默认边框：与扩展卡片 border-border/60 对齐（无 transition，hover/focus 即时切换） */
+export const DESKTOP_CONTROL_BORDER = "border border-control-border transition-none";
 
 /** 表单控件 hover：与扩展卡片一致 */
 export const DESKTOP_CONTROL_BORDER_HOVER =
   "hover:border-border hover:bg-muted/30";
 
-/** 表单控件 focus */
+/** 表单控件 focus：与 hover 同视觉，无 ring */
 export const DESKTOP_CONTROL_BORDER_FOCUS =
-  "focus-visible:border-border focus-visible:ring-2 focus-visible:ring-ring/60";
+  "focus-visible:border-border focus-visible:bg-muted/30 focus-visible:ring-0";
 
 /** 表单控件 focus-within（shell 容器） */
 export const DESKTOP_CONTROL_BORDER_FOCUS_WITHIN =
-  "focus-within:border-border focus-within:ring-2 focus-within:ring-ring/60";
+  "focus-within:border-border focus-within:bg-muted/30 focus-within:ring-0";
 
 /** 与 PendingApprovalCard 指引输入一致：外壳细边框，内层 Input 无 ring */
 export const DESKTOP_OVERLAY_LIST_FILTER_INPUT_SHELL = cn(

@@ -17,7 +17,7 @@ const buttonVariants = cva(
       variant: {
         default: "bg-primary text-primary-foreground [a]:hover:bg-primary/80",
         outline: cn(
-          "bg-background hover:text-sidebar-foreground aria-expanded:text-sidebar-foreground",
+          "bg-background transition-none hover:text-sidebar-foreground aria-expanded:text-sidebar-foreground",
           DESKTOP_CONTROL_BORDER,
           DESKTOP_CONTROL_BORDER_HOVER,
           DESKTOP_CONTROL_BORDER_FOCUS,
