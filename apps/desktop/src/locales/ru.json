@@ -361,7 +361,6 @@
     "deleteProviderGroup": "Удалить группу моделей провайдера",
     "deleteProviderGroupConfirm": "Вы уверены, что хотите удалить все модели «{{provider}}»? Конфигурация и ключ будут удалены вместе.",
     "selectProvider": "Выберите провайдера",
-    "selectProviderDescription": "Выберите провайдера и укажите параметры подключения.",
     "customConnection": "Пользовательское подключение",
     "customConnectionDescription": "Сначала выберите тип API, затем укажите endpoint и ключ.",
     "customGroupLabel": "Название провайдера",

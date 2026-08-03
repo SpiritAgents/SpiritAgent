@@ -361,7 +361,6 @@
     "deleteProviderGroup": "删除提供商模型组",
     "deleteProviderGroupConfirm": "确定删除「{{provider}}」下的全部模型？配置与密钥将一并移除。",
     "selectProvider": "选择提供商",
-    "selectProviderDescription": "选择后填写连接信息。",
     "customConnection": "自定义连接",
     "customConnectionDescription": "先选择 API 类型，再填写端点与密钥。",
     "customGroupLabel": "提供商名称",
