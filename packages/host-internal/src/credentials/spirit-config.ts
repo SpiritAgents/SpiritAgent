@@ -12,7 +12,7 @@ import {
   type ModelEntryV2,
   type ModelRef,
   type ProviderGroupV2,
-} from '@spiritagent/host-internal';
+} from '../config-v2.js';
 
 import type { SpiritConfigFile, SpiritModelProfile } from './types.js';
 
@@ -21,9 +21,13 @@ const APP_DATA_DIR_NAME = 'SpiritAgent';
 
 export { SpiritConfigSchemaError };
 
+/**
+ * Resolves the shared Spirit Agent data directory. Hosts with their own env
+ * override (e.g. SPIRIT_ACP_DATA_DIR, SPIRIT_SERVER_DATA_DIR) should check it
+ * before falling back to this function.
+ */
 export function resolveSpiritDataDir(): string {
-  const envOverride = process.env['SPIRIT_ACP_DATA_DIR']?.trim()
-    || process.env['SPIRIT_AGENT_DATA_DIR']?.trim();
+  const envOverride = process.env['SPIRIT_AGENT_DATA_DIR']?.trim();
   if (envOverride) {
     return envOverride;
   }

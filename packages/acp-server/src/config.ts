@@ -1,11 +1,15 @@
-import { resolveSpiritDataDir } from './credentials/spirit-config.js';
+import { resolveSpiritDataDir as resolveSharedSpiritDataDir } from '@spiritagent/host-internal';
+
 import type { AcpServerConfig } from './types.js';
 
 /**
  * Resolves the Spirit Agent data directory (shared with Desktop / CLI).
- * @deprecated Prefer {@link resolveSpiritDataDir} from credentials/spirit-config.
+ * ACP honors SPIRIT_ACP_DATA_DIR first, then the shared resolution
+ * (SPIRIT_AGENT_DATA_DIR → platform conventions).
  */
-export { resolveSpiritDataDir };
+export function resolveSpiritDataDir(): string {
+  return process.env['SPIRIT_ACP_DATA_DIR']?.trim() || resolveSharedSpiritDataDir();
+}
 
 /**
  * Loads ACP server runtime paths. LLM credentials and models come from shared

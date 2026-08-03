@@ -34,7 +34,6 @@
   "dependencies": {
     "@agentclientprotocol/sdk": "^0.25.1",
     "@inquirer/prompts": "^7.5.0",
-    "@napi-rs/keyring": "^1.2.0",
     "@spiritagent/agent-core": "0.3.2",
     "@spiritagent/host-internal": "0.3.2"
   },

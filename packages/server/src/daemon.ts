@@ -14,9 +14,19 @@ import {
   JSON_RPC_METHOD_NOT_FOUND,
   JSON_RPC_PARSE_ERROR,
   PROTOCOL_VERSION,
+  RUNTIME_EVENT,
   SERVER_CONNECTED,
   SERVER_HEALTH,
   SERVER_INITIALIZE,
+  SESSION_ABORT,
+  SESSION_CLOSE,
+  SESSION_CREATE,
+  SESSION_LIST,
+  SESSION_REPLY_PENDING_APPROVAL,
+  SESSION_REPLY_PENDING_QUESTIONS,
+  SESSION_SET_APPROVAL_LEVEL,
+  SESSION_SUBMIT_USER_TURN,
+  SESSION_TURN_FINISHED,
   errorResponse,
   isJsonRpcRequest,
   notification,
@@ -25,6 +35,18 @@ import {
   type ServerHealthResult,
   type ServerInitializeResult,
 } from './protocol/index.js';
+import { SessionManager } from './session-manager.js';
+
+const SESSION_METHODS = new Set([
+  SESSION_CREATE,
+  SESSION_LIST,
+  SESSION_CLOSE,
+  SESSION_SUBMIT_USER_TURN,
+  SESSION_ABORT,
+  SESSION_SET_APPROVAL_LEVEL,
+  SESSION_REPLY_PENDING_APPROVAL,
+  SESSION_REPLY_PENDING_QUESTIONS,
+]);
 import {
   acceptUpgrade,
   isWebSocketUpgrade,
@@ -91,6 +113,97 @@ export async function startDaemon(options: DaemonOptions): Promise<RunningDaemon
   const connections = new Set<WebSocketConnection>();
   const clientStates = new Map<WebSocketConnection, ClientState>();
 
+  const broadcast = (method: string, params: unknown): void => {
+    const frame = JSON.stringify(notification(method, params));
+    for (const conn of connections) {
+      conn.send(frame);
+    }
+  };
+
+  const sessionManager = new SessionManager(dataDir, {
+    broadcastRuntimeEvent: (sessionId, event) => {
+      broadcast(RUNTIME_EVENT, { sessionId, event });
+    },
+    broadcastTurnFinished: (sessionId, stopReason) => {
+      broadcast(SESSION_TURN_FINISHED, { sessionId, stopReason });
+    },
+    log,
+  });
+
+  /** Params readers with strict-but-minimal validation at the RPC boundary. */
+  const readSessionId = (params: Record<string, unknown>): string => {
+    const sessionId = params['sessionId'];
+    if (typeof sessionId !== 'string' || !sessionId.trim()) {
+      throw new Error('missing sessionId');
+    }
+    return sessionId;
+  };
+
+  /** Session RPC surface; `conn` provides the client kind from initialize. */
+  const handleSessionRpc = async (
+    conn: WebSocketConnection,
+    method: string,
+    rawParams: unknown,
+  ): Promise<unknown> => {
+    const params = (rawParams ?? {}) as Record<string, unknown>;
+    switch (method) {
+      case SESSION_CREATE: {
+        const workspaceRoot = typeof params['workspaceRoot'] === 'string' && params['workspaceRoot'].trim()
+          ? params['workspaceRoot']
+          : undefined;
+        if (!workspaceRoot) {
+          throw new Error('missing workspaceRoot');
+        }
+        const approvalLevel = params['approvalLevel'];
+        const info = await sessionManager.createSession({
+          workspaceRoot,
+          hostKind: clientStates.get(conn)?.clientKind ?? 'cli',
+          ...(approvalLevel === 'auto-approval' || approvalLevel === 'full-approval' || approvalLevel === 'default'
+            ? { approvalLevel }
+            : {}),
+        });
+        return info;
+      }
+      case SESSION_LIST:
+        return { sessions: sessionManager.listSessions() };
+      case SESSION_CLOSE:
+        await sessionManager.closeSession(readSessionId(params));
+        return { ok: true };
+      case SESSION_SUBMIT_USER_TURN: {
+        const text = params['text'];
+        if (typeof text !== 'string') {
+          throw new Error('missing text');
+        }
+        await sessionManager.submitUserTurn(readSessionId(params), {
+          text,
+          ...(Array.isArray(params['explicitImages'])
+            ? { explicitImages: params['explicitImages'].filter((v): v is string => typeof v === 'string') }
+            : {}),
+        });
+        return { accepted: true };
+      }
+      case SESSION_ABORT:
+        sessionManager.abort(readSessionId(params));
+        return { ok: true };
+      case SESSION_SET_APPROVAL_LEVEL: {
+        const level = params['approvalLevel'];
+        if (level !== 'default' && level !== 'auto-approval' && level !== 'full-approval') {
+          throw new Error('invalid approvalLevel');
+        }
+        await sessionManager.setApprovalLevel(readSessionId(params), level);
+        return { ok: true };
+      }
+      case SESSION_REPLY_PENDING_APPROVAL:
+        await sessionManager.replyPendingApproval(readSessionId(params), params['decision'] as never);
+        return { ok: true };
+      case SESSION_REPLY_PENDING_QUESTIONS:
+        await sessionManager.replyPendingQuestions(readSessionId(params), params['result'] as never);
+        return { ok: true };
+      default:
+        throw new Error(`unknown session method: ${method}`);
+    }
+  };
+
   const handleRpc = async (conn: WebSocketConnection, raw: string | Buffer): Promise<void> => {
     if (typeof raw !== 'string') {
       conn.send(JSON.stringify(errorResponse(null, JSON_RPC_INVALID_REQUEST, 'binary frames are not JSON-RPC')));
@@ -146,6 +259,11 @@ export async function startDaemon(options: DaemonOptions): Promise<RunningDaemon
           return;
         }
         default:
+          if (SESSION_METHODS.has(parsed.method)) {
+            const result = await handleSessionRpc(conn, parsed.method, parsed.params);
+            conn.send(JSON.stringify(successResponse(parsed.id, result ?? null)));
+            return;
+          }
           conn.send(JSON.stringify(errorResponse(parsed.id, JSON_RPC_METHOD_NOT_FOUND, `unknown method: ${parsed.method}`)));
       }
     } catch (err) {
@@ -233,6 +351,7 @@ export async function startDaemon(options: DaemonOptions): Promise<RunningDaemon
       return;
     }
     closed = true;
+    sessionManager.shutdown();
     for (const conn of connections) {
       conn.close(1001, 'server shutting down');
     }

@@ -81,7 +81,7 @@ export class HostToolExecutorProxy implements ToolExecutor<JsonValue, JsonValue>
   private hostToolDefinitionsLoaded = false;
   private toolDefinitionsCache: JsonValue = [];
   private readonly requestMetadata = new WeakMap<object, HostToolRequestMetadata>();
-  private readonly mcp = new McpService();
+  private readonly mcp: McpService;
   private lspBindings: LspHostBindings | undefined;
   private lsp: LspHostServiceInstance | undefined;
   private localHostService: LocalHostToolService | undefined;
@@ -90,7 +90,14 @@ export class HostToolExecutorProxy implements ToolExecutor<JsonValue, JsonValue>
   private approvalLevel: LazyToolGatewayApprovalLevel = 'default';
   private transportConfigForToolDefinitions: LlmTransportConfig | undefined;
 
-  constructor(protected readonly peer: JsonRpcPeer) {}
+  constructor(
+    protected readonly peer: JsonRpcPeer,
+    mcp?: McpService,
+  ) {
+    // Daemons serving multiple workspaces inject a per-session McpService;
+    // single-workspace hosts (CLI sidecar, ACP) keep the process-cwd default.
+    this.mcp = mcp ?? new McpService();
+  }
 
   setTransportConfigForToolDefinitions(config: LlmTransportConfig | undefined): void {
     this.transportConfigForToolDefinitions = config;

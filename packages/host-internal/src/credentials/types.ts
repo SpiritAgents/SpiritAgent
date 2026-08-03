@@ -1,18 +1,20 @@
 import type {
   ModelEntryV2,
-  ModelProviderId,
   ModelRef,
   ProviderGroupV2,
-  ProviderModelTransportKind,
   SpiritConfigSchemaVersion,
   SpiritModelCapabilityV2,
   SpiritModelReasoningEffortV2,
-} from '@spiritagent/host-internal';
+} from '../config-v2.js';
+import type {
+  ModelProviderId,
+  ProviderModelTransportKind,
+} from '../model-provider-presets.js';
 
 export type SpiritModelCapability = SpiritModelCapabilityV2;
 export type SpiritModelReasoningEffort = SpiritModelReasoningEffortV2;
 
-/** Resolved profile for ACP transport (group connect fields + model entry). */
+/** Resolved profile for host transports (group connect fields + model entry). */
 export interface SpiritModelProfile {
   groupId: string;
   ref: ModelRef;
@@ -34,7 +36,7 @@ export interface SpiritModelProfile {
   contextLength?: number;
 }
 
-/** Minimal `config.json` fields read/written by ACP; other Desktop fields are preserved on merge. */
+/** Minimal `config.json` fields read/written by hosts; other Desktop fields are preserved on merge. */
 export interface SpiritConfigFile {
   schemaVersion: SpiritConfigSchemaVersion;
   providerGroups: ProviderGroupV2[];
@@ -59,7 +61,7 @@ export interface GoogleVertexSetupCredentials {
   privateKey?: string;
 }
 
-/** Result collected by the setup wizard before persistence. */
+/** Result collected by a setup flow before persistence. */
 export interface ProviderSetupResult {
   groupId: string;
   model: ModelEntryV2;

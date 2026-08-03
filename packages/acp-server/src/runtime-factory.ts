@@ -50,7 +50,7 @@ import {
 } from '@spiritagent/host-internal';
 
 import { createNoopPeer } from './noop-peer.js';
-import { resolveTransportConfig } from './transport/resolve-transport.js';
+import { resolveTransportConfig } from '@spiritagent/host-internal';
 import type { AcpServerConfig } from './types.js';
 
 export type AcpHostRuntime = AgentRuntime<LlmTransportConfig, LlmToolAgentState, JsonValue, JsonValue>;

@@ -10,21 +10,25 @@ import {
   resolveGroqTransportReasoningEffortForContext,
   resolveOpenAiTransportReasoningEffortForContext,
 } from '@spiritagent/agent-core/reasoning-effort';
+
 import {
   bedrockMantleApiBaseFromRegion,
   isBedrockMantleOpenAiModel,
-  type ModelProviderId,
-} from '@spiritagent/host-internal';
-
+} from './bedrock-mantle.js';
+import type { ModelProviderId } from './model-provider-presets.js';
 import {
   loadActiveModelProfile,
   readBedrockCredentials,
   readGoogleVertexCredentials,
   resolveStoredApiKeyForProfile,
-} from '../credentials/index.js';
-import type { SpiritModelCapability, SpiritModelProfile } from '../credentials/types.js';
-import { resolveProfileApiBase, resolveSetupTransportKind } from '../setup/provider-wizard.js';
-import type { AcpServerConfig } from '../types.js';
+} from './credentials/index.js';
+import type { SpiritModelCapability, SpiritModelProfile } from './credentials/types.js';
+import { resolveProfileApiBase, resolveSetupTransportKind } from './provider-setup.js';
+
+export interface ResolveTransportContext {
+  workspaceRoot: string;
+  spiritDataDir: string;
+}
 
 function modelCapabilitiesFromConfig(
   capabilities: readonly SpiritModelCapability[],
@@ -77,7 +81,7 @@ function buildTransportFromProfile(
     if (!region) {
       throw new Error('Amazon Bedrock model is missing AWS region configuration.');
     }
-    const bedrockCredentials = readBedrockCredentials('amazon-bedrock');
+    const bedrockCredentials = readBedrockCredentials('amazon-bedrock', profile.groupId);
     const resolvedApiKey = apiKey.trim() || bedrockCredentials.apiKey?.trim() || '';
     const accessKeyId = bedrockCredentials.accessKeyId?.trim();
     const secretAccessKey = bedrockCredentials.secretAccessKey?.trim();
@@ -206,7 +210,7 @@ function buildTransportFromProfile(
     if (!region) {
       throw new Error('Amazon Bedrock model is missing AWS region configuration.');
     }
-    const bedrockCredentials = readBedrockCredentials('amazon-bedrock');
+    const bedrockCredentials = readBedrockCredentials('amazon-bedrock', profile.groupId);
     const resolvedApiKey = apiKey.trim() || bedrockCredentials.apiKey?.trim() || '';
     const accessKeyId = bedrockCredentials.accessKeyId?.trim();
     const secretAccessKey = bedrockCredentials.secretAccessKey?.trim();
@@ -243,7 +247,7 @@ function buildTransportFromProfile(
     ? resolveGroqTransportReasoningEffortForContext(profile.reasoningEffort, reasoningEffortContext)
     : resolveOpenAiTransportReasoningEffortForContext(profile.reasoningEffort, reasoningEffortContext);
   const vertexCredentials = profile.provider === 'google-vertex-ai'
-    ? readGoogleVertexCredentials('google-vertex-ai')
+    ? readGoogleVertexCredentials('google-vertex-ai', profile.groupId)
     : undefined;
   const vertexProject = profile.vertexProject?.trim();
   const vertexLocation = profile.vertexLocation?.trim();
@@ -271,31 +275,32 @@ function buildTransportFromProfile(
 }
 
 /**
- * Resolves LLM transport from shared Spirit config + keyring.
+ * Resolves LLM transport from shared Spirit config + keyring. Hosts call this
+ * in-process so secrets never cross an IPC/WS boundary.
  */
-export function resolveTransportConfig(config: AcpServerConfig): LlmTransportConfig {
-  const profile = loadActiveModelProfile(config.spiritDataDir);
+export function resolveTransportConfig(context: ResolveTransportContext): LlmTransportConfig {
+  const profile = loadActiveModelProfile(context.spiritDataDir);
   if (!profile) {
-    throw new Error('No active model configured. Run spirit-agent-acp --setup first.');
+    throw new Error('No active model configured. Run provider setup first.');
   }
 
   const apiKey = resolveStoredApiKeyForProfile(profile) ?? '';
   if (!apiKey.trim() && profile.provider === 'google-vertex-ai') {
-    const vertex = readGoogleVertexCredentials('google-vertex-ai');
+    const vertex = readGoogleVertexCredentials('google-vertex-ai', profile.groupId);
     const hasVertex = Boolean(
       vertex.apiKey?.trim()
       || (vertex.clientEmail?.trim() && vertex.privateKey?.trim()),
     );
     if (!hasVertex) {
-      throw new Error(`No Vertex credentials found for model "${profile.name}". Run --setup again.`);
+      throw new Error(`No Vertex credentials found for model "${profile.name}". Run setup again.`);
     }
   } else if (
     !apiKey.trim()
     && profile.provider !== 'amazon-bedrock'
     && profile.provider !== 'custom'
   ) {
-    throw new Error(`No API key found for model "${profile.name}". Run --setup again.`);
+    throw new Error(`No API key found for model "${profile.name}". Run setup again.`);
   }
 
-  return buildTransportFromProfile(profile, apiKey, config.workspaceRoot);
+  return buildTransportFromProfile(profile, apiKey, context.workspaceRoot);
 }

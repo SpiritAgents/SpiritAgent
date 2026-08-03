@@ -8,6 +8,8 @@ pub mod cli_bootstrap;
 #[cfg(feature = "tui")]
 pub mod conversation_select;
 #[cfg(feature = "tui")]
+pub mod daemon;
+#[cfg(feature = "tui")]
 pub mod headless;
 pub mod hooks;
 pub mod hooks_types;

@@ -44,9 +44,11 @@ Each daemon writes `{spiritDataDir}/server/instances/{instanceId}.json`:
 
 Clients resolve a daemon by reading the registry, pruning records whose pid is dead, and attaching to a survivor — otherwise they spawn a new one. The registry lives in the shared Spirit data directory (`%APPDATA%/SpiritAgent`, `~/Library/Application Support/SpiritAgent`, `$XDG_DATA_HOME/SpiritAgent`, or `~/.spirit-agent`; override with `SPIRIT_AGENT_DATA_DIR`).
 
-## Protocol (Phase 1)
+## Protocol
 
 After the upgrade handshake the server sends a `server.connected` notification (`protocolVersion`, `instanceId`, `version`).
+
+**Server lifecycle**
 
 | Method | Kind | Purpose |
 | --- | --- | --- |
@@ -54,7 +56,27 @@ After the upgrade handshake the server sends a `server.connected` notification (
 | `server.health` | request | Liveness: pid, uptime, version, connection count |
 | `server.connected` | notification | First frame after a successful upgrade |
 
-Session/streaming methods (`session.*`, `runtime.event`) land in later phases — see [Epic #274](https://github.com/SpiritAgents/SpiritAgent/issues/274).
+**Sessions and agent flow**
+
+| Method | Kind | Purpose |
+| --- | --- | --- |
+| `session.create` | request | Create a session (`workspaceRoot`, optional `approvalLevel`); the daemon resolves the model transport from shared config + OS keyring |
+| `session.list` | request | Live sessions in this daemon (id, workspace, host kind, busy, approval level) |
+| `session.close` | request | Abort + drop a session |
+| `session.submitUserTurn` | request | Start a user turn; streaming arrives as push notifications |
+| `session.abort` | request | Abort the current turn |
+| `session.setApprovalLevel` | request | `default` / `auto-approval` / `full-approval` |
+| `session.replyPendingApproval` | request | Answer a pending tool approval (`{ kind: 'allow' \| 'deny', … }`) |
+| `session.replyPendingQuestions` | request | Answer a pending structured questionnaire |
+| `runtime.event` | notification | One raw agent-core `RuntimeEvent` (`assistant-chunk`, `tool-call-started`, `approval-requested`, …) tagged with `sessionId`; broadcast to every connected client |
+| `session.turnFinished` | notification | Terminal state of a turn: `completed` / `failed` / `cancelled` |
+
+Notes for client authors:
+
+- Events are **pushed**, not polled; `waitForCompletedTurnResult` drives the runtime's poll loop inside the daemon, so idle sessions consume no cycles.
+- `update-pending-assistant-thinking` carries the full accumulated thinking text (same contract as the legacy host bridge) — clients that want deltas must diff locally.
+- `session.list`/`session.open` currently cover **live** sessions only; disk-based chat restore across daemon restarts lands with the Desktop migration phase.
+- Multi-client: every connected client receives every session's events; filter by `sessionId`.
 
 ## Remote access
 

@@ -1,12 +1,15 @@
-import {
-  SPIRIT_CONFIG_SCHEMA_VERSION,
-  type ModelProviderId,
-} from '@spiritagent/host-internal';
+import { SPIRIT_CONFIG_SCHEMA_VERSION } from '../config-v2.js';
+import type { ModelProviderId } from '../model-provider-presets.js';
 
 import { keyringStore } from './keyring-store.js';
 import {
   KEYRING_GLOBAL_ACCOUNT,
   KEYRING_SERVICE,
+  groupAccessKeyIdAccount,
+  groupKeyAccount,
+  groupSecretAccessKeyAccount,
+  groupVertexClientEmailAccount,
+  groupVertexPrivateKeyAccount,
   modelKeyAccount,
   modelProviderKeyScope,
   providerAccessKeyIdAccount,
@@ -31,39 +34,70 @@ import type {
 export { loadActiveModelProfile, loadSpiritConfig, saveSpiritConfig };
 export type { ProviderSetupResult, SpiritConfigFile, SpiritModelProfile };
 
-function readProviderKey(providerId: string): string | undefined {
-  const value = keyringStore().getPassword(KEYRING_SERVICE, providerKeyAccount(providerId));
+function readAccount(account: string): string | undefined {
+  const value = keyringStore().getPassword(KEYRING_SERVICE, account);
   const trimmed = value?.trim();
   return trimmed || undefined;
+}
+
+/** Group-scoped key first (Desktop/CLI canonical), then provider scope (acp legacy). */
+function readScopedKey(groupId: string | undefined, providerId: string): string | undefined {
+  if (groupId?.trim()) {
+    const groupKey = readAccount(groupKeyAccount(groupId.trim()));
+    if (groupKey) {
+      return groupKey;
+    }
+  }
+  return readAccount(providerKeyAccount(providerId));
+}
+
+function readScopedSubKey(
+  groupId: string | undefined,
+  providerId: string,
+  groupAccount: (groupId: string) => string,
+  providerAccount: (providerId: string) => string,
+): string | undefined {
+  if (groupId?.trim()) {
+    const value = readAccount(groupAccount(groupId.trim()));
+    if (value) {
+      return value;
+    }
+  }
+  return readAccount(providerAccount(providerId));
 }
 
 function readModelKey(modelName: string): string | undefined {
-  const value = keyringStore().getPassword(KEYRING_SERVICE, modelKeyAccount(modelName));
-  const trimmed = value?.trim();
-  return trimmed || undefined;
+  return readAccount(modelKeyAccount(modelName));
 }
 
 function readGlobalKey(): string | undefined {
-  const value = keyringStore().getPassword(KEYRING_SERVICE, KEYRING_GLOBAL_ACCOUNT);
-  const trimmed = value?.trim();
-  return trimmed || undefined;
+  return readAccount(KEYRING_GLOBAL_ACCOUNT);
 }
 
-export function readBedrockCredentials(providerId: ModelProviderId): BedrockSetupCredentials {
+export function readBedrockCredentials(
+  providerId: ModelProviderId,
+  groupId?: string,
+): BedrockSetupCredentials {
   const credentials: BedrockSetupCredentials = {};
-  const apiKey = readProviderKey(providerId);
+  const apiKey = readScopedKey(groupId, providerId);
   if (apiKey) {
     credentials.apiKey = apiKey;
   }
-  const accessKeyId = keyringStore()
-    .getPassword(KEYRING_SERVICE, providerAccessKeyIdAccount(providerId))
-    ?.trim();
+  const accessKeyId = readScopedSubKey(
+    groupId,
+    providerId,
+    groupAccessKeyIdAccount,
+    providerAccessKeyIdAccount,
+  );
   if (accessKeyId) {
     credentials.accessKeyId = accessKeyId;
   }
-  const secretAccessKey = keyringStore()
-    .getPassword(KEYRING_SERVICE, providerSecretAccessKeyAccount(providerId))
-    ?.trim();
+  const secretAccessKey = readScopedSubKey(
+    groupId,
+    providerId,
+    groupSecretAccessKeyAccount,
+    providerSecretAccessKeyAccount,
+  );
   if (secretAccessKey) {
     credentials.secretAccessKey = secretAccessKey;
   }
@@ -72,21 +106,28 @@ export function readBedrockCredentials(providerId: ModelProviderId): BedrockSetu
 
 export function readGoogleVertexCredentials(
   providerId: ModelProviderId,
+  groupId?: string,
 ): GoogleVertexSetupCredentials {
   const credentials: GoogleVertexSetupCredentials = {};
-  const apiKey = readProviderKey(providerId);
+  const apiKey = readScopedKey(groupId, providerId);
   if (apiKey) {
     credentials.apiKey = apiKey;
   }
-  const clientEmail = keyringStore()
-    .getPassword(KEYRING_SERVICE, providerVertexClientEmailAccount(providerId))
-    ?.trim();
+  const clientEmail = readScopedSubKey(
+    groupId,
+    providerId,
+    groupVertexClientEmailAccount,
+    providerVertexClientEmailAccount,
+  );
   if (clientEmail) {
     credentials.clientEmail = clientEmail;
   }
-  const privateKey = keyringStore()
-    .getPassword(KEYRING_SERVICE, providerVertexPrivateKeyAccount(providerId))
-    ?.trim();
+  const privateKey = readScopedSubKey(
+    groupId,
+    providerId,
+    groupVertexPrivateKeyAccount,
+    providerVertexPrivateKeyAccount,
+  );
   if (privateKey) {
     credentials.privateKey = privateKey;
   }
@@ -117,14 +158,14 @@ function hasGoogleVertexRuntimeCredentials(input: {
 }
 
 function hasProviderSecret(providerId: ModelProviderId, profile: SpiritModelProfile): boolean {
-  if (readProviderKey(providerId)) {
+  if (readScopedKey(profile.groupId, providerId)) {
     return true;
   }
   if (providerId === 'amazon-bedrock') {
-    return hasBedrockRuntimeCredentials(readBedrockCredentials('amazon-bedrock'));
+    return hasBedrockRuntimeCredentials(readBedrockCredentials('amazon-bedrock', profile.groupId));
   }
   if (providerId === 'google-vertex-ai') {
-    const credentials = readGoogleVertexCredentials('google-vertex-ai');
+    const credentials = readGoogleVertexCredentials('google-vertex-ai', profile.groupId);
     const vertexInput: {
       apiKey?: string;
       clientEmail?: string;
@@ -154,9 +195,9 @@ function hasProviderSecret(providerId: ModelProviderId, profile: SpiritModelProf
 
 export function resolveStoredApiKeyForProfile(profile: SpiritModelProfile): string | undefined {
   const scope = modelProviderKeyScope(profile.provider);
-  const providerKey = readProviderKey(scope);
-  if (providerKey) {
-    return providerKey;
+  const scopedKey = readScopedKey(profile.groupId, scope);
+  if (scopedKey) {
+    return scopedKey;
   }
   const modelKey = readModelKey(profile.name);
   if (modelKey) {
