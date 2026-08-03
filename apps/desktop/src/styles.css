@@ -42,6 +42,8 @@
   --destructive: oklch(0.577 0.245 27.325);
   --border: oklch(0.922 0 0);
   --input: oklch(0.922 0 0);
+  /* 表单控件默认边框：等价 border-border/60，与扩展卡片等低对比度块对齐 */
+  --control-border: color-mix(in oklab, var(--border) 60%, transparent);
   --ring: oklch(0.708 0 0);
   --chart-1: oklch(0.87 0 0);
   --chart-2: oklch(0.556 0 0);
@@ -115,6 +117,7 @@ html.dark,
   --destructive: oklch(0.704 0.191 22.216);
   --border: #272727;
   --input: #272727;
+  --control-border: color-mix(in oklab, var(--border) 60%, transparent);
   --ring: #3f3f3f;
   --chart-1: #e4e4e4;
   --chart-2: #a1a1a1;
@@ -393,6 +396,7 @@ html.spirit-desktop-native.spirit-desktop-mica.spirit-launch-splash-exiting
   --color-dialog-panel-border: var(--dialog-panel-border);
   --color-git-action-split: var(--git-action-split);
   --color-ring: var(--ring);
+  --color-control-border: var(--control-border);
   --color-input: var(--input);
   --color-border: var(--border);
   --color-destructive: var(--destructive);
