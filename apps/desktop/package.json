@@ -8,6 +8,12 @@
     "name": "Spirit Agent contributors",
     "email": "121384036+N123999@users.noreply.github.com"
   },
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/SpiritAgents/SpiritAgent.git",
+    "directory": "apps/desktop"
+  },
   "type": "module",
   "engines": {
     "node": ">=24"
