@@ -32,6 +32,7 @@ mod tests;
 #[cfg(test)]
 pub(crate) use constants::{ENV_API_KEY, ENV_RUNTIME_BACKEND_NODE_PATH};
 use json_rpc::JsonRpcProcess;
+pub(crate) use json_rpc::{resolve_node_path, resolve_server_entry};
 pub use types::*;
 use types::bridge::BridgePendingApproval;
 

@@ -2,7 +2,7 @@ mod framing;
 mod spawn;
 
 pub(crate) use framing::{is_json_rpc_response, write_message_to_stdin};
-pub(crate) use spawn::resolve_bridge_script;
+pub(crate) use spawn::{resolve_bridge_script, resolve_node_path, resolve_server_entry};
 
 use anyhow::{Context, Result, anyhow};
 use serde_json::{Value, json};
@@ -21,7 +21,7 @@ use crate::ts_bridge::constants::{
 };
 
 use spawn::{
-    resolve_host_internal_module_path, resolve_node_path, spawn_stderr_drain, spawn_stdout_reader,
+    resolve_host_internal_module_path, spawn_stderr_drain, spawn_stdout_reader,
 };
 
 pub(crate) struct JsonRpcProcess {

@@ -7,7 +7,7 @@
 
 **生産性を何倍にも引き上げるオープンソース AI エージェント** — ワークスペースに根ざし、実際のツールを備え、計画・実行・デリバリーまであなたと並走します。
 
-[Desktop アプリ](#desktop) · [CLI](#cli) · [ACP Server](#acp-server) · [Agent Core](#agent-core) · [開発](#開発)
+[Desktop アプリ](#desktop) · [CLI](#cli) · [Server](#server) · [ACP Server](#acp-server) · [Agent Core](#agent-core) · [開発](#開発)
 
 > 本プロジェクトは活発に開発中です。リリース間で動作や API が変わる場合があります。
 
@@ -23,13 +23,20 @@ Spirit Agent は、実プロジェクトのルートをコンテキストに動�
 
 ```
 ┌───────────────────────────────────────────────────────┐
-│  Hosts                                                │
+│  Clients                                              │
 │  ┌──────────────┐ ┌──────────┐ ┌───────────────────┐  │
-│  │   Desktop    │ │   CLI    │ │    ACP Server     │  │
-│  │  (Electron)  │ │  (Rust)  │ │  stdio / ndJSON   │  │
-│  └──────┬───────┘ └─────┬────┘ └───────────┬───────┘  │
-│         └───────────────┼──────────────────┘          │
+│  │   Desktop    │ │   CLI    │ │  Web (planned)    │  │
+│  │  (Electron)  │ │  (Rust)  │ │                   │  │
+│  └──────┬───────┘ └─────┬────┘ └─────────┬─────────┘  │
+│         └───────────────┴── WebSocket ───┘            │
 │                         ▼                             │
+│                packages/server                        │
+│      daemon: sessions, streaming, approvals           │
+│                         │                             │
+│  ┌───────────────────┐  │                             │
+│  │    ACP Server     │  │                             │
+│  │  stdio / ndJSON   │──┤                             │
+│  └───────────────────┘  ▼                             │
 │               packages/host-internal                  │
 │            discovery, tools, workspace                │
 │                         │                             │
@@ -114,6 +121,17 @@ Desktop 固有の開発・レイアウトは [apps/desktop/README.md](../apps/de
 npm run dev:cli    # cargo run -p spirit-agent
 ```
 
+## Server
+
+[`packages/server`](../packages/server)（`@spiritagent/server`、bin `spirit-server` / `spirit serve`）は、ファーストパーティホスト向けの**共有デーモンバックエンド**です。CLI と Desktop はプロセス内にランタイムを埋め込まず、WebSocket（JSON-RPC 2.0）で同じデーモンに接続します。ターミナルで開始したセッションはリアルタイムで Desktop にストリーミングされ、その逆も同様です。
+
+- **単一の信頼できる情報源** — セッション、ストリーミングイベント、ツール実行、承認キューはすべてデーモン内に保持され、クライアントは描画と入力だけを担当します。
+- **ランダムポートインスタンス** — `127.0.0.1` の OS 割り当てポートにバインドし、`{spiritDataDir}/server/instances/` に登録されます。クライアントは既存インスタンスへのアタッチを優先し、なければ新規起動します。`spirit-server ps` / `kill` でインスタンスを管理します。
+- **Bearer 認証** — ホームレベルのトークンは `{spiritDataDir}/server.token`（パーミッション 0600）に保存され、`Authorization` ヘッダーまたは `?token=` クエリで受け付けます。`spirit-server rotate-token` でローテーションすると新規接続に適用されます。
+- **新規依存ゼロ** — WebSocket 層（RFC 6455）はパッケージ内に実装されています。
+
+デーモンへの移行は進行中です（[Epic #274](https://github.com/SpiritAgents/SpiritAgent/issues/274) を参照）。セッション/ストリーミング RPC は段階的に追加されます。リモートアクセス（`--hostname 0.0.0.0`）は将来のフェーズ向けに予約されており、デフォルトでは無効です。
+
 ## ACP Server
 
 [`packages/acp-server`](../packages/acp-server) は薄いアダプターで、stdio / ndJSON 経由で Spirit Agent を [Agent Client Protocol](https://agentclientprotocol.com)（ACP）サーバーとして公開します。**Zed** や **JetBrains Junie** など ACP 対応エディタが、カスタム統合なしで Spirit Agent を AI コーディングエンジンとして接続できます。
@@ -162,7 +180,7 @@ node path/to/packages/acp-server/dist/src/stdio-entry.js --setup
 | `npm run dev:desktop` | 共有パッケージをビルドして Desktop 起動（Vite + Electron） |
 | `npm run dev:desktop:web` | Desktop レンダラー + ブラウザ Web ホスト |
 | `npm run dev:cli` | TUI 付き CLI |
-| `npm run build` | agent-core、host-internal、acp-server、Desktop の本番ビルド |
+| `npm run build` | agent-core、host-internal、server、acp-server、Desktop の本番ビルド |
 | `npm run eval:compare` | agent-core 変更後の eval 比較 |
 
 ### リポジトリ構成
@@ -174,6 +192,7 @@ apps/
 packages/
   agent-core/        エージェントランタイム、プロンプト、ツール定義、トランスポート、MCP、eval
   host-internal/     共有ホスト探索、ツール、拡張、LSP ヘルパー
+  server/            CLI / Desktop / Web 向け共有デーモンバックエンド（WebSocket + JSON-RPC）
   acp-server/        エディタ統合向け ACP サーバーアダプター
 scripts/             リリース、eval、リポジトリ自動化
 ```

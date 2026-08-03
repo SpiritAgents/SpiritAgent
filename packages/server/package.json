@@ -1,0 +1,40 @@
+{
+  "name": "@spiritagent/server",
+  "version": "0.3.2",
+  "description": "Spirit Server — shared daemon backend for Spirit Agent clients (CLI / Desktop / Web)",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/SpiritAgents/SpiritAgent.git",
+    "directory": "packages/server"
+  },
+  "publishConfig": {
+    "access": "public"
+  },
+  "type": "module",
+  "main": "./dist/src/entry.js",
+  "types": "./dist/src/protocol/index.d.ts",
+  "bin": {
+    "spirit-server": "./dist/src/entry.js"
+  },
+  "files": [
+    "dist",
+    "README.md"
+  ],
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "test": "npm run build && node --test dist/test/*.test.js",
+    "prepublishOnly": "npm run build && node ../../scripts/npm/assert-no-file-deps.mjs"
+  },
+  "engines": {
+    "node": ">=24"
+  },
+  "dependencies": {
+    "@spiritagent/agent-core": "0.3.2",
+    "@spiritagent/host-internal": "0.3.2"
+  },
+  "devDependencies": {
+    "@types/node": "^25.6.0",
+    "typescript": "^5.6.3"
+  }
+}

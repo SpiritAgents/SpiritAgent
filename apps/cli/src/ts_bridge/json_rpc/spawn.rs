@@ -13,7 +13,7 @@ use crate::{
     logging,
     ts_bridge::constants::{
         ENV_RUNTIME_BACKEND_NODE_PATH, ENV_RUNTIME_BRIDGE_PATH,
-        ENV_RUNTIME_HOST_INTERNAL_MODULE_PATH,
+        ENV_RUNTIME_HOST_INTERNAL_MODULE_PATH, ENV_SERVER_ENTRY_PATH,
     },
 };
 
@@ -119,6 +119,60 @@ pub(crate) fn resolve_bridge_script(workspace_root: &Path) -> Result<PathBuf> {
 
     Err(anyhow!(
         "未找到 TS bridge 入口 host-bridge.js。请先在 packages/agent-core 执行 npm run build。"
+    ))
+}
+
+pub(crate) fn resolve_server_entry(workspace_root: &Path) -> Result<PathBuf> {
+    if let Ok(path) = env::var(ENV_SERVER_ENTRY_PATH) {
+        let candidate = PathBuf::from(path);
+        if candidate.exists() {
+            return Ok(candidate);
+        }
+    }
+
+    for root in release_bundle_roots() {
+        let candidate = root
+            .join("packages")
+            .join("server")
+            .join("dist")
+            .join("src")
+            .join("entry.js");
+        if candidate.exists() {
+            return Ok(candidate);
+        }
+    }
+
+    // 与「用户项目目录」无关：server 入口位于 monorepo 的 packages/server/dist。
+    let from_crate = PathBuf::from(env!("CARGO_MANIFEST_DIR"))
+        .join("..")
+        .join("..")
+        .join("packages")
+        .join("server")
+        .join("dist")
+        .join("src")
+        .join("entry.js");
+    if from_crate.exists() {
+        return Ok(from_crate);
+    }
+
+    let mut cursor = workspace_root.to_path_buf();
+    loop {
+        let candidate = cursor
+            .join("packages")
+            .join("server")
+            .join("dist")
+            .join("src")
+            .join("entry.js");
+        if candidate.exists() {
+            return Ok(candidate);
+        }
+        if !cursor.pop() {
+            break;
+        }
+    }
+
+    Err(anyhow!(
+        "未找到 Spirit Server 入口 entry.js。请先在 packages/server 执行 npm run build。"
     ))
 }
 

@@ -29,6 +29,7 @@ pub mod fork;
 pub mod rewind;
 pub mod rules;
 pub mod runtime_handle;
+pub mod serve;
 pub mod session;
 pub mod subagent_display;
 #[cfg(feature = "tui")]
@@ -56,6 +57,7 @@ pub use cli::{
 pub use cli_bootstrap::{bootstrap_config, print_skills_stub, GlobalCliOptions};
 #[cfg(feature = "tui")]
 pub use headless::run_headless_prompt;
+pub use serve::run_serve;
 #[cfg(feature = "tui")]
 pub use tui::TuiShell;
 pub use view::{ChatMessage, MessageRole, ToolUiBlock, ToolUiPhase, TuiViewModel};
