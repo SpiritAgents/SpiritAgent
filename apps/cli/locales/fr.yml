@@ -192,7 +192,7 @@ form.extensions.footer_hint: "↑/↓ Déplacer  Molette défilement  Entrée es
 form.model.title: "Connecter les modèles"
 form.model.field.provider.label: "Fournisseur"
 form.model.provider.deepseek: "DeepSeek"
-form.model.provider.xai: "xAI"
+form.model.provider.xai: "SpaceXAI"
 form.model.provider.moonshot-ai: "Moonshot AI"
 form.model.provider.kimi-code: "Kimi Code"
 form.model.provider.moonshot-ai.site.cn: "Chine"

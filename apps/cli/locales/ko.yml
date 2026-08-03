@@ -192,7 +192,7 @@ form.extensions.footer_hint: "↑/↓ 이동  마우스 휠 스크롤  Enter 자
 form.model.title: "모델 연결"
 form.model.field.provider.label: "제공자"
 form.model.provider.deepseek: "DeepSeek"
-form.model.provider.xai: "xAI"
+form.model.provider.xai: "SpaceXAI"
 form.model.provider.moonshot-ai: "Moonshot AI"
 form.model.provider.kimi-code: "Kimi Code"
 form.model.provider.moonshot-ai.site.cn: "중국"

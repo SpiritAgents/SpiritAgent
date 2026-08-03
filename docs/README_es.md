@@ -58,7 +58,7 @@ Agent Core enruta la inferencia a través de varios transportes detrás de un ru
 | Transporte | Proveedores típicos |
 | --- | --- |
 | **OpenAI-compatible** | OpenAI, DeepSeek, Moonshot, MiniMax, Volcengine, endpoints personalizados |
-| **Open Responses** | OpenAI, xAI, Vercel AI Gateway, OpenRouter, Alibaba (Bailian) |
+| **Open Responses** | OpenAI, SpaceXAI, Vercel AI Gateway, OpenRouter, Alibaba (Bailian) |
 | **Anthropic** | Claude vía Messages API |
 
 Las capacidades nativas del proveedor (búsqueda web en Open Responses, búsqueda e intérprete de código de Alibaba, etc.) se inyectan mediante el campo `tools`.

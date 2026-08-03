@@ -192,7 +192,7 @@ form.extensions.footer_hint: "↑/↓ 移動  滑鼠滾輪捲動  Enter 佔位�
 form.model.title: "連接模型"
 form.model.field.provider.label: "供應商"
 form.model.provider.deepseek: "DeepSeek"
-form.model.provider.xai: "xAI"
+form.model.provider.xai: "SpaceXAI"
 form.model.provider.moonshot-ai: "Moonshot AI"
 form.model.provider.kimi-code: "Kimi Code"
 form.model.provider.moonshot-ai.site.cn: "中國"
