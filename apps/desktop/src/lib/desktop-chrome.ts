@@ -151,9 +151,28 @@ export const DESKTOP_OVERLAY_LIST_WIDTH =
 export const DESKTOP_OVERLAY_LIST_FILTER_HEADER =
   "shrink-0 border-b border-border/40 p-1.5";
 
+/** 表单控件默认边框：与扩展卡片 border-border/60 对齐 */
+export const DESKTOP_CONTROL_BORDER = "border-control-border transition-colors";
+
+/** 表单控件 hover：与扩展卡片一致 */
+export const DESKTOP_CONTROL_BORDER_HOVER =
+  "hover:border-border hover:bg-muted/30";
+
+/** 表单控件 focus */
+export const DESKTOP_CONTROL_BORDER_FOCUS =
+  "focus-visible:border-border focus-visible:ring-2 focus-visible:ring-ring/60";
+
+/** 表单控件 focus-within（shell 容器） */
+export const DESKTOP_CONTROL_BORDER_FOCUS_WITHIN =
+  "focus-within:border-border focus-within:ring-2 focus-within:ring-ring/60";
+
 /** 与 PendingApprovalCard 指引输入一致：外壳细边框，内层 Input 无 ring */
-export const DESKTOP_OVERLAY_LIST_FILTER_INPUT_SHELL =
-  "overflow-hidden rounded-md border border-input bg-transparent focus-within:border-ring/60 focus-within:ring-2 focus-within:ring-ring/20";
+export const DESKTOP_OVERLAY_LIST_FILTER_INPUT_SHELL = cn(
+  "overflow-hidden rounded-md bg-transparent",
+  DESKTOP_CONTROL_BORDER,
+  DESKTOP_CONTROL_BORDER_HOVER,
+  DESKTOP_CONTROL_BORDER_FOCUS_WITHIN,
+);
 
 export const DESKTOP_OVERLAY_LIST_FILTER_INPUT =
   "h-7 min-h-7 w-full min-w-0 rounded-none border-0 bg-transparent px-2.5 py-1 text-xs shadow-none focus-visible:border-transparent focus-visible:ring-0";
@@ -213,8 +232,10 @@ export const DESKTOP_SELECT_CONTENT = cn(
 
 /** 独立边框 Select 触发器（设置页等） */
 export const DESKTOP_SELECT_TRIGGER = cn(
-  "flex h-8 min-h-8 w-full min-w-0 cursor-pointer items-center justify-between gap-2 rounded-md border border-input bg-background px-2.5 py-1 text-sm shadow-xs outline-none",
-  "focus-visible:border-ring focus-visible:ring-2 focus-visible:ring-ring/50",
+  "flex h-8 min-h-8 w-full min-w-0 cursor-pointer items-center justify-between gap-2 rounded-md bg-background px-2.5 py-1 text-sm outline-none",
+  DESKTOP_CONTROL_BORDER,
+  DESKTOP_CONTROL_BORDER_HOVER,
+  DESKTOP_CONTROL_BORDER_FOCUS,
   "disabled:cursor-not-allowed disabled:opacity-50",
   "data-placeholder:text-muted-foreground [&>span]:line-clamp-1",
 );
