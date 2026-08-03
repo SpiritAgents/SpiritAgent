@@ -71,7 +71,7 @@ Las herramientas integradas se definen una vez en Agent Core (nombre, descripci�
 - **Shell** — `shell` con aprobación controlada por el host
 - **Web** — `web_fetch`; búsqueda vía herramientas del proveedor o búsqueda del host configurada
 - **Delegation** — `subagent`
-- **Planning** — `create_plan`, herramientas TODO de sesión (`todo_list`, `todo_create`, `todo_update`, `todo_complete`)
+- **Planning** — `create_plan`, herramientas TODO de sesión (`todo_list`, `todo_write`)
 - **Multimodal** — `generate_image`, `generate_video`
 - **Dreams** — `dream_list`, `dream_read`, `dream_record`, `dream_update`, `dream_delete` para resúmenes de memoria del workspace
 - **LSP** — diagnósticos del language server tras ediciones

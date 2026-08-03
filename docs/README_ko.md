@@ -71,7 +71,7 @@ Agent Core는 단일 런타임 뒤에서 여러 추론 트랜스포트를 라우
 - **Shell** — 호스트 제어 승인이 있는 `shell`
 - **Web** — `web_fetch`; 검색은 프로바이더 도구 또는 구성된 호스트 검색
 - **Delegation** — `subagent`
-- **Planning** — `create_plan`, 세션 TODO 도구(`todo_list`, `todo_create`, `todo_update`, `todo_complete`)
+- **Planning** — `create_plan`, 세션 TODO 도구(`todo_list`, `todo_write`)
 - **Multimodal** — `generate_image`, `generate_video`
 - **Dreams** — 워크스페이스 메모리 요약용 `dream_list`, `dream_read`, `dream_record`, `dream_update`, `dream_delete`
 - **LSP** — 편집 후 언어 서버 진단

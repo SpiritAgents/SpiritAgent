@@ -71,7 +71,7 @@ Agent Core は単一ランタイムの背後で複数の推論トランスポー
 - **Shell** — ホスト制御の承認付き `shell`
 - **Web** — `web_fetch`；検索はプロバイダーツールまたは設定済みホスト検索
 - **Delegation** — `subagent`
-- **Planning** — `create_plan`、セッション TODO ツール（`todo_list`、`todo_create`、`todo_update`、`todo_complete`）
+- **Planning** — `create_plan`、セッション TODO ツール（`todo_list`、`todo_write`）
 - **Multimodal** — `generate_image`、`generate_video`
 - **Dreams** — ワークスペース記憶要約向け `dream_list`、`dream_read`、`dream_record`、`dream_update`、`dream_delete`
 - **LSP** — 編集後の言語サーバ診断

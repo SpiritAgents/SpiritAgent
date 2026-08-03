@@ -71,7 +71,7 @@ Built-in tools are defined once in Agent Core (name, description, JSON Schema). 
 - **Shell** — `shell` with host-controlled approval
 - **Web** — `web_fetch`; search via provider tools or host search where configured
 - **Delegation** — `subagent`
-- **Planning** — `create_plan`, session TODO tools (`todo_list`, `todo_create`, `todo_update`, `todo_complete`)
+- **Planning** — `create_plan`, session TODO tools (`todo_list`, `todo_write`)
 - **Multimodal** — `generate_image`, `generate_video`
 - **Dreams** — `dream_list`, `dream_read`, `dream_record`, `dream_update`, `dream_delete` for workspace memory summaries
 - **LSP** — language-server diagnostics surfaced after edits

@@ -71,7 +71,7 @@ Eingebaute Tools werden einmal in Agent Core definiert (Name, Beschreibung, JSON
 - **Shell** — `shell` mit hostgesteuerter Freigabe
 - **Web** — `web_fetch`; Suche über Anbieter-Tools oder konfigurierte Host-Suche
 - **Delegation** — `subagent`
-- **Planning** — `create_plan`, Session-TODO-Tools (`todo_list`, `todo_create`, `todo_update`, `todo_complete`)
+- **Planning** — `create_plan`, Session-TODO-Tools (`todo_list`, `todo_write`)
 - **Multimodal** — `generate_image`, `generate_video`
 - **Dreams** — `dream_list`, `dream_read`, `dream_record`, `dream_update`, `dream_delete` für Workspace-Gedächtniszusammenfassungen
 - **LSP** — Language-Server-Diagnosen nach Bearbeitungen

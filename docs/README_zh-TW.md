@@ -71,7 +71,7 @@ Agent Core 在統一執行時背後路由多種推理傳輸層：
 - **Shell** — `shell`，由宿主控制審批
 - **Web** — `web_fetch`；搜尋透過提供商工具或已設定的宿主搜尋實現
 - **委派** — `subagent`
-- **規劃** — `create_plan`，工作階段 TODO 工具（`todo_list`、`todo_create`、`todo_update`、`todo_complete`）
+- **規劃** — `create_plan`，工作階段 TODO 工具（`todo_list`、`todo_write`）
 - **多模態** — `generate_image`、`generate_video`
 - **Dreams** — `dream_list`、`dream_read`、`dream_record`、`dream_update`、`dream_delete`，用於工作區記憶摘要
 - **LSP** — 編輯後展示語言伺服器診斷資訊

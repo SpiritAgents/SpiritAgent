@@ -71,7 +71,7 @@ Les outils intégrés sont définis une fois dans Agent Core (nom, description, 
 - **Shell** — `shell` avec approbation contrôlée par l’hôte
 - **Web** — `web_fetch` ; recherche via outils fournisseur ou recherche hôte configurée
 - **Delegation** — `subagent`
-- **Planning** — `create_plan`, outils TODO de session (`todo_list`, `todo_create`, `todo_update`, `todo_complete`)
+- **Planning** — `create_plan`, outils TODO de session (`todo_list`, `todo_write`)
 - **Multimodal** — `generate_image`, `generate_video`
 - **Dreams** — `dream_list`, `dream_read`, `dream_record`, `dream_update`, `dream_delete` pour résumés de mémoire workspace
 - **LSP** — diagnostics language server après éditions

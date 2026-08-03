@@ -71,7 +71,7 @@ Ferramentas embutidas são definidas uma vez no Agent Core (nome, descrição, J
 - **Shell** — `shell` com aprovação controlada pelo host
 - **Web** — `web_fetch`; busca via ferramentas do provedor ou busca do host configurada
 - **Delegation** — `subagent`
-- **Planning** — `create_plan`, ferramentas TODO de sessão (`todo_list`, `todo_create`, `todo_update`, `todo_complete`)
+- **Planning** — `create_plan`, ferramentas TODO de sessão (`todo_list`, `todo_write`)
 - **Multimodal** — `generate_image`, `generate_video`
 - **Dreams** — `dream_list`, `dream_read`, `dream_record`, `dream_update`, `dream_delete` para resumos de memória do workspace
 - **LSP** — diagnósticos do language server após edições
