@@ -15,6 +15,7 @@
     "build:host-internal": "npm --prefix packages/host-internal run build",
     "build:desktop": "npm --prefix apps/desktop run build",
     "build:acp-server": "npm --prefix packages/acp-server run build",
+    "build:cli": "cargo build -p spirit-agent --release",
     "build": "npm run build:agent-core && npm run build:host-internal && npm run build:acp-server && npm run build:desktop",
     "release:verify-version": "node scripts/release/verify-version.mjs",
     "release:cli:bundle": "node scripts/release/bundle-cli.mjs",
