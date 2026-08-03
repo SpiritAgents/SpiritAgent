@@ -54,6 +54,8 @@ describe('SessionManager', () => {
           events.push(`${sessionId}:${event.kind}`);
         },
         broadcastTurnFinished: () => {},
+        broadcastSnapshot: () => {},
+        broadcastTrustRequest: () => {},
       });
 
       const created = await manager.createSession({
@@ -89,6 +91,8 @@ describe('SessionManager', () => {
       const manager = new SessionManager(dataDir, {
         broadcastRuntimeEvent: () => {},
         broadcastTurnFinished: () => {},
+        broadcastSnapshot: () => {},
+        broadcastTrustRequest: () => {},
       });
       const created = await manager.createSession({
         workspaceRoot: tmpdir(),
@@ -104,6 +108,56 @@ describe('SessionManager', () => {
 
       manager.shutdown();
       assert.deepEqual(manager.listSessions(), []);
+    });
+  });
+
+  it('projects a bridge-compatible snapshot (field parity)', async () => {
+    await withMockKeyring(async () => {
+      const dataDir = freshDataDir();
+      const manager = new SessionManager(dataDir, {
+        broadcastRuntimeEvent: () => {},
+        broadcastTurnFinished: () => {},
+        broadcastSnapshot: () => {},
+        broadcastTrustRequest: () => {},
+      });
+      const created = await manager.createSession({
+        workspaceRoot: tmpdir(),
+        hostKind: 'cli',
+      });
+
+      const snapshot = manager.snapshot(created.sessionId);
+      // Required fields of the legacy bridge snapshot contract.
+      assert.equal(snapshot.isBusy, false);
+      assert.equal(snapshot.loopEnabled, false);
+      assert.equal(snapshot.approvalLevel, 'default');
+      assert.equal(snapshot.hasPendingApproval, false);
+      assert.equal(snapshot.hasPendingManualApproval, false);
+      assert.equal(snapshot.hasPendingQuestions, false);
+      assert.deepEqual(snapshot.pendingImagePaths, []);
+      assert.deepEqual(snapshot.pendingMcpResources, []);
+      assert.deepEqual(snapshot.childSessions, []);
+      // No unexpected keys beyond the bridge contract.
+      const allowedKeys = new Set([
+        'pendingUserTurn',
+        'pendingImagePaths',
+        'pendingMcpResources',
+        'pendingAuxState',
+        'hasPendingApproval',
+        'hasPendingManualApproval',
+        'hasPendingQuestions',
+        'currentPendingApproval',
+        'currentPendingQuestions',
+        'childSessions',
+        'isBusy',
+        'loopEnabled',
+        'approvalLevel',
+        'backgroundToolStatus',
+      ]);
+      for (const key of Object.keys(snapshot)) {
+        assert.ok(allowedKeys.has(key), `unexpected snapshot key: ${key}`);
+      }
+
+      manager.shutdown();
     });
   });
 });

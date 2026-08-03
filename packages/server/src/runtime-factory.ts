@@ -104,6 +104,8 @@ export interface ServerRuntimeResult {
   activeSkills: LlmActiveSkill[];
   setAgentMode: (mode: SpiritAgentMode) => Promise<void>;
   setApprovalLevel: (level: ApprovalLevel) => void;
+  approvalLevelSnapshot: () => ApprovalLevel;
+  setLoopEnabled: (enabled: boolean) => void;
 }
 
 /**
@@ -217,7 +219,8 @@ export async function createServerRuntime(
   const providerWebSearchPromptSection = buildProviderWebSearchPromptSection(transportConfig);
 
   const activeSkills: LlmActiveSkill[] = [];
-  const loopEnabled = false;
+  // Mutable: state factory closures capture the binding; setLoopEnabled updates it.
+  let loopEnabled = false;
   const attribution = undefined;
 
   const createToolAgentState = (messages: LlmMessage[], userInput: string) =>
@@ -361,6 +364,12 @@ export async function createServerRuntime(
     toolExecutor.setApprovalLevel(level);
   };
 
+  const setLoopEnabled = (enabled: boolean): void => {
+    loopEnabled = enabled;
+    runtime.setLoopEnabled(enabled);
+    toolExecutor.setLoopToolExposure(enabled);
+  };
+
   return {
     runtime,
     toolExecutor,
@@ -371,5 +380,7 @@ export async function createServerRuntime(
     activeSkills,
     setAgentMode,
     setApprovalLevel,
+    approvalLevelSnapshot: () => currentApprovalLevel,
+    setLoopEnabled,
   };
 }

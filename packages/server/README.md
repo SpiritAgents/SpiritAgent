@@ -63,20 +63,30 @@ After the upgrade handshake the server sends a `server.connected` notification (
 | `session.create` | request | Create a session (`workspaceRoot`, optional `approvalLevel`); the daemon resolves the model transport from shared config + OS keyring |
 | `session.list` | request | Live sessions in this daemon (id, workspace, host kind, busy, approval level) |
 | `session.close` | request | Abort + drop a session |
-| `session.submitUserTurn` | request | Start a user turn; streaming arrives as push notifications |
+| `session.submitUserTurn` | request | Start a user turn (`{ accepted: true }` or `{ queued: true }` when busy; the queue drains on idle) |
 | `session.abort` | request | Abort the current turn |
 | `session.setApprovalLevel` | request | `default` / `auto-approval` / `full-approval` |
+| `session.setMode` | request | Switch agent mode: `agent` / `plan` / `ask` / `debug` |
+| `session.setLoopEnabled` | request | Toggle loop mode |
+| `session.reset` | request | Abort + clear history |
+| `session.rename` | request | Set a display title (live sessions only) |
+| `session.continueAssistantCompletion` | request | Continue completion from the history tail |
+| `session.compactHistory` | request | Run manual history compaction |
+| `session.poll` | request | Pull the current session projection (watchdog / headless clients) |
 | `session.replyPendingApproval` | request | Answer a pending tool approval (`{ kind: 'allow' \| 'deny', … }`) |
 | `session.replyPendingQuestions` | request | Answer a pending structured questionnaire |
+| `session.replyWorkspaceCapabilityTrust` | request | Answer a workspace trust prompt (`allowOnce` / `deny` / `alwaysTrust`; first reply wins) |
 | `runtime.event` | notification | One raw agent-core `RuntimeEvent` (`assistant-chunk`, `tool-call-started`, `approval-requested`, …) tagged with `sessionId`; broadcast to every connected client |
 | `session.turnFinished` | notification | Terminal state of a turn: `completed` / `failed` / `cancelled` |
+| `session.snapshot` | notification | Session projection pushed at interaction boundaries (approval/questions/turn end) |
+| `workspace.trustRequested` | notification | Hooks ask for workspace capability trust; reply with `session.replyWorkspaceCapabilityTrust` |
 
 Notes for client authors:
 
-- Events are **pushed**, not polled; `waitForCompletedTurnResult` drives the runtime's poll loop inside the daemon, so idle sessions consume no cycles.
+- Events are **pushed**, not polled; each session runs a 25ms pump inside the daemon (the Desktop session-pump model) that drives `runtime.poll()` and harvests terminal results, so turns survive transient idle windows inside the turn machine (e.g. the await boundary while an approval resolves).
 - `update-pending-assistant-thinking` carries the full accumulated thinking text (same contract as the legacy host bridge) — clients that want deltas must diff locally.
 - `session.list`/`session.open` currently cover **live** sessions only; disk-based chat restore across daemon restarts lands with the Desktop migration phase.
-- Multi-client: every connected client receives every session's events; filter by `sessionId`.
+- Multi-client: every connected client receives every session's events; filter by `sessionId`. When the **last** client disconnects, pending approvals are denied and pending questions skipped so no runtime parks forever.
 
 ## Remote access
 

@@ -30,11 +30,31 @@ export const SESSION_SET_APPROVAL_LEVEL = 'session.setApprovalLevel';
 export const SESSION_REPLY_PENDING_APPROVAL = 'session.replyPendingApproval';
 /** RPC: answer pending questions. */
 export const SESSION_REPLY_PENDING_QUESTIONS = 'session.replyPendingQuestions';
+/** RPC: switch agent mode (agent | plan | ask | debug). */
+export const SESSION_SET_MODE = 'session.setMode';
+/** RPC: toggle loop mode. */
+export const SESSION_SET_LOOP_ENABLED = 'session.setLoopEnabled';
+/** RPC: clear history and abort any work in flight. */
+export const SESSION_RESET = 'session.reset';
+/** RPC: set a display title (live sessions only). */
+export const SESSION_RENAME = 'session.rename';
+/** RPC: continue assistant completion from history tail. */
+export const SESSION_CONTINUE_COMPLETION = 'session.continueAssistantCompletion';
+/** RPC: run manual history compaction. */
+export const SESSION_COMPACT_HISTORY = 'session.compactHistory';
+/** RPC: pull the current session projection (watchdog / headless). */
+export const SESSION_POLL = 'session.poll';
+/** RPC: answer a workspace capability trust prompt (first reply wins). */
+export const SESSION_REPLY_TRUST = 'session.replyWorkspaceCapabilityTrust';
 
 /** Notification: one agent-core RuntimeEvent for a session. */
 export const RUNTIME_EVENT = 'runtime.event';
 /** Notification: a submitted turn reached a terminal state. */
 export const SESSION_TURN_FINISHED = 'session.turnFinished';
+/** Notification: throttled session projection at interaction boundaries. */
+export const SESSION_SNAPSHOT = 'session.snapshot';
+/** Notification: hooks ask for workspace capability trust. */
+export const WORKSPACE_TRUST_REQUESTED = 'workspace.trustRequested';
 
 export type ClientKind = 'cli' | 'desktop' | 'web';
 

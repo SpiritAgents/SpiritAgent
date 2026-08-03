@@ -20,13 +20,23 @@ import {
   SERVER_INITIALIZE,
   SESSION_ABORT,
   SESSION_CLOSE,
+  SESSION_COMPACT_HISTORY,
+  SESSION_CONTINUE_COMPLETION,
   SESSION_CREATE,
   SESSION_LIST,
+  SESSION_POLL,
+  SESSION_RENAME,
   SESSION_REPLY_PENDING_APPROVAL,
   SESSION_REPLY_PENDING_QUESTIONS,
+  SESSION_REPLY_TRUST,
+  SESSION_RESET,
   SESSION_SET_APPROVAL_LEVEL,
+  SESSION_SET_LOOP_ENABLED,
+  SESSION_SET_MODE,
+  SESSION_SNAPSHOT,
   SESSION_SUBMIT_USER_TURN,
   SESSION_TURN_FINISHED,
+  WORKSPACE_TRUST_REQUESTED,
   errorResponse,
   isJsonRpcRequest,
   notification,
@@ -44,8 +54,16 @@ const SESSION_METHODS = new Set([
   SESSION_SUBMIT_USER_TURN,
   SESSION_ABORT,
   SESSION_SET_APPROVAL_LEVEL,
+  SESSION_SET_MODE,
+  SESSION_SET_LOOP_ENABLED,
+  SESSION_RESET,
+  SESSION_RENAME,
+  SESSION_CONTINUE_COMPLETION,
+  SESSION_COMPACT_HISTORY,
+  SESSION_POLL,
   SESSION_REPLY_PENDING_APPROVAL,
   SESSION_REPLY_PENDING_QUESTIONS,
+  SESSION_REPLY_TRUST,
 ]);
 import {
   acceptUpgrade,
@@ -127,6 +145,12 @@ export async function startDaemon(options: DaemonOptions): Promise<RunningDaemon
     broadcastTurnFinished: (sessionId, stopReason) => {
       broadcast(SESSION_TURN_FINISHED, { sessionId, stopReason });
     },
+    broadcastSnapshot: (sessionId, snapshot) => {
+      broadcast(SESSION_SNAPSHOT, { sessionId, snapshot });
+    },
+    broadcastTrustRequest: (sessionId, requestId, request) => {
+      broadcast(WORKSPACE_TRUST_REQUESTED, { sessionId, requestId, request });
+    },
     log,
   });
 
@@ -199,6 +223,48 @@ export async function startDaemon(options: DaemonOptions): Promise<RunningDaemon
       case SESSION_REPLY_PENDING_QUESTIONS:
         await sessionManager.replyPendingQuestions(readSessionId(params), params['result'] as never);
         return { ok: true };
+      case SESSION_SET_MODE: {
+        const mode = params['mode'];
+        if (mode !== 'agent' && mode !== 'plan' && mode !== 'ask' && mode !== 'debug') {
+          throw new Error('invalid mode');
+        }
+        await sessionManager.setAgentMode(readSessionId(params), mode);
+        return { ok: true };
+      }
+      case SESSION_SET_LOOP_ENABLED:
+        sessionManager.setLoopEnabled(readSessionId(params), params['enabled'] === true);
+        return { ok: true };
+      case SESSION_RESET:
+        sessionManager.reset(readSessionId(params));
+        return { ok: true };
+      case SESSION_RENAME: {
+        const title = params['title'];
+        if (typeof title !== 'string') {
+          throw new Error('missing title');
+        }
+        sessionManager.rename(readSessionId(params), title);
+        return { ok: true };
+      }
+      case SESSION_CONTINUE_COMPLETION:
+        await sessionManager.continueAssistantCompletion(readSessionId(params));
+        return { accepted: true };
+      case SESSION_COMPACT_HISTORY:
+        await sessionManager.compactHistory(readSessionId(params));
+        return { accepted: true };
+      case SESSION_POLL:
+        return { snapshot: sessionManager.snapshot(readSessionId(params)) };
+      case SESSION_REPLY_TRUST: {
+        const requestId = params['requestId'];
+        const decision = params['decision'];
+        if (typeof requestId !== 'string' || !requestId) {
+          throw new Error('missing requestId');
+        }
+        if (decision !== 'allowOnce' && decision !== 'deny' && decision !== 'alwaysTrust') {
+          throw new Error('invalid decision');
+        }
+        sessionManager.replyWorkspaceCapabilityTrust(requestId, decision);
+        return { ok: true };
+      }
       default:
         throw new Error(`unknown session method: ${method}`);
     }
@@ -316,10 +382,18 @@ export async function startDaemon(options: DaemonOptions): Promise<RunningDaemon
       conn.on('close', () => {
         connections.delete(conn);
         clientStates.delete(conn);
+        log(`[spirit-server] client disconnected (${connections.size} remaining)`);
+        // Nobody left to answer: release parked approvals / questions / trust.
+        if (connections.size === 0) {
+          sessionManager.handleNoClientsRemaining();
+        }
       });
       conn.on('error', () => {
         connections.delete(conn);
         clientStates.delete(conn);
+        if (connections.size === 0) {
+          sessionManager.handleNoClientsRemaining();
+        }
       });
     })();
   });
