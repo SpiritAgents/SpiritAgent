@@ -46,7 +46,7 @@ Spirit Agent는 실제 프로젝트 루트를 컨텍스트로 동작하는 **도
 ### 런타임과 모드
 
 - **Turn machine** — 스트리밍 응답, 도구 라운드, 컨텍스트 압축, 사용량 추적.
-- **Agent / Plan / Ask 모드** — 전체 도구, 계획 전용 워크플로, 또는 계약 계층에서 편집 도구를 제거한 읽기 전용 Q&A.
+- **Agent / Plan / Ask / Debug 모드** — 전체 도구, 계획 전용 워크플로, 계약 계층에서 편집 도구를 제거한 읽기 전용 Q&A, 또는 로그 포인트 가설을 활용한 구조화된 디버깅.
 - **Subagents** — `subagent`가 독립 도구 표면을 가진 하위 실행에 작업 위임.
 - **루프 제어** — 멀티태스크형 루프 활성화 시 선택적 `finish_task`.
 - **되감기 가능한 기록** — 호스트 측 롤백 및 재제출을 위한 메시지 아카이브 형식.
@@ -83,7 +83,7 @@ Agent Core가 모델이 보는 프로젝트 컨텍스트를 결정합니다:
 - **Rules** — `AGENTS.md`, `.spirit/rule.md`, 사용자 규칙 슬롯을 system 섹션에 병합.
 - **Skills** — 카탈로그 및 활성 Skill 주입; 호스트가 디스크에서 파일 탐색.
 - **MCP** — Model Context Protocol 클라이언트, 레지스트리, tool/resource/prompt 브리지.
-- **Mode prompts** — Agent, Plan, Ask 경계; system 텍스트에서 도구 재나열 금지.
+- **Mode prompts** — Agent, Plan, Ask, Debug 경계; system 텍스트에서 도구 재나열 금지.
 
 ### 품질과 평가
 

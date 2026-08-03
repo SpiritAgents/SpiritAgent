@@ -46,7 +46,7 @@ Spirit Agent es un **agente de codificación basado en herramientas** que se eje
 ### Runtime y modos
 
 - **Turn machine** — salida del asistente en streaming, rondas de herramientas, compactación y seguimiento de uso del contexto.
-- **Modos Agent / Plan / Ask** — acceso completo a herramientas, flujos solo de planificación o Q&A de solo lectura sin herramientas de edición a nivel de contrato.
+- **Modos Agent / Plan / Ask / Debug** — acceso completo a herramientas, flujos solo de planificación, Q&A de solo lectura sin herramientas de edición a nivel de contrato o depuración estructurada con hipótesis de puntos de registro.
 - **Subagents** — `subagent` delega trabajo enfocado a ejecuciones hijas con su propia superficie de herramientas.
 - **Control de bucle** — `finish_task` opcional cuando el bucle multitarea está habilitado.
 - **Historial compatible con rewind** — formatos de archivo diseñados para rollback y reenvío en el host.
@@ -83,7 +83,7 @@ Agent Core decide cómo el modelo ve el contexto del proyecto:
 - **Rules** — `AGENTS.md`, `.spirit/rule.md` y ranuras de reglas de usuario fusionadas en secciones system.
 - **Skills** — catálogo e inyección de skill activo; los hosts descubren archivos en disco.
 - **MCP** — cliente Model Context Protocol, registro y puente tool/resource/prompt.
-- **Mode prompts** — límites Agent, Plan y Ask sin repetir herramientas en el texto system.
+- **Mode prompts** — límites Agent, Plan, Ask y Debug sin repetir herramientas en el texto system.
 
 ### Calidad y evaluación
 

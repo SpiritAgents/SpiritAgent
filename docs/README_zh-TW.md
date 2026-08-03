@@ -46,7 +46,7 @@ Spirit Agent 是一款**工具型程式設計智能體**，以真實專案根目
 ### 執行時與模式
 
 - **回合狀態機（Turn machine）** — 串流助手輸出、工具輪次、上下文壓縮，以及上下文用量追蹤。
-- **Agent / Plan / Ask 模式** — 完整工具存取、僅規劃工作流，或在契約層剝離編輯工具的唯讀問答。
+- **Agent / Plan / Ask / Debug 模式** — 完整工具存取、僅規劃工作流、在契約層剝離編輯工具的唯讀問答，或基於日誌埋點假設的結構化除錯。
 - **子智能體（Subagents）** — `subagent` 將聚焦任務委派給子執行，子執行擁有獨立工具面。
 - **迴圈控制** — 啟用多任務式迴圈時，可選 `finish_task`。
 - **可回退的歷史** — 訊息封存格式便於宿主側回滾並重新提交。
@@ -83,7 +83,7 @@ Agent Core 決定模型如何「看見」專案上下文：
 - **Rules** — `AGENTS.md`、`.spirit/rule.md` 與使用者規則槽位合併進 system 段落。
 - **Skills** — 目錄與啟用 Skill 注入；宿主在磁碟上探索檔案。
 - **MCP** — Model Context Protocol 用戶端、註冊表，以及 tool/resource/prompt 橋接。
-- **模式提示詞** — Agent、Plan、Ask 邊界約束，不在 system 文字中重複列舉工具。
+- **模式提示詞** — Agent、Plan、Ask、Debug 邊界約束，不在 system 文字中重複列舉工具。
 
 ### 品質與評估
 

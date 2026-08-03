@@ -46,7 +46,7 @@ Spirit Agent は、実プロジェクトのルートをコンテキストに動�
 ### ランタイムとモード
 
 - **Turn machine** — ストリーミング応答、ツールラウンド、コンテキスト圧縮、使用量トラッキング。
-- **Agent / Plan / Ask モード** — フルツール、計画専用ワークフロー、または編集ツールを契約層で除外した読み取り専用 Q&A。
+- **Agent / Plan / Ask / Debug モード** — フルツール、計画専用ワークフロー、編集ツールを契約層で除外した読み取り専用 Q&A、またはログポイント仮説を用いた構造化デバッグ。
 - **Subagents** — `subagent` が独立したツール面を持つ子実行へタスクを委譲。
 - **ループ制御** — マルチタスク型ループ有効時の任意 `finish_task`。
 - **巻き戻し可能な履歴** — ホスト側ロールバックと再送信向けのメッセージアーカイブ形式。
@@ -83,7 +83,7 @@ Agent Core がモデルから見えるプロジェクト文脈を決定します
 - **Rules** — `AGENTS.md`、`.spirit/rule.md`、ユーザールールスロットを system セクションにマージ。
 - **Skills** — カタログとアクティブ Skill 注入；ホストがディスク上のファイルを探索。
 - **MCP** — Model Context Protocol クライアント、レジストリ、tool/resource/prompt ブリッジ。
-- **Mode prompts** — Agent / Plan / Ask の境界；system テキストでツールを再列挙しない。
+- **Mode prompts** — Agent / Plan / Ask / Debug の境界；system テキストでツールを再列挙しない。
 
 ### 品質と評価
 

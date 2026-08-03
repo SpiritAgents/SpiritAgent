@@ -46,7 +46,7 @@ Spirit Agent 是一款**工具型编程智能体**，以真实项目根目录为
 ### 运行时与模式
 
 - **回合状态机（Turn machine）** — 流式助手输出、工具轮次、上下文压缩，以及上下文用量追踪。
-- **Agent / Plan / Ask 模式** — 完整工具访问、仅规划工作流，或在契约层剥离编辑工具的只读问答。
+- **Agent / Plan / Ask / Debug 模式** — 完整工具访问、仅规划工作流、在契约层剥离编辑工具的只读问答，或基于日志埋点假设的结构化调试。
 - **子智能体（Subagents）** — `subagent` 将聚焦任务委派给子运行，子运行拥有独立工具面。
 - **循环控制** — 启用多任务式循环时，可选 `finish_task`。
 - **可回退的历史** — 消息归档格式便于宿主侧回滚并重新提交。
@@ -83,7 +83,7 @@ Agent Core 决定模型如何「看见」项目上下文：
 - **Rules** — `AGENTS.md`、`.spirit/rule.md` 与用户规则槽位合并进 system 段落。
 - **Skills** — 目录与激活 Skill 注入；宿主在磁盘上发现文件。
 - **MCP** — Model Context Protocol 客户端、注册表，以及 tool/resource/prompt 桥接。
-- **模式提示词** — Agent、Plan、Ask 边界约束，不在 system 文本中重复列举工具。
+- **模式提示词** — Agent、Plan、Ask、Debug 边界约束，不在 system 文本中重复列举工具。
 
 ### 质量与评估
 
