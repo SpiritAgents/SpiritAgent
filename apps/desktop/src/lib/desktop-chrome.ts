@@ -158,13 +158,25 @@ export const DESKTOP_CONTROL_BORDER = "border border-control-border transition-n
 export const DESKTOP_CONTROL_BORDER_HOVER =
   "hover:border-border hover:bg-muted/30";
 
-/** 表单控件 focus：与 hover 同视觉，无 ring */
-export const DESKTOP_CONTROL_BORDER_FOCUS =
-  "focus-visible:border-border focus-visible:bg-muted/30 focus-visible:ring-0";
+/** 鼠标点击 focus：保持 hover 边框，无 ring */
+export const DESKTOP_CONTROL_BORDER_FOCUSED =
+  "focus:border-border focus:bg-muted/30";
 
-/** 表单控件 focus-within（shell 容器） */
+/** 键盘 Tab focus-visible：shadcn ring（鼠标点击不触发 focus-visible） */
+export const DESKTOP_CONTROL_BORDER_FOCUS_VISIBLE =
+  "focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50";
+
+/** Select 触发器：略小的 ring，与 shadcn Select 默认一致 */
+export const DESKTOP_CONTROL_BORDER_FOCUS_VISIBLE_SELECT =
+  "focus-visible:border-ring focus-visible:ring-2 focus-visible:ring-ring/50";
+
+/** Shell：内层任意 focus 时保持边框 */
 export const DESKTOP_CONTROL_BORDER_FOCUS_WITHIN =
-  "focus-within:border-border focus-within:bg-muted/30 focus-within:ring-0";
+  "focus-within:border-border focus-within:bg-muted/30";
+
+/** Shell：仅内层键盘 focus-visible 时 ring */
+export const DESKTOP_CONTROL_BORDER_FOCUS_WITHIN_KEYBOARD =
+  "focus-within:has(:focus-visible):border-ring focus-within:has(:focus-visible):ring-2 focus-within:has(:focus-visible):ring-ring/50";
 
 /** 与 PendingApprovalCard 指引输入一致：外壳细边框，内层 Input 无 ring */
 export const DESKTOP_OVERLAY_LIST_FILTER_INPUT_SHELL = cn(
@@ -172,6 +184,7 @@ export const DESKTOP_OVERLAY_LIST_FILTER_INPUT_SHELL = cn(
   DESKTOP_CONTROL_BORDER,
   DESKTOP_CONTROL_BORDER_HOVER,
   DESKTOP_CONTROL_BORDER_FOCUS_WITHIN,
+  DESKTOP_CONTROL_BORDER_FOCUS_WITHIN_KEYBOARD,
 );
 
 export const DESKTOP_OVERLAY_LIST_FILTER_INPUT =
@@ -235,7 +248,8 @@ export const DESKTOP_SELECT_TRIGGER = cn(
   "flex h-8 min-h-8 w-full min-w-0 cursor-pointer items-center justify-between gap-2 rounded-md bg-background px-2.5 py-1 text-sm outline-none",
   DESKTOP_CONTROL_BORDER,
   DESKTOP_CONTROL_BORDER_HOVER,
-  DESKTOP_CONTROL_BORDER_FOCUS,
+  DESKTOP_CONTROL_BORDER_FOCUSED,
+  DESKTOP_CONTROL_BORDER_FOCUS_VISIBLE_SELECT,
   "disabled:cursor-not-allowed disabled:opacity-50",
   "data-placeholder:text-muted-foreground [&>span]:line-clamp-1",
 );

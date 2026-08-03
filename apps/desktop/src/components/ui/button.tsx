@@ -5,7 +5,7 @@ import { Slot } from "radix-ui"
 import { FONT_WEIGHT_NORMAL } from "@/lib/desktop-typography";
 import {
   DESKTOP_CONTROL_BORDER,
-  DESKTOP_CONTROL_BORDER_FOCUS,
+  DESKTOP_CONTROL_BORDER_FOCUSED,
   DESKTOP_CONTROL_BORDER_HOVER,
 } from "@/lib/desktop-chrome";
 import { cn } from "@/lib/utils"
@@ -20,7 +20,7 @@ const buttonVariants = cva(
           "bg-background transition-none hover:text-sidebar-foreground aria-expanded:text-sidebar-foreground",
           DESKTOP_CONTROL_BORDER,
           DESKTOP_CONTROL_BORDER_HOVER,
-          DESKTOP_CONTROL_BORDER_FOCUS,
+          DESKTOP_CONTROL_BORDER_FOCUSED,
           "aria-expanded:border-border aria-expanded:bg-muted/30",
         ),
         secondary:
