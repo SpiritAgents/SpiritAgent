@@ -79,13 +79,19 @@ class TestWsClient {
   }
 }
 
-async function startTestDaemon(): Promise<{ daemon: RunningDaemon; dataDir: string }> {
+async function startTestDaemon(options?: {
+  idleExitGraceMs?: number | null;
+  onIdleExit?: () => void;
+}): Promise<{ daemon: RunningDaemon; dataDir: string }> {
   const dataDir = await mkdtemp(join(tmpdir(), 'spirit-server-test-'));
   const daemon = await startDaemon({
     dataDir,
     version: '0.0.0-test',
     port: 0,
     log: () => {},
+    // Existing tests assert disconnect/approval behavior without wanting the process to self-exit.
+    idleExitGraceMs: options?.idleExitGraceMs === undefined ? null : options.idleExitGraceMs,
+    ...(options?.onIdleExit ? { onIdleExit: options.onIdleExit } : {}),
   });
   return { daemon, dataDir };
 }
@@ -189,5 +195,39 @@ describe('daemon lifecycle (smoke #1)', () => {
     });
     await daemon.close();
     assert.match((await disconnected).message, /connection closed/iu);
+  });
+
+  it('idle-exits after the last client disconnects (grace), cancelled by a new client', async () => {
+    const idleExits: number[] = [];
+    const { daemon, dataDir } = await startTestDaemon({
+      idleExitGraceMs: 200,
+      onIdleExit: () => {
+        idleExits.push(Date.now());
+      },
+    });
+    const token = await readCurrentToken(dataDir);
+    assert.ok(token);
+
+    const first = new TestWsClient(`ws://127.0.0.1:${daemon.port}/?token=${token}`);
+    await first.open();
+    assert.equal((await first.nextMessage()).method, SERVER_CONNECTED);
+    first.close();
+    await first.closed;
+
+    // Reconnect inside grace — must cancel idle-exit.
+    await new Promise((resolve) => setTimeout(resolve, 50));
+    const second = new TestWsClient(`ws://127.0.0.1:${daemon.port}/?token=${token}`);
+    await second.open();
+    assert.equal((await second.nextMessage()).method, SERVER_CONNECTED);
+    await new Promise((resolve) => setTimeout(resolve, 300));
+    assert.equal(idleExits.length, 0, 'idle-exit must not fire while a client is connected');
+
+    second.close();
+    await second.closed;
+    await new Promise((resolve) => setTimeout(resolve, 350));
+    assert.equal(idleExits.length, 1, 'idle-exit fires after last client + grace');
+
+    const instances = await listInstances(dataDir);
+    assert.equal(instances.length, 0, 'registry entry removed on idle-exit');
   });
 });

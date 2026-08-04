@@ -473,6 +473,7 @@ export class AiSdkOpenAiCompatibleTransport
         },
       };
     } catch (error) {
+      logAiSdkChatCompletionFailure(config, error, { streaming: false });
       return {
         kind: 'failure',
         error: renderAiSdkOpenAiError(error),
@@ -552,6 +553,7 @@ export class AiSdkOpenAiCompatibleTransport
       };
     } catch (error) {
       clearMoonshotChatCompletionRequest(config);
+      logAiSdkChatCompletionFailure(config, error, { streaming: true, phase: 'start' });
       return {
         eventStream: emptyAiSdkEventStream(),
         completion: Promise.resolve({
@@ -1778,6 +1780,7 @@ async function* aiSdkEventStreamToRuntimeEvents(
     });
     yield { kind: 'done' };
   } catch (error) {
+    logAiSdkChatCompletionFailure(config, error, { streaming: true, phase: 'stream' });
     const rendered = renderAiSdkOpenAiError(error);
     completion.resolve({
       kind: 'failure',
@@ -2227,6 +2230,22 @@ function buildAiSdkImageGenerationUrl(config: OpenAiImageGenerationConfig): stri
 
   const baseUrl = (config.baseUrl ?? DEFAULT_OPENAI_COMPATIBLE_BASE_URL).replace(/\/$/, '');
   return `${baseUrl}/images/generations`;
+}
+
+function logAiSdkChatCompletionFailure(
+  config: OpenAiTransportConfig,
+  error: unknown,
+  context: { streaming: boolean; phase?: 'start' | 'stream' } = { streaming: false },
+): void {
+  console.error('[agent-core][chat-completions] request.failed', {
+    adapter: 'ai-sdk',
+    vendor: config.llmVendor ?? 'custom',
+    model: config.model,
+    baseUrl: config.baseUrl ?? DEFAULT_OPENAI_COMPATIBLE_BASE_URL,
+    streaming: context.streaming,
+    ...(context.phase ? { phase: context.phase } : {}),
+    ...describeAiSdkErrorForDebug(error),
+  });
 }
 
 function logAiSdkImageGenerationStart(

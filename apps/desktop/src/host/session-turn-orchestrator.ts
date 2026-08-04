@@ -53,7 +53,7 @@ type RuntimeEventsFacade = {
     thinkingText?: string;
     compactionText?: string;
   }): void;
-  consumeCompletedTurnResult(): void;
+  consumeCompletedTurnResult(): boolean;
   syncPendingToolStates(): void;
   syncAssistantPrefixFromHistoryBeforeToolRow(): void;
   clearTurnErrorRetryState(): void;
@@ -399,14 +399,22 @@ export async function tickSessionCommand(
   } else if (options.light && bundle.deferredRuntimeHostEvents.length > 0) {
     changed = applyDrainedRuntimeHostEvents(ctx, bundle, []) || changed;
   }
-  if (changed) {
-    ctx.requestLiveSnapshotEmit();
-  }
   if (options.light) {
+    if (changed) {
+      ctx.requestLiveSnapshotEmit();
+    }
     await drainQueuedUserTurnIfIdle(ctx, bundle);
     return;
   }
-  orchestration.runtimeEvents.consumeCompletedTurnResult();
+  const consumedTurnResult = orchestration.runtimeEvents.consumeCompletedTurnResult();
+  bundle.messages = bundle.messageTimeline.toMessages();
+  if (consumedTurnResult) {
+    bundle.conversationRevision += 1;
+    changed = true;
+  }
+  if (changed) {
+    ctx.requestLiveSnapshotEmit();
+  }
   orchestration.runtimeEvents.syncPendingToolStates();
   ctx.syncSubagentToolStreamingOutput(bundle);
   orchestration.runtimeEvents.syncAssistantPrefixFromHistoryBeforeToolRow();

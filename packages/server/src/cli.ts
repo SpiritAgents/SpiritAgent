@@ -64,6 +64,9 @@ async function runServe(args: string[]): Promise<void> {
     version,
     ...(flags.hostname !== undefined ? { host: flags.hostname } : {}),
     ...(flags.port !== undefined ? { port: flags.port } : {}),
+    onIdleExit: () => {
+      process.exit(0);
+    },
   });
   console.error(`[spirit-server] data dir: ${dataDir}`);
   console.error(`[spirit-server] token file: ${tokenFilePath(dataDir)}`);

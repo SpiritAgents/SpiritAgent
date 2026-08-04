@@ -22,6 +22,8 @@ export interface ConnectOrSpawnServerOptions {
   dataDir: string;
   entryPath?: string;
   connectTimeoutMs?: number;
+  /** Pipe spawned daemon stderr into the parent process (dev ergonomics). */
+  forwardStderr?: boolean;
 }
 
 export interface ConnectedServer {
@@ -179,15 +181,21 @@ export async function connectOrSpawnServer(
   }
 
   const entryPath = options.entryPath ?? fileURLToPath(new URL('./entry.js', import.meta.url));
+  const forwardStderr = options.forwardStderr === true;
   const child = spawn(process.execPath, [entryPath, 'serve'], {
     detached: true,
-    stdio: 'ignore',
+    stdio: forwardStderr ? ['ignore', 'ignore', 'pipe'] : 'ignore',
     env: {
       ...process.env,
       ...(process.versions.electron ? { ELECTRON_RUN_AS_NODE: '1' } : {}),
       SPIRIT_AGENT_DATA_DIR: options.dataDir,
     },
   });
+  if (forwardStderr && child.stderr) {
+    child.stderr.on('data', (chunk: Buffer | string) => {
+      process.stderr.write(chunk);
+    });
+  }
   child.unref();
 
   const deadline = Date.now() + (options.connectTimeoutMs ?? 15_000);

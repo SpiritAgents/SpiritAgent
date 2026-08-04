@@ -470,6 +470,7 @@ import {
 import {
   abortRemoteDesktopShell,
   closeRemoteDesktopRuntime,
+  closeSharedDesktopServerClient,
   createRemoteDesktopRuntime,
   desktopUsesDaemonRuntime,
   exportRemoteDesktopState,
@@ -4869,6 +4870,8 @@ class DesktopHostService {
     this.sessionPump.stop();
     const runtimes = [...this.sessionRegistry.all()].map((bundle) => bundle.runtime);
     await Promise.all(runtimes.map((runtime) => closeRemoteDesktopRuntime(runtime)));
+    // After sessions close, drop the shared WS so daemon can idle-exit when we are the last host.
+    await closeSharedDesktopServerClient();
   }
 }
 

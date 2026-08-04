@@ -133,6 +133,9 @@ import {
   type WebSocketConnection,
 } from './ws/websocket-server.js';
 
+/** After the last client disconnects, wait this long before exiting (multi-host handoff). */
+export const DEFAULT_IDLE_EXIT_GRACE_MS = 2_500;
+
 export interface DaemonOptions {
   /** Bind hostname; defaults to loopback. Pass 0.0.0.0 only for explicit remote access. */
   host?: string;
@@ -141,6 +144,15 @@ export interface DaemonOptions {
   dataDir: string;
   version: string;
   log?: (message: string) => void;
+  /**
+   * Idle-exit grace after the last client disconnects.
+   * - number: wait that many ms then close (default {@link DEFAULT_IDLE_EXIT_GRACE_MS})
+   * - null: never auto-exit (tests / keep-alive)
+   * Startup with zero clients never schedules idle-exit; only a drop from N≥1 → 0 does.
+   */
+  idleExitGraceMs?: number | null;
+  /** Called after an idle-exit `close()` finishes (e.g. `process.exit(0)` in the serve entry). */
+  onIdleExit?: () => void;
 }
 
 export interface RunningDaemon {
@@ -183,6 +195,9 @@ export async function startDaemon(options: DaemonOptions): Promise<RunningDaemon
   const dataDir = options.dataDir;
   const version = options.version;
   const log = options.log ?? ((message: string) => console.error(message));
+  const idleExitGraceMs = options.idleExitGraceMs === undefined
+    ? DEFAULT_IDLE_EXIT_GRACE_MS
+    : options.idleExitGraceMs;
 
   // Ensure the home-level token exists before the first handshake arrives.
   await loadOrCreateToken(dataDir);
@@ -191,6 +206,49 @@ export async function startDaemon(options: DaemonOptions): Promise<RunningDaemon
   const startedAt = new Date().toISOString();
   const connections = new Set<WebSocketConnection>();
   const clientStates = new Map<WebSocketConnection, ClientState>();
+  let closed = false;
+  let idleExitTimer: ReturnType<typeof setTimeout> | undefined;
+  let closeDaemon: () => Promise<void> = async () => {};
+
+  const cancelIdleExit = (): void => {
+    if (idleExitTimer === undefined) {
+      return;
+    }
+    clearTimeout(idleExitTimer);
+    idleExitTimer = undefined;
+  };
+
+  const scheduleIdleExit = (): void => {
+    if (idleExitGraceMs === null || closed) {
+      return;
+    }
+    cancelIdleExit();
+    const graceMs = Math.max(0, idleExitGraceMs);
+    idleExitTimer = setTimeout(() => {
+      idleExitTimer = undefined;
+      if (closed || connections.size > 0) {
+        return;
+      }
+      log(`[spirit-server] no clients remaining after ${graceMs}ms; shutting down`);
+      void closeDaemon().then(() => {
+        options.onIdleExit?.();
+      });
+    }, graceMs);
+    idleExitTimer.unref?.();
+  };
+
+  const onClientGone = (): void => {
+    if (closed) {
+      return;
+    }
+    log(`[spirit-server] client disconnected (${connections.size} remaining)`);
+    if (connections.size > 0) {
+      return;
+    }
+    // Nobody left to answer: release parked approvals / questions / trust.
+    sessionManager.handleNoClientsRemaining();
+    scheduleIdleExit();
+  };
 
   const broadcast = (method: string, params: unknown): void => {
     const frame = JSON.stringify(notification(method, params));
@@ -587,6 +645,7 @@ export async function startDaemon(options: DaemonOptions): Promise<RunningDaemon
       if (!conn) {
         return;
       }
+      cancelIdleExit();
       connections.add(conn);
       conn.send(
         JSON.stringify(
@@ -603,18 +662,12 @@ export async function startDaemon(options: DaemonOptions): Promise<RunningDaemon
       conn.on('close', () => {
         connections.delete(conn);
         clientStates.delete(conn);
-        log(`[spirit-server] client disconnected (${connections.size} remaining)`);
-        // Nobody left to answer: release parked approvals / questions / trust.
-        if (connections.size === 0) {
-          sessionManager.handleNoClientsRemaining();
-        }
+        onClientGone();
       });
       conn.on('error', () => {
         connections.delete(conn);
         clientStates.delete(conn);
-        if (connections.size === 0) {
-          sessionManager.handleNoClientsRemaining();
-        }
+        onClientGone();
       });
     })();
   });
@@ -640,16 +693,18 @@ export async function startDaemon(options: DaemonOptions): Promise<RunningDaemon
   };
   await registerInstance(dataDir, record);
 
-  let closed = false;
-  const close = async (): Promise<void> => {
+  closeDaemon = async (): Promise<void> => {
     if (closed) {
       return;
     }
     closed = true;
+    cancelIdleExit();
     await sessionManager.shutdown();
     for (const conn of connections) {
       conn.close(1001, 'server shutting down');
     }
+    connections.clear();
+    clientStates.clear();
     await new Promise<void>((resolve) => {
       httpServer.close(() => resolve());
       httpServer.closeAllConnections();
@@ -666,6 +721,6 @@ export async function startDaemon(options: DaemonOptions): Promise<RunningDaemon
     pid: process.pid,
     startedAt,
     url: `ws://${host}:${port}`,
-    close,
+    close: () => closeDaemon(),
   };
 }

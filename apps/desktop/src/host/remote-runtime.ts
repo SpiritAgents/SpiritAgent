@@ -83,7 +83,10 @@ let sharedClientPromise: Promise<ServerRpcClient> | undefined;
 
 async function sharedDesktopServerClient(dataDir: string): Promise<ServerRpcClient> {
   if (!sharedClientPromise) {
-    const connecting = connectOrSpawnServer({ dataDir })
+    const connecting = connectOrSpawnServer({
+      dataDir,
+      forwardStderr: Boolean(process.env.VITE_DEV_SERVER_URL?.trim()),
+    })
       .then(async ({ client }) => {
         await client.call('server.initialize', {
           clientKind: 'desktop',
@@ -107,6 +110,21 @@ async function sharedDesktopServerClient(dataDir: string): Promise<ServerRpcClie
 
 export function desktopUsesDaemonRuntime(): boolean {
   return process.env.SPIRIT_INPROCESS_HOST !== '1';
+}
+
+/** Close the process-wide daemon WebSocket so the server can idle-exit. */
+export async function closeSharedDesktopServerClient(): Promise<void> {
+  const pending = sharedClientPromise;
+  sharedClientPromise = undefined;
+  if (!pending) {
+    return;
+  }
+  try {
+    const client = await pending;
+    client.close();
+  } catch {
+    // Connect/init may have failed; nothing left to close.
+  }
 }
 
 export async function createRemoteDesktopRuntime(

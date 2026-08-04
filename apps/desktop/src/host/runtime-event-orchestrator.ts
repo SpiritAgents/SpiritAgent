@@ -245,18 +245,19 @@ export class DesktopRuntimeEventOrchestrator {
     }
   }
 
-  consumeCompletedTurnResult(): void {
+  consumeCompletedTurnResult(): boolean {
     const runtime = this.options.runtime();
     if (!runtime) {
-      return;
+      return false;
     }
 
     const result = runtime.takeCompletedTurnResult();
     if (!result) {
-      return;
+      return false;
     }
 
     this.applyCompletedTurnResult(result);
+    return true;
   }
 
   applyCompletedTurnResult(
