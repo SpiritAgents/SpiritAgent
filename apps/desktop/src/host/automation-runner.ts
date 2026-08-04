@@ -2,14 +2,9 @@ import { randomUUID } from 'node:crypto';
 import path from 'node:path';
 
 import {
-  type LlmPlanMetadata,
-  type LlmTransportConfig,
-} from '@spiritagent/agent-core';
-import {
   buildAutomationTriggerMessage,
   createHostAutomationStore,
   defaultAutomationRunTriggerContext,
-  gitBranchLabelForBasicInfo,
   readGitWorkspaceSnapshot,
   type AutomationRunTriggerContext,
   type HostAutomationDefinition,
@@ -27,27 +22,16 @@ import {
 } from './automation-runtime.js';
 import { createDesktopRewindMetadata } from './rewind.js';
 import { buildStoredDesktopSession } from './sessions.js';
-import { buildPrimaryTransportConfig, resolveDesktopTransportKind } from './model-config.js';
-import {
-  modelExistsInGroup,
-  resolveModelProfile,
-  type ResolvedModelProfile,
-} from './model-config-access.js';
+import { modelExistsInGroup } from './model-config-access.js';
 import { modelRefKey } from '@spiritagent/host-internal/config-v2';
-import { modelProviderKeyScope } from './provider-api-key.js';
 import {
   chatsDirPath,
-  loadHostMetadata,
-  readBedrockProviderCredentialsFromKeyring,
   resolveApiKeyForConfigModel,
   saveStoredSession,
   spiritAgentDataDir,
   type DesktopConfigFile,
 } from './storage.js';
-import { DesktopToolExecutor } from './tool-executor.js';
-import { desktopUsesDaemonRuntime } from './remote-runtime.js';
 import type { DesktopRuntime } from './runtime.js';
-import { currentApiBase, isNoWorkspaceSessionRoot } from './service-utils.js';
 
 export const AUTOMATION_SESSION_FILE_PREFIX = 'chat-automation-';
 export const AUTOMATION_RUN_MAX_GUARD_ROUNDS = 200;
@@ -106,45 +90,12 @@ export async function runDesktopAutomationOnce(
 
     const gitSnapshot = await readGitWorkspaceSnapshot(input.definition.workspaceRoot);
     gitBranch = gitSnapshot.branch;
-    const gitBranchLabel = gitBranchLabelForBasicInfo(gitSnapshot);
     const sessionDisplayName = `${input.definition.title} · ${formatRunTimestamp(startedAtUnixMs)}`;
-
     const runtimeInput: Parameters<typeof createAutomationRuntime>[0] = {
       definition: input.definition,
       config: input.config,
       sessionPath,
-      gitBranchLabel,
     };
-
-    if (!desktopUsesDaemonRuntime()) {
-      const profile = resolveModelProfile(input.config, modelRef);
-      const workspaceBinding = isNoWorkspaceSessionRoot(input.definition.workspaceRoot)
-        ? 'none'
-        : 'project';
-      const metadata = await loadHostMetadata(input.definition.workspaceRoot, 'agent', {
-        workspaceBinding,
-      });
-      const planMetadata: LlmPlanMetadata = {
-        ...metadata.planMetadata,
-        agentMode: 'agent',
-        planMode: false,
-      } as LlmPlanMetadata;
-      const transportConfig = buildAutomationTransportConfig({
-        apiKey,
-        model: modelRef.name,
-        baseUrl: profile?.apiBase ?? currentApiBase(input.config),
-        workspaceRoot: input.definition.workspaceRoot,
-        profile: profile ?? undefined,
-        reasoningEffort: input.definition.reasoningEffort ?? profile?.reasoningEffort,
-      });
-      const toolExecutor = new DesktopToolExecutor(input.definition.workspaceRoot);
-      toolExecutor.setApprovalLevel(input.definition.approvalLevel);
-      toolExecutor.setActiveTransportConfig(transportConfig);
-      runtimeInput.transportConfig = transportConfig;
-      runtimeInput.planMetadata = planMetadata;
-      runtimeInput.metadata = metadata;
-      runtimeInput.toolExecutor = toolExecutor;
-    }
 
     runtimeHandle = await createAutomationRuntime(runtimeInput);
     const runtime = runtimeHandle.runtime;
@@ -362,32 +313,6 @@ async function persistAutomationSession(
     }),
   );
   await notifyAutomationSessionPersisted(deps, input.sessionPath);
-}
-
-function buildAutomationTransportConfig(input: {
-  apiKey: string;
-  model: string;
-  baseUrl: string;
-  workspaceRoot: string;
-  profile?: ResolvedModelProfile;
-  reasoningEffort?: ResolvedModelProfile['reasoningEffort'];
-}): LlmTransportConfig {
-  const transportKind = resolveDesktopTransportKind(input.profile);
-  const bedrockCredentials = transportKind === 'bedrock' && input.profile?.provider
-    ? readBedrockProviderCredentialsFromKeyring(modelProviderKeyScope(input.profile.provider))
-    : undefined;
-  const profile = input.profile && input.reasoningEffort !== undefined
-    ? { ...input.profile, reasoningEffort: input.reasoningEffort }
-    : input.profile;
-
-  return buildPrimaryTransportConfig({
-    apiKey: input.apiKey,
-    model: input.model,
-    baseUrl: input.baseUrl,
-    workspaceRoot: input.workspaceRoot,
-    profile,
-    bedrockCredentials,
-  });
 }
 
 function formatRunTimestamp(unixMs: number): string {

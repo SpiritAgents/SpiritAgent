@@ -80,7 +80,6 @@ export interface SubmitUserTurnAfterInitializedOptions {
 }
 
 export interface SessionTurnOrchestratorContext {
-  usesDaemonRuntime(): boolean;
   runSerialized<T>(work: () => Promise<T>, label?: string): Promise<T>;
   ensureInitialized(workspaceRootOverride?: string, options?: { fastPath?: boolean }): Promise<void>;
   requireRuntime(): DesktopRuntime;
@@ -226,9 +225,6 @@ export async function submitUserTurnAfterInitializedCommand(
   const runtime = bundle.runtime;
   if (!runtime) {
     throw new Error(i18n.t('error.runtimeNotReady'));
-  }
-  if (!ctx.usesDaemonRuntime()) {
-    await ctx.ensureToolExecutor(bundle);
   }
   try {
     await runtime.startUserTurnStreaming(trimmed, [], explicitWorkspaceFiles, turnSkills);
@@ -515,10 +511,6 @@ export async function continueAssistantCompletionCommand(
     ctx.requireState();
     if (ctx.activeBundle().activeSession?.readOnly) {
       throw new Error(i18n.t('error.readonlySessionContinue'));
-    }
-
-    if (!ctx.usesDaemonRuntime()) {
-      await ctx.ensureToolExecutor();
     }
 
     const continuable = ctx.latestContinuableAssistantMessage();

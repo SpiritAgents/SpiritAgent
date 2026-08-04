@@ -6,7 +6,6 @@ import {
   deleteFileBaselineTextForPath,
   lineDeltaForDeleteFilePath,
 } from './delete-file-line-delta.js';
-import { createDesktopAutoApprovalReviewer } from './auto-approval-review.js';
 import i18n from '../lib/i18n-host.js';
 import { resolveDesktopAgentMode } from '../lib/agent-mode.js';
 import {
@@ -463,7 +462,6 @@ import {
 import { DesktopToolExecutor } from './tool-executor.js';
 import {
   buildDesktopRuntimeBasicInfo,
-  createDesktopRuntime,
   type DesktopRuntime,
 } from './runtime.js';
 import {
@@ -471,7 +469,6 @@ import {
   closeRemoteDesktopRuntime,
   closeSharedDesktopServerClient,
   createRemoteDesktopRuntime,
-  desktopUsesDaemonRuntime,
   disposeRemoteDesktopRuntime,
   exportRemoteDesktopState,
   migrateRemoteConversationKey,
@@ -484,7 +481,6 @@ import {
   setRemoteDesktopApprovalLevel,
 } from './remote-runtime.js';
 import { buildActiveSkillPayload } from './skills.js';
-import { createDesktopSubagentWorkspaceBootstrap } from './subagent-worktree-bootstrap.js';
 import {
   buildDreamContextText,
   clearDreamCollectorIssue,
@@ -516,13 +512,7 @@ import {
   listDesktopMcpServersFromDisk,
 } from './mcp-config.js';
 import { listDesktopHookListItems } from './hooks.js';
-import {
-  buildDesktopHookSessionContext,
-  createDesktopHookRunner,
-  runDesktopSessionEndHook,
-  runDesktopSessionStartHook,
-} from './hook-runtime.js';
-import type { HookRunner, SessionEndHookInput, SessionStartHookInput } from '@spiritagent/agent-core';
+import type { SessionEndHookInput, SessionStartHookInput } from '@spiritagent/agent-core';
 import {
   disposeMcpServicesExcept,
   sharedMcpServiceForWorkspace,
@@ -863,7 +853,6 @@ class DesktopHostService {
 
   private sessionTurnContext(): SessionTurnOrchestratorContext {
     return {
-      usesDaemonRuntime: () => desktopUsesDaemonRuntime(),
       runSerialized: <T>(work: () => Promise<T>, label?: string) => this.runSerialized(work, label),
       ensureInitialized: (workspaceRootOverride, options) => this.ensureInitialized(workspaceRootOverride, options),
       requireRuntime: () => this.requireRuntime(),
@@ -989,10 +978,18 @@ class DesktopHostService {
     });
   };
 
-  private getHookRunner(workspaceRoot: string): HookRunner {
-    return createDesktopHookRunner(workspaceRoot, {
-      requestWorkspaceCapabilityTrust: this.requestWorkspaceCapabilityTrust,
-    });
+  private async runSessionEndForBundle(
+    bundle: SessionBundle,
+    reason: SessionEndHookInput['reason'],
+  ): Promise<void> {
+    await runRemoteDesktopSessionEnd(bundle.runtime, reason);
+  }
+
+  private async runSessionStartForBundle(
+    bundle: SessionBundle,
+    source: SessionStartHookInput['source'],
+  ): Promise<void> {
+    await runRemoteDesktopSessionStart(bundle.runtime, source);
   }
 
   private enqueueRemoteWorkspaceCapabilityTrust(
@@ -1014,34 +1011,6 @@ class DesktopHostService {
         }),
       );
     void this.workspaceCapabilityTrustTail;
-  }
-
-  private async runSessionEndForBundle(
-    bundle: SessionBundle,
-    reason: SessionEndHookInput['reason'],
-  ): Promise<void> {
-    if (await runRemoteDesktopSessionEnd(bundle.runtime, reason)) {
-      return;
-    }
-    const state = this.state;
-    const workspaceRoot = bundle.workspaceRoot || state?.workspaceRoot || '';
-    const hookRunner = this.getHookRunner(workspaceRoot);
-    const context = buildDesktopHookSessionContext(bundle, state?.config.activeModel.name);
-    await runDesktopSessionEndHook(hookRunner, context, reason);
-  }
-
-  private async runSessionStartForBundle(
-    bundle: SessionBundle,
-    source: SessionStartHookInput['source'],
-  ): Promise<void> {
-    if (await runRemoteDesktopSessionStart(bundle.runtime, source)) {
-      return;
-    }
-    const state = this.state;
-    const workspaceRoot = bundle.workspaceRoot || state?.workspaceRoot || '';
-    const hookRunner = this.getHookRunner(workspaceRoot);
-    const context = buildDesktopHookSessionContext(bundle, state?.config.activeModel.name);
-    await runDesktopSessionStartHook(bundle.runtime, hookRunner, context, source);
   }
 
   /**
@@ -1074,7 +1043,6 @@ class DesktopHostService {
 
   private sessionActivationContext(): SessionActivationContext {
     return {
-      usesDaemonRuntime: () => desktopUsesDaemonRuntime(),
       runSerialized: <T>(work: () => Promise<T>, label?: string) => this.runSerialized(work, label),
       ensureInitialized: (workspaceRootOverride, options) => this.ensureInitialized(workspaceRootOverride, options),
       requireState: () => this.requireState(),
@@ -2288,12 +2256,7 @@ class DesktopHostService {
 
   async abortShell(toolCallId: string): Promise<DesktopSnapshot> {
     const bundle = this.activeBundle();
-    const remoteAborted = await abortRemoteDesktopShell(bundle.runtime, toolCallId);
-    if (remoteAborted !== undefined) {
-      return this.buildSnapshot();
-    }
-    const toolExecutor = await this.ensureToolExecutor(bundle);
-    toolExecutor.abortShell(toolCallId);
+    await abortRemoteDesktopShell(bundle.runtime, toolCallId);
     return this.buildSnapshot();
   }
 
@@ -2836,18 +2799,14 @@ class DesktopHostService {
     }
     if (!inferencePreferenceOnly) {
       await this.syncPlanStateForBundle(bundle);
-      if (!desktopUsesDaemonRuntime()) {
-        await this.ensureToolExecutor(bundle, { skipMcpCatalogRefresh: true });
-      }
     }
     // 保留 bundle.currentTurnSkills：斜杠激活的 turn skill 须在 startUserTurnStreaming 时注入用户消息 meta
     const effectiveActiveModel = resolveEffectivePaneActiveModel(bundle, state);
-    if (desktopUsesDaemonRuntime()) {
-      if (inferencePreferenceOnly && bundle.runtime?.isBusy()) {
-        bundle.deferredRuntimeRefreshWhileBusy = true;
-        return;
-      }
-      const desktopMessages = bundle.messageTimeline.toMessages();
+    if (inferencePreferenceOnly && bundle.runtime?.isBusy()) {
+      bundle.deferredRuntimeRefreshWhileBusy = true;
+      return;
+    }
+    const desktopMessages = bundle.messageTimeline.toMessages();
       const llmHistoryForRuntime = bundle.archiveHistory.length > 0
         ? bundle.archiveHistory
         : buildLlmHistoryFallbackFromDesktopMessages(desktopMessages);
@@ -2927,159 +2886,6 @@ class DesktopHostService {
         this.activeApiKeyConfigured = false;
         this.lastRuntimeError = error instanceof Error ? error.message : String(error);
       }
-      return;
-    }
-    const activeProfile = resolveModelProfile(state.config, effectiveActiveModel);
-    const activeTransportKind = resolveDesktopTransportKind(activeProfile ?? undefined);
-    const bedrockCredentials = activeTransportKind === 'bedrock' && activeProfile?.provider
-      ? readBedrockProviderCredentialsFromKeyring(modelProviderKeyScope(activeProfile.provider))
-      : undefined;
-    const googleVertexCredentials = activeProfile?.provider === 'google-vertex-ai'
-      ? readGoogleVertexProviderCredentialsFromKeyring('google-vertex-ai')
-      : undefined;
-    const apiKey = await resolveApiKeyForConfigModel(state.config, effectiveActiveModel);
-    const azureResourceNameReady = activeProfile?.provider !== 'azure'
-      || Boolean(activeProfile.azureResourceName?.trim());
-    const cloudflareConnectReady = activeProfile?.provider !== 'cloudflare-ai-gateway'
-      || (
-        Boolean(activeProfile.cloudflareAccountId?.trim())
-        && Boolean(activeProfile.cloudflareGatewayId?.trim())
-      );
-    const runtimeAuthReady = activeTransportKind === 'bedrock'
-      ? Boolean(activeProfile?.awsRegion?.trim())
-        && hasBedrockRuntimeCredentials({
-          apiKey,
-          accessKeyId: bedrockCredentials?.accessKeyId,
-          secretAccessKey: bedrockCredentials?.secretAccessKey,
-        })
-      : activeProfile?.provider === 'google-vertex-ai'
-        ? hasGoogleVertexRuntimeCredentials({
-            apiKey,
-            clientEmail: googleVertexCredentials?.clientEmail,
-            privateKey: googleVertexCredentials?.privateKey,
-            vertexProject: activeProfile?.vertexProject,
-            vertexLocation: activeProfile?.vertexLocation,
-          })
-      : activeProfile?.provider === 'azure'
-        ? azureResourceNameReady && Boolean(apiKey)
-        : activeProfile?.provider === 'cloudflare-ai-gateway'
-          ? cloudflareConnectReady && Boolean(apiKey)
-        : activeProfile?.provider === 'custom'
-          ? true
-        : Boolean(apiKey);
-    this.activeApiKeyConfigured = runtimeAuthReady;
-    const extensionSystemPrompts = this.extensionWarmup.systemPromptsCache;
-    const imageGenerationProfile = state.config.imageGenerationModel
-      ? resolveModelProfile(state.config, state.config.imageGenerationModel) ?? undefined
-      : undefined;
-    const videoGenerationProfile = state.config.videoGenerationModel
-      ? resolveModelProfile(state.config, state.config.videoGenerationModel) ?? undefined
-      : undefined;
-    const imageGenerationApiKey = imageGenerationProfile
-      ? await resolveApiKeyForConfigModel(state.config, imageGenerationProfile.ref)
-      : undefined;
-    const videoGenerationApiKey = videoGenerationProfile
-      ? await resolveApiKeyForConfigModel(state.config, videoGenerationProfile.ref)
-      : undefined;
-    bundle.runtimeTransport = createLlmTransport();
-    if (!runtimeAuthReady) {
-      bundle.runtime = undefined;
-      if (bundle.id === this.sessionRegistry.activeSessionId()) {
-        this.runtime = undefined;
-      }
-      this.lastRuntimeError = activeProfile?.provider === 'azure' && !azureResourceNameReady
-        ? i18n.t('error.azureResourceNameRequired')
-        : activeProfile?.provider === 'cloudflare-ai-gateway' && !cloudflareConnectReady
-          ? i18n.t('settings.cloudflareAccountIdRequired')
-        : i18n.t('error.apiKeyNotConfigured');
-      await this.refreshModelKeyPresence();
-      return;
-    }
-
-    this.lastRuntimeError = '';
-
-    let runtimeTransportConfig = buildPrimaryTransportConfig({
-      apiKey: apiKey ?? bedrockCredentials?.apiKey ?? '',
-      model: activeProfile?.name ?? effectiveActiveModel.name,
-      baseUrl: currentApiBase(state.config),
-      workspaceRoot: bundle.workspaceRoot || state.workspaceRoot,
-      profile: activeProfile ?? undefined,
-      agentMode: resolveDesktopAgentMode(state.config),
-      ...(activeTransportKind === 'bedrock' && bedrockCredentials
-        ? { bedrockCredentials: { ...bedrockCredentials, apiKey: apiKey ?? bedrockCredentials.apiKey } }
-        : {}),
-      ...(activeProfile?.provider === 'google-vertex-ai' && googleVertexCredentials
-        ? { googleVertexCredentials }
-        : {}),
-    });
-    runtimeTransportConfig = attachImageGenerationToTransportConfig(runtimeTransportConfig, {
-      profile: imageGenerationProfile,
-      apiKey: imageGenerationApiKey,
-      catalogHints: buildModelCatalogHints(state.config),
-    });
-    runtimeTransportConfig = attachVideoGenerationToTransportConfig(runtimeTransportConfig, {
-      profile: videoGenerationProfile,
-      apiKey: videoGenerationApiKey,
-      catalogHints: buildModelCatalogHints(state.config),
-    });
-    bundle.runtimeTransport = createLlmTransport(runtimeTransportConfig);
-
-    if (inferencePreferenceOnly && bundle.runtime?.isBusy()) {
-      const toolExecutor = await this.ensureToolExecutor(bundle, { skipMcpCatalogRefresh: true });
-      toolExecutor.setActiveTransportConfig(runtimeTransportConfig);
-      bundle.deferredRuntimeRefreshWhileBusy = true;
-      return;
-    }
-
-    const desktopMessages = bundle.messageTimeline.toMessages();
-    const llmHistoryForRuntime = bundle.archiveHistory.length > 0
-      ? bundle.archiveHistory
-      : buildLlmHistoryFallbackFromDesktopMessages(desktopMessages);
-    const archive = {
-      messages: buildArchiveMessagesFromConversation(desktopMessages),
-      assistantAux: buildArchiveAssistantAuxFromConversation(desktopMessages),
-      llmHistory: llmHistoryForRuntime,
-      subagentSessions: bundle.archiveSubagentSessions ?? [],
-      loopEnabled: bundle.loopEnabled,
-      approvalLevel: bundle.approvalLevel,
-    } satisfies ChatArchive;
-    const previousRuntime = bundle.runtime;
-    const runtime = this.createRuntime(
-      runtimeTransportConfig,
-      llmHistoryForRuntime,
-      state.metadata.rules.enabledRules,
-      state.metadata.skills.enabledSkillCatalog,
-      state.metadata.planMetadata,
-      extensionSystemPrompts,
-      await buildDreamContextText({
-        workspaceRoot: bundle.workspaceRoot || state.workspaceRoot,
-        gitBranch: state.git.branch,
-      }),
-      await this.ensureToolExecutor(bundle, { skipMcpCatalogRefresh: true }),
-      bundle.runtimeTransport,
-      bundle,
-    );
-    if (bundle.archiveSubagentSessions.length > 0 || llmHistoryForRuntime.length > 0) {
-      runtime.replaceFromArchive({
-        ...archive,
-      });
-      if (bundle.archiveHistory.length === 0 && llmHistoryForRuntime.length > 0) {
-        bundle.archiveHistory = llmHistoryForRuntime;
-      }
-    }
-    runtime.setLoopEnabled(bundle.loopEnabled);
-    const toolExecutor = await this.ensureToolExecutor(bundle, { skipMcpCatalogRefresh: true });
-    toolExecutor.setApprovalLevel(bundle.approvalLevel);
-    bundle.runtime = runtime;
-    await closeRemoteDesktopRuntime(previousRuntime);
-    bundle.lastSeenMcpCatalogRevision = toolExecutor.mcpCatalogRevision();
-    if (bundle.id === this.sessionRegistry.activeSessionId()) {
-      this.runtime = runtime;
-    }
-    this.lastRuntimeError = '';
-    await this.refreshModelKeyPresence();
-    await this.refreshTodoSnapshotForBundle(bundle);
-    bundle.runtimeActivationSignature = this.runtimeActivationSignature(bundle);
   }
 
   private async ensureToolExecutor(
@@ -3128,35 +2934,7 @@ class DesktopHostService {
     bundle.toolExecutor.setLoopToolExposure(bundle.loopEnabled);
     bundle.toolExecutor.setAgentModeToolExposure(resolveDesktopAgentMode(this.requireState().config));
     await bundle.toolExecutor.ensureMcpToolingReady();
-    if (!options?.skipMcpCatalogRefresh) {
-      await this.maybeRefreshRuntimeForMcpCatalogChange(bundle);
-    }
     return bundle.toolExecutor;
-  }
-
-  private async maybeRefreshRuntimeForMcpCatalogChange(bundle: SessionBundle): Promise<void> {
-    if (!bundle.toolExecutor) {
-      return;
-    }
-    const revision = bundle.toolExecutor.mcpCatalogRevision();
-    const previous = bundle.lastSeenMcpCatalogRevision;
-    if (previous === undefined) {
-      bundle.lastSeenMcpCatalogRevision = revision;
-      return;
-    }
-    if (revision === previous || !bundle.runtime) {
-      return;
-    }
-    if (bundle.runtime.isBusy()) {
-      bundle.deferredRuntimeRefreshWhileBusy = true;
-      return;
-    }
-    bundle.lastSeenMcpCatalogRevision = revision;
-    await this.refreshRuntimeForBundle(bundle);
-    if (bundle.id === this.sessionRegistry.activeSessionId()) {
-      this.syncActiveRuntimePointer();
-    }
-    this.lastRuntimeError = '';
   }
 
   private sharedMcpServiceForWorkspace(
@@ -3233,48 +3011,6 @@ class DesktopHostService {
         });
       },
       ...(todoScope ? { todoScope } : {}),
-    });
-  }
-
-  private async buildScopedSubagentToolExecutor(
-    workspaceRoot: string,
-    transportConfig: LlmTransportConfig | undefined,
-    parentExecutor: DesktopToolExecutor,
-  ): Promise<DesktopToolExecutor> {
-    const state = this.requireState();
-    const extensions = await this.extensionManager().list();
-    const lsp = await ensureLspServiceReady(this.sharedLspServiceForWorkspace(workspaceRoot));
-    const scoped = new DesktopToolExecutor(workspaceRoot, {
-      mcp: this.sharedMcpServiceForWorkspace(workspaceRoot, state.workspaceBinding),
-      ...(lsp ? { lsp } : {}),
-      extensionToolDefinitions: buildDesktopExtensionToolDefinitions(extensions),
-      hostContributedToolsEnabled: true,
-    });
-    scoped.setApprovalLevel(parentExecutor.approvalLevelSnapshot());
-    scoped.setAgentModeToolExposure(resolveDesktopAgentMode(state.config));
-    scoped.setLoopToolExposure(this.activeBundle().loopEnabled);
-    if (transportConfig) {
-      scoped.setActiveTransportConfig(transportConfig);
-    }
-    return scoped;
-  }
-
-  private createSubagentWorkspaceBootstrap(
-    parentExecutor: DesktopToolExecutor,
-    transportConfig: LlmTransportConfig,
-  ) {
-    const state = this.requireState();
-    return createDesktopSubagentWorkspaceBootstrap({
-      parentWorkspaceRoot: state.workspaceRoot,
-      isGitRepository: state.git.isRepository,
-      resolveBaseBranch: () => {
-        const bundle = this.activeBundle();
-        return bundle.pendingGitBranch ?? state.git.branch;
-      },
-      generateWorktreeNames: (task, baseBranch, repoRoot) =>
-        this.generateWorktreeNamesFromModel(task, baseBranch, repoRoot),
-      buildScopedToolExecutor: (workspaceRoot) =>
-        this.buildScopedSubagentToolExecutor(workspaceRoot, transportConfig, parentExecutor),
     });
   }
 
@@ -3674,58 +3410,6 @@ class DesktopHostService {
     if (bundle.id === this.sessionRegistry.activeSessionId()) {
       this.emitLiveSnapshotUpdate();
     }
-  }
-
-  private createRuntime(
-    transportConfig: LlmTransportConfig,
-    history: ChatArchive['llmHistory'],
-    enabledRules: LlmEnabledRule[],
-    enabledSkillCatalog: LlmEnabledSkillCatalogEntry[],
-    planMetadata: LlmPlanMetadata,
-    extensionSystemPrompts: LlmExtensionSystemPrompt[],
-    dreamsContextText?: string,
-    toolExecutor: DesktopToolExecutor = this.requireToolExecutor(),
-    llmTransport: SpiritLlmTransport = createLlmTransport(transportConfig),
-    bundle: SessionBundle = this.activeBundle(),
-  ): DesktopRuntime {
-    const workspaceRoot = transportConfig.workspaceRoot ?? this.requireState().workspaceRoot;
-    toolExecutor.setActiveTransportConfig(transportConfig);
-    const hookRunner = this.getHookRunner(workspaceRoot);
-    const hookSessionContext = buildDesktopHookSessionContext(bundle, transportConfig.model);
-    const agents = normalizeAgentsConfig(this.requireState().config.agents);
-    return createDesktopRuntime({
-      transportConfig,
-      history,
-      enabledRules,
-      enabledSkillCatalog,
-      mcpToolCatalog: toolExecutor.mcpToolCatalogSnapshot(),
-      planMetadata,
-      extensionSystemPrompts,
-      ...(dreamsContextText === undefined ? {} : { dreamsContextText }),
-      toolExecutor,
-      llmTransport,
-      workspaceRoot,
-      basicInfo: buildDesktopRuntimeBasicInfo(
-        workspaceRoot,
-        toolExecutor,
-        gitBranchLabelForBasicInfo(this.requireState().git),
-        bundle.rewind.sessionId,
-      ),
-      attribution: {
-        commitEnabled: agents.attribution.commit.enabled,
-        prEnabled: agents.attribution.pr.enabled,
-      },
-      getLoopEnabled: () => bundle.loopEnabled,
-      getApprovalLevel: () => normalizeApprovalLevel(bundle.approvalLevel),
-      reviewToolApproval: createDesktopAutoApprovalReviewer({
-        config: this.requireState().config,
-        workspaceRoot,
-      }),
-      hookRunner,
-      hookSessionContext,
-      bootstrapSubagentWorkspace: this.createSubagentWorkspaceBootstrap(toolExecutor, transportConfig),
-      flushPendingHostEvents: () => this.flushRuntimeHostEventsForBundle(bundle),
-    });
   }
 
   private flushRuntimeHostEventsForBundle(bundle: SessionBundle): void {

@@ -118,10 +118,6 @@ async function sharedDesktopServerClient(dataDir: string): Promise<ServerRpcClie
   return sharedClientPromise;
 }
 
-export function desktopUsesDaemonRuntime(): boolean {
-  return process.env.SPIRIT_INPROCESS_HOST !== '1';
-}
-
 /** Close the process-wide daemon WebSocket so the server can idle-exit. */
 export async function closeSharedDesktopServerClient(): Promise<void> {
   const pending = sharedClientPromise;
