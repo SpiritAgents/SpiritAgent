@@ -169,6 +169,58 @@ describe('SessionManager', () => {
     });
   });
 
+  it('attach is idempotent and shares one runtime per conversationKey', async () => {
+    await withMockKeyring(async () => {
+      const dataDir = freshDataDir();
+      const manager = new SessionManager(dataDir, {
+        broadcastRuntimeEvent: () => {},
+        broadcastTurnFinished: () => {},
+        broadcastSnapshot: () => {},
+        broadcastTrustRequest: () => {},
+        broadcastFileChange: () => {},
+      });
+      const chatPath = join(tmpdir(), 'shared-chat.json');
+
+      const created = await manager.createSession({
+        workspaceRoot: tmpdir(),
+        hostKind: 'desktop',
+        conversationKey: chatPath,
+      });
+      assert.equal(created.conversationKey, chatPath);
+      assert.equal(created.attachmentCount, 0);
+
+      const duplicate = await manager.createSession({
+        workspaceRoot: tmpdir(),
+        hostKind: 'cli',
+        conversationKey: chatPath,
+      });
+      assert.equal(duplicate.sessionId, created.sessionId);
+
+      const clientA = 'client-a';
+      const clientB = 'client-b';
+      const attachA = manager.attachSession(clientA, { conversationKey: chatPath });
+      assert.equal(attachA.session.sessionId, created.sessionId);
+      assert.equal(attachA.session.attachmentCount, 1);
+
+      const attachB = manager.attachSession(clientB, { sessionId: created.sessionId });
+      assert.equal(attachB.session.attachmentCount, 2);
+
+      const attachAgain = manager.attachSession(clientA, { sessionId: created.sessionId });
+      assert.equal(attachAgain.session.attachmentCount, 2);
+
+      const firstDetach = await manager.detachSession(clientA, created.sessionId);
+      assert.equal(firstDetach.closed, false);
+      assert.equal(manager.getSession(created.sessionId)?.sessionId, created.sessionId);
+
+      const secondDetach = await manager.detachSession(clientB, created.sessionId);
+      assert.equal(secondDetach.closed, true);
+      assert.equal(manager.getSession(created.sessionId), undefined);
+      assert.deepEqual(manager.listSessions(), []);
+
+      await manager.shutdown();
+    });
+  });
+
   it('broadcasts a shared user-turn boundary before runtime execution', async () => {
     await withMockKeyring(async () => {
       const dataDir = freshDataDir();

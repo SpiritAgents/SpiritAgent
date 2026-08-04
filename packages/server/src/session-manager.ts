@@ -42,6 +42,8 @@ export interface ServerSessionInfo {
   approvalLevel: ApprovalLevel;
   model: string;
   queuedTurns: number;
+  conversationKey?: string;
+  attachmentCount: number;
 }
 
 interface QueuedUserTurn {
@@ -127,6 +129,18 @@ export interface CreateSessionParams {
   agentMode?: SpiritAgentMode;
   /** Todo store scope override (defaults to the new session id). */
   todoSessionKey?: string;
+  /** Stable chat file path for multi-host attach. */
+  conversationKey?: string;
+}
+
+export interface AttachSessionParams {
+  sessionId?: string;
+  conversationKey?: string;
+}
+
+export interface AttachSessionResult {
+  session: ServerSessionInfo;
+  snapshot: BridgeRuntimeSnapshot;
 }
 
 export interface SubmitUserTurnParams {
@@ -164,6 +178,9 @@ const IDLE_GRACE_TICKS = 40;
  */
 export class SessionManager {
   private readonly sessions = new Map<string, ServerSession>();
+  private readonly conversationIndex = new Map<string, string>();
+  /** sessionId → attached clientIds (refcount). */
+  private readonly attachments = new Map<string, Set<string>>();
   private readonly pendingTrustRequests = new Map<string, PendingTrustRequest>();
   private readonly spiritDataDir: string;
   /** Shared per-workspace MCP services (also serve host.mcp* management RPCs). */
@@ -177,6 +194,18 @@ export class SessionManager {
   }
 
   async createSession(params: CreateSessionParams): Promise<ServerSessionInfo> {
+    const conversationKey = params.conversationKey?.trim();
+    if (conversationKey) {
+      const existingId = this.conversationIndex.get(conversationKey);
+      if (existingId) {
+        const existing = this.sessions.get(existingId);
+        if (existing) {
+          return this.projectInfo(existing);
+        }
+        this.conversationIndex.delete(conversationKey);
+      }
+    }
+
     const sessionId = `sess_${randomUUID().replaceAll('-', '')}`;
     const runtimeResult = await createServerRuntime({
       workspaceRoot: params.workspaceRoot,
@@ -204,6 +233,8 @@ export class SessionManager {
       approvalLevel: params.approvalLevel ?? 'default',
       model: runtimeResult.transportConfig.model,
       queuedTurns: 0,
+      attachmentCount: 0,
+      ...(conversationKey ? { conversationKey } : {}),
     };
     const session: ServerSession = {
       info,
@@ -221,7 +252,80 @@ export class SessionManager {
     session.pump = setInterval(() => this.tickSession(session), PUMP_INTERVAL_MS);
     session.pump.unref();
     this.sessions.set(sessionId, session);
+    if (conversationKey) {
+      this.conversationIndex.set(conversationKey, sessionId);
+    }
     return { ...info };
+  }
+
+  attachSession(clientId: string, params: AttachSessionParams): AttachSessionResult {
+    const sessionId = this.resolveSessionId(params);
+    const session = this.requireSession(sessionId);
+    let clients = this.attachments.get(sessionId);
+    if (!clients) {
+      clients = new Set();
+      this.attachments.set(sessionId, clients);
+    }
+    clients.add(clientId);
+    return {
+      session: this.projectInfo(session),
+      snapshot: this.snapshotForSession(session),
+    };
+  }
+
+  async detachSession(clientId: string, sessionId: string): Promise<{ closed: boolean }> {
+    const clients = this.attachments.get(sessionId);
+    if (!clients?.has(clientId)) {
+      return { closed: false };
+    }
+    clients.delete(clientId);
+    if (clients.size > 0) {
+      return { closed: false };
+    }
+    this.attachments.delete(sessionId);
+    await this.destroySession(sessionId);
+    return { closed: true };
+  }
+
+  /** Move a live session to a new conversation key (e.g. provisional → stable chat path). */
+  migrateConversationKey(sessionId: string, nextKey: string): void {
+    const trimmed = nextKey.trim();
+    if (!trimmed) {
+      throw new Error('missing conversationKey');
+    }
+    const session = this.requireSession(sessionId);
+    const previousKey = session.info.conversationKey?.trim();
+    if (previousKey === trimmed) {
+      return;
+    }
+    const occupied = this.conversationIndex.get(trimmed);
+    if (occupied && occupied !== sessionId) {
+      throw new Error(`conversationKey already registered: ${trimmed}`);
+    }
+    if (previousKey) {
+      const indexed = this.conversationIndex.get(previousKey);
+      if (indexed === sessionId) {
+        this.conversationIndex.delete(previousKey);
+      }
+    }
+    session.info.conversationKey = trimmed;
+    this.conversationIndex.set(trimmed, sessionId);
+  }
+
+  private resolveSessionId(params: AttachSessionParams): string {
+    const byId = params.sessionId?.trim();
+    if (byId) {
+      return byId;
+    }
+    const key = params.conversationKey?.trim();
+    if (!key) {
+      throw new Error('missing sessionId or conversationKey');
+    }
+    const sessionId = this.conversationIndex.get(key);
+    if (!sessionId) {
+      throw new Error(`no live session for conversationKey: ${key}`);
+    }
+    return sessionId;
   }
 
   listSessions(): ServerSessionInfo[] {
@@ -247,6 +351,7 @@ export class SessionManager {
       ...session.info,
       isBusy: session.runtimeResult.runtime.isBusy(),
       queuedTurns: session.queue.length,
+      attachmentCount: this.attachments.get(session.info.sessionId)?.size ?? 0,
     };
   }
 
@@ -838,10 +943,19 @@ export class SessionManager {
   }
 
   async closeSession(sessionId: string): Promise<void> {
+    await this.destroySession(sessionId);
+  }
+
+  private async destroySession(sessionId: string): Promise<void> {
     const session = this.sessions.get(sessionId);
     if (!session) {
       return;
     }
+    const conversationKey = session.info.conversationKey?.trim();
+    if (conversationKey && this.conversationIndex.get(conversationKey) === sessionId) {
+      this.conversationIndex.delete(conversationKey);
+    }
+    this.attachments.delete(sessionId);
     session.turnGeneration += 1;
     session.queue = [];
     clearInterval(session.pump);
@@ -860,6 +974,8 @@ export class SessionManager {
       disposals.push(session.runtimeResult.toolExecutor.disposeLsp());
     }
     this.sessions.clear();
+    this.conversationIndex.clear();
+    this.attachments.clear();
     for (const [requestId, pending] of this.pendingTrustRequests) {
       this.pendingTrustRequests.delete(requestId);
       clearTimeout(pending.timer);

@@ -16,9 +16,13 @@ export const SERVER_CONNECTED = 'server.connected';
 
 /** RPC: create a session (owns an AgentRuntime in the daemon). */
 export const SESSION_CREATE = 'session.create';
+/** RPC: join an existing live session (refcount + snapshot). */
+export const SESSION_ATTACH = 'session.attach';
+/** RPC: release a session attachment; destroys when refcount hits zero. */
+export const SESSION_DETACH = 'session.detach';
 /** RPC: list live sessions. */
 export const SESSION_LIST = 'session.list';
-/** RPC: close + abort a session. */
+/** RPC: release this client's attachment (alias of detach); destroys at refcount zero. */
 export const SESSION_CLOSE = 'session.close';
 /** RPC: submit a user turn; streaming arrives via `runtime.event`. */
 export const SESSION_SUBMIT_USER_TURN = 'session.submitUserTurn';
@@ -143,9 +147,29 @@ export type SessionApprovalLevel = 'default' | 'auto-approval' | 'full-approval'
 
 export interface SessionCreateParams {
   workspaceRoot: string;
+  /** Stable chat file path; re-create returns the existing live session. */
+  conversationKey?: string;
   approvalLevel?: SessionApprovalLevel;
   modelRef?: { groupId: string; name: string };
   agentMode?: 'agent' | 'plan' | 'ask' | 'debug';
+  todoSessionKey?: string;
+}
+
+export interface SessionAttachParams {
+  /** Join by live session id (mutually exclusive with conversationKey). */
+  sessionId?: string;
+  /** Join by registered chat path (mutually exclusive with sessionId). */
+  conversationKey?: string;
+}
+
+export interface SessionAttachResult {
+  session: SessionInfo;
+  snapshot: unknown;
+}
+
+export interface SessionDetachResult {
+  /** True when the last attachment was released and the session was destroyed. */
+  closed: boolean;
 }
 
 export interface SessionInfo {
@@ -156,6 +180,8 @@ export interface SessionInfo {
   isBusy: boolean;
   approvalLevel: SessionApprovalLevel;
   model: string;
+  conversationKey?: string;
+  attachmentCount: number;
 }
 
 export interface SessionSubmitUserTurnParams {

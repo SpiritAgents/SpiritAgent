@@ -29,6 +29,7 @@ import {
   SESSION_ACTIVATE_SKILL,
   SESSION_ADD_PENDING_IMAGE,
   SESSION_APPLY_MCP_PROMPT,
+  SESSION_ATTACH,
   SESSION_ATTACH_MCP_RESOURCE,
   SESSION_CLEAR_PENDING_IMAGES,
   SESSION_CLEAR_PENDING_MCP_RESOURCES,
@@ -37,6 +38,7 @@ import {
   SESSION_CONTINUE_COMPLETION,
   SESSION_CONTINUE_MANUAL_APPROVAL,
   SESSION_CREATE,
+  SESSION_DETACH,
   SESSION_EXPORT_ARCHIVE,
   SESSION_EXPORT_STATE,
   SESSION_LIST,
@@ -83,6 +85,8 @@ import { HostService, HOST_METHODS } from './host-service.js';
 
 const SESSION_METHODS = new Set([
   SESSION_CREATE,
+  SESSION_ATTACH,
+  SESSION_DETACH,
   SESSION_LIST,
   SESSION_CLOSE,
   SESSION_SUBMIT_USER_TURN,
@@ -177,6 +181,7 @@ interface ClientState {
   clientKind?: ClientKind;
   clientId?: string;
   workspaceRoot?: string;
+  attachedSessionIds?: Set<string>;
 }
 
 function extractPresentedToken(headerValue: string | undefined, url: string | undefined): string {
@@ -245,10 +250,19 @@ export async function startDaemon(options: DaemonOptions): Promise<RunningDaemon
     idleExitTimer.unref?.();
   };
 
-  const onClientGone = (): void => {
+  const onClientGone = (conn: WebSocketConnection): void => {
     if (closed) {
       return;
     }
+    const state = clientStates.get(conn);
+    const attached = state?.attachedSessionIds;
+    if (attached && attached.size > 0) {
+      for (const sessionId of attached) {
+        void sessionManager.detachSession(resolveClientId(state), sessionId);
+      }
+      attached.clear();
+    }
+    clientStates.delete(conn);
     log(`[spirit-server] client disconnected (${connections.size} remaining)`);
     if (connections.size > 0) {
       return;
@@ -256,6 +270,33 @@ export async function startDaemon(options: DaemonOptions): Promise<RunningDaemon
     // Nobody left to answer: release parked approvals / questions / trust.
     sessionManager.handleNoClientsRemaining();
     scheduleIdleExit();
+  };
+
+  const resolveClientId = (state: ClientState | undefined): string => {
+    if (state?.clientId?.trim()) {
+      return state.clientId.trim();
+    }
+    const generated = `client_${randomUUID().replaceAll('-', '')}`;
+    if (state) {
+      state.clientId = generated;
+    }
+    return generated;
+  };
+
+  const trackAttachment = (conn: WebSocketConnection, sessionId: string): void => {
+    let state = clientStates.get(conn);
+    if (!state) {
+      state = {};
+      clientStates.set(conn, state);
+    }
+    if (!state.attachedSessionIds) {
+      state.attachedSessionIds = new Set();
+    }
+    state.attachedSessionIds.add(sessionId);
+  };
+
+  const untrackAttachment = (conn: WebSocketConnection, sessionId: string): void => {
+    clientStates.get(conn)?.attachedSessionIds?.delete(sessionId);
   };
 
   const broadcast = (method: string, params: unknown): void => {
@@ -319,6 +360,8 @@ export async function startDaemon(options: DaemonOptions): Promise<RunningDaemon
     rawParams: unknown,
   ): Promise<unknown> => {
     const params = (rawParams ?? {}) as Record<string, unknown>;
+    const clientState = clientStates.get(conn);
+    const clientId = resolveClientId(clientState);
     switch (method) {
       case SESSION_CREATE: {
         const workspaceRoot = typeof params['workspaceRoot'] === 'string' && params['workspaceRoot'].trim()
@@ -331,9 +374,13 @@ export async function startDaemon(options: DaemonOptions): Promise<RunningDaemon
         const todoSessionKey = params['todoSessionKey'];
         const modelRef = params['modelRef'];
         const agentMode = params['agentMode'];
+        const conversationKey = params['conversationKey'];
         const info = await sessionManager.createSession({
           workspaceRoot,
-          hostKind: clientStates.get(conn)?.clientKind ?? 'cli',
+          hostKind: clientState?.clientKind ?? 'cli',
+          ...(typeof conversationKey === 'string' && conversationKey.trim()
+            ? { conversationKey: conversationKey.trim() }
+            : {}),
           ...(approvalLevel === 'auto-approval' || approvalLevel === 'full-approval' || approvalLevel === 'default'
             ? { approvalLevel }
             : {}),
@@ -352,11 +399,27 @@ export async function startDaemon(options: DaemonOptions): Promise<RunningDaemon
         });
         return info;
       }
+      case SESSION_ATTACH: {
+        const sessionId = typeof params['sessionId'] === 'string' ? params['sessionId'].trim() : undefined;
+        const conversationKey = typeof params['conversationKey'] === 'string'
+          ? params['conversationKey'].trim()
+          : undefined;
+        const result = sessionManager.attachSession(clientId, {
+          ...(sessionId ? { sessionId } : {}),
+          ...(conversationKey ? { conversationKey } : {}),
+        });
+        trackAttachment(conn, result.session.sessionId);
+        return result;
+      }
+      case SESSION_DETACH:
+      case SESSION_CLOSE: {
+        const sessionId = readSessionId(params);
+        const result = await sessionManager.detachSession(clientId, sessionId);
+        untrackAttachment(conn, sessionId);
+        return method === SESSION_DETACH ? result : { ok: true, ...result };
+      }
       case SESSION_LIST:
         return { sessions: sessionManager.listSessions() };
-      case SESSION_CLOSE:
-        await sessionManager.closeSession(readSessionId(params));
-        return { ok: true };
       case SESSION_SUBMIT_USER_TURN: {
         const text = params['text'];
         if (typeof text !== 'string') {
@@ -669,13 +732,11 @@ export async function startDaemon(options: DaemonOptions): Promise<RunningDaemon
       });
       conn.on('close', () => {
         connections.delete(conn);
-        clientStates.delete(conn);
-        onClientGone();
+        onClientGone(conn);
       });
       conn.on('error', () => {
         connections.delete(conn);
-        clientStates.delete(conn);
-        onClientGone();
+        onClientGone(conn);
       });
     })();
   });

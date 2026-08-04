@@ -77,14 +77,21 @@ async function main() {
   const { instance, child } = await ensureDaemon();
   console.log(`daemon: ${instance.host}:${instance.port} (pid ${instance.pid})`);
 
-  // Client A owns the session; client B attaches to the same daemon.
+  // Client A owns the session; client B attaches by conversationKey.
+  const conversationKey = join(WORKSPACE, '.spirit-smoke6-chat.json');
   const a = await connect(instance.port, 'A');
-  await a.call('server.initialize', { clientKind: 'cli', workspaceRoot: WORKSPACE });
-  const session = await a.call('session.create', { workspaceRoot: WORKSPACE });
+  await a.call('server.initialize', { clientKind: 'cli', clientId: 'smoke-a', workspaceRoot: WORKSPACE });
+  const session = await a.call('session.create', { workspaceRoot: WORKSPACE, conversationKey });
+  await a.call('session.attach', { conversationKey });
   console.log('session:', session.sessionId);
 
   const b = await connect(instance.port, 'B');
-  await b.call('server.initialize', { clientKind: 'desktop', workspaceRoot: WORKSPACE });
+  await b.call('server.initialize', { clientKind: 'desktop', clientId: 'smoke-b', workspaceRoot: WORKSPACE });
+  const attached = await b.call('session.attach', { conversationKey });
+  if (attached.session.sessionId !== session.sessionId) {
+    throw new Error('attach returned a different sessionId than create');
+  }
+  console.log('B attached:', attached.session.sessionId);
 
   // B sees the session in the shared list.
   const listForB = await b.call('session.list', {});
