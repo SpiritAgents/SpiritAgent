@@ -727,6 +727,18 @@ export class RemoteDesktopRuntime {
   }
 }
 
+export async function migrateRemoteConversationKey(
+  runtime: unknown,
+  nextConversationKey: string,
+): Promise<void> {
+  if (!(runtime instanceof RemoteDesktopRuntime)) {
+    return;
+  }
+  await runtime.clientCall('session.migrateConversationKey', {
+    conversationKey: nextConversationKey,
+  });
+}
+
 export async function closeRemoteDesktopRuntime(runtime: unknown): Promise<void> {
   if (runtime instanceof RemoteDesktopRuntime) {
     await runtime.close();

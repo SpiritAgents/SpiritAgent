@@ -221,6 +221,38 @@ describe('SessionManager', () => {
     });
   });
 
+  it('migrates conversationKey when provisional path promotes to stable', async () => {
+    await withMockKeyring(async () => {
+      const dataDir = freshDataDir();
+      const manager = new SessionManager(dataDir, {
+        broadcastRuntimeEvent: () => {},
+        broadcastTurnFinished: () => {},
+        broadcastSnapshot: () => {},
+        broadcastTrustRequest: () => {},
+        broadcastFileChange: () => {},
+      });
+      const provisional = join(tmpdir(), 'provisional-chat.json');
+      const stable = join(tmpdir(), 'stable-chat.json');
+
+      const created = await manager.createSession({
+        workspaceRoot: tmpdir(),
+        hostKind: 'desktop',
+        conversationKey: provisional,
+      });
+      manager.migrateConversationKey(created.sessionId, stable);
+
+      assert.throws(
+        () => manager.attachSession('client-a', { conversationKey: provisional }),
+        /no live session for conversationKey/,
+      );
+      const attached = manager.attachSession('client-a', { conversationKey: stable });
+      assert.equal(attached.session.sessionId, created.sessionId);
+      assert.equal(attached.session.conversationKey, stable);
+
+      await manager.shutdown();
+    });
+  });
+
   it('broadcasts a shared user-turn boundary before runtime execution', async () => {
     await withMockKeyring(async () => {
       const dataDir = freshDataDir();

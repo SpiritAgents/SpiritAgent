@@ -20,6 +20,8 @@ export const SESSION_CREATE = 'session.create';
 export const SESSION_ATTACH = 'session.attach';
 /** RPC: release a session attachment; destroys when refcount hits zero. */
 export const SESSION_DETACH = 'session.detach';
+/** RPC: move a live session to a new conversation key (provisional → stable path). */
+export const SESSION_MIGRATE_CONVERSATION_KEY = 'session.migrateConversationKey';
 /** RPC: list live sessions. */
 export const SESSION_LIST = 'session.list';
 /** RPC: release this client's attachment (alias of detach); destroys at refcount zero. */
@@ -170,6 +172,11 @@ export interface SessionAttachResult {
 export interface SessionDetachResult {
   /** True when the last attachment was released and the session was destroyed. */
   closed: boolean;
+}
+
+export interface SessionMigrateConversationKeyParams {
+  sessionId: string;
+  conversationKey: string;
 }
 
 export interface SessionInfo {

@@ -474,6 +474,7 @@ import {
   createRemoteDesktopRuntime,
   desktopUsesDaemonRuntime,
   exportRemoteDesktopState,
+  migrateRemoteConversationKey,
   openRemoteDesktopRuntime,
   replyRemoteWorkspaceCapabilityTrust,
   remoteDesktopRuntimeNeedsProjection,
@@ -4514,6 +4515,9 @@ class DesktopHostService {
       activeSession.displayName = deriveDisplayNameFromSeed(seedText);
     }
     this.sessionRegistry.rekeyBundle(bundle, nextPath);
+    void migrateRemoteConversationKey(bundle.runtime, path.resolve(nextPath)).catch((error) => {
+      this.lastRuntimeError = error instanceof Error ? error.message : String(error);
+    });
   }
 
   private archiveMessages(): Array<{ role: 'user' | 'assistant'; content: string }> {

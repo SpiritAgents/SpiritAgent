@@ -42,6 +42,7 @@ import {
   SESSION_EXPORT_ARCHIVE,
   SESSION_EXPORT_STATE,
   SESSION_LIST,
+  SESSION_MIGRATE_CONVERSATION_KEY,
   SESSION_MCP,
   SESSION_POLL,
   SESSION_RENAME,
@@ -88,6 +89,7 @@ const SESSION_METHODS = new Set([
   SESSION_ATTACH,
   SESSION_DETACH,
   SESSION_LIST,
+  SESSION_MIGRATE_CONVERSATION_KEY,
   SESSION_CLOSE,
   SESSION_SUBMIT_USER_TURN,
   SESSION_ABORT,
@@ -420,6 +422,17 @@ export async function startDaemon(options: DaemonOptions): Promise<RunningDaemon
       }
       case SESSION_LIST:
         return { sessions: sessionManager.listSessions() };
+      case SESSION_MIGRATE_CONVERSATION_KEY: {
+        const conversationKey = params['conversationKey'];
+        if (typeof conversationKey !== 'string' || !conversationKey.trim()) {
+          throw new Error('missing conversationKey');
+        }
+        sessionManager.migrateConversationKey(
+          readSessionId(params),
+          conversationKey.trim(),
+        );
+        return { ok: true };
+      }
       case SESSION_SUBMIT_USER_TURN: {
         const text = params['text'];
         if (typeof text !== 'string') {
