@@ -1,8 +1,13 @@
 use crate::rewind::{
     ConversationMessageRole, ConversationMessageSnapshot, MessageAuxSnapshot, ToolBlockSnapshot,
 };
-use crate::view::{ChatMessage, MessageRole};
-use crate::ports::ArchivedLlmMessage;
+use crate::view::{AssistantAuxData, ChatMessage, MessageRole};
+use crate::ports::{ArchivedLlmMessage, ArchivedLlmToolCall};
+use crate::host_runtime::{
+    build_tool_preview_block, build_tool_result_block, format_tool_ui_message,
+};
+use crate::tool_ui::tool_request_from_streaming_preview;
+use std::collections::HashMap;
 
 pub const CHAT_SCHEMA_VERSION: i32 = 2;
 
@@ -342,39 +347,178 @@ pub fn derive_archive_projection(
     (archive_messages, assistant_aux)
 }
 
-/// Project daemon `llm_history` into TUI chat rows (user/assistant text only).
+/// UI projection from daemon `llm_history` for live session attach.
+#[derive(Clone, Debug, Default)]
+pub struct LiveChatProjection {
+    pub messages: Vec<ChatMessage>,
+    pub assistant_aux_by_message: HashMap<usize, AssistantAuxData>,
+}
+
+/// Project daemon `llm_history` into TUI chat rows, including tool cards.
+pub fn project_live_chat_from_llm_history(history: &[ArchivedLlmMessage]) -> LiveChatProjection {
+    let mut projection = LiveChatProjection::default();
+    let mut index = 0usize;
+    while index < history.len() {
+        let entry = &history[index];
+        match entry.role.as_str() {
+            "user" => {
+                push_user_message(&mut projection, entry);
+                index += 1;
+            }
+            "assistant" => {
+                index = push_assistant_turn(&mut projection, history, index);
+            }
+            "tool" => {
+                index += 1;
+            }
+            _ => index += 1,
+        }
+    }
+    projection
+}
+
+/// Backward-compatible wrapper returning message rows only.
 pub fn project_chat_messages_from_llm_history(
     history: &[ArchivedLlmMessage],
 ) -> Vec<ChatMessage> {
-    let mut messages = Vec::new();
-    for entry in history {
-        match entry.role.as_str() {
-            "user" => {
-                let content = entry.text_content();
-                if content.trim().is_empty() {
-                    continue;
-                }
-                messages.push(ChatMessage {
-                    role: MessageRole::User,
-                    content,
-                    tool_block: None,
-                });
-            }
-            "assistant" => {
-                let content = entry.text_content();
-                if content.trim().is_empty() {
-                    continue;
-                }
-                messages.push(ChatMessage {
-                    role: MessageRole::Agent,
-                    content,
-                    tool_block: None,
-                });
-            }
-            _ => {}
+    project_live_chat_from_llm_history(history).messages
+}
+
+fn push_user_message(projection: &mut LiveChatProjection, entry: &ArchivedLlmMessage) {
+    let content = entry.text_content();
+    if content.trim().is_empty() {
+        return;
+    }
+    projection.messages.push(ChatMessage {
+        role: MessageRole::User,
+        content,
+        tool_block: None,
+    });
+}
+
+fn push_assistant_turn(
+    projection: &mut LiveChatProjection,
+    history: &[ArchivedLlmMessage],
+    start_index: usize,
+) -> usize {
+    let entry = &history[start_index];
+    let mut next_index = start_index + 1;
+    if let Some(tool_calls) = entry.tool_calls.as_ref().filter(|calls| !calls.is_empty()) {
+        let tool_outputs = collect_following_tool_outputs(history, start_index + 1);
+        next_index = start_index + 1 + tool_outputs.consumed;
+        for tool_call in tool_calls {
+            push_tool_call_message(
+                projection,
+                tool_call,
+                tool_outputs.by_id.get(&tool_call.id).copied(),
+            );
         }
     }
-    messages
+
+    let content = entry.text_content();
+    if !content.trim().is_empty() {
+        let message_index = projection.messages.len();
+        projection.messages.push(ChatMessage {
+            role: MessageRole::Agent,
+            content,
+            tool_block: None,
+        });
+        if let Some(aux) = assistant_aux_from_provider_state(entry.provider_state.as_ref()) {
+            projection
+                .assistant_aux_by_message
+                .insert(message_index, aux);
+        }
+    } else if let Some(aux) = assistant_aux_from_provider_state(entry.provider_state.as_ref()) {
+        let message_index = projection.messages.len();
+        projection.messages.push(ChatMessage {
+            role: MessageRole::Agent,
+            content: String::new(),
+            tool_block: None,
+        });
+        projection
+            .assistant_aux_by_message
+            .insert(message_index, aux);
+    }
+
+    next_index
+}
+
+struct FollowingToolOutputs<'a> {
+    by_id: HashMap<String, &'a ArchivedLlmMessage>,
+    consumed: usize,
+}
+
+fn collect_following_tool_outputs<'a>(
+    history: &'a [ArchivedLlmMessage],
+    start_index: usize,
+) -> FollowingToolOutputs<'a> {
+    let mut by_id = HashMap::new();
+    let mut consumed = 0usize;
+    for entry in history.iter().skip(start_index) {
+        if entry.role != "tool" {
+            break;
+        }
+        if let Some(tool_call_id) = entry.tool_call_id.as_deref() {
+            by_id.entry(tool_call_id.to_string()).or_insert(entry);
+        }
+        consumed += 1;
+    }
+    FollowingToolOutputs { by_id, consumed }
+}
+
+fn push_tool_call_message(
+    projection: &mut LiveChatProjection,
+    tool_call: &ArchivedLlmToolCall,
+    tool_output: Option<&ArchivedLlmMessage>,
+) {
+    let request = tool_request_from_streaming_preview(&tool_call.name, &tool_call.arguments_json);
+    let (content, tool_block) = if let Some(output) = tool_output {
+        let output_text = output.text_content();
+        (
+            format_tool_ui_message(&request, &tool_call.name, &output_text),
+            build_tool_result_block(
+                &request,
+                &tool_call.name,
+                Some(&tool_call.id),
+                &output_text,
+            ),
+        )
+    } else {
+        (
+            String::new(),
+            build_tool_preview_block(&tool_call.name, &tool_call.id, &request),
+        )
+    };
+    projection.messages.push(ChatMessage {
+        role: MessageRole::Agent,
+        content,
+        tool_block: Some(tool_block),
+    });
+}
+
+fn assistant_aux_from_provider_state(provider_state: Option<&serde_json::Value>) -> Option<AssistantAuxData> {
+    let provider_state = provider_state?;
+    let thinking = provider_state
+        .get("thinking")
+        .or_else(|| provider_state.get("reasoning"))
+        .and_then(serde_json::Value::as_str)
+        .map(str::trim)
+        .filter(|value| !value.is_empty())
+        .map(str::to_string);
+    let compaction = provider_state
+        .get("compaction")
+        .and_then(serde_json::Value::as_str)
+        .map(str::trim)
+        .filter(|value| !value.is_empty())
+        .map(str::to_string);
+    if thinking.is_none() && compaction.is_none() {
+        None
+    } else {
+        Some(AssistantAuxData {
+            thinking,
+            compaction,
+        })
+    }
 }
 
 fn sanitize_aux(aux: Option<&MessageAuxSnapshot>) -> Option<MessageAuxSnapshot> {
@@ -463,7 +607,35 @@ mod tests {
     }
 
     #[test]
-    fn project_chat_messages_from_llm_history_skips_tool_rows_and_empty_assistant() {
+    fn project_chat_messages_from_llm_history_includes_tool_cards() {
+        use crate::ports::ArchivedLlmToolCall;
+
+        let history = vec![
+            ArchivedLlmMessage::from_text_and_images("user".to_string(), "hi".to_string(), Vec::new()),
+            ArchivedLlmMessage::from_text_and_images("assistant".to_string(), String::new(), Vec::new())
+                .with_tool_calls(Some(vec![ArchivedLlmToolCall {
+                    id: "call-1".to_string(),
+                    name: "Shell".to_string(),
+                    arguments_json: r#"{"command":"echo hi"}"#.to_string(),
+                }])),
+            ArchivedLlmMessage::from_text_and_images("tool".to_string(), "hi\n".to_string(), Vec::new())
+                .with_tool_call_id(Some("call-1".to_string())),
+            ArchivedLlmMessage::from_text_and_images(
+                "assistant".to_string(),
+                "done".to_string(),
+                Vec::new(),
+            ),
+        ];
+
+        let projection = project_live_chat_from_llm_history(&history);
+        assert_eq!(projection.messages.len(), 3);
+        assert_eq!(projection.messages[0].role, MessageRole::User);
+        assert!(projection.messages[1].tool_block.is_some());
+        assert_eq!(projection.messages[2].content, "done");
+    }
+
+    #[test]
+    fn project_chat_messages_from_llm_history_skips_orphan_tool_rows() {
         use crate::ports::ArchivedLlmToolCall;
 
         let history = vec![
@@ -483,11 +655,12 @@ mod tests {
             ),
         ];
 
-        let messages = project_chat_messages_from_llm_history(&history);
-        assert_eq!(messages.len(), 2);
-        assert_eq!(messages[0].role, MessageRole::User);
-        assert_eq!(messages[0].content, "hi");
-        assert_eq!(messages[1].role, MessageRole::Agent);
-        assert_eq!(messages[1].content, "done");
+        let projection = project_live_chat_from_llm_history(&history);
+        assert_eq!(projection.messages.len(), 3);
+        assert_eq!(projection.messages[0].role, MessageRole::User);
+        assert_eq!(projection.messages[0].content, "hi");
+        assert!(projection.messages[1].tool_block.is_some());
+        assert_eq!(projection.messages[2].role, MessageRole::Agent);
+        assert_eq!(projection.messages[2].content, "done");
     }
 }

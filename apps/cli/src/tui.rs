@@ -14,7 +14,7 @@ use crate::{
     adapters::{DefaultAppPaths, JsonChatRepository, JsonConfigStore, KeyringSecretStore},
     ask_questions::AskQuestionsResult,
     chat_store,
-    chat_timeline::project_chat_messages_from_llm_history,
+    chat_timeline::project_live_chat_from_llm_history,
     host_runtime::{RuntimeEvent, ToolUiRequest, build_tool_result_block, format_tool_ui_message},
     locale, logging,
     mcp_types::{ManagedMcpServer, McpDiscoveredPrompt},
@@ -786,7 +786,9 @@ impl TuiShell {
     fn populate_ui_from_live_archive(&mut self) -> Result<()> {
         let live = self.runtime.fetch_live_chat_archive()?;
         self.reset_loaded_session_ui_state();
-        self.messages = project_chat_messages_from_llm_history(&live.llm_history);
+        let projection = project_live_chat_from_llm_history(&live.llm_history);
+        self.messages = projection.messages;
+        self.assistant_aux_by_message = projection.assistant_aux_by_message;
         Ok(())
     }
 
