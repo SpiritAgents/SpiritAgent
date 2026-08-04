@@ -89,6 +89,8 @@ pub(crate) enum WsReadEvent {
     Text(String),
     /// Binary frames carry no protocol meaning for us; payload is discarded.
     Binary,
+    /// Server ping — caller must answer on the shared write socket.
+    Ping(Vec<u8>),
     Closed,
 }
 
@@ -251,12 +253,10 @@ impl WsStream {
                     }
                 }
                 OPCODE_PING => {
-                    self.send_pong(&frame.payload)?;
+                    return Ok(WsReadEvent::Ping(frame.payload));
                 }
                 OPCODE_PONG => {}
                 OPCODE_CLOSE => {
-                    // Echo the close frame, then let the peer finish the handshake.
-                    let _ = self.send_close();
                     return Ok(WsReadEvent::Closed);
                 }
                 other => bail!("unsupported ws opcode {other}"),

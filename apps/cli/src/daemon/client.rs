@@ -32,6 +32,7 @@ impl DaemonClient {
         let writer = Arc::new(Mutex::new(stream));
 
         let (tx, rx) = mpsc::channel::<Result<Value>>();
+        let writer_for_reader = Arc::clone(&writer);
         thread::spawn(move || loop {
             match reader.read_event() {
                 Ok(WsReadEvent::Text(text)) => {
@@ -42,7 +43,21 @@ impl DaemonClient {
                     }
                 }
                 Ok(WsReadEvent::Binary) => {}
+                Ok(WsReadEvent::Ping(payload)) => {
+                    if writer_for_reader
+                        .lock()
+                        .ok()
+                        .and_then(|mut locked| locked.send_pong(&payload).ok())
+                        .is_none()
+                    {
+                        break;
+                    }
+                }
                 Ok(WsReadEvent::Closed) => {
+                    let _ = writer_for_reader
+                        .lock()
+                        .ok()
+                        .map(|mut locked| locked.send_close());
                     let _ = tx.send(Err(anyhow!("daemon closed the connection")));
                     break;
                 }
