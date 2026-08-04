@@ -164,6 +164,13 @@ export class WebSocketConnection extends EventEmitter {
     super();
     socket.on('data', (chunk: Buffer) => this.handleData(chunk));
     socket.on('error', (err: Error) => this.emit('error', err));
+    // Host SIGINT / process.exit often FIN without a WS close frame; the socket
+    // stays in CLOSE_WAIT until we destroy it so 'close' can propagate.
+    socket.on('end', () => {
+      if (!this.closed) {
+        socket.destroy();
+      }
+    });
     socket.on('close', () => {
       if (!this.closed) {
         this.closed = true;

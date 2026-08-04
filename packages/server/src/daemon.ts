@@ -136,6 +136,14 @@ import {
 /** After the last client disconnects, wait this long before exiting (multi-host handoff). */
 export const DEFAULT_IDLE_EXIT_GRACE_MS = 2_500;
 
+function safeStderrLog(message: string): void {
+  try {
+    console.error(message);
+  } catch {
+    // Parent host may die first and break the forwarded stderr pipe (EPIPE).
+  }
+}
+
 export interface DaemonOptions {
   /** Bind hostname; defaults to loopback. Pass 0.0.0.0 only for explicit remote access. */
   host?: string;
@@ -194,7 +202,7 @@ export async function startDaemon(options: DaemonOptions): Promise<RunningDaemon
   const requestedPort = options.port ?? 0;
   const dataDir = options.dataDir;
   const version = options.version;
-  const log = options.log ?? ((message: string) => console.error(message));
+  const log = options.log ?? safeStderrLog;
   const idleExitGraceMs = options.idleExitGraceMs === undefined
     ? DEFAULT_IDLE_EXIT_GRACE_MS
     : options.idleExitGraceMs;

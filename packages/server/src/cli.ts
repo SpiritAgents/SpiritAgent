@@ -56,6 +56,12 @@ function parseServeFlags(args: string[]): ServeFlags {
 }
 
 async function runServe(args: string[]): Promise<void> {
+  process.stderr.on('error', (err: NodeJS.ErrnoException) => {
+    if (err.code === 'EPIPE') {
+      return;
+    }
+    throw err;
+  });
   const flags = parseServeFlags(args);
   const dataDir = resolveSpiritDataDir();
   const version = resolveServerVersion();

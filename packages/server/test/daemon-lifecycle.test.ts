@@ -197,6 +197,39 @@ describe('daemon lifecycle (smoke #1)', () => {
     assert.match((await disconnected).message, /connection closed/iu);
   });
 
+  it('idle-exits after client process hard-exits (TCP half-close / CLOSE_WAIT)', async () => {
+    const idleExits: number[] = [];
+    const { daemon, dataDir } = await startTestDaemon({
+      idleExitGraceMs: 150,
+      onIdleExit: () => {
+        idleExits.push(Date.now());
+      },
+    });
+    const token = await readCurrentToken(dataDir);
+    assert.ok(token);
+
+    const { spawn } = await import('node:child_process');
+    const client = spawn(
+      process.execPath,
+      [
+        '--input-type=module',
+        '-e',
+        `
+const url = new URL('ws://127.0.0.1:${daemon.port}/');
+url.searchParams.set('token', ${JSON.stringify(token)});
+const ws = new WebSocket(url);
+ws.addEventListener('open', () => setTimeout(() => process.exit(0), 50));
+ws.addEventListener('error', () => process.exit(1));
+`,
+      ],
+      { stdio: 'ignore' },
+    );
+    assert.equal(await new Promise<number | null>((resolve) => client.on('exit', resolve)), 0);
+    await new Promise((resolve) => setTimeout(resolve, 500));
+    assert.equal(idleExits.length, 1, 'hard client exit must still trigger idle-exit');
+    assert.equal((await listInstances(dataDir)).length, 0);
+  });
+
   it('idle-exits after the last client disconnects (grace), cancelled by a new client', async () => {
     const idleExits: number[] = [];
     const { daemon, dataDir } = await startTestDaemon({
