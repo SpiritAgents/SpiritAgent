@@ -751,6 +751,10 @@ export class SessionManager {
   ): Promise<void> {
     const session = this.requireSession(sessionId);
     await session.runtimeResult.runtime.continuePendingApproval(decision);
+    // approval-resolved mid-broadcast often sees isBusy=false (pending cleared, tool not
+    // inFlight yet). Push again after continue so clients see the resumed busy edge —
+    // same pattern as replyPendingQuestions.
+    this.callbacks.broadcastSnapshot(sessionId, this.snapshotForSession(session));
   }
 
   async replyPendingQuestions(
