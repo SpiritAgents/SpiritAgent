@@ -23,26 +23,23 @@ Spirit Agent는 실제 프로젝트 루트를 컨텍스트로 동작하는 **도
 
 ```
 ┌───────────────────────────────────────────────────────┐
-│  Clients                                              │
-│  ┌──────────────┐ ┌──────────┐ ┌───────────────────┐  │
-│  │   Desktop    │ │   CLI    │ │  Web (planned)    │  │
-│  │  (Electron)  │ │  (Rust)  │ │                   │  │
-│  └──────┬───────┘ └─────┬────┘ └─────────┬─────────┘  │
-│         └───────────────┴── WebSocket ───┘            │
-│                         ▼                             │
-│                packages/server                        │
-│      daemon: sessions, streaming, approvals           │
-│                         │                             │
-│  ┌───────────────────┐  │                             │
-│  │    ACP Server     │  │                             │
-│  │  stdio / ndJSON   │──┤                             │
-│  └───────────────────┘  ▼                             │
-│               packages/host-internal                  │
-│            discovery, tools, workspace                │
-│                         │                             │
-│                         ▼                             │
-│                packages/agent-core                    │
-│          runtime, prompts, tool contracts             │
+│  Hosts                                                │
+│     ┌────────────────────────┐ ┌────────────────┐     │
+│     │   Desktop       CLI    │ │   ACP Server   │     │
+│     │  (Electron)    (Rust)  │ │ stdio / ndJSON │     │
+│     └──────┬────────────┬────┘ └────────┬───────┘     │
+│            └────────────┘               │             │
+│                  ▼                      │             │
+│           packages/server               │             │
+│    sessions, streaming, approvals       │             │
+│                  │                      │             │
+│                  ▼                      │             │
+│        packages/host-internal           │             │
+│     discovery, tools, workspace  ◀──────┘             │
+│                  │                                    │
+│                  ▼                                    │
+│         packages/agent-core                           │
+│   runtime, prompts, tool contracts                    │
 └───────────────────────────────────────────────────────┘
 ```
 

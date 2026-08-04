@@ -23,26 +23,23 @@ Spirit Agent es un **agente de codificación basado en herramientas** que se eje
 
 ```
 ┌───────────────────────────────────────────────────────┐
-│  Clients                                              │
-│  ┌──────────────┐ ┌──────────┐ ┌───────────────────┐  │
-│  │   Desktop    │ │   CLI    │ │  Web (planned)    │  │
-│  │  (Electron)  │ │  (Rust)  │ │                   │  │
-│  └──────┬───────┘ └─────┬────┘ └─────────┬─────────┘  │
-│         └───────────────┴── WebSocket ───┘            │
-│                         ▼                             │
-│                packages/server                        │
-│      daemon: sessions, streaming, approvals           │
-│                         │                             │
-│  ┌───────────────────┐  │                             │
-│  │    ACP Server     │  │                             │
-│  │  stdio / ndJSON   │──┤                             │
-│  └───────────────────┘  ▼                             │
-│               packages/host-internal                  │
-│            discovery, tools, workspace                │
-│                         │                             │
-│                         ▼                             │
-│                packages/agent-core                    │
-│          runtime, prompts, tool contracts             │
+│  Hosts                                                │
+│     ┌────────────────────────┐ ┌────────────────┐     │
+│     │   Desktop       CLI    │ │   ACP Server   │     │
+│     │  (Electron)    (Rust)  │ │ stdio / ndJSON │     │
+│     └──────┬────────────┬────┘ └────────┬───────┘     │
+│            └────────────┘               │             │
+│                  ▼                      │             │
+│           packages/server               │             │
+│    sessions, streaming, approvals       │             │
+│                  │                      │             │
+│                  ▼                      │             │
+│        packages/host-internal           │             │
+│     discovery, tools, workspace  ◀──────┘             │
+│                  │                                    │
+│                  ▼                                    │
+│         packages/agent-core                           │
+│   runtime, prompts, tool contracts                    │
 └───────────────────────────────────────────────────────┘
 ```
 
