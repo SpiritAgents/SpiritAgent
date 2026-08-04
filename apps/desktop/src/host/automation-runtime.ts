@@ -56,6 +56,31 @@ export function buildEmptyAutomationArchive(
   };
 }
 
+export function buildAutomationRemoteRuntimeCreateInput(
+  input: CreateAutomationRuntimeInput,
+): {
+  dataDir: string;
+  workspaceRoot: string;
+  modelRef: HostAutomationDefinition['modelRef'];
+  agentMode: 'agent';
+  archive: ChatArchive;
+  approvalLevel: ReturnType<typeof normalizeApprovalLevel>;
+  todoSessionKey: string;
+  conversationKey: string;
+} {
+  const conversationKey = path.resolve(input.sessionPath);
+  return {
+    dataDir: spiritAgentDataDir(),
+    workspaceRoot: input.definition.workspaceRoot,
+    modelRef: input.definition.modelRef,
+    agentMode: 'agent',
+    archive: buildEmptyAutomationArchive(input.definition.approvalLevel),
+    approvalLevel: normalizeApprovalLevel(input.definition.approvalLevel),
+    todoSessionKey: conversationKey,
+    conversationKey,
+  };
+}
+
 export async function createAutomationRuntime(
   input: CreateAutomationRuntimeInput,
 ): Promise<AutomationRuntimeHandle> {
@@ -72,20 +97,11 @@ export async function disposeAutomationRuntime(handle: AutomationRuntimeHandle):
 async function createDaemonAutomationRuntime(
   input: CreateAutomationRuntimeInput,
 ): Promise<AutomationRuntimeHandle> {
-  const conversationKey = path.resolve(input.sessionPath);
-  const approvalLevel = normalizeApprovalLevel(input.definition.approvalLevel);
   let trustBlocked = false;
   let runtime: DesktopRuntime | undefined;
 
   runtime = await createRemoteDesktopRuntime({
-    dataDir: spiritAgentDataDir(),
-    workspaceRoot: input.definition.workspaceRoot,
-    modelRef: input.definition.modelRef,
-    agentMode: 'agent',
-    archive: buildEmptyAutomationArchive(input.definition.approvalLevel),
-    approvalLevel,
-    todoSessionKey: conversationKey,
-    conversationKey,
+    ...buildAutomationRemoteRuntimeCreateInput(input),
     onWorkspaceCapabilityTrustRequested: (requestId, request) => {
       void handleAutomationWorkspaceCapabilityTrust(
         () => runtime,
