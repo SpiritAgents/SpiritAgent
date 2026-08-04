@@ -121,7 +121,8 @@ pub(crate) fn ensure_daemon(workspace_root: &Path) -> Result<(DaemonInstance, St
     {
         use std::os::windows::process::CommandExt;
         const CREATE_NEW_PROCESS_GROUP: u32 = 0x0000_0200;
-        command.creation_flags(CREATE_NEW_PROCESS_GROUP);
+        const DETACHED_PROCESS: u32 = 0x0000_0008;
+        command.creation_flags(CREATE_NEW_PROCESS_GROUP | DETACHED_PROCESS);
     }
     let child = command.spawn().context("spawn spirit-server daemon")?;
     let child_pid = child.id();
