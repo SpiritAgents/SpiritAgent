@@ -1,4 +1,5 @@
 mod client;
+pub(crate) mod entry;
 mod resolve;
 mod runtime;
 mod ws;

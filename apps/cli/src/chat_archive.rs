@@ -39,29 +39,31 @@ pub(crate) fn archived_llm_message_to_json(message: &ArchivedLlmMessage) -> Valu
     });
 
     if let Some(tool_call_id) = &message.tool_call_id
-        && let Some(object) = value.as_object_mut() {
-            object.insert(
-                "toolCallId".to_string(),
-                Value::String(tool_call_id.clone()),
-            );
-        }
+        && let Some(object) = value.as_object_mut()
+    {
+        object.insert(
+            "toolCallId".to_string(),
+            Value::String(tool_call_id.clone()),
+        );
+    }
 
     if let Some(tool_calls) = &message.tool_calls
-        && let Some(object) = value.as_object_mut() {
-            object.insert(
-                "toolCalls".to_string(),
-                serde_json::to_value(tool_calls).unwrap_or(Value::Null),
-            );
-        }
+        && let Some(object) = value.as_object_mut()
+    {
+        object.insert(
+            "toolCalls".to_string(),
+            serde_json::to_value(tool_calls).unwrap_or(Value::Null),
+        );
+    }
 
     if let Some(provider_state) = &message.provider_state
-        && let Some(object) = value.as_object_mut() {
-            object.insert("providerState".to_string(), provider_state.clone());
-        }
+        && let Some(object) = value.as_object_mut()
+    {
+        object.insert("providerState".to_string(), provider_state.clone());
+    }
 
     value
 }
-
 
 pub(crate) fn chat_archive_to_bridge_json(archive: &crate::ports::ChatArchive) -> Value {
     let mut value = json!({
@@ -102,9 +104,10 @@ pub(crate) fn chat_archive_to_bridge_json(archive: &crate::ports::ChatArchive) -
     });
 
     if let Some(rewind) = &archive.rewind
-        && let Some(object) = value.as_object_mut() {
-            object.insert("rewind".to_string(), rewind.clone());
-        }
+        && let Some(object) = value.as_object_mut()
+    {
+        object.insert("rewind".to_string(), rewind.clone());
+    }
 
     value
 }

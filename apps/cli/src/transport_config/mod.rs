@@ -1,5 +1,6 @@
 mod config;
-pub(crate) mod keys;
+pub(crate) mod constants;
+mod keys;
 mod provider;
 
 pub(crate) use config::{
@@ -15,14 +16,4 @@ pub(crate) struct TransportHost<'a> {
     pub workspace_root: &'a Path,
     pub secret_store: &'a dyn SecretStore,
     pub stored_config: &'a AppConfig,
-}
-
-impl<'a> TransportHost<'a> {
-    pub(crate) fn from_runtime(runtime: &'a super::TsBridgeRuntime) -> Self {
-        Self {
-            workspace_root: &runtime.workspace_root,
-            secret_store: runtime.secret_store.as_ref(),
-            stored_config: &runtime.config,
-        }
-    }
 }

@@ -41,7 +41,10 @@ pub mod shell;
 pub mod skills;
 #[cfg(test)]
 pub(crate) mod test_support;
-pub mod ts_bridge;
+pub mod chat_archive;
+pub mod host_protocol;
+pub mod tool_ui;
+pub mod transport_config;
 #[cfg(feature = "tui")]
 pub mod tui;
 #[cfg(feature = "tui")]

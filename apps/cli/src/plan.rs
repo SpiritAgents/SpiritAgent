@@ -24,6 +24,15 @@ fn default_agent_mode() -> String {
     "agent".to_string()
 }
 
+pub(crate) fn bootstrap_plan_metadata() -> PlanMetadata {
+    PlanMetadata {
+        path: PathBuf::new(),
+        exists: false,
+        agent_mode: "agent".to_string(),
+        plan_mode: false,
+    }
+}
+
 pub fn user_plans_dir() -> PathBuf {
     spirit_agent_data_dir().join(PLANS_DIR_NAME)
 }

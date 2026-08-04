@@ -11,7 +11,7 @@ use crate::{
         load_group_secret_access_key_from_keyring, normalize_reasoning_effort_value,
         normalize_reasoning_mode_value,
     },
-    ts_bridge::constants::{ENV_API_BASE, ENV_API_KEY},
+    transport_config::constants::{ENV_API_BASE, ENV_API_KEY},
 };
 
 use super::{

@@ -1,6 +1,5 @@
-//! Daemon-backed runtime for the CLI: same surface as `TsBridgeRuntime`,
-//! but the AgentRuntime lives in the shared Spirit Server daemon and events
-//! arrive as WebSocket push notifications (no stdio sidecar, no polling).
+//! Daemon-backed runtime for the CLI: TUI-facing runtime surface backed by the
+//! shared Spirit Server daemon. Events arrive as WebSocket push notifications.
 
 use anyhow::{Result, anyhow};
 use serde_json::{Value, json};
@@ -13,11 +12,20 @@ use std::{
 
 use crate::{
     adapters::KeyringSecretStore,
+    chat_archive::chat_archive_to_bridge_json,
     chat_store,
+    host_protocol::{
+        BridgeChatArchive, BridgeExportState, BridgeManualToolCommandStartResult,
+        BridgeRuntimeEvent, BridgeRuntimeSnapshot, BridgeSubagentSessionArchiveEntry,
+        BridgeWorkspaceFileReferenceSuggestions, CliExtensionEntry, CliHostMetadataSnapshot,
+        CliMarketplaceCatalogItem, CliMarketplaceDetail, CliMarketplacePreparedInstall,
+        WorkspaceCapabilityTrustDecision, WorkspaceCapabilityTrustPrompter,
+        WorkspaceCapabilityTrustRequest,
+    },
     host_runtime::RuntimeEvent,
     logging,
     model_registry::AppConfig,
-    plan::{self, PlanMetadata},
+    plan::{self, PlanMetadata, bootstrap_plan_metadata},
     ports::{
         AssistantAuxArchiveEntry, ChatArchive, McpStatusSnapshot, SecretStore,
         SubagentSessionArchiveEntry, SubagentSessionSummary, normalize_approval_level,
@@ -27,15 +35,8 @@ use crate::{
     runtime_sync::RuntimeSyncState,
     session::SessionModel,
     skills::ActiveSkillPayload,
-    ts_bridge::{
-        BridgeChatArchive, BridgeExportState, BridgeManualToolCommandStartResult,
-        BridgeRuntimeEvent, BridgeRuntimeSnapshot, BridgeSubagentSessionArchiveEntry,
-        BridgeWorkspaceFileReferenceSuggestions, CliExtensionEntry, CliHostMetadataSnapshot,
-        CliMarketplaceCatalogItem, CliMarketplaceDetail, CliMarketplacePreparedInstall,
-        WorkspaceCapabilityTrustDecision, WorkspaceCapabilityTrustPrompter,
-        WorkspaceCapabilityTrustRequest, bootstrap_plan_metadata, chat_archive_to_bridge_json,
-        transport::{TransportHost, transport_config_will_change},
-    },
+    tool_ui::approval_decision_from_input,
+    transport_config::{TransportHost, transport_config_will_change},
     view::{ChatMessage, PendingAssistantAux, PendingSubagentApprovalView},
 };
 
@@ -585,7 +586,7 @@ impl DaemonRuntime {
         if !transport_config_will_change(&self.config, config) {
             return Ok(());
         }
-        crate::ts_bridge::transport::resolve_transport_config_json_for(
+        crate::transport_config::resolve_transport_config_json_for(
             &self.transport_host(),
             config,
         )
@@ -1254,7 +1255,7 @@ impl DaemonRuntime {
         if self.daemon_failed {
             return;
         }
-        let decision = crate::ts_bridge::approval_decision_from_input(message);
+        let decision = approval_decision_from_input(message);
         let method = match self.sync.pending_approval_kind {
             Some(crate::runtime_sync::PendingApprovalKind::Manual) => {
                 "session.continuePendingManualToolApproval"

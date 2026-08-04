@@ -30,7 +30,7 @@ use crate::{
     model_registry::{ModelProvider, ModelTransportKind},
     rules::{RuleEntry, RuleScope},
     skills::{SkillEntry, SkillScope},
-    ts_bridge::CliExtensionEntry,
+    host_protocol::CliExtensionEntry,
     vertex_models_list::vertex_api_base_from_project_and_location,
     view::{
         BottomFormFieldEditorView, BottomFormFieldView, BottomFormKind, BottomFormView,
@@ -2663,7 +2663,7 @@ mod tests {
         mcp_types::{McpDiscoveredPrompt, McpDiscoveredPromptArgument},
         rules::{RuleEntry, RulePreview, RuleScope, RuleSource},
         skills::{SkillEntry, SkillPreview, SkillRootKind, SkillScope, SkillSource},
-        ts_bridge::CliExtensionEntry,
+        host_protocol::CliExtensionEntry,
         view::BottomFormFieldEditorView,
     };
 

@@ -1,8 +1,8 @@
 use anyhow::anyhow;
 use serde_json::{Value, json};
 
+use crate::host_protocol::bridge::LocalMcpToolRequest;
 use crate::host_runtime::ToolUiRequest;
-use crate::ts_bridge::types::bridge::LocalMcpToolRequest;
 
 pub(crate) fn approval_decision_from_input(message: &str) -> Value {
     let decision = message.trim().to_lowercase();
@@ -16,7 +16,6 @@ pub(crate) fn approval_decision_from_input(message: &str) -> Value {
         }),
     }
 }
-
 
 pub(crate) fn tool_request_from_local_mcp(request: &LocalMcpToolRequest) -> ToolUiRequest {
     ToolUiRequest::new(

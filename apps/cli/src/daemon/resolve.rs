@@ -14,7 +14,7 @@ use std::{
 };
 
 use crate::mcp::spirit_agent_data_dir;
-use crate::ts_bridge::{resolve_node_path, resolve_server_entry};
+use crate::daemon::entry::{resolve_node_path, resolve_server_entry};
 
 const SPAWN_TIMEOUT: Duration = Duration::from_secs(15);
 const SPAWN_POLL_INTERVAL: Duration = Duration::from_millis(100);

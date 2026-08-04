@@ -33,7 +33,7 @@ use crate::{
         workspace_trust as workspace_trust_form,
     },
     skills::{self, SkillEntry},
-    ts_bridge::{
+    host_protocol::{
         CliExtensionCliUiHookEntry, CliExtensionEntry, CliMarketplaceCatalogItem,
         CliMarketplaceDetail, CliMarketplaceDetailVersion, CliMarketplacePreparedInstall,
     },

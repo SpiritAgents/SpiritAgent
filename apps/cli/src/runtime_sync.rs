@@ -1,21 +1,21 @@
-//! Shared runtime-sync state for CLI runtime backends (legacy TS bridge
-//! sidecar and the Spirit Server daemon). Both backends feed the same
-//! `BridgeRuntimeEvent` / `BridgeRuntimeSnapshot` shapes; this module is the
-//! single place that projects them into TUI-facing state.
+//! Shared runtime-sync state for CLI daemon backend. Projects daemon
+//! `BridgeRuntimeEvent` / `BridgeRuntimeSnapshot` shapes into TUI-facing state.
 
 use serde_json::Value;
 use std::collections::{HashMap, VecDeque};
 
 use crate::{
+    host_protocol::{
+        BridgeManualToolCommandStartResult, BridgePendingApproval, BridgeRuntimeEvent,
+        BridgeRuntimeSnapshot, LocalMcpToolFailedEvent, LocalMcpToolResultEvent,
+    },
     host_runtime::{
         RuntimeEvent, ToolUiRequest, build_tool_result_block, format_tool_ui_message,
         tool_approval_block, tool_failed_block,
     },
     ports::SubagentSessionSummary,
     session::SessionModel,
-    ts_bridge::{
-        BridgeManualToolCommandStartResult, BridgePendingApproval, BridgeRuntimeEvent,
-        BridgeRuntimeSnapshot, LocalMcpToolFailedEvent, LocalMcpToolResultEvent,
+    tool_ui::{
         tool_request_from_host_value, tool_request_from_local_mcp,
         tool_request_from_streaming_preview,
     },

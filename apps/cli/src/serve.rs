@@ -1,7 +1,7 @@
 use anyhow::Result;
 use std::process::{Command, Stdio};
 
-use crate::ts_bridge::{resolve_node_path, resolve_server_entry};
+use crate::daemon::entry::{resolve_node_path, resolve_server_entry};
 
 /// `spirit serve` — foreground Spirit Server daemon. stdio is inherited so
 /// daemon logs (stderr) stream straight into the user's terminal; the

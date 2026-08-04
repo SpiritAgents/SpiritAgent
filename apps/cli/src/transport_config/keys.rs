@@ -2,7 +2,7 @@ use anyhow::{Result, anyhow};
 use std::env;
 
 use crate::model_registry::ModelProvider;
-use crate::ts_bridge::constants::ENV_API_KEY;
+use crate::transport_config::constants::ENV_API_KEY;
 
 use super::TransportHost;
 
