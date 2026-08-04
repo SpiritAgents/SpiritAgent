@@ -422,8 +422,16 @@ export class DesktopRuntimeEventOrchestrator {
         if (hasActiveSubagentToolInMessages(timelineMessages)) {
           continue;
         }
+        const timeline = this.options.messageTimeline?.();
+        if (
+          timeline &&
+          event.text.trim() &&
+          timeline.hasFinalizedAuxInActiveSegment('thinking', event.text)
+        ) {
+          continue;
+        }
         this.options.assistantMessages.updatePendingAssistantAux('thinking', event.text);
-        this.options.messageTimeline?.()?.updatePendingAssistantAux('thinking', event.text);
+        timeline?.updatePendingAssistantAux('thinking', event.text);
         continue;
       }
       if (event.kind === 'update-pending-assistant-compaction') {
@@ -481,6 +489,9 @@ export class DesktopRuntimeEventOrchestrator {
             this.options.assistantMessages.appendAssistantThinkingSegment(event.text);
           }
           if (deferAfterStream && timeline) {
+            if (timeline.hasFinalizedAuxInActiveSegment('thinking', event.text)) {
+              continue;
+            }
             // 无工具：暂不拆行。把思考挂在当前 assistant 行 aux 上，正文到来后在同一个
             // AnimatedCollapse 实例上由展开过渡到收起；本段 completed 再拆行。
             timeline.updatePendingAssistantAux('thinking', event.text);
