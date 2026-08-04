@@ -226,17 +226,32 @@ impl DaemonRuntime {
 
     fn apply_loaded_chat_metadata(&mut self, archive: &ChatArchive, conversation_key: &str) {
         self.rewind = rewind::normalize_desktop_rewind_metadata(archive.rewind.as_ref());
-        self.active_plan_path =
-            plan::extract_active_plan_path_from_archived_llm_history(&archive.llm_history);
-        self.plan_metadata = plan::plan_metadata_snapshot(
-            self.plan_metadata.spirit_agent_mode(),
-            self.active_plan_path.as_deref(),
-        );
+        self.apply_live_session_plan_metadata(&archive.llm_history);
         if let Err(err) = self.set_todo_session_key(conversation_key) {
             logging::log_event(&format!(
                 "[daemon-runtime] set_todo_session_key 失败: {err}"
             ));
         }
+    }
+
+    fn apply_live_session_plan_metadata(&mut self, llm_history: &[crate::ports::ArchivedLlmMessage]) {
+        self.active_plan_path =
+            plan::extract_active_plan_path_from_archived_llm_history(llm_history);
+        self.plan_metadata = plan::plan_metadata_snapshot(
+            self.plan_metadata.spirit_agent_mode(),
+            self.active_plan_path.as_deref(),
+        );
+    }
+
+    fn apply_attached_live_session_metadata(&mut self, conversation_key: &str) -> Result<()> {
+        if let Err(err) = self.set_todo_session_key(conversation_key) {
+            logging::log_event(&format!(
+                "[daemon-runtime] set_todo_session_key 失败: {err}"
+            ));
+        }
+        let live = self.export_chat_archive(&[], &[])?;
+        self.apply_live_session_plan_metadata(&live.llm_history);
+        Ok(())
     }
 
     /// Bind the active daemon session to a stable chat file path.
@@ -266,7 +281,7 @@ impl DaemonRuntime {
 
         match self.try_attach_session(&conversation_key) {
             Ok(()) => {
-                self.apply_loaded_chat_metadata(archive, &conversation_key);
+                self.apply_attached_live_session_metadata(&conversation_key)?;
                 Ok(AttachChatSessionOutcome::AttachedLive)
             }
             Err(err) if Self::is_attach_miss(&err) => {
