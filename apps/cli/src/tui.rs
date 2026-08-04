@@ -691,6 +691,15 @@ impl TuiShell {
         match self.export_chat_archive_for_message_count(self.messages.len()) {
             Ok(archive) => match self.chat_repository.save(path, &archive) {
                 Ok(saved_path) => {
+                    let conversation_key = std::fs::canonicalize(&saved_path)
+                        .unwrap_or(saved_path.clone())
+                        .to_string_lossy()
+                        .into_owned();
+                    if let Err(err) = self.runtime.migrate_conversation_key(&conversation_key) {
+                        logging::log_event(&format!(
+                            "[tui-session] migrateConversationKey 失败 path={conversation_key} err={err:#}"
+                        ));
+                    }
                     self.messages.push(ChatMessage {
                         role: MessageRole::Agent,
                         content: t!("tui.session.saved", path = saved_path.display()).into_owned(),

@@ -239,6 +239,18 @@ impl DaemonRuntime {
         }
     }
 
+    /// Bind the active daemon session to a stable chat file path.
+    pub fn migrate_conversation_key(&mut self, conversation_key: &str) -> Result<()> {
+        if self.daemon_failed {
+            return Err(anyhow!("daemon 连接已处于失败状态。"));
+        }
+        self.call_daemon(
+            "session.migrateConversationKey",
+            Some(json!({ "conversationKey": conversation_key })),
+        )?;
+        Ok(())
+    }
+
     /// Join a live daemon session by chat path, or create and hydrate when none exists.
     pub fn attach_or_open_chat_session(
         &mut self,

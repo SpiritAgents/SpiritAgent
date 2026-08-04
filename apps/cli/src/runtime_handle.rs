@@ -403,6 +403,10 @@ impl RuntimeHandle {
         self.backend.fetch_live_chat_archive()
     }
 
+    pub fn migrate_conversation_key(&mut self, conversation_key: &str) -> Result<()> {
+        self.backend.migrate_conversation_key(conversation_key)
+    }
+
     pub fn activate_forked_session(
         &mut self,
         archive: &crate::ports::ChatArchive,
