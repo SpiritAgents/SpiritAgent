@@ -1,17 +1,9 @@
-import {
-  buildDreamCollectorSystemMessage,
-  type LlmPlanMetadata,
-  type LlmTransportConfig,
-} from '@spiritagent/agent-core';
-
 import i18n from '../lib/i18n-host.js';
 import type {
   DesktopDreamCollectorSnapshot,
   DesktopGitSnapshot,
 } from '../types.js';
 import type { DesktopConfigFile, HostMetadataSummary } from './storage.js';
-import type { DesktopRuntime } from './runtime.js';
-import type { DesktopToolExecutor } from './tool-executor.js';
 import {
   buildDreamCollectorPlanMetadata,
   DREAM_COLLECTOR_BACKOFF_MS,
@@ -40,11 +32,6 @@ export interface DreamCollectorServiceContext {
   setLastTickUnixMs(value: number): void;
   status(): DesktopDreamCollectorSnapshot;
   setStatus(next: DesktopDreamCollectorSnapshot): void;
-  createRuntime(
-    transportConfig: LlmTransportConfig,
-    planMetadata: LlmPlanMetadata,
-    toolExecutor: DesktopToolExecutor,
-  ): DesktopRuntime;
   runSerialized<T>(work: () => Promise<T>, label?: string): Promise<T>;
   activeBundle(): { deferredRuntimeRefreshWhileBusy: boolean };
   refreshRuntime(): Promise<void>;
@@ -109,11 +96,6 @@ export function startDreamCollectorIfNeeded(ctx: DreamCollectorServiceContext): 
   };
 
   void runDesktopDreamCollectorOnce(collectorInput, {
-    createRuntime: (transportConfig, planMetadata, toolExecutor) => ctx.createRuntime(
-      transportConfig,
-      planMetadata,
-      toolExecutor,
-    ),
     getStatus: () => ctx.status(),
     setStatus: (next) => ctx.setStatus(next),
   })
@@ -162,19 +144,4 @@ export function startDreamCollectorMonitorIfNeeded(
   }, DREAM_COLLECTOR_MONITOR_INTERVAL_MS);
   timer.unref?.();
   setTimer(timer);
-}
-
-export function createDreamCollectorRuntime(
-  createRuntime: DreamCollectorServiceContext['createRuntime'],
-): DreamCollectorServiceContext['createRuntime'] {
-  return (transportConfig, planMetadata, toolExecutor) =>
-    createRuntime(transportConfig, planMetadata, toolExecutor);
-}
-
-export function dreamCollectorExtensionPrompt() {
-  return {
-    extensionId: 'dream-collector',
-    extensionName: i18n.t('error.dreamCollector'),
-    content: buildDreamCollectorSystemMessage(),
-  };
 }

@@ -342,7 +342,6 @@ import {
   runtimeActivationSignature,
 } from './runtime-lifecycle.js';
 import {
-  dreamCollectorExtensionPrompt,
   startDreamCollectorIfNeeded as startDreamCollectorIfNeededFromService,
   startDreamCollectorMonitorIfNeeded as startDreamCollectorMonitorIfNeededFromService,
   type DreamCollectorServiceContext,
@@ -1291,16 +1290,6 @@ class DesktopHostService {
       },
       status: () => this.dreamCollectorStatus,
       setStatus: (next) => this.setDreamCollectorStatus(next),
-      createRuntime: (transportConfig, planMetadata, toolExecutor) => this.createRuntime(
-        transportConfig,
-        [],
-        [],
-        [],
-        planMetadata,
-        [dreamCollectorExtensionPrompt()],
-        undefined,
-        toolExecutor,
-      ),
       runSerialized: <T>(work: () => Promise<T>, label?: string) => this.runSerialized(work, label),
       activeBundle: () => this.activeBundle(),
       refreshRuntime: () => this.refreshRuntime(),

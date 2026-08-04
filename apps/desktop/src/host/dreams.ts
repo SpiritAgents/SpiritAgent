@@ -4,10 +4,7 @@ import path from 'node:path';
 
 import i18n from '../lib/i18n-host.js';
 import type {
-  AgentRuntime,
   LlmPlanMetadata,
-  LlmToolAgentState,
-  LlmTransportConfig,
 } from '@spiritagent/agent-core';
 import {
   llmMessageTextContent,
@@ -27,27 +24,28 @@ import type {
   ModelRef,
   SessionListItem,
 } from '../types.js';
-import type { DesktopToolRequest, StoredDesktopSession } from './contracts.js';
-import { buildPrimaryTransportConfig, resolveDesktopTransportKind } from './model-config.js';
-import { resolveModelProfile, type ResolvedModelProfile } from './model-config-access.js';
-import { modelProviderKeyScope } from './provider-api-key.js';
+import type { StoredDesktopSession } from './contracts.js';
+import { resolveModelProfile } from './model-config-access.js';
 import {
   chatsDirPath,
   listStoredSessions,
   loadStoredSession,
-  readBedrockProviderCredentialsFromKeyring,
   resolveApiKeyForConfigModel,
   saveStoredSession,
   spiritAgentDataDir,
   type DesktopConfigFile,
 } from './storage.js';
-import { DesktopToolExecutor } from './tool-executor.js';
+import {
+  createDreamCollectorRuntime,
+  disposeDreamCollectorRuntime,
+  resumeDreamCollectorTurn,
+  submitDreamCollectorTurn,
+} from './dream-collector-runtime.js';
 import { DesktopMessageTimeline } from './message-timeline.js';
 import { createDesktopRewindMetadata } from './rewind.js';
 import { buildStoredDesktopSession } from './sessions.js';
 import { timelinePersistedSnapshotToMessages } from './chat-schema.js';
 import {
-  currentApiBase,
   sameWorkspaceRoot,
 } from './service-utils.js';
 
@@ -62,13 +60,6 @@ const DREAM_COLLECTOR_ANCHOR_CONTEXT_MAX_CHARS = 4_000;
 const DREAM_COLLECTOR_ANCHOR_MESSAGE_COUNT = 4;
 const DREAM_COLLECTOR_SESSION_COOLDOWN_MS = 2 * 60 * 1000;
 const DREAM_CONTEXT_MAX_CHARS = 6_000;
-
-type DesktopRuntime = AgentRuntime<
-  LlmTransportConfig,
-  LlmToolAgentState,
-  DesktopToolRequest,
-  string
->;
 
 async function listActiveDreams(input: {
   workspaceRoot: string;
@@ -152,11 +143,6 @@ export interface RunDesktopDreamCollectorOnceInput {
 }
 
 export interface RunDesktopDreamCollectorOnceDeps {
-  createRuntime(
-    transportConfig: LlmTransportConfig,
-    planMetadata: LlmPlanMetadata,
-    toolExecutor: DesktopToolExecutor,
-  ): DesktopRuntime;
   getStatus(): DesktopDreamCollectorSnapshot;
   setStatus(next: DesktopDreamCollectorSnapshot): void;
 }
@@ -241,107 +227,105 @@ export async function runDesktopDreamCollectorOnce(
       }));
       return;
     }
-    // Collector 目前仍复用完整的 DesktopToolExecutor；这里只额外挂载 dream scope，
-    // 不会把可见工具面裁成 dream-only。要真正收紧到特许可用工具，需要连同扩展/MCP
-    // 的暴露策略一起设计清楚，避免现在先做一层局部限制后再打破宿主边界。
-    const toolExecutor = new DesktopToolExecutor(input.workspaceRoot, {
-      dreamScope: scope,
-      dreamToolMode: 'collector',
+    const collectorHandle = await createDreamCollectorRuntime({
+      workspaceRoot: input.workspaceRoot,
+      gitBranch: input.gitBranch,
+      modelRef: input.collectorModel,
       dreamSourceSession: {
         path: sourceSession.path,
         displayName: sourceSession.displayName,
         savedAtUnixMs: sourceSession.modifiedAtUnixMs,
       },
+      approvalLevel: 'auto-approval',
     });
-    const runtime = deps.createRuntime(
-      buildDreamCollectorTransportConfig({
-        apiKey,
-        model: activeProfile.name,
-        baseUrl: activeProfile?.apiBase ?? currentApiBase(input.config),
-        workspaceRoot: input.workspaceRoot,
-        profile: activeProfile,
-      }),
-      input.planMetadata,
-      toolExecutor,
-    );
-    promptForDebug = buildDreamCollectorPrompt({
-      sourceSession,
-      scope,
-      sourceContext,
-    });
-    let result = await runtime.submitUserTurn(promptForDebug);
-    for (let guard = 0; guard < 4; guard += 1) {
+    const runtime = collectorHandle.runtime;
+    try {
+      promptForDebug = buildDreamCollectorPrompt({
+        sourceSession,
+        scope,
+        sourceContext,
+      });
+      let result = await submitDreamCollectorTurn(runtime, promptForDebug);
+      for (let guard = 0; guard < 4; guard += 1) {
+        toolCalls = result.toolExecutions.map((execution) => ({
+          toolName: execution.toolName,
+          failed: execution.failed,
+        }));
+        if (result.kind === 'requires-approval') {
+          blockedToolName = result.approval.toolName;
+          const deniedToolName = result.approval.toolName;
+          result = await resumeDreamCollectorTurn(runtime, () =>
+            runtime.continuePendingApproval({
+              kind: 'deny',
+              resultText: `[dream collector policy] denied non-dream tool: ${deniedToolName}`,
+            }),
+          );
+          continue;
+        }
+        if (result.kind === 'requires-questions') {
+          blockedToolName = result.questions.toolName;
+          result = await resumeDreamCollectorTurn(runtime, () =>
+            runtime.continuePendingQuestions({ status: 'skipped' }),
+          );
+          continue;
+        }
+        break;
+      }
       toolCalls = result.toolExecutions.map((execution) => ({
         toolName: execution.toolName,
         failed: execution.failed,
       }));
-      if (result.kind === 'requires-approval') {
-        blockedToolName = result.approval.toolName;
-        result = await runtime.resumePendingApproval({
-          kind: 'deny',
-          resultText: `[dream collector policy] denied non-dream tool: ${result.approval.toolName}`,
+      if (result.kind !== 'completed') {
+        throw new Error(result.kind === 'failed' ? result.error : i18n.t('error.dreamCollectorIncomplete', { kind: result.kind }));
+      }
+      if (input.config.dreams.debugMode) {
+        await persistDreamCollectorDebugSession({
+          runId,
+          workspaceRoot: input.workspaceRoot,
+          gitBranch: input.gitBranch,
+          collectorModel: input.collectorModel.name,
+          sourceSession,
+          prompt: promptForDebug,
+          assistantText: result.assistantText,
+          failed: false,
         });
-        continue;
+        debugSessionPersisted = true;
       }
-      if (result.kind === 'requires-questions') {
-        blockedToolName = result.questions.toolName;
-        result = await runtime.resumePendingQuestions({ status: 'skipped' });
-        continue;
-      }
-      break;
-    }
-    toolCalls = result.toolExecutions.map((execution) => ({
-      toolName: execution.toolName,
-      failed: execution.failed,
-    }));
-    if (result.kind !== 'completed') {
-      throw new Error(result.kind === 'failed' ? result.error : i18n.t('error.dreamCollectorIncomplete', { kind: result.kind }));
-    }
-    if (input.config.dreams.debugMode) {
-      await persistDreamCollectorDebugSession({
+
+      await dreamStore.upsertSessionProgress({
+        path: sourceSession.path,
+        ...(sourceSession.displayName ? { displayName: sourceSession.displayName } : {}),
+        lastProcessedSavedAtUnixMs: sourceSession.modifiedAtUnixMs,
+        lastProcessedMessageCount: sourceContext.processedMessageCount,
+        lastProcessedPrefixHash: sourceContext.prefixHash,
+        lastRunAtUnixMs: Date.now(),
+        cooldownUntilUnixMs: Date.now() + DREAM_COLLECTOR_SESSION_COOLDOWN_MS,
+      });
+      deps.setStatus(clearDreamCollectorIssue({
+        ...deps.getStatus(),
+        state: 'idle',
+        lastSuccessAtUnixMs: Date.now(),
+        pendingCount: Math.max(0, pendingSessions.length - 1),
+        processedCount: deps.getStatus().processedCount + 1,
+      }));
+      await writeDreamCollectorRunLog({
         runId,
+        startedAtUnixMs,
+        finishedAtUnixMs: Date.now(),
         workspaceRoot: input.workspaceRoot,
         gitBranch: input.gitBranch,
         collectorModel: input.collectorModel.name,
-        sourceSession,
-        prompt: promptForDebug,
-        assistantText: result.assistantText,
-        failed: false,
+        sourceSessionPath: sourceSession.path,
+        decision: 'processed',
+        ...(sourceContextMode ? { sourceContextMode } : {}),
+        pendingCount,
+        resultSummary: truncateText(result.assistantText, 1_000),
+        toolCalls,
+        ...(blockedToolName ? { blockedToolName } : {}),
       });
-      debugSessionPersisted = true;
+    } finally {
+      await disposeDreamCollectorRuntime(collectorHandle);
     }
-
-    await dreamStore.upsertSessionProgress({
-      path: sourceSession.path,
-      ...(sourceSession.displayName ? { displayName: sourceSession.displayName } : {}),
-      lastProcessedSavedAtUnixMs: sourceSession.modifiedAtUnixMs,
-      lastProcessedMessageCount: sourceContext.processedMessageCount,
-      lastProcessedPrefixHash: sourceContext.prefixHash,
-      lastRunAtUnixMs: Date.now(),
-      cooldownUntilUnixMs: Date.now() + DREAM_COLLECTOR_SESSION_COOLDOWN_MS,
-    });
-    deps.setStatus(clearDreamCollectorIssue({
-      ...deps.getStatus(),
-      state: 'idle',
-      lastSuccessAtUnixMs: Date.now(),
-      pendingCount: Math.max(0, pendingSessions.length - 1),
-      processedCount: deps.getStatus().processedCount + 1,
-    }));
-    await writeDreamCollectorRunLog({
-      runId,
-      startedAtUnixMs,
-      finishedAtUnixMs: Date.now(),
-      workspaceRoot: input.workspaceRoot,
-      gitBranch: input.gitBranch,
-      collectorModel: input.collectorModel.name,
-      sourceSessionPath: sourceSession.path,
-      decision: 'processed',
-      ...(sourceContextMode ? { sourceContextMode } : {}),
-      pendingCount,
-      resultSummary: truncateText(result.assistantText, 1_000),
-      toolCalls,
-      ...(blockedToolName ? { blockedToolName } : {}),
-    });
   } catch (error) {
     if (input.config.dreams.debugMode && sourceSession && promptForDebug && !debugSessionPersisted) {
       await persistDreamCollectorDebugSession({
@@ -654,28 +638,6 @@ export function clearDreamCollectorIssue(
 ): DesktopDreamCollectorSnapshot {
   const { lastError: _lastError, backoffUntilUnixMs: _backoffUntilUnixMs, ...clean } = snapshot;
   return clean;
-}
-
-function buildDreamCollectorTransportConfig(input: {
-  apiKey: string;
-  model: string;
-  baseUrl: string;
-  workspaceRoot: string;
-  profile?: ResolvedModelProfile;
-}): LlmTransportConfig {
-  const transportKind = resolveDesktopTransportKind(input.profile);
-  const bedrockCredentials = transportKind === 'bedrock' && input.profile?.provider
-    ? readBedrockProviderCredentialsFromKeyring(modelProviderKeyScope(input.profile.provider))
-    : undefined;
-
-  return buildPrimaryTransportConfig({
-    apiKey: input.apiKey,
-    model: input.model,
-    baseUrl: input.baseUrl,
-    workspaceRoot: input.workspaceRoot,
-    profile: input.profile,
-    bedrockCredentials,
-  });
 }
 
 function truncateText(value: string, maxChars: number): string {

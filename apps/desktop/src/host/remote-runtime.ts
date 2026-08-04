@@ -21,7 +21,7 @@ import type {
   WorkspaceCapabilityTrustDecision,
   WorkspaceCapabilityTrustRequest,
 } from '@spiritagent/host-internal';
-import type { ModelRef } from '@spiritagent/host-internal';
+import type { ModelRef, HostDreamScope, HostDreamSourceSessionRef } from '@spiritagent/host-internal';
 import {
   connectOrSpawnServer,
   type ServerNotificationListener,
@@ -38,9 +38,12 @@ interface RemoteDesktopRuntimeInput {
   agentMode: 'agent' | 'plan' | 'ask' | 'debug';
   archive: ChatArchive;
   approvalLevel: 'default' | 'auto-approval' | 'full-approval';
-  todoSessionKey: string;
+  todoSessionKey?: string;
   /** Resolved chat file path for multi-host session identity. */
   conversationKey?: string;
+  sessionKind?: 'default' | 'dream-collector';
+  dreamScope?: HostDreamScope;
+  dreamSourceSession?: HostDreamSourceSessionRef;
   onActivity?: () => void;
   onWorkspaceCapabilityTrustRequested?: (
     requestId: string,
@@ -169,7 +172,9 @@ async function applyRemoteSessionPreferences(
   >,
 ): Promise<void> {
   await runtime.clientCall('session.setApprovalLevel', { approvalLevel: input.approvalLevel });
-  await runtime.clientCall('session.setTodoSessionKey', { sessionKey: input.todoSessionKey });
+  if (input.todoSessionKey?.trim()) {
+    await runtime.clientCall('session.setTodoSessionKey', { sessionKey: input.todoSessionKey.trim() });
+  }
   if (typeof input.archive.loopEnabled === 'boolean') {
     runtime.setLoopEnabled(input.archive.loopEnabled);
   }
@@ -202,8 +207,11 @@ export async function createRemoteDesktopRuntime(
     modelRef: input.modelRef,
     agentMode: input.agentMode,
     approvalLevel: input.approvalLevel,
-    todoSessionKey: input.todoSessionKey,
+    ...(input.todoSessionKey ? { todoSessionKey: input.todoSessionKey } : {}),
     ...(input.conversationKey ? { conversationKey: input.conversationKey } : {}),
+    ...(input.sessionKind === 'dream-collector' ? { sessionKind: 'dream-collector' } : {}),
+    ...(input.dreamScope ? { dreamScope: input.dreamScope } : {}),
+    ...(input.dreamSourceSession ? { dreamSourceSession: input.dreamSourceSession } : {}),
   });
   if (input.conversationKey) {
     await client.call('session.attach', { conversationKey: input.conversationKey });
