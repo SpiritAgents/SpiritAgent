@@ -301,6 +301,37 @@ impl DaemonRuntime {
         self.export_chat_archive(&[], &[])
     }
 
+    pub fn desktop_timeline_resync_pending(&self) -> bool {
+        self.sync.desktop_timeline_resync_pending
+    }
+
+    pub fn clear_desktop_timeline_resync_pending(&mut self) {
+        self.sync.desktop_timeline_resync_pending = false;
+    }
+
+    /// Pull the daemon-stored desktop timeline and hydrate it like a disk load.
+    pub fn fetch_live_desktop_timeline(
+        &mut self,
+    ) -> Result<Option<Vec<crate::rewind::ConversationMessageSnapshot>>> {
+        let value = self.call_daemon("session.getDesktopTimeline", None)?;
+        if value.is_null() {
+            return Ok(None);
+        }
+        let result: crate::host_protocol::BridgeDesktopTimelineResult =
+            serde_json::from_value(value)?;
+        let snapshots =
+            crate::chat_timeline::hydrate_desktop_messages_from_timeline(&result.timeline);
+        if snapshots.is_empty() {
+            return Ok(None);
+        }
+        logging::log_event(&format!(
+            "[daemon-runtime] fetched live desktop timeline revision={} messages={}",
+            result.revision,
+            snapshots.len()
+        ));
+        Ok(Some(snapshots))
+    }
+
     // ------------------------------------------------------------ transport
 
     pub(crate) fn call_daemon(&mut self, method: &str, params: Option<Value>) -> Result<Value> {
@@ -415,6 +446,10 @@ impl DaemonRuntime {
                 if let Err(err) = self.sync_snapshot_remote() {
                     self.handle_daemon_error(err);
                 }
+            }
+            "session.desktopTimelineUpdated" if for_this_session => {
+                // The TUI applies the resync once idle (full snapshot pull).
+                self.sync.desktop_timeline_resync_pending = true;
             }
             "session.fileChanged" if for_this_session => {
                 let change = params.get("change").cloned().unwrap_or(Value::Null);

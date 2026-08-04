@@ -129,6 +129,9 @@ pub struct TuiShell {
     /// Mirrors Desktop `workspaceBinding`; CLI defaults to project.
     workspace_binding: String,
     file_reference_index_loading: bool,
+    /// Session lifecycle notices (save/load/fork confirmations); re-appended
+    /// after a live desktop timeline resync rebuilds the conversation.
+    session_notices: Vec<ChatMessage>,
 }
 
 pub(crate) struct ApplyModelAddParams<'a> {
@@ -242,6 +245,7 @@ impl TuiShell {
             ui_runtime_state: UiRuntimeState::from_terminal_query(),
             workspace_binding: "project".to_string(),
             file_reference_index_loading: false,
+            session_notices: Vec::new(),
         };
 
         if let Err(err) = shell.runtime.prime_workspace_file_reference_index() {
@@ -428,6 +432,7 @@ impl TuiShell {
         self.messages.clear();
         self.assistant_aux_by_message.clear();
         self.clear_input_history();
+        self.session_notices.clear();
         self.persisted_standalone_pending_aux = None;
         self.persisted_standalone_pending_aux_anchor = None;
         self.subagent.picker_active = false;
@@ -700,26 +705,16 @@ impl TuiShell {
                             "[tui-session] migrateConversationKey 失败 path={conversation_key} err={err:#}"
                         ));
                     }
-                    self.messages.push(ChatMessage {
-                        role: MessageRole::Agent,
-                        content: t!("tui.session.saved", path = saved_path.display()).into_owned(),
-                        tool_block: None,
-                    });
+                    self.push_session_notice(
+                        t!("tui.session.saved", path = saved_path.display()).into_owned(),
+                    );
                 }
                 Err(err) => {
-                    self.messages.push(ChatMessage {
-                        role: MessageRole::Agent,
-                        content: t!("tui.session.save_failed", err = err).into_owned(),
-                        tool_block: None,
-                    });
+                    self.push_session_notice(t!("tui.session.save_failed", err = err).into_owned());
                 }
             },
             Err(err) => {
-                self.messages.push(ChatMessage {
-                    role: MessageRole::Agent,
-                    content: t!("tui.session.save_failed", err = err).into_owned(),
-                    tool_block: None,
-                });
+                self.push_session_notice(t!("tui.session.save_failed", err = err).into_owned());
             }
         }
     }
@@ -734,10 +729,12 @@ impl TuiShell {
         self.pending_assistant_msg_index = None;
         self.last_completed_assistant_msg_index = None;
         self.last_turn_can_continue = false;
+        self.session_notices.clear();
         self.clear_input_history();
     }
 
     fn populate_ui_from_disk_archive(&mut self, archive: &ChatArchive) {
+        self.session_notices.clear();
         if let Some(snapshots) = archive.desktop_messages.as_deref() {
             self.restore_conversation_from_snapshots(snapshots);
             return;
@@ -809,11 +806,7 @@ impl TuiShell {
         let resolved_path = match chat_store::resolve_chat_file_path(path) {
             Ok(resolved) => resolved,
             Err(err) => {
-                self.messages.push(ChatMessage {
-                    role: MessageRole::Agent,
-                    content: t!("tui.session.load_failed", err = err).into_owned(),
-                    tool_block: None,
-                });
+                self.push_session_notice(t!("tui.session.load_failed", err = err).into_owned());
                 return;
             }
         };
@@ -825,11 +818,9 @@ impl TuiShell {
                 {
                     Ok(outcome) => outcome,
                     Err(err) => {
-                        self.messages.push(ChatMessage {
-                            role: MessageRole::Agent,
-                            content: t!("tui.session.load_failed", err = err).into_owned(),
-                            tool_block: None,
-                        });
+                        self.push_session_notice(
+                            t!("tui.session.load_failed", err = err).into_owned(),
+                        );
                         return;
                     }
                 };
@@ -840,22 +831,16 @@ impl TuiShell {
                     }
                     AttachChatSessionOutcome::AttachedLive => {
                         if let Err(err) = self.populate_ui_from_live_archive() {
-                            self.messages.push(ChatMessage {
-                                role: MessageRole::Agent,
-                                content: t!("tui.session.load_failed", err = err).into_owned(),
-                                tool_block: None,
-                            });
+                            self.push_session_notice(
+                                t!("tui.session.load_failed", err = err).into_owned(),
+                            );
                             return;
                         }
                     }
                 }
 
                 if self.messages.is_empty() {
-                    self.messages.push(ChatMessage {
-                        role: MessageRole::Agent,
-                        content: t!("tui.session.loaded_empty").into_owned(),
-                        tool_block: None,
-                    });
+                    self.push_session_notice(t!("tui.session.loaded_empty").into_owned());
                 }
                 self.apply_runtime_events();
                 self.session_display_name = archive.session_display_name.clone();
@@ -868,18 +853,10 @@ impl TuiShell {
                         t!("tui.session.loaded", path = path).into_owned()
                     }
                 };
-                self.messages.push(ChatMessage {
-                    role: MessageRole::Agent,
-                    content: loaded_message,
-                    tool_block: None,
-                });
+                self.push_session_notice(loaded_message);
             }
             Err(err) => {
-                self.messages.push(ChatMessage {
-                    role: MessageRole::Agent,
-                    content: t!("tui.session.load_failed", err = err).into_owned(),
-                    tool_block: None,
-                });
+                self.push_session_notice(t!("tui.session.load_failed", err = err).into_owned());
             }
         }
     }
@@ -887,6 +864,56 @@ impl TuiShell {
     fn apply_runtime_events(&mut self) {
         runtime_events::apply_runtime_events(self);
         self.refresh_todo_items();
+        self.maybe_resync_live_desktop_timeline();
+    }
+
+    fn push_session_notice(&mut self, content: String) {
+        const SESSION_NOTICES_CAP: usize = 50;
+        let notice = ChatMessage {
+            role: MessageRole::Agent,
+            content,
+            tool_block: None,
+        };
+        self.messages.push(notice.clone());
+        self.session_notices.push(notice);
+        if self.session_notices.len() > SESSION_NOTICES_CAP {
+            let excess = self.session_notices.len() - SESSION_NOTICES_CAP;
+            self.session_notices.drain(..excess);
+        }
+    }
+
+    /// Apply a pending desktop timeline update pushed by the authoritative
+    /// desktop host. Full-snapshot resync, applied only while idle so in-flight
+    /// streaming state (pending message indices, approval cards) is never
+    /// clobbered mid-turn; the flag persists until it can be applied.
+    fn maybe_resync_live_desktop_timeline(&mut self) {
+        if !self.runtime.desktop_timeline_resync_pending() {
+            return;
+        }
+        if self.runtime.is_busy() {
+            return;
+        }
+        match self.runtime.fetch_live_desktop_timeline() {
+            Ok(Some(snapshots)) => {
+                self.runtime.clear_desktop_timeline_resync_pending();
+                // Continue-after-abort is a daemon-side history operation; the
+                // timeline rebuild must not clear the affordance.
+                let can_continue = self.last_turn_can_continue;
+                self.restore_conversation_from_snapshots(&snapshots);
+                self.last_turn_can_continue = can_continue;
+                self.scroll_history_to_bottom();
+                logging::log_event("[tui-timeline] applied live desktop timeline resync");
+            }
+            Ok(None) => {
+                self.runtime.clear_desktop_timeline_resync_pending();
+            }
+            Err(err) => {
+                self.runtime.clear_desktop_timeline_resync_pending();
+                logging::log_event(&format!(
+                    "[tui-timeline] live timeline resync failed: {err:#}"
+                ));
+            }
+        }
     }
 
     fn submit_runtime_user_turn(
@@ -1001,6 +1028,10 @@ impl TuiShell {
     fn restore_conversation_from_snapshots(&mut self, snapshots: &[ConversationMessageSnapshot]) {
         let (messages, assistant_aux_by_message) = rewind::restore_conversation(snapshots);
         self.messages = messages;
+        // Session notices (save/load/fork confirmations) survive rebuilds so a
+        // live timeline resync does not silently erase them.
+        let notices = self.session_notices.clone();
+        self.messages.extend(notices);
         self.assistant_aux_by_message = assistant_aux_by_message;
         self.persisted_standalone_pending_aux = None;
         self.persisted_standalone_pending_aux_anchor = None;
@@ -1079,13 +1110,12 @@ impl TuiShell {
         let saved_path = self.chat_repository.save(None, &fork_archive)?;
         self.runtime.activate_forked_session(&fork_archive, todos)?;
         self.session_display_name = Some(fork_display_name);
+        self.session_notices.clear();
         self.restore_conversation_from_snapshots(&truncated);
         self.scroll_history_to_bottom();
-        self.messages.push(ChatMessage {
-            role: MessageRole::Agent,
-            content: t!("tui.session.fork.created", path = saved_path.display()).into_owned(),
-            tool_block: None,
-        });
+        self.push_session_notice(
+            t!("tui.session.fork.created", path = saved_path.display()).into_owned(),
+        );
         Ok(())
     }
 

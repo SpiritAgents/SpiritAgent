@@ -38,6 +38,8 @@ pub(crate) struct RuntimeSyncState {
     pub(crate) is_busy_cache: bool,
     pub(crate) child_sessions_cache: Vec<SubagentSessionSummary>,
     pub(crate) subagent_message_cache: HashMap<String, Vec<ChatMessage>>,
+    /// A `session.desktopTimelineUpdated` arrived; the TUI applies it once idle.
+    pub(crate) desktop_timeline_resync_pending: bool,
     pub(crate) events: VecDeque<RuntimeEvent>,
 }
 
@@ -53,6 +55,7 @@ impl RuntimeSyncState {
             is_busy_cache: false,
             child_sessions_cache: Vec::new(),
             subagent_message_cache: HashMap::new(),
+            desktop_timeline_resync_pending: false,
             events: VecDeque::new(),
         }
     }

@@ -133,6 +133,14 @@ pub(crate) struct BridgeChatArchive {
     pub(crate) desktop_message_timeline: Option<Vec<crate::chat_timeline::PersistedTimelineTurn>>,
 }
 
+/// `session.getDesktopTimeline` result (null when the session has none).
+#[derive(Clone, Debug, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub(crate) struct BridgeDesktopTimelineResult {
+    pub(crate) revision: u64,
+    pub(crate) timeline: Vec<crate::chat_timeline::PersistedTimelineTurn>,
+}
+
 #[derive(Clone, Debug, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub(crate) struct BridgeSubagentSessionSummary {

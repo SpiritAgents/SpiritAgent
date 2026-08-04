@@ -403,6 +403,20 @@ impl RuntimeHandle {
         self.backend.fetch_live_chat_archive()
     }
 
+    pub fn desktop_timeline_resync_pending(&self) -> bool {
+        self.backend.desktop_timeline_resync_pending()
+    }
+
+    pub fn clear_desktop_timeline_resync_pending(&mut self) {
+        self.backend.clear_desktop_timeline_resync_pending()
+    }
+
+    pub fn fetch_live_desktop_timeline(
+        &mut self,
+    ) -> Result<Option<Vec<crate::rewind::ConversationMessageSnapshot>>> {
+        self.backend.fetch_live_desktop_timeline()
+    }
+
     pub fn migrate_conversation_key(&mut self, conversation_key: &str) -> Result<()> {
         self.backend.migrate_conversation_key(conversation_key)
     }
