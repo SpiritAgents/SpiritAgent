@@ -39,12 +39,15 @@ import {
   SESSION_CONTINUE_MANUAL_APPROVAL,
   SESSION_CREATE,
   SESSION_DETACH,
+  SESSION_DESKTOP_TIMELINE_UPDATED,
   SESSION_EXPORT_ARCHIVE,
   SESSION_EXPORT_STATE,
+  SESSION_GET_DESKTOP_TIMELINE,
   SESSION_LIST,
   SESSION_MIGRATE_CONVERSATION_KEY,
   SESSION_MCP,
   SESSION_POLL,
+  SESSION_PUSH_DESKTOP_TIMELINE,
   SESSION_RENAME,
   SESSION_REPLY_PENDING_APPROVAL,
   SESSION_REPLY_PENDING_QUESTIONS,
@@ -108,6 +111,8 @@ const SESSION_METHODS = new Set([
   SESSION_REPLACE_FROM_ARCHIVE,
   SESSION_EXPORT_ARCHIVE,
   SESSION_EXPORT_STATE,
+  SESSION_PUSH_DESKTOP_TIMELINE,
+  SESSION_GET_DESKTOP_TIMELINE,
   SESSION_ACTIVATE_SKILL,
   SESSION_ADD_PENDING_IMAGE,
   SESSION_CLEAR_PENDING_IMAGES,
@@ -341,6 +346,9 @@ export async function startDaemon(options: DaemonOptions): Promise<RunningDaemon
     broadcastFileChange: (sessionId, change) => {
       broadcast(SESSION_FILE_CHANGED, { sessionId, change });
     },
+    broadcastDesktopTimelineUpdated: (sessionId, revision) => {
+      broadcast(SESSION_DESKTOP_TIMELINE_UPDATED, { sessionId, revision });
+    },
     log,
   });
 
@@ -558,6 +566,10 @@ export async function startDaemon(options: DaemonOptions): Promise<RunningDaemon
         return { ok: true };
       case SESSION_EXPORT_ARCHIVE:
         return sessionManager.exportArchive(readSessionId(params), params['messages'], params['assistantAux']);
+      case SESSION_PUSH_DESKTOP_TIMELINE:
+        return sessionManager.pushDesktopTimeline(readSessionId(params), params['timeline']);
+      case SESSION_GET_DESKTOP_TIMELINE:
+        return sessionManager.getDesktopTimeline(readSessionId(params));
       case SESSION_EXPORT_STATE:
         return sessionManager.exportState(readSessionId(params));
       case SESSION_ACTIVATE_SKILL:

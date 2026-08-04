@@ -290,4 +290,72 @@ describe('SessionManager', () => {
       await manager.shutdown();
     });
   });
+
+  it('stores pushed desktop timelines, merges them into exportArchive, and clears on reset', async () => {
+    await withMockKeyring(async () => {
+      const dataDir = freshDataDir();
+      const broadcasts: Array<{ sessionId: string; revision: number }> = [];
+      const manager = new SessionManager(dataDir, {
+        broadcastRuntimeEvent: () => {},
+        broadcastTurnFinished: () => {},
+        broadcastSnapshot: () => {},
+        broadcastTrustRequest: () => {},
+        broadcastFileChange: () => {},
+        broadcastDesktopTimelineUpdated: (sessionId, revision) => {
+          broadcasts.push({ sessionId, revision });
+        },
+      });
+      const created = await manager.createSession({
+        workspaceRoot: tmpdir(),
+        hostKind: 'desktop',
+      });
+
+      // No timeline yet: get returns null and exportArchive stays untouched.
+      assert.equal(manager.getDesktopTimeline(created.sessionId), null);
+      const plainArchive = manager.exportArchive(created.sessionId, [], []) as Record<string, unknown>;
+      assert.equal('desktopMessageTimeline' in plainArchive, false);
+
+      // Non-array payloads are rejected at the boundary.
+      assert.throws(
+        () => manager.pushDesktopTimeline(created.sessionId, { not: 'an-array' }),
+        /desktop timeline must be an array/,
+      );
+
+      const timelineV1 = [{ turnId: 1, createdOrder: 0, segments: [] }];
+      const first = manager.pushDesktopTimeline(created.sessionId, timelineV1);
+      assert.deepEqual(first, { ok: true, revision: 1 });
+      assert.deepEqual(manager.getDesktopTimeline(created.sessionId), {
+        revision: 1,
+        timeline: timelineV1,
+      });
+
+      const timelineV2 = [{ turnId: 1, createdOrder: 0, segments: [] }, { turnId: 2, createdOrder: 1, segments: [] }];
+      const second = manager.pushDesktopTimeline(created.sessionId, timelineV2);
+      assert.deepEqual(second, { ok: true, revision: 2 });
+      assert.deepEqual(broadcasts, [
+        { sessionId: created.sessionId, revision: 1 },
+        { sessionId: created.sessionId, revision: 2 },
+      ]);
+
+      const mergedArchive = manager.exportArchive(created.sessionId, [], []) as Record<string, unknown>;
+      assert.deepEqual(mergedArchive['desktopMessageTimeline'], timelineV2);
+      assert.equal(mergedArchive['desktopMessageTimelineRevision'], 2);
+
+      // History replacement invalidates the stored timeline.
+      manager.replaceFromArchive(created.sessionId, {
+        messages: [],
+        assistantAux: [],
+        llmHistory: [],
+        subagentSessions: [],
+        loopEnabled: false,
+      });
+      assert.equal(manager.getDesktopTimeline(created.sessionId), null);
+
+      manager.pushDesktopTimeline(created.sessionId, timelineV1);
+      manager.reset(created.sessionId);
+      assert.equal(manager.getDesktopTimeline(created.sessionId), null);
+
+      await manager.shutdown();
+    });
+  });
 });

@@ -87,6 +87,16 @@ interface ServerSession {
   createParams: CreateSessionParams;
   /** Current todo store scope key. */
   todoSessionKey: string;
+  /**
+   * Latest desktop timeline snapshot pushed by a host client (opaque payload;
+   * the daemon never derives it from llm_history). Revision is assigned here
+   * and increments per accepted push.
+   */
+  desktopTimeline?: {
+    revision: number;
+    timeline: unknown[];
+    updatedAtUnixMs: number;
+  } | undefined;
 }
 
 export interface SessionManagerCallbacks {
@@ -119,6 +129,8 @@ export interface SessionManagerCallbacks {
   ) => void;
   /** Tool-written file change (clients keep rewind bookkeeping). */
   broadcastFileChange: (sessionId: string, change: unknown) => void;
+  /** A host client pushed a new desktop timeline snapshot. */
+  broadcastDesktopTimelineUpdated?: (sessionId: string, revision: number) => void;
   log?: (message: string) => void;
 }
 
@@ -638,6 +650,7 @@ export class SessionManager {
     session.turnActive = false;
     session.runtimeResult.runtime.replaceHistory([]);
     session.info.isBusy = false;
+    session.desktopTimeline = undefined;
     // Match the legacy bridge's fresh-session semantics: todos reset with it.
     void createHostTodoStore({
       spiritDataDir: this.spiritDataDir,
@@ -663,11 +676,52 @@ export class SessionManager {
   replaceFromArchive(sessionId: string, archive: unknown): void {
     const session = this.requireSession(sessionId);
     session.runtimeResult.runtime.replaceFromArchive(archive as never);
+    // History was replaced wholesale; the previous timeline is stale until
+    // the owning host pushes a fresh snapshot.
+    session.desktopTimeline = undefined;
   }
 
   exportArchive(sessionId: string, messages: unknown, assistantAux: unknown): unknown {
     const session = this.requireSession(sessionId);
-    return session.runtimeResult.runtime.toArchive(messages as never, assistantAux as never);
+    const archive = session.runtimeResult.runtime.toArchive(messages as never, assistantAux as never);
+    const stored = session.desktopTimeline;
+    if (!stored) {
+      return archive;
+    }
+    return {
+      ...archive,
+      desktopMessageTimeline: stored.timeline,
+      desktopMessageTimelineRevision: stored.revision,
+    };
+  }
+
+  /**
+   * Store the authoritative desktop timeline pushed by a host client and
+   * notify every attached client. Payload stays opaque; only the array shape
+   * is enforced at this boundary.
+   */
+  pushDesktopTimeline(sessionId: string, timeline: unknown): { ok: true; revision: number } {
+    const session = this.requireSession(sessionId);
+    if (!Array.isArray(timeline)) {
+      throw new Error('desktop timeline must be an array');
+    }
+    const revision = (session.desktopTimeline?.revision ?? 0) + 1;
+    session.desktopTimeline = {
+      revision,
+      timeline,
+      updatedAtUnixMs: Date.now(),
+    };
+    this.callbacks.broadcastDesktopTimelineUpdated?.(sessionId, revision);
+    return { ok: true, revision };
+  }
+
+  getDesktopTimeline(sessionId: string): { revision: number; timeline: unknown[] } | null {
+    const session = this.requireSession(sessionId);
+    const stored = session.desktopTimeline;
+    if (!stored) {
+      return null;
+    }
+    return { revision: stored.revision, timeline: stored.timeline };
   }
 
   async exportState(sessionId: string): Promise<unknown> {

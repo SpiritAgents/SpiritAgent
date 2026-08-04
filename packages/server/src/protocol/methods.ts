@@ -58,6 +58,10 @@ export const SESSION_REPLY_TRUST = 'session.replyWorkspaceCapabilityTrust';
 export const SESSION_REPLACE_FROM_ARCHIVE = 'session.replaceFromArchive';
 /** RPC: export the session as a chat archive. */
 export const SESSION_EXPORT_ARCHIVE = 'session.exportArchive';
+/** RPC: push the authoritative desktop timeline snapshot for a session. */
+export const SESSION_PUSH_DESKTOP_TIMELINE = 'session.pushDesktopTimeline';
+/** RPC: pull the current desktop timeline snapshot for a session. */
+export const SESSION_GET_DESKTOP_TIMELINE = 'session.getDesktopTimeline';
 /** RPC: export api messages + request trace + system prompts. */
 export const SESSION_EXPORT_STATE = 'session.exportState';
 /** RPC: activate a skill for the next turn (slash). */
@@ -106,6 +110,8 @@ export const SESSION_USER_TURN_SUBMITTED = 'session.userTurnSubmitted';
 export const SESSION_SUBAGENT_EVENTS = 'session.subagentEvents';
 /** Notification: throttled session projection at interaction boundaries. */
 export const SESSION_SNAPSHOT = 'session.snapshot';
+/** Notification: a client pushed a new desktop timeline snapshot for the session. */
+export const SESSION_DESKTOP_TIMELINE_UPDATED = 'session.desktopTimelineUpdated';
 /** Notification: hooks ask for workspace capability trust. */
 export const WORKSPACE_TRUST_REQUESTED = 'workspace.trustRequested';
 /** Notification: a tool wrote/changed a file (rewind bookkeeping). */
@@ -223,4 +229,25 @@ export interface SessionUserTurnSubmittedParams {
   text: string;
   clientTurnId?: string;
   explicitWorkspaceFiles?: unknown[];
+}
+
+export interface SessionPushDesktopTimelineParams {
+  sessionId: string;
+  /** Persisted desktop timeline turns (opaque to the daemon). */
+  timeline: unknown[];
+}
+
+export interface SessionPushDesktopTimelineResult {
+  ok: true;
+  revision: number;
+}
+
+export interface SessionGetDesktopTimelineResult {
+  revision: number;
+  timeline: unknown[];
+}
+
+export interface SessionDesktopTimelineUpdatedParams {
+  sessionId: string;
+  revision: number;
 }
