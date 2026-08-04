@@ -474,6 +474,7 @@ import {
   createRemoteDesktopRuntime,
   desktopUsesDaemonRuntime,
   exportRemoteDesktopState,
+  openRemoteDesktopRuntime,
   replyRemoteWorkspaceCapabilityTrust,
   remoteDesktopRuntimeNeedsProjection,
   runRemoteDesktopSessionEnd,
@@ -2868,33 +2869,45 @@ class DesktopHostService {
       } satisfies ChatArchive;
       const previousRuntime = bundle.runtime;
       bundle.runtimeTransport = createLlmTransport();
+      const conversationKey = bundle.activeSession?.filePath
+        ? path.resolve(bundle.activeSession.filePath)
+        : undefined;
+      const remoteRuntimeInput = {
+        dataDir: spiritAgentDataDir(),
+        workspaceRoot: bundle.workspaceRoot || state.workspaceRoot,
+        modelRef: effectiveActiveModel,
+        agentMode: resolveDesktopAgentMode(state.config),
+        archive,
+        approvalLevel: normalizeApprovalLevel(bundle.approvalLevel),
+        todoSessionKey: this.resolveTodoSessionKeyForBundle(bundle),
+        onActivity: () => {
+          this.sessionPump.ensureRunning();
+          this.requestThrottledLiveSnapshotEmit();
+        },
+        onWorkspaceCapabilityTrustRequested: (
+          requestId: string,
+          request: WorkspaceCapabilityTrustRequest,
+        ) => {
+          this.enqueueRemoteWorkspaceCapabilityTrust(
+            requestId,
+            request,
+            bundle.runtime,
+          );
+        },
+        onRemoteUserTurnSubmitted: (input: {
+          text: string;
+          explicitWorkspaceFiles: PendingWorkspaceFile[];
+        }) => {
+          this.projectRemoteUserTurn(bundle, input);
+        },
+        onFileChange: (change: unknown) => {
+          void this.recordHostFileChange(bundle, change as HostRecordedFileChange);
+        },
+      };
       try {
-        const runtime = await createRemoteDesktopRuntime({
-          dataDir: spiritAgentDataDir(),
-          workspaceRoot: bundle.workspaceRoot || state.workspaceRoot,
-          modelRef: effectiveActiveModel,
-          agentMode: resolveDesktopAgentMode(state.config),
-          archive,
-          approvalLevel: normalizeApprovalLevel(bundle.approvalLevel),
-          todoSessionKey: this.resolveTodoSessionKeyForBundle(bundle),
-          onActivity: () => {
-            this.sessionPump.ensureRunning();
-            this.requestThrottledLiveSnapshotEmit();
-          },
-          onWorkspaceCapabilityTrustRequested: (requestId, request) => {
-            this.enqueueRemoteWorkspaceCapabilityTrust(
-              requestId,
-              request,
-              bundle.runtime,
-            );
-          },
-          onRemoteUserTurnSubmitted: (input) => {
-            this.projectRemoteUserTurn(bundle, input);
-          },
-          onFileChange: (change) => {
-            void this.recordHostFileChange(bundle, change as HostRecordedFileChange);
-          },
-        });
+        const runtime = conversationKey
+          ? await openRemoteDesktopRuntime({ ...remoteRuntimeInput, conversationKey })
+          : await createRemoteDesktopRuntime(remoteRuntimeInput);
         runtime.setLoopEnabled(bundle.loopEnabled);
         bundle.runtime = runtime;
         await closeRemoteDesktopRuntime(previousRuntime);

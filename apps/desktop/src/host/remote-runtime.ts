@@ -39,6 +39,8 @@ interface RemoteDesktopRuntimeInput {
   archive: ChatArchive;
   approvalLevel: 'default' | 'auto-approval' | 'full-approval';
   todoSessionKey: string;
+  /** Resolved chat file path for multi-host session identity. */
+  conversationKey?: string;
   onActivity?: () => void;
   onWorkspaceCapabilityTrustRequested?: (
     requestId: string,
@@ -53,6 +55,11 @@ interface RemoteDesktopRuntimeInput {
 
 interface SessionCreateResult {
   sessionId: string;
+}
+
+interface SessionAttachResult {
+  session: { sessionId: string };
+  snapshot: BridgeRuntimeSnapshot;
 }
 
 interface SessionPollResult {
@@ -127,6 +134,65 @@ export async function closeSharedDesktopServerClient(): Promise<void> {
   }
 }
 
+function isConversationKeyAttachMiss(error: unknown): boolean {
+  return error instanceof Error && error.message.includes('no live session for conversationKey');
+}
+
+function buildRemoteDesktopRuntime(
+  client: ServerRpcClient,
+  sessionId: string,
+  input: Pick<
+    RemoteDesktopRuntimeInput,
+    | 'archive'
+    | 'onActivity'
+    | 'onWorkspaceCapabilityTrustRequested'
+    | 'onRemoteUserTurnSubmitted'
+    | 'onFileChange'
+  >,
+): RemoteDesktopRuntime {
+  return new RemoteDesktopRuntime(
+    client,
+    sessionId,
+    input.archive,
+    input.onActivity,
+    input.onWorkspaceCapabilityTrustRequested,
+    input.onRemoteUserTurnSubmitted,
+    input.onFileChange,
+  );
+}
+
+async function applyRemoteSessionPreferences(
+  runtime: RemoteDesktopRuntime,
+  input: Pick<
+    RemoteDesktopRuntimeInput,
+    'approvalLevel' | 'todoSessionKey' | 'archive'
+  >,
+): Promise<void> {
+  await runtime.clientCall('session.setApprovalLevel', { approvalLevel: input.approvalLevel });
+  await runtime.clientCall('session.setTodoSessionKey', { sessionKey: input.todoSessionKey });
+  if (typeof input.archive.loopEnabled === 'boolean') {
+    runtime.setLoopEnabled(input.archive.loopEnabled);
+  }
+}
+
+export async function attachRemoteDesktopRuntime(
+  input: RemoteDesktopRuntimeInput & { conversationKey: string },
+): Promise<DesktopRuntime> {
+  const client = await sharedDesktopServerClient(input.dataDir);
+  const attached = await client.call<SessionAttachResult>('session.attach', {
+    conversationKey: input.conversationKey,
+  });
+  const runtime = buildRemoteDesktopRuntime(client, attached.session.sessionId, input);
+  try {
+    await runtime.initializeFromSnapshot(attached.snapshot);
+    await applyRemoteSessionPreferences(runtime, input);
+    return runtime as unknown as DesktopRuntime;
+  } catch (error) {
+    await runtime.close().catch(() => undefined);
+    throw error;
+  }
+}
+
 export async function createRemoteDesktopRuntime(
   input: RemoteDesktopRuntimeInput,
 ): Promise<DesktopRuntime> {
@@ -137,16 +203,12 @@ export async function createRemoteDesktopRuntime(
     agentMode: input.agentMode,
     approvalLevel: input.approvalLevel,
     todoSessionKey: input.todoSessionKey,
+    ...(input.conversationKey ? { conversationKey: input.conversationKey } : {}),
   });
-  const runtime = new RemoteDesktopRuntime(
-    client,
-    created.sessionId,
-    input.archive,
-    input.onActivity,
-    input.onWorkspaceCapabilityTrustRequested,
-    input.onRemoteUserTurnSubmitted,
-    input.onFileChange,
-  );
+  if (input.conversationKey) {
+    await client.call('session.attach', { conversationKey: input.conversationKey });
+  }
+  const runtime = buildRemoteDesktopRuntime(client, created.sessionId, input);
   try {
     await runtime.initialize();
     return runtime as unknown as DesktopRuntime;
@@ -154,6 +216,20 @@ export async function createRemoteDesktopRuntime(
     await runtime.close().catch(() => undefined);
     throw error;
   }
+}
+
+/** Attach an existing live session, or create and hydrate when none is registered. */
+export async function openRemoteDesktopRuntime(
+  input: RemoteDesktopRuntimeInput & { conversationKey: string },
+): Promise<DesktopRuntime> {
+  try {
+    return await attachRemoteDesktopRuntime(input);
+  } catch (error) {
+    if (!isConversationKeyAttachMiss(error)) {
+      throw error;
+    }
+  }
+  return createRemoteDesktopRuntime(input);
 }
 
 export class RemoteDesktopRuntime {
@@ -217,14 +293,18 @@ export class RemoteDesktopRuntime {
     const result = await this.client.call<SessionPollResult>('session.poll', {
       sessionId: this.sessionId,
     });
-    this.snapshot = result.snapshot;
+    await this.initializeFromSnapshot(result.snapshot);
+  }
+
+  async initializeFromSnapshot(snapshot: BridgeRuntimeSnapshot): Promise<void> {
+    this.snapshot = snapshot;
     await this.refreshArchive();
   }
 
   async close(): Promise<void> {
     await this.awaitMutations();
     this.unsubscribe();
-    await this.client.call('session.close', { sessionId: this.sessionId });
+    await this.client.call('session.detach', { sessionId: this.sessionId });
   }
 
   async clientCall(method: string, params: Record<string, unknown>): Promise<unknown> {
