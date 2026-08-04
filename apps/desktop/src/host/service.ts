@@ -462,7 +462,7 @@ import {
 import { DesktopToolExecutor } from './tool-executor.js';
 import {
   buildDesktopRuntimeBasicInfo,
-  type DesktopRuntime,
+  type DesktopHostRuntime,
 } from './runtime.js';
 import {
   abortRemoteDesktopShell,
@@ -632,7 +632,7 @@ class DesktopHostService {
     void closeRemoteDesktopRuntime(bundle.runtime);
   });
   /** Active bundle runtime mirror for legacy call sites; use `bundle.runtime` in session ticks. */
-  private runtime: DesktopRuntime | undefined;
+  private runtime: DesktopHostRuntime | undefined;
   private toolExecutor: DesktopToolExecutor | undefined;
   private initialized = false;
   private lastRuntimeError = '';
@@ -4384,7 +4384,7 @@ class DesktopHostService {
   private async persistSessionBundle(
     bundle: SessionBundle,
     options: {
-      fromRuntime?: DesktopRuntime;
+      fromRuntime?: DesktopHostRuntime;
       bumpListSortAt?: boolean;
     } = {},
   ): Promise<void> {
@@ -4417,7 +4417,7 @@ class DesktopHostService {
     return this.state;
   }
 
-  private requireRuntime(): DesktopRuntime {
+  private requireRuntime(): DesktopHostRuntime {
     const runtime = this.activeBundle().runtime ?? this.runtime;
     if (!runtime) {
       throw new Error(this.lastRuntimeError || i18n.t('error.runtimeNotReady'));

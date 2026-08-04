@@ -8,7 +8,7 @@ import {
   type HostAutomationDefinition,
 } from '@spiritagent/host-internal';
 
-import type { DesktopRuntime } from './runtime.js';
+import type { DesktopHostRuntime } from './runtime.js';
 import {
   closeRemoteDesktopRuntime,
   createRemoteDesktopRuntime,
@@ -26,7 +26,7 @@ export interface CreateAutomationRuntimeInput {
 }
 
 export interface AutomationRuntimeHandle {
-  runtime: DesktopRuntime;
+  runtime: DesktopHostRuntime;
   dispose: () => Promise<void>;
   consumeTrustBlocked: () => boolean;
 }
@@ -73,7 +73,7 @@ export async function createAutomationRuntime(
   input: CreateAutomationRuntimeInput,
 ): Promise<AutomationRuntimeHandle> {
   let trustBlocked = false;
-  let runtime: DesktopRuntime | undefined;
+  let runtime: DesktopHostRuntime | undefined;
 
   runtime = await createRemoteDesktopRuntime({
     ...buildAutomationRemoteRuntimeCreateInput(input),
@@ -109,7 +109,7 @@ export async function disposeAutomationRuntime(handle: AutomationRuntimeHandle):
 }
 
 async function handleAutomationWorkspaceCapabilityTrust(
-  runtimeRef: () => DesktopRuntime | undefined,
+  runtimeRef: () => DesktopHostRuntime | undefined,
   requestId: string,
   approvalLevel: HostAutomationDefinition['approvalLevel'],
   markBlocked: () => void,

@@ -14,7 +14,7 @@ import type {
   DesktopGitSnapshot,
   DesktopSnapshot,
 } from '../types.js';
-import type { DesktopRuntime } from './runtime.js';
+import type { DesktopHostRuntime } from './runtime.js';
 import type { SessionBundle } from './session-bundle.js';
 import type { SessionRegistry } from './session-registry.js';
 import { loadStoredSession, isProvisionalSessionPath, isSideChatProvisionalSessionPath, isSplitProvisionalSessionPath, parseSideChatPaneIdFromSessionPath, parseSplitPaneIdFromSessionPath, type DesktopConfigFile, type DesktopWorkspaceBinding } from './storage.js';
@@ -50,11 +50,11 @@ export interface SessionActivationContext {
   requireState(): ActivationState;
   isInitialized(): boolean;
   currentWorkspaceRoot(): string | undefined;
-  currentRuntime(): DesktopRuntime | undefined;
+  currentRuntime(): DesktopHostRuntime | undefined;
   sessionRegistry(): SessionRegistry;
   persistSessionBundle(
     bundle: SessionBundle,
-    options: { fromRuntime?: DesktopRuntime; bumpListSortAt?: boolean },
+    options: { fromRuntime?: DesktopHostRuntime; bumpListSortAt?: boolean },
   ): Promise<void>;
   finalizeTodoScopeForNewActiveBundle(bundle: SessionBundle, workspaceRoot: string): Promise<void>;
   resetStreamingPlacementState(full: boolean, bundle: SessionBundle): void;

@@ -45,7 +45,7 @@ import type {
   ToolBlockSnapshot,
 } from '../types.js';
 import type { DesktopToolRequest } from './contracts.js';
-import type { DesktopRuntime } from './runtime.js';
+import type { DesktopHostRuntime } from './runtime.js';
 import type { DesktopAssistantMessageStateMachine } from './assistant-message-state.js';
 import type { DesktopConversationSnapshotView } from './conversation-snapshot.js';
 import type {
@@ -78,7 +78,7 @@ import {
 } from './message-ordering.js';
 
 export interface DesktopRuntimeEventOrchestratorOptions {
-  runtime: () => DesktopRuntime | undefined;
+  runtime: () => DesktopHostRuntime | undefined;
   messages: () => ConversationMessageSnapshot[];
   allocateMessageId: () => number;
   assistantMessages: DesktopAssistantMessageStateMachine;

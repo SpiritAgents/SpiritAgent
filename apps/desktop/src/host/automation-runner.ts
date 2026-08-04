@@ -31,7 +31,7 @@ import {
   spiritAgentDataDir,
   type DesktopConfigFile,
 } from './storage.js';
-import type { DesktopRuntime } from './runtime.js';
+import type { DesktopHostRuntime } from './runtime.js';
 
 export const AUTOMATION_SESSION_FILE_PREFIX = 'chat-automation-';
 export const AUTOMATION_RUN_MAX_GUARD_ROUNDS = 200;
@@ -282,7 +282,7 @@ async function persistAutomationSession(
   sessionPath: string;
   definition: HostAutomationDefinition;
   runId: string;
-  runtime: DesktopRuntime;
+  runtime: DesktopHostRuntime;
   projection: AutomationConversationProjection;
   workspaceRoot: string;
   gitBranch?: string;

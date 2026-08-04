@@ -1,22 +1,13 @@
 import {
-  AgentRuntime,
   type LlmActiveSkill,
   type LlmToolAgentBasicInfo,
-  type LlmToolAgentState,
-  type LlmTransportConfig,
 } from '@spiritagent/agent-core';
 import { resolveTranscriptSessionDir } from '@spiritagent/host-internal';
 
-import type { DesktopToolRequest } from './contracts.js';
 import { spiritAgentDataDir } from './storage.js';
 import type { DesktopToolExecutor } from './tool-executor.js';
 
-export type DesktopRuntime = AgentRuntime<
-  LlmTransportConfig,
-  LlmToolAgentState,
-  DesktopToolRequest,
-  string
->;
+export type { RemoteDesktopRuntime as DesktopHostRuntime } from './remote-runtime.js';
 
 export function buildDesktopRuntimeBasicInfo(
   workspaceRoot: string,

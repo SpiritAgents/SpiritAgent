@@ -11,14 +11,14 @@ import {
   serializeSubagentTimelinesFromMessages,
 } from './sessions.js';
 import type { SessionBundle } from './session-bundle.js';
-import type { DesktopRuntime } from './runtime.js';
+import type { DesktopHostRuntime } from './runtime.js';
 import { saveStoredSession } from './storage.js';
 
 export interface PersistDesktopSessionBundleInput {
   bundle: SessionBundle;
   workspaceRoot: string;
   gitBranch?: string;
-  fromRuntime?: DesktopRuntime;
+  fromRuntime?: DesktopHostRuntime;
   bumpListSortAt?: boolean;
 }
 

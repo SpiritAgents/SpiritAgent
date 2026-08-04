@@ -3,7 +3,7 @@ import path from 'node:path';
 import i18n from '../lib/i18n-host.js';
 import type { ForkSessionRequest } from '../types.js';
 import type { DesktopSnapshot } from '../types.js';
-import type { DesktopRuntime } from './runtime.js';
+import type { DesktopHostRuntime } from './runtime.js';
 import type { SessionBundle } from './session-bundle.js';
 import type { SessionActivationContext } from './session-activation.js';
 import { finishSessionActivationCommand } from './session-activation.js';
@@ -25,7 +25,7 @@ import {
 import { cloneArchiveHistory, cloneArchiveSubagentSessions } from './service-utils.js';
 
 export interface ForkSessionHostContext extends SessionActivationContext {
-  requireRuntime(): DesktopRuntime;
+  requireRuntime(): DesktopHostRuntime;
   isConversationBusy(): boolean;
   isActiveSessionReadOnly(): boolean;
   notifySessionListUpdated?(): void;

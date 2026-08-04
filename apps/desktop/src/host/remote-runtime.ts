@@ -4,6 +4,7 @@ import type {
   ChatArchive,
   JsonValue,
   LlmActiveSkill,
+  LlmMessage,
   PendingAssistantAux,
   PendingMcpResource,
   PendingWorkspaceFile,
@@ -29,7 +30,6 @@ import {
 } from '@spiritagent/server/client';
 
 import type { DesktopToolRequest } from './contracts.js';
-import type { DesktopRuntime } from './runtime.js';
 
 interface RemoteDesktopRuntimeInput {
   dataDir: string;
@@ -178,7 +178,7 @@ async function applyRemoteSessionPreferences(
 
 export async function attachRemoteDesktopRuntime(
   input: RemoteDesktopRuntimeInput & { conversationKey: string },
-): Promise<DesktopRuntime> {
+): Promise<RemoteDesktopRuntime> {
   const client = await sharedDesktopServerClient(input.dataDir);
   const attached = await client.call<SessionAttachResult>('session.attach', {
     conversationKey: input.conversationKey,
@@ -187,7 +187,7 @@ export async function attachRemoteDesktopRuntime(
   try {
     await runtime.initializeFromSnapshot(attached.snapshot);
     await applyRemoteSessionPreferences(runtime, input);
-    return runtime as unknown as DesktopRuntime;
+    return runtime;
   } catch (error) {
     await runtime.close().catch(() => undefined);
     throw error;
@@ -196,7 +196,7 @@ export async function attachRemoteDesktopRuntime(
 
 export async function createRemoteDesktopRuntime(
   input: RemoteDesktopRuntimeInput,
-): Promise<DesktopRuntime> {
+): Promise<RemoteDesktopRuntime> {
   const client = await sharedDesktopServerClient(input.dataDir);
   const created = await client.call<SessionCreateResult>('session.create', {
     workspaceRoot: input.workspaceRoot,
@@ -215,7 +215,7 @@ export async function createRemoteDesktopRuntime(
   const runtime = buildRemoteDesktopRuntime(client, created.sessionId, input);
   try {
     await runtime.initialize();
-    return runtime as unknown as DesktopRuntime;
+    return runtime;
   } catch (error) {
     await runtime.close().catch(() => undefined);
     throw error;
@@ -225,7 +225,7 @@ export async function createRemoteDesktopRuntime(
 /** Attach an existing live session, or create and hydrate when none is registered. */
 export async function openRemoteDesktopRuntime(
   input: RemoteDesktopRuntimeInput & { conversationKey: string },
-): Promise<DesktopRuntime> {
+): Promise<RemoteDesktopRuntime> {
   try {
     return await attachRemoteDesktopRuntime(input);
   } catch (error) {
@@ -416,8 +416,8 @@ export class RemoteDesktopRuntime {
     };
   }
 
-  history(): readonly ChatArchive['llmHistory'][number][] {
-    return this.archive.llmHistory;
+  history(): readonly LlmMessage[] {
+    return this.archive.llmHistory as readonly LlmMessage[];
   }
 
   requestTrace(): readonly JsonValue[] {

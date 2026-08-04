@@ -6,7 +6,7 @@ import { setImmediate as waitForImmediate } from 'node:timers/promises';
 import type { HostDreamSourceSessionRef, ModelRef } from '@spiritagent/host-internal';
 
 import type { DesktopToolRequest } from './contracts.js';
-import type { DesktopRuntime } from './runtime.js';
+import type { DesktopHostRuntime } from './runtime.js';
 import {
   closeRemoteDesktopRuntime,
   createRemoteDesktopRuntime,
@@ -24,7 +24,7 @@ export interface CreateDreamCollectorRuntimeInput {
 }
 
 export interface DreamCollectorRuntimeHandle {
-  runtime: DesktopRuntime;
+  runtime: DesktopHostRuntime;
   dispose: () => Promise<void>;
 }
 
@@ -60,7 +60,7 @@ export function buildDreamCollectorRemoteCreateInput(
 export async function createDreamCollectorRuntime(
   input: CreateDreamCollectorRuntimeInput,
 ): Promise<DreamCollectorRuntimeHandle> {
-  let runtime: DesktopRuntime | undefined;
+  let runtime: DesktopHostRuntime | undefined;
   runtime = await createRemoteDesktopRuntime({
     ...buildDreamCollectorRemoteCreateInput(input),
     onWorkspaceCapabilityTrustRequested: (requestId) => {
@@ -83,7 +83,7 @@ export async function disposeDreamCollectorRuntime(
 }
 
 export async function submitDreamCollectorTurn(
-  runtime: DesktopRuntime,
+  runtime: DesktopHostRuntime,
   text: string,
 ): Promise<RuntimeTurnResult<unknown, DesktopToolRequest, string>> {
   await runtime.startUserTurnStreaming(text);
@@ -91,7 +91,7 @@ export async function submitDreamCollectorTurn(
 }
 
 export async function resumeDreamCollectorTurn(
-  runtime: DesktopRuntime,
+  runtime: DesktopHostRuntime,
   resume: () => Promise<void>,
 ): Promise<RuntimeTurnResult<unknown, DesktopToolRequest, string>> {
   await resume();
@@ -99,7 +99,7 @@ export async function resumeDreamCollectorTurn(
 }
 
 async function waitForDreamCollectorTurnResult(
-  runtime: DesktopRuntime,
+  runtime: DesktopHostRuntime,
 ): Promise<RuntimeTurnResult<unknown, DesktopToolRequest, string>> {
   while (true) {
     const completed = runtime.takeCompletedTurnResult();

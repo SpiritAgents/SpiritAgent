@@ -16,7 +16,7 @@ import type {
   DesktopSnapshot,
 } from '../types.js';
 import type { DesktopToolRequest } from './contracts.js';
-import type { DesktopRuntime } from './runtime.js';
+import type { DesktopHostRuntime } from './runtime.js';
 import type { SessionBundle } from './session-bundle.js';
 import { toolMessageKey } from './message-ordering.js';
 import {
@@ -82,7 +82,7 @@ export interface SubmitUserTurnAfterInitializedOptions {
 export interface SessionTurnOrchestratorContext {
   runSerialized<T>(work: () => Promise<T>, label?: string): Promise<T>;
   ensureInitialized(workspaceRootOverride?: string, options?: { fastPath?: boolean }): Promise<void>;
-  requireRuntime(): DesktopRuntime;
+  requireRuntime(): DesktopHostRuntime;
   requireState(): { workspaceRoot: string };
   requireConfig(): import('./storage.js').DesktopConfigFile;
   resolveApiKeyForConfigModel(model: import('../types.js').ModelRef): Promise<string | undefined>;
@@ -118,7 +118,7 @@ export interface SessionTurnOrchestratorContext {
   refreshTodoSnapshotForBundle(bundle: SessionBundle): Promise<void>;
   buildSnapshot(): DesktopSnapshot;
   startDreamCollectorIfNeeded(): void;
-  persistSessionBundle(bundle: SessionBundle, options: { fromRuntime?: DesktopRuntime; bumpListSortAt?: boolean }): Promise<void>;
+  persistSessionBundle(bundle: SessionBundle, options: { fromRuntime?: DesktopHostRuntime; bumpListSortAt?: boolean }): Promise<void>;
   syncSubagentToolStreamingOutput(bundle: SessionBundle): void;
   markInterruptedToolsInCurrentTurn(): void;
   markAssistantMessageContinuable(content: string): void;
