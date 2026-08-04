@@ -7,7 +7,6 @@ pub mod cli;
 pub mod cli_bootstrap;
 #[cfg(feature = "tui")]
 pub mod conversation_select;
-#[cfg(feature = "tui")]
 pub mod daemon;
 #[cfg(feature = "tui")]
 pub mod headless;
@@ -29,7 +28,6 @@ pub mod plan;
 pub mod ports;
 pub mod fork;
 pub mod rewind;
-#[cfg(feature = "tui")]
 pub mod runtime_sync;
 pub mod rules;
 pub mod runtime_handle;
