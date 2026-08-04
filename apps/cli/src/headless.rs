@@ -53,6 +53,7 @@ fn run_daemon_headless_turn(runtime: &mut DaemonRuntime, deadline: Instant) -> R
     let mut pending_assistant = String::new();
     let mut final_assistant = String::new();
     let mut has_pending_assistant = false;
+    let mut runtime_error_hint: Option<String> = None;
 
     loop {
         if Instant::now() > deadline {
@@ -88,12 +89,10 @@ fn run_daemon_headless_turn(runtime: &mut DaemonRuntime, deadline: Instant) -> R
                     return Err(anyhow!("{}", t!("cli.headless.blocked_questions")));
                 }
                 RuntimeEvent::PushMessage(message) => {
-                    if message.role == MessageRole::Agent {
+                    if message.role == MessageRole::Agent && message.tool_block.is_none() {
                         let content = message.content.trim();
-                        if content.starts_with("daemon 连接失败:")
-                            || content.starts_with("daemon 执行失败:")
-                        {
-                            return Err(anyhow!("{}", content));
+                        if !content.is_empty() {
+                            runtime_error_hint = Some(content.to_string());
                         }
                     }
                 }
@@ -121,6 +120,9 @@ fn run_daemon_headless_turn(runtime: &mut DaemonRuntime, deadline: Instant) -> R
         final_assistant = pending_assistant;
     }
     if final_assistant.trim().is_empty() {
+        if let Some(hint) = runtime_error_hint {
+            return Err(anyhow!("{}", t!("cli.headless.runtime_failed", err = hint)));
+        }
         return Err(anyhow!("{}", t!("cli.headless.empty_response")));
     }
     println!("{final_assistant}");
