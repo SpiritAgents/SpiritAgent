@@ -87,6 +87,16 @@ fn run_daemon_headless_turn(runtime: &mut DaemonRuntime, deadline: Instant) -> R
                 RuntimeEvent::OpenAskQuestions { .. } => {
                     return Err(anyhow!("{}", t!("cli.headless.blocked_questions")));
                 }
+                RuntimeEvent::PushMessage(message) => {
+                    if message.role == MessageRole::Agent {
+                        let content = message.content.trim();
+                        if content.starts_with("daemon 连接失败:")
+                            || content.starts_with("daemon 执行失败:")
+                        {
+                            return Err(anyhow!("{}", content));
+                        }
+                    }
+                }
                 _ => {}
             }
         }
