@@ -301,6 +301,12 @@ export class RemoteDesktopRuntime {
     await this.refreshArchive();
   }
 
+  /** Drop notification subscription only; keeps daemon attachment (wrapper swap). */
+  async dispose(): Promise<void> {
+    await this.awaitMutations();
+    this.unsubscribe();
+  }
+
   async close(): Promise<void> {
     await this.awaitMutations();
     this.unsubscribe();
@@ -727,6 +733,14 @@ export class RemoteDesktopRuntime {
   }
 }
 
+export function remoteDesktopSessionId(runtime: unknown): string | undefined {
+  if (!runtime || typeof runtime !== 'object') {
+    return undefined;
+  }
+  const sessionId = (runtime as { sessionId?: unknown }).sessionId;
+  return typeof sessionId === 'string' ? sessionId : undefined;
+}
+
 export async function migrateRemoteConversationKey(
   runtime: unknown,
   nextConversationKey: string,
@@ -737,6 +751,12 @@ export async function migrateRemoteConversationKey(
   await runtime.clientCall('session.migrateConversationKey', {
     conversationKey: nextConversationKey,
   });
+}
+
+export async function disposeRemoteDesktopRuntime(runtime: unknown): Promise<void> {
+  if (runtime instanceof RemoteDesktopRuntime) {
+    await runtime.dispose();
+  }
 }
 
 export async function closeRemoteDesktopRuntime(runtime: unknown): Promise<void> {

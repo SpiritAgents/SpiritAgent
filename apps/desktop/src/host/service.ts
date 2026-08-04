@@ -473,9 +473,11 @@ import {
   closeSharedDesktopServerClient,
   createRemoteDesktopRuntime,
   desktopUsesDaemonRuntime,
+  disposeRemoteDesktopRuntime,
   exportRemoteDesktopState,
   migrateRemoteConversationKey,
   openRemoteDesktopRuntime,
+  remoteDesktopSessionId,
   replyRemoteWorkspaceCapabilityTrust,
   remoteDesktopRuntimeNeedsProjection,
   runRemoteDesktopSessionEnd,
@@ -2906,12 +2908,20 @@ class DesktopHostService {
         },
       };
       try {
+        const previousSessionId = remoteDesktopSessionId(previousRuntime);
         const runtime = conversationKey
           ? await openRemoteDesktopRuntime({ ...remoteRuntimeInput, conversationKey })
           : await createRemoteDesktopRuntime(remoteRuntimeInput);
         runtime.setLoopEnabled(bundle.loopEnabled);
         bundle.runtime = runtime;
-        await closeRemoteDesktopRuntime(previousRuntime);
+        const newSessionId = remoteDesktopSessionId(runtime);
+        if (previousRuntime) {
+          if (previousSessionId && previousSessionId === newSessionId) {
+            await disposeRemoteDesktopRuntime(previousRuntime);
+          } else {
+            await closeRemoteDesktopRuntime(previousRuntime);
+          }
+        }
         if (bundle.id === this.sessionRegistry.activeSessionId()) {
           this.runtime = runtime;
         }
