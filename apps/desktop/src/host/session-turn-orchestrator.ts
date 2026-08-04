@@ -421,7 +421,10 @@ export async function tickSessionCommand(
   // busy 期间按时间片落盘；回合终态（busy→idle）与进入审批/提问阻塞时强制落盘，持久化语义不变。
   const busyAfterTick = bundle.runtime?.isBusy() === true;
   const blockedAfterTick = isRuntimeBlocked(bundle);
-  const forcePersist = (wasBusy && !busyAfterTick) || (blockedAfterTick && !wasBlocked);
+  const forcePersist =
+    (wasBusy && !busyAfterTick)
+    || (blockedAfterTick && !wasBlocked)
+    || consumedTurnResult;
   const persistDue =
     Date.now() - (bundle.lastTickPersistAtMs ?? 0) >= TICK_SESSION_PERSIST_INTERVAL_MS;
   if (forcePersist || persistDue) {

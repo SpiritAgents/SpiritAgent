@@ -4867,6 +4867,20 @@ class DesktopHostService {
   }
 
   async shutdown(): Promise<void> {
+    for (const bundle of this.sessionRegistry.all()) {
+      if (!bundle.activeSession || bundle.activeSession.kind === 'ephemeral') {
+        continue;
+      }
+      try {
+        await tickSessionCommand(this.sessionTurnContext(), bundle);
+        await this.persistSessionBundle(bundle, {
+          fromRuntime: bundle.runtime,
+          bumpListSortAt: false,
+        });
+      } catch {
+        // Best-effort flush before exit; do not block teardown.
+      }
+    }
     this.sessionPump.stop();
     const runtimes = [...this.sessionRegistry.all()].map((bundle) => bundle.runtime);
     await Promise.all(runtimes.map((runtime) => closeRemoteDesktopRuntime(runtime)));
