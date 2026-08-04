@@ -70,8 +70,8 @@ export interface AcpRuntimeResult {
 /**
  * Creates a fully assembled AgentRuntime for ACP server mode.
  *
- * Key differences from the CLI host-bridge pattern:
- * - No JSON-RPC peer over stdio (ACP uses ndJSON on stdio)
+ * Key differences from the daemon-backed server runtime:
+ * - No WebSocket session attach (ACP uses ndJSON on stdio)
  * - host-internal is loaded directly as a dependency (not via env-var dynamic import)
  * - No LSP, extensions, todos, or image/video generation for MVP
  */

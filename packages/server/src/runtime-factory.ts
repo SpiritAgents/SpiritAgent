@@ -152,11 +152,12 @@ export interface ServerRuntimeResult {
 }
 
 /**
- * Assembles a fully-wired AgentRuntime for the daemon. Supersedes the three
- * historical assembly sites (Desktop host service, CLI host-bridge sidecar,
- * acp-server runtime-factory): the daemon runs tools in-process via
- * NodeHostToolService, with a real per-session McpService, LSP bindings,
- * extensions, todos, hooks, and transcript persistence.
+ * Assembles a fully-wired AgentRuntime inside the daemon. Supersedes legacy
+ * in-host assembly (Desktop in-process runtime, CLI host-bridge sidecar,
+ * acp-server local factory). First-party clients attach via WebSocket instead
+ * of spawning a sidecar. Tools run in-process via NodeHostToolService, with a
+ * real per-session McpService, LSP bindings, extensions, todos, hooks, and
+ * transcript persistence.
  */
 export async function createServerRuntime(
   options: ServerRuntimeOptions,
