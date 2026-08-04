@@ -1558,6 +1558,13 @@ impl DaemonRuntime {
         )?;
         let bridge_archive: BridgeChatArchive =
             serde_json::from_value(value)?;
+        // Live timeline pushed by the authoritative desktop host; hydrate it
+        // into desktop messages exactly like a disk load would.
+        let desktop_messages = bridge_archive
+            .desktop_message_timeline
+            .as_deref()
+            .map(crate::chat_timeline::hydrate_desktop_messages_from_timeline)
+            .filter(|snapshots| !snapshots.is_empty());
         Ok(ChatArchive {
             messages: bridge_archive
                 .messages
@@ -1596,7 +1603,7 @@ impl DaemonRuntime {
                     llm_history: entry.llm_history,
                 })
                 .collect(),
-            desktop_messages: None,
+            desktop_messages,
             rewind: Some(self.rewind.as_json()),
             session_display_name: None,
         })

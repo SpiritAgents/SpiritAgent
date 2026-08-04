@@ -786,9 +786,22 @@ impl TuiShell {
     fn populate_ui_from_live_archive(&mut self) -> Result<()> {
         let live = self.runtime.fetch_live_chat_archive()?;
         self.reset_loaded_session_ui_state();
+        if let Some(snapshots) = live.desktop_messages.as_deref() {
+            // Canonical path: the daemon-stored desktop timeline, hydrated
+            // exactly like a disk load.
+            self.restore_conversation_from_snapshots(snapshots);
+            return Ok(());
+        }
+        // Degraded path (explicit): no desktop host has pushed a timeline for
+        // this live session, so fall back to projecting llm_history.
         let projection = project_live_chat_from_llm_history(&live.llm_history);
         self.messages = projection.messages;
         self.assistant_aux_by_message = projection.assistant_aux_by_message;
+        self.messages.push(ChatMessage {
+            role: MessageRole::Agent,
+            content: t!("tui.session.live_timeline_degraded").into_owned(),
+            tool_block: None,
+        });
         Ok(())
     }
 

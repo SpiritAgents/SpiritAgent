@@ -126,6 +126,11 @@ pub(crate) struct BridgeChatArchive {
     pub(crate) subagent_sessions: Vec<BridgeSubagentSessionArchiveEntry>,
     #[serde(default)]
     pub(crate) rewind: Option<Value>,
+    /// Daemon-stored desktop timeline pushed by the authoritative desktop host
+    /// (same shape as chat-file `desktopMessageTimeline`); absent when no host
+    /// has pushed one for this session.
+    #[serde(default)]
+    pub(crate) desktop_message_timeline: Option<Vec<crate::chat_timeline::PersistedTimelineTurn>>,
 }
 
 #[derive(Clone, Debug, Serialize, Deserialize)]

@@ -663,4 +663,110 @@ mod tests {
         assert_eq!(projection.messages[2].role, MessageRole::Agent);
         assert_eq!(projection.messages[2].content, "done");
     }
+
+    /// Desktop-pushed timeline rows carry fields the CLI does not model
+    /// (`canContinue`, `localFileAttachments`, `aux.finishTaskNotice`) and row
+    /// kinds without a TUI projection (`standalone-subagent-status`); the
+    /// daemon wire payload must still hydrate like a disk load.
+    #[test]
+    fn hydrate_desktop_messages_from_daemon_timeline_payload() {
+        let payload = serde_json::json!({
+            "messages": [],
+            "assistantAux": [],
+            "llmHistory": [],
+            "loopEnabled": false,
+            "approvalLevel": "default",
+            "subagentSessions": [],
+            "desktopMessageTimeline": [{
+                "turnId": 1,
+                "createdOrder": 0,
+                "userRow": {
+                    "rowId": "row-1",
+                    "messageId": 1,
+                    "turnId": 1,
+                    "kind": "user",
+                    "createdOrder": 0,
+                    "content": "读一下 Cargo.toml",
+                    "pending": false,
+                    "localFileAttachments": [{ "path": "Cargo.toml", "kind": "file" }]
+                },
+                "segments": [{
+                    "segmentId": 1,
+                    "turnId": 1,
+                    "kind": "initial",
+                    "status": "completed",
+                    "createdOrder": 1,
+                    "rows": [{
+                        "rowId": "row-2",
+                        "messageId": 2,
+                        "turnId": 1,
+                        "segmentId": 1,
+                        "kind": "assistant-thinking",
+                        "section": "before-tools",
+                        "createdOrder": 2,
+                        "pending": false,
+                        "aux": { "thinking": "先看依赖", "finishTaskNotice": "ignored" }
+                    }, {
+                        "rowId": "row-3",
+                        "messageId": 3,
+                        "turnId": 1,
+                        "segmentId": 1,
+                        "kind": "tool",
+                        "section": "tools",
+                        "createdOrder": 3,
+                        "pending": false,
+                        "tool": {
+                            "toolCallId": "call-1",
+                            "toolName": "read_file",
+                            "phase": "succeeded",
+                            "headline": "Read Cargo.toml",
+                            "detailLines": ["path: Cargo.toml"],
+                            "argsExcerpt": "{\"path\":\"Cargo.toml\"}",
+                            "outputExcerpt": "[package]"
+                        }
+                    }, {
+                        "rowId": "row-4",
+                        "messageId": 4,
+                        "turnId": 1,
+                        "segmentId": 1,
+                        "kind": "standalone-subagent-status",
+                        "createdOrder": 4,
+                        "pending": false,
+                        "content": "SubAgent 运行中"
+                    }, {
+                        "rowId": "row-5",
+                        "messageId": 5,
+                        "turnId": 1,
+                        "segmentId": 1,
+                        "kind": "assistant-text",
+                        "section": "after-tools",
+                        "createdOrder": 5,
+                        "pending": false,
+                        "canContinue": true,
+                        "content": "已读取"
+                    }]
+                }]
+            }],
+            "desktopMessageTimelineRevision": 7
+        });
+
+        let archive: crate::host_protocol::BridgeChatArchive =
+            serde_json::from_value(payload).expect("bridge archive parses");
+        let timeline = archive
+            .desktop_message_timeline
+            .expect("timeline present");
+        let messages = hydrate_desktop_messages_from_timeline(&timeline);
+
+        assert_eq!(messages.len(), 4);
+        assert_eq!(messages[0].role, ConversationMessageRole::User);
+        assert_eq!(messages[0].content, "读一下 Cargo.toml");
+        assert_eq!(
+            messages[1].aux.as_ref().and_then(|aux| aux.thinking.as_deref()),
+            Some("先看依赖")
+        );
+        let tool = messages[2].tool.as_ref().expect("tool snapshot");
+        assert_eq!(tool.tool_name, "read_file");
+        assert_eq!(tool.tool_call_id.as_deref(), Some("call-1"));
+        assert_eq!(messages[3].content, "已读取");
+    }
 }
