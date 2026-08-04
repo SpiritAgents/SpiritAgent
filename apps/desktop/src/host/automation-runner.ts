@@ -22,6 +22,7 @@ import {
 
 import {
   createAutomationRuntime,
+  disposeAutomationRuntime,
   type AutomationRuntimeHandle,
 } from './automation-runtime.js';
 import { createDesktopRewindMetadata } from './rewind.js';
@@ -91,6 +92,7 @@ export async function runDesktopAutomationOnce(
 
   let runtimeHandle: AutomationRuntimeHandle | undefined;
   let projection: AutomationConversationProjection | undefined;
+  let gitBranch: string | undefined;
 
   try {
     const modelRef = input.definition.modelRef;
@@ -103,7 +105,7 @@ export async function runDesktopAutomationOnce(
     }
 
     const gitSnapshot = await readGitWorkspaceSnapshot(input.definition.workspaceRoot);
-    const gitBranch = gitSnapshot.branch;
+    gitBranch = gitSnapshot.branch;
     const gitBranchLabel = gitBranchLabelForBasicInfo(gitSnapshot);
     const sessionDisplayName = `${input.definition.title} · ${formatRunTimestamp(startedAtUnixMs)}`;
 
@@ -179,6 +181,23 @@ export async function runDesktopAutomationOnce(
     );
 
     for (let guard = 0; guard < AUTOMATION_RUN_MAX_GUARD_ROUNDS; guard += 1) {
+      if (runtimeHandle.consumeTrustBlocked()) {
+        run = await store.updateRun(input.definition.id, runId, { status: 'blocked' });
+        await persistAutomationSession(deps, {
+          sessionPath,
+          definition: input.definition,
+          runId,
+          runtime,
+          projection,
+          workspaceRoot: input.definition.workspaceRoot,
+          gitBranch,
+          sessionDisplayName,
+          approvalLevel: input.definition.approvalLevel,
+        });
+        deps.onRunUpdated?.(input.definition.id);
+        deps.notifySessionListUpdated?.();
+        return run;
+      }
       if (result.kind === 'requires-approval') {
         if (input.definition.approvalLevel === 'full-approval') {
           result = await runAutomationStreamingTurn(
@@ -264,6 +283,23 @@ export async function runDesktopAutomationOnce(
     return run;
   } catch (error) {
     const message = error instanceof Error ? error.message : String(error);
+    if (runtimeHandle && projection) {
+      try {
+        await persistAutomationSession(deps, {
+          sessionPath,
+          definition: input.definition,
+          runId,
+          runtime: runtimeHandle.runtime,
+          projection,
+          workspaceRoot: input.definition.workspaceRoot,
+          gitBranch,
+          sessionDisplayName: `${input.definition.title} · ${formatRunTimestamp(startedAtUnixMs)}`,
+          approvalLevel: input.definition.approvalLevel,
+        });
+      } catch {
+        // Best-effort partial persist for failed runs.
+      }
+    }
     run = await store.updateRun(input.definition.id, runId, {
       status: 'failed',
       completedAtUnixMs: Date.now(),
@@ -272,6 +308,10 @@ export async function runDesktopAutomationOnce(
     deps.onRunUpdated?.(input.definition.id);
     deps.notifySessionListUpdated?.();
     return run;
+  } finally {
+    if (runtimeHandle) {
+      await disposeAutomationRuntime(runtimeHandle);
+    }
   }
 }
 

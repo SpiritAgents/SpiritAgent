@@ -16,6 +16,7 @@ import {
   closeRemoteDesktopRuntime,
   createRemoteDesktopRuntime,
   desktopUsesDaemonRuntime,
+  replyRemoteWorkspaceCapabilityTrust,
 } from './remote-runtime.js';
 import { DesktopToolExecutor } from './tool-executor.js';
 import {
@@ -39,6 +40,7 @@ export interface CreateAutomationRuntimeInput {
 export interface AutomationRuntimeHandle {
   runtime: DesktopRuntime;
   dispose: () => Promise<void>;
+  consumeTrustBlocked: () => boolean;
 }
 
 export function buildEmptyAutomationArchive(
@@ -72,8 +74,10 @@ async function createDaemonAutomationRuntime(
 ): Promise<AutomationRuntimeHandle> {
   const conversationKey = path.resolve(input.sessionPath);
   const approvalLevel = normalizeApprovalLevel(input.definition.approvalLevel);
+  let trustBlocked = false;
+  let runtime: DesktopRuntime | undefined;
 
-  const runtime = await createRemoteDesktopRuntime({
+  runtime = await createRemoteDesktopRuntime({
     dataDir: spiritAgentDataDir(),
     workspaceRoot: input.definition.workspaceRoot,
     modelRef: input.definition.modelRef,
@@ -82,12 +86,30 @@ async function createDaemonAutomationRuntime(
     approvalLevel,
     todoSessionKey: conversationKey,
     conversationKey,
+    onWorkspaceCapabilityTrustRequested: (requestId, request) => {
+      void handleAutomationWorkspaceCapabilityTrust(
+        () => runtime,
+        requestId,
+        input.definition.approvalLevel,
+        () => {
+          trustBlocked = true;
+        },
+      );
+      void request;
+    },
   });
 
   return {
     runtime,
     dispose: async () => {
       await closeRemoteDesktopRuntime(runtime);
+    },
+    consumeTrustBlocked: () => {
+      if (!trustBlocked) {
+        return false;
+      }
+      trustBlocked = false;
+      return true;
     },
   };
 }
@@ -124,5 +146,24 @@ async function createInProcessAutomationRuntime(
   return {
     runtime,
     dispose: async () => {},
+    consumeTrustBlocked: () => false,
   };
+}
+
+async function handleAutomationWorkspaceCapabilityTrust(
+  runtimeRef: () => DesktopRuntime | undefined,
+  requestId: string,
+  approvalLevel: HostAutomationDefinition['approvalLevel'],
+  markBlocked: () => void,
+): Promise<void> {
+  const runtime = runtimeRef();
+  if (!runtime) {
+    return;
+  }
+  if (approvalLevel === 'full-approval' || approvalLevel === 'auto-approval') {
+    await replyRemoteWorkspaceCapabilityTrust(runtime, requestId, 'allowOnce');
+    return;
+  }
+  markBlocked();
+  await replyRemoteWorkspaceCapabilityTrust(runtime, requestId, 'deny');
 }
