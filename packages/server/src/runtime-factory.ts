@@ -7,6 +7,8 @@ import {
   buildApplyPatchFileToolsPromptSection,
   buildBasicInfoSystemMessage,
   buildContributedHostToolDefinitions,
+  buildDreamCollectorSystemMessage,
+  buildDreamHostToolDefinitions,
   buildExtensionsSystemMessage,
   buildLoopModeSystemMessage,
   buildMcpCatalogSystemMessage,
@@ -72,6 +74,8 @@ import {
   resolveTranscriptSessionDir,
   resolveTransportConfig,
   type ApprovalLevel,
+  type HostDreamScope,
+  type HostDreamSourceSessionRef,
   type ModelRef,
 } from '@spiritagent/host-internal';
 
@@ -80,6 +84,8 @@ import { createNoopPeer } from './noop-peer.js';
 export type ServerHostRuntime = AgentRuntime<LlmTransportConfig, LlmToolAgentState, JsonValue, JsonValue>;
 
 export type ServerClientKind = 'cli' | 'desktop' | 'web';
+
+export type ServerSessionKind = 'default' | 'dream-collector';
 
 export interface ServerRuntimeOptions {
   workspaceRoot: string;
@@ -94,6 +100,9 @@ export interface ServerRuntimeOptions {
   /** Extensions/todo surfaces differ per host; a session inherits its creator's kind. */
   hostKind: 'cli' | 'desktop';
   approvalLevel: ApprovalLevel;
+  sessionKind?: ServerSessionKind;
+  dreamScope?: HostDreamScope;
+  dreamSourceSession?: HostDreamSourceSessionRef;
   onEvent: (event: RuntimeEvent<JsonValue>) => void;
   /**
    * Workspace capability trust prompt (hooks). The session manager routes this
@@ -161,6 +170,10 @@ export async function createServerRuntime(
   } = options;
   const log = options.log ?? (() => {});
   const approvalLevel = options.approvalLevel;
+  const isDreamCollector = options.sessionKind === 'dream-collector';
+  if (isDreamCollector && !options.dreamScope) {
+    throw new Error('dream-collector session requires dreamScope');
+  }
 
   const transportConfig = resolveTransportConfig({
     workspaceRoot,
@@ -170,80 +183,127 @@ export async function createServerRuntime(
   await ensureTranscriptSessionDir(spiritDataDir, sessionKey);
 
   // 1. Tool executor: noop peer (no stdio peer in the daemon) + per-session MCP.
-  const mcpService = options.mcpService ?? new McpService(workspaceRoot, true);
+  const mcpService = isDreamCollector
+    ? new McpService(workspaceRoot, true)
+    : (options.mcpService ?? new McpService(workspaceRoot, true));
   const toolExecutor = new HostToolExecutorProxy(createNoopPeer(), mcpService);
-  mcpService.startBackgroundRefreshInBackground(false);
+  if (!isDreamCollector) {
+    mcpService.startBackgroundRefreshInBackground(false);
+  }
 
   // 2. Local tool service: real shell/file/web execution, noop management MCP
   //    adapter (MCP tool execution lives on the executor's McpService, same
   //    split as Desktop), extensions, todos, approval level.
-  await ensureBuiltinAuthoringSkills(spiritDataDir);
-  const extensionManager = createHostExtensionManager({ spiritDataDir, hostKind });
+  let extensionManager: ReturnType<typeof createHostExtensionManager> | undefined;
+  const extensionSystemPrompts: LlmExtensionSystemPrompt[] = [];
+  if (!isDreamCollector) {
+    await ensureBuiltinAuthoringSkills(spiritDataDir);
+    extensionManager = createHostExtensionManager({ spiritDataDir, hostKind });
+  }
   let currentApprovalLevel = approvalLevel;
   const service = new NodeHostToolService(
     { workspaceRoot, spiritDataDir },
     {
       mcp: createNoopMcpAdapter(),
-      extensions: {
-        manager: extensionManager,
-        getHost: () => ({}),
-        logger: console,
-      },
-      fileChangeObserver: {
-        async recordFileChange(change: unknown): Promise<void> {
-          await toolExecutor.lspServiceSnapshot()?.syncFromRecordedChange(change);
-          options.onFileChange?.(change);
-        },
-      },
+      ...(isDreamCollector
+        ? {
+            dreamScope: options.dreamScope!,
+            ...(options.dreamSourceSession
+              ? { dreamSourceSession: options.dreamSourceSession }
+              : {}),
+          }
+        : {
+            extensions: {
+              manager: extensionManager!,
+              getHost: () => ({}),
+              logger: console,
+            },
+            fileChangeObserver: {
+              async recordFileChange(change: unknown): Promise<void> {
+                await toolExecutor.lspServiceSnapshot()?.syncFromRecordedChange(change);
+                options.onFileChange?.(change);
+              },
+            },
+            todoScope: { sessionKey: options.todoSessionKey?.trim() || sessionKey },
+          }),
       getApprovalLevel: () => currentApprovalLevel,
-      todoScope: { sessionKey: options.todoSessionKey?.trim() || sessionKey },
     },
   );
   toolExecutor.setLocalHostService(service as unknown as LocalHostToolService);
   toolExecutor.setTransportConfigForToolDefinitions(transportConfig);
   toolExecutor.setApprovalLevel(currentApprovalLevel);
-  toolExecutor.setTodoToolDefinitions(buildTodoHostToolDefinitions());
-  // The bridge passes these via a loosely-typed dynamic import; with static
-  // imports the nominal types diverge slightly (structurally compatible).
-  toolExecutor.setLspHostBindings({
-    LspService,
-    appendLspDiagnosticsAfterWriteIfNeeded,
-  } as unknown as LspHostBindings);
-  await toolExecutor.setLspWorkspaceRoot(workspaceRoot);
+  if (isDreamCollector) {
+    toolExecutor.setDreamToolDefinitions(buildDreamHostToolDefinitions());
+    toolExecutor.setDreamOnlyToolSurface(true);
+    toolExecutor.setExtensionToolDefinitions([]);
+    toolExecutor.setTodoToolDefinitions([]);
+  } else {
+    toolExecutor.setTodoToolDefinitions(buildTodoHostToolDefinitions());
+    // The bridge passes these via a loosely-typed dynamic import; with static
+    // imports the nominal types diverge slightly (structurally compatible).
+    toolExecutor.setLspHostBindings({
+      LspService,
+      appendLspDiagnosticsAfterWriteIfNeeded,
+    } as unknown as LspHostBindings);
+    await toolExecutor.setLspWorkspaceRoot(workspaceRoot);
 
-  // Extension-contributed tools + system prompts (host-scoped).
-  const installedExtensions = await extensionManager.list();
-  toolExecutor.setExtensionToolDefinitions(
-    buildContributedHostToolDefinitions(
-      collectHostExtensionContributedTools(installedExtensions) as unknown as ContributedHostToolDefinition[],
-    ),
-  );
-  const extensionSystemPrompts: LlmExtensionSystemPrompt[] = (
-    await extensionManager.collectSystemPromptContributions({ host: {}, logger: console })
-  ).map((entry) => ({
-    extensionId: entry.extensionId,
-    extensionName: entry.extensionName,
-    content: entry.content,
-  }));
+    // Extension-contributed tools + system prompts (host-scoped).
+    const installedExtensions = await extensionManager!.list();
+    toolExecutor.setExtensionToolDefinitions(
+      buildContributedHostToolDefinitions(
+        collectHostExtensionContributedTools(installedExtensions) as unknown as ContributedHostToolDefinition[],
+      ),
+    );
+    extensionSystemPrompts.push(
+      ...(await extensionManager!.collectSystemPromptContributions({ host: {}, logger: console })).map((entry) => ({
+        extensionId: entry.extensionId,
+        extensionName: entry.extensionName,
+        content: entry.content,
+      })),
+    );
+  }
+
+  if (isDreamCollector) {
+    extensionSystemPrompts.push({
+      extensionId: 'dream-collector',
+      extensionName: 'Dream Collector',
+      content: buildDreamCollectorSystemMessage(),
+    });
+  }
 
   await toolExecutor.refreshCaches();
 
   // 3. Rules / skills / plan metadata.
-  const metadata = await loadHostInstructionMetadata(
-    { workspaceRoot, spiritDataDir },
-    { planMode: false, agentMode: 'agent' },
-  );
-  const enabledRules: LlmEnabledRule[] = [...metadata.rules.enabledRules];
-  const enabledSkillCatalog: LlmEnabledSkillCatalogEntry[] = [...metadata.skills.enabledSkillCatalog];
-  let currentPlanMetadata: LlmPlanMetadata | undefined = metadata.planMetadata;
-  toolExecutor.setAgentModeToolExposure('agent');
+  const enabledRules: LlmEnabledRule[] = [];
+  const enabledSkillCatalog: LlmEnabledSkillCatalogEntry[] = [];
+  let currentPlanMetadata: LlmPlanMetadata | undefined;
+  if (isDreamCollector) {
+    currentPlanMetadata = {
+      path: '',
+      exists: false,
+      agentMode: 'agent',
+      planMode: false,
+    };
+    toolExecutor.setAgentModeToolExposure('agent');
+  } else {
+    const metadata = await loadHostInstructionMetadata(
+      { workspaceRoot, spiritDataDir },
+      { planMode: false, agentMode: 'agent' },
+    );
+    enabledRules.push(...metadata.rules.enabledRules);
+    enabledSkillCatalog.push(...metadata.skills.enabledSkillCatalog);
+    currentPlanMetadata = metadata.planMetadata;
+    toolExecutor.setAgentModeToolExposure('agent');
+  }
 
   // 4. Basic info block.
   const shell = service.toolDefinitionEnvironment();
   const basicInfo: LlmToolAgentBasicInfo = {
     workspaceRoot,
     ...(shell?.shellDisplayName ? { terminal: shell.shellDisplayName } : {}),
-    gitBranch: await readGitBranchLabelForBasicInfo(workspaceRoot),
+    gitBranch: isDreamCollector && options.dreamScope
+      ? options.dreamScope.gitBranch
+      : await readGitBranchLabelForBasicInfo(workspaceRoot),
     sessionTranscript: resolveTranscriptSessionDir(spiritDataDir, sessionKey),
     system: service.operatingSystemInfo?.() ?? {
       name: process.platform === 'win32' ? 'Windows' : process.platform === 'darwin' ? 'macOS' : process.platform === 'linux' ? 'Linux' : process.platform,
@@ -390,6 +450,9 @@ export async function createServerRuntime(
   });
 
   const setAgentMode = async (mode: SpiritAgentMode): Promise<void> => {
+    if (isDreamCollector) {
+      return;
+    }
     toolExecutor.setAgentModeToolExposure(mode);
     const refreshed = await loadHostInstructionMetadata(
       { workspaceRoot, spiritDataDir },
@@ -410,6 +473,9 @@ export async function createServerRuntime(
   };
 
   const refreshExtensions = async (): Promise<void> => {
+    if (isDreamCollector || !extensionManager) {
+      return;
+    }
     const installed = await extensionManager.list();
     toolExecutor.setExtensionToolDefinitions(
       buildContributedHostToolDefinitions(
@@ -462,6 +528,9 @@ export async function createServerRuntime(
       }, reason);
     },
     reloadHostMetadata: async (mode) => {
+      if (isDreamCollector) {
+        return;
+      }
       const refreshed = await loadHostInstructionMetadata(
         { workspaceRoot, spiritDataDir },
         { planMode: mode === 'plan', agentMode: mode },

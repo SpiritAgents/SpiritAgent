@@ -377,6 +377,35 @@ export async function startDaemon(options: DaemonOptions): Promise<RunningDaemon
         const modelRef = params['modelRef'];
         const agentMode = params['agentMode'];
         const conversationKey = params['conversationKey'];
+        const sessionKind = params['sessionKind'];
+        const dreamScopeRaw = params['dreamScope'];
+        const dreamSourceSessionRaw = params['dreamSourceSession'];
+        const dreamScope = dreamScopeRaw
+          && typeof dreamScopeRaw === 'object'
+          && typeof (dreamScopeRaw as Record<string, unknown>)['workspaceRoot'] === 'string'
+          && typeof (dreamScopeRaw as Record<string, unknown>)['gitBranch'] === 'string'
+          ? {
+              workspaceRoot: String((dreamScopeRaw as Record<string, unknown>)['workspaceRoot']).trim(),
+              gitBranch: String((dreamScopeRaw as Record<string, unknown>)['gitBranch']).trim(),
+            }
+          : undefined;
+        let dreamSourceSession: { path: string; displayName?: string; savedAtUnixMs?: number } | undefined;
+        if (
+          dreamSourceSessionRaw
+          && typeof dreamSourceSessionRaw === 'object'
+          && typeof (dreamSourceSessionRaw as Record<string, unknown>)['path'] === 'string'
+        ) {
+          const raw = dreamSourceSessionRaw as Record<string, unknown>;
+          dreamSourceSession = {
+            path: String(raw['path']).trim(),
+          };
+          if (typeof raw['displayName'] === 'string' && raw['displayName'].trim()) {
+            dreamSourceSession.displayName = raw['displayName'].trim();
+          }
+          if (typeof raw['savedAtUnixMs'] === 'number') {
+            dreamSourceSession.savedAtUnixMs = raw['savedAtUnixMs'];
+          }
+        }
         const info = await sessionManager.createSession({
           workspaceRoot,
           hostKind: clientState?.clientKind ?? 'cli',
@@ -398,6 +427,9 @@ export async function startDaemon(options: DaemonOptions): Promise<RunningDaemon
           ...(agentMode === 'plan' || agentMode === 'ask' || agentMode === 'debug'
             ? { agentMode }
             : {}),
+          ...(sessionKind === 'dream-collector' ? { sessionKind: 'dream-collector' as const } : {}),
+          ...(dreamScope ? { dreamScope } : {}),
+          ...(dreamSourceSession ? { dreamSourceSession } : {}),
         });
         return info;
       }

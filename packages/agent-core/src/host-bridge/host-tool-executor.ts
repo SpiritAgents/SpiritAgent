@@ -74,6 +74,8 @@ export class HostToolExecutorProxy implements ToolExecutor<JsonValue, JsonValue>
   private hostToolDefinitionsCache: JsonValue = [];
   private extensionToolDefinitionsCache: JsonValue[] = [];
   private todoToolDefinitionsCache: JsonValue[] = [];
+  private dreamToolDefinitionsCache: JsonValue[] = [];
+  private dreamOnlyToolSurface = false;
   private loopToolDefinitionsCache: JsonValue[] = [];
   private loopToolExposureEnabled = false;
   private planToolDefinitionsCache: JsonValue[] = [];
@@ -131,6 +133,17 @@ export class HostToolExecutorProxy implements ToolExecutor<JsonValue, JsonValue>
     this.refreshMergedToolDefinitions();
   }
 
+  setDreamToolDefinitions(definitions: JsonValue[] | undefined): void {
+    this.dreamToolDefinitionsCache = Array.isArray(definitions) ? [...definitions] : [];
+    this.refreshMergedToolDefinitions();
+  }
+
+  /** When enabled, only dreamToolDefinitionsCache is exposed to the model. */
+  setDreamOnlyToolSurface(enabled: boolean): void {
+    this.dreamOnlyToolSurface = enabled;
+    this.refreshMergedToolDefinitions();
+  }
+
   setLoopToolExposure(loopEnabled: boolean): void {
     this.loopToolExposureEnabled = loopEnabled;
     this.loopToolDefinitionsCache = loopEnabled ? buildFinishTaskHostToolDefinitions() : [];
@@ -179,6 +192,10 @@ export class HostToolExecutorProxy implements ToolExecutor<JsonValue, JsonValue>
   }
 
   async refreshCaches(): Promise<void> {
+    if (this.dreamOnlyToolSurface) {
+      this.refreshMergedToolDefinitions();
+      return;
+    }
     if (!this.hostToolDefinitionsLoaded) {
       this.hostToolDefinitionsCache = buildBuiltinHostToolDefinitions(
         this.localHostService
@@ -557,6 +574,10 @@ export class HostToolExecutorProxy implements ToolExecutor<JsonValue, JsonValue>
   }
 
   private refreshMergedToolDefinitions(): void {
+    if (this.dreamOnlyToolSurface) {
+      this.toolDefinitionsCache = [...this.dreamToolDefinitionsCache];
+      return;
+    }
     let hostDefinitions = this.hostToolDefinitionsCache;
     if (!this.imageGenerationAvailable && Array.isArray(hostDefinitions)) {
       hostDefinitions = filterToolDefinitionByName(hostDefinitions, 'generate_image');

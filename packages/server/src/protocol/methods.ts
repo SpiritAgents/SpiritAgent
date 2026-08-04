@@ -155,6 +155,9 @@ export interface SessionCreateParams {
   modelRef?: { groupId: string; name: string };
   agentMode?: 'agent' | 'plan' | 'ask' | 'debug';
   todoSessionKey?: string;
+  sessionKind?: 'default' | 'dream-collector';
+  dreamScope?: { workspaceRoot: string; gitBranch: string };
+  dreamSourceSession?: { path: string; displayName?: string; savedAtUnixMs?: number };
 }
 
 export interface SessionAttachParams {

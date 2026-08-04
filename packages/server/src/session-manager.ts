@@ -8,12 +8,13 @@ import type {
   SpiritAgentMode,
 } from '@spiritagent/agent-core';
 import type { BridgeRuntimeSnapshot } from '@spiritagent/agent-core/host-bridge';
-import { createHostTodoStore, type ApprovalLevel, type ModelRef } from '@spiritagent/host-internal';
+import { createHostTodoStore, type ApprovalLevel, type HostDreamScope, type HostDreamSourceSessionRef, type ModelRef } from '@spiritagent/host-internal';
 
 import {
   createServerRuntime,
   type ServerClientKind,
   type ServerRuntimeResult,
+  type ServerSessionKind,
 } from './runtime-factory.js';
 import { McpRegistry } from './mcp-registry.js';
 import { buildServerSnapshot } from './snapshot-projector.js';
@@ -131,6 +132,9 @@ export interface CreateSessionParams {
   todoSessionKey?: string;
   /** Stable chat file path for multi-host attach. */
   conversationKey?: string;
+  sessionKind?: ServerSessionKind;
+  dreamScope?: HostDreamScope;
+  dreamSourceSession?: HostDreamSourceSessionRef;
 }
 
 export interface AttachSessionParams {
@@ -213,9 +217,14 @@ export class SessionManager {
       sessionKey: sessionId,
       ...(params.modelRef ? { modelRef: params.modelRef } : {}),
       ...(params.todoSessionKey?.trim() ? { todoSessionKey: params.todoSessionKey.trim() } : {}),
-      mcpService: this.mcpRegistry.forWorkspace(params.workspaceRoot),
+      ...(params.sessionKind === 'dream-collector'
+        ? {}
+        : { mcpService: this.mcpRegistry.forWorkspace(params.workspaceRoot) }),
       hostKind: params.hostKind === 'web' ? 'cli' : params.hostKind,
       approvalLevel: params.approvalLevel ?? 'default',
+      ...(params.sessionKind ? { sessionKind: params.sessionKind } : {}),
+      ...(params.dreamScope ? { dreamScope: params.dreamScope } : {}),
+      ...(params.dreamSourceSession ? { dreamSourceSession: params.dreamSourceSession } : {}),
       onEvent: (event) => this.handleRuntimeEvent(sessionId, event),
       onFileChange: (change) => this.callbacks.broadcastFileChange(sessionId, change),
       requestWorkspaceCapabilityTrust: (request) =>
