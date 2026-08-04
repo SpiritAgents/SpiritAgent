@@ -20,6 +20,7 @@ import {
 } from './provider-accounts.js';
 import {
   loadActiveModelProfile,
+  loadModelProfile,
   loadSpiritConfig,
   saveSpiritConfig,
 } from './spirit-config.js';
@@ -31,7 +32,7 @@ import type {
   SpiritModelProfile,
 } from './types.js';
 
-export { loadActiveModelProfile, loadSpiritConfig, saveSpiritConfig };
+export { loadActiveModelProfile, loadModelProfile, loadSpiritConfig, saveSpiritConfig };
 export type { ProviderSetupResult, SpiritConfigFile, SpiritModelProfile };
 
 function readAccount(account: string): string | undefined {

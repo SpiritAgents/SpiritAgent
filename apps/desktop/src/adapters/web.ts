@@ -373,6 +373,11 @@ export function createWebHostApi(): HostApi {
     subscribeAutomationsUpdates() {
       return () => {};
     },
+    subscribeDreamUpdates(callback) {
+      const controller = new AbortController();
+      void consumeSnapshotStream(baseUrl, callback, controller.signal);
+      return () => controller.abort();
+    },
     replyPendingApproval(request) {
       return post<DesktopSnapshot>(baseUrl, '/api/approval', request);
     },
@@ -615,6 +620,69 @@ function storeWebHostToken(token: string): void {
     localStorage.setItem(WEB_HOST_TOKEN_STORAGE_KEY, token);
   } catch {
     /* storage unavailable */
+  }
+}
+
+async function consumeSnapshotStream(
+  baseUrl: string,
+  callback: (snapshot: DesktopSnapshot) => void,
+  signal: AbortSignal,
+): Promise<void> {
+  let retryDelayMs = 250;
+  while (!signal.aborted) {
+    try {
+      const response = await fetch(`${baseUrl}/api/events`, {
+        headers: authHeaders(),
+        signal,
+      });
+      if (!response.ok) {
+        throw await responseError(response);
+      }
+      if (!response.body) {
+        throw new Error('Web Host update stream is unavailable.');
+      }
+      const reader = response.body.pipeThrough(new TextDecoderStream()).getReader();
+      let buffered = '';
+      retryDelayMs = 250;
+      try {
+        while (!signal.aborted) {
+          const { value, done } = await reader.read();
+          if (done) {
+            break;
+          }
+          buffered += value;
+          const lines = buffered.split('\n');
+          buffered = lines.pop() ?? '';
+          for (const line of lines) {
+            const trimmed = line.trim();
+            if (!trimmed) {
+              continue;
+            }
+            JSON.parse(trimmed);
+            const snapshot = await post<DesktopSnapshot>(baseUrl, '/api/poll',
+              withWebViewingSessionPath({}));
+            rememberWebViewingSession(snapshot);
+            callback(snapshot);
+          }
+        }
+      } finally {
+        await reader.cancel().catch(() => undefined);
+        reader.releaseLock();
+      }
+    } catch (error) {
+      if (signal.aborted) {
+        return;
+      }
+      console.error('[web-host] update stream failed', error);
+    }
+    await new Promise<void>((resolve) => {
+      const timer = setTimeout(resolve, retryDelayMs);
+      signal.addEventListener('abort', () => {
+        clearTimeout(timer);
+        resolve();
+      }, { once: true });
+    });
+    retryDelayMs = Math.min(retryDelayMs * 2, 5_000);
   }
 }
 

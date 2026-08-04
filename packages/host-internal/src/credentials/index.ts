@@ -1,6 +1,7 @@
 export {
   hasResolvableCredentials,
   loadActiveModelProfile,
+  loadModelProfile,
   loadSpiritConfig,
   readBedrockCredentials,
   readGoogleVertexCredentials,

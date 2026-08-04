@@ -26,6 +26,7 @@ export interface SessionDeleteContext
   removeEphemeralSession(filePath: string): void;
   bundleRuntimeIsBusy(sessionPath: string): boolean;
   clearSessionTitleGeneration(sessionPath: string): void;
+  disposeSessionRuntime(bundle: SessionBundle): Promise<void>;
 }
 
 /** 会话文件删除前读取 rewind sessionId，用于联动清理 rewind sidecar 目录。 */
@@ -124,6 +125,9 @@ export async function deleteSessionCommand(
         ctx.resetStreamingPlacementState(true, newActive);
       }
       await finishSessionActivationCommand(ctx, newActive);
+    }
+    if (removedBundle) {
+      await ctx.disposeSessionRuntime(removedBundle);
     }
 
     let rewindSessionId = removedBundle?.rewind.sessionId;

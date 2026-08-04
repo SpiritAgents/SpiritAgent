@@ -1,8 +1,14 @@
 import { randomUUID } from 'node:crypto';
 
-import type { JsonValue, LlmActiveSkill, RuntimeEvent, SpiritAgentMode } from '@spiritagent/agent-core';
+import type {
+  JsonValue,
+  LlmActiveSkill,
+  PendingWorkspaceFile,
+  RuntimeEvent,
+  SpiritAgentMode,
+} from '@spiritagent/agent-core';
 import type { BridgeRuntimeSnapshot } from '@spiritagent/agent-core/host-bridge';
-import { createHostTodoStore, type ApprovalLevel } from '@spiritagent/host-internal';
+import { createHostTodoStore, type ApprovalLevel, type ModelRef } from '@spiritagent/host-internal';
 
 import {
   createServerRuntime,
@@ -14,6 +20,18 @@ import { buildServerSnapshot } from './snapshot-projector.js';
 
 export type TurnStopReason = 'completed' | 'failed' | 'cancelled';
 
+export type ServerTurnResult =
+  | {
+      kind: 'completed';
+      assistantText: string;
+      toolExecutions: unknown[];
+    }
+  | {
+      kind: 'failed';
+      error: string;
+      toolExecutions: unknown[];
+    };
+
 export interface ServerSessionInfo {
   sessionId: string;
   workspaceRoot: string;
@@ -22,12 +40,15 @@ export interface ServerSessionInfo {
   title?: string;
   isBusy: boolean;
   approvalLevel: ApprovalLevel;
+  model: string;
   queuedTurns: number;
 }
 
 interface QueuedUserTurn {
   text: string;
+  clientTurnId?: string;
   explicitImages: string[];
+  explicitWorkspaceFiles: PendingWorkspaceFile[];
   activeSkills: LlmActiveSkill[];
 }
 
@@ -68,8 +89,23 @@ interface ServerSession {
 export interface SessionManagerCallbacks {
   /** Broadcast a runtime event to every connected client. */
   broadcastRuntimeEvent: (sessionId: string, event: RuntimeEvent<JsonValue>) => void;
+  broadcastSubagentEvents?: (
+    sessionId: string,
+    drains: Array<{
+      sessionId: string;
+      parentToolCallId: string;
+      events: RuntimeEvent<JsonValue>[];
+      pendingAux: unknown;
+    }>,
+  ) => void;
+  /** Broadcast before the runtime starts so every client opens the same turn boundary. */
+  broadcastUserTurnSubmitted?: (sessionId: string, turn: QueuedUserTurn) => void;
   /** Broadcast turn completion (terminal state of a submitUserTurn). */
-  broadcastTurnFinished: (sessionId: string, stopReason: TurnStopReason) => void;
+  broadcastTurnFinished: (
+    sessionId: string,
+    stopReason: TurnStopReason,
+    result?: ServerTurnResult,
+  ) => void;
   /** Broadcast a fresh session projection (throttled by the caller). */
   broadcastSnapshot: (sessionId: string, snapshot: BridgeRuntimeSnapshot) => void;
   /** Route a workspace capability trust prompt to clients; first reply wins. */
@@ -87,13 +123,17 @@ export interface CreateSessionParams {
   workspaceRoot: string;
   hostKind: ServerClientKind;
   approvalLevel?: ApprovalLevel;
+  modelRef?: ModelRef;
+  agentMode?: SpiritAgentMode;
   /** Todo store scope override (defaults to the new session id). */
   todoSessionKey?: string;
 }
 
 export interface SubmitUserTurnParams {
   text: string;
+  clientTurnId?: string;
   explicitImages?: string[];
+  explicitWorkspaceFiles?: PendingWorkspaceFile[];
   activeSkills?: LlmActiveSkill[];
 }
 
@@ -142,6 +182,7 @@ export class SessionManager {
       workspaceRoot: params.workspaceRoot,
       spiritDataDir: this.spiritDataDir,
       sessionKey: sessionId,
+      ...(params.modelRef ? { modelRef: params.modelRef } : {}),
       ...(params.todoSessionKey?.trim() ? { todoSessionKey: params.todoSessionKey.trim() } : {}),
       mcpService: this.mcpRegistry.forWorkspace(params.workspaceRoot),
       hostKind: params.hostKind === 'web' ? 'cli' : params.hostKind,
@@ -152,6 +193,7 @@ export class SessionManager {
         this.requestWorkspaceCapabilityTrust(sessionId, request),
       ...(this.callbacks.log ? { log: this.callbacks.log } : {}),
     });
+    await runtimeResult.setAgentMode(params.agentMode ?? 'agent');
 
     const info: ServerSessionInfo = {
       sessionId,
@@ -160,6 +202,7 @@ export class SessionManager {
       createdAt: new Date().toISOString(),
       isBusy: false,
       approvalLevel: params.approvalLevel ?? 'default',
+      model: runtimeResult.transportConfig.model,
       queuedTurns: 0,
     };
     const session: ServerSession = {
@@ -191,7 +234,12 @@ export class SessionManager {
   }
 
   snapshot(sessionId: string): BridgeRuntimeSnapshot {
-    return buildServerSnapshot(this.requireSession(sessionId).runtimeResult);
+    const session = this.requireSession(sessionId);
+    return this.snapshotForSession(session);
+  }
+
+  private snapshotForSession(session: ServerSession): BridgeRuntimeSnapshot {
+    return buildServerSnapshot(session.runtimeResult);
   }
 
   private projectInfo(session: ServerSession): ServerSessionInfo {
@@ -221,7 +269,7 @@ export class SessionManager {
     ) {
       const session = this.sessions.get(sessionId);
       if (session) {
-        this.callbacks.broadcastSnapshot(sessionId, buildServerSnapshot(session.runtimeResult));
+        this.callbacks.broadcastSnapshot(sessionId, this.snapshotForSession(session));
       }
     }
   }
@@ -237,15 +285,36 @@ export class SessionManager {
       const { runtime } = session.runtimeResult;
       await session.runtimeResult.toolExecutor.refreshCaches();
       await runtime.poll();
+      const childDrains = runtime.drainActiveChildSessionEvents().map((drain) => ({
+        ...drain,
+        pendingAux: runtime.childSessionPendingAuxState(drain.sessionId),
+      }));
+      if (childDrains.some((drain) => drain.events.length > 0 || drain.pendingAux !== undefined)) {
+        this.callbacks.broadcastSubagentEvents?.(session.info.sessionId, childDrains);
+      }
       // The bridge had clients drive this on a timer; the daemon pump owns it now.
       runtime.handleStreamStallTimeout();
 
       const turnResult = runtime.takeCompletedTurnResult();
       if (turnResult && session.turnActive) {
+        if (turnResult.kind !== 'completed' && turnResult.kind !== 'failed') {
+          return;
+        }
         this.finishTurn(
           session,
           session.turnGeneration,
           turnResult.kind === 'failed' ? 'failed' : 'completed',
+          turnResult.kind === 'failed'
+            ? {
+                kind: 'failed',
+                error: turnResult.error,
+                toolExecutions: turnResult.toolExecutions,
+              }
+            : {
+                kind: 'completed',
+                assistantText: turnResult.assistantText,
+                toolExecutions: turnResult.toolExecutions,
+              },
         );
         return;
       }
@@ -297,7 +366,9 @@ export class SessionManager {
 
     const turn: QueuedUserTurn = {
       text: params.text,
+      ...(params.clientTurnId?.trim() ? { clientTurnId: params.clientTurnId.trim() } : {}),
       explicitImages: params.explicitImages ?? [],
+      explicitWorkspaceFiles: params.explicitWorkspaceFiles ?? [],
       activeSkills: params.activeSkills ?? [],
     };
 
@@ -335,26 +406,33 @@ export class SessionManager {
     });
     session.pendingActiveSkills = [];
 
+    this.callbacks.broadcastUserTurnSubmitted?.(session.info.sessionId, turn);
+
     await runtime.startUserTurnStreaming(
       turn.text,
       turn.explicitImages,
-      [],
+      turn.explicitWorkspaceFiles,
       activeSkills,
     );
     // The session pump (25ms) drives poll() and harvests the turn result.
     // Push the busy edge immediately so clients see the turn start.
-    this.callbacks.broadcastSnapshot(session.info.sessionId, buildServerSnapshot(session.runtimeResult));
+    this.callbacks.broadcastSnapshot(session.info.sessionId, this.snapshotForSession(session));
   }
 
-  private finishTurn(session: ServerSession, generation: number, stopReason: TurnStopReason): void {
+  private finishTurn(
+    session: ServerSession,
+    generation: number,
+    stopReason: TurnStopReason,
+    result?: ServerTurnResult,
+  ): void {
     if (session.turnGeneration !== generation || !session.turnActive) {
       return;
     }
     session.turnActive = false;
     session.idleTicksWhileActive = 0;
     session.info.isBusy = false;
-    this.callbacks.broadcastTurnFinished(session.info.sessionId, stopReason);
-    this.callbacks.broadcastSnapshot(session.info.sessionId, buildServerSnapshot(session.runtimeResult));
+    this.callbacks.broadcastTurnFinished(session.info.sessionId, stopReason, result);
+    this.callbacks.broadcastSnapshot(session.info.sessionId, this.snapshotForSession(session));
     this.drainQueue(session);
   }
 
@@ -385,8 +463,12 @@ export class SessionManager {
     session.idleTicksWhileActive = 0;
     session.info.isBusy = false;
     this.callbacks.broadcastTurnFinished(sessionId, 'cancelled');
-    this.callbacks.broadcastSnapshot(sessionId, buildServerSnapshot(session.runtimeResult));
+    this.callbacks.broadcastSnapshot(sessionId, this.snapshotForSession(session));
     this.drainQueue(session);
+  }
+
+  abortShell(sessionId: string, toolCallId: string): boolean {
+    return this.requireSession(sessionId).runtimeResult.abortShell(toolCallId);
   }
 
   async continueAssistantCompletion(sessionId: string): Promise<void> {
@@ -426,6 +508,7 @@ export class SessionManager {
   async setAgentMode(sessionId: string, mode: SpiritAgentMode): Promise<void> {
     const session = this.requireSession(sessionId);
     await session.runtimeResult.setAgentMode(mode);
+    session.createParams.agentMode = mode;
   }
 
   setLoopEnabled(sessionId: string, enabled: boolean): void {
@@ -448,7 +531,7 @@ export class SessionManager {
     })
       .purge()
       .catch(() => {});
-    this.callbacks.broadcastSnapshot(sessionId, buildServerSnapshot(session.runtimeResult));
+    this.callbacks.broadcastSnapshot(sessionId, this.snapshotForSession(session));
   }
 
   rename(sessionId: string, title: string): void {
@@ -617,6 +700,9 @@ export class SessionManager {
       workspaceRoot: session.createParams.workspaceRoot,
       spiritDataDir: this.spiritDataDir,
       sessionKey: sessionId,
+      ...(session.createParams.modelRef ? { modelRef: session.createParams.modelRef } : {}),
+      todoSessionKey: session.todoSessionKey,
+      mcpService: this.mcpRegistry.forWorkspace(session.createParams.workspaceRoot),
       hostKind: session.createParams.hostKind === 'web' ? 'cli' : session.createParams.hostKind,
       approvalLevel: session.info.approvalLevel,
       onEvent: (event) => this.handleRuntimeEvent(sessionId, event),
@@ -627,7 +713,9 @@ export class SessionManager {
     });
     fresh.runtime.replaceHistory(history);
     fresh.setLoopEnabled(old.runtime.loopEnabled());
+    await fresh.setAgentMode(session.createParams.agentMode ?? 'agent');
     session.runtimeResult = fresh;
+    await old.toolExecutor.disposeLsp();
     await fresh.runSessionStart('resume');
   }
 
@@ -639,6 +727,10 @@ export class SessionManager {
 
   async runSessionStart(sessionId: string, source: 'startup' | 'resume' | 'open'): Promise<void> {
     await this.requireSession(sessionId).runtimeResult.runSessionStart(source);
+  }
+
+  async runSessionEnd(sessionId: string, reason: 'abort' | 'close' | 'switch'): Promise<void> {
+    await this.requireSession(sessionId).runtimeResult.runSessionEnd(reason);
   }
 
   setAttribution(sessionId: string, attribution: { commitEnabled?: boolean; prEnabled?: boolean }): void {
@@ -667,6 +759,7 @@ export class SessionManager {
   ): Promise<void> {
     const session = this.requireSession(sessionId);
     await session.runtimeResult.runtime.continuePendingQuestions(result);
+    this.callbacks.broadcastSnapshot(sessionId, this.snapshotForSession(session));
   }
 
   private requestWorkspaceCapabilityTrust(
@@ -750,14 +843,17 @@ export class SessionManager {
     clearInterval(session.pump);
     session.runtimeResult.runtime.abort();
     this.sessions.delete(sessionId);
+    await session.runtimeResult.toolExecutor.disposeLsp();
   }
 
   /** Aborts every session; called on daemon shutdown. */
-  shutdown(): void {
+  async shutdown(): Promise<void> {
+    const disposals: Promise<void>[] = [];
     for (const session of this.sessions.values()) {
       session.turnGeneration += 1;
       clearInterval(session.pump);
       session.runtimeResult.runtime.abort();
+      disposals.push(session.runtimeResult.toolExecutor.disposeLsp());
     }
     this.sessions.clear();
     for (const [requestId, pending] of this.pendingTrustRequests) {
@@ -765,5 +861,6 @@ export class SessionManager {
       clearTimeout(pending.timer);
       pending.resolve('deny');
     }
+    await Promise.all(disposals);
   }
 }

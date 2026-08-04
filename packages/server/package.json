@@ -14,6 +14,10 @@
   "type": "module",
   "main": "./dist/src/entry.js",
   "types": "./dist/src/protocol/index.d.ts",
+  "exports": {
+    ".": "./dist/src/protocol/index.js",
+    "./client": "./dist/src/client.js"
+  },
   "bin": {
     "spirit-server": "./dist/src/entry.js"
   },

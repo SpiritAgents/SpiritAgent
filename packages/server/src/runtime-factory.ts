@@ -72,6 +72,7 @@ import {
   resolveTranscriptSessionDir,
   resolveTransportConfig,
   type ApprovalLevel,
+  type ModelRef,
 } from '@spiritagent/host-internal';
 
 import { createNoopPeer } from './noop-peer.js';
@@ -85,6 +86,7 @@ export interface ServerRuntimeOptions {
   spiritDataDir: string;
   /** Transcript + todo scope key; defaults to the session id. */
   sessionKey: string;
+  modelRef?: ModelRef;
   /** Todo store scope override (CLI keys todos by its own chat session id). */
   todoSessionKey?: string;
   /** Shared per-workspace MCP service (daemon registry); defaults to a fresh one. */
@@ -127,7 +129,7 @@ export interface ServerRuntimeResult {
   /** sessionStart hook (startup/resume/open), applying context messages. */
   runSessionStart: (source: 'startup' | 'resume' | 'open') => Promise<void>;
   /** sessionEnd hook (switch/close). */
-  runSessionEnd: (reason: 'switch' | 'close') => Promise<void>;
+  runSessionEnd: (reason: 'abort' | 'switch' | 'close') => Promise<void>;
   /** Re-run rules/skills/plan discovery (mode switch or file changes). */
   reloadHostMetadata: (mode: SpiritAgentMode) => Promise<void>;
   /** Export api messages + request trace + assembled system prompts. */
@@ -136,6 +138,8 @@ export interface ServerRuntimeResult {
   setAttribution: (attribution: { commitEnabled?: boolean; prEnabled?: boolean } | undefined) => void;
   /** Re-scope the todo store (CLI keys todos by its own chat session id). */
   setTodoSessionKey: (sessionKey: string) => void;
+  /** Abort a running shell process owned by this session. */
+  abortShell: (toolCallId: string) => boolean;
 }
 
 /**
@@ -158,7 +162,11 @@ export async function createServerRuntime(
   const log = options.log ?? (() => {});
   const approvalLevel = options.approvalLevel;
 
-  const transportConfig = resolveTransportConfig({ workspaceRoot, spiritDataDir });
+  const transportConfig = resolveTransportConfig({
+    workspaceRoot,
+    spiritDataDir,
+    ...(options.modelRef ? { modelRef: options.modelRef } : {}),
+  });
   await ensureTranscriptSessionDir(spiritDataDir, sessionKey);
 
   // 1. Tool executor: noop peer (no stdio peer in the daemon) + per-session MCP.
@@ -498,5 +506,6 @@ export async function createServerRuntime(
     setTodoSessionKey: (key) => {
       service.setTodoScope?.({ sessionKey: key });
     },
+    abortShell: (toolCallId) => service.abortShell(toolCallId),
   };
 }

@@ -27,6 +27,10 @@ export type DesktopHostCommandResultHandler = (
   result: unknown,
 ) => void | Promise<void>;
 
+export type DesktopHostUpdateSubscriber = (
+  listener: (snapshot: unknown) => void,
+) => () => void;
+
 export interface DesktopHttpHostState {
   host: string;
   port: number;
@@ -53,6 +57,7 @@ export interface DesktopHttpHostOptions {
   port: number;
   invokeHostCommand: DesktopHostCommandInvoker;
   onHostCommandResult?: DesktopHostCommandResultHandler;
+  subscribeHostUpdates?: DesktopHostUpdateSubscriber;
   auth?: DesktopHttpAuthOptions;
   static?: DesktopHttpStaticOptions;
   logger?: Pick<Console, 'error' | 'log'>;
@@ -91,6 +96,7 @@ export function createDesktopHttpHost(options: DesktopHttpHostOptions): DesktopH
           host: options.host,
           invokeHostCommand: options.invokeHostCommand,
           onHostCommandResult: options.onHostCommandResult,
+          subscribeHostUpdates: options.subscribeHostUpdates,
           auth: options.auth,
           static: options.static,
         }),
@@ -167,6 +173,7 @@ export function createDesktopHttpRequestHandler({
   host,
   invokeHostCommand,
   onHostCommandResult,
+  subscribeHostUpdates,
   auth,
   static: staticOptions,
 }: {
@@ -174,6 +181,7 @@ export function createDesktopHttpRequestHandler({
   host: string;
   invokeHostCommand: DesktopHostCommandInvoker;
   onHostCommandResult?: DesktopHostCommandResultHandler;
+  subscribeHostUpdates?: DesktopHostUpdateSubscriber;
   auth?: DesktopHttpAuthOptions;
   static?: DesktopHttpStaticOptions;
 }) {
@@ -221,6 +229,7 @@ export function createDesktopHttpRequestHandler({
           pathname,
           runHostCommand,
           auth,
+          subscribeHostUpdates,
           onPairingFailure: () => {
             pairingFailureCount += 1;
             if (pairingFailureCount === MAX_PAIRING_FAILURES) {
@@ -270,6 +279,7 @@ async function handleApiRequest({
   pathname,
   runHostCommand,
   auth,
+  subscribeHostUpdates,
   onPairingFailure,
   isPairingLocked,
 }: {
@@ -278,6 +288,7 @@ async function handleApiRequest({
   pathname: string;
   runHostCommand: (command: HostCommandName, payload?: unknown) => Promise<unknown>;
   auth?: DesktopHttpAuthOptions;
+  subscribeHostUpdates?: DesktopHostUpdateSubscriber;
   onPairingFailure: () => void;
   isPairingLocked: () => boolean;
 }): Promise<void> {
@@ -326,6 +337,38 @@ async function handleApiRequest({
     writeJson(request, response, 401, {
       code: 'PAIRING_REQUIRED',
       error: '需要完成首次配对。',
+    });
+    return;
+  }
+
+  if (request.method === 'GET' && pathname === '/api/events') {
+    if (!subscribeHostUpdates) {
+      writeJson(request, response, 404, { error: 'Host updates are unavailable.' });
+      return;
+    }
+    response.writeHead(200, {
+      'Content-Type': 'application/x-ndjson; charset=utf-8',
+      'Cache-Control': 'no-cache, no-transform',
+      Connection: 'keep-alive',
+    });
+    response.write('\n');
+    const unsubscribe = subscribeHostUpdates((snapshot) => {
+      if (!response.destroyed) {
+        response.write(`${JSON.stringify(snapshot)}\n`);
+      }
+    });
+    await new Promise<void>((resolve) => {
+      let closed = false;
+      const close = () => {
+        if (closed) {
+          return;
+        }
+        closed = true;
+        unsubscribe();
+        resolve();
+      };
+      response.once('close', close);
+      request.once('aborted', close);
     });
     return;
   }

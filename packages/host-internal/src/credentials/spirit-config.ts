@@ -163,3 +163,17 @@ export function loadActiveModelProfile(spiritDataDir: string): SpiritModelProfil
   }
   return resolveSpiritModelProfile(resolved.group, resolved.model);
 }
+
+export function loadModelProfile(
+  spiritDataDir: string,
+  modelRef: ModelRef,
+): SpiritModelProfile | undefined {
+  const config = loadSpiritConfig(spiritDataDir);
+  if (!config) {
+    return undefined;
+  }
+  const resolved = findModelByRef(config.providerGroups, modelRef);
+  return resolved
+    ? resolveSpiritModelProfile(resolved.group, resolved.model)
+    : undefined;
+}

@@ -38,6 +38,7 @@ interface ActivationState {
 }
 
 export interface SessionActivationContext {
+  usesDaemonRuntime(): boolean;
   runSerialized<T>(work: () => Promise<T>, label?: string): Promise<T>;
   ensureInitialized(
     workspaceRootOverride?: string,
@@ -499,7 +500,9 @@ export async function finishSessionActivationCommand(
     }
     return;
   }
-  await ctx.ensureToolExecutor(bundle);
+  if (!ctx.usesDaemonRuntime()) {
+    await ctx.ensureToolExecutor(bundle);
+  }
   await ctx.refreshTodoSnapshotForBundle(bundle);
   await ctx.refreshRuntimeForBundle(bundle);
   await ctx.flushDeferredRuntimeRefreshIfIdle(bundle);

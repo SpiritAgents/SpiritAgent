@@ -25,6 +25,7 @@ import {
   SERVER_HEALTH,
   SERVER_INITIALIZE,
   SESSION_ABORT,
+  SESSION_ABORT_SHELL,
   SESSION_ACTIVATE_SKILL,
   SESSION_ADD_PENDING_IMAGE,
   SESSION_APPLY_MCP_PROMPT,
@@ -49,6 +50,7 @@ import {
   SESSION_REPLACE_CONFIG,
   SESSION_REPLACE_FROM_ARCHIVE,
   SESSION_RUN_SESSION_START,
+  SESSION_RUN_SESSION_END,
   SESSION_RELOAD_METADATA,
   SESSION_SET_APPROVAL_LEVEL,
   SESSION_SET_ATTRIBUTION,
@@ -59,9 +61,11 @@ import {
   SESSION_START_MANUAL_TOOL_COMMAND,
   SESSION_SUBAGENT_ARCHIVE,
   SESSION_SUBAGENT_AUX,
+  SESSION_SUBAGENT_EVENTS,
   SESSION_SUBMIT_USER_TURN,
   SESSION_TAKE_MANUAL_RESULT,
   SESSION_TURN_FINISHED,
+  SESSION_USER_TURN_SUBMITTED,
   SESSION_FILE_CHANGED,
   SERVER_SET_LLM_CLIENT_VERSION,
   SERVER_SET_LLM_HTTP_VERSION,
@@ -83,6 +87,7 @@ const SESSION_METHODS = new Set([
   SESSION_CLOSE,
   SESSION_SUBMIT_USER_TURN,
   SESSION_ABORT,
+  SESSION_ABORT_SHELL,
   SESSION_SET_APPROVAL_LEVEL,
   SESSION_SET_MODE,
   SESSION_SET_LOOP_ENABLED,
@@ -112,6 +117,7 @@ const SESSION_METHODS = new Set([
   SESSION_REPLACE_CONFIG,
   SESSION_RELOAD_METADATA,
   SESSION_RUN_SESSION_START,
+  SESSION_RUN_SESSION_END,
   SESSION_SET_ATTRIBUTION,
   SESSION_SET_TODO_SESSION_KEY,
 ]);
@@ -197,8 +203,25 @@ export async function startDaemon(options: DaemonOptions): Promise<RunningDaemon
     broadcastRuntimeEvent: (sessionId, event) => {
       broadcast(RUNTIME_EVENT, { sessionId, event });
     },
-    broadcastTurnFinished: (sessionId, stopReason) => {
-      broadcast(SESSION_TURN_FINISHED, { sessionId, stopReason });
+    broadcastSubagentEvents: (sessionId, drains) => {
+      broadcast(SESSION_SUBAGENT_EVENTS, { sessionId, drains });
+    },
+    broadcastUserTurnSubmitted: (sessionId, turn) => {
+      broadcast(SESSION_USER_TURN_SUBMITTED, {
+        sessionId,
+        text: turn.text,
+        ...(turn.clientTurnId ? { clientTurnId: turn.clientTurnId } : {}),
+        ...(turn.explicitWorkspaceFiles.length > 0
+          ? { explicitWorkspaceFiles: turn.explicitWorkspaceFiles }
+          : {}),
+      });
+    },
+    broadcastTurnFinished: (sessionId, stopReason, result) => {
+      broadcast(SESSION_TURN_FINISHED, {
+        sessionId,
+        stopReason,
+        ...(result ? { result } : {}),
+      });
     },
     broadcastSnapshot: (sessionId, snapshot) => {
       broadcast(SESSION_SNAPSHOT, { sessionId, snapshot });
@@ -240,6 +263,8 @@ export async function startDaemon(options: DaemonOptions): Promise<RunningDaemon
         }
         const approvalLevel = params['approvalLevel'];
         const todoSessionKey = params['todoSessionKey'];
+        const modelRef = params['modelRef'];
+        const agentMode = params['agentMode'];
         const info = await sessionManager.createSession({
           workspaceRoot,
           hostKind: clientStates.get(conn)?.clientKind ?? 'cli',
@@ -248,6 +273,15 @@ export async function startDaemon(options: DaemonOptions): Promise<RunningDaemon
             : {}),
           ...(typeof todoSessionKey === 'string' && todoSessionKey.trim()
             ? { todoSessionKey: todoSessionKey.trim() }
+            : {}),
+          ...(modelRef
+            && typeof modelRef === 'object'
+            && typeof (modelRef as Record<string, unknown>)['groupId'] === 'string'
+            && typeof (modelRef as Record<string, unknown>)['name'] === 'string'
+            ? { modelRef: modelRef as never }
+            : {}),
+          ...(agentMode === 'plan' || agentMode === 'ask' || agentMode === 'debug'
+            ? { agentMode }
             : {}),
         });
         return info;
@@ -264,8 +298,17 @@ export async function startDaemon(options: DaemonOptions): Promise<RunningDaemon
         }
         await sessionManager.submitUserTurn(readSessionId(params), {
           text,
+          ...(typeof params['clientTurnId'] === 'string' && params['clientTurnId'].trim()
+            ? { clientTurnId: params['clientTurnId'].trim() }
+            : {}),
           ...(Array.isArray(params['explicitImages'])
             ? { explicitImages: params['explicitImages'].filter((v): v is string => typeof v === 'string') }
+            : {}),
+          ...(Array.isArray(params['explicitWorkspaceFiles'])
+            ? { explicitWorkspaceFiles: params['explicitWorkspaceFiles'] as never }
+            : {}),
+          ...(Array.isArray(params['activeSkills'])
+            ? { activeSkills: params['activeSkills'] as never }
             : {}),
         });
         return { accepted: true };
@@ -273,6 +316,13 @@ export async function startDaemon(options: DaemonOptions): Promise<RunningDaemon
       case SESSION_ABORT:
         sessionManager.abort(readSessionId(params));
         return { ok: true };
+      case SESSION_ABORT_SHELL:
+        return {
+          aborted: sessionManager.abortShell(
+            readSessionId(params),
+            String(params['toolCallId'] ?? ''),
+          ),
+        };
       case SESSION_SET_APPROVAL_LEVEL: {
         const level = params['approvalLevel'];
         if (level !== 'default' && level !== 'auto-approval' && level !== 'full-approval') {
@@ -397,6 +447,14 @@ export async function startDaemon(options: DaemonOptions): Promise<RunningDaemon
           throw new Error('invalid source');
         }
         await sessionManager.runSessionStart(readSessionId(params), source);
+        return { ok: true };
+      }
+      case SESSION_RUN_SESSION_END: {
+        const reason = params['reason'];
+        if (reason !== 'abort' && reason !== 'close' && reason !== 'switch') {
+          throw new Error('invalid reason');
+        }
+        await sessionManager.runSessionEnd(readSessionId(params), reason);
         return { ok: true };
       }
       case SESSION_SET_ATTRIBUTION:
@@ -588,7 +646,7 @@ export async function startDaemon(options: DaemonOptions): Promise<RunningDaemon
       return;
     }
     closed = true;
-    sessionManager.shutdown();
+    await sessionManager.shutdown();
     for (const conn of connections) {
       conn.close(1001, 'server shutting down');
     }

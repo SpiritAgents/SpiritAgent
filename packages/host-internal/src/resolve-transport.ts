@@ -18,16 +18,19 @@ import {
 import type { ModelProviderId } from './model-provider-presets.js';
 import {
   loadActiveModelProfile,
+  loadModelProfile,
   readBedrockCredentials,
   readGoogleVertexCredentials,
   resolveStoredApiKeyForProfile,
 } from './credentials/index.js';
 import type { SpiritModelCapability, SpiritModelProfile } from './credentials/types.js';
+import type { ModelRef } from './config-v2.js';
 import { resolveProfileApiBase, resolveSetupTransportKind } from './provider-setup.js';
 
 export interface ResolveTransportContext {
   workspaceRoot: string;
   spiritDataDir: string;
+  modelRef?: ModelRef;
 }
 
 function modelCapabilitiesFromConfig(
@@ -279,7 +282,9 @@ function buildTransportFromProfile(
  * in-process so secrets never cross an IPC/WS boundary.
  */
 export function resolveTransportConfig(context: ResolveTransportContext): LlmTransportConfig {
-  const profile = loadActiveModelProfile(context.spiritDataDir);
+  const profile = context.modelRef
+    ? loadModelProfile(context.spiritDataDir, context.modelRef)
+    : loadActiveModelProfile(context.spiritDataDir);
   if (!profile) {
     throw new Error('No active model configured. Run provider setup first.');
   }

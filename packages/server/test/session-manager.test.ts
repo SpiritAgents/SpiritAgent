@@ -19,7 +19,10 @@ function freshDataDir(): string {
           id: 'openai',
           provider: 'openai',
           apiBase: 'https://api.openai.com/v1',
-          models: [{ name: 'gpt-4o-mini' }],
+          models: [
+            { name: 'gpt-4o-mini' },
+            { name: 'gpt-4o-mini-pane' },
+          ],
         },
       ],
       activeModel: { groupId: 'openai', name: 'gpt-4o-mini' },
@@ -100,15 +103,17 @@ describe('SessionManager', () => {
         workspaceRoot: tmpdir(),
         hostKind: 'desktop',
         approvalLevel: 'full-approval',
+        modelRef: { groupId: 'openai', name: 'gpt-4o-mini-pane' },
       });
       assert.equal(created.approvalLevel, 'full-approval');
+      assert.equal(created.model, 'gpt-4o-mini-pane');
       const info = manager.getSession(created.sessionId);
       assert.equal(info?.hostKind, 'desktop');
 
       await manager.setApprovalLevel(created.sessionId, 'auto-approval');
       assert.equal(manager.getSession(created.sessionId)?.approvalLevel, 'auto-approval');
 
-      manager.shutdown();
+      await manager.shutdown();
       assert.deepEqual(manager.listSessions(), []);
     });
   });
@@ -160,7 +165,45 @@ describe('SessionManager', () => {
         assert.ok(allowedKeys.has(key), `unexpected snapshot key: ${key}`);
       }
 
-      manager.shutdown();
+      await manager.shutdown();
+    });
+  });
+
+  it('broadcasts a shared user-turn boundary before runtime execution', async () => {
+    await withMockKeyring(async () => {
+      const dataDir = freshDataDir();
+      const submitted: Array<{ sessionId: string; text: string; clientTurnId?: string }> = [];
+      const manager = new SessionManager(dataDir, {
+        broadcastRuntimeEvent: () => {},
+        broadcastUserTurnSubmitted: (sessionId, turn) => {
+          submitted.push({
+            sessionId,
+            text: turn.text,
+            ...(turn.clientTurnId ? { clientTurnId: turn.clientTurnId } : {}),
+          });
+        },
+        broadcastTurnFinished: () => {},
+        broadcastSnapshot: () => {},
+        broadcastTrustRequest: () => {},
+        broadcastFileChange: () => {},
+      });
+      const created = await manager.createSession({
+        workspaceRoot: tmpdir(),
+        hostKind: 'desktop',
+      });
+
+      await manager.submitUserTurn(created.sessionId, {
+        text: 'shared boundary',
+        clientTurnId: 'desktop-turn-1',
+      });
+
+      assert.deepEqual(submitted, [{
+        sessionId: created.sessionId,
+        text: 'shared boundary',
+        clientTurnId: 'desktop-turn-1',
+      }]);
+      manager.abort(created.sessionId);
+      await manager.shutdown();
     });
   });
 });

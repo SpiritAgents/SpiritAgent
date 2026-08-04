@@ -65,6 +65,7 @@ After the upgrade handshake the server sends a `server.connected` notification (
 | `session.close` | request | Abort + drop a session |
 | `session.submitUserTurn` | request | Start a user turn (`{ accepted: true }` or `{ queued: true }` when busy; the queue drains on idle) |
 | `session.abort` | request | Abort the current turn |
+| `session.abortShell` | request | Abort a running shell process by tool call id |
 | `session.setApprovalLevel` | request | `default` / `auto-approval` / `full-approval` |
 | `session.setMode` | request | Switch agent mode: `agent` / `plan` / `ask` / `debug` |
 | `session.setLoopEnabled` | request | Toggle loop mode |
@@ -76,7 +77,10 @@ After the upgrade handshake the server sends a `server.connected` notification (
 | `session.replyPendingApproval` | request | Answer a pending tool approval (`{ kind: 'allow' \| 'deny', … }`) |
 | `session.replyPendingQuestions` | request | Answer a pending structured questionnaire |
 | `session.replyWorkspaceCapabilityTrust` | request | Answer a workspace trust prompt (`allowOnce` / `deny` / `alwaysTrust`; first reply wins) |
+| `session.runSessionStart` | request | Run the daemon-owned session start hook |
+| `session.runSessionEnd` | request | Run the daemon-owned session end hook |
 | `runtime.event` | notification | One raw agent-core `RuntimeEvent` (`assistant-chunk`, `tool-call-started`, `approval-requested`, …) tagged with `sessionId`; broadcast to every connected client |
+| `session.userTurnSubmitted` | notification | Shared user-turn boundary, including a client turn id for origin-client deduplication |
 | `session.turnFinished` | notification | Terminal state of a turn: `completed` / `failed` / `cancelled` |
 | `session.snapshot` | notification | Session projection pushed at interaction boundaries (approval/questions/turn end) |
 | `workspace.trustRequested` | notification | Hooks ask for workspace capability trust; reply with `session.replyWorkspaceCapabilityTrust` |
@@ -85,7 +89,7 @@ Notes for client authors:
 
 - Events are **pushed**, not polled; each session runs a 25ms pump inside the daemon (the Desktop session-pump model) that drives `runtime.poll()` and harvests terminal results, so turns survive transient idle windows inside the turn machine (e.g. the await boundary while an approval resolves).
 - `update-pending-assistant-thinking` carries the full accumulated thinking text (same contract as the legacy host bridge) — clients that want deltas must diff locally.
-- `session.list`/`session.open` currently cover **live** sessions only; disk-based chat restore across daemon restarts lands with the Desktop migration phase.
+- `session.list` covers **live** sessions only. Desktop restores disk chats by creating a live daemon session and sending its archive; the daemon registry itself is not a disk-chat index.
 - Multi-client: every connected client receives every session's events; filter by `sessionId`. When the **last** client disconnects, pending approvals are denied and pending questions skipped so no runtime parks forever.
 
 ## Remote access

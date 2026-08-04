@@ -80,6 +80,7 @@ export interface SubmitUserTurnAfterInitializedOptions {
 }
 
 export interface SessionTurnOrchestratorContext {
+  usesDaemonRuntime(): boolean;
   runSerialized<T>(work: () => Promise<T>, label?: string): Promise<T>;
   ensureInitialized(workspaceRootOverride?: string, options?: { fastPath?: boolean }): Promise<void>;
   requireRuntime(): DesktopRuntime;
@@ -88,6 +89,7 @@ export interface SessionTurnOrchestratorContext {
   resolveApiKeyForConfigModel(model: import('../types.js').ModelRef): Promise<string | undefined>;
   activeBundle(): SessionBundle;
   allBundles(): Iterable<SessionBundle>;
+  bundleNeedsRuntimeProjection(bundle: SessionBundle): boolean;
   getActiveBundle(): SessionBundle | undefined;
   activeSessionId(): string | undefined;
   emitLiveSnapshotUpdate(): void;
@@ -225,7 +227,9 @@ export async function submitUserTurnAfterInitializedCommand(
   if (!runtime) {
     throw new Error(i18n.t('error.runtimeNotReady'));
   }
-  await ctx.ensureToolExecutor(bundle);
+  if (!ctx.usesDaemonRuntime()) {
+    await ctx.ensureToolExecutor(bundle);
+  }
   try {
     await runtime.startUserTurnStreaming(trimmed, [], explicitWorkspaceFiles, turnSkills);
     ctx.refreshArchiveFromRuntime(bundle);
@@ -326,13 +330,19 @@ export async function drainQueuedUserTurnIfIdle(
 /** 单次泵 tick 主体（调用方须已持有 runSerialized 锁）：推进所有 busy 会话并同步宿主状态。 */
 async function runSessionsPumpTick(ctx: SessionTurnOrchestratorContext): Promise<void> {
   await ctx.ensureInitialized(undefined, { fastPath: true });
+  const fullyTicked = new Set<SessionBundle>();
   for (const bundle of ctx.allBundles()) {
-    if (bundle.runtime?.isBusy() || shouldAdvanceWorktreeBootstrap(bundle)) {
+    if (
+      bundle.runtime?.isBusy()
+      || shouldAdvanceWorktreeBootstrap(bundle)
+      || ctx.bundleNeedsRuntimeProjection(bundle)
+    ) {
       await tickSessionCommand(ctx, bundle);
+      fullyTicked.add(bundle);
     }
   }
   const active = ctx.getActiveBundle();
-  if (active && !active.runtime?.isBusy()) {
+  if (active && !fullyTicked.has(active) && !active.runtime?.isBusy()) {
     await tickSessionCommand(ctx, active, { light: true });
   }
   ctx.syncActiveRuntimePointer();
@@ -496,7 +506,9 @@ export async function continueAssistantCompletionCommand(
       throw new Error(i18n.t('error.readonlySessionContinue'));
     }
 
-    await ctx.ensureToolExecutor();
+    if (!ctx.usesDaemonRuntime()) {
+      await ctx.ensureToolExecutor();
+    }
 
     const continuable = ctx.latestContinuableAssistantMessage();
     if (!continuable || continuable.id !== messageId) {

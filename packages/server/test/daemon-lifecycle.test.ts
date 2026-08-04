@@ -5,6 +5,7 @@ import { join } from 'node:path';
 import { describe, it } from 'node:test';
 
 import { readCurrentToken } from '../src/auth-token.js';
+import { ServerRpcClient } from '../src/client.js';
 import { startDaemon, type RunningDaemon } from '../src/daemon.js';
 import { listInstances } from '../src/instance-registry.js';
 import {
@@ -172,5 +173,21 @@ describe('daemon lifecycle (smoke #1)', () => {
     } finally {
       await daemon.close();
     }
+  });
+
+  it('notifies shared clients when the daemon disconnects', async () => {
+    const { daemon, dataDir } = await startTestDaemon();
+    const token = await readCurrentToken(dataDir);
+    assert.ok(token);
+    const client = new ServerRpcClient({
+      url: `ws://127.0.0.1:${daemon.port}`,
+      token,
+    });
+    await client.connect();
+    const disconnected = new Promise<Error>((resolve) => {
+      client.onDisconnect(resolve);
+    });
+    await daemon.close();
+    assert.match((await disconnected).message, /connection closed/iu);
   });
 });

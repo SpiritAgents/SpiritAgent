@@ -24,6 +24,8 @@ export const SESSION_CLOSE = 'session.close';
 export const SESSION_SUBMIT_USER_TURN = 'session.submitUserTurn';
 /** RPC: abort the current turn. */
 export const SESSION_ABORT = 'session.abort';
+/** RPC: abort a running daemon shell by tool call id. */
+export const SESSION_ABORT_SHELL = 'session.abortShell';
 /** RPC: set approval level (default | auto-approval | full-approval). */
 export const SESSION_SET_APPROVAL_LEVEL = 'session.setApprovalLevel';
 /** RPC: answer a pending tool approval. */
@@ -77,6 +79,8 @@ export const SESSION_REPLACE_CONFIG = 'session.replaceConfig';
 export const SESSION_RELOAD_METADATA = 'session.reloadHostMetadata';
 /** RPC: run the sessionStart hook (startup | resume | open). */
 export const SESSION_RUN_SESSION_START = 'session.runSessionStart';
+/** RPC: run the sessionEnd hook (abort | close | switch). */
+export const SESSION_RUN_SESSION_END = 'session.runSessionEnd';
 /** RPC: attribution toggles for future turns. */
 export const SESSION_SET_ATTRIBUTION = 'session.setAttribution';
 /** RPC: re-scope the todo store (CLI keys todos by its chat session id). */
@@ -90,6 +94,10 @@ export const SERVER_SET_LLM_CLIENT_VERSION = 'server.setLlmClientVersion';
 export const RUNTIME_EVENT = 'runtime.event';
 /** Notification: a submitted turn reached a terminal state. */
 export const SESSION_TURN_FINISHED = 'session.turnFinished';
+/** Notification: a user turn started (clients create a shared timeline boundary). */
+export const SESSION_USER_TURN_SUBMITTED = 'session.userTurnSubmitted';
+/** Notification: drained child-session runtime events and pending aux state. */
+export const SESSION_SUBAGENT_EVENTS = 'session.subagentEvents';
 /** Notification: throttled session projection at interaction boundaries. */
 export const SESSION_SNAPSHOT = 'session.snapshot';
 /** Notification: hooks ask for workspace capability trust. */
@@ -136,6 +144,8 @@ export type SessionApprovalLevel = 'default' | 'auto-approval' | 'full-approval'
 export interface SessionCreateParams {
   workspaceRoot: string;
   approvalLevel?: SessionApprovalLevel;
+  modelRef?: { groupId: string; name: string };
+  agentMode?: 'agent' | 'plan' | 'ask' | 'debug';
 }
 
 export interface SessionInfo {
@@ -145,12 +155,15 @@ export interface SessionInfo {
   createdAt: string;
   isBusy: boolean;
   approvalLevel: SessionApprovalLevel;
+  model: string;
 }
 
 export interface SessionSubmitUserTurnParams {
   sessionId: string;
   text: string;
+  clientTurnId?: string;
   explicitImages?: string[];
+  explicitWorkspaceFiles?: unknown[];
   activeSkills?: unknown[];
 }
 
@@ -164,4 +177,14 @@ export type TurnStopReason = 'completed' | 'failed' | 'cancelled';
 export interface SessionTurnFinishedParams {
   sessionId: string;
   stopReason: TurnStopReason;
+  result?:
+    | { kind: 'completed'; assistantText: string; toolExecutions: unknown[] }
+    | { kind: 'failed'; error: string; toolExecutions: unknown[] };
+}
+
+export interface SessionUserTurnSubmittedParams {
+  sessionId: string;
+  text: string;
+  clientTurnId?: string;
+  explicitWorkspaceFiles?: unknown[];
 }

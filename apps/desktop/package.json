@@ -19,7 +19,7 @@
     "node": ">=24"
   },
   "scripts": {
-    "build:deps": "npm --prefix ../../packages/agent-core run build && npm --prefix ../../packages/host-internal run build:tsc",
+    "build:deps": "npm --prefix ../../packages/agent-core run build && npm --prefix ../../packages/host-internal run build:tsc && npm --prefix ../../packages/server run build",
     "ensure:dev-built": "node scripts/ensure-dev-built.mjs",
     "postinstall": "node scripts/ensure-pty-spawn-helper.mjs",
     "dev": "node scripts/ensure-dev-built.mjs && concurrently -k -n electron,renderer \"npm run dev:electron:run\" \"npm run dev:renderer\"",
@@ -61,6 +61,7 @@
     "@shikijs/themes": "^3.23.0",
     "@spiritagent/agent-core": "file:../../packages/agent-core",
     "@spiritagent/host-internal": "file:../../packages/host-internal",
+    "@spiritagent/server": "file:../../packages/server",
     "@streamdown/code": "^1.1.1",
     "@streamdown/math": "^1.0.2",
     "@streamdown/mermaid": "^1.0.2",

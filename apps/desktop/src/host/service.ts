@@ -467,6 +467,18 @@ import {
   createDesktopRuntime,
   type DesktopRuntime,
 } from './runtime.js';
+import {
+  abortRemoteDesktopShell,
+  closeRemoteDesktopRuntime,
+  createRemoteDesktopRuntime,
+  desktopUsesDaemonRuntime,
+  exportRemoteDesktopState,
+  replyRemoteWorkspaceCapabilityTrust,
+  remoteDesktopRuntimeNeedsProjection,
+  runRemoteDesktopSessionEnd,
+  runRemoteDesktopSessionStart,
+  setRemoteDesktopApprovalLevel,
+} from './remote-runtime.js';
 import { buildActiveSkillPayload } from './skills.js';
 import { createDesktopSubagentWorkspaceBootstrap } from './subagent-worktree-bootstrap.js';
 import {
@@ -622,7 +634,9 @@ class DesktopHostService {
   private hostExtensionMarketplace: HostExtensionMarketplaceManager | undefined;
   private hostExtensionMarketplaceFetchImpl: typeof fetch | undefined;
   private state: HostState | undefined;
-  private readonly sessionRegistry = new SessionRegistry();
+  private readonly sessionRegistry = new SessionRegistry((bundle) => {
+    void closeRemoteDesktopRuntime(bundle.runtime);
+  });
   /** Active bundle runtime mirror for legacy call sites; use `bundle.runtime` in session ticks. */
   private runtime: DesktopRuntime | undefined;
   private toolExecutor: DesktopToolExecutor | undefined;
@@ -695,6 +709,11 @@ class DesktopHostService {
   private visiblePaneSessionPaths: string[] = [];
   private readonly paneSessionSliceCache = new Map<string, { signature: string; slice: PaneSessionSlice }>();
   private pendingWorkspaceCapabilityTrust: WorkspaceCapabilityTrustRequest | undefined;
+  private pendingRemoteWorkspaceCapabilityTrust: {
+    requestId: string;
+    runtime: unknown;
+    finish: () => void;
+  } | undefined;
   private workspaceCapabilityTrustWaiter:
     | {
         resolve: (decision: WorkspaceCapabilityTrustDecision) => void;
@@ -840,6 +859,7 @@ class DesktopHostService {
 
   private sessionTurnContext(): SessionTurnOrchestratorContext {
     return {
+      usesDaemonRuntime: () => desktopUsesDaemonRuntime(),
       runSerialized: <T>(work: () => Promise<T>, label?: string) => this.runSerialized(work, label),
       ensureInitialized: (workspaceRootOverride, options) => this.ensureInitialized(workspaceRootOverride, options),
       requireRuntime: () => this.requireRuntime(),
@@ -849,6 +869,8 @@ class DesktopHostService {
         resolveApiKeyForConfigModel(this.requireState().config, model),
       activeBundle: () => this.activeBundle(),
       allBundles: () => this.sessionRegistry.all(),
+      bundleNeedsRuntimeProjection: (bundle) =>
+        remoteDesktopRuntimeNeedsProjection(bundle.runtime),
       getActiveBundle: () => this.sessionRegistry.getActive(),
       activeSessionId: () => this.sessionRegistry.activeSessionId(),
       emitLiveSnapshotUpdate: () => this.emitLiveSnapshotUpdate(),
@@ -969,10 +991,34 @@ class DesktopHostService {
     });
   }
 
+  private enqueueRemoteWorkspaceCapabilityTrust(
+    requestId: string,
+    request: WorkspaceCapabilityTrustRequest,
+    runtime: unknown,
+  ): void {
+    this.workspaceCapabilityTrustTail = this.workspaceCapabilityTrustTail
+      .catch(() => undefined)
+      .then(
+        () => new Promise<void>((finish) => {
+          this.pendingWorkspaceCapabilityTrust = request;
+          this.pendingRemoteWorkspaceCapabilityTrust = {
+            requestId,
+            runtime,
+            finish,
+          };
+          this.emitLiveSnapshotUpdate();
+        }),
+      );
+    void this.workspaceCapabilityTrustTail;
+  }
+
   private async runSessionEndForBundle(
     bundle: SessionBundle,
     reason: SessionEndHookInput['reason'],
   ): Promise<void> {
+    if (await runRemoteDesktopSessionEnd(bundle.runtime, reason)) {
+      return;
+    }
     const state = this.state;
     const workspaceRoot = bundle.workspaceRoot || state?.workspaceRoot || '';
     const hookRunner = this.getHookRunner(workspaceRoot);
@@ -984,6 +1030,9 @@ class DesktopHostService {
     bundle: SessionBundle,
     source: SessionStartHookInput['source'],
   ): Promise<void> {
+    if (await runRemoteDesktopSessionStart(bundle.runtime, source)) {
+      return;
+    }
     const state = this.state;
     const workspaceRoot = bundle.workspaceRoot || state?.workspaceRoot || '';
     const hookRunner = this.getHookRunner(workspaceRoot);
@@ -1021,6 +1070,7 @@ class DesktopHostService {
 
   private sessionActivationContext(): SessionActivationContext {
     return {
+      usesDaemonRuntime: () => desktopUsesDaemonRuntime(),
       runSerialized: <T>(work: () => Promise<T>, label?: string) => this.runSerialized(work, label),
       ensureInitialized: (workspaceRootOverride, options) => this.ensureInitialized(workspaceRootOverride, options),
       requireState: () => this.requireState(),
@@ -1726,6 +1776,7 @@ class DesktopHostService {
 
       const state = this.requireState();
       const runtime = this.requireRuntime();
+      const remoteState = await exportRemoteDesktopState(runtime);
       const extensionSystemPrompts = await this.collectExtensionSystemPrompts();
       const rulesSystemPrompt = buildRulesSystemMessage(state.metadata.rules.enabledRules);
       const skillsCatalogSystemPrompt = buildSkillsCatalogSystemMessage(
@@ -1761,7 +1812,7 @@ class DesktopHostService {
         active_model: modelRefKey(state.config.activeModel),
         api_base: currentApiBase(state.config),
         working_directory: state.workspaceRoot,
-        system_prompts: {
+        system_prompts: remoteState?.systemPrompts ?? {
           ...(this.runtimeTransport.llmSystemPromptsForExport() as Record<string, unknown>),
           tool_agent: buildToolAgentHostPrompt(state.config.activeModel.name),
           ...(rulesSystemPrompt === undefined ? {} : { rules: rulesSystemPrompt }),
@@ -1775,10 +1826,11 @@ class DesktopHostService {
           ...(basicInfoSystemPrompt === undefined ? {} : { basicInfo: basicInfoSystemPrompt }),
         },
         note: i18n.t('error.logSessionNote'),
-        message_count: runtime.history().length,
-        messages: this.runtimeTransport.llmHistoryAsApiMessages([...runtime.history()]),
-        api_request_trace_count: runtime.requestTrace().length,
-        api_request_trace: [...runtime.requestTrace()],
+        message_count: remoteState?.apiMessages.length ?? runtime.history().length,
+        messages: remoteState?.apiMessages
+          ?? this.runtimeTransport.llmHistoryAsApiMessages([...runtime.history()]),
+        api_request_trace_count: remoteState?.requestTrace.length ?? runtime.requestTrace().length,
+        api_request_trace: remoteState?.requestTrace ?? [...runtime.requestTrace()],
       };
 
       await writeFile(filePath, `${JSON.stringify(exportPayload, null, 2)}\n`, 'utf8');
@@ -1899,6 +1951,7 @@ class DesktopHostService {
       bundle.approvalLevel = normalized;
       const toolExecutor = await this.ensureToolExecutor(bundle);
       toolExecutor.setApprovalLevel(normalized);
+      await setRemoteDesktopApprovalLevel(bundle.runtime, normalized);
       await this.persistCurrentSessionIfNeeded();
       return this.buildSnapshot();
     });
@@ -2241,6 +2294,10 @@ class DesktopHostService {
 
   async abortShell(toolCallId: string): Promise<DesktopSnapshot> {
     const bundle = this.activeBundle();
+    const remoteAborted = await abortRemoteDesktopShell(bundle.runtime, toolCallId);
+    if (remoteAborted !== undefined) {
+      return this.buildSnapshot();
+    }
     const toolExecutor = await this.ensureToolExecutor(bundle);
     toolExecutor.abortShell(toolCallId);
     return this.buildSnapshot();
@@ -2293,6 +2350,22 @@ class DesktopHostService {
   async replyWorkspaceCapabilityTrust(
     request: ReplyWorkspaceCapabilityTrustRequest,
   ): Promise<DesktopSnapshot> {
+    const remote = this.pendingRemoteWorkspaceCapabilityTrust;
+    if (remote) {
+      try {
+        await replyRemoteWorkspaceCapabilityTrust(
+          remote.runtime,
+          remote.requestId,
+          request.decision,
+        );
+      } finally {
+        this.pendingRemoteWorkspaceCapabilityTrust = undefined;
+        this.pendingWorkspaceCapabilityTrust = undefined;
+        remote.finish();
+        this.emitLiveSnapshotUpdate();
+      }
+      return this.buildSnapshot();
+    }
     if (!this.pendingWorkspaceCapabilityTrust || !this.workspaceCapabilityTrustWaiter) {
       throw new Error('No pending workspace capability trust request');
     }
@@ -2673,6 +2746,10 @@ class DesktopHostService {
       },
       clearSessionTitleGeneration: (sessionPath) =>
         this.clearSessionTitleGenerationForSession(sessionPath),
+      disposeSessionRuntime: async (bundle) => {
+        await closeRemoteDesktopRuntime(bundle.runtime);
+        bundle.runtime = undefined;
+      },
     };
   }
 
@@ -2765,10 +2842,79 @@ class DesktopHostService {
     }
     if (!inferencePreferenceOnly) {
       await this.syncPlanStateForBundle(bundle);
-      await this.ensureToolExecutor(bundle, { skipMcpCatalogRefresh: true });
+      if (!desktopUsesDaemonRuntime()) {
+        await this.ensureToolExecutor(bundle, { skipMcpCatalogRefresh: true });
+      }
     }
     // 保留 bundle.currentTurnSkills：斜杠激活的 turn skill 须在 startUserTurnStreaming 时注入用户消息 meta
     const effectiveActiveModel = resolveEffectivePaneActiveModel(bundle, state);
+    if (desktopUsesDaemonRuntime()) {
+      if (inferencePreferenceOnly && bundle.runtime?.isBusy()) {
+        bundle.deferredRuntimeRefreshWhileBusy = true;
+        return;
+      }
+      const desktopMessages = bundle.messageTimeline.toMessages();
+      const llmHistoryForRuntime = bundle.archiveHistory.length > 0
+        ? bundle.archiveHistory
+        : buildLlmHistoryFallbackFromDesktopMessages(desktopMessages);
+      const archive = {
+        messages: buildArchiveMessagesFromConversation(desktopMessages),
+        assistantAux: buildArchiveAssistantAuxFromConversation(desktopMessages),
+        llmHistory: llmHistoryForRuntime,
+        subagentSessions: bundle.archiveSubagentSessions ?? [],
+        loopEnabled: bundle.loopEnabled,
+        approvalLevel: bundle.approvalLevel,
+      } satisfies ChatArchive;
+      const previousRuntime = bundle.runtime;
+      bundle.runtimeTransport = createLlmTransport();
+      try {
+        const runtime = await createRemoteDesktopRuntime({
+          dataDir: spiritAgentDataDir(),
+          workspaceRoot: bundle.workspaceRoot || state.workspaceRoot,
+          modelRef: effectiveActiveModel,
+          agentMode: resolveDesktopAgentMode(state.config),
+          archive,
+          approvalLevel: normalizeApprovalLevel(bundle.approvalLevel),
+          todoSessionKey: this.resolveTodoSessionKeyForBundle(bundle),
+          onActivity: () => {
+            this.sessionPump.ensureRunning();
+            this.requestThrottledLiveSnapshotEmit();
+          },
+          onWorkspaceCapabilityTrustRequested: (requestId, request) => {
+            this.enqueueRemoteWorkspaceCapabilityTrust(
+              requestId,
+              request,
+              bundle.runtime,
+            );
+          },
+          onRemoteUserTurnSubmitted: (input) => {
+            this.projectRemoteUserTurn(bundle, input);
+          },
+          onFileChange: (change) => {
+            void this.recordHostFileChange(bundle, change as HostRecordedFileChange);
+          },
+        });
+        runtime.setLoopEnabled(bundle.loopEnabled);
+        bundle.runtime = runtime;
+        await closeRemoteDesktopRuntime(previousRuntime);
+        if (bundle.id === this.sessionRegistry.activeSessionId()) {
+          this.runtime = runtime;
+        }
+        this.activeApiKeyConfigured = true;
+        this.lastRuntimeError = '';
+        await this.refreshTodoSnapshotForBundle(bundle);
+        bundle.runtimeActivationSignature = this.runtimeActivationSignature(bundle);
+      } catch (error) {
+        await closeRemoteDesktopRuntime(previousRuntime);
+        bundle.runtime = undefined;
+        if (bundle.id === this.sessionRegistry.activeSessionId()) {
+          this.runtime = undefined;
+        }
+        this.activeApiKeyConfigured = false;
+        this.lastRuntimeError = error instanceof Error ? error.message : String(error);
+      }
+      return;
+    }
     const activeProfile = resolveModelProfile(state.config, effectiveActiveModel);
     const activeTransportKind = resolveDesktopTransportKind(activeProfile ?? undefined);
     const bedrockCredentials = activeTransportKind === 'bedrock' && activeProfile?.provider
@@ -2875,6 +3021,15 @@ class DesktopHostService {
     const llmHistoryForRuntime = bundle.archiveHistory.length > 0
       ? bundle.archiveHistory
       : buildLlmHistoryFallbackFromDesktopMessages(desktopMessages);
+    const archive = {
+      messages: buildArchiveMessagesFromConversation(desktopMessages),
+      assistantAux: buildArchiveAssistantAuxFromConversation(desktopMessages),
+      llmHistory: llmHistoryForRuntime,
+      subagentSessions: bundle.archiveSubagentSessions ?? [],
+      loopEnabled: bundle.loopEnabled,
+      approvalLevel: bundle.approvalLevel,
+    } satisfies ChatArchive;
+    const previousRuntime = bundle.runtime;
     const runtime = this.createRuntime(
       runtimeTransportConfig,
       llmHistoryForRuntime,
@@ -2892,11 +3047,7 @@ class DesktopHostService {
     );
     if (bundle.archiveSubagentSessions.length > 0 || llmHistoryForRuntime.length > 0) {
       runtime.replaceFromArchive({
-        messages: buildArchiveMessagesFromConversation(desktopMessages),
-        assistantAux: buildArchiveAssistantAuxFromConversation(desktopMessages),
-        llmHistory: llmHistoryForRuntime,
-        subagentSessions: bundle.archiveSubagentSessions ?? [],
-        loopEnabled: bundle.loopEnabled,
+        ...archive,
       });
       if (bundle.archiveHistory.length === 0 && llmHistoryForRuntime.length > 0) {
         bundle.archiveHistory = llmHistoryForRuntime;
@@ -2906,6 +3057,7 @@ class DesktopHostService {
     const toolExecutor = await this.ensureToolExecutor(bundle, { skipMcpCatalogRefresh: true });
     toolExecutor.setApprovalLevel(bundle.approvalLevel);
     bundle.runtime = runtime;
+    await closeRemoteDesktopRuntime(previousRuntime);
     bundle.lastSeenMcpCatalogRevision = toolExecutor.mcpCatalogRevision();
     if (bundle.id === this.sessionRegistry.activeSessionId()) {
       this.runtime = runtime;
@@ -4289,6 +4441,44 @@ class DesktopHostService {
     };
   }
 
+  private projectRemoteUserTurn(
+    bundle: SessionBundle,
+    input: { text: string; explicitWorkspaceFiles: PendingWorkspaceFile[] },
+  ): void {
+    const displayText = input.text.trim() || i18n.t('error.attachedFiles', {
+      files: input.explicitWorkspaceFiles.map((file) => path.basename(file.path)).join(', '),
+    });
+    if (!displayText) {
+      return;
+    }
+    const localFileAttachments = input.explicitWorkspaceFiles.length > 0
+      ? input.explicitWorkspaceFiles.map((file) => ({
+          path: file.path,
+          name: path.basename(file.path),
+          isImage: file.kind === 'image',
+        }))
+      : undefined;
+    this.clearAssistantContinuationMarkers(bundle);
+    this.ensureActiveSession(displayText, bundle);
+    this.prepareSessionTitleForFirstUserTurn(displayText, bundle);
+    const userMessage: ConversationMessageSnapshot = {
+      id: this.allocateMessageId(bundle),
+      role: 'user',
+      content: displayText,
+      pending: false,
+      ...(localFileAttachments ? { localFileAttachments } : {}),
+    };
+    bundle.messages.push(userMessage);
+    bundle.messageTimeline.beginUserTurn(displayText, {
+      messageId: userMessage.id,
+      ...(localFileAttachments ? { localFileAttachments } : {}),
+    });
+    this.resetStreamingPlacementState(false, bundle);
+    bundle.conversationRevision += 1;
+    this.requestThrottledLiveSnapshotEmit();
+    this.notifySessionListUpdated();
+  }
+
   private promoteProvisionalSessionIfNeeded(
     seedText: string,
     bundle: SessionBundle = this.activeBundle(),
@@ -4591,7 +4781,10 @@ class DesktopHostService {
 
   private hasSessionPumpWork(): boolean {
     for (const bundle of this.sessionRegistry.all()) {
-      if (sessionBundleNeedsPumpTick(bundle)) {
+      if (
+        sessionBundleNeedsPumpTick(bundle)
+        || remoteDesktopRuntimeNeedsProjection(bundle.runtime)
+      ) {
         return true;
       }
     }
@@ -4671,6 +4864,12 @@ class DesktopHostService {
   private requireExtensionHostAdapter(): DesktopExtensionHostAdapter {
     return requireDesktopExtensionHostAdapter();
   }
+
+  async shutdown(): Promise<void> {
+    this.sessionPump.stop();
+    const runtimes = [...this.sessionRegistry.all()].map((bundle) => bundle.runtime);
+    await Promise.all(runtimes.map((runtime) => closeRemoteDesktopRuntime(runtime)));
+  }
 }
 
 const desktopHostService = new DesktopHostService();
@@ -4708,6 +4907,10 @@ export function subscribeDesktopAutomationsUpdates(
 
 export function subscribeDesktopSessionListUpdates(listener: () => void): () => void {
   return desktopHostService.subscribeSessionListUpdates(listener);
+}
+
+export async function shutdownDesktopHostService(): Promise<void> {
+  await desktopHostService.shutdown();
 }
 
 function normalizeApprovalDecision(
