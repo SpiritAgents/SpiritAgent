@@ -12,6 +12,7 @@ use crate::{
     daemon::DaemonRuntime,
     host_runtime::RuntimeEvent,
     ports::{AppPaths, ConfigStore, SecretStore},
+    view::MessageRole,
 };
 
 const POLL_INTERVAL: Duration = Duration::from_millis(50);
@@ -82,6 +83,9 @@ fn run_daemon_headless_turn(runtime: &mut DaemonRuntime, deadline: Instant) -> R
                 RuntimeEvent::RemovePendingAssistant => {
                     pending_assistant.clear();
                     has_pending_assistant = false;
+                }
+                RuntimeEvent::OpenAskQuestions { .. } => {
+                    return Err(anyhow!("{}", t!("cli.headless.blocked_questions")));
                 }
                 _ => {}
             }
