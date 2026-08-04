@@ -2,7 +2,6 @@ import { randomUUID } from 'node:crypto';
 import path from 'node:path';
 
 import {
-  createLlmTransport,
   type LlmPlanMetadata,
   type LlmTransportConfig,
 } from '@spiritagent/agent-core';
@@ -21,12 +20,14 @@ import {
   runAutomationStreamingTurn,
 } from './automation-conversation-projection.js';
 
+import {
+  createAutomationRuntime,
+  type AutomationRuntimeHandle,
+} from './automation-runtime.js';
 import { createDesktopRewindMetadata } from './rewind.js';
 import { buildStoredDesktopSession } from './sessions.js';
 import { buildPrimaryTransportConfig, resolveDesktopTransportKind } from './model-config.js';
 import {
-  findProviderGroup,
-  flattenProviderGroups,
   modelExistsInGroup,
   resolveModelProfile,
   type ResolvedModelProfile,
@@ -36,7 +37,6 @@ import { modelProviderKeyScope } from './provider-api-key.js';
 import {
   chatsDirPath,
   loadHostMetadata,
-  normalizeAgentsConfig,
   readBedrockProviderCredentialsFromKeyring,
   resolveApiKeyForConfigModel,
   saveStoredSession,
@@ -44,7 +44,8 @@ import {
   type DesktopConfigFile,
 } from './storage.js';
 import { DesktopToolExecutor } from './tool-executor.js';
-import { buildDesktopRuntimeBasicInfo, createDesktopRuntime, type DesktopRuntime } from './runtime.js';
+import { desktopUsesDaemonRuntime } from './remote-runtime.js';
+import type { DesktopRuntime } from './runtime.js';
 import { currentApiBase, isNoWorkspaceSessionRoot } from './service-utils.js';
 
 export const AUTOMATION_SESSION_FILE_PREFIX = 'chat-automation-';
@@ -88,6 +89,9 @@ export async function runDesktopAutomationOnce(
   });
   deps.onRunUpdated?.(input.definition.id);
 
+  let runtimeHandle: AutomationRuntimeHandle | undefined;
+  let projection: AutomationConversationProjection | undefined;
+
   try {
     const modelRef = input.definition.modelRef;
     if (!modelExistsInGroup(input.config, modelRef.groupId, modelRef.name)) {
@@ -98,53 +102,50 @@ export async function runDesktopAutomationOnce(
       throw new Error(`Missing API key for model: ${modelRefKey(modelRef)}`);
     }
 
-    const profile = resolveModelProfile(input.config, modelRef);
-    const workspaceBinding = isNoWorkspaceSessionRoot(input.definition.workspaceRoot)
-      ? 'none'
-      : 'project';
     const gitSnapshot = await readGitWorkspaceSnapshot(input.definition.workspaceRoot);
-    const metadata = await loadHostMetadata(input.definition.workspaceRoot, 'agent', {
-      workspaceBinding,
-    });
-    const planMetadata: LlmPlanMetadata = {
-      ...metadata.planMetadata,
-      agentMode: 'agent',
-      planMode: false,
-    } as LlmPlanMetadata;
+    const gitBranch = gitSnapshot.branch;
+    const gitBranchLabel = gitBranchLabelForBasicInfo(gitSnapshot);
+    const sessionDisplayName = `${input.definition.title} · ${formatRunTimestamp(startedAtUnixMs)}`;
 
-    const transportConfig = buildAutomationTransportConfig({
-      apiKey,
-      model: modelRef.name,
-      baseUrl: profile?.apiBase ?? currentApiBase(input.config),
-      workspaceRoot: input.definition.workspaceRoot,
-      profile: profile ?? undefined,
-      reasoningEffort: input.definition.reasoningEffort ?? profile?.reasoningEffort,
-    });
+    const runtimeInput: Parameters<typeof createAutomationRuntime>[0] = {
+      definition: input.definition,
+      config: input.config,
+      sessionPath,
+      gitBranchLabel,
+    };
 
-    const toolExecutor = new DesktopToolExecutor(input.definition.workspaceRoot);
-    toolExecutor.setApprovalLevel(input.definition.approvalLevel);
-    toolExecutor.setActiveTransportConfig(transportConfig);
-    const agents = normalizeAgentsConfig(input.config.agents);
-    const runtime = createDesktopRuntime({
-      transportConfig,
-      history: [],
-      enabledRules: metadata.rules.enabledRules,
-      enabledSkillCatalog: metadata.skills.enabledSkillCatalog,
-      planMetadata,
-      extensionSystemPrompts: [],
-      toolExecutor,
-      llmTransport: createLlmTransport(transportConfig),
-      workspaceRoot: input.definition.workspaceRoot,
-      basicInfo: buildDesktopRuntimeBasicInfo(
-        input.definition.workspaceRoot,
-        toolExecutor,
-        gitBranchLabelForBasicInfo(gitSnapshot),
-      ),
-      attribution: {
-        commitEnabled: agents.attribution.commit.enabled,
-        prEnabled: agents.attribution.pr.enabled,
-      },
-    });
+    if (!desktopUsesDaemonRuntime()) {
+      const profile = resolveModelProfile(input.config, modelRef);
+      const workspaceBinding = isNoWorkspaceSessionRoot(input.definition.workspaceRoot)
+        ? 'none'
+        : 'project';
+      const metadata = await loadHostMetadata(input.definition.workspaceRoot, 'agent', {
+        workspaceBinding,
+      });
+      const planMetadata: LlmPlanMetadata = {
+        ...metadata.planMetadata,
+        agentMode: 'agent',
+        planMode: false,
+      } as LlmPlanMetadata;
+      const transportConfig = buildAutomationTransportConfig({
+        apiKey,
+        model: modelRef.name,
+        baseUrl: profile?.apiBase ?? currentApiBase(input.config),
+        workspaceRoot: input.definition.workspaceRoot,
+        profile: profile ?? undefined,
+        reasoningEffort: input.definition.reasoningEffort ?? profile?.reasoningEffort,
+      });
+      const toolExecutor = new DesktopToolExecutor(input.definition.workspaceRoot);
+      toolExecutor.setApprovalLevel(input.definition.approvalLevel);
+      toolExecutor.setActiveTransportConfig(transportConfig);
+      runtimeInput.transportConfig = transportConfig;
+      runtimeInput.planMetadata = planMetadata;
+      runtimeInput.metadata = metadata;
+      runtimeInput.toolExecutor = toolExecutor;
+    }
+
+    runtimeHandle = await createAutomationRuntime(runtimeInput);
+    const runtime = runtimeHandle.runtime;
     const triggerContext = input.triggerContext ?? defaultAutomationRunTriggerContext(input.definition);
     const llmUserMessage = buildAutomationTriggerMessage({
       overview: input.definition.overview,
@@ -152,7 +153,7 @@ export async function runDesktopAutomationOnce(
       context: triggerContext,
     });
 
-    const projection = AutomationConversationProjection.create();
+    projection = AutomationConversationProjection.create();
     projection.bindRuntime(runtime);
     projection.beginUserTurn(input.definition.overview);
 
@@ -163,8 +164,8 @@ export async function runDesktopAutomationOnce(
       runtime,
       projection,
       workspaceRoot: input.definition.workspaceRoot,
-      gitBranch: gitSnapshot.branch,
-      sessionDisplayName: `${input.definition.title} · ${formatRunTimestamp(startedAtUnixMs)}`,
+      gitBranch,
+      sessionDisplayName,
       approvalLevel: input.definition.approvalLevel,
     });
     deps.notifySessionListUpdated?.();
@@ -197,8 +198,8 @@ export async function runDesktopAutomationOnce(
           runtime,
           projection,
           workspaceRoot: input.definition.workspaceRoot,
-          gitBranch: gitSnapshot.branch,
-          sessionDisplayName: `${input.definition.title} · ${formatRunTimestamp(startedAtUnixMs)}`,
+          gitBranch,
+          sessionDisplayName,
           approvalLevel: input.definition.approvalLevel,
         });
         deps.onRunUpdated?.(input.definition.id);
@@ -224,8 +225,8 @@ export async function runDesktopAutomationOnce(
           runtime,
           projection,
           workspaceRoot: input.definition.workspaceRoot,
-          gitBranch: gitSnapshot.branch,
-          sessionDisplayName: `${input.definition.title} · ${formatRunTimestamp(startedAtUnixMs)}`,
+          gitBranch,
+          sessionDisplayName,
           approvalLevel: input.definition.approvalLevel,
         });
         deps.onRunUpdated?.(input.definition.id);
@@ -249,8 +250,8 @@ export async function runDesktopAutomationOnce(
       runtime,
       projection,
       workspaceRoot: input.definition.workspaceRoot,
-      gitBranch: gitSnapshot.branch,
-      sessionDisplayName: `${input.definition.title} · ${formatRunTimestamp(startedAtUnixMs)}`,
+      gitBranch,
+      sessionDisplayName,
       approvalLevel: input.definition.approvalLevel,
     });
 
