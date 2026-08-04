@@ -7,9 +7,7 @@ import path from 'node:path';
 import {
   buildAutomationRemoteRuntimeCreateInput,
   buildEmptyAutomationArchive,
-  createAutomationRuntime,
 } from '../../dist-electron/src/host/automation-runtime.js';
-import { desktopUsesDaemonRuntime } from '../../dist-electron/src/host/remote-runtime.js';
 
 const sampleDefinition = {
   id: 'automation-test-id',
@@ -58,41 +56,5 @@ test('buildAutomationRemoteRuntimeCreateInput aligns conversationKey with resolv
       process.env.APPDATA = previousAppData;
     }
     await rm(tempRoot, { recursive: true, force: true });
-  }
-});
-
-test('createAutomationRuntime requires in-process wiring when daemon is disabled', async () => {
-  const previous = process.env.SPIRIT_INPROCESS_HOST;
-  process.env.SPIRIT_INPROCESS_HOST = '1';
-  try {
-    assert.equal(desktopUsesDaemonRuntime(), false);
-    await assert.rejects(
-      () => createAutomationRuntime({
-        definition: sampleDefinition,
-        config: { activeModel: sampleDefinition.modelRef },
-        sessionPath: '/tmp/chat-automation-test.json',
-      }),
-      /In-process automation runtime requires transport, metadata, and tool executor\./,
-    );
-  } finally {
-    if (previous === undefined) {
-      delete process.env.SPIRIT_INPROCESS_HOST;
-    } else {
-      process.env.SPIRIT_INPROCESS_HOST = previous;
-    }
-  }
-});
-
-test('desktopUsesDaemonRuntime defaults to daemon path', () => {
-  const previous = process.env.SPIRIT_INPROCESS_HOST;
-  delete process.env.SPIRIT_INPROCESS_HOST;
-  try {
-    assert.equal(desktopUsesDaemonRuntime(), true);
-  } finally {
-    if (previous === undefined) {
-      delete process.env.SPIRIT_INPROCESS_HOST;
-    } else {
-      process.env.SPIRIT_INPROCESS_HOST = previous;
-    }
   }
 });

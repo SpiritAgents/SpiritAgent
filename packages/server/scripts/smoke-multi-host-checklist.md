@@ -5,7 +5,7 @@ Automated coverage: `node packages/server/scripts/smoke-dual-client.mjs` (daemon
 ## Prerequisites
 
 - Built server: `npm run build -w @spiritagent/server`
-- Desktop dev or packaged build with daemon runtime (default; not `SPIRIT_INPROCESS_HOST=1`)
+- Desktop dev or packaged build (agent execution is daemon-only)
 - CLI on the same machine, same workspace + chat file path
 
 ## Checklist
