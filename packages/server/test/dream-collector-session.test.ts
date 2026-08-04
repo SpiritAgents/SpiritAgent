@@ -74,6 +74,11 @@ describe('dream-collector session', () => {
       );
       assert.equal(result.enabledRules.length, 0);
       assert.equal(result.enabledSkillCatalog.length, 0);
+
+      const beforeToolNames = toolNamesFromDefinitions(result.toolExecutor.toolDefinitionsJson());
+      await result.reloadHostMetadata('plan');
+      const afterToolNames = toolNamesFromDefinitions(result.toolExecutor.toolDefinitionsJson());
+      assert.deepEqual(afterToolNames, beforeToolNames);
     });
   });
 
