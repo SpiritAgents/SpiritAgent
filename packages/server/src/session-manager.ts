@@ -237,6 +237,8 @@ export class SessionManager {
       const { runtime } = session.runtimeResult;
       await session.runtimeResult.toolExecutor.refreshCaches();
       await runtime.poll();
+      // The bridge had clients drive this on a timer; the daemon pump owns it now.
+      runtime.handleStreamStallTimeout();
 
       const turnResult = runtime.takeCompletedTurnResult();
       if (turnResult && session.turnActive) {
