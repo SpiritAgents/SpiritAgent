@@ -4404,6 +4404,12 @@ class DesktopHostService {
     } else {
       bundle.id = result.nextId;
     }
+    // The daemon keeps the latest snapshot per session; other attached hosts
+    // (e.g. CLI) pull it on attach and on update notifications.
+    const timelineRuntime = options.fromRuntime ?? bundle.runtime;
+    if (result.desktopMessageTimeline && timelineRuntime) {
+      timelineRuntime.pushDesktopTimeline(result.desktopMessageTimeline);
+    }
   }
 
   private activeBundle(): SessionBundle {

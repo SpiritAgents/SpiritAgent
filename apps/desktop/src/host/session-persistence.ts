@@ -2,7 +2,7 @@ import path from 'node:path';
 
 import type { ChatArchive } from '@spiritagent/agent-core';
 
-import { normalizeTimelineSnapshotForPersistence } from './chat-schema.js';
+import { normalizeTimelineSnapshotForPersistence, type PersistedDesktopTimelineTurnSnapshot } from './chat-schema.js';
 import {
   buildArchiveAssistantAuxFromConversation,
   buildArchiveMessagesFromConversation,
@@ -26,6 +26,8 @@ export interface PersistDesktopSessionBundleResult {
   previousId?: string;
   nextId?: string;
   rekeyNeeded: boolean;
+  /** Persisted timeline snapshot (same shape as disk); present on successful persist. */
+  desktopMessageTimeline?: PersistedDesktopTimelineTurnSnapshot[];
 }
 
 export async function persistDesktopSessionBundle(
@@ -99,5 +101,6 @@ export async function persistDesktopSessionBundle(
     previousId,
     nextId: activeSession.filePath,
     rekeyNeeded: path.resolve(previousId) !== path.resolve(activeSession.filePath),
+    desktopMessageTimeline: normalizedTimelineSnapshot,
   };
 }

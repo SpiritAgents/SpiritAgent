@@ -30,6 +30,7 @@ import {
 } from '@spiritagent/server/client';
 
 import type { DesktopToolRequest } from './contracts.js';
+import type { PersistedDesktopTimelineTurnSnapshot } from './chat-schema.js';
 
 interface RemoteDesktopRuntimeInput {
   dataDir: string;
@@ -262,6 +263,8 @@ export class RemoteDesktopRuntime {
   private readonly pendingLocalClientTurnIds = new Set<string>();
   private mutationTail: Promise<void> = Promise.resolve();
   private mutationError: unknown;
+  /** Serializes timeline pushes; failures are logged and never poison the chain. */
+  private timelinePushTail: Promise<void> = Promise.resolve();
 
   constructor(
     private readonly client: ServerRpcClient,
@@ -308,13 +311,33 @@ export class RemoteDesktopRuntime {
   /** Drop notification subscription only; keeps daemon attachment (wrapper swap). */
   async dispose(): Promise<void> {
     await this.awaitMutations();
+    await this.timelinePushTail;
     this.unsubscribe();
   }
 
   async close(): Promise<void> {
     await this.awaitMutations();
+    await this.timelinePushTail;
     this.unsubscribe();
     await this.client.call('session.detach', { sessionId: this.sessionId });
+  }
+
+  /**
+   * Best-effort push of the authoritative desktop timeline snapshot. Pushes
+   * stay ordered per session; a failed push is logged and dropped (the next
+   * persist boundary re-pushes a full snapshot, so nothing needs a retry).
+   */
+  pushDesktopTimeline(timeline: PersistedDesktopTimelineTurnSnapshot[]): void {
+    this.timelinePushTail = this.timelinePushTail.then(async () => {
+      try {
+        await this.client.call('session.pushDesktopTimeline', {
+          sessionId: this.sessionId,
+          timeline,
+        });
+      } catch (error) {
+        console.warn('[desktop-host] pushDesktopTimeline failed', error);
+      }
+    });
   }
 
   async clientCall(method: string, params: Record<string, unknown>): Promise<unknown> {
