@@ -84,10 +84,10 @@ impl DaemonRuntime {
             .map(str::to_string)
             .ok_or_else(|| anyhow!("session.create 未返回 sessionId"))?;
         runtime.session_id = Some(session_id.clone());
-        let _ = runtime.client.call(
+        runtime.client.call(
             "session.attach",
             json!({ "sessionId": session_id }),
-        );
+        )?;
         runtime.rewind = rewind;
 
         logging::log_event(&format!(
