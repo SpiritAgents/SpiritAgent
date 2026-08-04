@@ -112,7 +112,7 @@ Veja [apps/desktop/README.md](../apps/desktop/README.md) para desenvolvimento es
 <img width="1014" height="744" alt="Spirit Agent CLI" src="https://github.com/user-attachments/assets/ecf4fcec-6a9b-4562-b0da-cc14816f36d3" />
 
 
-A [CLI Rust](../apps/cli) (`spirit-agent`) oferece um host terminal-first com UI Ratatui opcional. Compartilha o mesmo runtime Agent Core via ponte Node, ideal para scripts, sessões SSH e ambientes mínimos.
+A [CLI Rust](../apps/cli) (`spirit-agent`) oferece um host terminal-first com UI Ratatui opcional. Conecta-se ao daemon compartilhado Spirit Server via WebSocket, ideal para scripts, sessões SSH e ambientes mínimos.
 
 ```bash
 npm run dev:cli    # cargo run -p spirit-agent
@@ -127,7 +127,7 @@ npm run dev:cli    # cargo run -p spirit-agent
 - **Auth Bearer** — token no nível do home em `{spiritDataDir}/server.token` (modo 0600), aceito via cabeçalho `Authorization` ou query `?token=`; `spirit-server rotate-token` o rotaciona para novas conexões.
 - **Sem novas dependências** — a camada WebSocket (RFC 6455) é implementada no próprio pacote.
 
-A migração para o daemon está em andamento (veja [Epic #274](https://github.com/SpiritAgents/SpiritAgent/issues/274)); a superfície RPC de sessão/streaming chega em fases. O acesso remoto (`--hostname 0.0.0.0`) é reservado para uma fase futura e fica desligado por padrão.
+**CLI e Desktop são daemon-only para execução do agente** (veja [Epic #274](https://github.com/SpiritAgents/SpiritAgent/issues/274)). Clientes Desktop Web Host recebem snapshots autenticados do host Desktop enquanto a execução do agente permanece no daemon. O acesso remoto (`--hostname 0.0.0.0`) é reservado para uma fase futura e fica desligado por padrão.
 
 ## ACP Server
 

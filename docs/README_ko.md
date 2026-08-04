@@ -112,7 +112,7 @@ Desktop 전용 개발 및 레이아웃은 [apps/desktop/README.md](../apps/deskt
 <img width="1014" height="744" alt="Spirit Agent CLI" src="https://github.com/user-attachments/assets/ecf4fcec-6a9b-4562-b0da-cc14816f36d3" />
 
 
-[Rust CLI](../apps/cli)(`spirit-agent`)는 터미널 우선 호스트로 선택적 Ratatui UI를 제공합니다. Node 브리지를 통해 동일 Agent Core 런타임을 공유하며, 스크립팅, SSH 세션, 최소 환경에 적합합니다.
+[Rust CLI](../apps/cli)(`spirit-agent`)는 터미널 우선 호스트로 선택적 Ratatui UI를 제공합니다. WebSocket으로 공유 Spirit Server 데몬에 연결하며, 스크립팅, SSH 세션, 최소 환경에 적합합니다.
 
 ```bash
 npm run dev:cli    # cargo run -p spirit-agent
@@ -127,7 +127,7 @@ npm run dev:cli    # cargo run -p spirit-agent
 - **Bearer 인증** — 홈 레벨 토큰은 `{spiritDataDir}/server.token`(권한 0600)에 저장되며 `Authorization` 헤더 또는 `?token=` 쿼리로 전달합니다. `spirit-server rotate-token`으로 교체하면 새 연결부터 적용됩니다.
 - **신규 의존성 없음** — WebSocket 계층(RFC 6455)을 패키지 내부에 구현했습니다.
 
-데몬 마이그레이션은 진행 중입니다([Epic #274](https://github.com/SpiritAgents/SpiritAgent/issues/274) 참조). 세션/스트리밍 RPC 표면은 단계적으로 추가됩니다. 원격 접속(`--hostname 0.0.0.0`)은 향후 단계를 위해 예약되어 있으며 기본적으로 꺼져 있습니다.
+**CLI와 Desktop의 에이전트 실행은 daemon-only**입니다([Epic #274](https://github.com/SpiritAgents/SpiritAgent/issues/274) 참조). Desktop Web Host 클라이언트는 Desktop 호스트의 인증된 스냅샷 push를 받으며, 에이전트 실행은 데몬에 남습니다. 원격 접속(`--hostname 0.0.0.0`)은 향후 단계를 위해 예약되어 있으며 기본적으로 꺼져 있습니다.
 
 ## ACP Server
 

@@ -142,6 +142,10 @@ mod tests {
         let metadata = plan_metadata_snapshot("agent", Some(&plan_path));
         assert_eq!(metadata.path, plan_path);
         assert!(metadata.exists);
+
+        unsafe {
+            env::remove_var("SPIRIT_AGENT_DATA_DIR");
+        }
     }
 
     fn llm_tool_message(content: &str) -> LlmMessage {

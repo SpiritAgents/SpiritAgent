@@ -218,7 +218,7 @@ server 是 runtime 的宿主位置，不是第四个语义层；apps 退化为 c
 - `packages/host-internal` 承载梦境工具执行、dream store 与日志目录等宿主能力。
 - `packages/host-internal/src/lsp/` 承载 LSP 宿主实现（多语言 server 进程、`LspOrchestrator` 按后缀路由、provider 发现/安装、写后诊断 append、workspace cache）。
 - `packages/agent-core/src/lsp/` 仅保留 LSP 工具契约（`get_diagnostics` 按路径后缀自动路由）、支持后缀常量与 LLM 可见诊断格式化。
-- `packages/server` 承载共享 daemon：会话/turn/审批的单一真相源、WS 传输与 instance registry；CLI 默认作为 client 连接（`SPIRIT_INPROCESS_HOST=1` 为 CLI 迁移期回退）；Desktop 主会话、Automation、Dream Collector 已无 in-process 回退
+- `packages/server` 承载共享 daemon：会话/turn/审批的单一真相源、WS 传输与 instance registry；CLI 与 Desktop 主会话、Automation、Dream Collector 均无 in-process 回退
 - `packages/host-internal/src/credentials/` 承载共享配置与凭证读取（`config.json` + OS keyring，`group::{groupId}` 为规范账号方案），供 server 与 acp-server 进程内解析 transport。
 - `apps/desktop` 承载梦境设置、后台调度与 Commit 消费。
 - CLI 与 Desktop 当前重复的宿主工具实现、rules / skills / plan 发现与管理逻辑，应收敛到宿主内部库。

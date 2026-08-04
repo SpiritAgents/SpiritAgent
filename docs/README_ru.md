@@ -112,7 +112,7 @@ Agent Core определяет, как модель видит контекст
 <img width="1014" height="744" alt="Spirit Agent CLI" src="https://github.com/user-attachments/assets/ecf4fcec-6a9b-4562-b0da-cc14816f36d3" />
 
 
-[Rust CLI](../apps/cli) (`spirit-agent`) — terminal-first хост с опциональным Ratatui UI. Делит тот же Agent Core runtime через Node bridge; подходит для скриптов, SSH-сессий и минимальных окружений.
+[Rust CLI](../apps/cli) (`spirit-agent`) — terminal-first хост с опциональным Ratatui UI. Подключается к общему daemon Spirit Server по WebSocket; подходит для скриптов, SSH-сессий и минимальных окружений.
 
 ```bash
 npm run dev:cli    # cargo run -p spirit-agent
@@ -127,7 +127,7 @@ npm run dev:cli    # cargo run -p spirit-agent
 - **Bearer-аутентификация** — токен уровня home в `{spiritDataDir}/server.token` (права 0600), принимается через заголовок `Authorization` или query `?token=`; `spirit-server rotate-token` ротирует его для новых подключений.
 - **Без новых зависимостей** — слой WebSocket (RFC 6455) реализован внутри пакета.
 
-Миграция на daemon продолжается (см. [Epic #274](https://github.com/SpiritAgents/SpiritAgent/issues/274)); RPC-поверхность сессий и стриминга появится поэтапно. Удалённый доступ (`--hostname 0.0.0.0`) зарезервирован для будущей фазы и по умолчанию выключен.
+**CLI и Desktop работают только через daemon для выполнения агента** (см. [Epic #274](https://github.com/SpiritAgents/SpiritAgent/issues/274)). Клиенты Desktop Web Host получают аутентифицированные snapshot-push от Desktop-хоста, а выполнение агента остаётся в daemon. Удалённый доступ (`--hostname 0.0.0.0`) зарезервирован для будущей фазы и по умолчанию выключен.
 
 ## ACP Server
 

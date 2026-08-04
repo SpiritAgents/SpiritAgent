@@ -17,3 +17,6 @@ pub(crate) struct TransportHost<'a> {
     pub secret_store: &'a dyn SecretStore,
     pub stored_config: &'a AppConfig,
 }
+
+#[cfg(test)]
+mod tests;

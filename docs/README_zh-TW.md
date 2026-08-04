@@ -112,7 +112,7 @@ Desktop 專屬開發與目錄說明見 [apps/desktop/README.md](../apps/desktop/
 <img width="1014" height="744" alt="Spirit Agent CLI" src="https://github.com/user-attachments/assets/ecf4fcec-6a9b-4562-b0da-cc14816f36d3" />
 
 
-[Rust CLI](../apps/cli)（`spirit-agent`）提供終端優先的宿主，可選 Ratatui 介面。透過 Node 橋接共享同一套 Agent Core 執行時，適合腳本化、SSH 工作階段與極簡環境。
+[Rust CLI](../apps/cli)（`spirit-agent`）提供終端優先的宿主，可選 Ratatui 介面。透過 WebSocket 連接共享 Spirit Server daemon，適合腳本化、SSH 工作階段與極簡環境。
 
 ```bash
 npm run dev:cli    # cargo run -p spirit-agent
@@ -127,7 +127,7 @@ npm run dev:cli    # cargo run -p spirit-agent
 - **Bearer 驗證**——home 級 token 位於 `{spiritDataDir}/server.token`（0600 權限），支援 `Authorization` 標頭或 `?token=` 查詢參數；`spirit-server rotate-token` 輪換後對新連線生效。
 - **零新增依賴**——WebSocket 層（RFC 6455）在套件內實作。
 
-daemon 遷移仍在推進（見 [Epic #274](https://github.com/SpiritAgents/SpiritAgent/issues/274)），會話/串流 RPC 面將分階段落地。遠端存取（`--hostname 0.0.0.0`）預留給後續階段，預設關閉。
+**CLI 與 Desktop 的智能體執行均為 daemon-only**（見 [Epic #274](https://github.com/SpiritAgents/SpiritAgent/issues/274)）。Desktop Web Host 用戶端由 Desktop 宿主推送已鑑權的快照，智能體執行仍在 daemon 內。遠端存取（`--hostname 0.0.0.0`）預留給後續階段，預設關閉。
 
 ## ACP Server
 

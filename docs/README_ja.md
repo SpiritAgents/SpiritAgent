@@ -112,7 +112,7 @@ Desktop 固有の開発・レイアウトは [apps/desktop/README.md](../apps/de
 <img width="1014" height="744" alt="Spirit Agent CLI" src="https://github.com/user-attachments/assets/ecf4fcec-6a9b-4562-b0da-cc14816f36d3" />
 
 
-[Rust CLI](../apps/cli)（`spirit-agent`）はターミナル優先ホストで、オプションの Ratatui UI を提供。Node ブリッジ経由で同一 Agent Core ランタイムを共有し、スクリプト、SSH セッション、最小環境に適します。
+[Rust CLI](../apps/cli)（`spirit-agent`）はターミナル優先ホストで、オプションの Ratatui UI を提供。WebSocket 経由で共有 Spirit Server デーモンに接続し、スクリプト、SSH セッション、最小環境に適します。
 
 ```bash
 npm run dev:cli    # cargo run -p spirit-agent
@@ -127,7 +127,7 @@ npm run dev:cli    # cargo run -p spirit-agent
 - **Bearer 認証** — ホームレベルのトークンは `{spiritDataDir}/server.token`（パーミッション 0600）に保存され、`Authorization` ヘッダーまたは `?token=` クエリで受け付けます。`spirit-server rotate-token` でローテーションすると新規接続に適用されます。
 - **新規依存ゼロ** — WebSocket 層（RFC 6455）はパッケージ内に実装されています。
 
-デーモンへの移行は進行中です（[Epic #274](https://github.com/SpiritAgents/SpiritAgent/issues/274) を参照）。セッション/ストリーミング RPC は段階的に追加されます。リモートアクセス（`--hostname 0.0.0.0`）は将来のフェーズ向けに予約されており、デフォルトでは無効です。
+**CLI と Desktop のエージェント実行は daemon-only** です（[Epic #274](https://github.com/SpiritAgents/SpiritAgent/issues/274) を参照）。Desktop Web Host クライアントは Desktop ホストから認証済みスナップショットを受け取り、エージェント実行はデーモン内で行われます。リモートアクセス（`--hostname 0.0.0.0`）は将来のフェーズ向けに予約されており、デフォルトでは無効です。
 
 ## ACP Server
 
