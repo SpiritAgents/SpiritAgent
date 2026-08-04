@@ -387,6 +387,11 @@ fn resolve_save_path(path_arg: Option<&str>) -> Result<PathBuf> {
 }
 
 fn resolve_load_path(path_arg: &str) -> Result<PathBuf> {
+    resolve_chat_file_path(path_arg)
+}
+
+/// Resolve a chat file path the same way load/save does (absolute, under chats dir when relative).
+pub fn resolve_chat_file_path(path_arg: &str) -> Result<PathBuf> {
     let trimmed = path_arg.trim();
     if trimmed.is_empty() {
         return Err(anyhow!("/sessions load 需要文件名或路径"));

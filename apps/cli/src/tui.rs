@@ -714,6 +714,17 @@ impl TuiShell {
     }
 
     fn load_chat_by_path(&mut self, path: &str) {
+        let resolved_path = match chat_store::resolve_chat_file_path(path) {
+            Ok(resolved) => resolved,
+            Err(err) => {
+                self.messages.push(ChatMessage {
+                    role: MessageRole::Agent,
+                    content: t!("tui.session.load_failed", err = err).into_owned(),
+                    tool_block: None,
+                });
+                return;
+            }
+        };
         match self.chat_repository.load(path) {
             Ok(archive) => {
                 if let Some(snapshots) = archive.desktop_messages.as_deref() {
@@ -776,7 +787,7 @@ impl TuiShell {
                 }
                 if let Err(err) = self
                     .runtime
-                    .attach_or_open_chat_session(std::path::Path::new(path), &archive)
+                    .attach_or_open_chat_session(&resolved_path, &archive)
                 {
                     self.messages.push(ChatMessage {
                         role: MessageRole::Agent,

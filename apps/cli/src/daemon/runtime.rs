@@ -13,6 +13,7 @@ use std::{
 
 use crate::{
     adapters::KeyringSecretStore,
+    chat_store,
     host_runtime::RuntimeEvent,
     logging,
     model_registry::AppConfig,
@@ -150,8 +151,10 @@ impl DaemonRuntime {
     }
 
     fn conversation_key_for_path(chat_path: &Path) -> String {
-        std::fs::canonicalize(chat_path)
-            .unwrap_or_else(|_| chat_path.to_path_buf())
+        let resolved = chat_store::resolve_chat_file_path(chat_path.to_string_lossy().as_ref())
+            .unwrap_or_else(|_| chat_path.to_path_buf());
+        std::fs::canonicalize(&resolved)
+            .unwrap_or(resolved)
             .to_string_lossy()
             .into_owned()
     }
