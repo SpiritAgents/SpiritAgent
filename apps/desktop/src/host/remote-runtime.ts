@@ -408,6 +408,7 @@ export class RemoteDesktopRuntime {
       ...structuredClone(this.archive),
       messages: structuredClone(messages),
       assistantAux: structuredClone(assistantAux),
+      loopEnabled: this.snapshot.loopEnabled,
     };
   }
 
@@ -447,6 +448,7 @@ export class RemoteDesktopRuntime {
 
   setLoopEnabled(enabled: boolean): void {
     this.snapshot = { ...this.snapshot, loopEnabled: enabled };
+    this.archive = { ...this.archive, loopEnabled: enabled };
     this.enqueueMutation('session.setLoopEnabled', { enabled });
   }
 
