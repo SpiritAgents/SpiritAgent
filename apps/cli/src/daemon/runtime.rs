@@ -4,7 +4,12 @@
 
 use anyhow::{Result, anyhow};
 use serde_json::{Value, json};
-use std::{path::PathBuf, sync::Arc, time::Duration};
+use std::{
+    collections::HashSet,
+    path::{Path, PathBuf},
+    sync::Arc,
+    time::Duration,
+};
 
 use crate::{
     adapters::KeyringSecretStore,
@@ -52,6 +57,7 @@ pub(crate) struct DaemonRuntime {
     pub(crate) active_plan_path: Option<PathBuf>,
     daemon_failed: bool,
     workspace_capability_trust_prompter: Option<WorkspaceCapabilityTrustPrompter>,
+    pending_local_client_turn_ids: HashSet<String>,
 }
 
 impl DaemonRuntime {
@@ -75,7 +81,11 @@ impl DaemonRuntime {
             .and_then(Value::as_str)
             .map(str::to_string)
             .ok_or_else(|| anyhow!("session.create 未返回 sessionId"))?;
-        runtime.session_id = Some(session_id);
+        runtime.session_id = Some(session_id.clone());
+        let _ = runtime.client.call(
+            "session.attach",
+            json!({ "sessionId": session_id }),
+        );
         runtime.rewind = rewind;
 
         logging::log_event(&format!(
@@ -118,6 +128,7 @@ impl DaemonRuntime {
             "server.initialize",
             json!({
                 "clientKind": "cli",
+                "clientId": format!("cli-{}", std::process::id()),
                 "workspaceRoot": workspace_root.to_string_lossy(),
             }),
         )?;
@@ -134,7 +145,124 @@ impl DaemonRuntime {
             active_plan_path: None,
             daemon_failed: false,
             workspace_capability_trust_prompter: None,
+            pending_local_client_turn_ids: HashSet::new(),
         })
+    }
+
+    fn conversation_key_for_path(chat_path: &Path) -> String {
+        std::fs::canonicalize(chat_path)
+            .unwrap_or_else(|_| chat_path.to_path_buf())
+            .to_string_lossy()
+            .into_owned()
+    }
+
+    fn is_attach_miss(err: &anyhow::Error) -> bool {
+        err.to_string().contains("no live session for conversationKey")
+    }
+
+    fn detach_current_session(&mut self) {
+        if self.daemon_failed {
+            return;
+        }
+        let Some(session_id) = self.session_id.take() else {
+            return;
+        };
+        if let Err(err) = self.client.call(
+            "session.detach",
+            json!({ "sessionId": session_id }),
+        ) {
+            logging::log_event(&format!("[daemon-runtime] session.detach 失败: {err}"));
+        }
+    }
+
+    fn try_attach_session(&mut self, conversation_key: &str) -> Result<()> {
+        let value = self.client.call(
+            "session.attach",
+            json!({ "conversationKey": conversation_key }),
+        )?;
+        let session_id = value
+            .get("session")
+            .and_then(|session| session.get("sessionId"))
+            .and_then(Value::as_str)
+            .map(str::to_string)
+            .ok_or_else(|| anyhow!("session.attach 未返回 sessionId"))?;
+        self.session_id = Some(session_id);
+        let snapshot = value.get("snapshot").cloned().unwrap_or(Value::Null);
+        self.sync
+            .apply_snapshot(serde_json::from_value::<BridgeRuntimeSnapshot>(snapshot)?);
+        Ok(())
+    }
+
+    fn create_and_attach_session(
+        &mut self,
+        conversation_key: &str,
+        archive: &ChatArchive,
+    ) -> Result<()> {
+        let created = self.client.call(
+            "session.create",
+            json!({
+                "workspaceRoot": self.workspace_root.to_string_lossy(),
+                "conversationKey": conversation_key,
+                "todoSessionKey": conversation_key,
+            }),
+        )?;
+        let session_id = created
+            .get("sessionId")
+            .and_then(Value::as_str)
+            .map(str::to_string)
+            .ok_or_else(|| anyhow!("session.create 未返回 sessionId"))?;
+        self.session_id = Some(session_id);
+        self.client.call(
+            "session.attach",
+            json!({ "conversationKey": conversation_key }),
+        )?;
+        self.replace_runtime_archive(archive)?;
+        Ok(())
+    }
+
+    fn apply_loaded_chat_metadata(&mut self, archive: &ChatArchive, conversation_key: &str) {
+        self.rewind = rewind::normalize_desktop_rewind_metadata(archive.rewind.as_ref());
+        self.active_plan_path =
+            plan::extract_active_plan_path_from_archived_llm_history(&archive.llm_history);
+        self.plan_metadata = plan::plan_metadata_snapshot(
+            self.plan_metadata.spirit_agent_mode(),
+            self.active_plan_path.as_deref(),
+        );
+        if let Err(err) = self.set_todo_session_key(conversation_key) {
+            logging::log_event(&format!(
+                "[daemon-runtime] set_todo_session_key 失败: {err}"
+            ));
+        }
+    }
+
+    /// Join a live daemon session by chat path, or create and hydrate when none exists.
+    pub fn attach_or_open_chat_session(
+        &mut self,
+        chat_path: &Path,
+        archive: &ChatArchive,
+    ) -> Result<()> {
+        if self.daemon_failed {
+            return Ok(());
+        }
+        let conversation_key = Self::conversation_key_for_path(chat_path);
+        self.detach_current_session();
+        self.sync.subagent_message_cache.clear();
+
+        match self.try_attach_session(&conversation_key) {
+            Ok(()) => {
+                self.apply_loaded_chat_metadata(archive, &conversation_key);
+                Ok(())
+            }
+            Err(err) if Self::is_attach_miss(&err) => {
+                self.create_and_attach_session(&conversation_key, archive)?;
+                self.apply_loaded_chat_metadata(archive, &conversation_key);
+                Ok(())
+            }
+            Err(err) => {
+                self.handle_daemon_error(err);
+                Err(anyhow!("session.attach 失败"))
+            }
+        }
     }
 
     // ------------------------------------------------------------ transport
@@ -269,6 +397,45 @@ impl DaemonRuntime {
             }
             "workspace.trustRequested" if for_this_session => {
                 self.handle_trust_request(&params);
+            }
+            "session.userTurnSubmitted" if for_this_session => {
+                let text = params
+                    .get("text")
+                    .and_then(Value::as_str)
+                    .unwrap_or_default()
+                    .to_string();
+                if text.is_empty() {
+                    return;
+                }
+                if let Some(client_turn_id) = params.get("clientTurnId").and_then(Value::as_str) {
+                    if self.pending_local_client_turn_ids.remove(client_turn_id) {
+                        return;
+                    }
+                }
+                self.sync.push_remote_user_turn(text);
+            }
+            "session.subagentEvents" if for_this_session => {
+                if let Some(drains) = params.get("drains").and_then(Value::as_array) {
+                    for drain in drains {
+                        let child_session_id = drain
+                            .get("sessionId")
+                            .and_then(Value::as_str)
+                            .unwrap_or_default();
+                        if child_session_id.is_empty() {
+                            continue;
+                        }
+                        match serde_json::from_value::<Vec<BridgeRuntimeEvent>>(
+                            drain.get("events").cloned().unwrap_or(Value::Null),
+                        ) {
+                            Ok(events) => self
+                                .sync
+                                .apply_subagent_bridge_events(child_session_id, events),
+                            Err(err) => logging::log_event(&format!(
+                                "[daemon-runtime] 无法解析 session.subagentEvents: {err}"
+                            )),
+                        }
+                    }
+                }
             }
             _ => {}
         }
@@ -800,7 +967,13 @@ impl DaemonRuntime {
         if self.daemon_failed {
             return Err(anyhow!("daemon 已处于失败状态。"));
         }
-        let mut params = json!({ "text": text });
+        let client_turn_id = uuid::Uuid::new_v4().to_string();
+        self.pending_local_client_turn_ids
+            .insert(client_turn_id.clone());
+        let mut params = json!({
+            "text": text,
+            "clientTurnId": client_turn_id,
+        });
         if let Some(images) = explicit_images {
             params["explicitImages"] = serde_json::to_value(images).unwrap_or(Value::Array(vec![]));
         }
@@ -817,7 +990,10 @@ impl DaemonRuntime {
                 .map(|items| items.len())
                 .unwrap_or(0)
         ));
-        self.call_daemon("session.submitUserTurn", Some(params))?;
+        if let Err(err) = self.call_daemon("session.submitUserTurn", Some(params)) {
+            self.pending_local_client_turn_ids.remove(&client_turn_id);
+            return Err(err);
+        }
         // The turn is now running (or queued); the daemon's pushed snapshots
         // maintain the busy flag from here. Set the edge locally so callers
         // that immediately check is_busy (headless loop) don't exit early.
@@ -1516,10 +1692,10 @@ impl DaemonRuntime {
             return;
         };
         if let Err(err) = self.client.call(
-            "session.close",
+            "session.detach",
             json!({ "sessionId": session_id }),
         ) {
-            logging::log_event(&format!("[daemon-runtime] session.close 失败: {err}"));
+            logging::log_event(&format!("[daemon-runtime] session.detach 失败: {err}"));
         }
         self.client.close();
     }

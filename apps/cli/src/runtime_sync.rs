@@ -251,6 +251,57 @@ impl RuntimeSyncState {
         }
     }
 
+    pub(crate) fn push_remote_user_turn(&mut self, text: String) {
+        self.events.push_back(RuntimeEvent::PushMessage(ChatMessage::new(
+            MessageRole::User,
+            text,
+        )));
+    }
+
+    pub(crate) fn apply_subagent_bridge_events(
+        &mut self,
+        session_id: &str,
+        events: Vec<BridgeRuntimeEvent>,
+    ) {
+        for event in events {
+            match event {
+                BridgeRuntimeEvent::BeginAssistantResponse => {
+                    self.subagent_message_cache
+                        .entry(session_id.to_string())
+                        .or_default()
+                        .push(ChatMessage::new(MessageRole::Agent, String::new()));
+                }
+                BridgeRuntimeEvent::AssistantChunk { text } => {
+                    let cache = self
+                        .subagent_message_cache
+                        .entry(session_id.to_string())
+                        .or_default();
+                    if let Some(last) = cache.last_mut() {
+                        if matches!(last.role, MessageRole::Agent) {
+                            last.content.push_str(&text);
+                            continue;
+                        }
+                    }
+                    cache.push(ChatMessage::new(MessageRole::Agent, text));
+                }
+                BridgeRuntimeEvent::ReplacePendingAssistant { text } => {
+                    let cache = self
+                        .subagent_message_cache
+                        .entry(session_id.to_string())
+                        .or_default();
+                    if let Some(last) = cache.last_mut() {
+                        if matches!(last.role, MessageRole::Agent) {
+                            last.content = text;
+                            continue;
+                        }
+                    }
+                    cache.push(ChatMessage::new(MessageRole::Agent, text));
+                }
+                _ => {}
+            }
+        }
+    }
+
     pub(crate) fn apply_snapshot(&mut self, snapshot: BridgeRuntimeSnapshot) {
         self.session.clear_pending_user_turn();
         self.session.clear_pending_images();

@@ -774,7 +774,18 @@ impl TuiShell {
                         tool_block: None,
                     });
                 }
-                self.runtime.replace_session_from_archive(&archive);
+                if let Err(err) = self
+                    .runtime
+                    .attach_or_open_chat_session(std::path::Path::new(path), &archive)
+                {
+                    self.messages.push(ChatMessage {
+                        role: MessageRole::Agent,
+                        content: t!("tui.session.load_failed", err = err).into_owned(),
+                        tool_block: None,
+                    });
+                    return;
+                }
+                self.apply_runtime_events();
                 self.session_display_name = archive.session_display_name.clone();
                 self.scroll_history_to_bottom();
                 self.messages.push(ChatMessage {

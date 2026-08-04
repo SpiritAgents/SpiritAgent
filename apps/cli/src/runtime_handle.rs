@@ -1,6 +1,6 @@
 use anyhow::Result;
 use serde_json::Value;
-use std::{path::PathBuf, sync::Arc};
+use std::{path::{Path, PathBuf}, sync::Arc};
 
 use crate::{
     ask_questions::AskQuestionsResult,
@@ -428,6 +428,20 @@ impl RuntimeHandle {
 
     pub fn replace_session_from_archive(&mut self, archive: &crate::ports::ChatArchive) {
         dispatch!(self.replace_session_from_archive(archive))
+    }
+
+    pub fn attach_or_open_chat_session(
+        &mut self,
+        chat_path: &Path,
+        archive: &crate::ports::ChatArchive,
+    ) -> Result<()> {
+        match &mut self.backend {
+            RuntimeBackend::Bridge(runtime) => {
+                runtime.replace_session_from_archive(archive);
+                Ok(())
+            }
+            RuntimeBackend::Daemon(runtime) => runtime.attach_or_open_chat_session(chat_path, archive),
+        }
     }
 
     pub fn activate_forked_session(
