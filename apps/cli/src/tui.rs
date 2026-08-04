@@ -14,6 +14,7 @@ use crate::{
     adapters::{DefaultAppPaths, JsonChatRepository, JsonConfigStore, KeyringSecretStore},
     ask_questions::AskQuestionsResult,
     chat_store,
+    chat_timeline::project_chat_messages_from_llm_history,
     host_runtime::{RuntimeEvent, ToolUiRequest, build_tool_result_block, format_tool_ui_message},
     locale, logging,
     mcp_types::{ManagedMcpServer, McpDiscoveredPrompt},
@@ -21,8 +22,9 @@ use crate::{
     openai_models_list,
     plan::{self, PlanMetadata},
     ports::{
-        AppPaths, AssistantAuxArchiveEntry, ChatRepository, ConfigStore, McpStatusSnapshot,
-        McpStatusState, SecretStore, SubagentSessionArchiveEntry, SubagentSessionSummary,
+        AppPaths, AssistantAuxArchiveEntry, AttachChatSessionOutcome, ChatArchive, ChatRepository,
+        ConfigStore, McpStatusSnapshot, McpStatusState, SecretStore, SubagentSessionArchiveEntry,
+        SubagentSessionSummary,
     },
     rewind::{self, ConversationMessageSnapshot, DesktopRewindCheckpointSnapshot},
     rules::RuleEntry,
@@ -713,6 +715,72 @@ impl TuiShell {
         }
     }
 
+    fn reset_loaded_session_ui_state(&mut self) {
+        self.exit_rewind_picker_mode();
+        self.subagent.picker_active = false;
+        self.close_subagent_view();
+        self.assistant_aux_by_message.clear();
+        self.persisted_standalone_pending_aux = None;
+        self.persisted_standalone_pending_aux_anchor = None;
+        self.pending_assistant_msg_index = None;
+        self.last_completed_assistant_msg_index = None;
+        self.last_turn_can_continue = false;
+        self.clear_input_history();
+    }
+
+    fn populate_ui_from_disk_archive(&mut self, archive: &ChatArchive) {
+        if let Some(snapshots) = archive.desktop_messages.as_deref() {
+            self.restore_conversation_from_snapshots(snapshots);
+            return;
+        }
+        self.reset_loaded_session_ui_state();
+        let mut msgs = Vec::new();
+        for (role, content) in &archive.messages {
+            msgs.push(ChatMessage {
+                role: if role == "user" {
+                    MessageRole::User
+                } else {
+                    MessageRole::Agent
+                },
+                content: content.clone(),
+                tool_block: None,
+            });
+        }
+        self.messages = msgs;
+        self.assistant_aux_by_message = archive
+            .assistant_aux
+            .iter()
+            .filter_map(|entry| {
+                let thinking = entry
+                    .thinking
+                    .clone()
+                    .filter(|value| !value.trim().is_empty());
+                let compaction = entry
+                    .compaction
+                    .clone()
+                    .filter(|value| !value.trim().is_empty());
+                if thinking.is_none() && compaction.is_none() {
+                    None
+                } else {
+                    Some((
+                        entry.message_index,
+                        AssistantAuxData {
+                            thinking,
+                            compaction,
+                        },
+                    ))
+                }
+            })
+            .collect();
+    }
+
+    fn populate_ui_from_live_archive(&mut self) -> Result<()> {
+        let live = self.runtime.fetch_live_chat_archive()?;
+        self.reset_loaded_session_ui_state();
+        self.messages = project_chat_messages_from_llm_history(&live.llm_history);
+        Ok(())
+    }
+
     fn load_chat_by_path(&mut self, path: &str) {
         let resolved_path = match chat_store::resolve_chat_file_path(path) {
             Ok(resolved) => resolved,
@@ -727,57 +795,37 @@ impl TuiShell {
         };
         match self.chat_repository.load(path) {
             Ok(archive) => {
-                if let Some(snapshots) = archive.desktop_messages.as_deref() {
-                    self.restore_conversation_from_snapshots(snapshots);
-                } else {
-                    self.exit_rewind_picker_mode();
-                    self.subagent.picker_active = false;
-                    self.close_subagent_view();
-                    let mut msgs = Vec::new();
-                    for (role, content) in &archive.messages {
-                        msgs.push(ChatMessage {
-                            role: if role == "user" {
-                                MessageRole::User
-                            } else {
-                                MessageRole::Agent
-                            },
-                            content: content.clone(),
+                let outcome = match self
+                    .runtime
+                    .attach_or_open_chat_session(&resolved_path, &archive)
+                {
+                    Ok(outcome) => outcome,
+                    Err(err) => {
+                        self.messages.push(ChatMessage {
+                            role: MessageRole::Agent,
+                            content: t!("tui.session.load_failed", err = err).into_owned(),
                             tool_block: None,
                         });
+                        return;
                     }
-                    self.messages = msgs;
-                    self.assistant_aux_by_message = archive
-                        .assistant_aux
-                        .iter()
-                        .filter_map(|entry| {
-                            let thinking = entry
-                                .thinking
-                                .clone()
-                                .filter(|value| !value.trim().is_empty());
-                            let compaction = entry
-                                .compaction
-                                .clone()
-                                .filter(|value| !value.trim().is_empty());
-                            if thinking.is_none() && compaction.is_none() {
-                                None
-                            } else {
-                                Some((
-                                    entry.message_index,
-                                    AssistantAuxData {
-                                        thinking,
-                                        compaction,
-                                    },
-                                ))
-                            }
-                        })
-                        .collect();
-                    self.persisted_standalone_pending_aux = None;
-                    self.persisted_standalone_pending_aux_anchor = None;
-                    self.pending_assistant_msg_index = None;
-                    self.last_completed_assistant_msg_index = None;
-                    self.last_turn_can_continue = false;
-                    self.clear_input_history();
+                };
+
+                match outcome {
+                    AttachChatSessionOutcome::Created => {
+                        self.populate_ui_from_disk_archive(&archive);
+                    }
+                    AttachChatSessionOutcome::AttachedLive => {
+                        if let Err(err) = self.populate_ui_from_live_archive() {
+                            self.messages.push(ChatMessage {
+                                role: MessageRole::Agent,
+                                content: t!("tui.session.load_failed", err = err).into_owned(),
+                                tool_block: None,
+                            });
+                            return;
+                        }
+                    }
                 }
+
                 if self.messages.is_empty() {
                     self.messages.push(ChatMessage {
                         role: MessageRole::Agent,
@@ -785,23 +833,20 @@ impl TuiShell {
                         tool_block: None,
                     });
                 }
-                if let Err(err) = self
-                    .runtime
-                    .attach_or_open_chat_session(&resolved_path, &archive)
-                {
-                    self.messages.push(ChatMessage {
-                        role: MessageRole::Agent,
-                        content: t!("tui.session.load_failed", err = err).into_owned(),
-                        tool_block: None,
-                    });
-                    return;
-                }
                 self.apply_runtime_events();
                 self.session_display_name = archive.session_display_name.clone();
                 self.scroll_history_to_bottom();
+                let loaded_message = match outcome {
+                    AttachChatSessionOutcome::AttachedLive => {
+                        t!("tui.session.loaded_live", path = path).into_owned()
+                    }
+                    AttachChatSessionOutcome::Created => {
+                        t!("tui.session.loaded", path = path).into_owned()
+                    }
+                };
                 self.messages.push(ChatMessage {
                     role: MessageRole::Agent,
-                    content: t!("tui.session.loaded", path = path).into_owned(),
+                    content: loaded_message,
                     tool_block: None,
                 });
             }

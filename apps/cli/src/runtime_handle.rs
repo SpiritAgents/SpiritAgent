@@ -14,8 +14,8 @@ use crate::{
     model_registry::AppConfig,
     plan::PlanMetadata,
     ports::{
-        AssistantAuxArchiveEntry, ChatArchive, McpStatusSnapshot, SecretStore,
-        SubagentSessionArchiveEntry, SubagentSessionSummary,
+        AssistantAuxArchiveEntry, AttachChatSessionOutcome, ChatArchive, McpStatusSnapshot,
+        SecretStore, SubagentSessionArchiveEntry, SubagentSessionSummary,
     },
     rewind::{DesktopRewindCheckpointSnapshot, RewindRestoreOutcome},
     session::SessionModel,
@@ -395,8 +395,12 @@ impl RuntimeHandle {
         &mut self,
         chat_path: &Path,
         archive: &crate::ports::ChatArchive,
-    ) -> Result<()> {
+    ) -> Result<AttachChatSessionOutcome> {
         self.backend.attach_or_open_chat_session(chat_path, archive)
+    }
+
+    pub fn fetch_live_chat_archive(&mut self) -> Result<ChatArchive> {
+        self.backend.fetch_live_chat_archive()
     }
 
     pub fn activate_forked_session(

@@ -1,6 +1,8 @@
 use crate::rewind::{
     ConversationMessageRole, ConversationMessageSnapshot, MessageAuxSnapshot, ToolBlockSnapshot,
 };
+use crate::view::{ChatMessage, MessageRole};
+use crate::ports::ArchivedLlmMessage;
 
 pub const CHAT_SCHEMA_VERSION: i32 = 2;
 
@@ -340,6 +342,41 @@ pub fn derive_archive_projection(
     (archive_messages, assistant_aux)
 }
 
+/// Project daemon `llm_history` into TUI chat rows (user/assistant text only).
+pub fn project_chat_messages_from_llm_history(
+    history: &[ArchivedLlmMessage],
+) -> Vec<ChatMessage> {
+    let mut messages = Vec::new();
+    for entry in history {
+        match entry.role.as_str() {
+            "user" => {
+                let content = entry.text_content();
+                if content.trim().is_empty() {
+                    continue;
+                }
+                messages.push(ChatMessage {
+                    role: MessageRole::User,
+                    content,
+                    tool_block: None,
+                });
+            }
+            "assistant" => {
+                let content = entry.text_content();
+                if content.trim().is_empty() {
+                    continue;
+                }
+                messages.push(ChatMessage {
+                    role: MessageRole::Agent,
+                    content,
+                    tool_block: None,
+                });
+            }
+            _ => {}
+        }
+    }
+    messages
+}
+
 fn sanitize_aux(aux: Option<&MessageAuxSnapshot>) -> Option<MessageAuxSnapshot> {
     let aux = aux?;
     let thinking = aux
@@ -423,5 +460,34 @@ mod tests {
         assert_eq!(rows[1].kind, "tool");
         assert!(rows[1].content.is_none());
         assert_eq!(rows[2].content.as_deref(), Some("answer"));
+    }
+
+    #[test]
+    fn project_chat_messages_from_llm_history_skips_tool_rows_and_empty_assistant() {
+        use crate::ports::ArchivedLlmToolCall;
+
+        let history = vec![
+            ArchivedLlmMessage::from_text_and_images("user".to_string(), "hi".to_string(), Vec::new()),
+            ArchivedLlmMessage::from_text_and_images("assistant".to_string(), String::new(), Vec::new())
+                .with_tool_calls(Some(vec![ArchivedLlmToolCall {
+                    id: "call-1".to_string(),
+                    name: "Shell".to_string(),
+                    arguments_json: "{}".to_string(),
+                }])),
+            ArchivedLlmMessage::from_text_and_images("tool".to_string(), "output".to_string(), Vec::new())
+                .with_tool_call_id(Some("call-1".to_string())),
+            ArchivedLlmMessage::from_text_and_images(
+                "assistant".to_string(),
+                "done".to_string(),
+                Vec::new(),
+            ),
+        ];
+
+        let messages = project_chat_messages_from_llm_history(&history);
+        assert_eq!(messages.len(), 2);
+        assert_eq!(messages[0].role, MessageRole::User);
+        assert_eq!(messages[0].content, "hi");
+        assert_eq!(messages[1].role, MessageRole::Agent);
+        assert_eq!(messages[1].content, "done");
     }
 }

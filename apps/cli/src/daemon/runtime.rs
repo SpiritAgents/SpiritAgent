@@ -27,7 +27,7 @@ use crate::{
     model_registry::AppConfig,
     plan::{self, PlanMetadata, bootstrap_plan_metadata},
     ports::{
-        AssistantAuxArchiveEntry, ChatArchive, McpStatusSnapshot, SecretStore,
+        AssistantAuxArchiveEntry, AttachChatSessionOutcome, ChatArchive, McpStatusSnapshot, SecretStore,
         SubagentSessionArchiveEntry, SubagentSessionSummary, normalize_approval_level,
         normalize_llm_http_version,
     },
@@ -244,9 +244,9 @@ impl DaemonRuntime {
         &mut self,
         chat_path: &Path,
         archive: &ChatArchive,
-    ) -> Result<()> {
+    ) -> Result<AttachChatSessionOutcome> {
         if self.daemon_failed {
-            return Ok(());
+            return Err(anyhow!("daemon 连接已处于失败状态。"));
         }
         let conversation_key = Self::conversation_key_for_path(chat_path);
         self.detach_current_session();
@@ -255,18 +255,23 @@ impl DaemonRuntime {
         match self.try_attach_session(&conversation_key) {
             Ok(()) => {
                 self.apply_loaded_chat_metadata(archive, &conversation_key);
-                Ok(())
+                Ok(AttachChatSessionOutcome::AttachedLive)
             }
             Err(err) if Self::is_attach_miss(&err) => {
                 self.create_and_attach_session(&conversation_key, archive)?;
                 self.apply_loaded_chat_metadata(archive, &conversation_key);
-                Ok(())
+                Ok(AttachChatSessionOutcome::Created)
             }
             Err(err) => {
                 self.handle_daemon_error(err);
                 Err(anyhow!("session.attach 失败"))
             }
         }
+    }
+
+    /// Export the daemon session's live archive (llm history, subagents, loop state).
+    pub fn fetch_live_chat_archive(&mut self) -> Result<ChatArchive> {
+        self.export_chat_archive(&[], &[])
     }
 
     // ------------------------------------------------------------ transport

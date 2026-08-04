@@ -229,6 +229,14 @@ pub fn normalize_llm_http_version(value: &str) -> String {
     }
 }
 
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum AttachChatSessionOutcome {
+    /// `session.attach` missed; created a session and hydrated from disk archive.
+    Created,
+    /// Joined an existing live daemon session for this conversation key.
+    AttachedLive,
+}
+
 #[derive(Clone, Debug, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct ChatArchive {
