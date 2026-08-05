@@ -152,12 +152,7 @@ impl DaemonRuntime {
     }
 
     fn conversation_key_for_path(chat_path: &Path) -> String {
-        let resolved = chat_store::resolve_chat_file_path(chat_path.to_string_lossy().as_ref())
-            .unwrap_or_else(|_| chat_path.to_path_buf());
-        std::fs::canonicalize(&resolved)
-            .unwrap_or(resolved)
-            .to_string_lossy()
-            .into_owned()
+        chat_store::conversation_key_for_path(chat_path)
     }
 
     fn is_attach_miss(err: &anyhow::Error) -> bool {

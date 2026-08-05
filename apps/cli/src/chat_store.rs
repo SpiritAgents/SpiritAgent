@@ -416,6 +416,16 @@ pub fn resolve_chat_file_path(path_arg: &str) -> Result<PathBuf> {
     Ok(candidate)
 }
 
+/// Match Desktop `path.resolve`: absolute path without following symlinks.
+pub fn conversation_key_for_path(path: &Path) -> String {
+    let resolved = resolve_chat_file_path(path.to_string_lossy().as_ref())
+        .unwrap_or_else(|_| path.to_path_buf());
+    std::path::absolute(&resolved)
+        .unwrap_or(resolved)
+        .to_string_lossy()
+        .into_owned()
+}
+
 fn with_json_extension(path: PathBuf) -> PathBuf {
     if path.extension().and_then(|s| s.to_str()) == Some("json") {
         return path;
