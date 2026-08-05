@@ -1381,8 +1381,13 @@ impl DaemonRuntime {
     }
 
     pub(crate) fn handle_manual_tool_command_bridge_response(&mut self, value: &Value) -> Result<()> {
-        let Some(result_value) = value.get("result").cloned() else {
-            return Ok(());
+        let result_value = if value.get("kind").is_some() {
+            value.clone()
+        } else {
+            match value.get("result") {
+                Some(nested) => nested.clone(),
+                None => return Ok(()),
+            }
         };
         let result: BridgeManualToolCommandStartResult = serde_json::from_value(result_value)?;
         self.sync.handle_manual_tool_command_result(result);
