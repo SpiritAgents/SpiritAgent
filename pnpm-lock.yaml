@@ -12,46 +12,46 @@ importers:
   .:
     devDependencies:
       turbo:
-        specifier: ^2.5.4
+        specifier: 2.10.8
         version: 2.10.8
 
   apps/desktop:
     dependencies:
       '@fontsource-variable/geist':
-        specifier: ^5.2.8
+        specifier: 5.3.0
         version: 5.3.0
       '@lexical/clipboard':
-        specifier: ^0.46.0
+        specifier: 0.46.0
         version: 0.46.0(typescript@5.9.3)
       '@lexical/headless':
-        specifier: ^0.46.0
+        specifier: 0.46.0
         version: 0.46.0(typescript@5.9.3)
       '@lexical/history':
-        specifier: ^0.46.0
+        specifier: 0.46.0
         version: 0.46.0(typescript@5.9.3)
       '@lexical/plain-text':
-        specifier: ^0.46.0
+        specifier: 0.46.0
         version: 0.46.0(typescript@5.9.3)
       '@lexical/react':
-        specifier: ^0.46.0
+        specifier: 0.46.0
         version: 0.46.0(react-dom@19.2.8(react@19.2.8))(react@19.2.8)(typescript@5.9.3)(yjs@13.6.32)
       '@lexical/rich-text':
-        specifier: ^0.46.0
+        specifier: 0.46.0
         version: 0.46.0(typescript@5.9.3)
       '@lexical/utils':
-        specifier: ^0.46.0
+        specifier: 0.46.0
         version: 0.46.0(typescript@5.9.3)
       '@napi-rs/keyring':
-        specifier: ^1.2.0
+        specifier: 1.3.0
         version: 1.3.0
       '@radix-ui/react-scroll-area':
-        specifier: ^1.2.10
+        specifier: 1.2.18
         version: 1.2.18(@types/react-dom@19.2.4(@types/react@19.2.18))(@types/react@19.2.18)(react-dom@19.2.8(react@19.2.8))(react@19.2.8)
       '@shikijs/monaco':
-        specifier: ^3.23.0
+        specifier: 3.23.0
         version: 3.23.0
       '@shikijs/themes':
-        specifier: ^3.23.0
+        specifier: 3.23.0
         version: 3.23.0
       '@spiritagent/agent-core':
         specifier: workspace:*
@@ -63,188 +63,188 @@ importers:
         specifier: workspace:*
         version: link:../../packages/server
       '@streamdown/code':
-        specifier: ^1.1.1
+        specifier: 1.1.1
         version: 1.1.1(react@19.2.8)
       '@streamdown/math':
-        specifier: ^1.0.2
+        specifier: 1.0.2
         version: 1.0.2(react@19.2.8)
       '@streamdown/mermaid':
-        specifier: ^1.0.2
+        specifier: 1.0.2
         version: 1.0.2(react@19.2.8)
       '@tanstack/react-table':
-        specifier: ^8.21.3
+        specifier: 8.21.3
         version: 8.21.3(react-dom@19.2.8(react@19.2.8))(react@19.2.8)
       '@tanstack/react-virtual':
-        specifier: ^3.14.3
+        specifier: 3.14.9
         version: 3.14.9(react-dom@19.2.8(react@19.2.8))(react@19.2.8)
       '@xterm/addon-fit':
-        specifier: ^0.10.0
+        specifier: 0.10.0
         version: 0.10.0(@xterm/xterm@5.5.0)
       '@xterm/addon-web-links':
-        specifier: ^0.11.0
+        specifier: 0.11.0
         version: 0.11.0(@xterm/xterm@5.5.0)
       '@xterm/addon-webgl':
-        specifier: ^0.18.0
+        specifier: 0.18.0
         version: 0.18.0(@xterm/xterm@5.5.0)
       '@xterm/xterm':
-        specifier: ^5.5.0
+        specifier: 5.5.0
         version: 5.5.0
       '@xyflow/react':
-        specifier: ^12.10.2
+        specifier: 12.11.2
         version: 12.11.2(@types/react-dom@19.2.4(@types/react@19.2.18))(@types/react@19.2.18)(react-dom@19.2.8(react@19.2.8))(react@19.2.8)
       class-variance-authority:
-        specifier: ^0.7.1
+        specifier: 0.7.1
         version: 0.7.1
       clsx:
-        specifier: ^2.1.1
+        specifier: 2.1.1
         version: 2.1.1
       cmdk:
-        specifier: ^1.1.1
+        specifier: 1.1.1
         version: 1.1.1(@types/react-dom@19.2.4(@types/react@19.2.18))(@types/react@19.2.18)(react-dom@19.2.8(react@19.2.8))(react@19.2.8)
       diff:
-        specifier: ^9.0.0
+        specifier: 9.0.0
         version: 9.0.0
       dotenv:
-        specifier: ^17.4.2
+        specifier: 17.4.2
         version: 17.4.2
       gitdiff-parser:
-        specifier: ^0.3.1
+        specifier: 0.3.1
         version: 0.3.1
       hast-util-sanitize:
-        specifier: ^5.0.2
+        specifier: 5.0.2
         version: 5.0.2
       i18next:
         specifier: 26.3.0
         version: 26.3.0(typescript@5.9.3)
       katex:
-        specifier: ^0.17.0
+        specifier: 0.17.0
         version: 0.17.0
       koffi:
-        specifier: ^2.16.1
+        specifier: 2.16.3
         version: 2.16.3
       lexical:
-        specifier: ^0.46.0
+        specifier: 0.46.0
         version: 0.46.0(typescript@5.9.3)
       lucide-react:
-        specifier: ^1.8.0
+        specifier: 1.28.0
         version: 1.28.0(react@19.2.8)
       monaco-editor:
-        specifier: ^0.52.2
+        specifier: 0.52.2
         version: 0.52.2
       node-pty:
-        specifier: ^1.1.0
+        specifier: 1.1.0
         version: 1.1.0
       radix-ui:
-        specifier: ^1.6.0
+        specifier: 1.6.7
         version: 1.6.7(@types/react-dom@19.2.4(@types/react@19.2.18))(@types/react@19.2.18)(react-dom@19.2.8(react@19.2.8))(react@19.2.8)
       react:
-        specifier: ^19.2.5
+        specifier: 19.2.8
         version: 19.2.8
       react-dom:
-        specifier: ^19.2.5
+        specifier: 19.2.8
         version: 19.2.8(react@19.2.8)
       react-i18next:
         specifier: 17.0.8
         version: 17.0.8(i18next@26.3.0(typescript@5.9.3))(react-dom@19.2.8(react@19.2.8))(react@19.2.8)(typescript@5.9.3)
       rehype-raw:
-        specifier: ^7.0.0
+        specifier: 7.0.0
         version: 7.0.0
       rehype-sanitize:
-        specifier: ^6.0.0
+        specifier: 6.0.0
         version: 6.0.0
       remark-breaks:
-        specifier: ^4.0.0
+        specifier: 4.0.0
         version: 4.0.0
       remark-gfm:
-        specifier: ^4.0.1
+        specifier: 4.0.1
         version: 4.0.1
       seti-icons:
-        specifier: ^0.0.4
+        specifier: 0.0.4
         version: 0.0.4
       shadcn:
-        specifier: ^4.4.0
+        specifier: 4.16.1
         version: 4.16.1(typescript@5.9.3)
       shiki:
-        specifier: ^3.23.0
+        specifier: 3.23.0
         version: 3.23.0
       sonner:
-        specifier: ^2.0.7
+        specifier: 2.0.7
         version: 2.0.7(react-dom@19.2.8(react@19.2.8))(react@19.2.8)
       streamdown:
-        specifier: ^2.5.0
+        specifier: 2.5.0
         version: 2.5.0(react-dom@19.2.8(react@19.2.8))(react@19.2.8)
       tailwind-merge:
-        specifier: ^3.5.0
+        specifier: 3.6.0
         version: 3.6.0
       tw-animate-css:
-        specifier: ^1.4.0
+        specifier: 1.4.0
         version: 1.4.0
     devDependencies:
       '@electron/rebuild':
-        specifier: ^4.2.0
+        specifier: 4.2.0
         version: 4.2.0
       '@tailwindcss/vite':
-        specifier: ^4.2.4
+        specifier: 4.3.3
         version: 4.3.3(vite@8.2.0(@types/node@25.9.5)(esbuild@0.28.1)(jiti@2.7.0)(tsx@4.23.7))
       '@types/node':
-        specifier: ^25.6.0
+        specifier: 25.9.5
         version: 25.9.5
       '@types/react':
-        specifier: ^19.2.14
+        specifier: 19.2.18
         version: 19.2.18
       '@types/react-dom':
-        specifier: ^19.2.3
+        specifier: 19.2.4
         version: 19.2.4(@types/react@19.2.18)
       '@vitejs/plugin-react':
-        specifier: ^6.0.1
+        specifier: 6.0.5
         version: 6.0.5(vite@8.2.0(@types/node@25.9.5)(esbuild@0.28.1)(jiti@2.7.0)(tsx@4.23.7))
       concurrently:
-        specifier: ^9.2.1
+        specifier: 9.2.4
         version: 9.2.4
       cross-env:
-        specifier: ^10.0.0
+        specifier: 10.1.0
         version: 10.1.0
       electron:
-        specifier: ^43.2.0
+        specifier: 43.3.0
         version: 43.3.0
       electron-builder:
-        specifier: ^26.15.3
+        specifier: 26.15.3
         version: 26.15.3(electron-builder-squirrel-windows@26.15.3)
       license-checker-rseidelsohn:
-        specifier: ^5.0.1
+        specifier: 5.0.1
         version: 5.0.1
       linkedom:
-        specifier: ^0.18.12
+        specifier: 0.18.13
         version: 0.18.13
       png-to-ico:
-        specifier: ^3.0.1
+        specifier: 3.0.2
         version: 3.0.2
       sharp:
-        specifier: ^0.35.3
+        specifier: 0.35.3
         version: 0.35.3(@types/node@25.9.5)
       tailwindcss:
-        specifier: ^4.2.4
+        specifier: 4.3.3
         version: 4.3.3
       tsx:
-        specifier: ^4.8.1
+        specifier: 4.23.7
         version: 4.23.7
       typescript:
-        specifier: ^5.6.3
+        specifier: 5.9.3
         version: 5.9.3
       vite:
-        specifier: ^8.0.9
+        specifier: 8.2.0
         version: 8.2.0(@types/node@25.9.5)(esbuild@0.28.1)(jiti@2.7.0)(tsx@4.23.7)
       wait-on:
-        specifier: ^9.0.1
+        specifier: 9.1.0
         version: 9.1.0
 
   packages/acp-server:
     dependencies:
       '@agentclientprotocol/sdk':
-        specifier: ^0.25.1
+        specifier: 0.25.1
         version: 0.25.1(zod@3.25.76)
       '@inquirer/prompts':
-        specifier: ^7.5.0
+        specifier: 7.10.1
         version: 7.10.1(@types/node@25.9.5)
       '@spiritagent/agent-core':
         specifier: workspace:*
@@ -254,174 +254,174 @@ importers:
         version: link:../host-internal
     devDependencies:
       '@types/node':
-        specifier: ^25.6.0
+        specifier: 25.9.5
         version: 25.9.5
       license-checker-rseidelsohn:
-        specifier: ^5.0.1
+        specifier: 5.0.1
         version: 5.0.1
       typescript:
-        specifier: ^5.6.3
+        specifier: 5.9.3
         version: 5.9.3
 
   packages/agent-core:
     dependencies:
       '@ai-sdk/alibaba':
-        specifier: ^2.0.1
+        specifier: 2.0.25
         version: 2.0.25(zod@3.25.76)
       '@ai-sdk/amazon-bedrock':
-        specifier: ^5.0.1
+        specifier: 5.0.43
         version: 5.0.43(zod@3.25.76)
       '@ai-sdk/anthropic':
-        specifier: ^4.0.0
+        specifier: 4.0.30
         version: 4.0.30(zod@3.25.76)
       '@ai-sdk/azure':
-        specifier: ^4.0.1
+        specifier: 4.0.31
         version: 4.0.31(zod@3.25.76)
       '@ai-sdk/baseten':
-        specifier: ^2.0.17
+        specifier: 2.1.1
         version: 2.1.1(zod@3.25.76)
       '@ai-sdk/cohere':
-        specifier: ^4.0.15
+        specifier: 4.0.21
         version: 4.0.21(zod@3.25.76)
       '@ai-sdk/deepinfra':
-        specifier: ^3.0.20
+        specifier: 3.0.23
         version: 3.0.23(zod@3.25.76)
       '@ai-sdk/deepseek':
-        specifier: ^3.0.0
+        specifier: 3.0.22
         version: 3.0.22(zod@3.25.76)
       '@ai-sdk/fireworks':
-        specifier: ^3.0.8
+        specifier: 3.0.25
         version: 3.0.25(zod@3.25.76)
       '@ai-sdk/gateway':
-        specifier: ^4.0.3
+        specifier: 4.0.41
         version: 4.0.41(zod@3.25.76)
       '@ai-sdk/google':
-        specifier: ^4.0.1
+        specifier: 4.0.34
         version: 4.0.34(zod@3.25.76)
       '@ai-sdk/google-vertex':
-        specifier: ^5.0.1
+        specifier: 5.0.41
         version: 5.0.41(zod@3.25.76)
       '@ai-sdk/groq':
-        specifier: ^3.0.55
+        specifier: 3.0.55
         version: 3.0.55(zod@3.25.76)
       '@ai-sdk/huggingface':
-        specifier: ^2.0.17
+        specifier: 2.0.23
         version: 2.0.23(zod@3.25.76)
       '@ai-sdk/minimax':
-        specifier: ^3.0.2
+        specifier: 3.0.6
         version: 3.0.6(zod@3.25.76)
       '@ai-sdk/moonshotai':
-        specifier: ^3.0.1
+        specifier: 3.0.26
         version: 3.0.26(zod@3.25.76)
       '@ai-sdk/open-responses':
-        specifier: ^2.0.0
+        specifier: 2.0.21
         version: 2.0.21(zod@3.25.76)
       '@ai-sdk/openai':
-        specifier: ^4.0.1
+        specifier: 4.0.30
         version: 4.0.30(zod@3.25.76)
       '@ai-sdk/openai-compatible':
-        specifier: ^3.0.0
+        specifier: 3.0.23
         version: 3.0.23(zod@3.25.76)
       '@ai-sdk/togetherai':
-        specifier: ^3.0.18
+        specifier: 3.0.24
         version: 3.0.24(zod@3.25.76)
       '@ai-sdk/xai':
-        specifier: ^4.0.1
+        specifier: 4.0.28
         version: 4.0.28(zod@3.25.76)
       '@aws/bedrock-token-generator':
-        specifier: ^1.1.0
+        specifier: 1.1.0
         version: 1.1.0
       '@huggingface/inference':
-        specifier: ^4.13.23
+        specifier: 4.13.25
         version: 4.13.25
       '@modelcontextprotocol/sdk':
-        specifier: ^1.30.0
+        specifier: 1.30.0
         version: 1.30.0(zod@3.25.76)
       ai:
-        specifier: ^7.0.3
+        specifier: 7.0.52
         version: 7.0.52(zod@3.25.76)
       undici:
-        specifier: ^7.27.2
+        specifier: 7.29.0
         version: 7.29.0
     devDependencies:
       '@types/node':
-        specifier: ^25.6.0
+        specifier: 25.9.5
         version: 25.9.5
       license-checker-rseidelsohn:
-        specifier: ^5.0.1
+        specifier: 5.0.1
         version: 5.0.1
       tsx:
-        specifier: ^4.8.1
+        specifier: 4.23.7
         version: 4.23.7
       typescript:
-        specifier: ^5.6.3
+        specifier: 5.9.3
         version: 5.9.3
 
   packages/host-internal:
     dependencies:
       '@aws-sdk/client-bedrock':
-        specifier: ^3.1068.0
+        specifier: 3.1103.0
         version: 3.1103.0
       '@mozilla/readability':
-        specifier: ^0.6.0
+        specifier: 0.6.0
         version: 0.6.0
       '@napi-rs/keyring':
-        specifier: ^1.2.0
+        specifier: 1.3.0
         version: 1.3.0
       '@spiritagent/agent-core':
         specifier: workspace:*
         version: link:../agent-core
       '@vscode/ripgrep':
-        specifier: ^1.18.0
+        specifier: 1.18.0
         version: 1.18.0
       fast-glob:
-        specifier: ^3.3.3
+        specifier: 3.3.3
         version: 3.3.3
       fflate:
-        specifier: ^0.8.2
+        specifier: 0.8.3
         version: 0.8.3
       glob:
-        specifier: ^13.0.6
+        specifier: 13.0.6
         version: 13.0.6
       google-auth-library:
-        specifier: ^10.6.1
+        specifier: 10.9.1
         version: 10.9.1
       ignore:
-        specifier: ^5.3.2
+        specifier: 5.3.2
         version: 5.3.2
       jsdom:
-        specifier: ^29.1.1
+        specifier: 29.1.1
         version: 29.1.1(@noble/hashes@2.2.0)
       tar:
-        specifier: ^7.5.13
+        specifier: 7.5.22
         version: 7.5.22
       turndown:
-        specifier: ^7.2.4
+        specifier: 7.2.4
         version: 7.2.4
       turndown-plugin-gfm:
-        specifier: ^1.0.2
+        specifier: 1.0.2
         version: 1.0.2
       vscode-jsonrpc:
-        specifier: ^8.2.1
+        specifier: 8.2.1
         version: 8.2.1
       vscode-languageserver-protocol:
-        specifier: ^3.17.5
+        specifier: 3.18.2
         version: 3.18.2
     devDependencies:
       '@types/jsdom':
-        specifier: ^28.0.3
+        specifier: 28.0.3
         version: 28.0.3
       '@types/node':
-        specifier: ^25.6.0
+        specifier: 25.9.5
         version: 25.9.5
       '@types/turndown':
-        specifier: ^5.0.6
+        specifier: 5.0.6
         version: 5.0.6
       license-checker-rseidelsohn:
-        specifier: ^5.0.1
+        specifier: 5.0.1
         version: 5.0.1
       typescript:
-        specifier: ^5.6.3
+        specifier: 5.9.3
         version: 5.9.3
 
   packages/server:
@@ -434,10 +434,10 @@ importers:
         version: link:../host-internal
     devDependencies:
       '@types/node':
-        specifier: ^25.6.0
+        specifier: 25.9.5
         version: 25.9.5
       typescript:
-        specifier: ^5.6.3
+        specifier: 5.9.3
         version: 5.9.3
 
 packages:
@@ -11653,7 +11653,7 @@ snapshots:
       es6-error: 4.1.1
       matcher: 3.0.0
       roarr: 2.15.4
-      semver: 7.7.4
+      semver: 7.8.5
       serialize-error: 7.0.1
     optional: true
 

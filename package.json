@@ -44,7 +44,7 @@
     "dev:desktop:web": "turbo run build --filter=@spiritagent/desktop^... && pnpm --filter @spiritagent/desktop dev:web"
   },
   "devDependencies": {
-    "turbo": "^2.5.4"
+    "turbo": "2.10.8"
   },
   "engines": {
     "node": ">=24"
