@@ -31,6 +31,7 @@ import {
 
 import type { DesktopToolRequest } from './contracts.js';
 import type { PersistedDesktopTimelineTurnSnapshot } from './chat-schema.js';
+import { sameWorkspaceRoot } from './service-utils.js';
 
 interface RemoteDesktopRuntimeInput {
   dataDir: string;
@@ -62,7 +63,7 @@ interface SessionCreateResult {
 }
 
 interface SessionAttachResult {
-  session: { sessionId: string };
+  session: { sessionId: string; workspaceRoot: string };
   snapshot: BridgeRuntimeSnapshot;
 }
 
@@ -138,6 +139,14 @@ function isConversationKeyAttachMiss(error: unknown): boolean {
   return error instanceof Error && error.message.includes('no live session for conversationKey');
 }
 
+function isStaleDaemonWorkspaceAttach(error: unknown): boolean {
+  return error instanceof Error && error.message.includes('stale daemon workspace for conversationKey');
+}
+
+function isOpenRemoteAttachFallback(error: unknown): boolean {
+  return isConversationKeyAttachMiss(error) || isStaleDaemonWorkspaceAttach(error);
+}
+
 function buildRemoteDesktopRuntime(
   client: ServerRpcClient,
   sessionId: string,
@@ -184,6 +193,11 @@ export async function attachRemoteDesktopRuntime(
   const attached = await client.call<SessionAttachResult>('session.attach', {
     conversationKey: input.conversationKey,
   });
+  const daemonWorkspaceRoot = attached.session.workspaceRoot?.trim();
+  if (daemonWorkspaceRoot && !sameWorkspaceRoot(daemonWorkspaceRoot, input.workspaceRoot)) {
+    await client.call('session.close', { sessionId: attached.session.sessionId });
+    throw new Error(`stale daemon workspace for conversationKey: ${input.conversationKey}`);
+  }
   const runtime = buildRemoteDesktopRuntime(client, attached.session.sessionId, input);
   try {
     await runtime.initializeFromSnapshot(attached.snapshot);
@@ -230,7 +244,7 @@ export async function openRemoteDesktopRuntime(
   try {
     return await attachRemoteDesktopRuntime(input);
   } catch (error) {
-    if (!isConversationKeyAttachMiss(error)) {
+    if (!isOpenRemoteAttachFallback(error)) {
       throw error;
     }
   }
