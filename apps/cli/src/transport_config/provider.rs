@@ -115,6 +115,7 @@ pub(crate) fn model_provider_vendor(provider: ModelProvider) -> &'static str {
         ModelProvider::Google => "google",
         ModelProvider::GoogleVertexAi => "google-vertex-ai",
         ModelProvider::Volcengine => "volcengine",
+        ModelProvider::Byteplus => "byteplus",
         ModelProvider::Azure => "azure",
         ModelProvider::AmazonBedrock => {
             unreachable!("Amazon Bedrock 不应映射到 openai-compatible llmVendor")

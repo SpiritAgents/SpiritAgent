@@ -53,6 +53,7 @@ pub enum ModelProvider {
     #[serde(rename = "google-vertex-ai")]
     GoogleVertexAi,
     Volcengine,
+    Byteplus,
     Meituan,
     #[serde(rename = "tencent-tokenhub")]
     TencentTokenhub,
@@ -93,6 +94,7 @@ impl ModelProvider {
             Self::Google => "google",
             Self::GoogleVertexAi => "google-vertex-ai",
             Self::Volcengine => "volcengine",
+            Self::Byteplus => "byteplus",
             Self::Meituan => "meituan",
             Self::TencentTokenhub => "tencent-tokenhub",
             Self::Mistral => "mistral",
@@ -134,6 +136,7 @@ impl FromStr for ModelProvider {
             "google" => Ok(Self::Google),
             "google-vertex-ai" => Ok(Self::GoogleVertexAi),
             "volcengine" => Ok(Self::Volcengine),
+            "byteplus" => Ok(Self::Byteplus),
             "meituan" => Ok(Self::Meituan),
             "tencent-tokenhub" => Ok(Self::TencentTokenhub),
             "mistral" => Ok(Self::Mistral),
@@ -450,6 +453,7 @@ impl ModelProfile {
             | Some(ModelProvider::Google)
             | Some(ModelProvider::GoogleVertexAi)
             | Some(ModelProvider::Volcengine)
+            | Some(ModelProvider::Byteplus)
             | Some(ModelProvider::Stepfun)
             |             Some(ModelProvider::AmazonBedrock)
             | Some(ModelProvider::Azure)

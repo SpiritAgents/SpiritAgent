@@ -74,6 +74,13 @@ fn model_add_volcengine_provider_index() -> usize {
         .unwrap_or(14)
 }
 
+fn model_add_byteplus_provider_index() -> usize {
+    model_add_picker_order_ids()
+        .iter()
+        .position(|id| id == "byteplus")
+        .unwrap_or(15)
+}
+
 fn model_add_cloudflare_provider_index() -> usize {
     model_add_picker_order_ids()
         .iter()
@@ -353,6 +360,7 @@ fn model_add_provider_label(id: &str) -> String {
         "siliconflow" => t!("form.model.provider.siliconflow"),
         "stepfun" => t!("form.model.provider.stepfun"),
         "volcengine" => t!("form.model.provider.volcengine"),
+        "byteplus" => t!("form.model.provider.byteplus"),
         "meituan" => t!("form.model.provider.meituan"),
         "tencent-tokenhub" => t!("form.model.provider.tencent-tokenhub"),
         "mistral" => t!("form.model.provider.mistral"),
@@ -556,7 +564,7 @@ fn model_add_alibaba_workspace_id_field(value: &str) -> BottomFormFieldView {
     }
 }
 
-fn model_add_volcengine_transport_field(selected: usize) -> BottomFormFieldView {
+fn model_add_ark_transport_field(selected: usize) -> BottomFormFieldView {
     BottomFormFieldView {
         label: t!("form.model.field.api_kind.label").into_owned(),
         help: String::new(),
@@ -625,7 +633,7 @@ fn model_add_cloudflare_api_token_field(value: &str) -> BottomFormFieldView {
 fn model_add_transport_kind(form: &BottomFormView, provider: ModelProvider) -> ModelTransportKind {
     match provider {
         ModelProvider::Anthropic => ModelTransportKind::Anthropic,
-        ModelProvider::Volcengine => match form.fields.get(2).map(|f| &f.editor) {
+        ModelProvider::Volcengine | ModelProvider::Byteplus => match form.fields.get(2).map(|f| &f.editor) {
             Some(BottomFormFieldEditorView::Choice { selected, options }) if options.len() == 2 => {
                 if *selected == 1 {
                     ModelTransportKind::OpenResponses
@@ -914,7 +922,7 @@ fn sync_model_add_form_fields(form: &mut BottomFormView) {
         }
         _ => 0,
     };
-    let volcengine_transport_selected = match form.fields.get(2).map(|f| &f.editor) {
+    let ark_transport_selected = match form.fields.get(2).map(|f| &f.editor) {
         Some(BottomFormFieldEditorView::Choice { selected, options }) if options.len() == 2 => {
             (*selected).min(1)
         }
@@ -1161,11 +1169,13 @@ fn sync_model_add_form_fields(form: &mut BottomFormView) {
             model_add_glm_coding_plan_billing_mode_field(glm_coding_plan_billing_selected),
             model_add_api_key_field(api_key_raw),
         ]
-    } else if provider_idx == model_add_volcengine_provider_index() {
+    } else if provider_idx == model_add_volcengine_provider_index()
+        || provider_idx == model_add_byteplus_provider_index()
+    {
         vec![
             model_add_provider_field(provider_idx),
             model_add_mode_field_preset(),
-            model_add_volcengine_transport_field(volcengine_transport_selected),
+            model_add_ark_transport_field(ark_transport_selected),
             model_add_api_key_field(api_key_raw),
         ]
     } else if provider_idx == model_add_cloudflare_provider_index() {
@@ -2652,6 +2662,7 @@ mod tests {
         sync_model_add_form_fields, to_hook_save_request, to_prompt_args_json,
         hook_add_form_enter_toggles_checkbox,
         model_add_stepfun_provider_index, model_add_volcengine_provider_index,
+        model_add_byteplus_provider_index,
         model_add_z_ai_provider_index, model_add_zhipu_ai_provider_index,
         HOOK_ADD_FIELD_COMMAND, HOOK_ADD_FIELD_FAIL_CLOSED, HOOK_ADD_FIELD_TIMEOUT,
     };
@@ -3205,6 +3216,35 @@ mod tests {
             "https://ark.cn-beijing.volces.com/api/v3"
         );
         assert_eq!(parsed.api_key, "sk-volc");
+    }
+
+    #[test]
+    fn model_add_form_parses_byteplus_preset_connection() {
+        let mut form = new_model_add_form();
+        if let Some(f) = form.fields.get_mut(0)
+            && let BottomFormFieldEditorView::Choice { selected, .. } = &mut f.editor {
+                *selected = model_add_byteplus_provider_index();
+            }
+        sync_model_add_form_fields(&mut form);
+        assert_eq!(form.fields.len(), 4);
+        if let Some(f) = form.fields.get_mut(2)
+            && let BottomFormFieldEditorView::Choice { selected, .. } = &mut f.editor {
+                *selected = 1;
+            }
+        sync_model_add_form_fields(&mut form);
+        form.selected_field = 3;
+        insert_text(&mut form, "sk-byteplus");
+
+        let parsed = parse_model_add_connection(&form).expect("parse");
+        assert_eq!(parsed.provider, ModelProvider::Byteplus);
+        assert_eq!(parsed.transport_kind, ModelTransportKind::OpenResponses);
+        assert!(parsed.bulk);
+        assert!(parsed.model_name.is_none());
+        assert_eq!(
+            parsed.api_base,
+            "https://ark.ap-southeast.bytepluses.com/api/v3"
+        );
+        assert_eq!(parsed.api_key, "sk-byteplus");
     }
 
     #[test]
