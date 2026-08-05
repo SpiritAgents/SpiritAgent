@@ -528,9 +528,12 @@ export async function startDaemon(options: DaemonOptions): Promise<RunningDaemon
         await sessionManager.replyPendingApproval(sessionId, params['decision'] as never);
         return { ok: true };
       }
-      case SESSION_REPLY_PENDING_QUESTIONS:
-        await sessionManager.replyPendingQuestions(readSessionId(params), params['result'] as never);
+      case SESSION_REPLY_PENDING_QUESTIONS: {
+        const sessionId = readSessionId(params);
+        requireAttachedToSession(clientState, sessionId);
+        await sessionManager.replyPendingQuestions(sessionId, params['result'] as never);
         return { ok: true };
+      }
       case SESSION_SET_MODE: {
         const mode = params['mode'];
         if (mode !== 'agent' && mode !== 'plan' && mode !== 'ask' && mode !== 'debug') {
