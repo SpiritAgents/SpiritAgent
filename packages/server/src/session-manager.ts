@@ -201,6 +201,8 @@ export class SessionManager {
   private readonly spiritDataDir: string;
   /** Shared per-workspace MCP services (also serve host.mcp* management RPCs). */
   readonly mcpRegistry = new McpRegistry();
+  /** conversationKey → in-flight create; collapses concurrent creates for the same chat. */
+  private readonly creatingByConversationKey = new Map<string, Promise<ServerSessionInfo>>();
 
   constructor(
     spiritDataDir: string,
@@ -219,6 +221,35 @@ export class SessionManager {
           return this.projectInfo(existing);
         }
         this.conversationIndex.delete(conversationKey);
+      }
+      const inflight = this.creatingByConversationKey.get(conversationKey);
+      if (inflight) {
+        return inflight;
+      }
+      const promise = this.createSessionInner(params, conversationKey);
+      this.creatingByConversationKey.set(conversationKey, promise);
+      try {
+        return await promise;
+      } finally {
+        this.creatingByConversationKey.delete(conversationKey);
+      }
+    }
+    return this.createSessionInner(params);
+  }
+
+  private async createSessionInner(
+    params: CreateSessionParams,
+    conversationKey?: string,
+  ): Promise<ServerSessionInfo> {
+    const trimmedKey = conversationKey?.trim();
+    if (trimmedKey) {
+      const existingId = this.conversationIndex.get(trimmedKey);
+      if (existingId) {
+        const existing = this.sessions.get(existingId);
+        if (existing) {
+          return this.projectInfo(existing);
+        }
+        this.conversationIndex.delete(trimmedKey);
       }
     }
 
@@ -255,7 +286,7 @@ export class SessionManager {
       model: runtimeResult.transportConfig.model,
       queuedTurns: 0,
       attachmentCount: 0,
-      ...(conversationKey ? { conversationKey } : {}),
+      ...(trimmedKey ? { conversationKey: trimmedKey } : {}),
     };
     const session: ServerSession = {
       info,
@@ -273,8 +304,8 @@ export class SessionManager {
     session.pump = setInterval(() => this.tickSession(session), PUMP_INTERVAL_MS);
     session.pump.unref();
     this.sessions.set(sessionId, session);
-    if (conversationKey) {
-      this.conversationIndex.set(conversationKey, sessionId);
+    if (trimmedKey) {
+      this.conversationIndex.set(trimmedKey, sessionId);
     }
     return { ...info };
   }
