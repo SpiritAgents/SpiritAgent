@@ -768,6 +768,11 @@ export class RemoteDesktopRuntime {
       case 'update-pending-assistant-thinking':
         this.thinkingTextStore = event.text;
         break;
+      case 'assistant-thinking-segment-finalized':
+        // 对齐 embedded runtime（agent-core runtime/streaming.ts）：thinking 定稿即清空
+        // 暂存，否则 synthesizeLocalPendingAux 会把上一段思考当作下一段占位 detailText 复用。
+        this.thinkingTextStore = '';
+        break;
       case 'remove-pending-assistant':
         this.liveReasoningAwaitingDetail = false;
         break;
