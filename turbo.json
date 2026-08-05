@@ -3,7 +3,8 @@
   "tasks": {
     "build": {
       "dependsOn": ["^build"],
-      "outputs": ["dist/**", "dist-electron/**"]
+      "outputs": ["dist/**", "dist-electron/**"],
+      "passThroughEnv": ["SPIRIT_GITHUB_OAUTH_CLIENT_ID"]
     },
     "build:tsc": {
       "dependsOn": ["^build"],
