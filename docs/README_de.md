@@ -92,7 +92,7 @@ Agent Core bestimmt, wie das Modell den Projektkontext sieht:
 ### Qualität und Evaluation
 
 - **Smoke-Suites** — Vertrags-, Runtime- und Live-Anbieter-Checks unter `packages/agent-core/src/smoke`.
-- **Eval-Harness** — Szenariovergleich für Prompt- oder Tool-Definitionsänderungen (`npm run eval:compare` im Repo-Root).
+- **Eval-Harness** — Szenariovergleich für Prompt- oder Tool-Definitionsänderungen (`pnpm run eval:compare` im Repo-Root).
 
 `@spiritagent/agent-core` wird auf npm veröffentlicht; [`packages/host-internal`](../packages/host-internal) enthält gemeinsame Host-Discovery, Extensions, Marketplace, Workspace-Helfer und LSP-Orchestrierung für Desktop.
 
@@ -115,7 +115,7 @@ Siehe [apps/desktop/README.md](../apps/desktop/README.md) für Desktop-spezifisc
 Die [Rust CLI](../apps/cli) (`spirit-agent`) bietet einen terminal-first Host mit optionaler Ratatui-UI. Sie verbindet sich per WebSocket mit dem gemeinsamen Spirit-Server-Daemon und eignet sich für Skripte, SSH-Sitzungen und Minimalumgebungen.
 
 ```bash
-npm run dev:cli    # cargo run -p spirit-agent
+pnpm run dev:cli    # cargo run -p spirit-agent
 ```
 
 ## Server
@@ -142,7 +142,7 @@ npm run dev:cli    # cargo run -p spirit-agent
 
 ### Schnellstart (Zed)
 
-1. Server bauen: `npm run build:acp-server`
+1. Server bauen: `pnpm run build:acp-server`
 2. In Zed `settings.json` eintragen (kein API-Key in `env`):
 
 ```json
@@ -170,15 +170,16 @@ node path/to/packages/acp-server/dist/src/stdio-entry.js --setup
 
 ## Entwicklung
 
-**Anforderungen:** Node.js 24+, npm. Rust-Toolchain für CLI-Builds.
+**Anforderungen:** Node.js 24+, pnpm 10+ (über `corepack enable` aktivieren). Rust-Toolchain für CLI-Builds.
 
 | Befehl | Beschreibung |
 | --- | --- |
-| `npm run dev:desktop` | Shared Packages bauen und Desktop starten (Vite + Electron) |
-| `npm run dev:desktop:web` | Desktop-Renderer mit Browser-Web-Host |
-| `npm run dev:cli` | CLI mit TUI |
-| `npm run build` | Produktionsbuild von agent-core, host-internal, server, acp-server und Desktop |
-| `npm run eval:compare` | Eval-Vergleich nach agent-core-Änderungen |
+| `pnpm install` | Workspace-Abhängigkeiten installieren (einmal im Repo-Root) |
+| `pnpm run dev:desktop` | Shared Packages bauen und Desktop starten (Vite + Electron) |
+| `pnpm run dev:desktop:web` | Desktop-Renderer mit Browser-Web-Host |
+| `pnpm run dev:cli` | CLI mit TUI |
+| `pnpm run build` | Produktionsbuild von agent-core, host-internal, server, acp-server und Desktop |
+| `pnpm run eval:compare` | Eval-Vergleich nach agent-core-Änderungen |
 
 ### Repository-Layout
 

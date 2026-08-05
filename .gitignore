@@ -2,6 +2,7 @@
 **/node_modules/
 **/dist/
 **/dist-electron/
+**/.turbo/
 **/.tsbuildinfo*
 **/*.tsbuildinfo
 /apps/desktop/release/

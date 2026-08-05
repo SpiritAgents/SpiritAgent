@@ -92,7 +92,7 @@ Agent Core がモデルから見えるプロジェクト文脈を決定します
 ### 品質と評価
 
 - **Smoke スイート** — `packages/agent-core/src/smoke` の契約・ランタイム・ライブプロバイダチェック。
-- **Eval ハーネス** — プロンプトやツール定義変更向けシナリオ比較（リポジトリルートで `npm run eval:compare`）。
+- **Eval ハーネス** — プロンプトやツール定義変更向けシナリオ比較（リポジトリルートで `pnpm run eval:compare`）。
 
 `@spiritagent/agent-core` は npm 公開；[`packages/host-internal`](../packages/host-internal) は Desktop 共有のホスト側探索、拡張、マーケットプレイス、ワークスペースヘルパー、LSP オーケストレーション。
 
@@ -115,7 +115,7 @@ Desktop 固有の開発・レイアウトは [apps/desktop/README.md](../apps/de
 [Rust CLI](../apps/cli)（`spirit-agent`）はターミナル優先ホストで、オプションの Ratatui UI を提供。WebSocket 経由で共有 Spirit Server デーモンに接続し、スクリプト、SSH セッション、最小環境に適します。
 
 ```bash
-npm run dev:cli    # cargo run -p spirit-agent
+pnpm run dev:cli    # cargo run -p spirit-agent
 ```
 
 ## Server
@@ -142,7 +142,7 @@ npm run dev:cli    # cargo run -p spirit-agent
 
 ### クイックスタート（Zed）
 
-1. サーバーをビルド：`npm run build:acp-server`
+1. サーバーをビルド：`pnpm run build:acp-server`
 2. Zed の `settings.json` に追加（`env` に API キー不要）：
 
 ```json
@@ -170,15 +170,16 @@ node path/to/packages/acp-server/dist/src/stdio-entry.js --setup
 
 ## 開発
 
-**要件：** Node.js 24+、npm。CLI ビルドには Rust ツールチェーン。
+**要件：** Node.js 24+、pnpm 10+（`corepack enable` で有効化）。CLI ビルドには Rust ツールチェーン。
 
 | コマンド | 説明 |
 | --- | --- |
-| `npm run dev:desktop` | 共有パッケージをビルドして Desktop 起動（Vite + Electron） |
-| `npm run dev:desktop:web` | Desktop レンダラー + ブラウザ Web ホスト |
-| `npm run dev:cli` | TUI 付き CLI |
-| `npm run build` | agent-core、host-internal、server、acp-server、Desktop の本番ビルド |
-| `npm run eval:compare` | agent-core 変更後の eval 比較 |
+| `pnpm install` | workspace 依存関係をインストール（リポジトリルートで一度） |
+| `pnpm run dev:desktop` | 共有パッケージをビルドして Desktop 起動（Vite + Electron） |
+| `pnpm run dev:desktop:web` | Desktop レンダラー + ブラウザ Web ホスト |
+| `pnpm run dev:cli` | TUI 付き CLI |
+| `pnpm run build` | agent-core、host-internal、server、acp-server、Desktop の本番ビルド |
+| `pnpm run eval:compare` | agent-core 変更後の eval 比較 |
 
 ### リポジトリ構成
 

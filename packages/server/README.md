@@ -12,7 +12,7 @@
 ## Quick start
 
 ```bash
-npm run build
+pnpm run build
 node dist/src/entry.js            # foreground daemon, random port
 node dist/src/entry.js ps         # list instances
 node dist/src/entry.js kill       # stop all instances

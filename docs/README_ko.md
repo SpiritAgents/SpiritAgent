@@ -92,7 +92,7 @@ Agent Core가 모델이 보는 프로젝트 컨텍스트를 결정합니다:
 ### 품질과 평가
 
 - **Smoke 스위트** — `packages/agent-core/src/smoke`의 계약, 런타임, 라이브 프로바이더 검사.
-- **Eval 하네스** — 프롬프트 또는 도구 정의 변경에 대한 시나리오 비교(저장소 루트에서 `npm run eval:compare`).
+- **Eval 하네스** — 프롬프트 또는 도구 정의 변경에 대한 시나리오 비교(저장소 루트에서 `pnpm run eval:compare`).
 
 `@spiritagent/agent-core`는 npm에 게시됩니다. [`packages/host-internal`](../packages/host-internal)은 Desktop 공유 호스트 탐색, 확장, 마켓플레이스, 워크스페이스 헬퍼, LSP 오케스트레이션을 담당합니다.
 
@@ -115,7 +115,7 @@ Desktop 전용 개발 및 레이아웃은 [apps/desktop/README.md](../apps/deskt
 [Rust CLI](../apps/cli)(`spirit-agent`)는 터미널 우선 호스트로 선택적 Ratatui UI를 제공합니다. WebSocket으로 공유 Spirit Server 데몬에 연결하며, 스크립팅, SSH 세션, 최소 환경에 적합합니다.
 
 ```bash
-npm run dev:cli    # cargo run -p spirit-agent
+pnpm run dev:cli    # cargo run -p spirit-agent
 ```
 
 ## Server
@@ -142,7 +142,7 @@ npm run dev:cli    # cargo run -p spirit-agent
 
 ### 빠른 시작(Zed)
 
-1. 서버 빌드: `npm run build:acp-server`
+1. 서버 빌드: `pnpm run build:acp-server`
 2. Zed `settings.json`에 추가(`env`에 API 키 불필요):
 
 ```json
@@ -170,15 +170,16 @@ node path/to/packages/acp-server/dist/src/stdio-entry.js --setup
 
 ## 개발
 
-**요구 사항:** Node.js 24+, npm. CLI 빌드에는 Rust 툴체인 필요.
+**요구 사항:** Node.js 24+, pnpm 10+(`corepack enable`로 활성화). CLI 빌드에는 Rust 툴체인 필요.
 
 | 명령 | 설명 |
 | --- | --- |
-| `npm run dev:desktop` | 공유 패키지 빌드 후 Desktop 시작(Vite + Electron) |
-| `npm run dev:desktop:web` | Desktop 렌더러 + 브라우저 Web 호스트 |
-| `npm run dev:cli` | TUI 포함 CLI |
-| `npm run build` | agent-core, host-internal, server, acp-server, Desktop 프로덕션 빌드 |
-| `npm run eval:compare` | agent-core 변경 후 eval 비교 실행 |
+| `pnpm install` | workspace 의존성 설치(저장소 루트에서 한 번) |
+| `pnpm run dev:desktop` | 공유 패키지 빌드 후 Desktop 시작(Vite + Electron) |
+| `pnpm run dev:desktop:web` | Desktop 렌더러 + 브라우저 Web 호스트 |
+| `pnpm run dev:cli` | TUI 포함 CLI |
+| `pnpm run build` | agent-core, host-internal, server, acp-server, Desktop 프로덕션 빌드 |
+| `pnpm run eval:compare` | agent-core 변경 후 eval 비교 실행 |
 
 ### 저장소 구조
 

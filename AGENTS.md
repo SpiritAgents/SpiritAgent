@@ -141,5 +141,5 @@ if (record.type === 'image') {
 ### 验证与演进
 
 - 平衡点随模型能力、延迟预算、内容静态/动态而移动；**不要凭直觉拍板**某段该不该 push
-- 变更模型可见上下文后，用 `npm run eval:compare` 对比 push vs 不 push，看是否转化为正确率
+- 变更模型可见上下文后，用 `pnpm run eval:compare` 对比 push vs 不 push，看是否转化为正确率
 - 把「预置什么」做成可调、可测的旋钮，而非写死的兜底

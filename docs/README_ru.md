@@ -92,7 +92,7 @@ Agent Core определяет, как модель видит контекст
 ### Качество и оценка
 
 - **Smoke-наборы** — проверки контракта, runtime и live-провайдера в `packages/agent-core/src/smoke`.
-- **Eval harness** — сравнение сценариев при изменении prompts или определений инструментов (`npm run eval:compare` из корня репозитория).
+- **Eval harness** — сравнение сценариев при изменении prompts или определений инструментов (`pnpm run eval:compare` из корня репозитория).
 
 `@spiritagent/agent-core` публикуется в npm; [`packages/host-internal`](../packages/host-internal) содержит общий host discovery, extensions, marketplace, workspace helpers и оркестрацию LSP для Desktop.
 
@@ -115,7 +115,7 @@ Agent Core определяет, как модель видит контекст
 [Rust CLI](../apps/cli) (`spirit-agent`) — terminal-first хост с опциональным Ratatui UI. Подключается к общему daemon Spirit Server по WebSocket; подходит для скриптов, SSH-сессий и минимальных окружений.
 
 ```bash
-npm run dev:cli    # cargo run -p spirit-agent
+pnpm run dev:cli    # cargo run -p spirit-agent
 ```
 
 ## Server
@@ -142,7 +142,7 @@ npm run dev:cli    # cargo run -p spirit-agent
 
 ### Быстрый старт (Zed)
 
-1. Сборка сервера: `npm run build:acp-server`
+1. Сборка сервера: `pnpm run build:acp-server`
 2. Добавить в `settings.json` Zed (без API key в `env`):
 
 ```json
@@ -170,15 +170,16 @@ node path/to/packages/acp-server/dist/src/stdio-entry.js --setup
 
 ## Разработка
 
-**Требования:** Node.js 24+, npm. Для сборки CLI нужен Rust toolchain.
+**Требования:** Node.js 24+, pnpm 10+ (включить через `corepack enable`). Для сборки CLI нужен Rust toolchain.
 
 | Команда | Описание |
 | --- | --- |
-| `npm run dev:desktop` | Сборка shared packages и запуск Desktop (Vite + Electron) |
-| `npm run dev:desktop:web` | Desktop renderer с browser web host |
-| `npm run dev:cli` | CLI с TUI |
-| `npm run build` | Production build agent-core, host-internal, server, acp-server и Desktop |
-| `npm run eval:compare` | Eval-сравнение после изменений agent-core |
+| `pnpm install` | Установить зависимости workspace (один раз в корне репозитория) |
+| `pnpm run dev:desktop` | Сборка shared packages и запуск Desktop (Vite + Electron) |
+| `pnpm run dev:desktop:web` | Desktop renderer с browser web host |
+| `pnpm run dev:cli` | CLI с TUI |
+| `pnpm run build` | Production build agent-core, host-internal, server, acp-server и Desktop |
+| `pnpm run eval:compare` | Eval-сравнение после изменений agent-core |
 
 ### Структура репозитория
 

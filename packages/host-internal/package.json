@@ -162,7 +162,7 @@
     "smoke:openai-models-parse": "npm run build && node dist/smoke/openai-models-parse-smoke.js && node --test dist/bedrock-models.test.js dist/google-vertex-endpoints.test.js dist/google-vertex-models.test.js",
     "notice": "node scripts/gen-notice.mjs",
     "notice:production": "node scripts/gen-notice.mjs --production",
-    "prepublishOnly": "npm run build && node ../../scripts/npm/assert-no-file-deps.mjs"
+    "prepublishOnly": "pnpm run build && node ../../scripts/publish/assert-no-workspace-deps.mjs"
   },
   "devDependencies": {
     "@types/jsdom": "^28.0.3",
