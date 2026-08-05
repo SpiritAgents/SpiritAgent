@@ -20,6 +20,28 @@ const SPAWN_TIMEOUT: Duration = Duration::from_secs(15);
 const SPAWN_POLL_INTERVAL: Duration = Duration::from_millis(100);
 const CONNECT_PROBE_TIMEOUT: Duration = Duration::from_millis(300);
 
+pub(crate) fn is_loopback_host(host: &str) -> bool {
+    matches!(host, "127.0.0.1" | "localhost" | "::1")
+}
+
+#[cfg(unix)]
+fn is_process_alive(pid: u32) -> bool {
+    if pid == 0 {
+        return false;
+    }
+    use std::process::Command;
+    Command::new("kill")
+        .args(["-0", &pid.to_string()])
+        .status()
+        .map(|status| status.success())
+        .unwrap_or(false)
+}
+
+#[cfg(not(unix))]
+fn is_process_alive(pid: u32) -> bool {
+    pid != 0
+}
+
 #[derive(Clone, Debug, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub(crate) struct DaemonInstance {
@@ -53,7 +75,9 @@ fn read_instances(data_dir: &Path) -> Vec<DaemonInstance> {
             continue;
         };
         if let Ok(instance) = serde_json::from_str::<DaemonInstance>(&raw) {
-            instances.push(instance);
+            if is_process_alive(instance.pid) {
+                instances.push(instance);
+            }
         }
     }
     instances.sort_by(|a, b| a.started_at.cmp(&b.started_at));
@@ -74,7 +98,10 @@ fn probe(instance: &DaemonInstance) -> bool {
 }
 
 pub(crate) fn find_live_instance(data_dir: &Path) -> Option<DaemonInstance> {
-    read_instances(data_dir).into_iter().find(probe)
+    read_instances(data_dir)
+        .into_iter()
+        .filter(|instance| is_loopback_host(&instance.host))
+        .find(probe)
 }
 
 pub(crate) fn read_server_token(data_dir: &Path) -> Result<String> {

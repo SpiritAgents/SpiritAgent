@@ -105,17 +105,21 @@ impl WsStream {
         })
     }
 
-    /// Performs the HTTP upgrade handshake. `path` may carry a query string
-    /// (browser-style clients cannot set headers, so the token rides there).
-    pub(crate) fn connect(host: &str, port: u16, path: &str) -> Result<Self> {
+    /// Performs the HTTP upgrade handshake. `auth_token`, when set, is sent
+    /// as `Authorization: Bearer` instead of a query parameter.
+    pub(crate) fn connect(host: &str, port: u16, path: &str, auth_token: Option<&str>) -> Result<Self> {
         let mut stream = TcpStream::connect((host, port))
             .with_context(|| format!("connect {host}:{port}"))?;
         stream.set_nodelay(true).ok();
 
         let sec_key = BASE64.encode(uuid::Uuid::new_v4().as_bytes());
+        let auth_header = auth_token
+            .map(|token| format!("Authorization: Bearer {token}\r\n"))
+            .unwrap_or_default();
         let request = format!(
             "GET {path} HTTP/1.1\r\n\
              Host: {host}:{port}\r\n\
+             {auth_header}\
              Upgrade: websocket\r\n\
              Connection: Upgrade\r\n\
              Sec-WebSocket-Key: {sec_key}\r\n\

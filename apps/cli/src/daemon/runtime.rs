@@ -41,7 +41,7 @@ use crate::{
 };
 
 use super::client::DaemonClient;
-use super::resolve::ensure_daemon;
+use super::resolve::{ensure_daemon, is_loopback_host};
 
 /// Buffer window for draining daemon notifications without blocking.
 const NOTIFICATION_DRAIN_TIMEOUT: Duration = Duration::from_millis(5);
@@ -116,6 +116,9 @@ impl DaemonRuntime {
         workspace_root: PathBuf,
     ) -> Result<Self> {
         let (instance, token) = ensure_daemon(&workspace_root)?;
+        if !is_loopback_host(&instance.host) {
+            return Err(anyhow!("daemon host must be loopback: {}", instance.host));
+        }
         let mut client = DaemonClient::connect(&instance.host, instance.port, &token)?;
 
         // The daemon greets each connection with server.connected.
@@ -134,6 +137,19 @@ impl DaemonRuntime {
                 "workspaceRoot": workspace_root.to_string_lossy(),
             }),
         )?;
+
+        let health = client.call("server.health", json!({}))?;
+        let health_instance_id = health
+            .get("instanceId")
+            .and_then(Value::as_str)
+            .unwrap_or("");
+        if health_instance_id != instance.instance_id {
+            return Err(anyhow!(
+                "daemon health instanceId 不匹配 registry: expected {}, got {}",
+                instance.instance_id,
+                health_instance_id
+            ));
+        }
 
         Ok(Self {
             client,

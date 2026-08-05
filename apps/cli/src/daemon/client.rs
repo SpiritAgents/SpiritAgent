@@ -14,6 +14,7 @@ use std::{
     time::Duration,
 };
 
+use super::resolve::is_loopback_host;
 use super::ws::{WsReadEvent, WsStream};
 
 pub(crate) struct DaemonClient {
@@ -26,8 +27,10 @@ pub(crate) struct DaemonClient {
 
 impl DaemonClient {
     pub(crate) fn connect(host: &str, port: u16, token: &str) -> Result<Self> {
-        let path = format!("/?token={token}");
-        let stream = WsStream::connect(host, port, &path)?;
+        if !is_loopback_host(host) {
+            return Err(anyhow!("daemon host must be loopback: {host}"));
+        }
+        let stream = WsStream::connect(host, port, "/", Some(token))?;
         let mut reader = stream.try_clone()?;
         let writer = Arc::new(Mutex::new(stream));
 
