@@ -10,11 +10,11 @@ import { pollUntil } from './poll.js';
 import { buildGeneratedVideoToolOutput } from './output.js';
 import type { VideoGenerationBackend } from './types.js';
 
-interface VolcengineArkTaskCreateResponse {
+interface ArkTaskCreateResponse {
   id?: string;
 }
 
-interface VolcengineArkTaskStatusResponse {
+interface ArkTaskStatusResponse {
   status?: string;
   error?: { message?: string };
   content?: {
@@ -22,8 +22,8 @@ interface VolcengineArkTaskStatusResponse {
   };
 }
 
-export class VolcengineArkVideoBackend implements VideoGenerationBackend {
-  readonly id = 'volcengine-ark';
+export class ArkVideoBackend implements VideoGenerationBackend {
+  readonly id = 'ark';
 
   async generate(
     config: OpenAiVideoGenerationConfig,
@@ -60,13 +60,13 @@ export class VolcengineArkVideoBackend implements VideoGenerationBackend {
 
     if (!createResponse.ok) {
       const body = await createResponse.text();
-      throw new Error(`Volcengine Ark video task creation failed (${createResponse.status}): ${body}`);
+      throw new Error(`Ark video task creation failed (${createResponse.status}): ${body}`);
     }
 
-    const created = (await createResponse.json()) as VolcengineArkTaskCreateResponse;
+    const created = (await createResponse.json()) as ArkTaskCreateResponse;
     const taskId = created.id?.trim();
     if (!taskId) {
-      throw new Error('Volcengine Ark video task creation returned no task id.');
+      throw new Error('Ark video task creation returned no task id.');
     }
 
     const statusUrl = `${baseUrl}/contents/generations/tasks/${encodeURIComponent(taskId)}`;
@@ -78,28 +78,28 @@ export class VolcengineArkVideoBackend implements VideoGenerationBackend {
       });
       if (!statusResponse.ok) {
         const body = await statusResponse.text();
-        throw new Error(`Volcengine Ark video task polling failed (${statusResponse.status}): ${body}`);
+        throw new Error(`Ark video task polling failed (${statusResponse.status}): ${body}`);
       }
 
-      const status = (await statusResponse.json()) as VolcengineArkTaskStatusResponse;
+      const status = (await statusResponse.json()) as ArkTaskStatusResponse;
       const state = status.status?.toLowerCase();
       if (state === 'succeeded') {
         return status;
       }
       if (state === 'failed' || state === 'cancelled' || state === 'canceled') {
-        throw new Error(status.error?.message ?? `Volcengine Ark video task ended with status: ${status.status}`);
+        throw new Error(status.error?.message ?? `Ark video task ended with status: ${status.status}`);
       }
       return undefined;
     });
 
     const videoUrl = completed.content?.video_url?.trim();
     if (!videoUrl) {
-      throw new Error('Volcengine Ark video task succeeded without a video_url.');
+      throw new Error('Ark video task succeeded without a video_url.');
     }
 
     const downloadResponse = await fetch(videoUrl);
     if (!downloadResponse.ok) {
-      throw new Error(`Failed to download Volcengine Ark video (${downloadResponse.status}).`);
+      throw new Error(`Failed to download Ark video (${downloadResponse.status}).`);
     }
 
     const mediaType = downloadResponse.headers.get('content-type')?.split(';', 1)[0]?.trim() || 'video/mp4';

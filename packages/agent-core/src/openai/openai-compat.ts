@@ -1,4 +1,5 @@
 import type { JsonObject, JsonValue } from '../ports.js';
+import { isArkLlmVendor } from '../ark/ark-provider.js';
 import type { LlmModelCapabilities, TransportRequestProfile } from '../llm-provider-shared.js';
 import { resolveOpenAiTransportReasoningEffortForContext } from '../reasoning-effort.js';
 import {
@@ -40,6 +41,7 @@ export type OpenAiLlmVendor =
   | 'google'
   | 'google-vertex-ai'
   | 'volcengine'
+  | 'byteplus'
   | 'meituan'
   | 'tencent-tokenhub'
   | 'mistral'
@@ -296,7 +298,7 @@ export function openAiVendorChatCompletionBodyExtras(
     || config.llmVendor === 'z-ai'
     || config.llmVendor === 'zhipu-ai'
     || config.llmVendor === 'xiaomi'
-    || config.llmVendor === 'volcengine'
+    || isArkLlmVendor(config.llmVendor)
   ) {
     const enabled = config.vendorExtendedThinking !== false;
     extras.thinking = { type: enabled ? 'enabled' : 'disabled' };
@@ -327,12 +329,12 @@ export function openAiVendorChatCompletionBodyExtras(
   return extras;
 }
 
-/** Volcengine Ark 流式 Chat Completions 须在请求体携带 stream_options 才会在末 chunk 返回 usage。 */
+/** Ark 流式 Chat Completions 须在请求体携带 stream_options 才会在末 chunk 返回 usage。 */
 export function openAiStreamingUsageBodyExtras(
   config: Pick<OpenAiTransportConfig, 'llmVendor'>,
   stream: boolean,
 ): Record<string, unknown> {
-  if (!stream || config.llmVendor !== 'volcengine') {
+  if (!stream || !isArkLlmVendor(config.llmVendor)) {
     return {};
   }
 

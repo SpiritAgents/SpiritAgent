@@ -11,6 +11,7 @@ import {
 } from './apply-patch-bridge.js';
 import { resolveStreamingToolPreviewEmit } from '../tool-streaming-preview-gate.js';
 import { cloneJsonValue, isJsonObject, type ToolAgentState } from '../tool-agent.js';
+import { isArkLlmVendor } from '../ark/ark-provider.js';
 import { attachResponseIdToAssistantMessage } from './provider-state.js';
 import type { OpenResponsesTransportConfig } from './responses-compat.js';
 import { renderResponsesTransportError } from './ai-sdk-message-bridge.js';
@@ -595,8 +596,8 @@ function accumulateOpenResponsesToolCallProgressFromRawChunk(
 function shouldUseRawResponsesReasoningFallback(
   config: OpenResponsesTransportConfig,
 ): boolean {
-  // 火山方舟 Responses 流仅经 raw SSE 返回 reasoning_summary_text.delta，AI SDK 不发 reasoning-delta。
-  return config.llmVendor === 'volcengine';
+  // Ark Responses 流仅经 raw SSE 返回 reasoning_summary_text.delta，AI SDK 不发 reasoning-delta。
+  return isArkLlmVendor(config.llmVendor);
 }
 
 function shouldAggregateGatewaySdkToolCalls(config: OpenResponsesTransportConfig): boolean {

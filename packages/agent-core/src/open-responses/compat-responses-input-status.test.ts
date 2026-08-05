@@ -3,22 +3,27 @@ import test from 'node:test';
 
 import type { JsonObject } from '../ports.js';
 import {
-  patchVolcengineResponsesInputItemStatus,
-  shouldPatchVolcengineResponsesInputItemStatus,
+  patchArkResponsesInputItemStatus,
+  shouldPatchArkResponsesInputItemStatus,
 } from './compat-responses-input-status.js';
 
-test('shouldPatchVolcengineResponsesInputItemStatus is volcengine-only', () => {
+for (const llmVendor of ['volcengine', 'byteplus'] as const) {
+  test(`shouldPatchArkResponsesInputItemStatus matches ${llmVendor}`, () => {
+    assert.equal(
+      shouldPatchArkResponsesInputItemStatus({ llmVendor }),
+      true,
+    );
+  });
+}
+
+test('shouldPatchArkResponsesInputItemStatus rejects non-Ark vendors', () => {
   assert.equal(
-    shouldPatchVolcengineResponsesInputItemStatus({ llmVendor: 'volcengine' }),
-    true,
-  );
-  assert.equal(
-    shouldPatchVolcengineResponsesInputItemStatus({ llmVendor: 'alibaba' }),
+    shouldPatchArkResponsesInputItemStatus({ llmVendor: 'alibaba' }),
     false,
   );
 });
 
-test('patchVolcengineResponsesInputItemStatus fills completed on message and tool items', () => {
+test('patchArkResponsesInputItemStatus fills completed on message and tool items', () => {
   const body = {
     input: [
       {
@@ -46,7 +51,7 @@ test('patchVolcengineResponsesInputItemStatus fills completed on message and too
     ],
   } as JsonObject;
 
-  patchVolcengineResponsesInputItemStatus(body);
+  patchArkResponsesInputItemStatus(body);
 
   const input = body.input as JsonObject[];
   assert.equal(input[0]?.status, 'completed');
@@ -55,7 +60,7 @@ test('patchVolcengineResponsesInputItemStatus fills completed on message and too
   assert.equal(input[3]?.status, 'completed');
 });
 
-test('patchVolcengineResponsesInputItemStatus preserves failed status', () => {
+test('patchArkResponsesInputItemStatus preserves failed status', () => {
   const body = {
     input: [
       {
@@ -67,7 +72,7 @@ test('patchVolcengineResponsesInputItemStatus preserves failed status', () => {
     ],
   } as JsonObject;
 
-  patchVolcengineResponsesInputItemStatus(body);
+  patchArkResponsesInputItemStatus(body);
 
   const input = body.input as JsonObject[];
   assert.equal(input[0]?.status, 'failed');

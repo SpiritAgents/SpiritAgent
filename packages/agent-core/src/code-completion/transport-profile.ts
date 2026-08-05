@@ -4,6 +4,7 @@ import type { OpenAiLlmVendor, OpenAiTransportConfig } from '../openai/openai-co
 import type { OpenResponsesTransportConfig } from '../open-responses/responses-compat.js';
 import type { TransportRequestProfile } from '../llm-provider-shared.js';
 import type { LlmTransportConfig } from '../provider-config.js';
+import { isArkLlmVendor } from '../ark/ark-provider.js';
 import {
   isAnthropicTransportConfig,
   isBedrockTransportConfig,
@@ -68,6 +69,7 @@ function applyOpenAiCompatibleCodeCompletionProfile(
     vendor !== undefined
     && (
       OPENAI_COMPAT_THINKING_TYPE_VENDORS.has(vendor)
+      || isArkLlmVendor(vendor)
       || vendor === 'deepinfra'
       || (vendor === 'meituan' && config.supportsThinkingSwitch === true)
     )

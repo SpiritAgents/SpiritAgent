@@ -6,8 +6,8 @@ import {
   responsesUsesStoredState,
 } from './responses-incremental-input.js';
 import {
-  patchVolcengineResponsesInputItemStatus,
-  shouldPatchVolcengineResponsesInputItemStatus,
+  patchArkResponsesInputItemStatus,
+  shouldPatchArkResponsesInputItemStatus,
 } from './compat-responses-input-status.js';
 import {
   resolveOpenResponsesSdkProvider,
@@ -59,8 +59,8 @@ export function patchResponsesStoredStateRequestInit(
     if (previousResponseId) {
       patched.previous_response_id = previousResponseId;
     }
-    if (shouldPatchVolcengineResponsesInputItemStatus(config)) {
-      patchVolcengineResponsesInputItemStatus(patched);
+    if (shouldPatchArkResponsesInputItemStatus(config)) {
+      patchArkResponsesInputItemStatus(patched);
     }
 
     return {

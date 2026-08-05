@@ -17,6 +17,7 @@ import {
 } from '../openai/gpt-reasoning-controls.js';
 import { extractAzureResourceNameFromApiBase } from '../azure-resource.js';
 import { cloneJsonValue } from '../tool-agent.js';
+import { isArkLlmVendor } from '../ark/ark-provider.js';
 
 /** 底层 AI SDK provider：OpenAI 官方 Responses、Azure 官方 Responses 或 Open Responses 兼容 endpoint。 */
 export type OpenResponsesSdkProvider = 'openai' | 'xai' | 'azure' | 'open-responses-compatible';
@@ -210,8 +211,8 @@ export function resolveOpenResponsesReasoningSummary(
     return undefined;
   }
 
-  // 火山方舟 Responses 仅支持 reasoning.effort，拒绝 OpenAI 式 reasoning.summary。
-  if (config.llmVendor === 'volcengine' || config.llmVendor === 'stepfun') {
+  // Ark Responses 仅支持 reasoning.effort，拒绝 OpenAI 式 reasoning.summary。
+  if (isArkLlmVendor(config.llmVendor) || config.llmVendor === 'stepfun') {
     return undefined;
   }
 
