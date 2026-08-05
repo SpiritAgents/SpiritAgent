@@ -87,6 +87,6 @@ pub(crate) fn resolve_server_entry(workspace_root: &Path) -> Result<PathBuf> {
     }
 
     Err(anyhow!(
-        "未找到 Spirit Server 入口 entry.js。请先在 packages/server 执行 npm run build。"
+        "未找到 Spirit Server 入口 entry.js。请先在 packages/server 执行 pnpm run build。"
     ))
 }

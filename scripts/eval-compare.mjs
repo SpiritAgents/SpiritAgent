@@ -959,7 +959,7 @@ async function extractArchiveWithNodeTar(repoRoot, archivePath, workspacePath) {
   const tarPackagePath = path.join(repoRoot, 'packages', 'host-internal', 'node_modules', 'tar');
   if (!existsSync(tarPackagePath)) {
     throw new Error(
-      `缺少 Node tar 依赖，无法解包 git archive: ${tarPackagePath}。请先运行 npm --prefix packages/host-internal install。`,
+      `缺少 Node tar 依赖，无法解包 git archive: ${tarPackagePath}。请先在仓库根目录执行 pnpm install。`,
     );
   }
 
@@ -1073,8 +1073,14 @@ async function loadWorkspaceRuntimeModules(workspacePath) {
 }
 
 async function buildWorkspacePackages(workspacePath) {
-  await execWorkspaceCommand(workspacePath, npmExecutable(), ['--prefix', 'packages/host-internal', 'run', 'build']);
-  await execWorkspaceCommand(workspacePath, npmExecutable(), ['--prefix', 'packages/agent-core', 'run', 'build']);
+  await execWorkspaceCommand(workspacePath, pnpmExecutable(), [
+    'exec',
+    'turbo',
+    'run',
+    'build',
+    '--filter=@spiritagent/host-internal',
+    '--filter=@spiritagent/agent-core',
+  ]);
 }
 
 async function execWorkspaceCommand(cwd, command, args) {
@@ -1096,8 +1102,8 @@ async function execWorkspaceCommand(cwd, command, args) {
   });
 }
 
-function npmExecutable() {
-  return 'npm';
+function pnpmExecutable() {
+  return 'pnpm';
 }
 
 async function importModuleFromWorkspace(workspacePath, relativePath) {
@@ -1169,7 +1175,7 @@ function printScenarioList() {
 }
 
 function printHelp() {
-  console.log('用法: npm run eval:compare -- [options]');
+  console.log('用法: pnpm run eval:compare -- [options]');
   console.log('');
   console.log('默认比较来源: 当前 HEAD 与 staged diff。');
   console.log('也可通过 --commit 或 --baseline-ref/--candidate-ref 显式指定 before / after。');

@@ -180,7 +180,7 @@ function parseArgs(argv) {
 }
 
 function printHelp() {
-  console.log('用法: npm run eval:judge -- [options]');
+  console.log('用法: pnpm run eval:judge -- [options]');
   console.log('');
   console.log('选项:');
   console.log('  --artifact <path>        必填；compare runner 产出的 review-artifact.json');
