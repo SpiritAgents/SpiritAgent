@@ -347,6 +347,12 @@ impl DaemonRuntime {
         }
         self.client.call(method, params).map_err(|err| {
             let message = err.to_string();
+            if message.contains("daemon reader thread ended")
+                || message.contains("daemon closed the connection")
+                || message.contains("daemon writer poisoned")
+            {
+                return err;
+            }
             anyhow!("runtime-error: {}", message)
         })
     }
