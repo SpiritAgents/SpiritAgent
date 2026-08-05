@@ -2886,7 +2886,11 @@ export async function listArkModels(
 export const parseVolcengineModelEntriesPayload = parseArkModelEntriesPayload;
 
 /** @deprecated Use listArkModels */
-export const listVolcengineModels = listArkModels;
+export async function listVolcengineModels(
+  options: ListOpenAiCompatibleModelIdsOptions,
+): Promise<ProviderListedModelEntry[]> {
+  return listArkModels(options, 'volcengine');
+}
 
 /**
  * Meituan LongCat：`GET /models` 列表仅含 id，元数据需逐模型 `GET /models/{id}`。
