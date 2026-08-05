@@ -713,6 +713,10 @@ export class SessionManager {
 
   replaceFromArchive(sessionId: string, archive: unknown): void {
     const session = this.requireSession(sessionId);
+    const { runtime } = session.runtimeResult;
+    if (runtime.isBusy() || session.turnActive) {
+      throw new Error('session is busy; cannot replace archive while a turn is active');
+    }
     session.runtimeResult.runtime.replaceFromArchive(archive as never);
     // History was replaced wholesale; the previous timeline is stale until
     // the owning host pushes a fresh snapshot.
