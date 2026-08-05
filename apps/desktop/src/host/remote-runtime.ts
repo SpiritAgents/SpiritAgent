@@ -23,6 +23,7 @@ import type {
   WorkspaceCapabilityTrustRequest,
 } from '@spiritagent/host-internal';
 import type { ModelRef, HostDreamScope, HostDreamSourceSessionRef } from '@spiritagent/host-internal';
+import { loadModelProfile } from '@spiritagent/host-internal';
 import {
   connectOrSpawnServer,
   type ServerNotificationListener,
@@ -64,7 +65,7 @@ interface SessionCreateResult {
 }
 
 interface SessionAttachResult {
-  session: { sessionId: string; workspaceRoot: string };
+  session: { sessionId: string; workspaceRoot: string; model: string };
   snapshot: BridgeRuntimeSnapshot;
 }
 
@@ -187,6 +188,43 @@ async function applyRemoteSessionPreferences(
   }
 }
 
+function daemonSessionModelDiffersFromRef(
+  spiritDataDir: string,
+  requested: ModelRef,
+  daemonModel: string,
+): boolean {
+  const profile = loadModelProfile(spiritDataDir, requested);
+  if (!profile) {
+    return true;
+  }
+  return profile.name !== daemonModel;
+}
+
+async function syncDaemonSessionModelIfNeeded(
+  client: Awaited<ReturnType<typeof sharedDesktopServerClient>>,
+  input: Pick<RemoteDesktopRuntimeInput, 'dataDir' | 'modelRef'>,
+  attached: SessionAttachResult,
+): Promise<SessionAttachResult> {
+  if (!daemonSessionModelDiffersFromRef(input.dataDir, input.modelRef, attached.session.model)) {
+    return attached;
+  }
+  await client.call('session.replaceConfig', {
+    sessionId: attached.session.sessionId,
+    modelRef: input.modelRef,
+  });
+  const polled = await client.call<SessionPollResult>('session.poll', {
+    sessionId: attached.session.sessionId,
+  });
+  const profile = loadModelProfile(input.dataDir, input.modelRef);
+  return {
+    session: {
+      ...attached.session,
+      model: profile?.name ?? attached.session.model,
+    },
+    snapshot: polled.snapshot,
+  };
+}
+
 export async function attachRemoteDesktopRuntime(
   input: RemoteDesktopRuntimeInput & { conversationKey: string },
 ): Promise<RemoteDesktopRuntime> {
@@ -194,14 +232,15 @@ export async function attachRemoteDesktopRuntime(
   const attached = await client.call<SessionAttachResult>('session.attach', {
     conversationKey: input.conversationKey,
   });
-  const daemonWorkspaceRoot = attached.session.workspaceRoot?.trim();
+  const synced = await syncDaemonSessionModelIfNeeded(client, input, attached);
+  const daemonWorkspaceRoot = synced.session.workspaceRoot?.trim();
   if (daemonWorkspaceRoot && !sameWorkspaceRoot(daemonWorkspaceRoot, input.workspaceRoot)) {
-    await client.call('session.close', { sessionId: attached.session.sessionId });
+    await client.call('session.close', { sessionId: synced.session.sessionId });
     throw new Error(`stale daemon workspace for conversationKey: ${input.conversationKey}`);
   }
-  const runtime = buildRemoteDesktopRuntime(client, attached.session.sessionId, input);
+  const runtime = buildRemoteDesktopRuntime(client, synced.session.sessionId, input);
   try {
-    await runtime.initializeFromSnapshot(attached.snapshot);
+    await runtime.initializeFromSnapshot(synced.snapshot);
     await applyRemoteSessionPreferences(runtime, input);
     return runtime;
   } catch (error) {

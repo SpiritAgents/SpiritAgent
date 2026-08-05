@@ -901,8 +901,16 @@ export class SessionManager {
   // ------------------------------------------------- config / hooks / mode
 
   /** Re-resolve the transport from config.json and rebuild the runtime, preserving history. */
-  async replaceConfig(sessionId: string): Promise<void> {
+  async replaceConfig(sessionId: string, modelRef?: ModelRef): Promise<void> {
     const session = this.requireSession(sessionId);
+    if (modelRef?.groupId?.trim() && modelRef?.name?.trim()) {
+      session.createParams.modelRef = {
+        groupId: modelRef.groupId.trim(),
+        name: modelRef.name.trim(),
+      };
+    } else {
+      delete session.createParams.modelRef;
+    }
     const old = session.runtimeResult;
     await old.runSessionEnd('switch');
     old.runtime.abort();
@@ -927,6 +935,7 @@ export class SessionManager {
     fresh.setLoopEnabled(old.runtime.loopEnabled());
     await fresh.setAgentMode(session.createParams.agentMode ?? 'agent');
     session.runtimeResult = fresh;
+    session.info.model = fresh.transportConfig.model;
     await old.toolExecutor.disposeLsp();
     await fresh.runSessionStart('resume');
   }

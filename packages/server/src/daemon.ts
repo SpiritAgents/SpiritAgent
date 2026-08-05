@@ -636,9 +636,19 @@ export async function startDaemon(options: DaemonOptions): Promise<RunningDaemon
         return sessionManager.subagentSessionArchive(readSessionId(params), String(params['subagentSessionId'] ?? ''));
       case SESSION_SUBAGENT_AUX:
         return sessionManager.subagentPendingAuxState(readSessionId(params), String(params['subagentSessionId'] ?? ''));
-      case SESSION_REPLACE_CONFIG:
-        await sessionManager.replaceConfig(readSessionId(params));
+      case SESSION_REPLACE_CONFIG: {
+        const modelRef = params['modelRef'];
+        await sessionManager.replaceConfig(
+          readSessionId(params),
+          modelRef
+            && typeof modelRef === 'object'
+            && typeof (modelRef as Record<string, unknown>)['groupId'] === 'string'
+            && typeof (modelRef as Record<string, unknown>)['name'] === 'string'
+            ? (modelRef as { groupId: string; name: string })
+            : undefined,
+        );
         return { ok: true };
+      }
       case SESSION_RELOAD_METADATA: {
         const mode = params['mode'];
         await sessionManager.reloadHostMetadata(
