@@ -175,7 +175,7 @@
     "@aws-sdk/client-bedrock": "^3.1068.0",
     "@mozilla/readability": "^0.6.0",
     "@napi-rs/keyring": "^1.2.0",
-    "@spiritagent/agent-core": "0.3.2",
+    "@spiritagent/agent-core": "workspace:*",
     "@vscode/ripgrep": "^1.18.0",
     "fast-glob": "^3.3.3",
     "fflate": "^0.8.2",

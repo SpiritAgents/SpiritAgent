@@ -34,8 +34,8 @@
   "dependencies": {
     "@agentclientprotocol/sdk": "^0.25.1",
     "@inquirer/prompts": "^7.5.0",
-    "@spiritagent/agent-core": "0.3.2",
-    "@spiritagent/host-internal": "0.3.2"
+    "@spiritagent/agent-core": "workspace:*",
+    "@spiritagent/host-internal": "workspace:*"
   },
   "devDependencies": {
     "@types/node": "^25.6.0",
