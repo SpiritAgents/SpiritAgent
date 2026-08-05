@@ -89,8 +89,6 @@ pub(crate) enum WsReadEvent {
     Text(String),
     /// Binary frames carry no protocol meaning for us; payload is discarded.
     Binary,
-    /// Server ping — caller must answer on the shared write socket.
-    Ping(Vec<u8>),
     Closed,
 }
 
@@ -257,7 +255,7 @@ impl WsStream {
                     }
                 }
                 OPCODE_PING => {
-                    return Ok(WsReadEvent::Ping(frame.payload));
+                    self.send_pong(&frame.payload)?;
                 }
                 OPCODE_PONG => {}
                 OPCODE_CLOSE => {

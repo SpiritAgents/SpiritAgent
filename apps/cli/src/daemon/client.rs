@@ -46,16 +46,6 @@ impl DaemonClient {
                     }
                 }
                 Ok(WsReadEvent::Binary) => {}
-                Ok(WsReadEvent::Ping(payload)) => {
-                    if writer_for_reader
-                        .lock()
-                        .ok()
-                        .and_then(|mut locked| locked.send_pong(&payload).ok())
-                        .is_none()
-                    {
-                        break;
-                    }
-                }
                 Ok(WsReadEvent::Closed) => {
                     let _ = writer_for_reader
                         .lock()

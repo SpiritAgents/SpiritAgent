@@ -487,7 +487,7 @@ export async function startDaemon(options: DaemonOptions): Promise<RunningDaemon
         if (typeof text !== 'string') {
           throw new Error('missing text');
         }
-        await sessionManager.submitUserTurn(readSessionId(params), {
+        const outcome = await sessionManager.submitUserTurn(readSessionId(params), {
           text,
           ...(typeof params['clientTurnId'] === 'string' && params['clientTurnId'].trim()
             ? { clientTurnId: params['clientTurnId'].trim() }
@@ -502,7 +502,7 @@ export async function startDaemon(options: DaemonOptions): Promise<RunningDaemon
             ? { activeSkills: params['activeSkills'] as never }
             : {}),
         });
-        return { accepted: true };
+        return outcome;
       }
       case SESSION_ABORT:
         sessionManager.abort(readSessionId(params));
