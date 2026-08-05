@@ -31,6 +31,10 @@ export interface ConnectedServer {
   instance: ServerInstanceRecord;
 }
 
+function isLoopbackHost(host: string): boolean {
+  return host === '127.0.0.1' || host === 'localhost' || host === '::1';
+}
+
 type JsonRpcResponse = JsonRpcSuccessResponse | JsonRpcErrorResponse;
 
 export class ServerRpcClient {
@@ -50,6 +54,8 @@ export class ServerRpcClient {
       return;
     }
 
+    // Node's WebSocket API cannot set Authorization headers; the daemon also
+    // accepts ?token= on the upgrade URL (see daemon.ts extractPresentedToken).
     const url = new URL(this.options.url);
     url.searchParams.set('token', this.options.token);
     const socket = new WebSocket(url);
@@ -225,13 +231,19 @@ async function connectToRegisteredServer(
         ...instances.filter((instance) => instance.pid !== preferredPid).reverse(),
       ];
   for (const instance of ordered) {
+    if (!isLoopbackHost(instance.host)) {
+      continue;
+    }
     const client = new ServerRpcClient({
       url: `ws://${instance.host}:${instance.port}`,
       token,
     });
     try {
       await client.connect();
-      await client.call('server.health');
+      const health = await client.call<{ instanceId: string }>('server.health');
+      if (health.instanceId !== instance.instanceId) {
+        throw new Error('daemon health instanceId mismatch');
+      }
       return { client, instance };
     } catch {
       client.close();
