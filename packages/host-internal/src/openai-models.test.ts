@@ -1272,6 +1272,7 @@ test('parseBasetenModelEntriesPayload maps chat models pricing vision and reason
         id: 'moonshotai/Kimi-K3',
         object: 'model',
         name: 'Kimi K3',
+        description: 'Multimodal reasoning model for agentic workflows.',
         context_length: 1048000,
         max_completion_tokens: 262144,
         pricing: {
@@ -1310,6 +1311,7 @@ test('parseBasetenModelEntriesPayload maps chat models pricing vision and reason
     {
       id: 'moonshotai/Kimi-K3',
       displayName: 'Kimi K3',
+      description: 'Multimodal reasoning model for agentic workflows.',
       contextLength: 1048000,
       maxCompletionTokens: 262144,
       supportsImageInput: true,

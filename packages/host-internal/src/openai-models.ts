@@ -1089,6 +1089,10 @@ export function parseBasetenModelEntriesPayload(body: unknown): ProviderListedMo
     if (displayName) {
       modelEntry.displayName = displayName;
     }
+    const description = readOptionalTrimmedString(item.description);
+    if (description) {
+      modelEntry.description = description;
+    }
     const contextLength = readPositiveIntegerModelTrait(item, 'context_length');
     if (contextLength !== undefined) {
       modelEntry.contextLength = contextLength;
