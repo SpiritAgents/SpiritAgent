@@ -570,15 +570,13 @@ export class SessionManager {
     });
     session.pendingActiveSkills = [];
 
-    this.callbacks.broadcastUserTurnSubmitted?.(session.info.sessionId, turn);
-
     await runtime.startUserTurnStreaming(
       turn.text,
       turn.explicitImages,
       turn.explicitWorkspaceFiles,
       activeSkills,
     );
-    // The session pump (25ms) drives poll() and harvests the turn result.
+    this.callbacks.broadcastUserTurnSubmitted?.(session.info.sessionId, turn);
     // Push the busy edge immediately so clients see the turn start.
     this.callbacks.broadcastSnapshot(session.info.sessionId, this.snapshotForSession(session));
   }
@@ -610,12 +608,16 @@ export class SessionManager {
     }
     const next = session.queue.shift()!;
     this.startTurn(session, next).catch((err) => {
-      // Put the turn back and surface the failure as a failed turn.
-      session.queue.unshift(next);
       session.turnActive = false;
       session.info.isBusy = false;
-      this.callbacks.broadcastTurnFinished(session.info.sessionId, 'failed');
-      this.callbacks.log?.(`drainQueue failed: ${err instanceof Error ? err.message : String(err)}`);
+      const message = err instanceof Error ? err.message : String(err);
+      this.callbacks.broadcastTurnFinished(session.info.sessionId, 'failed', {
+        kind: 'failed',
+        error: message,
+        toolExecutions: [],
+      });
+      this.callbacks.log?.(`drainQueue failed: ${message}`);
+      this.drainQueue(session);
     });
   }
 
