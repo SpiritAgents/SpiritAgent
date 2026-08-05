@@ -64,7 +64,9 @@ export async function createDreamCollectorRuntime(
   runtime = await createRemoteDesktopRuntime({
     ...buildDreamCollectorRemoteCreateInput(input),
     onWorkspaceCapabilityTrustRequested: (requestId) => {
-      void replyRemoteWorkspaceCapabilityTrust(runtime!, requestId, 'allowOnce');
+      void replyRemoteWorkspaceCapabilityTrust(runtime!, requestId, 'allowOnce').catch((error) => {
+        console.warn('[dream-collector] replyWorkspaceCapabilityTrust failed', error);
+      });
     },
   });
 

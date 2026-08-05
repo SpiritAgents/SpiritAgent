@@ -225,9 +225,7 @@ export async function createRemoteDesktopRuntime(
     ...(input.dreamScope ? { dreamScope: input.dreamScope } : {}),
     ...(input.dreamSourceSession ? { dreamSourceSession: input.dreamSourceSession } : {}),
   });
-  if (input.conversationKey) {
-    await client.call('session.attach', { conversationKey: input.conversationKey });
-  }
+  await client.call('session.attach', { sessionId: created.sessionId });
   const runtime = buildRemoteDesktopRuntime(client, created.sessionId, input);
   try {
     await runtime.initialize();
