@@ -364,7 +364,14 @@ export class SessionManager {
   }
 
   private snapshotForSession(session: ServerSession): BridgeRuntimeSnapshot {
-    return buildServerSnapshot(session.runtimeResult);
+    const snapshot = buildServerSnapshot(session.runtimeResult);
+    // approval-resolved mid-broadcast clears pending approval before the resumed
+    // tool/LLM round marks runtime busy again; keep clients on the busy edge
+    // for the whole turn while session.turnActive is set.
+    if (session.turnActive && !snapshot.isBusy) {
+      return { ...snapshot, isBusy: true };
+    }
+    return snapshot;
   }
 
   private projectInfo(session: ServerSession): ServerSessionInfo {

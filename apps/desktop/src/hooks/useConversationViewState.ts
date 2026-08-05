@@ -25,6 +25,7 @@ import {
 } from "@/lib/conversation-layout-constants";
 import { normalizePaneSessionPathKey } from "@/lib/pane-desktop-snapshot";
 import {
+  busyActionBlocksConversationAbort,
   resolvePaneCanInterrupt,
   resolvePaneCanSend,
   resolvePaneComposerBusy,
@@ -312,7 +313,8 @@ export function useConversationViewState({
     && runtime.paneSendBusySessionPath === paneSessionPathKey;
   const conversationInterruptible = useIsolatedPane
     ? resolvePaneCanInterrupt(snapshot)
-    : runtime.summary.canInterrupt && !runtime.busyAction;
+    : runtime.summary.canInterrupt
+      && !busyActionBlocksConversationAbort(runtime.busyAction);
   const continueBusy = useIsolatedPane
     ? resolvePaneComposerBusy(snapshot, paneSendBusy)
     : Boolean(runtime.busyAction) || snapshot?.conversation.isBusy === true;
