@@ -14,26 +14,29 @@
     }
   },
   "scripts": {
-    "build:agent-core": "npm --prefix packages/agent-core run build",
-    "build:host-internal": "npm --prefix packages/host-internal run build",
-    "build:desktop": "npm --prefix apps/desktop run build",
-    "build:acp-server": "npm --prefix packages/acp-server run build",
-    "build:server": "npm --prefix packages/server run build",
+    "build:agent-core": "turbo run build --filter=@spiritagent/agent-core",
+    "build:host-internal": "turbo run build --filter=@spiritagent/host-internal",
+    "build:desktop": "turbo run build --filter=@spiritagent/desktop",
+    "build:acp-server": "turbo run build --filter=@spiritagent/acp-server",
+    "build:server": "turbo run build --filter=@spiritagent/server",
     "build:cli": "cargo build -p spirit-agent --release",
-    "build": "npm run build:agent-core && npm run build:host-internal && npm run build:server && npm run build:acp-server && npm run build:desktop",
+    "build": "turbo run build",
     "release:verify-version": "node scripts/release/verify-version.mjs",
     "release:cli:bundle": "node scripts/release/bundle-cli.mjs",
     "release:checksums": "node scripts/release/checksums.mjs",
     "release:prepare-approval-report": "node scripts/release/prepare-approval-report.mjs",
     "release:publish-selfhosted": "node scripts/release/publish-selfhosted.mjs",
-    "release:desktop": "npm --prefix apps/desktop run dist",
-    "eval:compare": "npm run build:agent-core && npm run build:host-internal && node scripts/eval-compare.mjs",
-    "eval:judge": "npm run build:agent-core && node scripts/eval-judge.mjs",
-    "smoke:host-internal-models-parse": "npm --prefix packages/host-internal run smoke:openai-models-parse",
-    "dev": "npm run build:agent-core && npm run build:host-internal && cargo run -p spirit-agent",
+    "release:desktop": "pnpm --filter @spiritagent/desktop run dist",
+    "eval:compare": "turbo run build --filter=@spiritagent/agent-core --filter=@spiritagent/host-internal && node scripts/eval-compare.mjs",
+    "eval:judge": "turbo run build --filter=@spiritagent/agent-core && node scripts/eval-judge.mjs",
+    "smoke:host-internal-models-parse": "pnpm --filter @spiritagent/host-internal run smoke:openai-models-parse",
+    "dev": "turbo run build --filter=@spiritagent/agent-core --filter=@spiritagent/host-internal && cargo run -p spirit-agent",
     "dev:cli": "cargo run -p spirit-agent",
-    "dev:desktop": "npm --prefix apps/desktop run dev",
-    "dev:desktop:web": "npm --prefix apps/desktop run dev:web"
+    "dev:desktop": "turbo run build --filter=@spiritagent/desktop^... && pnpm --filter @spiritagent/desktop dev",
+    "dev:desktop:web": "turbo run build --filter=@spiritagent/desktop^... && pnpm --filter @spiritagent/desktop dev:web"
+  },
+  "devDependencies": {
+    "turbo": "^2.5.4"
   },
   "engines": {
     "node": ">=24"
