@@ -466,8 +466,10 @@ export class DesktopRuntimeEventOrchestrator {
         this.options.assistantMessages.removePendingAssistantMessage();
         const timeline = this.options.messageTimeline?.();
         timeline?.removePendingAssistantText();
-        if (timeline && this.options.runtime()?.isBusy()) {
+        const runtime = this.options.runtime();
+        if (timeline && runtime?.isBusy()) {
           timeline.ensureAfterToolsThinkingPlaceholderRow();
+          runtime.expectLiveReasoningPlaceholder?.();
         }
         continue;
       }
@@ -592,6 +594,12 @@ export class DesktopRuntimeEventOrchestrator {
           this.activeGenerateVideoTools.delete(event.execution.toolCallId);
         }
         this.integrateToolExecutions([event.execution], 'event');
+        if (this.options.runtime()?.isBusy()) {
+          const placeholder = this.options.messageTimeline?.()?.ensureAfterToolsThinkingPlaceholderRow();
+          if (placeholder) {
+            this.options.runtime()?.expectLiveReasoningPlaceholder?.();
+          }
+        }
         this.options.dispatchExtensionEvent({
           type: 'onToolResult',
           detail: {

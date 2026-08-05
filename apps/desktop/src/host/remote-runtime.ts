@@ -29,6 +29,7 @@ import {
   type ServerRpcClient,
 } from '@spiritagent/server/client';
 
+import { parsePendingSubagentStatusText } from '../lib/subagent-display.js';
 import type { DesktopToolRequest } from './contracts.js';
 import type { PersistedDesktopTimelineTurnSnapshot } from './chat-schema.js';
 import { sameWorkspaceRoot } from './service-utils.js';
@@ -264,6 +265,9 @@ export class RemoteDesktopRuntime {
   private pendingStartedAtStore: number | undefined;
   private pendingLastEventAtStore: number | undefined;
   private streamChunkCounterStore = 0;
+  /** True after begin-assistant-response until remove-pending / turn completed. */
+  private liveReasoningAwaitingDetail = false;
+  private thinkingSpinnerIndexStore = 0;
   private archiveMessages: ChatArchive['messages'];
   private archiveAssistantAux: ChatArchive['assistantAux'];
   private childEventDrains: Array<{
@@ -477,7 +481,13 @@ export class RemoteDesktopRuntime {
     return undefined;
   }
 
-  tickThinkingSpinner(): void {}
+  tickThinkingSpinner(): void {
+    if (this.snapshot.isBusy) {
+      this.thinkingSpinnerIndexStore = (this.thinkingSpinnerIndexStore + 1) % 4;
+      return;
+    }
+    this.thinkingSpinnerIndexStore = 0;
+  }
 
   isBusy(): boolean {
     return this.snapshot.isBusy;
@@ -537,8 +547,71 @@ export class RemoteDesktopRuntime {
     return this.streamChunkCounterStore;
   }
 
+  expectLiveReasoningPlaceholder(): void {
+    if (
+      this.snapshot.isBusy &&
+      !this.snapshot.hasPendingApproval &&
+      !this.snapshot.hasPendingQuestions
+    ) {
+      this.liveReasoningAwaitingDetail = true;
+    }
+  }
+
   pendingAuxState(): PendingAssistantAux | undefined {
-    return this.snapshot.pendingAuxState;
+    const snapshotAux = this.snapshot.pendingAuxState;
+    if (snapshotAux && parsePendingSubagentStatusText(snapshotAux.statusText)) {
+      return snapshotAux;
+    }
+    return this.synthesizeLocalPendingAux(snapshotAux) ?? snapshotAux;
+  }
+
+  private thinkingSpinnerFrame(): string {
+    return ['|', '/', '-', '\\'][this.thinkingSpinnerIndexStore] ?? '|';
+  }
+
+  /**
+   * Daemon pushes session.snapshot only at approval/turn boundaries, not on
+   * begin-assistant-response. Synthesize the live Thinking... aux locally so
+   * empty pending assistant rows stay visible until thinking chunks arrive.
+   */
+  private synthesizeLocalPendingAux(
+    snapshotAux: PendingAssistantAux | undefined,
+  ): PendingAssistantAux | undefined {
+    if (!this.snapshot.isBusy) {
+      return undefined;
+    }
+    if (this.snapshot.hasPendingApproval || this.snapshot.hasPendingQuestions) {
+      return undefined;
+    }
+
+    const frame = this.thinkingSpinnerFrame();
+    const compaction = this.compactionTextStore.trim();
+    if (compaction) {
+      return {
+        kind: 'compressing',
+        statusText: `${frame} Compressing...`,
+        detailText: compaction,
+      };
+    }
+
+    const thinking = this.thinkingTextStore.trim();
+    if (thinking) {
+      return {
+        kind: 'thinking',
+        statusText: `${frame} Thinking...`,
+        detailText: thinking,
+      };
+    }
+
+    if (!this.liveReasoningAwaitingDetail) {
+      return undefined;
+    }
+
+    const kind = snapshotAux?.kind === 'compressing' ? 'compressing' : 'thinking';
+    return {
+      kind,
+      statusText: kind === 'thinking' ? `${frame} Thinking...` : `${frame} Compressing...`,
+    };
   }
 
   pendingImagePaths(): readonly string[] {
@@ -683,6 +756,7 @@ export class RemoteDesktopRuntime {
         this.thinkingTextStore = '';
         this.compactionTextStore = '';
         this.streamChunkCounterStore = 0;
+        this.liveReasoningAwaitingDetail = true;
         break;
       case 'assistant-chunk':
         this.pendingAssistantTextStore += event.text;
@@ -693,6 +767,12 @@ export class RemoteDesktopRuntime {
         break;
       case 'update-pending-assistant-thinking':
         this.thinkingTextStore = event.text;
+        break;
+      case 'remove-pending-assistant':
+        this.liveReasoningAwaitingDetail = false;
+        break;
+      case 'assistant-response-completed':
+        this.liveReasoningAwaitingDetail = false;
         break;
       case 'update-pending-assistant-compaction':
         this.compactionTextStore = event.text;
@@ -724,6 +804,7 @@ export class RemoteDesktopRuntime {
   }
 
   private applyTurnFinished(params: SessionTurnFinishedNotification): void {
+    this.liveReasoningAwaitingDetail = false;
     this.snapshot = { ...this.snapshot, isBusy: false };
     const result = params.result;
     if (result?.kind === 'completed') {
