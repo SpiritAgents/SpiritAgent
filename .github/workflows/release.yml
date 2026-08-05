@@ -641,7 +641,7 @@ jobs:
         run: pnpm install --frozen-lockfile
 
       - name: Build packages for npm publish
-        run: pnpm turbo run build --filter='@spiritagent/{agent-core,host-internal,acp-server}'
+        run: pnpm turbo run build --filter=@spiritagent/agent-core --filter=@spiritagent/host-internal --filter=@spiritagent/acp-server
 
       - name: Publish npm packages
         run: |
