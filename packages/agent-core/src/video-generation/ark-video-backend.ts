@@ -1,4 +1,5 @@
 import { getLlmFetch } from '../llm-fetch.js';
+import { defaultArkApiBase } from '../ark/ark-provider.js';
 import type { OpenAiVideoGenerationConfig } from '../openai/openai-compat.js';
 import type {
   GeneratedVideoFile,
@@ -30,7 +31,7 @@ export class ArkVideoBackend implements VideoGenerationBackend {
     request: VideoGenerationRequest,
     saveGeneratedVideo: (request: GeneratedVideoSaveRequest) => Promise<GeneratedVideoFile>,
   ): Promise<ToolExecutionOutput> {
-    const baseUrl = (config.baseUrl ?? 'https://ark.cn-beijing.volces.com/api/v3').replace(/\/$/, '');
+    const baseUrl = (config.baseUrl ?? defaultArkApiBase(config.llmVendor)).replace(/\/$/, '');
     const createUrl = `${baseUrl}/contents/generations/tasks`;
 
     console.error('[agent-core][generate-video] request.start', {

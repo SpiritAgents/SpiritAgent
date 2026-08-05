@@ -20,3 +20,11 @@ export function isArkApiBase(baseUrl: string | undefined): boolean {
     return false;
   }
 }
+
+export function defaultArkApiBase(vendor: OpenAiLlmVendor | undefined): string {
+  if (vendor === 'byteplus') {
+    return 'https://ark.ap-southeast.bytepluses.com/api/v3';
+  }
+
+  return 'https://ark.cn-beijing.volces.com/api/v3';
+}
