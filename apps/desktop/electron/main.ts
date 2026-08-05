@@ -126,6 +126,7 @@ import {
   setDesktopMarketplaceFetchImplementation,
   setDesktopGitHubFetchImplementation,
   setDesktopExtensionHostAdapter,
+  shutdownDesktopHostService,
   subscribeDesktopAutomationsUpdates,
   subscribeDesktopDreamUpdates,
   subscribeDesktopSessionListUpdates,
@@ -179,6 +180,8 @@ let quittingAfterDesktopWebHostStop = false;
 let unsubscribeDesktopDreamUpdates: (() => void) | undefined;
 let unsubscribeDesktopAutomationsUpdates: (() => void) | undefined;
 let unsubscribeDesktopSessionListUpdates: (() => void) | undefined;
+let desktopHostShutdownComplete = false;
+let desktopHostShutdownPromise: Promise<void> | undefined;
 
 const workspacePtyManager = new WorkspacePtyManager();
 
@@ -216,6 +219,7 @@ function getDesktopWebHost(config: DesktopWebHostConfigFile): DesktopHttpHost {
       port: config.port,
       invokeHostCommand: invokeDesktopHostCommand,
       onHostCommandResult: handleDesktopWebHostCommandResult,
+      subscribeHostUpdates: subscribeDesktopDreamUpdates,
       auth: {
         getTokenHash: () => desktopWebHostConfig?.authTokenHash,
         getPairingCode: () => desktopWebHostPairingCode,
@@ -1441,13 +1445,19 @@ app.on('before-quit', (event) => {
   unsubscribeDesktopAutomationsUpdates = undefined;
   unsubscribeDesktopSessionListUpdates?.();
   unsubscribeDesktopSessionListUpdates = undefined;
-  if (quittingAfterDesktopWebHostStop || !desktopWebHost?.isRunning()) {
+  if (quittingAfterDesktopWebHostStop && desktopHostShutdownComplete) {
     return;
   }
 
   event.preventDefault();
   quittingAfterDesktopWebHostStop = true;
-  void stopDesktopWebHostIfRunning().finally(() => {
+  desktopHostShutdownPromise ??= shutdownDesktopHostService().finally(() => {
+    desktopHostShutdownComplete = true;
+  });
+  void Promise.all([
+    stopDesktopWebHostIfRunning(),
+    desktopHostShutdownPromise,
+  ]).finally(() => {
     app.quit();
   });
 });

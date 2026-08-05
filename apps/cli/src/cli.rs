@@ -1,10 +1,12 @@
 use anyhow::{Context, Result, anyhow};
 use rust_i18n::t;
 use std::fs;
-use std::{collections::BTreeMap, env, path::PathBuf, sync::Arc};
+use std::{collections::BTreeMap, env, path::PathBuf};
 
 use crate::{
     adapters::{DefaultAppPaths, JsonConfigStore, KeyringSecretStore},
+    daemon::DaemonRuntime,
+    host_protocol::CliMarketplaceDetail,
     mcp::{
         example_github_mcp_config, load_mcp_config, save_mcp_config, set_server_enabled,
         user_mcp_config_path, workspace_mcp_config_path,
@@ -16,7 +18,6 @@ use crate::{
         model_refs_equal, save_group_api_key,
     },
     ports::{AppPaths, ConfigStore, SecretStore},
-    ts_bridge::TsBridgeRuntime,
 };
 
 const ENV_API_KEY: &str = "SPIRIT_API_KEY";
@@ -723,8 +724,6 @@ fn parse_model_transport_kind(
                 | ModelProvider::FireworksAi
                 | ModelProvider::HuggingFace
                 | ModelProvider::Baseten
-                | ModelProvider::Groq
-                | ModelProvider::Deepinfra
                 | ModelProvider::Volcengine
                 | ModelProvider::Custom
                 | ModelProvider::CloudflareAiGateway
@@ -1287,15 +1286,15 @@ pub fn handle_marketplace_cli(action: MarketplaceCommand) -> Result<()> {
     Ok(())
 }
 
-fn new_mcp_cli_runtime(workspace_root: PathBuf) -> Result<TsBridgeRuntime> {
-    TsBridgeRuntime::new_mcp_only(Arc::new(KeyringSecretStore), workspace_root)
+fn new_mcp_cli_runtime(workspace_root: PathBuf) -> Result<DaemonRuntime> {
+    DaemonRuntime::new_host_only(workspace_root)
 }
 
-fn new_extension_cli_runtime(workspace_root: PathBuf) -> Result<TsBridgeRuntime> {
-    TsBridgeRuntime::new_mcp_only(Arc::new(KeyringSecretStore), workspace_root)
+fn new_extension_cli_runtime(workspace_root: PathBuf) -> Result<DaemonRuntime> {
+    new_mcp_cli_runtime(workspace_root)
 }
 
-fn print_marketplace_detail(detail: &crate::ts_bridge::CliMarketplaceDetail) {
+fn print_marketplace_detail(detail: &CliMarketplaceDetail) {
     println!("id: {}", detail.extension_id);
     println!("package: {}", detail.package_name);
     println!("status: {}", detail.status);

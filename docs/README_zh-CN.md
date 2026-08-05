@@ -7,7 +7,7 @@
 
 **一款旨在成倍提升生产力的开源 AI 智能体** — 扎根于你的工作区，配备真实工具，随时与你一起规划、执行并交付成果。
 
-[Desktop 应用](#desktop) · [CLI](#cli) · [ACP Server](#acp-server) · [Agent Core](#agent-core) · [开发](#开发)
+[Desktop 应用](#desktop) · [CLI](#cli) · [Server](#server) · [ACP Server](#acp-server) · [Agent Core](#agent-core) · [开发](#开发)
 
 > 本项目仍在积极开发中。各版本之间的行为与 API 可能发生变化。
 
@@ -24,18 +24,22 @@ Spirit Agent 是一款**工具型编程智能体**，以真实项目根目录为
 ```
 ┌───────────────────────────────────────────────────────┐
 │  Hosts                                                │
-│  ┌──────────────┐ ┌──────────┐ ┌───────────────────┐  │
-│  │   Desktop    │ │   CLI    │ │    ACP Server     │  │
-│  │  (Electron)  │ │  (Rust)  │ │  stdio / ndJSON   │  │
-│  └──────┬───────┘ └─────┬────┘ └───────────┬───────┘  │
-│         └───────────────┼──────────────────┘          │
-│                         ▼                             │
-│               packages/host-internal                  │
-│            discovery, tools, workspace                │
-│                         │                             │
-│                         ▼                             │
-│                packages/agent-core                    │
-│          runtime, prompts, tool contracts             │
+│     ┌────────────────────────┐ ┌────────────────┐     │
+│     │   Desktop       CLI    │ │   ACP Server   │     │
+│     │  (Electron)    (Rust)  │ │ stdio / ndJSON │     │
+│     └──────┬────────────┬────┘ └────────┬───────┘     │
+│            └────────────┘               │             │
+│                  ▼                      │             │
+│           packages/server               │             │
+│    sessions, streaming, approvals       │             │
+│                  │                      │             │
+│                  ▼                      │             │
+│        packages/host-internal           │             │
+│     discovery, tools, workspace  ◀──────┘             │
+│                  │                                    │
+│                  ▼                                    │
+│         packages/agent-core                           │
+│   runtime, prompts, tool contracts                    │
 └───────────────────────────────────────────────────────┘
 ```
 
@@ -108,11 +112,22 @@ Desktop 专属开发与目录说明见 [apps/desktop/README.md](../apps/desktop/
 <img width="1014" height="744" alt="Spirit Agent CLI" src="https://github.com/user-attachments/assets/ecf4fcec-6a9b-4562-b0da-cc14816f36d3" />
 
 
-[Rust CLI](../apps/cli)（`spirit-agent`）提供终端优先的宿主，可选 Ratatui 界面。通过 Node 桥接共享同一套 Agent Core 运行时，适合脚本化、SSH 会话与极简环境。
+[Rust CLI](../apps/cli)（`spirit-agent`）提供终端优先的宿主，可选 Ratatui 界面。通过 WebSocket 连接共享 Spirit Server daemon，适合脚本化、SSH 会话与极简环境。
 
 ```bash
 npm run dev:cli    # cargo run -p spirit-agent
 ```
+
+## Server
+
+[`packages/server`](../packages/server)（`@spiritagent/server`，bin `spirit-server` / `spirit serve`）是第一方宿主的**共享 daemon 后端**。CLI 与 Desktop 不再在进程内嵌入运行时，而是通过 WebSocket（JSON-RPC 2.0）连接同一个 daemon——在终端发起的会话可以实时流式同步到 Desktop，反之亦然。
+
+- **单一真相源**——会话、流式事件、工具执行与审批队列都运行在 daemon 内；客户端只负责渲染与输入。
+- **随机端口实例**——绑定 `127.0.0.1` 的 OS 分配端口，并注册到 `{spiritDataDir}/server/instances/`；客户端优先 attach 已有实例，否则拉起新实例。`spirit-server ps` / `kill` 管理实例。
+- **Bearer 鉴权**——home 级 token 位于 `{spiritDataDir}/server.token`（0600 权限），支持 `Authorization` 头或 `?token=` 查询参数；`spirit-server rotate-token` 轮换后对新连接生效。
+- **零新增依赖**——WebSocket 层（RFC 6455）在包内实现。
+
+**CLI 与 Desktop 的智能体执行均为 daemon-only**（见 [Epic #274](https://github.com/SpiritAgents/SpiritAgent/issues/274)）。Desktop Web Host 客户端由 Desktop 宿主推送已鉴权的快照，智能体执行仍在 daemon 内。远程访问（`--hostname 0.0.0.0`）预留给后续阶段，默认关闭。
 
 ## ACP Server
 
@@ -162,7 +177,7 @@ node path/to/packages/acp-server/dist/src/stdio-entry.js --setup
 | `npm run dev:desktop` | 构建共享包并启动 Desktop（Vite + Electron） |
 | `npm run dev:desktop:web` | Desktop 渲染器 + 浏览器 Web 宿主 |
 | `npm run dev:cli` | 带 TUI 的 CLI |
-| `npm run build` | 生产构建 agent-core、host-internal、acp-server 与 Desktop |
+| `npm run build` | 生产构建 agent-core、host-internal、server、acp-server 与 Desktop |
 | `npm run eval:compare` | 在 agent-core 变更后运行 eval 对比 |
 
 ### 仓库结构
@@ -174,6 +189,7 @@ apps/
 packages/
   agent-core/        智能体运行时、提示词、工具定义、传输层、MCP、eval
   host-internal/     共享宿主发现、工具、扩展、LSP 辅助
+  server/            共享 daemon 后端（WebSocket + JSON-RPC），面向 CLI / Desktop / Web
   acp-server/        ACP (Agent Client Protocol) 服务器适配器，用于编辑器集成
 scripts/             发布、eval 与仓库自动化
 ```

@@ -8,12 +8,12 @@ import {
   loadSpiritConfig,
   saveProviderSetup,
   setKeyringStoreForTests,
-} from '../src/credentials/index.js';
+} from '@spiritagent/host-internal';
 import {
   providerAccessKeyIdAccount,
   providerKeyAccount,
   providerSecretAccessKeyAccount,
-} from '../src/credentials/provider-accounts.js';
+} from '@spiritagent/host-internal';
 import { buildProviderSetupResult } from '../src/setup/provider-wizard.js';
 
 function openAiSetup(overrides: Record<string, unknown> = {}) {

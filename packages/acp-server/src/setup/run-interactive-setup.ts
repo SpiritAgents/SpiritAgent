@@ -7,7 +7,7 @@ import {
   type ModelProviderId,
 } from '@spiritagent/host-internal';
 
-import type { ProviderSetupResult } from '../credentials/types.js';
+import type { ProviderSetupResult } from '@spiritagent/host-internal';
 import {
   buildSetupProfile,
   buildProviderSetupResult,

@@ -12,8 +12,8 @@ import {
 } from '../src/auth/constants.js';
 import { canCreateSession, createInitialAuthState } from '../src/auth/session-auth.js';
 import { loadBaseConfig } from '../src/config.js';
-import { hasResolvableCredentials, setKeyringStoreForTests } from '../src/credentials/index.js';
-import { providerKeyAccount } from '../src/credentials/provider-accounts.js';
+import { hasResolvableCredentials, setKeyringStoreForTests } from '@spiritagent/host-internal';
+import { providerKeyAccount, resolveTransportConfig } from '@spiritagent/host-internal';
 import {
   validateAzureSetup,
   validateBedrockCredentials,
@@ -21,7 +21,6 @@ import {
   validateModelName,
   buildSetupProfile,
 } from '../src/setup/provider-wizard.js';
-import { resolveTransportConfig } from '../src/transport/resolve-transport.js';
 import { openAiGroup, v2ConfigFixture } from './fixtures/v2-config.js';
 
 test('buildTerminalAuthMethod declares terminal setup args', () => {

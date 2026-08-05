@@ -6,7 +6,7 @@ import type { AuthState } from './auth/auth-state.js';
 import { buildAuthMethods } from './auth/build-auth-methods.js';
 import { TERMINAL_AUTH_METHOD_ID } from './auth/constants.js';
 import { canCreateSession } from './auth/session-auth.js';
-import { hasResolvableCredentials } from './credentials/index.js';
+import { hasResolvableCredentials } from '@spiritagent/host-internal';
 import { mapRuntimeEventToUpdate, createEventMapperState, type EventMapperState } from './event-mapper.js';
 import { handleApprovalRequest, handleQuestionsRequest } from './permission-bridge.js';
 import { buildAvailableCommands, parseSlashCommand, buildActiveSkillPayload, upsertActiveSkill } from './skill-bridge.js';

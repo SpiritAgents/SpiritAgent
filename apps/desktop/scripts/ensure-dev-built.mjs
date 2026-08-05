@@ -117,8 +117,10 @@ function ensure(name, stale, build, outputPaths) {
 
 const agentCoreRoot = path.join(repoRoot, 'packages/agent-core');
 const hostInternalRoot = path.join(repoRoot, 'packages/host-internal');
+const serverRoot = path.join(repoRoot, 'packages/server');
 const agentCoreOut = path.join(agentCoreRoot, 'dist/index.js');
 const hostInternalOut = path.join(hostInternalRoot, 'dist/index.js');
+const serverOut = path.join(serverRoot, 'dist/src/entry.js');
 const electronMainOut = path.join(desktopRoot, 'dist-electron/electron/main.js');
 const electronPreloadOut = path.join(desktopRoot, 'dist-electron/electron/preload.cjs');
 
@@ -141,6 +143,17 @@ ensure(
 );
 
 ensure(
+  'server',
+  isStale(
+    [path.join(serverRoot, 'src'), path.join(serverRoot, 'tsconfig.json')],
+    [serverOut],
+    [hostInternalOut, agentCoreOut],
+  ),
+  () => npmRun(serverRoot, 'build'),
+  [serverOut],
+);
+
+ensure(
   'electron',
   isStale(
     [
@@ -157,7 +170,7 @@ ensure(
       path.join(desktopRoot, 'tsconfig.preload.cjs.json'),
     ],
     [electronMainOut, electronPreloadOut],
-    [hostInternalOut, agentCoreOut],
+    [hostInternalOut, agentCoreOut, serverOut],
   ),
   () => npmRun(desktopRoot, 'build:electron'),
   [electronMainOut, electronPreloadOut],

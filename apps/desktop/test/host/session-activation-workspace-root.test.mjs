@@ -26,6 +26,9 @@ test('finishSessionActivationCommand syncs host workspace root before plan state
     syncPlanStateForBundle: async (target) => {
       calls.push(['syncPlanStateForBundle', target.id]);
     },
+    syncHostActiveModelToActiveBundle: async (target) => {
+      calls.push(['syncHostActiveModelToActiveBundle', target.id]);
+    },
     resetStreamingPlacementState: () => {
       calls.push(['resetStreamingPlacementState']);
     },
@@ -52,9 +55,10 @@ test('finishSessionActivationCommand syncs host workspace root before plan state
 
   await finishSessionActivationCommand(ctx, bundle);
 
-  assert.deepEqual(calls.slice(0, 2), [
+  assert.deepEqual(calls.slice(0, 3), [
     ['syncHostWorkspaceRootToActiveBundle', 'session-a'],
     ['syncPlanStateForBundle', 'session-a'],
+    ['syncHostActiveModelToActiveBundle', 'session-a'],
   ]);
 });
 
@@ -70,6 +74,9 @@ test('finishSessionActivationCommand still syncs host workspace root when runtim
     },
     syncPlanStateForBundle: async (target) => {
       calls.push(['syncPlanStateForBundle', target.id]);
+    },
+    syncHostActiveModelToActiveBundle: async (target) => {
+      calls.push(['syncHostActiveModelToActiveBundle', target.id]);
     },
     tickSession: async () => {
       calls.push(['tickSession']);
@@ -88,6 +95,7 @@ test('finishSessionActivationCommand still syncs host workspace root when runtim
   assert.deepEqual(calls, [
     ['syncHostWorkspaceRootToActiveBundle', 'session-a'],
     ['syncPlanStateForBundle', 'session-a'],
+    ['syncHostActiveModelToActiveBundle', 'session-a'],
     ['tickSession'],
     ['syncActiveRuntimePointer'],
   ]);
@@ -103,6 +111,9 @@ test('finishSessionActivationCommand skips plan sync when host workspace root wa
     },
     syncPlanStateForBundle: async (target) => {
       calls.push(['syncPlanStateForBundle', target.id]);
+    },
+    syncHostActiveModelToActiveBundle: async (target) => {
+      calls.push(['syncHostActiveModelToActiveBundle', target.id]);
     },
     resetStreamingPlacementState: () => {
       calls.push(['resetStreamingPlacementState']);

@@ -2521,7 +2521,7 @@ export function useDesktopRuntime() {
       applySnapshot(next);
       if (!targetSessionPath) {
         resetComposerAfterSend(settingsRef.current.agentMode, {
-          loopEnabled: effectiveSnapshot?.conversation.loopEnabled === true,
+          loopEnabled: next.conversation.loopEnabled === true,
         });
       }
       setRuntimeError("");

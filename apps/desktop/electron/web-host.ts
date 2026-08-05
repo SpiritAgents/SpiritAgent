@@ -3,7 +3,11 @@ import './load-env.js';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
-import { invokeDesktopHostCommand } from '../src/host/service.js';
+import {
+  invokeDesktopHostCommand,
+  shutdownDesktopHostService,
+  subscribeDesktopDreamUpdates,
+} from '../src/host/service.js';
 import {
   loadConfig,
   resolveConfiguredSpiritAgentDataDir,
@@ -30,6 +34,7 @@ const webHost = createDesktopHttpHost({
   host,
   port,
   invokeHostCommand: invokeDesktopHostCommand,
+  subscribeHostUpdates: subscribeDesktopDreamUpdates,
   auth: {
     getTokenHash: () => webHostConfig.authTokenHash,
     getPairingCode: () => pairingCode,
@@ -72,7 +77,10 @@ if (!webHostConfig.authTokenHash) {
 
 for (const signal of ['SIGINT', 'SIGTERM'] as const) {
   process.on(signal, () => {
-    void webHost.stop().finally(() => {
+    void Promise.all([
+      webHost.stop(),
+      shutdownDesktopHostService(),
+    ]).finally(() => {
       setDesktopWebHostRuntimeStatus({
         state: 'stopped',
         host,

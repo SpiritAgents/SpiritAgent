@@ -7,6 +7,7 @@ pub mod cli;
 pub mod cli_bootstrap;
 #[cfg(feature = "tui")]
 pub mod conversation_select;
+pub mod daemon;
 #[cfg(feature = "tui")]
 pub mod headless;
 pub mod hooks;
@@ -27,8 +28,10 @@ pub mod plan;
 pub mod ports;
 pub mod fork;
 pub mod rewind;
+pub mod runtime_sync;
 pub mod rules;
 pub mod runtime_handle;
+pub mod serve;
 pub mod session;
 pub mod subagent_display;
 #[cfg(feature = "tui")]
@@ -36,7 +39,10 @@ pub mod shell;
 pub mod skills;
 #[cfg(test)]
 pub(crate) mod test_support;
-pub mod ts_bridge;
+pub mod chat_archive;
+pub mod host_protocol;
+pub mod tool_ui;
+pub mod transport_config;
 #[cfg(feature = "tui")]
 pub mod tui;
 #[cfg(feature = "tui")]
@@ -56,6 +62,7 @@ pub use cli::{
 pub use cli_bootstrap::{bootstrap_config, print_skills_stub, GlobalCliOptions};
 #[cfg(feature = "tui")]
 pub use headless::run_headless_prompt;
+pub use serve::run_serve;
 #[cfg(feature = "tui")]
 pub use tui::TuiShell;
 pub use view::{ChatMessage, MessageRole, ToolUiBlock, ToolUiPhase, TuiViewModel};

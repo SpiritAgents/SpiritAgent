@@ -104,6 +104,33 @@ function visibleRowTokens(messages) {
   }).map(rowToken);
 }
 
+test('abort preemptive thinking finalize ignores duplicate deferred after-stream finalize event', () => {
+  const harness = createHarness();
+  const thinking = 'The user just sent random typing.';
+  harness.pushUser('enn');
+
+  harness.orchestrator.applyRuntimeHostEvents([
+    { kind: 'begin-assistant-response' },
+    { kind: 'update-pending-assistant-thinking', text: thinking },
+  ]);
+
+  harness.orchestrator.finalizeInterruptedDeferredThinking({ thinkingText: thinking });
+  harness.timeline.abortActiveAssistantSegment();
+
+  harness.orchestrator.applyRuntimeHostEvents([
+    {
+      kind: 'assistant-thinking-segment-finalized',
+      text: thinking,
+      placement: 'after-stream',
+    },
+  ]);
+
+  assert.deepEqual(harness.timeline.toMessages().map(rowToken), [
+    'user',
+    `thinking:${thinking}`,
+  ]);
+});
+
 test('runtime events are mirrored into continuation timeline segments', () => {
   const harness = createHarness();
   harness.pushUser('inspect this file');

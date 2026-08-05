@@ -7,7 +7,7 @@
 
 **생산성을 배가시키기 위해 설계된 오픈소스 AI 에이전트** — 워크스페이스에 뿌리를 두고, 실제 도구를 갖추며, 계획·실행·배포까지 함께합니다.
 
-[Desktop 앱](#desktop) · [CLI](#cli) · [ACP Server](#acp-server) · [Agent Core](#agent-core) · [개발](#개발)
+[Desktop 앱](#desktop) · [CLI](#cli) · [Server](#server) · [ACP Server](#acp-server) · [Agent Core](#agent-core) · [개발](#개발)
 
 > 본 프로젝트는 활발히 개발 중입니다. 릴리스 간 동작과 API가 변경될 수 있습니다.
 
@@ -24,18 +24,22 @@ Spirit Agent는 실제 프로젝트 루트를 컨텍스트로 동작하는 **도
 ```
 ┌───────────────────────────────────────────────────────┐
 │  Hosts                                                │
-│  ┌──────────────┐ ┌──────────┐ ┌───────────────────┐  │
-│  │   Desktop    │ │   CLI    │ │    ACP Server     │  │
-│  │  (Electron)  │ │  (Rust)  │ │  stdio / ndJSON   │  │
-│  └──────┬───────┘ └─────┬────┘ └───────────┬───────┘  │
-│         └───────────────┼──────────────────┘          │
-│                         ▼                             │
-│               packages/host-internal                  │
-│            discovery, tools, workspace                │
-│                         │                             │
-│                         ▼                             │
-│                packages/agent-core                    │
-│          runtime, prompts, tool contracts             │
+│     ┌────────────────────────┐ ┌────────────────┐     │
+│     │   Desktop       CLI    │ │   ACP Server   │     │
+│     │  (Electron)    (Rust)  │ │ stdio / ndJSON │     │
+│     └──────┬────────────┬────┘ └────────┬───────┘     │
+│            └────────────┘               │             │
+│                  ▼                      │             │
+│           packages/server               │             │
+│    sessions, streaming, approvals       │             │
+│                  │                      │             │
+│                  ▼                      │             │
+│        packages/host-internal           │             │
+│     discovery, tools, workspace  ◀──────┘             │
+│                  │                                    │
+│                  ▼                                    │
+│         packages/agent-core                           │
+│   runtime, prompts, tool contracts                    │
 └───────────────────────────────────────────────────────┘
 ```
 
@@ -108,11 +112,22 @@ Desktop 전용 개발 및 레이아웃은 [apps/desktop/README.md](../apps/deskt
 <img width="1014" height="744" alt="Spirit Agent CLI" src="https://github.com/user-attachments/assets/ecf4fcec-6a9b-4562-b0da-cc14816f36d3" />
 
 
-[Rust CLI](../apps/cli)(`spirit-agent`)는 터미널 우선 호스트로 선택적 Ratatui UI를 제공합니다. Node 브리지를 통해 동일 Agent Core 런타임을 공유하며, 스크립팅, SSH 세션, 최소 환경에 적합합니다.
+[Rust CLI](../apps/cli)(`spirit-agent`)는 터미널 우선 호스트로 선택적 Ratatui UI를 제공합니다. WebSocket으로 공유 Spirit Server 데몬에 연결하며, 스크립팅, SSH 세션, 최소 환경에 적합합니다.
 
 ```bash
 npm run dev:cli    # cargo run -p spirit-agent
 ```
+
+## Server
+
+[`packages/server`](../packages/server)(`@spiritagent/server`, bin `spirit-server` / `spirit serve`)는 퍼스트파티 호스트를 위한 **공유 데몬 백엔드**입니다. CLI와 Desktop은 프로세스 내에 런타임을 내장하는 대신 WebSocket(JSON-RPC 2.0)으로 같은 데몬에 연결합니다. 터미널에서 시작한 세션이 Desktop으로 실시간 스트리밍되고, 그 반대도 마찬가지입니다.
+
+- **단일 진실 공급원** — 세션, 스트리밍 이벤트, 도구 실행, 승인 큐는 모두 데몬에 있고, 클라이언트는 렌더링과 입력만 담당합니다.
+- **랜덤 포트 인스턴스** — `127.0.0.1`의 OS 할당 포트에 바인딩하고 `{spiritDataDir}/server/instances/`에 등록합니다. 클라이언트는 실행 중인 인스턴스에 우선 연결하고, 없으면 새로 시작합니다. `spirit-server ps` / `kill`로 인스턴스를 관리합니다.
+- **Bearer 인증** — 홈 레벨 토큰은 `{spiritDataDir}/server.token`(권한 0600)에 저장되며 `Authorization` 헤더 또는 `?token=` 쿼리로 전달합니다. `spirit-server rotate-token`으로 교체하면 새 연결부터 적용됩니다.
+- **신규 의존성 없음** — WebSocket 계층(RFC 6455)을 패키지 내부에 구현했습니다.
+
+**CLI와 Desktop의 에이전트 실행은 daemon-only**입니다([Epic #274](https://github.com/SpiritAgents/SpiritAgent/issues/274) 참조). Desktop Web Host 클라이언트는 Desktop 호스트의 인증된 스냅샷 push를 받으며, 에이전트 실행은 데몬에 남습니다. 원격 접속(`--hostname 0.0.0.0`)은 향후 단계를 위해 예약되어 있으며 기본적으로 꺼져 있습니다.
 
 ## ACP Server
 
@@ -162,7 +177,7 @@ node path/to/packages/acp-server/dist/src/stdio-entry.js --setup
 | `npm run dev:desktop` | 공유 패키지 빌드 후 Desktop 시작(Vite + Electron) |
 | `npm run dev:desktop:web` | Desktop 렌더러 + 브라우저 Web 호스트 |
 | `npm run dev:cli` | TUI 포함 CLI |
-| `npm run build` | agent-core, host-internal, acp-server, Desktop 프로덕션 빌드 |
+| `npm run build` | agent-core, host-internal, server, acp-server, Desktop 프로덕션 빌드 |
 | `npm run eval:compare` | agent-core 변경 후 eval 비교 실행 |
 
 ### 저장소 구조
@@ -174,6 +189,7 @@ apps/
 packages/
   agent-core/        에이전트 런타임, 프롬프트, 도구 정의, 트랜스포트, MCP, eval
   host-internal/     공유 호스트 탐색, 도구, 확장, LSP 헬퍼
+  server/            CLI / Desktop / Web용 공유 데몬 백엔드 (WebSocket + JSON-RPC)
   acp-server/        에디터 통합용 ACP 서버 어댑터
 scripts/             릴리스, eval, 저장소 자동화
 ```

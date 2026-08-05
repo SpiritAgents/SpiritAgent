@@ -17,7 +17,7 @@ import {
   splitRuntimeEventsForIncrementalFinishTaskPreview,
   splitRuntimeEventsForIncrementalResponsesBuiltInToolPreview,
 } from './runtime-event-orchestrator.js';
-import type { DesktopRuntime } from './runtime.js';
+import type { DesktopHostRuntime } from './runtime.js';
 import {
   buildArchiveAssistantAuxFromConversation,
   buildArchiveMessagesFromConversation,
@@ -36,7 +36,7 @@ export class AutomationConversationProjection {
   private deferredRuntimeHostEvents: RuntimeEvent<DesktopToolRequest>[] = [];
   private responsesBuiltInPreviewSeenCallIds = new Set<string>();
   private nextTimelineAssistantSegmentKind: DesktopTimelineSegmentKind = 'initial';
-  private runtime: DesktopRuntime | undefined;
+  private runtime: DesktopHostRuntime | undefined;
 
   private constructor(messages: ConversationMessageSnapshot[]) {
     this.messageIdCounter = nextMessageIdFromMessages(messages);
@@ -76,7 +76,7 @@ export class AutomationConversationProjection {
     return new AutomationConversationProjection([]);
   }
 
-  bindRuntime(runtime: DesktopRuntime): void {
+  bindRuntime(runtime: DesktopHostRuntime): void {
     this.runtime = runtime;
   }
 
@@ -143,7 +143,7 @@ export class AutomationConversationProjection {
 }
 
 export async function runAutomationStreamingTurn(
-  runtime: DesktopRuntime,
+  runtime: DesktopHostRuntime,
   projection: AutomationConversationProjection,
   startTurn: () => Promise<void>,
 ): Promise<RuntimeTurnResult<unknown, DesktopToolRequest, string>> {

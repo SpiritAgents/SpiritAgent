@@ -45,7 +45,7 @@ import type {
   ToolBlockSnapshot,
 } from '../types.js';
 import type { DesktopToolRequest } from './contracts.js';
-import type { DesktopRuntime } from './runtime.js';
+import type { DesktopHostRuntime } from './runtime.js';
 import type { DesktopAssistantMessageStateMachine } from './assistant-message-state.js';
 import type { DesktopConversationSnapshotView } from './conversation-snapshot.js';
 import type {
@@ -78,7 +78,7 @@ import {
 } from './message-ordering.js';
 
 export interface DesktopRuntimeEventOrchestratorOptions {
-  runtime: () => DesktopRuntime | undefined;
+  runtime: () => DesktopHostRuntime | undefined;
   messages: () => ConversationMessageSnapshot[];
   allocateMessageId: () => number;
   assistantMessages: DesktopAssistantMessageStateMachine;
@@ -245,18 +245,19 @@ export class DesktopRuntimeEventOrchestrator {
     }
   }
 
-  consumeCompletedTurnResult(): void {
+  consumeCompletedTurnResult(): boolean {
     const runtime = this.options.runtime();
     if (!runtime) {
-      return;
+      return false;
     }
 
     const result = runtime.takeCompletedTurnResult();
     if (!result) {
-      return;
+      return false;
     }
 
     this.applyCompletedTurnResult(result);
+    return true;
   }
 
   applyCompletedTurnResult(
@@ -421,8 +422,16 @@ export class DesktopRuntimeEventOrchestrator {
         if (hasActiveSubagentToolInMessages(timelineMessages)) {
           continue;
         }
+        const timeline = this.options.messageTimeline?.();
+        if (
+          timeline &&
+          event.text.trim() &&
+          timeline.hasFinalizedAuxInActiveSegment('thinking', event.text)
+        ) {
+          continue;
+        }
         this.options.assistantMessages.updatePendingAssistantAux('thinking', event.text);
-        this.options.messageTimeline?.()?.updatePendingAssistantAux('thinking', event.text);
+        timeline?.updatePendingAssistantAux('thinking', event.text);
         continue;
       }
       if (event.kind === 'update-pending-assistant-compaction') {
@@ -457,8 +466,10 @@ export class DesktopRuntimeEventOrchestrator {
         this.options.assistantMessages.removePendingAssistantMessage();
         const timeline = this.options.messageTimeline?.();
         timeline?.removePendingAssistantText();
-        if (timeline && this.options.runtime()?.isBusy()) {
+        const runtime = this.options.runtime();
+        if (timeline && runtime?.isBusy()) {
           timeline.ensureAfterToolsThinkingPlaceholderRow();
+          runtime.expectLiveReasoningPlaceholder?.();
         }
         continue;
       }
@@ -480,6 +491,9 @@ export class DesktopRuntimeEventOrchestrator {
             this.options.assistantMessages.appendAssistantThinkingSegment(event.text);
           }
           if (deferAfterStream && timeline) {
+            if (timeline.hasFinalizedAuxInActiveSegment('thinking', event.text)) {
+              continue;
+            }
             // 无工具：暂不拆行。把思考挂在当前 assistant 行 aux 上，正文到来后在同一个
             // AnimatedCollapse 实例上由展开过渡到收起；本段 completed 再拆行。
             timeline.updatePendingAssistantAux('thinking', event.text);
@@ -580,6 +594,12 @@ export class DesktopRuntimeEventOrchestrator {
           this.activeGenerateVideoTools.delete(event.execution.toolCallId);
         }
         this.integrateToolExecutions([event.execution], 'event');
+        if (this.options.runtime()?.isBusy()) {
+          const placeholder = this.options.messageTimeline?.()?.ensureAfterToolsThinkingPlaceholderRow();
+          if (placeholder) {
+            this.options.runtime()?.expectLiveReasoningPlaceholder?.();
+          }
+        }
         this.options.dispatchExtensionEvent({
           type: 'onToolResult',
           detail: {

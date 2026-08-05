@@ -7,12 +7,12 @@ use std::{
 };
 
 use crate::{
-    adapters::{DefaultAppPaths, KeyringSecretStore},
-    cli_bootstrap::{apply_approval_level, GlobalCliOptions},
+    adapters::{DefaultAppPaths, JsonConfigStore, KeyringSecretStore},
+    cli_bootstrap::GlobalCliOptions,
+    daemon::DaemonRuntime,
     host_runtime::RuntimeEvent,
-    model_registry::AppConfig,
-    ports::{AppPaths, SecretStore},
-    runtime_handle::RuntimeHandle,
+    ports::{AppPaths, ConfigStore, SecretStore},
+    view::MessageRole,
 };
 
 const POLL_INTERVAL: Duration = Duration::from_millis(50);
@@ -22,7 +22,7 @@ const DEFAULT_TURN_TIMEOUT: Duration = Duration::from_secs(60 * 30);
 pub fn run_headless_prompt(
     prompt: &str,
     options: &GlobalCliOptions,
-    config: AppConfig,
+    _config: crate::model_registry::AppConfig,
 ) -> Result<()> {
     let trimmed = prompt.trim();
     if trimmed.is_empty() {
@@ -32,30 +32,34 @@ pub fn run_headless_prompt(
     let app_paths = DefaultAppPaths::new();
     let secret_store: Arc<dyn SecretStore> = Arc::new(KeyringSecretStore);
     let workspace_root = app_paths.workspace_root();
-    let mut runtime = RuntimeHandle::new(config, secret_store, workspace_root)?;
+    let config = JsonConfigStore.load()?;
+    let mut runtime = DaemonRuntime::new(config, secret_store, workspace_root)?;
 
     if let Some(approval) = options.approval.as_deref() {
-        apply_approval_level(&mut runtime, approval)?;
+        let level = crate::cli_bootstrap::parse_cli_approval_level(approval)?;
+        runtime.set_approval_level(&level)?;
     }
 
-    // Match TUI startup: run sessionStart hooks before the first user turn.
     runtime.run_session_start("startup")?;
-
     runtime.submit_user_turn(trimmed.to_string(), None)?;
 
+    let deadline = Instant::now() + DEFAULT_TURN_TIMEOUT;
+    let result = run_daemon_headless_turn(&mut runtime, deadline);
+    runtime.close_session();
+    result
+}
+
+fn run_daemon_headless_turn(runtime: &mut DaemonRuntime, deadline: Instant) -> Result<()> {
     let mut pending_assistant = String::new();
     let mut final_assistant = String::new();
     let mut has_pending_assistant = false;
-    let mut runtime_notices: Vec<String> = Vec::new();
-    let deadline = Instant::now() + DEFAULT_TURN_TIMEOUT;
+    let mut runtime_error_hint: Option<String> = None;
 
     loop {
         if Instant::now() > deadline {
             return Err(anyhow!("{}", t!("cli.headless.timeout")));
         }
 
-        runtime.poll();
-        runtime.handle_stream_stall_timeout();
         for event in runtime.drain_events() {
             match event {
                 RuntimeEvent::BeginAssistantResponse => {
@@ -63,7 +67,6 @@ pub fn run_headless_prompt(
                     has_pending_assistant = true;
                 }
                 RuntimeEvent::AssistantChunk(chunk) => {
-                    // Accumulate silently; headless never prints intermediate text.
                     if has_pending_assistant {
                         pending_assistant.push_str(&chunk);
                     }
@@ -85,23 +88,19 @@ pub fn run_headless_prompt(
                 RuntimeEvent::OpenAskQuestions { .. } => {
                     return Err(anyhow!("{}", t!("cli.headless.blocked_questions")));
                 }
-                RuntimeEvent::PushMessage(message) => {
-                    // Tool cards stay off stdout; keep plain agent notices for failure reporting.
-                    if message.tool_block.is_none() {
-                        let content = message.content.trim();
-                        if !content.is_empty() {
-                            runtime_notices.push(content.to_string());
-                        }
-                    }
+                RuntimeEvent::PushMessage(message)
+                    if message.role == MessageRole::Agent
+                        && message.tool_block.is_none()
+                        && !message.content.trim().is_empty() =>
+                {
+                    runtime_error_hint = Some(message.content.trim().to_string());
                 }
-                RuntimeEvent::UpdatePendingAssistantThinking(_)
-                | RuntimeEvent::AssistantThinkingSegmentFinalized(_)
-                | RuntimeEvent::UpdatePendingAssistantCompaction(_)
-                | RuntimeEvent::UpsertToolPreview { .. } => {}
+                _ => {}
             }
         }
 
         if runtime.has_pending_tool_approval() {
+            runtime.respond_to_pending_tool_approval("n");
             return Err(anyhow!("{}", t!("cli.headless.blocked_approval")));
         }
 
@@ -119,17 +118,12 @@ pub fn run_headless_prompt(
     if final_assistant.trim().is_empty() && !pending_assistant.trim().is_empty() {
         final_assistant = pending_assistant;
     }
-
     if final_assistant.trim().is_empty() {
-        if let Some(notice) = runtime_notices.last() {
-            return Err(anyhow!(
-                "{}",
-                t!("cli.headless.runtime_failed", err = notice.as_str())
-            ));
+        if let Some(hint) = runtime_error_hint {
+            return Err(anyhow!("{}", t!("cli.headless.runtime_failed", err = hint)));
         }
         return Err(anyhow!("{}", t!("cli.headless.empty_response")));
     }
-
     println!("{final_assistant}");
     Ok(())
 }

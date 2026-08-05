@@ -1,5 +1,10 @@
 import type { DesktopSnapshot } from "@/types";
 
+/** Short-lived RPC busy flags that must not hide the turn abort control. */
+export function busyActionBlocksConversationAbort(busyAction: string): boolean {
+  return busyAction !== "" && busyAction !== "approve";
+}
+
 export function resolvePaneCanInterrupt(
   snapshot: DesktopSnapshot | null | undefined,
 ): boolean {

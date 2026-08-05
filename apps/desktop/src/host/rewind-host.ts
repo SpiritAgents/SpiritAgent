@@ -5,7 +5,7 @@ import type { HostRecordedFileChange } from '@spiritagent/host-internal';
 
 import { resolveDesktopAgentMode } from '../lib/agent-mode.js';
 import type { ConversationMessageSnapshot, DesktopGitSnapshot, PlanSnapshot } from '../types.js';
-import type { DesktopRuntime } from './runtime.js';
+import type { DesktopHostRuntime } from './runtime.js';
 import type { SessionBundle } from './session-bundle.js';
 import {
   bindRewindFileChangesToToolMessage,
@@ -50,8 +50,8 @@ export interface RewindHostContext {
   requireState(): RewindHostState;
   activeBundle(): SessionBundle;
   activeSessionId(): string | undefined;
-  runtime(): DesktopRuntime | undefined;
-  requireRuntime(): DesktopRuntime;
+  runtime(): DesktopHostRuntime | undefined;
+  requireRuntime(): DesktopHostRuntime;
   desktopMessages(): ConversationMessageSnapshot[];
   archiveMessages(): Array<{ role: 'user' | 'assistant'; content: string }>;
   archiveAssistantAux(): ChatArchive['assistantAux'];

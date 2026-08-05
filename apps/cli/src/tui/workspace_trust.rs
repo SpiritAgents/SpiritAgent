@@ -3,7 +3,7 @@ use crossterm::event::{self, Event, KeyCode, KeyEventKind, KeyModifiers};
 use ratatui::{backend::Backend, widgets::Clear, Terminal};
 use std::{io, time::Duration};
 
-use crate::ts_bridge::{
+use crate::host_protocol::{
     WorkspaceCapabilityTrustDecision, WorkspaceCapabilityTrustRequest,
 };
 

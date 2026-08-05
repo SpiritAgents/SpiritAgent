@@ -1,4 +1,4 @@
-import { hasResolvableCredentials } from '../credentials/index.js';
+import { hasResolvableCredentials } from '@spiritagent/host-internal';
 import type { AcpServerConfig } from '../types.js';
 import { AuthState } from './auth-state.js';
 

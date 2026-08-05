@@ -9,7 +9,7 @@ import type {
   DesktopSnapshot,
   ForkSessionIntoSideChatRequest,
 } from '../types.js';
-import type { DesktopRuntime } from './runtime.js';
+import type { DesktopHostRuntime } from './runtime.js';
 import type { SessionBundle } from './session-bundle.js';
 import type { SessionActivationContext } from './session-activation.js';
 import {
@@ -28,8 +28,8 @@ import type { SessionSplitHostContext } from './session-split.js';
 import { sideChatPaneSessionPath } from './storage.js';
 
 export interface SideChatSessionHostContext extends SessionSplitHostContext {
-  requireRuntime(): DesktopRuntime;
-  currentRuntime(): DesktopRuntime | undefined;
+  requireRuntime(): DesktopHostRuntime;
+  currentRuntime(): DesktopHostRuntime | undefined;
   isBundleConversationBusy(bundle: SessionBundle): boolean;
   isBundleReadOnly(bundle: SessionBundle): boolean;
 }

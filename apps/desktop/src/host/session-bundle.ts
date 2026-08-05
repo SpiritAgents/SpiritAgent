@@ -9,7 +9,7 @@ import type { ApprovalLevel, WorkLocationKind } from '@spiritagent/host-internal
 
 import type { ModelRef } from '../types.js';
 
-import type { DesktopRuntime } from './runtime.js';
+import type { DesktopHostRuntime } from './runtime.js';
 import type { DesktopToolExecutor } from './tool-executor.js';
 
 import type {
@@ -54,15 +54,13 @@ export interface SessionBundle {
   pendingUnboundFileChangeIds: string[];
   nextTimelineAssistantSegmentKind: DesktopTimelineSegmentKind;
   deferredRuntimeRefreshWhileBusy: boolean;
-  /** Last MCP catalog revision baked into the active runtime system message. */
-  lastSeenMcpCatalogRevision?: number;
   deferredRuntimeHostEvents: RuntimeEvent<DesktopToolRequest>[];
   /** Provider builtin preview callIds applied in a prior drain (for deferring terminal previews). */
   responsesBuiltInPreviewSeenCallIds: Set<string>;
   lastPersistedAtUnixMs?: number;
   /** `savedAtUnixMs` from disk; used to avoid bumping list order on background/switch persist. */
   listSortSavedAtUnixMs?: number;
-  runtime?: DesktopRuntime;
+  runtime?: DesktopHostRuntime;
   /** Fingerprint of host config used when `runtime` was last built for this bundle. */
   runtimeActivationSignature?: string;
   runtimeTransport?: SpiritLlmTransport;

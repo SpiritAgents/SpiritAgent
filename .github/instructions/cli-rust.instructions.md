@@ -8,12 +8,12 @@ applyTo: "apps/cli/**/*.rs"
 
 - 优先沿用现有 Rust 风格：`anyhow::Result`、显式错误上下文、清晰的枚举分发和 `match` 结构。
 - 保持改动局部化，避免为格式化而重排无关代码。
-- 参考这些文件中的现有模式：`apps/cli/src/main.rs`、`apps/cli/src/host_runtime.rs`、`apps/cli/src/ports.rs`、`apps/cli/src/tool_runtime.rs`、`apps/cli/src/ts_bridge.rs`、`apps/cli/src/tui.rs`、`apps/cli/src/ui.rs`。
+- 参考这些文件中的现有模式：`apps/cli/src/main.rs`、`apps/cli/src/host_runtime.rs`、`apps/cli/src/ports.rs`、`apps/cli/src/daemon/`、`apps/cli/src/runtime_sync.rs`、`apps/cli/src/tui.rs`、`apps/cli/src/ui.rs`。
 
 ## 架构（本目录内）
 
 - `apps/cli/src/ports.rs` 定义核心抽象接口；优先通过端口扩展能力，而不是把实现细节散落到上层。
-- `apps/cli/src/ts_bridge.rs` 负责桥接事件流；`apps/cli/src/host_runtime.rs` 负责宿主仍需复用的运行时事件与工具 UI 格式化。
+- `apps/cli/src/daemon/` 承载 CLI 与 `@spiritagent/server` 的 WebSocket 连接；`apps/cli/src/host_protocol/` 定义 daemon 事件/快照协议类型；`apps/cli/src/runtime_sync.rs` 将协议投影为 TUI 状态；`apps/cli/src/host_runtime.rs` 负责宿主仍需复用的运行时事件与工具 UI 格式化。
 - `apps/cli/src/main.rs` 负责 CLI 入口与子命令分发；`apps/cli/src/tui.rs` 与 `apps/cli/src/ui.rs` 负责交互界面。
 - MCP 主链路与协议实现以 `packages/agent-core` 为准；`apps/cli/src/tool_runtime.rs` 等负责内置工具执行，Rust 侧保留与宿主、桥接相关的配合代码。
 

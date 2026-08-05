@@ -6,7 +6,6 @@ import {
   deleteFileBaselineTextForPath,
   lineDeltaForDeleteFilePath,
 } from './delete-file-line-delta.js';
-import { createDesktopAutoApprovalReviewer } from './auto-approval-review.js';
 import i18n from '../lib/i18n-host.js';
 import { resolveDesktopAgentMode } from '../lib/agent-mode.js';
 import {
@@ -342,7 +341,6 @@ import {
   runtimeActivationSignature,
 } from './runtime-lifecycle.js';
 import {
-  dreamCollectorExtensionPrompt,
   startDreamCollectorIfNeeded as startDreamCollectorIfNeededFromService,
   startDreamCollectorMonitorIfNeeded as startDreamCollectorMonitorIfNeededFromService,
   type DreamCollectorServiceContext,
@@ -464,11 +462,25 @@ import {
 import { DesktopToolExecutor } from './tool-executor.js';
 import {
   buildDesktopRuntimeBasicInfo,
-  createDesktopRuntime,
-  type DesktopRuntime,
+  type DesktopHostRuntime,
 } from './runtime.js';
+import {
+  abortRemoteDesktopShell,
+  closeRemoteDesktopRuntime,
+  closeSharedDesktopServerClient,
+  createRemoteDesktopRuntime,
+  disposeRemoteDesktopRuntime,
+  exportRemoteDesktopState,
+  migrateRemoteConversationKey,
+  openRemoteDesktopRuntime,
+  remoteDesktopSessionId,
+  replyRemoteWorkspaceCapabilityTrust,
+  remoteDesktopRuntimeNeedsProjection,
+  runRemoteDesktopSessionEnd,
+  runRemoteDesktopSessionStart,
+  setRemoteDesktopApprovalLevel,
+} from './remote-runtime.js';
 import { buildActiveSkillPayload } from './skills.js';
-import { createDesktopSubagentWorkspaceBootstrap } from './subagent-worktree-bootstrap.js';
 import {
   buildDreamContextText,
   clearDreamCollectorIssue,
@@ -500,13 +512,7 @@ import {
   listDesktopMcpServersFromDisk,
 } from './mcp-config.js';
 import { listDesktopHookListItems } from './hooks.js';
-import {
-  buildDesktopHookSessionContext,
-  createDesktopHookRunner,
-  runDesktopSessionEndHook,
-  runDesktopSessionStartHook,
-} from './hook-runtime.js';
-import type { HookRunner, SessionEndHookInput, SessionStartHookInput } from '@spiritagent/agent-core';
+import type { SessionEndHookInput, SessionStartHookInput } from '@spiritagent/agent-core';
 import {
   disposeMcpServicesExcept,
   sharedMcpServiceForWorkspace,
@@ -622,9 +628,11 @@ class DesktopHostService {
   private hostExtensionMarketplace: HostExtensionMarketplaceManager | undefined;
   private hostExtensionMarketplaceFetchImpl: typeof fetch | undefined;
   private state: HostState | undefined;
-  private readonly sessionRegistry = new SessionRegistry();
+  private readonly sessionRegistry = new SessionRegistry((bundle) => {
+    void closeRemoteDesktopRuntime(bundle.runtime);
+  });
   /** Active bundle runtime mirror for legacy call sites; use `bundle.runtime` in session ticks. */
-  private runtime: DesktopRuntime | undefined;
+  private runtime: DesktopHostRuntime | undefined;
   private toolExecutor: DesktopToolExecutor | undefined;
   private initialized = false;
   private lastRuntimeError = '';
@@ -695,6 +703,11 @@ class DesktopHostService {
   private visiblePaneSessionPaths: string[] = [];
   private readonly paneSessionSliceCache = new Map<string, { signature: string; slice: PaneSessionSlice }>();
   private pendingWorkspaceCapabilityTrust: WorkspaceCapabilityTrustRequest | undefined;
+  private pendingRemoteWorkspaceCapabilityTrust: {
+    requestId: string;
+    runtime: unknown;
+    finish: () => void;
+  } | undefined;
   private workspaceCapabilityTrustWaiter:
     | {
         resolve: (decision: WorkspaceCapabilityTrustDecision) => void;
@@ -849,6 +862,8 @@ class DesktopHostService {
         resolveApiKeyForConfigModel(this.requireState().config, model),
       activeBundle: () => this.activeBundle(),
       allBundles: () => this.sessionRegistry.all(),
+      bundleNeedsRuntimeProjection: (bundle) =>
+        remoteDesktopRuntimeNeedsProjection(bundle.runtime),
       getActiveBundle: () => this.sessionRegistry.getActive(),
       activeSessionId: () => this.sessionRegistry.activeSessionId(),
       emitLiveSnapshotUpdate: () => this.emitLiveSnapshotUpdate(),
@@ -963,32 +978,39 @@ class DesktopHostService {
     });
   };
 
-  private getHookRunner(workspaceRoot: string): HookRunner {
-    return createDesktopHookRunner(workspaceRoot, {
-      requestWorkspaceCapabilityTrust: this.requestWorkspaceCapabilityTrust,
-    });
-  }
-
   private async runSessionEndForBundle(
     bundle: SessionBundle,
     reason: SessionEndHookInput['reason'],
   ): Promise<void> {
-    const state = this.state;
-    const workspaceRoot = bundle.workspaceRoot || state?.workspaceRoot || '';
-    const hookRunner = this.getHookRunner(workspaceRoot);
-    const context = buildDesktopHookSessionContext(bundle, state?.config.activeModel.name);
-    await runDesktopSessionEndHook(hookRunner, context, reason);
+    await runRemoteDesktopSessionEnd(bundle.runtime, reason);
   }
 
   private async runSessionStartForBundle(
     bundle: SessionBundle,
     source: SessionStartHookInput['source'],
   ): Promise<void> {
-    const state = this.state;
-    const workspaceRoot = bundle.workspaceRoot || state?.workspaceRoot || '';
-    const hookRunner = this.getHookRunner(workspaceRoot);
-    const context = buildDesktopHookSessionContext(bundle, state?.config.activeModel.name);
-    await runDesktopSessionStartHook(bundle.runtime, hookRunner, context, source);
+    await runRemoteDesktopSessionStart(bundle.runtime, source);
+  }
+
+  private enqueueRemoteWorkspaceCapabilityTrust(
+    requestId: string,
+    request: WorkspaceCapabilityTrustRequest,
+    runtime: unknown,
+  ): void {
+    this.workspaceCapabilityTrustTail = this.workspaceCapabilityTrustTail
+      .catch(() => undefined)
+      .then(
+        () => new Promise<void>((finish) => {
+          this.pendingWorkspaceCapabilityTrust = request;
+          this.pendingRemoteWorkspaceCapabilityTrust = {
+            requestId,
+            runtime,
+            finish,
+          };
+          this.emitLiveSnapshotUpdate();
+        }),
+      );
+    void this.workspaceCapabilityTrustTail;
   }
 
   /**
@@ -1236,16 +1258,6 @@ class DesktopHostService {
       },
       status: () => this.dreamCollectorStatus,
       setStatus: (next) => this.setDreamCollectorStatus(next),
-      createRuntime: (transportConfig, planMetadata, toolExecutor) => this.createRuntime(
-        transportConfig,
-        [],
-        [],
-        [],
-        planMetadata,
-        [dreamCollectorExtensionPrompt()],
-        undefined,
-        toolExecutor,
-      ),
       runSerialized: <T>(work: () => Promise<T>, label?: string) => this.runSerialized(work, label),
       activeBundle: () => this.activeBundle(),
       refreshRuntime: () => this.refreshRuntime(),
@@ -1726,6 +1738,7 @@ class DesktopHostService {
 
       const state = this.requireState();
       const runtime = this.requireRuntime();
+      const remoteState = await exportRemoteDesktopState(runtime);
       const extensionSystemPrompts = await this.collectExtensionSystemPrompts();
       const rulesSystemPrompt = buildRulesSystemMessage(state.metadata.rules.enabledRules);
       const skillsCatalogSystemPrompt = buildSkillsCatalogSystemMessage(
@@ -1761,7 +1774,7 @@ class DesktopHostService {
         active_model: modelRefKey(state.config.activeModel),
         api_base: currentApiBase(state.config),
         working_directory: state.workspaceRoot,
-        system_prompts: {
+        system_prompts: remoteState?.systemPrompts ?? {
           ...(this.runtimeTransport.llmSystemPromptsForExport() as Record<string, unknown>),
           tool_agent: buildToolAgentHostPrompt(state.config.activeModel.name),
           ...(rulesSystemPrompt === undefined ? {} : { rules: rulesSystemPrompt }),
@@ -1775,10 +1788,11 @@ class DesktopHostService {
           ...(basicInfoSystemPrompt === undefined ? {} : { basicInfo: basicInfoSystemPrompt }),
         },
         note: i18n.t('error.logSessionNote'),
-        message_count: runtime.history().length,
-        messages: this.runtimeTransport.llmHistoryAsApiMessages([...runtime.history()]),
-        api_request_trace_count: runtime.requestTrace().length,
-        api_request_trace: [...runtime.requestTrace()],
+        message_count: remoteState?.apiMessages.length ?? runtime.history().length,
+        messages: remoteState?.apiMessages
+          ?? this.runtimeTransport.llmHistoryAsApiMessages([...runtime.history()]),
+        api_request_trace_count: remoteState?.requestTrace.length ?? runtime.requestTrace().length,
+        api_request_trace: remoteState?.requestTrace ?? [...runtime.requestTrace()],
       };
 
       await writeFile(filePath, `${JSON.stringify(exportPayload, null, 2)}\n`, 'utf8');
@@ -1899,6 +1913,7 @@ class DesktopHostService {
       bundle.approvalLevel = normalized;
       const toolExecutor = await this.ensureToolExecutor(bundle);
       toolExecutor.setApprovalLevel(normalized);
+      await setRemoteDesktopApprovalLevel(bundle.runtime, normalized);
       await this.persistCurrentSessionIfNeeded();
       return this.buildSnapshot();
     });
@@ -2241,8 +2256,7 @@ class DesktopHostService {
 
   async abortShell(toolCallId: string): Promise<DesktopSnapshot> {
     const bundle = this.activeBundle();
-    const toolExecutor = await this.ensureToolExecutor(bundle);
-    toolExecutor.abortShell(toolCallId);
+    await abortRemoteDesktopShell(bundle.runtime, toolCallId);
     return this.buildSnapshot();
   }
 
@@ -2293,6 +2307,22 @@ class DesktopHostService {
   async replyWorkspaceCapabilityTrust(
     request: ReplyWorkspaceCapabilityTrustRequest,
   ): Promise<DesktopSnapshot> {
+    const remote = this.pendingRemoteWorkspaceCapabilityTrust;
+    if (remote) {
+      try {
+        await replyRemoteWorkspaceCapabilityTrust(
+          remote.runtime,
+          remote.requestId,
+          request.decision,
+        );
+      } finally {
+        this.pendingRemoteWorkspaceCapabilityTrust = undefined;
+        this.pendingWorkspaceCapabilityTrust = undefined;
+        remote.finish();
+        this.emitLiveSnapshotUpdate();
+      }
+      return this.buildSnapshot();
+    }
     if (!this.pendingWorkspaceCapabilityTrust || !this.workspaceCapabilityTrustWaiter) {
       throw new Error('No pending workspace capability trust request');
     }
@@ -2673,6 +2703,10 @@ class DesktopHostService {
       },
       clearSessionTitleGeneration: (sessionPath) =>
         this.clearSessionTitleGenerationForSession(sessionPath),
+      disposeSessionRuntime: async (bundle) => {
+        await closeRemoteDesktopRuntime(bundle.runtime);
+        bundle.runtime = undefined;
+      },
     };
   }
 
@@ -2765,155 +2799,93 @@ class DesktopHostService {
     }
     if (!inferencePreferenceOnly) {
       await this.syncPlanStateForBundle(bundle);
-      await this.ensureToolExecutor(bundle, { skipMcpCatalogRefresh: true });
     }
     // 保留 bundle.currentTurnSkills：斜杠激活的 turn skill 须在 startUserTurnStreaming 时注入用户消息 meta
     const effectiveActiveModel = resolveEffectivePaneActiveModel(bundle, state);
-    const activeProfile = resolveModelProfile(state.config, effectiveActiveModel);
-    const activeTransportKind = resolveDesktopTransportKind(activeProfile ?? undefined);
-    const bedrockCredentials = activeTransportKind === 'bedrock' && activeProfile?.provider
-      ? readBedrockProviderCredentialsFromKeyring(modelProviderKeyScope(activeProfile.provider))
-      : undefined;
-    const googleVertexCredentials = activeProfile?.provider === 'google-vertex-ai'
-      ? readGoogleVertexProviderCredentialsFromKeyring('google-vertex-ai')
-      : undefined;
-    const apiKey = await resolveApiKeyForConfigModel(state.config, effectiveActiveModel);
-    const azureResourceNameReady = activeProfile?.provider !== 'azure'
-      || Boolean(activeProfile.azureResourceName?.trim());
-    const cloudflareConnectReady = activeProfile?.provider !== 'cloudflare-ai-gateway'
-      || (
-        Boolean(activeProfile.cloudflareAccountId?.trim())
-        && Boolean(activeProfile.cloudflareGatewayId?.trim())
-      );
-    const runtimeAuthReady = activeTransportKind === 'bedrock'
-      ? Boolean(activeProfile?.awsRegion?.trim())
-        && hasBedrockRuntimeCredentials({
-          apiKey,
-          accessKeyId: bedrockCredentials?.accessKeyId,
-          secretAccessKey: bedrockCredentials?.secretAccessKey,
-        })
-      : activeProfile?.provider === 'google-vertex-ai'
-        ? hasGoogleVertexRuntimeCredentials({
-            apiKey,
-            clientEmail: googleVertexCredentials?.clientEmail,
-            privateKey: googleVertexCredentials?.privateKey,
-            vertexProject: activeProfile?.vertexProject,
-            vertexLocation: activeProfile?.vertexLocation,
-          })
-      : activeProfile?.provider === 'azure'
-        ? azureResourceNameReady && Boolean(apiKey)
-        : activeProfile?.provider === 'cloudflare-ai-gateway'
-          ? cloudflareConnectReady && Boolean(apiKey)
-        : activeProfile?.provider === 'custom'
-          ? true
-        : Boolean(apiKey);
-    this.activeApiKeyConfigured = runtimeAuthReady;
-    const extensionSystemPrompts = this.extensionWarmup.systemPromptsCache;
-    const imageGenerationProfile = state.config.imageGenerationModel
-      ? resolveModelProfile(state.config, state.config.imageGenerationModel) ?? undefined
-      : undefined;
-    const videoGenerationProfile = state.config.videoGenerationModel
-      ? resolveModelProfile(state.config, state.config.videoGenerationModel) ?? undefined
-      : undefined;
-    const imageGenerationApiKey = imageGenerationProfile
-      ? await resolveApiKeyForConfigModel(state.config, imageGenerationProfile.ref)
-      : undefined;
-    const videoGenerationApiKey = videoGenerationProfile
-      ? await resolveApiKeyForConfigModel(state.config, videoGenerationProfile.ref)
-      : undefined;
-    bundle.runtimeTransport = createLlmTransport();
-    if (!runtimeAuthReady) {
-      bundle.runtime = undefined;
-      if (bundle.id === this.sessionRegistry.activeSessionId()) {
-        this.runtime = undefined;
-      }
-      this.lastRuntimeError = activeProfile?.provider === 'azure' && !azureResourceNameReady
-        ? i18n.t('error.azureResourceNameRequired')
-        : activeProfile?.provider === 'cloudflare-ai-gateway' && !cloudflareConnectReady
-          ? i18n.t('settings.cloudflareAccountIdRequired')
-        : i18n.t('error.apiKeyNotConfigured');
-      await this.refreshModelKeyPresence();
-      return;
-    }
-
-    this.lastRuntimeError = '';
-
-    let runtimeTransportConfig = buildPrimaryTransportConfig({
-      apiKey: apiKey ?? bedrockCredentials?.apiKey ?? '',
-      model: activeProfile?.name ?? effectiveActiveModel.name,
-      baseUrl: currentApiBase(state.config),
-      workspaceRoot: bundle.workspaceRoot || state.workspaceRoot,
-      profile: activeProfile ?? undefined,
-      agentMode: resolveDesktopAgentMode(state.config),
-      ...(activeTransportKind === 'bedrock' && bedrockCredentials
-        ? { bedrockCredentials: { ...bedrockCredentials, apiKey: apiKey ?? bedrockCredentials.apiKey } }
-        : {}),
-      ...(activeProfile?.provider === 'google-vertex-ai' && googleVertexCredentials
-        ? { googleVertexCredentials }
-        : {}),
-    });
-    runtimeTransportConfig = attachImageGenerationToTransportConfig(runtimeTransportConfig, {
-      profile: imageGenerationProfile,
-      apiKey: imageGenerationApiKey,
-      catalogHints: buildModelCatalogHints(state.config),
-    });
-    runtimeTransportConfig = attachVideoGenerationToTransportConfig(runtimeTransportConfig, {
-      profile: videoGenerationProfile,
-      apiKey: videoGenerationApiKey,
-      catalogHints: buildModelCatalogHints(state.config),
-    });
-    bundle.runtimeTransport = createLlmTransport(runtimeTransportConfig);
-
     if (inferencePreferenceOnly && bundle.runtime?.isBusy()) {
-      const toolExecutor = await this.ensureToolExecutor(bundle, { skipMcpCatalogRefresh: true });
-      toolExecutor.setActiveTransportConfig(runtimeTransportConfig);
       bundle.deferredRuntimeRefreshWhileBusy = true;
       return;
     }
-
     const desktopMessages = bundle.messageTimeline.toMessages();
-    const llmHistoryForRuntime = bundle.archiveHistory.length > 0
-      ? bundle.archiveHistory
-      : buildLlmHistoryFallbackFromDesktopMessages(desktopMessages);
-    const runtime = this.createRuntime(
-      runtimeTransportConfig,
-      llmHistoryForRuntime,
-      state.metadata.rules.enabledRules,
-      state.metadata.skills.enabledSkillCatalog,
-      state.metadata.planMetadata,
-      extensionSystemPrompts,
-      await buildDreamContextText({
-        workspaceRoot: bundle.workspaceRoot || state.workspaceRoot,
-        gitBranch: state.git.branch,
-      }),
-      await this.ensureToolExecutor(bundle, { skipMcpCatalogRefresh: true }),
-      bundle.runtimeTransport,
-      bundle,
-    );
-    if (bundle.archiveSubagentSessions.length > 0 || llmHistoryForRuntime.length > 0) {
-      runtime.replaceFromArchive({
+      const llmHistoryForRuntime = bundle.archiveHistory.length > 0
+        ? bundle.archiveHistory
+        : buildLlmHistoryFallbackFromDesktopMessages(desktopMessages);
+      const archive = {
         messages: buildArchiveMessagesFromConversation(desktopMessages),
         assistantAux: buildArchiveAssistantAuxFromConversation(desktopMessages),
         llmHistory: llmHistoryForRuntime,
         subagentSessions: bundle.archiveSubagentSessions ?? [],
         loopEnabled: bundle.loopEnabled,
-      });
-      if (bundle.archiveHistory.length === 0 && llmHistoryForRuntime.length > 0) {
-        bundle.archiveHistory = llmHistoryForRuntime;
+        approvalLevel: bundle.approvalLevel,
+      } satisfies ChatArchive;
+      const previousRuntime = bundle.runtime;
+      bundle.runtimeTransport = createLlmTransport();
+      const conversationKey = bundle.activeSession?.filePath
+        ? path.resolve(bundle.activeSession.filePath)
+        : undefined;
+      const remoteRuntimeInput = {
+        dataDir: spiritAgentDataDir(),
+        workspaceRoot: bundle.workspaceRoot || state.workspaceRoot,
+        modelRef: effectiveActiveModel,
+        agentMode: resolveDesktopAgentMode(state.config),
+        archive,
+        approvalLevel: normalizeApprovalLevel(bundle.approvalLevel),
+        todoSessionKey: this.resolveTodoSessionKeyForBundle(bundle),
+        onActivity: () => {
+          this.sessionPump.ensureRunning();
+          this.requestThrottledLiveSnapshotEmit();
+        },
+        onWorkspaceCapabilityTrustRequested: (
+          requestId: string,
+          request: WorkspaceCapabilityTrustRequest,
+        ) => {
+          this.enqueueRemoteWorkspaceCapabilityTrust(
+            requestId,
+            request,
+            bundle.runtime,
+          );
+        },
+        onRemoteUserTurnSubmitted: (input: {
+          text: string;
+          explicitWorkspaceFiles: PendingWorkspaceFile[];
+        }) => {
+          this.projectRemoteUserTurn(bundle, input);
+        },
+        onFileChange: (change: unknown) => {
+          void this.recordHostFileChange(bundle, change as HostRecordedFileChange);
+        },
+      };
+      try {
+        const previousSessionId = remoteDesktopSessionId(previousRuntime);
+        const runtime = conversationKey
+          ? await openRemoteDesktopRuntime({ ...remoteRuntimeInput, conversationKey })
+          : await createRemoteDesktopRuntime(remoteRuntimeInput);
+        runtime.setLoopEnabled(bundle.loopEnabled);
+        bundle.runtime = runtime;
+        const newSessionId = remoteDesktopSessionId(runtime);
+        if (previousRuntime) {
+          if (previousSessionId && previousSessionId === newSessionId) {
+            await disposeRemoteDesktopRuntime(previousRuntime);
+          } else {
+            await closeRemoteDesktopRuntime(previousRuntime);
+          }
+        }
+        if (bundle.id === this.sessionRegistry.activeSessionId()) {
+          this.runtime = runtime;
+        }
+        this.activeApiKeyConfigured = true;
+        this.lastRuntimeError = '';
+        await this.refreshTodoSnapshotForBundle(bundle);
+        bundle.runtimeActivationSignature = this.runtimeActivationSignature(bundle);
+      } catch (error) {
+        await closeRemoteDesktopRuntime(previousRuntime);
+        bundle.runtime = undefined;
+        if (bundle.id === this.sessionRegistry.activeSessionId()) {
+          this.runtime = undefined;
+        }
+        this.activeApiKeyConfigured = false;
+        this.lastRuntimeError = error instanceof Error ? error.message : String(error);
       }
-    }
-    runtime.setLoopEnabled(bundle.loopEnabled);
-    const toolExecutor = await this.ensureToolExecutor(bundle, { skipMcpCatalogRefresh: true });
-    toolExecutor.setApprovalLevel(bundle.approvalLevel);
-    bundle.runtime = runtime;
-    bundle.lastSeenMcpCatalogRevision = toolExecutor.mcpCatalogRevision();
-    if (bundle.id === this.sessionRegistry.activeSessionId()) {
-      this.runtime = runtime;
-    }
-    this.lastRuntimeError = '';
-    await this.refreshModelKeyPresence();
-    await this.refreshTodoSnapshotForBundle(bundle);
-    bundle.runtimeActivationSignature = this.runtimeActivationSignature(bundle);
   }
 
   private async ensureToolExecutor(
@@ -2962,35 +2934,7 @@ class DesktopHostService {
     bundle.toolExecutor.setLoopToolExposure(bundle.loopEnabled);
     bundle.toolExecutor.setAgentModeToolExposure(resolveDesktopAgentMode(this.requireState().config));
     await bundle.toolExecutor.ensureMcpToolingReady();
-    if (!options?.skipMcpCatalogRefresh) {
-      await this.maybeRefreshRuntimeForMcpCatalogChange(bundle);
-    }
     return bundle.toolExecutor;
-  }
-
-  private async maybeRefreshRuntimeForMcpCatalogChange(bundle: SessionBundle): Promise<void> {
-    if (!bundle.toolExecutor) {
-      return;
-    }
-    const revision = bundle.toolExecutor.mcpCatalogRevision();
-    const previous = bundle.lastSeenMcpCatalogRevision;
-    if (previous === undefined) {
-      bundle.lastSeenMcpCatalogRevision = revision;
-      return;
-    }
-    if (revision === previous || !bundle.runtime) {
-      return;
-    }
-    if (bundle.runtime.isBusy()) {
-      bundle.deferredRuntimeRefreshWhileBusy = true;
-      return;
-    }
-    bundle.lastSeenMcpCatalogRevision = revision;
-    await this.refreshRuntimeForBundle(bundle);
-    if (bundle.id === this.sessionRegistry.activeSessionId()) {
-      this.syncActiveRuntimePointer();
-    }
-    this.lastRuntimeError = '';
   }
 
   private sharedMcpServiceForWorkspace(
@@ -3067,48 +3011,6 @@ class DesktopHostService {
         });
       },
       ...(todoScope ? { todoScope } : {}),
-    });
-  }
-
-  private async buildScopedSubagentToolExecutor(
-    workspaceRoot: string,
-    transportConfig: LlmTransportConfig | undefined,
-    parentExecutor: DesktopToolExecutor,
-  ): Promise<DesktopToolExecutor> {
-    const state = this.requireState();
-    const extensions = await this.extensionManager().list();
-    const lsp = await ensureLspServiceReady(this.sharedLspServiceForWorkspace(workspaceRoot));
-    const scoped = new DesktopToolExecutor(workspaceRoot, {
-      mcp: this.sharedMcpServiceForWorkspace(workspaceRoot, state.workspaceBinding),
-      ...(lsp ? { lsp } : {}),
-      extensionToolDefinitions: buildDesktopExtensionToolDefinitions(extensions),
-      hostContributedToolsEnabled: true,
-    });
-    scoped.setApprovalLevel(parentExecutor.approvalLevelSnapshot());
-    scoped.setAgentModeToolExposure(resolveDesktopAgentMode(state.config));
-    scoped.setLoopToolExposure(this.activeBundle().loopEnabled);
-    if (transportConfig) {
-      scoped.setActiveTransportConfig(transportConfig);
-    }
-    return scoped;
-  }
-
-  private createSubagentWorkspaceBootstrap(
-    parentExecutor: DesktopToolExecutor,
-    transportConfig: LlmTransportConfig,
-  ) {
-    const state = this.requireState();
-    return createDesktopSubagentWorkspaceBootstrap({
-      parentWorkspaceRoot: state.workspaceRoot,
-      isGitRepository: state.git.isRepository,
-      resolveBaseBranch: () => {
-        const bundle = this.activeBundle();
-        return bundle.pendingGitBranch ?? state.git.branch;
-      },
-      generateWorktreeNames: (task, baseBranch, repoRoot) =>
-        this.generateWorktreeNamesFromModel(task, baseBranch, repoRoot),
-      buildScopedToolExecutor: (workspaceRoot) =>
-        this.buildScopedSubagentToolExecutor(workspaceRoot, transportConfig, parentExecutor),
     });
   }
 
@@ -3508,58 +3410,6 @@ class DesktopHostService {
     if (bundle.id === this.sessionRegistry.activeSessionId()) {
       this.emitLiveSnapshotUpdate();
     }
-  }
-
-  private createRuntime(
-    transportConfig: LlmTransportConfig,
-    history: ChatArchive['llmHistory'],
-    enabledRules: LlmEnabledRule[],
-    enabledSkillCatalog: LlmEnabledSkillCatalogEntry[],
-    planMetadata: LlmPlanMetadata,
-    extensionSystemPrompts: LlmExtensionSystemPrompt[],
-    dreamsContextText?: string,
-    toolExecutor: DesktopToolExecutor = this.requireToolExecutor(),
-    llmTransport: SpiritLlmTransport = createLlmTransport(transportConfig),
-    bundle: SessionBundle = this.activeBundle(),
-  ): DesktopRuntime {
-    const workspaceRoot = transportConfig.workspaceRoot ?? this.requireState().workspaceRoot;
-    toolExecutor.setActiveTransportConfig(transportConfig);
-    const hookRunner = this.getHookRunner(workspaceRoot);
-    const hookSessionContext = buildDesktopHookSessionContext(bundle, transportConfig.model);
-    const agents = normalizeAgentsConfig(this.requireState().config.agents);
-    return createDesktopRuntime({
-      transportConfig,
-      history,
-      enabledRules,
-      enabledSkillCatalog,
-      mcpToolCatalog: toolExecutor.mcpToolCatalogSnapshot(),
-      planMetadata,
-      extensionSystemPrompts,
-      ...(dreamsContextText === undefined ? {} : { dreamsContextText }),
-      toolExecutor,
-      llmTransport,
-      workspaceRoot,
-      basicInfo: buildDesktopRuntimeBasicInfo(
-        workspaceRoot,
-        toolExecutor,
-        gitBranchLabelForBasicInfo(this.requireState().git),
-        bundle.rewind.sessionId,
-      ),
-      attribution: {
-        commitEnabled: agents.attribution.commit.enabled,
-        prEnabled: agents.attribution.pr.enabled,
-      },
-      getLoopEnabled: () => bundle.loopEnabled,
-      getApprovalLevel: () => normalizeApprovalLevel(bundle.approvalLevel),
-      reviewToolApproval: createDesktopAutoApprovalReviewer({
-        config: this.requireState().config,
-        workspaceRoot,
-      }),
-      hookRunner,
-      hookSessionContext,
-      bootstrapSubagentWorkspace: this.createSubagentWorkspaceBootstrap(toolExecutor, transportConfig),
-      flushPendingHostEvents: () => this.flushRuntimeHostEventsForBundle(bundle),
-    });
   }
 
   private flushRuntimeHostEventsForBundle(bundle: SessionBundle): void {
@@ -4289,6 +4139,44 @@ class DesktopHostService {
     };
   }
 
+  private projectRemoteUserTurn(
+    bundle: SessionBundle,
+    input: { text: string; explicitWorkspaceFiles: PendingWorkspaceFile[] },
+  ): void {
+    const displayText = input.text.trim() || i18n.t('error.attachedFiles', {
+      files: input.explicitWorkspaceFiles.map((file) => path.basename(file.path)).join(', '),
+    });
+    if (!displayText) {
+      return;
+    }
+    const localFileAttachments = input.explicitWorkspaceFiles.length > 0
+      ? input.explicitWorkspaceFiles.map((file) => ({
+          path: file.path,
+          name: path.basename(file.path),
+          isImage: file.kind === 'image',
+        }))
+      : undefined;
+    this.clearAssistantContinuationMarkers(bundle);
+    this.ensureActiveSession(displayText, bundle);
+    this.prepareSessionTitleForFirstUserTurn(displayText, bundle);
+    const userMessage: ConversationMessageSnapshot = {
+      id: this.allocateMessageId(bundle),
+      role: 'user',
+      content: displayText,
+      pending: false,
+      ...(localFileAttachments ? { localFileAttachments } : {}),
+    };
+    bundle.messages.push(userMessage);
+    bundle.messageTimeline.beginUserTurn(displayText, {
+      messageId: userMessage.id,
+      ...(localFileAttachments ? { localFileAttachments } : {}),
+    });
+    this.resetStreamingPlacementState(false, bundle);
+    bundle.conversationRevision += 1;
+    this.requestThrottledLiveSnapshotEmit();
+    this.notifySessionListUpdated();
+  }
+
   private promoteProvisionalSessionIfNeeded(
     seedText: string,
     bundle: SessionBundle = this.activeBundle(),
@@ -4310,6 +4198,9 @@ class DesktopHostService {
       activeSession.displayName = deriveDisplayNameFromSeed(seedText);
     }
     this.sessionRegistry.rekeyBundle(bundle, nextPath);
+    void migrateRemoteConversationKey(bundle.runtime, path.resolve(nextPath)).catch((error) => {
+      this.lastRuntimeError = error instanceof Error ? error.message : String(error);
+    });
   }
 
   private archiveMessages(): Array<{ role: 'user' | 'assistant'; content: string }> {
@@ -4493,7 +4384,7 @@ class DesktopHostService {
   private async persistSessionBundle(
     bundle: SessionBundle,
     options: {
-      fromRuntime?: DesktopRuntime;
+      fromRuntime?: DesktopHostRuntime;
       bumpListSortAt?: boolean;
     } = {},
   ): Promise<void> {
@@ -4513,6 +4404,12 @@ class DesktopHostService {
     } else {
       bundle.id = result.nextId;
     }
+    // The daemon keeps the latest snapshot per session; other attached hosts
+    // (e.g. CLI) pull it on attach and on update notifications.
+    const timelineRuntime = options.fromRuntime ?? bundle.runtime;
+    if (result.desktopMessageTimeline && timelineRuntime) {
+      timelineRuntime.pushDesktopTimeline(result.desktopMessageTimeline);
+    }
   }
 
   private activeBundle(): SessionBundle {
@@ -4526,7 +4423,7 @@ class DesktopHostService {
     return this.state;
   }
 
-  private requireRuntime(): DesktopRuntime {
+  private requireRuntime(): DesktopHostRuntime {
     const runtime = this.activeBundle().runtime ?? this.runtime;
     if (!runtime) {
       throw new Error(this.lastRuntimeError || i18n.t('error.runtimeNotReady'));
@@ -4591,7 +4488,10 @@ class DesktopHostService {
 
   private hasSessionPumpWork(): boolean {
     for (const bundle of this.sessionRegistry.all()) {
-      if (sessionBundleNeedsPumpTick(bundle)) {
+      if (
+        sessionBundleNeedsPumpTick(bundle)
+        || remoteDesktopRuntimeNeedsProjection(bundle.runtime)
+      ) {
         return true;
       }
     }
@@ -4671,6 +4571,28 @@ class DesktopHostService {
   private requireExtensionHostAdapter(): DesktopExtensionHostAdapter {
     return requireDesktopExtensionHostAdapter();
   }
+
+  async shutdown(): Promise<void> {
+    for (const bundle of this.sessionRegistry.all()) {
+      if (!bundle.activeSession || bundle.activeSession.kind === 'ephemeral') {
+        continue;
+      }
+      try {
+        await tickSessionCommand(this.sessionTurnContext(), bundle);
+        await this.persistSessionBundle(bundle, {
+          fromRuntime: bundle.runtime,
+          bumpListSortAt: false,
+        });
+      } catch {
+        // Best-effort flush before exit; do not block teardown.
+      }
+    }
+    this.sessionPump.stop();
+    const runtimes = [...this.sessionRegistry.all()].map((bundle) => bundle.runtime);
+    await Promise.all(runtimes.map((runtime) => closeRemoteDesktopRuntime(runtime)));
+    // After sessions close, drop the shared WS so daemon can idle-exit when we are the last host.
+    await closeSharedDesktopServerClient();
+  }
 }
 
 const desktopHostService = new DesktopHostService();
@@ -4708,6 +4630,10 @@ export function subscribeDesktopAutomationsUpdates(
 
 export function subscribeDesktopSessionListUpdates(listener: () => void): () => void {
   return desktopHostService.subscribeSessionListUpdates(listener);
+}
+
+export async function shutdownDesktopHostService(): Promise<void> {
+  await desktopHostService.shutdown();
 }
 
 function normalizeApprovalDecision(

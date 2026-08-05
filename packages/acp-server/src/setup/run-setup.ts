@@ -1,5 +1,5 @@
-import { resolveSpiritDataDir } from '../credentials/spirit-config.js';
-import { saveProviderSetup } from '../credentials/index.js';
+import { saveProviderSetup } from '@spiritagent/host-internal';
+import { resolveSpiritDataDir } from '../config.js';
 import { runProviderWizard } from './run-interactive-setup.js';
 
 /**

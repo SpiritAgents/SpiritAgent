@@ -11,9 +11,9 @@ import {
   providerSecretAccessKeyAccount,
   providerVertexClientEmailAccount,
   providerVertexPrivateKeyAccount,
-} from '../src/credentials/provider-accounts.js';
-import { setKeyringStoreForTests } from '../src/credentials/index.js';
-import { resolveTransportConfig } from '../src/transport/resolve-transport.js';
+} from '@spiritagent/host-internal';
+import { setKeyringStoreForTests } from '@spiritagent/host-internal';
+import { resolveTransportConfig } from '@spiritagent/host-internal';
 import { v2ConfigFixture } from './fixtures/v2-config.js';
 
 test('resolveTransportConfig builds bedrock transport from IAM credentials', () => {

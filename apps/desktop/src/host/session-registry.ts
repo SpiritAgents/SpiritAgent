@@ -40,6 +40,8 @@ export class SessionRegistry {
   /** Split-view pane paths that must stay loaded even when over MAX_LOADED_BUNDLES. */
   private protectedSessionPaths = new Set<string>();
 
+  constructor(private readonly onEvict?: (bundle: SessionBundle) => void) {}
+
   hasActive(): boolean {
     return this.activeId !== undefined && this.bundles.has(this.activeId);
   }
@@ -389,6 +391,7 @@ export class SessionRegistry {
           continue;
         }
         this.bundles.delete(id);
+        this.onEvict?.(bundle);
         evicted = true;
         break;
       }

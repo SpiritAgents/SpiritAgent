@@ -387,6 +387,11 @@ fn resolve_save_path(path_arg: Option<&str>) -> Result<PathBuf> {
 }
 
 fn resolve_load_path(path_arg: &str) -> Result<PathBuf> {
+    resolve_chat_file_path(path_arg)
+}
+
+/// Resolve a chat file path the same way load/save does (absolute, under chats dir when relative).
+pub fn resolve_chat_file_path(path_arg: &str) -> Result<PathBuf> {
     let trimmed = path_arg.trim();
     if trimmed.is_empty() {
         return Err(anyhow!("/sessions load 需要文件名或路径"));
@@ -409,6 +414,16 @@ fn resolve_load_path(path_arg: &str) -> Result<PathBuf> {
     }
 
     Ok(candidate)
+}
+
+/// Match Desktop `path.resolve`: absolute path without following symlinks.
+pub fn conversation_key_for_path(path: &Path) -> String {
+    let resolved = resolve_chat_file_path(path.to_string_lossy().as_ref())
+        .unwrap_or_else(|_| path.to_path_buf());
+    std::path::absolute(&resolved)
+        .unwrap_or(resolved)
+        .to_string_lossy()
+        .into_owned()
 }
 
 fn with_json_extension(path: PathBuf) -> PathBuf {

@@ -1,7 +1,7 @@
 use rust_i18n::t;
 
 use crate::{
-    ts_bridge::{
+    host_protocol::{
         WorkspaceCapabilityTrustDecision, WorkspaceCapabilityTrustHookEntry,
         WorkspaceCapabilityTrustRequest,
     },

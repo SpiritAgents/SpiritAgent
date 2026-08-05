@@ -7,7 +7,7 @@
 
 **Un agente de IA de código abierto diseñado para multiplicar tu productividad** — arraigado en tu espacio de trabajo, equipado con herramientas reales y listo para planificar, ejecutar y entregar contigo.
 
-[Aplicación Desktop](#desktop) · [CLI](#cli) · [ACP Server](#acp-server) · [Agent Core](#agent-core) · [Desarrollo](#desarrollo)
+[Aplicación Desktop](#desktop) · [CLI](#cli) · [Server](#server) · [ACP Server](#acp-server) · [Agent Core](#agent-core) · [Desarrollo](#desarrollo)
 
 > Este proyecto está en desarrollo activo. El comportamiento y las API pueden cambiar entre versiones.
 
@@ -24,18 +24,22 @@ Spirit Agent es un **agente de codificación basado en herramientas** que se eje
 ```
 ┌───────────────────────────────────────────────────────┐
 │  Hosts                                                │
-│  ┌──────────────┐ ┌──────────┐ ┌───────────────────┐  │
-│  │   Desktop    │ │   CLI    │ │    ACP Server     │  │
-│  │  (Electron)  │ │  (Rust)  │ │  stdio / ndJSON   │  │
-│  └──────┬───────┘ └─────┬────┘ └───────────┬───────┘  │
-│         └───────────────┼──────────────────┘          │
-│                         ▼                             │
-│               packages/host-internal                  │
-│            discovery, tools, workspace                │
-│                         │                             │
-│                         ▼                             │
-│                packages/agent-core                    │
-│          runtime, prompts, tool contracts             │
+│     ┌────────────────────────┐ ┌────────────────┐     │
+│     │   Desktop       CLI    │ │   ACP Server   │     │
+│     │  (Electron)    (Rust)  │ │ stdio / ndJSON │     │
+│     └──────┬────────────┬────┘ └────────┬───────┘     │
+│            └────────────┘               │             │
+│                  ▼                      │             │
+│           packages/server               │             │
+│    sessions, streaming, approvals       │             │
+│                  │                      │             │
+│                  ▼                      │             │
+│        packages/host-internal           │             │
+│     discovery, tools, workspace  ◀──────┘             │
+│                  │                                    │
+│                  ▼                                    │
+│         packages/agent-core                           │
+│   runtime, prompts, tool contracts                    │
 └───────────────────────────────────────────────────────┘
 ```
 
@@ -108,11 +112,22 @@ Consulta [apps/desktop/README.md](../apps/desktop/README.md) para desarrollo esp
 <img width="1014" height="744" alt="Spirit Agent CLI" src="https://github.com/user-attachments/assets/ecf4fcec-6a9b-4562-b0da-cc14816f36d3" />
 
 
-La [CLI en Rust](../apps/cli) (`spirit-agent`) ofrece un host orientado a terminal con UI Ratatui opcional. Comparte el mismo runtime Agent Core vía el puente Node, ideal para scripts, sesiones SSH y entornos mínimos.
+La [CLI en Rust](../apps/cli) (`spirit-agent`) ofrece un host orientado a terminal con UI Ratatui opcional. Se conecta al daemon compartido Spirit Server por WebSocket, ideal para scripts, sesiones SSH y entornos mínimos.
 
 ```bash
 npm run dev:cli    # cargo run -p spirit-agent
 ```
+
+## Server
+
+[`packages/server`](../packages/server) (`@spiritagent/server`, bin `spirit-server` / `spirit serve`) es el **backend demonio compartido** para los hosts first-party. CLI y Desktop ya no incrustan un runtime en su proceso: se conectan al mismo demonio por WebSocket (JSON-RPC 2.0), de modo que una sesión iniciada en la terminal se transmite en vivo a Desktop, y viceversa.
+
+- **Fuente única de verdad** — sesiones, eventos de streaming, ejecución de herramientas y colas de aprobación viven en el demonio; los clientes solo renderizan y envían entradas.
+- **Instancias en puerto aleatorio** — escucha en `127.0.0.1` con un puerto asignado por el SO y se registra en `{spiritDataDir}/server/instances/`; los clientes se adjuntan preferentemente a una instancia viva o lanzan una nueva. `spirit-server ps` / `kill` gestionan las instancias.
+- **Auth Bearer** — token a nivel de home en `{spiritDataDir}/server.token` (modo 0600), aceptado vía cabecera `Authorization` o query `?token=`; `spirit-server rotate-token` lo rota para las conexiones nuevas.
+- **Sin dependencias nuevas** — la capa WebSocket (RFC 6455) está implementada dentro del paquete.
+
+**CLI y Desktop son daemon-only para la ejecución del agente** (ver [Epic #274](https://github.com/SpiritAgents/SpiritAgent/issues/274)). Los clientes Desktop Web Host reciben snapshots autenticados desde el host Desktop mientras la ejecución del agente permanece en el daemon. El acceso remoto (`--hostname 0.0.0.0`) está reservado para una fase futura y desactivado por defecto.
 
 ## ACP Server
 
@@ -162,7 +177,7 @@ node path/to/packages/acp-server/dist/src/stdio-entry.js --setup
 | `npm run dev:desktop` | Compilar paquetes compartidos e iniciar Desktop (Vite + Electron) |
 | `npm run dev:desktop:web` | Renderer Desktop con host web en navegador |
 | `npm run dev:cli` | CLI con TUI |
-| `npm run build` | Build de producción de agent-core, host-internal, acp-server y Desktop |
+| `npm run build` | Build de producción de agent-core, host-internal, server, acp-server y Desktop |
 | `npm run eval:compare` | Comparación eval tras cambios en agent-core |
 
 ### Estructura del repositorio
@@ -174,6 +189,7 @@ apps/
 packages/
   agent-core/        Runtime del agente, prompts, definiciones de herramientas, transports, MCP, eval
   host-internal/     Descubrimiento compartido del host, herramientas, extensiones, helpers LSP
+  server/            Backend demonio compartido (WebSocket + JSON-RPC) para CLI / Desktop / Web
   acp-server/        Adaptador de servidor ACP para integración con editores
 scripts/             Release, eval y automatización del repo
 ```

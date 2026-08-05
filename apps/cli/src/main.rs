@@ -23,10 +23,10 @@ use std::{
 
 use spirit_agent::view::MarketplaceFlowStep;
 use spirit_agent::{
-    bootstrap_config, print_skills_stub, run_headless_prompt, ConfigCommand, ExtensionCommand,
-    GlobalCliOptions, HookCommand, KeyCommand, MarketplaceCommand, McpCommand, ModelAddCommand,
-    ModelCommand, TuiShell, handle_config_cli, handle_extension_cli, handle_hooks_cli, handle_mcp_cli,
-    handle_model_cli, logging, ui,
+    bootstrap_config, print_skills_stub, run_headless_prompt, run_serve, ConfigCommand,
+    ExtensionCommand, GlobalCliOptions, HookCommand, KeyCommand, MarketplaceCommand, McpCommand,
+    ModelAddCommand, ModelCommand, TuiShell, handle_config_cli, handle_extension_cli,
+    handle_hooks_cli, handle_mcp_cli, handle_model_cli, logging, ui,
 };
 
 const MAX_EVENT_BATCH_PER_TICK: usize = 2048;
@@ -80,6 +80,8 @@ struct Cli {
 enum Commands {
     Skills,
     Interactive,
+    /// Run the Spirit Server daemon in the foreground (WebSocket backend for hosts)
+    Serve,
     Model {
         #[command(subcommand)]
         action: ModelAction,
@@ -312,6 +314,7 @@ fn main() -> Result<()> {
 
     match cli.command {
         Some(Commands::Skills) => print_skills_stub(),
+        Some(Commands::Serve) => run_serve()?,
         Some(Commands::Interactive) | None => run_tui(&options)?,
         Some(Commands::Model { action }) => handle_model_cli(into_model_command(action))?,
         Some(Commands::Config { action }) => handle_config_cli(into_config_command(action))?,

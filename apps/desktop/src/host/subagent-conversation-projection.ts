@@ -20,7 +20,7 @@ import {
   splitRuntimeEventsForIncrementalFinishTaskPreview,
   splitRuntimeEventsForIncrementalResponsesBuiltInToolPreview,
 } from './runtime-event-orchestrator.js';
-import type { DesktopRuntime } from './runtime.js';
+import type { DesktopHostRuntime } from './runtime.js';
 import type { SessionBundle } from './session-bundle.js';
 import { sanitizeConversationMessagesForPersistence } from './sessions.js';
 
@@ -152,7 +152,7 @@ export class SubagentConversationProjection {
 
 function resolveSubagentSessionForProjection(
   bundle: SessionBundle,
-  runtime: DesktopRuntime | undefined,
+  runtime: DesktopHostRuntime | undefined,
   sessionId: string,
 ): SubagentSessionArchiveEntry | undefined {
   if (runtime) {
@@ -186,7 +186,7 @@ export function ensureSubagentConversationProjection(
 /** @returns 是否应用了子会话事件（供 tick 决定是否请求节流推送）。 */
 export function syncSubagentConversationProjections(
   bundle: SessionBundle,
-  runtime: DesktopRuntime | undefined,
+  runtime: DesktopHostRuntime | undefined,
 ): boolean {
   if (!runtime) {
     return false;
@@ -230,7 +230,7 @@ function syncWorktreeBootstrapCardOnProjection(
 
 function syncSubagentWorktreeBootstrapCards(
   bundle: SessionBundle,
-  runtime: DesktopRuntime,
+  runtime: DesktopHostRuntime,
 ): void {
   for (const session of runtime.childSessionArchives()) {
     const isWorktreeSubagent = isWorktreeSubagentSession(session.summary);

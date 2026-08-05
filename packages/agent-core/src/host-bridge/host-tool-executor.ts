@@ -74,6 +74,8 @@ export class HostToolExecutorProxy implements ToolExecutor<JsonValue, JsonValue>
   private hostToolDefinitionsCache: JsonValue = [];
   private extensionToolDefinitionsCache: JsonValue[] = [];
   private todoToolDefinitionsCache: JsonValue[] = [];
+  private dreamToolDefinitionsCache: JsonValue[] = [];
+  private dreamOnlyToolSurface = false;
   private loopToolDefinitionsCache: JsonValue[] = [];
   private loopToolExposureEnabled = false;
   private planToolDefinitionsCache: JsonValue[] = [];
@@ -81,7 +83,7 @@ export class HostToolExecutorProxy implements ToolExecutor<JsonValue, JsonValue>
   private hostToolDefinitionsLoaded = false;
   private toolDefinitionsCache: JsonValue = [];
   private readonly requestMetadata = new WeakMap<object, HostToolRequestMetadata>();
-  private readonly mcp = new McpService();
+  private readonly mcp: McpService;
   private lspBindings: LspHostBindings | undefined;
   private lsp: LspHostServiceInstance | undefined;
   private localHostService: LocalHostToolService | undefined;
@@ -90,7 +92,14 @@ export class HostToolExecutorProxy implements ToolExecutor<JsonValue, JsonValue>
   private approvalLevel: LazyToolGatewayApprovalLevel = 'default';
   private transportConfigForToolDefinitions: LlmTransportConfig | undefined;
 
-  constructor(protected readonly peer: JsonRpcPeer) {}
+  constructor(
+    protected readonly peer: JsonRpcPeer,
+    mcp?: McpService,
+  ) {
+    // Daemons serving multiple workspaces inject a per-session McpService;
+    // single-workspace hosts (CLI sidecar, ACP) keep the process-cwd default.
+    this.mcp = mcp ?? new McpService();
+  }
 
   setTransportConfigForToolDefinitions(config: LlmTransportConfig | undefined): void {
     this.transportConfigForToolDefinitions = config;
@@ -121,6 +130,17 @@ export class HostToolExecutorProxy implements ToolExecutor<JsonValue, JsonValue>
 
   setTodoToolDefinitions(definitions: JsonValue[] | undefined): void {
     this.todoToolDefinitionsCache = Array.isArray(definitions) ? [...definitions] : [];
+    this.refreshMergedToolDefinitions();
+  }
+
+  setDreamToolDefinitions(definitions: JsonValue[] | undefined): void {
+    this.dreamToolDefinitionsCache = Array.isArray(definitions) ? [...definitions] : [];
+    this.refreshMergedToolDefinitions();
+  }
+
+  /** When enabled, only dreamToolDefinitionsCache is exposed to the model. */
+  setDreamOnlyToolSurface(enabled: boolean): void {
+    this.dreamOnlyToolSurface = enabled;
     this.refreshMergedToolDefinitions();
   }
 
@@ -172,6 +192,10 @@ export class HostToolExecutorProxy implements ToolExecutor<JsonValue, JsonValue>
   }
 
   async refreshCaches(): Promise<void> {
+    if (this.dreamOnlyToolSurface) {
+      this.refreshMergedToolDefinitions();
+      return;
+    }
     if (!this.hostToolDefinitionsLoaded) {
       this.hostToolDefinitionsCache = buildBuiltinHostToolDefinitions(
         this.localHostService
@@ -550,6 +574,10 @@ export class HostToolExecutorProxy implements ToolExecutor<JsonValue, JsonValue>
   }
 
   private refreshMergedToolDefinitions(): void {
+    if (this.dreamOnlyToolSurface) {
+      this.toolDefinitionsCache = [...this.dreamToolDefinitionsCache];
+      return;
+    }
     let hostDefinitions = this.hostToolDefinitionsCache;
     if (!this.imageGenerationAvailable && Array.isArray(hostDefinitions)) {
       hostDefinitions = filterToolDefinitionByName(hostDefinitions, 'generate_image');
