@@ -73,7 +73,7 @@ fn resolve_host_internal_model_display_name_path() -> Result<PathBuf, String> {
     }
 
     Err(format!(
-        "未找到 host-internal model-display-name.js。请先在 packages/host-internal 执行 npm run build:tsc。默认查找路径: {}",
+        "未找到 host-internal model-display-name.js。请先在 packages/host-internal 执行 pnpm run build。默认查找路径: {}",
         from_crate.display()
     ))
 }

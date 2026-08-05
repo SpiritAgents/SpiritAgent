@@ -231,11 +231,10 @@ function buildNoticeText(entries, displayName, productionOnly, recursive, pkgRoo
   ].join("\n");
 }
 
-function findPackageLockRoot(startDir) {
+function findWorkspaceRoot(startDir) {
   let current = path.resolve(startDir);
   while (true) {
-    const lockPath = path.join(current, "package-lock.json");
-    if (existsSync(lockPath)) {
+    if (existsSync(path.join(current, "pnpm-lock.yaml")) || existsSync(path.join(current, "package-lock.json"))) {
       return current;
     }
     const parent = path.dirname(current);
@@ -247,11 +246,15 @@ function findPackageLockRoot(startDir) {
 }
 
 function readPackageLock(pkgRoot) {
-  const lockRoot = findPackageLockRoot(pkgRoot);
+  const lockRoot = findWorkspaceRoot(pkgRoot);
   if (!lockRoot) {
     return null;
   }
-  return readJson(path.join(lockRoot, "package-lock.json"));
+  const npmLockPath = path.join(lockRoot, "package-lock.json");
+  if (existsSync(npmLockPath)) {
+    return readJson(npmLockPath);
+  }
+  return null;
 }
 
 function resolveExcludedNames(pkgJson, extraExcludedPackageNames) {
@@ -281,7 +284,7 @@ export async function generateNotice({ pkgRoot, initLicenseChecker, extraExclude
   const displayName = pkgJson.name ?? "package";
   const excludedNames = resolveExcludedNames(pkgJson, extraExcludedPackageNames);
   const packageLock = readPackageLock(pkgRoot);
-  const licenseScanRoot = findPackageLockRoot(pkgRoot) ?? pkgRoot;
+  const licenseScanRoot = findWorkspaceRoot(pkgRoot) ?? pkgRoot;
 
   try {
     const packages = await runChecker(initLicenseChecker, licenseScanRoot, productionOnly);

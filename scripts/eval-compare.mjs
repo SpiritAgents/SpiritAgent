@@ -956,16 +956,15 @@ async function createEmptyExecutionWorkspace(workspacePath) {
 }
 
 async function extractArchiveWithNodeTar(repoRoot, archivePath, workspacePath) {
-  const tarPackagePath = path.join(repoRoot, 'packages', 'host-internal', 'node_modules', 'tar');
-  if (!existsSync(tarPackagePath)) {
-    throw new Error(
-      `缺少 Node tar 依赖，无法解包 git archive: ${tarPackagePath}。请先运行 npm --prefix packages/host-internal install。`,
-    );
+  const repoRequire = createRequire(path.join(repoRoot, 'package.json'));
+  let tar;
+  try {
+    tar = repoRequire('tar');
+  } catch {
+    throw new Error('缺少 Node tar 依赖，无法解包 git archive。请先在仓库根目录执行 pnpm install。');
   }
-
-  const tar = require(tarPackagePath);
   if (!tar || typeof tar.x !== 'function') {
-    throw new Error(`无法从 ${tarPackagePath} 加载 tar.x()，compare runner 无法解包快照。`);
+    throw new Error('无法加载 tar.x()，compare runner 无法解包快照。');
   }
 
   await tar.x({
@@ -976,6 +975,17 @@ async function extractArchiveWithNodeTar(repoRoot, archivePath, workspacePath) {
 }
 
 async function linkWorkspaceNodeModules(repoRoot, workspacePath) {
+  const rootNodeModules = path.join(repoRoot, 'node_modules');
+  const targetRootNodeModules = path.join(workspacePath, 'node_modules');
+
+  if (!existsSync(rootNodeModules)) {
+    throw new Error(`当前仓库缺少 node_modules，无法为隔离工作区复用依赖: ${rootNodeModules}`);
+  }
+
+  if (!existsSync(targetRootNodeModules)) {
+    await symlink(rootNodeModules, targetRootNodeModules, process.platform === 'win32' ? 'junction' : 'dir');
+  }
+
   const packageRelativePaths = [
     'packages/agent-core/node_modules',
     'packages/host-internal/node_modules',
@@ -986,13 +996,14 @@ async function linkWorkspaceNodeModules(repoRoot, workspacePath) {
     const targetNodeModules = path.join(workspacePath, relativePath);
 
     if (!existsSync(sourceNodeModules)) {
-      throw new Error(`当前仓库缺少 node_modules，无法为隔离工作区复用依赖: ${sourceNodeModules}`);
+      continue;
     }
 
     if (existsSync(targetNodeModules)) {
       continue;
     }
 
+    await mkdir(path.dirname(targetNodeModules), { recursive: true });
     await symlink(sourceNodeModules, targetNodeModules, process.platform === 'win32' ? 'junction' : 'dir');
   }
 }
@@ -1073,8 +1084,14 @@ async function loadWorkspaceRuntimeModules(workspacePath) {
 }
 
 async function buildWorkspacePackages(workspacePath) {
-  await execWorkspaceCommand(workspacePath, npmExecutable(), ['--prefix', 'packages/host-internal', 'run', 'build']);
-  await execWorkspaceCommand(workspacePath, npmExecutable(), ['--prefix', 'packages/agent-core', 'run', 'build']);
+  await execWorkspaceCommand(workspacePath, pnpmExecutable(), [
+    'exec',
+    'turbo',
+    'run',
+    'build',
+    '--filter=@spiritagent/host-internal',
+    '--filter=@spiritagent/agent-core',
+  ]);
 }
 
 async function execWorkspaceCommand(cwd, command, args) {
@@ -1096,8 +1113,8 @@ async function execWorkspaceCommand(cwd, command, args) {
   });
 }
 
-function npmExecutable() {
-  return 'npm';
+function pnpmExecutable() {
+  return 'pnpm';
 }
 
 async function importModuleFromWorkspace(workspacePath, relativePath) {
@@ -1169,7 +1186,7 @@ function printScenarioList() {
 }
 
 function printHelp() {
-  console.log('用法: npm run eval:compare -- [options]');
+  console.log('用法: pnpm run eval:compare -- [options]');
   console.log('');
   console.log('默认比较来源: 当前 HEAD 与 staged diff。');
   console.log('也可通过 --commit 或 --baseline-ref/--candidate-ref 显式指定 before / after。');

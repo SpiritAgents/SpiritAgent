@@ -73,8 +73,8 @@ function isStale(sourcePaths, outputPaths, dependencyOutputs = []) {
   return false;
 }
 
-function npmRun(cwd, script) {
-  const result = spawnSync('npm', ['run', script], {
+function pnpmRun(cwd, script) {
+  const result = spawnSync('pnpm', ['run', script], {
     cwd,
     stdio: 'inherit',
     shell: true,
@@ -127,7 +127,7 @@ const electronPreloadOut = path.join(desktopRoot, 'dist-electron/electron/preloa
 ensure(
   'agent-core',
   isStale([path.join(agentCoreRoot, 'src'), path.join(agentCoreRoot, 'tsconfig.json')], [agentCoreOut]),
-  () => npmRun(agentCoreRoot, 'build'),
+  () => pnpmRun(agentCoreRoot, 'build'),
   [agentCoreOut],
 );
 
@@ -138,7 +138,7 @@ ensure(
     [hostInternalOut],
     [agentCoreOut],
   ),
-  () => npmRun(hostInternalRoot, 'build:tsc'),
+  () => pnpmRun(hostInternalRoot, 'build:tsc'),
   [hostInternalOut],
 );
 
@@ -149,7 +149,7 @@ ensure(
     [serverOut],
     [hostInternalOut, agentCoreOut],
   ),
-  () => npmRun(serverRoot, 'build'),
+  () => pnpmRun(serverRoot, 'build'),
   [serverOut],
 );
 
@@ -172,7 +172,7 @@ ensure(
     [electronMainOut, electronPreloadOut],
     [hostInternalOut, agentCoreOut, serverOut],
   ),
-  () => npmRun(desktopRoot, 'build:electron'),
+  () => pnpmRun(desktopRoot, 'build:electron'),
   [electronMainOut, electronPreloadOut],
 );
 

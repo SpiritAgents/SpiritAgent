@@ -153,40 +153,40 @@
     "node": ">=24"
   },
   "scripts": {
-    "build": "npm --prefix ../agent-core run build && npm run build:tsc",
+    "build": "tsc -p tsconfig.json",
     "build:tsc": "tsc -p tsconfig.json",
     "test:workspace-file-references": "npm run build && node --test dist/workspace-file-references.test.js",
     "test:lsp": "npm run build && node --test dist/lsp/providers.test.js dist/lsp/resolve-server.test.js dist/lsp/resolve-server-jdtls.test.js dist/lsp/install.test.js dist/lsp/orchestrator.test.js dist/lsp/ready-providers.test.js dist/lsp/service-probe.test.js dist/lsp/write-append.test.js",
     "smoke:lsp": "npm run build && node dist/smoke/lsp-typescript-smoke.js",
-    "typecheck": "npm --prefix ../agent-core run build && tsc -p tsconfig.json --noEmit",
+    "typecheck": "tsc -p tsconfig.json --noEmit",
     "smoke:openai-models-parse": "npm run build && node dist/smoke/openai-models-parse-smoke.js && node --test dist/bedrock-models.test.js dist/google-vertex-endpoints.test.js dist/google-vertex-models.test.js",
     "notice": "node scripts/gen-notice.mjs",
     "notice:production": "node scripts/gen-notice.mjs --production",
-    "prepublishOnly": "npm run build && node ../../scripts/npm/assert-no-file-deps.mjs"
+    "prepublishOnly": "pnpm run build && node ../../scripts/publish/assert-no-workspace-deps.mjs"
   },
   "devDependencies": {
-    "@types/jsdom": "^28.0.3",
-    "@types/node": "^25.6.0",
-    "@types/turndown": "^5.0.6",
-    "license-checker-rseidelsohn": "^5.0.1",
-    "typescript": "^5.6.3"
+    "@types/jsdom": "28.0.3",
+    "@types/node": "25.9.5",
+    "@types/turndown": "5.0.6",
+    "license-checker-rseidelsohn": "5.0.1",
+    "typescript": "5.9.3"
   },
   "dependencies": {
-    "@aws-sdk/client-bedrock": "^3.1068.0",
-    "@mozilla/readability": "^0.6.0",
-    "@napi-rs/keyring": "^1.2.0",
-    "@spiritagent/agent-core": "0.3.2",
-    "@vscode/ripgrep": "^1.18.0",
-    "fast-glob": "^3.3.3",
-    "fflate": "^0.8.2",
-    "glob": "^13.0.6",
-    "google-auth-library": "^10.6.1",
-    "ignore": "^5.3.2",
-    "jsdom": "^29.1.1",
-    "tar": "^7.5.13",
-    "turndown": "^7.2.4",
-    "turndown-plugin-gfm": "^1.0.2",
-    "vscode-jsonrpc": "^8.2.1",
-    "vscode-languageserver-protocol": "^3.17.5"
+    "@aws-sdk/client-bedrock": "3.1103.0",
+    "@mozilla/readability": "0.6.0",
+    "@napi-rs/keyring": "1.3.0",
+    "@spiritagent/agent-core": "workspace:*",
+    "@vscode/ripgrep": "1.18.0",
+    "fast-glob": "3.3.3",
+    "fflate": "0.8.3",
+    "glob": "13.0.6",
+    "google-auth-library": "10.9.1",
+    "ignore": "5.3.2",
+    "jsdom": "29.1.1",
+    "tar": "7.5.22",
+    "turndown": "7.2.4",
+    "turndown-plugin-gfm": "1.0.2",
+    "vscode-jsonrpc": "8.2.1",
+    "vscode-languageserver-protocol": "3.18.2"
   }
 }

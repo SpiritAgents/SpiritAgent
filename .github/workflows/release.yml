@@ -27,6 +27,11 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 10.33.0
+
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
@@ -41,7 +46,7 @@ jobs:
           fi
 
       - name: Verify versions
-        run: npm run release:verify-version -- --version "$RELEASE_VERSION"
+        run: pnpm run release:verify-version -- --version "$RELEASE_VERSION"
 
   cli:
     name: CLI ${{ matrix.package_target }}
@@ -84,19 +89,23 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 10.33.0
+
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
           node-version-file: '.nvmrc'
           registry-url: https://registry.npmjs.org/
-          cache: npm
-          cache-dependency-path: package-lock.json
+          cache: pnpm
 
       - name: Install dependencies
-        run: npm ci
+        run: pnpm install --frozen-lockfile
 
       - name: Build TypeScript runtime
-        run: npm run build:agent-core && npm run build:host-internal
+        run: pnpm turbo run build --filter=@spiritagent/agent-core --filter=@spiritagent/host-internal
 
       - name: Setup Rust target
         run: rustup target add ${{ matrix.rust_target }}
@@ -143,7 +152,7 @@ jobs:
           echo "SPIRIT_MACOS_KEYCHAIN=$keychain" >> "$GITHUB_ENV"
 
       - name: Bundle CLI
-        run: npm run release:cli:bundle -- --target ${{ matrix.rust_target }} --version "$RELEASE_VERSION"
+        run: pnpm run release:cli:bundle -- --target ${{ matrix.rust_target }} --version "$RELEASE_VERSION"
         shell: bash
 
       # The bundler only warns when no identity is configured, so this is the gate that turns an
@@ -246,27 +255,27 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 10.33.0
+
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
           node-version-file: '.nvmrc'
           registry-url: https://registry.npmjs.org/
-          cache: npm
-          cache-dependency-path: |
-            package-lock.json
-            apps/desktop/package-lock.json
+          cache: pnpm
 
       - name: Install dependencies
-        run: |
-          npm ci
-          npm ci --prefix apps/desktop
+        run: pnpm install --frozen-lockfile
 
       - name: Build Desktop
-        run: npm --prefix apps/desktop run build
+        run: pnpm --filter @spiritagent/desktop run build
 
       - name: Verify packager icons
         working-directory: apps/desktop
-        run: npm run gen:icons
+        run: pnpm run gen:icons
 
       # Signing env vars must stay off the Windows and Linux legs: electron-builder treats an empty
       # CSC_LINK as a real value, so the two package steps are mutually exclusive rather than merged.
@@ -493,6 +502,11 @@ jobs:
         with:
           fetch-depth: 0
 
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 10.33.0
+
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
@@ -520,7 +534,7 @@ jobs:
           GITHUB_REPOSITORY: ${{ github.repository }}
           GITHUB_SHA: ${{ github.sha }}
         run: |
-          npm run release:prepare-approval-report -- \
+          pnpm run release:prepare-approval-report -- \
             --input release-assets \
             --output-dir release-assets/approval \
             --version "$RELEASE_VERSION" \
@@ -556,14 +570,18 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 10.33.0
+
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
           node-version-file: '.nvmrc'
           # No registry-url: Trusted Publishing uses OIDC. setup-node registry-url injects
           # _authToken=${NODE_AUTH_TOKEN} (often GitHub token), which skips OIDC and breaks publish.
-          cache: npm
-          cache-dependency-path: package-lock.json
+          cache: pnpm
 
       - name: Download release bundle
         uses: actions/download-artifact@v4
@@ -588,7 +606,7 @@ jobs:
       # Self-hosted first: R2 failures must not leave GitHub Release / npm already public.
       - name: Publish self-hosted downloads
         run: |
-          npm run release:publish-selfhosted -- \
+          pnpm run release:publish-selfhosted -- \
             --input release-assets \
             --version "$RELEASE_VERSION"
 
@@ -620,14 +638,10 @@ jobs:
             --notes-file "$notes_file"
 
       - name: Install dependencies for npm publish
-        run: npm ci
+        run: pnpm install --frozen-lockfile
 
       - name: Build packages for npm publish
-        run: |
-          set -euo pipefail
-          npm --prefix packages/agent-core run build
-          npm --prefix packages/host-internal run build
-          npm --prefix packages/acp-server run build
+        run: pnpm turbo run build --filter=@spiritagent/agent-core --filter=@spiritagent/host-internal --filter=@spiritagent/acp-server
 
       - name: Publish npm packages
         run: |
@@ -641,32 +655,25 @@ jobs:
           # each package MUST set Environment name to exactly "release" (not blank), or OIDC
           # claim matching fails (often with a misleading error).
           # Workflow filename must be release.yml. Provenance needs matching repository.url.
-          npm cache clean --force
           mkdir -p npm-publish-logs
           # Dependency order: agent-core → host-internal → acp-server
           publish_one() {
             local dir="$1"
-            local name tarball
+            local name tarball tarball_path
             name="$(node -p "require('./${dir}/package.json').name")"
-            if npm view "${name}@${RELEASE_VERSION}" version >/dev/null 2>&1; then
+            if pnpm view "${name}@${RELEASE_VERSION}" version >/dev/null 2>&1; then
               echo "Already on npm: ${name}@${RELEASE_VERSION}; skipping."
               return 0
             fi
             echo "Packing ${name}@${RELEASE_VERSION} from ${dir}"
             # Publish a local tarball so pack failures are visible before OIDC upload.
-            # Paths MUST be ./relative — otherwise npm treats them as git remotes.
-            tarball="$(npm pack "./${dir}" --pack-destination ./npm-publish-logs --json | node -p "JSON.parse(require('fs').readFileSync(0,'utf8'))[0].filename")"
-            local tarball_path="./npm-publish-logs/${tarball}"
+            tarball="$(pnpm --dir "./${dir}" pack --pack-destination "../../npm-publish-logs" | tail -1)"
+            tarball_path="./npm-publish-logs/$(basename "$tarball")"
             echo "Publishing tarball ${tarball_path}"
-            if ! npm publish "${tarball_path}" --access public --loglevel verbose 2>&1 | tee "npm-publish-logs/${name//\//_}.log"; then
-              echo "::error::npm publish failed for ${name}. Check Trusted Publisher: org/repo/workflow=release.yml/environment=release"
-              echo '--- last 80 lines of npm log ---' >> "$GITHUB_STEP_SUMMARY"
+            if ! pnpm publish "${tarball_path}" --access public --no-git-checks --loglevel verbose 2>&1 | tee "npm-publish-logs/${name//\//_}.log"; then
+              echo "::error::pnpm publish failed for ${name}. Check Trusted Publisher: org/repo/workflow=release.yml/environment=release"
+              echo '--- last 80 lines of publish log ---' >> "$GITHUB_STEP_SUMMARY"
               tail -n 80 "npm-publish-logs/${name//\//_}.log" >> "$GITHUB_STEP_SUMMARY" || true
-              if compgen -G "${HOME}/.npm/_logs/*-debug-0.log" > /dev/null; then
-                latest_debug="$(ls -t "${HOME}/.npm/_logs"/*-debug-0.log | head -1)"
-                echo "--- npm debug log: ${latest_debug} ---" >> "$GITHUB_STEP_SUMMARY"
-                tail -n 120 "$latest_debug" >> "$GITHUB_STEP_SUMMARY" || true
-              fi
               return 1
             fi
           }

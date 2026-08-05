@@ -92,7 +92,7 @@ Agent Core détermine comment le modèle voit le contexte projet :
 ### Qualité et évaluation
 
 - **Suites smoke** — contrats, runtime et checks fournisseur live sous `packages/agent-core/src/smoke`.
-- **Harness eval** — comparaison de scénarios pour changements de prompts ou définitions d’outils (`npm run eval:compare` à la racine).
+- **Harness eval** — comparaison de scénarios pour changements de prompts ou définitions d’outils (`pnpm run eval:compare` à la racine).
 
 `@spiritagent/agent-core` est publié sur npm ; [`packages/host-internal`](../packages/host-internal) contient découverte hôte partagée, extensions, marketplace, helpers workspace et orchestration LSP pour Desktop.
 
@@ -115,7 +115,7 @@ Voir [apps/desktop/README.md](../apps/desktop/README.md) pour le développement 
 La [CLI Rust](../apps/cli) (`spirit-agent`) offre un hôte terminal-first avec UI Ratatui optionnelle. Elle se connecte au daemon Spirit Server partagé via WebSocket, idéale pour scripts, sessions SSH et environnements minimaux.
 
 ```bash
-npm run dev:cli    # cargo run -p spirit-agent
+pnpm run dev:cli    # cargo run -p spirit-agent
 ```
 
 ## Server
@@ -142,7 +142,7 @@ npm run dev:cli    # cargo run -p spirit-agent
 
 ### Démarrage rapide (Zed)
 
-1. Build du serveur : `npm run build:acp-server`
+1. Build du serveur : `pnpm run build:acp-server`
 2. Ajouter dans `settings.json` de Zed (pas de clé API dans `env`) :
 
 ```json
@@ -170,15 +170,16 @@ node path/to/packages/acp-server/dist/src/stdio-entry.js --setup
 
 ## Développement
 
-**Prérequis :** Node.js 24+, npm. Toolchain Rust requise pour la CLI.
+**Prérequis :** Node.js 24+, pnpm 10+ (activer via `corepack enable`). Toolchain Rust requise pour la CLI.
 
 | Commande | Description |
 | --- | --- |
-| `npm run dev:desktop` | Build des packages partagés et démarrage Desktop (Vite + Electron) |
-| `npm run dev:desktop:web` | Renderer Desktop avec hôte web navigateur |
-| `npm run dev:cli` | CLI avec TUI |
-| `npm run build` | Build production agent-core, host-internal, server, acp-server et Desktop |
-| `npm run eval:compare` | Comparaison eval après changements agent-core |
+| `pnpm install` | Installer les dépendances du workspace (une fois à la racine) |
+| `pnpm run dev:desktop` | Build des packages partagés et démarrage Desktop (Vite + Electron) |
+| `pnpm run dev:desktop:web` | Renderer Desktop avec hôte web navigateur |
+| `pnpm run dev:cli` | CLI avec TUI |
+| `pnpm run build` | Build production agent-core, host-internal, server, acp-server et Desktop |
+| `pnpm run eval:compare` | Comparaison eval après changements agent-core |
 
 ### Structure du dépôt
 

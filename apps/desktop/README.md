@@ -42,13 +42,13 @@ Docked panels attach to the active workspace:
 ### Platform
 
 - **Electron shell** — native window, system notifications, title-bar integration, and OS terminal fallback.
-- **Web host** — optional browser-based UI with remote pairing (`npm run dev:web`).
+- **Web host** — optional browser-based UI with remote pairing (`pnpm run dev:web`).
 - **Packaged builds** — produce installable artifacts via `electron-builder`.
 
 ## Requirements
 
 - **Node.js** 24 or newer
-- **npm** (comes with Node)
+- **pnpm** 10+ (enable via `corepack enable` at the repo root)
 - **Rust toolchain** — only when building the CLI from the monorepo root; not required for Desktop-only development after dependencies are built
 - **Windows, macOS, or Linux** — Electron targets all three; some features (embedded shell, in-app browser) require the Electron shell
 
@@ -57,26 +57,27 @@ Docked panels attach to the active workspace:
 From the repository root:
 
 ```bash
-npm run dev:desktop
+corepack enable
+pnpm install
+pnpm run dev:desktop
 ```
 
-This builds shared packages (`agent-core`, `host-internal`), starts the Vite renderer on `http://127.0.0.1:1420`, and launches Electron.
+This builds shared packages (`agent-core`, `host-internal`, `server`), starts the Vite renderer on `http://127.0.0.1:1420`, and launches Electron.
 
-From `apps/desktop`:
+From `apps/desktop` (after `pnpm install` at the repo root):
 
 ```bash
-npm install
-npm run dev          # Electron + hot-reload renderer
-npm run dev:web      # Browser UI + local web host
+pnpm run dev          # Electron + hot-reload renderer
+pnpm run dev:web      # Browser UI + local web host
 ```
 
 Other useful scripts:
 
 ```bash
-npm run build        # Production renderer + Electron main/preload
-npm run dist         # Build and package installers (electron-builder)
-npm run test:lib     # Renderer/unit tests
-npm run test:host    # Host service tests
+pnpm run build        # Production renderer + Electron main/preload
+pnpm run dist         # Build and package installers (electron-builder)
+pnpm run test:lib     # Renderer/unit tests
+pnpm run test:host    # Host service tests
 ```
 
 ## Project layout

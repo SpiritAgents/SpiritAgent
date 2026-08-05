@@ -1,6 +1,7 @@
 #!/usr/bin/env node
 import { cp, mkdir, readFile, rm, stat, writeFile } from 'node:fs/promises';
 import { spawnSync } from 'node:child_process';
+import { createRequire } from 'node:module';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { signCliBundle } from './sign-macos.mjs';
@@ -196,7 +197,13 @@ async function copyHoistedHostInternalRipgrep(destinationRoot) {
   if (await pathExists(destination)) {
     return;
   }
-  const hoistedRipgrep = path.join(repoRoot, 'node_modules', '@vscode', 'ripgrep');
+  let hoistedRipgrep = path.join(repoRoot, 'node_modules', '@vscode', 'ripgrep');
+  try {
+    const require = createRequire(import.meta.url);
+    hoistedRipgrep = path.dirname(require.resolve('@vscode/ripgrep/package.json'));
+  } catch {
+    // fall back to repoRoot node_modules
+  }
   if (!(await pathExists(hoistedRipgrep))) {
     return;
   }

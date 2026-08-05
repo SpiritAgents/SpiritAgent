@@ -92,7 +92,7 @@ Agent Core 决定模型如何「看见」项目上下文：
 ### 质量与评估
 
 - **Smoke 套件** — 位于 `packages/agent-core/src/smoke` 的契约、运行时与线上提供商检查。
-- **Eval 框架** — 针对提示词或工具定义变更的场景对比与评判（在仓库根目录执行 `npm run eval:compare`）。
+- **Eval 框架** — 针对提示词或工具定义变更的场景对比与评判（在仓库根目录执行 `pnpm run eval:compare`）。
 
 `@spiritagent/agent-core` 发布至 npm；[`packages/host-internal`](../packages/host-internal) 承载 Desktop 共用的宿主侧发现、扩展、市场、工作区辅助与 LSP 编排。
 
@@ -115,7 +115,7 @@ Desktop 专属开发与目录说明见 [apps/desktop/README.md](../apps/desktop/
 [Rust CLI](../apps/cli)（`spirit-agent`）提供终端优先的宿主，可选 Ratatui 界面。通过 WebSocket 连接共享 Spirit Server daemon，适合脚本化、SSH 会话与极简环境。
 
 ```bash
-npm run dev:cli    # cargo run -p spirit-agent
+pnpm run dev:cli    # cargo run -p spirit-agent
 ```
 
 ## Server
@@ -142,7 +142,7 @@ npm run dev:cli    # cargo run -p spirit-agent
 
 ### 快速开始（Zed）
 
-1. 构建 server：`npm run build:acp-server`
+1. 构建 server：`pnpm run build:acp-server`
 2. 在 Zed 的 `settings.json` 中添加（`env` 中无需 API Key）：
 
 ```json
@@ -170,15 +170,16 @@ node path/to/packages/acp-server/dist/src/stdio-entry.js --setup
 
 ## 开发
 
-**环境要求：** Node.js 24+、npm。构建 CLI 需要 Rust 工具链。
+**环境要求：** Node.js 24+、pnpm 10+（通过 `corepack enable` 启用）。构建 CLI 需要 Rust 工具链。
 
 | 命令 | 说明 |
 | --- | --- |
-| `npm run dev:desktop` | 构建共享包并启动 Desktop（Vite + Electron） |
-| `npm run dev:desktop:web` | Desktop 渲染器 + 浏览器 Web 宿主 |
-| `npm run dev:cli` | 带 TUI 的 CLI |
-| `npm run build` | 生产构建 agent-core、host-internal、server、acp-server 与 Desktop |
-| `npm run eval:compare` | 在 agent-core 变更后运行 eval 对比 |
+| `pnpm install` | 安装 workspace 依赖（在仓库根目录执行一次） |
+| `pnpm run dev:desktop` | 构建共享包并启动 Desktop（Vite + Electron） |
+| `pnpm run dev:desktop:web` | Desktop 渲染器 + 浏览器 Web 宿主 |
+| `pnpm run dev:cli` | 带 TUI 的 CLI |
+| `pnpm run build` | 生产构建 agent-core、host-internal、server、acp-server 与 Desktop |
+| `pnpm run eval:compare` | 在 agent-core 变更后运行 eval 对比 |
 
 ### 仓库结构
 
