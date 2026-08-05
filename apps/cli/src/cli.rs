@@ -6,13 +6,10 @@ use std::{collections::BTreeMap, env, path::PathBuf};
 use crate::{
     adapters::{DefaultAppPaths, JsonConfigStore, KeyringSecretStore},
     daemon::DaemonRuntime,
+    host_protocol::CliMarketplaceDetail,
     mcp::{
         example_github_mcp_config, load_mcp_config, save_mcp_config, set_server_enabled,
         user_mcp_config_path, workspace_mcp_config_path,
-    },
-    mcp_types::{
-        ManagedMcpServer, McpDiscoveredPrompt, McpDiscoveredResource, McpDiscoveredTool,
-        McpServerInspection,
     },
     model_provider_presets::{azure_api_base_from_resource_name, model_add_alibaba_site_api_base, model_add_alibaba_site_requires_workspace_id, model_add_default_custom_api_base, model_add_kimi_code_api_base, model_add_minimax_site_api_base, model_add_moonshot_site_api_base, model_add_preset_api_base_by_provider, model_add_siliconflow_site_api_base, model_add_tencent_tokenhub_site_api_base, validate_azure_resource_name},
     model_registry::{
@@ -21,10 +18,6 @@ use crate::{
         model_refs_equal, save_group_api_key,
     },
     ports::{AppPaths, ConfigStore, SecretStore},
-    host_protocol::{
-        CliExtensionEntry, CliMarketplaceCatalogItem, CliMarketplaceDetail,
-        CliMarketplacePreparedInstall,
-    },
 };
 
 const ENV_API_KEY: &str = "SPIRIT_API_KEY";
@@ -731,8 +724,6 @@ fn parse_model_transport_kind(
                 | ModelProvider::FireworksAi
                 | ModelProvider::HuggingFace
                 | ModelProvider::Baseten
-                | ModelProvider::Groq
-                | ModelProvider::Deepinfra
                 | ModelProvider::Volcengine
                 | ModelProvider::Custom
                 | ModelProvider::CloudflareAiGateway

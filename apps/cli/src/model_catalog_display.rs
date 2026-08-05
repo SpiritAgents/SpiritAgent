@@ -228,7 +228,39 @@ pub fn model_display_title<'a>(
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::test_support::shared_env_lock;
     use std::env;
+
+    fn temp_test_dir(label: &str) -> PathBuf {
+        env::temp_dir().join(format!(
+            "spirit-model-catalog-display-{label}-{}",
+            std::process::id()
+        ))
+    }
+
+    fn with_isolated_data_dir(label: &str) -> PathBuf {
+        let data_dir = temp_test_dir(label);
+        unsafe {
+            env::set_var("SPIRIT_AGENT_DATA_DIR", &data_dir);
+            env::remove_var("APPDATA");
+        }
+        data_dir
+    }
+
+    fn restore_data_dir_env(previous_data_dir: Option<String>, previous_appdata: Option<String>) {
+        unsafe {
+            if let Some(value) = previous_data_dir {
+                env::set_var("SPIRIT_AGENT_DATA_DIR", value);
+            } else {
+                env::remove_var("SPIRIT_AGENT_DATA_DIR");
+            }
+            if let Some(value) = previous_appdata {
+                env::set_var("APPDATA", value);
+            } else {
+                env::remove_var("APPDATA");
+            }
+        }
+    }
 
     #[test]
     fn model_catalog_cache_file_path_matches_desktop_layout() {
@@ -240,16 +272,13 @@ mod tests {
 
     #[test]
     fn read_display_names_for_hint_parses_model_catalog() {
-        let dir = env::temp_dir().join(format!(
-            "spirit-model-catalog-display-test-{}",
-            std::process::id()
-        ));
+        let _guard = shared_env_lock()
+            .lock()
+            .unwrap_or_else(|err| err.into_inner());
+        let previous_data_dir = env::var("SPIRIT_AGENT_DATA_DIR").ok();
+        let previous_appdata = env::var("APPDATA").ok();
+        let data_dir = with_isolated_data_dir("openrouter-catalog");
         let hint = "openrouter::openai-compatible::https://openrouter.ai/api/v1";
-        let previous = env::var("APPDATA").ok();
-        // SAFETY: test-only isolation of SpiritAgent data dir.
-        unsafe {
-            env::set_var("APPDATA", &dir);
-        }
         let path = model_catalog_cache_file_path(hint);
         if let Some(parent) = path.parent() {
             fs::create_dir_all(parent).expect("cache dir");
@@ -260,14 +289,8 @@ mod tests {
         )
         .expect("write cache");
         let titles = read_display_names_for_hint(hint);
-        unsafe {
-            if let Some(value) = previous {
-                env::set_var("APPDATA", value);
-            } else {
-                env::remove_var("APPDATA");
-            }
-        }
-        let _ = fs::remove_dir_all(dir);
+        restore_data_dir_env(previous_data_dir, previous_appdata);
+        let _ = fs::remove_dir_all(data_dir);
 
         assert_eq!(
             titles.get("anthropic/claude-sonnet-4").map(String::as_str),
@@ -304,16 +327,13 @@ mod tests {
 
     #[test]
     fn read_display_names_for_hint_parses_google_model_catalog() {
-        let dir = env::temp_dir().join(format!(
-            "spirit-google-catalog-display-test-{}",
-            std::process::id()
-        ));
+        let _guard = shared_env_lock()
+            .lock()
+            .unwrap_or_else(|err| err.into_inner());
+        let previous_data_dir = env::var("SPIRIT_AGENT_DATA_DIR").ok();
+        let previous_appdata = env::var("APPDATA").ok();
+        let data_dir = with_isolated_data_dir("google-catalog");
         let hint = "google::openai-compatible::https://generativelanguage.googleapis.com/v1beta";
-        let previous = env::var("APPDATA").ok();
-        // SAFETY: test-only isolation of SpiritAgent data dir.
-        unsafe {
-            env::set_var("APPDATA", &dir);
-        }
         let path = model_catalog_cache_file_path(hint);
         if let Some(parent) = path.parent() {
             fs::create_dir_all(parent).expect("cache dir");
@@ -324,14 +344,8 @@ mod tests {
         )
         .expect("write cache");
         let titles = read_display_names_for_hint(hint);
-        unsafe {
-            if let Some(value) = previous {
-                env::set_var("APPDATA", value);
-            } else {
-                env::remove_var("APPDATA");
-            }
-        }
-        let _ = fs::remove_dir_all(dir);
+        restore_data_dir_env(previous_data_dir, previous_appdata);
+        let _ = fs::remove_dir_all(data_dir);
 
         assert_eq!(
             titles.get("gemini-2.5-flash").map(String::as_str),

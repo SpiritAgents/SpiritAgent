@@ -1,36 +1,6 @@
 use serde_json::{Value, json};
 
-use crate::{
-    llm_types::LlmMessage,
-    ports::{ArchivedLlmMessage, ArchivedLlmToolCall},
-};
-
-pub(crate) fn llm_history_to_json(history: &[LlmMessage]) -> Vec<Value> {
-    history
-        .iter()
-        .map(|message| {
-            archived_llm_message_to_json(
-                &ArchivedLlmMessage::from_text_and_images(
-                    message.role.to_string(),
-                    message.content.clone(),
-                    message.image_paths.clone(),
-                )
-                .with_tool_call_id(message.tool_call_id.clone())
-                .with_tool_calls(message.tool_calls.as_ref().map(|tool_calls| {
-                    tool_calls
-                        .iter()
-                        .map(|tool_call| ArchivedLlmToolCall {
-                            id: tool_call.id.clone(),
-                            name: tool_call.name.clone(),
-                            arguments_json: tool_call.arguments_json.clone(),
-                        })
-                        .collect()
-                }))
-                .with_provider_state(message.provider_state.clone()),
-            )
-        })
-        .collect()
-}
+use crate::ports::ArchivedLlmMessage;
 
 pub(crate) fn archived_llm_message_to_json(message: &ArchivedLlmMessage) -> Value {
     let mut value = json!({

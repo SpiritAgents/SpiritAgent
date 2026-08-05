@@ -1609,7 +1609,7 @@ pub(crate) fn parse_openai_gpt_model_version(model_id: &str) -> Option<(u32, u32
         }
 
         let major_end = rest
-            .find(|c| c == '-' || c == '_')
+            .find(['-', '_'])
             .unwrap_or(rest.len());
         let major_part = &rest[..major_end];
         if let Ok(major) = major_part.parse::<u32>() {

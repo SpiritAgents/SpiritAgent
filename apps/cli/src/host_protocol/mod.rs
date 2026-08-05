@@ -5,7 +5,7 @@ pub(crate) use bridge::{
     BridgeChatArchive, BridgeDesktopTimelineResult, BridgeExportState,
     BridgeManualToolCommandStartResult, BridgePendingApproval, BridgeRuntimeEvent,
     BridgeRuntimeSnapshot, BridgeSubagentSessionArchiveEntry,
-    BridgeWorkspaceFileReferenceSuggestions, LocalMcpToolFailedEvent, LocalMcpToolResultEvent,
+    BridgeWorkspaceFileReferenceSuggestions,
 };
 pub use bridge::{
     WorkspaceCapabilityTrustDecision, WorkspaceCapabilityTrustHookEntry,

@@ -7,18 +7,15 @@ use std::collections::{HashMap, VecDeque};
 use crate::{
     host_protocol::{
         BridgeManualToolCommandStartResult, BridgePendingApproval, BridgeRuntimeEvent,
-        BridgeRuntimeSnapshot, LocalMcpToolFailedEvent, LocalMcpToolResultEvent,
+        BridgeRuntimeSnapshot,
     },
     host_runtime::{
-        RuntimeEvent, ToolUiRequest, build_tool_result_block, format_tool_ui_message,
-        tool_approval_block, tool_failed_block,
+        RuntimeEvent, build_tool_result_block, format_tool_ui_message, tool_approval_block,
+        tool_failed_block,
     },
     ports::SubagentSessionSummary,
     session::SessionModel,
-    tool_ui::{
-        tool_request_from_host_value, tool_request_from_local_mcp,
-        tool_request_from_streaming_preview,
-    },
+    tool_ui::{tool_request_from_host_value, tool_request_from_streaming_preview},
     view::{ChatMessage, MessageRole, PendingAssistantAux},
 };
 
@@ -363,91 +360,6 @@ impl RuntimeSyncState {
             .entry(session_id.to_string())
             .or_default()
             .push(message);
-    }
-
-    pub(crate) fn push_local_mcp_tool_result(&mut self, event: LocalMcpToolResultEvent) {
-        let request = tool_request_from_local_mcp(&event.request);
-        if let Some(session_id) = event.subagent_session_id.as_deref() {
-            self.push_subagent_tool_result(
-                session_id,
-                &request,
-                &event.tool_name,
-                event.tool_call_id.as_deref(),
-                &event.output,
-            );
-            return;
-        }
-
-        self.events
-            .push_back(RuntimeEvent::PushMessage(ChatMessage::with_tool_block(
-                MessageRole::Agent,
-                format_tool_ui_message(&request, &event.tool_name, &event.output),
-                build_tool_result_block(
-                    &request,
-                    &event.tool_name,
-                    event.tool_call_id.as_deref(),
-                    &event.output,
-                ),
-            )));
-    }
-
-    pub(crate) fn push_local_mcp_tool_failure(&mut self, event: LocalMcpToolFailedEvent) {
-        if let Some(session_id) = event.subagent_session_id.as_deref() {
-            self.push_subagent_tool_failure(
-                session_id,
-                &event.tool_name,
-                event.tool_call_id.as_deref(),
-                &event.error,
-            );
-            return;
-        }
-
-        self.events
-            .push_back(RuntimeEvent::PushMessage(ChatMessage::with_tool_block(
-                MessageRole::Agent,
-                format!("工具执行失败: {}", event.error),
-                tool_failed_block(
-                    &event.tool_name,
-                    event.tool_call_id.as_deref(),
-                    "工具执行失败",
-                    &event.error,
-                ),
-            )));
-    }
-
-    fn push_subagent_tool_result(
-        &mut self,
-        session_id: &str,
-        request: &ToolUiRequest,
-        tool_name: &str,
-        tool_call_id: Option<&str>,
-        output: &str,
-    ) {
-        self.push_subagent_live_message(
-            session_id,
-            ChatMessage::with_tool_block(
-                MessageRole::Agent,
-                format_tool_ui_message(request, tool_name, output),
-                build_tool_result_block(request, tool_name, tool_call_id, output),
-            ),
-        );
-    }
-
-    fn push_subagent_tool_failure(
-        &mut self,
-        session_id: &str,
-        tool_name: &str,
-        tool_call_id: Option<&str>,
-        error: &str,
-    ) {
-        self.push_subagent_live_message(
-            session_id,
-            ChatMessage::with_tool_block(
-                MessageRole::Agent,
-                format!("工具执行失败: {}", error),
-                tool_failed_block(tool_name, tool_call_id, "工具执行失败", error),
-            ),
-        );
     }
 
     pub(crate) fn handle_manual_tool_command_result(

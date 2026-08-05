@@ -45,39 +45,6 @@ impl WorkspaceCapabilityTrustDecision {
 pub type WorkspaceCapabilityTrustPrompter =
     Box<dyn FnMut(WorkspaceCapabilityTrustRequest) -> WorkspaceCapabilityTrustDecision>;
 
-#[derive(Clone, Debug, Serialize, Deserialize)]
-#[serde(rename_all = "camelCase")]
-pub(crate) struct LocalMcpToolRequest {
-    pub(crate) kind: String,
-    pub(crate) name: String,
-    pub(crate) server: String,
-    pub(crate) display_name: String,
-    pub(crate) tool_name: String,
-    pub(crate) arguments: Value,
-}
-
-#[derive(Clone, Debug, Serialize, Deserialize)]
-#[serde(rename_all = "camelCase")]
-pub(crate) struct LocalMcpToolResultEvent {
-    pub(crate) request: LocalMcpToolRequest,
-    pub(crate) output: String,
-    pub(crate) tool_call_id: Option<String>,
-    pub(crate) tool_name: String,
-    pub(crate) subagent_session_id: Option<String>,
-    pub(crate) subagent_title: Option<String>,
-}
-
-#[derive(Clone, Debug, Serialize, Deserialize)]
-#[serde(rename_all = "camelCase")]
-pub(crate) struct LocalMcpToolFailedEvent {
-    pub(crate) request: LocalMcpToolRequest,
-    pub(crate) error: String,
-    pub(crate) tool_call_id: Option<String>,
-    pub(crate) tool_name: String,
-    pub(crate) subagent_session_id: Option<String>,
-    pub(crate) subagent_title: Option<String>,
-}
-
 fn default_bridge_approval_level() -> String {
     "default".to_string()
 }
@@ -229,13 +196,6 @@ pub(crate) struct BridgeToolExecution {
     pub(crate) request: Value,
     pub(crate) output: String,
     pub(crate) failed: bool,
-}
-
-#[derive(Clone, Debug, Serialize, Deserialize)]
-#[serde(rename_all = "camelCase")]
-pub(crate) struct BridgeDrainEventsResult {
-    pub(crate) events: Vec<BridgeRuntimeEvent>,
-    pub(crate) snapshot: BridgeRuntimeSnapshot,
 }
 
 #[derive(Clone, Debug, Serialize, Deserialize)]

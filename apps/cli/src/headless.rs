@@ -88,13 +88,12 @@ fn run_daemon_headless_turn(runtime: &mut DaemonRuntime, deadline: Instant) -> R
                 RuntimeEvent::OpenAskQuestions { .. } => {
                     return Err(anyhow!("{}", t!("cli.headless.blocked_questions")));
                 }
-                RuntimeEvent::PushMessage(message) => {
-                    if message.role == MessageRole::Agent && message.tool_block.is_none() {
-                        let content = message.content.trim();
-                        if !content.is_empty() {
-                            runtime_error_hint = Some(content.to_string());
-                        }
-                    }
+                RuntimeEvent::PushMessage(message)
+                    if message.role == MessageRole::Agent
+                        && message.tool_block.is_none()
+                        && !message.content.trim().is_empty() =>
+                {
+                    runtime_error_hint = Some(message.content.trim().to_string());
                 }
                 _ => {}
             }

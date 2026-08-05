@@ -1,7 +1,6 @@
 use anyhow::anyhow;
 use serde_json::{Value, json};
 
-use crate::host_protocol::bridge::LocalMcpToolRequest;
 use crate::host_runtime::ToolUiRequest;
 
 pub(crate) fn approval_decision_from_input(message: &str) -> Value {
@@ -15,30 +14,6 @@ pub(crate) fn approval_decision_from_input(message: &str) -> Value {
             "userMessage": message,
         }),
     }
-}
-
-pub(crate) fn tool_request_from_local_mcp(request: &LocalMcpToolRequest) -> ToolUiRequest {
-    ToolUiRequest::new(
-        "mcp_tool",
-        json!({
-            "server": request.server,
-            "display_name": request.display_name,
-            "tool_name": request.tool_name,
-            "arguments": request.arguments,
-        }),
-    )
-}
-
-pub(crate) fn is_retired_builtin_host_method(method: &str) -> bool {
-    matches!(
-        method,
-        "host.builtinToolDefinitionEnvironment"
-            | "host.parseCommand"
-            | "host.requestFromFunctionCall"
-            | "host.authorize"
-            | "host.trust"
-            | "host.execute"
-    )
 }
 
 pub(crate) fn extract_path_from_partial_tool_json(arguments_json: &str) -> Option<String> {
@@ -185,6 +160,18 @@ mod tests {
 
     #[test]
     fn retired_builtin_host_methods_stay_on_host_internal_side() {
+        fn is_retired(method: &str) -> bool {
+            matches!(
+                method,
+                "host.builtinToolDefinitionEnvironment"
+                    | "host.parseCommand"
+                    | "host.requestFromFunctionCall"
+                    | "host.authorize"
+                    | "host.trust"
+                    | "host.execute"
+            )
+        }
+
         for method in [
             "host.builtinToolDefinitionEnvironment",
             "host.parseCommand",
@@ -194,12 +181,12 @@ mod tests {
             "host.execute",
         ] {
             assert!(
-                is_retired_builtin_host_method(method),
+                is_retired(method),
                 "{method} should not fall back to Rust CLI tool runtime"
             );
         }
 
-        assert!(!is_retired_builtin_host_method("host.addMcpServer"));
-        assert!(!is_retired_builtin_host_method("host.localToolExecuted"));
+        assert!(!is_retired("host.addMcpServer"));
+        assert!(!is_retired("host.localToolExecuted"));
     }
 }
