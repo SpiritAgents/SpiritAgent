@@ -558,9 +558,9 @@ impl DaemonRuntime {
             }
         };
         self.workspace_capability_trust_prompter = prompter;
-        if let Err(err) = self.client.call(
+        if let Err(err) = self.call_daemon(
             "session.replyWorkspaceCapabilityTrust",
-            json!({ "requestId": request_id, "decision": decision.as_str() }),
+            Some(json!({ "requestId": request_id, "decision": decision.as_str() })),
         ) {
             self.handle_daemon_error(err);
         }
