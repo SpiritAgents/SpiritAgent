@@ -306,6 +306,15 @@ export async function startDaemon(options: DaemonOptions): Promise<RunningDaemon
     clientStates.get(conn)?.attachedSessionIds?.delete(sessionId);
   };
 
+  const requireAttachedToSession = (
+    clientState: ClientState | undefined,
+    sessionId: string,
+  ): void => {
+    if (!clientState?.attachedSessionIds?.has(sessionId)) {
+      throw new Error('client is not attached to session');
+    }
+  };
+
   const broadcast = (method: string, params: unknown): void => {
     const frame = JSON.stringify(notification(method, params));
     for (const conn of connections) {
@@ -513,9 +522,12 @@ export async function startDaemon(options: DaemonOptions): Promise<RunningDaemon
         await sessionManager.setApprovalLevel(readSessionId(params), level);
         return { ok: true };
       }
-      case SESSION_REPLY_PENDING_APPROVAL:
-        await sessionManager.replyPendingApproval(readSessionId(params), params['decision'] as never);
+      case SESSION_REPLY_PENDING_APPROVAL: {
+        const sessionId = readSessionId(params);
+        requireAttachedToSession(clientState, sessionId);
+        await sessionManager.replyPendingApproval(sessionId, params['decision'] as never);
         return { ok: true };
+      }
       case SESSION_REPLY_PENDING_QUESTIONS:
         await sessionManager.replyPendingQuestions(readSessionId(params), params['result'] as never);
         return { ok: true };
@@ -558,6 +570,11 @@ export async function startDaemon(options: DaemonOptions): Promise<RunningDaemon
         if (decision !== 'allowOnce' && decision !== 'deny' && decision !== 'alwaysTrust') {
           throw new Error('invalid decision');
         }
+        const sessionId = sessionManager.pendingTrustSessionId(requestId);
+        if (!sessionId) {
+          throw new Error('unknown trust requestId');
+        }
+        requireAttachedToSession(clientState, sessionId);
         sessionManager.replyWorkspaceCapabilityTrust(requestId, decision);
         return { ok: true };
       }

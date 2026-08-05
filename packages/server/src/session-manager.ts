@@ -971,6 +971,10 @@ export class SessionManager {
     pending.resolve(decision);
   }
 
+  pendingTrustSessionId(requestId: string): string | undefined {
+    return this.pendingTrustRequests.get(requestId)?.sessionId;
+  }
+
   /**
    * Last client disconnected: deny/skip every pending interaction so no
    * runtime parks on input that can never arrive.
