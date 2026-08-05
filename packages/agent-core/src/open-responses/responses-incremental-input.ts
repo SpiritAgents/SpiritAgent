@@ -1,6 +1,7 @@
 import { AsyncLocalStorage } from 'node:async_hooks';
 
 import type { JsonValue } from '../ports.js';
+import { isArkLlmVendor } from '../ark/ark-provider.js';
 import { cloneJsonValue, isJsonObject } from '../tool-agent.js';
 import {
   findAnchorIndexForResponseId,
@@ -35,7 +36,7 @@ export function responsesUsesStoredState(config: OpenResponsesTransportConfig): 
     return false;
   }
 
-  if (config.llmVendor === 'alibaba' || config.llmVendor === 'volcengine') {
+  if (config.llmVendor === 'alibaba' || isArkLlmVendor(config.llmVendor)) {
     return true;
   }
 

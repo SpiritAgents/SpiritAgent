@@ -80,6 +80,7 @@
       "intl": "インターナショナル"
     },
     "volcengine": "Volcengine",
+    "byteplus": "BytePlus",
     "meituan": "Meituan",
     "tencentTokenhub": "Tencent TokenHub",
     "tencentTokenhubSite": {
@@ -367,6 +368,7 @@
     "customGroupLabelPlaceholder": "例: My Local API",
     "providerConnectionDescription": "最初にAPIタイプを選択し、その後APIキーを入力してください。",
     "volcengineConnectionDescription": "APIタイプを選択し、APIキーを入力してください。",
+    "byteplusConnectionDescription": "APIタイプを選択し、APIキーを入力してください。",
     "providerSimpleDescription": "APIキーを入力して接続します。",
     "apiType": "APIタイプ",
     "site": "サイト",

@@ -91,6 +91,7 @@ export function usesProviderListedModelCatalogMetadata(input: {
     || input.provider === 'hugging-face'
     || input.provider === 'baseten'
     || input.provider === 'volcengine'
+    || input.provider === 'byteplus'
     || input.provider === 'stepfun'
     || input.provider === 'google'
     || input.provider === 'google-vertex-ai'

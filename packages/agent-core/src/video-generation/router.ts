@@ -1,3 +1,5 @@
+import { ArkVideoBackend } from './ark-video-backend.js';
+import { isArkApiBase, isArkLlmVendor } from '../ark/ark-provider.js';
 import type { OpenAiVideoGenerationConfig } from '../openai/openai-compat.js';
 import type {
   GeneratedVideoFile,
@@ -7,14 +9,13 @@ import type {
 } from '../ports.js';
 import { AiSdkGatewayVideoBackend } from './ai-sdk-gateway-backend.js';
 import { OpenRouterVideosBackend } from './openrouter-videos-backend.js';
-import { VolcengineArkVideoBackend } from './volcengine-ark-backend.js';
 import { SiliconFlowVideoBackend } from './siliconflow-backend.js';
 import { TogetherVideosBackend } from './together-videos-backend.js';
 import { DeepInfraVideosBackend } from './deepinfra-videos-backend.js';
 import { HuggingFaceVideoBackend } from './huggingface-backend.js';
 import type { VideoGenerationBackend } from './types.js';
 
-const volcengineArkBackend = new VolcengineArkVideoBackend();
+const arkVideoBackend = new ArkVideoBackend();
 const openRouterVideosBackend = new OpenRouterVideosBackend();
 const aiSdkGatewayBackend = new AiSdkGatewayVideoBackend();
 const siliconFlowVideoBackend = new SiliconFlowVideoBackend();
@@ -35,18 +36,8 @@ export function isSiliconFlowApiBase(baseUrl: string | undefined): boolean {
   }
 }
 
-export function isVolcengineArkApiBase(baseUrl: string | undefined): boolean {
-  if (!baseUrl) {
-    return false;
-  }
-
-  try {
-    const hostname = new URL(baseUrl).hostname.toLowerCase();
-    return hostname.includes('volces.com') || hostname.includes('bytepluses.com');
-  } catch {
-    return false;
-  }
-}
+/** @deprecated Use isArkApiBase from ark-provider */
+export const isVolcengineArkApiBase = isArkApiBase;
 
 export function isTogetherAiApiBase(baseUrl: string | undefined): boolean {
   if (!baseUrl) {
@@ -114,12 +105,12 @@ export function resolveVideoGenerationBackend(
     return siliconFlowVideoBackend;
   }
 
-  if (isVolcengineArkApiBase(config.baseUrl)) {
-    return volcengineArkBackend;
+  if (isArkLlmVendor(config.llmVendor) || isArkApiBase(config.baseUrl)) {
+    return arkVideoBackend;
   }
 
   throw new Error(
-    'No video generation backend is configured for the selected video model. Use Volcengine Ark, Vercel AI Gateway, OpenRouter, SiliconFlow, Together AI, DeepInfra, or Hugging Face.',
+    'No video generation backend is configured for the selected video model. Use Volcengine Ark, BytePlus ModelArk, Vercel AI Gateway, OpenRouter, SiliconFlow, Together AI, DeepInfra, or Hugging Face.',
   );
 }
 

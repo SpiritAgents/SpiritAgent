@@ -9,6 +9,7 @@ import {
 import { createHuggingFace } from '@ai-sdk/huggingface';
 
 import { getLlmFetch } from '../llm-fetch.js';
+import { isArkLlmVendor } from '../ark/ark-provider.js';
 import { wrapFetchForCloudflareAiGateway } from '../cloudflare-ai-gateway-fetch.js';
 import type { JsonObject } from '../ports.js';
 import { createAlibabaResponsesAwareFetch } from './alibaba-responses-fetch.js';
@@ -410,7 +411,7 @@ export function buildResponsesProviderOptions(
     }
 
     if (
-      (config.llmVendor === 'alibaba' || config.llmVendor === 'volcengine')
+      (config.llmVendor === 'alibaba' || isArkLlmVendor(config.llmVendor))
       && responsesUsesStoredState(config)
     ) {
       providerOptions.store = config.store ?? true;

@@ -569,7 +569,9 @@ export function ProviderConnectDialog({
               ? t('settings.customConnectionDescription')
               : provider === "volcengine"
                 ? t('settings.volcengineConnectionDescription')
-                : provider === "siliconflow"
+                : provider === "byteplus"
+                  ? t('settings.byteplusConnectionDescription')
+                  : provider === "siliconflow"
                   ? t('settings.siliconflowConnectionDescription')
                   : provider === "moonshot-ai"
                     ? t('settings.moonshotConnectionDescription')

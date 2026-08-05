@@ -11,6 +11,7 @@ export * from './reasoning-effort.js';
 export * from './llm-fetch.js';
 export * from './llm-retry.js';
 export * from './transport-factory.js';
+export * from './ark/index.js';
 export * from './openai/index.js';
 export * from './anthropic/index.js';
 export * from './bedrock/index.js';

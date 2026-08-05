@@ -30,6 +30,7 @@ const CONTEXT_USAGE_PROVIDERS = new Set<DesktopModelProvider>([
   'moonshot-ai',
   'kimi-code',
   'volcengine',
+  'byteplus',
 ]);
 
 export function supportsContextUsageProvider(provider: DesktopModelProvider | undefined): boolean {

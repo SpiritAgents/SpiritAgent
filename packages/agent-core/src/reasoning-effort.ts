@@ -58,6 +58,7 @@ export type ModelReasoningProvider =
   | 'google'
   | 'google-vertex-ai'
   | 'volcengine'
+  | 'byteplus'
   | 'meituan'
   | 'tencent-tokenhub'
   | 'mistral'

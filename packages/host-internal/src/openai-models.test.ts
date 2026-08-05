@@ -12,7 +12,7 @@ import {
   parseOpenRouterModelEntriesPayload,
   parseSiliconFlowModelEntriesPayload,
   parseVercelAiGatewayModelEntriesPayload,
-  parseVolcengineModelEntriesPayload,
+  parseArkModelEntriesPayload,
   parseXiaomiModelEntriesPayload,
   parseMinimaxModelEntriesPayload,
   parseMeituanModelDetailPayload,
@@ -805,8 +805,8 @@ test('parseOpenAiCompatibleModelEntriesPayload routes xiaomi provider to xiaomi 
   ]);
 });
 
-test('parseVolcengineModelEntriesPayload maps domain and skips shutdown models', () => {
-  const entries = parseVolcengineModelEntriesPayload({
+test('parseArkModelEntriesPayload maps domain and skips shutdown models', () => {
+  const entries = parseArkModelEntriesPayload({
     object: 'list',
     data: [
       {
@@ -873,7 +873,7 @@ test('parseVolcengineModelEntriesPayload maps domain and skips shutdown models',
   ]);
 });
 
-test('parseOpenAiCompatibleModelEntriesPayload routes volcengine to typed parser', () => {
+test('parseOpenAiCompatibleModelEntriesPayload routes volcengine to Ark parser', () => {
   const entries = parseOpenAiCompatibleModelEntriesPayload({
     data: [
       {
@@ -889,6 +889,25 @@ test('parseOpenAiCompatibleModelEntriesPayload routes volcengine to typed parser
       id: 'doubao-seedance-2-0-260128',
       displayName: 'doubao-seedance-2-0',
       supportsVideoGeneration: true,
+    },
+  ]);
+});
+
+test('parseOpenAiCompatibleModelEntriesPayload routes byteplus to Ark parser', () => {
+  const entries = parseOpenAiCompatibleModelEntriesPayload({
+    data: [
+      {
+        id: 'seed-2-0-lite-260228',
+        name: 'seed-2-0-lite',
+        domain: 'LLM',
+      },
+    ],
+  }, 'byteplus');
+
+  assert.deepEqual(entries, [
+    {
+      id: 'seed-2-0-lite-260228',
+      displayName: 'seed-2-0-lite',
     },
   ]);
 });

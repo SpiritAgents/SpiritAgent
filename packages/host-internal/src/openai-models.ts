@@ -138,8 +138,8 @@ export function parseOpenAiCompatibleModelEntriesPayload(
     return parseOpenRouterModelEntriesPayload(body);
   }
 
-  if (provider === 'volcengine') {
-    return parseVolcengineModelEntriesPayload(body);
+  if (provider === 'volcengine' || provider === 'byteplus') {
+    return parseArkModelEntriesPayload(body);
   }
 
   if (provider === 'xiaomi') {
@@ -1913,9 +1913,9 @@ export function parseMinimaxModelEntriesPayload(body: unknown): ProviderListedMo
   return entries;
 }
 
-const SKIPPED_VOLCENGINE_MODEL_STATUSES = new Set(['shutdown', 'retiring']);
+const SKIPPED_ARK_MODEL_STATUSES = new Set(['shutdown', 'retiring']);
 
-function readVolcengineModalities(value: unknown): string[] {
+function readArkModalities(value: unknown): string[] {
   if (!Array.isArray(value)) {
     return [];
   }
@@ -1929,15 +1929,15 @@ function readVolcengineModalities(value: unknown): string[] {
   return modalities;
 }
 
-function readVolcengineInputModalities(record: Record<string, unknown>): string[] {
+function readArkInputModalities(record: Record<string, unknown>): string[] {
   const modalities = asRecord(record.modalities);
-  return readVolcengineModalities(modalities?.input_modalities);
+  return readArkModalities(modalities?.input_modalities);
 }
 
 /**
- * Volcengine Ark `GET /api/v3/models`: OpenAI-shaped list with `domain`, `modalities`, `status`.
+ * Ark `GET /api/v3/models`: OpenAI-shaped list with `domain`, `modalities`, `status`.
  */
-export function parseVolcengineModelEntriesPayload(body: unknown): ProviderListedModelEntry[] {
+export function parseArkModelEntriesPayload(body: unknown): ProviderListedModelEntry[] {
   if (typeof body !== 'object' || body === null || !('data' in body)) {
     return [];
   }
@@ -1958,7 +1958,7 @@ export function parseVolcengineModelEntriesPayload(body: unknown): ProviderListe
     }
 
     const status = typeof record.status === 'string' ? record.status.trim().toLowerCase() : '';
-    if (status && SKIPPED_VOLCENGINE_MODEL_STATUSES.has(status)) {
+    if (status && SKIPPED_ARK_MODEL_STATUSES.has(status)) {
       continue;
     }
 
@@ -1987,7 +1987,7 @@ export function parseVolcengineModelEntriesPayload(body: unknown): ProviderListe
         modelEntry.supportsImageGeneration = true;
         break;
       case 'VLM': {
-        const inputModalities = readVolcengineInputModalities(record);
+        const inputModalities = readArkInputModalities(record);
         if (inputModalities.includes('image')) {
           modelEntry.supportsImageInput = true;
         }
@@ -2735,7 +2735,11 @@ export async function listProviderModels(
   }
 
   if (options.provider === 'volcengine') {
-    return listVolcengineModels(options);
+    return listArkModels(options, 'volcengine');
+  }
+
+  if (options.provider === 'byteplus') {
+    return listArkModels(options, 'byteplus');
   }
 
   if (options.provider === 'meituan') {
@@ -2871,10 +2875,21 @@ export async function listOpenRouterModels(
   return listOpenAiCompatibleModelsForProvider(options, 'openrouter');
 }
 
+export async function listArkModels(
+  options: ListOpenAiCompatibleModelIdsOptions,
+  provider: 'volcengine' | 'byteplus',
+): Promise<ProviderListedModelEntry[]> {
+  return listOpenAiCompatibleModelsForProvider(options, provider);
+}
+
+/** @deprecated Use parseArkModelEntriesPayload */
+export const parseVolcengineModelEntriesPayload = parseArkModelEntriesPayload;
+
+/** @deprecated Use listArkModels */
 export async function listVolcengineModels(
   options: ListOpenAiCompatibleModelIdsOptions,
 ): Promise<ProviderListedModelEntry[]> {
-  return listOpenAiCompatibleModelsForProvider(options, 'volcengine');
+  return listArkModels(options, 'volcengine');
 }
 
 /**

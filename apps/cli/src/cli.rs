@@ -725,6 +725,7 @@ fn parse_model_transport_kind(
                 | ModelProvider::HuggingFace
                 | ModelProvider::Baseten
                 | ModelProvider::Volcengine
+                | ModelProvider::Byteplus
                 | ModelProvider::Custom
                 | ModelProvider::CloudflareAiGateway
                 | ModelProvider::TencentTokenhub,

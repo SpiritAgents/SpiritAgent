@@ -29,6 +29,7 @@ const DIRECT_THINKING_SWITCH_PROVIDERS = new Set([
   'zhipu-ai',
   'xiaomi',
   'volcengine',
+  'byteplus',
   'alibaba',
   'siliconflow',
   'tencent-tokenhub',

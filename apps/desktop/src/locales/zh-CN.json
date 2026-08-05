@@ -80,6 +80,7 @@
       "intl": "国际站"
     },
     "volcengine": "火山引擎",
+    "byteplus": "BytePlus",
     "meituan": "美团",
     "tencentTokenhub": "腾讯 TokenHub",
     "tencentTokenhubSite": {
@@ -367,6 +368,7 @@
     "customGroupLabelPlaceholder": "例如 My Local API",
     "providerConnectionDescription": "先选择 API 类型，再填写 API Key。",
     "volcengineConnectionDescription": "先选择 API 类型，再填写 API Key。",
+    "byteplusConnectionDescription": "先选择 API 类型，再填写 API Key。",
     "providerSimpleDescription": "填写 API Key 即可连接。",
     "apiType": "API 类型",
     "site": "站点",
