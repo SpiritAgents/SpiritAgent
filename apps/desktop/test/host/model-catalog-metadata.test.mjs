@@ -438,6 +438,10 @@ test('volcengine provider maps domain-derived traits to catalog capabilities', (
   ]);
 });
 
+test('byteplus provider uses Ark catalog metadata path', () => {
+  assert.equal(usesProviderListedModelCatalogMetadata({ provider: 'byteplus' }), true);
+});
+
 test('meituan provider maps LongCat catalog metadata to preview entries', () => {
   assert.equal(usesProviderListedModelCatalogMetadata({ provider: 'meituan' }), true);
 

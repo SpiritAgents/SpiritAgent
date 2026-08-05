@@ -76,6 +76,7 @@ export function connectTransportOptionsForProvider(provider: DesktopModelProvide
         connectTransportOptionCatalog.openResponsesApi,
       ];
     case "volcengine":
+    case "byteplus":
       return [
         connectTransportOptionCatalog.chatCompletions,
         connectTransportOptionCatalog.responsesApi,
@@ -112,7 +113,8 @@ export function providerSupportsConnectTransportPicker(
     provider === "openrouter" ||
     provider === "cloudflare-ai-gateway" ||
     provider === "fireworks-ai" ||
-    provider === "volcengine"
+    provider === "volcengine" ||
+    provider === "byteplus"
   );
 }
 
