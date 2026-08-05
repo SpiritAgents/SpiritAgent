@@ -5,14 +5,27 @@ import { fileURLToPath } from 'node:url';
 
 const desktopRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const repoRoot = path.resolve(desktopRoot, '../..');
-const hoistedVscode = path.join(repoRoot, 'node_modules', '@vscode');
 const destVscode = path.join(desktopRoot, 'node_modules', '@vscode');
 
-/** @vscode/ripgrep 通过 optionalDependency 平台包提供 rg 二进制；npm 常 hoist 到仓库根，electron-builder 默认打不进 desktop。 */
+/** @vscode/ripgrep 通过 optionalDependency 平台包提供 rg 二进制；pnpm hoisted 布局下常只在仓库根 node_modules。 */
+function resolveHoistedVscode() {
+  const desktopVscode = path.join(desktopRoot, 'node_modules', '@vscode');
+  if (fs.existsSync(desktopVscode)) {
+    return desktopVscode;
+  }
+  return path.join(repoRoot, 'node_modules', '@vscode');
+}
+
 function copyRipgrepPackages() {
+  const hoistedVscode = resolveHoistedVscode();
   if (!fs.existsSync(hoistedVscode)) {
     console.error('[pack] missing hoisted @vscode at', hoistedVscode);
     process.exit(1);
+  }
+
+  if (path.resolve(hoistedVscode) === path.resolve(destVscode)) {
+    console.log('[pack] @vscode/ripgrep already under desktop node_modules, skip copy');
+    return;
   }
 
   const names = fs.readdirSync(hoistedVscode).filter(

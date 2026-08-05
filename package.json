@@ -11,7 +11,15 @@
   "pnpm": {
     "overrides": {
       "node-gyp": "^12.2.0"
-    }
+    },
+    "onlyBuiltDependencies": [
+      "electron",
+      "electron-winstaller",
+      "esbuild",
+      "koffi",
+      "node-pty",
+      "sharp"
+    ]
   },
   "scripts": {
     "build:agent-core": "turbo run build --filter=@spiritagent/agent-core",
