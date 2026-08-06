@@ -40,8 +40,8 @@
     "smoke:host-internal-models-parse": "pnpm --filter @spiritagent/host-internal run smoke:openai-models-parse",
     "dev": "turbo run build --filter=@spiritagent/agent-core --filter=@spiritagent/host-internal && cargo run -p spirit-agent",
     "dev:cli": "cargo run -p spirit-agent",
-    "dev:desktop": "turbo run build --filter=@spiritagent/desktop^... && pnpm --filter @spiritagent/desktop dev",
-    "dev:desktop:web": "turbo run build --filter=@spiritagent/desktop^... && pnpm --filter @spiritagent/desktop dev:web"
+    "dev:desktop": "pnpm --filter @spiritagent/desktop dev",
+    "dev:desktop:web": "pnpm --filter @spiritagent/desktop dev:web"
   },
   "devDependencies": {
     "turbo": "2.10.8"
