@@ -197,7 +197,7 @@ scripts/             Release, eval, and repo automation
 
 ## Contributing
 
-Read [AGENTS.md](AGENTS.md) and [`.github/copilot-instructions.md`](.github/copilot-instructions.md) for architecture boundaries, commit conventions, and agent-core change guidelines.
+See [CONTRIBUTING.md](CONTRIBUTING.md) to get started. For architecture boundaries, commit conventions, and agent-core guidelines, also read [AGENTS.md](AGENTS.md).
 
 ## License
 
