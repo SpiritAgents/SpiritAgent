@@ -1,0 +1,26 @@
+{
+  "$schema": "https://www.cursor.com/schemas/environment.schema.json",
+  "name": "Spirit Agent",
+  "build": {
+    "dockerfile": "Dockerfile",
+    "context": ".."
+  },
+  "install": "bash .cursor/scripts/install.sh",
+  "ports": [
+    {
+      "name": "desktop-web-renderer",
+      "port": 5173
+    },
+    {
+      "name": "desktop-vite-dev",
+      "port": 1420
+    }
+  ],
+  "terminals": [
+    {
+      "name": "desktop-web",
+      "command": "pnpm run dev:desktop:web",
+      "description": "Desktop renderer + browser web host at http://127.0.0.1:5173"
+    }
+  ]
+}
