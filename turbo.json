@@ -10,6 +10,10 @@
       "dependsOn": ["^build"],
       "outputs": ["dist/**"]
     },
+    "build:electron": {
+      "dependsOn": ["^build"],
+      "outputs": ["dist-electron/**"]
+    },
     "typecheck": {
       "dependsOn": ["^build"]
     },
