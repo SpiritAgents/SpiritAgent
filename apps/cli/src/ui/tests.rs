@@ -11,7 +11,7 @@ use crate::{
 };
 use ratatui::{Terminal, backend::TestBackend};
 use rust_i18n::t;
-use std::{collections::HashMap, env, fs};
+use std::{collections::HashMap, fs};
 use unicode_width::UnicodeWidthStr;
 
 fn render_text_lines(lines: Vec<Line<'static>>) -> Vec<String> {
@@ -61,11 +61,7 @@ fn render_ui_snapshot(
 fn test_image_path(label: &str) -> std::path::PathBuf {
     let unique = uuid::Uuid::new_v4().simple().to_string();
     let short = &unique[..8];
-    env::current_dir()
-        .expect("workspace cwd")
-        .join("target")
-        .join("ui-tests")
-        .join(format!("{}-{}.png", label, short))
+    std::env::temp_dir().join(format!("spirit-ui-{label}-{short}.png"))
 }
 
 fn build_view_model(message: ChatMessage) -> TuiViewModel {
@@ -1520,13 +1516,10 @@ fn generate_image_ui_renders_halfblock_preview_from_local_file() {
     ));
 
     let (lines, buffer) = render_ui_snapshot(&app, 80, 36);
-    let file_name = file_path
-        .file_name()
-        .and_then(|name| name.to_str())
-        .expect("temp image file name");
+    let path_marker = "spirit-ui-halfblock";
     let path_index = lines
         .iter()
-        .position(|line| line.contains(file_name))
+        .position(|line| line.contains(path_marker))
         .expect("path line exists");
 
     let has_red_pixels = ((path_index + 1) as u16..=(path_index + 12) as u16).any(|y| {
