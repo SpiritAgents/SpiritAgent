@@ -177,7 +177,7 @@ export function currentSkillSlashQueryAtCursor(
   input: string,
   cursorChars: number,
 ): ActiveSkillSlashQuery | undefined {
-  if (!input || input.includes("\n")) {
+  if (!input) {
     return undefined;
   }
 

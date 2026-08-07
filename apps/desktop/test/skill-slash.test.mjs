@@ -101,6 +101,26 @@ test("currentSkillSlashQueryAtCursor rejects slash command followed by extra tex
   );
 });
 
+test("currentSkillSlashQueryAtCursor matches slash token after newline", () => {
+  const input = "hello\n/plan";
+  const query = currentSkillSlashQueryAtCursor(input, Array.from(input).length);
+  assert.deepEqual(query, {
+    start: 6,
+    end: 11,
+    raw: "/plan",
+  });
+});
+
+test("currentSkillSlashQueryAtCursor matches lone slash on second line", () => {
+  const input = "aaa\n/";
+  const query = currentSkillSlashQueryAtCursor(input, Array.from(input).length);
+  assert.deepEqual(query, {
+    start: 4,
+    end: 5,
+    raw: "/",
+  });
+});
+
 test("currentSkillSlashQueryAtCursor returns undefined when caret is outside slash token", () => {
   assert.equal(currentSkillSlashQueryAtCursor("hello world", 5), undefined);
 });
