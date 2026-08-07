@@ -1,7 +1,9 @@
+import { useRef } from "react";
 import { useTranslation } from "react-i18next";
 
 import { ComposerSuggestionMenuItem } from "@/components/composer-suggestion-menu-item";
 import { useComposerSuggestionMenuHighlight } from "@/hooks/useComposerSuggestionMenuHighlight";
+import { useComposerSuggestionMenuKeyboardScroll } from "@/hooks/useComposerSuggestionMenuKeyboardScroll";
 import {
   DESKTOP_OVERLAY_LIST_ITEM_PRIMARY,
   DESKTOP_OVERLAY_LIST_ITEM_SECONDARY,
@@ -26,15 +28,17 @@ export function SkillSlashMenu({
   onApplySuggestion,
 }: SkillSlashMenuProps) {
   const { t } = useTranslation();
+  const menuRef = useRef<HTMLDivElement | null>(null);
   const { highlightedIndex, menuPointerHandlers, getItemPointerHandlers } =
     useComposerSuggestionMenuHighlight(selectedIndex, suggestions.length);
+  useComposerSuggestionMenuKeyboardScroll(selectedIndex, menuRef, "data-skill-slash-index");
 
   if (suggestions.length === 0) {
     return <div className="px-2 py-2.5 text-xs text-muted-foreground">{t("app.noMatches")}</div>;
   }
 
   return (
-    <div {...menuPointerHandlers}>
+    <div ref={menuRef} {...menuPointerHandlers}>
       {suggestions.map((suggestion, index) => {
         const description = suggestion.descriptionKey
           ? t(suggestion.descriptionKey)
