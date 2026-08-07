@@ -1229,7 +1229,6 @@ const ComposerLexicalInputCore = forwardRef<ComposerRichInputHandle, ComposerLex
         <ComposerClipboardPlugin
           segmentsRef={segmentsRef}
           commitSegments={commitSegments}
-          contentEditableRef={contentEditableRef}
           onPaste={onPaste}
         />
         <SlashSelectionPlugin
