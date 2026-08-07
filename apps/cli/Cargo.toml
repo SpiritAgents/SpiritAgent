@@ -22,7 +22,7 @@ serde_yaml = "0.9"
 semver = "1"
 sha2 = "0.10"
 keyring = "2.3"
-rpassword = "7"
+rpassword = "7.5"
 unicode-width = { version = "0.2", optional = true }
 comrak = { version = "0.36", optional = true }
 arboard = { version = "3", optional = true }
