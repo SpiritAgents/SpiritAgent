@@ -2,8 +2,8 @@ import {
   COMPOSER_INLINE_CHIP_CLASS,
   COMPOSER_INLINE_CHIP_ICON_CLASS,
 } from "@/lib/composer-inline-chip-styles";
-import { appendWorkspaceFileIconSvg } from "@/lib/workspace-explorer-icon-dom";
-import { WORKSPACE_FILE_ICON_CHIP_SIZE_PX } from "@/lib/workspace-file-icon-svg";
+import { appendWorkspaceFileIcon } from "@/lib/workspace-explorer-icon-dom";
+import { WORKSPACE_FILE_ICON_CHIP_SIZE_PX } from "@/lib/workspace-file-icon-sizes";
 import { workspaceFileBasename } from "@/lib/file-picker-path";
 import type { FileSnippetAttachment } from "@/lib/file-snippet-attachment";
 
@@ -49,7 +49,7 @@ export function makeFileSnippetChipNode(attachment: FileSnippetAttachment, doc: 
     formatFileSnippetChipLabel(attachment.filePath, attachment.lineStart, attachment.lineEnd),
   );
 
-  appendWorkspaceFileIconSvg(span, doc, attachment.filePath, {
+  appendWorkspaceFileIcon(span, doc, attachment.filePath, {
     size: WORKSPACE_FILE_ICON_CHIP_SIZE_PX,
     className: FILE_SNIPPET_CHIP_ICON_CLASS,
   }, 'file', { colorMode: 'inherit' });

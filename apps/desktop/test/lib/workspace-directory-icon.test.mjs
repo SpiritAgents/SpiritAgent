@@ -6,9 +6,9 @@ import {
 } from '../../src/lib/workspace-directory-icon.ts';
 
 test('workspaceDirectoryIconClassName matches slash menu list density', () => {
-  assert.match(workspaceDirectoryIconClassName('seti'), /size-3\.5/u);
-  assert.match(workspaceDirectoryIconClassName('seti'), /opacity-70/u);
-  assert.doesNotMatch(workspaceDirectoryIconClassName('seti'), /text-/u);
+  assert.match(workspaceDirectoryIconClassName('list'), /size-3\.5/u);
+  assert.match(workspaceDirectoryIconClassName('list'), /opacity-70/u);
+  assert.doesNotMatch(workspaceDirectoryIconClassName('list'), /text-/u);
 });
 
 test('workspaceDirectoryIconClassName inherit uses chip size', () => {

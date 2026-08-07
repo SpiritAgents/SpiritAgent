@@ -6,7 +6,7 @@ import {
   WORKSPACE_FILE_CHIP_CLASS,
   WORKSPACE_FILE_CHIP_ICON_CLASS,
 } from "@/lib/workspace-file-chip-styles";
-import { WORKSPACE_FILE_ICON_CHIP_SIZE_PX } from "@/lib/workspace-file-icon-svg";
+import { WORKSPACE_FILE_ICON_CHIP_SIZE_PX } from "@/lib/workspace-file-icon-sizes";
 
 type WorkspaceFileChipProps = {
   path: string;

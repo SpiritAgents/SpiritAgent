@@ -1,18 +1,15 @@
-import { Folder } from 'lucide-react';
-
-import { useTheme } from '@/hooks/useTheme';
 import { workspaceFileBasename } from '@/lib/file-picker-path';
 import { workspaceDirectoryIconClassName } from '@/lib/workspace-directory-icon';
+import { workspaceExplorerIcon } from '@/lib/workspace-explorer-icon';
 import {
-  resolveWorkspaceFileIcon,
+  WORKSPACE_FILE_ICON_CHIP_SIZE_PX,
+  WORKSPACE_FILE_ICON_LIST_CLASS,
   type WorkspaceFileIconColorMode,
-} from '@/lib/workspace-file-icon-resolver';
-import {
-  prepareSetiSvgForDisplay,
-  WORKSPACE_FILE_ICON_LIST_SIZE_PX,
-} from '@/lib/workspace-file-icon-svg';
+} from '@/lib/workspace-file-icon-sizes';
 import { cn } from '@/lib/utils';
 import type { WorkspaceExplorerEntryKind } from '@/types';
+
+export type { WorkspaceFileIconColorMode } from '@/lib/workspace-file-icon-sizes';
 
 export type WorkspaceFileIconProps = {
   name?: string;
@@ -23,23 +20,31 @@ export type WorkspaceFileIconProps = {
   colorMode?: WorkspaceFileIconColorMode;
 };
 
+export function workspaceFileIconClassName(
+  colorMode: WorkspaceFileIconColorMode,
+  className?: string,
+): string {
+  if (colorMode === 'inherit') {
+    return cn('size-[10px] shrink-0', className);
+  }
+  return cn(WORKSPACE_FILE_ICON_LIST_CLASS, className);
+}
+
 export function WorkspaceFileIcon({
   name,
   path,
   kind = 'file',
-  size = WORKSPACE_FILE_ICON_LIST_SIZE_PX,
+  size = WORKSPACE_FILE_ICON_CHIP_SIZE_PX,
   className,
-  colorMode = 'seti',
+  colorMode = 'list',
 }: WorkspaceFileIconProps) {
-  const { resolvedDark } = useTheme();
   const resolvedName = name ?? (path ? workspaceFileBasename(path) : '');
   if (!resolvedName) {
     return null;
   }
 
-  const theme = resolvedDark ? 'dark' : 'light';
-
   if (kind === 'dir') {
+    const Folder = workspaceExplorerIcon(resolvedName, 'dir');
     return (
       <Folder
         className={workspaceDirectoryIconClassName(colorMode, className)}
@@ -48,26 +53,12 @@ export function WorkspaceFileIcon({
     );
   }
 
-  const icon = resolveWorkspaceFileIcon(resolvedName, kind, {
-    colorMode,
-    theme,
-  });
+  const Icon = workspaceExplorerIcon(resolvedName, kind);
+  const iconClassName = workspaceFileIconClassName(colorMode, className);
 
-  if (!icon) {
-    return null;
+  if (colorMode === 'inherit') {
+    return <Icon size={size} className={iconClassName} aria-hidden />;
   }
 
-  return (
-    <span
-      className={cn('inline-flex shrink-0 items-center justify-center', className)}
-      style={{
-        width: size,
-        height: size,
-        ...(icon.color ? { color: icon.color } : undefined),
-        ...(icon.opacity !== undefined ? { opacity: icon.opacity } : undefined),
-      }}
-      aria-hidden
-      dangerouslySetInnerHTML={{ __html: prepareSetiSvgForDisplay(icon.svg, size) }}
-    />
-  );
+  return <Icon className={iconClassName} aria-hidden />;
 }
