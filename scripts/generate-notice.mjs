@@ -1,4 +1,5 @@
 import { createHash } from "node:crypto";
+import { execFileSync } from "node:child_process";
 import { existsSync, readFileSync, writeFileSync } from "node:fs";
 import path from "node:path";
 
@@ -194,7 +195,7 @@ function buildNoticeText(entries, displayName, productionOnly, recursive, pkgRoo
     )
     .map(
       (group) =>
-        `### ${group.spdx}\n\n**Used by:**\n${group.packages
+        `### ${group.spdx}\n\n**Used by:**\n\n${group.packages
           .map((pkg) => `- ${pkg}`)
           .join("\n")}\n\n\`\`\`\n${group.text}\n\`\`\`\n`
     );
@@ -277,6 +278,13 @@ function runChecker(initLicenseChecker, pkgRoot, productionOnly) {
   });
 }
 
+function formatNoticeWithOxfmt(noticePath, workspaceRoot) {
+  execFileSync("pnpm", ["exec", "oxfmt", path.resolve(noticePath)], {
+    cwd: workspaceRoot,
+    stdio: "inherit",
+  });
+}
+
 export async function generateNotice({ pkgRoot, initLicenseChecker, extraExcludedPackageNames = [] }) {
   const productionOnly = process.argv.includes("--production");
   const recursive = process.argv.includes("--recursive");
@@ -292,7 +300,12 @@ export async function generateNotice({ pkgRoot, initLicenseChecker, extraExclude
     const entries = buildIncludedEntries(packages, filter, excludedNames);
     const noticeText = buildNoticeText(entries, displayName, productionOnly, recursive, pkgRoot);
 
-    writeFileSync(path.join(pkgRoot, "NOTICE.md"), noticeText, "utf8");
+    const noticePath = path.join(pkgRoot, "NOTICE.md");
+    writeFileSync(noticePath, noticeText, "utf8");
+    const workspaceRoot = findWorkspaceRoot(pkgRoot);
+    if (workspaceRoot) {
+      formatNoticeWithOxfmt(noticePath, workspaceRoot);
+    }
     console.log(`Wrote NOTICE.md (${entries.length} packages)`);
   } catch (error) {
     const message = error instanceof Error ? error.stack ?? error.message : String(error);
