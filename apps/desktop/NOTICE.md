@@ -8,16 +8,16 @@ Scope constraint: exclude workspace-local/internal dependencies resolved via `wo
 
 - MIT: 57 package(s)
 - Apache-2.0: 7 package(s)
-- BSD-3-Clause: 2 package(s)
+- BSD-3-Clause: 3 package(s)
+- BSD-2-Clause: 2 package(s)
 - ISC: 2 package(s)
-- BSD-2-Clause: 1 package(s)
 - OFL-1.1: 1 package(s)
 
 ## Components
 
-- **@electron/rebuild** 3.7.2 — MIT
+- **@electron/rebuild** 4.2.0 — MIT
   - https://github.com/electron/rebuild
-- **@fontsource-variable/geist** 5.2.8 — OFL-1.1
+- **@fontsource-variable/geist** 5.3.0 — OFL-1.1
   - https://github.com/fontsource/font-files
 - **@lexical/clipboard** 0.46.0 — MIT
   - https://github.com/facebook/lexical
@@ -33,9 +33,9 @@ Scope constraint: exclude workspace-local/internal dependencies resolved via `wo
   - https://github.com/facebook/lexical
 - **@lexical/utils** 0.46.0 — MIT
   - https://github.com/facebook/lexical
-- **@napi-rs/keyring** 1.2.0 — MIT
+- **@napi-rs/keyring** 1.3.0 — MIT
   - https://github.com/Brooooooklyn/keyring-node
-- **@radix-ui/react-scroll-area** 1.2.12 — MIT
+- **@radix-ui/react-scroll-area** 1.2.18 — MIT
   - https://github.com/radix-ui/primitives
 - **@shikijs/monaco** 3.23.0 — MIT
   - https://github.com/shikijs/shiki
@@ -47,21 +47,21 @@ Scope constraint: exclude workspace-local/internal dependencies resolved via `wo
   - https://github.com/vercel/streamdown
 - **@streamdown/mermaid** 1.0.2 — Apache-2.0
   - https://github.com/vercel/streamdown
-- **@tailwindcss/vite** 4.2.4 — MIT
+- **@tailwindcss/vite** 4.3.3 — MIT
   - https://github.com/tailwindlabs/tailwindcss
 - **@tanstack/react-table** 8.21.3 — MIT
   - https://github.com/TanStack/table
-- **@tanstack/react-virtual** 3.14.3 — MIT
+- **@tanstack/react-virtual** 3.14.9 — MIT
   - https://github.com/TanStack/virtual
-- **@types/diff** 7.0.2 — MIT
+- **@types/node** 24.13.3 — MIT
   - https://github.com/DefinitelyTyped/DefinitelyTyped
-- **@types/node** 25.6.0 — MIT
+- **@types/node** 25.9.5 — MIT
   - https://github.com/DefinitelyTyped/DefinitelyTyped
-- **@types/react** 19.2.14 — MIT
+- **@types/react** 19.2.18 — MIT
   - https://github.com/DefinitelyTyped/DefinitelyTyped
-- **@types/react-dom** 19.2.3 — MIT
+- **@types/react-dom** 19.2.4 — MIT
   - https://github.com/DefinitelyTyped/DefinitelyTyped
-- **@vitejs/plugin-react** 6.0.1 — MIT
+- **@vitejs/plugin-react** 6.0.5 — MIT
   - https://github.com/vitejs/vite-plugin-react
 - **@xterm/addon-fit** 0.10.0 — MIT
   - https://github.com/xtermjs/xterm.js.git#master
@@ -71,7 +71,7 @@ Scope constraint: exclude workspace-local/internal dependencies resolved via `wo
   - https://github.com/xtermjs/xterm.js.git#master
 - **@xterm/xterm** 5.5.0 — MIT
   - https://github.com/xtermjs/xterm.js
-- **@xyflow/react** 12.10.2 — MIT
+- **@xyflow/react** 12.11.2 — MIT
   - https://github.com/xyflow/xyflow
 - **class-variance-authority** 0.7.1 — Apache-2.0
   - https://github.com/joe-bell/cva
@@ -79,17 +79,21 @@ Scope constraint: exclude workspace-local/internal dependencies resolved via `wo
   - https://github.com/lukeed/clsx
 - **cmdk** 1.1.1 — MIT
   - https://github.com/pacocoursey/cmdk
-- **concurrently** 9.2.1 — MIT
+- **concurrently** 9.2.4 — MIT
   - https://github.com/open-cli-tools/concurrently
 - **cross-env** 10.1.0 — MIT
   - https://github.com/kentcdodds/cross-env
-- **diff** 7.0.0 — BSD-3-Clause
+- **diff** 8.0.4 — BSD-3-Clause
   - https://github.com/kpdecker/jsdiff
+- **diff** 9.0.0 — BSD-3-Clause
+  - https://github.com/kpdecker/jsdiff
+- **dotenv** 16.6.1 — BSD-2-Clause
+  - https://github.com/motdotla/dotenv
 - **dotenv** 17.4.2 — BSD-2-Clause
   - https://github.com/motdotla/dotenv
-- **electron** 38.8.6 — MIT
+- **electron** 43.3.0 — MIT
   - https://github.com/electron/electron
-- **electron-builder** 26.12.1 — MIT
+- **electron-builder** 26.15.3 — MIT
   - https://github.com/electron-userland/electron-builder
 - **gitdiff-parser** 0.3.1 — MIT
   - https://github.com/ecomfe/gitdiff-parser
@@ -97,30 +101,30 @@ Scope constraint: exclude workspace-local/internal dependencies resolved via `wo
   - https://github.com/syntax-tree/hast-util-sanitize
 - **i18next** 26.3.0 — MIT
   - https://github.com/i18next/i18next
-- **katex** 0.17.0 — MIT
+- **katex** 0.16.47 — MIT
   - https://github.com/KaTeX/KaTeX
-- **koffi** 2.16.1 — MIT
+- **koffi** 2.16.3 — MIT
   - https://github.com/Koromix/koffi
 - **lexical** 0.46.0 — MIT
   - https://github.com/facebook/lexical
-- **license-checker-rseidelsohn** 4.4.2 — BSD-3-Clause
+- **license-checker-rseidelsohn** 5.0.1 — BSD-3-Clause
   - https://github.com/RSeidelsohn/license-checker-rseidelsohn
-- **linkedom** 0.18.12 — ISC
+- **linkedom** 0.18.13 — ISC
   - https://github.com/WebReflection/linkedom
-- **lucide-react** 1.8.0 — ISC
+- **lucide-react** 1.28.0 — ISC
   - https://github.com/lucide-icons/lucide
 - **monaco-editor** 0.52.2 — MIT
   - https://github.com/microsoft/monaco-editor
 - **node-pty** 1.1.0 — MIT
   - https://github.com/microsoft/node-pty
-- **png-to-ico** 3.0.1 — MIT
+- **png-to-ico** 3.0.2 — MIT
   - https://github.com/steambap/png-to-ico
-- **radix-ui** 1.6.0 — MIT
+- **radix-ui** 1.6.7 — MIT
   - https://github.com/radix-ui/primitives
-- **react** 19.2.5 — MIT
-  - https://github.com/facebook/react
-- **react-dom** 19.2.5 — MIT
-  - https://github.com/facebook/react
+- **react** 19.2.8 — MIT
+  - https://github.com/react/react
+- **react-dom** 19.2.8 — MIT
+  - https://github.com/react/react
 - **react-i18next** 17.0.8 — MIT
   - https://github.com/i18next/react-i18next
 - **rehype-raw** 7.0.0 — MIT
@@ -131,11 +135,9 @@ Scope constraint: exclude workspace-local/internal dependencies resolved via `wo
   - https://github.com/remarkjs/remark-breaks
 - **remark-gfm** 4.0.1 — MIT
   - https://github.com/remarkjs/remark-gfm
-- **seti-icons** 0.0.4 — MIT
-  - https://github.com/elviswolcott/seti-icons
-- **shadcn** 4.4.0 — MIT
+- **shadcn** 4.16.1 — MIT
   - https://github.com/shadcn-ui/ui
-- **sharp** 0.34.5 — Apache-2.0
+- **sharp** 0.35.3 — Apache-2.0
   - https://github.com/lovell/sharp
 - **shiki** 3.23.0 — MIT
   - https://github.com/shikijs/shiki
@@ -143,17 +145,19 @@ Scope constraint: exclude workspace-local/internal dependencies resolved via `wo
   - https://github.com/emilkowalski/sonner
 - **streamdown** 2.5.0 — Apache-2.0
   - https://github.com/vercel/streamdown
-- **tailwind-merge** 3.5.0 — MIT
+- **tailwind-merge** 3.6.0 — MIT
   - https://github.com/dcastil/tailwind-merge
-- **tailwindcss** 4.2.4 — MIT
+- **tailwindcss** 4.3.3 — MIT
   - https://github.com/tailwindlabs/tailwindcss
+- **tsx** 4.23.7 — MIT
+  - https://github.com/privatenumber/tsx
 - **tw-animate-css** 1.4.0 — MIT
   - https://github.com/Wombosvideo/tw-animate-css
 - **typescript** 5.9.3 — Apache-2.0
   - https://github.com/microsoft/TypeScript
-- **vite** 8.0.9 — MIT
+- **vite** 8.2.0 — MIT
   - https://github.com/vitejs/vite
-- **wait-on** 9.0.5 — MIT
+- **wait-on** 9.1.0 — MIT
   - https://github.com/jeffbski/wait-on
 
 ## License texts
@@ -383,7 +387,7 @@ limitations under the License.
 ### Apache-2.0
 
 **Used by:**
-- sharp 0.34.5
+- sharp 0.35.3
 
 ```
 Apache License
@@ -645,6 +649,7 @@ END OF TERMS AND CONDITIONS
 ### BSD-2-Clause
 
 **Used by:**
+- dotenv 16.6.1
 - dotenv 17.4.2
 
 ```
@@ -676,7 +681,8 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 ### BSD-3-Clause
 
 **Used by:**
-- diff 7.0.0
+- diff 8.0.4
+- diff 9.0.0
 
 ```
 BSD 3-Clause License
@@ -713,7 +719,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 ### BSD-3-Clause
 
 **Used by:**
-- license-checker-rseidelsohn 4.4.2
+- license-checker-rseidelsohn 5.0.1
 
 ```
 Copyright 2012 Yahoo Inc.
@@ -744,7 +750,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 ### ISC
 
 **Used by:**
-- linkedom 0.18.12
+- linkedom 0.18.13
 
 ```
 ISC License
@@ -767,7 +773,7 @@ PERFORMANCE OF THIS SOFTWARE.
 ### ISC
 
 **Used by:**
-- lucide-react 1.8.0
+- lucide-react 1.28.0
 
 ```
 ISC License
@@ -818,7 +824,7 @@ SOFTWARE.
 ### MIT
 
 **Used by:**
-- @electron/rebuild 3.7.2
+- @electron/rebuild 4.2.0
 
 ```
 MIT License
@@ -855,8 +861,8 @@ SOFTWARE.
 - @lexical/rich-text 0.46.0
 - @lexical/utils 0.46.0
 - lexical 0.46.0
-- react 19.2.5
-- react-dom 19.2.5
+- react 19.2.8
+- react-dom 19.2.8
 
 ```
 MIT License
@@ -885,7 +891,7 @@ SOFTWARE.
 ### MIT
 
 **Used by:**
-- @napi-rs/keyring 1.2.0
+- @napi-rs/keyring 1.3.0
 
 ```
 MIT License
@@ -914,8 +920,8 @@ SOFTWARE.
 ### MIT
 
 **Used by:**
-- @radix-ui/react-scroll-area 1.2.12
-- radix-ui 1.6.0
+- @radix-ui/react-scroll-area 1.2.18
+- radix-ui 1.6.7
 
 ```
 MIT License
@@ -976,8 +982,8 @@ SOFTWARE.
 ### MIT
 
 **Used by:**
-- @tailwindcss/vite 4.2.4
-- tailwindcss 4.2.4
+- @tailwindcss/vite 4.3.3
+- tailwindcss 4.3.3
 
 ```
 MIT License
@@ -1035,7 +1041,7 @@ SOFTWARE.
 ### MIT
 
 **Used by:**
-- @tanstack/react-virtual 3.14.3
+- @tanstack/react-virtual 3.14.9
 
 ```
 MIT License
@@ -1064,10 +1070,10 @@ SOFTWARE.
 ### MIT
 
 **Used by:**
-- @types/diff 7.0.2
-- @types/node 25.6.0
-- @types/react 19.2.14
-- @types/react-dom 19.2.3
+- @types/node 24.13.3
+- @types/node 25.9.5
+- @types/react 19.2.18
+- @types/react-dom 19.2.4
 
 ```
     MIT License
@@ -1096,7 +1102,7 @@ SOFTWARE.
 ### MIT
 
 **Used by:**
-- @vitejs/plugin-react 6.0.1
+- @vitejs/plugin-react 6.0.5
 
 ```
 MIT License
@@ -1235,7 +1241,7 @@ THE SOFTWARE.
 ### MIT
 
 **Used by:**
-- @xyflow/react 12.10.2
+- @xyflow/react 12.11.2
 
 ```
 MIT License
@@ -1310,7 +1316,7 @@ SOFTWARE.
 ### MIT
 
 **Used by:**
-- concurrently 9.2.1
+- concurrently 9.2.4
 
 ```
 The MIT License (MIT)
@@ -1367,7 +1373,7 @@ SOFTWARE.
 ### MIT
 
 **Used by:**
-- electron 38.8.6
+- electron 43.3.0
 
 ```
 Copyright (c) Electron contributors
@@ -1396,7 +1402,7 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 ### MIT
 
 **Used by:**
-- electron-builder 26.12.1
+- electron-builder 26.15.3
 
 ```
 The MIT License (MIT)
@@ -1514,7 +1520,7 @@ SOFTWARE.
 ### MIT
 
 **Used by:**
-- katex 0.17.0
+- katex 0.16.47
 
 ```
 The MIT License (MIT)
@@ -1543,7 +1549,7 @@ SOFTWARE.
 ### MIT
 
 **Used by:**
-- koffi 2.16.1
+- koffi 2.16.3
 
 ```
 MIT License
@@ -1679,7 +1685,7 @@ SOFTWARE.
 ### MIT
 
 **Used by:**
-- png-to-ico 3.0.1
+- png-to-ico 3.0.2
 
 ```
 MIT License
@@ -1798,101 +1804,7 @@ SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 ### MIT
 
 **Used by:**
-- seti-icons 0.0.4
-
-```
-[![Travis (.com)](https://img.shields.io/travis/com/elviswolcott/seti-icons?logo=travis)](https://travis-ci.com/elviswolcott/seti-icons)
-[![npm](https://img.shields.io/npm/v/seti-icons?label=seti-icons&logo=npm)](https://www.npmjs.com/package/seti-icons)
-# seti-icons
-
-> File icons from Seti-UI
-
-All of the icons come from [jesseweed/seti-ui](https://github.com/jesseweed/seti-ui). 
-This repo just packages them up so you can use them with `npm install`.
-
-This package is primarily intended for use in static sites.
-All of the icons are stored in a JSON file as SVG strings.
-For most static sites, you only want a few icons on a page (and will likely reuse the same few icons across the entire site).
-As a result, it is best to inline the icons in the pages.
-
-In other cases, this approach does not make sense. 
-For example, in a webapp where the icons are used dynamically, it would likely be better to use an SVG spritesheet to enable caching of the icons instead of bundling 100K of SVG strings.
-
-# Usage
-
-By default, the color name from Seti-UI is returned for icons.
-
-```js
-import { getIcon } from "seti-icons";
-
-const { svg, color } = getIcon("README.md");
-```
-
-To replace the color keywords, use `themeIcons`.
-
-```js
-import { themeIcons } from "seti-icons";
-
-const getIcon = themeIcons({
-  blue: "#268bd2";
-  grey: "#657b83";
-  "grey-light": "#839496";
-  green: "#859900";
-  orange: "#cb4b16";
-  pink: "#d33682";
-  purple: "#6c71c4";
-  red: "#dc322f";
-  white: "#fdf6e3";
-  yellow: "#b58900";
-  ignore: "#586e75";
-})
-
-const { svg, color } = getIcon("README.md");
-```
-
-# Development
-
-## Available Scripts
-
-In the project directory, you can run:
-
-### `./build/build.sh`
-
-Runs a complete build from a fresh install
-
-### `npm run build`
-
-Builds the package using typescript into `./lib`
-
-### `npm run build:scripts`
-
-Builds the build scripts
-
-### `npm run extract`
-
-Processes the icons and styles in `seti-ui` into JSON files
-
-### `npm test`
-
-Launches the Jest to run tests.
-
-### `npm run lint`
-
-Checks code for style issues and syntax errors with TSLint and Prettier.
-
-### `npm run lint:fix`
-
-Checks code for style issues and syntax errors with TSLint and Prettier, attempting to fix them when possible.
-
-## Publishing a new version
-
-Travis is configured to run deploys on tags.
-```
-
-### MIT
-
-**Used by:**
-- shadcn 4.4.0
+- shadcn 4.16.1
 
 ```
 MIT License
@@ -1950,12 +1862,41 @@ SOFTWARE.
 ### MIT
 
 **Used by:**
-- tailwind-merge 3.5.0
+- tailwind-merge 3.6.0
 
 ```
 MIT License
 
 Copyright (c) 2021 Dany Castillo
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.
+```
+
+### MIT
+
+**Used by:**
+- tsx 4.23.7
+
+```
+MIT License
+
+Copyright (c) Hiroki Osame <hiroki.osame@gmail.com>
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal
@@ -2008,7 +1949,7 @@ SOFTWARE.
 ### MIT
 
 **Used by:**
-- vite 8.0.9
+- vite 8.2.0
 
 ```
 # Vite core license
@@ -2361,6 +2302,34 @@ Repository: https://github.com/vitest-dev/vitest
 > MIT License
 > 
 > Copyright (c) 2021-Present VoidZero Inc. and Vitest contributors
+> 
+> Permission is hereby granted, free of charge, to any person obtaining a copy
+> of this software and associated documentation files (the "Software"), to deal
+> in the Software without restriction, including without limitation the rights
+> to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+> copies of the Software, and to permit persons to whom the Software is
+> furnished to do so, subject to the following conditions:
+> 
+> The above copyright notice and this permission notice shall be included in all
+> copies or substantial portions of the Software.
+> 
+> THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+> IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+> FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+> AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+> LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+> OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+> SOFTWARE.
+
+---------------------------------------
+
+## @voidzero-dev/vite-task-client
+License: MIT
+Repository: https://github.com/voidzero-dev/vite-task
+
+> MIT License
+> 
+> Copyright (c) 2026-present, VoidZero Inc.
 > 
 > Permission is hereby granted, free of charge, to any person obtaining a copy
 > of this software and associated documentation files (the "Software"), to deal
@@ -2975,6 +2944,35 @@ Repository: https://github.com/follow-redirects/follow-redirects
 
 ---------------------------------------
 
+## fresh-import
+License: MIT
+By: sapphi-red
+Repository: https://github.com/sapphi-red/fresh-import
+
+> MIT License
+> 
+> Copyright (c) 2026 sapphi-red
+> 
+> Permission is hereby granted, free of charge, to any person obtaining a copy
+> of this software and associated documentation files (the "Software"), to deal
+> in the Software without restriction, including without limitation the rights
+> to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+> copies of the Software, and to permit persons to whom the Software is
+> furnished to do so, subject to the following conditions:
+> 
+> The above copyright notice and this permission notice shall be included in all
+> copies or substantial portions of the Software.
+> 
+> THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+> IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+> FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+> AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+> LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+> OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+> SOFTWARE.
+
+---------------------------------------
+
 ## generic-names
 License: MIT
 By: Alexey Litvinov
@@ -3175,6 +3173,13 @@ Repository: https://github.com/micromatch/is-glob
 
 ---------------------------------------
 
+## is-reference
+License: MIT
+By: Rich Harris
+Repository: https://github.com/Rich-Harris/is-reference
+
+---------------------------------------
+
 ## isexe, which
 License: ISC
 By: Isaac Z. Schlueter
@@ -3230,7 +3235,7 @@ Repository: https://github.com/lydell/js-tokens
 ## launch-editor, launch-editor-middleware
 License: MIT
 By: Evan You
-Repositories: https://github.com/yyx990803/launch-editor, https://github.com/yyx990803/launch-editor
+Repositories: https://github.com/vitejs/launch-editor, https://github.com/vitejs/launch-editor
 
 > The MIT License (MIT)
 > 
@@ -4241,12 +4246,40 @@ Repository: https://github.com/websockets/ws
 > COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER
 > IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN
 > CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+
+---------------------------------------
+
+## zimmerframe
+License: MIT
+Repository: https://github.com/sveltejs/zimmerframe
+
+> MIT License
+> 
+> Copyright (c) 2023 [these people](https://github.com/Rich-Harris/zimmerframe/graphs/contributors)
+> 
+> Permission is hereby granted, free of charge, to any person obtaining a copy
+> of this software and associated documentation files (the "Software"), to deal
+> in the Software without restriction, including without limitation the rights
+> to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+> copies of the Software, and to permit persons to whom the Software is
+> furnished to do so, subject to the following conditions:
+> 
+> The above copyright notice and this permission notice shall be included in all
+> copies or substantial portions of the Software.
+> 
+> THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+> IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+> FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+> AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+> LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+> OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+> SOFTWARE.
 ```
 
 ### MIT
 
 **Used by:**
-- wait-on 9.0.5
+- wait-on 9.1.0
 
 ```
 The MIT License (MIT)
@@ -4263,10 +4296,10 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 ### OFL-1.1
 
 **Used by:**
-- @fontsource-variable/geist 5.2.8
+- @fontsource-variable/geist 5.3.0
 
 ```
-Copyright 2024 The Geist Project Authors (https://github.com/vercel/geist-font.git)
+Copyright 2024 The Geist Project Authors (https://github.com/vercel/geist-font) Geist-Italic[wght].ttf: Copyright 2024 The Geist Project Authors (https://github.com/vercel/geist-font)
 
 This Font Software is licensed under the SIL Open Font License, Version 1.1.
 This license is copied below, and is also available with a FAQ at:
