@@ -41,9 +41,15 @@
     "dev": "turbo run build --filter=@spiritagent/agent-core --filter=@spiritagent/host-internal && cargo run -p spirit-agent",
     "dev:cli": "cargo run -p spirit-agent",
     "dev:desktop": "pnpm --filter @spiritagent/desktop dev",
-    "dev:desktop:web": "pnpm --filter @spiritagent/desktop dev:web"
+    "dev:desktop:web": "pnpm --filter @spiritagent/desktop dev:web",
+    "lint": "oxlint packages apps/desktop",
+    "lint:fix": "oxlint --fix packages apps/desktop",
+    "format": "oxfmt --check packages apps/desktop",
+    "format:fix": "oxfmt packages apps/desktop"
   },
   "devDependencies": {
+    "oxfmt": "^0.62.0",
+    "oxlint": "^1.77.0",
     "turbo": "2.10.8"
   },
   "engines": {
