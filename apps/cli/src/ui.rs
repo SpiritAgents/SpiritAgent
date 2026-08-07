@@ -7,7 +7,7 @@ use ratatui::{
     text::{Line, Span},
     widgets::{Block, Borders, Clear, Paragraph, Wrap},
 };
-use ratatui_image::picker::{Picker, ProtocolType};
+use ratatui_image::picker::Picker;
 use ratatui_image::{Resize, StatefulImage, protocol::StatefulProtocol};
 use rust_i18n::t;
 use unicode_width::{UnicodeWidthChar, UnicodeWidthStr};
@@ -90,7 +90,7 @@ pub enum ImageRenderBackend {
 }
 
 enum CachedRenderedImage {
-    Ready(StatefulProtocol),
+    Ready(Box<StatefulProtocol>),
     Failed,
 }
 
@@ -121,10 +121,8 @@ impl ImageRenderState {
     }
 
     pub fn halfblocks() -> Self {
-        let mut picker = Picker::from_fontsize((10, 20));
-        picker.set_protocol_type(ProtocolType::Halfblocks);
         Self {
-            picker,
+            picker: Picker::halfblocks(),
             backend: ImageRenderBackend::HalfblocksFallback,
             cache: HashMap::new(),
         }
@@ -164,7 +162,7 @@ impl ImageRenderState {
             frame.render_stateful_widget(
                 StatefulImage::default().resize(Resize::Fit(None)),
                 area,
-                protocol,
+                protocol.as_mut(),
             );
             encoding_error = protocol
                 .last_encoding_result()
@@ -186,7 +184,7 @@ impl ImageRenderState {
 fn load_cached_rendered_image(path: &str, picker: &Picker) -> CachedRenderedImage {
     match ImageReader::open(path) {
         Ok(reader) => match reader.decode() {
-            Ok(image) => CachedRenderedImage::Ready(picker.new_resize_protocol(image)),
+            Ok(image) => CachedRenderedImage::Ready(Box::new(picker.new_resize_protocol(image))),
             Err(err) => {
                 let message = format!("decode failed: {err:#}");
                 logging::log_event(&format!(
