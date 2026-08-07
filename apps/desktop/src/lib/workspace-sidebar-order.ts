@@ -40,8 +40,6 @@ export function applyWorkspaceGroupOrder<T extends WorkspaceGroupOrderEntry>(
   return [...ordered, ...appended];
 }
 
-export function workspaceGroupIdsInOrder<T extends { id: string }>(
-  groups: readonly T[],
-): string[] {
+export function workspaceGroupIdsInOrder<T extends { id: string }>(groups: readonly T[]): string[] {
   return groups.map((group) => group.id);
 }

@@ -8,10 +8,10 @@ function mergeConsecutiveNumericVersionSegments(tokens: string[]): string[] {
     const current = tokens[index];
     const next = tokens[index + 1];
     if (
-      current
-      && next
-      && PURE_DIGIT_TOKEN_PATTERN.test(current)
-      && PURE_DIGIT_TOKEN_PATTERN.test(next)
+      current &&
+      next &&
+      PURE_DIGIT_TOKEN_PATTERN.test(current) &&
+      PURE_DIGIT_TOKEN_PATTERN.test(next)
     ) {
       merged.push(`${current}.${next}`);
       index += 1;
@@ -29,14 +29,14 @@ function mergeConsecutiveNumericVersionSegments(tokens: string[]): string[] {
 export function formatModelDisplayNameFromId(modelId: string): string {
   const normalized = modelId
     .trim()
-    .replace(MODEL_DISPLAY_NAME_SEPARATOR_PATTERN, ' ')
-    .replace(/\s+/g, ' ')
+    .replace(MODEL_DISPLAY_NAME_SEPARATOR_PATTERN, " ")
+    .replace(/\s+/g, " ")
     .trim();
   if (!normalized) {
     return modelId;
   }
 
-  const tokens = normalized.split(' ').filter((token) => token.length > 0);
+  const tokens = normalized.split(" ").filter((token) => token.length > 0);
   const versionAwareTokens = mergeConsecutiveNumericVersionSegments(tokens);
 
   return versionAwareTokens
@@ -46,7 +46,7 @@ export function formatModelDisplayNameFromId(modelId: string): string {
       }
       return word.charAt(0).toUpperCase() + word.slice(1);
     })
-    .join(' ');
+    .join(" ");
 }
 
 export function resolveModelDisplayTitle(input: {

@@ -4,16 +4,10 @@ import { Maximize2, X } from "lucide-react";
 import type { MermaidConfig } from "mermaid";
 import type { CustomRendererProps } from "streamdown";
 
-import {
-  LOCAL_IMAGE_FLOATING_ACTION_BUTTON_CLASS,
-} from "@/components/local-image-preview-dialog";
+import { LOCAL_IMAGE_FLOATING_ACTION_BUTTON_CLASS } from "@/components/local-image-preview-dialog";
 import { SpiritMermaidChart } from "@/components/spirit-mermaid-chart";
 import { Button } from "@/components/ui/button";
-import {
-  Dialog,
-  DialogClose,
-  DialogContent,
-} from "@/components/ui/dialog";
+import { Dialog, DialogClose, DialogContent } from "@/components/ui/dialog";
 import { Spinner } from "@/components/ui/spinner";
 import { getSpiritMermaidConfig } from "@/lib/markdown-mermaid-theme";
 import { cn } from "@/lib/utils";
@@ -61,7 +55,10 @@ function MermaidPreviewDialog({
               type="button"
               variant="ghost"
               size="icon"
-              className={cn("absolute top-3 right-3 z-[1]", LOCAL_IMAGE_FLOATING_ACTION_BUTTON_CLASS)}
+              className={cn(
+                "absolute top-3 right-3 z-[1]",
+                LOCAL_IMAGE_FLOATING_ACTION_BUTTON_CLASS,
+              )}
               title={closeLabel}
               aria-label={closeLabel}
             >
@@ -94,10 +91,7 @@ export function MarkdownMermaidBlock({
 }: CustomRendererProps & { resolvedDark: boolean }) {
   const { t } = useTranslation();
   const [viewerOpen, setViewerOpen] = useState(false);
-  const mermaidConfig = useMemo(
-    () => getSpiritMermaidConfig(resolvedDark),
-    [resolvedDark],
-  );
+  const mermaidConfig = useMemo(() => getSpiritMermaidConfig(resolvedDark), [resolvedDark]);
   const expandLabel = t("app.viewLargeDiagram");
 
   if (isIncomplete) {

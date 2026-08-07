@@ -1,13 +1,13 @@
 import {
   buildNotificationApprovalProtocolUrl,
   buildNotificationFocusProtocolUrl,
-} from './spirit-notification-protocol.js';
+} from "./spirit-notification-protocol.js";
 
 export type WindowsToastPayload = {
   title: string;
   body?: string;
   tag?: string;
-  actions?: Array<{ type: 'button'; text: string }>;
+  actions?: Array<{ type: "button"; text: string }>;
 };
 
 const TOAST_TEXT_LINE_MAX = 4;
@@ -15,10 +15,10 @@ const TOAST_ACTION_MAX = 2;
 
 export function escapeToastXml(value: string): string {
   return value
-    .replace(/&/g, '&amp;')
-    .replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;')
-    .replace(/"/g, '&quot;');
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;");
 }
 
 function toastTextLines(payload: WindowsToastPayload): string[] {
@@ -42,16 +42,16 @@ function toastTextLines(payload: WindowsToastPayload): string[] {
 export function buildWindowsToastXml(payload: WindowsToastPayload): string {
   const textXml = toastTextLines(payload)
     .map((line) => `<text>${escapeToastXml(line)}</text>`)
-    .join('');
+    .join("");
   const tag = payload.tag?.trim();
   const actionsXml = (payload.actions ?? [])
     .slice(0, TOAST_ACTION_MAX)
     .map((action, index) => {
-      const decision = index === 0 ? 'allow' : 'deny';
+      const decision = index === 0 ? "allow" : "deny";
       const protocolUrl = buildNotificationApprovalProtocolUrl(decision, tag);
       return `<action content="${escapeToastXml(action.text)}" arguments="${escapeToastXml(protocolUrl)}" activationType="protocol" />`;
     })
-    .join('');
+    .join("");
   const launch = escapeToastXml(buildNotificationFocusProtocolUrl(tag));
   return `<toast launch="${launch}" activationType="protocol"><visual><binding template="ToastGeneric">${textXml}</binding></visual><actions>${actionsXml}</actions></toast>`;
 }
@@ -69,44 +69,43 @@ export type WindowsToastActivationDetails = {
 /** Normalize WinRT activation payload from `Notification.handleActivation` / `action` events. */
 export function parseWindowsToastActivation(
   details: WindowsToastActivationDetails,
-): { kind: 'click' } | { kind: 'action'; actionIndex: number } {
-  if (details.type?.toLowerCase() === 'action') {
+): { kind: "click" } | { kind: "action"; actionIndex: number } {
+  if (details.type?.toLowerCase() === "action") {
     const directIndex = details.actionIndex;
-    if (typeof directIndex === 'number' && directIndex >= 0) {
-      return { kind: 'action', actionIndex: directIndex };
+    if (typeof directIndex === "number" && directIndex >= 0) {
+      return { kind: "action", actionIndex: directIndex };
     }
   }
 
-  const rawArguments = details.arguments?.trim() ?? '';
-  const params = new URLSearchParams(rawArguments.replace(/;/g, '&'));
-  const activationType = (params.get('type') ?? details.type ?? 'click').toLowerCase();
-  if (activationType !== 'action') {
-    return { kind: 'click' };
+  const rawArguments = details.arguments?.trim() ?? "";
+  const params = new URLSearchParams(rawArguments.replace(/;/g, "&"));
+  const activationType = (params.get("type") ?? details.type ?? "click").toLowerCase();
+  if (activationType !== "action") {
+    return { kind: "click" };
   }
   const fromDetails =
-    typeof details.actionIndex === 'number' && details.actionIndex >= 0
+    typeof details.actionIndex === "number" && details.actionIndex >= 0
       ? details.actionIndex
       : undefined;
-  const fromArguments = params.get('actionIndex');
-  const actionIndex =
-    fromDetails ?? (fromArguments !== null ? Number(fromArguments) : Number.NaN);
+  const fromArguments = params.get("actionIndex");
+  const actionIndex = fromDetails ?? (fromArguments !== null ? Number(fromArguments) : Number.NaN);
   if (!Number.isFinite(actionIndex) || actionIndex < 0) {
-    return { kind: 'click' };
+    return { kind: "click" };
   }
-  return { kind: 'action', actionIndex };
+  return { kind: "action", actionIndex };
 }
 
 export function resolveNotificationActionIndex(
   event: unknown,
   legacyIndex?: number,
 ): number | undefined {
-  if (typeof event === 'object' && event !== null && 'actionIndex' in event) {
+  if (typeof event === "object" && event !== null && "actionIndex" in event) {
     const fromEvent = (event as { actionIndex?: number }).actionIndex;
-    if (typeof fromEvent === 'number' && fromEvent >= 0) {
+    if (typeof fromEvent === "number" && fromEvent >= 0) {
       return fromEvent;
     }
   }
-  if (typeof legacyIndex === 'number' && legacyIndex >= 0) {
+  if (typeof legacyIndex === "number" && legacyIndex >= 0) {
     return legacyIndex;
   }
   return undefined;

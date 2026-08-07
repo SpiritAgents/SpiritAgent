@@ -1,7 +1,7 @@
-import type { ModelProviderId } from '../model-provider-presets.js';
+import type { ModelProviderId } from "../model-provider-presets.js";
 
-export const KEYRING_SERVICE = 'SpiritAgent';
-export const KEYRING_GLOBAL_ACCOUNT = 'openai_api_key';
+export const KEYRING_SERVICE = "SpiritAgent";
+export const KEYRING_GLOBAL_ACCOUNT = "openai_api_key";
 
 /**
  * Canonical (Desktop/CLI) account scheme: keys are scoped by provider *group*
@@ -54,5 +54,5 @@ export function modelKeyAccount(modelName: string): string {
 
 /** Config profiles without `provider` use custom-scoped keys. */
 export function modelProviderKeyScope(provider?: ModelProviderId): ModelProviderId {
-  return provider ?? 'custom';
+  return provider ?? "custom";
 }

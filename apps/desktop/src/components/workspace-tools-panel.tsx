@@ -41,7 +41,10 @@ import {
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { GitHubConnectTooltipContent } from "@/components/github-sign-in-prompt";
-import { WorkspaceBrowserTab, type WorkspaceBrowserTabProps } from "@/components/workspace-browser-tab";
+import {
+  WorkspaceBrowserTab,
+  type WorkspaceBrowserTabProps,
+} from "@/components/workspace-browser-tab";
 import { WorkspaceFilesTab } from "@/components/workspace-files-tab";
 import { WorkspaceGitTab } from "@/components/workspace-git-tab";
 import { WorkspacePrTab } from "@/components/workspace-pr-tab";
@@ -71,14 +74,14 @@ import {
   registerWorkspaceNewToolTabShortcut,
   unregisterWorkspaceNewToolTabShortcut,
 } from "@/lib/workspace-new-tool-tab-shortcut-bridge";
-import { useWorkspaceToolsChromeActions, useWorkspaceToolsChromeOpen } from "@/contexts/workspace-tools-chrome-context";
+import {
+  useWorkspaceToolsChromeActions,
+  useWorkspaceToolsChromeOpen,
+} from "@/contexts/workspace-tools-chrome-context";
 import { useGitHubAuthConnected } from "@/hooks/use-github-auth-connected";
 import { useWorkspaceToolsShellHorizontalDivider } from "@/lib/use-workspace-tools-shell-horizontal-divider";
 import { WORKSPACE_TOOL_TABS_SHELL_DIVIDER_ATTR } from "@/lib/workspace-tools-panel-edge";
-import type {
-  EditorFileTarget,
-  WorkspaceEditorViewMode,
-} from "@/lib/workspace-editor-navigation";
+import type { EditorFileTarget, WorkspaceEditorViewMode } from "@/lib/workspace-editor-navigation";
 import { resolveWorkspaceFilesTabIcon } from "@/lib/workspace-explorer-icon";
 import {
   addWorkspaceToolTab,
@@ -107,15 +110,12 @@ import type {
 
 export type { WorkspaceToolTab, WorkspaceToolTabKind };
 
-const TAB_KIND_META: Record<
-  WorkspaceToolTabKind,
-  { labelKey: string; icon: typeof FileText }
-> = {
-  files: { labelKey: 'workspace.files', icon: FileText },
-  shell: { labelKey: 'workspace.shell', icon: Terminal },
-  git: { labelKey: 'workspace.gitTab', icon: GitBranch },
-  browser: { labelKey: 'workspace.browser', icon: Globe },
-  pr: { labelKey: 'workspace.prTab', icon: GitPullRequest },
+const TAB_KIND_META: Record<WorkspaceToolTabKind, { labelKey: string; icon: typeof FileText }> = {
+  files: { labelKey: "workspace.files", icon: FileText },
+  shell: { labelKey: "workspace.shell", icon: Terminal },
+  git: { labelKey: "workspace.gitTab", icon: GitBranch },
+  browser: { labelKey: "workspace.browser", icon: Globe },
+  pr: { labelKey: "workspace.prTab", icon: GitPullRequest },
 };
 
 export type WorkspaceToolsDockProps = {
@@ -149,7 +149,10 @@ export type WorkspaceToolsDockProps = {
   prRevealNonce?: number;
   prRevealTabId?: string | null;
   prRevealRequest?: import("@/lib/workspace-pr-navigation").GitHubPullRequestRevealRequest | null;
-  onOpenWorkspaceFile?: (relativePath: string, options?: { viewMode?: WorkspaceEditorViewMode }) => void;
+  onOpenWorkspaceFile?: (
+    relativePath: string,
+    options?: { viewMode?: WorkspaceEditorViewMode },
+  ) => void;
   onOpenWorkspaceFileInNewTab?: (
     relativePath: string,
     options?: { viewMode?: WorkspaceEditorViewMode },
@@ -158,7 +161,7 @@ export type WorkspaceToolsDockProps = {
   activeTabId: string;
   onTabsChange: Dispatch<SetStateAction<WorkspaceToolTab[]>>;
   onActiveTabIdChange(id: string): void;
-  onBrowserElementPicked?: WorkspaceBrowserTabProps['onElementPicked'];
+  onBrowserElementPicked?: WorkspaceBrowserTabProps["onElementPicked"];
   onPrDiffAddToSession?: (attachment: import("@/lib/pr-diff-attachment").PrDiffAttachment) => void;
   onTerminalAddToSession?: (
     attachment: import("@/lib/terminal-snippet-attachment").TerminalSnippetAttachment,
@@ -170,7 +173,7 @@ export type WorkspaceToolsDockProps = {
   onGitCommitAddToSession?: (
     attachment: import("@/lib/git-commit-attachment").GitCommitAttachment,
   ) => void;
-  onBrowserOpenInNewTab?: WorkspaceBrowserTabProps['onOpenUrlInNewTab'];
+  onBrowserOpenInNewTab?: WorkspaceBrowserTabProps["onOpenUrlInNewTab"];
   /** Electron 桌面版可新建/使用浏览器选项卡；Web 宿主菜单项可见但禁用。 */
   browserTabEnabled?: boolean;
   /** Electron 桌面版可新建 PR 选项卡；Web 宿主菜单项可见但禁用。 */
@@ -214,7 +217,9 @@ export type WorkspaceToolsDockProps = {
   gitChipBusy?: boolean;
   readGitWorkingTree: () => Promise<GitWorkingTreeSnapshot>;
   readGitHistory: (request?: ReadGitHistoryRequest) => Promise<GitHistorySnapshot>;
-  readGitCommitMessage: (request: import("@/types").ReadGitCommitMessageRequest) => Promise<import("@/types").GitCommitMessageSnapshot>;
+  readGitCommitMessage: (
+    request: import("@/types").ReadGitCommitMessageRequest,
+  ) => Promise<import("@/types").GitCommitMessageSnapshot>;
   submitGitChip: (request: SubmitGitChipRequest) => Promise<boolean>;
   className?: string;
   /** Windows 云母 / macOS Vibrancy：工作区面板使用半透明主题底色。 */
@@ -416,7 +421,7 @@ function WorkspaceToolsDockShell({
         <div
           role="separator"
           aria-orientation="vertical"
-          aria-label={t('workspace.resizeToolsWidth')}
+          aria-label={t("workspace.resizeToolsWidth")}
           className={cn(
             "group relative z-10 w-px shrink-0 cursor-col-resize touch-none select-none",
             "before:absolute before:inset-y-0 before:-left-1 before:w-3 before:content-['']",
@@ -442,7 +447,7 @@ function WorkspaceToolsDockShell({
             desktopMicaTintClass(useMicaBackdrop),
           )}
           style={{ width: widthPx }}
-          aria-label={t('workspace.workspaceTools')}
+          aria-label={t("workspace.workspaceTools")}
         >
           <WorkspaceToolsDockContent {...contentProps} />
         </aside>
@@ -555,10 +560,7 @@ const WorkspaceToolsDockContent = memo(function WorkspaceToolsDockContent({
     };
   }, [openTools]);
 
-  const activeTab = useMemo(
-    () => tabs.find((tab) => tab.id === activeTabId),
-    [activeTabId, tabs],
-  );
+  const activeTab = useMemo(() => tabs.find((tab) => tab.id === activeTabId), [activeTabId, tabs]);
 
   useEffect(() => {
     if (activeTab?.kind !== "shell") {
@@ -593,7 +595,15 @@ const WorkspaceToolsDockContent = memo(function WorkspaceToolsDockContent({
       onTabsChange(next.tabs);
       onActiveTabIdChange(next.activeId);
     },
-    [browserTabEnabled, gitHubAuthConnected, prTabEnabled, onActiveTabIdChange, onTabsChange, tabs, t],
+    [
+      browserTabEnabled,
+      gitHubAuthConnected,
+      prTabEnabled,
+      onActiveTabIdChange,
+      onTabsChange,
+      tabs,
+      t,
+    ],
   );
 
   const performCloseTab = useCallback(
@@ -665,9 +675,7 @@ const WorkspaceToolsDockContent = memo(function WorkspaceToolsDockContent({
   const handleTabDirtyChange = useCallback(
     (tabId: string, dirty: boolean) => {
       onTabsChange((prev) =>
-        prev.map((item) =>
-          item.id === tabId ? { ...item, tabDirty: dirty || undefined } : item,
-        ),
+        prev.map((item) => (item.id === tabId ? { ...item, tabDirty: dirty || undefined } : item)),
       );
     },
     [onTabsChange],
@@ -677,9 +685,7 @@ const WorkspaceToolsDockContent = memo(function WorkspaceToolsDockContent({
     (tabId: string, relativePath: string | undefined) => {
       onTabsChange((prev) =>
         prev.map((item) =>
-          item.id === tabId
-            ? { ...item, filesWorkspacePath: relativePath || undefined }
-            : item,
+          item.id === tabId ? { ...item, filesWorkspacePath: relativePath || undefined } : item,
         ),
       );
     },
@@ -697,350 +703,347 @@ const WorkspaceToolsDockContent = memo(function WorkspaceToolsDockContent({
 
   return (
     <>
-          <div
-            ref={toolTabsBarRef}
-            className="flex shrink-0 items-end gap-0 pt-1.5 pb-0 pl-1 pr-1"
-          >
-            <ScrollArea
-              scrollbars="horizontal"
-              type="hover"
-              scrollHideDelay={450}
-              className="min-h-0 min-w-0 flex-1 self-stretch"
-            >
-              <div
-                role="tablist"
-                aria-label={t('workspace.toolTabs')}
-                className="flex items-end gap-0"
-              >
-              {tabs.map((item) => {
-                const meta = TAB_KIND_META[item.kind];
-                const displayTitle = item.tabTitle;
-                const filesTabIcon =
-                  item.kind === "files" ? resolveWorkspaceFilesTabIcon(displayTitle) : undefined;
-                const Icon =
-                  item.kind === "pr" && item.prStatus
-                    ? resolvePrTabStatusIcon(item.prStatus)
-                    : filesTabIcon ?? meta.icon;
-                const selected = item.id === activeTabId;
-                const label = workspaceToolTabLabel(item.kind, tabs, item.id, t);
-                const renderTabButton = () => (
-                  <button
-                    type="button"
-                    role="tab"
-                    id={`workspace-tool-tab-${item.id}`}
-                    aria-selected={selected}
-                    aria-controls={`workspace-tool-panel-${item.id}`}
-                    tabIndex={selected ? 0 : -1}
-                    aria-label={displayTitle ? undefined : label}
-                    className="flex min-w-0 flex-1 items-center gap-1 rounded-t-md bg-transparent py-2 pl-2 pr-2 text-xs font-normal outline-none"
-                    onClick={() => onActiveTabIdChange(item.id)}
-                  >
-                    <Icon className="size-3.5 shrink-0 opacity-80" aria-hidden />
-                    {displayTitle ? (
-                      <span className="flex min-w-0 items-center gap-1.5">
-                        <span className="truncate">{displayTitle}</span>
-                        {item.tabDirty ? (
-                          <span
-                            className="size-1.5 shrink-0 rounded-full bg-muted-foreground"
-                            role="status"
-                            aria-label={t("workspace.unsavedChangesIndicator")}
-                          />
-                        ) : null}
-                      </span>
-                    ) : null}
-                  </button>
-                );
-                return (
-                  <div
-                    key={item.id}
-                    className={cn(
-                      "group/tab relative flex shrink-0 items-stretch rounded-t-md border border-transparent",
-                      displayTitle ? "max-w-[9rem]" : "max-w-[3rem]",
-                      selected
-                        ? cn(
-                            "border-border/40 text-foreground shadow-sm",
-                            useMicaBackdrop
-                              ? cn("border-b-transparent", desktopMicaWorkspaceTabSelectedClass(useMicaBackdrop))
-                              : "border-b-background bg-background",
-                          )
-                        : "text-muted-foreground hover:bg-accent hover:text-accent-foreground",
-                    )}
-                  >
-                    {displayTitle ? (
-                      renderTabButton()
-                    ) : (
-                      <Tooltip delayDuration={300} disableHoverableContent>
-                        <TooltipTrigger asChild>{renderTabButton()}</TooltipTrigger>
-                        <TooltipContent side="bottom" sideOffset={4}>
-                          {label}
-                        </TooltipContent>
-                      </Tooltip>
-                    )}
-                    {displayTitle ? (
-                      <button
-                        type="button"
-                        className={cn(
-                          "absolute inset-y-0 right-0 hidden w-8 items-center justify-end rounded-tr-md pr-1 outline-none group-hover/tab:flex",
-                          selected ? "bg-background" : "bg-accent",
-                        )}
-                        style={maskFadeHorizontalEnd}
-                        aria-label={t('workspace.closeTab', { label })}
-                        onClick={(event) => {
-                          event.stopPropagation();
-                          handleCloseTab(item.id);
-                        }}
-                      >
-                        <X className="size-3 opacity-70" aria-hidden />
-                      </button>
-                    ) : null}
-                  </div>
-                );
-              })}
-              </div>
-            </ScrollArea>
-            <DropdownMenu modal open={addToolTabMenuOpen} onOpenChange={setAddToolTabMenuOpen}>
-              <Tooltip delayDuration={300} disableHoverableContent>
-                <TooltipTrigger asChild>
-                  <DropdownMenuTrigger asChild>
-                    <Button
-                      type="button"
-                      variant="ghost"
-                      size="icon"
-                      data-workspace-new-tool-tab=""
-                      aria-label={t('workspace.newToolTab')}
-                      className={cn(
-                        'mb-1 size-7 shrink-0 rounded-full p-0 text-muted-foreground shadow-none hover:bg-muted/50 hover:text-sidebar-foreground',
-                        'aria-expanded:bg-muted/35 aria-expanded:text-sidebar-foreground aria-expanded:hover:bg-muted/50',
-                        instantHoverMotionClass,
-                      )}
-                    >
-                      <Plus className="size-3.5" aria-hidden />
-                    </Button>
-                  </DropdownMenuTrigger>
-                </TooltipTrigger>
-                <TooltipContent side="bottom" sideOffset={4}>
-                  {t('common.new')}{" "}
-                  <NewToolTabShortcutKbd />
-                </TooltipContent>
-              </Tooltip>
-              <DropdownMenuContent
-                align="start"
-                side="top"
-                sideOffset={10}
-                onCloseAutoFocus={(event) => {
-                  event.preventDefault();
-                }}
-                className={cn(
-                  'flex w-max min-w-[11rem] max-w-[min(15rem,calc(100vw-1.25rem))] flex-col',
-                  DESKTOP_OVERLAY_LIST_DROPDOWN_SURFACE,
-                  DESKTOP_OVERLAY_LIST_LIST_PADDING,
-                  DESKTOP_OVERLAY_LIST_LIST_GAP,
-                )}
-              >
-                {(["files", "shell", "git", "browser", "pr"] as const).map((kind) => {
-                  const meta = TAB_KIND_META[kind];
-                  const Icon = meta.icon;
-                  const browserDisabled = kind === "browser" && !browserTabEnabled;
-                  const prHostDisabled = kind === "pr" && !prTabEnabled;
-                  const prAuthBlocked = kind === "pr" && prMenuBlocked;
-                  const disabled = browserDisabled || prHostDisabled || prAuthBlocked;
-                  const menuItem = (
-                    <DropdownMenuItem
-                      disabled={disabled}
-                      title={
-                        browserDisabled
-                          ? t("workspace.browserElectronOnly")
-                          : prHostDisabled
-                            ? t("workspace.prElectronOnly")
-                            : undefined
-                      }
-                      className={cn(
-                        "flex w-full cursor-pointer select-none items-center gap-2 rounded-sm text-left outline-none",
-                        DESKTOP_OVERLAY_LIST_ITEM,
-                        "text-popover-foreground",
-                      )}
-                      onSelect={() => {
-                        handleAddTab(kind);
-                      }}
-                    >
-                      <Icon className="size-4 shrink-0 text-muted-foreground" aria-hidden />
-                      <span className="min-w-0 flex-1 truncate">{t(meta.labelKey)}</span>
-                    </DropdownMenuItem>
-                  );
-
-                  if (kind !== "pr" || !prAuthBlocked || prHostDisabled) {
-                    return <span key={kind} className="flex w-full min-w-0">{menuItem}</span>;
-                  }
-
-                  return (
-                    <Tooltip key={kind} delayDuration={300}>
-                      <TooltipTrigger asChild>
-                        <span className="flex w-full min-w-0">{menuItem}</span>
-                      </TooltipTrigger>
-                      <TooltipContent side="right" sideOffset={8}>
-                        {gitHubAuthConnected === null ? (
-                          t("workspace.prGitHubAuthChecking")
-                        ) : (
-                          <GitHubConnectTooltipContent
-                            onSignIn={() => {
-                              onOpenIntegrationsSettings?.();
-                            }}
-                          />
-                        )}
-                      </TooltipContent>
-                    </Tooltip>
-                  );
-                })}
-              </DropdownMenuContent>
-            </DropdownMenu>
-          </div>
-
-          <div className="relative flex min-h-0 flex-1 flex-col overflow-hidden text-xs" aria-live="polite">
+      <div ref={toolTabsBarRef} className="flex shrink-0 items-end gap-0 pt-1.5 pb-0 pl-1 pr-1">
+        <ScrollArea
+          scrollbars="horizontal"
+          type="hover"
+          scrollHideDelay={450}
+          className="min-h-0 min-w-0 flex-1 self-stretch"
+        >
+          <div role="tablist" aria-label={t("workspace.toolTabs")} className="flex items-end gap-0">
             {tabs.map((item) => {
+              const meta = TAB_KIND_META[item.kind];
+              const displayTitle = item.tabTitle;
+              const filesTabIcon =
+                item.kind === "files" ? resolveWorkspaceFilesTabIcon(displayTitle) : undefined;
+              const Icon =
+                item.kind === "pr" && item.prStatus
+                  ? resolvePrTabStatusIcon(item.prStatus)
+                  : (filesTabIcon ?? meta.icon);
               const selected = item.id === activeTabId;
-              const panelPadding =
-                item.kind === "files" || item.kind === "shell" ? "p-0" : "p-0";
-              const planRevealEnabled =
-                item.kind === "files" &&
-                planRevealTabId != null &&
-                item.id === planRevealTabId;
-              const fileRevealEnabled =
-                item.kind === "files" &&
-                fileRevealTabId != null &&
-                item.id === fileRevealTabId;
-              const prRevealEnabled =
-                item.kind === "pr" && prRevealTabId != null && item.id === prRevealTabId;
-
+              const label = workspaceToolTabLabel(item.kind, tabs, item.id, t);
+              const renderTabButton = () => (
+                <button
+                  type="button"
+                  role="tab"
+                  id={`workspace-tool-tab-${item.id}`}
+                  aria-selected={selected}
+                  aria-controls={`workspace-tool-panel-${item.id}`}
+                  tabIndex={selected ? 0 : -1}
+                  aria-label={displayTitle ? undefined : label}
+                  className="flex min-w-0 flex-1 items-center gap-1 rounded-t-md bg-transparent py-2 pl-2 pr-2 text-xs font-normal outline-none"
+                  onClick={() => onActiveTabIdChange(item.id)}
+                >
+                  <Icon className="size-3.5 shrink-0 opacity-80" aria-hidden />
+                  {displayTitle ? (
+                    <span className="flex min-w-0 items-center gap-1.5">
+                      <span className="truncate">{displayTitle}</span>
+                      {item.tabDirty ? (
+                        <span
+                          className="size-1.5 shrink-0 rounded-full bg-muted-foreground"
+                          role="status"
+                          aria-label={t("workspace.unsavedChangesIndicator")}
+                        />
+                      ) : null}
+                    </span>
+                  ) : null}
+                </button>
+              );
               return (
                 <div
                   key={item.id}
-                  id={`workspace-tool-panel-${item.id}`}
-                  role="tabpanel"
-                  aria-labelledby={`workspace-tool-tab-${item.id}`}
-                  hidden={!selected}
-                  inert={!selected}
-                  aria-hidden={!selected}
                   className={cn(
-                    "absolute inset-0 flex min-h-0 flex-col overflow-hidden",
-                    panelPadding,
-                    !selected && "invisible",
+                    "group/tab relative flex shrink-0 items-stretch rounded-t-md border border-transparent",
+                    displayTitle ? "max-w-[9rem]" : "max-w-[3rem]",
+                    selected
+                      ? cn(
+                          "border-border/40 text-foreground shadow-sm",
+                          useMicaBackdrop
+                            ? cn(
+                                "border-b-transparent",
+                                desktopMicaWorkspaceTabSelectedClass(useMicaBackdrop),
+                              )
+                            : "border-b-background bg-background",
+                        )
+                      : "text-muted-foreground hover:bg-accent hover:text-accent-foreground",
                   )}
                 >
-                  {item.kind === "files" ? (
-                    <div className="flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden pr-2 pb-2 pt-0">
-                      <WorkspaceFilesTab
-                        workspaceRoot={workspaceRoot}
-                        plan={plan}
-                        listExplorerChildren={listExplorerChildren}
-                        gitRevision={gitSnapshot?.revision}
-                        readWorkspaceTextFile={readWorkspaceTextFile}
-                        writeWorkspaceTextFile={writeWorkspaceTextFile}
-                        readHostTextFile={readHostTextFile}
-                        writeHostTextFile={writeHostTextFile}
-                        readManagedImagePreviewDataUrl={readManagedImagePreviewDataUrl}
-                        readLocalImagePreviewDataUrl={readLocalImagePreviewDataUrl}
-                        onStartImplementing={onStartImplementing}
-                        startImplementingDisabled={startImplementingDisabled}
-                        autoRevealPlanNonce={planRevealEnabled ? autoRevealPlanNonce : 0}
-                        planRevealEnabled={planRevealEnabled}
-                        autoRevealFileNonce={fileRevealEnabled ? autoRevealFileNonce : 0}
-                        fileRevealEnabled={fileRevealEnabled}
-                        fileRevealPath={fileRevealPath}
-                        fileRevealAbsolutePath={fileRevealAbsolutePath}
-                        fileRevealScope={fileRevealScope}
-                        fileRevealViewMode={fileRevealViewMode}
-                        fileRevealDirectoryOnly={fileRevealDirectoryOnly}
-                        fileRevealLine={fileRevealEnabled ? fileRevealLine : null}
-                        fileRevealColumn={fileRevealEnabled ? fileRevealColumn : null}
-                        searchWorkspaceContent={searchWorkspaceContent}
-                        onTitleChange={(title) => handleTabTitleChange(item.id, title)}
-                        onDirtyChange={(dirty) => handleTabDirtyChange(item.id, dirty)}
-                        onOpenWorkspaceFile={onOpenWorkspaceFile}
-                        onOpenWorkspaceFileInNewTab={onOpenWorkspaceFileInNewTab}
-                        onFilesWorkspacePathChange={(path) =>
-                          handleTabFilesWorkspacePathChange(item.id, path)
-                        }
-                        onFileSnippetAddToSession={onFileSnippetAddToSession}
-                        onWorkspaceFileAddToSession={onWorkspaceFileAddToSession}
-                        useMicaBackdrop={useMicaBackdrop}
-                        codeCompletionEnabled={codeCompletionEnabled}
-                      />
-                    </div>
-                  ) : item.kind === "shell" ? (
-                    mountedShellTabIds.has(item.id) ? (
-                      <div className="flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden">
-                        <WorkspaceShellTab
-                          workspaceRoot={workspaceRoot}
-                          useMicaBackdrop={useMicaBackdrop}
-                          onTitleChange={(title) => handleTabTitleChange(item.id, title)}
-                          terminalDisplayName={workspaceTerminalChipDisplayName(item, tabs, t)}
-                          onTerminalAddToSession={onTerminalAddToSession}
-                          suspendTerminalResize={isResizing}
-                        />
-                      </div>
-                    ) : null
-                  ) : item.kind === "browser" ? (
-                    <div className="flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden">
-                      <WorkspaceBrowserTab
-                        browserTabId={item.id}
-                        browserUrl={item.browserUrl}
-                        browserTabEnabled={browserTabEnabled}
-                        isActive={selected}
-                        useMicaBackdrop={useMicaBackdrop}
-                        onBrowserUrlChange={(url) => handleBrowserUrlChange(item.id, url)}
-                        onOpenUrlInNewTab={onBrowserOpenInNewTab}
-                        onTitleChange={(title) => handleTabTitleChange(item.id, title)}
-                        onElementPicked={onBrowserElementPicked}
-                      />
-                    </div>
-                  ) : item.kind === "pr" ? (
-                    <div className="flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden">
-                      <WorkspacePrTab
-                        gitSnapshot={gitSnapshot}
-                        isActive={selected}
-                        prTabEnabled={prTabEnabled}
-                        onOpenIntegrationsSettings={onOpenIntegrationsSettings}
-                        getGitHubAuthStatus={getGitHubAuthStatus}
-                        getGitHubPullRequestForCurrentBranch={getGitHubPullRequestForCurrentBranch}
-                        listGitHubPullRequests={listGitHubPullRequests}
-                        getGitHubPullRequestTabCounts={getGitHubPullRequestTabCounts}
-                        getGitHubPullRequestDetail={getGitHubPullRequestDetail}
-                        getGitHubPullRequestConversation={getGitHubPullRequestConversation}
-                        getGitHubPullRequestFiles={getGitHubPullRequestFiles}
-                        getGitHubPullRequestCommits={getGitHubPullRequestCommits}
-                        getGitHubPullRequestChecks={getGitHubPullRequestChecks}
-                        mergeGitHubPullRequest={mergeGitHubPullRequest}
-                        markGitHubPullRequestReady={markGitHubPullRequestReady}
-                        prRevealEnabled={prRevealEnabled}
-                        prRevealNonce={prRevealEnabled ? prRevealNonce : 0}
-                        prRevealRequest={prRevealEnabled ? prRevealRequest : null}
-                        onPrDiffAddToSession={onPrDiffAddToSession}
-                        onTitleChange={(title) => handleTabTitleChange(item.id, title)}
-                        onPrStatusChange={(status) => handleTabPrStatusChange(item.id, status)}
-                      />
-                    </div>
+                  {displayTitle ? (
+                    renderTabButton()
                   ) : (
-                    <div className="flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden px-2 pb-2 pt-2">
-                      <WorkspaceGitTab
-                        gitSnapshot={gitSnapshot}
-                        isActive={selected}
-                        gitChipBusy={gitChipBusy}
-                        readGitWorkingTree={readGitWorkingTree}
-                        readGitHistory={readGitHistory}
-                        readGitCommitMessage={readGitCommitMessage}
-                        submitGitChip={submitGitChip}
-                        onGitCommitAddToSession={onGitCommitAddToSession}
-                        onOpenChangedFile={onOpenWorkspaceFile}
-                      />
-                    </div>
+                    <Tooltip delayDuration={300} disableHoverableContent>
+                      <TooltipTrigger asChild>{renderTabButton()}</TooltipTrigger>
+                      <TooltipContent side="bottom" sideOffset={4}>
+                        {label}
+                      </TooltipContent>
+                    </Tooltip>
                   )}
+                  {displayTitle ? (
+                    <button
+                      type="button"
+                      className={cn(
+                        "absolute inset-y-0 right-0 hidden w-8 items-center justify-end rounded-tr-md pr-1 outline-none group-hover/tab:flex",
+                        selected ? "bg-background" : "bg-accent",
+                      )}
+                      style={maskFadeHorizontalEnd}
+                      aria-label={t("workspace.closeTab", { label })}
+                      onClick={(event) => {
+                        event.stopPropagation();
+                        handleCloseTab(item.id);
+                      }}
+                    >
+                      <X className="size-3 opacity-70" aria-hidden />
+                    </button>
+                  ) : null}
                 </div>
               );
             })}
-            {tabs.length === 0 ? (
-              <p className="p-3 text-muted-foreground">{t('workspace.noOpenTabs')}</p>
-            ) : null}
           </div>
+        </ScrollArea>
+        <DropdownMenu modal open={addToolTabMenuOpen} onOpenChange={setAddToolTabMenuOpen}>
+          <Tooltip delayDuration={300} disableHoverableContent>
+            <TooltipTrigger asChild>
+              <DropdownMenuTrigger asChild>
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="icon"
+                  data-workspace-new-tool-tab=""
+                  aria-label={t("workspace.newToolTab")}
+                  className={cn(
+                    "mb-1 size-7 shrink-0 rounded-full p-0 text-muted-foreground shadow-none hover:bg-muted/50 hover:text-sidebar-foreground",
+                    "aria-expanded:bg-muted/35 aria-expanded:text-sidebar-foreground aria-expanded:hover:bg-muted/50",
+                    instantHoverMotionClass,
+                  )}
+                >
+                  <Plus className="size-3.5" aria-hidden />
+                </Button>
+              </DropdownMenuTrigger>
+            </TooltipTrigger>
+            <TooltipContent side="bottom" sideOffset={4}>
+              {t("common.new")} <NewToolTabShortcutKbd />
+            </TooltipContent>
+          </Tooltip>
+          <DropdownMenuContent
+            align="start"
+            side="top"
+            sideOffset={10}
+            onCloseAutoFocus={(event) => {
+              event.preventDefault();
+            }}
+            className={cn(
+              "flex w-max min-w-[11rem] max-w-[min(15rem,calc(100vw-1.25rem))] flex-col",
+              DESKTOP_OVERLAY_LIST_DROPDOWN_SURFACE,
+              DESKTOP_OVERLAY_LIST_LIST_PADDING,
+              DESKTOP_OVERLAY_LIST_LIST_GAP,
+            )}
+          >
+            {(["files", "shell", "git", "browser", "pr"] as const).map((kind) => {
+              const meta = TAB_KIND_META[kind];
+              const Icon = meta.icon;
+              const browserDisabled = kind === "browser" && !browserTabEnabled;
+              const prHostDisabled = kind === "pr" && !prTabEnabled;
+              const prAuthBlocked = kind === "pr" && prMenuBlocked;
+              const disabled = browserDisabled || prHostDisabled || prAuthBlocked;
+              const menuItem = (
+                <DropdownMenuItem
+                  disabled={disabled}
+                  title={
+                    browserDisabled
+                      ? t("workspace.browserElectronOnly")
+                      : prHostDisabled
+                        ? t("workspace.prElectronOnly")
+                        : undefined
+                  }
+                  className={cn(
+                    "flex w-full cursor-pointer select-none items-center gap-2 rounded-sm text-left outline-none",
+                    DESKTOP_OVERLAY_LIST_ITEM,
+                    "text-popover-foreground",
+                  )}
+                  onSelect={() => {
+                    handleAddTab(kind);
+                  }}
+                >
+                  <Icon className="size-4 shrink-0 text-muted-foreground" aria-hidden />
+                  <span className="min-w-0 flex-1 truncate">{t(meta.labelKey)}</span>
+                </DropdownMenuItem>
+              );
+
+              if (kind !== "pr" || !prAuthBlocked || prHostDisabled) {
+                return (
+                  <span key={kind} className="flex w-full min-w-0">
+                    {menuItem}
+                  </span>
+                );
+              }
+
+              return (
+                <Tooltip key={kind} delayDuration={300}>
+                  <TooltipTrigger asChild>
+                    <span className="flex w-full min-w-0">{menuItem}</span>
+                  </TooltipTrigger>
+                  <TooltipContent side="right" sideOffset={8}>
+                    {gitHubAuthConnected === null ? (
+                      t("workspace.prGitHubAuthChecking")
+                    ) : (
+                      <GitHubConnectTooltipContent
+                        onSignIn={() => {
+                          onOpenIntegrationsSettings?.();
+                        }}
+                      />
+                    )}
+                  </TooltipContent>
+                </Tooltip>
+              );
+            })}
+          </DropdownMenuContent>
+        </DropdownMenu>
+      </div>
+
+      <div
+        className="relative flex min-h-0 flex-1 flex-col overflow-hidden text-xs"
+        aria-live="polite"
+      >
+        {tabs.map((item) => {
+          const selected = item.id === activeTabId;
+          const panelPadding = item.kind === "files" || item.kind === "shell" ? "p-0" : "p-0";
+          const planRevealEnabled =
+            item.kind === "files" && planRevealTabId != null && item.id === planRevealTabId;
+          const fileRevealEnabled =
+            item.kind === "files" && fileRevealTabId != null && item.id === fileRevealTabId;
+          const prRevealEnabled =
+            item.kind === "pr" && prRevealTabId != null && item.id === prRevealTabId;
+
+          return (
+            <div
+              key={item.id}
+              id={`workspace-tool-panel-${item.id}`}
+              role="tabpanel"
+              aria-labelledby={`workspace-tool-tab-${item.id}`}
+              hidden={!selected}
+              inert={!selected}
+              aria-hidden={!selected}
+              className={cn(
+                "absolute inset-0 flex min-h-0 flex-col overflow-hidden",
+                panelPadding,
+                !selected && "invisible",
+              )}
+            >
+              {item.kind === "files" ? (
+                <div className="flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden pr-2 pb-2 pt-0">
+                  <WorkspaceFilesTab
+                    workspaceRoot={workspaceRoot}
+                    plan={plan}
+                    listExplorerChildren={listExplorerChildren}
+                    gitRevision={gitSnapshot?.revision}
+                    readWorkspaceTextFile={readWorkspaceTextFile}
+                    writeWorkspaceTextFile={writeWorkspaceTextFile}
+                    readHostTextFile={readHostTextFile}
+                    writeHostTextFile={writeHostTextFile}
+                    readManagedImagePreviewDataUrl={readManagedImagePreviewDataUrl}
+                    readLocalImagePreviewDataUrl={readLocalImagePreviewDataUrl}
+                    onStartImplementing={onStartImplementing}
+                    startImplementingDisabled={startImplementingDisabled}
+                    autoRevealPlanNonce={planRevealEnabled ? autoRevealPlanNonce : 0}
+                    planRevealEnabled={planRevealEnabled}
+                    autoRevealFileNonce={fileRevealEnabled ? autoRevealFileNonce : 0}
+                    fileRevealEnabled={fileRevealEnabled}
+                    fileRevealPath={fileRevealPath}
+                    fileRevealAbsolutePath={fileRevealAbsolutePath}
+                    fileRevealScope={fileRevealScope}
+                    fileRevealViewMode={fileRevealViewMode}
+                    fileRevealDirectoryOnly={fileRevealDirectoryOnly}
+                    fileRevealLine={fileRevealEnabled ? fileRevealLine : null}
+                    fileRevealColumn={fileRevealEnabled ? fileRevealColumn : null}
+                    searchWorkspaceContent={searchWorkspaceContent}
+                    onTitleChange={(title) => handleTabTitleChange(item.id, title)}
+                    onDirtyChange={(dirty) => handleTabDirtyChange(item.id, dirty)}
+                    onOpenWorkspaceFile={onOpenWorkspaceFile}
+                    onOpenWorkspaceFileInNewTab={onOpenWorkspaceFileInNewTab}
+                    onFilesWorkspacePathChange={(path) =>
+                      handleTabFilesWorkspacePathChange(item.id, path)
+                    }
+                    onFileSnippetAddToSession={onFileSnippetAddToSession}
+                    onWorkspaceFileAddToSession={onWorkspaceFileAddToSession}
+                    useMicaBackdrop={useMicaBackdrop}
+                    codeCompletionEnabled={codeCompletionEnabled}
+                  />
+                </div>
+              ) : item.kind === "shell" ? (
+                mountedShellTabIds.has(item.id) ? (
+                  <div className="flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden">
+                    <WorkspaceShellTab
+                      workspaceRoot={workspaceRoot}
+                      useMicaBackdrop={useMicaBackdrop}
+                      onTitleChange={(title) => handleTabTitleChange(item.id, title)}
+                      terminalDisplayName={workspaceTerminalChipDisplayName(item, tabs, t)}
+                      onTerminalAddToSession={onTerminalAddToSession}
+                      suspendTerminalResize={isResizing}
+                    />
+                  </div>
+                ) : null
+              ) : item.kind === "browser" ? (
+                <div className="flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden">
+                  <WorkspaceBrowserTab
+                    browserTabId={item.id}
+                    browserUrl={item.browserUrl}
+                    browserTabEnabled={browserTabEnabled}
+                    isActive={selected}
+                    useMicaBackdrop={useMicaBackdrop}
+                    onBrowserUrlChange={(url) => handleBrowserUrlChange(item.id, url)}
+                    onOpenUrlInNewTab={onBrowserOpenInNewTab}
+                    onTitleChange={(title) => handleTabTitleChange(item.id, title)}
+                    onElementPicked={onBrowserElementPicked}
+                  />
+                </div>
+              ) : item.kind === "pr" ? (
+                <div className="flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden">
+                  <WorkspacePrTab
+                    gitSnapshot={gitSnapshot}
+                    isActive={selected}
+                    prTabEnabled={prTabEnabled}
+                    onOpenIntegrationsSettings={onOpenIntegrationsSettings}
+                    getGitHubAuthStatus={getGitHubAuthStatus}
+                    getGitHubPullRequestForCurrentBranch={getGitHubPullRequestForCurrentBranch}
+                    listGitHubPullRequests={listGitHubPullRequests}
+                    getGitHubPullRequestTabCounts={getGitHubPullRequestTabCounts}
+                    getGitHubPullRequestDetail={getGitHubPullRequestDetail}
+                    getGitHubPullRequestConversation={getGitHubPullRequestConversation}
+                    getGitHubPullRequestFiles={getGitHubPullRequestFiles}
+                    getGitHubPullRequestCommits={getGitHubPullRequestCommits}
+                    getGitHubPullRequestChecks={getGitHubPullRequestChecks}
+                    mergeGitHubPullRequest={mergeGitHubPullRequest}
+                    markGitHubPullRequestReady={markGitHubPullRequestReady}
+                    prRevealEnabled={prRevealEnabled}
+                    prRevealNonce={prRevealEnabled ? prRevealNonce : 0}
+                    prRevealRequest={prRevealEnabled ? prRevealRequest : null}
+                    onPrDiffAddToSession={onPrDiffAddToSession}
+                    onTitleChange={(title) => handleTabTitleChange(item.id, title)}
+                    onPrStatusChange={(status) => handleTabPrStatusChange(item.id, status)}
+                  />
+                </div>
+              ) : (
+                <div className="flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden px-2 pb-2 pt-2">
+                  <WorkspaceGitTab
+                    gitSnapshot={gitSnapshot}
+                    isActive={selected}
+                    gitChipBusy={gitChipBusy}
+                    readGitWorkingTree={readGitWorkingTree}
+                    readGitHistory={readGitHistory}
+                    readGitCommitMessage={readGitCommitMessage}
+                    submitGitChip={submitGitChip}
+                    onGitCommitAddToSession={onGitCommitAddToSession}
+                    onOpenChangedFile={onOpenWorkspaceFile}
+                  />
+                </div>
+              )}
+            </div>
+          );
+        })}
+        {tabs.length === 0 ? (
+          <p className="p-3 text-muted-foreground">{t("workspace.noOpenTabs")}</p>
+        ) : null}
+      </div>
 
       <Dialog
         open={pendingCloseTabId !== null}
@@ -1057,12 +1060,17 @@ const WorkspaceToolsDockContent = memo(function WorkspaceToolsDockContent({
           </DialogHeader>
           <DialogFooter>
             <DialogFooterActions>
-            <Button type="button" variant="outline" size="sm" onClick={() => setPendingCloseTabId(null)}>
-              {t("common.cancel")}
-            </Button>
-            <Button type="button" size="sm" variant="destructive" onClick={handleConfirmCloseTab}>
-              {t("common.close")}
-            </Button>
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={() => setPendingCloseTabId(null)}
+              >
+                {t("common.cancel")}
+              </Button>
+              <Button type="button" size="sm" variant="destructive" onClick={handleConfirmCloseTab}>
+                {t("common.close")}
+              </Button>
             </DialogFooterActions>
           </DialogFooter>
         </DialogContent>

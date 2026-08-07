@@ -5,7 +5,7 @@
  * responses plus server-initiated notifications (streaming events).
  */
 
-export const JSON_RPC_VERSION = '2.0' as const;
+export const JSON_RPC_VERSION = "2.0" as const;
 
 export type JsonRpcId = number | string;
 
@@ -51,14 +51,14 @@ export const JSON_RPC_INVALID_PARAMS = -32602;
 export const JSON_RPC_INTERNAL_ERROR = -32603;
 
 export function isJsonRpcRequest(value: unknown): value is JsonRpcRequest {
-  if (typeof value !== 'object' || value === null) {
+  if (typeof value !== "object" || value === null) {
     return false;
   }
   const candidate = value as Record<string, unknown>;
   return (
-    candidate['jsonrpc'] === JSON_RPC_VERSION &&
-    typeof candidate['method'] === 'string' &&
-    (typeof candidate['id'] === 'number' || typeof candidate['id'] === 'string')
+    candidate["jsonrpc"] === JSON_RPC_VERSION &&
+    typeof candidate["method"] === "string" &&
+    (typeof candidate["id"] === "number" || typeof candidate["id"] === "string")
   );
 }
 

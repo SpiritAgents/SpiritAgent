@@ -6,7 +6,10 @@ import {
   TextSelectionActionMenu,
   TextSelectionActionMenuItem,
 } from "@/components/text-selection-action-menu";
-import { useMonacoSelectionActionMenu, readMonacoSelectionLineRange } from "@/hooks/use-monaco-selection-action-menu";
+import {
+  useMonacoSelectionActionMenu,
+  readMonacoSelectionLineRange,
+} from "@/hooks/use-monaco-selection-action-menu";
 import { useTextSelectionActionMenu } from "@/hooks/use-text-selection-action-menu";
 import type { FileSnippetAttachment } from "@/lib/file-snippet-attachment";
 import type * as Monaco from "monaco-editor";
@@ -57,9 +60,7 @@ export function FileDomSelectionMenu({
       return;
     }
 
-    onFileSnippetAddToSession(
-      makeFileSnippetAttachment(filePath, selectedText, 0, 0),
-    );
+    onFileSnippetAddToSession(makeFileSnippetAttachment(filePath, selectedText, 0, 0));
     dismiss();
     selection?.removeAllRanges();
   }, [dismiss, filePath, onFileSnippetAddToSession, selectionText]);
@@ -69,7 +70,11 @@ export function FileDomSelectionMenu({
   }
 
   return (
-    <TextSelectionActionMenu open={open && Boolean(selectionText.trim())} anchor={anchor} onOpenChange={setOpen}>
+    <TextSelectionActionMenu
+      open={open && Boolean(selectionText.trim())}
+      anchor={anchor}
+      onOpenChange={setOpen}
+    >
       <TextSelectionActionMenuItem
         label={t("workspace.addSelectionToSession")}
         onSelect={handleAddToSession}
@@ -91,11 +96,13 @@ export function FileMonacoSelectionMenu({
 }) {
   const { t } = useTranslation();
   const enabled = Boolean(onFileSnippetAddToSession && filePath);
-  const { open, setOpen, anchor, selectionText, lineRange, dismiss } = useMonacoSelectionActionMenu({
-    enabled,
-    containerRef,
-    editor,
-  });
+  const { open, setOpen, anchor, selectionText, lineRange, dismiss } = useMonacoSelectionActionMenu(
+    {
+      enabled,
+      containerRef,
+      editor,
+    },
+  );
 
   const handleAddToSession = useCallback(() => {
     const activeEditor = editor;
@@ -112,12 +119,7 @@ export function FileMonacoSelectionMenu({
 
     const range = readMonacoSelectionLineRange(activeEditor) ?? lineRange;
     onFileSnippetAddToSession(
-      makeFileSnippetAttachment(
-        filePath,
-        selectedText,
-        range?.lineStart ?? 0,
-        range?.lineEnd ?? 0,
-      ),
+      makeFileSnippetAttachment(filePath, selectedText, range?.lineStart ?? 0, range?.lineEnd ?? 0),
     );
     dismiss();
 
@@ -139,7 +141,11 @@ export function FileMonacoSelectionMenu({
   }
 
   return (
-    <TextSelectionActionMenu open={open && Boolean(selectionText.trim())} anchor={anchor} onOpenChange={setOpen}>
+    <TextSelectionActionMenu
+      open={open && Boolean(selectionText.trim())}
+      anchor={anchor}
+      onOpenChange={setOpen}
+    >
       <TextSelectionActionMenuItem
         label={t("workspace.addSelectionToSession")}
         onSelect={handleAddToSession}

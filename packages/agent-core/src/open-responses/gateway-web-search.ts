@@ -1,13 +1,13 @@
-import { createGateway } from '@ai-sdk/gateway';
+import { createGateway } from "@ai-sdk/gateway";
 
-import { getLlmFetch } from '../llm-fetch.js';
-import type { JsonObject } from '../ports.js';
-import type { OpenResponsesTransportConfig } from './responses-compat.js';
+import { getLlmFetch } from "../llm-fetch.js";
+import type { JsonObject } from "../ports.js";
+import type { OpenResponsesTransportConfig } from "./responses-compat.js";
 
 export function shouldUseGatewayWebSearch(
-  config: Pick<OpenResponsesTransportConfig, 'llmVendor'>,
+  config: Pick<OpenResponsesTransportConfig, "llmVendor">,
 ): boolean {
-  return config.llmVendor === 'vercel-ai-gateway';
+  return config.llmVendor === "vercel-ai-gateway";
 }
 
 export function buildGatewayWebSearchTool(config: OpenResponsesTransportConfig): unknown {
@@ -16,16 +16,16 @@ export function buildGatewayWebSearchTool(config: OpenResponsesTransportConfig):
 
 export function buildGatewayResponsesWebSearchToolRequestEntry(): JsonObject {
   return {
-    type: 'provider',
-    id: 'gateway.perplexity_search',
+    type: "provider",
+    id: "gateway.perplexity_search",
     args: {},
   };
 }
 
 export function buildGatewayWebSearchTraceToolEntry(): JsonObject {
   return {
-    type: 'provider_tool',
-    id: 'gateway.perplexity_search',
-    name: 'web_search',
+    type: "provider_tool",
+    id: "gateway.perplexity_search",
+    name: "web_search",
   };
 }

@@ -13,21 +13,21 @@ import {
   BreadcrumbList,
   BreadcrumbPage,
   BreadcrumbSeparator,
-} from '@/components/ui/breadcrumb';
-import { Tooltip, TooltipContent } from '@/components/ui/tooltip';
+} from "@/components/ui/breadcrumb";
+import { Tooltip, TooltipContent } from "@/components/ui/tooltip";
 import {
   SessionListGitTooltipPanel,
   type SessionGitTooltipItem,
-} from '@/components/session-list-git-tooltip';
+} from "@/components/session-list-git-tooltip";
 import {
   DESKTOP_CHROME_ACTIVE_TEXT,
   DESKTOP_CHROME_MUTED_TEXT,
   DESKTOP_SESSION_TITLE_HOVER_CLASS,
   SESSION_TITLE_RENAME_INPUT_CLASS,
-} from '@/lib/desktop-chrome';
-import { toolCardSecondaryTextClass } from '@/lib/file-tool-lsp-diagnostics-display';
-import { DESKTOP_SIDEBAR_TEXT_CLASS, FONT_WEIGHT_NORMAL } from '@/lib/desktop-typography';
-import { cn } from '@/lib/utils';
+} from "@/lib/desktop-chrome";
+import { toolCardSecondaryTextClass } from "@/lib/file-tool-lsp-diagnostics-display";
+import { DESKTOP_SIDEBAR_TEXT_CLASS, FONT_WEIGHT_NORMAL } from "@/lib/desktop-typography";
+import { cn } from "@/lib/utils";
 
 type SessionChromeBreadcrumbProps = {
   sessionTitle: string;
@@ -67,11 +67,7 @@ function SessionChromeTitleTooltip({
       disableHoverableContent
     >
       <Tooltip.Item item={item}>{children}</Tooltip.Item>
-      <TooltipContent
-        side="bottom"
-        sideOffset={6}
-        className="flex flex-col items-start gap-1 py-2"
-      >
+      <TooltipContent side="bottom" sideOffset={6} className="flex flex-col items-start gap-1 py-2">
         {(activeItem) =>
           activeItem ? (
             <SessionListGitTooltipPanel item={activeItem as SessionGitTooltipItem} />
@@ -99,8 +95,8 @@ export function SessionChromeBreadcrumb({
   const renameInputRef = useRef<HTMLInputElement>(null);
   const skipBlurCommitRef = useRef(false);
   const trimmedSessionTitle = sessionTitle.trim();
-  const trimmedSessionTitleSuffix = sessionTitleSuffix?.trim() ?? '';
-  const trimmedSubagentPromptText = subagentPromptText?.trim() ?? '';
+  const trimmedSessionTitleSuffix = sessionTitleSuffix?.trim() ?? "";
+  const trimmedSubagentPromptText = subagentPromptText?.trim() ?? "";
   const titleInteractive = Boolean(onRenameStart);
 
   useLayoutEffect(() => {
@@ -139,11 +135,7 @@ export function SessionChromeBreadcrumb({
     if (!sessionTooltip) {
       return node;
     }
-    return (
-      <SessionChromeTitleTooltip item={sessionTooltip}>
-        {node}
-      </SessionChromeTitleTooltip>
-    );
+    return <SessionChromeTitleTooltip item={sessionTooltip}>{node}</SessionChromeTitleTooltip>;
   };
 
   const sessionTitleNode = renaming ? (
@@ -171,30 +163,32 @@ export function SessionChromeBreadcrumb({
         {trimmedSessionTitle}
       </button>,
     )
-  ) : wrapWithTooltip(
-    <button
-      type="button"
-      className={sessionTitleButtonClass(titleInteractive)}
-      onDoubleClick={(event: MouseEvent<HTMLButtonElement>) => {
-        if (!onRenameStart) {
-          return;
-        }
-        event.preventDefault();
-        event.stopPropagation();
-        onRenameStart();
-      }}
-    >
-      {trimmedSessionTitleSuffix ? (
-        <span className="inline-flex min-w-0 max-w-full items-baseline gap-1.5">
-          <span className="min-w-0 truncate">{trimmedSessionTitle}</span>
-          <span className={cn("shrink-0", toolCardSecondaryTextClass)}>
-            {trimmedSessionTitleSuffix}
+  ) : (
+    wrapWithTooltip(
+      <button
+        type="button"
+        className={sessionTitleButtonClass(titleInteractive)}
+        onDoubleClick={(event: MouseEvent<HTMLButtonElement>) => {
+          if (!onRenameStart) {
+            return;
+          }
+          event.preventDefault();
+          event.stopPropagation();
+          onRenameStart();
+        }}
+      >
+        {trimmedSessionTitleSuffix ? (
+          <span className="inline-flex min-w-0 max-w-full items-baseline gap-1.5">
+            <span className="min-w-0 truncate">{trimmedSessionTitle}</span>
+            <span className={cn("shrink-0", toolCardSecondaryTextClass)}>
+              {trimmedSessionTitleSuffix}
+            </span>
           </span>
-        </span>
-      ) : (
-        trimmedSessionTitle
-      )}
-    </button>,
+        ) : (
+          trimmedSessionTitle
+        )}
+      </button>,
+    )
   );
 
   return (
@@ -202,12 +196,12 @@ export function SessionChromeBreadcrumb({
       <BreadcrumbList className={cn("flex-nowrap gap-1.5 sm:gap-2", DESKTOP_SIDEBAR_TEXT_CLASS)}>
         <BreadcrumbItem
           className={cn(
-            'min-w-0',
+            "min-w-0",
             renaming && !trimmedSubagentPromptText
-              ? 'max-w-full flex-1'
+              ? "max-w-full flex-1"
               : trimmedSubagentPromptText
-                ? 'max-w-[min(12rem,30vw)] shrink'
-                : 'max-w-[min(20rem,40vw)]',
+                ? "max-w-[min(12rem,30vw)] shrink"
+                : "max-w-[min(20rem,40vw)]",
           )}
         >
           {sessionTitleNode}

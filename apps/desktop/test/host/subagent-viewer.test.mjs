@@ -1,128 +1,128 @@
-import assert from 'node:assert/strict';
-import { test } from 'node:test';
+import assert from "node:assert/strict";
+import { test } from "node:test";
 
 import {
   buildSubagentConversationSnapshots,
   resolveSubagentPromptFromTaskFields,
-} from '@spiritagent/host-internal';
+} from "@spiritagent/host-internal";
 
-test('buildSubagentConversationSnapshots maps user, assistant text, and tool results', () => {
+test("buildSubagentConversationSnapshots maps user, assistant text, and tool results", () => {
   const messages = buildSubagentConversationSnapshots(
     [
-      { role: 'user', content: 'Inspect the repo layout' },
+      { role: "user", content: "Inspect the repo layout" },
       {
-        role: 'assistant',
-        content: 'I will read README first.',
+        role: "assistant",
+        content: "I will read README first.",
         toolCalls: [
           {
-            id: 'call_read_1',
-            name: 'read_file',
+            id: "call_read_1",
+            name: "read_file",
             argumentsJson: '{"path":"README.md"}',
           },
         ],
       },
       {
-        role: 'tool',
-        toolCallId: 'call_read_1',
-        content: '# Spirit Agent',
+        role: "tool",
+        toolCallId: "call_read_1",
+        content: "# Spirit Agent",
       },
-      { role: 'assistant', content: 'README mentions Desktop host.' },
+      { role: "assistant", content: "README mentions Desktop host." },
     ],
-    { sessionStatus: 'completed' },
+    { sessionStatus: "completed" },
   );
 
   assert.equal(messages.length, 4);
-  assert.equal(messages[0]?.role, 'user');
-  assert.equal(messages[0]?.content, 'Inspect the repo layout');
-  assert.equal(messages[1]?.role, 'assistant');
-  assert.equal(messages[1]?.content, 'I will read README first.');
-  assert.equal(messages[2]?.tool?.toolName, 'read_file');
-  assert.equal(messages[2]?.tool?.phase, 'succeeded');
-  assert.match(messages[2]?.tool?.outputExcerpt ?? '', /Spirit Agent/);
-  assert.equal(messages[3]?.content, 'README mentions Desktop host.');
+  assert.equal(messages[0]?.role, "user");
+  assert.equal(messages[0]?.content, "Inspect the repo layout");
+  assert.equal(messages[1]?.role, "assistant");
+  assert.equal(messages[1]?.content, "I will read README first.");
+  assert.equal(messages[2]?.tool?.toolName, "read_file");
+  assert.equal(messages[2]?.tool?.phase, "succeeded");
+  assert.match(messages[2]?.tool?.outputExcerpt ?? "", /Spirit Agent/);
+  assert.equal(messages[3]?.content, "README mentions Desktop host.");
 });
 
-test('buildSubagentConversationSnapshots marks unresolved tools as running while session runs', () => {
+test("buildSubagentConversationSnapshots marks unresolved tools as running while session runs", () => {
   const messages = buildSubagentConversationSnapshots(
     [
-      { role: 'user', content: 'Run shell check' },
+      { role: "user", content: "Run shell check" },
       {
-        role: 'assistant',
-        content: '',
+        role: "assistant",
+        content: "",
         toolCalls: [
           {
-            id: 'call_shell_1',
-            name: 'shell',
+            id: "call_shell_1",
+            name: "shell",
             argumentsJson: '{"command":"git status"}',
           },
         ],
       },
     ],
-    { sessionStatus: 'running' },
+    { sessionStatus: "running" },
   );
 
   assert.equal(messages.length, 2);
-  assert.equal(messages[1]?.tool?.phase, 'running');
+  assert.equal(messages[1]?.tool?.phase, "running");
   assert.equal(messages[1]?.pending, true);
 });
 
-test('buildSubagentConversationSnapshots marks last unresolved tool as pending-approval when blocked', () => {
+test("buildSubagentConversationSnapshots marks last unresolved tool as pending-approval when blocked", () => {
   const messages = buildSubagentConversationSnapshots(
     [
-      { role: 'user', content: 'Delete temp file' },
+      { role: "user", content: "Delete temp file" },
       {
-        role: 'assistant',
-        content: '',
+        role: "assistant",
+        content: "",
         toolCalls: [
           {
-            id: 'call_delete_1',
-            name: 'delete_file',
+            id: "call_delete_1",
+            name: "delete_file",
             argumentsJson: '{"path":"tmp.txt"}',
           },
         ],
       },
     ],
-    { sessionStatus: 'blocked' },
+    { sessionStatus: "blocked" },
   );
 
-  assert.equal(messages[1]?.tool?.phase, 'pending-approval');
+  assert.equal(messages[1]?.tool?.phase, "pending-approval");
 });
 
-test('buildSubagentConversationSnapshots maps assistant reasoning to thinking aux rows', () => {
+test("buildSubagentConversationSnapshots maps assistant reasoning to thinking aux rows", () => {
   const messages = buildSubagentConversationSnapshots(
     [
-      { role: 'user', content: 'Say hello' },
+      { role: "user", content: "Say hello" },
       {
-        role: 'assistant',
-        content: '你好',
-        providerState: { reasoning_content: '子智能体输出你好' },
+        role: "assistant",
+        content: "你好",
+        providerState: { reasoning_content: "子智能体输出你好" },
       },
     ],
-    { sessionStatus: 'completed' },
+    { sessionStatus: "completed" },
   );
 
   assert.equal(messages.length, 3);
-  assert.equal(messages[0]?.role, 'user');
-  assert.equal(messages[1]?.role, 'assistant');
-  assert.equal(messages[1]?.content, '');
-  assert.equal(messages[1]?.aux?.thinking, '子智能体输出你好');
-  assert.equal(messages[2]?.content, '你好');
+  assert.equal(messages[0]?.role, "user");
+  assert.equal(messages[1]?.role, "assistant");
+  assert.equal(messages[1]?.content, "");
+  assert.equal(messages[1]?.aux?.thinking, "子智能体输出你好");
+  assert.equal(messages[2]?.content, "你好");
 });
 
-test('resolveSubagentPromptFromTaskFields prefers task then context summary', () => {
+test("resolveSubagentPromptFromTaskFields prefers task then context summary", () => {
   assert.equal(
     resolveSubagentPromptFromTaskFields({
-      task: '  Run tests  ',
-      contextSummary: 'fallback',
-      title: 'title',
+      task: "  Run tests  ",
+      contextSummary: "fallback",
+      title: "title",
     }),
-    'Run tests',
+    "Run tests",
   );
   assert.equal(
     resolveSubagentPromptFromTaskFields({
-      contextSummary: 'Need grep',
-      title: 'title',
+      contextSummary: "Need grep",
+      title: "title",
     }),
-    'Need grep',
+    "Need grep",
   );
 });

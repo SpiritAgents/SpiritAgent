@@ -1,5 +1,5 @@
-import { mkdir, readdir, readFile, rm, writeFile } from 'node:fs/promises';
-import { join } from 'node:path';
+import { mkdir, readdir, readFile, rm, writeFile } from "node:fs/promises";
+import { join } from "node:path";
 
 /**
  * Instance registry: each running daemon writes one JSON record under
@@ -17,7 +17,7 @@ export interface ServerInstanceRecord {
 }
 
 export function instancesDir(dataDir: string): string {
-  return join(dataDir, 'server', 'instances');
+  return join(dataDir, "server", "instances");
 }
 
 export function instanceFilePath(dataDir: string, instanceId: string): string {
@@ -32,7 +32,7 @@ export async function registerInstance(
   await writeFile(
     instanceFilePath(dataDir, record.instanceId),
     `${JSON.stringify(record, null, 2)}\n`,
-    'utf8',
+    "utf8",
   );
 }
 
@@ -49,24 +49,24 @@ export function isProcessAlive(pid: number): boolean {
     return true;
   } catch (err) {
     // EPERM means the process exists but belongs to another user.
-    return (err as NodeJS.ErrnoException).code === 'EPERM';
+    return (err as NodeJS.ErrnoException).code === "EPERM";
   }
 }
 
 function parseRecord(raw: string): ServerInstanceRecord | null {
   try {
     const value: unknown = JSON.parse(raw);
-    if (typeof value !== 'object' || value === null) {
+    if (typeof value !== "object" || value === null) {
       return null;
     }
     const record = value as Record<string, unknown>;
     if (
-      typeof record['instanceId'] !== 'string' ||
-      typeof record['pid'] !== 'number' ||
-      typeof record['host'] !== 'string' ||
-      typeof record['port'] !== 'number' ||
-      typeof record['startedAt'] !== 'string' ||
-      typeof record['version'] !== 'string'
+      typeof record["instanceId"] !== "string" ||
+      typeof record["pid"] !== "number" ||
+      typeof record["host"] !== "string" ||
+      typeof record["port"] !== "number" ||
+      typeof record["startedAt"] !== "string" ||
+      typeof record["version"] !== "string"
     ) {
       return null;
     }
@@ -94,10 +94,10 @@ export async function listInstances(
   }
   const records: ServerInstanceRecord[] = [];
   for (const file of files) {
-    if (!file.endsWith('.json')) {
+    if (!file.endsWith(".json")) {
       continue;
     }
-    const record = parseRecord(await readFile(join(instancesDir(dataDir), file), 'utf8'));
+    const record = parseRecord(await readFile(join(instancesDir(dataDir), file), "utf8"));
     if (!record) {
       continue;
     }

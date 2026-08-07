@@ -2,8 +2,8 @@ import {
   GITHUB_OAUTH_ACCESS_TOKEN_URL,
   GITHUB_OAUTH_DEVICE_CODE_URL,
   GITHUB_OAUTH_SCOPES,
-} from './oauth-config.js';
-import { githubFetch } from './github-fetch.js';
+} from "./oauth-config.js";
+import { githubFetch } from "./github-fetch.js";
 import {
   GITHUB_OAUTH_DEVICE_CODE_REQUEST_INTERVAL_MS,
   GITHUB_OAUTH_DEVICE_CODE_REQUEST_TIMEOUT_MS,
@@ -13,11 +13,11 @@ import {
   isGitHubFetchAbortError,
   sleepUntilGitHubOAuthRetryDeadline,
   throwIfGitHubFetchAborted,
-} from './oauth-fetch-retry.js';
-import { GitHubOAuthError, requireGitHubOAuthClientId } from './oauth.js';
-import type { GitHubDeviceAuthChallenge, GitHubOAuthTokenResponse } from './types.js';
+} from "./oauth-fetch-retry.js";
+import { GitHubOAuthError, requireGitHubOAuthClientId } from "./oauth.js";
+import type { GitHubDeviceAuthChallenge, GitHubOAuthTokenResponse } from "./types.js";
 
-const DEVICE_GRANT_TYPE = 'urn:ietf:params:oauth:grant-type:device_code';
+const DEVICE_GRANT_TYPE = "urn:ietf:params:oauth:grant-type:device_code";
 
 interface DeviceCodeApiResponse {
   device_code: string;
@@ -38,28 +38,28 @@ export async function requestGitHubDeviceCode(input?: {
 }): Promise<GitHubDeviceAuthChallenge & { deviceCode: string }> {
   const body = new URLSearchParams({
     client_id: input?.clientId ?? requireGitHubOAuthClientId(),
-    scope: (input?.scopes ?? GITHUB_OAUTH_SCOPES).join(' '),
+    scope: (input?.scopes ?? GITHUB_OAUTH_SCOPES).join(" "),
   });
 
   return retryGitHubOAuthUntil({
     expiresAtMs: Date.now() + GITHUB_OAUTH_DEVICE_CODE_REQUEST_TIMEOUT_MS,
     intervalMs: GITHUB_OAUTH_DEVICE_CODE_REQUEST_INTERVAL_MS,
-    timedOutMessage: 'GitHub device code request timed out.',
+    timedOutMessage: "GitHub device code request timed out.",
     attempt: async (): Promise<
       GitHubOAuthRetryAttempt<GitHubDeviceAuthChallenge & { deviceCode: string }>
     > => {
       try {
         const response = await githubFetch(GITHUB_OAUTH_DEVICE_CODE_URL, {
-          method: 'POST',
+          method: "POST",
           headers: {
-            Accept: 'application/json',
-            'Content-Type': 'application/x-www-form-urlencoded',
+            Accept: "application/json",
+            "Content-Type": "application/x-www-form-urlencoded",
           },
           body,
         });
 
         if (isRetriableGitHubHttpStatus(response.status)) {
-          return { outcome: 'retry' };
+          return { outcome: "retry" };
         }
 
         const payload = (await response.json()) as DeviceCodeApiResponse & {
@@ -69,11 +69,14 @@ export async function requestGitHubDeviceCode(input?: {
 
         if (!response.ok || payload.error || !payload.device_code || !payload.user_code) {
           const detail = payload.error_description ?? payload.error ?? `HTTP ${response.status}`;
-          throw new GitHubOAuthError(`GitHub device code request failed: ${detail}`, response.status);
+          throw new GitHubOAuthError(
+            `GitHub device code request failed: ${detail}`,
+            response.status,
+          );
         }
 
         return {
-          outcome: 'success',
+          outcome: "success",
           value: {
             deviceCode: payload.device_code,
             userCode: payload.user_code,
@@ -86,7 +89,7 @@ export async function requestGitHubDeviceCode(input?: {
         if (error instanceof GitHubOAuthError) {
           throw error;
         }
-        return { outcome: 'retry' };
+        return { outcome: "retry" };
       }
     },
   });
@@ -114,10 +117,10 @@ export async function pollGitHubDeviceToken(input: {
       });
 
       const response = await githubFetch(GITHUB_OAUTH_ACCESS_TOKEN_URL, {
-        method: 'POST',
+        method: "POST",
         headers: {
-          Accept: 'application/json',
-          'Content-Type': 'application/x-www-form-urlencoded',
+          Accept: "application/json",
+          "Content-Type": "application/x-www-form-urlencoded",
         },
         body,
         ...(input.signal ? { signal: input.signal } : {}),
@@ -134,7 +137,7 @@ export async function pollGitHubDeviceToken(input: {
       }
 
       const error = payload.error?.trim();
-      if (error === 'authorization_pending') {
+      if (error === "authorization_pending") {
         await sleepUntilGitHubOAuthRetryDeadline({
           intervalMs,
           expiresAtMs,
@@ -143,7 +146,7 @@ export async function pollGitHubDeviceToken(input: {
         continue;
       }
 
-      if (error === 'slow_down') {
+      if (error === "slow_down") {
         intervalMs += 5000;
         await sleepUntilGitHubOAuthRetryDeadline({
           intervalMs,
@@ -153,12 +156,12 @@ export async function pollGitHubDeviceToken(input: {
         continue;
       }
 
-      if (error === 'access_denied') {
-        throw new GitHubOAuthError('GitHub device authorization was denied.');
+      if (error === "access_denied") {
+        throw new GitHubOAuthError("GitHub device authorization was denied.");
       }
 
-      if (error === 'expired_token') {
-        throw new GitHubOAuthError('GitHub device code expired. Start sign-in again.');
+      if (error === "expired_token") {
+        throw new GitHubOAuthError("GitHub device code expired. Start sign-in again.");
       }
 
       if (isRetriableGitHubHttpStatus(response.status)) {
@@ -177,7 +180,7 @@ export async function pollGitHubDeviceToken(input: {
         throw pollError;
       }
       if (isGitHubFetchAbortError(pollError, input.signal)) {
-        throw new GitHubOAuthError('GitHub device authorization was cancelled.');
+        throw new GitHubOAuthError("GitHub device authorization was cancelled.");
       }
       await sleepUntilGitHubOAuthRetryDeadline({
         intervalMs,
@@ -187,5 +190,5 @@ export async function pollGitHubDeviceToken(input: {
     }
   }
 
-  throw new GitHubOAuthError('GitHub device authorization timed out.');
+  throw new GitHubOAuthError("GitHub device authorization timed out.");
 }

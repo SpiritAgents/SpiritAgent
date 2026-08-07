@@ -71,9 +71,7 @@ export function useTerminalSelectionActionMenu({
 
     const range = readTerminalSelectionLineRange(term);
     const pointer = lastPointerRef.current;
-    const nextAnchor = pointer
-      ? pointAnchor(pointer.x, pointer.y)
-      : containerAnchor(container);
+    const nextAnchor = pointer ? pointAnchor(pointer.x, pointer.y) : containerAnchor(container);
 
     setSelectionText(text);
     setLineRange(range);

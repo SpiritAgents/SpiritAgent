@@ -12,9 +12,9 @@ type ComposerSuggestionMenuItemProps = {
   ComponentProps<typeof DropdownMenuItem>,
   "onMouseDown" | "onMouseEnter" | "onFocus" | "title" | "onPointerMove"
 > & {
-  "data-skill-slash-index"?: number;
-  "data-workspace-file-reference-index"?: number;
-};
+    "data-skill-slash-index"?: number;
+    "data-workspace-file-reference-index"?: number;
+  };
 
 export function ComposerSuggestionMenuItem({
   selected = false,

@@ -1,4 +1,4 @@
-import path from 'node:path';
+import path from "node:path";
 
 import {
   createHostDreamStore,
@@ -9,10 +9,10 @@ import {
   WORKSPACE_CONTENT_SEARCH_MAX_MATCHES,
   type WorkLocationKind,
   type WorkspaceFileReferenceIndexSnapshot,
-} from '@spiritagent/host-internal';
+} from "@spiritagent/host-internal";
 
-import i18n from '../lib/i18n-host.js';
-import { clearCodeCompletionStateForWorkspace } from './code-completion-commands.js';
+import i18n from "../lib/i18n-host.js";
+import { clearCodeCompletionStateForWorkspace } from "./code-completion-commands.js";
 import type {
   CheckoutGitBranchRequest,
   CommitChangesRequest,
@@ -36,7 +36,7 @@ import type {
   WriteWorkspaceTextFileRequest,
   WorkspaceContentSearchRequest,
   WorkspaceContentSearchResult,
-} from '../types.js';
+} from "../types.js";
 import {
   applyGitRevision,
   checkoutWorkspaceGitBranch,
@@ -46,14 +46,14 @@ import {
   readWorkspaceGitHistory,
   readWorkspaceGitCommitMessage,
   readWorkspaceGitWorkingTree,
-} from './git.js';
-import { ephemeralSessionsToListItems, sessionListActivityFromBundle } from './sessions.js';
-import type { SessionBundle } from './session-bundle.js';
+} from "./git.js";
+import { ephemeralSessionsToListItems, sessionListActivityFromBundle } from "./sessions.js";
+import type { SessionBundle } from "./session-bundle.js";
 import {
   listWorkspaceExplorerChildren as listWorkspaceExplorerChildrenFromDisk,
   readWorkspaceTextFile as readWorkspaceTextFileFromDisk,
   writeWorkspaceTextFile as writeWorkspaceTextFileToDisk,
-} from './workspace-files.js';
+} from "./workspace-files.js";
 import {
   createWorkspaceEntry as createWorkspaceEntryOnDisk,
   forceDeleteWorkspaceEntry as forceDeleteWorkspaceEntryOnDisk,
@@ -63,7 +63,7 @@ import {
   revealWorkspaceEntry as revealWorkspaceEntryOnDisk,
   trashWorkspaceEntry as trashWorkspaceEntryOnDisk,
   type WorkspaceEntryKind,
-} from './workspace-file-operations.js';
+} from "./workspace-file-operations.js";
 import {
   listStoredSessions,
   mergeRecentWorkspaceRoots,
@@ -72,8 +72,8 @@ import {
   saveConfig,
   spiritAgentDataDir,
   type DesktopConfigFile,
-} from './storage.js';
-import type { EphemeralSessionRecord } from './sessions.js';
+} from "./storage.js";
+import type { EphemeralSessionRecord } from "./sessions.js";
 
 interface HostWorkspaceGitState {
   workspaceRoot: string;
@@ -89,7 +89,10 @@ interface HostWorkspaceGitBundle {
 
 export interface HostWorkspaceGitCommandContext {
   runSerialized<T>(work: () => Promise<T>, label?: string): Promise<T>;
-  ensureInitialized(workspaceRootOverride?: string, options?: { fastPath?: boolean }): Promise<void>;
+  ensureInitialized(
+    workspaceRootOverride?: string,
+    options?: { fastPath?: boolean },
+  ): Promise<void>;
   requireState(): HostWorkspaceGitState;
   isRuntimeBusy(): boolean;
   activeBundle(): HostWorkspaceGitBundle;
@@ -113,9 +116,9 @@ export async function rememberWorkspaceRootCommand(
     await ctx.ensureInitialized();
     const workspaceRoot = request.workspaceRoot?.trim()
       ? path.resolve(request.workspaceRoot.trim())
-      : '';
+      : "";
     if (!workspaceRoot) {
-      throw new Error(i18n.t('error.workspacePathRequired'));
+      throw new Error(i18n.t("error.workspacePathRequired"));
     }
 
     const state = ctx.requireState();
@@ -136,9 +139,9 @@ export async function forgetWorkspaceRootCommand(
     await ctx.ensureInitialized();
     const workspaceRoot = request.workspaceRoot?.trim()
       ? path.resolve(request.workspaceRoot.trim())
-      : '';
+      : "";
     if (!workspaceRoot) {
-      throw new Error(i18n.t('error.workspacePathRequired'));
+      throw new Error(i18n.t("error.workspacePathRequired"));
     }
 
     const state = ctx.requireState();
@@ -159,20 +162,20 @@ export async function commitChangesCommand(
   return ctx.runSerialized(async () => {
     await ctx.ensureInitialized();
     if (ctx.isRuntimeBusy()) {
-      throw new Error(i18n.t('error.runtimeBusy'));
+      throw new Error(i18n.t("error.runtimeBusy"));
     }
 
     const state = ctx.requireState();
     if (!state.git.isRepository) {
-      throw new Error(i18n.t('error.notGitRepo'));
+      throw new Error(i18n.t("error.notGitRepo"));
     }
     if (!state.git.hasChanges) {
-      throw new Error(i18n.t('error.noChangesToCommit'));
+      throw new Error(i18n.t("error.noChangesToCommit"));
     }
 
     const commitMessage = request.message?.trim();
     if (!commitMessage) {
-      throw new Error(i18n.t('error.commitMessageRequired'));
+      throw new Error(i18n.t("error.commitMessageRequired"));
     }
 
     await commitWorkspaceChanges(state.workspaceRoot, commitMessage);
@@ -204,19 +207,19 @@ export async function checkoutGitBranchCommand(
   return ctx.runSerialized(async () => {
     await ctx.ensureInitialized(undefined, { fastPath: true });
     if (ctx.isRuntimeBusy()) {
-      throw new Error(i18n.t('error.runtimeBusy'));
+      throw new Error(i18n.t("error.runtimeBusy"));
     }
 
     const state = ctx.requireState();
     const normalized = request.branch.trim();
     if (!state.git.isRepository) {
-      throw new Error(i18n.t('error.notGitRepo'));
+      throw new Error(i18n.t("error.notGitRepo"));
     }
     if (!normalized) {
-      throw new Error(i18n.t('error.branchNameRequired'));
+      throw new Error(i18n.t("error.branchNameRequired"));
     }
     if (!state.git.branches.includes(normalized)) {
-      throw new Error(i18n.t('error.branchNotFound', { branch: normalized }));
+      throw new Error(i18n.t("error.branchNotFound", { branch: normalized }));
     }
 
     state.git = applyGitRevision(
@@ -239,13 +242,13 @@ export async function mergeWorktreeToMainCommand(
   return ctx.runSerialized(async () => {
     await ctx.ensureInitialized(undefined, { fastPath: true });
     if (ctx.isRuntimeBusy()) {
-      throw new Error(i18n.t('error.runtimeBusy'));
+      throw new Error(i18n.t("error.runtimeBusy"));
     }
 
     const state = ctx.requireState();
     const git = state.git;
     if (!git.isWorktreeSession || !git.primaryRepoRoot || !git.worktreeBranch) {
-      throw new Error(i18n.t('error.notInWorktree'));
+      throw new Error(i18n.t("error.notInWorktree"));
     }
 
     await mergeWorktreeBranchToMain(git.primaryRepoRoot, git.worktreeBranch);
@@ -260,15 +263,15 @@ export async function pushGitBranchCommand(
   return ctx.runSerialized(async () => {
     await ctx.ensureInitialized(undefined, { fastPath: true });
     if (ctx.isRuntimeBusy()) {
-      throw new Error(i18n.t('error.runtimeBusy'));
+      throw new Error(i18n.t("error.runtimeBusy"));
     }
 
     const state = ctx.requireState();
     if (!state.git.isRepository) {
-      throw new Error(i18n.t('error.notGitRepo'));
+      throw new Error(i18n.t("error.notGitRepo"));
     }
     if (!state.git.needsPush) {
-      throw new Error(i18n.t('error.nothingToPush'));
+      throw new Error(i18n.t("error.nothingToPush"));
     }
 
     await pushWorkspaceGitBranch(state.workspaceRoot);
@@ -277,14 +280,18 @@ export async function pushGitBranchCommand(
   });
 }
 
-export async function listSessionsCommand(ctx: HostWorkspaceGitCommandContext): Promise<SessionListItem[]> {
+export async function listSessionsCommand(
+  ctx: HostWorkspaceGitCommandContext,
+): Promise<SessionListItem[]> {
   return ctx.runSerialized(async () => {
     await ctx.ensureInitialized(undefined, { fastPath: true });
     const state = ctx.requireState();
     const activeId = ctx.activeSessionId();
     const stored = await listStoredSessions();
     const ephemeral: SessionListItem[] = ephemeralSessionsToListItems(state.ephemeralSessions);
-    const merged = [...stored, ...ephemeral].sort((left, right) => right.modifiedAtUnixMs - left.modifiedAtUnixMs);
+    const merged = [...stored, ...ephemeral].sort(
+      (left, right) => right.modifiedAtUnixMs - left.modifiedAtUnixMs,
+    );
     return merged.map((item) => ({
       ...item,
       ...sessionListActivityFromBundle(ctx.bundleForSessionPath(item.path)),
@@ -401,7 +408,7 @@ export async function getWorkspaceFileReferenceIndexCommand(
 export async function readWorkspaceTextFileCommand(
   ctx: HostWorkspaceGitCommandContext,
   relativePath: string,
-  options?: import('../types.js').ReadWorkspaceTextFileOptions,
+  options?: import("../types.js").ReadWorkspaceTextFileOptions,
 ): Promise<WorkspaceReadTextFileResult> {
   await ctx.ensureInitialized(undefined, { fastPath: true });
   const state = ctx.requireState();
@@ -503,7 +510,7 @@ export async function readHostTextFileCommand(
   absolutePath: string,
 ): Promise<WorkspaceReadTextFileResult> {
   await ctx.ensureInitialized(undefined, { fastPath: true });
-  const { readHostTextFile } = await import('./host-text-file.js');
+  const { readHostTextFile } = await import("./host-text-file.js");
   return readHostTextFile(absolutePath);
 }
 
@@ -513,7 +520,7 @@ export async function writeHostTextFileCommand(
 ): Promise<void> {
   return ctx.runSerialized(async () => {
     await ctx.ensureInitialized();
-    const { writeHostTextFile } = await import('./host-text-file.js');
+    const { writeHostTextFile } = await import("./host-text-file.js");
     await writeHostTextFile(request.absolutePath, request.text);
   });
 }
@@ -523,7 +530,7 @@ export async function statHostTextFileCommand(
   absolutePath: string,
 ): Promise<HostTextFileStatResult> {
   await ctx.ensureInitialized(undefined, { fastPath: true });
-  const { statHostTextFile } = await import('./host-text-file.js');
+  const { statHostTextFile } = await import("./host-text-file.js");
   return statHostTextFile(absolutePath);
 }
 
@@ -532,7 +539,7 @@ export async function refreshGitSnapshotCommand(
 ): Promise<DesktopSnapshot> {
   await ctx.runCoalescedGitRefresh();
   if (!ctx.hasState()) {
-    throw new Error(i18n.t('error.hostNotReady'));
+    throw new Error(i18n.t("error.hostNotReady"));
   }
   return ctx.buildSnapshot();
 }

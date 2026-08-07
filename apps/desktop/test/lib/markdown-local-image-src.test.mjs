@@ -17,10 +17,7 @@ test("isBlockedRemoteMarkdownMediaSrc detects http(s) and protocol-relative urls
 });
 
 test("classifyMarkdownImageSrc classifies managed remote local and invalid", () => {
-  assert.equal(
-    classifyMarkdownImageSrc("spirit://generated/image/abc.png"),
-    "managed",
-  );
+  assert.equal(classifyMarkdownImageSrc("spirit://generated/image/abc.png"), "managed");
   assert.equal(classifyMarkdownImageSrc("https://example.com/a.png"), "remote");
   assert.equal(classifyMarkdownImageSrc("http://example.com/a.png"), "remote");
   assert.equal(classifyMarkdownImageSrc("//cdn.example.com/a.png"), "remote");

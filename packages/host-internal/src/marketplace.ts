@@ -1,29 +1,26 @@
-import { Buffer } from 'node:buffer';
-import { createHash } from 'node:crypto';
-import { existsSync } from 'node:fs';
-import { mkdtemp, rm, writeFile } from 'node:fs/promises';
-import os from 'node:os';
-import path from 'node:path';
+import { Buffer } from "node:buffer";
+import { createHash } from "node:crypto";
+import { existsSync } from "node:fs";
+import { mkdtemp, rm, writeFile } from "node:fs/promises";
+import os from "node:os";
+import path from "node:path";
 
-import { x as extractTar } from 'tar';
+import { x as extractTar } from "tar";
 
-import {
-  installPreparedExtensionDirectory,
-  type HostInstalledExtension,
-} from './extensions.js';
-import type { ExtensionHostKind, ExtensionManagementContext } from './storage.js';
+import { installPreparedExtensionDirectory, type HostInstalledExtension } from "./extensions.js";
+import type { ExtensionHostKind, ExtensionManagementContext } from "./storage.js";
 
-const MARKETPLACE_TEMP_DIR_PREFIX = 'spirit-marketplace-';
-const SUPPORTED_SRI_HASH_ALGORITHMS = new Set(['sha256', 'sha384', 'sha512']);
+const MARKETPLACE_TEMP_DIR_PREFIX = "spirit-marketplace-";
+const SUPPORTED_SRI_HASH_ALGORITHMS = new Set(["sha256", "sha384", "sha512"]);
 const MARKETPLACE_FETCH_TIMEOUT_MS = 20_000;
 const MAX_MARKETPLACE_JSON_BYTES = 512 * 1024;
 const MAX_MARKETPLACE_TEXT_BYTES = 2 * 1024 * 1024;
 const MAX_MARKETPLACE_TARBALL_BYTES = 50 * 1024 * 1024;
 export const DEFAULT_MARKETPLACE_REGISTRY_BASE_URL =
-  'https://raw.githubusercontent.com/SpiritAgents/awesome/refs/heads/main/registry/';
+  "https://raw.githubusercontent.com/SpiritAgents/awesome/refs/heads/main/registry/";
 
-export type MarketplaceChannel = 'stable' | 'preview' | 'experimental';
-export type MarketplaceReviewStatus = 'unverified' | 'verified' | 'revoked';
+export type MarketplaceChannel = "stable" | "preview" | "experimental";
+export type MarketplaceReviewStatus = "unverified" | "verified" | "revoked";
 
 export interface MarketplaceCatalogItem {
   extensionId: string;
@@ -170,7 +167,7 @@ export function createHostExtensionMarketplace(
     async getReadme(extensionId) {
       const cacheKey = extensionId.trim();
       if (!cacheKey) {
-        throw new Error('扩展 id 不能为空。');
+        throw new Error("扩展 id 不能为空。");
       }
       const cached = readmePromiseCache.get(cacheKey);
       if (cached) {
@@ -186,7 +183,7 @@ export function createHostExtensionMarketplace(
           () => loadCatalogDocument(fetchImpl, registryBaseUrl, catalogPromise),
         );
         const readmeUrl = resolveRegistryAssetUrl(detail.readmePath, registryBaseUrl);
-        return fetchText(readmeUrl, fetchImpl, '扩展 README');
+        return fetchText(readmeUrl, fetchImpl, "扩展 README");
       })();
       readmePromiseCache.set(cacheKey, nextPromise);
       void nextPromise.catch(() => {
@@ -197,20 +194,40 @@ export function createHostExtensionMarketplace(
       return nextPromise;
     },
     async prepareInstall(request) {
-      const prepared = await prepareMarketplaceInstall(context.hostKind, request, fetchImpl, registryBaseUrl, detailPromiseCache, () => loadCatalogDocument(fetchImpl, registryBaseUrl, catalogPromise));
+      const prepared = await prepareMarketplaceInstall(
+        context.hostKind,
+        request,
+        fetchImpl,
+        registryBaseUrl,
+        detailPromiseCache,
+        () => loadCatalogDocument(fetchImpl, registryBaseUrl, catalogPromise),
+      );
       catalogPromise ??= loadCatalogDocument(fetchImpl, registryBaseUrl, undefined);
       return prepared;
     },
     async install(request) {
-      const prepared = await prepareMarketplaceInstall(context.hostKind, request, fetchImpl, registryBaseUrl, detailPromiseCache, () => loadCatalogDocument(fetchImpl, registryBaseUrl, catalogPromise));
+      const prepared = await prepareMarketplaceInstall(
+        context.hostKind,
+        request,
+        fetchImpl,
+        registryBaseUrl,
+        detailPromiseCache,
+        () => loadCatalogDocument(fetchImpl, registryBaseUrl, catalogPromise),
+      );
       if (!prepared.supportsCurrentHost) {
-        throw new Error(`此扩展版本不支持当前宿主安装：${prepared.extensionId}@${prepared.version}`);
+        throw new Error(
+          `此扩展版本不支持当前宿主安装：${prepared.extensionId}@${prepared.version}`,
+        );
       }
-      if (prepared.reviewStatus !== 'verified' && request.reviewAcknowledged !== true) {
-        throw new Error(`扩展 ${prepared.extensionId}@${prepared.version} 尚未验证，安装前必须显式确认。`);
+      if (prepared.reviewStatus !== "verified" && request.reviewAcknowledged !== true) {
+        throw new Error(
+          `扩展 ${prepared.extensionId}@${prepared.version} 尚未验证，安装前必须显式确认。`,
+        );
       }
       if (!prepared.tarballUrl) {
-        throw new Error(`扩展 ${prepared.extensionId}@${prepared.version} 缺少 tarballUrl，无法安装。`);
+        throw new Error(
+          `扩展 ${prepared.extensionId}@${prepared.version} 缺少 tarballUrl，无法安装。`,
+        );
       }
       if (!prepared.integrity && !prepared.shasum) {
         throw new Error(
@@ -218,16 +235,12 @@ export function createHostExtensionMarketplace(
         );
       }
 
-      const tarballBuffer = await fetchBinary(
-        prepared.tarballUrl,
-        fetchImpl,
-        '扩展 tarball',
-      );
+      const tarballBuffer = await fetchBinary(prepared.tarballUrl, fetchImpl, "扩展 tarball");
       verifyDownloadedTarball(tarballBuffer, prepared);
 
       const tempDirectory = await mkdtemp(path.join(os.tmpdir(), MARKETPLACE_TEMP_DIR_PREFIX));
       const tarballFilePath = path.join(tempDirectory, prepared.sourceFileName);
-      const extractedPackageDirectory = path.join(tempDirectory, 'package');
+      const extractedPackageDirectory = path.join(tempDirectory, "package");
 
       try {
         await writeFile(tarballFilePath, tarballBuffer);
@@ -239,7 +252,9 @@ export function createHostExtensionMarketplace(
         });
 
         if (!existsSync(extractedPackageDirectory)) {
-          throw new Error(`扩展 tarball 解包后缺少 package/ 根目录：${prepared.extensionId}@${prepared.version}`);
+          throw new Error(
+            `扩展 tarball 解包后缺少 package/ 根目录：${prepared.extensionId}@${prepared.version}`,
+          );
         }
 
         const installed = await installPreparedExtensionDirectory(context, {
@@ -265,7 +280,7 @@ async function prepareMarketplaceInstall(
 ): Promise<MarketplacePreparedInstall> {
   const extensionId = request.extensionId.trim();
   if (!extensionId) {
-    throw new Error('扩展 id 不能为空。');
+    throw new Error("扩展 id 不能为空。");
   }
 
   const catalog = await loadCatalog();
@@ -299,7 +314,7 @@ async function prepareMarketplaceInstall(
     supportedHosts: [...version.supportedHosts],
     supportsCurrentHost: version.supportedHosts.includes(hostKind),
     ...(version.tarballUrl
-      ? { tarballUrl: normalizeMarketplaceHttpsUrl(version.tarballUrl, 'marketplace tarball') }
+      ? { tarballUrl: normalizeMarketplaceHttpsUrl(version.tarballUrl, "marketplace tarball") }
       : {}),
     ...(version.integrity ? { integrity: version.integrity } : {}),
     ...(version.shasum ? { shasum: version.shasum } : {}),
@@ -317,7 +332,11 @@ async function loadCatalogDocument(
   if (cachedPromise) {
     return cachedPromise;
   }
-  const raw = await fetchJson(resolveRegistryAssetUrl('catalog.json', registryBaseUrl), fetchImpl, 'marketplace catalog');
+  const raw = await fetchJson(
+    resolveRegistryAssetUrl("catalog.json", registryBaseUrl),
+    fetchImpl,
+    "marketplace catalog",
+  );
   return parseCatalogDocument(raw);
 }
 
@@ -330,7 +349,7 @@ async function loadDetailDocument(
 ): Promise<MarketplaceDetailDocument> {
   const normalizedId = extensionId.trim();
   if (!normalizedId) {
-    throw new Error('扩展 id 不能为空。');
+    throw new Error("扩展 id 不能为空。");
   }
 
   const cached = detailPromiseCache.get(normalizedId);
@@ -348,11 +367,13 @@ async function loadDetailDocument(
     const raw = await fetchJson(
       resolveRegistryAssetUrl(catalogItem.detailPath, registryBaseUrl),
       fetchImpl,
-      'marketplace detail',
+      "marketplace detail",
     );
     const detail = parseDetailDocument(raw);
     if (detail.extensionId !== normalizedId) {
-      throw new Error(`marketplace detail 扩展 id 不匹配：期望 ${normalizedId}，实际 ${detail.extensionId}`);
+      throw new Error(
+        `marketplace detail 扩展 id 不匹配：期望 ${normalizedId}，实际 ${detail.extensionId}`,
+      );
     }
     return detail;
   })();
@@ -372,7 +393,9 @@ async function fetchJson(url: string, fetchImpl: typeof fetch, label: string): P
     throw new Error(`${label} 拉取失败：${response.status} ${response.statusText}`);
   }
   try {
-    return JSON.parse((await readResponseBuffer(response, label, MAX_MARKETPLACE_JSON_BYTES)).toString('utf8'));
+    return JSON.parse(
+      (await readResponseBuffer(response, label, MAX_MARKETPLACE_JSON_BYTES)).toString("utf8"),
+    );
   } catch {
     throw new Error(`${label} 不是合法 JSON：${url}`);
   }
@@ -383,14 +406,10 @@ async function fetchText(url: string, fetchImpl: typeof fetch, label: string): P
   if (!response.ok) {
     throw new Error(`${label} 拉取失败：${response.status} ${response.statusText}`);
   }
-  return (await readResponseBuffer(response, label, MAX_MARKETPLACE_TEXT_BYTES)).toString('utf8');
+  return (await readResponseBuffer(response, label, MAX_MARKETPLACE_TEXT_BYTES)).toString("utf8");
 }
 
-async function fetchBinary(
-  url: string,
-  fetchImpl: typeof fetch,
-  label: string,
-): Promise<Buffer> {
+async function fetchBinary(url: string, fetchImpl: typeof fetch, label: string): Promise<Buffer> {
   const response = await fetchResponse(url, fetchImpl, label, MAX_MARKETPLACE_TARBALL_BYTES);
   if (!response.ok) {
     throw new Error(`${label} 下载失败：${response.status} ${response.statusText}`);
@@ -451,11 +470,14 @@ async function readResponseBuffer(
     chunks.push(value);
   }
 
-  return Buffer.concat(chunks.map((chunk) => Buffer.from(chunk)), totalBytes);
+  return Buffer.concat(
+    chunks.map((chunk) => Buffer.from(chunk)),
+    totalBytes,
+  );
 }
 
 function assertMarketplaceContentLength(response: Response, label: string, maxBytes: number): void {
-  const headerValue = response.headers.get('content-length');
+  const headerValue = response.headers.get("content-length");
   if (!headerValue) {
     return;
   }
@@ -470,12 +492,12 @@ function assertMarketplaceContentLength(response: Response, label: string, maxBy
 }
 
 function parseCatalogDocument(value: unknown): MarketplaceCatalogDocument {
-  const root = requiredRecord(value, 'marketplace catalog');
-  const schemaVersion = numberField(root.schemaVersion, 'catalog.schemaVersion');
+  const root = requiredRecord(value, "marketplace catalog");
+  const schemaVersion = numberField(root.schemaVersion, "catalog.schemaVersion");
   if (schemaVersion !== 1) {
     throw new Error(`仅支持 marketplace catalog schemaVersion=1，收到 ${schemaVersion}`);
   }
-  const items = arrayField(root.items, 'catalog.items').map((entry, index) =>
+  const items = arrayField(root.items, "catalog.items").map((entry, index) =>
     parseCatalogItem(entry, `catalog.items[${index}]`),
   );
   return { schemaVersion, items };
@@ -489,41 +511,60 @@ function parseCatalogItem(value: unknown, fieldPrefix: string): MarketplaceCatal
     status: nonEmptyString(item.status, `${fieldPrefix}.status`),
     featured: booleanField(item.featured, `${fieldPrefix}.featured`),
     defaultVersion: nonEmptyString(item.defaultVersion, `${fieldPrefix}.defaultVersion`),
-    defaultChannel: enumField(item.defaultChannel, `${fieldPrefix}.defaultChannel`, ['stable', 'preview', 'experimental']),
-    defaultReviewStatus: enumField(item.defaultReviewStatus, `${fieldPrefix}.defaultReviewStatus`, ['unverified', 'verified', 'revoked']),
+    defaultChannel: enumField(item.defaultChannel, `${fieldPrefix}.defaultChannel`, [
+      "stable",
+      "preview",
+      "experimental",
+    ]),
+    defaultReviewStatus: enumField(item.defaultReviewStatus, `${fieldPrefix}.defaultReviewStatus`, [
+      "unverified",
+      "verified",
+      "revoked",
+    ]),
     detailPath: nonEmptyString(item.detailPath, `${fieldPrefix}.detailPath`),
     displayName: nonEmptyString(item.displayName, `${fieldPrefix}.displayName`),
     description: nonEmptyString(item.description, `${fieldPrefix}.description`),
-    ...(optionalNonEmptyString(item.author) ? { author: optionalNonEmptyString(item.author)! } : {}),
-    ...(optionalNonEmptyString(item.homepageUrl) ? { homepageUrl: optionalNonEmptyString(item.homepageUrl)! } : {}),
-    ...(optionalNonEmptyString(item.repositoryUrl) ? { repositoryUrl: optionalNonEmptyString(item.repositoryUrl)! } : {}),
+    ...(optionalNonEmptyString(item.author)
+      ? { author: optionalNonEmptyString(item.author)! }
+      : {}),
+    ...(optionalNonEmptyString(item.homepageUrl)
+      ? { homepageUrl: optionalNonEmptyString(item.homepageUrl)! }
+      : {}),
+    ...(optionalNonEmptyString(item.repositoryUrl)
+      ? { repositoryUrl: optionalNonEmptyString(item.repositoryUrl)! }
+      : {}),
     keywords: optionalStringArray(item.keywords, `${fieldPrefix}.keywords`),
     supportedHosts: requiredHostKinds(item.supportedHosts, `${fieldPrefix}.supportedHosts`),
-    requestedCapabilities: optionalStringArray(item.requestedCapabilities, `${fieldPrefix}.requestedCapabilities`),
-    ...(optionalNonEmptyString(item.iconUrl) ? { iconUrl: optionalNonEmptyString(item.iconUrl)! } : {}),
+    requestedCapabilities: optionalStringArray(
+      item.requestedCapabilities,
+      `${fieldPrefix}.requestedCapabilities`,
+    ),
+    ...(optionalNonEmptyString(item.iconUrl)
+      ? { iconUrl: optionalNonEmptyString(item.iconUrl)! }
+      : {}),
   };
 }
 
 function parseDetailDocument(value: unknown): MarketplaceDetailDocument {
-  const root = requiredRecord(value, 'marketplace detail');
-  const schemaVersion = numberField(root.schemaVersion, 'detail.schemaVersion');
+  const root = requiredRecord(value, "marketplace detail");
+  const schemaVersion = numberField(root.schemaVersion, "detail.schemaVersion");
   if (schemaVersion !== 1) {
     throw new Error(`仅支持 marketplace detail schemaVersion=1，收到 ${schemaVersion}`);
   }
-  const versions = arrayField(root.versions, 'detail.versions').map((entry, index) =>
+  const versions = arrayField(root.versions, "detail.versions").map((entry, index) =>
     parseDetailVersion(entry, `detail.versions[${index}]`),
   );
   if (versions.length === 0) {
-    throw new Error('marketplace detail.versions 不能为空。');
+    throw new Error("marketplace detail.versions 不能为空。");
   }
   return {
     schemaVersion,
-    extensionId: nonEmptyString(root.extensionId, 'detail.extensionId'),
-    packageName: nonEmptyString(root.packageName, 'detail.packageName'),
-    status: nonEmptyString(root.status, 'detail.status'),
-    featured: booleanField(root.featured, 'detail.featured'),
-    defaultVersion: nonEmptyString(root.defaultVersion, 'detail.defaultVersion'),
-    readmePath: nonEmptyString(root.readmePath, 'detail.readmePath'),
+    extensionId: nonEmptyString(root.extensionId, "detail.extensionId"),
+    packageName: nonEmptyString(root.packageName, "detail.packageName"),
+    status: nonEmptyString(root.status, "detail.status"),
+    featured: booleanField(root.featured, "detail.featured"),
+    defaultVersion: nonEmptyString(root.defaultVersion, "detail.defaultVersion"),
+    readmePath: nonEmptyString(root.readmePath, "detail.readmePath"),
     versions,
   };
 }
@@ -540,43 +581,74 @@ function parseDetailVersion(value: unknown, fieldPrefix: string): MarketplaceDet
 
   return {
     version: nonEmptyString(version.version, `${fieldPrefix}.version`),
-    channel: enumField(version.channel, `${fieldPrefix}.channel`, ['stable', 'preview', 'experimental']),
-    reviewStatus: enumField(version.reviewStatus, `${fieldPrefix}.reviewStatus`, ['unverified', 'verified', 'revoked']),
+    channel: enumField(version.channel, `${fieldPrefix}.channel`, [
+      "stable",
+      "preview",
+      "experimental",
+    ]),
+    reviewStatus: enumField(version.reviewStatus, `${fieldPrefix}.reviewStatus`, [
+      "unverified",
+      "verified",
+      "revoked",
+    ]),
     displayName: nonEmptyString(version.displayName, `${fieldPrefix}.displayName`),
     description: nonEmptyString(version.description, `${fieldPrefix}.description`),
-    ...(optionalNonEmptyString(version.author) ? { author: optionalNonEmptyString(version.author)! } : {}),
-    ...(optionalNonEmptyString(version.homepageUrl) ? { homepageUrl: optionalNonEmptyString(version.homepageUrl)! } : {}),
-    ...(optionalNonEmptyString(version.repositoryUrl) ? { repositoryUrl: optionalNonEmptyString(version.repositoryUrl)! } : {}),
+    ...(optionalNonEmptyString(version.author)
+      ? { author: optionalNonEmptyString(version.author)! }
+      : {}),
+    ...(optionalNonEmptyString(version.homepageUrl)
+      ? { homepageUrl: optionalNonEmptyString(version.homepageUrl)! }
+      : {}),
+    ...(optionalNonEmptyString(version.repositoryUrl)
+      ? { repositoryUrl: optionalNonEmptyString(version.repositoryUrl)! }
+      : {}),
     keywords: optionalStringArray(version.keywords, `${fieldPrefix}.keywords`),
     supportedHosts: requiredHostKinds(version.supportedHosts, `${fieldPrefix}.supportedHosts`),
-    requestedCapabilities: optionalStringArray(version.requestedCapabilities, `${fieldPrefix}.requestedCapabilities`),
-    ...(optionalNonEmptyString(version.iconUrl) ? { iconUrl: optionalNonEmptyString(version.iconUrl)! } : {}),
-    ...(optionalNonEmptyString(version.publishedAt) ? { publishedAt: optionalNonEmptyString(version.publishedAt)! } : {}),
-    ...(optionalNonEmptyString(version.tarballUrl) ? { tarballUrl: optionalNonEmptyString(version.tarballUrl)! } : {}),
-    ...(optionalNonEmptyString(version.integrity) ? { integrity: optionalNonEmptyString(version.integrity)! } : {}),
-    ...(optionalNonEmptyString(version.shasum) ? { shasum: optionalNonEmptyString(version.shasum)! } : {}),
+    requestedCapabilities: optionalStringArray(
+      version.requestedCapabilities,
+      `${fieldPrefix}.requestedCapabilities`,
+    ),
+    ...(optionalNonEmptyString(version.iconUrl)
+      ? { iconUrl: optionalNonEmptyString(version.iconUrl)! }
+      : {}),
+    ...(optionalNonEmptyString(version.publishedAt)
+      ? { publishedAt: optionalNonEmptyString(version.publishedAt)! }
+      : {}),
+    ...(optionalNonEmptyString(version.tarballUrl)
+      ? { tarballUrl: optionalNonEmptyString(version.tarballUrl)! }
+      : {}),
+    ...(optionalNonEmptyString(version.integrity)
+      ? { integrity: optionalNonEmptyString(version.integrity)! }
+      : {}),
+    ...(optionalNonEmptyString(version.shasum)
+      ? { shasum: optionalNonEmptyString(version.shasum)! }
+      : {}),
     ...(parsedChangelog ? { changelog: parsedChangelog } : {}),
   };
 }
 
 function verifyDownloadedTarball(
   buffer: Buffer,
-  prepared: Pick<MarketplacePreparedInstall, 'extensionId' | 'version' | 'integrity' | 'shasum'>,
+  prepared: Pick<MarketplacePreparedInstall, "extensionId" | "version" | "integrity" | "shasum">,
 ): void {
   if (!prepared.integrity && !prepared.shasum) {
-    throw new Error(`扩展 tarball 缺少 integrity/shasum：${prepared.extensionId}@${prepared.version}`);
+    throw new Error(
+      `扩展 tarball 缺少 integrity/shasum：${prepared.extensionId}@${prepared.version}`,
+    );
   }
 
   if (prepared.integrity) {
     const integrityEntries = prepared.integrity.split(/\s+/u).filter(Boolean);
     const matched = integrityEntries.some((entry) => verifySriEntry(buffer, entry));
     if (!matched) {
-      throw new Error(`扩展 tarball integrity 校验失败：${prepared.extensionId}@${prepared.version}`);
+      throw new Error(
+        `扩展 tarball integrity 校验失败：${prepared.extensionId}@${prepared.version}`,
+      );
     }
   }
 
   if (prepared.shasum) {
-    const actual = createHash('sha1').update(buffer).digest('hex');
+    const actual = createHash("sha1").update(buffer).digest("hex");
     if (actual.toLowerCase() !== prepared.shasum.toLowerCase()) {
       throw new Error(`扩展 tarball shasum 校验失败：${prepared.extensionId}@${prepared.version}`);
     }
@@ -584,7 +656,7 @@ function verifyDownloadedTarball(
 }
 
 function verifySriEntry(buffer: Buffer, entry: string): boolean {
-  const separatorIndex = entry.indexOf('-');
+  const separatorIndex = entry.indexOf("-");
   if (separatorIndex <= 0 || separatorIndex >= entry.length - 1) {
     return false;
   }
@@ -594,7 +666,7 @@ function verifySriEntry(buffer: Buffer, entry: string): boolean {
   }
   const expected = entry.slice(separatorIndex + 1);
   try {
-    const actual = createHash(algorithm).update(buffer).digest('base64');
+    const actual = createHash(algorithm).update(buffer).digest("base64");
     return actual === expected;
   } catch {
     return false;
@@ -617,19 +689,22 @@ function deriveDownloadFileName(
       // ignore and fall back
     }
   }
-  return `${extensionId.replace(/[^a-z0-9._-]+/giu, '-')}-${version}.tgz`;
+  return `${extensionId.replace(/[^a-z0-9._-]+/giu, "-")}-${version}.tgz`;
 }
 
 function ensureTrailingSlash(url: string): string {
-  return url.endsWith('/') ? url : `${url}/`;
+  return url.endsWith("/") ? url : `${url}/`;
 }
 
 function resolveRegistryAssetUrl(relativeOrAbsolutePath: string, registryBaseUrl: string): string {
   const normalized = relativeOrAbsolutePath.trim();
   if (/^https?:\/\//iu.test(normalized)) {
-    return normalizeMarketplaceHttpsUrl(normalized, 'marketplace 资源');
+    return normalizeMarketplaceHttpsUrl(normalized, "marketplace 资源");
   }
-  return normalizeMarketplaceHttpsUrl(new URL(normalized.replace(/^\.\//u, ''), registryBaseUrl).href, 'marketplace 资源');
+  return normalizeMarketplaceHttpsUrl(
+    new URL(normalized.replace(/^\.\//u, ""), registryBaseUrl).href,
+    "marketplace 资源",
+  );
 }
 
 function normalizeMarketplaceHttpsUrl(url: string, label: string): string {
@@ -639,7 +714,7 @@ function normalizeMarketplaceHttpsUrl(url: string, label: string): string {
   } catch {
     throw new Error(`${label} URL 非法：${url}`);
   }
-  if (resolved.protocol !== 'https:') {
+  if (resolved.protocol !== "https:") {
     throw new Error(`${label} URL 必须使用 https：${resolved.href}`);
   }
   return resolved.href;
@@ -653,7 +728,7 @@ function requiredRecord(value: unknown, fieldName: string): Record<string, unkno
 }
 
 function isRecord(value: unknown): value is Record<string, unknown> {
-  return typeof value === 'object' && value !== null && !Array.isArray(value);
+  return typeof value === "object" && value !== null && !Array.isArray(value);
 }
 
 function extractErrorMessage(error: unknown): string {
@@ -664,14 +739,14 @@ function extractErrorMessage(error: unknown): string {
 }
 
 function nonEmptyString(value: unknown, fieldName: string): string {
-  if (typeof value !== 'string' || value.trim().length === 0) {
+  if (typeof value !== "string" || value.trim().length === 0) {
     throw new Error(`${fieldName} 不能为空。`);
   }
   return value.trim();
 }
 
 function optionalNonEmptyString(value: unknown): string | undefined {
-  if (typeof value !== 'string') {
+  if (typeof value !== "string") {
     return undefined;
   }
   const trimmed = value.trim();
@@ -679,14 +754,14 @@ function optionalNonEmptyString(value: unknown): string | undefined {
 }
 
 function booleanField(value: unknown, fieldName: string): boolean {
-  if (typeof value !== 'boolean') {
+  if (typeof value !== "boolean") {
     throw new Error(`${fieldName} 必须是布尔值。`);
   }
   return value;
 }
 
 function numberField(value: unknown, fieldName: string): number {
-  if (typeof value !== 'number' || !Number.isFinite(value)) {
+  if (typeof value !== "number" || !Number.isFinite(value)) {
     throw new Error(`${fieldName} 必须是数字。`);
   }
   return value;
@@ -722,7 +797,7 @@ function optionalStringArray(value: unknown, fieldName: string): string[] {
 
 function requiredHostKinds(value: unknown, fieldName: string): ExtensionHostKind[] {
   const result = optionalStringArray(value, fieldName).map((entry) => {
-    if (entry !== 'cli' && entry !== 'desktop') {
+    if (entry !== "cli" && entry !== "desktop") {
       throw new Error(`${fieldName} 取值非法：${entry}`);
     }
     return entry;

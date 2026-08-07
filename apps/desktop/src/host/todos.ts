@@ -1,14 +1,14 @@
-import { randomUUID } from 'node:crypto';
-import path from 'node:path';
+import { randomUUID } from "node:crypto";
+import path from "node:path";
 
 import {
   createHostTodoStore,
   type HostTodoRecord,
   type HostTodoScope,
-} from '@spiritagent/host-internal';
+} from "@spiritagent/host-internal";
 
-import type { DesktopTodoItem } from '../types.js';
-import { isProvisionalSessionPath, spiritAgentDataDir } from './storage.js';
+import type { DesktopTodoItem } from "../types.js";
+import { isProvisionalSessionPath, spiritAgentDataDir } from "./storage.js";
 
 /** Per-bundle TODO scope while the chat file is still the shared provisional slot. */
 export function createTodoSessionScopeKey(): string {
@@ -34,7 +34,7 @@ export function resolveTodoSessionKey(input: {
 
 export function normalizeTodoSessionStorageKey(sessionKey: string): string {
   const trimmed = sessionKey.trim();
-  if (trimmed.startsWith('todo-scope:')) {
+  if (trimmed.startsWith("todo-scope:")) {
     return trimmed;
   }
   return path.resolve(trimmed);

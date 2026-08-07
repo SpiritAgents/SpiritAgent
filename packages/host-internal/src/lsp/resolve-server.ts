@@ -1,16 +1,16 @@
-import { execFile } from 'node:child_process';
-import { access } from 'node:fs/promises';
-import { constants } from 'node:fs';
-import { promisify } from 'node:util';
+import { execFile } from "node:child_process";
+import { access } from "node:fs/promises";
+import { constants } from "node:fs";
+import { promisify } from "node:util";
 
-import { TYPESCRIPT_LANGUAGE_SERVER_COMMAND } from '@spiritagent/agent-core';
+import { TYPESCRIPT_LANGUAGE_SERVER_COMMAND } from "@spiritagent/agent-core";
 
 import {
   buildWindowsCommandCandidates,
   isWindowsPlatform,
   splitWindowsPathEntries,
   splitWindowsPathExtEntries,
-} from './windows-path.js';
+} from "./windows-path.js";
 
 const execFileAsync = promisify(execFile);
 
@@ -27,7 +27,7 @@ export async function preferWindowsSpawnableCommand(
   if (!isWindowsPlatform(platform) || /\.[^\\/]+$/i.test(command)) {
     return command;
   }
-  for (const extension of ['.cmd', '.exe', '.bat']) {
+  for (const extension of [".cmd", ".exe", ".bat"]) {
     const candidate = `${command}${extension}`;
     try {
       await access(candidate, constants.F_OK);
@@ -44,7 +44,7 @@ async function resolveCommandViaWindowsWhere(
   args: string[],
 ): Promise<ResolvedLanguageServerCommand | undefined> {
   try {
-    const result = await execFileAsync('where.exe', [command], {
+    const result = await execFileAsync("where.exe", [command], {
       timeout: 2_000,
       windowsHide: true,
     });
@@ -69,7 +69,7 @@ export async function resolveCommandOnPath(
   platform: NodeJS.Platform = process.platform,
   args: string[] = [],
 ): Promise<ResolvedLanguageServerCommand | undefined> {
-  if (isWindowsPlatform(platform) && !command.includes('\\') && !command.includes('/')) {
+  if (isWindowsPlatform(platform) && !command.includes("\\") && !command.includes("/")) {
     const fromWhere = await resolveCommandViaWindowsWhere(command, args);
     if (fromWhere) {
       return fromWhere;
@@ -95,8 +95,11 @@ export function buildCommandCandidates(
   platform: NodeJS.Platform,
 ): string[] {
   if (!isWindowsPlatform(platform)) {
-    const pathEntries = (env.PATH ?? '').split(':').map((entry) => entry.trim()).filter(Boolean);
-    return pathEntries.map((entry) => `${entry.replace(/\/+$/, '')}/${command}`);
+    const pathEntries = (env.PATH ?? "")
+      .split(":")
+      .map((entry) => entry.trim())
+      .filter(Boolean);
+    return pathEntries.map((entry) => `${entry.replace(/\/+$/, "")}/${command}`);
   }
 
   return buildWindowsCommandCandidates(
@@ -126,8 +129,8 @@ async function runCommandForOutput(
       windowsHide: true,
     });
     return {
-      stdout: String(result.stdout ?? ''),
-      stderr: String(result.stderr ?? ''),
+      stdout: String(result.stdout ?? ""),
+      stderr: String(result.stderr ?? ""),
       code: 0,
     };
   } catch (error) {
@@ -137,9 +140,9 @@ async function runCommandForOutput(
       code?: number | string;
     };
     return {
-      stdout: String(execError.stdout ?? ''),
-      stderr: String(execError.stderr ?? ''),
-      code: typeof execError.code === 'number' ? execError.code : 1,
+      stdout: String(execError.stdout ?? ""),
+      stderr: String(execError.stderr ?? ""),
+      code: typeof execError.code === "number" ? execError.code : 1,
     };
   }
 }
@@ -148,12 +151,12 @@ async function resolveRustAnalyzerViaRustup(
   env: NodeJS.ProcessEnv,
   platform: NodeJS.Platform,
 ): Promise<ResolvedLanguageServerCommand | undefined> {
-  const rustup = await resolveCommandOnPath('rustup', env, platform, []);
+  const rustup = await resolveCommandOnPath("rustup", env, platform, []);
   if (!rustup) {
     return undefined;
   }
 
-  const which = await runCommandForOutput(rustup.command, ['which', 'rust-analyzer'], env);
+  const which = await runCommandForOutput(rustup.command, ["which", "rust-analyzer"], env);
   if (which.code !== 0) {
     return undefined;
   }
@@ -172,11 +175,8 @@ async function resolveRustAnalyzerViaRustup(
   return { command: resolvedPath, args: [] };
 }
 
-async function isRustAnalyzerHealthy(
-  command: string,
-  env: NodeJS.ProcessEnv,
-): Promise<boolean> {
-  const result = await runCommandForOutput(command, ['--version'], env);
+async function isRustAnalyzerHealthy(command: string, env: NodeJS.ProcessEnv): Promise<boolean> {
+  const result = await runCommandForOutput(command, ["--version"], env);
   const combined = `${result.stdout}\n${result.stderr}`.trim();
   return result.code === 0 && isRustAnalyzerVersionOutputHealthy(combined);
 }
@@ -190,7 +190,7 @@ export async function resolveRustAnalyzerOnPath(
     return fromRustup;
   }
 
-  const fromPath = await resolveCommandOnPath('rust-analyzer', env, platform, []);
+  const fromPath = await resolveCommandOnPath("rust-analyzer", env, platform, []);
   if (!fromPath) {
     return undefined;
   }
@@ -206,28 +206,28 @@ export async function resolveClangdOnPath(
   env: NodeJS.ProcessEnv = process.env,
   platform: NodeJS.Platform = process.platform,
 ): Promise<ResolvedLanguageServerCommand | undefined> {
-  return resolveCommandOnPath('clangd', env, platform, ['--background-index']);
+  return resolveCommandOnPath("clangd", env, platform, ["--background-index"]);
 }
 
 export async function resolvePyrightOnPath(
   env: NodeJS.ProcessEnv = process.env,
   platform: NodeJS.Platform = process.platform,
 ): Promise<ResolvedLanguageServerCommand | undefined> {
-  return resolveCommandOnPath('pyright-langserver', env, platform, ['--stdio']);
+  return resolveCommandOnPath("pyright-langserver", env, platform, ["--stdio"]);
 }
 
 export async function resolveGoplsOnPath(
   env: NodeJS.ProcessEnv = process.env,
   platform: NodeJS.Platform = process.platform,
 ): Promise<ResolvedLanguageServerCommand | undefined> {
-  return resolveCommandOnPath('gopls', env, platform, []);
+  return resolveCommandOnPath("gopls", env, platform, []);
 }
 
 export async function resolveTypescriptLanguageServerOnPath(
   env: NodeJS.ProcessEnv = process.env,
   platform: NodeJS.Platform = process.platform,
 ): Promise<ResolvedLanguageServerCommand | undefined> {
-  return resolveCommandOnPath(TYPESCRIPT_LANGUAGE_SERVER_COMMAND, env, platform, ['--stdio']);
+  return resolveCommandOnPath(TYPESCRIPT_LANGUAGE_SERVER_COMMAND, env, platform, ["--stdio"]);
 }
 
 /** @deprecated Use buildCommandCandidates */

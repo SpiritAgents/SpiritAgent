@@ -1,7 +1,10 @@
 import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 
-import type { ReadLocalVideoPreview, ReadManagedVideoPreview } from "@/components/tool-call/tool-call-types";
+import type {
+  ReadLocalVideoPreview,
+  ReadManagedVideoPreview,
+} from "@/components/tool-call/tool-call-types";
 import {
   isPreviewableVideoPath,
   readCachedLocalFilePreviewDataUrl,
@@ -23,9 +26,13 @@ export function VideoGenerationToolCard({
   const { t } = useTranslation();
   const videoPath = tool.videoPaths?.find((path) => path.trim().length > 0) ?? "";
   const previewSourcePath =
-    tool.videoPaths?.find((path) => isManagedGeneratedVideoRef(path) || isPreviewableVideoPath(path)) ?? "";
+    tool.videoPaths?.find(
+      (path) => isManagedGeneratedVideoRef(path) || isPreviewableVideoPath(path),
+    ) ?? "";
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
-  const [previewState, setPreviewState] = useState<"idle" | "loading" | "ready" | "unavailable">("idle");
+  const [previewState, setPreviewState] = useState<"idle" | "loading" | "ready" | "unavailable">(
+    "idle",
+  );
 
   useEffect(() => {
     let cancelled = false;
@@ -76,13 +83,12 @@ export function VideoGenerationToolCard({
     };
   }, [previewSourcePath, readLocalVideoPreviewUrl, readManagedVideoPreviewUrl]);
 
-  const loading = tool.phase === "preview" || tool.phase === "running" || previewState === "loading";
+  const loading =
+    tool.phase === "preview" || tool.phase === "running" || previewState === "loading";
 
   return (
     <div className="w-full max-w-[min(28rem,100%)] py-1">
-      <div
-        className="relative aspect-square overflow-hidden rounded-md border border-border/45 bg-muted/20 transition-colors duration-200"
-      >
+      <div className="relative aspect-square overflow-hidden rounded-md border border-border/45 bg-muted/20 transition-colors duration-200">
         {previewUrl ? (
           <video
             src={previewUrl}
@@ -98,7 +104,7 @@ export function VideoGenerationToolCard({
                 loading ? "spirit-thinking-shimmer-text" : "text-muted-foreground",
               )}
             >
-              {loading ? t('common.loading') : t('app.previewUnavailable')}
+              {loading ? t("common.loading") : t("app.previewUnavailable")}
             </span>
           </div>
         )}

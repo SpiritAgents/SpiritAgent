@@ -1,13 +1,10 @@
-import {
-  buildActiveSkillsBlockContent,
-  type ToolAgentActiveSkill,
-} from '../tool-agent.js';
+import { buildActiveSkillsBlockContent, type ToolAgentActiveSkill } from "../tool-agent.js";
 
 /** Prefix user turn content with a local-time anchor for the LLM (plain text, no separate metadata field). */
-const USER_MESSAGE_AT_OPEN = '<user_message_at>';
-const USER_MESSAGE_AT_CLOSE = '</user_message_at>';
-const ACTIVE_SKILL_OPEN = '<active_skill>';
-const ACTIVE_SKILL_CLOSE = '</active_skill>';
+const USER_MESSAGE_AT_OPEN = "<user_message_at>";
+const USER_MESSAGE_AT_CLOSE = "</user_message_at>";
+const ACTIVE_SKILL_OPEN = "<active_skill>";
+const ACTIVE_SKILL_CLOSE = "</active_skill>";
 
 export function formatActiveSkillUserMessageMeta(
   activeSkills: ToolAgentActiveSkill[],
@@ -29,9 +26,11 @@ export function formatUserMessageContentForLlm(
   if (activeSkillMeta) {
     lines.push(activeSkillMeta);
   }
-  lines.push(`${USER_MESSAGE_AT_OPEN}${formatLocalIsoWithOffset(new Date())}${USER_MESSAGE_AT_CLOSE}`);
+  lines.push(
+    `${USER_MESSAGE_AT_OPEN}${formatLocalIsoWithOffset(new Date())}${USER_MESSAGE_AT_CLOSE}`,
+  );
   lines.push(body);
-  return lines.join('\n');
+  return lines.join("\n");
 }
 
 export function userMessageContentMatchesInput(content: string, input: string): boolean {
@@ -52,21 +51,21 @@ function bodyAfterUserMessageMeta(content: string): string | undefined {
       return undefined;
     }
     remaining = remaining.slice(closeIndex + ACTIVE_SKILL_CLOSE.length);
-    if (remaining.startsWith('\n')) {
+    if (remaining.startsWith("\n")) {
       remaining = remaining.slice(1);
     }
   }
 
-  const firstLineEnd = remaining.indexOf('\n');
+  const firstLineEnd = remaining.indexOf("\n");
   if (firstLineEnd < 0) {
     return undefined;
   }
 
   const firstLine = remaining.slice(0, firstLineEnd);
   if (
-    firstLine.startsWith(USER_MESSAGE_AT_OPEN)
-    && firstLine.endsWith(USER_MESSAGE_AT_CLOSE)
-    && firstLine.length > USER_MESSAGE_AT_OPEN.length + USER_MESSAGE_AT_CLOSE.length
+    firstLine.startsWith(USER_MESSAGE_AT_OPEN) &&
+    firstLine.endsWith(USER_MESSAGE_AT_CLOSE) &&
+    firstLine.length > USER_MESSAGE_AT_OPEN.length + USER_MESSAGE_AT_CLOSE.length
   ) {
     return remaining.slice(firstLineEnd + 1);
   }
@@ -75,11 +74,11 @@ function bodyAfterUserMessageMeta(content: string): string | undefined {
 }
 
 function pad2(n: number): string {
-  return String(n).padStart(2, '0');
+  return String(n).padStart(2, "0");
 }
 
 function pad3(n: number): string {
-  return String(n).padStart(3, '0');
+  return String(n).padStart(3, "0");
 }
 
 /** e.g. 2026-04-21T15:30:45.123+08:00 (local calendar + UTC offset). */
@@ -92,7 +91,7 @@ function formatLocalIsoWithOffset(d: Date): string {
   const s = pad2(d.getSeconds());
   const ms = pad3(d.getMilliseconds());
   const offMin = -d.getTimezoneOffset();
-  const sign = offMin >= 0 ? '+' : '-';
+  const sign = offMin >= 0 ? "+" : "-";
   const abs = Math.abs(offMin);
   const oh = pad2(Math.floor(abs / 60));
   const om = pad2(abs % 60);

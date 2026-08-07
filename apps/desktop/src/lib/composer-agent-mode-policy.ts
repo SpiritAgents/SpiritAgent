@@ -50,10 +50,10 @@ export function composerShowsPlaceholder(
     return false;
   }
   if (
-    hasLoopSegment(segs)
-    || hasAgentModeSegment(segs)
-    || hasSkillSegment(segs)
-    || hasInlineAttachmentChipSegments(segs)
+    hasLoopSegment(segs) ||
+    hasAgentModeSegment(segs) ||
+    hasSkillSegment(segs) ||
+    hasInlineAttachmentChipSegments(segs)
   ) {
     return false;
   }

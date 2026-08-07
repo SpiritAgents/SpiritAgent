@@ -1,4 +1,4 @@
-import type { CodeCompletionJournalEntry } from './types.js';
+import type { CodeCompletionJournalEntry } from "./types.js";
 
 const DEFAULT_MAX_CHARS = 6_000;
 
@@ -8,17 +8,17 @@ export interface FormattedRecentEdits {
 }
 
 function normalizePath(relativePath: string): string {
-  return relativePath.replace(/\\/g, '/');
+  return relativePath.replace(/\\/g, "/");
 }
 
 function buildFileDiff(relativePath: string, baselineText: string, currentText: string): string {
   if (baselineText === currentText) {
-    return '';
+    return "";
   }
 
   const path = normalizePath(relativePath);
-  const beforeLines = baselineText.split('\n');
-  const afterLines = currentText.split('\n');
+  const beforeLines = baselineText.split("\n");
+  const afterLines = currentText.split("\n");
   const lines: string[] = [`--- ${path}`, `+++ ${path}`];
 
   const maxLines = Math.max(beforeLines.length, afterLines.length);
@@ -36,7 +36,7 @@ function buildFileDiff(relativePath: string, baselineText: string, currentText: 
     }
   }
 
-  return lines.join('\n');
+  return lines.join("\n");
 }
 
 export class CodeCompletionEditJournal {
@@ -73,10 +73,10 @@ export class CodeCompletionEditJournal {
       .filter((chunk) => chunk.length > 0);
 
     if (chunks.length === 0) {
-      return { text: '(none)', truncated: false };
+      return { text: "(none)", truncated: false };
     }
 
-    let text = chunks.join('\n\n');
+    let text = chunks.join("\n\n");
     if (text.length <= maxChars) {
       return { text, truncated: false };
     }

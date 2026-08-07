@@ -5,9 +5,9 @@ export function buildParentSubagentToolResultText(
   sessionId?: string,
   sessionTranscript?: string,
 ): string {
-  const normalizedTitle = title.trim() || 'SubAgent';
+  const normalizedTitle = title.trim() || "SubAgent";
   const normalizedOutput = outputText.trim();
-  const header = failed ? '[subagent failed]' : '[subagent completed]';
+  const header = failed ? "[subagent failed]" : "[subagent completed]";
   const lines = [header, `title=${normalizedTitle}`];
   const normalizedSessionId = sessionId?.trim();
   if (normalizedSessionId) {
@@ -18,9 +18,9 @@ export function buildParentSubagentToolResultText(
     lines.push(`sessionTranscript=${normalizedTranscript}`);
   }
   if (!normalizedOutput) {
-    return lines.join('\n');
+    return lines.join("\n");
   }
 
-  const label = failed ? 'error:' : 'final_output:';
-  return `${lines.join('\n')}\n${label}\n${normalizedOutput}`;
+  const label = failed ? "error:" : "final_output:";
+  return `${lines.join("\n")}\n${label}\n${normalizedOutput}`;
 }

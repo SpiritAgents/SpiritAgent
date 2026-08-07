@@ -1,5 +1,5 @@
-import assert from 'node:assert/strict';
-import test from 'node:test';
+import assert from "node:assert/strict";
+import test from "node:test";
 
 import {
   createToolExecutionTextOutput,
@@ -7,16 +7,16 @@ import {
   type JsonValue,
   type ToolExecutionOutput,
   type ToolExecutor,
-} from '../ports.js';
+} from "../ports.js";
 import {
   pollPendingBackgroundToolExecution,
   scheduleBackgroundToolExecutionAsync,
   type BackgroundToolsRuntime,
-} from './background-tools.js';
-import type { RuntimeEvent, RuntimeTurnContext } from './types.js';
+} from "./background-tools.js";
+import type { RuntimeEvent, RuntimeTurnContext } from "./types.js";
 
 interface ShellToolRequest {
-  name: 'shell';
+  name: "shell";
   command: string;
 }
 
@@ -30,15 +30,15 @@ class DeferredShellExecutor implements ToolExecutor<ShellToolRequest> {
   }
 
   async parseCommand(): Promise<ShellToolRequest> {
-    throw new Error('not implemented');
+    throw new Error("not implemented");
   }
 
   async requestFromFunctionCall(): Promise<ShellToolRequest> {
-    throw new Error('not implemented');
+    throw new Error("not implemented");
   }
 
   async authorize(): Promise<AuthorizationDecision> {
-    return { kind: 'allowed' };
+    return { kind: "allowed" };
   }
 
   async trust(): Promise<void> {}
@@ -51,7 +51,7 @@ class DeferredShellExecutor implements ToolExecutor<ShellToolRequest> {
   }
 
   shouldExecuteInBackground(request: ShellToolRequest): boolean {
-    return request.name === 'shell';
+    return request.name === "shell";
   }
 
   startMcpBackgroundRefresh(): void {}
@@ -59,7 +59,7 @@ class DeferredShellExecutor implements ToolExecutor<ShellToolRequest> {
   mcpStatusSnapshot() {
     return {
       revision: 0,
-      state: 'idle' as const,
+      state: "idle" as const,
       configuredServers: 0,
       loadedServers: 0,
       cachedTools: 0,
@@ -67,7 +67,7 @@ class DeferredShellExecutor implements ToolExecutor<ShellToolRequest> {
   }
 
   async addMcpServer(): Promise<string> {
-    throw new Error('not implemented');
+    throw new Error("not implemented");
   }
 
   async listMcpServers(): Promise<never[]> {
@@ -75,7 +75,7 @@ class DeferredShellExecutor implements ToolExecutor<ShellToolRequest> {
   }
 
   async inspectMcpServer(): Promise<never> {
-    throw new Error('not implemented');
+    throw new Error("not implemented");
   }
 
   async listMcpTools(): Promise<never[]> {
@@ -87,7 +87,7 @@ class DeferredShellExecutor implements ToolExecutor<ShellToolRequest> {
   }
 
   async readMcpResource(): Promise<JsonValue> {
-    throw new Error('not implemented');
+    throw new Error("not implemented");
   }
 
   async listCachedMcpPrompts(): Promise<never[]> {
@@ -99,11 +99,11 @@ class DeferredShellExecutor implements ToolExecutor<ShellToolRequest> {
   }
 
   async getMcpPrompt(): Promise<JsonValue> {
-    throw new Error('not implemented');
+    throw new Error("not implemented");
   }
 }
 
-test('scheduleBackgroundToolExecutionAsync defers while background slot is busy', async () => {
+test("scheduleBackgroundToolExecutionAsync defers while background slot is busy", async () => {
   const executor = new DeferredShellExecutor();
   const turn: RuntimeTurnContext<ShellToolRequest> = {
     requestTrace: [],
@@ -116,11 +116,7 @@ test('scheduleBackgroundToolExecutionAsync defers while background slot is busy'
   const runtime = {
     options: {
       toolExecutor: executor,
-      appendToolResultMessage: (
-        currentState: TestState,
-        toolCallId: string,
-        content: string,
-      ) => {
+      appendToolResultMessage: (currentState: TestState, toolCallId: string, content: string) => {
         currentState.messages.push(`${toolCallId}:${content}`);
         return currentState;
       },
@@ -137,40 +133,40 @@ test('scheduleBackgroundToolExecutionAsync defers while background slot is busy'
     processToolCallsAsync: async () => {},
   } as unknown as BackgroundToolsRuntime<unknown, TestState, ShellToolRequest>;
 
-  const firstRequest: ShellToolRequest = { name: 'shell', command: 'first' };
-  const secondRequest: ShellToolRequest = { name: 'shell', command: 'second' };
+  const firstRequest: ShellToolRequest = { name: "shell", command: "first" };
+  const secondRequest: ShellToolRequest = { name: "shell", command: "second" };
 
   scheduleBackgroundToolExecutionAsync(
     runtime,
-    'run',
+    "run",
     state,
     firstRequest,
-    'call_1',
-    'shell',
+    "call_1",
+    "shell",
     '{"command":"first"}',
     turn,
   );
   scheduleBackgroundToolExecutionAsync(
     runtime,
-    'run',
+    "run",
     state,
     secondRequest,
-    'call_2',
-    'shell',
+    "call_2",
+    "shell",
     '{"command":"second"}',
     turn,
   );
 
   assert.equal(runtime.deferredBackgroundToolExecutions.length, 1);
-  assert.equal(runtime.pendingBackgroundToolExecution?.kind, 'tool-call');
+  assert.equal(runtime.pendingBackgroundToolExecution?.kind, "tool-call");
   assert.equal(
-    runtime.pendingBackgroundToolExecution?.kind === 'tool-call'
+    runtime.pendingBackgroundToolExecution?.kind === "tool-call"
       ? runtime.pendingBackgroundToolExecution.toolCallId
       : undefined,
-    'call_1',
+    "call_1",
   );
 
-  executor.completions.get('first')?.();
+  executor.completions.get("first")?.();
   await new Promise((resolve) => {
     setTimeout(resolve, 0);
   });
@@ -178,19 +174,19 @@ test('scheduleBackgroundToolExecutionAsync defers while background slot is busy'
 
   assert.equal(runtime.deferredBackgroundToolExecutions.length, 0);
   assert.equal(
-    runtime.pendingBackgroundToolExecution?.kind === 'tool-call'
+    runtime.pendingBackgroundToolExecution?.kind === "tool-call"
       ? runtime.pendingBackgroundToolExecution.toolCallId
       : undefined,
-    'call_2',
+    "call_2",
   );
-  assert.deepEqual(state.messages, ['call_1:done:first']);
+  assert.deepEqual(state.messages, ["call_1:done:first"]);
 
-  executor.completions.get('second')?.();
+  executor.completions.get("second")?.();
   await new Promise((resolve) => {
     setTimeout(resolve, 0);
   });
   await pollPendingBackgroundToolExecution(runtime);
 
   assert.equal(runtime.pendingBackgroundToolExecution, undefined);
-  assert.deepEqual(state.messages, ['call_1:done:first', 'call_2:done:second']);
+  assert.deepEqual(state.messages, ["call_1:done:first", "call_2:done:second"]);
 });

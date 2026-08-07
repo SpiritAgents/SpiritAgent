@@ -30,11 +30,7 @@ import {
   resolvePaneCanSend,
   resolvePaneComposerBusy,
 } from "@/lib/pane-conversation-controls";
-import type {
-  ConversationMessageSnapshot,
-  DesktopSnapshot,
-  PendingAssistantAux,
-} from "@/types";
+import type { ConversationMessageSnapshot, DesktopSnapshot, PendingAssistantAux } from "@/types";
 import {
   countVisiblePaneSessions,
   type ConversationAbortShortcutTargetRef,
@@ -147,20 +143,15 @@ export function useConversationViewState({
         snapshot?.workspaceBinding ?? "project",
         snapshot?.availableWorkspaces ?? [],
       ),
-    [
-      snapshot?.availableWorkspaces,
-      snapshot?.workspaceBinding,
-      snapshot?.workspaceRoot,
-      language,
-    ],
+    [snapshot?.availableWorkspaces, snapshot?.workspaceBinding, snapshot?.workspaceRoot, language],
   );
   const includeWorkspaceGreetingVariants = workspaceDisplayLabel !== null;
   const emptySessionGreeting = useMemo(() => {
     const sessionKey = normalizeEmptySessionGreetingSessionKey(composerSessionKey);
     const navigationVariant = runtime.navigationGreetingVariant;
     const variantId =
-      navigationVariant
-      ?? resolveEmptySessionGreetingVariantForSession(sessionKey, {
+      navigationVariant ??
+      resolveEmptySessionGreetingVariantForSession(sessionKey, {
         includeWorkspaceVariants: includeWorkspaceGreetingVariants,
       });
     return resolveEmptySessionGreeting(t, variantId, workspaceDisplayLabel);
@@ -238,7 +229,9 @@ export function useConversationViewState({
     longConversationListDemoActive: longConversationListDemo.active,
     isBusy: snapshot?.conversation.isBusy,
     busyAction: useIsolatedPane
-      ? (snapshot?.conversation.isBusy ? "send" : "")
+      ? snapshot?.conversation.isBusy
+        ? "send"
+        : ""
       : runtime.busyAction,
     pendingAuxState: conversationPendingAuxState,
     sessionMessages,
@@ -257,11 +250,9 @@ export function useConversationViewState({
   const rewindWarnings = snapshot?.conversation.rewindWarnings ?? [];
   const pendingApproval = snapshot?.conversation.pendingToolApproval;
   const showPendingApprovalInComposer = Boolean(
-    pendingApproval
-    && (
-      !subagentViewActive
-      || pendingApproval.subagentSessionId === snapshot?.subagentViewer?.sessionId
-    ),
+    pendingApproval &&
+    (!subagentViewActive ||
+      pendingApproval.subagentSessionId === snapshot?.subagentViewer?.sessionId),
   );
 
   // hero ↔ 底部 dock 布局切换时 pre-paint 重测；demo 注入消息但 session 仍为空时也算非 hero。
@@ -297,9 +288,7 @@ export function useConversationViewState({
   );
 
   const panePendingQuestions = snapshot?.conversation.pendingQuestions ?? null;
-  const pendingQuestions = useIsolatedPane
-    ? panePendingQuestions
-    : runtime.pendingQuestions;
+  const pendingQuestions = useIsolatedPane ? panePendingQuestions : runtime.pendingQuestions;
   const showPendingQuestionsInComposer = useIsolatedPane
     ? Boolean(panePendingQuestions)
     : Boolean(pendingQuestions);
@@ -308,18 +297,17 @@ export function useConversationViewState({
   const paneSessionPathKey = normalizePaneSessionPathKey(
     snapshot?.activeSession?.filePath ?? composerSessionKey,
   );
-  const paneSendBusy = useIsolatedPane
-    && Boolean(paneSessionPathKey)
-    && runtime.paneSendBusySessionPath === paneSessionPathKey;
+  const paneSendBusy =
+    useIsolatedPane &&
+    Boolean(paneSessionPathKey) &&
+    runtime.paneSendBusySessionPath === paneSessionPathKey;
   const conversationInterruptible = useIsolatedPane
     ? resolvePaneCanInterrupt(snapshot)
-    : runtime.summary.canInterrupt
-      && !busyActionBlocksConversationAbort(runtime.busyAction);
+    : runtime.summary.canInterrupt && !busyActionBlocksConversationAbort(runtime.busyAction);
   const continueBusy = useIsolatedPane
     ? resolvePaneComposerBusy(snapshot, paneSendBusy)
     : Boolean(runtime.busyAction) || snapshot?.conversation.isBusy === true;
-  const conversationAbortShortcutEligible =
-    conversationInterruptible && !activeSessionReadOnly;
+  const conversationAbortShortcutEligible = conversationInterruptible && !activeSessionReadOnly;
   const conversationAbortShortcutEligibleRef = useRef(false);
   conversationAbortShortcutEligibleRef.current = conversationAbortShortcutEligible;
 
@@ -333,11 +321,7 @@ export function useConversationViewState({
     conversationAbortShortcutTargetRef.current = {
       eligible: conversationAbortShortcutEligible,
     };
-  }, [
-    conversationAbortShortcutEligible,
-    conversationAbortShortcutTargetRef,
-    snapshot,
-  ]);
+  }, [conversationAbortShortcutEligible, conversationAbortShortcutTargetRef, snapshot]);
 
   const startImplementingDisabled =
     !snapshot?.runtimeReady ||

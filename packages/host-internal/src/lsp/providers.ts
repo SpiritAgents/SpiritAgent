@@ -5,20 +5,20 @@ import {
   resolvePyrightOnPath,
   resolveRustAnalyzerOnPath,
   resolveTypescriptLanguageServerOnPath,
-} from './resolve-server.js';
-import { resolveJdtlsOnPath } from './resolve-server-jdtls.js';
-import { resolveOmnisharpOnPath } from './resolve-server-omnisharp.js';
+} from "./resolve-server.js";
+import { resolveJdtlsOnPath } from "./resolve-server-jdtls.js";
+import { resolveOmnisharpOnPath } from "./resolve-server-omnisharp.js";
 
 export type LspProviderId =
-  | 'typescript-language-server'
-  | 'pyright'
-  | 'gopls'
-  | 'rust-analyzer'
-  | 'clangd'
-  | 'jdtls'
-  | 'omnisharp';
+  | "typescript-language-server"
+  | "pyright"
+  | "gopls"
+  | "rust-analyzer"
+  | "clangd"
+  | "jdtls"
+  | "omnisharp";
 
-export type LspInstallKind = 'npm' | 'go' | 'rustup' | 'platform' | 'manual' | 'dotnet';
+export type LspInstallKind = "npm" | "go" | "rustup" | "platform" | "manual" | "dotnet";
 
 export interface LspProviderDescriptor {
   id: LspProviderId;
@@ -30,7 +30,7 @@ export interface LspProviderDescriptor {
   npmPackage?: string;
 }
 
-export type LspProviderDiscoveryStatus = 'ready' | 'not_found';
+export type LspProviderDiscoveryStatus = "ready" | "not_found";
 
 export interface LspProviderDiscoveryResult {
   id: LspProviderId;
@@ -41,55 +41,55 @@ export interface LspProviderDiscoveryResult {
 
 export const LSP_PROVIDERS: readonly LspProviderDescriptor[] = [
   {
-    id: 'typescript-language-server',
-    displayName: 'TypeScript Language Server',
-    languageLabels: ['TypeScript', 'JavaScript'],
-    extensions: ['.ts', '.tsx', '.mts', '.cts', '.js', '.jsx', '.mjs', '.cjs'],
-    installKind: 'npm',
-    npmPackage: 'typescript-language-server',
+    id: "typescript-language-server",
+    displayName: "TypeScript Language Server",
+    languageLabels: ["TypeScript", "JavaScript"],
+    extensions: [".ts", ".tsx", ".mts", ".cts", ".js", ".jsx", ".mjs", ".cjs"],
+    installKind: "npm",
+    npmPackage: "typescript-language-server",
   },
   {
-    id: 'pyright',
-    displayName: 'Pyright',
-    languageLabels: ['Python'],
-    extensions: ['.py', '.pyi'],
-    installKind: 'npm',
-    npmPackage: 'pyright',
+    id: "pyright",
+    displayName: "Pyright",
+    languageLabels: ["Python"],
+    extensions: [".py", ".pyi"],
+    installKind: "npm",
+    npmPackage: "pyright",
   },
   {
-    id: 'gopls',
-    displayName: 'gopls',
-    languageLabels: ['Go'],
-    extensions: ['.go'],
-    installKind: 'go',
+    id: "gopls",
+    displayName: "gopls",
+    languageLabels: ["Go"],
+    extensions: [".go"],
+    installKind: "go",
   },
   {
-    id: 'rust-analyzer',
-    displayName: 'rust-analyzer',
-    languageLabels: ['Rust'],
-    extensions: ['.rs'],
-    installKind: 'rustup',
+    id: "rust-analyzer",
+    displayName: "rust-analyzer",
+    languageLabels: ["Rust"],
+    extensions: [".rs"],
+    installKind: "rustup",
   },
   {
-    id: 'clangd',
-    displayName: 'clangd',
-    languageLabels: ['C', 'C++'],
-    extensions: ['.c', '.h', '.cpp', '.cc', '.cxx', '.hpp', '.hh', '.hxx'],
-    installKind: 'platform',
+    id: "clangd",
+    displayName: "clangd",
+    languageLabels: ["C", "C++"],
+    extensions: [".c", ".h", ".cpp", ".cc", ".cxx", ".hpp", ".hh", ".hxx"],
+    installKind: "platform",
   },
   {
-    id: 'jdtls',
-    displayName: 'Eclipse JDT Language Server',
-    languageLabels: ['Java'],
-    extensions: ['.java'],
-    installKind: 'manual',
+    id: "jdtls",
+    displayName: "Eclipse JDT Language Server",
+    languageLabels: ["Java"],
+    extensions: [".java"],
+    installKind: "manual",
   },
   {
-    id: 'omnisharp',
-    displayName: 'OmniSharp',
-    languageLabels: ['C#'],
-    extensions: ['.cs'],
-    installKind: 'dotnet',
+    id: "omnisharp",
+    displayName: "OmniSharp",
+    languageLabels: ["C#"],
+    extensions: [".cs"],
+    installKind: "dotnet",
   },
 ] as const;
 
@@ -112,12 +112,14 @@ export function findLspProvider(id: string): LspProviderDescriptor | undefined {
 }
 
 export function routeLspProviderForExtension(extension: string): LspProviderId | undefined {
-  const normalized = extension.startsWith('.') ? extension.toLowerCase() : `.${extension.toLowerCase()}`;
+  const normalized = extension.startsWith(".")
+    ? extension.toLowerCase()
+    : `.${extension.toLowerCase()}`;
   return EXTENSION_TO_PROVIDER.get(normalized);
 }
 
 export function routeLspProviderForPath(resolvedPath: string): LspProviderId | undefined {
-  const lastDot = resolvedPath.lastIndexOf('.');
+  const lastDot = resolvedPath.lastIndexOf(".");
   if (lastDot < 0) {
     return undefined;
   }
@@ -131,10 +133,10 @@ type ProviderResolver = (
 ) => Promise<{ command: string; args: string[] } | undefined>;
 
 const PROVIDER_RESOLVERS: Partial<Record<LspProviderId, ProviderResolver>> = {
-  'typescript-language-server': resolveTypescriptLanguageServerOnPath,
+  "typescript-language-server": resolveTypescriptLanguageServerOnPath,
   pyright: resolvePyrightOnPath,
   gopls: resolveGoplsOnPath,
-  'rust-analyzer': resolveRustAnalyzerOnPath,
+  "rust-analyzer": resolveRustAnalyzerOnPath,
   clangd: resolveClangdOnPath,
   jdtls: resolveJdtlsOnPath,
   omnisharp: resolveOmnisharpOnPath,
@@ -148,19 +150,20 @@ export async function discoverLspProvider(
 ): Promise<LspProviderDiscoveryResult> {
   const resolver = PROVIDER_RESOLVERS[id];
   if (!resolver) {
-    return { id, status: 'not_found' };
+    return { id, status: "not_found" };
   }
 
-  const resolved = id === 'rust-analyzer' && options.lightweight === true
-    ? await resolveCommandOnPath('rust-analyzer', env, platform, [])
-    : await resolver(env, platform);
+  const resolved =
+    id === "rust-analyzer" && options.lightweight === true
+      ? await resolveCommandOnPath("rust-analyzer", env, platform, [])
+      : await resolver(env, platform);
   if (!resolved) {
-    return { id, status: 'not_found' };
+    return { id, status: "not_found" };
   }
 
   return {
     id,
-    status: 'ready',
+    status: "ready",
     command: resolved.command,
     args: resolved.args,
   };

@@ -1,12 +1,12 @@
 import {
   hasBedrockIamCredentials,
   hasGoogleVertexServiceAccountCredentials,
-} from '../lib/provider-runtime-credentials.js';
+} from "../lib/provider-runtime-credentials.js";
 
 export {
   hasBedrockIamCredentials,
   hasGoogleVertexServiceAccountCredentials,
-} from '../lib/provider-runtime-credentials.js';
+} from "../lib/provider-runtime-credentials.js";
 
 import {
   emptyModelRef,
@@ -16,9 +16,9 @@ import {
   modelRefsEqual,
   type ModelRef,
   type ProviderGroupV2,
-} from '@spiritagent/host-internal';
+} from "@spiritagent/host-internal";
 
-import type { DesktopModelProvider } from '../types.js';
+import type { DesktopModelProvider } from "../types.js";
 
 /** Keyring account for a provider-group-scoped API key (`SpiritAgent` / `group::{id}`). */
 export function groupKeyAccount(groupId: string): string {
@@ -94,7 +94,7 @@ export function hasGoogleVertexRuntimeCredentials(input: {
 
 /** Config profiles without `provider` are treated as custom-scoped keys. */
 export function modelProviderKeyScope(provider?: DesktopModelProvider): DesktopModelProvider {
-  return provider ?? 'custom';
+  return provider ?? "custom";
 }
 
 export interface ModelKeyPresenceProfile {
@@ -168,7 +168,7 @@ function modelRefStillExists(
 
 function clearDefaultSlotIfNoRemainingModel(
   config: ModelRemovalConfigTarget,
-  slot: 'imageGenerationModel' | 'videoGenerationModel' | 'lightweightChatModel',
+  slot: "imageGenerationModel" | "videoGenerationModel" | "lightweightChatModel",
 ): void {
   const value = config[slot];
   if (value && !modelRefStillExists(config.providerGroups, value)) {
@@ -200,9 +200,9 @@ export function applyModelsRemovalToConfig(
     const remaining = listAllModelRefs(config.providerGroups);
     config.activeModel = remaining[0] ? { ...remaining[0] } : emptyModelRef();
   }
-  clearDefaultSlotIfNoRemainingModel(config, 'imageGenerationModel');
-  clearDefaultSlotIfNoRemainingModel(config, 'videoGenerationModel');
-  clearDefaultSlotIfNoRemainingModel(config, 'lightweightChatModel');
+  clearDefaultSlotIfNoRemainingModel(config, "imageGenerationModel");
+  clearDefaultSlotIfNoRemainingModel(config, "videoGenerationModel");
+  clearDefaultSlotIfNoRemainingModel(config, "lightweightChatModel");
   return removed;
 }
 
@@ -232,9 +232,10 @@ export function buildModelSecretKeyPresence(
   for (const profile of profiles) {
     const ref: ModelRef = { groupId: profile.groupId, name: profile.name };
     const refKey = modelRefKey(ref);
-    const cacheKey = profile.provider === 'google-vertex-ai'
-      ? `${profile.groupId}::${profile.vertexProject?.trim() ?? ''}::${profile.vertexLocation?.trim() ?? ''}`
-      : profile.groupId;
+    const cacheKey =
+      profile.provider === "google-vertex-ai"
+        ? `${profile.groupId}::${profile.vertexProject?.trim() ?? ""}::${profile.vertexLocation?.trim() ?? ""}`
+        : profile.groupId;
     let groupPresent = groupCache.get(cacheKey);
     if (groupPresent === undefined) {
       groupPresent = hasGroupKey(profile.groupId, profile);

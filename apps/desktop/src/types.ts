@@ -1,26 +1,32 @@
-import type { ModelProviderId, ProviderConnectSiteId } from '@spiritagent/host-internal/model-provider-presets';
+import type {
+  ModelProviderId,
+  ProviderConnectSiteId,
+} from "@spiritagent/host-internal/model-provider-presets";
 import type {
   ModelEntryV2,
   ModelRef,
   ProviderGroupV2,
   SpiritConfigSchemaVersion,
-} from '@spiritagent/host-internal/config-v2';
-import type { ModelReasoningEffort } from '@spiritagent/agent-core/reasoning-effort';
-import type { LspWriteDiagnosticsUi } from '@spiritagent/agent-core';
+} from "@spiritagent/host-internal/config-v2";
+import type { ModelReasoningEffort } from "@spiritagent/agent-core/reasoning-effort";
+import type { LspWriteDiagnosticsUi } from "@spiritagent/agent-core";
 
-import type { DesktopAgentMode } from './lib/agent-mode.js';
-import type { DesktopAutomationTrigger } from './lib/automation-trigger.js';
+import type { DesktopAgentMode } from "./lib/agent-mode.js";
+import type { DesktopAutomationTrigger } from "./lib/automation-trigger.js";
 
 export type { DesktopAgentMode };
-import type { WorkspaceFileReferenceSuggestionsResult as HostWorkspaceFileReferenceSuggestionsResult } from '@spiritagent/host-internal/workspace-file-reference-query';
-import type { ApprovalLevel } from '@spiritagent/host-internal/approval-level';
-import type { WorkLocationKind } from '@spiritagent/host-internal/work-location';
-import type { LocalFileComposerRoute } from '@spiritagent/host-internal/local-file-composer-route';
-import type { GitHubPullRequestCommit, GitHubPullRequestMergeMethod } from '@spiritagent/host-internal/github/types';
+import type { WorkspaceFileReferenceSuggestionsResult as HostWorkspaceFileReferenceSuggestionsResult } from "@spiritagent/host-internal/workspace-file-reference-query";
+import type { ApprovalLevel } from "@spiritagent/host-internal/approval-level";
+import type { WorkLocationKind } from "@spiritagent/host-internal/work-location";
+import type { LocalFileComposerRoute } from "@spiritagent/host-internal/local-file-composer-route";
+import type {
+  GitHubPullRequestCommit,
+  GitHubPullRequestMergeMethod,
+} from "@spiritagent/host-internal/github/types";
 import type {
   WorkspaceCapabilityTrustDecision,
   WorkspaceCapabilityTrustRequest,
-} from '@spiritagent/host-internal';
+} from "@spiritagent/host-internal";
 
 export type {
   ApprovalLevel,
@@ -30,13 +36,13 @@ export type {
   WorkspaceCapabilityTrustRequest,
 };
 
-import type { BrowserElementAttachment } from './lib/browser-element-attachment.js';
-import type { RichSegment } from './lib/composer-segment-model.js';
-import type { ComposerLocalFileAttachmentView } from './lib/local-file-attachments.js';
+import type { BrowserElementAttachment } from "./lib/browser-element-attachment.js";
+import type { RichSegment } from "./lib/composer-segment-model.js";
+import type { ComposerLocalFileAttachmentView } from "./lib/local-file-attachments.js";
 
 export type { ModelRef, ModelEntryV2, ProviderGroupV2, SpiritConfigSchemaVersion };
 
-export type DesktopWorkspaceBinding = 'project' | 'none';
+export type DesktopWorkspaceBinding = "project" | "none";
 
 export interface BootstrapRequest {
   workspaceRoot?: string;
@@ -97,7 +103,7 @@ export interface UpdateConfigRequest {
 }
 
 export interface DesktopNetworksConfigUpdate {
-  llmHttpVersion?: 'http1.1' | 'http2';
+  llmHttpVersion?: "http1.1" | "http2";
 }
 
 export interface DesktopAgentsConfigUpdate {
@@ -121,14 +127,14 @@ export interface InstallLspProviderRequest {
   providerId: string;
 }
 
-export type DesktopLspProviderStatus = 'ready' | 'not_found' | 'disabled';
+export type DesktopLspProviderStatus = "ready" | "not_found" | "disabled";
 
 export interface DesktopLspProviderSnapshot {
   id: string;
   displayName: string;
   languages: string[];
   status: DesktopLspProviderStatus;
-  installKind: 'npm' | 'go' | 'rustup' | 'platform' | 'manual' | 'dotnet';
+  installKind: "npm" | "go" | "rustup" | "platform" | "manual" | "dotnet";
   npmPackage?: string;
   command?: string;
 }
@@ -166,15 +172,20 @@ export interface DesktopDreamConfigUpdate {
 export type DesktopModelProvider = ModelProviderId;
 export type DesktopProviderConnectSiteId = ProviderConnectSiteId;
 
-export type DesktopTransportKind = 'openai-compatible' | 'open-responses' | 'anthropic' | 'bedrock';
+export type DesktopTransportKind = "openai-compatible" | "open-responses" | "anthropic" | "bedrock";
 
 /** 模型推理强度字符串；具体允许值由 provider / transportKind 在 agent-core 中约束。 */
 export type DesktopModelReasoningEffort = ModelReasoningEffort;
 
 /** GPT-5.6+ OpenAI 路由模型的 reasoning.mode（standard / pro）。 */
-export type DesktopModelReasoningMode = 'standard' | 'pro';
+export type DesktopModelReasoningMode = "standard" | "pro";
 
-export type DesktopModelCapability = 'chat' | 'image' | 'video' | 'imageGeneration' | 'videoGeneration';
+export type DesktopModelCapability =
+  | "chat"
+  | "image"
+  | "video"
+  | "imageGeneration"
+  | "videoGeneration";
 
 export interface PreviewModelCatalogVideoDurationPricing {
   resolution: string;
@@ -199,11 +210,11 @@ export interface PreviewModelCatalogPricing {
   videoExamplePricing?: PreviewModelCatalogExamplePricing;
 }
 
-export type DesktopAlibabaBillingMode = 'token-plan';
+export type DesktopAlibabaBillingMode = "token-plan";
 
-export type DesktopStepfunBillingMode = 'step-plan';
+export type DesktopStepfunBillingMode = "step-plan";
 
-export type DesktopGlmCodingPlanBillingMode = 'glm-coding-plan';
+export type DesktopGlmCodingPlanBillingMode = "glm-coding-plan";
 
 export interface PreviewModelCatalogEntry {
   id: string;
@@ -214,7 +225,7 @@ export interface PreviewModelCatalogEntry {
   supportedReasoningEfforts?: DesktopModelReasoningEffort[];
   contextLength?: number;
   maxCompletionTokens?: number;
-  supportsThinkingType?: 'only';
+  supportsThinkingType?: "only";
   supportsThinkingSwitch?: boolean;
   /** Hugging Face Hub 媒体模型：Inference Providers 路由 hint。 */
   inferenceProvider?: string;
@@ -349,9 +360,9 @@ export interface DesktopMcpCapabilityToggles {
   prompts: boolean;
 }
 
-export type DesktopMcpTransportType = 'stdio' | 'http';
+export type DesktopMcpTransportType = "stdio" | "http";
 
-export type DesktopMcpScope = 'user' | 'workspace';
+export type DesktopMcpScope = "user" | "workspace";
 
 export interface AddMcpServerRequest {
   name: string;
@@ -367,16 +378,16 @@ export interface DeleteMcpServerRequest {
   scope: DesktopMcpScope;
 }
 
-export type DesktopHookScope = 'user' | 'workspace';
+export type DesktopHookScope = "user" | "workspace";
 
 export type DesktopHookEventName =
-  | 'sessionStart'
-  | 'sessionEnd'
-  | 'submitPrompt'
-  | 'preToolUse'
-  | 'postToolUse'
-  | 'subagentStart'
-  | 'subagentEnd';
+  | "sessionStart"
+  | "sessionEnd"
+  | "submitPrompt"
+  | "preToolUse"
+  | "postToolUse"
+  | "subagentStart"
+  | "subagentEnd";
 
 export interface SaveHookEntryRequest {
   scope: DesktopHookScope;
@@ -442,12 +453,9 @@ export interface UpdateExtensionSecretRequest {
   value?: string;
 }
 
-export type DesktopExtensionToolApprovalMode =
-  | 'allowed'
-  | 'need-approval'
-  | 'need-questions';
+export type DesktopExtensionToolApprovalMode = "allowed" | "need-approval" | "need-questions";
 
-export type DesktopExtensionToolExecutionMode = 'foreground' | 'background';
+export type DesktopExtensionToolExecutionMode = "foreground" | "background";
 
 export interface DesktopExtensionContributedTool {
   name: string;
@@ -479,7 +487,7 @@ export interface DesktopExtensionCliUiHookEntry {
   suffix?: string;
 }
 
-export type DesktopExtensionSettingType = 'string' | 'boolean' | 'number' | 'select';
+export type DesktopExtensionSettingType = "string" | "boolean" | "number" | "select";
 
 export interface DesktopExtensionSettingOption {
   value: string;
@@ -510,7 +518,7 @@ export interface DesktopExtensionSecretStatus {
   configured: boolean;
 }
 
-export type DesktopExtensionHostKind = 'cli' | 'desktop';
+export type DesktopExtensionHostKind = "cli" | "desktop";
 
 export interface DesktopExtensionListItem {
   id: string;
@@ -536,9 +544,9 @@ export interface DesktopExtensionListItem {
   installedAtUnixMs: number;
 }
 
-export type DesktopMarketplaceChannel = 'stable' | 'preview' | 'experimental';
+export type DesktopMarketplaceChannel = "stable" | "preview" | "experimental";
 
-export type DesktopMarketplaceReviewStatus = 'unverified' | 'verified' | 'revoked';
+export type DesktopMarketplaceReviewStatus = "unverified" | "verified" | "revoked";
 
 export interface DesktopMarketplaceCatalogItem {
   extensionId: string;
@@ -612,7 +620,7 @@ export interface DesktopMarketplacePreparedInstall {
 }
 
 export interface DesktopMcpStdioTransportSnapshot {
-  type: 'stdio';
+  type: "stdio";
   command: string;
   args: string[];
   metadata: Record<string, string>;
@@ -622,7 +630,7 @@ export interface DesktopMcpStdioTransportSnapshot {
 }
 
 export interface DesktopMcpHttpTransportSnapshot {
-  type: 'http';
+  type: "http";
   url: string;
   metadata: Record<string, string>;
   timeoutMs?: number;
@@ -653,8 +661,8 @@ export interface DesktopMcpServerInspection {
   promptsCount: number;
 }
 
-export type DesktopSkillScope = 'workspace' | 'user';
-export type DesktopSkillRootKind = 'workspaceSpirit' | 'workspaceAgents' | 'user';
+export type DesktopSkillScope = "workspace" | "user";
+export type DesktopSkillRootKind = "workspaceSpirit" | "workspaceAgents" | "user";
 
 /** 创建 `skills/<name>/SKILL.md`，根目录由 `rootKind` 决定（用户目录或工作区 `.spirit` / `.agents`）。 */
 export interface CreateSkillRequest {
@@ -677,14 +685,14 @@ export interface SubmitSkillSlashRequest {
   extraNote?: string;
 }
 
-export type GitChipAction = 'commit' | 'push' | 'merge';
+export type GitChipAction = "commit" | "push" | "merge";
 
 export interface SubmitGitChipRequest {
   action: GitChipAction;
   extraNote?: string;
 }
 
-export type DesktopRuleScope = 'workspace' | 'user';
+export type DesktopRuleScope = "workspace" | "user";
 
 /** 在固定规则槽位创建 Markdown 规则文件，根目录由 `rootKind` 决定。 */
 export interface CreateRuleRequest {
@@ -855,7 +863,7 @@ export interface DesktopRuleListItem {
 export interface ActiveSessionSnapshot {
   filePath: string;
   displayName: string;
-  kind?: 'stored' | 'ephemeral';
+  kind?: "stored" | "ephemeral";
   readOnly?: boolean;
 }
 
@@ -865,7 +873,7 @@ export interface SessionListItem {
   modifiedAtUnixMs: number;
   workspaceRoot: string;
   gitBranch?: string;
-  kind?: 'stored' | 'ephemeral';
+  kind?: "stored" | "ephemeral";
   readOnly?: boolean;
   /** Agent turn in progress for this session (in-memory registry). */
   isBusy?: boolean;
@@ -881,7 +889,7 @@ export interface DesktopWorkspaceListItem {
 }
 
 /** 工作区文件树子节点（相对工作区根的路径由前端用 `name` 与父路径拼接）。 */
-export type WorkspaceExplorerEntryKind = 'file' | 'dir';
+export type WorkspaceExplorerEntryKind = "file" | "dir";
 
 export interface WorkspaceExplorerEntry {
   name: string;
@@ -900,7 +908,8 @@ export interface QueryWorkspaceFileReferenceSuggestionsRequest {
 }
 
 export type WorkspaceFileReferenceSuggestionsResult = HostWorkspaceFileReferenceSuggestionsResult;
-export type WorkspaceFileReferenceSuggestionsResponse = WorkspaceFileReferenceSuggestionsResult | null;
+export type WorkspaceFileReferenceSuggestionsResponse =
+  WorkspaceFileReferenceSuggestionsResult | null;
 
 export interface WorkspaceFileReferenceIndexSnapshot {
   ready: boolean;
@@ -950,7 +959,7 @@ export type WorkspaceContentSearchResult = {
   truncated?: boolean;
 };
 
-export type CodeCompletionKind = 'insert' | 'replace' | 'delete';
+export type CodeCompletionKind = "insert" | "replace" | "delete";
 
 export interface CodeCompletionOperationSnapshot {
   kind: CodeCompletionKind;
@@ -1032,7 +1041,12 @@ export interface DesktopSnapshot {
   pendingWorkspaceCapabilityTrust?: WorkspaceCapabilityTrustRequest;
 }
 
-export type SubagentViewerSessionStatus = 'bootstrapping' | 'running' | 'completed' | 'failed' | 'blocked';
+export type SubagentViewerSessionStatus =
+  | "bootstrapping"
+  | "running"
+  | "completed"
+  | "failed"
+  | "blocked";
 
 export interface SubagentViewerSnapshot {
   parentToolCallId: string;
@@ -1074,7 +1088,7 @@ export interface DesktopConfigSnapshot {
   /** 与 `spiritAgentDataDir()/model-catalog-cache` 对齐；无缓存时为空数组。 */
   modelCatalogHints?: DesktopModelCatalogHint[];
   networks: {
-    llmHttpVersion: 'http1.1' | 'http2';
+    llmHttpVersion: "http1.1" | "http2";
   };
 }
 
@@ -1085,12 +1099,12 @@ export interface DesktopDreamSettingsSnapshot {
 }
 
 export type DesktopDreamCollectorState =
-  | 'disabled'
-  | 'missing-model'
-  | 'idle'
-  | 'running'
-  | 'backoff'
-  | 'error';
+  | "disabled"
+  | "missing-model"
+  | "idle"
+  | "running"
+  | "backoff"
+  | "error";
 
 export interface DesktopDreamCollectorSnapshot {
   state: DesktopDreamCollectorState;
@@ -1132,11 +1146,11 @@ export interface DesktopAutomationListItem {
 export type {
   DesktopAutomationSchedule,
   DesktopAutomationWeekday,
-} from './lib/automation-schedule.js';
+} from "./lib/automation-schedule.js";
 export type {
   DesktopAutomationGitHubEvent,
   DesktopAutomationTrigger,
-} from './lib/automation-trigger.js';
+} from "./lib/automation-trigger.js";
 
 export interface DesktopGitHubAutomationRepositoryItem {
   owner: string;
@@ -1166,7 +1180,7 @@ export interface SearchGitHubAutomationRepositoriesSnapshot {
   totalCount: number;
 }
 
-export type DesktopAutomationRunStatus = 'running' | 'blocked' | 'completed' | 'failed';
+export type DesktopAutomationRunStatus = "running" | "blocked" | "completed" | "failed";
 
 export interface DesktopAutomationRun {
   id: string;
@@ -1182,7 +1196,7 @@ export interface DesktopAutomationDefinition {
   id: string;
   title: string;
   overview: string;
-  trigger: import('./lib/automation-trigger.js').DesktopAutomationTrigger;
+  trigger: import("./lib/automation-trigger.js").DesktopAutomationTrigger;
   workspaceRoot: string;
   modelRef: ModelRef;
   reasoningEffort?: DesktopModelReasoningEffort;
@@ -1201,7 +1215,7 @@ export interface DesktopAutomationDetail {
 export interface DesktopCreateAutomationRequest {
   title: string;
   overview: string;
-  trigger: import('./lib/automation-trigger.js').DesktopAutomationTrigger;
+  trigger: import("./lib/automation-trigger.js").DesktopAutomationTrigger;
   workspaceRoot: string;
   modelRef: ModelRef;
   reasoningEffort?: DesktopModelReasoningEffort;
@@ -1212,7 +1226,7 @@ export interface DesktopCreateAutomationRequest {
 export interface DesktopUpdateAutomationRequest {
   title?: string;
   overview?: string;
-  trigger?: import('./lib/automation-trigger.js').DesktopAutomationTrigger;
+  trigger?: import("./lib/automation-trigger.js").DesktopAutomationTrigger;
   workspaceRoot?: string;
   modelRef?: ModelRef;
   reasoningEffort?: DesktopModelReasoningEffort;
@@ -1337,12 +1351,12 @@ export type {
   GitHubPullRequestTabCounts,
   GitHubPullRequestTaskListProgress,
   GitHubRepositoryRef,
-} from '@spiritagent/host-internal/github/types';
+} from "@spiritagent/host-internal/github/types";
 
 export interface ListGitHubPullRequestsRequest {
   owner: string;
   repo: string;
-  state: 'open' | 'closed';
+  state: "open" | "closed";
   page?: number;
   query?: string;
 }
@@ -1374,7 +1388,7 @@ export interface MergeGitHubPullRequestRequest extends GetGitHubPullRequestDetai
 export type {
   GitHubPullRequestMergeMethod,
   GitHubPullRequestMergeResult,
-} from '@spiritagent/host-internal/github/types';
+} from "@spiritagent/host-internal/github/types";
 
 export interface ModelProfileSnapshot {
   groupId?: string;
@@ -1416,7 +1430,7 @@ export interface ModelProfileSnapshot {
   /** 用户配置的模型上下文长度（token）；优先于 catalog 解析。 */
   contextLength?: number;
   /** Kimi Code `supports_thinking_type`；`only` 表示思考常开。 */
-  supportsThinkingType?: 'only';
+  supportsThinkingType?: "only";
   /** 目录标记：模型支持 `thinking.type` 开关（如 Meituan LongCat）。 */
   supportsThinkingSwitch?: boolean;
   /** 宿主快照：该模型是否在系统钥匙串中有专属 API Key 条目（与 CLI 一致；不含环境变量与全局回退）。 */
@@ -1437,14 +1451,14 @@ export interface PlanSnapshot {
 
 export interface McpStatusSnapshot {
   revision: number;
-  state: 'idle' | 'loading' | 'ready' | 'error';
+  state: "idle" | "loading" | "ready" | "error";
   configuredServers: number;
   loadedServers: number;
   cachedTools: number;
   lastError?: string;
 }
 
-export type DesktopTodoStatus = 'pending' | 'in_progress' | 'completed';
+export type DesktopTodoStatus = "pending" | "in_progress" | "completed";
 
 export interface DesktopTodoItem {
   id: string;
@@ -1492,7 +1506,7 @@ export interface ConversationLocalFileAttachmentSnapshot {
 
 export interface ConversationMessageSnapshot {
   id: number;
-  role: 'user' | 'assistant';
+  role: "user" | "assistant";
   content: string;
   localFileAttachments?: ConversationLocalFileAttachmentSnapshot[];
   tool?: ToolBlockSnapshot;
@@ -1522,14 +1536,14 @@ export interface MessageRewindResult {
 export interface FileRewindWarning {
   changeId?: string;
   path: string;
-  action: 'create_file' | 'edit_file' | 'delete_file';
+  action: "create_file" | "edit_file" | "delete_file";
   message: string;
 }
 
 export interface ToolBlockSnapshot {
   toolCallId?: string;
   toolName: string;
-  phase: 'preview' | 'pending-approval' | 'running' | 'succeeded' | 'failed';
+  phase: "preview" | "pending-approval" | "running" | "succeeded" | "failed";
   headline: string;
   /** Muted secondary line shown after headline (e.g. shell command, grep query). */
   headlineDetail?: string;
@@ -1577,9 +1591,9 @@ export interface PendingToolApprovalSnapshot {
 }
 
 export type DesktopApprovalDecision =
-  | { kind: 'allow'; persistTrust?: boolean }
-  | { kind: 'deny'; resultText?: string }
-  | { kind: 'guidance'; userMessage: string; resultText?: string };
+  | { kind: "allow"; persistTrust?: boolean }
+  | { kind: "deny"; resultText?: string }
+  | { kind: "guidance"; userMessage: string; resultText?: string };
 
 export interface PendingQuestionsSnapshot {
   toolCallId: string;
@@ -1588,7 +1602,7 @@ export interface PendingQuestionsSnapshot {
 }
 
 export interface PendingAssistantAux {
-  kind: 'thinking' | 'compressing';
+  kind: "thinking" | "compressing";
   statusText: string;
   detailText?: string;
 }
@@ -1627,7 +1641,7 @@ export interface AskQuestionsAnswer {
 }
 
 export interface AskQuestionsResult {
-  status: 'answered' | 'skipped';
+  status: "answered" | "skipped";
   answers?: AskQuestionsAnswer[];
 }
 
@@ -1642,11 +1656,11 @@ export interface DesktopWebHostConfigSnapshot {
   host: string;
   port: number;
   paired: boolean;
-  authMode: 'pairing';
+  authMode: "pairing";
 }
 
 export interface DesktopWebHostStatusSnapshot {
-  state: 'disabled' | 'stopped' | 'starting' | 'running' | 'error';
+  state: "disabled" | "stopped" | "starting" | "running" | "error";
   host: string;
   port: number;
   url?: string;
@@ -1656,7 +1670,7 @@ export interface DesktopWebHostStatusSnapshot {
 
 export interface DesktopWebHostPolicySnapshot {
   healthRequiresAuth: true;
-  cors: 'same-origin';
+  cors: "same-origin";
   allowHttpLan: true;
   allowRemoteControl: true;
 }

@@ -30,7 +30,9 @@ export const connectTransportOptionCatalog = {
   },
 } satisfies Record<string, ConnectTransportOption>;
 
-export function connectTransportOptionsForProvider(provider: DesktopModelProvider): ConnectTransportOption[] {
+export function connectTransportOptionsForProvider(
+  provider: DesktopModelProvider,
+): ConnectTransportOption[] {
   switch (provider) {
     case "openai":
       return [];
@@ -60,7 +62,10 @@ export function connectTransportOptionsForProvider(provider: DesktopModelProvide
     case "hugging-face":
       return [connectTransportOptionCatalog.openResponsesApi];
     case "siliconflow":
-      return [connectTransportOptionCatalog.chatCompletions, connectTransportOptionCatalog.messagesApi];
+      return [
+        connectTransportOptionCatalog.chatCompletions,
+        connectTransportOptionCatalog.messagesApi,
+      ];
     case "openrouter":
     case "cloudflare-ai-gateway":
     case "custom":
@@ -118,10 +123,14 @@ export function providerSupportsConnectTransportPicker(
   );
 }
 
-export function providerShowsConnectTransportPicker(provider: DesktopModelProvider | null): boolean {
-  return provider !== null
-    && provider !== "vercel-ai-gateway"
-    && providerSupportsConnectTransportPicker(provider);
+export function providerShowsConnectTransportPicker(
+  provider: DesktopModelProvider | null,
+): boolean {
+  return (
+    provider !== null &&
+    provider !== "vercel-ai-gateway" &&
+    providerSupportsConnectTransportPicker(provider)
+  );
 }
 
 export function resolveConnectTransportKindForProvider(

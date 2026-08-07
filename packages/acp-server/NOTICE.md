@@ -26,6 +26,7 @@ Scope constraint: exclude workspace-local/internal dependencies resolved via `wo
 ### Apache-2.0
 
 **Used by:**
+
 - @agentclientprotocol/sdk 0.25.0
 
 ```
@@ -225,6 +226,7 @@ Scope constraint: exclude workspace-local/internal dependencies resolved via `wo
 ### Apache-2.0
 
 **Used by:**
+
 - typescript 5.9.3
 
 ```
@@ -232,7 +234,7 @@ Apache License
 
 Version 2.0, January 2004
 
-http://www.apache.org/licenses/ 
+http://www.apache.org/licenses/
 
 TERMS AND CONDITIONS FOR USE, REPRODUCTION, AND DISTRIBUTION
 
@@ -288,6 +290,7 @@ END OF TERMS AND CONDITIONS
 ### BSD-3-Clause
 
 **Used by:**
+
 - license-checker-rseidelsohn 4.4.2
 
 ```
@@ -319,6 +322,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 ### MIT
 
 **Used by:**
+
 - @types/node 25.9.2
 
 ```

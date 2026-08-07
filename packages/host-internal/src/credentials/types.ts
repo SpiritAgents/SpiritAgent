@@ -5,11 +5,8 @@ import type {
   SpiritConfigSchemaVersion,
   SpiritModelCapabilityV2,
   SpiritModelReasoningEffortV2,
-} from '../config-v2.js';
-import type {
-  ModelProviderId,
-  ProviderModelTransportKind,
-} from '../model-provider-presets.js';
+} from "../config-v2.js";
+import type { ModelProviderId, ProviderModelTransportKind } from "../model-provider-presets.js";
 
 export type SpiritModelCapability = SpiritModelCapabilityV2;
 export type SpiritModelReasoningEffort = SpiritModelReasoningEffortV2;
@@ -66,7 +63,7 @@ export interface ProviderSetupResult {
   groupId: string;
   model: ModelEntryV2;
   providerScope: ModelProviderId;
-  group: Omit<ProviderGroupV2, 'models'>;
+  group: Omit<ProviderGroupV2, "models">;
   apiKey?: string;
   bedrock?: BedrockSetupCredentials;
   vertex?: GoogleVertexSetupCredentials;

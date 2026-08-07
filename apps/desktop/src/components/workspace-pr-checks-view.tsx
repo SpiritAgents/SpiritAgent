@@ -21,13 +21,7 @@ export type WorkspacePrChecksViewProps = {
   className?: string;
 };
 
-function CheckStateIcon({
-  state,
-  label,
-}: {
-  state: GitHubPullRequestCheckState;
-  label: string;
-}) {
+function CheckStateIcon({ state, label }: { state: GitHubPullRequestCheckState; label: string }) {
   if (state === "success") {
     return <Check className="size-4 shrink-0 text-emerald-500" aria-label={label} />;
   }

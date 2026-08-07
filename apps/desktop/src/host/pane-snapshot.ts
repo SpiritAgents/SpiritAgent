@@ -1,7 +1,7 @@
-import { appendQueuedUserTurnSnapshots } from './message-queue.js';
-import { isSessionBundleBusy } from './direct-media-turn.js';
-import type { DesktopConversationSnapshotView } from './conversation-snapshot.js';
-import type { SessionBundle } from './session-bundle.js';
+import { appendQueuedUserTurnSnapshots } from "./message-queue.js";
+import { isSessionBundleBusy } from "./direct-media-turn.js";
+import type { DesktopConversationSnapshotView } from "./conversation-snapshot.js";
+import type { SessionBundle } from "./session-bundle.js";
 
 import type {
   ActiveSessionSnapshot,
@@ -11,13 +11,10 @@ import type {
   ModelRef,
   PaneSessionSlice,
   PendingAssistantAux,
-} from '../types.js';
-import {
-  mapPendingAuxState,
-  mapPendingToolApproval,
-} from './snapshot-mappers.js';
-import { mapPendingQuestions } from './service-utils.js';
-import type { DesktopToolRequest } from './contracts.js';
+} from "../types.js";
+import { mapPendingAuxState, mapPendingToolApproval } from "./snapshot-mappers.js";
+import { mapPendingQuestions } from "./service-utils.js";
+import type { DesktopToolRequest } from "./contracts.js";
 
 export function buildPaneSessionSlice(input: {
   bundle: SessionBundle;
@@ -33,9 +30,9 @@ export function buildPaneSessionSlice(input: {
     subagentSessionId?: string;
     autoReviewBlockReason?: string;
   };
-  pendingQuestions?: import('@spiritagent/agent-core').RuntimePendingQuestions<DesktopToolRequest>;
+  pendingQuestions?: import("@spiritagent/agent-core").RuntimePendingQuestions<DesktopToolRequest>;
   pendingImagePaths?: string[];
-  pendingMcpResources?: import('../types.js').PendingMcpResource[];
+  pendingMcpResources?: import("../types.js").PendingMcpResource[];
   pendingUserTurn?: string;
   paneWorkspace?: {
     workspaceRoot: string;
@@ -76,8 +73,10 @@ export function buildPaneSessionSlice(input: {
             request: input.pendingApproval.request,
             ...(input.pendingApproval.prompt !== undefined
               ? { prompt: input.pendingApproval.prompt }
-              : { prompt: '' }),
-            ...(input.pendingApproval.trustTarget ? { trustTarget: input.pendingApproval.trustTarget } : {}),
+              : { prompt: "" }),
+            ...(input.pendingApproval.trustTarget
+              ? { trustTarget: input.pendingApproval.trustTarget }
+              : {}),
             ...(input.pendingApproval.subagentSessionId
               ? { subagentSessionId: input.pendingApproval.subagentSessionId }
               : {}),
@@ -87,7 +86,9 @@ export function buildPaneSessionSlice(input: {
           }),
         }
       : {}),
-    ...(input.pendingQuestions ? { pendingQuestions: mapPendingQuestions(input.pendingQuestions) } : {}),
+    ...(input.pendingQuestions
+      ? { pendingQuestions: mapPendingQuestions(input.pendingQuestions) }
+      : {}),
     isBusy: isSessionBundleBusy(bundle),
     ...(bundle.rewindWarnings.length > 0
       ? { rewindWarnings: bundle.rewindWarnings.map((warning) => ({ ...warning })) }

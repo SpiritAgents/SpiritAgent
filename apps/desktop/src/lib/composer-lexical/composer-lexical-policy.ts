@@ -3,14 +3,8 @@ import {
   applyAgentModeChipPolicy,
   type AgentModeChipPolicy,
 } from "@/lib/composer-agent-mode-policy";
-import {
-  mergeAdjacentTextSegments,
-  type RichSegment,
-} from "@/lib/composer-segment-model";
-import {
-  ensureLoopChipTypingTail,
-  ensureLoopPinned,
-} from "@/lib/composer-loop-segments";
+import { mergeAdjacentTextSegments, type RichSegment } from "@/lib/composer-segment-model";
+import { ensureLoopChipTypingTail, ensureLoopPinned } from "@/lib/composer-loop-segments";
 
 export type StructuralChipPolicyOptions = {
   agentMode: DesktopAgentMode;

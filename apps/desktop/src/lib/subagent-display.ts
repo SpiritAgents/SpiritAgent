@@ -1,4 +1,4 @@
-import type { ConversationMessageSnapshot, PendingAssistantAux } from '../types.js';
+import type { ConversationMessageSnapshot, PendingAssistantAux } from "../types.js";
 
 /** Parent wrap-up after subagent — normal assistant body, not runtime status. */
 function isParentSubagentCompletionSurfaceText(text: string): boolean {
@@ -9,8 +9,7 @@ function isParentSubagentCompletionSurfaceText(text: string): boolean {
 const SUBAGENT_SPINNER_PREFIX = /^[|/\\-]\s+/;
 
 /** Progress tail after `title:` on the subagent status line (streaming English fragments included). */
-const SUBAGENT_STATUS_TAIL_PREFIX =
-  /^(The|Sub|Sp|Thinking|Compressing|运行|等待)\b/u;
+const SUBAGENT_STATUS_TAIL_PREFIX = /^(The|Sub|Sp|Thinking|Compressing|运行|等待)\b/u;
 
 /** Colon is part of an emoticon (e.g. `:)`), not a `label: status` separator. */
 function isEmoticonColon(text: string, colonIdx: number): boolean {
@@ -19,10 +18,10 @@ function isEmoticonColon(text: string, colonIdx: number): boolean {
 }
 
 function lastStatusColonIndex(text: string): number {
-  let colonIdx = Math.max(text.lastIndexOf(':'), text.lastIndexOf('：'));
+  let colonIdx = Math.max(text.lastIndexOf(":"), text.lastIndexOf("："));
   while (colonIdx > 0 && isEmoticonColon(text, colonIdx)) {
-    const prevAscii = text.lastIndexOf(':', colonIdx - 1);
-    const prevFull = text.lastIndexOf('：', colonIdx - 1);
+    const prevAscii = text.lastIndexOf(":", colonIdx - 1);
+    const prevFull = text.lastIndexOf("：", colonIdx - 1);
     const prev = Math.max(prevAscii, prevFull);
     if (prev <= 0) {
       return -1;
@@ -33,15 +32,15 @@ function lastStatusColonIndex(text: string): number {
 }
 
 export function stripSubagentSpinnerPrefix(text: string): string {
-  return text.trim().replace(SUBAGENT_SPINNER_PREFIX, '').trim();
+  return text.trim().replace(SUBAGENT_SPINNER_PREFIX, "").trim();
 }
 
 /** Runtime `pendingAuxState()` for main-thread thinking/compressing (not subagent status lines). */
 export function isLivePendingReasoningAux(pendingAux: PendingAssistantAux | undefined): boolean {
   return Boolean(
     pendingAux &&
-      (pendingAux.kind === 'thinking' || pendingAux.kind === 'compressing') &&
-      !parsePendingSubagentStatusText(pendingAux.statusText),
+    (pendingAux.kind === "thinking" || pendingAux.kind === "compressing") &&
+    !parsePendingSubagentStatusText(pendingAux.statusText),
   );
 }
 
@@ -52,7 +51,7 @@ export function isGenericPendingThinkingStatusText(text: string | undefined): bo
     return false;
   }
   const withoutSpinner = stripSubagentSpinnerPrefix(normalized);
-  return withoutSpinner === 'Thinking...';
+  return withoutSpinner === "Thinking...";
 }
 
 /** Placeholder compaction aux before summary text arrives (e.g. `| Compressing...`). */
@@ -62,7 +61,7 @@ export function isGenericPendingCompactionStatusText(text: string | undefined): 
     return false;
   }
   const withoutSpinner = stripSubagentSpinnerPrefix(normalized);
-  return withoutSpinner === 'Compressing...';
+  return withoutSpinner === "Compressing...";
 }
 
 function isSubagentRuntimeStatusTail(after: string): boolean {
@@ -111,7 +110,7 @@ export function isSubagentStatusSurfaceText(text: string | undefined): boolean {
 
   const withoutSpinner = stripSubagentSpinnerPrefix(normalized);
 
-  if (withoutSpinner === 'Thinking...' || withoutSpinner === 'Compressing...') {
+  if (withoutSpinner === "Thinking..." || withoutSpinner === "Compressing...") {
     return true;
   }
   if (/:\s*运行中\s*$/u.test(withoutSpinner)) {
@@ -128,7 +127,7 @@ export function isSubagentStatusSurfaceText(text: string | undefined): boolean {
 
   const before = withoutSpinner.slice(0, colonIdx).trim();
   const after = withoutSpinner.slice(colonIdx + 1).trim();
-  if (!after || before.length < 4 || after.startsWith('```')) {
+  if (!after || before.length < 4 || after.startsWith("```")) {
     return false;
   }
 
@@ -162,14 +161,14 @@ export function hasSubagentToolInCurrentTurn(
 ): boolean {
   let lastUserIndex = -1;
   for (let index = messages.length - 1; index >= 0; index -= 1) {
-    if (messages[index]?.role === 'user') {
+    if (messages[index]?.role === "user") {
       lastUserIndex = index;
       break;
     }
   }
   for (let index = lastUserIndex + 1; index < messages.length; index += 1) {
     const message = messages[index];
-    if (message?.role === 'assistant' && message.tool?.toolName === 'subagent') {
+    if (message?.role === "assistant" && message.tool?.toolName === "subagent") {
       return true;
     }
   }
@@ -181,9 +180,9 @@ export function hasActiveSubagentToolInMessages(
 ): boolean {
   return messages.some(
     (message) =>
-      message.role === 'assistant' &&
-      message.tool?.toolName === 'subagent' &&
-      (message.tool.phase === 'preview' || message.tool.phase === 'running'),
+      message.role === "assistant" &&
+      message.tool?.toolName === "subagent" &&
+      (message.tool.phase === "preview" || message.tool.phase === "running"),
   );
 }
 
@@ -193,11 +192,11 @@ export function hasInFlightSubagentDelegationInMessages(
 ): boolean {
   return messages.some(
     (message) =>
-      message.role === 'assistant' &&
-      message.tool?.toolName === 'subagent' &&
-      (message.tool.phase === 'preview' ||
-        message.tool.phase === 'running' ||
-        message.tool.phase === 'pending-approval'),
+      message.role === "assistant" &&
+      message.tool?.toolName === "subagent" &&
+      (message.tool.phase === "preview" ||
+        message.tool.phase === "running" ||
+        message.tool.phase === "pending-approval"),
   );
 }
 
@@ -205,9 +204,7 @@ export function isSubagentStatusSurfaceMessage(
   message: ConversationMessageSnapshot | undefined,
 ): boolean {
   return Boolean(
-    message?.role === 'assistant' &&
-      !message.tool &&
-      isSubagentStatusSurfaceText(message.content),
+    message?.role === "assistant" && !message.tool && isSubagentStatusSurfaceText(message.content),
   );
 }
 
@@ -218,7 +215,7 @@ export function parsePendingSubagentStatusText(text: string | undefined): string
   }
 
   const status = stripSubagentSpinnerPrefix(text);
-  if (!status || status === 'Thinking...' || status === 'Compressing...') {
+  if (!status || status === "Thinking..." || status === "Compressing...") {
     return undefined;
   }
 

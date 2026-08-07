@@ -1,7 +1,7 @@
-import { structuredPatch } from 'diff';
-import gitDiffParser, { type Change, type File } from 'gitdiff-parser';
+import { structuredPatch } from "diff";
+import gitDiffParser, { type Change, type File } from "gitdiff-parser";
 
-export type DiffDisplayLineKind = 'normal' | 'insert' | 'delete';
+export type DiffDisplayLineKind = "normal" | "insert" | "delete";
 
 export type DiffDisplayLine = {
   kind: DiffDisplayLineKind;
@@ -11,40 +11,40 @@ export type DiffDisplayLine = {
 };
 
 export function normalizeDiffPath(filename: string): string {
-  return filename.replace(/\\/gu, '/').trim() || 'file';
+  return filename.replace(/\\/gu, "/").trim() || "file";
 }
 
 export function wrapPatchAsUnifiedDiff(filename: string, patch: string): string {
   const normalizedPath = normalizeDiffPath(filename);
   const hunk = patch.trim();
   if (!hunk) {
-    return '';
+    return "";
   }
   return [
     `diff --git a/${normalizedPath} b/${normalizedPath}`,
     `--- a/${normalizedPath}`,
     `+++ b/${normalizedPath}`,
     hunk,
-  ].join('\n');
+  ].join("\n");
 }
 
 function changeToDisplayLine(change: Change): DiffDisplayLine {
-  if (change.type === 'insert') {
+  if (change.type === "insert") {
     return {
-      kind: 'insert',
+      kind: "insert",
       content: change.content,
       newLineNumber: change.lineNumber,
     };
   }
-  if (change.type === 'delete') {
+  if (change.type === "delete") {
     return {
-      kind: 'delete',
+      kind: "delete",
       content: change.content,
       oldLineNumber: change.lineNumber,
     };
   }
   return {
-    kind: 'normal',
+    kind: "normal",
     content: change.content,
     oldLineNumber: change.oldLineNumber,
     newLineNumber: change.newLineNumber,
@@ -52,7 +52,7 @@ function changeToDisplayLine(change: Change): DiffDisplayLine {
 }
 
 export function buildToolCallDiffLines(original: string, modified: string): DiffDisplayLine[] {
-  const patch = structuredPatch('file', 'file', original, modified, '', '', { context: 3 });
+  const patch = structuredPatch("file", "file", original, modified, "", "", { context: 3 });
   const lines: DiffDisplayLine[] = [];
 
   for (const hunk of patch.hunks) {
@@ -63,15 +63,15 @@ export function buildToolCallDiffLines(original: string, modified: string): Diff
       const prefix = line.charAt(0);
       const content = line.slice(1);
 
-      if (prefix === '+') {
-        lines.push({ kind: 'insert', content, newLineNumber: newLine });
+      if (prefix === "+") {
+        lines.push({ kind: "insert", content, newLineNumber: newLine });
         newLine += 1;
-      } else if (prefix === '-') {
-        lines.push({ kind: 'delete', content, oldLineNumber: oldLine });
+      } else if (prefix === "-") {
+        lines.push({ kind: "delete", content, oldLineNumber: oldLine });
         oldLine += 1;
-      } else if (prefix === ' ') {
+      } else if (prefix === " ") {
         lines.push({
-          kind: 'normal',
+          kind: "normal",
           content,
           oldLineNumber: oldLine,
           newLineNumber: newLine,
@@ -107,7 +107,7 @@ export function buildDiffLinesFromUnifiedText(diffText: string): DiffDisplayLine
 }
 
 export function displayLineNumberForChange(change: Change): number {
-  if (change.type === 'delete' || change.type === 'insert') {
+  if (change.type === "delete" || change.type === "insert") {
     return change.lineNumber;
   }
   return change.newLineNumber;

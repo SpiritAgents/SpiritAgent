@@ -63,10 +63,14 @@ export function useGitHubAutomationRepositories({
           if (generation !== fetchGenerationRef.current) {
             return;
           }
-          writeGitHubAutomationRepositoriesSearchCache(searchQuery, {
-            items: snapshot.items,
-            totalCount: snapshot.totalCount,
-          }, page);
+          writeGitHubAutomationRepositoriesSearchCache(
+            searchQuery,
+            {
+              items: snapshot.items,
+              totalCount: snapshot.totalCount,
+            },
+            page,
+          );
           let nextLength = 0;
           setItems((current) => {
             const nextItems = append ? [...current, ...snapshot.items] : snapshot.items;
@@ -129,7 +133,10 @@ export function useGitHubAutomationRepositories({
       : readGitHubAutomationRepositoriesListCache();
 
     if (cached && !searchQuery) {
-      const listCached = cached as { items: DesktopGitHubAutomationRepositoryItem[]; hasNextPage: boolean };
+      const listCached = cached as {
+        items: DesktopGitHubAutomationRepositoryItem[];
+        hasNextPage: boolean;
+      };
       setItems(listCached.items);
       setHasMore(listCached.hasNextPage);
       setNextPage(listCached.hasNextPage ? 2 : undefined);
@@ -140,11 +147,14 @@ export function useGitHubAutomationRepositories({
     }
 
     if (cached && searchQuery) {
-      const searchCached = cached as { items: DesktopGitHubAutomationRepositoryItem[]; totalCount: number };
+      const searchCached = cached as {
+        items: DesktopGitHubAutomationRepositoryItem[];
+        totalCount: number;
+      };
       setItems(searchCached.items);
       const hasMoreSearch =
-        searchCached.items.length >= SEARCH_PAGE_SIZE
-        && searchCached.items.length < searchCached.totalCount;
+        searchCached.items.length >= SEARCH_PAGE_SIZE &&
+        searchCached.items.length < searchCached.totalCount;
       setHasMore(hasMoreSearch);
       setNextPage(hasMoreSearch ? 2 : undefined);
       setLoading(false);

@@ -24,10 +24,7 @@ const sampleAttachment = {
 test("gitCommitContextText serializes oid, author, authoredAt, and full message body", () => {
   const wire = gitCommitContextText(sampleAttachment);
 
-  assert.match(
-    wire,
-    /^```git:abc123def456\tAlice\t2024-01-02 10:00:00 \+0000\nfeat: add chip/,
-  );
+  assert.match(wire, /^```git:abc123def456\tAlice\t2024-01-02 10:00:00 \+0000\nfeat: add chip/);
   assert.match(wire, /Body paragraph\.\n```$/);
 });
 

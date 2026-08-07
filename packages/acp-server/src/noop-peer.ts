@@ -1,5 +1,5 @@
-import { JsonRpcPeer } from '@spiritagent/agent-core/host-bridge';
-import { PassThrough } from 'node:stream';
+import { JsonRpcPeer } from "@spiritagent/agent-core/host-bridge";
+import { PassThrough } from "node:stream";
 
 /**
  * Creates a no-op JsonRpcPeer that does not bind to any real stdin/stdout.

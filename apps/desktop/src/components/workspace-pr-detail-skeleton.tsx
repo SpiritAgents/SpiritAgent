@@ -24,11 +24,7 @@ function PrSkeletonBlock({ className }: { className?: string }) {
   return <Skeleton className={className} />;
 }
 
-function PrConversationTimelineSkeletonRow({
-  cardLines,
-}: {
-  cardLines: readonly string[];
-}) {
+function PrConversationTimelineSkeletonRow({ cardLines }: { cardLines: readonly string[] }) {
   return (
     <div className="min-w-0">
       <div className="flex min-w-0 items-center gap-2">
@@ -62,14 +58,11 @@ export function WorkspacePrDetailSkeleton({
   const ariaLabel = loadingLabel ?? t("workspace.prLoading");
   const subTabBarRef = useRef<HTMLDivElement>(null);
 
-  useWorkspaceToolsShellHorizontalDivider(
-    subTabBarRef,
-    {
-      enabled: true,
-      edge: "bottom",
-      dividerAttr: PR_SUBTAB_SHELL_DIVIDER_ATTR,
-    },
-  );
+  useWorkspaceToolsShellHorizontalDivider(subTabBarRef, {
+    enabled: true,
+    edge: "bottom",
+    dividerAttr: PR_SUBTAB_SHELL_DIVIDER_ATTR,
+  });
 
   return (
     <article
@@ -117,10 +110,7 @@ export function WorkspacePrDetailSkeleton({
           <div className="space-y-2 px-3 pt-3 pb-3">
             <div className={TIMELINE_ITEMS_CLASS}>
               {CONVERSATION_ROW_VARIANTS.map((variant, index) => (
-                <PrConversationTimelineSkeletonRow
-                  key={index}
-                  cardLines={variant.cardLines}
-                />
+                <PrConversationTimelineSkeletonRow key={index} cardLines={variant.cardLines} />
               ))}
             </div>
           </div>

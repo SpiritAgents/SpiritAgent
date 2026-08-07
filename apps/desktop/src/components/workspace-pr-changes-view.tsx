@@ -1,4 +1,12 @@
-import { useCallback, useEffect, useMemo, useRef, useState, type ComponentRef, type RefObject } from "react";
+import {
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+  type ComponentRef,
+  type RefObject,
+} from "react";
 import { useTranslation } from "react-i18next";
 import { ChevronRight } from "lucide-react";
 
@@ -18,7 +26,12 @@ import { installContainedSelectAll } from "@/lib/contained-text-selection";
 import type { PrDiffAttachment, PullRequestChipStatus } from "@/lib/pr-diff-attachment";
 import { buildPrDiffSnippetFromPatch, buildPrDiffSnippetText } from "@/lib/pr-diff-text";
 import { inferLineRangeFromPatch } from "@/lib/pr-diff-patch-slice";
-import { isNodeInUnifiedDiffCode, readDiffSelectionText, resolveChangedFileFromSelection, resolveDiffSelectionLineRange } from "@/lib/pr-diff-selection";
+import {
+  isNodeInUnifiedDiffCode,
+  readDiffSelectionText,
+  resolveChangedFileFromSelection,
+  resolveDiffSelectionLineRange,
+} from "@/lib/pr-diff-selection";
 import {
   PR_CHANGES_TREE_MIN_WIDTH_PX,
   computePrChangesTreeMaxWidthPx,
@@ -27,9 +40,7 @@ import {
 } from "@/lib/layout-prefs";
 import { useWorkspaceToolsShellRowDividers } from "@/lib/use-workspace-tools-shell-row-dividers";
 import { useWorkspaceToolsShellHorizontalDivider } from "@/lib/use-workspace-tools-shell-horizontal-divider";
-import {
-  PR_CHANGED_FILE_HEADER_SHELL_DIVIDER_ATTR,
-} from "@/lib/workspace-tools-panel-edge";
+import { PR_CHANGED_FILE_HEADER_SHELL_DIVIDER_ATTR } from "@/lib/workspace-tools-panel-edge";
 import { cn } from "@/lib/utils";
 import type { GitHubPullRequestChangedFile } from "@/types";
 
@@ -59,10 +70,12 @@ function isDiffCodeSelection(selection: Selection, root: HTMLElement): boolean {
   if (!diffRoot) {
     return false;
   }
-  const isInDiffCode = (node: Node | null): boolean =>
-    isNodeInUnifiedDiffCode(node, diffRoot);
-  return isInDiffCode(anchor) && isInDiffCode(focus)
-    && resolveChangedFileFromSelection(selection, root) != null;
+  const isInDiffCode = (node: Node | null): boolean => isNodeInUnifiedDiffCode(node, diffRoot);
+  return (
+    isInDiffCode(anchor) &&
+    isInDiffCode(focus) &&
+    resolveChangedFileFromSelection(selection, root) != null
+  );
 }
 
 function isDiffBlockSelection(selection: Selection, root: HTMLElement): boolean {
@@ -129,16 +142,11 @@ function PrChangesSelectionMenu({
 
     const filePatch = files.find((file) => file.filename === filename)?.patch;
     const lineRange =
-      (diffRoot ? resolveDiffSelectionLineRange(diffRoot, selection) : null)
-      ?? (filePatch ? inferLineRangeFromPatch(filename, filePatch, selectedText) : null);
+      (diffRoot ? resolveDiffSelectionLineRange(diffRoot, selection) : null) ??
+      (filePatch ? inferLineRangeFromPatch(filename, filePatch, selectedText) : null);
     const diffText =
       filePatch && lineRange
-        ? buildPrDiffSnippetFromPatch(
-            filename,
-            filePatch,
-            lineRange.lineStart,
-            lineRange.lineEnd,
-          )
+        ? buildPrDiffSnippetFromPatch(filename, filePatch, lineRange.lineStart, lineRange.lineEnd)
         : buildPrDiffSnippetText(filename, selectedText);
     if (!diffText) {
       dismiss();
@@ -247,7 +255,9 @@ function PrChangedFileHeaderButton({
         aria-hidden
       />
       <div className="flex min-w-0 flex-1 items-center gap-1.5 overflow-hidden">
-        <span className="min-w-0 truncate text-xs leading-relaxed text-foreground">{displayPath}</span>
+        <span className="min-w-0 truncate text-xs leading-relaxed text-foreground">
+          {displayPath}
+        </span>
         <EditFileLineDeltaBadge
           delta={{ added: additions, removed: deletions }}
           className="font-normal"
@@ -410,10 +420,7 @@ export function WorkspacePrChangesView({
   const treeNodes = useMemo(() => buildPrChangedFilesTree(files), [files]);
   const showFileList = files.length > 0;
 
-  const getCardsScrollViewport = useCallback(
-    () => scrollAreaViewport(cardsScrollRef.current),
-    [],
-  );
+  const getCardsScrollViewport = useCallback(() => scrollAreaViewport(cardsScrollRef.current), []);
 
   useWorkspaceToolsShellRowDividers(cardsListRef, [files.length, hasMore, expandedFilenames.size], {
     enabled: showFileList,
@@ -547,10 +554,7 @@ export function WorkspacePrChangesView({
         style={{ width: treeWidthPx }}
       >
         <ScrollArea className="h-full min-h-0 flex-1" type="auto">
-          <WorkspacePrChangesFileTree
-            nodes={treeNodes}
-            onSelectFile={navigateToFile}
-          />
+          <WorkspacePrChangesFileTree nodes={treeNodes} onSelectFile={navigateToFile} />
         </ScrollArea>
       </aside>
       <div
@@ -571,11 +575,7 @@ export function WorkspacePrChangesView({
           aria-hidden
         />
       </div>
-      <ScrollArea
-        ref={cardsScrollRef}
-        className="min-h-0 min-w-0 flex-1"
-        type="auto"
-      >
+      <ScrollArea ref={cardsScrollRef} className="min-h-0 min-w-0 flex-1" type="auto">
         <div ref={cardsListRef}>
           {files.map((file) => (
             <PrChangedFileCard

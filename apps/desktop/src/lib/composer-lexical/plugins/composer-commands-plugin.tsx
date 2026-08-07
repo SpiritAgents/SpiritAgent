@@ -103,9 +103,7 @@ export function ComposerCommandsPlugin({
       INSERT_SKILL_CHIP_COMMAND,
       ({ alias, clearText, appendTrailingSpace }) => {
         editor.focus();
-        const base = clearText
-          ? emptySegments()
-          : mergeAdjacentTextSegments(segmentsRef.current);
+        const base = clearText ? emptySegments() : mergeAdjacentTextSegments(segmentsRef.current);
         const caret = clearText
           ? caretAtEnd(base)
           : (lexicalSelectionToSegmentCaret(editor) ?? caretAtEnd(base));
@@ -116,9 +114,9 @@ export function ComposerCommandsPlugin({
         if (appendTrailingSpace) {
           const trailing = next[nextCaret.segmentIndex];
           const chipTailAlreadySpaced =
-            trailing?.kind === "text"
-            && isComposerPlainEmpty(trailing.value)
-            && nextCaret.offset > 0;
+            trailing?.kind === "text" &&
+            isComposerPlainEmpty(trailing.value) &&
+            nextCaret.offset > 0;
           if (!chipTailAlreadySpaced) {
             ({ segments: next, caret: nextCaret } = insertSegmentAtCaret(next, nextCaret, {
               kind: "text",

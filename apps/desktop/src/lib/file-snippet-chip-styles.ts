@@ -32,7 +32,10 @@ export function formatFileSnippetChipTitle(attachment: FileSnippetAttachment): s
   return `${normalized}${linePart}`;
 }
 
-export function makeFileSnippetChipNode(attachment: FileSnippetAttachment, doc: Document): HTMLElement {
+export function makeFileSnippetChipNode(
+  attachment: FileSnippetAttachment,
+  doc: Document,
+): HTMLElement {
   const span = doc.createElement("span");
   span.contentEditable = "false";
   span.dataset.fileSnippetChip = "true";
@@ -49,10 +52,17 @@ export function makeFileSnippetChipNode(attachment: FileSnippetAttachment, doc: 
     formatFileSnippetChipLabel(attachment.filePath, attachment.lineStart, attachment.lineEnd),
   );
 
-  appendWorkspaceFileIcon(span, doc, attachment.filePath, {
-    size: WORKSPACE_FILE_ICON_CHIP_SIZE_PX,
-    className: FILE_SNIPPET_CHIP_ICON_CLASS,
-  }, 'file', { colorMode: 'inherit' });
+  appendWorkspaceFileIcon(
+    span,
+    doc,
+    attachment.filePath,
+    {
+      size: WORKSPACE_FILE_ICON_CHIP_SIZE_PX,
+      className: FILE_SNIPPET_CHIP_ICON_CLASS,
+    },
+    "file",
+    { colorMode: "inherit" },
+  );
 
   span.appendChild(
     doc.createTextNode(

@@ -55,7 +55,9 @@ export function GitHubDeviceLoginDialog({
               <p className={cn("text-3xl tracking-widest text-foreground", FONT_WEIGHT_MEDIUM)}>
                 {challenge.userCode}
               </p>
-              <p className="text-xs text-muted-foreground">{t("settings.integrationsDeviceWaiting")}</p>
+              <p className="text-xs text-muted-foreground">
+                {t("settings.integrationsDeviceWaiting")}
+              </p>
               {onOpenDevicePage ? (
                 <Button
                   type="button"
@@ -74,9 +76,7 @@ export function GitHubDeviceLoginDialog({
           ) : null}
         </div>
 
-        {error ? (
-          <p className="text-center text-sm text-destructive">{error}</p>
-        ) : null}
+        {error ? <p className="text-center text-sm text-destructive">{error}</p> : null}
 
         <DialogFooter>
           <DialogFooterActions>

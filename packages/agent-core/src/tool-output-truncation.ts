@@ -4,13 +4,13 @@ import {
   createLlmMessageContentFromText,
   llmMessageTextContent,
   type LlmMessage,
-} from './ports.js';
+} from "./ports.js";
 import {
   buildContextRetryExcerpt,
   cloneJsonValue,
   isJsonObject,
   type ToolAgentState,
-} from './tool-agent.js';
+} from "./tool-agent.js";
 
 export type PersistToolOutputArchiveInput = {
   sessionId?: string;
@@ -67,10 +67,10 @@ export async function prepareToolOutputForAppend(input: {
 }
 
 function readToolCallIdFromToolAgentMessage(message: Record<string, unknown>): string | undefined {
-  if (typeof message.tool_call_id === 'string' && message.tool_call_id.length > 0) {
+  if (typeof message.tool_call_id === "string" && message.tool_call_id.length > 0) {
     return message.tool_call_id;
   }
-  if (typeof message.toolCallId === 'string' && message.toolCallId.length > 0) {
+  if (typeof message.toolCallId === "string" && message.toolCallId.length > 0) {
     return message.toolCallId;
   }
   return undefined;
@@ -84,7 +84,7 @@ export async function prepareToolOutputTruncationForHistory(
   const nextHistory = await Promise.all(
     history.map(async (message, messageIndex) => {
       const contentText = llmMessageTextContent(message.content);
-      if (message.role !== 'tool') {
+      if (message.role !== "tool") {
         return {
           role: message.role,
           content: cloneLlmMessageContent(message.content),
@@ -160,7 +160,11 @@ export async function prepareToolOutputTruncationForToolAgentState(
   let changed = false;
   const messages = await Promise.all(
     state.messages.map(async (message, messageIndex) => {
-      if (!isJsonObject(message) || typeof message.content !== 'string' || message.role !== 'tool') {
+      if (
+        !isJsonObject(message) ||
+        typeof message.content !== "string" ||
+        message.role !== "tool"
+      ) {
         return cloneJsonValue(message);
       }
 

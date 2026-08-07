@@ -57,6 +57,7 @@ Scope constraint: exclude workspace-local/internal dependencies resolved via `wo
 ### Apache-2.0
 
 **Used by:**
+
 - @aws-sdk/client-bedrock 3.1070.0
 
 ```
@@ -266,6 +267,7 @@ Scope constraint: exclude workspace-local/internal dependencies resolved via `wo
 ### Apache-2.0
 
 **Used by:**
+
 - @mozilla/readability 0.6.0
 
 ```
@@ -287,6 +289,7 @@ limitations under the License.
 ### Apache-2.0
 
 **Used by:**
+
 - google-auth-library 10.7.0
 
 ```
@@ -497,6 +500,7 @@ limitations under the License.
 ### Apache-2.0
 
 **Used by:**
+
 - typescript 5.9.3
 
 ```
@@ -504,7 +508,7 @@ Apache License
 
 Version 2.0, January 2004
 
-http://www.apache.org/licenses/ 
+http://www.apache.org/licenses/
 
 TERMS AND CONDITIONS FOR USE, REPRODUCTION, AND DISTRIBUTION
 
@@ -560,6 +564,7 @@ END OF TERMS AND CONDITIONS
 ### BlueOak-1.0.0
 
 **Used by:**
+
 - glob 13.0.6
 
 ```
@@ -631,6 +636,7 @@ software or this license, under any kind of legal claim.***
 ### BlueOak-1.0.0
 
 **Used by:**
+
 - tar 7.5.16
 
 ```
@@ -694,6 +700,7 @@ software or this license, under any kind of legal claim.***
 ### BSD-3-Clause
 
 **Used by:**
+
 - license-checker-rseidelsohn 4.4.2
 
 ```
@@ -725,6 +732,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 ### MIT
 
 **Used by:**
+
 - @types/jsdom 28.0.3
 - @types/node 25.9.3
 - @types/turndown 5.0.6
@@ -756,6 +764,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 ### MIT
 
 **Used by:**
+
 - @vscode/ripgrep 1.18.0
 
 ```
@@ -777,6 +786,7 @@ THE SOFTWARE IS PROVIDED *AS IS*, WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 ### MIT
 
 **Used by:**
+
 - fast-glob 3.3.3
 
 ```
@@ -806,6 +816,7 @@ SOFTWARE.
 ### MIT
 
 **Used by:**
+
 - fflate 0.8.3
 
 ```
@@ -835,6 +846,7 @@ SOFTWARE.
 ### MIT
 
 **Used by:**
+
 - ignore 5.3.2
 
 ```
@@ -864,6 +876,7 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 ### MIT
 
 **Used by:**
+
 - jsdom 29.1.1
 
 ```
@@ -894,6 +907,7 @@ OTHER DEALINGS IN THE SOFTWARE.
 ### MIT
 
 **Used by:**
+
 - turndown 7.2.4
 - turndown-plugin-gfm 1.0.2
 
@@ -924,6 +938,7 @@ SOFTWARE.
 ### MIT
 
 **Used by:**
+
 - vscode-jsonrpc 8.2.1
 - vscode-languageserver-protocol 3.18.0
 

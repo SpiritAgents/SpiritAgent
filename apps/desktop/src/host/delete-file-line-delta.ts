@@ -1,24 +1,27 @@
-import { existsSync, lstatSync, readFileSync } from 'node:fs';
-import path from 'node:path';
+import { existsSync, lstatSync, readFileSync } from "node:fs";
+import path from "node:path";
 
-import { resolveInstructionPaths, type InstructionDiscoveryContext } from '@spiritagent/host-internal';
+import {
+  resolveInstructionPaths,
+  type InstructionDiscoveryContext,
+} from "@spiritagent/host-internal";
 
 import {
   deleteFileLineDeltaFromContent,
   type EditFileLineDelta,
-} from '../lib/edit-file-line-delta.js';
+} from "../lib/edit-file-line-delta.js";
 
 /** 与 `readWorkspaceTextFile` 一致，避免删除前读取超大文件。 */
 const DELETE_FILE_LINE_DELTA_MAX_BYTES = 2 * 1024 * 1024;
 
 function pathCompareKey(inputPath: string): string {
-  let normalized = path.resolve(inputPath).replace(/\\/gu, '/');
-  if (normalized.startsWith('//?/UNC/')) {
-    normalized = `//${normalized.slice('//?/UNC/'.length)}`;
-  } else if (normalized.startsWith('//?/')) {
-    normalized = normalized.slice('//?/'.length);
+  let normalized = path.resolve(inputPath).replace(/\\/gu, "/");
+  if (normalized.startsWith("//?/UNC/")) {
+    normalized = `//${normalized.slice("//?/UNC/".length)}`;
+  } else if (normalized.startsWith("//?/")) {
+    normalized = normalized.slice("//?/".length);
   }
-  return normalized.replace(/\/+$/u, '');
+  return normalized.replace(/\/+$/u, "");
 }
 
 function pathHasPrefix(candidate: string, prefix: string): boolean {
@@ -92,7 +95,7 @@ function readDeleteFileUtf8Content(
   }
 
   try {
-    return readFileSync(target, 'utf8');
+    return readFileSync(target, "utf8");
   } catch {
     return undefined;
   }

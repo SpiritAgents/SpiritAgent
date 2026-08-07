@@ -1,5 +1,5 @@
-import { githubApiHeaders, githubFetch, githubHasNextPage, readGitHubJson } from './github-api.js';
-import { GITHUB_API_BASE_URL } from './oauth-config.js';
+import { githubApiHeaders, githubFetch, githubHasNextPage, readGitHubJson } from "./github-api.js";
+import { GITHUB_API_BASE_URL } from "./oauth-config.js";
 
 export interface GitHubAutomationRepositoryItem {
   owner: string;
@@ -24,10 +24,12 @@ interface GitHubSearchRepositoriesResponse {
   items: GitHubUserRepoApiItem[];
 }
 
-function mapRepositoryItem(item: GitHubUserRepoApiItem): GitHubAutomationRepositoryItem | undefined {
+function mapRepositoryItem(
+  item: GitHubUserRepoApiItem,
+): GitHubAutomationRepositoryItem | undefined {
   const fullName = item.full_name?.trim();
   const name = item.name?.trim();
-  const owner = item.owner?.login?.trim() ?? fullName?.split('/')[0]?.trim();
+  const owner = item.owner?.login?.trim() ?? fullName?.split("/")[0]?.trim();
   if (!owner || !name || !fullName) {
     return undefined;
   }
@@ -60,11 +62,11 @@ export async function listUserGitHubRepositories(
   const page = options?.page ?? 1;
   const perPage = options?.perPage ?? 100;
   const url = new URL(`${GITHUB_API_BASE_URL}/user/repos`);
-  url.searchParams.set('affiliation', 'owner,collaborator,organization_member');
-  url.searchParams.set('sort', 'updated');
-  url.searchParams.set('direction', 'desc');
-  url.searchParams.set('per_page', String(perPage));
-  url.searchParams.set('page', String(page));
+  url.searchParams.set("affiliation", "owner,collaborator,organization_member");
+  url.searchParams.set("sort", "updated");
+  url.searchParams.set("direction", "desc");
+  url.searchParams.set("per_page", String(perPage));
+  url.searchParams.set("page", String(page));
 
   const response = await githubFetch(url, { headers: githubApiHeaders(accessToken) });
   const payload = await readGitHubJson<GitHubUserRepoApiItem[]>(response);
@@ -89,11 +91,11 @@ export async function searchGitHubRepositories(
   const perPage = options?.perPage ?? 30;
   const url = new URL(`${GITHUB_API_BASE_URL}/search/repositories`);
   const q = buildAutomationRepositorySearchQuery(trimmedQuery, login);
-  url.searchParams.set('q', q);
-  url.searchParams.set('sort', trimmedQuery ? 'stars' : 'updated');
-  url.searchParams.set('order', 'desc');
-  url.searchParams.set('per_page', String(perPage));
-  url.searchParams.set('page', String(page));
+  url.searchParams.set("q", q);
+  url.searchParams.set("sort", trimmedQuery ? "stars" : "updated");
+  url.searchParams.set("order", "desc");
+  url.searchParams.set("per_page", String(perPage));
+  url.searchParams.set("page", String(page));
 
   const response = await githubFetch(url, { headers: githubApiHeaders(accessToken) });
   const payload = await readGitHubJson<GitHubSearchRepositoriesResponse>(response);

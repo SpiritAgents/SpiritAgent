@@ -1,14 +1,14 @@
-import { createElement } from 'react';
-import { renderToStaticMarkup } from 'react-dom/server';
+import { createElement } from "react";
+import { renderToStaticMarkup } from "react-dom/server";
 
-import { workspaceFileBasename } from '@/lib/file-picker-path';
-import { renderWorkspaceDirectoryIconMarkup } from '@/lib/workspace-directory-icon';
-import { workspaceExplorerIcon } from '@/lib/workspace-explorer-icon';
+import { workspaceFileBasename } from "@/lib/file-picker-path";
+import { renderWorkspaceDirectoryIconMarkup } from "@/lib/workspace-directory-icon";
+import { workspaceExplorerIcon } from "@/lib/workspace-explorer-icon";
 import {
   WORKSPACE_FILE_ICON_LIST_CLASS,
   type WorkspaceFileIconColorMode,
-} from '@/lib/workspace-file-icon-sizes';
-import type { WorkspaceExplorerEntryKind } from '@/types';
+} from "@/lib/workspace-file-icon-sizes";
+import type { WorkspaceExplorerEntryKind } from "@/types";
 
 export type AppendWorkspaceFileIconOptions = {
   colorMode?: WorkspaceFileIconColorMode;
@@ -20,13 +20,13 @@ export function appendWorkspaceFileIcon(
   doc: Document,
   path: string,
   attrs: { size: number; className: string },
-  kind: WorkspaceExplorerEntryKind = 'file',
+  kind: WorkspaceExplorerEntryKind = "file",
   options: AppendWorkspaceFileIconOptions = {},
 ): void {
-  const { colorMode = 'list' } = options;
+  const { colorMode = "list" } = options;
 
-  if (kind === 'dir') {
-    const template = doc.createElement('template');
+  if (kind === "dir") {
+    const template = doc.createElement("template");
     template.innerHTML = renderWorkspaceDirectoryIconMarkup(attrs.className, colorMode);
     const svg = template.content.firstElementChild;
     if (svg) {
@@ -37,16 +37,16 @@ export function appendWorkspaceFileIcon(
 
   const Icon = workspaceExplorerIcon(workspaceFileBasename(path), kind);
   const className =
-    colorMode === 'inherit'
+    colorMode === "inherit"
       ? attrs.className
-      : [WORKSPACE_FILE_ICON_LIST_CLASS, attrs.className].filter(Boolean).join(' ');
+      : [WORKSPACE_FILE_ICON_LIST_CLASS, attrs.className].filter(Boolean).join(" ");
 
-  const template = doc.createElement('template');
+  const template = doc.createElement("template");
   template.innerHTML = renderToStaticMarkup(
     createElement(Icon, {
-      ...(colorMode === 'inherit' ? { size: attrs.size } : {}),
+      ...(colorMode === "inherit" ? { size: attrs.size } : {}),
       className: className || undefined,
-      'aria-hidden': true,
+      "aria-hidden": true,
     }),
   ).trim();
   const svg = template.content.firstElementChild;

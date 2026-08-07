@@ -83,9 +83,7 @@ export function useMonacoSelectionActionMenu({
 
     const range = readMonacoSelectionLineRange(activeEditor);
     const pointer = lastPointerRef.current;
-    const nextAnchor = pointer
-      ? pointAnchor(pointer.x, pointer.y)
-      : containerAnchor(container);
+    const nextAnchor = pointer ? pointAnchor(pointer.x, pointer.y) : containerAnchor(container);
 
     setSelectionText(text);
     setLineRange(range);
@@ -139,7 +137,10 @@ export function useMonacoSelectionActionMenu({
     container.addEventListener("mouseup", onPointerUp);
     container.addEventListener("touchend", onTouchEnd);
     const selectionDisposable = activeEditor.onDidChangeCursorSelection(onSelectionChange);
-    const detachEditorKeyboardSync = attachKeyboardSelectionMenuSync(scheduleSync, activeEditor.getDomNode() ?? container);
+    const detachEditorKeyboardSync = attachKeyboardSelectionMenuSync(
+      scheduleSync,
+      activeEditor.getDomNode() ?? container,
+    );
     return () => {
       cancelAnimationFrame(raf);
       container.removeEventListener("mouseup", onPointerUp);

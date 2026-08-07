@@ -16,7 +16,11 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import type { DeleteExtensionRequest, DesktopExtensionListItem } from "@/types";
-import {DESKTOP_LIST_ITEM_PRIMARY_CLASS, DESKTOP_SECTION_LABEL_COMPACT_CLASS, DESKTOP_PAGE_TITLE_CLASS } from "@/lib/desktop-typography";
+import {
+  DESKTOP_LIST_ITEM_PRIMARY_CLASS,
+  DESKTOP_SECTION_LABEL_COMPACT_CLASS,
+  DESKTOP_PAGE_TITLE_CLASS,
+} from "@/lib/desktop-typography";
 
 export function ExtensionsSettingsPanel({
   snapshot,
@@ -25,10 +29,7 @@ export function ExtensionsSettingsPanel({
   onDeleteExtension,
 }: Pick<
   SettingsViewProps,
-  | "snapshot"
-  | "extensionsBusy"
-  | "onImportExtension"
-  | "onDeleteExtension"
+  "snapshot" | "extensionsBusy" | "onImportExtension" | "onDeleteExtension"
 >) {
   const { t } = useTranslation();
   const [deleteTarget, setDeleteTarget] = useState<DesktopExtensionListItem | null>(null);
@@ -66,9 +67,12 @@ export function ExtensionsSettingsPanel({
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div className="min-w-0 flex-1 space-y-1">
           <div className="flex items-center gap-2">
-            <h1 className={DESKTOP_PAGE_TITLE_CLASS}>{t('settings.extensionsTitle')}</h1>
+            <h1 className={DESKTOP_PAGE_TITLE_CLASS}>{t("settings.extensionsTitle")}</h1>
             {snapshot?.extensionsLoading ? (
-              <LoaderCircle className="size-4 animate-spin text-muted-foreground" aria-label={t('common.loading')} />
+              <LoaderCircle
+                className="size-4 animate-spin text-muted-foreground"
+                aria-label={t("common.loading")}
+              />
             ) : null}
           </div>
         </div>
@@ -79,13 +83,15 @@ export function ExtensionsSettingsPanel({
           disabled={extensionsBusy}
           onClick={() => inputRef.current?.click()}
         >
-          {t('settings.importZip')}
+          {t("settings.importZip")}
         </Button>
       </div>
 
       <div className="divide-y divide-border/35 rounded-lg border border-border/40 bg-background/80">
         {items.length === 0 ? (
-          <p className="px-4 py-10 text-center text-sm text-muted-foreground">{t('settings.noExtensionsInstalled')}</p>
+          <p className="px-4 py-10 text-center text-sm text-muted-foreground">
+            {t("settings.noExtensionsInstalled")}
+          </p>
         ) : (
           items.map((item) => (
             <div
@@ -107,12 +113,16 @@ export function ExtensionsSettingsPanel({
                 {item.description ? (
                   <p className="text-xs text-muted-foreground">{item.description}</p>
                 ) : null}
-                <p className="truncate font-mono text-[0.65rem] text-muted-foreground/90" title={item.id}>
+                <p
+                  className="truncate font-mono text-[0.65rem] text-muted-foreground/90"
+                  title={item.id}
+                >
                   {item.id}
                 </p>
                 <p className="text-xs text-muted-foreground">
-                  {t('settings.installedAt')}{formatExtensionInstalledAt(item.installedAtUnixMs)}
-                  {item.archiveFileName ? ` · ${t('settings.source')}${item.archiveFileName}` : ""}
+                  {t("settings.installedAt")}
+                  {formatExtensionInstalledAt(item.installedAtUnixMs)}
+                  {item.archiveFileName ? ` · ${t("settings.source")}${item.archiveFileName}` : ""}
                 </p>
                 {item.activationEvents?.length ? (
                   <p className="text-xs text-muted-foreground">
@@ -121,7 +131,9 @@ export function ExtensionsSettingsPanel({
                 ) : null}
                 {item.desktopCss?.length ? (
                   <div className="space-y-1 pt-1">
-                    <p className={DESKTOP_SECTION_LABEL_COMPACT_CLASS}>{t('settings.desktopCss')}</p>
+                    <p className={DESKTOP_SECTION_LABEL_COMPACT_CLASS}>
+                      {t("settings.desktopCss")}
+                    </p>
                     {item.desktopCss.map((entry) => (
                       <div
                         key={`${item.id}:desktop-css:${entry.path}`}
@@ -130,13 +142,16 @@ export function ExtensionsSettingsPanel({
                         <div className="flex flex-wrap items-center gap-2">
                           <code className="text-[0.7rem] text-foreground">{entry.path}</code>
                           {entry.media ? (
-                            <Badge variant="outline" className="text-[0.65rem] text-muted-foreground">
+                            <Badge
+                              variant="outline"
+                              className="text-[0.65rem] text-muted-foreground"
+                            >
                               media: {entry.media}
                             </Badge>
                           ) : null}
                         </div>
                         <p className="mt-1 text-xs text-muted-foreground">
-                          {t('settings.desktopCssDescription')}
+                          {t("settings.desktopCssDescription")}
                         </p>
                       </div>
                     ))}
@@ -144,7 +159,7 @@ export function ExtensionsSettingsPanel({
                 ) : null}
                 {item.cliHooks?.length ? (
                   <div className="space-y-1 pt-1">
-                    <p className={DESKTOP_SECTION_LABEL_COMPACT_CLASS}>{t('settings.cliHooks')}</p>
+                    <p className={DESKTOP_SECTION_LABEL_COMPACT_CLASS}>{t("settings.cliHooks")}</p>
                     {item.cliHooks.map((hook, index) => (
                       <div
                         key={`${item.id}:cli-hook:${hook.slot}:${index}`}
@@ -153,13 +168,16 @@ export function ExtensionsSettingsPanel({
                         <div className="flex flex-wrap items-center gap-2">
                           <code className="text-[0.7rem] text-foreground">{hook.slot}</code>
                           {hook.variant ? (
-                            <Badge variant="outline" className="text-[0.65rem] text-muted-foreground">
+                            <Badge
+                              variant="outline"
+                              className="text-[0.65rem] text-muted-foreground"
+                            >
                               variant: {hook.variant}
                             </Badge>
                           ) : null}
                         </div>
                         <p className="mt-1 text-xs text-muted-foreground">
-                          {t('settings.cliHookDescription')}
+                          {t("settings.cliHookDescription")}
                         </p>
                       </div>
                     ))}
@@ -174,7 +192,7 @@ export function ExtensionsSettingsPanel({
                   disabled={extensionsBusy}
                   onClick={() => setDeleteTarget(item)}
                 >
-                  {t('common.delete')}
+                  {t("common.delete")}
                 </Button>
               </div>
             </div>
@@ -192,45 +210,45 @@ export function ExtensionsSettingsPanel({
       >
         <DialogContent className="sm:max-w-md" showCloseButton>
           <DialogHeader>
-            <DialogTitle>{t('settings.deleteExtension')}</DialogTitle>
+            <DialogTitle>{t("settings.deleteExtension")}</DialogTitle>
             <DialogDescription>
-              {t('settings.deleteExtensionConfirm', { name: deleteTarget?.displayName ?? '' })}
+              {t("settings.deleteExtensionConfirm", { name: deleteTarget?.displayName ?? "" })}
             </DialogDescription>
           </DialogHeader>
           <DialogFooter>
             <DialogFooterActions>
-            <Button
-              type="button"
-              variant="outline"
-              size="sm"
-              onClick={() => setDeleteTarget(null)}
-              disabled={extensionsBusy}
-            >
-              {t('common.cancel')}
-            </Button>
-            <Button
-              type="button"
-              variant="destructive"
-              size="sm"
-              disabled={extensionsBusy || !deleteTarget}
-              onClick={() => {
-                const target = deleteTarget;
-                if (!target) {
-                  return;
-                }
-                void (async () => {
-                  try {
-                    await onDeleteExtension({ id: target.id });
-                    setDeleteTarget(null);
-                  } catch {
-                    /* runtimeError */
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={() => setDeleteTarget(null)}
+                disabled={extensionsBusy}
+              >
+                {t("common.cancel")}
+              </Button>
+              <Button
+                type="button"
+                variant="destructive"
+                size="sm"
+                disabled={extensionsBusy || !deleteTarget}
+                onClick={() => {
+                  const target = deleteTarget;
+                  if (!target) {
+                    return;
                   }
-                })();
-              }}
-            >
-              {extensionsBusy ? <LoaderCircle className="size-4 animate-spin" /> : null}
-              {t('common.delete')}
-            </Button>
+                  void (async () => {
+                    try {
+                      await onDeleteExtension({ id: target.id });
+                      setDeleteTarget(null);
+                    } catch {
+                      /* runtimeError */
+                    }
+                  })();
+                }}
+              >
+                {extensionsBusy ? <LoaderCircle className="size-4 animate-spin" /> : null}
+                {t("common.delete")}
+              </Button>
             </DialogFooterActions>
           </DialogFooter>
         </DialogContent>

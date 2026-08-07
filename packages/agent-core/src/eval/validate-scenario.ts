@@ -1,20 +1,26 @@
-import { readFile } from 'node:fs/promises';
+import { readFile } from "node:fs/promises";
 
-import { createExampleEvalScenario } from './examples.js';
-import { assertEvalScenario, validateEvalScenario } from './validation.js';
+import { createExampleEvalScenario } from "./examples.js";
+import { assertEvalScenario, validateEvalScenario } from "./validation.js";
 
 async function main(): Promise<void> {
   const scenarioPath = process.argv[2];
   const scenario = scenarioPath
-    ? JSON.parse(await readFile(scenarioPath, 'utf8')) as unknown
+    ? (JSON.parse(await readFile(scenarioPath, "utf8")) as unknown)
     : createExampleEvalScenario();
 
   assertEvalScenario(scenario);
   const result = validateEvalScenario(scenario);
-  console.log(JSON.stringify({
-    valid: result.valid,
-    source: scenarioPath ?? 'built-in example',
-  }, null, 2));
+  console.log(
+    JSON.stringify(
+      {
+        valid: result.valid,
+        source: scenarioPath ?? "built-in example",
+      },
+      null,
+      2,
+    ),
+  );
 }
 
 main().catch((error: unknown) => {

@@ -1,4 +1,4 @@
-import { getTokenProvider } from '@aws/bedrock-token-generator';
+import { getTokenProvider } from "@aws/bedrock-token-generator";
 
 export interface BedrockMantleIamCredentials {
   region: string;
@@ -13,11 +13,7 @@ export function hasBedrockMantleIamCredentials(
   if (!iam) {
     return false;
   }
-  return Boolean(
-    iam.region.trim()
-      && iam.accessKeyId.trim()
-      && iam.secretAccessKey.trim(),
-  );
+  return Boolean(iam.region.trim() && iam.accessKeyId.trim() && iam.secretAccessKey.trim());
 }
 
 export function createBedrockMantleBearerAuthFetch(
@@ -36,7 +32,7 @@ export function createBedrockMantleBearerAuthFetch(
   return async (input, init) => {
     const token = await provideToken();
     const headers = new Headers(init?.headers);
-    headers.set('Authorization', `Bearer ${token}`);
+    headers.set("Authorization", `Bearer ${token}`);
     return baseFetch(input, { ...init, headers });
   };
 }
@@ -54,18 +50,16 @@ export function wrapFetchForBedrockMantleIamAuth(
   return createBedrockMantleBearerAuthFetch(baseFetch, config.bedrockMantleIam);
 }
 
-export function resolveBedrockMantleOpenResponsesApiKey(
-  config: {
-    apiKey?: string;
-    bedrockMantleIam?: BedrockMantleIamCredentials;
-  },
-): string {
+export function resolveBedrockMantleOpenResponsesApiKey(config: {
+  apiKey?: string;
+  bedrockMantleIam?: BedrockMantleIamCredentials;
+}): string {
   const apiKey = config.apiKey?.trim();
   if (apiKey) {
     return apiKey;
   }
   if (hasBedrockMantleIamCredentials(config.bedrockMantleIam)) {
-    return 'bedrock-mantle-iam';
+    return "bedrock-mantle-iam";
   }
-  return '';
+  return "";
 }

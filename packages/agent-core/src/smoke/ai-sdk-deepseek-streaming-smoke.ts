@@ -1,1 +1,1 @@
-import './contract/ai-sdk-deepseek-streaming-smoke.js';
+import "./contract/ai-sdk-deepseek-streaming-smoke.js";

@@ -1,7 +1,7 @@
-import path from 'node:path';
+import path from "node:path";
 
-import type { ChatArchive } from '@spiritagent/agent-core';
-import { isManualCompactionUiStatusText } from '@spiritagent/agent-core';
+import type { ChatArchive } from "@spiritagent/agent-core";
+import { isManualCompactionUiStatusText } from "@spiritagent/agent-core";
 import {
   CHAT_SCHEMA_VERSION,
   hydrateTimelineSnapshotFromPersistence,
@@ -10,15 +10,15 @@ import {
   timelineRuntimeSnapshotToMessages,
   type PersistedDesktopTimelineTurnSnapshot,
   validateTimelineSnapshotV2,
-} from './chat-schema.js';
-import type { StoredDesktopSession } from './contracts.js';
+} from "./chat-schema.js";
+import type { StoredDesktopSession } from "./contracts.js";
 
 import type {
   ActiveSessionSnapshot,
   ConversationContextUsageSnapshot,
   ConversationMessageSnapshot,
   SessionListItem,
-} from '../types.js';
+} from "../types.js";
 import {
   extractActivePlanPathFromLlmHistory,
   modelRefKey,
@@ -26,25 +26,25 @@ import {
   parseModelRef,
   type ApprovalLevel,
   type ModelRef,
-} from '@spiritagent/host-internal';
-import type { QueuedUserTurn } from './message-queue.js';
-import type { SessionTitleSource } from './contracts.js';
-import type { DesktopTimelineTurnSnapshot } from './message-timeline.js';
-import { DesktopMessageTimeline } from './message-timeline.js';
-import type { SessionBundle } from './session-bundle.js';
-import { isSessionBundleBusy } from './direct-media-turn.js';
+} from "@spiritagent/host-internal";
+import type { QueuedUserTurn } from "./message-queue.js";
+import type { SessionTitleSource } from "./contracts.js";
+import type { DesktopTimelineTurnSnapshot } from "./message-timeline.js";
+import { DesktopMessageTimeline } from "./message-timeline.js";
+import type { SessionBundle } from "./session-bundle.js";
+import { isSessionBundleBusy } from "./direct-media-turn.js";
 import {
   normalizeMessageAuxSnapshot,
   normalizeToolBlockSnapshot,
   shouldDropEmptyAssistantMessage,
   shouldHideEmptyPendingAssistantSnapshot,
-} from './message-ordering.js';
-import { cloneArchiveHistory, cloneArchiveSubagentSessions } from './service-utils.js';
-import { createDesktopRewindMetadata, type StoredDesktopRewindMetadata } from './rewind.js';
+} from "./message-ordering.js";
+import { cloneArchiveHistory, cloneArchiveSubagentSessions } from "./service-utils.js";
+import { createDesktopRewindMetadata, type StoredDesktopRewindMetadata } from "./rewind.js";
 
-export const EPHEMERAL_COMMIT_SESSION_PREFIX = 'ephemeral://commit-message/';
-export const EPHEMERAL_WORKTREE_SESSION_PREFIX = 'ephemeral://worktree-naming/';
-export const EPHEMERAL_SESSION_TITLE_PREFIX = 'ephemeral://session-title/';
+export const EPHEMERAL_COMMIT_SESSION_PREFIX = "ephemeral://commit-message/";
+export const EPHEMERAL_WORKTREE_SESSION_PREFIX = "ephemeral://worktree-naming/";
+export const EPHEMERAL_SESSION_TITLE_PREFIX = "ephemeral://session-title/";
 const MAX_EPHEMERAL_COMMIT_SESSIONS = 8;
 
 function parseStoredSessionActiveModel(value: unknown): ModelRef | undefined {
@@ -52,12 +52,12 @@ function parseStoredSessionActiveModel(value: unknown): ModelRef | undefined {
   if (asRef) {
     return asRef;
   }
-  if (typeof value === 'string') {
+  if (typeof value === "string") {
     const trimmed = value.trim();
     if (!trimmed) {
       return undefined;
     }
-    const separatorIndex = trimmed.lastIndexOf('::');
+    const separatorIndex = trimmed.lastIndexOf("::");
     if (separatorIndex > 0) {
       const groupId = trimmed.slice(0, separatorIndex).trim();
       const name = trimmed.slice(separatorIndex + 2).trim();
@@ -65,7 +65,7 @@ function parseStoredSessionActiveModel(value: unknown): ModelRef | undefined {
         return { groupId, name };
       }
     }
-    return { groupId: '', name: trimmed };
+    return { groupId: "", name: trimmed };
   }
   return undefined;
 }
@@ -80,7 +80,7 @@ export interface EphemeralSessionRecord {
   workspaceRoot: string;
   modifiedAtUnixMs: number;
   messages: ConversationMessageSnapshot[];
-  llmHistory: ChatArchive['llmHistory'];
+  llmHistory: ChatArchive["llmHistory"];
   readOnly: true;
 }
 
@@ -88,8 +88,8 @@ export interface RestoredSessionState {
   messages: ConversationMessageSnapshot[];
   desktopMessageTimeline?: DesktopTimelineTurnSnapshot[];
   activeSession: ActiveSessionSnapshot;
-  archiveHistory: ChatArchive['llmHistory'];
-  archiveSubagentSessions: NonNullable<ChatArchive['subagentSessions']>;
+  archiveHistory: ChatArchive["llmHistory"];
+  archiveSubagentSessions: NonNullable<ChatArchive["subagentSessions"]>;
   rewind: StoredDesktopRewindMetadata;
   loopEnabled: boolean;
   approvalLevel: ApprovalLevel;
@@ -117,10 +117,10 @@ export function rememberEphemeralSessionRecord(
   sessions: EphemeralSessionRecord[],
   record: EphemeralSessionRecord,
 ): EphemeralSessionRecord[] {
-  return [
-    record,
-    ...sessions.filter((session) => session.path !== record.path),
-  ].slice(0, MAX_EPHEMERAL_COMMIT_SESSIONS);
+  return [record, ...sessions.filter((session) => session.path !== record.path)].slice(
+    0,
+    MAX_EPHEMERAL_COMMIT_SESSIONS,
+  );
 }
 
 export function removeEphemeralSessionRecord(
@@ -138,7 +138,7 @@ export function ephemeralSessionsToListItems(
     displayName: session.displayName,
     modifiedAtUnixMs: session.modifiedAtUnixMs,
     workspaceRoot: session.workspaceRoot,
-    kind: 'ephemeral',
+    kind: "ephemeral",
     readOnly: true,
   }));
 }
@@ -171,14 +171,14 @@ export function restoreEphemeralSessionState(record: EphemeralSessionRecord): Re
     activeSession: {
       filePath: record.path,
       displayName: record.displayName,
-      kind: 'ephemeral',
+      kind: "ephemeral",
       readOnly: true,
     },
     archiveHistory: cloneArchiveHistory(record.llmHistory),
     archiveSubagentSessions: [],
     rewind: createDesktopRewindMetadata(),
     loopEnabled: false,
-    approvalLevel: 'default',
+    approvalLevel: "default",
   };
 }
 
@@ -187,21 +187,23 @@ export function restoreStoredSessionState(input: {
   loaded: StoredDesktopSession;
 }): RestoredSessionState {
   validateTimelineSnapshotV2(input.loaded.desktopMessageTimeline);
-  const runtimeTimeline = hydrateTimelineSnapshotFromPersistence(input.loaded.desktopMessageTimeline);
+  const runtimeTimeline = hydrateTimelineSnapshotFromPersistence(
+    input.loaded.desktopMessageTimeline,
+  );
   const messages = timelinePersistedSnapshotToMessages(input.loaded.desktopMessageTimeline);
-  const storedActivePlanPath = typeof input.loaded.activePlanPath === 'string'
-    ? input.loaded.activePlanPath.trim()
-    : '';
-  const activePlanPath = storedActivePlanPath.length > 0
-    ? storedActivePlanPath
-    : extractActivePlanPathFromLlmHistory(input.loaded.llmHistory);
+  const storedActivePlanPath =
+    typeof input.loaded.activePlanPath === "string" ? input.loaded.activePlanPath.trim() : "";
+  const activePlanPath =
+    storedActivePlanPath.length > 0
+      ? storedActivePlanPath
+      : extractActivePlanPathFromLlmHistory(input.loaded.llmHistory);
   return {
     messages,
     desktopMessageTimeline: runtimeTimeline,
     activeSession: {
       filePath: path.resolve(input.filePath),
       displayName: input.loaded.sessionDisplayName ?? deriveDisplayNameFromMessages(messages),
-      kind: 'stored',
+      kind: "stored",
     },
     archiveHistory: cloneArchiveHistory(input.loaded.llmHistory),
     archiveSubagentSessions: cloneSubagentSessions(input.loaded.subagentSessions ?? []),
@@ -213,9 +215,9 @@ export function restoreStoredSessionState(input: {
       return activeModel ? { activeModel } : {};
     })(),
     ...(activePlanPath ? { activePlanPath } : {}),
-    ...(input.loaded.sessionTitleSource === 'seed'
-      || input.loaded.sessionTitleSource === 'llm'
-      || input.loaded.sessionTitleSource === 'manual'
+    ...(input.loaded.sessionTitleSource === "seed" ||
+    input.loaded.sessionTitleSource === "llm" ||
+    input.loaded.sessionTitleSource === "manual"
       ? { sessionTitleSource: input.loaded.sessionTitleSource }
       : {}),
     ...(input.loaded.contextUsage ? { contextUsage: { ...input.loaded.contextUsage } } : {}),
@@ -233,8 +235,8 @@ export function restoreStoredSessionState(input: {
 }
 
 export function buildStoredDesktopSession(input: {
-  llmHistory: ChatArchive['llmHistory'];
-  subagentSessions?: ChatArchive['subagentSessions'];
+  llmHistory: ChatArchive["llmHistory"];
+  subagentSessions?: ChatArchive["subagentSessions"];
   savedAtUnixMs?: number;
   sessionDisplayName: string;
   sessionTitleSource?: SessionTitleSource;
@@ -252,7 +254,9 @@ export function buildStoredDesktopSession(input: {
   automationId?: string;
   automationRunId?: string;
 }): StoredDesktopSession {
-  const desktopMessageTimeline = normalizeTimelineSnapshotForPersistence(input.desktopMessageTimeline);
+  const desktopMessageTimeline = normalizeTimelineSnapshotForPersistence(
+    input.desktopMessageTimeline,
+  );
   validateTimelineSnapshotV2(desktopMessageTimeline);
   return {
     chatSchemaVersion: CHAT_SCHEMA_VERSION,
@@ -272,7 +276,9 @@ export function buildStoredDesktopSession(input: {
     ...(input.activePlanPath ? { activePlanPath: input.activePlanPath } : {}),
     rewind: input.rewind,
     ...(input.contextUsage ? { contextUsage: { ...input.contextUsage } } : {}),
-    ...(input.subagentDesktopTimelines ? { subagentDesktopTimelines: input.subagentDesktopTimelines } : {}),
+    ...(input.subagentDesktopTimelines
+      ? { subagentDesktopTimelines: input.subagentDesktopTimelines }
+      : {}),
     ...(input.queuedUserTurns?.length
       ? { queuedUserTurns: cloneQueuedUserTurns(input.queuedUserTurns) }
       : {}),
@@ -325,13 +331,13 @@ export function sanitizeConversationMessagesForPersistence(
 /** 当磁盘 llmHistory 为空但 desktop 消息已有往返时，供 runtime 恢复的最小 llm 历史。 */
 export function buildLlmHistoryFallbackFromDesktopMessages(
   messages: ConversationMessageSnapshot[],
-): ChatArchive['llmHistory'] {
+): ChatArchive["llmHistory"] {
   const projectable = archiveProjectableConversationMessages(messages);
   const fallback = projectable
     .filter(
       (message) =>
-        (message.role === 'user' || message.role === 'assistant') &&
-        !(message.role === 'assistant' && isManualCompactionUiStatusText(message.content)),
+        (message.role === "user" || message.role === "assistant") &&
+        !(message.role === "assistant" && isManualCompactionUiStatusText(message.content)),
     )
     .map((message) => ({
       role: message.role,
@@ -344,7 +350,7 @@ export function buildLlmHistoryFallbackFromDesktopMessages(
 
 export function buildArchiveMessagesFromConversation(
   messages: ConversationMessageSnapshot[],
-): ChatArchive['messages'] {
+): ChatArchive["messages"] {
   return archiveProjectableConversationMessages(messages).map((message) => ({
     role: message.role,
     content: message.content,
@@ -353,24 +359,26 @@ export function buildArchiveMessagesFromConversation(
 
 export function buildArchiveAssistantAuxFromConversation(
   messages: ConversationMessageSnapshot[],
-): ChatArchive['assistantAux'] {
+): ChatArchive["assistantAux"] {
   return archiveProjectableConversationMessages(messages).flatMap((message, index) => {
     if (!message.aux) {
       return [];
     }
-    return [{
-      messageIndex: index,
-      ...(message.aux.thinking ? { thinking: message.aux.thinking } : {}),
-      ...(message.aux.compaction ? { compaction: message.aux.compaction } : {}),
-      ...(message.aux.finishTaskNotice ? { finishTaskNotice: message.aux.finishTaskNotice } : {}),
-    }];
+    return [
+      {
+        messageIndex: index,
+        ...(message.aux.thinking ? { thinking: message.aux.thinking } : {}),
+        ...(message.aux.compaction ? { compaction: message.aux.compaction } : {}),
+        ...(message.aux.finishTaskNotice ? { finishTaskNotice: message.aux.finishTaskNotice } : {}),
+      },
+    ];
   });
 }
 
 /** Runtime archive projection from a persisted v2 timeline snapshot. */
 export function buildChatArchiveFromTimeline(
   timeline: DesktopTimelineTurnSnapshot[],
-): Pick<ChatArchive, 'messages' | 'assistantAux'> {
+): Pick<ChatArchive, "messages" | "assistantAux"> {
   const messages = timelineRuntimeSnapshotToMessages(timeline);
   return {
     messages: buildArchiveMessagesFromConversation(messages),
@@ -391,16 +399,16 @@ export function restoreMessagesFromArchive(
 export function deriveDisplayNameFromSeed(seed: string): string {
   const trimmed = seed.trim();
   if (!trimmed) {
-    return 'New conversation';
+    return "New conversation";
   }
   return trimmed.length > 28 ? `${trimmed.slice(0, 28)}…` : trimmed;
 }
 
 export function deriveDisplayNameFromMessages(messages: ConversationMessageSnapshot[]): string {
   const firstUser = messages.find(
-    (message) => message.role === 'user' && message.content.trim().length > 0,
+    (message) => message.role === "user" && message.content.trim().length > 0,
   );
-  return deriveDisplayNameFromSeed(firstUser?.content ?? 'New conversation');
+  return deriveDisplayNameFromSeed(firstUser?.content ?? "New conversation");
 }
 
 function cloneConversationMessages(
@@ -456,12 +464,12 @@ function archiveProjectableConversationMessages(
 }
 
 function cloneSubagentSessions(
-  sessions: NonNullable<ChatArchive['subagentSessions']>,
-): NonNullable<ChatArchive['subagentSessions']> {
+  sessions: NonNullable<ChatArchive["subagentSessions"]>,
+): NonNullable<ChatArchive["subagentSessions"]> {
   return cloneArchiveSubagentSessions(sessions);
 }
 
-type SessionListActivity = Pick<SessionListItem, 'isBusy' | 'isBlocked'>;
+type SessionListActivity = Pick<SessionListItem, "isBusy" | "isBlocked">;
 
 /** Map in-memory bundle runtime to session list activity flags. */
 export function sessionListActivityFromBundle(bundle?: SessionBundle): SessionListActivity {

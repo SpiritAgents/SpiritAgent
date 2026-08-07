@@ -9,14 +9,14 @@ import {
   type SpiritAgentMode,
   type ToolCallRequest,
   normalizeSpiritAgentMode,
-} from './ports.js';
-import type { ToolAgentMcpToolCatalogSnapshot } from './mcp/types.js';
+} from "./ports.js";
+import type { ToolAgentMcpToolCatalogSnapshot } from "./mcp/types.js";
 import {
   findEarliestContextBlockIndex,
   includesLlmContextBlock,
   LLM_CONTEXT_TAGS,
   wrapLlmContextBlock,
-} from './llm-context-block.js';
+} from "./llm-context-block.js";
 
 const TOOL_OUTPUT_RETRY_MAX_CHARS = 12_000;
 const TOOL_TRUNCATION_HEAD_RATIO_NUM = 2;
@@ -40,14 +40,14 @@ export type ToolAgentAttributionFlags = {
 };
 
 export const SESSION_TRANSCRIPT_READ_FILE_GUIDANCE =
-  'Important details may be recovered by reading transcript.json and optional subagents/*.json under this directory with read_file.';
+  "Important details may be recovered by reading transcript.json and optional subagents/*.json under this directory with read_file.";
 
 export const TOOL_OUTPUT_ARCHIVE_READ_FILE_GUIDANCE =
-  'Use read_file on that path only when you need omitted details.';
+  "Use read_file on that path only when you need omitted details.";
 
-export const TOOL_OUTPUT_TRUNCATION_LABEL = '[tool output truncated for context retry]';
+export const TOOL_OUTPUT_TRUNCATION_LABEL = "[tool output truncated for context retry]";
 
-const SESSION_TRANSCRIPT_EXAMPLE_DIR_PATH = '/path/to/transcripts/session-1234567890';
+const SESSION_TRANSCRIPT_EXAMPLE_DIR_PATH = "/path/to/transcripts/session-1234567890";
 
 const COMPACT_HISTORY_OUTPUT_TEMPLATE_WITHOUT_TRANSCRIPT = `[Session Overview]
 <Summarize the current task and overall progress in 1–2 sentences>
@@ -84,32 +84,32 @@ ${COMPACT_HISTORY_TRANSCRIPT_OUTPUT_SECTION}`;
 const SESSION_TRANSCRIPT_HARD_REQUIREMENT = `6. The [Transcript] section must contain exactly three lines: the section title, then the transcript directory absolute path alone on the next line, then this exact guidance sentence on the following line: ${SESSION_TRANSCRIPT_READ_FILE_GUIDANCE} Do not output only the path.`;
 
 export const COMPACT_HISTORY_TRIGGER_USER_PROMPT =
-  'Output the compression summary now. Follow the system message template exactly; do not call tools or ask questions.';
+  "Output the compression summary now. Follow the system message template exactly; do not call tools or ask questions.";
 
 function buildCompactHistorySystemPromptCore(includeTranscriptSection: boolean): string {
   const hardRequirements = [
-    '1. Output must strictly follow the section titles, order, and hierarchy in the output template; do not add, remove, or rename sections.',
-    '2. The [User Messages] section must include every user message from the conversation above: one message per line, in order of appearance, preserving original wording; do not omit, merge, paraphrase, or rewrite. You may append [images attached] / [videos attached] annotations only when a message is extremely long.',
-    '3. For sections other than [User Messages], summarize in concise bullet points, preserving decision rationale and verifiable details; avoid vague repetition.',
-    '4. Omit small talk, thanks, repeated explanations, and low-information back-and-forth confirmations.',
-    '5. Output only the summary body; do not wrap it in markdown code fences; do not add explanations, preambles, or closings.',
+    "1. Output must strictly follow the section titles, order, and hierarchy in the output template; do not add, remove, or rename sections.",
+    "2. The [User Messages] section must include every user message from the conversation above: one message per line, in order of appearance, preserving original wording; do not omit, merge, paraphrase, or rewrite. You may append [images attached] / [videos attached] annotations only when a message is extremely long.",
+    "3. For sections other than [User Messages], summarize in concise bullet points, preserving decision rationale and verifiable details; avoid vague repetition.",
+    "4. Omit small talk, thanks, repeated explanations, and low-information back-and-forth confirmations.",
+    "5. Output only the summary body; do not wrap it in markdown code fences; do not add explanations, preambles, or closings.",
     ...(includeTranscriptSection ? [SESSION_TRANSCRIPT_HARD_REQUIREMENT] : []),
   ];
 
   return [
-    'Compress the conversation in the messages that follow into a reusable system summary for later turns.',
-    '',
-    'Hard requirements:',
+    "Compress the conversation in the messages that follow into a reusable system summary for later turns.",
+    "",
+    "Hard requirements:",
     ...hardRequirements,
-    '',
-    'When summarizing, preserve: user goals, key constraints, verified conclusions, failed attempts, and open items.',
-    '',
-    'Output template:',
-    '',
+    "",
+    "When summarizing, preserve: user goals, key constraints, verified conclusions, failed attempts, and open items.",
+    "",
+    "Output template:",
+    "",
     includeTranscriptSection
       ? COMPACT_HISTORY_OUTPUT_TEMPLATE
       : COMPACT_HISTORY_OUTPUT_TEMPLATE_WITHOUT_TRANSCRIPT,
-  ].join('\n');
+  ].join("\n");
 }
 
 export function buildCompactHistorySystemPrompt(transcriptDirPath?: string): string {
@@ -120,15 +120,15 @@ export function buildCompactHistorySystemPrompt(transcriptDirPath?: string): str
 
   return [
     buildCompactHistorySystemPromptCore(true),
-    '',
-    'Example [Transcript] section shape (use the real transcript directory path from below, not this placeholder path):',
-    '',
-    '[Transcript]',
+    "",
+    "Example [Transcript] section shape (use the real transcript directory path from below, not this placeholder path):",
+    "",
+    "[Transcript]",
     SESSION_TRANSCRIPT_EXAMPLE_DIR_PATH,
     SESSION_TRANSCRIPT_READ_FILE_GUIDANCE,
-    '',
+    "",
     `Transcript directory path for this compression (use this exact path on the transcript line): ${normalizedPath}`,
-  ].join('\n');
+  ].join("\n");
 }
 
 export const COMPACT_HISTORY_SYSTEM_PROMPT = buildCompactHistorySystemPrompt();
@@ -164,14 +164,14 @@ export function buildCompactHistoryPromptMessages(
 ): LlmMessage[] {
   return [
     {
-      role: 'system',
+      role: "system",
       content: createLlmMessageContentFromText(
         buildCompactHistorySystemPrompt(options.transcriptDirPath),
       ),
     },
     ...cloneLlmHistoryMessages(history),
     {
-      role: 'user',
+      role: "user",
       content: createLlmMessageContentFromText(COMPACT_HISTORY_TRIGGER_USER_PROMPT),
     },
   ];
@@ -179,7 +179,7 @@ export function buildCompactHistoryPromptMessages(
 
 export interface ToolAgentEnabledRule {
   id: string;
-  scope: 'workspace' | 'user';
+  scope: "workspace" | "user";
   title: string;
   path: string;
   content: string;
@@ -187,7 +187,7 @@ export interface ToolAgentEnabledRule {
 
 export interface ToolAgentEnabledSkillCatalogEntry {
   id: string;
-  scope: 'workspace' | 'user';
+  scope: "workspace" | "user";
   name: string;
   description: string;
   path: string;
@@ -197,7 +197,7 @@ export type {
   ToolAgentMcpToolCatalogServerEntry,
   ToolAgentMcpToolCatalogSnapshot,
   ToolAgentMcpToolCatalogToolEntry,
-} from './mcp/types.js';
+} from "./mcp/types.js";
 
 export interface ToolAgentActiveSkillResourceEntry {
   kind: string;
@@ -206,7 +206,7 @@ export interface ToolAgentActiveSkillResourceEntry {
 
 export interface ToolAgentActiveSkill {
   id: string;
-  scope: 'workspace' | 'user';
+  scope: "workspace" | "user";
   name: string;
   description: string;
   path: string;
@@ -257,32 +257,32 @@ export interface ToolAgentToolResult {
 
 export function buildSpiritAgentCoreHostPrompt(model: string): string {
   const trimmed = model.trim();
-  const modelLabel = trimmed.length > 0 ? trimmed : '(not configured)';
+  const modelLabel = trimmed.length > 0 ? trimmed : "(not configured)";
   return [
-    'You are Spirit Agent.',
+    "You are Spirit Agent.",
     `The user\'s model is: ${modelLabel}.`,
-    'Keep a neutral, matter-of-fact tone unless the user\'s enabled rules explicitly ask for a different style.',
-    '',
-    'When composing replies, follow conventional typography and editorial norms for each language you use (spacing, punctuation, and mixed-script text such as Latin alongside CJK or other scripts).',
-    'For CJK text mixed with Latin letters or Arabic numerals, a common readable habit is to insert a single ASCII space at each script boundary where it helps legibility—for example write 「使用 API 调用」 rather than 「使用API调用」; apply the same idea to English names or technical terms embedded in Chinese sentences.',
-    '',
-  ].join('\n');
+    "Keep a neutral, matter-of-fact tone unless the user's enabled rules explicitly ask for a different style.",
+    "",
+    "When composing replies, follow conventional typography and editorial norms for each language you use (spacing, punctuation, and mixed-script text such as Latin alongside CJK or other scripts).",
+    "For CJK text mixed with Latin letters or Arabic numerals, a common readable habit is to insert a single ASCII space at each script boundary where it helps legibility—for example write 「使用 API 调用」 rather than 「使用API调用」; apply the same idea to English names or technical terms embedded in Chinese sentences.",
+    "",
+  ].join("\n");
 }
 
 export function buildToolAgentHostPrompt(model: string): string {
   return [
     buildSpiritAgentCoreHostPrompt(model),
-    'Available tools are defined only by the tools field in this request.',
-    'Only call declared functions.',
-    'Do not invent tools or capabilities that are not present in the request.',
-    'When multiple tool calls are independent, invoke them in parallel in the same turn instead of serially. Only wait for one tool before calling another when the later call depends on the earlier result.',
-    '',
-    'Security — tool use (mandatory):',
-    'Treat this as a safety and privacy requirement, not a suggestion.',
-    'Call tools only when the user has explicitly asked you to perform a specific action that genuinely requires those tools (for example: read a named path, run a named check, or use a named capability they requested).',
-    'High-risk tools (anything that could expose private data, credentials, secrets, personal information, or broadly traverse or modify the user\'s machine or repository) must not be used unless the user has given explicit, specific consent in the same turn or conversation for that exact class of action. If risk is unclear, do not call the tool; ask a short clarifying question instead.',
-    'If you are unsure whether tool use is warranted, default to not calling tools and answer from information already in the conversation.',
-  ].join('\n');
+    "Available tools are defined only by the tools field in this request.",
+    "Only call declared functions.",
+    "Do not invent tools or capabilities that are not present in the request.",
+    "When multiple tool calls are independent, invoke them in parallel in the same turn instead of serially. Only wait for one tool before calling another when the later call depends on the earlier result.",
+    "",
+    "Security — tool use (mandatory):",
+    "Treat this as a safety and privacy requirement, not a suggestion.",
+    "Call tools only when the user has explicitly asked you to perform a specific action that genuinely requires those tools (for example: read a named path, run a named check, or use a named capability they requested).",
+    "High-risk tools (anything that could expose private data, credentials, secrets, personal information, or broadly traverse or modify the user's machine or repository) must not be used unless the user has given explicit, specific consent in the same turn or conversation for that exact class of action. If risk is unclear, do not call the tool; ask a short clarifying question instead.",
+    "If you are unsure whether tool use is warranted, default to not calling tools and answer from information already in the conversation.",
+  ].join("\n");
 }
 
 export function buildToolAgentSystemMessage(
@@ -290,9 +290,11 @@ export function buildToolAgentSystemMessage(
   ...sections: Array<string | undefined>
 ): string {
   return [buildToolAgentHostPrompt(model), ...sections]
-    .filter((section): section is string => typeof section === 'string' && section.trim().length > 0)
+    .filter(
+      (section): section is string => typeof section === "string" && section.trim().length > 0,
+    )
     .map((section) => section.trim())
-    .join('\n\n');
+    .join("\n\n");
 }
 
 export function buildToolAgentMessages(input: {
@@ -311,7 +313,9 @@ export function buildToolAgentMessages(input: {
   attribution?: ToolAgentAttributionFlags;
 }): JsonValue[] {
   const rulesSystemMessage = buildRulesSystemMessage(input.enabledRules ?? []);
-  const skillsCatalogSystemMessage = buildSkillsCatalogSystemMessage(input.enabledSkillCatalog ?? []);
+  const skillsCatalogSystemMessage = buildSkillsCatalogSystemMessage(
+    input.enabledSkillCatalog ?? [],
+  );
   const mcpCatalogSystemMessage = buildMcpCatalogSystemMessage(input.mcpToolCatalog);
   const agentModeSystemMessage = buildAgentModeSystemMessage(input.planMetadata);
   const loopModeSystemMessage = buildLoopModeSystemMessage(input.loopEnabled);
@@ -322,7 +326,7 @@ export function buildToolAgentMessages(input: {
 
   return [
     {
-      role: 'system',
+      role: "system",
       content: buildToolAgentSystemMessage(
         input.model,
         rulesSystemMessage,
@@ -342,15 +346,12 @@ export function buildToolAgentMessages(input: {
   ];
 }
 
-export function startToolAgentState(
-  messages: JsonValue[],
-  userInput: string,
-): ToolAgentState {
+export function startToolAgentState(messages: JsonValue[], userInput: string): ToolAgentState {
   const nextMessages = messages.map((message) => cloneJsonValue(message));
   const lastRole = nextMessages.at(-1);
-  const needAppendUser = !isJsonObject(lastRole) || lastRole.role !== 'user';
+  const needAppendUser = !isJsonObject(lastRole) || lastRole.role !== "user";
   if (needAppendUser) {
-    nextMessages.push({ role: 'user', content: userInput });
+    nextMessages.push({ role: "user", content: userInput });
   }
 
   return {
@@ -381,7 +382,7 @@ export function appendToolResultMessages(
     messages: [
       ...state.messages.map((message) => cloneJsonValue(message)),
       ...results.map((result) => ({
-        role: 'tool',
+        role: "tool",
         tool_call_id: result.toolCallId,
         content: result.content,
         ...(result.providerState !== undefined
@@ -401,25 +402,23 @@ export function appendToolResultMessage(
   return appendToolResultMessages(state, [{ toolCallId, content }]);
 }
 
-export function appendUserMessage(
-  state: ToolAgentState,
-  content: string,
-): ToolAgentState {
+export function appendUserMessage(state: ToolAgentState, content: string): ToolAgentState {
   return {
-    messages: [...state.messages.map((message) => cloneJsonValue(message)), { role: 'user', content }],
+    messages: [
+      ...state.messages.map((message) => cloneJsonValue(message)),
+      { role: "user", content },
+    ],
     steps: state.steps,
   };
 }
 
-export function extractLastAssistantText(
-  state: ToolAgentState,
-): string | undefined {
+export function extractLastAssistantText(state: ToolAgentState): string | undefined {
   for (let index = state.messages.length - 1; index >= 0; index -= 1) {
     const message = state.messages[index];
-    if (!isJsonObject(message) || message.role !== 'assistant') {
+    if (!isJsonObject(message) || message.role !== "assistant") {
       continue;
     }
-    if (typeof message.content === 'string' && message.content.trim()) {
+    if (typeof message.content === "string" && message.content.trim()) {
       return message.content;
     }
 
@@ -446,7 +445,7 @@ export function assistantToolCallMessageFromState(
 
   for (let index = state.messages.length - 1; index >= 0; index -= 1) {
     const message = state.messages[index];
-    if (!isJsonObject(message) || message.role !== 'assistant') {
+    if (!isJsonObject(message) || message.role !== "assistant") {
       continue;
     }
 
@@ -457,9 +456,9 @@ export function assistantToolCallMessageFromState(
 
     const providerState = extractAssistantProviderState(message);
     return {
-      role: 'assistant',
+      role: "assistant",
       content: createLlmMessageContentFromText(
-        typeof message.content === 'string' ? message.content : '',
+        typeof message.content === "string" ? message.content : "",
       ),
       toolCalls,
       ...(providerState !== undefined ? { providerState } : {}),
@@ -475,30 +474,31 @@ export function finalAssistantHistoryMessageFromState(
 ): LlmMessage {
   for (let index = state.messages.length - 1; index >= 0; index -= 1) {
     const message = state.messages[index];
-    if (!isJsonObject(message) || message.role !== 'assistant') {
+    if (!isJsonObject(message) || message.role !== "assistant") {
       continue;
     }
 
     const providerState = extractAssistantProviderState(message);
     return {
-      role: 'assistant',
+      role: "assistant",
       content: createLlmMessageContentFromText(assistantText),
       ...(providerState !== undefined ? { providerState } : {}),
     };
   }
 
   return {
-    role: 'assistant',
+    role: "assistant",
     content: createLlmMessageContentFromText(assistantText),
   };
 }
 
-export function truncateToolAgentStateForContextRetry(
-  state: ToolAgentState,
-): { state: ToolAgentState; changed: boolean } {
+export function truncateToolAgentStateForContextRetry(state: ToolAgentState): {
+  state: ToolAgentState;
+  changed: boolean;
+} {
   let changed = false;
   const messages = state.messages.map((message) => {
-    if (!isJsonObject(message) || typeof message.content !== 'string') {
+    if (!isJsonObject(message) || typeof message.content !== "string") {
       return cloneJsonValue(message);
     }
 
@@ -523,13 +523,14 @@ export function truncateToolAgentStateForContextRetry(
   };
 }
 
-export function truncateHistoryForCompaction(
-  history: LlmMessage[],
-): { history: LlmMessage[]; changed: boolean } {
+export function truncateHistoryForCompaction(history: LlmMessage[]): {
+  history: LlmMessage[];
+  changed: boolean;
+} {
   let changed = false;
   const nextHistory = history.map((message) => {
     const contentText = llmMessageTextContent(message.content);
-    if (message.role !== 'tool') {
+    if (message.role !== "tool") {
       return {
         role: message.role,
         content: cloneLlmMessageContent(message.content),
@@ -593,17 +594,15 @@ export function truncateHistoryForCompaction(
   };
 }
 
-export function buildRulesSystemMessage(
-  enabledRules: ToolAgentEnabledRule[],
-): string | undefined {
+export function buildRulesSystemMessage(enabledRules: ToolAgentEnabledRule[]): string | undefined {
   if (enabledRules.length === 0) {
     return undefined;
   }
 
   const lines = [
-    'Apply the following enabled rules as additive constraints from their source files.',
-    'These rules do not replace the main system prompt; they extend it.',
-    '',
+    "Apply the following enabled rules as additive constraints from their source files.",
+    "These rules do not replace the main system prompt; they extend it.",
+    "",
   ];
 
   for (const rule of enabledRules) {
@@ -611,11 +610,11 @@ export function buildRulesSystemMessage(
       `<rule id="${escapeRuleAttribute(rule.id)}" scope="${escapeRuleAttribute(rule.scope)}" title="${escapeRuleAttribute(rule.title)}" path="${escapeRuleAttribute(rule.path)}">`,
     );
     lines.push(rule.content.trimEnd());
-    lines.push('</rule>');
-    lines.push('');
+    lines.push("</rule>");
+    lines.push("");
   }
 
-  return wrapLlmContextBlock(LLM_CONTEXT_TAGS.rules, lines.join('\n'));
+  return wrapLlmContextBlock(LLM_CONTEXT_TAGS.rules, lines.join("\n"));
 }
 
 export function buildSkillsCatalogSystemMessage(
@@ -626,10 +625,10 @@ export function buildSkillsCatalogSystemMessage(
   }
 
   const lines = [
-    'The host exposes the following enabled skills as metadata only.',
-    'Do not assume a skill\'s full instructions unless the user message includes an <active_skill> block for it.',
-    'If a listed skill seems relevant, you may read it proactively or ask the user to activate it explicitly with its top-level slash command, e.g. /llm-debug.',
-    '',
+    "The host exposes the following enabled skills as metadata only.",
+    "Do not assume a skill's full instructions unless the user message includes an <active_skill> block for it.",
+    "If a listed skill seems relevant, you may read it proactively or ask the user to activate it explicitly with its top-level slash command, e.g. /llm-debug.",
+    "",
   ];
 
   for (const skill of enabledSkillCatalog) {
@@ -637,11 +636,11 @@ export function buildSkillsCatalogSystemMessage(
       `<skill id="${escapeRuleAttribute(skill.id)}" scope="${escapeRuleAttribute(skill.scope)}" name="${escapeRuleAttribute(skill.name)}" path="${escapeRuleAttribute(skill.path)}">`,
     );
     lines.push(skill.description.trimEnd());
-    lines.push('</skill>');
-    lines.push('');
+    lines.push("</skill>");
+    lines.push("");
   }
 
-  return wrapLlmContextBlock(LLM_CONTEXT_TAGS.skills_catalog, lines.join('\n'));
+  return wrapLlmContextBlock(LLM_CONTEXT_TAGS.skills_catalog, lines.join("\n"));
 }
 
 export function buildMcpCatalogSystemMessage(
@@ -662,75 +661,73 @@ export function buildMcpCatalogSystemMessage(
   if (hasTools) {
     if (mcpToolCount > 0 && builtInToolCount > 0) {
       lines.push(
-        'The host lists enabled MCP and built-in tools as metadata only.',
-        'Use tool_describe to fetch a tool input schema before tool_call.',
-        '',
+        "The host lists enabled MCP and built-in tools as metadata only.",
+        "Use tool_describe to fetch a tool input schema before tool_call.",
+        "",
       );
     } else if (builtInToolCount > 0) {
       lines.push(
-        'The host lists built-in tools as metadata only.',
-        'Use tool_describe to fetch a tool input schema before tool_call.',
-        '',
+        "The host lists built-in tools as metadata only.",
+        "Use tool_describe to fetch a tool input schema before tool_call.",
+        "",
       );
     } else {
       lines.push(
-        'The host lists enabled MCP tools as metadata only.',
-        'Use tool_describe to fetch a tool input schema before tool_call.',
-        '',
+        "The host lists enabled MCP tools as metadata only.",
+        "Use tool_describe to fetch a tool input schema before tool_call.",
+        "",
       );
     }
   }
 
   if (hasResources) {
-    lines.push('Use fetch_mcp_resource to read resource contents when needed.', '');
+    lines.push("Use fetch_mcp_resource to read resource contents when needed.", "");
   }
 
   if (catalog.truncated) {
     lines.push(
       `<catalog truncated="true" totalTools="${catalog.totalToolCount}">`,
-      'Some tools were omitted from this catalog. Use tool_describe with the server and tool name to fetch schemas for tools not listed here.',
-      '</catalog>',
-      '',
+      "Some tools were omitted from this catalog. Use tool_describe with the server and tool name to fetch schemas for tools not listed here.",
+      "</catalog>",
+      "",
     );
   }
 
   if (catalog.resourcesTruncated) {
     lines.push(
       `<catalog resourcesTruncated="true" totalResources="${catalog.totalResourceCount}">`,
-      'Some resources were omitted from this catalog.',
-      '</catalog>',
-      '',
+      "Some resources were omitted from this catalog.",
+      "</catalog>",
+      "",
     );
   }
 
   for (const server of catalog.servers) {
     const lastErrorAttribute =
-      server.lastError === undefined
-        ? ''
-        : ` lastError="${escapeRuleAttribute(server.lastError)}"`;
+      server.lastError === undefined ? "" : ` lastError="${escapeRuleAttribute(server.lastError)}"`;
     lines.push(
       `<mcp-server name="${escapeRuleAttribute(server.name)}" displayName="${escapeRuleAttribute(server.displayName)}" state="${escapeRuleAttribute(server.state)}"${lastErrorAttribute}>`,
     );
     for (const tool of server.tools) {
       lines.push(`<tool name="${escapeRuleAttribute(tool.name)}">`);
       lines.push(tool.description.trimEnd());
-      lines.push('</tool>');
+      lines.push("</tool>");
     }
     for (const resource of server.resources) {
       const mimeTypesAttribute =
         resource.mimeTypes === undefined || resource.mimeTypes.length === 0
-          ? ''
-          : ` mimeTypes="${escapeRuleAttribute(resource.mimeTypes.join(','))}"`;
+          ? ""
+          : ` mimeTypes="${escapeRuleAttribute(resource.mimeTypes.join(","))}"`;
       lines.push(
         `<resource uri="${escapeRuleAttribute(resource.uri)}" name="${escapeRuleAttribute(resource.name)}"${mimeTypesAttribute}>`,
       );
       if (resource.description !== undefined && resource.description.trim()) {
         lines.push(resource.description.trimEnd());
       }
-      lines.push('</resource>');
+      lines.push("</resource>");
     }
-    lines.push('</mcp-server>');
-    lines.push('');
+    lines.push("</mcp-server>");
+    lines.push("");
   }
 
   for (const server of catalog.builtInServers ?? []) {
@@ -740,72 +737,70 @@ export function buildMcpCatalogSystemMessage(
     for (const tool of server.tools) {
       lines.push(`<tool name="${escapeRuleAttribute(tool.name)}">`);
       lines.push(tool.description.trimEnd());
-      lines.push('</tool>');
+      lines.push("</tool>");
     }
-    lines.push('</built-in-server>');
-    lines.push('');
+    lines.push("</built-in-server>");
+    lines.push("");
   }
 
-  return wrapLlmContextBlock(LLM_CONTEXT_TAGS.mcp_catalog, lines.join('\n'));
+  return wrapLlmContextBlock(LLM_CONTEXT_TAGS.mcp_catalog, lines.join("\n"));
 }
 
-export function buildAgentModeSystemMessage(
-  planMetadata?: ToolAgentPlanMetadata,
-): string {
+export function buildAgentModeSystemMessage(planMetadata?: ToolAgentPlanMetadata): string {
   const agentMode = normalizeSpiritAgentMode(planMetadata);
-  const lines = [`You are in ${agentModeLabel(agentMode)} mode.`, ''];
+  const lines = [`You are in ${agentModeLabel(agentMode)} mode.`, ""];
 
-  if (agentMode === 'plan') {
+  if (agentMode === "plan") {
     lines.push(
-      'If the goal or scope is unclear, use ask_questions to clarify before you draft a plan. Draft implementation plans when appropriate (for example with create_plan). When a plan is ready, tell the user to click Start implementing beside the Plan control, or switch to Agent mode and ask you to implement it.',
+      "If the goal or scope is unclear, use ask_questions to clarify before you draft a plan. Draft implementation plans when appropriate (for example with create_plan). When a plan is ready, tell the user to click Start implementing beside the Plan control, or switch to Agent mode and ask you to implement it.",
     );
-  } else if (agentMode === 'ask') {
+  } else if (agentMode === "ask") {
     lines.push(
-      'Help read-only. Only call tools that are available in this request. If the user wants edits or execution, ask them to switch to Agent mode.',
+      "Help read-only. Only call tools that are available in this request. If the user wants edits or execution, ask them to switch to Agent mode.",
     );
-  } else if (agentMode === 'debug') {
+  } else if (agentMode === "debug") {
     lines.push(
-      'When the user reports a bug, do not attempt a fix immediately. Instead:',
-      '',
-      '1. Propose hypotheses about the root cause, ranked by likelihood.',
-      '2. Insert structured log points in the relevant source code to test each hypothesis.',
-      '',
-      'Each log point should append one NDJSON line to a file under .spirit/logs/ at runtime:',
-      '- Directory: .spirit/logs/ under the workspace root',
-      '- Filename: kebab-case (e.g. auth-retry-failure.json)',
-      '- Format: NDJSON (one JSON object per line)',
-      '- Required fields:',
+      "When the user reports a bug, do not attempt a fix immediately. Instead:",
+      "",
+      "1. Propose hypotheses about the root cause, ranked by likelihood.",
+      "2. Insert structured log points in the relevant source code to test each hypothesis.",
+      "",
+      "Each log point should append one NDJSON line to a file under .spirit/logs/ at runtime:",
+      "- Directory: .spirit/logs/ under the workspace root",
+      "- Filename: kebab-case (e.g. auth-retry-failure.json)",
+      "- Format: NDJSON (one JSON object per line)",
+      "- Required fields:",
       '  - "hypotheses": array of hypotheses being tested',
       '  - "message": short header describing what this log captures',
       '  - "data": evidence source (stack traces, variable snapshots, timing, etc.)',
-      '',
+      "",
       'Wrap every debug log insertion in a collapsible region named "agent log"',
-      '(e.g. // #region agent log … // #endregion in JS/TS; use the language\'s',
-      'equivalent elsewhere). Remove entire regions after the bug is verified fixed.',
-      '',
+      "(e.g. // #region agent log … // #endregion in JS/TS; use the language's",
+      "equivalent elsewhere). Remove entire regions after the bug is verified fixed.",
+      "",
       '3. After inserting log points, tell the user the reproduction steps and ask them to reply "resolved" or "still reproducing".',
-      '   - If resolved: remove the log points and confirm.',
-      '   - If still reproducing: read the log files, analyze evidence, refine hypotheses, and continue.',
+      "   - If resolved: remove the log points and confirm.",
+      "   - If still reproducing: read the log files, analyze evidence, refine hypotheses, and continue.",
     );
   } else {
     lines.push(
-      'Handle the user\'s requests efficiently, professionally, and carefully—including analysis, edits, shell commands, and verification when appropriate.',
+      "Handle the user's requests efficiently, professionally, and carefully—including analysis, edits, shell commands, and verification when appropriate.",
     );
   }
 
-  return wrapLlmContextBlock(LLM_CONTEXT_TAGS.agent_mode, lines.join('\n'));
+  return wrapLlmContextBlock(LLM_CONTEXT_TAGS.agent_mode, lines.join("\n"));
 }
 
 function agentModeLabel(agentMode: SpiritAgentMode): string {
   switch (agentMode) {
-    case 'plan':
-      return 'Plan';
-    case 'ask':
-      return 'Ask';
-    case 'debug':
-      return 'Debug';
+    case "plan":
+      return "Plan";
+    case "ask":
+      return "Ask";
+    case "debug":
+      return "Debug";
     default:
-      return 'Agent';
+      return "Agent";
   }
 }
 
@@ -821,11 +816,11 @@ export function buildLoopModeSystemMessage(loopEnabled?: boolean): string | unde
   return wrapLlmContextBlock(
     LLM_CONTEXT_TAGS.loop_mode,
     [
-      'Loop mode is enabled.',
-      'Do not end the conversation until you are confident that the user\'s task is fully complete.',
-      'Ordinary assistant replies do not stop the loop; keep working, calling tools, and verifying results until the task is done.',
-      'Call `finish_task` only when no further work is needed.',
-    ].join('\n'),
+      "Loop mode is enabled.",
+      "Do not end the conversation until you are confident that the user's task is fully complete.",
+      "Ordinary assistant replies do not stop the loop; keep working, calling tools, and verifying results until the task is done.",
+      "Call `finish_task` only when no further work is needed.",
+    ].join("\n"),
   );
 }
 
@@ -845,15 +840,15 @@ export function buildAttributionSystemMessage(
   const lines: string[] = [];
   if (commitEnabled) {
     lines.push(
-      'When you create git commits, append this trailer at the end of the commit message body (after subject/body): Co-authored-by: Spirit Agent <agent@spirit.fast>. Do not change the user\'s primary author or signing identity.',
+      "When you create git commits, append this trailer at the end of the commit message body (after subject/body): Co-authored-by: Spirit Agent <agent@spirit.fast>. Do not change the user's primary author or signing identity.",
     );
   }
   if (prEnabled) {
     lines.push(
-      'When you create GitHub pull requests with gh pr create, append this line at the end of the PR body: Made with [Spirit Agent](https://spirit.fast)',
+      "When you create GitHub pull requests with gh pr create, append this line at the end of the PR body: Made with [Spirit Agent](https://spirit.fast)",
     );
   }
-  return wrapLlmContextBlock(LLM_CONTEXT_TAGS.attribution, lines.join('\n'));
+  return wrapLlmContextBlock(LLM_CONTEXT_TAGS.attribution, lines.join("\n"));
 }
 
 export function hasAttributionSystemMessage(content: string): boolean {
@@ -868,34 +863,34 @@ export function buildActiveSkillsBlockContent(
   }
 
   const lines = [
-    'The following skills were explicitly activated by the user.',
-    'Treat them as additive host-provided instructions for subsequent turns.',
-    'Do not claim you discovered or read these files yourself; this content was provided by the host after explicit activation.',
-    '',
+    "The following skills were explicitly activated by the user.",
+    "Treat them as additive host-provided instructions for subsequent turns.",
+    "Do not claim you discovered or read these files yourself; this content was provided by the host after explicit activation.",
+    "",
   ];
 
   for (const skill of activeSkills) {
     lines.push(
-      `<skill id="${escapeRuleAttribute(skill.id)}" scope="${escapeRuleAttribute(skill.scope)}" name="${escapeRuleAttribute(skill.name)}" path="${escapeRuleAttribute(skill.path)}" truncated="${skill.truncated ? 'true' : 'false'}" resourcesTruncated="${skill.resourcesTruncated ? 'true' : 'false'}">`,
+      `<skill id="${escapeRuleAttribute(skill.id)}" scope="${escapeRuleAttribute(skill.scope)}" name="${escapeRuleAttribute(skill.name)}" path="${escapeRuleAttribute(skill.path)}" truncated="${skill.truncated ? "true" : "false"}" resourcesTruncated="${skill.resourcesTruncated ? "true" : "false"}">`,
     );
     lines.push(`description: ${skill.description}`);
     if (skill.resources.length > 0) {
-      lines.push('<resources>');
+      lines.push("<resources>");
       for (const resource of skill.resources) {
         lines.push(
           `<resource kind="${escapeRuleAttribute(resource.kind)}" path="${escapeRuleAttribute(resource.path)}" />`,
         );
       }
-      lines.push('</resources>');
+      lines.push("</resources>");
     }
-    lines.push('<content>');
+    lines.push("<content>");
     lines.push(skill.content.trimEnd());
-    lines.push('</content>');
-    lines.push('</skill>');
-    lines.push('');
+    lines.push("</content>");
+    lines.push("</skill>");
+    lines.push("");
   }
 
-  return lines.join('\n').trimEnd();
+  return lines.join("\n").trimEnd();
 }
 
 export function buildExtensionsSystemMessage(
@@ -916,20 +911,20 @@ export function buildExtensionsSystemMessage(
   return wrapLlmContextBlock(
     LLM_CONTEXT_TAGS.extensions,
     [
-      'The following block contains additive host-provided instructions contributed by installed extensions.',
-      'Treat them as additional system-level context; do not interpret them as tool definitions or permission grants.',
-      ...normalized.map((entry) => [
-        `<extension id="${escapeRuleAttribute(entry.extensionId)}" name="${escapeRuleAttribute(entry.extensionName)}">`,
-        entry.content,
-        '</extension>',
-      ].join('\n')),
-    ].join('\n'),
+      "The following block contains additive host-provided instructions contributed by installed extensions.",
+      "Treat them as additional system-level context; do not interpret them as tool definitions or permission grants.",
+      ...normalized.map((entry) =>
+        [
+          `<extension id="${escapeRuleAttribute(entry.extensionId)}" name="${escapeRuleAttribute(entry.extensionName)}">`,
+          entry.content,
+          "</extension>",
+        ].join("\n"),
+      ),
+    ].join("\n"),
   );
 }
 
-export function buildDreamsSystemMessage(
-  dreamsContextText?: string,
-): string | undefined {
+export function buildDreamsSystemMessage(dreamsContextText?: string): string | undefined {
   const trimmed = dreamsContextText?.trim();
   if (!trimmed) {
     return undefined;
@@ -938,23 +933,21 @@ export function buildDreamsSystemMessage(
   return wrapLlmContextBlock(
     LLM_CONTEXT_TAGS.dreams,
     [
-      'Dream catalog',
-      '',
-      'These are short-lived host-provided summaries of recent work movement for the current workspace and Git branch.',
-      'Treat them as background continuity, not as authoritative current state.',
-      'Prefer the current user request, visible conversation, and tool results when they conflict with these summaries.',
-      'Only summary-level dream catalog entries are embedded here; full dream details are not included in this system message.',
-      'Use `dream_list` to refresh the current dream catalog and `dream_read` with a relevant dream id when you need more detail.',
-      'Do not assume details that are not present in the catalog or returned by the dream tools.',
-      '',
+      "Dream catalog",
+      "",
+      "These are short-lived host-provided summaries of recent work movement for the current workspace and Git branch.",
+      "Treat them as background continuity, not as authoritative current state.",
+      "Prefer the current user request, visible conversation, and tool results when they conflict with these summaries.",
+      "Only summary-level dream catalog entries are embedded here; full dream details are not included in this system message.",
+      "Use `dream_list` to refresh the current dream catalog and `dream_read` with a relevant dream id when you need more detail.",
+      "Do not assume details that are not present in the catalog or returned by the dream tools.",
+      "",
       trimmed,
-    ].join('\n'),
+    ].join("\n"),
   );
 }
 
-export function buildBasicInfoSystemMessage(
-  basicInfo?: ToolAgentBasicInfo,
-): string | undefined {
+export function buildBasicInfoSystemMessage(basicInfo?: ToolAgentBasicInfo): string | undefined {
   const workspaceRoot = basicInfo?.workspaceRoot?.trim();
   const terminal = basicInfo?.terminal?.trim();
   const gitBranch = basicInfo?.gitBranch?.trim();
@@ -967,21 +960,21 @@ export function buildBasicInfoSystemMessage(
     return undefined;
   }
 
-  const lines = ['Basic information', ''];
+  const lines = ["Basic information", ""];
   if (workspaceRoot) {
-    lines.push('Current workspace:', `- ${workspaceRoot}`, '');
+    lines.push("Current workspace:", `- ${workspaceRoot}`, "");
   }
   if (gitBranch) {
-    lines.push('Current Git branch:', `- ${gitBranch}`, '');
+    lines.push("Current Git branch:", `- ${gitBranch}`, "");
   }
   if (terminal) {
-    lines.push('Current terminal:', `- ${terminal}`, '');
+    lines.push("Current terminal:", `- ${terminal}`, "");
   }
   if (sessionTranscript) {
-    lines.push('Current session transcript:', `- ${sessionTranscript}`, '');
+    lines.push("Current session transcript:", `- ${sessionTranscript}`, "");
   }
   if (hasSystem) {
-    lines.push('Operating system:');
+    lines.push("Operating system:");
     if (systemName) {
       lines.push(`- Name: ${systemName}`);
     }
@@ -990,7 +983,7 @@ export function buildBasicInfoSystemMessage(
     }
   }
 
-  return wrapLlmContextBlock(LLM_CONTEXT_TAGS.basic_info, lines.join('\n'));
+  return wrapLlmContextBlock(LLM_CONTEXT_TAGS.basic_info, lines.join("\n"));
 }
 
 export function patchBasicInfoWorkspaceRootInMessages(
@@ -1004,7 +997,11 @@ export function patchBasicInfoWorkspaceRootInMessages(
 
   let changed = false;
   const next = messages.map((message) => {
-    if (!isJsonObject(message) || message.role !== 'system' || typeof message.content !== 'string') {
+    if (
+      !isJsonObject(message) ||
+      message.role !== "system" ||
+      typeof message.content !== "string"
+    ) {
       return message;
     }
     if (!includesLlmContextBlock(message.content, LLM_CONTEXT_TAGS.basic_info)) {
@@ -1062,10 +1059,10 @@ export function hasBasicInfoSystemMessage(content: string): boolean {
 
 export function findSpiritSystemMessageContent(messages: JsonValue[]): string | undefined {
   for (const message of messages) {
-    if (!isJsonObject(message) || message.role !== 'system') {
+    if (!isJsonObject(message) || message.role !== "system") {
       continue;
     }
-    if (typeof message.content === 'string') {
+    if (typeof message.content === "string") {
       const content = message.content;
       const sectionStart = findEarliestContextBlockIndex(content, SPIRIT_CONTEXT_BLOCK_TAGS);
       if (sectionStart >= 0) {
@@ -1078,7 +1075,7 @@ export function findSpiritSystemMessageContent(messages: JsonValue[]): string | 
 }
 
 export function isJsonObject(value: JsonValue | undefined): value is JsonObject {
-  return typeof value === 'object' && value !== null && !Array.isArray(value);
+  return typeof value === "object" && value !== null && !Array.isArray(value);
 }
 
 export function cloneJsonValue(value: JsonValue): JsonValue {
@@ -1095,10 +1092,7 @@ export function cloneJsonValue(value: JsonValue): JsonValue {
   );
 }
 
-export function findLastMatchingIndex<T>(
-  items: T[],
-  predicate: (item: T) => boolean,
-): number {
+export function findLastMatchingIndex<T>(items: T[], predicate: (item: T) => boolean): number {
   for (let index = items.length - 1; index >= 0; index -= 1) {
     const item = items[index];
     if (item !== undefined && predicate(item)) {
@@ -1115,12 +1109,12 @@ function extractStoredAssistantReasoningText(message: JsonObject): string | unde
     message.reasoningContent,
     message.reasoning,
     message.thinking,
-  ].filter((value): value is string => typeof value === 'string' && value.trim().length > 0);
+  ].filter((value): value is string => typeof value === "string" && value.trim().length > 0);
 
-  return pieces.length > 0 ? pieces.join('') : undefined;
+  return pieces.length > 0 ? pieces.join("") : undefined;
 }
 
-function extractAssistantToolCalls(message: JsonObject): LlmMessage['toolCalls'] | undefined {
+function extractAssistantToolCalls(message: JsonObject): LlmMessage["toolCalls"] | undefined {
   if (!Array.isArray(message.tool_calls)) {
     return undefined;
   }
@@ -1129,25 +1123,27 @@ function extractAssistantToolCalls(message: JsonObject): LlmMessage['toolCalls']
     if (!isJsonObject(entry) || !isJsonObject(entry.function)) {
       return [];
     }
-    if (typeof entry.id !== 'string' || typeof entry.function.name !== 'string') {
+    if (typeof entry.id !== "string" || typeof entry.function.name !== "string") {
       return [];
     }
 
-    return [{
-      id: entry.id,
-      name: entry.function.name,
-      argumentsJson:
-        typeof entry.function.arguments === 'string'
-          ? entry.function.arguments
-          : JSON.stringify(entry.function.arguments ?? {}),
-    }];
+    return [
+      {
+        id: entry.id,
+        name: entry.function.name,
+        argumentsJson:
+          typeof entry.function.arguments === "string"
+            ? entry.function.arguments
+            : JSON.stringify(entry.function.arguments ?? {}),
+      },
+    ];
   });
 
   return toolCalls.length > 0 ? toolCalls : undefined;
 }
 
 function assistantToolCallsMatchRequests(
-  toolCalls: NonNullable<LlmMessage['toolCalls']>,
+  toolCalls: NonNullable<LlmMessage["toolCalls"]>,
   calls: ToolCallRequest[],
 ): boolean {
   if (toolCalls.length !== calls.length) {
@@ -1165,15 +1161,16 @@ function extractAssistantProviderState(message: JsonObject): JsonObject | undefi
     return cloneLlmProviderState(message.providerState);
   }
 
-  const entries = Object.entries(message).filter(([key]) => (
-    key !== 'role'
-    && key !== 'content'
-    && key !== 'tool_calls'
-    && key !== 'toolCallId'
-    && key !== 'tool_call_id'
-    && key !== 'toolCalls'
-    && key !== 'providerState'
-  ));
+  const entries = Object.entries(message).filter(
+    ([key]) =>
+      key !== "role" &&
+      key !== "content" &&
+      key !== "tool_calls" &&
+      key !== "toolCallId" &&
+      key !== "tool_call_id" &&
+      key !== "toolCalls" &&
+      key !== "providerState",
+  );
 
   if (entries.length === 0) {
     return undefined;
@@ -1186,17 +1183,14 @@ function truncateMessageContentForRetry(
   role: JsonValue | undefined,
   content: string,
 ): string | undefined {
-  if (role === 'tool') {
+  if (role === "tool") {
     return buildContextRetryExcerpt(content);
   }
 
   return undefined;
 }
 
-export function buildContextRetryExcerpt(
-  text: string,
-  archivePath?: string,
-): string | undefined {
+export function buildContextRetryExcerpt(text: string, archivePath?: string): string | undefined {
   const chars = Array.from(text);
   if (chars.length <= TOOL_OUTPUT_RETRY_MAX_CHARS) {
     return undefined;
@@ -1206,40 +1200,42 @@ export function buildContextRetryExcerpt(
   const label = TOOL_OUTPUT_TRUNCATION_LABEL;
   const archiveHint = archivePath?.trim()
     ? `\nFull output archived at: ${archivePath.trim()}\n${TOOL_OUTPUT_ARCHIVE_READ_FILE_GUIDANCE}`
-    : '';
+    : "";
   const overhead = Array.from(label).length + Array.from(archiveHint).length + 160;
   const usable = Math.max(TOOL_OUTPUT_RETRY_MAX_CHARS - overhead, 256);
-  const headChars = Math.floor((usable * TOOL_TRUNCATION_HEAD_RATIO_NUM) / TOOL_TRUNCATION_HEAD_RATIO_DEN);
+  const headChars = Math.floor(
+    (usable * TOOL_TRUNCATION_HEAD_RATIO_NUM) / TOOL_TRUNCATION_HEAD_RATIO_DEN,
+  );
   const tailChars = Math.max(usable - headChars, 0);
   const head = takeFirstChars(text, headChars);
   const tail = takeLastChars(text, tailChars);
-  const omittedChars = Math.max(chars.length - Array.from(head).length - Array.from(tail).length, 0);
-  const omittedLines = Math.max(totalLines - head.split(/\r?\n/).length - tail.split(/\r?\n/).length, 0);
+  const omittedChars = Math.max(
+    chars.length - Array.from(head).length - Array.from(tail).length,
+    0,
+  );
+  const omittedLines = Math.max(
+    totalLines - head.split(/\r?\n/).length - tail.split(/\r?\n/).length,
+    0,
+  );
 
   const middle = `${label} omitted_chars=${omittedChars} omitted_lines≈${omittedLines}${archiveHint}`;
 
-  return [
-    head,
-    middle,
-    tail,
-  ]
-    .filter((part) => part.trim().length > 0)
-    .join('\n');
+  return [head, middle, tail].filter((part) => part.trim().length > 0).join("\n");
 }
 
 function takeFirstChars(text: string, count: number): string {
-  return Array.from(text).slice(0, count).join('');
+  return Array.from(text).slice(0, count).join("");
 }
 
 function takeLastChars(text: string, count: number): string {
   const chars = Array.from(text);
-  return chars.slice(Math.max(chars.length - count, 0)).join('');
+  return chars.slice(Math.max(chars.length - count, 0)).join("");
 }
 
 function escapeRuleAttribute(value: string): string {
   return value
-    .replaceAll('&', '&amp;')
-    .replaceAll('"', '&quot;')
-    .replaceAll('<', '&lt;')
-    .replaceAll('>', '&gt;');
+    .replaceAll("&", "&amp;")
+    .replaceAll('"', "&quot;")
+    .replaceAll("<", "&lt;")
+    .replaceAll(">", "&gt;");
 }

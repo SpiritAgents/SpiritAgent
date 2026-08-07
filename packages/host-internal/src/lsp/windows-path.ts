@@ -1,7 +1,7 @@
-const DEFAULT_WINDOWS_PATHEXT = ['.com', '.exe', '.cmd', '.bat'];
+const DEFAULT_WINDOWS_PATHEXT = [".com", ".exe", ".cmd", ".bat"];
 
 export function isWindowsPlatform(platform: NodeJS.Platform = process.platform): boolean {
-  return platform === 'win32';
+  return platform === "win32";
 }
 
 export function splitWindowsPathEntries(value: string | undefined): string[] {
@@ -10,15 +10,15 @@ export function splitWindowsPathEntries(value: string | undefined): string[] {
   }
 
   return value
-    .split(';')
+    .split(";")
     .map((entry) => entry.trim())
     .filter((entry) => entry.length > 0);
 }
 
 export function splitWindowsPathExtEntries(value: string | undefined): string[] {
-  const source = value ?? DEFAULT_WINDOWS_PATHEXT.join(';');
+  const source = value ?? DEFAULT_WINDOWS_PATHEXT.join(";");
   const entries = source
-    .split(';')
+    .split(";")
     .map((entry) => entry.trim().toLowerCase())
     .filter((entry) => entry.length > 0);
 
@@ -35,13 +35,13 @@ export function buildWindowsCommandCandidates(
     return [];
   }
 
-  const hasDirectorySeparator = trimmedCommand.includes('\\') || trimmedCommand.includes('/');
+  const hasDirectorySeparator = trimmedCommand.includes("\\") || trimmedCommand.includes("/");
   const hasExtension = /\.[^\\/\.]+$/.test(trimmedCommand);
   const basePaths = hasDirectorySeparator
     ? [trimmedCommand]
-    : pathEntries.map((entry) => `${entry.replace(/[\\/]+$/, '')}\\${trimmedCommand}`);
+    : pathEntries.map((entry) => `${entry.replace(/[\\/]+$/, "")}\\${trimmedCommand}`);
   const extensions = hasExtension
-    ? ['']
+    ? [""]
     : pathExtEntries.length > 0
       ? pathExtEntries
       : DEFAULT_WINDOWS_PATHEXT;

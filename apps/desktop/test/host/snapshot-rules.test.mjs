@@ -1,17 +1,17 @@
-import assert from 'node:assert/strict';
-import { test } from 'node:test';
+import assert from "node:assert/strict";
+import { test } from "node:test";
 
-import { buildDesktopSnapshot } from '../../dist-electron/src/host/snapshot.js';
+import { buildDesktopSnapshot } from "../../dist-electron/src/host/snapshot.js";
 
-test('buildDesktopSnapshot maps rulesList from metadata entries', () => {
+test("buildDesktopSnapshot maps rulesList from metadata entries", () => {
   const snapshot = buildDesktopSnapshot({
-    workspaceRoot: 'C:/workspace/demo',
+    workspaceRoot: "C:/workspace/demo",
     config: {
       models: [],
-      activeModel: '',
+      activeModel: "",
       recentWorkspaces: [],
       dreams: {},
-      networks: { llmHttpVersion: 'http2' },
+      networks: { llmHttpVersion: "http2" },
       webHost: { enabled: false },
     },
     git: { available: false },
@@ -23,25 +23,25 @@ test('buildDesktopSnapshot maps rulesList from metadata entries', () => {
         entries: [
           {
             source: {
-              id: 'rule-spirit',
-              scope: 'workspace',
-              rootKind: 'workspaceSpirit',
-              title: '工作区 Spirit 规则',
-              shortLabel: '.spirit/rule.md',
-              path: 'C:/workspace/demo/.spirit/rule.md',
+              id: "rule-spirit",
+              scope: "workspace",
+              rootKind: "workspaceSpirit",
+              title: "工作区 Spirit 规则",
+              shortLabel: ".spirit/rule.md",
+              path: "C:/workspace/demo/.spirit/rule.md",
             },
             exists: true,
             enabled: true,
-            preview: { excerpt: '# Rules\nhello', truncated: false },
+            preview: { excerpt: "# Rules\nhello", truncated: false },
           },
           {
             source: {
-              id: 'rule-agents',
-              scope: 'workspace',
-              rootKind: 'workspaceAgents',
-              title: '工作区 AGENTS 规则',
-              shortLabel: 'AGENTS.md',
-              path: 'C:/workspace/demo/AGENTS.md',
+              id: "rule-agents",
+              scope: "workspace",
+              rootKind: "workspaceAgents",
+              title: "工作区 AGENTS 规则",
+              shortLabel: "AGENTS.md",
+              path: "C:/workspace/demo/AGENTS.md",
             },
             exists: false,
             enabled: false,
@@ -55,16 +55,16 @@ test('buildDesktopSnapshot maps rulesList from metadata entries', () => {
         entries: [],
       },
       planMetadata: {
-        path: '',
+        path: "",
         exists: false,
-        agentMode: 'agent',
+        agentMode: "agent",
         planMode: false,
       },
     },
-    plan: { path: '', exists: false },
+    plan: { path: "", exists: false },
     extensionsList: [],
     extensionCss: [],
-    dreamCollectorStatus: { state: 'disabled' },
+    dreamCollectorStatus: { state: "disabled" },
     runtimeReady: true,
     modelKeyPresence: {},
     activeApiKeyConfigured: false,
@@ -77,12 +77,12 @@ test('buildDesktopSnapshot maps rulesList from metadata entries', () => {
       isBusy: false,
       isBlocked: false,
     },
-    composerSessionKey: 'test',
+    composerSessionKey: "test",
     automationsList: [],
   });
 
   assert.equal(snapshot.rulesList.length, 2);
-  assert.equal(snapshot.rulesList[0]?.rootKind, 'workspaceSpirit');
-  assert.equal(snapshot.rulesList[0]?.previewExcerpt, '# Rules\nhello');
+  assert.equal(snapshot.rulesList[0]?.rootKind, "workspaceSpirit");
+  assert.equal(snapshot.rulesList[0]?.previewExcerpt, "# Rules\nhello");
   assert.equal(snapshot.rulesList[1]?.exists, false);
 });

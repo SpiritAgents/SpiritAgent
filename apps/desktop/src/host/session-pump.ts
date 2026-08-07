@@ -1,5 +1,5 @@
-import type { SessionBundle } from './session-bundle.js';
-import { shouldAdvanceWorktreeBootstrap } from './worktree-bootstrap-orchestrator.js';
+import type { SessionBundle } from "./session-bundle.js";
+import { shouldAdvanceWorktreeBootstrap } from "./worktree-bootstrap-orchestrator.js";
 
 /** 泵 tick 间隔：决定流式事件消费与 UI 推送的最小节奏。 */
 export const SESSION_PUMP_INTERVAL_MS = 25;
@@ -20,8 +20,8 @@ export function sessionBundleNeedsPumpTick(bundle: SessionBundle): boolean {
 
 /** 环境变量 `SPIRIT_DESKTOP_PUMP_DEBUG`：设为 1/true/on 时输出泵的启停、tick 频率与推送频率统计。 */
 export function pumpDebugEnabled(): boolean {
-  const raw = process.env.SPIRIT_DESKTOP_PUMP_DEBUG?.trim().toLowerCase() ?? '';
-  return raw === '1' || raw === 'true' || raw === 'on' || raw === 'yes';
+  const raw = process.env.SPIRIT_DESKTOP_PUMP_DEBUG?.trim().toLowerCase() ?? "";
+  return raw === "1" || raw === "true" || raw === "on" || raw === "yes";
 }
 
 const PUMP_DEBUG_STATS_INTERVAL_MS = 5_000;
@@ -65,7 +65,7 @@ export class SessionPump {
     }
     this.running = true;
     if (pumpDebugEnabled()) {
-      console.log('[desktop-host][pump] start');
+      console.log("[desktop-host][pump] start");
       this.debugTickCount = 0;
       this.debugTickDurationMs = 0;
       this.debugWindowStartedAtMs = Date.now();
@@ -119,7 +119,7 @@ export class SessionPump {
     if (!this.options.hasPumpWork()) {
       this.running = false;
       if (pumpDebugEnabled()) {
-        console.log('[desktop-host][pump] idle, stop');
+        console.log("[desktop-host][pump] idle, stop");
       }
       return;
     }

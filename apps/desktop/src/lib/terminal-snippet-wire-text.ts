@@ -8,7 +8,10 @@ import {
 
 /** Wire-format terminal snippet block (shared by attachment + composer segment model). */
 export function terminalSnippetContextText(
-  attachment: Pick<TerminalSnippetAttachment, "terminalName" | "lineStart" | "lineEnd" | "selectedText">,
+  attachment: Pick<
+    TerminalSnippetAttachment,
+    "terminalName" | "lineStart" | "lineEnd" | "selectedText"
+  >,
 ): string {
   const name = attachment.terminalName.trim() || "Terminal";
   const lineSuffix = formatLineRange(attachment.lineStart, attachment.lineEnd);

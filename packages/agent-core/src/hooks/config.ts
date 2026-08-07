@@ -1,7 +1,7 @@
-import { realpathSync } from 'node:fs';
-import { isAbsolute, join, relative, resolve } from 'node:path';
+import { realpathSync } from "node:fs";
+import { isAbsolute, join, relative, resolve } from "node:path";
 
-import { HookConfigError } from './errors.js';
+import { HookConfigError } from "./errors.js";
 import {
   DEFAULT_HOOK_TIMEOUT_SECONDS,
   HOOK_CONFIG_VERSION,
@@ -11,11 +11,11 @@ import {
   type HookEventName,
   type HooksConfigFile,
   type ResolvedHookDefinition,
-} from './types.js';
+} from "./types.js";
 
 export { HOOKS_CONFIG_FILE_NAME };
 
-const SPIRIT = '.spirit';
+const SPIRIT = ".spirit";
 
 export function hooksUserConfigPath(dataDir: string): string {
   return join(dataDir, HOOKS_CONFIG_FILE_NAME);
@@ -26,11 +26,11 @@ export function hooksWorkspaceConfigPath(workspaceRoot: string): string {
 }
 
 export function hooksUserScriptsDir(dataDir: string): string {
-  return join(dataDir, 'hooks');
+  return join(dataDir, "hooks");
 }
 
 export function hooksWorkspaceScriptsDir(workspaceRoot: string): string {
-  return join(workspaceRoot, SPIRIT, 'hooks');
+  return join(workspaceRoot, SPIRIT, "hooks");
 }
 
 export function emptyHooksConfigFile(): HooksConfigFile {
@@ -38,7 +38,7 @@ export function emptyHooksConfigFile(): HooksConfigFile {
 }
 
 function isRecord(value: unknown): value is Record<string, unknown> {
-  return typeof value === 'object' && value !== null && !Array.isArray(value);
+  return typeof value === "object" && value !== null && !Array.isArray(value);
 }
 
 function parseHookDefinition(raw: unknown, label: string): HookDefinition {
@@ -46,7 +46,7 @@ function parseHookDefinition(raw: unknown, label: string): HookDefinition {
     throw new HookConfigError(`${label} must be an object.`);
   }
 
-  const command = typeof raw.command === 'string' ? raw.command.trim() : '';
+  const command = typeof raw.command === "string" ? raw.command.trim() : "";
   if (!command) {
     throw new HookConfigError(`${label}.command is required.`);
   }
@@ -54,21 +54,21 @@ function parseHookDefinition(raw: unknown, label: string): HookDefinition {
   const definition: HookDefinition = { command };
 
   if (raw.timeout !== undefined) {
-    if (typeof raw.timeout !== 'number' || !Number.isFinite(raw.timeout) || raw.timeout <= 0) {
+    if (typeof raw.timeout !== "number" || !Number.isFinite(raw.timeout) || raw.timeout <= 0) {
       throw new HookConfigError(`${label}.timeout must be a positive number.`);
     }
     definition.timeout = raw.timeout;
   }
 
   if (raw.failClosed !== undefined) {
-    if (typeof raw.failClosed !== 'boolean') {
+    if (typeof raw.failClosed !== "boolean") {
       throw new HookConfigError(`${label}.failClosed must be a boolean.`);
     }
     definition.failClosed = raw.failClosed;
   }
 
   if (raw.matcher !== undefined) {
-    if (typeof raw.matcher !== 'string' || !raw.matcher.trim()) {
+    if (typeof raw.matcher !== "string" || !raw.matcher.trim()) {
       throw new HookConfigError(`${label}.matcher must be a non-empty string.`);
     }
     definition.matcher = raw.matcher.trim();
@@ -79,7 +79,7 @@ function parseHookDefinition(raw: unknown, label: string): HookDefinition {
 
 export function parseHooksConfigFile(raw: unknown): HooksConfigFile {
   if (!isRecord(raw)) {
-    throw new HookConfigError('hooks.json root must be an object.');
+    throw new HookConfigError("hooks.json root must be an object.");
   }
 
   if (raw.version !== HOOK_CONFIG_VERSION) {
@@ -90,7 +90,7 @@ export function parseHooksConfigFile(raw: unknown): HooksConfigFile {
     throw new HookConfigError('hooks.json "hooks" must be an object.');
   }
 
-  const hooks: HooksConfigFile['hooks'] = {};
+  const hooks: HooksConfigFile["hooks"] = {};
   for (const [key, value] of Object.entries(raw.hooks)) {
     if (!HOOK_EVENT_NAMES.includes(key as HookEventName)) {
       throw new HookConfigError(`Unknown hook event: ${key}`);
@@ -134,11 +134,7 @@ export function resolveMergedHookDefinitions(
 ): ResolvedHookDefinition[] {
   const resolved: ResolvedHookDefinition[] = [];
 
-  const append = (
-    entries: HookDefinition[],
-    scope: 'user' | 'workspace',
-    configDir: string,
-  ) => {
+  const append = (entries: HookDefinition[], scope: "user" | "workspace", configDir: string) => {
     for (const entry of entries) {
       if (entry.matcher && matcherTarget !== undefined) {
         try {
@@ -157,16 +153,17 @@ export function resolveMergedHookDefinitions(
         ...entry,
         scope,
         configDir,
-        timeout: entry.timeout !== undefined && entry.timeout > 0
-          ? entry.timeout
-          : DEFAULT_HOOK_TIMEOUT_SECONDS,
+        timeout:
+          entry.timeout !== undefined && entry.timeout > 0
+            ? entry.timeout
+            : DEFAULT_HOOK_TIMEOUT_SECONDS,
       });
     }
   };
 
-  append(user.hooks[event] ?? [], 'user', userConfigDir);
+  append(user.hooks[event] ?? [], "user", userConfigDir);
   if (workspaceConfigDir) {
-    append(workspace.hooks[event] ?? [], 'workspace', workspaceConfigDir);
+    append(workspace.hooks[event] ?? [], "workspace", workspaceConfigDir);
   }
 
   return resolved;
@@ -174,14 +171,14 @@ export function resolveMergedHookDefinitions(
 
 export function resolveHookCommandPath(definition: ResolvedHookDefinition): string {
   const command = definition.command.trim();
-  if (command.startsWith('/') || /^[A-Za-z]:\\/.test(command)) {
+  if (command.startsWith("/") || /^[A-Za-z]:\\/.test(command)) {
     return command;
   }
 
   const configRoot = resolve(definition.configDir);
   const resolved = resolve(configRoot, command);
   const relativePath = relative(configRoot, resolved);
-  if (relativePath.startsWith('..') || isAbsolute(relativePath)) {
+  if (relativePath.startsWith("..") || isAbsolute(relativePath)) {
     throw new HookConfigError(`Hook command escapes config directory: ${command}`);
   }
 
@@ -189,7 +186,7 @@ export function resolveHookCommandPath(definition: ResolvedHookDefinition): stri
     const realConfigRoot = realpathSync.native(configRoot);
     const realResolved = realpathSync.native(resolved);
     const relativeReal = relative(realConfigRoot, realResolved);
-    if (relativeReal.startsWith('..') || isAbsolute(relativeReal)) {
+    if (relativeReal.startsWith("..") || isAbsolute(relativeReal)) {
       throw new HookConfigError(`Hook command escapes config directory via symlink: ${command}`);
     }
     return realResolved;

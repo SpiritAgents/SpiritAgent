@@ -1,25 +1,22 @@
-import type { LspWriteDiagnosticsUi } from '@spiritagent/agent-core';
+import type { LspWriteDiagnosticsUi } from "@spiritagent/agent-core";
 
-import type { ToolBlockSnapshot } from '@/types';
+import type { ToolBlockSnapshot } from "@/types";
 
 /** 短工具卡次级文字（shell 原因、文件名、LSP 摘要等）。 */
-export const toolCardSecondaryTextClass =
-  'text-muted-foreground/75 dark:text-muted-foreground/65';
+export const toolCardSecondaryTextClass = "text-muted-foreground/75 dark:text-muted-foreground/65";
 
 /** shell `{命令}` 等更浅第三级；与原因色分开以免摘要行糊成一段。 */
-export const toolCardFileNameDetailClass =
-  'text-muted-foreground/42 dark:text-muted-foreground/45';
+export const toolCardFileNameDetailClass = "text-muted-foreground/42 dark:text-muted-foreground/45";
 
 /**
  * 四段式 shell 卡第四段（失败状态）；为摘要行最浅一级，浅于命令段 {@link toolCardFileNameDetailClass}。
  * 灰阶（opacity）：动词 100% → 原因 75/65% → 命令 42/45% → 失败 30/32%。
  */
-export const toolCardFailedStatusClass =
-  'text-muted-foreground/30 dark:text-muted-foreground/32';
+export const toolCardFailedStatusClass = "text-muted-foreground/30 dark:text-muted-foreground/32";
 
 /** 可点击短工具卡触发器：整卡摘要同比增亮，保留灰阶层次。 */
 export const clickableToolCardTriggerClass =
-  'transition-[filter] duration-150 hover:brightness-[1.12] focus-visible:brightness-[1.12] motion-reduce:transition-none';
+  "transition-[filter] duration-150 hover:brightness-[1.12] focus-visible:brightness-[1.12] motion-reduce:transition-none";
 
 export function lspDiagnosticsCounts(diagnostics: LspWriteDiagnosticsUi): {
   errorCount: number;
@@ -28,9 +25,9 @@ export function lspDiagnosticsCounts(diagnostics: LspWriteDiagnosticsUi): {
   let errorCount = 0;
   let warningCount = 0;
   for (const item of diagnostics.items) {
-    if (item.severity === 'error') {
+    if (item.severity === "error") {
       errorCount += 1;
-    } else if (item.severity === 'warning') {
+    } else if (item.severity === "warning") {
       warningCount += 1;
     }
   }
@@ -38,9 +35,9 @@ export function lspDiagnosticsCounts(diagnostics: LspWriteDiagnosticsUi): {
 }
 
 export function shouldShowLspDiagnosticsOnToolCard(
-  tool: Pick<ToolBlockSnapshot, 'phase' | 'lspWriteDiagnostics'>,
+  tool: Pick<ToolBlockSnapshot, "phase" | "lspWriteDiagnostics">,
 ): tool is ToolBlockSnapshot & { lspWriteDiagnostics: LspWriteDiagnosticsUi } {
-  if (tool.phase !== 'succeeded' || !tool.lspWriteDiagnostics) {
+  if (tool.phase !== "succeeded" || !tool.lspWriteDiagnostics) {
     return false;
   }
   const { errorCount, warningCount } = lspDiagnosticsCounts(tool.lspWriteDiagnostics);
@@ -54,10 +51,10 @@ export function formatLspDiagnosticsSummaryLabel(
 ): string | undefined {
   const parts: string[] = [];
   if (errorCount > 0) {
-    parts.push(translate('tool.lspErrorCount', { count: errorCount }));
+    parts.push(translate("tool.lspErrorCount", { count: errorCount }));
   }
   if (warningCount > 0) {
-    parts.push(translate('tool.lspWarningCount', { count: warningCount }));
+    parts.push(translate("tool.lspWarningCount", { count: warningCount }));
   }
-  return parts.length > 0 ? parts.join(', ') : undefined;
+  return parts.length > 0 ? parts.join(", ") : undefined;
 }

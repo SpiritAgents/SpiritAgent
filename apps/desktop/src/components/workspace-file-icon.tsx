@@ -1,15 +1,15 @@
-import { workspaceFileBasename } from '@/lib/file-picker-path';
-import { workspaceDirectoryIconClassName } from '@/lib/workspace-directory-icon';
-import { workspaceExplorerIcon } from '@/lib/workspace-explorer-icon';
+import { workspaceFileBasename } from "@/lib/file-picker-path";
+import { workspaceDirectoryIconClassName } from "@/lib/workspace-directory-icon";
+import { workspaceExplorerIcon } from "@/lib/workspace-explorer-icon";
 import {
   WORKSPACE_FILE_ICON_CHIP_SIZE_PX,
   WORKSPACE_FILE_ICON_LIST_CLASS,
   type WorkspaceFileIconColorMode,
-} from '@/lib/workspace-file-icon-sizes';
-import { cn } from '@/lib/utils';
-import type { WorkspaceExplorerEntryKind } from '@/types';
+} from "@/lib/workspace-file-icon-sizes";
+import { cn } from "@/lib/utils";
+import type { WorkspaceExplorerEntryKind } from "@/types";
 
-export type { WorkspaceFileIconColorMode } from '@/lib/workspace-file-icon-sizes';
+export type { WorkspaceFileIconColorMode } from "@/lib/workspace-file-icon-sizes";
 
 export type WorkspaceFileIconProps = {
   name?: string;
@@ -24,8 +24,8 @@ export function workspaceFileIconClassName(
   colorMode: WorkspaceFileIconColorMode,
   className?: string,
 ): string {
-  if (colorMode === 'inherit') {
-    return cn('size-[10px] shrink-0', className);
+  if (colorMode === "inherit") {
+    return cn("size-[10px] shrink-0", className);
   }
   return cn(WORKSPACE_FILE_ICON_LIST_CLASS, className);
 }
@@ -33,30 +33,25 @@ export function workspaceFileIconClassName(
 export function WorkspaceFileIcon({
   name,
   path,
-  kind = 'file',
+  kind = "file",
   size = WORKSPACE_FILE_ICON_CHIP_SIZE_PX,
   className,
-  colorMode = 'list',
+  colorMode = "list",
 }: WorkspaceFileIconProps) {
-  const resolvedName = name ?? (path ? workspaceFileBasename(path) : '');
+  const resolvedName = name ?? (path ? workspaceFileBasename(path) : "");
   if (!resolvedName) {
     return null;
   }
 
-  if (kind === 'dir') {
-    const Folder = workspaceExplorerIcon(resolvedName, 'dir');
-    return (
-      <Folder
-        className={workspaceDirectoryIconClassName(colorMode, className)}
-        aria-hidden
-      />
-    );
+  if (kind === "dir") {
+    const Folder = workspaceExplorerIcon(resolvedName, "dir");
+    return <Folder className={workspaceDirectoryIconClassName(colorMode, className)} aria-hidden />;
   }
 
   const Icon = workspaceExplorerIcon(resolvedName, kind);
   const iconClassName = workspaceFileIconClassName(colorMode, className);
 
-  if (colorMode === 'inherit') {
+  if (colorMode === "inherit") {
     return <Icon size={size} className={iconClassName} aria-hidden />;
   }
 

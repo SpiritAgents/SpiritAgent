@@ -1,8 +1,8 @@
 import type {
   ToolAgentBuiltInToolCatalogServerEntry,
   ToolAgentMcpToolCatalogSnapshot,
-} from '../mcp/types.js';
-import type { BuiltInLazyToolIndexEntry } from './types.js';
+} from "../mcp/types.js";
+import type { BuiltInLazyToolIndexEntry } from "./types.js";
 
 export function findBuiltInLazyToolIndexEntry(
   entries: readonly BuiltInLazyToolIndexEntry[],
@@ -14,7 +14,7 @@ export function findBuiltInLazyToolIndexEntry(
 
 export function buildBuiltInLazyToolCatalogSnapshot(
   entries: readonly BuiltInLazyToolIndexEntry[],
-): Pick<ToolAgentMcpToolCatalogSnapshot, 'builtInServers' | 'builtInToolCount'> | undefined {
+): Pick<ToolAgentMcpToolCatalogSnapshot, "builtInServers" | "builtInToolCount"> | undefined {
   if (entries.length === 0) {
     return undefined;
   }
@@ -65,8 +65,8 @@ export function mergeLazyToolCatalogSnapshots(
 }
 
 function builtInServerDisplayName(server: string): string {
-  if (server === 'desktop') {
-    return 'Desktop';
+  if (server === "desktop") {
+    return "Desktop";
   }
   return server;
 }

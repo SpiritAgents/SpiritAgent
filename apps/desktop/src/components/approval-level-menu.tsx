@@ -10,7 +10,10 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
-import { DESKTOP_OVERLAY_SHORT_LIST_PADDING, DESKTOP_OVERLAY_SHORT_MENU_MIN_WIDTH } from "@/lib/desktop-chrome";
+import {
+  DESKTOP_OVERLAY_SHORT_LIST_PADDING,
+  DESKTOP_OVERLAY_SHORT_MENU_MIN_WIDTH,
+} from "@/lib/desktop-chrome";
 import {
   COMPOSER_INLINE_CHIP_ICON_CLASS,
   COMPOSER_INLINE_CHIP_TEXT_CLASS,
@@ -68,11 +71,13 @@ export function ApprovalLevelMenu({
   const { t } = useTranslation();
   const [menuOpen, setMenuOpen] = useState(false);
   const options = [
-    { value: "default" as ApprovalLevel, label: t('composer.approvalDefault') },
-    { value: "auto-approval" as ApprovalLevel, label: t('composer.approvalAuto') },
-    { value: "full-approval" as ApprovalLevel, label: t('composer.approvalBypass') },
+    { value: "default" as ApprovalLevel, label: t("composer.approvalDefault") },
+    { value: "auto-approval" as ApprovalLevel, label: t("composer.approvalAuto") },
+    { value: "full-approval" as ApprovalLevel, label: t("composer.approvalBypass") },
   ];
-  const label = options.find((option) => option.value === approvalLevel)?.label ?? t('composer.approvalDefault');
+  const label =
+    options.find((option) => option.value === approvalLevel)?.label ??
+    t("composer.approvalDefault");
   const TriggerIcon = APPROVAL_LEVEL_ICONS[approvalLevel];
   const suppressTooltip = menuOpen || disabled;
 
@@ -87,11 +92,11 @@ export function ApprovalLevelMenu({
           <DropdownMenuTrigger asChild>
             <button
               type="button"
-              aria-label={t('composer.selectApprovalLevel')}
+              aria-label={t("composer.selectApprovalLevel")}
               disabled={disabled}
               className={cn(
                 "inline-flex h-7 max-w-full items-center gap-1.5 rounded-md border-0 bg-transparent px-1 text-left outline-none hover:bg-muted/50 focus-visible:ring-2 focus-visible:ring-ring/50",
-                    DESKTOP_MENU_TRIGGER_TEXT_CLASS,
+                DESKTOP_MENU_TRIGGER_TEXT_CLASS,
                 approvalLevelTriggerTextClass(approvalLevel),
               )}
             >
@@ -99,9 +104,7 @@ export function ApprovalLevelMenu({
                 className={cn("size-3.5 shrink-0", approvalLevelTriggerIconClass(approvalLevel))}
                 aria-hidden
               />
-              <span className="min-w-0 truncate">
-                {label}
-              </span>
+              <span className="min-w-0 truncate">{label}</span>
               <ChevronDown
                 className={cn("size-3 shrink-0", approvalLevelChevronClass(approvalLevel))}
                 aria-hidden
@@ -110,7 +113,7 @@ export function ApprovalLevelMenu({
           </DropdownMenuTrigger>
         </TooltipTrigger>
         <TooltipContent side="top" sideOffset={4}>
-          {t('composer.selectApprovalLevel')}
+          {t("composer.selectApprovalLevel")}
         </TooltipContent>
       </Tooltip>
       <DropdownMenuContent
@@ -125,15 +128,9 @@ export function ApprovalLevelMenu({
               <DropdownMenuItem
                 key={option.value}
                 onSelect={() => onApprovalLevelChange(option.value)}
-                className={cn(
-                  "gap-2",
-                  approvalLevel === option.value && "bg-accent/40",
-                )}
+                className={cn("gap-2", approvalLevel === option.value && "bg-accent/40")}
               >
-                <OptionIcon
-                  className="size-3.5 shrink-0 text-muted-foreground/80"
-                  aria-hidden
-                />
+                <OptionIcon className="size-3.5 shrink-0 text-muted-foreground/80" aria-hidden />
                 {option.label}
               </DropdownMenuItem>
             );

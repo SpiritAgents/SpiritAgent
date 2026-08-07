@@ -1,11 +1,5 @@
 import * as React from "react";
-import {
-  Corner,
-  Root,
-  Scrollbar,
-  Thumb,
-  Viewport,
-} from "@radix-ui/react-scroll-area";
+import { Corner, Root, Scrollbar, Thumb, Viewport } from "@radix-ui/react-scroll-area";
 
 import { cn } from "@/lib/utils";
 

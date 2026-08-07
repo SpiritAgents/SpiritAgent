@@ -5,7 +5,7 @@ import {
   type LlmModelCapabilities,
   type LlmTransportConfig,
   type OpenResponsesSdkProvider,
-} from '@spiritagent/agent-core';
+} from "@spiritagent/agent-core";
 import {
   isXiaomiResponsesReasoningEffortContext,
   resolveAnthropicTransportReasoningEffortForContext,
@@ -13,13 +13,13 @@ import {
   resolveOpenAiTransportReasoningEffortForContext,
   resolveOpenAiTransportReasoningModeForContext,
   type ModelReasoningEffortContext,
-} from '@spiritagent/agent-core/reasoning-effort';
+} from "@spiritagent/agent-core/reasoning-effort";
 import {
   modelSupportsThinkingSwitch,
   resolveAnthropicExplicitThinkingConfig,
   resolveVendorExtendedThinking,
   shouldPinReasoningEffortToDefault,
-} from '@spiritagent/agent-core/model-thinking-controls';
+} from "@spiritagent/agent-core/model-thinking-controls";
 import {
   listProviderModels,
   listProviderConnectSiteOptions,
@@ -32,7 +32,7 @@ import {
   cloudflareAiGatewayApiBaseFromAccountId,
   vertexApiBaseFromProjectAndLocation,
   type ProviderListedModelEntry,
-} from '@spiritagent/host-internal';
+} from "@spiritagent/host-internal";
 
 import type {
   AddProviderModelsRequest,
@@ -43,36 +43,36 @@ import type {
   DesktopTransportKind,
   ModelProfileSnapshot,
   PreviewModelCatalogEntry,
-} from '../types.js';
-import type { BedrockProviderCredentials } from './provider-api-key.js';
-import type { GoogleVertexProviderCredentials } from './provider-api-key.js';
+} from "../types.js";
+import type { BedrockProviderCredentials } from "./provider-api-key.js";
+import type { GoogleVertexProviderCredentials } from "./provider-api-key.js";
 import {
   isModelCatalogCacheFresh,
   readModelCatalogCache,
   writeModelCatalogCache,
-} from './model-catalog-cache.js';
-import { invalidateModelCatalogHintsMemo } from './snapshot.js';
+} from "./model-catalog-cache.js";
+import { invalidateModelCatalogHintsMemo } from "./snapshot.js";
 import {
   previewCatalogMapForTransport,
   previewModelCatalogForTransport,
   usesProviderListedModelCatalogMetadata,
-} from './model-catalog-metadata.js';
-import { findModelCatalogEntry } from '../lib/model-catalog-detail.js';
+} from "./model-catalog-metadata.js";
+import { findModelCatalogEntry } from "../lib/model-catalog-detail.js";
 import {
   resolveComposerDirectMediaTool,
   type DirectMediaTool,
-} from '../lib/composer-direct-media.js';
+} from "../lib/composer-direct-media.js";
 import {
   DEFAULT_API_BASE,
   defaultCustomModelCapabilities,
   type DesktopConfigFile,
-} from './storage.js';
+} from "./storage.js";
 
 export { resolveComposerDirectMediaTool, type DirectMediaTool };
 
 function inferProviderSiteFromStoredApiBase(
-  profile: Pick<ModelProfileSnapshot, 'provider' | 'transportKind' | 'apiBase'>,
-): ModelProfileSnapshot['providerSite'] | undefined {
+  profile: Pick<ModelProfileSnapshot, "provider" | "transportKind" | "apiBase">,
+): ModelProfileSnapshot["providerSite"] | undefined {
   const provider = profile.provider;
   if (!provider || !providerSupportsSiteSelection(provider)) {
     return undefined;
@@ -85,7 +85,7 @@ function inferProviderSiteFromStoredApiBase(
   for (const option of listProviderConnectSiteOptions(provider)) {
     const siteApiBase = resolveProviderConnectApiBase(provider, transportKind, { site: option.id });
     if (storedApiBase === siteApiBase) {
-      return option.id as ModelProfileSnapshot['providerSite'];
+      return option.id as ModelProfileSnapshot["providerSite"];
     }
   }
   return undefined;
@@ -94,10 +94,25 @@ function inferProviderSiteFromStoredApiBase(
 export function resolveProfileApiBase(
   profile: Pick<
     ModelProfileSnapshot,
-    'name' | 'provider' | 'transportKind' | 'apiBase' | 'awsRegion' | 'azureResourceName' | 'cloudflareAccountId' | 'cloudflareGatewayId' | 'vertexProject' | 'vertexLocation' | 'providerSite' | 'alibabaWorkspaceId' | 'alibabaBillingMode' | 'stepfunBillingMode' | 'zAiBillingMode' | 'zhipuBillingMode'
+    | "name"
+    | "provider"
+    | "transportKind"
+    | "apiBase"
+    | "awsRegion"
+    | "azureResourceName"
+    | "cloudflareAccountId"
+    | "cloudflareGatewayId"
+    | "vertexProject"
+    | "vertexLocation"
+    | "providerSite"
+    | "alibabaWorkspaceId"
+    | "alibabaBillingMode"
+    | "stepfunBillingMode"
+    | "zAiBillingMode"
+    | "zhipuBillingMode"
   >,
 ): string {
-  if (profile.provider === 'amazon-bedrock') {
+  if (profile.provider === "amazon-bedrock") {
     const region = profile.awsRegion?.trim();
     if (region) {
       if (isBedrockMantleOpenAiModel(profile.name)) {
@@ -107,16 +122,16 @@ export function resolveProfileApiBase(
     }
   }
 
-  if (profile.provider === 'google-vertex-ai') {
+  if (profile.provider === "google-vertex-ai") {
     const project = profile.vertexProject?.trim();
     const location = profile.vertexLocation?.trim();
     if (project && location) {
       return vertexApiBaseFromProjectAndLocation(project, location);
     }
-    return profile.apiBase?.trim() || '';
+    return profile.apiBase?.trim() || "";
   }
 
-  if (profile.provider === 'azure') {
+  if (profile.provider === "azure") {
     const resourceName = profile.azureResourceName?.trim();
     if (resourceName) {
       return azureApiBaseFromResourceName(resourceName);
@@ -125,10 +140,10 @@ export function resolveProfileApiBase(
     if (trimmed) {
       return trimmed;
     }
-    throw new Error('Azure 模型缺少 azureResourceName 配置。');
+    throw new Error("Azure 模型缺少 azureResourceName 配置。");
   }
 
-  if (profile.provider === 'cloudflare-ai-gateway') {
+  if (profile.provider === "cloudflare-ai-gateway") {
     const accountId = profile.cloudflareAccountId?.trim();
     if (accountId) {
       return cloudflareAiGatewayApiBaseFromAccountId(accountId);
@@ -137,10 +152,10 @@ export function resolveProfileApiBase(
     if (trimmed) {
       return trimmed;
     }
-    throw new Error('Cloudflare AI Gateway 模型缺少 cloudflareAccountId 配置。');
+    throw new Error("Cloudflare AI Gateway 模型缺少 cloudflareAccountId 配置。");
   }
 
-  if (profile.provider && profile.provider !== 'custom') {
+  if (profile.provider && profile.provider !== "custom") {
     const providerSite = profile.providerSite ?? inferProviderSiteFromStoredApiBase(profile);
     return defaultApiBaseForTransport(
       profile.provider,
@@ -159,42 +174,42 @@ export function resolveProfileApiBase(
 }
 
 export function resolveDesktopTransportKind(
-  profile?: Pick<ModelProfileSnapshot, 'provider' | 'transportKind'>,
+  profile?: Pick<ModelProfileSnapshot, "provider" | "transportKind">,
 ): DesktopTransportKind {
   const requested = profile?.transportKind;
   if (requested) {
     if (
-      (profile?.provider === 'google' || profile?.provider === 'google-vertex-ai')
-      && (requested === 'open-responses' || requested === 'anthropic')
+      (profile?.provider === "google" || profile?.provider === "google-vertex-ai") &&
+      (requested === "open-responses" || requested === "anthropic")
     ) {
-      return 'openai-compatible';
+      return "openai-compatible";
     }
-    if (profile?.provider === 'azure' || profile?.provider === 'openai') {
-      return 'open-responses';
+    if (profile?.provider === "azure" || profile?.provider === "openai") {
+      return "open-responses";
     }
     return requested;
   }
 
-  return profile?.provider === 'anthropic'
-    ? 'anthropic'
-    : profile?.provider === 'minimax'
-      ? 'anthropic'
-      : profile?.provider === 'amazon-bedrock'
-      ? 'bedrock'
-      : profile?.provider === 'azure' || profile?.provider === 'openai'
-        ? 'open-responses'
-        : 'openai-compatible';
+  return profile?.provider === "anthropic"
+    ? "anthropic"
+    : profile?.provider === "minimax"
+      ? "anthropic"
+      : profile?.provider === "amazon-bedrock"
+        ? "bedrock"
+        : profile?.provider === "azure" || profile?.provider === "openai"
+          ? "open-responses"
+          : "openai-compatible";
 }
 
 export function defaultApiBaseForTransport(
   provider?: DesktopModelProvider,
   transportKind?: DesktopTransportKind,
-  providerSite?: ModelProfileSnapshot['providerSite'],
+  providerSite?: ModelProfileSnapshot["providerSite"],
   alibabaWorkspaceId?: string,
-  alibabaBillingMode?: ModelProfileSnapshot['alibabaBillingMode'],
-  stepfunBillingMode?: ModelProfileSnapshot['stepfunBillingMode'],
-  zAiBillingMode?: ModelProfileSnapshot['zAiBillingMode'],
-  zhipuBillingMode?: ModelProfileSnapshot['zhipuBillingMode'],
+  alibabaBillingMode?: ModelProfileSnapshot["alibabaBillingMode"],
+  stepfunBillingMode?: ModelProfileSnapshot["stepfunBillingMode"],
+  zAiBillingMode?: ModelProfileSnapshot["zAiBillingMode"],
+  zhipuBillingMode?: ModelProfileSnapshot["zhipuBillingMode"],
 ): string {
   if (!provider) {
     return DEFAULT_API_BASE;
@@ -204,11 +219,11 @@ export function defaultApiBaseForTransport(
     provider,
     transportKind ?? resolveDesktopTransportKind({ provider }),
     {
-      ...(alibabaBillingMode === 'token-plan' ? { billingMode: 'token-plan' } : {}),
-      ...(stepfunBillingMode === 'step-plan' ? { stepfunBillingMode: 'step-plan' } : {}),
-      ...(zAiBillingMode === 'glm-coding-plan' ? { zAiBillingMode: 'glm-coding-plan' } : {}),
-      ...(zhipuBillingMode === 'glm-coding-plan' ? { zhipuBillingMode: 'glm-coding-plan' } : {}),
-      ...(alibabaBillingMode === 'token-plan'
+      ...(alibabaBillingMode === "token-plan" ? { billingMode: "token-plan" } : {}),
+      ...(stepfunBillingMode === "step-plan" ? { stepfunBillingMode: "step-plan" } : {}),
+      ...(zAiBillingMode === "glm-coding-plan" ? { zAiBillingMode: "glm-coding-plan" } : {}),
+      ...(zhipuBillingMode === "glm-coding-plan" ? { zhipuBillingMode: "glm-coding-plan" } : {}),
+      ...(alibabaBillingMode === "token-plan"
         ? {}
         : {
             ...(providerSite ? { site: providerSite } : {}),
@@ -222,12 +237,12 @@ export function reasoningProviderForTransport(
   provider: DesktopModelProvider | undefined,
   transportKind: DesktopTransportKind,
 ): DesktopModelProvider | undefined {
-  if (transportKind === 'anthropic') {
-    return 'anthropic';
+  if (transportKind === "anthropic") {
+    return "anthropic";
   }
 
-  if (transportKind === 'open-responses' && provider === 'openai') {
-    return 'openai';
+  if (transportKind === "open-responses" && provider === "openai") {
+    return "openai";
   }
 
   return provider;
@@ -235,22 +250,22 @@ export function reasoningProviderForTransport(
 
 export function openAiCompatibleVendorFromProvider(
   provider?: DesktopModelProvider,
-): Exclude<DesktopModelProvider, 'anthropic' | 'amazon-bedrock'> | undefined {
-  return provider && provider !== 'anthropic' && provider !== 'amazon-bedrock'
+): Exclude<DesktopModelProvider, "anthropic" | "amazon-bedrock"> | undefined {
+  return provider && provider !== "anthropic" && provider !== "amazon-bedrock"
     ? provider
     : undefined;
 }
 
 type AgentModelProfileFields = Pick<
   ModelProfileSnapshot,
-  | 'provider'
-  | 'transportKind'
-  | 'reasoningEffort'
-  | 'reasoningMode'
-  | 'supportedReasoningEfforts'
-  | 'thinkingEnabled'
-  | 'supportsThinkingType'
-  | 'supportsThinkingSwitch'
+  | "provider"
+  | "transportKind"
+  | "reasoningEffort"
+  | "reasoningMode"
+  | "supportedReasoningEfforts"
+  | "thinkingEnabled"
+  | "supportsThinkingType"
+  | "supportsThinkingSwitch"
 >;
 
 function buildAgentModelReasoningContext(
@@ -263,7 +278,9 @@ function buildAgentModelReasoningContext(
     ...(profile?.supportedReasoningEfforts !== undefined
       ? { supportedEfforts: profile.supportedReasoningEfforts }
       : {}),
-    ...(profile?.supportsThinkingType ? { supportsThinkingType: profile.supportsThinkingType } : {}),
+    ...(profile?.supportsThinkingType
+      ? { supportsThinkingType: profile.supportsThinkingType }
+      : {}),
     ...(profile?.supportsThinkingSwitch === true ? { supportsThinkingSwitch: true } : {}),
     model,
   };
@@ -272,26 +289,23 @@ function buildAgentModelReasoningContext(
 function resolveAgentOpenAiReasoningEffort(
   profile: AgentModelProfileFields | undefined,
   model: string,
-  transportKind: NonNullable<ModelReasoningEffortContext['transportKind']>,
+  transportKind: NonNullable<ModelReasoningEffortContext["transportKind"]>,
 ) {
   const context = {
     ...buildAgentModelReasoningContext(profile, model),
     transportKind,
   };
   const thinkingEnabled = profile?.thinkingEnabled !== false;
-  if (
-    isXiaomiResponsesReasoningEffortContext(context)
-    && profile?.thinkingEnabled === false
-  ) {
-    return 'none';
+  if (isXiaomiResponsesReasoningEffortContext(context) && profile?.thinkingEnabled === false) {
+    return "none";
   }
   if (
-    modelSupportsThinkingSwitch(context)
-    && shouldPinReasoningEffortToDefault(thinkingEnabled, context)
+    modelSupportsThinkingSwitch(context) &&
+    shouldPinReasoningEffortToDefault(thinkingEnabled, context)
   ) {
     return undefined;
   }
-  if (context.provider === 'groq') {
+  if (context.provider === "groq") {
     return resolveGroqTransportReasoningEffortForContext(profile?.reasoningEffort, context);
   }
   return resolveOpenAiTransportReasoningEffortForContext(profile?.reasoningEffort, context);
@@ -300,7 +314,7 @@ function resolveAgentOpenAiReasoningEffort(
 function resolveAgentOpenAiReasoningMode(
   profile: AgentModelProfileFields | undefined,
   model: string,
-  transportKind: NonNullable<ModelReasoningEffortContext['transportKind']>,
+  transportKind: NonNullable<ModelReasoningEffortContext["transportKind"]>,
 ) {
   const context = {
     ...buildAgentModelReasoningContext(profile, model),
@@ -323,7 +337,7 @@ function resolveAgentVendorExtendedThinking(
 function resolveAgentAnthropicExplicitThinking(
   profile: AgentModelProfileFields | undefined,
   model: string,
-): AnthropicTransportConfig['thinking'] | undefined {
+): AnthropicTransportConfig["thinking"] | undefined {
   const context = buildAgentModelReasoningContext(profile, model);
   return resolveAnthropicExplicitThinkingConfig(profile?.thinkingEnabled, context);
 }
@@ -338,33 +352,30 @@ export function buildPrimaryTransportConfig(input: {
   googleVertexCredentials?: GoogleVertexProviderCredentials;
   profile?: Pick<
     ModelProfileSnapshot,
-    | 'provider'
-    | 'transportKind'
-    | 'capabilities'
-    | 'reasoningEffort'
-    | 'reasoningMode'
-    | 'supportedReasoningEfforts'
-    | 'thinkingEnabled'
-    | 'awsRegion'
-    | 'azureResourceName'
-    | 'cloudflareAccountId'
-    | 'cloudflareGatewayId'
-    | 'vertexProject'
-    | 'vertexLocation'
-    | 'supportsThinkingType'
-    | 'supportsThinkingSwitch'
+    | "provider"
+    | "transportKind"
+    | "capabilities"
+    | "reasoningEffort"
+    | "reasoningMode"
+    | "supportedReasoningEfforts"
+    | "thinkingEnabled"
+    | "awsRegion"
+    | "azureResourceName"
+    | "cloudflareAccountId"
+    | "cloudflareGatewayId"
+    | "vertexProject"
+    | "vertexLocation"
+    | "supportsThinkingType"
+    | "supportsThinkingSwitch"
   >;
 }): LlmTransportConfig {
-  const spiritAgentMode = input.agentMode ?? 'agent';
+  const spiritAgentMode = input.agentMode ?? "agent";
   const transportKind = resolveDesktopTransportKind(input.profile);
 
-  if (
-    input.profile?.provider === 'amazon-bedrock'
-    && isBedrockMantleOpenAiModel(input.model)
-  ) {
+  if (input.profile?.provider === "amazon-bedrock" && isBedrockMantleOpenAiModel(input.model)) {
     const region = input.profile.awsRegion?.trim();
     if (!region) {
-      throw new Error('Amazon Bedrock 模型缺少 AWS 区域配置。');
+      throw new Error("Amazon Bedrock 模型缺少 AWS 区域配置。");
     }
     const bedrockCredentials = input.bedrockCredentials;
     const apiKey = input.apiKey.trim() || bedrockCredentials?.apiKey?.trim();
@@ -372,13 +383,13 @@ export function buildPrimaryTransportConfig(input: {
     const secretAccessKey = bedrockCredentials?.secretAccessKey?.trim();
     const sessionToken = bedrockCredentials?.sessionToken?.trim();
     if (!apiKey && !(accessKeyId && secretAccessKey)) {
-      throw new Error('Amazon Bedrock Mantle 模型需要 Bearer API Key 或 IAM 凭证。');
+      throw new Error("Amazon Bedrock Mantle 模型需要 Bearer API Key 或 IAM 凭证。");
     }
     const normalizedReasoningEffort = resolveOpenAiTransportReasoningEffortForContext(
       input.profile?.reasoningEffort,
       {
-        provider: 'openai',
-        transportKind: 'open-responses',
+        provider: "openai",
+        transportKind: "open-responses",
         ...(input.profile?.supportedReasoningEfforts !== undefined
           ? { supportedEfforts: input.profile.supportedReasoningEfforts }
           : {}),
@@ -387,21 +398,21 @@ export function buildPrimaryTransportConfig(input: {
     );
     const mantleBaseUrl = bedrockMantleApiBaseFromRegion(region);
     const reasoningSummary = resolveOpenResponsesReasoningSummary({
-      llmVendor: 'openai',
+      llmVendor: "openai",
       model: input.model,
       baseUrl: mantleBaseUrl,
       ...(normalizedReasoningEffort ? { reasoningEffort: normalizedReasoningEffort } : {}),
     });
 
     return {
-      transportKind: 'open-responses',
-      apiKey: apiKey ?? '',
+      transportKind: "open-responses",
+      apiKey: apiKey ?? "",
       model: input.model,
       baseUrl: mantleBaseUrl,
       workspaceRoot: input.workspaceRoot,
       spiritAgentMode,
-      responsesProvider: 'openai',
-      llmVendor: 'openai',
+      responsesProvider: "openai",
+      llmVendor: "openai",
       ...(input.profile?.capabilities
         ? { modelCapabilities: modelCapabilitiesFromConfig(input.profile.capabilities) }
         : {}),
@@ -420,28 +431,28 @@ export function buildPrimaryTransportConfig(input: {
     };
   }
 
-  if (transportKind === 'open-responses') {
+  if (transportKind === "open-responses") {
     const llmVendor = openAiCompatibleVendorFromProvider(input.profile?.provider);
     const normalizedReasoningEffort = resolveAgentOpenAiReasoningEffort(
       input.profile,
       input.model,
-      'open-responses',
+      "open-responses",
     );
     const normalizedReasoningMode = resolveAgentOpenAiReasoningMode(
       input.profile,
       input.model,
-      'open-responses',
+      "open-responses",
     );
     const responsesProvider: OpenResponsesSdkProvider | undefined =
-      input.profile?.provider === 'openai' || input.profile?.provider === 'fireworks-ai'
-        ? 'openai'
-        : input.profile?.provider === 'xai'
-          ? 'xai'
-          : input.profile?.provider === 'vercel-ai-gateway' ||
-              input.profile?.provider === 'cloudflare-ai-gateway' ||
-              input.profile?.provider === 'openrouter'
+      input.profile?.provider === "openai" || input.profile?.provider === "fireworks-ai"
+        ? "openai"
+        : input.profile?.provider === "xai"
+          ? "xai"
+          : input.profile?.provider === "vercel-ai-gateway" ||
+              input.profile?.provider === "cloudflare-ai-gateway" ||
+              input.profile?.provider === "openrouter"
             ? undefined
-            : 'open-responses-compatible';
+            : "open-responses-compatible";
     const reasoningSummary = resolveOpenResponsesReasoningSummary({
       ...(llmVendor ? { llmVendor } : {}),
       model: input.model,
@@ -451,7 +462,7 @@ export function buildPrimaryTransportConfig(input: {
     const cloudflareGatewayId = input.profile?.cloudflareGatewayId?.trim();
 
     return {
-      transportKind: 'open-responses',
+      transportKind: "open-responses",
       apiKey: input.apiKey,
       model: input.model,
       baseUrl: input.baseUrl,
@@ -470,7 +481,7 @@ export function buildPrimaryTransportConfig(input: {
     };
   }
 
-  if (transportKind === 'anthropic') {
+  if (transportKind === "anthropic") {
     const supportedAnthropicEfforts = normalizeAnthropicSupportedEfforts(
       input.profile?.supportedReasoningEfforts,
     );
@@ -489,10 +500,10 @@ export function buildPrimaryTransportConfig(input: {
     const vendorExtendedThinking = resolveAgentVendorExtendedThinking(input.profile, input.model);
     const cloudflareGatewayId = input.profile?.cloudflareGatewayId?.trim();
     const llmVendor = openAiCompatibleVendorFromProvider(input.profile?.provider);
-    const meituanThinkingSwitch = llmVendor === 'meituan'
-      && input.profile?.supportsThinkingSwitch === true;
+    const meituanThinkingSwitch =
+      llmVendor === "meituan" && input.profile?.supportsThinkingSwitch === true;
     return {
-      transportKind: 'anthropic',
+      transportKind: "anthropic",
       apiKey: input.apiKey,
       model: input.model,
       baseUrl: input.baseUrl,
@@ -512,10 +523,10 @@ export function buildPrimaryTransportConfig(input: {
     };
   }
 
-  if (transportKind === 'bedrock') {
+  if (transportKind === "bedrock") {
     const region = input.profile?.awsRegion?.trim();
     if (!region) {
-      throw new Error('Amazon Bedrock 模型缺少 AWS 区域配置。');
+      throw new Error("Amazon Bedrock 模型缺少 AWS 区域配置。");
     }
     const bedrockCredentials = input.bedrockCredentials;
     const apiKey = input.apiKey.trim() || bedrockCredentials?.apiKey?.trim();
@@ -525,7 +536,7 @@ export function buildPrimaryTransportConfig(input: {
       input.profile?.reasoningEffort,
       {
         ...(input.profile?.provider ? { provider: input.profile.provider } : {}),
-        transportKind: 'bedrock',
+        transportKind: "bedrock",
         ...(input.profile?.supportedReasoningEfforts !== undefined
           ? { supportedEfforts: input.profile.supportedReasoningEfforts }
           : {}),
@@ -533,7 +544,7 @@ export function buildPrimaryTransportConfig(input: {
       },
     );
     return {
-      transportKind: 'bedrock',
+      transportKind: "bedrock",
       model: input.model,
       region,
       ...(apiKey ? { apiKey } : {}),
@@ -551,12 +562,12 @@ export function buildPrimaryTransportConfig(input: {
   const normalizedReasoningEffort = resolveAgentOpenAiReasoningEffort(
     input.profile,
     input.model,
-    'openai-compatible',
+    "openai-compatible",
   );
   const normalizedReasoningMode = resolveAgentOpenAiReasoningMode(
     input.profile,
     input.model,
-    'openai-compatible',
+    "openai-compatible",
   );
   const vendorExtendedThinking = resolveAgentVendorExtendedThinking(input.profile, input.model);
   const vertexCredentials = input.googleVertexCredentials;
@@ -597,39 +608,47 @@ export function modelCapabilitiesFromConfig(
   capabilities: readonly DesktopModelCapability[],
 ): LlmModelCapabilities {
   return {
-    ...(capabilities.includes('chat') ? { chat: true } : {}),
-    ...(capabilities.includes('image') ? { imageInput: true } : {}),
-    ...(capabilities.includes('video') ? { videoInput: true } : {}),
-    ...(capabilities.includes('imageGeneration') ? { imageGeneration: true } : {}),
+    ...(capabilities.includes("chat") ? { chat: true } : {}),
+    ...(capabilities.includes("image") ? { imageInput: true } : {}),
+    ...(capabilities.includes("video") ? { videoInput: true } : {}),
+    ...(capabilities.includes("imageGeneration") ? { imageGeneration: true } : {}),
   };
 }
 
 function normalizeAnthropicSupportedEfforts(
   efforts?: readonly string[],
-): AnthropicTransportConfig['supportedEfforts'] {
+): AnthropicTransportConfig["supportedEfforts"] {
   if (efforts === undefined) {
     return undefined;
   }
 
-  return efforts.filter((effort): effort is NonNullable<AnthropicTransportConfig['supportedEfforts']>[number] => (
-    effort === 'low'
-    || effort === 'medium'
-    || effort === 'high'
-    || effort === 'xhigh'
-    || effort === 'max'
-  ));
+  return efforts.filter(
+    (effort): effort is NonNullable<AnthropicTransportConfig["supportedEfforts"]>[number] =>
+      effort === "low" ||
+      effort === "medium" ||
+      effort === "high" ||
+      effort === "xhigh" ||
+      effort === "max",
+  );
 }
 
-export function supportsImageGeneration(model: { capabilities?: readonly DesktopModelCapability[] }): boolean {
-  return model.capabilities?.includes('imageGeneration') === true;
+export function supportsImageGeneration(model: {
+  capabilities?: readonly DesktopModelCapability[];
+}): boolean {
+  return model.capabilities?.includes("imageGeneration") === true;
 }
 
-export function supportsVideoGeneration(model: { capabilities?: readonly DesktopModelCapability[] }): boolean {
-  return model.capabilities?.includes('videoGeneration') === true;
+export function supportsVideoGeneration(model: {
+  capabilities?: readonly DesktopModelCapability[];
+}): boolean {
+  return model.capabilities?.includes("videoGeneration") === true;
 }
 
 export function buildImageGenerationSubConfig(input: {
-  profile: Pick<ModelProfileSnapshot, 'name' | 'apiBase' | 'provider' | 'capabilities' | 'transportKind'>;
+  profile: Pick<
+    ModelProfileSnapshot,
+    "name" | "apiBase" | "provider" | "capabilities" | "transportKind"
+  >;
   apiKey: string;
   inferenceProvider?: string;
 }) {
@@ -647,7 +666,10 @@ export function buildImageGenerationSubConfig(input: {
 }
 
 export function buildVideoGenerationSubConfig(input: {
-  profile: Pick<ModelProfileSnapshot, 'name' | 'apiBase' | 'provider' | 'capabilities' | 'transportKind'>;
+  profile: Pick<
+    ModelProfileSnapshot,
+    "name" | "apiBase" | "provider" | "capabilities" | "transportKind"
+  >;
   apiKey: string;
   inferenceProvider?: string;
 }) {
@@ -667,18 +689,18 @@ export function buildVideoGenerationSubConfig(input: {
 export function buildMediaOnlyTransportConfig(
   toolName: DirectMediaTool,
   input: {
-    profile: Pick<ModelProfileSnapshot, 'name' | 'apiBase' | 'provider' | 'capabilities'>;
+    profile: Pick<ModelProfileSnapshot, "name" | "apiBase" | "provider" | "capabilities">;
     apiKey: string;
   },
 ): LlmTransportConfig {
   const shell = {
-    transportKind: 'openai-compatible' as const,
+    transportKind: "openai-compatible" as const,
     apiKey: input.apiKey,
     model: input.profile.name,
     baseUrl: resolveProfileApiBase(input.profile),
   };
 
-  if (toolName === 'generate_image') {
+  if (toolName === "generate_image") {
     return {
       ...shell,
       imageGeneration: buildImageGenerationSubConfig(input),
@@ -709,7 +731,7 @@ export function attachVideoGenerationToTransportConfig(
   if (!input.profile || !input.apiKey || !supportsVideoGeneration(input.profile)) {
     return transportConfig;
   }
-  if (transportConfig.transportKind === 'anthropic') {
+  if (transportConfig.transportKind === "anthropic") {
     return transportConfig;
   }
 
@@ -734,7 +756,7 @@ export function attachImageGenerationToTransportConfig(
   if (!input.profile || !input.apiKey || !supportsImageGeneration(input.profile)) {
     return transportConfig;
   }
-  if (transportConfig.transportKind === 'anthropic') {
+  if (transportConfig.transportKind === "anthropic") {
     return transportConfig;
   }
 
@@ -800,7 +822,11 @@ export async function loadPreviewModelsForTransport(input: {
     ...(input.vertexPrivateKey ? { vertexPrivateKey: input.vertexPrivateKey } : {}),
     ...(input.cloudflareAccountId ? { cloudflareAccountId: input.cloudflareAccountId } : {}),
   });
-  const modelCatalog = previewModelCatalogForProvider(input.provider, input.transportKind, listedModels);
+  const modelCatalog = previewModelCatalogForProvider(
+    input.provider,
+    input.transportKind,
+    listedModels,
+  );
   const modelIds = listedModels.map((entry) => entry.id);
   await writeModelCatalogCache(
     input.apiBase,
@@ -872,10 +898,10 @@ export function resolveAddedModelCapabilities(input: {
   if (input.catalogEntry?.capabilities) {
     const merged = [...input.catalogEntry.capabilities];
     if (
-      input.requestedCapabilities?.includes('imageGeneration') === true
-      && !merged.includes('imageGeneration')
+      input.requestedCapabilities?.includes("imageGeneration") === true &&
+      !merged.includes("imageGeneration")
     ) {
-      merged.push('imageGeneration');
+      merged.push("imageGeneration");
     }
     return merged;
   }
@@ -884,5 +910,5 @@ export function resolveAddedModelCapabilities(input: {
     return input.requestedCapabilities;
   }
 
-  return input.provider === 'custom' ? defaultCustomModelCapabilities() : undefined;
+  return input.provider === "custom" ? defaultCustomModelCapabilities() : undefined;
 }

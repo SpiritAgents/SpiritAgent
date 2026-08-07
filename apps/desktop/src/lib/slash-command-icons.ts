@@ -1,4 +1,4 @@
-import type { LucideIcon } from 'lucide-react'
+import type { LucideIcon } from "lucide-react";
 import {
   Bug,
   CircleHelp,
@@ -9,18 +9,18 @@ import {
   Repeat,
   ScrollText,
   Sparkles,
-} from 'lucide-react'
+} from "lucide-react";
 
-import type { SkillSlashSuggestionKind } from '@/lib/skill-slash'
+import type { SkillSlashSuggestionKind } from "@/lib/skill-slash";
 
 export const SLASH_SUGGESTION_ICONS: Record<SkillSlashSuggestionKind, LucideIcon> = {
-  'log-session': ScrollText,
+  "log-session": ScrollText,
   compact: FoldVertical,
   fork: GitFork,
-  'side-chat': MessageSquare,
+  "side-chat": MessageSquare,
   loop: Repeat,
   plan: ClipboardList,
   ask: CircleHelp,
   debug: Bug,
   skill: Sparkles,
-}
+};

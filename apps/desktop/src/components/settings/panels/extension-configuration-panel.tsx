@@ -14,7 +14,11 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import type { DesktopExtensionListItem, UpdateExtensionSecretRequest, UpdateExtensionSettingsRequest } from "@/types";
+import type {
+  DesktopExtensionListItem,
+  UpdateExtensionSecretRequest,
+  UpdateExtensionSettingsRequest,
+} from "@/types";
 import { DESKTOP_PAGE_TITLE_CLASS } from "@/lib/desktop-typography";
 
 export function ExtensionConfigurationPanel({
@@ -73,13 +77,13 @@ export function ExtensionConfigurationPanel({
           {item.desktopSettingsPage?.title ?? item.displayName}
         </h1>
         <p className="text-sm text-muted-foreground">
-          {item.description ?? t('settings.extensionSettingsDescription', { id: item.id })}
+          {item.description ?? t("settings.extensionSettingsDescription", { id: item.id })}
         </p>
       </div>
 
       {!hasSettings && !hasSecrets ? (
         <div className="rounded-lg border border-border/40 bg-background/80 px-4 py-10 text-center text-sm text-muted-foreground">
-          {t('settings.noExtensionSettings')}
+          {t("settings.noExtensionSettings")}
         </div>
       ) : (
         <div className="divide-y divide-border/35 rounded-lg border border-border/40 bg-background/80 px-4 sm:px-5">
@@ -165,7 +169,9 @@ export function ExtensionConfigurationPanel({
                     disabled={extensionsBusy}
                     type={setting.type === "number" ? "number" : "text"}
                     placeholder={setting.placeholder ?? setting.title}
-                    onChange={(event) => updateSettingDraft(item.id, setting.key, event.target.value)}
+                    onChange={(event) =>
+                      updateSettingDraft(item.id, setting.key, event.target.value)
+                    }
                   />
                   <Button
                     type="button"
@@ -188,7 +194,7 @@ export function ExtensionConfigurationPanel({
                       });
                     }}
                   >
-                    {t('common.save')}
+                    {t("common.save")}
                   </Button>
                 </div>
               </SettingsRow>
@@ -197,7 +203,8 @@ export function ExtensionConfigurationPanel({
 
           {item.secretSlots?.map((slot) => {
             const fieldKey = secretDraftKey(item.id, slot.key);
-            const configured = item.secretStatuses?.find((entry) => entry.key === slot.key)?.configured === true;
+            const configured =
+              item.secretStatuses?.find((entry) => entry.key === slot.key)?.configured === true;
             return (
               <SettingsRow
                 key={fieldKey}
@@ -206,8 +213,11 @@ export function ExtensionConfigurationPanel({
                 htmlFor={fieldKey}
               >
                 <div className="flex w-full flex-wrap justify-end gap-2 sm:max-w-md">
-                  <Badge variant={configured ? "secondary" : "outline"} className="h-9 px-3 text-muted-foreground">
-                    {configured ? t('settings.configured') : t('settings.notConfigured')}
+                  <Badge
+                    variant={configured ? "secondary" : "outline"}
+                    className="h-9 px-3 text-muted-foreground"
+                  >
+                    {configured ? t("settings.configured") : t("settings.notConfigured")}
                   </Badge>
                   <DesktopFormInput
                     id={fieldKey}
@@ -215,7 +225,9 @@ export function ExtensionConfigurationPanel({
                     type="password"
                     value={secretDrafts[fieldKey] ?? ""}
                     disabled={extensionsBusy}
-                    placeholder={configured ? t('settings.enterNewValue') : t('settings.enterSecret')}
+                    placeholder={
+                      configured ? t("settings.enterNewValue") : t("settings.enterSecret")
+                    }
                     onChange={(event) => updateSecretDraft(item.id, slot.key, event.target.value)}
                   />
                   <Button
@@ -232,7 +244,7 @@ export function ExtensionConfigurationPanel({
                       updateSecretDraft(item.id, slot.key, "");
                     }}
                   >
-                    {t('common.save')}
+                    {t("common.save")}
                   </Button>
                   <Button
                     type="button"
@@ -248,7 +260,7 @@ export function ExtensionConfigurationPanel({
                       updateSecretDraft(item.id, slot.key, "");
                     }}
                   >
-                    {t('common.clear')}
+                    {t("common.clear")}
                   </Button>
                 </div>
               </SettingsRow>

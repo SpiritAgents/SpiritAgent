@@ -1,8 +1,8 @@
-import { nestReviewThreadsUnderReviews } from './conversation.js';
+import { nestReviewThreadsUnderReviews } from "./conversation.js";
 import type {
   GitHubPullRequestConversationItem,
   GitHubPullRequestConversationReview,
-} from './types.js';
+} from "./types.js";
 
 function flattenConversationItems(
   items: GitHubPullRequestConversationItem[],
@@ -10,7 +10,7 @@ function flattenConversationItems(
   const output: GitHubPullRequestConversationItem[] = [];
 
   for (const item of items) {
-    if (item.kind === 'review') {
+    if (item.kind === "review") {
       const { threads, ...review } = item as GitHubPullRequestConversationReview;
       output.push({ ...review, threads: [] });
       for (const thread of threads) {

@@ -5,11 +5,7 @@ import { editorStateToRichSegments } from "@/lib/composer-lexical/bridge/editor-
 import { richSegmentsToEditorState } from "@/lib/composer-lexical/bridge/rich-segments-to-editor";
 import { normalizeComposerSegmentsPolicy } from "@/lib/composer-lexical/composer-lexical-policy";
 import type { DesktopAgentMode } from "@/lib/agent-mode";
-import {
-  hasLoopSegment,
-  insertLoopSegment,
-  removeLoopSegment,
-} from "@/lib/composer-loop-segments";
+import { hasLoopSegment, insertLoopSegment, removeLoopSegment } from "@/lib/composer-loop-segments";
 import {
   mergeAdjacentTextSegments,
   segmentsEqual,
@@ -44,10 +40,10 @@ export function LoopChipPlugin({
 
     if (!loopEnabled) {
       if (prev && hasLoopSegment(raw)) {
-        const stripped = normalizeComposerSegmentsPolicy(
-          removeLoopSegment(raw),
-          { agentMode, agentModeChipDismissed },
-        );
+        const stripped = normalizeComposerSegmentsPolicy(removeLoopSegment(raw), {
+          agentMode,
+          agentModeChipDismissed,
+        });
         skipEditorSyncRef.current = true;
         richSegmentsToEditorState(stripped, editor);
         skipEditorSyncRef.current = false;

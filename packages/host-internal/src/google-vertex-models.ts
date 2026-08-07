@@ -3,14 +3,14 @@
  * Express API Key 模式无法列模型，请手动填写部署名。
  */
 
-import { GoogleAuth } from 'google-auth-library';
+import { GoogleAuth } from "google-auth-library";
 
-import type { ProviderListedModelEntry } from './openai-models.js';
+import type { ProviderListedModelEntry } from "./openai-models.js";
 import {
   normalizeVertexLocation,
   normalizeVertexProject,
   vertexPublisherModelsListUrl,
-} from './google-vertex-endpoints.js';
+} from "./google-vertex-endpoints.js";
 
 export interface ListVertexModelsOptions {
   project: string;
@@ -22,12 +22,12 @@ export interface ListVertexModelsOptions {
 }
 
 function readOptionalTrimmedString(value: unknown): string | undefined {
-  return typeof value === 'string' && value.trim().length > 0 ? value.trim() : undefined;
+  return typeof value === "string" && value.trim().length > 0 ? value.trim() : undefined;
 }
 
 function vertexModelIdFromPublisherName(name: string): string | undefined {
   const trimmed = name.trim();
-  const marker = '/models/';
+  const marker = "/models/";
   const index = trimmed.lastIndexOf(marker);
   if (index >= 0) {
     const id = trimmed.slice(index + marker.length).trim();
@@ -38,12 +38,12 @@ function vertexModelIdFromPublisherName(name: string): string | undefined {
 
 function vertexModelSupportsReasoning(modelId: string): boolean {
   const normalized = modelId.trim().toLowerCase();
-  return normalized.includes('gemini-2.5') || normalized.includes('gemini-3');
+  return normalized.includes("gemini-2.5") || normalized.includes("gemini-3");
 }
 
 /** 解析 Vertex `publisherModels` 列表响应。 */
 export function parseVertexModelEntriesPayload(body: unknown): ProviderListedModelEntry[] {
-  if (typeof body !== 'object' || body === null) {
+  if (typeof body !== "object" || body === null) {
     return [];
   }
 
@@ -54,7 +54,7 @@ export function parseVertexModelEntriesPayload(body: unknown): ProviderListedMod
 
   const entries: ProviderListedModelEntry[] = [];
   for (const entry of publisherModels) {
-    if (typeof entry !== 'object' || entry === null) {
+    if (typeof entry !== "object" || entry === null) {
       continue;
     }
     const record = entry as Record<string, unknown>;
@@ -70,12 +70,14 @@ export function parseVertexModelEntriesPayload(body: unknown): ProviderListedMod
 
     const displayName = readOptionalTrimmedString(record.displayName);
     const description = readOptionalTrimmedString(record.description);
-    const inputLimit = typeof record.inputTokenLimit === 'number' && record.inputTokenLimit > 0
-      ? record.inputTokenLimit
-      : undefined;
-    const outputLimit = typeof record.outputTokenLimit === 'number' && record.outputTokenLimit > 0
-      ? record.outputTokenLimit
-      : undefined;
+    const inputLimit =
+      typeof record.inputTokenLimit === "number" && record.inputTokenLimit > 0
+        ? record.inputTokenLimit
+        : undefined;
+    const outputLimit =
+      typeof record.outputTokenLimit === "number" && record.outputTokenLimit > 0
+        ? record.outputTokenLimit
+        : undefined;
 
     entries.push({
       id,
@@ -95,12 +97,12 @@ async function resolveVertexAccessToken(options: ListVertexModelsOptions): Promi
   const clientEmail = options.vertexClientEmail?.trim();
   const privateKey = options.vertexPrivateKey?.trim();
   const auth = new GoogleAuth({
-    scopes: ['https://www.googleapis.com/auth/cloud-platform'],
+    scopes: ["https://www.googleapis.com/auth/cloud-platform"],
     ...(clientEmail && privateKey
       ? {
           credentials: {
             client_email: clientEmail,
-            private_key: privateKey.replace(/\\n/g, '\n'),
+            private_key: privateKey.replace(/\\n/g, "\n"),
           },
         }
       : {}),
@@ -109,7 +111,7 @@ async function resolveVertexAccessToken(options: ListVertexModelsOptions): Promi
   const tokenResponse = await client.getAccessToken();
   const token = tokenResponse?.token?.trim();
   if (!token) {
-    throw new Error('无法获取 Google Vertex 访问令牌。请检查 ADC 或服务账号凭证。');
+    throw new Error("无法获取 Google Vertex 访问令牌。请检查 ADC 或服务账号凭证。");
   }
   return token;
 }
@@ -120,7 +122,7 @@ async function fetchVertexModelsPage(
   signal?: AbortSignal,
 ): Promise<unknown> {
   const response = await fetch(url, {
-    method: 'GET',
+    method: "GET",
     headers: {
       Authorization: `Bearer ${accessToken}`,
     },
@@ -138,12 +140,15 @@ async function fetchVertexModelsPage(
   }
 
   if (!response.ok) {
-    const errObj = typeof json === 'object' && json !== null ? json as Record<string, unknown> : undefined;
+    const errObj =
+      typeof json === "object" && json !== null ? (json as Record<string, unknown>) : undefined;
     const error = errObj?.error;
     const errMsg =
-      typeof error === 'string'
+      typeof error === "string"
         ? error
-        : typeof error === 'object' && error !== null && typeof (error as { message?: unknown }).message === 'string'
+        : typeof error === "object" &&
+            error !== null &&
+            typeof (error as { message?: unknown }).message === "string"
           ? (error as { message: string }).message
           : undefined;
     throw new Error(
@@ -160,16 +165,16 @@ export async function listVertexModels(
   options: ListVertexModelsOptions,
 ): Promise<ProviderListedModelEntry[]> {
   if (options.apiKey?.trim()) {
-    throw new Error('Google Vertex Express API Key 模式无法自动列模型，请手动填写模型 ID。');
+    throw new Error("Google Vertex Express API Key 模式无法自动列模型，请手动填写模型 ID。");
   }
 
   const project = normalizeVertexProject(options.project);
   const location = normalizeVertexLocation(options.location);
   if (!project) {
-    throw new Error('Google Vertex 列模型需要填写 GCP 项目 ID。');
+    throw new Error("Google Vertex 列模型需要填写 GCP 项目 ID。");
   }
   if (!location) {
-    throw new Error('Google Vertex 列模型需要填写区域（location）。');
+    throw new Error("Google Vertex 列模型需要填写区域（location）。");
   }
 
   const accessToken = await resolveVertexAccessToken(options);
@@ -182,7 +187,7 @@ export async function listVertexModels(
     allEntries.push(...parseVertexModelEntriesPayload(json));
 
     pageToken =
-      typeof json === 'object' && json !== null && 'nextPageToken' in json
+      typeof json === "object" && json !== null && "nextPageToken" in json
         ? readOptionalTrimmedString((json as { nextPageToken?: unknown }).nextPageToken)
         : undefined;
   } while (pageToken);

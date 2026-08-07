@@ -1,28 +1,28 @@
-import path from 'node:path';
+import path from "node:path";
 
-import i18n from '../lib/i18n-host.js';
-import type { ForkSessionRequest } from '../types.js';
-import type { DesktopSnapshot } from '../types.js';
-import type { DesktopHostRuntime } from './runtime.js';
-import type { SessionBundle } from './session-bundle.js';
-import type { SessionActivationContext } from './session-activation.js';
-import { finishSessionActivationCommand } from './session-activation.js';
+import i18n from "../lib/i18n-host.js";
+import type { ForkSessionRequest } from "../types.js";
+import type { DesktopSnapshot } from "../types.js";
+import type { DesktopHostRuntime } from "./runtime.js";
+import type { SessionBundle } from "./session-bundle.js";
+import type { SessionActivationContext } from "./session-activation.js";
+import { finishSessionActivationCommand } from "./session-activation.js";
 import {
   buildArchiveAssistantAuxFromConversation,
   buildArchiveMessagesFromConversation,
   nextMessageIdFromMessages,
   sanitizeConversationMessagesForPersistence,
-} from './sessions.js';
-import { createDesktopRewindMetadata } from './rewind.js';
-import { cloneHostTodoRecords, listSessionTodos, replaceSessionTodos } from './todos.js';
-import { defaultNewSessionPath } from './storage.js';
+} from "./sessions.js";
+import { createDesktopRewindMetadata } from "./rewind.js";
+import { cloneHostTodoRecords, listSessionTodos, replaceSessionTodos } from "./todos.js";
+import { defaultNewSessionPath } from "./storage.js";
 import {
   buildTruncatedChatArchiveForFork,
   deriveForkedSessionDisplayName,
   resolveForkAnchorIndex,
   truncateMessagesThroughIndex,
-} from './fork-session.js';
-import { cloneArchiveHistory, cloneArchiveSubagentSessions } from './service-utils.js';
+} from "./fork-session.js";
+import { cloneArchiveHistory, cloneArchiveSubagentSessions } from "./service-utils.js";
 
 export interface ForkSessionHostContext extends SessionActivationContext {
   requireRuntime(): DesktopHostRuntime;
@@ -41,14 +41,14 @@ export function populateForkedBundleFromSource(
     archive: ReturnType<typeof buildTruncatedChatArchiveForFork>;
     sourceBundle: SessionBundle;
   },
-  ctx: Pick<ForkSessionHostContext, 'createMessageTimelineFromMessages'>,
+  ctx: Pick<ForkSessionHostContext, "createMessageTimelineFromMessages">,
 ): void {
   const timeline = ctx.createMessageTimelineFromMessages(input.truncatedMessages);
   forkBundle.workspaceRoot = input.workspaceRoot;
   forkBundle.activeSession = {
     filePath: path.resolve(input.filePath),
     displayName: input.displayName,
-    kind: 'stored',
+    kind: "stored",
   };
   forkBundle.messages = input.truncatedMessages.map((message) => ({ ...message }));
   forkBundle.messageTimeline = timeline;
@@ -71,7 +71,7 @@ export function populateForkedBundleFromSource(
   forkBundle.queuedUserTurns = [];
   forkBundle.conversationRevision = 0;
   forkBundle.contextUsage = undefined;
-  forkBundle.sessionTitleSource = 'seed';
+  forkBundle.sessionTitleSource = "seed";
   forkBundle.subagentDesktopMessagesBySessionId = new Map();
   forkBundle.subagentConversationProjections = new Map();
   forkBundle.runtime = undefined;
@@ -92,19 +92,19 @@ export async function forkSessionCommand(
     ctx.clearSubagentViewerTarget();
 
     if (ctx.isActiveSessionReadOnly()) {
-      throw new Error(i18n.t('error.forkReadOnlySession'));
+      throw new Error(i18n.t("error.forkReadOnlySession"));
     }
     if (ctx.isConversationBusy()) {
-      throw new Error(i18n.t('error.runtimeBusy'));
+      throw new Error(i18n.t("error.runtimeBusy"));
     }
     if (!Number.isFinite(request.messageId)) {
-      throw new Error(i18n.t('error.invalidMessageId'));
+      throw new Error(i18n.t("error.invalidMessageId"));
     }
 
     const state = ctx.requireState();
     const sourceBundle = ctx.sessionRegistry().getActive();
     if (!sourceBundle?.activeSession) {
-      throw new Error(i18n.t('error.hostNotInitialized'));
+      throw new Error(i18n.t("error.hostNotInitialized"));
     }
 
     const sourceMessages = sourceBundle.messageTimeline.toMessages();
@@ -114,21 +114,22 @@ export async function forkSessionCommand(
       request.listIndex,
     );
     if (anchorIndex === null) {
-      throw new Error(i18n.t('error.forkInvalidAnchor'));
+      throw new Error(i18n.t("error.forkInvalidAnchor"));
     }
 
     const truncatedMessages = truncateMessagesThroughIndex(sourceMessages, anchorIndex);
     if (truncatedMessages.length === 0) {
-      throw new Error(i18n.t('error.forkInvalidAnchor'));
+      throw new Error(i18n.t("error.forkInvalidAnchor"));
     }
 
     const sourceMessageCount = sourceMessages.length;
     if (sourceBundle.activeSession && sourceMessageCount > 0) {
-      await ctx.runSessionEndForBundle?.(sourceBundle, 'switch');
+      await ctx.runSessionEndForBundle?.(sourceBundle, "switch");
       await ctx.persistSessionBundle(sourceBundle, {
-        fromRuntime: ctx.sessionRegistry().activeSessionId() === sourceBundle.id
-          ? ctx.currentRuntime()
-          : undefined,
+        fromRuntime:
+          ctx.sessionRegistry().activeSessionId() === sourceBundle.id
+            ? ctx.currentRuntime()
+            : undefined,
         bumpListSortAt: false,
       });
     }
@@ -167,16 +168,16 @@ export async function forkSessionCommand(
     await replaceSessionTodos(forkTodoKey, sourceTodos);
 
     ctx.sessionRegistry().activateExisting(forkBundle);
-    await finishSessionActivationCommand(ctx, forkBundle, { sessionStartSource: 'open' });
+    await finishSessionActivationCommand(ctx, forkBundle, { sessionStartSource: "open" });
     await ctx.persistSessionBundle(forkBundle, {
       fromRuntime: forkBundle.runtime,
       bumpListSortAt: true,
     });
 
     ctx.notifySessionListUpdated?.();
-    ctx.setLastRuntimeError('');
+    ctx.setLastRuntimeError("");
     ctx.scheduleSessionExtensionWarmup({
-      type: 'onSessionOpened',
+      type: "onSessionOpened",
       detail: {
         filePath: path.resolve(forkBundle.activeSession!.filePath),
         displayName: forkDisplayName,

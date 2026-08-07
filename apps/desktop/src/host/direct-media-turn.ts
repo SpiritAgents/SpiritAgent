@@ -1,4 +1,4 @@
-import { randomUUID } from 'node:crypto';
+import { randomUUID } from "node:crypto";
 
 import {
   createLlmMessageContentFromText,
@@ -10,29 +10,26 @@ import {
   type RuntimeToolExecution,
   type StoredLlmMessageArchiveEntry,
   type ToolExecutionOutput,
-} from '@spiritagent/agent-core';
+} from "@spiritagent/agent-core";
 
-import i18n from '../lib/i18n-host.js';
+import i18n from "../lib/i18n-host.js";
 import {
   resolveComposerDirectMediaTool,
   type DirectMediaTool,
-} from '../lib/composer-direct-media.js';
-import type { DesktopToolRequest } from './contracts.js';
+} from "../lib/composer-direct-media.js";
+import type { DesktopToolRequest } from "./contracts.js";
 import {
   buildMediaOnlyTransportConfig,
   type DirectMediaTool as HostDirectMediaTool,
-} from './model-config.js';
-import type { SessionBundle } from './session-bundle.js';
-import { isWorktreeBootstrapInFlight } from './worktree-bootstrap-card.js';
-import { syncRuntimeHistoryFromBundleArchive } from './conversation-continuation.js';
-import type { SessionTurnOrchestratorContext } from './session-turn-orchestrator.js';
-import type { DesktopConfigFile } from './storage.js';
-import type { ModelRef } from '../types.js';
-import {
-  flattenProviderGroups,
-  resolveModelProfile,
-} from './model-config-access.js';
-import type { DesktopToolExecutor } from './tool-executor.js';
+} from "./model-config.js";
+import type { SessionBundle } from "./session-bundle.js";
+import { isWorktreeBootstrapInFlight } from "./worktree-bootstrap-card.js";
+import { syncRuntimeHistoryFromBundleArchive } from "./conversation-continuation.js";
+import type { SessionTurnOrchestratorContext } from "./session-turn-orchestrator.js";
+import type { DesktopConfigFile } from "./storage.js";
+import type { ModelRef } from "../types.js";
+import { flattenProviderGroups, resolveModelProfile } from "./model-config-access.js";
+import type { DesktopToolExecutor } from "./tool-executor.js";
 
 export interface DirectMediaTurnInput {
   bundle: SessionBundle;
@@ -43,10 +40,10 @@ export interface DirectMediaTurnInput {
 }
 
 function buildMediaToolRequest(toolName: DirectMediaTool, prompt: string): DesktopToolRequest {
-  if (toolName === 'generate_image') {
-    return { name: 'generate_image', prompt };
+  if (toolName === "generate_image") {
+    return { name: "generate_image", prompt };
   }
-  return { name: 'generate_video', prompt };
+  return { name: "generate_video", prompt };
 }
 
 function buildMediaToolExecution(
@@ -56,14 +53,14 @@ function buildMediaToolExecution(
   output: ToolExecutionOutput,
   failed: boolean,
 ): RuntimeToolExecution<DesktopToolRequest> {
-  const artifacts: RuntimeToolExecution<DesktopToolRequest>['artifacts'] = [];
+  const artifacts: RuntimeToolExecution<DesktopToolRequest>["artifacts"] = [];
   for (const part of output.content) {
-    if (part.type === 'image') {
-      artifacts.push({ kind: 'image', path: part.path });
+    if (part.type === "image") {
+      artifacts.push({ kind: "image", path: part.path });
       continue;
     }
-    if (part.type === 'video') {
-      artifacts.push({ kind: 'video', path: part.path });
+    if (part.type === "video") {
+      artifacts.push({ kind: "video", path: part.path });
     }
   }
 
@@ -88,12 +85,12 @@ export function appendDirectMediaTurnToArchive(
   },
 ): void {
   const userEntry: StoredLlmMessageArchiveEntry = {
-    role: 'user',
+    role: "user",
     content: createLlmMessageContentFromText(input.prompt),
   };
   const assistantEntry: StoredLlmMessageArchiveEntry = {
-    role: 'assistant',
-    content: createLlmMessageContentFromText(''),
+    role: "assistant",
+    content: createLlmMessageContentFromText(""),
     toolCalls: [
       {
         id: input.toolCallId,
@@ -103,7 +100,7 @@ export function appendDirectMediaTurnToArchive(
     ],
   };
   const toolEntry: StoredLlmMessageArchiveEntry = {
-    role: 'tool',
+    role: "tool",
     content: createLlmMessageContentFromText(input.summaryText),
     toolCallId: input.toolCallId,
   };
@@ -137,7 +134,7 @@ export function beginDirectMediaTurn(
 ): DesktopToolRequest {
   const request = buildMediaToolRequest(input.toolName, input.prompt);
   const startedEvent: RuntimeEvent<DesktopToolRequest> = {
-    kind: 'tool-call-started',
+    kind: "tool-call-started",
     toolCallId: input.toolCallId,
     toolName: input.toolName,
     request,
@@ -155,12 +152,12 @@ async function validateDirectMediaTurnSetup(
   const config = ctx.requireConfig();
   const profile = resolveModelProfile(config, config.activeModel);
   if (!profile) {
-    throw new Error(i18n.t('error.modelNotFound', { model: config.activeModel.name }));
+    throw new Error(i18n.t("error.modelNotFound", { model: config.activeModel.name }));
   }
 
   const apiKey = await ctx.resolveApiKeyForConfigModel(profile.ref);
   if (!apiKey) {
-    throw new Error(i18n.t('error.apiKeyNotConfigured'));
+    throw new Error(i18n.t("error.apiKeyNotConfigured"));
   }
 
   await ctx.ensureToolExecutor(input.bundle);
@@ -175,12 +172,12 @@ async function runDirectMediaGeneration(
   const config = ctx.requireConfig();
   const profile = resolveModelProfile(config, config.activeModel);
   if (!profile) {
-    throw new Error(i18n.t('error.modelNotFound', { model: config.activeModel.name }));
+    throw new Error(i18n.t("error.modelNotFound", { model: config.activeModel.name }));
   }
 
   const apiKey = await ctx.resolveApiKeyForConfigModel(profile.ref);
   if (!apiKey) {
-    throw new Error(i18n.t('error.apiKeyNotConfigured'));
+    throw new Error(i18n.t("error.apiKeyNotConfigured"));
   }
 
   const mediaTransportConfig = buildMediaOnlyTransportConfig(input.toolName, {
@@ -193,15 +190,13 @@ async function runDirectMediaGeneration(
 
   try {
     let output: ToolExecutionOutput;
-    if (input.toolName === 'generate_image') {
+    if (input.toolName === "generate_image") {
       const imageRequest: ImageGenerationRequest = {
         prompt: input.prompt,
         size: DEFAULT_IMAGE_GENERATION_SIZE,
       };
-      output = await llmTransport.generateImage(
-        mediaTransportConfig,
-        imageRequest,
-        (saveRequest) => toolExecutor.saveGeneratedImage(saveRequest),
+      output = await llmTransport.generateImage(mediaTransportConfig, imageRequest, (saveRequest) =>
+        toolExecutor.saveGeneratedImage(saveRequest),
       );
     } else {
       output = await llmTransport.generateVideo(
@@ -213,7 +208,7 @@ async function runDirectMediaGeneration(
 
     const execution = buildMediaToolExecution(toolCallId, input.toolName, request, output, false);
     orchestration.runtimeEvents.applyRuntimeHostEvents([
-      { kind: 'tool-execution-finished', execution },
+      { kind: "tool-execution-finished", execution },
     ]);
     appendDirectMediaTurnToArchive(input.bundle, {
       prompt: input.prompt,
@@ -224,9 +219,7 @@ async function runDirectMediaGeneration(
     });
   } catch (error) {
     const message = renderDirectMediaError(error);
-    const failedOutput = createToolExecutionTextOutput(
-      `${input.toolName} failed: ${message}`,
-    );
+    const failedOutput = createToolExecutionTextOutput(`${input.toolName} failed: ${message}`);
     const execution = buildMediaToolExecution(
       toolCallId,
       input.toolName,
@@ -235,7 +228,7 @@ async function runDirectMediaGeneration(
       true,
     );
     orchestration.runtimeEvents.applyRuntimeHostEvents([
-      { kind: 'tool-execution-finished', execution },
+      { kind: "tool-execution-finished", execution },
     ]);
     appendDirectMediaTurnToArchive(input.bundle, {
       prompt: input.prompt,
@@ -297,7 +290,7 @@ export async function startComposerDirectMediaTurn(
   const toolCallId = randomUUID();
   const request = beginDirectMediaTurn(ctx, { ...input, toolCallId });
   void finishDirectMediaTurn(ctx, input, toolCallId, request).catch((error) => {
-    console.error('[desktop][composer-direct-media] background turn failed', error);
+    console.error("[desktop][composer-direct-media] background turn failed", error);
   });
 }
 
@@ -322,10 +315,10 @@ export function shouldUseComposerDirectMediaTurn(
     return null;
   }
   if (explicitWorkspaceFileCount > 0) {
-    console.debug(
-      '[desktop][composer-direct-media] attachments present; falling back to chat',
-      { activeModel: activeProfile.name, tool: directMediaTool },
-    );
+    console.debug("[desktop][composer-direct-media] attachments present; falling back to chat", {
+      activeModel: activeProfile.name,
+      tool: directMediaTool,
+    });
     return null;
   }
   return directMediaTool;

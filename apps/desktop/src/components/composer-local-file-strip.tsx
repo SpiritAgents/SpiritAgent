@@ -125,7 +125,7 @@ function ComposerLocalFileCard({
       <LocalImagePreviewDialog
         open={viewerOpen}
         onOpenChange={setViewerOpen}
-        previewDataUrl={canPreview ? attachment.previewDataUrl ?? null : null}
+        previewDataUrl={canPreview ? (attachment.previewDataUrl ?? null) : null}
         onSave={saveLocalImageAs ? handleSaveImage : undefined}
         saving={saving}
       />

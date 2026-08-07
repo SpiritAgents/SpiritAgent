@@ -1,26 +1,24 @@
-import {
-  type RuntimeTurnResult,
-} from '@spiritagent/agent-core';
-import { setImmediate as waitForImmediate } from 'node:timers/promises';
+import { type RuntimeTurnResult } from "@spiritagent/agent-core";
+import { setImmediate as waitForImmediate } from "node:timers/promises";
 
-import type { HostDreamSourceSessionRef, ModelRef } from '@spiritagent/host-internal';
+import type { HostDreamSourceSessionRef, ModelRef } from "@spiritagent/host-internal";
 
-import type { DesktopToolRequest } from './contracts.js';
-import type { DesktopHostRuntime } from './runtime.js';
+import type { DesktopToolRequest } from "./contracts.js";
+import type { DesktopHostRuntime } from "./runtime.js";
 import {
   closeRemoteDesktopRuntime,
   createRemoteDesktopRuntime,
   replyRemoteWorkspaceCapabilityTrust,
-} from './remote-runtime.js';
-import { buildEmptyAutomationArchive } from './automation-runtime.js';
-import { spiritAgentDataDir } from './storage.js';
+} from "./remote-runtime.js";
+import { buildEmptyAutomationArchive } from "./automation-runtime.js";
+import { spiritAgentDataDir } from "./storage.js";
 
 export interface CreateDreamCollectorRuntimeInput {
   workspaceRoot: string;
   gitBranch: string;
   modelRef: ModelRef;
   dreamSourceSession: HostDreamSourceSessionRef;
-  approvalLevel?: 'default' | 'auto-approval' | 'full-approval';
+  approvalLevel?: "default" | "auto-approval" | "full-approval";
 }
 
 export interface DreamCollectorRuntimeHandle {
@@ -28,16 +26,14 @@ export interface DreamCollectorRuntimeHandle {
   dispose: () => Promise<void>;
 }
 
-export function buildDreamCollectorRemoteCreateInput(
-  input: CreateDreamCollectorRuntimeInput,
-): {
+export function buildDreamCollectorRemoteCreateInput(input: CreateDreamCollectorRuntimeInput): {
   dataDir: string;
   workspaceRoot: string;
   modelRef: ModelRef;
-  agentMode: 'agent';
+  agentMode: "agent";
   archive: ReturnType<typeof buildEmptyAutomationArchive>;
-  approvalLevel: 'default' | 'auto-approval' | 'full-approval';
-  sessionKind: 'dream-collector';
+  approvalLevel: "default" | "auto-approval" | "full-approval";
+  sessionKind: "dream-collector";
   dreamScope: { workspaceRoot: string; gitBranch: string };
   dreamSourceSession: HostDreamSourceSessionRef;
 } {
@@ -45,10 +41,10 @@ export function buildDreamCollectorRemoteCreateInput(
     dataDir: spiritAgentDataDir(),
     workspaceRoot: input.workspaceRoot,
     modelRef: input.modelRef,
-    agentMode: 'agent',
-    archive: buildEmptyAutomationArchive(input.approvalLevel ?? 'auto-approval'),
-    approvalLevel: input.approvalLevel ?? 'auto-approval',
-    sessionKind: 'dream-collector',
+    agentMode: "agent",
+    archive: buildEmptyAutomationArchive(input.approvalLevel ?? "auto-approval"),
+    approvalLevel: input.approvalLevel ?? "auto-approval",
+    sessionKind: "dream-collector",
     dreamScope: {
       workspaceRoot: input.workspaceRoot,
       gitBranch: input.gitBranch,
@@ -64,8 +60,8 @@ export async function createDreamCollectorRuntime(
   runtime = await createRemoteDesktopRuntime({
     ...buildDreamCollectorRemoteCreateInput(input),
     onWorkspaceCapabilityTrustRequested: (requestId) => {
-      void replyRemoteWorkspaceCapabilityTrust(runtime!, requestId, 'allowOnce').catch((error) => {
-        console.warn('[dream-collector] replyWorkspaceCapabilityTrust failed', error);
+      void replyRemoteWorkspaceCapabilityTrust(runtime!, requestId, "allowOnce").catch((error) => {
+        console.warn("[dream-collector] replyWorkspaceCapabilityTrust failed", error);
       });
     },
   });
@@ -109,7 +105,7 @@ async function waitForDreamCollectorTurnResult(
       return completed;
     }
     if (!runtime.isBusy()) {
-      throw new Error('Dream collector runtime ended without a turn result.');
+      throw new Error("Dream collector runtime ended without a turn result.");
     }
     runtime.tickThinkingSpinner();
     await runtime.poll();

@@ -1,7 +1,19 @@
 import { useEffect, useMemo, useState, type KeyboardEvent } from "react";
-import { GitCommit, GitMerge, GitPullRequest, GitPullRequestClosed, GitPullRequestDraft, PenTool, Terminal, FileText } from "lucide-react";
+import {
+  GitCommit,
+  GitMerge,
+  GitPullRequest,
+  GitPullRequestClosed,
+  GitPullRequestDraft,
+  PenTool,
+  Terminal,
+  FileText,
+} from "lucide-react";
 
-import { BROWSER_ELEMENT_CHIP_CLASS, BROWSER_ELEMENT_CHIP_ICON_CLASS } from "@/lib/browser-element-chip-styles";
+import {
+  BROWSER_ELEMENT_CHIP_CLASS,
+  BROWSER_ELEMENT_CHIP_ICON_CLASS,
+} from "@/lib/browser-element-chip-styles";
 import { ComposerLocalFileStrip } from "@/components/composer-local-file-strip";
 import { useLocalFileAttachmentPreviews } from "@/hooks/useLocalFileAttachmentPreviews";
 import {
@@ -51,11 +63,11 @@ import type { ConversationMessageSnapshot } from "@/types";
 
 function ElementCard({ tagName, url }: { tagName: string; url: string }) {
   return (
-    <span
-      title={url}
-      className={BROWSER_ELEMENT_CHIP_CLASS}
-    >
-      <PenTool className={cn("size-[10px] shrink-0", BROWSER_ELEMENT_CHIP_ICON_CLASS)} aria-hidden />
+    <span title={url} className={BROWSER_ELEMENT_CHIP_CLASS}>
+      <PenTool
+        className={cn("size-[10px] shrink-0", BROWSER_ELEMENT_CHIP_ICON_CLASS)}
+        aria-hidden
+      />
       {`<${tagName}>`}
     </span>
   );
@@ -100,11 +112,7 @@ function prDiffStatusIcon(status: PullRequestChipStatus) {
   }
 }
 
-function PrDiffCard({
-  part,
-}: {
-  part: Extract<MessageContentPart, { kind: "prDiff" }>;
-}) {
+function PrDiffCard({ part }: { part: Extract<MessageContentPart, { kind: "prDiff" }> }) {
   const Icon = prDiffStatusIcon(part.status);
   return (
     <span
@@ -147,11 +155,7 @@ function TerminalCard({
   );
 }
 
-function FileSnippetCard({
-  part,
-}: {
-  part: Extract<MessageContentPart, { kind: "fileSnippet" }>;
-}) {
+function FileSnippetCard({ part }: { part: Extract<MessageContentPart, { kind: "fileSnippet" }> }) {
   return (
     <span
       title={formatFileSnippetChipTitle({
@@ -169,11 +173,7 @@ function FileSnippetCard({
   );
 }
 
-function GitCommitCard({
-  part,
-}: {
-  part: Extract<MessageContentPart, { kind: "gitCommit" }>;
-}) {
+function GitCommitCard({ part }: { part: Extract<MessageContentPart, { kind: "gitCommit" }> }) {
   return (
     <span
       title={formatGitCommitChipTitle({
@@ -192,17 +192,27 @@ function GitCommitCard({
   );
 }
 
-function isInlineChipPart(
-  part: MessageContentPart | null | undefined,
-): part is Extract<MessageContentPart, { kind: "element" | "workspaceFile" | "prDiff" | "gitCommit" | "terminalSnippet" | "fileSnippet" | "skill" }> {
+function isInlineChipPart(part: MessageContentPart | null | undefined): part is Extract<
+  MessageContentPart,
+  {
+    kind:
+      | "element"
+      | "workspaceFile"
+      | "prDiff"
+      | "gitCommit"
+      | "terminalSnippet"
+      | "fileSnippet"
+      | "skill";
+  }
+> {
   return (
-    part?.kind === "element"
-    || part?.kind === "workspaceFile"
-    || part?.kind === "skill"
-    || part?.kind === "prDiff"
-    || part?.kind === "gitCommit"
-    || part?.kind === "terminalSnippet"
-    || part?.kind === "fileSnippet"
+    part?.kind === "element" ||
+    part?.kind === "workspaceFile" ||
+    part?.kind === "skill" ||
+    part?.kind === "prDiff" ||
+    part?.kind === "gitCommit" ||
+    part?.kind === "terminalSnippet" ||
+    part?.kind === "fileSnippet"
   );
 }
 
@@ -242,22 +252,22 @@ export function UserMessageBubble({
 
   useLocalFileAttachmentPreviews(attachmentViews, setAttachmentViews, readLocalImagePreviewDataUrl);
 
-  const contentParts = useMemo(
-    () => parseMessageContentParts(message.content),
-    [message.content],
-  );
-  const visibleText = contentParts.filter((p) => p.kind === 'text').map((p) => p.value).join('');
+  const contentParts = useMemo(() => parseMessageContentParts(message.content), [message.content]);
+  const visibleText = contentParts
+    .filter((p) => p.kind === "text")
+    .map((p) => p.value)
+    .join("");
   const showText =
     (visibleText.trim().length > 0 ||
       contentParts.some(
         (p) =>
-          p.kind === "element"
-          || p.kind === "workspaceFile"
-          || p.kind === "skill"
-          || p.kind === "prDiff"
-          || p.kind === "gitCommit"
-          || p.kind === "terminalSnippet"
-          || p.kind === "fileSnippet",
+          p.kind === "element" ||
+          p.kind === "workspaceFile" ||
+          p.kind === "skill" ||
+          p.kind === "prDiff" ||
+          p.kind === "gitCommit" ||
+          p.kind === "terminalSnippet" ||
+          p.kind === "fileSnippet",
       )) &&
     !isAttachmentOnlyDisplayText(message.content, message.localFileAttachments);
   const hasAttachments = attachmentViews.length > 0;
@@ -284,8 +294,13 @@ export function UserMessageBubble({
     <div className="flex w-full flex-col items-end gap-1.5">
       {hasAttachments ? (
         <div
-          className={cn("w-full", !showText && queued && "opacity-60", !showText && canStartRewind &&
-            "cursor-pointer transition-colors hover:bg-muted/80 focus-visible:ring-2 focus-visible:ring-ring/50 focus-visible:outline-none")}
+          className={cn(
+            "w-full",
+            !showText && queued && "opacity-60",
+            !showText &&
+              canStartRewind &&
+              "cursor-pointer transition-colors hover:bg-muted/80 focus-visible:ring-2 focus-visible:ring-ring/50 focus-visible:outline-none",
+          )}
           role={!showText && canStartRewind ? "button" : undefined}
           tabIndex={!showText && canStartRewind ? 0 : undefined}
           onClick={!showText && canStartRewind ? onRewindStart : undefined}

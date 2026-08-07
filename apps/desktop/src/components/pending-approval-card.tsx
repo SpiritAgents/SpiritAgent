@@ -6,10 +6,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Kbd } from "@/components/ui/kbd";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Textarea } from "@/components/ui/textarea";
-import {
-  DESKTOP_FORM_INPUT_SHELL,
-  DESKTOP_FORM_TEXTAREA_INNER,
-} from "@/lib/desktop-chrome";
+import { DESKTOP_FORM_INPUT_SHELL, DESKTOP_FORM_TEXTAREA_INNER } from "@/lib/desktop-chrome";
 import { cn } from "@/lib/utils";
 import type { PendingToolApprovalSnapshot } from "@/types";
 

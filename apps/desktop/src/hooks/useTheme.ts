@@ -75,13 +75,9 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
     };
   }, [applySystemTheme, theme]);
 
-  const resolvedDark =
-    theme === "dark" ? true : theme === "light" ? false : systemDark;
+  const resolvedDark = theme === "dark" ? true : theme === "light" ? false : systemDark;
 
-  const value = useMemo(
-    () => ({ theme, setTheme, resolvedDark }),
-    [theme, setTheme, resolvedDark],
-  );
+  const value = useMemo(() => ({ theme, setTheme, resolvedDark }), [theme, setTheme, resolvedDark]);
 
   return createElement(
     ThemeSetterContext.Provider,

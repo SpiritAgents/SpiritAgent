@@ -4,11 +4,7 @@ import { useTranslation } from "react-i18next";
 import { Download, LoaderCircle, X } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
-import {
-  Dialog,
-  DialogClose,
-  DialogContent,
-} from "@/components/ui/dialog";
+import { Dialog, DialogClose, DialogContent } from "@/components/ui/dialog";
 import { cn } from "@/lib/utils";
 
 // backdrop-filter 在祖先 opacity 动画期间无法正确合成；卡片 hover 渐显须与 blur 写在同一元素上。
@@ -22,9 +18,8 @@ function computeImagePreviewCssSize(
   naturalWidth: number,
   naturalHeight: number,
 ): { width: number; height: number } {
-  const dpr = typeof window !== "undefined" && window.devicePixelRatio > 0
-    ? window.devicePixelRatio
-    : 1;
+  const dpr =
+    typeof window !== "undefined" && window.devicePixelRatio > 0 ? window.devicePixelRatio : 1;
   let cssW = Math.max(1, Math.floor(naturalWidth / dpr));
   let cssH = Math.max(1, Math.floor(naturalHeight / dpr));
 
@@ -42,7 +37,9 @@ function computeImagePreviewCssSize(
   return { width: cssW, height: cssH };
 }
 
-export function useImagePreviewAspectRatio(previewDataUrl: string | null): CSSProperties | undefined {
+export function useImagePreviewAspectRatio(
+  previewDataUrl: string | null,
+): CSSProperties | undefined {
   const [previewSize, setPreviewSize] = useState<{ width: number; height: number } | null>(null);
 
   useEffect(() => {
@@ -125,12 +122,15 @@ export function LocalImagePreviewDialog({
                 type="button"
                 variant="ghost"
                 size="icon"
-                className={cn("absolute top-3 right-3 z-20", LOCAL_IMAGE_FLOATING_ACTION_BUTTON_CLASS)}
-                title={t('app.closeImagePreview')}
-                aria-label={t('app.closeImagePreview')}
+                className={cn(
+                  "absolute top-3 right-3 z-20",
+                  LOCAL_IMAGE_FLOATING_ACTION_BUTTON_CLASS,
+                )}
+                title={t("app.closeImagePreview")}
+                aria-label={t("app.closeImagePreview")}
               >
                 <X className="size-4" aria-hidden />
-                <span className="sr-only">{t('app.closeImagePreview')}</span>
+                <span className="sr-only">{t("app.closeImagePreview")}</span>
               </Button>
             </DialogClose>
             <img
@@ -148,10 +148,14 @@ export function LocalImagePreviewDialog({
                   className={cn("pointer-events-auto", LOCAL_IMAGE_FLOATING_ACTION_BUTTON_CLASS)}
                   onClick={() => void onSave()}
                   disabled={saving}
-                  title={t('app.downloadImage')}
-                  aria-label={t('app.downloadImage')}
+                  title={t("app.downloadImage")}
+                  aria-label={t("app.downloadImage")}
                 >
-                  {saving ? <LoaderCircle className="size-4 animate-spin" aria-hidden /> : <Download className="size-4" aria-hidden />}
+                  {saving ? (
+                    <LoaderCircle className="size-4 animate-spin" aria-hidden />
+                  ) : (
+                    <Download className="size-4" aria-hidden />
+                  )}
                 </Button>
               </div>
             ) : null}

@@ -114,7 +114,14 @@ export function AgentModeChipPlugin({
     if (!segmentsEqual(next, segmentsRef.current)) {
       onSegmentsNormalized(next);
     }
-  }, [agentMode, agentModeChipDismissed, editor, onSegmentsNormalized, segmentsRef, skipEditorSyncRef]);
+  }, [
+    agentMode,
+    agentModeChipDismissed,
+    editor,
+    onSegmentsNormalized,
+    segmentsRef,
+    skipEditorSyncRef,
+  ]);
 
   return null;
 }

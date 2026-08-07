@@ -1,28 +1,28 @@
-import { setImmediate as waitForImmediate } from 'node:timers/promises';
+import { setImmediate as waitForImmediate } from "node:timers/promises";
 
-import type { RuntimeEvent, RuntimeTurnResult } from '@spiritagent/agent-core';
+import type { RuntimeEvent, RuntimeTurnResult } from "@spiritagent/agent-core";
 
-import type { ConversationMessageSnapshot } from '../types.js';
-import { DesktopAssistantMessageStateMachine } from './assistant-message-state.js';
-import { DesktopConversationSnapshotView } from './conversation-snapshot.js';
-import type { DesktopToolRequest } from './contracts.js';
+import type { ConversationMessageSnapshot } from "../types.js";
+import { DesktopAssistantMessageStateMachine } from "./assistant-message-state.js";
+import { DesktopConversationSnapshotView } from "./conversation-snapshot.js";
+import type { DesktopToolRequest } from "./contracts.js";
 import {
   DesktopMessageTimeline,
   type DesktopTimelineSegmentKind,
   type DesktopTimelineTurnSnapshot,
-} from './message-timeline.js';
+} from "./message-timeline.js";
 import {
   DesktopRuntimeEventOrchestrator,
   runtimeEventsIncludeAppliedResponsesBuiltInToolPreview,
   splitRuntimeEventsForIncrementalFinishTaskPreview,
   splitRuntimeEventsForIncrementalResponsesBuiltInToolPreview,
-} from './runtime-event-orchestrator.js';
-import type { DesktopHostRuntime } from './runtime.js';
+} from "./runtime-event-orchestrator.js";
+import type { DesktopHostRuntime } from "./runtime.js";
 import {
   buildArchiveAssistantAuxFromConversation,
   buildArchiveMessagesFromConversation,
   sanitizeConversationMessagesForPersistence,
-} from './sessions.js';
+} from "./sessions.js";
 
 function nextMessageIdFromMessages(messages: ConversationMessageSnapshot[]): number {
   return Math.max(0, ...messages.map((message) => message.id)) + 1;
@@ -35,7 +35,7 @@ export class AutomationConversationProjection {
   private messageIdCounter: number;
   private deferredRuntimeHostEvents: RuntimeEvent<DesktopToolRequest>[] = [];
   private responsesBuiltInPreviewSeenCallIds = new Set<string>();
-  private nextTimelineAssistantSegmentKind: DesktopTimelineSegmentKind = 'initial';
+  private nextTimelineAssistantSegmentKind: DesktopTimelineSegmentKind = "initial";
   private runtime: DesktopHostRuntime | undefined;
 
   private constructor(messages: ConversationMessageSnapshot[]) {
@@ -46,7 +46,9 @@ export class AutomationConversationProjection {
         this.messageIdCounter = Math.max(this.messageIdCounter, messageId + 1);
       },
     });
-    const conversationSnapshotView = new DesktopConversationSnapshotView(() => this.allocateMessageId());
+    const conversationSnapshotView = new DesktopConversationSnapshotView(() =>
+      this.allocateMessageId(),
+    );
     const messageBuffer: ConversationMessageSnapshot[] = [...messages];
     this.assistantMessages = new DesktopAssistantMessageStateMachine({
       messages: () => messageBuffer,
@@ -100,20 +102,18 @@ export class AutomationConversationProjection {
     this.runtimeEvents.applyRuntimeHostEvents(splitBuiltin.toApply);
     for (const event of splitBuiltin.toApply) {
       if (
-        event.kind === 'streaming-tool-preview'
-        && runtimeEventsIncludeAppliedResponsesBuiltInToolPreview([event])
+        event.kind === "streaming-tool-preview" &&
+        runtimeEventsIncludeAppliedResponsesBuiltInToolPreview([event])
       ) {
         this.responsesBuiltInPreviewSeenCallIds.add(event.toolCallId);
       }
     }
   }
 
-  applyCompletedTurnResult(
-    result: RuntimeTurnResult<unknown, DesktopToolRequest, string>,
-  ): void {
+  applyCompletedTurnResult(result: RuntimeTurnResult<unknown, DesktopToolRequest, string>): void {
     this.runtimeEvents.applyCompletedTurnResult(result);
     this.runtimeEvents.syncTurnTailState();
-    this.nextTimelineAssistantSegmentKind = 'initial';
+    this.nextTimelineAssistantSegmentKind = "initial";
   }
 
   toMessages(): ConversationMessageSnapshot[] {
@@ -156,7 +156,7 @@ export async function runAutomationStreamingTurn(
       return completed;
     }
     if (!runtime.isBusy()) {
-      throw new Error('Automation runtime ended without a turn result.');
+      throw new Error("Automation runtime ended without a turn result.");
     }
     runtime.tickThinkingSpinner();
     await runtime.poll();

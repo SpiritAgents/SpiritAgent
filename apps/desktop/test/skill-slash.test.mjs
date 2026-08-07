@@ -12,7 +12,10 @@ import {
 
 test("buildSkillSlashSuggestions excludes start-implementing slash", () => {
   const suggestions = buildSkillSlashSuggestions("/", []);
-  assert.equal(suggestions.some((item) => item.alias === "/start-implementing"), false);
+  assert.equal(
+    suggestions.some((item) => item.alias === "/start-implementing"),
+    false,
+  );
 });
 
 test("buildSkillSlashSuggestions includes loop command", () => {
@@ -23,7 +26,10 @@ test("buildSkillSlashSuggestions includes loop command", () => {
 test("buildSkillSlashSuggestions filters loop by prefix", () => {
   const suggestions = buildSkillSlashSuggestions("/lo", []);
   assert.ok(suggestions.some((item) => item.kind === "loop"));
-  assert.equal(buildSkillSlashSuggestions("/compact", []).some((item) => item.kind === "loop"), false);
+  assert.equal(
+    buildSkillSlashSuggestions("/compact", []).some((item) => item.kind === "loop"),
+    false,
+  );
 });
 
 test("buildSkillSlashSuggestions includes plan and ask commands", () => {
@@ -35,7 +41,10 @@ test("buildSkillSlashSuggestions includes plan and ask commands", () => {
 test("buildSkillSlashSuggestions filters plan by prefix", () => {
   const suggestions = buildSkillSlashSuggestions("/p", []);
   assert.ok(suggestions.some((item) => item.kind === "plan"));
-  assert.equal(buildSkillSlashSuggestions("/ask", []).some((item) => item.kind === "plan"), false);
+  assert.equal(
+    buildSkillSlashSuggestions("/ask", []).some((item) => item.kind === "plan"),
+    false,
+  );
 });
 
 test("buildSkillSlashSuggestions matches side via btw search alias", () => {
@@ -49,7 +58,10 @@ test("buildSkillSlashSuggestions matches side via btw search alias", () => {
 test("buildSkillSlashSuggestions filters side by btw alias prefix", () => {
   const suggestions = buildSkillSlashSuggestions("/bt", []);
   assert.ok(suggestions.some((item) => item.kind === "side-chat"));
-  assert.equal(buildSkillSlashSuggestions("/compact", []).some((item) => item.kind === "side-chat"), false);
+  assert.equal(
+    buildSkillSlashSuggestions("/compact", []).some((item) => item.kind === "side-chat"),
+    false,
+  );
 });
 
 test("currentSkillSlashQueryAtCursor matches slash token in middle of text", () => {
@@ -120,11 +132,8 @@ test("buildSkillSlashSuggestions returns empty for undefined query", () => {
 });
 
 test("isCompactSlashComposerSegments matches chip-only compact composer", async () => {
-  const {
-    COMPACT_SLASH_ALIAS,
-    isCompactSlashComposerRequest,
-    isCompactSlashComposerSegments,
-  } = await import("../src/lib/skill-slash.ts");
+  const { COMPACT_SLASH_ALIAS, isCompactSlashComposerRequest, isCompactSlashComposerSegments } =
+    await import("../src/lib/skill-slash.ts");
   const { skillContextText } = await import("../src/lib/skill-wire-text.ts");
 
   assert.equal(

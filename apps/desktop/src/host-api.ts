@@ -104,13 +104,13 @@ import type {
   ApprovalLevel,
   LocalFileComposerRoute,
   WorkLocationKind,
-} from './types';
+} from "./types";
 
-import { createElectronHostApi } from './adapters/electron';
-import { createWebHostApi } from './adapters/web';
+import { createElectronHostApi } from "./adapters/electron";
+import { createWebHostApi } from "./adapters/web";
 
 export interface HostApi {
-  kind: 'electron' | 'web';
+  kind: "electron" | "web";
   bootstrap(request?: BootstrapRequest): Promise<DesktopSnapshot>;
   rememberWorkspaceRoot?(request: RememberWorkspaceRequest): Promise<DesktopSnapshot>;
   forgetWorkspace?(request: ForgetWorkspaceRequest): Promise<DesktopSnapshot>;
@@ -135,7 +135,9 @@ export interface HostApi {
   prepareMarketplaceExtensionInstall(
     request: PrepareMarketplaceExtensionInstallRequest,
   ): Promise<DesktopMarketplacePreparedInstall>;
-  installMarketplaceExtension(request: InstallMarketplaceExtensionRequest): Promise<DesktopSnapshot>;
+  installMarketplaceExtension(
+    request: InstallMarketplaceExtensionRequest,
+  ): Promise<DesktopSnapshot>;
   deleteExtension(request: DeleteExtensionRequest): Promise<DesktopSnapshot>;
   runExtension(request: RunExtensionRequest): Promise<DesktopSnapshot>;
   updateExtensionSettings(request: UpdateExtensionSettingsRequest): Promise<DesktopSnapshot>;
@@ -208,13 +210,16 @@ export interface HostApi {
   reorderQueuedUserTurn(request: QueuedUserTurnRequest): Promise<DesktopSnapshot>;
   sendQueuedUserTurnNow(request: QueuedUserTurnRequest): Promise<DesktopSnapshot>;
   removeQueuedUserTurn(request: QueuedUserTurnRequest): Promise<DesktopSnapshot>;
-  poll(request?: import('./types').PollRequest): Promise<DesktopSnapshot>;
+  poll(request?: import("./types").PollRequest): Promise<DesktopSnapshot>;
   setSubagentViewerTarget(parentToolCallId: string | null): Promise<DesktopSnapshot>;
   listDreamsOverview(): Promise<DesktopDreamOverviewItem[]>;
   listAutomations(): Promise<DesktopAutomationListItem[]>;
   getAutomation(automationId: string): Promise<DesktopAutomationDetail | undefined>;
   createAutomation(request: DesktopCreateAutomationRequest): Promise<DesktopSnapshot>;
-  updateAutomation(automationId: string, patch: DesktopUpdateAutomationRequest): Promise<DesktopSnapshot>;
+  updateAutomation(
+    automationId: string,
+    patch: DesktopUpdateAutomationRequest,
+  ): Promise<DesktopSnapshot>;
   deleteAutomation(automationId: string): Promise<DesktopSnapshot>;
   setAutomationEnabled(automationId: string, enabled: boolean): Promise<DesktopSnapshot>;
   subscribeDreamUpdates?(callback: (snapshot: DesktopSnapshot) => void): () => void;
@@ -222,7 +227,9 @@ export interface HostApi {
   subscribeSessionListUpdates?(callback: () => void): () => void;
   replyPendingApproval(request: ReplyPendingApprovalRequest): Promise<DesktopSnapshot>;
   replyPendingQuestions(request: ReplyPendingQuestionsRequest): Promise<DesktopSnapshot>;
-  replyWorkspaceCapabilityTrust(request: ReplyWorkspaceCapabilityTrustRequest): Promise<DesktopSnapshot>;
+  replyWorkspaceCapabilityTrust(
+    request: ReplyWorkspaceCapabilityTrustRequest,
+  ): Promise<DesktopSnapshot>;
   openPathInDefaultApp(absolutePath: string): Promise<void>;
   resetSession(): Promise<DesktopSnapshot>;
   listSessions(): Promise<SessionListItem[]>;
@@ -253,7 +260,7 @@ export interface HostApi {
   recordCodeCompletionFileState(request: RecordCodeCompletionFileStateRequest): Promise<void>;
   resetCodeCompletionJournal(): Promise<void>;
   primeWorkspaceFileReferenceIndex(): Promise<void>;
-  getWorkspaceFileReferenceIndex(): Promise<import('./types').WorkspaceFileReferenceIndexSnapshot>;
+  getWorkspaceFileReferenceIndex(): Promise<import("./types").WorkspaceFileReferenceIndexSnapshot>;
   listWorkspaceExplorerChildren(relativePath: string): Promise<WorkspaceExplorerListResult>;
   readWorkspaceTextFile(
     relativePath: string,
@@ -268,7 +275,7 @@ export interface HostApi {
   createWorkspaceEntry(
     parentDirectoryRel: string,
     name: string,
-    kind: 'file' | 'dir',
+    kind: "file" | "dir",
   ): Promise<{ relativePath: string }>;
   moveWorkspaceEntry(
     relativePath: string,
@@ -293,7 +300,7 @@ export interface HostApi {
 }
 
 export async function createHostApi(): Promise<HostApi> {
-  if (typeof window !== 'undefined' && window.spiritDesktop) {
+  if (typeof window !== "undefined" && window.spiritDesktop) {
     return createElectronHostApi();
   }
 

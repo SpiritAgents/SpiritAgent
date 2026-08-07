@@ -1,5 +1,8 @@
-import type { SessionListItem } from '../types.js';
-import { buildNewSessionProtocolUrl, buildOpenSessionProtocolUrl } from './spirit-notification-protocol.js';
+import type { SessionListItem } from "../types.js";
+import {
+  buildNewSessionProtocolUrl,
+  buildOpenSessionProtocolUrl,
+} from "./spirit-notification-protocol.js";
 
 export const JUMP_LIST_RECENT_LIMIT = 5;
 export const TRAY_RECENT_LIMIT = 5;
@@ -7,7 +10,7 @@ export const TRAY_MORE_LIMIT = 10;
 export const JUMP_LIST_TITLE_MAX = 260;
 
 export type JumpListTaskItem = {
-  type: 'task';
+  type: "task";
   title: string;
   program: string;
   args: string;
@@ -16,8 +19,8 @@ export type JumpListTaskItem = {
 };
 
 export type JumpListCategoryBuilt =
-  | { type: 'custom'; name: string; items: JumpListTaskItem[] }
-  | { type: 'tasks'; items: JumpListTaskItem[] };
+  | { type: "custom"; name: string; items: JumpListTaskItem[] }
+  | { type: "tasks"; items: JumpListTaskItem[] };
 
 export function pickRecentSessions(
   sessions: readonly SessionListItem[],
@@ -29,7 +32,9 @@ export function pickRecentSessions(
     .slice(0, capped);
 }
 
-export function pickRecentSessionsForJumpList(sessions: readonly SessionListItem[]): SessionListItem[] {
+export function pickRecentSessionsForJumpList(
+  sessions: readonly SessionListItem[],
+): SessionListItem[] {
   return pickRecentSessions(sessions, JUMP_LIST_RECENT_LIMIT);
 }
 
@@ -41,9 +46,9 @@ export function truncateJumpListTitle(title: string, maxLength = JUMP_LIST_TITLE
     return trimmed;
   }
   if (maxLength <= 1) {
-    return '…';
+    return "…";
   }
-  return `${points.slice(0, maxLength - 1).join('')}…`;
+  return `${points.slice(0, maxLength - 1).join("")}…`;
 }
 
 export function buildJumpListLaunchArgs(protocolUrl: string, devMainScript?: string): string {
@@ -68,10 +73,10 @@ export function buildWindowsJumpListCategories(input: {
 
   if (recentSessions.length > 0) {
     categories.push({
-      type: 'custom',
+      type: "custom",
       name: input.recentLabel,
       items: recentSessions.map((session) => ({
-        type: 'task',
+        type: "task",
         title: truncateJumpListTitle(session.displayName),
         program: input.execPath,
         args: buildJumpListLaunchArgs(buildOpenSessionProtocolUrl(session.path), devMainScript),
@@ -82,10 +87,10 @@ export function buildWindowsJumpListCategories(input: {
   }
 
   categories.push({
-    type: 'tasks',
+    type: "tasks",
     items: [
       {
-        type: 'task',
+        type: "task",
         title: input.newAgentLabel,
         program: input.execPath,
         args: buildJumpListLaunchArgs(buildNewSessionProtocolUrl(), devMainScript),

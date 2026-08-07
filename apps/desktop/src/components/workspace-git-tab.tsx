@@ -42,7 +42,9 @@ export type WorkspaceGitTabProps = {
   gitChipBusy: boolean;
   readGitWorkingTree: () => Promise<GitWorkingTreeSnapshot>;
   readGitHistory: (request?: ReadGitHistoryRequest) => Promise<GitHistorySnapshot>;
-  readGitCommitMessage: (request: ReadGitCommitMessageRequest) => Promise<import("@/types").GitCommitMessageSnapshot>;
+  readGitCommitMessage: (
+    request: ReadGitCommitMessageRequest,
+  ) => Promise<import("@/types").GitCommitMessageSnapshot>;
   submitGitChip: (request: SubmitGitChipRequest) => Promise<boolean>;
   onGitCommitAddToSession?: (attachment: GitCommitAttachment) => void;
   onOpenChangedFile?: (
@@ -285,8 +287,7 @@ export function WorkspaceGitTab({
     prevTabActiveRef.current = true;
 
     const branch = gitSnapshot?.branch;
-    const branchChanged =
-      prevBranchRef.current !== undefined && prevBranchRef.current !== branch;
+    const branchChanged = prevBranchRef.current !== undefined && prevBranchRef.current !== branch;
     prevBranchRef.current = branch;
 
     const hadChanges = prevHasChangesRef.current;
@@ -296,13 +297,7 @@ export function WorkspaceGitTab({
     if (becameActive || branchChanged || clearedChanges) {
       void loadHistory();
     }
-  }, [
-    isActive,
-    loadHistory,
-    gitSnapshot?.revision,
-    gitSnapshot?.branch,
-    gitSnapshot?.hasChanges,
-  ]);
+  }, [isActive, loadHistory, gitSnapshot?.revision, gitSnapshot?.branch, gitSnapshot?.hasChanges]);
 
   useEffect(() => {
     return () => {

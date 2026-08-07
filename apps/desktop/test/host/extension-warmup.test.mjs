@@ -1,7 +1,7 @@
-import assert from 'node:assert/strict';
-import { test } from 'node:test';
+import assert from "node:assert/strict";
+import { test } from "node:test";
 
-import { ExtensionWarmupCoordinator } from '../../dist-electron/src/host/extension-warmup.js';
+import { ExtensionWarmupCoordinator } from "../../dist-electron/src/host/extension-warmup.js";
 
 function delay(ms) {
   return new Promise((resolve) => {
@@ -21,7 +21,7 @@ function createCallbacks(overrides = {}) {
     async collectSystemPrompts() {
       calls.collect += 1;
       await delay(overrides.collectDelayMs ?? 0);
-      return [{ extensionId: 'ext-1', extensionName: 'Test', content: 'prompt' }];
+      return [{ extensionId: "ext-1", extensionName: "Test", content: "prompt" }];
     },
     async refreshExtensionsListFull() {
       calls.refreshList += 1;
@@ -40,12 +40,12 @@ function createCallbacks(overrides = {}) {
   return { callbacks, calls };
 }
 
-test('ExtensionWarmupCoordinator reports loading while warmup is in flight', async () => {
+test("ExtensionWarmupCoordinator reports loading while warmup is in flight", async () => {
   const coordinator = new ExtensionWarmupCoordinator();
   const { callbacks } = createCallbacks({ collectDelayMs: 30 });
 
   assert.equal(coordinator.extensionsLoading, false);
-  coordinator.schedule({ type: 'startup', workspaceRoot: '/tmp/ws' }, callbacks);
+  coordinator.schedule({ type: "startup", workspaceRoot: "/tmp/ws" }, callbacks);
   assert.equal(coordinator.extensionsLoading, true);
 
   await delay(80);
@@ -54,7 +54,7 @@ test('ExtensionWarmupCoordinator reports loading while warmup is in flight', asy
   assert.equal(coordinator.systemPromptsCache.length, 1);
 });
 
-test('ExtensionWarmupCoordinator skips stale warmup after invalidate', async () => {
+test("ExtensionWarmupCoordinator skips stale warmup after invalidate", async () => {
   const coordinator = new ExtensionWarmupCoordinator();
   let resolveCollect;
   const collectGate = new Promise((resolve) => {
@@ -64,11 +64,11 @@ test('ExtensionWarmupCoordinator skips stale warmup after invalidate', async () 
     async collectSystemPrompts() {
       calls.collect += 1;
       await collectGate;
-      return [{ extensionId: 'ext-1', extensionName: 'Test', content: 'prompt' }];
+      return [{ extensionId: "ext-1", extensionName: "Test", content: "prompt" }];
     },
   });
 
-  coordinator.schedule({ type: 'startup', workspaceRoot: '/tmp/ws' }, callbacks);
+  coordinator.schedule({ type: "startup", workspaceRoot: "/tmp/ws" }, callbacks);
   coordinator.invalidate();
   resolveCollect();
   await delay(20);
@@ -80,7 +80,7 @@ test('ExtensionWarmupCoordinator skips stale warmup after invalidate', async () 
   assert.equal(coordinator.systemPromptsCache.length, 0);
 });
 
-test('ExtensionWarmupCoordinator runs session trigger dispatch', async () => {
+test("ExtensionWarmupCoordinator runs session trigger dispatch", async () => {
   const coordinator = new ExtensionWarmupCoordinator();
   const events = [];
   const { callbacks, calls } = createCallbacks({
@@ -92,10 +92,10 @@ test('ExtensionWarmupCoordinator runs session trigger dispatch', async () => {
 
   coordinator.schedule(
     {
-      type: 'session',
+      type: "session",
       event: {
-        type: 'onSessionOpened',
-        detail: { filePath: '/tmp/session.json', displayName: 'Session' },
+        type: "onSessionOpened",
+        detail: { filePath: "/tmp/session.json", displayName: "Session" },
       },
     },
     callbacks,
@@ -104,14 +104,14 @@ test('ExtensionWarmupCoordinator runs session trigger dispatch', async () => {
 
   assert.equal(calls.apply, 1);
   assert.equal(events.length, 1);
-  assert.equal(events[0].type, 'onSessionOpened');
+  assert.equal(events[0].type, "onSessionOpened");
 });
 
-test('refreshSystemPromptsCache updates cache synchronously for mutations', async () => {
+test("refreshSystemPromptsCache updates cache synchronously for mutations", async () => {
   const coordinator = new ExtensionWarmupCoordinator();
   const { callbacks } = createCallbacks();
 
   await coordinator.refreshSystemPromptsCache(callbacks);
   assert.equal(coordinator.warmupReady, true);
-  assert.equal(coordinator.systemPromptsCache[0]?.content, 'prompt');
+  assert.equal(coordinator.systemPromptsCache[0]?.content, "prompt");
 });

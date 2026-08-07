@@ -1,11 +1,4 @@
-import {
-  useCallback,
-  useEffect,
-  useMemo,
-  useRef,
-  useState,
-  type ReactNode,
-} from "react";
+import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { RotateCcw, ZoomIn, ZoomOut } from "lucide-react";
 import type { MermaidConfig } from "mermaid";
 
@@ -54,12 +47,9 @@ function MermaidPanZoom({
   const maxZoom = 3;
   const zoomStep = 0.1;
 
-  const adjustZoom = useCallback(
-    (delta: number) => {
-      setZoom((current) => Math.max(minZoom, Math.min(maxZoom, current + delta)));
-    },
-    [],
-  );
+  const adjustZoom = useCallback((delta: number) => {
+    setZoom((current) => Math.max(minZoom, Math.min(maxZoom, current + delta)));
+  }, []);
 
   const resetView = useCallback(() => {
     setZoom(1);
@@ -275,9 +265,7 @@ export function SpiritMermaidChart({
         if (!cancelled) {
           setSvg("");
           setError(
-            renderError instanceof Error
-              ? renderError.message
-              : "Failed to render Mermaid chart",
+            renderError instanceof Error ? renderError.message : "Failed to render Mermaid chart",
           );
         }
       } finally {

@@ -1,9 +1,9 @@
-import { execFile } from 'node:child_process';
-import { promisify } from 'node:util';
+import { execFile } from "node:child_process";
+import { promisify } from "node:util";
 
 const execFileAsync = promisify(execFile);
 const GIT_MAX_BUFFER = 4 * 1024 * 1024;
-const FIELD_SEP = '\x1f';
+const FIELD_SEP = "\x1f";
 export const GIT_HISTORY_PAGE_SIZE = 200;
 const DEFAULT_MAX_COMMITS = GIT_HISTORY_PAGE_SIZE;
 
@@ -47,15 +47,17 @@ export interface ReadGitCommitHistoryOptions {
 }
 
 function renderGitError(error: unknown): string {
-  if (typeof error !== 'object' || error === null) {
+  if (typeof error !== "object" || error === null) {
     return String(error);
   }
-  const stdout = typeof (error as { stdout?: unknown }).stdout === 'string'
-    ? (error as { stdout: string }).stdout.trim()
-    : '';
-  const stderr = typeof (error as { stderr?: unknown }).stderr === 'string'
-    ? (error as { stderr: string }).stderr.trim()
-    : '';
+  const stdout =
+    typeof (error as { stdout?: unknown }).stdout === "string"
+      ? (error as { stdout: string }).stdout.trim()
+      : "";
+  const stderr =
+    typeof (error as { stderr?: unknown }).stderr === "string"
+      ? (error as { stderr: string }).stderr.trim()
+      : "";
   const message = error instanceof Error ? error.message.trim() : String(error);
   return stderr || stdout || message;
 }
@@ -65,7 +67,7 @@ async function runGit(
   args: string[],
 ): Promise<{ stdout: string; stderr: string }> {
   try {
-    const result = await execFileAsync('git', args, {
+    const result = await execFileAsync("git", args, {
       cwd: workspaceRoot,
       windowsHide: true,
       maxBuffer: GIT_MAX_BUFFER,
@@ -73,7 +75,7 @@ async function runGit(
     return { stdout: result.stdout, stderr: result.stderr };
   } catch (error) {
     const message = renderGitError(error);
-    throw new Error(`git ${args.join(' ')} failed: ${message}`);
+    throw new Error(`git ${args.join(" ")} failed: ${message}`);
   }
 }
 
@@ -82,7 +84,7 @@ export function parseGitLogDecorations(decorations: string): string[] {
     return [];
   }
   const refs: string[] = [];
-  const parts = decorations.split(',');
+  const parts = decorations.split(",");
   for (const part of parts) {
     const trimmed = part.trim();
     if (!trimmed) {
@@ -93,8 +95,8 @@ export function parseGitLogDecorations(decorations: string): string[] {
       refs.push(headMatch[1].trim());
       continue;
     }
-    if (trimmed.startsWith('tag: ')) {
-      refs.push(trimmed.slice('tag: '.length).trim());
+    if (trimmed.startsWith("tag: ")) {
+      refs.push(trimmed.slice("tag: ".length).trim());
       continue;
     }
     refs.push(trimmed);
@@ -111,19 +113,17 @@ export function parseGitLogRecordLine(line: string): GitCommitRecord | undefined
   if (fields.length < 5) {
     return undefined;
   }
-  const [oid, parentsRaw, subject, author, authoredAt, decorations = ''] = fields;
+  const [oid, parentsRaw, subject, author, authoredAt, decorations = ""] = fields;
   if (!oid?.trim()) {
     return undefined;
   }
-  const parents = parentsRaw?.trim()
-    ? parentsRaw.trim().split(/\s+/u).filter(Boolean)
-    : [];
+  const parents = parentsRaw?.trim() ? parentsRaw.trim().split(/\s+/u).filter(Boolean) : [];
   return {
     oid: oid.trim(),
     parents,
-    subject: subject?.trim() ?? '',
-    author: author?.trim() ?? '',
-    authoredAt: authoredAt?.trim() ?? '',
+    subject: subject?.trim() ?? "",
+    author: author?.trim() ?? "",
+    authoredAt: authoredAt?.trim() ?? "",
     refs: parseGitLogDecorations(decorations),
   };
 }
@@ -394,15 +394,15 @@ export async function readGitCommitHistory(
     logCommits: [],
   };
   try {
-    const { stdout: repoFlag } = await runGit(repoRoot, ['rev-parse', '--is-inside-work-tree']);
-    if (repoFlag.trim() !== 'true') {
+    const { stdout: repoFlag } = await runGit(repoRoot, ["rev-parse", "--is-inside-work-tree"]);
+    if (repoFlag.trim() !== "true") {
       return empty;
     }
 
     const logArgs = [
-      'log',
-      '--all',
-      '--topo-order',
+      "log",
+      "--all",
+      "--topo-order",
       ...(skip > 0 ? [`--skip=${String(skip)}`] : []),
       `-n${String(maxCount)}`,
       `--format=format:%H${FIELD_SEP}%P${FIELD_SEP}%s${FIELD_SEP}%an${FIELD_SEP}%ai${FIELD_SEP}%D`,

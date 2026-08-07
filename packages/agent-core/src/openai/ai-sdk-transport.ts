@@ -1,48 +1,22 @@
-import { basename } from 'node:path';
+import { basename } from "node:path";
 
-import {
-  createAlibaba,
-} from '@ai-sdk/alibaba';
-import {
-  createFireworks,
-} from '@ai-sdk/fireworks';
-import {
-  createBaseten,
-} from '@ai-sdk/baseten';
-import {
-  createGroq,
-  type GroqLanguageModelOptions,
-} from '@ai-sdk/groq';
-import {
-  createTogetherAI,
-} from '@ai-sdk/togetherai';
-import {
-  createCohere,
-} from '@ai-sdk/cohere';
-import {
-  createDeepSeek,
-  type DeepSeekLanguageModelOptions,
-} from '@ai-sdk/deepseek';
-import {
-  createDeepInfra,
-} from '@ai-sdk/deepinfra';
-import {
-  createGoogle,
-  type GoogleLanguageModelOptions,
-} from '@ai-sdk/google';
-import { createVertex } from '@ai-sdk/google-vertex';
-import {
-  createMoonshotAI,
-  type MoonshotAILanguageModelOptions,
-} from '@ai-sdk/moonshotai';
-import {
-  createXai,
-} from '@ai-sdk/xai';
-import { createGateway } from '@ai-sdk/gateway';
+import { createAlibaba } from "@ai-sdk/alibaba";
+import { createFireworks } from "@ai-sdk/fireworks";
+import { createBaseten } from "@ai-sdk/baseten";
+import { createGroq, type GroqLanguageModelOptions } from "@ai-sdk/groq";
+import { createTogetherAI } from "@ai-sdk/togetherai";
+import { createCohere } from "@ai-sdk/cohere";
+import { createDeepSeek, type DeepSeekLanguageModelOptions } from "@ai-sdk/deepseek";
+import { createDeepInfra } from "@ai-sdk/deepinfra";
+import { createGoogle, type GoogleLanguageModelOptions } from "@ai-sdk/google";
+import { createVertex } from "@ai-sdk/google-vertex";
+import { createMoonshotAI, type MoonshotAILanguageModelOptions } from "@ai-sdk/moonshotai";
+import { createXai } from "@ai-sdk/xai";
+import { createGateway } from "@ai-sdk/gateway";
 import {
   createOpenAICompatible,
   type OpenAICompatibleLanguageModelChatOptions,
-} from '@ai-sdk/openai-compatible';
+} from "@ai-sdk/openai-compatible";
 import {
   generateImage as generateAiImage,
   generateObject,
@@ -51,18 +25,18 @@ import {
   streamText,
   tool,
   type TextStreamPart,
-} from 'ai';
+} from "ai";
 
-import { buildAiSdkUserImageFilePartFromUrl } from '../ai-sdk-image-url-part.js';
+import { buildAiSdkUserImageFilePartFromUrl } from "../ai-sdk-image-url-part.js";
 import {
   resolveStreamingToolPreviewEmit,
   shouldEmitStreamingToolNamePreview,
-} from '../tool-streaming-preview-gate.js';
+} from "../tool-streaming-preview-gate.js";
 import {
   DEFAULT_IMAGE_GENERATION_SIZE,
   createLlmMessageContentFromTextAndImages,
   llmMessageTextContent,
-} from '../ports.js';
+} from "../ports.js";
 import type {
   GeneratedImageFile,
   GeneratedImageSaveRequest,
@@ -79,22 +53,22 @@ import type {
   ToolAgentRoundCompletion,
   ToolCallRequest,
   ToolExecutionOutput,
-} from '../ports.js';
+} from "../ports.js";
 import {
   includesCompactSummaryBlock,
   unwrapCompactSummaryBlock,
   wrapCompactSummaryBlock,
-} from '../llm-context-block.js';
+} from "../llm-context-block.js";
 import {
   buildCompactHistoryPromptMessages,
   buildToolAgentHostPrompt,
   cloneJsonValue,
   isJsonObject,
   type ToolAgentState,
-} from '../tool-agent.js';
-import { renderAiSdkProviderError } from './ai-sdk-provider-error.js';
-import { readAiSdkUsage } from '../ai-sdk-usage.js';
-import { finishTaskStreamingPreviewReady } from '../finish-task-preview.js';
+} from "../tool-agent.js";
+import { renderAiSdkProviderError } from "./ai-sdk-provider-error.js";
+import { readAiSdkUsage } from "../ai-sdk-usage.js";
+import { finishTaskStreamingPreviewReady } from "../finish-task-preview.js";
 import {
   buildOpenAiRequestTrace,
   openAiReasoningEffort,
@@ -105,99 +79,96 @@ import {
   type OpenAiImageGenerationConfig,
   type OpenAiTransportConfig,
   type OpenAiVideoGenerationConfig,
-} from './openai-compat.js';
-import { modelSupportsOpenAiGpt56ReasoningControls } from './gpt-reasoning-controls.js';
+} from "./openai-compat.js";
+import { modelSupportsOpenAiGpt56ReasoningControls } from "./gpt-reasoning-controls.js";
 import {
   buildGatewayMinimaxProviderOptions,
   isGatewayMinimaxModel,
-} from './gateway-minimax-thinking.js';
+} from "./gateway-minimax-thinking.js";
 import {
   buildGatewayAlibabaProviderOptions,
   isGatewayAlibabaModel,
-} from './gateway-alibaba-thinking.js';
+} from "./gateway-alibaba-thinking.js";
 import {
   buildGatewayAnthropicProviderOptions,
   isGatewayAnthropicClaudeModel,
-} from './gateway-anthropic-thinking.js';
+} from "./gateway-anthropic-thinking.js";
 import {
   buildGatewayCodeCompletionProviderOptions,
   shouldUseGatewayCodeCompletionProviderOptions,
-} from './gateway-code-completion-thinking.js';
+} from "./gateway-code-completion-thinking.js";
 import {
   buildGatewayDeepSeekProviderOptions,
   isGatewayDeepSeekModel,
-} from './gateway-deepseek-thinking.js';
+} from "./gateway-deepseek-thinking.js";
 import {
   buildGatewayMoonshotProviderOptions,
   isGatewayMoonshotModel,
   isMoonshotThinkingSwitchModel,
-} from './moonshot-thinking-switch.js';
+} from "./moonshot-thinking-switch.js";
 import {
   buildGatewayXiaomiProviderOptions,
   isGatewayXiaomiModel,
-} from './gateway-xiaomi-thinking.js';
-import {
-  buildGatewayZaiProviderOptions,
-  isGatewayZaiModel,
-} from './gateway-zai-thinking.js';
+} from "./gateway-xiaomi-thinking.js";
+import { buildGatewayZaiProviderOptions, isGatewayZaiModel } from "./gateway-zai-thinking.js";
 import {
   buildGatewayXaiProviderOptions,
   isGatewayXaiModel,
   resolveXaiProviderReasoningEffort,
-} from './gateway-xai-reasoning.js';
+} from "./gateway-xai-reasoning.js";
 import {
   buildGatewayGoogleProviderOptions,
   buildGoogleThinkingConfigForEffort,
   isGatewayGoogleGeminiModel,
-} from './gateway-google-thinking.js';
-import { isOpenRouterAnthropicClaudeModel } from './openrouter-anthropic-reasoning.js';
-import { generateSiliconFlowImage } from '../image-generation/siliconflow-backend.js';
-import { generateHuggingFaceImage } from '../image-generation/huggingface-backend.js';
-import { generateStepfunImage } from '../image-generation/stepfun-backend.js';
-import { isCodeCompletionTransportProfile } from '../code-completion/transport-profile.js';
-import { generateVideoWithRouter } from '../video-generation/router.js';
-import { getLlmFetch } from '../llm-fetch.js';
-import { wrapFetchForCloudflareAiGateway } from '../cloudflare-ai-gateway-fetch.js';
-import { createAlibabaChatCompletionsAwareFetch } from '../open-responses/alibaba-chat-completions-fetch.js';
+} from "./gateway-google-thinking.js";
+import { isOpenRouterAnthropicClaudeModel } from "./openrouter-anthropic-reasoning.js";
+import { generateSiliconFlowImage } from "../image-generation/siliconflow-backend.js";
+import { generateHuggingFaceImage } from "../image-generation/huggingface-backend.js";
+import { generateStepfunImage } from "../image-generation/stepfun-backend.js";
+import { isCodeCompletionTransportProfile } from "../code-completion/transport-profile.js";
+import { generateVideoWithRouter } from "../video-generation/router.js";
+import { getLlmFetch } from "../llm-fetch.js";
+import { wrapFetchForCloudflareAiGateway } from "../cloudflare-ai-gateway-fetch.js";
+import { createAlibabaChatCompletionsAwareFetch } from "../open-responses/alibaba-chat-completions-fetch.js";
 import {
   buildAlibabaChatCompletionsExtraBody,
   shouldPatchAlibabaChatCompletionsExtraBody,
   shouldUseAlibabaChatCompletionsBuiltInTools,
-} from '../open-responses/alibaba-built-in-tools.js';
+} from "../open-responses/alibaba-built-in-tools.js";
 import {
   clearMoonshotChatCompletionMessages,
   openAiMessagesContainVideoUrl,
   stashMoonshotChatCompletionMessages,
   takeMoonshotChatCompletionMessages,
-} from './moonshot-chat-completion-messages.js';
+} from "./moonshot-chat-completion-messages.js";
 import {
   llmHistoryToOpenAiMessages,
   resolveMoonshotVideoUrlsInOpenAiMessages,
-} from './openai-multimodal-messages.js';
-import { resolveXiaomiVideoUrlsInOpenAiMessages } from './xiaomi-video-messages.js';
-import { resolveDeepInfraVideoUrlsInOpenAiMessages } from './deepinfra-video-messages.js';
-import { normalizeMoonshotApiBase } from './moonshot-files.js';
+} from "./openai-multimodal-messages.js";
+import { resolveXiaomiVideoUrlsInOpenAiMessages } from "./xiaomi-video-messages.js";
+import { resolveDeepInfraVideoUrlsInOpenAiMessages } from "./deepinfra-video-messages.js";
+import { normalizeMoonshotApiBase } from "./moonshot-files.js";
 import {
   buildMoonshotFormulaTraceToolEntries,
   createMoonshotFormulaChatCompletionsAwareFetch,
-} from '../moonshot/formula/moonshot-chat-completions-fetch.js';
-import { shouldUseMoonshotFormulaWebSearch } from '../moonshot/formula/formula-eligibility.js';
-import { buildMoonshotFormulaStreamingToolPreviewArgumentsJson } from '../moonshot/formula/moonshot-formula-tool-loop.js';
-import { buildStepfunWebSearchStreamingPreviewArgumentsJson } from '../stepfun/stepfun-web-search-tool-loop.js';
-import { buildKimiCodeWebSearchStreamingPreviewArgumentsJson } from '../kimi-code/kimi-code-web-search-tool-loop.js';
+} from "../moonshot/formula/moonshot-chat-completions-fetch.js";
+import { shouldUseMoonshotFormulaWebSearch } from "../moonshot/formula/formula-eligibility.js";
+import { buildMoonshotFormulaStreamingToolPreviewArgumentsJson } from "../moonshot/formula/moonshot-formula-tool-loop.js";
+import { buildStepfunWebSearchStreamingPreviewArgumentsJson } from "../stepfun/stepfun-web-search-tool-loop.js";
+import { buildKimiCodeWebSearchStreamingPreviewArgumentsJson } from "../kimi-code/kimi-code-web-search-tool-loop.js";
 import {
   buildJsonSchemaCompletionMessages,
   stringifyJsonSchemaCompletionOutput,
   type OpenAiJsonSchemaCompletionRequest,
   type OpenAiJsonSchemaCompletionResult,
   type OpenAiJsonSchemaTransport,
-} from './json-schema.js';
+} from "./json-schema.js";
 
-const DEFAULT_OPENAI_COMPATIBLE_BASE_URL = 'https://api.openai.com/v1';
-const DEFAULT_XAI_BASE_URL = 'https://api.x.ai/v1';
-const DEFAULT_GOOGLE_BASE_URL = 'https://generativelanguage.googleapis.com/v1beta';
-const DEFAULT_DEEPINFRA_BASE_URL = 'https://api.deepinfra.com/v1';
-const STREAMING_TOOL_CALL_PLACEHOLDER_PREFIX = 'stream-tool-call-';
+const DEFAULT_OPENAI_COMPATIBLE_BASE_URL = "https://api.openai.com/v1";
+const DEFAULT_XAI_BASE_URL = "https://api.x.ai/v1";
+const DEFAULT_GOOGLE_BASE_URL = "https://generativelanguage.googleapis.com/v1beta";
+const DEFAULT_DEEPINFRA_BASE_URL = "https://api.deepinfra.com/v1";
+const STREAMING_TOOL_CALL_PLACEHOLDER_PREFIX = "stream-tool-call-";
 
 type AiSdkToolCall = {
   toolCallId: string;
@@ -206,14 +177,14 @@ type AiSdkToolCall = {
 };
 
 type OpenAiFunctionToolDefinition = JsonObject & {
-  type: 'function';
+  type: "function";
   function: JsonObject;
 };
 
 interface AggregatedStreamingToolCall {
   index: number;
   id: string;
-  type: 'function';
+  type: "function";
   functionName: string;
   functionArguments: string;
   readyPreviewEmitted: boolean;
@@ -227,20 +198,20 @@ interface Deferred<T> {
   reject(error: unknown): void;
 }
 
-const MANAGED_GENERATED_ASSET_PROTOCOL = 'spirit:';
-const MANAGED_GENERATED_ASSET_HOST = 'generated';
+const MANAGED_GENERATED_ASSET_PROTOCOL = "spirit:";
+const MANAGED_GENERATED_ASSET_HOST = "generated";
 
 export function normalizeGeneratedImageMarkdownRef(markdownRef: string): string {
   const trimmed = markdownRef.trim();
   if (!trimmed) {
-    throw new Error('Host returned an empty generated image markdownRef.');
+    throw new Error("Host returned an empty generated image markdownRef.");
   }
 
   let url: URL;
   try {
     url = new URL(trimmed);
   } catch {
-    throw new Error('Host returned an invalid generated image markdownRef.');
+    throw new Error("Host returned an invalid generated image markdownRef.");
   }
 
   if (
@@ -249,30 +220,30 @@ export function normalizeGeneratedImageMarkdownRef(markdownRef: string): string 
     url.search.length > 0 ||
     url.hash.length > 0
   ) {
-    throw new Error('Host returned an invalid generated image markdownRef.');
+    throw new Error("Host returned an invalid generated image markdownRef.");
   }
 
-  const segments = url.pathname.replace(/^\/+/, '').split('/').filter(Boolean);
-  if (segments.length !== 2 || segments[0]?.toLowerCase() !== 'image') {
-    throw new Error('Host returned an invalid generated image markdownRef.');
+  const segments = url.pathname.replace(/^\/+/, "").split("/").filter(Boolean);
+  if (segments.length !== 2 || segments[0]?.toLowerCase() !== "image") {
+    throw new Error("Host returned an invalid generated image markdownRef.");
   }
 
   let imageId: string;
   try {
-    imageId = decodeURIComponent(segments[1] ?? '').trim();
+    imageId = decodeURIComponent(segments[1] ?? "").trim();
   } catch {
-    throw new Error('Host returned an invalid generated image markdownRef.');
+    throw new Error("Host returned an invalid generated image markdownRef.");
   }
 
   if (
     !imageId ||
     imageId !== basename(imageId) ||
-    imageId === '.' ||
-    imageId === '..' ||
-    imageId.includes('/') ||
-    imageId.includes('\\')
+    imageId === "." ||
+    imageId === ".." ||
+    imageId.includes("/") ||
+    imageId.includes("\\")
   ) {
-    throw new Error('Host returned an invalid generated image markdownRef.');
+    throw new Error("Host returned an invalid generated image markdownRef.");
   }
 
   return `spirit://generated/image/${encodeURIComponent(imageId)}`;
@@ -288,18 +259,18 @@ export class AiSdkOpenAiCompatibleTransport
   ): Promise<ToolExecutionOutput> {
     const imageConfig = config.imageGeneration;
     if (!imageConfig) {
-      throw new Error('No image generation model is configured.');
+      throw new Error("No image generation model is configured.");
     }
 
-    if (imageConfig.llmVendor === 'siliconflow') {
+    if (imageConfig.llmVendor === "siliconflow") {
       return generateSiliconFlowImage(imageConfig, request, saveGeneratedImage);
     }
 
-    if (imageConfig.llmVendor === 'hugging-face') {
+    if (imageConfig.llmVendor === "hugging-face") {
       return generateHuggingFaceImage(imageConfig, request, saveGeneratedImage);
     }
 
-    if (imageConfig.llmVendor === 'stepfun') {
+    if (imageConfig.llmVendor === "stepfun") {
       return generateStepfunImage(imageConfig, request, saveGeneratedImage);
     }
 
@@ -332,7 +303,7 @@ export class AiSdkOpenAiCompatibleTransport
 
     logAiSdkImageGenerationSuccess(imageConfig, requestUrl, saved);
 
-    const summaryLines = ['[generated image]'];
+    const summaryLines = ["[generated image]"];
     const markdownRef = normalizeGeneratedImageMarkdownRef(saved.markdownRef);
     summaryLines.push(
       `image_ref: ${markdownRef}`,
@@ -340,7 +311,7 @@ export class AiSdkOpenAiCompatibleTransport
       `embed_markdown: ![Generated image](${markdownRef})`,
     );
     summaryLines.push(`mime_type: ${saved.mimeType}`, `model: ${imageConfig.model}`);
-    const summaryText = summaryLines.join('\n');
+    const summaryText = summaryLines.join("\n");
 
     return {
       content: createLlmMessageContentFromTextAndImages(summaryText, [saved.path]),
@@ -355,7 +326,7 @@ export class AiSdkOpenAiCompatibleTransport
   ): Promise<ToolExecutionOutput> {
     const videoConfig = config.videoGeneration;
     if (!videoConfig) {
-      throw new Error('No video generation model is configured.');
+      throw new Error("No video generation model is configured.");
     }
 
     return generateVideoWithRouter(videoConfig, request, saveGeneratedVideo);
@@ -431,7 +402,7 @@ export class AiSdkOpenAiCompatibleTransport
           ? {}
           : {
               tools: buildAiSdkTools(normalizedTools) as any,
-              toolChoice: 'auto' as const,
+              toolChoice: "auto" as const,
             }),
         providerOptions: buildAiSdkProviderOptions(config),
         maxRetries: 2,
@@ -448,11 +419,11 @@ export class AiSdkOpenAiCompatibleTransport
       const calls = extractToolCallsFromAiSdk(result.toolCalls);
       if (calls.length > 0) {
         return {
-          kind: 'success',
+          kind: "success",
           result: {
             state: nextState,
             step: {
-              kind: 'tool-calls',
+              kind: "tool-calls",
               calls,
             },
             requestTrace: tracedRequest,
@@ -462,11 +433,11 @@ export class AiSdkOpenAiCompatibleTransport
       }
 
       return {
-        kind: 'success',
+        kind: "success",
         result: {
           state: nextState,
           step: {
-            kind: 'final-response-ready',
+            kind: "final-response-ready",
           },
           requestTrace: tracedRequest,
           ...(usage ? { usage } : {}),
@@ -475,7 +446,7 @@ export class AiSdkOpenAiCompatibleTransport
     } catch (error) {
       logAiSdkChatCompletionFailure(config, error, { streaming: false });
       return {
-        kind: 'failure',
+        kind: "failure",
         error: renderAiSdkOpenAiError(error),
         requestTrace: tracedRequest,
       };
@@ -522,7 +493,7 @@ export class AiSdkOpenAiCompatibleTransport
           ? {}
           : {
               tools: buildAiSdkTools(normalizedTools) as any,
-              toolChoice: 'auto' as const,
+              toolChoice: "auto" as const,
             }),
         providerOptions: buildAiSdkProviderOptions(config),
         include: { rawChunks: true },
@@ -553,11 +524,11 @@ export class AiSdkOpenAiCompatibleTransport
       };
     } catch (error) {
       clearMoonshotChatCompletionRequest(config);
-      logAiSdkChatCompletionFailure(config, error, { streaming: true, phase: 'start' });
+      logAiSdkChatCompletionFailure(config, error, { streaming: true, phase: "start" });
       return {
         eventStream: emptyAiSdkEventStream(),
         completion: Promise.resolve({
-          kind: 'failure',
+          kind: "failure",
           error: renderAiSdkOpenAiError(error),
           requestTrace,
         }),
@@ -570,7 +541,7 @@ export class AiSdkOpenAiCompatibleTransport
     config: OpenAiTransportConfig,
     history: LlmMessage[],
     onProgress?: (message: string) => void,
-    context?: import('../ports.js').CompactHistoryManualContext,
+    context?: import("../ports.js").CompactHistoryManualContext,
   ): Promise<{
     droppedMessages: number;
     beforeLength: number;
@@ -600,7 +571,7 @@ export class AiSdkOpenAiCompatibleTransport
       model: config.compactModel ?? config.model,
     };
 
-    let summary = '';
+    let summary = "";
     if (onProgress) {
       let emittedProgress = false;
       try {
@@ -613,7 +584,7 @@ export class AiSdkOpenAiCompatibleTransport
         });
 
         for await (const part of streamed.stream) {
-          if (part.type !== 'text-delta') {
+          if (part.type !== "text-delta") {
             continue;
           }
 
@@ -646,12 +617,12 @@ export class AiSdkOpenAiCompatibleTransport
 
     const normalizedSummary = summary.trim();
     if (!normalizedSummary) {
-      throw new Error('AI SDK 压缩返回为空，无法生成摘要。');
+      throw new Error("AI SDK 压缩返回为空，无法生成摘要。");
     }
 
     history.splice(0, history.length, {
-      role: 'system',
-      content: [{ type: 'text', text: wrapCompactSummaryBlock(normalizedSummary) }],
+      role: "system",
+      content: [{ type: "text", text: wrapCompactSummaryBlock(normalizedSummary) }],
     });
 
     return {
@@ -664,7 +635,7 @@ export class AiSdkOpenAiCompatibleTransport
   compactSummaryText(history: LlmMessage[]): string | undefined {
     const message = history.find(
       (entry) =>
-        entry.role === 'system' &&
+        entry.role === "system" &&
         includesCompactSummaryBlock(llmMessageTextContent(entry.content)),
     );
     if (!message) {
@@ -676,10 +647,10 @@ export class AiSdkOpenAiCompatibleTransport
   isContextOverflowError(error: string): boolean {
     const normalized = error.toLowerCase();
     return (
-      normalized.includes('context length') ||
-      normalized.includes('maximum context length') ||
-      normalized.includes('too many tokens') ||
-      normalized.includes('context_window_exceeded')
+      normalized.includes("context length") ||
+      normalized.includes("maximum context length") ||
+      normalized.includes("too many tokens") ||
+      normalized.includes("context_window_exceeded")
     );
   }
 
@@ -689,7 +660,7 @@ export class AiSdkOpenAiCompatibleTransport
 
   llmSystemPromptsForExport(): JsonValue {
     return {
-      tool_agent: buildToolAgentHostPrompt('—'),
+      tool_agent: buildToolAgentHostPrompt("—"),
     };
   }
 }
@@ -703,13 +674,13 @@ function buildAiSdkRequestTrace(
 ): JsonValue[] {
   const requestTrace = buildOpenAiRequestTrace(config, stepIndex, messages, tools, stream);
   if (
-    !isDeepSeekOfficialAiSdkProvider(config)
-    && !isXaiOfficialAiSdkProvider(config)
-    && !isMoonshotOfficialAiSdkProvider(config)
-    && !isAlibabaOfficialAiSdkProvider(config)
-    && !isVercelAiGatewayProvider(config)
-    && !isGoogleOfficialAiSdkProvider(config)
-    && !isGoogleVertexOfficialAiSdkProvider(config)
+    !isDeepSeekOfficialAiSdkProvider(config) &&
+    !isXaiOfficialAiSdkProvider(config) &&
+    !isMoonshotOfficialAiSdkProvider(config) &&
+    !isAlibabaOfficialAiSdkProvider(config) &&
+    !isVercelAiGatewayProvider(config) &&
+    !isGoogleOfficialAiSdkProvider(config) &&
+    !isGoogleVertexOfficialAiSdkProvider(config)
   ) {
     return requestTrace;
   }
@@ -720,27 +691,27 @@ function buildAiSdkRequestTrace(
   }
 
   const kind = isDeepSeekOfficialAiSdkProvider(config)
-    ? 'deepseek_sdk_chat_completions'
+    ? "deepseek_sdk_chat_completions"
     : isXaiOfficialAiSdkProvider(config)
-      ? 'xai_sdk_chat_completions'
+      ? "xai_sdk_chat_completions"
       : isMoonshotOfficialAiSdkProvider(config)
-        ? 'moonshot_sdk_chat_completions'
+        ? "moonshot_sdk_chat_completions"
         : isAlibabaOfficialAiSdkProvider(config)
-          ? 'alibaba_sdk_chat_completions'
+          ? "alibaba_sdk_chat_completions"
           : isVercelAiGatewayProvider(config)
-            ? 'gateway_sdk_chat_completions'
+            ? "gateway_sdk_chat_completions"
             : isGoogleVertexOfficialAiSdkProvider(config)
-              ? 'google_vertex_sdk_generate_content'
-              : 'google_sdk_generate_content';
+              ? "google_vertex_sdk_generate_content"
+              : "google_sdk_generate_content";
 
-  const alibabaExtraBody = isAlibabaOfficialAiSdkProvider(config)
-    && shouldUseAlibabaChatCompletionsBuiltInTools(config)
-    ? buildAlibabaChatCompletionsExtraBody({ streaming: stream })
-    : undefined;
-  const moonshotFormulaTraceTools = isMoonshotOfficialAiSdkProvider(config)
-    && shouldUseMoonshotFormulaWebSearch(config)
-    ? buildMoonshotFormulaTraceToolEntries()
-    : undefined;
+  const alibabaExtraBody =
+    isAlibabaOfficialAiSdkProvider(config) && shouldUseAlibabaChatCompletionsBuiltInTools(config)
+      ? buildAlibabaChatCompletionsExtraBody({ streaming: stream })
+      : undefined;
+  const moonshotFormulaTraceTools =
+    isMoonshotOfficialAiSdkProvider(config) && shouldUseMoonshotFormulaWebSearch(config)
+      ? buildMoonshotFormulaTraceToolEntries()
+      : undefined;
 
   return [
     {
@@ -777,9 +748,9 @@ function createAiSdkLanguageModel(config: OpenAiTransportConfig): any {
     return createAiSdkGatewayProvider(config)(config.model);
   }
 
-  if (config.llmVendor === 'openai') {
+  if (config.llmVendor === "openai") {
     throw new Error(
-      'OpenAI official Chat Completions is no longer supported; use transportKind open-responses.',
+      "OpenAI official Chat Completions is no longer supported; use transportKind open-responses.",
     );
   }
 
@@ -832,7 +803,9 @@ function createAiSdkImageModel(config: OpenAiImageGenerationConfig): any {
     return createAiSdkTogetherProvider(config).image(config.model);
   }
 
-  return createAiSdkOpenAiCompatibleProvider(config, { includeChatVendorExtras: false }).imageModel(config.model);
+  return createAiSdkOpenAiCompatibleProvider(config, { includeChatVendorExtras: false }).imageModel(
+    config.model,
+  );
 }
 
 function createAiSdkOpenAiCompatibleProvider(
@@ -840,9 +813,10 @@ function createAiSdkOpenAiCompatibleProvider(
   options: { includeChatVendorExtras?: boolean } = {},
 ) {
   const transportConfig = config as OpenAiTransportConfig;
-  const vendorExtras = options.includeChatVendorExtras === false
-    ? {}
-    : openAiVendorChatCompletionBodyExtras(transportConfig);
+  const vendorExtras =
+    options.includeChatVendorExtras === false
+      ? {}
+      : openAiVendorChatCompletionBodyExtras(transportConfig);
   const needsVideoStash = usesOpenAiCompatibleVideoMessageStash(transportConfig.llmVendor);
   const needsFetchWrapper = needsVideoStash || Object.keys(vendorExtras).length > 0;
   const fetchWrapper = !needsFetchWrapper
@@ -854,14 +828,11 @@ function createAiSdkOpenAiCompatibleProvider(
         }
 
         const requestUrl =
-          typeof input === 'string'
-            ? input
-            : input instanceof URL
-              ? input.toString()
-              : 'request';
-        const stashedMessages = needsVideoStash && requestUrl.includes('/chat/completions')
-          ? takeMoonshotChatCompletionMessages()
-          : undefined;
+          typeof input === "string" ? input : input instanceof URL ? input.toString() : "request";
+        const stashedMessages =
+          needsVideoStash && requestUrl.includes("/chat/completions")
+            ? takeMoonshotChatCompletionMessages()
+            : undefined;
 
         return getLlmFetch()(input, {
           ...init,
@@ -875,8 +846,8 @@ function createAiSdkOpenAiCompatibleProvider(
       };
 
   const headers = {
-    ...(config.organization ? { 'OpenAI-Organization': config.organization } : {}),
-    ...(config.project ? { 'OpenAI-Project': config.project } : {}),
+    ...(config.organization ? { "OpenAI-Organization": config.organization } : {}),
+    ...(config.project ? { "OpenAI-Project": config.project } : {}),
   };
 
   let resolvedFetch = wrapFetchForCloudflareAiGateway(
@@ -888,7 +859,7 @@ function createAiSdkOpenAiCompatibleProvider(
 
   return createOpenAICompatible({
     apiKey: config.apiKey,
-    name: 'openai',
+    name: "openai",
     baseURL: config.baseUrl ?? DEFAULT_OPENAI_COMPATIBLE_BASE_URL,
     supportsStructuredOutputs: true,
     ...(Object.keys(headers).length === 0 ? {} : { headers }),
@@ -906,12 +877,8 @@ function createAiSdkMoonshotProvider(config: OpenAiTransportConfig) {
     }
 
     const requestUrl =
-      typeof input === 'string'
-        ? input
-        : input instanceof URL
-          ? input.toString()
-          : 'request';
-    const moonshotMessages = requestUrl.includes('/chat/completions')
+      typeof input === "string" ? input : input instanceof URL ? input.toString() : "request";
+    const moonshotMessages = requestUrl.includes("/chat/completions")
       ? takeMoonshotChatCompletionMessages()
       : undefined;
     return formulaAwareFetch(input, {
@@ -962,21 +929,22 @@ function createAiSdkGoogleVertexProvider(config: OpenAiTransportConfig) {
     } as Parameters<typeof createVertex>[0]);
   }
 
-  const googleAuthOptions = clientEmail && privateKey
-    ? {
-        credentials: {
-          client_email: clientEmail,
-          private_key: privateKey.replace(/\\n/g, '\n'),
-        },
-      }
-    : config.vertexGoogleAuthOptions;
+  const googleAuthOptions =
+    clientEmail && privateKey
+      ? {
+          credentials: {
+            client_email: clientEmail,
+            private_key: privateKey.replace(/\\n/g, "\n"),
+          },
+        }
+      : config.vertexGoogleAuthOptions;
 
   return createVertex({
     ...(project ? { project } : {}),
     ...(location ? { location } : {}),
     ...(config.baseUrl ? { baseURL: config.baseUrl } : {}),
     ...(googleAuthOptions ? { googleAuthOptions } : {}),
-    ...(apiKey ? { apiKey } as Record<string, string> : {}),
+    ...(apiKey ? ({ apiKey } as Record<string, string>) : {}),
     fetch: getLlmFetch(),
   } as Parameters<typeof createVertex>[0]);
 }
@@ -1017,12 +985,8 @@ function createAiSdkFireworksProvider(config: OpenAiTransportConfig) {
     }
 
     const requestUrl =
-      typeof input === 'string'
-        ? input
-        : input instanceof URL
-          ? input.toString()
-          : 'request';
-    if (!requestUrl.includes('/chat/completions')) {
+      typeof input === "string" ? input : input instanceof URL ? input.toString() : "request";
+    if (!requestUrl.includes("/chat/completions")) {
       return getLlmFetch()(input, init);
     }
 
@@ -1043,7 +1007,7 @@ function createAiSdkFireworksProvider(config: OpenAiTransportConfig) {
 }
 
 function createAiSdkTogetherProvider(
-  config: Pick<OpenAiTransportConfig, 'apiKey' | 'baseUrl'> | OpenAiImageGenerationConfig,
+  config: Pick<OpenAiTransportConfig, "apiKey" | "baseUrl"> | OpenAiImageGenerationConfig,
 ) {
   // SDK 默认 api.together.xyz；连接配置的 api.together.ai/v1 必须显式覆盖。
   return createTogetherAI({
@@ -1053,9 +1017,7 @@ function createAiSdkTogetherProvider(
   });
 }
 
-function createAiSdkBasetenProvider(
-  config: Pick<OpenAiTransportConfig, 'apiKey' | 'baseUrl'>,
-) {
+function createAiSdkBasetenProvider(config: Pick<OpenAiTransportConfig, "apiKey" | "baseUrl">) {
   return createBaseten({
     apiKey: config.apiKey,
     ...(config.baseUrl ? { baseURL: config.baseUrl } : {}),
@@ -1063,9 +1025,7 @@ function createAiSdkBasetenProvider(
   });
 }
 
-function createAiSdkGroqProvider(
-  config: Pick<OpenAiTransportConfig, 'apiKey' | 'baseUrl'>,
-) {
+function createAiSdkGroqProvider(config: Pick<OpenAiTransportConfig, "apiKey" | "baseUrl">) {
   // SDK 默认 https://api.groq.com/openai/v1；连接配置须显式覆盖 baseURL。
   return createGroq({
     apiKey: config.apiKey,
@@ -1080,24 +1040,32 @@ function createAiSdkGroqProvider(
  * 故剥掉尾部 /openai 后缀；自定义根不带该后缀时原样透传。
  */
 function normalizeDeepInfraSdkBaseUrl(baseUrl: string | undefined): string | undefined {
-  const trimmed = baseUrl?.trim().replace(/\/+$/, '');
+  const trimmed = baseUrl?.trim().replace(/\/+$/, "");
   if (!trimmed) {
     return undefined;
   }
-  return trimmed.endsWith('/openai') ? trimmed.slice(0, -'/openai'.length) : trimmed;
+  return trimmed.endsWith("/openai") ? trimmed.slice(0, -"/openai".length) : trimmed;
 }
 
-const DEEPINFRA_REASONING_EFFORTS = new Set(['none', 'minimal', 'low', 'medium', 'high', 'xhigh', 'max']);
+const DEEPINFRA_REASONING_EFFORTS = new Set([
+  "none",
+  "minimal",
+  "low",
+  "medium",
+  "high",
+  "xhigh",
+  "max",
+]);
 
 /**
  * 仅用户显式选择档位时注入；未设置时不带字段走服务端默认
  * （不用 openAiReasoningEffort 的 medium 兜底，避免对非 reasoning 模型误传）。
  */
 function resolveDeepInfraReasoningEffort(
-  config: Pick<OpenAiTransportConfig, 'reasoningEffort'>,
+  config: Pick<OpenAiTransportConfig, "reasoningEffort">,
 ): string | undefined {
   const raw = config.reasoningEffort;
-  if (typeof raw !== 'string') {
+  if (typeof raw !== "string") {
     return undefined;
   }
   const normalized = raw.trim().toLowerCase();
@@ -1120,12 +1088,8 @@ function createAiSdkDeepInfraProvider(config: OpenAiTransportConfig) {
         }
 
         const requestUrl =
-          typeof input === 'string'
-            ? input
-            : input instanceof URL
-              ? input.toString()
-              : 'request';
-        if (!requestUrl.includes('/chat/completions')) {
+          typeof input === "string" ? input : input instanceof URL ? input.toString() : "request";
+        if (!requestUrl.includes("/chat/completions")) {
           return getLlmFetch()(input, init);
         }
 
@@ -1150,9 +1114,7 @@ function createAiSdkDeepInfraProvider(config: OpenAiTransportConfig) {
   });
 }
 
-function createAiSdkCohereProvider(
-  config: Pick<OpenAiTransportConfig, 'apiKey' | 'baseUrl'>,
-) {
+function createAiSdkCohereProvider(config: Pick<OpenAiTransportConfig, "apiKey" | "baseUrl">) {
   return createCohere({
     apiKey: config.apiKey,
     ...(config.baseUrl ? { baseURL: config.baseUrl } : {}),
@@ -1180,18 +1142,22 @@ function createAiSdkGatewayProvider(config: OpenAiTransportConfig) {
   });
 }
 
-function buildAiSdkProviderOptions(
-  config: OpenAiTransportConfig,
-): Record<string, JsonObject> {
+function buildAiSdkProviderOptions(config: OpenAiTransportConfig): Record<string, JsonObject> {
   if (shouldUseGatewayCodeCompletionProviderOptions(config)) {
     return buildGatewayCodeCompletionProviderOptions(config);
   }
 
-  if (isVercelAiGatewayProvider(config) && isGatewayAnthropicClaudeModel(config.llmVendor, config.model)) {
+  if (
+    isVercelAiGatewayProvider(config) &&
+    isGatewayAnthropicClaudeModel(config.llmVendor, config.model)
+  ) {
     return buildGatewayAnthropicProviderOptions(config);
   }
 
-  if (isVercelAiGatewayProvider(config) && isGatewayGoogleGeminiModel(config.llmVendor, config.model)) {
+  if (
+    isVercelAiGatewayProvider(config) &&
+    isGatewayGoogleGeminiModel(config.llmVendor, config.model)
+  ) {
     return buildGatewayGoogleProviderOptions(config, openAiReasoningEffort(config));
   }
 
@@ -1283,7 +1249,7 @@ function buildAiSdkProviderOptions(
   if (isDeepSeekOfficialAiSdkProvider(config)) {
     const deepseekOptions = {
       thinking: {
-        type: config.vendorExtendedThinking === false ? 'disabled' : 'enabled',
+        type: config.vendorExtendedThinking === false ? "disabled" : "enabled",
       },
     } satisfies DeepSeekLanguageModelOptions;
 
@@ -1294,9 +1260,9 @@ function buildAiSdkProviderOptions(
 
   if (isMoonshotOfficialAiSdkProvider(config)) {
     const moonshotContext = {
-      provider: 'moonshot-ai' as const,
+      provider: "moonshot-ai" as const,
       model: config.model,
-      transportKind: 'openai-compatible' as const,
+      transportKind: "openai-compatible" as const,
     };
     if (!isMoonshotThinkingSwitchModel(moonshotContext)) {
       return {};
@@ -1304,7 +1270,7 @@ function buildAiSdkProviderOptions(
 
     const moonshotaiOptions = {
       thinking: {
-        type: config.vendorExtendedThinking === false ? 'disabled' : 'enabled',
+        type: config.vendorExtendedThinking === false ? "disabled" : "enabled",
       },
     } satisfies MoonshotAILanguageModelOptions;
 
@@ -1392,7 +1358,7 @@ function buildAiSdkProviderOptions(
   }
 
   const reasoningEffort = openAiReasoningEffort(config) as
-    | OpenAICompatibleLanguageModelChatOptions['reasoningEffort']
+    | OpenAICompatibleLanguageModelChatOptions["reasoningEffort"]
     | undefined;
   const reasoningMode = openAiReasoningMode(config);
 
@@ -1424,23 +1390,30 @@ function normalizeToolDefinitions(tools: JsonValue): OpenAiFunctionToolDefinitio
     .map((toolDefinition) => cloneJsonValue(toolDefinition) as OpenAiFunctionToolDefinition);
 }
 
-function buildAiSdkTools(normalizedTools: OpenAiFunctionToolDefinition[]): Record<string, ReturnType<typeof tool>> {
+function buildAiSdkTools(
+  normalizedTools: OpenAiFunctionToolDefinition[],
+): Record<string, ReturnType<typeof tool>> {
   return Object.fromEntries(
     normalizedTools.flatMap((toolDefinition) => {
       const functionDefinition = toolDefinition.function;
-      if (typeof functionDefinition.name !== 'string' || !isJsonObject(functionDefinition.parameters)) {
+      if (
+        typeof functionDefinition.name !== "string" ||
+        !isJsonObject(functionDefinition.parameters)
+      ) {
         return [];
       }
 
-      return [[
-        functionDefinition.name,
-        tool({
-          ...(typeof functionDefinition.description === 'string'
-            ? { description: functionDefinition.description }
-            : {}),
-          inputSchema: jsonSchema(functionDefinition.parameters as Record<string, unknown>),
-        }),
-      ]];
+      return [
+        [
+          functionDefinition.name,
+          tool({
+            ...(typeof functionDefinition.description === "string"
+              ? { description: functionDefinition.description }
+              : {}),
+            inputSchema: jsonSchema(functionDefinition.parameters as Record<string, unknown>),
+          }),
+        ],
+      ];
     }),
   );
 }
@@ -1449,25 +1422,25 @@ function openAiMessagesToAiSdkMessages(messages: JsonValue[]): Array<Record<stri
   const toolCallNames = buildToolCallNameIndex(messages);
 
   return messages.flatMap((message) => {
-    if (!isJsonObject(message) || typeof message.role !== 'string') {
+    if (!isJsonObject(message) || typeof message.role !== "string") {
       return [];
     }
 
     switch (message.role) {
-      case 'system': {
-        return typeof message.content === 'string'
-          ? [{ role: 'system', content: message.content }]
+      case "system": {
+        return typeof message.content === "string"
+          ? [{ role: "system", content: message.content }]
           : [];
       }
-      case 'user': {
+      case "user": {
         const content = openAiUserContentToAiSdkContent(message.content);
-        return content === undefined ? [] : [{ role: 'user', content }];
+        return content === undefined ? [] : [{ role: "user", content }];
       }
-      case 'assistant': {
+      case "assistant": {
         const assistantMessage = openAiAssistantMessageToAiSdkMessage(message);
         return assistantMessage === undefined ? [] : [assistantMessage];
       }
-      case 'tool': {
+      case "tool": {
         const toolMessage = openAiToolMessageToAiSdkMessage(message, toolCallNames);
         return toolMessage === undefined ? [] : [toolMessage];
       }
@@ -1480,7 +1453,7 @@ function openAiMessagesToAiSdkMessages(messages: JsonValue[]): Array<Record<stri
 function openAiUserContentToAiSdkContent(
   content: JsonValue | undefined,
 ): string | Array<Record<string, unknown>> | undefined {
-  if (typeof content === 'string') {
+  if (typeof content === "string") {
     return content;
   }
 
@@ -1490,22 +1463,22 @@ function openAiUserContentToAiSdkContent(
 
   const parts: Array<Record<string, unknown>> = [];
   for (const part of content) {
-    if (!isJsonObject(part) || typeof part.type !== 'string') {
+    if (!isJsonObject(part) || typeof part.type !== "string") {
       continue;
     }
 
     switch (part.type) {
-      case 'text':
-        if (typeof part.text === 'string') {
-          parts.push({ type: 'text', text: part.text });
+      case "text":
+        if (typeof part.text === "string") {
+          parts.push({ type: "text", text: part.text });
         }
         break;
-      case 'image_url':
-        if (isJsonObject(part.image_url) && typeof part.image_url.url === 'string') {
+      case "image_url":
+        if (isJsonObject(part.image_url) && typeof part.image_url.url === "string") {
           parts.push(buildAiSdkUserImageFilePartFromUrl(part.image_url.url));
         }
         break;
-      case 'video_url':
+      case "video_url":
         // Moonshot AI 视频：AI SDK 会丢弃 video_url，由 fetch 包装器写回完整 messages（见 moonshot-chat-completion-messages.ts）。
         break;
       default:
@@ -1524,25 +1497,25 @@ function openAiAssistantMessageToAiSdkMessage(
   const contentParts: Array<Record<string, unknown>> = [];
 
   if (reasoningText) {
-    contentParts.push({ type: 'reasoning', text: reasoningText });
+    contentParts.push({ type: "reasoning", text: reasoningText });
   }
 
-  if (typeof message.content === 'string' && message.content.length > 0) {
-    contentParts.push({ type: 'text', text: message.content });
+  if (typeof message.content === "string" && message.content.length > 0) {
+    contentParts.push({ type: "text", text: message.content });
   }
 
   contentParts.push(...toolCallParts);
 
   if (contentParts.length === 0) {
-    if (typeof message.content === 'string') {
-      return { role: 'assistant', content: message.content };
+    if (typeof message.content === "string") {
+      return { role: "assistant", content: message.content };
     }
 
     return undefined;
   }
 
   return {
-    role: 'assistant',
+    role: "assistant",
     content: contentParts,
   };
 }
@@ -1556,24 +1529,27 @@ function openAiToolMessageToAiSdkMessage(
     return undefined;
   }
 
-  const toolName = toolCallNames.get(toolCallId) ?? 'unknown_tool';
+  const toolName = toolCallNames.get(toolCallId) ?? "unknown_tool";
   const result = tryParseJsonValue(message.content);
   const output =
     result === undefined
       ? {
-          type: 'text',
-          value: typeof message.content === 'string' ? message.content : JSON.stringify(message.content ?? ''),
+          type: "text",
+          value:
+            typeof message.content === "string"
+              ? message.content
+              : JSON.stringify(message.content ?? ""),
         }
       : {
-          type: 'json',
+          type: "json",
           value: result,
         };
 
   return {
-    role: 'tool',
+    role: "tool",
     content: [
       {
-        type: 'tool-result',
+        type: "tool-result",
         toolCallId,
         toolName,
         output,
@@ -1586,7 +1562,11 @@ function buildToolCallNameIndex(messages: JsonValue[]): Map<string, string> {
   const toolCallNames = new Map<string, string>();
 
   for (const message of messages) {
-    if (!isJsonObject(message) || message.role !== 'assistant' || !Array.isArray(message.tool_calls)) {
+    if (
+      !isJsonObject(message) ||
+      message.role !== "assistant" ||
+      !Array.isArray(message.tool_calls)
+    ) {
       continue;
     }
 
@@ -1595,7 +1575,7 @@ function buildToolCallNameIndex(messages: JsonValue[]): Map<string, string> {
         continue;
       }
 
-      if (!hasNonEmptyToolCallId(toolCall.id) || typeof toolCall.function.name !== 'string') {
+      if (!hasNonEmptyToolCallId(toolCall.id) || typeof toolCall.function.name !== "string") {
         continue;
       }
 
@@ -1616,16 +1596,18 @@ function extractAssistantToolCallParts(message: JsonObject): Array<Record<string
       return [];
     }
 
-    if (!hasNonEmptyToolCallId(toolCall.id) || typeof toolCall.function.name !== 'string') {
+    if (!hasNonEmptyToolCallId(toolCall.id) || typeof toolCall.function.name !== "string") {
       return [];
     }
 
-    return [{
-      type: 'tool-call',
-      toolCallId: toolCall.id,
-      toolName: toolCall.function.name,
-      input: tryParseJsonValue(toolCall.function.arguments) ?? toolCall.function.arguments ?? {},
-    }];
+    return [
+      {
+        type: "tool-call",
+        toolCallId: toolCall.id,
+        toolName: toolCall.function.name,
+        input: tryParseJsonValue(toolCall.function.arguments) ?? toolCall.function.arguments ?? {},
+      },
+    ];
   });
 }
 
@@ -1641,13 +1623,13 @@ function buildAssistantMessageFromGenerateTextResult(
 
   return withReasoningContentIfNeeded(
     {
-      role: 'assistant',
+      role: "assistant",
       content: text || null,
       ...(toolCalls.length > 0
         ? {
             tool_calls: toolCalls.map((toolCall) => ({
               id: toolCall.toolCallId,
-              type: 'function',
+              type: "function",
               function: {
                 name: toolCall.toolName,
                 arguments: JSON.stringify(toolCall.input),
@@ -1656,11 +1638,13 @@ function buildAssistantMessageFromGenerateTextResult(
           }
         : {}),
     },
-    '',
+    "",
   );
 }
 
-function extractAssistantMessageFromChatResponseBody(responseBody: unknown): JsonObject | undefined {
+function extractAssistantMessageFromChatResponseBody(
+  responseBody: unknown,
+): JsonObject | undefined {
   if (!isJsonObjectUnknown(responseBody) || !Array.isArray(responseBody.choices)) {
     return undefined;
   }
@@ -1677,15 +1661,16 @@ function normalizeRawAssistantMessage(message: JsonObject): JsonValue {
   const functionToolCalls = Array.isArray(message.tool_calls)
     ? message.tool_calls
         .filter(isJsonObject)
-        .filter((toolCall) => toolCall.type === 'function' && isJsonObject(toolCall.function))
+        .filter((toolCall) => toolCall.type === "function" && isJsonObject(toolCall.function))
         .map((toolCall) => cloneJsonValue(toolCall))
     : [];
   const reasoningContent = extractAssistantReasoningContentFromJson(message);
 
   return withReasoningContentIfNeeded(
     {
-      role: 'assistant',
-      content: typeof message.content === 'string' || message.content === null ? message.content : null,
+      role: "assistant",
+      content:
+        typeof message.content === "string" || message.content === null ? message.content : null,
       ...(functionToolCalls.length > 0 ? { tool_calls: functionToolCalls } : {}),
     },
     reasoningContent,
@@ -1702,42 +1687,42 @@ async function* aiSdkEventStreamToRuntimeEvents(
   config: OpenAiTransportConfig,
 ): AsyncGenerator<LlmStreamEvent, void, undefined> {
   const toolCalls = new Map<number, AggregatedStreamingToolCall>();
-  let assistantContent = '';
-  let reasoningContent = '';
+  let assistantContent = "";
+  let reasoningContent = "";
   let sawAnswerOrToolOutput = false;
   const rawPreview: string[] = [];
 
   try {
     for await (const part of stream) {
-      if (part.type === 'raw' && rawPreview.length < 8) {
+      if (part.type === "raw" && rawPreview.length < 8) {
         rawPreview.push(truncateChars(JSON.stringify(part.rawValue), 320));
       }
 
       switch (part.type) {
-        case 'reasoning-delta': {
+        case "reasoning-delta": {
           reasoningContent += part.text;
-          yield { kind: 'thinking-chunk', text: part.text };
+          yield { kind: "thinking-chunk", text: part.text };
           break;
         }
-        case 'text-delta': {
+        case "text-delta": {
           sawAnswerOrToolOutput = true;
           assistantContent += part.text;
-          yield { kind: 'assistant-chunk', text: part.text };
+          yield { kind: "assistant-chunk", text: part.text };
           break;
         }
-        case 'tool-call': {
+        case "tool-call": {
           sawAnswerOrToolOutput = true;
           break;
         }
-        case 'error': {
+        case "error": {
           throw part.error;
         }
-        case 'raw': {
+        case "raw": {
           if (!useStructuredReasoningEvents) {
             const thinkingText = extractFallbackStreamingThinkingTextFromRawChunk(part.rawValue);
             if (thinkingText) {
               reasoningContent += thinkingText;
-              yield { kind: 'thinking-chunk', text: thinkingText };
+              yield { kind: "thinking-chunk", text: thinkingText };
             }
           }
 
@@ -1760,8 +1745,10 @@ async function* aiSdkEventStreamToRuntimeEvents(
     }
 
     if (!sawAnswerOrToolOutput && !reasoningContent.trim()) {
-      const preview = rawPreview.length === 0 ? '<empty stream body>' : rawPreview.join('\n');
-      throw new Error(`流式响应无任何 delta（无 content / tool_calls）。预览:\n${truncateChars(preview, 600)}`);
+      const preview = rawPreview.length === 0 ? "<empty stream body>" : rawPreview.join("\n");
+      throw new Error(
+        `流式响应无任何 delta（无 content / tool_calls）。预览:\n${truncateChars(preview, 600)}`,
+      );
     }
 
     nextState.messages.push(
@@ -1770,25 +1757,25 @@ async function* aiSdkEventStreamToRuntimeEvents(
     const calls = extractToolCallsFromAggregatedMap(toolCalls);
     const usage = await readAiSdkUsage(usageSource);
     completion.resolve({
-      kind: 'success',
+      kind: "success",
       result: {
         state: nextState,
-        step: calls.length > 0 ? { kind: 'tool-calls', calls } : { kind: 'final-response-ready' },
+        step: calls.length > 0 ? { kind: "tool-calls", calls } : { kind: "final-response-ready" },
         requestTrace,
         ...(usage ? { usage } : {}),
       },
     });
-    yield { kind: 'done' };
+    yield { kind: "done" };
   } catch (error) {
-    logAiSdkChatCompletionFailure(config, error, { streaming: true, phase: 'stream' });
+    logAiSdkChatCompletionFailure(config, error, { streaming: true, phase: "stream" });
     const rendered = renderAiSdkOpenAiError(error);
     completion.resolve({
-      kind: 'failure',
+      kind: "failure",
       error: rendered,
       requestTrace,
     });
     yield {
-      kind: 'error',
+      kind: "error",
       error: rendered,
     };
   }
@@ -1803,13 +1790,9 @@ function extractFallbackStreamingThinkingTextFromRawChunk(rawValue: unknown): st
     .filter(isJsonObject)
     .map((choice) => choice.delta)
     .filter(isJsonObject)
-    .flatMap((delta) => [
-      delta.reasoningText,
-      delta.reasoning_text,
-      delta.thinking,
-    ])
-    .filter((value): value is string => typeof value === 'string' && value.length > 0)
-    .join('');
+    .flatMap((delta) => [delta.reasoningText, delta.reasoning_text, delta.thinking])
+    .filter((value): value is string => typeof value === "string" && value.length > 0)
+    .join("");
 
   return chunks || undefined;
 }
@@ -1819,10 +1802,12 @@ function resolveStreamingToolPreviewArgumentsJson(
   toolName: string,
   argumentsJson: string,
 ): string {
-  return buildMoonshotFormulaStreamingToolPreviewArgumentsJson(config, toolName, argumentsJson)
-    ?? buildStepfunWebSearchStreamingPreviewArgumentsJson(config, toolName, argumentsJson)
-    ?? buildKimiCodeWebSearchStreamingPreviewArgumentsJson(config, toolName, argumentsJson)
-    ?? argumentsJson;
+  return (
+    buildMoonshotFormulaStreamingToolPreviewArgumentsJson(config, toolName, argumentsJson) ??
+    buildStepfunWebSearchStreamingPreviewArgumentsJson(config, toolName, argumentsJson) ??
+    buildKimiCodeWebSearchStreamingPreviewArgumentsJson(config, toolName, argumentsJson) ??
+    argumentsJson
+  );
 }
 
 function accumulateStreamingToolCallProgressFromRawChunk(
@@ -1836,23 +1821,27 @@ function accumulateStreamingToolCallProgressFromRawChunk(
 
   const updates: LlmStreamEvent[] = [];
   for (const choice of rawValue.choices) {
-    if (!isJsonObject(choice) || !isJsonObject(choice.delta) || !Array.isArray(choice.delta.tool_calls)) {
+    if (
+      !isJsonObject(choice) ||
+      !isJsonObject(choice.delta) ||
+      !Array.isArray(choice.delta.tool_calls)
+    ) {
       continue;
     }
 
     for (const delta of choice.delta.tool_calls) {
-      if (!isJsonObject(delta) || typeof delta.index !== 'number') {
+      if (!isJsonObject(delta) || typeof delta.index !== "number") {
         continue;
       }
 
       const existing = toolCalls.get(delta.index);
-      const previousFunctionName = existing?.functionName ?? '';
+      const previousFunctionName = existing?.functionName ?? "";
       const current: AggregatedStreamingToolCall = existing ?? {
         index: delta.index,
         id: nonEmptyToolCallIdOrUndefined(delta.id) ?? `stream-tool-call-${delta.index}`,
-        type: 'function',
-        functionName: '',
-        functionArguments: '',
+        type: "function",
+        functionName: "",
+        functionArguments: "",
         readyPreviewEmitted: false,
       };
 
@@ -1862,19 +1851,19 @@ function accumulateStreamingToolCallProgressFromRawChunk(
         current.id = nextToolCallId;
       }
 
-      if (isJsonObject(delta.function) && typeof delta.function.name === 'string') {
+      if (isJsonObject(delta.function) && typeof delta.function.name === "string") {
         current.functionName += delta.function.name;
       }
-      if (isJsonObject(delta.function) && typeof delta.function.arguments === 'string') {
+      if (isJsonObject(delta.function) && typeof delta.function.arguments === "string") {
         current.functionArguments += delta.function.arguments;
       }
 
       if (
-        shouldEmitStreamingToolNamePreview(current.functionName, previousFunctionName)
-        && !isGeneratedStreamingToolCallId(current.id)
+        shouldEmitStreamingToolNamePreview(current.functionName, previousFunctionName) &&
+        !isGeneratedStreamingToolCallId(current.id)
       ) {
         updates.push({
-          kind: 'streaming-tool-preview',
+          kind: "streaming-tool-preview",
           toolCallId: current.id,
           toolName: current.functionName,
           argumentsJson: resolveStreamingToolPreviewArgumentsJson(
@@ -1885,19 +1874,16 @@ function accumulateStreamingToolCallProgressFromRawChunk(
         });
       }
 
-      if (current.functionName === 'finish_task') {
+      if (current.functionName === "finish_task") {
         if (finishTaskStreamingPreviewReady(current.functionName, current.functionArguments)) {
           updates.push({
-            kind: 'streaming-tool-preview',
+            kind: "streaming-tool-preview",
             toolCallId: current.id,
             toolName: current.functionName,
             argumentsJson: current.functionArguments,
           });
         }
-      } else if (
-        current.functionName &&
-        !isGeneratedStreamingToolCallId(current.id)
-      ) {
+      } else if (current.functionName && !isGeneratedStreamingToolCallId(current.id)) {
         const previewState = {
           readyPreviewEmitted: current.readyPreviewEmitted,
           ...(current.lastPreviewArgsLen === undefined
@@ -1914,7 +1900,7 @@ function accumulateStreamingToolCallProgressFromRawChunk(
         );
         if (decision.emit) {
           updates.push({
-            kind: 'streaming-tool-preview',
+            kind: "streaming-tool-preview",
             toolCallId: current.id,
             toolName: current.functionName,
             argumentsJson: resolveStreamingToolPreviewArgumentsJson(
@@ -1959,7 +1945,7 @@ function buildStreamingAssistantMessage(
 
   return withReasoningContentIfNeeded(
     {
-      role: 'assistant',
+      role: "assistant",
       content: assistantContent || null,
       ...(functionToolCalls.length > 0 ? { tool_calls: functionToolCalls } : {}),
     },
@@ -1988,16 +1974,13 @@ function extractToolCallsFromAiSdk(toolCalls: readonly AiSdkToolCall[]): ToolCal
   }));
 }
 
-function withReasoningContentIfNeeded(
-  message: JsonObject,
-  reasoningContent: string,
-): JsonValue {
+function withReasoningContentIfNeeded(message: JsonObject, reasoningContent: string): JsonValue {
   if (messageContentHasEmbeddedThinking(message)) {
     return message;
   }
 
   const toolCalls = Array.isArray(message.tool_calls) ? message.tool_calls : [];
-  if ('reasoning_content' in message) {
+  if ("reasoning_content" in message) {
     return message;
   }
 
@@ -2011,7 +1994,7 @@ function withReasoningContentIfNeeded(
   if (toolCalls.length > 0) {
     return {
       ...message,
-      reasoning_content: '',
+      reasoning_content: "",
     };
   }
 
@@ -2019,23 +2002,18 @@ function withReasoningContentIfNeeded(
 }
 
 function messageContentHasEmbeddedThinking(message: JsonObject): boolean {
-  if (typeof message.content !== 'string') {
+  if (typeof message.content !== "string") {
     return false;
   }
 
   const trimmed = message.content.trimStart();
-  return trimmed.startsWith('<think>') && trimmed.includes('</think>');
+  return trimmed.startsWith("<think>") && trimmed.includes("</think>");
 }
 
 function extractAssistantReasoningContentFromJson(message: JsonObject): string {
-  return [
-    message.reasoning_content,
-    message.reasoningContent,
-    message.reasoning,
-    message.thinking,
-  ]
-    .filter((value): value is string => typeof value === 'string' && value.length > 0)
-    .join('');
+  return [message.reasoning_content, message.reasoningContent, message.reasoning, message.thinking]
+    .filter((value): value is string => typeof value === "string" && value.length > 0)
+    .join("");
 }
 
 function tryCountContentLines(argumentsJson: string): number | undefined {
@@ -2046,7 +2024,7 @@ function tryCountContentLines(argumentsJson: string): number | undefined {
     }
 
     const candidate = parsed.content ?? parsed.new_text;
-    if (typeof candidate !== 'string') {
+    if (typeof candidate !== "string") {
       return undefined;
     }
 
@@ -2056,7 +2034,7 @@ function tryCountContentLines(argumentsJson: string): number | undefined {
   }
 }
 
-function openAiTransportAssetRoot(config: Pick<OpenAiTransportConfig, 'workspaceRoot'>): string {
+function openAiTransportAssetRoot(config: Pick<OpenAiTransportConfig, "workspaceRoot">): string {
   return config.workspaceRoot ?? process.cwd();
 }
 
@@ -2075,8 +2053,8 @@ function prepareMoonshotChatCompletionRequest(
   requestMessages: JsonValue[],
 ): void {
   if (
-    usesOpenAiCompatibleVideoMessageStash(config.llmVendor)
-    && openAiMessagesContainVideoUrl(requestMessages)
+    usesOpenAiCompatibleVideoMessageStash(config.llmVendor) &&
+    openAiMessagesContainVideoUrl(requestMessages)
   ) {
     stashMoonshotChatCompletionMessages(requestMessages);
   }
@@ -2089,13 +2067,13 @@ function clearMoonshotChatCompletionRequest(config: OpenAiTransportConfig): void
 }
 
 function usesOpenAiCompatibleVideoMessageStash(
-  vendor: OpenAiTransportConfig['llmVendor'],
+  vendor: OpenAiTransportConfig["llmVendor"],
 ): boolean {
-  return vendor === 'moonshot-ai' || vendor === 'xiaomi' || vendor === 'deepinfra';
+  return vendor === "moonshot-ai" || vendor === "xiaomi" || vendor === "deepinfra";
 }
 
 function normalizeMessagesForRequest(
-  config: Pick<OpenAiTransportConfig, 'llmVendor' | 'model' | 'modelCapabilities'>,
+  config: Pick<OpenAiTransportConfig, "llmVendor" | "model" | "modelCapabilities">,
   messages: JsonValue[],
 ): JsonValue[] {
   const profile = resolveOpenAiModelCompatibilityProfile(config);
@@ -2107,20 +2085,16 @@ function sanitizeMessageForCompatibility(
   profile: ReturnType<typeof resolveOpenAiModelCompatibilityProfile>,
 ): JsonValue {
   const cloned = cloneJsonValue(message);
-  if (!isJsonObject(cloned) || cloned.role !== 'user' || !Array.isArray(cloned.content)) {
+  if (!isJsonObject(cloned) || cloned.role !== "user" || !Array.isArray(cloned.content)) {
     return cloned;
   }
 
   let content = cloned.content;
   if (profile.hasExplicitCapabilities && !profile.capabilities.imageInput) {
-    content = content.filter(
-      (part) => !(isJsonObject(part) && part.type === 'image_url'),
-    );
+    content = content.filter((part) => !(isJsonObject(part) && part.type === "image_url"));
   }
   if (profile.hasExplicitCapabilities && !profile.capabilities.videoInput) {
-    content = content.filter(
-      (part) => !(isJsonObject(part) && part.type === 'video_url'),
-    );
+    content = content.filter((part) => !(isJsonObject(part) && part.type === "video_url"));
   }
 
   // filter 恒产生新数组，引用变化不代表真有 part 被裁；
@@ -2128,7 +2102,7 @@ function sanitizeMessageForCompatibility(
   if (content.length !== cloned.content.length) {
     return {
       ...cloned,
-      content: content.length > 0 ? content : '',
+      content: content.length > 0 ? content : "",
     };
   }
 
@@ -2136,53 +2110,53 @@ function sanitizeMessageForCompatibility(
 }
 
 function isDeepSeekOfficialAiSdkProvider(config: OpenAiTransportConfig): boolean {
-  return config.llmVendor === 'deepseek';
+  return config.llmVendor === "deepseek";
 }
 
 function isXaiOfficialAiSdkProvider(config: OpenAiTransportConfig): boolean {
-  return config.llmVendor === 'xai';
+  return config.llmVendor === "xai";
 }
 
 function isMoonshotOfficialAiSdkProvider(config: OpenAiTransportConfig): boolean {
-  return config.llmVendor === 'moonshot-ai';
+  return config.llmVendor === "moonshot-ai";
 }
 
 function isFireworksOfficialAiSdkProvider(config: OpenAiTransportConfig): boolean {
-  return config.llmVendor === 'fireworks-ai';
+  return config.llmVendor === "fireworks-ai";
 }
 
 function isTogetherOfficialAiSdkProvider(config: OpenAiTransportConfig): boolean {
-  return config.llmVendor === 'together-ai';
+  return config.llmVendor === "together-ai";
 }
 
 function isBasetenOfficialAiSdkProvider(config: OpenAiTransportConfig): boolean {
-  return config.llmVendor === 'baseten';
+  return config.llmVendor === "baseten";
 }
 
 function isGroqOfficialAiSdkProvider(config: OpenAiTransportConfig): boolean {
-  return config.llmVendor === 'groq';
+  return config.llmVendor === "groq";
 }
 
 function isDeepInfraOfficialAiSdkProvider(config: OpenAiTransportConfig): boolean {
-  return config.llmVendor === 'deepinfra';
+  return config.llmVendor === "deepinfra";
 }
 
 function resolveGroqProviderReasoningEffort(
-  config: Pick<OpenAiTransportConfig, 'reasoningEffort'>,
-): GroqLanguageModelOptions['reasoningEffort'] | undefined {
+  config: Pick<OpenAiTransportConfig, "reasoningEffort">,
+): GroqLanguageModelOptions["reasoningEffort"] | undefined {
   const raw = config.reasoningEffort;
-  if (raw === undefined || raw === 'minimal') {
+  if (raw === undefined || raw === "minimal") {
     return undefined;
   }
 
   // Groq Qwen 须显式传 default；不可经 openAiReasoningEffort 把 default 映射为 undefined。
-  const normalized = typeof raw === 'string' ? raw.trim().toLowerCase() : '';
+  const normalized = typeof raw === "string" ? raw.trim().toLowerCase() : "";
   switch (normalized) {
-    case 'none':
-    case 'default':
-    case 'low':
-    case 'medium':
-    case 'high':
+    case "none":
+    case "default":
+    case "low":
+    case "medium":
+    case "high":
       return normalized;
     default:
       return undefined;
@@ -2190,11 +2164,11 @@ function resolveGroqProviderReasoningEffort(
 }
 
 function isCohereOfficialAiSdkProvider(config: OpenAiTransportConfig): boolean {
-  return config.llmVendor === 'cohere';
+  return config.llmVendor === "cohere";
 }
 
 function isTogetherOfficialAiSdkImageConfig(config: OpenAiImageGenerationConfig): boolean {
-  return config.llmVendor === 'together-ai';
+  return config.llmVendor === "together-ai";
 }
 
 function usesStructuredReasoningStreamEvents(config: OpenAiTransportConfig): boolean {
@@ -2202,44 +2176,42 @@ function usesStructuredReasoningStreamEvents(config: OpenAiTransportConfig): boo
 }
 
 function isAlibabaOfficialAiSdkProvider(config: OpenAiTransportConfig): boolean {
-  return config.llmVendor === 'alibaba';
+  return config.llmVendor === "alibaba";
 }
 
 function isVercelAiGatewayProvider(config: OpenAiTransportConfig): boolean {
-  return config.llmVendor === 'vercel-ai-gateway';
+  return config.llmVendor === "vercel-ai-gateway";
 }
 
-function isVercelAiGatewayImageConfig(
-  config: OpenAiImageGenerationConfig,
-): boolean {
-  return config.llmVendor === 'vercel-ai-gateway';
+function isVercelAiGatewayImageConfig(config: OpenAiImageGenerationConfig): boolean {
+  return config.llmVendor === "vercel-ai-gateway";
 }
 
 function isGoogleOfficialAiSdkProvider(config: OpenAiTransportConfig): boolean {
-  return config.llmVendor === 'google';
+  return config.llmVendor === "google";
 }
 
 function isGoogleVertexOfficialAiSdkProvider(config: OpenAiTransportConfig): boolean {
-  return config.llmVendor === 'google-vertex-ai';
+  return config.llmVendor === "google-vertex-ai";
 }
 
 function buildAiSdkImageGenerationUrl(config: OpenAiImageGenerationConfig): string {
   if (isVercelAiGatewayImageConfig(config)) {
-    return 'https://ai-gateway.vercel.sh/v3/ai/image-model';
+    return "https://ai-gateway.vercel.sh/v3/ai/image-model";
   }
 
-  const baseUrl = (config.baseUrl ?? DEFAULT_OPENAI_COMPATIBLE_BASE_URL).replace(/\/$/, '');
+  const baseUrl = (config.baseUrl ?? DEFAULT_OPENAI_COMPATIBLE_BASE_URL).replace(/\/$/, "");
   return `${baseUrl}/images/generations`;
 }
 
 function logAiSdkChatCompletionFailure(
   config: OpenAiTransportConfig,
   error: unknown,
-  context: { streaming: boolean; phase?: 'start' | 'stream' } = { streaming: false },
+  context: { streaming: boolean; phase?: "start" | "stream" } = { streaming: false },
 ): void {
-  console.error('[agent-core][chat-completions] request.failed', {
-    adapter: 'ai-sdk',
-    vendor: config.llmVendor ?? 'custom',
+  console.error("[agent-core][chat-completions] request.failed", {
+    adapter: "ai-sdk",
+    vendor: config.llmVendor ?? "custom",
     model: config.model,
     baseUrl: config.baseUrl ?? DEFAULT_OPENAI_COMPATIBLE_BASE_URL,
     streaming: context.streaming,
@@ -2253,13 +2225,13 @@ function logAiSdkImageGenerationStart(
   request: ImageGenerationRequest,
   requestUrl: string,
 ): void {
-  console.error('[agent-core][generate-image] request.start', {
+  console.error("[agent-core][generate-image] request.start", {
     adapter: isVercelAiGatewayImageConfig(config)
-      ? 'ai-sdk-gateway-image'
+      ? "ai-sdk-gateway-image"
       : isTogetherOfficialAiSdkImageConfig(config)
-        ? 'ai-sdk-togetherai-image'
-        : 'openai-compatible-image',
-    vendor: config.llmVendor ?? 'custom',
+        ? "ai-sdk-togetherai-image"
+        : "openai-compatible-image",
+    vendor: config.llmVendor ?? "custom",
     model: config.model,
     baseUrl: config.baseUrl ?? DEFAULT_OPENAI_COMPATIBLE_BASE_URL,
     requestUrl,
@@ -2274,9 +2246,9 @@ function logAiSdkImageGenerationSuccess(
   requestUrl: string,
   saved: GeneratedImageFile,
 ): void {
-  console.error('[agent-core][generate-image] request.success', {
-    adapter: 'openai-compatible-image',
-    vendor: config.llmVendor ?? 'custom',
+  console.error("[agent-core][generate-image] request.success", {
+    adapter: "openai-compatible-image",
+    vendor: config.llmVendor ?? "custom",
     model: config.model,
     requestUrl,
     savedPath: saved.path,
@@ -2290,9 +2262,9 @@ function logAiSdkImageGenerationFailure(
   requestUrl: string,
   error: unknown,
 ): void {
-  console.error('[agent-core][generate-image] request.failed', {
-    adapter: 'openai-compatible-image',
-    vendor: config.llmVendor ?? 'custom',
+  console.error("[agent-core][generate-image] request.failed", {
+    adapter: "openai-compatible-image",
+    vendor: config.llmVendor ?? "custom",
     model: config.model,
     baseUrl: config.baseUrl ?? DEFAULT_OPENAI_COMPATIBLE_BASE_URL,
     requestUrl,
@@ -2323,8 +2295,8 @@ function describeAiSdkErrorForDebug(error: unknown): Record<string, unknown> {
   return {
     errorName: error.name,
     errorMessage: error.message,
-    ...(typeof candidate.url === 'string' ? { errorUrl: candidate.url } : {}),
-    ...(typeof candidate.statusCode === 'number' ? { statusCode: candidate.statusCode } : {}),
+    ...(typeof candidate.url === "string" ? { errorUrl: candidate.url } : {}),
+    ...(typeof candidate.statusCode === "number" ? { statusCode: candidate.statusCode } : {}),
     ...(candidate.responseBody !== undefined
       ? { responseBodyPreview: truncateChars(stringifyDebugValue(candidate.responseBody), 4000) }
       : {}),
@@ -2342,9 +2314,9 @@ function describeAiSdkErrorForDebug(error: unknown): Record<string, unknown> {
 function normalizeDebugValue(value: unknown): unknown {
   if (
     value === null ||
-    typeof value === 'string' ||
-    typeof value === 'number' ||
-    typeof value === 'boolean'
+    typeof value === "string" ||
+    typeof value === "number" ||
+    typeof value === "boolean"
   ) {
     return value;
   }
@@ -2357,7 +2329,7 @@ function normalizeDebugValue(value: unknown): unknown {
 }
 
 function stringifyDebugValue(value: unknown): string {
-  if (typeof value === 'string') {
+  if (typeof value === "string") {
     return value;
   }
 
@@ -2373,7 +2345,7 @@ function stringifyDebugValue(value: unknown): string {
 }
 
 function singleLine(text: string): string {
-  return text.replace(/\s+/g, ' ').trim();
+  return text.replace(/\s+/g, " ").trim();
 }
 
 function renderAiSdkOpenAiError(error: unknown): string {
@@ -2381,7 +2353,7 @@ function renderAiSdkOpenAiError(error: unknown): string {
 }
 
 function tryParseRequestBody(body: BodyInit | null | undefined): JsonValue | undefined {
-  if (typeof body !== 'string') {
+  if (typeof body !== "string") {
     return undefined;
   }
 
@@ -2393,7 +2365,7 @@ function tryParseRequestBody(body: BodyInit | null | undefined): JsonValue | und
 }
 
 function tryParseJsonValue(value: unknown): JsonValue | undefined {
-  if (typeof value !== 'string') {
+  if (typeof value !== "string") {
     return value as JsonValue | undefined;
   }
 
@@ -2405,7 +2377,7 @@ function tryParseJsonValue(value: unknown): JsonValue | undefined {
 }
 
 function isFunctionToolDefinition(value: JsonValue): value is OpenAiFunctionToolDefinition {
-  return isJsonObject(value) && value.type === 'function' && isJsonObject(value.function);
+  return isJsonObject(value) && value.type === "function" && isJsonObject(value.function);
 }
 
 function isJsonObjectUnknown(value: unknown): value is JsonObject {
@@ -2418,11 +2390,11 @@ function truncateChars(text: string, maxChars: number): string {
     return text;
   }
 
-  return `${chars.slice(0, maxChars).join('')}...`;
+  return `${chars.slice(0, maxChars).join("")}...`;
 }
 
 function hasNonEmptyToolCallId(value: unknown): value is string {
-  return typeof value === 'string' && value.length > 0;
+  return typeof value === "string" && value.length > 0;
 }
 
 function nonEmptyToolCallIdOrUndefined(value: unknown): string | undefined {
@@ -2457,7 +2429,7 @@ function trimLeadingStreamLineBreaks(existingText: string, nextText: string): st
     return nextText;
   }
 
-  return nextText.replace(/^[\r\n]+/u, '');
+  return nextText.replace(/^[\r\n]+/u, "");
 }
 
 async function* emptyAiSdkEventStream(): AsyncGenerator<LlmStreamEvent, void, undefined> {}

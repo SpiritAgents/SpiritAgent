@@ -22,8 +22,6 @@ export function bottomScrollFadeMaskStyle(
     "--sidebar-mask-bottom-alpha": hasMoreBelow ? "0" : "1",
     maskImage: LIST_BOTTOM_SCROLL_FADE_MASK,
     WebkitMaskImage: LIST_BOTTOM_SCROLL_FADE_MASK,
-    ...(options?.animate !== false
-      ? { transition: "--sidebar-mask-bottom-alpha 150ms" }
-      : {}),
+    ...(options?.animate !== false ? { transition: "--sidebar-mask-bottom-alpha 150ms" } : {}),
   } as CSSProperties;
 }

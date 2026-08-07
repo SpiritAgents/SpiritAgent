@@ -1,11 +1,11 @@
-import { isSubagentStatusSurfaceText } from '../lib/subagent-display.js';
-import type { ConversationMessageSnapshot, ToolBlockSnapshot } from '../types.js';
+import { isSubagentStatusSurfaceText } from "../lib/subagent-display.js";
+import type { ConversationMessageSnapshot, ToolBlockSnapshot } from "../types.js";
 
 /** Minimal shape of persisted subagent session rows (host-only; no agent-core import). */
 export interface SubagentSessionArchiveSnapshot {
   summary: {
     parentToolCallId?: string;
-    status: 'bootstrapping' | 'running' | 'completed' | 'failed' | 'blocked';
+    status: "bootstrapping" | "running" | "completed" | "failed" | "blocked";
     latestMessage?: string;
     finalOutput?: string;
   };
@@ -16,29 +16,29 @@ export interface SubagentSessionArchiveSnapshot {
 }
 
 function archiveHistoryMessageText(content: unknown): string {
-  if (typeof content === 'string') {
+  if (typeof content === "string") {
     return content;
   }
-  if (!content || typeof content !== 'object') {
-    return '';
+  if (!content || typeof content !== "object") {
+    return "";
   }
   const record = content as Record<string, unknown>;
-  if (typeof record.text === 'string') {
+  if (typeof record.text === "string") {
     return record.text;
   }
   if (Array.isArray(content)) {
     const parts: string[] = [];
     for (const part of content) {
-      if (part && typeof part === 'object') {
+      if (part && typeof part === "object") {
         const text = (part as { text?: unknown }).text;
-        if (typeof text === 'string') {
+        if (typeof text === "string") {
           parts.push(text);
         }
       }
     }
-    return parts.join('');
+    return parts.join("");
   }
-  return '';
+  return "";
 }
 
 export function extractSubagentSessionStreamingText(
@@ -46,7 +46,7 @@ export function extractSubagentSessionStreamingText(
 ): string | undefined {
   for (let index = session.llmHistory.length - 1; index >= 0; index -= 1) {
     const message = session.llmHistory[index];
-    if (message?.role !== 'assistant') {
+    if (message?.role !== "assistant") {
       continue;
     }
     const text = archiveHistoryMessageText(message.content).trim();
@@ -71,7 +71,7 @@ export function extractSubagentSessionStreamingText(
 export function findSubagentToolPhase(
   messages: ReadonlyArray<ConversationMessageSnapshot>,
   toolCallId: string,
-): ToolBlockSnapshot['phase'] | undefined {
+): ToolBlockSnapshot["phase"] | undefined {
   for (let index = messages.length - 1; index >= 0; index -= 1) {
     const message = messages[index];
     if (message?.tool?.toolCallId === toolCallId) {
@@ -86,5 +86,5 @@ export function isSubagentToolCallPending(
   toolCallId: string,
 ): boolean {
   const phase = findSubagentToolPhase(messages, toolCallId);
-  return phase === 'preview' || phase === 'running' || phase === 'pending-approval';
+  return phase === "preview" || phase === "running" || phase === "pending-approval";
 }

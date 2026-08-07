@@ -1,24 +1,24 @@
-import type { JsonObject, JsonValue } from '../ports.js';
+import type { JsonObject, JsonValue } from "../ports.js";
 
-export const TOOL_DESCRIBE_TOOL_NAME = 'tool_describe';
-export const TOOL_CALL_TOOL_NAME = 'tool_call';
+export const TOOL_DESCRIBE_TOOL_NAME = "tool_describe";
+export const TOOL_CALL_TOOL_NAME = "tool_call";
 
 const LAZY_TOOL_PROVIDER_PROPERTY: JsonObject = {
-  type: 'string',
+  type: "string",
   description: 'Tool provider namespace: "mcp" for MCP servers, "built-in" for host tools.',
-  enum: ['mcp', 'built-in'],
+  enum: ["mcp", "built-in"],
 };
 
 const LAZY_TOOL_SERVER_PROPERTY: JsonObject = {
-  type: 'string',
+  type: "string",
   description:
     'Provider-specific server identifier. For MCP, the configured server name. For built-in, the host namespace (for example "desktop").',
 };
 
 const LAZY_TOOL_NAME_PROPERTY: JsonObject = {
-  type: 'string',
+  type: "string",
   description:
-    'Provider-specific tool name. For MCP, the tool name reported by the server. For built-in, the host tool name.',
+    "Provider-specific tool name. For MCP, the tool name reported by the server. For built-in, the host tool name.",
 };
 
 export function isLazyToolGatewayToolName(name: string): boolean {
@@ -29,34 +29,34 @@ export function buildLazyToolGatewayDefinitions(): JsonValue[] {
   return [
     lazyToolFunctionDefinition(
       TOOL_DESCRIBE_TOOL_NAME,
-      'Fetch the input schema for a lazily loaded tool. Call this before tool_call when argument shape is unclear.',
+      "Fetch the input schema for a lazily loaded tool. Call this before tool_call when argument shape is unclear.",
       {
-        type: 'object',
+        type: "object",
         properties: {
           provider: LAZY_TOOL_PROVIDER_PROPERTY,
           server: LAZY_TOOL_SERVER_PROPERTY,
           tool: LAZY_TOOL_NAME_PROPERTY,
         },
-        required: ['provider', 'server', 'tool'],
+        required: ["provider", "server", "tool"],
         additionalProperties: false,
       },
     ),
     lazyToolFunctionDefinition(
       TOOL_CALL_TOOL_NAME,
-      'Invoke a lazily loaded tool. Use tool_describe first when you need the input schema.',
+      "Invoke a lazily loaded tool. Use tool_describe first when you need the input schema.",
       {
-        type: 'object',
+        type: "object",
         properties: {
           provider: LAZY_TOOL_PROVIDER_PROPERTY,
           server: LAZY_TOOL_SERVER_PROPERTY,
           tool: LAZY_TOOL_NAME_PROPERTY,
           arguments: {
-            type: 'object',
-            description: 'Tool arguments object matching the schema from tool_describe.',
+            type: "object",
+            description: "Tool arguments object matching the schema from tool_describe.",
             additionalProperties: true,
           },
         },
-        required: ['provider', 'server', 'tool'],
+        required: ["provider", "server", "tool"],
         additionalProperties: false,
       },
     ),
@@ -69,7 +69,7 @@ function lazyToolFunctionDefinition(
   parameters: JsonObject,
 ): JsonValue {
   return {
-    type: 'function',
+    type: "function",
     function: {
       name,
       description,

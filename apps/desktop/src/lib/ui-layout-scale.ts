@@ -90,8 +90,7 @@ function shouldApplyWin32TitleBarCounterZoom(): boolean {
   if (typeof window === "undefined" || typeof navigator === "undefined") {
     return false;
   }
-  const electron =
-    Boolean(window.spiritDesktop) || /\bElectron\//.test(navigator.userAgent);
+  const electron = Boolean(window.spiritDesktop) || /\bElectron\//.test(navigator.userAgent);
   if (!electron) {
     return false;
   }
@@ -215,10 +214,7 @@ export function applyUiLayoutScaleToDocument(scale: number): void {
 
 export function stepUiLayoutScale(current: number, direction: "in" | "out"): number {
   const base = clampUiLayoutScale(current);
-  const stepped =
-    direction === "in"
-      ? base + UI_LAYOUT_SCALE_STEP
-      : base - UI_LAYOUT_SCALE_STEP;
+  const stepped = direction === "in" ? base + UI_LAYOUT_SCALE_STEP : base - UI_LAYOUT_SCALE_STEP;
   return clampUiLayoutScale(stepped);
 }
 

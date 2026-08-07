@@ -1,17 +1,17 @@
-import { createJsonSchemaTransport } from '@spiritagent/agent-core';
-import { CodeCompletionService } from '@spiritagent/host-internal';
-import type { CodeCompletionResult } from '@spiritagent/agent-core';
+import { createJsonSchemaTransport } from "@spiritagent/agent-core";
+import { CodeCompletionService } from "@spiritagent/host-internal";
+import type { CodeCompletionResult } from "@spiritagent/agent-core";
 
-import { resolveDesktopAgentMode } from '../lib/agent-mode.js';
-import { resolveLightweightChatModelProfile } from './lightweight-chat-model.js';
-import { buildCodeCompletionTransportConfig } from './model-config.js';
-import { currentApiBase } from './service-utils.js';
-import type { DesktopConfigFile } from './storage.js';
-import { resolveApiKeyForConfigModel } from './storage.js';
+import { resolveDesktopAgentMode } from "../lib/agent-mode.js";
+import { resolveLightweightChatModelProfile } from "./lightweight-chat-model.js";
+import { buildCodeCompletionTransportConfig } from "./model-config.js";
+import { currentApiBase } from "./service-utils.js";
+import type { DesktopConfigFile } from "./storage.js";
+import { resolveApiKeyForConfigModel } from "./storage.js";
 import type {
   RecordCodeCompletionFileStateRequest,
   RequestCodeCompletionRequest,
-} from '../types.js';
+} from "../types.js";
 
 const servicesByWorkspaceRoot = new Map<string, CodeCompletionService>();
 const abortControllersByWorkspaceRoot = new Map<string, AbortController>();
@@ -113,7 +113,7 @@ export async function requestCodeCompletionCommand(
     if (signal.aborted) {
       return { operations: [] };
     }
-    console.debug('[code-completion] request failed:', error);
+    console.debug("[code-completion] request failed:", error);
     return { operations: [] };
   } finally {
     endCompletionRequest(context.workspaceRoot, signal);

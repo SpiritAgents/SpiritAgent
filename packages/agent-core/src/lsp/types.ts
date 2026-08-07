@@ -1,4 +1,4 @@
-import type { JsonObject } from '../ports.js';
+import type { JsonObject } from "../ports.js";
 
 export type LspDiagnosticSeverity = 1 | 2 | 3 | 4;
 
@@ -20,7 +20,7 @@ export interface LspDiagnostic {
   source?: string;
 }
 
-export type LspFileChangeKind = 'create_file' | 'edit_file' | 'delete_file';
+export type LspFileChangeKind = "create_file" | "edit_file" | "delete_file";
 
 export interface LspFileSnapshot {
   exists: boolean;
@@ -36,12 +36,12 @@ export interface LspFileChangeNotification {
 }
 
 export interface LspDiagnosticsToolRequest extends JsonObject {
-  name: 'get_diagnostics';
+  name: "get_diagnostics";
   paths: string[];
 }
 
 export interface LspDiagnosticUiItem {
-  severity: 'error' | 'warning';
+  severity: "error" | "warning";
   line: number;
   column: number;
   message: string;

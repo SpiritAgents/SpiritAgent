@@ -24,7 +24,7 @@ export interface GitHubOAuthTokenResponse {
 export interface GitHubPullRequestSummary {
   number: number;
   title: string;
-  state: 'open' | 'closed';
+  state: "open" | "closed";
   url: string;
   authorLogin: string;
   headRef: string;
@@ -44,15 +44,15 @@ export interface GitHubPullRequestDetail extends GitHubPullRequestSummary {
 }
 
 export type GitHubPullRequestMergeableState =
-  | 'clean'
-  | 'dirty'
-  | 'blocked'
-  | 'behind'
-  | 'unstable'
-  | 'draft'
-  | 'unknown';
+  | "clean"
+  | "dirty"
+  | "blocked"
+  | "behind"
+  | "unstable"
+  | "draft"
+  | "unknown";
 
-export type GitHubPullRequestMergeMethod = 'merge' | 'squash' | 'rebase';
+export type GitHubPullRequestMergeMethod = "merge" | "squash" | "rebase";
 
 export interface GitHubPullRequestMergeResult {
   sha: string;
@@ -66,10 +66,10 @@ export interface GitHubPullRequestForBranchResult {
 }
 
 export type GitHubPullRequestReviewState =
-  | 'APPROVED'
-  | 'CHANGES_REQUESTED'
-  | 'COMMENTED'
-  | 'DISMISSED';
+  | "APPROVED"
+  | "CHANGES_REQUESTED"
+  | "COMMENTED"
+  | "DISMISSED";
 
 export interface GitHubPullRequestReviewComment {
   id: number;
@@ -81,7 +81,7 @@ export interface GitHubPullRequestReviewComment {
 }
 
 export interface GitHubPullRequestConversationCommit {
-  kind: 'commit';
+  kind: "commit";
   id: string;
   createdAt: string;
   authorLogin: string;
@@ -92,7 +92,7 @@ export interface GitHubPullRequestConversationCommit {
 }
 
 export interface GitHubPullRequestConversationMerged {
-  kind: 'merged';
+  kind: "merged";
   id: string;
   createdAt: string;
   authorLogin: string;
@@ -101,7 +101,7 @@ export interface GitHubPullRequestConversationMerged {
 }
 
 export interface GitHubPullRequestConversationIssueComment {
-  kind: 'issueComment';
+  kind: "issueComment";
   id: string;
   createdAt: string;
   authorLogin: string;
@@ -111,7 +111,7 @@ export interface GitHubPullRequestConversationIssueComment {
 }
 
 export interface GitHubPullRequestConversationReview {
-  kind: 'review';
+  kind: "review";
   id: string;
   createdAt: string;
   authorLogin: string;
@@ -123,7 +123,7 @@ export interface GitHubPullRequestConversationReview {
 }
 
 export interface GitHubPullRequestConversationReviewThread {
-  kind: 'reviewThread';
+  kind: "reviewThread";
   id: string;
   createdAt: string;
   authorLogin: string;
@@ -153,13 +153,13 @@ export interface GitHubPullRequestConversationSnapshot {
 }
 
 export type GitHubPullRequestFileStatus =
-  | 'added'
-  | 'removed'
-  | 'modified'
-  | 'renamed'
-  | 'copied'
-  | 'changed'
-  | 'unchanged';
+  | "added"
+  | "removed"
+  | "modified"
+  | "renamed"
+  | "copied"
+  | "changed"
+  | "unchanged";
 
 export interface GitHubPullRequestChangedFile {
   filename: string;
@@ -192,7 +192,7 @@ export interface GitHubPullRequestCommitsSnapshot {
   hasMore: boolean;
 }
 
-export type GitHubPullRequestCheckState = 'success' | 'failure' | 'in_progress' | 'pending';
+export type GitHubPullRequestCheckState = "success" | "failure" | "in_progress" | "pending";
 
 export interface GitHubPullRequestCheck {
   id: string;
@@ -211,7 +211,7 @@ export interface GitHubPullRequestChecksSnapshot {
   nextCursor?: string;
 }
 
-export type GitHubPullRequestListState = 'open' | 'closed';
+export type GitHubPullRequestListState = "open" | "closed";
 
 export interface GitHubListPullRequestsRequest {
   owner: string;

@@ -1,20 +1,20 @@
-import path from 'node:path';
+import path from "node:path";
 
-import { app } from 'electron';
+import { app } from "electron";
 
 import {
   SPIRIT_NOTIFICATION_PROTOCOL,
   dispatchSpiritNotificationProtocolUrl,
   handleSpiritNotificationProtocolArgv as dispatchSpiritNotificationProtocolArgv,
   type SpiritNotificationProtocolHandlers,
-} from '../src/lib/spirit-notification-protocol.js';
+} from "../src/lib/spirit-notification-protocol.js";
 
 export type { SpiritNotificationProtocolHandlers };
 
 let handlers: SpiritNotificationProtocolHandlers | undefined;
 
 export function registerSpiritNotificationProtocolClient(): void {
-  if (process.platform !== 'win32') {
+  if (process.platform !== "win32") {
     return;
   }
   if (process.defaultApp) {
@@ -44,8 +44,8 @@ function dispatchSpiritNotificationProtocolUrlFromOpenUrl(rawUrl: string): void 
 }
 
 export function installSpiritNotificationProtocolRouting(): void {
-  if (process.platform === 'darwin') {
-    app.on('open-url', (event, url) => {
+  if (process.platform === "darwin") {
+    app.on("open-url", (event, url) => {
       event.preventDefault();
       dispatchSpiritNotificationProtocolUrlFromOpenUrl(url);
     });

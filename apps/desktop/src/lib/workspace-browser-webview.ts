@@ -169,10 +169,7 @@ export async function bindDevtoolsHost(
   if (!bridge?.bindBrowserGuestDevtools) {
     throw new Error("Desktop browser guest bridge unavailable");
   }
-  await bridge.bindBrowserGuestDevtools(
-    pageWv.getWebContentsId(),
-    devtoolsWv.getWebContentsId(),
-  );
+  await bridge.bindBrowserGuestDevtools(pageWv.getWebContentsId(), devtoolsWv.getWebContentsId());
 }
 
 export async function openEmbeddedDevtools(
@@ -214,10 +211,7 @@ export async function captureWebviewPngBase64(
   return comma >= 0 ? dataUrl.slice(comma + 1) : dataUrl;
 }
 
-export async function executeWebviewScript(
-  wv: SpiritWebviewTag,
-  script: string,
-): Promise<unknown> {
+export async function executeWebviewScript(wv: SpiritWebviewTag, script: string): Promise<unknown> {
   return wv.executeJavaScript(script);
 }
 

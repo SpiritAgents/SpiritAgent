@@ -1,5 +1,5 @@
-import i18n from '@/lib/i18n';
-import type { ConversationMessageSnapshot, PendingAssistantAux } from '../types.js';
+import i18n from "@/lib/i18n";
+import type { ConversationMessageSnapshot, PendingAssistantAux } from "../types.js";
 
 /** Negative ids — UI-only demo, never persisted. */
 export const COMPACTION_UI_DEMO_MESSAGE_IDS = {
@@ -8,23 +8,18 @@ export const COMPACTION_UI_DEMO_MESSAGE_IDS = {
   reply: -9102,
 } as const;
 
-const DEMO_USER_TEXT = i18n.t('demo.compactionUserText');
+const DEMO_USER_TEXT = i18n.t("demo.compactionUserText");
 
-const DEMO_COMPACTION_SUMMARY = i18n.t('demo.compactionSummary');
+const DEMO_COMPACTION_SUMMARY = i18n.t("demo.compactionSummary");
 
-const DEMO_ASSISTANT_REPLY = i18n.t('demo.compactionAssistantReply');
+const DEMO_ASSISTANT_REPLY = i18n.t("demo.compactionAssistantReply");
 
-const SPINNER_FRAMES = ['|', '/', '-', '\\'] as const;
+const SPINNER_FRAMES = ["|", "/", "-", "\\"] as const;
 
-export type CompactionUiDemoPhase =
-  | 'idle'
-  | 'spinner'
-  | 'streaming'
-  | 'finalized'
-  | 'complete';
+export type CompactionUiDemoPhase = "idle" | "spinner" | "streaming" | "finalized" | "complete";
 
 export function compactionDemoSpinnerFrame(tick: number): string {
-  return SPINNER_FRAMES[tick % SPINNER_FRAMES.length] ?? '|';
+  return SPINNER_FRAMES[tick % SPINNER_FRAMES.length] ?? "|";
 }
 
 export function buildCompactionDemoPendingAux(
@@ -33,7 +28,7 @@ export function buildCompactionDemoPendingAux(
 ): PendingAssistantAux {
   const frame = compactionDemoSpinnerFrame(tick);
   return {
-    kind: 'compressing',
+    kind: "compressing",
     statusText: `${frame} Compressing...`,
     ...(detailText ? { detailText } : {}),
   };
@@ -51,36 +46,36 @@ export function buildCompactionDemoMessages(input: {
 }): ConversationMessageSnapshot[] {
   const user: ConversationMessageSnapshot = {
     id: COMPACTION_UI_DEMO_MESSAGE_IDS.user,
-    role: 'user',
+    role: "user",
     content: DEMO_USER_TEXT,
     pending: false,
   };
 
-  if (input.phase === 'idle') {
+  if (input.phase === "idle") {
     return [];
   }
 
-  if (input.phase === 'spinner') {
+  if (input.phase === "spinner") {
     return [
       user,
       {
         id: COMPACTION_UI_DEMO_MESSAGE_IDS.compaction,
-        role: 'assistant',
-        content: '',
+        role: "assistant",
+        content: "",
         pending: true,
         aux: { compaction: `${compactionDemoSpinnerFrame(input.tick)} Compressing...` },
       },
     ];
   }
 
-  if (input.phase === 'streaming') {
+  if (input.phase === "streaming") {
     const partial = streamingCompactionPrefix(input.streamProgress);
     return [
       user,
       {
         id: COMPACTION_UI_DEMO_MESSAGE_IDS.compaction,
-        role: 'assistant',
-        content: '',
+        role: "assistant",
+        content: "",
         pending: true,
         aux: { compaction: partial },
       },
@@ -89,13 +84,13 @@ export function buildCompactionDemoMessages(input: {
 
   const compactionMessage: ConversationMessageSnapshot = {
     id: COMPACTION_UI_DEMO_MESSAGE_IDS.compaction,
-    role: 'assistant',
-    content: '',
+    role: "assistant",
+    content: "",
     pending: false,
     aux: { compaction: DEMO_COMPACTION_SUMMARY },
   };
 
-  if (input.phase === 'finalized') {
+  if (input.phase === "finalized") {
     return [user, compactionMessage];
   }
 
@@ -104,7 +99,7 @@ export function buildCompactionDemoMessages(input: {
     compactionMessage,
     {
       id: COMPACTION_UI_DEMO_MESSAGE_IDS.reply,
-      role: 'assistant',
+      role: "assistant",
       content: DEMO_ASSISTANT_REPLY,
       pending: false,
     },

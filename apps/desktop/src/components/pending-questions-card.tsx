@@ -6,10 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import type { QuestionDraft } from "@/hooks/useDesktopRuntime";
-import {
-  DESKTOP_CHROME_TOGGLE_ICON_BTN,
-  instantHoverMotionClass,
-} from "@/lib/desktop-chrome";
+import { DESKTOP_CHROME_TOGGLE_ICON_BTN, instantHoverMotionClass } from "@/lib/desktop-chrome";
 import { cn } from "@/lib/utils";
 import type { PendingQuestionsSnapshot } from "@/types";
 
@@ -20,8 +17,7 @@ const questionOptionSurfaceClass =
 
 const questionRowIndexClass = "text-muted-foreground [font-variant-numeric:lining-nums]";
 
-const questionRowLayoutClass =
-  "grid grid-cols-[1.125rem_minmax(0,1fr)] items-start gap-x-1";
+const questionRowLayoutClass = "grid grid-cols-[1.125rem_minmax(0,1fr)] items-start gap-x-1";
 
 const questionRowTextClass = "text-card-foreground";
 
@@ -50,10 +46,7 @@ type PendingQuestionsCardProps = {
   pendingQuestions: PendingQuestionsSnapshot;
   questionDrafts: Record<string, QuestionDraft>;
   questionsBusy: boolean;
-  onUpdateDraft(
-    questionId: string,
-    updater: (draft: QuestionDraft) => QuestionDraft,
-  ): void;
+  onUpdateDraft(questionId: string, updater: (draft: QuestionDraft) => QuestionDraft): void;
   onSubmitQuestions(): void;
   onSkipQuestions(): void;
 };
@@ -146,9 +139,7 @@ export function PendingQuestionsCard({
               size="icon-sm"
               className={cn(DESKTOP_CHROME_TOGGLE_ICON_BTN, "text-muted-foreground")}
               disabled={questionsBusy || currentIndex >= questions.length - 1}
-              onClick={() =>
-                setCurrentIndex((index) => Math.min(index + 1, questions.length - 1))
-              }
+              onClick={() => setCurrentIndex((index) => Math.min(index + 1, questions.length - 1))}
             >
               <ChevronRight />
               <span className="sr-only">{t("app.nextQuestion")}</span>
@@ -167,10 +158,7 @@ export function PendingQuestionsCard({
                 <button
                   key={option.id}
                   type="button"
-                  className={cn(
-                    questionOptionClass,
-                    selected && "bg-primary/8",
-                  )}
+                  className={cn(questionOptionClass, selected && "bg-primary/8")}
                   disabled={questionsBusy}
                   onClick={() =>
                     question.allowMultiple
@@ -180,9 +168,7 @@ export function PendingQuestionsCard({
                 >
                   <span className={questionRowIndexClass}>{optionIndex + 1}.</span>
                   <div className="min-w-0 flex-1 space-y-0.5">
-                    <span className="font-normal text-card-foreground">
-                      {option.label}
-                    </span>
+                    <span className="font-normal text-card-foreground">{option.label}</span>
                     {option.summary ? (
                       <p className="text-xs leading-relaxed text-muted-foreground">
                         {option.summary}
@@ -195,12 +181,7 @@ export function PendingQuestionsCard({
           </div>
         ) : null}
 
-        <div
-          className={cn(
-            questionInputRowClass,
-            question.options.length > 0 && "mt-0",
-          )}
-        >
+        <div className={cn(questionInputRowClass, question.options.length > 0 && "mt-0")}>
           <span className={questionRowIndexClass}>{question.options.length + 1}.</span>
           <Input
             id={`${question.id}-custom`}

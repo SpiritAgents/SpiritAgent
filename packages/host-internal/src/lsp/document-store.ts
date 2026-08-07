@@ -1,6 +1,6 @@
-import { pathToFileURL } from 'node:url';
+import { pathToFileURL } from "node:url";
 
-import { languageIdForExtension, relativePathFromWorkspace } from './paths.js';
+import { languageIdForExtension, relativePathFromWorkspace } from "./paths.js";
 
 export interface OpenDocumentRecord {
   uri: string;
@@ -21,11 +21,7 @@ export class LspDocumentStore {
     return this.documents.has(uri);
   }
 
-  open(input: {
-    workspaceRoot: string;
-    resolvedPath: string;
-    text: string;
-  }): OpenDocumentRecord {
+  open(input: { workspaceRoot: string; resolvedPath: string; text: string }): OpenDocumentRecord {
     const uri = pathToFileURL(input.resolvedPath).href;
     const existing = this.documents.get(uri);
     const relativePath = relativePathFromWorkspace(input.workspaceRoot, input.resolvedPath);

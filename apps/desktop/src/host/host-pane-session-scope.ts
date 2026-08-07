@@ -1,6 +1,6 @@
-import path from 'node:path';
+import path from "node:path";
 
-import type { SessionRegistry } from './session-registry.js';
+import type { SessionRegistry } from "./session-registry.js";
 
 export interface PaneSessionScopeHostContext {
   sessionRegistry(): SessionRegistry;
@@ -35,7 +35,7 @@ export async function withOptionalPaneSessionActivation<T>(
   try {
     const target = registry.findBySessionPath(resolved);
     if (!target) {
-      throw new Error('Session not found.');
+      throw new Error("Session not found.");
     }
     if (registry.getActive() !== target) {
       registry.activateExisting(target);

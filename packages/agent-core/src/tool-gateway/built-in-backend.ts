@@ -1,11 +1,11 @@
-import { McpConfigError } from '../mcp/errors.js';
-import { findBuiltInLazyToolIndexEntry } from './built-in-catalog.js';
+import { McpConfigError } from "../mcp/errors.js";
+import { findBuiltInLazyToolIndexEntry } from "./built-in-catalog.js";
 import type {
   BuiltInLazyToolGatewayBackend,
   BuiltInLazyToolIndexEntry,
   LazyToolCallRequest,
   LazyToolDescribeRequest,
-} from './types.js';
+} from "./types.js";
 
 export function createBuiltInLazyToolGatewayBackend(
   indexEntries: readonly BuiltInLazyToolIndexEntry[],
@@ -13,14 +13,14 @@ export function createBuiltInLazyToolGatewayBackend(
   return {
     describe: (request) => describeBuiltInTool(indexEntries, request),
     call: async () => {
-      throw new McpConfigError('Built-in lazy tool execution must be provided by the host.');
+      throw new McpConfigError("Built-in lazy tool execution must be provided by the host.");
     },
   };
 }
 
 export function createBuiltInLazyToolGatewayBackendWithCall(
   indexEntries: readonly BuiltInLazyToolIndexEntry[],
-  call: BuiltInLazyToolGatewayBackend['call'],
+  call: BuiltInLazyToolGatewayBackend["call"],
 ): BuiltInLazyToolGatewayBackend {
   return {
     describe: (request) => describeBuiltInTool(indexEntries, request),
@@ -50,8 +50,8 @@ export function parseBuiltInLazyToolCallArguments(
   if (argsValue === undefined) {
     return {};
   }
-  if (typeof argsValue !== 'object' || argsValue === null || Array.isArray(argsValue)) {
-    throw new McpConfigError('tool_call arguments must be a JSON object when provided');
+  if (typeof argsValue !== "object" || argsValue === null || Array.isArray(argsValue)) {
+    throw new McpConfigError("tool_call arguments must be a JSON object when provided");
   }
   return argsValue as Record<string, unknown>;
 }

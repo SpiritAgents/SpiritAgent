@@ -1,15 +1,15 @@
-import type { PendingWorkspaceFile } from '@spiritagent/agent-core';
-import type { SubagentSessionStatus } from '@spiritagent/agent-core';
+import type { PendingWorkspaceFile } from "@spiritagent/agent-core";
+import type { SubagentSessionStatus } from "@spiritagent/agent-core";
 
-import i18n from '../lib/i18n-host.js';
-import { phaseToVerbContext } from '../lib/tool-verb-context.js';
-import type { ToolBlockSnapshot } from '../types.js';
-import type { DesktopRewindCheckpointSnapshot } from './rewind.js';
-import type { DesktopMessageTimeline } from './message-timeline.js';
+import i18n from "../lib/i18n-host.js";
+import { phaseToVerbContext } from "../lib/tool-verb-context.js";
+import type { ToolBlockSnapshot } from "../types.js";
+import type { DesktopRewindCheckpointSnapshot } from "./rewind.js";
+import type { DesktopMessageTimeline } from "./message-timeline.js";
 
-export const WORKTREE_BOOTSTRAP_TOOL_NAME = 'worktree_bootstrap';
+export const WORKTREE_BOOTSTRAP_TOOL_NAME = "worktree_bootstrap";
 
-export type WorktreeBootstrapPhase = 'running' | 'succeeded' | 'failed';
+export type WorktreeBootstrapPhase = "running" | "succeeded" | "failed";
 
 export interface PendingWorktreeBootstrap {
   toolCallId: string;
@@ -29,15 +29,15 @@ export function worktreeBootstrapToolCallId(sessionKey: string): string {
 export function buildWorktreeBootstrapToolSnapshot(
   phase: WorktreeBootstrapPhase,
 ): ToolBlockSnapshot {
-  const toolPhase: ToolBlockSnapshot['phase'] =
-    phase === 'running' ? 'running' : phase === 'succeeded' ? 'succeeded' : 'failed';
+  const toolPhase: ToolBlockSnapshot["phase"] =
+    phase === "running" ? "running" : phase === "succeeded" ? "succeeded" : "failed";
   const verbContext = phaseToVerbContext(toolPhase);
   return {
     toolCallId: undefined,
     toolName: WORKTREE_BOOTSTRAP_TOOL_NAME,
     phase: toolPhase,
-    headline: i18n.t('tool.create', verbContext ? { context: verbContext } : {}),
-    headlineDetail: i18n.t('composer.workLocationWorktree'),
+    headline: i18n.t("tool.create", verbContext ? { context: verbContext } : {}),
+    headlineDetail: i18n.t("composer.workLocationWorktree"),
     detailLines: [],
   };
 }
@@ -45,7 +45,7 @@ export function buildWorktreeBootstrapToolSnapshot(
 export function isWorktreeBootstrapInFlight(
   pending: PendingWorktreeBootstrap | undefined,
 ): boolean {
-  return pending?.phase === 'running';
+  return pending?.phase === "running";
 }
 
 /** Subagent 会话是否启用了 worktree 委派（仅此类会话应展示 worktree bootstrap 卡片）。 */
@@ -53,7 +53,7 @@ export function isWorktreeSubagentSession(summary: {
   status: SubagentSessionStatus;
   worktreePath?: string;
 }): boolean {
-  return summary.status === 'bootstrapping' || Boolean(summary.worktreePath?.trim());
+  return summary.status === "bootstrapping" || Boolean(summary.worktreePath?.trim());
 }
 
 export function upsertWorktreeBootstrapCardInTimeline(
@@ -68,16 +68,16 @@ export function upsertWorktreeBootstrapCardInTimeline(
 }
 
 export function resolveWorktreeBootstrapCardPhaseFromSubagentStatus(
-  status: 'bootstrapping' | 'running' | 'completed' | 'failed' | 'blocked',
+  status: "bootstrapping" | "running" | "completed" | "failed" | "blocked",
 ): WorktreeBootstrapPhase | undefined {
-  if (status === 'bootstrapping') {
-    return 'running';
+  if (status === "bootstrapping") {
+    return "running";
   }
-  if (status === 'failed') {
-    return 'failed';
+  if (status === "failed") {
+    return "failed";
   }
-  if (status === 'running' || status === 'blocked' || status === 'completed') {
-    return 'succeeded';
+  if (status === "running" || status === "blocked" || status === "completed") {
+    return "succeeded";
   }
   return undefined;
 }

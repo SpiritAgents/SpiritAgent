@@ -1,9 +1,6 @@
-import i18n from '../lib/i18n-host.js';
-import type {
-  DesktopDreamCollectorSnapshot,
-  DesktopGitSnapshot,
-} from '../types.js';
-import type { DesktopConfigFile, HostMetadataSummary } from './storage.js';
+import i18n from "../lib/i18n-host.js";
+import type { DesktopDreamCollectorSnapshot, DesktopGitSnapshot } from "../types.js";
+import type { DesktopConfigFile, HostMetadataSummary } from "./storage.js";
 import {
   buildDreamCollectorPlanMetadata,
   DREAM_COLLECTOR_BACKOFF_MS,
@@ -11,9 +8,9 @@ import {
   DREAM_COLLECTOR_TICK_INTERVAL_MS,
   emptyDreamCollectorSnapshot,
   runDesktopDreamCollectorOnce,
-} from './dreams.js';
-import { resolveLightweightChatModelProfile } from './lightweight-chat-model.js';
-import { cloneDesktopConfig } from './service-utils.js';
+} from "./dreams.js";
+import { resolveLightweightChatModelProfile } from "./lightweight-chat-model.js";
+import { cloneDesktopConfig } from "./service-utils.js";
 
 interface DreamCollectorState {
   workspaceRoot: string;
@@ -47,19 +44,19 @@ export function startDreamCollectorIfNeeded(ctx: DreamCollectorServiceContext): 
   const settings = state.config.dreams;
   const now = Date.now();
   if (!settings.enabled) {
-    ctx.setStatus(emptyDreamCollectorSnapshot('disabled'));
+    ctx.setStatus(emptyDreamCollectorSnapshot("disabled"));
     return;
   }
   const lightweightModel = resolveLightweightChatModelProfile(state.config);
   if (!lightweightModel) {
     ctx.setStatus({
-      ...emptyDreamCollectorSnapshot('missing-model'),
-      lastError: i18n.t('error.lightweightChatModelNotConfigured'),
+      ...emptyDreamCollectorSnapshot("missing-model"),
+      lastError: i18n.t("error.lightweightChatModelNotConfigured"),
     });
     return;
   }
   if (!state.git.isRepository || !state.git.branch) {
-    ctx.setStatus(emptyDreamCollectorSnapshot('idle'));
+    ctx.setStatus(emptyDreamCollectorSnapshot("idle"));
     return;
   }
   if (ctx.runtimeBusy() || ctx.running()) {
@@ -69,7 +66,7 @@ export function startDreamCollectorIfNeeded(ctx: DreamCollectorServiceContext): 
   if (backoffUntilUnixMs !== undefined && now < backoffUntilUnixMs) {
     ctx.setStatus({
       ...ctx.status(),
-      state: 'backoff',
+      state: "backoff",
     });
     return;
   }
@@ -81,7 +78,7 @@ export function startDreamCollectorIfNeeded(ctx: DreamCollectorServiceContext): 
   ctx.setRunning(true);
   ctx.setStatus({
     ...ctx.status(),
-    state: 'running',
+    state: "running",
     lastRunAtUnixMs: now,
     pendingCount: ctx.status().pendingCount,
     processedCount: ctx.status().processedCount,
@@ -103,7 +100,7 @@ export function startDreamCollectorIfNeeded(ctx: DreamCollectorServiceContext): 
       const backoffUntilUnixMs = Date.now() + DREAM_COLLECTOR_BACKOFF_MS;
       ctx.setStatus({
         ...ctx.status(),
-        state: 'backoff',
+        state: "backoff",
         lastError: error instanceof Error ? error.message : String(error),
         backoffUntilUnixMs,
       });

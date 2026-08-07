@@ -1,7 +1,7 @@
-import { SPIRIT_CONFIG_SCHEMA_VERSION } from '../config-v2.js';
-import type { ModelProviderId } from '../model-provider-presets.js';
+import { SPIRIT_CONFIG_SCHEMA_VERSION } from "../config-v2.js";
+import type { ModelProviderId } from "../model-provider-presets.js";
 
-import { keyringStore } from './keyring-store.js';
+import { keyringStore } from "./keyring-store.js";
 import {
   KEYRING_GLOBAL_ACCOUNT,
   KEYRING_SERVICE,
@@ -17,20 +17,20 @@ import {
   providerSecretAccessKeyAccount,
   providerVertexClientEmailAccount,
   providerVertexPrivateKeyAccount,
-} from './provider-accounts.js';
+} from "./provider-accounts.js";
 import {
   loadActiveModelProfile,
   loadModelProfile,
   loadSpiritConfig,
   saveSpiritConfig,
-} from './spirit-config.js';
+} from "./spirit-config.js";
 import type {
   BedrockSetupCredentials,
   GoogleVertexSetupCredentials,
   ProviderSetupResult,
   SpiritConfigFile,
   SpiritModelProfile,
-} from './types.js';
+} from "./types.js";
 
 export { loadActiveModelProfile, loadModelProfile, loadSpiritConfig, saveSpiritConfig };
 export type { ProviderSetupResult, SpiritConfigFile, SpiritModelProfile };
@@ -162,11 +162,11 @@ function hasProviderSecret(providerId: ModelProviderId, profile: SpiritModelProf
   if (readScopedKey(profile.groupId, providerId)) {
     return true;
   }
-  if (providerId === 'amazon-bedrock') {
-    return hasBedrockRuntimeCredentials(readBedrockCredentials('amazon-bedrock', profile.groupId));
+  if (providerId === "amazon-bedrock") {
+    return hasBedrockRuntimeCredentials(readBedrockCredentials("amazon-bedrock", profile.groupId));
   }
-  if (providerId === 'google-vertex-ai') {
-    const credentials = readGoogleVertexCredentials('google-vertex-ai', profile.groupId);
+  if (providerId === "google-vertex-ai") {
+    const credentials = readGoogleVertexCredentials("google-vertex-ai", profile.groupId);
     const vertexInput: {
       apiKey?: string;
       clientEmail?: string;
@@ -274,9 +274,9 @@ export async function saveProviderSetup(
   setup: ProviderSetupResult,
 ): Promise<void> {
   const scope = setup.providerScope;
-  if (scope === 'amazon-bedrock' && setup.bedrock) {
+  if (scope === "amazon-bedrock" && setup.bedrock) {
     saveBedrockCredentials(scope, setup.bedrock);
-  } else if (scope === 'google-vertex-ai' && setup.vertex) {
+  } else if (scope === "google-vertex-ai" && setup.vertex) {
     saveGoogleVertexCredentials(scope, setup.vertex);
   } else if (setup.apiKey?.trim()) {
     saveProviderApiKey(scope, setup.apiKey);

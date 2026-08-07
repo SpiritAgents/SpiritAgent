@@ -1,10 +1,10 @@
-import { Readability } from '@mozilla/readability';
-import { JSDOM } from 'jsdom';
-import TurndownService from 'turndown';
-import { gfm } from 'turndown-plugin-gfm';
-import { looksLikeHtml, normalizeMimeType, resolveAbsoluteUrl } from './resolve-url.js';
+import { Readability } from "@mozilla/readability";
+import { JSDOM } from "jsdom";
+import TurndownService from "turndown";
+import { gfm } from "turndown-plugin-gfm";
+import { looksLikeHtml, normalizeMimeType, resolveAbsoluteUrl } from "./resolve-url.js";
 
-export type WebPageExtraction = 'readability' | 'fallback_full_page' | 'passthrough';
+export type WebPageExtraction = "readability" | "fallback_full_page" | "passthrough";
 
 export interface ExtractedWebContent {
   markdown: string;
@@ -17,20 +17,20 @@ export interface ExtractedWebContent {
 
 function createTurndownService(baseUrl: string): TurndownService {
   const turndown = new TurndownService({
-    headingStyle: 'atx',
-    codeBlockStyle: 'fenced',
-    emDelimiter: '*',
-    bulletListMarker: '-',
+    headingStyle: "atx",
+    codeBlockStyle: "fenced",
+    emDelimiter: "*",
+    bulletListMarker: "-",
   });
   turndown.use(gfm);
 
-  turndown.addRule('absoluteLinks', {
+  turndown.addRule("absoluteLinks", {
     filter(node) {
-      return node.nodeName === 'A';
+      return node.nodeName === "A";
     },
     replacement(content, node) {
       const element = node as HTMLAnchorElement;
-      const href = element.getAttribute('href') ?? '';
+      const href = element.getAttribute("href") ?? "";
       const absolute = resolveAbsoluteUrl(href, baseUrl);
       const label = content.trim() || href.trim();
       if (!absolute) {
@@ -40,27 +40,27 @@ function createTurndownService(baseUrl: string): TurndownService {
     },
   });
 
-  turndown.addRule('absoluteImages', {
+  turndown.addRule("absoluteImages", {
     filter(node) {
-      if (node.nodeName !== 'IMG') {
+      if (node.nodeName !== "IMG") {
         return false;
       }
       const element = node as HTMLImageElement;
-      const width = element.getAttribute('width');
-      const height = element.getAttribute('height');
-      if (width === '1' && height === '1') {
+      const width = element.getAttribute("width");
+      const height = element.getAttribute("height");
+      if (width === "1" && height === "1") {
         return false;
       }
       return true;
     },
     replacement(_content, node) {
       const element = node as HTMLImageElement;
-      const src = element.getAttribute('src') ?? '';
+      const src = element.getAttribute("src") ?? "";
       const absolute = resolveAbsoluteUrl(src, baseUrl);
       if (!absolute) {
-        return '';
+        return "";
       }
-      const alt = element.getAttribute('alt')?.trim() ?? '';
+      const alt = element.getAttribute("alt")?.trim() ?? "";
       return `![${alt}](${absolute})`;
     },
   });
@@ -83,7 +83,7 @@ function extractFromHtmlDocument(document: Document, baseUrl: string): Extracted
       ...(article.title ? { title: article.title } : {}),
       ...(article.siteName ? { siteName: article.siteName } : {}),
       ...(article.excerpt ? { excerpt: article.excerpt } : {}),
-      extraction: 'readability',
+      extraction: "readability",
     };
   }
 
@@ -92,32 +92,32 @@ function extractFromHtmlDocument(document: Document, baseUrl: string): Extracted
   return {
     markdown: htmlToMarkdown(bodyHtml, baseUrl),
     ...(docTitle.length > 0 ? { title: docTitle } : {}),
-    extraction: 'fallback_full_page',
+    extraction: "fallback_full_page",
   };
 }
 
 export function normalizeLineEndings(text: string): string {
-  return text.replace(/\r\n/g, '\n').replace(/\r/g, '\n');
+  return text.replace(/\r\n/g, "\n").replace(/\r/g, "\n");
 }
 
 export function normalizeMarkdownWhitespace(text: string): string {
   const normalized = normalizeLineEndings(text);
   const out: string[] = [];
   let blankRun = 0;
-  for (const line of normalized.split('\n')) {
-    const trimmed = line.replace(/\s+$/u, '');
+  for (const line of normalized.split("\n")) {
+    const trimmed = line.replace(/\s+$/u, "");
     if (trimmed.trim().length === 0) {
       blankRun += 1;
       if (blankRun <= 1) {
-        out.push('');
+        out.push("");
       }
       continue;
     }
     blankRun = 0;
-    out.push(trimmed.replace(/^\uFEFF/u, ''));
+    out.push(trimmed.replace(/^\uFEFF/u, ""));
   }
-  const result = out.join('\n').trim();
-  return result.length === 0 ? '（网页内容为空）' : result;
+  const result = out.join("\n").trim();
+  return result.length === 0 ? "（网页内容为空）" : result;
 }
 
 export function extractWebContent(
@@ -127,65 +127,68 @@ export function extractWebContent(
 ): ExtractedWebContent {
   const mime = normalizeMimeType(contentType);
 
-  if (mime.includes('json')) {
+  if (mime.includes("json")) {
     try {
       const parsed: unknown = JSON.parse(raw);
       const markdown = JSON.stringify(parsed, null, 2);
       const keys =
-        parsed !== null && typeof parsed === 'object' && !Array.isArray(parsed)
-          ? Object.keys(parsed).join(', ')
+        parsed !== null && typeof parsed === "object" && !Array.isArray(parsed)
+          ? Object.keys(parsed).join(", ")
           : undefined;
       return {
         markdown: normalizeMarkdownWhitespace(markdown),
         ...(keys ? { jsonKeys: keys } : {}),
-        extraction: 'passthrough',
+        extraction: "passthrough",
       };
     } catch {
       return {
         markdown: normalizeMarkdownWhitespace(raw),
-        extraction: 'passthrough',
+        extraction: "passthrough",
       };
     }
   }
 
-  if (mime.includes('markdown') || mime.endsWith('.md')) {
+  if (mime.includes("markdown") || mime.endsWith(".md")) {
     return {
       markdown: normalizeMarkdownWhitespace(raw),
-      extraction: 'passthrough',
+      extraction: "passthrough",
     };
   }
 
-  if (mime.startsWith('text/plain') && !looksLikeHtml(raw)) {
+  if (mime.startsWith("text/plain") && !looksLikeHtml(raw)) {
     return {
       markdown: normalizeMarkdownWhitespace(raw),
-      extraction: 'passthrough',
+      extraction: "passthrough",
     };
   }
 
-  if (mime.includes('html') || looksLikeHtml(raw)) {
+  if (mime.includes("html") || looksLikeHtml(raw)) {
     const dom = new JSDOM(raw, { url: finalUrl });
     return extractFromHtmlDocument(dom.window.document, finalUrl);
   }
 
   return {
     markdown: normalizeMarkdownWhitespace(raw),
-    extraction: 'passthrough',
+    extraction: "passthrough",
   };
 }
 
-export function collectLinksFromHtml(html: string, baseUrl: string): Array<{ text: string; url: string }> {
+export function collectLinksFromHtml(
+  html: string,
+  baseUrl: string,
+): Array<{ text: string; url: string }> {
   const dom = new JSDOM(html, { url: baseUrl });
   const links: Array<{ text: string; url: string }> = [];
   const seen = new Set<string>();
 
-  for (const anchor of dom.window.document.querySelectorAll('a[href]')) {
-    const href = anchor.getAttribute('href') ?? '';
+  for (const anchor of dom.window.document.querySelectorAll("a[href]")) {
+    const href = anchor.getAttribute("href") ?? "";
     const absolute = resolveAbsoluteUrl(href, baseUrl);
     if (!absolute || seen.has(absolute)) {
       continue;
     }
     seen.add(absolute);
-    const text = anchor.textContent?.replace(/\s+/gu, ' ').trim() || absolute;
+    const text = anchor.textContent?.replace(/\s+/gu, " ").trim() || absolute;
     links.push({ text, url: absolute });
   }
 
@@ -201,8 +204,8 @@ export function collectLinksFromMarkdown(
   const pattern = /\[([^\]]*)\]\(([^)]+)\)/gu;
 
   for (const match of markdown.matchAll(pattern)) {
-    const text = match[1]?.trim() || match[2]?.trim() || '';
-    const href = match[2]?.trim() ?? '';
+    const text = match[1]?.trim() || match[2]?.trim() || "";
+    const href = match[2]?.trim() ?? "";
     const absolute = resolveAbsoluteUrl(href, baseUrl);
     if (!absolute || seen.has(absolute)) {
       continue;

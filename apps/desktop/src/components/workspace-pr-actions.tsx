@@ -22,9 +22,7 @@ import {
 import { cn } from "@/lib/utils";
 import type { GitHubPullRequestDetail, GitHubPullRequestMergeMethod } from "@/types";
 
-export function resolvePrActionMode(
-  detail: GitHubPullRequestDetail,
-): "merge" | "ready" | null {
+export function resolvePrActionMode(detail: GitHubPullRequestDetail): "merge" | "ready" | null {
   if (detail.state !== "open" || detail.merged || !detail.viewerCanMerge) {
     return null;
   }

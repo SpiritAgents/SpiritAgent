@@ -1,15 +1,15 @@
-import { spawn } from 'node:child_process';
-import path from 'node:path';
+import { spawn } from "node:child_process";
+import path from "node:path";
 
-import { resolveBundledRipgrepPath } from './bundled-ripgrep-env.js';
+import { resolveBundledRipgrepPath } from "./bundled-ripgrep-env.js";
 
-const MAX_SEARCH_FILE_SIZE = '1M';
+const MAX_SEARCH_FILE_SIZE = "1M";
 
 /** 工作区内容搜索（Desktop 文件面板）最多返回的命中条数 */
 export const WORKSPACE_CONTENT_SEARCH_MAX_MATCHES = 5000;
 
 /** 任意路径下的 .git 目录均不参与搜索（含 --hidden 全文模式） */
-const RIPGREP_EXCLUDED_GLOBS = ['!**/.git/**'] as const;
+const RIPGREP_EXCLUDED_GLOBS = ["!**/.git/**"] as const;
 
 export type RipgrepSearchOptions = {
   workspaceRoot: string;
@@ -47,7 +47,7 @@ type RipgrepMatchLine = {
 
 type RipgrepJsonLine =
   | {
-      type: 'match';
+      type: "match";
       data: RipgrepMatchLine;
     }
   | {
@@ -57,11 +57,11 @@ type RipgrepJsonLine =
 
 /** 去掉 rg JSON 行尾换行；保留行首缩进，submatch 字节偏移与 lineText 对齐。 */
 export function normalizeSearchLine(line: string): string {
-  return line.replace(/\r?\n$/u, '');
+  return line.replace(/\r?\n$/u, "");
 }
 
-function readRipgrepMatchLineText(lines: RipgrepMatchLine['lines']): string | undefined {
-  if (typeof lines.text === 'string') {
+function readRipgrepMatchLineText(lines: RipgrepMatchLine["lines"]): string | undefined {
+  if (typeof lines.text === "string") {
     return lines.text;
   }
   // 二进制命中仅有 lines.bytes；工作区文本搜索跳过
@@ -72,24 +72,24 @@ function appendQueryArgs(args: string[], options: RipgrepSearchOptions): void {
   const { query, isRegexp = false, caseSensitive = false, wholeWord = false } = options;
 
   if (wholeWord) {
-    args.push('-w');
+    args.push("-w");
   }
 
   if (isRegexp) {
     if (!caseSensitive) {
-      args.push('-i');
+      args.push("-i");
     }
-    args.push('--regexp', query);
+    args.push("--regexp", query);
     return;
   }
 
-  args.push('-F');
+  args.push("-F");
   if (!caseSensitive) {
-    args.push('-i');
+    args.push("-i");
   }
 
-  if (query.startsWith('-')) {
-    args.push('--', query);
+  if (query.startsWith("-")) {
+    args.push("--", query);
   } else {
     args.push(query);
   }
@@ -98,24 +98,24 @@ function appendQueryArgs(args: string[], options: RipgrepSearchOptions): void {
 export function buildRipgrepArgs(options: RipgrepSearchOptions): string[] {
   const { globPattern, workspaceRoot } = options;
   const args: string[] = [
-    '--json',
-    '--no-heading',
-    '--color=never',
-    '--line-number',
-    '--max-filesize',
+    "--json",
+    "--no-heading",
+    "--color=never",
+    "--line-number",
+    "--max-filesize",
     MAX_SEARCH_FILE_SIZE,
   ];
 
   for (const excludedGlob of RIPGREP_EXCLUDED_GLOBS) {
-    args.push('-g', excludedGlob);
+    args.push("-g", excludedGlob);
   }
 
   if (globPattern === null || globPattern === undefined) {
-    args.push('--hidden');
+    args.push("--hidden");
   }
 
   if (globPattern !== null && globPattern !== undefined) {
-    args.push('-g', globPattern);
+    args.push("-g", globPattern);
   }
 
   appendQueryArgs(args, options);
@@ -124,14 +124,14 @@ export function buildRipgrepArgs(options: RipgrepSearchOptions): string[] {
 }
 
 function toRelativePath(workspaceRoot: string, filePath: string): string {
-  const rel = path.relative(workspaceRoot, filePath).replace(/\\/gu, '/');
-  return rel || '.';
+  const rel = path.relative(workspaceRoot, filePath).replace(/\\/gu, "/");
+  return rel || ".";
 }
 
 function mapRipgrepRegexError(stderr: string): Error {
   const trimmed = stderr.trim();
   if (!trimmed) {
-    return new Error('无效正则');
+    return new Error("无效正则");
   }
   const message = trimmed.split(/\r?\n/u).find((line) => line.trim().length > 0) ?? trimmed;
   return new Error(`无效正则: ${message}`);
@@ -149,11 +149,11 @@ function parseRipgrepJsonMatchLine(line: string, workspaceRoot: string): Ripgrep
     return null;
   }
 
-  if (parsed.type !== 'match') {
+  if (parsed.type !== "match") {
     return null;
   }
 
-  const matchData = (parsed as { type: 'match'; data: RipgrepMatchLine }).data;
+  const matchData = (parsed as { type: "match"; data: RipgrepMatchLine }).data;
   const rawLineText = readRipgrepMatchLineText(matchData.lines);
   if (rawLineText === undefined || !matchData.path?.text) {
     return null;
@@ -181,10 +181,10 @@ function appendMatchWithinLimit(
 
 function waitForChildClose(child: ReturnType<typeof spawn>): Promise<number | null> {
   return new Promise((resolve, reject) => {
-    child.once('error', (error: Error) => {
+    child.once("error", (error: Error) => {
       reject(error);
     });
-    child.once('close', (code) => {
+    child.once("close", (code) => {
       resolve(code);
     });
   });
@@ -198,7 +198,7 @@ function consumeRipgrepStdoutLines(params: {
 }): { stdoutBuffer: string; limitReached: boolean } {
   let { stdoutBuffer, workspaceRoot, matches, maxMatches } = params;
   let limitReached = false;
-  let newlineIndex = stdoutBuffer.indexOf('\n');
+  let newlineIndex = stdoutBuffer.indexOf("\n");
 
   while (newlineIndex >= 0) {
     const line = stdoutBuffer.slice(0, newlineIndex);
@@ -208,16 +208,18 @@ function consumeRipgrepStdoutLines(params: {
       limitReached = true;
       break;
     }
-    newlineIndex = stdoutBuffer.indexOf('\n');
+    newlineIndex = stdoutBuffer.indexOf("\n");
   }
 
   return { stdoutBuffer, limitReached };
 }
 
-export async function runRipgrepSearch(options: RipgrepSearchOptions): Promise<RipgrepSearchResult> {
+export async function runRipgrepSearch(
+  options: RipgrepSearchOptions,
+): Promise<RipgrepSearchResult> {
   const rgExecutable = resolveBundledRipgrepPath();
   if (!rgExecutable) {
-    throw new Error('Could not resolve bundled ripgrep executable');
+    throw new Error("Could not resolve bundled ripgrep executable");
   }
 
   const args = buildRipgrepArgs(options);
@@ -227,12 +229,12 @@ export async function runRipgrepSearch(options: RipgrepSearchOptions): Promise<R
   });
 
   const matches: RipgrepMatch[] = [];
-  let stderr = '';
-  let stdoutBuffer = '';
+  let stderr = "";
+  let stdoutBuffer = "";
   let limitReached = false;
   const maxMatches = options.maxMatches;
 
-  child.stdout.on('data', (chunk: Buffer | string) => {
+  child.stdout.on("data", (chunk: Buffer | string) => {
     if (limitReached) {
       return;
     }
@@ -250,7 +252,7 @@ export async function runRipgrepSearch(options: RipgrepSearchOptions): Promise<R
     }
   });
 
-  child.stderr.on('data', (chunk: Buffer | string) => {
+  child.stderr.on("data", (chunk: Buffer | string) => {
     stderr += chunk.toString();
   });
 
@@ -283,16 +285,16 @@ export async function runRipgrepSearch(options: RipgrepSearchOptions): Promise<R
 
 export function formatGrepToolOutput(matches: readonly RipgrepMatch[]): string {
   if (matches.length === 0) {
-    return 'No files found';
+    return "No files found";
   }
 
   const files = new Set<string>();
-  let out = '';
+  let out = "";
   for (const match of matches) {
     files.add(match.relativePath);
     out += `${match.relativePath}:${match.lineNumber} | ${match.lineText}\n`;
   }
-  out += '\nFiles\n';
+  out += "\nFiles\n";
   for (const file of [...files].sort((left, right) => left.localeCompare(right))) {
     out += `${file}\n`;
   }

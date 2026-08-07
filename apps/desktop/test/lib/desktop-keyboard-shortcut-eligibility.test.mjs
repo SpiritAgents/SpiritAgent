@@ -1,5 +1,5 @@
-import assert from 'node:assert/strict';
-import { test } from 'node:test';
+import assert from "node:assert/strict";
+import { test } from "node:test";
 
 import {
   resolveModBackslashSplitShortcutAction,
@@ -8,42 +8,42 @@ import {
   resolveModTNewToolTabShortcutAction,
   shouldTriggerConversationAbortShortcut,
   shouldTriggerSettingsEscapeShortcut,
-} from '../../src/lib/desktop-keyboard-shortcut-eligibility.ts';
+} from "../../src/lib/desktop-keyboard-shortcut-eligibility.ts";
 
 const conversationContext = {
-  activeSurface: 'conversation',
+  activeSurface: "conversation",
   conversationAbortShortcutEligible: true,
 };
 
-test('resolveModPShortcutAction returns file-picker for Mod+P', () => {
+test("resolveModPShortcutAction returns file-picker for Mod+P", () => {
   assert.equal(
     resolveModPShortcutAction({
       defaultPrevented: false,
-      key: 'p',
+      key: "p",
       shiftKey: false,
       modPressed: true,
     }),
-    'file-picker',
+    "file-picker",
   );
 });
 
-test('resolveModPShortcutAction returns action-picker for Mod+Shift+P', () => {
+test("resolveModPShortcutAction returns action-picker for Mod+Shift+P", () => {
   assert.equal(
     resolveModPShortcutAction({
       defaultPrevented: false,
-      key: 'P',
+      key: "P",
       shiftKey: true,
       modPressed: true,
     }),
-    'action-picker',
+    "action-picker",
   );
 });
 
-test('resolveModPShortcutAction returns null when mod is not pressed', () => {
+test("resolveModPShortcutAction returns null when mod is not pressed", () => {
   assert.equal(
     resolveModPShortcutAction({
       defaultPrevented: false,
-      key: 'p',
+      key: "p",
       shiftKey: false,
       modPressed: false,
     }),
@@ -51,58 +51,58 @@ test('resolveModPShortcutAction returns null when mod is not pressed', () => {
   );
 });
 
-test('resolveModBackslashSplitShortcutAction returns split-right for Mod+Backslash on conversation', () => {
+test("resolveModBackslashSplitShortcutAction returns split-right for Mod+Backslash on conversation", () => {
   assert.equal(
     resolveModBackslashSplitShortcutAction(
       {
         defaultPrevented: false,
         shiftKey: false,
         altKey: false,
-        code: 'Backslash',
-        target: { tagName: 'DIV', closest: () => null },
+        code: "Backslash",
+        target: { tagName: "DIV", closest: () => null },
         modPressed: true,
       },
       conversationContext,
     ),
-    'split-right',
+    "split-right",
   );
 });
 
-test('resolveModBackslashSplitShortcutAction returns split-down for Mod+Shift+Backslash', () => {
+test("resolveModBackslashSplitShortcutAction returns split-down for Mod+Shift+Backslash", () => {
   assert.equal(
     resolveModBackslashSplitShortcutAction(
       {
         defaultPrevented: false,
         shiftKey: true,
         altKey: false,
-        code: 'Backslash',
-        target: { tagName: 'DIV', closest: () => null },
+        code: "Backslash",
+        target: { tagName: "DIV", closest: () => null },
         modPressed: true,
       },
       conversationContext,
     ),
-    'split-down',
+    "split-down",
   );
 });
 
-test('resolveModBackslashSplitShortcutAction returns null outside conversation surface', () => {
+test("resolveModBackslashSplitShortcutAction returns null outside conversation surface", () => {
   assert.equal(
     resolveModBackslashSplitShortcutAction(
       {
         defaultPrevented: false,
         shiftKey: false,
         altKey: false,
-        code: 'Backslash',
-        target: { tagName: 'DIV', closest: () => null },
+        code: "Backslash",
+        target: { tagName: "DIV", closest: () => null },
         modPressed: true,
       },
-      { activeSurface: 'settings' },
+      { activeSurface: "settings" },
     ),
     null,
   );
 });
 
-test('shouldTriggerConversationAbortShortcut accepts physical Ctrl+C on conversation surface', () => {
+test("shouldTriggerConversationAbortShortcut accepts physical Ctrl+C on conversation surface", () => {
   assert.equal(
     shouldTriggerConversationAbortShortcut(
       {
@@ -111,9 +111,9 @@ test('shouldTriggerConversationAbortShortcut accepts physical Ctrl+C on conversa
         metaKey: false,
         altKey: false,
         shiftKey: false,
-        code: 'KeyC',
-        key: 'c',
-        target: { tagName: 'DIV', closest: () => null },
+        code: "KeyC",
+        key: "c",
+        target: { tagName: "DIV", closest: () => null },
       },
       conversationContext,
     ),
@@ -121,7 +121,7 @@ test('shouldTriggerConversationAbortShortcut accepts physical Ctrl+C on conversa
   );
 });
 
-test('shouldTriggerConversationAbortShortcut rejects when not on conversation surface', () => {
+test("shouldTriggerConversationAbortShortcut rejects when not on conversation surface", () => {
   assert.equal(
     shouldTriggerConversationAbortShortcut(
       {
@@ -130,17 +130,17 @@ test('shouldTriggerConversationAbortShortcut rejects when not on conversation su
         metaKey: false,
         altKey: false,
         shiftKey: false,
-        code: 'KeyC',
-        key: 'c',
+        code: "KeyC",
+        key: "c",
         target: null,
       },
-      { ...conversationContext, activeSurface: 'settings' },
+      { ...conversationContext, activeSurface: "settings" },
     ),
     false,
   );
 });
 
-test('shouldTriggerConversationAbortShortcut rejects Cmd+C (meta without ctrl-only path)', () => {
+test("shouldTriggerConversationAbortShortcut rejects Cmd+C (meta without ctrl-only path)", () => {
   assert.equal(
     shouldTriggerConversationAbortShortcut(
       {
@@ -149,8 +149,8 @@ test('shouldTriggerConversationAbortShortcut rejects Cmd+C (meta without ctrl-on
         metaKey: true,
         altKey: false,
         shiftKey: false,
-        code: 'KeyC',
-        key: 'c',
+        code: "KeyC",
+        key: "c",
         target: null,
       },
       conversationContext,
@@ -159,7 +159,7 @@ test('shouldTriggerConversationAbortShortcut rejects Cmd+C (meta without ctrl-on
   );
 });
 
-test('shouldTriggerConversationAbortShortcut rejects textarea targets', () => {
+test("shouldTriggerConversationAbortShortcut rejects textarea targets", () => {
   assert.equal(
     shouldTriggerConversationAbortShortcut(
       {
@@ -168,9 +168,9 @@ test('shouldTriggerConversationAbortShortcut rejects textarea targets', () => {
         metaKey: false,
         altKey: false,
         shiftKey: false,
-        code: 'KeyC',
-        key: 'c',
-        target: { tagName: 'TEXTAREA', closest: () => null },
+        code: "KeyC",
+        key: "c",
+        target: { tagName: "TEXTAREA", closest: () => null },
       },
       conversationContext,
     ),
@@ -178,7 +178,7 @@ test('shouldTriggerConversationAbortShortcut rejects textarea targets', () => {
   );
 });
 
-test('shouldTriggerConversationAbortShortcut rejects xterm targets', () => {
+test("shouldTriggerConversationAbortShortcut rejects xterm targets", () => {
   assert.equal(
     shouldTriggerConversationAbortShortcut(
       {
@@ -187,11 +187,11 @@ test('shouldTriggerConversationAbortShortcut rejects xterm targets', () => {
         metaKey: false,
         altKey: false,
         shiftKey: false,
-        code: 'KeyC',
-        key: 'c',
+        code: "KeyC",
+        key: "c",
         target: {
-          tagName: 'DIV',
-          closest: (selector) => (selector.includes('xterm') ? {} : null),
+          tagName: "DIV",
+          closest: (selector) => (selector.includes("xterm") ? {} : null),
         },
       },
       conversationContext,
@@ -200,58 +200,58 @@ test('shouldTriggerConversationAbortShortcut rejects xterm targets', () => {
   );
 });
 
-test('resolveModCommaSettingsShortcutAction opens settings from conversation', () => {
+test("resolveModCommaSettingsShortcutAction opens settings from conversation", () => {
   assert.equal(
     resolveModCommaSettingsShortcutAction(
       {
         defaultPrevented: false,
-        key: ',',
+        key: ",",
         shiftKey: false,
         altKey: false,
         modPressed: true,
-        target: { tagName: 'DIV' },
+        target: { tagName: "DIV" },
       },
-      { activeSurface: 'conversation' },
+      { activeSurface: "conversation" },
     ),
-    'open-settings',
+    "open-settings",
   );
 });
 
-test('resolveModCommaSettingsShortcutAction ignores when already on settings', () => {
+test("resolveModCommaSettingsShortcutAction ignores when already on settings", () => {
   assert.equal(
     resolveModCommaSettingsShortcutAction(
       {
         defaultPrevented: false,
-        key: ',',
+        key: ",",
         shiftKey: false,
         altKey: false,
         modPressed: true,
-        target: { tagName: 'DIV' },
+        target: { tagName: "DIV" },
       },
-      { activeSurface: 'settings' },
-    ),
-    null,
-  );
-});
-
-test('resolveModCommaSettingsShortcutAction ignores textarea targets', () => {
-  assert.equal(
-    resolveModCommaSettingsShortcutAction(
-      {
-        defaultPrevented: false,
-        key: ',',
-        shiftKey: false,
-        altKey: false,
-        modPressed: true,
-        target: { tagName: 'TEXTAREA' },
-      },
-      { activeSurface: 'conversation' },
+      { activeSurface: "settings" },
     ),
     null,
   );
 });
 
-test('shouldTriggerSettingsEscapeShortcut accepts escape on settings surface', () => {
+test("resolveModCommaSettingsShortcutAction ignores textarea targets", () => {
+  assert.equal(
+    resolveModCommaSettingsShortcutAction(
+      {
+        defaultPrevented: false,
+        key: ",",
+        shiftKey: false,
+        altKey: false,
+        modPressed: true,
+        target: { tagName: "TEXTAREA" },
+      },
+      { activeSurface: "conversation" },
+    ),
+    null,
+  );
+});
+
+test("shouldTriggerSettingsEscapeShortcut accepts escape on settings surface", () => {
   assert.equal(
     shouldTriggerSettingsEscapeShortcut(
       {
@@ -260,17 +260,17 @@ test('shouldTriggerSettingsEscapeShortcut accepts escape on settings surface', (
         metaKey: false,
         altKey: false,
         shiftKey: false,
-        code: 'Escape',
-        key: 'Escape',
-        target: { tagName: 'DIV', isContentEditable: false, closest: () => null },
+        code: "Escape",
+        key: "Escape",
+        target: { tagName: "DIV", isContentEditable: false, closest: () => null },
       },
-      { activeSurface: 'settings' },
+      { activeSurface: "settings" },
     ),
     true,
   );
 });
 
-test('shouldTriggerSettingsEscapeShortcut rejects non-settings surface', () => {
+test("shouldTriggerSettingsEscapeShortcut rejects non-settings surface", () => {
   assert.equal(
     shouldTriggerSettingsEscapeShortcut(
       {
@@ -279,17 +279,17 @@ test('shouldTriggerSettingsEscapeShortcut rejects non-settings surface', () => {
         metaKey: false,
         altKey: false,
         shiftKey: false,
-        code: 'Escape',
-        key: 'Escape',
+        code: "Escape",
+        key: "Escape",
         target: null,
       },
-      { activeSurface: 'conversation' },
+      { activeSurface: "conversation" },
     ),
     false,
   );
 });
 
-test('shouldTriggerSettingsEscapeShortcut rejects textarea targets', () => {
+test("shouldTriggerSettingsEscapeShortcut rejects textarea targets", () => {
   assert.equal(
     shouldTriggerSettingsEscapeShortcut(
       {
@@ -298,17 +298,17 @@ test('shouldTriggerSettingsEscapeShortcut rejects textarea targets', () => {
         metaKey: false,
         altKey: false,
         shiftKey: false,
-        code: 'Escape',
-        key: 'Escape',
-        target: { tagName: 'TEXTAREA', isContentEditable: false, closest: () => null },
+        code: "Escape",
+        key: "Escape",
+        target: { tagName: "TEXTAREA", isContentEditable: false, closest: () => null },
       },
-      { activeSurface: 'settings' },
+      { activeSurface: "settings" },
     ),
     false,
   );
 });
 
-test('shouldTriggerSettingsEscapeShortcut rejects when a Radix dialog is open', () => {
+test("shouldTriggerSettingsEscapeShortcut rejects when a Radix dialog is open", () => {
   const previousDocument = globalThis.document;
   globalThis.document = {
     querySelector: (selector) =>
@@ -323,11 +323,11 @@ test('shouldTriggerSettingsEscapeShortcut rejects when a Radix dialog is open', 
           metaKey: false,
           altKey: false,
           shiftKey: false,
-          code: 'Escape',
-          key: 'Escape',
-          target: { tagName: 'DIV', isContentEditable: false, closest: () => null },
+          code: "Escape",
+          key: "Escape",
+          target: { tagName: "DIV", isContentEditable: false, closest: () => null },
         },
-        { activeSurface: 'settings' },
+        { activeSurface: "settings" },
       ),
       false,
     );
@@ -336,49 +336,49 @@ test('shouldTriggerSettingsEscapeShortcut rejects when a Radix dialog is open', 
   }
 });
 
-test('resolveModTNewToolTabShortcutAction returns open-new-tool-tab on conversation surface', () => {
+test("resolveModTNewToolTabShortcutAction returns open-new-tool-tab on conversation surface", () => {
   assert.equal(
     resolveModTNewToolTabShortcutAction(
       {
         defaultPrevented: false,
-        key: 't',
+        key: "t",
         shiftKey: false,
         altKey: false,
         modPressed: true,
       },
-      { activeSurface: 'conversation' },
+      { activeSurface: "conversation" },
     ),
-    'open-new-tool-tab',
+    "open-new-tool-tab",
   );
 });
 
-test('resolveModTNewToolTabShortcutAction returns null outside conversation surface', () => {
+test("resolveModTNewToolTabShortcutAction returns null outside conversation surface", () => {
   assert.equal(
     resolveModTNewToolTabShortcutAction(
       {
         defaultPrevented: false,
-        key: 't',
+        key: "t",
         shiftKey: false,
         altKey: false,
         modPressed: true,
       },
-      { activeSurface: 'settings' },
+      { activeSurface: "settings" },
     ),
     null,
   );
 });
 
-test('resolveModTNewToolTabShortcutAction ignores shift and alt modifiers', () => {
+test("resolveModTNewToolTabShortcutAction ignores shift and alt modifiers", () => {
   assert.equal(
     resolveModTNewToolTabShortcutAction(
       {
         defaultPrevented: false,
-        key: 't',
+        key: "t",
         shiftKey: true,
         altKey: false,
         modPressed: true,
       },
-      { activeSurface: 'conversation' },
+      { activeSurface: "conversation" },
     ),
     null,
   );
@@ -386,12 +386,12 @@ test('resolveModTNewToolTabShortcutAction ignores shift and alt modifiers', () =
     resolveModTNewToolTabShortcutAction(
       {
         defaultPrevented: false,
-        key: 't',
+        key: "t",
         shiftKey: false,
         altKey: true,
         modPressed: true,
       },
-      { activeSurface: 'conversation' },
+      { activeSurface: "conversation" },
     ),
     null,
   );

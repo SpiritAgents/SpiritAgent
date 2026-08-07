@@ -1,12 +1,8 @@
-import {
-  deleteKeyringPassword,
-  getKeyringPassword,
-  setKeyringPassword,
-} from './keyring-secret.js';
+import { deleteKeyringPassword, getKeyringPassword, setKeyringPassword } from "./keyring-secret.js";
 
-const KEYRING_SERVICE = 'SpiritAgent';
-const GITHUB_OAUTH_ACCESS_TOKEN_ACCOUNT = 'github::oauth_access_token';
-const GITHUB_OAUTH_LOGIN_ACCOUNT = 'github::oauth_login';
+const KEYRING_SERVICE = "SpiritAgent";
+const GITHUB_OAUTH_ACCESS_TOKEN_ACCOUNT = "github::oauth_access_token";
+const GITHUB_OAUTH_LOGIN_ACCOUNT = "github::oauth_login";
 
 export async function loadGitHubAccessToken(): Promise<string | undefined> {
   const value = getKeyringPassword(KEYRING_SERVICE, GITHUB_OAUTH_ACCESS_TOKEN_ACCOUNT);

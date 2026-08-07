@@ -1,19 +1,19 @@
-import { createHash, randomUUID } from 'node:crypto';
-import { existsSync } from 'node:fs';
-import { mkdir, readFile, writeFile } from 'node:fs/promises';
-import path from 'node:path';
+import { createHash, randomUUID } from "node:crypto";
+import { existsSync } from "node:fs";
+import { mkdir, readFile, writeFile } from "node:fs/promises";
+import path from "node:path";
 
 export const DREAM_RETENTION_MS = 5 * 24 * 60 * 60 * 1000;
 
-const DREAMS_DIR_NAME = 'dreams';
-const DREAM_LOGS_DIR_NAME = 'dream-logs';
+const DREAMS_DIR_NAME = "dreams";
+const DREAM_LOGS_DIR_NAME = "dream-logs";
 
 export interface HostDreamScope {
   workspaceRoot: string;
   gitBranch: string;
 }
 
-export type HostDreamRecordStatus = 'active' | 'superseded' | 'deleted';
+export type HostDreamRecordStatus = "active" | "superseded" | "deleted";
 
 export interface HostDreamSourceSessionRef {
   path: string;
@@ -115,7 +115,7 @@ export class HostDreamStore {
     const now = options.nowUnixMs ?? Date.now();
     return file.records
       .filter((record) => {
-        if (!options.includeDeleted && record.status === 'deleted') {
+        if (!options.includeDeleted && record.status === "deleted") {
           return false;
         }
         if (!options.includeExpired && record.expiresAtUnixMs <= now) {
@@ -139,11 +139,11 @@ export class HostDreamStore {
     const record: HostDreamRecord = {
       id: randomUUID(),
       scope: this.scope,
-      title: normalizeNonEmpty(input.title, 'title'),
-      summary: normalizeNonEmpty(input.summary, 'summary'),
+      title: normalizeNonEmpty(input.title, "title"),
+      summary: normalizeNonEmpty(input.summary, "summary"),
       ...(details ? { details } : {}),
       ...(tags.length > 0 ? { tags } : {}),
-      status: 'active',
+      status: "active",
       createdAtUnixMs: now,
       updatedAtUnixMs: now,
       expiresAtUnixMs: now + DREAM_RETENTION_MS,
@@ -165,9 +165,11 @@ export class HostDreamStore {
     const current = file.records[index]!;
     const next: HostDreamRecord = {
       ...current,
-      ...(input.title !== undefined ? { title: normalizeNonEmpty(input.title, 'title') } : {}),
-      ...(input.summary !== undefined ? { summary: normalizeNonEmpty(input.summary, 'summary') } : {}),
-      status: current.status === 'deleted' ? 'active' : current.status,
+      ...(input.title !== undefined ? { title: normalizeNonEmpty(input.title, "title") } : {}),
+      ...(input.summary !== undefined
+        ? { summary: normalizeNonEmpty(input.summary, "summary") }
+        : {}),
+      status: current.status === "deleted" ? "active" : current.status,
       updatedAtUnixMs: now,
       expiresAtUnixMs: now + DREAM_RETENTION_MS,
     };
@@ -204,8 +206,11 @@ export class HostDreamStore {
     const now = Date.now();
     file.records[index] = {
       ...file.records[index]!,
-      status: 'deleted',
-      details: appendDetails(file.records[index]!.details, `Deleted: ${normalizeNonEmpty(reason, 'reason')}`),
+      status: "deleted",
+      details: appendDetails(
+        file.records[index]!.details,
+        `Deleted: ${normalizeNonEmpty(reason, "reason")}`,
+      ),
       updatedAtUnixMs: now,
       expiresAtUnixMs: now + DREAM_RETENTION_MS,
     };
@@ -231,7 +236,9 @@ export class HostDreamStore {
 
   async listSessionProgress(): Promise<HostDreamSessionProgress[]> {
     const file = await this.loadFile();
-    return [...file.sessionProgress].sort((left, right) => right.lastRunAtUnixMs - left.lastRunAtUnixMs);
+    return [...file.sessionProgress].sort(
+      (left, right) => right.lastRunAtUnixMs - left.lastRunAtUnixMs,
+    );
   }
 
   async readSessionProgress(sessionPath: string): Promise<HostDreamSessionProgress | undefined> {
@@ -255,7 +262,11 @@ export class HostDreamStore {
     const next: HostDreamSessionProgress = {
       ...current,
       ...normalized,
-      ...(normalized.displayName ? { displayName: normalized.displayName } : current.displayName ? { displayName: current.displayName } : {}),
+      ...(normalized.displayName
+        ? { displayName: normalized.displayName }
+        : current.displayName
+          ? { displayName: current.displayName }
+          : {}),
     };
     if (!normalized.displayName && !current.displayName) {
       delete next.displayName;
@@ -273,7 +284,7 @@ export class HostDreamStore {
       return { version: 2, scope: this.scope, records: [], sessionProgress: [] };
     }
 
-    const raw = await readFile(this.filePath, 'utf8');
+    const raw = await readFile(this.filePath, "utf8");
     let parsed: Partial<HostDreamFile>;
     try {
       parsed = JSON.parse(raw) as Partial<HostDreamFile>;
@@ -296,48 +307,52 @@ export class HostDreamStore {
 
   private async saveFile(file: HostDreamFile): Promise<void> {
     await mkdir(path.dirname(this.filePath), { recursive: true });
-    await writeFile(this.filePath, `${JSON.stringify(file, null, 2)}\n`, 'utf8');
+    await writeFile(this.filePath, `${JSON.stringify(file, null, 2)}\n`, "utf8");
   }
 }
 
 function normalizeDreamScope(scope: Partial<HostDreamScope>): HostDreamScope {
   return {
-    workspaceRoot: normalizeNonEmpty(scope.workspaceRoot, 'workspaceRoot'),
-    gitBranch: normalizeNonEmpty(scope.gitBranch, 'gitBranch'),
+    workspaceRoot: normalizeNonEmpty(scope.workspaceRoot, "workspaceRoot"),
+    gitBranch: normalizeNonEmpty(scope.gitBranch, "gitBranch"),
   };
 }
 
 function dreamScopeKey(scope: HostDreamScope): string {
-  return createHash('sha256')
+  return createHash("sha256")
     .update(`${scope.workspaceRoot}\0${scope.gitBranch}`)
-    .digest('hex')
+    .digest("hex")
     .slice(0, 32);
 }
 
 function normalizeDreamRecord(value: unknown, fallbackScope: HostDreamScope): HostDreamRecord {
-  const record = typeof value === 'object' && value !== null ? value as Partial<HostDreamRecord> : {};
+  const record =
+    typeof value === "object" && value !== null ? (value as Partial<HostDreamRecord>) : {};
   const now = Date.now();
   const details = normalizeOptionalText(record.details);
   const tags = Array.isArray(record.tags) ? normalizeTags(record.tags) : [];
   return {
     id: normalizeOptionalText(record.id) ?? randomUUID(),
     scope: normalizeDreamScope(record.scope ?? fallbackScope),
-    title: normalizeOptionalText(record.title) ?? 'Untitled dream',
-    summary: normalizeOptionalText(record.summary) ?? '',
+    title: normalizeOptionalText(record.title) ?? "Untitled dream",
+    summary: normalizeOptionalText(record.summary) ?? "",
     ...(details ? { details } : {}),
     ...(tags.length > 0 ? { tags } : {}),
-    status: record.status === 'superseded' || record.status === 'deleted' ? record.status : 'active',
+    status:
+      record.status === "superseded" || record.status === "deleted" ? record.status : "active",
     createdAtUnixMs: normalizeUnixMs(record.createdAtUnixMs) ?? now,
     updatedAtUnixMs: normalizeUnixMs(record.updatedAtUnixMs) ?? now,
     expiresAtUnixMs: normalizeUnixMs(record.expiresAtUnixMs) ?? now + DREAM_RETENTION_MS,
     sourceSessions: Array.isArray(record.sourceSessions)
-      ? record.sourceSessions.map(normalizeSourceSession).filter((entry): entry is HostDreamSourceSessionRef => entry !== undefined)
+      ? record.sourceSessions
+          .map(normalizeSourceSession)
+          .filter((entry): entry is HostDreamSourceSessionRef => entry !== undefined)
       : [],
   };
 }
 
 function normalizeSourceSession(value: unknown): HostDreamSourceSessionRef | undefined {
-  if (typeof value !== 'object' || value === null) {
+  if (typeof value !== "object" || value === null) {
     return undefined;
   }
   const source = value as Partial<HostDreamSourceSessionRef>;
@@ -355,7 +370,7 @@ function normalizeSourceSession(value: unknown): HostDreamSourceSessionRef | und
 }
 
 function normalizeSessionProgress(value: unknown): HostDreamSessionProgress | undefined {
-  if (typeof value !== 'object' || value === null) {
+  if (typeof value !== "object" || value === null) {
     return undefined;
   }
   const progress = value as Partial<HostDreamSessionProgress>;
@@ -391,7 +406,7 @@ function normalizeRequiredSessionProgressInput(
 ): HostDreamSessionProgress {
   const normalized = normalizeSessionProgress(value);
   if (!normalized) {
-    throw new Error('会话进度无效');
+    throw new Error("会话进度无效");
   }
   return normalized;
 }
@@ -409,19 +424,19 @@ function normalizeNonEmpty(value: unknown, field: string): string {
 }
 
 function normalizeOptionalText(value: unknown): string | undefined {
-  return typeof value === 'string' && value.trim().length > 0 ? value.trim() : undefined;
+  return typeof value === "string" && value.trim().length > 0 ? value.trim() : undefined;
 }
 
 function normalizeUnixMs(value: unknown): number | undefined {
-  return typeof value === 'number' && Number.isFinite(value) ? Math.trunc(value) : undefined;
+  return typeof value === "number" && Number.isFinite(value) ? Math.trunc(value) : undefined;
 }
 
 function normalizeNonNegativeInt(value: unknown): number | undefined {
-  return typeof value === 'number' && Number.isInteger(value) && value >= 0 ? value : undefined;
+  return typeof value === "number" && Number.isInteger(value) && value >= 0 ? value : undefined;
 }
 
 function appendDetails(existing: string | undefined, addition: string): string {
-  return [existing?.trim(), addition.trim()].filter(Boolean).join('\n');
+  return [existing?.trim(), addition.trim()].filter(Boolean).join("\n");
 }
 
 function appendSourceSession(
@@ -435,8 +450,12 @@ function appendSourceSession(
   const current = existing[index]!;
   const merged: HostDreamSourceSessionRef = {
     path: current.path,
-    ...(next.displayName ? { displayName: next.displayName } : current.displayName ? { displayName: current.displayName } : {}),
-    ...(((next.savedAtUnixMs ?? current.savedAtUnixMs) !== undefined)
+    ...(next.displayName
+      ? { displayName: next.displayName }
+      : current.displayName
+        ? { displayName: current.displayName }
+        : {}),
+    ...((next.savedAtUnixMs ?? current.savedAtUnixMs) !== undefined
       ? { savedAtUnixMs: Math.max(next.savedAtUnixMs ?? 0, current.savedAtUnixMs ?? 0) }
       : {}),
   };

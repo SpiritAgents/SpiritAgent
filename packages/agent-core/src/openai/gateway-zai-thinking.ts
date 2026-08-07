@@ -1,12 +1,12 @@
-import type { JsonObject } from '../ports.js';
-import type { OpenAiTransportConfig } from './openai-compat.js';
-import { openAiReasoningEffort } from './openai-compat.js';
-import { parseGatewayUpstreamSlug } from './gateway-code-completion-thinking.js';
+import type { JsonObject } from "../ports.js";
+import type { OpenAiTransportConfig } from "./openai-compat.js";
+import { openAiReasoningEffort } from "./openai-compat.js";
+import { parseGatewayUpstreamSlug } from "./gateway-code-completion-thinking.js";
 
 /** 文档：https://docs.z.ai/guides/capabilities/thinking — GLM-4.5+ 支持 thinking.type。 */
 function normalizeZaiModelId(model: string): string {
   const normalized = model.trim().toLowerCase();
-  const slashIndex = normalized.lastIndexOf('/');
+  const slashIndex = normalized.lastIndexOf("/");
   return slashIndex >= 0 ? normalized.slice(slashIndex + 1) : normalized;
 }
 
@@ -39,18 +39,15 @@ export function isZaiThinkingSwitchEligibleModel(model: string): boolean {
   return version.major === 4 && version.minor >= 5;
 }
 
-export function isGatewayZaiModel(
-  llmVendor: string | undefined,
-  model: string,
-): boolean {
-  return llmVendor === 'vercel-ai-gateway' && parseGatewayUpstreamSlug(model) === 'zai';
+export function isGatewayZaiModel(llmVendor: string | undefined, model: string): boolean {
+  return llmVendor === "vercel-ai-gateway" && parseGatewayUpstreamSlug(model) === "zai";
 }
 
 /** Gateway Z.ai：经 zai 命名空间注入 thinking.type；reasoning_effort 仍走 openai 命名空间。 */
 export function buildGatewayZaiProviderOptions(
   config: Pick<
     OpenAiTransportConfig,
-    'llmVendor' | 'model' | 'reasoningEffort' | 'vendorExtendedThinking'
+    "llmVendor" | "model" | "reasoningEffort" | "vendorExtendedThinking"
   >,
 ): Record<string, JsonObject> {
   if (!isGatewayZaiModel(config.llmVendor, config.model)) {
@@ -63,18 +60,18 @@ export function buildGatewayZaiProviderOptions(
   if (config.vendorExtendedThinking === false) {
     return {
       zai: {
-        thinking: { type: 'disabled' },
+        thinking: { type: "disabled" },
       } as JsonObject,
     };
   }
 
   const result: Record<string, JsonObject> = {
     zai: {
-      thinking: { type: 'enabled' },
+      thinking: { type: "enabled" },
     } as JsonObject,
   };
   const effort = openAiReasoningEffort(config);
-  if (effort !== undefined && effort !== 'default' && effort !== 'none') {
+  if (effort !== undefined && effort !== "default" && effort !== "none") {
     result.openai = {
       reasoningEffort: effort,
     } as JsonObject;

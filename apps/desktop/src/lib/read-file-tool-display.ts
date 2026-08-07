@@ -1,11 +1,8 @@
-import {
-  readFileHeadlineDetailForPath,
-  readFileVerbKey,
-} from './read-file-skill-display.js';
+import { readFileHeadlineDetailForPath, readFileVerbKey } from "./read-file-skill-display.js";
 import {
   isToolOutputArchivePath,
   toolOutputArchiveHeadlineDetail,
-} from './tool-output-archive-display.js';
+} from "./tool-output-archive-display.js";
 
 export function readFileToolHeadlineDetail(
   rawPath: string,
@@ -16,7 +13,7 @@ export function readFileToolHeadlineDetail(
     skillMarkdownContent?: string;
   },
 ): string {
-  const lineRange = options.lineRange ?? '';
+  const lineRange = options.lineRange ?? "";
   if (isToolOutputArchivePath(rawPath)) {
     return toolOutputArchiveHeadlineDetail(options.toolOutputLabel, lineRange);
   }

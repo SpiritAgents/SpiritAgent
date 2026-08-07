@@ -1,18 +1,18 @@
 import {
   isGenericPendingCompactionStatusText,
   isLivePendingReasoningAux,
-} from './subagent-display.js';
-import type { ConversationMessageSnapshot, PendingAssistantAux } from '../types.js';
+} from "./subagent-display.js";
+import type { ConversationMessageSnapshot, PendingAssistantAux } from "../types.js";
 
 export function isStandaloneCompactionMessage(
   message: ConversationMessageSnapshot | undefined,
 ): boolean {
   return Boolean(
-    message?.role === 'assistant' &&
-      !message.tool &&
-      !message.content.trim() &&
-      message.aux?.compaction?.trim() &&
-      !isGenericPendingCompactionStatusText(message.aux.compaction),
+    message?.role === "assistant" &&
+    !message.tool &&
+    !message.content.trim() &&
+    message.aux?.compaction?.trim() &&
+    !isGenericPendingCompactionStatusText(message.aux.compaction),
   );
 }
 
@@ -36,12 +36,12 @@ function isLiveCompactionPlaceholderMessage(
   pendingAuxState: PendingAssistantAux | undefined,
 ): boolean {
   if (
-    message.role !== 'assistant' ||
+    message.role !== "assistant" ||
     !message.pending ||
     message.content.trim() ||
     message.tool ||
     !isLivePendingReasoningAux(pendingAuxState) ||
-    pendingAuxState?.kind !== 'compressing'
+    pendingAuxState?.kind !== "compressing"
   ) {
     return false;
   }
@@ -58,7 +58,7 @@ export function assistantCompactionLive(
   message: ConversationMessageSnapshot,
   pendingAuxState?: PendingAssistantAux,
 ): boolean {
-  if (message.role !== 'assistant' || message.content.trim() || message.tool || !message.pending) {
+  if (message.role !== "assistant" || message.content.trim() || message.tool || !message.pending) {
     return false;
   }
 
@@ -74,7 +74,7 @@ export function shouldShowAssistantCompactionCollapsible(
   message: ConversationMessageSnapshot,
   pendingAuxState: PendingAssistantAux | undefined,
 ): boolean {
-  if (message.role === 'user') {
+  if (message.role === "user") {
     return false;
   }
 

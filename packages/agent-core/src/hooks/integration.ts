@@ -1,7 +1,7 @@
-import type { JsonObject, ToolCallRequest } from '../ports.js';
-import type { AgentRuntimeOptions } from '../runtime/types.js';
+import type { JsonObject, ToolCallRequest } from "../ports.js";
+import type { AgentRuntimeOptions } from "../runtime/types.js";
 
-import { HookDeniedError } from './errors.js';
+import { HookDeniedError } from "./errors.js";
 import type {
   HookRunResult,
   HookRunner,
@@ -10,7 +10,7 @@ import type {
   PreToolUseHookInput,
   SessionEndHookInput,
   SessionStartHookInput,
-} from './types.js';
+} from "./types.js";
 
 export const DEFAULT_HOOK_SESSION_CONTEXT: HookSessionContext = {
   sessionId: undefined,
@@ -19,23 +19,13 @@ export const DEFAULT_HOOK_SESSION_CONTEXT: HookSessionContext = {
   model: undefined,
 };
 
-export function resolveHookSessionContext<
-  Config,
-  State,
-  ToolRequest,
-  TrustTarget = string,
->(
+export function resolveHookSessionContext<Config, State, ToolRequest, TrustTarget = string>(
   options: AgentRuntimeOptions<Config, State, ToolRequest, TrustTarget>,
 ): HookSessionContext {
   return options.hookSessionContext ?? DEFAULT_HOOK_SESSION_CONTEXT;
 }
 
-export function resolveHookRunner<
-  Config,
-  State,
-  ToolRequest,
-  TrustTarget = string,
->(
+export function resolveHookRunner<Config, State, ToolRequest, TrustTarget = string>(
   options: AgentRuntimeOptions<Config, State, ToolRequest, TrustTarget>,
 ): HookRunner | undefined {
   return options.hookRunner;
@@ -44,7 +34,7 @@ export function resolveHookRunner<
 export function toolInputFromArgumentsJson(argumentsJson: string): JsonObject {
   try {
     const parsed = JSON.parse(argumentsJson) as unknown;
-    if (typeof parsed === 'object' && parsed !== null && !Array.isArray(parsed)) {
+    if (typeof parsed === "object" && parsed !== null && !Array.isArray(parsed)) {
       return parsed as JsonObject;
     }
   } catch {
@@ -65,7 +55,7 @@ export function throwIfHookDenied(event: string, result: HookRunResult): void {
 }
 
 export function appendHookAdditionalContexts(
-  recordContextMessage: ((role: 'system', content: string) => void) | undefined,
+  recordContextMessage: ((role: "system", content: string) => void) | undefined,
   contexts: readonly string[],
 ): void {
   if (!recordContextMessage || contexts.length === 0) {
@@ -74,7 +64,7 @@ export function appendHookAdditionalContexts(
   for (const context of contexts) {
     const trimmed = context.trim();
     if (trimmed) {
-      recordContextMessage('system', trimmed);
+      recordContextMessage("system", trimmed);
     }
   }
 }
@@ -90,9 +80,9 @@ function baseHookFields(context: HookSessionContext) {
 
 export async function runSessionStartHookAndApply(
   hookRunner: HookRunner | undefined,
-  recordContextMessage: ((role: 'system', content: string) => void) | undefined,
+  recordContextMessage: ((role: "system", content: string) => void) | undefined,
   context: HookSessionContext,
-  source: SessionStartHookInput['source'],
+  source: SessionStartHookInput["source"],
 ): Promise<void> {
   if (!hookRunner) {
     return;
@@ -107,7 +97,7 @@ export async function runSessionStartHookAndApply(
 export async function runSessionEndHook(
   hookRunner: HookRunner | undefined,
   context: HookSessionContext,
-  reason: SessionEndHookInput['reason'],
+  reason: SessionEndHookInput["reason"],
 ): Promise<void> {
   if (!hookRunner) {
     return;
@@ -118,12 +108,7 @@ export async function runSessionEndHook(
   });
 }
 
-export async function runPreToolUseHook<
-  Config,
-  State,
-  ToolRequest,
-  TrustTarget = string,
->(
+export async function runPreToolUseHook<Config, State, ToolRequest, TrustTarget = string>(
   options: AgentRuntimeOptions<Config, State, ToolRequest, TrustTarget>,
   call: ToolCallRequest,
   toolInput: JsonObject,
@@ -142,7 +127,7 @@ export async function runPreToolUseHook<
     };
   }
 
-  const input: Omit<PreToolUseHookInput, 'hookEventName' | 'timestamp'> = {
+  const input: Omit<PreToolUseHookInput, "hookEventName" | "timestamp"> = {
     ...baseHookFields(resolveHookSessionContext(options)),
     toolName: call.name,
     toolCallId: call.id,
@@ -150,18 +135,13 @@ export async function runPreToolUseHook<
   };
 
   const result = await hookRunner.runPreToolUse(input);
-  throwIfHookDenied('preToolUse', result);
+  throwIfHookDenied("preToolUse", result);
   return result;
 }
 
-export async function runPostToolUseHook<
-  Config,
-  State,
-  ToolRequest,
-  TrustTarget = string,
->(
+export async function runPostToolUseHook<Config, State, ToolRequest, TrustTarget = string>(
   options: AgentRuntimeOptions<Config, State, ToolRequest, TrustTarget>,
-  input: Omit<PostToolUseHookInput, 'hookEventName' | 'timestamp' | keyof HookSessionContext>,
+  input: Omit<PostToolUseHookInput, "hookEventName" | "timestamp" | keyof HookSessionContext>,
 ): Promise<HookRunResult> {
   const hookRunner = resolveHookRunner(options);
   if (!hookRunner) {
@@ -183,12 +163,7 @@ export async function runPostToolUseHook<
   });
 }
 
-export async function runSubmitPromptHook<
-  Config,
-  State,
-  ToolRequest,
-  TrustTarget = string,
->(
+export async function runSubmitPromptHook<Config, State, ToolRequest, TrustTarget = string>(
   options: AgentRuntimeOptions<Config, State, ToolRequest, TrustTarget>,
   prompt: string,
   messageId: string | undefined = undefined,
@@ -215,11 +190,8 @@ export async function runSubmitPromptHook<
   return result;
 }
 
-export async function applyUpdatedToolRequest<
-  ToolRequest,
-  TrustTarget = string,
->(
-  toolExecutor: AgentRuntimeOptions<unknown, unknown, ToolRequest, TrustTarget>['toolExecutor'],
+export async function applyUpdatedToolRequest<ToolRequest, TrustTarget = string>(
+  toolExecutor: AgentRuntimeOptions<unknown, unknown, ToolRequest, TrustTarget>["toolExecutor"],
   call: ToolCallRequest,
   updatedInput: JsonObject,
 ): Promise<ToolRequest> {
@@ -228,14 +200,14 @@ export async function applyUpdatedToolRequest<
       call.name,
       JSON.stringify(updatedInput),
     );
-    return toolExecutor.attachRequestMetadata?.(next, {
-      toolCallId: call.id,
-      toolName: call.name,
-    }) ?? next;
+    return (
+      toolExecutor.attachRequestMetadata?.(next, {
+        toolCallId: call.id,
+        toolName: call.name,
+      }) ?? next
+    );
   } catch (error) {
     const detail = error instanceof Error ? error.message : String(error);
-    throw new Error(
-      `Failed to apply hook updatedInput for tool "${call.name}": ${detail}`,
-    );
+    throw new Error(`Failed to apply hook updatedInput for tool "${call.name}": ${detail}`);
   }
 }

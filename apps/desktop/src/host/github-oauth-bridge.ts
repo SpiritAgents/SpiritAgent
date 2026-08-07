@@ -1,4 +1,4 @@
-import type { GitHubDeviceAuthChallenge } from '@spiritagent/host-internal';
+import type { GitHubDeviceAuthChallenge } from "@spiritagent/host-internal";
 
 export type BeginGitHubDeviceLoginRunner = () => Promise<GitHubDeviceAuthChallenge>;
 export type CompleteGitHubDeviceLoginRunner = () => Promise<{ login: string }>;
@@ -20,14 +20,14 @@ export function registerGitHubDeviceLoginRunners(runners: {
 
 export async function beginGitHubDeviceLogin(): Promise<GitHubDeviceAuthChallenge> {
   if (!beginRunner) {
-    throw new Error('GitHub device login is only available in the Electron desktop app.');
+    throw new Error("GitHub device login is only available in the Electron desktop app.");
   }
   return beginRunner();
 }
 
 export async function completeGitHubDeviceLogin(): Promise<{ login: string }> {
   if (!completeRunner) {
-    throw new Error('GitHub device login is only available in the Electron desktop app.');
+    throw new Error("GitHub device login is only available in the Electron desktop app.");
   }
   return completeRunner();
 }

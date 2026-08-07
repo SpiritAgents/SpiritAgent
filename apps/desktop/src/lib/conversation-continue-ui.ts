@@ -1,4 +1,4 @@
-import type { ConversationMessageSnapshot } from '../types.js';
+import type { ConversationMessageSnapshot } from "../types.js";
 
 export type TurnContinuePresentation = {
   continuableMessage: ConversationMessageSnapshot;
@@ -8,7 +8,7 @@ export type TurnContinuePresentation = {
 
 function lastUserMessageIndex(messages: readonly ConversationMessageSnapshot[]): number {
   for (let index = messages.length - 1; index >= 0; index -= 1) {
-    if (messages[index]?.role === 'user') {
+    if (messages[index]?.role === "user") {
       return index;
     }
   }
@@ -20,7 +20,7 @@ function lastUserMessageIndexBefore(
   messageIndex: number,
 ): number {
   for (let index = messageIndex; index >= 0; index -= 1) {
-    if (messages[index]?.role === 'user') {
+    if (messages[index]?.role === "user") {
       return index;
     }
   }
@@ -28,7 +28,7 @@ function lastUserMessageIndexBefore(
 }
 
 function isAssistantBodyTextMessage(message: ConversationMessageSnapshot | undefined): boolean {
-  return Boolean(message?.role === 'assistant' && !message.tool && message.content.trim());
+  return Boolean(message?.role === "assistant" && !message.tool && message.content.trim());
 }
 
 function findLastAssistantBodyTextIndexInTurn(
@@ -39,7 +39,7 @@ function findLastAssistantBodyTextIndexInTurn(
   let lastIndex: number | null = null;
   for (let index = turnStart + 1; index < messages.length; index += 1) {
     const message = messages[index];
-    if (!message || message.role === 'user') {
+    if (!message || message.role === "user") {
       break;
     }
     if (isAssistantBodyTextMessage(message)) {

@@ -1,6 +1,10 @@
-import path from 'node:path';
+import path from "node:path";
 
-import { PLANS_DIR_NAME, type InstructionDiscoveryContext, resolveInstructionPaths } from './storage.js';
+import {
+  PLANS_DIR_NAME,
+  type InstructionDiscoveryContext,
+  resolveInstructionPaths,
+} from "./storage.js";
 
 const PLAN_NAME_PATTERN = /^[a-zA-Z0-9_-]+$/;
 const CREATE_PLAN_PATH_PATTERN = /\[plan\]\npath: ([^\n]+)/;
@@ -8,17 +12,17 @@ const CREATE_PLAN_PATH_PATTERN = /\[plan\]\npath: ([^\n]+)/;
 export function sanitizePlanName(rawName: string): string {
   const trimmed = rawName.trim();
   if (!trimmed) {
-    throw new Error('Plan name cannot be empty.');
+    throw new Error("Plan name cannot be empty.");
   }
-  if (trimmed.includes('/') || trimmed.includes('\\') || trimmed.includes('..')) {
+  if (trimmed.includes("/") || trimmed.includes("\\") || trimmed.includes("..")) {
     throw new Error('Plan name must not contain path separators or "..".');
   }
-  const stem = trimmed.endsWith('.md') ? trimmed.slice(0, -3) : trimmed;
-  if (!stem || stem.includes('.') || stem.includes(' ')) {
-    throw new Error('Plan name must be a single slug (letters, digits, hyphens, underscores).');
+  const stem = trimmed.endsWith(".md") ? trimmed.slice(0, -3) : trimmed;
+  if (!stem || stem.includes(".") || stem.includes(" ")) {
+    throw new Error("Plan name must be a single slug (letters, digits, hyphens, underscores).");
   }
   if (!PLAN_NAME_PATTERN.test(stem)) {
-    throw new Error('Plan name must use only letters, digits, hyphens, and underscores.');
+    throw new Error("Plan name must use only letters, digits, hyphens, and underscores.");
   }
   return stem;
 }
@@ -39,7 +43,7 @@ export function isPathUnderPlansDir(
   const plansDir = path.resolve(resolvePlansDir(context));
   const candidate = path.resolve(resolvedPath);
   const relative = path.relative(plansDir, candidate);
-  return relative === '' || (!relative.startsWith('..') && !path.isAbsolute(relative));
+  return relative === "" || (!relative.startsWith("..") && !path.isAbsolute(relative));
 }
 
 export function parseCreatePlanPathFromToolOutput(output: string): string | undefined {
@@ -49,21 +53,21 @@ export function parseCreatePlanPathFromToolOutput(output: string): string | unde
 }
 
 function llmMessageTextContent(content: unknown): string {
-  if (typeof content === 'string') {
+  if (typeof content === "string") {
     return content;
   }
   if (!Array.isArray(content)) {
-    return '';
+    return "";
   }
   return content
     .map((part) => {
-      if (typeof part !== 'object' || part === null) {
-        return '';
+      if (typeof part !== "object" || part === null) {
+        return "";
       }
       const text = (part as { text?: unknown }).text;
-      return typeof text === 'string' ? text : '';
+      return typeof text === "string" ? text : "";
     })
-    .join('\n');
+    .join("\n");
 }
 
 export function extractActivePlanPathFromLlmHistory(
@@ -74,11 +78,13 @@ export function extractActivePlanPathFromLlmHistory(
     if (!message) {
       continue;
     }
-    const role = typeof message.role === 'string' ? message.role : '';
-    if (role !== 'tool' && role !== 'assistant') {
+    const role = typeof message.role === "string" ? message.role : "";
+    if (role !== "tool" && role !== "assistant") {
       continue;
     }
-    const pathFromOutput = parseCreatePlanPathFromToolOutput(llmMessageTextContent(message.content));
+    const pathFromOutput = parseCreatePlanPathFromToolOutput(
+      llmMessageTextContent(message.content),
+    );
     if (pathFromOutput) {
       return pathFromOutput;
     }

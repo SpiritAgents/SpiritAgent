@@ -1,5 +1,5 @@
-import assert from 'node:assert/strict';
-import { test } from 'node:test';
+import assert from "node:assert/strict";
+import { test } from "node:test";
 
 import {
   COMPOSER_DRAFT_STORAGE_KEY,
@@ -7,7 +7,7 @@ import {
   normalizeComposerSessionKey,
   readComposerDraft,
   writeComposerDraft,
-} from '../../dist-electron/src/lib/composer-draft-store.js';
+} from "../../dist-electron/src/lib/composer-draft-store.js";
 
 function createMemoryStorage() {
   const values = new Map();
@@ -22,26 +22,26 @@ function createMemoryStorage() {
   };
 }
 
-test('normalizeComposerSessionKey normalizes Windows-style paths', () => {
+test("normalizeComposerSessionKey normalizes Windows-style paths", () => {
   assert.equal(
-    normalizeComposerSessionKey('D:\\SpiritAgent\\Chats\\A.json'),
-    'd:/spiritagent/chats/a.json',
+    normalizeComposerSessionKey("D:\\SpiritAgent\\Chats\\A.json"),
+    "d:/spiritagent/chats/a.json",
   );
 });
 
-test('writeComposerDraft and readComposerDraft round-trip text attachments and segments', () => {
+test("writeComposerDraft and readComposerDraft round-trip text attachments and segments", () => {
   const storage = createMemoryStorage();
-  const sessionKey = 'D:/SpiritAgent/chats/session-a.json';
+  const sessionKey = "D:/SpiritAgent/chats/session-a.json";
   const segments = [
-    { kind: 'text', value: 'fix ' },
-    { kind: 'workspaceFile', path: 'src/App.tsx' },
-    { kind: 'skill', alias: '/git-commit' },
+    { kind: "text", value: "fix " },
+    { kind: "workspaceFile", path: "src/App.tsx" },
+    { kind: "skill", alias: "/git-commit" },
   ];
 
   writeComposerDraft(
     sessionKey,
     {
-      localFilePaths: ['D:\\tmp\\note.png', 'D:/tmp/note.png'],
+      localFilePaths: ["D:\\tmp\\note.png", "D:/tmp/note.png"],
       segments,
     },
     storage,
@@ -49,35 +49,43 @@ test('writeComposerDraft and readComposerDraft round-trip text attachments and s
 
   const restored = readComposerDraft(sessionKey, storage);
   assert.deepEqual(restored, {
-    text: 'fix @src/App.tsx',
-    localFilePaths: ['D:/tmp/note.png'],
+    text: "fix @src/App.tsx",
+    localFilePaths: ["D:/tmp/note.png"],
     segments,
     updatedAt: restored.updatedAt,
   });
-  assert.equal(typeof restored.updatedAt, 'number');
+  assert.equal(typeof restored.updatedAt, "number");
 });
 
-test('writeComposerDraft deletes empty drafts', () => {
+test("writeComposerDraft deletes empty drafts", () => {
   const storage = createMemoryStorage();
-  const sessionKey = 'session-empty';
+  const sessionKey = "session-empty";
 
-  writeComposerDraft(sessionKey, { localFilePaths: [], segments: [{ kind: 'text', value: 'temp' }] }, storage);
-  writeComposerDraft(sessionKey, { localFilePaths: [], segments: [{ kind: 'text', value: '   ' }] }, storage);
+  writeComposerDraft(
+    sessionKey,
+    { localFilePaths: [], segments: [{ kind: "text", value: "temp" }] },
+    storage,
+  );
+  writeComposerDraft(
+    sessionKey,
+    { localFilePaths: [], segments: [{ kind: "text", value: "   " }] },
+    storage,
+  );
 
   assert.equal(readComposerDraft(sessionKey, storage), undefined);
   const raw = JSON.parse(storage.getItem(COMPOSER_DRAFT_STORAGE_KEY));
-  assert.equal(raw.drafts['session-empty'], undefined);
+  assert.equal(raw.drafts["session-empty"], undefined);
 });
 
-test('readComposerDraft discards v1 drafts without migration', () => {
+test("readComposerDraft discards v1 drafts without migration", () => {
   const storage = createMemoryStorage();
   storage.setItem(
     COMPOSER_DRAFT_STORAGE_KEY,
     JSON.stringify({
       version: 1,
       drafts: {
-        'legacy-session': {
-          text: '@README.md hello',
+        "legacy-session": {
+          text: "@README.md hello",
           localFilePaths: [],
           updatedAt: 1,
         },
@@ -85,22 +93,26 @@ test('readComposerDraft discards v1 drafts without migration', () => {
     }),
   );
 
-  assert.equal(readComposerDraft('legacy-session', storage), undefined);
+  assert.equal(readComposerDraft("legacy-session", storage), undefined);
 });
 
-test('clearComposerDraft removes a stored draft', () => {
+test("clearComposerDraft removes a stored draft", () => {
   const storage = createMemoryStorage();
-  const sessionKey = 'session-clear';
+  const sessionKey = "session-clear";
 
-  writeComposerDraft(sessionKey, { localFilePaths: [], segments: [{ kind: 'text', value: 'keep me briefly' }] }, storage);
+  writeComposerDraft(
+    sessionKey,
+    { localFilePaths: [], segments: [{ kind: "text", value: "keep me briefly" }] },
+    storage,
+  );
   clearComposerDraft(sessionKey, storage);
 
   assert.equal(readComposerDraft(sessionKey, storage), undefined);
 });
 
-test('readComposerDraft returns undefined for corrupted storage', () => {
+test("readComposerDraft returns undefined for corrupted storage", () => {
   const storage = createMemoryStorage();
-  storage.setItem(COMPOSER_DRAFT_STORAGE_KEY, '{not-json');
+  storage.setItem(COMPOSER_DRAFT_STORAGE_KEY, "{not-json");
 
-  assert.equal(readComposerDraft('any-session', storage), undefined);
+  assert.equal(readComposerDraft("any-session", storage), undefined);
 });

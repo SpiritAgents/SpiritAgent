@@ -1,11 +1,15 @@
-import { formatTriggerLabel, normalizeAutomationTrigger, previewCreateAutomationFromArguments } from '@spiritagent/host-internal';
+import {
+  formatTriggerLabel,
+  normalizeAutomationTrigger,
+  previewCreateAutomationFromArguments,
+} from "@spiritagent/host-internal";
 
-import i18n from '../lib/i18n-host.js';
+import i18n from "../lib/i18n-host.js";
 import type {
   LlmMessageContent,
   RuntimePendingApproval,
   RuntimePendingQuestions,
-} from '@spiritagent/agent-core';
+} from "@spiritagent/agent-core";
 import {
   finishTaskNoticeFromSummary,
   isGenericProviderWebSearchQuery,
@@ -13,38 +17,32 @@ import {
   previewRequestFromStreamingArguments,
   RESPONSES_BUILT_IN_SPIRIT_UI_KEY,
   tryExtractPartialWebSearchQuery,
-} from '@spiritagent/agent-core';
+} from "@spiritagent/agent-core";
 
 import {
   hasAssistantNonTerminalToolInCurrentTurn,
   hasAssistantToolLaterInTurn,
   isStandaloneThinkingMessage,
-} from '../lib/conversation-thinking-ui.js';
-import { lsToolDisplayPath } from '@spiritagent/host-internal/skill-paths';
+} from "../lib/conversation-thinking-ui.js";
+import { lsToolDisplayPath } from "@spiritagent/host-internal/skill-paths";
 
 import {
   isSkillMarkdownPath,
   parseReadFilePathFromRequest,
   lineRangeForReadFile,
-} from '../lib/read-file-skill-display.js';
-import {
-  readFileToolHeadlineDetail,
-  readFileVerbKey,
-} from '../lib/read-file-tool-display.js';
-import { grepToolHeadlineDetail } from '../lib/grep-tool-display.js';
-import { phaseToVerbContext } from '../lib/tool-verb-context.js';
+} from "../lib/read-file-skill-display.js";
+import { readFileToolHeadlineDetail, readFileVerbKey } from "../lib/read-file-tool-display.js";
+import { grepToolHeadlineDetail } from "../lib/grep-tool-display.js";
+import { phaseToVerbContext } from "../lib/tool-verb-context.js";
 import {
   diagnosticsPathsHeadlineDetail,
   parseDiagnosticsPathsFromRequest,
-} from '../lib/diagnostics-path-display.js';
-import {
-  todoWriteSummaryDetail,
-  type TodoDisplayItem,
-} from '../lib/todo-tool-display.js';
+} from "../lib/diagnostics-path-display.js";
+import { todoWriteSummaryDetail, type TodoDisplayItem } from "../lib/todo-tool-display.js";
 import {
   builtInCreateAutomationToolCallSummaryParts,
   parseLazyToolGatewayFieldsFromJson,
-} from '../lib/lazy-built-in-tool-display.js';
+} from "../lib/lazy-built-in-tool-display.js";
 import {
   hasActiveSubagentToolInMessages,
   hasInFlightSubagentDelegationInMessages,
@@ -53,14 +51,14 @@ import {
   isSubagentStatusSurfaceMessage,
   isSubagentStatusSurfaceText,
   parsePendingSubagentStatusText,
-} from '../lib/subagent-display.js';
+} from "../lib/subagent-display.js";
 import type {
   ConversationMessageSnapshot,
   MessageAuxSnapshot,
   PendingAssistantAux,
   ToolBlockSnapshot,
-} from '../types.js';
-import type { DesktopToolRequest } from './contracts.js';
+} from "../types.js";
+import type { DesktopToolRequest } from "./contracts.js";
 
 export {
   hasActiveSubagentToolInMessages,
@@ -72,23 +70,23 @@ export {
 };
 
 /** 环境变量 `SPIRIT_DESKTOP_MESSAGE_ORDER_DEBUG`：不设为关；`1`/compact/on 紧凑；`2`/verbose 更详并节流纯 preview；`0`/off 显式关闭。 */
-export type MessageOrderDebugLevel = 'off' | 'compact' | 'verbose';
+export type MessageOrderDebugLevel = "off" | "compact" | "verbose";
 
 export function messageOrderDebugLevel(): MessageOrderDebugLevel {
-  const raw = process.env.SPIRIT_DESKTOP_MESSAGE_ORDER_DEBUG?.trim().toLowerCase() ?? '';
-  if (raw === '') {
-    return 'off';
+  const raw = process.env.SPIRIT_DESKTOP_MESSAGE_ORDER_DEBUG?.trim().toLowerCase() ?? "";
+  if (raw === "") {
+    return "off";
   }
-  if (raw === '1' || raw === 'true' || raw === 'yes' || raw === 'on' || raw === 'compact') {
-    return 'compact';
+  if (raw === "1" || raw === "true" || raw === "yes" || raw === "on" || raw === "compact") {
+    return "compact";
   }
-  if (raw === '0' || raw === 'false' || raw === 'off' || raw === 'no') {
-    return 'off';
+  if (raw === "0" || raw === "false" || raw === "off" || raw === "no") {
+    return "off";
   }
-  if (raw === '2' || raw === 'verbose' || raw === 'debug' || raw === 'all') {
-    return 'verbose';
+  if (raw === "2" || raw === "verbose" || raw === "debug" || raw === "all") {
+    return "verbose";
   }
-  return 'off';
+  return "off";
 }
 
 export function summarizeMessagesTailForOrderDebug(
@@ -96,34 +94,43 @@ export function summarizeMessagesTailForOrderDebug(
   max: number,
 ): string {
   if (messages.length === 0) {
-    return '∅';
+    return "∅";
   }
   const slice = messages.slice(Math.max(0, messages.length - max));
-  return slice.map(formatMessageOrderToken).join('«');
+  return slice.map(formatMessageOrderToken).join("«");
 }
 
 export function summarizeToolRowsForDebug(
   messages: ReadonlyArray<ConversationMessageSnapshot>,
   max = 8,
 ): string {
-  const tools = messages.filter(
-    (message) => message.role === 'assistant' && Boolean(message.tool),
-  );
+  const tools = messages.filter((message) => message.role === "assistant" && Boolean(message.tool));
   if (tools.length === 0) {
-    return '∅';
+    return "∅";
   }
-  return tools.slice(Math.max(0, tools.length - max)).map(formatToolRowForDebug).join(',');
+  return tools
+    .slice(Math.max(0, tools.length - max))
+    .map(formatToolRowForDebug)
+    .join(",");
 }
 
 function formatMessageOrderToken(m: ConversationMessageSnapshot): string {
-  if (m.role === 'user') {
-    return 'U';
+  if (m.role === "user") {
+    return "U";
   }
   const toolName = m.tool?.toolName;
   if (toolName) {
-    const phase = m.tool?.phase ?? '?';
+    const phase = m.tool?.phase ?? "?";
     const p =
-      phase === 'running' ? '~' : phase === 'succeeded' ? '=' : phase === 'failed' ? '!' : phase === 'pending-approval' ? '?' : '.';
+      phase === "running"
+        ? "~"
+        : phase === "succeeded"
+          ? "="
+          : phase === "failed"
+            ? "!"
+            : phase === "pending-approval"
+              ? "?"
+              : ".";
     return `${p}${truncateOneLineForDebug(toolName, 20)}`;
   }
   if (m.aux?.thinking && !m.content.trim()) {
@@ -134,11 +141,11 @@ function formatMessageOrderToken(m: ConversationMessageSnapshot): string {
   }
   const c = m.content.trim();
   if (!c) {
-    return 'Aε';
+    return "Aε";
   }
   const hasThinking = Boolean(m.aux?.thinking?.trim());
   const hasCompaction = Boolean(m.aux?.compaction?.trim());
-  const prefix = hasThinking ? (hasCompaction ? 'aTC' : 'aT') : hasCompaction ? 'aC' : 'a';
+  const prefix = hasThinking ? (hasCompaction ? "aTC" : "aT") : hasCompaction ? "aC" : "a";
   return `${prefix}#${m.id}:${truncateOneLineForDebug(c, 18)}`;
 }
 
@@ -149,35 +156,35 @@ function formatToolRowForDebug(message: ConversationMessageSnapshot): string {
   }
   const toolCallId = tool.toolCallId?.trim() || `tool:${tool.toolName}`;
   const phase =
-    tool.phase === 'running'
-      ? '~'
-      : tool.phase === 'succeeded'
-        ? '='
-        : tool.phase === 'failed'
-          ? '!'
-          : tool.phase === 'pending-approval'
-            ? '?'
-            : '.';
+    tool.phase === "running"
+      ? "~"
+      : tool.phase === "succeeded"
+        ? "="
+        : tool.phase === "failed"
+          ? "!"
+          : tool.phase === "pending-approval"
+            ? "?"
+            : ".";
   return `${message.id}:${phase}${truncateOneLineForDebug(tool.toolName, 18)}:${truncateOneLineForDebug(toolCallId, 20)}`;
 }
 
 export function truncateOneLineForDebug(s: string, max: number): string {
-  const t = s.replace(/\s+/g, ' ').trim();
+  const t = s.replace(/\s+/g, " ").trim();
   if (t.length <= max) {
     return t;
   }
   return `${t.slice(0, max)}…`;
 }
 
-const SHELL_REASON_PREFIX = i18n.t('tool.reasonPrefix');
+const SHELL_REASON_PREFIX = i18n.t("tool.reasonPrefix");
 
 export function reasonForShellTool(toolName: string, request: unknown): string | undefined {
-  if (toolName !== 'shell' || !request || typeof request !== 'object') {
+  if (toolName !== "shell" || !request || typeof request !== "object") {
     return undefined;
   }
 
   const reason = (request as { reason?: unknown }).reason;
-  if (typeof reason !== 'string') {
+  if (typeof reason !== "string") {
     return undefined;
   }
 
@@ -190,7 +197,7 @@ export function displayTitleForTool(toolName: string, request: unknown): string 
   if (shellReason) {
     return shellReason;
   }
-  if (toolName === 'tool_call' || toolName === 'tool_describe') {
+  if (toolName === "tool_call" || toolName === "tool_describe") {
     const summary = toolCallSummaryCopyForRequest(
       toolName,
       resolveToolSummaryRequest(toolName, request),
@@ -203,7 +210,7 @@ export function displayTitleForTool(toolName: string, request: unknown): string 
 }
 
 export function stripReasonLineFromShellPrompt(toolName: string, prompt: string): string {
-  if (toolName !== 'shell') {
+  if (toolName !== "shell") {
     return prompt;
   }
 
@@ -212,7 +219,7 @@ export function stripReasonLineFromShellPrompt(toolName: string, prompt: string)
     return prompt;
   }
 
-  return lines.slice(1).join('\n').trim();
+  return lines.slice(1).join("\n").trim();
 }
 
 export interface ToolCallSummaryCopy {
@@ -230,28 +237,28 @@ export type ToolCallSummaryOptions = {
   streamingArgumentsJson?: string;
 };
 
-export { todoWriteSummaryDetail, type TodoDisplayItem } from '../lib/todo-tool-display.js';
+export { todoWriteSummaryDetail, type TodoDisplayItem } from "../lib/todo-tool-display.js";
 
 const SUMMARY_DETAIL_MAX = 80;
 const SUBAGENT_TASK_PREVIEW_MAX = 48;
 
 /** Parsed host request uses `plan_name`; streaming preview JSON uses tool arg `name`. */
 function planSlugFromCreatePlanRequest(record: Record<string, unknown>): string {
-  const planName = typeof record.plan_name === 'string' ? record.plan_name.trim() : '';
+  const planName = typeof record.plan_name === "string" ? record.plan_name.trim() : "";
   if (planName) {
     return planName;
   }
-  const streamedName = typeof record.name === 'string' ? record.name.trim() : '';
-  return streamedName === 'create_plan' ? '' : streamedName;
+  const streamedName = typeof record.name === "string" ? record.name.trim() : "";
+  return streamedName === "create_plan" ? "" : streamedName;
 }
 
 export function toolCallSummaryCopyForRequest(
   toolName: string,
   request: unknown,
-  phase?: ToolBlockSnapshot['phase'],
+  phase?: ToolBlockSnapshot["phase"],
   options?: ToolCallSummaryOptions,
 ): ToolCallSummaryCopy | undefined {
-  if (!request || typeof request !== 'object') {
+  if (!request || typeof request !== "object") {
     return undefined;
   }
 
@@ -260,148 +267,156 @@ export function toolCallSummaryCopyForRequest(
   const tOpts = ctx ? { context: ctx } : {};
 
   switch (toolName) {
-    case 'shell': {
+    case "shell": {
       const reason = reasonForShellTool(toolName, request);
-      const command = typeof record.command === 'string' ? record.command.trim() : '';
+      const command = typeof record.command === "string" ? record.command.trim() : "";
       if (!reason && !command) {
         return undefined;
       }
       return {
-        headline: reason ?? i18n.t('tool.runCommand', tOpts),
+        headline: reason ?? i18n.t("tool.runCommand", tOpts),
         ...(command ? { headlineDetail: truncateSummaryDetail(command) } : {}),
       };
     }
-    case 'create_file':
-    case 'edit_file':
-    case 'delete_file': {
-      const rawPath = typeof record.path === 'string' ? record.path : '';
+    case "create_file":
+    case "edit_file":
+    case "delete_file": {
+      const rawPath = typeof record.path === "string" ? record.path : "";
       const basename = displayBasename(rawPath);
       const verb =
-        toolName === 'create_file' ? i18n.t('tool.create', tOpts) : toolName === 'edit_file' ? i18n.t('tool.edit', tOpts) : i18n.t('tool.delete', tOpts);
+        toolName === "create_file"
+          ? i18n.t("tool.create", tOpts)
+          : toolName === "edit_file"
+            ? i18n.t("tool.edit", tOpts)
+            : i18n.t("tool.delete", tOpts);
       return {
         headline: verb,
         headlineDetail: truncateSummaryDetail(basename),
       };
     }
-    case 'create_plan': {
+    case "create_plan": {
       const planSlug = planSlugFromCreatePlanRequest(record);
       const label = planSlug
-        ? `plans/${planSlug.endsWith('.md') ? planSlug : `${planSlug}.md`}`
-        : 'plans/';
+        ? `plans/${planSlug.endsWith(".md") ? planSlug : `${planSlug}.md`}`
+        : "plans/";
       return {
-        headline: i18n.t('tool.create', tOpts),
+        headline: i18n.t("tool.create", tOpts),
         headlineDetail: truncateSummaryDetail(displayBasename(label)),
       };
     }
-    case 'create_automation': {
-      const title = typeof record.title === 'string' ? record.title.trim() : '';
+    case "create_automation": {
+      const title = typeof record.title === "string" ? record.title.trim() : "";
       const trigger = normalizeAutomationTrigger(record.trigger);
-      const triggerLabel = trigger ? formatTriggerLabel(trigger) : '';
-      const detail = [title, triggerLabel].filter((part) => part.length > 0).join(' · ');
+      const triggerLabel = trigger ? formatTriggerLabel(trigger) : "";
+      const detail = [title, triggerLabel].filter((part) => part.length > 0).join(" · ");
       return {
-        headline: i18n.t('automations.create', tOpts),
-        headlineDetail: truncateSummaryDetail(detail || 'automation'),
+        headline: i18n.t("automations.create", tOpts),
+        headlineDetail: truncateSummaryDetail(detail || "automation"),
       };
     }
-    case 'apply_patch': {
+    case "apply_patch": {
       const operation =
-        record.operation && typeof record.operation === 'object'
+        record.operation && typeof record.operation === "object"
           ? (record.operation as Record<string, unknown>)
           : undefined;
-      const rawPath = typeof operation?.path === 'string' ? operation.path : '';
+      const rawPath = typeof operation?.path === "string" ? operation.path : "";
       const basename = displayBasename(rawPath);
-      const opType = typeof operation?.type === 'string' ? operation.type : '';
+      const opType = typeof operation?.type === "string" ? operation.type : "";
       const verb =
-        opType === 'create_file'
-          ? i18n.t('tool.create', tOpts)
-          : opType === 'update_file'
-            ? i18n.t('tool.edit', tOpts)
-            : opType === 'delete_file'
-              ? i18n.t('tool.delete', tOpts)
-              : 'Patch';
+        opType === "create_file"
+          ? i18n.t("tool.create", tOpts)
+          : opType === "update_file"
+            ? i18n.t("tool.edit", tOpts)
+            : opType === "delete_file"
+              ? i18n.t("tool.delete", tOpts)
+              : "Patch";
       return {
         headline: verb,
         headlineDetail: truncateSummaryDetail(basename),
       };
     }
-    case 'grep': {
+    case "grep": {
       const headlineDetail = grepToolHeadlineDetail(
         {
-          query: typeof record.query === 'string' ? record.query : undefined,
+          query: typeof record.query === "string" ? record.query : undefined,
           is_regexp: record.is_regexp === true,
-          glob: typeof record.glob === 'string' ? record.glob : undefined,
+          glob: typeof record.glob === "string" ? record.glob : undefined,
         },
         (key, opts) => i18n.t(key, { ...tOpts, ...opts }),
       );
       return {
-        headline: i18n.t('tool.search', tOpts),
+        headline: i18n.t("tool.search", tOpts),
         ...(headlineDetail ? { headlineDetail: truncateSummaryDetail(headlineDetail) } : {}),
       };
     }
-    case 'glob': {
-      const pattern = typeof record.pattern === 'string' ? record.pattern.trim() : '';
+    case "glob": {
+      const pattern = typeof record.pattern === "string" ? record.pattern.trim() : "";
       return {
-        headline: i18n.t('tool.match', tOpts),
+        headline: i18n.t("tool.match", tOpts),
         ...(pattern ? { headlineDetail: truncateSummaryDetail(pattern) } : {}),
       };
     }
-    case 'web_fetch': {
-      const url = typeof record.url === 'string' ? record.url.trim() : '';
+    case "web_fetch": {
+      const url = typeof record.url === "string" ? record.url.trim() : "";
       return {
-        headline: i18n.t('tool.fetch', tOpts),
+        headline: i18n.t("tool.fetch", tOpts),
         ...(url ? { headlineDetail: truncateSummaryDetail(url) } : {}),
       };
     }
-    case 'tool_describe':
-    case 'tool_call': {
-      if (toolName === 'tool_call') {
+    case "tool_describe":
+    case "tool_call": {
+      if (toolName === "tool_call") {
         const builtInCopy = lazyBuiltInCreateAutomationSummaryCopy(record, tOpts, options);
         if (builtInCopy) {
           return builtInCopy;
         }
       }
-      const provider = typeof record.provider === 'string' ? record.provider.trim() : '';
-      const server = typeof record.server === 'string' ? record.server.trim() : '';
-      const tool = typeof record.tool === 'string' ? record.tool.trim() : '';
-      const detail = [provider, server, tool].filter((part) => part.length > 0).join(' / ');
+      const provider = typeof record.provider === "string" ? record.provider.trim() : "";
+      const server = typeof record.server === "string" ? record.server.trim() : "";
+      const tool = typeof record.tool === "string" ? record.tool.trim() : "";
+      const detail = [provider, server, tool].filter((part) => part.length > 0).join(" / ");
       return {
         headline:
-          toolName === 'tool_call'
-            ? i18n.t('tool.lazyToolCall', tOpts)
-            : i18n.t('tool.lazyToolDescribe', tOpts),
+          toolName === "tool_call"
+            ? i18n.t("tool.lazyToolCall", tOpts)
+            : i18n.t("tool.lazyToolDescribe", tOpts),
         ...(detail ? { headlineDetail: truncateSummaryDetail(detail) } : {}),
       };
     }
-    case 'fetch_mcp_resource': {
-      const server = typeof record.server === 'string' ? record.server.trim() : '';
-      const uri = typeof record.uri === 'string' ? record.uri.trim() : '';
-      const detail = [server, uri].filter((part) => part.length > 0).join(' / ');
+    case "fetch_mcp_resource": {
+      const server = typeof record.server === "string" ? record.server.trim() : "";
+      const uri = typeof record.uri === "string" ? record.uri.trim() : "";
+      const detail = [server, uri].filter((part) => part.length > 0).join(" / ");
       return {
-        headline: i18n.t('tool.fetchMcpResource', tOpts),
+        headline: i18n.t("tool.fetchMcpResource", tOpts),
         ...(detail ? { headlineDetail: truncateSummaryDetail(detail) } : {}),
       };
     }
-    case 'web_search': {
+    case "web_search": {
       const query = webSearchQueryFromArguments(record);
       return {
-        headline: i18n.t('tool.webSearch', tOpts),
+        headline: i18n.t("tool.webSearch", tOpts),
         ...(query && !isGenericProviderWebSearchQuery(query)
           ? { headlineDetail: truncateSummaryDetail(query) }
           : {}),
       };
     }
-    case 'code_interpreter': {
-      const code = typeof record.code === 'string' ? record.code.trim() : '';
-      const firstLine = code.split(/\r?\n/u).find((line) => line.trim().length > 0)?.trim() ?? '';
+    case "code_interpreter": {
+      const code = typeof record.code === "string" ? record.code.trim() : "";
+      const firstLine =
+        code
+          .split(/\r?\n/u)
+          .find((line) => line.trim().length > 0)
+          ?.trim() ?? "";
       return {
-        headline: i18n.t('tool.codeInterpreter', tOpts),
+        headline: i18n.t("tool.codeInterpreter", tOpts),
         ...(firstLine ? { headlineDetail: truncateSummaryDetail(firstLine) } : {}),
       };
     }
-    case 'ls': {
-      const rawPath = typeof record.path === 'string' ? record.path.trim() : '';
+    case "ls": {
+      const rawPath = typeof record.path === "string" ? record.path.trim() : "";
       return {
-        headline: i18n.t('tool.ls', tOpts),
+        headline: i18n.t("tool.ls", tOpts),
         ...(rawPath
           ? {
               headlineDetail: truncateSummaryDetail(
@@ -411,67 +426,69 @@ export function toolCallSummaryCopyForRequest(
           : {}),
       };
     }
-    case 'get_diagnostics': {
+    case "get_diagnostics": {
       const paths = parseDiagnosticsPathsFromRequest(record);
       const detail = diagnosticsPathsHeadlineDetail(paths);
       return {
-        headline: i18n.t('tool.diagnosticsChecking'),
+        headline: i18n.t("tool.diagnosticsChecking"),
         ...(detail ? { headlineDetail: detail } : {}),
       };
     }
-    case 'ask_questions': {
+    case "ask_questions": {
       const questions = Array.isArray(record.questions) ? record.questions : [];
       return {
-        headline: i18n.t('tool.askQuestions', tOpts),
-        headlineDetail: questions.length > 0 ? i18n.t('tool.nQuestions', { count: questions.length }) : i18n.t('tool.question'),
+        headline: i18n.t("tool.askQuestions", tOpts),
+        headlineDetail:
+          questions.length > 0
+            ? i18n.t("tool.nQuestions", { count: questions.length })
+            : i18n.t("tool.question"),
       };
     }
-    case 'subagent': {
-      const task = typeof record.task === 'string' ? record.task.trim() : '';
+    case "subagent": {
+      const task = typeof record.task === "string" ? record.task.trim() : "";
       const contextSummary =
-        typeof record.context_summary === 'string' ? record.context_summary.trim() : '';
+        typeof record.context_summary === "string" ? record.context_summary.trim() : "";
       const previewSource = task || contextSummary;
       return {
-        headline: i18n.t('tool.subagent', tOpts),
+        headline: i18n.t("tool.subagent", tOpts),
         headlineDetail: previewSource
           ? truncateSummaryDetail(previewSource, SUBAGENT_TASK_PREVIEW_MAX)
-          : i18n.t('tool.unspecifiedTask'),
+          : i18n.t("tool.unspecifiedTask"),
       };
     }
-    case 'dream_list':
-      return { headline: i18n.t('tool.dreamList', tOpts) };
-    case 'dream_read':
-      return dreamIdSummaryCopy(i18n.t('tool.dreamRead', tOpts), record);
-    case 'dream_update':
-      return dreamIdSummaryCopy(i18n.t('tool.dreamUpdate', tOpts), record);
-    case 'dream_delete':
-      return dreamIdSummaryCopy(i18n.t('tool.dreamDelete', tOpts), record);
-    case 'dream_record': {
-      const title = typeof record.title === 'string' ? record.title.trim() : '';
-      const summary = typeof record.summary === 'string' ? record.summary.trim() : '';
+    case "dream_list":
+      return { headline: i18n.t("tool.dreamList", tOpts) };
+    case "dream_read":
+      return dreamIdSummaryCopy(i18n.t("tool.dreamRead", tOpts), record);
+    case "dream_update":
+      return dreamIdSummaryCopy(i18n.t("tool.dreamUpdate", tOpts), record);
+    case "dream_delete":
+      return dreamIdSummaryCopy(i18n.t("tool.dreamDelete", tOpts), record);
+    case "dream_record": {
+      const title = typeof record.title === "string" ? record.title.trim() : "";
+      const summary = typeof record.summary === "string" ? record.summary.trim() : "";
       const detail = title || summary;
       return {
-        headline: i18n.t('tool.dreamRecord', tOpts),
+        headline: i18n.t("tool.dreamRecord", tOpts),
         ...(detail ? { headlineDetail: truncateSummaryDetail(detail) } : {}),
       };
     }
-    case 'todo_write': {
+    case "todo_write": {
       const headlineDetail = todoWriteSummaryDetail({
         before: options?.todosBeforeWrite ?? [],
         afterPayload: options?.executionOutput ?? record,
         t: (key, countOpts) => i18n.t(key, { ...tOpts, ...countOpts }),
-        separator: i18n.t('tool.todoWriteDeltaSeparator'),
+        separator: i18n.t("tool.todoWriteDeltaSeparator"),
       });
       return {
-        headline: i18n.t('tool.todoWrite', tOpts),
+        headline: i18n.t("tool.todoWrite", tOpts),
         ...(headlineDetail ? { headlineDetail: truncateSummaryDetail(headlineDetail) } : {}),
       };
     }
-    case 'todo_list':
-      return { headline: i18n.t('tool.todoList', tOpts) };
-    case 'extension_tool': {
-      const extensionToolName =
-        typeof record.tool_name === 'string' ? record.tool_name.trim() : '';
+    case "todo_list":
+      return { headline: i18n.t("tool.todoList", tOpts) };
+    case "extension_tool": {
+      const extensionToolName = typeof record.tool_name === "string" ? record.tool_name.trim() : "";
       if (!extensionToolName) {
         return undefined;
       }
@@ -486,7 +503,7 @@ function dreamIdSummaryCopy(
   headline: string,
   record: Record<string, unknown>,
 ): ToolCallSummaryCopy {
-  const id = typeof record.id === 'string' ? record.id.trim() : '';
+  const id = typeof record.id === "string" ? record.id.trim() : "";
   return {
     headline,
     ...(id ? { headlineDetail: truncateSummaryDetail(id) } : {}),
@@ -498,29 +515,21 @@ function lazyBuiltInCreateAutomationSummaryCopy(
   tOpts: Record<string, unknown>,
   options?: ToolCallSummaryOptions,
 ): ToolCallSummaryCopy | undefined {
-  const gatewayJson = options?.streamingArgumentsJson?.trim() ?? '';
+  const gatewayJson = options?.streamingArgumentsJson?.trim() ?? "";
   const partialFields = gatewayJson ? parseLazyToolGatewayFieldsFromJson(gatewayJson) : {};
   const provider =
-    (typeof record.provider === 'string' ? record.provider.trim() : '') ||
+    (typeof record.provider === "string" ? record.provider.trim() : "") ||
     partialFields.provider ||
-    '';
+    "";
   const server =
-    (typeof record.server === 'string' ? record.server.trim() : '') ||
-    partialFields.server ||
-    '';
+    (typeof record.server === "string" ? record.server.trim() : "") || partialFields.server || "";
   const tool =
-    (typeof record.tool === 'string' ? record.tool.trim() : '') ||
-    partialFields.tool ||
-    '';
-  if (
-    provider !== 'built-in'
-    || server !== 'desktop'
-    || tool !== 'create_automation'
-  ) {
+    (typeof record.tool === "string" ? record.tool.trim() : "") || partialFields.tool || "";
+  if (provider !== "built-in" || server !== "desktop" || tool !== "create_automation") {
     return undefined;
   }
 
-  const headline = i18n.t('automations.create', tOpts);
+  const headline = i18n.t("automations.create", tOpts);
   const parts = builtInCreateAutomationToolCallSummaryParts({
     gatewayJson: gatewayJson || undefined,
     requestRecord: record,
@@ -537,30 +546,30 @@ function lazyBuiltInCreateAutomationSummaryCopy(
 }
 
 function resolveToolSummaryRequest(toolName: string, request: unknown): unknown {
-  if (!request || typeof request !== 'object') {
+  if (!request || typeof request !== "object") {
     return request;
   }
   const record = request as Record<string, unknown>;
-  if (record.kind === 'fetchMcpResource') {
+  if (record.kind === "fetchMcpResource") {
     return {
-      server: typeof record.server === 'string' ? record.server : '',
-      uri: typeof record.uri === 'string' ? record.uri : '',
+      server: typeof record.server === "string" ? record.server : "",
+      uri: typeof record.uri === "string" ? record.uri : "",
     };
   }
-  if (record.kind !== 'lazyToolGateway' || typeof record.argumentsJson !== 'string') {
+  if (record.kind !== "lazyToolGateway" || typeof record.argumentsJson !== "string") {
     return request;
   }
-  const gatewayName = typeof record.name === 'string' ? record.name : toolName;
+  const gatewayName = typeof record.name === "string" ? record.name : toolName;
   return previewRequestFromStreamingArguments(gatewayName, record.argumentsJson);
 }
 
 export function toolCallSummaryForPhase(
-  phase: ToolBlockSnapshot['phase'],
+  phase: ToolBlockSnapshot["phase"],
   toolName: string,
   request: unknown,
   options?: ToolCallSummaryOptions,
 ): ToolCallSummaryCopy {
-  if (toolName === 'read_file') {
+  if (toolName === "read_file") {
     return readFileSummaryCopy(request, phase, options);
   }
 
@@ -574,7 +583,7 @@ export function toolCallSummaryForPhase(
 }
 
 export function headlineForToolPhase(
-  phase: ToolBlockSnapshot['phase'],
+  phase: ToolBlockSnapshot["phase"],
   toolName: string,
   request: unknown,
   options?: ToolCallSummaryOptions,
@@ -601,8 +610,8 @@ export function lastAssistantPlainTextInHistory(
 ): string | undefined {
   for (let i = hist.length - 1; i >= 0; i -= 1) {
     const m = hist[i];
-    const text = m ? historyMessageText(m.content).trim() : '';
-    if (m?.role === 'assistant' && text) {
+    const text = m ? historyMessageText(m.content).trim() : "";
+    if (m?.role === "assistant" && text) {
       return text;
     }
   }
@@ -619,7 +628,7 @@ export function assistantPrefixBeforeFirstToolInCurrentTurn(
 ): string | undefined {
   let lastUserIdx = -1;
   for (let i = hist.length - 1; i >= 0; i -= 1) {
-    if (hist[i]?.role === 'user') {
+    if (hist[i]?.role === "user") {
       lastUserIdx = i;
       break;
     }
@@ -627,7 +636,7 @@ export function assistantPrefixBeforeFirstToolInCurrentTurn(
 
   let firstToolIdx = -1;
   for (let i = lastUserIdx + 1; i < hist.length; i += 1) {
-    if (hist[i]?.role === 'tool') {
+    if (hist[i]?.role === "tool") {
       firstToolIdx = i;
       break;
     }
@@ -640,7 +649,7 @@ export function assistantPrefixBeforeFirstToolInCurrentTurn(
       continue;
     }
     const text = historyMessageText(m.content).trim();
-    if (m.role === 'assistant' && text) {
+    if (m.role === "assistant" && text) {
       return text;
     }
   }
@@ -679,9 +688,7 @@ export function assistantTurnHasPlainPrefixMessage(
   }
   return messages.some(
     (message) =>
-      message.role === 'assistant' &&
-      !message.tool &&
-      message.content.trim() === normalizedPrefix,
+      message.role === "assistant" && !message.tool && message.content.trim() === normalizedPrefix,
   );
 }
 
@@ -690,7 +697,7 @@ function assistantPlainTextsInCurrentTurnHistory(
 ): string[] {
   let lastUserIdx = -1;
   for (let i = hist.length - 1; i >= 0; i -= 1) {
-    if (hist[i]?.role === 'user') {
+    if (hist[i]?.role === "user") {
       lastUserIdx = i;
       break;
     }
@@ -699,7 +706,7 @@ function assistantPlainTextsInCurrentTurnHistory(
   const texts: string[] = [];
   for (let i = lastUserIdx + 1; i < hist.length; i += 1) {
     const item = hist[i];
-    if (!item || item.role !== 'assistant') {
+    if (!item || item.role !== "assistant") {
       continue;
     }
     const text = historyMessageText(item.content).trim();
@@ -711,7 +718,7 @@ function assistantPlainTextsInCurrentTurnHistory(
 }
 
 function historyMessageText(content: string | LlmMessageContent): string {
-  return typeof content === 'string' ? content : llmMessageTextContent(content);
+  return typeof content === "string" ? content : llmMessageTextContent(content);
 }
 
 function assistantPlainTextsInCurrentTurnMessages(
@@ -719,7 +726,7 @@ function assistantPlainTextsInCurrentTurnMessages(
 ): string[] {
   let lastUserIdx = -1;
   for (let i = messages.length - 1; i >= 0; i -= 1) {
-    if (messages[i]?.role === 'user') {
+    if (messages[i]?.role === "user") {
       lastUserIdx = i;
       break;
     }
@@ -728,7 +735,7 @@ function assistantPlainTextsInCurrentTurnMessages(
   const texts: string[] = [];
   for (let i = lastUserIdx + 1; i < messages.length; i += 1) {
     const item = messages[i];
-    if (!item || item.role !== 'assistant' || item.tool) {
+    if (!item || item.role !== "assistant" || item.tool) {
       continue;
     }
     const text = item.content.trim();
@@ -753,7 +760,9 @@ export function stripPendingThinkingMatchingFinalized(
   return Object.keys(rest).length > 0 ? rest : undefined;
 }
 
-export function stripThinkingFromAux(aux: MessageAuxSnapshot | undefined): MessageAuxSnapshot | undefined {
+export function stripThinkingFromAux(
+  aux: MessageAuxSnapshot | undefined,
+): MessageAuxSnapshot | undefined {
   if (!aux?.thinking) {
     return normalizeMessageAuxSnapshot(aux);
   }
@@ -809,10 +818,10 @@ export function shouldHidePendingAssistantThinkingForLiveStandaloneSubagentStatu
 ): boolean {
   return Boolean(
     isStandaloneSubagentStatusAux(livePendingAux) &&
-      message.role === 'assistant' &&
-      message.pending &&
-      !message.tool &&
-      !message.content.trim(),
+    message.role === "assistant" &&
+    message.pending &&
+    !message.tool &&
+    !message.content.trim(),
   );
 }
 
@@ -821,8 +830,8 @@ export function shouldReanchorPersistedStandaloneSubagentStatusOnBeginAssistantR
   persistedStandalonePendingAux: PendingAssistantAux | undefined,
 ): boolean {
   return Boolean(
-    lastMessage?.role === 'assistant' &&
-      isStandaloneSubagentStatusAux(persistedStandalonePendingAux),
+    lastMessage?.role === "assistant" &&
+    isStandaloneSubagentStatusAux(persistedStandalonePendingAux),
   );
 }
 
@@ -832,7 +841,7 @@ export function messageIndexIsInCurrentTurn(
 ): boolean {
   let lastUserIdx = -1;
   for (let i = messages.length - 1; i >= 0; i -= 1) {
-    if (messages[i]?.role === 'user') {
+    if (messages[i]?.role === "user") {
       lastUserIdx = i;
       break;
     }
@@ -845,7 +854,7 @@ export function hasStandaloneThinkingMessageInCurrentTurn(
 ): boolean {
   let lastUserIdx = -1;
   for (let i = messages.length - 1; i >= 0; i -= 1) {
-    if (messages[i]?.role === 'user') {
+    if (messages[i]?.role === "user") {
       lastUserIdx = i;
       break;
     }
@@ -854,7 +863,7 @@ export function hasStandaloneThinkingMessageInCurrentTurn(
   for (let i = lastUserIdx + 1; i < messages.length; i += 1) {
     const message = messages[i];
     if (
-      message?.role === 'assistant' &&
+      message?.role === "assistant" &&
       !message.tool &&
       !message.content.trim() &&
       Boolean(message.aux?.thinking?.trim())
@@ -874,11 +883,11 @@ export function describeAuxForDebug(aux: MessageAuxSnapshot): string {
   if (aux.compaction?.trim()) {
     parts.push(`C≈${truncateOneLineForDebug(aux.compaction, 28)}`);
   }
-  return parts.join('+') || 'none';
+  return parts.join("+") || "none";
 }
 
 export function describeOptionalAuxForDebug(aux: MessageAuxSnapshot | undefined): string {
-  return aux ? describeAuxForDebug(aux) : 'none';
+  return aux ? describeAuxForDebug(aux) : "none";
 }
 
 export function normalizeToolBlockSnapshot(
@@ -888,7 +897,7 @@ export function normalizeToolBlockSnapshot(
     return undefined;
   }
 
-  const toolName = tool.toolName.trim() || 'unknown-tool';
+  const toolName = tool.toolName.trim() || "unknown-tool";
   const headline = tool.headline.trim() || defaultToolHeadline(tool.phase, toolName);
   const headlineDetail = tool.headlineDetail?.trim() ? tool.headlineDetail.trim() : undefined;
   const detailLines = tool.detailLines.filter((line) => line.trim().length > 0);
@@ -915,28 +924,28 @@ export function normalizeToolBlockSnapshot(
 }
 
 function normalizeTodoWriteBeforeTodosSnapshot(
-  value: ToolBlockSnapshot['todoWriteBeforeTodos'],
-): ToolBlockSnapshot['todoWriteBeforeTodos'] | undefined {
+  value: ToolBlockSnapshot["todoWriteBeforeTodos"],
+): ToolBlockSnapshot["todoWriteBeforeTodos"] | undefined {
   if (!Array.isArray(value) || value.length === 0) {
     return undefined;
   }
   const items = value
     .map((entry) => {
-      if (!entry || typeof entry !== 'object') {
+      if (!entry || typeof entry !== "object") {
         return undefined;
       }
-      const title = typeof entry.title === 'string' ? entry.title.trim() : '';
+      const title = typeof entry.title === "string" ? entry.title.trim() : "";
       if (!title) {
         return undefined;
       }
       return {
         title,
         status:
-          entry.status === 'completed'
-            ? ('completed' as const)
-            : entry.status === 'in_progress'
-              ? ('in_progress' as const)
-              : ('pending' as const),
+          entry.status === "completed"
+            ? ("completed" as const)
+            : entry.status === "in_progress"
+              ? ("in_progress" as const)
+              : ("pending" as const),
       };
     })
     .filter((entry): entry is NonNullable<typeof entry> => entry !== undefined);
@@ -944,9 +953,9 @@ function normalizeTodoWriteBeforeTodosSnapshot(
 }
 
 function normalizeLspWriteDiagnosticsSnapshot(
-  value: ToolBlockSnapshot['lspWriteDiagnostics'],
-): ToolBlockSnapshot['lspWriteDiagnostics'] | undefined {
-  if (!value || typeof value.relativePath !== 'string' || !Array.isArray(value.items)) {
+  value: ToolBlockSnapshot["lspWriteDiagnostics"],
+): ToolBlockSnapshot["lspWriteDiagnostics"] | undefined {
+  if (!value || typeof value.relativePath !== "string" || !Array.isArray(value.items)) {
     return undefined;
   }
   const relativePath = value.relativePath.trim();
@@ -957,11 +966,11 @@ function normalizeLspWriteDiagnosticsSnapshot(
     .filter(
       (item) =>
         item &&
-        typeof item === 'object' &&
-        (item.severity === 'error' || item.severity === 'warning') &&
-        typeof item.line === 'number' &&
-        typeof item.column === 'number' &&
-        typeof item.message === 'string' &&
+        typeof item === "object" &&
+        (item.severity === "error" || item.severity === "warning") &&
+        typeof item.line === "number" &&
+        typeof item.column === "number" &&
+        typeof item.message === "string" &&
         item.message.trim().length > 0,
     )
     .map((item) => ({
@@ -987,16 +996,14 @@ export function normalizeMessageAuxSnapshot(
 
   const thinking = aux.thinking?.trim() ? aux.thinking : undefined;
   const compaction = aux.compaction?.trim() ? aux.compaction : undefined;
-  const finishTaskNotice = aux.finishTaskNotice?.trim()
-    ? aux.finishTaskNotice
-    : undefined;
+  const finishTaskNotice = aux.finishTaskNotice?.trim() ? aux.finishTaskNotice : undefined;
   const turnError = aux.turnError === true ? true : undefined;
   const turnErrorRetry =
-    aux.turnErrorRetry
-    && Number.isInteger(aux.turnErrorRetry.attempt)
-    && aux.turnErrorRetry.attempt > 0
-    && Number.isInteger(aux.turnErrorRetry.maxAttempts)
-    && aux.turnErrorRetry.maxAttempts > 0
+    aux.turnErrorRetry &&
+    Number.isInteger(aux.turnErrorRetry.attempt) &&
+    aux.turnErrorRetry.attempt > 0 &&
+    Number.isInteger(aux.turnErrorRetry.maxAttempts) &&
+    aux.turnErrorRetry.maxAttempts > 0
       ? {
           attempt: aux.turnErrorRetry.attempt,
           maxAttempts: aux.turnErrorRetry.maxAttempts,
@@ -1015,22 +1022,22 @@ export function normalizeMessageAuxSnapshot(
   };
 }
 
-const FINISH_TASK_DEFAULT_OUTPUT = 'Task marked complete.';
+const FINISH_TASK_DEFAULT_OUTPUT = "Task marked complete.";
 
 export {
   finishTaskArgumentsJsonComplete,
   finishTaskNoticeFromSummary,
   finishTaskNoticePreviewFromArguments,
   finishTaskSummaryFromStreamingArguments,
-} from '@spiritagent/agent-core';
+} from "@spiritagent/agent-core";
 
 export function finishTaskSummaryFromExecution(input: {
   request: unknown;
   output?: string;
 }): string {
-  if (input.request && typeof input.request === 'object') {
+  if (input.request && typeof input.request === "object") {
     const request = input.request as { name?: unknown; summary?: unknown };
-    if (request.name === 'finish_task' && typeof request.summary === 'string') {
+    if (request.name === "finish_task" && typeof request.summary === "string") {
       const summary = request.summary.trim();
       if (summary) {
         return summary;
@@ -1038,12 +1045,12 @@ export function finishTaskSummaryFromExecution(input: {
     }
   }
 
-  const output = (input.output ?? '').trim();
+  const output = (input.output ?? "").trim();
   if (output && output !== FINISH_TASK_DEFAULT_OUTPUT) {
     return output;
   }
 
-  return '';
+  return "";
 }
 
 export function finishTaskNoticeFromExecution(input: {
@@ -1071,7 +1078,7 @@ export function assistantContentDuplicatesFinishTaskSummary(
 }
 
 export function isFinishTaskToolName(toolName: string): boolean {
-  return toolName === 'finish_task';
+  return toolName === "finish_task";
 }
 
 export function shouldDropEmptyAssistantMessage(
@@ -1080,11 +1087,7 @@ export function shouldDropEmptyAssistantMessage(
   aux: MessageAuxSnapshot | undefined,
 ): boolean {
   return (
-    message.role === 'assistant' &&
-    !message.pending &&
-    !message.content.trim() &&
-    !tool &&
-    !aux
+    message.role === "assistant" && !message.pending && !message.content.trim() && !tool && !aux
   );
 }
 
@@ -1095,7 +1098,7 @@ export function shouldHideEmptyPendingAssistantSnapshot(
   messageIndex?: number,
 ): boolean {
   const isEmptyPending =
-    message.role === 'assistant' &&
+    message.role === "assistant" &&
     message.pending &&
     !message.content.trim() &&
     !message.tool &&
@@ -1113,8 +1116,8 @@ export function shouldHideEmptyPendingAssistantSnapshot(
     if (
       messages !== undefined &&
       messageIndex !== undefined &&
-      (hasAssistantToolLaterInTurn(messages, messageIndex)
-        || hasAssistantNonTerminalToolInCurrentTurn(messages, messageIndex))
+      (hasAssistantToolLaterInTurn(messages, messageIndex) ||
+        hasAssistantNonTerminalToolInCurrentTurn(messages, messageIndex))
     ) {
       return true;
     }
@@ -1124,22 +1127,19 @@ export function shouldHideEmptyPendingAssistantSnapshot(
   return true;
 }
 
-function defaultToolHeadline(
-  phase: ToolBlockSnapshot['phase'],
-  toolName: string,
-): string {
+function defaultToolHeadline(phase: ToolBlockSnapshot["phase"], toolName: string): string {
   switch (phase) {
-    case 'preview':
-      return i18n.t('tool.previewing', { toolName });
-    case 'pending-approval':
-      return i18n.t('tool.pendingApproval', { toolName });
-    case 'running':
-      return i18n.t('tool.running', { toolName });
-    case 'failed':
-      return i18n.t('tool.failed', { toolName });
-    case 'succeeded':
+    case "preview":
+      return i18n.t("tool.previewing", { toolName });
+    case "pending-approval":
+      return i18n.t("tool.pendingApproval", { toolName });
+    case "running":
+      return i18n.t("tool.running", { toolName });
+    case "failed":
+      return i18n.t("tool.failed", { toolName });
+    case "succeeded":
     default:
-      return i18n.t('tool.succeeded', { toolName });
+      return i18n.t("tool.succeeded", { toolName });
   }
 }
 
@@ -1150,20 +1150,20 @@ function hasBlockingToolAheadOfSameTurnPreview(
 ): boolean {
   let lastUser = -1;
   for (let i = 0; i < messages.length; i += 1) {
-    if (messages[i]?.role === 'user') {
+    if (messages[i]?.role === "user") {
       lastUser = i;
     }
   }
   for (let i = lastUser + 1; i < messages.length; i += 1) {
     const m = messages[i];
-    if (m?.role !== 'assistant' || !m.tool) {
+    if (m?.role !== "assistant" || !m.tool) {
       continue;
     }
     if (m.tool.toolCallId === thisToolCallId) {
       continue;
     }
     const p = m.tool.phase;
-    if (p === 'preview' || p === 'pending-approval' || p === 'running') {
+    if (p === "preview" || p === "pending-approval" || p === "running") {
       return true;
     }
   }
@@ -1172,23 +1172,22 @@ function hasBlockingToolAheadOfSameTurnPreview(
 
 export function toolCallSummaryCopyForResponsesBuiltInTool(
   toolName: string,
-  phase: ToolBlockSnapshot['phase'],
+  phase: ToolBlockSnapshot["phase"],
   previewSummary: ToolCallSummaryCopy,
   providerUi?: { headlineDetail?: string; sourceCount?: number },
 ): ToolCallSummaryCopy {
-  if (toolName === 'web_search') {
+  if (toolName === "web_search") {
     const headlineDetail =
-      previewSummary.headlineDetail?.trim()
-      || providerUi?.headlineDetail?.trim();
+      previewSummary.headlineDetail?.trim() || providerUi?.headlineDetail?.trim();
     if (
-      !headlineDetail
-      && phase === 'succeeded'
-      && providerUi?.sourceCount
-      && providerUi.sourceCount > 0
+      !headlineDetail &&
+      phase === "succeeded" &&
+      providerUi?.sourceCount &&
+      providerUi.sourceCount > 0
     ) {
       return {
         headline: previewSummary.headline,
-        headlineDetail: i18n.t('tool.webSearchSourceCount', { count: providerUi.sourceCount }),
+        headlineDetail: i18n.t("tool.webSearchSourceCount", { count: providerUi.sourceCount }),
       };
     }
     return {
@@ -1212,19 +1211,19 @@ export function toolCallSummaryForStreamingPreview(
   request?: unknown,
   options?: ToolCallSummaryOptions,
 ): ToolCallSummaryCopy {
-  if (toolName === 'read_file') {
-    return readFileSummaryCopy(request, 'running');
+  if (toolName === "read_file") {
+    return readFileSummaryCopy(request, "running");
   }
 
   const streamingJson = options?.streamingArgumentsJson?.trim();
   let effectiveRequest: unknown = request;
-  if (streamingJson && (toolName === 'tool_call' || toolName === 'tool_describe')) {
+  if (streamingJson && (toolName === "tool_call" || toolName === "tool_describe")) {
     const fromStream = previewRequestFromStreamingArguments(toolName, streamingJson);
     if (
       fromStream &&
       request !== undefined &&
-      typeof request === 'object' &&
-      typeof fromStream === 'object'
+      typeof request === "object" &&
+      typeof fromStream === "object"
     ) {
       effectiveRequest = {
         ...(fromStream as Record<string, unknown>),
@@ -1242,33 +1241,33 @@ export function toolCallSummaryForStreamingPreview(
         : options;
   const custom =
     effectiveRequest !== undefined
-      ? toolCallSummaryCopyForRequest(toolName, effectiveRequest, 'running', summaryOptions)
+      ? toolCallSummaryCopyForRequest(toolName, effectiveRequest, "running", summaryOptions)
       : undefined;
   if (custom) {
     return custom;
   }
 
-  if (toolName === 'get_diagnostics' && request && typeof request === 'object') {
+  if (toolName === "get_diagnostics" && request && typeof request === "object") {
     const detail = diagnosticsPathsHeadlineDetail(parseDiagnosticsPathsFromRequest(request));
     return {
-      headline: i18n.t('tool.diagnosticsChecking'),
+      headline: i18n.t("tool.diagnosticsChecking"),
       ...(detail ? { headlineDetail: detail } : {}),
     };
   }
 
-  if (toolName === 'tool_call' || toolName === 'tool_describe') {
-    const tOpts = { context: 'running' as const };
+  if (toolName === "tool_call" || toolName === "tool_describe") {
+    const tOpts = { context: "running" as const };
     return {
       headline: hasBlockingToolAheadOfSameTurnPreview(messages, toolCallId)
-        ? i18n.t('tool.queued', { toolName })
-        : i18n.t(toolName === 'tool_call' ? 'tool.lazyToolCall' : 'tool.lazyToolDescribe', tOpts),
+        ? i18n.t("tool.queued", { toolName })
+        : i18n.t(toolName === "tool_call" ? "tool.lazyToolCall" : "tool.lazyToolDescribe", tOpts),
     };
   }
 
   return {
     headline: hasBlockingToolAheadOfSameTurnPreview(messages, toolCallId)
-      ? i18n.t('tool.queued', { toolName })
-      : i18n.t('tool.running', { toolName }),
+      ? i18n.t("tool.queued", { toolName })
+      : i18n.t("tool.running", { toolName }),
   };
 }
 
@@ -1279,18 +1278,19 @@ export function headlineForStreamingToolPreview(
   request?: unknown,
   options?: ToolCallSummaryOptions,
 ): string {
-  return toolCallSummaryForStreamingPreview(messages, toolCallId, toolName, request, options).headline;
+  return toolCallSummaryForStreamingPreview(messages, toolCallId, toolName, request, options)
+    .headline;
 }
 
 function readFileSummaryCopy(
   request: unknown,
-  phase?: ToolBlockSnapshot['phase'],
+  phase?: ToolBlockSnapshot["phase"],
   options?: ToolCallSummaryOptions,
 ): ToolCallSummaryCopy {
   const ctx = phase ? phaseToVerbContext(phase) : undefined;
   const tOpts = ctx ? { context: ctx } : {};
-  if (!request || typeof request !== 'object') {
-    return { headline: i18n.t('tool.read', tOpts), headlineDetail: i18n.t('tool.file') };
+  if (!request || typeof request !== "object") {
+    return { headline: i18n.t("tool.read", tOpts), headlineDetail: i18n.t("tool.file") };
   }
 
   const record = request as Record<string, unknown>;
@@ -1298,12 +1298,12 @@ function readFileSummaryCopy(
   const lineRange = lineRangeForReadFile(record.offset, record.limit);
   const isSkillPath = isSkillMarkdownPath(rawPath);
   const skillMarkdownContent =
-    isSkillPath && typeof options?.executionOutput === 'string'
+    isSkillPath && typeof options?.executionOutput === "string"
       ? options.executionOutput
       : undefined;
   const detail = readFileToolHeadlineDetail(rawPath, {
-    emptyFileLabel: i18n.t('tool.file'),
-    toolOutputLabel: i18n.t('tool.toolOutput'),
+    emptyFileLabel: i18n.t("tool.file"),
+    toolOutputLabel: i18n.t("tool.toolOutput"),
     lineRange,
     skillMarkdownContent,
   });
@@ -1315,26 +1315,26 @@ function readFileSummaryCopy(
 }
 
 function webSearchQueryFromArguments(record: Record<string, unknown>): string {
-  for (const key of ['query', 'search_query', 'q', 'keywords']) {
+  for (const key of ["query", "search_query", "q", "keywords"]) {
     const value = record[key];
-    if (typeof value === 'string' && value.trim().length > 0) {
+    if (typeof value === "string" && value.trim().length > 0) {
       return value.trim();
     }
   }
 
   const spiritUi = record[RESPONSES_BUILT_IN_SPIRIT_UI_KEY];
-  if (spiritUi && typeof spiritUi === 'object' && !Array.isArray(spiritUi)) {
+  if (spiritUi && typeof spiritUi === "object" && !Array.isArray(spiritUi)) {
     const headlineDetail = (spiritUi as Record<string, unknown>).headlineDetail;
-    if (typeof headlineDetail === 'string' && headlineDetail.trim()) {
+    if (typeof headlineDetail === "string" && headlineDetail.trim()) {
       return headlineDetail.trim();
     }
   }
 
   const argumentsJson = record.argumentsJson;
-  if (typeof argumentsJson === 'string' && argumentsJson.trim()) {
+  if (typeof argumentsJson === "string" && argumentsJson.trim()) {
     try {
       const parsed = JSON.parse(argumentsJson) as unknown;
-      if (parsed && typeof parsed === 'object' && !Array.isArray(parsed)) {
+      if (parsed && typeof parsed === "object" && !Array.isArray(parsed)) {
         return webSearchQueryFromArguments(parsed as Record<string, unknown>);
       }
     } catch {
@@ -1346,14 +1346,14 @@ function webSearchQueryFromArguments(record: Record<string, unknown>): string {
   }
 
   const action = record.action;
-  if (action && typeof action === 'object' && !Array.isArray(action)) {
+  if (action && typeof action === "object" && !Array.isArray(action)) {
     return webSearchQueryFromArguments(action as Record<string, unknown>);
   }
-  return '';
+  return "";
 }
 
 function truncateSummaryDetail(value: string, max = SUMMARY_DETAIL_MAX): string {
-  const normalized = value.replace(/\s+/g, ' ').trim();
+  const normalized = value.replace(/\s+/g, " ").trim();
   if (normalized.length <= max) {
     return normalized;
   }
@@ -1363,16 +1363,16 @@ function truncateSummaryDetail(value: string, max = SUMMARY_DETAIL_MAX): string 
 function displayBasename(path: string): string {
   const trimmed = path.trim();
   if (!trimmed) {
-    return i18n.t('tool.file');
+    return i18n.t("tool.file");
   }
 
-  const normalized = trimmed.replace(/\\/g, '/');
-  const segments = normalized.split('/').filter(Boolean);
+  const normalized = trimmed.replace(/\\/g, "/");
+  const segments = normalized.split("/").filter(Boolean);
   return segments[segments.length - 1] || normalized;
 }
 
 function displayPathForLs(path: string, workspaceRoot?: string): string {
-  const displayed = lsToolDisplayPath(path, workspaceRoot, i18n.t('tool.directory'));
+  const displayed = lsToolDisplayPath(path, workspaceRoot, i18n.t("tool.directory"));
   if (displayed.length <= SUMMARY_DETAIL_MAX) {
     return displayed;
   }
@@ -1382,16 +1382,16 @@ function displayPathForLs(path: string, workspaceRoot?: string): string {
 function displayPathForReadFile(path: string): string {
   const trimmed = path.trim();
   if (!trimmed) {
-    return i18n.t('tool.file');
+    return i18n.t("tool.file");
   }
 
-  const normalized = trimmed.replace(/\\/g, '/');
-  const absolute = normalized.startsWith('/') || /^[A-Za-z]:\//u.test(normalized);
+  const normalized = trimmed.replace(/\\/g, "/");
+  const absolute = normalized.startsWith("/") || /^[A-Za-z]:\//u.test(normalized);
   if (!absolute) {
     return normalized;
   }
 
-  const segments = normalized.split('/').filter(Boolean);
+  const segments = normalized.split("/").filter(Boolean);
   return segments[segments.length - 1] || normalized;
 }
 
@@ -1400,7 +1400,7 @@ export function toolMessageKey(
     | RuntimePendingApproval<DesktopToolRequest, string>
     | RuntimePendingQuestions<DesktopToolRequest>,
 ): string {
-  return 'toolCallId' in pending && pending.toolCallId
+  return "toolCallId" in pending && pending.toolCallId
     ? pending.toolCallId
     : `pending:${pending.toolName}`;
 }

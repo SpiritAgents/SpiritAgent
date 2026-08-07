@@ -1,15 +1,15 @@
-import type { HostApi } from '../host-api';
-import type { AbortConversationRequest } from '../types';
+import type { HostApi } from "../host-api";
+import type { AbortConversationRequest } from "../types";
 
 export async function createElectronHostApi(): Promise<HostApi> {
-  if (typeof window === 'undefined' || !window.spiritDesktop) {
-    throw new Error('Electron host bridge is unavailable.');
+  if (typeof window === "undefined" || !window.spiritDesktop) {
+    throw new Error("Electron host bridge is unavailable.");
   }
 
   const bridge = window.spiritDesktop;
 
   return {
-    kind: 'electron',
+    kind: "electron",
     bootstrap(request) {
       return bridge.bootstrap(request);
     },
@@ -169,7 +169,7 @@ export async function createElectronHostApi(): Promise<HostApi> {
     removeQueuedUserTurn(request) {
       return bridge.removeQueuedUserTurn(request);
     },
-    poll(request?: import('../types').PollRequest) {
+    poll(request?: import("../types").PollRequest) {
       return bridge.poll(request);
     },
     setSubagentViewerTarget(parentToolCallId) {

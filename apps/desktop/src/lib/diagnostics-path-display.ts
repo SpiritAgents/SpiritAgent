@@ -12,7 +12,7 @@ function truncateSummaryDetail(value: string, max = SUMMARY_DETAIL_MAX): string 
 }
 
 export function parseDiagnosticsPathsFromRequest(request: unknown): string[] {
-  if (!request || typeof request !== 'object' || Array.isArray(request)) {
+  if (!request || typeof request !== "object" || Array.isArray(request)) {
     return [];
   }
   const paths = (request as Record<string, unknown>).paths;
@@ -21,7 +21,7 @@ export function parseDiagnosticsPathsFromRequest(request: unknown): string[] {
   }
   const normalized: string[] = [];
   for (const entry of paths) {
-    if (typeof entry !== 'string') {
+    if (typeof entry !== "string") {
       continue;
     }
     const trimmed = entry.trim();

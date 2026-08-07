@@ -8,12 +8,6 @@
     "url": "git+https://github.com/SpiritAgents/SpiritAgent.git",
     "directory": "packages/acp-server"
   },
-  "publishConfig": {
-    "access": "public"
-  },
-  "type": "module",
-  "main": "./dist/src/stdio-entry.js",
-  "types": "./dist/src/types.d.ts",
   "bin": {
     "spirit-agent-acp": "./dist/src/stdio-entry.js"
   },
@@ -21,15 +15,18 @@
     "dist",
     "README.md"
   ],
+  "type": "module",
+  "main": "./dist/src/stdio-entry.js",
+  "types": "./dist/src/types.d.ts",
+  "publishConfig": {
+    "access": "public"
+  },
   "scripts": {
     "build": "tsc -p tsconfig.json",
     "test": "npm run build && node --test dist/test/*.test.js",
     "prepublishOnly": "pnpm run build && node ../../scripts/publish/assert-no-workspace-deps.mjs",
     "notice": "node scripts/gen-notice.mjs",
     "notice:production": "node scripts/gen-notice.mjs --production"
-  },
-  "engines": {
-    "node": ">=24"
   },
   "dependencies": {
     "@agentclientprotocol/sdk": "0.25.1",
@@ -41,5 +38,8 @@
     "@types/node": "25.9.5",
     "license-checker-rseidelsohn": "5.0.1",
     "typescript": "5.9.3"
+  },
+  "engines": {
+    "node": ">=24"
   }
 }

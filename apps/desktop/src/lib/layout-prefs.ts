@@ -9,12 +9,7 @@ function clampInt(value: number, min: number, max: number): number {
   return Math.min(max, Math.max(min, Math.round(value)));
 }
 
-function readStoredPositiveInt(
-  key: string,
-  fallback: number,
-  min: number,
-  max: number,
-): number {
+function readStoredPositiveInt(key: string, fallback: number, min: number, max: number): number {
   try {
     if (typeof localStorage === "undefined") {
       return fallback;
@@ -67,8 +62,7 @@ export const WORKSPACE_TOOLS_DEFAULT_WIDTH_PX = 420;
 /** 左侧拖拽分隔条在 flex 布局中占用的宽度（可见 1px 线；命中区由 ::before 向左扩展）。 */
 export const WORKSPACE_TOOLS_RESIZE_SEPARATOR_PX = 1;
 export const WORKSPACE_TOOLS_VIEWPORT_MAX_WIDTH_RATIO = 0.62;
-export const WORKSPACE_TOOLS_DEFAULT_WIDTH_RATIO =
-  WORKSPACE_TOOLS_DEFAULT_WIDTH_PX / 1200;
+export const WORKSPACE_TOOLS_DEFAULT_WIDTH_RATIO = WORKSPACE_TOOLS_DEFAULT_WIDTH_PX / 1200;
 
 export function computeWorkspaceToolsMaxWidthPx(
   viewportWidthPx = typeof window !== "undefined" ? window.innerWidth : 1200,
@@ -76,23 +70,15 @@ export function computeWorkspaceToolsMaxWidthPx(
   return Math.round(viewportWidthPx * WORKSPACE_TOOLS_VIEWPORT_MAX_WIDTH_RATIO);
 }
 
-function clampWorkspaceToolsWidthRatio(
-  ratio: number,
-  viewportWidthPx: number,
-): number {
+function clampWorkspaceToolsWidthRatio(ratio: number, viewportWidthPx: number): number {
   const min =
     viewportWidthPx > 0
       ? WORKSPACE_TOOLS_MIN_WIDTH_PX / viewportWidthPx
       : WORKSPACE_TOOLS_MIN_WIDTH_PX / 1200;
-  return Math.min(
-    WORKSPACE_TOOLS_VIEWPORT_MAX_WIDTH_RATIO,
-    Math.max(min, ratio),
-  );
+  return Math.min(WORKSPACE_TOOLS_VIEWPORT_MAX_WIDTH_RATIO, Math.max(min, ratio));
 }
 
-function readStoredWorkspaceToolsWidthRatio(
-  viewportWidthPx: number,
-): number | null {
+function readStoredWorkspaceToolsWidthRatio(viewportWidthPx: number): number | null {
   try {
     if (typeof localStorage === "undefined") {
       return null;
@@ -108,10 +94,7 @@ function readStoredWorkspaceToolsWidthRatio(
   return null;
 }
 
-function writeStoredWorkspaceToolsWidthRatio(
-  ratio: number,
-  viewportWidthPx: number,
-): void {
+function writeStoredWorkspaceToolsWidthRatio(ratio: number, viewportWidthPx: number): void {
   try {
     if (typeof localStorage === "undefined") {
       return;
@@ -135,17 +118,11 @@ export function readWorkspaceToolsWidthRatio(
 
   try {
     if (typeof localStorage === "undefined") {
-      return clampWorkspaceToolsWidthRatio(
-        WORKSPACE_TOOLS_DEFAULT_WIDTH_RATIO,
-        viewportWidthPx,
-      );
+      return clampWorkspaceToolsWidthRatio(WORKSPACE_TOOLS_DEFAULT_WIDTH_RATIO, viewportWidthPx);
     }
     const legacyRaw = localStorage.getItem(WORKSPACE_TOOLS_WIDTH_STORAGE_KEY);
     if (legacyRaw === null) {
-      return clampWorkspaceToolsWidthRatio(
-        WORKSPACE_TOOLS_DEFAULT_WIDTH_RATIO,
-        viewportWidthPx,
-      );
+      return clampWorkspaceToolsWidthRatio(WORKSPACE_TOOLS_DEFAULT_WIDTH_RATIO, viewportWidthPx);
     }
     const legacyMax = computeWorkspaceToolsMaxWidthPx(viewportWidthPx);
     const legacyPx = readStoredPositiveInt(
@@ -161,10 +138,7 @@ export function readWorkspaceToolsWidthRatio(
     writeStoredWorkspaceToolsWidthRatio(migratedRatio, viewportWidthPx);
     return migratedRatio;
   } catch {
-    return clampWorkspaceToolsWidthRatio(
-      WORKSPACE_TOOLS_DEFAULT_WIDTH_RATIO,
-      viewportWidthPx,
-    );
+    return clampWorkspaceToolsWidthRatio(WORKSPACE_TOOLS_DEFAULT_WIDTH_RATIO, viewportWidthPx);
   }
 }
 
@@ -180,21 +154,14 @@ export function readWorkspaceToolsWidthPx(
 ): number {
   const ratio = readWorkspaceToolsWidthRatio(viewportWidthPx);
   const max = computeWorkspaceToolsMaxWidthPx(viewportWidthPx);
-  return clampInt(
-    Math.round(viewportWidthPx * ratio),
-    WORKSPACE_TOOLS_MIN_WIDTH_PX,
-    max,
-  );
+  return clampInt(Math.round(viewportWidthPx * ratio), WORKSPACE_TOOLS_MIN_WIDTH_PX, max);
 }
 
 export function workspaceToolsShellWidthExpression(widthPx: number): string {
   return `calc(${WORKSPACE_TOOLS_RESIZE_SEPARATOR_PX}px + ${widthPx}px)`;
 }
 
-export function workspaceToolsShellWidthWhenOpen(
-  open: boolean,
-  widthPx: number,
-): string {
+export function workspaceToolsShellWidthWhenOpen(open: boolean, widthPx: number): string {
   return open ? workspaceToolsShellWidthExpression(widthPx) : "0px";
 }
 
@@ -278,10 +245,7 @@ export function readWorkspaceFilesTreeWidthPx(containerWidthPx?: number): number
   );
 }
 
-export function writeWorkspaceFilesTreeWidthPx(
-  widthPx: number,
-  containerWidthPx?: number,
-): void {
+export function writeWorkspaceFilesTreeWidthPx(widthPx: number, containerWidthPx?: number): void {
   writeStoredPositiveInt(
     WORKSPACE_FILES_TREE_WIDTH_STORAGE_KEY,
     clampWorkspaceFilesTreeWidthPx(widthPx, containerWidthPx),
@@ -314,10 +278,7 @@ export function computeGitChangesPaneRatioBounds(containerHeightPx: number): {
   return { min, max };
 }
 
-export function clampGitChangesPaneRatio(
-  ratio: number,
-  containerHeightPx?: number,
-): number {
+export function clampGitChangesPaneRatio(ratio: number, containerHeightPx?: number): number {
   if (containerHeightPx && containerHeightPx > 0) {
     const { min, max } = computeGitChangesPaneRatioBounds(containerHeightPx);
     if (min <= max) {
@@ -327,11 +288,7 @@ export function clampGitChangesPaneRatio(
   return clampRatio(ratio, GIT_CHANGES_RATIO_LOOSE_MIN, GIT_CHANGES_RATIO_LOOSE_MAX);
 }
 
-function readStoredRatio(
-  key: string,
-  fallback: number,
-  containerHeightPx?: number,
-): number {
+function readStoredRatio(key: string, fallback: number, containerHeightPx?: number): number {
   try {
     if (typeof localStorage === "undefined") {
       return fallback;
@@ -352,10 +309,7 @@ function writeStoredRatio(key: string, ratio: number, containerHeightPx?: number
     if (typeof localStorage === "undefined") {
       return;
     }
-    localStorage.setItem(
-      key,
-      String(clampGitChangesPaneRatio(ratio, containerHeightPx)),
-    );
+    localStorage.setItem(key, String(clampGitChangesPaneRatio(ratio, containerHeightPx)));
   } catch {
     // ignore
   }
@@ -369,10 +323,7 @@ export function readGitChangesPaneRatio(containerHeightPx?: number): number {
   );
 }
 
-export function writeGitChangesPaneRatio(
-  ratio: number,
-  containerHeightPx?: number,
-): void {
+export function writeGitChangesPaneRatio(ratio: number, containerHeightPx?: number): void {
   writeStoredRatio(GIT_CHANGES_PANE_RATIO_STORAGE_KEY, ratio, containerHeightPx);
 }
 
@@ -396,10 +347,7 @@ export function computePrOverviewPaneRatioBounds(containerHeightPx: number): {
   return { min, max };
 }
 
-export function clampPrOverviewPaneRatio(
-  ratio: number,
-  containerHeightPx?: number,
-): number {
+export function clampPrOverviewPaneRatio(ratio: number, containerHeightPx?: number): number {
   if (containerHeightPx && containerHeightPx > 0) {
     const { min, max } = computePrOverviewPaneRatioBounds(containerHeightPx);
     if (min <= max) {
@@ -425,10 +373,7 @@ export function readPrOverviewPaneRatio(containerHeightPx?: number): number {
   return clampPrOverviewPaneRatio(PR_OVERVIEW_DEFAULT_RATIO, containerHeightPx);
 }
 
-export function writePrOverviewPaneRatio(
-  ratio: number,
-  containerHeightPx?: number,
-): void {
+export function writePrOverviewPaneRatio(ratio: number, containerHeightPx?: number): void {
   try {
     if (typeof localStorage === "undefined") {
       return;
@@ -442,17 +387,14 @@ export function writePrOverviewPaneRatio(
   }
 }
 
-const WORKSPACE_SIDEBAR_EXPANDED_STORAGE_KEY =
-  "spirit-desktop-workspace-sidebar-expanded-by-id";
+const WORKSPACE_SIDEBAR_EXPANDED_STORAGE_KEY = "spirit-desktop-workspace-sidebar-expanded-by-id";
 
 const WORKSPACE_SIDEBAR_EXPANDED_MAX_ENTRIES = 200;
 
 /** `false` = 收起；缺省或 `true` = 展开（与 SessionSidebar AnimatedCollapse 一致）。 */
 export type WorkspaceSidebarExpandedById = Record<string, boolean>;
 
-function sanitizeWorkspaceSidebarExpandedById(
-  value: unknown,
-): WorkspaceSidebarExpandedById {
+function sanitizeWorkspaceSidebarExpandedById(value: unknown): WorkspaceSidebarExpandedById {
   if (!value || typeof value !== "object" || Array.isArray(value)) {
     return {};
   }
@@ -491,9 +433,7 @@ export function readWorkspaceSidebarExpandedById(): WorkspaceSidebarExpandedById
   }
 }
 
-export function writeWorkspaceSidebarExpandedById(
-  value: WorkspaceSidebarExpandedById,
-): void {
+export function writeWorkspaceSidebarExpandedById(value: WorkspaceSidebarExpandedById): void {
   try {
     if (typeof localStorage === "undefined") {
       return;
@@ -507,8 +447,7 @@ export function writeWorkspaceSidebarExpandedById(
   }
 }
 
-const SIDEBAR_WORKSPACE_SECTION_EXPANDED_KEY =
-  "spirit-desktop-sidebar-workspace-section-expanded";
+const SIDEBAR_WORKSPACE_SECTION_EXPANDED_KEY = "spirit-desktop-sidebar-workspace-section-expanded";
 const SIDEBAR_NO_WORKSPACE_SECTION_EXPANDED_KEY =
   "spirit-desktop-sidebar-no-workspace-section-expanded";
 
@@ -557,8 +496,7 @@ export function writeSidebarNoWorkspaceSectionExpanded(expanded: boolean): void 
   writeStoredBoolean(SIDEBAR_NO_WORKSPACE_SECTION_EXPANDED_KEY, expanded);
 }
 
-const WORKSPACE_SIDEBAR_GROUP_ORDER_STORAGE_KEY =
-  "spirit-desktop-workspace-sidebar-group-order";
+const WORKSPACE_SIDEBAR_GROUP_ORDER_STORAGE_KEY = "spirit-desktop-workspace-sidebar-group-order";
 
 const WORKSPACE_SIDEBAR_GROUP_ORDER_MAX_ENTRIES = 200;
 

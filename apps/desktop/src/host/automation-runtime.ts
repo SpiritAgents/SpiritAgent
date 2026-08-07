@@ -1,23 +1,15 @@
-import path from 'node:path';
+import path from "node:path";
 
-import {
-  type ChatArchive,
-} from '@spiritagent/agent-core';
-import {
-  normalizeApprovalLevel,
-  type HostAutomationDefinition,
-} from '@spiritagent/host-internal';
+import { type ChatArchive } from "@spiritagent/agent-core";
+import { normalizeApprovalLevel, type HostAutomationDefinition } from "@spiritagent/host-internal";
 
-import type { DesktopHostRuntime } from './runtime.js';
+import type { DesktopHostRuntime } from "./runtime.js";
 import {
   closeRemoteDesktopRuntime,
   createRemoteDesktopRuntime,
   replyRemoteWorkspaceCapabilityTrust,
-} from './remote-runtime.js';
-import {
-  spiritAgentDataDir,
-  type DesktopConfigFile,
-} from './storage.js';
+} from "./remote-runtime.js";
+import { spiritAgentDataDir, type DesktopConfigFile } from "./storage.js";
 
 export interface CreateAutomationRuntimeInput {
   definition: HostAutomationDefinition;
@@ -32,7 +24,7 @@ export interface AutomationRuntimeHandle {
 }
 
 export function buildEmptyAutomationArchive(
-  approvalLevel: HostAutomationDefinition['approvalLevel'],
+  approvalLevel: HostAutomationDefinition["approvalLevel"],
 ): ChatArchive {
   return {
     messages: [],
@@ -44,13 +36,11 @@ export function buildEmptyAutomationArchive(
   };
 }
 
-export function buildAutomationRemoteRuntimeCreateInput(
-  input: CreateAutomationRuntimeInput,
-): {
+export function buildAutomationRemoteRuntimeCreateInput(input: CreateAutomationRuntimeInput): {
   dataDir: string;
   workspaceRoot: string;
-  modelRef: HostAutomationDefinition['modelRef'];
-  agentMode: 'agent';
+  modelRef: HostAutomationDefinition["modelRef"];
+  agentMode: "agent";
   archive: ChatArchive;
   approvalLevel: ReturnType<typeof normalizeApprovalLevel>;
   todoSessionKey: string;
@@ -61,7 +51,7 @@ export function buildAutomationRemoteRuntimeCreateInput(
     dataDir: spiritAgentDataDir(),
     workspaceRoot: input.definition.workspaceRoot,
     modelRef: input.definition.modelRef,
-    agentMode: 'agent',
+    agentMode: "agent",
     archive: buildEmptyAutomationArchive(input.definition.approvalLevel),
     approvalLevel: normalizeApprovalLevel(input.definition.approvalLevel),
     todoSessionKey: conversationKey,
@@ -111,17 +101,17 @@ export async function disposeAutomationRuntime(handle: AutomationRuntimeHandle):
 async function handleAutomationWorkspaceCapabilityTrust(
   runtimeRef: () => DesktopHostRuntime | undefined,
   requestId: string,
-  approvalLevel: HostAutomationDefinition['approvalLevel'],
+  approvalLevel: HostAutomationDefinition["approvalLevel"],
   markBlocked: () => void,
 ): Promise<void> {
   const runtime = runtimeRef();
   if (!runtime) {
     return;
   }
-  if (approvalLevel === 'full-approval' || approvalLevel === 'auto-approval') {
-    await replyRemoteWorkspaceCapabilityTrust(runtime, requestId, 'allowOnce');
+  if (approvalLevel === "full-approval" || approvalLevel === "auto-approval") {
+    await replyRemoteWorkspaceCapabilityTrust(runtime, requestId, "allowOnce");
     return;
   }
   markBlocked();
-  await replyRemoteWorkspaceCapabilityTrust(runtime, requestId, 'deny');
+  await replyRemoteWorkspaceCapabilityTrust(runtime, requestId, "deny");
 }

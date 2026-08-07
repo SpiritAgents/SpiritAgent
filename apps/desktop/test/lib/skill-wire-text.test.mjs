@@ -6,10 +6,7 @@ import {
   parseMessageContentParts,
   segmentsToMessageText,
 } from "../../src/lib/composer-segment-model.ts";
-import {
-  scanSkillWireBlocks,
-  skillContextText,
-} from "../../src/lib/skill-wire-text.ts";
+import { scanSkillWireBlocks, skillContextText } from "../../src/lib/skill-wire-text.ts";
 
 test("skillContextText serializes typed fence block", () => {
   const wire = skillContextText("/git-commit");
@@ -39,5 +36,8 @@ test("segmentsToMessageText round-trips skill chips", () => {
   assert.equal(parts[0].alias, "/git-commit");
 
   const segments = messageContentToRichSegments(message, "rewind");
-  assert.equal(segments.some((segment) => segment.kind === "skill"), true);
+  assert.equal(
+    segments.some((segment) => segment.kind === "skill"),
+    true,
+  );
 });

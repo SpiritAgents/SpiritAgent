@@ -9,18 +9,18 @@ import {
   type ModelEntryV2,
   type ModelRef,
   type ProviderGroupV2,
-} from '@spiritagent/host-internal';
+} from "@spiritagent/host-internal";
 import {
   defaultModelReasoningEffort,
   resolveModelReasoningEffortForContext,
   resolveModelReasoningMode,
   type ModelReasoningEffort,
-} from '@spiritagent/agent-core/reasoning-effort';
-import { shouldPinReasoningEffortToDefault } from '@spiritagent/agent-core/model-thinking-controls';
+} from "@spiritagent/agent-core/reasoning-effort";
+import { shouldPinReasoningEffortToDefault } from "@spiritagent/agent-core/model-thinking-controls";
 
-import { resolveDesktopAgentMode } from '../lib/agent-mode.js';
-import { parseModelContextLength } from '../lib/context-usage.js';
-import i18n from '../lib/i18n-host.js';
+import { resolveDesktopAgentMode } from "../lib/agent-mode.js";
+import { parseModelContextLength } from "../lib/context-usage.js";
+import i18n from "../lib/i18n-host.js";
 import type {
   AddModelRequest,
   AddProviderModelsRequest,
@@ -41,8 +41,11 @@ import type {
   RemoveProviderGroupRequest,
   RemoveProviderModelsRequest,
   UpdateConfigRequest,
-} from '../types.js';
-import { syncExistingModelsFromCatalog, removeDelistedModelsFromCatalog } from './model-catalog-startup-refresh.js';
+} from "../types.js";
+import {
+  syncExistingModelsFromCatalog,
+  removeDelistedModelsFromCatalog,
+} from "./model-catalog-startup-refresh.js";
 import {
   defaultApiBaseForTransport,
   findCatalogEntryForModel,
@@ -52,7 +55,7 @@ import {
   resolveAddedModelCapabilities,
   resolveDesktopTransportKind,
   resolveProfileApiBase,
-} from './model-config.js';
+} from "./model-config.js";
 import {
   bedrockApiBaseFromRegion,
   azureApiBaseFromResourceName,
@@ -61,18 +64,21 @@ import {
   isValidCloudflareAccountId,
   isValidCloudflareGatewayId,
   vertexApiBaseFromProjectAndLocation,
-} from '@spiritagent/host-internal';
+} from "@spiritagent/host-internal";
 import {
   providerConnectSiteRequiresWorkspaceId,
   providerSupportsSiteSelection,
-} from './provider-presets.js';
-import { bedrockMantleApiBaseFromRegion, isBedrockMantleOpenAiModel } from '@spiritagent/host-internal/bedrock-mantle';
-import { modelSupportsChat } from './lightweight-chat-model.js';
+} from "./provider-presets.js";
+import {
+  bedrockMantleApiBaseFromRegion,
+  isBedrockMantleOpenAiModel,
+} from "@spiritagent/host-internal/bedrock-mantle";
+import { modelSupportsChat } from "./lightweight-chat-model.js";
 import {
   applyModelsRemovalToConfig,
   filterNewGroupModelIds,
   type ModelRemovalTarget,
-} from './provider-api-key.js';
+} from "./provider-api-key.js";
 import {
   flattenProviderGroups,
   findProviderGroup,
@@ -81,7 +87,7 @@ import {
   modelSupportsVideoGeneration,
   normalizeSlotModelRef,
   resolveModelProfile,
-} from './model-config-access.js';
+} from "./model-config-access.js";
 import {
   loadHostMetadata,
   normalizeDreamConfig,
@@ -103,14 +109,14 @@ import {
   type DesktopConfigFile,
   type DesktopWorkspaceBinding,
   type HostMetadataSummary,
-} from './storage.js';
+} from "./storage.js";
 import {
   hasBedrockIamCredentials,
   hasBedrockRuntimeCredentials,
   hasGoogleVertexRuntimeCredentials,
   hasGoogleVertexServiceAccountCredentials,
-} from './provider-api-key.js';
-import { currentApiBase } from './service-utils.js';
+} from "./provider-api-key.js";
+import { currentApiBase } from "./service-utils.js";
 
 interface HostModelState {
   workspaceRoot: string;
@@ -169,15 +175,13 @@ interface ModelEntryLocation {
   model: ModelEntryV2;
 }
 
-function asModelEntryReasoningEffort(
-  value: ModelReasoningEffort,
-): ModelEntryV2['reasoningEffort'] {
-  return value as ModelEntryV2['reasoningEffort'];
+function asModelEntryReasoningEffort(value: ModelReasoningEffort): ModelEntryV2["reasoningEffort"] {
+  return value as ModelEntryV2["reasoningEffort"];
 }
 
 function asModelEntryReasoningMode(
   value: DesktopModelReasoningMode,
-): NonNullable<ModelEntryV2['reasoningMode']> {
+): NonNullable<ModelEntryV2["reasoningMode"]> {
   return value;
 }
 
@@ -191,8 +195,8 @@ function applyModelReasoningModeToEntry(
   }
 
   const resolved = resolveModelReasoningMode(reasoningMode, modelContext);
-  if (resolved === 'pro') {
-    model.reasoningMode = asModelEntryReasoningMode('pro');
+  if (resolved === "pro") {
+    model.reasoningMode = asModelEntryReasoningMode("pro");
   } else {
     delete model.reasoningMode;
   }
@@ -200,35 +204,35 @@ function applyModelReasoningModeToEntry(
 
 function asModelEntrySupportedReasoningEfforts(
   value: DesktopModelReasoningEffort[],
-): NonNullable<ModelEntryV2['supportedReasoningEfforts']> {
-  return value as NonNullable<ModelEntryV2['supportedReasoningEfforts']>;
+): NonNullable<ModelEntryV2["supportedReasoningEfforts"]> {
+  return value as NonNullable<ModelEntryV2["supportedReasoningEfforts"]>;
 }
 
 function resolveConnectGroupId(input: ConnectRequestFields): string {
   const provider = input.provider;
-  if (provider === 'custom') {
+  if (provider === "custom") {
     const label = input.customGroupLabel?.trim();
     if (label) {
       return slugifyProviderGroupLabel(label);
     }
-    const groupId = input.groupId?.trim() ?? '';
+    const groupId = input.groupId?.trim() ?? "";
     if (groupId) {
       return groupId;
     }
-    throw new Error(i18n.t('error.modelNameRequired'));
+    throw new Error(i18n.t("error.modelNameRequired"));
   }
-  const explicitGroupId = input.groupId?.trim() ?? '';
+  const explicitGroupId = input.groupId?.trim() ?? "";
   if (explicitGroupId) {
     return explicitGroupId;
   }
   if (provider) {
     return defaultPresetProviderGroupId(provider);
   }
-  throw new Error(i18n.t('error.modelNameRequired'));
+  throw new Error(i18n.t("error.modelNameRequired"));
 }
 
 function findModelEntryInConfig(
-  config: Pick<DesktopConfigFile, 'providerGroups'>,
+  config: Pick<DesktopConfigFile, "providerGroups">,
   ref: ModelRef,
 ): ModelEntryLocation | null {
   const group = findProviderGroup(config, ref.groupId);
@@ -244,8 +248,8 @@ function findModelEntryInConfig(
 
 function buildProviderGroupConnect(
   input: ConnectRequestFields & { modelName?: string },
-): Omit<ProviderGroupV2, 'id' | 'models'> {
-  const provider = input.provider ?? 'custom';
+): Omit<ProviderGroupV2, "id" | "models"> {
+  const provider = input.provider ?? "custom";
   const transportKind = resolveDesktopTransportKind({
     provider,
     transportKind: input.transportKind,
@@ -267,24 +271,28 @@ function buildProviderGroupConnect(
     input.zhipuBillingMode,
     input.cloudflareAccountId,
   );
-  const group: Omit<ProviderGroupV2, 'id' | 'models'> = {
+  const group: Omit<ProviderGroupV2, "id" | "models"> = {
     provider,
     apiBase,
   };
   const label = input.customGroupLabel?.trim();
-  if (provider === 'custom') {
-    group.label = label || input.groupId?.trim() || defaultPresetProviderGroupId('custom');
+  if (provider === "custom") {
+    group.label = label || input.groupId?.trim() || defaultPresetProviderGroupId("custom");
   }
-  if (transportKind === 'anthropic' || transportKind === 'open-responses' || transportKind === 'bedrock') {
+  if (
+    transportKind === "anthropic" ||
+    transportKind === "open-responses" ||
+    transportKind === "bedrock"
+  ) {
     group.transportKind = transportKind;
   }
-  if (provider === 'amazon-bedrock' && input.awsRegion?.trim()) {
+  if (provider === "amazon-bedrock" && input.awsRegion?.trim()) {
     group.awsRegion = input.awsRegion.trim();
   }
-  if (provider === 'azure' && input.azureResourceName?.trim()) {
+  if (provider === "azure" && input.azureResourceName?.trim()) {
     group.azureResourceName = input.azureResourceName.trim();
   }
-  if (provider === 'google-vertex-ai') {
+  if (provider === "google-vertex-ai") {
     if (input.vertexProject?.trim()) {
       group.vertexProject = input.vertexProject.trim();
     }
@@ -292,7 +300,7 @@ function buildProviderGroupConnect(
       group.vertexLocation = input.vertexLocation.trim();
     }
   }
-  if (provider === 'cloudflare-ai-gateway') {
+  if (provider === "cloudflare-ai-gateway") {
     if (input.cloudflareAccountId?.trim()) {
       group.cloudflareAccountId = input.cloudflareAccountId.trim();
     }
@@ -315,7 +323,7 @@ function buildProviderGroupConnect(
 function findOrCreateProviderGroup(
   config: DesktopConfigFile,
   groupId: string,
-  connect: Omit<ProviderGroupV2, 'id' | 'models'>,
+  connect: Omit<ProviderGroupV2, "id" | "models">,
 ): ProviderGroupV2 {
   const existing = findProviderGroup(config, groupId);
   if (existing) {
@@ -362,7 +370,7 @@ async function saveGroupCredentials(
     vertexPrivateKey?: string;
   },
 ): Promise<void> {
-  if (provider === 'amazon-bedrock') {
+  if (provider === "amazon-bedrock") {
     await saveBedrockProviderCredentialsForProvider(groupId, {
       apiKey: input.apiKey,
       accessKeyId: input.accessKeyId,
@@ -370,7 +378,7 @@ async function saveGroupCredentials(
     });
     return;
   }
-  if (provider === 'google-vertex-ai') {
+  if (provider === "google-vertex-ai") {
     await saveGoogleVertexProviderCredentialsForProvider(groupId, {
       apiKey: input.apiKey,
       clientEmail: input.vertexClientEmail,
@@ -385,12 +393,15 @@ async function saveGroupCredentials(
   await saveApiKeyForProvider(groupId, input.apiKey);
 }
 
-async function clearGroupCredentials(groupId: string, provider: DesktopModelProvider): Promise<void> {
-  if (provider === 'amazon-bedrock') {
+async function clearGroupCredentials(
+  groupId: string,
+  provider: DesktopModelProvider,
+): Promise<void> {
+  if (provider === "amazon-bedrock") {
     await saveBedrockProviderCredentialsForProvider(groupId, {});
     return;
   }
-  if (provider === 'google-vertex-ai') {
+  if (provider === "google-vertex-ai") {
     await saveGoogleVertexProviderCredentialsForProvider(groupId, {});
     return;
   }
@@ -398,11 +409,11 @@ async function clearGroupCredentials(groupId: string, provider: DesktopModelProv
 }
 
 async function removeGroupKeyring(groupId: string, provider: DesktopModelProvider): Promise<void> {
-  if (provider === 'amazon-bedrock') {
+  if (provider === "amazon-bedrock") {
     await removeBedrockProviderCredentials(groupId);
     return;
   }
-  if (provider === 'google-vertex-ai') {
+  if (provider === "google-vertex-ai") {
     await removeGoogleVertexProviderCredentials(groupId);
     return;
   }
@@ -433,7 +444,7 @@ export async function updateConfigCommand(
       : undefined;
 
     if (ctx.isRuntimeBusy() && Boolean(request.apiKey?.trim())) {
-      throw new Error(i18n.t('error.runtimeBusy'));
+      throw new Error(i18n.t("error.runtimeBusy"));
     }
 
     const activeRef = request.activeModel;
@@ -445,14 +456,14 @@ export async function updateConfigCommand(
     if (!isEmptyModelRef(activeRef)) {
       activeEntry = findModelEntryInConfig(state.config, activeRef);
       if (!activeEntry) {
-        throw new Error(i18n.t('error.modelNotFound', { name: activeRef.name }));
+        throw new Error(i18n.t("error.modelNotFound", { name: activeRef.name }));
       }
       const { group, model } = activeEntry;
       const resolved = resolveModelProfile(state.config, activeRef);
       if (!resolved) {
-        throw new Error(i18n.t('error.modelNotFound', { name: activeRef.name }));
+        throw new Error(i18n.t("error.modelNotFound", { name: activeRef.name }));
       }
-      if (resolved.provider && resolved.provider !== 'custom') {
+      if (resolved.provider && resolved.provider !== "custom") {
         if (!modelRefsEqual(state.config.activeModel, activeRef)) {
           group.apiBase = resolveProfileApiBase(resolved);
         }
@@ -460,14 +471,16 @@ export async function updateConfigCommand(
         group.apiBase = apiBase;
       }
       if (reasoningEffort !== undefined) {
-        model.reasoningEffort = asModelEntryReasoningEffort(resolveModelReasoningEffortForContext(reasoningEffort, {
-          ...(resolved.provider ? { provider: resolved.provider } : {}),
-          model: model.name,
-          ...(resolved.transportKind ? { transportKind: resolved.transportKind } : {}),
-          ...(resolved.supportedReasoningEfforts !== undefined
-            ? { supportedEfforts: resolved.supportedReasoningEfforts }
-            : {}),
-        }));
+        model.reasoningEffort = asModelEntryReasoningEffort(
+          resolveModelReasoningEffortForContext(reasoningEffort, {
+            ...(resolved.provider ? { provider: resolved.provider } : {}),
+            model: model.name,
+            ...(resolved.transportKind ? { transportKind: resolved.transportKind } : {}),
+            ...(resolved.supportedReasoningEfforts !== undefined
+              ? { supportedEfforts: resolved.supportedReasoningEfforts }
+              : {}),
+          }),
+        );
       }
       if (reasoningMode !== undefined) {
         applyModelReasoningModeToEntry(model, reasoningMode, {
@@ -487,9 +500,7 @@ export async function updateConfigCommand(
           ...(resolved.supportsThinkingType
             ? { supportsThinkingType: resolved.supportsThinkingType }
             : {}),
-          ...(resolved.supportsThinkingSwitch === true
-            ? { supportsThinkingSwitch: true }
-            : {}),
+          ...(resolved.supportsThinkingSwitch === true ? { supportsThinkingSwitch: true } : {}),
         };
         if (thinkingEnabled) {
           delete model.thinkingEnabled;
@@ -498,7 +509,7 @@ export async function updateConfigCommand(
         }
         if (shouldPinReasoningEffortToDefault(thinkingEnabled, modelContext)) {
           model.reasoningEffort = asModelEntryReasoningEffort(
-            resolveModelReasoningEffortForContext('default', modelContext),
+            resolveModelReasoningEffortForContext("default", modelContext),
           );
         }
       }
@@ -507,7 +518,7 @@ export async function updateConfigCommand(
         name: activeRef.name.trim(),
       };
     } else {
-      state.config.activeModel = { groupId: '', name: '' };
+      state.config.activeModel = { groupId: "", name: "" };
       activeEntry = null;
     }
     state.config.uiLocale = request.uiLocale?.trim() || undefined;
@@ -521,9 +532,11 @@ export async function updateConfigCommand(
           modelSupportsImageGeneration,
         );
         if (!imageRef) {
-          throw new Error(i18n.t('error.imageGenModelNotFound', {
-            model: request.imageGenerationModel.name,
-          }));
+          throw new Error(
+            i18n.t("error.imageGenModelNotFound", {
+              model: request.imageGenerationModel.name,
+            }),
+          );
         }
         state.config.imageGenerationModel = imageRef;
       }
@@ -538,9 +551,11 @@ export async function updateConfigCommand(
           modelSupportsVideoGeneration,
         );
         if (!videoRef) {
-          throw new Error(i18n.t('error.videoGenModelNotFound', {
-            model: request.videoGenerationModel.name,
-          }));
+          throw new Error(
+            i18n.t("error.videoGenModelNotFound", {
+              model: request.videoGenerationModel.name,
+            }),
+          );
         }
         state.config.videoGenerationModel = videoRef;
       }
@@ -555,9 +570,11 @@ export async function updateConfigCommand(
           modelSupportsChat,
         );
         if (!chatRef) {
-          throw new Error(i18n.t('error.lightweightChatModelNotFound', {
-            model: request.lightweightChatModel.name,
-          }));
+          throw new Error(
+            i18n.t("error.lightweightChatModelNotFound", {
+              model: request.lightweightChatModel.name,
+            }),
+          );
         }
         state.config.lightweightChatModel = chatRef;
       }
@@ -575,7 +592,7 @@ export async function updateConfigCommand(
     if (request.agentMode !== undefined) {
       state.config.agentMode = request.agentMode;
     } else if (request.planMode !== undefined) {
-      state.config.agentMode = request.planMode ? 'plan' : 'agent';
+      state.config.agentMode = request.planMode ? "plan" : "agent";
     }
     if (request.webHost !== undefined) {
       const nextWebHost = normalizeWebHostConfig({
@@ -646,8 +663,8 @@ export async function updateConfigCommand(
     const agentModeNow = resolveDesktopAgentMode(state.config);
     const lspEnabledChanged = state.config.agents.lsp.enabled !== prevLspEnabled;
     const modelOrEndpointChanged =
-      !modelRefsEqual(state.config.activeModel, prevActiveModel)
-      || currentApiBase(state.config) !== prevApiBase;
+      !modelRefsEqual(state.config.activeModel, prevActiveModel) ||
+      currentApiBase(state.config) !== prevApiBase;
     const imageGenerationModelChanged = !modelRefsEqual(
       state.config.imageGenerationModel,
       prevImageGenerationModel,
@@ -675,28 +692,24 @@ export async function updateConfigCommand(
     }
 
     const transportOrPlanChanged =
-      agentModeNow !== prevAgentMode
-      || modelOrEndpointChanged
-      || imageGenerationModelChanged
-      || videoGenerationModelChanged;
+      agentModeNow !== prevAgentMode ||
+      modelOrEndpointChanged ||
+      imageGenerationModelChanged ||
+      videoGenerationModelChanged;
     const activeModelProfile = resolveModelProfile(state.config, state.config.activeModel);
     const inferencePreferenceOnlyUpdate =
-      !transportOrPlanChanged
-      && !lspEnabledChanged
-      && agentModeNow === prevAgentMode
-      && !Boolean(request.apiKey?.trim())
-      && activeModelProfile !== null
-      && prevActiveModelInference !== undefined
-      && modelRefsEqual(state.config.activeModel, prevActiveModel)
-      && (
-        activeModelProfile.thinkingEnabled !== prevActiveModelInference.thinkingEnabled
-        || activeModelProfile.reasoningEffort !== prevActiveModelInference.reasoningEffort
-        || activeModelProfile.reasoningMode !== prevActiveModelInference.reasoningMode
-      );
+      !transportOrPlanChanged &&
+      !lspEnabledChanged &&
+      agentModeNow === prevAgentMode &&
+      !Boolean(request.apiKey?.trim()) &&
+      activeModelProfile !== null &&
+      prevActiveModelInference !== undefined &&
+      modelRefsEqual(state.config.activeModel, prevActiveModel) &&
+      (activeModelProfile.thinkingEnabled !== prevActiveModelInference.thinkingEnabled ||
+        activeModelProfile.reasoningEffort !== prevActiveModelInference.reasoningEffort ||
+        activeModelProfile.reasoningMode !== prevActiveModelInference.reasoningMode);
     const deferRuntimeRefresh =
-      wasBusy
-      && transportOrPlanChanged
-      && !Boolean(request.apiKey?.trim());
+      wasBusy && transportOrPlanChanged && !Boolean(request.apiKey?.trim());
 
     if (deferRuntimeRefresh) {
       ctx.activeBundle().deferredRuntimeRefreshWhileBusy = true;
@@ -712,7 +725,7 @@ export async function updateConfigCommand(
       await ctx.refreshLspSnapshot();
     }
 
-    ctx.setLastRuntimeError('');
+    ctx.setLastRuntimeError("");
     await ctx.flushDeferredRuntimeRefreshIfIdle();
     return ctx.buildSnapshot();
   });
@@ -724,12 +737,18 @@ function assertAlibabaConnectWorkspace(input: {
   alibabaWorkspaceId?: string;
   alibabaBillingMode?: DesktopAlibabaBillingMode;
 }): void {
-  if (input.provider !== 'alibaba' || input.alibabaBillingMode === 'token-plan' || !input.providerSite) {
+  if (
+    input.provider !== "alibaba" ||
+    input.alibabaBillingMode === "token-plan" ||
+    !input.providerSite
+  ) {
     return;
   }
-  if (providerConnectSiteRequiresWorkspaceId('alibaba', input.providerSite)
-    && !input.alibabaWorkspaceId?.trim()) {
-    throw new Error(i18n.t('error.alibabaWorkspaceIdRequired'));
+  if (
+    providerConnectSiteRequiresWorkspaceId("alibaba", input.providerSite) &&
+    !input.alibabaWorkspaceId?.trim()
+  ) {
+    throw new Error(i18n.t("error.alibabaWorkspaceIdRequired"));
   }
 }
 
@@ -742,45 +761,48 @@ function applyManagedProviderConnectFields<
     zAiBillingMode?: DesktopGlmCodingPlanBillingMode;
     zhipuBillingMode?: DesktopGlmCodingPlanBillingMode;
   },
->(profile: T, input: {
-  provider?: DesktopModelProvider;
-  providerSite?: DesktopProviderConnectSiteId;
-  alibabaWorkspaceId?: string;
-  alibabaBillingMode?: DesktopAlibabaBillingMode;
-  stepfunBillingMode?: DesktopStepfunBillingMode;
-  zAiBillingMode?: DesktopGlmCodingPlanBillingMode;
-  zhipuBillingMode?: DesktopGlmCodingPlanBillingMode;
-}): void {
-  if (input.provider === 'stepfun') {
-    if (input.stepfunBillingMode === 'step-plan') {
-      profile.stepfunBillingMode = 'step-plan';
+>(
+  profile: T,
+  input: {
+    provider?: DesktopModelProvider;
+    providerSite?: DesktopProviderConnectSiteId;
+    alibabaWorkspaceId?: string;
+    alibabaBillingMode?: DesktopAlibabaBillingMode;
+    stepfunBillingMode?: DesktopStepfunBillingMode;
+    zAiBillingMode?: DesktopGlmCodingPlanBillingMode;
+    zhipuBillingMode?: DesktopGlmCodingPlanBillingMode;
+  },
+): void {
+  if (input.provider === "stepfun") {
+    if (input.stepfunBillingMode === "step-plan") {
+      profile.stepfunBillingMode = "step-plan";
     } else {
       delete profile.stepfunBillingMode;
     }
     return;
   }
 
-  if (input.provider === 'z-ai') {
-    if (input.zAiBillingMode === 'glm-coding-plan') {
-      profile.zAiBillingMode = 'glm-coding-plan';
+  if (input.provider === "z-ai") {
+    if (input.zAiBillingMode === "glm-coding-plan") {
+      profile.zAiBillingMode = "glm-coding-plan";
     } else {
       delete profile.zAiBillingMode;
     }
     return;
   }
 
-  if (input.provider === 'zhipu-ai') {
-    if (input.zhipuBillingMode === 'glm-coding-plan') {
-      profile.zhipuBillingMode = 'glm-coding-plan';
+  if (input.provider === "zhipu-ai") {
+    if (input.zhipuBillingMode === "glm-coding-plan") {
+      profile.zhipuBillingMode = "glm-coding-plan";
     } else {
       delete profile.zhipuBillingMode;
     }
     return;
   }
 
-  if (input.provider === 'alibaba') {
-    if (input.alibabaBillingMode === 'token-plan') {
-      profile.alibabaBillingMode = 'token-plan';
+  if (input.provider === "alibaba") {
+    if (input.alibabaBillingMode === "token-plan") {
+      profile.alibabaBillingMode = "token-plan";
       delete profile.providerSite;
       delete profile.alibabaWorkspaceId;
       return;
@@ -816,19 +838,19 @@ function assertCloudflareConnectFields(input: {
   const accountId = input.cloudflareAccountId?.trim();
   const gatewayId = input.cloudflareGatewayId?.trim();
   if (!accountId) {
-    throw new Error(i18n.t('settings.cloudflareAccountIdRequired'));
+    throw new Error(i18n.t("settings.cloudflareAccountIdRequired"));
   }
   if (!isValidCloudflareAccountId(accountId)) {
-    throw new Error(i18n.t('settings.cloudflareAccountIdInvalid'));
+    throw new Error(i18n.t("settings.cloudflareAccountIdInvalid"));
   }
   if (!gatewayId) {
-    throw new Error(i18n.t('settings.cloudflareGatewayIdRequired'));
+    throw new Error(i18n.t("settings.cloudflareGatewayIdRequired"));
   }
   if (!isValidCloudflareGatewayId(gatewayId)) {
-    throw new Error(i18n.t('settings.cloudflareGatewayIdInvalid'));
+    throw new Error(i18n.t("settings.cloudflareGatewayIdInvalid"));
   }
   if (!input.apiKey?.trim()) {
-    throw new Error(i18n.t('settings.cloudflareAiGatewayApiTokenRequired'));
+    throw new Error(i18n.t("settings.cloudflareAiGatewayApiTokenRequired"));
   }
 }
 
@@ -849,7 +871,7 @@ function resolveManagedConnectApiBase(
   zhipuBillingMode?: DesktopGlmCodingPlanBillingMode,
   cloudflareAccountId?: string,
 ): string {
-  if (provider === 'amazon-bedrock') {
+  if (provider === "amazon-bedrock") {
     const region = awsRegion?.trim();
     if (region) {
       if (modelName && isBedrockMantleOpenAiModel(modelName)) {
@@ -858,35 +880,35 @@ function resolveManagedConnectApiBase(
       return bedrockApiBaseFromRegion(region);
     }
   }
-  if (provider === 'google-vertex-ai') {
+  if (provider === "google-vertex-ai") {
     const project = vertexProject?.trim();
     const location = vertexLocation?.trim();
     if (project && location) {
       return vertexApiBaseFromProjectAndLocation(project, location);
     }
   }
-  if (provider === 'azure') {
+  if (provider === "azure") {
     const resourceName = azureResourceName?.trim();
     if (resourceName) {
       return azureApiBaseFromResourceName(resourceName);
     }
   }
-  if (provider === 'cloudflare-ai-gateway') {
+  if (provider === "cloudflare-ai-gateway") {
     const accountId = cloudflareAccountId?.trim();
     if (accountId) {
       return cloudflareAiGatewayApiBaseFromAccountId(accountId);
     }
   }
-  if (provider === 'custom') {
+  if (provider === "custom") {
     const trimmed = requestApiBase.trim();
     if (!trimmed) {
-      throw new Error(i18n.t('error.endpointRequired'));
+      throw new Error(i18n.t("error.endpointRequired"));
     }
     return trimmed;
   }
   if (!provider) {
     const trimmed = requestApiBase.trim();
-    return trimmed || defaultApiBaseForTransport('custom', transportKind);
+    return trimmed || defaultApiBaseForTransport("custom", transportKind);
   }
   return defaultApiBaseForTransport(
     provider,
@@ -911,7 +933,7 @@ function assertBedrockConnectCredentials(input: {
   if (hasBedrockRuntimeCredentials({ apiKey, accessKeyId, secretAccessKey })) {
     return;
   }
-  throw new Error(i18n.t('error.bedrockCredentialsRequired'));
+  throw new Error(i18n.t("error.bedrockCredentialsRequired"));
 }
 
 function assertBedrockCatalogCredentials(input: {
@@ -922,7 +944,7 @@ function assertBedrockCatalogCredentials(input: {
   if (hasBedrockIamCredentials(input)) {
     return;
   }
-  throw new Error(i18n.t('error.bedrockCatalogIamRequired'));
+  throw new Error(i18n.t("error.bedrockCatalogIamRequired"));
 }
 
 function assertVertexCatalogCredentials(input: {
@@ -933,22 +955,22 @@ function assertVertexCatalogCredentials(input: {
   vertexLocation?: string;
 }): void {
   if (input.apiKey?.trim()) {
-    throw new Error(i18n.t('error.vertexExpressCatalogUnsupported'));
+    throw new Error(i18n.t("error.vertexExpressCatalogUnsupported"));
   }
   if (!input.vertexProject?.trim() || !input.vertexLocation?.trim()) {
-    throw new Error(i18n.t('error.vertexProjectLocationRequired'));
+    throw new Error(i18n.t("error.vertexProjectLocationRequired"));
   }
   const hasServiceAccountFields = Boolean(
     input.vertexClientEmail?.trim() || input.vertexPrivateKey?.trim(),
   );
   if (
-    hasServiceAccountFields
-    && !hasGoogleVertexServiceAccountCredentials({
+    hasServiceAccountFields &&
+    !hasGoogleVertexServiceAccountCredentials({
       clientEmail: input.vertexClientEmail,
       privateKey: input.vertexPrivateKey,
     })
   ) {
-    throw new Error(i18n.t('error.vertexCatalogServiceAccountRequired'));
+    throw new Error(i18n.t("error.vertexCatalogServiceAccountRequired"));
   }
 }
 
@@ -962,10 +984,12 @@ function assertVertexConnectCredentials(input: {
   if (hasGoogleVertexRuntimeCredentials(input)) {
     return;
   }
-  throw new Error(i18n.t('error.vertexCredentialsRequired'));
+  throw new Error(i18n.t("error.vertexCredentialsRequired"));
 }
 
-export async function previewModelsCommand(request: PreviewModelsRequest): Promise<PreviewModelsResponse> {
+export async function previewModelsCommand(
+  request: PreviewModelsRequest,
+): Promise<PreviewModelsResponse> {
   const provider = parseModelProviderId(request.provider);
   const transportKind = resolveDesktopTransportKind({
     provider,
@@ -982,10 +1006,10 @@ export async function previewModelsCommand(request: PreviewModelsRequest): Promi
   const vertexLocation = request.vertexLocation?.trim();
   const cloudflareAccountId = request.cloudflareAccountId?.trim();
   const cloudflareGatewayId = request.cloudflareGatewayId?.trim();
-  if (provider === 'amazon-bedrock' && !awsRegion) {
-    throw new Error(i18n.t('error.bedrockRegionRequired'));
+  if (provider === "amazon-bedrock" && !awsRegion) {
+    throw new Error(i18n.t("error.bedrockRegionRequired"));
   }
-  if (provider === 'cloudflare-ai-gateway') {
+  if (provider === "cloudflare-ai-gateway") {
     assertCloudflareConnectFields({
       cloudflareAccountId,
       cloudflareGatewayId,
@@ -1015,9 +1039,9 @@ export async function previewModelsCommand(request: PreviewModelsRequest): Promi
   const secretAccessKey = request.secretAccessKey?.trim();
   const vertexClientEmail = request.vertexClientEmail?.trim();
   const vertexPrivateKey = request.vertexPrivateKey?.trim();
-  if (provider === 'amazon-bedrock') {
+  if (provider === "amazon-bedrock") {
     assertBedrockCatalogCredentials({ apiKey, accessKeyId, secretAccessKey });
-  } else if (provider === 'google-vertex-ai') {
+  } else if (provider === "google-vertex-ai") {
     assertVertexCatalogCredentials({
       apiKey,
       vertexClientEmail,
@@ -1025,8 +1049,8 @@ export async function previewModelsCommand(request: PreviewModelsRequest): Promi
       vertexProject,
       vertexLocation,
     });
-  } else if (provider !== 'cloudflare-ai-gateway' && provider !== 'custom' && !apiKey) {
-    throw new Error(i18n.t('error.apiKeyRequired'));
+  } else if (provider !== "cloudflare-ai-gateway" && provider !== "custom" && !apiKey) {
+    throw new Error(i18n.t("error.apiKeyRequired"));
   }
   const result = await loadPreviewModelsForTransport({
     provider,
@@ -1059,7 +1083,7 @@ export async function addProviderModelsCommand(
     const state = ctx.requireState();
 
     if (ctx.isRuntimeBusy()) {
-      throw new Error(i18n.t('error.runtimeBusy'));
+      throw new Error(i18n.t("error.runtimeBusy"));
     }
 
     const provider = parseModelProviderId(request.provider);
@@ -1078,17 +1102,22 @@ export async function addProviderModelsCommand(
     const vertexLocation = request.vertexLocation?.trim();
     const cloudflareAccountId = request.cloudflareAccountId?.trim();
     const cloudflareGatewayId = request.cloudflareGatewayId?.trim();
-    if (provider === 'amazon-bedrock' && !awsRegion) {
-      throw new Error(i18n.t('error.bedrockRegionRequired'));
+    if (provider === "amazon-bedrock" && !awsRegion) {
+      throw new Error(i18n.t("error.bedrockRegionRequired"));
     }
-    if (provider === 'cloudflare-ai-gateway') {
+    if (provider === "cloudflare-ai-gateway") {
       assertCloudflareConnectFields({
         cloudflareAccountId,
         cloudflareGatewayId,
         apiKey: request.apiKey,
       });
     }
-    assertAlibabaConnectWorkspace({ provider, providerSite, alibabaWorkspaceId, alibabaBillingMode });
+    assertAlibabaConnectWorkspace({
+      provider,
+      providerSite,
+      alibabaWorkspaceId,
+      alibabaBillingMode,
+    });
     const connectInput: ConnectRequestFields = {
       groupId: request.groupId,
       ...(provider !== undefined ? { provider } : {}),
@@ -1117,9 +1146,9 @@ export async function addProviderModelsCommand(
     const secretAccessKey = request.secretAccessKey?.trim();
     const vertexClientEmail = request.vertexClientEmail?.trim();
     const vertexPrivateKey = request.vertexPrivateKey?.trim();
-    if (provider === 'amazon-bedrock') {
+    if (provider === "amazon-bedrock") {
       assertBedrockConnectCredentials({ apiKey, accessKeyId, secretAccessKey });
-    } else if (provider === 'google-vertex-ai') {
+    } else if (provider === "google-vertex-ai") {
       assertVertexConnectCredentials({
         apiKey,
         vertexClientEmail,
@@ -1127,14 +1156,14 @@ export async function addProviderModelsCommand(
         vertexProject,
         vertexLocation,
       });
-    } else if (provider !== 'cloudflare-ai-gateway' && provider !== 'custom' && !apiKey) {
-      throw new Error(i18n.t('error.apiKeyRequired'));
+    } else if (provider !== "cloudflare-ai-gateway" && provider !== "custom" && !apiKey) {
+      throw new Error(i18n.t("error.apiKeyRequired"));
     }
 
     const rawIds = request.modelIds.map((id) => id.trim()).filter((id) => id.length > 0);
     const uniqueIds = [...new Set(rawIds)];
     if (uniqueIds.length === 0) {
-      throw new Error(i18n.t('error.emptyModelList'));
+      throw new Error(i18n.t("error.emptyModelList"));
     }
 
     const existingModels = existingModelsForGroupAdd(state.config);
@@ -1145,21 +1174,23 @@ export async function addProviderModelsCommand(
       const catalogEntry = catalogEntries.get(name);
       const entry: ModelEntryV2 = {
         name,
-        reasoningEffort: asModelEntryReasoningEffort(defaultModelReasoningEffort({
-          ...(reasoningProviderForTransport(provider, transportKind)
-            ? { provider: reasoningProviderForTransport(provider, transportKind) }
-            : {}),
-          model: name,
-          ...(catalogEntry?.supportedReasoningEfforts !== undefined
-            ? { supportedEfforts: catalogEntry.supportedReasoningEfforts }
-            : {}),
-          ...(catalogEntry?.supportsThinkingType
-            ? { supportsThinkingType: catalogEntry.supportsThinkingType }
-            : {}),
-          ...(catalogEntry?.supportsThinkingSwitch === true
-            ? { supportsThinkingSwitch: true }
-            : {}),
-        })),
+        reasoningEffort: asModelEntryReasoningEffort(
+          defaultModelReasoningEffort({
+            ...(reasoningProviderForTransport(provider, transportKind)
+              ? { provider: reasoningProviderForTransport(provider, transportKind) }
+              : {}),
+            model: name,
+            ...(catalogEntry?.supportedReasoningEfforts !== undefined
+              ? { supportedEfforts: catalogEntry.supportedReasoningEfforts }
+              : {}),
+            ...(catalogEntry?.supportsThinkingType
+              ? { supportsThinkingType: catalogEntry.supportsThinkingType }
+              : {}),
+            ...(catalogEntry?.supportsThinkingSwitch === true
+              ? { supportsThinkingSwitch: true }
+              : {}),
+          }),
+        ),
       };
       if (catalogEntry?.supportedReasoningEfforts !== undefined) {
         entry.supportedReasoningEfforts = asModelEntrySupportedReasoningEfforts(
@@ -1186,23 +1217,29 @@ export async function addProviderModelsCommand(
 
     const scopeProfile: ModelProfileSnapshot = {
       groupId,
-      name: uniqueIds[0] ?? '',
+      name: uniqueIds[0] ?? "",
       apiBase,
       provider,
       reasoningEffort: defaultModelReasoningEffort({
         ...(reasoningProviderForTransport(provider, transportKind)
           ? { provider: reasoningProviderForTransport(provider, transportKind) }
           : {}),
-        model: uniqueIds[0] ?? '',
+        model: uniqueIds[0] ?? "",
       }),
-      ...(transportKind === 'anthropic' || transportKind === 'open-responses' || transportKind === 'bedrock'
+      ...(transportKind === "anthropic" ||
+      transportKind === "open-responses" ||
+      transportKind === "bedrock"
         ? { transportKind }
         : {}),
-      ...(provider === 'amazon-bedrock' && awsRegion ? { awsRegion } : {}),
-      ...(provider === 'google-vertex-ai' && vertexProject ? { vertexProject } : {}),
-      ...(provider === 'google-vertex-ai' && vertexLocation ? { vertexLocation } : {}),
-      ...(provider === 'cloudflare-ai-gateway' && cloudflareAccountId ? { cloudflareAccountId } : {}),
-      ...(provider === 'cloudflare-ai-gateway' && cloudflareGatewayId ? { cloudflareGatewayId } : {}),
+      ...(provider === "amazon-bedrock" && awsRegion ? { awsRegion } : {}),
+      ...(provider === "google-vertex-ai" && vertexProject ? { vertexProject } : {}),
+      ...(provider === "google-vertex-ai" && vertexLocation ? { vertexLocation } : {}),
+      ...(provider === "cloudflare-ai-gateway" && cloudflareAccountId
+        ? { cloudflareAccountId }
+        : {}),
+      ...(provider === "cloudflare-ai-gateway" && cloudflareGatewayId
+        ? { cloudflareGatewayId }
+        : {}),
     };
     applyManagedProviderConnectFields(scopeProfile, {
       provider,
@@ -1229,10 +1266,10 @@ export async function addProviderModelsCommand(
       : 0;
 
     if (toAdd.length === 0 && syncedPreview === 0 && prunedPreview.length === 0) {
-      throw new Error(i18n.t('error.modelsAlreadyExist'));
+      throw new Error(i18n.t("error.modelsAlreadyExist"));
     }
 
-    const resolvedProvider = provider ?? 'custom';
+    const resolvedProvider = provider ?? "custom";
     try {
       await saveGroupCredentials(groupId, resolvedProvider, {
         apiKey,
@@ -1247,7 +1284,11 @@ export async function addProviderModelsCommand(
     }
 
     const group = findOrCreateProviderGroup(state.config, groupId, groupConnect);
-    const pruned = removeDelistedModelsFromCatalog(state.config, scopeProfile, catalogRefreshResult);
+    const pruned = removeDelistedModelsFromCatalog(
+      state.config,
+      scopeProfile,
+      catalogRefreshResult,
+    );
     if (request.modelCatalog?.length) {
       syncExistingModelsFromCatalog(state.config, scopeProfile, catalogRefreshResult);
     }
@@ -1279,7 +1320,7 @@ export async function addProviderModelsCommand(
     }
     await saveConfig(state.config);
     await ctx.refreshRuntime();
-    ctx.setLastRuntimeError('');
+    ctx.setLastRuntimeError("");
     await ctx.persistCurrentSessionIfNeeded();
     return ctx.buildSnapshot();
   });
@@ -1294,17 +1335,17 @@ export async function addModelCommand(
     const state = ctx.requireState();
 
     if (ctx.isRuntimeBusy()) {
-      throw new Error(i18n.t('error.runtimeBusy'));
+      throw new Error(i18n.t("error.runtimeBusy"));
     }
 
     const name = request.name.trim();
-    const provider = parseModelProviderId(request.provider) ?? 'custom';
+    const provider = parseModelProviderId(request.provider) ?? "custom";
     if (
-      provider === 'azure'
-      && request.transportKind !== undefined
-      && request.transportKind !== 'open-responses'
+      provider === "azure" &&
+      request.transportKind !== undefined &&
+      request.transportKind !== "open-responses"
     ) {
-      throw new Error(i18n.t('error.azureOpenResponsesOnly'));
+      throw new Error(i18n.t("error.azureOpenResponsesOnly"));
     }
     const transportKind = resolveDesktopTransportKind({
       provider,
@@ -1322,23 +1363,28 @@ export async function addModelCommand(
     const azureResourceName = request.azureResourceName?.trim();
     const cloudflareAccountId = request.cloudflareAccountId?.trim();
     const cloudflareGatewayId = request.cloudflareGatewayId?.trim();
-    if (provider === 'amazon-bedrock' && !awsRegion) {
-      throw new Error(i18n.t('error.bedrockRegionRequired'));
+    if (provider === "amazon-bedrock" && !awsRegion) {
+      throw new Error(i18n.t("error.bedrockRegionRequired"));
     }
-    if (provider === 'azure' && !azureResourceName) {
-      throw new Error(i18n.t('error.azureResourceNameRequired'));
+    if (provider === "azure" && !azureResourceName) {
+      throw new Error(i18n.t("error.azureResourceNameRequired"));
     }
-    if (provider === 'azure' && azureResourceName && !isValidAzureResourceName(azureResourceName)) {
-      throw new Error(i18n.t('error.azureResourceNameInvalid'));
+    if (provider === "azure" && azureResourceName && !isValidAzureResourceName(azureResourceName)) {
+      throw new Error(i18n.t("error.azureResourceNameInvalid"));
     }
-    if (provider === 'cloudflare-ai-gateway') {
+    if (provider === "cloudflare-ai-gateway") {
       assertCloudflareConnectFields({
         cloudflareAccountId,
         cloudflareGatewayId,
         apiKey: request.apiKey,
       });
     }
-    assertAlibabaConnectWorkspace({ provider, providerSite, alibabaWorkspaceId, alibabaBillingMode });
+    assertAlibabaConnectWorkspace({
+      provider,
+      providerSite,
+      alibabaWorkspaceId,
+      alibabaBillingMode,
+    });
     const connectInput: ConnectRequestFields = {
       groupId: request.groupId,
       provider,
@@ -1364,21 +1410,21 @@ export async function addModelCommand(
     const apiKey = request.apiKey.trim();
 
     if (!name) {
-      throw new Error(i18n.t('error.modelNameRequired'));
+      throw new Error(i18n.t("error.modelNameRequired"));
     }
-    if (provider === 'google-vertex-ai') {
+    if (provider === "google-vertex-ai") {
       assertVertexConnectCredentials({
         apiKey,
         vertexProject,
         vertexLocation,
       });
-    } else if (provider === 'azure' && /\s/u.test(name)) {
-      throw new Error(i18n.t('error.azureDeploymentNameWhitespace'));
-    } else if (provider !== 'cloudflare-ai-gateway' && provider !== 'custom' && !apiKey) {
-      throw new Error(i18n.t('error.apiKeyRequired'));
+    } else if (provider === "azure" && /\s/u.test(name)) {
+      throw new Error(i18n.t("error.azureDeploymentNameWhitespace"));
+    } else if (provider !== "cloudflare-ai-gateway" && provider !== "custom" && !apiKey) {
+      throw new Error(i18n.t("error.apiKeyRequired"));
     }
     if (modelExistsInGroup(state.config, groupId, name)) {
-      throw new Error(i18n.t('error.modelExists', { name }));
+      throw new Error(i18n.t("error.modelExists", { name }));
     }
 
     const catalogEntry = await findCatalogEntryForModel({
@@ -1392,21 +1438,23 @@ export async function addModelCommand(
 
     const modelEntry: ModelEntryV2 = {
       name,
-      reasoningEffort: asModelEntryReasoningEffort(defaultModelReasoningEffort({
-        ...(reasoningProviderForTransport(provider, transportKind)
-          ? { provider: reasoningProviderForTransport(provider, transportKind) }
-          : {}),
-        model: name,
-        ...(catalogEntry?.supportedReasoningEfforts !== undefined
-          ? { supportedEfforts: catalogEntry.supportedReasoningEfforts }
-          : {}),
-        ...(catalogEntry?.supportsThinkingType
-          ? { supportsThinkingType: catalogEntry.supportsThinkingType }
-          : {}),
-        ...(catalogEntry?.supportsThinkingSwitch === true
-          ? { supportsThinkingSwitch: true }
-          : {}),
-      })),
+      reasoningEffort: asModelEntryReasoningEffort(
+        defaultModelReasoningEffort({
+          ...(reasoningProviderForTransport(provider, transportKind)
+            ? { provider: reasoningProviderForTransport(provider, transportKind) }
+            : {}),
+          model: name,
+          ...(catalogEntry?.supportedReasoningEfforts !== undefined
+            ? { supportedEfforts: catalogEntry.supportedReasoningEfforts }
+            : {}),
+          ...(catalogEntry?.supportsThinkingType
+            ? { supportsThinkingType: catalogEntry.supportsThinkingType }
+            : {}),
+          ...(catalogEntry?.supportsThinkingSwitch === true
+            ? { supportsThinkingSwitch: true }
+            : {}),
+        }),
+      ),
     };
     if (catalogEntry?.supportedReasoningEfforts !== undefined) {
       modelEntry.supportedReasoningEfforts = asModelEntrySupportedReasoningEfforts(
@@ -1436,7 +1484,7 @@ export async function addModelCommand(
     if (request.contextLength !== undefined) {
       const contextLength = parseModelContextLength(request.contextLength);
       if (contextLength === undefined) {
-        throw new Error(i18n.t('error.contextLengthInvalid'));
+        throw new Error(i18n.t("error.contextLengthInvalid"));
       }
       modelEntry.contextLength = contextLength;
     }
@@ -1453,14 +1501,14 @@ export async function addModelCommand(
       state.config.videoGenerationModel = modelRef;
     }
     await saveConfig(state.config);
-    if (provider === 'custom' && !request.provider) {
+    if (provider === "custom" && !request.provider) {
       await saveApiKeyForModel(modelRefKey(modelRef), apiKey);
     } else {
       await saveGroupCredentials(groupId, provider, { apiKey });
     }
 
     await ctx.refreshRuntime();
-    ctx.setLastRuntimeError('');
+    ctx.setLastRuntimeError("");
     await ctx.persistCurrentSessionIfNeeded();
     return ctx.buildSnapshot();
   });
@@ -1476,12 +1524,14 @@ export async function removeModelCommand(
 
     const ref = request.ref;
     if (isEmptyModelRef(ref)) {
-      throw new Error(i18n.t('error.modelNameRequired'));
+      throw new Error(i18n.t("error.modelNameRequired"));
     }
     if (!resolveModelProfile(state.config, ref)) {
-      throw new Error(i18n.t('error.modelNotFound', { name: ref.name }));
+      throw new Error(i18n.t("error.modelNotFound", { name: ref.name }));
     }
-    const targetsToRemove: ModelRemovalTarget[] = [{ ref: { groupId: ref.groupId.trim(), name: ref.name.trim() } }];
+    const targetsToRemove: ModelRemovalTarget[] = [
+      { ref: { groupId: ref.groupId.trim(), name: ref.name.trim() } },
+    ];
     return finalizeModelRemoval(ctx, state, targetsToRemove, { removeLegacyModelKeys: true });
   });
 }
@@ -1496,11 +1546,11 @@ export async function removeProviderGroupCommand(
 
     const groupId = request.groupId.trim();
     if (!groupId) {
-      throw new Error(i18n.t('error.modelNameRequired'));
+      throw new Error(i18n.t("error.modelNameRequired"));
     }
     const group = findProviderGroup(state.config, groupId);
     if (!group || group.models.length === 0) {
-      throw new Error(i18n.t('error.noModelsInProvider'));
+      throw new Error(i18n.t("error.noModelsInProvider"));
     }
 
     const targetsToRemove: ModelRemovalTarget[] = group.models.map((model) => ({
@@ -1508,12 +1558,14 @@ export async function removeProviderGroupCommand(
     }));
     const provider = group.provider as DesktopModelProvider;
     applyModelsRemovalToConfig(state.config, targetsToRemove);
-    state.config.providerGroups = state.config.providerGroups.filter((entry) => entry.id !== groupId);
+    state.config.providerGroups = state.config.providerGroups.filter(
+      (entry) => entry.id !== groupId,
+    );
     await saveConfig(state.config);
     await removeGroupKeyring(groupId, provider);
     await ctx.refreshModelKeyPresence();
     await ctx.refreshRuntime();
-    ctx.setLastRuntimeError('');
+    ctx.setLastRuntimeError("");
     await ctx.persistCurrentSessionIfNeeded();
     return ctx.buildSnapshot();
   });
@@ -1526,7 +1578,7 @@ export async function removeProviderModelsCommand(
 ): Promise<DesktopSnapshot> {
   const provider = parsePresetModelProviderId(request.provider);
   if (!provider) {
-    throw new Error(i18n.t('error.providerDeleteOnly'));
+    throw new Error(i18n.t("error.providerDeleteOnly"));
   }
   return removeProviderGroupCommand(ctx, {
     groupId: defaultPresetProviderGroupId(provider),
@@ -1542,7 +1594,9 @@ async function finalizeModelRemoval(
   },
 ): Promise<DesktopSnapshot> {
   applyModelsRemovalToConfig(state.config, targetsToRemove);
-  state.config.providerGroups = state.config.providerGroups.filter((group) => group.models.length > 0);
+  state.config.providerGroups = state.config.providerGroups.filter(
+    (group) => group.models.length > 0,
+  );
   await saveConfig(state.config);
   if (options?.removeLegacyModelKeys) {
     for (const target of targetsToRemove) {
@@ -1551,7 +1605,7 @@ async function finalizeModelRemoval(
   }
   await ctx.refreshModelKeyPresence();
   await ctx.refreshRuntime();
-  ctx.setLastRuntimeError('');
+  ctx.setLastRuntimeError("");
   await ctx.persistCurrentSessionIfNeeded();
   return ctx.buildSnapshot();
 }

@@ -10,17 +10,17 @@ import {
   type HookRunner,
   type HookRunnerContext,
   isPreHookEvent,
-} from '@spiritagent/agent-core';
+} from "@spiritagent/agent-core";
 
-import { runCommandHook } from './command-runner.js';
-import { listHookDefinitionsForInput, loadHooksConfig, type LoadedHooksConfig } from './loader.js';
+import { runCommandHook } from "./command-runner.js";
+import { listHookDefinitionsForInput, loadHooksConfig, type LoadedHooksConfig } from "./loader.js";
 import {
   applyWorkspaceCapabilityTrustDecision,
   computeWorkspaceHooksContentHash,
   evaluateWorkspaceHooksTrustGate,
   filterDefinitionsByWorkspaceTrust,
   type RequestWorkspaceCapabilityTrust,
-} from './trust.js';
+} from "./trust.js";
 
 function applyPreEventPermission(
   aggregate: HookRunResult,
@@ -31,11 +31,11 @@ function applyPreEventPermission(
     ? mergePreEventHookPermission(aggregate.permission, permission)
     : permission;
 
-  if (merged === 'deny') {
+  if (merged === "deny") {
     return {
       ...aggregate,
       denied: true,
-      permission: 'deny',
+      permission: "deny",
       userMessage: output.userMessage ?? aggregate.userMessage,
       agentMessage: output.agentMessage ?? aggregate.agentMessage,
     };
@@ -92,7 +92,8 @@ export interface CreateHookRunnerOptions extends HookRunnerContext {
 
 export function createHookRunner(options: CreateHookRunnerOptions): HookRunner {
   const getLoaded = (): LoadedHooksConfig =>
-    options.reloadConfig?.() ?? loadHooksConfig({
+    options.reloadConfig?.() ??
+    loadHooksConfig({
       spiritDataDir: options.spiritDataDir,
       workspaceRoot: options.workspaceRoot,
     });
@@ -111,23 +112,23 @@ export function createHookRunner(options: CreateHookRunnerOptions): HookRunner {
         loaded,
       });
 
-      if (gate.status === 'noWorkspaceHooks') {
+      if (gate.status === "noWorkspaceHooks") {
         return false;
       }
-      if (gate.status === 'allow') {
+      if (gate.status === "allow") {
         return true;
       }
 
       if (!options.requestWorkspaceCapabilityTrust) {
         options.logger?.(
-          'Skipping workspace hooks: no trust prompt available (non-interactive default deny).',
+          "Skipping workspace hooks: no trust prompt available (non-interactive default deny).",
         );
         return false;
       }
 
       const decision = await options.requestWorkspaceCapabilityTrust(gate.request);
-      if (decision === 'deny') {
-        options.logger?.('Skipping workspace hooks: user denied workspace capability trust.');
+      if (decision === "deny") {
+        options.logger?.("Skipping workspace hooks: user denied workspace capability trust.");
         return false;
       }
 
@@ -136,7 +137,7 @@ export function createHookRunner(options: CreateHookRunnerOptions): HookRunner {
       const currentHash = computeWorkspaceHooksContentHash(freshLoaded);
       if (!currentHash || currentHash !== gate.request.contentHash) {
         options.logger?.(
-          'Skipping workspace hooks: content hash changed while awaiting trust decision.',
+          "Skipping workspace hooks: content hash changed while awaiting trust decision.",
         );
         return false;
       }
@@ -162,10 +163,8 @@ export function createHookRunner(options: CreateHookRunnerOptions): HookRunner {
       return emptyHookRunResult();
     }
 
-    const hasWorkspace = definitions.some((definition) => definition.scope === 'workspace');
-    const workspaceAllowed = hasWorkspace
-      ? await ensureWorkspaceHooksAllowed(loaded)
-      : false;
+    const hasWorkspace = definitions.some((definition) => definition.scope === "workspace");
+    const workspaceAllowed = hasWorkspace ? await ensureWorkspaceHooksAllowed(loaded) : false;
     const runnable = filterDefinitionsByWorkspaceTrust(definitions, workspaceAllowed);
     if (runnable.length === 0) {
       return emptyHookRunResult();
@@ -187,7 +186,7 @@ export function createHookRunner(options: CreateHookRunnerOptions): HookRunner {
 
       if (result.denied) {
         aggregate.denied = true;
-        aggregate.permission = 'deny';
+        aggregate.permission = "deny";
         aggregate.userMessage = result.effectiveOutput?.userMessage ?? aggregate.userMessage;
         aggregate.agentMessage = result.effectiveOutput?.agentMessage ?? aggregate.agentMessage;
         break;
@@ -201,20 +200,20 @@ export function createHookRunner(options: CreateHookRunnerOptions): HookRunner {
 
   return {
     runSessionStart: (input) =>
-      runEvent({ ...input, hookEventName: 'sessionStart', timestamp: new Date().toISOString() }),
+      runEvent({ ...input, hookEventName: "sessionStart", timestamp: new Date().toISOString() }),
     runSessionEnd: (input) =>
-      runEvent({ ...input, hookEventName: 'sessionEnd', timestamp: new Date().toISOString() }),
+      runEvent({ ...input, hookEventName: "sessionEnd", timestamp: new Date().toISOString() }),
     runSubmitPrompt: (input) =>
-      runEvent({ ...input, hookEventName: 'submitPrompt', timestamp: new Date().toISOString() }),
+      runEvent({ ...input, hookEventName: "submitPrompt", timestamp: new Date().toISOString() }),
     runPreToolUse: (input) =>
-      runEvent({ ...input, hookEventName: 'preToolUse', timestamp: new Date().toISOString() }),
+      runEvent({ ...input, hookEventName: "preToolUse", timestamp: new Date().toISOString() }),
     runPostToolUse: (input) =>
-      runEvent({ ...input, hookEventName: 'postToolUse', timestamp: new Date().toISOString() }),
+      runEvent({ ...input, hookEventName: "postToolUse", timestamp: new Date().toISOString() }),
     runSubagentStart: (input) =>
-      runEvent({ ...input, hookEventName: 'subagentStart', timestamp: new Date().toISOString() }),
+      runEvent({ ...input, hookEventName: "subagentStart", timestamp: new Date().toISOString() }),
     runSubagentEnd: (input) =>
-      runEvent({ ...input, hookEventName: 'subagentEnd', timestamp: new Date().toISOString() }),
+      runEvent({ ...input, hookEventName: "subagentEnd", timestamp: new Date().toISOString() }),
   };
 }
 
-export { loadHooksConfig, summarizeHooksConfig } from './loader.js';
+export { loadHooksConfig, summarizeHooksConfig } from "./loader.js";

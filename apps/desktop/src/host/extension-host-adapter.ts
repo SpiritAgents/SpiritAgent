@@ -1,4 +1,4 @@
-import i18n from '../lib/i18n-host.js';
+import i18n from "../lib/i18n-host.js";
 
 export interface DesktopExtensionMessageBoxRequest {
   title: string;
@@ -8,7 +8,7 @@ export interface DesktopExtensionMessageBoxRequest {
   cancelId?: number;
   defaultId?: number;
   noLink?: boolean;
-  type?: 'none' | 'info' | 'error' | 'question' | 'warning';
+  type?: "none" | "info" | "error" | "question" | "warning";
 }
 
 export interface DesktopExtensionHostAdapter {
@@ -29,7 +29,7 @@ export function getDesktopExtensionHostAdapter(): DesktopExtensionHostAdapter | 
 
 export function requireDesktopExtensionHostAdapter(): DesktopExtensionHostAdapter {
   if (!desktopExtensionHostAdapter) {
-    throw new Error(i18n.t('error.extensionHostNotAvailable'));
+    throw new Error(i18n.t("error.extensionHostNotAvailable"));
   }
   return desktopExtensionHostAdapter;
 }

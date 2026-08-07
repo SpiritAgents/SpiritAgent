@@ -24,9 +24,7 @@ export function normalizeBrowserUrl(input: string): string | null {
     return null;
   }
 
-  const withScheme = /^[a-zA-Z][a-zA-Z\d+\-.]*:\/\//.test(trimmed)
-    ? trimmed
-    : `https://${trimmed}`;
+  const withScheme = /^[a-zA-Z][a-zA-Z\d+\-.]*:\/\//.test(trimmed) ? trimmed : `https://${trimmed}`;
 
   try {
     const parsed = new URL(withScheme);

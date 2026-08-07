@@ -1,19 +1,16 @@
 import { useCallback, useEffect, useMemo, useRef, useState, memo, type ComponentRef } from "react";
 import { useTranslation } from "react-i18next";
 import { useVirtualizer } from "@tanstack/react-virtual";
-import {
-  CaseSensitive,
-  ChevronDown,
-  ChevronRight,
-  Regex,
-  WholeWord,
-} from "lucide-react";
+import { CaseSensitive, ChevronDown, ChevronRight, Regex, WholeWord } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
-import { DESKTOP_OVERLAY_LIST_FILTER_INPUT_SHELL, instantHoverMotionClass } from "@/lib/desktop-chrome";
+import {
+  DESKTOP_OVERLAY_LIST_FILTER_INPUT_SHELL,
+  instantHoverMotionClass,
+} from "@/lib/desktop-chrome";
 import { scrollAreaViewport } from "@/lib/scroll-area-viewport";
 import { WorkspaceFileIcon } from "@/components/workspace-file-icon";
 import { resolveWorkspaceFilesTabIcon } from "@/lib/workspace-explorer-icon";
@@ -48,14 +45,13 @@ export type WorkspaceFilesSearchPanelProps = {
   searchWorkspaceContent: (
     request: WorkspaceContentSearchRequest,
   ) => Promise<WorkspaceContentSearchResult>;
-  onOpenSearchMatch: (
-    relativePath: string,
-    reveal: EditorFileRevealLocation,
+  onOpenSearchMatch: (relativePath: string, reveal: EditorFileRevealLocation) => void;
+  onSearchSessionChange?: (
+    session: {
+      query: string;
+      matchesByPath: Map<string, WorkspaceContentSearchMatch[]>;
+    } | null,
   ) => void;
-  onSearchSessionChange?: (session: {
-    query: string;
-    matchesByPath: Map<string, WorkspaceContentSearchMatch[]>;
-  } | null) => void;
 };
 
 const SEARCH_DEBOUNCE_MS = 300;
@@ -314,7 +310,9 @@ export function WorkspaceFilesSearchPanel({
           </p>
         ) : null}
         {!searching && !searchError && debouncedQuery && groups.length === 0 ? (
-          <p className="px-3 py-2 text-xs text-muted-foreground">{t("workspace.fileSearchNoResults")}</p>
+          <p className="px-3 py-2 text-xs text-muted-foreground">
+            {t("workspace.fileSearchNoResults")}
+          </p>
         ) : null}
 
         <ScrollArea ref={scrollAreaRef} className="h-full min-h-0 w-full">

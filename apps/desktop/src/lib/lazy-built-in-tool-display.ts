@@ -1,12 +1,12 @@
-import type { DesktopAutomationTrigger } from './automation-trigger.js';
+import type { DesktopAutomationTrigger } from "./automation-trigger.js";
 import {
   formatDesktopAutomationTriggerLabel,
   isValidDesktopAutomationTrigger,
   type DesktopAutomationTriggerFormatLabels,
-} from './automation-trigger.js';
-import type { DesktopAutomationSchedule } from './automation-schedule.js';
-import { isValidDesktopAutomationSchedule } from './automation-schedule.js';
-import type { ToolBlockSnapshot } from '../types.js';
+} from "./automation-trigger.js";
+import type { DesktopAutomationSchedule } from "./automation-schedule.js";
+import { isValidDesktopAutomationSchedule } from "./automation-schedule.js";
+import type { ToolBlockSnapshot } from "../types.js";
 
 type LazyToolGatewayFields = {
   provider?: string;
@@ -24,21 +24,21 @@ function decodePartialJsonString(value: string): string {
   return value.replace(/\\(["\\/bfnrtu])/gu, (_match, code: string) => {
     switch (code) {
       case '"':
-      case '\\':
-      case '/':
+      case "\\":
+      case "/":
         return code;
-      case 'b':
-        return '\b';
-      case 'f':
-        return '\f';
-      case 'n':
-        return '\n';
-      case 'r':
-        return '\r';
-      case 't':
-        return '\t';
-      case 'u':
-        return '';
+      case "b":
+        return "\b";
+      case "f":
+        return "\f";
+      case "n":
+        return "\n";
+      case "r":
+        return "\r";
+      case "t":
+        return "\t";
+      case "u":
+        return "";
       default:
         return code;
     }
@@ -68,7 +68,7 @@ function tryParsePartialCreateAutomationTrigger(
   args?: Record<string, unknown>,
 ): DesktopAutomationTrigger | undefined {
   const triggerValue = args?.trigger;
-  if (triggerValue && typeof triggerValue === 'object' && !Array.isArray(triggerValue)) {
+  if (triggerValue && typeof triggerValue === "object" && !Array.isArray(triggerValue)) {
     const trigger = triggerValue as DesktopAutomationTrigger;
     if (isValidDesktopAutomationTrigger(trigger)) {
       return trigger;
@@ -86,58 +86,52 @@ function tryParsePartialCreateAutomationTrigger(
     ? decodePartialJsonString(triggerKindMatch[1])
     : undefined;
 
-  if (triggerKind === 'time') {
+  if (triggerKind === "time") {
     const scheduleKindMatch = gatewayJson.match(
       /"schedule"\s*:\s*\{[^}]*"kind"\s*:\s*"((?:\\.|[^"\\])*)"/u,
     );
     const scheduleKind = scheduleKindMatch?.[1]
       ? decodePartialJsonString(scheduleKindMatch[1])
       : undefined;
-    if (scheduleKind === 'hourly') {
-      const schedule: DesktopAutomationSchedule = { kind: 'hourly' };
-      return isValidDesktopAutomationSchedule(schedule) ? { kind: 'time', schedule } : undefined;
+    if (scheduleKind === "hourly") {
+      const schedule: DesktopAutomationSchedule = { kind: "hourly" };
+      return isValidDesktopAutomationSchedule(schedule) ? { kind: "time", schedule } : undefined;
     }
-    const hour = extractPartialIntegerField(gatewayJson, 'hour');
-    const minute = extractPartialIntegerField(gatewayJson, 'minute');
+    const hour = extractPartialIntegerField(gatewayJson, "hour");
+    const minute = extractPartialIntegerField(gatewayJson, "minute");
     if (hour === undefined || minute === undefined) {
       return undefined;
     }
-    if (scheduleKind === 'weekly') {
-      const weekday = extractPartialIntegerField(gatewayJson, 'weekday');
+    if (scheduleKind === "weekly") {
+      const weekday = extractPartialIntegerField(gatewayJson, "weekday");
       if (weekday === undefined || weekday < 0 || weekday > 6) {
         return undefined;
       }
       const schedule: DesktopAutomationSchedule = {
-        kind: 'weekly',
+        kind: "weekly",
         weekday: weekday as 0 | 1 | 2 | 3 | 4 | 5 | 6,
         hour,
         minute,
       };
-      return isValidDesktopAutomationSchedule(schedule)
-        ? { kind: 'time', schedule }
-        : undefined;
+      return isValidDesktopAutomationSchedule(schedule) ? { kind: "time", schedule } : undefined;
     }
-    if (scheduleKind === 'daily') {
-      const schedule: DesktopAutomationSchedule = { kind: 'daily', hour, minute };
-      return isValidDesktopAutomationSchedule(schedule)
-        ? { kind: 'time', schedule }
-        : undefined;
+    if (scheduleKind === "daily") {
+      const schedule: DesktopAutomationSchedule = { kind: "daily", hour, minute };
+      return isValidDesktopAutomationSchedule(schedule) ? { kind: "time", schedule } : undefined;
     }
     return undefined;
   }
 
-  if (triggerKind === 'github') {
-    const owner = extractCompletePartialStringField(gatewayJson, 'owner');
-    const repo = extractCompletePartialStringField(gatewayJson, 'repo');
-    const eventMatch = gatewayJson.match(
-      /"event"\s*:\s*"((?:\\.|[^"\\])*)"/u,
-    );
+  if (triggerKind === "github") {
+    const owner = extractCompletePartialStringField(gatewayJson, "owner");
+    const repo = extractCompletePartialStringField(gatewayJson, "repo");
+    const eventMatch = gatewayJson.match(/"event"\s*:\s*"((?:\\.|[^"\\])*)"/u);
     const event = eventMatch?.[1] ? decodePartialJsonString(eventMatch[1]) : undefined;
-    if (!owner || !repo || (event !== 'pull_request_created' && event !== 'issue_created')) {
+    if (!owner || !repo || (event !== "pull_request_created" && event !== "issue_created")) {
       return undefined;
     }
     const trigger: DesktopAutomationTrigger = {
-      kind: 'github',
+      kind: "github",
       owner,
       repo,
       event,
@@ -148,7 +142,9 @@ function tryParsePartialCreateAutomationTrigger(
   return undefined;
 }
 
-export function parseLazyToolGatewayFieldsFromJson(json: string | undefined): LazyToolGatewayFields {
+export function parseLazyToolGatewayFieldsFromJson(
+  json: string | undefined,
+): LazyToolGatewayFields {
   if (!json?.trim()) {
     return {};
   }
@@ -156,19 +152,19 @@ export function parseLazyToolGatewayFieldsFromJson(json: string | undefined): La
   const trimmed = json.trim();
   try {
     const parsed = JSON.parse(trimmed) as unknown;
-    if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed)) {
+    if (!parsed || typeof parsed !== "object" || Array.isArray(parsed)) {
       return {};
     }
     const record = parsed as Record<string, unknown>;
-    if (record.kind === 'lazyToolGateway' && typeof record.argumentsJson === 'string') {
+    if (record.kind === "lazyToolGateway" && typeof record.argumentsJson === "string") {
       return parseLazyToolGatewayFieldsFromJson(record.argumentsJson);
     }
-    const provider = typeof record.provider === 'string' ? record.provider.trim() : undefined;
-    const server = typeof record.server === 'string' ? record.server.trim() : undefined;
-    const tool = typeof record.tool === 'string' ? record.tool.trim() : undefined;
+    const provider = typeof record.provider === "string" ? record.provider.trim() : undefined;
+    const server = typeof record.server === "string" ? record.server.trim() : undefined;
+    const tool = typeof record.tool === "string" ? record.tool.trim() : undefined;
     const argsValue = record.arguments;
     const args =
-      argsValue && typeof argsValue === 'object' && !Array.isArray(argsValue)
+      argsValue && typeof argsValue === "object" && !Array.isArray(argsValue)
         ? (argsValue as Record<string, unknown>)
         : undefined;
     return {
@@ -178,9 +174,9 @@ export function parseLazyToolGatewayFieldsFromJson(json: string | undefined): La
       ...(args ? { arguments: args } : {}),
     };
   } catch {
-    const provider = extractCompletePartialStringField(trimmed, 'provider');
-    const server = extractCompletePartialStringField(trimmed, 'server');
-    const tool = extractCompletePartialStringField(trimmed, 'tool');
+    const provider = extractCompletePartialStringField(trimmed, "provider");
+    const server = extractCompletePartialStringField(trimmed, "server");
+    const tool = extractCompletePartialStringField(trimmed, "tool");
     return {
       ...(provider ? { provider } : {}),
       ...(server ? { server } : {}),
@@ -190,7 +186,7 @@ export function parseLazyToolGatewayFieldsFromJson(json: string | undefined): La
 }
 
 export function lazyToolGatewayFieldsFromToolSnapshot(
-  tool: Pick<ToolBlockSnapshot, 'argsExcerpt' | 'streamingArgumentsJson'>,
+  tool: Pick<ToolBlockSnapshot, "argsExcerpt" | "streamingArgumentsJson">,
 ): LazyToolGatewayFields {
   const streaming = parseLazyToolGatewayFieldsFromJson(tool.streamingArgumentsJson);
   if (streaming.provider || streaming.server || streaming.tool) {
@@ -201,28 +197,28 @@ export function lazyToolGatewayFieldsFromToolSnapshot(
 
 export function isBuiltInCreateAutomationLazyToolCall(fields: LazyToolGatewayFields): boolean {
   return (
-    fields.provider === 'built-in'
-    && fields.server === 'desktop'
-    && fields.tool === 'create_automation'
+    fields.provider === "built-in" &&
+    fields.server === "desktop" &&
+    fields.tool === "create_automation"
   );
 }
 
 export function createAutomationTitleFromLazyArguments(
   args: Record<string, unknown> | undefined,
 ): string | undefined {
-  const explicitTitle = typeof args?.title === 'string' ? args.title.trim() : '';
+  const explicitTitle = typeof args?.title === "string" ? args.title.trim() : "";
   if (explicitTitle) {
     return explicitTitle;
   }
-  const overview = typeof args?.overview === 'string' ? args.overview.trim() : '';
+  const overview = typeof args?.overview === "string" ? args.overview.trim() : "";
   if (!overview) {
     return undefined;
   }
-  const firstLine = overview.split(/\r?\n/u)[0]?.trim() ?? '';
+  const firstLine = overview.split(/\r?\n/u)[0]?.trim() ?? "";
   if (!firstLine) {
     return undefined;
   }
-  return [...firstLine].length > 80 ? [...firstLine].slice(0, 80).join('') : firstLine;
+  return [...firstLine].length > 80 ? [...firstLine].slice(0, 80).join("") : firstLine;
 }
 
 export function resolveCreateAutomationSummaryDetail(input: {
@@ -230,20 +226,20 @@ export function resolveCreateAutomationSummaryDetail(input: {
   requestRecord?: Record<string, unknown>;
   formatTriggerLabel: (trigger: DesktopAutomationTrigger) => string;
 }): CreateAutomationSummaryDetail | undefined {
-  const gatewayJson = input.gatewayJson?.trim() ?? '';
+  const gatewayJson = input.gatewayJson?.trim() ?? "";
   const fields = input.requestRecord
     ? {
-        ...(typeof input.requestRecord.provider === 'string'
+        ...(typeof input.requestRecord.provider === "string"
           ? { provider: input.requestRecord.provider.trim() }
           : {}),
-        ...(typeof input.requestRecord.server === 'string'
+        ...(typeof input.requestRecord.server === "string"
           ? { server: input.requestRecord.server.trim() }
           : {}),
-        ...(typeof input.requestRecord.tool === 'string'
+        ...(typeof input.requestRecord.tool === "string"
           ? { tool: input.requestRecord.tool.trim() }
           : {}),
         ...(input.requestRecord.arguments &&
-        typeof input.requestRecord.arguments === 'object' &&
+        typeof input.requestRecord.arguments === "object" &&
         !Array.isArray(input.requestRecord.arguments)
           ? { arguments: input.requestRecord.arguments as Record<string, unknown> }
           : {}),
@@ -257,7 +253,7 @@ export function resolveCreateAutomationSummaryDetail(input: {
   const args =
     fields.arguments ??
     (input.requestRecord?.arguments &&
-    typeof input.requestRecord.arguments === 'object' &&
+    typeof input.requestRecord.arguments === "object" &&
     !Array.isArray(input.requestRecord.arguments)
       ? (input.requestRecord.arguments as Record<string, unknown>)
       : undefined);
@@ -265,10 +261,10 @@ export function resolveCreateAutomationSummaryDetail(input: {
   const titleFromArgs = createAutomationTitleFromLazyArguments(args);
   const titleFromPartial =
     titleFromArgs ??
-    extractCompletePartialStringField(gatewayJson, 'title') ??
-    (extractCompletePartialStringField(gatewayJson, 'overview')
+    extractCompletePartialStringField(gatewayJson, "title") ??
+    (extractCompletePartialStringField(gatewayJson, "overview")
       ? createAutomationTitleFromLazyArguments({
-          overview: extractCompletePartialStringField(gatewayJson, 'overview'),
+          overview: extractCompletePartialStringField(gatewayJson, "overview"),
         })
       : undefined);
 
@@ -288,21 +284,21 @@ export function formatCreateAutomationHeadlineDetail(
     return undefined;
   }
   const parts = [detail.title, detail.triggerLabel].filter(
-    (part): part is string => typeof part === 'string' && part.length > 0,
+    (part): part is string => typeof part === "string" && part.length > 0,
   );
-  return parts.length > 0 ? parts.join(' · ') : undefined;
+  return parts.length > 0 ? parts.join(" · ") : undefined;
 }
 
 export function defaultDesktopAutomationTriggerFormatLabels(): DesktopAutomationTriggerFormatLabels {
   return {
-    hourly: 'Hourly',
-    dailyPrefix: 'Daily',
-    weeklyPrefix: 'Weekly',
-    weekdays: ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'],
+    hourly: "Hourly",
+    dailyPrefix: "Daily",
+    weeklyPrefix: "Weekly",
+    weekdays: ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"],
     formatWeekly: (weekday, time) => `Weekly ${weekday} ${time}`,
-    githubPrefix: 'GitHub',
-    githubPullRequestCreated: 'PR created',
-    githubIssueCreated: 'Issue created',
+    githubPrefix: "GitHub",
+    githubPullRequestCreated: "PR created",
+    githubIssueCreated: "Issue created",
   };
 }
 
@@ -318,7 +314,10 @@ export function builtInCreateAutomationToolCallSummaryParts(input: {
     formatTriggerLabel:
       input.formatTriggerLabel ??
       ((trigger) =>
-        formatDesktopAutomationTriggerLabel(trigger, defaultDesktopAutomationTriggerFormatLabels())),
+        formatDesktopAutomationTriggerLabel(
+          trigger,
+          defaultDesktopAutomationTriggerFormatLabels(),
+        )),
   });
   if (!detail) {
     return undefined;

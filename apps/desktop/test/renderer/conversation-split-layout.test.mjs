@@ -64,7 +64,9 @@ test("closePane in 4-pane grid removes only the closed leaf", () => {
   const closed = closePane(grid, "tl");
   assert.ok(closed);
   assert.equal(countPanes(closed), 3);
-  const paneIds = collectSplitLayoutLeaves(closed).map((leaf) => leaf.paneId).sort();
+  const paneIds = collectSplitLayoutLeaves(closed)
+    .map((leaf) => leaf.paneId)
+    .sort();
   assert.deepEqual(paneIds, ["bl", "br", "tr"]);
 });
 
@@ -173,18 +175,8 @@ test("repositionPane nests a pane into a target quadrant inside a larger layout"
     "horizontal",
     createLeafNode("b", "/sessions/b.json"),
   );
-  layout = splitPaneAt(
-    layout,
-    "b",
-    "vertical",
-    createLeafNode("c", "/sessions/c.json"),
-  );
-  layout = splitPaneAt(
-    layout,
-    "b",
-    "horizontal",
-    createLeafNode("d", "/sessions/d.json"),
-  );
+  layout = splitPaneAt(layout, "b", "vertical", createLeafNode("c", "/sessions/c.json"));
+  layout = splitPaneAt(layout, "b", "horizontal", createLeafNode("d", "/sessions/d.json"));
   assert.equal(countPanes(layout), 4);
   const moved = repositionPane(layout, "d", "a", "after");
   assert.ok(moved);
@@ -224,12 +216,7 @@ test("updateSplitRatios applies multiple split updates", () => {
   if (split.kind !== "split") {
     return;
   }
-  const nested = splitPaneAt(
-    split.first,
-    "a",
-    "vertical",
-    createLeafNode("c", "/sessions/c.json"),
-  );
+  const nested = splitPaneAt(split.first, "a", "vertical", createLeafNode("c", "/sessions/c.json"));
   const layout = { ...split, first: nested };
   assert.equal(layout.kind, "split");
   if (layout.kind !== "split" || layout.first.kind !== "split") {

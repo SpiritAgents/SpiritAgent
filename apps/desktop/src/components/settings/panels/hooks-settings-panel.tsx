@@ -55,7 +55,11 @@ const hookCreateScopeOptions: Array<{
   hintKey: string;
 }> = [
   { scope: "user", labelKey: "settings.skillUserDirShort", hintKey: "settings.hooksUserDirHint" },
-  { scope: "workspace", labelKey: "settings.mcpScopeWorkspace", hintKey: "settings.hooksWorkspaceDirHint" },
+  {
+    scope: "workspace",
+    labelKey: "settings.mcpScopeWorkspace",
+    hintKey: "settings.hooksWorkspaceDirHint",
+  },
 ];
 
 type HooksSettingsPanelProps = {
@@ -128,10 +132,7 @@ export function HooksSettingsPanel({
       return;
     }
     const parsedTimeout = timeout.trim() ? Number(timeout) : undefined;
-    if (
-      parsedTimeout !== undefined
-      && (!Number.isFinite(parsedTimeout) || parsedTimeout <= 0)
-    ) {
+    if (parsedTimeout !== undefined && (!Number.isFinite(parsedTimeout) || parsedTimeout <= 0)) {
       setCreateError(t("settings.hooksTimeoutInvalid"));
       return;
     }
@@ -150,9 +151,7 @@ export function HooksSettingsPanel({
       setAddDialogOpen(false);
       resetForm();
     } catch (error) {
-      setCreateError(
-        error instanceof Error ? error.message : t("settings.hooksSaveFailed"),
-      );
+      setCreateError(error instanceof Error ? error.message : t("settings.hooksSaveFailed"));
     }
   }
 
@@ -160,9 +159,7 @@ export function HooksSettingsPanel({
     <div className="space-y-4">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div className="min-w-0 flex-1 space-y-1">
-          <h1 className={DESKTOP_PAGE_TITLE_CLASS}>
-            {t("settings.hooks")}
-          </h1>
+          <h1 className={DESKTOP_PAGE_TITLE_CLASS}>{t("settings.hooks")}</h1>
           {workspaceBindingDisabled ? (
             <p className="text-xs text-muted-foreground">{t("app.noWorkspaceBindingHint")}</p>
           ) : null}
@@ -204,36 +201,36 @@ export function HooksSettingsPanel({
           </p>
         ) : (
           items.map((item) => (
-              <div
-                key={item.id}
-                className="flex flex-col gap-3 px-4 py-4 sm:flex-row sm:items-start sm:justify-between sm:gap-4"
-              >
-                <div className="min-w-0 flex-1 space-y-1.5">
-                  <div className="flex flex-wrap items-center gap-2">
-                    <span className={DESKTOP_LIST_ITEM_PRIMARY_CLASS}>{item.event}</span>
-                    <Badge variant="outline" className="text-muted-foreground">
-                      {hookScopeLabel(item.scope, t)}
-                    </Badge>
-                  </div>
-                  <p
-                    className="break-all font-mono text-[0.65rem] text-muted-foreground/90"
-                    title={item.command}
-                  >
-                    {item.command}
-                  </p>
+            <div
+              key={item.id}
+              className="flex flex-col gap-3 px-4 py-4 sm:flex-row sm:items-start sm:justify-between sm:gap-4"
+            >
+              <div className="min-w-0 flex-1 space-y-1.5">
+                <div className="flex flex-wrap items-center gap-2">
+                  <span className={DESKTOP_LIST_ITEM_PRIMARY_CLASS}>{item.event}</span>
+                  <Badge variant="outline" className="text-muted-foreground">
+                    {hookScopeLabel(item.scope, t)}
+                  </Badge>
                 </div>
-                <Button
-                  type="button"
-                  variant="destructive"
-                  size="sm"
-                  className="shrink-0 self-start sm:self-center"
-                  disabled={hooksBusy}
-                  onClick={() => setDeleteTarget(item)}
+                <p
+                  className="break-all font-mono text-[0.65rem] text-muted-foreground/90"
+                  title={item.command}
                 >
-                  {t("common.delete")}
-                </Button>
+                  {item.command}
+                </p>
               </div>
-            ))
+              <Button
+                type="button"
+                variant="destructive"
+                size="sm"
+                className="shrink-0 self-start sm:self-center"
+                disabled={hooksBusy}
+                onClick={() => setDeleteTarget(item)}
+              >
+                {t("common.delete")}
+              </Button>
+            </div>
+          ))
         )}
       </div>
 
@@ -256,50 +253,48 @@ export function HooksSettingsPanel({
               })}
             </DialogDescription>
           </DialogHeader>
-          {deleteError ? (
-            <p className="text-xs text-destructive">{deleteError}</p>
-          ) : null}
+          {deleteError ? <p className="text-xs text-destructive">{deleteError}</p> : null}
           <DialogFooter>
             <DialogFooterActions>
-            <Button
-              type="button"
-              variant="outline"
-              size="sm"
-              onClick={() => setDeleteTarget(null)}
-              disabled={hooksBusy}
-            >
-              {t("common.cancel")}
-            </Button>
-            <Button
-              type="button"
-              variant="destructive"
-              size="sm"
-              disabled={hooksBusy || !deleteTarget}
-              onClick={() => {
-                const target = deleteTarget;
-                if (!target) {
-                  return;
-                }
-                void (async () => {
-                  try {
-                    setDeleteError(null);
-                    await onDeleteHookEntry({
-                      scope: target.scope,
-                      event: target.event,
-                      index: target.index,
-                    });
-                    setDeleteTarget(null);
-                  } catch (error) {
-                    setDeleteError(
-                      error instanceof Error ? error.message : t("settings.hooksDeleteFailed"),
-                    );
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={() => setDeleteTarget(null)}
+                disabled={hooksBusy}
+              >
+                {t("common.cancel")}
+              </Button>
+              <Button
+                type="button"
+                variant="destructive"
+                size="sm"
+                disabled={hooksBusy || !deleteTarget}
+                onClick={() => {
+                  const target = deleteTarget;
+                  if (!target) {
+                    return;
                   }
-                })();
-              }}
-            >
-              {hooksBusy ? <LoaderCircle className="size-4 animate-spin" /> : null}
-              {t("common.delete")}
-            </Button>
+                  void (async () => {
+                    try {
+                      setDeleteError(null);
+                      await onDeleteHookEntry({
+                        scope: target.scope,
+                        event: target.event,
+                        index: target.index,
+                      });
+                      setDeleteTarget(null);
+                    } catch (error) {
+                      setDeleteError(
+                        error instanceof Error ? error.message : t("settings.hooksDeleteFailed"),
+                      );
+                    }
+                  })();
+                }}
+              >
+                {hooksBusy ? <LoaderCircle className="size-4 animate-spin" /> : null}
+                {t("common.delete")}
+              </Button>
             </DialogFooterActions>
           </DialogFooter>
         </DialogContent>
@@ -347,13 +342,19 @@ export function HooksSettingsPanel({
                 ))}
               </div>
               <p className="text-xs text-muted-foreground">
-                {localizedHookCreateScopeOptions.find((option) => option.scope === createScope)?.hint}
+                {
+                  localizedHookCreateScopeOptions.find((option) => option.scope === createScope)
+                    ?.hint
+                }
               </p>
             </div>
 
             <div className="grid gap-2">
               <Label htmlFor="hook-event">{t("settings.hooksEvent")}</Label>
-              <Select value={event} onValueChange={(value) => setEvent(value as DesktopHookEventName)}>
+              <Select
+                value={event}
+                onValueChange={(value) => setEvent(value as DesktopHookEventName)}
+              >
                 <SelectTrigger id="hook-event">
                   <SelectValue />
                 </SelectTrigger>
@@ -388,9 +389,7 @@ export function HooksSettingsPanel({
                 autoComplete="off"
               />
             </div>
-            {createError ? (
-              <p className="text-xs text-destructive">{createError}</p>
-            ) : null}
+            {createError ? <p className="text-xs text-destructive">{createError}</p> : null}
             <div className="grid gap-2">
               <Label htmlFor="hook-matcher">{t("settings.hooksMatcher")}</Label>
               <DesktopFormInput
@@ -414,7 +413,12 @@ export function HooksSettingsPanel({
           </div>
           <DialogFooter>
             <DialogFooterActions>
-              <Button type="button" variant="outline" size="sm" onClick={() => setAddDialogOpen(false)}>
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={() => setAddDialogOpen(false)}
+              >
                 {t("common.cancel")}
               </Button>
               <Button

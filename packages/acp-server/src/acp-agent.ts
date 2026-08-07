@@ -1,20 +1,29 @@
-import type * as acp from '@agentclientprotocol/sdk';
-import type * as schema from '@agentclientprotocol/sdk';
-import { RequestError } from '@agentclientprotocol/sdk';
-import type { JsonValue, LlmActiveSkill, RuntimeEvent } from '@spiritagent/agent-core';
-import type { AuthState } from './auth/auth-state.js';
-import { buildAuthMethods } from './auth/build-auth-methods.js';
-import { TERMINAL_AUTH_METHOD_ID } from './auth/constants.js';
-import { canCreateSession } from './auth/session-auth.js';
-import { hasResolvableCredentials } from '@spiritagent/host-internal';
-import { mapRuntimeEventToUpdate, createEventMapperState, type EventMapperState } from './event-mapper.js';
-import { handleApprovalRequest, handleQuestionsRequest } from './permission-bridge.js';
-import { buildAvailableCommands, parseSlashCommand, buildActiveSkillPayload, upsertActiveSkill } from './skill-bridge.js';
-import { extractPromptImages } from './prompt-images.js';
-import { SessionManager } from './session-manager.js';
-import { mapSessionSetupError } from './transport/map-setup-error.js';
-import { AVAILABLE_MODES } from './types.js';
-import type { AcpServerConfig } from './types.js';
+import type * as acp from "@agentclientprotocol/sdk";
+import type * as schema from "@agentclientprotocol/sdk";
+import { RequestError } from "@agentclientprotocol/sdk";
+import type { JsonValue, LlmActiveSkill, RuntimeEvent } from "@spiritagent/agent-core";
+import type { AuthState } from "./auth/auth-state.js";
+import { buildAuthMethods } from "./auth/build-auth-methods.js";
+import { TERMINAL_AUTH_METHOD_ID } from "./auth/constants.js";
+import { canCreateSession } from "./auth/session-auth.js";
+import { hasResolvableCredentials } from "@spiritagent/host-internal";
+import {
+  mapRuntimeEventToUpdate,
+  createEventMapperState,
+  type EventMapperState,
+} from "./event-mapper.js";
+import { handleApprovalRequest, handleQuestionsRequest } from "./permission-bridge.js";
+import {
+  buildAvailableCommands,
+  parseSlashCommand,
+  buildActiveSkillPayload,
+  upsertActiveSkill,
+} from "./skill-bridge.js";
+import { extractPromptImages } from "./prompt-images.js";
+import { SessionManager } from "./session-manager.js";
+import { mapSessionSetupError } from "./transport/map-setup-error.js";
+import { AVAILABLE_MODES } from "./types.js";
+import type { AcpServerConfig } from "./types.js";
 
 /**
  * Spirit Agent implementation of the ACP Agent interface.
@@ -38,9 +47,7 @@ export class SpiritAcpAgent implements acp.Agent {
     this.sessionManager = new SessionManager(config);
   }
 
-  async initialize(
-    _params: schema.InitializeRequest,
-  ): Promise<schema.InitializeResponse> {
+  async initialize(_params: schema.InitializeRequest): Promise<schema.InitializeResponse> {
     const authMethods = buildAuthMethods();
 
     return {
@@ -58,21 +65,19 @@ export class SpiritAcpAgent implements acp.Agent {
         },
       },
       agentInfo: {
-        name: 'spirit-agent',
-        title: 'Spirit Agent',
-        version: '0.3.2',
+        name: "spirit-agent",
+        title: "Spirit Agent",
+        version: "0.3.2",
       },
       authMethods,
     };
   }
 
-  async newSession(
-    params: schema.NewSessionRequest,
-  ): Promise<schema.NewSessionResponse> {
+  async newSession(params: schema.NewSessionRequest): Promise<schema.NewSessionResponse> {
     if (!canCreateSession(this.config, this.authState)) {
       throw RequestError.authRequired(
         undefined,
-        'Authentication required before creating a session',
+        "Authentication required before creating a session",
       );
     }
 
@@ -80,9 +85,8 @@ export class SpiritAcpAgent implements acp.Agent {
 
     let result;
     try {
-      result = await this.sessionManager.createSession(
-        workspaceRoot,
-        (sessionId, event) => this.handleRuntimeEvent(sessionId, event),
+      result = await this.sessionManager.createSession(workspaceRoot, (sessionId, event) =>
+        this.handleRuntimeEvent(sessionId, event),
       );
     } catch (err) {
       throw mapSessionSetupError(err);
@@ -100,22 +104,24 @@ export class SpiritAcpAgent implements acp.Agent {
     if (commands.length > 0) {
       const sessionId = result.sessionId;
       setTimeout(() => {
-        this.connection.sessionUpdate({
-          sessionId,
-          update: {
-            sessionUpdate: 'available_commands_update',
-            availableCommands: commands,
-          },
-        } as unknown as schema.SessionNotification).catch((err) => {
-          console.error('Failed to send available commands:', err);
-        });
+        this.connection
+          .sessionUpdate({
+            sessionId,
+            update: {
+              sessionUpdate: "available_commands_update",
+              availableCommands: commands,
+            },
+          } as unknown as schema.SessionNotification)
+          .catch((err) => {
+            console.error("Failed to send available commands:", err);
+          });
       }, 0);
     }
 
     return {
       sessionId: result.sessionId,
       modes: {
-        currentModeId: 'agent',
+        currentModeId: "agent",
         availableModes: AVAILABLE_MODES.map((m) => ({
           id: m.id,
           name: m.name,
@@ -137,8 +143,8 @@ export class SpiritAcpAgent implements acp.Agent {
 
     if (!hasResolvableCredentials(this.config.spiritDataDir)) {
       throw RequestError.authRequired(
-        { reason: 'missing_credentials' },
-        'Provider credentials are not configured. Run setup in the terminal first.',
+        { reason: "missing_credentials" },
+        "Provider credentials are not configured. Run setup in the terminal first.",
       );
     }
 
@@ -146,9 +152,7 @@ export class SpiritAcpAgent implements acp.Agent {
     return {};
   }
 
-  async unstable_logout(
-    _params: schema.LogoutRequest,
-  ): Promise<schema.LogoutResponse | void> {
+  async unstable_logout(_params: schema.LogoutRequest): Promise<schema.LogoutResponse | void> {
     this.authState.logout();
     return {};
   }
@@ -162,7 +166,7 @@ export class SpiritAcpAgent implements acp.Agent {
     await this.connection.sessionUpdate({
       sessionId: params.sessionId,
       update: {
-        sessionUpdate: 'current_mode_update',
+        sessionUpdate: "current_mode_update",
         currentModeId: mode,
       },
     } as unknown as schema.SessionNotification);
@@ -198,8 +202,9 @@ export class SpiritAcpAgent implements acp.Agent {
           const payload = await buildActiveSkillPayload(entry);
           upsertActiveSkill(session.activeSkills, payload);
           activeSkillsForTurn = [payload];
-          userInput = parsed.remainingText
-            || `Please follow the activated skill "${parsed.skillName}" to handle the current task.`;
+          userInput =
+            parsed.remainingText ||
+            `Please follow the activated skill "${parsed.skillName}" to handle the current task.`;
         } catch (err) {
           console.error(`Failed to activate skill "${parsed.skillName}":`, err);
         }
@@ -211,26 +216,33 @@ export class SpiritAcpAgent implements acp.Agent {
 
     try {
       // Extract images from content blocks
-      const { paths: explicitImages, cleanup: cleanupImages } = await extractPromptImages(params.prompt);
+      const { paths: explicitImages, cleanup: cleanupImages } = await extractPromptImages(
+        params.prompt,
+      );
 
       try {
         // Use streaming start so onEvent fires real-time chunks
-        await session.runtime.startUserTurnStreaming(userInput, explicitImages, [], activeSkillsForTurn);
+        await session.runtime.startUserTurnStreaming(
+          userInput,
+          explicitImages,
+          [],
+          activeSkillsForTurn,
+        );
         const result = await session.runtime.waitForCompletedTurnResult();
 
         // Check if a newer prompt has superseded this one
         if (this.promptGenerations.get(params.sessionId) !== generation) {
-          return { stopReason: 'cancelled' };
+          return { stopReason: "cancelled" };
         }
 
         session.pendingPrompt = null;
 
         // Map turn result to stop reason
-        if (result.kind === 'failed') {
-          return { stopReason: 'refusal' };
+        if (result.kind === "failed") {
+          return { stopReason: "refusal" };
         }
 
-        return { stopReason: 'end_turn' };
+        return { stopReason: "end_turn" };
       } finally {
         // Clean up temp files after the entire turn completes (LLM may still
         // read image files during processing between start and completion)
@@ -239,14 +251,14 @@ export class SpiritAcpAgent implements acp.Agent {
     } catch (err) {
       // Stale generation — a newer prompt took over, treat as cancelled
       if (this.promptGenerations.get(params.sessionId) !== generation) {
-        return { stopReason: 'cancelled' };
+        return { stopReason: "cancelled" };
       }
 
       const aborted = session.pendingPrompt?.signal.aborted ?? false;
       session.pendingPrompt = null;
 
       if (aborted) {
-        return { stopReason: 'cancelled' };
+        return { stopReason: "cancelled" };
       }
 
       // Re-throw unexpected errors
@@ -281,31 +293,31 @@ export class SpiritAcpAgent implements acp.Agent {
    */
   private handleRuntimeEvent(sessionId: string, event: RuntimeEvent<JsonValue>): void {
     // Handle approval requests asynchronously
-    if (event.kind === 'approval-requested') {
+    if (event.kind === "approval-requested") {
       const session = this.sessionManager.getSession(sessionId);
       if (session) {
         // Fire-and-forget: request permission, then continue approval
-        handleApprovalRequest(
-          this.connection,
-          sessionId,
-          event.approval as any,
-        ).then((decision) => {
-          // The pending approval may have been cleared by cancel/abort
-          // in the meantime. Catch the rejection to avoid unhandled errors.
-          session.runtime.continuePendingApproval(decision).catch(() => {});
-        }).catch((err) => {
-          console.error('Permission request failed:', err);
-          session.runtime.continuePendingApproval({
-            kind: 'deny',
-            resultText: 'Permission request failed.',
-          }).catch(() => {});
-        });
+        handleApprovalRequest(this.connection, sessionId, event.approval as any)
+          .then((decision) => {
+            // The pending approval may have been cleared by cancel/abort
+            // in the meantime. Catch the rejection to avoid unhandled errors.
+            session.runtime.continuePendingApproval(decision).catch(() => {});
+          })
+          .catch((err) => {
+            console.error("Permission request failed:", err);
+            session.runtime
+              .continuePendingApproval({
+                kind: "deny",
+                resultText: "Permission request failed.",
+              })
+              .catch(() => {});
+          });
       }
       return;
     }
 
     // Handle questions-requested by degrading to permission prompt (MVP)
-    if (event.kind === 'questions-requested') {
+    if (event.kind === "questions-requested") {
       const session = this.sessionManager.getSession(sessionId);
       if (session) {
         // RuntimePendingQuestions has nested .questions (AskQuestionsRequest) with .title
@@ -313,31 +325,32 @@ export class SpiritAcpAgent implements acp.Agent {
           questions?: { title?: string };
           toolName?: string;
         };
-        const description = pending.questions?.title
-          ?? pending.toolName
-          ?? 'The agent needs additional input.';
-        handleQuestionsRequest(
-          this.connection,
-          sessionId,
-          { prompt: description },
-        ).then((allowed) => {
-          if (allowed) {
-            session.runtime.resumePendingQuestions({
-              status: 'answered',
-              answers: [],
-            }).catch((err) => {
-              console.error('Failed to resume questions:', err);
-            });
-          } else {
-            session.runtime.resumePendingQuestions({
-              status: 'skipped',
-            }).catch((err) => {
-              console.error('Failed to skip questions:', err);
-            });
-          }
-        }).catch((err) => {
-          console.error('Questions request failed:', err);
-        });
+        const description =
+          pending.questions?.title ?? pending.toolName ?? "The agent needs additional input.";
+        handleQuestionsRequest(this.connection, sessionId, { prompt: description })
+          .then((allowed) => {
+            if (allowed) {
+              session.runtime
+                .resumePendingQuestions({
+                  status: "answered",
+                  answers: [],
+                })
+                .catch((err) => {
+                  console.error("Failed to resume questions:", err);
+                });
+            } else {
+              session.runtime
+                .resumePendingQuestions({
+                  status: "skipped",
+                })
+                .catch((err) => {
+                  console.error("Failed to skip questions:", err);
+                });
+            }
+          })
+          .catch((err) => {
+            console.error("Questions request failed:", err);
+          });
       }
       return;
     }
@@ -351,7 +364,7 @@ export class SpiritAcpAgent implements acp.Agent {
     const update = mapRuntimeEventToUpdate(event, sessionId, mapperState);
     if (update) {
       this.connection.sessionUpdate(update).catch((err) => {
-        console.error('Failed to send session update:', err);
+        console.error("Failed to send session update:", err);
       });
     }
   }
@@ -364,16 +377,16 @@ function extractPromptText(prompt: schema.ContentBlock[]): string {
   const parts: string[] = [];
 
   for (const block of prompt) {
-    if (block.type === 'text') {
+    if (block.type === "text") {
       parts.push(block.text);
-    } else if (block.type === 'resource' && 'text' in block.resource) {
+    } else if (block.type === "resource" && "text" in block.resource) {
       const resource = block.resource as { uri?: string; text?: string };
-      parts.push(`[File: ${resource.uri ?? 'unknown'}]\n${resource.text ?? ''}`);
-    } else if (block.type === 'resource_link') {
+      parts.push(`[File: ${resource.uri ?? "unknown"}]\n${resource.text ?? ""}`);
+    } else if (block.type === "resource_link") {
       const link = block as { uri?: string; name?: string };
-      parts.push(`[Link: ${link.name ?? link.uri ?? 'unknown'}]`);
+      parts.push(`[Link: ${link.name ?? link.uri ?? "unknown"}]`);
     }
   }
 
-  return parts.join('\n\n');
+  return parts.join("\n\n");
 }

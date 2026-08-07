@@ -1,7 +1,7 @@
-import { displayableCompactionText } from '@/lib/conversation-compaction-ui';
-import { lastUserMessageIndexBefore } from '@/lib/message-turn-actions-ui';
-import { formatToolCallSummaryPlainText } from '@/lib/tool-call-display';
-import type { ConversationMessageSnapshot } from '@/types';
+import { displayableCompactionText } from "@/lib/conversation-compaction-ui";
+import { lastUserMessageIndexBefore } from "@/lib/message-turn-actions-ui";
+import { formatToolCallSummaryPlainText } from "@/lib/tool-call-display";
+import type { ConversationMessageSnapshot } from "@/types";
 
 export function assistantTurnMessageIndices(
   messages: readonly ConversationMessageSnapshot[],
@@ -11,19 +11,17 @@ export function assistantTurnMessageIndices(
   const indices: number[] = [];
   for (let index = turnStart + 1; index < messages.length; index += 1) {
     const message = messages[index];
-    if (!message || message.role === 'user') {
+    if (!message || message.role === "user") {
       break;
     }
-    if (message.role === 'assistant') {
+    if (message.role === "assistant") {
       indices.push(index);
     }
   }
   return indices;
 }
 
-export function formatAssistantMessageCopySegments(
-  message: ConversationMessageSnapshot,
-): string[] {
+export function formatAssistantMessageCopySegments(message: ConversationMessageSnapshot): string[] {
   const segments: string[] = [];
   const compaction = displayableCompactionText(message);
   if (compaction) {
@@ -33,7 +31,7 @@ export function formatAssistantMessageCopySegments(
   if (content) {
     segments.push(content);
   }
-  const finishTaskNotice = message.aux?.finishTaskNotice?.trim() ?? '';
+  const finishTaskNotice = message.aux?.finishTaskNotice?.trim() ?? "";
   if (finishTaskNotice) {
     segments.push(finishTaskNotice);
   }
@@ -56,7 +54,7 @@ export function formatAssistantTurnCopyText(
     }
     parts.push(...formatAssistantMessageCopySegments(message));
   }
-  return parts.join('\n\n');
+  return parts.join("\n\n");
 }
 
 export function canCopyAssistantTurn(

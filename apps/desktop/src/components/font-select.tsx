@@ -108,7 +108,9 @@ export function FontSelect({
     if (value !== DEFAULT_FONT_ID && value !== SYSTEM_FONT_ID && value.trim()) {
       values.add(value.trim());
     }
-    return Array.from(values).sort((a, b) => a.localeCompare(b, undefined, { sensitivity: "base" }));
+    return Array.from(values).sort((a, b) =>
+      a.localeCompare(b, undefined, { sensitivity: "base" }),
+    );
   }, [fonts, loadedFonts, value]);
 
   const allOptions = useMemo<FontOption[]>(
@@ -171,7 +173,11 @@ export function FontSelect({
             >
               <span
                 className="min-w-0 truncate text-left"
-                style={value === DEFAULT_FONT_ID ? undefined : { fontFamily: toFontPreferenceStack(value) }}
+                style={
+                  value === DEFAULT_FONT_ID
+                    ? undefined
+                    : { fontFamily: toFontPreferenceStack(value) }
+                }
               >
                 {currentLabel}
               </span>
@@ -185,9 +191,13 @@ export function FontSelect({
         }
       >
         {effectiveLoading ? (
-          <p className="px-2 py-4 text-center text-xs text-muted-foreground">{t("settings.loadingFonts")}</p>
+          <p className="px-2 py-4 text-center text-xs text-muted-foreground">
+            {t("settings.loadingFonts")}
+          </p>
         ) : filteredOptions.length === 0 ? (
-          <p className="px-2 py-4 text-center text-xs text-muted-foreground">{t("settings.noMatchingFonts")}</p>
+          <p className="px-2 py-4 text-center text-xs text-muted-foreground">
+            {t("settings.noMatchingFonts")}
+          </p>
         ) : (
           filteredOptions.map((option) => {
             const selected = option.id === value;
@@ -231,7 +241,9 @@ async function listAvailableFonts(): Promise<string[]> {
   }
 
   const localFonts = await queryBrowserLocalFonts();
-  return normalizeFonts(localFonts.map((font) => font.family).filter((family): family is string => Boolean(family)));
+  return normalizeFonts(
+    localFonts.map((font) => font.family).filter((family): family is string => Boolean(family)),
+  );
 }
 
 async function queryBrowserLocalFonts(): Promise<BrowserFontData[]> {
@@ -246,11 +258,7 @@ async function queryBrowserLocalFonts(): Promise<BrowserFontData[]> {
 }
 
 function normalizeFonts(fonts: string[]): string[] {
-  return Array.from(
-    new Set(
-      fonts
-        .map((font) => font.trim())
-        .filter(Boolean),
-    ),
-  ).sort((a, b) => a.localeCompare(b, undefined, { sensitivity: "base" }));
+  return Array.from(new Set(fonts.map((font) => font.trim()).filter(Boolean))).sort((a, b) =>
+    a.localeCompare(b, undefined, { sensitivity: "base" }),
+  );
 }

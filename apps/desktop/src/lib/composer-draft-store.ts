@@ -2,7 +2,7 @@ import type { RichSegment } from "./composer-segment-model.js";
 import { normalizeComposerPlain, segmentsToPlainText } from "./composer-segment-model.js";
 import { normalizeSessionPathKey } from "./session-path-kind.js";
 
-export const COMPOSER_DRAFT_STORAGE_KEY = 'spirit-desktop-composer-drafts';
+export const COMPOSER_DRAFT_STORAGE_KEY = "spirit-desktop-composer-drafts";
 
 const STORE_VERSION = 2;
 const MAX_DRAFT_ENTRIES = 200;
@@ -25,7 +25,7 @@ export interface ComposerDraftStorage {
 }
 
 export function normalizeComposerSessionKey(key: string): string {
-  return key.trim().replace(/\\/g, '/').toLowerCase();
+  return key.trim().replace(/\\/g, "/").toLowerCase();
 }
 
 function normalizeLocalFilePaths(paths: readonly string[]): string[] {
@@ -36,7 +36,7 @@ function normalizeLocalFilePaths(paths: readonly string[]): string[] {
     if (!trimmed) {
       continue;
     }
-    const slashPath = trimmed.replace(/\\/g, '/');
+    const slashPath = trimmed.replace(/\\/g, "/");
     const dedupeKey = slashPath.toLowerCase();
     if (seen.has(dedupeKey)) {
       continue;
@@ -48,25 +48,33 @@ function normalizeLocalFilePaths(paths: readonly string[]): string[] {
 }
 
 function isPersistedRichSegment(value: unknown): value is RichSegment {
-  if (typeof value !== 'object' || value === null || !('kind' in value)) {
+  if (typeof value !== "object" || value === null || !("kind" in value)) {
     return false;
   }
   const kind = (value as { kind?: unknown }).kind;
-  if (kind === 'text') {
-    return typeof (value as { value?: unknown }).value === 'string';
+  if (kind === "text") {
+    return typeof (value as { value?: unknown }).value === "string";
   }
-  if (kind === 'workspaceFile') {
-    return typeof (value as { path?: unknown }).path === 'string';
+  if (kind === "workspaceFile") {
+    return typeof (value as { path?: unknown }).path === "string";
   }
-  if (kind === 'skill') {
-    return typeof (value as { alias?: unknown }).alias === 'string';
+  if (kind === "skill") {
+    return typeof (value as { alias?: unknown }).alias === "string";
   }
-  if (kind === 'loop' || kind === 'plan' || kind === 'ask' || kind === 'debug') {
+  if (kind === "loop" || kind === "plan" || kind === "ask" || kind === "debug") {
     return true;
   }
-  if (kind === 'element' || kind === 'prDiff' || kind === 'gitCommit' || kind === 'terminalSnippet' || kind === 'fileSnippet') {
-    return typeof (value as { attachment?: unknown }).attachment === 'object'
-      && (value as { attachment?: unknown }).attachment !== null;
+  if (
+    kind === "element" ||
+    kind === "prDiff" ||
+    kind === "gitCommit" ||
+    kind === "terminalSnippet" ||
+    kind === "fileSnippet"
+  ) {
+    return (
+      typeof (value as { attachment?: unknown }).attachment === "object" &&
+      (value as { attachment?: unknown }).attachment !== null
+    );
   }
   return false;
 }
@@ -80,7 +88,7 @@ function normalizeDraftSegments(segments: unknown): RichSegment[] {
 
 function hasMeaningfulDraftSegments(segments: readonly RichSegment[]): boolean {
   return segments.some((segment) => {
-    if (segment.kind === 'text') {
+    if (segment.kind === "text") {
       return segment.value.trim().length > 0;
     }
     return true;
@@ -92,15 +100,17 @@ function draftPlainText(segments: readonly RichSegment[]): string {
 }
 
 function isComposerDraftEmpty(
-  entry: Pick<ComposerDraftEntry, 'localFilePaths' | 'segments'>,
+  entry: Pick<ComposerDraftEntry, "localFilePaths" | "segments">,
 ): boolean {
-  return entry.localFilePaths.length === 0
-    && !hasMeaningfulDraftSegments(entry.segments)
-    && !draftPlainText(entry.segments).trim();
+  return (
+    entry.localFilePaths.length === 0 &&
+    !hasMeaningfulDraftSegments(entry.segments) &&
+    !draftPlainText(entry.segments).trim()
+  );
 }
 
 function isComposerDraftEntryEmpty(
-  entry: Pick<ComposerDraftEntry, 'localFilePaths' | 'segments'> | undefined,
+  entry: Pick<ComposerDraftEntry, "localFilePaths" | "segments"> | undefined,
 ): boolean {
   return !entry || isComposerDraftEmpty(entry);
 }
@@ -128,7 +138,7 @@ export function resolvePaneComposerDraft(
 
 export function buildPaneComposerDraftKey(sessionPath: string): string {
   const normalized = normalizeSessionPathKey(sessionPath.trim());
-  return normalized ? `pane:${normalized}` : '';
+  return normalized ? `pane:${normalized}` : "";
 }
 
 function readStoreFile(storage: ComposerDraftStorage): ComposerDraftStoreFile {
@@ -138,7 +148,7 @@ function readStoreFile(storage: ComposerDraftStorage): ComposerDraftStoreFile {
       return { version: STORE_VERSION, drafts: {} };
     }
     const parsed = JSON.parse(raw) as Partial<ComposerDraftStoreFile>;
-    if (parsed.version !== STORE_VERSION || typeof parsed.drafts !== 'object' || !parsed.drafts) {
+    if (parsed.version !== STORE_VERSION || typeof parsed.drafts !== "object" || !parsed.drafts) {
       return { version: STORE_VERSION, drafts: {} };
     }
     return { version: STORE_VERSION, drafts: parsed.drafts };
@@ -151,7 +161,9 @@ function writeStoreFile(storage: ComposerDraftStorage, file: ComposerDraftStoreF
   storage.setItem(COMPOSER_DRAFT_STORAGE_KEY, JSON.stringify(file));
 }
 
-function pruneDraftEntries(drafts: Record<string, ComposerDraftEntry>): Record<string, ComposerDraftEntry> {
+function pruneDraftEntries(
+  drafts: Record<string, ComposerDraftEntry>,
+): Record<string, ComposerDraftEntry> {
   const entries = Object.entries(drafts);
   if (entries.length <= MAX_DRAFT_ENTRIES) {
     return drafts;
@@ -161,7 +173,7 @@ function pruneDraftEntries(drafts: Record<string, ComposerDraftEntry>): Record<s
 }
 
 function defaultStorage(): ComposerDraftStorage | undefined {
-  if (typeof localStorage === 'undefined') {
+  if (typeof localStorage === "undefined") {
     return undefined;
   }
   return localStorage;
@@ -176,7 +188,7 @@ export function readComposerDraft(
     return undefined;
   }
   const entry = readStoreFile(storage).drafts[normalizedKey];
-  if (!entry || typeof entry.text !== 'string' || !Array.isArray(entry.localFilePaths)) {
+  if (!entry || typeof entry.text !== "string" || !Array.isArray(entry.localFilePaths)) {
     return undefined;
   }
   const segments = normalizeDraftSegments(entry.segments);
@@ -185,13 +197,13 @@ export function readComposerDraft(
     text,
     localFilePaths: normalizeLocalFilePaths(entry.localFilePaths),
     segments,
-    updatedAt: typeof entry.updatedAt === 'number' ? entry.updatedAt : 0,
+    updatedAt: typeof entry.updatedAt === "number" ? entry.updatedAt : 0,
   };
 }
 
 export function writeComposerDraft(
   sessionKey: string,
-  payload: Pick<ComposerDraftEntry, 'localFilePaths' | 'segments'>,
+  payload: Pick<ComposerDraftEntry, "localFilePaths" | "segments">,
   storage: ComposerDraftStorage | undefined = defaultStorage(),
 ): void {
   const normalizedKey = normalizeComposerSessionKey(sessionKey);

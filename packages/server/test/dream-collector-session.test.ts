@@ -1,30 +1,30 @@
-import assert from 'node:assert/strict';
-import { mkdtempSync, writeFileSync } from 'node:fs';
-import { tmpdir } from 'node:os';
-import { join } from 'node:path';
-import { describe, it } from 'node:test';
+import assert from "node:assert/strict";
+import { mkdtempSync, writeFileSync } from "node:fs";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
+import { describe, it } from "node:test";
 
-import { toolNamesFromDefinitions } from '@spiritagent/agent-core';
-import { setKeyringStoreForTests, groupKeyAccount } from '@spiritagent/host-internal';
+import { toolNamesFromDefinitions } from "@spiritagent/agent-core";
+import { setKeyringStoreForTests, groupKeyAccount } from "@spiritagent/host-internal";
 
-import { createServerRuntime } from '../src/runtime-factory.js';
-import { SessionManager } from '../src/session-manager.js';
+import { createServerRuntime } from "../src/runtime-factory.js";
+import { SessionManager } from "../src/session-manager.js";
 
 function freshDataDir(): string {
-  const dir = mkdtempSync(join(tmpdir(), 'spirit-server-dream-collector-'));
+  const dir = mkdtempSync(join(tmpdir(), "spirit-server-dream-collector-"));
   writeFileSync(
-    join(dir, 'config.json'),
+    join(dir, "config.json"),
     JSON.stringify({
       schemaVersion: 2,
       providerGroups: [
         {
-          id: 'openai',
-          provider: 'openai',
-          apiBase: 'https://api.openai.com/v1',
-          models: [{ name: 'gpt-4o-mini' }],
+          id: "openai",
+          provider: "openai",
+          apiBase: "https://api.openai.com/v1",
+          models: [{ name: "gpt-4o-mini" }],
         },
       ],
-      activeModel: { groupId: 'openai', name: 'gpt-4o-mini' },
+      activeModel: { groupId: "openai", name: "gpt-4o-mini" },
     }),
   );
   return dir;
@@ -41,51 +41,54 @@ function withMockKeyring(run: () => Promise<void>): Promise<void> {
       store.delete(`${service}/${account}`);
     },
   });
-  store.set(`SpiritAgent/${groupKeyAccount('openai')}`, 'test-key');
+  store.set(`SpiritAgent/${groupKeyAccount("openai")}`, "test-key");
   return run().finally(() => setKeyringStoreForTests(undefined));
 }
 
-describe('dream-collector session', () => {
-  it('createServerRuntime exposes dream-only tool definitions', async () => {
+describe("dream-collector session", () => {
+  it("createServerRuntime exposes dream-only tool definitions", async () => {
     await withMockKeyring(async () => {
       const dataDir = freshDataDir();
-      const workspaceRoot = mkdtempSync(join(tmpdir(), 'spirit-dream-collector-ws-'));
+      const workspaceRoot = mkdtempSync(join(tmpdir(), "spirit-dream-collector-ws-"));
       const result = await createServerRuntime({
         workspaceRoot,
         spiritDataDir: dataDir,
-        sessionKey: 'sess_dream_collector_test',
-        hostKind: 'desktop',
-        approvalLevel: 'auto-approval',
-        sessionKind: 'dream-collector',
-        dreamScope: { workspaceRoot, gitBranch: 'main' },
+        sessionKey: "sess_dream_collector_test",
+        hostKind: "desktop",
+        approvalLevel: "auto-approval",
+        sessionKind: "dream-collector",
+        dreamScope: { workspaceRoot, gitBranch: "main" },
         dreamSourceSession: {
-          path: join(workspaceRoot, 'chats', 'source.json'),
-          displayName: 'Source chat',
+          path: join(workspaceRoot, "chats", "source.json"),
+          displayName: "Source chat",
           savedAtUnixMs: Date.now(),
         },
-        modelRef: { groupId: 'openai', name: 'gpt-4o-mini' },
+        modelRef: { groupId: "openai", name: "gpt-4o-mini" },
         onEvent: () => {},
       });
 
       const toolNames = toolNamesFromDefinitions(result.toolExecutor.toolDefinitionsJson());
-      assert.deepEqual(
-        [...toolNames].sort(),
-        ['dream_delete', 'dream_list', 'dream_read', 'dream_record', 'dream_update'],
-      );
+      assert.deepEqual([...toolNames].sort(), [
+        "dream_delete",
+        "dream_list",
+        "dream_read",
+        "dream_record",
+        "dream_update",
+      ]);
       assert.equal(result.enabledRules.length, 0);
       assert.equal(result.enabledSkillCatalog.length, 0);
 
       const beforeToolNames = toolNamesFromDefinitions(result.toolExecutor.toolDefinitionsJson());
-      await result.reloadHostMetadata('plan');
+      await result.reloadHostMetadata("plan");
       const afterToolNames = toolNamesFromDefinitions(result.toolExecutor.toolDefinitionsJson());
       assert.deepEqual(afterToolNames, beforeToolNames);
     });
   });
 
-  it('SessionManager.createSession accepts dream-collector params', async () => {
+  it("SessionManager.createSession accepts dream-collector params", async () => {
     await withMockKeyring(async () => {
       const dataDir = freshDataDir();
-      const workspaceRoot = mkdtempSync(join(tmpdir(), 'spirit-dream-collector-ws-'));
+      const workspaceRoot = mkdtempSync(join(tmpdir(), "spirit-dream-collector-ws-"));
       const manager = new SessionManager(dataDir, {
         broadcastRuntimeEvent: () => {},
         broadcastTurnFinished: () => {},
@@ -96,17 +99,17 @@ describe('dream-collector session', () => {
 
       const created = await manager.createSession({
         workspaceRoot,
-        hostKind: 'desktop',
-        approvalLevel: 'auto-approval',
-        sessionKind: 'dream-collector',
-        dreamScope: { workspaceRoot, gitBranch: 'feature-branch' },
+        hostKind: "desktop",
+        approvalLevel: "auto-approval",
+        sessionKind: "dream-collector",
+        dreamScope: { workspaceRoot, gitBranch: "feature-branch" },
         dreamSourceSession: {
-          path: join(workspaceRoot, 'chats', 'pending.json'),
+          path: join(workspaceRoot, "chats", "pending.json"),
         },
-        modelRef: { groupId: 'openai', name: 'gpt-4o-mini' },
+        modelRef: { groupId: "openai", name: "gpt-4o-mini" },
       });
 
-      assert.ok(created.sessionId.startsWith('sess_'));
+      assert.ok(created.sessionId.startsWith("sess_"));
       assert.equal(created.isBusy, false);
       await manager.closeSession(created.sessionId);
     });

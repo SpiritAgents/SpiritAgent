@@ -1,51 +1,47 @@
-import * as React from "react"
-import { Dialog as DialogPrimitive } from "radix-ui"
+import * as React from "react";
+import { Dialog as DialogPrimitive } from "radix-ui";
 
 import { FONT_WEIGHT_NORMAL } from "@/lib/desktop-typography";
-import { cn } from "@/lib/utils"
-import { getUiLayoutPortalContainer } from "@/lib/ui-layout-scale"
-import { Button } from "@/components/ui/button"
-import { XIcon } from "lucide-react"
+import { cn } from "@/lib/utils";
+import { getUiLayoutPortalContainer } from "@/lib/ui-layout-scale";
+import { Button } from "@/components/ui/button";
+import { XIcon } from "lucide-react";
 
 type DialogOutsideEvent = {
-  detail: { originalEvent: PointerEvent | FocusEvent | MouseEvent }
-  preventDefault(): void
-}
+  detail: { originalEvent: PointerEvent | FocusEvent | MouseEvent };
+  preventDefault(): void;
+};
 
 /** 嵌套 Select/Dropdown 的 disableOutsidePointerEvents 会使 content 穿透点击落到 overlay。 */
 function preventDialogDismissForOverlayPassthrough(
   event: DialogOutsideEvent,
   contentEl: HTMLElement | null,
 ): void {
-  const originalEvent = event.detail.originalEvent
-  const target = originalEvent.target
+  const originalEvent = event.detail.originalEvent;
+  const target = originalEvent.target;
   if (!(target instanceof Element) || !target.closest('[data-slot="dialog-overlay"]')) {
-    return
+    return;
   }
   if (!contentEl || !("clientX" in originalEvent)) {
-    return
+    return;
   }
-  const rect = contentEl.getBoundingClientRect()
+  const rect = contentEl.getBoundingClientRect();
   const insideContent =
-    originalEvent.clientX >= rect.left
-    && originalEvent.clientX <= rect.right
-    && originalEvent.clientY >= rect.top
-    && originalEvent.clientY <= rect.bottom
+    originalEvent.clientX >= rect.left &&
+    originalEvent.clientX <= rect.right &&
+    originalEvent.clientY >= rect.top &&
+    originalEvent.clientY <= rect.bottom;
   if (insideContent) {
-    event.preventDefault()
+    event.preventDefault();
   }
 }
 
-function Dialog({
-  ...props
-}: React.ComponentProps<typeof DialogPrimitive.Root>) {
-  return <DialogPrimitive.Root data-slot="dialog" {...props} />
+function Dialog({ ...props }: React.ComponentProps<typeof DialogPrimitive.Root>) {
+  return <DialogPrimitive.Root data-slot="dialog" {...props} />;
 }
 
-function DialogTrigger({
-  ...props
-}: React.ComponentProps<typeof DialogPrimitive.Trigger>) {
-  return <DialogPrimitive.Trigger data-slot="dialog-trigger" {...props} />
+function DialogTrigger({ ...props }: React.ComponentProps<typeof DialogPrimitive.Trigger>) {
+  return <DialogPrimitive.Trigger data-slot="dialog-trigger" {...props} />;
 }
 
 function DialogPortal({
@@ -58,13 +54,11 @@ function DialogPortal({
       container={container ?? getUiLayoutPortalContainer()}
       {...props}
     />
-  )
+  );
 }
 
-function DialogClose({
-  ...props
-}: React.ComponentProps<typeof DialogPrimitive.Close>) {
-  return <DialogPrimitive.Close data-slot="dialog-close" {...props} />
+function DialogClose({ ...props }: React.ComponentProps<typeof DialogPrimitive.Close>) {
+  return <DialogPrimitive.Close data-slot="dialog-close" {...props} />;
 }
 
 function DialogOverlay({
@@ -76,11 +70,11 @@ function DialogOverlay({
       data-slot="dialog-overlay"
       className={cn(
         "fixed inset-0 isolate z-50 bg-black/10 duration-100 supports-backdrop-filter:backdrop-blur-xs data-open:animate-in data-open:fade-in-0 data-closed:animate-out data-closed:fade-out-0",
-        className
+        className,
       )}
       {...props}
     />
-  )
+  );
 }
 
 function DialogContent({
@@ -92,10 +86,10 @@ function DialogContent({
   onInteractOutside,
   ...props
 }: React.ComponentProps<typeof DialogPrimitive.Content> & {
-  showCloseButton?: boolean
-  overlayClassName?: string
+  showCloseButton?: boolean;
+  overlayClassName?: string;
 }) {
-  const contentRef = React.useRef<HTMLDivElement>(null)
+  const contentRef = React.useRef<HTMLDivElement>(null);
 
   return (
     <DialogPortal>
@@ -105,48 +99,39 @@ function DialogContent({
         data-slot="dialog-content"
         className={cn(
           "fixed top-1/2 left-1/2 z-50 grid w-full max-w-[calc(100%-2rem)] -translate-x-1/2 -translate-y-1/2 gap-4 rounded-xl bg-popover p-4 text-sm text-popover-foreground ring-1 ring-foreground/10 duration-100 outline-none sm:max-w-sm data-open:animate-in data-open:fade-in-0 data-open:zoom-in-95 data-closed:animate-out data-closed:fade-out-0 data-closed:zoom-out-95",
-          className
+          className,
         )}
         onPointerDownOutside={(event) => {
-          preventDialogDismissForOverlayPassthrough(event, contentRef.current)
-          onPointerDownOutside?.(event)
+          preventDialogDismissForOverlayPassthrough(event, contentRef.current);
+          onPointerDownOutside?.(event);
         }}
         onInteractOutside={(event) => {
-          preventDialogDismissForOverlayPassthrough(event, contentRef.current)
-          onInteractOutside?.(event)
+          preventDialogDismissForOverlayPassthrough(event, contentRef.current);
+          onInteractOutside?.(event);
         }}
         {...props}
       >
         {children}
         {showCloseButton && (
           <DialogPrimitive.Close data-slot="dialog-close" asChild>
-            <Button
-              variant="ghost"
-              className="absolute top-2 right-2"
-              size="icon-sm"
-            >
-              <XIcon
-              />
+            <Button variant="ghost" className="absolute top-2 right-2" size="icon-sm">
+              <XIcon />
               <span className="sr-only">Close</span>
             </Button>
           </DialogPrimitive.Close>
         )}
       </DialogPrimitive.Content>
     </DialogPortal>
-  )
+  );
 }
 
 function DialogHeader({ className, ...props }: React.ComponentProps<"div">) {
   return (
-    <div
-      data-slot="dialog-header"
-      className={cn("flex flex-col gap-2", className)}
-      {...props}
-    />
-  )
+    <div data-slot="dialog-header" className={cn("flex flex-col gap-2", className)} {...props} />
+  );
 }
 
-type DialogFooterLayout = "actions" | "split"
+type DialogFooterLayout = "actions" | "split";
 
 function DialogFooter({
   className,
@@ -156,9 +141,9 @@ function DialogFooter({
   children,
   ...props
 }: React.ComponentProps<"div"> & {
-  layout?: DialogFooterLayout
-  inset?: boolean
-  showCloseButton?: boolean
+  layout?: DialogFooterLayout;
+  inset?: boolean;
+  showCloseButton?: boolean;
 }) {
   return (
     <div
@@ -169,7 +154,7 @@ function DialogFooter({
         layout === "split"
           ? "flex-col sm:flex-row sm:items-center sm:justify-between"
           : "flex-col-reverse sm:flex-row sm:justify-end",
-        className
+        className,
       )}
       {...props}
     >
@@ -180,39 +165,30 @@ function DialogFooter({
         </DialogPrimitive.Close>
       )}
     </div>
-  )
+  );
 }
 
-function DialogFooterActions({
-  className,
-  ...props
-}: React.ComponentProps<"div">) {
+function DialogFooterActions({ className, ...props }: React.ComponentProps<"div">) {
   return (
     <div
       data-slot="dialog-footer-actions"
       className={cn(
         "flex shrink-0 flex-col-reverse gap-2 sm:flex-row sm:items-center sm:justify-end",
-        className
+        className,
       )}
       {...props}
     />
-  )
+  );
 }
 
-function DialogTitle({
-  className,
-  ...props
-}: React.ComponentProps<typeof DialogPrimitive.Title>) {
+function DialogTitle({ className, ...props }: React.ComponentProps<typeof DialogPrimitive.Title>) {
   return (
     <DialogPrimitive.Title
       data-slot="dialog-title"
-      className={cn(
-        `font-heading text-base leading-none ${FONT_WEIGHT_NORMAL}`,
-        className
-      )}
+      className={cn(`font-heading text-base leading-none ${FONT_WEIGHT_NORMAL}`, className)}
       {...props}
     />
-  )
+  );
 }
 
 function DialogDescription({
@@ -224,11 +200,11 @@ function DialogDescription({
       data-slot="dialog-description"
       className={cn(
         "text-sm text-muted-foreground *:[a]:underline *:[a]:underline-offset-3 *:[a]:hover:text-sidebar-foreground",
-        className
+        className,
       )}
       {...props}
     />
-  )
+  );
 }
 
 export {
@@ -243,4 +219,4 @@ export {
   DialogPortal,
   DialogTitle,
   DialogTrigger,
-}
+};

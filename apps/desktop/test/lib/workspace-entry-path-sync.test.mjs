@@ -18,7 +18,10 @@ test("formatWorkspaceRelativePathForCopy normalizes and uses dot for root", () =
 
 test("joinWorkspaceAbsolutePath joins root and relative path", () => {
   assert.equal(joinWorkspaceAbsolutePath("D:\\Projects\\app", ""), "D:\\Projects\\app");
-  assert.equal(joinWorkspaceAbsolutePath("D:\\Projects\\app", "src/App.tsx"), "D:\\Projects\\app\\src\\App.tsx");
+  assert.equal(
+    joinWorkspaceAbsolutePath("D:\\Projects\\app", "src/App.tsx"),
+    "D:\\Projects\\app\\src\\App.tsx",
+  );
   assert.equal(joinWorkspaceAbsolutePath("/home/user/app", "src/lib"), "/home/user/app/src/lib");
   assert.equal(joinWorkspaceAbsolutePath("/home/user/app/", "src/lib"), "/home/user/app/src/lib");
 });
@@ -38,7 +41,10 @@ test("isUnderWorkspaceEntryPath matches self and nested paths", () => {
 });
 
 test("remapWorkspaceEntryPath remaps exact and nested paths", () => {
-  assert.equal(remapWorkspaceEntryPath("src/App.tsx", "src/Main.tsx", "src/App.tsx"), "src/Main.tsx");
+  assert.equal(
+    remapWorkspaceEntryPath("src/App.tsx", "src/Main.tsx", "src/App.tsx"),
+    "src/Main.tsx",
+  );
   assert.equal(
     remapWorkspaceEntryPath("src", "lib", "src/components/Button.tsx"),
     "lib/components/Button.tsx",

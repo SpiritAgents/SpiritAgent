@@ -175,8 +175,8 @@ export function useDesktopKeyboardShortcuts({
         !shouldTriggerConversationAbortShortcut(event, {
           activeSurface: activeSurfaceRef.current,
           conversationAbortShortcutEligible:
-            conversationAbortShortcutTargetRef?.current.eligible
-            ?? conversationAbortShortcutEligibleRef.current,
+            conversationAbortShortcutTargetRef?.current.eligible ??
+            conversationAbortShortcutEligibleRef.current,
         })
       ) {
         return;
@@ -290,9 +290,7 @@ export function useDesktopKeyboardShortcuts({
       const target = event.target;
       if (
         target instanceof Node &&
-        document
-          .querySelector('[data-spirit-surface="workspace-image-preview"]')
-          ?.contains(target)
+        document.querySelector('[data-spirit-surface="workspace-image-preview"]')?.contains(target)
       ) {
         return;
       }

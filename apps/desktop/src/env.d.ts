@@ -49,7 +49,7 @@ import type {
   ApprovalLevel,
   LocalFileComposerRoute,
   WorkLocationKind,
-} from './types';
+} from "./types";
 
 declare global {
   interface SpiritDesktopApi {
@@ -69,7 +69,9 @@ declare global {
     previewModels(request: PreviewModelsRequest): Promise<PreviewModelsResponse>;
     removeModel(name: string): Promise<DesktopSnapshot>;
     removeProviderModels(provider: DesktopModelProvider): Promise<DesktopSnapshot>;
-    removeProviderGroup(request: import('./types').RemoveProviderGroupRequest): Promise<DesktopSnapshot>;
+    removeProviderGroup(
+      request: import("./types").RemoveProviderGroupRequest,
+    ): Promise<DesktopSnapshot>;
     addMcpServer(request: AddMcpServerRequest): Promise<DesktopSnapshot>;
     deleteMcpServer(request: DeleteMcpServerRequest): Promise<DesktopSnapshot>;
     saveHookEntry(request: SaveHookEntryRequest): Promise<DesktopSnapshot>;
@@ -82,7 +84,9 @@ declare global {
     prepareMarketplaceExtensionInstall(
       request: PrepareMarketplaceExtensionInstallRequest,
     ): Promise<DesktopMarketplacePreparedInstall>;
-    installMarketplaceExtension(request: InstallMarketplaceExtensionRequest): Promise<DesktopSnapshot>;
+    installMarketplaceExtension(
+      request: InstallMarketplaceExtensionRequest,
+    ): Promise<DesktopSnapshot>;
     deleteExtension(request: DeleteExtensionRequest): Promise<DesktopSnapshot>;
     runExtension(request: RunExtensionRequest): Promise<DesktopSnapshot>;
     updateExtensionSettings(request: UpdateExtensionSettingsRequest): Promise<DesktopSnapshot>;
@@ -101,77 +105,91 @@ declare global {
     setApprovalLevel(approvalLevel: ApprovalLevel): Promise<DesktopSnapshot>;
     setPendingGitBranch(branch: string): Promise<DesktopSnapshot>;
     setWorkLocation(workLocation: WorkLocationKind): Promise<DesktopSnapshot>;
-    checkoutGitBranch(request: import('./types.js').CheckoutGitBranchRequest): Promise<DesktopSnapshot>;
+    checkoutGitBranch(
+      request: import("./types.js").CheckoutGitBranchRequest,
+    ): Promise<DesktopSnapshot>;
     mergeWorktreeToMain(): Promise<DesktopSnapshot>;
     pushGitBranch(): Promise<DesktopSnapshot>;
     refreshGitSnapshot(): Promise<DesktopSnapshot>;
-    abortConversation(request?: import('./types.js').AbortConversationRequest): Promise<DesktopSnapshot>;
+    abortConversation(
+      request?: import("./types.js").AbortConversationRequest,
+    ): Promise<DesktopSnapshot>;
     abortShell(toolCallId: string): Promise<DesktopSnapshot>;
     continueAssistantCompletion(messageId: number): Promise<DesktopSnapshot>;
     rewindAndSubmitMessage(request: RewindAndSubmitMessageRequest): Promise<DesktopSnapshot>;
     forkSession(request: ForkSessionRequest): Promise<DesktopSnapshot>;
-    reorderQueuedUserTurn(request: import('./types.js').QueuedUserTurnRequest): Promise<DesktopSnapshot>;
-    sendQueuedUserTurnNow(request: import('./types.js').QueuedUserTurnRequest): Promise<DesktopSnapshot>;
-    removeQueuedUserTurn(request: import('./types.js').QueuedUserTurnRequest): Promise<DesktopSnapshot>;
-    poll(request?: import('./types').PollRequest): Promise<DesktopSnapshot>;
+    reorderQueuedUserTurn(
+      request: import("./types.js").QueuedUserTurnRequest,
+    ): Promise<DesktopSnapshot>;
+    sendQueuedUserTurnNow(
+      request: import("./types.js").QueuedUserTurnRequest,
+    ): Promise<DesktopSnapshot>;
+    removeQueuedUserTurn(
+      request: import("./types.js").QueuedUserTurnRequest,
+    ): Promise<DesktopSnapshot>;
+    poll(request?: import("./types").PollRequest): Promise<DesktopSnapshot>;
     setSubagentViewerTarget(parentToolCallId: string | null): Promise<DesktopSnapshot>;
     listDreamsOverview(): Promise<DesktopDreamOverviewItem[]>;
-    listAutomations(): Promise<import('./types.js').DesktopAutomationListItem[]>;
-    getAutomation(automationId: string): Promise<import('./types.js').DesktopAutomationDetail | undefined>;
-    createAutomation(request: import('./types.js').DesktopCreateAutomationRequest): Promise<DesktopSnapshot>;
+    listAutomations(): Promise<import("./types.js").DesktopAutomationListItem[]>;
+    getAutomation(
+      automationId: string,
+    ): Promise<import("./types.js").DesktopAutomationDetail | undefined>;
+    createAutomation(
+      request: import("./types.js").DesktopCreateAutomationRequest,
+    ): Promise<DesktopSnapshot>;
     updateAutomation(
       automationId: string,
-      patch: import('./types.js').DesktopUpdateAutomationRequest,
+      patch: import("./types.js").DesktopUpdateAutomationRequest,
     ): Promise<DesktopSnapshot>;
     deleteAutomation(automationId: string): Promise<DesktopSnapshot>;
     setAutomationEnabled(automationId: string, enabled: boolean): Promise<DesktopSnapshot>;
     dreamSubscribe(callback: (snapshot: DesktopSnapshot) => void): () => void;
     automationsSubscribe(callback: (snapshot: DesktopSnapshot) => void): () => void;
     sessionListSubscribe(callback: () => void): () => void;
-    replyPendingApproval(request: import('./types').ReplyPendingApprovalRequest): Promise<DesktopSnapshot>;
-    replyPendingQuestions(request: import('./types').ReplyPendingQuestionsRequest): Promise<DesktopSnapshot>;
+    replyPendingApproval(
+      request: import("./types").ReplyPendingApprovalRequest,
+    ): Promise<DesktopSnapshot>;
+    replyPendingQuestions(
+      request: import("./types").ReplyPendingQuestionsRequest,
+    ): Promise<DesktopSnapshot>;
     replyWorkspaceCapabilityTrust(
-      request: import('./types').ReplyWorkspaceCapabilityTrustRequest,
+      request: import("./types").ReplyWorkspaceCapabilityTrustRequest,
     ): Promise<DesktopSnapshot>;
     openPathInDefaultApp(absolutePath: string): Promise<void>;
     resetSession(): Promise<DesktopSnapshot>;
     listSessions(): Promise<SessionListItem[]>;
     openSession(path: string): Promise<DesktopSnapshot>;
     beginSplitPaneSession(
-      request: import('./types').BeginSplitPaneSessionRequest,
-    ): Promise<import('./types').BeginSplitPaneSessionResponse>;
+      request: import("./types").BeginSplitPaneSessionRequest,
+    ): Promise<import("./types").BeginSplitPaneSessionResponse>;
     beginSideChatPaneSession(
-      request: import('./types').BeginSideChatPaneSessionRequest,
-    ): Promise<import('./types').BeginSideChatPaneSessionResponse>;
+      request: import("./types").BeginSideChatPaneSessionRequest,
+    ): Promise<import("./types").BeginSideChatPaneSessionResponse>;
     forkSessionIntoSideChat(
-      request: import('./types').ForkSessionIntoSideChatRequest,
+      request: import("./types").ForkSessionIntoSideChatRequest,
     ): Promise<DesktopSnapshot>;
     setVisiblePaneSessions(
-      request: import('./types').SetVisiblePaneSessionsRequest,
+      request: import("./types").SetVisiblePaneSessionsRequest,
     ): Promise<DesktopSnapshot>;
     syncSplitPaneSessions(
-      request: import('./types').SyncSplitPaneSessionsRequest,
+      request: import("./types").SyncSplitPaneSessionsRequest,
     ): Promise<DesktopSnapshot>;
-    focusPaneSession(
-      request: import('./types').FocusPaneSessionRequest,
-    ): Promise<DesktopSnapshot>;
+    focusPaneSession(request: import("./types").FocusPaneSessionRequest): Promise<DesktopSnapshot>;
     closeSplitPaneSession(
-      request: import('./types').CloseSplitPaneSessionRequest,
+      request: import("./types").CloseSplitPaneSessionRequest,
     ): Promise<DesktopSnapshot>;
     switchPaneWorkspace(
-      request: import('./types').SwitchPaneWorkspaceRequest,
+      request: import("./types").SwitchPaneWorkspaceRequest,
     ): Promise<DesktopSnapshot>;
-    switchPaneModel(
-      request: import('./types').SwitchPaneModelRequest,
-    ): Promise<DesktopSnapshot>;
+    switchPaneModel(request: import("./types").SwitchPaneModelRequest): Promise<DesktopSnapshot>;
     setPanePendingGitBranch(
-      request: import('./types').SetPanePendingGitBranchRequest,
+      request: import("./types").SetPanePendingGitBranchRequest,
     ): Promise<DesktopSnapshot>;
     setPaneWorkLocation(
-      request: import('./types').SetPaneWorkLocationRequest,
+      request: import("./types").SetPaneWorkLocationRequest,
     ): Promise<DesktopSnapshot>;
     checkoutPaneGitBranch(
-      request: import('./types').CheckoutPaneGitBranchRequest,
+      request: import("./types").CheckoutPaneGitBranchRequest,
     ): Promise<DesktopSnapshot>;
     deleteSession(path: string): Promise<DesktopSnapshot>;
     renameSession(path: string, displayName: string): Promise<DesktopSnapshot>;
@@ -179,72 +197,80 @@ declare global {
       request: QueryWorkspaceFileReferenceSuggestionsRequest,
     ): Promise<WorkspaceFileReferenceSuggestionsResponse>;
     requestCodeCompletion(
-      request: import('./types').RequestCodeCompletionRequest,
-    ): Promise<import('./types').CodeCompletionResponse>;
+      request: import("./types").RequestCodeCompletionRequest,
+    ): Promise<import("./types").CodeCompletionResponse>;
     abortCodeCompletion(): Promise<void>;
     recordCodeCompletionFileState(
-      request: import('./types').RecordCodeCompletionFileStateRequest,
+      request: import("./types").RecordCodeCompletionFileStateRequest,
     ): Promise<void>;
     resetCodeCompletionJournal(): Promise<void>;
     primeWorkspaceFileReferenceIndex(): Promise<void>;
-    getWorkspaceFileReferenceIndex(): Promise<import('./types').WorkspaceFileReferenceIndexSnapshot>;
+    getWorkspaceFileReferenceIndex(): Promise<
+      import("./types").WorkspaceFileReferenceIndexSnapshot
+    >;
     listWorkspaceExplorerChildren(relativePath: string): Promise<WorkspaceExplorerListResult>;
-    readGitWorkingTree(): Promise<import('./types').GitWorkingTreeSnapshot>;
-    readGitHistory(request?: import('./types').ReadGitHistoryRequest): Promise<import('./types').GitHistorySnapshot>;
-    readGitCommitMessage(request: import('./types').ReadGitCommitMessageRequest): Promise<import('./types').GitCommitMessageSnapshot>;
-    getGitHubAuthStatus(): Promise<import('./types').GitHubAuthStatus>;
-    beginGitHubDeviceLogin(): Promise<import('./types').GitHubDeviceAuthChallenge>;
-    completeGitHubDeviceLogin(): Promise<import('./types').GitHubAuthStatus>;
+    readGitWorkingTree(): Promise<import("./types").GitWorkingTreeSnapshot>;
+    readGitHistory(
+      request?: import("./types").ReadGitHistoryRequest,
+    ): Promise<import("./types").GitHistorySnapshot>;
+    readGitCommitMessage(
+      request: import("./types").ReadGitCommitMessageRequest,
+    ): Promise<import("./types").GitCommitMessageSnapshot>;
+    getGitHubAuthStatus(): Promise<import("./types").GitHubAuthStatus>;
+    beginGitHubDeviceLogin(): Promise<import("./types").GitHubDeviceAuthChallenge>;
+    completeGitHubDeviceLogin(): Promise<import("./types").GitHubAuthStatus>;
     cancelGitHubDeviceLogin(): Promise<void>;
-    disconnectGitHub(): Promise<import('./types').GitHubAuthStatus>;
-    getGitHubPullRequestForCurrentBranch(): Promise<import('./types').GitHubPullRequestForBranchResult>;
+    disconnectGitHub(): Promise<import("./types").GitHubAuthStatus>;
+    getGitHubPullRequestForCurrentBranch(): Promise<
+      import("./types").GitHubPullRequestForBranchResult
+    >;
     listGitHubPullRequests(
-      request: import('./types').ListGitHubPullRequestsRequest,
-    ): Promise<import('./types').GitHubPullRequestListSnapshot>;
+      request: import("./types").ListGitHubPullRequestsRequest,
+    ): Promise<import("./types").GitHubPullRequestListSnapshot>;
     listGitHubAutomationRepositories(
-      request?: import('./types').ListGitHubAutomationRepositoriesRequest,
-    ): Promise<import('./types').GitHubAutomationRepositoriesSnapshot>;
+      request?: import("./types").ListGitHubAutomationRepositoriesRequest,
+    ): Promise<import("./types").GitHubAutomationRepositoriesSnapshot>;
     searchGitHubAutomationRepositories(
-      request: import('./types').SearchGitHubAutomationRepositoriesRequest,
-    ): Promise<import('./types').SearchGitHubAutomationRepositoriesSnapshot>;
+      request: import("./types").SearchGitHubAutomationRepositoriesRequest,
+    ): Promise<import("./types").SearchGitHubAutomationRepositoriesSnapshot>;
     getGitHubPullRequestTabCounts(
-      request: import('./types').GetGitHubPullRequestTabCountsRequest,
-    ): Promise<import('./types').GitHubPullRequestTabCounts>;
+      request: import("./types").GetGitHubPullRequestTabCountsRequest,
+    ): Promise<import("./types").GitHubPullRequestTabCounts>;
     getGitHubPullRequestDetail(
-      request: import('./types').GetGitHubPullRequestDetailRequest,
-    ): Promise<import('./types').GitHubPullRequestDetail>;
+      request: import("./types").GetGitHubPullRequestDetailRequest,
+    ): Promise<import("./types").GitHubPullRequestDetail>;
     getGitHubPullRequestConversation(
-      request: import('./types').GetGitHubPullRequestDetailRequest,
-    ): Promise<import('./types').GitHubPullRequestConversationSnapshot>;
+      request: import("./types").GetGitHubPullRequestDetailRequest,
+    ): Promise<import("./types").GitHubPullRequestConversationSnapshot>;
     getGitHubPullRequestFiles(
-      request: import('./types').GetGitHubPullRequestDetailRequest,
-    ): Promise<import('./types').GitHubPullRequestFilesSnapshot>;
+      request: import("./types").GetGitHubPullRequestDetailRequest,
+    ): Promise<import("./types").GitHubPullRequestFilesSnapshot>;
     getGitHubPullRequestCommits(
-      request: import('./types').GetGitHubPullRequestDetailRequest,
-    ): Promise<import('./types').GitHubPullRequestCommitsSnapshot>;
+      request: import("./types").GetGitHubPullRequestDetailRequest,
+    ): Promise<import("./types").GitHubPullRequestCommitsSnapshot>;
     getGitHubPullRequestChecks(
-      request: import('./types').GetGitHubPullRequestDetailRequest,
-    ): Promise<import('./types').GitHubPullRequestChecksSnapshot>;
+      request: import("./types").GetGitHubPullRequestDetailRequest,
+    ): Promise<import("./types").GitHubPullRequestChecksSnapshot>;
     mergeGitHubPullRequest(
-      request: import('./types').MergeGitHubPullRequestRequest,
-    ): Promise<import('./types').GitHubPullRequestMergeResult>;
+      request: import("./types").MergeGitHubPullRequestRequest,
+    ): Promise<import("./types").GitHubPullRequestMergeResult>;
     markGitHubPullRequestReady(
-      request: import('./types').GetGitHubPullRequestDetailRequest,
-    ): Promise<import('./types').GitHubPullRequestDetail>;
+      request: import("./types").GetGitHubPullRequestDetailRequest,
+    ): Promise<import("./types").GitHubPullRequestDetail>;
     readWorkspaceTextFile(
       relativePath: string,
-      options?: import('@/types').ReadWorkspaceTextFileOptions,
+      options?: import("@/types").ReadWorkspaceTextFileOptions,
     ): Promise<WorkspaceReadTextFileResult>;
     searchWorkspaceContent(
-      request: import('@/types').WorkspaceContentSearchRequest,
-    ): Promise<import('@/types').WorkspaceContentSearchResult>;
+      request: import("@/types").WorkspaceContentSearchRequest,
+    ): Promise<import("@/types").WorkspaceContentSearchResult>;
     writeWorkspaceTextFile(request: WriteWorkspaceTextFileRequest): Promise<void>;
     revealWorkspaceEntry(relativePath: string, workspaceRoot?: string): Promise<void>;
     renameWorkspaceEntry(relativePath: string, newName: string): Promise<{ relativePath: string }>;
     createWorkspaceEntry(
       parentDirectoryRel: string,
       name: string,
-      kind: 'file' | 'dir',
+      kind: "file" | "dir",
     ): Promise<{ relativePath: string }>;
     moveWorkspaceEntry(
       relativePath: string,
@@ -255,9 +281,7 @@ declare global {
     readHostTextFile(absolutePath: string): Promise<WorkspaceReadTextFileResult>;
     writeHostTextFile(request: WriteHostTextFileRequest): Promise<void>;
     statHostTextFile(absolutePath: string): Promise<HostTextFileStatResult>;
-    classifyLocalFileComposerRoute(
-      absolutePath: string,
-    ): Promise<LocalFileComposerRoute>;
+    classifyLocalFileComposerRoute(absolutePath: string): Promise<LocalFileComposerRoute>;
     pickWorkspaceDirectory(): Promise<string | null>;
     pickLocalFile(): Promise<string | null>;
     getPathForDroppedFile(file: File): string;
@@ -271,14 +295,14 @@ declare global {
     /** resolve 为 themeSource 生效后主进程视角的真实 dark（system 时可能与请求值不同）。 */
     syncWindowFrame(request: {
       dark: boolean;
-      nativeTheme: 'system' | 'light' | 'dark';
+      nativeTheme: "system" | "light" | "dark";
       nativeBackdropBlur?: boolean;
     }): Promise<boolean>;
     syncLanguage(lang: string): Promise<void>;
     /** macOS：UI 缩放后同步原生红绿灯位置，与切换按钮保持对齐。 */
     syncTrafficLightPosition(position: { x: number; y: number }): Promise<void>;
     popupApplicationMenu(
-      section: 'file' | 'edit' | 'view' | 'window' | 'help',
+      section: "file" | "edit" | "view" | "window" | "help",
       clientX: number,
       clientY: number,
     ): Promise<void>;
@@ -299,7 +323,13 @@ declare global {
     >;
     scanLocalListeners(): void;
     subscribeLocalListeners(callbacks: {
-      onFound: (item: { port: number; address?: string; processName?: string; url?: string; title?: string }) => void;
+      onFound: (item: {
+        port: number;
+        address?: string;
+        processName?: string;
+        url?: string;
+        title?: string;
+      }) => void;
       onDone: () => void;
     }): () => void;
     ptySubscribe(callbacks: {
@@ -319,7 +349,9 @@ declare global {
     subscribeBrowserGuestF12(callback: (payload: { tabId: string }) => void): () => void;
     readClipboardText(): string;
     writeClipboardText(text: string): void;
-    showNotification(request: import('./lib/desktop-notification-types.js').DesktopShowNotificationRequest): Promise<boolean>;
+    showNotification(
+      request: import("./lib/desktop-notification-types.js").DesktopShowNotificationRequest,
+    ): Promise<boolean>;
     getAppAwayFromUser(): Promise<boolean>;
     reportRendererVisibility(hidden: boolean): Promise<boolean>;
     syncAttentionPending(flags: {
@@ -333,13 +365,13 @@ declare global {
     subscribeAppAwayChanged(callback: (away: boolean) => void): () => void;
     subscribeNotifyRefresh(callback: () => void): () => void;
     subscribeApprovalFromNotification(
-      callback: (payload: { decision: 'allow' | 'deny' }) => void,
+      callback: (payload: { decision: "allow" | "deny" }) => void,
     ): () => void;
     subscribeNotificationReply(
       callback: (payload: {
-        kind: 'approval' | 'ask-questions';
+        kind: "approval" | "ask-questions";
         text: string;
-        context?: import('./lib/desktop-notification-types.js').DesktopNotificationContext;
+        context?: import("./lib/desktop-notification-types.js").DesktopNotificationContext;
       }) => void,
     ): () => void;
     subscribeNewSession(callback: () => void): () => void;
@@ -399,7 +431,12 @@ declare global {
     executeJavaScript(code: string): Promise<unknown>;
     insertCSS(css: string): Promise<string>;
     removeInsertedCSS(key: string): Promise<void>;
-    capturePage(rect: { x: number; y: number; width: number; height: number }): Promise<SpiritWebviewCaptureImage>;
+    capturePage(rect: {
+      x: number;
+      y: number;
+      width: number;
+      height: number;
+    }): Promise<SpiritWebviewCaptureImage>;
     addEventListener(type: string, listener: (...args: unknown[]) => void): void;
     removeEventListener(type: string, listener: (...args: unknown[]) => void): void;
   }

@@ -1,4 +1,4 @@
-import type { AskQuestionsResult, PendingQuestionsSnapshot } from '../types';
+import type { AskQuestionsResult, PendingQuestionsSnapshot } from "../types";
 
 export function buildSingleTextQuestionNotificationReplyResult(
   pendingQuestions: PendingQuestionsSnapshot | null | undefined,
@@ -27,7 +27,7 @@ export function buildSingleTextQuestionNotificationReplyResult(
   }
 
   return {
-    status: 'answered',
+    status: "answered",
     answers: [
       {
         questionId: question.id,

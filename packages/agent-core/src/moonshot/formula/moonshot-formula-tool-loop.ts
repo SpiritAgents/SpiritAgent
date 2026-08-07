@@ -1,20 +1,17 @@
-import type { JsonObject } from '../../ports.js';
-import { isJsonObject } from '../../tool-agent.js';
-import type { OpenAiTransportConfig } from '../../openai/openai-compat.js';
-import type { ToolCallRequest } from '../../ports.js';
-import { tryExtractPartialWebSearchQuery } from '../../tool-streaming-preview-gate.js';
-import { invokeFormulaFiber } from './formula-client.js';
+import type { JsonObject } from "../../ports.js";
+import { isJsonObject } from "../../tool-agent.js";
+import type { OpenAiTransportConfig } from "../../openai/openai-compat.js";
+import type { ToolCallRequest } from "../../ports.js";
+import { tryExtractPartialWebSearchQuery } from "../../tool-streaming-preview-gate.js";
+import { invokeFormulaFiber } from "./formula-client.js";
 import {
   isMoonshotFormulaWebSearchTool,
   shouldUseMoonshotFormulaWebSearch,
-} from './formula-eligibility.js';
-import { resolveMoonshotFormulaUri } from './formula-registry.js';
-import { buildMoonshotFormulaToolPreviewArgumentsJson } from './formula-spirit-ui.js';
+} from "./formula-eligibility.js";
+import { resolveMoonshotFormulaUri } from "./formula-registry.js";
+import { buildMoonshotFormulaToolPreviewArgumentsJson } from "./formula-spirit-ui.js";
 
-export function isMoonshotFormulaManagedToolCall(
-  toolName: string,
-  config: unknown,
-): boolean {
+export function isMoonshotFormulaManagedToolCall(toolName: string, config: unknown): boolean {
   if (!shouldUseMoonshotFormulaWebSearch(config as OpenAiTransportConfig)) {
     return false;
   }
@@ -26,27 +23,27 @@ export function readMoonshotFormulaWebSearchQuery(argumentsJson: string): string
   try {
     const parsed = JSON.parse(argumentsJson) as JsonObject;
     if (!isJsonObject(parsed)) {
-      return '';
+      return "";
     }
     const query = parsed.query;
-    return typeof query === 'string' ? query.trim() : '';
+    return typeof query === "string" ? query.trim() : "";
   } catch {
-    return tryExtractPartialWebSearchQuery(argumentsJson) ?? '';
+    return tryExtractPartialWebSearchQuery(argumentsJson) ?? "";
   }
 }
 
 export type MoonshotFormulaToolExecutionResult =
-  | { kind: 'succeeded'; content: string; previewArgumentsJson: string }
-  | { kind: 'failed'; error: string; previewArgumentsJson: string };
+  | { kind: "succeeded"; content: string; previewArgumentsJson: string }
+  | { kind: "failed"; error: string; previewArgumentsJson: string };
 
 export async function executeMoonshotFormulaToolCall(
   config: OpenAiTransportConfig,
-  call: Pick<ToolCallRequest, 'name' | 'argumentsJson'>,
+  call: Pick<ToolCallRequest, "name" | "argumentsJson">,
 ): Promise<MoonshotFormulaToolExecutionResult> {
   const formulaUri = resolveMoonshotFormulaUri(call.name);
   if (!formulaUri) {
     return {
-      kind: 'failed',
+      kind: "failed",
       error: `Unknown Moonshot Formula tool: ${call.name}`,
       previewArgumentsJson: buildMoonshotFormulaToolPreviewArgumentsJson({ failed: true }),
     };
@@ -54,7 +51,7 @@ export async function executeMoonshotFormulaToolCall(
 
   const query = isMoonshotFormulaWebSearchTool(call.name, config)
     ? readMoonshotFormulaWebSearchQuery(call.argumentsJson)
-    : '';
+    : "";
 
   const fiberResult = await invokeFormulaFiber(
     {
@@ -66,24 +63,24 @@ export async function executeMoonshotFormulaToolCall(
     call.argumentsJson,
   );
 
-  if (fiberResult.kind === 'failed') {
+  if (fiberResult.kind === "failed") {
     return {
-      kind: 'failed',
+      kind: "failed",
       error: fiberResult.error,
       previewArgumentsJson: buildMoonshotFormulaToolPreviewArgumentsJson({
         query,
         failed: true,
-        status: 'failed',
+        status: "failed",
       }),
     };
   }
 
   return {
-    kind: 'succeeded',
+    kind: "succeeded",
     content: fiberResult.content,
     previewArgumentsJson: buildMoonshotFormulaToolPreviewArgumentsJson({
       query,
-      status: 'completed',
+      status: "completed",
     }),
   };
 }
@@ -99,6 +96,6 @@ export function buildMoonshotFormulaStreamingToolPreviewArgumentsJson(
 
   return buildMoonshotFormulaToolPreviewArgumentsJson({
     query: readMoonshotFormulaWebSearchQuery(argumentsJson),
-    status: 'in_progress',
+    status: "in_progress",
   });
 }

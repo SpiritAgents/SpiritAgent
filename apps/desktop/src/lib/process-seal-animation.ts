@@ -1,16 +1,14 @@
-import { useLayoutEffect, useRef } from 'react';
+import { useLayoutEffect, useRef } from "react";
 
-import type { ConversationRenderItem } from '@/lib/conversation-process-groups';
-import type { ConversationMessageSnapshot, PendingAssistantAux } from '@/types';
+import type { ConversationRenderItem } from "@/lib/conversation-process-groups";
+import type { ConversationMessageSnapshot, PendingAssistantAux } from "@/types";
 
 function processGroupIds(renderItems: readonly ConversationRenderItem[]): string[] {
-  return renderItems
-    .filter((item) => item.kind === 'process-group')
-    .map((item) => item.groupId);
+  return renderItems.filter((item) => item.kind === "process-group").map((item) => item.groupId);
 }
 
 export function isLiveComposeViewKey(viewKey: string): boolean {
-  return viewKey.startsWith('__no-session__') || viewKey.startsWith('todo-scope:');
+  return viewKey.startsWith("__no-session__") || viewKey.startsWith("todo-scope:");
 }
 
 export function resolveProcessSealLiveTurnActive(options: {
@@ -23,16 +21,16 @@ export function resolveProcessSealLiveTurnActive(options: {
   messages: readonly ConversationMessageSnapshot[];
 }): boolean {
   if (
-    options.subagentViewActive
-    || options.compactionDemoActive
-    || options.longConversationListDemoActive === true
+    options.subagentViewActive ||
+    options.compactionDemoActive ||
+    options.longConversationListDemoActive === true
   ) {
     return false;
   }
-  if (options.busyAction === 'session') {
+  if (options.busyAction === "session") {
     return false;
   }
-  if (options.busyAction === 'send' || options.isBusy === true) {
+  if (options.busyAction === "send" || options.isBusy === true) {
     return true;
   }
   if (options.pendingAuxState) {
@@ -68,17 +66,16 @@ export function resolveProcessSealNavigationSignals(input: {
   composeTurnInFlight: boolean;
   nextStickyComposeTurnInFlight: boolean;
 } {
-  const sessionNavigationPending = input.busyAction === 'session';
+  const sessionNavigationPending = input.busyAction === "session";
   const composeTurnInFlightThisRender =
     !sessionNavigationPending &&
     isLiveComposeViewKey(input.conversationViewKey) &&
-    (input.busyAction === 'send' ||
+    (input.busyAction === "send" ||
       input.isBusy === true ||
       input.sessionMessages.some((message) => message.pending));
 
   const composeTurnInFlight =
-    composeTurnInFlightThisRender ||
-    (!sessionNavigationPending && input.stickyComposeTurnInFlight);
+    composeTurnInFlightThisRender || (!sessionNavigationPending && input.stickyComposeTurnInFlight);
 
   let nextStickyComposeTurnInFlight: boolean;
   if (sessionNavigationPending) {
@@ -109,15 +106,13 @@ export function buildProcessSealAnimationPlan(
   options: ProcessSealAnimationPlanOptions,
 ): ProcessSealAnimationPlanResult {
   const isFirstObservation = state.prevViewKey === null;
-  const viewKeyChanged =
-    !isFirstObservation && state.prevViewKey !== conversationViewKey;
+  const viewKeyChanged = !isFirstObservation && state.prevViewKey !== conversationViewKey;
   const newlyAppearedGroupIds = groupIds.filter((groupId) => !state.prevGroupIds.has(groupId));
 
   const shouldAnimateNewGroups = isFirstObservation
     ? false
     : viewKeyChanged
-      ? !options.sessionNavigationPending &&
-        (options.liveTurnActive || options.composeTurnInFlight)
+      ? !options.sessionNavigationPending && (options.liveTurnActive || options.composeTurnInFlight)
       : true;
 
   return {
@@ -147,7 +142,7 @@ function useProcessSealAnimationPlan(
   }
 
   const groupIds = processGroupIds(renderItems);
-  const groupIdsKey = groupIds.join('|');
+  const groupIdsKey = groupIds.join("|");
 
   const { shouldPlayByGroupId, nextState } = buildProcessSealAnimationPlan(
     planStateRef.current,
@@ -210,7 +205,11 @@ export function useProcessSealAnimationGate(input: {
 
   useLayoutEffect(() => {
     stickyComposeTurnInFlightRef.current = navigationSignals.nextStickyComposeTurnInFlight;
-  }, [input.conversationViewKey, input.renderItems, navigationSignals.nextStickyComposeTurnInFlight]);
+  }, [
+    input.conversationViewKey,
+    input.renderItems,
+    navigationSignals.nextStickyComposeTurnInFlight,
+  ]);
 
   return shouldPlaySealAnimation;
 }

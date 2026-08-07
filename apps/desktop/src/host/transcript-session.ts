@@ -1,9 +1,6 @@
-import {
-  deleteTranscriptSessionDir,
-  ensureTranscriptSessionDir,
-} from '@spiritagent/host-internal';
+import { deleteTranscriptSessionDir, ensureTranscriptSessionDir } from "@spiritagent/host-internal";
 
-import { spiritAgentDataDir } from './storage.js';
+import { spiritAgentDataDir } from "./storage.js";
 
 export async function ensureDesktopTranscriptSessionDir(sessionKey: string): Promise<string> {
   return ensureTranscriptSessionDir(spiritAgentDataDir(), sessionKey);

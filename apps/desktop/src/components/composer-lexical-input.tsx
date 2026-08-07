@@ -97,9 +97,7 @@ import { AgentModeChipPlugin } from "@/lib/composer-lexical/plugins/agent-mode-c
 import { LoopChipPlugin } from "@/lib/composer-lexical/plugins/loop-chip-plugin";
 import { normalizeComposerSegmentsPolicy } from "@/lib/composer-lexical/composer-lexical-policy";
 import { cn } from "@/lib/utils";
-import {
-  viewportLengthToScaleRootLocal,
-} from "@/lib/ui-layout-scale";
+import { viewportLengthToScaleRootLocal } from "@/lib/ui-layout-scale";
 
 export type { ActiveWorkspaceFileReferenceQuery } from "@/lib/composer-segment-model";
 export type { RichSegment } from "@/lib/composer-segment-model";
@@ -243,12 +241,7 @@ function measureAgentModeChipPlaceholderLeft(
   segments: RichSegment[],
 ): {
   left: number | null;
-  source:
-    | "no-chip"
-    | "selection"
-    | "dom-caret"
-    | "chip-right-fallback"
-    | "default-padding";
+  source: "no-chip" | "selection" | "dom-caret" | "chip-right-fallback" | "default-padding";
   chipWidth: number | null;
   selectionLeftInShell: number | null;
   chipRightInShell: number | null;
@@ -276,11 +269,7 @@ function measureAgentModeChipPlaceholderLeft(
   const chipWidth = chipRect.width;
 
   const selection = window.getSelection();
-  if (
-    selection
-    && selection.rangeCount > 0
-    && editorEl.contains(selection.anchorNode)
-  ) {
+  if (selection && selection.rangeCount > 0 && editorEl.contains(selection.anchorNode)) {
     const selectionLeftInShell =
       selection.getRangeAt(0).cloneRange().getBoundingClientRect().left - shellRect.left;
     if (selectionLeftInShell >= chipRightInShell - 1) {
@@ -568,10 +557,7 @@ const ComposerLexicalInputCore = forwardRef<ComposerRichInputHandle, ComposerLex
         skipEditorSyncRef.current = true;
         richSegmentsToEditorState(next, editor);
         if (caret) {
-          segmentCaretToLexicalSelection(
-            editor,
-            normalizeCaretForComposer(next, caret),
-          );
+          segmentCaretToLexicalSelection(editor, normalizeCaretForComposer(next, caret));
         }
         skipEditorSyncRef.current = false;
       },
@@ -623,8 +609,8 @@ const ComposerLexicalInputCore = forwardRef<ComposerRichInputHandle, ComposerLex
         const merged = applyComposerPolicy(next);
         let resolvedCaret = caret ?? null;
         if (
-          hasLoopSegment(merged)
-          || (shouldPinAgentModeChip(chipPolicy()) && hasAgentModeSegment(merged))
+          hasLoopSegment(merged) ||
+          (shouldPinAgentModeChip(chipPolicy()) && hasAgentModeSegment(merged))
         ) {
           resolvedCaret = normalizeCaretForComposer(merged, resolvedCaret);
         }
@@ -866,9 +852,7 @@ const ComposerLexicalInputCore = forwardRef<ComposerRichInputHandle, ComposerLex
         if (loopEnabledRef.current) {
           next = insertLoopSegment(next).segments;
         }
-        const caret = hasAgentModeSegment(next)
-          ? caretAfterAgentModeChip(next)
-          : caretAtEnd(next);
+        const caret = hasAgentModeSegment(next) ? caretAfterAgentModeChip(next) : caretAtEnd(next);
         skipExternalSegmentsSyncRef.current = true;
         commitSegments(next, caret, { syncLoop: false, syncAgentMode: false });
       },
@@ -880,27 +864,30 @@ const ComposerLexicalInputCore = forwardRef<ComposerRichInputHandle, ComposerLex
       reportSelectionChange();
     }, [editor, reportSelectionChange]);
 
-    const getPlainTextCaretClientRect = useCallback((plainTextOffset: number): DOMRect | null => {
-      const root = contentEditableRef.current;
-      if (!root) {
-        return null;
-      }
+    const getPlainTextCaretClientRect = useCallback(
+      (plainTextOffset: number): DOMRect | null => {
+        const root = contentEditableRef.current;
+        if (!root) {
+          return null;
+        }
 
-      const selection = window.getSelection();
-      if (!selection || selection.rangeCount === 0) {
-        return null;
-      }
-      const range = selection.getRangeAt(0);
-      if (!root.contains(range.commonAncestorContainer)) {
-        return null;
-      }
+        const selection = window.getSelection();
+        if (!selection || selection.rangeCount === 0) {
+          return null;
+        }
+        const range = selection.getRangeAt(0);
+        if (!root.contains(range.commonAncestorContainer)) {
+          return null;
+        }
 
-      const caret = lexicalSelectionToSegmentCaret(editor);
-      if (!caret || caretToPlainTextOffset(segmentsRef.current, caret) !== plainTextOffset) {
-        return null;
-      }
-      return range.cloneRange().getBoundingClientRect();
-    }, [editor]);
+        const caret = lexicalSelectionToSegmentCaret(editor);
+        if (!caret || caretToPlainTextOffset(segmentsRef.current, caret) !== plainTextOffset) {
+          return null;
+        }
+        return range.cloneRange().getBoundingClientRect();
+      },
+      [editor],
+    );
 
     useImperativeHandle(
       ref,
@@ -1011,11 +998,11 @@ const ComposerLexicalInputCore = forwardRef<ComposerRichInputHandle, ComposerLex
         KEY_DOWN_COMMAND,
         (event: globalThis.KeyboardEvent) => {
           if (
-            event.key === "Enter"
-            && !event.shiftKey
-            && !event.ctrlKey
-            && !event.metaKey
-            && !event.isComposing
+            event.key === "Enter" &&
+            !event.shiftKey &&
+            !event.ctrlKey &&
+            !event.metaKey &&
+            !event.isComposing
           ) {
             return true;
           }
@@ -1107,15 +1094,10 @@ const ComposerLexicalInputCore = forwardRef<ComposerRichInputHandle, ComposerLex
     const pinnedAgentModeChipKind = currentAgentModeSegment(segments);
 
     const effectiveChipPlaceholderLeft = showAgentModeChipPlaceholder
-      ? (
-        agentModeChipPlaceholderLeft
-        ?? (
-          pinnedAgentModeChipKind
-          && chipPlaceholderCacheKindRef.current === pinnedAgentModeChipKind
-            ? chipPlaceholderLeftCacheRef.current
-            : null
-        )
-      )
+      ? (agentModeChipPlaceholderLeft ??
+        (pinnedAgentModeChipKind && chipPlaceholderCacheKindRef.current === pinnedAgentModeChipKind
+          ? chipPlaceholderLeftCacheRef.current
+          : null))
       : null;
 
     const showDefaultPlaceholder = isEmpty && Boolean(placeholder);
@@ -1129,9 +1111,9 @@ const ComposerLexicalInputCore = forwardRef<ComposerRichInputHandle, ComposerLex
 
     useEffect(() => {
       if (
-        showAgentModeChipPlaceholder
-        && pinnedAgentModeChipKind
-        && chipPlaceholderCacheKindRef.current !== pinnedAgentModeChipKind
+        showAgentModeChipPlaceholder &&
+        pinnedAgentModeChipKind &&
+        chipPlaceholderCacheKindRef.current !== pinnedAgentModeChipKind
       ) {
         setAgentModeChipPlaceholderLeft(null);
       }
@@ -1151,11 +1133,7 @@ const ComposerLexicalInputCore = forwardRef<ComposerRichInputHandle, ComposerLex
       }
 
       const measure = () => {
-        const measured = measureAgentModeChipPlaceholderLeft(
-          shell,
-          editorEl,
-          segmentsRef.current,
-        );
+        const measured = measureAgentModeChipPlaceholderLeft(shell, editorEl, segmentsRef.current);
         const nextLeft = measured.left;
         if (nextLeft === null || !measured.publishable) {
           return;
@@ -1184,14 +1162,13 @@ const ComposerLexicalInputCore = forwardRef<ComposerRichInputHandle, ComposerLex
     return (
       <div ref={shellRef} className="relative">
         {showDefaultPlaceholder ? (
-          <span
-            aria-hidden
-            className={cn(COMPOSER_PLACEHOLDER_CLASS, "left-3")}
-          >
+          <span aria-hidden className={cn(COMPOSER_PLACEHOLDER_CLASS, "left-3")}>
             {placeholder}
           </span>
         ) : null}
-        {showAgentModeChipPlaceholder && agentModeChipPlaceholder && effectiveChipPlaceholderLeft !== null ? (
+        {showAgentModeChipPlaceholder &&
+        agentModeChipPlaceholder &&
+        effectiveChipPlaceholderLeft !== null ? (
           <span
             aria-hidden
             className={COMPOSER_PLACEHOLDER_CLASS}
@@ -1248,10 +1225,7 @@ const ComposerLexicalInputCore = forwardRef<ComposerRichInputHandle, ComposerLex
           onSegmentsNormalized={handleSegmentsNormalized}
           onLoopEnabledChange={onLoopEnabledChange}
         />
-        <ComposerCommandsPlugin
-          segmentsRef={segmentsRef}
-          commitSegments={commitSegments}
-        />
+        <ComposerCommandsPlugin segmentsRef={segmentsRef} commitSegments={commitSegments} />
         <ComposerClipboardPlugin
           segmentsRef={segmentsRef}
           commitSegments={commitSegments}

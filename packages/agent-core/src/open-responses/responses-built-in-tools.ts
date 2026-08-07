@@ -1,18 +1,19 @@
-import type { JsonObject, JsonValue, LlmStreamEvent } from '../ports.js';
-import { isJsonObject } from '../tool-agent.js';
-import { ALIBABA_RESPONSES_BUILT_IN_TOOL_TYPES } from './alibaba-built-in-tools.js';
+import type { JsonObject, JsonValue, LlmStreamEvent } from "../ports.js";
+import { isJsonObject } from "../tool-agent.js";
+import { ALIBABA_RESPONSES_BUILT_IN_TOOL_TYPES } from "./alibaba-built-in-tools.js";
 
-export const RESPONSES_BUILT_IN_TOOL_NAMES = [
-  ...ALIBABA_RESPONSES_BUILT_IN_TOOL_TYPES,
-] as const;
+export const RESPONSES_BUILT_IN_TOOL_NAMES = [...ALIBABA_RESPONSES_BUILT_IN_TOOL_TYPES] as const;
 
-const OUTPUT_ITEM_TYPE_TO_TOOL_NAME: Record<string, (typeof RESPONSES_BUILT_IN_TOOL_NAMES)[number]> = {
-  web_search_call: 'web_search',
-  code_interpreter_call: 'code_interpreter',
+const OUTPUT_ITEM_TYPE_TO_TOOL_NAME: Record<
+  string,
+  (typeof RESPONSES_BUILT_IN_TOOL_NAMES)[number]
+> = {
+  web_search_call: "web_search",
+  code_interpreter_call: "code_interpreter",
 };
 
 /** Embedded in streaming-tool-preview argumentsJson for Desktop UI mapping. */
-export const RESPONSES_BUILT_IN_SPIRIT_UI_KEY = '_spiritUi';
+export const RESPONSES_BUILT_IN_SPIRIT_UI_KEY = "_spiritUi";
 
 export type ResponsesBuiltInToolSpiritUi = {
   headlineDetail?: string;
@@ -44,30 +45,30 @@ export function isResponsesBuiltInToolName(toolName: string): boolean {
   return (RESPONSES_BUILT_IN_TOOL_NAMES as readonly string[]).includes(toolName);
 }
 
-export type ResponsesBuiltInToolStreamPhase = 'preview' | 'succeeded' | 'failed';
+export type ResponsesBuiltInToolStreamPhase = "preview" | "succeeded" | "failed";
 
 export function resolveResponsesBuiltInToolStreamPhase(
   item: JsonObject,
 ): ResponsesBuiltInToolStreamPhase {
-  const status = typeof item.status === 'string' ? item.status.trim().toLowerCase() : '';
+  const status = typeof item.status === "string" ? item.status.trim().toLowerCase() : "";
   if (
-    status === 'completed' ||
-    status === 'complete' ||
-    status === 'succeeded' ||
-    status === 'success'
+    status === "completed" ||
+    status === "complete" ||
+    status === "succeeded" ||
+    status === "success"
   ) {
-    return 'succeeded';
+    return "succeeded";
   }
   if (
-    status === 'failed' ||
-    status === 'cancelled' ||
-    status === 'canceled' ||
-    status === 'error' ||
-    status === 'incomplete'
+    status === "failed" ||
+    status === "cancelled" ||
+    status === "canceled" ||
+    status === "error" ||
+    status === "incomplete"
   ) {
-    return 'failed';
+    return "failed";
   }
-  return 'preview';
+  return "preview";
 }
 
 export function resolveResponsesBuiltInToolStreamPhaseFromArgumentsJson(
@@ -97,23 +98,25 @@ export function parseResponsesBuiltInToolUiFromArgumentsJson(
       return undefined;
     }
     const ui = raw as JsonObject;
-    const inputExcerpt = typeof ui.inputExcerpt === 'string' ? ui.inputExcerpt : '';
+    const inputExcerpt = typeof ui.inputExcerpt === "string" ? ui.inputExcerpt : "";
     if (!inputExcerpt.trim()) {
       return undefined;
     }
     const headlineDetail =
-      typeof ui.headlineDetail === 'string' && ui.headlineDetail.trim()
+      typeof ui.headlineDetail === "string" && ui.headlineDetail.trim()
         ? ui.headlineDetail.trim()
         : undefined;
     const outputExcerpt =
-      typeof ui.outputExcerpt === 'string' && ui.outputExcerpt.trim()
+      typeof ui.outputExcerpt === "string" && ui.outputExcerpt.trim()
         ? ui.outputExcerpt
         : undefined;
     const detailLines = Array.isArray(ui.detailLines)
-      ? ui.detailLines.filter((line): line is string => typeof line === 'string' && line.trim().length > 0)
+      ? ui.detailLines.filter(
+          (line): line is string => typeof line === "string" && line.trim().length > 0,
+        )
       : undefined;
     const sourceCount =
-      typeof ui.sourceCount === 'number' && Number.isFinite(ui.sourceCount) && ui.sourceCount > 0
+      typeof ui.sourceCount === "number" && Number.isFinite(ui.sourceCount) && ui.sourceCount > 0
         ? Math.floor(ui.sourceCount)
         : undefined;
     return {
@@ -132,11 +135,11 @@ export function buildResponsesBuiltInToolCardData(
   item: JsonObject,
   toolName: (typeof RESPONSES_BUILT_IN_TOOL_NAMES)[number],
 ): ResponsesBuiltInToolCardData {
-  const status = readStringField(item, 'status');
+  const status = readStringField(item, "status");
   switch (toolName) {
-    case 'web_search':
+    case "web_search":
       return buildWebSearchCardData(item, status);
-    case 'code_interpreter':
+    case "code_interpreter":
       return buildCodeInterpreterCardData(item, status);
     default:
       return {
@@ -152,9 +155,9 @@ function buildWebSearchCardData(
 ): ResponsesBuiltInToolCardData {
   const action = isJsonObject(item.action as JsonValue) ? (item.action as JsonObject) : undefined;
   const query =
-    readStringField(action ?? {}, 'query')
-    ?? readStringField(item, 'query')
-    ?? readStringField(item, 'search_query');
+    readStringField(action ?? {}, "query") ??
+    readStringField(item, "query") ??
+    readStringField(item, "search_query");
   const sources = formatWebSearchSources(action);
   const streamPhase = resolveResponsesBuiltInToolStreamPhase(item);
   const inputPayload: JsonObject = {
@@ -167,7 +170,7 @@ function buildWebSearchCardData(
     inputExcerpt: JSON.stringify(inputPayload, null, 2),
     ...(sources.outputExcerpt ? { outputExcerpt: sources.outputExcerpt } : {}),
     ...(sources.detailLines.length > 0 ? { detailLines: sources.detailLines } : {}),
-    ...(streamPhase === 'succeeded' && sources.sourceCount > 0
+    ...(streamPhase === "succeeded" && sources.sourceCount > 0
       ? { sourceCount: sources.sourceCount }
       : {}),
   };
@@ -175,20 +178,20 @@ function buildWebSearchCardData(
 
 /** Bailian Responses `web_search_call.action.query` is often the placeholder "Web search". */
 export function isGenericProviderWebSearchQuery(query: string): boolean {
-  const normalized = query.trim().toLowerCase().replace(/\s+/g, ' ');
-  return normalized === 'web search' || normalized === 'websearch';
+  const normalized = query.trim().toLowerCase().replace(/\s+/g, " ");
+  return normalized === "web search" || normalized === "websearch";
 }
 
 function buildCodeInterpreterCardData(
   item: JsonObject,
   status: string | undefined,
 ): ResponsesBuiltInToolCardData {
-  const code = readStringField(item, 'code');
+  const code = readStringField(item, "code");
   const logs = formatCodeInterpreterLogs(item.outputs);
   const headlineDetail = code
     ? truncateHeadlineDetail(code.split(/\r?\n/u)[0] ?? code)
     : logs.lineCount > 0
-      ? `${logs.lineCount} log line${logs.lineCount === 1 ? '' : 's'}`
+      ? `${logs.lineCount} log line${logs.lineCount === 1 ? "" : "s"}`
       : undefined;
   const inputPayload: JsonObject = {
     ...(code ? { code } : {}),
@@ -221,7 +224,7 @@ function formatWebSearchSources(action: JsonObject | undefined): {
     if (!isJsonObject(entry as JsonValue)) {
       continue;
     }
-    const url = readStringField(entry as JsonObject, 'url');
+    const url = readStringField(entry as JsonObject, "url");
     if (!url) {
       continue;
     }
@@ -234,7 +237,7 @@ function formatWebSearchSources(action: JsonObject | undefined): {
     return { detailLines: [], sourceCount: 0 };
   }
   return {
-    outputExcerpt: outputLines.join('\n'),
+    outputExcerpt: outputLines.join("\n"),
     detailLines,
     sourceCount: detailLines.length,
   };
@@ -245,7 +248,7 @@ function formatCodeInterpreterLogs(outputs: JsonValue | undefined): {
   lineCount: number;
 } {
   if (!Array.isArray(outputs)) {
-    return { text: '', lineCount: 0 };
+    return { text: "", lineCount: 0 };
   }
   const parts: string[] = [];
   let lineCount = 0;
@@ -254,13 +257,13 @@ function formatCodeInterpreterLogs(outputs: JsonValue | undefined): {
       continue;
     }
     const record = entry as JsonObject;
-    if (typeof record.logs === 'string' && record.logs.trim()) {
+    if (typeof record.logs === "string" && record.logs.trim()) {
       parts.push(record.logs);
       lineCount += record.logs.split(/\r?\n/u).filter((line) => line.trim().length > 0).length;
     }
   }
   return {
-    text: parts.join('\n\n'),
+    text: parts.join("\n\n"),
     lineCount,
   };
 }
@@ -270,8 +273,8 @@ export function buildResponsesBuiltInToolArgumentsJson(
   toolName: (typeof RESPONSES_BUILT_IN_TOOL_NAMES)[number],
 ): string {
   const payload: JsonObject = {};
-  const query = readStringField(item, 'query');
-  const url = readStringField(item, 'url');
+  const query = readStringField(item, "query");
+  const url = readStringField(item, "url");
   const queries = item.queries;
   if (query && !isGenericProviderWebSearchQuery(query)) {
     payload.query = query;
@@ -284,7 +287,7 @@ export function buildResponsesBuiltInToolArgumentsJson(
   }
   if (isJsonObject(item.action as JsonValue)) {
     payload.action = item.action as JsonObject;
-    const actionQuery = readStringField(item.action as JsonObject, 'query');
+    const actionQuery = readStringField(item.action as JsonObject, "query");
     if (actionQuery && !payload.query && !isGenericProviderWebSearchQuery(actionQuery)) {
       payload.query = actionQuery;
     }
@@ -292,18 +295,18 @@ export function buildResponsesBuiltInToolArgumentsJson(
   if (Array.isArray(item.urls)) {
     payload.urls = item.urls;
   }
-  const goal = readStringField(item, 'goal');
+  const goal = readStringField(item, "goal");
   if (goal) {
     payload.goal = goal;
   }
-  const code = readStringField(item, 'code');
+  const code = readStringField(item, "code");
   if (code) {
     payload.code = code;
   }
   if (Array.isArray(item.outputs)) {
     payload.outputs = item.outputs;
   }
-  if (typeof item.status === 'string') {
+  if (typeof item.status === "string") {
     payload.status = item.status;
   }
 
@@ -331,9 +334,9 @@ export function buildGatewaySdkProviderBuiltinToolResultArgumentsJson(
     return undefined;
   }
 
-  if (toolName === 'web_search') {
+  if (toolName === "web_search") {
     const inputObj = isJsonObject(input as JsonValue) ? (input as JsonObject) : {};
-    const query = readStringField(inputObj, 'query') ?? '';
+    const query = readStringField(inputObj, "query") ?? "";
     const sources: JsonObject[] = [];
 
     if (!failed && isJsonObject(output as JsonValue)) {
@@ -344,13 +347,13 @@ export function buildGatewaySdkProviderBuiltinToolResultArgumentsJson(
             continue;
           }
           const entry = result as JsonObject;
-          const url = readStringField(entry, 'url');
+          const url = readStringField(entry, "url");
           if (!url) {
             continue;
           }
-          const source: JsonObject = { type: 'url', url };
-          const title = readStringField(entry, 'title');
-          const snippet = readStringField(entry, 'snippet');
+          const source: JsonObject = { type: "url", url };
+          const title = readStringField(entry, "title");
+          const snippet = readStringField(entry, "snippet");
           if (title) {
             source.title = title;
           }
@@ -363,15 +366,15 @@ export function buildGatewaySdkProviderBuiltinToolResultArgumentsJson(
     }
 
     const item: JsonObject = {
-      type: 'web_search_call',
-      status: failed ? 'failed' : 'completed',
+      type: "web_search_call",
+      status: failed ? "failed" : "completed",
       action: {
-        type: 'search',
+        type: "search",
         query,
         sources,
       },
     };
-    return buildResponsesBuiltInToolArgumentsJson(item, 'web_search');
+    return buildResponsesBuiltInToolArgumentsJson(item, "web_search");
   }
 
   return undefined;
@@ -379,7 +382,7 @@ export function buildGatewaySdkProviderBuiltinToolResultArgumentsJson(
 
 function readStringField(record: JsonObject, key: string): string | undefined {
   const value = record[key];
-  if (typeof value !== 'string') {
+  if (typeof value !== "string") {
     return undefined;
   }
   const trimmed = value.trim();
@@ -387,7 +390,7 @@ function readStringField(record: JsonObject, key: string): string | undefined {
 }
 
 function truncateHeadlineDetail(value: string, max = HEADLINE_DETAIL_MAX): string {
-  const normalized = value.replace(/\s+/g, ' ').trim();
+  const normalized = value.replace(/\s+/g, " ").trim();
   if (normalized.length <= max) {
     return normalized;
   }
@@ -420,35 +423,35 @@ const RESPONSES_BUILT_IN_LIFECYCLE_CHUNK_TYPES: ReadonlyArray<{
   status: string;
 }> = [
   {
-    chunkType: 'response.web_search_call.in_progress',
-    toolName: 'web_search',
-    status: 'in_progress',
+    chunkType: "response.web_search_call.in_progress",
+    toolName: "web_search",
+    status: "in_progress",
   },
   {
-    chunkType: 'response.web_search_call.searching',
-    toolName: 'web_search',
-    status: 'searching',
+    chunkType: "response.web_search_call.searching",
+    toolName: "web_search",
+    status: "searching",
   },
   {
-    chunkType: 'response.code_interpreter_call.in_progress',
-    toolName: 'code_interpreter',
-    status: 'in_progress',
+    chunkType: "response.code_interpreter_call.in_progress",
+    toolName: "code_interpreter",
+    status: "in_progress",
   },
   {
-    chunkType: 'response.code_interpreter_call.interpreting',
-    toolName: 'code_interpreter',
-    status: 'interpreting',
+    chunkType: "response.code_interpreter_call.interpreting",
+    toolName: "code_interpreter",
+    status: "interpreting",
   },
 ];
 
 function readResponsesBuiltInItemId(chunk: JsonObject): string | undefined {
-  const itemId = readStringField(chunk, 'item_id');
+  const itemId = readStringField(chunk, "item_id");
   if (itemId) {
     return itemId;
   }
   if (isJsonObject(chunk.item as JsonValue)) {
     const item = chunk.item as JsonObject;
-    return readStringField(item, 'id') ?? readStringField(item, 'call_id');
+    return readStringField(item, "id") ?? readStringField(item, "call_id");
   }
   return undefined;
 }
@@ -457,10 +460,10 @@ function responsesBuiltInOutputItemTypeForToolName(
   toolName: (typeof RESPONSES_BUILT_IN_TOOL_NAMES)[number],
 ): string {
   switch (toolName) {
-    case 'web_search':
-      return 'web_search_call';
-    case 'code_interpreter':
-      return 'code_interpreter_call';
+    case "web_search":
+      return "web_search_call";
+    case "code_interpreter":
+      return "code_interpreter_call";
     default:
       return toolName;
   }
@@ -472,9 +475,9 @@ function emitResponsesBuiltInToolPreview(
   state: ResponsesBuiltInPreviewStreamState,
 ): { events: LlmStreamEvent[]; state: ResponsesBuiltInPreviewStreamState } {
   const callId =
-    readStringField(item, 'id')
-    ?? readStringField(item, 'call_id')
-    ?? `provider-${toolName}-${state.nextPreviewIndex}`;
+    readStringField(item, "id") ??
+    readStringField(item, "call_id") ??
+    `provider-${toolName}-${state.nextPreviewIndex}`;
 
   const mergedItem: JsonObject = {
     ...(state.items.get(callId)?.item ?? {}),
@@ -487,7 +490,7 @@ function emitResponsesBuiltInToolPreview(
   return {
     events: [
       {
-        kind: 'streaming-tool-preview',
+        kind: "streaming-tool-preview",
         toolCallId: callId,
         toolName,
         argumentsJson: buildResponsesBuiltInToolArgumentsJson(mergedItem, toolName),
@@ -500,7 +503,7 @@ function emitResponsesBuiltInToolPreview(
 function coerceResponsesBuiltInPreviewStreamState(
   stateOrIndex: ResponsesBuiltInPreviewStreamState | number,
 ): ResponsesBuiltInPreviewStreamState {
-  if (typeof stateOrIndex === 'number') {
+  if (typeof stateOrIndex === "number") {
     return createResponsesBuiltInPreviewStreamState(stateOrIndex);
   }
   return stateOrIndex;
@@ -517,7 +520,7 @@ export function accumulateResponsesBuiltInToolPreviewsFromRawChunk(
 } {
   const state = coerceResponsesBuiltInPreviewStreamState(stateOrIndex);
 
-  if (!isJsonObject(rawValue as JsonValue) || typeof (rawValue as JsonObject).type !== 'string') {
+  if (!isJsonObject(rawValue as JsonValue) || typeof (rawValue as JsonObject).type !== "string") {
     return { events: [], state, nextPreviewIndex: state.nextPreviewIndex };
   }
 
@@ -547,7 +550,7 @@ export function accumulateResponsesBuiltInToolPreviewsFromRawChunk(
     };
   }
 
-  if (chunkType !== 'response.output_item.added' && chunkType !== 'response.output_item.done') {
+  if (chunkType !== "response.output_item.added" && chunkType !== "response.output_item.done") {
     return { events: [], state, nextPreviewIndex: state.nextPreviewIndex };
   }
 
@@ -556,7 +559,7 @@ export function accumulateResponsesBuiltInToolPreviewsFromRawChunk(
   }
 
   const item = chunk.item as JsonObject;
-  const itemType = typeof item.type === 'string' ? item.type : '';
+  const itemType = typeof item.type === "string" ? item.type : "";
   const toolName = responsesBuiltInToolNameFromOutputItemType(itemType);
   if (!toolName) {
     return { events: [], state, nextPreviewIndex: state.nextPreviewIndex };
@@ -566,7 +569,7 @@ export function accumulateResponsesBuiltInToolPreviewsFromRawChunk(
   const finalizedState = {
     ...emitted.state,
     nextPreviewIndex:
-      chunkType === 'response.output_item.added'
+      chunkType === "response.output_item.added"
         ? emitted.state.nextPreviewIndex + 1
         : emitted.state.nextPreviewIndex,
   };

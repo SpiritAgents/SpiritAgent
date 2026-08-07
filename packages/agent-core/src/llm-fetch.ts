@@ -1,19 +1,19 @@
-import { createRequire } from 'node:module';
+import { createRequire } from "node:module";
 
-import { Agent, fetch as undiciFetch } from 'undici';
+import { Agent, fetch as undiciFetch } from "undici";
 
-import { observeLlmFetchResponse } from './llm-retry.js';
+import { observeLlmFetchResponse } from "./llm-retry.js";
 
-export type LlmHttpVersion = 'http1.1' | 'http2';
+export type LlmHttpVersion = "http1.1" | "http2";
 
-export const SPIRIT_AGENT_UA_PRODUCT = 'SpiritAgent';
+export const SPIRIT_AGENT_UA_PRODUCT = "SpiritAgent";
 
 const require = createRequire(import.meta.url);
-const defaultClientVersion = (require('../package.json') as { version: string }).version;
+const defaultClientVersion = (require("../package.json") as { version: string }).version;
 
-const LLM_HTTP_VERSIONS: readonly LlmHttpVersion[] = ['http1.1', 'http2'];
+const LLM_HTTP_VERSIONS: readonly LlmHttpVersion[] = ["http1.1", "http2"];
 
-let configuredVersion: LlmHttpVersion = 'http2';
+let configuredVersion: LlmHttpVersion = "http2";
 let llmDispatcher: Agent | undefined;
 let configuredClientVersion: string = defaultClientVersion;
 let llmFetchTransportOverride: typeof fetch | undefined;
@@ -45,7 +45,7 @@ export function mergeLlmFetchInit(init?: RequestInit): RequestInit {
 
   if (sourceHeaders instanceof Headers) {
     const headers = new Headers(sourceHeaders);
-    headers.set('User-Agent', userAgent);
+    headers.set("User-Agent", userAgent);
     return { ...init, headers };
   }
 
@@ -54,28 +54,28 @@ export function mergeLlmFetchInit(init?: RequestInit): RequestInit {
     for (const [key, value] of sourceHeaders) {
       headers.append(key, value);
     }
-  } else if (sourceHeaders && typeof sourceHeaders === 'object') {
+  } else if (sourceHeaders && typeof sourceHeaders === "object") {
     for (const [key, value] of Object.entries(sourceHeaders)) {
       if (value !== undefined) {
         headers.set(key, value);
       }
     }
   }
-  headers.set('User-Agent', userAgent);
+  headers.set("User-Agent", userAgent);
   return { ...init, headers };
 }
 
 export function normalizeLlmHttpVersion(value: unknown): LlmHttpVersion {
-  if (typeof value === 'string') {
+  if (typeof value === "string") {
     const normalized = value.trim().toLowerCase();
-    if (normalized === 'http1.1' || normalized === 'http/1.1' || normalized === 'http1') {
-      return 'http1.1';
+    if (normalized === "http1.1" || normalized === "http/1.1" || normalized === "http1") {
+      return "http1.1";
     }
-    if (normalized === 'http2' || normalized === 'http/2' || normalized === 'h2') {
-      return 'http2';
+    if (normalized === "http2" || normalized === "http/2" || normalized === "h2") {
+      return "http2";
     }
   }
-  return 'http2';
+  return "http2";
 }
 
 export function getLlmHttpVersion(): LlmHttpVersion {
@@ -96,7 +96,7 @@ export function configureLlmHttpVersion(version: LlmHttpVersion): void {
 
 function llmDispatcherInstance(): Agent {
   llmDispatcher ??= new Agent({
-    allowH2: configuredVersion === 'http2',
+    allowH2: configuredVersion === "http2",
     pipelining: 0,
   });
   return llmDispatcher;
@@ -108,7 +108,9 @@ export function getLlmFetch(): typeof fetch {
   const fetchWithDispatcher = async (input: RequestInfo | URL, init?: RequestInit) => {
     const mergedInit = mergeLlmFetchInit(init);
     if (llmFetchTransportOverride) {
-      return observeLlmFetchResponse(await llmFetchTransportOverride(input, mergedInit) as Response);
+      return observeLlmFetchResponse(
+        (await llmFetchTransportOverride(input, mergedInit)) as Response,
+      );
     }
     const response = await undiciFetch(
       input as Parameters<typeof undiciFetch>[0],

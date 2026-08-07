@@ -1,8 +1,8 @@
-import { existsSync, readFileSync } from 'node:fs';
-import { mkdir, writeFile } from 'node:fs/promises';
-import path from 'node:path';
+import { existsSync, readFileSync } from "node:fs";
+import { mkdir, writeFile } from "node:fs/promises";
+import path from "node:path";
 
-import i18n from '../lib/i18n-host.js';
+import i18n from "../lib/i18n-host.js";
 import {
   findMcpServerNameConflict,
   mcpUserConfigPath,
@@ -13,24 +13,24 @@ import {
   summarizeTransport,
   type McpConfigFile,
   type McpServerConfig,
-} from '@spiritagent/agent-core';
+} from "@spiritagent/agent-core";
 
 import type {
   AddMcpServerRequest,
   DesktopMcpScope,
   DesktopMcpServerListItem,
   DesktopSnapshot,
-} from '../types.js';
-import { spiritAgentDataDir } from './storage.js';
+} from "../types.js";
+import { spiritAgentDataDir } from "./storage.js";
 
 const MCP_DEFAULT_TIMEOUT_MS = 20_000;
 
-type DesktopMcpMetadataKind = 'env' | 'header';
+type DesktopMcpMetadataKind = "env" | "header";
 
-export function emptyMcpStatusSnapshot(): DesktopSnapshot['mcpStatus'] {
+export function emptyMcpStatusSnapshot(): DesktopSnapshot["mcpStatus"] {
   return {
     revision: 0,
-    state: 'idle',
+    state: "idle",
     configuredServers: 0,
     loadedServers: 0,
     cachedTools: 0,
@@ -46,7 +46,7 @@ export function desktopWorkspaceMcpConfigPath(workspaceRoot: string): string {
 }
 
 export function mcpConfigPathForScope(scope: DesktopMcpScope, workspaceRoot: string): string {
-  return scope === 'workspace'
+  return scope === "workspace"
     ? desktopWorkspaceMcpConfigPath(workspaceRoot)
     : desktopUserMcpConfigPath();
 }
@@ -56,13 +56,16 @@ export function loadMcpConfigFileAt(configPath: string): McpConfigFile {
     return { servers: {} };
   }
 
-  const content = readFileSync(configPath, 'utf8');
+  const content = readFileSync(configPath, "utf8");
   return parseMcpConfigFile(JSON.parse(content) as unknown);
 }
 
-export async function saveMcpConfigFileAt(configPath: string, config: McpConfigFile): Promise<void> {
+export async function saveMcpConfigFileAt(
+  configPath: string,
+  config: McpConfigFile,
+): Promise<void> {
   await mkdir(path.dirname(configPath), { recursive: true });
-  await writeFile(configPath, `${JSON.stringify(config, null, 2)}\n`, 'utf8');
+  await writeFile(configPath, `${JSON.stringify(config, null, 2)}\n`, "utf8");
 }
 
 function mapServerListItem(
@@ -72,7 +75,7 @@ function mapServerListItem(
 ): DesktopMcpServerListItem {
   const normalized = normalizeMcpServerConfig(name, server);
   switch (normalized.transport.type) {
-    case 'stdio':
+    case "stdio":
       return {
         name: normalized.name,
         displayName: normalized.displayName,
@@ -80,7 +83,7 @@ function mapServerListItem(
         capabilities: normalized.capabilities,
         scope,
         transport: {
-          type: 'stdio',
+          type: "stdio",
           command: normalized.transport.command,
           args: normalized.transport.args,
           metadata: normalized.transport.env,
@@ -91,7 +94,7 @@ function mapServerListItem(
           summary: summarizeTransport(normalized.transport),
         },
       };
-    case 'http':
+    case "http":
       return {
         name: normalized.name,
         displayName: normalized.displayName,
@@ -99,7 +102,7 @@ function mapServerListItem(
         capabilities: normalized.capabilities,
         scope,
         transport: {
-          type: 'http',
+          type: "http",
           url: normalized.transport.url,
           metadata: normalized.transport.headers,
           ...(normalized.transport.timeoutMs !== undefined
@@ -113,19 +116,19 @@ function mapServerListItem(
 
 export function listDesktopMcpServersFromDisk(
   workspaceRoot: string,
-  workspaceBinding: 'project' | 'none' = 'project',
+  workspaceBinding: "project" | "none" = "project",
 ): DesktopMcpServerListItem[] {
   try {
     const userConfig = loadMcpConfigFileAt(desktopUserMcpConfigPath());
     const userItems = Object.entries(userConfig.servers).map(([name, server]) =>
-      mapServerListItem(name, server, 'user'),
+      mapServerListItem(name, server, "user"),
     );
-    if (workspaceBinding === 'none') {
+    if (workspaceBinding === "none") {
       return userItems;
     }
     const workspaceConfig = loadMcpConfigFileAt(desktopWorkspaceMcpConfigPath(workspaceRoot));
     const workspaceItems = Object.entries(workspaceConfig.servers).map(([name, server]) =>
-      mapServerListItem(name, server, 'workspace'),
+      mapServerListItem(name, server, "workspace"),
     );
     return [...userItems, ...workspaceItems];
   } catch {
@@ -136,13 +139,13 @@ export function listDesktopMcpServersFromDisk(
 export function assertMcpServerNameAvailable(workspaceRoot: string, name: string): void {
   const trimmed = name.trim();
   if (!trimmed) {
-    throw new Error(i18n.t('error.mcpNameRequired'));
+    throw new Error(i18n.t("error.mcpNameRequired"));
   }
 
   const userConfig = loadMcpConfigFileAt(desktopUserMcpConfigPath());
   const workspaceConfig = loadMcpConfigFileAt(desktopWorkspaceMcpConfigPath(workspaceRoot));
   if (findMcpServerNameConflict(userConfig, workspaceConfig, trimmed)) {
-    throw new Error(i18n.t('error.mcpExists', { name: trimmed }));
+    throw new Error(i18n.t("error.mcpExists", { name: trimmed }));
   }
 }
 
@@ -167,13 +170,13 @@ export async function deleteMcpServerFromDisk(
 ): Promise<void> {
   const trimmed = name.trim();
   if (!trimmed) {
-    throw new Error(i18n.t('error.mcpNameRequired'));
+    throw new Error(i18n.t("error.mcpNameRequired"));
   }
 
   const configPath = mcpConfigPathForScope(scope, workspaceRoot);
   const configFile = loadMcpConfigFileAt(configPath);
   if (!configFile.servers[trimmed]) {
-    throw new Error(i18n.t('error.mcpNotFound', { name: trimmed }));
+    throw new Error(i18n.t("error.mcpNotFound", { name: trimmed }));
   }
 
   delete configFile.servers[trimmed];
@@ -184,24 +187,24 @@ export function buildMcpServerConfigFromRequest(request: AddMcpServerRequest): M
   const name = request.name.trim();
   const capabilities = normalizeCapabilityToggles(request.capabilities);
   const metadata = parseDesktopMcpMetadata(
-    request.metadata ?? '',
-    request.transportType === 'http' ? 'header' : 'env',
+    request.metadata ?? "",
+    request.transportType === "http" ? "header" : "env",
   );
 
-  if (request.transportType === 'http') {
+  if (request.transportType === "http") {
     const endpoint = request.endpoint.trim();
     if (!endpoint) {
-      throw new Error(i18n.t('error.httpEndpointRequired'));
+      throw new Error(i18n.t("error.httpEndpointRequired"));
     }
 
     let url: URL;
     try {
       url = new URL(endpoint);
     } catch {
-      throw new Error(i18n.t('error.httpEndpointInvalidUrl'));
+      throw new Error(i18n.t("error.httpEndpointInvalidUrl"));
     }
     if (!url.protocol || !url.host) {
-      throw new Error(i18n.t('error.httpEndpointMissingSchemeHost'));
+      throw new Error(i18n.t("error.httpEndpointMissingSchemeHost"));
     }
 
     return {
@@ -209,7 +212,7 @@ export function buildMcpServerConfigFromRequest(request: AddMcpServerRequest): M
       enabled: true,
       capabilities,
       transport: {
-        type: 'http',
+        type: "http",
         url: url.toString(),
         ...(Object.keys(metadata).length > 0 ? { headers: metadata } : {}),
         timeoutMs: MCP_DEFAULT_TIMEOUT_MS,
@@ -220,7 +223,7 @@ export function buildMcpServerConfigFromRequest(request: AddMcpServerRequest): M
   const tokens = splitDesktopCommandLine(request.endpoint.trim());
   const [command, ...args] = tokens;
   if (!command) {
-      throw new Error(i18n.t('error.commandRequired'));
+    throw new Error(i18n.t("error.commandRequired"));
   }
 
   return {
@@ -228,7 +231,7 @@ export function buildMcpServerConfigFromRequest(request: AddMcpServerRequest): M
     enabled: true,
     capabilities,
     transport: {
-      type: 'stdio',
+      type: "stdio",
       command,
       ...(args.length > 0 ? { args } : {}),
       ...(Object.keys(metadata).length > 0 ? { env: metadata } : {}),
@@ -247,30 +250,33 @@ function parseDesktopMcpMetadata(
   }
 
   const result: Record<string, string> = {};
-  for (const item of trimmed.split(';')) {
+  for (const item of trimmed.split(";")) {
     const pair = item.trim();
     if (!pair) {
       continue;
     }
 
-    const parsed = kind === 'env'
-      ? pair.split(/=(.*)/su, 2)
-      : pair.includes(':')
-        ? pair.split(/:(.*)/su, 2)
-        : pair.split(/=(.*)/su, 2);
+    const parsed =
+      kind === "env"
+        ? pair.split(/=(.*)/su, 2)
+        : pair.includes(":")
+          ? pair.split(/:(.*)/su, 2)
+          : pair.split(/=(.*)/su, 2);
 
     if (parsed.length < 2) {
-      throw new Error(kind === 'env'
-        ? i18n.t('error.envFormatInvalid')
-        : i18n.t('error.headerFormatInvalid'));
+      throw new Error(
+        kind === "env" ? i18n.t("error.envFormatInvalid") : i18n.t("error.headerFormatInvalid"),
+      );
     }
 
-    const key = parsed[0]?.trim() ?? '';
+    const key = parsed[0]?.trim() ?? "";
     if (!key) {
-      throw new Error(kind === 'env' ? i18n.t('error.envKeyRequired') : i18n.t('error.headerKeyRequired'));
+      throw new Error(
+        kind === "env" ? i18n.t("error.envKeyRequired") : i18n.t("error.headerKeyRequired"),
+      );
     }
 
-    result[key] = (parsed[1] ?? '').trim();
+    result[key] = (parsed[1] ?? "").trim();
   }
 
   return result;
@@ -281,13 +287,13 @@ function parseDesktopMcpMetadata(
 // 是引号内的 `\"` / `\'`（匹配当前引号），用于嵌入字面引号。
 function splitDesktopCommandLine(input: string): string[] {
   const tokens: string[] = [];
-  let current = '';
+  let current = "";
   let quote: '"' | "'" | undefined;
 
   for (let index = 0; index < input.length; index += 1) {
     const ch = input[index]!;
     if (quote) {
-      if (ch === '\\' && input[index + 1] === quote) {
+      if (ch === "\\" && input[index + 1] === quote) {
         current += quote;
         index += 1;
         continue;
@@ -307,7 +313,7 @@ function splitDesktopCommandLine(input: string): string[] {
     if (/\s/u.test(ch)) {
       if (current) {
         tokens.push(current);
-        current = '';
+        current = "";
       }
       continue;
     }
@@ -315,7 +321,7 @@ function splitDesktopCommandLine(input: string): string[] {
   }
 
   if (quote) {
-      throw new Error(i18n.t('error.unclosedQuote'));
+    throw new Error(i18n.t("error.unclosedQuote"));
   }
   if (current) {
     tokens.push(current);

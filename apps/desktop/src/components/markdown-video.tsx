@@ -17,7 +17,8 @@ export function MarkdownVideo({
 }) {
   const { t } = useTranslation();
   const normalizedSrc = typeof src === "string" && src.trim().length > 0 ? src.trim() : null;
-  const managedRef = normalizedSrc && isManagedGeneratedVideoRef(normalizedSrc) ? normalizedSrc : null;
+  const managedRef =
+    normalizedSrc && isManagedGeneratedVideoRef(normalizedSrc) ? normalizedSrc : null;
   const [resolvedSrc, setResolvedSrc] = useState<string | null>(managedRef ? null : normalizedSrc);
   const [managedLoadState, setManagedLoadState] = useState<ManagedVideoLoadState>("idle");
 
@@ -78,27 +79,15 @@ export function MarkdownVideo({
     "my-3 flex min-h-28 w-full items-center justify-center rounded-md border border-dashed border-border/50 bg-muted/20 px-3 text-xs text-muted-foreground";
 
   if (managedRef && !readManagedVideoPreviewUrl) {
-    return (
-      <span className={cn("block", placeholderClassName)}>
-        {t("error.hostNotSupported")}
-      </span>
-    );
+    return <span className={cn("block", placeholderClassName)}>{t("error.hostNotSupported")}</span>;
   }
 
   if (managedRef && managedLoadState === "loading") {
-    return (
-      <span className={cn("block", placeholderClassName)}>
-        {t("error.loading")}
-      </span>
-    );
+    return <span className={cn("block", placeholderClassName)}>{t("error.loading")}</span>;
   }
 
   if (managedRef && managedLoadState === "unavailable") {
-    return (
-      <span className={cn("block", placeholderClassName)}>
-        {t("error.unavailable")}
-      </span>
-    );
+    return <span className={cn("block", placeholderClassName)}>{t("error.unavailable")}</span>;
   }
 
   if (!resolvedSrc) {

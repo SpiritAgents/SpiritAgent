@@ -1,7 +1,7 @@
-import { useEffect, useRef, useState } from 'react'
-import { useTranslation } from 'react-i18next'
+import { useEffect, useRef, useState } from "react";
+import { useTranslation } from "react-i18next";
 
-import { WorkspaceFilePickerRow } from '@/components/workspace-file-picker-row'
+import { WorkspaceFilePickerRow } from "@/components/workspace-file-picker-row";
 import {
   Command,
   CommandDialog,
@@ -9,28 +9,28 @@ import {
   CommandInput,
   CommandItem,
   CommandList,
-} from '@/components/ui/command'
+} from "@/components/ui/command";
 import {
   looksLikeAbsolutePath,
   normalizeAbsolutePathInput,
   toWorkspaceFileReferenceQueryInput,
-} from '@/lib/file-picker-path'
-import { instantHoverMotionClass } from '@/lib/desktop-chrome'
-import { RADIX_OVERLAY_CLOSE_MS } from '@/lib/overlay-motion'
-import { WorkspaceFileIcon } from '@/components/workspace-file-icon'
-import { cn } from '@/lib/utils'
+} from "@/lib/file-picker-path";
+import { instantHoverMotionClass } from "@/lib/desktop-chrome";
+import { RADIX_OVERLAY_CLOSE_MS } from "@/lib/overlay-motion";
+import { WorkspaceFileIcon } from "@/components/workspace-file-icon";
+import { cn } from "@/lib/utils";
 
 type WorkspaceFilePickerDialogProps = {
-  open: boolean
-  onOpenChange(open: boolean): void
-  workspaceRoot: string
-  workspaceBinding: 'project' | 'none'
-  indexReady: boolean
-  searchWorkspaceFiles(query: string): string[]
-  onOpenWorkspaceFile(relativePath: string): void
-  onOpenExternalFile(absolutePath: string): void
-  statHostTextFile(absolutePath: string): Promise<{ exists: boolean; isFile: boolean }>
-}
+  open: boolean;
+  onOpenChange(open: boolean): void;
+  workspaceRoot: string;
+  workspaceBinding: "project" | "none";
+  indexReady: boolean;
+  searchWorkspaceFiles(query: string): string[];
+  onOpenWorkspaceFile(relativePath: string): void;
+  onOpenExternalFile(absolutePath: string): void;
+  statHostTextFile(absolutePath: string): Promise<{ exists: boolean; isFile: boolean }>;
+};
 
 export function WorkspaceFilePickerDialog({
   open,
@@ -43,102 +43,97 @@ export function WorkspaceFilePickerDialog({
   onOpenExternalFile,
   statHostTextFile,
 }: WorkspaceFilePickerDialogProps) {
-  const { t } = useTranslation()
-  const [query, setQuery] = useState('')
-  const [suggestions, setSuggestions] = useState<string[]>([])
-  const [absolutePathExists, setAbsolutePathExists] = useState<boolean | null>(null)
-  const absoluteStatRequestIdRef = useRef(0)
+  const { t } = useTranslation();
+  const [query, setQuery] = useState("");
+  const [suggestions, setSuggestions] = useState<string[]>([]);
+  const [absolutePathExists, setAbsolutePathExists] = useState<boolean | null>(null);
+  const absoluteStatRequestIdRef = useRef(0);
 
   useEffect(() => {
     if (open) {
-      return
+      return;
     }
     const timeoutId = window.setTimeout(() => {
-      setQuery('')
-      setSuggestions([])
-      setAbsolutePathExists(null)
-    }, RADIX_OVERLAY_CLOSE_MS)
-    return () => window.clearTimeout(timeoutId)
-  }, [open])
+      setQuery("");
+      setSuggestions([]);
+      setAbsolutePathExists(null);
+    }, RADIX_OVERLAY_CLOSE_MS);
+    return () => window.clearTimeout(timeoutId);
+  }, [open]);
 
   useEffect(() => {
     if (!open) {
-      return
+      return;
     }
 
-    const trimmed = query.trim()
+    const trimmed = query.trim();
     const workspaceSearchEnabled =
-      workspaceBinding === 'project' && workspaceRoot.trim().length > 0
+      workspaceBinding === "project" && workspaceRoot.trim().length > 0;
 
     if (!workspaceSearchEnabled || !indexReady) {
-      setSuggestions([])
-      return
+      setSuggestions([]);
+      return;
     }
 
-    setSuggestions(searchWorkspaceFiles(toWorkspaceFileReferenceQueryInput(trimmed)))
-  }, [indexReady, open, query, searchWorkspaceFiles, workspaceBinding, workspaceRoot])
+    setSuggestions(searchWorkspaceFiles(toWorkspaceFileReferenceQueryInput(trimmed)));
+  }, [indexReady, open, query, searchWorkspaceFiles, workspaceBinding, workspaceRoot]);
 
-  const trimmedQuery = query.trim()
+  const trimmedQuery = query.trim();
   const absolutePathCandidate = looksLikeAbsolutePath(trimmedQuery)
     ? normalizeAbsolutePathInput(trimmedQuery)
-    : null
+    : null;
 
   useEffect(() => {
     if (!open || !absolutePathCandidate) {
-      setAbsolutePathExists(null)
-      return
+      setAbsolutePathExists(null);
+      return;
     }
 
-    const requestId = absoluteStatRequestIdRef.current + 1
-    absoluteStatRequestIdRef.current = requestId
+    const requestId = absoluteStatRequestIdRef.current + 1;
+    absoluteStatRequestIdRef.current = requestId;
 
     void statHostTextFile(absolutePathCandidate)
       .then((result) => {
         if (absoluteStatRequestIdRef.current !== requestId) {
-          return
+          return;
         }
-        setAbsolutePathExists(result.exists && result.isFile)
+        setAbsolutePathExists(result.exists && result.isFile);
       })
       .catch(() => {
         if (absoluteStatRequestIdRef.current !== requestId) {
-          return
+          return;
         }
-        setAbsolutePathExists(false)
-      })
-  }, [absolutePathCandidate, open, statHostTextFile])
+        setAbsolutePathExists(false);
+      });
+  }, [absolutePathCandidate, open, statHostTextFile]);
 
   const closeAndOpenWorkspaceFile = (relativePath: string) => {
-    onOpenChange(false)
-    onOpenWorkspaceFile(relativePath)
-  }
+    onOpenChange(false);
+    onOpenWorkspaceFile(relativePath);
+  };
 
   const closeAndOpenExternalFile = (absolutePath: string) => {
-    onOpenChange(false)
-    onOpenExternalFile(absolutePath)
-  }
+    onOpenChange(false);
+    onOpenExternalFile(absolutePath);
+  };
 
   const showEmpty =
-    suggestions.length === 0
-    && (!absolutePathCandidate || absolutePathExists === false)
-  const showAbsolutePathIcon = Boolean(absolutePathCandidate && absolutePathExists !== false)
+    suggestions.length === 0 && (!absolutePathCandidate || absolutePathExists === false);
+  const showAbsolutePathIcon = Boolean(absolutePathCandidate && absolutePathExists !== false);
 
   return (
     <CommandDialog
       open={open}
       onOpenChange={onOpenChange}
-      title={t('workspace.filePickerTitle')}
-      description={t('workspace.filePickerDescription')}
+      title={t("workspace.filePickerTitle")}
+      description={t("workspace.filePickerDescription")}
       className="sm:max-w-xl"
     >
-      <Command
-        shouldFilter={false}
-        aria-label={t('workspace.filePickerTitle')}
-        className="gap-2"
-      >
+      <Command shouldFilter={false} aria-label={t("workspace.filePickerTitle")} className="gap-2">
         <CommandInput
           value={query}
           onValueChange={setQuery}
-          placeholder={t('workspace.filePickerPlaceholder')}
+          placeholder={t("workspace.filePickerPlaceholder")}
         />
         <CommandList className="max-h-96">
           {absolutePathCandidate && absolutePathExists !== false && showAbsolutePathIcon ? (
@@ -146,14 +141,14 @@ export function WorkspaceFilePickerDialog({
               key={`absolute:${absolutePathCandidate}`}
               value={`absolute:${absolutePathCandidate}`}
               className={cn(
-                'min-w-0 cursor-pointer [&>svg:last-child]:hidden',
+                "min-w-0 cursor-pointer [&>svg:last-child]:hidden",
                 instantHoverMotionClass,
               )}
               onSelect={() => closeAndOpenExternalFile(absolutePathCandidate)}
             >
               <WorkspaceFileIcon path={absolutePathCandidate} />
               <span className="min-w-0 truncate text-sm text-popover-foreground">
-                {t('workspace.filePickerOpenAbsolutePath', { path: absolutePathCandidate })}
+                {t("workspace.filePickerOpenAbsolutePath", { path: absolutePathCandidate })}
               </span>
             </CommandItem>
           ) : null}
@@ -162,7 +157,7 @@ export function WorkspaceFilePickerDialog({
               key={path}
               value={path}
               className={cn(
-                'min-w-0 cursor-pointer [&>svg:last-child]:hidden',
+                "min-w-0 cursor-pointer [&>svg:last-child]:hidden",
                 instantHoverMotionClass,
               )}
               onSelect={() => closeAndOpenWorkspaceFile(path)}
@@ -173,14 +168,14 @@ export function WorkspaceFilePickerDialog({
           {showEmpty ? (
             <CommandEmpty>
               {!indexReady
-                ? t('workspace.filePickerIndexing')
+                ? t("workspace.filePickerIndexing")
                 : absolutePathCandidate && absolutePathExists === false
-                  ? t('workspace.filePickerAbsolutePathNotFound')
-                  : t('workspace.filePickerEmpty')}
+                  ? t("workspace.filePickerAbsolutePathNotFound")
+                  : t("workspace.filePickerEmpty")}
             </CommandEmpty>
           ) : null}
         </CommandList>
       </Command>
     </CommandDialog>
-  )
+  );
 }

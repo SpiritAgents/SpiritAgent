@@ -1,9 +1,9 @@
-import assert from 'node:assert/strict';
-import { join } from 'node:path';
-import test from 'node:test';
+import assert from "node:assert/strict";
+import { join } from "node:path";
+import test from "node:test";
 
-import { mkdtempSync, rmSync } from 'node:fs';
-import { tmpdir } from 'node:os';
+import { mkdtempSync, rmSync } from "node:fs";
+import { tmpdir } from "node:os";
 
 import {
   findMcpServerNameConflict,
@@ -12,11 +12,11 @@ import {
   mergeMcpConfigFiles,
   resolveDefaultSpiritAgentDataDir,
   spiritAgentDataDir,
-} from './config.js';
-import type { McpConfigFile } from './types.js';
+} from "./config.js";
+import type { McpConfigFile } from "./types.js";
 
 const stdioServer = {
-  transport: { type: 'stdio' as const, command: 'echo' },
+  transport: { type: "stdio" as const, command: "echo" },
 };
 
 function withEnv(vars: Record<string, string | undefined>, run: () => void): void {
@@ -42,26 +42,29 @@ function withEnv(vars: Record<string, string | undefined>, run: () => void): voi
   }
 }
 
-test('resolveDefaultSpiritAgentDataDir uses APPDATA on Windows-style hosts', () => {
+test("resolveDefaultSpiritAgentDataDir uses APPDATA on Windows-style hosts", () => {
   withEnv(
     {
-      APPDATA: '/tmp/spirit-agent-appdata',
-      HOME: '/tmp/should-not-use',
+      APPDATA: "/tmp/spirit-agent-appdata",
+      HOME: "/tmp/should-not-use",
       USERPROFILE: undefined,
       SPIRIT_AGENT_DATA_DIR: undefined,
     },
     () => {
-      assert.equal(resolveDefaultSpiritAgentDataDir(), join('/tmp/spirit-agent-appdata', 'SpiritAgent'));
+      assert.equal(
+        resolveDefaultSpiritAgentDataDir(),
+        join("/tmp/spirit-agent-appdata", "SpiritAgent"),
+      );
     },
   );
 });
 
-test('resolveDefaultSpiritAgentDataDir uses Application Support on macOS', () => {
-  if (process.platform !== 'darwin') {
+test("resolveDefaultSpiritAgentDataDir uses Application Support on macOS", () => {
+  if (process.platform !== "darwin") {
     return;
   }
 
-  const home = mkdtempSync(join(tmpdir(), 'spirit-agent-home-'));
+  const home = mkdtempSync(join(tmpdir(), "spirit-agent-home-"));
   try {
     withEnv(
       {
@@ -73,7 +76,7 @@ test('resolveDefaultSpiritAgentDataDir uses Application Support on macOS', () =>
       () => {
         assert.equal(
           resolveDefaultSpiritAgentDataDir(),
-          join(home, 'Library', 'Application Support', 'SpiritAgent'),
+          join(home, "Library", "Application Support", "SpiritAgent"),
         );
       },
     );
@@ -82,26 +85,23 @@ test('resolveDefaultSpiritAgentDataDir uses Application Support on macOS', () =>
   }
 });
 
-test('spiritAgentDataDir honors SPIRIT_AGENT_DATA_DIR override', () => {
+test("spiritAgentDataDir honors SPIRIT_AGENT_DATA_DIR override", () => {
   withEnv(
     {
-      SPIRIT_AGENT_DATA_DIR: '/tmp/spirit-agent-override',
-      APPDATA: '/tmp/spirit-agent-appdata',
+      SPIRIT_AGENT_DATA_DIR: "/tmp/spirit-agent-override",
+      APPDATA: "/tmp/spirit-agent-appdata",
     },
     () => {
-      assert.equal(spiritAgentDataDir(), '/tmp/spirit-agent-override');
+      assert.equal(spiritAgentDataDir(), "/tmp/spirit-agent-override");
     },
   );
 });
 
-test('mcpWorkspaceConfigPath resolves under .spirit directory', () => {
-  assert.equal(
-    mcpWorkspaceConfigPath('/tmp/project'),
-    join('/tmp/project', '.spirit', 'mcp.json'),
-  );
+test("mcpWorkspaceConfigPath resolves under .spirit directory", () => {
+  assert.equal(mcpWorkspaceConfigPath("/tmp/project"), join("/tmp/project", ".spirit", "mcp.json"));
 });
 
-test('mergeMcpConfigFiles combines user and workspace servers', () => {
+test("mergeMcpConfigFiles combines user and workspace servers", () => {
   const user: McpConfigFile = {
     servers: { github: stdioServer },
   };
@@ -110,53 +110,53 @@ test('mergeMcpConfigFiles combines user and workspace servers', () => {
   };
 
   const merged = mergeMcpConfigFiles(user, workspace);
-  assert.deepEqual(Object.keys(merged.servers).sort(), ['github', 'local']);
+  assert.deepEqual(Object.keys(merged.servers).sort(), ["github", "local"]);
 });
 
-test('mergeMcpConfigFiles lets workspace override same-named user server', () => {
+test("mergeMcpConfigFiles lets workspace override same-named user server", () => {
   const user: McpConfigFile = {
     servers: {
-      shared: { transport: { type: 'stdio', command: 'user-cmd' } },
+      shared: { transport: { type: "stdio", command: "user-cmd" } },
     },
   };
   const workspace: McpConfigFile = {
     servers: {
-      shared: { transport: { type: 'stdio', command: 'workspace-cmd' } },
+      shared: { transport: { type: "stdio", command: "workspace-cmd" } },
     },
   };
 
   const merged = mergeMcpConfigFiles(user, workspace);
   const transport = merged.servers.shared?.transport;
-  assert.equal(transport?.type, 'stdio');
-  if (transport?.type === 'stdio') {
-    assert.equal(transport.command, 'workspace-cmd');
+  assert.equal(transport?.type, "stdio");
+  if (transport?.type === "stdio") {
+    assert.equal(transport.command, "workspace-cmd");
   }
 });
 
-test('mcpServerScopesFromFiles labels each server by source file', () => {
+test("mcpServerScopesFromFiles labels each server by source file", () => {
   const user: McpConfigFile = { servers: { github: stdioServer } };
   const workspace: McpConfigFile = { servers: { local: stdioServer } };
 
   assert.deepEqual(mcpServerScopesFromFiles(user, workspace), {
-    github: 'user',
-    local: 'workspace',
+    github: "user",
+    local: "workspace",
   });
 });
 
-test('findMcpServerNameConflict detects existing names in either scope', () => {
+test("findMcpServerNameConflict detects existing names in either scope", () => {
   const user: McpConfigFile = { servers: { github: stdioServer } };
   const workspace: McpConfigFile = { servers: { local: stdioServer } };
 
-  assert.equal(findMcpServerNameConflict(user, workspace, 'github'), 'user');
-  assert.equal(findMcpServerNameConflict(user, workspace, 'local'), 'workspace');
-  assert.equal(findMcpServerNameConflict(user, workspace, 'missing'), undefined);
+  assert.equal(findMcpServerNameConflict(user, workspace, "github"), "user");
+  assert.equal(findMcpServerNameConflict(user, workspace, "local"), "workspace");
+  assert.equal(findMcpServerNameConflict(user, workspace, "missing"), undefined);
 });
 
-test('mergeMcpConfigFiles with empty workspace yields user-only servers', () => {
+test("mergeMcpConfigFiles with empty workspace yields user-only servers", () => {
   const user: McpConfigFile = { servers: { github: stdioServer } };
   const workspace: McpConfigFile = { servers: { local: stdioServer } };
 
   const merged = mergeMcpConfigFiles(user, { servers: {} });
-  assert.deepEqual(Object.keys(merged.servers), ['github']);
-  assert.deepEqual(mcpServerScopesFromFiles(user, { servers: {} }), { github: 'user' });
+  assert.deepEqual(Object.keys(merged.servers), ["github"]);
+  assert.deepEqual(mcpServerScopesFromFiles(user, { servers: {} }), { github: "user" });
 });

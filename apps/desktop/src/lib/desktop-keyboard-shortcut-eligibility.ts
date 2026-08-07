@@ -39,8 +39,7 @@ export function shouldTriggerConversationAbortShortcut(
     (target.tagName === "TEXTAREA" ||
       target.tagName === "INPUT" ||
       target.tagName === "SELECT" ||
-      (target.isContentEditable &&
-        !target.closest("[data-spirit-surface='composer-surface']")))
+      (target.isContentEditable && !target.closest("[data-spirit-surface='composer-surface']")))
   ) {
     return false;
   }
@@ -75,8 +74,7 @@ export function isEditableShortcutTarget(target: HTMLElement | null): boolean {
     target.tagName === "TEXTAREA" ||
     target.tagName === "INPUT" ||
     target.tagName === "SELECT" ||
-    (target.isContentEditable &&
-      !target.closest("[data-spirit-surface='composer-surface']"))
+    (target.isContentEditable && !target.closest("[data-spirit-surface='composer-surface']"))
   );
 }
 

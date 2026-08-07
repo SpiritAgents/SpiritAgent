@@ -1,7 +1,7 @@
-import { McpConfigError } from '../mcp/errors.js';
-import type { JsonObject, JsonValue } from '../ports.js';
+import { McpConfigError } from "../mcp/errors.js";
+import type { JsonObject, JsonValue } from "../ports.js";
 
-export const FETCH_MCP_RESOURCE_TOOL_NAME = 'fetch_mcp_resource';
+export const FETCH_MCP_RESOURCE_TOOL_NAME = "fetch_mcp_resource";
 
 export interface FetchMcpResourceArguments {
   server: string;
@@ -10,7 +10,7 @@ export interface FetchMcpResourceArguments {
 
 export interface FetchMcpResourceToolRequest {
   [key: string]: JsonValue;
-  kind: 'fetchMcpResource';
+  kind: "fetchMcpResource";
   server: string;
   uri: string;
 }
@@ -37,24 +37,25 @@ export function isFetchMcpResourceToolName(name: string): boolean {
 
 export function buildFetchMcpResourceDefinition(): JsonValue {
   return {
-    type: 'function',
+    type: "function",
     function: {
       name: FETCH_MCP_RESOURCE_TOOL_NAME,
-      description: 'Read the full contents of an MCP resource.',
+      description: "Read the full contents of an MCP resource.",
       parameters: {
-        type: 'object',
+        type: "object",
         properties: {
           server: {
-            type: 'string',
+            type: "string",
             description:
-              'Configured MCP server name that exposes the resource, as shown on the parent <mcp-server> in <mcp_catalog>.',
+              "Configured MCP server name that exposes the resource, as shown on the parent <mcp-server> in <mcp_catalog>.",
           },
           uri: {
-            type: 'string',
-            description: 'Resource URI exactly as listed on the <resource> element in <mcp_catalog>.',
+            type: "string",
+            description:
+              "Resource URI exactly as listed on the <resource> element in <mcp_catalog>.",
           },
         },
-        required: ['server', 'uri'],
+        required: ["server", "uri"],
         additionalProperties: false,
       },
     },
@@ -69,24 +70,26 @@ export function parseFetchMcpResourceArguments(argumentsJson: string): FetchMcpR
     throw new McpConfigError(`Invalid JSON arguments for ${FETCH_MCP_RESOURCE_TOOL_NAME}`);
   }
 
-  if (typeof parsed !== 'object' || parsed === null || Array.isArray(parsed)) {
+  if (typeof parsed !== "object" || parsed === null || Array.isArray(parsed)) {
     throw new McpConfigError(`${FETCH_MCP_RESOURCE_TOOL_NAME} arguments must be a JSON object`);
   }
 
   return {
-    server: readRequiredString(parsed, 'server'),
-    uri: readRequiredString(parsed, 'uri'),
+    server: readRequiredString(parsed, "server"),
+    uri: readRequiredString(parsed, "uri"),
   };
 }
 
-export function isFetchMcpResourceToolRequest(value: JsonValue): value is FetchMcpResourceToolRequest {
+export function isFetchMcpResourceToolRequest(
+  value: JsonValue,
+): value is FetchMcpResourceToolRequest {
   return (
-    typeof value === 'object'
-    && value !== null
-    && !Array.isArray(value)
-    && value.kind === 'fetchMcpResource'
-    && typeof value.server === 'string'
-    && typeof value.uri === 'string'
+    typeof value === "object" &&
+    value !== null &&
+    !Array.isArray(value) &&
+    value.kind === "fetchMcpResource" &&
+    typeof value.server === "string" &&
+    typeof value.uri === "string"
   );
 }
 
@@ -105,9 +108,10 @@ export async function executeFetchMcpResourceCall(
 }
 
 export function formatMcpResourceFetchResultJson(value: JsonValue): string {
-  const contents = isJsonObject(value) && Array.isArray(value.contents) ? value.contents : undefined;
+  const contents =
+    isJsonObject(value) && Array.isArray(value.contents) ? value.contents : undefined;
   if (!contents || contents.length === 0) {
-    throw new McpConfigError('MCP resource returned no contents');
+    throw new McpConfigError("MCP resource returned no contents");
   }
 
   const parts = contents.map((content) => mapReadResourceContentPart(content));
@@ -132,18 +136,18 @@ function mapReadResourceContentPart(content: JsonValue): FetchMcpResourceContent
   }
 
   const mimeType =
-    typeof content.mimeType === 'string' && content.mimeType.trim()
+    typeof content.mimeType === "string" && content.mimeType.trim()
       ? content.mimeType.trim()
       : undefined;
 
-  if (typeof content.text === 'string') {
+  if (typeof content.text === "string") {
     return {
       ...(mimeType === undefined ? {} : { mimeType }),
       text: content.text,
     };
   }
 
-  if (typeof content.blob === 'string') {
+  if (typeof content.blob === "string") {
     return {
       ...(mimeType === undefined ? {} : { mimeType }),
       blobOmitted: true,
@@ -159,14 +163,14 @@ function mapReadResourceContentPart(content: JsonValue): FetchMcpResourceContent
 
 function readRequiredString(value: JsonObject, key: string): string {
   const candidate = value[key];
-  if (typeof candidate !== 'string' || candidate.trim().length === 0) {
+  if (typeof candidate !== "string" || candidate.trim().length === 0) {
     throw new McpConfigError(`Missing or invalid "${key}" for ${FETCH_MCP_RESOURCE_TOOL_NAME}`);
   }
   return candidate.trim();
 }
 
 function isJsonObject(value: JsonValue): value is JsonObject {
-  return typeof value === 'object' && value !== null && !Array.isArray(value);
+  return typeof value === "object" && value !== null && !Array.isArray(value);
 }
 
 function safePrettyJson(value: JsonValue): string {

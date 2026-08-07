@@ -1,20 +1,20 @@
-import type { MenuItemConstructorOptions } from 'electron';
+import type { MenuItemConstructorOptions } from "electron";
 
-import i18nHost from '../src/lib/i18n-host.js';
+import i18nHost from "../src/lib/i18n-host.js";
 import {
   TRAY_MORE_LIMIT,
   TRAY_RECENT_LIMIT,
   pickRecentSessions,
   truncateJumpListTitle,
-} from '../src/lib/windows-jump-list-build.js';
-import type { SessionListItem } from '../src/types.js';
+} from "../src/lib/windows-jump-list-build.js";
+import type { SessionListItem } from "../src/types.js";
 
 export function deriveWorkspaceLabel(workspaceRoot: string | null | undefined): string {
   if (!workspaceRoot?.trim()) {
-    return '';
+    return "";
   }
-  const normalized = workspaceRoot.replace(/\\/g, '/').replace(/\/+$/g, '');
-  const lastSlash = normalized.lastIndexOf('/');
+  const normalized = workspaceRoot.replace(/\\/g, "/").replace(/\/+$/g, "");
+  const lastSlash = normalized.lastIndexOf("/");
   return lastSlash >= 0 ? normalized.slice(lastSlash + 1) || normalized : normalized;
 }
 
@@ -23,7 +23,7 @@ export function buildSessionMenuItem(
   onOpen: (sessionPath: string) => void,
 ): MenuItemConstructorOptions {
   const title = truncateJumpListTitle(session.displayName || session.path);
-  if (process.platform === 'darwin') {
+  if (process.platform === "darwin") {
     const workspaceLabel = deriveWorkspaceLabel(session.workspaceRoot);
     if (workspaceLabel) {
       // 已知限制：Tray 菜单会显示 sublabel（工作区名）；macOS Dock 右键菜单不支持
@@ -55,7 +55,7 @@ export function buildRecentSessionMenuItems(
   return [
     ...recent.map((session) => buildSessionMenuItem(session, onOpen)),
     {
-      label: i18nHost.t('tray.more'),
+      label: i18nHost.t("tray.more"),
       submenu: more.map((session) => buildSessionMenuItem(session, onOpen)),
     },
   ];

@@ -1,15 +1,15 @@
-import { existsSync } from 'node:fs';
-import path from 'node:path';
-import { fileURLToPath } from 'node:url';
+import { existsSync } from "node:fs";
+import path from "node:path";
+import { fileURLToPath } from "node:url";
 
-import { Menu, Tray, app, nativeImage, type MenuItemConstructorOptions } from 'electron';
+import { Menu, Tray, app, nativeImage, type MenuItemConstructorOptions } from "electron";
 
-import { invokeDesktopHostCommand } from '../src/host/service.js';
-import { loadConfig } from '../src/host/storage.js';
-import i18nHost from '../src/lib/i18n-host.js';
-import type { SessionListItem } from '../src/types.js';
+import { invokeDesktopHostCommand } from "../src/host/service.js";
+import { loadConfig } from "../src/host/storage.js";
+import i18nHost from "../src/lib/i18n-host.js";
+import type { SessionListItem } from "../src/types.js";
 
-import { buildRecentSessionMenuItems } from './session-menu-items.js';
+import { buildRecentSessionMenuItems } from "./session-menu-items.js";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
@@ -28,10 +28,10 @@ let disposed = false;
 let syncGeneration = 0;
 
 function resolveTrayIconPath(): string | undefined {
-  const fileName = process.platform === 'win32' ? 'iconTemplate-32.png' : 'iconTemplate.png';
+  const fileName = process.platform === "win32" ? "iconTemplate-32.png" : "iconTemplate.png";
   const candidates = [
-    path.join(__dirname, '..', '..', 'build', 'tray', fileName),
-    path.join(process.cwd(), 'build', 'tray', fileName),
+    path.join(__dirname, "..", "..", "build", "tray", fileName),
+    path.join(process.cwd(), "build", "tray", fileName),
   ];
   for (const candidate of candidates) {
     if (existsSync(candidate)) {
@@ -41,36 +41,33 @@ function resolveTrayIconPath(): string | undefined {
   return undefined;
 }
 
-function buildTrayMenu(
-  sessions: readonly SessionListItem[],
-  deps: StatusTrayDeps,
-): Menu {
+function buildTrayMenu(sessions: readonly SessionListItem[], deps: StatusTrayDeps): Menu {
   const openSession = (sessionPath: string) => {
     void deps.openSession(sessionPath);
   };
 
   const template: MenuItemConstructorOptions[] = [
     {
-      label: i18nHost.t('tray.recent'),
+      label: i18nHost.t("tray.recent"),
       enabled: false,
     },
     ...buildRecentSessionMenuItems(sessions, openSession),
-    { type: 'separator' },
+    { type: "separator" },
     {
-      label: i18nHost.t('tray.newSession'),
+      label: i18nHost.t("tray.newSession"),
       click: () => {
         void deps.newSession();
       },
     },
-    { type: 'separator' },
+    { type: "separator" },
     {
-      label: i18nHost.t('tray.openApp'),
+      label: i18nHost.t("tray.openApp"),
       click: () => {
         void deps.focusOrCreateMainWindow();
       },
     },
     {
-      label: i18nHost.t('tray.quitApp'),
+      label: i18nHost.t("tray.quitApp"),
       click: () => {
         app.quit();
       },
@@ -91,18 +88,18 @@ function destroyTray(): void {
 function ensureTray(iconPath: string, menu: Menu): Tray {
   if (!tray) {
     const image = nativeImage.createFromPath(iconPath);
-    if (process.platform === 'darwin') {
+    if (process.platform === "darwin") {
       image.setTemplateImage(true);
     }
     tray = new Tray(image.isEmpty() ? iconPath : image);
-    tray.setToolTip(i18nHost.t('tray.tooltip'));
-    if (process.platform === 'win32') {
-      tray.on('click', () => {
+    tray.setToolTip(i18nHost.t("tray.tooltip"));
+    if (process.platform === "win32") {
+      tray.on("click", () => {
         tray?.popUpContextMenu();
       });
     }
   } else {
-    tray.setToolTip(i18nHost.t('tray.tooltip'));
+    tray.setToolTip(i18nHost.t("tray.tooltip"));
   }
   tray.setContextMenu(menu);
   return tray;
@@ -112,14 +109,11 @@ function isSyncStale(generation: number): boolean {
   return disposed || generation !== syncGeneration;
 }
 
-async function syncStatusTrayUnlocked(
-  deps: StatusTrayDeps,
-  generation: number,
-): Promise<void> {
+async function syncStatusTrayUnlocked(deps: StatusTrayDeps, generation: number): Promise<void> {
   if (isSyncStale(generation)) {
     return;
   }
-  if (process.platform !== 'darwin' && process.platform !== 'win32') {
+  if (process.platform !== "darwin" && process.platform !== "win32") {
     destroyTray();
     return;
   }
@@ -129,7 +123,7 @@ async function syncStatusTrayUnlocked(
     const config = await loadConfig();
     enabled = config.trayIcon !== false;
   } catch (error) {
-    console.warn('[spirit-desktop] status tray loadConfig failed:', error);
+    console.warn("[spirit-desktop] status tray loadConfig failed:", error);
   }
 
   if (isSyncStale(generation)) {
@@ -143,17 +137,17 @@ async function syncStatusTrayUnlocked(
 
   const iconPath = resolveTrayIconPath();
   if (!iconPath) {
-    console.warn('[spirit-desktop] status tray icon missing under build/tray');
+    console.warn("[spirit-desktop] status tray icon missing under build/tray");
     destroyTray();
     return;
   }
 
   let sessions: SessionListItem[] = [];
   try {
-    const listed = await invokeDesktopHostCommand('listSessions');
+    const listed = await invokeDesktopHostCommand("listSessions");
     sessions = Array.isArray(listed) ? (listed as SessionListItem[]) : [];
   } catch (error) {
-    console.warn('[spirit-desktop] status tray listSessions failed:', error);
+    console.warn("[spirit-desktop] status tray listSessions failed:", error);
   }
 
   if (isSyncStale(generation)) {

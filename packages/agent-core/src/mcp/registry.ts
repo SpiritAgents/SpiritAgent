@@ -1,20 +1,16 @@
-import {
-  normalizeMcpConfigFile,
-  summarizeCapabilities,
-  summarizeTransport,
-} from './config.js';
+import { normalizeMcpConfigFile, summarizeCapabilities, summarizeTransport } from "./config.js";
 import type {
   McpConfigFile,
   McpRegistryRuntimeState,
   McpRegistrySnapshot,
   McpServerRuntimeState,
   McpServerStatus,
-} from './types.js';
+} from "./types.js";
 
 export class McpRegistry {
   private readonly serverStore = new Map<string, McpServerStatus>();
   private revisionStore = 0;
-  private stateStore: McpRegistryRuntimeState = 'idle';
+  private stateStore: McpRegistryRuntimeState = "idle";
   private lastErrorStore: string | undefined;
 
   replaceConfig(config: McpConfigFile): void {
@@ -26,7 +22,7 @@ export class McpRegistry {
         name: server.name,
         displayName: server.displayName,
         enabled: server.enabled,
-        state: server.enabled ? 'idle' : 'disabled',
+        state: server.enabled ? "idle" : "disabled",
         transportSummary: summarizeTransport(server.transport),
         capabilitySummary: summarizeCapabilities(server.capabilities),
         cachedTools: 0,
@@ -39,7 +35,9 @@ export class McpRegistry {
   }
 
   servers(): readonly McpServerStatus[] {
-    return [...this.serverStore.values()].sort((left, right) => left.name.localeCompare(right.name));
+    return [...this.serverStore.values()].sort((left, right) =>
+      left.name.localeCompare(right.name),
+    );
   }
 
   get(name: string): McpServerStatus | undefined {
@@ -82,8 +80,12 @@ export class McpRegistry {
   }
 
   snapshot(): McpRegistrySnapshot {
-    const configuredServers = [...this.serverStore.values()].filter((server) => server.enabled).length;
-    const loadedServers = [...this.serverStore.values()].filter((server) => server.state === 'ready').length;
+    const configuredServers = [...this.serverStore.values()].filter(
+      (server) => server.enabled,
+    ).length;
+    const loadedServers = [...this.serverStore.values()].filter(
+      (server) => server.state === "ready",
+    ).length;
     const cachedTools = [...this.serverStore.values()].reduce(
       (total, server) => total + server.cachedTools,
       0,
@@ -102,18 +104,18 @@ export class McpRegistry {
   private computeState(): McpRegistryRuntimeState {
     const enabledServers = [...this.serverStore.values()].filter((server) => server.enabled);
     if (enabledServers.length === 0) {
-      return 'idle';
+      return "idle";
     }
 
-    if (enabledServers.some((server) => server.state === 'loading' || server.state === 'idle')) {
-      return 'loading';
+    if (enabledServers.some((server) => server.state === "loading" || server.state === "idle")) {
+      return "loading";
     }
 
-    if (enabledServers.some((server) => server.state === 'error')) {
-      return 'error';
+    if (enabledServers.some((server) => server.state === "error")) {
+      return "error";
     }
 
-    return 'ready';
+    return "ready";
   }
 
   private firstServerError(): string | undefined {

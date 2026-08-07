@@ -1,9 +1,9 @@
-import { resolveHookSessionContext } from '../hooks/integration.js';
-import { prepareToolOutputForAppend } from '../tool-output-truncation.js';
+import { resolveHookSessionContext } from "../hooks/integration.js";
+import { prepareToolOutputForAppend } from "../tool-output-truncation.js";
 
-import { syncPreparedToolResultContentToHistory } from './tool-execution.js';
-import type { AgentRuntimeOptions } from './types.js';
-import type { LlmMessage } from '../ports.js';
+import { syncPreparedToolResultContentToHistory } from "./tool-execution.js";
+import type { AgentRuntimeOptions } from "./types.js";
+import type { LlmMessage } from "../ports.js";
 
 export async function prepareRuntimeToolResultContentForAppend<
   Config,

@@ -1,10 +1,10 @@
-import test from 'node:test';
-import assert from 'node:assert/strict';
-import { execFile } from 'node:child_process';
-import { mkdtemp, readFile, rm, writeFile } from 'node:fs/promises';
-import { tmpdir } from 'node:os';
-import { join } from 'node:path';
-import { promisify } from 'node:util';
+import test from "node:test";
+import assert from "node:assert/strict";
+import { execFile } from "node:child_process";
+import { mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
+import { promisify } from "node:util";
 
 import {
   addGitWorktree,
@@ -30,109 +30,117 @@ import {
   resolveGitPushRemote,
   resolvePrimaryRepoRoot,
   resolveWorkspaceGroupingRoot,
-} from './git-workspace.js';
+} from "./git-workspace.js";
 
 const execFileAsync = promisify(execFile);
 
 async function runGit(cwd: string, args: string[]): Promise<void> {
-  await execFileAsync('git', args, { cwd, windowsHide: true });
+  await execFileAsync("git", args, { cwd, windowsHide: true });
 }
 
-test('listGitBranches and checkoutGitBranch work in a temp repository', async () => {
-  const repoRoot = await mkdtemp(join(tmpdir(), 'spirit-host-internal-git-'));
+test("listGitBranches and checkoutGitBranch work in a temp repository", async () => {
+  const repoRoot = await mkdtemp(join(tmpdir(), "spirit-host-internal-git-"));
 
   try {
-    await runGit(repoRoot, ['init']);
-    await runGit(repoRoot, ['config', 'user.email', 'test@example.com']);
-    await runGit(repoRoot, ['config', 'user.name', 'Spirit Test']);
-    await writeFile(join(repoRoot, 'README.md'), '# hello\n');
-    await runGit(repoRoot, ['add', 'README.md']);
-    await runGit(repoRoot, ['commit', '-m', 'init']);
-    const { stdout: defaultBranchOutput } = await execFileAsync('git', ['branch', '--show-current'], {
-      cwd: repoRoot,
-      windowsHide: true,
-    });
+    await runGit(repoRoot, ["init"]);
+    await runGit(repoRoot, ["config", "user.email", "test@example.com"]);
+    await runGit(repoRoot, ["config", "user.name", "Spirit Test"]);
+    await writeFile(join(repoRoot, "README.md"), "# hello\n");
+    await runGit(repoRoot, ["add", "README.md"]);
+    await runGit(repoRoot, ["commit", "-m", "init"]);
+    const { stdout: defaultBranchOutput } = await execFileAsync(
+      "git",
+      ["branch", "--show-current"],
+      {
+        cwd: repoRoot,
+        windowsHide: true,
+      },
+    );
     const defaultBranch = defaultBranchOutput.trim();
-    await runGit(repoRoot, ['branch', 'feature-a']);
-    await runGit(repoRoot, ['checkout', '-b', 'feature-b']);
+    await runGit(repoRoot, ["branch", "feature-a"]);
+    await runGit(repoRoot, ["checkout", "-b", "feature-b"]);
 
     const branches = await listGitBranches(repoRoot);
-    assert.deepEqual(branches, ['feature-b', 'feature-a', defaultBranch]);
+    assert.deepEqual(branches, ["feature-b", "feature-a", defaultBranch]);
 
     const snapshotBefore = await readGitWorkspaceSnapshot(repoRoot);
     assert.equal(snapshotBefore.isRepository, true);
-    assert.equal(snapshotBefore.branch, 'feature-b');
+    assert.equal(snapshotBefore.branch, "feature-b");
     assert.deepEqual(snapshotBefore.branches, branches);
 
-    await checkoutGitBranch(repoRoot, 'feature-a');
+    await checkoutGitBranch(repoRoot, "feature-a");
     const snapshotAfter = await readGitWorkspaceSnapshot(repoRoot);
-    assert.equal(snapshotAfter.branch, 'feature-a');
-    assert.equal(snapshotAfter.branches[0], 'feature-a');
+    assert.equal(snapshotAfter.branch, "feature-a");
+    assert.equal(snapshotAfter.branches[0], "feature-a");
   } finally {
     await rm(repoRoot, { recursive: true, force: true, maxRetries: 5, retryDelay: 50 });
   }
 });
 
-test('checkoutGitBranch throws GitCheckoutBlockedError when local changes block checkout', async () => {
-  const repoRoot = await mkdtemp(join(tmpdir(), 'spirit-host-internal-git-blocked-'));
+test("checkoutGitBranch throws GitCheckoutBlockedError when local changes block checkout", async () => {
+  const repoRoot = await mkdtemp(join(tmpdir(), "spirit-host-internal-git-blocked-"));
 
   try {
-    await runGit(repoRoot, ['init']);
-    await runGit(repoRoot, ['config', 'user.email', 'test@example.com']);
-    await runGit(repoRoot, ['config', 'user.name', 'Spirit Test']);
-    await writeFile(join(repoRoot, 'README.md'), 'v1\n');
-    await runGit(repoRoot, ['add', 'README.md']);
-    await runGit(repoRoot, ['commit', '-m', 'init']);
-    const { stdout: defaultBranchOutput } = await execFileAsync('git', ['branch', '--show-current'], {
-      cwd: repoRoot,
-      windowsHide: true,
-    });
+    await runGit(repoRoot, ["init"]);
+    await runGit(repoRoot, ["config", "user.email", "test@example.com"]);
+    await runGit(repoRoot, ["config", "user.name", "Spirit Test"]);
+    await writeFile(join(repoRoot, "README.md"), "v1\n");
+    await runGit(repoRoot, ["add", "README.md"]);
+    await runGit(repoRoot, ["commit", "-m", "init"]);
+    const { stdout: defaultBranchOutput } = await execFileAsync(
+      "git",
+      ["branch", "--show-current"],
+      {
+        cwd: repoRoot,
+        windowsHide: true,
+      },
+    );
     const defaultBranch = defaultBranchOutput.trim();
-    await runGit(repoRoot, ['checkout', '-b', 'other']);
-    await writeFile(join(repoRoot, 'README.md'), 'v2\n');
-    await runGit(repoRoot, ['add', 'README.md']);
-    await runGit(repoRoot, ['commit', '-m', 'other']);
-    await runGit(repoRoot, ['checkout', defaultBranch]);
-    await writeFile(join(repoRoot, 'README.md'), 'v1-local\n');
+    await runGit(repoRoot, ["checkout", "-b", "other"]);
+    await writeFile(join(repoRoot, "README.md"), "v2\n");
+    await runGit(repoRoot, ["add", "README.md"]);
+    await runGit(repoRoot, ["commit", "-m", "other"]);
+    await runGit(repoRoot, ["checkout", defaultBranch]);
+    await writeFile(join(repoRoot, "README.md"), "v1-local\n");
 
     await assert.rejects(
-      () => checkoutGitBranch(repoRoot, 'other'),
+      () => checkoutGitBranch(repoRoot, "other"),
       (error: unknown) => isGitCheckoutBlockedError(error),
     );
 
-    await checkoutGitBranch(repoRoot, 'other', { discardLocalChanges: true });
+    await checkoutGitBranch(repoRoot, "other", { discardLocalChanges: true });
     const snapshot = await readGitWorkspaceSnapshot(repoRoot);
-    assert.equal(snapshot.branch, 'other');
-    const readme = await readFile(join(repoRoot, 'README.md'), 'utf8');
-    assert.equal(readme.replace(/\r\n/g, '\n'), 'v2\n');
+    assert.equal(snapshot.branch, "other");
+    const readme = await readFile(join(repoRoot, "README.md"), "utf8");
+    assert.equal(readme.replace(/\r\n/g, "\n"), "v2\n");
   } finally {
     await rm(repoRoot, { recursive: true, force: true, maxRetries: 5, retryDelay: 50 });
   }
 });
 
-test('parseGitShortBranchLine parses upstream and ahead/behind counts', () => {
-  assert.deepEqual(parseGitShortBranchLine('## main...origin/main [ahead 2, behind 1]'), {
-    localBranch: 'main',
-    upstreamRemote: 'origin',
-    upstreamBranch: 'main',
+test("parseGitShortBranchLine parses upstream and ahead/behind counts", () => {
+  assert.deepEqual(parseGitShortBranchLine("## main...origin/main [ahead 2, behind 1]"), {
+    localBranch: "main",
+    upstreamRemote: "origin",
+    upstreamBranch: "main",
     aheadCount: 2,
     behindCount: 1,
   });
-  assert.deepEqual(parseGitShortBranchLine('## feature'), {
-    localBranch: 'feature',
+  assert.deepEqual(parseGitShortBranchLine("## feature"), {
+    localBranch: "feature",
     aheadCount: 0,
     behindCount: 0,
   });
-  assert.equal(parseGitShortBranchLine(' M file.txt'), null);
+  assert.equal(parseGitShortBranchLine(" M file.txt"), null);
 });
 
-test('computeGitNeedsPush and resolveGitPushRemote', () => {
+test("computeGitNeedsPush and resolveGitPushRemote", () => {
   assert.equal(
     computeGitNeedsPush({
       hasUpstream: true,
       aheadCount: 1,
       hasCommit: true,
-      pushRemote: 'origin',
+      pushRemote: "origin",
     }),
     true,
   );
@@ -141,7 +149,7 @@ test('computeGitNeedsPush and resolveGitPushRemote', () => {
       hasUpstream: true,
       aheadCount: 0,
       hasCommit: true,
-      pushRemote: 'origin',
+      pushRemote: "origin",
     }),
     false,
   );
@@ -150,45 +158,45 @@ test('computeGitNeedsPush and resolveGitPushRemote', () => {
       hasUpstream: false,
       aheadCount: 0,
       hasCommit: true,
-      pushRemote: 'origin',
+      pushRemote: "origin",
     }),
     true,
   );
-  assert.equal(resolveGitPushRemote(['upstream', 'origin'], 'upstream'), 'upstream');
-  assert.equal(resolveGitPushRemote(['upstream'], undefined), 'upstream');
+  assert.equal(resolveGitPushRemote(["upstream", "origin"], "upstream"), "upstream");
+  assert.equal(resolveGitPushRemote(["upstream"], undefined), "upstream");
 });
 
-test('pushGitBranch runs git push -u after local commit without upstream', async () => {
-  const repoRoot = await mkdtemp(join(tmpdir(), 'spirit-host-internal-push-'));
+test("pushGitBranch runs git push -u after local commit without upstream", async () => {
+  const repoRoot = await mkdtemp(join(tmpdir(), "spirit-host-internal-push-"));
 
   try {
-    await runGit(repoRoot, ['init']);
-    await runGit(repoRoot, ['config', 'user.email', 'test@example.com']);
-    await runGit(repoRoot, ['config', 'user.name', 'Spirit Test']);
-    await writeFile(join(repoRoot, 'README.md'), '# hello\n');
-    await runGit(repoRoot, ['add', 'README.md']);
-    await runGit(repoRoot, ['commit', '-m', 'init']);
+    await runGit(repoRoot, ["init"]);
+    await runGit(repoRoot, ["config", "user.email", "test@example.com"]);
+    await runGit(repoRoot, ["config", "user.name", "Spirit Test"]);
+    await writeFile(join(repoRoot, "README.md"), "# hello\n");
+    await runGit(repoRoot, ["add", "README.md"]);
+    await runGit(repoRoot, ["commit", "-m", "init"]);
 
     const snapshot = await readGitWorkspaceSnapshot(repoRoot);
     assert.equal(snapshot.needsPush, false);
     assert.equal(snapshot.pushRemote, undefined);
 
-    await runGit(repoRoot, ['remote', 'add', 'origin', repoRoot]);
+    await runGit(repoRoot, ["remote", "add", "origin", repoRoot]);
     const snapshotWithRemote = await readGitWorkspaceSnapshot(repoRoot);
     assert.equal(snapshotWithRemote.needsPush, true);
-    assert.equal(snapshotWithRemote.pushRemote, 'origin');
+    assert.equal(snapshotWithRemote.pushRemote, "origin");
 
     await pushGitBranch(repoRoot);
     const afterPush = await readGitWorkspaceSnapshot(repoRoot);
     assert.equal(afterPush.needsPush, false);
-    assert.equal(afterPush.upstreamRemote, 'origin');
+    assert.equal(afterPush.upstreamRemote, "origin");
   } finally {
     await rm(repoRoot, { recursive: true, force: true, maxRetries: 5, retryDelay: 50 });
   }
 });
 
-test('readGitWorkspaceSnapshot returns empty snapshot outside git repo', async () => {
-  const dir = await mkdtemp(join(tmpdir(), 'spirit-host-internal-non-git-'));
+test("readGitWorkspaceSnapshot returns empty snapshot outside git repo", async () => {
+  const dir = await mkdtemp(join(tmpdir(), "spirit-host-internal-non-git-"));
   try {
     const snapshot = await readGitWorkspaceSnapshot(dir);
     assert.equal(snapshot.isRepository, false);
@@ -201,8 +209,8 @@ test('readGitWorkspaceSnapshot returns empty snapshot outside git repo', async (
   }
 });
 
-test('readGitBranchLabelForBasicInfo reports non-git workspace label', async () => {
-  const dir = await mkdtemp(join(tmpdir(), 'spirit-host-internal-non-git-label-'));
+test("readGitBranchLabelForBasicInfo reports non-git workspace label", async () => {
+  const dir = await mkdtemp(join(tmpdir(), "spirit-host-internal-non-git-label-"));
   try {
     assert.equal(await readGitBranchLabelForBasicInfo(dir), NOT_A_GIT_REPOSITORY_BASIC_INFO_LABEL);
     assert.equal(
@@ -214,43 +222,47 @@ test('readGitBranchLabelForBasicInfo reports non-git workspace label', async () 
   }
 });
 
-test('resolveWorkspaceGroupingRoot maps linked worktrees to primary repo', () => {
+test("resolveWorkspaceGroupingRoot maps linked worktrees to primary repo", () => {
   assert.equal(
-    resolveWorkspaceGroupingRoot('D:\\SpiritAgent.worktrees\\spirit-hello-test'),
-    'D:\\SpiritAgent',
+    resolveWorkspaceGroupingRoot("D:\\SpiritAgent.worktrees\\spirit-hello-test"),
+    "D:\\SpiritAgent",
   );
-  assert.equal(resolveWorkspaceGroupingRoot('D:\\SpiritAgent'), 'D:\\SpiritAgent');
+  assert.equal(resolveWorkspaceGroupingRoot("D:\\SpiritAgent"), "D:\\SpiritAgent");
 });
 
-test('spirit worktree and branch name validation', () => {
-  assert.equal(isSpiritWorktreeName('spirit-add-worktree-ui'), true);
-  assert.equal(isSpiritWorktreeName('spirit-abc'), true);
-  assert.equal(isSpiritWorktreeName('Spirit-Add-Worktree'), false);
-  assert.equal(isSpiritWorktreeName('add-worktree'), false);
+test("spirit worktree and branch name validation", () => {
+  assert.equal(isSpiritWorktreeName("spirit-add-worktree-ui"), true);
+  assert.equal(isSpiritWorktreeName("spirit-abc"), true);
+  assert.equal(isSpiritWorktreeName("Spirit-Add-Worktree"), false);
+  assert.equal(isSpiritWorktreeName("add-worktree"), false);
 
-  assert.equal(isSpiritBranchName('spirit/add-worktree-ui'), true);
-  assert.equal(isSpiritBranchName('spirit/abc'), true);
-  assert.equal(isSpiritBranchName('Spirit/add-worktree'), false);
-  assert.equal(isSpiritBranchName('feature/foo'), false);
+  assert.equal(isSpiritBranchName("spirit/add-worktree-ui"), true);
+  assert.equal(isSpiritBranchName("spirit/abc"), true);
+  assert.equal(isSpiritBranchName("Spirit/add-worktree"), false);
+  assert.equal(isSpiritBranchName("feature/foo"), false);
 });
 
-test('addGitWorktree, readWorktreeContext, and mergeSpiritBranchToMain work in a temp repository', async () => {
-  const repoRoot = await mkdtemp(join(tmpdir(), 'spirit-host-internal-worktree-'));
-  const worktreeName = 'spirit-test-feature';
-  const branchName = 'spirit/test-feature';
+test("addGitWorktree, readWorktreeContext, and mergeSpiritBranchToMain work in a temp repository", async () => {
+  const repoRoot = await mkdtemp(join(tmpdir(), "spirit-host-internal-worktree-"));
+  const worktreeName = "spirit-test-feature";
+  const branchName = "spirit/test-feature";
 
   try {
-    await runGit(repoRoot, ['init']);
-    await runGit(repoRoot, ['config', 'user.email', 'test@example.com']);
-    await runGit(repoRoot, ['config', 'user.name', 'Spirit Test']);
-    await writeFile(join(repoRoot, 'README.md'), '# hello\n');
-    await runGit(repoRoot, ['add', 'README.md']);
-    await runGit(repoRoot, ['commit', '-m', 'init']);
+    await runGit(repoRoot, ["init"]);
+    await runGit(repoRoot, ["config", "user.email", "test@example.com"]);
+    await runGit(repoRoot, ["config", "user.name", "Spirit Test"]);
+    await writeFile(join(repoRoot, "README.md"), "# hello\n");
+    await runGit(repoRoot, ["add", "README.md"]);
+    await runGit(repoRoot, ["commit", "-m", "init"]);
 
-    const { stdout: defaultBranchOutput } = await execFileAsync('git', ['branch', '--show-current'], {
-      cwd: repoRoot,
-      windowsHide: true,
-    });
+    const { stdout: defaultBranchOutput } = await execFileAsync(
+      "git",
+      ["branch", "--show-current"],
+      {
+        cwd: repoRoot,
+        windowsHide: true,
+      },
+    );
     const defaultBranch = defaultBranchOutput.trim();
     const primaryRepoRoot = await resolvePrimaryRepoRoot(repoRoot);
     assert.equal(primaryRepoRoot, repoRoot);
@@ -263,7 +275,10 @@ test('addGitWorktree, readWorktreeContext, and mergeSpiritBranchToMain work in a
     });
 
     const worktrees = await listGitWorktrees(repoRoot);
-    assert.equal(worktrees.some((entry) => entry.path === worktreePath), true);
+    assert.equal(
+      worktrees.some((entry) => entry.path === worktreePath),
+      true,
+    );
 
     const context = await readWorktreeContext(worktreePath);
     assert.equal(context.isWorktree, true);
@@ -271,51 +286,56 @@ test('addGitWorktree, readWorktreeContext, and mergeSpiritBranchToMain work in a
     assert.equal(context.worktreeName, worktreeName);
     assert.equal(context.branch, branchName);
 
-    await writeFile(join(worktreePath, 'feature.txt'), 'feature\n');
-    await runGit(worktreePath, ['add', 'feature.txt']);
-    await runGit(worktreePath, ['commit', '-m', 'feature']);
+    await writeFile(join(worktreePath, "feature.txt"), "feature\n");
+    await runGit(worktreePath, ["add", "feature.txt"]);
+    await runGit(worktreePath, ["commit", "-m", "feature"]);
 
     const resolvedDefaultBranch = await resolveDefaultBranch(repoRoot);
     assert.equal(resolvedDefaultBranch, defaultBranch);
 
     await mergeSpiritBranchToMain(repoRoot, branchName);
-    const mergedReadme = await readFile(join(repoRoot, 'feature.txt'), 'utf8');
-    assert.equal(mergedReadme.replace(/\r\n/g, '\n'), 'feature\n');
+    const mergedReadme = await readFile(join(repoRoot, "feature.txt"), "utf8");
+    assert.equal(mergedReadme.replace(/\r\n/g, "\n"), "feature\n");
     assert.equal((await readGitWorkspaceSnapshot(repoRoot)).branch, defaultBranch);
   } finally {
-    await rm(`${repoRoot}.worktrees`, { recursive: true, force: true, maxRetries: 5, retryDelay: 50 });
+    await rm(`${repoRoot}.worktrees`, {
+      recursive: true,
+      force: true,
+      maxRetries: 5,
+      retryDelay: 50,
+    });
     await rm(repoRoot, { recursive: true, force: true, maxRetries: 5, retryDelay: 50 });
   }
 });
 
-test('parseGitDiffNumstat sums insertions and deletions', () => {
-  const delta = parseGitDiffNumstat('2\t1\tREADME.md\n-\t-\tbinary.dat\n');
+test("parseGitDiffNumstat sums insertions and deletions", () => {
+  const delta = parseGitDiffNumstat("2\t1\tREADME.md\n-\t-\tbinary.dat\n");
   assert.deepEqual(delta, { added: 2, removed: 1 });
 });
 
-test('readGitWorkingTreeLineDelta counts tracked edits and untracked files', async () => {
-  const repoRoot = await mkdtemp(join(tmpdir(), 'spirit-host-internal-git-line-delta-'));
+test("readGitWorkingTreeLineDelta counts tracked edits and untracked files", async () => {
+  const repoRoot = await mkdtemp(join(tmpdir(), "spirit-host-internal-git-line-delta-"));
 
   try {
-    await runGit(repoRoot, ['init']);
-    await runGit(repoRoot, ['config', 'user.email', 'test@example.com']);
-    await runGit(repoRoot, ['config', 'user.name', 'Spirit Test']);
-    await writeFile(join(repoRoot, 'README.md'), 'one\n');
-    await runGit(repoRoot, ['add', 'README.md']);
-    await runGit(repoRoot, ['commit', '-m', 'init']);
+    await runGit(repoRoot, ["init"]);
+    await runGit(repoRoot, ["config", "user.email", "test@example.com"]);
+    await runGit(repoRoot, ["config", "user.name", "Spirit Test"]);
+    await writeFile(join(repoRoot, "README.md"), "one\n");
+    await runGit(repoRoot, ["add", "README.md"]);
+    await runGit(repoRoot, ["commit", "-m", "init"]);
 
     const cleanSnapshot = await readGitWorkspaceSnapshot(repoRoot);
     assert.equal(cleanSnapshot.hasChanges, false);
     assert.equal(cleanSnapshot.workingTreeLineDelta, undefined);
 
-    await writeFile(join(repoRoot, 'README.md'), 'one\ntwo\n');
+    await writeFile(join(repoRoot, "README.md"), "one\ntwo\n");
     const trackedSnapshot = await readGitWorkspaceSnapshot(repoRoot);
     assert.equal(trackedSnapshot.hasChanges, true);
     assert.ok((trackedSnapshot.workingTreeLineDelta?.added ?? 0) > 0);
     assert.equal(trackedSnapshot.workingTreeLineDelta?.removed ?? -1, 0);
 
-    await runGit(repoRoot, ['checkout', '--', 'README.md']);
-    await writeFile(join(repoRoot, 'new.txt'), 'alpha\nbeta\n');
+    await runGit(repoRoot, ["checkout", "--", "README.md"]);
+    await writeFile(join(repoRoot, "new.txt"), "alpha\nbeta\n");
     const untrackedSnapshot = await readGitWorkspaceSnapshot(repoRoot);
     assert.equal(untrackedSnapshot.hasChanges, true);
     assert.deepEqual(untrackedSnapshot.workingTreeLineDelta, { added: 2, removed: 0 });

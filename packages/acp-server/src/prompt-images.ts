@@ -1,8 +1,8 @@
-import { writeFile, mkdtemp, rm } from 'node:fs/promises';
-import { tmpdir } from 'node:os';
-import path from 'node:path';
-import { fileURLToPath } from 'node:url';
-import type * as schema from '@agentclientprotocol/sdk';
+import { writeFile, mkdtemp, rm } from "node:fs/promises";
+import { tmpdir } from "node:os";
+import path from "node:path";
+import { fileURLToPath } from "node:url";
+import type * as schema from "@agentclientprotocol/sdk";
 
 export interface ExtractedImages {
   /** File paths for explicitImages */
@@ -20,14 +20,12 @@ export interface ExtractedImages {
  *
  * Returns an array of local file paths suitable for `explicitImages`.
  */
-export async function extractPromptImages(
-  prompt: schema.ContentBlock[],
-): Promise<ExtractedImages> {
+export async function extractPromptImages(prompt: schema.ContentBlock[]): Promise<ExtractedImages> {
   const paths: string[] = [];
   let tempDir: string | undefined;
 
   for (const block of prompt) {
-    if (block.type !== 'image') {
+    if (block.type !== "image") {
       continue;
     }
 
@@ -36,7 +34,7 @@ export async function extractPromptImages(
     // Prefer URI if it's a local file path
     if (image.uri) {
       const uri = image.uri;
-      if (uri.startsWith('file://')) {
+      if (uri.startsWith("file://")) {
         try {
           // Use fileURLToPath for cross-platform path conversion
           // (handles Windows /C:/... → C:\... etc.)
@@ -55,11 +53,11 @@ export async function extractPromptImages(
     // Base64 data — write to temp file
     if (image.data) {
       if (!tempDir) {
-        tempDir = await mkdtemp(path.join(tmpdir(), 'acp-images-'));
+        tempDir = await mkdtemp(path.join(tmpdir(), "acp-images-"));
       }
       const ext = mimeTypeToExt(image.mimeType);
       const filePath = path.join(tempDir, `image-${paths.length}${ext}`);
-      await writeFile(filePath, Buffer.from(image.data, 'base64'));
+      await writeFile(filePath, Buffer.from(image.data, "base64"));
       paths.push(filePath);
     }
   }
@@ -75,11 +73,17 @@ export async function extractPromptImages(
 
 function mimeTypeToExt(mimeType: string): string {
   switch (mimeType) {
-    case 'image/png': return '.png';
-    case 'image/jpeg': return '.jpg';
-    case 'image/gif': return '.gif';
-    case 'image/webp': return '.webp';
-    case 'image/svg+xml': return '.svg';
-    default: return '.bin';
+    case "image/png":
+      return ".png";
+    case "image/jpeg":
+      return ".jpg";
+    case "image/gif":
+      return ".gif";
+    case "image/webp":
+      return ".webp";
+    case "image/svg+xml":
+      return ".svg";
+    default:
+      return ".bin";
   }
 }

@@ -1,15 +1,15 @@
-import { getLlmFetch } from '../llm-fetch.js';
-import { defaultArkApiBase } from '../ark/ark-provider.js';
-import type { OpenAiVideoGenerationConfig } from '../openai/openai-compat.js';
+import { getLlmFetch } from "../llm-fetch.js";
+import { defaultArkApiBase } from "../ark/ark-provider.js";
+import type { OpenAiVideoGenerationConfig } from "../openai/openai-compat.js";
 import type {
   GeneratedVideoFile,
   GeneratedVideoSaveRequest,
   ToolExecutionOutput,
   VideoGenerationRequest,
-} from '../ports.js';
-import { pollUntil } from './poll.js';
-import { buildGeneratedVideoToolOutput } from './output.js';
-import type { VideoGenerationBackend } from './types.js';
+} from "../ports.js";
+import { pollUntil } from "./poll.js";
+import { buildGeneratedVideoToolOutput } from "./output.js";
+import type { VideoGenerationBackend } from "./types.js";
 
 interface ArkTaskCreateResponse {
   id?: string;
@@ -24,17 +24,17 @@ interface ArkTaskStatusResponse {
 }
 
 export class ArkVideoBackend implements VideoGenerationBackend {
-  readonly id = 'ark';
+  readonly id = "ark";
 
   async generate(
     config: OpenAiVideoGenerationConfig,
     request: VideoGenerationRequest,
     saveGeneratedVideo: (request: GeneratedVideoSaveRequest) => Promise<GeneratedVideoFile>,
   ): Promise<ToolExecutionOutput> {
-    const baseUrl = (config.baseUrl ?? defaultArkApiBase(config.llmVendor)).replace(/\/$/, '');
+    const baseUrl = (config.baseUrl ?? defaultArkApiBase(config.llmVendor)).replace(/\/$/, "");
     const createUrl = `${baseUrl}/contents/generations/tasks`;
 
-    console.error('[agent-core][generate-video] request.start', {
+    console.error("[agent-core][generate-video] request.start", {
       adapter: this.id,
       model: config.model,
       baseUrl,
@@ -45,14 +45,14 @@ export class ArkVideoBackend implements VideoGenerationBackend {
     });
 
     const createResponse = await getLlmFetch()(createUrl, {
-      method: 'POST',
+      method: "POST",
       headers: {
         Authorization: `Bearer ${config.apiKey}`,
-        'Content-Type': 'application/json',
+        "Content-Type": "application/json",
       },
       body: JSON.stringify({
         model: config.model,
-        content: [{ type: 'text', text: request.prompt }],
+        content: [{ type: "text", text: request.prompt }],
         ...(request.duration !== undefined ? { duration: request.duration } : {}),
         ...(request.aspectRatio ? { ratio: request.aspectRatio } : {}),
         ...(request.resolution ? { resolution: request.resolution } : {}),
@@ -67,7 +67,7 @@ export class ArkVideoBackend implements VideoGenerationBackend {
     const created = (await createResponse.json()) as ArkTaskCreateResponse;
     const taskId = created.id?.trim();
     if (!taskId) {
-      throw new Error('Ark video task creation returned no task id.');
+      throw new Error("Ark video task creation returned no task id.");
     }
 
     const statusUrl = `${baseUrl}/contents/generations/tasks/${encodeURIComponent(taskId)}`;
@@ -84,18 +84,20 @@ export class ArkVideoBackend implements VideoGenerationBackend {
 
       const status = (await statusResponse.json()) as ArkTaskStatusResponse;
       const state = status.status?.toLowerCase();
-      if (state === 'succeeded') {
+      if (state === "succeeded") {
         return status;
       }
-      if (state === 'failed' || state === 'cancelled' || state === 'canceled') {
-        throw new Error(status.error?.message ?? `Ark video task ended with status: ${status.status}`);
+      if (state === "failed" || state === "cancelled" || state === "canceled") {
+        throw new Error(
+          status.error?.message ?? `Ark video task ended with status: ${status.status}`,
+        );
       }
       return undefined;
     });
 
     const videoUrl = completed.content?.video_url?.trim();
     if (!videoUrl) {
-      throw new Error('Ark video task succeeded without a video_url.');
+      throw new Error("Ark video task succeeded without a video_url.");
     }
 
     const downloadResponse = await fetch(videoUrl);
@@ -103,7 +105,8 @@ export class ArkVideoBackend implements VideoGenerationBackend {
       throw new Error(`Failed to download Ark video (${downloadResponse.status}).`);
     }
 
-    const mediaType = downloadResponse.headers.get('content-type')?.split(';', 1)[0]?.trim() || 'video/mp4';
+    const mediaType =
+      downloadResponse.headers.get("content-type")?.split(";", 1)[0]?.trim() || "video/mp4";
     const data = new Uint8Array(await downloadResponse.arrayBuffer());
     const saved = await saveGeneratedVideo({
       data,
@@ -112,7 +115,7 @@ export class ArkVideoBackend implements VideoGenerationBackend {
       model: config.model,
     });
 
-    console.error('[agent-core][generate-video] request.success', {
+    console.error("[agent-core][generate-video] request.success", {
       adapter: this.id,
       model: config.model,
       taskId,

@@ -1,60 +1,63 @@
-import type { RuntimeEvent, SubagentSessionArchiveEntry, SubagentSessionStatus } from '@spiritagent/agent-core';
-import { llmMessageTextContent } from '@spiritagent/agent-core';
+import type {
+  RuntimeEvent,
+  SubagentSessionArchiveEntry,
+  SubagentSessionStatus,
+} from "@spiritagent/agent-core";
+import { llmMessageTextContent } from "@spiritagent/agent-core";
 
-import type { ConversationMessageSnapshot } from '../types.js';
-import { DesktopAssistantMessageStateMachine } from './assistant-message-state.js';
-import { DesktopConversationSnapshotView } from './conversation-snapshot.js';
-import type { DesktopToolRequest } from './contracts.js';
-import {
-  DesktopMessageTimeline,
-  type DesktopTimelineSegmentKind,
-} from './message-timeline.js';
+import type { ConversationMessageSnapshot } from "../types.js";
+import { DesktopAssistantMessageStateMachine } from "./assistant-message-state.js";
+import { DesktopConversationSnapshotView } from "./conversation-snapshot.js";
+import type { DesktopToolRequest } from "./contracts.js";
+import { DesktopMessageTimeline, type DesktopTimelineSegmentKind } from "./message-timeline.js";
 import {
   isWorktreeSubagentSession,
   resolveWorktreeBootstrapCardPhaseFromSubagentStatus,
   upsertWorktreeBootstrapCardInTimeline,
-} from './worktree-bootstrap-card.js';
+} from "./worktree-bootstrap-card.js";
 import {
   DesktopRuntimeEventOrchestrator,
   runtimeEventsIncludeAppliedResponsesBuiltInToolPreview,
   splitRuntimeEventsForIncrementalFinishTaskPreview,
   splitRuntimeEventsForIncrementalResponsesBuiltInToolPreview,
-} from './runtime-event-orchestrator.js';
-import type { DesktopHostRuntime } from './runtime.js';
-import type { SessionBundle } from './session-bundle.js';
-import { sanitizeConversationMessagesForPersistence } from './sessions.js';
+} from "./runtime-event-orchestrator.js";
+import type { DesktopHostRuntime } from "./runtime.js";
+import type { SessionBundle } from "./session-bundle.js";
+import { sanitizeConversationMessagesForPersistence } from "./sessions.js";
 
 function nextMessageIdFromMessages(messages: ConversationMessageSnapshot[]): number {
   return Math.max(0, ...messages.map((message) => message.id)) + 1;
 }
 
 function historyText(content: unknown): string {
-  if (typeof content === 'string') {
+  if (typeof content === "string") {
     return content;
   }
   if (Array.isArray(content)) {
     return llmMessageTextContent(content);
   }
-  return '';
+  return "";
 }
 
 function seedMessagesFromSubagentSession(
   session: SubagentSessionArchiveEntry,
 ): ConversationMessageSnapshot[] {
   for (const entry of session.llmHistory) {
-    if (entry.role !== 'user') {
+    if (entry.role !== "user") {
       continue;
     }
     const content = historyText(entry.content).trim();
     if (!content) {
       continue;
     }
-    return [{
-      id: 1,
-      role: 'user',
-      content,
-      pending: false,
-    }];
+    return [
+      {
+        id: 1,
+        role: "user",
+        content,
+        pending: false,
+      },
+    ];
   }
   return [];
 }
@@ -66,7 +69,7 @@ export class SubagentConversationProjection {
   private messageIdCounter: number;
   private deferredRuntimeHostEvents: RuntimeEvent<DesktopToolRequest>[] = [];
   private responsesBuiltInPreviewSeenCallIds = new Set<string>();
-  private nextTimelineAssistantSegmentKind: DesktopTimelineSegmentKind = 'initial';
+  private nextTimelineAssistantSegmentKind: DesktopTimelineSegmentKind = "initial";
 
   private constructor(
     readonly sessionId: string,
@@ -79,7 +82,9 @@ export class SubagentConversationProjection {
         this.messageIdCounter = Math.max(this.messageIdCounter, messageId + 1);
       },
     });
-    const conversationSnapshotView = new DesktopConversationSnapshotView(() => this.allocateMessageId());
+    const conversationSnapshotView = new DesktopConversationSnapshotView(() =>
+      this.allocateMessageId(),
+    );
     const messageBuffer: ConversationMessageSnapshot[] = [...messages];
     this.assistantMessages = new DesktopAssistantMessageStateMachine({
       messages: () => messageBuffer,
@@ -114,7 +119,11 @@ export class SubagentConversationProjection {
       : seedMessagesFromSubagentSession(session);
     const projection = new SubagentConversationProjection(session.summary.sessionId, messages);
     if (isWorktreeSubagentSession(session.summary)) {
-      syncWorktreeBootstrapCardOnProjection(projection, session.summary.status, session.summary.sessionId);
+      syncWorktreeBootstrapCardOnProjection(
+        projection,
+        session.summary.status,
+        session.summary.sessionId,
+      );
     }
     return projection;
   }
@@ -131,8 +140,8 @@ export class SubagentConversationProjection {
     this.runtimeEvents.applyRuntimeHostEvents(splitBuiltin.toApply);
     for (const event of splitBuiltin.toApply) {
       if (
-        event.kind === 'streaming-tool-preview'
-        && runtimeEventsIncludeAppliedResponsesBuiltInToolPreview([event])
+        event.kind === "streaming-tool-preview" &&
+        runtimeEventsIncludeAppliedResponsesBuiltInToolPreview([event])
       ) {
         this.responsesBuiltInPreviewSeenCallIds.add(event.toolCallId);
       }
@@ -208,10 +217,7 @@ export function syncSubagentConversationProjections(
     const projection = ensureSubagentConversationProjection(bundle, session);
     projection.applyDrainedEvents(childDrain.events);
     const syncedMessages = projection.toMessages();
-    bundle.subagentDesktopMessagesBySessionId.set(
-      childDrain.sessionId,
-      syncedMessages,
-    );
+    bundle.subagentDesktopMessagesBySessionId.set(childDrain.sessionId, syncedMessages);
   }
   return true;
 }
@@ -259,7 +265,10 @@ export function cloneSubagentDesktopMessagesRecord(
     return next;
   }
   for (const [sessionId, messages] of Object.entries(record)) {
-    next.set(sessionId, messages.map((message) => ({ ...message })));
+    next.set(
+      sessionId,
+      messages.map((message) => ({ ...message })),
+    );
   }
   return next;
 }

@@ -1,15 +1,13 @@
-import type { BridgeRuntimeSnapshot } from '@spiritagent/agent-core/host-bridge';
+import type { BridgeRuntimeSnapshot } from "@spiritagent/agent-core/host-bridge";
 
-import type { ServerRuntimeResult } from './runtime-factory.js';
+import type { ServerRuntimeResult } from "./runtime-factory.js";
 
 /**
  * Projects a session runtime into the bridge-compatible snapshot shape.
  * Same fields as the legacy host bridge's `buildSnapshot` — clients written
  * against the sidecar protocol read this unchanged.
  */
-export function buildServerSnapshot(
-  runtimeResult: ServerRuntimeResult,
-): BridgeRuntimeSnapshot {
+export function buildServerSnapshot(runtimeResult: ServerRuntimeResult): BridgeRuntimeSnapshot {
   const target = runtimeResult.runtime;
   const pendingUserTurn = target.pendingUserTurn();
   const pendingAuxState = target.pendingAuxState();

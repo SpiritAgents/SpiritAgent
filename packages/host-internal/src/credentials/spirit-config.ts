@@ -1,7 +1,7 @@
-import { existsSync, readFileSync } from 'node:fs';
-import { mkdir, writeFile } from 'node:fs/promises';
-import { homedir } from 'node:os';
-import { join } from 'node:path';
+import { existsSync, readFileSync } from "node:fs";
+import { mkdir, writeFile } from "node:fs/promises";
+import { homedir } from "node:os";
+import { join } from "node:path";
 
 import {
   assertSpiritConfigSchemaVersion,
@@ -12,12 +12,12 @@ import {
   type ModelEntryV2,
   type ModelRef,
   type ProviderGroupV2,
-} from '../config-v2.js';
+} from "../config-v2.js";
 
-import type { SpiritConfigFile, SpiritModelProfile } from './types.js';
+import type { SpiritConfigFile, SpiritModelProfile } from "./types.js";
 
-const CONFIG_FILE_NAME = 'config.json';
-const APP_DATA_DIR_NAME = 'SpiritAgent';
+const CONFIG_FILE_NAME = "config.json";
+const APP_DATA_DIR_NAME = "SpiritAgent";
 
 export { SpiritConfigSchemaError };
 
@@ -27,37 +27,37 @@ export { SpiritConfigSchemaError };
  * before falling back to this function.
  */
 export function resolveSpiritDataDir(): string {
-  const envOverride = process.env['SPIRIT_AGENT_DATA_DIR']?.trim();
+  const envOverride = process.env["SPIRIT_AGENT_DATA_DIR"]?.trim();
   if (envOverride) {
     return envOverride;
   }
 
-  const appData = process.env['APPDATA']?.trim();
+  const appData = process.env["APPDATA"]?.trim();
   if (appData) {
     return join(appData, APP_DATA_DIR_NAME);
   }
 
-  const home = process.env['HOME']?.trim() || homedir()?.trim();
+  const home = process.env["HOME"]?.trim() || homedir()?.trim();
   if (home) {
-    if (process.platform === 'darwin') {
-      return join(home, 'Library', 'Application Support', APP_DATA_DIR_NAME);
+    if (process.platform === "darwin") {
+      return join(home, "Library", "Application Support", APP_DATA_DIR_NAME);
     }
-    if (process.platform === 'linux') {
-      const xdgDataHome = process.env['XDG_DATA_HOME']?.trim();
+    if (process.platform === "linux") {
+      const xdgDataHome = process.env["XDG_DATA_HOME"]?.trim();
       if (xdgDataHome) {
         return join(xdgDataHome, APP_DATA_DIR_NAME);
       }
-      return join(home, '.local', 'share', APP_DATA_DIR_NAME);
+      return join(home, ".local", "share", APP_DATA_DIR_NAME);
     }
-    return join(home, '.spirit-agent');
+    return join(home, ".spirit-agent");
   }
 
-  const userProfile = process.env['USERPROFILE']?.trim();
+  const userProfile = process.env["USERPROFILE"]?.trim();
   if (userProfile) {
-    return join(userProfile, '.spirit-agent');
+    return join(userProfile, ".spirit-agent");
   }
 
-  return join(homedir(), '.spirit-agent');
+  return join(homedir(), ".spirit-agent");
 }
 
 export function configFilePath(spiritDataDir: string): string {
@@ -103,11 +103,11 @@ function normalizeProviderGroups(raw: unknown): ProviderGroupV2[] {
 function normalizeConfig(raw: Record<string, unknown>): SpiritConfigFile {
   assertSpiritConfigSchemaVersion(raw);
 
-  const providerGroups = normalizeProviderGroups(raw['providerGroups']);
-  const activeModel = parseModelRef(raw['activeModel']) ?? { groupId: '', name: '' };
-  const imageGenerationModel = parseModelRef(raw['imageGenerationModel']);
-  const videoGenerationModel = parseModelRef(raw['videoGenerationModel']);
-  const lightweightChatModel = parseModelRef(raw['lightweightChatModel']);
+  const providerGroups = normalizeProviderGroups(raw["providerGroups"]);
+  const activeModel = parseModelRef(raw["activeModel"]) ?? { groupId: "", name: "" };
+  const imageGenerationModel = parseModelRef(raw["imageGenerationModel"]);
+  const videoGenerationModel = parseModelRef(raw["videoGenerationModel"]);
+  const lightweightChatModel = parseModelRef(raw["lightweightChatModel"]);
 
   return {
     ...raw,
@@ -126,8 +126,8 @@ export function loadSpiritConfig(spiritDataDir: string): SpiritConfigFile | unde
     return undefined;
   }
   try {
-    const parsed: unknown = JSON.parse(readFileSync(filePath, 'utf8'));
-    if (typeof parsed !== 'object' || parsed === null) {
+    const parsed: unknown = JSON.parse(readFileSync(filePath, "utf8"));
+    if (typeof parsed !== "object" || parsed === null) {
       return undefined;
     }
     return normalizeConfig(parsed as Record<string, unknown>);
@@ -149,7 +149,7 @@ export async function saveSpiritConfig(
     ...config,
     schemaVersion: SPIRIT_CONFIG_SCHEMA_VERSION,
   };
-  await writeFile(filePath, `${JSON.stringify(payload, null, 2)}\n`, 'utf8');
+  await writeFile(filePath, `${JSON.stringify(payload, null, 2)}\n`, "utf8");
 }
 
 export function loadActiveModelProfile(spiritDataDir: string): SpiritModelProfile | undefined {
@@ -173,7 +173,5 @@ export function loadModelProfile(
     return undefined;
   }
   const resolved = findModelByRef(config.providerGroups, modelRef);
-  return resolved
-    ? resolveSpiritModelProfile(resolved.group, resolved.model)
-    : undefined;
+  return resolved ? resolveSpiritModelProfile(resolved.group, resolved.model) : undefined;
 }

@@ -11,10 +11,10 @@ export {
   providerConnectSiteRequiresWorkspaceId,
   resolveConnectApiBase,
   resolveProviderConnectApiBase,
-} from '@spiritagent/host-internal/model-provider-presets';
+} from "@spiritagent/host-internal/model-provider-presets";
 export type {
   ModelProviderId,
   ProviderConnectSiteId,
   ProviderModelTransportKind,
   ResolveProviderConnectApiBaseOptions,
-} from '@spiritagent/host-internal/model-provider-presets';
+} from "@spiritagent/host-internal/model-provider-presets";

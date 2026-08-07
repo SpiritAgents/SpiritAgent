@@ -1,16 +1,16 @@
-import assert from 'node:assert/strict';
-import test from 'node:test';
+import assert from "node:assert/strict";
+import test from "node:test";
 
-import { buildSingleTextQuestionNotificationReplyResult } from '../../src/lib/ask-questions-notification-reply.ts';
+import { buildSingleTextQuestionNotificationReplyResult } from "../../src/lib/ask-questions-notification-reply.ts";
 
 function pendingQuestions(overrides = {}) {
   return {
-    toolCallId: 'tool-1',
+    toolCallId: "tool-1",
     request: {
       questions: [
         {
-          id: 'question-1',
-          title: 'What should happen next?',
+          id: "question-1",
+          title: "What should happen next?",
           allowMultiple: false,
           options: [],
         },
@@ -20,56 +20,56 @@ function pendingQuestions(overrides = {}) {
   };
 }
 
-test('buildSingleTextQuestionNotificationReplyResult maps matching text reply', () => {
+test("buildSingleTextQuestionNotificationReplyResult maps matching text reply", () => {
   assert.deepEqual(
     buildSingleTextQuestionNotificationReplyResult(pendingQuestions(), {
-      text: '  Proceed carefully  ',
+      text: "  Proceed carefully  ",
       context: {
-        questionToolCallId: 'tool-1',
-        questionId: 'question-1',
+        questionToolCallId: "tool-1",
+        questionId: "question-1",
       },
     }),
     {
-      status: 'answered',
+      status: "answered",
       answers: [
         {
-          questionId: 'question-1',
+          questionId: "question-1",
           selectedOptionIds: [],
-          customText: 'Proceed carefully',
+          customText: "Proceed carefully",
         },
       ],
     },
   );
 });
 
-test('buildSingleTextQuestionNotificationReplyResult ignores stale tool call', () => {
+test("buildSingleTextQuestionNotificationReplyResult ignores stale tool call", () => {
   assert.equal(
     buildSingleTextQuestionNotificationReplyResult(pendingQuestions(), {
-      text: 'Proceed',
+      text: "Proceed",
       context: {
-        questionToolCallId: 'old-tool',
-        questionId: 'question-1',
+        questionToolCallId: "old-tool",
+        questionId: "question-1",
       },
     }),
     undefined,
   );
 });
 
-test('buildSingleTextQuestionNotificationReplyResult ignores multi-question prompts', () => {
+test("buildSingleTextQuestionNotificationReplyResult ignores multi-question prompts", () => {
   assert.equal(
     buildSingleTextQuestionNotificationReplyResult(
       pendingQuestions({
         request: {
           questions: [
             {
-              id: 'question-1',
-              title: 'First?',
+              id: "question-1",
+              title: "First?",
               allowMultiple: false,
               options: [],
             },
             {
-              id: 'question-2',
-              title: 'Second?',
+              id: "question-2",
+              title: "Second?",
               allowMultiple: false,
               options: [],
             },
@@ -77,10 +77,10 @@ test('buildSingleTextQuestionNotificationReplyResult ignores multi-question prom
         },
       }),
       {
-        text: 'Proceed',
+        text: "Proceed",
         context: {
-          questionToolCallId: 'tool-1',
-          questionId: 'question-1',
+          questionToolCallId: "tool-1",
+          questionId: "question-1",
         },
       },
     ),

@@ -1,16 +1,11 @@
-import type { ToolBlockSnapshot } from '../types.js';
+import type { ToolBlockSnapshot } from "../types.js";
 
 export type EditFileLineDelta = {
   added: number;
   removed: number;
 };
 
-const TOOLS_WITH_LINE_DELTA = new Set([
-  'edit_file',
-  'create_file',
-  'create_plan',
-  'delete_file',
-]);
+const TOOLS_WITH_LINE_DELTA = new Set(["edit_file", "create_file", "create_plan", "delete_file"]);
 
 function splitLines(text: string): string[] {
   if (!text) {
@@ -80,21 +75,21 @@ function longestCommonSubsequenceLength(a: string[], b: string[]): number {
 
 function appendDecodedEscape(result: string, esc: string): string {
   switch (esc) {
-    case 'n':
+    case "n":
       return `${result}\n`;
-    case 'r':
+    case "r":
       return `${result}\r`;
-    case 't':
+    case "t":
       return `${result}\t`;
     case '"':
       return `${result}"`;
-    case '\\':
+    case "\\":
       return `${result}\\`;
-    case '/':
+    case "/":
       return `${result}/`;
-    case 'b':
+    case "b":
       return `${result}\b`;
-    case 'f':
+    case "f":
       return `${result}\f`;
     default:
       return `${result}${esc}`;
@@ -116,7 +111,7 @@ export function tryExtractPartialJsonStringValue(
   while (i < argumentsJson.length && /\s/u.test(argumentsJson[i]!)) {
     i += 1;
   }
-  if (argumentsJson[i] !== ':') {
+  if (argumentsJson[i] !== ":") {
     return undefined;
   }
   i += 1;
@@ -128,19 +123,19 @@ export function tryExtractPartialJsonStringValue(
   }
   i += 1;
 
-  let result = '';
+  let result = "";
   while (i < argumentsJson.length) {
     const ch = argumentsJson[i]!;
     if (ch === '"') {
       return result;
     }
-    if (ch === '\\') {
+    if (ch === "\\") {
       i += 1;
       if (i >= argumentsJson.length) {
         break;
       }
       const esc = argumentsJson[i]!;
-      if (esc === 'u') {
+      if (esc === "u") {
         const hex = argumentsJson.slice(i + 1, i + 5);
         if (/^[0-9a-fA-F]{4}$/u.test(hex)) {
           result += String.fromCodePoint(Number.parseInt(hex, 16));
@@ -181,9 +176,9 @@ export function tryExtractPartialPlanName(argumentsJson: string): string | undef
 
   try {
     const parsed = JSON.parse(trimmed) as unknown;
-    if (parsed && typeof parsed === 'object') {
+    if (parsed && typeof parsed === "object") {
       const name = (parsed as Record<string, unknown>).name;
-      if (typeof name === 'string' && name.trim()) {
+      if (typeof name === "string" && name.trim()) {
         return name.trim();
       }
     }
@@ -221,13 +216,13 @@ function extractDeleteFilePath(
   request?: unknown,
   argumentsJson?: string,
 ): string | undefined {
-  if (toolName !== 'delete_file') {
+  if (toolName !== "delete_file") {
     return undefined;
   }
 
-  if (request && typeof request === 'object') {
+  if (request && typeof request === "object") {
     const pathValue = (request as Record<string, unknown>).path;
-    if (typeof pathValue === 'string' && pathValue.trim()) {
+    if (typeof pathValue === "string" && pathValue.trim()) {
       return pathValue.trim();
     }
   }
@@ -239,14 +234,14 @@ function extractDeleteFilePath(
 
   try {
     const parsed = JSON.parse(trimmed) as unknown;
-    if (parsed && typeof parsed === 'object') {
+    if (parsed && typeof parsed === "object") {
       const pathValue = (parsed as Record<string, unknown>).path;
-      if (typeof pathValue === 'string' && pathValue.trim()) {
+      if (typeof pathValue === "string" && pathValue.trim()) {
         return pathValue.trim();
       }
     }
   } catch {
-    const partial = tryExtractPartialJsonStringValue(trimmed, 'path');
+    const partial = tryExtractPartialJsonStringValue(trimmed, "path");
     if (partial?.trim()) {
       return partial.trim();
     }
@@ -269,23 +264,23 @@ export function toolLineDeltaFromRequest(
   request: unknown,
   options?: { preview?: boolean },
 ): EditFileLineDelta | undefined {
-  if (!TOOLS_WITH_LINE_DELTA.has(toolName) || !request || typeof request !== 'object') {
+  if (!TOOLS_WITH_LINE_DELTA.has(toolName) || !request || typeof request !== "object") {
     return undefined;
   }
 
   const record = request as Record<string, unknown>;
 
-  if (toolName === 'create_file' || toolName === 'create_plan') {
-    const content = typeof record.content === 'string' ? record.content : '';
+  if (toolName === "create_file" || toolName === "create_plan") {
+    const content = typeof record.content === "string" ? record.content : "";
     return createContentLineDelta(content);
   }
 
-  if (toolName === 'delete_file') {
+  if (toolName === "delete_file") {
     return undefined;
   }
 
-  const oldText = typeof record.old_text === 'string' ? record.old_text : '';
-  const newText = typeof record.new_text === 'string' ? record.new_text : '';
+  const oldText = typeof record.old_text === "string" ? record.old_text : "";
+  const newText = typeof record.new_text === "string" ? record.new_text : "";
   if (!oldText && !newText) {
     return undefined;
   }
@@ -310,21 +305,21 @@ export function toolLineDeltaFromArgumentsJson(
   try {
     return toolLineDeltaFromRequest(toolName, JSON.parse(trimmed) as unknown, options);
   } catch {
-    if (toolName === 'create_file' || toolName === 'create_plan') {
-      const content = tryExtractPartialJsonStringValue(trimmed, 'content');
+    if (toolName === "create_file" || toolName === "create_plan") {
+      const content = tryExtractPartialJsonStringValue(trimmed, "content");
       return content !== undefined ? createContentLineDelta(content) : undefined;
     }
 
-    if (toolName === 'delete_file') {
+    if (toolName === "delete_file") {
       return undefined;
     }
 
-    const oldText = tryExtractPartialJsonStringValue(trimmed, 'old_text');
-    const newText = tryExtractPartialJsonStringValue(trimmed, 'new_text');
+    const oldText = tryExtractPartialJsonStringValue(trimmed, "old_text");
+    const newText = tryExtractPartialJsonStringValue(trimmed, "new_text");
     if (oldText === undefined && newText === undefined) {
       return undefined;
     }
-    const delta = lineChangeCountsForPhase(oldText ?? '', newText ?? '', options?.preview === true);
+    const delta = lineChangeCountsForPhase(oldText ?? "", newText ?? "", options?.preview === true);
     if (!delta || (delta.added === 0 && delta.removed === 0)) {
       return undefined;
     }
@@ -336,7 +331,7 @@ export function toolLineDeltaFromArgumentsJson(
 export function editFileLineDeltaFromArgumentsJson(
   argumentsJson: string,
 ): EditFileLineDelta | undefined {
-  return toolLineDeltaFromArgumentsJson('edit_file', argumentsJson);
+  return toolLineDeltaFromArgumentsJson("edit_file", argumentsJson);
 }
 
 export function resolveToolLineDelta(tool: ToolBlockSnapshot): EditFileLineDelta | undefined {
@@ -352,8 +347,10 @@ export function resolveToolLineDelta(tool: ToolBlockSnapshot): EditFileLineDelta
   return undefined;
 }
 
-export function resolveToolLineDeltaForDisplay(tool: ToolBlockSnapshot): EditFileLineDelta | undefined {
-  if (tool.phase === 'failed') {
+export function resolveToolLineDeltaForDisplay(
+  tool: ToolBlockSnapshot,
+): EditFileLineDelta | undefined {
+  if (tool.phase === "failed") {
     return undefined;
   }
   return resolveToolLineDelta(tool);
@@ -374,17 +371,22 @@ export function attachEditFileLineDelta(
       : toolLineDeltaFromRequest(tool.toolName, source.request, phaseOptions);
 
   const deleteInputPath =
-    tool.toolName === 'delete_file'
+    tool.toolName === "delete_file"
       ? extractDeleteFilePath(tool.toolName, source.request, source.argumentsJson)
       : undefined;
 
-  if (!delta && tool.toolName === 'delete_file' && deleteInputPath && source.resolveDeleteFileLines) {
+  if (
+    !delta &&
+    tool.toolName === "delete_file" &&
+    deleteInputPath &&
+    source.resolveDeleteFileLines
+  ) {
     delta = source.resolveDeleteFileLines(deleteInputPath);
   }
 
   let deleteFileBaselineText = tool.deleteFileBaselineText;
   if (
-    tool.toolName === 'delete_file' &&
+    tool.toolName === "delete_file" &&
     deleteInputPath &&
     source.resolveDeleteFileBaseline &&
     deleteFileBaselineText === undefined
@@ -413,7 +415,7 @@ export function preserveDeleteFileLineDelta(
   attached: ToolBlockSnapshot,
   priorDelta?: EditFileLineDelta,
 ): ToolBlockSnapshot {
-  if (toolName !== 'delete_file' || attached.editLineDelta || !priorDelta) {
+  if (toolName !== "delete_file" || attached.editLineDelta || !priorDelta) {
     return attached;
   }
   return { ...attached, editLineDelta: priorDelta };
@@ -425,7 +427,7 @@ export function preserveDeleteFileBaseline(
   attached: ToolBlockSnapshot,
   priorBaseline?: string,
 ): ToolBlockSnapshot {
-  if (toolName !== 'delete_file' || attached.deleteFileBaselineText || !priorBaseline) {
+  if (toolName !== "delete_file" || attached.deleteFileBaselineText || !priorBaseline) {
     return attached;
   }
   return { ...attached, deleteFileBaselineText: priorBaseline };

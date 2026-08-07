@@ -2,14 +2,14 @@ import {
   WEB_FETCH_ACCEPT_HEADER,
   WEB_FETCH_TIMEOUT_MS,
   WEB_FETCH_USER_AGENT,
-} from './constants.js';
+} from "./constants.js";
 import {
   collectLinksFromHtml,
   collectLinksFromMarkdown,
   extractWebContent,
-} from './extract-markdown.js';
-import { buildWebFetchOutput } from './format-output.js';
-import { looksLikeHtml, normalizeMimeType } from './resolve-url.js';
+} from "./extract-markdown.js";
+import { buildWebFetchOutput } from "./format-output.js";
+import { looksLikeHtml, normalizeMimeType } from "./resolve-url.js";
 
 export interface FetchedWebPage {
   url: string;
@@ -19,17 +19,20 @@ export interface FetchedWebPage {
   raw: string;
 }
 
-export async function fetchWebPage(url: string, fetchImpl: typeof fetch = fetch): Promise<FetchedWebPage> {
+export async function fetchWebPage(
+  url: string,
+  fetchImpl: typeof fetch = fetch,
+): Promise<FetchedWebPage> {
   const controller = new AbortController();
   const timeout = setTimeout(() => controller.abort(), WEB_FETCH_TIMEOUT_MS);
   try {
     const response = await fetchImpl(url, {
-      redirect: 'follow',
+      redirect: "follow",
       signal: controller.signal,
       headers: {
-        'User-Agent': WEB_FETCH_USER_AGENT,
+        "User-Agent": WEB_FETCH_USER_AGENT,
         Accept: WEB_FETCH_ACCEPT_HEADER,
-        'Accept-Language': 'zh-CN,zh;q=0.9,en;q=0.8',
+        "Accept-Language": "zh-CN,zh;q=0.9,en;q=0.8",
       },
     });
 
@@ -38,7 +41,7 @@ export async function fetchWebPage(url: string, fetchImpl: typeof fetch = fetch)
       url,
       finalUrl: response.url || url,
       status: response.status,
-      contentType: response.headers.get('content-type') ?? 'unknown',
+      contentType: response.headers.get("content-type") ?? "unknown",
       raw,
     };
   } finally {
@@ -67,7 +70,7 @@ export function convertFetchedPageToToolText(page: FetchedWebPage): string {
   const mime = normalizeMimeType(page.contentType);
 
   let links = collectLinksFromMarkdown(extracted.markdown, page.finalUrl);
-  if (mime.includes('html') || looksLikeHtml(page.raw)) {
+  if (mime.includes("html") || looksLikeHtml(page.raw)) {
     links = mergeLinks(collectLinksFromHtml(page.raw, page.finalUrl), links);
   }
 

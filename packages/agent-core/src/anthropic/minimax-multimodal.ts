@@ -1,19 +1,19 @@
-import type { AnthropicTransportConfig } from './anthropic-compat.js';
+import type { AnthropicTransportConfig } from "./anthropic-compat.js";
 
 export function isMinimaxAnthropicConfig(
-  config: Pick<AnthropicTransportConfig, 'baseUrl' | 'llmVendor'>,
+  config: Pick<AnthropicTransportConfig, "baseUrl" | "llmVendor">,
 ): boolean {
-  if (config.llmVendor === 'minimax') {
+  if (config.llmVendor === "minimax") {
     return true;
   }
 
-  const base = config.baseUrl?.trim().toLowerCase() ?? '';
-  return base.includes('minimax');
+  const base = config.baseUrl?.trim().toLowerCase() ?? "";
+  return base.includes("minimax");
 }
 
 export type MinimaxAnthropicImageSource =
-  | { type: 'url'; url: string }
-  | { type: 'base64'; media_type: string; data: string };
+  | { type: "url"; url: string }
+  | { type: "base64"; media_type: string; data: string };
 
 export function parseDataUrlToAnthropicImageSource(
   value: string,
@@ -31,31 +31,29 @@ export function parseDataUrlToAnthropicImageSource(
   }
 
   return {
-    type: 'base64',
+    type: "base64",
     media_type: mediaType,
     data,
   };
 }
 
-export function mapMinimaxAnthropicImageContentPart(
-  imageUrl: string,
-): Record<string, unknown> {
+export function mapMinimaxAnthropicImageContentPart(imageUrl: string): Record<string, unknown> {
   const trimmed = imageUrl.trim();
-  const source = parseDataUrlToAnthropicImageSource(trimmed)
-    ?? { type: 'url' as const, url: trimmed };
+  const source = parseDataUrlToAnthropicImageSource(trimmed) ?? {
+    type: "url" as const,
+    url: trimmed,
+  };
   return {
-    type: 'image',
+    type: "image",
     source,
   };
 }
 
-export function mapMinimaxAnthropicVideoContentPart(
-  videoUrl: string,
-): Record<string, unknown> {
+export function mapMinimaxAnthropicVideoContentPart(videoUrl: string): Record<string, unknown> {
   return {
-    type: 'video',
+    type: "video",
     source: {
-      type: 'url',
+      type: "url",
       url: videoUrl.trim(),
     },
   };

@@ -1,12 +1,12 @@
-const SKIP_LINK_SCHEMES = new Set(['javascript:', 'mailto:', 'tel:', 'data:']);
+const SKIP_LINK_SCHEMES = new Set(["javascript:", "mailto:", "tel:", "data:"]);
 
 export function normalizeMimeType(contentType: string): string {
-  return contentType.split(';', 1)[0]?.trim().toLowerCase() ?? '';
+  return contentType.split(";", 1)[0]?.trim().toLowerCase() ?? "";
 }
 
 export function resolveAbsoluteUrl(href: string, baseUrl: string): string | undefined {
   const trimmed = href.trim();
-  if (trimmed.length === 0 || trimmed.startsWith('#')) {
+  if (trimmed.length === 0 || trimmed.startsWith("#")) {
     return undefined;
   }
 
@@ -19,7 +19,7 @@ export function resolveAbsoluteUrl(href: string, baseUrl: string): string | unde
 
   try {
     const parsed = new URL(trimmed, baseUrl);
-    if (parsed.protocol !== 'http:' && parsed.protocol !== 'https:') {
+    if (parsed.protocol !== "http:" && parsed.protocol !== "https:") {
       return undefined;
     }
     return parsed.toString();
@@ -31,9 +31,9 @@ export function resolveAbsoluteUrl(href: string, baseUrl: string): string | unde
 export function looksLikeHtml(raw: string): boolean {
   const prefix = raw.slice(0, 512).toLowerCase();
   return (
-    prefix.includes('<html') ||
-    prefix.includes('<!doctype html') ||
-    prefix.includes('<body') ||
-    prefix.includes('<head')
+    prefix.includes("<html") ||
+    prefix.includes("<!doctype html") ||
+    prefix.includes("<body") ||
+    prefix.includes("<head")
   );
 }

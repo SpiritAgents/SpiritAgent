@@ -3,45 +3,45 @@ import type {
   LlmActiveSkill,
   RuntimeEvent,
   SpiritLlmTransport,
-} from '@spiritagent/agent-core';
-import type { DesktopToolRequest, SessionTitleSource } from './contracts.js';
-import type { ApprovalLevel, WorkLocationKind } from '@spiritagent/host-internal';
+} from "@spiritagent/agent-core";
+import type { DesktopToolRequest, SessionTitleSource } from "./contracts.js";
+import type { ApprovalLevel, WorkLocationKind } from "@spiritagent/host-internal";
 
-import type { ModelRef } from '../types.js';
+import type { ModelRef } from "../types.js";
 
-import type { DesktopHostRuntime } from './runtime.js';
-import type { DesktopToolExecutor } from './tool-executor.js';
+import type { DesktopHostRuntime } from "./runtime.js";
+import type { DesktopToolExecutor } from "./tool-executor.js";
 
 import type {
   ActiveSessionSnapshot,
   ConversationContextUsageSnapshot,
   ConversationMessageSnapshot,
   FileRewindWarning,
-} from '../types.js';
-import type { QueuedUserTurn } from './message-queue.js';
-import type { PendingWorktreeBootstrap } from './worktree-bootstrap-card.js';
-import type { DesktopTimelineSegmentKind, DesktopMessageTimeline } from './message-timeline.js';
-import { createDesktopRewindMetadata, type StoredDesktopRewindMetadata } from './rewind.js';
-import { createTodoSessionScopeKey } from './todos.js';
-import { ensureDesktopTranscriptSessionDir } from './transcript-session.js';
-import { rehydrateFinishTaskNoticesForRestoredSession } from './finish-task-notice-rehydrate.js';
-import { nextMessageIdFromMessages, type RestoredSessionState } from './sessions.js';
-import type { SubagentConversationProjection } from './subagent-conversation-projection.js';
-import { DesktopMessageTimeline as TimelineCtor } from './message-timeline.js';
+} from "../types.js";
+import type { QueuedUserTurn } from "./message-queue.js";
+import type { PendingWorktreeBootstrap } from "./worktree-bootstrap-card.js";
+import type { DesktopTimelineSegmentKind, DesktopMessageTimeline } from "./message-timeline.js";
+import { createDesktopRewindMetadata, type StoredDesktopRewindMetadata } from "./rewind.js";
+import { createTodoSessionScopeKey } from "./todos.js";
+import { ensureDesktopTranscriptSessionDir } from "./transcript-session.js";
+import { rehydrateFinishTaskNoticesForRestoredSession } from "./finish-task-notice-rehydrate.js";
+import { nextMessageIdFromMessages, type RestoredSessionState } from "./sessions.js";
+import type { SubagentConversationProjection } from "./subagent-conversation-projection.js";
+import { DesktopMessageTimeline as TimelineCtor } from "./message-timeline.js";
 
 export interface SessionBundle {
   /** Stable id: `activeSession.filePath` or synthetic until first persist. */
   id: string;
   workspaceRoot: string;
   /** Per-pane workspace binding; foreground syncs to global config on activation. */
-  workspaceBinding?: import('../types.js').DesktopWorkspaceBinding;
+  workspaceBinding?: import("../types.js").DesktopWorkspaceBinding;
   /** Git snapshot for background panes whose workspace differs from host state. */
-  scopedGit?: import('../types.js').DesktopGitSnapshot;
+  scopedGit?: import("../types.js").DesktopGitSnapshot;
   activeSession?: ActiveSessionSnapshot;
   messages: ConversationMessageSnapshot[];
   messageTimeline: DesktopMessageTimeline;
-  archiveHistory: ChatArchive['llmHistory'];
-  archiveSubagentSessions: NonNullable<ChatArchive['subagentSessions']>;
+  archiveHistory: ChatArchive["llmHistory"];
+  archiveSubagentSessions: NonNullable<ChatArchive["subagentSessions"]>;
   loopEnabled: boolean;
   approvalLevel: ApprovalLevel;
   activeModel?: ModelRef;
@@ -69,15 +69,15 @@ export interface SessionBundle {
   toolExecutorTodoSessionKey?: string;
   /** Isolated TODO storage key until the session is saved to a real chat file. */
   todoSessionScopeKey?: string;
-  cachedTodoSnapshot?: import('../types.js').ConversationTodoSnapshot;
+  cachedTodoSnapshot?: import("../types.js").ConversationTodoSnapshot;
   /** Bumped on rewind restore; exposed as `conversation.revision` in snapshots. */
   conversationRevision: number;
   /** refreshArchiveFromRuntime 的投影缓存：timeline 实例 + 修订号未变时跳过重算。 */
   archiveProjectionCache?: {
     timeline: DesktopMessageTimeline;
     revision: number;
-    archiveMessages: ChatArchive['messages'];
-    archiveAssistantAux: ChatArchive['assistantAux'];
+    archiveMessages: ChatArchive["messages"];
+    archiveAssistantAux: ChatArchive["assistantAux"];
   };
   /** busy tick 落盘节流：上次 tick 落盘时间（内存态，不持久化）。 */
   lastTickPersistAtMs?: number;
@@ -97,7 +97,7 @@ export interface SessionBundle {
   subagentConversationProjections: Map<string, SubagentConversationProjection>;
 }
 
-export function createEmptySessionBundle(workspaceRoot: string, id = '__draft__'): SessionBundle {
+export function createEmptySessionBundle(workspaceRoot: string, id = "__draft__"): SessionBundle {
   const messages: ConversationMessageSnapshot[] = [];
   const rewind = createDesktopRewindMetadata();
   void ensureDesktopTranscriptSessionDir(rewind.sessionId);
@@ -112,14 +112,14 @@ export function createEmptySessionBundle(workspaceRoot: string, id = '__draft__'
     archiveHistory: [],
     archiveSubagentSessions: [],
     loopEnabled: false,
-    approvalLevel: 'default',
-    workLocation: 'local',
+    approvalLevel: "default",
+    workLocation: "local",
     rewind,
     rewindWarnings: [],
     messageIdCounter: 1,
     currentTurnSkills: [],
     pendingUnboundFileChangeIds: [],
-    nextTimelineAssistantSegmentKind: 'initial',
+    nextTimelineAssistantSegmentKind: "initial",
     deferredRuntimeRefreshWhileBusy: false,
     deferredRuntimeHostEvents: [],
     responsesBuiltInPreviewSeenCallIds: new Set(),
@@ -136,14 +136,11 @@ export function sessionBundleFromRestored(
   restored: RestoredSessionState,
   createTimeline: (
     messages: ConversationMessageSnapshot[],
-    timelineSnapshot?: import('./message-timeline.js').DesktopTimelineTurnSnapshot[],
+    timelineSnapshot?: import("./message-timeline.js").DesktopTimelineTurnSnapshot[],
   ) => DesktopMessageTimeline,
 ): SessionBundle {
   const id = restored.activeSession.filePath;
-  const messageTimeline = createTimeline(
-    restored.messages,
-    restored.desktopMessageTimeline,
-  );
+  const messageTimeline = createTimeline(restored.messages, restored.desktopMessageTimeline);
   const messages = rehydrateFinishTaskNoticesForRestoredSession({
     messages: restored.messages,
     messageTimeline,
@@ -160,13 +157,13 @@ export function sessionBundleFromRestored(
     loopEnabled: restored.loopEnabled,
     approvalLevel: restored.approvalLevel,
     ...(restored.activeModel ? { activeModel: restored.activeModel } : {}),
-    workLocation: 'local',
+    workLocation: "local",
     rewind: restored.rewind,
     rewindWarnings: [],
     messageIdCounter: nextMessageIdFromMessages(restored.messages),
     currentTurnSkills: [],
     pendingUnboundFileChangeIds: [],
-    nextTimelineAssistantSegmentKind: 'initial',
+    nextTimelineAssistantSegmentKind: "initial",
     deferredRuntimeRefreshWhileBusy: false,
     deferredRuntimeHostEvents: [],
     responsesBuiltInPreviewSeenCallIds: new Set(),
@@ -177,10 +174,9 @@ export function sessionBundleFromRestored(
     ...(restored.contextUsage ? { contextUsage: { ...restored.contextUsage } } : {}),
     subagentDesktopMessagesBySessionId: restored.subagentDesktopMessagesBySessionId
       ? new Map(
-          [...restored.subagentDesktopMessagesBySessionId.entries()].map(([sessionId, messages]) => [
-            sessionId,
-            messages.map((message) => ({ ...message })),
-          ]),
+          [...restored.subagentDesktopMessagesBySessionId.entries()].map(
+            ([sessionId, messages]) => [sessionId, messages.map((message) => ({ ...message }))],
+          ),
         )
       : new Map(),
     subagentConversationProjections: new Map(),
@@ -197,17 +193,17 @@ export function resetSessionBundleInPlace(bundle: SessionBundle): void {
   bundle.archiveHistory = [];
   bundle.archiveSubagentSessions = [];
   bundle.loopEnabled = false;
-  bundle.approvalLevel = 'default';
+  bundle.approvalLevel = "default";
   bundle.activeModel = undefined;
   bundle.pendingGitBranch = undefined;
-  bundle.workLocation = 'local';
+  bundle.workLocation = "local";
   bundle.rewind = createDesktopRewindMetadata();
   void ensureDesktopTranscriptSessionDir(bundle.rewind.sessionId);
   bundle.rewindWarnings = [];
   bundle.messageIdCounter = 1;
   bundle.currentTurnSkills = [];
   bundle.pendingUnboundFileChangeIds = [];
-  bundle.nextTimelineAssistantSegmentKind = 'initial';
+  bundle.nextTimelineAssistantSegmentKind = "initial";
   bundle.deferredRuntimeRefreshWhileBusy = false;
   bundle.deferredRuntimeHostEvents = [];
   bundle.responsesBuiltInPreviewSeenCallIds = new Set();

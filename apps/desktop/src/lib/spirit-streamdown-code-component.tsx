@@ -10,11 +10,11 @@ const FENCE_LANGUAGE_PATTERN = /language-([^\s]+)/;
 
 function extractFenceCode(children: ReactNode): string {
   if (
-    isValidElement(children)
-    && children.props
-    && typeof children.props === "object"
-    && "children" in children.props
-    && typeof children.props.children === "string"
+    isValidElement(children) &&
+    children.props &&
+    typeof children.props === "object" &&
+    "children" in children.props &&
+    typeof children.props.children === "string"
   ) {
     return children.props.children;
   }

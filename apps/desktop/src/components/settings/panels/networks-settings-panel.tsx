@@ -38,10 +38,7 @@ export function NetworksSettingsPanel({
   snapshot,
   onSavePatch,
   onResetWebHostPairing,
-}: Pick<
-  SettingsViewProps,
-  "settings" | "snapshot" | "onSavePatch" | "onResetWebHostPairing"
->) {
+}: Pick<SettingsViewProps, "settings" | "snapshot" | "onSavePatch" | "onResetWebHostPairing">) {
   const { t } = useTranslation();
   const webHost = snapshot?.webHost;
   const webHostUrl =
@@ -69,9 +66,14 @@ export function NetworksSettingsPanel({
         >
           <Select
             value={settings.llmHttpVersion}
-            onValueChange={(value) => void onSavePatch({ llmHttpVersion: value as "http1.1" | "http2" })}
+            onValueChange={(value) =>
+              void onSavePatch({ llmHttpVersion: value as "http1.1" | "http2" })
+            }
           >
-            <SelectTrigger id="settings-llm-http-version-select" className="w-full sm:min-w-[12rem]">
+            <SelectTrigger
+              id="settings-llm-http-version-select"
+              className="w-full sm:min-w-[12rem]"
+            >
               <SelectValue placeholder={t("settings.llmHttpVersion")} />
             </SelectTrigger>
             <SelectContent>
@@ -100,9 +102,7 @@ export function NetworksSettingsPanel({
               <Checkbox
                 id="settings-web-host-enabled"
                 checked={settings.webHostEnabled}
-                onCheckedChange={(value) =>
-                  void onSavePatch({ webHostEnabled: value === true })
-                }
+                onCheckedChange={(value) => void onSavePatch({ webHostEnabled: value === true })}
                 className="size-5"
               />
             </div>
@@ -140,7 +140,12 @@ export function NetworksSettingsPanel({
               onChange={(event) => setWebHostPortDraft(event.target.value)}
               onBlur={() => {
                 const port = Number.parseInt(webHostPortDraft, 10);
-                if (Number.isInteger(port) && port >= 1 && port <= 65535 && port !== settings.webHostPort) {
+                if (
+                  Number.isInteger(port) &&
+                  port >= 1 &&
+                  port <= 65535 &&
+                  port !== settings.webHostPort
+                ) {
                   void onSavePatch({ webHostPort: port });
                 }
               }}

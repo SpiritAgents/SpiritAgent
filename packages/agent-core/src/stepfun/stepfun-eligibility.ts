@@ -1,4 +1,4 @@
-import type { LlmTransportConfig } from '../provider-config.js';
+import type { LlmTransportConfig } from "../provider-config.js";
 
 function isStepfunApiBase(baseUrl: string | undefined): boolean {
   const trimmed = baseUrl?.trim();
@@ -7,7 +7,7 @@ function isStepfunApiBase(baseUrl: string | undefined): boolean {
   }
 
   try {
-    return new URL(trimmed).hostname === 'api.stepfun.com';
+    return new URL(trimmed).hostname === "api.stepfun.com";
   } catch {
     return false;
   }
@@ -19,16 +19,13 @@ export function shouldUseStepfunWebSearch(config: LlmTransportConfig | undefined
   }
 
   const vendor = (config as { llmVendor?: string }).llmVendor;
-  if (vendor === 'stepfun') {
+  if (vendor === "stepfun") {
     return true;
   }
 
   return isStepfunApiBase((config as { baseUrl?: string }).baseUrl);
 }
 
-export function isStepfunManagedWebSearchToolCall(
-  toolName: string,
-  config: unknown,
-): boolean {
-  return toolName === 'web_search' && shouldUseStepfunWebSearch(config as LlmTransportConfig);
+export function isStepfunManagedWebSearchToolCall(toolName: string, config: unknown): boolean {
+  return toolName === "web_search" && shouldUseStepfunWebSearch(config as LlmTransportConfig);
 }

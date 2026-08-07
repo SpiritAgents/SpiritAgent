@@ -29,15 +29,15 @@ Infer from the conversation when possible; only ask for missing pieces:
 
 Use the narrowest event that matches the goal:
 
-| Goal | Event |
-| --- | --- |
-| Session setup or audit on open/resume | `sessionStart` |
-| Session teardown audit | `sessionEnd` |
-| Validate or gate user prompts | `submitPrompt` |
-| Gate or rewrite any tool call | `preToolUse` |
-| Add context after a tool succeeds | `postToolUse` |
-| Gate subagent delegation | `subagentStart` |
-| Auto follow-up after subagent finishes | `subagentEnd` |
+| Goal                                   | Event           |
+| -------------------------------------- | --------------- |
+| Session setup or audit on open/resume  | `sessionStart`  |
+| Session teardown audit                 | `sessionEnd`    |
+| Validate or gate user prompts          | `submitPrompt`  |
+| Gate or rewrite any tool call          | `preToolUse`    |
+| Add context after a tool succeeds      | `postToolUse`   |
+| Gate subagent delegation               | `subagentStart` |
+| Auto follow-up after subagent finishes | `subagentEnd`   |
 
 **Matcher targets** (JavaScript `RegExp`, not POSIX grep):
 
@@ -80,11 +80,11 @@ Scripts read **one JSON object** on stdin (the serialized hook input). Common fi
 
 Write JSON to stdout when you need structured output. Supported output fields depend on the event:
 
-| Event | Output fields |
-| --- | --- |
+| Event                                         | Output fields                                                                            |
+| --------------------------------------------- | ---------------------------------------------------------------------------------------- |
 | `submitPrompt`, `preToolUse`, `subagentStart` | `permission` (`allow` \| `deny` \| `ask`), `userMessage`, `agentMessage`, `updatedInput` |
-| `postToolUse`, `sessionStart`, `sessionEnd` | `additionalContext` |
-| `subagentEnd` | `followupMessage` |
+| `postToolUse`, `sessionStart`, `sessionEnd`   | `additionalContext`                                                                      |
+| `subagentEnd`                                 | `followupMessage`                                                                        |
 
 **Exit codes**
 

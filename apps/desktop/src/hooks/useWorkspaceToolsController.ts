@@ -69,9 +69,8 @@ export function useWorkspaceToolsController({
   );
   const [workspaceFileRevealPath, setWorkspaceFileRevealPath] = useState("");
   const [workspaceFileRevealAbsolutePath, setWorkspaceFileRevealAbsolutePath] = useState("");
-  const [workspaceFileRevealScope, setWorkspaceFileRevealScope] = useState<
-    EditorFileTarget["scope"]
-  >("workspace");
+  const [workspaceFileRevealScope, setWorkspaceFileRevealScope] =
+    useState<EditorFileTarget["scope"]>("workspace");
   const [workspaceFileRevealViewMode, setWorkspaceFileRevealViewMode] =
     useState<WorkspaceEditorViewMode>("edit");
   const [workspaceFileRevealDirectoryOnly, setWorkspaceFileRevealDirectoryOnly] = useState(false);
@@ -105,40 +104,46 @@ export function useWorkspaceToolsController({
   const [workspacePrRevealRequest, setWorkspacePrRevealRequest] =
     useState<GitHubPullRequestRevealRequest | null>(null);
 
-  const openBrowserUrlInNewTab = useCallback((rawUrl: string) => {
-    if (runtime.hostKind !== "electron") {
-      return;
-    }
-    const url = normalizeBrowserUrl(rawUrl);
-    if (!url) {
-      return;
-    }
-    const navigation = openBrowserUrlInWorkspaceTabs(workspaceToolTabsRef.current, url);
-    setWorkspaceToolsOpen(true);
-    setWorkspaceToolTabs(navigation.tabs);
-    setActiveWorkspaceToolTabId(navigation.activeId);
-  }, [runtime.hostKind]);
+  const openBrowserUrlInNewTab = useCallback(
+    (rawUrl: string) => {
+      if (runtime.hostKind !== "electron") {
+        return;
+      }
+      const url = normalizeBrowserUrl(rawUrl);
+      if (!url) {
+        return;
+      }
+      const navigation = openBrowserUrlInWorkspaceTabs(workspaceToolTabsRef.current, url);
+      setWorkspaceToolsOpen(true);
+      setWorkspaceToolTabs(navigation.tabs);
+      setActiveWorkspaceToolTabId(navigation.activeId);
+    },
+    [runtime.hostKind],
+  );
 
-  const revealEditorFile = useCallback((navigation: ReturnType<typeof buildOpenEditorFileNavigation>) => {
-    const target = navigation.reveal;
-    setWorkspaceToolsOpen(true);
-    setWorkspaceToolTabs(navigation.tabs);
-    setActiveWorkspaceToolTabId(navigation.activeTabId);
-    setWorkspaceFileRevealTargetId(navigation.filesTabId);
-    setWorkspaceFileRevealScope(target.scope);
-    setWorkspaceFileRevealViewMode(target.viewMode);
-    setWorkspaceFileRevealDirectoryOnly(false);
-    setWorkspaceFileRevealLine(target.reveal?.line ?? null);
-    setWorkspaceFileRevealColumn(target.reveal?.column ?? null);
-    if (target.scope === "workspace") {
-      setWorkspaceFileRevealPath(target.relativePath);
-      setWorkspaceFileRevealAbsolutePath("");
-    } else {
-      setWorkspaceFileRevealPath("");
-      setWorkspaceFileRevealAbsolutePath(target.absolutePath);
-    }
-    setWorkspaceFileRevealNonce((value) => value + 1);
-  }, [setWorkspaceToolsOpen]);
+  const revealEditorFile = useCallback(
+    (navigation: ReturnType<typeof buildOpenEditorFileNavigation>) => {
+      const target = navigation.reveal;
+      setWorkspaceToolsOpen(true);
+      setWorkspaceToolTabs(navigation.tabs);
+      setActiveWorkspaceToolTabId(navigation.activeTabId);
+      setWorkspaceFileRevealTargetId(navigation.filesTabId);
+      setWorkspaceFileRevealScope(target.scope);
+      setWorkspaceFileRevealViewMode(target.viewMode);
+      setWorkspaceFileRevealDirectoryOnly(false);
+      setWorkspaceFileRevealLine(target.reveal?.line ?? null);
+      setWorkspaceFileRevealColumn(target.reveal?.column ?? null);
+      if (target.scope === "workspace") {
+        setWorkspaceFileRevealPath(target.relativePath);
+        setWorkspaceFileRevealAbsolutePath("");
+      } else {
+        setWorkspaceFileRevealPath("");
+        setWorkspaceFileRevealAbsolutePath(target.absolutePath);
+      }
+      setWorkspaceFileRevealNonce((value) => value + 1);
+    },
+    [setWorkspaceToolsOpen],
+  );
 
   const openEditorFile = useCallback(
     (target: EditorFileTarget) => {
@@ -156,7 +161,10 @@ export function useWorkspaceToolsController({
   const openWorkspaceFile = useCallback(
     (
       relativePath: string,
-      options?: { viewMode?: WorkspaceEditorViewMode; reveal?: import('@/lib/workspace-editor-navigation').EditorFileRevealLocation },
+      options?: {
+        viewMode?: WorkspaceEditorViewMode;
+        reveal?: import("@/lib/workspace-editor-navigation").EditorFileRevealLocation;
+      },
     ) => {
       const target: EditorFileTarget = {
         scope: "workspace",
@@ -183,7 +191,10 @@ export function useWorkspaceToolsController({
   const openWorkspaceFileInNewTab = useCallback(
     (
       relativePath: string,
-      options?: { viewMode?: WorkspaceEditorViewMode; reveal?: import('@/lib/workspace-editor-navigation').EditorFileRevealLocation },
+      options?: {
+        viewMode?: WorkspaceEditorViewMode;
+        reveal?: import("@/lib/workspace-editor-navigation").EditorFileRevealLocation;
+      },
     ) => {
       revealEditorFile(
         buildOpenEditorFileInNewTabNavigation({
@@ -217,22 +228,25 @@ export function useWorkspaceToolsController({
     setWorkspaceFileRevealNonce((value) => value + 1);
   }, []);
 
-  const openPullRequestInPrTab = useCallback((request: GitHubPullRequestRevealRequest) => {
-    if (runtime.hostKind !== "electron") {
-      return;
-    }
-    const navigation = buildOpenPullRequestNavigation({
-      tabs: workspaceToolTabsRef.current,
-      activeTabId: activeWorkspaceToolTabIdRef.current,
-      request,
-    });
-    setWorkspaceToolsOpen(true);
-    setWorkspaceToolTabs(navigation.tabs);
-    setActiveWorkspaceToolTabId(navigation.activeTabId);
-    setWorkspacePrRevealTargetId(navigation.prTabId);
-    setWorkspacePrRevealRequest(navigation.request);
-    setWorkspacePrRevealNonce((value) => value + 1);
-  }, [runtime.hostKind]);
+  const openPullRequestInPrTab = useCallback(
+    (request: GitHubPullRequestRevealRequest) => {
+      if (runtime.hostKind !== "electron") {
+        return;
+      }
+      const navigation = buildOpenPullRequestNavigation({
+        tabs: workspaceToolTabsRef.current,
+        activeTabId: activeWorkspaceToolTabIdRef.current,
+        request,
+      });
+      setWorkspaceToolsOpen(true);
+      setWorkspaceToolTabs(navigation.tabs);
+      setActiveWorkspaceToolTabId(navigation.activeTabId);
+      setWorkspacePrRevealTargetId(navigation.prTabId);
+      setWorkspacePrRevealRequest(navigation.request);
+      setWorkspacePrRevealNonce((value) => value + 1);
+    },
+    [runtime.hostKind],
+  );
 
   const openGitTab = useCallback(() => {
     const navigation = resolveWorkspaceGitTab(

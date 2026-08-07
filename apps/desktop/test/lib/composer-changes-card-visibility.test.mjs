@@ -1,9 +1,9 @@
-import assert from 'node:assert/strict';
-import test from 'node:test';
+import assert from "node:assert/strict";
+import test from "node:test";
 
-import { shouldShowComposerChangesCard } from '../../src/lib/composer-changes-card-visibility.ts';
+import { shouldShowComposerChangesCard } from "../../src/lib/composer-changes-card-visibility.ts";
 
-test('shouldShowComposerChangesCard hides when not a repository', () => {
+test("shouldShowComposerChangesCard hides when not a repository", () => {
   assert.equal(
     shouldShowComposerChangesCard({
       isRepository: false,
@@ -14,7 +14,7 @@ test('shouldShowComposerChangesCard hides when not a repository', () => {
   );
 });
 
-test('shouldShowComposerChangesCard hides when workspace is clean', () => {
+test("shouldShowComposerChangesCard hides when workspace is clean", () => {
   assert.equal(
     shouldShowComposerChangesCard({
       isRepository: true,
@@ -25,7 +25,7 @@ test('shouldShowComposerChangesCard hides when workspace is clean', () => {
   );
 });
 
-test('shouldShowComposerChangesCard hides without line delta', () => {
+test("shouldShowComposerChangesCard hides without line delta", () => {
   assert.equal(
     shouldShowComposerChangesCard({
       isRepository: true,
@@ -35,7 +35,7 @@ test('shouldShowComposerChangesCard hides without line delta', () => {
   );
 });
 
-test('shouldShowComposerChangesCard hides when both added and removed are zero', () => {
+test("shouldShowComposerChangesCard hides when both added and removed are zero", () => {
   assert.equal(
     shouldShowComposerChangesCard({
       isRepository: true,
@@ -46,7 +46,7 @@ test('shouldShowComposerChangesCard hides when both added and removed are zero',
   );
 });
 
-test('shouldShowComposerChangesCard shows when added or removed is positive', () => {
+test("shouldShowComposerChangesCard shows when added or removed is positive", () => {
   assert.equal(
     shouldShowComposerChangesCard({
       isRepository: true,
@@ -65,6 +65,6 @@ test('shouldShowComposerChangesCard shows when added or removed is positive', ()
   );
 });
 
-test('shouldShowComposerChangesCard treats undefined git as hidden', () => {
+test("shouldShowComposerChangesCard treats undefined git as hidden", () => {
   assert.equal(shouldShowComposerChangesCard(undefined), false);
 });

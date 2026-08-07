@@ -28,9 +28,9 @@ export function SlashSelectionPlugin({
     const onDocumentSelectionChange = () => {
       const selection = window.getSelection();
       if (
-        !selection
-        || selection.rangeCount === 0
-        || !root.contains(selection.getRangeAt(0).commonAncestorContainer)
+        !selection ||
+        selection.rangeCount === 0 ||
+        !root.contains(selection.getRangeAt(0).commonAncestorContainer)
       ) {
         return;
       }

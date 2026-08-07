@@ -1,13 +1,13 @@
-import { lstat, readFile, writeFile } from 'node:fs/promises';
-import { tmpdir } from 'node:os';
-import path from 'node:path';
+import { lstat, readFile, writeFile } from "node:fs/promises";
+import { tmpdir } from "node:os";
+import path from "node:path";
 
 import {
   deleteFileBaselineTextForPath,
   lineDeltaForDeleteFilePath,
-} from './delete-file-line-delta.js';
-import i18n from '../lib/i18n-host.js';
-import { resolveDesktopAgentMode } from '../lib/agent-mode.js';
+} from "./delete-file-line-delta.js";
+import i18n from "../lib/i18n-host.js";
+import { resolveDesktopAgentMode } from "../lib/agent-mode.js";
 import {
   buildBasicInfoSystemMessage,
   buildDreamsSystemMessage,
@@ -32,7 +32,7 @@ import {
   type RuntimeToolExecution,
   type SpiritLlmTransport,
   type LlmActiveSkill,
-} from '@spiritagent/agent-core';
+} from "@spiritagent/agent-core";
 import {
   buildStartImplementingUserTurn,
   extractActivePlanPathFromLlmHistory,
@@ -57,7 +57,7 @@ import {
   type WorkLocationKind,
   type WorkspaceCapabilityTrustDecision,
   type WorkspaceCapabilityTrustRequest,
-} from '@spiritagent/host-internal';
+} from "@spiritagent/host-internal";
 
 import type {
   ActiveSessionSnapshot,
@@ -158,9 +158,9 @@ import type {
   WorkspaceReadTextFileResult,
   WriteHostTextFileRequest,
   WriteWorkspaceTextFileRequest,
-} from '../types.js';
-import type { DesktopToolRequest, HostCommandName } from './contracts.js';
-import { createHostInvokeDispatch } from './host-invoke-dispatch.js';
+} from "../types.js";
+import type { DesktopToolRequest, HostCommandName } from "./contracts.js";
+import { createHostInvokeDispatch } from "./host-invoke-dispatch.js";
 import {
   addModelCommand,
   addProviderModelsCommand,
@@ -170,7 +170,7 @@ import {
   removeProviderModelsCommand,
   updateConfigCommand,
   type HostModelCommandContext,
-} from './host-model-commands.js';
+} from "./host-model-commands.js";
 import {
   addMcpServerCommand,
   createRuleCommand,
@@ -193,8 +193,8 @@ import {
   updateExtensionSecretCommand,
   updateExtensionSettingsCommand,
   type HostExtensionCommandContext,
-} from './host-extension-commands.js';
-import { submitGitChipCommand } from './host-git-chip-commands.js';
+} from "./host-extension-commands.js";
+import { submitGitChipCommand } from "./host-git-chip-commands.js";
 import {
   checkoutGitBranchCommand,
   commitChangesCommand,
@@ -227,7 +227,7 @@ import {
   trashWorkspaceEntryCommand,
   forceDeleteWorkspaceEntryCommand,
   type HostWorkspaceGitCommandContext,
-} from './host-workspace-git-commands.js';
+} from "./host-workspace-git-commands.js";
 import {
   beginGitHubDeviceLoginCommand,
   cancelGitHubDeviceLoginCommand,
@@ -246,7 +246,7 @@ import {
   getGitHubPullRequestTabCountsCommand,
   markGitHubPullRequestReadyCommand,
   mergeGitHubPullRequestCommand,
-} from './host-github-commands.js';
+} from "./host-github-commands.js";
 import {
   abortConversationCommand,
   abortConversationInContext,
@@ -261,7 +261,7 @@ import {
   tickSessionCommand,
   type SessionTurnOrchestratorContext,
   type SubmitUserTurnAfterInitializedOptions,
-} from './session-turn-orchestrator.js';
+} from "./session-turn-orchestrator.js";
 import {
   LIVE_SNAPSHOT_BUSY_HEARTBEAT_MS,
   LIVE_SNAPSHOT_EMIT_THROTTLE_MS,
@@ -269,32 +269,32 @@ import {
   SessionPump,
   pumpDebugEnabled,
   sessionBundleNeedsPumpTick,
-} from './session-pump.js';
+} from "./session-pump.js";
 import {
   startWorktreeBootstrapTurnCommand,
   type WorktreeBootstrapHostContext,
-} from './worktree-bootstrap-orchestrator.js';
-import { isSessionBundleBusy } from './direct-media-turn.js';
+} from "./worktree-bootstrap-orchestrator.js";
+import { isSessionBundleBusy } from "./direct-media-turn.js";
 import {
   appendQueuedUserTurnSnapshots,
   canEnqueueUserTurn,
   enqueueUserTurnCommand,
   removeQueuedUserTurnCommand,
   reorderQueuedUserTurnCommand,
-} from './message-queue.js';
+} from "./message-queue.js";
 import {
   openSessionBackgroundCommand,
   openSessionCommand,
   resetSessionBackgroundCommand,
   resetSessionCommand,
   type SessionActivationContext,
-} from './session-activation.js';
-import { forkSessionCommand, type ForkSessionHostContext } from './fork-session-host.js';
+} from "./session-activation.js";
+import { forkSessionCommand, type ForkSessionHostContext } from "./fork-session-host.js";
 import {
   beginSideChatPaneSessionCommand,
   forkSessionIntoSideChatCommand,
   type SideChatSessionHostContext,
-} from './side-chat-session-host.js';
+} from "./side-chat-session-host.js";
 import {
   beginSplitPaneSessionCommand,
   closeSplitPaneSessionCommand,
@@ -302,8 +302,8 @@ import {
   setVisiblePaneSessionsCommand,
   syncSplitPaneSessionsCommand,
   type SessionSplitHostContext,
-} from './session-split.js';
-import { buildPaneSessionSlice } from './pane-snapshot.js';
+} from "./session-split.js";
+import { buildPaneSessionSlice } from "./pane-snapshot.js";
 import {
   switchPaneWorkspaceCommand,
   setPanePendingGitBranchCommand,
@@ -313,42 +313,39 @@ import {
   ensureVisiblePaneScopedGitSnapshots,
   prefetchScopedGitBeforeGlobalWorkspaceChange,
   type PaneWorkspaceHostContext,
-} from './host-pane-workspace.js';
-import { withOptionalPaneSessionActivation, type PaneSessionScopeHostContext } from './host-pane-session-scope.js';
-import { resolvePendingApprovalSessionPath } from '../lib/pane-pending-turn-routing.js';
+} from "./host-pane-workspace.js";
 import {
-  switchPaneModelCommand,
-  type PaneModelHostContext,
-} from './host-pane-model.js';
+  withOptionalPaneSessionActivation,
+  type PaneSessionScopeHostContext,
+} from "./host-pane-session-scope.js";
+import { resolvePendingApprovalSessionPath } from "../lib/pane-pending-turn-routing.js";
+import { switchPaneModelCommand, type PaneModelHostContext } from "./host-pane-model.js";
 import {
   needsHostActiveModelSync,
   resolveEffectivePaneActiveModel,
   resolvePaneModelProjection,
   freezePaneActiveModelIfNeeded,
   ensureVisiblePaneActiveModels,
-} from './active-model-sync.js';
-import {
-  findModelRefByName,
-  resolveModelProfile,
-} from './model-config-access.js';
-import { deleteSessionCommand, type SessionDeleteContext } from './session-delete.js';
-import { modelRefKey, modelRefsEqual } from '@spiritagent/host-internal';
-import type { ModelRef } from '../types.js';
-import { renameSessionCommand, type SessionRenameContext } from './session-rename.js';
+} from "./active-model-sync.js";
+import { findModelRefByName, resolveModelProfile } from "./model-config-access.js";
+import { deleteSessionCommand, type SessionDeleteContext } from "./session-delete.js";
+import { modelRefKey, modelRefsEqual } from "@spiritagent/host-internal";
+import type { ModelRef } from "../types.js";
+import { renameSessionCommand, type SessionRenameContext } from "./session-rename.js";
 import {
   finishSessionActivationCommand,
   isBundleRuntimeFresh,
   runtimeActivationSignature,
-} from './runtime-lifecycle.js';
+} from "./runtime-lifecycle.js";
 import {
   startDreamCollectorIfNeeded as startDreamCollectorIfNeededFromService,
   startDreamCollectorMonitorIfNeeded as startDreamCollectorMonitorIfNeededFromService,
   type DreamCollectorServiceContext,
-} from './dream-collector-service.js';
+} from "./dream-collector-service.js";
 import {
   startAutomationSchedulerMonitorIfNeeded as startAutomationSchedulerMonitorIfNeededFromService,
   type AutomationSchedulerServiceContext,
-} from './automation-scheduler-service.js';
+} from "./automation-scheduler-service.js";
 import {
   createAutomationCommand,
   deleteAutomationCommand,
@@ -356,7 +353,7 @@ import {
   listAutomationsCommand,
   setAutomationEnabledCommand,
   updateAutomationCommand,
-} from './host-automation-commands.js';
+} from "./host-automation-commands.js";
 import {
   clearAssistantContinuationMarkers as clearAssistantContinuationMarkersFromService,
   latestContinuableAssistantMessage as latestContinuableAssistantMessageFromService,
@@ -367,8 +364,8 @@ import {
   refreshArchiveFromRuntime as refreshArchiveFromRuntimeFromService,
   syncSubagentToolStreamingOutput as syncSubagentToolStreamingOutputFromService,
   type ConversationContinuationContext,
-} from './conversation-continuation.js';
-import { syncLivePendingAuxSnapshot } from './live-snapshot-sync.js';
+} from "./conversation-continuation.js";
+import { syncLivePendingAuxSnapshot } from "./live-snapshot-sync.js";
 import {
   buildConversationTodoSnapshot as buildConversationTodoSnapshotFromService,
   cancelTodoClearing as cancelTodoClearingFromService,
@@ -379,7 +376,7 @@ import {
   resolveTodoSessionKeyForBundle as resolveTodoSessionKeyForBundleFromService,
   scheduleTodoClearing as scheduleTodoClearingFromService,
   type SessionTodosHostContext,
-} from './session-todos-host.js';
+} from "./session-todos-host.js";
 import {
   applyTodosAfterRewind as applyTodosAfterRewindFromService,
   bindFileChangesToToolMessage as bindFileChangesToToolMessageFromService,
@@ -388,11 +385,8 @@ import {
   recordRewindCheckpoint as recordRewindCheckpointFromService,
   restoreBeforeRewindCheckpoint as restoreBeforeRewindCheckpointFromService,
   type RewindHostContext,
-} from './rewind-host.js';
-import {
-  ensureInitializedCommand,
-  type HostInitializationContext,
-} from './host-initialization.js';
+} from "./rewind-host.js";
+import { ensureInitializedCommand, type HostInitializationContext } from "./host-initialization.js";
 import {
   buildArchiveAssistantAuxFromConversation,
   buildArchiveMessagesFromConversation,
@@ -402,33 +396,33 @@ import {
   type EphemeralSessionRecord,
   nextMessageIdFromMessages,
   removeEphemeralSessionRecord,
-} from './sessions.js';
-import { generateSessionTitleFromModelTask } from './session-title-generation.js';
-import { prepareSessionTitleForFirstUserTurn as resetSessionTitleForFirstUserTurn } from './session-title-first-turn.js';
-import { applyGeneratedSessionTitle } from './session-title-service.js';
+} from "./sessions.js";
+import { generateSessionTitleFromModelTask } from "./session-title-generation.js";
+import { prepareSessionTitleForFirstUserTurn as resetSessionTitleForFirstUserTurn } from "./session-title-first-turn.js";
+import { applyGeneratedSessionTitle } from "./session-title-service.js";
 import {
   abortCodeCompletionCommand,
   recordCodeCompletionFileStateCommand,
   requestCodeCompletionCommand,
   resetCodeCompletionJournalCommand,
   type CodeCompletionCommandContext,
-} from './code-completion-commands.js';
+} from "./code-completion-commands.js";
 import {
   buildContextUsagePercent,
   type ContextUsageModelProfile,
   resolveModelContextLength,
-} from '../lib/context-usage.js';
+} from "../lib/context-usage.js";
 import {
   attachImageGenerationToTransportConfig,
   attachVideoGenerationToTransportConfig,
   buildPrimaryTransportConfig,
   resolveDesktopTransportKind,
-} from './model-config.js';
+} from "./model-config.js";
 import {
   applyConfiguredModelCatalogRefreshResults,
   fetchConfiguredModelCatalogsOnStartup,
   forceRefreshModelCatalogForProfile,
-} from './model-catalog-startup-refresh.js';
+} from "./model-catalog-startup-refresh.js";
 import {
   DEFAULT_API_BASE,
   defaultNewSessionPath,
@@ -453,17 +447,14 @@ import {
   type DesktopWebHostConfigFile,
   type DesktopWorkspaceBinding,
   type HostMetadataSummary,
-} from './storage.js';
+} from "./storage.js";
 import {
   hasBedrockRuntimeCredentials,
   hasGoogleVertexRuntimeCredentials,
   modelProviderKeyScope,
-} from './provider-api-key.js';
-import { DesktopToolExecutor } from './tool-executor.js';
-import {
-  buildDesktopRuntimeBasicInfo,
-  type DesktopHostRuntime,
-} from './runtime.js';
+} from "./provider-api-key.js";
+import { DesktopToolExecutor } from "./tool-executor.js";
+import { buildDesktopRuntimeBasicInfo, type DesktopHostRuntime } from "./runtime.js";
 import {
   abortRemoteDesktopShell,
   closeRemoteDesktopRuntime,
@@ -479,99 +470,84 @@ import {
   runRemoteDesktopSessionEnd,
   runRemoteDesktopSessionStart,
   setRemoteDesktopApprovalLevel,
-} from './remote-runtime.js';
-import { buildActiveSkillPayload } from './skills.js';
+} from "./remote-runtime.js";
+import { buildActiveSkillPayload } from "./skills.js";
 import {
   buildDreamContextText,
   clearDreamCollectorIssue,
   emptyDreamCollectorSnapshot,
   isDreamCollectorDebugSessionPath,
-} from './dreams.js';
-import { resolveLightweightChatModelProfile } from './lightweight-chat-model.js';
-import {
-  createTodoScope,
-} from './todos.js';
+} from "./dreams.js";
+import { resolveLightweightChatModelProfile } from "./lightweight-chat-model.js";
+import { createTodoScope } from "./todos.js";
 import {
   buildDesktopExtensionListItems,
   buildDesktopExtensionToolDefinitions,
   collectDesktopExtensionCssLayers,
   collectExtensionSystemPrompts,
-} from './extensions.js';
+} from "./extensions.js";
 import {
   getDesktopExtensionHostAdapter,
   requireDesktopExtensionHostAdapter,
   setDesktopExtensionHostAdapter,
   type DesktopExtensionHostAdapter,
-} from './extension-host-adapter.js';
-import {
-  ExtensionWarmupCoordinator,
-  type ExtensionWarmupTrigger,
-} from './extension-warmup.js';
-import {
-  emptyMcpStatusSnapshot,
-  listDesktopMcpServersFromDisk,
-} from './mcp-config.js';
-import { listDesktopHookListItems } from './hooks.js';
-import type { SessionEndHookInput, SessionStartHookInput } from '@spiritagent/agent-core';
-import {
-  disposeMcpServicesExcept,
-  sharedMcpServiceForWorkspace,
-} from './service-mcp.js';
+} from "./extension-host-adapter.js";
+import { ExtensionWarmupCoordinator, type ExtensionWarmupTrigger } from "./extension-warmup.js";
+import { emptyMcpStatusSnapshot, listDesktopMcpServersFromDisk } from "./mcp-config.js";
+import { listDesktopHookListItems } from "./hooks.js";
+import type { SessionEndHookInput, SessionStartHookInput } from "@spiritagent/agent-core";
+import { disposeMcpServicesExcept, sharedMcpServiceForWorkspace } from "./service-mcp.js";
 import {
   disposeAllLspServices,
   disposeLspServicesExcept,
   ensureLspServiceReady,
   lspUserConfigFromEnabled,
   sharedLspServiceForWorkspace,
-} from '@spiritagent/host-internal/lsp';
-import { buildDesktopLspSnapshot, defaultDesktopLspSnapshot } from './lsp-snapshot.js';
-import { installLspProviderCommand } from './lsp-commands.js';
+} from "@spiritagent/host-internal/lsp";
+import { buildDesktopLspSnapshot, defaultDesktopLspSnapshot } from "./lsp-snapshot.js";
+import { installLspProviderCommand } from "./lsp-commands.js";
 import {
   currentApiBase,
   mapPendingQuestions,
   sameDreamCollectorSnapshot,
   sameWorkspaceRoot,
-} from './service-utils.js';
+} from "./service-utils.js";
 import {
   needsHostWorkspaceRootSync,
   resolveEffectiveWorkspaceRoot,
-} from './workspace-root-sync.js';
-import { DesktopConversationSnapshotView } from './conversation-snapshot.js';
-import { buildDesktopSnapshot, buildModelCatalogHints } from './snapshot.js';
-import {
-  applyToolCallSummaryCopy,
-} from './message-ordering.js';
+} from "./workspace-root-sync.js";
+import { DesktopConversationSnapshotView } from "./conversation-snapshot.js";
+import { buildDesktopSnapshot, buildModelCatalogHints } from "./snapshot.js";
+import { applyToolCallSummaryCopy } from "./message-ordering.js";
 import {
   mapPendingAuxState,
   mapPendingMcpResources,
   mapPendingToolApproval,
-} from './snapshot-mappers.js';
-import { DesktopAssistantMessageStateMachine } from './assistant-message-state.js';
-import {
-  DesktopRuntimeEventOrchestrator,
-} from './runtime-event-orchestrator.js';
+} from "./snapshot-mappers.js";
+import { DesktopAssistantMessageStateMachine } from "./assistant-message-state.js";
+import { DesktopRuntimeEventOrchestrator } from "./runtime-event-orchestrator.js";
 import {
   DesktopMessageTimeline,
   type DesktopTimelineSegmentKind,
   type DesktopTimelineTurnSnapshot,
-} from './message-timeline.js';
+} from "./message-timeline.js";
 import {
   createWorkspaceGitWorktree,
   applyGitRevision,
   readPrimaryRepoRoot,
   readWorkspaceGitSnapshot,
-} from './git.js';
-import { generateWorktreeNamesFromModelTask } from './ephemeral-llm-tasks.js';
-import { buildSubagentViewerSnapshot } from './subagent-viewer.js';
-import { persistDesktopSessionBundle } from './session-persistence.js';
-import { SessionRegistry } from './session-registry.js';
-import type { SessionBundle } from './session-bundle.js';
+} from "./git.js";
+import { generateWorktreeNamesFromModelTask } from "./ephemeral-llm-tasks.js";
+import { buildSubagentViewerSnapshot } from "./subagent-viewer.js";
+import { persistDesktopSessionBundle } from "./session-persistence.js";
+import { SessionRegistry } from "./session-registry.js";
+import type { SessionBundle } from "./session-bundle.js";
 import {
   createDesktopRewindMetadata,
   loadRewindCheckpointSnapshot,
   loadRewindFileChange,
   type DesktopRewindCheckpointSnapshot,
-} from './rewind.js';
+} from "./rewind.js";
 
 export { setDesktopExtensionHostAdapter };
 
@@ -587,7 +563,10 @@ interface HostState {
   ephemeralSessions: EphemeralSessionRecord[];
 }
 
-async function loadDesktopPlanSnapshot(planPath: string, existsHint?: boolean): Promise<PlanSnapshot> {
+async function loadDesktopPlanSnapshot(
+  planPath: string,
+  existsHint?: boolean,
+): Promise<PlanSnapshot> {
   try {
     const stat = await lstat(planPath);
     if (!stat.isFile()) {
@@ -597,7 +576,7 @@ async function loadDesktopPlanSnapshot(planPath: string, existsHint?: boolean): 
       };
     }
 
-    const content = await readFile(planPath, 'utf8');
+    const content = await readFile(planPath, "utf8");
     return {
       path: planPath,
       exists: true,
@@ -617,11 +596,11 @@ class DesktopHostService {
   private runtimeTransport: SpiritLlmTransport = createLlmTransport();
   private readonly extensionStateStore = createDesktopExtensionStateStore({
     spiritDataDir: spiritAgentDataDir(),
-    hostKind: 'desktop',
+    hostKind: "desktop",
   });
   private readonly hostExtensionManager = createHostExtensionManager({
     spiritDataDir: spiritAgentDataDir(),
-    hostKind: 'desktop',
+    hostKind: "desktop",
     stateStore: this.extensionStateStore,
   });
   private readonly extensionWarmup = new ExtensionWarmupCoordinator();
@@ -635,7 +614,7 @@ class DesktopHostService {
   private runtime: DesktopHostRuntime | undefined;
   private toolExecutor: DesktopToolExecutor | undefined;
   private initialized = false;
-  private lastRuntimeError = '';
+  private lastRuntimeError = "";
   private activeApiKeyConfigured = false;
   private modelKeyPresence: Record<string, boolean> = {};
   private readonly bundleOrchestrations = new WeakMap<
@@ -652,7 +631,7 @@ class DesktopHostService {
     hasPumpWork: () => this.hasSessionPumpWork(),
     runTick: () => this.runSessionPumpTick(),
     onTickError: (error) => {
-      console.error('[desktop-host][pump] tick failed', error);
+      console.error("[desktop-host][pump] tick failed", error);
     },
   });
   private liveSnapshotEmitTimer: ReturnType<typeof setTimeout> | undefined;
@@ -660,7 +639,8 @@ class DesktopHostService {
   private debugLiveSnapshotEmitCount = 0;
   private debugLiveSnapshotEmitWindowStartedAtMs = 0;
   private lastSessionListNotifyAtMs = 0;
-  private dreamCollectorStatus: DesktopDreamCollectorSnapshot = emptyDreamCollectorSnapshot('disabled');
+  private dreamCollectorStatus: DesktopDreamCollectorSnapshot =
+    emptyDreamCollectorSnapshot("disabled");
   private dreamCollectorRunning = false;
   private dreamCollectorLastTickUnixMs = 0;
   private dreamCollectorMonitorTimer: ReturnType<typeof setInterval> | undefined;
@@ -694,20 +674,32 @@ class DesktopHostService {
   >();
   private lastToolSnapshotLogSignature: string | undefined;
   /** buildSnapshot 高频调用；MCP servers / hooks 列表按 workspace+binding 键缓存，配置增删命令处显式失效。 */
-  private mcpServersListCache: { key: string; items: ReturnType<typeof listDesktopMcpServersFromDisk> } | undefined;
-  private hooksListCache: { key: string; items: ReturnType<typeof listDesktopHookListItems> } | undefined;
+  private mcpServersListCache:
+    | { key: string; items: ReturnType<typeof listDesktopMcpServersFromDisk> }
+    | undefined;
+  private hooksListCache:
+    | { key: string; items: ReturnType<typeof listDesktopHookListItems> }
+    | undefined;
   /** One MCP catalog per workspace — survives per-session DesktopToolExecutor rebuilds. */
   private readonly mcpServiceByWorkspaceRoot = new Map<string, McpService>();
-  private readonly lspServiceByWorkspaceRoot = new Map<string, import('@spiritagent/host-internal/lsp').LspService>();
+  private readonly lspServiceByWorkspaceRoot = new Map<
+    string,
+    import("@spiritagent/host-internal/lsp").LspService
+  >();
   private lspSnapshot = defaultDesktopLspSnapshot();
   private visiblePaneSessionPaths: string[] = [];
-  private readonly paneSessionSliceCache = new Map<string, { signature: string; slice: PaneSessionSlice }>();
+  private readonly paneSessionSliceCache = new Map<
+    string,
+    { signature: string; slice: PaneSessionSlice }
+  >();
   private pendingWorkspaceCapabilityTrust: WorkspaceCapabilityTrustRequest | undefined;
-  private pendingRemoteWorkspaceCapabilityTrust: {
-    requestId: string;
-    runtime: unknown;
-    finish: () => void;
-  } | undefined;
+  private pendingRemoteWorkspaceCapabilityTrust:
+    | {
+        requestId: string;
+        runtime: unknown;
+        finish: () => void;
+      }
+    | undefined;
   private workspaceCapabilityTrustWaiter:
     | {
         resolve: (decision: WorkspaceCapabilityTrustDecision) => void;
@@ -793,7 +785,8 @@ class DesktopHostService {
   private extensionCommandContext(): HostExtensionCommandContext {
     return {
       runSerialized: <T>(work: () => Promise<T>, label?: string) => this.runSerialized(work, label),
-      ensureInitialized: (workspaceRootOverride, options) => this.ensureInitialized(workspaceRootOverride, options),
+      ensureInitialized: (workspaceRootOverride, options) =>
+        this.ensureInitialized(workspaceRootOverride, options),
       isInitialized: () => this.initialized,
       requireState: () => this.requireState(),
       isRuntimeBusy: () => this.runtime?.isBusy() === true,
@@ -811,7 +804,8 @@ class DesktopHostService {
       persistCurrentSessionIfNeeded: () => this.persistCurrentSessionIfNeeded(),
       dispatchExtensionEvent: (event, options) => this.dispatchExtensionEvent(event, options),
       requireEnabledSkillEntry: (skillName) => this.requireEnabledSkillEntry(skillName),
-      submitUserTurnAfterInitialized: (text, options) => this.submitUserTurnAfterInitialized(text, options),
+      submitUserTurnAfterInitialized: (text, options) =>
+        this.submitUserTurnAfterInitialized(text, options),
       appendInlineAssistantReply: (displayText, assistantText) =>
         this.appendInlineAssistantReply(displayText, assistantText),
       setLastRuntimeError: (error) => {
@@ -825,7 +819,8 @@ class DesktopHostService {
   private workspaceGitCommandContext(): HostWorkspaceGitCommandContext {
     return {
       runSerialized: <T>(work: () => Promise<T>, label?: string) => this.runSerialized(work, label),
-      ensureInitialized: (workspaceRootOverride, options) => this.ensureInitialized(workspaceRootOverride, options),
+      ensureInitialized: (workspaceRootOverride, options) =>
+        this.ensureInitialized(workspaceRootOverride, options),
       requireState: () => this.requireState(),
       isRuntimeBusy: () => this.runtime?.isBusy() === true,
       activeBundle: () => this.activeBundle(),
@@ -854,7 +849,8 @@ class DesktopHostService {
   private sessionTurnContext(): SessionTurnOrchestratorContext {
     return {
       runSerialized: <T>(work: () => Promise<T>, label?: string) => this.runSerialized(work, label),
-      ensureInitialized: (workspaceRootOverride, options) => this.ensureInitialized(workspaceRootOverride, options),
+      ensureInitialized: (workspaceRootOverride, options) =>
+        this.ensureInitialized(workspaceRootOverride, options),
       requireRuntime: () => this.requireRuntime(),
       requireState: () => this.requireState(),
       requireConfig: () => this.requireState().config,
@@ -862,8 +858,7 @@ class DesktopHostService {
         resolveApiKeyForConfigModel(this.requireState().config, model),
       activeBundle: () => this.activeBundle(),
       allBundles: () => this.sessionRegistry.all(),
-      bundleNeedsRuntimeProjection: (bundle) =>
-        remoteDesktopRuntimeNeedsProjection(bundle.runtime),
+      bundleNeedsRuntimeProjection: (bundle) => remoteDesktopRuntimeNeedsProjection(bundle.runtime),
       getActiveBundle: () => this.sessionRegistry.getActive(),
       activeSessionId: () => this.sessionRegistry.activeSessionId(),
       emitLiveSnapshotUpdate: () => this.emitLiveSnapshotUpdate(),
@@ -882,13 +877,14 @@ class DesktopHostService {
         this.maybeRefreshRuntimeAfterTodoScopeChange(bundle, previousSessionKey),
       buildRewindCheckpointSnapshot: (bundle) => this.buildRewindCheckpointSnapshot(bundle),
       allocateMessageId: (bundle) => this.allocateMessageId(bundle),
-      resetStreamingPlacementState: (full, bundle) => this.resetStreamingPlacementState(full, bundle),
+      resetStreamingPlacementState: (full, bundle) =>
+        this.resetStreamingPlacementState(full, bundle),
       persistCurrentSessionIfNeeded: (bundle) => this.persistCurrentSessionIfNeeded(bundle),
       scheduleSessionTitleGenerationIfNeeded: (seedText, bundle) =>
         this.scheduleSessionTitleGenerationIfNeeded(seedText, bundle),
       dispatchUserMessageExtensionEvent: (text, displayText, messageId) =>
         this.dispatchExtensionEvent({
-          type: 'onUserMessage',
+          type: "onUserMessage",
           detail: {
             text,
             displayText,
@@ -904,7 +900,8 @@ class DesktopHostService {
           bundle,
         ),
       orchestrationFor: (bundle) => this.orchestrationFor(bundle),
-      rebuildMessageTimelineFromMessages: (bundle) => this.rebuildMessageTimelineFromMessages(bundle),
+      rebuildMessageTimelineFromMessages: (bundle) =>
+        this.rebuildMessageTimelineFromMessages(bundle),
       flushDeferredRuntimeRefreshIfIdle: (bundle) => this.flushDeferredRuntimeRefreshIfIdle(bundle),
       refreshTodoSnapshotForBundle: (bundle) => this.refreshTodoSnapshotForBundle(bundle),
       buildSnapshot: () => this.buildSnapshot(),
@@ -927,7 +924,8 @@ class DesktopHostService {
   private worktreeBootstrapHost(): WorktreeBootstrapHostContext {
     return {
       validateWorktreeBootstrapPreconditions: () => this.validateWorktreeBootstrapPreconditions(),
-      executeWorktreeBootstrap: (userPrompt) => this.executeWorktreeBootstrapForActiveBundle(userPrompt),
+      executeWorktreeBootstrap: (userPrompt) =>
+        this.executeWorktreeBootstrapForActiveBundle(userPrompt),
       resolveWorktreeBootstrapSessionKey: () => this.activeBundle().id,
       setLastRuntimeError: (error) => {
         this.lastRuntimeError = error;
@@ -940,15 +938,15 @@ class DesktopHostService {
     const bundle = this.activeBundle();
 
     if (!state.git.isRepository) {
-      throw new Error(i18n.t('error.notGitRepoForWorktree'));
+      throw new Error(i18n.t("error.notGitRepoForWorktree"));
     }
 
     const baseBranch = bundle.pendingGitBranch ?? state.git.branch;
     if (!baseBranch) {
-      throw new Error(i18n.t('error.cannotDetermineBaseBranch'));
+      throw new Error(i18n.t("error.cannotDetermineBaseBranch"));
     }
     if (!state.git.branches.includes(baseBranch)) {
-      throw new Error(i18n.t('error.baseBranchNotFound', { branch: baseBranch }));
+      throw new Error(i18n.t("error.baseBranchNotFound", { branch: baseBranch }));
     }
   }
 
@@ -980,14 +978,14 @@ class DesktopHostService {
 
   private async runSessionEndForBundle(
     bundle: SessionBundle,
-    reason: SessionEndHookInput['reason'],
+    reason: SessionEndHookInput["reason"],
   ): Promise<void> {
     await runRemoteDesktopSessionEnd(bundle.runtime, reason);
   }
 
   private async runSessionStartForBundle(
     bundle: SessionBundle,
-    source: SessionStartHookInput['source'],
+    source: SessionStartHookInput["source"],
   ): Promise<void> {
     await runRemoteDesktopSessionStart(bundle.runtime, source);
   }
@@ -1000,15 +998,16 @@ class DesktopHostService {
     this.workspaceCapabilityTrustTail = this.workspaceCapabilityTrustTail
       .catch(() => undefined)
       .then(
-        () => new Promise<void>((finish) => {
-          this.pendingWorkspaceCapabilityTrust = request;
-          this.pendingRemoteWorkspaceCapabilityTrust = {
-            requestId,
-            runtime,
-            finish,
-          };
-          this.emitLiveSnapshotUpdate();
-        }),
+        () =>
+          new Promise<void>((finish) => {
+            this.pendingWorkspaceCapabilityTrust = request;
+            this.pendingRemoteWorkspaceCapabilityTrust = {
+              requestId,
+              runtime,
+              finish,
+            };
+            this.emitLiveSnapshotUpdate();
+          }),
       );
     void this.workspaceCapabilityTrustTail;
   }
@@ -1019,7 +1018,7 @@ class DesktopHostService {
    */
   private scheduleSessionStartForBundle(
     bundle: SessionBundle,
-    source: SessionStartHookInput['source'],
+    source: SessionStartHookInput["source"],
   ): void {
     const bundleId = bundle.id;
     this.sessionStartTail = this.sessionStartTail
@@ -1033,7 +1032,7 @@ class DesktopHostService {
           await this.runSessionStartForBundle(target, source);
         } catch (error) {
           const message = error instanceof Error ? error.message : String(error);
-          console.error('[desktop-host] sessionStart failed', { bundleId, source, error });
+          console.error("[desktop-host] sessionStart failed", { bundleId, source, error });
           this.lastRuntimeError = message;
           this.emitLiveSnapshotUpdate();
         }
@@ -1044,7 +1043,8 @@ class DesktopHostService {
   private sessionActivationContext(): SessionActivationContext {
     return {
       runSerialized: <T>(work: () => Promise<T>, label?: string) => this.runSerialized(work, label),
-      ensureInitialized: (workspaceRootOverride, options) => this.ensureInitialized(workspaceRootOverride, options),
+      ensureInitialized: (workspaceRootOverride, options) =>
+        this.ensureInitialized(workspaceRootOverride, options),
       requireState: () => this.requireState(),
       isInitialized: () => this.initialized,
       currentWorkspaceRoot: () => this.state?.workspaceRoot,
@@ -1053,12 +1053,14 @@ class DesktopHostService {
       persistSessionBundle: (bundle, options) => this.persistSessionBundle(bundle, options),
       finalizeTodoScopeForNewActiveBundle: (bundle, workspaceRoot) =>
         this.finalizeTodoScopeForNewActiveBundle(bundle, workspaceRoot),
-      resetStreamingPlacementState: (full, bundle) => this.resetStreamingPlacementState(full, bundle),
+      resetStreamingPlacementState: (full, bundle) =>
+        this.resetStreamingPlacementState(full, bundle),
       findEphemeralSession: (filePath) => this.findEphemeralSession(filePath),
       createMessageTimelineFromMessages: (messages, timelineSnapshot) =>
         this.createMessageTimelineFromMessages(messages, timelineSnapshot),
       syncPlanStateForBundle: (bundle) => this.syncPlanStateForBundle(bundle),
-      syncHostWorkspaceRootToActiveBundle: (bundle) => this.syncHostWorkspaceRootToActiveBundle(bundle),
+      syncHostWorkspaceRootToActiveBundle: (bundle) =>
+        this.syncHostWorkspaceRootToActiveBundle(bundle),
       syncHostActiveModelToActiveBundle: (bundle) => this.syncHostActiveModelToActiveBundle(bundle),
       tickSession: (bundle) => this.tickSession(bundle),
       syncActiveRuntimePointer: () => this.syncActiveRuntimePointer(),
@@ -1071,7 +1073,7 @@ class DesktopHostService {
         this.lastRuntimeError = error;
       },
       scheduleSessionExtensionWarmup: (event) =>
-        this.scheduleExtensionWarmup({ type: 'session', event }),
+        this.scheduleExtensionWarmup({ type: "session", event }),
       buildSnapshot: () => this.buildSnapshot(),
       buildSnapshotProjectedForBundle: (bundle) => this.buildSnapshotProjectedForBundle(bundle),
       clearSubagentViewerTarget: () => this.clearSubagentViewerTarget(),
@@ -1107,16 +1109,17 @@ class DesktopHostService {
       adoptProjectWorkspaceForForeground: async (workspaceRoot, options) => {
         await this.adoptWorkspaceRootForActiveBundle(workspaceRoot, options);
         const state = this.requireState();
-        state.workspaceBinding = 'project';
+        state.workspaceBinding = "project";
         state.config = {
           ...state.config,
-          workspaceBinding: 'project',
+          workspaceBinding: "project",
           recentWorkspaces: mergeRecentWorkspaceRoots(state.config.recentWorkspaces, workspaceRoot),
           lastProjectWorkspaceRoot: workspaceRoot,
         };
         await saveConfig(state.config);
       },
-      adoptNoWorkspaceForForeground: (options) => this.adoptNoWorkspaceBindingForActiveBundle(options),
+      adoptNoWorkspaceForForeground: (options) =>
+        this.adoptNoWorkspaceBindingForActiveBundle(options),
       refreshRuntimeForBundle: (bundle) => this.refreshRuntimeForBundle(bundle),
       invalidatePaneSessionSliceCache: (sessionPath) => {
         this.paneSessionSliceCache.delete(path.resolve(sessionPath));
@@ -1155,7 +1158,7 @@ class DesktopHostService {
     const bundle = this.activeBundle();
     const activeProfile = resolveModelProfile(state.config, modelRef);
     if (!activeProfile) {
-      throw new Error(i18n.t('error.modelNotFound', { model: modelRef.name }));
+      throw new Error(i18n.t("error.modelNotFound", { model: modelRef.name }));
     }
     const resolvedRef = activeProfile.ref;
 
@@ -1234,8 +1237,8 @@ class DesktopHostService {
         }
         const snapshot = this.buildSnapshot();
         return (
-          snapshot.conversation.pendingToolApproval !== undefined
-          || snapshot.conversation.pendingQuestions !== undefined
+          snapshot.conversation.pendingToolApproval !== undefined ||
+          snapshot.conversation.pendingQuestions !== undefined
         );
       },
       isActiveSessionReadOnly: () => this.activeBundle().activeSession?.readOnly === true,
@@ -1262,7 +1265,7 @@ class DesktopHostService {
       activeBundle: () => this.activeBundle(),
       refreshRuntime: () => this.refreshRuntime(),
       clearLastRuntimeError: () => {
-        this.lastRuntimeError = '';
+        this.lastRuntimeError = "";
       },
     };
   }
@@ -1311,7 +1314,8 @@ class DesktopHostService {
       resolveTodoSessionKeyForBundle: (bundle) => this.resolveTodoSessionKeyForBundle(bundle),
       cancelTodoClearing: (sessionKey) => this.cancelTodoClearing(sessionKey),
       refreshTodoSnapshotForBundle: (bundle) => this.refreshTodoSnapshotForBundle(bundle),
-      createMessageTimelineFromMessages: (messages) => this.createMessageTimelineFromMessages(messages),
+      createMessageTimelineFromMessages: (messages) =>
+        this.createMessageTimelineFromMessages(messages),
       resetStreamingPlacementState: (full) => this.resetStreamingPlacementState(full),
     };
   }
@@ -1433,7 +1437,7 @@ class DesktopHostService {
       await this.ensureInitialized(request?.workspaceRoot, {
         workspaceBinding: request?.workspaceBinding,
         deferExtensionWarmup: true,
-        ...(request?.workspaceBinding === 'none' ? { preserveRecentWorkspaces: true } : {}),
+        ...(request?.workspaceBinding === "none" ? { preserveRecentWorkspaces: true } : {}),
       });
       this.startDreamCollectorMonitorIfNeeded();
       this.startAutomationSchedulerMonitorIfNeeded();
@@ -1443,12 +1447,12 @@ class DesktopHostService {
         const state = this.requireState();
         const bundle = this.sessionRegistry.beginNewBackground(state.workspaceRoot);
         await this.finalizeTodoScopeForNewActiveBundle(bundle, state.workspaceRoot);
-        this.lastRuntimeError = '';
+        this.lastRuntimeError = "";
         return this.buildSnapshotProjectedForBundle(bundle);
       }
       return this.buildSnapshot();
-    }, 'bootstrap');
-    this.scheduleExtensionWarmup({ type: 'startup', workspaceRoot: snapshot.workspaceRoot });
+    }, "bootstrap");
+    this.scheduleExtensionWarmup({ type: "startup", workspaceRoot: snapshot.workspaceRoot });
     this.scheduleModelCatalogStartupRefresh();
     return snapshot;
   }
@@ -1468,13 +1472,18 @@ class DesktopHostService {
         if (!state) {
           return;
         }
-        const fetchSummary = await fetchConfiguredModelCatalogsOnStartup(state.config, { forceRefresh: false });
+        const fetchSummary = await fetchConfiguredModelCatalogsOnStartup(state.config, {
+          forceRefresh: false,
+        });
         await this.runSerialized(async () => {
           const applyState = this.state;
           if (!applyState) {
             return;
           }
-          const summary = applyConfiguredModelCatalogRefreshResults(applyState.config, fetchSummary.fetched);
+          const summary = applyConfiguredModelCatalogRefreshResults(
+            applyState.config,
+            fetchSummary.fetched,
+          );
           if (summary.merged > 0 || summary.synced > 0 || summary.pruned > 0) {
             await saveConfig(applyState.config);
             for (const name of summary.prunedModelNames) {
@@ -1485,14 +1494,14 @@ class DesktopHostService {
             }
           }
           if (
-            summary.refreshed > 0
-            || summary.merged > 0
-            || summary.synced > 0
-            || summary.pruned > 0
+            summary.refreshed > 0 ||
+            summary.merged > 0 ||
+            summary.synced > 0 ||
+            summary.pruned > 0
           ) {
             this.emitLiveSnapshotUpdate();
           }
-        }, 'model-catalog-startup-refresh-apply');
+        }, "model-catalog-startup-refresh-apply");
       } catch {
         // best-effort：启动时目录刷新失败不阻断 Desktop
       } finally {
@@ -1669,19 +1678,19 @@ class DesktopHostService {
       await this.ensureInitialized(undefined, { fastPath: true });
       const runtime = this.requireRuntime();
       if (runtime.isBusy()) {
-        throw new Error(i18n.t('error.runtimeBusy'));
+        throw new Error(i18n.t("error.runtimeBusy"));
       }
 
       const state = this.requireState();
       const bundle = this.activeBundle();
-      if (resolveDesktopAgentMode(state.config) !== 'agent') {
-        state.config.agentMode = 'agent';
+      if (resolveDesktopAgentMode(state.config) !== "agent") {
+        state.config.agentMode = "agent";
         await saveConfig(state.config);
-        state.metadata = await loadHostMetadata(state.workspaceRoot, 'agent', {
+        state.metadata = await loadHostMetadata(state.workspaceRoot, "agent", {
           activePlanPath: bundle.activePlanPath,
           workspaceBinding: state.workspaceBinding,
         });
-        bundle.toolExecutor?.setAgentModeToolExposure('agent');
+        bundle.toolExecutor?.setAgentModeToolExposure("agent");
       }
       return this.submitUserTurnAfterInitialized(
         buildStartImplementingUserTurn(
@@ -1692,7 +1701,7 @@ class DesktopHostService {
           bundle.activePlanPath,
         ),
         {
-          displayText: i18n.t('workspace.startImplementing'),
+          displayText: i18n.t("workspace.startImplementing"),
         },
       );
     });
@@ -1703,13 +1712,13 @@ class DesktopHostService {
       await this.ensureInitialized(undefined, { fastPath: true });
       const runtime = this.requireRuntime();
       if (this.activeBundle().activeSession?.readOnly) {
-        throw new Error(i18n.t('error.readonlySessionCompact'));
+        throw new Error(i18n.t("error.readonlySessionCompact"));
       }
       if (runtime.currentPendingApproval() || runtime.currentPendingQuestions()) {
-        throw new Error(i18n.t('error.pendingApprovalCompact'));
+        throw new Error(i18n.t("error.pendingApprovalCompact"));
       }
       if (runtime.isBusy()) {
-        throw new Error(i18n.t('error.runtimeBusy'));
+        throw new Error(i18n.t("error.runtimeBusy"));
       }
 
       // Match CLI `/compact`: start async compaction and let poll() stream aux updates.
@@ -1787,22 +1796,20 @@ class DesktopHostService {
           ...(dreamsSystemPrompt === undefined ? {} : { dreams: dreamsSystemPrompt }),
           ...(basicInfoSystemPrompt === undefined ? {} : { basicInfo: basicInfoSystemPrompt }),
         },
-        note: i18n.t('error.logSessionNote'),
+        note: i18n.t("error.logSessionNote"),
         message_count: remoteState?.apiMessages.length ?? runtime.history().length,
-        messages: remoteState?.apiMessages
-          ?? this.runtimeTransport.llmHistoryAsApiMessages([...runtime.history()]),
+        messages:
+          remoteState?.apiMessages ??
+          this.runtimeTransport.llmHistoryAsApiMessages([...runtime.history()]),
         api_request_trace_count: remoteState?.requestTrace.length ?? runtime.requestTrace().length,
         api_request_trace: remoteState?.requestTrace ?? [...runtime.requestTrace()],
       };
 
-      await writeFile(filePath, `${JSON.stringify(exportPayload, null, 2)}\n`, 'utf8');
+      await writeFile(filePath, `${JSON.stringify(exportPayload, null, 2)}\n`, "utf8");
 
       const snapshot = await this.appendInlineAssistantReply(
-        '/log-session',
-        [
-          i18n.t('error.logSessionExported'),
-          filePath,
-        ].join('\n'),
+        "/log-session",
+        [i18n.t("error.logSessionExported"), filePath].join("\n"),
       );
 
       return {
@@ -1816,11 +1823,13 @@ class DesktopHostService {
     return this.runSerialized(async () => {
       await this.ensureInitialized(undefined, { fastPath: true });
       const trimmed = request.text.trim();
-      const hasLocalFiles = Array.isArray(request.localFilePaths) && request.localFilePaths.length > 0;
-      const hasReferencedPaths = Array.isArray(request.referencedWorkspaceFilePaths)
-        && request.referencedWorkspaceFilePaths.length > 0;
+      const hasLocalFiles =
+        Array.isArray(request.localFilePaths) && request.localFilePaths.length > 0;
+      const hasReferencedPaths =
+        Array.isArray(request.referencedWorkspaceFilePaths) &&
+        request.referencedWorkspaceFilePaths.length > 0;
       if (!trimmed && !hasLocalFiles && !hasReferencedPaths) {
-        throw new Error(i18n.t('error.messageRequired'));
+        throw new Error(i18n.t("error.messageRequired"));
       }
 
       const targetSessionPath = request.sessionPath?.trim();
@@ -1840,7 +1849,7 @@ class DesktopHostService {
         if (targetSessionPath) {
           const targetBundle = this.sessionRegistry.findBySessionPath(targetSessionPath);
           if (!targetBundle) {
-            throw new Error('Session not found.');
+            throw new Error("Session not found.");
           }
           if (this.sessionRegistry.getActive() !== targetBundle) {
             this.sessionRegistry.activateExisting(targetBundle);
@@ -1859,7 +1868,7 @@ class DesktopHostService {
             explicitWorkspaceFiles,
             turnSkills,
           });
-        } else if (bundle.messages.length === 0 && bundle.workLocation === 'worktree') {
+        } else if (bundle.messages.length === 0 && bundle.workLocation === "worktree") {
           snapshot = await startWorktreeBootstrapTurnCommand(
             this.sessionTurnContext(),
             this.worktreeBootstrapHost(),
@@ -1888,7 +1897,7 @@ class DesktopHostService {
         restorePreviousActive();
         throw error;
       }
-    }, 'submit-user-turn');
+    }, "submit-user-turn");
   }
 
   async setLoopEnabled(enabled: boolean): Promise<DesktopSnapshot> {
@@ -1925,13 +1934,13 @@ class DesktopHostService {
       const state = this.requireState();
       const normalized = branch.trim();
       if (!state.git.isRepository) {
-        throw new Error(i18n.t('error.notGitRepo'));
+        throw new Error(i18n.t("error.notGitRepo"));
       }
       if (!normalized) {
-        throw new Error(i18n.t('error.branchNameRequired'));
+        throw new Error(i18n.t("error.branchNameRequired"));
       }
       if (!state.git.branches.includes(normalized)) {
-        throw new Error(i18n.t('error.branchNotFound', { branch: normalized }));
+        throw new Error(i18n.t("error.branchNotFound", { branch: normalized }));
       }
       this.activeBundle().pendingGitBranch = normalized;
       return this.buildSnapshot();
@@ -1978,7 +1987,7 @@ class DesktopHostService {
       if (targetSessionPath) {
         const targetBundle = this.sessionRegistry.findBySessionPath(targetSessionPath);
         if (!targetBundle) {
-          throw new Error('Session not found.');
+          throw new Error("Session not found.");
         }
         if (this.sessionRegistry.getActive() !== targetBundle) {
           this.sessionRegistry.activateExisting(targetBundle);
@@ -2036,18 +2045,18 @@ class DesktopHostService {
       if (runtime.isBusy()) {
         const aborted = await abortConversationInContext(this.sessionTurnContext());
         if (!aborted && this.requireRuntime().isBusy()) {
-          throw new Error(i18n.t('error.runtimeBusy'));
+          throw new Error(i18n.t("error.runtimeBusy"));
         }
       }
       if (!Number.isFinite(request.messageId)) {
-        throw new Error(i18n.t('error.invalidMessageId'));
+        throw new Error(i18n.t("error.invalidMessageId"));
       }
 
       const checkpoint = this.activeBundle().rewind.checkpoints.find(
         (candidate) => candidate.messageId === request.messageId,
       );
       if (!checkpoint) {
-        throw new Error(i18n.t('error.noCheckpoint'));
+        throw new Error(i18n.t("error.noCheckpoint"));
       }
 
       const snapshot = await loadRewindCheckpointSnapshot(
@@ -2056,11 +2065,11 @@ class DesktopHostService {
         checkpoint.id,
       );
       if (!snapshot) {
-        throw new Error(i18n.t('error.checkpointFileMissing'));
+        throw new Error(i18n.t("error.checkpointFileMissing"));
       }
 
-      const changesToRestore = this.activeBundle().rewind.fileChanges
-        .filter((change) => change.sequence > checkpoint.sequence)
+      const changesToRestore = this.activeBundle()
+        .rewind.fileChanges.filter((change) => change.sequence > checkpoint.sequence)
         .sort((left, right) => left.sequence - right.sequence);
       const loadedChanges: HostRecordedFileChange[] = [];
       const missingWarnings: FileRewindWarning[] = [];
@@ -2077,7 +2086,7 @@ class DesktopHostService {
             changeId: metadata.id,
             path: metadata.resolvedPath,
             action: metadata.kind,
-            message: i18n.t('error.fileChangeSnapshotMissing'),
+            message: i18n.t("error.fileChangeSnapshotMissing"),
           });
         }
       }
@@ -2092,7 +2101,9 @@ class DesktopHostService {
       await this.applyTodosAfterRewind(snapshot);
       return this.submitUserTurnAfterInitialized(request.text, {
         preserveRewindWarnings: true,
-        explicitWorkspaceFiles: await this.resolveExplicitLocalFileAttachments(request.localFilePaths),
+        explicitWorkspaceFiles: await this.resolveExplicitLocalFileAttachments(
+          request.localFilePaths,
+        ),
       });
     });
   }
@@ -2150,7 +2161,7 @@ class DesktopHostService {
     const merged: PendingWorkspaceFile[] = [];
     for (const group of groups) {
       for (const file of group) {
-        const key = file.path.replace(/\\/gu, '/').toLowerCase();
+        const key = file.path.replace(/\\/gu, "/").toLowerCase();
         if (seen.has(key)) {
           continue;
         }
@@ -2162,7 +2173,7 @@ class DesktopHostService {
   }
 
   private async resolveMergedExplicitWorkspaceFiles(
-    request: Pick<SubmitUserTurnRequest, 'localFilePaths' | 'referencedWorkspaceFilePaths'>,
+    request: Pick<SubmitUserTurnRequest, "localFilePaths" | "referencedWorkspaceFilePaths">,
   ): Promise<PendingWorkspaceFile[]> {
     return this.mergeExplicitWorkspaceFiles(
       await this.resolveExplicitLocalFileAttachments(request.localFilePaths),
@@ -2172,8 +2183,8 @@ class DesktopHostService {
 
   private skillNameFromChipAlias(alias: string): string {
     const trimmed = alias.trim();
-    if (!trimmed.startsWith('/')) {
-      throw new Error(i18n.t('error.skillNameRequired'));
+    if (!trimmed.startsWith("/")) {
+      throw new Error(i18n.t("error.skillNameRequired"));
     }
     return trimmed.slice(1);
   }
@@ -2219,21 +2230,23 @@ class DesktopHostService {
     this.ensureActiveSession(displayText);
     const userMessage: ConversationMessageSnapshot = {
       id: this.allocateMessageId(),
-      role: 'user',
+      role: "user",
       content: displayText,
       pending: false,
     };
     this.activeBundle().messages.push(userMessage);
-    this.activeBundle().messageTimeline.beginUserTurn(userMessage.content, { messageId: userMessage.id });
+    this.activeBundle().messageTimeline.beginUserTurn(userMessage.content, {
+      messageId: userMessage.id,
+    });
     this.resetStreamingPlacementState(false);
     this.activeOrchestration().assistantMessages.appendAssistantMessage(assistantText);
-    this.activeBundle().messageTimeline.beginAssistantSegment('initial');
+    this.activeBundle().messageTimeline.beginAssistantSegment("initial");
     this.activeBundle().messageTimeline.materializeCompletedAssistantText(assistantText);
     await this.persistCurrentSessionIfNeeded();
     return this.buildSnapshot();
   }
 
-  async poll(request?: import('../types.js').PollRequest): Promise<DesktopSnapshot> {
+  async poll(request?: import("../types.js").PollRequest): Promise<DesktopSnapshot> {
     await pollCommand(this.sessionTurnContext());
     const sessionPath = request?.sessionPath?.trim();
     if (!sessionPath) {
@@ -2280,12 +2293,15 @@ class DesktopHostService {
 
   async replyPendingApproval(request: ReplyPendingApprovalRequest): Promise<DesktopSnapshot> {
     const sessionPath =
-      request.sessionPath?.trim()
-      ?? resolvePendingApprovalSessionPath(this.buildSnapshot());
+      request.sessionPath?.trim() ?? resolvePendingApprovalSessionPath(this.buildSnapshot());
     if (sessionPath) {
-      await withOptionalPaneSessionActivation(this.paneSessionScopeContext(), sessionPath, async () => {
-        await replyPendingApprovalCommand(this.sessionTurnContext(), request.decision);
-      });
+      await withOptionalPaneSessionActivation(
+        this.paneSessionScopeContext(),
+        sessionPath,
+        async () => {
+          await replyPendingApprovalCommand(this.sessionTurnContext(), request.decision);
+        },
+      );
       await this.ensureInitialized(undefined, { fastPath: true });
       return this.buildSnapshot();
     }
@@ -2295,9 +2311,13 @@ class DesktopHostService {
   async replyPendingQuestions(request: ReplyPendingQuestionsRequest): Promise<DesktopSnapshot> {
     const sessionPath = request.sessionPath?.trim();
     if (sessionPath) {
-      await withOptionalPaneSessionActivation(this.paneSessionScopeContext(), sessionPath, async () => {
-        await replyPendingQuestionsCommand(this.sessionTurnContext(), request.result);
-      });
+      await withOptionalPaneSessionActivation(
+        this.paneSessionScopeContext(),
+        sessionPath,
+        async () => {
+          await replyPendingQuestionsCommand(this.sessionTurnContext(), request.result);
+        },
+      );
       await this.ensureInitialized(undefined, { fastPath: true });
       return this.buildSnapshot();
     }
@@ -2324,7 +2344,7 @@ class DesktopHostService {
       return this.buildSnapshot();
     }
     if (!this.pendingWorkspaceCapabilityTrust || !this.workspaceCapabilityTrustWaiter) {
-      throw new Error('No pending workspace capability trust request');
+      throw new Error("No pending workspace capability trust request");
     }
     const waiter = this.workspaceCapabilityTrustWaiter;
     this.workspaceCapabilityTrustWaiter = undefined;
@@ -2408,7 +2428,9 @@ class DesktopHostService {
     return readGitHistoryCommand(this.workspaceGitCommandContext(), request);
   }
 
-  async readGitCommitMessage(request: ReadGitCommitMessageRequest): Promise<GitCommitMessageSnapshot> {
+  async readGitCommitMessage(
+    request: ReadGitCommitMessageRequest,
+  ): Promise<GitCommitMessageSnapshot> {
     return readGitCommitMessageCommand(this.workspaceGitCommandContext(), request);
   }
 
@@ -2491,7 +2513,9 @@ class DesktopHostService {
     return listWorkspaceFileReferenceSuggestionsCommand(this.workspaceGitCommandContext(), request);
   }
 
-  async requestCodeCompletion(request: RequestCodeCompletionRequest): Promise<CodeCompletionResponse> {
+  async requestCodeCompletion(
+    request: RequestCodeCompletionRequest,
+  ): Promise<CodeCompletionResponse> {
     return requestCodeCompletionCommand(this.codeCompletionCommandContext(), request);
   }
 
@@ -2499,7 +2523,9 @@ class DesktopHostService {
     abortCodeCompletionCommand(this.requireState().workspaceRoot);
   }
 
-  async recordCodeCompletionFileState(request: RecordCodeCompletionFileStateRequest): Promise<void> {
+  async recordCodeCompletionFileState(
+    request: RecordCodeCompletionFileStateRequest,
+  ): Promise<void> {
     recordCodeCompletionFileStateCommand(this.codeCompletionCommandContext(), request);
   }
 
@@ -2511,20 +2537,22 @@ class DesktopHostService {
     return primeWorkspaceFileReferenceIndexCommand(this.workspaceGitCommandContext());
   }
 
-  async getWorkspaceFileReferenceIndex(): Promise<import('../types.js').WorkspaceFileReferenceIndexSnapshot> {
+  async getWorkspaceFileReferenceIndex(): Promise<
+    import("../types.js").WorkspaceFileReferenceIndexSnapshot
+  > {
     return getWorkspaceFileReferenceIndexCommand(this.workspaceGitCommandContext());
   }
 
   async readWorkspaceTextFile(
     relativePath: string,
-    options?: import('../types.js').ReadWorkspaceTextFileOptions,
+    options?: import("../types.js").ReadWorkspaceTextFileOptions,
   ): Promise<WorkspaceReadTextFileResult> {
     return readWorkspaceTextFileCommand(this.workspaceGitCommandContext(), relativePath, options);
   }
 
   async searchWorkspaceContent(
-    request: import('../types.js').WorkspaceContentSearchRequest,
-  ): Promise<import('../types.js').WorkspaceContentSearchResult> {
+    request: import("../types.js").WorkspaceContentSearchRequest,
+  ): Promise<import("../types.js").WorkspaceContentSearchResult> {
     return searchWorkspaceContentCommand(this.workspaceGitCommandContext(), request);
   }
 
@@ -2554,7 +2582,7 @@ class DesktopHostService {
   async createWorkspaceEntry(
     parentDirectoryRel: string,
     name: string,
-    kind: 'file' | 'dir',
+    kind: "file" | "dir",
   ): Promise<{ relativePath: string }> {
     return createWorkspaceEntryCommand(
       this.workspaceGitCommandContext(),
@@ -2599,10 +2627,7 @@ class DesktopHostService {
     return resolveLocalFileComposerRoute(absolutePath);
   }
 
-  async openSession(
-    filePath: string,
-    options?: { activate?: boolean },
-  ): Promise<DesktopSnapshot> {
+  async openSession(filePath: string, options?: { activate?: boolean }): Promise<DesktopSnapshot> {
     if (options?.activate === false) {
       return openSessionBackgroundCommand(this.sessionActivationContext(), filePath);
     }
@@ -2621,15 +2646,11 @@ class DesktopHostService {
     return beginSideChatPaneSessionCommand(this.sessionSplitContext(), request);
   }
 
-  async forkSessionIntoSideChat(
-    request: ForkSessionIntoSideChatRequest,
-  ): Promise<DesktopSnapshot> {
+  async forkSessionIntoSideChat(request: ForkSessionIntoSideChatRequest): Promise<DesktopSnapshot> {
     return forkSessionIntoSideChatCommand(this.sideChatSessionContext(), request);
   }
 
-  async setVisiblePaneSessions(
-    request: SetVisiblePaneSessionsRequest,
-  ): Promise<DesktopSnapshot> {
+  async setVisiblePaneSessions(request: SetVisiblePaneSessionsRequest): Promise<DesktopSnapshot> {
     return setVisiblePaneSessionsCommand(this.sessionSplitContext(), request);
   }
 
@@ -2641,9 +2662,7 @@ class DesktopHostService {
     return syncSplitPaneSessionsCommand(this.sessionSplitContext(), request);
   }
 
-  async closeSplitPaneSession(
-    request: CloseSplitPaneSessionRequest,
-  ): Promise<DesktopSnapshot> {
+  async closeSplitPaneSession(request: CloseSplitPaneSessionRequest): Promise<DesktopSnapshot> {
     return closeSplitPaneSessionCommand(this.sessionSplitContext(), request);
   }
 
@@ -2739,7 +2758,11 @@ class DesktopHostService {
       workspaceBinding?: DesktopWorkspaceBinding;
     } = {},
   ): Promise<void> {
-    return ensureInitializedCommand(this.hostInitializationContext(), workspaceRootOverride, options);
+    return ensureInitializedCommand(
+      this.hostInitializationContext(),
+      workspaceRootOverride,
+      options,
+    );
   }
 
   private async refreshRuntime(): Promise<void> {
@@ -2751,7 +2774,7 @@ class DesktopHostService {
     // hook trust can prompt; previously only re-refresh of an existing runtime did.
     // Schedule unlocked: trust await must not hold runSerialized.
     if (bundle.runtime) {
-      this.scheduleSessionStartForBundle(bundle, hadRuntime ? 'resume' : 'startup');
+      this.scheduleSessionStartForBundle(bundle, hadRuntime ? "resume" : "startup");
     }
   }
 
@@ -2795,7 +2818,7 @@ class DesktopHostService {
     const inferencePreferenceOnly = options.inferencePreferenceOnly === true;
     const hadRuntime = bundle.runtime !== undefined;
     if (hadRuntime && !inferencePreferenceOnly) {
-      await this.runSessionEndForBundle(bundle, 'switch');
+      await this.runSessionEndForBundle(bundle, "switch");
     }
     if (!inferencePreferenceOnly) {
       await this.syncPlanStateForBundle(bundle);
@@ -2807,85 +2830,82 @@ class DesktopHostService {
       return;
     }
     const desktopMessages = bundle.messageTimeline.toMessages();
-      const llmHistoryForRuntime = bundle.archiveHistory.length > 0
+    const llmHistoryForRuntime =
+      bundle.archiveHistory.length > 0
         ? bundle.archiveHistory
         : buildLlmHistoryFallbackFromDesktopMessages(desktopMessages);
-      const archive = {
-        messages: buildArchiveMessagesFromConversation(desktopMessages),
-        assistantAux: buildArchiveAssistantAuxFromConversation(desktopMessages),
-        llmHistory: llmHistoryForRuntime,
-        subagentSessions: bundle.archiveSubagentSessions ?? [],
-        loopEnabled: bundle.loopEnabled,
-        approvalLevel: bundle.approvalLevel,
-      } satisfies ChatArchive;
-      const previousRuntime = bundle.runtime;
-      bundle.runtimeTransport = createLlmTransport();
-      const conversationKey = bundle.activeSession?.filePath
-        ? path.resolve(bundle.activeSession.filePath)
-        : undefined;
-      const remoteRuntimeInput = {
-        dataDir: spiritAgentDataDir(),
-        workspaceRoot: bundle.workspaceRoot || state.workspaceRoot,
-        modelRef: effectiveActiveModel,
-        agentMode: resolveDesktopAgentMode(state.config),
-        archive,
-        approvalLevel: normalizeApprovalLevel(bundle.approvalLevel),
-        todoSessionKey: this.resolveTodoSessionKeyForBundle(bundle),
-        onActivity: () => {
-          this.sessionPump.ensureRunning();
-          this.requestThrottledLiveSnapshotEmit();
-        },
-        onWorkspaceCapabilityTrustRequested: (
-          requestId: string,
-          request: WorkspaceCapabilityTrustRequest,
-        ) => {
-          this.enqueueRemoteWorkspaceCapabilityTrust(
-            requestId,
-            request,
-            bundle.runtime,
-          );
-        },
-        onRemoteUserTurnSubmitted: (input: {
-          text: string;
-          explicitWorkspaceFiles: PendingWorkspaceFile[];
-        }) => {
-          this.projectRemoteUserTurn(bundle, input);
-        },
-        onFileChange: (change: unknown) => {
-          void this.recordHostFileChange(bundle, change as HostRecordedFileChange);
-        },
-      };
-      try {
-        const previousSessionId = remoteDesktopSessionId(previousRuntime);
-        const runtime = conversationKey
-          ? await openRemoteDesktopRuntime({ ...remoteRuntimeInput, conversationKey })
-          : await createRemoteDesktopRuntime(remoteRuntimeInput);
-        runtime.setLoopEnabled(bundle.loopEnabled);
-        bundle.runtime = runtime;
-        const newSessionId = remoteDesktopSessionId(runtime);
-        if (previousRuntime) {
-          if (previousSessionId && previousSessionId === newSessionId) {
-            await disposeRemoteDesktopRuntime(previousRuntime);
-          } else {
-            await closeRemoteDesktopRuntime(previousRuntime);
-          }
+    const archive = {
+      messages: buildArchiveMessagesFromConversation(desktopMessages),
+      assistantAux: buildArchiveAssistantAuxFromConversation(desktopMessages),
+      llmHistory: llmHistoryForRuntime,
+      subagentSessions: bundle.archiveSubagentSessions ?? [],
+      loopEnabled: bundle.loopEnabled,
+      approvalLevel: bundle.approvalLevel,
+    } satisfies ChatArchive;
+    const previousRuntime = bundle.runtime;
+    bundle.runtimeTransport = createLlmTransport();
+    const conversationKey = bundle.activeSession?.filePath
+      ? path.resolve(bundle.activeSession.filePath)
+      : undefined;
+    const remoteRuntimeInput = {
+      dataDir: spiritAgentDataDir(),
+      workspaceRoot: bundle.workspaceRoot || state.workspaceRoot,
+      modelRef: effectiveActiveModel,
+      agentMode: resolveDesktopAgentMode(state.config),
+      archive,
+      approvalLevel: normalizeApprovalLevel(bundle.approvalLevel),
+      todoSessionKey: this.resolveTodoSessionKeyForBundle(bundle),
+      onActivity: () => {
+        this.sessionPump.ensureRunning();
+        this.requestThrottledLiveSnapshotEmit();
+      },
+      onWorkspaceCapabilityTrustRequested: (
+        requestId: string,
+        request: WorkspaceCapabilityTrustRequest,
+      ) => {
+        this.enqueueRemoteWorkspaceCapabilityTrust(requestId, request, bundle.runtime);
+      },
+      onRemoteUserTurnSubmitted: (input: {
+        text: string;
+        explicitWorkspaceFiles: PendingWorkspaceFile[];
+      }) => {
+        this.projectRemoteUserTurn(bundle, input);
+      },
+      onFileChange: (change: unknown) => {
+        void this.recordHostFileChange(bundle, change as HostRecordedFileChange);
+      },
+    };
+    try {
+      const previousSessionId = remoteDesktopSessionId(previousRuntime);
+      const runtime = conversationKey
+        ? await openRemoteDesktopRuntime({ ...remoteRuntimeInput, conversationKey })
+        : await createRemoteDesktopRuntime(remoteRuntimeInput);
+      runtime.setLoopEnabled(bundle.loopEnabled);
+      bundle.runtime = runtime;
+      const newSessionId = remoteDesktopSessionId(runtime);
+      if (previousRuntime) {
+        if (previousSessionId && previousSessionId === newSessionId) {
+          await disposeRemoteDesktopRuntime(previousRuntime);
+        } else {
+          await closeRemoteDesktopRuntime(previousRuntime);
         }
-        if (bundle.id === this.sessionRegistry.activeSessionId()) {
-          this.runtime = runtime;
-        }
-        this.activeApiKeyConfigured = true;
-        this.lastRuntimeError = '';
-        await this.refreshTodoSnapshotForBundle(bundle);
-        bundle.runtimeActivationSignature = this.runtimeActivationSignature(bundle);
-      } catch (error) {
-        await closeRemoteDesktopRuntime(previousRuntime);
-        bundle.runtime = undefined;
-        if (bundle.id === this.sessionRegistry.activeSessionId()) {
-          this.runtime = undefined;
-        }
-        this.activeApiKeyConfigured = false;
-        this.lastRuntimeError = error instanceof Error ? error.message : String(error);
       }
+      if (bundle.id === this.sessionRegistry.activeSessionId()) {
+        this.runtime = runtime;
+      }
+      this.activeApiKeyConfigured = true;
+      this.lastRuntimeError = "";
+      await this.refreshTodoSnapshotForBundle(bundle);
+      bundle.runtimeActivationSignature = this.runtimeActivationSignature(bundle);
+    } catch (error) {
+      await closeRemoteDesktopRuntime(previousRuntime);
+      bundle.runtime = undefined;
+      if (bundle.id === this.sessionRegistry.activeSessionId()) {
+        this.runtime = undefined;
+      }
+      this.activeApiKeyConfigured = false;
+      this.lastRuntimeError = error instanceof Error ? error.message : String(error);
+    }
   }
 
   private async ensureToolExecutor(
@@ -2905,16 +2925,13 @@ class DesktopHostService {
     const todoScope: HostTodoScope = createTodoScope(this.resolveTodoSessionKeyForBundle(bundle));
 
     const needsRebuild =
-      !bundle.toolExecutor
-      || bundle.toolExecutorWorkspaceRoot !== workspaceRoot
-      || !bundle.toolExecutor.matchesDreamAccess(dreamScope, dreamScope ? 'read-only' : undefined)
-      || !bundle.toolExecutor.matchesTodoAccess(todoScope);
+      !bundle.toolExecutor ||
+      bundle.toolExecutorWorkspaceRoot !== workspaceRoot ||
+      !bundle.toolExecutor.matchesDreamAccess(dreamScope, dreamScope ? "read-only" : undefined) ||
+      !bundle.toolExecutor.matchesTodoAccess(todoScope);
 
     if (needsRebuild) {
-      if (
-        bundle.toolExecutorWorkspaceRoot
-        && bundle.toolExecutorWorkspaceRoot !== workspaceRoot
-      ) {
+      if (bundle.toolExecutorWorkspaceRoot && bundle.toolExecutorWorkspaceRoot !== workspaceRoot) {
         await disposeLspServicesExcept(this.lspServiceByWorkspaceRoot, workspaceRoot);
         disposeMcpServicesExcept(this.mcpServiceByWorkspaceRoot, workspaceRoot);
       }
@@ -2928,18 +2945,20 @@ class DesktopHostService {
       this.toolExecutor = bundle.toolExecutor;
     }
     if (!bundle.toolExecutor) {
-      throw new Error(i18n.t('error.mcpExecutorNotInitialized'));
+      throw new Error(i18n.t("error.mcpExecutorNotInitialized"));
     }
     bundle.toolExecutor.setApprovalLevel(bundle.approvalLevel);
     bundle.toolExecutor.setLoopToolExposure(bundle.loopEnabled);
-    bundle.toolExecutor.setAgentModeToolExposure(resolveDesktopAgentMode(this.requireState().config));
+    bundle.toolExecutor.setAgentModeToolExposure(
+      resolveDesktopAgentMode(this.requireState().config),
+    );
     await bundle.toolExecutor.ensureMcpToolingReady();
     return bundle.toolExecutor;
   }
 
   private sharedMcpServiceForWorkspace(
     workspaceRoot: string,
-    workspaceBinding: DesktopWorkspaceBinding = 'project',
+    workspaceBinding: DesktopWorkspaceBinding = "project",
   ): McpService {
     return sharedMcpServiceForWorkspace(
       this.mcpServiceByWorkspaceRoot,
@@ -2977,7 +2996,7 @@ class DesktopHostService {
         getHost: () => {
           const adapter = getDesktopExtensionHostAdapter();
           if (!adapter) {
-            throw new Error(i18n.t('error.extensionHostNotConnected'));
+            throw new Error(i18n.t("error.extensionHostNotConnected"));
           }
           return adapter;
         },
@@ -2986,7 +3005,7 @@ class DesktopHostService {
       ...(dreamScope
         ? {
             dreamScope,
-            dreamToolMode: 'read-only' as const,
+            dreamToolMode: "read-only" as const,
           }
         : {}),
       hostContributedToolsEnabled: true,
@@ -2994,7 +3013,7 @@ class DesktopHostService {
         const currentState = this.requireState();
         const lightweightModel = resolveLightweightChatModelProfile(currentState.config);
         if (!lightweightModel) {
-          throw new Error(i18n.t('error.lightweightChatModelNotConfigured'));
+          throw new Error(i18n.t("error.lightweightChatModelNotConfigured"));
         }
         return {
           workspaceRoot,
@@ -3121,7 +3140,8 @@ class DesktopHostService {
       sessionPath,
       workspaceRoot,
       restored,
-      (messages, timelineSnapshot) => this.createMessageTimelineFromMessages(messages, timelineSnapshot),
+      (messages, timelineSnapshot) =>
+        this.createMessageTimelineFromMessages(messages, timelineSnapshot),
     );
     if (!synced) {
       return;
@@ -3238,18 +3258,18 @@ class DesktopHostService {
     bundle: SessionBundle = this.activeBundle(),
   ): void {
     const activeSession = bundle.activeSession;
-    if (!activeSession || activeSession.readOnly === true || activeSession.kind === 'ephemeral') {
+    if (!activeSession || activeSession.readOnly === true || activeSession.kind === "ephemeral") {
       return;
     }
 
     const userMessageCount = bundle.messageTimeline
       .toMessages()
-      .filter((message) => message.role === 'user').length;
+      .filter((message) => message.role === "user").length;
     if (userMessageCount !== 1) {
       return;
     }
 
-    if (bundle.sessionTitleSource !== 'seed') {
+    if (bundle.sessionTitleSource !== "seed") {
       return;
     }
 
@@ -3267,7 +3287,7 @@ class DesktopHostService {
     void this.generateAndApplySessionTitle(bundle, seedText, filePath, epoch)
       .catch((error) => {
         console.debug(
-          '[session-title] generation failed:',
+          "[session-title] generation failed:",
           error instanceof Error ? error.message : String(error),
         );
       })
@@ -3310,7 +3330,9 @@ class DesktopHostService {
     });
   }
 
-  private async flushDeferredRuntimeRefreshIfIdle(bundle: SessionBundle = this.activeBundle()): Promise<void> {
+  private async flushDeferredRuntimeRefreshIfIdle(
+    bundle: SessionBundle = this.activeBundle(),
+  ): Promise<void> {
     if (!bundle.deferredRuntimeRefreshWhileBusy) {
       return;
     }
@@ -3322,7 +3344,7 @@ class DesktopHostService {
     if (bundle.id === this.sessionRegistry.activeSessionId()) {
       this.syncActiveRuntimePointer();
     }
-    this.lastRuntimeError = '';
+    this.lastRuntimeError = "";
   }
 
   private async refreshModelKeyPresence(): Promise<void> {
@@ -3435,21 +3457,33 @@ class DesktopHostService {
     bundle: SessionBundle,
     previousSessionKey: string,
   ): Promise<void> {
-    return maybeRefreshRuntimeAfterTodoScopeChangeFromService(this.sessionTodosContext(), bundle, previousSessionKey);
+    return maybeRefreshRuntimeAfterTodoScopeChangeFromService(
+      this.sessionTodosContext(),
+      bundle,
+      previousSessionKey,
+    );
   }
 
   private async finalizeTodoScopeForNewActiveBundle(
     bundle: SessionBundle,
     workspaceRoot: string,
   ): Promise<void> {
-    return finalizeTodoScopeForNewActiveBundleFromService(this.sessionTodosContext(), bundle, workspaceRoot);
+    return finalizeTodoScopeForNewActiveBundleFromService(
+      this.sessionTodosContext(),
+      bundle,
+      workspaceRoot,
+    );
   }
 
   private async reconcileTodoScopeAfterSessionPathChange(
     bundle: SessionBundle,
     previousSessionKey: string,
   ): Promise<void> {
-    return reconcileTodoScopeAfterSessionPathChangeFromService(this.sessionTodosContext(), bundle, previousSessionKey);
+    return reconcileTodoScopeAfterSessionPathChangeFromService(
+      this.sessionTodosContext(),
+      bundle,
+      previousSessionKey,
+    );
   }
 
   private cancelTodoClearing(sessionKey: string): void {
@@ -3508,8 +3542,8 @@ class DesktopHostService {
       composerSessionKey: _foregroundComposerSessionKey,
       ...sharedSnapshot
     } = base;
-    const projectedActiveSession = slice.activeSession
-      ?? (bundle.activeSession ? { ...bundle.activeSession } : undefined);
+    const projectedActiveSession =
+      slice.activeSession ?? (bundle.activeSession ? { ...bundle.activeSession } : undefined);
     return {
       ...sharedSnapshot,
       conversation: slice.conversation,
@@ -3607,9 +3641,9 @@ class DesktopHostService {
       modelKeyPresence: this.modelKeyPresence,
       activeApiKeyConfigured: this.activeApiKeyConfigured,
       mcpStatus:
-        this.activeBundle().toolExecutor?.mcpStatusSnapshot()
-        ?? this.toolExecutor?.mcpStatusSnapshot()
-        ?? emptyMcpStatusSnapshot(),
+        this.activeBundle().toolExecutor?.mcpStatusSnapshot() ??
+        this.toolExecutor?.mcpStatusSnapshot() ??
+        emptyMcpStatusSnapshot(),
       mcpServers: this.listMcpServersCached(state.workspaceRoot, state.workspaceBinding),
       hooksList: this.listHooksCached(state.workspaceRoot, state.workspaceBinding),
       lsp: this.lspSnapshot,
@@ -3623,9 +3657,7 @@ class DesktopHostService {
           : {}),
         pendingImagePaths: [...(activeRuntime?.pendingImagePaths() ?? [])],
         pendingMcpResources: mapPendingMcpResources(activeRuntime?.pendingMcpResources() ?? []),
-        ...(pendingAux
-          ? { pendingAuxState: mapPendingAuxState(pendingAux)! }
-          : {}),
+        ...(pendingAux ? { pendingAuxState: mapPendingAuxState(pendingAux)! } : {}),
         ...(pendingApproval
           ? {
               pendingToolApproval: mapPendingToolApproval({
@@ -3638,12 +3670,12 @@ class DesktopHostService {
               }),
             }
           : {}),
-        ...(pendingQuestions
-          ? { pendingQuestions: mapPendingQuestions(pendingQuestions) }
-          : {}),
+        ...(pendingQuestions ? { pendingQuestions: mapPendingQuestions(pendingQuestions) } : {}),
         isBusy: conversationBusy,
         ...(this.activeBundle().rewindWarnings.length > 0
-          ? { rewindWarnings: this.activeBundle().rewindWarnings.map((warning) => ({ ...warning })) }
+          ? {
+              rewindWarnings: this.activeBundle().rewindWarnings.map((warning) => ({ ...warning })),
+            }
           : {}),
         ...(activeBundle.cachedTodoSnapshot ? { todos: activeBundle.cachedTodoSnapshot } : {}),
         ...(activeBundle.contextUsage ? { contextUsage: { ...activeBundle.contextUsage } } : {}),
@@ -3677,9 +3709,7 @@ class DesktopHostService {
       return undefined;
     }
 
-    const activePath = path.resolve(
-      activeBundle.activeSession?.filePath ?? activeBundle.id,
-    );
+    const activePath = path.resolve(activeBundle.activeSession?.filePath ?? activeBundle.id);
     const paneSessions: Record<string, PaneSessionSlice> = {};
 
     for (const sessionPath of this.visiblePaneSessionPaths) {
@@ -3724,19 +3754,19 @@ class DesktopHostService {
         bundle.messageTimeline.toMessages().length,
         isSessionBundleBusy(bundle) ? 1 : 0,
         bundle.activeSession?.filePath ?? bundle.id,
-        pendingApproval?.toolCallId ?? '',
-        pendingQuestions ? JSON.stringify(pendingQuestions.request) : '',
-        bundleRuntime?.pendingUserTurn() ?? '',
-        (bundleRuntime?.pendingImagePaths()?.length ?? 0),
-        paneWorkspace?.workspaceRoot ?? '',
-        paneWorkspace?.workspaceBinding ?? '',
+        pendingApproval?.toolCallId ?? "",
+        pendingQuestions ? JSON.stringify(pendingQuestions.request) : "",
+        bundleRuntime?.pendingUserTurn() ?? "",
+        bundleRuntime?.pendingImagePaths()?.length ?? 0,
+        paneWorkspace?.workspaceRoot ?? "",
+        paneWorkspace?.workspaceBinding ?? "",
         paneWorkspace?.git?.revision ?? 0,
-        paneWorkspace?.git?.selectedBranch ?? paneWorkspace?.git?.branch ?? '',
+        paneWorkspace?.git?.selectedBranch ?? paneWorkspace?.git?.branch ?? "",
         bundle.approvalLevel,
         paneModel?.activeModel
           ? modelRefKey(paneModel.activeModel)
           : modelRefKey(resolveEffectivePaneActiveModel(bundle, this.requireState())),
-      ].join('\0');
+      ].join("\0");
       const cached = this.paneSessionSliceCache.get(resolved);
       // 流式回合中 messageTimeline 内容会变但 revision/msgCount 签名常不变；忙碌时禁用缓存（19a224c6 回归）。
       if (!isSessionBundleBusy(bundle) && cached?.signature === sliceSignature) {
@@ -3795,19 +3825,19 @@ class DesktopHostService {
     const repoRoot = await readPrimaryRepoRoot(state.workspaceRoot);
     const worktreeContext = await readWorkspaceGitSnapshot(state.workspaceRoot);
     if (worktreeContext.isWorktreeSession) {
-      throw new Error(i18n.t('error.alreadyInWorktree'));
+      throw new Error(i18n.t("error.alreadyInWorktree"));
     }
 
     const baseBranch = bundle.pendingGitBranch ?? state.git.branch;
     if (!baseBranch) {
-      throw new Error(i18n.t('error.cannotDetermineBaseBranch'));
+      throw new Error(i18n.t("error.cannotDetermineBaseBranch"));
     }
 
     const names = await this.generateWorktreeNamesFromModel(userPrompt, baseBranch, repoRoot);
     const created = await createWorkspaceGitWorktree(repoRoot, names, baseBranch);
 
     bundle.pendingGitBranch = undefined;
-    bundle.workLocation = 'local';
+    bundle.workLocation = "local";
     bundle.workspaceRoot = created.worktreePath;
 
     await this.adoptWorkspaceRootForActiveBundle(created.worktreePath);
@@ -3838,7 +3868,7 @@ class DesktopHostService {
       await prefetchScopedGitBeforeGlobalWorkspaceChange(
         this.paneWorkspaceContext(),
         resolved,
-        'project',
+        "project",
       );
       this.paneSessionSliceCache.clear();
     }
@@ -3846,17 +3876,13 @@ class DesktopHostService {
     if (switchingWorkspace) {
       await this.extensionManager().deactivateAll();
       this.invalidateExtensionWarmup();
-      this.lastRuntimeError = '';
+      this.lastRuntimeError = "";
       this.toolExecutor = undefined;
       this.resetStreamingPlacementState(true);
     }
 
     state.workspaceRoot = resolved;
-    state.git = applyGitRevision(
-      await readWorkspaceGitSnapshot(resolved),
-      0,
-      { reset: true },
-    );
+    state.git = applyGitRevision(await readWorkspaceGitSnapshot(resolved), 0, { reset: true });
     bundle.workspaceRoot = resolved;
     await this.syncPlanStateForBundle(bundle);
 
@@ -3872,7 +3898,7 @@ class DesktopHostService {
     this.syncActiveRuntimePointer();
     if (switchingWorkspace) {
       await this.refreshExtensionsList({ metadataOnly: true });
-      this.scheduleExtensionWarmup({ type: 'startup', workspaceRoot: resolved });
+      this.scheduleExtensionWarmup({ type: "startup", workspaceRoot: resolved });
     }
     await this.ensureVisiblePaneScopedGit();
   }
@@ -3886,13 +3912,13 @@ class DesktopHostService {
     this.syncActiveRuntimePointer();
     if (switchingWorkspace) {
       await this.refreshExtensionsList({ metadataOnly: true });
-      this.scheduleExtensionWarmup({ type: 'startup', workspaceRoot });
+      this.scheduleExtensionWarmup({ type: "startup", workspaceRoot });
     }
   }
 
-  private async adoptNoWorkspaceBindingForActiveBundle(
-    options?: { deferHeavyWork?: boolean },
-  ): Promise<void> {
+  private async adoptNoWorkspaceBindingForActiveBundle(options?: {
+    deferHeavyWork?: boolean;
+  }): Promise<void> {
     const state = this.requireState();
     const bundle = this.activeBundle();
     const home = resolveDesktopHomeDirectory();
@@ -3900,48 +3926,40 @@ class DesktopHostService {
     const previousBinding = normalizeWorkspaceBinding(state.workspaceBinding);
 
     if (this.visiblePaneSessionPaths.length > 1) {
-      await prefetchScopedGitBeforeGlobalWorkspaceChange(
-        this.paneWorkspaceContext(),
-        home,
-        'none',
-      );
+      await prefetchScopedGitBeforeGlobalWorkspaceChange(this.paneWorkspaceContext(), home, "none");
       this.paneSessionSliceCache.clear();
     }
 
     if (switchingWorkspace) {
       await this.extensionManager().deactivateAll();
       this.invalidateExtensionWarmup();
-      this.lastRuntimeError = '';
+      this.lastRuntimeError = "";
       this.toolExecutor = undefined;
       this.resetStreamingPlacementState(true);
     }
 
-    const git = applyGitRevision(
-      await readWorkspaceGitSnapshot(home),
-      0,
-      { reset: true },
-    );
+    const git = applyGitRevision(await readWorkspaceGitSnapshot(home), 0, { reset: true });
     git.workLocation = bundle.workLocation;
 
     let lastProjectWorkspaceRoot = state.config.lastProjectWorkspaceRoot;
     if (
-      previousBinding === 'project'
-      && state.workspaceRoot
-      && !sameWorkspaceRoot(state.workspaceRoot, home)
+      previousBinding === "project" &&
+      state.workspaceRoot &&
+      !sameWorkspaceRoot(state.workspaceRoot, home)
     ) {
       lastProjectWorkspaceRoot = state.workspaceRoot;
     }
 
-    state.workspaceBinding = 'none';
+    state.workspaceBinding = "none";
     state.workspaceRoot = home;
     state.git = git;
     bundle.workspaceRoot = home;
-    bundle.workspaceBinding = 'none';
+    bundle.workspaceBinding = "none";
     bundle.scopedGit = undefined;
 
     state.config = {
       ...state.config,
-      workspaceBinding: 'none',
+      workspaceBinding: "none",
       ...(lastProjectWorkspaceRoot ? { lastProjectWorkspaceRoot } : {}),
     };
     await saveConfig(state.config);
@@ -3960,7 +3978,7 @@ class DesktopHostService {
     this.syncActiveRuntimePointer();
     if (switchingWorkspace) {
       await this.refreshExtensionsList({ metadataOnly: true });
-      this.scheduleExtensionWarmup({ type: 'startup', workspaceRoot: home });
+      this.scheduleExtensionWarmup({ type: "startup", workspaceRoot: home });
     }
     await this.ensureVisiblePaneScopedGit();
   }
@@ -3973,11 +3991,11 @@ class DesktopHostService {
     const state = this.requireState();
     const lightweightModel = resolveLightweightChatModelProfile(state.config);
     if (!lightweightModel) {
-      throw new Error(i18n.t('error.lightweightChatModelNotConfigured'));
+      throw new Error(i18n.t("error.lightweightChatModelNotConfigured"));
     }
     const apiKey = await resolveApiKeyForConfigModel(state.config, lightweightModel.profile.ref);
     if (!apiKey) {
-      throw new Error(i18n.t('error.autoWorktreeNameFailedNoKey'));
+      throw new Error(i18n.t("error.autoWorktreeNameFailedNoKey"));
     }
 
     const extensionSystemPrompts = await this.collectExtensionSystemPrompts();
@@ -4012,7 +4030,7 @@ class DesktopHostService {
       this.hostExtensionMarketplace = createHostExtensionMarketplace(
         {
           spiritDataDir: spiritAgentDataDir(),
-          hostKind: 'desktop',
+          hostKind: "desktop",
         },
         this.hostExtensionMarketplaceFetchImpl
           ? { fetchImpl: this.hostExtensionMarketplaceFetchImpl }
@@ -4041,7 +4059,9 @@ class DesktopHostService {
     state.extensionCss = await collectDesktopExtensionCssLayers(extensions);
   }
 
-  private async refreshExtensionToolDefinitions(executor: DesktopToolExecutor = this.requireToolExecutor()): Promise<void> {
+  private async refreshExtensionToolDefinitions(
+    executor: DesktopToolExecutor = this.requireToolExecutor(),
+  ): Promise<void> {
     const extensions = await this.extensionManager().list();
     executor.setExtensionToolDefinitions(buildDesktopExtensionToolDefinitions(extensions));
   }
@@ -4066,7 +4086,7 @@ class DesktopHostService {
 
     this.activeBundle().deferredRuntimeRefreshWhileBusy = false;
     await this.refreshRuntime();
-    this.lastRuntimeError = '';
+    this.lastRuntimeError = "";
   }
 
   private invalidateExtensionWarmup(): void {
@@ -4100,7 +4120,7 @@ class DesktopHostService {
     if (bundle.id === this.sessionRegistry.activeSessionId()) {
       this.syncActiveRuntimePointer();
     }
-    this.lastRuntimeError = '';
+    this.lastRuntimeError = "";
   }
 
   private async dispatchExtensionEvent(
@@ -4135,7 +4155,7 @@ class DesktopHostService {
     bundle.activeSession = {
       filePath: defaultNewSessionPath(),
       displayName: deriveDisplayNameFromSeed(seedText),
-      kind: 'stored',
+      kind: "stored",
     };
   }
 
@@ -4143,25 +4163,28 @@ class DesktopHostService {
     bundle: SessionBundle,
     input: { text: string; explicitWorkspaceFiles: PendingWorkspaceFile[] },
   ): void {
-    const displayText = input.text.trim() || i18n.t('error.attachedFiles', {
-      files: input.explicitWorkspaceFiles.map((file) => path.basename(file.path)).join(', '),
-    });
+    const displayText =
+      input.text.trim() ||
+      i18n.t("error.attachedFiles", {
+        files: input.explicitWorkspaceFiles.map((file) => path.basename(file.path)).join(", "),
+      });
     if (!displayText) {
       return;
     }
-    const localFileAttachments = input.explicitWorkspaceFiles.length > 0
-      ? input.explicitWorkspaceFiles.map((file) => ({
-          path: file.path,
-          name: path.basename(file.path),
-          isImage: file.kind === 'image',
-        }))
-      : undefined;
+    const localFileAttachments =
+      input.explicitWorkspaceFiles.length > 0
+        ? input.explicitWorkspaceFiles.map((file) => ({
+            path: file.path,
+            name: path.basename(file.path),
+            isImage: file.kind === "image",
+          }))
+        : undefined;
     this.clearAssistantContinuationMarkers(bundle);
     this.ensureActiveSession(displayText, bundle);
     this.prepareSessionTitleForFirstUserTurn(displayText, bundle);
     const userMessage: ConversationMessageSnapshot = {
       id: this.allocateMessageId(bundle),
-      role: 'user',
+      role: "user",
       content: displayText,
       pending: false,
       ...(localFileAttachments ? { localFileAttachments } : {}),
@@ -4191,7 +4214,7 @@ class DesktopHostService {
 
     const existingUserCount = bundle.messageTimeline
       .toMessages()
-      .filter((message) => message.role === 'user').length;
+      .filter((message) => message.role === "user").length;
     const nextPath = defaultNewSessionPath();
     activeSession.filePath = nextPath;
     if (existingUserCount === 0) {
@@ -4203,7 +4226,7 @@ class DesktopHostService {
     });
   }
 
-  private archiveMessages(): Array<{ role: 'user' | 'assistant'; content: string }> {
+  private archiveMessages(): Array<{ role: "user" | "assistant"; content: string }> {
     return buildArchiveMessagesFromConversation(this.desktopMessages());
   }
 
@@ -4250,7 +4273,7 @@ class DesktopHostService {
 
   private takeNextTimelineAssistantSegmentKind(bundle: SessionBundle): DesktopTimelineSegmentKind {
     const kind = bundle.nextTimelineAssistantSegmentKind;
-    bundle.nextTimelineAssistantSegmentKind = 'initial';
+    bundle.nextTimelineAssistantSegmentKind = "initial";
     return kind;
   }
 
@@ -4258,7 +4281,7 @@ class DesktopHostService {
     const messages = this.activeBundle().messages;
     let lastUser = -1;
     for (let index = messages.length - 1; index >= 0; index -= 1) {
-      if (messages[index]?.role === 'user') {
+      if (messages[index]?.role === "user") {
         lastUser = index;
         break;
       }
@@ -4269,14 +4292,18 @@ class DesktopHostService {
       if (!tool?.toolCallId) {
         continue;
       }
-      if (tool.phase !== 'preview' && tool.phase !== 'running' && tool.phase !== 'pending-approval') {
+      if (
+        tool.phase !== "preview" &&
+        tool.phase !== "running" &&
+        tool.phase !== "pending-approval"
+      ) {
         continue;
       }
-      const headline = i18n.t('error.interrupted', { toolName: tool.toolName });
+      const headline = i18n.t("error.interrupted", { toolName: tool.toolName });
       const failedTool = applyToolCallSummaryCopy(
         {
           ...tool,
-          phase: 'failed',
+          phase: "failed",
           headline,
           detailLines: [],
         },
@@ -4303,7 +4330,9 @@ class DesktopHostService {
   }
 
   private markLatestRenderableAssistantMessageContinuableInCurrentTurn(): void {
-    markLatestRenderableAssistantMessageContinuableInCurrentTurnFromService(this.conversationContinuationContext());
+    markLatestRenderableAssistantMessageContinuableInCurrentTurnFromService(
+      this.conversationContinuationContext(),
+    );
   }
 
   private logContinuationSnapshotState(input: {
@@ -4332,7 +4361,10 @@ class DesktopHostService {
     refreshArchiveFromRuntimeFromService(this.conversationContinuationContext(), bundle);
   }
 
-  private async recordHostFileChange(bundle: SessionBundle, change: HostRecordedFileChange): Promise<void> {
+  private async recordHostFileChange(
+    bundle: SessionBundle,
+    change: HostRecordedFileChange,
+  ): Promise<void> {
     return recordHostFileChangeFromService(this.rewindHostContext(), bundle, change);
   }
 
@@ -4349,7 +4381,11 @@ class DesktopHostService {
     beforeUserCheckpoint?: DesktopRewindCheckpointSnapshot,
     bundle?: SessionBundle,
   ): Promise<void> {
-    return recordRewindCheckpointFromService(this.rewindHostContext(bundle), messageId, beforeUserCheckpoint);
+    return recordRewindCheckpointFromService(
+      this.rewindHostContext(bundle),
+      messageId,
+      beforeUserCheckpoint,
+    );
   }
 
   private async applyTodosAfterRewind(snapshot: DesktopRewindCheckpointSnapshot): Promise<void> {
@@ -4366,7 +4402,11 @@ class DesktopHostService {
     snapshot: DesktopRewindCheckpointSnapshot,
     checkpointSequence: number,
   ): void {
-    restoreBeforeRewindCheckpointFromService(this.rewindHostContext(), snapshot, checkpointSequence);
+    restoreBeforeRewindCheckpointFromService(
+      this.rewindHostContext(),
+      snapshot,
+      checkpointSequence,
+    );
   }
 
   private async persistCurrentSessionIfNeeded(bundle?: SessionBundle): Promise<void> {
@@ -4418,7 +4458,7 @@ class DesktopHostService {
 
   private requireState(): HostState {
     if (!this.state) {
-      throw new Error(i18n.t('error.hostNotInitialized'));
+      throw new Error(i18n.t("error.hostNotInitialized"));
     }
     return this.state;
   }
@@ -4426,7 +4466,7 @@ class DesktopHostService {
   private requireRuntime(): DesktopHostRuntime {
     const runtime = this.activeBundle().runtime ?? this.runtime;
     if (!runtime) {
-      throw new Error(this.lastRuntimeError || i18n.t('error.runtimeNotReady'));
+      throw new Error(this.lastRuntimeError || i18n.t("error.runtimeNotReady"));
     }
     return runtime;
   }
@@ -4458,10 +4498,13 @@ class DesktopHostService {
   /**
    * @param full `false`：仅清思考插入锚点（新用户轮次，避免误插旧工具链）。`true`：另清 finalize 去重与 apply 批次计数（重置会话 / 打开存档）。
    */
-  private resetStreamingPlacementState(full: boolean, bundle: SessionBundle = this.activeBundle()): void {
+  private resetStreamingPlacementState(
+    full: boolean,
+    bundle: SessionBundle = this.activeBundle(),
+  ): void {
     const orchestration = this.orchestrationFor(bundle);
     orchestration.assistantMessages.resetStreamingPlacementState(full);
-    bundle.nextTimelineAssistantSegmentKind = 'initial';
+    bundle.nextTimelineAssistantSegmentKind = "initial";
     if (!full) {
       return;
     }
@@ -4469,7 +4512,7 @@ class DesktopHostService {
     orchestration.runtimeEvents.reset();
   }
 
-  private async runSerialized<T>(work: () => Promise<T>, _label = 'unlabeled'): Promise<T> {
+  private async runSerialized<T>(work: () => Promise<T>, _label = "unlabeled"): Promise<T> {
     const previous = this.serialized;
     let release: (() => void) | undefined;
     this.serialized = new Promise<void>((resolve) => {
@@ -4489,8 +4532,8 @@ class DesktopHostService {
   private hasSessionPumpWork(): boolean {
     for (const bundle of this.sessionRegistry.all()) {
       if (
-        sessionBundleNeedsPumpTick(bundle)
-        || remoteDesktopRuntimeNeedsProjection(bundle.runtime)
+        sessionBundleNeedsPumpTick(bundle) ||
+        remoteDesktopRuntimeNeedsProjection(bundle.runtime)
       ) {
         return true;
       }
@@ -4549,13 +4592,15 @@ class DesktopHostService {
     this.liveSnapshotEmitTimer = timer;
   }
 
-  private requireEnabledSkillEntry(skillName: string): HostMetadataSummary['skills']['entries'][number] {
+  private requireEnabledSkillEntry(
+    skillName: string,
+  ): HostMetadataSummary["skills"]["entries"][number] {
     const normalized = skillName.trim();
     const entry = this.requireState().metadata.skills.entries.find(
       (candidate) => candidate.enabled && candidate.source.name === normalized,
     );
     if (!entry) {
-      throw new Error(i18n.t('error.skillNotFound', { name: normalized }));
+      throw new Error(i18n.t("error.skillNotFound", { name: normalized }));
     }
     return entry;
   }
@@ -4563,7 +4608,7 @@ class DesktopHostService {
   private requireToolExecutor(): DesktopToolExecutor {
     const executor = this.activeBundle().toolExecutor ?? this.toolExecutor;
     if (!executor) {
-      throw new Error(i18n.t('error.mcpExecutorNotInitialized'));
+      throw new Error(i18n.t("error.mcpExecutorNotInitialized"));
     }
     return executor;
   }
@@ -4574,7 +4619,7 @@ class DesktopHostService {
 
   async shutdown(): Promise<void> {
     for (const bundle of this.sessionRegistry.all()) {
-      if (!bundle.activeSession || bundle.activeSession.kind === 'ephemeral') {
+      if (!bundle.activeSession || bundle.activeSession.kind === "ephemeral") {
         continue;
       }
       try {
@@ -4603,9 +4648,7 @@ export function setDesktopMarketplaceFetchImplementation(
   desktopHostService.setMarketplaceFetchImpl(fetchImpl);
 }
 
-export function setDesktopGitHubFetchImplementation(
-  fetchImpl: typeof fetch | undefined,
-): void {
+export function setDesktopGitHubFetchImplementation(fetchImpl: typeof fetch | undefined): void {
   setGitHubFetchImplementation(fetchImpl);
 }
 
@@ -4640,29 +4683,28 @@ function normalizeApprovalDecision(
   decision: DesktopApprovalDecision | undefined,
 ): RuntimeApprovalDecision {
   switch (decision?.kind) {
-    case 'allow':
+    case "allow":
       return {
-        kind: 'allow',
+        kind: "allow",
         ...(decision.persistTrust ? { persistTrust: true } : {}),
       };
-    case 'deny':
+    case "deny":
       return {
-        kind: 'deny',
+        kind: "deny",
         ...(decision.resultText?.trim() ? { resultText: decision.resultText.trim() } : {}),
       };
-    case 'guidance': {
+    case "guidance": {
       const userMessage = decision.userMessage.trim();
       if (!userMessage) {
-        throw new Error(i18n.t('error.enterGuidance'));
+        throw new Error(i18n.t("error.enterGuidance"));
       }
       return {
-        kind: 'guidance',
+        kind: "guidance",
         userMessage,
         ...(decision.resultText?.trim() ? { resultText: decision.resultText.trim() } : {}),
       };
     }
     default:
-      throw new Error(i18n.t('error.invalidApproval'));
+      throw new Error(i18n.t("error.invalidApproval"));
   }
 }
-

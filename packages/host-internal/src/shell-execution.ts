@@ -1,14 +1,14 @@
-import { spawn, type ChildProcess } from 'node:child_process';
-import path from 'node:path';
+import { spawn, type ChildProcess } from "node:child_process";
+import path from "node:path";
 
-import { buildAgentShellEnvironment } from './bundled-ripgrep-env.js';
+import { buildAgentShellEnvironment } from "./bundled-ripgrep-env.js";
 import {
   decodeShellHostOutput,
   defaultShellForPty,
   isWindowsCmdExecutable,
   isWindowsPowerShellExecutable,
   prepareShellForHostExecution,
-} from './default-terminal-shell.js';
+} from "./default-terminal-shell.js";
 
 const DEFAULT_MAX_OUTPUT_BYTES = 8 * 1024 * 1024;
 const DEFAULT_CHUNK_THROTTLE_MS = 75;
@@ -32,24 +32,27 @@ export interface RunShellHandle {
   kill: () => void;
 }
 
-function shellSpawnInvocation(shellFile: string, command: string): { file: string; args: string[] } {
+function shellSpawnInvocation(
+  shellFile: string,
+  command: string,
+): { file: string; args: string[] } {
   if (isWindowsPowerShellExecutable(shellFile)) {
     return {
       file: shellFile,
-      args: ['-NoProfile', '-NonInteractive', '-Command', command],
+      args: ["-NoProfile", "-NonInteractive", "-Command", command],
     };
   }
   if (isWindowsCmdExecutable(shellFile)) {
     return {
       file: shellFile,
-      args: ['/d', '/s', '/c', command],
+      args: ["/d", "/s", "/c", command],
     };
   }
   const base = path.basename(shellFile).toLowerCase();
-  if (base === 'fish') {
-    return { file: shellFile, args: ['-c', command] };
+  if (base === "fish") {
+    return { file: shellFile, args: ["-c", command] };
   }
-  return { file: shellFile, args: ['-c', command] };
+  return { file: shellFile, args: ["-c", command] };
 }
 
 function createChunkThrottle(
@@ -59,7 +62,7 @@ function createChunkThrottle(
   push: (chunk: string) => void;
   flush: () => void;
 } {
-  let pending = '';
+  let pending = "";
   let timer: ReturnType<typeof setTimeout> | undefined;
 
   const flush = (): void => {
@@ -71,7 +74,7 @@ function createChunkThrottle(
       return;
     }
     const chunk = pending;
-    pending = '';
+    pending = "";
     onOutputChunk(chunk);
   };
 
@@ -98,7 +101,10 @@ export function runShell(options: RunShellOptions): RunShellHandle {
   const { file, args } = shellSpawnInvocation(shellExecutable, preparedCommand);
   const maxOutputBytes = options.maxOutputBytes ?? DEFAULT_MAX_OUTPUT_BYTES;
   const throttle = options.onOutputChunk
-    ? createChunkThrottle(options.onOutputChunk, options.chunkThrottleMs ?? DEFAULT_CHUNK_THROTTLE_MS)
+    ? createChunkThrottle(
+        options.onOutputChunk,
+        options.chunkThrottleMs ?? DEFAULT_CHUNK_THROTTLE_MS,
+      )
     : undefined;
 
   let child: ChildProcess | undefined;
@@ -112,36 +118,36 @@ export function runShell(options: RunShellOptions): RunShellHandle {
   };
 
   const result = new Promise<RunShellResult>((resolve) => {
-    let stdout = '';
-    let stderr = '';
+    let stdout = "";
+    let stderr = "";
     let stdoutBytes = 0;
     let stderrBytes = 0;
     let exitCode = 0;
 
     const appendLimited = (current: string, addition: string): string => {
-      if (addition.length === 0 || Buffer.byteLength(current, 'utf8') >= maxOutputBytes) {
+      if (addition.length === 0 || Buffer.byteLength(current, "utf8") >= maxOutputBytes) {
         return current;
       }
       let combined = current + addition;
-      while (Buffer.byteLength(combined, 'utf8') > maxOutputBytes && combined.length > current.length) {
+      while (
+        Buffer.byteLength(combined, "utf8") > maxOutputBytes &&
+        combined.length > current.length
+      ) {
         combined = combined.slice(0, -1);
       }
       return combined;
     };
 
-    const appendStream = (
-      stream: 'stdout' | 'stderr',
-      decoded: string,
-    ): void => {
+    const appendStream = (stream: "stdout" | "stderr", decoded: string): void => {
       if (decoded.length === 0) {
         return;
       }
-      if (stream === 'stdout') {
+      if (stream === "stdout") {
         stdout = appendLimited(stdout, decoded);
-        stdoutBytes = Buffer.byteLength(stdout, 'utf8');
+        stdoutBytes = Buffer.byteLength(stdout, "utf8");
       } else {
         stderr = appendLimited(stderr, decoded);
-        stderrBytes = Buffer.byteLength(stderr, 'utf8');
+        stderrBytes = Buffer.byteLength(stderr, "utf8");
       }
       throttle?.push(decoded);
     };
@@ -149,26 +155,26 @@ export function runShell(options: RunShellOptions): RunShellHandle {
     child = spawn(file, args, {
       cwd: options.workspaceRoot,
       windowsHide: true,
-      stdio: ['ignore', 'pipe', 'pipe'],
+      stdio: ["ignore", "pipe", "pipe"],
       env: buildAgentShellEnvironment(process.env),
     });
 
-    child.stdout?.on('data', (chunk: Buffer) => {
-      appendStream('stdout', decodeSpawnChunk(shellExecutable, chunk));
+    child.stdout?.on("data", (chunk: Buffer) => {
+      appendStream("stdout", decodeSpawnChunk(shellExecutable, chunk));
     });
 
-    child.stderr?.on('data', (chunk: Buffer) => {
-      appendStream('stderr', decodeSpawnChunk(shellExecutable, chunk));
+    child.stderr?.on("data", (chunk: Buffer) => {
+      appendStream("stderr", decodeSpawnChunk(shellExecutable, chunk));
     });
 
-    child.on('error', () => {
+    child.on("error", () => {
       throttle?.flush();
       resolve({ stdout, stderr, exitCode: -1 });
     });
 
-    child.on('close', (code) => {
+    child.on("close", (code) => {
       throttle?.flush();
-      exitCode = killedByHost ? -1 : typeof code === 'number' ? code : -1;
+      exitCode = killedByHost ? -1 : typeof code === "number" ? code : -1;
       resolve({ stdout, stderr, exitCode });
     });
   });

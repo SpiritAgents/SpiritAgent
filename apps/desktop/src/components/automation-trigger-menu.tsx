@@ -72,10 +72,7 @@ export function AutomationTriggerMenu({
 }: AutomationTriggerMenuProps) {
   const { t } = useTranslation();
   const [githubSubOpen, setGithubSubOpen] = useState(false);
-  const label = formatDesktopAutomationTriggerLabel(
-    trigger,
-    buildAutomationTriggerFormatLabels(t),
-  );
+  const label = formatDesktopAutomationTriggerLabel(trigger, buildAutomationTriggerFormatLabels(t));
 
   const timeSchedule: DesktopAutomationSchedule =
     trigger.kind === "time" ? trigger.schedule : { kind: "daily", hour: 20, minute: 0 };
@@ -104,14 +101,17 @@ export function AutomationTriggerMenu({
           disabled={disabled}
           className={cn(
             "inline-flex h-7 max-w-full items-center gap-1 rounded-md border-0 bg-transparent px-1 text-muted-foreground outline-none hover:bg-muted/50 focus-visible:ring-2 focus-visible:ring-ring/50 disabled:opacity-50",
-                    DESKTOP_MENU_TRIGGER_TEXT_CLASS,
+            DESKTOP_MENU_TRIGGER_TEXT_CLASS,
           )}
         >
           <span className="min-w-0 truncate">{label}</span>
           <ChevronDown className="size-3 shrink-0 text-muted-foreground/80" aria-hidden />
         </button>
       </DropdownMenuTrigger>
-      <DropdownMenuContent align="start" className={cn(DESKTOP_OVERLAY_SHORT_MENU_MIN_WIDTH, "z-[120] p-0")}>
+      <DropdownMenuContent
+        align="start"
+        className={cn(DESKTOP_OVERLAY_SHORT_MENU_MIN_WIDTH, "z-[120] p-0")}
+      >
         <div className={DESKTOP_OVERLAY_SHORT_LIST_PADDING}>
           <DropdownMenuSub
             open={githubConnected ? githubSubOpen : false}
@@ -126,7 +126,10 @@ export function AutomationTriggerMenu({
               <Tooltip delayDuration={300}>
                 <TooltipTrigger asChild>
                   <span className="flex w-full min-w-0">
-                    <DropdownMenuSubTrigger disabled={disabled || !githubConnected} className="gap-2">
+                    <DropdownMenuSubTrigger
+                      disabled={disabled || !githubConnected}
+                      className="gap-2"
+                    >
                       <GitHubMarkIcon className="size-3.5 shrink-0 text-muted-foreground/80" />
                       {t("automations.trigger.github")}
                     </DropdownMenuSubTrigger>
@@ -151,7 +154,11 @@ export function AutomationTriggerMenu({
                   {t("automations.trigger.github")}
                 </DropdownMenuSubTrigger>
                 <DropdownMenuSubContent
-                  className={cn(DESKTOP_OVERLAY_LIST_CONTENT, DESKTOP_OVERLAY_LIST_SHELL, "z-[130] w-72")}
+                  className={cn(
+                    DESKTOP_OVERLAY_LIST_CONTENT,
+                    DESKTOP_OVERLAY_LIST_SHELL,
+                    "z-[130] w-72",
+                  )}
                 >
                   <AutomationGitHubRepositoryList
                     open={githubSubOpen}
@@ -169,7 +176,9 @@ export function AutomationTriggerMenu({
               <Clock className="size-3.5 shrink-0 text-muted-foreground/80" aria-hidden />
               {t("automations.trigger.time")}
             </DropdownMenuSubTrigger>
-            <DropdownMenuSubContent className={cn(DESKTOP_OVERLAY_SHORT_MENU_MIN_WIDTH, "z-[130] p-0")}>
+            <DropdownMenuSubContent
+              className={cn(DESKTOP_OVERLAY_SHORT_MENU_MIN_WIDTH, "z-[130] p-0")}
+            >
               <div className={DESKTOP_OVERLAY_SHORT_LIST_PADDING}>
                 <AutomationTimeScheduleOptions
                   schedule={timeSchedule}
@@ -199,19 +208,17 @@ function AutomationGitHubRepositoryList({
     query: string,
     page?: number,
   ): Promise<SearchGitHubAutomationRepositoriesSnapshot>;
-  onSelect(
-    repo: DesktopGitHubAutomationRepositoryItem,
-    event: DesktopAutomationGitHubEvent,
-  ): void;
+  onSelect(repo: DesktopGitHubAutomationRepositoryItem, event: DesktopAutomationGitHubEvent): void;
 }) {
   const { t } = useTranslation();
   const scrollAreaRef = useRef<ComponentRef<typeof ScrollArea>>(null);
   const loadMoreSentinelRef = useRef<HTMLDivElement>(null);
-  const { query, setQuery, items, loading, loadingMore, hasMore, loadMore, error } = useGitHubAutomationRepositories({
-    open,
-    listGitHubRepositories,
-    searchGitHubRepositories,
-  });
+  const { query, setQuery, items, loading, loadingMore, hasMore, loadMore, error } =
+    useGitHubAutomationRepositories({
+      open,
+      listGitHubRepositories,
+      searchGitHubRepositories,
+    });
 
   useEffect(() => {
     if (!open || !hasMore || loadingMore) {
@@ -258,9 +265,13 @@ function AutomationGitHubRepositoryList({
           {loading ? (
             <p className="px-2 py-3 text-xs text-muted-foreground">{t("common.loading")}</p>
           ) : error ? (
-            <p className="px-2 py-3 text-xs text-destructive">{t("automations.trigger.repositoryLoadFailed")}</p>
+            <p className="px-2 py-3 text-xs text-destructive">
+              {t("automations.trigger.repositoryLoadFailed")}
+            </p>
           ) : items.length === 0 ? (
-            <p className="px-2 py-3 text-xs text-muted-foreground">{t("automations.trigger.repositoryEmpty")}</p>
+            <p className="px-2 py-3 text-xs text-muted-foreground">
+              {t("automations.trigger.repositoryEmpty")}
+            </p>
           ) : (
             <>
               {items.map((item) => (

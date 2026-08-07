@@ -38,11 +38,7 @@ type TabListCacheEntry = {
   nextPage?: number;
 };
 
-function buildListCacheKey(
-  repository: GitHubRepositoryRef,
-  tab: PrListTab,
-  query: string,
-): string {
+function buildListCacheKey(repository: GitHubRepositoryRef, tab: PrListTab, query: string): string {
   return `${repository.owner}/${repository.repo}\0${tab}\0${query}`;
 }
 
@@ -249,7 +245,13 @@ export const WorkspacePrListView = forwardRef<WorkspacePrListViewHandle, Workspa
           }
         }
       },
-      [listGitHubPullRequests, notifyInitialLoadSettled, repository.owner, repository.repo, writeListCache],
+      [
+        listGitHubPullRequests,
+        notifyInitialLoadSettled,
+        repository.owner,
+        repository.repo,
+        writeListCache,
+      ],
     );
 
     const refreshInBackground = useCallback(() => {
@@ -303,7 +305,14 @@ export const WorkspacePrListView = forwardRef<WorkspacePrListViewHandle, Workspa
       setHasMore(false);
       setNextPage(undefined);
       void fetchPage(activeTab, query, 1, false);
-    }, [activeTab, debouncedQuery, fetchPage, notifyInitialLoadSettled, readTabCountsCache, repository]);
+    }, [
+      activeTab,
+      debouncedQuery,
+      fetchPage,
+      notifyInitialLoadSettled,
+      readTabCountsCache,
+      repository,
+    ]);
 
     const handleLoadMore = useCallback(() => {
       if (!hasMore || loadingMore || loading || !nextPage || loadMoreInFlightRef.current) {
@@ -346,42 +355,47 @@ export const WorkspacePrListView = forwardRef<WorkspacePrListViewHandle, Workspa
       },
     ];
 
-    const listBody = loading && items.length === 0 ? (
-      <div className="px-3 py-3 text-xs text-muted-foreground">{t("workspace.prListLoading")}</div>
-    ) : !loading && items.length === 0 ? (
-      <div className="px-3 py-3 text-xs text-muted-foreground">
-        {debouncedQuery ? t("workspace.prListSearchEmpty") : t("workspace.prListEmpty")}
-      </div>
-    ) : (
-      <ScrollArea ref={scrollAreaRef} className="min-h-0 flex-1" type="auto">
-        <div ref={listRef}>
-          {items.map((item) => (
-            <WorkspacePrListRow
-              key={item.number}
-              item={item}
-              onSelect={onSelectPullRequest}
-            />
-          ))}
-          {hasMore || loadingMore ? (
-            <div
-              ref={loadMoreSentinelRef}
-              className="flex min-h-10 items-center justify-center gap-2 py-2 text-xs text-muted-foreground"
-            >
-              {loadingMore ? (
-                <>
-                  <LoaderCircle className="size-3.5 animate-spin" aria-hidden />
-                  {t("workspace.prListLoadingMore")}
-                </>
-              ) : hasMore ? (
-                <Button type="button" variant="ghost" size="sm" className="h-7 text-xs" onClick={handleLoadMore}>
-                  {t("workspace.prListLoadMore")}
-                </Button>
-              ) : null}
-            </div>
-          ) : null}
+    const listBody =
+      loading && items.length === 0 ? (
+        <div className="px-3 py-3 text-xs text-muted-foreground">
+          {t("workspace.prListLoading")}
         </div>
-      </ScrollArea>
-    );
+      ) : !loading && items.length === 0 ? (
+        <div className="px-3 py-3 text-xs text-muted-foreground">
+          {debouncedQuery ? t("workspace.prListSearchEmpty") : t("workspace.prListEmpty")}
+        </div>
+      ) : (
+        <ScrollArea ref={scrollAreaRef} className="min-h-0 flex-1" type="auto">
+          <div ref={listRef}>
+            {items.map((item) => (
+              <WorkspacePrListRow key={item.number} item={item} onSelect={onSelectPullRequest} />
+            ))}
+            {hasMore || loadingMore ? (
+              <div
+                ref={loadMoreSentinelRef}
+                className="flex min-h-10 items-center justify-center gap-2 py-2 text-xs text-muted-foreground"
+              >
+                {loadingMore ? (
+                  <>
+                    <LoaderCircle className="size-3.5 animate-spin" aria-hidden />
+                    {t("workspace.prListLoadingMore")}
+                  </>
+                ) : hasMore ? (
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="sm"
+                    className="h-7 text-xs"
+                    onClick={handleLoadMore}
+                  >
+                    {t("workspace.prListLoadMore")}
+                  </Button>
+                ) : null}
+              </div>
+            ) : null}
+          </div>
+        </ScrollArea>
+      );
 
     return (
       <div className={cn("flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden", className)}>

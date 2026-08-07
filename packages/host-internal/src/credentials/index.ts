@@ -8,12 +8,9 @@ export {
   resolveStoredApiKeyForProfile,
   saveProviderSetup,
   saveSpiritConfig,
-} from './credentials.js';
-export {
-  configFilePath,
-  resolveSpiritDataDir,
-} from './spirit-config.js';
-export { setKeyringStoreForTests, type KeyringStore } from './keyring-store.js';
+} from "./credentials.js";
+export { configFilePath, resolveSpiritDataDir } from "./spirit-config.js";
+export { setKeyringStoreForTests, type KeyringStore } from "./keyring-store.js";
 export {
   KEYRING_GLOBAL_ACCOUNT,
   KEYRING_SERVICE,
@@ -29,7 +26,7 @@ export {
   providerSecretAccessKeyAccount,
   providerVertexClientEmailAccount,
   providerVertexPrivateKeyAccount,
-} from './provider-accounts.js';
+} from "./provider-accounts.js";
 export type {
   BedrockSetupCredentials,
   GoogleVertexSetupCredentials,
@@ -38,4 +35,4 @@ export type {
   SpiritModelCapability,
   SpiritModelProfile,
   SpiritModelReasoningEffort,
-} from './types.js';
+} from "./types.js";

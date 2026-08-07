@@ -32,7 +32,11 @@ import type {
   SearchGitHubAutomationRepositoriesSnapshot,
 } from "@/types";
 import { FONT_WEIGHT_MEDIUM } from "@/lib/desktop-typography";
-import { emptyModelRef, isEmptyModelRef, modelRefsEqual } from "@spiritagent/host-internal/config-v2";
+import {
+  emptyModelRef,
+  isEmptyModelRef,
+  modelRefsEqual,
+} from "@spiritagent/host-internal/config-v2";
 import { cn } from "@/lib/utils";
 
 type CreateAutomationDialogProps = {
@@ -92,9 +96,7 @@ export function CreateAutomationDialog({
     setTrigger(defaultDesktopTimeTrigger());
     setWorkspaceBinding(snapshot.workspaceBinding);
     setWorkspaceRoot(
-      snapshot.workspaceBinding === "none"
-        ? snapshot.userHomeDirectory
-        : snapshot.workspaceRoot,
+      snapshot.workspaceBinding === "none" ? snapshot.userHomeDirectory : snapshot.workspaceRoot,
     );
     setModelRef(snapshot.config.activeModel);
     const activeModel = snapshot.config.models.find((model) =>
@@ -111,17 +113,20 @@ export function CreateAutomationDialog({
     workspaceBinding === "none" ? (snapshot?.userHomeDirectory ?? "") : workspaceRoot;
 
   const canSubmit =
-    title.trim().length > 0
-    && overview.trim().length > 0
-    && (workspaceBinding === "none" || workspaceRoot.trim().length > 0)
-    && resolvedWorkspaceRoot.trim().length > 0
-    && !isEmptyModelRef(modelRef)
-    && isValidDesktopAutomationTrigger(trigger)
-    && (trigger.kind !== "github" || githubConnected);
+    title.trim().length > 0 &&
+    overview.trim().length > 0 &&
+    (workspaceBinding === "none" || workspaceRoot.trim().length > 0) &&
+    resolvedWorkspaceRoot.trim().length > 0 &&
+    !isEmptyModelRef(modelRef) &&
+    isValidDesktopAutomationTrigger(trigger) &&
+    (trigger.kind !== "github" || githubConnected);
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="flex max-h-[min(90vh,40rem)] max-w-2xl flex-col gap-0 p-0 sm:max-w-2xl" showCloseButton>
+      <DialogContent
+        className="flex max-h-[min(90vh,40rem)] max-w-2xl flex-col gap-0 p-0 sm:max-w-2xl"
+        showCloseButton
+      >
         <DialogHeader className="sr-only">
           <DialogTitle>{t("automations.dialogTitle")}</DialogTitle>
         </DialogHeader>
@@ -131,7 +136,10 @@ export function CreateAutomationDialog({
             onChange={(event) => setTitle(event.target.value)}
             placeholder={t("automations.dialogTitlePlaceholder")}
             disabled={disabled}
-            className={cn("w-full border-0 bg-transparent text-lg text-foreground outline-none placeholder:text-muted-foreground/70", FONT_WEIGHT_MEDIUM)}
+            className={cn(
+              "w-full border-0 bg-transparent text-lg text-foreground outline-none placeholder:text-muted-foreground/70",
+              FONT_WEIGHT_MEDIUM,
+            )}
           />
           <textarea
             value={overview}
@@ -204,7 +212,12 @@ export function CreateAutomationDialog({
             ) : null}
           </div>
           <DialogFooterActions>
-            <Button type="button" variant="outline" onClick={() => onOpenChange(false)} disabled={disabled}>
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => onOpenChange(false)}
+              disabled={disabled}
+            >
               {t("common.cancel")}
             </Button>
             <Button

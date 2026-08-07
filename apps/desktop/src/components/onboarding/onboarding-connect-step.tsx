@@ -80,8 +80,7 @@ export function OnboardingConnectControls({
       return;
     }
     const update = () => {
-      const next =
-        viewport.scrollHeight - viewport.scrollTop - viewport.clientHeight > 1;
+      const next = viewport.scrollHeight - viewport.scrollTop - viewport.clientHeight > 1;
       setHasMoreBelow(next);
       onBottomFadeChange?.(next);
     };

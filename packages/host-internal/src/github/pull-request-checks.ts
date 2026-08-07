@@ -1,10 +1,10 @@
-import { getPullRequestChecksViaGraphQL } from './pull-request-checks-graphql.js';
+import { getPullRequestChecksViaGraphQL } from "./pull-request-checks-graphql.js";
 import type {
   GitHubPullRequestCheck,
   GitHubPullRequestCheckState,
   GitHubPullRequestChecksSnapshot,
   GitHubRepositoryRef,
-} from './types.js';
+} from "./types.js";
 
 const EPOCH_ISO = new Date(0).toISOString();
 
@@ -46,33 +46,33 @@ function mapCheckRunState(
   status: string | null | undefined,
   conclusion: string | null | undefined,
 ): GitHubPullRequestCheckState {
-  const normalizedStatus = status?.trim().toLowerCase() || '';
-  if (normalizedStatus === 'queued' || normalizedStatus === 'in_progress') {
-    return 'in_progress';
+  const normalizedStatus = status?.trim().toLowerCase() || "";
+  if (normalizedStatus === "queued" || normalizedStatus === "in_progress") {
+    return "in_progress";
   }
 
-  const normalizedConclusion = conclusion?.trim().toLowerCase() || '';
+  const normalizedConclusion = conclusion?.trim().toLowerCase() || "";
   if (
-    normalizedConclusion === 'failure' ||
-    normalizedConclusion === 'timed_out' ||
-    normalizedConclusion === 'startup_failure' ||
-    normalizedConclusion === 'action_required'
+    normalizedConclusion === "failure" ||
+    normalizedConclusion === "timed_out" ||
+    normalizedConclusion === "startup_failure" ||
+    normalizedConclusion === "action_required"
   ) {
-    return 'failure';
+    return "failure";
   }
 
-  return 'success';
+  return "success";
 }
 
 function mapCommitStatusState(state: string | null | undefined): GitHubPullRequestCheckState {
-  const normalized = state?.trim().toLowerCase() || '';
-  if (normalized === 'failure' || normalized === 'error') {
-    return 'failure';
+  const normalized = state?.trim().toLowerCase() || "";
+  if (normalized === "failure" || normalized === "error") {
+    return "failure";
   }
-  if (normalized === 'pending') {
-    return 'in_progress';
+  if (normalized === "pending") {
+    return "in_progress";
   }
-  return 'success';
+  return "success";
 }
 
 export function mapCheckRun(item: GitHubCheckRunApiItem): GitHubPullRequestCheck | null {
@@ -114,8 +114,8 @@ export function mapCommitStatus(item: GitHubCommitStatusApiItem): GitHubPullRequ
     name: context,
     state,
     startedAt,
-    ...(state === 'success' && updatedAt ? { completedAt: updatedAt } : {}),
-    ...(state === 'failure' && updatedAt ? { completedAt: updatedAt } : {}),
+    ...(state === "success" && updatedAt ? { completedAt: updatedAt } : {}),
+    ...(state === "failure" && updatedAt ? { completedAt: updatedAt } : {}),
     ...(url ? { url } : {}),
   };
 }

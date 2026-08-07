@@ -1,10 +1,10 @@
-import assert from 'node:assert/strict';
-import { mkdtemp, rm, writeFile } from 'node:fs/promises';
-import { tmpdir } from 'node:os';
-import { join, dirname } from 'node:path';
-import test from 'node:test';
+import assert from "node:assert/strict";
+import { mkdtemp, rm, writeFile } from "node:fs/promises";
+import { tmpdir } from "node:os";
+import { join, dirname } from "node:path";
+import test from "node:test";
 
-import { rgPath } from '@vscode/ripgrep';
+import { rgPath } from "@vscode/ripgrep";
 
 import {
   SPIRIT_RG_BIN_DIR_ENV,
@@ -12,27 +12,27 @@ import {
   SPIRIT_SHELL_USE_BUNDLED_RG_ENV,
   buildAgentShellEnvironment,
   resolveBundledRipgrepPath,
-} from './bundled-ripgrep-env.js';
-import { runShell } from './shell-execution.js';
+} from "./bundled-ripgrep-env.js";
+import { runShell } from "./shell-execution.js";
 
 function pathSeparator(): string {
-  return process.platform === 'win32' ? ';' : ':';
+  return process.platform === "win32" ? ";" : ":";
 }
 
 function resolvePathEnvKey(env: NodeJS.ProcessEnv): string {
-  if (process.platform !== 'win32') {
-    return 'PATH';
+  if (process.platform !== "win32") {
+    return "PATH";
   }
-  return Object.keys(env).find((key) => key.toLowerCase() === 'path') ?? 'Path';
+  return Object.keys(env).find((key) => key.toLowerCase() === "path") ?? "Path";
 }
 
-test('resolveBundledRipgrepPath returns bundled rg when available', () => {
+test("resolveBundledRipgrepPath returns bundled rg when available", () => {
   const resolved = resolveBundledRipgrepPath({});
   assert.equal(resolved, rgPath);
 });
 
-test('buildAgentShellEnvironment prepends bundled rg bin dir to PATH', () => {
-  const baseEnv = { PATH: '/usr/bin:/bin' };
+test("buildAgentShellEnvironment prepends bundled rg bin dir to PATH", () => {
+  const baseEnv = { PATH: "/usr/bin:/bin" };
   const env = buildAgentShellEnvironment(baseEnv);
   const pathKey = resolvePathEnvKey(env);
   const binDir = env[SPIRIT_RG_BIN_DIR_ENV];
@@ -43,27 +43,27 @@ test('buildAgentShellEnvironment prepends bundled rg bin dir to PATH', () => {
   assert.equal(env[pathKey]?.startsWith(`${binDir}${pathSeparator()}`), true);
 });
 
-test('buildAgentShellEnvironment skips injection when SPIRIT_SHELL_USE_BUNDLED_RG=0', () => {
+test("buildAgentShellEnvironment skips injection when SPIRIT_SHELL_USE_BUNDLED_RG=0", () => {
   const baseEnv = {
-    PATH: '/usr/bin:/bin',
-    [SPIRIT_SHELL_USE_BUNDLED_RG_ENV]: '0',
+    PATH: "/usr/bin:/bin",
+    [SPIRIT_SHELL_USE_BUNDLED_RG_ENV]: "0",
   };
   const env = buildAgentShellEnvironment(baseEnv);
   const pathKey = resolvePathEnvKey(env);
 
-  assert.equal(env[pathKey], '/usr/bin:/bin');
+  assert.equal(env[pathKey], "/usr/bin:/bin");
   assert.equal(env[SPIRIT_RG_PATH_ENV], undefined);
   assert.equal(env[SPIRIT_RG_BIN_DIR_ENV], undefined);
 });
 
-test('buildAgentShellEnvironment respects external SPIRIT_RG_PATH override', async () => {
-  const tempDir = await mkdtemp(join(tmpdir(), 'spirit-rg-override-'));
-  const fakeRg = join(tempDir, process.platform === 'win32' ? 'rg.exe' : 'rg');
+test("buildAgentShellEnvironment respects external SPIRIT_RG_PATH override", async () => {
+  const tempDir = await mkdtemp(join(tmpdir(), "spirit-rg-override-"));
+  const fakeRg = join(tempDir, process.platform === "win32" ? "rg.exe" : "rg");
 
   try {
-    await writeFile(fakeRg, '#!/bin/sh\n', 'utf8');
+    await writeFile(fakeRg, "#!/bin/sh\n", "utf8");
     const baseEnv = {
-      PATH: '/usr/bin',
+      PATH: "/usr/bin",
       [SPIRIT_RG_PATH_ENV]: fakeRg,
     };
     const env = buildAgentShellEnvironment(baseEnv);
@@ -75,7 +75,7 @@ test('buildAgentShellEnvironment respects external SPIRIT_RG_PATH override', asy
   }
 });
 
-test('buildAgentShellEnvironment does not duplicate bin dir when already first in PATH', () => {
+test("buildAgentShellEnvironment does not duplicate bin dir when already first in PATH", () => {
   const binDir = dirname(rgPath);
   const baseEnv = { PATH: `${binDir}${pathSeparator()}/usr/bin` };
   const env = buildAgentShellEnvironment(baseEnv);
@@ -86,15 +86,14 @@ test('buildAgentShellEnvironment does not duplicate bin dir when already first i
   assert.equal(env[SPIRIT_RG_BIN_DIR_ENV], binDir);
 });
 
-test('runShell resolves rg from bundled PATH', async () => {
-  const workspaceRoot = await mkdtemp(join(tmpdir(), 'spirit-shell-rg-'));
-  const locateCommand =
-    process.platform === 'win32' ? 'where rg' : 'command -v rg';
+test("runShell resolves rg from bundled PATH", async () => {
+  const workspaceRoot = await mkdtemp(join(tmpdir(), "spirit-shell-rg-"));
+  const locateCommand = process.platform === "win32" ? "where rg" : "command -v rg";
 
   try {
     const { result: versionResult } = runShell({
       workspaceRoot,
-      command: 'rg --version',
+      command: "rg --version",
     });
     const version = await versionResult;
 

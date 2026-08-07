@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState } from "react";
 
 /** Tracks whether the user has left the desktop window (Electron main process truth). */
 export function useDesktopAppAway(): boolean {
@@ -28,16 +28,16 @@ export function useDesktopAppAway(): boolean {
       setAway(next);
     });
 
-    document.addEventListener('visibilitychange', reportVisibility);
-    window.addEventListener('focus', reportVisibility);
-    window.addEventListener('blur', reportVisibility);
+    document.addEventListener("visibilitychange", reportVisibility);
+    window.addEventListener("focus", reportVisibility);
+    window.addEventListener("blur", reportVisibility);
 
     return () => {
       cancelled = true;
       unsubscribeAway?.();
-      document.removeEventListener('visibilitychange', reportVisibility);
-      window.removeEventListener('focus', reportVisibility);
-      window.removeEventListener('blur', reportVisibility);
+      document.removeEventListener("visibilitychange", reportVisibility);
+      window.removeEventListener("focus", reportVisibility);
+      window.removeEventListener("blur", reportVisibility);
     };
   }, []);
 

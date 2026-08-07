@@ -1,22 +1,22 @@
-import { useTranslation } from 'react-i18next'
+import { useTranslation } from "react-i18next";
 
-import { ComposerSuggestionMenuItem } from '@/components/composer-suggestion-menu-item'
+import { ComposerSuggestionMenuItem } from "@/components/composer-suggestion-menu-item";
 import {
   DESKTOP_OVERLAY_LIST_ITEM_PRIMARY,
   DESKTOP_OVERLAY_LIST_ITEM_SECONDARY,
-} from '@/lib/desktop-chrome'
-import { SLASH_SUGGESTION_ICONS } from '@/lib/slash-command-icons'
-import type { SkillSlashSuggestion, SkillSlashSuggestionKind } from '@/lib/skill-slash'
+} from "@/lib/desktop-chrome";
+import { SLASH_SUGGESTION_ICONS } from "@/lib/slash-command-icons";
+import type { SkillSlashSuggestion, SkillSlashSuggestionKind } from "@/lib/skill-slash";
 
 type SkillSlashMenuProps = {
-  suggestions: SkillSlashSuggestion[]
-  selectedIndex: number
-  onApplySuggestion(suggestion: SkillSlashSuggestion): void
-}
+  suggestions: SkillSlashSuggestion[];
+  selectedIndex: number;
+  onApplySuggestion(suggestion: SkillSlashSuggestion): void;
+};
 
 function SlashSuggestionIcon({ kind }: { kind: SkillSlashSuggestionKind }) {
-  const Icon = SLASH_SUGGESTION_ICONS[kind]
-  return <Icon className="mt-0.5 size-3.5 shrink-0 opacity-70" aria-hidden />
+  const Icon = SLASH_SUGGESTION_ICONS[kind];
+  return <Icon className="mt-0.5 size-3.5 shrink-0 opacity-70" aria-hidden />;
 }
 
 export function SkillSlashMenu({
@@ -24,12 +24,10 @@ export function SkillSlashMenu({
   selectedIndex,
   onApplySuggestion,
 }: SkillSlashMenuProps) {
-  const { t } = useTranslation()
+  const { t } = useTranslation();
 
   if (suggestions.length === 0) {
-    return (
-      <div className="px-2 py-2.5 text-xs text-muted-foreground">{t('app.noMatches')}</div>
-    )
+    return <div className="px-2 py-2.5 text-xs text-muted-foreground">{t("app.noMatches")}</div>;
   }
 
   return (
@@ -37,7 +35,7 @@ export function SkillSlashMenu({
       {suggestions.map((suggestion, index) => {
         const description = suggestion.descriptionKey
           ? t(suggestion.descriptionKey)
-          : suggestion.description ?? ''
+          : (suggestion.description ?? "");
 
         return (
           <ComposerSuggestionMenuItem
@@ -60,8 +58,8 @@ export function SkillSlashMenu({
               </div>
             </div>
           </ComposerSuggestionMenuItem>
-        )
+        );
       })}
     </>
-  )
+  );
 }

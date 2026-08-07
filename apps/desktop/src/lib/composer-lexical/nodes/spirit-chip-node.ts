@@ -85,8 +85,6 @@ export function $createSpiritChipNode(payload: SpiritChipPayload): SpiritChipNod
   return $applyNodeReplacement(new SpiritChipNode(payload));
 }
 
-export function $isSpiritChipNode(
-  node: LexicalNode | null | undefined,
-): node is SpiritChipNode {
+export function $isSpiritChipNode(node: LexicalNode | null | undefined): node is SpiritChipNode {
   return node instanceof SpiritChipNode;
 }

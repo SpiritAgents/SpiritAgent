@@ -94,7 +94,7 @@ export function shortcutLabel(key: string): string {
 /** Physical Ctrl + letter shortcut keys for tooltip Kbd chips (not Cmd on macOS). */
 export function ctrlLetterShortcutKbdKeys(key: string): readonly string[] {
   const letter = key.toUpperCase();
-  return isMacDesktopPlatform() ? ['⌃', letter] : ['Ctrl', letter];
+  return isMacDesktopPlatform() ? ["⌃", letter] : ["Ctrl", letter];
 }
 
 /** Cmd/Ctrl + letter shortcut keys for tooltip Kbd chips. */

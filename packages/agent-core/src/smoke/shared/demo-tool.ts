@@ -4,8 +4,8 @@ import type {
   McpStatusSnapshot,
   ToolExecutionOutput,
   ToolExecutor,
-} from '../../ports.js';
-import { createToolExecutionTextOutput } from '../../ports.js';
+} from "../../ports.js";
+import { createToolExecutionTextOutput } from "../../ports.js";
 
 export interface DemoToolRequest {
   name: string;
@@ -16,19 +16,19 @@ export interface DemoToolRequest {
 export function demoLookupToolDefinition(): JsonValue[] {
   return [
     {
-      type: 'function',
+      type: "function",
       function: {
-        name: 'demo_lookup',
-        description: 'Demo tool used to verify OpenAI-compatible tool-calling integration.',
+        name: "demo_lookup",
+        description: "Demo tool used to verify OpenAI-compatible tool-calling integration.",
         parameters: {
-          type: 'object',
+          type: "object",
           properties: {
             query: {
-              type: 'string',
-              description: 'Lookup query.',
+              type: "string",
+              description: "Lookup query.",
             },
           },
-          required: ['query'],
+          required: ["query"],
           additionalProperties: false,
         },
       },
@@ -42,13 +42,10 @@ export class DemoToolExecutor implements ToolExecutor<DemoToolRequest> {
   }
 
   async parseCommand(_message: string): Promise<DemoToolRequest> {
-    throw new Error('DemoToolExecutor.parseCommand 未实现。');
+    throw new Error("DemoToolExecutor.parseCommand 未实现。");
   }
 
-  async requestFromFunctionCall(
-    name: string,
-    argumentsJson: string,
-  ): Promise<DemoToolRequest> {
+  async requestFromFunctionCall(name: string, argumentsJson: string): Promise<DemoToolRequest> {
     return {
       name,
       argumentsJson,
@@ -56,28 +53,28 @@ export class DemoToolExecutor implements ToolExecutor<DemoToolRequest> {
     };
   }
 
-  async authorize(
-    _request: DemoToolRequest,
-  ): Promise<AuthorizationDecision> {
-    return { kind: 'allowed' };
+  async authorize(_request: DemoToolRequest): Promise<AuthorizationDecision> {
+    return { kind: "allowed" };
   }
 
   async trust(_target: string): Promise<void> {}
 
   async execute(request: DemoToolRequest): Promise<ToolExecutionOutput> {
-    if (request.name !== 'demo_lookup') {
+    if (request.name !== "demo_lookup") {
       throw new Error(`未知 demo 工具: ${request.name}`);
     }
 
     const query =
-      isJsonObject(request.parsedArguments) && typeof request.parsedArguments.query === 'string'
+      isJsonObject(request.parsedArguments) && typeof request.parsedArguments.query === "string"
         ? request.parsedArguments.query
-        : 'unknown';
+        : "unknown";
 
-    return createToolExecutionTextOutput(JSON.stringify({
-      query,
-      result: 'transport bridge ok',
-    }));
+    return createToolExecutionTextOutput(
+      JSON.stringify({
+        query,
+        result: "transport bridge ok",
+      }),
+    );
   }
 
   startMcpBackgroundRefresh(): void {}
@@ -85,7 +82,7 @@ export class DemoToolExecutor implements ToolExecutor<DemoToolRequest> {
   mcpStatusSnapshot(): McpStatusSnapshot {
     return {
       revision: 0,
-      state: 'idle',
+      state: "idle",
       configuredServers: 0,
       loadedServers: 0,
       cachedTools: 0,
@@ -93,7 +90,7 @@ export class DemoToolExecutor implements ToolExecutor<DemoToolRequest> {
   }
 
   async addMcpServer(_name: string, _config: JsonValue): Promise<string> {
-    throw new Error('DemoToolExecutor.addMcpServer 未实现。');
+    throw new Error("DemoToolExecutor.addMcpServer 未实现。");
   }
 
   async listMcpServers(): Promise<never[]> {
@@ -101,7 +98,7 @@ export class DemoToolExecutor implements ToolExecutor<DemoToolRequest> {
   }
 
   async inspectMcpServer(_name: string): Promise<never> {
-    throw new Error('DemoToolExecutor.inspectMcpServer 未实现。');
+    throw new Error("DemoToolExecutor.inspectMcpServer 未实现。");
   }
 
   async listMcpTools(_name: string): Promise<never[]> {
@@ -113,7 +110,7 @@ export class DemoToolExecutor implements ToolExecutor<DemoToolRequest> {
   }
 
   async readMcpResource(_name: string, _uri: string): Promise<JsonValue> {
-    throw new Error('DemoToolExecutor.readMcpResource 未实现。');
+    throw new Error("DemoToolExecutor.readMcpResource 未实现。");
   }
 
   async listCachedMcpPrompts(_name: string): Promise<never[]> {
@@ -124,15 +121,11 @@ export class DemoToolExecutor implements ToolExecutor<DemoToolRequest> {
     return [];
   }
 
-  async getMcpPrompt(
-    _name: string,
-    _prompt: string,
-    _argsJson?: string,
-  ): Promise<JsonValue> {
-    throw new Error('DemoToolExecutor.getMcpPrompt 未实现。');
+  async getMcpPrompt(_name: string, _prompt: string, _argsJson?: string): Promise<JsonValue> {
+    throw new Error("DemoToolExecutor.getMcpPrompt 未实现。");
   }
 }
 
 function isJsonObject(value: JsonValue): value is Record<string, JsonValue> {
-  return typeof value === 'object' && value !== null && !Array.isArray(value);
+  return typeof value === "object" && value !== null && !Array.isArray(value);
 }

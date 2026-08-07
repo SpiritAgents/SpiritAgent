@@ -147,9 +147,6 @@ test("extractHtmlTitle reads non-empty title", () => {
 
 test("isLikelyWebPage accepts html content-type or titled body", () => {
   assert.equal(isLikelyWebPage("text/html", ""), true);
-  assert.equal(
-    isLikelyWebPage("application/json", '<html><title>Dashboard</title></html>'),
-    true,
-  );
+  assert.equal(isLikelyWebPage("application/json", "<html><title>Dashboard</title></html>"), true);
   assert.equal(isLikelyWebPage("application/json", '{"ok":true}'), false);
 });

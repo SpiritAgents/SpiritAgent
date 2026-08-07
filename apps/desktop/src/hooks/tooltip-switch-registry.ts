@@ -49,10 +49,7 @@ export type TooltipSwitchSlotKey = {
   itemId: string;
 };
 
-export function tooltipSwitchSlotKey(
-  registrationId: string,
-  itemId: string,
-): TooltipSwitchSlotKey {
+export function tooltipSwitchSlotKey(registrationId: string, itemId: string): TooltipSwitchSlotKey {
   return { registrationId, itemId };
 }
 
@@ -60,12 +57,7 @@ export function tooltipSwitchSlotsEqual(
   a: TooltipSwitchSlotKey | null,
   b: TooltipSwitchSlotKey | null,
 ): boolean {
-  return (
-    a !== null &&
-    b !== null &&
-    a.registrationId === b.registrationId &&
-    a.itemId === b.itemId
-  );
+  return a !== null && b !== null && a.registrationId === b.registrationId && a.itemId === b.itemId;
 }
 
 export function deriveTooltipSwitchAnchorSlot(
@@ -191,21 +183,14 @@ const TOOLTIP_COMPANION_OVERLAY_SELECTORS = [
 ] as const;
 
 /** Detail tooltip / nested Select portals sit outside DropdownMenuContent but belong to the picker. */
-export function isEventTargetWithinTooltipCompanionOverlays(
-  target: EventTarget | null,
-): boolean {
+export function isEventTargetWithinTooltipCompanionOverlays(target: EventTarget | null): boolean {
   if (!(target instanceof Element)) {
     return false;
   }
-  return TOOLTIP_COMPANION_OVERLAY_SELECTORS.some(
-    (selector) => target.closest(selector) !== null,
-  );
+  return TOOLTIP_COMPANION_OVERLAY_SELECTORS.some((selector) => target.closest(selector) !== null);
 }
 
-export function isPointerOverTooltipCompanionOverlays(
-  clientX: number,
-  clientY: number,
-): boolean {
+export function isPointerOverTooltipCompanionOverlays(clientX: number, clientY: number): boolean {
   const nodes =
     typeof document.elementsFromPoint === "function"
       ? document.elementsFromPoint(clientX, clientY)

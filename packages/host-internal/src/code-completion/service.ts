@@ -1,23 +1,24 @@
-import type { CodeCompletionResult } from '@spiritagent/agent-core';
+import type { CodeCompletionResult } from "@spiritagent/agent-core";
 
-import { CodeCompletionEditJournal } from './edit-journal.js';
-import type { LlmCodeCompletionDependencies } from './llm-source.js';
-import { LlmCodeCompletionSource } from './llm-source.js';
-import type { CodeCompletionJournalEntry, CodeCompletionRequestContext, CodeCompletionSource } from './types.js';
+import { CodeCompletionEditJournal } from "./edit-journal.js";
+import type { LlmCodeCompletionDependencies } from "./llm-source.js";
+import { LlmCodeCompletionSource } from "./llm-source.js";
+import type {
+  CodeCompletionJournalEntry,
+  CodeCompletionRequestContext,
+  CodeCompletionSource,
+} from "./types.js";
 
 // 未来 LSP textDocument/completion 作为另一 CompletionSource 接入，与 LLM 结果合并排序。
 export interface LspCodeCompletionSource extends CodeCompletionSource {
-  readonly kind: 'lsp';
+  readonly kind: "lsp";
 }
 
 export class CodeCompletionService {
   private readonly journal: CodeCompletionEditJournal;
   private readonly sources: CodeCompletionSource[];
 
-  constructor(options?: {
-    journal?: CodeCompletionEditJournal;
-    sources?: CodeCompletionSource[];
-  }) {
+  constructor(options?: { journal?: CodeCompletionEditJournal; sources?: CodeCompletionSource[] }) {
     this.journal = options?.journal ?? new CodeCompletionEditJournal();
     this.sources = options?.sources ?? [];
   }

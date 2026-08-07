@@ -132,9 +132,7 @@ export function buildConversationScrollOccludeMaskStyle(
     .filter((shape): shape is ConversationScrollOccludeShape => shape != null);
 
   const bottomSlabFromY =
-    input.bottomSlabFromY == null
-      ? null
-      : Math.min(vh, Math.max(0, input.bottomSlabFromY));
+    input.bottomSlabFromY == null ? null : Math.min(vh, Math.max(0, input.bottomSlabFromY));
 
   if (shapes.length === 0 && bottomSlabFromY == null) {
     return undefined;

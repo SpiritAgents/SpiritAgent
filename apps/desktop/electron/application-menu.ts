@@ -1,10 +1,10 @@
-import { BrowserWindow, Menu, app, dialog } from 'electron';
+import { BrowserWindow, Menu, app, dialog } from "electron";
 
-import i18nHost from '../src/lib/i18n-host.js';
+import i18nHost from "../src/lib/i18n-host.js";
 
 const isDevChrome = Boolean(process.env.VITE_DEV_SERVER_URL) || !app.isPackaged;
 
-export type ApplicationMenuSection = 'file' | 'edit' | 'view' | 'window' | 'help';
+export type ApplicationMenuSection = "file" | "edit" | "view" | "window" | "help";
 
 function menuLabel(key: string, options?: Record<string, unknown>): string {
   return i18nHost.t(`titleBar.${key}`, options);
@@ -13,19 +13,19 @@ function menuLabel(key: string, options?: Record<string, unknown>): string {
 function sendNewSession(win?: BrowserWindow): void {
   const target = win ?? BrowserWindow.getFocusedWindow();
   if (target && !target.isDestroyed()) {
-    target.webContents.send('desktop:new-session');
+    target.webContents.send("desktop:new-session");
   }
 }
 
 function editMenuItems(): Electron.MenuItemConstructorOptions[] {
   return [
-    { role: 'undo', label: menuLabel('undo') },
-    { role: 'redo', label: menuLabel('redo') },
-    { type: 'separator' },
-    { role: 'cut', label: menuLabel('cut') },
-    { role: 'copy', label: menuLabel('copy') },
-    { role: 'paste', label: menuLabel('paste') },
-    { role: 'selectAll', label: menuLabel('selectAll') },
+    { role: "undo", label: menuLabel("undo") },
+    { role: "redo", label: menuLabel("redo") },
+    { type: "separator" },
+    { role: "cut", label: menuLabel("cut") },
+    { role: "copy", label: menuLabel("copy") },
+    { role: "paste", label: menuLabel("paste") },
+    { role: "selectAll", label: menuLabel("selectAll") },
   ];
 }
 
@@ -33,28 +33,28 @@ function viewMenuItems(): Electron.MenuItemConstructorOptions[] {
   return [
     ...(isDevChrome
       ? ([
-          { role: 'reload' as const, label: menuLabel('reload') },
-          { role: 'forceReload' as const, label: menuLabel('forceReload') },
-          { role: 'toggleDevTools' as const, label: menuLabel('devTools') },
-          { type: 'separator' as const },
+          { role: "reload" as const, label: menuLabel("reload") },
+          { role: "forceReload" as const, label: menuLabel("forceReload") },
+          { role: "toggleDevTools" as const, label: menuLabel("devTools") },
+          { type: "separator" as const },
         ] satisfies Electron.MenuItemConstructorOptions[])
       : []),
-    { role: 'togglefullscreen', label: menuLabel('toggleFullscreen') },
+    { role: "togglefullscreen", label: menuLabel("toggleFullscreen") },
   ];
 }
 
 function appMenuItems(): Electron.MenuItemConstructorOptions[] {
   const appName = app.name;
   return [
-    { role: 'about', label: menuLabel('about') },
-    { type: 'separator' },
-    { role: 'services', label: menuLabel('services') },
-    { type: 'separator' },
-    { role: 'hide', label: menuLabel('hideApp', { appName }) },
-    { role: 'hideOthers', label: menuLabel('hideOthers') },
-    { role: 'unhide', label: menuLabel('showAll') },
-    { type: 'separator' },
-    { role: 'quit', label: menuLabel('quitApp', { appName }) },
+    { role: "about", label: menuLabel("about") },
+    { type: "separator" },
+    { role: "services", label: menuLabel("services") },
+    { type: "separator" },
+    { role: "hide", label: menuLabel("hideApp", { appName }) },
+    { role: "hideOthers", label: menuLabel("hideOthers") },
+    { role: "unhide", label: menuLabel("showAll") },
+    { type: "separator" },
+    { role: "quit", label: menuLabel("quitApp", { appName }) },
   ];
 }
 
@@ -63,26 +63,26 @@ function buildSectionTemplate(
   section: ApplicationMenuSection,
 ): Electron.MenuItemConstructorOptions[] {
   switch (section) {
-    case 'file':
+    case "file":
       return [
         {
-          label: menuLabel('newSession'),
+          label: menuLabel("newSession"),
           click: () => {
             sendNewSession(win);
           },
         },
-        { type: 'separator' },
-        { role: 'quit', label: menuLabel('quit') },
+        { type: "separator" },
+        { role: "quit", label: menuLabel("quit") },
       ];
-    case 'edit':
+    case "edit":
       return editMenuItems();
-    case 'view':
+    case "view":
       return viewMenuItems();
-    case 'window':
+    case "window":
       return [
-        { role: 'minimize', label: menuLabel('minimize') },
+        { role: "minimize", label: menuLabel("minimize") },
         {
-          label: menuLabel('maximize'),
+          label: menuLabel("maximize"),
           click: (_item, focused) => {
             const target = focused ?? win;
             if (target.isMaximized()) {
@@ -92,18 +92,18 @@ function buildSectionTemplate(
             }
           },
         },
-        { role: 'close', label: menuLabel('close') },
+        { role: "close", label: menuLabel("close") },
       ];
-    case 'help':
+    case "help":
       return [
         {
-          label: menuLabel('about'),
+          label: menuLabel("about"),
           click: () => {
             void dialog.showMessageBox(win, {
-              type: 'info',
-              title: 'Spirit Agent',
-              message: 'Spirit Agent',
-              detail: menuLabel('versionDetail', { version: app.getVersion() }),
+              type: "info",
+              title: "Spirit Agent",
+              message: "Spirit Agent",
+              detail: menuLabel("versionDetail", { version: app.getVersion() }),
             });
           },
         },
@@ -120,34 +120,34 @@ function buildMacOSApplicationMenuTemplate(): Electron.MenuItemConstructorOption
       submenu: appMenuItems(),
     },
     {
-      label: menuLabel('file'),
+      label: menuLabel("file"),
       submenu: [
         {
-          label: menuLabel('newSession'),
-          accelerator: 'CmdOrCtrl+N',
+          label: menuLabel("newSession"),
+          accelerator: "CmdOrCtrl+N",
           click: () => {
             sendNewSession();
           },
         },
-        { type: 'separator' },
-        { role: 'close', label: menuLabel('close') },
+        { type: "separator" },
+        { role: "close", label: menuLabel("close") },
       ],
     },
     {
-      label: menuLabel('edit'),
+      label: menuLabel("edit"),
       submenu: editMenuItems(),
     },
     {
-      label: menuLabel('view'),
+      label: menuLabel("view"),
       submenu: viewMenuItems(),
     },
     {
-      label: menuLabel('window'),
+      label: menuLabel("window"),
       submenu: [
-        { role: 'minimize', label: menuLabel('minimize') },
-        { role: 'zoom', label: menuLabel('zoom') },
-        { type: 'separator' },
-        { role: 'front', label: menuLabel('bringAllToFront') },
+        { role: "minimize", label: menuLabel("minimize") },
+        { role: "zoom", label: menuLabel("zoom") },
+        { type: "separator" },
+        { role: "front", label: menuLabel("bringAllToFront") },
       ],
     },
   ];

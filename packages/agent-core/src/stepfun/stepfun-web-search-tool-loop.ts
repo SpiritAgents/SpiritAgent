@@ -1,12 +1,12 @@
-import { getLlmFetch } from '../llm-fetch.js';
-import type { JsonObject } from '../ports.js';
-import { isJsonObject } from '../tool-agent.js';
-import type { LlmTransportConfig } from '../provider-config.js';
-import type { ToolCallRequest } from '../ports.js';
-import { readWebSearchQuery } from '../web-search/read-web-search-query.js';
-import { buildStepfunWebSearchToolPreviewArgumentsJson } from './stepfun-spirit-ui.js';
-import { isStepfunManagedWebSearchToolCall } from './stepfun-eligibility.js';
-import { invokeStepfunSearch } from './stepfun-search-client.js';
+import { getLlmFetch } from "../llm-fetch.js";
+import type { JsonObject } from "../ports.js";
+import { isJsonObject } from "../tool-agent.js";
+import type { LlmTransportConfig } from "../provider-config.js";
+import type { ToolCallRequest } from "../ports.js";
+import { readWebSearchQuery } from "../web-search/read-web-search-query.js";
+import { buildStepfunWebSearchToolPreviewArgumentsJson } from "./stepfun-spirit-ui.js";
+import { isStepfunManagedWebSearchToolCall } from "./stepfun-eligibility.js";
+import { invokeStepfunSearch } from "./stepfun-search-client.js";
 
 export function readStepfunWebSearchQuery(argumentsJson: string): string {
   return readWebSearchQuery(argumentsJson);
@@ -19,7 +19,7 @@ function readStepfunWebSearchResultCount(argumentsJson: string): number | undefi
       return undefined;
     }
     const n = parsed.n;
-    if (typeof n !== 'number' || !Number.isFinite(n)) {
+    if (typeof n !== "number" || !Number.isFinite(n)) {
       return undefined;
     }
     const truncated = Math.trunc(n);
@@ -33,17 +33,17 @@ function readStepfunWebSearchResultCount(argumentsJson: string): number | undefi
 }
 
 export type StepfunWebSearchToolExecutionResult =
-  | { kind: 'succeeded'; content: string; previewArgumentsJson: string }
-  | { kind: 'failed'; error: string; previewArgumentsJson: string };
+  | { kind: "succeeded"; content: string; previewArgumentsJson: string }
+  | { kind: "failed"; error: string; previewArgumentsJson: string };
 
 export async function executeStepfunWebSearchToolCall(
   config: LlmTransportConfig,
-  call: Pick<ToolCallRequest, 'name' | 'argumentsJson'>,
+  call: Pick<ToolCallRequest, "name" | "argumentsJson">,
   fetchImpl: typeof fetch = getLlmFetch(),
 ): Promise<StepfunWebSearchToolExecutionResult> {
   const query = readStepfunWebSearchQuery(call.argumentsJson);
   const n = readStepfunWebSearchResultCount(call.argumentsJson);
-  const apiKey = (config as { apiKey?: string }).apiKey ?? '';
+  const apiKey = (config as { apiKey?: string }).apiKey ?? "";
 
   const searchResult = await invokeStepfunSearch(
     apiKey,
@@ -51,24 +51,24 @@ export async function executeStepfunWebSearchToolCall(
     fetchImpl,
   );
 
-  if (searchResult.kind === 'failed') {
+  if (searchResult.kind === "failed") {
     return {
-      kind: 'failed',
+      kind: "failed",
       error: searchResult.error,
       previewArgumentsJson: buildStepfunWebSearchToolPreviewArgumentsJson({
         query,
         failed: true,
-        status: 'failed',
+        status: "failed",
       }),
     };
   }
 
   return {
-    kind: 'succeeded',
+    kind: "succeeded",
     content: searchResult.content,
     previewArgumentsJson: buildStepfunWebSearchToolPreviewArgumentsJson({
       query,
-      status: 'completed',
+      status: "completed",
       outputExcerpt: searchResult.content,
     }),
   };
@@ -85,6 +85,6 @@ export function buildStepfunWebSearchStreamingPreviewArgumentsJson(
 
   return buildStepfunWebSearchToolPreviewArgumentsJson({
     query: readStepfunWebSearchQuery(argumentsJson),
-    status: 'in_progress',
+    status: "in_progress",
   });
 }

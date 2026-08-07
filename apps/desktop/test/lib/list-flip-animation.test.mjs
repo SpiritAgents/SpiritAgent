@@ -18,10 +18,13 @@ test("captureListFlipTops records node tops in order", () => {
     ["b", nodeB],
   ]);
 
-  assert.deepEqual(captureListFlipTops(nodeById, ["a", "b"]), new Map([
-    ["a", 10],
-    ["b", 48],
-  ]));
+  assert.deepEqual(
+    captureListFlipTops(nodeById, ["a", "b"]),
+    new Map([
+      ["a", 10],
+      ["b", 48],
+    ]),
+  );
 });
 
 test("prefersReducedSidebarReorderMotion is boolean", () => {

@@ -1,6 +1,6 @@
-import { finishTaskStreamingPreviewReady } from './finish-task-preview.js';
-import type { JsonValue } from './ports.js';
-import { isJsonObject } from './tool-agent.js';
+import { finishTaskStreamingPreviewReady } from "./finish-task-preview.js";
+import type { JsonValue } from "./ports.js";
+import { isJsonObject } from "./tool-agent.js";
 
 const PARTIAL_PATH_PATTERN = /"path"\s*:\s*"((?:\\.|[^"\\])*)"/;
 const PARTIAL_PLAN_NAME_PATTERN = /"name"\s*:\s*"((?:\\.|[^"\\])*)"/;
@@ -28,8 +28,8 @@ function tryExtractPartialPositiveInt(argumentsJson: string, key: string): numbe
 /** Extract read_file fields tolerating incomplete JSON while arguments stream in. */
 export function tryExtractPartialReadFileFields(argumentsJson: string): PartialReadFileToolFields {
   const path = tryExtractPartialToolPath(argumentsJson);
-  const offset = tryExtractPartialPositiveInt(argumentsJson, 'offset');
-  const limit = tryExtractPartialPositiveInt(argumentsJson, 'limit');
+  const offset = tryExtractPartialPositiveInt(argumentsJson, "offset");
+  const limit = tryExtractPartialPositiveInt(argumentsJson, "limit");
   return {
     ...(path ? { path } : {}),
     ...(offset !== undefined ? { offset } : {}),
@@ -42,7 +42,7 @@ export function readFileStreamingPreviewSignature(argumentsJson: string): string
   if (!fields.path) {
     return undefined;
   }
-  return `${fields.path}\0${fields.offset ?? ''}\0${fields.limit ?? ''}`;
+  return `${fields.path}\0${fields.offset ?? ""}\0${fields.limit ?? ""}`;
 }
 
 function decodePartialJsonString(match: string): string | undefined {
@@ -64,7 +64,7 @@ export function tryExtractPartialApplyPatchPath(argumentsJson: string): string |
     const parsed = JSON.parse(trimmed) as JsonValue;
     if (isJsonObject(parsed) && isJsonObject(parsed.operation)) {
       const path = parsed.operation.path;
-      if (typeof path === 'string' && path.trim()) {
+      if (typeof path === "string" && path.trim()) {
         return path.trim();
       }
     }
@@ -84,7 +84,7 @@ export function tryExtractPartialToolPath(argumentsJson: string): string | undef
 
   try {
     const parsed = JSON.parse(trimmed) as JsonValue;
-    if (isJsonObject(parsed) && typeof parsed.path === 'string' && parsed.path.trim()) {
+    if (isJsonObject(parsed) && typeof parsed.path === "string" && parsed.path.trim()) {
       return parsed.path.trim();
     }
   } catch {
@@ -108,7 +108,7 @@ export function tryExtractPartialWebSearchQuery(argumentsJson: string): string |
 
   try {
     const parsed = JSON.parse(trimmed) as JsonValue;
-    if (isJsonObject(parsed) && typeof parsed.query === 'string' && parsed.query.trim()) {
+    if (isJsonObject(parsed) && typeof parsed.query === "string" && parsed.query.trim()) {
       return parsed.query.trim();
     }
   } catch {
@@ -136,7 +136,7 @@ export function tryExtractPartialPlanName(argumentsJson: string): string | undef
 
   try {
     const parsed = JSON.parse(trimmed) as JsonValue;
-    if (isJsonObject(parsed) && typeof parsed.name === 'string' && parsed.name.trim()) {
+    if (isJsonObject(parsed) && typeof parsed.name === "string" && parsed.name.trim()) {
       return parsed.name.trim();
     }
   } catch {
@@ -167,13 +167,15 @@ function tryExtractPartialLazyToolGatewayFields(argumentsJson: string): {
       return {};
     }
     return {
-      ...(typeof parsed.provider === 'string' && parsed.provider.trim()
+      ...(typeof parsed.provider === "string" && parsed.provider.trim()
         ? { provider: parsed.provider.trim() }
         : {}),
-      ...(typeof parsed.server === 'string' && parsed.server.trim()
+      ...(typeof parsed.server === "string" && parsed.server.trim()
         ? { server: parsed.server.trim() }
         : {}),
-      ...(typeof parsed.tool === 'string' && parsed.tool.trim() ? { tool: parsed.tool.trim() } : {}),
+      ...(typeof parsed.tool === "string" && parsed.tool.trim()
+        ? { tool: parsed.tool.trim() }
+        : {}),
     };
   } catch {
     const providerMatch = trimmed.match(/"provider"\s*:\s*"((?:\\.|[^"\\])*)"/);
@@ -217,10 +219,10 @@ function tryExtractPartialFetchMcpResourceFields(argumentsJson: string): {
       return {};
     }
     return {
-      ...(typeof parsed.server === 'string' && parsed.server.trim()
+      ...(typeof parsed.server === "string" && parsed.server.trim()
         ? { server: parsed.server.trim() }
         : {}),
-      ...(typeof parsed.uri === 'string' && parsed.uri.trim() ? { uri: parsed.uri.trim() } : {}),
+      ...(typeof parsed.uri === "string" && parsed.uri.trim() ? { uri: parsed.uri.trim() } : {}),
     };
   } catch {
     const serverMatch = trimmed.match(/"server"\s*:\s*"((?:\\.|[^"\\])*)"/);
@@ -247,27 +249,27 @@ export function hostToolArgumentsReadyForEarlyStreamingPreview(
   argumentsJson: string,
 ): boolean {
   switch (name) {
-    case 'apply_patch':
+    case "apply_patch":
       return tryExtractPartialApplyPatchPath(argumentsJson) !== undefined;
-    case 'edit_file':
-    case 'create_file':
+    case "edit_file":
+    case "create_file":
       return tryExtractPartialToolPath(argumentsJson) !== undefined;
-    case 'create_plan':
+    case "create_plan":
       return tryExtractPartialPlanName(argumentsJson) !== undefined;
-    case 'read_file':
-    case 'ls':
-    case 'delete_file':
+    case "read_file":
+    case "ls":
+    case "delete_file":
       return tryExtractPartialToolPath(argumentsJson) !== undefined;
-    case 'glob':
-    case 'grep':
-    case 'shell':
-    case 'web_fetch':
-    case 'subagent':
+    case "glob":
+    case "grep":
+    case "shell":
+    case "web_fetch":
+    case "subagent":
       return hostToolArgumentsReadyForPreview(name, argumentsJson);
-    case 'web_search':
+    case "web_search":
       return tryExtractPartialWebSearchQuery(argumentsJson) !== undefined;
-    case 'tool_call':
-    case 'tool_describe': {
+    case "tool_call":
+    case "tool_describe": {
       const fields = tryExtractPartialLazyToolGatewayFields(argumentsJson);
       return Boolean(fields.provider || fields.server || fields.tool);
     }
@@ -277,7 +279,7 @@ export function hostToolArgumentsReadyForEarlyStreamingPreview(
 }
 
 export function hostToolArgumentsReadyForPreview(name: string, argumentsJson: string): boolean {
-  if (name === 'finish_task') {
+  if (name === "finish_task") {
     return finishTaskStreamingPreviewReady(name, argumentsJson);
   }
 
@@ -299,52 +301,52 @@ export function hostToolArgumentsReadyForPreview(name: string, argumentsJson: st
 
   const nonEmpty = (key: string): boolean => {
     const value = parsed[key];
-    return typeof value === 'string' && value.trim().length > 0;
+    return typeof value === "string" && value.trim().length > 0;
   };
 
   switch (name) {
-    case 'shell':
-      return nonEmpty('command');
-    case 'web_fetch':
-      return nonEmpty('url');
-    case 'ls':
-      return nonEmpty('path');
-    case 'read_file':
-      return nonEmpty('path');
-    case 'glob':
-      return nonEmpty('pattern');
-    case 'grep':
-      return nonEmpty('query');
-    case 'subagent':
-      return nonEmpty('task');
-    case 'apply_patch': {
+    case "shell":
+      return nonEmpty("command");
+    case "web_fetch":
+      return nonEmpty("url");
+    case "ls":
+      return nonEmpty("path");
+    case "read_file":
+      return nonEmpty("path");
+    case "glob":
+      return nonEmpty("pattern");
+    case "grep":
+      return nonEmpty("query");
+    case "subagent":
+      return nonEmpty("task");
+    case "apply_patch": {
       const operation = parsed.operation;
       if (!isJsonObject(operation)) {
         return false;
       }
       const opType = operation.type;
       const opPath = operation.path;
-      if (typeof opType !== 'string' || typeof opPath !== 'string' || !opPath.trim()) {
+      if (typeof opType !== "string" || typeof opPath !== "string" || !opPath.trim()) {
         return false;
       }
-      if (opType === 'delete_file') {
+      if (opType === "delete_file") {
         return true;
       }
-      return typeof operation.diff === 'string' && operation.diff.length > 0;
+      return typeof operation.diff === "string" && operation.diff.length > 0;
     }
-    case 'create_file':
-      return nonEmpty('path') && nonEmpty('content');
-    case 'create_plan':
-      return nonEmpty('name') && nonEmpty('content');
-    case 'edit_file':
-      return nonEmpty('path') && nonEmpty('old_text') && nonEmpty('new_text');
-    case 'delete_file':
-      return nonEmpty('path');
-    case 'ask_questions':
+    case "create_file":
+      return nonEmpty("path") && nonEmpty("content");
+    case "create_plan":
+      return nonEmpty("name") && nonEmpty("content");
+    case "edit_file":
+      return nonEmpty("path") && nonEmpty("old_text") && nonEmpty("new_text");
+    case "delete_file":
+      return nonEmpty("path");
+    case "ask_questions":
       return Array.isArray(parsed.questions) && parsed.questions.length > 0;
     default:
       return Object.values(parsed).some(
-        (value) => typeof value === 'string' && value.trim().length > 0,
+        (value) => typeof value === "string" && value.trim().length > 0,
       );
   }
 }
@@ -379,7 +381,7 @@ function lazyToolGatewayStreamingPreviewSignature(argumentsJson: string): string
     parts.push(`tr:${hourMatch[1]}:${minuteMatch[1]}`);
   }
 
-  return parts.length > 0 ? parts.join('|') : undefined;
+  return parts.length > 0 ? parts.join("|") : undefined;
 }
 
 export function shouldRepeatStreamingToolPreview(
@@ -391,7 +393,7 @@ export function shouldRepeatStreamingToolPreview(
     nextArgumentsJson?: string;
   },
 ): boolean {
-  if (toolName === 'read_file') {
+  if (toolName === "read_file") {
     const nextSignature = options?.nextArgumentsJson
       ? readFileStreamingPreviewSignature(options.nextArgumentsJson)
       : undefined;
@@ -400,7 +402,7 @@ export function shouldRepeatStreamingToolPreview(
     }
     return options?.previousDetailSignature !== nextSignature;
   }
-  if (toolName === 'edit_file') {
+  if (toolName === "edit_file") {
     const nextSignature = options?.nextArgumentsJson
       ? editFileStreamingPreviewSignature(options.nextArgumentsJson)
       : undefined;
@@ -409,7 +411,7 @@ export function shouldRepeatStreamingToolPreview(
     }
     return options?.previousDetailSignature !== nextSignature;
   }
-  if (toolName === 'create_file' || toolName === 'create_plan') {
+  if (toolName === "create_file" || toolName === "create_plan") {
     const nextSignature = options?.nextArgumentsJson
       ? createContentStreamingPreviewSignature(options.nextArgumentsJson)
       : undefined;
@@ -418,7 +420,7 @@ export function shouldRepeatStreamingToolPreview(
     }
     return options?.previousDetailSignature !== nextSignature;
   }
-  if (toolName === 'web_search') {
+  if (toolName === "web_search") {
     const nextSignature = options?.nextArgumentsJson
       ? webSearchStreamingPreviewSignature(options.nextArgumentsJson)
       : undefined;
@@ -427,7 +429,7 @@ export function shouldRepeatStreamingToolPreview(
     }
     return options?.previousDetailSignature !== nextSignature;
   }
-  if (toolName === 'tool_call' || toolName === 'tool_describe') {
+  if (toolName === "tool_call" || toolName === "tool_describe") {
     const nextSignature = options?.nextArgumentsJson
       ? lazyToolGatewayStreamingPreviewSignature(options.nextArgumentsJson)
       : undefined;
@@ -436,9 +438,7 @@ export function shouldRepeatStreamingToolPreview(
     }
     return options?.previousDetailSignature !== nextSignature;
   }
-  if (
-    toolName !== 'apply_patch'
-  ) {
+  if (toolName !== "apply_patch") {
     return false;
   }
   return nextArgsLen >= previousArgsLen + STREAMING_PREVIEW_UPDATE_MIN_DELTA_CHARS;
@@ -446,7 +446,7 @@ export function shouldRepeatStreamingToolPreview(
 
 /** Whether partial `read_file` args are safe to execute before the JSON object closes. */
 export function readFilePartialAllowsEarlyExecution(argumentsJson: string): boolean {
-  if (hostToolArgumentsReadyForPreview('read_file', argumentsJson)) {
+  if (hostToolArgumentsReadyForPreview("read_file", argumentsJson)) {
     return true;
   }
   const fields = tryExtractPartialReadFileFields(argumentsJson);
@@ -480,19 +480,19 @@ export function buildEarlyExecutableArgumentsJson(
   }
 
   switch (name) {
-    case 'read_file':
+    case "read_file":
       if (!readFilePartialAllowsEarlyExecution(argumentsJson)) {
         return undefined;
       }
       break;
-    case 'ls':
-    case 'delete_file':
+    case "ls":
+    case "delete_file":
       break;
     default:
       return undefined;
   }
 
-  if (name === 'read_file') {
+  if (name === "read_file") {
     const fields = tryExtractPartialReadFileFields(argumentsJson);
     if (!fields.path) {
       return undefined;
@@ -525,20 +525,20 @@ export function previewRequestFromStreamingArguments(
   try {
     return JSON.parse(trimmed) as unknown;
   } catch {
-    if (toolName === 'read_file') {
+    if (toolName === "read_file") {
       const fields = tryExtractPartialReadFileFields(argumentsJson);
       return fields.path ? fields : undefined;
     }
     if (
-      toolName === 'ls'
-      || toolName === 'delete_file'
-      || toolName === 'create_file'
-      || toolName === 'edit_file'
+      toolName === "ls" ||
+      toolName === "delete_file" ||
+      toolName === "create_file" ||
+      toolName === "edit_file"
     ) {
       const path = tryExtractPartialToolPath(argumentsJson);
       return path ? { path } : undefined;
     }
-    if (toolName === 'apply_patch') {
+    if (toolName === "apply_patch") {
       const path = tryExtractPartialApplyPatchPath(argumentsJson);
       if (!path) {
         return undefined;
@@ -550,19 +550,19 @@ export function previewRequestFromStreamingArguments(
       }
       return { operation };
     }
-    if (toolName === 'create_plan') {
+    if (toolName === "create_plan") {
       const name = tryExtractPartialPlanName(argumentsJson);
       return name ? { name } : undefined;
     }
-    if (toolName === 'tool_call' || toolName === 'tool_describe') {
+    if (toolName === "tool_call" || toolName === "tool_describe") {
       const fields = tryExtractPartialLazyToolGatewayFields(argumentsJson);
       return fields.provider || fields.server || fields.tool ? fields : undefined;
     }
-    if (toolName === 'fetch_mcp_resource') {
+    if (toolName === "fetch_mcp_resource") {
       const fields = tryExtractPartialFetchMcpResourceFields(argumentsJson);
       return fields.server || fields.uri ? fields : undefined;
     }
-    if (toolName === 'web_search') {
+    if (toolName === "web_search") {
       const query = tryExtractPartialWebSearchQuery(argumentsJson);
       return query ? { query } : undefined;
     }
@@ -572,7 +572,7 @@ export function previewRequestFromStreamingArguments(
 
 /** Re-emit when create_file / create_plan `content` grows (line count + length). */
 function createContentStreamingPreviewSignature(argumentsJson: string): string | undefined {
-  const content = tryExtractPartialEditFileStringField(argumentsJson, 'content');
+  const content = tryExtractPartialEditFileStringField(argumentsJson, "content");
   if (content === undefined) {
     return undefined;
   }
@@ -585,12 +585,12 @@ function createContentStreamingPreviewSignature(argumentsJson: string): string |
 
 /** Re-emit streaming preview when edit_file +/- line counts change (host/UI computes display). */
 function editFileStreamingPreviewSignature(argumentsJson: string): string | undefined {
-  const oldText = tryExtractPartialEditFileStringField(argumentsJson, 'old_text');
-  const newText = tryExtractPartialEditFileStringField(argumentsJson, 'new_text');
+  const oldText = tryExtractPartialEditFileStringField(argumentsJson, "old_text");
+  const newText = tryExtractPartialEditFileStringField(argumentsJson, "new_text");
   if (oldText === undefined && newText === undefined) {
     return undefined;
   }
-  const { added, removed } = editFileLineChangeCounts(oldText ?? '', newText ?? '');
+  const { added, removed } = editFileLineChangeCounts(oldText ?? "", newText ?? "");
   if (added === 0 && removed === 0) {
     return undefined;
   }
@@ -611,7 +611,7 @@ function tryExtractPartialEditFileStringField(
   while (i < argumentsJson.length && /\s/u.test(argumentsJson[i]!)) {
     i += 1;
   }
-  if (argumentsJson[i] !== ':') {
+  if (argumentsJson[i] !== ":") {
     return undefined;
   }
   i += 1;
@@ -623,19 +623,19 @@ function tryExtractPartialEditFileStringField(
   }
   i += 1;
 
-  let result = '';
+  let result = "";
   while (i < argumentsJson.length) {
     const ch = argumentsJson[i]!;
     if (ch === '"') {
       return result;
     }
-    if (ch === '\\') {
+    if (ch === "\\") {
       i += 1;
       if (i >= argumentsJson.length) {
         break;
       }
       const esc = argumentsJson[i]!;
-      if (esc === 'u') {
+      if (esc === "u") {
         const hex = argumentsJson.slice(i + 1, i + 5);
         if (/^[0-9a-fA-F]{4}$/u.test(hex)) {
           result += String.fromCodePoint(Number.parseInt(hex, 16));
@@ -656,16 +656,16 @@ function tryExtractPartialEditFileStringField(
 
 function decodeEditFileJsonEscape(esc: string): string {
   switch (esc) {
-    case 'n':
-      return '\n';
-    case 'r':
-      return '\r';
-    case 't':
-      return '\t';
+    case "n":
+      return "\n";
+    case "r":
+      return "\r";
+    case "t":
+      return "\t";
     case '"':
       return '"';
-    case '\\':
-      return '\\';
+    case "\\":
+      return "\\";
     default:
       return esc;
   }
@@ -723,7 +723,7 @@ export function shouldEmitStreamingToolNamePreview(
   previousToolName: string,
 ): boolean {
   const trimmed = toolName.trim();
-  return trimmed.length > 0 && previousToolName.trim().length === 0 && trimmed !== 'finish_task';
+  return trimmed.length > 0 && previousToolName.trim().length === 0 && trimmed !== "finish_task";
 }
 
 export function resolveStreamingToolPreviewEmit(
@@ -741,15 +741,15 @@ export function resolveStreamingToolPreviewEmit(
   }
 
   const nextDetailSignature =
-    toolName === 'read_file'
+    toolName === "read_file"
       ? readFileStreamingPreviewSignature(argumentsJson)
-      : toolName === 'edit_file'
+      : toolName === "edit_file"
         ? editFileStreamingPreviewSignature(argumentsJson)
-        : toolName === 'create_file' || toolName === 'create_plan'
+        : toolName === "create_file" || toolName === "create_plan"
           ? createContentStreamingPreviewSignature(argumentsJson)
-          : toolName === 'web_search'
+          : toolName === "web_search"
             ? webSearchStreamingPreviewSignature(argumentsJson)
-            : toolName === 'tool_call' || toolName === 'tool_describe'
+            : toolName === "tool_call" || toolName === "tool_describe"
               ? lazyToolGatewayStreamingPreviewSignature(argumentsJson)
               : undefined;
 

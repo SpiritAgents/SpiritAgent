@@ -9,7 +9,11 @@ import {
   type ReactNode,
 } from "react";
 
-import { readWorkspaceToolsWidthPx, workspaceToolsShellWidthExpression, workspaceToolsShellWidthWhenOpen } from "@/lib/layout-prefs";
+import {
+  readWorkspaceToolsWidthPx,
+  workspaceToolsShellWidthExpression,
+  workspaceToolsShellWidthWhenOpen,
+} from "@/lib/layout-prefs";
 
 type WorkspaceToolsChromeActions = {
   setOpen: (updater: boolean | ((current: boolean) => boolean)) => void;
@@ -18,9 +22,7 @@ type WorkspaceToolsChromeActions = {
 };
 
 const WorkspaceToolsChromeOpenContext = createContext(false);
-const WorkspaceToolsChromeActionsContext = createContext<WorkspaceToolsChromeActions | null>(
-  null,
-);
+const WorkspaceToolsChromeActionsContext = createContext<WorkspaceToolsChromeActions | null>(null);
 
 export type WorkspaceToolsChromeApi = {
   open: boolean;

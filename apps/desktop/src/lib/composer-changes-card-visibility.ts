@@ -4,7 +4,9 @@ export type ComposerChangesCardGitSnapshot = {
   workingTreeLineDelta?: { added: number; removed: number };
 };
 
-export function shouldShowComposerChangesCard(git: ComposerChangesCardGitSnapshot | undefined): boolean {
+export function shouldShowComposerChangesCard(
+  git: ComposerChangesCardGitSnapshot | undefined,
+): boolean {
   if (!git?.isRepository || !git.hasChanges || !git.workingTreeLineDelta) {
     return false;
   }

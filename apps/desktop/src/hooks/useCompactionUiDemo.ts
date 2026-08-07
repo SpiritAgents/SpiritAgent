@@ -1,11 +1,11 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
 import {
   buildCompactionDemoMessages,
   buildCompactionDemoPendingAux,
   type CompactionUiDemoPhase,
-} from '@/lib/compaction-ui-demo';
-import type { ConversationMessageSnapshot, PendingAssistantAux } from '@/types';
+} from "@/lib/compaction-ui-demo";
+import type { ConversationMessageSnapshot, PendingAssistantAux } from "@/types";
 
 const SPINNER_MS = 180;
 const STREAM_TICK_MS = 45;
@@ -17,7 +17,7 @@ const PHASE_DELAYS_MS = {
 
 export function useCompactionUiDemo() {
   const [active, setActive] = useState(false);
-  const [phase, setPhase] = useState<CompactionUiDemoPhase>('idle');
+  const [phase, setPhase] = useState<CompactionUiDemoPhase>("idle");
   const [tick, setTick] = useState(0);
   const [streamProgress, setStreamProgress] = useState(0);
   const phaseTimersRef = useRef<ReturnType<typeof setTimeout>[]>([]);
@@ -46,7 +46,7 @@ export function useCompactionUiDemo() {
     clearPhaseTimers();
     clearMotionTimers();
     setActive(false);
-    setPhase('idle');
+    setPhase("idle");
     setTick(0);
     setStreamProgress(0);
   }, [clearMotionTimers, clearPhaseTimers]);
@@ -54,7 +54,7 @@ export function useCompactionUiDemo() {
   const start = useCallback(() => {
     stop();
     setActive(true);
-    setPhase('spinner');
+    setPhase("spinner");
     setTick(0);
     setStreamProgress(0);
 
@@ -64,7 +64,7 @@ export function useCompactionUiDemo() {
 
     phaseTimersRef.current.push(
       setTimeout(() => {
-        setPhase('streaming');
+        setPhase("streaming");
         setStreamProgress(0);
         streamTimerRef.current = setInterval(() => {
           setStreamProgress((current) => {
@@ -78,19 +78,25 @@ export function useCompactionUiDemo() {
         }, STREAM_TICK_MS);
       }, PHASE_DELAYS_MS.spinner),
       setTimeout(() => {
-        setPhase('finalized');
+        setPhase("finalized");
         clearMotionTimers();
       }, PHASE_DELAYS_MS.spinner + PHASE_DELAYS_MS.streaming),
-      setTimeout(() => {
-        setPhase('complete');
-      }, PHASE_DELAYS_MS.spinner + PHASE_DELAYS_MS.streaming + PHASE_DELAYS_MS.finalized),
+      setTimeout(
+        () => {
+          setPhase("complete");
+        },
+        PHASE_DELAYS_MS.spinner + PHASE_DELAYS_MS.streaming + PHASE_DELAYS_MS.finalized,
+      ),
     );
   }, [clearMotionTimers, stop]);
 
-  useEffect(() => () => {
-    clearPhaseTimers();
-    clearMotionTimers();
-  }, [clearMotionTimers, clearPhaseTimers]);
+  useEffect(
+    () => () => {
+      clearPhaseTimers();
+      clearMotionTimers();
+    },
+    [clearMotionTimers, clearPhaseTimers],
+  );
 
   const messages = useMemo(
     () =>
@@ -104,10 +110,10 @@ export function useCompactionUiDemo() {
     if (!active) {
       return undefined;
     }
-    if (phase === 'spinner') {
+    if (phase === "spinner") {
       return buildCompactionDemoPendingAux(tick);
     }
-    if (phase === 'streaming') {
+    if (phase === "streaming") {
       return buildCompactionDemoPendingAux(
         tick,
         buildCompactionDemoMessages({ phase, tick, streamProgress }).find(

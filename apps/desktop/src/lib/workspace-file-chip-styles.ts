@@ -1,15 +1,15 @@
 import {
   isWorkspaceReferenceDirectoryPath,
   normalizeWorkspaceReferenceDirectoryPath,
-} from '@spiritagent/host-internal/workspace-file-reference-query';
-import { workspaceFileBasename } from '@/lib/file-picker-path';
+} from "@spiritagent/host-internal/workspace-file-reference-query";
+import { workspaceFileBasename } from "@/lib/file-picker-path";
 import {
   COMPOSER_INLINE_CHIP_CLASS,
   COMPOSER_INLINE_CHIP_ICON_CLASS,
-} from '@/lib/composer-inline-chip-styles';
-import { appendWorkspaceFileIcon } from '@/lib/workspace-explorer-icon-dom';
-import { WORKSPACE_FILE_ICON_CHIP_SIZE_PX } from '@/lib/workspace-file-icon-sizes';
-import type { WorkspaceExplorerEntryKind } from '@/types';
+} from "@/lib/composer-inline-chip-styles";
+import { appendWorkspaceFileIcon } from "@/lib/workspace-explorer-icon-dom";
+import { WORKSPACE_FILE_ICON_CHIP_SIZE_PX } from "@/lib/workspace-file-icon-sizes";
+import type { WorkspaceExplorerEntryKind } from "@/types";
 
 /** 工作区 @ 引用 chip（文件与目录路径） */
 export const WORKSPACE_FILE_CHIP_CLASS = COMPOSER_INLINE_CHIP_CLASS;
@@ -17,7 +17,7 @@ export const WORKSPACE_FILE_CHIP_CLASS = COMPOSER_INLINE_CHIP_CLASS;
 export const WORKSPACE_FILE_CHIP_ICON_CLASS = COMPOSER_INLINE_CHIP_ICON_CLASS;
 
 export function isWorkspaceDirectoryChipPath(path: string): boolean {
-  return isWorkspaceReferenceDirectoryPath(path.replace(/\\/gu, '/'));
+  return isWorkspaceReferenceDirectoryPath(path.replace(/\\/gu, "/"));
 }
 
 export function resolveWorkspaceFileChipPresentation(path: string): {
@@ -26,14 +26,14 @@ export function resolveWorkspaceFileChipPresentation(path: string): {
   iconKind: WorkspaceExplorerEntryKind;
   iconPath: string;
 } {
-  const normalized = path.replace(/\\/gu, '/');
+  const normalized = path.replace(/\\/gu, "/");
   const chipClass = WORKSPACE_FILE_CHIP_CLASS;
   const iconClass = WORKSPACE_FILE_CHIP_ICON_CLASS;
   if (isWorkspaceDirectoryChipPath(normalized)) {
     return {
       chipClass,
       iconClass,
-      iconKind: 'dir',
+      iconKind: "dir",
       iconPath: normalizeWorkspaceReferenceDirectoryPath(normalized),
     };
   }
@@ -41,7 +41,7 @@ export function resolveWorkspaceFileChipPresentation(path: string): {
   return {
     chipClass,
     iconClass,
-    iconKind: 'file',
+    iconKind: "file",
     iconPath: normalized,
   };
 }
@@ -58,10 +58,17 @@ export function makeFileChipNode(path: string, doc: Document): HTMLElement {
   span.className = presentation.chipClass;
   span.title = normalized;
 
-  appendWorkspaceFileIcon(span, doc, presentation.iconPath, {
-    size: WORKSPACE_FILE_ICON_CHIP_SIZE_PX,
-    className: presentation.iconClass,
-  }, presentation.iconKind, { colorMode: 'inherit' });
+  appendWorkspaceFileIcon(
+    span,
+    doc,
+    presentation.iconPath,
+    {
+      size: WORKSPACE_FILE_ICON_CHIP_SIZE_PX,
+      className: presentation.iconClass,
+    },
+    presentation.iconKind,
+    { colorMode: "inherit" },
+  );
 
   span.appendChild(doc.createTextNode(workspaceFileBasename(normalized)));
   return span;

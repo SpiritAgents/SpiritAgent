@@ -26,10 +26,12 @@ import type {
   ModelRef,
   SearchGitHubAutomationRepositoriesSnapshot,
 } from "@/types";
-import { emptyModelRef, isEmptyModelRef, modelRefsEqual } from "@spiritagent/host-internal/config-v2";
 import {
-  resolveWorkspaceBindingForStoredRoot,
-} from "@/lib/workspace-display-label";
+  emptyModelRef,
+  isEmptyModelRef,
+  modelRefsEqual,
+} from "@spiritagent/host-internal/config-v2";
+import { resolveWorkspaceBindingForStoredRoot } from "@/lib/workspace-display-label";
 
 type AutomationSettingsPanelProps = {
   automationId: string;
@@ -85,7 +87,11 @@ export function AutomationSettingsPanel({
   }, [automationId]);
 
   useEffect(() => {
-    if (!definition || !snapshot?.userHomeDirectory || initializedForAutomationIdRef.current === automationId) {
+    if (
+      !definition ||
+      !snapshot?.userHomeDirectory ||
+      initializedForAutomationIdRef.current === automationId
+    ) {
       return;
     }
 
@@ -138,17 +144,26 @@ export function AutomationSettingsPanel({
     }
 
     return Object.keys(next).length > 0 ? next : null;
-  }, [approvalLevel, definition, modelRef, overview, reasoningEffort, resolvedWorkspaceRoot, trigger, title]);
+  }, [
+    approvalLevel,
+    definition,
+    modelRef,
+    overview,
+    reasoningEffort,
+    resolvedWorkspaceRoot,
+    trigger,
+    title,
+  ]);
 
   const canSave =
-    title.trim().length > 0
-    && overview.trim().length > 0
-    && (workspaceBinding === "none" || workspaceRoot.trim().length > 0)
-    && resolvedWorkspaceRoot.trim().length > 0
-    && !isEmptyModelRef(modelRef)
-    && isValidDesktopAutomationTrigger(trigger)
-    && (trigger.kind !== "github" || githubConnected)
-    && patch !== null;
+    title.trim().length > 0 &&
+    overview.trim().length > 0 &&
+    (workspaceBinding === "none" || workspaceRoot.trim().length > 0) &&
+    resolvedWorkspaceRoot.trim().length > 0 &&
+    !isEmptyModelRef(modelRef) &&
+    isValidDesktopAutomationTrigger(trigger) &&
+    (trigger.kind !== "github" || githubConnected) &&
+    patch !== null;
 
   if (!definition) {
     return (
@@ -166,7 +181,10 @@ export function AutomationSettingsPanel({
           onChange={(event) => setTitle(event.target.value)}
           placeholder={t("automations.dialogTitlePlaceholder")}
           disabled={disabled}
-          className={cn("w-full border-0 bg-transparent text-lg text-foreground outline-none placeholder:text-muted-foreground/70", FONT_WEIGHT_MEDIUM)}
+          className={cn(
+            "w-full border-0 bg-transparent text-lg text-foreground outline-none placeholder:text-muted-foreground/70",
+            FONT_WEIGHT_MEDIUM,
+          )}
         />
         <textarea
           value={overview}

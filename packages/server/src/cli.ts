@@ -1,7 +1,7 @@
-import { resolveSpiritDataDir, resolveServerVersion } from './config.js';
-import { rotateToken, tokenFilePath } from './auth-token.js';
-import { isProcessAlive, listInstances } from './instance-registry.js';
-import { startDaemon } from './daemon.js';
+import { resolveSpiritDataDir, resolveServerVersion } from "./config.js";
+import { rotateToken, tokenFilePath } from "./auth-token.js";
+import { isProcessAlive, listInstances } from "./instance-registry.js";
+import { startDaemon } from "./daemon.js";
 
 const USAGE = `spirit-server — Spirit Agent shared daemon
 
@@ -32,16 +32,16 @@ function parseServeFlags(args: string[]): ServeFlags {
   const flags: ServeFlags = {};
   for (let i = 0; i < args.length; i += 1) {
     const arg = args[i];
-    if (arg === '--hostname') {
+    if (arg === "--hostname") {
       const value = args[++i];
       if (!value) {
-        throw new Error('--hostname requires a value');
+        throw new Error("--hostname requires a value");
       }
       flags.hostname = value;
-    } else if (arg === '--port') {
+    } else if (arg === "--port") {
       const value = args[++i];
       if (!value) {
-        throw new Error('--port requires a value');
+        throw new Error("--port requires a value");
       }
       const port = Number.parseInt(value, 10);
       if (!Number.isInteger(port) || port < 0 || port > 65535) {
@@ -56,8 +56,8 @@ function parseServeFlags(args: string[]): ServeFlags {
 }
 
 async function runServe(args: string[]): Promise<void> {
-  process.stderr.on('error', (err: NodeJS.ErrnoException) => {
-    if (err.code === 'EPIPE') {
+  process.stderr.on("error", (err: NodeJS.ErrnoException) => {
+    if (err.code === "EPIPE") {
       return;
     }
     throw err;
@@ -83,18 +83,18 @@ async function runServe(args: string[]): Promise<void> {
       process.exit(0);
     });
   };
-  process.on('SIGINT', () => shutdown('SIGINT'));
-  process.on('SIGTERM', () => shutdown('SIGTERM'));
+  process.on("SIGINT", () => shutdown("SIGINT"));
+  process.on("SIGTERM", () => shutdown("SIGTERM"));
 }
 
 async function runPs(): Promise<void> {
   const dataDir = resolveSpiritDataDir();
   const instances = await listInstances(dataDir);
   if (instances.length === 0) {
-    console.log('no running instances');
+    console.log("no running instances");
     return;
   }
-  console.log('INSTANCE ID                             PID      PORT   STARTED');
+  console.log("INSTANCE ID                             PID      PORT   STARTED");
   for (const instance of instances) {
     console.log(
       `${instance.instanceId}  ${String(instance.pid).padEnd(8)} ${String(instance.port).padEnd(6)} ${instance.startedAt}`,
@@ -110,7 +110,7 @@ async function runKill(args: string[]): Promise<void> {
     ? instances.filter((instance) => instance.instanceId === targetId)
     : instances;
   if (targets.length === 0) {
-    console.error(targetId ? `no such instance: ${targetId}` : 'no running instances');
+    console.error(targetId ? `no such instance: ${targetId}` : "no running instances");
     process.exitCode = 1;
     return;
   }
@@ -118,7 +118,7 @@ async function runKill(args: string[]): Promise<void> {
     if (!isProcessAlive(target.pid)) {
       continue;
     }
-    process.kill(target.pid, 'SIGTERM');
+    process.kill(target.pid, "SIGTERM");
     console.log(`sent SIGTERM to instance ${target.instanceId} (pid ${target.pid})`);
   }
 }
@@ -127,31 +127,33 @@ async function runRotateToken(): Promise<void> {
   const dataDir = resolveSpiritDataDir();
   await rotateToken(dataDir);
   console.log(`rotated token at ${tokenFilePath(dataDir)}`);
-  console.log('running daemons pick up the new token for new connections; existing connections are unaffected');
+  console.log(
+    "running daemons pick up the new token for new connections; existing connections are unaffected",
+  );
 }
 
 export async function runCli(argv: string[]): Promise<void> {
   const [command, ...rest] = argv;
   switch (command) {
     case undefined:
-    case 'serve':
+    case "serve":
       await runServe(rest);
       return;
-    case 'ps':
+    case "ps":
       await runPs();
       return;
-    case 'kill':
+    case "kill":
       await runKill(rest);
       return;
-    case 'rotate-token':
+    case "rotate-token":
       await runRotateToken();
       return;
-    case '--help':
-    case '-h':
+    case "--help":
+    case "-h":
       console.log(USAGE);
       return;
-    case '--version':
-    case '-v':
+    case "--version":
+    case "-v":
       console.log(resolveServerVersion());
       return;
     default:

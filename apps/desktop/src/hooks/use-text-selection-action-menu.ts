@@ -118,11 +118,7 @@ export function useTextSelectionActionMenu({
         return;
       }
       const text = readSelectionText(selection);
-      if (
-        !text
-        || !root.contains(selection.anchorNode)
-        || !root.contains(selection.focusNode)
-      ) {
+      if (!text || !root.contains(selection.anchorNode) || !root.contains(selection.focusNode)) {
         dismiss();
       }
     };

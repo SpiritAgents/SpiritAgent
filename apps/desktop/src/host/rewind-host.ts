@@ -1,12 +1,12 @@
-import path from 'node:path';
+import path from "node:path";
 
-import type { ChatArchive, RuntimeToolExecution } from '@spiritagent/agent-core';
-import type { HostRecordedFileChange } from '@spiritagent/host-internal';
+import type { ChatArchive, RuntimeToolExecution } from "@spiritagent/agent-core";
+import type { HostRecordedFileChange } from "@spiritagent/host-internal";
 
-import { resolveDesktopAgentMode } from '../lib/agent-mode.js';
-import type { ConversationMessageSnapshot, DesktopGitSnapshot, PlanSnapshot } from '../types.js';
-import type { DesktopHostRuntime } from './runtime.js';
-import type { SessionBundle } from './session-bundle.js';
+import { resolveDesktopAgentMode } from "../lib/agent-mode.js";
+import type { ConversationMessageSnapshot, DesktopGitSnapshot, PlanSnapshot } from "../types.js";
+import type { DesktopHostRuntime } from "./runtime.js";
+import type { SessionBundle } from "./session-bundle.js";
 import {
   bindRewindFileChangesToToolMessage,
   createRewindCheckpointMetadata,
@@ -19,22 +19,28 @@ import {
   toDesktopFileChange,
   upsertRewindCheckpointMetadata,
   type DesktopRewindCheckpointSnapshot,
-} from './rewind.js';
-import type { DesktopMessageTimeline } from './message-timeline.js';
+} from "./rewind.js";
+import type { DesktopMessageTimeline } from "./message-timeline.js";
 import {
   hydrateTimelineSnapshotFromPersistence,
   normalizeTimelineSnapshotForPersistence,
   timelinePersistedSnapshotToMessages,
-} from './chat-schema.js';
+} from "./chat-schema.js";
 import {
   archiveBeforeLastUser,
   cloneArchiveHistory,
   cloneArchiveSubagentSessions,
   cloneChatArchive,
-} from './service-utils.js';
-import { cloneHostTodoRecords, listSessionTodos, replaceSessionTodos } from './todos.js';
-import { loadHostMetadata, spiritAgentDataDir, type DesktopConfigFile, type DesktopWorkspaceBinding, type HostMetadataSummary } from './storage.js';
-import type { DesktopToolRequest } from './contracts.js';
+} from "./service-utils.js";
+import { cloneHostTodoRecords, listSessionTodos, replaceSessionTodos } from "./todos.js";
+import {
+  loadHostMetadata,
+  spiritAgentDataDir,
+  type DesktopConfigFile,
+  type DesktopWorkspaceBinding,
+  type HostMetadataSummary,
+} from "./storage.js";
+import type { DesktopToolRequest } from "./contracts.js";
 
 interface RewindHostState {
   workspaceRoot: string;
@@ -53,14 +59,14 @@ export interface RewindHostContext {
   runtime(): DesktopHostRuntime | undefined;
   requireRuntime(): DesktopHostRuntime;
   desktopMessages(): ConversationMessageSnapshot[];
-  archiveMessages(): Array<{ role: 'user' | 'assistant'; content: string }>;
-  archiveAssistantAux(): ChatArchive['assistantAux'];
+  archiveMessages(): Array<{ role: "user" | "assistant"; content: string }>;
+  archiveAssistantAux(): ChatArchive["assistantAux"];
   resolveTodoSessionKeyForBundle(bundle: SessionBundle): string;
   cancelTodoClearing(sessionKey: string): void;
   refreshTodoSnapshotForBundle(bundle: SessionBundle): Promise<void>;
   createMessageTimelineFromMessages(
     messages: ConversationMessageSnapshot[],
-    timelineSnapshot?: import('./message-timeline.js').DesktopTimelineTurnSnapshot[],
+    timelineSnapshot?: import("./message-timeline.js").DesktopTimelineTurnSnapshot[],
   ): DesktopMessageTimeline;
   resetStreamingPlacementState(full: boolean): void;
 }
@@ -75,33 +81,31 @@ export async function recordHostFileChange(
     return;
   }
 
-  if (
-    change.toolName === 'create_plan'
-    && change.after.exists
-    && change.after.file
-  ) {
+  if (change.toolName === "create_plan" && change.after.exists && change.after.file) {
     bundle.activePlanPath = change.resolvedPath;
   }
 
   if (
-    bundle.id === ctx.activeSessionId()
-    && (
-      (bundle.activePlanPath && sameFsPath(change.resolvedPath, bundle.activePlanPath))
-      || sameFsPath(change.resolvedPath, state.plan.path)
-    )
+    bundle.id === ctx.activeSessionId() &&
+    ((bundle.activePlanPath && sameFsPath(change.resolvedPath, bundle.activePlanPath)) ||
+      sameFsPath(change.resolvedPath, state.plan.path))
   ) {
     if (bundle.activePlanPath && sameFsPath(change.resolvedPath, bundle.activePlanPath)) {
-      state.metadata = await loadHostMetadata(state.workspaceRoot, resolveDesktopAgentMode(state.config), {
-        activePlanPath: bundle.activePlanPath,
-        workspaceBinding: state.workspaceBinding,
-      });
+      state.metadata = await loadHostMetadata(
+        state.workspaceRoot,
+        resolveDesktopAgentMode(state.config),
+        {
+          activePlanPath: bundle.activePlanPath,
+          workspaceBinding: state.workspaceBinding,
+        },
+      );
     }
     state.metadata.planMetadata.exists = change.after.exists && change.after.file;
     state.plan = {
       path: change.resolvedPath,
       exists: change.after.exists && change.after.file,
       ...(change.after.content !== undefined ? { content: change.after.content } : {}),
-      ...(typeof change.after.mtimeMs === 'number'
+      ...(typeof change.after.mtimeMs === "number"
         ? { modifiedAtUnixMs: change.after.mtimeMs }
         : {}),
     };
@@ -156,13 +160,13 @@ export async function recordRewindCheckpoint(
   const runtime = ctx.runtime();
   const archive = runtime
     ? runtime.toArchive(ctx.archiveMessages(), ctx.archiveAssistantAux())
-    : {
+    : ({
         messages: ctx.archiveMessages(),
         assistantAux: ctx.archiveAssistantAux(),
         llmHistory: ctx.activeBundle().archiveHistory,
         subagentSessions: ctx.activeBundle().archiveSubagentSessions ?? [],
         loopEnabled: ctx.activeBundle().loopEnabled,
-      } satisfies ChatArchive;
+      } satisfies ChatArchive);
   const sessionKey = ctx.resolveTodoSessionKeyForBundle(ctx.activeBundle());
   const currentTodos = cloneHostTodoRecords(await listSessionTodos(sessionKey));
   const desktopMessageTimeline = normalizeTimelineSnapshotForPersistence(
@@ -211,13 +215,13 @@ export async function buildRewindCheckpointSnapshot(
   const runtime = ctx.runtime();
   const archive = runtime
     ? runtime.toArchive(ctx.archiveMessages(), ctx.archiveAssistantAux())
-    : {
+    : ({
         messages: ctx.archiveMessages(),
         assistantAux: ctx.archiveAssistantAux(),
         llmHistory: ctx.activeBundle().archiveHistory,
         subagentSessions: ctx.activeBundle().archiveSubagentSessions ?? [],
         loopEnabled: ctx.activeBundle().loopEnabled,
-      } satisfies ChatArchive;
+      } satisfies ChatArchive);
   const sessionKey = ctx.resolveTodoSessionKeyForBundle(ctx.activeBundle());
   const todos = cloneHostTodoRecords(await listSessionTodos(sessionKey));
   return {
@@ -236,8 +240,8 @@ export function restoreBeforeRewindCheckpoint(
 ): void {
   ctx.requireState();
   const archive = snapshot.beforeArchive ?? archiveBeforeLastUser(snapshot.archive);
-  const timeline = snapshot.beforeDesktopMessageTimeline
-    ?? snapshot.desktopMessageTimeline.slice(0, -1);
+  const timeline =
+    snapshot.beforeDesktopMessageTimeline ?? snapshot.desktopMessageTimeline.slice(0, -1);
   const desktopMessages = timelinePersistedSnapshotToMessages(timeline);
 
   ctx.activeBundle().messages = desktopMessages.map((message) => ({ ...message }));
@@ -246,15 +250,13 @@ export function restoreBeforeRewindCheckpoint(
     hydrateTimelineSnapshotFromPersistence(timeline),
   );
   ctx.activeBundle().archiveHistory = cloneArchiveHistory(archive.llmHistory);
-  ctx.activeBundle().archiveSubagentSessions = cloneArchiveSubagentSessions(archive.subagentSessions ?? []);
+  ctx.activeBundle().archiveSubagentSessions = cloneArchiveSubagentSessions(
+    archive.subagentSessions ?? [],
+  );
   ctx.activeBundle().loopEnabled = archive.loopEnabled === true;
   const pruned = pruneRewindMetadataAfterCheckpoint(ctx.activeBundle().rewind, checkpointSequence);
   // 元数据裁剪后同步清理对应 sidecar 文件；失败不影响回退流程（下次会话删除仍会整目录清理）
-  void deleteRewindSidecarFiles(
-    spiritAgentDataDir(),
-    ctx.activeBundle().rewind.sessionId,
-    pruned,
-  );
+  void deleteRewindSidecarFiles(spiritAgentDataDir(), ctx.activeBundle().rewind.sessionId, pruned);
   ctx.activeBundle().pendingUnboundFileChangeIds = [];
   ctx.activeBundle().messageIdCounter = nextMessageIdFromMessages(ctx.activeBundle().messages);
   ctx.activeBundle().conversationRevision += 1;
@@ -268,7 +270,7 @@ function nextMessageIdFromMessages(messages: ConversationMessageSnapshot[]): num
 }
 
 function normalizeFsPath(value: string): string {
-  return path.normalize(value).replace(/\\/g, '/').toLowerCase();
+  return path.normalize(value).replace(/\\/g, "/").toLowerCase();
 }
 
 function sameFsPath(left: string, right: string): boolean {

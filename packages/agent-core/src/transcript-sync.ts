@@ -1,9 +1,9 @@
-import type { LlmMessage } from './ports.js';
+import type { LlmMessage } from "./ports.js";
 import {
   buildSessionTranscript,
   type SessionTranscript,
   type SessionTranscriptMessage,
-} from './transcript.js';
+} from "./transcript.js";
 
 function transcriptMessagesEqual(
   left: SessionTranscriptMessage,
@@ -27,9 +27,9 @@ function sealedEndsWithLive(
     const sealedMessage = sealed[offset + index];
     const liveMessage = live[index];
     if (
-      sealedMessage === undefined
-      || liveMessage === undefined
-      || !transcriptMessagesEqual(sealedMessage, liveMessage)
+      sealedMessage === undefined ||
+      liveMessage === undefined ||
+      !transcriptMessagesEqual(sealedMessage, liveMessage)
     ) {
       return false;
     }
@@ -48,9 +48,9 @@ function sealedIsPrefixOfLive(
     const sealedMessage = sealed[index];
     const liveMessage = live[index];
     if (
-      sealedMessage === undefined
-      || liveMessage === undefined
-      || !transcriptMessagesEqual(sealedMessage, liveMessage)
+      sealedMessage === undefined ||
+      liveMessage === undefined ||
+      !transcriptMessagesEqual(sealedMessage, liveMessage)
     ) {
       return false;
     }
@@ -120,7 +120,7 @@ export function mergeSessionTranscripts(
   const messages = mergeSealedTranscriptMessages(existing.messages, incoming.messages);
   return {
     export_version: incoming.export_version,
-    kind: 'session_transcript',
+    kind: "session_transcript",
     exported_at_unix_ms: Math.max(existing.exported_at_unix_ms, incoming.exported_at_unix_ms),
     message_count: messages.length,
     messages,

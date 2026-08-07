@@ -1,14 +1,14 @@
-import { execFile } from 'node:child_process';
-import { readFile, realpath, stat } from 'node:fs/promises';
-import { isAbsolute, relative, resolve } from 'node:path';
-import { promisify } from 'node:util';
+import { execFile } from "node:child_process";
+import { readFile, realpath, stat } from "node:fs/promises";
+import { isAbsolute, relative, resolve } from "node:path";
+import { promisify } from "node:util";
 
-import fg from 'fast-glob';
+import fg from "fast-glob";
 
 import {
   cachedIgnoreMatchersForRelativeDir,
   shouldIgnoreWorkspacePath,
-} from './workspace-ignore.js';
+} from "./workspace-ignore.js";
 
 const execFileAsync = promisify(execFile);
 const GIT_LS_FILES_MAX_BUFFER = 64 * 1024 * 1024;
@@ -17,12 +17,12 @@ import {
   currentWorkspaceFileReferenceQuery,
   referencedWorkspaceFilePathsFromInput,
   type WorkspaceFileReferenceSuggestionsResult,
-} from './workspace-file-reference-query.js';
-import { detectSupportedImageFile, hasSupportedImageExtension } from './image-file-support.js';
-import { detectSupportedVideoFile, hasSupportedVideoExtension } from './video-file-support.js';
+} from "./workspace-file-reference-query.js";
+import { detectSupportedImageFile, hasSupportedImageExtension } from "./image-file-support.js";
+import { detectSupportedVideoFile, hasSupportedVideoExtension } from "./video-file-support.js";
 
 const DEFAULT_MAX_CONTENT_CHARS = 24_000;
-const DEFAULT_IGNORED_DIRECTORY_NAMES = new Set(['.git', 'target', 'node_modules', 'bin', 'obj']);
+const DEFAULT_IGNORED_DIRECTORY_NAMES = new Set([".git", "target", "node_modules", "bin", "obj"]);
 
 interface WorkspaceFileIndexCacheEntry {
   promise: Promise<string[]>;
@@ -32,7 +32,7 @@ interface WorkspaceFileIndexCacheEntry {
 const workspaceFileIndexCache = new Map<string, WorkspaceFileIndexCacheEntry>();
 
 export interface WorkspaceFileReferenceTextAttachment {
-  kind: 'text';
+  kind: "text";
   path: string;
   totalChars: number;
   truncated: boolean;
@@ -41,13 +41,13 @@ export interface WorkspaceFileReferenceTextAttachment {
 }
 
 export interface WorkspaceFileReferenceImageAttachment {
-  kind: 'image';
+  kind: "image";
   path: string;
   attachedAtUnixMs: number;
 }
 
 export interface WorkspaceFileReferenceVideoAttachment {
-  kind: 'video';
+  kind: "video";
   path: string;
   attachedAtUnixMs: number;
 }
@@ -153,7 +153,9 @@ export async function clearWorkspaceFileReferenceIndexCache(workspaceRoot?: stri
   }
 }
 
-async function cachedWorkspaceFileReferenceIndex(workspaceRoot: string): Promise<string[] | undefined> {
+async function cachedWorkspaceFileReferenceIndex(
+  workspaceRoot: string,
+): Promise<string[] | undefined> {
   const root = await canonicalWorkspaceRoot(workspaceRoot);
   const entry = workspaceFileIndexCache.get(root);
   return entry?.files ? [...entry.files] : undefined;
@@ -192,7 +194,9 @@ export async function resolveWorkspaceFileReferenceAttachmentsFromInput(
 
   for (const referencePath of referencedWorkspaceFilePathsFromInput(text)) {
     try {
-      attachments.push(await workspaceFileReferenceAttachmentFromPath(workspaceRoot, referencePath, options));
+      attachments.push(
+        await workspaceFileReferenceAttachmentFromPath(workspaceRoot, referencePath, options),
+      );
     } catch {
       // 与现有 agent-core / CLI 行为保持一致：忽略不存在、不可读或不支持的引用。
     }
@@ -206,23 +210,26 @@ export async function workspaceFileReferenceAttachmentFromPath(
   referencePath: string,
   options: ResolveWorkspaceFileReferenceAttachmentsOptions = {},
 ): Promise<WorkspaceFileReferenceAttachment> {
-  const { absolutePath, relativePath } = await resolveWorkspaceFileReferencePath(workspaceRoot, referencePath);
+  const { absolutePath, relativePath } = await resolveWorkspaceFileReferencePath(
+    workspaceRoot,
+    referencePath,
+  );
   return localFileAttachmentFromAbsolutePath(absolutePath, relativePath, options);
 }
 
-import type { LocalFileComposerRoute } from './local-file-composer-route.js';
+import type { LocalFileComposerRoute } from "./local-file-composer-route.js";
 
-export type { LocalFileComposerRoute } from './local-file-composer-route.js';
+export type { LocalFileComposerRoute } from "./local-file-composer-route.js";
 
 export async function classifyLocalFileComposerRoute(
   absolutePath: string,
 ): Promise<LocalFileComposerRoute> {
   try {
     const attachment = await localFileAttachmentFromPath(absolutePath);
-    return attachment.kind === 'image' || attachment.kind === 'video' ? 'media' : 'reference';
+    return attachment.kind === "image" || attachment.kind === "video" ? "media" : "reference";
   } catch {
     // 二进制/校验失败等同 @ 引用：UI 仍展示 chip，发送时静默忽略（与现有 @ 行为一致）
-    return 'reference';
+    return "reference";
   }
 }
 
@@ -230,7 +237,7 @@ export async function localFileAttachmentFromPath(
   absolutePath: string,
   options: ResolveWorkspaceFileReferenceAttachmentsOptions = {},
 ): Promise<WorkspaceFileReferenceAttachment> {
-  const normalizedPath = absolutePath.replace(/\\/gu, '/');
+  const normalizedPath = absolutePath.replace(/\\/gu, "/");
   return localFileAttachmentFromAbsolutePath(absolutePath, normalizedPath, options);
 }
 
@@ -248,7 +255,7 @@ async function localFileAttachmentFromAbsolutePath(
   const image = detectSupportedImageFile(absolutePath, bytes);
   if (image) {
     return {
-      kind: 'image',
+      kind: "image",
       path: attachmentPath,
       attachedAtUnixMs: Date.now(),
     };
@@ -261,7 +268,7 @@ async function localFileAttachmentFromAbsolutePath(
   const video = detectSupportedVideoFile(absolutePath, bytes);
   if (video) {
     return {
-      kind: 'video',
+      kind: "video",
       path: attachmentPath,
       attachedAtUnixMs: Date.now(),
     };
@@ -275,16 +282,16 @@ async function localFileAttachmentFromAbsolutePath(
     throw new Error(`暂不支持引用二进制文件: ${attachmentPath}`);
   }
 
-  const text = bytes.toString('utf8');
+  const text = bytes.toString("utf8");
   const chars = Array.from(text);
   const maxContentChars = options.maxContentChars ?? DEFAULT_MAX_CONTENT_CHARS;
   const truncated = chars.length > maxContentChars;
   const content = truncated
-    ? `${chars.slice(0, maxContentChars).join('')}\n\n...<文件内容已截断>`
+    ? `${chars.slice(0, maxContentChars).join("")}\n\n...<文件内容已截断>`
     : text;
 
   return {
-    kind: 'text',
+    kind: "text",
     path: attachmentPath,
     totalChars: chars.length,
     truncated,
@@ -293,7 +300,9 @@ async function localFileAttachmentFromAbsolutePath(
   };
 }
 
-async function collectWorkspaceFileReferenceIndexUncached(workspaceRoot: string): Promise<string[]> {
+async function collectWorkspaceFileReferenceIndexUncached(
+  workspaceRoot: string,
+): Promise<string[]> {
   const viaGit = await collectWorkspaceFileIndexViaGit(workspaceRoot);
   if (viaGit !== null) {
     return viaGit;
@@ -304,15 +313,15 @@ async function collectWorkspaceFileReferenceIndexUncached(workspaceRoot: string)
 
 async function collectWorkspaceFileIndexViaGit(workspaceRoot: string): Promise<string[] | null> {
   try {
-    await stat(resolve(workspaceRoot, '.git'));
+    await stat(resolve(workspaceRoot, ".git"));
   } catch {
     return null;
   }
 
   try {
     const { stdout } = await execFileAsync(
-      'git',
-      ['ls-files', '-z', '--cached', '--others', '--exclude-standard'],
+      "git",
+      ["ls-files", "-z", "--cached", "--others", "--exclude-standard"],
       {
         cwd: workspaceRoot,
         windowsHide: true,
@@ -321,9 +330,9 @@ async function collectWorkspaceFileIndexViaGit(workspaceRoot: string): Promise<s
     );
 
     return stdout
-      .split('\0')
+      .split("\0")
       .filter((entry) => entry.length > 0)
-      .map((entry) => entry.replace(/\\/gu, '/'))
+      .map((entry) => entry.replace(/\\/gu, "/"))
       .filter((entry) => pathPassesDefaultIgnoredDirectories(entry));
   } catch {
     return null;
@@ -332,11 +341,11 @@ async function collectWorkspaceFileIndexViaGit(workspaceRoot: string): Promise<s
 
 async function collectWorkspaceFileIndexViaFastGlob(workspaceRoot: string): Promise<string[]> {
   const globIgnore = [
-    '**/.git/**',
+    "**/.git/**",
     ...Array.from(DEFAULT_IGNORED_DIRECTORY_NAMES).map((directory) => `**/${directory}/**`),
   ];
 
-  const entries = await fg('**/*', {
+  const entries = await fg("**/*", {
     cwd: workspaceRoot,
     onlyFiles: true,
     dot: true,
@@ -346,17 +355,18 @@ async function collectWorkspaceFileIndexViaFastGlob(workspaceRoot: string): Prom
   });
 
   const files: string[] = [];
-  const matcherCache = new Map<string, Awaited<ReturnType<typeof cachedIgnoreMatchersForRelativeDir>>>();
+  const matcherCache = new Map<
+    string,
+    Awaited<ReturnType<typeof cachedIgnoreMatchersForRelativeDir>>
+  >();
 
   for (const entry of entries) {
-    const relativePath = entry.replace(/\\/gu, '/');
-    const parentDirRelPath = relativePath.includes('/')
-      ? relativePath.slice(0, relativePath.lastIndexOf('/'))
-      : '';
+    const relativePath = entry.replace(/\\/gu, "/");
+    const parentDirRelPath = relativePath.includes("/")
+      ? relativePath.slice(0, relativePath.lastIndexOf("/"))
+      : "";
     if (
-      parentDirRelPath
-        .split('/')
-        .some((segment) => DEFAULT_IGNORED_DIRECTORY_NAMES.has(segment))
+      parentDirRelPath.split("/").some((segment) => DEFAULT_IGNORED_DIRECTORY_NAMES.has(segment))
     ) {
       continue;
     }
@@ -377,7 +387,7 @@ async function collectWorkspaceFileIndexViaFastGlob(workspaceRoot: string): Prom
 }
 
 function pathPassesDefaultIgnoredDirectories(relativePath: string): boolean {
-  const segments = relativePath.replace(/\\/gu, '/').split('/');
+  const segments = relativePath.replace(/\\/gu, "/").split("/");
   return !segments.some((segment) => DEFAULT_IGNORED_DIRECTORY_NAMES.has(segment));
 }
 
@@ -385,14 +395,14 @@ async function resolveWorkspaceFileReferencePath(
   workspaceRoot: string,
   referencePath: string,
 ): Promise<{ absolutePath: string; relativePath: string }> {
-  const normalizedReferencePath = referencePath.replace(/\0/gu, '').replace(/\\/gu, '/').trim();
+  const normalizedReferencePath = referencePath.replace(/\0/gu, "").replace(/\\/gu, "/").trim();
   if (!normalizedReferencePath) {
-    throw new Error('未指定文件路径');
+    throw new Error("未指定文件路径");
   }
   if (
-    isAbsolute(referencePath)
-    || isAbsolute(normalizedReferencePath)
-    || normalizedReferencePath.startsWith('/')
+    isAbsolute(referencePath) ||
+    isAbsolute(normalizedReferencePath) ||
+    normalizedReferencePath.startsWith("/")
   ) {
     const canonicalTarget = await realpath(normalizedReferencePath);
     return {
@@ -401,9 +411,9 @@ async function resolveWorkspaceFileReferencePath(
     };
   }
 
-  const segments = normalizedReferencePath.split('/').filter((segment) => segment.length > 0);
+  const segments = normalizedReferencePath.split("/").filter((segment) => segment.length > 0);
   for (const segment of segments) {
-    if (segment === '.' || segment === '..') {
+    if (segment === "." || segment === "..") {
       throw new Error(`不支持引用工作区外文件: ${referencePath}`);
     }
   }
@@ -411,19 +421,19 @@ async function resolveWorkspaceFileReferencePath(
   const workspaceRootResolved = await canonicalWorkspaceRoot(workspaceRoot);
   const targetPath = resolve(workspaceRootResolved, ...segments);
   const relativeTarget = relative(workspaceRootResolved, targetPath);
-  if (relativeTarget.startsWith('..') || isAbsolute(relativeTarget)) {
+  if (relativeTarget.startsWith("..") || isAbsolute(relativeTarget)) {
     throw new Error(`不支持引用工作区外文件: ${referencePath}`);
   }
 
   const canonicalTarget = await realpath(targetPath);
   const canonicalRelativeTarget = relative(workspaceRootResolved, canonicalTarget);
-  if (canonicalRelativeTarget.startsWith('..') || isAbsolute(canonicalRelativeTarget)) {
+  if (canonicalRelativeTarget.startsWith("..") || isAbsolute(canonicalRelativeTarget)) {
     throw new Error(`不支持引用工作区外文件: ${referencePath}`);
   }
 
   return {
     absolutePath: canonicalTarget,
-    relativePath: canonicalRelativeTarget.replace(/\\/gu, '/'),
+    relativePath: canonicalRelativeTarget.replace(/\\/gu, "/"),
   };
 }
 

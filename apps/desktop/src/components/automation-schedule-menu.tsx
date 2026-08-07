@@ -58,12 +58,16 @@ function resolveWeeklyWeekday(schedule: DesktopAutomationSchedule): DesktopAutom
   return 1;
 }
 
-function toDailySchedule(schedule: DesktopAutomationSchedule): Extract<DesktopAutomationSchedule, { kind: "daily" }> {
+function toDailySchedule(
+  schedule: DesktopAutomationSchedule,
+): Extract<DesktopAutomationSchedule, { kind: "daily" }> {
   const { hour, minute } = resolveDailyTime(schedule);
   return { kind: "daily", hour, minute };
 }
 
-function toWeeklySchedule(schedule: DesktopAutomationSchedule): Extract<DesktopAutomationSchedule, { kind: "weekly" }> {
+function toWeeklySchedule(
+  schedule: DesktopAutomationSchedule,
+): Extract<DesktopAutomationSchedule, { kind: "weekly" }> {
   const { hour, minute } = resolveDailyTime(schedule);
   return { kind: "weekly", weekday: resolveWeeklyWeekday(schedule), hour, minute };
 }
@@ -83,10 +87,7 @@ export function AutomationTimeScheduleOptions({
 
   return (
     <>
-      <DropdownMenuItem
-        disabled={disabled}
-        onSelect={() => onScheduleChange({ kind: "hourly" })}
-      >
+      <DropdownMenuItem disabled={disabled} onSelect={() => onScheduleChange({ kind: "hourly" })}>
         {t("automations.schedule.hourly")}
       </DropdownMenuItem>
       <DailyScheduleSub
@@ -125,14 +126,17 @@ export function AutomationScheduleMenu({
           disabled={disabled}
           className={cn(
             "inline-flex h-7 max-w-full items-center gap-1 rounded-md border-0 bg-transparent px-1 text-muted-foreground outline-none hover:bg-muted/50 focus-visible:ring-2 focus-visible:ring-ring/50 disabled:opacity-50",
-                    DESKTOP_MENU_TRIGGER_TEXT_CLASS,
+            DESKTOP_MENU_TRIGGER_TEXT_CLASS,
           )}
         >
           <span className="min-w-0 truncate">{label}</span>
           <ChevronDown className="size-3 shrink-0 text-muted-foreground/80" aria-hidden />
         </button>
       </DropdownMenuTrigger>
-      <DropdownMenuContent align="start" className={cn(DESKTOP_OVERLAY_SHORT_MENU_MIN_WIDTH, "z-[120]")}>
+      <DropdownMenuContent
+        align="start"
+        className={cn(DESKTOP_OVERLAY_SHORT_MENU_MIN_WIDTH, "z-[120]")}
+      >
         <AutomationTimeScheduleOptions
           schedule={schedule}
           disabled={disabled}
@@ -166,7 +170,9 @@ function DailyScheduleSub({
             hour={hour}
             minute={minute}
             onHourChange={(nextHour) => onScheduleChange({ kind: "daily", hour: nextHour, minute })}
-            onMinuteChange={(nextMinute) => onScheduleChange({ kind: "daily", hour, minute: nextMinute })}
+            onMinuteChange={(nextMinute) =>
+              onScheduleChange({ kind: "daily", hour, minute: nextMinute })
+            }
           />
         </div>
       </DropdownMenuSubContent>
@@ -224,9 +230,11 @@ function WeeklyScheduleSub({
             hour={hour}
             minute={minute}
             onHourChange={(nextHour) =>
-              onScheduleChange({ kind: "weekly", weekday, hour: nextHour, minute })}
+              onScheduleChange({ kind: "weekly", weekday, hour: nextHour, minute })
+            }
             onMinuteChange={(nextMinute) =>
-              onScheduleChange({ kind: "weekly", weekday, hour, minute: nextMinute })}
+              onScheduleChange({ kind: "weekly", weekday, hour, minute: nextMinute })
+            }
           />
         </div>
       </DropdownMenuSubContent>

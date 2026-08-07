@@ -4,28 +4,25 @@ import {
   type LlmModelCapabilities,
   type LlmTransportConfig,
   type OpenResponsesSdkProvider,
-} from '@spiritagent/agent-core';
+} from "@spiritagent/agent-core";
 import {
   resolveAnthropicTransportReasoningEffortForContext,
   resolveGroqTransportReasoningEffortForContext,
   resolveOpenAiTransportReasoningEffortForContext,
-} from '@spiritagent/agent-core/reasoning-effort';
+} from "@spiritagent/agent-core/reasoning-effort";
 
-import {
-  bedrockMantleApiBaseFromRegion,
-  isBedrockMantleOpenAiModel,
-} from './bedrock-mantle.js';
-import type { ModelProviderId } from './model-provider-presets.js';
+import { bedrockMantleApiBaseFromRegion, isBedrockMantleOpenAiModel } from "./bedrock-mantle.js";
+import type { ModelProviderId } from "./model-provider-presets.js";
 import {
   loadActiveModelProfile,
   loadModelProfile,
   readBedrockCredentials,
   readGoogleVertexCredentials,
   resolveStoredApiKeyForProfile,
-} from './credentials/index.js';
-import type { SpiritModelCapability, SpiritModelProfile } from './credentials/types.js';
-import type { ModelRef } from './config-v2.js';
-import { resolveProfileApiBase, resolveSetupTransportKind } from './provider-setup.js';
+} from "./credentials/index.js";
+import type { SpiritModelCapability, SpiritModelProfile } from "./credentials/types.js";
+import type { ModelRef } from "./config-v2.js";
+import { resolveProfileApiBase, resolveSetupTransportKind } from "./provider-setup.js";
 
 export interface ResolveTransportContext {
   workspaceRoot: string;
@@ -37,34 +34,35 @@ function modelCapabilitiesFromConfig(
   capabilities: readonly SpiritModelCapability[],
 ): LlmModelCapabilities {
   return {
-    ...(capabilities.includes('chat') ? { chat: true } : {}),
-    ...(capabilities.includes('image') ? { imageInput: true } : {}),
-    ...(capabilities.includes('video') ? { videoInput: true } : {}),
-    ...(capabilities.includes('imageGeneration') ? { imageGeneration: true } : {}),
+    ...(capabilities.includes("chat") ? { chat: true } : {}),
+    ...(capabilities.includes("image") ? { imageInput: true } : {}),
+    ...(capabilities.includes("video") ? { videoInput: true } : {}),
+    ...(capabilities.includes("imageGeneration") ? { imageGeneration: true } : {}),
   };
 }
 
 function openAiCompatibleVendorFromProvider(
   provider?: ModelProviderId,
-): Exclude<ModelProviderId, 'anthropic' | 'amazon-bedrock'> | undefined {
-  return provider && provider !== 'anthropic' && provider !== 'amazon-bedrock'
+): Exclude<ModelProviderId, "anthropic" | "amazon-bedrock"> | undefined {
+  return provider && provider !== "anthropic" && provider !== "amazon-bedrock"
     ? provider
     : undefined;
 }
 
 function normalizeAnthropicSupportedEfforts(
   efforts?: readonly string[],
-): AnthropicTransportConfig['supportedEfforts'] {
+): AnthropicTransportConfig["supportedEfforts"] {
   if (efforts === undefined) {
     return undefined;
   }
-  return efforts.filter((effort): effort is NonNullable<AnthropicTransportConfig['supportedEfforts']>[number] => (
-    effort === 'low'
-    || effort === 'medium'
-    || effort === 'high'
-    || effort === 'xhigh'
-    || effort === 'max'
-  ));
+  return efforts.filter(
+    (effort): effort is NonNullable<AnthropicTransportConfig["supportedEfforts"]>[number] =>
+      effort === "low" ||
+      effort === "medium" ||
+      effort === "high" ||
+      effort === "xhigh" ||
+      effort === "max",
+  );
 }
 
 function buildTransportFromProfile(
@@ -73,49 +71,49 @@ function buildTransportFromProfile(
   workspaceRoot: string,
 ): LlmTransportConfig {
   const baseUrl = resolveProfileApiBase(profile);
-  const transportKind = resolveSetupTransportKind(profile.provider ?? 'custom', profile.transportKind);
+  const transportKind = resolveSetupTransportKind(
+    profile.provider ?? "custom",
+    profile.transportKind,
+  );
   const model = profile.name;
 
-  if (
-    profile.provider === 'amazon-bedrock'
-    && isBedrockMantleOpenAiModel(model)
-  ) {
+  if (profile.provider === "amazon-bedrock" && isBedrockMantleOpenAiModel(model)) {
     const region = profile.awsRegion?.trim();
     if (!region) {
-      throw new Error('Amazon Bedrock model is missing AWS region configuration.');
+      throw new Error("Amazon Bedrock model is missing AWS region configuration.");
     }
-    const bedrockCredentials = readBedrockCredentials('amazon-bedrock', profile.groupId);
-    const resolvedApiKey = apiKey.trim() || bedrockCredentials.apiKey?.trim() || '';
+    const bedrockCredentials = readBedrockCredentials("amazon-bedrock", profile.groupId);
+    const resolvedApiKey = apiKey.trim() || bedrockCredentials.apiKey?.trim() || "";
     const accessKeyId = bedrockCredentials.accessKeyId?.trim();
     const secretAccessKey = bedrockCredentials.secretAccessKey?.trim();
     if (!resolvedApiKey && !(accessKeyId && secretAccessKey)) {
-      throw new Error('Amazon Bedrock Mantle requires a Bearer API key or IAM credentials.');
+      throw new Error("Amazon Bedrock Mantle requires a Bearer API key or IAM credentials.");
     }
     const normalizedReasoningEffort = resolveOpenAiTransportReasoningEffortForContext(
       profile.reasoningEffort,
       {
-        provider: 'openai',
-        transportKind: 'open-responses',
+        provider: "openai",
+        transportKind: "open-responses",
         model,
       },
     );
     const mantleBaseUrl = bedrockMantleApiBaseFromRegion(region);
     const reasoningSummary = resolveOpenResponsesReasoningSummary({
-      llmVendor: 'openai',
+      llmVendor: "openai",
       model,
       baseUrl: mantleBaseUrl,
       ...(normalizedReasoningEffort ? { reasoningEffort: normalizedReasoningEffort } : {}),
     });
 
     return {
-      transportKind: 'open-responses',
+      transportKind: "open-responses",
       apiKey: resolvedApiKey,
       model,
       baseUrl: mantleBaseUrl,
       workspaceRoot,
-      spiritAgentMode: 'agent',
-      responsesProvider: 'openai',
-      llmVendor: 'openai',
+      spiritAgentMode: "agent",
+      responsesProvider: "openai",
+      llmVendor: "openai",
       ...(profile.capabilities
         ? { modelCapabilities: modelCapabilitiesFromConfig(profile.capabilities) }
         : {}),
@@ -133,26 +131,26 @@ function buildTransportFromProfile(
     };
   }
 
-  if (transportKind === 'open-responses') {
+  if (transportKind === "open-responses") {
     const llmVendor = openAiCompatibleVendorFromProvider(profile.provider);
     const normalizedReasoningEffort = resolveOpenAiTransportReasoningEffortForContext(
       profile.reasoningEffort,
       {
         ...(profile.provider ? { provider: profile.provider } : {}),
-        transportKind: 'open-responses',
+        transportKind: "open-responses",
         model,
       },
     );
     const responsesProvider: OpenResponsesSdkProvider | undefined =
-      profile.provider === 'openai'
-        ? 'openai'
-        : profile.provider === 'xai'
-          ? 'xai'
-          : profile.provider === 'vercel-ai-gateway'
-            || profile.provider === 'cloudflare-ai-gateway'
-            || profile.provider === 'openrouter'
+      profile.provider === "openai"
+        ? "openai"
+        : profile.provider === "xai"
+          ? "xai"
+          : profile.provider === "vercel-ai-gateway" ||
+              profile.provider === "cloudflare-ai-gateway" ||
+              profile.provider === "openrouter"
             ? undefined
-            : 'open-responses-compatible';
+            : "open-responses-compatible";
     const reasoningSummary = resolveOpenResponsesReasoningSummary({
       ...(llmVendor ? { llmVendor } : {}),
       model,
@@ -161,12 +159,12 @@ function buildTransportFromProfile(
     const cloudflareGatewayId = profile.cloudflareGatewayId?.trim();
 
     return {
-      transportKind: 'open-responses',
+      transportKind: "open-responses",
       apiKey,
       model,
       baseUrl,
       workspaceRoot,
-      spiritAgentMode: 'agent',
+      spiritAgentMode: "agent",
       ...(responsesProvider ? { responsesProvider } : {}),
       ...(llmVendor ? { llmVendor } : {}),
       ...(cloudflareGatewayId ? { cloudflareGatewayId } : {}),
@@ -178,8 +176,10 @@ function buildTransportFromProfile(
     };
   }
 
-  if (transportKind === 'anthropic') {
-    const supportedAnthropicEfforts = normalizeAnthropicSupportedEfforts(profile.supportedReasoningEfforts);
+  if (transportKind === "anthropic") {
+    const supportedAnthropicEfforts = normalizeAnthropicSupportedEfforts(
+      profile.supportedReasoningEfforts,
+    );
     const anthropicEffort = resolveAnthropicTransportReasoningEffortForContext(
       profile.reasoningEffort,
       {
@@ -191,7 +191,7 @@ function buildTransportFromProfile(
     const cloudflareGatewayId = profile.cloudflareGatewayId?.trim();
     const llmVendor = openAiCompatibleVendorFromProvider(profile.provider);
     return {
-      transportKind: 'anthropic',
+      transportKind: "anthropic",
       apiKey,
       model,
       baseUrl,
@@ -208,25 +208,25 @@ function buildTransportFromProfile(
     };
   }
 
-  if (transportKind === 'bedrock') {
+  if (transportKind === "bedrock") {
     const region = profile.awsRegion?.trim();
     if (!region) {
-      throw new Error('Amazon Bedrock model is missing AWS region configuration.');
+      throw new Error("Amazon Bedrock model is missing AWS region configuration.");
     }
-    const bedrockCredentials = readBedrockCredentials('amazon-bedrock', profile.groupId);
-    const resolvedApiKey = apiKey.trim() || bedrockCredentials.apiKey?.trim() || '';
+    const bedrockCredentials = readBedrockCredentials("amazon-bedrock", profile.groupId);
+    const resolvedApiKey = apiKey.trim() || bedrockCredentials.apiKey?.trim() || "";
     const accessKeyId = bedrockCredentials.accessKeyId?.trim();
     const secretAccessKey = bedrockCredentials.secretAccessKey?.trim();
     const normalizedReasoningEffort = resolveOpenAiTransportReasoningEffortForContext(
       profile.reasoningEffort,
       {
         ...(profile.provider ? { provider: profile.provider } : {}),
-        transportKind: 'bedrock',
+        transportKind: "bedrock",
         model,
       },
     );
     return {
-      transportKind: 'bedrock',
+      transportKind: "bedrock",
       model,
       region,
       ...(resolvedApiKey ? { apiKey: resolvedApiKey } : {}),
@@ -246,12 +246,20 @@ function buildTransportFromProfile(
     ...(profile.transportKind ? { transportKind: profile.transportKind } : {}),
     model,
   };
-  const normalizedReasoningEffort = profile.provider === 'groq'
-    ? resolveGroqTransportReasoningEffortForContext(profile.reasoningEffort, reasoningEffortContext)
-    : resolveOpenAiTransportReasoningEffortForContext(profile.reasoningEffort, reasoningEffortContext);
-  const vertexCredentials = profile.provider === 'google-vertex-ai'
-    ? readGoogleVertexCredentials('google-vertex-ai', profile.groupId)
-    : undefined;
+  const normalizedReasoningEffort =
+    profile.provider === "groq"
+      ? resolveGroqTransportReasoningEffortForContext(
+          profile.reasoningEffort,
+          reasoningEffortContext,
+        )
+      : resolveOpenAiTransportReasoningEffortForContext(
+          profile.reasoningEffort,
+          reasoningEffortContext,
+        );
+  const vertexCredentials =
+    profile.provider === "google-vertex-ai"
+      ? readGoogleVertexCredentials("google-vertex-ai", profile.groupId)
+      : undefined;
   const vertexProject = profile.vertexProject?.trim();
   const vertexLocation = profile.vertexLocation?.trim();
   const vertexClientEmail = vertexCredentials?.clientEmail?.trim();
@@ -259,7 +267,7 @@ function buildTransportFromProfile(
   const cloudflareGatewayId = profile.cloudflareGatewayId?.trim();
 
   return {
-    transportKind: 'openai-compatible',
+    transportKind: "openai-compatible",
     apiKey,
     model,
     baseUrl,
@@ -286,23 +294,22 @@ export function resolveTransportConfig(context: ResolveTransportContext): LlmTra
     ? loadModelProfile(context.spiritDataDir, context.modelRef)
     : loadActiveModelProfile(context.spiritDataDir);
   if (!profile) {
-    throw new Error('No active model configured. Run provider setup first.');
+    throw new Error("No active model configured. Run provider setup first.");
   }
 
-  const apiKey = resolveStoredApiKeyForProfile(profile) ?? '';
-  if (!apiKey.trim() && profile.provider === 'google-vertex-ai') {
-    const vertex = readGoogleVertexCredentials('google-vertex-ai', profile.groupId);
+  const apiKey = resolveStoredApiKeyForProfile(profile) ?? "";
+  if (!apiKey.trim() && profile.provider === "google-vertex-ai") {
+    const vertex = readGoogleVertexCredentials("google-vertex-ai", profile.groupId);
     const hasVertex = Boolean(
-      vertex.apiKey?.trim()
-      || (vertex.clientEmail?.trim() && vertex.privateKey?.trim()),
+      vertex.apiKey?.trim() || (vertex.clientEmail?.trim() && vertex.privateKey?.trim()),
     );
     if (!hasVertex) {
       throw new Error(`No Vertex credentials found for model "${profile.name}". Run setup again.`);
     }
   } else if (
-    !apiKey.trim()
-    && profile.provider !== 'amazon-bedrock'
-    && profile.provider !== 'custom'
+    !apiKey.trim() &&
+    profile.provider !== "amazon-bedrock" &&
+    profile.provider !== "custom"
   ) {
     throw new Error(`No API key found for model "${profile.name}". Run setup again.`);
   }

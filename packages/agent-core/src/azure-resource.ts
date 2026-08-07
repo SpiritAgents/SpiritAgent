@@ -18,7 +18,7 @@ export function validateAzureResourceName(resourceName: string): string {
   const normalized = normalizeAzureResourceName(resourceName);
   if (!isValidAzureResourceName(normalized)) {
     throw new Error(
-      'Azure resource name must be 2–64 characters and contain only letters, numbers, and hyphens; it cannot start or end with a hyphen.',
+      "Azure resource name must be 2–64 characters and contain only letters, numbers, and hyphens; it cannot start or end with a hyphen.",
     );
   }
   return normalized;
@@ -27,13 +27,13 @@ export function validateAzureResourceName(resourceName: string): string {
 export function azureApiBaseFromResourceName(resourceName: string): string {
   const normalized = normalizeAzureResourceName(resourceName);
   if (!normalized) {
-    return 'https://YOUR_RESOURCE_NAME.openai.azure.com/openai/v1';
+    return "https://YOUR_RESOURCE_NAME.openai.azure.com/openai/v1";
   }
   return `https://${validateAzureResourceName(normalized)}.openai.azure.com/openai/v1`;
 }
 
 export function extractAzureResourceNameFromApiBase(baseUrl: string): string | undefined {
-  const normalized = baseUrl.trim().replace(/\/+$/, '');
+  const normalized = baseUrl.trim().replace(/\/+$/, "");
   const match = normalized.match(/^https:\/\/([^.]+)\.openai\.azure\.com(?:\/|$)/i);
   const resource = match?.[1]?.trim();
   if (!resource || !isValidAzureResourceName(resource)) {

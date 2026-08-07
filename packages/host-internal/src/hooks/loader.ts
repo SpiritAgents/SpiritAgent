@@ -1,5 +1,5 @@
-import { existsSync, readFileSync } from 'node:fs';
-import path from 'node:path';
+import { existsSync, readFileSync } from "node:fs";
+import path from "node:path";
 
 import {
   emptyHooksConfigFile,
@@ -13,7 +13,7 @@ import {
   type HookInput,
   type HooksConfigFile,
   hookMatcherTarget,
-} from '@spiritagent/agent-core';
+} from "@spiritagent/agent-core";
 
 export interface LoadHooksConfigOptions {
   spiritDataDir: string;
@@ -32,7 +32,7 @@ export function loadHooksConfigFileAt(configPath: string): HooksConfigFile {
     return emptyHooksConfigFile();
   }
   try {
-    const content = readFileSync(configPath, 'utf8');
+    const content = readFileSync(configPath, "utf8");
     return parseHooksConfigFile(JSON.parse(content) as unknown);
   } catch (error) {
     const detail = error instanceof Error ? error.message : String(error);
@@ -46,7 +46,7 @@ export function loadHooksConfigFileForMutation(configPath: string): HooksConfigF
     return emptyHooksConfigFile();
   }
   try {
-    const content = readFileSync(configPath, 'utf8');
+    const content = readFileSync(configPath, "utf8");
     return parseHooksConfigFile(JSON.parse(content) as unknown);
   } catch (error) {
     const detail = error instanceof Error ? error.message : String(error);
@@ -75,10 +75,7 @@ export function loadHooksConfig(options: LoadHooksConfigOptions): LoadedHooksCon
   };
 }
 
-export function listHookDefinitionsForInput(
-  loaded: LoadedHooksConfig,
-  input: HookInput,
-) {
+export function listHookDefinitionsForInput(loaded: LoadedHooksConfig, input: HookInput) {
   return resolveMergedHookDefinitions(
     loaded.user,
     loaded.workspace,
@@ -92,13 +89,13 @@ export function listHookDefinitionsForInput(
 export function summarizeHooksConfig(loaded: LoadedHooksConfig): Record<HookEventName, number> {
   const summary = {} as Record<HookEventName, number>;
   const events = [
-    'sessionStart',
-    'sessionEnd',
-    'submitPrompt',
-    'preToolUse',
-    'postToolUse',
-    'subagentStart',
-    'subagentEnd',
+    "sessionStart",
+    "sessionEnd",
+    "submitPrompt",
+    "preToolUse",
+    "postToolUse",
+    "subagentStart",
+    "subagentEnd",
   ] as const;
   for (const event of events) {
     const userCount = loaded.user.hooks[event]?.length ?? 0;
@@ -109,7 +106,7 @@ export function summarizeHooksConfig(loaded: LoadedHooksConfig): Record<HookEven
 }
 
 export interface HookValidationEntry {
-  scope: 'user' | 'workspace';
+  scope: "user" | "workspace";
   event: HookEventName;
   index: number;
   command: string;
@@ -132,8 +129,8 @@ export function validateHooksConfig(options: LoadHooksConfigOptions): {
 
   for (const event of HOOK_EVENT_NAMES) {
     const appendScopeEntries = (
-      scope: 'user' | 'workspace',
-      hookEntries: HooksConfigFile['hooks'][typeof event] | undefined,
+      scope: "user" | "workspace",
+      hookEntries: HooksConfigFile["hooks"][typeof event] | undefined,
       configDir: string,
     ) => {
       for (const [index, entry] of (hookEntries ?? []).entries()) {
@@ -159,9 +156,9 @@ export function validateHooksConfig(options: LoadHooksConfigOptions): {
       }
     };
 
-    appendScopeEntries('user', loaded.user.hooks[event], loaded.userConfigDir);
+    appendScopeEntries("user", loaded.user.hooks[event], loaded.userConfigDir);
     if (loaded.workspaceConfigDir) {
-      appendScopeEntries('workspace', loaded.workspace.hooks[event], loaded.workspaceConfigDir);
+      appendScopeEntries("workspace", loaded.workspace.hooks[event], loaded.workspaceConfigDir);
     }
   }
 

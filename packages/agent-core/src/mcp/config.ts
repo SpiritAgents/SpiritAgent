@@ -1,10 +1,10 @@
-import { homedir } from 'node:os';
-import { join } from 'node:path';
+import { homedir } from "node:os";
+import { join } from "node:path";
 
-const APP_DATA_DIR_NAME = 'SpiritAgent';
-const ENV_SPIRIT_AGENT_DATA_DIR = 'SPIRIT_AGENT_DATA_DIR';
+const APP_DATA_DIR_NAME = "SpiritAgent";
+const ENV_SPIRIT_AGENT_DATA_DIR = "SPIRIT_AGENT_DATA_DIR";
 
-import { McpConfigError } from './errors.js';
+import { McpConfigError } from "./errors.js";
 import type {
   McpCapabilityToggles,
   McpConfigFile,
@@ -15,17 +15,17 @@ import type {
   ResolvedMcpStdioTransportConfig,
   ResolvedMcpTransportConfig,
   McpClientInfo,
-} from './types.js';
+} from "./types.js";
 
-const ENV_PLACEHOLDER_PREFIX = '${env:';
-export const MCP_CONFIG_FILE_NAME = 'mcp.json';
+const ENV_PLACEHOLDER_PREFIX = "${env:";
+export const MCP_CONFIG_FILE_NAME = "mcp.json";
 const DEFAULT_MCP_CONFIG_FILE = MCP_CONFIG_FILE_NAME;
-export const SPIRIT_DIR_NAME = '.spirit';
-export type McpConfigScope = 'user' | 'workspace';
+export const SPIRIT_DIR_NAME = ".spirit";
+export type McpConfigScope = "user" | "workspace";
 
 export const DEFAULT_MCP_CLIENT_INFO: McpClientInfo = {
-  name: '@spiritagent/agent-core',
-  version: '0.3.2',
+  name: "@spiritagent/agent-core",
+  version: "0.3.2",
 };
 
 export function mcpUserConfigPath(dataDir: string): string {
@@ -49,25 +49,25 @@ export function resolveDefaultSpiritAgentDataDir(): string {
 
   const home = resolveHomeDirectory();
   if (home) {
-    if (process.platform === 'darwin') {
-      return join(home, 'Library', 'Application Support', APP_DATA_DIR_NAME);
+    if (process.platform === "darwin") {
+      return join(home, "Library", "Application Support", APP_DATA_DIR_NAME);
     }
-    if (process.platform === 'linux') {
+    if (process.platform === "linux") {
       const xdgDataHome = process.env.XDG_DATA_HOME?.trim();
       if (xdgDataHome) {
         return join(xdgDataHome, APP_DATA_DIR_NAME);
       }
-      return join(home, '.local', 'share', APP_DATA_DIR_NAME);
+      return join(home, ".local", "share", APP_DATA_DIR_NAME);
     }
-    return join(home, '.spirit-agent');
+    return join(home, ".spirit-agent");
   }
 
   const userProfile = process.env.USERPROFILE?.trim();
   if (userProfile) {
-    return join(userProfile, '.spirit-agent');
+    return join(userProfile, ".spirit-agent");
   }
 
-  return join(homedir(), '.spirit-agent');
+  return join(homedir(), ".spirit-agent");
 }
 
 export function spiritAgentDataDir(): string {
@@ -79,10 +79,7 @@ export function spiritAgentDataDir(): string {
   return resolveDefaultSpiritAgentDataDir();
 }
 
-export function mergeMcpConfigFiles(
-  user: McpConfigFile,
-  workspace: McpConfigFile,
-): McpConfigFile {
+export function mergeMcpConfigFiles(user: McpConfigFile, workspace: McpConfigFile): McpConfigFile {
   return {
     servers: { ...user.servers, ...workspace.servers },
   };
@@ -94,10 +91,10 @@ export function mcpServerScopesFromFiles(
 ): Record<string, McpConfigScope> {
   const scopes: Record<string, McpConfigScope> = {};
   for (const name of Object.keys(user.servers)) {
-    scopes[name] = 'user';
+    scopes[name] = "user";
   }
   for (const name of Object.keys(workspace.servers)) {
-    scopes[name] = 'workspace';
+    scopes[name] = "workspace";
   }
   return scopes;
 }
@@ -114,13 +111,13 @@ export function findMcpServerNameConflict(
   const inUser = trimmed in user.servers;
   const inWorkspace = trimmed in workspace.servers;
   if (inUser && inWorkspace) {
-    return 'user';
+    return "user";
   }
   if (inUser) {
-    return 'user';
+    return "user";
   }
   if (inWorkspace) {
-    return 'workspace';
+    return "workspace";
   }
   return undefined;
 }
@@ -144,13 +141,13 @@ export function normalizeCapabilityToggles(
 }
 
 export function parseMcpConfigFile(raw: unknown): McpConfigFile {
-  const root = asRecord(raw, 'MCP 配置根对象必须是 JSON object');
+  const root = asRecord(raw, "MCP 配置根对象必须是 JSON object");
   const rawServers = root.servers;
   if (rawServers === undefined) {
     return { servers: {} };
   }
 
-  const serversRecord = asRecord(rawServers, 'MCP 配置的 servers 字段必须是 JSON object');
+  const serversRecord = asRecord(rawServers, "MCP 配置的 servers 字段必须是 JSON object");
   const servers: Record<string, McpServerConfig> = {};
 
   for (const [name, server] of Object.entries(serversRecord)) {
@@ -178,7 +175,7 @@ export function normalizeMcpServerConfig(
 ): ResolvedMcpServerConfig {
   const trimmedName = name.trim();
   if (!trimmedName) {
-    throw new McpConfigError('MCP server 名称不能为空');
+    throw new McpConfigError("MCP server 名称不能为空");
   }
 
   return {
@@ -194,40 +191,36 @@ export function normalizeTransportConfig(
   transport: McpTransportConfig,
 ): ResolvedMcpTransportConfig {
   switch (transport.type) {
-    case 'stdio': {
+    case "stdio": {
       const command = transport.command.trim();
       if (!command) {
-        throw new McpConfigError('stdio MCP transport command 不能为空');
+        throw new McpConfigError("stdio MCP transport command 不能为空");
       }
 
       const base: ResolvedMcpStdioTransportConfig = {
-        type: 'stdio',
+        type: "stdio",
         command,
         args: [...(transport.args ?? [])],
         env: { ...(transport.env ?? {}) },
-        stderr: transport.stderr ?? 'inherit',
-        ...(typeof transport.cwd === 'string' && transport.cwd.trim()
+        stderr: transport.stderr ?? "inherit",
+        ...(typeof transport.cwd === "string" && transport.cwd.trim()
           ? { cwd: transport.cwd.trim() }
           : {}),
-        ...(typeof transport.timeoutMs === 'number'
-          ? { timeoutMs: transport.timeoutMs }
-          : {}),
+        ...(typeof transport.timeoutMs === "number" ? { timeoutMs: transport.timeoutMs } : {}),
       };
       return base;
     }
-    case 'http': {
+    case "http": {
       const url = transport.url.trim();
       if (!url) {
-        throw new McpConfigError('http MCP transport url 不能为空');
+        throw new McpConfigError("http MCP transport url 不能为空");
       }
 
       const base: ResolvedMcpHttpTransportConfig = {
-        type: 'http',
+        type: "http",
         url,
         headers: { ...(transport.headers ?? {}) },
-        ...(typeof transport.timeoutMs === 'number'
-          ? { timeoutMs: transport.timeoutMs }
-          : {}),
+        ...(typeof transport.timeoutMs === "number" ? { timeoutMs: transport.timeoutMs } : {}),
       };
       return base;
     }
@@ -238,7 +231,7 @@ export function resolveEnvTemplate(
   value: string,
   lookup: (name: string) => string | undefined,
 ): string {
-  let rendered = '';
+  let rendered = "";
   let remaining = value;
 
   while (true) {
@@ -250,7 +243,7 @@ export function resolveEnvTemplate(
 
     rendered += remaining.slice(0, start);
     const placeholder = remaining.slice(start + ENV_PLACEHOLDER_PREFIX.length);
-    const end = placeholder.indexOf('}');
+    const end = placeholder.indexOf("}");
     if (end < 0) {
       throw new McpConfigError(`非法环境变量占位符: ${value}`);
     }
@@ -285,14 +278,16 @@ export function resolveEnvRecord(
 
 export function summarizeTransport(transport: ResolvedMcpTransportConfig): string {
   switch (transport.type) {
-    case 'stdio': {
-      const argsText = transport.args.length > 0 ? ` ${transport.args.join(' ')}` : '';
-      const cwdText = transport.cwd ? `, cwd=${transport.cwd}` : '';
-      const timeoutText = transport.timeoutMs !== undefined ? `, timeout=${transport.timeoutMs}ms` : '';
+    case "stdio": {
+      const argsText = transport.args.length > 0 ? ` ${transport.args.join(" ")}` : "";
+      const cwdText = transport.cwd ? `, cwd=${transport.cwd}` : "";
+      const timeoutText =
+        transport.timeoutMs !== undefined ? `, timeout=${transport.timeoutMs}ms` : "";
       return `stdio ${transport.command}${argsText}${cwdText}${timeoutText}`;
     }
-    case 'http': {
-      const timeoutText = transport.timeoutMs !== undefined ? `, timeout=${transport.timeoutMs}ms` : '';
+    case "http": {
+      const timeoutText =
+        transport.timeoutMs !== undefined ? `, timeout=${transport.timeoutMs}ms` : "";
       return `http ${transport.url}${timeoutText}`;
     }
   }
@@ -301,48 +296,46 @@ export function summarizeTransport(transport: ResolvedMcpTransportConfig): strin
 export function summarizeCapabilities(capabilities: McpCapabilityToggles): string {
   const enabled: string[] = [];
   if (capabilities.tools) {
-    enabled.push('tools');
+    enabled.push("tools");
   }
   if (capabilities.resources) {
-    enabled.push('resources');
+    enabled.push("resources");
   }
   if (capabilities.prompts) {
-    enabled.push('prompts');
+    enabled.push("prompts");
   }
-  return enabled.length > 0 ? enabled.join(', ') : 'none';
+  return enabled.length > 0 ? enabled.join(", ") : "none";
 }
 
 function parseMcpServerConfig(name: string, raw: unknown): McpServerConfig {
   const record = asRecord(raw, `MCP server ${name} 配置必须是 JSON object`);
   const nestedTransport = asRecordOrUndefined(record.transport);
-  const displayName = readOptionalString(record, ['displayName', 'display_name']);
+  const displayName = readOptionalString(record, ["displayName", "display_name"]);
   const capabilities = parseCapabilityToggles(record.capabilities);
 
   return {
     ...(displayName === undefined ? {} : { displayName }),
-    ...(typeof record.enabled === 'boolean' ? { enabled: record.enabled } : {}),
+    ...(typeof record.enabled === "boolean" ? { enabled: record.enabled } : {}),
     ...(capabilities === undefined ? {} : { capabilities }),
     transport: parseTransportConfigForConfig(name, nestedTransport ?? record),
   };
 }
 
-function parseCapabilityToggles(
-  raw: unknown,
-): Partial<McpCapabilityToggles> | undefined {
+function parseCapabilityToggles(raw: unknown): Partial<McpCapabilityToggles> | undefined {
   if (raw === undefined) {
     return undefined;
   }
 
-  const record = asRecord(raw, 'MCP capabilities 配置必须是 JSON object');
+  const record = asRecord(raw, "MCP capabilities 配置必须是 JSON object");
   const toggles: Partial<McpCapabilityToggles> = {};
 
-  if (typeof record.tools === 'boolean') {
+  if (typeof record.tools === "boolean") {
     toggles.tools = record.tools;
   }
-  if (typeof record.resources === 'boolean') {
+  if (typeof record.resources === "boolean") {
     toggles.resources = record.resources;
   }
-  if (typeof record.prompts === 'boolean') {
+  if (typeof record.prompts === "boolean") {
     toggles.prompts = record.prompts;
   }
 
@@ -353,17 +346,21 @@ function parseTransportConfigForConfig(
   serverName: string,
   raw: Record<string, unknown>,
 ): McpTransportConfig {
-  const type = readOptionalString(raw, ['type'])?.trim().toLowerCase();
+  const type = readOptionalString(raw, ["type"])?.trim().toLowerCase();
   switch (type) {
-    case 'stdio': {
-      const args = readOptionalStringArray(raw, ['args']);
-      const env = readOptionalStringRecord(raw, ['env']);
-      const cwd = readOptionalString(raw, ['cwd']);
-      const timeoutMs = readOptionalNumber(raw, ['timeoutMs', 'timeout_ms']);
-      const stderr = readOptionalEnum(raw, ['stderr'], ['inherit', 'pipe']);
+    case "stdio": {
+      const args = readOptionalStringArray(raw, ["args"]);
+      const env = readOptionalStringRecord(raw, ["env"]);
+      const cwd = readOptionalString(raw, ["cwd"]);
+      const timeoutMs = readOptionalNumber(raw, ["timeoutMs", "timeout_ms"]);
+      const stderr = readOptionalEnum(raw, ["stderr"], ["inherit", "pipe"]);
       return {
-        type: 'stdio',
-        command: readRequiredString(raw, ['command'], `MCP server ${serverName} 的 stdio command 不能为空`),
+        type: "stdio",
+        command: readRequiredString(
+          raw,
+          ["command"],
+          `MCP server ${serverName} 的 stdio command 不能为空`,
+        ),
         ...(args === undefined ? {} : { args }),
         ...(env === undefined ? {} : { env }),
         ...(cwd === undefined ? {} : { cwd }),
@@ -371,12 +368,12 @@ function parseTransportConfigForConfig(
         ...(stderr === undefined ? {} : { stderr }),
       };
     }
-    case 'http': {
-      const headers = readOptionalStringRecord(raw, ['headers']);
-      const timeoutMs = readOptionalNumber(raw, ['timeoutMs', 'timeout_ms']);
+    case "http": {
+      const headers = readOptionalStringRecord(raw, ["headers"]);
+      const timeoutMs = readOptionalNumber(raw, ["timeoutMs", "timeout_ms"]);
       return {
-        type: 'http',
-        url: readRequiredString(raw, ['url'], `MCP server ${serverName} 的 http url 不能为空`),
+        type: "http",
+        url: readRequiredString(raw, ["url"], `MCP server ${serverName} 的 http url 不能为空`),
         ...(headers === undefined ? {} : { headers }),
         ...(timeoutMs === undefined ? {} : { timeoutMs }),
       };
@@ -387,7 +384,7 @@ function parseTransportConfigForConfig(
 }
 
 function asRecord(value: unknown, errorMessage: string): Record<string, unknown> {
-  if (typeof value !== 'object' || value === null || Array.isArray(value)) {
+  if (typeof value !== "object" || value === null || Array.isArray(value)) {
     throw new McpConfigError(errorMessage);
   }
 
@@ -395,17 +392,14 @@ function asRecord(value: unknown, errorMessage: string): Record<string, unknown>
 }
 
 function asRecordOrUndefined(value: unknown): Record<string, unknown> | undefined {
-  if (typeof value !== 'object' || value === null || Array.isArray(value)) {
+  if (typeof value !== "object" || value === null || Array.isArray(value)) {
     return undefined;
   }
 
   return value as Record<string, unknown>;
 }
 
-function firstDefined(
-  record: Record<string, unknown>,
-  keys: string[],
-): unknown {
+function firstDefined(record: Record<string, unknown>, keys: string[]): unknown {
   for (const key of keys) {
     if (key in record) {
       return record[key];
@@ -415,12 +409,9 @@ function firstDefined(
   return undefined;
 }
 
-function readOptionalString(
-  record: Record<string, unknown>,
-  keys: string[],
-): string | undefined {
+function readOptionalString(record: Record<string, unknown>, keys: string[]): string | undefined {
   const value = firstDefined(record, keys);
-  return typeof value === 'string' ? value : undefined;
+  return typeof value === "string" ? value : undefined;
 }
 
 function readRequiredString(
@@ -436,12 +427,9 @@ function readRequiredString(
   return value;
 }
 
-function readOptionalNumber(
-  record: Record<string, unknown>,
-  keys: string[],
-): number | undefined {
+function readOptionalNumber(record: Record<string, unknown>, keys: string[]): number | undefined {
   const value = firstDefined(record, keys);
-  return typeof value === 'number' && Number.isFinite(value) ? value : undefined;
+  return typeof value === "number" && Number.isFinite(value) ? value : undefined;
 }
 
 function readOptionalStringArray(
@@ -453,7 +441,7 @@ function readOptionalStringArray(
     return undefined;
   }
 
-  return value.filter((entry): entry is string => typeof entry === 'string');
+  return value.filter((entry): entry is string => typeof entry === "string");
 }
 
 function readOptionalStringRecord(
@@ -468,7 +456,7 @@ function readOptionalStringRecord(
 
   const normalized: Record<string, string> = {};
   for (const [key, entry] of Object.entries(candidate)) {
-    if (typeof entry === 'string') {
+    if (typeof entry === "string") {
       normalized[key] = entry;
     }
   }
@@ -482,5 +470,5 @@ function readOptionalEnum<T extends string>(
   values: readonly T[],
 ): T | undefined {
   const value = firstDefined(record, keys);
-  return typeof value === 'string' && values.includes(value as T) ? (value as T) : undefined;
+  return typeof value === "string" && values.includes(value as T) ? (value as T) : undefined;
 }

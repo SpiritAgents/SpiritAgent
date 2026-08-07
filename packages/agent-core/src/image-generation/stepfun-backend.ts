@@ -1,15 +1,15 @@
-import { getLlmFetch } from '../llm-fetch.js';
-import type { OpenAiImageGenerationConfig } from '../openai/openai-compat.js';
-import { normalizeGeneratedImageMarkdownRef } from '../openai/ai-sdk-transport.js';
+import { getLlmFetch } from "../llm-fetch.js";
+import type { OpenAiImageGenerationConfig } from "../openai/openai-compat.js";
+import { normalizeGeneratedImageMarkdownRef } from "../openai/ai-sdk-transport.js";
 import type {
   GeneratedImageFile,
   GeneratedImageSaveRequest,
   ImageGenerationRequest,
   ToolExecutionOutput,
-} from '../ports.js';
-import { createLlmMessageContentFromTextAndImages } from '../ports.js';
+} from "../ports.js";
+import { createLlmMessageContentFromTextAndImages } from "../ports.js";
 
-export const STEPFUN_IMAGE_GENERATION_URL = 'https://api.stepfun.com/v1/images/generations';
+export const STEPFUN_IMAGE_GENERATION_URL = "https://api.stepfun.com/v1/images/generations";
 
 interface StepfunImageGenerationResponse {
   data?: Array<{ url?: string; b64_json?: string }>;
@@ -28,7 +28,7 @@ export function mapStepfunImageSize(model: string, size: string | undefined): st
 
   const width = match[1];
   const height = match[2];
-  if (model.trim() === 'step-image-edit-2') {
+  if (model.trim() === "step-image-edit-2") {
     return `${height}x${width}`;
   }
 
@@ -36,20 +36,20 @@ export function mapStepfunImageSize(model: string, size: string | undefined): st
 }
 
 function decodeBase64Image(data: string): Uint8Array {
-  return Uint8Array.from(Buffer.from(data, 'base64'));
+  return Uint8Array.from(Buffer.from(data, "base64"));
 }
 
 async function requestStepfunImage(
   config: OpenAiImageGenerationConfig,
   request: ImageGenerationRequest,
-  responseFormat: 'b64_json' | 'url',
+  responseFormat: "b64_json" | "url",
 ): Promise<StepfunImageGenerationResponse> {
   const mappedSize = mapStepfunImageSize(config.model, request.size);
   const createResponse = await getLlmFetch()(STEPFUN_IMAGE_GENERATION_URL, {
-    method: 'POST',
+    method: "POST",
     headers: {
       Authorization: `Bearer ${config.apiKey}`,
-      'Content-Type': 'application/json',
+      "Content-Type": "application/json",
     },
     body: JSON.stringify({
       model: config.model,
@@ -72,8 +72,8 @@ export async function generateStepfunImage(
   request: ImageGenerationRequest,
   saveGeneratedImage: (request: GeneratedImageSaveRequest) => Promise<GeneratedImageFile>,
 ): Promise<ToolExecutionOutput> {
-  console.error('[agent-core][generate-image] request.start', {
-    adapter: 'stepfun',
+  console.error("[agent-core][generate-image] request.start", {
+    adapter: "stepfun",
     model: config.model,
     createUrl: STEPFUN_IMAGE_GENERATION_URL,
     size: request.size,
@@ -82,13 +82,13 @@ export async function generateStepfunImage(
 
   let created: StepfunImageGenerationResponse;
   try {
-    created = await requestStepfunImage(config, request, 'b64_json');
+    created = await requestStepfunImage(config, request, "b64_json");
   } catch (error) {
     const message = error instanceof Error ? error.message : String(error);
-    if (!message.includes('StepFun image generation failed')) {
+    if (!message.includes("StepFun image generation failed")) {
       throw error;
     }
-    created = await requestStepfunImage(config, request, 'url');
+    created = await requestStepfunImage(config, request, "url");
   }
 
   const first = created.data?.[0];
@@ -97,22 +97,22 @@ export async function generateStepfunImage(
     const data = decodeBase64Image(b64);
     const saved = await saveGeneratedImage({
       data,
-      mediaType: 'image/png',
+      mediaType: "image/png",
       prompt: request.prompt,
       model: config.model,
     });
-    console.error('[agent-core][generate-image] request.success', {
-      adapter: 'stepfun',
+    console.error("[agent-core][generate-image] request.success", {
+      adapter: "stepfun",
       model: config.model,
       mimeType: saved.mimeType,
-      responseFormat: 'b64_json',
+      responseFormat: "b64_json",
     });
     return buildStepfunImageToolOutput(saved, config.model);
   }
 
   const imageUrl = first?.url?.trim();
   if (!imageUrl) {
-    throw new Error('StepFun image generation returned no image data.');
+    throw new Error("StepFun image generation returned no image data.");
   }
 
   const downloadResponse = await fetch(imageUrl);
@@ -121,7 +121,8 @@ export async function generateStepfunImage(
     throw new Error(`StepFun image download failed (${downloadResponse.status}): ${body}`);
   }
 
-  const mediaType = downloadResponse.headers.get('content-type')?.split(';')[0]?.trim() || 'image/png';
+  const mediaType =
+    downloadResponse.headers.get("content-type")?.split(";")[0]?.trim() || "image/png";
   const data = new Uint8Array(await downloadResponse.arrayBuffer());
   const saved = await saveGeneratedImage({
     data,
@@ -130,8 +131,8 @@ export async function generateStepfunImage(
     model: config.model,
   });
 
-  console.error('[agent-core][generate-image] request.success', {
-    adapter: 'stepfun',
+  console.error("[agent-core][generate-image] request.success", {
+    adapter: "stepfun",
     model: config.model,
     mimeType: saved.mimeType,
   });
@@ -143,7 +144,7 @@ function buildStepfunImageToolOutput(
   saved: GeneratedImageFile,
   model: string,
 ): ToolExecutionOutput {
-  const summaryLines = ['[generated image]'];
+  const summaryLines = ["[generated image]"];
   const markdownRef = normalizeGeneratedImageMarkdownRef(saved.markdownRef);
   summaryLines.push(
     `image_ref: ${markdownRef}`,
@@ -151,7 +152,7 @@ function buildStepfunImageToolOutput(
     `embed_markdown: ![Generated image](${markdownRef})`,
   );
   summaryLines.push(`mime_type: ${saved.mimeType}`, `model: ${model}`);
-  const summaryText = summaryLines.join('\n');
+  const summaryText = summaryLines.join("\n");
 
   return {
     content: createLlmMessageContentFromTextAndImages(summaryText, [saved.path]),

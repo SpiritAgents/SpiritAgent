@@ -1,52 +1,52 @@
-import type { JsonObject, JsonValue } from '../ports.js';
-import { isArkLlmVendor } from '../ark/ark-provider.js';
-import type { LlmModelCapabilities, TransportRequestProfile } from '../llm-provider-shared.js';
-import { resolveOpenAiTransportReasoningEffortForContext } from '../reasoning-effort.js';
+import type { JsonObject, JsonValue } from "../ports.js";
+import { isArkLlmVendor } from "../ark/ark-provider.js";
+import type { LlmModelCapabilities, TransportRequestProfile } from "../llm-provider-shared.js";
+import { resolveOpenAiTransportReasoningEffortForContext } from "../reasoning-effort.js";
 import {
   modelSupportsOpenAiGpt56ReasoningControls,
   resolveOpenAiTransportReasoningModeForContext,
   type ModelReasoningMode,
-} from '../openai/gpt-reasoning-controls.js';
-import { cloneJsonValue } from '../tool-agent.js';
-import { isThinkingSwitchDisabledModel } from './thinking-switch-disabled-models.js';
+} from "../openai/gpt-reasoning-controls.js";
+import { cloneJsonValue } from "../tool-agent.js";
+import { isThinkingSwitchDisabledModel } from "./thinking-switch-disabled-models.js";
 import {
   buildOpenRouterClaudeReasoningBody,
   isOpenRouterAnthropicClaudeModel,
-} from './openrouter-anthropic-reasoning.js';
+} from "./openrouter-anthropic-reasoning.js";
 
 /** 与宿主 `ModelProfile.provider` 对齐；用于在 OpenAI 形态 API 上附加厂商扩展字段。 */
 export type OpenAiLlmVendor =
-  | 'deepseek'
-  | 'xai'
-  | 'moonshot-ai'
-  | 'kimi-code'
-  | 'z-ai'
-  | 'zhipu-ai'
-  | 'minimax'
-  | 'xiaomi'
-  | 'siliconflow'
-  | 'stepfun'
-  | 'alibaba'
-  | 'vercel-ai-gateway'
-  | 'cloudflare-ai-gateway'
-  | 'openrouter'
-  | 'fireworks-ai'
-  | 'together-ai'
-  | 'groq'
-  | 'deepinfra'
-  | 'hugging-face'
-  | 'baseten'
-  | 'cohere'
-  | 'openai'
-  | 'google'
-  | 'google-vertex-ai'
-  | 'volcengine'
-  | 'byteplus'
-  | 'meituan'
-  | 'tencent-tokenhub'
-  | 'mistral'
-  | 'azure'
-  | 'custom';
+  | "deepseek"
+  | "xai"
+  | "moonshot-ai"
+  | "kimi-code"
+  | "z-ai"
+  | "zhipu-ai"
+  | "minimax"
+  | "xiaomi"
+  | "siliconflow"
+  | "stepfun"
+  | "alibaba"
+  | "vercel-ai-gateway"
+  | "cloudflare-ai-gateway"
+  | "openrouter"
+  | "fireworks-ai"
+  | "together-ai"
+  | "groq"
+  | "deepinfra"
+  | "hugging-face"
+  | "baseten"
+  | "cohere"
+  | "openai"
+  | "google"
+  | "google-vertex-ai"
+  | "volcengine"
+  | "byteplus"
+  | "meituan"
+  | "tencent-tokenhub"
+  | "mistral"
+  | "azure"
+  | "custom";
 
 export type OpenAiModelCapabilities = LlmModelCapabilities;
 
@@ -91,7 +91,7 @@ export interface OpenAiVideoGenerationConfig {
 }
 
 export interface OpenAiTransportConfig {
-  transportKind?: 'openai-compatible';
+  transportKind?: "openai-compatible";
   apiKey: string;
   model: string;
   baseUrl?: string;
@@ -120,7 +120,7 @@ export interface OpenAiTransportConfig {
    * 抽象推理强度；`default` 表示不指定，交给上游或模型默认行为。
    * 非 `default` 时直接走 OpenAI chat.completions 官方字段 `reasoning_effort`。
    */
-  reasoningEffort?: 'default' | 'minimal' | 'none' | 'low' | 'medium' | 'high' | 'xhigh' | 'max';
+  reasoningEffort?: "default" | "minimal" | "none" | "low" | "medium" | "high" | "xhigh" | "max";
   reasoningMode?: ModelReasoningMode;
   /**
    * 仅对 `deepseek` / `moonshot-ai`：是否在所有经本 transport 的 chat.completions 请求体中加入
@@ -154,18 +154,18 @@ export interface OpenAiTransportConfig {
 
 export interface OpenAiRequestTrace extends JsonObject {
   kind:
-    | 'openai_sdk_chat_completions'
-    | 'deepseek_sdk_chat_completions'
-    | 'xai_sdk_chat_completions'
-    | 'moonshot_sdk_chat_completions'
-    | 'alibaba_sdk_chat_completions'
-    | 'gateway_sdk_chat_completions';
+    | "openai_sdk_chat_completions"
+    | "deepseek_sdk_chat_completions"
+    | "xai_sdk_chat_completions"
+    | "moonshot_sdk_chat_completions"
+    | "alibaba_sdk_chat_completions"
+    | "gateway_sdk_chat_completions";
   stepIndex: number;
   model: string;
   stream: boolean;
   /** OpenAI 兼容 chat.completions 请求字段。 */
   reasoning_effort?: JsonValue;
-  toolChoice?: 'auto';
+  toolChoice?: "auto";
   messages: JsonValue[];
   tools?: JsonValue[];
   /** 与 SDK 请求体一并发送的真正厂商扩展（若有），例如 DeepSeek/Moonshot 的 `thinking`。 */
@@ -173,7 +173,7 @@ export interface OpenAiRequestTrace extends JsonObject {
 }
 
 export function resolveOpenAiModelCompatibilityProfile(
-  config: Pick<OpenAiTransportConfig, 'llmVendor' | 'model' | 'modelCapabilities'>,
+  config: Pick<OpenAiTransportConfig, "llmVendor" | "model" | "modelCapabilities">,
 ): OpenAiModelCompatibilityProfile {
   if (config.modelCapabilities !== undefined) {
     return {
@@ -182,42 +182,42 @@ export function resolveOpenAiModelCompatibilityProfile(
     };
   }
 
-  if (config.llmVendor === 'deepseek') {
+  if (config.llmVendor === "deepseek") {
     return {
       hasExplicitCapabilities: true,
       capabilities: {},
     };
   }
 
-  if (config.llmVendor === 'moonshot-ai') {
+  if (config.llmVendor === "moonshot-ai") {
     return {
       hasExplicitCapabilities: true,
       capabilities: {},
     };
   }
 
-  if (config.llmVendor === 'xiaomi') {
+  if (config.llmVendor === "xiaomi") {
     return {
       hasExplicitCapabilities: true,
       capabilities: {},
     };
   }
 
-  if (config.llmVendor === 'deepinfra') {
+  if (config.llmVendor === "deepinfra") {
     return {
       hasExplicitCapabilities: true,
       capabilities: {},
     };
   }
 
-  if (config.llmVendor === 'minimax') {
+  if (config.llmVendor === "minimax") {
     return {
       hasExplicitCapabilities: true,
       capabilities: {},
     };
   }
 
-  if (config.llmVendor === 'siliconflow') {
+  if (config.llmVendor === "siliconflow") {
     return {
       hasExplicitCapabilities: true,
       capabilities: {},
@@ -234,17 +234,17 @@ export function resolveOpenAiModelCompatibilityProfile(
  * OpenAI 官方 chat.completions 推理强度字段。
  */
 export function openAiReasoningEffort(
-  config: Pick<OpenAiTransportConfig, 'llmVendor' | 'model' | 'reasoningEffort'>,
+  config: Pick<OpenAiTransportConfig, "llmVendor" | "model" | "reasoningEffort">,
 ): string | undefined {
   return resolveOpenAiTransportReasoningEffortForContext(config.reasoningEffort, {
     ...(config.llmVendor ? { provider: config.llmVendor } : {}),
     model: config.model,
-    transportKind: 'openai-compatible',
+    transportKind: "openai-compatible",
   });
 }
 
 export function openAiReasoningMode(
-  config: Pick<OpenAiTransportConfig, 'llmVendor' | 'model' | 'reasoningMode'>,
+  config: Pick<OpenAiTransportConfig, "llmVendor" | "model" | "reasoningMode">,
 ): ModelReasoningMode | undefined {
   return resolveOpenAiTransportReasoningModeForContext(config.reasoningMode, {
     ...(config.llmVendor ? { provider: config.llmVendor } : {}),
@@ -253,12 +253,14 @@ export function openAiReasoningMode(
 }
 
 function buildOpenAiGpt56ReasoningBody(
-  config: Pick<OpenAiTransportConfig, 'llmVendor' | 'model' | 'reasoningEffort' | 'reasoningMode'>,
+  config: Pick<OpenAiTransportConfig, "llmVendor" | "model" | "reasoningEffort" | "reasoningMode">,
 ): Record<string, unknown> | undefined {
-  if (!modelSupportsOpenAiGpt56ReasoningControls({
-    ...(config.llmVendor ? { provider: config.llmVendor } : {}),
-    model: config.model,
-  })) {
+  if (
+    !modelSupportsOpenAiGpt56ReasoningControls({
+      ...(config.llmVendor ? { provider: config.llmVendor } : {}),
+      model: config.model,
+    })
+  ) {
     return undefined;
   }
 
@@ -277,42 +279,39 @@ function buildOpenAiGpt56ReasoningBody(
 export function openAiVendorChatCompletionBodyExtras(
   config: Pick<
     OpenAiTransportConfig,
-    | 'llmVendor'
-    | 'model'
-    | 'reasoningEffort'
-    | 'reasoningMode'
-    | 'vendorExtendedThinking'
-    | 'transportRequestProfile'
-    | 'supportsThinkingSwitch'
+    | "llmVendor"
+    | "model"
+    | "reasoningEffort"
+    | "reasoningMode"
+    | "vendorExtendedThinking"
+    | "transportRequestProfile"
+    | "supportsThinkingSwitch"
   >,
 ): Record<string, unknown> {
   const extras: Record<string, unknown> = {};
-  if (
-    config.llmVendor === 'meituan'
-    && config.supportsThinkingSwitch === true
-  ) {
+  if (config.llmVendor === "meituan" && config.supportsThinkingSwitch === true) {
     const enabled = config.vendorExtendedThinking !== false;
-    extras.thinking = { type: enabled ? 'enabled' : 'disabled' };
+    extras.thinking = { type: enabled ? "enabled" : "disabled" };
   } else if (
-    config.llmVendor === 'deepseek'
-    || config.llmVendor === 'z-ai'
-    || config.llmVendor === 'zhipu-ai'
-    || config.llmVendor === 'xiaomi'
-    || isArkLlmVendor(config.llmVendor)
+    config.llmVendor === "deepseek" ||
+    config.llmVendor === "z-ai" ||
+    config.llmVendor === "zhipu-ai" ||
+    config.llmVendor === "xiaomi" ||
+    isArkLlmVendor(config.llmVendor)
   ) {
     const enabled = config.vendorExtendedThinking !== false;
-    extras.thinking = { type: enabled ? 'enabled' : 'disabled' };
+    extras.thinking = { type: enabled ? "enabled" : "disabled" };
   } else if (
-    config.llmVendor === 'tencent-tokenhub'
-    && !isThinkingSwitchDisabledModel(config.model)
+    config.llmVendor === "tencent-tokenhub" &&
+    !isThinkingSwitchDisabledModel(config.model)
   ) {
     const enabled = config.vendorExtendedThinking !== false;
-    extras.thinking = { type: enabled ? 'enabled' : 'disabled' };
+    extras.thinking = { type: enabled ? "enabled" : "disabled" };
   }
 
-  if (config.llmVendor === 'siliconflow' && config.transportRequestProfile === 'code-completion') {
+  if (config.llmVendor === "siliconflow" && config.transportRequestProfile === "code-completion") {
     extras.enable_thinking = false;
-  } else if (config.llmVendor === 'siliconflow' && config.vendorExtendedThinking === false) {
+  } else if (config.llmVendor === "siliconflow" && config.vendorExtendedThinking === false) {
     extras.enable_thinking = false;
   }
 
@@ -331,7 +330,7 @@ export function openAiVendorChatCompletionBodyExtras(
 
 /** Ark 流式 Chat Completions 须在请求体携带 stream_options 才会在末 chunk 返回 usage。 */
 export function openAiStreamingUsageBodyExtras(
-  config: Pick<OpenAiTransportConfig, 'llmVendor'>,
+  config: Pick<OpenAiTransportConfig, "llmVendor">,
   stream: boolean,
 ): Record<string, unknown> {
   if (!stream || !isArkLlmVendor(config.llmVendor)) {
@@ -354,13 +353,12 @@ export function buildOpenAiRequestTrace(
 ): JsonValue[] {
   const openRouterClaude = isOpenRouterAnthropicClaudeModel(config.llmVendor, config.model);
   const gpt56Reasoning = openRouterClaude ? undefined : buildOpenAiGpt56ReasoningBody(config);
-  const reasoningEffort = openRouterClaude || gpt56Reasoning !== undefined
-    ? undefined
-    : openAiReasoningEffort(config);
+  const reasoningEffort =
+    openRouterClaude || gpt56Reasoning !== undefined ? undefined : openAiReasoningEffort(config);
   const vendorExtras = openAiVendorChatCompletionBodyExtras(config);
   const streamingUsageExtras = openAiStreamingUsageBodyExtras(config, stream);
   const trace: OpenAiRequestTrace = {
-    kind: 'openai_sdk_chat_completions',
+    kind: "openai_sdk_chat_completions",
     stepIndex,
     model: config.model,
     stream,
@@ -372,13 +370,11 @@ export function buildOpenAiRequestTrace(
     messages: messages.map((message) => cloneJsonValue(message)),
     ...(tools.length > 0
       ? {
-          toolChoice: 'auto',
+          toolChoice: "auto",
           tools: tools.map((tool) => cloneJsonValue(tool as JsonValue)),
         }
       : {}),
-    ...(Object.keys(vendorExtras).length > 0
-      ? { vendorExtras: vendorExtras as JsonValue }
-      : {}),
+    ...(Object.keys(vendorExtras).length > 0 ? { vendorExtras: vendorExtras as JsonValue } : {}),
     ...(Object.keys(streamingUsageExtras).length > 0
       ? { streamingUsageExtras: streamingUsageExtras as JsonValue }
       : {}),

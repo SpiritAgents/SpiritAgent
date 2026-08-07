@@ -1,7 +1,7 @@
-import { AsyncLocalStorage } from 'node:async_hooks';
+import { AsyncLocalStorage } from "node:async_hooks";
 
-import type { JsonObject, JsonValue, ToolCallRequest } from '../ports.js';
-import { cloneJsonValue, isJsonObject } from '../tool-agent.js';
+import type { JsonObject, JsonValue, ToolCallRequest } from "../ports.js";
+import { cloneJsonValue, isJsonObject } from "../tool-agent.js";
 import {
   APPLY_PATCH_HOST_TOOL_NAME,
   type ApplyPatchOperation,
@@ -13,21 +13,27 @@ import {
   shouldUseApplyPatchFunctionTool,
   shouldUseBuiltInApplyPatchRequestItems,
   shouldUseOpenAiSdkApplyPatchTool,
-} from './apply-patch-eligibility.js';
-import type { OpenResponsesTransportConfig } from './responses-compat.js';
-import { buildAlibabaResponsesBuiltInTools, shouldUseAlibabaResponsesBuiltInTools } from './alibaba-built-in-tools.js';
-import { buildGatewayWebSearchTraceToolEntry, shouldUseGatewayWebSearch } from './gateway-web-search.js';
+} from "./apply-patch-eligibility.js";
+import type { OpenResponsesTransportConfig } from "./responses-compat.js";
+import {
+  buildAlibabaResponsesBuiltInTools,
+  shouldUseAlibabaResponsesBuiltInTools,
+} from "./alibaba-built-in-tools.js";
+import {
+  buildGatewayWebSearchTraceToolEntry,
+  shouldUseGatewayWebSearch,
+} from "./gateway-web-search.js";
 import {
   buildWebSearchResponsesTraceToolEntry,
   shouldUseProviderWebSearch,
-} from './web-search-eligibility.js';
+} from "./web-search-eligibility.js";
 
-export const APPLY_PATCH_BUILT_IN_TOOL = { type: 'apply_patch' } as const;
+export const APPLY_PATCH_BUILT_IN_TOOL = { type: "apply_patch" } as const;
 
 interface ApplyPatchRequestRound {
   callId: string;
   operation: JsonObject;
-  outputStatus: 'completed' | 'failed';
+  outputStatus: "completed" | "failed";
   outputText?: string;
 }
 
@@ -80,7 +86,7 @@ export function prepareApplyPatchRequestBodyStash(messages: readonly JsonValue[]
     }
     const record = message as JsonObject;
 
-    if (record.role === 'assistant' && Array.isArray(record.tool_calls)) {
+    if (record.role === "assistant" && Array.isArray(record.tool_calls)) {
       for (const toolCall of record.tool_calls) {
         if (!isJsonObject(toolCall as JsonValue)) {
           continue;
@@ -93,7 +99,7 @@ export function prepareApplyPatchRequestBodyStash(messages: readonly JsonValue[]
         if (functionDef.name !== APPLY_PATCH_HOST_TOOL_NAME) {
           continue;
         }
-        const callId = typeof toolCallRecord.id === 'string' ? toolCallRecord.id : '';
+        const callId = typeof toolCallRecord.id === "string" ? toolCallRecord.id : "";
         const operation = parseApplyPatchOperationFromArguments(functionDef.arguments);
         if (!callId || !operation) {
           continue;
@@ -106,11 +112,11 @@ export function prepareApplyPatchRequestBodyStash(messages: readonly JsonValue[]
       continue;
     }
 
-    if (record.role !== 'tool') {
+    if (record.role !== "tool") {
       continue;
     }
 
-    const callId = typeof record.tool_call_id === 'string' ? record.tool_call_id : '';
+    const callId = typeof record.tool_call_id === "string" ? record.tool_call_id : "";
     if (!callId || !pendingOperations.has(callId)) {
       continue;
     }
@@ -122,17 +128,17 @@ export function prepareApplyPatchRequestBodyStash(messages: readonly JsonValue[]
     pendingOperations.delete(callId);
 
     const providerOutput = readApplyPatchToolResultProviderState(record);
-    const content = typeof record.content === 'string' ? record.content : '';
+    const content = typeof record.content === "string" ? record.content : "";
     const failed =
-      providerOutput?.status === 'failed'
-      || content.includes('[tool')
-      || content.toLowerCase().includes('error');
+      providerOutput?.status === "failed" ||
+      content.includes("[tool") ||
+      content.toLowerCase().includes("error");
     const outputText = providerOutput?.output ?? content;
 
     store.applyPatchRequestRounds.push({
       callId,
       operation,
-      outputStatus: failed ? 'failed' : 'completed',
+      outputStatus: failed ? "failed" : "completed",
       ...(outputText ? { outputText } : {}),
     });
   }
@@ -174,12 +180,14 @@ export function buildResponsesTraceTools(
   if (shouldUseApplyPatchFileTools(config)) {
     if (shouldUseOpenAiSdkApplyPatchTool(config)) {
       traceTools.push({
-        type: 'provider_tool',
-        id: 'openai.apply_patch',
+        type: "provider_tool",
+        id: "openai.apply_patch",
         name: APPLY_PATCH_HOST_TOOL_NAME,
       });
     } else if (shouldUseApplyPatchFunctionTool(config)) {
-      traceTools.push(cloneJsonValue(buildApplyPatchResponsesFunctionToolDefinition() as JsonValue));
+      traceTools.push(
+        cloneJsonValue(buildApplyPatchResponsesFunctionToolDefinition() as JsonValue),
+      );
     } else {
       traceTools.push(cloneJsonValue(APPLY_PATCH_BUILT_IN_TOOL as JsonValue));
     }
@@ -214,8 +222,8 @@ export function extractApplyPatchCallsFromResponsesBody(body: unknown): ToolCall
       continue;
     }
     const patchItem = item as JsonObject;
-    if (patchItem.type === 'apply_patch_call') {
-      const callId = typeof patchItem.call_id === 'string' ? patchItem.call_id : '';
+    if (patchItem.type === "apply_patch_call") {
+      const callId = typeof patchItem.call_id === "string" ? patchItem.call_id : "";
       const operation = parseApplyPatchOperation(patchItem.operation);
       if (!callId || !operation) {
         continue;
@@ -229,11 +237,11 @@ export function extractApplyPatchCallsFromResponsesBody(body: unknown): ToolCall
       continue;
     }
 
-    if (patchItem.type !== 'function_call' || patchItem.name !== APPLY_PATCH_HOST_TOOL_NAME) {
+    if (patchItem.type !== "function_call" || patchItem.name !== APPLY_PATCH_HOST_TOOL_NAME) {
       continue;
     }
 
-    const callId = typeof patchItem.call_id === 'string' ? patchItem.call_id : '';
+    const callId = typeof patchItem.call_id === "string" ? patchItem.call_id : "";
     const operation = parseApplyPatchOperationFromArguments(patchItem.arguments);
     if (!callId || !operation) {
       continue;
@@ -266,10 +274,13 @@ export function normalizeApplyPatchToolCallArgumentsJson(
     if (!isJsonObject(parsed) || !isJsonObject(parsed.operation as JsonValue)) {
       return argumentsJson;
     }
-    if (typeof parsed.callId === 'string' && parsed.callId === callId) {
+    if (typeof parsed.callId === "string" && parsed.callId === callId) {
       return argumentsJson;
     }
-    return buildApplyPatchToolCallArgumentsJson(callId, parsed.operation as unknown as ApplyPatchOperation);
+    return buildApplyPatchToolCallArgumentsJson(
+      callId,
+      parsed.operation as unknown as ApplyPatchOperation,
+    );
   } catch {
     return argumentsJson;
   }
@@ -289,7 +300,7 @@ export function appendApplyPatchToolCallsToAssistantMessage(
     : [];
   const nextCalls = patchCalls.map((call, index) => ({
     id: call.id,
-    type: 'function',
+    type: "function",
     index: existing.length + index,
     function: {
       name: APPLY_PATCH_HOST_TOOL_NAME,
@@ -307,7 +318,7 @@ export function stripApplyPatchCallsFromResponsesBody(body: JsonObject): void {
   }
 
   body.output = output.filter((item) => {
-    return !(isJsonObject(item as JsonValue) && (item as JsonObject).type === 'apply_patch_call');
+    return !(isJsonObject(item as JsonValue) && (item as JsonObject).type === "apply_patch_call");
   });
 }
 
@@ -321,7 +332,9 @@ export function patchResponsesRequestBodyForApplyPatch(
   const tools = body.tools;
   if (shouldUseApplyPatchFunctionTool(config)) {
     if (!hasApplyPatchToolInResponsesTools(tools)) {
-      const definition = cloneJsonValue(buildApplyPatchResponsesFunctionToolDefinition() as JsonValue);
+      const definition = cloneJsonValue(
+        buildApplyPatchResponsesFunctionToolDefinition() as JsonValue,
+      );
       if (Array.isArray(tools)) {
         tools.push(definition);
       } else {
@@ -351,11 +364,11 @@ export function patchResponsesRequestBodyForApplyPatch(
       continue;
     }
     const item = rawItem as JsonObject;
-    if (item.type !== 'function_call' || item.name !== APPLY_PATCH_HOST_TOOL_NAME) {
+    if (item.type !== "function_call" || item.name !== APPLY_PATCH_HOST_TOOL_NAME) {
       continue;
     }
 
-    const callId = typeof item.call_id === 'string' ? item.call_id : '';
+    const callId = typeof item.call_id === "string" ? item.call_id : "";
     const operation = parseApplyPatchOperationFromArguments(item.arguments);
     if (!callId || !operation) {
       continue;
@@ -363,7 +376,7 @@ export function patchResponsesRequestBodyForApplyPatch(
 
     if (store.useBuiltInApplyPatchRequestItems) {
       input[index] = {
-        type: 'apply_patch_call',
+        type: "apply_patch_call",
         call_id: callId,
         operation: cloneJsonValue(operation as unknown as JsonValue) as JsonObject,
       };
@@ -380,14 +393,14 @@ export function patchResponsesRequestBodyForApplyPatch(
       continue;
     }
     const item = rawItem as JsonObject;
-    if (item.type !== 'function_call_output') {
+    if (item.type !== "function_call_output") {
       continue;
     }
 
-    const callId = typeof item.call_id === 'string' ? item.call_id : '';
+    const callId = typeof item.call_id === "string" ? item.call_id : "";
     if (
-      !callId
-      || (!store.pendingApplyPatchCallIds.has(callId) && !applyPatchCallIds.has(callId))
+      !callId ||
+      (!store.pendingApplyPatchCallIds.has(callId) && !applyPatchCallIds.has(callId))
     ) {
       continue;
     }
@@ -398,11 +411,11 @@ export function patchResponsesRequestBodyForApplyPatch(
     }
 
     const outputText = stringifyCallOutput(item.output as JsonValue | undefined);
-    const failed = outputText.includes('[tool') || outputText.toLowerCase().includes('error');
+    const failed = outputText.includes("[tool") || outputText.toLowerCase().includes("error");
     input[index] = {
-      type: 'apply_patch_call_output',
+      type: "apply_patch_call_output",
       call_id: callId,
-      status: failed ? 'failed' : 'completed',
+      status: failed ? "failed" : "completed",
       ...(failed && outputText ? { output: outputText } : {}),
     };
     store.pendingApplyPatchCallIds.delete(callId);
@@ -427,17 +440,17 @@ function injectStashedApplyPatchRoundsIntoRequestInput(
       continue;
     }
     const item = rawItem as JsonObject;
-    const callId = typeof item.call_id === 'string' ? item.call_id : '';
+    const callId = typeof item.call_id === "string" ? item.call_id : "";
     if (!callId || !stashedCallIds.has(callId)) {
       continue;
     }
 
     const type = item.type;
     if (
-      (type === 'function_call' && item.name === APPLY_PATCH_HOST_TOOL_NAME)
-      || type === 'function_call_output'
-      || type === 'apply_patch_call'
-      || type === 'apply_patch_call_output'
+      (type === "function_call" && item.name === APPLY_PATCH_HOST_TOOL_NAME) ||
+      type === "function_call_output" ||
+      type === "apply_patch_call" ||
+      type === "apply_patch_call_output"
     ) {
       input.splice(index, 1);
     }
@@ -446,19 +459,19 @@ function injectStashedApplyPatchRoundsIntoRequestInput(
   for (const round of store.applyPatchRequestRounds) {
     if (store.useBuiltInApplyPatchRequestItems) {
       input.push({
-        type: 'apply_patch_call',
+        type: "apply_patch_call",
         call_id: round.callId,
         operation: round.operation,
       });
       input.push({
-        type: 'apply_patch_call_output',
+        type: "apply_patch_call_output",
         call_id: round.callId,
         status: round.outputStatus,
         ...(round.outputText ? { output: round.outputText } : {}),
       });
     } else {
       input.push({
-        type: 'function_call',
+        type: "function_call",
         call_id: round.callId,
         name: APPLY_PATCH_HOST_TOOL_NAME,
         arguments: buildApplyPatchToolCallArgumentsJson(
@@ -467,9 +480,9 @@ function injectStashedApplyPatchRoundsIntoRequestInput(
         ),
       });
       input.push({
-        type: 'function_call_output',
+        type: "function_call_output",
         call_id: round.callId,
-        output: round.outputText ?? '',
+        output: round.outputText ?? "",
       });
     }
     store.pendingApplyPatchCallIds.delete(round.callId);
@@ -480,7 +493,7 @@ export function parseApplyPatchOperationFromArguments(
   argumentsValue: unknown,
 ): ApplyPatchOperation | undefined {
   let parsed: unknown = argumentsValue;
-  if (typeof argumentsValue === 'string') {
+  if (typeof argumentsValue === "string") {
     try {
       parsed = JSON.parse(argumentsValue) as JsonValue;
     } catch {
@@ -502,7 +515,7 @@ export function parseApplyPatchOperationFromArguments(
 
 export function buildApplyPatchToolResultProviderState(
   callId: string,
-  status: 'completed' | 'failed',
+  status: "completed" | "failed",
   output?: string,
 ): JsonObject {
   return {
@@ -525,7 +538,7 @@ export function buildApplyPatchToolResultProviderState(
 
 export function readApplyPatchToolResultProviderState(
   message: JsonObject,
-): { call_id: string; status: 'completed' | 'failed'; output?: string } | undefined {
+): { call_id: string; status: "completed" | "failed"; output?: string } | undefined {
   const providerState = message.providerState;
   if (!isJsonObject(providerState as JsonValue)) {
     return undefined;
@@ -545,8 +558,8 @@ export function readApplyPatchToolResultProviderState(
   }
 
   const outputItem = candidate as JsonObject;
-  const callId = typeof outputItem.call_id === 'string' ? outputItem.call_id : '';
-  const status = outputItem.status === 'failed' ? 'failed' : 'completed';
+  const callId = typeof outputItem.call_id === "string" ? outputItem.call_id : "";
+  const status = outputItem.status === "failed" ? "failed" : "completed";
   if (!callId) {
     return undefined;
   }
@@ -554,7 +567,7 @@ export function readApplyPatchToolResultProviderState(
   return {
     call_id: callId,
     status,
-    ...(typeof outputItem.output === 'string' ? { output: outputItem.output } : {}),
+    ...(typeof outputItem.output === "string" ? { output: outputItem.output } : {}),
   };
 }
 
@@ -577,8 +590,8 @@ function parseApplyPatchOperation(value: unknown): ApplyPatchOperation | undefin
   const type = operation.type;
   const path = operation.path;
   if (
-    (type !== 'create_file' && type !== 'update_file' && type !== 'delete_file')
-    || typeof path !== 'string'
+    (type !== "create_file" && type !== "update_file" && type !== "delete_file") ||
+    typeof path !== "string"
   ) {
     return undefined;
   }
@@ -586,20 +599,20 @@ function parseApplyPatchOperation(value: unknown): ApplyPatchOperation | undefin
   return {
     type,
     path,
-    ...(typeof operation.diff === 'string' ? { diff: operation.diff } : {}),
+    ...(typeof operation.diff === "string" ? { diff: operation.diff } : {}),
   };
 }
 
 function isApplyPatchBuiltInTool(tool: unknown): boolean {
-  return isJsonObject(tool as JsonValue) && (tool as JsonObject).type === 'apply_patch';
+  return isJsonObject(tool as JsonValue) && (tool as JsonObject).type === "apply_patch";
 }
 
 function stringifyCallOutput(output: JsonValue | undefined): string {
-  if (typeof output === 'string') {
+  if (typeof output === "string") {
     return output;
   }
   if (output === undefined || output === null) {
-    return '';
+    return "";
   }
   return JSON.stringify(output);
 }

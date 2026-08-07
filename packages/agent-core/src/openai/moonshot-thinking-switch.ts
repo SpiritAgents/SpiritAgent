@@ -1,13 +1,13 @@
-import type { JsonObject } from '../ports.js';
-import type { ModelReasoningEffortContext } from '../reasoning-effort.js';
-import type { OpenAiTransportConfig } from './openai-compat.js';
-import { openAiReasoningEffort } from './openai-compat.js';
-import { parseGatewayUpstreamSlug } from './gateway-code-completion-thinking.js';
+import type { JsonObject } from "../ports.js";
+import type { ModelReasoningEffortContext } from "../reasoning-effort.js";
+import type { OpenAiTransportConfig } from "./openai-compat.js";
+import { openAiReasoningEffort } from "./openai-compat.js";
+import { parseGatewayUpstreamSlug } from "./gateway-code-completion-thinking.js";
 
 /** 文档：https://platform.kimi.com/docs/api/chat — 仅 kimi-k2.5+ 支持 thinking.type 开关。 */
 function normalizeMoonshotModelId(model: string): string {
   const normalized = model.trim().toLowerCase();
-  const slashIndex = normalized.lastIndexOf('/');
+  const slashIndex = normalized.lastIndexOf("/");
   return slashIndex >= 0 ? normalized.slice(slashIndex + 1) : normalized;
 }
 
@@ -36,7 +36,7 @@ export function isMoonshotKimiK3Model(model: string): boolean {
 /** moonshot-v1-*、kimi-k2.7-code-*（含 highspeed）与 kimi-k3 不支持 thinking.type 开关。 */
 export function isMoonshotThinkingSwitchExcludedModel(model: string): boolean {
   const id = normalizeMoonshotModelId(model);
-  if (id.startsWith('moonshot-v1-') || id === 'moonshot-v1') {
+  if (id.startsWith("moonshot-v1-") || id === "moonshot-v1") {
     return true;
   }
   if (/^kimi-k2\.7-code(?:-|$)/.test(id)) {
@@ -63,33 +63,28 @@ export function isMoonshotThinkingSwitchEligibleModel(model: string): boolean {
   return version.major === 2 && version.minor >= 5;
 }
 
-export function isMoonshotThinkingSwitchModel(
-  context?: ModelReasoningEffortContext,
-): boolean {
-  if (context?.provider === 'moonshot-ai') {
-    return isMoonshotThinkingSwitchEligibleModel(context.model ?? '');
+export function isMoonshotThinkingSwitchModel(context?: ModelReasoningEffortContext): boolean {
+  if (context?.provider === "moonshot-ai") {
+    return isMoonshotThinkingSwitchEligibleModel(context.model ?? "");
   }
   if (
-    context?.provider === 'vercel-ai-gateway'
-    && parseGatewayUpstreamSlug(context.model ?? '') === 'moonshotai'
+    context?.provider === "vercel-ai-gateway" &&
+    parseGatewayUpstreamSlug(context.model ?? "") === "moonshotai"
   ) {
-    return isMoonshotThinkingSwitchEligibleModel(context.model ?? '');
+    return isMoonshotThinkingSwitchEligibleModel(context.model ?? "");
   }
   return false;
 }
 
-export function isGatewayMoonshotModel(
-  llmVendor: string | undefined,
-  model: string,
-): boolean {
-  return llmVendor === 'vercel-ai-gateway' && parseGatewayUpstreamSlug(model) === 'moonshotai';
+export function isGatewayMoonshotModel(llmVendor: string | undefined, model: string): boolean {
+  return llmVendor === "vercel-ai-gateway" && parseGatewayUpstreamSlug(model) === "moonshotai";
 }
 
 /** Gateway Moonshot：开关型型号经 moonshotai 命名空间控制 thinking；reasoning_effort 仍走 openai 命名空间。 */
 export function buildGatewayMoonshotProviderOptions(
   config: Pick<
     OpenAiTransportConfig,
-    'llmVendor' | 'model' | 'reasoningEffort' | 'vendorExtendedThinking'
+    "llmVendor" | "model" | "reasoningEffort" | "vendorExtendedThinking"
   >,
 ): Record<string, JsonObject> {
   if (!isGatewayMoonshotModel(config.llmVendor, config.model)) {
@@ -97,9 +92,9 @@ export function buildGatewayMoonshotProviderOptions(
   }
 
   const context: ModelReasoningEffortContext = {
-    provider: 'vercel-ai-gateway',
+    provider: "vercel-ai-gateway",
     model: config.model,
-    transportKind: 'openai-compatible',
+    transportKind: "openai-compatible",
   };
   if (!isMoonshotThinkingSwitchModel(context)) {
     return {};
@@ -108,18 +103,18 @@ export function buildGatewayMoonshotProviderOptions(
   if (config.vendorExtendedThinking === false) {
     return {
       moonshotai: {
-        thinking: { type: 'disabled' },
+        thinking: { type: "disabled" },
       } as JsonObject,
     };
   }
 
   const result: Record<string, JsonObject> = {
     moonshotai: {
-      thinking: { type: 'enabled' },
+      thinking: { type: "enabled" },
     } as JsonObject,
   };
   const effort = openAiReasoningEffort(config);
-  if (effort !== undefined && effort !== 'default' && effort !== 'none') {
+  if (effort !== undefined && effort !== "default" && effort !== "none") {
     result.openai = {
       reasoningEffort: effort,
     } as JsonObject;

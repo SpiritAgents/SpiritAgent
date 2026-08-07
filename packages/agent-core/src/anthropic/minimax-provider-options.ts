@@ -1,14 +1,11 @@
-import type { JsonObject } from '../ports.js';
-import { isMinimaxM3ThinkingSwitchModel } from '../openai/gateway-minimax-thinking.js';
-import type { AnthropicTransportConfig } from './anthropic-compat.js';
+import type { JsonObject } from "../ports.js";
+import { isMinimaxM3ThinkingSwitchModel } from "../openai/gateway-minimax-thinking.js";
+import type { AnthropicTransportConfig } from "./anthropic-compat.js";
 
 export function buildMinimaxProviderOptions(
-  config: Pick<
-    AnthropicTransportConfig,
-    'llmVendor' | 'model' | 'vendorExtendedThinking'
-  >,
+  config: Pick<AnthropicTransportConfig, "llmVendor" | "model" | "vendorExtendedThinking">,
 ): Record<string, JsonObject> {
-  if (config.llmVendor !== 'minimax') {
+  if (config.llmVendor !== "minimax") {
     return {};
   }
 
@@ -20,7 +17,7 @@ export function buildMinimaxProviderOptions(
   return {
     minimax: {
       thinking: {
-        type: enabled ? 'adaptive' : 'disabled',
+        type: enabled ? "adaptive" : "disabled",
       },
     } as JsonObject,
   };

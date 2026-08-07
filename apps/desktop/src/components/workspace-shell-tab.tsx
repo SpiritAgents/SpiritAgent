@@ -74,8 +74,7 @@ export function WorkspaceShellTab({
       bridge: b,
       onTitleChange: (title) => onTitleChangeRef.current?.(title),
       onEmbedError: setEmbedError,
-      shellExitedMessage: (exitCode) =>
-        tRef.current("workspace.shellExited", { exitCode }),
+      shellExitedMessage: (exitCode) => tRef.current("workspace.shellExited", { exitCode }),
       isResizeSuspended: () => suspendResizeRef.current,
     });
     setTerminal(session.terminal);

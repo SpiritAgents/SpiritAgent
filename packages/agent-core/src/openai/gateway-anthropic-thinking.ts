@@ -1,6 +1,6 @@
-import type { JsonObject, JsonValue } from '../ports.js';
-import type { AnthropicEffort, AnthropicThinkingConfig } from '../anthropic/anthropic-compat.js';
-import type { OpenAiLlmVendor, OpenAiTransportConfig } from './openai-compat.js';
+import type { JsonObject, JsonValue } from "../ports.js";
+import type { AnthropicEffort, AnthropicThinkingConfig } from "../anthropic/anthropic-compat.js";
+import type { OpenAiLlmVendor, OpenAiTransportConfig } from "./openai-compat.js";
 import {
   isRoutedAnthropicClaudeModel,
   resolveRoutedAnthropicClaudeCapabilities,
@@ -9,24 +9,24 @@ import {
   routedAnthropicEffortFromReasoningEffort,
   ROUTED_ANTHROPIC_BUDGET_TOKENS_BY_EFFORT,
   type RoutedAnthropicClaudeCapabilities,
-} from './routed-anthropic-claude-capabilities.js';
+} from "./routed-anthropic-claude-capabilities.js";
 
-export type GatewayAnthropicThinkingMode = RoutedAnthropicClaudeCapabilities['thinkingMode'];
+export type GatewayAnthropicThinkingMode = RoutedAnthropicClaudeCapabilities["thinkingMode"];
 export type GatewayAnthropicClaudeCapabilities = RoutedAnthropicClaudeCapabilities;
 
 export function normalizeGatewayAnthropicClaudeModelId(model: string): string {
   return model
     .trim()
     .toLowerCase()
-    .replace(/^anthropic\//, '')
-    .replace(/(\d)\.(\d)/g, '$1-$2');
+    .replace(/^anthropic\//, "")
+    .replace(/(\d)\.(\d)/g, "$1-$2");
 }
 
 export function isGatewayAnthropicClaudeModel(
   llmVendor: OpenAiLlmVendor | undefined,
   model: string,
 ): boolean {
-  if (llmVendor !== 'vercel-ai-gateway') {
+  if (llmVendor !== "vercel-ai-gateway") {
     return false;
   }
 
@@ -49,7 +49,7 @@ function buildAdaptiveThinkingConfig(
   capabilities: GatewayAnthropicClaudeCapabilities,
 ): AnthropicThinkingConfig {
   return {
-    type: 'adaptive',
+    type: "adaptive",
     ...(capabilities.adaptiveDisplay ? { display: capabilities.adaptiveDisplay } : {}),
   };
 }
@@ -57,7 +57,7 @@ function buildAdaptiveThinkingConfig(
 export function buildGatewayAnthropicProviderOptions(
   config: Pick<
     OpenAiTransportConfig,
-    'llmVendor' | 'model' | 'reasoningEffort' | 'vendorExtendedThinking'
+    "llmVendor" | "model" | "reasoningEffort" | "vendorExtendedThinking"
   >,
 ): Record<string, JsonObject> {
   if (!isGatewayAnthropicClaudeModel(config.llmVendor, config.model)) {
@@ -74,9 +74,12 @@ export function buildGatewayAnthropicProviderOptions(
     toolStreaming: true,
   };
 
-  if (capabilities.thinkingMode === 'adaptive') {
-    if (config.vendorExtendedThinking === false && routedAnthropicClaudeThinkingSwitchable(capabilities)) {
-      anthropic.thinking = { type: 'disabled' } as unknown as JsonValue;
+  if (capabilities.thinkingMode === "adaptive") {
+    if (
+      config.vendorExtendedThinking === false &&
+      routedAnthropicClaudeThinkingSwitchable(capabilities)
+    ) {
+      anthropic.thinking = { type: "disabled" } as unknown as JsonValue;
       return { anthropic };
     }
     anthropic.thinking = buildAdaptiveThinkingConfig(capabilities) as unknown as JsonValue;
@@ -86,13 +89,13 @@ export function buildGatewayAnthropicProviderOptions(
     return { anthropic };
   }
 
-  if (capabilities.thinkingMode === 'budget') {
+  if (capabilities.thinkingMode === "budget") {
     if (config.vendorExtendedThinking === false) {
-      anthropic.thinking = { type: 'disabled' } as unknown as JsonValue;
+      anthropic.thinking = { type: "disabled" } as unknown as JsonValue;
       return { anthropic };
     }
     anthropic.thinking = {
-      type: 'enabled',
+      type: "enabled",
       budgetTokens: ROUTED_ANTHROPIC_BUDGET_TOKENS_BY_EFFORT.high,
     } as unknown as JsonValue;
     return { anthropic };

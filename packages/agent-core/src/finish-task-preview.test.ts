@@ -1,32 +1,26 @@
-import assert from 'node:assert/strict';
-import test from 'node:test';
+import assert from "node:assert/strict";
+import test from "node:test";
 
 import {
   finishTaskNoticePreviewFromArguments,
   finishTaskStreamingPreviewReady,
   finishTaskSummaryFromStreamingArguments,
-} from './finish-task-preview.js';
+} from "./finish-task-preview.js";
 
-test('finishTaskStreamingPreviewReady accepts partial summary JSON', () => {
-  assert.equal(finishTaskStreamingPreviewReady('finish_task', '{"summary":"确认'), true);
-  assert.equal(finishTaskStreamingPreviewReady('finish_task', '{}'), false);
-  assert.equal(finishTaskStreamingPreviewReady('read_file', '{"path":"/tmp/a"}'), false);
+test("finishTaskStreamingPreviewReady accepts partial summary JSON", () => {
+  assert.equal(finishTaskStreamingPreviewReady("finish_task", '{"summary":"确认'), true);
+  assert.equal(finishTaskStreamingPreviewReady("finish_task", "{}"), false);
+  assert.equal(finishTaskStreamingPreviewReady("read_file", '{"path":"/tmp/a"}'), false);
 });
 
-test('finishTaskSummaryFromStreamingArguments extracts partial summary', () => {
-  assert.equal(
-    finishTaskSummaryFromStreamingArguments('{"summary":"确认每条'),
-    '确认每条',
-  );
+test("finishTaskSummaryFromStreamingArguments extracts partial summary", () => {
+  assert.equal(finishTaskSummaryFromStreamingArguments('{"summary":"确认每条'), "确认每条");
 });
 
-test('finishTaskNoticePreviewFromArguments builds streaming notice text', () => {
-  assert.equal(
-    finishTaskNoticePreviewFromArguments('{"summary":"确认每条'),
-    '任务以 确认每条',
-  );
+test("finishTaskNoticePreviewFromArguments builds streaming notice text", () => {
+  assert.equal(finishTaskNoticePreviewFromArguments('{"summary":"确认每条'), "任务以 确认每条");
   assert.equal(
     finishTaskNoticePreviewFromArguments('{"summary":"确认每条消息。"}'),
-    '任务以 确认每条消息。 完成。',
+    "任务以 确认每条消息。 完成。",
   );
 });

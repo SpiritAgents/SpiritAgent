@@ -37,10 +37,7 @@ export function TurnErrorMessageCard({
         {isRetrying ? (
           <Spinner className="shrink-0 self-center text-foreground" />
         ) : (
-          <TriangleAlertIcon
-            className="size-4 shrink-0 self-center text-foreground"
-            aria-hidden
-          />
+          <TriangleAlertIcon className="size-4 shrink-0 self-center text-foreground" aria-hidden />
         )}
         <p className="min-w-0 flex-1 text-sm leading-relaxed text-foreground [overflow-wrap:anywhere]">
           {displayText}

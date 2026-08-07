@@ -1,16 +1,16 @@
-import type { JsonValue, LlmMessage } from '../ports.js';
+import type { JsonValue, LlmMessage } from "../ports.js";
 
-export type EvalVariantRole = 'baseline' | 'candidate' | 'reference';
+export type EvalVariantRole = "baseline" | "candidate" | "reference";
 
 export type EvalArtifactKind =
-  | 'transcript'
-  | 'workspace-diff'
-  | 'file'
-  | 'screenshot'
-  | 'log'
-  | 'metadata';
+  | "transcript"
+  | "workspace-diff"
+  | "file"
+  | "screenshot"
+  | "log"
+  | "metadata";
 
-export type EvalReviewOutcome = 'baseline' | 'candidate' | 'tie' | 'inconclusive';
+export type EvalReviewOutcome = "baseline" | "candidate" | "tie" | "inconclusive";
 
 export interface EvalRubricCriterion {
   id: string;
@@ -59,7 +59,7 @@ export interface EvalRunSpec {
   scenario: EvalScenario;
   variants: EvalVariant[];
   isolation: {
-    kind: 'host-provided-workspace';
+    kind: "host-provided-workspace";
     description?: string;
   };
   artifactPolicy: {

@@ -7,13 +7,13 @@ export function normalizeAwsRegion(region: string): string {
 export function bedrockApiBaseFromRegion(region: string): string {
   const normalized = normalizeAwsRegion(region);
   if (!normalized) {
-    return 'https://bedrock.us-east-1.amazonaws.com';
+    return "https://bedrock.us-east-1.amazonaws.com";
   }
   return `https://bedrock.${normalized}.amazonaws.com`;
 }
 
 export function extractAwsRegionFromBedrockApiBase(baseUrl: string): string | undefined {
-  const normalized = baseUrl.trim().replace(/\/+$/, '');
+  const normalized = baseUrl.trim().replace(/\/+$/, "");
   const match = normalized.match(/^https:\/\/bedrock\.([a-z0-9-]+)\.amazonaws\.com$/i);
   return match?.[1];
 }

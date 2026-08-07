@@ -2,7 +2,15 @@ import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import type { LucideIcon } from "lucide-react";
 import type { ReactNode } from "react";
-import { Check, ChevronRight, CircleX, Eye, GitCommit, GitPullRequest, MessageSquare } from "lucide-react";
+import {
+  Check,
+  ChevronRight,
+  CircleX,
+  Eye,
+  GitCommit,
+  GitPullRequest,
+  MessageSquare,
+} from "lucide-react";
 
 import { ReviewCommentHunkView } from "@/components/review-comment-hunk-view";
 import { WorkspacePrMarkdown } from "@/components/workspace-pr-markdown";
@@ -44,17 +52,13 @@ export type PrConversationTimelineProps = {
   className?: string;
 };
 
-function PrConversationTimelineShell({
-  node,
-  children,
-}: {
-  node: ReactNode;
-  children: ReactNode;
-}) {
+function PrConversationTimelineShell({ node, children }: { node: ReactNode; children: ReactNode }) {
   return (
     <div className="relative flex gap-2">
       <div className="relative shrink-0" style={{ width: NODE_COLUMN_PX }}>
-        <div className="absolute left-1/2 top-0 flex -translate-x-1/2 justify-center pt-0.5">{node}</div>
+        <div className="absolute left-1/2 top-0 flex -translate-x-1/2 justify-center pt-0.5">
+          {node}
+        </div>
       </div>
       <div className="min-w-0 flex-1">{children}</div>
     </div>
@@ -174,7 +178,9 @@ function PrConversationTimelineRow({
   return (
     <div className="relative flex gap-2">
       <div className="relative shrink-0" style={{ width: NODE_COLUMN_PX }}>
-        <div className="absolute left-1/2 top-0 flex -translate-x-1/2 justify-center pt-0.5">{node}</div>
+        <div className="absolute left-1/2 top-0 flex -translate-x-1/2 justify-center pt-0.5">
+          {node}
+        </div>
       </div>
       <div className="min-w-0 flex-1">
         <div className="flex min-w-0 items-center gap-2">
@@ -303,7 +309,9 @@ function ReviewFileThreadCard({ thread }: { thread: GitHubPullRequestConversatio
             type="button"
             className="flex w-full min-w-0 items-center gap-1 px-3 py-2 text-left outline-none cursor-pointer focus-visible:ring-2 focus-visible:ring-ring/50"
             aria-expanded={open}
-            aria-label={open ? t("workspace.prReviewThreadCollapse") : t("workspace.prReviewThreadExpand")}
+            aria-label={
+              open ? t("workspace.prReviewThreadCollapse") : t("workspace.prReviewThreadExpand")
+            }
             onClick={() => setOpen((value) => !value)}
           >
             <ChevronRight
@@ -370,7 +378,10 @@ function MergeTimelineRow({ item }: { item: GitHubPullRequestConversationMerged 
   return (
     <PrConversationTimelineShell
       node={
-        <PrConversationTimelineNode icon={GitPullRequest} iconClassName={GITHUB_PR_MERGED_ICON_CLASS} />
+        <PrConversationTimelineNode
+          icon={GitPullRequest}
+          iconClassName={GITHUB_PR_MERGED_ICON_CLASS}
+        />
       }
     >
       <div className="flex min-w-0 items-center gap-2">
@@ -430,7 +441,9 @@ export function PrConversationTimeline({
   const { t } = useTranslation();
 
   if (loading && items.length === 0) {
-    return <p className={cn("text-xs text-muted-foreground", className)}>{t("workspace.prLoading")}</p>;
+    return (
+      <p className={cn("text-xs text-muted-foreground", className)}>{t("workspace.prLoading")}</p>
+    );
   }
 
   if (items.length === 0) {

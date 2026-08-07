@@ -1,32 +1,33 @@
-import { Client } from '@modelcontextprotocol/sdk/client';
-import { StdioClientTransport, type StdioServerParameters } from '@modelcontextprotocol/sdk/client/stdio.js';
-import { StreamableHTTPClientTransport } from '@modelcontextprotocol/sdk/client/streamableHttp.js';
-import type { Implementation, ServerCapabilities } from '@modelcontextprotocol/sdk/types.js';
-import { LATEST_PROTOCOL_VERSION } from '@modelcontextprotocol/sdk/types.js';
+import { Client } from "@modelcontextprotocol/sdk/client";
+import {
+  StdioClientTransport,
+  type StdioServerParameters,
+} from "@modelcontextprotocol/sdk/client/stdio.js";
+import { StreamableHTTPClientTransport } from "@modelcontextprotocol/sdk/client/streamableHttp.js";
+import type { Implementation, ServerCapabilities } from "@modelcontextprotocol/sdk/types.js";
+import { LATEST_PROTOCOL_VERSION } from "@modelcontextprotocol/sdk/types.js";
 
-import { DEFAULT_MCP_CLIENT_INFO } from './config.js';
-import { McpConnectionError } from './errors.js';
+import { DEFAULT_MCP_CLIENT_INFO } from "./config.js";
+import { McpConnectionError } from "./errors.js";
 import type {
   McpClientInfo,
   ResolvedMcpHttpTransportConfig,
   ResolvedMcpServerConfig,
   ResolvedMcpStdioTransportConfig,
   ResolvedMcpTransportConfig,
-} from './types.js';
+} from "./types.js";
 
-export type McpListToolsResult = Awaited<ReturnType<Client['listTools']>>;
-export type McpListResourcesResult = Awaited<ReturnType<Client['listResources']>>;
-export type McpListResourceTemplatesResult = Awaited<ReturnType<Client['listResourceTemplates']>>;
-export type McpListPromptsResult = Awaited<ReturnType<Client['listPrompts']>>;
-export type McpReadResourceResult = Awaited<ReturnType<Client['readResource']>>;
-export type McpGetPromptResult = Awaited<ReturnType<Client['getPrompt']>>;
-export type McpCallToolResult = Awaited<ReturnType<Client['callTool']>>;
+export type McpListToolsResult = Awaited<ReturnType<Client["listTools"]>>;
+export type McpListResourcesResult = Awaited<ReturnType<Client["listResources"]>>;
+export type McpListResourceTemplatesResult = Awaited<ReturnType<Client["listResourceTemplates"]>>;
+export type McpListPromptsResult = Awaited<ReturnType<Client["listPrompts"]>>;
+export type McpReadResourceResult = Awaited<ReturnType<Client["readResource"]>>;
+export type McpGetPromptResult = Awaited<ReturnType<Client["getPrompt"]>>;
+export type McpCallToolResult = Awaited<ReturnType<Client["callTool"]>>;
 type McpSdkTransport = StdioClientTransport | StreamableHTTPClientTransport;
-type McpConnectTransport = Parameters<Client['connect']>[0];
+type McpConnectTransport = Parameters<Client["connect"]>[0];
 
-export function createMcpSdkClient(
-  clientInfo: McpClientInfo = DEFAULT_MCP_CLIENT_INFO,
-): Client {
+export function createMcpSdkClient(clientInfo: McpClientInfo = DEFAULT_MCP_CLIENT_INFO): Client {
   return new Client(
     {
       name: clientInfo.name,
@@ -79,7 +80,10 @@ export class SdkMcpConnection {
     this.timeoutMsStore = server.transport.timeoutMs;
 
     try {
-      await this.clientStore.connect(transport as unknown as McpConnectTransport, this.requestOptions());
+      await this.clientStore.connect(
+        transport as unknown as McpConnectTransport,
+        this.requestOptions(),
+      );
     } catch (error) {
       await safeCloseTransport(transport);
       throw new McpConnectionError(`MCP server 连接失败: ${server.name}`, { cause: error });
@@ -123,17 +127,24 @@ export class SdkMcpConnection {
   }
 
   async getPrompt(name: string, args?: Record<string, string>): Promise<McpGetPromptResult> {
-    return this.clientStore.getPrompt({
-      name,
-      ...(args === undefined ? {} : { arguments: args }),
-    }, this.requestOptions());
+    return this.clientStore.getPrompt(
+      {
+        name,
+        ...(args === undefined ? {} : { arguments: args }),
+      },
+      this.requestOptions(),
+    );
   }
 
   async callTool(name: string, args?: Record<string, unknown>): Promise<McpCallToolResult> {
-    return this.clientStore.callTool({
-      name,
-      ...(args === undefined ? {} : { arguments: args }),
-    }, undefined, this.requestOptions());
+    return this.clientStore.callTool(
+      {
+        name,
+        ...(args === undefined ? {} : { arguments: args }),
+      },
+      undefined,
+      this.requestOptions(),
+    );
   }
 
   private requestOptions(): { timeout: number } | undefined {
@@ -143,9 +154,9 @@ export class SdkMcpConnection {
 
 export function createTransport(config: ResolvedMcpTransportConfig): McpSdkTransport {
   switch (config.type) {
-    case 'stdio':
+    case "stdio":
       return new StdioClientTransport(buildStdioServerParameters(config));
-    case 'http':
+    case "http":
       return new StreamableHTTPClientTransport(new URL(config.url), {
         ...(Object.keys(config.headers).length > 0
           ? {
@@ -181,7 +192,7 @@ async function safeCloseTransport(transport: McpSdkTransport): Promise<void> {
 export function isHttpTransport(
   config: ResolvedMcpTransportConfig,
 ): config is ResolvedMcpHttpTransportConfig {
-  return config.type === 'http';
+  return config.type === "http";
 }
 
 function resolveProtocolVersion(transport: McpSdkTransport): string {

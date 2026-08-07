@@ -1,7 +1,7 @@
-import type { OpenAiTransportConfig } from '../../openai/openai-compat.js';
-import type { LlmTransportConfig } from '../../provider-config.js';
-import type { ToolCallRequest } from '../../ports.js';
-import { createLlmMessageContentFromText } from '../../ports.js';
+import type { OpenAiTransportConfig } from "../../openai/openai-compat.js";
+import type { LlmTransportConfig } from "../../provider-config.js";
+import type { ToolCallRequest } from "../../ports.js";
+import { createLlmMessageContentFromText } from "../../ports.js";
 import {
   commitSyntheticToolExecutionFailure,
   commitToolExecutionOutput,
@@ -10,30 +10,32 @@ import {
   runTurnLoop,
   startToolAgentRoundAsync,
   type TurnMachineRuntime,
-} from '../../runtime/turn-machine.js';
-import { prepareAndSyncRuntimeToolResultToHistory } from '../../runtime/tool-output-append.js';
-import type {
-  RuntimeTurnContext,
-  RuntimeTurnResult,
-} from '../../runtime/types.js';
-import { executeMoonshotFormulaToolCall, isMoonshotFormulaManagedToolCall } from './moonshot-formula-tool-loop.js';
-import { buildMoonshotFormulaToolPreviewArgumentsJson } from './formula-spirit-ui.js';
-import { buildStepfunWebSearchToolPreviewArgumentsJson } from '../../stepfun/stepfun-spirit-ui.js';
-import { readMoonshotFormulaWebSearchQuery } from './moonshot-formula-tool-loop.js';
+} from "../../runtime/turn-machine.js";
+import { prepareAndSyncRuntimeToolResultToHistory } from "../../runtime/tool-output-append.js";
+import type { RuntimeTurnContext, RuntimeTurnResult } from "../../runtime/types.js";
+import {
+  executeMoonshotFormulaToolCall,
+  isMoonshotFormulaManagedToolCall,
+} from "./moonshot-formula-tool-loop.js";
+import { buildMoonshotFormulaToolPreviewArgumentsJson } from "./formula-spirit-ui.js";
+import { buildStepfunWebSearchToolPreviewArgumentsJson } from "../../stepfun/stepfun-spirit-ui.js";
+import { readMoonshotFormulaWebSearchQuery } from "./moonshot-formula-tool-loop.js";
 import {
   executeStepfunWebSearchToolCall,
   readStepfunWebSearchQuery,
-} from '../../stepfun/stepfun-web-search-tool-loop.js';
-import { isStepfunManagedWebSearchToolCall } from '../../stepfun/stepfun-eligibility.js';
+} from "../../stepfun/stepfun-web-search-tool-loop.js";
+import { isStepfunManagedWebSearchToolCall } from "../../stepfun/stepfun-eligibility.js";
 import {
   executeKimiCodeWebSearchToolCall,
   readKimiCodeWebSearchQuery,
-} from '../../kimi-code/kimi-code-web-search-tool-loop.js';
-import { isKimiCodeManagedWebSearchToolCall } from '../../kimi-code/kimi-code-eligibility.js';
+} from "../../kimi-code/kimi-code-web-search-tool-loop.js";
+import { isKimiCodeManagedWebSearchToolCall } from "../../kimi-code/kimi-code-eligibility.js";
 
 function isLocalManagedWebSearchToolCall(toolName: string, config: unknown): boolean {
-  return isStepfunManagedWebSearchToolCall(toolName, config)
-    || isKimiCodeManagedWebSearchToolCall(toolName, config);
+  return (
+    isStepfunManagedWebSearchToolCall(toolName, config) ||
+    isKimiCodeManagedWebSearchToolCall(toolName, config)
+  );
 }
 
 function readPreviewQuery(argumentsJson: string, toolName: string, config: unknown): string {
@@ -55,7 +57,7 @@ function buildManagedProviderWebSearchPreviewArgumentsJson(
     outputExcerpt?: string;
   },
 ): string {
-  if (isLocalManagedWebSearchToolCall('web_search', config)) {
+  if (isLocalManagedWebSearchToolCall("web_search", config)) {
     return buildStepfunWebSearchToolPreviewArgumentsJson(input);
   }
   return buildMoonshotFormulaToolPreviewArgumentsJson(input);
@@ -76,12 +78,7 @@ function managedProviderToolSummaryText(
   return `[provider tool ${toolName}] completed`;
 }
 
-async function executeAndCommitManagedProviderToolCall<
-  Config,
-  State,
-  ToolRequest,
-  TrustTarget,
->(
+async function executeAndCommitManagedProviderToolCall<Config, State, ToolRequest, TrustTarget>(
   runtime: TurnMachineRuntime<Config, State, ToolRequest, TrustTarget>,
   state: State,
   call: ToolCallRequest,
@@ -92,12 +89,12 @@ async function executeAndCommitManagedProviderToolCall<
   const previewQuery = readPreviewQuery(call.argumentsJson, call.name, config);
 
   runtime.emitEvent({
-    kind: 'streaming-tool-preview',
+    kind: "streaming-tool-preview",
     toolCallId: call.id,
     toolName: call.name,
     argumentsJson: buildManagedProviderWebSearchPreviewArgumentsJson(config, {
       query: previewQuery,
-      status: 'in_progress',
+      status: "in_progress",
     }),
   });
 
@@ -110,13 +107,13 @@ async function executeAndCommitManagedProviderToolCall<
       : await executeMoonshotFormulaToolCall(config as OpenAiTransportConfig, call);
 
   runtime.emitEvent({
-    kind: 'streaming-tool-preview',
+    kind: "streaming-tool-preview",
     toolCallId: call.id,
     toolName: call.name,
     argumentsJson: execution.previewArgumentsJson,
   });
 
-  if (execution.kind === 'failed') {
+  if (execution.kind === "failed") {
     commitSyntheticToolExecutionFailure(
       runtime,
       turn,
@@ -125,11 +122,7 @@ async function executeAndCommitManagedProviderToolCall<
       call.name,
       execution.error,
     );
-    const resumedState = runtime.options.appendToolResultMessage(
-      state,
-      call.id,
-      execution.error,
-    );
+    const resumedState = runtime.options.appendToolResultMessage(state, call.id, execution.error);
     return { state: resumedState, failed: true, modelContent: execution.error };
   }
 
@@ -137,7 +130,7 @@ async function executeAndCommitManagedProviderToolCall<
     call.name,
     config,
     false,
-    execution.kind === 'succeeded' ? execution.content : undefined,
+    execution.kind === "succeeded" ? execution.content : undefined,
   );
   const content = createLlmMessageContentFromText(summaryText);
   commitToolExecutionOutput(runtime, turn, {
@@ -156,44 +149,31 @@ async function executeAndCommitManagedProviderToolCall<
     call.id,
     execution.content,
   );
-  const resumedState = runtime.options.appendToolResultMessage(
-    state,
-    call.id,
-    preparedContent,
-  );
+  const resumedState = runtime.options.appendToolResultMessage(state, call.id, preparedContent);
   return { state: resumedState, failed: false, modelContent: preparedContent };
 }
 
 function isManagedProviderToolCall(toolName: string, config: unknown): boolean {
-  return isMoonshotFormulaManagedToolCall(toolName, config)
-    || isStepfunManagedWebSearchToolCall(toolName, config)
-    || isKimiCodeManagedWebSearchToolCall(toolName, config);
+  return (
+    isMoonshotFormulaManagedToolCall(toolName, config) ||
+    isStepfunManagedWebSearchToolCall(toolName, config) ||
+    isKimiCodeManagedWebSearchToolCall(toolName, config)
+  );
 }
 
-export type ManagedProviderToolCallOutcome<
-  State,
-  ToolRequest,
-  TrustTarget,
-> =
-  | { kind: 'not-handled' }
-  | { kind: 'advance'; state: State }
-  | { kind: 'turn-result'; result: RuntimeTurnResult<State, ToolRequest, TrustTarget> };
+export type ManagedProviderToolCallOutcome<State, ToolRequest, TrustTarget> =
+  | { kind: "not-handled" }
+  | { kind: "advance"; state: State }
+  | { kind: "turn-result"; result: RuntimeTurnResult<State, ToolRequest, TrustTarget> };
 
-function providerFormulaToolRequestStub<ToolRequest>(
-  call: ToolCallRequest,
-): ToolRequest {
+function providerFormulaToolRequestStub<ToolRequest>(call: ToolCallRequest): ToolRequest {
   return {
     name: call.name,
     argumentsJson: call.argumentsJson,
   } as ToolRequest;
 }
 
-export async function handleManagedProviderToolCallInTurn<
-  Config,
-  State,
-  ToolRequest,
-  TrustTarget,
->(
+export async function handleManagedProviderToolCallInTurn<Config, State, ToolRequest, TrustTarget>(
   runtime: TurnMachineRuntime<Config, State, ToolRequest, TrustTarget>,
   pendingUserInput: string,
   state: State,
@@ -202,7 +182,7 @@ export async function handleManagedProviderToolCallInTurn<
   turn: RuntimeTurnContext<ToolRequest>,
 ): Promise<ManagedProviderToolCallOutcome<State, ToolRequest, TrustTarget>> {
   if (!isManagedProviderToolCall(call.name, runtime.options.config)) {
-    return { kind: 'not-handled' };
+    return { kind: "not-handled" };
   }
 
   const { state: resumedState } = await executeAndCommitManagedProviderToolCall(
@@ -214,19 +194,13 @@ export async function handleManagedProviderToolCallInTurn<
 
   if (remainingCalls.length > 0) {
     return {
-      kind: 'turn-result',
-      result: await processToolCalls(
-        runtime,
-        resumedState,
-        pendingUserInput,
-        remainingCalls,
-        turn,
-      ),
+      kind: "turn-result",
+      result: await processToolCalls(runtime, resumedState, pendingUserInput, remainingCalls, turn),
     };
   }
 
   return {
-    kind: 'turn-result',
+    kind: "turn-result",
     result: await runTurnLoop(runtime, resumedState, pendingUserInput, turn),
   };
 }

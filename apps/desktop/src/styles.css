@@ -12,13 +12,13 @@
 @custom-variant dark (&:is(.dark *));
 
 @property --sidebar-mask-top-alpha {
-  syntax: '<number>';
+  syntax: "<number>";
   inherits: false;
   initial-value: 1;
 }
 
 @property --sidebar-mask-bottom-alpha {
-  syntax: '<number>';
+  syntax: "<number>";
   inherits: false;
   initial-value: 1;
 }
@@ -70,7 +70,7 @@
   /* Git primary ButtonGroup 内部分割：固定中性灰，禁止混 primary-foreground（暗色下是近黑，再淡也像黑线） */
   --git-action-split: oklch(0.58 0 0);
   /* UI 字体栈：运行时由 applyFontToDocument 覆盖；须用 var() 接入 @theme，避免 font-sans 被编译成字面量。 */
-  --spirit-ui-font-stack: 'Geist Variable', sans-serif;
+  --spirit-ui-font-stack: "Geist Variable", sans-serif;
   /* 集成终端（xterm）：浅色主题 ANSI 色板 */
   --terminal-bg: #ffffff;
   --terminal-fg: #0a0a0a;
@@ -228,7 +228,9 @@ html.spirit-desktop-darwin {
   /* hiddenInset 红绿灯占用宽度（约 12px 边距 + 三键 + 间距） */
   --spirit-macos-traffic-lights-inset-left: 4.875rem;
   /* 侧栏切换：红绿灯右缘 + 小间距（fixed 钉位用，不改 drag 区域几何） */
-  --spirit-macos-sidebar-toggle-inset-left: calc(var(--spirit-macos-traffic-lights-inset-left) + 0.125rem);
+  --spirit-macos-sidebar-toggle-inset-left: calc(
+    var(--spirit-macos-traffic-lights-inset-left) + 0.125rem
+  );
 }
 
 /* 仅侧栏下移避让左上红绿灯；主区顶栏与标题栏同高同排 */
@@ -283,8 +285,11 @@ html.spirit-desktop-darwin [data-spirit-surface="workspace-panel"] > div:first-c
 
 /* Split 后顶栏用于 pane 拖拽/重排，禁用窗口级拖拽以免与 HTML5 drag 冲突 */
 html.spirit-desktop-darwin.spirit-desktop-darwin-conversation-split #session-sidebar-panel::before,
-html.spirit-desktop-darwin.spirit-desktop-darwin-conversation-split [data-spirit-surface="layout-chrome"],
-html.spirit-desktop-darwin.spirit-desktop-darwin-conversation-split [data-spirit-surface="workspace-panel"] > div:first-child {
+html.spirit-desktop-darwin.spirit-desktop-darwin-conversation-split
+  [data-spirit-surface="layout-chrome"],
+html.spirit-desktop-darwin.spirit-desktop-darwin-conversation-split
+  [data-spirit-surface="workspace-panel"]
+  > div:first-child {
   -webkit-app-region: no-drag;
 }
 
@@ -301,7 +306,9 @@ html.spirit-desktop-darwin:not(.spirit-desktop-darwin-fullscreen)
 }
 
 /* Split 非 anchor pane：不避让红绿灯，但与 anchor 侧栏展开时保持相同标题行左留白 */
-html.spirit-desktop-darwin:not(.spirit-desktop-darwin-fullscreen).spirit-desktop-darwin-conversation-split
+html.spirit-desktop-darwin:not(
+    .spirit-desktop-darwin-fullscreen
+  ).spirit-desktop-darwin-conversation-split
   [data-spirit-surface="layout-chrome"][data-macos-leading-inset="false"] {
   padding-left: calc(var(--spirit-macos-titlebar-inset) - 1rem);
 }
@@ -646,15 +653,20 @@ html.spirit-desktop-native.spirit-desktop-mica.spirit-launch-splash-exiting
   /* Thinking：`background-clip: text`；双层（底层 muted + 顶层平移高光），避免单层在极端 `background-position` 下露透明洞。 */
   @keyframes spirit-thinking-text-shimmer-pos {
     0% {
-      background-position: 125% 50%, 0 0;
+      background-position:
+        125% 50%,
+        0 0;
     }
     100% {
-      background-position: -125% 50%, 0 0;
+      background-position:
+        -125% 50%,
+        0 0;
     }
   }
 
   .spirit-thinking-shimmer-text {
-    background-image: linear-gradient(
+    background-image:
+      linear-gradient(
         118deg,
         transparent 0%,
         transparent 24%,
@@ -665,8 +677,12 @@ html.spirit-desktop-native.spirit-desktop-mica.spirit-launch-splash-exiting
         transparent 100%
       ),
       linear-gradient(var(--muted-foreground), var(--muted-foreground));
-    background-size: 240% 100%, 100% 100%;
-    background-position: 125% 50%, 0 0;
+    background-size:
+      240% 100%,
+      100% 100%;
+    background-position:
+      125% 50%,
+      0 0;
     background-repeat: no-repeat, no-repeat;
     -webkit-background-clip: text;
     background-clip: text;

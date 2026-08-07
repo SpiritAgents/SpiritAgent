@@ -86,7 +86,10 @@ import { SettingsShortcutKbd } from "@/components/layout/desktop-shortcut-kbds";
 import { SESSION_TITLE_RENAME_INPUT_CLASS } from "@/lib/desktop-chrome";
 import { DESKTOP_SIDEBAR_TEXT_CLASS } from "@/lib/desktop-typography";
 import { useOptionalConversationSplit } from "@/contexts/conversation-split-context";
-import { isSidebarSessionDragBlockedTarget, setSidebarSessionDragData } from "@/lib/sidebar-session-drag";
+import {
+  isSidebarSessionDragBlockedTarget,
+  setSidebarSessionDragData,
+} from "@/lib/sidebar-session-drag";
 import { shortcutLabel, settingsShortcutLabel } from "@/lib/desktop-shell";
 import i18n from "@/lib/i18n";
 import { useHostApi } from "@/hooks/useHostApi";
@@ -104,7 +107,6 @@ const settingsShortcutLabelText = settingsShortcutLabel();
 function describeRenameError(error: unknown): string {
   return error instanceof Error ? error.message : String(error);
 }
-
 
 function samePath(a: string, b: string): boolean {
   return a.replace(/\\/g, "/").toLowerCase() === b.replace(/\\/g, "/").toLowerCase();
@@ -182,7 +184,7 @@ function normalizePath(value: string): string {
 function deriveWorkspaceLabel(workspaceRoot: string | null | undefined): string {
   const trimmed = workspaceRoot?.trim();
   if (!trimmed) {
-    return i18n.t('sidebar.currentWorkspace');
+    return i18n.t("sidebar.currentWorkspace");
   }
   const normalized = trimmed.replace(/\\/g, "/").replace(/\/+$/g, "");
   const lastSlash = normalized.lastIndexOf("/");
@@ -443,11 +445,7 @@ const WorkspaceSessionGroupCollapsible = memo(function WorkspaceSessionGroupColl
       )}
       aria-grabbed={isDragging ? true : undefined}
     >
-      <AnimatedCollapse
-        open={expanded}
-        onOpenChange={onOpenChange}
-        className="min-w-0"
-      >
+      <AnimatedCollapse open={expanded} onOpenChange={onOpenChange} className="min-w-0">
         <div
           className={cn(
             "group/workspace-row flex h-8 w-full min-w-0 items-center overflow-hidden rounded-md",
@@ -471,165 +469,172 @@ const WorkspaceSessionGroupCollapsible = memo(function WorkspaceSessionGroupColl
           onClickCapture={onHeaderClickCapture}
           {...headerPointerHandlers}
         >
-        <AnimatedCollapseTrigger
-          disabled={disabled}
-          className={cn(
-            "flex h-8 min-w-0 flex-1 items-center gap-2 overflow-hidden px-2.5 text-left text-sm",
-            "bg-transparent outline-none hover:bg-transparent focus-visible:bg-transparent",
-            sidebarInteractionMotionClass,
-            "focus-visible:ring-2 focus-visible:ring-sidebar-ring/40",
-          )}
-          title={group.rootPath ?? group.label}
-          data-workspace-path={group.rootPath ?? group.id}
-        >
-          <span className="relative inline-flex size-3.5 shrink-0 items-center justify-center">
-            {expanded ? (
-              <FolderOpen
-                className={cn(
-                  "size-3.5",
-                  showWorkspaceRowHoverChrome
-                    ? "hidden"
-                    : "group-hover/workspace-row:hidden group-has-[button:focus-visible]/workspace-row:hidden",
-                )}
-                aria-hidden
-              />
-            ) : (
-              <FolderClosed
-                className={cn(
-                  "size-3.5",
-                  showWorkspaceRowHoverChrome
-                    ? "hidden"
-                    : "group-hover/workspace-row:hidden group-has-[button:focus-visible]/workspace-row:hidden",
-                )}
-                aria-hidden
-              />
+          <AnimatedCollapseTrigger
+            disabled={disabled}
+            className={cn(
+              "flex h-8 min-w-0 flex-1 items-center gap-2 overflow-hidden px-2.5 text-left text-sm",
+              "bg-transparent outline-none hover:bg-transparent focus-visible:bg-transparent",
+              sidebarInteractionMotionClass,
+              "focus-visible:ring-2 focus-visible:ring-sidebar-ring/40",
             )}
-            <ChevronRight
-              className={cn(
-                "absolute size-3.5 transition-transform duration-150",
-                showWorkspaceRowHoverChrome
-                  ? "inline-flex"
-                  : "hidden group-hover/workspace-row:inline-flex group-has-[button:focus-visible]/workspace-row:inline-flex",
-                expanded && "rotate-90",
-              )}
-              aria-hidden
-            />
-          </span>
-          <span className={cn("truncate", DESKTOP_SIDEBAR_TEXT_CLASS)}>{group.label}</span>
-        </AnimatedCollapseTrigger>
-        {onNewSessionInWorkspace && workspaceRoot ? (
-          <Tooltip
-            delayDuration={300}
-            disableHoverableContent
-            onOpenChange={(open) => {
-              if (open) {
-                setPlusTooltipAnchorLocked(true);
-              } else if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
-                setPlusTooltipAnchorLocked(false);
-              }
-            }}
+            title={group.rootPath ?? group.label}
+            data-workspace-path={group.rootPath ?? group.id}
           >
-            <TooltipTrigger asChild>
-              <Button
-                type="button"
-                variant="ghost"
-                size="icon"
-                data-workspace-new-session=""
-                draggable={workspaceNewSessionDragEnabled}
+            <span className="relative inline-flex size-3.5 shrink-0 items-center justify-center">
+              {expanded ? (
+                <FolderOpen
+                  className={cn(
+                    "size-3.5",
+                    showWorkspaceRowHoverChrome
+                      ? "hidden"
+                      : "group-hover/workspace-row:hidden group-has-[button:focus-visible]/workspace-row:hidden",
+                  )}
+                  aria-hidden
+                />
+              ) : (
+                <FolderClosed
+                  className={cn(
+                    "size-3.5",
+                    showWorkspaceRowHoverChrome
+                      ? "hidden"
+                      : "group-hover/workspace-row:hidden group-has-[button:focus-visible]/workspace-row:hidden",
+                  )}
+                  aria-hidden
+                />
+              )}
+              <ChevronRight
                 className={cn(
-                  "mr-0.5 size-6 shrink-0",
-                  workspaceRowHovered || plusTooltipAnchorLocked
+                  "absolute size-3.5 transition-transform duration-150",
+                  showWorkspaceRowHoverChrome
                     ? "inline-flex"
-                    : "hidden group-has-[button:focus-visible]/workspace-row:inline-flex",
-                  plusTooltipAnchorLocked && !workspaceRowHovered && "pointer-events-none opacity-0",
-                  sidebarItemDefaultTextClass,
-                  sidebarInteractionMotionClass,
-                  sidebarItemHoverClass(micaStyle),
+                    : "hidden group-hover/workspace-row:inline-flex group-has-[button:focus-visible]/workspace-row:inline-flex",
+                  expanded && "rotate-90",
                 )}
-                disabled={disabled || newSessionBusy}
-                aria-label={t("sidebar.newSessionInWorkspace", { workspace: group.label })}
-                onClick={() => onNewSessionInWorkspace(workspaceRoot)}
-                onDragStart={(event) => {
-                  if (!split || !workspaceNewSessionDragEnabled) {
-                    event.preventDefault();
-                    return;
-                  }
-                  const payload = {
-                    kind: "new-in-workspace" as const,
-                    workspaceRoot,
-                  };
-                  setSidebarSessionDragData(event.dataTransfer, payload);
-                  split.startSidebarSessionDrag(payload);
-                }}
-                onDragEnd={() => split?.clearSidebarSessionDrag()}
-              >
-                <Plus className="size-3.5" aria-hidden />
-              </Button>
-            </TooltipTrigger>
-            <TooltipContent
-              side="bottom"
-              sideOffset={4}
-              onAnimationEnd={(event) => {
-                if (event.target !== event.currentTarget) {
-                  return;
+                aria-hidden
+              />
+            </span>
+            <span className={cn("truncate", DESKTOP_SIDEBAR_TEXT_CLASS)}>{group.label}</span>
+          </AnimatedCollapseTrigger>
+          {onNewSessionInWorkspace && workspaceRoot ? (
+            <Tooltip
+              delayDuration={300}
+              disableHoverableContent
+              onOpenChange={(open) => {
+                if (open) {
+                  setPlusTooltipAnchorLocked(true);
+                } else if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
+                  setPlusTooltipAnchorLocked(false);
                 }
-                if (event.currentTarget.getAttribute("data-state") !== "closed") {
-                  return;
-                }
-                setPlusTooltipAnchorLocked(false);
               }}
             >
-              {t("sidebar.newSessionInWorkspace", { workspace: group.label })}
-            </TooltipContent>
-          </Tooltip>
-        ) : null}
-      </div>
-
-      <AnimatedCollapseContent className="min-w-0">
-        <SessionListGitTooltip>
-          <SessionListGitTooltip.Zone className="mt-0.5 flex min-w-0 flex-col gap-0.5">
-            {visibleSessions.map((session) => (
-              <SessionListGitTooltip.Row key={session.path} session={session}>
-                <SessionListRow
-                  sessionPath={session.path}
-                  displayName={session.displayName}
-                  gitBranch={session.gitBranch}
-                  isBusy={session.isBusy}
-                  isBlocked={session.isBlocked}
-                  showCompletedUnseen={unseenCompletedSessionPaths?.has(session.path) === true}
-                  nested
-                  selected={isSessionSelected(session.path)}
-                  disabled={disabled}
-                  micaStyle={micaStyle}
-                  onSelectPath={onSelectSession}
-                  renaming={renamingSessionPath === session.path}
-                  renameValue={renamingSessionPath === session.path ? renameValue : undefined}
-                  onRenameValueChange={onRenameValueChange}
-                  onRenameCommit={onRenameCommit}
-                  onRenameCancel={onRenameCancel}
-                  onRenameStart={
-                    canRenameSession && !session.isBusy
-                      ? () => onRenameStart?.(session)
-                      : undefined
+              <TooltipTrigger asChild>
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="icon"
+                  data-workspace-new-session=""
+                  draggable={workspaceNewSessionDragEnabled}
+                  className={cn(
+                    "mr-0.5 size-6 shrink-0",
+                    workspaceRowHovered || plusTooltipAnchorLocked
+                      ? "inline-flex"
+                      : "hidden group-has-[button:focus-visible]/workspace-row:inline-flex",
+                    plusTooltipAnchorLocked &&
+                      !workspaceRowHovered &&
+                      "pointer-events-none opacity-0",
+                    sidebarItemDefaultTextClass,
+                    sidebarInteractionMotionClass,
+                    sidebarItemHoverClass(micaStyle),
+                  )}
+                  disabled={disabled || newSessionBusy}
+                  aria-label={t("sidebar.newSessionInWorkspace", { workspace: group.label })}
+                  onClick={() => onNewSessionInWorkspace(workspaceRoot)}
+                  onDragStart={(event) => {
+                    if (!split || !workspaceNewSessionDragEnabled) {
+                      event.preventDefault();
+                      return;
+                    }
+                    const payload = {
+                      kind: "new-in-workspace" as const,
+                      workspaceRoot,
+                    };
+                    setSidebarSessionDragData(event.dataTransfer, payload);
+                    split.startSidebarSessionDrag(payload);
+                  }}
+                  onDragEnd={() => split?.clearSidebarSessionDrag()}
+                >
+                  <Plus className="size-3.5" aria-hidden />
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent
+                side="bottom"
+                sideOffset={4}
+                onAnimationEnd={(event) => {
+                  if (event.target !== event.currentTarget) {
+                    return;
                   }
-                />
-              </SessionListGitTooltip.Row>
-            ))}
-            <SessionListLoadMore
-              hiddenCount={hiddenSessionCount}
-              nested
-              disabled={disabled}
-              onLoadMore={onLoadMore}
-            />
-          </SessionListGitTooltip.Zone>
-        </SessionListGitTooltip>
-      </AnimatedCollapseContent>
-    </AnimatedCollapse>
+                  if (event.currentTarget.getAttribute("data-state") !== "closed") {
+                    return;
+                  }
+                  setPlusTooltipAnchorLocked(false);
+                }}
+              >
+                {t("sidebar.newSessionInWorkspace", { workspace: group.label })}
+              </TooltipContent>
+            </Tooltip>
+          ) : null}
+        </div>
+
+        <AnimatedCollapseContent className="min-w-0">
+          <SessionListGitTooltip>
+            <SessionListGitTooltip.Zone className="mt-0.5 flex min-w-0 flex-col gap-0.5">
+              {visibleSessions.map((session) => (
+                <SessionListGitTooltip.Row key={session.path} session={session}>
+                  <SessionListRow
+                    sessionPath={session.path}
+                    displayName={session.displayName}
+                    gitBranch={session.gitBranch}
+                    isBusy={session.isBusy}
+                    isBlocked={session.isBlocked}
+                    showCompletedUnseen={unseenCompletedSessionPaths?.has(session.path) === true}
+                    nested
+                    selected={isSessionSelected(session.path)}
+                    disabled={disabled}
+                    micaStyle={micaStyle}
+                    onSelectPath={onSelectSession}
+                    renaming={renamingSessionPath === session.path}
+                    renameValue={renamingSessionPath === session.path ? renameValue : undefined}
+                    onRenameValueChange={onRenameValueChange}
+                    onRenameCommit={onRenameCommit}
+                    onRenameCancel={onRenameCancel}
+                    onRenameStart={
+                      canRenameSession && !session.isBusy
+                        ? () => onRenameStart?.(session)
+                        : undefined
+                    }
+                  />
+                </SessionListGitTooltip.Row>
+              ))}
+              <SessionListLoadMore
+                hiddenCount={hiddenSessionCount}
+                nested
+                disabled={disabled}
+                onLoadMore={onLoadMore}
+              />
+            </SessionListGitTooltip.Zone>
+          </SessionListGitTooltip>
+        </AnimatedCollapseContent>
+      </AnimatedCollapse>
     </div>
   );
 });
 
-function SessionListLoadMore({ hiddenCount, nested, disabled, onLoadMore }: SessionListLoadMoreProps) {
+function SessionListLoadMore({
+  hiddenCount,
+  nested,
+  disabled,
+  onLoadMore,
+}: SessionListLoadMoreProps) {
   const { t } = useTranslation();
   if (hiddenCount <= 0) {
     return null;
@@ -655,9 +660,7 @@ function SessionListLoadMore({ hiddenCount, nested, disabled, onLoadMore }: Sess
 type SessionRowStatusTone = "blocked" | "completed";
 
 function sessionRowStatusDotClass(tone: SessionRowStatusTone): string {
-  return tone === "blocked"
-    ? "bg-yellow-500"
-    : "bg-blue-500";
+  return tone === "blocked" ? "bg-yellow-500" : "bg-blue-500";
 }
 
 function SessionRowStatusDot({ tone, label }: { tone: SessionRowStatusTone; label: string }) {
@@ -715,9 +718,7 @@ const SessionListRow = memo(function SessionListRow({
   const renameInputRef = useRef<HTMLInputElement>(null);
   const skipBlurCommitRef = useRef(false);
   const sessionDragEnabled = Boolean(split) && !disabled && !isBusy && !renaming;
-  const hasIndicator =
-    (isBusy && !isBlocked) ||
-    (!selected && (isBlocked || showCompletedUnseen));
+  const hasIndicator = (isBusy && !isBlocked) || (!selected && (isBlocked || showCompletedUnseen));
   const showGitTooltip = Boolean(gitBranch?.trim()) && gitTooltipContext !== null;
 
   useLayoutEffect(() => {
@@ -739,11 +740,7 @@ const SessionListRow = memo(function SessionListRow({
     "group flex w-full min-w-0 items-center overflow-hidden rounded-md text-left text-sm outline-none",
     sidebarInteractionMotionClass,
     "focus-visible:ring-2 focus-visible:ring-sidebar-ring/40",
-    nested
-      ? "py-2 pr-2.5 pl-2.5 gap-2"
-      : hasIndicator
-        ? "h-8 pr-2.5 pl-2.5 gap-2"
-        : "h-8 px-2.5",
+    nested ? "py-2 pr-2.5 pl-2.5 gap-2" : hasIndicator ? "h-8 pr-2.5 pl-2.5 gap-2" : "h-8 px-2.5",
     selected
       ? sessionRowSelectedClass(micaStyle)
       : cn(
@@ -752,20 +749,18 @@ const SessionListRow = memo(function SessionListRow({
         ),
   );
 
-  const leading = (nested || hasIndicator) ? (
-    <span className="flex w-3.5 shrink-0 items-center justify-center" aria-hidden>
-      {isBusy && !isBlocked ? (
-        <Spinner
-          className="size-3 shrink-0 text-foreground"
-          aria-label={t('common.running')}
-        />
-      ) : !selected && isBlocked ? (
-        <SessionRowStatusDot tone="blocked" label={t("sidebar.sessionBlocked")} />
-      ) : !selected && showCompletedUnseen ? (
-        <SessionRowStatusDot tone="completed" label={t("sidebar.sessionCompleted")} />
-      ) : null}
-    </span>
-  ) : null;
+  const leading =
+    nested || hasIndicator ? (
+      <span className="flex w-3.5 shrink-0 items-center justify-center" aria-hidden>
+        {isBusy && !isBlocked ? (
+          <Spinner className="size-3 shrink-0 text-foreground" aria-label={t("common.running")} />
+        ) : !selected && isBlocked ? (
+          <SessionRowStatusDot tone="blocked" label={t("sidebar.sessionBlocked")} />
+        ) : !selected && showCompletedUnseen ? (
+          <SessionRowStatusDot tone="completed" label={t("sidebar.sessionCompleted")} />
+        ) : null}
+      </span>
+    ) : null;
 
   const handleRenameKeyDown = (event: KeyboardEvent<HTMLInputElement>) => {
     if (event.key === "Enter") {
@@ -986,10 +981,7 @@ function WorkspaceListNav({
     canDeleteWorkspace || canRenameSession || canDeleteSession || canOpenWorkspaceDirectory;
 
   const inner = (
-    <div
-      className="min-w-0"
-      onContextMenuCapture={canShowMenu ? onContextMenuCapture : undefined}
-    >
+    <div className="min-w-0" onContextMenuCapture={canShowMenu ? onContextMenuCapture : undefined}>
       {children}
     </div>
   );
@@ -998,7 +990,9 @@ function WorkspaceListNav({
     return inner;
   }
 
-  const isWorkspaceTarget = Boolean(contextMenuWorkspaceGroup ?? contextMenuWorkspaceGroupRef.current);
+  const isWorkspaceTarget = Boolean(
+    contextMenuWorkspaceGroup ?? contextMenuWorkspaceGroupRef.current,
+  );
   const workspaceTarget = contextMenuWorkspaceGroupRef.current ?? contextMenuWorkspaceGroup;
   const sessionTarget = contextMenuSession ?? contextMenuSessionRef.current;
   const sessionBusy = sessionTarget?.isBusy === true;
@@ -1252,10 +1246,7 @@ function sessionRowHoverClass(_micaStyle?: boolean) {
 
 /** 重命名编辑态：与 hover 同色半透明铺底，常驻显示 */
 function sessionRowRenamingClass(_micaStyle?: boolean) {
-  return cn(
-    "!bg-foreground/[0.06]",
-    "dark:!bg-white/[0.06]",
-  );
+  return cn("!bg-foreground/[0.06]", "dark:!bg-white/[0.06]");
 }
 
 function SessionSidebarInner({
@@ -1346,7 +1337,9 @@ function SessionSidebarInner({
   const [unboundVisibleCount, setUnboundVisibleCount] = useState(SIDEBAR_SESSION_PAGE_SIZE);
   const [deleteTarget, setDeleteTarget] = useState<SessionListItem | null>(null);
   const [deleteSessionDialogOpen, setDeleteSessionDialogOpen] = useState(false);
-  const [deleteWorkspaceTarget, setDeleteWorkspaceTarget] = useState<SessionWorkspaceGroup | null>(null);
+  const [deleteWorkspaceTarget, setDeleteWorkspaceTarget] = useState<SessionWorkspaceGroup | null>(
+    null,
+  );
   const [deleteWorkspaceDialogOpen, setDeleteWorkspaceDialogOpen] = useState(false);
   const [deleteSectionTarget, setDeleteSectionTarget] = useState<
     "workspace-section" | "no-workspace-section" | null
@@ -1354,7 +1347,8 @@ function SessionSidebarInner({
   const [deleteSectionDialogOpen, setDeleteSectionDialogOpen] = useState(false);
   const [contextMenuSession, setContextMenuSession] = useState<SessionListItem | null>(null);
   const contextMenuSessionRef = useRef<SessionListItem | null>(null);
-  const [contextMenuWorkspaceGroup, setContextMenuWorkspaceGroup] = useState<SessionWorkspaceGroup | null>(null);
+  const [contextMenuWorkspaceGroup, setContextMenuWorkspaceGroup] =
+    useState<SessionWorkspaceGroup | null>(null);
   const contextMenuWorkspaceGroupRef = useRef<SessionWorkspaceGroup | null>(null);
   const [renamingSessionPath, setRenamingSessionPath] = useState<string | null>(null);
   const [renameValue, setRenameValue] = useState("");
@@ -1529,13 +1523,7 @@ function SessionSidebarInner({
     } finally {
       renameCommitInFlightRef.current = false;
     }
-  }, [
-    handleRenameCancel,
-    onRenameSession,
-    renameValue,
-    renamingSessionPath,
-    sessionByPath,
-  ]);
+  }, [handleRenameCancel, onRenameSession, renameValue, renamingSessionPath, sessionByPath]);
 
   const handleRenameStartFromMenu = useCallback(
     (session: SessionListItem) => {
@@ -1563,8 +1551,7 @@ function SessionSidebarInner({
     samePath(sessionPath, activeFilePath);
 
   const isActiveSessionInSidebar =
-    activeFilePath !== null &&
-    sessions.some((session) => samePath(session.path, activeFilePath));
+    activeFilePath !== null && sessions.some((session) => samePath(session.path, activeFilePath));
 
   const newSessionNavActive =
     !marketplaceActive &&
@@ -1695,15 +1682,10 @@ function SessionSidebarInner({
       )}
       data-narrow={narrow || undefined}
       id="session-sidebar-panel"
-      aria-label={settingsMode ? t('sidebar.settingsNavAria') : t('sidebar.sessionNavAria')}
+      aria-label={settingsMode ? t("sidebar.settingsNavAria") : t("sidebar.sessionNavAria")}
     >
       {settingsMode ? (
-        <div
-          className={cn(
-            "flex flex-col gap-2 px-1.5 pt-2.5",
-            narrow && "items-center",
-          )}
-        >
+        <div className={cn("flex flex-col gap-2 px-1.5 pt-2.5", narrow && "items-center")}>
           <Button
             type="button"
             variant="ghost"
@@ -1718,15 +1700,12 @@ function SessionSidebarInner({
             onClick={onBackToSessions}
           >
             <ArrowLeft className="size-4" aria-hidden />
-            <span className={cn(narrow && "sr-only")}>{t('common.back')}</span>
+            <span className={cn(narrow && "sr-only")}>{t("common.back")}</span>
           </Button>
         </div>
       ) : (
         <div
-          className={cn(
-            "flex flex-col gap-1.5 px-1.5 pt-2.5",
-            narrow && "shrink-0 items-center",
-          )}
+          className={cn("flex flex-col gap-1.5 px-1.5 pt-2.5", narrow && "shrink-0 items-center")}
         >
           <Button
             type="button"
@@ -1741,9 +1720,7 @@ function SessionSidebarInner({
               newSessionNavActive
                 ? sidebarItemSelectedClass(micaStyle)
                 : sidebarItemHoverClass(micaStyle),
-              narrow
-                ? "size-8 shrink-0"
-                : "group h-8 w-full justify-start gap-2",
+              narrow ? "size-8 shrink-0" : "group h-8 w-full justify-start gap-2",
             )}
             disabled={disabled || (newSessionBusy && !newSessionNavActive)}
             onClick={onNewSession}
@@ -1759,7 +1736,7 @@ function SessionSidebarInner({
             onDragEnd={() => split?.clearSidebarSessionDrag()}
           >
             <SquarePen className="size-3.5" aria-hidden />
-            <span className={cn(narrow && "sr-only")}>{t('sidebar.newSession')}</span>
+            <span className={cn(narrow && "sr-only")}>{t("sidebar.newSession")}</span>
             {!narrow && (
               <span className={sidebarItemShortcutClass} aria-hidden>
                 {newSessionShortcutLabel}
@@ -1770,7 +1747,7 @@ function SessionSidebarInner({
             type="button"
             variant={sidebarNavButtonVariant(micaStyle, marketplaceActive)}
             size={narrow ? "icon" : "sm"}
-            title={narrow ? t('sidebar.extensions') : undefined}
+            title={narrow ? t("sidebar.extensions") : undefined}
             aria-current={marketplaceActive ? "page" : undefined}
             className={cn(
               "text-xs",
@@ -1779,22 +1756,20 @@ function SessionSidebarInner({
               marketplaceActive
                 ? sidebarItemSelectedClass(micaStyle)
                 : sidebarItemHoverClass(micaStyle),
-              narrow
-                ? "size-8 shrink-0"
-                : "h-8 w-full justify-start gap-2",
+              narrow ? "size-8 shrink-0" : "h-8 w-full justify-start gap-2",
             )}
             disabled={disabled}
             onClick={onOpenMarketplace}
           >
             <Blocks className="size-3.5" aria-hidden />
-            <span className={cn(narrow && "sr-only")}>{t('sidebar.extensions')}</span>
+            <span className={cn(narrow && "sr-only")}>{t("sidebar.extensions")}</span>
           </Button>
           {onOpenAutomations ? (
             <Button
               type="button"
               variant={sidebarNavButtonVariant(micaStyle, automationsActive)}
               size={narrow ? "icon" : "sm"}
-              title={narrow ? t('sidebar.automations') : undefined}
+              title={narrow ? t("sidebar.automations") : undefined}
               aria-current={automationsActive ? "page" : undefined}
               className={cn(
                 "text-xs",
@@ -1803,15 +1778,13 @@ function SessionSidebarInner({
                 automationsActive
                   ? sidebarItemSelectedClass(micaStyle)
                   : sidebarItemHoverClass(micaStyle),
-                narrow
-                  ? "size-8 shrink-0"
-                  : "h-8 w-full justify-start gap-2",
+                narrow ? "size-8 shrink-0" : "h-8 w-full justify-start gap-2",
               )}
               disabled={disabled}
               onClick={onOpenAutomations}
             >
               <Bot className="size-3.5" aria-hidden />
-              <span className={cn(narrow && "sr-only")}>{t('sidebar.automations')}</span>
+              <span className={cn(narrow && "sr-only")}>{t("sidebar.automations")}</span>
             </Button>
           ) : null}
         </div>
@@ -1833,7 +1806,10 @@ function SessionSidebarInner({
           style={sidebarScrollAreaMaskStyle(scrollEdgeFades.top, scrollEdgeFades.bottom)}
         >
           {settingsMode ? (
-            <nav className="flex min-w-0 flex-col gap-0.5 p-1.5" aria-label={t('sidebar.settingsTabsAria')}>
+            <nav
+              className="flex min-w-0 flex-col gap-0.5 p-1.5"
+              aria-label={t("sidebar.settingsTabsAria")}
+            >
               {(
                 [
                   { key: "settings-primary", tabs: settingsPrimaryTabs },
@@ -1864,12 +1840,16 @@ function SessionSidebarInner({
                           "text-xs",
                           sidebarItemDefaultTextClass,
                           sidebarInteractionMotionClass,
-                          selected ? sidebarItemSelectedClass(micaStyle) : sidebarItemHoverClass(micaStyle),
+                          selected
+                            ? sidebarItemSelectedClass(micaStyle)
+                            : sidebarItemHoverClass(micaStyle),
                           narrow ? "size-8 shrink-0" : "h-8 w-full justify-start gap-2",
                         )}
                       >
                         <Icon className="size-3.5" aria-hidden />
-                        <span className={cn("min-w-0 truncate", narrow && "sr-only")}>{t(tab.labelKey)}</span>
+                        <span className={cn("min-w-0 truncate", narrow && "sr-only")}>
+                          {t(tab.labelKey)}
+                        </span>
                       </button>
                     );
                   })}
@@ -1880,7 +1860,7 @@ function SessionSidebarInner({
                   <div className="h-2" aria-hidden />
                   {narrow ? null : (
                     <p className="px-2.5 pb-1 text-[0.65rem] text-sidebar-item-foreground">
-                      {t('sidebar.extensionSettings')}
+                      {t("sidebar.extensionSettings")}
                     </p>
                   )}
                   {extensionSettingsItems.map((item) => {
@@ -1901,12 +1881,16 @@ function SessionSidebarInner({
                           "text-xs",
                           sidebarItemDefaultTextClass,
                           sidebarInteractionMotionClass,
-                          selected ? sidebarItemSelectedClass(micaStyle) : sidebarItemHoverClass(micaStyle),
+                          selected
+                            ? sidebarItemSelectedClass(micaStyle)
+                            : sidebarItemHoverClass(micaStyle),
                           narrow ? "size-8 shrink-0" : "h-8 w-full justify-start gap-2",
                         )}
                       >
                         <Blocks className="size-3.5" aria-hidden />
-                        <span className={cn("min-w-0 truncate", narrow && "sr-only")}>{item.label}</span>
+                        <span className={cn("min-w-0 truncate", narrow && "sr-only")}>
+                          {item.label}
+                        </span>
                       </button>
                     );
                   })}
@@ -1917,7 +1901,7 @@ function SessionSidebarInner({
             <div className="min-w-0 px-1.5 pb-1.5">
               {workspaceGroups.length > 0 ? (
                 <SidebarSectionCollapsible
-                  label={t('sidebar.workspace')}
+                  label={t("sidebar.workspace")}
                   expanded={workspaceSectionExpanded}
                   disabled={disabled}
                   headerClassName="pt-2"
@@ -1957,7 +1941,8 @@ function SessionSidebarInner({
                   >
                     {workspaceGroups.map((group) => {
                       const expanded = collapsedWorkspaceIds[group.id] !== false;
-                      const visibleCount = visibleCountByWorkspaceGroupId[group.id] ?? SIDEBAR_SESSION_PAGE_SIZE;
+                      const visibleCount =
+                        visibleCountByWorkspaceGroupId[group.id] ?? SIDEBAR_SESSION_PAGE_SIZE;
                       const visibleSessions = group.sessions.slice(0, visibleCount);
                       const hiddenSessionCount = group.sessions.length - visibleSessions.length;
 
@@ -1979,7 +1964,9 @@ function SessionSidebarInner({
                             setWorkspaceGroupExpanded(group.id, open);
                           }}
                           onSelectSession={onSelectSession}
-                          onLoadMore={() => loadMoreWorkspaceGroupSessions(group.id, group.sessions.length)}
+                          onLoadMore={() =>
+                            loadMoreWorkspaceGroupSessions(group.id, group.sessions.length)
+                          }
                           onNewSessionInWorkspace={onNewSessionInWorkspace}
                           newSessionBusy={newSessionBusy}
                           renamingSessionPath={renamingSessionPath}
@@ -1989,8 +1976,12 @@ function SessionSidebarInner({
                           onRenameCancel={handleRenameCancel}
                           onRenameStart={handleRenameStart}
                           canRenameSession={canRenameSession}
-                          groupNodeRef={(node) => workspaceGroupReorder.registerGroupNode(group.id, node)}
-                          headerPointerHandlers={workspaceGroupReorder.getHeaderPointerHandlers(group.id)}
+                          groupNodeRef={(node) =>
+                            workspaceGroupReorder.registerGroupNode(group.id, node)
+                          }
+                          headerPointerHandlers={workspaceGroupReorder.getHeaderPointerHandlers(
+                            group.id,
+                          )}
                           onHeaderClickCapture={workspaceGroupReorder.handleHeaderClickCapture}
                           isDragging={workspaceGroupReorder.draggingGroupId === group.id}
                           isPressing={workspaceGroupReorder.pressingGroupId === group.id}
@@ -2005,7 +1996,7 @@ function SessionSidebarInner({
                 <div className="h-2" aria-hidden />
               ) : null}
               <SessionListNav
-                ariaLabel={t('sidebar.workspaceSessionsAria')}
+                ariaLabel={t("sidebar.workspaceSessionsAria")}
                 canRenameSession={canRenameSession}
                 canDeleteSession={canDeleteSession}
                 contextMenuSession={contextMenuSession}
@@ -2020,7 +2011,7 @@ function SessionSidebarInner({
               >
                 {unboundSessions.length > 0 ? (
                   <SidebarSectionCollapsible
-                    label={t('sidebar.noWorkspaceSessions')}
+                    label={t("sidebar.noWorkspaceSessions")}
                     expanded={noWorkspaceSectionExpanded}
                     disabled={disabled}
                     headerClassName="pt-1"
@@ -2051,14 +2042,18 @@ function SessionSidebarInner({
                               gitBranch={session.gitBranch}
                               isBusy={session.isBusy}
                               isBlocked={session.isBlocked}
-                              showCompletedUnseen={unseenCompletedSessionPaths?.has(session.path) === true}
+                              showCompletedUnseen={
+                                unseenCompletedSessionPaths?.has(session.path) === true
+                              }
                               nested={false}
                               selected={isSessionSelected(session.path)}
                               disabled={disabled}
                               micaStyle={micaStyle}
                               onSelectPath={onSelectSession}
                               renaming={renamingSessionPath === session.path}
-                              renameValue={renamingSessionPath === session.path ? renameValue : undefined}
+                              renameValue={
+                                renamingSessionPath === session.path ? renameValue : undefined
+                              }
                               onRenameValueChange={setRenameValue}
                               onRenameCommit={() => void handleRenameCommit()}
                               onRenameCancel={handleRenameCancel}
@@ -2086,12 +2081,7 @@ function SessionSidebarInner({
       </div>
 
       {!settingsMode ? (
-        <div
-          className={cn(
-            "shrink-0 p-2",
-            narrow && "mt-auto flex flex-col items-center py-2",
-          )}
-        >
+        <div className={cn("shrink-0 p-2", narrow && "mt-auto flex flex-col items-center py-2")}>
           {narrow ? (
             <Tooltip delayDuration={300} disableHoverableContent>
               <TooltipTrigger asChild>
@@ -2158,38 +2148,40 @@ function SessionSidebarInner({
           </DialogHeader>
           <DialogFooter>
             <DialogFooterActions>
-            <Button
-              type="button"
-              variant="outline"
-              size="sm"
-              onClick={() => {
-                if (!deleteSessionBusy) {
-                  dismissDeleteSessionDialog();
-                }
-              }}
-              disabled={deleteSessionBusy}
-            >
-              {t("common.cancel")}
-            </Button>
-            <Button
-              type="button"
-              variant="destructive"
-              size="sm"
-              disabled={deleteSessionBusy || !deleteTarget || !onDeleteSession}
-              onClick={() => {
-                const target = deleteTarget;
-                if (!target || !onDeleteSession) {
-                  return;
-                }
-                void (async () => {
-                  await onDeleteSession(target.path);
-                  dismissDeleteSessionDialog();
-                })();
-              }}
-            >
-              {deleteSessionBusy ? <LoaderCircle className="size-4 animate-spin" aria-hidden /> : null}
-              {t("common.delete")}
-            </Button>
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={() => {
+                  if (!deleteSessionBusy) {
+                    dismissDeleteSessionDialog();
+                  }
+                }}
+                disabled={deleteSessionBusy}
+              >
+                {t("common.cancel")}
+              </Button>
+              <Button
+                type="button"
+                variant="destructive"
+                size="sm"
+                disabled={deleteSessionBusy || !deleteTarget || !onDeleteSession}
+                onClick={() => {
+                  const target = deleteTarget;
+                  if (!target || !onDeleteSession) {
+                    return;
+                  }
+                  void (async () => {
+                    await onDeleteSession(target.path);
+                    dismissDeleteSessionDialog();
+                  })();
+                }}
+              >
+                {deleteSessionBusy ? (
+                  <LoaderCircle className="size-4 animate-spin" aria-hidden />
+                ) : null}
+                {t("common.delete")}
+              </Button>
             </DialogFooterActions>
           </DialogFooter>
         </DialogContent>
@@ -2225,55 +2217,57 @@ function SessionSidebarInner({
           </DialogHeader>
           <DialogFooter>
             <DialogFooterActions>
-            <Button
-              type="button"
-              variant="outline"
-              size="sm"
-              onClick={() => {
-                if (!sectionDeleteBusy) {
-                  dismissDeleteSectionDialog();
-                }
-              }}
-              disabled={sectionDeleteBusy}
-            >
-              {t("common.cancel")}
-            </Button>
-            <Button
-              type="button"
-              variant="destructive"
-              size="sm"
-              disabled={
-                sectionDeleteBusy
-                || deleteSectionTarget === null
-                || (deleteSectionTarget === "workspace-section"
-                  ? !onDeleteWorkspace || workspaceGroups.length === 0
-                  : !onDeleteSession || unboundSessions.length === 0)
-              }
-              onClick={() => {
-                const target = deleteSectionTarget;
-                if (!target) {
-                  return;
-                }
-                void (async () => {
-                  if (target === "workspace-section") {
-                    if (!onDeleteWorkspace) {
-                      return;
-                    }
-                    for (const group of workspaceGroups) {
-                      await onDeleteWorkspace(group.rootPath ?? group.id);
-                    }
-                  } else if (onDeleteSession) {
-                    for (const session of unboundSessions) {
-                      await onDeleteSession(session.path);
-                    }
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={() => {
+                  if (!sectionDeleteBusy) {
+                    dismissDeleteSectionDialog();
                   }
-                  dismissDeleteSectionDialog();
-                })();
-              }}
-            >
-              {sectionDeleteBusy ? <LoaderCircle className="size-4 animate-spin" aria-hidden /> : null}
-              {t("common.delete")}
-            </Button>
+                }}
+                disabled={sectionDeleteBusy}
+              >
+                {t("common.cancel")}
+              </Button>
+              <Button
+                type="button"
+                variant="destructive"
+                size="sm"
+                disabled={
+                  sectionDeleteBusy ||
+                  deleteSectionTarget === null ||
+                  (deleteSectionTarget === "workspace-section"
+                    ? !onDeleteWorkspace || workspaceGroups.length === 0
+                    : !onDeleteSession || unboundSessions.length === 0)
+                }
+                onClick={() => {
+                  const target = deleteSectionTarget;
+                  if (!target) {
+                    return;
+                  }
+                  void (async () => {
+                    if (target === "workspace-section") {
+                      if (!onDeleteWorkspace) {
+                        return;
+                      }
+                      for (const group of workspaceGroups) {
+                        await onDeleteWorkspace(group.rootPath ?? group.id);
+                      }
+                    } else if (onDeleteSession) {
+                      for (const session of unboundSessions) {
+                        await onDeleteSession(session.path);
+                      }
+                    }
+                    dismissDeleteSectionDialog();
+                  })();
+                }}
+              >
+                {sectionDeleteBusy ? (
+                  <LoaderCircle className="size-4 animate-spin" aria-hidden />
+                ) : null}
+                {t("common.delete")}
+              </Button>
             </DialogFooterActions>
           </DialogFooter>
         </DialogContent>
@@ -2301,38 +2295,40 @@ function SessionSidebarInner({
           </DialogHeader>
           <DialogFooter>
             <DialogFooterActions>
-            <Button
-              type="button"
-              variant="outline"
-              size="sm"
-              onClick={() => {
-                if (!deleteWorkspaceBusy) {
-                  dismissDeleteWorkspaceDialog();
-                }
-              }}
-              disabled={deleteWorkspaceBusy}
-            >
-              {t("common.cancel")}
-            </Button>
-            <Button
-              type="button"
-              variant="destructive"
-              size="sm"
-              disabled={deleteWorkspaceBusy || !deleteWorkspaceTarget || !onDeleteWorkspace}
-              onClick={() => {
-                const target = deleteWorkspaceTarget;
-                if (!target || !onDeleteWorkspace) {
-                  return;
-                }
-                void (async () => {
-                  await onDeleteWorkspace(target.rootPath ?? target.id);
-                  dismissDeleteWorkspaceDialog();
-                })();
-              }}
-            >
-              {deleteWorkspaceBusy ? <LoaderCircle className="size-4 animate-spin" aria-hidden /> : null}
-              {t("common.delete")}
-            </Button>
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={() => {
+                  if (!deleteWorkspaceBusy) {
+                    dismissDeleteWorkspaceDialog();
+                  }
+                }}
+                disabled={deleteWorkspaceBusy}
+              >
+                {t("common.cancel")}
+              </Button>
+              <Button
+                type="button"
+                variant="destructive"
+                size="sm"
+                disabled={deleteWorkspaceBusy || !deleteWorkspaceTarget || !onDeleteWorkspace}
+                onClick={() => {
+                  const target = deleteWorkspaceTarget;
+                  if (!target || !onDeleteWorkspace) {
+                    return;
+                  }
+                  void (async () => {
+                    await onDeleteWorkspace(target.rootPath ?? target.id);
+                    dismissDeleteWorkspaceDialog();
+                  })();
+                }}
+              >
+                {deleteWorkspaceBusy ? (
+                  <LoaderCircle className="size-4 animate-spin" aria-hidden />
+                ) : null}
+                {t("common.delete")}
+              </Button>
             </DialogFooterActions>
           </DialogFooter>
         </DialogContent>

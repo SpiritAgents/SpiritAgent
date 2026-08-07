@@ -1,4 +1,12 @@
-import { useCallback, useEffect, useLayoutEffect, useRef, useState, type CSSProperties, type ReactNode } from "react";
+import {
+  useCallback,
+  useEffect,
+  useLayoutEffect,
+  useRef,
+  useState,
+  type CSSProperties,
+  type ReactNode,
+} from "react";
 import { useTranslation } from "react-i18next";
 
 import { OnboardingAppearanceControls } from "@/components/onboarding/onboarding-appearance-step";
@@ -194,9 +202,7 @@ export function OnboardingWizard({
   ): ReactNode => {
     switch (target) {
       case 1:
-        return (
-          <OnboardingWelcomeStep onContinue={() => goToStep(2)} />
-        );
+        return <OnboardingWelcomeStep onContinue={() => goToStep(2)} />;
       case 2:
         return (
           <OnboardingAppearanceStep
@@ -320,10 +326,7 @@ function OnboardingStepShell({
       <h1 {...oobeBlockProps(0)} className={cn("shrink-0", DESKTOP_PAGE_TITLE_CLASS)}>
         {title}
       </h1>
-      <div
-        {...oobeBlockProps(1)}
-        className="flex min-h-0 w-full flex-1 flex-col items-center pt-8"
-      >
+      <div {...oobeBlockProps(1)} className="flex min-h-0 w-full flex-1 flex-col items-center pt-8">
         {children}
       </div>
       <div {...oobeBlockProps(2)} className="flex shrink-0 items-center gap-3 pt-6">
@@ -334,11 +337,7 @@ function OnboardingStepShell({
 }
 
 /** Step 1：居中品牌图标与产品名；自进入 0.5s / 1s 固定时序淡入标题与 Continue；Shimmer 独立播完当前轮。 */
-function OnboardingWelcomeStep({
-  onContinue,
-}: {
-  onContinue: () => void;
-}) {
+function OnboardingWelcomeStep({ onContinue }: { onContinue: () => void }) {
   const { t } = useTranslation();
   const [titleVisible, setTitleVisible] = useState(false);
   const [continueVisible, setContinueVisible] = useState(false);
@@ -380,10 +379,7 @@ function OnboardingWelcomeStep({
   }, []);
 
   return (
-    <div
-      {...oobeBlockProps(0)}
-      className="flex h-full flex-col items-center justify-center"
-    >
+    <div {...oobeBlockProps(0)} className="flex h-full flex-col items-center justify-center">
       <div className="relative shrink-0" style={{ width: ONBOARDING_LOGO_WIDTH_PX }}>
         <SpiritGlassLogo width={ONBOARDING_LOGO_WIDTH_PX} className="relative z-0" />
         {/* 保持 DOM 稳定挂载，避免重渲染 remount 导致 sweep 从 125% 重启 */}

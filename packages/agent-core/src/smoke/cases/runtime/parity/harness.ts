@@ -1,6 +1,6 @@
-import { mkdir, mkdtemp, rm, writeFile } from 'node:fs/promises';
-import { tmpdir } from 'node:os';
-import { join } from 'node:path';
+import { mkdir, mkdtemp, rm, writeFile } from "node:fs/promises";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
 
 import type {
   AuthorizationDecision,
@@ -12,7 +12,7 @@ import type {
   StartedToolAgentRound,
   ToolAgentRoundCompletion,
   ToolExecutor,
-} from '../../../../ports.js';
+} from "../../../../ports.js";
 import {
   cloneLlmMessageContent,
   createLlmMessageContentFromText,
@@ -21,22 +21,22 @@ import {
   llmMessageHasImages,
   llmMessageImagePaths,
   llmMessageTextContent,
-} from '../../../../ports.js';
+} from "../../../../ports.js";
 import {
   COMPACT_PROGRESS_TEXT,
   includesCompactSummaryBlock,
   unwrapCompactSummaryBlock,
   wrapCompactSummaryBlock,
-} from '../../../../llm-context-block.js';
+} from "../../../../llm-context-block.js";
 import {
   AgentRuntime,
   pendingWorkspaceFilesFromInput,
   type RuntimeEvent,
   type RuntimeTurnResult,
-} from '../../../../runtime.js';
-import { userMessageContentMatchesInput } from '../../../../runtime/user-turn-timestamp.js';
+} from "../../../../runtime.js";
+import { userMessageContentMatchesInput } from "../../../../runtime/user-turn-timestamp.js";
 
-const MOCK_COMPACTED_HISTORY_SUMMARY = 'compacted history';
+const MOCK_COMPACTED_HISTORY_SUMMARY = "compacted history";
 const MOCK_COMPACT_SUMMARY_BLOCK = wrapCompactSummaryBlock(MOCK_COMPACTED_HISTORY_SUMMARY);
 
 export interface ScriptedState {
@@ -75,32 +75,29 @@ export class ApprovalExecutor implements ToolExecutor<ScriptedToolRequest> {
   }
 
   async parseCommand(_message: string): Promise<ScriptedToolRequest> {
-    throw new Error('ApprovalExecutor.parseCommand 未实现。');
+    throw new Error("ApprovalExecutor.parseCommand 未实现。");
   }
 
-  async requestFromFunctionCall(
-    name: string,
-    argumentsJson: string,
-  ): Promise<ScriptedToolRequest> {
+  async requestFromFunctionCall(name: string, argumentsJson: string): Promise<ScriptedToolRequest> {
     return { name, argumentsJson };
   }
 
   async authorize(request: ScriptedToolRequest): Promise<AuthorizationDecision> {
-    if (request.name === 'create_file') {
+    if (request.name === "create_file") {
       return {
-        kind: 'need-approval',
-        prompt: '写文件需要审批。',
+        kind: "need-approval",
+        prompt: "写文件需要审批。",
       };
     }
 
-    return { kind: 'allowed' };
+    return { kind: "allowed" };
   }
 
   async trust(_target: string): Promise<void> {}
 
   async execute(_request: ScriptedToolRequest): Promise<ToolExecutionOutput> {
     this.executedCalls += 1;
-    return createToolExecutionTextOutput('unexpected execution');
+    return createToolExecutionTextOutput("unexpected execution");
   }
 
   startMcpBackgroundRefresh(): void {}
@@ -108,7 +105,7 @@ export class ApprovalExecutor implements ToolExecutor<ScriptedToolRequest> {
   mcpStatusSnapshot() {
     return {
       revision: 0,
-      state: 'idle' as const,
+      state: "idle" as const,
       configuredServers: 0,
       loadedServers: 0,
       cachedTools: 0,
@@ -116,7 +113,7 @@ export class ApprovalExecutor implements ToolExecutor<ScriptedToolRequest> {
   }
 
   async addMcpServer(): Promise<string> {
-    throw new Error('ApprovalExecutor.addMcpServer 未实现。');
+    throw new Error("ApprovalExecutor.addMcpServer 未实现。");
   }
 
   async listMcpServers(): Promise<never[]> {
@@ -124,7 +121,7 @@ export class ApprovalExecutor implements ToolExecutor<ScriptedToolRequest> {
   }
 
   async inspectMcpServer(): Promise<never> {
-    throw new Error('ApprovalExecutor.inspectMcpServer 未实现。');
+    throw new Error("ApprovalExecutor.inspectMcpServer 未实现。");
   }
 
   async listMcpTools(): Promise<never[]> {
@@ -136,7 +133,7 @@ export class ApprovalExecutor implements ToolExecutor<ScriptedToolRequest> {
   }
 
   async readMcpResource(): Promise<JsonValue> {
-    throw new Error('ApprovalExecutor.readMcpResource 未实现。');
+    throw new Error("ApprovalExecutor.readMcpResource 未实现。");
   }
 
   async listCachedMcpPrompts(): Promise<never[]> {
@@ -148,7 +145,7 @@ export class ApprovalExecutor implements ToolExecutor<ScriptedToolRequest> {
   }
 
   async getMcpPrompt(): Promise<JsonValue> {
-    throw new Error('ApprovalExecutor.getMcpPrompt 未实现。');
+    throw new Error("ApprovalExecutor.getMcpPrompt 未实现。");
   }
 }
 
@@ -164,28 +161,28 @@ export class ApprovalTransport implements LlmTransport<undefined, ScriptedState>
 
     if (this.rounds === 1) {
       return {
-        kind: 'success',
+        kind: "success",
         result: {
           state: {
             messages: [
               ...state.messages,
               {
-                role: 'assistant',
-                content: '准备写文件。',
+                role: "assistant",
+                content: "准备写文件。",
                 tool_calls: [
                   {
-                    id: 'call-write',
-                    type: 'function',
+                    id: "call-write",
+                    type: "function",
                     function: {
-                      name: 'create_file',
+                      name: "create_file",
                       arguments: '{"path":"demo.txt","content":"x"}',
                     },
                   },
                   {
-                    id: 'call-search',
-                    type: 'function',
+                    id: "call-search",
+                    type: "function",
                     function: {
-                      name: 'grep',
+                      name: "grep",
                       arguments: '{"query":"should-not-run"}',
                     },
                   },
@@ -195,16 +192,16 @@ export class ApprovalTransport implements LlmTransport<undefined, ScriptedState>
             steps: state.steps + 1,
           },
           step: {
-            kind: 'tool-calls',
+            kind: "tool-calls",
             calls: [
               {
-                id: 'call-write',
-                name: 'create_file',
+                id: "call-write",
+                name: "create_file",
                 argumentsJson: '{"path":"demo.txt","content":"x"}',
               },
               {
-                id: 'call-search',
-                name: 'grep',
+                id: "call-search",
+                name: "grep",
                 argumentsJson: '{"query":"should-not-run"}',
               },
             ],
@@ -217,43 +214,43 @@ export class ApprovalTransport implements LlmTransport<undefined, ScriptedState>
     const hasGuidance = state.messages.some(
       (message) =>
         isJsonObject(message) &&
-        message.role === 'user' &&
-        typeof message.content === 'string' &&
-        message.content.includes('不要写文件，直接总结'),
+        message.role === "user" &&
+        typeof message.content === "string" &&
+        message.content.includes("不要写文件，直接总结"),
     );
     const hasDeniedTool = state.messages.some(
       (message) =>
         isJsonObject(message) &&
-        message.role === 'tool' &&
-        message.tool_call_id === 'call-write' &&
-        typeof message.content === 'string' &&
-        message.content.includes('rejected by user guidance'),
+        message.role === "tool" &&
+        message.tool_call_id === "call-write" &&
+        typeof message.content === "string" &&
+        message.content.includes("rejected by user guidance"),
     );
     const hasQueuedToolResult = state.messages.some(
       (message) =>
         isJsonObject(message) &&
-        message.role === 'tool' &&
-        message.tool_call_id === 'call-search' &&
-        typeof message.content === 'string' &&
-        message.content === 'unexpected execution',
+        message.role === "tool" &&
+        message.tool_call_id === "call-search" &&
+        typeof message.content === "string" &&
+        message.content === "unexpected execution",
     );
 
     if (!hasGuidance || !hasDeniedTool || !hasQueuedToolResult) {
       return {
-        kind: 'failure',
-        error: 'approval guidance 状态未正确写回。',
+        kind: "failure",
+        error: "approval guidance 状态未正确写回。",
         requestTrace: [{ round: this.rounds }],
       };
     }
 
     return {
-      kind: 'success',
+      kind: "success",
       result: {
         state: {
-          messages: [...state.messages, { role: 'assistant', content: 'GUIDANCE_OK' }],
+          messages: [...state.messages, { role: "assistant", content: "GUIDANCE_OK" }],
           steps: state.steps + 1,
         },
-        step: { kind: 'final-response-ready' },
+        step: { kind: "final-response-ready" },
         requestTrace: [{ round: this.rounds }],
       },
     };
@@ -275,7 +272,7 @@ export class ApprovalTransport implements LlmTransport<undefined, ScriptedState>
   }
 
   isContextOverflowError(error: string): boolean {
-    return error.includes('context');
+    return error.includes("context");
   }
 
   llmHistoryAsApiMessages(history: LlmMessage[]): JsonValue[] {
@@ -293,18 +290,15 @@ export class CompactExecutor implements ToolExecutor<ScriptedToolRequest> {
   }
 
   async parseCommand(_message: string): Promise<ScriptedToolRequest> {
-    throw new Error('CompactExecutor.parseCommand 未实现。');
+    throw new Error("CompactExecutor.parseCommand 未实现。");
   }
 
-  async requestFromFunctionCall(
-    name: string,
-    argumentsJson: string,
-  ): Promise<ScriptedToolRequest> {
+  async requestFromFunctionCall(name: string, argumentsJson: string): Promise<ScriptedToolRequest> {
     return { name, argumentsJson };
   }
 
   async authorize(): Promise<AuthorizationDecision> {
-    return { kind: 'allowed' };
+    return { kind: "allowed" };
   }
 
   async trust(_target: string): Promise<void> {}
@@ -318,7 +312,7 @@ export class CompactExecutor implements ToolExecutor<ScriptedToolRequest> {
   mcpStatusSnapshot() {
     return {
       revision: 0,
-      state: 'idle' as const,
+      state: "idle" as const,
       configuredServers: 0,
       loadedServers: 0,
       cachedTools: 0,
@@ -326,7 +320,7 @@ export class CompactExecutor implements ToolExecutor<ScriptedToolRequest> {
   }
 
   async addMcpServer(): Promise<string> {
-    throw new Error('CompactExecutor.addMcpServer 未实现。');
+    throw new Error("CompactExecutor.addMcpServer 未实现。");
   }
 
   async listMcpServers(): Promise<never[]> {
@@ -334,7 +328,7 @@ export class CompactExecutor implements ToolExecutor<ScriptedToolRequest> {
   }
 
   async inspectMcpServer(): Promise<never> {
-    throw new Error('CompactExecutor.inspectMcpServer 未实现。');
+    throw new Error("CompactExecutor.inspectMcpServer 未实现。");
   }
 
   async listMcpTools(): Promise<never[]> {
@@ -346,7 +340,7 @@ export class CompactExecutor implements ToolExecutor<ScriptedToolRequest> {
   }
 
   async readMcpResource(): Promise<JsonValue> {
-    throw new Error('CompactExecutor.readMcpResource 未实现。');
+    throw new Error("CompactExecutor.readMcpResource 未实现。");
   }
 
   async listCachedMcpPrompts(): Promise<never[]> {
@@ -358,7 +352,7 @@ export class CompactExecutor implements ToolExecutor<ScriptedToolRequest> {
   }
 
   async getMcpPrompt(): Promise<JsonValue> {
-    throw new Error('CompactExecutor.getMcpPrompt 未实现。');
+    throw new Error("CompactExecutor.getMcpPrompt 未实现。");
   }
 }
 
@@ -373,31 +367,31 @@ export class CompactTransport implements LlmTransport<undefined, ScriptedState> 
     this.rounds += 1;
 
     const hasToolResult = state.messages.some(
-      (message) => isJsonObject(message) && message.role === 'tool',
+      (message) => isJsonObject(message) && message.role === "tool",
     );
     const hasSummary = state.messages.some(
       (message) =>
         isJsonObject(message) &&
-        message.role === 'system' &&
+        message.role === "system" &&
         message.content === MOCK_COMPACT_SUMMARY_BLOCK,
     );
 
     if (!hasToolResult) {
       return {
-        kind: 'success',
+        kind: "success",
         result: {
           state: {
             messages: [
               ...state.messages,
               {
-                role: 'assistant',
-                content: '先搜索。',
+                role: "assistant",
+                content: "先搜索。",
                 tool_calls: [
                   {
-                    id: 'call-search',
-                    type: 'function',
+                    id: "call-search",
+                    type: "function",
                     function: {
-                      name: 'grep',
+                      name: "grep",
                       arguments: '{"query":"runtime parity"}',
                     },
                   },
@@ -407,11 +401,11 @@ export class CompactTransport implements LlmTransport<undefined, ScriptedState> 
             steps: state.steps + 1,
           },
           step: {
-            kind: 'tool-calls',
+            kind: "tool-calls",
             calls: [
               {
-                id: 'call-search',
-                name: 'grep',
+                id: "call-search",
+                name: "grep",
                 argumentsJson: '{"query":"runtime parity"}',
               },
             ],
@@ -423,8 +417,8 @@ export class CompactTransport implements LlmTransport<undefined, ScriptedState> 
 
     if (!hasSummary) {
       return {
-        kind: 'failure',
-        error: 'context overflow: too many tokens',
+        kind: "failure",
+        error: "context overflow: too many tokens",
         requestTrace: [{ round: 2 }],
       };
     }
@@ -432,71 +426,71 @@ export class CompactTransport implements LlmTransport<undefined, ScriptedState> 
     const hasAssistantToolCall = state.messages.some(
       (message) =>
         isJsonObject(message) &&
-        message.role === 'assistant' &&
+        message.role === "assistant" &&
         Array.isArray(message.tool_calls) &&
         message.tool_calls.length > 0,
     );
 
     if (!hasAssistantToolCall) {
       return {
-        kind: 'failure',
-        error: 'compact retry 未保留 assistant tool-call state。',
+        kind: "failure",
+        error: "compact retry 未保留 assistant tool-call state。",
         requestTrace: [{ round: this.rounds }],
       };
     }
 
     return {
-      kind: 'success',
+      kind: "success",
       result: {
         state: {
-          messages: [...state.messages, { role: 'assistant', content: 'COMPACT_OK' }],
+          messages: [...state.messages, { role: "assistant", content: "COMPACT_OK" }],
           steps: state.steps + 1,
         },
-        step: { kind: 'final-response-ready' },
+        step: { kind: "final-response-ready" },
         requestTrace: [{ round: this.rounds }],
       },
     };
   }
 
-    async compactHistoryManual(
-      _config: undefined,
-      history: LlmMessage[],
-    ): Promise<{ droppedMessages: number; beforeLength: number; afterLength: number }> {
-      const beforeLength = history.length;
-      const lastUser = [...history].reverse().find((message) => message.role === 'user');
-      history.splice(
-        0,
-        history.length,
-        {
-          role: 'system',
-          content: createLlmMessageContentFromText(MOCK_COMPACT_SUMMARY_BLOCK),
-        },
-        ...(lastUser ? [lastUser] : []),
-      );
+  async compactHistoryManual(
+    _config: undefined,
+    history: LlmMessage[],
+  ): Promise<{ droppedMessages: number; beforeLength: number; afterLength: number }> {
+    const beforeLength = history.length;
+    const lastUser = [...history].reverse().find((message) => message.role === "user");
+    history.splice(
+      0,
+      history.length,
+      {
+        role: "system",
+        content: createLlmMessageContentFromText(MOCK_COMPACT_SUMMARY_BLOCK),
+      },
+      ...(lastUser ? [lastUser] : []),
+    );
 
-      return {
-        droppedMessages: Math.max(beforeLength - history.length, 0),
-        beforeLength,
-        afterLength: history.length,
-      };
-    }
-
-    compactSummaryText(history: LlmMessage[]): string | undefined {
-      return compactSummaryFromHistory(history);
-    }
-
-    isContextOverflowError(error: string): boolean {
-      return error.includes('context overflow');
-    }
-
-    llmHistoryAsApiMessages(history: LlmMessage[]): JsonValue[] {
-      return historyAsPlainApiMessages(history);
-    }
-
-    llmSystemPromptsForExport(): JsonValue {
-      return {};
-    }
+    return {
+      droppedMessages: Math.max(beforeLength - history.length, 0),
+      beforeLength,
+      afterLength: history.length,
+    };
   }
+
+  compactSummaryText(history: LlmMessage[]): string | undefined {
+    return compactSummaryFromHistory(history);
+  }
+
+  isContextOverflowError(error: string): boolean {
+    return error.includes("context overflow");
+  }
+
+  llmHistoryAsApiMessages(history: LlmMessage[]): JsonValue[] {
+    return historyAsPlainApiMessages(history);
+  }
+
+  llmSystemPromptsForExport(): JsonValue {
+    return {};
+  }
+}
 
 export class PollingCompactTransport extends CompactTransport {
   private resolveCompaction: (() => void) | undefined;
@@ -509,12 +503,12 @@ export class PollingCompactTransport extends CompactTransport {
 
     return new Promise((resolve) => {
       this.resolveCompaction = () => {
-        const lastUser = [...history].reverse().find((message) => message.role === 'user');
+        const lastUser = [...history].reverse().find((message) => message.role === "user");
         history.splice(
           0,
           history.length,
           {
-            role: 'system',
+            role: "system",
             content: createLlmMessageContentFromText(MOCK_COMPACT_SUMMARY_BLOCK),
           },
           ...(lastUser ? [lastUser] : []),
@@ -549,12 +543,12 @@ export class ProgressManualCompactionTransport extends CompactTransport {
     return new Promise((resolve) => {
       this.resolveCompaction = () => {
         this.progressCallback?.(COMPACT_PROGRESS_TEXT);
-        const lastUser = [...history].reverse().find((message) => message.role === 'user');
+        const lastUser = [...history].reverse().find((message) => message.role === "user");
         history.splice(
           0,
           history.length,
           {
-            role: 'system',
+            role: "system",
             content: createLlmMessageContentFromText(MOCK_COMPACT_SUMMARY_BLOCK),
           },
           ...(lastUser ? [lastUser] : []),
@@ -578,7 +572,7 @@ export class ProgressManualCompactionTransport extends CompactTransport {
   }
 
   isContextOverflowError(error: string): boolean {
-    return error.includes('context overflow');
+    return error.includes("context overflow");
   }
 
   llmHistoryAsApiMessages(history: LlmMessage[]): JsonValue[] {
@@ -596,18 +590,15 @@ export class BackgroundExecutor implements ToolExecutor<ScriptedToolRequest> {
   }
 
   async parseCommand(_message: string): Promise<ScriptedToolRequest> {
-    throw new Error('BackgroundExecutor.parseCommand 未实现。');
+    throw new Error("BackgroundExecutor.parseCommand 未实现。");
   }
 
-  async requestFromFunctionCall(
-    name: string,
-    argumentsJson: string,
-  ): Promise<ScriptedToolRequest> {
+  async requestFromFunctionCall(name: string, argumentsJson: string): Promise<ScriptedToolRequest> {
     return { name, argumentsJson };
   }
 
   async authorize(): Promise<AuthorizationDecision> {
-    return { kind: 'allowed' };
+    return { kind: "allowed" };
   }
 
   async trust(_target: string): Promise<void> {}
@@ -618,11 +609,11 @@ export class BackgroundExecutor implements ToolExecutor<ScriptedToolRequest> {
   }
 
   shouldExecuteInBackground(request: ScriptedToolRequest): boolean {
-    return request.name === 'grep';
+    return request.name === "grep";
   }
 
   backgroundStatusText(request: ScriptedToolRequest): string | undefined {
-    return request.name === 'grep' ? '搜索中: runtime parity' : undefined;
+    return request.name === "grep" ? "搜索中: runtime parity" : undefined;
   }
 
   startMcpBackgroundRefresh(): void {}
@@ -630,7 +621,7 @@ export class BackgroundExecutor implements ToolExecutor<ScriptedToolRequest> {
   mcpStatusSnapshot() {
     return {
       revision: 0,
-      state: 'idle' as const,
+      state: "idle" as const,
       configuredServers: 0,
       loadedServers: 0,
       cachedTools: 0,
@@ -638,7 +629,7 @@ export class BackgroundExecutor implements ToolExecutor<ScriptedToolRequest> {
   }
 
   async addMcpServer(): Promise<string> {
-    throw new Error('BackgroundExecutor.addMcpServer 未实现。');
+    throw new Error("BackgroundExecutor.addMcpServer 未实现。");
   }
 
   async listMcpServers(): Promise<never[]> {
@@ -646,7 +637,7 @@ export class BackgroundExecutor implements ToolExecutor<ScriptedToolRequest> {
   }
 
   async inspectMcpServer(): Promise<never> {
-    throw new Error('BackgroundExecutor.inspectMcpServer 未实现。');
+    throw new Error("BackgroundExecutor.inspectMcpServer 未实现。");
   }
 
   async listMcpTools(): Promise<never[]> {
@@ -658,7 +649,7 @@ export class BackgroundExecutor implements ToolExecutor<ScriptedToolRequest> {
   }
 
   async readMcpResource(): Promise<JsonValue> {
-    throw new Error('BackgroundExecutor.readMcpResource 未实现。');
+    throw new Error("BackgroundExecutor.readMcpResource 未实现。");
   }
 
   async listCachedMcpPrompts(): Promise<never[]> {
@@ -670,7 +661,7 @@ export class BackgroundExecutor implements ToolExecutor<ScriptedToolRequest> {
   }
 
   async getMcpPrompt(): Promise<JsonValue> {
-    throw new Error('BackgroundExecutor.getMcpPrompt 未实现。');
+    throw new Error("BackgroundExecutor.getMcpPrompt 未实现。");
   }
 }
 
@@ -699,27 +690,27 @@ export class BackgroundTransport implements LlmTransport<undefined, ScriptedStat
     const hasToolResult = state.messages.some(
       (message) =>
         isJsonObject(message) &&
-        message.role === 'tool' &&
-        typeof message.content === 'string' &&
-        message.content.includes('background result'),
+        message.role === "tool" &&
+        typeof message.content === "string" &&
+        message.content.includes("background result"),
     );
 
     if (!hasToolResult) {
       return {
-        kind: 'success',
+        kind: "success",
         result: {
           state: {
             messages: [
               ...state.messages,
               {
-                role: 'assistant',
-                content: '先后台搜索。',
+                role: "assistant",
+                content: "先后台搜索。",
                 tool_calls: [
                   {
-                    id: 'call-background-search',
-                    type: 'function',
+                    id: "call-background-search",
+                    type: "function",
                     function: {
-                      name: 'grep',
+                      name: "grep",
                       arguments: '{"query":"runtime parity"}',
                     },
                   },
@@ -729,11 +720,11 @@ export class BackgroundTransport implements LlmTransport<undefined, ScriptedStat
             steps: state.steps + 1,
           },
           step: {
-            kind: 'tool-calls',
+            kind: "tool-calls",
             calls: [
               {
-                id: 'call-background-search',
-                name: 'grep',
+                id: "call-background-search",
+                name: "grep",
                 argumentsJson: '{"query":"runtime parity"}',
               },
             ],
@@ -744,13 +735,13 @@ export class BackgroundTransport implements LlmTransport<undefined, ScriptedStat
     }
 
     return {
-      kind: 'success',
+      kind: "success",
       result: {
         state: {
-          messages: [...state.messages, { role: 'assistant', content: 'BACKGROUND_OK' }],
+          messages: [...state.messages, { role: "assistant", content: "BACKGROUND_OK" }],
           steps: state.steps + 1,
         },
-        step: { kind: 'final-response-ready' },
+        step: { kind: "final-response-ready" },
         requestTrace: [{ round: this.rounds }],
       },
     };
@@ -772,7 +763,7 @@ export class BackgroundTransport implements LlmTransport<undefined, ScriptedStat
   }
 
   isContextOverflowError(error: string): boolean {
-    return error.includes('context');
+    return error.includes("context");
   }
 
   llmHistoryAsApiMessages(history: LlmMessage[]): JsonValue[] {
@@ -805,20 +796,20 @@ export class FinalTextTransport implements LlmTransport<undefined, ScriptedState
       this.validateState?.(state);
     } catch (error) {
       return {
-        kind: 'failure',
+        kind: "failure",
         error: error instanceof Error ? error.message : String(error),
         requestTrace: [{ messageCount: state.messages.length, steps: state.steps }],
       };
     }
 
     return {
-      kind: 'success',
+      kind: "success",
       result: {
         state: {
-          messages: [...state.messages, { role: 'assistant', content: this.assistantText }],
+          messages: [...state.messages, { role: "assistant", content: this.assistantText }],
           steps: state.steps + 1,
         },
-        step: { kind: 'final-response-ready' },
+        step: { kind: "final-response-ready" },
         requestTrace: [{ assistantText: this.assistantText }],
       },
     };
@@ -840,7 +831,7 @@ export class FinalTextTransport implements LlmTransport<undefined, ScriptedState
   }
 
   isContextOverflowError(error: string): boolean {
-    return error.includes('context');
+    return error.includes("context");
   }
 
   llmHistoryAsApiMessages(history: LlmMessage[]): JsonValue[] {
@@ -867,18 +858,21 @@ export class ToolImageProjectionTransport implements LlmTransport<undefined, Scr
 
     if (this.rounds === 1) {
       return {
-        kind: 'success',
+        kind: "success",
         result: {
           state: {
-            messages: [
-              ...state.messages,
-              { role: 'assistant', content: '先读取图片。' },
-            ],
+            messages: [...state.messages, { role: "assistant", content: "先读取图片。" }],
             steps: state.steps + 1,
           },
           step: {
-            kind: 'tool-calls',
-            calls: [{ id: 'call-read-image', name: 'read_file', argumentsJson: '{"path":"tool-image.png"}' }],
+            kind: "tool-calls",
+            calls: [
+              {
+                id: "call-read-image",
+                name: "read_file",
+                argumentsJson: '{"path":"tool-image.png"}',
+              },
+            ],
           },
           requestTrace: [{ round: 1 }],
         },
@@ -888,35 +882,35 @@ export class ToolImageProjectionTransport implements LlmTransport<undefined, Scr
     const hasProjectedImageUserMessage = state.messages.some(
       (message) =>
         isJsonObject(message) &&
-        message.role === 'user' &&
-        typeof message.content === 'string' &&
-        message.content.includes('[read image]') &&
+        message.role === "user" &&
+        typeof message.content === "string" &&
+        message.content.includes("[read image]") &&
         Array.isArray(message.image_paths) &&
-        message.image_paths.includes('tool-image.png'),
+        message.image_paths.includes("tool-image.png"),
     );
     if (!hasProjectedImageUserMessage) {
-      throw new Error('tool image projection smoke 未把工具图片输出投影到下一拍 user 消息。');
+      throw new Error("tool image projection smoke 未把工具图片输出投影到下一拍 user 消息。");
     }
 
     const hasToolSummary = state.messages.some(
       (message) =>
         isJsonObject(message) &&
-        message.role === 'tool' &&
-        typeof message.content === 'string' &&
-        message.content.includes('[read image]'),
+        message.role === "tool" &&
+        typeof message.content === "string" &&
+        message.content.includes("[read image]"),
     );
     if (!hasToolSummary) {
-      throw new Error('tool image projection smoke 未保留工具结果摘要。');
+      throw new Error("tool image projection smoke 未保留工具结果摘要。");
     }
 
     return {
-      kind: 'success',
+      kind: "success",
       result: {
         state: {
-          messages: [...state.messages, { role: 'assistant', content: 'TOOL_IMAGE_PROJECTION_OK' }],
+          messages: [...state.messages, { role: "assistant", content: "TOOL_IMAGE_PROJECTION_OK" }],
           steps: state.steps + 1,
         },
-        step: { kind: 'final-response-ready' },
+        step: { kind: "final-response-ready" },
         requestTrace: [{ round: 2 }],
       },
     };
@@ -938,7 +932,7 @@ export class ToolImageProjectionTransport implements LlmTransport<undefined, Scr
   }
 
   isContextOverflowError(error: string): boolean {
-    return error.includes('context');
+    return error.includes("context");
   }
 
   llmHistoryAsApiMessages(history: LlmMessage[]): JsonValue[] {
@@ -962,20 +956,20 @@ export class SubagentTransport implements LlmTransport<undefined, ScriptedState>
 
     if (this.rounds === 1) {
       return {
-        kind: 'success',
+        kind: "success",
         result: {
           state: {
             messages: [
               ...state.messages,
               {
-                role: 'assistant',
-                content: '准备委托子代理。',
+                role: "assistant",
+                content: "准备委托子代理。",
                 tool_calls: [
                   {
-                    id: 'call-subagent',
-                    type: 'function',
+                    id: "call-subagent",
+                    type: "function",
                     function: {
-                      name: 'subagent',
+                      name: "subagent",
                       arguments: '{"task":"输出：好的，我是 SubAgent，哈哈哈"}',
                     },
                   },
@@ -985,16 +979,16 @@ export class SubagentTransport implements LlmTransport<undefined, ScriptedState>
             steps: state.steps + 1,
           },
           step: {
-            kind: 'tool-calls',
+            kind: "tool-calls",
             calls: [
               {
-                id: 'call-subagent',
-                name: 'subagent',
+                id: "call-subagent",
+                name: "subagent",
                 argumentsJson: '{"task":"输出：好的，我是 SubAgent，哈哈哈"}',
               },
             ],
           },
-          requestTrace: [{ mode: 'subagent-parent-round-1' }],
+          requestTrace: [{ mode: "subagent-parent-round-1" }],
         },
       };
     }
@@ -1002,61 +996,64 @@ export class SubagentTransport implements LlmTransport<undefined, ScriptedState>
     if (this.rounds === 2) {
       const delegatedPromptPresent = state.messages.some(
         (message) =>
-          isJsonObject(message)
-          && message.role === 'user'
-          && typeof message.content === 'string'
-          && message.content.includes('You are already inside the delegated child session.'),
+          isJsonObject(message) &&
+          message.role === "user" &&
+          typeof message.content === "string" &&
+          message.content.includes("You are already inside the delegated child session."),
       );
       if (!delegatedPromptPresent) {
         return {
-          kind: 'failure',
-          error: 'subagent child round 未收到委托后的 user turn。',
-          requestTrace: [{ mode: 'subagent-child-round-missing-user-turn' }],
+          kind: "failure",
+          error: "subagent child round 未收到委托后的 user turn。",
+          requestTrace: [{ mode: "subagent-child-round-missing-user-turn" }],
         };
       }
 
       return {
-        kind: 'success',
+        kind: "success",
         result: {
           state: {
-            messages: [...state.messages, { role: 'assistant', content: '好的，我是 SubAgent，哈哈哈' }],
+            messages: [
+              ...state.messages,
+              { role: "assistant", content: "好的，我是 SubAgent，哈哈哈" },
+            ],
             steps: state.steps + 1,
           },
-          step: { kind: 'final-response-ready' },
-          requestTrace: [{ mode: 'subagent-child-round' }],
+          step: { kind: "final-response-ready" },
+          requestTrace: [{ mode: "subagent-child-round" }],
         },
       };
     }
 
     const toolResultMessage = state.messages.find(
       (message) =>
-        isJsonObject(message)
-        && message.role === 'tool'
-        && message.tool_call_id === 'call-subagent'
-        && typeof message.content === 'string',
+        isJsonObject(message) &&
+        message.role === "tool" &&
+        message.tool_call_id === "call-subagent" &&
+        typeof message.content === "string",
     );
     if (
-      !toolResultMessage
-      || !isJsonObject(toolResultMessage)
-      || typeof toolResultMessage.content !== 'string'
-      || !toolResultMessage.content.includes('好的，我是 SubAgent，哈哈哈')
+      !toolResultMessage ||
+      !isJsonObject(toolResultMessage) ||
+      typeof toolResultMessage.content !== "string" ||
+      !toolResultMessage.content.includes("好的，我是 SubAgent，哈哈哈")
     ) {
       return {
-        kind: 'failure',
-        error: 'subagent parent round 未收到子代理结果。',
-        requestTrace: [{ mode: 'subagent-parent-round-2-missing-tool-result' }],
+        kind: "failure",
+        error: "subagent parent round 未收到子代理结果。",
+        requestTrace: [{ mode: "subagent-parent-round-2-missing-tool-result" }],
       };
     }
 
     return {
-      kind: 'success',
+      kind: "success",
       result: {
         state: {
-          messages: [...state.messages, { role: 'assistant', content: 'SUBAGENT_OK' }],
+          messages: [...state.messages, { role: "assistant", content: "SUBAGENT_OK" }],
           steps: state.steps + 1,
         },
-        step: { kind: 'final-response-ready' },
-        requestTrace: [{ mode: 'subagent-parent-round-2' }],
+        step: { kind: "final-response-ready" },
+        requestTrace: [{ mode: "subagent-parent-round-2" }],
       },
     };
   }
@@ -1077,7 +1074,7 @@ export class SubagentTransport implements LlmTransport<undefined, ScriptedState>
   }
 
   isContextOverflowError(error: string): boolean {
-    return error.includes('context');
+    return error.includes("context");
   }
 
   llmHistoryAsApiMessages(history: LlmMessage[]): JsonValue[] {
@@ -1098,7 +1095,7 @@ export class StreamingFinalTransport implements LlmTransport<undefined, Scripted
     _state: ScriptedState,
     _tools: JsonValue,
   ): Promise<ToolAgentRoundCompletion<ScriptedState>> {
-    throw new Error('StreamingFinalTransport 应走 streaming 路径。');
+    throw new Error("StreamingFinalTransport 应走 streaming 路径。");
   }
 
   async startToolAgentRoundStreaming(
@@ -1108,22 +1105,22 @@ export class StreamingFinalTransport implements LlmTransport<undefined, Scripted
   ): Promise<StartedToolAgentRound<ScriptedState>> {
     return {
       eventStream: streamFromEvents([
-        { kind: 'thinking-chunk', text: 'thinking...' },
-        { kind: 'assistant-chunk', text: 'STREAM_' },
-        { kind: 'assistant-chunk', text: 'OK' },
-        { kind: 'done' },
+        { kind: "thinking-chunk", text: "thinking..." },
+        { kind: "assistant-chunk", text: "STREAM_" },
+        { kind: "assistant-chunk", text: "OK" },
+        { kind: "done" },
       ]),
       completion: (async () => {
         await flushMicrotasks();
         return {
-          kind: 'success',
+          kind: "success",
           result: {
             state: {
-              messages: [...state.messages, { role: 'assistant', content: 'STREAM_OK' }],
+              messages: [...state.messages, { role: "assistant", content: "STREAM_OK" }],
               steps: state.steps + 1,
             },
-            step: { kind: 'final-response-ready' },
-            requestTrace: [{ mode: 'streaming-final' }],
+            step: { kind: "final-response-ready" },
+            requestTrace: [{ mode: "streaming-final" }],
           },
         };
       })(),
@@ -1146,7 +1143,7 @@ export class StreamingFinalTransport implements LlmTransport<undefined, Scripted
   }
 
   isContextOverflowError(error: string): boolean {
-    return error.includes('context');
+    return error.includes("context");
   }
 
   llmHistoryAsApiMessages(history: LlmMessage[]): JsonValue[] {
@@ -1167,9 +1164,9 @@ export class WorkspaceContextTransport implements LlmTransport<undefined, Script
     const workspaceMessages = state.messages.flatMap((message) => {
       if (
         !isJsonObject(message) ||
-        message.role !== 'system' ||
-        typeof message.content !== 'string' ||
-        !message.content.startsWith('[WORKSPACE_FILE]')
+        message.role !== "system" ||
+        typeof message.content !== "string" ||
+        !message.content.startsWith("[WORKSPACE_FILE]")
       ) {
         return [];
       }
@@ -1178,32 +1175,30 @@ export class WorkspaceContextTransport implements LlmTransport<undefined, Script
     });
     const hasRuntimeContext = workspaceMessages.some(
       (content) =>
-        content.includes('path: src/runtime.ts') &&
-        content.includes('export const runtime = true;'),
+        content.includes("path: src/runtime.ts") &&
+        content.includes("export const runtime = true;"),
     );
     const hasReadmeContext = workspaceMessages.some(
-      (content) =>
-        content.includes('path: README.md') &&
-        content.includes('hello from readme'),
+      (content) => content.includes("path: README.md") && content.includes("hello from readme"),
     );
 
     if (!hasRuntimeContext || !hasReadmeContext) {
       return {
-        kind: 'failure',
-        error: 'workspace file context 未注入到 tool-agent state。',
+        kind: "failure",
+        error: "workspace file context 未注入到 tool-agent state。",
         requestTrace: [{ workspaceMessages }],
       };
     }
 
     return {
-      kind: 'success',
+      kind: "success",
       result: {
         state: {
-          messages: [...state.messages, { role: 'assistant', content: 'WORKSPACE_CONTEXT_OK' }],
+          messages: [...state.messages, { role: "assistant", content: "WORKSPACE_CONTEXT_OK" }],
           steps: state.steps + 1,
         },
-        step: { kind: 'final-response-ready' },
-        requestTrace: [{ mode: 'workspace-context' }],
+        step: { kind: "final-response-ready" },
+        requestTrace: [{ mode: "workspace-context" }],
       },
     };
   }
@@ -1224,7 +1219,7 @@ export class WorkspaceContextTransport implements LlmTransport<undefined, Script
   }
 
   isContextOverflowError(error: string): boolean {
-    return error.includes('context');
+    return error.includes("context");
   }
 
   llmHistoryAsApiMessages(history: LlmMessage[]): JsonValue[] {
@@ -1242,7 +1237,7 @@ export class StreamingTimeoutTransport implements LlmTransport<undefined, Script
     _state: ScriptedState,
     _tools: JsonValue,
   ): Promise<ToolAgentRoundCompletion<ScriptedState>> {
-    throw new Error('StreamingTimeoutTransport 应走 streaming 路径。');
+    throw new Error("StreamingTimeoutTransport 应走 streaming 路径。");
   }
 
   async startToolAgentRoundStreaming(
@@ -1251,18 +1246,16 @@ export class StreamingTimeoutTransport implements LlmTransport<undefined, Script
     _tools: JsonValue,
   ): Promise<StartedToolAgentRound<ScriptedState>> {
     return {
-      eventStream: streamFromEvents([
-        { kind: 'assistant-chunk', text: 'PARTIAL' },
-      ]),
+      eventStream: streamFromEvents([{ kind: "assistant-chunk", text: "PARTIAL" }]),
       completion: Promise.resolve({
-        kind: 'success',
+        kind: "success",
         result: {
           state: {
-            messages: [...state.messages, { role: 'assistant', content: 'PARTIAL' }],
+            messages: [...state.messages, { role: "assistant", content: "PARTIAL" }],
             steps: state.steps + 1,
           },
-          step: { kind: 'final-response-ready' },
-          requestTrace: [{ mode: 'stream-timeout' }],
+          step: { kind: "final-response-ready" },
+          requestTrace: [{ mode: "stream-timeout" }],
         },
       }),
     };
@@ -1284,7 +1277,7 @@ export class StreamingTimeoutTransport implements LlmTransport<undefined, Script
   }
 
   isContextOverflowError(error: string): boolean {
-    return error.includes('context');
+    return error.includes("context");
   }
 
   llmHistoryAsApiMessages(history: LlmMessage[]): JsonValue[] {
@@ -1302,7 +1295,7 @@ export class StreamingFailureTransport implements LlmTransport<undefined, Script
     _state: ScriptedState,
     _tools: JsonValue,
   ): Promise<ToolAgentRoundCompletion<ScriptedState>> {
-    throw new Error('StreamingFailureTransport 应走 streaming 路径。');
+    throw new Error("StreamingFailureTransport 应走 streaming 路径。");
   }
 
   async startToolAgentRoundStreaming(
@@ -1313,9 +1306,9 @@ export class StreamingFailureTransport implements LlmTransport<undefined, Script
     return {
       eventStream: streamFromEvents([]),
       completion: Promise.resolve({
-        kind: 'failure',
-        error: '400 invalid params, invalid chat setting (2013)',
-        requestTrace: [{ mode: 'streaming-failure' }],
+        kind: "failure",
+        error: "400 invalid params, invalid chat setting (2013)",
+        requestTrace: [{ mode: "streaming-failure" }],
       }),
     };
   }
@@ -1336,7 +1329,7 @@ export class StreamingFailureTransport implements LlmTransport<undefined, Script
   }
 
   isContextOverflowError(error: string): boolean {
-    return error.includes('context');
+    return error.includes("context");
   }
 
   llmHistoryAsApiMessages(history: LlmMessage[]): JsonValue[] {
@@ -1359,14 +1352,14 @@ export class StreamingToolRoundTransport implements LlmTransport<undefined, Scri
     _tools: JsonValue,
   ): Promise<ToolAgentRoundCompletion<ScriptedState>> {
     return {
-      kind: 'success',
+      kind: "success",
       result: {
         state: {
-          messages: [...state.messages, { role: 'assistant', content: 'TOOL_ROUND_DONE' }],
+          messages: [...state.messages, { role: "assistant", content: "TOOL_ROUND_DONE" }],
           steps: state.steps + 1,
         },
-        step: { kind: 'final-response-ready' },
-        requestTrace: [{ mode: 'stream-tool-round-sync-fallback' }],
+        step: { kind: "final-response-ready" },
+        requestTrace: [{ mode: "stream-tool-round-sync-fallback" }],
       },
     };
   }
@@ -1383,8 +1376,8 @@ export class StreamingToolRoundTransport implements LlmTransport<undefined, Scri
       }),
       cancel: () => {
         this.resolveCompletion?.({
-          kind: 'failure',
-          error: 'cancelled',
+          kind: "failure",
+          error: "cancelled",
           requestTrace: [],
         });
       },
@@ -1393,20 +1386,20 @@ export class StreamingToolRoundTransport implements LlmTransport<undefined, Scri
 
   finish(state: ScriptedState): void {
     this.resolveCompletion?.({
-      kind: 'success',
+      kind: "success",
       result: {
         state,
         step: {
-          kind: 'tool-calls',
+          kind: "tool-calls",
           calls: [
             {
-              id: 'call-stream-tool',
-              name: 'grep',
+              id: "call-stream-tool",
+              name: "grep",
               argumentsJson: '{"query":"later"}',
             },
           ],
         },
-        requestTrace: [{ mode: 'stream-tool-round' }],
+        requestTrace: [{ mode: "stream-tool-round" }],
       },
     });
   }
@@ -1427,7 +1420,7 @@ export class StreamingToolRoundTransport implements LlmTransport<undefined, Scri
   }
 
   isContextOverflowError(error: string): boolean {
-    return error.includes('context');
+    return error.includes("context");
   }
 
   llmHistoryAsApiMessages(history: LlmMessage[]): JsonValue[] {
@@ -1448,14 +1441,17 @@ export class StreamingBackgroundRoundTransport implements LlmTransport<undefined
     _tools: JsonValue,
   ): Promise<ToolAgentRoundCompletion<ScriptedState>> {
     return {
-      kind: 'success',
+      kind: "success",
       result: {
         state: {
-          messages: [...state.messages, { role: 'assistant', content: 'STREAM_BACKGROUND_SYNC_FALLBACK' }],
+          messages: [
+            ...state.messages,
+            { role: "assistant", content: "STREAM_BACKGROUND_SYNC_FALLBACK" },
+          ],
           steps: state.steps + 1,
         },
-        step: { kind: 'final-response-ready' },
-        requestTrace: [{ mode: 'streaming-background-sync-fallback' }],
+        step: { kind: "final-response-ready" },
+        requestTrace: [{ mode: "streaming-background-sync-fallback" }],
       },
     };
   }
@@ -1471,20 +1467,20 @@ export class StreamingBackgroundRoundTransport implements LlmTransport<undefined
       return {
         eventStream: streamFromEvents([]),
         completion: Promise.resolve({
-          kind: 'success',
+          kind: "success",
           result: {
             state: {
               messages: [
                 ...state.messages,
                 {
-                  role: 'assistant',
-                  content: '先触发后台搜索。',
+                  role: "assistant",
+                  content: "先触发后台搜索。",
                   tool_calls: [
                     {
-                      id: 'call-stream-background',
-                      type: 'function',
+                      id: "call-stream-background",
+                      type: "function",
                       function: {
-                        name: 'grep',
+                        name: "grep",
                         arguments: '{"query":"runtime parity"}',
                       },
                     },
@@ -1494,16 +1490,16 @@ export class StreamingBackgroundRoundTransport implements LlmTransport<undefined
               steps: state.steps + 1,
             },
             step: {
-              kind: 'tool-calls',
+              kind: "tool-calls",
               calls: [
                 {
-                  id: 'call-stream-background',
-                  name: 'grep',
+                  id: "call-stream-background",
+                  name: "grep",
                   argumentsJson: '{"query":"runtime parity"}',
                 },
               ],
             },
-            requestTrace: [{ mode: 'streaming-background-round-1' }],
+            requestTrace: [{ mode: "streaming-background-round-1" }],
           },
         }),
       };
@@ -1511,19 +1507,19 @@ export class StreamingBackgroundRoundTransport implements LlmTransport<undefined
 
     return {
       eventStream: streamFromEvents([
-        { kind: 'assistant-chunk', text: 'STREAM_BG_' },
-        { kind: 'assistant-chunk', text: 'OK' },
-        { kind: 'done' },
+        { kind: "assistant-chunk", text: "STREAM_BG_" },
+        { kind: "assistant-chunk", text: "OK" },
+        { kind: "done" },
       ]),
       completion: Promise.resolve({
-        kind: 'success',
+        kind: "success",
         result: {
           state: {
-            messages: [...state.messages, { role: 'assistant', content: 'STREAM_BG_OK' }],
+            messages: [...state.messages, { role: "assistant", content: "STREAM_BG_OK" }],
             steps: state.steps + 1,
           },
-          step: { kind: 'final-response-ready' },
-          requestTrace: [{ mode: 'streaming-background-round-2' }],
+          step: { kind: "final-response-ready" },
+          requestTrace: [{ mode: "streaming-background-round-2" }],
         },
       }),
     };
@@ -1545,7 +1541,7 @@ export class StreamingBackgroundRoundTransport implements LlmTransport<undefined
   }
 
   isContextOverflowError(error: string): boolean {
-    return error.includes('context overflow');
+    return error.includes("context overflow");
   }
 
   llmHistoryAsApiMessages(history: LlmMessage[]): JsonValue[] {
@@ -1565,25 +1561,22 @@ export class StreamingApprovalExecutor implements ToolExecutor<ScriptedToolReque
   }
 
   async parseCommand(_message: string): Promise<ScriptedToolRequest> {
-    throw new Error('StreamingApprovalExecutor.parseCommand 未实现。');
+    throw new Error("StreamingApprovalExecutor.parseCommand 未实现。");
   }
 
-  async requestFromFunctionCall(
-    name: string,
-    argumentsJson: string,
-  ): Promise<ScriptedToolRequest> {
+  async requestFromFunctionCall(name: string, argumentsJson: string): Promise<ScriptedToolRequest> {
     return { name, argumentsJson };
   }
 
   async authorize(request: ScriptedToolRequest): Promise<AuthorizationDecision> {
-    if (request.name === 'create_file') {
+    if (request.name === "create_file") {
       return {
-        kind: 'need-approval',
-        prompt: '写文件需要审批。',
+        kind: "need-approval",
+        prompt: "写文件需要审批。",
       };
     }
 
-    return { kind: 'allowed' };
+    return { kind: "allowed" };
   }
 
   async trust(_target: string): Promise<void> {}
@@ -1598,7 +1591,7 @@ export class StreamingApprovalExecutor implements ToolExecutor<ScriptedToolReque
   mcpStatusSnapshot() {
     return {
       revision: 0,
-      state: 'idle' as const,
+      state: "idle" as const,
       configuredServers: 0,
       loadedServers: 0,
       cachedTools: 0,
@@ -1606,7 +1599,7 @@ export class StreamingApprovalExecutor implements ToolExecutor<ScriptedToolReque
   }
 
   async addMcpServer(): Promise<string> {
-    throw new Error('StreamingApprovalExecutor.addMcpServer 未实现。');
+    throw new Error("StreamingApprovalExecutor.addMcpServer 未实现。");
   }
 
   async listMcpServers(): Promise<never[]> {
@@ -1614,7 +1607,7 @@ export class StreamingApprovalExecutor implements ToolExecutor<ScriptedToolReque
   }
 
   async inspectMcpServer(): Promise<never> {
-    throw new Error('StreamingApprovalExecutor.inspectMcpServer 未实现。');
+    throw new Error("StreamingApprovalExecutor.inspectMcpServer 未实现。");
   }
 
   async listMcpTools(): Promise<never[]> {
@@ -1626,7 +1619,7 @@ export class StreamingApprovalExecutor implements ToolExecutor<ScriptedToolReque
   }
 
   async readMcpResource(): Promise<JsonValue> {
-    throw new Error('StreamingApprovalExecutor.readMcpResource 未实现。');
+    throw new Error("StreamingApprovalExecutor.readMcpResource 未实现。");
   }
 
   async listCachedMcpPrompts(): Promise<never[]> {
@@ -1638,7 +1631,7 @@ export class StreamingApprovalExecutor implements ToolExecutor<ScriptedToolReque
   }
 
   async getMcpPrompt(): Promise<JsonValue> {
-    throw new Error('StreamingApprovalExecutor.getMcpPrompt 未实现。');
+    throw new Error("StreamingApprovalExecutor.getMcpPrompt 未实现。");
   }
 }
 
@@ -1651,14 +1644,17 @@ export class StreamingApprovalTransport implements LlmTransport<undefined, Scrip
     _tools: JsonValue,
   ): Promise<ToolAgentRoundCompletion<ScriptedState>> {
     return {
-      kind: 'success',
+      kind: "success",
       result: {
         state: {
-          messages: [...state.messages, { role: 'assistant', content: 'STREAM_APPROVAL_SYNC_FALLBACK' }],
+          messages: [
+            ...state.messages,
+            { role: "assistant", content: "STREAM_APPROVAL_SYNC_FALLBACK" },
+          ],
           steps: state.steps + 1,
         },
-        step: { kind: 'final-response-ready' },
-        requestTrace: [{ mode: 'streaming-approval-sync-fallback' }],
+        step: { kind: "final-response-ready" },
+        requestTrace: [{ mode: "streaming-approval-sync-fallback" }],
       },
     };
   }
@@ -1674,20 +1670,20 @@ export class StreamingApprovalTransport implements LlmTransport<undefined, Scrip
       return {
         eventStream: streamFromEvents([]),
         completion: Promise.resolve({
-          kind: 'success',
+          kind: "success",
           result: {
             state: {
               messages: [
                 ...state.messages,
                 {
-                  role: 'assistant',
-                  content: '先申请写文件权限。',
+                  role: "assistant",
+                  content: "先申请写文件权限。",
                   tool_calls: [
                     {
-                      id: 'call-stream-approval',
-                      type: 'function',
+                      id: "call-stream-approval",
+                      type: "function",
                       function: {
-                        name: 'create_file',
+                        name: "create_file",
                         arguments: '{"path":"demo.txt","content":"x"}',
                       },
                     },
@@ -1697,16 +1693,16 @@ export class StreamingApprovalTransport implements LlmTransport<undefined, Scrip
               steps: state.steps + 1,
             },
             step: {
-              kind: 'tool-calls',
+              kind: "tool-calls",
               calls: [
                 {
-                  id: 'call-stream-approval',
-                  name: 'create_file',
+                  id: "call-stream-approval",
+                  name: "create_file",
                   argumentsJson: '{"path":"demo.txt","content":"x"}',
                 },
               ],
             },
-            requestTrace: [{ mode: 'streaming-approval-round-1' }],
+            requestTrace: [{ mode: "streaming-approval-round-1" }],
           },
         }),
       };
@@ -1715,37 +1711,37 @@ export class StreamingApprovalTransport implements LlmTransport<undefined, Scrip
     const hasApprovedToolResult = state.messages.some(
       (message) =>
         isJsonObject(message) &&
-        message.role === 'tool' &&
-        typeof message.content === 'string' &&
-        message.content === 'approved output for create_file',
+        message.role === "tool" &&
+        typeof message.content === "string" &&
+        message.content === "approved output for create_file",
     );
 
     if (!hasApprovedToolResult) {
       return {
         eventStream: streamFromEvents([]),
         completion: Promise.resolve({
-          kind: 'failure',
-          error: 'streaming approval resume 未写回 tool result。',
-          requestTrace: [{ mode: 'streaming-approval-round-2-missing-tool-result' }],
+          kind: "failure",
+          error: "streaming approval resume 未写回 tool result。",
+          requestTrace: [{ mode: "streaming-approval-round-2-missing-tool-result" }],
         }),
       };
     }
 
     return {
       eventStream: streamFromEvents([
-        { kind: 'assistant-chunk', text: 'STREAM_APPROVAL_' },
-        { kind: 'assistant-chunk', text: 'OK' },
-        { kind: 'done' },
+        { kind: "assistant-chunk", text: "STREAM_APPROVAL_" },
+        { kind: "assistant-chunk", text: "OK" },
+        { kind: "done" },
       ]),
       completion: Promise.resolve({
-        kind: 'success',
+        kind: "success",
         result: {
           state: {
-            messages: [...state.messages, { role: 'assistant', content: 'STREAM_APPROVAL_OK' }],
+            messages: [...state.messages, { role: "assistant", content: "STREAM_APPROVAL_OK" }],
             steps: state.steps + 1,
           },
-          step: { kind: 'final-response-ready' },
-          requestTrace: [{ mode: 'streaming-approval-round-2' }],
+          step: { kind: "final-response-ready" },
+          requestTrace: [{ mode: "streaming-approval-round-2" }],
         },
       }),
     };
@@ -1767,7 +1763,7 @@ export class StreamingApprovalTransport implements LlmTransport<undefined, Scrip
   }
 
   isContextOverflowError(error: string): boolean {
-    return error.includes('context overflow');
+    return error.includes("context overflow");
   }
 
   llmHistoryAsApiMessages(history: LlmMessage[]): JsonValue[] {
@@ -1781,26 +1777,26 @@ export class StreamingApprovalTransport implements LlmTransport<undefined, Scrip
 
 export class StreamingApprovalImageExecutor extends StreamingApprovalExecutor {
   override async authorize(request: ScriptedToolRequest): Promise<AuthorizationDecision> {
-    if (request.name === 'read_file') {
+    if (request.name === "read_file") {
       return {
-        kind: 'need-approval',
-        prompt: '读取图片需要审批。',
+        kind: "need-approval",
+        prompt: "读取图片需要审批。",
       };
     }
 
-    return { kind: 'allowed' };
+    return { kind: "allowed" };
   }
 
   override async execute(request: ScriptedToolRequest): Promise<ToolExecutionOutput> {
     this.executedCalls += 1;
-    if (request.name !== 'read_file') {
+    if (request.name !== "read_file") {
       return createToolExecutionTextOutput(`approved output for ${request.name}`);
     }
 
-    const summaryText = '[read image]\npath: approved-image.png\n\n图像文件已作为图片输入返回。';
+    const summaryText = "[read image]\npath: approved-image.png\n\n图像文件已作为图片输入返回。";
     return {
       summaryText,
-      content: createLlmMessageContentFromTextAndImages(summaryText, ['approved-image.png']),
+      content: createLlmMessageContentFromTextAndImages(summaryText, ["approved-image.png"]),
     };
   }
 }
@@ -1814,14 +1810,17 @@ export class StreamingApprovalImageTransport implements LlmTransport<undefined, 
     _tools: JsonValue,
   ): Promise<ToolAgentRoundCompletion<ScriptedState>> {
     return {
-      kind: 'success',
+      kind: "success",
       result: {
         state: {
-          messages: [...state.messages, { role: 'assistant', content: 'STREAM_APPROVAL_IMAGE_SYNC_FALLBACK' }],
+          messages: [
+            ...state.messages,
+            { role: "assistant", content: "STREAM_APPROVAL_IMAGE_SYNC_FALLBACK" },
+          ],
           steps: state.steps + 1,
         },
-        step: { kind: 'final-response-ready' },
-        requestTrace: [{ mode: 'streaming-approval-image-sync-fallback' }],
+        step: { kind: "final-response-ready" },
+        requestTrace: [{ mode: "streaming-approval-image-sync-fallback" }],
       },
     };
   }
@@ -1837,20 +1836,20 @@ export class StreamingApprovalImageTransport implements LlmTransport<undefined, 
       return {
         eventStream: streamFromEvents([]),
         completion: Promise.resolve({
-          kind: 'success',
+          kind: "success",
           result: {
             state: {
               messages: [
                 ...state.messages,
                 {
-                  role: 'assistant',
-                  content: '先申请读取图片权限。',
+                  role: "assistant",
+                  content: "先申请读取图片权限。",
                   tool_calls: [
                     {
-                      id: 'call-stream-approval-image',
-                      type: 'function',
+                      id: "call-stream-approval-image",
+                      type: "function",
                       function: {
-                        name: 'read_file',
+                        name: "read_file",
                         arguments: '{"path":"approved-image.png"}',
                       },
                     },
@@ -1860,16 +1859,16 @@ export class StreamingApprovalImageTransport implements LlmTransport<undefined, 
               steps: state.steps + 1,
             },
             step: {
-              kind: 'tool-calls',
+              kind: "tool-calls",
               calls: [
                 {
-                  id: 'call-stream-approval-image',
-                  name: 'read_file',
+                  id: "call-stream-approval-image",
+                  name: "read_file",
                   argumentsJson: '{"path":"approved-image.png"}',
                 },
               ],
             },
-            requestTrace: [{ mode: 'streaming-approval-image-round-1' }],
+            requestTrace: [{ mode: "streaming-approval-image-round-1" }],
           },
         }),
       };
@@ -1878,18 +1877,18 @@ export class StreamingApprovalImageTransport implements LlmTransport<undefined, 
     const hasApprovedToolResult = state.messages.some(
       (message) =>
         isJsonObject(message) &&
-        message.role === 'tool' &&
-        typeof message.content === 'string' &&
-        message.content.includes('[read image]') &&
-        message.content.includes('approved-image.png'),
+        message.role === "tool" &&
+        typeof message.content === "string" &&
+        message.content.includes("[read image]") &&
+        message.content.includes("approved-image.png"),
     );
     if (!hasApprovedToolResult) {
       return {
         eventStream: streamFromEvents([]),
         completion: Promise.resolve({
-          kind: 'failure',
-          error: 'streaming approval image resume 未写回图片 tool result。',
-          requestTrace: [{ mode: 'streaming-approval-image-round-2-missing-tool-result' }],
+          kind: "failure",
+          error: "streaming approval image resume 未写回图片 tool result。",
+          requestTrace: [{ mode: "streaming-approval-image-round-2-missing-tool-result" }],
         }),
       };
     }
@@ -1897,38 +1896,41 @@ export class StreamingApprovalImageTransport implements LlmTransport<undefined, 
     const hasProjectedImageUserMessage = state.messages.some(
       (message) =>
         isJsonObject(message) &&
-        message.role === 'user' &&
-        typeof message.content === 'string' &&
-        message.content.includes('[read image]') &&
+        message.role === "user" &&
+        typeof message.content === "string" &&
+        message.content.includes("[read image]") &&
         Array.isArray(message.image_paths) &&
-        message.image_paths.includes('approved-image.png'),
+        message.image_paths.includes("approved-image.png"),
     );
     if (!hasProjectedImageUserMessage) {
       return {
         eventStream: streamFromEvents([]),
         completion: Promise.resolve({
-          kind: 'failure',
-          error: 'streaming approval image resume 未把图片工具输出投影到下一拍 user 消息。',
-          requestTrace: [{ mode: 'streaming-approval-image-round-2-missing-projection' }],
+          kind: "failure",
+          error: "streaming approval image resume 未把图片工具输出投影到下一拍 user 消息。",
+          requestTrace: [{ mode: "streaming-approval-image-round-2-missing-projection" }],
         }),
       };
     }
 
     return {
       eventStream: streamFromEvents([
-        { kind: 'assistant-chunk', text: 'STREAM_APPROVAL_IMAGE_' },
-        { kind: 'assistant-chunk', text: 'OK' },
-        { kind: 'done' },
+        { kind: "assistant-chunk", text: "STREAM_APPROVAL_IMAGE_" },
+        { kind: "assistant-chunk", text: "OK" },
+        { kind: "done" },
       ]),
       completion: Promise.resolve({
-        kind: 'success',
+        kind: "success",
         result: {
           state: {
-            messages: [...state.messages, { role: 'assistant', content: 'STREAM_APPROVAL_IMAGE_OK' }],
+            messages: [
+              ...state.messages,
+              { role: "assistant", content: "STREAM_APPROVAL_IMAGE_OK" },
+            ],
             steps: state.steps + 1,
           },
-          step: { kind: 'final-response-ready' },
-          requestTrace: [{ mode: 'streaming-approval-image-round-2' }],
+          step: { kind: "final-response-ready" },
+          requestTrace: [{ mode: "streaming-approval-image-round-2" }],
         },
       }),
     };
@@ -1950,7 +1952,7 @@ export class StreamingApprovalImageTransport implements LlmTransport<undefined, 
   }
 
   isContextOverflowError(error: string): boolean {
-    return error.includes('context overflow');
+    return error.includes("context overflow");
   }
 
   llmHistoryAsApiMessages(history: LlmMessage[]): JsonValue[] {
@@ -1962,7 +1964,6 @@ export class StreamingApprovalImageTransport implements LlmTransport<undefined, 
   }
 }
 
-
 export class StreamingApprovalGuidanceTransport implements LlmTransport<undefined, ScriptedState> {
   rounds = 0;
 
@@ -1972,14 +1973,17 @@ export class StreamingApprovalGuidanceTransport implements LlmTransport<undefine
     _tools: JsonValue,
   ): Promise<ToolAgentRoundCompletion<ScriptedState>> {
     return {
-      kind: 'success',
+      kind: "success",
       result: {
         state: {
-          messages: [...state.messages, { role: 'assistant', content: 'STREAM_GUIDANCE_SYNC_FALLBACK' }],
+          messages: [
+            ...state.messages,
+            { role: "assistant", content: "STREAM_GUIDANCE_SYNC_FALLBACK" },
+          ],
           steps: state.steps + 1,
         },
-        step: { kind: 'final-response-ready' },
-        requestTrace: [{ mode: 'streaming-guidance-sync-fallback' }],
+        step: { kind: "final-response-ready" },
+        requestTrace: [{ mode: "streaming-guidance-sync-fallback" }],
       },
     };
   }
@@ -1995,28 +1999,28 @@ export class StreamingApprovalGuidanceTransport implements LlmTransport<undefine
       return {
         eventStream: streamFromEvents([]),
         completion: Promise.resolve({
-          kind: 'success',
+          kind: "success",
           result: {
             state: {
               messages: [
                 ...state.messages,
                 {
-                  role: 'assistant',
-                  content: '先申请写文件权限。',
+                  role: "assistant",
+                  content: "先申请写文件权限。",
                   tool_calls: [
                     {
-                      id: 'call-stream-guidance-write',
-                      type: 'function',
+                      id: "call-stream-guidance-write",
+                      type: "function",
                       function: {
-                        name: 'create_file',
+                        name: "create_file",
                         arguments: '{"path":"demo.txt","content":"x"}',
                       },
                     },
                     {
-                      id: 'call-stream-guidance-search',
-                      type: 'function',
+                      id: "call-stream-guidance-search",
+                      type: "function",
                       function: {
-                        name: 'grep',
+                        name: "grep",
                         arguments: '{"query":"should-not-run"}',
                       },
                     },
@@ -2026,21 +2030,21 @@ export class StreamingApprovalGuidanceTransport implements LlmTransport<undefine
               steps: state.steps + 1,
             },
             step: {
-              kind: 'tool-calls',
+              kind: "tool-calls",
               calls: [
                 {
-                  id: 'call-stream-guidance-write',
-                  name: 'create_file',
+                  id: "call-stream-guidance-write",
+                  name: "create_file",
                   argumentsJson: '{"path":"demo.txt","content":"x"}',
                 },
                 {
-                  id: 'call-stream-guidance-search',
-                  name: 'grep',
+                  id: "call-stream-guidance-search",
+                  name: "grep",
                   argumentsJson: '{"query":"should-not-run"}',
                 },
               ],
             },
-            requestTrace: [{ mode: 'streaming-guidance-round-1' }],
+            requestTrace: [{ mode: "streaming-guidance-round-1" }],
           },
         }),
       };
@@ -2049,53 +2053,53 @@ export class StreamingApprovalGuidanceTransport implements LlmTransport<undefine
     const hasGuidance = state.messages.some(
       (message) =>
         isJsonObject(message) &&
-        message.role === 'user' &&
-        typeof message.content === 'string' &&
-        message.content.includes('不要写文件，直接总结'),
+        message.role === "user" &&
+        typeof message.content === "string" &&
+        message.content.includes("不要写文件，直接总结"),
     );
     const hasDeniedToolResult = state.messages.some(
       (message) =>
         isJsonObject(message) &&
-        message.role === 'tool' &&
-        message.tool_call_id === 'call-stream-guidance-write' &&
-        typeof message.content === 'string' &&
-        message.content.includes('rejected by user guidance'),
+        message.role === "tool" &&
+        message.tool_call_id === "call-stream-guidance-write" &&
+        typeof message.content === "string" &&
+        message.content.includes("rejected by user guidance"),
     );
     const hasQueuedToolResult = state.messages.some(
       (message) =>
         isJsonObject(message) &&
-        message.role === 'tool' &&
-        message.tool_call_id === 'call-stream-guidance-search' &&
-        typeof message.content === 'string' &&
-        message.content === 'approved output for grep',
+        message.role === "tool" &&
+        message.tool_call_id === "call-stream-guidance-search" &&
+        typeof message.content === "string" &&
+        message.content === "approved output for grep",
     );
 
     if (!hasGuidance || !hasDeniedToolResult || !hasQueuedToolResult) {
       return {
         eventStream: streamFromEvents([]),
         completion: Promise.resolve({
-          kind: 'failure',
-          error: 'streaming guidance resume 未正确继续后续排队工具。',
-          requestTrace: [{ mode: 'streaming-guidance-round-2-missing-tool-results' }],
+          kind: "failure",
+          error: "streaming guidance resume 未正确继续后续排队工具。",
+          requestTrace: [{ mode: "streaming-guidance-round-2-missing-tool-results" }],
         }),
       };
     }
 
     return {
       eventStream: streamFromEvents([
-        { kind: 'assistant-chunk', text: 'STREAM_GUIDANCE_' },
-        { kind: 'assistant-chunk', text: 'OK' },
-        { kind: 'done' },
+        { kind: "assistant-chunk", text: "STREAM_GUIDANCE_" },
+        { kind: "assistant-chunk", text: "OK" },
+        { kind: "done" },
       ]),
       completion: Promise.resolve({
-        kind: 'success',
+        kind: "success",
         result: {
           state: {
-            messages: [...state.messages, { role: 'assistant', content: 'STREAM_GUIDANCE_OK' }],
+            messages: [...state.messages, { role: "assistant", content: "STREAM_GUIDANCE_OK" }],
             steps: state.steps + 1,
           },
-          step: { kind: 'final-response-ready' },
-          requestTrace: [{ mode: 'streaming-guidance-round-2' }],
+          step: { kind: "final-response-ready" },
+          requestTrace: [{ mode: "streaming-guidance-round-2" }],
         },
       }),
       cancel: () => {},
@@ -2118,7 +2122,7 @@ export class StreamingApprovalGuidanceTransport implements LlmTransport<undefine
   }
 
   isContextOverflowError(error: string): boolean {
-    return error.includes('context overflow');
+    return error.includes("context overflow");
   }
 
   llmHistoryAsApiMessages(history: LlmMessage[]): JsonValue[] {
@@ -2140,14 +2144,17 @@ export class StreamingCompactionTransport implements LlmTransport<undefined, Scr
     _tools: JsonValue,
   ): Promise<ToolAgentRoundCompletion<ScriptedState>> {
     return {
-      kind: 'success',
+      kind: "success",
       result: {
         state: {
-          messages: [...state.messages, { role: 'assistant', content: 'STREAM_COMPACT_SYNC_FALLBACK' }],
+          messages: [
+            ...state.messages,
+            { role: "assistant", content: "STREAM_COMPACT_SYNC_FALLBACK" },
+          ],
           steps: state.steps + 1,
         },
-        step: { kind: 'final-response-ready' },
-        requestTrace: [{ mode: 'streaming-compact-sync-fallback' }],
+        step: { kind: "final-response-ready" },
+        requestTrace: [{ mode: "streaming-compact-sync-fallback" }],
       },
     };
   }
@@ -2162,32 +2169,32 @@ export class StreamingCompactionTransport implements LlmTransport<undefined, Scr
     if (this.rounds === 1) {
       return {
         eventStream: streamFromEvents([
-          { kind: 'assistant-chunk', text: 'PARTIAL_BEFORE_COMPACT' },
-          { kind: 'error', error: 'context overflow: streaming too large' },
+          { kind: "assistant-chunk", text: "PARTIAL_BEFORE_COMPACT" },
+          { kind: "error", error: "context overflow: streaming too large" },
         ]),
         completion: Promise.resolve({
-          kind: 'failure',
-          error: 'context overflow: streaming too large',
-          requestTrace: [{ mode: 'streaming-compact-round-1' }],
+          kind: "failure",
+          error: "context overflow: streaming too large",
+          requestTrace: [{ mode: "streaming-compact-round-1" }],
         }),
       };
     }
 
     return {
       eventStream: streamFromEvents([
-        { kind: 'assistant-chunk', text: 'STREAM_COMPACT_' },
-        { kind: 'assistant-chunk', text: 'OK' },
-        { kind: 'done' },
+        { kind: "assistant-chunk", text: "STREAM_COMPACT_" },
+        { kind: "assistant-chunk", text: "OK" },
+        { kind: "done" },
       ]),
       completion: Promise.resolve({
-        kind: 'success',
+        kind: "success",
         result: {
           state: {
-            messages: [...state.messages, { role: 'assistant', content: 'STREAM_COMPACT_OK' }],
+            messages: [...state.messages, { role: "assistant", content: "STREAM_COMPACT_OK" }],
             steps: state.steps + 1,
           },
-          step: { kind: 'final-response-ready' },
-          requestTrace: [{ mode: 'streaming-compact-round-2' }],
+          step: { kind: "final-response-ready" },
+          requestTrace: [{ mode: "streaming-compact-round-2" }],
         },
       }),
     };
@@ -2201,12 +2208,12 @@ export class StreamingCompactionTransport implements LlmTransport<undefined, Scr
 
     return new Promise((resolve) => {
       this.resolveCompaction = () => {
-        const lastUser = [...history].reverse().find((message) => message.role === 'user');
+        const lastUser = [...history].reverse().find((message) => message.role === "user");
         history.splice(
           0,
           history.length,
           {
-            role: 'system',
+            role: "system",
             content: createLlmMessageContentFromText(MOCK_COMPACT_SUMMARY_BLOCK),
           },
           ...(lastUser ? [lastUser] : []),
@@ -2230,7 +2237,7 @@ export class StreamingCompactionTransport implements LlmTransport<undefined, Scr
   }
 
   isContextOverflowError(error: string): boolean {
-    return error.includes('context overflow');
+    return error.includes("context overflow");
   }
 
   llmHistoryAsApiMessages(history: LlmMessage[]): JsonValue[] {
@@ -2248,37 +2255,34 @@ export class HostExecutor implements ToolExecutor<ScriptedToolRequest> {
   }
 
   async parseCommand(message: string): Promise<ScriptedToolRequest> {
-    if (message.includes('delete')) {
-      return { name: 'delete_file', argumentsJson: '{"path":"demo.txt"}' };
+    if (message.includes("delete")) {
+      return { name: "delete_file", argumentsJson: '{"path":"demo.txt"}' };
     }
 
-    if (message.includes('search')) {
-      return { name: 'grep', argumentsJson: '{"query":"runtime parity"}' };
+    if (message.includes("search")) {
+      return { name: "grep", argumentsJson: '{"query":"runtime parity"}' };
     }
 
-    if (message.includes('read')) {
-      return { name: 'read_file', argumentsJson: '{"path":"demo.txt"}' };
+    if (message.includes("read")) {
+      return { name: "read_file", argumentsJson: '{"path":"demo.txt"}' };
     }
 
-    throw new Error('unknown manual tool command');
+    throw new Error("unknown manual tool command");
   }
 
-  async requestFromFunctionCall(
-    name: string,
-    argumentsJson: string,
-  ): Promise<ScriptedToolRequest> {
+  async requestFromFunctionCall(name: string, argumentsJson: string): Promise<ScriptedToolRequest> {
     return { name, argumentsJson };
   }
 
   async authorize(request: ScriptedToolRequest): Promise<AuthorizationDecision> {
-    if (request.name === 'delete_file') {
+    if (request.name === "delete_file") {
       return {
-        kind: 'need-approval',
-        prompt: '删除文件需要审批。',
+        kind: "need-approval",
+        prompt: "删除文件需要审批。",
       };
     }
 
-    return { kind: 'allowed' };
+    return { kind: "allowed" };
   }
 
   async trust(_target: string): Promise<void> {}
@@ -2288,12 +2292,12 @@ export class HostExecutor implements ToolExecutor<ScriptedToolRequest> {
   }
 
   shouldExecuteInBackground(request: ScriptedToolRequest): boolean {
-    return request.name === 'grep';
+    return request.name === "grep";
   }
 
   backgroundStatusText(request: ScriptedToolRequest): string | undefined {
-    if (request.name === 'grep') {
-      return '搜索中: runtime parity';
+    if (request.name === "grep") {
+      return "搜索中: runtime parity";
     }
 
     return undefined;
@@ -2304,7 +2308,7 @@ export class HostExecutor implements ToolExecutor<ScriptedToolRequest> {
   mcpStatusSnapshot() {
     return {
       revision: 0,
-      state: 'idle' as const,
+      state: "idle" as const,
       configuredServers: 0,
       loadedServers: 0,
       cachedTools: 0,
@@ -2320,7 +2324,7 @@ export class HostExecutor implements ToolExecutor<ScriptedToolRequest> {
   }
 
   async inspectMcpServer(): Promise<never> {
-    throw new Error('HostExecutor.inspectMcpServer 未实现。');
+    throw new Error("HostExecutor.inspectMcpServer 未实现。");
   }
 
   async listMcpTools(): Promise<never[]> {
@@ -2336,8 +2340,8 @@ export class HostExecutor implements ToolExecutor<ScriptedToolRequest> {
       contents: [
         {
           uri,
-          mimeType: 'text/plain',
-          text: 'resource body',
+          mimeType: "text/plain",
+          text: "resource body",
         },
       ],
     };
@@ -2355,14 +2359,14 @@ export class HostExecutor implements ToolExecutor<ScriptedToolRequest> {
     return {
       messages: [
         {
-          role: 'system',
+          role: "system",
           content: `prompt-system:${prompt}`,
         },
         {
-          role: 'user',
+          role: "user",
           content: {
-            type: 'text',
-            text: 'prompt-user-message',
+            type: "text",
+            text: "prompt-user-message",
           },
         },
       ],
@@ -2372,14 +2376,14 @@ export class HostExecutor implements ToolExecutor<ScriptedToolRequest> {
 
 export class ToolImageProjectionExecutor extends HostExecutor {
   override async execute(request: ScriptedToolRequest): Promise<ToolExecutionOutput> {
-    if (request.name !== 'read_file') {
+    if (request.name !== "read_file") {
       return super.execute(request);
     }
 
-    const summaryText = '[read image]\npath: tool-image.png\n\n图像文件已作为图片输入返回。';
+    const summaryText = "[read image]\npath: tool-image.png\n\n图像文件已作为图片输入返回。";
     return {
       summaryText,
-      content: createLlmMessageContentFromTextAndImages(summaryText, ['tool-image.png']),
+      content: createLlmMessageContentFromTextAndImages(summaryText, ["tool-image.png"]),
     };
   }
 }
@@ -2388,9 +2392,9 @@ export class SubagentExecutor extends HostExecutor {
   executedSubagentCalls = 0;
 
   override async execute(request: ScriptedToolRequest): Promise<ToolExecutionOutput> {
-    if (request.name === 'subagent') {
+    if (request.name === "subagent") {
       this.executedSubagentCalls += 1;
-      throw new Error('subagent 不应落到宿主 execute');
+      throw new Error("subagent 不应落到宿主 execute");
     }
 
     return super.execute(request);
@@ -2401,7 +2405,7 @@ export class PollingManualBackgroundExecutor extends HostExecutor {
   private readonly deferred = createDeferred<ToolExecutionOutput>();
 
   async execute(request: ScriptedToolRequest): Promise<ToolExecutionOutput> {
-    if (request.name === 'grep') {
+    if (request.name === "grep") {
       return this.deferred.promise;
     }
 
@@ -2413,19 +2417,17 @@ export class PollingManualBackgroundExecutor extends HostExecutor {
   }
 }
 
-
-
 export function createScriptedState(history: LlmMessage[], userInput: string): ScriptedState {
   const messages: JsonValue[] = [
-    { role: 'system', content: 'scripted-runtime' },
+    { role: "system", content: "scripted-runtime" },
     ...history.map((message) => ({
       role: message.role,
       content: llmMessageTextContent(message.content),
       ...(message.toolCallId !== undefined ? { tool_call_id: message.toolCallId } : {}),
-      ...((message.role === 'user' && llmMessageHasImages(message.content))
+      ...(message.role === "user" && llmMessageHasImages(message.content)
         ? {
             image_paths: message.content
-              .filter((part): part is { type: 'image'; path: string } => part.type === 'image')
+              .filter((part): part is { type: "image"; path: string } => part.type === "image")
               .map((part) => part.path),
           }
         : {}),
@@ -2433,8 +2435,8 @@ export function createScriptedState(history: LlmMessage[], userInput: string): S
   ];
 
   const last = messages.at(-1);
-  if (!isJsonObject(last) || last.role !== 'user') {
-    messages.push({ role: 'user', content: userInput });
+  if (!isJsonObject(last) || last.role !== "user") {
+    messages.push({ role: "user", content: userInput });
   }
 
   return { messages, steps: 0 };
@@ -2446,29 +2448,32 @@ export function appendScriptedToolResult(
   content: string,
 ): ScriptedState {
   return {
-    messages: [...state.messages, { role: 'tool', tool_call_id: toolCallId, content }],
+    messages: [...state.messages, { role: "tool", tool_call_id: toolCallId, content }],
     steps: state.steps,
   };
 }
 
 export function appendScriptedUserMessage(state: ScriptedState, content: string): ScriptedState {
   return {
-    messages: [...state.messages, { role: 'user', content }],
+    messages: [...state.messages, { role: "user", content }],
     steps: state.steps,
   };
 }
 
-export function appendScriptedUserLlmMessage(state: ScriptedState, message: LlmMessage): ScriptedState {
+export function appendScriptedUserLlmMessage(
+  state: ScriptedState,
+  message: LlmMessage,
+): ScriptedState {
   return {
     messages: [
       ...state.messages,
       {
-        role: 'user',
+        role: "user",
         content: llmMessageTextContent(message.content),
         ...(llmMessageHasImages(message.content)
           ? {
               image_paths: message.content
-                .filter((part): part is { type: 'image'; path: string } => part.type === 'image')
+                .filter((part): part is { type: "image"; path: string } => part.type === "image")
                 .map((part) => part.path),
             }
           : {}),
@@ -2481,7 +2486,11 @@ export function appendScriptedUserLlmMessage(state: ScriptedState, message: LlmM
 export function extractScriptedAssistantText(state: ScriptedState): string | undefined {
   for (let index = state.messages.length - 1; index >= 0; index -= 1) {
     const message = state.messages[index];
-    if (isJsonObject(message) && message.role === 'assistant' && typeof message.content === 'string') {
+    if (
+      isJsonObject(message) &&
+      message.role === "assistant" &&
+      typeof message.content === "string"
+    ) {
       return message.content;
     }
   }
@@ -2489,16 +2498,17 @@ export function extractScriptedAssistantText(state: ScriptedState): string | und
   return undefined;
 }
 
-export function truncateScriptedStateForContextRetry(
-  state: ScriptedState,
-): { state: ScriptedState; changed: boolean } {
+export function truncateScriptedStateForContextRetry(state: ScriptedState): {
+  state: ScriptedState;
+  changed: boolean;
+} {
   let changed = false;
   const messages = state.messages.map((message) => {
-    if (!isJsonObject(message) || typeof message.content !== 'string') {
+    if (!isJsonObject(message) || typeof message.content !== "string") {
       return cloneJsonValue(message);
     }
 
-    if (message.role !== 'tool' || message.content.length <= 80) {
+    if (message.role !== "tool" || message.content.length <= 80) {
       return { ...message };
     }
 
@@ -2518,13 +2528,14 @@ export function truncateScriptedStateForContextRetry(
   };
 }
 
-export function truncateScriptedHistoryForCompaction(
-  history: LlmMessage[],
-): { history: LlmMessage[]; changed: boolean } {
+export function truncateScriptedHistoryForCompaction(history: LlmMessage[]): {
+  history: LlmMessage[];
+  changed: boolean;
+} {
   let changed = false;
   const nextHistory = history.map((message) => {
     const text = llmMessageTextContent(message.content);
-    if (message.role !== 'tool') {
+    if (message.role !== "tool") {
       return {
         role: message.role,
         content: cloneLlmMessageContent(message.content),
@@ -2595,11 +2606,13 @@ export function rebuildScriptedStateAfterCompaction(
     const message = retryState.messages[index];
     if (
       isJsonObject(message) &&
-      message.role === 'user' &&
-      typeof message.content === 'string' &&
+      message.role === "user" &&
+      typeof message.content === "string" &&
       userMessageContentMatchesInput(message.content, userInput)
     ) {
-      rebuilt.messages.push(...retryState.messages.slice(index + 1).map((item) => cloneJsonValue(item)));
+      rebuilt.messages.push(
+        ...retryState.messages.slice(index + 1).map((item) => cloneJsonValue(item)),
+      );
       return rebuilt;
     }
   }
@@ -2611,7 +2624,7 @@ export function rebuildScriptedStateAfterCompaction(
 }
 
 export function isJsonObject(value: JsonValue | undefined): value is Record<string, JsonValue> {
-  return typeof value === 'object' && value !== null && !Array.isArray(value);
+  return typeof value === "object" && value !== null && !Array.isArray(value);
 }
 
 export function cloneJsonValue(value: JsonValue): JsonValue {
@@ -2660,8 +2673,6 @@ export function createDeferred<T>(): {
   };
 }
 
-
-
 export {
   mkdir,
   mkdtemp,
@@ -2680,12 +2691,6 @@ export {
   llmMessageImagePaths,
   llmMessageTextContent,
 };
-export type {
-  JsonValue,
-  LlmMessage,
-  LlmStreamEvent,
-  RuntimeEvent,
-  RuntimeTurnResult,
-};
+export type { JsonValue, LlmMessage, LlmStreamEvent, RuntimeEvent, RuntimeTurnResult };
 
 export type RuntimeParityCaseResult = Record<string, unknown>;

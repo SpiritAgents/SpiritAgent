@@ -1,15 +1,15 @@
-import assert from 'node:assert/strict';
-import test from 'node:test';
+import assert from "node:assert/strict";
+import test from "node:test";
 
 import {
   buildDeletePreviewText,
   codeCompletionOperationToDeleteDiffPreviewAtCursor,
   extractTextInRange,
   isCursorInDeleteRange,
-} from './delete-diff-preview.js';
-import type { CodeCompletionOperation } from './types.js';
+} from "./delete-diff-preview.js";
+import type { CodeCompletionOperation } from "./types.js";
 
-test('isCursorInDeleteRange accepts cursor inside multi-line span', () => {
+test("isCursorInDeleteRange accepts cursor inside multi-line span", () => {
   const op = {
     startLine: 2,
     startColumn: 3,
@@ -25,46 +25,46 @@ test('isCursorInDeleteRange accepts cursor inside multi-line span', () => {
   assert.equal(isCursorInDeleteRange(op, 4, 6), false);
 });
 
-test('extractTextInRange reads span text for delete', () => {
-  const documentText = '## 最-后';
+test("extractTextInRange reads span text for delete", () => {
+  const documentText = "## 最-后";
   const operation: CodeCompletionOperation = {
-    kind: 'delete',
+    kind: "delete",
     startLine: 1,
     startColumn: 5,
     endLine: 1,
     endColumn: 6,
   };
-  assert.equal(extractTextInRange(documentText, operation), '-');
+  assert.equal(extractTextInRange(documentText, operation), "-");
 });
 
-test('buildDeletePreviewText maps single-line hyphen removal', () => {
-  const documentText = '## 最-后';
+test("buildDeletePreviewText maps single-line hyphen removal", () => {
+  const documentText = "## 最-后";
   const operation: CodeCompletionOperation = {
-    kind: 'delete',
+    kind: "delete",
     startLine: 1,
     startColumn: 5,
     endLine: 1,
     endColumn: 6,
   };
-  assert.equal(buildDeletePreviewText(documentText, operation), '## 最后');
+  assert.equal(buildDeletePreviewText(documentText, operation), "## 最后");
 });
 
-test('buildDeletePreviewText maps cross-line delete', () => {
-  const documentText = 'foo\nbar\nbaz';
+test("buildDeletePreviewText maps cross-line delete", () => {
+  const documentText = "foo\nbar\nbaz";
   const operation: CodeCompletionOperation = {
-    kind: 'delete',
+    kind: "delete",
     startLine: 1,
     startColumn: 1,
     endLine: 2,
     endColumn: 4,
   };
-  assert.equal(buildDeletePreviewText(documentText, operation), '\nbaz');
+  assert.equal(buildDeletePreviewText(documentText, operation), "\nbaz");
 });
 
-test('codeCompletionOperationToDeleteDiffPreviewAtCursor rejects cursor outside span', () => {
-  const documentText = '## 最-后';
+test("codeCompletionOperationToDeleteDiffPreviewAtCursor rejects cursor outside span", () => {
+  const documentText = "## 最-后";
   const operation: CodeCompletionOperation = {
-    kind: 'delete',
+    kind: "delete",
     startLine: 1,
     startColumn: 5,
     endLine: 1,
@@ -80,10 +80,10 @@ test('codeCompletionOperationToDeleteDiffPreviewAtCursor rejects cursor outside 
   );
 });
 
-test('codeCompletionOperationToDeleteDiffPreviewAtCursor returns spec at cursor', () => {
-  const documentText = '## 最-后';
+test("codeCompletionOperationToDeleteDiffPreviewAtCursor returns spec at cursor", () => {
+  const documentText = "## 最-后";
   const operation: CodeCompletionOperation = {
-    kind: 'delete',
+    kind: "delete",
     startLine: 1,
     startColumn: 5,
     endLine: 1,
@@ -99,16 +99,16 @@ test('codeCompletionOperationToDeleteDiffPreviewAtCursor returns spec at cursor'
     startColumn: 5,
     endLineNumber: 1,
     endColumn: 6,
-    deletedText: '-',
-    previewText: '## 最后',
+    deletedText: "-",
+    previewText: "## 最后",
     anchorLineNumber: 1,
   });
 });
 
-test('codeCompletionOperationToDeleteDiffPreviewAtCursor allows empty previewText', () => {
-  const documentText = 'only';
+test("codeCompletionOperationToDeleteDiffPreviewAtCursor allows empty previewText", () => {
+  const documentText = "only";
   const operation: CodeCompletionOperation = {
-    kind: 'delete',
+    kind: "delete",
     startLine: 1,
     startColumn: 1,
     endLine: 1,
@@ -120,6 +120,6 @@ test('codeCompletionOperationToDeleteDiffPreviewAtCursor allows empty previewTex
     cursorColumn: 3,
   });
   assert.ok(spec);
-  assert.equal(spec?.previewText, '');
-  assert.equal(spec?.deletedText, 'only');
+  assert.equal(spec?.previewText, "");
+  assert.equal(spec?.deletedText, "only");
 });

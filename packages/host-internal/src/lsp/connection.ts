@@ -1,27 +1,24 @@
-import { spawn, type SpawnOptions } from 'node:child_process';
-import path from 'node:path';
-import { pathToFileURL } from 'node:url';
+import { spawn, type SpawnOptions } from "node:child_process";
+import path from "node:path";
+import { pathToFileURL } from "node:url";
 
-import type { LspDiagnostic } from '@spiritagent/agent-core';
+import type { LspDiagnostic } from "@spiritagent/agent-core";
 
-import { isWindowsPlatform } from './windows-path.js';
-import { normalizeLspFileUri } from './paths.js';
+import { isWindowsPlatform } from "./windows-path.js";
+import { normalizeLspFileUri } from "./paths.js";
 import {
   createMessageConnection,
   StreamMessageReader,
   StreamMessageWriter,
   type MessageConnection,
-} from 'vscode-jsonrpc/node.js';
-import type { InitializeParams, InitializeResult } from 'vscode-languageserver-protocol';
+} from "vscode-jsonrpc/node.js";
+import type { InitializeParams, InitializeResult } from "vscode-languageserver-protocol";
 
 /** Windows 上 .cmd/.bat 须 shell:true，否则 spawn 会同步抛出 EINVAL。 */
-export function buildLanguageServerSpawnOptions(
-  command: string,
-  cwd: string,
-): SpawnOptions {
+export function buildLanguageServerSpawnOptions(command: string, cwd: string): SpawnOptions {
   const options: SpawnOptions = {
     cwd,
-    stdio: ['pipe', 'pipe', 'pipe'],
+    stdio: ["pipe", "pipe", "pipe"],
     windowsHide: true,
   };
   if (isWindowsPlatform() && /\.(?:cmd|bat)$/i.test(command)) {
@@ -32,8 +29,8 @@ export function buildLanguageServerSpawnOptions(
 
 function waitForChildSpawn(child: ReturnType<typeof spawn>): Promise<void> {
   return new Promise((resolve, reject) => {
-    child.once('error', reject);
-    child.once('spawn', () => resolve());
+    child.once("error", reject);
+    child.once("spawn", () => resolve());
   });
 }
 
@@ -71,8 +68,8 @@ export class LspConnection {
 
     if (connection) {
       try {
-        await connection.sendRequest('shutdown');
-        connection.sendNotification('exit');
+        await connection.sendRequest("shutdown");
+        connection.sendNotification("exit");
       } catch {
         // best effort
       }
@@ -89,7 +86,7 @@ export class LspConnection {
     const child = spawn(options.command, options.args, spawnOptions);
     this.processStore = child;
 
-    child.stderr?.on('data', (chunk) => {
+    child.stderr?.on("data", (chunk) => {
       const text = String(chunk).trim();
       if (text.length > 0) {
         console.error(`[lsp] ${text}`);
@@ -99,7 +96,7 @@ export class LspConnection {
     await waitForChildSpawn(child);
 
     if (!child.stdout || !child.stdin) {
-      throw new Error('Language server child process is missing stdio pipes');
+      throw new Error("Language server child process is missing stdio pipes");
     }
     const connection = createMessageConnection(
       new StreamMessageReader(child.stdout),
@@ -107,11 +104,11 @@ export class LspConnection {
     );
     this.connectionStore = connection;
 
-    connection.onNotification('textDocument/publishDiagnostics', (params) => {
-      if (!params || typeof params !== 'object') {
+    connection.onNotification("textDocument/publishDiagnostics", (params) => {
+      if (!params || typeof params !== "object") {
         return;
       }
-      const uri = normalizeLspFileUri(typeof params.uri === 'string' ? params.uri : '');
+      const uri = normalizeLspFileUri(typeof params.uri === "string" ? params.uri : "");
       const diagnostics = Array.isArray(params.diagnostics) ? params.diagnostics : [];
       options.onDiagnostics(uri, diagnostics as LspDiagnostic[]);
     });
@@ -147,10 +144,10 @@ export class LspConnection {
       ],
     };
 
-    const result = await connection.sendRequest<InitializeResult>('initialize', initializeParams);
+    const result = await connection.sendRequest<InitializeResult>("initialize", initializeParams);
     if (!result) {
-      throw new Error('Language server initialize returned empty result');
+      throw new Error("Language server initialize returned empty result");
     }
-    connection.sendNotification('initialized');
+    connection.sendNotification("initialized");
   }
 }

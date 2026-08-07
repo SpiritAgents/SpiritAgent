@@ -2,5 +2,5 @@
 
 /** Trim and remove trailing slashes from API root (e.g. `https://host/v1`). */
 export function normalizeOpenAiApiBase(baseUrl: string): string {
-  return baseUrl.trim().replace(/\/+$/, '');
+  return baseUrl.trim().replace(/\/+$/, "");
 }

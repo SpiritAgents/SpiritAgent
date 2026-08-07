@@ -1,10 +1,7 @@
-import { isToolOutputArchivePath } from '@spiritagent/host-internal/tool-output-archive-path';
+import { isToolOutputArchivePath } from "@spiritagent/host-internal/tool-output-archive-path";
 
 export { isToolOutputArchivePath };
 
-export function toolOutputArchiveHeadlineDetail(
-  toolOutputLabel: string,
-  lineRange = '',
-): string {
+export function toolOutputArchiveHeadlineDetail(toolOutputLabel: string, lineRange = ""): string {
   return `${toolOutputLabel}${lineRange}`.trim();
 }

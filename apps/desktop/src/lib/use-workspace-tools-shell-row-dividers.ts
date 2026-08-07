@@ -145,5 +145,14 @@ export function useWorkspaceToolsShellRowDividers(
       clipHost!.remove();
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps -- caller controls invalidation via deps
-  }, [dividerAnchorEdge, dividerAnchorRef, dividerClassName, enabled, layoutWatchRef, listRef, trailingDivider, ...deps]);
+  }, [
+    dividerAnchorEdge,
+    dividerAnchorRef,
+    dividerClassName,
+    enabled,
+    layoutWatchRef,
+    listRef,
+    trailingDivider,
+    ...deps,
+  ]);
 }

@@ -2,7 +2,11 @@ import { useEffect, useState } from "react";
 
 import { computeDurationMs } from "@/lib/format-ci-duration";
 
-export function useElapsedDuration(startedAt: string, active: boolean, completedAt?: string): number {
+export function useElapsedDuration(
+  startedAt: string,
+  active: boolean,
+  completedAt?: string,
+): number {
   const [elapsedMs, setElapsedMs] = useState(() => computeDurationMs(startedAt, completedAt));
 
   useEffect(() => {

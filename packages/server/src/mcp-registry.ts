@@ -1,6 +1,6 @@
-import path from 'node:path';
+import path from "node:path";
 
-import { McpService } from '@spiritagent/agent-core';
+import { McpService } from "@spiritagent/agent-core";
 
 /**
  * Per-workspace shared McpService cache (same pattern as Desktop's

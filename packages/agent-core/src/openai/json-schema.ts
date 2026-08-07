@@ -1,11 +1,7 @@
-import type { JsonObject, JsonValue } from '../ports.js';
-import {
-  buildToolAgentSystemMessage,
-  cloneJsonValue,
-  isJsonObject,
-} from '../tool-agent.js';
+import type { JsonObject, JsonValue } from "../ports.js";
+import { buildToolAgentSystemMessage, cloneJsonValue, isJsonObject } from "../tool-agent.js";
 
-import type { OpenAiTransportConfig } from './openai-compat.js';
+import type { OpenAiTransportConfig } from "./openai-compat.js";
 
 export interface OpenAiJsonSchemaCompletionRequest {
   userPrompt: string;
@@ -29,9 +25,9 @@ export interface OpenAiJsonSchemaTransport {
 }
 
 export type StructuredOutputResponseFormat =
-  | { type: 'json_object' }
+  | { type: "json_object" }
   | {
-      type: 'json_schema';
+      type: "json_schema";
       json_schema: {
         name: string;
         strict: true;
@@ -40,23 +36,25 @@ export type StructuredOutputResponseFormat =
     };
 
 export function buildJsonSchemaCompletionMessages(
-  config: Pick<OpenAiTransportConfig, 'model' | 'llmVendor'>,
+  config: Pick<OpenAiTransportConfig, "model" | "llmVendor">,
   request: OpenAiJsonSchemaCompletionRequest,
 ): JsonValue[] {
   const structuredOutputSystemSection = buildStructuredOutputSystemSection(config, request);
   const sections = [...(request.systemSections ?? []), structuredOutputSystemSection]
-    .filter((section): section is string => typeof section === 'string' && section.trim().length > 0)
+    .filter(
+      (section): section is string => typeof section === "string" && section.trim().length > 0,
+    )
     .map((section) => section.trim());
   return [
     {
-      role: 'system',
+      role: "system",
       content:
         request.includeToolAgentHostPrompt === false
-          ? sections.join('\n\n')
+          ? sections.join("\n\n")
           : buildToolAgentSystemMessage(config.model, ...sections),
     },
     {
-      role: 'user',
+      role: "user",
       content: request.userPrompt,
     },
   ];
@@ -65,15 +63,17 @@ export function buildJsonSchemaCompletionMessages(
 export function extractJsonSchemaCompletionContent(response: {
   choices?: Array<{ message?: { content?: string | null } }>;
 }): string {
-  const content = response.choices?.at(0)?.message?.content?.trim() ?? '';
+  const content = response.choices?.at(0)?.message?.content?.trim() ?? "";
   if (!content) {
-    throw new Error('结构化输出返回为空。');
+    throw new Error("结构化输出返回为空。");
   }
 
   return content;
 }
 
-export function parseJsonSchemaCompletionOutput<T extends JsonValue = JsonValue>(content: string): T {
+export function parseJsonSchemaCompletionOutput<T extends JsonValue = JsonValue>(
+  content: string,
+): T {
   const candidates = collectJsonParseCandidates(content);
   for (const candidate of candidates) {
     try {
@@ -83,7 +83,7 @@ export function parseJsonSchemaCompletionOutput<T extends JsonValue = JsonValue>
     }
   }
 
-  throw new Error('结构化输出不是合法 JSON。');
+  throw new Error("结构化输出不是合法 JSON。");
 }
 
 export function stringifyJsonSchemaCompletionOutput(output: JsonValue): string {
@@ -91,15 +91,15 @@ export function stringifyJsonSchemaCompletionOutput(output: JsonValue): string {
 }
 
 export function buildStructuredOutputResponseFormat(
-  config: Pick<OpenAiTransportConfig, 'llmVendor'>,
+  config: Pick<OpenAiTransportConfig, "llmVendor">,
   request: OpenAiJsonSchemaCompletionRequest,
 ): StructuredOutputResponseFormat {
-  if (config.llmVendor === 'deepseek') {
-    return { type: 'json_object' };
+  if (config.llmVendor === "deepseek") {
+    return { type: "json_object" };
   }
 
   return {
-    type: 'json_schema',
+    type: "json_schema",
     json_schema: {
       name: request.schemaName,
       strict: true,
@@ -109,24 +109,22 @@ export function buildStructuredOutputResponseFormat(
 }
 
 export function buildStructuredOutputSystemSection(
-  config: Pick<OpenAiTransportConfig, 'llmVendor'>,
+  config: Pick<OpenAiTransportConfig, "llmVendor">,
   request: OpenAiJsonSchemaCompletionRequest,
 ): string | undefined {
-  if (config.llmVendor !== 'deepseek') {
+  if (config.llmVendor !== "deepseek") {
     return undefined;
   }
 
   const example = buildJsonSchemaExample(request.schema);
   return [
-    'Return only raw json that matches the requested schema.',
-    'Do not add Markdown code fences, explanations, or any extra text.',
+    "Return only raw json that matches the requested schema.",
+    "Do not add Markdown code fences, explanations, or any extra text.",
     `Schema name: ${request.schemaName}`,
-    '[JSON_SCHEMA]',
+    "[JSON_SCHEMA]",
     JSON.stringify(request.schema),
-    ...(example === undefined
-      ? []
-      : ['[JSON_EXAMPLE]', JSON.stringify(example, null, 2)]),
-  ].join('\n');
+    ...(example === undefined ? [] : ["[JSON_EXAMPLE]", JSON.stringify(example, null, 2)]),
+  ].join("\n");
 }
 
 function collectJsonParseCandidates(content: string): string[] {
@@ -147,14 +145,14 @@ function collectJsonParseCandidates(content: string): string[] {
   const fenceMatch = trimmed.match(/^```(?:json)?\s*([\s\S]*?)\s*```$/i);
   push(fenceMatch?.[1]);
 
-  const firstObjectStart = trimmed.indexOf('{');
-  const lastObjectEnd = trimmed.lastIndexOf('}');
+  const firstObjectStart = trimmed.indexOf("{");
+  const lastObjectEnd = trimmed.lastIndexOf("}");
   if (firstObjectStart >= 0 && lastObjectEnd > firstObjectStart) {
     push(trimmed.slice(firstObjectStart, lastObjectEnd + 1));
   }
 
-  const firstArrayStart = trimmed.indexOf('[');
-  const lastArrayEnd = trimmed.lastIndexOf(']');
+  const firstArrayStart = trimmed.indexOf("[");
+  const lastArrayEnd = trimmed.lastIndexOf("]");
   if (firstArrayStart >= 0 && lastArrayEnd > firstArrayStart) {
     push(trimmed.slice(firstArrayStart, lastArrayEnd + 1));
   }
@@ -171,7 +169,7 @@ function buildJsonSchemaExample(schema: JsonValue | undefined): JsonValue | unde
     return cloneJsonValue(schema.enum[0] as JsonValue);
   }
 
-  if (schema.type === 'object' && isJsonObject(schema.properties)) {
+  if (schema.type === "object" && isJsonObject(schema.properties)) {
     const example: JsonObject = {};
     for (const [key, value] of Object.entries(schema.properties)) {
       example[key] = buildJsonSchemaExample(value as JsonValue) ?? null;
@@ -179,17 +177,17 @@ function buildJsonSchemaExample(schema: JsonValue | undefined): JsonValue | unde
     return example;
   }
 
-  if (schema.type === 'array') {
+  if (schema.type === "array") {
     return [];
   }
 
   switch (schema.type) {
-    case 'string':
-      return '';
-    case 'integer':
-    case 'number':
+    case "string":
+      return "";
+    case "integer":
+    case "number":
       return 0;
-    case 'boolean':
+    case "boolean":
       return false;
     default:
       return undefined;

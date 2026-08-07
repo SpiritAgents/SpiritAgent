@@ -1,10 +1,8 @@
-import { applyCodeCompletionOperations, extractCodeCompletionSpan } from './apply.js';
-import { isCursorInOperationRange } from './to-monaco.js';
-import type { CodeCompletionOperation, InlineDeleteDiffPreviewSpec } from './types.js';
+import { applyCodeCompletionOperations, extractCodeCompletionSpan } from "./apply.js";
+import { isCursorInOperationRange } from "./to-monaco.js";
+import type { CodeCompletionOperation, InlineDeleteDiffPreviewSpec } from "./types.js";
 
-export type {
-  InlineDeleteDiffPreviewSpec,
-} from './types.js';
+export type { InlineDeleteDiffPreviewSpec } from "./types.js";
 
 export type DeleteDiffPreviewMapContext = {
   documentText: string;
@@ -14,16 +12,12 @@ export type DeleteDiffPreviewMapContext = {
 
 /** Cursor inside operation span (single- or multi-line). */
 export function isCursorInDeleteRange(
-  operation: Pick<CodeCompletionOperation, 'startLine' | 'startColumn' | 'endLine' | 'endColumn'>,
+  operation: Pick<CodeCompletionOperation, "startLine" | "startColumn" | "endLine" | "endColumn">,
   cursorLine: number,
   cursorColumn: number,
 ): boolean {
   if (operation.startLine === operation.endLine) {
-    return isCursorInOperationRange(
-      operation as CodeCompletionOperation,
-      cursorLine,
-      cursorColumn,
-    );
+    return isCursorInOperationRange(operation as CodeCompletionOperation, cursorLine, cursorColumn);
   }
   if (cursorLine < operation.startLine || cursorLine > operation.endLine) {
     return false;
@@ -49,20 +43,20 @@ export function buildDeletePreviewText(
   operation: CodeCompletionOperation,
 ): string {
   const nextText = applyCodeCompletionOperations(documentText, [operation]);
-  const lines = nextText.split('\n');
+  const lines = nextText.split("\n");
   const startIndex = Math.max(0, operation.startLine - 1);
   const endIndex = Math.min(lines.length - 1, operation.endLine - 1);
   if (startIndex > endIndex || endIndex < 0) {
-    return '';
+    return "";
   }
-  return lines.slice(startIndex, endIndex + 1).join('\n');
+  return lines.slice(startIndex, endIndex + 1).join("\n");
 }
 
 export function codeCompletionOperationToDeleteDiffPreviewAtCursor(
   operation: CodeCompletionOperation,
   ctx: DeleteDiffPreviewMapContext,
 ): InlineDeleteDiffPreviewSpec | undefined {
-  if (operation.kind !== 'delete') {
+  if (operation.kind !== "delete") {
     return undefined;
   }
 

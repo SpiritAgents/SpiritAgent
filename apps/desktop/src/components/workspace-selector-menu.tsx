@@ -2,9 +2,7 @@ import { useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { ChevronDown, FolderPlus, MessageSquareText } from "lucide-react";
 
-import {
-  DropdownMenuItem,
-} from "@/components/ui/dropdown-menu";
+import { DropdownMenuItem } from "@/components/ui/dropdown-menu";
 import {
   FilteredOverlayMenu,
   FilteredOverlayMenuTrigger,
@@ -24,10 +22,7 @@ import {
   instantHoverMotionClass,
 } from "@/lib/desktop-chrome";
 import { useTruncatedElement } from "@/hooks/use-truncated-element";
-import {
-  resolveWorkspaceSelectorLabel,
-  sameWorkspacePath,
-} from "@/lib/workspace-display-label";
+import { resolveWorkspaceSelectorLabel, sameWorkspacePath } from "@/lib/workspace-display-label";
 import type { DesktopSnapshot } from "@/types";
 import { DESKTOP_MENU_TRIGGER_TEXT_CLASS } from "@/lib/desktop-typography";
 import { cn } from "@/lib/utils";
@@ -59,8 +54,12 @@ function WorkspaceSelectorMenuItem({
   selected: boolean;
   onSelect(): void;
 }) {
-  const { ref: labelRef, isTruncated: isLabelTruncated } = useTruncatedElement<HTMLDivElement>(workspace.label);
-  const { ref: pathRef, isTruncated: isPathTruncated } = useTruncatedElement<HTMLDivElement>(workspace.path);
+  const { ref: labelRef, isTruncated: isLabelTruncated } = useTruncatedElement<HTMLDivElement>(
+    workspace.label,
+  );
+  const { ref: pathRef, isTruncated: isPathTruncated } = useTruncatedElement<HTMLDivElement>(
+    workspace.path,
+  );
   const tooltipItem: WorkspaceListTooltipItem | null =
     isLabelTruncated || isPathTruncated
       ? {
@@ -74,8 +73,12 @@ function WorkspaceSelectorMenuItem({
     <TooltipItem item={tooltipItem}>
       <DropdownMenuItem
         onSelect={onSelect}
-        className={cn("items-start",
-                    DESKTOP_MENU_TRIGGER_TEXT_CLASS, DESKTOP_OVERLAY_LIST_ITEM, selected && "bg-accent/40")}
+        className={cn(
+          "items-start",
+          DESKTOP_MENU_TRIGGER_TEXT_CLASS,
+          DESKTOP_OVERLAY_LIST_ITEM,
+          selected && "bg-accent/40",
+        )}
       >
         <div className="min-w-0 flex-1">
           <div ref={labelRef} className={cn(DESKTOP_OVERLAY_LIST_ITEM_PRIMARY, "truncate")}>
@@ -110,18 +113,15 @@ export function WorkspaceSelectorMenu({
     if (!query) {
       return availableWorkspaces;
     }
-    return availableWorkspaces.filter((workspace) =>
-      workspace.label.toLowerCase().includes(query) || workspace.path.toLowerCase().includes(query),
+    return availableWorkspaces.filter(
+      (workspace) =>
+        workspace.label.toLowerCase().includes(query) ||
+        workspace.path.toLowerCase().includes(query),
     );
   }, [availableWorkspaces, workspaceFilter]);
   const currentWorkspaceLabel = useMemo(
     () =>
-      resolveWorkspaceSelectorLabel(
-        currentWorkspaceRoot,
-        workspaceBinding,
-        availableWorkspaces,
-        t,
-      ),
+      resolveWorkspaceSelectorLabel(currentWorkspaceRoot, workspaceBinding, availableWorkspaces, t),
     [availableWorkspaces, currentWorkspaceRoot, t, workspaceBinding],
   );
   const suppressTooltip = menuOpen || disabled === true;
@@ -179,7 +179,10 @@ export function WorkspaceSelectorMenu({
         onAddWorkspace || onSelectNoWorkspace ? (
           <>
             {onAddWorkspace ? (
-              <DropdownMenuItem onSelect={onAddWorkspace} className={cn("gap-1.5", DESKTOP_OVERLAY_LIST_ACTION_ITEM)}>
+              <DropdownMenuItem
+                onSelect={onAddWorkspace}
+                className={cn("gap-1.5", DESKTOP_OVERLAY_LIST_ACTION_ITEM)}
+              >
                 <FolderPlus className="size-3 shrink-0 text-muted-foreground" aria-hidden />
                 <span>{t("app.addWorkspace")}</span>
               </DropdownMenuItem>
@@ -212,8 +215,8 @@ export function WorkspaceSelectorMenu({
           <Tooltip.Zone>
             {filteredWorkspaces.map((workspace) => {
               const selected =
-                workspaceBinding === "project"
-                && sameWorkspacePath(workspace.path, currentWorkspaceRoot);
+                workspaceBinding === "project" &&
+                sameWorkspacePath(workspace.path, currentWorkspaceRoot);
               return (
                 <WorkspaceSelectorMenuItem
                   key={workspace.path}

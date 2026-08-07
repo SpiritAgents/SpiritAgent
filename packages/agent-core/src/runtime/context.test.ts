@@ -1,9 +1,9 @@
-import assert from 'node:assert/strict';
-import test from 'node:test';
+import assert from "node:assert/strict";
+import test from "node:test";
 
-import { SubmitPromptHookDeniedError } from '../hooks/errors.js';
-import type { HookRunner, HookRunResult } from '../hooks/types.js';
-import { prepareSubmittedUserTurn } from './context.js';
+import { SubmitPromptHookDeniedError } from "../hooks/errors.js";
+import type { HookRunner, HookRunResult } from "../hooks/types.js";
+import { prepareSubmittedUserTurn } from "./context.js";
 
 function mockResult(overrides: Partial<HookRunResult> = {}): HookRunResult {
   return {
@@ -19,15 +19,16 @@ function mockResult(overrides: Partial<HookRunResult> = {}): HookRunResult {
   };
 }
 
-test('prepareSubmittedUserTurn throws SubmitPromptHookDeniedError when hook denies', async () => {
+test("prepareSubmittedUserTurn throws SubmitPromptHookDeniedError when hook denies", async () => {
   const hookRunner: HookRunner = {
     runSessionStart: async () => mockResult(),
     runSessionEnd: async () => mockResult(),
-    runSubmitPrompt: async () => mockResult({
-      denied: true,
-      userMessage: 'blocked prompt',
-      followupMessage: 'try later',
-    }),
+    runSubmitPrompt: async () =>
+      mockResult({
+        denied: true,
+        userMessage: "blocked prompt",
+        followupMessage: "try later",
+      }),
     runPreToolUse: async () => mockResult(),
     runPostToolUse: async () => mockResult(),
     runSubagentStart: async () => mockResult(),
@@ -38,10 +39,10 @@ test('prepareSubmittedUserTurn throws SubmitPromptHookDeniedError when hook deni
     options: {
       hookRunner,
       hookSessionContext: {
-        sessionId: 's1',
+        sessionId: "s1",
         conversationPath: null,
-        workspaceRoot: '/w',
-        model: 'm',
+        workspaceRoot: "/w",
+        model: "m",
       },
       createToolAgentState: (messages: unknown[], userInput: string) => ({ messages, userInput }),
     },
@@ -53,11 +54,11 @@ test('prepareSubmittedUserTurn throws SubmitPromptHookDeniedError when hook deni
   };
 
   await assert.rejects(
-    () => prepareSubmittedUserTurn(runtime as never, 'hello', []),
+    () => prepareSubmittedUserTurn(runtime as never, "hello", []),
     (error: unknown) => {
       assert.ok(error instanceof SubmitPromptHookDeniedError);
-      assert.equal(error.denialMessage, 'blocked prompt');
-      assert.equal(error.followupMessage, 'try later');
+      assert.equal(error.denialMessage, "blocked prompt");
+      assert.equal(error.followupMessage, "try later");
       return true;
     },
   );

@@ -1,13 +1,8 @@
-import { commitSubject } from './commit-subject.js';
-import { resolveGitCommitAuthorIdentity } from './git-author-github.js';
-import { getPullRequestCommits } from './pull-request-commits.js';
-import { GITHUB_API_BASE_URL } from './oauth-config.js';
-import {
-  githubApiHeaders,
-  githubFetch,
-  githubHasNextPage,
-  readGitHubJson,
-} from './github-api.js';
+import { commitSubject } from "./commit-subject.js";
+import { resolveGitCommitAuthorIdentity } from "./git-author-github.js";
+import { getPullRequestCommits } from "./pull-request-commits.js";
+import { GITHUB_API_BASE_URL } from "./oauth-config.js";
+import { githubApiHeaders, githubFetch, githubHasNextPage, readGitHubJson } from "./github-api.js";
 import type {
   GitHubPullRequestConversationCommit,
   GitHubPullRequestConversationMerged,
@@ -20,7 +15,7 @@ import type {
   GitHubPullRequestReviewComment,
   GitHubPullRequestReviewState,
   GitHubRepositoryRef,
-} from './types.js';
+} from "./types.js";
 
 const TIMELINE_PAGE_SIZE = 100;
 const REVIEW_COMMENTS_PAGE_SIZE = 100;
@@ -71,7 +66,7 @@ function resolveActor(event: GitHubTimelineEvent): GitHubUserRef | null {
 }
 
 function resolveLogin(user: GitHubUserRef | null | undefined): string {
-  return user?.login?.trim() || 'unknown';
+  return user?.login?.trim() || "unknown";
 }
 
 function resolveAvatarUrl(user: GitHubUserRef | null | undefined): string {
@@ -85,20 +80,18 @@ function resolveAvatarUrl(user: GitHubUserRef | null | undefined): string {
 
 function normalizeReviewState(state: string | null | undefined): GitHubPullRequestReviewState {
   switch (state?.trim().toUpperCase()) {
-    case 'APPROVED':
-      return 'APPROVED';
-    case 'CHANGES_REQUESTED':
-      return 'CHANGES_REQUESTED';
-    case 'DISMISSED':
-      return 'DISMISSED';
+    case "APPROVED":
+      return "APPROVED";
+    case "CHANGES_REQUESTED":
+      return "CHANGES_REQUESTED";
+    case "DISMISSED":
+      return "DISMISSED";
     default:
-      return 'COMMENTED';
+      return "COMMENTED";
   }
 }
 
-function resolveCommittedTimelineFields(
-  event: GitHubTimelineEvent,
-): {
+function resolveCommittedTimelineFields(event: GitHubTimelineEvent): {
   sha: string;
   message: string;
   url: string;
@@ -107,7 +100,7 @@ function resolveCommittedTimelineFields(
   authorDate: string | null;
 } | null {
   const nested = event.commit;
-  const sha = nested?.sha?.trim() || event.sha?.trim() || event.commit_id?.trim() || '';
+  const sha = nested?.sha?.trim() || event.sha?.trim() || event.commit_id?.trim() || "";
   if (!sha) {
     return null;
   }
@@ -115,9 +108,9 @@ function resolveCommittedTimelineFields(
   const author = nested?.author ?? event.author;
   return {
     sha,
-    message: nested?.message ?? event.message ?? '',
-    url: nested?.html_url?.trim() || event.html_url?.trim() || '',
-    authorName: author?.name?.trim() || '',
+    message: nested?.message ?? event.message ?? "",
+    url: nested?.html_url?.trim() || event.html_url?.trim() || "",
+    authorName: author?.name?.trim() || "",
     authorEmail: author?.email?.trim() || null,
     authorDate: author?.date?.trim() || null,
   };
@@ -129,7 +122,7 @@ function resolveTimelineEventCreatedAt(event: GitHubTimelineEvent): string | nul
     return direct;
   }
 
-  if (event.event?.trim() === 'committed') {
+  if (event.event?.trim() === "committed") {
     const committed = resolveCommittedTimelineFields(event);
     if (committed?.authorDate) {
       return committed.authorDate;
@@ -144,9 +137,9 @@ function mapReviewComment(item: GitHubReviewCommentApiItem): GitHubPullRequestRe
     id: item.id,
     authorLogin: resolveLogin(item.user),
     avatarUrl: resolveAvatarUrl(item.user),
-    body: item.body?.trim() || '',
+    body: item.body?.trim() || "",
     createdAt: item.created_at?.trim() || new Date(0).toISOString(),
-    url: item.html_url?.trim() || '',
+    url: item.html_url?.trim() || "",
   };
 }
 
@@ -193,13 +186,13 @@ export function groupReviewCommentsIntoThreads(
     const mappedRoot = threadComments[0]!;
 
     return {
-      kind: 'reviewThread',
+      kind: "reviewThread",
       id: `review-thread-${root.id}`,
       createdAt: mappedRoot.createdAt,
       authorLogin: mappedRoot.authorLogin,
       avatarUrl: mappedRoot.avatarUrl,
-      path: root.path?.trim() || '',
-      diffHunk: root.diff_hunk?.trim() || '',
+      path: root.path?.trim() || "",
+      diffHunk: root.diff_hunk?.trim() || "",
       line: root.line ?? null,
       url: mappedRoot.url,
       comments: threadComments,
@@ -218,7 +211,7 @@ export function mapTimelineEventToConversationItem(
     return null;
   }
 
-  if (eventType === 'pull_request_review_comment') {
+  if (eventType === "pull_request_review_comment") {
     return null;
   }
 
@@ -232,7 +225,7 @@ export function mapTimelineEventToConversationItem(
   const avatarUrl = resolveAvatarUrl(actor);
   const eventId = String(event.id ?? `${eventType}-${createdAt}`);
 
-  if (eventType === 'committed') {
+  if (eventType === "committed") {
     const committed = resolveCommittedTimelineFields(event);
     if (!committed) {
       return null;
@@ -243,7 +236,7 @@ export function mapTimelineEventToConversationItem(
       authorEmail: committed.authorEmail,
     });
     const item: GitHubPullRequestConversationCommit = {
-      kind: 'commit',
+      kind: "commit",
       id: `commit-${committed.sha}`,
       createdAt,
       authorLogin: identity.login,
@@ -255,44 +248,44 @@ export function mapTimelineEventToConversationItem(
     return item;
   }
 
-  if (eventType === 'commented') {
-    const body = event.body?.trim() || '';
+  if (eventType === "commented") {
+    const body = event.body?.trim() || "";
     const item: GitHubPullRequestConversationIssueComment = {
-      kind: 'issueComment',
+      kind: "issueComment",
       id: `issue-comment-${eventId}`,
       createdAt,
       authorLogin,
       avatarUrl,
       body,
-      url: event.html_url?.trim() || '',
+      url: event.html_url?.trim() || "",
     };
     return item;
   }
 
-  if (eventType === 'reviewed') {
+  if (eventType === "reviewed") {
     const body = event.body?.trim();
     const item: GitHubPullRequestConversationReview = {
-      kind: 'review',
+      kind: "review",
       id: `review-${eventId}`,
       createdAt,
       authorLogin,
       avatarUrl,
       state: normalizeReviewState(event.state),
-      url: event.html_url?.trim() || '',
+      url: event.html_url?.trim() || "",
       threads: [],
       ...(body ? { body } : {}),
     };
     return item;
   }
 
-  if (eventType === 'merged') {
+  if (eventType === "merged") {
     const item: GitHubPullRequestConversationMerged = {
-      kind: 'merged',
+      kind: "merged",
       id: `merged-${eventId}`,
       createdAt,
       authorLogin,
       avatarUrl,
-      url: event.html_url?.trim() || '',
+      url: event.html_url?.trim() || "",
     };
     return item;
   }
@@ -305,13 +298,13 @@ export function nestReviewThreadsUnderReviews(
 ): GitHubPullRequestConversationItem[] {
   const reviewIds = new Set(
     items
-      .filter((item): item is GitHubPullRequestConversationReview => item.kind === 'review')
+      .filter((item): item is GitHubPullRequestConversationReview => item.kind === "review")
       .map((item) => item.id),
   );
   const threadsByReviewId = new Map<string, GitHubPullRequestConversationReviewThread[]>();
 
   for (const item of items) {
-    if (item.kind !== 'reviewThread' || !item.reviewId || !reviewIds.has(item.reviewId)) {
+    if (item.kind !== "reviewThread" || !item.reviewId || !reviewIds.has(item.reviewId)) {
       continue;
     }
     const bucket = threadsByReviewId.get(item.reviewId) ?? [];
@@ -322,7 +315,7 @@ export function nestReviewThreadsUnderReviews(
   const output: GitHubPullRequestConversationItem[] = [];
 
   for (const item of items) {
-    if (item.kind === 'reviewThread') {
+    if (item.kind === "reviewThread") {
       if (item.reviewId && reviewIds.has(item.reviewId)) {
         continue;
       }
@@ -330,7 +323,7 @@ export function nestReviewThreadsUnderReviews(
       continue;
     }
 
-    if (item.kind === 'review') {
+    if (item.kind === "review") {
       const threads = [...(threadsByReviewId.get(item.id) ?? [])].sort(
         (left, right) => new Date(left.createdAt).getTime() - new Date(right.createdAt).getTime(),
       );
@@ -354,10 +347,10 @@ export function mergePullRequestConversationItems(
     .map(mapTimelineEventToConversationItem)
     .filter((item): item is GitHubPullRequestConversationItem => item != null)
     .filter((item) => {
-      if (item.kind !== 'issueComment') {
+      if (item.kind !== "issueComment") {
         return true;
       }
-      return !reviewThreadIds.has(Number(item.id.replace(/^issue-comment-/, '')));
+      return !reviewThreadIds.has(Number(item.id.replace(/^issue-comment-/, "")));
     });
 
   const threads = groupReviewCommentsIntoThreads(reviewComments);
@@ -389,11 +382,14 @@ export function enrichConversationCommitAuthors(
   }
 
   const authorsBySha = new Map(
-    commits.map((commit) => [commit.sha, { authorLogin: commit.authorLogin, avatarUrl: commit.avatarUrl }]),
+    commits.map((commit) => [
+      commit.sha,
+      { authorLogin: commit.authorLogin, avatarUrl: commit.avatarUrl },
+    ]),
   );
 
   return items.map((item) => {
-    if (item.kind !== 'commit') {
+    if (item.kind !== "commit") {
       return item;
     }
 
@@ -482,9 +478,9 @@ export async function getPullRequestConversation(
   options: GetPullRequestConversationOptions = {},
 ): Promise<GitHubPullRequestConversationSnapshot> {
   const isInitialLoad =
-    options.timelinePage === undefined
-    && options.reviewCommentsPage === undefined
-    && options.commitsPage === undefined;
+    options.timelinePage === undefined &&
+    options.reviewCommentsPage === undefined &&
+    options.commitsPage === undefined;
 
   const timelinePage = isInitialLoad ? 1 : options.timelinePage;
   const reviewCommentsPage = isInitialLoad ? 1 : options.reviewCommentsPage;
@@ -541,7 +537,4 @@ export async function getPullRequestConversation(
   };
 }
 
-export type {
-  GitHubReviewCommentApiItem,
-  GitHubTimelineEvent,
-};
+export type { GitHubReviewCommentApiItem, GitHubTimelineEvent };

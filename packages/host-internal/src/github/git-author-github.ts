@@ -35,9 +35,9 @@ export function resolveGitCommitAuthorIdentity(options: {
     };
   }
 
-  const name = options.authorName?.trim() || 'unknown';
+  const name = options.authorName?.trim() || "unknown";
   return {
     login: name,
-    avatarUrl: '',
+    avatarUrl: "",
   };
 }

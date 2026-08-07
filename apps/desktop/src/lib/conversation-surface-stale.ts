@@ -1,15 +1,15 @@
 export type ConversationActiveSurface =
-  | 'conversation'
-  | 'settings'
-  | 'marketplace'
-  | 'automations'
-  | 'automation-detail';
+  | "conversation"
+  | "settings"
+  | "marketplace"
+  | "automations"
+  | "automation-detail";
 
 /** Leaving the conversation surface leaves the in-memory snapshot describing the prior session. */
 export function shouldMarkConversationSnapshotStale(
   activeSurface: ConversationActiveSurface,
 ): boolean {
-  return activeSurface !== 'conversation';
+  return activeSurface !== "conversation";
 }
 
 /** Safe to show conversation snapshot again once session navigation has settled on the conversation surface. */
@@ -19,9 +19,7 @@ export function shouldClearConversationSnapshotStale(input: {
   newSessionBusy: boolean;
 }): boolean {
   return (
-    input.activeSurface === 'conversation' &&
-    !input.sessionNavigationBusy &&
-    !input.newSessionBusy
+    input.activeSurface === "conversation" && !input.sessionNavigationBusy && !input.newSessionBusy
   );
 }
 
@@ -34,7 +32,7 @@ export function shouldSuppressStaleConversation(input: {
 }): boolean {
   return (
     input.conversationSnapshotStale &&
-    input.activeSurface === 'conversation' &&
+    input.activeSurface === "conversation" &&
     (input.sessionNavigationBusy || input.newSessionBusy)
   );
 }
@@ -47,9 +45,9 @@ export function resolveEffectiveEmptySession(input: {
   newSessionBusy: boolean;
 }): boolean {
   if (
-    input.compactionDemoActive
-    || input.longConversationListDemoActive
-    || input.subagentViewActive
+    input.compactionDemoActive ||
+    input.longConversationListDemoActive ||
+    input.subagentViewActive
   ) {
     return false;
   }

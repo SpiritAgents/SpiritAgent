@@ -1,23 +1,27 @@
-import type { AnthropicTransportConfig } from './anthropic/anthropic-compat.js';
-import type { LlmTransportKind } from './llm-provider-shared.js';
+import type { AnthropicTransportConfig } from "./anthropic/anthropic-compat.js";
+import type { LlmTransportKind } from "./llm-provider-shared.js";
 import {
   isGatewayAnthropicClaudeModel,
   resolveGatewayAnthropicClaudeCapabilities,
-} from './openai/gateway-anthropic-thinking.js';
-import { parseGatewayUpstreamSlug } from './openai/gateway-code-completion-thinking.js';
-import { isXiaomiResponsesReasoningEffortContext } from './openai/gateway-xiaomi-thinking.js';
-import { isTokenHubReasoningEffortModel } from './openai/tokenhub-reasoning-effort.js';
-import { isMoonshotKimiK3Model } from './openai/moonshot-thinking-switch.js';
+} from "./openai/gateway-anthropic-thinking.js";
+import { parseGatewayUpstreamSlug } from "./openai/gateway-code-completion-thinking.js";
+import { isXiaomiResponsesReasoningEffortContext } from "./openai/gateway-xiaomi-thinking.js";
+import { isTokenHubReasoningEffortModel } from "./openai/tokenhub-reasoning-effort.js";
+import { isMoonshotKimiK3Model } from "./openai/moonshot-thinking-switch.js";
 
-export { isXiaomiResponsesReasoningEffortContext } from './openai/gateway-xiaomi-thinking.js';
-import { isGatewayGoogleGeminiModel, isGoogleGeminiMinimalThinkingLevelModel, isGoogleGeminiThinkingLevelModel } from './openai/gateway-google-thinking.js';
-import { isOpenRouterAnthropicClaudeModel } from './openai/openrouter-anthropic-reasoning.js';
+export { isXiaomiResponsesReasoningEffortContext } from "./openai/gateway-xiaomi-thinking.js";
+import {
+  isGatewayGoogleGeminiModel,
+  isGoogleGeminiMinimalThinkingLevelModel,
+  isGoogleGeminiThinkingLevelModel,
+} from "./openai/gateway-google-thinking.js";
+import { isOpenRouterAnthropicClaudeModel } from "./openai/openrouter-anthropic-reasoning.js";
 import {
   isRoutedAnthropicClaudeModel,
   resolveRoutedAnthropicClaudeCapabilities,
-} from './openai/routed-anthropic-claude-capabilities.js';
-import type { OpenAiTransportConfig } from './openai/openai-compat.js';
-import { modelSupportsOpenAiGpt56ReasoningControls } from './openai/gpt-reasoning-controls.js';
+} from "./openai/routed-anthropic-claude-capabilities.js";
+import type { OpenAiTransportConfig } from "./openai/openai-compat.js";
+import { modelSupportsOpenAiGpt56ReasoningControls } from "./openai/gpt-reasoning-controls.js";
 
 export {
   isOpenAiGpt56OrLaterModel,
@@ -29,74 +33,74 @@ export {
   resolveOpenAiTransportReasoningModeForContext,
   type ModelReasoningMode,
   type OpenAiGpt56ReasoningEffort,
-} from './openai/gpt-reasoning-controls.js';
+} from "./openai/gpt-reasoning-controls.js";
 
 export type ModelReasoningProvider =
-  | 'deepseek'
-  | 'xai'
-  | 'moonshot-ai'
-  | 'kimi-code'
-  | 'z-ai'
-  | 'zhipu-ai'
-  | 'minimax'
-  | 'xiaomi'
-  | 'siliconflow'
-  | 'stepfun'
-  | 'alibaba'
-  | 'anthropic'
-  | 'vercel-ai-gateway'
-  | 'cloudflare-ai-gateway'
-  | 'openrouter'
-  | 'fireworks-ai'
-  | 'together-ai'
-  | 'groq'
-  | 'deepinfra'
-  | 'hugging-face'
-  | 'baseten'
-  | 'cohere'
-  | 'openai'
-  | 'google'
-  | 'google-vertex-ai'
-  | 'volcengine'
-  | 'byteplus'
-  | 'meituan'
-  | 'tencent-tokenhub'
-  | 'mistral'
-  | 'azure'
-  | 'amazon-bedrock'
-  | 'custom';
+  | "deepseek"
+  | "xai"
+  | "moonshot-ai"
+  | "kimi-code"
+  | "z-ai"
+  | "zhipu-ai"
+  | "minimax"
+  | "xiaomi"
+  | "siliconflow"
+  | "stepfun"
+  | "alibaba"
+  | "anthropic"
+  | "vercel-ai-gateway"
+  | "cloudflare-ai-gateway"
+  | "openrouter"
+  | "fireworks-ai"
+  | "together-ai"
+  | "groq"
+  | "deepinfra"
+  | "hugging-face"
+  | "baseten"
+  | "cohere"
+  | "openai"
+  | "google"
+  | "google-vertex-ai"
+  | "volcengine"
+  | "byteplus"
+  | "meituan"
+  | "tencent-tokenhub"
+  | "mistral"
+  | "azure"
+  | "amazon-bedrock"
+  | "custom";
 
 export type ModelReasoningEffort = string;
 
 export type ModelReasoningTransportKind = LlmTransportKind;
 
 export type OpenAiCompatibleReasoningEffort =
-  | 'default'
-  | 'none'
-  | 'low'
-  | 'medium'
-  | 'high'
-  | 'xhigh'
-  | 'max';
+  | "default"
+  | "none"
+  | "low"
+  | "medium"
+  | "high"
+  | "xhigh"
+  | "max";
 
-export type DeepSeekV4ReasoningEffort = 'default' | 'high' | 'max';
+export type DeepSeekV4ReasoningEffort = "default" | "high" | "max";
 
-export type MoonshotReasoningEffort = 'default' | 'minimal' | 'low' | 'medium' | 'high';
+export type MoonshotReasoningEffort = "default" | "minimal" | "low" | "medium" | "high";
 
-export type MoonshotK3ReasoningEffort = 'default' | 'low' | 'high' | 'max';
+export type MoonshotK3ReasoningEffort = "default" | "low" | "high" | "max";
 
-export type XaiReasoningEffort = 'default' | 'none' | 'low' | 'medium' | 'high';
+export type XaiReasoningEffort = "default" | "none" | "low" | "medium" | "high";
 
-export type GoogleReasoningEffort = 'default' | 'none' | 'minimal' | 'low' | 'medium' | 'high';
+export type GoogleReasoningEffort = "default" | "none" | "minimal" | "low" | "medium" | "high";
 
-export type AnthropicReasoningEffort = 'default' | 'low' | 'medium' | 'high' | 'xhigh' | 'max';
+export type AnthropicReasoningEffort = "default" | "low" | "medium" | "high" | "xhigh" | "max";
 
 export interface ModelReasoningEffortOption<T extends string = string> {
   value: T;
   label: string;
 }
 
-export type ModelSupportsThinkingType = 'only';
+export type ModelSupportsThinkingType = "only";
 
 export interface ModelReasoningEffortContext {
   provider?: ModelReasoningProvider;
@@ -109,95 +113,95 @@ export interface ModelReasoningEffortContext {
   supportsThinkingSwitch?: boolean;
 }
 
-export const DEFAULT_MODEL_REASONING_EFFORT: OpenAiCompatibleReasoningEffort = 'medium';
+export const DEFAULT_MODEL_REASONING_EFFORT: OpenAiCompatibleReasoningEffort = "medium";
 
 export const OPENAI_COMPATIBLE_REASONING_EFFORT_OPTIONS: ReadonlyArray<
   ModelReasoningEffortOption<OpenAiCompatibleReasoningEffort>
 > = [
-  { value: 'default', label: 'Default' },
-  { value: 'none', label: 'None' },
-  { value: 'low', label: 'Low' },
-  { value: 'medium', label: 'Medium' },
-  { value: 'high', label: 'High' },
-  { value: 'xhigh', label: 'Xhigh' },
+  { value: "default", label: "Default" },
+  { value: "none", label: "None" },
+  { value: "low", label: "Low" },
+  { value: "medium", label: "Medium" },
+  { value: "high", label: "High" },
+  { value: "xhigh", label: "Xhigh" },
 ];
 
 export const GPT56_REASONING_EFFORT_OPTIONS: ReadonlyArray<
   ModelReasoningEffortOption<OpenAiCompatibleReasoningEffort>
 > = [
-  { value: 'default', label: 'Default' },
-  { value: 'none', label: 'None' },
-  { value: 'low', label: 'Low' },
-  { value: 'medium', label: 'Medium' },
-  { value: 'high', label: 'High' },
-  { value: 'xhigh', label: 'Xhigh' },
-  { value: 'max', label: 'Max' },
+  { value: "default", label: "Default" },
+  { value: "none", label: "None" },
+  { value: "low", label: "Low" },
+  { value: "medium", label: "Medium" },
+  { value: "high", label: "High" },
+  { value: "xhigh", label: "Xhigh" },
+  { value: "max", label: "Max" },
 ];
 
 export const DEEPSEEK_V4_REASONING_EFFORT_OPTIONS: ReadonlyArray<
   ModelReasoningEffortOption<DeepSeekV4ReasoningEffort>
 > = [
-  { value: 'default', label: 'Default' },
-  { value: 'high', label: 'High' },
-  { value: 'max', label: 'Max' },
+  { value: "default", label: "Default" },
+  { value: "high", label: "High" },
+  { value: "max", label: "Max" },
 ];
 
 export const MOONSHOT_REASONING_EFFORT_OPTIONS: ReadonlyArray<
   ModelReasoningEffortOption<MoonshotReasoningEffort>
 > = [
-  { value: 'default', label: 'Default' },
-  { value: 'minimal', label: 'Minimal' },
-  { value: 'low', label: 'Low' },
-  { value: 'medium', label: 'Medium' },
-  { value: 'high', label: 'High' },
+  { value: "default", label: "Default" },
+  { value: "minimal", label: "Minimal" },
+  { value: "low", label: "Low" },
+  { value: "medium", label: "Medium" },
+  { value: "high", label: "High" },
 ];
 
 export const MOONSHOT_K3_REASONING_EFFORT_OPTIONS: ReadonlyArray<
   ModelReasoningEffortOption<MoonshotK3ReasoningEffort>
 > = [
-  { value: 'default', label: 'Default' },
-  { value: 'low', label: 'Low' },
-  { value: 'high', label: 'High' },
-  { value: 'max', label: 'Max' },
+  { value: "default", label: "Default" },
+  { value: "low", label: "Low" },
+  { value: "high", label: "High" },
+  { value: "max", label: "Max" },
 ];
 
 export const XAI_REASONING_EFFORT_OPTIONS: ReadonlyArray<
   ModelReasoningEffortOption<XaiReasoningEffort>
 > = [
-  { value: 'default', label: 'Default' },
-  { value: 'none', label: 'None' },
-  { value: 'low', label: 'Low' },
-  { value: 'medium', label: 'Medium' },
-  { value: 'high', label: 'High' },
+  { value: "default", label: "Default" },
+  { value: "none", label: "None" },
+  { value: "low", label: "Low" },
+  { value: "medium", label: "Medium" },
+  { value: "high", label: "High" },
 ];
 
 export const GOOGLE_GEMINI_MINIMAL_REASONING_EFFORT_OPTIONS: ReadonlyArray<
   ModelReasoningEffortOption<GoogleReasoningEffort>
 > = [
-  { value: 'default', label: 'Default' },
-  { value: 'minimal', label: 'Minimal' },
-  { value: 'low', label: 'Low' },
-  { value: 'medium', label: 'Medium' },
-  { value: 'high', label: 'High' },
+  { value: "default", label: "Default" },
+  { value: "minimal", label: "Minimal" },
+  { value: "low", label: "Low" },
+  { value: "medium", label: "Medium" },
+  { value: "high", label: "High" },
 ];
 
 export const GOOGLE_GEMINI_LEVEL_REASONING_EFFORT_OPTIONS: ReadonlyArray<
   ModelReasoningEffortOption<GoogleReasoningEffort>
 > = [
-  { value: 'default', label: 'Default' },
-  { value: 'low', label: 'Low' },
-  { value: 'medium', label: 'Medium' },
-  { value: 'high', label: 'High' },
+  { value: "default", label: "Default" },
+  { value: "low", label: "Low" },
+  { value: "medium", label: "Medium" },
+  { value: "high", label: "High" },
 ];
 
 export const GOOGLE_GEMINI_BUDGET_REASONING_EFFORT_OPTIONS: ReadonlyArray<
   ModelReasoningEffortOption<GoogleReasoningEffort>
 > = [
-  { value: 'default', label: 'Default' },
-  { value: 'none', label: 'None' },
-  { value: 'low', label: 'Low' },
-  { value: 'medium', label: 'Medium' },
-  { value: 'high', label: 'High' },
+  { value: "default", label: "Default" },
+  { value: "none", label: "None" },
+  { value: "low", label: "Low" },
+  { value: "medium", label: "Medium" },
+  { value: "high", label: "High" },
 ];
 
 export const GOOGLE_REASONING_EFFORT_OPTIONS = GOOGLE_GEMINI_BUDGET_REASONING_EFFORT_OPTIONS;
@@ -205,15 +209,15 @@ export const GOOGLE_REASONING_EFFORT_OPTIONS = GOOGLE_GEMINI_BUDGET_REASONING_EF
 export const ANTHROPIC_REASONING_EFFORT_OPTIONS: ReadonlyArray<
   ModelReasoningEffortOption<AnthropicReasoningEffort>
 > = [
-  { value: 'default', label: 'Default' },
-  { value: 'low', label: 'Low' },
-  { value: 'medium', label: 'Medium' },
-  { value: 'high', label: 'High' },
-  { value: 'xhigh', label: 'Xhigh' },
-  { value: 'max', label: 'Max' },
+  { value: "default", label: "Default" },
+  { value: "low", label: "Low" },
+  { value: "medium", label: "Medium" },
+  { value: "high", label: "High" },
+  { value: "xhigh", label: "Xhigh" },
+  { value: "max", label: "Max" },
 ];
 
-const DEEPSEEK_V4_REASONING_MODEL_IDS = new Set(['deepseek-v4-pro', 'deepseek-v4-flash']);
+const DEEPSEEK_V4_REASONING_MODEL_IDS = new Set(["deepseek-v4-pro", "deepseek-v4-flash"]);
 
 const ALL_REASONING_EFFORT_OPTIONS = dedupeReasoningEffortOptions([
   ...OPENAI_COMPATIBLE_REASONING_EFFORT_OPTIONS,
@@ -261,63 +265,58 @@ const ANTHROPIC_REASONING_EFFORT_VALUES = new Set<string>(
 );
 
 export function normalizeModelReasoningEffort(value: unknown): ModelReasoningEffort | undefined {
-  if (typeof value !== 'string') {
+  if (typeof value !== "string") {
     return undefined;
   }
   const trimmed = value.trim().toLowerCase();
-  return ALL_REASONING_EFFORT_VALUES.has(trimmed)
-    ? trimmed
-    : undefined;
+  return ALL_REASONING_EFFORT_VALUES.has(trimmed) ? trimmed : undefined;
 }
 
 export function resolveModelReasoningEffort(value: unknown): ModelReasoningEffort {
-  return resolveCompatibleModelReasoningEffort(
-    normalizeModelReasoningEffort(value),
-    undefined,
-  );
+  return resolveCompatibleModelReasoningEffort(normalizeModelReasoningEffort(value), undefined);
 }
 
 export function defaultModelReasoningEffort(
   context?: ModelReasoningEffortContext,
 ): ModelReasoningEffort {
   if (isDeepSeekV4ReasoningEffortModel(context)) {
-    return 'default';
+    return "default";
   }
 
   if (isMoonshotReasoningEffortModel(context)) {
-    return 'default';
+    return "default";
   }
 
   if (isKimiCodeReasoningEffortModel(context)) {
-    return 'default';
+    return "default";
   }
 
   if (isXaiReasoningEffortModel(context)) {
-    return 'default';
+    return "default";
   }
 
   if (isGoogleReasoningEffortModel(context)) {
-    return 'default';
+    return "default";
   }
 
   if (isAnthropicReasoningEffortModel(context)) {
-    return 'default';
+    return "default";
   }
 
   if (isGatewayAnthropicClaudeReasoningModel(context)) {
-    return 'default';
+    return "default";
   }
 
   if (isOpenRouterAnthropicClaudeReasoningModel(context)) {
-    return 'default';
+    return "default";
   }
 
   if (isXiaomiResponsesReasoningEffortContext(context)) {
-    return 'default';
+    return "default";
   }
 
   if (isTokenHubReasoningEffortModel(context)) {
-    return 'default';
+    return "default";
   }
 
   if (isGroqReasoningEffortModel(context)) {
@@ -332,7 +331,7 @@ export function modelReasoningEffortOptions(
 ): ReadonlyArray<ModelReasoningEffortOption<ModelReasoningEffort>> {
   // DeepSeek 路由（直连或 Gateway deepseek/*）仅 V4 在 thinking 模式下有 reasoning_effort。
   if (isDeepSeekRouteContext(context) && !isDeepSeekV4ReasoningEffortModel(context)) {
-    return [{ value: 'default', label: 'Default' }];
+    return [{ value: "default", label: "Default" }];
   }
 
   if (isDeepSeekV4ReasoningEffortModel(context)) {
@@ -373,16 +372,16 @@ export function modelReasoningEffortOptions(
   if (isGatewayAnthropicClaudeReasoningModel(context)) {
     return anthropicClaudeReasoningEffortOptions(
       context,
-      context?.supportedEfforts
-        ?? resolveGatewayAnthropicClaudeCapabilities(context?.model ?? '').supportedEfforts,
+      context?.supportedEfforts ??
+        resolveGatewayAnthropicClaudeCapabilities(context?.model ?? "").supportedEfforts,
     );
   }
 
   if (isOpenRouterAnthropicClaudeReasoningModel(context)) {
     return anthropicClaudeReasoningEffortOptions(
       context,
-      context?.supportedEfforts
-        ?? resolveRoutedAnthropicClaudeCapabilities(context?.model ?? '').supportedEfforts,
+      context?.supportedEfforts ??
+        resolveRoutedAnthropicClaudeCapabilities(context?.model ?? "").supportedEfforts,
     );
   }
 
@@ -390,8 +389,8 @@ export function modelReasoningEffortOptions(
     return OPENAI_COMPATIBLE_REASONING_EFFORT_OPTIONS;
   }
 
-  if (context?.provider === 'tencent-tokenhub' && !isTokenHubReasoningEffortModel(context)) {
-    return [{ value: 'default', label: 'Default' }];
+  if (context?.provider === "tencent-tokenhub" && !isTokenHubReasoningEffortModel(context)) {
+    return [{ value: "default", label: "Default" }];
   }
 
   if (isTokenHubReasoningEffortModel(context)) {
@@ -419,22 +418,22 @@ export function resolveModelReasoningEffortForContext(
 export function resolveOpenAiTransportReasoningEffortForContext(
   value: unknown,
   context?: ModelReasoningEffortContext,
-): OpenAiTransportConfig['reasoningEffort'] | undefined {
+): OpenAiTransportConfig["reasoningEffort"] | undefined {
   const normalized = resolveModelReasoningEffortForContext(value, {
     ...context,
-    transportKind: context?.transportKind ?? 'openai-compatible',
+    transportKind: context?.transportKind ?? "openai-compatible",
   });
 
   switch (normalized) {
-    case 'default':
+    case "default":
       return undefined;
-    case 'none':
-    case 'low':
-    case 'medium':
-    case 'high':
-    case 'xhigh':
-    case 'minimal':
-    case 'max':
+    case "none":
+    case "low":
+    case "medium":
+    case "high":
+    case "xhigh":
+    case "minimal":
+    case "max":
       return normalized;
     default:
       return undefined;
@@ -445,18 +444,18 @@ export function resolveOpenAiTransportReasoningEffortForContext(
 export function resolveGroqTransportReasoningEffortForContext(
   value: unknown,
   context?: ModelReasoningEffortContext,
-): OpenAiTransportConfig['reasoningEffort'] | undefined {
+): OpenAiTransportConfig["reasoningEffort"] | undefined {
   const normalized = resolveModelReasoningEffortForContext(value, {
     ...context,
-    transportKind: context?.transportKind ?? 'openai-compatible',
+    transportKind: context?.transportKind ?? "openai-compatible",
   });
 
   switch (normalized) {
-    case 'none':
-    case 'default':
-    case 'low':
-    case 'medium':
-    case 'high':
+    case "none":
+    case "default":
+    case "low":
+    case "medium":
+    case "high":
       return normalized;
     default:
       return undefined;
@@ -466,22 +465,22 @@ export function resolveGroqTransportReasoningEffortForContext(
 export function resolveAnthropicTransportReasoningEffortForContext(
   value: unknown,
   context?: ModelReasoningEffortContext,
-): AnthropicTransportConfig['effort'] | undefined {
-  if (resolveRoutedAnthropicClaudeCapabilitiesForContext(context)?.thinkingMode === 'budget') {
+): AnthropicTransportConfig["effort"] | undefined {
+  if (resolveRoutedAnthropicClaudeCapabilitiesForContext(context)?.thinkingMode === "budget") {
     return undefined;
   }
 
   const normalized = resolveModelReasoningEffortForContext(value, {
     ...context,
-    transportKind: 'anthropic',
+    transportKind: "anthropic",
   });
 
   switch (normalized) {
-    case 'low':
-    case 'medium':
-    case 'high':
-    case 'xhigh':
-    case 'max':
+    case "low":
+    case "medium":
+    case "high":
+    case "xhigh":
+    case "max":
       return normalized;
     default:
       return undefined;
@@ -489,71 +488,61 @@ export function resolveAnthropicTransportReasoningEffortForContext(
 }
 
 export function modelReasoningEffortLabel(value: ModelReasoningEffort): string {
-  return ALL_REASONING_EFFORT_OPTIONS.find((option) => option.value === value)?.label ?? 'Medium';
+  return ALL_REASONING_EFFORT_OPTIONS.find((option) => option.value === value)?.label ?? "Medium";
 }
 
-export function isDeepSeekV4ReasoningEffortModel(
-  context?: ModelReasoningEffortContext,
-): boolean {
+export function isDeepSeekV4ReasoningEffortModel(context?: ModelReasoningEffortContext): boolean {
   if (!isDeepSeekRouteContext(context)) {
     return false;
   }
-  return DEEPSEEK_V4_REASONING_MODEL_IDS.has(normalizeDeepSeekModelId(context?.model ?? ''));
+  return DEEPSEEK_V4_REASONING_MODEL_IDS.has(normalizeDeepSeekModelId(context?.model ?? ""));
 }
 
-export function isMoonshotReasoningEffortModel(
-  context?: ModelReasoningEffortContext,
-): boolean {
-  return context?.provider === 'moonshot-ai';
+export function isMoonshotReasoningEffortModel(context?: ModelReasoningEffortContext): boolean {
+  return context?.provider === "moonshot-ai";
 }
 
 /** Moonshot kimi-k3 与 Gateway moonshotai/kimi-k3：顶层 reasoning_effort，无 thinking.type。 */
-export function isMoonshotK3ReasoningEffortModel(
-  context?: ModelReasoningEffortContext,
-): boolean {
-  if (!isMoonshotKimiK3Model(context?.model ?? '')) {
+export function isMoonshotK3ReasoningEffortModel(context?: ModelReasoningEffortContext): boolean {
+  if (!isMoonshotKimiK3Model(context?.model ?? "")) {
     return false;
   }
-  if (context?.provider === 'moonshot-ai' || context?.provider === 'baseten') {
+  if (context?.provider === "moonshot-ai" || context?.provider === "baseten") {
     return true;
   }
-  return context?.provider === 'vercel-ai-gateway'
-    && parseGatewayUpstreamSlug(context.model ?? '') === 'moonshotai';
+  return (
+    context?.provider === "vercel-ai-gateway" &&
+    parseGatewayUpstreamSlug(context.model ?? "") === "moonshotai"
+  );
 }
 
-export function isKimiCodeReasoningEffortModel(
-  context?: ModelReasoningEffortContext,
-): boolean {
-  return context?.provider === 'kimi-code';
+export function isKimiCodeReasoningEffortModel(context?: ModelReasoningEffortContext): boolean {
+  return context?.provider === "kimi-code";
 }
 
-export function isKimiCodeThinkingOnlyModel(
-  context?: ModelReasoningEffortContext,
-): boolean {
-  return context?.supportsThinkingType === 'only';
+export function isKimiCodeThinkingOnlyModel(context?: ModelReasoningEffortContext): boolean {
+  return context?.supportsThinkingType === "only";
 }
 
-export function isXaiReasoningEffortModel(
-  context?: ModelReasoningEffortContext,
-): boolean {
-  return context?.provider === 'xai';
+export function isXaiReasoningEffortModel(context?: ModelReasoningEffortContext): boolean {
+  return context?.provider === "xai";
 }
 
-export function isGoogleReasoningEffortModel(
-  context?: ModelReasoningEffortContext,
-): boolean {
-  return context?.provider === 'google'
-    || context?.provider === 'google-vertex-ai'
-    || isGatewayGoogleGeminiModel(
-      context?.provider === 'vercel-ai-gateway' ? 'vercel-ai-gateway' : undefined,
-      context?.model ?? '',
-    );
+export function isGoogleReasoningEffortModel(context?: ModelReasoningEffortContext): boolean {
+  return (
+    context?.provider === "google" ||
+    context?.provider === "google-vertex-ai" ||
+    isGatewayGoogleGeminiModel(
+      context?.provider === "vercel-ai-gateway" ? "vercel-ai-gateway" : undefined,
+      context?.model ?? "",
+    )
+  );
 }
 
 export function googleReasoningEffortOptionsForContext(
   context?: ModelReasoningEffortContext,
 ): ReadonlyArray<ModelReasoningEffortOption<ModelReasoningEffort>> {
-  const model = context?.model ?? '';
+  const model = context?.model ?? "";
   if (isGoogleGeminiMinimalThinkingLevelModel(model)) {
     return GOOGLE_GEMINI_MINIMAL_REASONING_EFFORT_OPTIONS;
   }
@@ -567,18 +556,16 @@ function googleReasoningEffortValuesForModel(model: string): Set<string> {
   return new Set(googleReasoningEffortOptionsForContext({ model }).map((option) => option.value));
 }
 
-export function isAnthropicReasoningEffortModel(
-  context?: ModelReasoningEffortContext,
-): boolean {
-  return context?.transportKind === 'anthropic' || context?.provider === 'anthropic';
+export function isAnthropicReasoningEffortModel(context?: ModelReasoningEffortContext): boolean {
+  return context?.transportKind === "anthropic" || context?.provider === "anthropic";
 }
 
 export function isGatewayAnthropicClaudeReasoningModel(
   context?: ModelReasoningEffortContext,
 ): boolean {
   return isGatewayAnthropicClaudeModel(
-    context?.provider === 'vercel-ai-gateway' ? 'vercel-ai-gateway' : undefined,
-    context?.model ?? '',
+    context?.provider === "vercel-ai-gateway" ? "vercel-ai-gateway" : undefined,
+    context?.model ?? "",
   );
 }
 
@@ -586,27 +573,29 @@ export function isOpenRouterAnthropicClaudeReasoningModel(
   context?: ModelReasoningEffortContext,
 ): boolean {
   return isOpenRouterAnthropicClaudeModel(
-    context?.provider === 'openrouter' ? 'openrouter' : undefined,
-    context?.model ?? '',
+    context?.provider === "openrouter" ? "openrouter" : undefined,
+    context?.model ?? "",
   );
 }
 
 function normalizeModelId(value: unknown): string {
-  return typeof value === 'string' ? value.trim().toLowerCase() : '';
+  return typeof value === "string" ? value.trim().toLowerCase() : "";
 }
 
 function normalizeDeepSeekModelId(model: string): string {
   const normalized = normalizeModelId(model);
-  const slashIndex = normalized.lastIndexOf('/');
+  const slashIndex = normalized.lastIndexOf("/");
   return slashIndex >= 0 ? normalized.slice(slashIndex + 1) : normalized;
 }
 
 function isDeepSeekRouteContext(context?: ModelReasoningEffortContext): boolean {
-  if (context?.provider === 'deepseek') {
+  if (context?.provider === "deepseek") {
     return true;
   }
-  return context?.provider === 'vercel-ai-gateway'
-    && parseGatewayUpstreamSlug(context.model ?? '') === 'deepseek';
+  return (
+    context?.provider === "vercel-ai-gateway" &&
+    parseGatewayUpstreamSlug(context.model ?? "") === "deepseek"
+  );
 }
 
 function resolveCompatibleModelReasoningEffort(
@@ -617,163 +606,163 @@ function resolveCompatibleModelReasoningEffort(
 
   if (isDeepSeekV4ReasoningEffortModel(context)) {
     switch (normalized) {
-      case 'low':
-      case 'medium':
-      case 'high':
-        return 'high';
-      case 'xhigh':
-      case 'max':
-        return 'max';
-      case 'none':
-      case 'minimal':
-        return 'default';
-      case 'default':
-        return 'default';
+      case "low":
+      case "medium":
+      case "high":
+        return "high";
+      case "xhigh":
+      case "max":
+        return "max";
+      case "none":
+      case "minimal":
+        return "default";
+      case "default":
+        return "default";
       default:
-        return DEEPSEEK_V4_REASONING_EFFORT_VALUES.has(normalized)
-          ? normalized
-          : 'default';
+        return DEEPSEEK_V4_REASONING_EFFORT_VALUES.has(normalized) ? normalized : "default";
     }
   }
 
   if (isMoonshotK3ReasoningEffortModel(context)) {
     switch (normalized) {
-      case 'none':
-      case 'minimal':
-      case 'medium':
-        return 'default';
-      case 'xhigh':
-        return 'max';
+      case "none":
+      case "minimal":
+      case "medium":
+        return "default";
+      case "xhigh":
+        return "max";
       default:
-        return MOONSHOT_K3_REASONING_EFFORT_VALUES.has(normalized) ? normalized : 'default';
+        return MOONSHOT_K3_REASONING_EFFORT_VALUES.has(normalized) ? normalized : "default";
     }
   }
 
   if (isMoonshotReasoningEffortModel(context)) {
     const supportedEfforts = normalizeSupportedReasoningEfforts(context?.supportedEfforts);
     switch (normalized) {
-      case 'none':
-        return 'default';
-      case 'xhigh':
-      case 'max':
-        return 'high';
+      case "none":
+        return "default";
+      case "xhigh":
+      case "max":
+        return "high";
       default:
-        return moonshotReasoningEffortValueForContext(normalized, supportedEfforts) ?? 'default';
+        return moonshotReasoningEffortValueForContext(normalized, supportedEfforts) ?? "default";
     }
   }
 
   if (isKimiCodeReasoningEffortModel(context)) {
     const supportedEfforts = normalizeSupportedReasoningEfforts(context?.supportedEfforts);
     switch (normalized) {
-      case 'none':
-        return 'default';
-      case 'xhigh':
-      case 'max':
-        return 'high';
+      case "none":
+        return "default";
+      case "xhigh":
+      case "max":
+        return "high";
       default:
-        return moonshotReasoningEffortValueForContext(normalized, supportedEfforts) ?? 'default';
+        return moonshotReasoningEffortValueForContext(normalized, supportedEfforts) ?? "default";
     }
   }
 
   if (isXaiReasoningEffortModel(context)) {
     switch (normalized) {
-      case 'minimal':
-        return 'low';
-      case 'xhigh':
-      case 'max':
-        return 'high';
+      case "minimal":
+        return "low";
+      case "xhigh":
+      case "max":
+        return "high";
       default:
-        return XAI_REASONING_EFFORT_VALUES.has(normalized) ? normalized : 'default';
+        return XAI_REASONING_EFFORT_VALUES.has(normalized) ? normalized : "default";
     }
   }
 
   if (isGoogleReasoningEffortModel(context)) {
-    const model = context?.model ?? '';
+    const model = context?.model ?? "";
     switch (normalized) {
-      case 'none':
+      case "none":
         if (isGoogleGeminiMinimalThinkingLevelModel(model)) {
-          return 'minimal';
+          return "minimal";
         }
         if (isGoogleGeminiThinkingLevelModel(model)) {
-          return 'default';
+          return "default";
         }
-        return 'none';
-      case 'minimal':
+        return "none";
+      case "minimal":
         if (isGoogleGeminiMinimalThinkingLevelModel(model)) {
-          return 'minimal';
+          return "minimal";
         }
         if (isGoogleGeminiThinkingLevelModel(model)) {
-          return 'default';
+          return "default";
         }
-        return 'none';
-      case 'xhigh':
-      case 'max':
-        return 'high';
+        return "none";
+      case "xhigh":
+      case "max":
+        return "high";
       default:
-        return googleReasoningEffortValuesForModel(model).has(normalized) ? normalized : 'default';
+        return googleReasoningEffortValuesForModel(model).has(normalized) ? normalized : "default";
     }
   }
 
   if (isAnthropicReasoningEffortModel(context)) {
     const supportedEfforts = normalizeSupportedReasoningEfforts(context?.supportedEfforts);
     switch (normalized) {
-      case 'none':
-      case 'minimal':
-        return 'default';
+      case "none":
+      case "minimal":
+        return "default";
       default:
-        return anthropicReasoningEffortValueForContext(normalized, supportedEfforts) ?? 'default';
+        return anthropicReasoningEffortValueForContext(normalized, supportedEfforts) ?? "default";
     }
   }
 
   if (isGatewayAnthropicClaudeReasoningModel(context)) {
     const supportedEfforts = normalizeSupportedReasoningEfforts(
-      context?.supportedEfforts
-        ?? resolveGatewayAnthropicClaudeCapabilities(context?.model ?? '').supportedEfforts,
+      context?.supportedEfforts ??
+        resolveGatewayAnthropicClaudeCapabilities(context?.model ?? "").supportedEfforts,
     );
     switch (normalized) {
-      case 'none':
-      case 'minimal':
-        return 'default';
+      case "none":
+      case "minimal":
+        return "default";
       default:
-        return anthropicReasoningEffortValueForContext(normalized, supportedEfforts) ?? 'default';
+        return anthropicReasoningEffortValueForContext(normalized, supportedEfforts) ?? "default";
     }
   }
 
   if (isOpenRouterAnthropicClaudeReasoningModel(context)) {
     const supportedEfforts = normalizeSupportedReasoningEfforts(
-      context?.supportedEfforts
-        ?? resolveRoutedAnthropicClaudeCapabilities(context?.model ?? '').supportedEfforts,
+      context?.supportedEfforts ??
+        resolveRoutedAnthropicClaudeCapabilities(context?.model ?? "").supportedEfforts,
     );
     switch (normalized) {
-      case 'none':
-      case 'minimal':
-        return 'default';
+      case "none":
+      case "minimal":
+        return "default";
       default:
-        return anthropicReasoningEffortValueForContext(normalized, supportedEfforts) ?? 'default';
+        return anthropicReasoningEffortValueForContext(normalized, supportedEfforts) ?? "default";
     }
   }
 
   if (isGroqReasoningEffortModel(context)) {
-    return groqReasoningEffortValueForContext(normalized, context?.supportedEfforts) ?? 'default';
+    return groqReasoningEffortValueForContext(normalized, context?.supportedEfforts) ?? "default";
   }
 
-  if (normalized === 'minimal') {
-    return 'default';
+  if (normalized === "minimal") {
+    return "default";
   }
 
   if (modelSupportsOpenAiGpt56ReasoningControls(context)) {
     const supportedEfforts = normalizeSupportedReasoningEfforts(context?.supportedEfforts);
     if (supportedEfforts && supportedEfforts.size > 0) {
-      return gpt56ReasoningEffortValueForContext(normalized, supportedEfforts)
-        ?? DEFAULT_MODEL_REASONING_EFFORT;
+      return (
+        gpt56ReasoningEffortValueForContext(normalized, supportedEfforts) ??
+        DEFAULT_MODEL_REASONING_EFFORT
+      );
     }
     return GPT56_REASONING_EFFORT_VALUES.has(normalized)
       ? normalized
       : DEFAULT_MODEL_REASONING_EFFORT;
   }
 
-  if (normalized === 'max') {
-    return 'xhigh';
+  if (normalized === "max") {
+    return "xhigh";
   }
 
   return OPENAI_COMPATIBLE_REASONING_EFFORT_VALUES.has(normalized)
@@ -798,16 +787,12 @@ function dedupeReasoningEffortOptions(
   return deduped;
 }
 
-function resolveRoutedAnthropicClaudeCapabilitiesForContext(
-  context?: ModelReasoningEffortContext,
-) {
+function resolveRoutedAnthropicClaudeCapabilitiesForContext(context?: ModelReasoningEffortContext) {
   const model = context?.model?.trim();
   if (!model) {
     return undefined;
   }
-  const routedModelId = isRoutedAnthropicClaudeModel(model)
-    ? model
-    : `anthropic/${model}`;
+  const routedModelId = isRoutedAnthropicClaudeModel(model) ? model : `anthropic/${model}`;
   if (!isRoutedAnthropicClaudeModel(routedModelId)) {
     return undefined;
   }
@@ -819,8 +804,8 @@ function anthropicClaudeReasoningEffortOptions(
   supportedEffortsOverride?: readonly ModelReasoningEffort[],
 ): ReadonlyArray<ModelReasoningEffortOption<ModelReasoningEffort>> {
   const capabilities = resolveRoutedAnthropicClaudeCapabilitiesForContext(context);
-  if (capabilities?.thinkingMode === 'budget') {
-    return [{ value: 'default', label: 'Default' }];
+  if (capabilities?.thinkingMode === "budget") {
+    return [{ value: "default", label: "Default" }];
   }
 
   const supportedEfforts = supportedEffortsOverride ?? capabilities?.supportedEfforts;
@@ -832,7 +817,7 @@ function anthropicClaudeReasoningEffortOptions(
     return ANTHROPIC_REASONING_EFFORT_OPTIONS;
   }
 
-  return [{ value: 'default', label: 'Default' }];
+  return [{ value: "default", label: "Default" }];
 }
 
 function anthropicReasoningEffortValueForContext(
@@ -845,9 +830,7 @@ function anthropicReasoningEffortValueForContext(
   if (!supportedEfforts) {
     return normalized;
   }
-  return normalized === 'default' || supportedEfforts.has(normalized)
-    ? normalized
-    : undefined;
+  return normalized === "default" || supportedEfforts.has(normalized) ? normalized : undefined;
 }
 
 function anthropicReasoningEffortOptionsForSupportedEfforts(
@@ -855,7 +838,7 @@ function anthropicReasoningEffortOptionsForSupportedEfforts(
 ): ReadonlyArray<ModelReasoningEffortOption<ModelReasoningEffort>> {
   const supported = normalizeSupportedReasoningEfforts(supportedEfforts) ?? new Set<string>();
   return ANTHROPIC_REASONING_EFFORT_OPTIONS.filter(
-    (option) => option.value === 'default' || supported.has(option.value),
+    (option) => option.value === "default" || supported.has(option.value),
   );
 }
 
@@ -869,9 +852,7 @@ function moonshotReasoningEffortValueForContext(
   if (!supportedEfforts) {
     return normalized;
   }
-  return normalized === 'default' || supportedEfforts.has(normalized)
-    ? normalized
-    : undefined;
+  return normalized === "default" || supportedEfforts.has(normalized) ? normalized : undefined;
 }
 
 function moonshotReasoningEffortOptionsForSupportedEfforts(
@@ -879,35 +860,35 @@ function moonshotReasoningEffortOptionsForSupportedEfforts(
 ): ReadonlyArray<ModelReasoningEffortOption<ModelReasoningEffort>> {
   const supported = normalizeSupportedReasoningEfforts(supportedEfforts) ?? new Set<string>();
   return MOONSHOT_REASONING_EFFORT_OPTIONS.filter(
-    (option) => option.value === 'default' || supported.has(option.value),
+    (option) => option.value === "default" || supported.has(option.value),
   );
 }
 
 const GROQ_REASONING_EFFORT_LABELS: Record<string, string> = {
-  none: 'None',
-  default: 'Default',
-  low: 'Low',
-  medium: 'Medium',
-  high: 'High',
+  none: "None",
+  default: "Default",
+  low: "Low",
+  medium: "Medium",
+  high: "High",
 };
 
-export function isGroqReasoningEffortModel(
-  context?: ModelReasoningEffortContext,
-): boolean {
-  return context?.provider === 'groq'
-    && context.supportedEfforts !== undefined
-    && context.supportedEfforts.length > 0;
+export function isGroqReasoningEffortModel(context?: ModelReasoningEffortContext): boolean {
+  return (
+    context?.provider === "groq" &&
+    context.supportedEfforts !== undefined &&
+    context.supportedEfforts.length > 0
+  );
 }
 
 function defaultGroqModelReasoningEffort(
   context?: ModelReasoningEffortContext,
 ): ModelReasoningEffort {
   const supported = readGroqSupportedReasoningEffortSet(context?.supportedEfforts);
-  if (supported.has('default')) {
-    return 'default';
+  if (supported.has("default")) {
+    return "default";
   }
-  if (supported.has('medium')) {
-    return 'medium';
+  if (supported.has("medium")) {
+    return "medium";
   }
   return supported.values().next().value ?? DEFAULT_MODEL_REASONING_EFFORT;
 }
@@ -936,12 +917,12 @@ function groqReasoningEffortValueForContext(
   if (supported.has(normalized)) {
     return normalized;
   }
-  if (normalized === 'minimal') {
-    if (supported.has('default')) {
-      return 'default';
+  if (normalized === "minimal") {
+    if (supported.has("default")) {
+      return "default";
     }
-    if (supported.has('low')) {
-      return 'low';
+    if (supported.has("low")) {
+      return "low";
     }
   }
   return undefined;
@@ -969,9 +950,7 @@ function gpt56ReasoningEffortValueForContext(
   if (!supportedEfforts) {
     return normalized;
   }
-  return normalized === 'default' || supportedEfforts.has(normalized)
-    ? normalized
-    : undefined;
+  return normalized === "default" || supportedEfforts.has(normalized) ? normalized : undefined;
 }
 
 function gpt56ReasoningEffortOptionsForContext(
@@ -980,7 +959,7 @@ function gpt56ReasoningEffortOptionsForContext(
   const supportedEfforts = normalizeSupportedReasoningEfforts(context?.supportedEfforts);
   if (supportedEfforts && supportedEfforts.size > 0) {
     return GPT56_REASONING_EFFORT_OPTIONS.filter(
-      (option) => option.value === 'default' || supportedEfforts.has(option.value),
+      (option) => option.value === "default" || supportedEfforts.has(option.value),
     );
   }
 
@@ -996,7 +975,7 @@ function normalizeSupportedReasoningEfforts(
   const normalized = new Set<string>();
   for (const value of values) {
     const effort = normalizeModelReasoningEffort(value);
-    if (!effort || effort === 'default') {
+    if (!effort || effort === "default") {
       continue;
     }
     normalized.add(effort);

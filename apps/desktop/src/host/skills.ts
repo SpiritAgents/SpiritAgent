@@ -1,38 +1,28 @@
-import { existsSync } from 'node:fs';
-import { mkdir, readdir, rm, writeFile } from 'node:fs/promises';
-import path from 'node:path';
+import { existsSync } from "node:fs";
+import { mkdir, readdir, rm, writeFile } from "node:fs/promises";
+import path from "node:path";
 
-import i18n from '../lib/i18n-host.js';
-import type {
-  OpenAiActiveSkill,
-  OpenAiActiveSkillResourceEntry,
-} from '@spiritagent/agent-core';
+import i18n from "../lib/i18n-host.js";
+import type { OpenAiActiveSkill, OpenAiActiveSkillResourceEntry } from "@spiritagent/agent-core";
 import {
   resolveInstructionPaths,
   SKILL_FILE_NAME,
   validateSkillName,
-} from '@spiritagent/host-internal';
+} from "@spiritagent/host-internal";
 
-import type {
-  CreateSkillRequest,
-  DeleteSkillRequest,
-  DesktopSkillRootKind,
-} from '../types.js';
-import {
-  type HostMetadataSummary,
-  spiritAgentDataDir,
-} from './storage.js';
-import { formatYamlScalarForSkillFrontmatter } from './service-utils.js';
+import type { CreateSkillRequest, DeleteSkillRequest, DesktopSkillRootKind } from "../types.js";
+import { type HostMetadataSummary, spiritAgentDataDir } from "./storage.js";
+import { formatYamlScalarForSkillFrontmatter } from "./service-utils.js";
 
 const ACTIVE_SKILL_CONTENT_MAX_CHARS = 12_000;
 const ACTIVE_SKILL_RESOURCE_MAX_ENTRIES = 24;
 const ACTIVE_SKILL_RESOURCE_DIRS: ReadonlyArray<{
-  kind: OpenAiActiveSkillResourceEntry['kind'];
+  kind: OpenAiActiveSkillResourceEntry["kind"];
   dirname: string;
 }> = [
-  { kind: 'scripts', dirname: 'scripts' },
-  { kind: 'references', dirname: 'references' },
-  { kind: 'assets', dirname: 'assets' },
+  { kind: "scripts", dirname: "scripts" },
+  { kind: "references", dirname: "references" },
+  { kind: "assets", dirname: "assets" },
 ];
 
 export function desktopInstructionPaths(workspaceRoot: string) {
@@ -43,10 +33,10 @@ export function desktopInstructionPaths(workspaceRoot: string) {
 }
 
 export function parseSkillRootKind(value: unknown): DesktopSkillRootKind {
-  if (value === 'user' || value === 'workspaceSpirit' || value === 'workspaceAgents') {
+  if (value === "user" || value === "workspaceSpirit" || value === "workspaceAgents") {
     return value;
   }
-  throw new Error(i18n.t('error.invalidSkillRootKind'));
+  throw new Error(i18n.t("error.invalidSkillRootKind"));
 }
 
 export function resolveSkillRootDir(
@@ -54,11 +44,11 @@ export function resolveSkillRootDir(
   rootKind: DesktopSkillRootKind,
 ): string {
   switch (rootKind) {
-    case 'user':
+    case "user":
       return instructionPaths.userSkillsDir;
-    case 'workspaceSpirit':
+    case "workspaceSpirit":
       return instructionPaths.workspaceSpiritSkillsDir;
-    case 'workspaceAgents':
+    case "workspaceAgents":
       return instructionPaths.workspaceAgentsSkillsDir;
     default: {
       const _exhaustive: never = rootKind;
@@ -83,7 +73,7 @@ export function assertPathUnderSkillRoot(
   const root = path.resolve(resolveSkillRootDir(instructionPaths, rootKind));
   const resolved = path.resolve(targetDir);
   if (resolved !== root && !resolved.startsWith(root + path.sep)) {
-    throw new Error(i18n.t('error.skillPathOutsideRoot'));
+    throw new Error(i18n.t("error.skillPathOutsideRoot"));
   }
 }
 
@@ -101,15 +91,15 @@ export async function createSkillFile(
 
   const summary = request.summary.trim();
   if (!summary) {
-    throw new Error(i18n.t('error.skillSummaryRequired'));
+    throw new Error(i18n.t("error.skillSummaryRequired"));
   }
   const content = request.content.trim();
   if (!content) {
-    throw new Error(i18n.t('error.skillContentRequired'));
+    throw new Error(i18n.t("error.skillContentRequired"));
   }
   const skillDir = resolveSkillDir(instructionPaths, name, rootKind);
   if (existsSync(skillDir)) {
-    throw new Error(i18n.t('error.skillAlreadyExists', { name }));
+    throw new Error(i18n.t("error.skillAlreadyExists", { name }));
   }
 
   const frontmatterDescription = formatYamlScalarForSkillFrontmatter(summary);
@@ -122,7 +112,7 @@ ${content}
 `;
 
   await mkdir(skillDir, { recursive: true });
-  await writeFile(path.join(skillDir, SKILL_FILE_NAME), fileContent, 'utf8');
+  await writeFile(path.join(skillDir, SKILL_FILE_NAME), fileContent, "utf8");
 }
 
 export async function deleteSkillDir(
@@ -141,7 +131,7 @@ export async function deleteSkillDir(
   assertPathUnderSkillRoot(instructionPaths, skillDir, rootKind);
 
   if (!existsSync(skillDir)) {
-    throw new Error(i18n.t('error.skillNotFound', { name }));
+    throw new Error(i18n.t("error.skillNotFound", { name }));
   }
 
   await rm(skillDir, { recursive: true, force: true });
@@ -150,13 +140,13 @@ export async function deleteSkillDir(
 export function buildActivateSkillUserTurn(skillName: string, extraNote: string): string {
   const trimmed = extraNote.trim();
   if (!trimmed) {
-    return i18n.t('slash.activateSkillPrompt', { skillName });
+    return i18n.t("slash.activateSkillPrompt", { skillName });
   }
   return trimmed;
 }
 
 export async function buildActiveSkillPayload(
-  entry: HostMetadataSummary['skills']['entries'][number],
+  entry: HostMetadataSummary["skills"]["entries"][number],
 ): Promise<OpenAiActiveSkill> {
   const skillRoot = path.dirname(entry.source.path);
   const { content, truncated } = truncateActiveSkillContent(entry.content);
@@ -188,7 +178,7 @@ function truncateActiveSkillContent(content: string): {
   }
 
   return {
-    content: `${chars.slice(0, ACTIVE_SKILL_CONTENT_MAX_CHARS).join('').trimEnd()}\n\n...<skill content truncated>`,
+    content: `${chars.slice(0, ACTIVE_SKILL_CONTENT_MAX_CHARS).join("").trimEnd()}\n\n...<skill content truncated>`,
     truncated: true,
   };
 }
@@ -231,7 +221,7 @@ async function collectSkillResources(skillRoot: string): Promise<{
 
         resources.push({
           kind,
-          path: path.relative(skillRoot, fullPath).replace(/\\/gu, '/'),
+          path: path.relative(skillRoot, fullPath).replace(/\\/gu, "/"),
         });
       }
     }

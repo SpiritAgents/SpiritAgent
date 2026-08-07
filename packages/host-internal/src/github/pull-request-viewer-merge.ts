@@ -1,6 +1,6 @@
-import { executeGitHubGraphQL } from './github-graphql.js';
-import { viewerCanMergeFromPermissions } from './repository-permissions.js';
-import type { GitHubRepositoryRef } from './types.js';
+import { executeGitHubGraphQL } from "./github-graphql.js";
+import { viewerCanMergeFromPermissions } from "./repository-permissions.js";
+import type { GitHubRepositoryRef } from "./types.js";
 
 const VIEWER_MERGE_HEADLINE_QUERY = `
 query ViewerMergeHeadline($owner: String!, $repo: String!, $number: Int!) {
@@ -45,7 +45,7 @@ export async function fetchViewerMergeHeadlineText(
         number,
       },
     );
-    return data.repository?.pullRequest?.viewerMergeHeadlineText?.trim() ?? '';
+    return data.repository?.pullRequest?.viewerMergeHeadlineText?.trim() ?? "";
   } catch {
     return null;
   }

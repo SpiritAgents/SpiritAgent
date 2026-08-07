@@ -1,8 +1,8 @@
-import path from 'node:path';
+import path from "node:path";
 
-import { resolveDesktopAgentMode } from '../lib/agent-mode.js';
-import { clearCodeCompletionStateForWorkspace } from './code-completion-commands.js';
-import type { PlanSnapshot } from '../types.js';
+import { resolveDesktopAgentMode } from "../lib/agent-mode.js";
+import { clearCodeCompletionStateForWorkspace } from "./code-completion-commands.js";
+import type { PlanSnapshot } from "../types.js";
 import {
   discoverWorkspaceRoot,
   applyLlmClientVersionFromApp,
@@ -16,16 +16,20 @@ import {
   type DesktopConfigFile,
   type DesktopWorkspaceBinding,
   type HostMetadataSummary,
-} from './storage.js';
-import { applyGitRevision, readWorkspaceGitSnapshot } from './git.js';
-import type { SessionRegistry } from './session-registry.js';
-import type { DesktopToolExecutor } from './tool-executor.js';
-import type { DesktopGitSnapshot, DesktopExtensionCssLayer, DesktopExtensionListItem } from '../types.js';
-import type { EphemeralSessionRecord } from './sessions.js';
-import { ensureBuiltinAuthoringSkills } from '@spiritagent/host-internal';
-import { resolveWorkspaceBindingForRequestedRoot, sameWorkspaceRoot } from './service-utils.js';
-import { spiritAgentDataDir } from './storage.js';
-import type { ExtensionWarmupTrigger } from './extension-warmup.js';
+} from "./storage.js";
+import { applyGitRevision, readWorkspaceGitSnapshot } from "./git.js";
+import type { SessionRegistry } from "./session-registry.js";
+import type { DesktopToolExecutor } from "./tool-executor.js";
+import type {
+  DesktopGitSnapshot,
+  DesktopExtensionCssLayer,
+  DesktopExtensionListItem,
+} from "../types.js";
+import type { EphemeralSessionRecord } from "./sessions.js";
+import { ensureBuiltinAuthoringSkills } from "@spiritagent/host-internal";
+import { resolveWorkspaceBindingForRequestedRoot, sameWorkspaceRoot } from "./service-utils.js";
+import { spiritAgentDataDir } from "./storage.js";
+import type { ExtensionWarmupTrigger } from "./extension-warmup.js";
 
 export interface InitializationState {
   workspaceRoot: string;
@@ -90,13 +94,13 @@ export async function ensureInitializedCommand(
   });
 
   const workspaceRoot =
-    workspaceBinding === 'none'
+    workspaceBinding === "none"
       ? resolveDesktopHomeDirectory()
-      : requestedWorkspaceRoot
-        ?? (previousState?.workspaceBinding === 'project' ? previousState.workspaceRoot : undefined)
-        ?? loadedConfig.lastProjectWorkspaceRoot
-        ?? loadedConfig.recentWorkspaces?.[0]
-        ?? discoverWorkspaceRoot();
+      : (requestedWorkspaceRoot ??
+        (previousState?.workspaceBinding === "project" ? previousState.workspaceRoot : undefined) ??
+        loadedConfig.lastProjectWorkspaceRoot ??
+        loadedConfig.recentWorkspaces?.[0] ??
+        discoverWorkspaceRoot());
 
   if (
     options.fastPath === true &&
@@ -111,17 +115,15 @@ export async function ensureInitializedCommand(
   const git = await readWorkspaceGitSnapshot(workspaceRoot);
   let lastProjectWorkspaceRoot = loadedConfig.lastProjectWorkspaceRoot;
   if (
-    workspaceBinding === 'none'
-    && previousBinding === 'project'
-    && previousState?.workspaceRoot
-    && !sameWorkspaceRoot(previousState.workspaceRoot, resolveDesktopHomeDirectory())
+    workspaceBinding === "none" &&
+    previousBinding === "project" &&
+    previousState?.workspaceRoot &&
+    !sameWorkspaceRoot(previousState.workspaceRoot, resolveDesktopHomeDirectory())
   ) {
     lastProjectWorkspaceRoot = previousState.workspaceRoot;
   }
 
-  const preserveRecent =
-    workspaceBinding === 'none'
-    || options.preserveRecentWorkspaces === true;
+  const preserveRecent = workspaceBinding === "none" || options.preserveRecentWorkspaces === true;
   const config = {
     ...loadedConfig,
     workspaceBinding,
@@ -137,18 +139,22 @@ export async function ensureInitializedCommand(
   const recentWorkspacesChanged =
     !loadedConfig.recentWorkspaces ||
     config.recentWorkspaces.length !== loadedConfig.recentWorkspaces.length ||
-    config.recentWorkspaces.some((entry, index) => entry !== loadedConfig.recentWorkspaces?.[index]);
-  const bindingChanged = normalizeWorkspaceBinding(loadedConfig.workspaceBinding) !== workspaceBinding;
-  const lastProjectChanged = loadedConfig.lastProjectWorkspaceRoot !== config.lastProjectWorkspaceRoot;
+    config.recentWorkspaces.some(
+      (entry, index) => entry !== loadedConfig.recentWorkspaces?.[index],
+    );
+  const bindingChanged =
+    normalizeWorkspaceBinding(loadedConfig.workspaceBinding) !== workspaceBinding;
+  const lastProjectChanged =
+    loadedConfig.lastProjectWorkspaceRoot !== config.lastProjectWorkspaceRoot;
   if (recentWorkspacesChanged || bindingChanged || lastProjectChanged) {
     await saveConfig(config);
   }
 
   if (
-    ctx.initialized()
-    && previousState?.workspaceRoot
-    && sameWorkspaceRoot(previousState.workspaceRoot, workspaceRoot)
-    && previousBinding === workspaceBinding
+    ctx.initialized() &&
+    previousState?.workspaceRoot &&
+    sameWorkspaceRoot(previousState.workspaceRoot, workspaceRoot) &&
+    previousBinding === workspaceBinding
   ) {
     const currentState = ctx.state();
     if (!currentState) {
@@ -168,7 +174,10 @@ export async function ensureInitializedCommand(
   const metadata = await loadHostMetadata(workspaceRoot, resolveDesktopAgentMode(config), {
     workspaceBinding,
   });
-  const plan = await ctx.loadDesktopPlanSnapshot(metadata.planMetadata.path, metadata.planMetadata.exists);
+  const plan = await ctx.loadDesktopPlanSnapshot(
+    metadata.planMetadata.path,
+    metadata.planMetadata.exists,
+  );
   const state = ctx.state();
   const previousWorkspaceRoot = state?.workspaceRoot;
   const switchingWorkspace = Boolean(
@@ -180,7 +189,7 @@ export async function ensureInitializedCommand(
   }
 
   if (switchingWorkspace) {
-    ctx.setLastRuntimeError('');
+    ctx.setLastRuntimeError("");
     ctx.setToolExecutor(undefined);
     if (previousWorkspaceRoot) {
       clearCodeCompletionStateForWorkspace(previousWorkspaceRoot);
@@ -212,6 +221,6 @@ export async function ensureInitializedCommand(
     await ctx.refreshRuntime();
   }
   if (options.deferExtensionWarmup !== true) {
-    ctx.scheduleExtensionWarmup({ type: 'startup', workspaceRoot });
+    ctx.scheduleExtensionWarmup({ type: "startup", workspaceRoot });
   }
 }

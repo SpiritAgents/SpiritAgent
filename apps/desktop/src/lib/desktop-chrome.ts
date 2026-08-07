@@ -19,8 +19,7 @@ export {
  * Instant hover fill — exclude background-color from transitions (session-sidebar precedent).
  * Keeps existing hover:bg-* overlays; only removes bg fade in/out on hover.
  */
-export const instantHoverMotionClass =
-  "!transition-[opacity,transform,box-shadow] duration-150";
+export const instantHoverMotionClass = "!transition-[opacity,transform,box-shadow] duration-150";
 
 /** 半透明 hover 铺底，背景色不参与 transition（不含字色变化） */
 export const DESKTOP_INSTANT_HOVER_OVERLAY = cn(
@@ -85,10 +84,7 @@ export const DESKTOP_CHROME_COMMIT_BTN = cn(
 );
 
 /** Git 更改区 primary 按钮（ButtonGroup 分段，配合 `size="xs"`）；`border-r-0` 避免透明右边框叠在分割线上显得过粗 */
-export const DESKTOP_GIT_ACTION_BTN = cn(
-  "border-r-0 shadow-none",
-  instantHoverMotionClass,
-);
+export const DESKTOP_GIT_ACTION_BTN = cn("border-r-0 shadow-none", instantHoverMotionClass);
 
 /** Git ButtonGroup 中间竖线（`ButtonGroupSeparator`）；`!bg-*` 覆盖 Separator 默认的 bg-border / bg-input */
 export const DESKTOP_GIT_ACTION_SPLIT = cn(
@@ -109,10 +105,7 @@ export const DESKTOP_GIT_ACTION_MENU_TRIGGER = cn(
 /** 短列表：轻外壳（仅局部场景使用） */
 export const DESKTOP_OVERLAY_SHORT_SHELL = "rounded-lg shadow-md ring-0";
 
-export const DESKTOP_OVERLAY_SHORT_CONTENT = cn(
-  DESKTOP_OVERLAY_SHORT_SHELL,
-  "p-1 text-sm",
-);
+export const DESKTOP_OVERLAY_SHORT_CONTENT = cn(DESKTOP_OVERLAY_SHORT_SHELL, "p-1 text-sm");
 
 /** Dropdown 基元：短列表壳 + popover 面 */
 export const DESKTOP_OVERLAY_SHORT_DROPDOWN_SURFACE = cn(
@@ -148,19 +141,16 @@ export const DESKTOP_OVERLAY_LIST_DROPDOWN_SURFACE = cn(
 export const DESKTOP_OVERLAY_LIST_WIDTH =
   "w-max min-w-[max(11rem,var(--radix-dropdown-menu-trigger-width))] max-w-[min(14rem,calc(100vw-1.25rem))]";
 
-export const DESKTOP_OVERLAY_LIST_FILTER_HEADER =
-  "shrink-0 border-b border-border/40 p-1.5";
+export const DESKTOP_OVERLAY_LIST_FILTER_HEADER = "shrink-0 border-b border-border/40 p-1.5";
 
 /** 表单控件默认边框：与扩展卡片 border-border/60 对齐（无 transition，hover/focus 即时切换） */
 export const DESKTOP_CONTROL_BORDER = "border border-control-border transition-none";
 
 /** 表单控件 hover：与扩展卡片一致 */
-export const DESKTOP_CONTROL_BORDER_HOVER =
-  "hover:border-border hover:bg-muted/30";
+export const DESKTOP_CONTROL_BORDER_HOVER = "hover:border-border hover:bg-muted/30";
 
 /** 鼠标点击 focus：保持 hover 边框，无 ring */
-export const DESKTOP_CONTROL_BORDER_FOCUSED =
-  "focus:border-border focus:bg-muted/30";
+export const DESKTOP_CONTROL_BORDER_FOCUSED = "focus:border-border focus:bg-muted/30";
 
 /** 键盘 Tab focus-visible：shadcn ring（鼠标点击不触发 focus-visible） */
 export const DESKTOP_CONTROL_BORDER_FOCUS_VISIBLE =
@@ -257,16 +247,13 @@ export const DESKTOP_SELECT_TRIGGER = cn(
 export const DESKTOP_SELECT_LABEL = DESKTOP_OVERLAY_LIST_GROUP_LABEL;
 
 /** 长列表底部单行操作（添加工作区等），密度对齐 LIST 而非 Dropdown 默认 SHORT */
-export const DESKTOP_OVERLAY_LIST_ACTION_ITEM =
-  "px-2 py-1.5 text-xs text-popover-foreground";
+export const DESKTOP_OVERLAY_LIST_ACTION_ITEM = "px-2 py-1.5 text-xs text-popover-foreground";
 
 export const DESKTOP_OVERLAY_LIST_ITEM_PRIMARY = DESKTOP_OVERLAY_ITEM_PRIMARY_CLASS;
 
-export const DESKTOP_OVERLAY_LIST_ITEM_SECONDARY =
-  "truncate text-[11px] text-muted-foreground";
+export const DESKTOP_OVERLAY_LIST_ITEM_SECONDARY = "truncate text-[11px] text-muted-foreground";
 
-export const DESKTOP_OVERLAY_LIST_SUB_TRIGGER =
-  "items-center gap-1.5 px-2.5 py-1.5 pr-2 text-xs";
+export const DESKTOP_OVERLAY_LIST_SUB_TRIGGER = "items-center gap-1.5 px-2.5 py-1.5 pr-2 text-xs";
 
 /** 长列表配套详情 Popover：密度与 DESKTOP_OVERLAY_LIST_* 对齐 */
 export const DESKTOP_OVERLAY_LIST_DETAIL_SURFACE = cn(
@@ -285,9 +272,7 @@ export const DESKTOP_OVERLAY_LIST_WORKSPACE_PANEL =
 export const DESKTOP_COMPOSER_CHIP_SURFACE = desktopComposerChipSurfaceClass(false);
 
 /** 阻止滚轮穿透到背后会话/列表 */
-export function stopOverlayScrollPropagation(event: {
-  stopPropagation(): void;
-}): void {
+export function stopOverlayScrollPropagation(event: { stopPropagation(): void }): void {
   event.stopPropagation();
 }
 

@@ -44,16 +44,12 @@ export function OnboardingAttributionControls({
           <label htmlFor="onboarding-pr-attribution" className={DESKTOP_SETTINGS_LABEL_CLASS}>
             {t("settings.prAttribution")}
           </label>
-          <p className="text-sm text-muted-foreground">
-            {t("settings.prAttributionDescription")}
-          </p>
+          <p className="text-sm text-muted-foreground">{t("settings.prAttributionDescription")}</p>
         </div>
         <Switch
           id="onboarding-pr-attribution"
           checked={settings.prAttributionEnabled}
-          onCheckedChange={(value) =>
-            void onSavePatch({ prAttributionEnabled: value === true })
-          }
+          onCheckedChange={(value) => void onSavePatch({ prAttributionEnabled: value === true })}
         />
       </div>
     </div>

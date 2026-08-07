@@ -1,186 +1,223 @@
-import type { HostCommandName } from './contracts.js';
-import type { CommandPayloads } from './host-command-payloads.js';
+import type { HostCommandName } from "./contracts.js";
+import type { CommandPayloads } from "./host-command-payloads.js";
 
 export interface HostCommandDelegate {
-  bootstrap(request?: CommandPayloads['bootstrap']['request']): Promise<unknown>;
-  rememberWorkspaceRoot(request: CommandPayloads['rememberWorkspaceRoot']['request']): Promise<unknown>;
-  forgetWorkspace(request: CommandPayloads['forgetWorkspace']['request']): Promise<unknown>;
-  commitChanges(request: CommandPayloads['commitChanges']['request']): Promise<unknown>;
-  updateConfig(request: CommandPayloads['updateConfig']['request']): Promise<unknown>;
-  installLspProvider(request: CommandPayloads['installLspProvider']['request']): Promise<unknown>;
+  bootstrap(request?: CommandPayloads["bootstrap"]["request"]): Promise<unknown>;
+  rememberWorkspaceRoot(
+    request: CommandPayloads["rememberWorkspaceRoot"]["request"],
+  ): Promise<unknown>;
+  forgetWorkspace(request: CommandPayloads["forgetWorkspace"]["request"]): Promise<unknown>;
+  commitChanges(request: CommandPayloads["commitChanges"]["request"]): Promise<unknown>;
+  updateConfig(request: CommandPayloads["updateConfig"]["request"]): Promise<unknown>;
+  installLspProvider(request: CommandPayloads["installLspProvider"]["request"]): Promise<unknown>;
   setWebHostAuthTokenHash(authTokenHash: string): Promise<unknown>;
-  addModel(request: CommandPayloads['addModel']['request']): Promise<unknown>;
-  addProviderModels(request: CommandPayloads['addProviderModels']['request']): Promise<unknown>;
-  previewModels(request: CommandPayloads['previewModels']['request']): Promise<unknown>;
-  removeModel(request: CommandPayloads['removeModel']['request']): Promise<unknown>;
-  removeProviderModels(request: CommandPayloads['removeProviderModels']['request']): Promise<unknown>;
-  removeProviderGroup(request: CommandPayloads['removeProviderGroup']['request']): Promise<unknown>;
-  addMcpServer(request: CommandPayloads['addMcpServer']['request']): Promise<unknown>;
-  deleteMcpServer(request: CommandPayloads['deleteMcpServer']['request']): Promise<unknown>;
-  saveHookEntry(request: CommandPayloads['saveHookEntry']['request']): Promise<unknown>;
-  deleteHookEntry(request: CommandPayloads['deleteHookEntry']['request']): Promise<unknown>;
+  addModel(request: CommandPayloads["addModel"]["request"]): Promise<unknown>;
+  addProviderModels(request: CommandPayloads["addProviderModels"]["request"]): Promise<unknown>;
+  previewModels(request: CommandPayloads["previewModels"]["request"]): Promise<unknown>;
+  removeModel(request: CommandPayloads["removeModel"]["request"]): Promise<unknown>;
+  removeProviderModels(
+    request: CommandPayloads["removeProviderModels"]["request"],
+  ): Promise<unknown>;
+  removeProviderGroup(request: CommandPayloads["removeProviderGroup"]["request"]): Promise<unknown>;
+  addMcpServer(request: CommandPayloads["addMcpServer"]["request"]): Promise<unknown>;
+  deleteMcpServer(request: CommandPayloads["deleteMcpServer"]["request"]): Promise<unknown>;
+  saveHookEntry(request: CommandPayloads["saveHookEntry"]["request"]): Promise<unknown>;
+  deleteHookEntry(request: CommandPayloads["deleteHookEntry"]["request"]): Promise<unknown>;
   inspectMcpServer(name: string): Promise<unknown>;
-  importExtension(request: CommandPayloads['importExtension']['request']): Promise<unknown>;
+  importExtension(request: CommandPayloads["importExtension"]["request"]): Promise<unknown>;
   listMarketplaceExtensions(): Promise<unknown>;
   getMarketplaceExtensionDetail(extensionId: string): Promise<unknown>;
   getMarketplaceExtensionReadme(extensionId: string): Promise<unknown>;
-  installMarketplaceExtension(request: CommandPayloads['installMarketplaceExtension']['request']): Promise<unknown>;
-  prepareMarketplaceExtensionInstall(
-    request: CommandPayloads['prepareMarketplaceExtensionInstall']['request'],
+  installMarketplaceExtension(
+    request: CommandPayloads["installMarketplaceExtension"]["request"],
   ): Promise<unknown>;
-  deleteExtension(request: CommandPayloads['deleteExtension']['request']): Promise<unknown>;
-  runExtension(request: CommandPayloads['runExtension']['request']): Promise<unknown>;
-  updateExtensionSettings(request: CommandPayloads['updateExtensionSettings']['request']): Promise<unknown>;
-  updateExtensionSecret(request: CommandPayloads['updateExtensionSecret']['request']): Promise<unknown>;
-  createRule(request: CommandPayloads['createRule']['request']): Promise<unknown>;
-  createSkill(request: CommandPayloads['createSkill']['request']): Promise<unknown>;
-  deleteRule(request: CommandPayloads['deleteRule']['request']): Promise<unknown>;
-  deleteSkill(request: CommandPayloads['deleteSkill']['request']): Promise<unknown>;
-  submitSkillSlash(request: CommandPayloads['submitSkillSlash']['request']): Promise<unknown>;
-  submitGitChip(request: CommandPayloads['submitGitChip']['request']): Promise<unknown>;
+  prepareMarketplaceExtensionInstall(
+    request: CommandPayloads["prepareMarketplaceExtensionInstall"]["request"],
+  ): Promise<unknown>;
+  deleteExtension(request: CommandPayloads["deleteExtension"]["request"]): Promise<unknown>;
+  runExtension(request: CommandPayloads["runExtension"]["request"]): Promise<unknown>;
+  updateExtensionSettings(
+    request: CommandPayloads["updateExtensionSettings"]["request"],
+  ): Promise<unknown>;
+  updateExtensionSecret(
+    request: CommandPayloads["updateExtensionSecret"]["request"],
+  ): Promise<unknown>;
+  createRule(request: CommandPayloads["createRule"]["request"]): Promise<unknown>;
+  createSkill(request: CommandPayloads["createSkill"]["request"]): Promise<unknown>;
+  deleteRule(request: CommandPayloads["deleteRule"]["request"]): Promise<unknown>;
+  deleteSkill(request: CommandPayloads["deleteSkill"]["request"]): Promise<unknown>;
+  submitSkillSlash(request: CommandPayloads["submitSkillSlash"]["request"]): Promise<unknown>;
+  submitGitChip(request: CommandPayloads["submitGitChip"]["request"]): Promise<unknown>;
   submitStartImplementing(): Promise<unknown>;
   exportSessionLog(): Promise<unknown>;
   compactHistory(): Promise<unknown>;
-  submitUserTurn(request: CommandPayloads['submitUserTurn']): Promise<unknown>;
+  submitUserTurn(request: CommandPayloads["submitUserTurn"]): Promise<unknown>;
   setLoopEnabled(enabled: boolean): Promise<unknown>;
-  setApprovalLevel(approvalLevel: CommandPayloads['setApprovalLevel']['approvalLevel']): Promise<unknown>;
+  setApprovalLevel(
+    approvalLevel: CommandPayloads["setApprovalLevel"]["approvalLevel"],
+  ): Promise<unknown>;
   setPendingGitBranch(branch: string): Promise<unknown>;
-  setWorkLocation(workLocation: CommandPayloads['setWorkLocation']['workLocation']): Promise<unknown>;
-  checkoutGitBranch(request: CommandPayloads['checkoutGitBranch']): Promise<unknown>;
+  setWorkLocation(
+    workLocation: CommandPayloads["setWorkLocation"]["workLocation"],
+  ): Promise<unknown>;
+  checkoutGitBranch(request: CommandPayloads["checkoutGitBranch"]): Promise<unknown>;
   mergeWorktreeToMain(): Promise<unknown>;
   pushGitBranch(): Promise<unknown>;
   refreshGitSnapshot(): Promise<unknown>;
-  abortConversation(request?: CommandPayloads['abortConversation']): Promise<unknown>;
+  abortConversation(request?: CommandPayloads["abortConversation"]): Promise<unknown>;
   abortShell(toolCallId: string): Promise<unknown>;
   continueAssistantCompletion(messageId: number): Promise<unknown>;
-  poll(request?: import('../types.js').PollRequest): Promise<unknown>;
+  poll(request?: import("../types.js").PollRequest): Promise<unknown>;
   listDreamsOverview(): Promise<unknown>;
   listAutomations(): Promise<unknown>;
   getAutomation(automationId: string): Promise<unknown>;
-  createAutomation(request: CommandPayloads['createAutomation']['request']): Promise<unknown>;
-  updateAutomation(automationId: string, patch: CommandPayloads['updateAutomation']['patch']): Promise<unknown>;
+  createAutomation(request: CommandPayloads["createAutomation"]["request"]): Promise<unknown>;
+  updateAutomation(
+    automationId: string,
+    patch: CommandPayloads["updateAutomation"]["patch"],
+  ): Promise<unknown>;
   deleteAutomation(automationId: string): Promise<unknown>;
   setAutomationEnabled(automationId: string, enabled: boolean): Promise<unknown>;
-  replyPendingApproval(request: CommandPayloads['replyPendingApproval']['request']): Promise<unknown>;
-  replyPendingQuestions(request: CommandPayloads['replyPendingQuestions']['request']): Promise<unknown>;
-  replyWorkspaceCapabilityTrust(
-    request: CommandPayloads['replyWorkspaceCapabilityTrust']['request'],
+  replyPendingApproval(
+    request: CommandPayloads["replyPendingApproval"]["request"],
   ): Promise<unknown>;
-  resetSession(payload?: CommandPayloads['resetSession']): Promise<unknown>;
+  replyPendingQuestions(
+    request: CommandPayloads["replyPendingQuestions"]["request"],
+  ): Promise<unknown>;
+  replyWorkspaceCapabilityTrust(
+    request: CommandPayloads["replyWorkspaceCapabilityTrust"]["request"],
+  ): Promise<unknown>;
+  resetSession(payload?: CommandPayloads["resetSession"]): Promise<unknown>;
   listSessions(): Promise<unknown>;
   openSession(path: string, options?: { activate?: boolean }): Promise<unknown>;
   beginSplitPaneSession(
-    request: CommandPayloads['beginSplitPaneSession']['request'],
+    request: CommandPayloads["beginSplitPaneSession"]["request"],
   ): Promise<unknown>;
   beginSideChatPaneSession(
-    request: CommandPayloads['beginSideChatPaneSession']['request'],
+    request: CommandPayloads["beginSideChatPaneSession"]["request"],
   ): Promise<unknown>;
   forkSessionIntoSideChat(
-    request: CommandPayloads['forkSessionIntoSideChat']['request'],
+    request: CommandPayloads["forkSessionIntoSideChat"]["request"],
   ): Promise<unknown>;
   setVisiblePaneSessions(
-    request: CommandPayloads['setVisiblePaneSessions']['request'],
+    request: CommandPayloads["setVisiblePaneSessions"]["request"],
   ): Promise<unknown>;
   syncSplitPaneSessions(
-    request: CommandPayloads['syncSplitPaneSessions']['request'],
+    request: CommandPayloads["syncSplitPaneSessions"]["request"],
   ): Promise<unknown>;
-  focusPaneSession(
-    request: CommandPayloads['focusPaneSession']['request'],
-  ): Promise<unknown>;
+  focusPaneSession(request: CommandPayloads["focusPaneSession"]["request"]): Promise<unknown>;
   closeSplitPaneSession(
-    request: CommandPayloads['closeSplitPaneSession']['request'],
+    request: CommandPayloads["closeSplitPaneSession"]["request"],
   ): Promise<unknown>;
-  switchPaneWorkspace(
-    request: CommandPayloads['switchPaneWorkspace']['request'],
-  ): Promise<unknown>;
-  switchPaneModel(
-    request: CommandPayloads['switchPaneModel']['request'],
-  ): Promise<unknown>;
+  switchPaneWorkspace(request: CommandPayloads["switchPaneWorkspace"]["request"]): Promise<unknown>;
+  switchPaneModel(request: CommandPayloads["switchPaneModel"]["request"]): Promise<unknown>;
   setPanePendingGitBranch(
-    request: CommandPayloads['setPanePendingGitBranch']['request'],
+    request: CommandPayloads["setPanePendingGitBranch"]["request"],
   ): Promise<unknown>;
-  setPaneWorkLocation(
-    request: CommandPayloads['setPaneWorkLocation']['request'],
-  ): Promise<unknown>;
+  setPaneWorkLocation(request: CommandPayloads["setPaneWorkLocation"]["request"]): Promise<unknown>;
   checkoutPaneGitBranch(
-    request: CommandPayloads['checkoutPaneGitBranch']['request'],
+    request: CommandPayloads["checkoutPaneGitBranch"]["request"],
   ): Promise<unknown>;
   deleteSession(path: string): Promise<unknown>;
   renameSession(path: string, displayName: string): Promise<unknown>;
   listWorkspaceFileReferenceSuggestions(
-    request: CommandPayloads['listWorkspaceFileReferenceSuggestions']['request'],
+    request: CommandPayloads["listWorkspaceFileReferenceSuggestions"]["request"],
   ): Promise<unknown>;
   requestCodeCompletion(
-    request: CommandPayloads['requestCodeCompletion']['request'],
+    request: CommandPayloads["requestCodeCompletion"]["request"],
   ): Promise<unknown>;
   abortCodeCompletion(): Promise<unknown>;
   recordCodeCompletionFileState(
-    request: CommandPayloads['recordCodeCompletionFileState']['request'],
+    request: CommandPayloads["recordCodeCompletionFileState"]["request"],
   ): Promise<unknown>;
   resetCodeCompletionJournal(): Promise<unknown>;
   primeWorkspaceFileReferenceIndex(): Promise<unknown>;
   getWorkspaceFileReferenceIndex(): Promise<unknown>;
   listWorkspaceExplorerChildren(relativePath: string): Promise<unknown>;
   readGitWorkingTree(): Promise<unknown>;
-  readGitHistory(request: NonNullable<CommandPayloads['readGitHistory']['request']>): Promise<unknown>;
-  readGitCommitMessage(request: CommandPayloads['readGitCommitMessage']['request']): Promise<unknown>;
+  readGitHistory(
+    request: NonNullable<CommandPayloads["readGitHistory"]["request"]>,
+  ): Promise<unknown>;
+  readGitCommitMessage(
+    request: CommandPayloads["readGitCommitMessage"]["request"],
+  ): Promise<unknown>;
   getGitHubAuthStatus(): Promise<unknown>;
   beginGitHubDeviceLogin(): Promise<unknown>;
   completeGitHubDeviceLogin(): Promise<unknown>;
   cancelGitHubDeviceLogin(): Promise<unknown>;
   disconnectGitHub(): Promise<unknown>;
   getGitHubPullRequestForCurrentBranch(): Promise<unknown>;
-  listGitHubPullRequests(request: CommandPayloads['listGitHubPullRequests']['request']): Promise<unknown>;
+  listGitHubPullRequests(
+    request: CommandPayloads["listGitHubPullRequests"]["request"],
+  ): Promise<unknown>;
   listGitHubAutomationRepositories(
-    request?: CommandPayloads['listGitHubAutomationRepositories']['request'],
+    request?: CommandPayloads["listGitHubAutomationRepositories"]["request"],
   ): Promise<unknown>;
   searchGitHubAutomationRepositories(
-    request: CommandPayloads['searchGitHubAutomationRepositories']['request'],
+    request: CommandPayloads["searchGitHubAutomationRepositories"]["request"],
   ): Promise<unknown>;
   getGitHubPullRequestTabCounts(
-    request: CommandPayloads['getGitHubPullRequestTabCounts']['request'],
+    request: CommandPayloads["getGitHubPullRequestTabCounts"]["request"],
   ): Promise<unknown>;
-  getGitHubPullRequestDetail(request: CommandPayloads['getGitHubPullRequestDetail']['request']): Promise<unknown>;
-  getGitHubPullRequestConversation(request: CommandPayloads['getGitHubPullRequestConversation']['request']): Promise<unknown>;
-  getGitHubPullRequestFiles(request: CommandPayloads['getGitHubPullRequestFiles']['request']): Promise<unknown>;
-  getGitHubPullRequestCommits(request: CommandPayloads['getGitHubPullRequestCommits']['request']): Promise<unknown>;
-  getGitHubPullRequestChecks(request: CommandPayloads['getGitHubPullRequestChecks']['request']): Promise<unknown>;
-  mergeGitHubPullRequest(request: CommandPayloads['mergeGitHubPullRequest']['request']): Promise<unknown>;
-  markGitHubPullRequestReady(request: CommandPayloads['markGitHubPullRequestReady']['request']): Promise<unknown>;
+  getGitHubPullRequestDetail(
+    request: CommandPayloads["getGitHubPullRequestDetail"]["request"],
+  ): Promise<unknown>;
+  getGitHubPullRequestConversation(
+    request: CommandPayloads["getGitHubPullRequestConversation"]["request"],
+  ): Promise<unknown>;
+  getGitHubPullRequestFiles(
+    request: CommandPayloads["getGitHubPullRequestFiles"]["request"],
+  ): Promise<unknown>;
+  getGitHubPullRequestCommits(
+    request: CommandPayloads["getGitHubPullRequestCommits"]["request"],
+  ): Promise<unknown>;
+  getGitHubPullRequestChecks(
+    request: CommandPayloads["getGitHubPullRequestChecks"]["request"],
+  ): Promise<unknown>;
+  mergeGitHubPullRequest(
+    request: CommandPayloads["mergeGitHubPullRequest"]["request"],
+  ): Promise<unknown>;
+  markGitHubPullRequestReady(
+    request: CommandPayloads["markGitHubPullRequestReady"]["request"],
+  ): Promise<unknown>;
   readWorkspaceTextFile(
     relativePath: string,
-    options?: import('../types.js').ReadWorkspaceTextFileOptions,
+    options?: import("../types.js").ReadWorkspaceTextFileOptions,
   ): Promise<unknown>;
   searchWorkspaceContent(
-    request: import('../types.js').WorkspaceContentSearchRequest,
+    request: import("../types.js").WorkspaceContentSearchRequest,
   ): Promise<unknown>;
-  writeWorkspaceTextFile(request: CommandPayloads['writeWorkspaceTextFile']['request']): Promise<unknown>;
+  writeWorkspaceTextFile(
+    request: CommandPayloads["writeWorkspaceTextFile"]["request"],
+  ): Promise<unknown>;
   revealWorkspaceEntry(relativePath: string, workspaceRoot?: string): Promise<unknown>;
   openPathInDefaultApp(absolutePath: string): Promise<unknown>;
-  renameWorkspaceEntry(
-    relativePath: string,
-    newName: string,
-  ): Promise<unknown>;
+  renameWorkspaceEntry(relativePath: string, newName: string): Promise<unknown>;
   createWorkspaceEntry(
     parentDirectoryRel: string,
     name: string,
-    kind: 'file' | 'dir',
+    kind: "file" | "dir",
   ): Promise<unknown>;
-  moveWorkspaceEntry(
-    relativePath: string,
-    targetDirectoryRel: string,
-  ): Promise<unknown>;
+  moveWorkspaceEntry(relativePath: string, targetDirectoryRel: string): Promise<unknown>;
   trashWorkspaceEntry(relativePath: string): Promise<unknown>;
   forceDeleteWorkspaceEntry(relativePath: string): Promise<unknown>;
   readHostTextFile(absolutePath: string): Promise<unknown>;
-  writeHostTextFile(request: CommandPayloads['writeHostTextFile']['request']): Promise<unknown>;
+  writeHostTextFile(request: CommandPayloads["writeHostTextFile"]["request"]): Promise<unknown>;
   statHostTextFile(absolutePath: string): Promise<unknown>;
   classifyLocalFileComposerRoute(absolutePath: string): Promise<unknown>;
-  rewindAndSubmitMessage(request: CommandPayloads['rewindAndSubmitMessage']['request']): Promise<unknown>;
-  forkSession(request: CommandPayloads['forkSession']['request']): Promise<unknown>;
-  reorderQueuedUserTurn(request: CommandPayloads['reorderQueuedUserTurn']['request']): Promise<unknown>;
-  sendQueuedUserTurnNow(request: CommandPayloads['sendQueuedUserTurnNow']['request']): Promise<unknown>;
-  removeQueuedUserTurn(request: CommandPayloads['removeQueuedUserTurn']['request']): Promise<unknown>;
+  rewindAndSubmitMessage(
+    request: CommandPayloads["rewindAndSubmitMessage"]["request"],
+  ): Promise<unknown>;
+  forkSession(request: CommandPayloads["forkSession"]["request"]): Promise<unknown>;
+  reorderQueuedUserTurn(
+    request: CommandPayloads["reorderQueuedUserTurn"]["request"],
+  ): Promise<unknown>;
+  sendQueuedUserTurnNow(
+    request: CommandPayloads["sendQueuedUserTurnNow"]["request"],
+  ): Promise<unknown>;
+  removeQueuedUserTurn(
+    request: CommandPayloads["removeQueuedUserTurn"]["request"],
+  ): Promise<unknown>;
   setSubagentViewerTarget(parentToolCallId: string | null): Promise<unknown>;
 }
 
@@ -210,10 +247,13 @@ const hostCommandDispatch = {
   inspectMcpServer: (host, payload) => host.inspectMcpServer(payload.name),
   importExtension: (host, payload) => host.importExtension(payload.request),
   listMarketplaceExtensions: (host) => host.listMarketplaceExtensions(),
-  getMarketplaceExtensionDetail: (host, payload) => host.getMarketplaceExtensionDetail(payload.extensionId),
-  getMarketplaceExtensionReadme: (host, payload) => host.getMarketplaceExtensionReadme(payload.extensionId),
+  getMarketplaceExtensionDetail: (host, payload) =>
+    host.getMarketplaceExtensionDetail(payload.extensionId),
+  getMarketplaceExtensionReadme: (host, payload) =>
+    host.getMarketplaceExtensionReadme(payload.extensionId),
   installMarketplaceExtension: (host, payload) => host.installMarketplaceExtension(payload.request),
-  prepareMarketplaceExtensionInstall: (host, payload) => host.prepareMarketplaceExtensionInstall(payload.request),
+  prepareMarketplaceExtensionInstall: (host, payload) =>
+    host.prepareMarketplaceExtensionInstall(payload.request),
   deleteExtension: (host, payload) => host.deleteExtension(payload.request),
   runExtension: (host, payload) => host.runExtension(payload.request),
   updateExtensionSettings: (host, payload) => host.updateExtensionSettings(payload.request),
@@ -238,7 +278,8 @@ const hostCommandDispatch = {
   refreshGitSnapshot: (host) => host.refreshGitSnapshot(),
   abortConversation: (host, payload) => host.abortConversation(payload ?? {}),
   abortShell: (host, payload) => host.abortShell(payload.toolCallId),
-  continueAssistantCompletion: (host, payload) => host.continueAssistantCompletion(payload.messageId),
+  continueAssistantCompletion: (host, payload) =>
+    host.continueAssistantCompletion(payload.messageId),
   poll: (host, payload) => host.poll(payload),
   listDreamsOverview: (host) => host.listDreamsOverview(),
   listAutomations: (host) => host.listAutomations(),
@@ -246,15 +287,18 @@ const hostCommandDispatch = {
   createAutomation: (host, payload) => host.createAutomation(payload.request),
   updateAutomation: (host, payload) => host.updateAutomation(payload.automationId, payload.patch),
   deleteAutomation: (host, payload) => host.deleteAutomation(payload.automationId),
-  setAutomationEnabled: (host, payload) => host.setAutomationEnabled(payload.automationId, payload.enabled),
+  setAutomationEnabled: (host, payload) =>
+    host.setAutomationEnabled(payload.automationId, payload.enabled),
   replyPendingApproval: (host, payload) => host.replyPendingApproval(payload.request),
   replyPendingQuestions: (host, payload) => host.replyPendingQuestions(payload.request),
-  replyWorkspaceCapabilityTrust: (host, payload) => host.replyWorkspaceCapabilityTrust(payload.request),
-  resetSession: (host, payload) => host.resetSession(
-    payload && typeof payload === 'object' && payload.activate === false
-      ? { activate: false }
-      : undefined,
-  ),
+  replyWorkspaceCapabilityTrust: (host, payload) =>
+    host.replyWorkspaceCapabilityTrust(payload.request),
+  resetSession: (host, payload) =>
+    host.resetSession(
+      payload && typeof payload === "object" && payload.activate === false
+        ? { activate: false }
+        : undefined,
+    ),
   listSessions: (host) => host.listSessions(),
   openSession: (host, payload) => host.openSession(payload.path, { activate: payload.activate }),
   beginSplitPaneSession: (host, payload) => host.beginSplitPaneSession(payload.request),
@@ -280,7 +324,8 @@ const hostCommandDispatch = {
   resetCodeCompletionJournal: (host) => host.resetCodeCompletionJournal(),
   primeWorkspaceFileReferenceIndex: (host) => host.primeWorkspaceFileReferenceIndex(),
   getWorkspaceFileReferenceIndex: (host) => host.getWorkspaceFileReferenceIndex(),
-  listWorkspaceExplorerChildren: (host, payload) => host.listWorkspaceExplorerChildren(payload.relativePath),
+  listWorkspaceExplorerChildren: (host, payload) =>
+    host.listWorkspaceExplorerChildren(payload.relativePath),
   readGitWorkingTree: (host) => host.readGitWorkingTree(),
   readGitHistory: (host, payload) => host.readGitHistory(payload.request ?? {}),
   readGitCommitMessage: (host, payload) => host.readGitCommitMessage(payload.request),
@@ -295,7 +340,8 @@ const hostCommandDispatch = {
     host.listGitHubAutomationRepositories(payload.request),
   searchGitHubAutomationRepositories: (host, payload) =>
     host.searchGitHubAutomationRepositories(payload.request),
-  getGitHubPullRequestTabCounts: (host, payload) => host.getGitHubPullRequestTabCounts(payload.request),
+  getGitHubPullRequestTabCounts: (host, payload) =>
+    host.getGitHubPullRequestTabCounts(payload.request),
   getGitHubPullRequestDetail: (host, payload) => host.getGitHubPullRequestDetail(payload.request),
   getGitHubPullRequestConversation: (host, payload) =>
     host.getGitHubPullRequestConversation(payload.request),
@@ -333,7 +379,8 @@ const hostCommandDispatch = {
   reorderQueuedUserTurn: (host, payload) => host.reorderQueuedUserTurn(payload.request),
   sendQueuedUserTurnNow: (host, payload) => host.sendQueuedUserTurnNow(payload.request),
   removeQueuedUserTurn: (host, payload) => host.removeQueuedUserTurn(payload.request),
-  setSubagentViewerTarget: (host, payload) => host.setSubagentViewerTarget(payload.parentToolCallId),
+  setSubagentViewerTarget: (host, payload) =>
+    host.setSubagentViewerTarget(payload.parentToolCallId),
 } satisfies { [Command in HostCommandName]: HostCommandHandler<Command> };
 
 export function createHostInvokeDispatch(host: HostCommandDelegate) {

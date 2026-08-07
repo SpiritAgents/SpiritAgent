@@ -1,34 +1,36 @@
-import path from 'node:path';
+import path from "node:path";
 
+import { needsHostActiveModelSync, resolveEffectivePaneActiveModel } from "./active-model-sync.js";
+
+import type { SessionEndHookInput, SessionStartHookInput } from "@spiritagent/agent-core";
+
+import { resolveDesktopAgentMode } from "../lib/agent-mode.js";
+import i18n from "../lib/i18n-host.js";
+import type { ConversationMessageSnapshot, DesktopGitSnapshot, DesktopSnapshot } from "../types.js";
+import type { DesktopHostRuntime } from "./runtime.js";
+import type { SessionBundle } from "./session-bundle.js";
+import type { SessionRegistry } from "./session-registry.js";
 import {
-  needsHostActiveModelSync,
-  resolveEffectivePaneActiveModel,
-} from './active-model-sync.js';
-
-import type { SessionEndHookInput, SessionStartHookInput } from '@spiritagent/agent-core';
-
-import { resolveDesktopAgentMode } from '../lib/agent-mode.js';
-import i18n from '../lib/i18n-host.js';
-import type {
-  ConversationMessageSnapshot,
-  DesktopGitSnapshot,
-  DesktopSnapshot,
-} from '../types.js';
-import type { DesktopHostRuntime } from './runtime.js';
-import type { SessionBundle } from './session-bundle.js';
-import type { SessionRegistry } from './session-registry.js';
-import { loadStoredSession, isProvisionalSessionPath, isSideChatProvisionalSessionPath, isSplitProvisionalSessionPath, parseSideChatPaneIdFromSessionPath, parseSplitPaneIdFromSessionPath, type DesktopConfigFile, type DesktopWorkspaceBinding } from './storage.js';
+  loadStoredSession,
+  isProvisionalSessionPath,
+  isSideChatProvisionalSessionPath,
+  isSplitProvisionalSessionPath,
+  parseSideChatPaneIdFromSessionPath,
+  parseSplitPaneIdFromSessionPath,
+  type DesktopConfigFile,
+  type DesktopWorkspaceBinding,
+} from "./storage.js";
 import {
   isEphemeralDebugSessionPath,
   restoreEphemeralSessionState,
   restoreStoredSessionState,
   type EphemeralSessionRecord,
-} from './sessions.js';
-import type { DesktopTimelineTurnSnapshot, DesktopMessageTimeline } from './message-timeline.js';
-import { currentApiBase, sameWorkspaceRoot } from './service-utils.js';
-import type { HostExtensionEvent } from '@spiritagent/host-internal';
-import { cancelPendingWorktreeBootstrapOnBundle } from './worktree-bootstrap-orchestrator.js';
-import { resolveStoredSessionWorkspaceRoot } from './resolve-session-workspace-root.js';
+} from "./sessions.js";
+import type { DesktopTimelineTurnSnapshot, DesktopMessageTimeline } from "./message-timeline.js";
+import { currentApiBase, sameWorkspaceRoot } from "./service-utils.js";
+import type { HostExtensionEvent } from "@spiritagent/host-internal";
+import { cancelPendingWorktreeBootstrapOnBundle } from "./worktree-bootstrap-orchestrator.js";
+import { resolveStoredSessionWorkspaceRoot } from "./resolve-session-workspace-root.js";
 
 interface ActivationState {
   workspaceRoot: string;
@@ -80,11 +82,11 @@ export interface SessionActivationContext {
   clearSubagentViewerTarget(): void;
   runSessionEndForBundle?(
     bundle: SessionBundle,
-    reason: SessionEndHookInput['reason'],
+    reason: SessionEndHookInput["reason"],
   ): Promise<void>;
   runSessionStartForBundle?(
     bundle: SessionBundle,
-    source: SessionStartHookInput['source'],
+    source: SessionStartHookInput["source"],
   ): Promise<void>;
 }
 
@@ -117,9 +119,9 @@ export async function ensureStoredSessionBundleRegistered(
       })
     : ctx.requireState().workspaceRoot;
   const sameWorkspace =
-    ctx.isInitialized()
-    && Boolean(ctx.currentWorkspaceRoot())
-    && sameWorkspaceRoot(ctx.currentWorkspaceRoot()!, workspaceRoot);
+    ctx.isInitialized() &&
+    Boolean(ctx.currentWorkspaceRoot()) &&
+    sameWorkspaceRoot(ctx.currentWorkspaceRoot()!, workspaceRoot);
   await ctx.ensureInitialized(workspaceRoot, {
     ...(sameWorkspace ? { fastPath: true } : { deferRuntimeRefresh: true }),
     preserveRecentWorkspaces: true,
@@ -128,12 +130,11 @@ export async function ensureStoredSessionBundleRegistered(
     filePath,
     loaded,
   });
-  const bundle = ctx.sessionRegistry().upsertFromRestored(
-    workspaceRoot,
-    restored,
-    (messages, timelineSnapshot) =>
+  const bundle = ctx
+    .sessionRegistry()
+    .upsertFromRestored(workspaceRoot, restored, (messages, timelineSnapshot) =>
       ctx.createMessageTimelineFromMessages(messages, timelineSnapshot),
-  );
+    );
   bundle.listSortSavedAtUnixMs = loaded.savedAtUnixMs;
   return bundle;
 }
@@ -147,9 +148,10 @@ export async function resetSessionCommand(ctx: SessionActivationContext): Promis
     const leaving = ctx.sessionRegistry().getActive();
     const leavingMessageCount = leaving?.messageTimeline.toMessages().length ?? 0;
     if (leaving?.activeSession && leavingMessageCount > 0) {
-      await ctx.runSessionEndForBundle?.(leaving, 'switch');
+      await ctx.runSessionEndForBundle?.(leaving, "switch");
       await ctx.persistSessionBundle(leaving, {
-        fromRuntime: ctx.sessionRegistry().activeSessionId() === leaving.id ? ctx.currentRuntime() : undefined,
+        fromRuntime:
+          ctx.sessionRegistry().activeSessionId() === leaving.id ? ctx.currentRuntime() : undefined,
         bumpListSortAt: false,
       });
     }
@@ -157,10 +159,10 @@ export async function resetSessionCommand(ctx: SessionActivationContext): Promis
     ctx.syncActiveRuntimePointer();
     await ctx.finalizeTodoScopeForNewActiveBundle(bundle, state.workspaceRoot);
     ctx.resetStreamingPlacementState(true, bundle);
-    await finishSessionActivationCommand(ctx, bundle, { sessionStartSource: 'startup' });
-    ctx.setLastRuntimeError('');
+    await finishSessionActivationCommand(ctx, bundle, { sessionStartSource: "startup" });
+    ctx.setLastRuntimeError("");
     ctx.scheduleSessionExtensionWarmup({
-      type: 'onSessionReset',
+      type: "onSessionReset",
       detail: {
         workspaceRoot: state.workspaceRoot,
       },
@@ -179,12 +181,12 @@ export async function openSessionCommand(
     const leaving = ctx.sessionRegistry().getActive();
     const leavingMessageCount = leaving?.messageTimeline.toMessages().length ?? 0;
     if (
-      leaving?.activeSession
-      && leaving.activeSession.kind !== 'ephemeral'
-      && leavingMessageCount > 0
+      leaving?.activeSession &&
+      leaving.activeSession.kind !== "ephemeral" &&
+      leavingMessageCount > 0
     ) {
       cancelPendingWorktreeBootstrapOnBundle(leaving);
-      await ctx.runSessionEndForBundle?.(leaving, 'switch');
+      await ctx.runSessionEndForBundle?.(leaving, "switch");
       await ctx.persistSessionBundle(leaving, {
         fromRuntime:
           leaving.runtime?.isBusy() && ctx.sessionRegistry().activeSessionId() === leaving.id
@@ -197,25 +199,25 @@ export async function openSessionCommand(
     if (isEphemeralDebugSessionPath(filePath)) {
       const ephemeral = ctx.findEphemeralSession(filePath);
       if (!ephemeral) {
-        throw new Error(i18n.t('error.ephemeralSessionExpired'));
+        throw new Error(i18n.t("error.ephemeralSessionExpired"));
       }
       const ephemeralSameWorkspace = Boolean(
-        ctx.isInitialized()
-        && ctx.currentWorkspaceRoot()
-        && sameWorkspaceRoot(ctx.currentWorkspaceRoot()!, ephemeral.workspaceRoot),
+        ctx.isInitialized() &&
+        ctx.currentWorkspaceRoot() &&
+        sameWorkspaceRoot(ctx.currentWorkspaceRoot()!, ephemeral.workspaceRoot),
       );
       await ctx.ensureInitialized(ephemeral.workspaceRoot, {
         preserveRecentWorkspaces: true,
         ...(ephemeralSameWorkspace ? { fastPath: true } : { deferRuntimeRefresh: true }),
       });
       const restored = restoreEphemeralSessionState(ephemeral);
-      const bundle = ctx.sessionRegistry().upsertFromRestored(
-        ephemeral.workspaceRoot,
-        restored,
-        (messages, timelineSnapshot) => ctx.createMessageTimelineFromMessages(messages, timelineSnapshot),
-      );
-      await finishSessionActivationCommand(ctx, bundle, { sessionStartSource: 'open' });
-      ctx.setLastRuntimeError('');
+      const bundle = ctx
+        .sessionRegistry()
+        .upsertFromRestored(ephemeral.workspaceRoot, restored, (messages, timelineSnapshot) =>
+          ctx.createMessageTimelineFromMessages(messages, timelineSnapshot),
+        );
+      await finishSessionActivationCommand(ctx, bundle, { sessionStartSource: "open" });
+      ctx.setLastRuntimeError("");
       return ctx.buildSnapshot();
     }
 
@@ -225,10 +227,10 @@ export async function openSessionCommand(
     if (warmBundle?.activeSession && warmMessageCount > 0) {
       await ctx.ensureInitialized(warmBundle.workspaceRoot, { fastPath: true });
       ctx.sessionRegistry().activateExisting(warmBundle);
-      await finishSessionActivationCommand(ctx, warmBundle, { sessionStartSource: 'resume' });
-      ctx.setLastRuntimeError('');
+      await finishSessionActivationCommand(ctx, warmBundle, { sessionStartSource: "resume" });
+      ctx.setLastRuntimeError("");
       ctx.scheduleSessionExtensionWarmup({
-        type: 'onSessionOpened',
+        type: "onSessionOpened",
         detail: {
           filePath: resolvedPath,
           displayName: warmBundle.activeSession.displayName,
@@ -238,14 +240,14 @@ export async function openSessionCommand(
     }
 
     if (
-      warmBundle?.activeSession
-      && (isProvisionalSessionPath(resolvedPath) || isSplitProvisionalSessionPath(resolvedPath))
-      && !isSideChatProvisionalSessionPath(resolvedPath)
+      warmBundle?.activeSession &&
+      (isProvisionalSessionPath(resolvedPath) || isSplitProvisionalSessionPath(resolvedPath)) &&
+      !isSideChatProvisionalSessionPath(resolvedPath)
     ) {
       await ctx.ensureInitialized(warmBundle.workspaceRoot, { fastPath: true });
       ctx.sessionRegistry().activateExisting(warmBundle);
-      await finishSessionActivationCommand(ctx, warmBundle, { sessionStartSource: 'open' });
-      ctx.setLastRuntimeError('');
+      await finishSessionActivationCommand(ctx, warmBundle, { sessionStartSource: "open" });
+      ctx.setLastRuntimeError("");
       return ctx.buildSnapshot();
     }
 
@@ -256,8 +258,8 @@ export async function openSessionCommand(
         const state = ctx.requireState();
         const bundle = ctx.sessionRegistry().beginSplitPaneSession(state.workspaceRoot, paneId);
         ctx.sessionRegistry().activateExisting(bundle);
-        await finishSessionActivationCommand(ctx, bundle, { sessionStartSource: 'open' });
-        ctx.setLastRuntimeError('');
+        await finishSessionActivationCommand(ctx, bundle, { sessionStartSource: "open" });
+        ctx.setLastRuntimeError("");
         return ctx.buildSnapshot();
       }
     }
@@ -279,8 +281,8 @@ export async function openSessionCommand(
           bundle = ctx.sessionRegistry().beginSideChatPaneSession(state.workspaceRoot, paneId);
         }
         ctx.sessionRegistry().activateExisting(bundle);
-        await finishSessionActivationCommand(ctx, bundle, { sessionStartSource: 'open' });
-        ctx.setLastRuntimeError('');
+        await finishSessionActivationCommand(ctx, bundle, { sessionStartSource: "open" });
+        ctx.setLastRuntimeError("");
         return ctx.buildSnapshot();
       }
     }
@@ -293,9 +295,9 @@ export async function openSessionCommand(
         })
       : ctx.requireState().workspaceRoot;
     const sameWorkspace =
-      ctx.isInitialized()
-      && Boolean(ctx.currentWorkspaceRoot())
-      && sameWorkspaceRoot(ctx.currentWorkspaceRoot()!, workspaceRoot);
+      ctx.isInitialized() &&
+      Boolean(ctx.currentWorkspaceRoot()) &&
+      sameWorkspaceRoot(ctx.currentWorkspaceRoot()!, workspaceRoot);
     await ctx.ensureInitialized(workspaceRoot, {
       ...(sameWorkspace ? { fastPath: true } : { deferRuntimeRefresh: true }),
       preserveRecentWorkspaces: true,
@@ -304,18 +306,18 @@ export async function openSessionCommand(
       filePath,
       loaded,
     });
-    const bundle = ctx.sessionRegistry().upsertFromRestored(
-      workspaceRoot,
-      restored,
-      (messages, timelineSnapshot) => ctx.createMessageTimelineFromMessages(messages, timelineSnapshot),
-    );
+    const bundle = ctx
+      .sessionRegistry()
+      .upsertFromRestored(workspaceRoot, restored, (messages, timelineSnapshot) =>
+        ctx.createMessageTimelineFromMessages(messages, timelineSnapshot),
+      );
     bundle.listSortSavedAtUnixMs = loaded.savedAtUnixMs;
-    const sessionStartSource: SessionStartHookInput['source'] =
-      restored.messages.length > 0 || restored.archiveHistory.length > 0 ? 'resume' : 'open';
+    const sessionStartSource: SessionStartHookInput["source"] =
+      restored.messages.length > 0 || restored.archiveHistory.length > 0 ? "resume" : "open";
     await finishSessionActivationCommand(ctx, bundle, { sessionStartSource });
-    ctx.setLastRuntimeError('');
+    ctx.setLastRuntimeError("");
     ctx.scheduleSessionExtensionWarmup({
-      type: 'onSessionOpened',
+      type: "onSessionOpened",
       detail: {
         filePath: path.resolve(filePath),
         displayName: bundle.activeSession!.displayName,
@@ -333,23 +335,23 @@ async function registerSessionBundleForOpen(
   if (isEphemeralDebugSessionPath(filePath)) {
     const ephemeral = ctx.findEphemeralSession(filePath);
     if (!ephemeral) {
-      throw new Error(i18n.t('error.ephemeralSessionExpired'));
+      throw new Error(i18n.t("error.ephemeralSessionExpired"));
     }
     const ephemeralSameWorkspace = Boolean(
-      ctx.isInitialized()
-      && ctx.currentWorkspaceRoot()
-      && sameWorkspaceRoot(ctx.currentWorkspaceRoot()!, ephemeral.workspaceRoot),
+      ctx.isInitialized() &&
+      ctx.currentWorkspaceRoot() &&
+      sameWorkspaceRoot(ctx.currentWorkspaceRoot()!, ephemeral.workspaceRoot),
     );
     await ctx.ensureInitialized(ephemeral.workspaceRoot, {
       preserveRecentWorkspaces: true,
       ...(ephemeralSameWorkspace ? { fastPath: true } : { deferRuntimeRefresh: true }),
     });
     const restored = restoreEphemeralSessionState(ephemeral);
-    return ctx.sessionRegistry().upsertFromRestored(
-      ephemeral.workspaceRoot,
-      restored,
-      (messages, timelineSnapshot) => ctx.createMessageTimelineFromMessages(messages, timelineSnapshot),
-    );
+    return ctx
+      .sessionRegistry()
+      .upsertFromRestored(ephemeral.workspaceRoot, restored, (messages, timelineSnapshot) =>
+        ctx.createMessageTimelineFromMessages(messages, timelineSnapshot),
+      );
   }
 
   const resolvedPath = path.resolve(filePath);
@@ -397,9 +399,9 @@ async function registerSessionBundleForOpen(
       })
     : ctx.requireState().workspaceRoot;
   const sameWorkspace =
-    ctx.isInitialized()
-    && Boolean(ctx.currentWorkspaceRoot())
-    && sameWorkspaceRoot(ctx.currentWorkspaceRoot()!, workspaceRoot);
+    ctx.isInitialized() &&
+    Boolean(ctx.currentWorkspaceRoot()) &&
+    sameWorkspaceRoot(ctx.currentWorkspaceRoot()!, workspaceRoot);
   await ctx.ensureInitialized(workspaceRoot, {
     ...(sameWorkspace ? { fastPath: true } : { deferRuntimeRefresh: true }),
     preserveRecentWorkspaces: true,
@@ -408,11 +410,11 @@ async function registerSessionBundleForOpen(
     filePath,
     loaded,
   });
-  const bundle = ctx.sessionRegistry().upsertFromRestored(
-    workspaceRoot,
-    restored,
-    (messages, timelineSnapshot) => ctx.createMessageTimelineFromMessages(messages, timelineSnapshot),
-  );
+  const bundle = ctx
+    .sessionRegistry()
+    .upsertFromRestored(workspaceRoot, restored, (messages, timelineSnapshot) =>
+      ctx.createMessageTimelineFromMessages(messages, timelineSnapshot),
+    );
   bundle.listSortSavedAtUnixMs = loaded.savedAtUnixMs;
   return bundle;
 }
@@ -423,7 +425,7 @@ export async function openSessionBackgroundCommand(
 ): Promise<DesktopSnapshot> {
   return ctx.runSerialized(async () => {
     const bundle = await registerSessionBundleForOpen(ctx, filePath);
-    ctx.setLastRuntimeError('');
+    ctx.setLastRuntimeError("");
     return ctx.buildSnapshotProjectedForBundle(bundle);
   });
 }
@@ -438,7 +440,7 @@ export async function resetSessionBackgroundCommand(
     const state = ctx.requireState();
     const bundle = ctx.sessionRegistry().beginNewBackground(state.workspaceRoot);
     await ctx.finalizeTodoScopeForNewActiveBundle(bundle, state.workspaceRoot);
-    ctx.setLastRuntimeError('');
+    ctx.setLastRuntimeError("");
     return ctx.buildSnapshotProjectedForBundle(bundle);
   });
 }
@@ -450,7 +452,7 @@ export function runtimeActivationSignature(
   const state = ctx.requireState();
   return JSON.stringify({
     model: resolveEffectivePaneActiveModel(bundle, state),
-    imageModel: state.config.imageGenerationModel ?? '',
+    imageModel: state.config.imageGenerationModel ?? "",
     apiBase: currentApiBase(state.config),
     workspaceRoot: bundle.workspaceRoot || state.workspaceRoot,
     agentMode: resolveDesktopAgentMode(state.config),
@@ -477,7 +479,7 @@ export function isBundleRuntimeFresh(
 export async function finishSessionActivationCommand(
   ctx: SessionActivationContext,
   bundle: SessionBundle,
-  options?: { sessionStartSource?: SessionStartHookInput['source'] },
+  options?: { sessionStartSource?: SessionStartHookInput["source"] },
 ): Promise<void> {
   const adoptedWorkspaceRoot = await ctx.syncHostWorkspaceRootToActiveBundle(bundle);
   if (!adoptedWorkspaceRoot) {

@@ -4,12 +4,12 @@ import type {
   ImageGenerationRequest,
   LlmTransport,
   ToolExecutionOutput,
-} from '../ports.js';
+} from "../ports.js";
 
-import { AiSdkOpenAiCompatibleTransport } from './ai-sdk-transport.js';
-import type { OpenAiTransportConfig } from './openai-compat.js';
-import type { OpenAiJsonSchemaTransport } from './json-schema.js';
-import type { OpenAiToolAgentState } from './tool-agent-helpers.js';
+import { AiSdkOpenAiCompatibleTransport } from "./ai-sdk-transport.js";
+import type { OpenAiTransportConfig } from "./openai-compat.js";
+import type { OpenAiJsonSchemaTransport } from "./json-schema.js";
+import type { OpenAiToolAgentState } from "./tool-agent-helpers.js";
 
 export interface OpenAiImageGenerationTransport {
   generateImage(
@@ -19,19 +19,13 @@ export interface OpenAiImageGenerationTransport {
   ): Promise<ToolExecutionOutput>;
 }
 
-export type OpenAiCompatibleTransport = LlmTransport<
-  OpenAiTransportConfig,
-  OpenAiToolAgentState
-> & OpenAiImageGenerationTransport;
+export type OpenAiCompatibleTransport = LlmTransport<OpenAiTransportConfig, OpenAiToolAgentState> &
+  OpenAiImageGenerationTransport;
 
-export function createOpenAiCompatibleTransport(
-  _config?: unknown,
-): OpenAiCompatibleTransport {
+export function createOpenAiCompatibleTransport(_config?: unknown): OpenAiCompatibleTransport {
   return new AiSdkOpenAiCompatibleTransport();
 }
 
-export function createOpenAiJsonSchemaTransport(
-  _config?: unknown,
-): OpenAiJsonSchemaTransport {
+export function createOpenAiJsonSchemaTransport(_config?: unknown): OpenAiJsonSchemaTransport {
   return new AiSdkOpenAiCompatibleTransport();
 }

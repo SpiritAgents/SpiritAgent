@@ -1,7 +1,11 @@
-import type { JsonValue, RuntimeApprovalDecision, RuntimePendingApproval } from '@spiritagent/agent-core';
-import type { AgentSideConnection } from '@agentclientprotocol/sdk';
-import type * as schema from '@agentclientprotocol/sdk';
-import { mapToolNameToKind, buildToolCallTitle } from './tool-call-mapper.js';
+import type {
+  JsonValue,
+  RuntimeApprovalDecision,
+  RuntimePendingApproval,
+} from "@spiritagent/agent-core";
+import type { AgentSideConnection } from "@agentclientprotocol/sdk";
+import type * as schema from "@agentclientprotocol/sdk";
+import { mapToolNameToKind, buildToolCallTitle } from "./tool-call-mapper.js";
 
 /**
  * Handles a runtime approval request by asking the ACP client for permission.
@@ -27,14 +31,16 @@ export async function handleApprovalRequest(
         toolCallId,
         title,
         kind: kind as schema.ToolKind,
-        status: 'pending',
-        content: [{
-          type: 'content',
-          content: {
-            type: 'text',
-            text: approval.prompt || `Tool ${approval.toolName} requires permission.`,
+        status: "pending",
+        content: [
+          {
+            type: "content",
+            content: {
+              type: "text",
+              text: approval.prompt || `Tool ${approval.toolName} requires permission.`,
+            },
           },
-        }],
+        ],
       },
       options: buildPermissionOptions(approval),
     });
@@ -42,7 +48,7 @@ export async function handleApprovalRequest(
     return mapPermissionResponse(response);
   } catch {
     // If permission request fails (e.g. connection closed), deny the operation
-    return { kind: 'deny', resultText: 'Permission request failed.' };
+    return { kind: "deny", resultText: "Permission request failed." };
   }
 }
 
@@ -58,27 +64,28 @@ export async function handleQuestionsRequest(
   questions: { prompt?: string; questions?: unknown[] },
 ): Promise<boolean> {
   try {
-    const description = questions.prompt ?? 'The agent needs additional input.';
+    const description = questions.prompt ?? "The agent needs additional input.";
     const response = await connection.requestPermission({
       sessionId,
       toolCall: {
         toolCallId: `questions_${Date.now()}`,
-        title: 'Agent needs input',
-        kind: 'other',
-        status: 'pending',
-        content: [{
-          type: 'content',
-          content: { type: 'text', text: description },
-        }],
+        title: "Agent needs input",
+        kind: "other",
+        status: "pending",
+        content: [
+          {
+            type: "content",
+            content: { type: "text", text: description },
+          },
+        ],
       },
       options: [
-        { optionId: 'allow', name: 'Continue', kind: 'allow_once' },
-        { optionId: 'reject', name: 'Cancel', kind: 'reject_once' },
+        { optionId: "allow", name: "Continue", kind: "allow_once" },
+        { optionId: "reject", name: "Cancel", kind: "reject_once" },
       ],
     });
 
-    return response.outcome.outcome !== 'cancelled'
-      && response.outcome.optionId === 'allow';
+    return response.outcome.outcome !== "cancelled" && response.outcome.optionId === "allow";
   } catch {
     return false;
   }
@@ -92,25 +99,25 @@ function buildPermissionOptions(
 ): schema.PermissionOption[] {
   const options: schema.PermissionOption[] = [
     {
-      optionId: 'allow',
-      name: 'Allow',
-      kind: 'allow_once',
+      optionId: "allow",
+      name: "Allow",
+      kind: "allow_once",
     },
   ];
 
   // If there's a trust target, offer "always allow"
   if (approval.trustTarget !== undefined) {
     options.push({
-      optionId: 'allow-always',
-      name: 'Always Allow',
-      kind: 'allow_always',
+      optionId: "allow-always",
+      name: "Always Allow",
+      kind: "allow_always",
     });
   }
 
   options.push({
-    optionId: 'reject',
-    name: 'Reject',
-    kind: 'reject_once',
+    optionId: "reject",
+    name: "Reject",
+    kind: "reject_once",
   });
 
   return options;
@@ -124,18 +131,18 @@ function mapPermissionResponse(
 ): RuntimeApprovalDecision {
   const outcome = response.outcome;
 
-  if (outcome.outcome === 'cancelled') {
-    return { kind: 'deny', resultText: 'Operation cancelled.' };
+  if (outcome.outcome === "cancelled") {
+    return { kind: "deny", resultText: "Operation cancelled." };
   }
 
   switch (outcome.optionId) {
-    case 'allow':
-      return { kind: 'allow' };
-    case 'allow-always':
-      return { kind: 'allow', persistTrust: true };
-    case 'reject':
-      return { kind: 'deny', resultText: 'User rejected this operation.' };
+    case "allow":
+      return { kind: "allow" };
+    case "allow-always":
+      return { kind: "allow", persistTrust: true };
+    case "reject":
+      return { kind: "deny", resultText: "User rejected this operation." };
     default:
-      return { kind: 'deny', resultText: `Unknown permission option: ${outcome.optionId}` };
+      return { kind: "deny", resultText: `Unknown permission option: ${outcome.optionId}` };
   }
 }

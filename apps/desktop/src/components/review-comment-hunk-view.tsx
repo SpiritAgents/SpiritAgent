@@ -2,10 +2,7 @@ import { useMemo } from "react";
 
 import { UnifiedDiffCodeView } from "@/components/unified-diff-code-view";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import {
-  buildDiffLinesFromUnifiedText,
-  wrapPatchAsUnifiedDiff,
-} from "@/lib/diff-display-lines";
+import { buildDiffLinesFromUnifiedText, wrapPatchAsUnifiedDiff } from "@/lib/diff-display-lines";
 import { useDiffLineHighlight } from "@/lib/diff-line-highlight";
 import { monacoLanguageId } from "@/lib/monaco-language";
 import { cn } from "@/lib/utils";

@@ -1,4 +1,4 @@
-import type { GitHubRepositoryRef } from './types.js';
+import type { GitHubRepositoryRef } from "./types.js";
 
 export function parseGitHubRemoteUrl(rawUrl: string): GitHubRepositoryRef | null {
   const trimmed = rawUrl.trim();
@@ -18,15 +18,15 @@ export function parseGitHubRemoteUrl(rawUrl: string): GitHubRepositoryRef | null
 
   try {
     const parsed = new URL(trimmed);
-    if (parsed.hostname !== 'github.com') {
+    if (parsed.hostname !== "github.com") {
       return null;
     }
-    const segments = parsed.pathname.split('/').filter(Boolean);
+    const segments = parsed.pathname.split("/").filter(Boolean);
     if (segments.length < 2) {
       return null;
     }
     const owner = segments[0]?.trim();
-    const repo = segments[1]?.replace(/\.git$/u, '').trim();
+    const repo = segments[1]?.replace(/\.git$/u, "").trim();
     if (!owner || !repo) {
       return null;
     }

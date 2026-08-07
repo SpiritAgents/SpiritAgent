@@ -1,6 +1,6 @@
-import { getLlmFetch } from '../llm-fetch.js';
+import { getLlmFetch } from "../llm-fetch.js";
 
-export const STEPFUN_SEARCH_URL = 'https://api.stepfun.com/v1/search';
+export const STEPFUN_SEARCH_URL = "https://api.stepfun.com/v1/search";
 
 type StepfunSearchResult = {
   url?: string;
@@ -16,17 +16,17 @@ type StepfunSearchResponse = {
 };
 
 export type StepfunSearchInvokeResult =
-  | { kind: 'succeeded'; content: string }
-  | { kind: 'failed'; error: string };
+  | { kind: "succeeded"; content: string }
+  | { kind: "failed"; error: string };
 
 export function formatStepfunSearchResults(results: readonly StepfunSearchResult[]): string {
   if (results.length === 0) {
-    return 'No search results.';
+    return "No search results.";
   }
 
   return results
     .map((result, index) => {
-      const lines = [`## ${index + 1}. ${result.title?.trim() || 'Untitled'}`];
+      const lines = [`## ${index + 1}. ${result.title?.trim() || "Untitled"}`];
       if (result.url?.trim()) {
         lines.push(`URL: ${result.url.trim()}`);
       }
@@ -39,9 +39,9 @@ export function formatStepfunSearchResults(results: readonly StepfunSearchResult
       if (result.content?.trim()) {
         lines.push(`Content: ${result.content.trim()}`);
       }
-      return lines.join('\n');
+      return lines.join("\n");
     })
-    .join('\n\n');
+    .join("\n\n");
 }
 
 export async function invokeStepfunSearch(
@@ -51,12 +51,12 @@ export async function invokeStepfunSearch(
 ): Promise<StepfunSearchInvokeResult> {
   const query = body.query.trim();
   if (!query) {
-    return { kind: 'failed', error: 'web_search requires a non-empty query.' };
+    return { kind: "failed", error: "web_search requires a non-empty query." };
   }
 
   const trimmedKey = apiKey.trim();
   if (!trimmedKey) {
-    return { kind: 'failed', error: 'StepFun search requires an API key.' };
+    return { kind: "failed", error: "StepFun search requires an API key." };
   }
 
   const payload: { query: string; n?: number } = { query };
@@ -69,30 +69,30 @@ export async function invokeStepfunSearch(
 
   try {
     const response = await fetchImpl(STEPFUN_SEARCH_URL, {
-      method: 'POST',
+      method: "POST",
       headers: {
         Authorization: `Bearer ${trimmedKey}`,
-        'Content-Type': 'application/json',
+        "Content-Type": "application/json",
       },
       body: JSON.stringify(payload),
     });
 
     if (!response.ok) {
-      const text = await response.text().catch(() => '');
-      const suffix = text.trim() ? `: ${text.trim()}` : '';
+      const text = await response.text().catch(() => "");
+      const suffix = text.trim() ? `: ${text.trim()}` : "";
       return {
-        kind: 'failed',
+        kind: "failed",
         error: `StepFun search failed (${response.status})${suffix}`,
       };
     }
 
     const json = (await response.json()) as StepfunSearchResponse;
     return {
-      kind: 'succeeded',
+      kind: "succeeded",
       content: formatStepfunSearchResults(Array.isArray(json.results) ? json.results : []),
     };
   } catch (error) {
     const message = error instanceof Error ? error.message : String(error);
-    return { kind: 'failed', error: message };
+    return { kind: "failed", error: message };
   }
 }

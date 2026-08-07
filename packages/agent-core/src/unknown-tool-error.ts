@@ -1,9 +1,9 @@
-import type { JsonValue } from './ports.js';
+import type { JsonValue } from "./ports.js";
 
-const UNKNOWN_TOOL_PREFIX = '未知工具:';
+const UNKNOWN_TOOL_PREFIX = "未知工具:";
 
 function isJsonObject(value: JsonValue): value is Record<string, JsonValue> {
-  return typeof value === 'object' && value !== null && !Array.isArray(value);
+  return typeof value === "object" && value !== null && !Array.isArray(value);
 }
 
 export function toolDefinitionNameFromJson(value: JsonValue): string | undefined {
@@ -11,12 +11,12 @@ export function toolDefinitionNameFromJson(value: JsonValue): string | undefined
     return undefined;
   }
 
-  const candidateFunction = value['function'];
+  const candidateFunction = value["function"];
   if (candidateFunction === undefined || !isJsonObject(candidateFunction)) {
     return undefined;
   }
 
-  return typeof candidateFunction.name === 'string' ? candidateFunction.name : undefined;
+  return typeof candidateFunction.name === "string" ? candidateFunction.name : undefined;
 }
 
 export function toolNamesFromDefinitions(definitions: JsonValue): string[] {
@@ -47,7 +47,7 @@ export function unknownToolErrorMessage(
     return `${UNKNOWN_TOOL_PREFIX} ${trimmed}`;
   }
 
-  return `${UNKNOWN_TOOL_PREFIX} ${trimmed}。可用工具: ${unique.join(', ')}`;
+  return `${UNKNOWN_TOOL_PREFIX} ${trimmed}。可用工具: ${unique.join(", ")}`;
 }
 
 export function throwUnknownToolError(

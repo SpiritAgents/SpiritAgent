@@ -1,7 +1,7 @@
 const DEFAULT_SUGGESTION_LIMIT = 128;
 
 /** Trailing slash marks directory entries in suggestion lists. */
-export const WORKSPACE_REFERENCE_DIRECTORY_SUFFIX = '/';
+export const WORKSPACE_REFERENCE_DIRECTORY_SUFFIX = "/";
 
 export interface ActiveWorkspaceFileReferenceQuery {
   start: number;
@@ -27,7 +27,7 @@ export function currentWorkspaceFileReferenceQuery(
   }
 
   const token = input.slice(start, end);
-  if (!token.startsWith('@') || token.includes('\n')) {
+  if (!token.startsWith("@") || token.includes("\n")) {
     return undefined;
   }
 
@@ -49,7 +49,7 @@ export function replaceWorkspaceFileReferenceQuery(
   const nextChar = input.slice(queryEndCodeUnits).charAt(0);
   const needsSpace = nextChar.length === 0 || !/\s/u.test(nextChar);
   if (finalize && needsSpace) {
-    replacement += ' ';
+    replacement += " ";
   }
 
   const queryStartCodeUnits = charCountToCodeUnitIndex(input, query.start);
@@ -66,12 +66,12 @@ export function referencedWorkspaceFilePathsFromInput(input: string): string[] {
   const paths: string[] = [];
 
   for (const token of input.split(/\s+/u)) {
-    const path = token.startsWith('@') ? token.slice(1) : undefined;
+    const path = token.startsWith("@") ? token.slice(1) : undefined;
     if (!path) {
       continue;
     }
 
-    const normalized = path.replace(/\\/gu, '/');
+    const normalized = path.replace(/\\/gu, "/");
     if (seen.has(normalized)) {
       continue;
     }
@@ -88,16 +88,18 @@ export function isWorkspaceReferenceDirectoryPath(path: string): boolean {
 }
 
 export function normalizeWorkspaceReferenceDirectoryPath(path: string): string {
-  return path.replace(/\/+$/u, '');
+  return path.replace(/\/+$/u, "");
 }
 
 export function deriveWorkspaceDirectoryPathsFromFiles(files: readonly string[]): string[] {
   const directories = new Set<string>();
 
   for (const file of files) {
-    const segments = file.split('/').filter((segment) => segment.length > 0);
+    const segments = file.split("/").filter((segment) => segment.length > 0);
     for (let index = 1; index < segments.length; index += 1) {
-      directories.add(`${segments.slice(0, index).join('/')}${WORKSPACE_REFERENCE_DIRECTORY_SUFFIX}`);
+      directories.add(
+        `${segments.slice(0, index).join("/")}${WORKSPACE_REFERENCE_DIRECTORY_SUFFIX}`,
+      );
     }
   }
 
@@ -155,17 +157,12 @@ export function computeWorkspaceFileReferenceSuggestions(
   files: readonly string[],
   options?: { includeDirectories?: boolean },
 ): string[] {
-  const needle = query
-    .replace(/^@/u, '')
-    .trim()
-    .toLowerCase();
+  const needle = query.replace(/^@/u, "").trim().toLowerCase();
   const needleChars = Array.from(needle);
 
   const includeDirectories = options?.includeDirectories !== false;
   const index = preparedReferenceIndexForFiles(files);
-  const candidates = includeDirectories
-    ? [...index.directories, ...index.files]
-    : index.files;
+  const candidates = includeDirectories ? [...index.directories, ...index.files] : index.files;
 
   const scored: { score: number; candidate: PreparedReferenceCandidate }[] = [];
   for (const candidate of candidates) {
@@ -195,7 +192,7 @@ export function charCountToCodeUnitIndex(input: string, cursorChars: number): nu
   }
 
   let chars = 0;
-  for (let index = 0; index < input.length; ) {
+  for (let index = 0; index < input.length;) {
     if (chars === cursorChars) {
       return index;
     }
@@ -212,7 +209,7 @@ export function charCountToCodeUnitIndex(input: string, cursorChars: number): nu
 
 export function codeUnitIndexToCharCount(input: string, codeUnitIndex: number): number {
   let chars = 0;
-  for (let index = 0; index < codeUnitIndex; ) {
+  for (let index = 0; index < codeUnitIndex;) {
     const codePoint = input.codePointAt(index);
     if (codePoint === undefined) {
       break;
@@ -224,7 +221,7 @@ export function codeUnitIndexToCharCount(input: string, codeUnitIndex: number): 
 }
 
 function tokenStart(input: string, cursor: number): number {
-  for (let index = cursor; index > 0; ) {
+  for (let index = cursor; index > 0;) {
     const previousIndex = previousCodePointIndex(input, index);
     const codePoint = input.codePointAt(previousIndex);
     if (codePoint === undefined) {
@@ -242,7 +239,7 @@ function tokenStart(input: string, cursor: number): number {
 }
 
 function tokenEnd(input: string, cursor: number): number {
-  for (let index = cursor; index < input.length; ) {
+  for (let index = cursor; index < input.length;) {
     const codePoint = input.codePointAt(index);
     if (codePoint === undefined) {
       break;
@@ -273,7 +270,7 @@ function previousCodePointIndex(input: string, fromIndex: number): number {
 
 function referencePathBasename(path: string): string {
   const normalized = normalizeWorkspaceReferenceDirectoryPath(path);
-  return normalized.split('/').at(-1) ?? normalized;
+  return normalized.split("/").at(-1) ?? normalized;
 }
 
 function scorePreparedReferenceCandidate(
@@ -323,10 +320,7 @@ function scorePreparedReferenceCandidate(
 }
 
 /** haystack 经 for..of 按码点迭代，避免每候选 Array.from 整串物化。 */
-function subsequenceScore(
-  needleChars: readonly string[],
-  haystack: string,
-): number | undefined {
+function subsequenceScore(needleChars: readonly string[], haystack: string): number | undefined {
   let needleIndex = 0;
   let haystackIndex = 0;
   let firstMatch: number | undefined;

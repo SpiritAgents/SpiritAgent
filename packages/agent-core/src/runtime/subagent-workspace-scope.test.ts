@@ -1,8 +1,8 @@
-import assert from 'node:assert/strict';
-import test from 'node:test';
+import assert from "node:assert/strict";
+import test from "node:test";
 
-import { scopeAgentRuntimeOptionsForSubagentWorkspace } from './subagent-workspace-scope.js';
-import type { AgentRuntimeOptions, PendingWorkspaceFile } from './types.js';
+import { scopeAgentRuntimeOptionsForSubagentWorkspace } from "./subagent-workspace-scope.js";
+import type { AgentRuntimeOptions, PendingWorkspaceFile } from "./types.js";
 
 type TestState = { messages: unknown[]; steps: number };
 
@@ -11,8 +11,8 @@ function baseOptions(
 ): AgentRuntimeOptions<undefined, TestState, unknown> {
   return {
     config: undefined,
-    llmTransport: {} as AgentRuntimeOptions<undefined, TestState, unknown>['llmTransport'],
-    toolExecutor: {} as AgentRuntimeOptions<undefined, TestState, unknown>['toolExecutor'],
+    llmTransport: {} as AgentRuntimeOptions<undefined, TestState, unknown>["llmTransport"],
+    toolExecutor: {} as AgentRuntimeOptions<undefined, TestState, unknown>["toolExecutor"],
     createToolAgentState: () => ({ messages: [], steps: 0 }),
     appendToolResultMessage: (state) => state,
     extractAssistantText: () => undefined,
@@ -20,39 +20,39 @@ function baseOptions(
   };
 }
 
-test('scopeAgentRuntimeOptionsForSubagentWorkspace replaces appendUserLlmMessage callback', () => {
+test("scopeAgentRuntimeOptionsForSubagentWorkspace replaces appendUserLlmMessage callback", () => {
   const options = baseOptions({
     appendUserLlmMessage: (state) => state,
   });
 
   const scoped = scopeAgentRuntimeOptionsForSubagentWorkspace(
     options,
-    'D:\\repo.worktrees\\spirit-a',
+    "D:\\repo.worktrees\\spirit-a",
   );
   assert.notEqual(scoped.appendUserLlmMessage, options.appendUserLlmMessage);
-  assert.equal(typeof scoped.appendUserLlmMessage, 'function');
+  assert.equal(typeof scoped.appendUserLlmMessage, "function");
 });
 
-test('scopeAgentRuntimeOptionsForSubagentWorkspace uses resolveWorkspaceFilesForRoot when provided', async () => {
+test("scopeAgentRuntimeOptionsForSubagentWorkspace uses resolveWorkspaceFilesForRoot when provided", async () => {
   const sampleFile: PendingWorkspaceFile = {
-    kind: 'text',
-    path: 'scoped/README.md',
+    kind: "text",
+    path: "scoped/README.md",
     totalChars: 4,
     truncated: false,
     attachedAtUnixMs: 1,
-    content: 'body',
+    content: "body",
   };
   const options = baseOptions({
     resolveWorkspaceFilesForRoot: (workspaceRoot, userInput) => [
       { ...sampleFile, path: `${workspaceRoot}/${userInput}` },
     ],
-    resolveWorkspaceFilesFromInput: () => [{ ...sampleFile, path: 'parent/wrong' }],
+    resolveWorkspaceFilesFromInput: () => [{ ...sampleFile, path: "parent/wrong" }],
   });
 
   const scoped = scopeAgentRuntimeOptionsForSubagentWorkspace(
     options,
-    'D:\\repo.worktrees\\spirit-a',
+    "D:\\repo.worktrees\\spirit-a",
   );
-  const files = await scoped.resolveWorkspaceFilesFromInput?.('README.md');
-  assert.deepEqual(files, [{ ...sampleFile, path: 'D:\\repo.worktrees\\spirit-a/README.md' }]);
+  const files = await scoped.resolveWorkspaceFilesFromInput?.("README.md");
+  assert.deepEqual(files, [{ ...sampleFile, path: "D:\\repo.worktrees\\spirit-a/README.md" }]);
 });

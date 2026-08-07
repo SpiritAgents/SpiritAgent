@@ -1,6 +1,6 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState } from "react";
 
-import { COLLAPSIBLE_CLOSE_UNMOUNT_DELAY_MS } from '@/lib/collapsible-animation';
+import { COLLAPSIBLE_CLOSE_UNMOUNT_DELAY_MS } from "@/lib/collapsible-animation";
 
 /** 展开时立即挂载；收起后延迟卸载，与 AnimatedCollapse 收起动画对齐。 */
 export function useCollapsibleChildMount(

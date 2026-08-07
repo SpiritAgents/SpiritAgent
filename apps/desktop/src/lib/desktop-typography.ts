@@ -13,11 +13,7 @@ export const DESKTOP_PAGE_TITLE_CLASS = cn(
 );
 
 /** 设置行 label */
-export const DESKTOP_SETTINGS_LABEL_CLASS = cn(
-  "text-sm",
-  FONT_WEIGHT_NORMAL,
-  "text-foreground",
-);
+export const DESKTOP_SETTINGS_LABEL_CLASS = cn("text-sm", FONT_WEIGHT_NORMAL, "text-foreground");
 
 /** 侧栏会话名、分组标签等 */
 export const DESKTOP_SIDEBAR_TEXT_CLASS = cn("text-xs", FONT_WEIGHT_NORMAL);
@@ -37,18 +33,10 @@ export const DESKTOP_OVERLAY_GROUP_LABEL_CLASS = cn(
 );
 
 /** 设置列表项 / 模型名等 */
-export const DESKTOP_LIST_ITEM_PRIMARY_CLASS = cn(
-  "text-sm",
-  FONT_WEIGHT_NORMAL,
-  "text-foreground",
-);
+export const DESKTOP_LIST_ITEM_PRIMARY_CLASS = cn("text-sm", FONT_WEIGHT_NORMAL, "text-foreground");
 
 /** 设置子节标题、编辑器 tab 切换 */
-export const DESKTOP_SECTION_LABEL_CLASS = cn(
-  "text-sm",
-  FONT_WEIGHT_NORMAL,
-  "text-foreground",
-);
+export const DESKTOP_SECTION_LABEL_CLASS = cn("text-sm", FONT_WEIGHT_NORMAL, "text-foreground");
 
 /** 紧凑型子节标题（Extensions 内嵌小节等） */
 export const DESKTOP_SECTION_LABEL_COMPACT_CLASS = cn(

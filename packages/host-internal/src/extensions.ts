@@ -1,12 +1,22 @@
-import { Buffer } from 'node:buffer';
-import { createHash } from 'node:crypto';
-import { existsSync } from 'node:fs';
-import { cp, mkdir, mkdtemp, readdir, readFile, rename, rm, stat, writeFile } from 'node:fs/promises';
-import os from 'node:os';
-import path from 'node:path';
-import { pathToFileURL } from 'node:url';
+import { Buffer } from "node:buffer";
+import { createHash } from "node:crypto";
+import { existsSync } from "node:fs";
+import {
+  cp,
+  mkdir,
+  mkdtemp,
+  readdir,
+  readFile,
+  rename,
+  rm,
+  stat,
+  writeFile,
+} from "node:fs/promises";
+import os from "node:os";
+import path from "node:path";
+import { pathToFileURL } from "node:url";
 
-import { unzipSync } from 'fflate';
+import { unzipSync } from "fflate";
 
 import {
   createFileExtensionStateStore,
@@ -18,57 +28,54 @@ import {
   type ExtensionStateStore,
   type ExtensionManagementContext,
   type ExtensionPaths,
-} from './storage.js';
+} from "./storage.js";
 
 const EXTENSION_SCHEMA_VERSION = 1;
 const EXTENSION_PACKAGE_NAME_PATTERN = /^(?:@[a-z0-9][a-z0-9._-]*\/)?[a-z0-9][a-z0-9._-]*$/u;
-const TEMP_DIR_PREFIX = 'spirit-extension-';
+const TEMP_DIR_PREFIX = "spirit-extension-";
 const EXTENSION_FIELD_KEY_PATTERN = /^[a-z0-9]+(?:[._-][a-z0-9]+)*$/u;
-const SPIRIT_EXTENSION_FIELD_NAME = 'spiritExtension';
+const SPIRIT_EXTENSION_FIELD_NAME = "spiritExtension";
 const EXTENSION_TOOL_INVOCATION_NAME_MAX_LENGTH = 64;
 const EXTENSION_TOOL_ID_FRAGMENT_LIMIT = 16;
 const EXTENSION_TOOL_NAME_FRAGMENT_LIMIT = 24;
 
 export const SUPPORTED_HOST_EXTENSION_ACTIVATION_EVENTS = [
-  'onStartup',
-  'onExtensionInstalled',
-  'onSessionOpened',
-  'onSessionReset',
-  'onUserMessage',
-  'onToolCall',
-  'onToolResult',
-  'onApprovalResolved',
+  "onStartup",
+  "onExtensionInstalled",
+  "onSessionOpened",
+  "onSessionReset",
+  "onUserMessage",
+  "onToolCall",
+  "onToolResult",
+  "onApprovalResolved",
 ] as const;
 
 export const SUPPORTED_HOST_EXTENSION_REQUESTED_CAPABILITIES = [
-  'tool-definitions',
-  'tool-execution',
-  'system-prompt',
-  'approval-flow',
-  'questions-flow',
-  'settings',
-  'secret-storage',
-  'structured-results',
-  'desktop-ui',
-  'cli-ui',
+  "tool-definitions",
+  "tool-execution",
+  "system-prompt",
+  "approval-flow",
+  "questions-flow",
+  "settings",
+  "secret-storage",
+  "structured-results",
+  "desktop-ui",
+  "cli-ui",
 ] as const;
 
 export const SUPPORTED_HOST_EXTENSION_TOOL_APPROVAL_MODES = [
-  'allowed',
-  'need-approval',
-  'need-questions',
+  "allowed",
+  "need-approval",
+  "need-questions",
 ] as const;
 
-export const SUPPORTED_HOST_EXTENSION_TOOL_EXECUTION_MODES = [
-  'foreground',
-  'background',
-] as const;
+export const SUPPORTED_HOST_EXTENSION_TOOL_EXECUTION_MODES = ["foreground", "background"] as const;
 
 export const SUPPORTED_HOST_EXTENSION_SETTING_TYPES = [
-  'string',
-  'boolean',
-  'number',
-  'select',
+  "string",
+  "boolean",
+  "number",
+  "select",
 ] as const;
 
 export type HostExtensionActivationEventName =
@@ -83,8 +90,7 @@ export type HostExtensionToolApprovalMode =
 export type HostExtensionToolExecutionMode =
   (typeof SUPPORTED_HOST_EXTENSION_TOOL_EXECUTION_MODES)[number];
 
-export type HostExtensionSettingType =
-  (typeof SUPPORTED_HOST_EXTENSION_SETTING_TYPES)[number];
+export type HostExtensionSettingType = (typeof SUPPORTED_HOST_EXTENSION_SETTING_TYPES)[number];
 
 export type HostExtensionJsonSchema = Record<string, unknown>;
 
@@ -126,43 +132,41 @@ export interface HostExtensionDesktopContributionSet {
 }
 
 export const SUPPORTED_HOST_EXTENSION_CLI_UI_SLOTS = [
-  'message.user',
-  'message.assistant',
-  'message.tool',
-  'assistant.thinking',
-  'input.frame',
-  'bottom_form',
-  'bottom_form.section',
-  'slash_suggestions',
-  'approval.panel',
-  'questions.panel',
+  "message.user",
+  "message.assistant",
+  "message.tool",
+  "assistant.thinking",
+  "input.frame",
+  "bottom_form",
+  "bottom_form.section",
+  "slash_suggestions",
+  "approval.panel",
+  "questions.panel",
 ] as const;
 
 export const SUPPORTED_HOST_EXTENSION_CLI_UI_VARIANTS = [
-  'default',
-  'accented',
-  'muted',
-  'warning',
-  'success',
-  'danger',
+  "default",
+  "accented",
+  "muted",
+  "warning",
+  "success",
+  "danger",
 ] as const;
 
 export const SUPPORTED_HOST_EXTENSION_CLI_UI_TOKEN_ROLES = [
-  'default',
-  'primary',
-  'secondary',
-  'muted',
-  'accent',
-  'success',
-  'warning',
-  'danger',
+  "default",
+  "primary",
+  "secondary",
+  "muted",
+  "accent",
+  "success",
+  "warning",
+  "danger",
 ] as const;
 
-export type HostExtensionCliUiSlot =
-  (typeof SUPPORTED_HOST_EXTENSION_CLI_UI_SLOTS)[number];
+export type HostExtensionCliUiSlot = (typeof SUPPORTED_HOST_EXTENSION_CLI_UI_SLOTS)[number];
 
-export type HostExtensionCliUiVariant =
-  (typeof SUPPORTED_HOST_EXTENSION_CLI_UI_VARIANTS)[number];
+export type HostExtensionCliUiVariant = (typeof SUPPORTED_HOST_EXTENSION_CLI_UI_VARIANTS)[number];
 
 export type HostExtensionCliUiTokenRole =
   (typeof SUPPORTED_HOST_EXTENSION_CLI_UI_TOKEN_ROLES)[number];
@@ -265,7 +269,7 @@ export interface InstallPreparedExtensionDirectoryRequest {
 export interface RunExtensionRequest<THostApi> {
   id: string;
   host: THostApi;
-  logger?: Pick<Console, 'error' | 'log'>;
+  logger?: Pick<Console, "error" | "log">;
 }
 
 export interface HostExtensionRuntimeInfo {
@@ -324,12 +328,14 @@ export interface HostExtensionSystemPromptContribution {
 
 export interface CollectExtensionSystemPromptContributionsRequest<THostApi> {
   host: THostApi;
-  logger?: Pick<Console, 'error' | 'log'>;
+  logger?: Pick<Console, "error" | "log">;
 }
 
 export interface HostActivatedExtension {
   tools?: Record<string, HostExtensionToolHandler<unknown>>;
-  invokeTool?<THostApi>(request: HostExtensionToolExecutionContext<THostApi>): Promise<unknown> | unknown;
+  invokeTool?<THostApi>(
+    request: HostExtensionToolExecutionContext<THostApi>,
+  ): Promise<unknown> | unknown;
   systemPrompt?: string;
   getSystemPrompt?(): Promise<string | undefined> | string | undefined;
   onEvent?(event: HostExtensionEvent): Promise<void> | void;
@@ -348,7 +354,7 @@ export interface InvokeExtensionToolRequest<THostApi> {
   toolName: string;
   arguments: Record<string, unknown>;
   host: THostApi;
-  logger?: Pick<Console, 'error' | 'log'>;
+  logger?: Pick<Console, "error" | "log">;
   toolCallId?: string;
   questionsResult?: unknown;
 }
@@ -367,7 +373,7 @@ export interface UpdateExtensionSecretRequest {
 export interface DispatchExtensionEventRequest<THostApi> {
   event: HostExtensionEvent;
   host: THostApi;
-  logger?: Pick<Console, 'error' | 'log'>;
+  logger?: Pick<Console, "error" | "log">;
   targetExtensionIds?: readonly string[];
 }
 
@@ -394,7 +400,7 @@ export interface HostExtensionManager {
 }
 
 export function collectHostExtensionContributedTools(
-  extensions: readonly Pick<HostInstalledExtension, 'id' | 'manifest'>[],
+  extensions: readonly Pick<HostInstalledExtension, "id" | "manifest">[],
 ): HostExtensionContributedToolDefinition[] {
   return collectResolvableExtensionTools(extensions).map((entry) => ({
     name: entry.invocationName,
@@ -473,8 +479,8 @@ interface ActivatedExtensionCacheEntry {
   activationEvents: readonly HostExtensionActivationEventName[];
   runtimeInfo: HostExtensionRuntimeInfo;
   activatedExtension?: HostActivatedExtension;
-  onEvent?: HostActivatedExtension['onEvent'];
-  dispose?: HostActivatedExtension['dispose'];
+  onEvent?: HostActivatedExtension["onEvent"];
+  dispose?: HostActivatedExtension["dispose"];
 }
 
 export async function listInstalledExtensions(
@@ -521,11 +527,11 @@ export async function listInstalledExtensions(
   }
 
   installed.sort((left, right) => {
-    const byName = left.manifest.name.localeCompare(right.manifest.name, 'zh-CN');
+    const byName = left.manifest.name.localeCompare(right.manifest.name, "zh-CN");
     if (byName !== 0) {
       return byName;
     }
-    return left.id.localeCompare(right.id, 'en');
+    return left.id.localeCompare(right.id, "en");
   });
 
   const nextRegistryEntries = installed.map((item) => ({
@@ -535,7 +541,11 @@ export async function listInstalledExtensions(
     ...(item.archiveFileName ? { archiveFileName: item.archiveFileName } : {}),
   }));
 
-  await saveExtensionRegistryIfChanged(paths.extensionsIndexFile, registryEntries, nextRegistryEntries);
+  await saveExtensionRegistryIfChanged(
+    paths.extensionsIndexFile,
+    registryEntries,
+    nextRegistryEntries,
+  );
 
   return installed;
 }
@@ -549,10 +559,10 @@ function assertExtensionImportAllowedForHost(
     return;
   }
   const hostLabel: Record<ExtensionHostKind, string> = {
-    cli: 'CLI',
-    desktop: 'Desktop',
+    cli: "CLI",
+    desktop: "Desktop",
   };
-  const listed = allowed.map((entry) => hostLabel[entry] ?? entry).join('、');
+  const listed = allowed.map((entry) => hostLabel[entry] ?? entry).join("、");
   throw new Error(
     `此扩展不支持在当前宿主安装：当前为 ${hostLabel[hostKind]}，扩展仅支持 ${listed}。`,
   );
@@ -565,20 +575,25 @@ export async function importExtensionArchive(
   const paths = resolveExtensionPaths(context);
   await ensureExtensionDirectories(paths);
 
-  const archiveBuffer = Buffer.from(request.archiveBase64, 'base64');
+  const archiveBuffer = Buffer.from(request.archiveBase64, "base64");
   if (archiveBuffer.length === 0) {
-    throw new Error('扩展 ZIP 内容为空。');
+    throw new Error("扩展 ZIP 内容为空。");
   }
 
   const extracted = unzipSync(new Uint8Array(archiveBuffer));
   const normalizedExtracted = new Map(
-    Object.entries(extracted).map(([entryName, content]) => [normalizeArchivePath(entryName), content]),
+    Object.entries(extracted).map(([entryName, content]) => [
+      normalizeArchivePath(entryName),
+      content,
+    ]),
   );
   const manifestEntryName = resolveManifestArchivePath(Object.keys(extracted));
-  const manifestRaw = Buffer.from(normalizedExtracted.get(manifestEntryName) ?? []).toString('utf8');
-  const manifestRoot = manifestEntryName.includes('/')
-    ? manifestEntryName.slice(0, manifestEntryName.lastIndexOf('/'))
-    : '';
+  const manifestRaw = Buffer.from(normalizedExtracted.get(manifestEntryName) ?? []).toString(
+    "utf8",
+  );
+  const manifestRoot = manifestEntryName.includes("/")
+    ? manifestEntryName.slice(0, manifestEntryName.lastIndexOf("/"))
+    : "";
   const manifest = await parseExtensionManifest(manifestRaw, {
     readRelativeTextFile: async (relativePath, fieldName) => {
       const normalized = normalizeArchivePath(relativePath);
@@ -587,7 +602,7 @@ export async function importExtensionArchive(
       if (!content) {
         throw new Error(`扩展 ${fieldName} 指向的文件不存在：${relativePath}`);
       }
-      return Buffer.from(content).toString('utf8');
+      return Buffer.from(content).toString("utf8");
     },
   });
   const directoryName = extensionDirectoryNameFromId(manifest.id);
@@ -603,13 +618,13 @@ export async function importExtensionArchive(
         continue;
       }
 
-      const targetFilePath = path.join(stagingDirectory, ...relativePath.split('/'));
+      const targetFilePath = path.join(stagingDirectory, ...relativePath.split("/"));
       await mkdir(path.dirname(targetFilePath), { recursive: true });
       await writeFile(targetFilePath, Buffer.from(content));
     }
 
     if (manifest.main) {
-      const mainFilePath = path.join(stagingDirectory, ...manifest.main.split('/'));
+      const mainFilePath = path.join(stagingDirectory, ...manifest.main.split("/"));
       if (!existsSync(mainFilePath)) {
         throw new Error(`扩展 main 文件不存在：${manifest.main}`);
       }
@@ -641,7 +656,7 @@ export async function installPreparedExtensionDirectory(
 ): Promise<HostInstalledExtension> {
   const preparedDirectoryPath = request.preparedDirectoryPath.trim();
   if (!preparedDirectoryPath) {
-    throw new Error('预安装扩展目录不能为空。');
+    throw new Error("预安装扩展目录不能为空。");
   }
 
   const paths = resolveExtensionPaths(context);
@@ -659,7 +674,7 @@ export async function installPreparedExtensionDirectory(
   }
 
   if (manifest.main) {
-    const mainFilePath = path.join(preparedDirectoryPath, ...manifest.main.split('/'));
+    const mainFilePath = path.join(preparedDirectoryPath, ...manifest.main.split("/"));
     if (!existsSync(mainFilePath)) {
       throw new Error(`扩展 main 文件不存在：${manifest.main}`);
     }
@@ -733,7 +748,7 @@ export async function removeInstalledExtension(
 ): Promise<void> {
   const normalizedId = id.trim();
   if (!normalizedId) {
-    throw new Error('扩展 id 不能为空。');
+    throw new Error("扩展 id 不能为空。");
   }
 
   const paths = resolveExtensionPaths(context);
@@ -766,7 +781,7 @@ export async function runInstalledExtension<THostApi>(
 ): Promise<void> {
   const normalizedId = request.id.trim();
   if (!normalizedId) {
-    throw new Error('扩展 id 不能为空。');
+    throw new Error("扩展 id 不能为空。");
   }
 
   const target = await requireInstalledExtension(context, normalizedId);
@@ -789,8 +804,9 @@ export async function resolveExtensionTool(
   }
   const installed = await listInstalledExtensions(context);
   return (
-    collectResolvableExtensionTools(installed).find((entry) => entry.invocationName === normalizedName) ??
-    undefined
+    collectResolvableExtensionTools(installed).find(
+      (entry) => entry.invocationName === normalizedName,
+    ) ?? undefined
   );
 }
 
@@ -805,7 +821,7 @@ export async function invokeExtensionTool<THostApi>(
   if (!tool) {
     throw new Error(`扩展未声明工具：${request.toolName}`);
   }
-  if (!target.manifest.requestedCapabilities?.includes('tool-execution')) {
+  if (!target.manifest.requestedCapabilities?.includes("tool-execution")) {
     throw new Error(`扩展未声明 tool-execution capability：${target.id}`);
   }
 
@@ -976,7 +992,7 @@ async function ensureActivatedExtension<THostApi>(
   stateStore: ExtensionStateStore,
   options: {
     host: THostApi;
-    logger?: Pick<Console, 'error' | 'log'>;
+    logger?: Pick<Console, "error" | "log">;
     log: (message: string) => void;
     activationEvent?: HostExtensionEvent;
   },
@@ -996,7 +1012,7 @@ async function ensureActivatedExtension<THostApi>(
     throw new Error(`扩展未声明 main，当前无法执行：${target.id}`);
   }
 
-  const mainFilePath = path.join(target.directoryPath, ...mainEntry.split('/'));
+  const mainFilePath = path.join(target.directoryPath, ...mainEntry.split("/"));
   if (!existsSync(mainFilePath)) {
     throw new Error(`扩展 main 文件不存在：${mainEntry}`);
   }
@@ -1031,7 +1047,7 @@ function createRuntimeInfo(target: HostInstalledExtension): HostExtensionRuntime
     version: target.manifest.version,
     directoryPath: target.directoryPath,
     manifestPath: target.manifestPath,
-    main: target.manifest.main ?? '',
+    main: target.manifest.main ?? "",
   };
 }
 
@@ -1043,7 +1059,7 @@ async function invokeActivatedExtensionTool<THostApi>(
     host: THostApi;
     toolName: string;
     arguments: Record<string, unknown>;
-    logger?: Pick<Console, 'error' | 'log'>;
+    logger?: Pick<Console, "error" | "log">;
     toolCallId?: string;
     questionsResult?: unknown;
   },
@@ -1068,7 +1084,7 @@ async function invokeActivatedExtensionTool<THostApi>(
   };
 
   const directInvoker = activated.invokeTool;
-  if (typeof directInvoker === 'function') {
+  if (typeof directInvoker === "function") {
     return directInvoker(toolContext);
   }
 
@@ -1086,7 +1102,7 @@ async function resolveActivatedExtensionSystemPrompt(
     return undefined;
   }
 
-  if (typeof activated.getSystemPrompt === 'function') {
+  if (typeof activated.getSystemPrompt === "function") {
     const dynamicPrompt = await activated.getSystemPrompt();
     const normalizedDynamicPrompt = dynamicPrompt?.trim();
     return normalizedDynamicPrompt ? normalizedDynamicPrompt : undefined;
@@ -1097,23 +1113,23 @@ async function resolveActivatedExtensionSystemPrompt(
 }
 
 function resolveToolHandler(
-  tools: HostActivatedExtension['tools'],
+  tools: HostActivatedExtension["tools"],
   toolName: string,
 ): HostExtensionToolHandler<unknown> | undefined {
-  if (!tools || typeof tools !== 'object') {
+  if (!tools || typeof tools !== "object") {
     return undefined;
   }
 
   const handler = tools[toolName];
-  return typeof handler === 'function' ? handler : undefined;
+  return typeof handler === "function" ? handler : undefined;
 }
 
 function renderExtensionToolResult(result: unknown): string {
-  if (typeof result === 'string') {
+  if (typeof result === "string") {
     return result;
   }
   if (result === undefined) {
-    return '';
+    return "";
   }
   return JSON.stringify(result, null, 2);
 }
@@ -1192,7 +1208,7 @@ async function requireInstalledExtension(
 ): Promise<HostInstalledExtension> {
   const normalizedId = id.trim();
   if (!normalizedId) {
-    throw new Error('扩展 id 不能为空。');
+    throw new Error("扩展 id 不能为空。");
   }
 
   const installed = await listInstalledExtensions(context);
@@ -1282,8 +1298,8 @@ function validateSettingValue(
     throw new Error(`扩展设置 ${definition.key} 不能为空。`);
   }
 
-  if (definition.type === 'string') {
-    if (typeof value !== 'string') {
+  if (definition.type === "string") {
+    if (typeof value !== "string") {
       throw new Error(`扩展设置 ${definition.key} 必须是字符串。`);
     }
     if (definition.required && value.trim().length === 0) {
@@ -1292,21 +1308,21 @@ function validateSettingValue(
     return value;
   }
 
-  if (definition.type === 'boolean') {
-    if (typeof value !== 'boolean') {
+  if (definition.type === "boolean") {
+    if (typeof value !== "boolean") {
       throw new Error(`扩展设置 ${definition.key} 必须是布尔值。`);
     }
     return value;
   }
 
-  if (definition.type === 'number') {
-    if (typeof value !== 'number' || !Number.isFinite(value)) {
+  if (definition.type === "number") {
+    if (typeof value !== "number" || !Number.isFinite(value)) {
       throw new Error(`扩展设置 ${definition.key} 必须是数字。`);
     }
     return value;
   }
 
-  if (typeof value !== 'string') {
+  if (typeof value !== "string") {
     throw new Error(`扩展设置 ${definition.key} 必须是字符串。`);
   }
 
@@ -1319,13 +1335,13 @@ function validateSettingValue(
 
 function supportsResolvableToolContribution(manifest: HostExtensionManifest): boolean {
   return (
-    manifest.requestedCapabilities?.includes('tool-definitions') === true &&
-    manifest.requestedCapabilities?.includes('tool-execution') === true
+    manifest.requestedCapabilities?.includes("tool-definitions") === true &&
+    manifest.requestedCapabilities?.includes("tool-execution") === true
   );
 }
 
 function collectResolvableExtensionTools(
-  extensions: readonly Pick<HostInstalledExtension, 'id' | 'manifest'>[],
+  extensions: readonly Pick<HostInstalledExtension, "id" | "manifest">[],
 ): HostResolvedExtensionTool[] {
   const collected: HostResolvedExtensionTool[] = [];
   const seenInvocationNames = new Set<string>();
@@ -1360,9 +1376,9 @@ function buildExtensionToolInvocationName(extensionId: string, toolName: string)
     sanitizeExtensionToolInvocationFragment(toolName),
     EXTENSION_TOOL_NAME_FRAGMENT_LIMIT,
   );
-  const digest = createHash('sha1')
+  const digest = createHash("sha1")
     .update(`${extensionFragment}\0${toolFragment}`)
-    .digest('hex')
+    .digest("hex")
     .slice(0, 8);
   const base = `extension__${extensionFragment}__${toolFragment}__${digest}`;
 
@@ -1389,35 +1405,34 @@ function ensureUniqueExtensionToolInvocationName(
 }
 
 function sanitizeExtensionToolInvocationFragment(input: string): string {
-  let output = '';
+  let output = "";
 
   for (const char of input) {
     if (
-      (char >= 'a' && char <= 'z')
-      || (char >= 'A' && char <= 'Z')
-      || (char >= '0' && char <= '9')
+      (char >= "a" && char <= "z") ||
+      (char >= "A" && char <= "Z") ||
+      (char >= "0" && char <= "9")
     ) {
       output += char.toLowerCase();
       continue;
     }
 
-    if (!output.endsWith('_')) {
-      output += '_';
+    if (!output.endsWith("_")) {
+      output += "_";
     }
   }
 
-  const trimmed = output.replace(/^_+|_+$/gu, '');
-  return trimmed || 'tool';
+  const trimmed = output.replace(/^_+|_+$/gu, "");
+  return trimmed || "tool";
 }
 
 function truncateExtensionToolInvocationFragment(input: string, maxLength: number): string {
-  return Array.from(input).slice(0, maxLength).join('');
+  return Array.from(input).slice(0, maxLength).join("");
 }
 
 function supportsSystemPromptContribution(manifest: HostExtensionManifest): boolean {
-  return manifest.requestedCapabilities?.includes('system-prompt') === true;
+  return manifest.requestedCapabilities?.includes("system-prompt") === true;
 }
-
 
 async function deactivateAllExtensions(
   activatedExtensions: Map<string, ActivatedExtensionCacheEntry>,
@@ -1449,13 +1464,16 @@ async function ensureExtensionDirectories(paths: ExtensionPaths): Promise<void> 
 }
 
 async function readExtensionManifestFile(filePath: string): Promise<HostExtensionManifest> {
-  const raw = await readFile(filePath, 'utf8');
+  const raw = await readFile(filePath, "utf8");
   const manifestDirectory = path.dirname(filePath);
   return parseExtensionManifest(raw, {
     readRelativeTextFile: async (relativePath, fieldName) => {
-      const targetPath = path.join(manifestDirectory, ...normalizeArchivePath(relativePath).split('/'));
+      const targetPath = path.join(
+        manifestDirectory,
+        ...normalizeArchivePath(relativePath).split("/"),
+      );
       try {
-        return await readFile(targetPath, 'utf8');
+        return await readFile(targetPath, "utf8");
       } catch {
         throw new Error(`扩展 ${fieldName} 指向的文件不存在：${relativePath}`);
       }
@@ -1471,11 +1489,11 @@ async function parseExtensionManifest(
   try {
     parsed = JSON.parse(raw);
   } catch {
-    throw new Error('扩展 package.json 不是合法 JSON。');
+    throw new Error("扩展 package.json 不是合法 JSON。");
   }
 
   if (!isRecord(parsed)) {
-    throw new Error('扩展 package.json 必须是 JSON object。');
+    throw new Error("扩展 package.json 必须是 JSON object。");
   }
 
   const spiritExtension = requiredSpiritExtensionField(parsed[SPIRIT_EXTENSION_FIELD_NAME]);
@@ -1490,13 +1508,19 @@ async function parseExtensionManifest(
   }
 
   const id = packageNameField(parsed.name);
-  const name = stringField(spiritExtension.displayName, `${SPIRIT_EXTENSION_FIELD_NAME}.displayName`);
-  const icon = optionalPackageStringField(spiritExtension.icon, `${SPIRIT_EXTENSION_FIELD_NAME}.icon`);
-  const version = stringField(parsed.version, 'version');
-  const description = optionalPackageStringField(parsed.description, 'description');
+  const name = stringField(
+    spiritExtension.displayName,
+    `${SPIRIT_EXTENSION_FIELD_NAME}.displayName`,
+  );
+  const icon = optionalPackageStringField(
+    spiritExtension.icon,
+    `${SPIRIT_EXTENSION_FIELD_NAME}.icon`,
+  );
+  const version = stringField(parsed.version, "version");
+  const description = optionalPackageStringField(parsed.description, "description");
   const author = optionalPackageAuthorField(parsed.author);
-  const homepage = optionalPackageStringField(parsed.homepage, 'homepage');
-  const main = optionalPackageStringField(parsed.main, 'main');
+  const homepage = optionalPackageStringField(parsed.homepage, "homepage");
+  const main = optionalPackageStringField(parsed.main, "main");
   const activationEvents = optionalActivationEventsField(
     spiritExtension.activationEvents,
     `${SPIRIT_EXTENSION_FIELD_NAME}.activationEvents`,
@@ -1524,7 +1548,7 @@ async function parseExtensionManifest(
   );
 
   if (main) {
-    assertSafeRelativePath(main, 'main');
+    assertSafeRelativePath(main, "main");
   }
 
   if (icon) {
@@ -1552,18 +1576,22 @@ async function parseExtensionManifest(
   };
 }
 
-async function loadExtensionRegistry(filePath: string): Promise<Map<string, HostExtensionRegistryEntry>> {
+async function loadExtensionRegistry(
+  filePath: string,
+): Promise<Map<string, HostExtensionRegistryEntry>> {
   if (!existsSync(filePath)) {
     return new Map();
   }
 
   try {
-    const raw = await readFile(filePath, 'utf8');
+    const raw = await readFile(filePath, "utf8");
     const parsed = JSON.parse(raw) as { entries?: HostExtensionRegistryEntry[] };
     const entries = Array.isArray(parsed.entries) ? parsed.entries : [];
     return new Map(
       entries
-        .filter((entry) => typeof entry?.id === 'string' && typeof entry?.directoryName === 'string')
+        .filter(
+          (entry) => typeof entry?.id === "string" && typeof entry?.directoryName === "string",
+        )
         .map((entry) => [entry.id, entry]),
     );
   } catch {
@@ -1582,7 +1610,7 @@ async function saveExtensionRegistryIfChanged(
     return;
   }
 
-  await writeFile(filePath, nextJson, 'utf8');
+  await writeFile(filePath, nextJson, "utf8");
 }
 
 async function writeExtensionRegistry(
@@ -1590,18 +1618,21 @@ async function writeExtensionRegistry(
   entries: readonly HostExtensionRegistryEntry[],
 ): Promise<void> {
   await mkdir(path.dirname(filePath), { recursive: true });
-  await writeFile(filePath, serializeRegistry(entries), 'utf8');
+  await writeFile(filePath, serializeRegistry(entries), "utf8");
 }
 
 function serializeRegistry(entries: readonly HostExtensionRegistryEntry[]): string {
-  const sorted = [...entries].sort((left, right) => left.id.localeCompare(right.id, 'en'));
+  const sorted = [...entries].sort((left, right) => left.id.localeCompare(right.id, "en"));
   return `${JSON.stringify({ entries: sorted }, null, 2)}\n`;
 }
 
 function resolveManifestArchivePath(entryNames: readonly string[]): string {
   const candidates = entryNames.filter((entryName) => {
     const normalized = normalizeArchivePath(entryName);
-    return normalized.endsWith(`/${EXTENSION_MANIFEST_FILE_NAME}`) || normalized === EXTENSION_MANIFEST_FILE_NAME;
+    return (
+      normalized.endsWith(`/${EXTENSION_MANIFEST_FILE_NAME}`) ||
+      normalized === EXTENSION_MANIFEST_FILE_NAME
+    );
   });
 
   if (candidates.length === 0) {
@@ -1620,11 +1651,14 @@ function resolveManifestArchivePath(entryNames: readonly string[]): string {
   return normalizeArchivePath(manifestPath);
 }
 
-function resolveArchiveRelativePath(entryName: string, manifestEntryName: string): string | undefined {
+function resolveArchiveRelativePath(
+  entryName: string,
+  manifestEntryName: string,
+): string | undefined {
   const normalizedEntryName = normalizeArchivePath(entryName);
-  const manifestRoot = manifestEntryName.includes('/')
-    ? manifestEntryName.slice(0, manifestEntryName.lastIndexOf('/'))
-    : '';
+  const manifestRoot = manifestEntryName.includes("/")
+    ? manifestEntryName.slice(0, manifestEntryName.lastIndexOf("/"))
+    : "";
 
   if (manifestRoot) {
     if (!normalizedEntryName.startsWith(`${manifestRoot}/`)) {
@@ -1636,20 +1670,20 @@ function resolveArchiveRelativePath(entryName: string, manifestEntryName: string
     ? normalizedEntryName.slice(manifestRoot.length + 1)
     : normalizedEntryName;
 
-  if (!relativePath || relativePath.endsWith('/')) {
+  if (!relativePath || relativePath.endsWith("/")) {
     return undefined;
   }
 
-  assertSafeRelativePath(relativePath, 'archive entry');
+  assertSafeRelativePath(relativePath, "archive entry");
   return relativePath;
 }
 
 function normalizeArchivePath(filePath: string): string {
-  return filePath.replace(/\\/gu, '/').replace(/^\.\//u, '');
+  return filePath.replace(/\\/gu, "/").replace(/^\.\//u, "");
 }
 
 function extensionDirectoryNameFromId(id: string): string {
-  return `pkg-${Buffer.from(id, 'utf8').toString('base64url')}`;
+  return `pkg-${Buffer.from(id, "utf8").toString("base64url")}`;
 }
 
 async function activateExtension<THostApi>(
@@ -1657,7 +1691,7 @@ async function activateExtension<THostApi>(
   mainFilePath: string,
   options: {
     host: THostApi;
-    logger?: Pick<Console, 'error' | 'log'>;
+    logger?: Pick<Console, "error" | "log">;
     log: (message: string) => void;
     settings: HostExtensionSettingsAccessor;
     secrets: HostExtensionSecretsAccessor;
@@ -1680,7 +1714,7 @@ async function activateExtension<THostApi>(
         version: target.manifest.version,
         directoryPath: target.directoryPath,
         manifestPath: target.manifestPath,
-        main: target.manifest.main ?? '',
+        main: target.manifest.main ?? "",
       },
       host: options.host,
       log: options.log,
@@ -1701,11 +1735,11 @@ async function activateExtension<THostApi>(
 async function loadExtensionModule(
   target: HostInstalledExtension,
   mainFilePath: string,
-  logger?: Pick<Console, 'error' | 'log'>,
+  logger?: Pick<Console, "error" | "log">,
 ): Promise<unknown> {
   try {
     const mainModuleUrl = pathToFileURL(mainFilePath);
-    mainModuleUrl.searchParams.set('ts', `${target.installedAtUnixMs}`);
+    mainModuleUrl.searchParams.set("ts", `${target.installedAtUnixMs}`);
     return await import(mainModuleUrl.href);
   } catch (error) {
     logger?.error(`[extension:${target.id}] load failed`, error);
@@ -1721,17 +1755,20 @@ function resolveActivatedExtension(value: unknown): HostActivatedExtension | und
   }
 
   const tools = resolveActivatedExtensionTools(value.tools);
-  const invokeTool = typeof value.invokeTool === 'function'
-    ? value.invokeTool as HostActivatedExtension['invokeTool']
-    : undefined;
-  const systemPrompt = typeof value.systemPrompt === 'string' && value.systemPrompt.trim()
-    ? value.systemPrompt
-    : undefined;
-  const getSystemPrompt = typeof value.getSystemPrompt === 'function'
-    ? value.getSystemPrompt as HostActivatedExtension['getSystemPrompt']
-    : undefined;
-  const onEvent = typeof value.onEvent === 'function' ? value.onEvent : undefined;
-  const dispose = typeof value.dispose === 'function' ? value.dispose : undefined;
+  const invokeTool =
+    typeof value.invokeTool === "function"
+      ? (value.invokeTool as HostActivatedExtension["invokeTool"])
+      : undefined;
+  const systemPrompt =
+    typeof value.systemPrompt === "string" && value.systemPrompt.trim()
+      ? value.systemPrompt
+      : undefined;
+  const getSystemPrompt =
+    typeof value.getSystemPrompt === "function"
+      ? (value.getSystemPrompt as HostActivatedExtension["getSystemPrompt"])
+      : undefined;
+  const onEvent = typeof value.onEvent === "function" ? value.onEvent : undefined;
+  const dispose = typeof value.dispose === "function" ? value.dispose : undefined;
   if (!tools && !invokeTool && !systemPrompt && !getSystemPrompt && !onEvent && !dispose) {
     return undefined;
   }
@@ -1742,30 +1779,30 @@ function resolveActivatedExtension(value: unknown): HostActivatedExtension | und
     invokeTool ? { invokeTool } : {},
     systemPrompt ? { systemPrompt } : {},
     getSystemPrompt ? { getSystemPrompt } : {},
-    onEvent ? { onEvent: onEvent as HostActivatedExtension['onEvent'] } : {},
-    dispose ? { dispose: dispose as HostActivatedExtension['dispose'] } : {},
+    onEvent ? { onEvent: onEvent as HostActivatedExtension["onEvent"] } : {},
+    dispose ? { dispose: dispose as HostActivatedExtension["dispose"] } : {},
   ) as HostActivatedExtension;
 }
 
 function resolveActivatedExtensionTools(
   value: unknown,
-): HostActivatedExtension['tools'] | undefined {
+): HostActivatedExtension["tools"] | undefined {
   if (!isRecord(value)) {
     return undefined;
   }
 
-  const entries = Object.entries(value).filter(([, handler]) => typeof handler === 'function');
+  const entries = Object.entries(value).filter(([, handler]) => typeof handler === "function");
   if (entries.length === 0) {
     return undefined;
   }
 
-  return Object.fromEntries(entries) as HostActivatedExtension['tools'];
+  return Object.fromEntries(entries) as HostActivatedExtension["tools"];
 }
 
 function resolveActivateHandler<THostApi>(
   loadedModule: unknown,
 ): ((context: HostExtensionActivationContext<THostApi>) => unknown) | undefined {
-  if (typeof loadedModule === 'function') {
+  if (typeof loadedModule === "function") {
     return loadedModule as (context: HostExtensionActivationContext<THostApi>) => unknown;
   }
 
@@ -1773,16 +1810,16 @@ function resolveActivateHandler<THostApi>(
     return undefined;
   }
 
-  if (typeof loadedModule.activate === 'function') {
+  if (typeof loadedModule.activate === "function") {
     return loadedModule.activate as (context: HostExtensionActivationContext<THostApi>) => unknown;
   }
 
   const defaultExport = loadedModule.default;
-  if (typeof defaultExport === 'function') {
+  if (typeof defaultExport === "function") {
     return defaultExport as (context: HostExtensionActivationContext<THostApi>) => unknown;
   }
 
-  if (isRecord(defaultExport) && typeof defaultExport.activate === 'function') {
+  if (isRecord(defaultExport) && typeof defaultExport.activate === "function") {
     return defaultExport.activate as (context: HostExtensionActivationContext<THostApi>) => unknown;
   }
 
@@ -1791,28 +1828,30 @@ function resolveActivateHandler<THostApi>(
 
 function assertSafeRelativePath(filePath: string, label: string): void {
   const normalized = normalizeArchivePath(filePath);
-  if (!normalized || normalized.startsWith('/') || /^[A-Za-z]:/u.test(normalized)) {
+  if (!normalized || normalized.startsWith("/") || /^[A-Za-z]:/u.test(normalized)) {
     throw new Error(`扩展 ${label} 必须是相对路径。`);
   }
 
-  const segments = normalized.split('/');
-  if (segments.some((segment) => !segment || segment === '.' || segment === '..')) {
+  const segments = normalized.split("/");
+  if (segments.some((segment) => !segment || segment === "." || segment === "..")) {
     throw new Error(`扩展 ${label} 包含非法路径段。`);
   }
 }
 
 function requiredSpiritExtensionField(value: unknown): Record<string, unknown> {
   if (!isRecord(value)) {
-    throw new Error(`扩展 package.json 缺少 ${SPIRIT_EXTENSION_FIELD_NAME} 字段，且该字段必须是对象。`);
+    throw new Error(
+      `扩展 package.json 缺少 ${SPIRIT_EXTENSION_FIELD_NAME} 字段，且该字段必须是对象。`,
+    );
   }
   return value;
 }
 
 function packageNameField(value: unknown): string {
-  const packageName = stringField(value, 'name');
+  const packageName = stringField(value, "name");
   if (!EXTENSION_PACKAGE_NAME_PATTERN.test(packageName)) {
     throw new Error(
-      '扩展 package.json 字段 name 非法；必须为合法 npm 包名，且本次仅支持小写包名与可选 scoped 包名。',
+      "扩展 package.json 字段 name 非法；必须为合法 npm 包名，且本次仅支持小写包名与可选 scoped 包名。",
     );
   }
   return packageName;
@@ -1822,7 +1861,7 @@ function optionalPackageStringField(value: unknown, fieldName: string): string |
   if (value === undefined || value === null) {
     return undefined;
   }
-  if (typeof value !== 'string') {
+  if (typeof value !== "string") {
     throw new Error(`扩展 package.json 字段 ${fieldName} 必须是字符串。`);
   }
   const trimmed = value.trim();
@@ -1833,25 +1872,25 @@ function optionalPackageAuthorField(value: unknown): string | undefined {
   if (value === undefined || value === null) {
     return undefined;
   }
-  if (typeof value === 'string') {
+  if (typeof value === "string") {
     const trimmed = value.trim();
     return trimmed.length > 0 ? trimmed : undefined;
   }
   if (isRecord(value)) {
-    return optionalPackageStringField(value.name, 'author.name');
+    return optionalPackageStringField(value.name, "author.name");
   }
-  throw new Error('扩展 package.json 字段 author 必须是字符串或包含 name 字段的对象。');
+  throw new Error("扩展 package.json 字段 author 必须是字符串或包含 name 字段的对象。");
 }
 
 function stringField(value: unknown, fieldName: string): string {
-  if (typeof value !== 'string' || value.trim().length === 0) {
+  if (typeof value !== "string" || value.trim().length === 0) {
     throw new Error(`扩展字段 ${fieldName} 不能为空。`);
   }
   return value.trim();
 }
 
 function optionalStringField(value: unknown): string | undefined {
-  if (typeof value !== 'string') {
+  if (typeof value !== "string") {
     return undefined;
   }
   const trimmed = value.trim();
@@ -1871,7 +1910,7 @@ function requiredSupportedHostsField(value: unknown, fieldName: string): Extensi
 
   const result: ExtensionHostKind[] = [];
   for (const entry of value) {
-    if (typeof entry !== 'string') {
+    if (typeof entry !== "string") {
       throw new Error(`扩展字段 ${fieldName} 必须是字符串数组。`);
     }
     const normalized = entry.trim() as ExtensionHostKind;
@@ -1896,7 +1935,7 @@ function optionalActivationEventsField(
 
   const result: HostExtensionActivationEventName[] = [];
   for (const entry of value) {
-    if (typeof entry !== 'string') {
+    if (typeof entry !== "string") {
       throw new Error(`扩展字段 ${fieldName} 必须是字符串数组。`);
     }
     const normalized = entry.trim() as HostExtensionActivationEventName;
@@ -1921,7 +1960,7 @@ function optionalRequestedCapabilitiesField(
 
   const result: HostExtensionRequestedCapability[] = [];
   for (const entry of value) {
-    if (typeof entry !== 'string') {
+    if (typeof entry !== "string") {
       throw new Error(`扩展字段 ${fieldName} 必须是字符串数组。`);
     }
     const normalized = entry.trim() as HostExtensionRequestedCapability;
@@ -2013,7 +2052,11 @@ async function optionalCliContributionSetField(
     return undefined;
   }
 
-  const hooks = await optionalCliUiHookDefinitionsField(value.hooks, options, `${fieldPrefix}.hooks`);
+  const hooks = await optionalCliUiHookDefinitionsField(
+    value.hooks,
+    options,
+    `${fieldPrefix}.hooks`,
+  );
   if (hooks.length === 0) {
     return undefined;
   }
@@ -2061,14 +2104,14 @@ function parseCliUiHookDocument(
   }
 
   return parsed.hooks.map((entry, index) =>
-    parseCliUiHookDefinition(entry, index, `CLI hooks 资源 ${resourcePath}.hooks`)
+    parseCliUiHookDefinition(entry, index, `CLI hooks 资源 ${resourcePath}.hooks`),
   );
 }
 
 function parseCliUiHookDefinition(
   value: unknown,
   index: number,
-  fieldPrefix = 'contributes.cli.hooks',
+  fieldPrefix = "contributes.cli.hooks",
 ): HostExtensionCliUiHookDefinition {
   if (!isRecord(value)) {
     throw new Error(`扩展字段 ${fieldPrefix}[${index}] 必须是对象。`);
@@ -2177,14 +2220,14 @@ function assertHostUiContributionCapabilities(
 ): void {
   const hasDesktopContribution = Boolean(contributes?.desktop);
   const hasCliContribution = Boolean(contributes?.cli);
-  const hasDesktopCapability = requestedCapabilities.includes('desktop-ui');
-  const hasCliCapability = requestedCapabilities.includes('cli-ui');
+  const hasDesktopCapability = requestedCapabilities.includes("desktop-ui");
+  const hasCliCapability = requestedCapabilities.includes("cli-ui");
 
   if (hasDesktopContribution !== hasDesktopCapability) {
     throw new Error(
       hasDesktopContribution
         ? `扩展声明了 ${SPIRIT_EXTENSION_FIELD_NAME}.contributes.desktop，但缺少 ${SPIRIT_EXTENSION_FIELD_NAME}.requestedCapabilities 中的 desktop-ui。`
-        : `扩展声明了 desktop-ui capability，但缺少 ${SPIRIT_EXTENSION_FIELD_NAME}.contributes.desktop。`
+        : `扩展声明了 desktop-ui capability，但缺少 ${SPIRIT_EXTENSION_FIELD_NAME}.contributes.desktop。`,
     );
   }
 
@@ -2192,7 +2235,7 @@ function assertHostUiContributionCapabilities(
     throw new Error(
       hasCliContribution
         ? `扩展声明了 ${SPIRIT_EXTENSION_FIELD_NAME}.contributes.cli，但缺少 ${SPIRIT_EXTENSION_FIELD_NAME}.requestedCapabilities 中的 cli-ui。`
-        : `扩展声明了 cli-ui capability，但缺少 ${SPIRIT_EXTENSION_FIELD_NAME}.contributes.cli。`
+        : `扩展声明了 cli-ui capability，但缺少 ${SPIRIT_EXTENSION_FIELD_NAME}.contributes.cli。`,
     );
   }
 }
@@ -2213,7 +2256,10 @@ function parseContributedToolDefinition(
 
   const description = stringField(value.description, `${fieldPrefix}[${index}].description`);
   const inputSchema = schemaField(value.inputSchema, `${fieldPrefix}[${index}].inputSchema`);
-  const outputSchema = optionalSchemaField(value.outputSchema, `${fieldPrefix}[${index}].outputSchema`);
+  const outputSchema = optionalSchemaField(
+    value.outputSchema,
+    `${fieldPrefix}[${index}].outputSchema`,
+  );
   const approvalMode = optionalEnumField(
     value.approvalMode,
     `${fieldPrefix}[${index}].approvalMode`,
@@ -2274,7 +2320,12 @@ function parseSettingDefinition(
     `${fieldPrefix}[${index}].defaultValue`,
     type,
   );
-  const options = optionalSettingOptionsField(value.options, index, type, `${fieldPrefix}[${index}].options`);
+  const options = optionalSettingOptionsField(
+    value.options,
+    index,
+    type,
+    `${fieldPrefix}[${index}].options`,
+  );
 
   return {
     key,
@@ -2297,8 +2348,10 @@ function optionalSettingOptionsField(
   if (value === undefined || value === null) {
     return [];
   }
-  if (type !== 'select') {
-    throw new Error(`只有 select 类型的设置项允许声明 options：${fieldName.replace(/\.options$/u, '')}`);
+  if (type !== "select") {
+    throw new Error(
+      `只有 select 类型的设置项允许声明 options：${fieldName.replace(/\.options$/u, "")}`,
+    );
   }
   if (!Array.isArray(value)) {
     throw new Error(`扩展字段 ${fieldName} 必须是数组。`);
@@ -2308,14 +2361,8 @@ function optionalSettingOptionsField(
     if (!isRecord(entry)) {
       throw new Error(`扩展字段 ${fieldName}[${optionIndex}] 必须是对象。`);
     }
-    const optionValue = stringField(
-      entry.value,
-      `${fieldName}[${optionIndex}].value`,
-    );
-    const label = stringField(
-      entry.label,
-      `${fieldName}[${optionIndex}].label`,
-    );
+    const optionValue = stringField(entry.value, `${fieldName}[${optionIndex}].value`);
+    const label = stringField(entry.label, `${fieldName}[${optionIndex}].label`);
     const description = optionalStringField(entry.description);
     return {
       value: optionValue,
@@ -2335,29 +2382,26 @@ function optionalSettingDefaultValueField(
   }
 
   switch (type) {
-    case 'string':
-    case 'select':
-      if (typeof value !== 'string') {
+    case "string":
+    case "select":
+      if (typeof value !== "string") {
         throw new Error(`扩展字段 ${fieldName} 必须是字符串。`);
       }
       return value;
-    case 'boolean':
-      if (typeof value !== 'boolean') {
+    case "boolean":
+      if (typeof value !== "boolean") {
         throw new Error(`扩展字段 ${fieldName} 必须是布尔值。`);
       }
       return value;
-    case 'number':
-      if (typeof value !== 'number' || !Number.isFinite(value)) {
+    case "number":
+      if (typeof value !== "number" || !Number.isFinite(value)) {
         throw new Error(`扩展字段 ${fieldName} 必须是数字。`);
       }
       return value;
   }
 }
 
-function optionalSecretSlotsField(
-  value: unknown,
-  fieldPrefix: string,
-): HostExtensionSecretSlot[] {
+function optionalSecretSlotsField(value: unknown, fieldPrefix: string): HostExtensionSecretSlot[] {
   if (!Array.isArray(value)) {
     return [];
   }
@@ -2383,7 +2427,7 @@ function optionalSecretSlotsField(
 }
 
 function optionalBooleanField(value: unknown): boolean | undefined {
-  return typeof value === 'boolean' ? value : undefined;
+  return typeof value === "boolean" ? value : undefined;
 }
 
 function schemaField(value: unknown, fieldName: string): HostExtensionJsonSchema {
@@ -2408,7 +2452,7 @@ function enumField<T extends readonly string[]>(
   fieldName: string,
   allowedValues: T,
 ): T[number] {
-  if (typeof value !== 'string') {
+  if (typeof value !== "string") {
     throw new Error(`扩展字段 ${fieldName} 必须是字符串。`);
   }
   const normalized = value.trim() as T[number];
@@ -2430,12 +2474,12 @@ function optionalEnumField<T extends readonly string[]>(
 }
 
 function numberField(value: unknown, fieldName: string): number {
-  if (typeof value !== 'number' || !Number.isFinite(value)) {
+  if (typeof value !== "number" || !Number.isFinite(value)) {
     throw new Error(`扩展字段 ${fieldName} 必须是数字。`);
   }
   return value;
 }
 
 function isRecord(value: unknown): value is Record<string, unknown> {
-  return typeof value === 'object' && value !== null;
+  return typeof value === "object" && value !== null;
 }

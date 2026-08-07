@@ -5,11 +5,11 @@ import type {
   StartedToolAgentRound,
   ToolAgentRoundCompletion,
   ToolExecutionOutput,
-} from '../../../../ports.js';
+} from "../../../../ports.js";
 import {
   DEFAULT_VIDEO_GENERATION_DURATION,
   createLlmMessageContentFromTextAndImages,
-} from '../../../../ports.js';
+} from "../../../../ports.js";
 import {
   AgentRuntime,
   HostExecutor,
@@ -23,13 +23,13 @@ import {
   type RuntimeParityCaseResult,
   type ScriptedState,
   type ScriptedToolRequest,
-} from './harness.js';
+} from "./harness.js";
 
-const GENERATE_VIDEO_ASSISTANT_TEXT = 'GENERATE_VIDEO_OK';
+const GENERATE_VIDEO_ASSISTANT_TEXT = "GENERATE_VIDEO_OK";
 
 export async function runGenerateVideoCase(): Promise<RuntimeParityCaseResult> {
   const nonStreamingTransport = new GenerateVideoTerminalTransport(
-    'non-streaming',
+    "non-streaming",
     '{"prompt":"cinematic clip of a quiet moonlit courtyard"}',
   );
   const nonStreamingExecutor = new CountingHostExecutor();
@@ -38,26 +38,26 @@ export async function runGenerateVideoCase(): Promise<RuntimeParityCaseResult> {
     nonStreamingTransport,
     nonStreamingExecutor,
     nonStreamingEvents,
-    'cinematic clip',
+    "cinematic clip",
     DEFAULT_VIDEO_GENERATION_DURATION,
   );
 
-  const nonStreamingResult = await nonStreamingRuntime.submitUserTurn('生成一段视频');
+  const nonStreamingResult = await nonStreamingRuntime.submitUserTurn("生成一段视频");
   if (
-    nonStreamingResult.kind !== 'completed' ||
+    nonStreamingResult.kind !== "completed" ||
     nonStreamingResult.assistantText !== GENERATE_VIDEO_ASSISTANT_TEXT
   ) {
-    throw new Error('generate_video 非流式 smoke 未完成。');
+    throw new Error("generate_video 非流式 smoke 未完成。");
   }
   assertTerminalGenerateVideoResult(
     nonStreamingResult.toolExecutions,
     nonStreamingTransport.rounds,
     nonStreamingExecutor.executedCalls,
-    'generate_video 非流式 smoke',
+    "generate_video 非流式 smoke",
   );
 
   const streamingTransport = new GenerateVideoTerminalTransport(
-    'streaming',
+    "streaming",
     '{"prompt":"wide cinematic clip of a quiet moonlit courtyard","duration":8,"aspect_ratio":"16:9","resolution":"720p"}',
   );
   const streamingExecutor = new CountingHostExecutor();
@@ -66,34 +66,34 @@ export async function runGenerateVideoCase(): Promise<RuntimeParityCaseResult> {
     streamingTransport,
     streamingExecutor,
     streamingEvents,
-    'wide cinematic clip',
+    "wide cinematic clip",
     8,
-    '16:9',
-    '720p',
+    "16:9",
+    "720p",
   );
 
-  await streamingRuntime.startUserTurnStreaming('生成一段视频');
+  await streamingRuntime.startUserTurnStreaming("生成一段视频");
   for (let index = 0; index < 24 && streamingRuntime.isBusy(); index += 1) {
     await flushMicrotasks(8);
     await streamingRuntime.poll();
   }
   if (streamingRuntime.isBusy()) {
-    throw new Error('generate_video 流式 smoke 未在预期轮次内完成。');
+    throw new Error("generate_video 流式 smoke 未在预期轮次内完成。");
   }
 
   const streamingResult = streamingRuntime.takeCompletedTurnResult();
   if (
     !streamingResult ||
-    streamingResult.kind !== 'completed' ||
+    streamingResult.kind !== "completed" ||
     streamingResult.assistantText !== GENERATE_VIDEO_ASSISTANT_TEXT
   ) {
-    throw new Error('generate_video 流式 smoke 未完成。');
+    throw new Error("generate_video 流式 smoke 未完成。");
   }
   assertTerminalGenerateVideoResult(
     streamingResult.toolExecutions,
     streamingTransport.rounds,
     streamingExecutor.executedCalls,
-    'generate_video 流式 smoke',
+    "generate_video 流式 smoke",
   );
 
   return {
@@ -120,7 +120,7 @@ function createGenerateVideoRuntime(
     extractAssistantText: extractScriptedAssistantText,
     generateVideo: async (request): Promise<ToolExecutionOutput> => {
       if (!request.prompt.includes(expectedPromptSnippet)) {
-        throw new Error('generate_video smoke 未收到模型重写后的最终 prompt。');
+        throw new Error("generate_video smoke 未收到模型重写后的最终 prompt。");
       }
       if (request.duration !== expectedDuration) {
         throw new Error(`generate_video smoke 未解析出预期 duration：${request.duration}`);
@@ -132,16 +132,20 @@ function createGenerateVideoRuntime(
         throw new Error(`generate_video smoke 未解析出预期 resolution：${request.resolution}`);
       }
 
-      const markdownRef = 'spirit://generated/video/courtyard-clip.mp4';
+      const markdownRef = "spirit://generated/video/courtyard-clip.mp4";
       const summaryText = [
-        '[generated video]',
+        "[generated video]",
         `video_ref: ${markdownRef}`,
         `read_file_path: ${markdownRef}`,
         `embed_markdown: <video src="${markdownRef}" controls></video>`,
-      ].join('\n');
+      ].join("\n");
 
       return {
-        content: createLlmMessageContentFromTextAndImages(summaryText, [], ['generated/courtyard-clip.mp4']),
+        content: createLlmMessageContentFromTextAndImages(
+          summaryText,
+          [],
+          ["generated/courtyard-clip.mp4"],
+        ),
         summaryText,
       };
     },
@@ -150,7 +154,12 @@ function createGenerateVideoRuntime(
 }
 
 function assertTerminalGenerateVideoResult(
-  toolExecutions: { toolName: string; failed: boolean; output: string; artifacts?: { path: string }[] }[],
+  toolExecutions: {
+    toolName: string;
+    failed: boolean;
+    output: string;
+    artifacts?: { path: string }[];
+  }[],
   rounds: number,
   executedCalls: number,
   label: string,
@@ -162,11 +171,15 @@ function assertTerminalGenerateVideoResult(
     throw new Error(`${label} 不应落到宿主 execute。`);
   }
 
-  const execution = toolExecutions.find((item) => item.toolName === 'generate_video');
-  if (!execution || execution.failed || !execution.output.includes('spirit://generated/video/courtyard-clip.mp4')) {
+  const execution = toolExecutions.find((item) => item.toolName === "generate_video");
+  if (
+    !execution ||
+    execution.failed ||
+    !execution.output.includes("spirit://generated/video/courtyard-clip.mp4")
+  ) {
     throw new Error(`${label} 未记录正确的 generate_video 工具结果。`);
   }
-  if (!execution.artifacts?.some((artifact) => artifact.path === 'generated/courtyard-clip.mp4')) {
+  if (!execution.artifacts?.some((artifact) => artifact.path === "generated/courtyard-clip.mp4")) {
     throw new Error(`${label} 未把生成视频路径放入 structured artifacts。`);
   }
 }
@@ -175,7 +188,7 @@ class GenerateVideoTerminalTransport implements LlmTransport<undefined, Scripted
   rounds = 0;
 
   constructor(
-    private readonly mode: 'non-streaming' | 'streaming',
+    private readonly mode: "non-streaming" | "streaming",
     private readonly argumentsJson: string,
   ) {}
 
@@ -184,8 +197,8 @@ class GenerateVideoTerminalTransport implements LlmTransport<undefined, Scripted
     state: ScriptedState,
     _tools: JsonValue,
   ): Promise<ToolAgentRoundCompletion<ScriptedState>> {
-    if (this.mode !== 'non-streaming') {
-      throw new Error('generate_video streaming smoke 应走 streaming transport。');
+    if (this.mode !== "non-streaming") {
+      throw new Error("generate_video streaming smoke 应走 streaming transport。");
     }
 
     return this.nextRound(state);
@@ -196,8 +209,8 @@ class GenerateVideoTerminalTransport implements LlmTransport<undefined, Scripted
     state: ScriptedState,
     _tools: JsonValue,
   ): Promise<StartedToolAgentRound<ScriptedState>> {
-    if (this.mode !== 'streaming') {
-      throw new Error('generate_video non-streaming smoke 不应走 streaming transport。');
+    if (this.mode !== "streaming") {
+      throw new Error("generate_video non-streaming smoke 不应走 streaming transport。");
     }
 
     this.rounds += 1;
@@ -205,9 +218,9 @@ class GenerateVideoTerminalTransport implements LlmTransport<undefined, Scripted
       return {
         eventStream: streamFromEvents([
           {
-            kind: 'streaming-tool-preview',
-            toolCallId: 'call-generate-video',
-            toolName: 'generate_video',
+            kind: "streaming-tool-preview",
+            toolCallId: "call-generate-video",
+            toolName: "generate_video",
             argumentsJson: this.argumentsJson,
           },
         ]),
@@ -218,9 +231,9 @@ class GenerateVideoTerminalTransport implements LlmTransport<undefined, Scripted
     if (this.rounds === 2) {
       return {
         eventStream: streamFromEvents([
-          { kind: 'assistant-chunk', text: 'GENERATE_VIDEO_' },
-          { kind: 'assistant-chunk', text: 'OK' },
-          { kind: 'done' },
+          { kind: "assistant-chunk", text: "GENERATE_VIDEO_" },
+          { kind: "assistant-chunk", text: "OK" },
+          { kind: "done" },
         ]),
         completion: Promise.resolve(this.buildFinalResponseRound(state)),
       };
@@ -229,9 +242,9 @@ class GenerateVideoTerminalTransport implements LlmTransport<undefined, Scripted
     return {
       eventStream: streamFromEvents([]),
       completion: Promise.resolve({
-        kind: 'failure',
-        error: 'generate_video completed but runtime continued into an unexpected streaming round.',
-        requestTrace: [{ mode: 'generate-video-terminal-extra-streaming-round' }],
+        kind: "failure",
+        error: "generate_video completed but runtime continued into an unexpected streaming round.",
+        requestTrace: [{ mode: "generate-video-terminal-extra-streaming-round" }],
       }),
     };
   }
@@ -252,7 +265,7 @@ class GenerateVideoTerminalTransport implements LlmTransport<undefined, Scripted
   }
 
   isContextOverflowError(error: string): boolean {
-    return error.includes('context');
+    return error.includes("context");
   }
 
   llmHistoryAsApiMessages(history: LlmMessage[]): JsonValue[] {
@@ -274,28 +287,28 @@ class GenerateVideoTerminalTransport implements LlmTransport<undefined, Scripted
     }
 
     return {
-      kind: 'failure',
-      error: 'generate_video completed but runtime continued into another model round.',
-      requestTrace: [{ mode: 'generate-video-terminal-extra-round' }],
+      kind: "failure",
+      error: "generate_video completed but runtime continued into another model round.",
+      requestTrace: [{ mode: "generate-video-terminal-extra-round" }],
     };
   }
 
   private buildToolCallRound(state: ScriptedState): ToolAgentRoundCompletion<ScriptedState> {
     return {
-      kind: 'success',
+      kind: "success",
       result: {
         state: {
           messages: [
             ...state.messages,
             {
-              role: 'assistant',
-              content: '准备生成视频。',
+              role: "assistant",
+              content: "准备生成视频。",
               tool_calls: [
                 {
-                  id: 'call-generate-video',
-                  type: 'function',
+                  id: "call-generate-video",
+                  type: "function",
                   function: {
-                    name: 'generate_video',
+                    name: "generate_video",
                     arguments: this.argumentsJson,
                   },
                 },
@@ -305,33 +318,33 @@ class GenerateVideoTerminalTransport implements LlmTransport<undefined, Scripted
           steps: state.steps + 1,
         },
         step: {
-          kind: 'tool-calls',
+          kind: "tool-calls",
           calls: [
             {
-              id: 'call-generate-video',
-              name: 'generate_video',
+              id: "call-generate-video",
+              name: "generate_video",
               argumentsJson: this.argumentsJson,
             },
           ],
         },
-        requestTrace: [{ mode: 'generate-video-terminal-round' }],
+        requestTrace: [{ mode: "generate-video-terminal-round" }],
       },
     };
   }
 
   private buildFinalResponseRound(state: ScriptedState): ToolAgentRoundCompletion<ScriptedState> {
     return {
-      kind: 'success',
+      kind: "success",
       result: {
         state: {
           messages: [
             ...state.messages,
-            { role: 'assistant', content: GENERATE_VIDEO_ASSISTANT_TEXT },
+            { role: "assistant", content: GENERATE_VIDEO_ASSISTANT_TEXT },
           ],
           steps: state.steps + 1,
         },
-        step: { kind: 'final-response-ready' },
-        requestTrace: [{ mode: 'generate-video-terminal-final-round' }],
+        step: { kind: "final-response-ready" },
+        requestTrace: [{ mode: "generate-video-terminal-final-round" }],
       },
     };
   }

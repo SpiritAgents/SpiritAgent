@@ -1,31 +1,31 @@
-import path from 'node:path';
+import path from "node:path";
 
-import type { ChatArchive } from '@spiritagent/agent-core';
+import type { ChatArchive } from "@spiritagent/agent-core";
 
-import i18n from '../lib/i18n-host.js';
+import i18n from "../lib/i18n-host.js";
 import type {
   BeginSideChatPaneSessionRequest,
   BeginSideChatPaneSessionResponse,
   DesktopSnapshot,
   ForkSessionIntoSideChatRequest,
-} from '../types.js';
-import type { DesktopHostRuntime } from './runtime.js';
-import type { SessionBundle } from './session-bundle.js';
-import type { SessionActivationContext } from './session-activation.js';
+} from "../types.js";
+import type { DesktopHostRuntime } from "./runtime.js";
+import type { SessionBundle } from "./session-bundle.js";
+import type { SessionActivationContext } from "./session-activation.js";
 import {
   buildArchiveAssistantAuxFromConversation,
   buildArchiveMessagesFromConversation,
   sanitizeConversationMessagesForPersistence,
-} from './sessions.js';
-import { cloneHostTodoRecords, listSessionTodos, replaceSessionTodos } from './todos.js';
+} from "./sessions.js";
+import { cloneHostTodoRecords, listSessionTodos, replaceSessionTodos } from "./todos.js";
 import {
   buildTruncatedChatArchiveForFork,
   resolveForkAnchorIndex,
   truncateMessagesThroughIndex,
-} from './fork-session.js';
-import { populateForkedBundleFromSource } from './fork-session-host.js';
-import type { SessionSplitHostContext } from './session-split.js';
-import { sideChatPaneSessionPath } from './storage.js';
+} from "./fork-session.js";
+import { populateForkedBundleFromSource } from "./fork-session-host.js";
+import type { SessionSplitHostContext } from "./session-split.js";
+import { sideChatPaneSessionPath } from "./storage.js";
 
 export interface SideChatSessionHostContext extends SessionSplitHostContext {
   requireRuntime(): DesktopHostRuntime;
@@ -42,8 +42,8 @@ function buildSourceArchiveForFork(
   const archiveMessages = buildArchiveMessagesFromConversation(sourceMessages);
   const archiveAssistantAux = buildArchiveAssistantAuxFromConversation(sourceMessages);
   const runtime =
-    sourceBundle.runtime
-    ?? (ctx.sessionRegistry().getActive() === sourceBundle ? ctx.currentRuntime() : undefined);
+    sourceBundle.runtime ??
+    (ctx.sessionRegistry().getActive() === sourceBundle ? ctx.currentRuntime() : undefined);
   if (runtime) {
     const archive = runtime.toArchive(archiveMessages, archiveAssistantAux);
     archive.loopEnabled = sourceBundle.loopEnabled;
@@ -66,7 +66,7 @@ export async function beginSideChatPaneSessionCommand(
     await ctx.ensureInitialized(undefined, { fastPath: true });
     const paneId = request.paneId.trim();
     if (!paneId) {
-      throw new Error('Side-chat pane id is required.');
+      throw new Error("Side-chat pane id is required.");
     }
 
     const state = ctx.requireState();
@@ -96,28 +96,28 @@ export async function forkSessionIntoSideChatCommand(
     const sourceSessionPath = path.resolve(request.sourceSessionPath.trim());
     const targetPaneId = request.targetPaneId.trim();
     if (!sourceSessionPath || !targetPaneId) {
-      throw new Error(i18n.t('error.hostNotInitialized'));
+      throw new Error(i18n.t("error.hostNotInitialized"));
     }
     if (!Number.isFinite(request.messageId)) {
-      throw new Error(i18n.t('error.invalidMessageId'));
+      throw new Error(i18n.t("error.invalidMessageId"));
     }
 
     const registry = ctx.sessionRegistry();
     const sourceBundle = registry.findBySessionPath(sourceSessionPath);
     if (!sourceBundle?.activeSession) {
-      throw new Error(i18n.t('error.hostNotInitialized'));
+      throw new Error(i18n.t("error.hostNotInitialized"));
     }
     if (ctx.isBundleReadOnly(sourceBundle)) {
-      throw new Error(i18n.t('error.forkReadOnlySession'));
+      throw new Error(i18n.t("error.forkReadOnlySession"));
     }
     if (ctx.isBundleConversationBusy(sourceBundle)) {
-      throw new Error(i18n.t('error.runtimeBusy'));
+      throw new Error(i18n.t("error.runtimeBusy"));
     }
 
     const targetSessionPath = path.resolve(sideChatPaneSessionPath(targetPaneId));
     const targetBundle = registry.findBySessionPath(targetSessionPath);
     if (!targetBundle) {
-      throw new Error('Side-chat session not found.');
+      throw new Error("Side-chat session not found.");
     }
 
     const sourceMessages = sourceBundle.messageTimeline.toMessages();
@@ -127,20 +127,22 @@ export async function forkSessionIntoSideChatCommand(
       request.listIndex,
     );
     if (anchorIndex === null) {
-      throw new Error(i18n.t('error.forkInvalidAnchor'));
+      throw new Error(i18n.t("error.forkInvalidAnchor"));
     }
 
     const truncatedMessages = truncateMessagesThroughIndex(sourceMessages, anchorIndex);
     if (truncatedMessages.length === 0) {
-      throw new Error(i18n.t('error.forkInvalidAnchor'));
+      throw new Error(i18n.t("error.forkInvalidAnchor"));
     }
 
     const sourceMessageCount = sourceMessages.length;
     if (sourceBundle.activeSession && sourceMessageCount > 0) {
-      await ctx.runSessionEndForBundle?.(sourceBundle, 'switch');
+      await ctx.runSessionEndForBundle?.(sourceBundle, "switch");
       await ctx.persistSessionBundle(sourceBundle, {
         fromRuntime:
-          registry.activeSessionId() === sourceBundle.id ? ctx.currentRuntime() : sourceBundle.runtime,
+          registry.activeSessionId() === sourceBundle.id
+            ? ctx.currentRuntime()
+            : sourceBundle.runtime,
         bumpListSortAt: false,
       });
     }
@@ -176,7 +178,7 @@ export async function forkSessionIntoSideChatCommand(
       bumpListSortAt: false,
     });
 
-    ctx.setLastRuntimeError('');
+    ctx.setLastRuntimeError("");
     return ctx.buildSnapshot();
   });
 }

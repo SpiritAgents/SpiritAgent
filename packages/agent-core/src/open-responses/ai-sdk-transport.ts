@@ -1,6 +1,6 @@
-import { generateObject, generateText, jsonSchema, streamText } from 'ai';
+import { generateObject, generateText, jsonSchema, streamText } from "ai";
 
-import { readAiSdkUsage } from '../ai-sdk-usage.js';
+import { readAiSdkUsage } from "../ai-sdk-usage.js";
 
 import type {
   GeneratedImageFile,
@@ -16,37 +16,41 @@ import type {
   ToolAgentRoundCompletion,
   ToolExecutionOutput,
   VideoGenerationRequest,
-} from '../ports.js';
-import type { JsonSchemaCompletionRequest, JsonSchemaCompletionResult, JsonSchemaTransport } from '../json-schema.js';
+} from "../ports.js";
+import type {
+  JsonSchemaCompletionRequest,
+  JsonSchemaCompletionResult,
+  JsonSchemaTransport,
+} from "../json-schema.js";
 import {
   buildJsonSchemaCompletionMessages,
   stringifyJsonSchemaCompletionOutput,
-} from '../openai/json-schema.js';
+} from "../openai/json-schema.js";
 import {
   includesCompactSummaryBlock,
   unwrapCompactSummaryBlock,
   wrapCompactSummaryBlock,
-} from '../llm-context-block.js';
+} from "../llm-context-block.js";
 import {
   buildCompactHistoryPromptMessages,
   buildToolAgentHostPrompt,
   cloneJsonValue,
   isJsonObject,
   type ToolAgentState,
-} from '../tool-agent.js';
-import { llmHistoryToOpenAiMessages } from '../openai/tool-agent-helpers.js';
+} from "../tool-agent.js";
+import { llmHistoryToOpenAiMessages } from "../openai/tool-agent-helpers.js";
 import {
   buildAssistantMessageFromResponsesGenerateText,
   extractToolCallsFromAiSdk,
   normalizeResponsesToolDefinitions,
   openAiMessagesToResponsesAiSdkMessages,
   renderResponsesTransportError,
-} from './ai-sdk-message-bridge.js';
+} from "./ai-sdk-message-bridge.js";
 import {
   buildSdkProviderWebSearchStopWhen,
   collectExecutedProviderBuiltinToolCallIdsFromSteps,
   filterPendingHostToolCalls,
-} from './sdk-provider-web-search-loop.js';
+} from "./sdk-provider-web-search-loop.js";
 import {
   appendApplyPatchToolCallsToAssistantMessage,
   beginApplyPatchBridgeRound,
@@ -56,33 +60,33 @@ import {
   registerPendingApplyPatchCallIds,
   runWithApplyPatchBridgeContext,
   takeLastExtractedApplyPatchCalls,
-} from './apply-patch-bridge.js';
-import { shouldUseOpenAiSdkApplyPatchTool } from './apply-patch-eligibility.js';
-import { isResponsesBuiltInToolName } from './responses-built-in-tools.js';
-import { xaiResponsesRejectsLocalFunctionTools } from './web-search-eligibility.js';
+} from "./apply-patch-bridge.js";
+import { shouldUseOpenAiSdkApplyPatchTool } from "./apply-patch-eligibility.js";
+import { isResponsesBuiltInToolName } from "./responses-built-in-tools.js";
+import { xaiResponsesRejectsLocalFunctionTools } from "./web-search-eligibility.js";
 import {
   buildResponsesGenerateTools,
   buildResponsesProviderOptions,
   createResponsesLanguageModel,
-} from './model-factory.js';
+} from "./model-factory.js";
 import {
   attachResponseIdToAssistantMessage,
   extractResponseIdFromGenerateTextResult,
-} from './provider-state.js';
+} from "./provider-state.js";
 import {
   buildResponsesRoundInput,
   bindResponsesStoredStateRequestContextAsyncIterable,
   runInResponsesStoredStateRequestContextSync,
   runWithResponsesStoredStateRequestContext,
-} from './responses-incremental-input.js';
+} from "./responses-incremental-input.js";
 import {
   buildOpenResponsesRequestTrace,
   buildOpenResponsesTraceExtras,
   type OpenResponsesTransportConfig,
-} from './responses-compat.js';
-import { createDeferred, responsesEventStreamToRuntimeEvents } from './streaming.js';
-import { generateVideoWithRouter } from '../video-generation/router.js';
-import { AiSdkOpenAiCompatibleTransport } from '../openai/ai-sdk-transport.js';
+} from "./responses-compat.js";
+import { createDeferred, responsesEventStreamToRuntimeEvents } from "./streaming.js";
+import { generateVideoWithRouter } from "../video-generation/router.js";
+import { AiSdkOpenAiCompatibleTransport } from "../openai/ai-sdk-transport.js";
 
 const openAiCompatibleImageTransport = new AiSdkOpenAiCompatibleTransport();
 
@@ -95,13 +99,11 @@ function trimLeadingStreamLineBreaks(existingText: string, nextText: string): st
     return nextText;
   }
 
-  return nextText.replace(/^[\r\n]+/u, '');
+  return nextText.replace(/^[\r\n]+/u, "");
 }
 
 export class AiSdkOpenResponsesTransport
-  implements
-    LlmTransport<OpenResponsesTransportConfig, ToolAgentState>,
-    JsonSchemaTransport
+  implements LlmTransport<OpenResponsesTransportConfig, ToolAgentState>, JsonSchemaTransport
 {
   async generateImage(
     config: OpenResponsesTransportConfig,
@@ -110,15 +112,15 @@ export class AiSdkOpenResponsesTransport
   ): Promise<ToolExecutionOutput> {
     const imageConfig = config.imageGeneration;
     if (!imageConfig) {
-      throw new Error('No image generation model is configured.');
+      throw new Error("No image generation model is configured.");
     }
 
     return openAiCompatibleImageTransport.generateImage(
       {
-        transportKind: 'openai-compatible',
+        transportKind: "openai-compatible",
         apiKey: config.apiKey,
         model: config.model,
-        baseUrl: config.baseUrl ?? '',
+        baseUrl: config.baseUrl ?? "",
         imageGeneration: imageConfig,
         ...(config.workspaceRoot ? { workspaceRoot: config.workspaceRoot } : {}),
       },
@@ -134,7 +136,7 @@ export class AiSdkOpenResponsesTransport
   ): Promise<ToolExecutionOutput> {
     const videoConfig = config.videoGeneration;
     if (!videoConfig) {
-      throw new Error('No video generation model is configured.');
+      throw new Error("No video generation model is configured.");
     }
 
     return generateVideoWithRouter(videoConfig, request, saveGeneratedVideo);
@@ -200,102 +202,104 @@ export class AiSdkOpenResponsesTransport
 
     if (xaiResponsesRejectsLocalFunctionTools(config, normalizedTools.length)) {
       return {
-        kind: 'failure',
+        kind: "failure",
         error: xaiResponsesLocalToolsUnsupportedMessage(),
         requestTrace: tracedRequest,
       };
     }
 
     try {
-      return await runWithResponsesStoredStateRequestContext(
-        roundInput.previousResponseId,
-        () => runWithApplyPatchBridgeContext(async () => {
-        const generateTools = buildResponsesGenerateTools(config, normalizedTools);
-        const hasGenerateTools = Object.keys(generateTools).length > 0;
-        const sdkWebSearchStopWhen = buildSdkProviderWebSearchStopWhen(config);
-        const result = await generateText({
-          model: createResponsesLanguageModel(config) as any,
-          messages: openAiMessagesToResponsesAiSdkMessages(roundInput.apiMessages, config) as any,
-          allowSystemInMessages: true,
-          ...(hasGenerateTools
-            ? {
-                tools: generateTools as any,
-                toolChoice: 'auto' as const,
-              }
-            : {}),
-          ...(sdkWebSearchStopWhen ? { stopWhen: sdkWebSearchStopWhen } : {}),
-          providerOptions: buildResponsesProviderOptions(config, roundInput.previousResponseId),
-          maxRetries: 2,
-        });
+      return await runWithResponsesStoredStateRequestContext(roundInput.previousResponseId, () =>
+        runWithApplyPatchBridgeContext(async () => {
+          const generateTools = buildResponsesGenerateTools(config, normalizedTools);
+          const hasGenerateTools = Object.keys(generateTools).length > 0;
+          const sdkWebSearchStopWhen = buildSdkProviderWebSearchStopWhen(config);
+          const result = await generateText({
+            model: createResponsesLanguageModel(config) as any,
+            messages: openAiMessagesToResponsesAiSdkMessages(roundInput.apiMessages, config) as any,
+            allowSystemInMessages: true,
+            ...(hasGenerateTools
+              ? {
+                  tools: generateTools as any,
+                  toolChoice: "auto" as const,
+                }
+              : {}),
+            ...(sdkWebSearchStopWhen ? { stopWhen: sdkWebSearchStopWhen } : {}),
+            providerOptions: buildResponsesProviderOptions(config, roundInput.previousResponseId),
+            maxRetries: 2,
+          });
 
-        const applyPatchCalls = shouldUseOpenAiSdkApplyPatchTool(config)
-          ? []
-          : takeLastExtractedApplyPatchCalls();
-        const executedProviderBuiltinToolCallIds = collectExecutedProviderBuiltinToolCallIdsFromSteps(
-          result.steps,
-        );
-        const pendingAssistantToolCalls = result.toolCalls.filter(
-          (toolCall) => !(
-            isResponsesBuiltInToolName(toolCall.toolName)
-            && executedProviderBuiltinToolCallIds.has(toolCall.toolCallId)
-          ),
-        );
-        const assistantMessage = attachResponseIdToAssistantMessage(
-          config,
-          buildAssistantMessageFromResponsesGenerateText(
-            result.text,
-            pendingAssistantToolCalls,
-            result.reasoningText ?? '',
-          ),
-          extractResponseIdFromGenerateTextResult(result),
-        );
-        if (applyPatchCalls.length > 0 && isJsonObject(assistantMessage as JsonValue)) {
-          appendApplyPatchToolCallsToAssistantMessage(assistantMessage as JsonObject, applyPatchCalls);
-        }
-        nextState.messages.push(assistantMessage);
+          const applyPatchCalls = shouldUseOpenAiSdkApplyPatchTool(config)
+            ? []
+            : takeLastExtractedApplyPatchCalls();
+          const executedProviderBuiltinToolCallIds =
+            collectExecutedProviderBuiltinToolCallIdsFromSteps(result.steps);
+          const pendingAssistantToolCalls = result.toolCalls.filter(
+            (toolCall) =>
+              !(
+                isResponsesBuiltInToolName(toolCall.toolName) &&
+                executedProviderBuiltinToolCallIds.has(toolCall.toolCallId)
+              ),
+          );
+          const assistantMessage = attachResponseIdToAssistantMessage(
+            config,
+            buildAssistantMessageFromResponsesGenerateText(
+              result.text,
+              pendingAssistantToolCalls,
+              result.reasoningText ?? "",
+            ),
+            extractResponseIdFromGenerateTextResult(result),
+          );
+          if (applyPatchCalls.length > 0 && isJsonObject(assistantMessage as JsonValue)) {
+            appendApplyPatchToolCallsToAssistantMessage(
+              assistantMessage as JsonObject,
+              applyPatchCalls,
+            );
+          }
+          nextState.messages.push(assistantMessage);
 
-        if (applyPatchCalls.length > 0) {
-          registerPendingApplyPatchCallIds(applyPatchCalls.map((call) => call.id));
-        }
-        const usage = await readAiSdkUsage(result);
-        const calls = mergeToolCallsWithApplyPatch(
-          filterPendingHostToolCalls(
-            extractToolCallsFromAiSdk(pendingAssistantToolCalls),
-            executedProviderBuiltinToolCallIds,
-          ),
-          applyPatchCalls,
-        );
-        if (calls.length > 0) {
+          if (applyPatchCalls.length > 0) {
+            registerPendingApplyPatchCallIds(applyPatchCalls.map((call) => call.id));
+          }
+          const usage = await readAiSdkUsage(result);
+          const calls = mergeToolCallsWithApplyPatch(
+            filterPendingHostToolCalls(
+              extractToolCallsFromAiSdk(pendingAssistantToolCalls),
+              executedProviderBuiltinToolCallIds,
+            ),
+            applyPatchCalls,
+          );
+          if (calls.length > 0) {
+            return {
+              kind: "success",
+              result: {
+                state: nextState,
+                step: {
+                  kind: "tool-calls",
+                  calls,
+                },
+                requestTrace: tracedRequest,
+                ...(usage ? { usage } : {}),
+              },
+            } as ToolAgentRoundCompletion<ToolAgentState>;
+          }
+
           return {
-            kind: 'success',
+            kind: "success",
             result: {
               state: nextState,
               step: {
-                kind: 'tool-calls',
-                calls,
+                kind: "final-response-ready",
               },
               requestTrace: tracedRequest,
               ...(usage ? { usage } : {}),
             },
           } as ToolAgentRoundCompletion<ToolAgentState>;
-        }
-
-        return {
-          kind: 'success',
-          result: {
-            state: nextState,
-            step: {
-              kind: 'final-response-ready',
-            },
-            requestTrace: tracedRequest,
-            ...(usage ? { usage } : {}),
-          },
-        } as ToolAgentRoundCompletion<ToolAgentState>;
-      }),
+        }),
       );
     } catch (error) {
       return {
-        kind: 'failure',
+        kind: "failure",
         error: renderResponsesTransportError(error),
         requestTrace: tracedRequest,
       };
@@ -331,7 +335,7 @@ export class AiSdkOpenResponsesTransport
       return {
         eventStream: emptyResponsesEventStream(),
         completion: Promise.resolve({
-          kind: 'failure',
+          kind: "failure",
           error: xaiResponsesLocalToolsUnsupportedMessage(),
           requestTrace,
         }),
@@ -346,25 +350,25 @@ export class AiSdkOpenResponsesTransport
       const providerOptions = buildResponsesProviderOptions(config, roundInput.previousResponseId);
       const sdkMessages = openAiMessagesToResponsesAiSdkMessages(roundInput.apiMessages, config);
       const sdkWebSearchStopWhen = buildSdkProviderWebSearchStopWhen(config);
-      const result: { stream: AsyncIterable<unknown> } & Parameters<typeof readAiSdkUsage>[0] = runInResponsesStoredStateRequestContextSync(
-        roundInput.previousResponseId,
-        () => streamText({
-          model: createResponsesLanguageModel(config) as any,
-          messages: sdkMessages as any,
-          allowSystemInMessages: true,
-          ...(hasGenerateTools
-            ? {
-                tools: generateTools as any,
-                toolChoice: 'auto' as const,
-              }
-            : {}),
-          ...(sdkWebSearchStopWhen ? { stopWhen: sdkWebSearchStopWhen } : {}),
-          providerOptions,
-          include: { rawChunks: true },
-          maxRetries: 2,
-          abortSignal: abortController.signal,
-        }),
-      );
+      const result: { stream: AsyncIterable<unknown> } & Parameters<typeof readAiSdkUsage>[0] =
+        runInResponsesStoredStateRequestContextSync(roundInput.previousResponseId, () =>
+          streamText({
+            model: createResponsesLanguageModel(config) as any,
+            messages: sdkMessages as any,
+            allowSystemInMessages: true,
+            ...(hasGenerateTools
+              ? {
+                  tools: generateTools as any,
+                  toolChoice: "auto" as const,
+                }
+              : {}),
+            ...(sdkWebSearchStopWhen ? { stopWhen: sdkWebSearchStopWhen } : {}),
+            providerOptions,
+            include: { rawChunks: true },
+            maxRetries: 2,
+            abortSignal: abortController.signal,
+          }),
+        );
       const completion = createDeferred<ToolAgentRoundCompletion<ToolAgentState>>();
       void completion.promise.finally(() => {
         endApplyPatchBridgeRound();
@@ -390,7 +394,7 @@ export class AiSdkOpenResponsesTransport
       return {
         eventStream: emptyResponsesEventStream(),
         completion: Promise.resolve({
-          kind: 'failure',
+          kind: "failure",
           error: renderResponsesTransportError(error),
           requestTrace,
         }),
@@ -403,7 +407,7 @@ export class AiSdkOpenResponsesTransport
     config: OpenResponsesTransportConfig,
     history: LlmMessage[],
     onProgress?: (message: string) => void,
-    context?: import('../ports.js').CompactHistoryManualContext,
+    context?: import("../ports.js").CompactHistoryManualContext,
   ): Promise<{
     droppedMessages: number;
     beforeLength: number;
@@ -433,7 +437,7 @@ export class AiSdkOpenResponsesTransport
       model: config.compactModel ?? config.model,
     };
 
-    let summary = '';
+    let summary = "";
     if (onProgress) {
       let emittedProgress = false;
       try {
@@ -446,7 +450,7 @@ export class AiSdkOpenResponsesTransport
         });
 
         for await (const part of streamed.stream) {
-          if (part.type !== 'text-delta') {
+          if (part.type !== "text-delta") {
             continue;
           }
 
@@ -479,12 +483,12 @@ export class AiSdkOpenResponsesTransport
 
     const normalizedSummary = summary.trim();
     if (!normalizedSummary) {
-      throw new Error('Open Responses 压缩返回为空，无法生成摘要。');
+      throw new Error("Open Responses 压缩返回为空，无法生成摘要。");
     }
 
     history.splice(0, history.length, {
-      role: 'system',
-      content: [{ type: 'text', text: wrapCompactSummaryBlock(normalizedSummary) }],
+      role: "system",
+      content: [{ type: "text", text: wrapCompactSummaryBlock(normalizedSummary) }],
     });
 
     return {
@@ -497,28 +501,28 @@ export class AiSdkOpenResponsesTransport
   compactSummaryText(history: LlmMessage[]): string | undefined {
     const message = history.find(
       (entry) =>
-        entry.role === 'system' &&
+        entry.role === "system" &&
         entry.content.some(
-          (part) => part.type === 'text' && includesCompactSummaryBlock(part.text),
+          (part) => part.type === "text" && includesCompactSummaryBlock(part.text),
         ),
     );
     if (!message) {
       return undefined;
     }
     const text = message.content
-      .filter((part): part is { type: 'text'; text: string } => part.type === 'text')
+      .filter((part): part is { type: "text"; text: string } => part.type === "text")
       .map((part) => part.text)
-      .join('');
+      .join("");
     return unwrapCompactSummaryBlock(text);
   }
 
   isContextOverflowError(error: string): boolean {
     const normalized = error.toLowerCase();
     return (
-      normalized.includes('context length') ||
-      normalized.includes('maximum context length') ||
-      normalized.includes('too many tokens') ||
-      normalized.includes('context_window_exceeded')
+      normalized.includes("context length") ||
+      normalized.includes("maximum context length") ||
+      normalized.includes("too many tokens") ||
+      normalized.includes("context_window_exceeded")
     );
   }
 
@@ -528,17 +532,17 @@ export class AiSdkOpenResponsesTransport
 
   llmSystemPromptsForExport(): JsonValue {
     return {
-      tool_agent: buildToolAgentHostPrompt('—'),
+      tool_agent: buildToolAgentHostPrompt("—"),
     };
   }
 }
 
 async function* emptyResponsesEventStream(): AsyncGenerator<
-  import('../ports.js').LlmStreamEvent,
+  import("../ports.js").LlmStreamEvent,
   void,
   undefined
 > {}
 
 function xaiResponsesLocalToolsUnsupportedMessage(): string {
-  return 'SpaceXAI Responses API 暂不支持本地 function tools，请改用 Chat Completions transport。';
+  return "SpaceXAI Responses API 暂不支持本地 function tools，请改用 Chat Completions transport。";
 }

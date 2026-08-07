@@ -1,10 +1,10 @@
-import { FILE_DIFF_TOOL_NAMES } from '@/lib/file-tool-diff-source.js';
-import i18n from '@/lib/i18n';
+import { FILE_DIFF_TOOL_NAMES } from "@/lib/file-tool-diff-source.js";
+import i18n from "@/lib/i18n";
 import {
   parseShellToolCommand,
   shellExpandableDetailLines,
   shellHasExpandableContent,
-} from '@/lib/shell-tool-display';
+} from "@/lib/shell-tool-display";
 import {
   isSkillMarkdownPath,
   LEGACY_READ_FILE_HEADLINE,
@@ -12,20 +12,15 @@ import {
   parseReadFilePathFromToolSnapshot,
   parseReadFileRequestRecordFromArgsExcerpt,
   storedReadFileHeadlineUsesSkillVerb,
-} from '@/lib/read-file-skill-display';
-import {
-  readFileToolHeadlineDetail,
-  readFileVerbKey,
-} from '@/lib/read-file-tool-display';
-import { phaseToVerbContext } from '@/lib/tool-verb-context';
-import { grepToolHeadlineDetail, parseGrepRequestFromArgsExcerpt } from '@/lib/grep-tool-display';
-import { buildAutomationTriggerFormatLabels } from './automation-trigger-i18n.js';
-import { formatDesktopAutomationTriggerLabel } from './automation-trigger.js';
-import {
-  builtInCreateAutomationToolCallSummaryParts,
-} from './lazy-built-in-tool-display.js';
-import { resolveTodoWriteBeforeSnapshot, todoWriteSummaryDetail } from '@/lib/todo-tool-display.js';
-import type { ToolBlockSnapshot } from '@/types';
+} from "@/lib/read-file-skill-display";
+import { readFileToolHeadlineDetail, readFileVerbKey } from "@/lib/read-file-tool-display";
+import { phaseToVerbContext } from "@/lib/tool-verb-context";
+import { grepToolHeadlineDetail, parseGrepRequestFromArgsExcerpt } from "@/lib/grep-tool-display";
+import { buildAutomationTriggerFormatLabels } from "./automation-trigger-i18n.js";
+import { formatDesktopAutomationTriggerLabel } from "./automation-trigger.js";
+import { builtInCreateAutomationToolCallSummaryParts } from "./lazy-built-in-tool-display.js";
+import { resolveTodoWriteBeforeSnapshot, todoWriteSummaryDetail } from "@/lib/todo-tool-display.js";
+import type { ToolBlockSnapshot } from "@/types";
 
 export type ShellToolSummaryParts = {
   verb: string;
@@ -39,12 +34,9 @@ export type ToolCallSummaryParts = {
   shellSummary?: ShellToolSummaryParts;
 };
 
-export { toolCallPhaseShowsShimmer } from './tool-call-shimmer.js';
+export { toolCallPhaseShowsShimmer } from "./tool-call-shimmer.js";
 
-const RESPONSES_BUILT_IN_TOOL_NAMES = new Set([
-  'web_search',
-  'code_interpreter',
-]);
+const RESPONSES_BUILT_IN_TOOL_NAMES = new Set(["web_search", "code_interpreter"]);
 
 /**
  * Direct mapping from toolName to i18n verb key.
@@ -52,29 +44,29 @@ const RESPONSES_BUILT_IN_TOOL_NAMES = new Set([
  * switching the UI language instantly updates all tool cards.
  */
 const TOOL_VERB_KEY_MAP: Record<string, string> = {
-  create_file: 'tool.create',
-  edit_file: 'tool.edit',
-  delete_file: 'tool.delete',
-  grep: 'tool.search',
-  glob: 'tool.match',
-  web_fetch: 'tool.fetch',
-  web_search: 'tool.webSearch',
-  code_interpreter: 'tool.codeInterpreter',
-  ls: 'tool.ls',
-  ask_questions: 'tool.askQuestions',
-  subagent: 'tool.subagent',
-  dream_list: 'tool.dreamList',
-  dream_read: 'tool.dreamRead',
-  dream_update: 'tool.dreamUpdate',
-  dream_delete: 'tool.dreamDelete',
-  dream_record: 'tool.dreamRecord',
-  todo_write: 'tool.todoWrite',
-  todo_list: 'tool.todoList',
-  tool_call: 'tool.lazyToolCall',
-  tool_describe: 'tool.lazyToolDescribe',
-  fetch_mcp_resource: 'tool.fetchMcpResource',
-  create_plan: 'tool.create',
-  create_automation: 'automations.create',
+  create_file: "tool.create",
+  edit_file: "tool.edit",
+  delete_file: "tool.delete",
+  grep: "tool.search",
+  glob: "tool.match",
+  web_fetch: "tool.fetch",
+  web_search: "tool.webSearch",
+  code_interpreter: "tool.codeInterpreter",
+  ls: "tool.ls",
+  ask_questions: "tool.askQuestions",
+  subagent: "tool.subagent",
+  dream_list: "tool.dreamList",
+  dream_read: "tool.dreamRead",
+  dream_update: "tool.dreamUpdate",
+  dream_delete: "tool.dreamDelete",
+  dream_record: "tool.dreamRecord",
+  todo_write: "tool.todoWrite",
+  todo_list: "tool.todoList",
+  tool_call: "tool.lazyToolCall",
+  tool_describe: "tool.lazyToolDescribe",
+  fetch_mcp_resource: "tool.fetchMcpResource",
+  create_plan: "tool.create",
+  create_automation: "automations.create",
 };
 
 /**
@@ -83,34 +75,40 @@ const TOOL_VERB_KEY_MAP: Record<string, string> = {
  * any locale) vs a custom model-supplied reason.
  */
 const RUN_COMMAND_DEFAULT_HEADLINES = new Set([
-  '运行命令',
-  '运行命令中',
-  '已运行命令',
+  "运行命令",
+  "运行命令中",
+  "已运行命令",
   // en base + context variants
-  'Run command',
-  'Running command',
-  'Ran command',
+  "Run command",
+  "Running command",
+  "Ran command",
 ]);
 
 /** Reverse-map an apply_patch headline back to its verb key. */
 const APPLY_PATCH_VERB_VARIANTS: ReadonlyArray<{ key: string; values: Set<string> }> = [
-  { key: 'tool.create', values: new Set(['创建', '创建中', '已创建', 'Create', 'Creating', 'Created']) },
-  { key: 'tool.edit', values: new Set(['编辑', '编辑中', '已编辑', 'Edit', 'Editing', 'Edited']) },
-  { key: 'tool.delete', values: new Set(['删除', '删除中', '已删除', 'Delete', 'Deleting', 'Deleted']) },
+  {
+    key: "tool.create",
+    values: new Set(["创建", "创建中", "已创建", "Create", "Creating", "Created"]),
+  },
+  { key: "tool.edit", values: new Set(["编辑", "编辑中", "已编辑", "Edit", "Editing", "Edited"]) },
+  {
+    key: "tool.delete",
+    values: new Set(["删除", "删除中", "已删除", "Delete", "Deleting", "Deleted"]),
+  },
 ];
 
 function shellToolSummaryFromReason(
   reason: string,
-  phase: ToolBlockSnapshot['phase'],
-): Pick<ToolCallSummaryParts, 'headline' | 'shellSummary'> {
+  phase: ToolBlockSnapshot["phase"],
+): Pick<ToolCallSummaryParts, "headline" | "shellSummary"> {
   const trimmed = reason.trim();
   const ctx = phaseToVerbContext(phase);
   const tOpts = ctx ? { context: ctx } : {};
-  const defaultHeadline = i18n.t('tool.runCommand', tOpts);
+  const defaultHeadline = i18n.t("tool.runCommand", tOpts);
   if (!trimmed || RUN_COMMAND_DEFAULT_HEADLINES.has(trimmed)) {
     return { headline: defaultHeadline };
   }
-  const verb = i18n.t('tool.runShellVerb', tOpts);
+  const verb = i18n.t("tool.runShellVerb", tOpts);
   return {
     headline: `${verb} ${trimmed}`,
     shellSummary: { verb, reason: trimmed },
@@ -139,10 +137,7 @@ function countDiagnosticsIssues(outputExcerpt: string | undefined): number {
     return total;
   }
   // 兜底：按行统计（无 header 时）
-  return outputExcerpt
-    .split('\n')
-    .filter((line) => /^(error|warning)\s/.test(line.trim()))
-    .length;
+  return outputExcerpt.split("\n").filter((line) => /^(error|warning)\s/.test(line.trim())).length;
 }
 
 function diagnosticsOutputIsAllClean(output: string): boolean {
@@ -150,8 +145,11 @@ function diagnosticsOutputIsAllClean(output: string): boolean {
   if (!trimmed) {
     return true;
   }
-  const sections = trimmed.split(/\n\n+/).map((section) => section.trim()).filter(Boolean);
-  return sections.every((section) => section.startsWith('No errors or warnings'));
+  const sections = trimmed
+    .split(/\n\n+/)
+    .map((section) => section.trim())
+    .filter(Boolean);
+  return sections.every((section) => section.startsWith("No errors or warnings"));
 }
 
 function readFileToolSummaryParts(tool: ToolBlockSnapshot): ToolCallSummaryParts {
@@ -162,20 +160,18 @@ function readFileToolSummaryParts(tool: ToolBlockSnapshot): ToolCallSummaryParts
 
   if (rawPath) {
     const argsRecord = parseReadFileRequestRecordFromArgsExcerpt(tool.argsExcerpt);
-    const lineRange = argsRecord
-      ? lineRangeForReadFile(argsRecord.offset, argsRecord.limit)
-      : '';
+    const lineRange = argsRecord ? lineRangeForReadFile(argsRecord.offset, argsRecord.limit) : "";
     const isSkillPath = isSkillMarkdownPath(rawPath);
     const skillMarkdownContent = isSkillPath ? tool.outputExcerpt : undefined;
     const computedDetail = readFileToolHeadlineDetail(rawPath, {
-      emptyFileLabel: i18n.t('tool.file'),
-      toolOutputLabel: i18n.t('tool.toolOutput'),
+      emptyFileLabel: i18n.t("tool.file"),
+      toolOutputLabel: i18n.t("tool.toolOutput"),
       lineRange,
       skillMarkdownContent,
     }).trim();
     const detail = isSkillPath
-      ? (computedDetail || undefined)
-      : (computedDetail || snapshotDetail || undefined);
+      ? computedDetail || undefined
+      : computedDetail || snapshotDetail || undefined;
     return {
       headline: i18n.t(readFileVerbKey(rawPath), tOpts),
       ...(detail ? { detail } : {}),
@@ -187,8 +183,8 @@ function readFileToolSummaryParts(tool: ToolBlockSnapshot): ToolCallSummaryParts
     if (legacy) {
       const legacyPath = legacy[1].trim();
       const legacyDetail = readFileToolHeadlineDetail(legacyPath, {
-        emptyFileLabel: i18n.t('tool.file'),
-        toolOutputLabel: i18n.t('tool.toolOutput'),
+        emptyFileLabel: i18n.t("tool.file"),
+        toolOutputLabel: i18n.t("tool.toolOutput"),
       }).trim();
       return {
         headline: i18n.t(readFileVerbKey(legacyPath), tOpts),
@@ -197,9 +193,7 @@ function readFileToolSummaryParts(tool: ToolBlockSnapshot): ToolCallSummaryParts
     }
   }
 
-  const verbKey = storedReadFileHeadlineUsesSkillVerb(tool.headline)
-    ? 'tool.use'
-    : 'tool.read';
+  const verbKey = storedReadFileHeadlineUsesSkillVerb(tool.headline) ? "tool.use" : "tool.read";
   return {
     headline: i18n.t(verbKey, tOpts),
     ...(snapshotDetail ? { detail: snapshotDetail } : {}),
@@ -210,11 +204,11 @@ export function getToolCallSummaryParts(tool: ToolBlockSnapshot): ToolCallSummar
   const headline = tool.headline.trim();
   const snapshotDetail = tool.headlineDetail?.trim();
 
-  if (tool.toolName === 'read_file') {
+  if (tool.toolName === "read_file") {
     return readFileToolSummaryParts(tool);
   }
 
-  if (tool.toolName === 'shell') {
+  if (tool.toolName === "shell") {
     const command = snapshotDetail || parseShellToolCommand(tool);
     return {
       ...shellToolSummaryFromReason(headline, tool.phase),
@@ -222,62 +216,56 @@ export function getToolCallSummaryParts(tool: ToolBlockSnapshot): ToolCallSummar
     };
   }
 
-  if (tool.toolName === 'get_diagnostics') {
-    if (
-      tool.phase === 'preview' ||
-      tool.phase === 'running' ||
-      tool.phase === 'pending-approval'
-    ) {
+  if (tool.toolName === "get_diagnostics") {
+    if (tool.phase === "preview" || tool.phase === "running" || tool.phase === "pending-approval") {
       return {
-        headline: i18n.t('tool.diagnosticsChecking'),
+        headline: i18n.t("tool.diagnosticsChecking"),
         ...(snapshotDetail ? { detail: snapshotDetail } : {}),
       };
     }
-    if (tool.phase === 'failed') {
+    if (tool.phase === "failed") {
       return {
-        headline: i18n.t('tool.diagnosticsChecking'),
+        headline: i18n.t("tool.diagnosticsChecking"),
         ...(snapshotDetail ? { detail: snapshotDetail } : {}),
       };
     }
-    if (tool.phase === 'succeeded') {
-      const output = tool.outputExcerpt?.trim() ?? '';
+    if (tool.phase === "succeeded") {
+      const output = tool.outputExcerpt?.trim() ?? "";
       if (diagnosticsOutputIsAllClean(output)) {
         return {
-          headline: i18n.t('tool.diagnosticsNoIssues'),
+          headline: i18n.t("tool.diagnosticsNoIssues"),
           ...(snapshotDetail ? { detail: snapshotDetail } : {}),
         };
       }
       const issueCount = countDiagnosticsIssues(tool.outputExcerpt);
       if (issueCount === 0) {
         return {
-          headline: i18n.t('tool.diagnosticsNoIssues'),
+          headline: i18n.t("tool.diagnosticsNoIssues"),
           ...(snapshotDetail ? { detail: snapshotDetail } : {}),
         };
       }
       return {
-        headline: i18n.t('tool.diagnosticsIssueCount', { count: issueCount }),
+        headline: i18n.t("tool.diagnosticsIssueCount", { count: issueCount }),
         ...(snapshotDetail ? { detail: snapshotDetail } : {}),
       };
     }
   }
 
-  if (tool.toolName === 'tool_call') {
+  if (tool.toolName === "tool_call") {
     const ctx = phaseToVerbContext(tool.phase);
     const tOpts = ctx ? { context: ctx } : {};
-    const gatewayJson =
-      tool.streamingArgumentsJson?.trim() || tool.argsExcerpt?.trim() || '';
+    const gatewayJson = tool.streamingArgumentsJson?.trim() || tool.argsExcerpt?.trim() || "";
     const triggerLabels = buildAutomationTriggerFormatLabels((key, opts) =>
       i18n.t(key, { ...(opts ?? {}), ...(ctx ? { context: ctx } : {}) }),
     );
     const parts = builtInCreateAutomationToolCallSummaryParts({
       gatewayJson: gatewayJson || undefined,
-      headline: i18n.t('automations.create', tOpts),
-      formatTriggerLabel: (trigger) =>
-        formatDesktopAutomationTriggerLabel(trigger, triggerLabels),
+      headline: i18n.t("automations.create", tOpts),
+      formatTriggerLabel: (trigger) => formatDesktopAutomationTriggerLabel(trigger, triggerLabels),
     });
     if (parts) {
       const snapshotDetail = tool.headlineDetail?.trim();
-      const useProgressiveDetail = tool.phase === 'preview';
+      const useProgressiveDetail = tool.phase === "preview";
       const resolvedDetail = useProgressiveDetail
         ? (parts.detail ?? snapshotDetail)
         : (snapshotDetail ?? parts.detail);
@@ -291,7 +279,7 @@ export function getToolCallSummaryParts(tool: ToolBlockSnapshot): ToolCallSummar
   // --- Dynamic re-translation for known tools ---
   // Re-derive headline from toolName + phase using the renderer's current locale
   // so that switching language instantly refreshes all tool card verbs.
-  if (tool.toolName === 'apply_patch') {
+  if (tool.toolName === "apply_patch") {
     const matched = APPLY_PATCH_VERB_VARIANTS.find((entry) => entry.values.has(headline));
     if (matched) {
       const ctx = phaseToVerbContext(tool.phase);
@@ -306,20 +294,20 @@ export function getToolCallSummaryParts(tool: ToolBlockSnapshot): ToolCallSummar
   if (verbKey) {
     const ctx = phaseToVerbContext(tool.phase);
     const beforeItems =
-      tool.toolName === 'todo_write'
+      tool.toolName === "todo_write"
         ? resolveTodoWriteBeforeSnapshot(tool.todoWriteBeforeTodos, [])
         : [];
     const todoWriteDetail =
-      tool.toolName === 'todo_write'
+      tool.toolName === "todo_write"
         ? todoWriteSummaryDetail({
             before: beforeItems,
             afterPayload: tool.outputExcerpt ?? tool.argsExcerpt,
             t: (key, countOpts) => i18n.t(key, ctx ? { context: ctx, ...countOpts } : countOpts),
-            separator: i18n.t('tool.todoWriteDeltaSeparator'),
+            separator: i18n.t("tool.todoWriteDeltaSeparator"),
           })
         : undefined;
     const grepDetail =
-      tool.toolName === 'grep'
+      tool.toolName === "grep"
         ? (() => {
             const request = parseGrepRequestFromArgsExcerpt(tool.argsExcerpt);
             return request
@@ -328,10 +316,10 @@ export function getToolCallSummaryParts(tool: ToolBlockSnapshot): ToolCallSummar
           })()
         : undefined;
     const inFlightTodoWrite =
-      tool.toolName === 'todo_write'
-      && (tool.phase === 'preview' || tool.phase === 'running' || tool.phase === 'pending-approval');
+      tool.toolName === "todo_write" &&
+      (tool.phase === "preview" || tool.phase === "running" || tool.phase === "pending-approval");
     let detail: string | undefined;
-    if (tool.toolName === 'todo_write') {
+    if (tool.toolName === "todo_write") {
       if (inFlightTodoWrite) {
         // preview/running 时 headlineDetail 由 orchestrator 用完整 previewRequest 写入；argsExcerpt 流式重算不可靠
         detail = snapshotDetail ?? todoWriteDetail;
@@ -340,7 +328,7 @@ export function getToolCallSummaryParts(tool: ToolBlockSnapshot): ToolCallSummar
       } else {
         detail = todoWriteDetail ?? snapshotDetail;
       }
-    } else if (tool.toolName === 'grep') {
+    } else if (tool.toolName === "grep") {
       detail = grepDetail ?? snapshotDetail;
     } else {
       detail = todoWriteDetail || snapshotDetail;
@@ -368,8 +356,8 @@ export function formatToolCallSummaryPlainText(tool: ToolBlockSnapshot): string 
   } else {
     text = summary.detail ? `${summary.headline} ${summary.detail}` : summary.headline;
   }
-  if (tool.phase === 'failed') {
-    text = `${text} ${i18n.t('settings.failed')}`;
+  if (tool.phase === "failed") {
+    text = `${text} ${i18n.t("settings.failed")}`;
   }
   return text;
 }
@@ -387,11 +375,8 @@ function fileDiffToolHasExpandableContent(tool: ToolBlockSnapshot): boolean {
     return true;
   }
 
-  if (tool.phase === 'preview' || tool.phase === 'running') {
-    return (
-      Boolean(tool.argsExcerpt?.trim()) ||
-      Boolean(tool.streamingArgumentsJson?.trim())
-    );
+  if (tool.phase === "preview" || tool.phase === "running") {
+    return Boolean(tool.argsExcerpt?.trim()) || Boolean(tool.streamingArgumentsJson?.trim());
   }
 
   return Boolean(tool.argsExcerpt?.trim());
@@ -415,7 +400,7 @@ export function toolHasExpandableContent(tool: ToolBlockSnapshot): boolean {
   if (tool.suppressExpand) {
     return false;
   }
-  if (tool.toolName === 'read_file') {
+  if (tool.toolName === "read_file") {
     return false;
   }
 
@@ -427,25 +412,25 @@ export function toolHasExpandableContent(tool: ToolBlockSnapshot): boolean {
     return responsesBuiltInToolHasExpandableContent(tool);
   }
 
-  if (tool.toolName === 'shell') {
+  if (tool.toolName === "shell") {
     const command = tool.headlineDetail?.trim() || parseShellToolCommand(tool);
     return shellHasExpandableContent(tool, command);
   }
 
-  if (tool.toolName === 'subagent') {
+  if (tool.toolName === "subagent") {
     return (
       Boolean(tool.outputExcerpt?.trim()) ||
       tool.detailLines.some((line) => line.trim()) ||
       Boolean(tool.argsExcerpt?.trim()) ||
-      tool.phase === 'preview' ||
-      tool.phase === 'running'
+      tool.phase === "preview" ||
+      tool.phase === "running"
     );
   }
 
   return (
     Boolean(tool.outputExcerpt?.trim()) ||
     tool.detailLines.some((line) => line.trim()) ||
-    (tool.phase === 'preview' && Boolean(tool.argsExcerpt?.trim()))
+    (tool.phase === "preview" && Boolean(tool.argsExcerpt?.trim()))
   );
 }
 
@@ -465,11 +450,11 @@ export function isMinimalToolCallMessage(message: {
   content: string;
   tool?: ToolBlockSnapshot;
 }): boolean {
-  if (message.role !== 'assistant' || message.content.trim()) {
+  if (message.role !== "assistant" || message.content.trim()) {
     return false;
   }
   if (!message.tool) {
     return false;
   }
-  return message.tool.toolName !== 'generate_image' && message.tool.toolName !== 'generate_video';
+  return message.tool.toolName !== "generate_image" && message.tool.toolName !== "generate_video";
 }

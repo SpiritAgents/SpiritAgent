@@ -1,45 +1,45 @@
-import type { AnthropicTransportConfig } from '../anthropic/anthropic-compat.js';
-import type { BedrockTransportConfig } from '../bedrock/bedrock-compat.js';
-import type { OpenAiLlmVendor, OpenAiTransportConfig } from '../openai/openai-compat.js';
-import type { OpenResponsesTransportConfig } from '../open-responses/responses-compat.js';
-import type { TransportRequestProfile } from '../llm-provider-shared.js';
-import type { LlmTransportConfig } from '../provider-config.js';
-import { isArkLlmVendor } from '../ark/ark-provider.js';
+import type { AnthropicTransportConfig } from "../anthropic/anthropic-compat.js";
+import type { BedrockTransportConfig } from "../bedrock/bedrock-compat.js";
+import type { OpenAiLlmVendor, OpenAiTransportConfig } from "../openai/openai-compat.js";
+import type { OpenResponsesTransportConfig } from "../open-responses/responses-compat.js";
+import type { TransportRequestProfile } from "../llm-provider-shared.js";
+import type { LlmTransportConfig } from "../provider-config.js";
+import { isArkLlmVendor } from "../ark/ark-provider.js";
 import {
   isAnthropicTransportConfig,
   isBedrockTransportConfig,
   isOpenAiCompatibleTransportConfig,
   isOpenResponsesTransportConfig,
-} from '../provider-config.js';
+} from "../provider-config.js";
 
 /** 经 `thinking.type` 关闭 extended thinking 的 OpenAI-compatible 直连厂商（后续 Phase 逐步扩展）。 */
 const OPENAI_COMPAT_THINKING_TYPE_VENDORS = new Set<OpenAiLlmVendor>([
-  'deepseek',
-  'moonshot-ai',
-  'z-ai',
-  'zhipu-ai',
-  'xiaomi',
-  'volcengine',
-  'tencent-tokenhub',
+  "deepseek",
+  "moonshot-ai",
+  "z-ai",
+  "zhipu-ai",
+  "xiaomi",
+  "volcengine",
+  "tencent-tokenhub",
 ]);
 
-export function isCodeCompletionTransportProfile(
-  config: { transportRequestProfile?: TransportRequestProfile },
-): boolean {
-  return config.transportRequestProfile === 'code-completion';
+export function isCodeCompletionTransportProfile(config: {
+  transportRequestProfile?: TransportRequestProfile;
+}): boolean {
+  return config.transportRequestProfile === "code-completion";
 }
 
 function withCodeCompletionProfile<T extends LlmTransportConfig>(config: T): T {
   return {
     ...config,
-    transportRequestProfile: 'code-completion',
+    transportRequestProfile: "code-completion",
   };
 }
 
 /** 经 reasoningEffort none 关闭 Gemini thinking 的 OpenAI-compatible 直连厂商。 */
 const OPENAI_COMPAT_GOOGLE_REASONING_NONE_VENDORS = new Set<OpenAiLlmVendor>([
-  'google',
-  'google-vertex-ai',
+  "google",
+  "google-vertex-ai",
 ]);
 
 function applyOpenAiCompatibleCodeCompletionProfile(
@@ -47,37 +47,35 @@ function applyOpenAiCompatibleCodeCompletionProfile(
 ): OpenAiTransportConfig {
   const profiled = withCodeCompletionProfile(config);
   const vendor = profiled.llmVendor;
-  if (vendor === 'openai' || vendor === 'xai' || vendor === 'openrouter') {
+  if (vendor === "openai" || vendor === "xai" || vendor === "openrouter") {
     return {
       ...profiled,
-      reasoningEffort: 'none',
+      reasoningEffort: "none",
     };
   }
-  if (vendor === 'custom') {
+  if (vendor === "custom") {
     return {
       ...profiled,
-      reasoningEffort: 'none',
+      reasoningEffort: "none",
     };
   }
   if (vendor !== undefined && OPENAI_COMPAT_GOOGLE_REASONING_NONE_VENDORS.has(vendor)) {
     return {
       ...profiled,
-      reasoningEffort: 'none',
+      reasoningEffort: "none",
     };
   }
   if (
-    vendor !== undefined
-    && (
-      OPENAI_COMPAT_THINKING_TYPE_VENDORS.has(vendor)
-      || isArkLlmVendor(vendor)
-      || vendor === 'deepinfra'
-      || (vendor === 'meituan' && config.supportsThinkingSwitch === true)
-    )
+    vendor !== undefined &&
+    (OPENAI_COMPAT_THINKING_TYPE_VENDORS.has(vendor) ||
+      isArkLlmVendor(vendor) ||
+      vendor === "deepinfra" ||
+      (vendor === "meituan" && config.supportsThinkingSwitch === true))
   ) {
     // Moonshot/DeepSeek 等与 thinking.type 互斥，补全路径不写 reasoning_effort（default → 不传）。
     return {
       ...profiled,
-      reasoningEffort: 'default',
+      reasoningEffort: "default",
       vendorExtendedThinking: false,
     };
   }
@@ -87,13 +85,13 @@ function applyOpenAiCompatibleCodeCompletionProfile(
 function applyAnthropicCodeCompletionProfile(
   config: AnthropicTransportConfig,
 ): AnthropicTransportConfig {
-  if (config.llmVendor === 'meituan' && config.supportsThinkingSwitch === true) {
+  if (config.llmVendor === "meituan" && config.supportsThinkingSwitch === true) {
     return {
       ...withCodeCompletionProfile(config),
       vendorExtendedThinking: false,
     };
   }
-  if (config.llmVendor === 'minimax') {
+  if (config.llmVendor === "minimax") {
     return {
       ...withCodeCompletionProfile(config),
       vendorExtendedThinking: false,
@@ -101,7 +99,7 @@ function applyAnthropicCodeCompletionProfile(
   }
   return {
     ...withCodeCompletionProfile(config),
-    thinking: { type: 'disabled' },
+    thinking: { type: "disabled" },
   };
 }
 
@@ -110,27 +108,25 @@ function applyOpenResponsesCodeCompletionProfile(
 ): OpenResponsesTransportConfig {
   const profiled = withCodeCompletionProfile(config);
   if (
-    profiled.llmVendor === 'openai'
-    || profiled.llmVendor === 'xai'
-    || profiled.llmVendor === 'openrouter'
-    || profiled.llmVendor === 'azure'
-    || profiled.llmVendor === 'vercel-ai-gateway'
+    profiled.llmVendor === "openai" ||
+    profiled.llmVendor === "xai" ||
+    profiled.llmVendor === "openrouter" ||
+    profiled.llmVendor === "azure" ||
+    profiled.llmVendor === "vercel-ai-gateway"
   ) {
     return {
       ...profiled,
-      reasoningEffort: 'none',
-      reasoningSummary: 'off',
+      reasoningEffort: "none",
+      reasoningSummary: "off",
     };
   }
   return profiled;
 }
 
-function applyBedrockCodeCompletionProfile(
-  config: BedrockTransportConfig,
-): BedrockTransportConfig {
+function applyBedrockCodeCompletionProfile(config: BedrockTransportConfig): BedrockTransportConfig {
   return {
     ...withCodeCompletionProfile(config),
-    reasoningEffort: 'none',
+    reasoningEffort: "none",
   };
 }
 

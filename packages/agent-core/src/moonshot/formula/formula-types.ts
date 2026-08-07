@@ -1,10 +1,10 @@
-import type { JsonObject } from '../../ports.js';
+import type { JsonObject } from "../../ports.js";
 
 /** Moonshot Formula semantic URI, e.g. `moonshot/web-search:latest`. */
 export type FormulaUri = string;
 
 export type FormulaToolDefinition = {
-  type: 'function';
+  type: "function";
   function: {
     name: string;
     description?: string;
@@ -34,5 +34,5 @@ export type FormulaFiberResponse = {
 };
 
 export type FormulaFiberInvokeResult =
-  | { kind: 'succeeded'; content: string }
-  | { kind: 'failed'; error: string };
+  | { kind: "succeeded"; content: string }
+  | { kind: "failed"; error: string };

@@ -1,5 +1,5 @@
-import { Buffer } from 'node:buffer';
-import type { ReadStream } from 'node:tty';
+import { Buffer } from "node:buffer";
+import type { ReadStream } from "node:tty";
 
 import type {
   JsonRpcErrorResponse,
@@ -7,7 +7,7 @@ import type {
   JsonRpcNotification,
   JsonRpcRequest,
   JsonRpcSuccessResponse,
-} from './protocol.js';
+} from "./protocol.js";
 
 type Handler = (params: unknown, method: string) => Promise<unknown> | unknown;
 
@@ -23,10 +23,13 @@ export class JsonRpcPeer {
   private readonly input: NodeJS.ReadableStream;
   private readonly output: NodeJS.WritableStream;
   private readonly handlers = new Map<string, Handler>();
-  private readonly pending = new Map<number, {
-    resolve: (value: unknown) => void;
-    reject: (error: Error) => void;
-  }>();
+  private readonly pending = new Map<
+    number,
+    {
+      resolve: (value: unknown) => void;
+      reject: (error: Error) => void;
+    }
+  >();
   private nextId = 1;
   private buffer = Buffer.alloc(0);
 
@@ -36,12 +39,12 @@ export class JsonRpcPeer {
   }
 
   start(): void {
-    this.input.on('data', (chunk: Buffer | string) => {
-      const bytes = typeof chunk === 'string' ? Buffer.from(chunk) : chunk;
+    this.input.on("data", (chunk: Buffer | string) => {
+      const bytes = typeof chunk === "string" ? Buffer.from(chunk) : chunk;
       this.onData(bytes);
     });
 
-    this.input.on('end', () => {
+    this.input.on("end", () => {
       for (const [id, pending] of this.pending) {
         pending.reject(new Error(`JSON-RPC 连接已关闭，未收到请求 ${id} 的响应。`));
       }
@@ -58,7 +61,7 @@ export class JsonRpcPeer {
     this.nextId += 1;
 
     const payload: JsonRpcRequest = {
-      jsonrpc: '2.0',
+      jsonrpc: "2.0",
       id,
       method,
       ...(params !== undefined ? { params: params as never } : {}),
@@ -77,7 +80,7 @@ export class JsonRpcPeer {
 
   notify(method: string, params?: unknown): void {
     const payload: JsonRpcNotification = {
-      jsonrpc: '2.0',
+      jsonrpc: "2.0",
       method,
       ...(params !== undefined ? { params: params as never } : {}),
     };
@@ -89,12 +92,12 @@ export class JsonRpcPeer {
     this.buffer = Buffer.concat([this.buffer, chunk]);
 
     while (true) {
-      const headerEnd = this.buffer.indexOf('\r\n\r\n');
+      const headerEnd = this.buffer.indexOf("\r\n\r\n");
       if (headerEnd < 0) {
         return;
       }
 
-      const headerText = this.buffer.subarray(0, headerEnd).toString('utf8');
+      const headerText = this.buffer.subarray(0, headerEnd).toString("utf8");
       const contentLength = this.parseContentLength(headerText);
       if (contentLength === undefined) {
         throw new Error(`JSON-RPC framing 缺少 Content-Length: ${headerText}`);
@@ -105,7 +108,7 @@ export class JsonRpcPeer {
         return;
       }
 
-      const body = this.buffer.subarray(headerEnd + 4, totalLength).toString('utf8');
+      const body = this.buffer.subarray(headerEnd + 4, totalLength).toString("utf8");
       this.buffer = this.buffer.subarray(totalLength);
       const message = JSON.parse(body) as JsonRpcMessage;
       void this.handleMessage(message);
@@ -113,13 +116,13 @@ export class JsonRpcPeer {
   }
 
   private parseContentLength(headerText: string): number | undefined {
-    for (const line of headerText.split('\r\n')) {
-      const [name, value] = line.split(':', 2);
-      if (name?.trim().toLowerCase() !== 'content-length') {
+    for (const line of headerText.split("\r\n")) {
+      const [name, value] = line.split(":", 2);
+      if (name?.trim().toLowerCase() !== "content-length") {
         continue;
       }
 
-      const parsed = Number.parseInt(value?.trim() ?? '', 10);
+      const parsed = Number.parseInt(value?.trim() ?? "", 10);
       if (Number.isFinite(parsed) && parsed >= 0) {
         return parsed;
       }
@@ -129,7 +132,7 @@ export class JsonRpcPeer {
   }
 
   private async handleMessage(message: JsonRpcMessage): Promise<void> {
-    if ('method' in message) {
+    if ("method" in message) {
       await this.handleRequest(message);
       return;
     }
@@ -140,7 +143,7 @@ export class JsonRpcPeer {
     }
 
     this.pending.delete(message.id);
-    if ('error' in message) {
+    if ("error" in message) {
       pending.reject(new Error(message.error.message));
       return;
     }
@@ -151,9 +154,9 @@ export class JsonRpcPeer {
   private async handleRequest(message: JsonRpcRequest | JsonRpcNotification): Promise<void> {
     const handler = this.handlers.get(message.method);
     if (!handler) {
-      if ('id' in message) {
+      if ("id" in message) {
         this.writeMessage({
-          jsonrpc: '2.0',
+          jsonrpc: "2.0",
           id: message.id,
           error: {
             code: -32601,
@@ -166,17 +169,17 @@ export class JsonRpcPeer {
 
     try {
       const result = await handler(message.params, message.method);
-      if ('id' in message) {
+      if ("id" in message) {
         this.writeMessage({
-          jsonrpc: '2.0',
+          jsonrpc: "2.0",
           id: message.id,
           result: (result ?? null) as never,
         } satisfies JsonRpcSuccessResponse);
       }
     } catch (error) {
-      if ('id' in message) {
+      if ("id" in message) {
         this.writeMessage({
-          jsonrpc: '2.0',
+          jsonrpc: "2.0",
           id: message.id,
           error: {
             code: -32000,
@@ -188,8 +191,8 @@ export class JsonRpcPeer {
   }
 
   private writeMessage(message: JsonRpcMessage): void {
-    const body = Buffer.from(JSON.stringify(message), 'utf8');
-    const header = Buffer.from(`Content-Length: ${body.length}\r\n\r\n`, 'utf8');
+    const body = Buffer.from(JSON.stringify(message), "utf8");
+    const header = Buffer.from(`Content-Length: ${body.length}\r\n\r\n`, "utf8");
     this.output.write(header);
     this.output.write(body);
   }

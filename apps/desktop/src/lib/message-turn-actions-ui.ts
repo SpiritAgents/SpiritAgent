@@ -1,17 +1,17 @@
-import type { PointerEvent as ReactPointerEvent } from 'react';
+import type { PointerEvent as ReactPointerEvent } from "react";
 
-import { isAssistantBodyTextMessage } from '@/lib/conversation-process-groups';
-import type { ConversationRenderItem } from '@/lib/conversation-process-groups';
-import { resolveTurnContinuePresentation } from '@/lib/conversation-continue-ui';
-import { isSubagentStatusSurfaceMessage } from '@/lib/subagent-display';
-import type { ConversationMessageSnapshot } from '@/types';
+import { isAssistantBodyTextMessage } from "@/lib/conversation-process-groups";
+import type { ConversationRenderItem } from "@/lib/conversation-process-groups";
+import { resolveTurnContinuePresentation } from "@/lib/conversation-continue-ui";
+import { isSubagentStatusSurfaceMessage } from "@/lib/subagent-display";
+import type { ConversationMessageSnapshot } from "@/types";
 
 export function lastUserMessageIndexBefore(
   messages: readonly ConversationMessageSnapshot[],
   messageIndex: number,
 ): number {
   for (let index = messageIndex; index >= 0; index -= 1) {
-    if (messages[index]?.role === 'user') {
+    if (messages[index]?.role === "user") {
       return index;
     }
   }
@@ -25,10 +25,10 @@ export function hasLaterAssistantMessagesInTurn(
 ): boolean {
   for (let index = messageIndex + 1; index < messages.length; index += 1) {
     const message = messages[index];
-    if (!message || message.role === 'user') {
+    if (!message || message.role === "user") {
       break;
     }
-    if (message.role === 'assistant') {
+    if (message.role === "assistant") {
       return true;
     }
   }
@@ -52,10 +52,10 @@ function isTurnActionsEligibleBodyMessage(
   message: ConversationMessageSnapshot | undefined,
 ): boolean {
   return Boolean(
-    message
-    && isAssistantBodyTextMessage(message)
-    && !message.pending
-    && !isSubagentStatusSurfaceMessage(message),
+    message &&
+    isAssistantBodyTextMessage(message) &&
+    !message.pending &&
+    !isSubagentStatusSurfaceMessage(message),
   );
 }
 
@@ -68,7 +68,7 @@ export function findLastAssistantBodyTextIndexInTurn(
   let lastIndex: number | null = null;
   for (let index = turnStart + 1; index < messages.length; index += 1) {
     const message = messages[index];
-    if (!message || message.role === 'user') {
+    if (!message || message.role === "user") {
       break;
     }
     if (isTurnActionsEligibleBodyMessage(message)) {
@@ -119,9 +119,9 @@ export function assistantTurnStartIndexForRenderItem(
   renderItem: ConversationRenderItem,
   messages: readonly ConversationMessageSnapshot[],
 ): number | null {
-  if (renderItem.kind === 'message') {
+  if (renderItem.kind === "message") {
     const message = messages[renderItem.messageIndex];
-    if (!message || message.role === 'user') {
+    if (!message || message.role === "user") {
       return null;
     }
     return lastUserMessageIndexBefore(messages, renderItem.messageIndex);
@@ -145,13 +145,13 @@ export function shouldClearAssistantTurnHover(
   if (!(next instanceof Element)) {
     return shouldClearAssistantTurnHoverForRelatedTurnStart(null, turnStart);
   }
-  const nextTurn = next.closest('[data-spirit-fork-turn-start]');
+  const nextTurn = next.closest("[data-spirit-fork-turn-start]");
   return shouldClearAssistantTurnHoverForRelatedTurnStart(
-    nextTurn?.getAttribute('data-spirit-fork-turn-start') ?? null,
+    nextTurn?.getAttribute("data-spirit-fork-turn-start") ?? null,
     turnStart,
   );
 }
 
 /** Hidden by default; revealed via forkMenuHoverRevealed or forkMenuAlwaysVisible. */
 export const MESSAGE_TURN_FORK_MENU_HIDDEN_CLASSES =
-  'opacity-0 transition-all duration-150 focus-visible:opacity-100 data-[state=open]:opacity-100 disabled:opacity-0';
+  "opacity-0 transition-all duration-150 focus-visible:opacity-100 data-[state=open]:opacity-100 disabled:opacity-0";

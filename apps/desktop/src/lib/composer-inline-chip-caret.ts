@@ -8,12 +8,12 @@ function isInlineAttachmentChip(
   { kind: "element" | "prDiff" | "terminalSnippet" | "fileSnippet" | "workspaceFile" | "skill" }
 > {
   return (
-    seg?.kind === "element"
-    || seg?.kind === "prDiff"
-    || seg?.kind === "terminalSnippet"
-    || seg?.kind === "fileSnippet"
-    || seg?.kind === "workspaceFile"
-    || seg?.kind === "skill"
+    seg?.kind === "element" ||
+    seg?.kind === "prDiff" ||
+    seg?.kind === "terminalSnippet" ||
+    seg?.kind === "fileSnippet" ||
+    seg?.kind === "workspaceFile" ||
+    seg?.kind === "skill"
   );
 }
 
@@ -22,8 +22,7 @@ function caretAfterInlineChip(segs: RichSegment[], chipIndex: number): SegmentCa
   const textIndex = merged.findIndex((s, i) => i > chipIndex && s.kind === "text");
   if (textIndex >= 0) {
     const textSeg = merged[textIndex];
-    const offset =
-      textSeg?.kind === "text" && textSeg.value.startsWith(" ") ? 1 : 0;
+    const offset = textSeg?.kind === "text" && textSeg.value.startsWith(" ") ? 1 : 0;
     return { segmentIndex: textIndex, offset };
   }
   return { segmentIndex: chipIndex + 1, offset: 0 };
@@ -46,10 +45,7 @@ export function normalizeCaretForInlineAttachmentChips(
 }
 
 /** True when caret is immediately after an inline file/element chip (Backspace removes it). */
-export function isCaretAtInlineChipRemovalPoint(
-  segs: RichSegment[],
-  caret: SegmentCaret,
-): boolean {
+export function isCaretAtInlineChipRemovalPoint(segs: RichSegment[], caret: SegmentCaret): boolean {
   const merged = mergeAdjacentTextSegments(segs);
   const at = merged[caret.segmentIndex];
   if (at?.kind !== "text" || caret.offset !== 0) {

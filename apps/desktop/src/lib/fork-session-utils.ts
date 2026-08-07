@@ -1,10 +1,10 @@
-import type { ConversationMessageSnapshot } from '../types.js';
+import type { ConversationMessageSnapshot } from "../types.js";
 
 const FORK_DISPLAY_NAME_PREFIX = /^\((\d+)\)\s+([\s\S]*)$/;
 
 /** Matches UI fork anchor: completed assistant row with body text or a tool card. */
 export function isForkableForkAnchor(message: ConversationMessageSnapshot): boolean {
-  if (message.role !== 'assistant' || message.pending) {
+  if (message.role !== "assistant" || message.pending) {
     return false;
   }
   return Boolean(message.content.trim() || message.tool);
@@ -28,11 +28,7 @@ export function resolveForkAnchorIndex(
   if (!Number.isFinite(messageId)) {
     return null;
   }
-  if (
-    listIndex !== undefined
-    && listIndex >= 0
-    && listIndex < messages.length
-  ) {
+  if (listIndex !== undefined && listIndex >= 0 && listIndex < messages.length) {
     const atListIndex = messages[listIndex]!;
     if (atListIndex.id === messageId && isForkableForkAnchor(atListIndex)) {
       return listIndex;
@@ -61,7 +57,12 @@ export function sanitizeTruncatedMessagesForFork(
   messages: readonly ConversationMessageSnapshot[],
 ): ConversationMessageSnapshot[] {
   return messages.map((message) => {
-    const { canContinue: _canContinue, canRewind: _canRewind, pending: _pending, ...rest } = message;
+    const {
+      canContinue: _canContinue,
+      canRewind: _canRewind,
+      pending: _pending,
+      ...rest
+    } = message;
     return {
       ...rest,
       pending: false,
@@ -96,12 +97,7 @@ export function collectSubagentParentToolCallIdsInMessages(
 
 export function filterSubagentSessionsForTruncatedMessages<
   T extends { summary: { parentToolCallId: string } },
->(
-  sessions: readonly T[],
-  truncatedMessages: readonly ConversationMessageSnapshot[],
-): T[] {
+>(sessions: readonly T[], truncatedMessages: readonly ConversationMessageSnapshot[]): T[] {
   const visibleParentIds = collectSubagentParentToolCallIdsInMessages(truncatedMessages);
-  return sessions.filter((entry) =>
-    visibleParentIds.has(entry.summary.parentToolCallId.trim()),
-  );
+  return sessions.filter((entry) => visibleParentIds.has(entry.summary.parentToolCallId.trim()));
 }

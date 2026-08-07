@@ -1,11 +1,6 @@
 import { useCallback, useState } from "react";
 
-import {
-  applyFontToDocument,
-  getStoredFont,
-  setStoredFont,
-  type FontPreference,
-} from "@/lib/font";
+import { applyFontToDocument, getStoredFont, setStoredFont, type FontPreference } from "@/lib/font";
 
 export function useFont() {
   const [font, setFontState] = useState<FontPreference>(() => getStoredFont());

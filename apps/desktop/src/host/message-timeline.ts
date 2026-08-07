@@ -3,9 +3,9 @@ import type {
   ConversationMessageSnapshot,
   MessageAuxSnapshot,
   ToolBlockSnapshot,
-} from '../types.js';
-import { formatTurnErrorRetryProgress } from '../lib/conversation-turn-error-ui.js';
-import { isSubagentStatusSurfaceText } from '../lib/subagent-display.js';
+} from "../types.js";
+import { formatTurnErrorRetryProgress } from "../lib/conversation-turn-error-ui.js";
+import { isSubagentStatusSurfaceText } from "../lib/subagent-display.js";
 import {
   messageOrderDebugLevel,
   normalizeMessageAuxSnapshot,
@@ -13,21 +13,21 @@ import {
   stripRedundantThinkingFromMessageAux,
   stripThinkingFromAux,
   truncateOneLineForDebug,
-} from './message-ordering.js';
+} from "./message-ordering.js";
 
 export type DesktopTimelineRowKind =
-  | 'user'
-  | 'assistant-text'
-  | 'assistant-thinking'
-  | 'assistant-compaction'
-  | 'tool'
-  | 'standalone-subagent-status';
+  | "user"
+  | "assistant-text"
+  | "assistant-thinking"
+  | "assistant-compaction"
+  | "tool"
+  | "standalone-subagent-status";
 
-export type DesktopTimelineSegmentKind = 'initial' | 'continuation' | 'hydrated';
-export type DesktopTimelineSegmentStatus = 'streaming' | 'completed' | 'aborted';
-export type DesktopTimelineRowSection = 'before-tools' | 'tools' | 'after-tools';
+export type DesktopTimelineSegmentKind = "initial" | "continuation" | "hydrated";
+export type DesktopTimelineSegmentStatus = "streaming" | "completed" | "aborted";
+export type DesktopTimelineRowSection = "before-tools" | "tools" | "after-tools";
 
-export type DesktopThinkingSegmentPlacement = 'before-next-tool' | 'after-stream';
+export type DesktopThinkingSegmentPlacement = "before-next-tool" | "after-stream";
 
 export interface DesktopTimelineRowSnapshot {
   rowId: string;
@@ -86,17 +86,17 @@ interface DesktopTimelineTurn {
 }
 
 const ROW_SECTION_ORDER: Record<DesktopTimelineRowSection, number> = {
-  'before-tools': 0,
+  "before-tools": 0,
   tools: 1,
-  'after-tools': 2,
+  "after-tools": 2,
 };
 
 const ROW_KIND_ORDER: Record<DesktopTimelineRowKind, number> = {
   user: 0,
-  'assistant-thinking': 1,
-  'assistant-compaction': 2,
-  'standalone-subagent-status': 3,
-  'assistant-text': 4,
+  "assistant-thinking": 1,
+  "assistant-compaction": 2,
+  "standalone-subagent-status": 3,
+  "assistant-text": 4,
   tool: 5,
 };
 
@@ -204,7 +204,7 @@ export class DesktopMessageTimeline {
     const row = this.createRow({
       messageId: input.messageId,
       turnId: turn.turnId,
-      kind: 'user',
+      kind: "user",
       content,
       pending: input.pending ?? false,
       ...(input.localFileAttachments?.length
@@ -218,15 +218,15 @@ export class DesktopMessageTimeline {
     return rowToMessage(row);
   }
 
-  beginAssistantSegment(kind: DesktopTimelineSegmentKind = 'initial'): ConversationMessageSnapshot {
+  beginAssistantSegment(kind: DesktopTimelineSegmentKind = "initial"): ConversationMessageSnapshot {
     this.markMutated();
     const prior = this.activeSegment();
-    if (prior?.status === 'streaming') {
+    if (prior?.status === "streaming") {
       this.completeActiveAssistantSegment();
     }
     const turn = this.ensureActiveTurn();
     const segment = this.createSegment(turn, kind);
-    const row = this.createAssistantTextRow(segment, 'before-tools', true);
+    const row = this.createAssistantTextRow(segment, "before-tools", true);
     segment.activeAssistantTextRowId = row.rowId;
     this.activeSegmentId = segment.segmentId;
     return rowToMessage(row);
@@ -235,7 +235,7 @@ export class DesktopMessageTimeline {
   setAssistantTextContent(messageId: number, content: string): boolean {
     this.markMutated();
     for (const row of this.allRows()) {
-      if (row.messageId !== messageId || row.kind !== 'assistant-text') {
+      if (row.messageId !== messageId || row.kind !== "assistant-text") {
         continue;
       }
       row.content = content;
@@ -249,11 +249,11 @@ export class DesktopMessageTimeline {
     this.markMutated();
     let cleared = false;
     for (const row of this.allRows()) {
-      if (row.messageId !== messageId || row.kind !== 'assistant-text') {
+      if (row.messageId !== messageId || row.kind !== "assistant-text") {
         continue;
       }
       if (row.content.trim() && isSubagentStatusSurfaceText(row.content)) {
-        row.content = '';
+        row.content = "";
         cleared = true;
       }
       if (row.aux?.thinking?.trim() && isSubagentStatusSurfaceText(row.aux.thinking)) {
@@ -278,8 +278,8 @@ export class DesktopMessageTimeline {
     if (hasTools) {
       const existingAfterToolsText = segment.rows.some(
         (candidate) =>
-          candidate.kind === 'assistant-text' &&
-          candidate.section === 'after-tools' &&
+          candidate.kind === "assistant-text" &&
+          candidate.section === "after-tools" &&
           candidate.content.trim(),
       );
       if (!existingAfterToolsText) {
@@ -290,7 +290,7 @@ export class DesktopMessageTimeline {
     // assistant 行上，UI 才能在同一个 AnimatedCollapse 实例上由展开过渡到收起。
     const row = hasTools
       ? this.ensureStreamingAssistantTextRowAfterTools(segment)
-      : this.ensureActiveAssistantTextRow('text');
+      : this.ensureActiveAssistantTextRow("text");
     row.content += chunk;
     row.pending = true;
     return rowToMessage(row);
@@ -301,26 +301,29 @@ export class DesktopMessageTimeline {
     const segment = this.ensureActiveSegment();
     const row = segmentHasToolRows(segment)
       ? this.ensureStreamingAssistantTextRowAfterTools(segment)
-      : this.ensureActiveAssistantTextRow('text');
+      : this.ensureActiveAssistantTextRow("text");
     row.content = text;
     row.pending = true;
     return rowToMessage(row);
   }
 
-  updatePendingAssistantAux(kind: 'thinking' | 'compressing', text: string): ConversationMessageSnapshot {
+  updatePendingAssistantAux(
+    kind: "thinking" | "compressing",
+    text: string,
+  ): ConversationMessageSnapshot {
     this.markMutated();
     const segment = this.ensureActiveSegment();
-    const row = this.ensureActiveAssistantTextRow('aux');
+    const row = this.ensureActiveAssistantTextRow("aux");
     const normalized = text.trim();
     const aux = {
       ...(row.aux?.thinking ? { thinking: row.aux.thinking } : {}),
       ...(row.aux?.compaction ? { compaction: row.aux.compaction } : {}),
       ...(row.aux?.finishTaskNotice ? { finishTaskNotice: row.aux.finishTaskNotice } : {}),
-      ...(kind === 'thinking' && normalized ? { thinking: text } : {}),
-      ...(kind === 'compressing' && normalized ? { compaction: text } : {}),
+      ...(kind === "thinking" && normalized ? { thinking: text } : {}),
+      ...(kind === "compressing" && normalized ? { compaction: text } : {}),
     } satisfies MessageAuxSnapshot;
     if (!normalized) {
-      if (kind === 'thinking') {
+      if (kind === "thinking") {
         delete aux.thinking;
       } else {
         delete aux.compaction;
@@ -332,7 +335,7 @@ export class DesktopMessageTimeline {
     } else {
       delete row.aux;
     }
-    if (kind === 'thinking') {
+    if (kind === "thinking") {
       this.pruneEmptyAssistantTextRows(segment);
     }
     this.logSegmentRows(`update-pending-${kind}`, segment);
@@ -347,7 +350,7 @@ export class DesktopMessageTimeline {
     }
 
     const row = this.allRows().find(
-      (candidate) => candidate.messageId === messageId && candidate.kind === 'assistant-text',
+      (candidate) => candidate.messageId === messageId && candidate.kind === "assistant-text",
     );
     if (!row) {
       return false;
@@ -383,7 +386,7 @@ export class DesktopMessageTimeline {
       ...(target.aux?.compaction ? { compaction: target.aux.compaction } : {}),
       finishTaskNotice: normalizedNotice,
     });
-    this.logSegmentRows('finish-task-notice-preview', segment);
+    this.logSegmentRows("finish-task-notice-preview", segment);
     return rowToMessage(target);
   }
 
@@ -403,21 +406,21 @@ export class DesktopMessageTimeline {
       ...(target.aux.thinking ? { thinking: target.aux.thinking } : {}),
       ...(target.aux.compaction ? { compaction: target.aux.compaction } : {}),
     });
-    this.logSegmentRows('finish-task-notice-cleared', segment);
+    this.logSegmentRows("finish-task-notice-cleared", segment);
     return rowToMessage(target);
   }
 
-  hasFinalizedAuxInActiveSegment(kind: 'thinking' | 'compressing', text: string): boolean {
+  hasFinalizedAuxInActiveSegment(kind: "thinking" | "compressing", text: string): boolean {
     const segment = this.activeSegment();
     const normalized = text.trim();
     if (!segment || !normalized) {
       return false;
     }
     return segment.rows.some((row) => {
-      if (kind === 'thinking') {
-        return row.kind === 'assistant-thinking' && row.content.trim() === normalized;
+      if (kind === "thinking") {
+        return row.kind === "assistant-thinking" && row.content.trim() === normalized;
       }
-      return row.kind === 'assistant-compaction' && row.content.trim() === normalized;
+      return row.kind === "assistant-compaction" && row.content.trim() === normalized;
     });
   }
 
@@ -429,9 +432,7 @@ export class DesktopMessageTimeline {
     }
     return segment.rows.some(
       (row) =>
-        row.kind === 'assistant-text' &&
-        row.pending &&
-        row.aux?.thinking?.trim() === normalized,
+        row.kind === "assistant-text" && row.pending && row.aux?.thinking?.trim() === normalized,
     );
   }
 
@@ -444,25 +445,25 @@ export class DesktopMessageTimeline {
     }
     this.markMutated();
     const segment = this.ensureActiveSegment();
-    if (this.hasFinalizedAuxInActiveSegment('thinking', text)) {
-      this.stripSegmentAuxKind(segment, 'thinking', text);
+    if (this.hasFinalizedAuxInActiveSegment("thinking", text)) {
+      this.stripSegmentAuxKind(segment, "thinking", text);
       this.pruneEmptyAssistantTextRows(segment);
       return undefined;
     }
     const section = resolveThinkingRowSection(segment, placement);
-    this.stripSegmentAuxKind(segment, 'thinking', text);
+    this.stripSegmentAuxKind(segment, "thinking", text);
     this.pruneEmptyAssistantTextRows(segment);
     const row = this.createRow({
       turnId: segment.turnId,
       segmentId: segment.segmentId,
-      kind: 'assistant-thinking',
+      kind: "assistant-thinking",
       section,
       content: text,
       pending: false,
       aux: { thinking: text },
     });
     this.insertFinalizedThinkingRow(segment, row, placement);
-    this.logSegmentRows('finalize-thinking', segment);
+    this.logSegmentRows("finalize-thinking", segment);
     return rowToMessage(row);
   }
 
@@ -472,19 +473,17 @@ export class DesktopMessageTimeline {
     placement?: DesktopThinkingSegmentPlacement,
   ): void {
     const insertAfterTools =
-      placement === 'before-next-tool'
-      || (
-        placement === 'after-stream'
-        && segmentHasToolRows(segment)
-        && !segmentHasPostToolAssistantAnswer(segment)
-      );
+      placement === "before-next-tool" ||
+      (placement === "after-stream" &&
+        segmentHasToolRows(segment) &&
+        !segmentHasPostToolAssistantAnswer(segment));
     if (!insertAfterTools) {
       segment.rows.push(row);
       return;
     }
     let lastToolIndex = -1;
     for (let index = 0; index < segment.rows.length; index += 1) {
-      if (segment.rows[index]?.kind === 'tool') {
+      if (segment.rows[index]?.kind === "tool") {
         lastToolIndex = index;
       }
     }
@@ -517,10 +516,7 @@ export class DesktopMessageTimeline {
       return false;
     }
     return segment.rows.some(
-      (row) =>
-        row.kind === 'assistant-text' &&
-        row.section !== 'after-tools' &&
-        row.content.trim(),
+      (row) => row.kind === "assistant-text" && row.section !== "after-tools" && row.content.trim(),
     );
   }
 
@@ -530,12 +526,12 @@ export class DesktopMessageTimeline {
     }
     this.markMutated();
     const segment = this.ensureActiveSegment();
-    this.stripSegmentAuxKind(segment, 'compaction', text);
+    this.stripSegmentAuxKind(segment, "compaction", text);
     const row = this.createRow({
       turnId: segment.turnId,
       segmentId: segment.segmentId,
-      kind: 'assistant-compaction',
-      section: resolveThinkingRowSection(segment, 'after-stream'),
+      kind: "assistant-compaction",
+      section: resolveThinkingRowSection(segment, "after-stream"),
       content: text,
       pending: false,
       aux: { compaction: text },
@@ -550,11 +546,14 @@ export class DesktopMessageTimeline {
     const existing = this.findToolRow(toolCallId);
     if (existing) {
       existing.tool = normalizedTool;
-      existing.content = '';
+      existing.content = "";
       existing.pending = false;
-      const segment = existing.segmentId !== undefined
-        ? this.activeTurn()?.segments.find((candidate) => candidate.segmentId === existing.segmentId)
-        : undefined;
+      const segment =
+        existing.segmentId !== undefined
+          ? this.activeTurn()?.segments.find(
+              (candidate) => candidate.segmentId === existing.segmentId,
+            )
+          : undefined;
       if (segment) {
         this.logSegmentRows(`upsert-tool-${normalizedTool.phase}`, segment);
       }
@@ -566,23 +565,25 @@ export class DesktopMessageTimeline {
     if (activeText?.content.trim()) {
       activeText.pending = false;
     }
-    if (normalizedTool.phase === 'preview' || normalizedTool.phase === 'running') {
+    if (normalizedTool.phase === "preview" || normalizedTool.phase === "running") {
       this.clearPrematureAfterToolsThinkingPlaceholder(segment);
     }
     const row = this.createRow({
       turnId: segment.turnId,
       segmentId: segment.segmentId,
-      kind: 'tool',
-      section: 'tools',
-      content: '',
+      kind: "tool",
+      section: "tools",
+      content: "",
       pending: false,
       tool: normalizedTool,
     });
     const insertBeforeActiveText =
-      (normalizedTool.phase === 'preview' || normalizedTool.phase === 'running')
-      && Boolean(activeText?.pending || activeText?.aux?.thinking?.trim());
+      (normalizedTool.phase === "preview" || normalizedTool.phase === "running") &&
+      Boolean(activeText?.pending || activeText?.aux?.thinking?.trim());
     if (insertBeforeActiveText && activeText) {
-      const activeIndex = segment.rows.findIndex((candidate) => candidate.rowId === activeText.rowId);
+      const activeIndex = segment.rows.findIndex(
+        (candidate) => candidate.rowId === activeText.rowId,
+      );
       if (activeIndex >= 0) {
         segment.rows.splice(activeIndex, 0, row);
       } else {
@@ -599,7 +600,7 @@ export class DesktopMessageTimeline {
     this.markMutated();
     for (const segment of this.orderedTurns().flatMap((turn) => this.orderedSegments(turn))) {
       const index = segment.rows.findIndex(
-        (row) => row.kind === 'tool' && row.tool?.toolCallId === toolCallId,
+        (row) => row.kind === "tool" && row.tool?.toolCallId === toolCallId,
       );
       if (index >= 0) {
         segment.rows.splice(index, 1);
@@ -628,7 +629,7 @@ export class DesktopMessageTimeline {
       for (const turn of this.orderedTurns()) {
         for (const segment of this.orderedSegments(turn)) {
           const toolIndex = segment.rows.findIndex(
-            (row) => row.kind === 'tool' && row.tool?.toolCallId === afterToolCallId,
+            (row) => row.kind === "tool" && row.tool?.toolCallId === afterToolCallId,
           );
           if (toolIndex >= 0) {
             targetSegment = segment;
@@ -649,10 +650,10 @@ export class DesktopMessageTimeline {
       }
       targetSegment = this.activeSegment() ?? turn.segments[turn.segments.length - 1];
       if (!targetSegment) {
-        targetSegment = this.createSegment(turn, 'hydrated');
+        targetSegment = this.createSegment(turn, "hydrated");
       }
       for (let index = targetSegment.rows.length - 1; index >= 0; index -= 1) {
-        if (targetSegment.rows[index]?.kind === 'tool') {
+        if (targetSegment.rows[index]?.kind === "tool") {
           insertAfterToolIndex = index;
           break;
         }
@@ -666,22 +667,20 @@ export class DesktopMessageTimeline {
     const anchorToolIndex =
       insertAfterToolIndex >= 0
         ? insertAfterToolIndex
-        : targetSegment.rows.findIndex((row) => row.kind === 'tool');
-    const anchorRow =
-      anchorToolIndex >= 0 ? targetSegment.rows[anchorToolIndex] : undefined;
+        : targetSegment.rows.findIndex((row) => row.kind === "tool");
+    const anchorRow = anchorToolIndex >= 0 ? targetSegment.rows[anchorToolIndex] : undefined;
     const insertOrder = anchorRow ? anchorRow.createdOrder + 1 : this.nextCreatedOrder;
     const row = this.createRow({
       messageId,
       turnId: targetSegment.turnId,
       segmentId: targetSegment.segmentId,
-      kind: 'user',
-      section: anchorRow?.section ?? 'after-tools',
+      kind: "user",
+      section: anchorRow?.section ?? "after-tools",
       content: trimmed,
       pending: false,
       createdOrder: insertOrder,
     });
-    const physicalInsertAt =
-      anchorToolIndex >= 0 ? anchorToolIndex + 1 : targetSegment.rows.length;
+    const physicalInsertAt = anchorToolIndex >= 0 ? anchorToolIndex + 1 : targetSegment.rows.length;
     targetSegment.rows.splice(physicalInsertAt, 0, row);
     return rowToMessage(row);
   }
@@ -694,8 +693,8 @@ export class DesktopMessageTimeline {
     const segment = this.ensureActiveSegment();
     const existing = segment.rows.find(
       (row) =>
-        row.kind === 'assistant-text' &&
-        row.section === 'before-tools' &&
+        row.kind === "assistant-text" &&
+        row.section === "before-tools" &&
         row.content.trim() === content.trim(),
     );
     if (existing) {
@@ -706,7 +705,7 @@ export class DesktopMessageTimeline {
     const activeText = this.activeAssistantTextRow(segment);
     if (
       activeText &&
-      activeText.section === 'before-tools' &&
+      activeText.section === "before-tools" &&
       !activeText.content.trim() &&
       !normalizeMessageAuxSnapshot(activeText.aux)
     ) {
@@ -716,7 +715,7 @@ export class DesktopMessageTimeline {
       return rowToMessage(activeText);
     }
 
-    const row = this.createAssistantTextRow(segment, 'before-tools', false);
+    const row = this.createAssistantTextRow(segment, "before-tools", false);
     row.content = content;
     return rowToMessage(row);
   }
@@ -739,7 +738,7 @@ export class DesktopMessageTimeline {
       row &&
       row.content.trim() &&
       row.content.trim() !== normalizedContent &&
-      row.section === 'before-tools' &&
+      row.section === "before-tools" &&
       segmentHasToolRows(segment)
     ) {
       row.pending = false;
@@ -749,7 +748,7 @@ export class DesktopMessageTimeline {
     if (!row) {
       row = this.createAssistantTextRow(
         segment,
-        segmentHasToolRows(segment) ? 'after-tools' : 'before-tools',
+        segmentHasToolRows(segment) ? "after-tools" : "before-tools",
         false,
       );
     }
@@ -762,15 +761,15 @@ export class DesktopMessageTimeline {
     } else {
       delete row.aux;
     }
-    segment.status = 'completed';
+    segment.status = "completed";
     segment.activeAssistantTextRowId = undefined;
     this.logCompletedAssistantMaterialization(segment, row, reused, content);
-    this.logSegmentRows('complete-text', segment);
+    this.logSegmentRows("complete-text", segment);
     return rowToMessage(row);
   }
 
   upsertTurnErrorRetryMessage(
-    retry: NonNullable<MessageAuxSnapshot['turnErrorRetry']>,
+    retry: NonNullable<MessageAuxSnapshot["turnErrorRetry"]>,
   ): ConversationMessageSnapshot | undefined {
     this.markMutated();
     const segment = this.ensureActiveSegment();
@@ -785,7 +784,7 @@ export class DesktopMessageTimeline {
     if (!row) {
       row = this.createAssistantTextRow(
         segment,
-        segmentHasToolRows(segment) ? 'after-tools' : 'before-tools',
+        segmentHasToolRows(segment) ? "after-tools" : "before-tools",
         false,
       );
       this.turnErrorRetryRowId = row.rowId;
@@ -836,10 +835,10 @@ export class DesktopMessageTimeline {
       delete row.aux;
     }
     this.turnErrorRetryRowId = undefined;
-    segment.status = 'completed';
+    segment.status = "completed";
     segment.activeAssistantTextRowId = undefined;
     this.logCompletedAssistantMaterialization(segment, row, true, content);
-    this.logSegmentRows('complete-text', segment);
+    this.logSegmentRows("complete-text", segment);
     return rowToMessage(row);
   }
 
@@ -861,14 +860,14 @@ export class DesktopMessageTimeline {
     const normalizedCompletion = completionText.trim();
     let target = this.findAssistantTextRowWithContent(segment, normalizedCompletion);
     if (target) {
-      target.content = '';
+      target.content = "";
     } else {
       target = this.findLastAssistantTextRow(segment);
     }
     if (!target) {
       target = this.createAssistantTextRow(
         segment,
-        segmentHasToolRows(segment) ? 'after-tools' : 'before-tools',
+        segmentHasToolRows(segment) ? "after-tools" : "before-tools",
         false,
       );
     }
@@ -881,10 +880,10 @@ export class DesktopMessageTimeline {
 
     target.pending = false;
     target.aux = normalizedAux;
-    segment.status = 'completed';
+    segment.status = "completed";
     segment.activeAssistantTextRowId = undefined;
-    this.logCompletedAssistantMaterialization(segment, target, true, '');
-    this.logSegmentRows('finish-task-notice', segment);
+    this.logCompletedAssistantMaterialization(segment, target, true, "");
+    this.logSegmentRows("finish-task-notice", segment);
     return rowToMessage(target);
   }
 
@@ -904,7 +903,7 @@ export class DesktopMessageTimeline {
         delete row.aux;
       }
     }
-    segment.status = 'completed';
+    segment.status = "completed";
     segment.activeAssistantTextRowId = undefined;
   }
 
@@ -918,7 +917,7 @@ export class DesktopMessageTimeline {
     if (row) {
       row.pending = false;
     }
-    segment.status = 'aborted';
+    segment.status = "aborted";
     segment.activeAssistantTextRowId = undefined;
   }
 
@@ -960,7 +959,7 @@ export class DesktopMessageTimeline {
       }
       return rowToMessage(existing);
     }
-    const row = this.createAssistantTextRow(segment, 'after-tools', true);
+    const row = this.createAssistantTextRow(segment, "after-tools", true);
     segment.activeAssistantTextRowId = row.rowId;
     return rowToMessage(row);
   }
@@ -982,7 +981,9 @@ export class DesktopMessageTimeline {
     return true;
   }
 
-  markLatestRenderableAssistantRowContinuableInActiveTurn(): ConversationMessageSnapshot | undefined {
+  markLatestRenderableAssistantRowContinuableInActiveTurn():
+    | ConversationMessageSnapshot
+    | undefined {
     const turn = this.activeTurn();
     if (!turn) {
       return undefined;
@@ -990,7 +991,9 @@ export class DesktopMessageTimeline {
     return this.markLatestRenderableAssistantRowContinuableFromRows(this.rowsForTurn(turn));
   }
 
-  markLatestRenderableAssistantRowContinuable(input: { content?: string } = {}): ConversationMessageSnapshot | undefined {
+  markLatestRenderableAssistantRowContinuable(
+    input: { content?: string } = {},
+  ): ConversationMessageSnapshot | undefined {
     return this.markLatestRenderableAssistantRowContinuableFromRows(this.allRows(), input);
   }
 
@@ -1000,7 +1003,7 @@ export class DesktopMessageTimeline {
   ): ConversationMessageSnapshot | undefined {
     this.clearContinuationMarkers();
     // clearContinuationMarkers 已 markMutated；本方法仅追加 row.canContinue 标记
-    const normalized = input.content?.trim() ?? '';
+    const normalized = input.content?.trim() ?? "";
     const candidates = rows.filter((row) => {
       if (!isRenderableAssistantRow(row)) {
         return false;
@@ -1008,7 +1011,7 @@ export class DesktopMessageTimeline {
       if (!normalized) {
         return true;
       }
-      return row.kind === 'assistant-text' && row.content.trim() === normalized;
+      return row.kind === "assistant-text" && row.content.trim() === normalized;
     });
     const row = candidates[candidates.length - 1];
     if (!row) {
@@ -1025,7 +1028,7 @@ export class DesktopMessageTimeline {
   }
 
   private hydrateMessage(message: ConversationMessageSnapshot): void {
-    if (message.role === 'user') {
+    if (message.role === "user") {
       const activeTurn = this.activeTurn();
       if (activeTurn?.userRow && this.turnHasInlineUserReplyEligibleContent(activeTurn)) {
         this.insertHydratedInlineUserReply(message);
@@ -1042,55 +1045,61 @@ export class DesktopMessageTimeline {
     }
 
     const aux = normalizeMessageAuxSnapshot(message.aux);
-    let segment = this.activeSegment() ?? this.createSegment(this.ensureActiveTurn(), 'hydrated');
+    let segment = this.activeSegment() ?? this.createSegment(this.ensureActiveTurn(), "hydrated");
     let target = this.resolveHydratedMessageTarget(message, aux, segment);
     if (this.shouldStartNewHydratedSegment(segment, target.section, target.kind)) {
-      segment = this.createSegment(this.ensureActiveTurn(), 'hydrated');
+      segment = this.createSegment(this.ensureActiveTurn(), "hydrated");
       target = this.resolveHydratedMessageTarget(message, aux, segment);
     }
 
-    if (target.kind === 'tool' && target.tool) {
-      segment.rows.push(this.createRow({
-        messageId: message.id,
-        turnId: segment.turnId,
-        segmentId: segment.segmentId,
-        kind: target.kind,
-        section: target.section,
-        content: '',
-        pending: message.pending,
-        canContinue: message.canContinue,
-        tool: target.tool,
-      }));
+    if (target.kind === "tool" && target.tool) {
+      segment.rows.push(
+        this.createRow({
+          messageId: message.id,
+          turnId: segment.turnId,
+          segmentId: segment.segmentId,
+          kind: target.kind,
+          section: target.section,
+          content: "",
+          pending: message.pending,
+          canContinue: message.canContinue,
+          tool: target.tool,
+        }),
+      );
       return;
     }
 
-    if (target.kind === 'assistant-thinking' && aux?.thinking) {
-      segment.rows.push(this.createRow({
-        messageId: message.id,
-        turnId: segment.turnId,
-        segmentId: segment.segmentId,
-        kind: target.kind,
-        section: target.section,
-        content: aux.thinking,
-        pending: false,
-        canContinue: message.canContinue,
-        aux: { thinking: aux.thinking },
-      }));
+    if (target.kind === "assistant-thinking" && aux?.thinking) {
+      segment.rows.push(
+        this.createRow({
+          messageId: message.id,
+          turnId: segment.turnId,
+          segmentId: segment.segmentId,
+          kind: target.kind,
+          section: target.section,
+          content: aux.thinking,
+          pending: false,
+          canContinue: message.canContinue,
+          aux: { thinking: aux.thinking },
+        }),
+      );
       return;
     }
 
-    if (target.kind === 'assistant-compaction' && aux?.compaction) {
-      segment.rows.push(this.createRow({
-        messageId: message.id,
-        turnId: segment.turnId,
-        segmentId: segment.segmentId,
-        kind: target.kind,
-        section: target.section,
-        content: aux.compaction,
-        pending: false,
-        canContinue: message.canContinue,
-        aux: { compaction: aux.compaction },
-      }));
+    if (target.kind === "assistant-compaction" && aux?.compaction) {
+      segment.rows.push(
+        this.createRow({
+          messageId: message.id,
+          turnId: segment.turnId,
+          segmentId: segment.segmentId,
+          kind: target.kind,
+          section: target.section,
+          content: aux.compaction,
+          pending: false,
+          canContinue: message.canContinue,
+          aux: { compaction: aux.compaction },
+        }),
+      );
       return;
     }
 
@@ -1114,7 +1123,7 @@ export class DesktopMessageTimeline {
   private turnHasInlineUserReplyEligibleContent(turn: DesktopTimelineTurn): boolean {
     return turn.segments.some((segment) =>
       segment.rows.some(
-        (row) => row.kind === 'tool' || isRenderableAssistantRow(row) || row.kind === 'user',
+        (row) => row.kind === "tool" || isRenderableAssistantRow(row) || row.kind === "user",
       ),
     );
   }
@@ -1123,12 +1132,12 @@ export class DesktopMessageTimeline {
     const turn = this.ensureActiveTurn();
     let targetSegment = this.activeSegment() ?? turn.segments[turn.segments.length - 1];
     if (!targetSegment) {
-      targetSegment = this.createSegment(turn, 'hydrated');
+      targetSegment = this.createSegment(turn, "hydrated");
     }
 
     let insertAfterToolIndex = -1;
     for (let index = targetSegment.rows.length - 1; index >= 0; index -= 1) {
-      if (targetSegment.rows[index]?.kind === 'tool') {
+      if (targetSegment.rows[index]?.kind === "tool") {
         insertAfterToolIndex = index;
         break;
       }
@@ -1141,8 +1150,8 @@ export class DesktopMessageTimeline {
       messageId: message.id,
       turnId: targetSegment.turnId,
       segmentId: targetSegment.segmentId,
-      kind: 'user',
-      section: anchorRow?.section ?? 'after-tools',
+      kind: "user",
+      section: anchorRow?.section ?? "after-tools",
       content: message.content,
       pending: message.pending,
       createdOrder: insertOrder,
@@ -1192,7 +1201,7 @@ export class DesktopMessageTimeline {
         for (const rowSnapshot of segmentSnapshot.rows) {
           const row = this.restoreRowSnapshot(rowSnapshot);
           segment.rows.push(row);
-          if (row.kind === 'assistant-text' && row.pending) {
+          if (row.kind === "assistant-text" && row.pending) {
             segment.activeAssistantTextRowId = row.rowId;
           }
           maxCreatedOrder = Math.max(maxCreatedOrder, row.createdOrder);
@@ -1242,7 +1251,7 @@ export class DesktopMessageTimeline {
     }
     for (let index = turn.segments.length - 1; index >= 0; index -= 1) {
       const segment = turn.segments[index];
-      if (segment.activeAssistantTextRowId || segment.status === 'streaming') {
+      if (segment.activeAssistantTextRowId || segment.status === "streaming") {
         return segment.segmentId;
       }
     }
@@ -1260,26 +1269,26 @@ export class DesktopMessageTimeline {
   } {
     if (message.tool) {
       return {
-        kind: 'tool',
-        section: 'tools',
+        kind: "tool",
+        section: "tools",
         tool: cloneTool(message.tool),
       };
     }
     if (!message.content.trim() && aux?.thinking) {
       return {
-        kind: 'assistant-thinking',
-        section: 'before-tools',
+        kind: "assistant-thinking",
+        section: "before-tools",
       };
     }
     if (!message.content.trim() && aux?.compaction) {
       return {
-        kind: 'assistant-compaction',
-        section: 'before-tools',
+        kind: "assistant-compaction",
+        section: "before-tools",
       };
     }
     return {
-      kind: 'assistant-text',
-      section: segmentHasToolRows(segment) ? 'after-tools' : 'before-tools',
+      kind: "assistant-text",
+      section: segmentHasToolRows(segment) ? "after-tools" : "before-tools",
     };
   }
 
@@ -1308,11 +1317,11 @@ export class DesktopMessageTimeline {
   private finalizeHydratedSegments(): void {
     for (const turn of this.turns) {
       for (const segment of turn.segments) {
-        if (segment.kind !== 'hydrated') {
+        if (segment.kind !== "hydrated") {
           continue;
         }
         const hasPendingRow = segment.rows.some((row) => row.pending);
-        segment.status = hasPendingRow ? 'streaming' : 'completed';
+        segment.status = hasPendingRow ? "streaming" : "completed";
         if (!hasPendingRow) {
           segment.activeAssistantTextRowId = undefined;
         }
@@ -1344,7 +1353,7 @@ export class DesktopMessageTimeline {
     if (existing) {
       return existing;
     }
-    return this.createSegment(this.ensureActiveTurn(), 'initial');
+    return this.createSegment(this.ensureActiveTurn(), "initial");
   }
 
   private activeSegment(): DesktopTimelineSegment | undefined {
@@ -1360,7 +1369,7 @@ export class DesktopMessageTimeline {
       segmentId: this.nextSegmentId++,
       turnId: turn.turnId,
       kind,
-      status: 'streaming',
+      status: "streaming",
       createdOrder: this.nextCreatedOrder++,
       rows: [],
     };
@@ -1379,14 +1388,14 @@ export class DesktopMessageTimeline {
       segment.activeAssistantTextRowId = existing.rowId;
       return existing;
     }
-    const row = this.createAssistantTextRow(segment, 'after-tools', true);
+    const row = this.createAssistantTextRow(segment, "after-tools", true);
     segment.activeAssistantTextRowId = row.rowId;
     return row;
   }
 
   private removeStaleBeforeToolsEmptyPendingRows(segment: DesktopTimelineSegment): void {
     segment.rows = segment.rows.filter((row) => {
-      if (row.kind !== 'assistant-text' || row.section !== 'before-tools') {
+      if (row.kind !== "assistant-text" || row.section !== "before-tools") {
         return true;
       }
       return Boolean(row.content.trim() || hasRowAux(row));
@@ -1396,11 +1405,7 @@ export class DesktopMessageTimeline {
   /** Gateway multi-search: drop empty after-tools placeholder seeded before the next tool preview. */
   private clearPrematureAfterToolsThinkingPlaceholder(segment: DesktopTimelineSegment): void {
     const afterToolsRow = this.findAfterToolsAssistantTextRow(segment);
-    if (
-      !afterToolsRow?.pending
-      || afterToolsRow.content.trim()
-      || hasRowAux(afterToolsRow)
-    ) {
+    if (!afterToolsRow?.pending || afterToolsRow.content.trim() || hasRowAux(afterToolsRow)) {
       return;
     }
     segment.rows = segment.rows.filter((row) => row.rowId !== afterToolsRow.rowId);
@@ -1414,41 +1419,41 @@ export class DesktopMessageTimeline {
   ): DesktopTimelineRow | undefined {
     for (let index = segment.rows.length - 1; index >= 0; index -= 1) {
       const row = segment.rows[index];
-      if (row?.kind === 'assistant-text' && row.section === 'after-tools') {
+      if (row?.kind === "assistant-text" && row.section === "after-tools") {
         return row;
       }
     }
     return undefined;
   }
 
-  private ensureActiveAssistantTextRow(mode: 'text' | 'aux'): DesktopTimelineRow {
+  private ensureActiveAssistantTextRow(mode: "text" | "aux"): DesktopTimelineRow {
     const segment = this.ensureActiveSegment();
     const existing = this.activeAssistantTextRow(segment);
     if (existing) {
-      if (segmentHasToolRows(segment) && existing.section === 'before-tools') {
-        if (mode === 'text') {
+      if (segmentHasToolRows(segment) && existing.section === "before-tools") {
+        if (mode === "text") {
           if (existing.content.trim() || hasRowAux(existing)) {
-            const row = this.createAssistantTextRow(segment, 'after-tools', true);
+            const row = this.createAssistantTextRow(segment, "after-tools", true);
             segment.activeAssistantTextRowId = row.rowId;
             return row;
           }
-          existing.section = 'after-tools';
-        } else if (mode === 'aux') {
+          existing.section = "after-tools";
+        } else if (mode === "aux") {
           if (existing.content.trim() && segmentAllToolsTerminal(segment)) {
             // Gateway provider-search resume：工具前前缀已落在 before-tools 行，全部工具完成后合成思考须写到 after-tools。
             const afterToolsRow =
-              this.findAfterToolsAssistantTextRow(segment)
-              ?? this.createAssistantTextRow(segment, 'after-tools', true);
+              this.findAfterToolsAssistantTextRow(segment) ??
+              this.createAssistantTextRow(segment, "after-tools", true);
             segment.activeAssistantTextRowId = afterToolsRow.rowId;
             return afterToolsRow;
           }
           if (!existing.content.trim()) {
             if (hasRowAux(existing)) {
-              const row = this.createAssistantTextRow(segment, 'tools', true);
+              const row = this.createAssistantTextRow(segment, "tools", true);
               segment.activeAssistantTextRowId = row.rowId;
               return row;
             }
-            existing.section = 'tools';
+            existing.section = "tools";
           }
         }
         return existing;
@@ -1456,11 +1461,11 @@ export class DesktopMessageTimeline {
       return existing;
     }
     const section: DesktopTimelineRowSection =
-      mode === 'text' && segmentHasToolRows(segment)
-        ? 'after-tools'
-        : mode === 'aux' && segmentHasToolRows(segment)
-          ? 'tools'
-          : 'before-tools';
+      mode === "text" && segmentHasToolRows(segment)
+        ? "after-tools"
+        : mode === "aux" && segmentHasToolRows(segment)
+          ? "tools"
+          : "before-tools";
     const row = this.createAssistantTextRow(segment, section, true);
     segment.activeAssistantTextRowId = row.rowId;
     return row;
@@ -1471,7 +1476,7 @@ export class DesktopMessageTimeline {
       return undefined;
     }
     return segment.rows.find(
-      (row) => row.rowId === segment.activeAssistantTextRowId && row.kind === 'assistant-text',
+      (row) => row.rowId === segment.activeAssistantTextRowId && row.kind === "assistant-text",
     );
   }
 
@@ -1488,7 +1493,7 @@ export class DesktopMessageTimeline {
   ): DesktopTimelineRow | undefined {
     for (let index = segment.rows.length - 1; index >= 0; index -= 1) {
       const row = segment.rows[index];
-      if (row?.kind === 'assistant-text') {
+      if (row?.kind === "assistant-text") {
         return row;
       }
     }
@@ -1505,7 +1510,7 @@ export class DesktopMessageTimeline {
     }
     for (let index = segment.rows.length - 1; index >= 0; index -= 1) {
       const row = segment.rows[index];
-      if (row?.kind === 'assistant-text' && row.content.trim() === normalized) {
+      if (row?.kind === "assistant-text" && row.content.trim() === normalized) {
         return row;
       }
     }
@@ -1519,7 +1524,7 @@ export class DesktopMessageTimeline {
     let emptyRow: DesktopTimelineRow | undefined;
     for (let index = segment.rows.length - 1; index >= 0; index -= 1) {
       const row = segment.rows[index];
-      if (row?.kind !== 'assistant-text') {
+      if (row?.kind !== "assistant-text") {
         continue;
       }
       if (normalizedContent && row.content.trim() === normalizedContent) {
@@ -1540,9 +1545,9 @@ export class DesktopMessageTimeline {
     const row = this.createRow({
       turnId: segment.turnId,
       segmentId: segment.segmentId,
-      kind: 'assistant-text',
+      kind: "assistant-text",
       section,
-      content: '',
+      content: "",
       pending,
     });
     segment.rows.push(row);
@@ -1607,12 +1612,10 @@ export class DesktopMessageTimeline {
   private findToolRow(toolCallId: string): DesktopTimelineRow | undefined {
     const stable = isStableTimelineToolCallId(toolCallId);
     const activeTurnId = this.activeTurn()?.turnId;
-    const candidates = stable
-      ? this.allRows()
-      : this.activeSegment()?.rows ?? [];
+    const candidates = stable ? this.allRows() : (this.activeSegment()?.rows ?? []);
     for (let index = candidates.length - 1; index >= 0; index -= 1) {
       const row = candidates[index];
-      if (row?.kind === 'tool' && row.tool?.toolCallId === toolCallId) {
+      if (row?.kind === "tool" && row.tool?.toolCallId === toolCallId) {
         if (
           stable &&
           activeTurnId !== undefined &&
@@ -1630,7 +1633,7 @@ export class DesktopMessageTimeline {
   private pruneEmptyAssistantTextRows(segment: DesktopTimelineSegment): void {
     const activeRowId = segment.activeAssistantTextRowId;
     segment.rows = segment.rows.filter((row) => {
-      if (row.kind !== 'assistant-text') {
+      if (row.kind !== "assistant-text") {
         return true;
       }
       const keep = Boolean(row.content.trim() || hasRowAux(row));
@@ -1643,19 +1646,19 @@ export class DesktopMessageTimeline {
 
   private stripSegmentAuxKind(
     segment: DesktopTimelineSegment,
-    kind: 'thinking' | 'compaction',
+    kind: "thinking" | "compaction",
     text: string,
   ): void {
     const cleared: number[] = [];
     for (const row of segment.rows) {
-      if (row.kind !== 'assistant-text' || !row.aux) {
+      if (row.kind !== "assistant-text" || !row.aux) {
         continue;
       }
-      const current = kind === 'thinking' ? row.aux.thinking : row.aux.compaction;
+      const current = kind === "thinking" ? row.aux.thinking : row.aux.compaction;
       if (!current?.trim() || current.trim() !== text.trim()) {
         continue;
       }
-      if (kind === 'thinking') {
+      if (kind === "thinking") {
         delete row.aux.thinking;
       } else {
         delete row.aux.compaction;
@@ -1677,17 +1680,17 @@ export class DesktopMessageTimeline {
   /** Finalize or drop in-flight thinking aux once answer text starts (after tools). */
   private settlePendingThinkingBeforeAssistantText(segment: DesktopTimelineSegment): void {
     for (const row of segment.rows) {
-      if (row.kind !== 'assistant-text') {
+      if (row.kind !== "assistant-text") {
         continue;
       }
       const pendingThinking = row.aux?.thinking?.trim();
       if (!pendingThinking || row.content.trim()) {
         continue;
       }
-      if (!this.hasFinalizedAuxInActiveSegment('thinking', pendingThinking)) {
-        this.finalizeThinkingSegment(pendingThinking, 'after-stream');
+      if (!this.hasFinalizedAuxInActiveSegment("thinking", pendingThinking)) {
+        this.finalizeThinkingSegment(pendingThinking, "after-stream");
       } else {
-        this.stripSegmentAuxKind(segment, 'thinking', pendingThinking);
+        this.stripSegmentAuxKind(segment, "thinking", pendingThinking);
         this.pruneEmptyAssistantTextRows(segment);
       }
       break;
@@ -1709,7 +1712,7 @@ export class DesktopMessageTimeline {
       if (leftSection !== rightSection) {
         return leftSection - rightSection;
       }
-      if (left.section === 'tools' && right.section === 'tools') {
+      if (left.section === "tools" && right.section === "tools") {
         return left.createdOrder - right.createdOrder;
       }
       const leftKind = ROW_KIND_ORDER[left.kind] ?? 99;
@@ -1739,43 +1742,43 @@ export class DesktopMessageTimeline {
     reused: boolean,
     content: string,
   ): void {
-    if (messageOrderDebugLevel() === 'off') {
+    if (messageOrderDebugLevel() === "off") {
       return;
     }
     console.log(
-      `[desktop-host][timeline] complete-text ${reused ? 'reuse' : 'create'} turn=${segment.turnId} segment=${segment.segmentId} msg=${row.messageId} text≈${truncateOneLineForDebug(content, 48)}`,
+      `[desktop-host][timeline] complete-text ${reused ? "reuse" : "create"} turn=${segment.turnId} segment=${segment.segmentId} msg=${row.messageId} text≈${truncateOneLineForDebug(content, 48)}`,
     );
   }
 
   private logStripSegmentAux(
-    kind: 'thinking' | 'compaction',
+    kind: "thinking" | "compaction",
     segment: DesktopTimelineSegment,
     text: string,
     cleared: number[],
   ): void {
-    if (messageOrderDebugLevel() === 'off') {
+    if (messageOrderDebugLevel() === "off") {
       return;
     }
     console.log(
-      `[desktop-host][timeline] strip-segment-aux kind=${kind} turn=${segment.turnId} segment=${segment.segmentId} cleared=${cleared.join(',') || '∅'} final≈${truncateOneLineForDebug(text, 48)}`,
+      `[desktop-host][timeline] strip-segment-aux kind=${kind} turn=${segment.turnId} segment=${segment.segmentId} cleared=${cleared.join(",") || "∅"} final≈${truncateOneLineForDebug(text, 48)}`,
     );
   }
 
   private logSegmentRows(stage: string, segment: DesktopTimelineSegment): void {
-    if (messageOrderDebugLevel() !== 'verbose') {
+    if (messageOrderDebugLevel() !== "verbose") {
       return;
     }
     const rows = this.orderedSegmentRows(segment)
       .map((row) => {
-        const section = row.section ?? 'none';
+        const section = row.section ?? "none";
         const text = row.tool
           ? row.tool.headline
-          : row.aux?.thinking ?? row.aux?.compaction ?? row.content;
-        const clipped = text.trim() ? truncateOneLineForDebug(text, 42) : '∅';
+          : (row.aux?.thinking ?? row.aux?.compaction ?? row.content);
+        const clipped = text.trim() ? truncateOneLineForDebug(text, 42) : "∅";
         return `${section}:${row.kind}#${row.messageId}≈${clipped}`;
       })
-      .join('«');
-    const signature = `${stage}|${segment.turnId}|${segment.segmentId}|${rows || '∅'}`;
+      .join("«");
+    const signature = `${stage}|${segment.turnId}|${segment.segmentId}|${rows || "∅"}`;
     if (signature === this.lastSegmentRowsLogSignature) {
       return;
     }
@@ -1792,7 +1795,7 @@ export class DesktopMessageTimeline {
     }
 
     console.log(
-      `[desktop-host][timeline] segment-rows stage=${stage} turn=${segment.turnId} segment=${segment.segmentId} rows=${rows || '∅'}`,
+      `[desktop-host][timeline] segment-rows stage=${stage} turn=${segment.turnId} segment=${segment.segmentId} rows=${rows || "∅"}`,
     );
     this.lastSegmentRowsLogSignature = signature;
     if (pendingStageKey) {
@@ -1803,50 +1806,47 @@ export class DesktopMessageTimeline {
 }
 
 export function isStableTimelineToolCallId(toolCallId: string): boolean {
-  return !toolCallId.startsWith('pending:') && !toolCallId.startsWith('tool:');
+  return !toolCallId.startsWith("pending:") && !toolCallId.startsWith("tool:");
 }
 
 function canReuseToolMessageAcrossTurns(tool: ToolBlockSnapshot | undefined): boolean {
-  return tool?.phase === 'preview' || tool?.phase === 'pending-approval' || tool?.phase === 'running';
+  return (
+    tool?.phase === "preview" || tool?.phase === "pending-approval" || tool?.phase === "running"
+  );
 }
 
 function segmentHasToolRows(segment: DesktopTimelineSegment): boolean {
-  return segment.rows.some((row) => row.kind === 'tool');
+  return segment.rows.some((row) => row.kind === "tool");
 }
 
 function segmentAllToolsTerminal(segment: DesktopTimelineSegment): boolean {
-  const toolRows = segment.rows.filter((row) => row.kind === 'tool');
+  const toolRows = segment.rows.filter((row) => row.kind === "tool");
   if (toolRows.length === 0) {
     return false;
   }
   return toolRows.every((row) => {
     const phase = row.tool?.phase;
-    return phase === 'succeeded' || phase === 'failed';
+    return phase === "succeeded" || phase === "failed";
   });
 }
 
 function segmentHasPostToolAssistantAnswer(segment: DesktopTimelineSegment): boolean {
   return segment.rows.some(
-    (row) =>
-      row.kind === 'assistant-text' &&
-      row.section === 'after-tools' &&
-      row.content.trim(),
+    (row) => row.kind === "assistant-text" && row.section === "after-tools" && row.content.trim(),
   );
 }
 
 /** Tool preview inserted before a still-pending before-tools row (pre-tool reasoning). */
-function segmentHasPendingBeforeToolsRowAfterFirstTool(
-  segment: DesktopTimelineSegment,
-): boolean {
-  const firstToolIndex = segment.rows.findIndex((row) => row.kind === 'tool');
+function segmentHasPendingBeforeToolsRowAfterFirstTool(segment: DesktopTimelineSegment): boolean {
+  const firstToolIndex = segment.rows.findIndex((row) => row.kind === "tool");
   if (firstToolIndex < 0) {
     return false;
   }
   return segment.rows.some(
     (row, index) =>
       index > firstToolIndex &&
-      row.kind === 'assistant-text' &&
-      row.section === 'before-tools' &&
+      row.kind === "assistant-text" &&
+      row.section === "before-tools" &&
       !row.content.trim(),
   );
 }
@@ -1856,22 +1856,22 @@ function resolveThinkingRowSection(
   placement?: DesktopThinkingSegmentPlacement,
 ): DesktopTimelineRowSection {
   if (!segmentHasToolRows(segment)) {
-    return 'before-tools';
+    return "before-tools";
   }
-  if (placement === 'before-next-tool') {
-    return segmentHasToolRows(segment) ? 'tools' : 'before-tools';
+  if (placement === "before-next-tool") {
+    return segmentHasToolRows(segment) ? "tools" : "before-tools";
   }
-  if (placement === 'after-stream') {
+  if (placement === "after-stream") {
     if (segmentHasPostToolAssistantAnswer(segment)) {
-      return 'after-tools';
+      return "after-tools";
     }
     if (segmentHasPendingBeforeToolsRowAfterFirstTool(segment)) {
-      return 'before-tools';
+      return "before-tools";
     }
     // 工具回合中途的思考（尚无工具后正文）应落在 tools 段，而非 after-tools（会排到所有工具卡片之后）。
-    return 'tools';
+    return "tools";
   }
-  return 'before-tools';
+  return "before-tools";
 }
 
 function hasRowAux(row: DesktopTimelineRow): boolean {
@@ -1879,7 +1879,7 @@ function hasRowAux(row: DesktopTimelineRow): boolean {
 }
 
 function isPendingSegmentRowsLogStage(stage: string): boolean {
-  return stage === 'update-pending-thinking' || stage === 'update-pending-compressing';
+  return stage === "update-pending-thinking" || stage === "update-pending-compressing";
 }
 
 function trimPendingSegmentRowsLogMsByKey(map: Map<string, number>, maxEntries: number): void {
@@ -1893,23 +1893,23 @@ function trimPendingSegmentRowsLogMsByKey(map: Map<string, number>, maxEntries: 
 }
 
 function isRenderableAssistantRow(row: DesktopTimelineRow): boolean {
-  if (row.kind === 'user' || row.pending) {
+  if (row.kind === "user" || row.pending) {
     return false;
   }
   return Boolean(
-    row.kind === 'tool' ||
-      row.content.trim() ||
-      row.aux?.thinking?.trim() ||
-      row.aux?.compaction?.trim() ||
-      row.aux?.finishTaskNotice?.trim(),
+    row.kind === "tool" ||
+    row.content.trim() ||
+    row.aux?.thinking?.trim() ||
+    row.aux?.compaction?.trim() ||
+    row.aux?.finishTaskNotice?.trim(),
   );
 }
 
 function rowToMessage(row: DesktopTimelineRow): ConversationMessageSnapshot {
-  if (row.kind === 'user') {
+  if (row.kind === "user") {
     return {
       id: row.messageId,
-      role: 'user',
+      role: "user",
       content: row.content,
       pending: row.pending,
       ...(row.localFileAttachments?.length
@@ -1923,8 +1923,9 @@ function rowToMessage(row: DesktopTimelineRow): ConversationMessageSnapshot {
   const aux = normalizeMessageAuxSnapshot(row.aux);
   return {
     id: row.messageId,
-    role: 'assistant',
-    content: row.kind === 'assistant-thinking' || row.kind === 'assistant-compaction' ? '' : row.content,
+    role: "assistant",
+    content:
+      row.kind === "assistant-thinking" || row.kind === "assistant-compaction" ? "" : row.content,
     ...(tool ? { tool } : {}),
     ...(aux ? { aux } : {}),
     pending: row.pending,

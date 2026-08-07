@@ -1,5 +1,5 @@
-import { spawn } from 'node:child_process';
-import { access, constants } from 'node:fs/promises';
+import { spawn } from "node:child_process";
+import { access, constants } from "node:fs/promises";
 
 import {
   DEFAULT_HOOK_TIMEOUT_SECONDS,
@@ -7,7 +7,7 @@ import {
   type HookCommandOutput,
   type HookExecutionRecord,
   type ResolvedHookDefinition,
-} from '@spiritagent/agent-core';
+} from "@spiritagent/agent-core";
 
 export interface RunCommandHookOptions {
   definition: ResolvedHookDefinition;
@@ -30,7 +30,7 @@ function parseHookStdout(stdout: string): HookCommandOutput | null {
   }
   try {
     const parsed = JSON.parse(trimmed) as unknown;
-    if (typeof parsed !== 'object' || parsed === null || Array.isArray(parsed)) {
+    if (typeof parsed !== "object" || parsed === null || Array.isArray(parsed)) {
       return null;
     }
     return parsed as HookCommandOutput;
@@ -42,7 +42,7 @@ function parseHookStdout(stdout: string): HookCommandOutput | null {
 async function isExecutable(filePath: string): Promise<boolean> {
   try {
     await access(filePath, constants.F_OK | constants.R_OK);
-    if (process.platform !== 'win32') {
+    if (process.platform !== "win32") {
       await access(filePath, constants.X_OK);
     }
     return true;
@@ -59,7 +59,7 @@ export async function runCommandHook(
   try {
     commandPath = resolveHookCommandPath(definition);
   } catch (error) {
-    const message = error instanceof Error ? error.message : 'Hook command path is invalid.';
+    const message = error instanceof Error ? error.message : "Hook command path is invalid.";
     logger?.(message);
     const baseRecord: HookExecutionRecord = {
       definition,
@@ -72,22 +72,23 @@ export async function runCommandHook(
     if (definition.failClosed) {
       return {
         record: baseRecord,
-        effectiveOutput: { permission: 'deny', userMessage: message },
+        effectiveOutput: { permission: "deny", userMessage: message },
         denied: true,
       };
     }
     return { record: baseRecord, effectiveOutput: null, denied: false };
   }
-  const timeoutSeconds = definition.timeout !== undefined && definition.timeout > 0
-    ? definition.timeout
-    : DEFAULT_HOOK_TIMEOUT_SECONDS;
+  const timeoutSeconds =
+    definition.timeout !== undefined && definition.timeout > 0
+      ? definition.timeout
+      : DEFAULT_HOOK_TIMEOUT_SECONDS;
   const timeoutMs = timeoutSeconds * 1000;
 
   const baseRecord: HookExecutionRecord = {
     definition,
     exitCode: null,
     stdout: null,
-    stderr: '',
+    stderr: "",
     timedOut: false,
     failed: false,
   };
@@ -99,7 +100,7 @@ export async function runCommandHook(
     if (definition.failClosed) {
       return {
         record: baseRecord,
-        effectiveOutput: { permission: 'deny', userMessage: baseRecord.stderr },
+        effectiveOutput: { permission: "deny", userMessage: baseRecord.stderr },
         denied: true,
       };
     }
@@ -109,30 +110,30 @@ export async function runCommandHook(
   return new Promise((resolve) => {
     const child = spawn(commandPath, [], {
       cwd: definition.configDir,
-      stdio: ['pipe', 'pipe', 'pipe'],
+      stdio: ["pipe", "pipe", "pipe"],
       env: process.env,
     });
 
-    let stdout = '';
-    let stderr = '';
+    let stdout = "";
+    let stderr = "";
     let settled = false;
     const timer = setTimeout(() => {
       if (settled) {
         return;
       }
       settled = true;
-      child.kill('SIGKILL');
+      child.kill("SIGKILL");
       const record: HookExecutionRecord = {
         ...baseRecord,
         exitCode: null,
-        stderr: stderr || 'Hook timed out.',
+        stderr: stderr || "Hook timed out.",
         timedOut: true,
         failed: true,
       };
       if (definition.failClosed) {
         resolve({
           record,
-          effectiveOutput: { permission: 'deny', userMessage: 'Hook timed out.' },
+          effectiveOutput: { permission: "deny", userMessage: "Hook timed out." },
           denied: true,
         });
         return;
@@ -140,14 +141,14 @@ export async function runCommandHook(
       resolve({ record, effectiveOutput: null, denied: false });
     }, timeoutMs);
 
-    child.stdout.on('data', (chunk: Buffer) => {
-      stdout += chunk.toString('utf8');
+    child.stdout.on("data", (chunk: Buffer) => {
+      stdout += chunk.toString("utf8");
     });
-    child.stderr.on('data', (chunk: Buffer) => {
-      stderr += chunk.toString('utf8');
+    child.stderr.on("data", (chunk: Buffer) => {
+      stderr += chunk.toString("utf8");
     });
 
-    child.on('error', (error) => {
+    child.on("error", (error) => {
       if (settled) {
         return;
       }
@@ -162,7 +163,7 @@ export async function runCommandHook(
       if (definition.failClosed) {
         resolve({
           record,
-          effectiveOutput: { permission: 'deny', userMessage: error.message },
+          effectiveOutput: { permission: "deny", userMessage: error.message },
           denied: true,
         });
         return;
@@ -170,7 +171,7 @@ export async function runCommandHook(
       resolve({ record, effectiveOutput: null, denied: false });
     });
 
-    child.on('close', (code) => {
+    child.on("close", (code) => {
       if (settled) {
         return;
       }
@@ -181,7 +182,7 @@ export async function runCommandHook(
       const invalidJson = stdout.trim().length > 0 && parsed === null;
       const failed = code !== 0 && code !== DENY_EXIT_CODE;
       const deniedByExit = code === DENY_EXIT_CODE;
-      const deniedByOutput = parsed?.permission === 'deny';
+      const deniedByOutput = parsed?.permission === "deny";
       const denied = deniedByExit || deniedByOutput;
 
       const record: HookExecutionRecord = {
@@ -196,7 +197,7 @@ export async function runCommandHook(
       if (invalidJson && definition.failClosed) {
         resolve({
           record,
-          effectiveOutput: { permission: 'deny', userMessage: 'Hook returned invalid JSON.' },
+          effectiveOutput: { permission: "deny", userMessage: "Hook returned invalid JSON." },
           denied: true,
         });
         return;
@@ -206,7 +207,7 @@ export async function runCommandHook(
         resolve({
           record,
           effectiveOutput: {
-            permission: 'deny',
+            permission: "deny",
             userMessage: stderr.trim() || `Hook exited with code ${String(code)}.`,
           },
           denied: true,
@@ -216,9 +217,7 @@ export async function runCommandHook(
 
       resolve({
         record,
-        effectiveOutput: deniedByExit
-          ? { permission: 'deny', ...(parsed ?? {}) }
-          : parsed,
+        effectiveOutput: deniedByExit ? { permission: "deny", ...(parsed ?? {}) } : parsed,
         denied,
       });
     });

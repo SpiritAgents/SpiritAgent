@@ -1,21 +1,21 @@
-import assert from 'node:assert/strict';
-import test from 'node:test';
+import assert from "node:assert/strict";
+import test from "node:test";
 
-import { resolveToolAutoReviewGate } from './gate.js';
-import { applyAutoReviewToApprovalGate } from '../runtime/auto-approval-integration.js';
-import { buildAutoApprovalReviewPrompt } from './prompt.js';
-import { normalizeAutoApprovalReviewResult } from './run-review.js';
-import { resolveToolInputSchema } from './resolve-tool-schema.js';
-import type { ToolAutoReviewInput } from './types.js';
+import { resolveToolAutoReviewGate } from "./gate.js";
+import { applyAutoReviewToApprovalGate } from "../runtime/auto-approval-integration.js";
+import { buildAutoApprovalReviewPrompt } from "./prompt.js";
+import { normalizeAutoApprovalReviewResult } from "./run-review.js";
+import { resolveToolInputSchema } from "./resolve-tool-schema.js";
+import type { ToolAutoReviewInput } from "./types.js";
 
 const sampleInput: ToolAutoReviewInput = {
-  toolName: 'shell',
+  toolName: "shell",
   argumentsJson: '{"command":"echo hi","reason":"test"}',
-  inputSchema: { type: 'object', properties: { command: { type: 'string' } } },
-  hostApprovalContext: '高风险工具调用: shell\n命令: echo hi',
+  inputSchema: { type: "object", properties: { command: { type: "string" } } },
+  hostApprovalContext: "高风险工具调用: shell\n命令: echo hi",
 };
 
-test('buildAutoApprovalReviewPrompt includes schema, context, and examples', () => {
+test("buildAutoApprovalReviewPrompt includes schema, context, and examples", () => {
   const prompt = buildAutoApprovalReviewPrompt(sampleInput);
   assert.match(prompt, /tool_name/u);
   assert.match(prompt, /shell/u);
@@ -25,68 +25,74 @@ test('buildAutoApprovalReviewPrompt includes schema, context, and examples', () 
   assert.match(prompt, /npm install/u);
 });
 
-test('resolveToolInputSchema reads OpenAI function definitions', () => {
+test("resolveToolInputSchema reads OpenAI function definitions", () => {
   const schema = resolveToolInputSchema(
-    [{
-      type: 'function',
-      function: {
-        name: 'shell',
-        parameters: { type: 'object', properties: { command: { type: 'string' } } },
+    [
+      {
+        type: "function",
+        function: {
+          name: "shell",
+          parameters: { type: "object", properties: { command: { type: "string" } } },
+        },
       },
-    }],
-    'shell',
+    ],
+    "shell",
   );
   assert.ok(schema);
   const properties = schema.properties;
-  assert.ok(properties && typeof properties === 'object' && !Array.isArray(properties));
-  assert.deepEqual(properties.command, { type: 'string' });
+  assert.ok(properties && typeof properties === "object" && !Array.isArray(properties));
+  assert.deepEqual(properties.command, { type: "string" });
 });
 
-test('normalizeAutoApprovalReviewResult validates output', () => {
-  assert.deepEqual(
-    normalizeAutoApprovalReviewResult({ allow: true, reason: 'read-only' }),
-    { allow: true, reason: 'read-only' },
-  );
-  assert.equal(normalizeAutoApprovalReviewResult({ allow: true, reason: '  ' }), undefined);
-  assert.equal(normalizeAutoApprovalReviewResult({ allow: 'yes', reason: 'x' }), undefined);
+test("normalizeAutoApprovalReviewResult validates output", () => {
+  assert.deepEqual(normalizeAutoApprovalReviewResult({ allow: true, reason: "read-only" }), {
+    allow: true,
+    reason: "read-only",
+  });
+  assert.equal(normalizeAutoApprovalReviewResult({ allow: true, reason: "  " }), undefined);
+  assert.equal(normalizeAutoApprovalReviewResult({ allow: "yes", reason: "x" }), undefined);
 });
 
-test('resolveToolAutoReviewGate bypasses when approval level is not auto-approval', async () => {
-  const gate = await resolveToolAutoReviewGate('default', async () => ({ allow: true, reason: 'x' }), sampleInput);
-  assert.equal(gate.kind, 'manual');
-});
-
-test('resolveToolAutoReviewGate allows when reviewer returns allow', async () => {
+test("resolveToolAutoReviewGate bypasses when approval level is not auto-approval", async () => {
   const gate = await resolveToolAutoReviewGate(
-    'auto-approval',
-    async () => ({ allow: true, reason: 'safe read' }),
+    "default",
+    async () => ({ allow: true, reason: "x" }),
     sampleInput,
   );
-  assert.equal(gate.kind, 'allowed');
+  assert.equal(gate.kind, "manual");
 });
 
-test('resolveToolAutoReviewGate blocks when reviewer returns deny', async () => {
+test("resolveToolAutoReviewGate allows when reviewer returns allow", async () => {
   const gate = await resolveToolAutoReviewGate(
-    'auto-approval',
-    async () => ({ allow: false, reason: 'force push' }),
+    "auto-approval",
+    async () => ({ allow: true, reason: "safe read" }),
     sampleInput,
   );
-  assert.deepEqual(gate, { kind: 'blocked', reason: 'force push' });
+  assert.equal(gate.kind, "allowed");
 });
 
-test('resolveToolAutoReviewGate falls back to manual when reviewer is unavailable', async () => {
-  const gate = await resolveToolAutoReviewGate('auto-approval', async () => undefined, sampleInput);
-  assert.equal(gate.kind, 'manual');
+test("resolveToolAutoReviewGate blocks when reviewer returns deny", async () => {
+  const gate = await resolveToolAutoReviewGate(
+    "auto-approval",
+    async () => ({ allow: false, reason: "force push" }),
+    sampleInput,
+  );
+  assert.deepEqual(gate, { kind: "blocked", reason: "force push" });
 });
 
-test('applyAutoReviewToApprovalGate skips auto review when hook requested approval', async () => {
+test("resolveToolAutoReviewGate falls back to manual when reviewer is unavailable", async () => {
+  const gate = await resolveToolAutoReviewGate("auto-approval", async () => undefined, sampleInput);
+  assert.equal(gate.kind, "manual");
+});
+
+test("applyAutoReviewToApprovalGate skips auto review when hook requested approval", async () => {
   const gate = await applyAutoReviewToApprovalGate(
-    'auto-approval',
-    async () => ({ allow: true, reason: 'would allow' }),
+    "auto-approval",
+    async () => ({ allow: true, reason: "would allow" }),
     [],
-    { name: 'grep', argumentsJson: '{}' },
-    { prompt: 'hook confirmation required', trustTarget: undefined },
-    { kind: 'needs-approval', request: { name: 'grep' }, prompt: 'hook confirmation required' },
+    { name: "grep", argumentsJson: "{}" },
+    { prompt: "hook confirmation required", trustTarget: undefined },
+    { kind: "needs-approval", request: { name: "grep" }, prompt: "hook confirmation required" },
   );
-  assert.deepEqual(gate, { prompt: 'hook confirmation required', trustTarget: undefined });
+  assert.deepEqual(gate, { prompt: "hook confirmation required", trustTarget: undefined });
 });

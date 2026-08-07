@@ -1,32 +1,26 @@
-import assert from 'node:assert/strict';
-import test from 'node:test';
+import assert from "node:assert/strict";
+import test from "node:test";
 
-import { buildAiSdkUserImageFilePartFromUrl } from './ai-sdk-image-url-part.js';
+import { buildAiSdkUserImageFilePartFromUrl } from "./ai-sdk-image-url-part.js";
 
-test('buildAiSdkUserImageFilePartFromUrl uses AI SDK 7 file part shape', () => {
-  assert.deepEqual(
-    buildAiSdkUserImageFilePartFromUrl('https://example.com/photo.png'),
-    {
-      type: 'file',
-      mediaType: 'image/*',
-      data: {
-        type: 'url',
-        url: 'https://example.com/photo.png',
-      },
+test("buildAiSdkUserImageFilePartFromUrl uses AI SDK 7 file part shape", () => {
+  assert.deepEqual(buildAiSdkUserImageFilePartFromUrl("https://example.com/photo.png"), {
+    type: "file",
+    mediaType: "image/*",
+    data: {
+      type: "url",
+      url: "https://example.com/photo.png",
     },
-  );
+  });
 });
 
-test('buildAiSdkUserImageFilePartFromUrl inlines data URLs as base64 file data', () => {
-  assert.deepEqual(
-    buildAiSdkUserImageFilePartFromUrl('data:image/png;base64,QUJD'),
-    {
-      type: 'file',
-      mediaType: 'image/png',
-      data: {
-        type: 'data',
-        data: 'QUJD',
-      },
+test("buildAiSdkUserImageFilePartFromUrl inlines data URLs as base64 file data", () => {
+  assert.deepEqual(buildAiSdkUserImageFilePartFromUrl("data:image/png;base64,QUJD"), {
+    type: "file",
+    mediaType: "image/png",
+    data: {
+      type: "data",
+      data: "QUJD",
     },
-  );
+  });
 });

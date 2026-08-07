@@ -2,7 +2,15 @@ import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 
 import i18n from "@/lib/i18n";
-import { ArrowLeft, ArrowLeftRight, Download, LoaderCircle, RefreshCw, Search, Sparkles } from "lucide-react";
+import {
+  ArrowLeft,
+  ArrowLeftRight,
+  Download,
+  LoaderCircle,
+  RefreshCw,
+  Search,
+  Sparkles,
+} from "lucide-react";
 
 import { MarkdownMessage } from "@/components/markdown-message";
 import { Badge } from "@/components/ui/badge";
@@ -81,12 +89,12 @@ function reviewStatusBadgeVariant(status: DesktopMarketplaceCatalogItem["default
 
 function reviewStatusLabel(status: DesktopMarketplaceCatalogItem["defaultReviewStatus"]) {
   if (status === "verified") {
-    return i18n.t('marketplace.verified');
+    return i18n.t("marketplace.verified");
   }
   if (status === "revoked") {
-    return i18n.t('marketplace.revoked');
+    return i18n.t("marketplace.revoked");
   }
-  return i18n.t('marketplace.unverified');
+  return i18n.t("marketplace.unverified");
 }
 
 function installedExtensionForCatalog(
@@ -103,9 +111,12 @@ function installedExtensionForCatalog(
 
 function installedBadgeLabel(installed: DesktopExtensionListItem, targetVersion: string) {
   if (installed.version === targetVersion) {
-    return i18n.t('marketplace.installedVersion', { version: installed.version });
+    return i18n.t("marketplace.installedVersion", { version: installed.version });
   }
-  return i18n.t('marketplace.updateAvailable', { current: installed.version, target: targetVersion });
+  return i18n.t("marketplace.updateAvailable", {
+    current: installed.version,
+    target: targetVersion,
+  });
 }
 
 export function MarketplaceView({
@@ -167,7 +178,7 @@ export function MarketplaceView({
   const installedItem = installedExtensionForCatalog(selectedCatalog, installedExtensions);
   /** 目录推荐 / registry 最新默认版本（无「选中版本」状态，仅此一处作为顶栏安装目标） */
   const latestVersion = selectedCatalog
-    ? selectedDetail?.defaultVersion ?? selectedCatalog.defaultVersion
+    ? (selectedDetail?.defaultVersion ?? selectedCatalog.defaultVersion)
     : "";
   /** 顶栏主按钮：仅「目录默认最新版 vs 本地已装版本」比较，无单独选中版本状态 */
   const headerPrimaryDisabled =
@@ -178,9 +189,9 @@ export function MarketplaceView({
     ? undefined
     : installedItem
       ? installedItem.version === latestVersion
-        ? t('marketplace.alreadyLatest')
-        : t('marketplace.goToVersionList')
-      : t('marketplace.installVersion', { version: latestVersion });
+        ? t("marketplace.alreadyLatest")
+        : t("marketplace.goToVersionList")
+      : t("marketplace.installVersion", { version: latestVersion });
   const selectedReadme = selectedCatalog ? readmeById[selectedCatalog.extensionId] : undefined;
 
   useEffect(() => {
@@ -314,7 +325,12 @@ export function MarketplaceView({
     try {
       const prepared = await onPrepareMarketplaceExtensionInstall(request);
       if (!prepared.supportsCurrentHost) {
-        setLocalError(t('marketplace.extensionNotSupported', { name: prepared.displayName, version: prepared.version }));
+        setLocalError(
+          t("marketplace.extensionNotSupported", {
+            name: prepared.displayName,
+            version: prepared.version,
+          }),
+        );
         return null;
       }
       setPendingInstall(null);
@@ -425,18 +441,26 @@ export function MarketplaceView({
   const listEmpty = filteredCatalog.length === 0 && !loadingCatalog;
 
   return (
-    <div data-spirit-surface="marketplace-shell" className={cn("flex min-h-0 min-w-0 flex-1 flex-col text-sm", desktopMicaTintClass(useMicaBackdrop))}>
+    <div
+      data-spirit-surface="marketplace-shell"
+      className={cn(
+        "flex min-h-0 min-w-0 flex-1 flex-col text-sm",
+        desktopMicaTintClass(useMicaBackdrop),
+      )}
+    >
       {detailExtensionId === null ? (
         <ScrollArea className="min-h-0 flex-1" type="hover" scrollHideDelay={450}>
-          <div
-            className={cn(
-              "mx-auto w-full px-3 pb-12 pt-6 sm:pt-7",
-              MARKETPLACE_LIST_W,
-            )}
-          >
+          <div className={cn("mx-auto w-full px-3 pb-12 pt-6 sm:pt-7", MARKETPLACE_LIST_W)}>
             <div className="flex flex-col items-center gap-6">
               <div className="flex w-full flex-col items-center gap-2">
-                <p className={cn("text-center text-lg tracking-tight text-foreground", FONT_WEIGHT_MEDIUM)}>{t('marketplace.title')}</p>
+                <p
+                  className={cn(
+                    "text-center text-lg tracking-tight text-foreground",
+                    FONT_WEIGHT_MEDIUM,
+                  )}
+                >
+                  {t("marketplace.title")}
+                </p>
                 <div className="flex w-full max-w-sm items-center gap-1.5">
                   <div
                     className={cn(
@@ -451,7 +475,7 @@ export function MarketplaceView({
                     <Input
                       value={searchText}
                       onChange={(event) => setSearchText(event.target.value)}
-                      placeholder={t('marketplace.searchPlaceholder')}
+                      placeholder={t("marketplace.searchPlaceholder")}
                       className="h-8 rounded-none border-0 bg-transparent pl-8 text-sm shadow-none focus-visible:border-transparent focus-visible:ring-0 dark:bg-transparent"
                     />
                   </div>
@@ -461,7 +485,7 @@ export function MarketplaceView({
                     size="icon"
                     className="size-8 shrink-0"
                     disabled={loadingCatalog || marketplaceBusy}
-                    title={t('marketplace.refreshCatalog')}
+                    title={t("marketplace.refreshCatalog")}
                     onClick={() => {
                       void refreshCatalog();
                     }}
@@ -477,50 +501,55 @@ export function MarketplaceView({
 
               {listEmpty ? (
                 <p className="text-center text-sm text-muted-foreground">
-                  {loadingCatalog ? t('marketplace.loadingCatalog') : t('marketplace.noMatches')}
+                  {loadingCatalog ? t("marketplace.loadingCatalog") : t("marketplace.noMatches")}
                 </p>
               ) : (
                 <div className="grid w-full grid-cols-1 gap-2 sm:grid-cols-2">
                   {filteredCatalog.map((item) => (
-                      <button
-                        key={item.extensionId}
-                        type="button"
-                        onClick={() => openDetail(item.extensionId)}
-                        className={cn(
-                          "flex w-full items-center gap-3 rounded-lg border border-border/60 bg-background px-3 py-2.5 text-left",
-                          "hover:border-border hover:bg-muted/30",
-                          "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/60",
-                        )}
-                      >
-                        {item.iconUrl ? (
-                          <img
-                            src={item.iconUrl}
-                            alt=""
-                            className="size-10 shrink-0 rounded-md border border-border/50 bg-muted object-cover"
-                          />
-                        ) : (
-                          <div className="flex size-10 shrink-0 items-center justify-center rounded-md border border-border/50 bg-muted text-muted-foreground">
-                            <Sparkles className="size-4" aria-hidden />
-                          </div>
-                        )}
-                        <span className="min-w-0 flex-1 space-y-1">
-                          <span className="flex flex-wrap items-center gap-1.5">
-                            <span className="truncate font-normal text-foreground">{item.displayName}</span>
-                            {item.featured ? (
-                              <Badge variant="secondary" className="text-[10px] font-normal">
-                                {t('marketplace.featured')}
-                              </Badge>
-                            ) : null}
-                            <Badge variant={reviewStatusBadgeVariant(item.defaultReviewStatus)} className="text-[10px]">
-                              {reviewStatusLabel(item.defaultReviewStatus)}
+                    <button
+                      key={item.extensionId}
+                      type="button"
+                      onClick={() => openDetail(item.extensionId)}
+                      className={cn(
+                        "flex w-full items-center gap-3 rounded-lg border border-border/60 bg-background px-3 py-2.5 text-left",
+                        "hover:border-border hover:bg-muted/30",
+                        "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/60",
+                      )}
+                    >
+                      {item.iconUrl ? (
+                        <img
+                          src={item.iconUrl}
+                          alt=""
+                          className="size-10 shrink-0 rounded-md border border-border/50 bg-muted object-cover"
+                        />
+                      ) : (
+                        <div className="flex size-10 shrink-0 items-center justify-center rounded-md border border-border/50 bg-muted text-muted-foreground">
+                          <Sparkles className="size-4" aria-hidden />
+                        </div>
+                      )}
+                      <span className="min-w-0 flex-1 space-y-1">
+                        <span className="flex flex-wrap items-center gap-1.5">
+                          <span className="truncate font-normal text-foreground">
+                            {item.displayName}
+                          </span>
+                          {item.featured ? (
+                            <Badge variant="secondary" className="text-[10px] font-normal">
+                              {t("marketplace.featured")}
                             </Badge>
-                          </span>
-                          <span className="line-clamp-2 text-xs leading-relaxed text-muted-foreground">
-                            {item.description}
-                          </span>
+                          ) : null}
+                          <Badge
+                            variant={reviewStatusBadgeVariant(item.defaultReviewStatus)}
+                            className="text-[10px]"
+                          >
+                            {reviewStatusLabel(item.defaultReviewStatus)}
+                          </Badge>
                         </span>
-                      </button>
-                    ))}
+                        <span className="line-clamp-2 text-xs leading-relaxed text-muted-foreground">
+                          {item.description}
+                        </span>
+                      </span>
+                    </button>
+                  ))}
                 </div>
               )}
             </div>
@@ -541,19 +570,20 @@ export function MarketplaceView({
                 onClick={closeDetail}
               >
                 <ArrowLeft className="size-4" aria-hidden />
-                {t('common.back')}
+                {t("common.back")}
               </Button>
             </div>
           </div>
 
           {!selectedCatalog ? (
             <div className="flex flex-1 items-center justify-center px-6 text-sm text-muted-foreground">
-              {t('marketplace.extensionNotFound')}
+              {t("marketplace.extensionNotFound")}
             </div>
           ) : (
             <ScrollArea className="min-h-0 flex-1" type="hover" scrollHideDelay={450}>
-              <div className={cn("mx-auto w-full space-y-4 px-3 pb-12 pt-5", MARKETPLACE_READING_W)}>
-
+              <div
+                className={cn("mx-auto w-full space-y-4 px-3 pb-12 pt-5", MARKETPLACE_READING_W)}
+              >
                 {/* 详情顶栏：图标与文本垂直居中；正文压缩为标题行 + 单行摘要（作者并入摘要前缀） */}
                 <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between sm:gap-6">
                   <div className="flex min-w-0 flex-1 items-center gap-3">
@@ -576,7 +606,10 @@ export function MarketplaceView({
                         <Badge variant="outline" className="text-[10px] font-normal">
                           {selectedCatalog.defaultChannel}
                         </Badge>
-                        <Badge variant={reviewStatusBadgeVariant(selectedCatalog.defaultReviewStatus)} className="text-[10px]">
+                        <Badge
+                          variant={reviewStatusBadgeVariant(selectedCatalog.defaultReviewStatus)}
+                          className="text-[10px]"
+                        >
                           {reviewStatusLabel(selectedCatalog.defaultReviewStatus)}
                         </Badge>
                         {installedItem ? (
@@ -589,7 +622,9 @@ export function MarketplaceView({
                         {selectedCatalog.author ? (
                           <span className="text-muted-foreground">{selectedCatalog.author}</span>
                         ) : null}
-                        {selectedCatalog.author ? <span className="text-muted-foreground/70"> · </span> : null}
+                        {selectedCatalog.author ? (
+                          <span className="text-muted-foreground/70"> · </span>
+                        ) : null}
                         {selectedCatalog.description}
                       </p>
                     </div>
@@ -611,7 +646,7 @@ export function MarketplaceView({
                       ) : (
                         <Download className="size-4" aria-hidden />
                       )}
-                      {installedItem ? t('marketplace.switch') : t('marketplace.install')}
+                      {installedItem ? t("marketplace.switch") : t("marketplace.install")}
                     </Button>
                   </div>
                 </div>
@@ -621,9 +656,9 @@ export function MarketplaceView({
                   <div className="flex flex-wrap gap-1 pt-0.5">
                     {(
                       [
-                        ["readme", t('marketplace.tabReadme')],
-                        ["changelog", t('marketplace.tabChangelog')],
-                        ["versions", t('marketplace.tabVersions')],
+                        ["readme", t("marketplace.tabReadme")],
+                        ["changelog", t("marketplace.tabChangelog")],
+                        ["versions", t("marketplace.tabVersions")],
                       ] as const
                     ).map(([tabId, label]) => (
                       <button
@@ -649,12 +684,12 @@ export function MarketplaceView({
                       {loadingReadmeId === selectedCatalog.extensionId ? (
                         <div className="flex items-center gap-2 text-sm text-muted-foreground">
                           <LoaderCircle className="size-4 animate-spin" aria-hidden />
-                          {t('common.loading')}
+                          {t("common.loading")}
                         </div>
                       ) : selectedReadme ? (
                         <MarkdownMessage content={selectedReadme} />
                       ) : (
-                        <p className="text-sm text-muted-foreground">{t('marketplace.noReadme')}</p>
+                        <p className="text-sm text-muted-foreground">{t("marketplace.noReadme")}</p>
                       )}
                     </div>
                   ) : null}
@@ -674,7 +709,9 @@ export function MarketplaceView({
                                   {version.channel}
                                 </Badge>
                               </div>
-                              <p className="mt-2 text-sm leading-relaxed text-foreground">{version.changelog.summary}</p>
+                              <p className="mt-2 text-sm leading-relaxed text-foreground">
+                                {version.changelog.summary}
+                              </p>
                               <p className="mt-2 whitespace-pre-wrap text-sm leading-relaxed text-muted-foreground">
                                 {version.changelog.body}
                               </p>
@@ -682,7 +719,9 @@ export function MarketplaceView({
                           ) : null,
                         )
                       ) : (
-                        <p className="text-sm text-muted-foreground">{t('marketplace.noChangelog')}</p>
+                        <p className="text-sm text-muted-foreground">
+                          {t("marketplace.noChangelog")}
+                        </p>
                       )}
                     </div>
                   ) : null}
@@ -692,7 +731,7 @@ export function MarketplaceView({
                       {loadingDetailId === selectedCatalog.extensionId && !selectedDetail ? (
                         <div className="flex items-center gap-2 py-3 text-sm text-muted-foreground">
                           <LoaderCircle className="size-4 animate-spin" aria-hidden />
-                          {t('marketplace.loadingVersions')}
+                          {t("marketplace.loadingVersions")}
                         </div>
                       ) : selectedDetail ? (
                         selectedDetail.versions.map((version) => {
@@ -706,30 +745,38 @@ export function MarketplaceView({
                               <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
                                 <div className="min-w-0 flex-1 space-y-2">
                                   <div className="flex flex-wrap items-center gap-2">
-                                    <span className="text-xs text-foreground">{version.version}</span>
+                                    <span className="text-xs text-foreground">
+                                      {version.version}
+                                    </span>
                                     <Badge variant="outline" className="text-[10px]">
                                       {version.channel}
                                     </Badge>
                                     <div className="flex flex-wrap gap-1">
                                       {version.supportedHosts.map((host) => (
-                                        <Badge key={host} variant="outline" className="text-[10px] font-normal">
+                                        <Badge
+                                          key={host}
+                                          variant="outline"
+                                          className="text-[10px] font-normal"
+                                        >
                                           {host}
                                         </Badge>
                                       ))}
                                     </div>
                                     {installedHere ? (
                                       <Badge variant="secondary" className="text-[10px]">
-                                        {t('marketplace.installed')}
+                                        {t("marketplace.installed")}
                                       </Badge>
                                     ) : null}
                                     {!desktopSupported ? (
                                       <Badge variant="destructive" className="text-[10px]">
-                                        {t('marketplace.unsupportedDesktop')}
+                                        {t("marketplace.unsupportedDesktop")}
                                       </Badge>
                                     ) : null}
                                   </div>
                                   {version.description ? (
-                                    <p className="text-sm leading-relaxed text-muted-foreground">{version.description}</p>
+                                    <p className="text-sm leading-relaxed text-muted-foreground">
+                                      {version.description}
+                                    </p>
                                   ) : null}
                                 </div>
                                 <div className="flex shrink-0 items-center justify-end sm:pl-2">
@@ -739,15 +786,17 @@ export function MarketplaceView({
                                     className="h-8 text-xs"
                                     title={
                                       installedHere
-                                        ? t('marketplace.currentVersionInUse')
-                                        : t('marketplace.switchToVersion', { version: version.version })
+                                        ? t("marketplace.currentVersionInUse")
+                                        : t("marketplace.switchToVersion", {
+                                            version: version.version,
+                                          })
                                     }
                                     disabled={marketplaceBusy || !desktopSupported || installedHere}
                                     onClick={() => {
                                       void requestInstallVersion(version.version);
                                     }}
                                   >
-                                    {t('marketplace.switch')}
+                                    {t("marketplace.switch")}
                                   </Button>
                                 </div>
                               </div>
@@ -774,13 +823,19 @@ export function MarketplaceView({
       >
         <DialogContent className="sm:max-w-lg" showCloseButton>
           <DialogHeader>
-            <DialogTitle>{t('marketplace.confirmSwitchUnverified')}</DialogTitle>
+            <DialogTitle>{t("marketplace.confirmSwitchUnverified")}</DialogTitle>
             <DialogDescription>
               {pendingInstall
                 ? pendingInstall.reviewStatus === "revoked"
-                  ? t('marketplace.revokedExtensionWarning', { name: pendingInstall.displayName, version: pendingInstall.version })
-                  : t('marketplace.unverifiedExtensionWarning', { name: pendingInstall.displayName, version: pendingInstall.version })
-                : t('marketplace.notVerifiedStatus')}
+                  ? t("marketplace.revokedExtensionWarning", {
+                      name: pendingInstall.displayName,
+                      version: pendingInstall.version,
+                    })
+                  : t("marketplace.unverifiedExtensionWarning", {
+                      name: pendingInstall.displayName,
+                      version: pendingInstall.version,
+                    })
+                : t("marketplace.notVerifiedStatus")}
             </DialogDescription>
           </DialogHeader>
 
@@ -792,31 +847,38 @@ export function MarketplaceView({
                 : "border border-border bg-muted/40 text-foreground",
             )}
           >
-            {t('marketplace.switchAdvice')}
+            {t("marketplace.switchAdvice")}
           </div>
 
           <DialogFooter>
             <DialogFooterActions>
-            <Button type="button" variant="outline" onClick={() => setPendingInstall(null)} disabled={marketplaceBusy}>
-              {t('common.cancel')}
-            </Button>
-            <Button
-              type="button"
-              size="sm"
-              onClick={() => {
-                if (!pendingInstall) {
-                  return;
-                }
-                void installSelectedVersion(true, {
-                  extensionId: pendingInstall.extensionId,
-                  version: pendingInstall.version,
-                });
-              }}
-              disabled={marketplaceBusy}
-            >
-              {marketplaceBusy ? <LoaderCircle className="size-4 animate-spin" aria-hidden /> : null}
-              {t('marketplace.continueSwitch')}
-            </Button>
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => setPendingInstall(null)}
+                disabled={marketplaceBusy}
+              >
+                {t("common.cancel")}
+              </Button>
+              <Button
+                type="button"
+                size="sm"
+                onClick={() => {
+                  if (!pendingInstall) {
+                    return;
+                  }
+                  void installSelectedVersion(true, {
+                    extensionId: pendingInstall.extensionId,
+                    version: pendingInstall.version,
+                  });
+                }}
+                disabled={marketplaceBusy}
+              >
+                {marketplaceBusy ? (
+                  <LoaderCircle className="size-4 animate-spin" aria-hidden />
+                ) : null}
+                {t("marketplace.continueSwitch")}
+              </Button>
             </DialogFooterActions>
           </DialogFooter>
         </DialogContent>

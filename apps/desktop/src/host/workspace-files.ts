@@ -1,28 +1,28 @@
-import { Buffer } from 'node:buffer';
-import { lstat, readFile, readdir, realpath, stat, writeFile } from 'node:fs/promises';
-import path from 'node:path';
+import { Buffer } from "node:buffer";
+import { lstat, readFile, readdir, realpath, stat, writeFile } from "node:fs/promises";
+import path from "node:path";
 
-import { resolveWorkspaceExplorerIgnoreFlags } from '@spiritagent/host-internal';
+import { resolveWorkspaceExplorerIgnoreFlags } from "@spiritagent/host-internal";
 import {
   detectSupportedImageFile,
   hasSupportedImageExtension,
-} from '@spiritagent/host-internal/image-file-support';
+} from "@spiritagent/host-internal/image-file-support";
 
-import i18n from '../lib/i18n-host.js';
+import i18n from "../lib/i18n-host.js";
 import type {
   ReadWorkspaceTextFileOptions,
   WorkspaceExplorerEntry,
   WorkspaceExplorerListResult,
   WorkspaceReadTextFileResult,
   WriteWorkspaceTextFileRequest,
-} from '../types.js';
+} from "../types.js";
 
 function isENOENT(error: unknown): boolean {
   return (
-    typeof error === 'object'
-    && error !== null
-    && 'code' in error
-    && (error as NodeJS.ErrnoException).code === 'ENOENT'
+    typeof error === "object" &&
+    error !== null &&
+    "code" in error &&
+    (error as NodeJS.ErrnoException).code === "ENOENT"
   );
 }
 
@@ -52,7 +52,7 @@ export function isBinaryTextFileBuffer(buffer: Buffer): boolean {
   try {
     // 截断前缀可能在多字节 UTF-8 序列中间切断；stream 模式允许末尾
     // 不完整序列，只有取到整个文件时才要求解码完全终结。
-    new TextDecoder('utf-8', { fatal: true }).decode(sample, {
+    new TextDecoder("utf-8", { fatal: true }).decode(sample, {
       stream: sample.length < buffer.length,
     });
     return false;
@@ -67,15 +67,15 @@ export function workspaceTextFileResultFromBuffer(
 ): WorkspaceReadTextFileResult {
   const image = detectSupportedImageFile(filePath, buffer);
   if (image) {
-    return { text: '', image: { mimeType: image.mimeType } };
+    return { text: "", image: { mimeType: image.mimeType } };
   }
   if (hasSupportedImageExtension(filePath)) {
-    return { text: '', binary: true };
+    return { text: "", binary: true };
   }
   if (isBinaryTextFileBuffer(buffer)) {
-    return { text: '', binary: true };
+    return { text: "", binary: true };
   }
-  return { text: buffer.toString('utf8') };
+  return { text: buffer.toString("utf8") };
 }
 
 /**
@@ -87,22 +87,22 @@ export async function resolveWorkspaceRelativePath(
 ): Promise<string> {
   const root = path.resolve(workspaceRoot);
   const canonicalRoot = await realpath(root);
-  const cleaned = relativePath.replace(/\0/g, '');
-  const posix = cleaned.replace(/\\/g, '/').trim();
-  if (posix.startsWith('/') || /^[a-zA-Z]:/.test(posix)) {
-    throw new Error(i18n.t('error.invalidPath'));
+  const cleaned = relativePath.replace(/\0/g, "");
+  const posix = cleaned.replace(/\\/g, "/").trim();
+  if (posix.startsWith("/") || /^[a-zA-Z]:/.test(posix)) {
+    throw new Error(i18n.t("error.invalidPath"));
   }
-  const segments = posix.split('/').filter((segment) => segment.length > 0);
+  const segments = posix.split("/").filter((segment) => segment.length > 0);
   for (const segment of segments) {
-    if (segment === '..' || segment === '.') {
-      throw new Error(i18n.t('error.invalidPath'));
+    if (segment === ".." || segment === ".") {
+      throw new Error(i18n.t("error.invalidPath"));
     }
   }
 
   const target = segments.length === 0 ? root : path.resolve(root, ...segments);
   const rel = path.relative(root, target);
-  if (rel.startsWith('..') || path.isAbsolute(rel)) {
-    throw new Error(i18n.t('error.pathOutsideWorkspace'));
+  if (rel.startsWith("..") || path.isAbsolute(rel)) {
+    throw new Error(i18n.t("error.pathOutsideWorkspace"));
   }
 
   let current = root;
@@ -111,10 +111,10 @@ export async function resolveWorkspaceRelativePath(
     try {
       const entry = await lstat(current);
       if (entry.isSymbolicLink()) {
-        throw new Error(i18n.t('error.pathContainsSymlink'));
+        throw new Error(i18n.t("error.pathContainsSymlink"));
       }
     } catch (error) {
-      if (error instanceof Error && error.message === i18n.t('error.pathContainsSymlink')) {
+      if (error instanceof Error && error.message === i18n.t("error.pathContainsSymlink")) {
         throw error;
       }
       break;
@@ -124,11 +124,11 @@ export async function resolveWorkspaceRelativePath(
   try {
     const canonicalTarget = await realpath(target);
     const canonicalRel = path.relative(canonicalRoot, canonicalTarget);
-    if (canonicalRel.startsWith('..') || path.isAbsolute(canonicalRel)) {
-      throw new Error(i18n.t('error.pathOutsideWorkspace'));
+    if (canonicalRel.startsWith("..") || path.isAbsolute(canonicalRel)) {
+      throw new Error(i18n.t("error.pathOutsideWorkspace"));
     }
   } catch (error) {
-    if (error instanceof Error && error.message === i18n.t('error.pathOutsideWorkspace')) {
+    if (error instanceof Error && error.message === i18n.t("error.pathOutsideWorkspace")) {
       throw error;
     }
   }
@@ -152,24 +152,29 @@ export async function listWorkspaceExplorerChildren(
   }
   const dirents = await readdir(dir, { withFileTypes: true });
   const entries: WorkspaceExplorerEntry[] = dirents
-    .filter((dirent) => dirent.name && dirent.name !== '.' && dirent.name !== '..')
+    .filter((dirent) => dirent.name && dirent.name !== "." && dirent.name !== "..")
     .map((dirent) => ({
       name: dirent.name,
-      kind: dirent.isDirectory() ? 'dir' : 'file',
+      kind: dirent.isDirectory() ? "dir" : "file",
     }));
   entries.sort((left, right) => {
     if (left.kind !== right.kind) {
-      return left.kind === 'dir' ? -1 : 1;
+      return left.kind === "dir" ? -1 : 1;
     }
-    return left.name.localeCompare(right.name, undefined, { sensitivity: 'base' });
+    return left.name.localeCompare(right.name, undefined, { sensitivity: "base" });
   });
 
-  const normalizedParent = relativePath.replace(/\\/g, '/').trim();
+  const normalizedParent = relativePath.replace(/\\/g, "/").trim();
   let ignoreFlags: boolean[];
   try {
-    ignoreFlags = await resolveWorkspaceExplorerIgnoreFlags(workspaceRoot, normalizedParent, entries, {
-      preferInProcess: true,
-    });
+    ignoreFlags = await resolveWorkspaceExplorerIgnoreFlags(
+      workspaceRoot,
+      normalizedParent,
+      entries,
+      {
+        preferInProcess: true,
+      },
+    );
   } catch {
     ignoreFlags = entries.map(() => false);
   }
@@ -187,9 +192,9 @@ export async function readWorkspaceTextFile(
   relativePath: string,
   options?: ReadWorkspaceTextFileOptions,
 ): Promise<WorkspaceReadTextFileResult> {
-  const posix = relativePath.replace(/\0/g, '').replace(/\\/g, '/').trim();
+  const posix = relativePath.replace(/\0/g, "").replace(/\\/g, "/").trim();
   if (!posix) {
-    throw new Error(i18n.t('error.noFilePath'));
+    throw new Error(i18n.t("error.noFilePath"));
   }
   const filePath = await resolveWorkspaceRelativePath(workspaceRoot, relativePath);
   let fileStat;
@@ -197,15 +202,15 @@ export async function readWorkspaceTextFile(
     fileStat = await stat(filePath);
   } catch (statError) {
     if (options?.optional && isENOENT(statError)) {
-      return { text: '' };
+      return { text: "" };
     }
-    throw new Error(i18n.t('error.fileNotAccessible'));
+    throw new Error(i18n.t("error.fileNotAccessible"));
   }
   if (!fileStat.isFile()) {
-    throw new Error(i18n.t('error.notAFile'));
+    throw new Error(i18n.t("error.notAFile"));
   }
   if (fileStat.size > maxReadableFileBytes(filePath)) {
-    throw new Error(i18n.t('error.fileTooLarge'));
+    throw new Error(i18n.t("error.fileTooLarge"));
   }
   const buffer = await readFile(filePath);
   return workspaceTextFileResultFromBuffer(buffer, filePath);
@@ -215,23 +220,23 @@ export async function writeWorkspaceTextFile(
   workspaceRoot: string,
   request: WriteWorkspaceTextFileRequest,
 ): Promise<void> {
-  const posix = request.relativePath.replace(/\0/g, '').replace(/\\/g, '/').trim();
+  const posix = request.relativePath.replace(/\0/g, "").replace(/\\/g, "/").trim();
   if (!posix) {
-    throw new Error(i18n.t('error.noFilePath'));
+    throw new Error(i18n.t("error.noFilePath"));
   }
   const filePath = await resolveWorkspaceRelativePath(workspaceRoot, request.relativePath);
   let fileStat;
   try {
     fileStat = await stat(filePath);
   } catch {
-    throw new Error(i18n.t('error.fileNotAccessible'));
+    throw new Error(i18n.t("error.fileNotAccessible"));
   }
   if (!fileStat.isFile()) {
-    throw new Error(i18n.t('error.onlyRegularFile'));
+    throw new Error(i18n.t("error.onlyRegularFile"));
   }
-  const bytes = Buffer.byteLength(request.text, 'utf8');
+  const bytes = Buffer.byteLength(request.text, "utf8");
   if (bytes > WORKSPACE_TEXT_FILE_MAX_BYTES) {
-    throw new Error(i18n.t('error.contentTooLarge'));
+    throw new Error(i18n.t("error.contentTooLarge"));
   }
-  await writeFile(filePath, request.text, 'utf8');
+  await writeFile(filePath, request.text, "utf8");
 }

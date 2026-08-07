@@ -17,8 +17,8 @@ export function normalizeAbsolutePathInput(input: string): string {
 }
 
 export function workspaceFileBasename(relativePath: string): string {
-  const normalized = relativePath.replace(/\/+$/u, '');
-  const segments = normalized.split('/');
+  const normalized = relativePath.replace(/\/+$/u, "");
+  const segments = normalized.split("/");
   return segments[segments.length - 1] || normalized;
 }
 
@@ -30,7 +30,7 @@ export function isMarkdownPath(path: string): boolean {
 export function toWorkspaceFileReferenceQueryInput(trimmed: string): string {
   const normalized = trimmed.trim();
   if (!normalized) {
-    return '@';
+    return "@";
   }
-  return normalized.startsWith('@') ? normalized : `@${normalized}`;
+  return normalized.startsWith("@") ? normalized : `@${normalized}`;
 }

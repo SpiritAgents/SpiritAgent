@@ -3,7 +3,7 @@ import {
   type ModelEntryV2,
   type ModelRef,
   type ProviderGroupV2,
-} from '@spiritagent/host-internal';
+} from "@spiritagent/host-internal";
 
 import type {
   DesktopAlibabaBillingMode,
@@ -14,8 +14,8 @@ import type {
   DesktopStepfunBillingMode,
   DesktopTransportKind,
   ModelProfileSnapshot,
-} from '../types.js';
-import type { DesktopConfigFile } from './storage.js';
+} from "../types.js";
+import type { DesktopConfigFile } from "./storage.js";
 
 export interface ResolvedModelProfile extends ModelProfileSnapshot {
   groupId: string;
@@ -23,7 +23,7 @@ export interface ResolvedModelProfile extends ModelProfileSnapshot {
 }
 
 export function flattenProviderGroups(
-  config: Pick<DesktopConfigFile, 'providerGroups'>,
+  config: Pick<DesktopConfigFile, "providerGroups">,
 ): ResolvedModelProfile[] {
   const resolved: ResolvedModelProfile[] = [];
   for (const group of config.providerGroups) {
@@ -51,17 +51,22 @@ export function resolveModelProfileFromParts(
     name: model.name,
     apiBase: group.apiBase,
     reasoningEffort: model.reasoningEffort as DesktopModelReasoningEffort,
-    ...(model.reasoningMode === 'pro' ? { reasoningMode: 'pro' as const } : {}),
+    ...(model.reasoningMode === "pro" ? { reasoningMode: "pro" as const } : {}),
     ...(model.thinkingEnabled === false ? { thinkingEnabled: false } : {}),
     ...(model.supportedReasoningEfforts !== undefined
-      ? { supportedReasoningEfforts: model.supportedReasoningEfforts as DesktopModelReasoningEffort[] }
+      ? {
+          supportedReasoningEfforts:
+            model.supportedReasoningEfforts as DesktopModelReasoningEffort[],
+        }
       : {}),
     ...(model.capabilities !== undefined
       ? { capabilities: model.capabilities as DesktopModelCapability[] }
       : {}),
     provider: group.provider as DesktopModelProvider,
     ...(group.transportKind ? { transportKind: group.transportKind as DesktopTransportKind } : {}),
-    ...(group.providerSite ? { providerSite: group.providerSite as ResolvedModelProfile['providerSite'] } : {}),
+    ...(group.providerSite
+      ? { providerSite: group.providerSite as ResolvedModelProfile["providerSite"] }
+      : {}),
     ...(group.alibabaWorkspaceId ? { alibabaWorkspaceId: group.alibabaWorkspaceId } : {}),
     ...(group.alibabaBillingMode
       ? { alibabaBillingMode: group.alibabaBillingMode as DesktopAlibabaBillingMode }
@@ -88,7 +93,7 @@ export function resolveModelProfileFromParts(
 }
 
 export function resolveModelProfile(
-  config: Pick<DesktopConfigFile, 'providerGroups'>,
+  config: Pick<DesktopConfigFile, "providerGroups">,
   ref: ModelRef | undefined,
 ): ResolvedModelProfile | null {
   if (!ref?.groupId?.trim() || !ref?.name?.trim()) {
@@ -106,7 +111,7 @@ export function resolveModelProfile(
 }
 
 export function findProviderGroup(
-  config: Pick<DesktopConfigFile, 'providerGroups'>,
+  config: Pick<DesktopConfigFile, "providerGroups">,
   groupId: string,
 ): ProviderGroupV2 | undefined {
   const normalized = groupId.trim();
@@ -117,7 +122,7 @@ export function findProviderGroup(
 }
 
 export function modelExistsInGroup(
-  config: Pick<DesktopConfigFile, 'providerGroups'>,
+  config: Pick<DesktopConfigFile, "providerGroups">,
   groupId: string,
   name: string,
 ): boolean {
@@ -128,7 +133,7 @@ export function modelExistsInGroup(
   return group.models.some((model) => model.name === name.trim());
 }
 
-export function listAllModelRefs(config: Pick<DesktopConfigFile, 'providerGroups'>): ModelRef[] {
+export function listAllModelRefs(config: Pick<DesktopConfigFile, "providerGroups">): ModelRef[] {
   const refs: ModelRef[] = [];
   for (const group of config.providerGroups) {
     for (const model of group.models) {
@@ -138,42 +143,44 @@ export function listAllModelRefs(config: Pick<DesktopConfigFile, 'providerGroups
   return refs;
 }
 
-export function firstModelRef(config: Pick<DesktopConfigFile, 'providerGroups'>): ModelRef {
+export function firstModelRef(config: Pick<DesktopConfigFile, "providerGroups">): ModelRef {
   const firstGroup = config.providerGroups[0];
   const firstModel = firstGroup?.models[0];
   if (!firstGroup || !firstModel) {
-    return { groupId: '', name: '' };
+    return { groupId: "", name: "" };
   }
   return { groupId: firstGroup.id, name: firstModel.name };
 }
 
 export function modelRefExists(
-  config: Pick<DesktopConfigFile, 'providerGroups'>,
+  config: Pick<DesktopConfigFile, "providerGroups">,
   ref: ModelRef | undefined,
 ): boolean {
   return resolveModelProfile(config, ref) !== null;
 }
 
-export function resolveActiveModelProfile(
-  config: DesktopConfigFile,
-): ResolvedModelProfile | null {
+export function resolveActiveModelProfile(config: DesktopConfigFile): ResolvedModelProfile | null {
   return resolveModelProfile(config, config.activeModel);
 }
 
-export function modelSupportsImageGeneration(model: Pick<ModelProfileSnapshot, 'capabilities'>): boolean {
-  return model.capabilities?.includes('imageGeneration') === true;
+export function modelSupportsImageGeneration(
+  model: Pick<ModelProfileSnapshot, "capabilities">,
+): boolean {
+  return model.capabilities?.includes("imageGeneration") === true;
 }
 
-export function modelSupportsVideoGeneration(model: Pick<ModelProfileSnapshot, 'capabilities'>): boolean {
-  return model.capabilities?.includes('videoGeneration') === true;
+export function modelSupportsVideoGeneration(
+  model: Pick<ModelProfileSnapshot, "capabilities">,
+): boolean {
+  return model.capabilities?.includes("videoGeneration") === true;
 }
 
-export function modelSupportsChat(model: Pick<ModelProfileSnapshot, 'capabilities'>): boolean {
-  return model.capabilities === undefined || model.capabilities.includes('chat');
+export function modelSupportsChat(model: Pick<ModelProfileSnapshot, "capabilities">): boolean {
+  return model.capabilities === undefined || model.capabilities.includes("chat");
 }
 
 export function findModelRefByName(
-  config: Pick<DesktopConfigFile, 'providerGroups'>,
+  config: Pick<DesktopConfigFile, "providerGroups">,
   name: string,
 ): ModelRef | undefined {
   const trimmed = name.trim();
@@ -190,7 +197,7 @@ export function findModelRefByName(
 }
 
 export function resolvePaneModelRef(
-  config: Pick<DesktopConfigFile, 'providerGroups'>,
+  config: Pick<DesktopConfigFile, "providerGroups">,
   ref: ModelRef | undefined,
 ): ModelRef | undefined {
   if (!ref?.name?.trim()) {
@@ -208,15 +215,19 @@ export function resolvePaneModelRef(
 
 export function normalizeSlotModelRef(
   value: unknown,
-  config: Pick<DesktopConfigFile, 'providerGroups'>,
+  config: Pick<DesktopConfigFile, "providerGroups">,
   predicate: (profile: ResolvedModelProfile) => boolean,
 ): ModelRef | undefined {
-  const ref = typeof value === 'object' && value !== null
-    ? {
-        groupId: typeof (value as ModelRef).groupId === 'string' ? (value as ModelRef).groupId.trim() : '',
-        name: typeof (value as ModelRef).name === 'string' ? (value as ModelRef).name.trim() : '',
-      }
-    : undefined;
+  const ref =
+    typeof value === "object" && value !== null
+      ? {
+          groupId:
+            typeof (value as ModelRef).groupId === "string"
+              ? (value as ModelRef).groupId.trim()
+              : "",
+          name: typeof (value as ModelRef).name === "string" ? (value as ModelRef).name.trim() : "",
+        }
+      : undefined;
   if (!ref?.groupId || !ref?.name) {
     return undefined;
   }

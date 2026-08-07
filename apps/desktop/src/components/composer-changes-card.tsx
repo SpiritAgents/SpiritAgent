@@ -27,7 +27,9 @@ export function ComposerChangesCard({
       onClick={onOpenGitTab}
       aria-label={t("composer.changesAria")}
     >
-      <span className="font-sans text-xs font-normal leading-none text-muted-foreground">{t("composer.changes")}</span>
+      <span className="font-sans text-xs font-normal leading-none text-muted-foreground">
+        {t("composer.changes")}
+      </span>
       <EditFileLineDeltaBadge delta={delta} className="font-normal" />
     </button>
   );

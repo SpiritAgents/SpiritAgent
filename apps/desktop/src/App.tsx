@@ -53,12 +53,12 @@ import {
   type ShellOverlayPhase,
 } from "@/lib/desktop-shell";
 import { isMarkdownPath } from "@/lib/file-picker-path";
-import { isWorkspaceReferenceDirectoryPath, normalizeWorkspaceReferenceDirectoryPath } from "@spiritagent/host-internal/workspace-file-reference-query";
-import { tryHandleDesktopWorkspaceLink } from "@/lib/workspace-navigation-link";
 import {
-  applyUiLayoutScaleToDocument,
-  UI_LAYOUT_SCALE_ROOT_ID,
-} from "@/lib/ui-layout-scale";
+  isWorkspaceReferenceDirectoryPath,
+  normalizeWorkspaceReferenceDirectoryPath,
+} from "@spiritagent/host-internal/workspace-file-reference-query";
+import { tryHandleDesktopWorkspaceLink } from "@/lib/workspace-navigation-link";
+import { applyUiLayoutScaleToDocument, UI_LAYOUT_SCALE_ROOT_ID } from "@/lib/ui-layout-scale";
 import { resolveOnboardingVisible } from "@/lib/onboarding";
 import { cn } from "@/lib/utils";
 
@@ -97,11 +97,11 @@ export default function App() {
   const sessionMessages = snapshot?.conversation.messages ?? [];
   const sessionNavigationBusy = runtime.busyAction === "session";
   const newSessionBusy = runtime.busyAction === "reset";
-  const conversationNavigationPending =
-    sessionNavigationBusy || runtime.layoutNavigationPending;
-  const activeFilePath = runtime.hostKind === "web"
-    ? (runtime.viewingSessionPath ?? snapshot?.activeSession?.filePath ?? null)
-    : (snapshot?.activeSession?.filePath ?? null);
+  const conversationNavigationPending = sessionNavigationBusy || runtime.layoutNavigationPending;
+  const activeFilePath =
+    runtime.hostKind === "web"
+      ? (runtime.viewingSessionPath ?? snapshot?.activeSession?.filePath ?? null)
+      : (snapshot?.activeSession?.filePath ?? null);
   const sidebarActiveFilePath = useSettledSidebarActivePath(
     activeFilePath,
     conversationNavigationPending,
@@ -114,7 +114,6 @@ export default function App() {
   const conversationAbortShortcutTargetRef = useRef<ConversationAbortShortcutTarget>({
     eligible: false,
   });
-
 
   // Hook order is intentional — do not reorder without checking cross-hook deps:
   // 1. surfaceNav — session surface routing; handleGenerateAutomation reads composerAutomationApiRef
@@ -186,7 +185,6 @@ export default function App() {
     },
   });
 
-
   const messageRewind = useMessageRewind({
     runtime,
     messages: conversation.messages,
@@ -219,22 +217,14 @@ export default function App() {
     dismissedThisSession: onboardingDismissed,
   });
   const launchSplashActive =
-    snapshot === null &&
-    !runtime.hostConnectionError.trim() &&
-    !runtime.runtimeError.trim();
-  const launchSplashOverlayUp =
-    launchSplashPhase === "running" || launchSplashPhase === "leaving";
-  const onboardingOverlayUp =
-    onboardingPhase === "running" || onboardingPhase === "leaving";
+    snapshot === null && !runtime.hostConnectionError.trim() && !runtime.runtimeError.trim();
+  const launchSplashOverlayUp = launchSplashPhase === "running" || launchSplashPhase === "leaving";
+  const onboardingOverlayUp = onboardingPhase === "running" || onboardingPhase === "leaving";
   /** 全屏 overlay 挂载期间隐藏 app-body；Mica leaving 时改由 CSS opacity 交叉淡入。 */
   const shellUnderlayHidden =
-    launchSplashActive ||
-    onboardingVisible ||
-    launchSplashOverlayUp ||
-    onboardingOverlayUp;
+    launchSplashActive || onboardingVisible || launchSplashOverlayUp || onboardingOverlayUp;
   const appBodyMicaCrossfade =
-    useMicaBackdrop &&
-    (launchSplashPhase === "leaving" || onboardingPhase === "leaving");
+    useMicaBackdrop && (launchSplashPhase === "leaving" || onboardingPhase === "leaving");
   const appBodyInvisible = shellUnderlayHidden && !appBodyMicaCrossfade;
 
   const handleOnboardingDone = useCallback(() => {
@@ -272,450 +262,493 @@ export default function App() {
 
   if (runtime.webHostPairingRequired && runtime.hostKind === "web" && !snapshot) {
     return (
-      <WebHostPairingGate
-        busy={runtime.busyAction === "bootstrap"}
-        onPair={runtime.pairWebHost}
-      />
+      <WebHostPairingGate busy={runtime.busyAction === "bootstrap"} onPair={runtime.pairWebHost} />
     );
   }
 
   return (
     <WorkspaceMarkdownLinkProvider onLinkClick={handleWorkspaceMarkdownLinkClick}>
-    <SessionSidebarChromeProvider apiRef={surfaceNav.sessionSidebarChromeApiRef}>
-    <div
-      data-spirit-surface="desktop-chrome-root"
-      className="flex h-full min-h-0 flex-col text-foreground"
-    >
-      {winElectronChrome ? (
-        <DesktopTitleBar
-          useMicaBackdrop={useMicaBackdrop}
-          onZoomIn={uiLayoutScale.zoomIn}
-          onZoomOut={uiLayoutScale.zoomOut}
-          onZoomReset={uiLayoutScale.resetScale}
-        />
-      ) : null}
-      <div
-        id={UI_LAYOUT_SCALE_ROOT_ID}
-        className="flex min-h-0 min-w-0 flex-1 flex-col"
-      >
-    <div
-      data-spirit-surface="app-shell"
-      data-spirit-shell-kind={isElectronShell ? "electron" : "web"}
-      data-spirit-mica={useMicaBackdrop ? "true" : "false"}
-      className={cn(
-        "flex h-full min-h-0 flex-col",
-        useMicaBackdrop ? "bg-transparent" : "bg-background",
-      )}
-    >
-      <LaunchSplash
-        active={launchSplashActive}
-        useMicaBackdrop={useMicaBackdrop}
-        onPhaseChange={setLaunchSplashPhase}
-      />
-      <OnboardingWizard
-        active={onboardingVisible}
-        useMicaBackdrop={useMicaBackdrop}
-        settings={runtime.settings}
-        onSavePatch={runtime.saveSettingsPatch}
-        modelsBusy={runtime.busyAction === "models"}
-        modelsPreviewBusy={runtime.busyAction === "modelsPreview"}
-        onAddModel={runtime.addModel}
-        onAddProviderModels={runtime.addProviderModels}
-        onPreviewModels={runtime.previewModels}
-        onDone={handleOnboardingDone}
-        onPhaseChange={setOnboardingPhase}
-      />
-      <div
-        data-spirit-surface="app-body"
-        className={cn(
-          "flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden",
-          appBodyInvisible && "invisible",
-        )}
-      >
-        {!desktopTitleBarChrome ? (
-          <div
-            className={cn(
-              "h-px w-full shrink-0",
-              // 非 Electron：壳顶部分隔线
-              useMicaBackdrop
-                ? "bg-black/5 dark:bg-white/10"
-                : "bg-border/30 dark:bg-white/12",
-            )}
-            role="separator"
-            aria-orientation="horizontal"
-          />
-        ) : null}
-        <div data-spirit-surface="main-frame" className="flex min-h-0 min-w-0 flex-1 overflow-hidden">
-        <ConversationSplitProvider
-          runtime={runtime}
-          snapshot={snapshot}
-          conversationAbortShortcutTargetRef={conversationAbortShortcutTargetRef}
-          registerBeginSideChat={registerBeginSideChat}
-          onEnsureConversationSurface={() => {
-            surfaceNav.setLastNonSettingsSurface("conversation");
-            surfaceNav.setActiveSurface("conversation");
-          }}
+      <SessionSidebarChromeProvider apiRef={surfaceNav.sessionSidebarChromeApiRef}>
+        <div
+          data-spirit-surface="desktop-chrome-root"
+          className="flex h-full min-h-0 flex-col text-foreground"
         >
-        <ConversationSessionFocusComposerBridge
-          composerSessionKey={conversation.composerSessionKey}
-          enabled={
-            snapshot != null
-            && surfaceNav.activeSurface === "conversation"
-            && !surfaceNav.settingsMode
-            && !sessionNavigationBusy
-            && !runtime.layoutNavigationPending
-            && !newSessionBusy
-          }
-          composerAutomationApiRef={composerAutomationApiRef}
-        />
-        <SessionSidebarShell useMicaBackdrop={useMicaBackdrop}>
-          <SessionSidebar
-            narrow={false}
-            mode={surfaceNav.settingsMode ? "settings" : "sessions"}
-            userHomeDirectory={snapshot?.userHomeDirectory ?? null}
-            sessions={runtime.sessions}
-            activeFilePath={sidebarActiveFilePath}
-            onNewSession={surfaceNav.handleNewSession}
-            onNewSessionInWorkspace={(workspaceRoot) => {
-              void surfaceNav.handleNewSessionInWorkspace(workspaceRoot);
-            }}
-            onSelectSession={(path) => {
-              surfaceNav.setLastNonSettingsSurface("conversation");
-              surfaceNav.setActiveSurface("conversation");
-              void runtime.openSession(path);
-            }}
-            onOpenMarketplace={() => {
-              surfaceNav.sessionSidebarChromeApiRef.current?.openSidebar();
-              surfaceNav.setLastNonSettingsSurface("marketplace");
-              surfaceNav.setActiveSurface("marketplace");
-            }}
-            onOpenAutomations={() => {
-              surfaceNav.sessionSidebarChromeApiRef.current?.openSidebar();
-              surfaceNav.setLastNonSettingsSurface("automations");
-              surfaceNav.setSelectedAutomationId(null);
-              surfaceNav.setActiveSurface("automations");
-            }}
-            onOpenSettings={surfaceNav.handleOpenSettings}
-            onBackToSessions={surfaceNav.handleCloseSettings}
-            marketplaceActive={surfaceNav.marketplaceMode}
-            automationsActive={surfaceNav.automationsMode}
-            settingsTab={surfaceNav.settingsTab}
-            extensionSettingsId={surfaceNav.extensionSettingsId}
-            extensionSettingsItems={surfaceNav.extensionSettingsItems}
-            onSettingsTabChange={(tab) => {
-              surfaceNav.setExtensionSettingsId(null);
-              surfaceNav.setSettingsTab(tab);
-            }}
-            onExtensionSettingsChange={(id) => surfaceNav.setExtensionSettingsId(id)}
-            micaStyle={useMicaBackdrop}
-            newSessionBusy={newSessionBusy}
-            sessionNavigationBusy={sessionNavigationBusy}
-            deleteSessionBusy={sessionNavigationBusy}
-            onDeleteSession={(path) => runtime.deleteSession(path)}
-            renameSessionBusy={sessionNavigationBusy}
-            onRenameSession={(path, displayName) => runtime.renameSession(path, displayName)}
-            deleteWorkspaceBusy={sessionNavigationBusy}
-            onDeleteWorkspace={(workspacePath) => runtime.deleteWorkspace(workspacePath)}
-            unseenCompletedSessionPaths={runtime.unseenCompletedSessionPaths}
-          />
-        </SessionSidebarShell>
+          {winElectronChrome ? (
+            <DesktopTitleBar
+              useMicaBackdrop={useMicaBackdrop}
+              onZoomIn={uiLayoutScale.zoomIn}
+              onZoomOut={uiLayoutScale.zoomOut}
+              onZoomReset={uiLayoutScale.resetScale}
+            />
+          ) : null}
+          <div id={UI_LAYOUT_SCALE_ROOT_ID} className="flex min-h-0 min-w-0 flex-1 flex-col">
+            <div
+              data-spirit-surface="app-shell"
+              data-spirit-shell-kind={isElectronShell ? "electron" : "web"}
+              data-spirit-mica={useMicaBackdrop ? "true" : "false"}
+              className={cn(
+                "flex h-full min-h-0 flex-col",
+                useMicaBackdrop ? "bg-transparent" : "bg-background",
+              )}
+            >
+              <LaunchSplash
+                active={launchSplashActive}
+                useMicaBackdrop={useMicaBackdrop}
+                onPhaseChange={setLaunchSplashPhase}
+              />
+              <OnboardingWizard
+                active={onboardingVisible}
+                useMicaBackdrop={useMicaBackdrop}
+                settings={runtime.settings}
+                onSavePatch={runtime.saveSettingsPatch}
+                modelsBusy={runtime.busyAction === "models"}
+                modelsPreviewBusy={runtime.busyAction === "modelsPreview"}
+                onAddModel={runtime.addModel}
+                onAddProviderModels={runtime.addProviderModels}
+                onPreviewModels={runtime.previewModels}
+                onDone={handleOnboardingDone}
+                onPhaseChange={setOnboardingPhase}
+              />
+              <div
+                data-spirit-surface="app-body"
+                className={cn(
+                  "flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden",
+                  appBodyInvisible && "invisible",
+                )}
+              >
+                {!desktopTitleBarChrome ? (
+                  <div
+                    className={cn(
+                      "h-px w-full shrink-0",
+                      // 非 Electron：壳顶部分隔线
+                      useMicaBackdrop
+                        ? "bg-black/5 dark:bg-white/10"
+                        : "bg-border/30 dark:bg-white/12",
+                    )}
+                    role="separator"
+                    aria-orientation="horizontal"
+                  />
+                ) : null}
+                <div
+                  data-spirit-surface="main-frame"
+                  className="flex min-h-0 min-w-0 flex-1 overflow-hidden"
+                >
+                  <ConversationSplitProvider
+                    runtime={runtime}
+                    snapshot={snapshot}
+                    conversationAbortShortcutTargetRef={conversationAbortShortcutTargetRef}
+                    registerBeginSideChat={registerBeginSideChat}
+                    onEnsureConversationSurface={() => {
+                      surfaceNav.setLastNonSettingsSurface("conversation");
+                      surfaceNav.setActiveSurface("conversation");
+                    }}
+                  >
+                    <ConversationSessionFocusComposerBridge
+                      composerSessionKey={conversation.composerSessionKey}
+                      enabled={
+                        snapshot != null &&
+                        surfaceNav.activeSurface === "conversation" &&
+                        !surfaceNav.settingsMode &&
+                        !sessionNavigationBusy &&
+                        !runtime.layoutNavigationPending &&
+                        !newSessionBusy
+                      }
+                      composerAutomationApiRef={composerAutomationApiRef}
+                    />
+                    <SessionSidebarShell useMicaBackdrop={useMicaBackdrop}>
+                      <SessionSidebar
+                        narrow={false}
+                        mode={surfaceNav.settingsMode ? "settings" : "sessions"}
+                        userHomeDirectory={snapshot?.userHomeDirectory ?? null}
+                        sessions={runtime.sessions}
+                        activeFilePath={sidebarActiveFilePath}
+                        onNewSession={surfaceNav.handleNewSession}
+                        onNewSessionInWorkspace={(workspaceRoot) => {
+                          void surfaceNav.handleNewSessionInWorkspace(workspaceRoot);
+                        }}
+                        onSelectSession={(path) => {
+                          surfaceNav.setLastNonSettingsSurface("conversation");
+                          surfaceNav.setActiveSurface("conversation");
+                          void runtime.openSession(path);
+                        }}
+                        onOpenMarketplace={() => {
+                          surfaceNav.sessionSidebarChromeApiRef.current?.openSidebar();
+                          surfaceNav.setLastNonSettingsSurface("marketplace");
+                          surfaceNav.setActiveSurface("marketplace");
+                        }}
+                        onOpenAutomations={() => {
+                          surfaceNav.sessionSidebarChromeApiRef.current?.openSidebar();
+                          surfaceNav.setLastNonSettingsSurface("automations");
+                          surfaceNav.setSelectedAutomationId(null);
+                          surfaceNav.setActiveSurface("automations");
+                        }}
+                        onOpenSettings={surfaceNav.handleOpenSettings}
+                        onBackToSessions={surfaceNav.handleCloseSettings}
+                        marketplaceActive={surfaceNav.marketplaceMode}
+                        automationsActive={surfaceNav.automationsMode}
+                        settingsTab={surfaceNav.settingsTab}
+                        extensionSettingsId={surfaceNav.extensionSettingsId}
+                        extensionSettingsItems={surfaceNav.extensionSettingsItems}
+                        onSettingsTabChange={(tab) => {
+                          surfaceNav.setExtensionSettingsId(null);
+                          surfaceNav.setSettingsTab(tab);
+                        }}
+                        onExtensionSettingsChange={(id) => surfaceNav.setExtensionSettingsId(id)}
+                        micaStyle={useMicaBackdrop}
+                        newSessionBusy={newSessionBusy}
+                        sessionNavigationBusy={sessionNavigationBusy}
+                        deleteSessionBusy={sessionNavigationBusy}
+                        onDeleteSession={(path) => runtime.deleteSession(path)}
+                        renameSessionBusy={sessionNavigationBusy}
+                        onRenameSession={(path, displayName) =>
+                          runtime.renameSession(path, displayName)
+                        }
+                        deleteWorkspaceBusy={sessionNavigationBusy}
+                        onDeleteWorkspace={(workspacePath) =>
+                          runtime.deleteWorkspace(workspacePath)
+                        }
+                        unseenCompletedSessionPaths={runtime.unseenCompletedSessionPaths}
+                      />
+                    </SessionSidebarShell>
 
-        {surfaceNav.settingsMode ? (
-          <div data-spirit-surface="settings-shell" className={cn("flex min-h-0 min-w-0 flex-1 flex-col", desktopMicaTintInnerClass(useMicaBackdrop))}>
-            <DesktopLayoutChromeBar
-              useMicaBackdrop={useMicaBackdrop}
-              showWorkspaceToggle={false}
-            />
-            <SettingsView
-              useMicaBackdrop={useMicaBackdrop}
-              tab={surfaceNav.settingsTab}
-              extensionSettingsId={surfaceNav.extensionSettingsId}
-              font={font}
-              onFontChange={setFont}
-              clickablePointerCursor={clickablePointerCursor}
-              onClickablePointerCursorChange={setClickablePointerCursor}
-              settings={runtime.settings}
-              snapshot={snapshot}
-              apiReady={runtime.apiReady}
-              busyAction={runtime.busyAction}
-              modelsBusy={runtime.busyAction === "models"}
-              modelsPreviewBusy={runtime.busyAction === "modelsPreview"}
-              mcpsBusy={runtime.busyAction === "mcps"}
-              hooksBusy={runtime.busyAction === "hooks"}
-              skillsBusy={runtime.busyAction === "skills"}
-              rulesBusy={runtime.busyAction === "rules"}
-              extensionsBusy={runtime.busyAction === "extensions"}
-              lspInstallBusy={runtime.lspInstallBusy}
-              isElectronShell={isElectronShell}
-              onSavePatch={runtime.saveSettingsPatch}
-              onInstallLspProvider={runtime.installLspProvider}
-              onResetWebHostPairing={runtime.resetWebHostPairing}
-              onAddModel={runtime.addModel}
-              onAddProviderModels={runtime.addProviderModels}
-              onPreviewModels={runtime.previewModels}
-              onRemoveModel={runtime.removeModel}
-              onRemoveProviderModels={runtime.removeProviderModels}
-              onAddMcpServer={runtime.addMcpServer}
-              onImportExtension={runtime.importExtension}
-              onDeleteExtension={runtime.deleteExtension}
-              onUpdateExtensionSettings={runtime.updateExtensionSettings}
-              onUpdateExtensionSecret={runtime.updateExtensionSecret}
-              onDeleteMcpServer={runtime.deleteMcpServer}
-              onSaveHookEntry={runtime.saveHookEntry}
-              onDeleteHookEntry={runtime.deleteHookEntry}
-              onInspectMcpServer={runtime.inspectMcpServer}
-              onCreateSkill={runtime.createSkill}
-              onCreateRule={runtime.createRule}
-              onStartCompactionUiDemo={() => {
-                longConversationListDemo.stop();
-                surfaceNav.setActiveSurface("conversation");
-                compactionDemo.start();
-              }}
-              onStartLongConversationListDemo={() => {
-                compactionDemo.stop();
-                surfaceNav.setActiveSurface("conversation");
-                longConversationListDemo.start();
-              }}
-              onDeleteSkill={runtime.deleteSkill}
-              onDeleteRule={runtime.deleteRule}
-              onListDreamsOverview={runtime.listDreamsOverview}
-              onGenerateSkillNavigate={() => {
-                surfaceNav.handlePrefillComposerSkillChip("create-skill");
-              }}
-              onGenerateRuleNavigate={() => {
-                surfaceNav.handlePrefillComposerSkillChip("create-rule");
-              }}
-              onGenerateHookNavigate={() => {
-                surfaceNav.handlePrefillComposerSkillChip("create-hook");
-              }}
-              getGitHubAuthStatus={runtime.getGitHubAuthStatus}
-              beginGitHubDeviceLogin={runtime.beginGitHubDeviceLogin}
-              completeGitHubDeviceLogin={runtime.completeGitHubDeviceLogin}
-              cancelGitHubDeviceLogin={runtime.cancelGitHubDeviceLogin}
-              disconnectGitHub={runtime.disconnectGitHub}
-            />
-          </div>
-        ) : surfaceNav.automationsMode ? (
-          <div data-spirit-surface="automations-layout" className={cn("flex min-h-0 min-w-0 flex-1 flex-col", desktopMicaTintInnerClass(useMicaBackdrop))}>
-            <DesktopLayoutChromeBar
-              useMicaBackdrop={useMicaBackdrop}
-              showWorkspaceToggle={false}
-            />
-            <div className={cn("flex min-h-0 min-w-0 flex-1 flex-col", desktopMicaTintClass(useMicaBackdrop))}>
-            {surfaceNav.automationDetailMode && surfaceNav.selectedAutomationId ? (
-              <AutomationDetailView
-                automationId={surfaceNav.selectedAutomationId}
-                snapshot={snapshot}
-                onBack={() => {
-                  surfaceNav.setSelectedAutomationId(null);
-                  surfaceNav.setActiveSurface("automations");
-                }}
-                onOpenSession={(path) => {
-                  surfaceNav.setLastNonSettingsSurface("conversation");
-                  surfaceNav.setActiveSurface("conversation");
-                  void runtime.openSession(path);
-                }}
-                getAutomation={runtime.getAutomation}
-                updateAutomation={(id, patch) => void runtime.updateAutomation(id, patch)}
-                settingsDisabled={!runtime.apiReady || runtime.busyAction === "automation"}
-                githubConnected={gitHubAuthConnected === true}
-                githubAuthChecking={gitHubAuthConnected === null}
-                onOpenIntegrationsSettings={openIntegrationsSettings}
-                listGitHubRepositories={runtime.listGitHubAutomationRepositories}
-                searchGitHubRepositories={runtime.searchGitHubAutomationRepositories}
-                onAddWorkspace={() => void runtime.pickWorkspaceDirectory?.().then((path) => {
-                  if (path) {
-                    void runtime.rememberWorkspaceRoot(path);
-                  }
-                })}
+                    {surfaceNav.settingsMode ? (
+                      <div
+                        data-spirit-surface="settings-shell"
+                        className={cn(
+                          "flex min-h-0 min-w-0 flex-1 flex-col",
+                          desktopMicaTintInnerClass(useMicaBackdrop),
+                        )}
+                      >
+                        <DesktopLayoutChromeBar
+                          useMicaBackdrop={useMicaBackdrop}
+                          showWorkspaceToggle={false}
+                        />
+                        <SettingsView
+                          useMicaBackdrop={useMicaBackdrop}
+                          tab={surfaceNav.settingsTab}
+                          extensionSettingsId={surfaceNav.extensionSettingsId}
+                          font={font}
+                          onFontChange={setFont}
+                          clickablePointerCursor={clickablePointerCursor}
+                          onClickablePointerCursorChange={setClickablePointerCursor}
+                          settings={runtime.settings}
+                          snapshot={snapshot}
+                          apiReady={runtime.apiReady}
+                          busyAction={runtime.busyAction}
+                          modelsBusy={runtime.busyAction === "models"}
+                          modelsPreviewBusy={runtime.busyAction === "modelsPreview"}
+                          mcpsBusy={runtime.busyAction === "mcps"}
+                          hooksBusy={runtime.busyAction === "hooks"}
+                          skillsBusy={runtime.busyAction === "skills"}
+                          rulesBusy={runtime.busyAction === "rules"}
+                          extensionsBusy={runtime.busyAction === "extensions"}
+                          lspInstallBusy={runtime.lspInstallBusy}
+                          isElectronShell={isElectronShell}
+                          onSavePatch={runtime.saveSettingsPatch}
+                          onInstallLspProvider={runtime.installLspProvider}
+                          onResetWebHostPairing={runtime.resetWebHostPairing}
+                          onAddModel={runtime.addModel}
+                          onAddProviderModels={runtime.addProviderModels}
+                          onPreviewModels={runtime.previewModels}
+                          onRemoveModel={runtime.removeModel}
+                          onRemoveProviderModels={runtime.removeProviderModels}
+                          onAddMcpServer={runtime.addMcpServer}
+                          onImportExtension={runtime.importExtension}
+                          onDeleteExtension={runtime.deleteExtension}
+                          onUpdateExtensionSettings={runtime.updateExtensionSettings}
+                          onUpdateExtensionSecret={runtime.updateExtensionSecret}
+                          onDeleteMcpServer={runtime.deleteMcpServer}
+                          onSaveHookEntry={runtime.saveHookEntry}
+                          onDeleteHookEntry={runtime.deleteHookEntry}
+                          onInspectMcpServer={runtime.inspectMcpServer}
+                          onCreateSkill={runtime.createSkill}
+                          onCreateRule={runtime.createRule}
+                          onStartCompactionUiDemo={() => {
+                            longConversationListDemo.stop();
+                            surfaceNav.setActiveSurface("conversation");
+                            compactionDemo.start();
+                          }}
+                          onStartLongConversationListDemo={() => {
+                            compactionDemo.stop();
+                            surfaceNav.setActiveSurface("conversation");
+                            longConversationListDemo.start();
+                          }}
+                          onDeleteSkill={runtime.deleteSkill}
+                          onDeleteRule={runtime.deleteRule}
+                          onListDreamsOverview={runtime.listDreamsOverview}
+                          onGenerateSkillNavigate={() => {
+                            surfaceNav.handlePrefillComposerSkillChip("create-skill");
+                          }}
+                          onGenerateRuleNavigate={() => {
+                            surfaceNav.handlePrefillComposerSkillChip("create-rule");
+                          }}
+                          onGenerateHookNavigate={() => {
+                            surfaceNav.handlePrefillComposerSkillChip("create-hook");
+                          }}
+                          getGitHubAuthStatus={runtime.getGitHubAuthStatus}
+                          beginGitHubDeviceLogin={runtime.beginGitHubDeviceLogin}
+                          completeGitHubDeviceLogin={runtime.completeGitHubDeviceLogin}
+                          cancelGitHubDeviceLogin={runtime.cancelGitHubDeviceLogin}
+                          disconnectGitHub={runtime.disconnectGitHub}
+                        />
+                      </div>
+                    ) : surfaceNav.automationsMode ? (
+                      <div
+                        data-spirit-surface="automations-layout"
+                        className={cn(
+                          "flex min-h-0 min-w-0 flex-1 flex-col",
+                          desktopMicaTintInnerClass(useMicaBackdrop),
+                        )}
+                      >
+                        <DesktopLayoutChromeBar
+                          useMicaBackdrop={useMicaBackdrop}
+                          showWorkspaceToggle={false}
+                        />
+                        <div
+                          className={cn(
+                            "flex min-h-0 min-w-0 flex-1 flex-col",
+                            desktopMicaTintClass(useMicaBackdrop),
+                          )}
+                        >
+                          {surfaceNav.automationDetailMode && surfaceNav.selectedAutomationId ? (
+                            <AutomationDetailView
+                              automationId={surfaceNav.selectedAutomationId}
+                              snapshot={snapshot}
+                              onBack={() => {
+                                surfaceNav.setSelectedAutomationId(null);
+                                surfaceNav.setActiveSurface("automations");
+                              }}
+                              onOpenSession={(path) => {
+                                surfaceNav.setLastNonSettingsSurface("conversation");
+                                surfaceNav.setActiveSurface("conversation");
+                                void runtime.openSession(path);
+                              }}
+                              getAutomation={runtime.getAutomation}
+                              updateAutomation={(id, patch) =>
+                                void runtime.updateAutomation(id, patch)
+                              }
+                              settingsDisabled={
+                                !runtime.apiReady || runtime.busyAction === "automation"
+                              }
+                              githubConnected={gitHubAuthConnected === true}
+                              githubAuthChecking={gitHubAuthConnected === null}
+                              onOpenIntegrationsSettings={openIntegrationsSettings}
+                              listGitHubRepositories={runtime.listGitHubAutomationRepositories}
+                              searchGitHubRepositories={runtime.searchGitHubAutomationRepositories}
+                              onAddWorkspace={() =>
+                                void runtime.pickWorkspaceDirectory?.().then((path) => {
+                                  if (path) {
+                                    void runtime.rememberWorkspaceRoot(path);
+                                  }
+                                })
+                              }
+                            />
+                          ) : (
+                            <AutomationsView
+                              snapshot={snapshot}
+                              apiReady={runtime.apiReady}
+                              busyAction={runtime.busyAction}
+                              githubConnected={gitHubAuthConnected === true}
+                              onGenerateAutomation={() =>
+                                void surfaceNav.handleGenerateAutomation()
+                              }
+                              onCreateAutomation={() =>
+                                surfaceNav.setCreateAutomationDialogOpen(true)
+                              }
+                              onOpenAutomation={(automationId) => {
+                                surfaceNav.setSelectedAutomationId(automationId);
+                                surfaceNav.setActiveSurface("automation-detail");
+                              }}
+                              onDeleteAutomation={async (automationId) => {
+                                await runtime.deleteAutomation(automationId);
+                                if (surfaceNav.selectedAutomationId === automationId) {
+                                  surfaceNav.setSelectedAutomationId(null);
+                                  surfaceNav.setActiveSurface("automations");
+                                }
+                              }}
+                            />
+                          )}
+                          <CreateAutomationDialog
+                            open={surfaceNav.createAutomationDialogOpen}
+                            onOpenChange={surfaceNav.setCreateAutomationDialogOpen}
+                            snapshot={snapshot}
+                            disabled={!runtime.apiReady || runtime.busyAction === "automation"}
+                            githubConnected={gitHubAuthConnected === true}
+                            githubAuthChecking={gitHubAuthConnected === null}
+                            onOpenIntegrationsSettings={openIntegrationsSettings}
+                            listGitHubRepositories={runtime.listGitHubAutomationRepositories}
+                            searchGitHubRepositories={runtime.searchGitHubAutomationRepositories}
+                            onSubmit={(request) => void runtime.createAutomation(request)}
+                            onAddWorkspace={() =>
+                              void runtime.pickWorkspaceDirectory?.().then((path) => {
+                                if (path) {
+                                  void runtime.rememberWorkspaceRoot(path);
+                                }
+                              })
+                            }
+                          />
+                        </div>
+                      </div>
+                    ) : surfaceNav.marketplaceMode ? (
+                      <div
+                        data-spirit-surface="marketplace-layout"
+                        className={cn(
+                          "flex min-h-0 min-w-0 flex-1 flex-col",
+                          desktopMicaTintInnerClass(useMicaBackdrop),
+                        )}
+                      >
+                        <DesktopLayoutChromeBar
+                          useMicaBackdrop={useMicaBackdrop}
+                          showWorkspaceToggle={false}
+                        />
+                        <MarketplaceView
+                          useMicaBackdrop={useMicaBackdrop}
+                          snapshot={snapshot}
+                          apiReady={runtime.apiReady}
+                          busyAction={runtime.busyAction}
+                          onListMarketplaceExtensions={runtime.listMarketplaceExtensions}
+                          onGetMarketplaceExtensionDetail={runtime.getMarketplaceExtensionDetail}
+                          onGetMarketplaceExtensionReadme={runtime.getMarketplaceExtensionReadme}
+                          onPrepareMarketplaceExtensionInstall={
+                            runtime.prepareMarketplaceExtensionInstall
+                          }
+                          onInstallMarketplaceExtension={runtime.installMarketplaceExtension}
+                        />
+                      </div>
+                    ) : null}
+
+                    {surfaceNav.preserveConversationSurface ? (
+                      <div
+                        className={cn(
+                          "flex min-h-0 min-w-0 flex-1 flex-row overflow-hidden",
+                          desktopMicaTintInnerClass(useMicaBackdrop),
+                          surfaceNav.settingsMode && "hidden",
+                        )}
+                        aria-hidden={surfaceNav.settingsMode}
+                      >
+                        <div className="flex min-h-0 min-w-0 flex-1 flex-row overflow-hidden">
+                          <div className="flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden">
+                            <ConversationSplitRoot
+                              useMicaBackdrop={useMicaBackdrop}
+                              renderPane={(pane) => (
+                                <ConversationPaneHost
+                                  key={pane.paneId}
+                                  runtime={runtime}
+                                  baseSnapshot={snapshot}
+                                  sessionPath={pane.sessionPath}
+                                  paneId={pane.paneId}
+                                  isFocused={pane.isFocused}
+                                  isAnchorPane={pane.isAnchorPane}
+                                  isSessionSidebarAnchorPane={pane.isSessionSidebarAnchorPane}
+                                  useIsolatedPane={pane.useIsolatedPane}
+                                  splitPaneCount={pane.splitPaneCount}
+                                  onFocusPane={pane.onFocusPane}
+                                  onSideChat={pane.onSideChat}
+                                  onSplit={pane.onSplit}
+                                  onSplitVertical={pane.onSplitVertical}
+                                  onClosePane={pane.onClosePane}
+                                  showClosePane={pane.showClosePane}
+                                  paneReorderEnabled={pane.paneReorderEnabled}
+                                  onPaneDragStart={pane.onPaneDragStart}
+                                  onPaneDragLeave={pane.onPaneDragLeave}
+                                  onPaneDrop={pane.onPaneDrop}
+                                  onSidebarSessionDrop={pane.onSidebarSessionDrop}
+                                  paneDropOverlayActive={pane.paneDropOverlayActive}
+                                  paneDragSourcePaneId={pane.paneDragSourcePaneId}
+                                  sidebarSessionDragActive={pane.sidebarSessionDragActive}
+                                  useMicaBackdrop={useMicaBackdrop}
+                                  subagentViewActive={subagentViewActive}
+                                  subagentViewer={subagentViewer}
+                                  compactionDemo={compactionDemo}
+                                  longConversationListDemo={longConversationListDemo}
+                                  hideStaleConversationMessages={
+                                    surfaceNav.hideStaleConversationMessages
+                                  }
+                                  showWorkspaceBindingControls={
+                                    surfaceNav.showWorkspaceBindingControls
+                                  }
+                                  sessionNavigationBusy={sessionNavigationBusy}
+                                  newSessionBusy={newSessionBusy}
+                                  onNewSession={surfaceNav.handleNewSession}
+                                  deleteSessionBusy={sessionNavigationBusy}
+                                  onDeleteSession={(path) => runtime.deleteSession(path)}
+                                  renameSessionBusy={sessionNavigationBusy}
+                                  onRenameSession={(path, displayName) =>
+                                    runtime.renameSession(path, displayName)
+                                  }
+                                  workspaceTools={workspaceTools}
+                                  onOpenIntegrationsSettings={openIntegrationsSettings}
+                                  onCompactionDemoStop={compactionDemo.stop}
+                                  onLongConversationListDemoStop={longConversationListDemo.stop}
+                                  t={t}
+                                  language={i18n.language}
+                                />
+                              )}
+                            />
+                          </div>
+                          <ConversationWorkspaceToolsDock
+                            useMicaBackdrop={useMicaBackdrop}
+                            snapshot={snapshot}
+                            runtime={runtime}
+                            conversation={conversation}
+                            composer={composer}
+                            workspaceTools={workspaceTools}
+                            onOpenIntegrationsSettings={openIntegrationsSettings}
+                          />
+                        </div>
+                      </div>
+                    ) : null}
+                  </ConversationSplitProvider>
+                </div>
+              </div>
+
+              <ActionPickerDialog
+                open={composer.actionPickerOpen}
+                onOpenChange={composer.setActionPickerOpen}
+                onSelect={composer.runActionPaletteItem}
+                isItemDisabled={composer.isActionPaletteItemDisabled}
+                shouldIncludeItem={composer.filterActionPaletteItem}
               />
-            ) : (
-              <AutomationsView
-                snapshot={snapshot}
-                apiReady={runtime.apiReady}
-                busyAction={runtime.busyAction}
-                githubConnected={gitHubAuthConnected === true}
-                onGenerateAutomation={() => void surfaceNav.handleGenerateAutomation()}
-                onCreateAutomation={() => surfaceNav.setCreateAutomationDialogOpen(true)}
-                onOpenAutomation={(automationId) => {
-                  surfaceNav.setSelectedAutomationId(automationId);
-                  surfaceNav.setActiveSurface("automation-detail");
-                }}
-                onDeleteAutomation={async (automationId) => {
-                  await runtime.deleteAutomation(automationId);
-                  if (surfaceNav.selectedAutomationId === automationId) {
-                    surfaceNav.setSelectedAutomationId(null);
-                    surfaceNav.setActiveSurface("automations");
+
+              <WorkspaceFilePickerDialog
+                open={composer.filePickerOpen}
+                onOpenChange={composer.setFilePickerOpen}
+                workspaceRoot={snapshot?.workspaceRoot ?? ""}
+                workspaceBinding={snapshot?.workspaceBinding ?? "project"}
+                onOpenWorkspaceFile={(relativePath) => {
+                  if (isWorkspaceReferenceDirectoryPath(relativePath)) {
+                    workspaceTools.revealWorkspaceDirectory(
+                      normalizeWorkspaceReferenceDirectoryPath(relativePath),
+                    );
+                    return;
                   }
+                  workspaceTools.openWorkspaceFile(relativePath, {
+                    viewMode: isMarkdownPath(relativePath) ? "preview" : "edit",
+                  });
+                }}
+                onOpenExternalFile={(absolutePath) => {
+                  workspaceTools.openEditorFile({
+                    scope: "external",
+                    absolutePath,
+                    viewMode: isMarkdownPath(absolutePath) ? "preview" : "edit",
+                  });
+                }}
+                statHostTextFile={runtime.statHostTextFile}
+                indexReady={composer.workspaceFileIndex.ready}
+                searchWorkspaceFiles={composer.workspaceFileIndex.searchFilesOnly}
+              />
+
+              <WorkspaceCapabilityTrustDialog
+                pending={snapshot?.pendingWorkspaceCapabilityTrust}
+                busy={runtime.busyAction === "workspaceTrust"}
+                onReply={(decision) => {
+                  void runtime.replyWorkspaceCapabilityTrust(decision);
                 }}
               />
-            )}
-            <CreateAutomationDialog
-              open={surfaceNav.createAutomationDialogOpen}
-              onOpenChange={surfaceNav.setCreateAutomationDialogOpen}
-              snapshot={snapshot}
-              disabled={!runtime.apiReady || runtime.busyAction === "automation"}
-              githubConnected={gitHubAuthConnected === true}
-              githubAuthChecking={gitHubAuthConnected === null}
-              onOpenIntegrationsSettings={openIntegrationsSettings}
-              listGitHubRepositories={runtime.listGitHubAutomationRepositories}
-              searchGitHubRepositories={runtime.searchGitHubAutomationRepositories}
-              onSubmit={(request) => void runtime.createAutomation(request)}
-              onAddWorkspace={() => void runtime.pickWorkspaceDirectory?.().then((path) => {
-                if (path) {
-                  void runtime.rememberWorkspaceRoot(path);
-                }
-              })}
-            />
             </div>
           </div>
-        ) : surfaceNav.marketplaceMode ? (
-          <div data-spirit-surface="marketplace-layout" className={cn("flex min-h-0 min-w-0 flex-1 flex-col", desktopMicaTintInnerClass(useMicaBackdrop))}>
-            <DesktopLayoutChromeBar
-              useMicaBackdrop={useMicaBackdrop}
-              showWorkspaceToggle={false}
-            />
-            <MarketplaceView
-              useMicaBackdrop={useMicaBackdrop}
-              snapshot={snapshot}
-              apiReady={runtime.apiReady}
-              busyAction={runtime.busyAction}
-              onListMarketplaceExtensions={runtime.listMarketplaceExtensions}
-              onGetMarketplaceExtensionDetail={runtime.getMarketplaceExtensionDetail}
-              onGetMarketplaceExtensionReadme={runtime.getMarketplaceExtensionReadme}
-              onPrepareMarketplaceExtensionInstall={runtime.prepareMarketplaceExtensionInstall}
-              onInstallMarketplaceExtension={runtime.installMarketplaceExtension}
-            />
-          </div>
-        ) : null}
-
-        {surfaceNav.preserveConversationSurface ? (
-          <div
-            className={cn(
-              "flex min-h-0 min-w-0 flex-1 flex-row overflow-hidden",
-              desktopMicaTintInnerClass(useMicaBackdrop),
-              surfaceNav.settingsMode && "hidden",
-            )}
-            aria-hidden={surfaceNav.settingsMode}
-          >
-          <div className="flex min-h-0 min-w-0 flex-1 flex-row overflow-hidden">
-          <div className="flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden">
-          <ConversationSplitRoot
-            useMicaBackdrop={useMicaBackdrop}
-            renderPane={(pane) => (
-              <ConversationPaneHost
-                key={pane.paneId}
-                runtime={runtime}
-                baseSnapshot={snapshot}
-                sessionPath={pane.sessionPath}
-                paneId={pane.paneId}
-                isFocused={pane.isFocused}
-                isAnchorPane={pane.isAnchorPane}
-                isSessionSidebarAnchorPane={pane.isSessionSidebarAnchorPane}
-                useIsolatedPane={pane.useIsolatedPane}
-                splitPaneCount={pane.splitPaneCount}
-                onFocusPane={pane.onFocusPane}
-                onSideChat={pane.onSideChat}
-                onSplit={pane.onSplit}
-                onSplitVertical={pane.onSplitVertical}
-                onClosePane={pane.onClosePane}
-                showClosePane={pane.showClosePane}
-                paneReorderEnabled={pane.paneReorderEnabled}
-                onPaneDragStart={pane.onPaneDragStart}
-                onPaneDragLeave={pane.onPaneDragLeave}
-                onPaneDrop={pane.onPaneDrop}
-                onSidebarSessionDrop={pane.onSidebarSessionDrop}
-                paneDropOverlayActive={pane.paneDropOverlayActive}
-                paneDragSourcePaneId={pane.paneDragSourcePaneId}
-                sidebarSessionDragActive={pane.sidebarSessionDragActive}
-                useMicaBackdrop={useMicaBackdrop}
-                subagentViewActive={subagentViewActive}
-                subagentViewer={subagentViewer}
-                compactionDemo={compactionDemo}
-                longConversationListDemo={longConversationListDemo}
-                hideStaleConversationMessages={surfaceNav.hideStaleConversationMessages}
-                showWorkspaceBindingControls={surfaceNav.showWorkspaceBindingControls}
-                sessionNavigationBusy={sessionNavigationBusy}
-                newSessionBusy={newSessionBusy}
-                onNewSession={surfaceNav.handleNewSession}
-                deleteSessionBusy={sessionNavigationBusy}
-                onDeleteSession={(path) => runtime.deleteSession(path)}
-                renameSessionBusy={sessionNavigationBusy}
-                onRenameSession={(path, displayName) => runtime.renameSession(path, displayName)}
-                workspaceTools={workspaceTools}
-                onOpenIntegrationsSettings={openIntegrationsSettings}
-                onCompactionDemoStop={compactionDemo.stop}
-                onLongConversationListDemoStop={longConversationListDemo.stop}
-                t={t}
-                language={i18n.language}
-              />
-            )}
-          />
-          </div>
-          <ConversationWorkspaceToolsDock
-            useMicaBackdrop={useMicaBackdrop}
-            snapshot={snapshot}
-            runtime={runtime}
-            conversation={conversation}
-            composer={composer}
-            workspaceTools={workspaceTools}
-            onOpenIntegrationsSettings={openIntegrationsSettings}
-          />
-          </div>
-          </div>
-        ) : null}
-        </ConversationSplitProvider>
         </div>
-      </div>
-
-      <ActionPickerDialog
-        open={composer.actionPickerOpen}
-        onOpenChange={composer.setActionPickerOpen}
-        onSelect={composer.runActionPaletteItem}
-        isItemDisabled={composer.isActionPaletteItemDisabled}
-        shouldIncludeItem={composer.filterActionPaletteItem}
-      />
-
-      <WorkspaceFilePickerDialog
-        open={composer.filePickerOpen}
-        onOpenChange={composer.setFilePickerOpen}
-        workspaceRoot={snapshot?.workspaceRoot ?? ''}
-        workspaceBinding={snapshot?.workspaceBinding ?? 'project'}
-        onOpenWorkspaceFile={(relativePath) => {
-          if (isWorkspaceReferenceDirectoryPath(relativePath)) {
-            workspaceTools.revealWorkspaceDirectory(
-              normalizeWorkspaceReferenceDirectoryPath(relativePath),
-            );
-            return;
-          }
-          workspaceTools.openWorkspaceFile(relativePath, {
-            viewMode: isMarkdownPath(relativePath) ? "preview" : "edit",
-          });
-        }}
-        onOpenExternalFile={(absolutePath) => {
-          workspaceTools.openEditorFile({
-            scope: "external",
-            absolutePath,
-            viewMode: isMarkdownPath(absolutePath) ? "preview" : "edit",
-          });
-        }}
-        statHostTextFile={runtime.statHostTextFile}
-        indexReady={composer.workspaceFileIndex.ready}
-        searchWorkspaceFiles={composer.workspaceFileIndex.searchFilesOnly}
-      />
-
-      <WorkspaceCapabilityTrustDialog
-        pending={snapshot?.pendingWorkspaceCapabilityTrust}
-        busy={runtime.busyAction === "workspaceTrust"}
-        onReply={(decision) => {
-          void runtime.replyWorkspaceCapabilityTrust(decision);
-        }}
-      />
-
-    </div>
-      </div>
-    </div>
-    </SessionSidebarChromeProvider>
+      </SessionSidebarChromeProvider>
     </WorkspaceMarkdownLinkProvider>
   );
 }

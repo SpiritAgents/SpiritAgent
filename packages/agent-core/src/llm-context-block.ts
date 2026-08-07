@@ -1,16 +1,16 @@
 export const LLM_CONTEXT_TAGS = {
-  rules: 'rules',
-  skills_catalog: 'skills_catalog',
-  mcp_catalog: 'mcp_catalog',
-  agent_mode: 'agent_mode',
-  loop_mode: 'loop_mode',
-  attribution: 'attribution',
-  extensions: 'extensions',
-  dreams: 'dreams',
-  basic_info: 'basic_info',
-  compact_summary: 'compact_summary',
-  compact_progress: 'compact_progress',
-  dream_collector: 'dream_collector',
+  rules: "rules",
+  skills_catalog: "skills_catalog",
+  mcp_catalog: "mcp_catalog",
+  agent_mode: "agent_mode",
+  loop_mode: "loop_mode",
+  attribution: "attribution",
+  extensions: "extensions",
+  dreams: "dreams",
+  basic_info: "basic_info",
+  compact_summary: "compact_summary",
+  compact_progress: "compact_progress",
+  dream_collector: "dream_collector",
 } as const;
 
 export type LlmContextTag = (typeof LLM_CONTEXT_TAGS)[keyof typeof LLM_CONTEXT_TAGS];
@@ -36,14 +36,14 @@ export function unwrapLlmContextBlock(tag: string, text: string): string | undef
   }
 
   const bodyStart = start + open.length;
-  const afterOpen = text[bodyStart] === '\n' ? bodyStart + 1 : bodyStart;
+  const afterOpen = text[bodyStart] === "\n" ? bodyStart + 1 : bodyStart;
   const end = text.lastIndexOf(close);
   if (end < afterOpen) {
     return undefined;
   }
 
   const raw = text.slice(afterOpen, end);
-  return raw.endsWith('\n') ? raw.slice(0, -1) : raw;
+  return raw.endsWith("\n") ? raw.slice(0, -1) : raw;
 }
 
 export function includesLlmContextBlock(content: string, tag: string): boolean {
@@ -74,5 +74,5 @@ export function includesCompactSummaryBlock(text: string): boolean {
 
 export const COMPACT_PROGRESS_TEXT = wrapLlmContextBlock(
   LLM_CONTEXT_TAGS.compact_progress,
-  'compacting history',
+  "compacting history",
 );

@@ -1,19 +1,19 @@
-import { ArkVideoBackend } from './ark-video-backend.js';
-import { isArkApiBase, isArkLlmVendor } from '../ark/ark-provider.js';
-import type { OpenAiVideoGenerationConfig } from '../openai/openai-compat.js';
+import { ArkVideoBackend } from "./ark-video-backend.js";
+import { isArkApiBase, isArkLlmVendor } from "../ark/ark-provider.js";
+import type { OpenAiVideoGenerationConfig } from "../openai/openai-compat.js";
 import type {
   GeneratedVideoFile,
   GeneratedVideoSaveRequest,
   ToolExecutionOutput,
   VideoGenerationRequest,
-} from '../ports.js';
-import { AiSdkGatewayVideoBackend } from './ai-sdk-gateway-backend.js';
-import { OpenRouterVideosBackend } from './openrouter-videos-backend.js';
-import { SiliconFlowVideoBackend } from './siliconflow-backend.js';
-import { TogetherVideosBackend } from './together-videos-backend.js';
-import { DeepInfraVideosBackend } from './deepinfra-videos-backend.js';
-import { HuggingFaceVideoBackend } from './huggingface-backend.js';
-import type { VideoGenerationBackend } from './types.js';
+} from "../ports.js";
+import { AiSdkGatewayVideoBackend } from "./ai-sdk-gateway-backend.js";
+import { OpenRouterVideosBackend } from "./openrouter-videos-backend.js";
+import { SiliconFlowVideoBackend } from "./siliconflow-backend.js";
+import { TogetherVideosBackend } from "./together-videos-backend.js";
+import { DeepInfraVideosBackend } from "./deepinfra-videos-backend.js";
+import { HuggingFaceVideoBackend } from "./huggingface-backend.js";
+import type { VideoGenerationBackend } from "./types.js";
 
 const arkVideoBackend = new ArkVideoBackend();
 const openRouterVideosBackend = new OpenRouterVideosBackend();
@@ -30,7 +30,7 @@ export function isSiliconFlowApiBase(baseUrl: string | undefined): boolean {
 
   try {
     const hostname = new URL(baseUrl).hostname.toLowerCase();
-    return hostname.includes('siliconflow.com') || hostname.includes('siliconflow.cn');
+    return hostname.includes("siliconflow.com") || hostname.includes("siliconflow.cn");
   } catch {
     return false;
   }
@@ -46,7 +46,7 @@ export function isTogetherAiApiBase(baseUrl: string | undefined): boolean {
 
   try {
     const hostname = new URL(baseUrl).hostname.toLowerCase();
-    return hostname.includes('together.ai') || hostname.includes('together.xyz');
+    return hostname.includes("together.ai") || hostname.includes("together.xyz");
   } catch {
     return false;
   }
@@ -59,7 +59,7 @@ export function isHuggingFaceApiBase(baseUrl: string | undefined): boolean {
 
   try {
     const hostname = new URL(baseUrl).hostname.toLowerCase();
-    return hostname.includes('huggingface.co');
+    return hostname.includes("huggingface.co");
   } catch {
     return false;
   }
@@ -72,7 +72,7 @@ export function isDeepInfraApiBase(baseUrl: string | undefined): boolean {
 
   try {
     const hostname = new URL(baseUrl).hostname.toLowerCase();
-    return hostname.includes('deepinfra.com');
+    return hostname.includes("deepinfra.com");
   } catch {
     return false;
   }
@@ -81,27 +81,27 @@ export function isDeepInfraApiBase(baseUrl: string | undefined): boolean {
 export function resolveVideoGenerationBackend(
   config: OpenAiVideoGenerationConfig,
 ): VideoGenerationBackend {
-  if (config.llmVendor === 'vercel-ai-gateway') {
+  if (config.llmVendor === "vercel-ai-gateway") {
     return aiSdkGatewayBackend;
   }
 
-  if (config.llmVendor === 'openrouter') {
+  if (config.llmVendor === "openrouter") {
     return openRouterVideosBackend;
   }
 
-  if (config.llmVendor === 'together-ai' || isTogetherAiApiBase(config.baseUrl)) {
+  if (config.llmVendor === "together-ai" || isTogetherAiApiBase(config.baseUrl)) {
     return togetherVideosBackend;
   }
 
-  if (config.llmVendor === 'deepinfra' || isDeepInfraApiBase(config.baseUrl)) {
+  if (config.llmVendor === "deepinfra" || isDeepInfraApiBase(config.baseUrl)) {
     return deepInfraVideosBackend;
   }
 
-  if (config.llmVendor === 'hugging-face' || isHuggingFaceApiBase(config.baseUrl)) {
+  if (config.llmVendor === "hugging-face" || isHuggingFaceApiBase(config.baseUrl)) {
     return huggingFaceVideoBackend;
   }
 
-  if (config.llmVendor === 'siliconflow' || isSiliconFlowApiBase(config.baseUrl)) {
+  if (config.llmVendor === "siliconflow" || isSiliconFlowApiBase(config.baseUrl)) {
     return siliconFlowVideoBackend;
   }
 
@@ -110,7 +110,7 @@ export function resolveVideoGenerationBackend(
   }
 
   throw new Error(
-    'No video generation backend is configured for the selected video model. Use Volcengine Ark, BytePlus ModelArk, Vercel AI Gateway, OpenRouter, SiliconFlow, Together AI, DeepInfra, or Hugging Face.',
+    "No video generation backend is configured for the selected video model. Use Volcengine Ark, BytePlus ModelArk, Vercel AI Gateway, OpenRouter, SiliconFlow, Together AI, DeepInfra, or Hugging Face.",
   );
 }
 
@@ -123,7 +123,7 @@ export async function generateVideoWithRouter(
   try {
     return await backend.generate(config, request, saveGeneratedVideo);
   } catch (error) {
-    console.error('[agent-core][generate-video] request.failed', {
+    console.error("[agent-core][generate-video] request.failed", {
       adapter: backend.id,
       model: config.model,
       baseUrl: config.baseUrl,

@@ -59,7 +59,10 @@ export type ConversationPaneHostProps = {
   onPaneDragStart?: (paneId: string) => void;
   onPaneDragLeave?: () => void;
   onPaneDrop?: (targetPaneId: string, zone: PaneDropZone) => void;
-  onSidebarSessionDrop?: (targetPaneId: string, zone: import("@/lib/conversation-split-layout").PaneRepositionZone) => void;
+  onSidebarSessionDrop?: (
+    targetPaneId: string,
+    zone: import("@/lib/conversation-split-layout").PaneRepositionZone,
+  ) => void;
   paneDropOverlayActive: boolean;
   paneDragSourcePaneId: string | null;
   sidebarSessionDragActive: boolean;
@@ -163,11 +166,9 @@ export function ConversationPaneHost({
   );
 
   const showSideChat =
-    !pane.paneIsEmptySession
-    && Boolean(
-      findLastForkableAssistantMessageId(pane.paneSnapshot?.conversation.messages ?? []),
-    )
-    && canBeginSideChat({
+    !pane.paneIsEmptySession &&
+    Boolean(findLastForkableAssistantMessageId(pane.paneSnapshot?.conversation.messages ?? [])) &&
+    canBeginSideChat({
       conversationBusy: pane.paneSnapshot?.conversation.isBusy === true,
       activeSessionReadOnly: pane.paneSnapshot?.activeSession?.readOnly === true,
       forkBusy: controllerInput.runtime.busyAction === "fork",
@@ -206,9 +207,7 @@ export function ConversationPaneHost({
       onExitSubagentViewer={pane.onExitSubagentViewer}
       onNewSession={controllerInput.onNewSession}
       newSessionBusy={controllerInput.newSessionBusy}
-      showDeleteSession={
-        !pane.paneIsEmptySession && Boolean(controllerInput.onDeleteSession)
-      }
+      showDeleteSession={!pane.paneIsEmptySession && Boolean(controllerInput.onDeleteSession)}
       deleteSessionPath={sessionPath}
       deleteSessionDisplayName={pane.paneSnapshot?.activeSession?.displayName ?? null}
       deleteSessionBusy={controllerInput.deleteSessionBusy}
@@ -216,9 +215,7 @@ export function ConversationPaneHost({
       onDeleteSession={handleDeleteSession}
       onDeleteSessionOverlayClosed={handleDeleteSessionOverlayClosed}
       showRenameSession={
-        !isSideChatPane
-        && !pane.paneIsEmptySession
-        && Boolean(controllerInput.onRenameSession)
+        !isSideChatPane && !pane.paneIsEmptySession && Boolean(controllerInput.onRenameSession)
       }
       renameSessionPath={sessionPath}
       renameSessionDisplayName={pane.paneSnapshot?.activeSession?.displayName ?? null}

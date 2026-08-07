@@ -1,31 +1,31 @@
-import { createGateway, type GatewayVideoModelId } from '@ai-sdk/gateway';
-import { experimental_generateVideo as generateVideo } from 'ai';
+import { createGateway, type GatewayVideoModelId } from "@ai-sdk/gateway";
+import { experimental_generateVideo as generateVideo } from "ai";
 
-import { getLlmFetch } from '../llm-fetch.js';
-import type { OpenAiVideoGenerationConfig } from '../openai/openai-compat.js';
+import { getLlmFetch } from "../llm-fetch.js";
+import type { OpenAiVideoGenerationConfig } from "../openai/openai-compat.js";
 import {
   DEFAULT_VIDEO_GENERATION_DURATION,
   type GeneratedVideoFile,
   type GeneratedVideoSaveRequest,
   type ToolExecutionOutput,
   type VideoGenerationRequest,
-} from '../ports.js';
-import { buildGeneratedVideoToolOutput } from './output.js';
-import type { VideoGenerationBackend } from './types.js';
+} from "../ports.js";
+import { buildGeneratedVideoToolOutput } from "./output.js";
+import type { VideoGenerationBackend } from "./types.js";
 
 /** Gateway 视频走 v3 AI 协议（默认 `…/v3/ai/video-model`），不能用 chat 预设的 `/v1` baseUrl。 */
 export function resolveAiGatewayVideoProviderOptions(
-  config: Pick<OpenAiVideoGenerationConfig, 'apiKey' | 'baseUrl'>,
+  config: Pick<OpenAiVideoGenerationConfig, "apiKey" | "baseUrl">,
 ): { apiKey: string } {
   return { apiKey: config.apiKey };
 }
 
 /** MiniMax H3 文生视频经 Gateway 省略 ratio 时会回落为 adaptive，上游返回 2013。其它 Gateway 视频模型可正常省略 ratio。 */
-export const MINIMAX_H3_GATEWAY_DEFAULT_ASPECT_RATIO = '16:9' as const;
+export const MINIMAX_H3_GATEWAY_DEFAULT_ASPECT_RATIO = "16:9" as const;
 
 export function isMinimaxH3GatewayVideoModel(model: string): boolean {
   const normalized = model.trim().toLowerCase();
-  return normalized === 'minimax/minimax-h3' || normalized.endsWith('/minimax-h3');
+  return normalized === "minimax/minimax-h3" || normalized.endsWith("/minimax-h3");
 }
 
 export function resolveAiGatewayVideoAspectRatio(
@@ -67,10 +67,7 @@ export function snapToNearestVeoGatewayDuration(duration: number): number {
   return best;
 }
 
-export function resolveAiGatewayVideoDuration(
-  model: string,
-  duration: number | undefined,
-): number {
+export function resolveAiGatewayVideoDuration(model: string, duration: number | undefined): number {
   const resolved = duration ?? DEFAULT_VIDEO_GENERATION_DURATION;
   if (!isVeoGatewayVideoModel(model)) {
     return resolved;
@@ -84,7 +81,7 @@ export function resolveAiGatewayVideoDuration(
 }
 
 export class AiSdkGatewayVideoBackend implements VideoGenerationBackend {
-  readonly id = 'ai-sdk-gateway';
+  readonly id = "ai-sdk-gateway";
 
   async generate(
     config: OpenAiVideoGenerationConfig,
@@ -96,10 +93,10 @@ export class AiSdkGatewayVideoBackend implements VideoGenerationBackend {
       fetch: getLlmFetch(),
     });
 
-    console.error('[agent-core][generate-video] request.start', {
+    console.error("[agent-core][generate-video] request.start", {
       adapter: this.id,
       model: config.model,
-      gatewayBaseUrl: 'https://ai-gateway.vercel.sh/v3/ai',
+      gatewayBaseUrl: "https://ai-gateway.vercel.sh/v3/ai",
       profileBaseUrl: config.baseUrl,
     });
 
@@ -118,7 +115,7 @@ export class AiSdkGatewayVideoBackend implements VideoGenerationBackend {
 
     const video = result.videos[0];
     if (!video) {
-      throw new Error('AI Gateway video generation returned no video.');
+      throw new Error("AI Gateway video generation returned no video.");
     }
 
     const saved = await saveGeneratedVideo({
@@ -128,7 +125,7 @@ export class AiSdkGatewayVideoBackend implements VideoGenerationBackend {
       model: config.model,
     });
 
-    console.error('[agent-core][generate-video] request.success', {
+    console.error("[agent-core][generate-video] request.success", {
       adapter: this.id,
       model: config.model,
       savedPath: saved.path,

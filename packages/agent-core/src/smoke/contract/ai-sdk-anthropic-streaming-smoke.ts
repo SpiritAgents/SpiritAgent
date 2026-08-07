@@ -1,33 +1,34 @@
-import { once } from 'node:events';
-import { createServer } from 'node:http';
-import type { AddressInfo } from 'node:net';
+import { once } from "node:events";
+import { createServer } from "node:http";
+import type { AddressInfo } from "node:net";
 
-import type { JsonValue } from '../../ports.js';
-import { AiSdkAnthropicTransport } from '../../anthropic/ai-sdk-transport.js';
+import type { JsonValue } from "../../ports.js";
+import { AiSdkAnthropicTransport } from "../../anthropic/ai-sdk-transport.js";
 import {
   appendToolResultMessage,
   buildToolAgentMessages,
   extractLastAssistantText,
   isJsonObject,
   startToolAgentState,
-} from '../../tool-agent.js';
+} from "../../tool-agent.js";
 
-import { demoLookupToolDefinition, printSmokeSection } from '../shared/index.js';
+import { demoLookupToolDefinition, printSmokeSection } from "../shared/index.js";
 
-const ANTHROPIC_REASONING_TEXT = '先想一下，再查工具。';
-const ANTHROPIC_REASONING_SIGNATURE = 'sig_anthropic_stream_1';
-const ANTHROPIC_TOOL_USE_ID = 'toolu_anthropic_stream_1';
-const ANTHROPIC_PROJECTED_SYSTEM_CONTEXT_PREFIX = '[HOST_CONTEXT_FROM_SYSTEM]';
-const ANTHROPIC_SEPARATED_SYSTEM_CONTEXT_SAMPLE = '[WORKSPACE_FILE]\npath: D:\\SpiritAgent\\README.md\nchars: 11';
+const ANTHROPIC_REASONING_TEXT = "先想一下，再查工具。";
+const ANTHROPIC_REASONING_SIGNATURE = "sig_anthropic_stream_1";
+const ANTHROPIC_TOOL_USE_ID = "toolu_anthropic_stream_1";
+const ANTHROPIC_PROJECTED_SYSTEM_CONTEXT_PREFIX = "[HOST_CONTEXT_FROM_SYSTEM]";
+const ANTHROPIC_SEPARATED_SYSTEM_CONTEXT_SAMPLE =
+  "[WORKSPACE_FILE]\npath: D:\\SpiritAgent\\README.md\nchars: 11";
 
 async function main(): Promise<void> {
   let requestCount = 0;
   const requestBodies: JsonValue[] = [];
 
   const server = createServer(async (request, response) => {
-    if (request.method !== 'POST' || request.url !== '/v1/messages') {
+    if (request.method !== "POST" || request.url !== "/v1/messages") {
       response.statusCode = 404;
-      response.end('not found');
+      response.end("not found");
       return;
     }
 
@@ -37,89 +38,96 @@ async function main(): Promise<void> {
 
     if (
       requestCount === 2 &&
-      !requestIncludesReplayedThinking(body, ANTHROPIC_REASONING_TEXT, ANTHROPIC_REASONING_SIGNATURE)
+      !requestIncludesReplayedThinking(
+        body,
+        ANTHROPIC_REASONING_TEXT,
+        ANTHROPIC_REASONING_SIGNATURE,
+      )
     ) {
-      response.writeHead(400, { 'content-type': 'application/json; charset=utf-8' });
-      response.end(JSON.stringify({
-        type: 'error',
-        error: {
-          type: 'invalid_request_error',
-          message: 'The `content[].thinking` in the thinking mode must be passed back to the API.',
-        },
-      }));
+      response.writeHead(400, { "content-type": "application/json; charset=utf-8" });
+      response.end(
+        JSON.stringify({
+          type: "error",
+          error: {
+            type: "invalid_request_error",
+            message:
+              "The `content[].thinking` in the thinking mode must be passed back to the API.",
+          },
+        }),
+      );
       return;
     }
 
     response.writeHead(200, {
-      'content-type': 'text/event-stream; charset=utf-8',
-      'cache-control': 'no-cache, no-transform',
-      connection: 'keep-alive',
+      "content-type": "text/event-stream; charset=utf-8",
+      "cache-control": "no-cache, no-transform",
+      connection: "keep-alive",
     });
 
     const chunks =
       requestCount === 1
         ? [
             {
-              type: 'message_start',
+              type: "message_start",
               message: {
-                id: 'msg_anthropic_stream_1',
-                model: 'deepseek-v4-pro',
+                id: "msg_anthropic_stream_1",
+                model: "deepseek-v4-pro",
                 usage: { input_tokens: 12 },
               },
             },
             {
-              type: 'content_block_start',
+              type: "content_block_start",
               index: 0,
               content_block: {
-                type: 'thinking',
-                thinking: '',
+                type: "thinking",
+                thinking: "",
               },
             },
             {
-              type: 'content_block_delta',
+              type: "content_block_delta",
               index: 0,
               delta: {
-                type: 'thinking_delta',
+                type: "thinking_delta",
                 thinking: ANTHROPIC_REASONING_TEXT,
               },
             },
             {
-              type: 'content_block_delta',
+              type: "content_block_delta",
               index: 0,
               delta: {
-                type: 'signature_delta',
+                type: "signature_delta",
                 signature: ANTHROPIC_REASONING_SIGNATURE,
               },
             },
             {
-              type: 'content_block_stop',
+              type: "content_block_stop",
               index: 0,
             },
             {
-              type: 'content_block_start',
+              type: "content_block_start",
               index: 1,
               content_block: {
-                type: 'tool_use',
+                type: "tool_use",
                 id: ANTHROPIC_TOOL_USE_ID,
-                name: 'demo_lookup',
+                name: "demo_lookup",
               },
             },
             {
-              type: 'content_block_delta',
+              type: "content_block_delta",
               index: 1,
               delta: {
-                type: 'input_json_delta',
+                type: "input_json_delta",
                 partial_json: '{"query":"Spirit Agent anthropic"}',
               },
             },
             {
-              type: 'content_block_stop',
+              type: "content_block_stop",
               index: 1,
             },
             {
-              type: 'message_delta',
+              type: "message_delta",
               delta: {
-                stop_reason: 'tool_use',
+                stop_reason: "tool_use",
                 stop_sequence: null,
               },
               usage: {
@@ -127,42 +135,42 @@ async function main(): Promise<void> {
               },
             },
             {
-              type: 'message_stop',
+              type: "message_stop",
             },
           ]
         : [
             {
-              type: 'message_start',
+              type: "message_start",
               message: {
-                id: 'msg_anthropic_stream_2',
-                model: 'deepseek-v4-pro',
+                id: "msg_anthropic_stream_2",
+                model: "deepseek-v4-pro",
                 usage: { input_tokens: 16 },
               },
             },
             {
-              type: 'content_block_start',
+              type: "content_block_start",
               index: 0,
               content_block: {
-                type: 'text',
-                text: '',
+                type: "text",
+                text: "",
               },
             },
             {
-              type: 'content_block_delta',
+              type: "content_block_delta",
               index: 0,
               delta: {
-                type: 'text_delta',
-                text: 'AI_SDK_ANTHROPIC_STREAM_OK',
+                type: "text_delta",
+                text: "AI_SDK_ANTHROPIC_STREAM_OK",
               },
             },
             {
-              type: 'content_block_stop',
+              type: "content_block_stop",
               index: 0,
             },
             {
-              type: 'message_delta',
+              type: "message_delta",
               delta: {
-                stop_reason: 'end_turn',
+                stop_reason: "end_turn",
                 stop_sequence: null,
               },
               usage: {
@@ -170,41 +178,41 @@ async function main(): Promise<void> {
               },
             },
             {
-              type: 'message_stop',
+              type: "message_stop",
             },
           ];
 
     for (const chunk of chunks) {
       response.write(`data: ${JSON.stringify(chunk)}\n\n`);
     }
-    response.write('data: [DONE]\n\n');
+    response.write("data: [DONE]\n\n");
     response.end();
   });
 
-  server.listen(0, '127.0.0.1');
-  await once(server, 'listening');
+  server.listen(0, "127.0.0.1");
+  await once(server, "listening");
 
   const address = server.address();
-  if (!address || typeof address === 'string') {
+  if (!address || typeof address === "string") {
     server.close();
-    throw new Error('无法获取本地 Anthropic smoke server 端口。');
+    throw new Error("无法获取本地 Anthropic smoke server 端口。");
   }
 
   const transport = new AiSdkAnthropicTransport();
   const state = startToolAgentState(
     buildToolAgentMessages({
       historyMessages: [],
-      model: 'deepseek-v4-pro',
+      model: "deepseek-v4-pro",
     }),
-    'Call demo_lookup exactly once.',
+    "Call demo_lookup exactly once.",
   );
 
   const config = {
-    transportKind: 'anthropic' as const,
-    apiKey: 'test-key',
-    model: 'deepseek-v4-pro',
+    transportKind: "anthropic" as const,
+    apiKey: "test-key",
+    model: "deepseek-v4-pro",
     baseUrl: `http://127.0.0.1:${(address as AddressInfo).port}/v1`,
-    thinking: { type: 'enabled' as const, budgetTokens: 1024 },
+    thinking: { type: "enabled" as const, budgetTokens: 1024 },
   };
 
   const started = await transport.startToolAgentRoundStreaming(
@@ -216,36 +224,46 @@ async function main(): Promise<void> {
   const firstEvents = await collectEvents(started.eventStream);
   const firstCompletion = await started.completion;
 
-  printSmokeSection('ai-sdk anthropic streaming smoke step 1 events', firstEvents);
-  printSmokeSection('ai-sdk anthropic streaming smoke step 1 completion', firstCompletion);
+  printSmokeSection("ai-sdk anthropic streaming smoke step 1 events", firstEvents);
+  printSmokeSection("ai-sdk anthropic streaming smoke step 1 completion", firstCompletion);
 
-  if (!firstEvents.some((event) => isJsonObject(event) && event.kind === 'streaming-tool-preview')) {
+  if (
+    !firstEvents.some((event) => isJsonObject(event) && event.kind === "streaming-tool-preview")
+  ) {
     server.close();
-    throw new Error('ai-sdk anthropic streaming smoke 未收到 streaming-tool-preview 事件。');
+    throw new Error("ai-sdk anthropic streaming smoke 未收到 streaming-tool-preview 事件。");
   }
 
   if (
     !firstEvents.some(
       (event) =>
         isJsonObject(event) &&
-        event.kind === 'thinking-chunk' &&
-        typeof event.text === 'string' &&
+        event.kind === "thinking-chunk" &&
+        typeof event.text === "string" &&
         event.text.includes(ANTHROPIC_REASONING_TEXT),
     )
   ) {
     server.close();
-    throw new Error('ai-sdk anthropic streaming smoke 未收到预期的 thinking-chunk。');
+    throw new Error("ai-sdk anthropic streaming smoke 未收到预期的 thinking-chunk。");
   }
 
-  if (firstCompletion.kind !== 'success' || firstCompletion.result.step.kind !== 'tool-calls') {
+  if (firstCompletion.kind !== "success" || firstCompletion.result.step.kind !== "tool-calls") {
     server.close();
-    throw new Error('ai-sdk anthropic streaming smoke step 1 未进入预期的 tool-calls。');
+    throw new Error("ai-sdk anthropic streaming smoke step 1 未进入预期的 tool-calls。");
   }
 
   const firstAssistant = firstCompletion.result.state.messages.at(-1);
-  if (!hasStoredReasoningSignature(firstAssistant, ANTHROPIC_REASONING_TEXT, ANTHROPIC_REASONING_SIGNATURE)) {
+  if (
+    !hasStoredReasoningSignature(
+      firstAssistant,
+      ANTHROPIC_REASONING_TEXT,
+      ANTHROPIC_REASONING_SIGNATURE,
+    )
+  ) {
     server.close();
-    throw new Error('ai-sdk anthropic streaming smoke 未在 assistant message 上保留 reasoning signature。');
+    throw new Error(
+      "ai-sdk anthropic streaming smoke 未在 assistant message 上保留 reasoning signature。",
+    );
   }
 
   const resumedState = appendToolResultMessage(
@@ -264,27 +282,42 @@ async function main(): Promise<void> {
   const secondCompletion = await secondStarted.completion;
   server.close();
 
-  printSmokeSection('ai-sdk anthropic streaming smoke step 2 events', secondEvents);
-  printSmokeSection('ai-sdk anthropic streaming smoke step 2 completion', secondCompletion);
+  printSmokeSection("ai-sdk anthropic streaming smoke step 2 events", secondEvents);
+  printSmokeSection("ai-sdk anthropic streaming smoke step 2 completion", secondCompletion);
 
-  if (secondCompletion.kind !== 'success' || secondCompletion.result.step.kind !== 'final-response-ready') {
-    throw new Error('ai-sdk anthropic streaming smoke step 2 未进入预期的 final-response-ready。');
+  if (
+    secondCompletion.kind !== "success" ||
+    secondCompletion.result.step.kind !== "final-response-ready"
+  ) {
+    throw new Error("ai-sdk anthropic streaming smoke step 2 未进入预期的 final-response-ready。");
   }
 
   const assistantText = extractLastAssistantText(secondCompletion.result.state)?.trim();
-  if (assistantText !== 'AI_SDK_ANTHROPIC_STREAM_OK') {
+  if (assistantText !== "AI_SDK_ANTHROPIC_STREAM_OK") {
     throw new Error(
-      `ai-sdk anthropic streaming smoke step 2 未拿到预期最终 assistant 文本。实际: ${assistantText ?? '<empty>'}`,
+      `ai-sdk anthropic streaming smoke step 2 未拿到预期最终 assistant 文本。实际: ${assistantText ?? "<empty>"}`,
     );
   }
 
   const firstRequest = requestBodies[0];
-  if (!isJsonObject(firstRequest) || !isJsonObject(firstRequest.thinking) || firstRequest.thinking.type !== 'enabled') {
-    throw new Error('ai-sdk anthropic streaming smoke 未在首轮请求上发送 thinking=enabled。');
+  if (
+    !isJsonObject(firstRequest) ||
+    !isJsonObject(firstRequest.thinking) ||
+    firstRequest.thinking.type !== "enabled"
+  ) {
+    throw new Error("ai-sdk anthropic streaming smoke 未在首轮请求上发送 thinking=enabled。");
   }
 
-  if (!requestIncludesReplayedThinking(requestBodies[1], ANTHROPIC_REASONING_TEXT, ANTHROPIC_REASONING_SIGNATURE)) {
-    throw new Error('ai-sdk anthropic streaming smoke 未把带 signature 的 thinking block 回灌到第二轮请求。');
+  if (
+    !requestIncludesReplayedThinking(
+      requestBodies[1],
+      ANTHROPIC_REASONING_TEXT,
+      ANTHROPIC_REASONING_SIGNATURE,
+    )
+  ) {
+    throw new Error(
+      "ai-sdk anthropic streaming smoke 未把带 signature 的 thinking block 回灌到第二轮请求。",
+    );
   }
 
   await runSeparatedSystemProjectionSmoke();
@@ -293,68 +326,78 @@ async function main(): Promise<void> {
 async function runSeparatedSystemProjectionSmoke(): Promise<void> {
   const requestBodies: JsonValue[] = [];
   const server = createServer(async (request, response) => {
-    if (request.method !== 'POST' || request.url !== '/v1/messages') {
+    if (request.method !== "POST" || request.url !== "/v1/messages") {
       response.statusCode = 404;
-      response.end('not found');
+      response.end("not found");
       return;
     }
 
     requestBodies.push(await readJsonBody(request));
     response.writeHead(200, {
-      'content-type': 'text/event-stream; charset=utf-8',
-      'cache-control': 'no-cache, no-transform',
-      connection: 'keep-alive',
+      "content-type": "text/event-stream; charset=utf-8",
+      "cache-control": "no-cache, no-transform",
+      connection: "keep-alive",
     });
-    response.write(`data: ${JSON.stringify({
-      type: 'message_start',
-      message: {
-        id: 'msg_anthropic_system_projection',
-        model: 'deepseek-v4-pro',
-        usage: { input_tokens: 9 },
-      },
-    })}\n\n`);
-    response.write(`data: ${JSON.stringify({
-      type: 'content_block_start',
-      index: 0,
-      content_block: {
-        type: 'text',
-        text: '',
-      },
-    })}\n\n`);
-    response.write(`data: ${JSON.stringify({
-      type: 'content_block_delta',
-      index: 0,
-      delta: {
-        type: 'text_delta',
-        text: 'AI_SDK_ANTHROPIC_SYSTEM_CONTEXT_OK',
-      },
-    })}\n\n`);
-    response.write(`data: ${JSON.stringify({
-      type: 'content_block_stop',
-      index: 0,
-    })}\n\n`);
-    response.write(`data: ${JSON.stringify({
-      type: 'message_delta',
-      delta: {
-        stop_reason: 'end_turn',
-        stop_sequence: null,
-      },
-      usage: {
-        output_tokens: 7,
-      },
-    })}\n\n`);
+    response.write(
+      `data: ${JSON.stringify({
+        type: "message_start",
+        message: {
+          id: "msg_anthropic_system_projection",
+          model: "deepseek-v4-pro",
+          usage: { input_tokens: 9 },
+        },
+      })}\n\n`,
+    );
+    response.write(
+      `data: ${JSON.stringify({
+        type: "content_block_start",
+        index: 0,
+        content_block: {
+          type: "text",
+          text: "",
+        },
+      })}\n\n`,
+    );
+    response.write(
+      `data: ${JSON.stringify({
+        type: "content_block_delta",
+        index: 0,
+        delta: {
+          type: "text_delta",
+          text: "AI_SDK_ANTHROPIC_SYSTEM_CONTEXT_OK",
+        },
+      })}\n\n`,
+    );
+    response.write(
+      `data: ${JSON.stringify({
+        type: "content_block_stop",
+        index: 0,
+      })}\n\n`,
+    );
+    response.write(
+      `data: ${JSON.stringify({
+        type: "message_delta",
+        delta: {
+          stop_reason: "end_turn",
+          stop_sequence: null,
+        },
+        usage: {
+          output_tokens: 7,
+        },
+      })}\n\n`,
+    );
     response.write('data: {"type":"message_stop"}\n\n');
-    response.write('data: [DONE]\n\n');
+    response.write("data: [DONE]\n\n");
     response.end();
   });
 
-  server.listen(0, '127.0.0.1');
-  await once(server, 'listening');
+  server.listen(0, "127.0.0.1");
+  await once(server, "listening");
 
   const address = server.address();
-  if (!address || typeof address === 'string') {
+  if (!address || typeof address === "string") {
     server.close();
-    throw new Error('无法获取 separated system projection smoke server 端口。');
+    throw new Error("无法获取 separated system projection smoke server 端口。");
   }
 
   const transport = new AiSdkAnthropicTransport();
@@ -362,34 +405,34 @@ async function runSeparatedSystemProjectionSmoke(): Promise<void> {
     buildToolAgentMessages({
       historyMessages: [
         {
-          role: 'user',
-          content: '<user_message_at>2026-05-14T16:11:27.803+08:00</user_message_at>\nHi DeepSeek',
+          role: "user",
+          content: "<user_message_at>2026-05-14T16:11:27.803+08:00</user_message_at>\nHi DeepSeek",
         },
         {
-          role: 'assistant',
-          content: '你好！我是 Spirit Agent。',
+          role: "assistant",
+          content: "你好！我是 Spirit Agent。",
         },
         {
-          role: 'system',
+          role: "system",
           content: ANTHROPIC_SEPARATED_SYSTEM_CONTEXT_SAMPLE,
         },
         {
-          role: 'assistant',
-          content: 'README 很短，目前没有安装说明。',
+          role: "assistant",
+          content: "README 很短，目前没有安装说明。",
         },
       ],
-      model: 'deepseek-v4-pro',
+      model: "deepseek-v4-pro",
     }),
-    'XSWL',
+    "XSWL",
   );
 
   const started = await transport.startToolAgentRoundStreaming(
     {
-      transportKind: 'anthropic',
-      apiKey: 'test-key',
-      model: 'deepseek-v4-pro',
+      transportKind: "anthropic",
+      apiKey: "test-key",
+      model: "deepseek-v4-pro",
       baseUrl: `http://127.0.0.1:${(address as AddressInfo).port}/v1`,
-      thinking: { type: 'enabled', budgetTokens: 1024 },
+      thinking: { type: "enabled", budgetTokens: 1024 },
     },
     state,
     [],
@@ -399,24 +442,30 @@ async function runSeparatedSystemProjectionSmoke(): Promise<void> {
   const completion = await started.completion;
   server.close();
 
-  printSmokeSection('ai-sdk anthropic separated-system smoke events', events);
-  printSmokeSection('ai-sdk anthropic separated-system smoke completion', completion);
+  printSmokeSection("ai-sdk anthropic separated-system smoke events", events);
+  printSmokeSection("ai-sdk anthropic separated-system smoke completion", completion);
 
-  if (completion.kind !== 'success' || completion.result.step.kind !== 'final-response-ready') {
-    throw new Error('ai-sdk anthropic separated-system smoke 未进入预期的 final-response-ready。');
+  if (completion.kind !== "success" || completion.result.step.kind !== "final-response-ready") {
+    throw new Error("ai-sdk anthropic separated-system smoke 未进入预期的 final-response-ready。");
   }
 
   const finalText = extractLastAssistantText(completion.result.state)?.trim();
-  if (finalText !== 'AI_SDK_ANTHROPIC_SYSTEM_CONTEXT_OK') {
-    throw new Error(`ai-sdk anthropic separated-system smoke 未拿到预期文本。实际: ${finalText ?? '<empty>'}`);
+  if (finalText !== "AI_SDK_ANTHROPIC_SYSTEM_CONTEXT_OK") {
+    throw new Error(
+      `ai-sdk anthropic separated-system smoke 未拿到预期文本。实际: ${finalText ?? "<empty>"}`,
+    );
   }
 
   if (requestBodies.length !== 1) {
-    throw new Error('ai-sdk anthropic separated-system smoke 未成功发出 HTTP 请求，疑似仍在 Anthropic prompt 转换阶段失败。');
+    throw new Error(
+      "ai-sdk anthropic separated-system smoke 未成功发出 HTTP 请求，疑似仍在 Anthropic prompt 转换阶段失败。",
+    );
   }
 
   if (!requestIncludesProjectedSystemContext(requestBodies[0])) {
-    throw new Error('ai-sdk anthropic separated-system smoke 未把中途 system message 投影成 user host context。');
+    throw new Error(
+      "ai-sdk anthropic separated-system smoke 未把中途 system message 投影成 user host context。",
+    );
   }
 }
 
@@ -436,7 +485,7 @@ async function readJsonBody(request: NodeJS.ReadableStream): Promise<JsonValue> 
     chunks.push(Buffer.isBuffer(chunk) ? chunk : Buffer.from(chunk));
   }
 
-  return JSON.parse(Buffer.concat(chunks).toString('utf8')) as JsonValue;
+  return JSON.parse(Buffer.concat(chunks).toString("utf8")) as JsonValue;
 }
 
 function hasStoredReasoningSignature(
@@ -455,7 +504,7 @@ function hasStoredReasoningSignature(
       : [];
 
   return reasoningParts.some((part) => {
-    if (!isJsonObject(part) || part.type !== 'reasoning' || part.text !== reasoningText) {
+    if (!isJsonObject(part) || part.type !== "reasoning" || part.text !== reasoningText) {
       return false;
     }
 
@@ -465,9 +514,9 @@ function hasStoredReasoningSignature(
         ? part.providerOptions
         : isJsonObject(part.provider_options)
           ? part.provider_options
-      : isJsonObject(part.provider_metadata)
-        ? part.provider_metadata
-        : undefined;
+          : isJsonObject(part.provider_metadata)
+            ? part.provider_metadata
+            : undefined;
     return (
       providerMetadata !== undefined &&
       isJsonObject(providerMetadata.anthropic) &&
@@ -486,19 +535,19 @@ function requestIncludesReplayedThinking(
   }
 
   return requestBody.messages.some((message) => {
-    if (!isJsonObject(message) || message.role !== 'assistant' || !Array.isArray(message.content)) {
+    if (!isJsonObject(message) || message.role !== "assistant" || !Array.isArray(message.content)) {
       return false;
     }
 
     const hasThinking = message.content.some(
       (part) =>
         isJsonObject(part) &&
-        part.type === 'thinking' &&
+        part.type === "thinking" &&
         part.thinking === reasoningText &&
         part.signature === signature,
     );
     const hasToolUse = message.content.some(
-      (part) => isJsonObject(part) && part.type === 'tool_use' && part.id === ANTHROPIC_TOOL_USE_ID,
+      (part) => isJsonObject(part) && part.type === "tool_use" && part.id === ANTHROPIC_TOOL_USE_ID,
     );
 
     return hasThinking && hasToolUse;
@@ -511,15 +560,15 @@ function requestIncludesProjectedSystemContext(requestBody: JsonValue | undefine
   }
 
   return requestBody.messages.some((message) => {
-    if (!isJsonObject(message) || message.role !== 'user' || !Array.isArray(message.content)) {
+    if (!isJsonObject(message) || message.role !== "user" || !Array.isArray(message.content)) {
       return false;
     }
 
     return message.content.some(
       (part) =>
         isJsonObject(part) &&
-        part.type === 'text' &&
-        typeof part.text === 'string' &&
+        part.type === "text" &&
+        typeof part.text === "string" &&
         part.text.includes(ANTHROPIC_PROJECTED_SYSTEM_CONTEXT_PREFIX) &&
         part.text.includes(ANTHROPIC_SEPARATED_SYSTEM_CONTEXT_SAMPLE),
     );

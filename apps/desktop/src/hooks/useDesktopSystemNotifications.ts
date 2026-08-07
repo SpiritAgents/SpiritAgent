@@ -1,15 +1,20 @@
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef } from "react";
 
 import {
   formatSessionPrefixedTitle,
   genericApprovalNotificationBody,
   shellApprovalNotificationBody,
-} from '@/lib/desktop-notification-copy';
-import type { DesktopShowNotificationRequest } from '@/lib/desktop-notification-types';
-import type { DesktopSnapshot, PendingQuestionsSnapshot, PendingToolApprovalSnapshot, SessionListItem } from '@/types';
-import i18n from '@/lib/i18n';
+} from "@/lib/desktop-notification-copy";
+import type { DesktopShowNotificationRequest } from "@/lib/desktop-notification-types";
+import type {
+  DesktopSnapshot,
+  PendingQuestionsSnapshot,
+  PendingToolApprovalSnapshot,
+  SessionListItem,
+} from "@/types";
+import i18n from "@/lib/i18n";
 
-type NotificationBridge = NonNullable<Window['spiritDesktop']>;
+type NotificationBridge = NonNullable<Window["spiritDesktop"]>;
 
 type AttentionFlags = {
   needsApproval: boolean;
@@ -19,7 +24,7 @@ type AttentionFlags = {
 };
 
 function attentionFlagsKey(flags: AttentionFlags): string {
-  return `${flags.needsApproval}:${flags.needsQuestions}:${flags.needsTaskComplete}:${flags.attentionBlockKey ?? ''}`;
+  return `${flags.needsApproval}:${flags.needsQuestions}:${flags.needsTaskComplete}:${flags.attentionBlockKey ?? ""}`;
 }
 
 function resolveAttentionBlockKey(
@@ -50,7 +55,7 @@ function buildAttentionFlags(
 }
 
 function sessionDisplayName(snapshot: DesktopSnapshot | null | undefined): string {
-  return snapshot?.activeSession?.displayName?.trim() || i18n.t('notification.defaultSessionName');
+  return snapshot?.activeSession?.displayName?.trim() || i18n.t("notification.defaultSessionName");
 }
 
 async function requestDesktopNotification(
@@ -73,22 +78,28 @@ function approvalNotificationPayload(
   isWindows: boolean,
 ): DesktopShowNotificationRequest {
   const body =
-    approval.toolName === 'shell'
-      ? shellApprovalNotificationBody(approval.prompt, i18n.t('tool.reasonPrefix'))
+    approval.toolName === "shell"
+      ? shellApprovalNotificationBody(approval.prompt, i18n.t("tool.reasonPrefix"))
       : genericApprovalNotificationBody(approval.toolName, approval.prompt);
 
   return {
-    kind: 'approval',
-    tag: 'spirit-approval',
-    title: formatSessionPrefixedTitle(sessionName, i18n.t('notification.approval.title')),
-    body: isWindows ? body : `${body}\n${i18n.t('notification.approval.returnToApp')}`,
-    ...(isWindows || window.spiritDesktop?.platform === 'darwin'
+    kind: "approval",
+    tag: "spirit-approval",
+    title: formatSessionPrefixedTitle(sessionName, i18n.t("notification.approval.title")),
+    body: isWindows ? body : `${body}\n${i18n.t("notification.approval.returnToApp")}`,
+    ...(isWindows || window.spiritDesktop?.platform === "darwin"
       ? {
           actions: [
-            { type: 'button' as const, text: i18n.t('app.allow'), action: 'allow' as const },
-            { type: 'button' as const, text: i18n.t('app.deny'), action: 'deny' as const },
-            ...(window.spiritDesktop?.platform === 'darwin'
-              ? [{ type: 'text' as const, text: i18n.t('notification.approval.reply'), action: 'reply' as const }]
+            { type: "button" as const, text: i18n.t("app.allow"), action: "allow" as const },
+            { type: "button" as const, text: i18n.t("app.deny"), action: "deny" as const },
+            ...(window.spiritDesktop?.platform === "darwin"
+              ? [
+                  {
+                    type: "text" as const,
+                    text: i18n.t("notification.approval.reply"),
+                    action: "reply" as const,
+                  },
+                ]
               : []),
           ],
         }
@@ -104,25 +115,25 @@ function askQuestionsNotificationPayload(
   const detail =
     pending.request.title?.trim() ||
     (questionCount > 0
-      ? i18n.t('notification.askQuestions.nQuestions', { count: questionCount })
-      : i18n.t('notification.askQuestions.fallback'));
+      ? i18n.t("notification.askQuestions.nQuestions", { count: questionCount })
+      : i18n.t("notification.askQuestions.fallback"));
 
   const singleQuestion =
     pending.request.questions.length === 1 ? pending.request.questions[0] : undefined;
 
   return {
-    kind: 'ask-questions',
+    kind: "ask-questions",
     tag: `spirit-ask-${pending.toolCallId}`,
-    title: formatSessionPrefixedTitle(sessionName, i18n.t('notification.askQuestions.title')),
+    title: formatSessionPrefixedTitle(sessionName, i18n.t("notification.askQuestions.title")),
     body: detail,
-    ...(singleQuestion && window.spiritDesktop?.platform === 'darwin'
+    ...(singleQuestion && window.spiritDesktop?.platform === "darwin"
       ? {
           actions: [
             {
-              type: 'text' as const,
-              text: i18n.t('notification.askQuestions.reply'),
+              type: "text" as const,
+              text: i18n.t("notification.askQuestions.reply"),
               placeholder: singleQuestion.title,
-              action: 'reply' as const,
+              action: "reply" as const,
             },
           ],
           context: {
@@ -153,7 +164,7 @@ export function useDesktopSystemNotifications(options: {
   const bgNotifiedGenRef = useRef<Map<string, number>>(new Map());
   const isWindowsRef = useRef(false);
   const taskCompleteAttentionRef = useRef(false);
-  const lastAttentionSyncKeyRef = useRef('');
+  const lastAttentionSyncKeyRef = useRef("");
   const snapshotRef = useRef(snapshot);
   snapshotRef.current = snapshot;
 
@@ -175,11 +186,11 @@ export function useDesktopSystemNotifications(options: {
   };
 
   useEffect(() => {
-    isWindowsRef.current = window.spiritDesktop?.platform === 'win32';
+    isWindowsRef.current = window.spiritDesktop?.platform === "win32";
   }, []);
 
   useEffect(() => {
-    if (apiKind !== 'electron') {
+    if (apiKind !== "electron") {
       return;
     }
     const bridge = window.spiritDesktop;
@@ -190,7 +201,7 @@ export function useDesktopSystemNotifications(options: {
       return;
     }
     taskCompleteAttentionRef.current = false;
-    lastAttentionSyncKeyRef.current = '';
+    lastAttentionSyncKeyRef.current = "";
     void bridge.syncAttentionPending({
       needsApproval: false,
       needsQuestions: false,
@@ -199,7 +210,7 @@ export function useDesktopSystemNotifications(options: {
   }, [apiKind, enabled]);
 
   useEffect(() => {
-    if (apiKind !== 'electron') {
+    if (apiKind !== "electron") {
       return;
     }
     const bridge = window.spiritDesktop;
@@ -222,7 +233,7 @@ export function useDesktopSystemNotifications(options: {
   }, [apiKind, enabled]);
 
   useEffect(() => {
-    if (!enabled || apiKind !== 'electron' || !window.spiritDesktop?.showNotification) {
+    if (!enabled || apiKind !== "electron" || !window.spiritDesktop?.showNotification) {
       return;
     }
     const bridge = window.spiritDesktop;
@@ -232,29 +243,23 @@ export function useDesktopSystemNotifications(options: {
     const questions = snapshot?.conversation.pendingQuestions;
     const isBusy = snapshot?.conversation.isBusy === true;
 
-    syncAttentionPending(
-      bridge,
-      buildAttentionFlags(snapshot, taskCompleteAttentionRef.current),
-    );
+    syncAttentionPending(bridge, buildAttentionFlags(snapshot, taskCompleteAttentionRef.current));
 
     if (isBusy && prevBusyRef.current !== true) {
       busyCycleRef.current += 1;
-      notifiedTaskCompleteRef.current.delete(`${snapshot?.composerSessionKey ?? 'active'}:${busyCycleRef.current}`);
+      notifiedTaskCompleteRef.current.delete(
+        `${snapshot?.composerSessionKey ?? "active"}:${busyCycleRef.current}`,
+      );
     }
 
-    if (
-      prevBusyRef.current === true &&
-      !isBusy &&
-      !approval &&
-      !questions
-    ) {
-      const dedupeKey = `${snapshot?.composerSessionKey ?? 'active'}:${busyCycleRef.current}`;
+    if (prevBusyRef.current === true && !isBusy && !approval && !questions) {
+      const dedupeKey = `${snapshot?.composerSessionKey ?? "active"}:${busyCycleRef.current}`;
       if (!notifiedTaskCompleteRef.current.has(dedupeKey)) {
         notifiedTaskCompleteRef.current.add(dedupeKey);
         void requestDesktopNotification(bridge, {
-          kind: 'task-complete',
+          kind: "task-complete",
           tag: `spirit-task-complete-${dedupeKey}`,
-          title: formatSessionPrefixedTitle(sessionName, i18n.t('notification.taskComplete.title')),
+          title: formatSessionPrefixedTitle(sessionName, i18n.t("notification.taskComplete.title")),
         }).then(() => {
           void bridge.getAppAwayFromUser?.().then((away) => {
             if (away) {
@@ -266,9 +271,7 @@ export function useDesktopSystemNotifications(options: {
     }
     prevBusyRef.current = isBusy;
 
-    const approvalKey = approval
-      ? `${approval.toolName}:${approval.prompt}`
-      : undefined;
+    const approvalKey = approval ? `${approval.toolName}:${approval.prompt}` : undefined;
     if (approval && approvalKey !== prevApprovalKeyRef.current) {
       void requestDesktopNotification(
         bridge,
@@ -279,7 +282,10 @@ export function useDesktopSystemNotifications(options: {
 
     const questionsKey = questions?.toolCallId;
     if (questions && questionsKey && questionsKey !== prevQuestionsKeyRef.current) {
-      void requestDesktopNotification(bridge, askQuestionsNotificationPayload(sessionName, questions));
+      void requestDesktopNotification(
+        bridge,
+        askQuestionsNotificationPayload(sessionName, questions),
+      );
     }
     prevQuestionsKeyRef.current = questionsKey;
 
@@ -300,11 +306,11 @@ export function useDesktopSystemNotifications(options: {
         if (bgNotifiedGenRef.current.get(session.path) !== gen) {
           bgNotifiedGenRef.current.set(session.path, gen);
           void requestDesktopNotification(bridge, {
-            kind: 'task-complete',
+            kind: "task-complete",
             tag: `spirit-task-complete-${session.path}`,
             title: formatSessionPrefixedTitle(
               session.displayName,
-              i18n.t('notification.taskComplete.title'),
+              i18n.t("notification.taskComplete.title"),
             ),
           }).then(() => {
             void bridge.getAppAwayFromUser?.().then((away) => {
@@ -320,7 +326,11 @@ export function useDesktopSystemNotifications(options: {
   }, [apiKind, enabled, snapshot, sessions]);
 
   useEffect(() => {
-    if (apiKind !== 'electron' || !onNotifyRefresh || !window.spiritDesktop?.subscribeNotifyRefresh) {
+    if (
+      apiKind !== "electron" ||
+      !onNotifyRefresh ||
+      !window.spiritDesktop?.subscribeNotifyRefresh
+    ) {
       return;
     }
     return window.spiritDesktop.subscribeNotifyRefresh(onNotifyRefresh);

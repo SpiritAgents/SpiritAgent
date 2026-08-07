@@ -1,10 +1,10 @@
-export type SessionWorkLocation = 'local' | 'worktree';
+export type SessionWorkLocation = "local" | "worktree";
 
 const SPIRIT_WORKTREE_PATH_PATTERN = /^(.+)\.worktrees\/[^/]+$/u;
 
 function normalizeWorkspacePathForMatch(workspaceRoot: string): string {
   const trimmed = workspaceRoot.trim();
-  return trimmed.replace(/\\/g, '/').replace(/\/+$/g, '');
+  return trimmed.replace(/\\/g, "/").replace(/\/+$/g, "");
 }
 
 /** Browser-safe mirror of host-internal resolveWorkspaceGroupingRoot (avoid barrel import in renderer). */
@@ -24,5 +24,5 @@ export function isSpiritWorktreeWorkspaceRoot(workspaceRoot: string): boolean {
 }
 
 export function resolveSessionWorkLocation(workspaceRoot: string): SessionWorkLocation {
-  return isSpiritWorktreeWorkspaceRoot(workspaceRoot) ? 'worktree' : 'local';
+  return isSpiritWorktreeWorkspaceRoot(workspaceRoot) ? "worktree" : "local";
 }

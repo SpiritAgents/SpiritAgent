@@ -1,4 +1,4 @@
-import { BrowserWindow, app } from 'electron';
+import { BrowserWindow, app } from "electron";
 
 let mainWindowRef: BrowserWindow | undefined;
 let pendingApproval = false;
@@ -38,17 +38,17 @@ export function setDesktopAttentionPending(flags: {
 }): void {
   const prevKey = attentionBlockKey;
 
-  if (typeof flags.needsApproval === 'boolean') {
+  if (typeof flags.needsApproval === "boolean") {
     pendingApproval = flags.needsApproval;
   }
-  if (typeof flags.needsQuestions === 'boolean') {
+  if (typeof flags.needsQuestions === "boolean") {
     pendingQuestions = flags.needsQuestions;
   }
-  if (typeof flags.needsTaskComplete === 'boolean') {
+  if (typeof flags.needsTaskComplete === "boolean") {
     pendingTaskComplete = flags.needsTaskComplete;
   }
 
-  if (typeof flags.attentionBlockKey === 'string' && flags.attentionBlockKey.length > 0) {
+  if (typeof flags.attentionBlockKey === "string" && flags.attentionBlockKey.length > 0) {
     attentionBlockKey = flags.attentionBlockKey;
   } else if (!pendingApproval && !pendingQuestions) {
     attentionBlockKey = undefined;
@@ -80,18 +80,18 @@ export function refreshDesktopAttention(away: boolean): void {
     return;
   }
 
-  if (process.platform === 'win32' || process.platform === 'linux') {
+  if (process.platform === "win32" || process.platform === "linux") {
     window.flashFrame(active);
     return;
   }
 
-  if (process.platform === 'darwin' && app.dock) {
+  if (process.platform === "darwin" && app.dock) {
     if (dockBounceId !== undefined) {
       app.dock.cancelBounce(dockBounceId);
       dockBounceId = undefined;
     }
     if (active) {
-      dockBounceId = app.dock.bounce('informational');
+      dockBounceId = app.dock.bounce("informational");
     }
   }
 }

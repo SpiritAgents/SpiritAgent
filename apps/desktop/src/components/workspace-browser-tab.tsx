@@ -6,10 +6,7 @@ import { ArrowLeft, ArrowRight, PenTool, RefreshCw } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { normalizeBrowserUrl, toLocalHostUrl } from "@/lib/browser-url";
-import {
-  BROWSER_NEW_TAB_SENTINEL,
-  isBrowserNewTabUrl,
-} from "@/lib/workspace-tool-tabs";
+import { BROWSER_NEW_TAB_SENTINEL, isBrowserNewTabUrl } from "@/lib/workspace-tool-tabs";
 import type { BrowserElementAttachment } from "@/lib/browser-element-attachment";
 import { truncateOuterHtml } from "@/lib/browser-element-attachment";
 import {
@@ -111,11 +108,7 @@ function clampDevtoolsWidthPx(totalWidth: number, widthPx: number): number {
   return Math.max(DEVTOOLS_MIN_WIDTH_PX, Math.min(maxDevtools, Math.round(widthPx)));
 }
 
-function BrowserNewTabPage({
-  onNavigate,
-}: {
-  onNavigate(url: string): void;
-}) {
+function BrowserNewTabPage({ onNavigate }: { onNavigate(url: string): void }) {
   const { t } = useTranslation();
   const [endpoints, setEndpoints] = useState<LocalListeningEndpoint[]>([]);
   const [scanning, setScanning] = useState(false);
@@ -442,7 +435,7 @@ export function WorkspaceBrowserTab({
 
   useEffect(() => {
     if (isPickerActive) exitPicker();
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [browserUrl]);
 
   useEffect(() => {
@@ -641,9 +634,7 @@ export function WorkspaceBrowserTab({
   }, [canEmbed, isActive, showNewTab, toggleDevtools]);
 
   const navDisabled = showNewTab;
-  const pageWebviewRight = devtoolsOpen
-    ? devtoolsWidthPx + DEVTOOLS_SPLITTER_WIDTH_PX
-    : 0;
+  const pageWebviewRight = devtoolsOpen ? devtoolsWidthPx + DEVTOOLS_SPLITTER_WIDTH_PX : 0;
 
   useWorkspaceToolsShellHorizontalDivider(
     navBarRef,
@@ -723,10 +714,7 @@ export function WorkspaceBrowserTab({
             type="button"
             variant="ghost"
             size="icon-sm"
-            className={cn(
-              "size-7 shrink-0",
-              isPickerActive && "bg-accent text-accent-foreground",
-            )}
+            className={cn("size-7 shrink-0", isPickerActive && "bg-accent text-accent-foreground")}
             aria-label={t("workspace.browserPickerToggle")}
             aria-pressed={isPickerActive}
             onClick={() => setIsPickerActive((v) => !v)}

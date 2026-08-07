@@ -1,8 +1,8 @@
-import assert from 'node:assert/strict';
-import { mkdtemp } from 'node:fs/promises';
-import { tmpdir } from 'node:os';
-import { join } from 'node:path';
-import { describe, it } from 'node:test';
+import assert from "node:assert/strict";
+import { mkdtemp } from "node:fs/promises";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
+import { describe, it } from "node:test";
 
 import {
   instanceFilePath,
@@ -11,80 +11,77 @@ import {
   registerInstance,
   unregisterInstance,
   type ServerInstanceRecord,
-} from '../src/instance-registry.js';
+} from "../src/instance-registry.js";
 
 async function freshDataDir(): Promise<string> {
-  return mkdtemp(join(tmpdir(), 'spirit-server-test-'));
+  return mkdtemp(join(tmpdir(), "spirit-server-test-"));
 }
 
 function record(overrides: Partial<ServerInstanceRecord>): ServerInstanceRecord {
   return {
-    instanceId: 'instance-1',
+    instanceId: "instance-1",
     pid: process.pid,
-    host: '127.0.0.1',
+    host: "127.0.0.1",
     port: 12345,
     startedAt: new Date().toISOString(),
-    version: '0.0.0-test',
+    version: "0.0.0-test",
     ...overrides,
   };
 }
 
-describe('instance-registry', () => {
-  it('registers and lists live instances', async () => {
+describe("instance-registry", () => {
+  it("registers and lists live instances", async () => {
     const dir = await freshDataDir();
-    await registerInstance(dir, record({ instanceId: 'a' }));
-    await registerInstance(dir, record({ instanceId: 'b', port: 2222 }));
+    await registerInstance(dir, record({ instanceId: "a" }));
+    await registerInstance(dir, record({ instanceId: "b", port: 2222 }));
     const instances = await listInstances(dir);
-    assert.deepEqual(
-      instances.map((instance) => instance.instanceId).sort(),
-      ['a', 'b'],
-    );
+    assert.deepEqual(instances.map((instance) => instance.instanceId).sort(), ["a", "b"]);
   });
 
-  it('prunes records whose pid is dead', async () => {
+  it("prunes records whose pid is dead", async () => {
     const dir = await freshDataDir();
-    await registerInstance(dir, record({ instanceId: 'alive' }));
+    await registerInstance(dir, record({ instanceId: "alive" }));
     // 2^22 is outside typical pid ranges on macOS/Linux and not our process.
-    await registerInstance(dir, record({ instanceId: 'dead', pid: 4_194_304 }));
+    await registerInstance(dir, record({ instanceId: "dead", pid: 4_194_304 }));
     const instances = await listInstances(dir);
     assert.deepEqual(
       instances.map((instance) => instance.instanceId),
-      ['alive'],
+      ["alive"],
     );
     // Second listing confirms the stale file was removed, not just filtered.
     const again = await listInstances(dir, { prune: false });
     assert.deepEqual(
       again.map((instance) => instance.instanceId),
-      ['alive'],
+      ["alive"],
     );
   });
 
-  it('unregister removes the record file', async () => {
+  it("unregister removes the record file", async () => {
     const dir = await freshDataDir();
-    await registerInstance(dir, record({ instanceId: 'gone' }));
-    await unregisterInstance(dir, 'gone');
+    await registerInstance(dir, record({ instanceId: "gone" }));
+    await unregisterInstance(dir, "gone");
     assert.deepEqual(await listInstances(dir), []);
     // Idempotent: removing a missing record does not throw.
-    await unregisterInstance(dir, 'gone');
+    await unregisterInstance(dir, "gone");
   });
 
-  it('ignores malformed record files', async () => {
+  it("ignores malformed record files", async () => {
     const dir = await freshDataDir();
-    await registerInstance(dir, record({ instanceId: 'ok' }));
-    const bad = instanceFilePath(dir, 'bad');
-    await import('node:fs/promises').then(({ writeFile, mkdir }) =>
-      mkdir(join(dir, 'server', 'instances'), { recursive: true }).then(() =>
-        writeFile(bad, 'not json', 'utf8'),
+    await registerInstance(dir, record({ instanceId: "ok" }));
+    const bad = instanceFilePath(dir, "bad");
+    await import("node:fs/promises").then(({ writeFile, mkdir }) =>
+      mkdir(join(dir, "server", "instances"), { recursive: true }).then(() =>
+        writeFile(bad, "not json", "utf8"),
       ),
     );
     const instances = await listInstances(dir);
     assert.deepEqual(
       instances.map((instance) => instance.instanceId),
-      ['ok'],
+      ["ok"],
     );
   });
 
-  it('isProcessAlive detects self and rejects invalid pids', () => {
+  it("isProcessAlive detects self and rejects invalid pids", () => {
     assert.equal(isProcessAlive(process.pid), true);
     assert.equal(isProcessAlive(0), false);
     assert.equal(isProcessAlive(-1), false);

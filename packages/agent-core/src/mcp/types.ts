@@ -5,17 +5,17 @@ export interface McpCapabilityToggles {
 }
 
 export interface McpStdioTransportConfig {
-  type: 'stdio';
+  type: "stdio";
   command: string;
   args?: string[];
   env?: Record<string, string>;
   cwd?: string;
   timeoutMs?: number;
-  stderr?: 'inherit' | 'pipe';
+  stderr?: "inherit" | "pipe";
 }
 
 export interface McpHttpTransportConfig {
-  type: 'http';
+  type: "http";
   url: string;
   headers?: Record<string, string>;
   timeoutMs?: number;
@@ -35,17 +35,17 @@ export interface McpConfigFile {
 }
 
 export interface ResolvedMcpStdioTransportConfig {
-  type: 'stdio';
+  type: "stdio";
   command: string;
   args: string[];
   env: Record<string, string>;
-  stderr: 'inherit' | 'pipe';
+  stderr: "inherit" | "pipe";
   cwd?: string;
   timeoutMs?: number;
 }
 
 export interface ResolvedMcpHttpTransportConfig {
-  type: 'http';
+  type: "http";
   url: string;
   headers: Record<string, string>;
   timeoutMs?: number;
@@ -63,8 +63,8 @@ export interface ResolvedMcpServerConfig {
   transport: ResolvedMcpTransportConfig;
 }
 
-export type McpServerRuntimeState = 'disabled' | 'idle' | 'loading' | 'ready' | 'error';
-export type McpRegistryRuntimeState = 'idle' | 'loading' | 'ready' | 'error';
+export type McpServerRuntimeState = "disabled" | "idle" | "loading" | "ready" | "error";
+export type McpRegistryRuntimeState = "idle" | "loading" | "ready" | "error";
 
 export interface McpServerStatus {
   name: string;
@@ -96,7 +96,7 @@ export interface McpToolIndexEntry {
   displayName: string;
   toolName: string;
   description: string;
-  inputSchema: import('../ports.js').JsonValue;
+  inputSchema: import("../ports.js").JsonValue;
 }
 
 export interface ToolAgentMcpToolCatalogToolEntry {

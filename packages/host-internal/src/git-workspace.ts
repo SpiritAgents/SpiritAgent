@@ -1,13 +1,13 @@
-import { execFile } from 'node:child_process';
-import { mkdir, readFile } from 'node:fs/promises';
-import path from 'node:path';
-import { promisify } from 'node:util';
+import { execFile } from "node:child_process";
+import { mkdir, readFile } from "node:fs/promises";
+import path from "node:path";
+import { promisify } from "node:util";
 
 const execFileAsync = promisify(execFile);
 const GIT_MAX_BUFFER = 4 * 1024 * 1024;
 
-export type { WorkLocationKind } from './work-location.js';
-import type { WorkLocationKind } from './work-location.js';
+export type { WorkLocationKind } from "./work-location.js";
+import type { WorkLocationKind } from "./work-location.js";
 
 export interface GitCheckoutOptions {
   discardLocalChanges?: boolean;
@@ -44,16 +44,16 @@ export interface ParsedGitStatusBranchLine {
 
 export function parseGitShortBranchLine(line: string): ParsedGitStatusBranchLine | null {
   const trimmed = line.trim();
-  if (!trimmed.startsWith('## ')) {
+  if (!trimmed.startsWith("## ")) {
     return null;
   }
 
   let branchPart = trimmed.slice(3).trim();
-  let bracketPart = '';
-  const bracketStart = branchPart.indexOf(' [');
+  let bracketPart = "";
+  const bracketStart = branchPart.indexOf(" [");
   if (bracketStart >= 0) {
     bracketPart = branchPart.slice(bracketStart + 2);
-    if (bracketPart.endsWith(']')) {
+    if (bracketPart.endsWith("]")) {
       bracketPart = bracketPart.slice(0, -1);
     }
     branchPart = branchPart.slice(0, bracketStart).trim();
@@ -62,11 +62,11 @@ export function parseGitShortBranchLine(line: string): ParsedGitStatusBranchLine
   let localBranch: string | undefined;
   let upstreamRemote: string | undefined;
   let upstreamBranch: string | undefined;
-  const ellipsis = branchPart.indexOf('...');
+  const ellipsis = branchPart.indexOf("...");
   if (ellipsis >= 0) {
     localBranch = branchPart.slice(0, ellipsis) || undefined;
     const upstream = branchPart.slice(ellipsis + 3);
-    const slash = upstream.indexOf('/');
+    const slash = upstream.indexOf("/");
     if (slash >= 0) {
       upstreamRemote = upstream.slice(0, slash) || undefined;
       upstreamBranch = upstream.slice(slash + 1) || undefined;
@@ -77,7 +77,10 @@ export function parseGitShortBranchLine(line: string): ParsedGitStatusBranchLine
 
   let aheadCount = 0;
   let behindCount = 0;
-  for (const segment of bracketPart.split(',').map((part) => part.trim()).filter(Boolean)) {
+  for (const segment of bracketPart
+    .split(",")
+    .map((part) => part.trim())
+    .filter(Boolean)) {
     const aheadMatch = /^ahead (\d+)$/u.exec(segment);
     const behindMatch = /^behind (\d+)$/u.exec(segment);
     if (aheadMatch) {
@@ -104,8 +107,8 @@ export function resolveGitPushRemote(
   if (upstreamRemote && remotes.includes(upstreamRemote)) {
     return upstreamRemote;
   }
-  if (remotes.includes('origin')) {
-    return 'origin';
+  if (remotes.includes("origin")) {
+    return "origin";
   }
   return remotes[0];
 }
@@ -131,39 +134,45 @@ export interface PushGitBranchOptions {
 }
 
 function renderGitError(error: unknown): string {
-  if (typeof error !== 'object' || error === null) {
+  if (typeof error !== "object" || error === null) {
     return String(error);
   }
 
-  const stdout = typeof (error as { stdout?: unknown }).stdout === 'string'
-    ? (error as { stdout: string }).stdout.trim()
-    : '';
-  const stderr = typeof (error as { stderr?: unknown }).stderr === 'string'
-    ? (error as { stderr: string }).stderr.trim()
-    : '';
+  const stdout =
+    typeof (error as { stdout?: unknown }).stdout === "string"
+      ? (error as { stdout: string }).stdout.trim()
+      : "";
+  const stderr =
+    typeof (error as { stderr?: unknown }).stderr === "string"
+      ? (error as { stderr: string }).stderr.trim()
+      : "";
   const message = error instanceof Error ? error.message.trim() : String(error);
   return stderr || stdout || message;
 }
 
 export function isGitCheckoutBlockedByLocalChanges(message: string): boolean {
-  return /local changes to the following files would be overwritten by checkout/i.test(message)
-    || /please commit your changes or stash them before you switch branches/i.test(message);
+  return (
+    /local changes to the following files would be overwritten by checkout/i.test(message) ||
+    /please commit your changes or stash them before you switch branches/i.test(message)
+  );
 }
 
 export class GitCheckoutBlockedError extends Error {
-  readonly code = 'GIT_CHECKOUT_LOCAL_CHANGES';
+  readonly code = "GIT_CHECKOUT_LOCAL_CHANGES";
 
   constructor(message: string) {
     super(message);
-    this.name = 'GitCheckoutBlockedError';
+    this.name = "GitCheckoutBlockedError";
   }
 }
 
 export function isGitCheckoutBlockedError(error: unknown): error is GitCheckoutBlockedError {
-  return error instanceof GitCheckoutBlockedError
-    || (typeof error === 'object'
-      && error !== null
-      && (error as { code?: unknown }).code === 'GIT_CHECKOUT_LOCAL_CHANGES');
+  return (
+    error instanceof GitCheckoutBlockedError ||
+    (typeof error === "object" &&
+      error !== null &&
+      (error as { code?: unknown }).code === "GIT_CHECKOUT_LOCAL_CHANGES")
+  );
 }
 
 async function runGit(
@@ -171,7 +180,7 @@ async function runGit(
   args: string[],
 ): Promise<{ stdout: string; stderr: string }> {
   try {
-    const result = await execFileAsync('git', args, {
+    const result = await execFileAsync("git", args, {
       cwd: workspaceRoot,
       windowsHide: true,
       maxBuffer: GIT_MAX_BUFFER,
@@ -182,23 +191,22 @@ async function runGit(
     };
   } catch (error) {
     const message = renderGitError(error);
-    throw new Error(`git ${args.join(' ')} failed: ${message}`);
+    throw new Error(`git ${args.join(" ")} failed: ${message}`);
   }
 }
 
 async function readBranchName(workspaceRoot: string): Promise<string | undefined> {
-  const { stdout } = await runGit(workspaceRoot, ['branch', '--show-current']);
+  const { stdout } = await runGit(workspaceRoot, ["branch", "--show-current"]);
   const branch = stdout.trim();
   return branch || undefined;
 }
 
-export const NOT_A_GIT_REPOSITORY_BASIC_INFO_LABEL =
-  'Current workspace is not a Git repository';
+export const NOT_A_GIT_REPOSITORY_BASIC_INFO_LABEL = "Current workspace is not a Git repository";
 
-export const DETACHED_GIT_HEAD_BASIC_INFO_LABEL = 'detached HEAD';
+export const DETACHED_GIT_HEAD_BASIC_INFO_LABEL = "detached HEAD";
 
 export function gitBranchLabelForBasicInfo(
-  snapshot: Pick<GitWorkspaceSnapshot, 'isRepository' | 'branch'>,
+  snapshot: Pick<GitWorkspaceSnapshot, "isRepository" | "branch">,
 ): string {
   if (!snapshot.isRepository) {
     return NOT_A_GIT_REPOSITORY_BASIC_INFO_LABEL;
@@ -208,8 +216,11 @@ export function gitBranchLabelForBasicInfo(
 
 export async function readGitBranchLabelForBasicInfo(workspaceRoot: string): Promise<string> {
   try {
-    const { stdout: repoFlag } = await runGit(workspaceRoot, ['rev-parse', '--is-inside-work-tree']);
-    if (repoFlag.trim() !== 'true') {
+    const { stdout: repoFlag } = await runGit(workspaceRoot, [
+      "rev-parse",
+      "--is-inside-work-tree",
+    ]);
+    if (repoFlag.trim() !== "true") {
       return NOT_A_GIT_REPOSITORY_BASIC_INFO_LABEL;
     }
     const branch = (await readBranchName(workspaceRoot))?.trim();
@@ -221,7 +232,7 @@ export async function readGitBranchLabelForBasicInfo(workspaceRoot: string): Pro
 
 function sortBranches(branches: string[], currentBranch?: string): string[] {
   const unique = [...new Set(branches.map((branch) => branch.trim()).filter(Boolean))];
-  unique.sort((left, right) => left.localeCompare(right, undefined, { sensitivity: 'base' }));
+  unique.sort((left, right) => left.localeCompare(right, undefined, { sensitivity: "base" }));
   if (!currentBranch) {
     return unique;
   }
@@ -240,9 +251,9 @@ function sortBranches(branches: string[], currentBranch?: string): string[] {
 export async function listGitBranches(workspaceRoot: string): Promise<string[]> {
   const currentBranch = await readBranchName(workspaceRoot);
   const { stdout } = await runGit(workspaceRoot, [
-    'for-each-ref',
-    '--format=%(refname:short)',
-    'refs/heads',
+    "for-each-ref",
+    "--format=%(refname:short)",
+    "refs/heads",
   ]);
   const branches = stdout
     .split(/\r?\n/u)
@@ -258,12 +269,12 @@ export async function checkoutGitBranch(
 ): Promise<void> {
   const normalized = branch.trim();
   if (!normalized) {
-    throw new Error('Branch name cannot be empty.');
+    throw new Error("Branch name cannot be empty.");
   }
 
   const args = options.discardLocalChanges
-    ? ['checkout', '-f', normalized]
-    : ['checkout', normalized];
+    ? ["checkout", "-f", normalized]
+    : ["checkout", normalized];
 
   try {
     await runGit(workspaceRoot, args);
@@ -272,7 +283,7 @@ export async function checkoutGitBranch(
     if (!options.discardLocalChanges && isGitCheckoutBlockedByLocalChanges(message)) {
       throw new GitCheckoutBlockedError(message);
     }
-    throw new Error(`git ${args.join(' ')} failed: ${message}`);
+    throw new Error(`git ${args.join(" ")} failed: ${message}`);
   }
 }
 
@@ -298,14 +309,14 @@ export function parseGitStatusPorcelain(stdout: string): GitWorkingTreeChange[] 
       continue;
     }
 
-    if (line.startsWith('??')) {
+    if (line.startsWith("??")) {
       const path = line.slice(3).trim();
       if (path) {
         changes.push({
           path,
-          indexStatus: '?',
-          worktreeStatus: '?',
-          code: '??',
+          indexStatus: "?",
+          worktreeStatus: "?",
+          code: "??",
         });
       }
       continue;
@@ -315,53 +326,55 @@ export function parseGitStatusPorcelain(stdout: string): GitWorkingTreeChange[] 
       continue;
     }
 
-    const indexStatus = line[0] ?? ' ';
-    const worktreeStatus = line[1] ?? ' ';
+    const indexStatus = line[0] ?? " ";
+    const worktreeStatus = line[1] ?? " ";
     const pathPart = line.slice(3).trim();
     if (!pathPart) {
       continue;
     }
 
-    const renameArrow = ' -> ';
+    const renameArrow = " -> ";
     const arrowIndex = pathPart.indexOf(renameArrow);
     const previousPath = arrowIndex >= 0 ? pathPart.slice(0, arrowIndex).trim() : undefined;
-    const path = arrowIndex >= 0
-      ? pathPart.slice(arrowIndex + renameArrow.length).trim()
-      : pathPart;
+    const path =
+      arrowIndex >= 0 ? pathPart.slice(arrowIndex + renameArrow.length).trim() : pathPart;
 
     if (!path) {
       continue;
     }
 
-    const code = indexStatus !== ' ' && worktreeStatus !== ' '
-      ? `${indexStatus}${worktreeStatus}`
-      : indexStatus !== ' '
-        ? indexStatus
-        : worktreeStatus !== ' '
-          ? worktreeStatus
-          : ' ';
+    const code =
+      indexStatus !== " " && worktreeStatus !== " "
+        ? `${indexStatus}${worktreeStatus}`
+        : indexStatus !== " "
+          ? indexStatus
+          : worktreeStatus !== " "
+            ? worktreeStatus
+            : " ";
 
     changes.push({
       path,
       indexStatus,
       worktreeStatus,
-      code: code.trim() === '' ? ' ' : code,
+      code: code.trim() === "" ? " " : code,
       ...(previousPath ? { previousPath } : {}),
     });
   }
 
-  changes.sort((left, right) => left.path.localeCompare(right.path, undefined, { sensitivity: 'base' }));
+  changes.sort((left, right) =>
+    left.path.localeCompare(right.path, undefined, { sensitivity: "base" }),
+  );
   return changes;
 }
 
 export async function readGitWorkingTreeChanges(repoRoot: string): Promise<GitWorkingTreeSnapshot> {
   try {
     const [{ stdout: repoFlag }, { stdout: statusOutput }] = await Promise.all([
-      runGit(repoRoot, ['rev-parse', '--is-inside-work-tree']),
-      runGit(repoRoot, ['status', '--porcelain', '--untracked-files=all']),
+      runGit(repoRoot, ["rev-parse", "--is-inside-work-tree"]),
+      runGit(repoRoot, ["status", "--porcelain", "--untracked-files=all"]),
     ]);
 
-    if (repoFlag.trim() !== 'true') {
+    if (repoFlag.trim() !== "true") {
       return { isRepository: false, changes: [] };
     }
 
@@ -376,7 +389,7 @@ export async function readGitWorkingTreeChanges(repoRoot: string): Promise<GitWo
 
 async function listGitRemotes(workspaceRoot: string): Promise<string[]> {
   try {
-    const { stdout } = await runGit(workspaceRoot, ['remote']);
+    const { stdout } = await runGit(workspaceRoot, ["remote"]);
     return stdout
       .split(/\r?\n/u)
       .map((line) => line.trim())
@@ -388,7 +401,7 @@ async function listGitRemotes(workspaceRoot: string): Promise<string[]> {
 
 async function gitHasCommit(workspaceRoot: string): Promise<boolean> {
   try {
-    await runGit(workspaceRoot, ['rev-parse', '--verify', 'HEAD']);
+    await runGit(workspaceRoot, ["rev-parse", "--verify", "HEAD"]);
     return true;
   } catch {
     return false;
@@ -403,18 +416,18 @@ export function parseGitDiffNumstat(stdout: string): GitWorkingTreeLineDelta {
     if (!line) {
       continue;
     }
-    const tabIndex = line.indexOf('\t');
+    const tabIndex = line.indexOf("\t");
     if (tabIndex < 0) {
       continue;
     }
     const addedRaw = line.slice(0, tabIndex).trim();
     const rest = line.slice(tabIndex + 1);
-    const secondTab = rest.indexOf('\t');
+    const secondTab = rest.indexOf("\t");
     if (secondTab < 0) {
       continue;
     }
     const removedRaw = rest.slice(0, secondTab).trim();
-    if (addedRaw === '-' || removedRaw === '-') {
+    if (addedRaw === "-" || removedRaw === "-") {
       continue;
     }
     const parsedAdded = Number.parseInt(addedRaw, 10);
@@ -441,12 +454,12 @@ function sumGitWorkingTreeLineDelta(
 
 async function countTextFileLines(absolutePath: string): Promise<number> {
   try {
-    const content = await readFile(absolutePath, 'utf8');
+    const content = await readFile(absolutePath, "utf8");
     if (content.length === 0) {
       return 0;
     }
     const lines = content.split(/\r?\n/u);
-    if (lines.length > 0 && lines[lines.length - 1] === '') {
+    if (lines.length > 0 && lines[lines.length - 1] === "") {
       lines.pop();
     }
     return lines.length;
@@ -462,21 +475,18 @@ export async function readGitWorkingTreeLineDelta(
   let delta: GitWorkingTreeLineDelta = { added: 0, removed: 0 };
 
   if (options.hasCommit) {
-    const { stdout } = await runGit(repoRoot, ['diff', '--numstat', 'HEAD']);
+    const { stdout } = await runGit(repoRoot, ["diff", "--numstat", "HEAD"]);
     delta = parseGitDiffNumstat(stdout);
   } else {
     const [{ stdout: unstaged }, { stdout: staged }] = await Promise.all([
-      runGit(repoRoot, ['diff', '--numstat']),
-      runGit(repoRoot, ['diff', '--cached', '--numstat']),
+      runGit(repoRoot, ["diff", "--numstat"]),
+      runGit(repoRoot, ["diff", "--cached", "--numstat"]),
     ]);
-    delta = sumGitWorkingTreeLineDelta(
-      parseGitDiffNumstat(unstaged),
-      parseGitDiffNumstat(staged),
-    );
+    delta = sumGitWorkingTreeLineDelta(parseGitDiffNumstat(unstaged), parseGitDiffNumstat(staged));
   }
 
   const untrackedChanges = parseGitStatusPorcelain(options.statusOutput).filter(
-    (change) => change.code === '??',
+    (change) => change.code === "??",
   );
   for (const change of untrackedChanges) {
     const lines = await countTextFileLines(path.join(repoRoot, change.path));
@@ -506,22 +516,22 @@ export async function readGitWorkspaceSnapshot(repoRoot: string): Promise<GitWor
       remotes,
       hasCommit,
     ] = await Promise.all([
-      runGit(repoRoot, ['rev-parse', '--is-inside-work-tree']),
-      runGit(repoRoot, ['status', '--porcelain', '--untracked-files=all']),
-      runGit(repoRoot, ['status', '-sb']),
+      runGit(repoRoot, ["rev-parse", "--is-inside-work-tree"]),
+      runGit(repoRoot, ["status", "--porcelain", "--untracked-files=all"]),
+      runGit(repoRoot, ["status", "-sb"]),
       readBranchName(repoRoot),
       listGitBranches(repoRoot),
       listGitRemotes(repoRoot),
       gitHasCommit(repoRoot),
     ]);
 
-    if (repoFlag.trim() !== 'true') {
+    if (repoFlag.trim() !== "true") {
       return emptySnapshot();
     }
 
     const shortBranchLine = shortStatusOutput
       .split(/\r?\n/u)
-      .find((line) => line.startsWith('## '));
+      .find((line) => line.startsWith("## "));
     const parsedBranch = shortBranchLine ? parseGitShortBranchLine(shortBranchLine) : null;
     const upstreamRemote = parsedBranch?.upstreamRemote;
     const upstreamBranch = parsedBranch?.upstreamBranch;
@@ -564,24 +574,24 @@ export async function pushGitBranch(
 ): Promise<void> {
   const snapshot = await readGitWorkspaceSnapshot(workspaceRoot);
   if (!snapshot.isRepository) {
-    throw new Error('Not a git repository');
+    throw new Error("Not a git repository");
   }
 
   const branch = options.branch?.trim() || snapshot.branch;
   if (!branch) {
-    throw new Error('No branch to push');
+    throw new Error("No branch to push");
   }
 
   const remote = options.remote?.trim() || snapshot.pushRemote;
   if (!remote) {
-    throw new Error('No git remote configured');
+    throw new Error("No git remote configured");
   }
 
-  await runGit(workspaceRoot, ['push', '-u', remote, branch]);
+  await runGit(workspaceRoot, ["push", "-u", remote, branch]);
 }
 
 export function normalizeWorkLocationKind(value: unknown): WorkLocationKind {
-  return value === 'worktree' ? 'worktree' : 'local';
+  return value === "worktree" ? "worktree" : "local";
 }
 
 const SPIRIT_WORKTREE_NAME_PATTERN = /^spirit-[a-z0-9]+(?:-[a-z0-9]+)*$/u;
@@ -621,7 +631,7 @@ export function isSpiritBranchName(name: string): boolean {
 export function buildWorktreeRootPath(repoRoot: string, worktreeName: string): string {
   const normalizedName = worktreeName.trim();
   if (!normalizedName) {
-    throw new Error('Worktree name cannot be empty.');
+    throw new Error("Worktree name cannot be empty.");
   }
   return path.join(`${repoRoot}.worktrees`, normalizedName);
 }
@@ -629,7 +639,7 @@ export function buildWorktreeRootPath(repoRoot: string, worktreeName: string): s
 /** Map a linked worktree path back to its primary repository root for UI grouping. */
 export function resolveWorkspaceGroupingRoot(workspaceRoot: string): string {
   const normalized = path.resolve(workspaceRoot);
-  const asPosix = normalized.replace(/\\/g, '/');
+  const asPosix = normalized.replace(/\\/g, "/");
   const match = asPosix.match(/^(.+)\.worktrees\/[^/]+$/u);
   if (match?.[1]) {
     return path.resolve(match[1]);
@@ -639,17 +649,17 @@ export function resolveWorkspaceGroupingRoot(workspaceRoot: string): string {
 
 export async function resolvePrimaryRepoRoot(workspaceRoot: string): Promise<string> {
   const { stdout } = await runGit(workspaceRoot, [
-    'rev-parse',
-    '--path-format=absolute',
-    '--git-common-dir',
+    "rev-parse",
+    "--path-format=absolute",
+    "--git-common-dir",
   ]);
   const commonDir = stdout.trim();
   if (!commonDir) {
-    throw new Error('Unable to resolve primary repository root.');
+    throw new Error("Unable to resolve primary repository root.");
   }
   const normalizedCommonDir = path.resolve(commonDir);
   const basename = path.basename(normalizedCommonDir).toLowerCase();
-  if (basename === '.git') {
+  if (basename === ".git") {
     return path.dirname(normalizedCommonDir);
   }
   return normalizedCommonDir;
@@ -657,10 +667,7 @@ export async function resolvePrimaryRepoRoot(workspaceRoot: string): Promise<str
 
 export async function resolveDefaultBranch(repoRoot: string): Promise<string> {
   try {
-    const { stdout } = await runGit(repoRoot, [
-      'symbolic-ref',
-      'refs/remotes/origin/HEAD',
-    ]);
+    const { stdout } = await runGit(repoRoot, ["symbolic-ref", "refs/remotes/origin/HEAD"]);
     const match = stdout.trim().match(/^refs\/remotes\/origin\/(.+)$/u);
     if (match?.[1]) {
       return match[1];
@@ -670,11 +677,11 @@ export async function resolveDefaultBranch(repoRoot: string): Promise<string> {
   }
 
   const branches = await listGitBranches(repoRoot);
-  if (branches.includes('main')) {
-    return 'main';
+  if (branches.includes("main")) {
+    return "main";
   }
-  if (branches.includes('master')) {
-    return 'master';
+  if (branches.includes("master")) {
+    return "master";
   }
   const current = await readBranchName(repoRoot);
   if (current) {
@@ -683,7 +690,7 @@ export async function resolveDefaultBranch(repoRoot: string): Promise<string> {
   if (branches.length > 0) {
     return branches[0]!;
   }
-  throw new Error('Unable to resolve default branch.');
+  throw new Error("Unable to resolve default branch.");
 }
 
 function parseGitWorktreeListLine(line: string): GitWorktreeEntry | undefined {
@@ -699,19 +706,19 @@ function parseGitWorktreeListLine(line: string): GitWorktreeEntry | undefined {
 
   const branchMatch = trimmed.match(/^branch\s+refs\/heads\/(.+)$/u);
   if (branchMatch?.[1]) {
-    return { path: '', branch: branchMatch[1].trim() };
+    return { path: "", branch: branchMatch[1].trim() };
   }
 
   const headMatch = trimmed.match(/^HEAD\s+([0-9a-f]+)$/iu);
   if (headMatch?.[1]) {
-    return { path: '', head: headMatch[1].trim() };
+    return { path: "", head: headMatch[1].trim() };
   }
 
   return undefined;
 }
 
 export async function listGitWorktrees(repoRoot: string): Promise<GitWorktreeEntry[]> {
-  const { stdout } = await runGit(repoRoot, ['worktree', 'list', '--porcelain']);
+  const { stdout } = await runGit(repoRoot, ["worktree", "list", "--porcelain"]);
   const entries: GitWorktreeEntry[] = [];
   let current: GitWorktreeEntry | undefined;
 
@@ -754,24 +761,17 @@ export async function addGitWorktree(
   const baseBranch = options.baseBranch.trim();
 
   if (!branchName) {
-    throw new Error('Branch name cannot be empty.');
+    throw new Error("Branch name cannot be empty.");
   }
   if (!baseBranch) {
-    throw new Error('Base branch cannot be empty.');
+    throw new Error("Base branch cannot be empty.");
   }
   if (!isSpiritBranchName(branchName)) {
     throw new Error(`Branch name must match spirit/... format: ${branchName}`);
   }
 
   await mkdir(path.dirname(worktreePath), { recursive: true });
-  await runGit(repoRoot, [
-    'worktree',
-    'add',
-    '-b',
-    branchName,
-    worktreePath,
-    baseBranch,
-  ]);
+  await runGit(repoRoot, ["worktree", "add", "-b", branchName, worktreePath, baseBranch]);
 }
 
 export async function removeGitWorktree(
@@ -781,12 +781,12 @@ export async function removeGitWorktree(
 ): Promise<void> {
   const resolvedPath = path.resolve(worktreePath.trim());
   if (!resolvedPath) {
-    throw new Error('Worktree path cannot be empty.');
+    throw new Error("Worktree path cannot be empty.");
   }
 
-  const args = ['worktree', 'remove', resolvedPath];
+  const args = ["worktree", "remove", resolvedPath];
   if (options.force === true) {
-    args.push('--force');
+    args.push("--force");
   }
   await runGit(repoRoot, args);
 }
@@ -820,18 +820,17 @@ export async function readWorktreeContext(workspaceRoot: string): Promise<Worktr
 }
 
 export function isGitMergeConflictError(message: string): boolean {
-  return /fix conflicts and then commit the result/i.test(message)
-    || /Automatic merge failed/i.test(message)
-    || /CONFLICT/i.test(message);
+  return (
+    /fix conflicts and then commit the result/i.test(message) ||
+    /Automatic merge failed/i.test(message) ||
+    /CONFLICT/i.test(message)
+  );
 }
 
-export async function mergeSpiritBranchToMain(
-  repoRoot: string,
-  branchName: string,
-): Promise<void> {
+export async function mergeSpiritBranchToMain(repoRoot: string, branchName: string): Promise<void> {
   const normalizedBranch = branchName.trim();
   if (!normalizedBranch) {
-    throw new Error('Branch name cannot be empty.');
+    throw new Error("Branch name cannot be empty.");
   }
   if (!isSpiritBranchName(normalizedBranch)) {
     throw new Error(`Branch name must match spirit/... format: ${normalizedBranch}`);
@@ -839,10 +838,10 @@ export async function mergeSpiritBranchToMain(
 
   const snapshot = await readGitWorkspaceSnapshot(repoRoot);
   if (!snapshot.isRepository) {
-    throw new Error('Primary repository is not a Git repository.');
+    throw new Error("Primary repository is not a Git repository.");
   }
   if (snapshot.hasChanges) {
-    throw new Error('Primary repository has uncommitted changes. Commit or stash before merging.');
+    throw new Error("Primary repository has uncommitted changes. Commit or stash before merging.");
   }
 
   const defaultBranch = await resolveDefaultBranch(repoRoot);
@@ -851,12 +850,12 @@ export async function mergeSpiritBranchToMain(
   }
 
   try {
-    await runGit(repoRoot, ['merge', '--no-edit', normalizedBranch]);
+    await runGit(repoRoot, ["merge", "--no-edit", normalizedBranch]);
   } catch (error) {
     const message = renderGitError(error);
     if (isGitMergeConflictError(message)) {
       try {
-        await runGit(repoRoot, ['merge', '--abort']);
+        await runGit(repoRoot, ["merge", "--abort"]);
       } catch {
         // best effort
       }

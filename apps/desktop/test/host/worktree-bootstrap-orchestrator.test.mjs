@@ -1,14 +1,14 @@
-import assert from 'node:assert/strict';
-import test from 'node:test';
+import assert from "node:assert/strict";
+import test from "node:test";
 
-import { DesktopMessageTimeline } from '../../dist-electron/src/host/message-timeline.js';
+import { DesktopMessageTimeline } from "../../dist-electron/src/host/message-timeline.js";
 import {
   advancePendingWorktreeBootstrapCommand,
   cancelPendingWorktreeBootstrapOnBundle,
   shouldAdvanceWorktreeBootstrap,
   startWorktreeBootstrapTurnCommand,
-} from '../../dist-electron/src/host/worktree-bootstrap-orchestrator.js';
-import { WORKTREE_BOOTSTRAP_TOOL_NAME } from '../../dist-electron/src/host/worktree-bootstrap-card.js';
+} from "../../dist-electron/src/host/worktree-bootstrap-orchestrator.js";
+import { WORKTREE_BOOTSTRAP_TOOL_NAME } from "../../dist-electron/src/host/worktree-bootstrap-card.js";
 
 function createTimelineHarness() {
   let nextMessageId = 1;
@@ -23,28 +23,28 @@ function createTimelineHarness() {
   return { timeline, nextMessageId: () => nextMessageId };
 }
 
-test('cancelPendingWorktreeBootstrapOnBundle marks card failed and clears pending', async () => {
+test("cancelPendingWorktreeBootstrapOnBundle marks card failed and clears pending", async () => {
   const { timeline } = createTimelineHarness();
   const bundle = {
-    id: 'draft-cancel',
+    id: "draft-cancel",
     messages: [],
     messageTimeline: timeline,
-    currentTurnSkills: [{ name: 'test' }],
+    currentTurnSkills: [{ name: "test" }],
     pendingWorktreeBootstrap: {
-      toolCallId: 'worktree-bootstrap:draft-cancel',
-      phase: 'running',
+      toolCallId: "worktree-bootstrap:draft-cancel",
+      phase: "running",
     },
   };
-  timeline.beginUserTurn('hello', { messageId: 1 });
+  timeline.beginUserTurn("hello", { messageId: 1 });
   cancelPendingWorktreeBootstrapOnBundle(bundle);
   assert.equal(bundle.pendingWorktreeBootstrap, undefined);
   assert.equal(bundle.currentTurnSkills.length, 0);
 });
 
-test('startWorktreeBootstrapTurnCommand inserts user message and running worktree card', async () => {
+test("startWorktreeBootstrapTurnCommand inserts user message and running worktree card", async () => {
   const { timeline } = createTimelineHarness();
   const bundle = {
-    id: 'draft-test',
+    id: "draft-test",
     messages: [],
     messageTimeline: timeline,
     currentTurnSkills: [],
@@ -57,11 +57,11 @@ test('startWorktreeBootstrapTurnCommand inserts user message and running worktre
   const snapshot = await startWorktreeBootstrapTurnCommand(
     {
       activeBundle: () => bundle,
-      requireState: () => ({ workspaceRoot: '/repo' }),
+      requireState: () => ({ workspaceRoot: "/repo" }),
       refreshRuntimeForBundle: async () => {},
       syncActiveRuntimePointer: () => {},
       clearAssistantContinuationMarkers: () => {},
-      resolveTodoSessionKeyForBundle: () => 'todo-key',
+      resolveTodoSessionKeyForBundle: () => "todo-key",
       ensureActiveSession: () => {},
       prepareSessionTitleForFirstUserTurn: () => {},
       reconcileTodoScopeAfterSessionPathChange: async () => {},
@@ -83,37 +83,37 @@ test('startWorktreeBootstrapTurnCommand inserts user message and running worktre
     {
       validateWorktreeBootstrapPreconditions: () => {},
       executeWorktreeBootstrap: async () => {},
-      resolveWorktreeBootstrapSessionKey: () => 'draft-test',
+      resolveWorktreeBootstrapSessionKey: () => "draft-test",
       setLastRuntimeError: () => {},
     },
-    'build feature in worktree',
+    "build feature in worktree",
     {},
   );
 
   assert.equal(persisted, true);
   assert.equal(bundle.messages.length, 2);
-  assert.equal(bundle.messages[0]?.role, 'user');
-  assert.equal(bundle.messages[0]?.content, 'build feature in worktree');
+  assert.equal(bundle.messages[0]?.role, "user");
+  assert.equal(bundle.messages[0]?.content, "build feature in worktree");
   assert.equal(bundle.messages[1]?.tool?.toolName, WORKTREE_BOOTSTRAP_TOOL_NAME);
-  assert.equal(bundle.messages[1]?.tool?.phase, 'running');
-  assert.equal(bundle.pendingWorktreeBootstrap?.phase, 'running');
+  assert.equal(bundle.messages[1]?.tool?.phase, "running");
+  assert.equal(bundle.pendingWorktreeBootstrap?.phase, "running");
   assert.equal(shouldAdvanceWorktreeBootstrap(bundle), true);
   assert.ok(snapshot);
 });
 
-test('advancePendingWorktreeBootstrapCommand emits snapshot after bootstrap before streaming', async () => {
+test("advancePendingWorktreeBootstrapCommand emits snapshot after bootstrap before streaming", async () => {
   const { timeline } = createTimelineHarness();
   const bundle = {
-    id: 'draft-advance',
+    id: "draft-advance",
     messages: [],
     messageTimeline: timeline,
     currentTurnSkills: [],
     archiveHistory: [],
     pendingWorktreeBootstrap: {
-      toolCallId: 'worktree-bootstrap:draft-advance',
-      phase: 'running',
-      userPrompt: 'hello',
-      displayText: 'hello',
+      toolCallId: "worktree-bootstrap:draft-advance",
+      phase: "running",
+      userPrompt: "hello",
+      displayText: "hello",
       userMessageId: 1,
       beforeUserCheckpoint: {
         archive: { llmHistory: [] },
@@ -121,20 +121,20 @@ test('advancePendingWorktreeBootstrapCommand emits snapshot after bootstrap befo
       },
     },
   };
-  timeline.beginUserTurn('hello', { messageId: 1 });
+  timeline.beginUserTurn("hello", { messageId: 1 });
 
   const callOrder = [];
   await advancePendingWorktreeBootstrapCommand(
     {
       requireRuntime: () => ({
         startUserTurnStreaming: async () => {
-          callOrder.push('startUserTurnStreaming');
+          callOrder.push("startUserTurnStreaming");
         },
         poll: async () => {},
         drainEvents: () => [],
       }),
       ensureToolExecutor: async () => {
-        callOrder.push('ensureToolExecutor');
+        callOrder.push("ensureToolExecutor");
       },
       refreshArchiveFromRuntime: () => {},
       recordRewindCheckpoint: async () => {},
@@ -151,16 +151,16 @@ test('advancePendingWorktreeBootstrapCommand emits snapshot after bootstrap befo
       flushDeferredRuntimeRefreshIfIdle: async () => {},
       refreshTodoSnapshotForBundle: async () => {},
       emitLiveSnapshotUpdate: () => {
-        callOrder.push('emitLiveSnapshotUpdate');
+        callOrder.push("emitLiveSnapshotUpdate");
       },
       persistCurrentSessionIfNeeded: async () => {
-        callOrder.push('persistCurrentSessionIfNeeded');
+        callOrder.push("persistCurrentSessionIfNeeded");
       },
       drainQueuedUserTurnIfIdle: async () => {},
     },
     {
       executeWorktreeBootstrap: async () => {
-        callOrder.push('executeWorktreeBootstrap');
+        callOrder.push("executeWorktreeBootstrap");
       },
       setLastRuntimeError: () => {},
     },
@@ -168,15 +168,16 @@ test('advancePendingWorktreeBootstrapCommand emits snapshot after bootstrap befo
   );
 
   assert.equal(bundle.pendingWorktreeBootstrap, undefined);
-  assert.ok(callOrder.includes('executeWorktreeBootstrap'));
-  assert.equal(callOrder.filter((entry) => entry === 'emitLiveSnapshotUpdate').length, 2);
+  assert.ok(callOrder.includes("executeWorktreeBootstrap"));
+  assert.equal(callOrder.filter((entry) => entry === "emitLiveSnapshotUpdate").length, 2);
   assert.ok(
-    callOrder.indexOf('emitLiveSnapshotUpdate') > callOrder.indexOf('executeWorktreeBootstrap'),
+    callOrder.indexOf("emitLiveSnapshotUpdate") > callOrder.indexOf("executeWorktreeBootstrap"),
   );
   assert.ok(
-    callOrder.indexOf('startUserTurnStreaming') > callOrder.indexOf('emitLiveSnapshotUpdate'),
+    callOrder.indexOf("startUserTurnStreaming") > callOrder.indexOf("emitLiveSnapshotUpdate"),
   );
   assert.ok(
-    callOrder.lastIndexOf('emitLiveSnapshotUpdate') > callOrder.indexOf('persistCurrentSessionIfNeeded'),
+    callOrder.lastIndexOf("emitLiveSnapshotUpdate") >
+      callOrder.indexOf("persistCurrentSessionIfNeeded"),
   );
 });

@@ -27,12 +27,12 @@ export function isSelectionShortcutKeyUp(event: KeyboardEvent): boolean {
     return true;
   }
   return (
-    event.key === "Shift"
-    || event.key.startsWith("Arrow")
-    || event.key === "Home"
-    || event.key === "End"
-    || event.key === "PageUp"
-    || event.key === "PageDown"
+    event.key === "Shift" ||
+    event.key.startsWith("Arrow") ||
+    event.key === "Home" ||
+    event.key === "End" ||
+    event.key === "PageUp" ||
+    event.key === "PageDown"
   );
 }
 

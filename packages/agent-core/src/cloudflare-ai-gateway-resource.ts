@@ -1,9 +1,8 @@
 /** Cloudflare AI Gateway REST API base URL helpers（无 Node 或 SDK 依赖）。 */
 
-export const CLOUDFLARE_AI_GATEWAY_ACCOUNT_ID_PLACEHOLDER = 'YOUR_ACCOUNT_ID';
+export const CLOUDFLARE_AI_GATEWAY_ACCOUNT_ID_PLACEHOLDER = "YOUR_ACCOUNT_ID";
 
-export const CLOUDFLARE_AI_GATEWAY_PRESET_API_BASE =
-  `https://api.cloudflare.com/client/v4/accounts/${CLOUDFLARE_AI_GATEWAY_ACCOUNT_ID_PLACEHOLDER}/ai/v1`;
+export const CLOUDFLARE_AI_GATEWAY_PRESET_API_BASE = `https://api.cloudflare.com/client/v4/accounts/${CLOUDFLARE_AI_GATEWAY_ACCOUNT_ID_PLACEHOLDER}/ai/v1`;
 
 const CLOUDFLARE_ACCOUNT_ID_PATTERN = /^[a-f0-9]{32}$/i;
 
@@ -22,7 +21,7 @@ export function isValidCloudflareAccountId(accountId: string): boolean {
 export function validateCloudflareAccountId(accountId: string): string {
   const normalized = normalizeCloudflareAccountId(accountId);
   if (!isValidCloudflareAccountId(normalized)) {
-    throw new Error('Cloudflare Account ID must be a 32-character hexadecimal string.');
+    throw new Error("Cloudflare Account ID must be a 32-character hexadecimal string.");
   }
   return normalized;
 }
@@ -43,7 +42,7 @@ export function validateCloudflareGatewayId(gatewayId: string): string {
   const normalized = normalizeCloudflareGatewayId(gatewayId);
   if (!isValidCloudflareGatewayId(normalized)) {
     throw new Error(
-      'Cloudflare Gateway ID must be 1–64 characters and contain only letters, numbers, hyphens, and underscores; it cannot start or end with a hyphen or underscore.',
+      "Cloudflare Gateway ID must be 1–64 characters and contain only letters, numbers, hyphens, and underscores; it cannot start or end with a hyphen or underscore.",
     );
   }
   return normalized;
@@ -58,7 +57,7 @@ export function cloudflareAiGatewayApiBaseFromAccountId(accountId: string): stri
 }
 
 export function extractCloudflareAccountIdFromApiBase(baseUrl: string): string | undefined {
-  const normalized = baseUrl.trim().replace(/\/+$/, '');
+  const normalized = baseUrl.trim().replace(/\/+$/, "");
   const match = normalized.match(
     /^https:\/\/api\.cloudflare\.com\/client\/v4\/accounts\/([a-f0-9]{32})\/ai\/v1(?:\/|$)/i,
   );

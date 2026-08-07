@@ -100,9 +100,7 @@ export function findFilesTabWithWorkspacePath(
   relativePath: string,
 ): string | undefined {
   const normalized = normalizeWorkspaceEntryRel(relativePath);
-  return tabs.find(
-    (tab) => tab.kind === "files" && tab.filesWorkspacePath === normalized,
-  )?.id;
+  return tabs.find((tab) => tab.kind === "files" && tab.filesWorkspacePath === normalized)?.id;
 }
 
 export type OpenWorkspaceFileNavigationInput = {

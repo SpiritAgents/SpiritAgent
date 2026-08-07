@@ -2,18 +2,12 @@ import assert from "node:assert/strict";
 import { test } from "node:test";
 
 import { normalizeComposerSegmentsPolicy } from "../../src/lib/composer-lexical/composer-lexical-policy.ts";
-import {
-  emptySegments,
-  mergeAdjacentTextSegments,
-} from "../../src/lib/composer-segment-model.ts";
+import { emptySegments, mergeAdjacentTextSegments } from "../../src/lib/composer-segment-model.ts";
 import {
   hasAgentModeSegment,
   insertAgentModeSegment,
 } from "../../src/lib/composer-agent-mode-segments.ts";
-import {
-  hasLoopSegment,
-  insertLoopSegment,
-} from "../../src/lib/composer-loop-segments.ts";
+import { hasLoopSegment, insertLoopSegment } from "../../src/lib/composer-loop-segments.ts";
 
 test("normalizeComposerSegmentsPolicy pins ask chip when host mode is ask", () => {
   const normalized = normalizeComposerSegmentsPolicy(emptySegments(), {
@@ -21,7 +15,10 @@ test("normalizeComposerSegmentsPolicy pins ask chip when host mode is ask", () =
     agentModeChipDismissed: false,
   });
   assert.ok(hasAgentModeSegment(normalized));
-  assert.equal(normalized.some((s) => s.kind === "ask"), true);
+  assert.equal(
+    normalized.some((s) => s.kind === "ask"),
+    true,
+  );
 });
 
 test("normalizeComposerSegmentsPolicy removes ask chip when dismissed", () => {
@@ -52,6 +49,12 @@ test("normalizeComposerSegmentsPolicy merges body text with pinned ask chip", ()
     agentMode: "ask",
     agentModeChipDismissed: false,
   });
-  assert.equal(merged.some((s) => s.kind === "ask"), true);
-  assert.equal(merged.some((s) => s.kind === "text" && s.value === "hello world"), true);
+  assert.equal(
+    merged.some((s) => s.kind === "ask"),
+    true,
+  );
+  assert.equal(
+    merged.some((s) => s.kind === "text" && s.value === "hello world"),
+    true,
+  );
 });

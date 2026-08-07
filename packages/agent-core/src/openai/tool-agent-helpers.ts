@@ -1,12 +1,8 @@
-import {
-  llmMessageTextContent,
-  type JsonValue,
-  type LlmMessage,
-} from '../ports.js';
+import { llmMessageTextContent, type JsonValue, type LlmMessage } from "../ports.js";
 import {
   llmHistoryToOpenAiMessages,
   llmMessageToOpenAiMessage,
-} from './openai-multimodal-messages.js';
+} from "./openai-multimodal-messages.js";
 import {
   appendToolResultMessage,
   appendToolResultMessages,
@@ -39,9 +35,9 @@ import {
   type ToolAgentPlanMetadata,
   type ToolAgentState,
   type ToolAgentToolResult,
-} from '../tool-agent.js';
-import type { ToolAgentMcpToolCatalogSnapshot } from '../mcp/types.js';
-import { userMessageContentMatchesInput } from '../runtime/user-turn-timestamp.js';
+} from "../tool-agent.js";
+import type { ToolAgentMcpToolCatalogSnapshot } from "../mcp/types.js";
+import { userMessageContentMatchesInput } from "../runtime/user-turn-timestamp.js";
 
 export {
   buildActiveSkillsBlockContent,
@@ -56,11 +52,11 @@ export {
   buildMcpCatalogSystemMessage,
   buildSpiritAgentCoreHostPrompt,
   buildToolAgentHostPrompt,
-} from '../tool-agent.js';
+} from "../tool-agent.js";
 
 export type OpenAiEnabledRule = ToolAgentEnabledRule;
 export type OpenAiEnabledSkillCatalogEntry = ToolAgentEnabledSkillCatalogEntry;
-export type OpenAiActiveSkillResourceEntry = ToolAgentActiveSkill['resources'][number];
+export type OpenAiActiveSkillResourceEntry = ToolAgentActiveSkill["resources"][number];
 export type OpenAiActiveSkill = ToolAgentActiveSkill;
 export type OpenAiPlanMetadata = ToolAgentPlanMetadata;
 export type OpenAiExtensionSystemPrompt = ToolAgentExtensionSystemPrompt;
@@ -169,12 +165,8 @@ function buildOpenAiToolAgentMessages(
     extensionSystemPrompts,
     ...(dreamsContextText === undefined ? {} : { dreamsContextText }),
     ...(basicInfo === undefined ? {} : { basicInfo }),
-    ...(applyPatchFileToolsPromptSection === undefined
-      ? {}
-      : { applyPatchFileToolsPromptSection }),
-    ...(providerWebSearchPromptSection === undefined
-      ? {}
-      : { providerWebSearchPromptSection }),
+    ...(applyPatchFileToolsPromptSection === undefined ? {} : { applyPatchFileToolsPromptSection }),
+    ...(providerWebSearchPromptSection === undefined ? {} : { providerWebSearchPromptSection }),
     ...(loopEnabled === true ? { loopEnabled: true } : {}),
     ...(attribution === undefined ? {} : { attribution }),
   });
@@ -207,8 +199,8 @@ export function appendOpenAiUserLlmMessage(
   message: LlmMessage,
   assetRoot = process.cwd(),
 ): OpenAiToolAgentState {
-  if (message.role !== 'user') {
-    throw new Error('appendOpenAiUserLlmMessage 仅支持 user message。');
+  if (message.role !== "user") {
+    throw new Error("appendOpenAiUserLlmMessage 仅支持 user message。");
   }
 
   return {
@@ -220,21 +212,21 @@ export function appendOpenAiUserLlmMessage(
   };
 }
 
-export function extractLastOpenAiAssistantText(
-  state: OpenAiToolAgentState,
-): string | undefined {
+export function extractLastOpenAiAssistantText(state: OpenAiToolAgentState): string | undefined {
   return extractLastAssistantText(state);
 }
 
-export function truncateOpenAiToolAgentStateForContextRetry(
-  state: OpenAiToolAgentState,
-): { state: OpenAiToolAgentState; changed: boolean } {
+export function truncateOpenAiToolAgentStateForContextRetry(state: OpenAiToolAgentState): {
+  state: OpenAiToolAgentState;
+  changed: boolean;
+} {
   return truncateToolAgentStateForContextRetry(state);
 }
 
-export function truncateOpenAiHistoryForCompaction(
-  history: LlmMessage[],
-): { history: LlmMessage[]; changed: boolean } {
+export function truncateOpenAiHistoryForCompaction(history: LlmMessage[]): {
+  history: LlmMessage[];
+  changed: boolean;
+} {
   return truncateHistoryForCompaction(history);
 }
 
@@ -280,7 +272,7 @@ export function rebuildOpenAiToolAgentStateAfterCompaction(
     const preservedLoop = hasLoopModeSystemMessage(preservedSpiritSystemMessage);
     const preservedAttribution = hasAttributionSystemMessage(preservedSpiritSystemMessage);
     rebuilt.messages[0] = {
-      role: 'system',
+      role: "system",
       content: buildToolAgentSystemMessage(
         model,
         preservedSpiritSystemMessage,
@@ -293,9 +285,8 @@ export function rebuildOpenAiToolAgentStateAfterCompaction(
   }
   rebuilt.steps = retryState.steps;
 
-  const userIndex = findLastMatchingIndex(
-    retryState.messages,
-    (message) => isOpenAiUserMessageForInput(message, userInput),
+  const userIndex = findLastMatchingIndex(retryState.messages, (message) =>
+    isOpenAiUserMessageForInput(message, userInput),
   );
 
   if (userIndex < 0) {
@@ -312,11 +303,11 @@ export function rebuildOpenAiToolAgentStateAfterCompaction(
 }
 
 function isOpenAiUserMessageForInput(message: JsonValue, userInput: string): boolean {
-  if (!isJsonObject(message) || message.role !== 'user') {
+  if (!isJsonObject(message) || message.role !== "user") {
     return false;
   }
 
-  if (typeof message.content === 'string') {
+  if (typeof message.content === "string") {
     return userMessageContentMatchesInput(message.content, userInput);
   }
 
@@ -327,8 +318,8 @@ function isOpenAiUserMessageForInput(message: JsonValue, userInput: string): boo
   return message.content.some(
     (part) =>
       isJsonObject(part) &&
-      part.type === 'text' &&
-      typeof part.text === 'string' &&
+      part.type === "text" &&
+      typeof part.text === "string" &&
       userMessageContentMatchesInput(part.text, userInput),
   );
 }

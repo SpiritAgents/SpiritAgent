@@ -12,23 +12,17 @@ import { getUiLayoutPortalContainer } from "@/lib/ui-layout-scale";
 import { radixAnchoredOverlayMotion } from "@/lib/overlay-motion";
 import { cn } from "@/lib/utils";
 
-function DropdownMenu({
-  ...props
-}: React.ComponentProps<typeof DropdownMenuPrimitive.Root>) {
+function DropdownMenu({ ...props }: React.ComponentProps<typeof DropdownMenuPrimitive.Root>) {
   return <DropdownMenuPrimitive.Root data-slot="dropdown-menu" {...props} />;
 }
 
 function DropdownMenuTrigger({
   ...props
 }: React.ComponentProps<typeof DropdownMenuPrimitive.Trigger>) {
-  return (
-    <DropdownMenuPrimitive.Trigger data-slot="dropdown-menu-trigger" {...props} />
-  );
+  return <DropdownMenuPrimitive.Trigger data-slot="dropdown-menu-trigger" {...props} />;
 }
 
-function DropdownMenuSub({
-  ...props
-}: React.ComponentProps<typeof DropdownMenuPrimitive.Sub>) {
+function DropdownMenuSub({ ...props }: React.ComponentProps<typeof DropdownMenuPrimitive.Sub>) {
   return <DropdownMenuPrimitive.Sub data-slot="dropdown-menu-sub" {...props} />;
 }
 
@@ -74,18 +68,17 @@ function DropdownMenuSubContent({
   );
 }
 
-type DropdownMenuContentProps = React.ComponentProps<
-  typeof DropdownMenuPrimitive.Content
-> & {
+type DropdownMenuContentProps = React.ComponentProps<typeof DropdownMenuPrimitive.Content> & {
   /** Menu Content mount focus hook; omitted from upstream DropdownMenu types. */
   onOpenAutoFocus?: (event: Event) => void;
   /** Menu roving-focus entry hook; omitted from upstream DropdownMenu types. */
   onEntryFocus?: (event: Event) => void;
 };
 
-function preventDropdownDismissForTooltipCompanion(
-  event: { target: EventTarget | null; preventDefault(): void },
-): void {
+function preventDropdownDismissForTooltipCompanion(event: {
+  target: EventTarget | null;
+  preventDefault(): void;
+}): void {
   if (!isEventTargetWithinTooltipCompanionOverlays(event.target)) {
     return;
   }
@@ -147,9 +140,7 @@ function DropdownMenuItem({
         variant === "destructive" &&
           "text-destructive focus:bg-destructive/10 focus:text-destructive dark:focus:bg-destructive/20 [&_svg]:text-destructive",
         className,
-        tooltipMenuHighlight &&
-          variant !== "destructive" &&
-          "!bg-accent text-accent-foreground",
+        tooltipMenuHighlight && variant !== "destructive" && "!bg-accent text-accent-foreground",
       )}
       {...props}
     />
@@ -169,17 +160,11 @@ function DropdownMenuSeparator({
   );
 }
 
-function DropdownMenuShortcut({
-  className,
-  ...props
-}: React.ComponentProps<"span">) {
+function DropdownMenuShortcut({ className, ...props }: React.ComponentProps<"span">) {
   return (
     <span
       data-slot="dropdown-menu-shortcut"
-      className={cn(
-        "ml-auto text-xs tracking-widest text-muted-foreground",
-        className,
-      )}
+      className={cn("ml-auto text-xs tracking-widest text-muted-foreground", className)}
       {...props}
     />
   );

@@ -30,10 +30,7 @@ import {
   resolveTurnActionsToolbarHostIndex,
   shouldClearAssistantTurnHover,
 } from "@/lib/message-turn-actions-ui";
-import {
-  canCopyAssistantTurn,
-  formatAssistantTurnCopyText,
-} from "@/lib/message-turn-copy";
+import { canCopyAssistantTurn, formatAssistantTurnCopyText } from "@/lib/message-turn-copy";
 import { cn } from "@/lib/utils";
 import type { EditorFileTarget } from "@/lib/workspace-editor-navigation";
 import type {
@@ -151,9 +148,7 @@ export function ConversationList({
   onForkMessage,
 }: ConversationListProps) {
   const { t } = useTranslation();
-  const [hoveredAssistantTurnStart, setHoveredAssistantTurnStart] = useState<number | null>(
-    null,
-  );
+  const [hoveredAssistantTurnStart, setHoveredAssistantTurnStart] = useState<number | null>(null);
   const turnActionsToolbarHostIndex = useMemo(
     () => resolveTurnActionsToolbarHostIndex(messages),
     [messages],
@@ -163,17 +158,12 @@ export function ConversationList({
     setHoveredAssistantTurnStart(turnStart);
   }, []);
 
-  const handleAssistantTurnPointerLeave = useCallback(
-    (event: PointerEvent, turnStart: number) => {
-      if (!shouldClearAssistantTurnHover(event, turnStart)) {
-        return;
-      }
-      setHoveredAssistantTurnStart((current) =>
-        current === turnStart ? null : current,
-      );
-    },
-    [],
-  );
+  const handleAssistantTurnPointerLeave = useCallback((event: PointerEvent, turnStart: number) => {
+    if (!shouldClearAssistantTurnHover(event, turnStart)) {
+      return;
+    }
+    setHoveredAssistantTurnStart((current) => (current === turnStart ? null : current));
+  }, []);
 
   useEffect(() => {
     if (!conversationIsBusy) {
@@ -227,9 +217,7 @@ export function ConversationList({
   );
   const handleRewindSegmentsChange = useCallback(
     (segments: import("@/lib/composer-segment-model").RichSegment[]) => {
-      onRewindDraftChange((current) =>
-        current ? { ...current, segments } : current,
-      );
+      onRewindDraftChange((current) => (current ? { ...current, segments } : current));
     },
     [onRewindDraftChange],
   );
@@ -369,12 +357,7 @@ export function ConversationList({
     observer.observe(viewport);
     observer.observe(listEl);
     return () => observer.disconnect();
-  }, [
-    scrollElement,
-    composerSessionKey,
-    conversationListScopeKey,
-    conversationListRemountEpoch,
-  ]);
+  }, [scrollElement, composerSessionKey, conversationListScopeKey, conversationListRemountEpoch]);
 
   const renderRow = (renderIndex: number): ReactNode => {
     const renderItem = conversationRenderItems[renderIndex];
@@ -383,8 +366,7 @@ export function ConversationList({
     }
     const assistantTurnStart = assistantTurnStartIndexForRenderItem(renderItem, messages);
     const forkMenuHoverRevealed =
-      assistantTurnStart !== null
-      && hoveredAssistantTurnStart === assistantTurnStart;
+      assistantTurnStart !== null && hoveredAssistantTurnStart === assistantTurnStart;
 
     if (renderItem.kind === "process-group") {
       const anchorMessage = messages[renderItem.messageIndices[0]];
@@ -417,10 +399,7 @@ export function ConversationList({
           }
           className="scroll-mt-4 flex w-full justify-start"
         >
-          <div
-            data-spirit-surface="message-assistant"
-            className="min-w-0 w-full space-y-2"
-          >
+          <div data-spirit-surface="message-assistant" className="min-w-0 w-full space-y-2">
             <ProcessCardCollapsible
               groupId={renderItem.groupId}
               messageIndices={renderItem.messageIndices}
@@ -479,12 +458,8 @@ export function ConversationList({
     if (!message) {
       return null;
     }
-    const queuedCanMoveUp =
-      message.queued === true && (queuedBeforeCounts[index] ?? 0) > 0;
-    const hiddenByProcessGroup = isMessageHiddenByProcessGroup(
-      conversationRenderItems,
-      index,
-    );
+    const queuedCanMoveUp = message.queued === true && (queuedBeforeCounts[index] ?? 0) > 0;
+    const hiddenByProcessGroup = isMessageHiddenByProcessGroup(conversationRenderItems, index);
     const rewindSelected = rewindDraft?.listIndex === index;
     // 派生布尔用完整 aux 计算（shouldShow… 会看相邻行的 live 状态）；MessageCard 的
     // pendingAuxState prop 才按 message.pending 门控——live aux 只与 pending 行自身
@@ -513,10 +488,7 @@ export function ConversationList({
           messages,
           index,
         )}
-        collapseThinkingDuringToolPreview={shouldCollapseThinkingDuringToolPreview(
-          messages,
-          index,
-        )}
+        collapseThinkingDuringToolPreview={shouldCollapseThinkingDuringToolPreview(messages, index)}
         turnActionsEligible={messageShowsAssistantTurnActions(message, messages, index)}
         inActiveStreamingTurn={isMessageInActiveStreamingTurn(
           messages,
@@ -535,9 +507,7 @@ export function ConversationList({
         rewindSelected={rewindSelected}
         rewindSegments={rewindSelected ? rewindDraft.segments : []}
         rewindLocalFileAttachments={
-          rewindSelected
-            ? rewindDraft.localFileAttachments
-            : EMPTY_REWIND_LOCAL_FILE_ATTACHMENTS
+          rewindSelected ? rewindDraft.localFileAttachments : EMPTY_REWIND_LOCAL_FILE_ATTACHMENTS
         }
         rewindRichInputRef={rewindRichInputRef}
         rewindCanSubmit={
@@ -585,9 +555,7 @@ export function ConversationList({
         conversationIsBusy={conversationIsBusy}
         activeSessionReadOnly={activeSessionReadOnly}
         forkBusy={runtime.busyAction === "fork"}
-        forkMenuAlwaysVisible={
-          !conversationIsBusy && turnActionsToolbarHostIndex === index
-        }
+        forkMenuAlwaysVisible={!conversationIsBusy && turnActionsToolbarHostIndex === index}
         forkMenuHoverRevealed={forkMenuHoverRevealed}
         assistantTurnStartIndex={assistantTurnStart}
         onAssistantTurnPointerEnter={handleAssistantTurnPointerEnter}
@@ -661,8 +629,8 @@ export function ConversationList({
                 // translateY（由 virtualizer 直写）使行 wrapper 自成 stacking
                 // context，卡片内 z-40 无法跨出与 z-30 的 rewind 遮罩竞争；
                 // rewind 行须在 wrapper 层提升 z。
-                ...(rewindDraft
-                && (() => {
+                ...(rewindDraft &&
+                (() => {
                   const item = conversationRenderItems[virtualItem.index];
                   return item?.kind === "message" && item.messageIndex === rewindDraft.listIndex;
                 })()

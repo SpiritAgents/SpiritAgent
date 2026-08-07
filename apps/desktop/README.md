@@ -20,12 +20,12 @@ Spirit Agent Desktop is the graphical host for [Spirit Agent](https://github.com
 
 Docked panels attach to the active workspace:
 
-| Panel | Description |
-| --- | --- |
-| **Files** | Browse and edit workspace files; Markdown preview; plan files under `plans/`. |
-| **Shell** | Embedded PTY terminal (Electron only). |
-| **Git** | Working tree changes, commit history graph, commit / push / merge actions, and built-in `/git-commit`, `/git-push`, `/git-merge` skills. |
-| **Browser** | Probe local dev servers and browse pages inside the app (Electron only). |
+| Panel       | Description                                                                                                                              |
+| ----------- | ---------------------------------------------------------------------------------------------------------------------------------------- |
+| **Files**   | Browse and edit workspace files; Markdown preview; plan files under `plans/`.                                                            |
+| **Shell**   | Embedded PTY terminal (Electron only).                                                                                                   |
+| **Git**     | Working tree changes, commit history graph, commit / push / merge actions, and built-in `/git-commit`, `/git-push`, `/git-merge` skills. |
+| **Browser** | Probe local dev servers and browse pages inside the app (Electron only).                                                                 |
 
 **Worktrees** — work in an isolated Git worktree per session; merge back when ready.
 

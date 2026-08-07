@@ -1,22 +1,22 @@
-import type { JsonObject, JsonValue } from '../ports.js';
+import type { JsonObject, JsonValue } from "../ports.js";
 
 export const HOOK_CONFIG_VERSION = 1 as const;
-export const HOOKS_CONFIG_FILE_NAME = 'hooks.json';
+export const HOOKS_CONFIG_FILE_NAME = "hooks.json";
 export const DEFAULT_HOOK_TIMEOUT_SECONDS = 30;
 
 export const HOOK_EVENT_NAMES = [
-  'sessionStart',
-  'sessionEnd',
-  'submitPrompt',
-  'preToolUse',
-  'postToolUse',
-  'subagentStart',
-  'subagentEnd',
+  "sessionStart",
+  "sessionEnd",
+  "submitPrompt",
+  "preToolUse",
+  "postToolUse",
+  "subagentStart",
+  "subagentEnd",
 ] as const;
 
 export type HookEventName = (typeof HOOK_EVENT_NAMES)[number];
-export type HookPermission = 'allow' | 'deny' | 'ask';
-export type HookConfigScope = 'user' | 'workspace';
+export type HookPermission = "allow" | "deny" | "ask";
+export type HookConfigScope = "user" | "workspace";
 
 export interface HookDefinition {
   command: string;
@@ -45,30 +45,30 @@ export interface HookCommonInput {
 }
 
 export interface SessionStartHookInput extends HookCommonInput {
-  hookEventName: 'sessionStart';
-  source: 'startup' | 'resume' | 'open';
+  hookEventName: "sessionStart";
+  source: "startup" | "resume" | "open";
 }
 
 export interface SessionEndHookInput extends HookCommonInput {
-  hookEventName: 'sessionEnd';
-  reason: 'abort' | 'close' | 'switch';
+  hookEventName: "sessionEnd";
+  reason: "abort" | "close" | "switch";
 }
 
 export interface SubmitPromptHookInput extends HookCommonInput {
-  hookEventName: 'submitPrompt';
+  hookEventName: "submitPrompt";
   prompt: string;
   messageId: string | undefined;
 }
 
 export interface PreToolUseHookInput extends HookCommonInput {
-  hookEventName: 'preToolUse';
+  hookEventName: "preToolUse";
   toolName: string;
   toolCallId: string;
   toolInput: JsonObject;
 }
 
 export interface PostToolUseHookInput extends HookCommonInput {
-  hookEventName: 'postToolUse';
+  hookEventName: "postToolUse";
   toolName: string;
   toolCallId: string;
   toolInput: JsonObject;
@@ -78,17 +78,17 @@ export interface PostToolUseHookInput extends HookCommonInput {
 }
 
 export interface SubagentStartHookInput extends HookCommonInput {
-  hookEventName: 'subagentStart';
+  hookEventName: "subagentStart";
   subagentSessionId: string;
   subagentType: string;
   task: string;
 }
 
 export interface SubagentEndHookInput extends HookCommonInput {
-  hookEventName: 'subagentEnd';
+  hookEventName: "subagentEnd";
   subagentSessionId: string;
   subagentType: string;
-  status: 'completed' | 'error' | 'aborted';
+  status: "completed" | "error" | "aborted";
   task: string;
   summary: string | undefined;
   modifiedFiles: string[] | undefined;
@@ -146,13 +146,27 @@ export interface HookSessionContext {
 }
 
 export interface HookRunner {
-  runSessionStart(input: Omit<SessionStartHookInput, 'hookEventName' | 'timestamp'>): Promise<HookRunResult>;
-  runSessionEnd(input: Omit<SessionEndHookInput, 'hookEventName' | 'timestamp'>): Promise<HookRunResult>;
-  runSubmitPrompt(input: Omit<SubmitPromptHookInput, 'hookEventName' | 'timestamp'>): Promise<HookRunResult>;
-  runPreToolUse(input: Omit<PreToolUseHookInput, 'hookEventName' | 'timestamp'>): Promise<HookRunResult>;
-  runPostToolUse(input: Omit<PostToolUseHookInput, 'hookEventName' | 'timestamp'>): Promise<HookRunResult>;
-  runSubagentStart(input: Omit<SubagentStartHookInput, 'hookEventName' | 'timestamp'>): Promise<HookRunResult>;
-  runSubagentEnd(input: Omit<SubagentEndHookInput, 'hookEventName' | 'timestamp'>): Promise<HookRunResult>;
+  runSessionStart(
+    input: Omit<SessionStartHookInput, "hookEventName" | "timestamp">,
+  ): Promise<HookRunResult>;
+  runSessionEnd(
+    input: Omit<SessionEndHookInput, "hookEventName" | "timestamp">,
+  ): Promise<HookRunResult>;
+  runSubmitPrompt(
+    input: Omit<SubmitPromptHookInput, "hookEventName" | "timestamp">,
+  ): Promise<HookRunResult>;
+  runPreToolUse(
+    input: Omit<PreToolUseHookInput, "hookEventName" | "timestamp">,
+  ): Promise<HookRunResult>;
+  runPostToolUse(
+    input: Omit<PostToolUseHookInput, "hookEventName" | "timestamp">,
+  ): Promise<HookRunResult>;
+  runSubagentStart(
+    input: Omit<SubagentStartHookInput, "hookEventName" | "timestamp">,
+  ): Promise<HookRunResult>;
+  runSubagentEnd(
+    input: Omit<SubagentEndHookInput, "hookEventName" | "timestamp">,
+  ): Promise<HookRunResult>;
 }
 
 export function emptyHookRunResult(): HookRunResult {
@@ -173,30 +187,26 @@ export function mergePreEventHookPermission(
   current: HookPermission | undefined,
   next: HookPermission,
 ): HookPermission {
-  if (current === 'deny' || next === 'deny') {
-    return 'deny';
+  if (current === "deny" || next === "deny") {
+    return "deny";
   }
-  if (current === 'ask' || next === 'ask') {
-    return 'ask';
+  if (current === "ask" || next === "ask") {
+    return "ask";
   }
-  return 'allow';
+  return "allow";
 }
 
 export function isPreHookEvent(event: HookEventName): boolean {
-  return (
-    event === 'submitPrompt'
-    || event === 'preToolUse'
-    || event === 'subagentStart'
-  );
+  return event === "submitPrompt" || event === "preToolUse" || event === "subagentStart";
 }
 
 export function hookMatcherTarget(input: HookInput): string | undefined {
   switch (input.hookEventName) {
-    case 'preToolUse':
-    case 'postToolUse':
+    case "preToolUse":
+    case "postToolUse":
       return input.toolName;
-    case 'subagentStart':
-    case 'subagentEnd':
+    case "subagentStart":
+    case "subagentEnd":
       return input.subagentType;
     default:
       return undefined;

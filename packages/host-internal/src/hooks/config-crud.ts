@@ -1,5 +1,5 @@
-import { mkdir, writeFile } from 'node:fs/promises';
-import path from 'node:path';
+import { mkdir, writeFile } from "node:fs/promises";
+import path from "node:path";
 
 import {
   HOOK_EVENT_NAMES,
@@ -8,12 +8,12 @@ import {
   type HookDefinition,
   type HookEventName,
   type HooksConfigFile,
-} from '@spiritagent/agent-core';
+} from "@spiritagent/agent-core";
 
-import { loadHooksConfigFileAt, loadHooksConfigFileForMutation } from './loader.js';
+import { loadHooksConfigFileAt, loadHooksConfigFileForMutation } from "./loader.js";
 
-export type HookConfigScope = 'user' | 'workspace';
-export type HookWorkspaceBinding = 'project' | 'none';
+export type HookConfigScope = "user" | "workspace";
+export type HookWorkspaceBinding = "project" | "none";
 
 export interface HookListItem {
   id: string;
@@ -48,12 +48,9 @@ export interface HookCrudContext {
   workspaceBinding: HookWorkspaceBinding;
 }
 
-async function saveHooksConfigFileAt(
-  configPath: string,
-  config: HooksConfigFile,
-): Promise<void> {
+async function saveHooksConfigFileAt(configPath: string, config: HooksConfigFile): Promise<void> {
   await mkdir(path.dirname(configPath), { recursive: true });
-  await writeFile(configPath, `${JSON.stringify(config, null, 2)}\n`, 'utf8');
+  await writeFile(configPath, `${JSON.stringify(config, null, 2)}\n`, "utf8");
 }
 
 export function hooksConfigPathForScope(
@@ -61,7 +58,7 @@ export function hooksConfigPathForScope(
   workspaceRoot: string,
   scope: HookConfigScope,
 ): string {
-  return scope === 'workspace'
+  return scope === "workspace"
     ? hooksWorkspaceConfigPath(workspaceRoot)
     : hooksUserConfigPath(spiritDataDir);
 }
@@ -94,12 +91,12 @@ function mapHookListItems(
 export function listHookListItems(context: HookCrudContext): HookListItem[] {
   const userPath = hooksUserConfigPath(context.spiritDataDir);
   const userConfig = loadHooksConfigFileAt(userPath);
-  const items = mapHookListItems(userConfig, 'user', userPath);
+  const items = mapHookListItems(userConfig, "user", userPath);
 
-  if (context.workspaceBinding !== 'none' && context.workspaceRoot.trim()) {
+  if (context.workspaceBinding !== "none" && context.workspaceRoot.trim()) {
     const workspacePath = hooksWorkspaceConfigPath(context.workspaceRoot.trim());
     const workspaceConfig = loadHooksConfigFileAt(workspacePath);
-    items.push(...mapHookListItems(workspaceConfig, 'workspace', workspacePath));
+    items.push(...mapHookListItems(workspaceConfig, "workspace", workspacePath));
   }
 
   return items;
@@ -108,13 +105,13 @@ export function listHookListItems(context: HookCrudContext): HookListItem[] {
 function normalizeHookDefinition(request: SaveHookEntryRequest): HookDefinition {
   const command = request.command.trim();
   if (!command) {
-    throw new Error('Hook command is required.');
+    throw new Error("Hook command is required.");
   }
 
   const definition: HookDefinition = { command };
   if (request.timeout !== undefined) {
     if (!Number.isFinite(request.timeout) || request.timeout <= 0) {
-      throw new Error('Hook timeout must be a positive number.');
+      throw new Error("Hook timeout must be a positive number.");
     }
     definition.timeout = request.timeout;
   }
@@ -131,8 +128,8 @@ function assertWorkspaceScopeAllowed(
   scope: HookConfigScope,
   workspaceBinding: HookWorkspaceBinding,
 ): void {
-  if (scope === 'workspace' && workspaceBinding === 'none') {
-    throw new Error('Workspace hooks require a bound workspace.');
+  if (scope === "workspace" && workspaceBinding === "none") {
+    throw new Error("Workspace hooks require a bound workspace.");
   }
 }
 
@@ -178,7 +175,7 @@ export async function deleteHookEntry(
   const event = request.event;
   const entries = [...(config.hooks[event] ?? [])];
   if (request.index < 0 || request.index >= entries.length) {
-    throw new Error('Hook entry not found.');
+    throw new Error("Hook entry not found.");
   }
   entries.splice(request.index, 1);
   if (entries.length > 0) {
@@ -195,8 +192,9 @@ export function hooksConfigPathsSummary(context: HookCrudContext): {
 } {
   return {
     user: hooksUserConfigPath(context.spiritDataDir),
-    workspace: context.workspaceBinding === 'none'
-      ? undefined
-      : hooksWorkspaceConfigPath(context.workspaceRoot.trim()),
+    workspace:
+      context.workspaceBinding === "none"
+        ? undefined
+        : hooksWorkspaceConfigPath(context.workspaceRoot.trim()),
   };
 }

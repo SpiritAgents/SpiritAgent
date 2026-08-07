@@ -58,11 +58,8 @@ import {
   buildStepfunWebSearchToolDefinition,
   shouldUseKimiCodeWebSearch,
   buildKimiCodeWebSearchToolDefinition,
-} from '@spiritagent/agent-core';
-import {
-  LspService,
-  appendLspDiagnosticsAfterWriteIfNeeded,
-} from '@spiritagent/host-internal/lsp';
+} from "@spiritagent/agent-core";
+import { LspService, appendLspDiagnosticsAfterWriteIfNeeded } from "@spiritagent/host-internal/lsp";
 import {
   CREATE_AUTOMATION_CONTRIBUTED_TOOL,
   CREATE_AUTOMATION_TOOL_NAME,
@@ -86,30 +83,30 @@ import {
   NodeHostToolService,
   normalizeApprovalLevel,
   createNoopMcpAdapter,
-} from '@spiritagent/host-internal';
+} from "@spiritagent/host-internal";
 
-import type { AskQuestionsQuestionSpec } from '../types.js';
-import { spiritAgentDataDir } from './storage.js';
-import type { DesktopAgentMode } from '../lib/agent-mode.js';
-import type { DesktopToolRequest } from './contracts.js';
+import type { AskQuestionsQuestionSpec } from "../types.js";
+import { spiritAgentDataDir } from "./storage.js";
+import type { DesktopAgentMode } from "../lib/agent-mode.js";
+import type { DesktopToolRequest } from "./contracts.js";
 
-type DesktopDreamToolMode = 'read-only' | 'collector';
+type DesktopDreamToolMode = "read-only" | "collector";
 
-const READ_ONLY_DREAM_TOOL_NAMES = new Set<DreamHostToolName>(['dream_list', 'dream_read']);
+const READ_ONLY_DREAM_TOOL_NAMES = new Set<DreamHostToolName>(["dream_list", "dream_read"]);
 
 const DESKTOP_BUILT_IN_LAZY_TOOL_DEFINITIONS = [CREATE_AUTOMATION_CONTRIBUTED_TOOL];
 
-function isDreamToolRequest(request: DesktopToolRequest): request is Extract<DesktopToolRequest, { name: DreamHostToolName }> {
-  return typeof request?.name === 'string' && request.name.startsWith('dream_');
+function isDreamToolRequest(
+  request: DesktopToolRequest,
+): request is Extract<DesktopToolRequest, { name: DreamHostToolName }> {
+  return typeof request?.name === "string" && request.name.startsWith("dream_");
 }
 
 function includesLazyToolGatewayDefinitions(definitions: JsonValue[]): boolean {
   return toolNamesFromDefinitions(definitions).some((name) => isLazyToolGatewayToolName(name));
 }
 
-export class DesktopToolExecutor
-  implements ToolExecutor<DesktopToolRequest, string>
-{
+export class DesktopToolExecutor implements ToolExecutor<DesktopToolRequest, string> {
   private readonly tools: NodeHostToolService<AskQuestionsQuestionSpec>;
   private readonly mcp: McpService;
   private readonly lsp: LspService | undefined;
@@ -123,12 +120,12 @@ export class DesktopToolExecutor
   private loopToolDefinitions: JsonValue[] = [];
   private loopToolExposureEnabled = false;
   private planToolDefinitions: JsonValue[] = [];
-  private agentMode: DesktopAgentMode = 'agent';
+  private agentMode: DesktopAgentMode = "agent";
   private activeModelCompatibilityProfile: OpenAiModelCompatibilityProfile | undefined;
   private activeTransportConfig: LlmTransportConfig | undefined;
   private imageGenerationAvailable = false;
   private videoGenerationAvailable = false;
-  private approvalLevel: ApprovalLevel = 'default';
+  private approvalLevel: ApprovalLevel = "default";
 
   constructor(
     private readonly workspaceRoot: string,
@@ -153,40 +150,45 @@ export class DesktopToolExecutor
     this.hostContributedToolsEnabled = options.hostContributedToolsEnabled === true;
     this.dreamScope = options.dreamScope;
     this.todoScope = options.todoScope;
-    this.dreamToolMode = options.dreamScope ? (options.dreamToolMode ?? 'collector') : undefined;
+    this.dreamToolMode = options.dreamScope ? (options.dreamToolMode ?? "collector") : undefined;
     this.dreamToolDefinitions = !options.dreamScope
       ? []
-      : this.dreamToolMode === 'read-only'
+      : this.dreamToolMode === "read-only"
         ? buildDreamReadHostToolDefinitions()
         : buildDreamHostToolDefinitions();
     this.todoToolDefinitions = options.todoScope ? buildTodoHostToolDefinitions() : [];
-    this.tools = new NodeHostToolService<AskQuestionsQuestionSpec>({
-      workspaceRoot,
-      spiritDataDir: spiritAgentDataDir(),
-    }, {
-      mcp: createNoopMcpAdapter(),
-      getModelCompatibilityProfile: () => this.activeModelCompatibilityProfile,
-      getApprovalLevel: () => this.approvalLevel,
-      ...(options.fileChangeObserver ? { fileChangeObserver: options.fileChangeObserver } : {}),
-      ...(options.extensions ? { extensions: options.extensions } : {}),
-      ...(options.dreamScope ? { dreamScope: options.dreamScope } : {}),
-      ...(options.dreamSourceSession ? { dreamSourceSession: options.dreamSourceSession } : {}),
-      ...(options.todoScope ? { todoScope: options.todoScope } : {}),
-      ...(options.getAutomationCreateDefaults
-        ? { getAutomationCreateDefaults: options.getAutomationCreateDefaults }
-        : {}),
-      ...(options.onAutomationCreated ? { onAutomationCreated: options.onAutomationCreated } : {}),
-      availableToolDefinitions: () => this.toolDefinitionsJson(),
-    });
+    this.tools = new NodeHostToolService<AskQuestionsQuestionSpec>(
+      {
+        workspaceRoot,
+        spiritDataDir: spiritAgentDataDir(),
+      },
+      {
+        mcp: createNoopMcpAdapter(),
+        getModelCompatibilityProfile: () => this.activeModelCompatibilityProfile,
+        getApprovalLevel: () => this.approvalLevel,
+        ...(options.fileChangeObserver ? { fileChangeObserver: options.fileChangeObserver } : {}),
+        ...(options.extensions ? { extensions: options.extensions } : {}),
+        ...(options.dreamScope ? { dreamScope: options.dreamScope } : {}),
+        ...(options.dreamSourceSession ? { dreamSourceSession: options.dreamSourceSession } : {}),
+        ...(options.todoScope ? { todoScope: options.todoScope } : {}),
+        ...(options.getAutomationCreateDefaults
+          ? { getAutomationCreateDefaults: options.getAutomationCreateDefaults }
+          : {}),
+        ...(options.onAutomationCreated
+          ? { onAutomationCreated: options.onAutomationCreated }
+          : {}),
+        availableToolDefinitions: () => this.toolDefinitionsJson(),
+      },
+    );
   }
 
   setActiveTransportConfig(config: LlmTransportConfig): void {
     this.activeTransportConfig = config;
     this.activeModelCompatibilityProfile = resolveOpenAiModelCompatibilityProfile(config as any);
     this.imageGenerationAvailable =
-      'imageGeneration' in config && config.imageGeneration !== undefined;
+      "imageGeneration" in config && config.imageGeneration !== undefined;
     this.videoGenerationAvailable =
-      'videoGeneration' in config && config.videoGeneration !== undefined;
+      "videoGeneration" in config && config.videoGeneration !== undefined;
   }
 
   setApprovalLevel(level: ApprovalLevel): void {
@@ -204,7 +206,7 @@ export class DesktopToolExecutor
   }
 
   setPlanModeToolExposure(planMode: boolean): void {
-    this.setAgentModeToolExposure(planMode ? 'plan' : 'agent');
+    this.setAgentModeToolExposure(planMode ? "plan" : "agent");
   }
 
   approvalLevelSnapshot(): ApprovalLevel {
@@ -223,9 +225,11 @@ export class DesktopToolExecutor
     dreamScope: HostDreamScope | undefined,
     dreamToolMode: DesktopDreamToolMode | undefined,
   ): boolean {
-    return this.dreamToolMode === dreamToolMode
-      && this.dreamScope?.workspaceRoot === dreamScope?.workspaceRoot
-      && this.dreamScope?.gitBranch === dreamScope?.gitBranch;
+    return (
+      this.dreamToolMode === dreamToolMode &&
+      this.dreamScope?.workspaceRoot === dreamScope?.workspaceRoot &&
+      this.dreamScope?.gitBranch === dreamScope?.gitBranch
+    );
   }
 
   matchesTodoAccess(todoScope: HostTodoScope | undefined): boolean {
@@ -233,22 +237,24 @@ export class DesktopToolExecutor
   }
 
   toolDefinitionsJson(): JsonValue {
-    let builtinDefinitions = buildBuiltinHostToolDefinitions(this.tools.toolDefinitionEnvironment());
+    let builtinDefinitions = buildBuiltinHostToolDefinitions(
+      this.tools.toolDefinitionEnvironment(),
+    );
     if (!this.imageGenerationAvailable) {
       builtinDefinitions = builtinDefinitions.filter(
-        (definition) => toolDefinitionName(definition) !== 'generate_image',
+        (definition) => toolDefinitionName(definition) !== "generate_image",
       );
     }
     if (!this.videoGenerationAvailable) {
       builtinDefinitions = builtinDefinitions.filter(
-        (definition) => toolDefinitionName(definition) !== 'generate_video',
+        (definition) => toolDefinitionName(definition) !== "generate_video",
       );
     }
 
     if (
-      this.activeTransportConfig !== undefined
-      && isOpenResponsesTransportConfig(this.activeTransportConfig)
-      && shouldUseApplyPatchFileTools(this.activeTransportConfig, { agentMode: this.agentMode })
+      this.activeTransportConfig !== undefined &&
+      isOpenResponsesTransportConfig(this.activeTransportConfig) &&
+      shouldUseApplyPatchFileTools(this.activeTransportConfig, { agentMode: this.agentMode })
     ) {
       builtinDefinitions = filterLegacyHostFileToolDefinitions(builtinDefinitions);
     }
@@ -260,12 +266,12 @@ export class DesktopToolExecutor
         ...this.planToolDefinitions,
         ...this.dreamToolDefinitions,
         ...this.todoToolDefinitions,
-        ...(this.activeTransportConfig !== undefined
-          && shouldUseStepfunWebSearch(this.activeTransportConfig)
+        ...(this.activeTransportConfig !== undefined &&
+        shouldUseStepfunWebSearch(this.activeTransportConfig)
           ? [buildStepfunWebSearchToolDefinition()]
           : []),
-        ...(this.activeTransportConfig !== undefined
-          && shouldUseKimiCodeWebSearch(this.activeTransportConfig)
+        ...(this.activeTransportConfig !== undefined &&
+        shouldUseKimiCodeWebSearch(this.activeTransportConfig)
           ? [buildKimiCodeWebSearchToolDefinition()]
           : []),
       ],
@@ -298,13 +304,10 @@ export class DesktopToolExecutor
   }
 
   async parseCommand(_message: string): Promise<DesktopToolRequest> {
-    throw new Error('当前桌面宿主未实现手动工具命令解析。');
+    throw new Error("当前桌面宿主未实现手动工具命令解析。");
   }
 
-  async requestFromFunctionCall(
-    name: string,
-    argumentsJson: string,
-  ): Promise<DesktopToolRequest> {
+  async requestFromFunctionCall(name: string, argumentsJson: string): Promise<DesktopToolRequest> {
     const availableDefinitions = this.toolDefinitionsJson();
     assertFinishTaskToolAllowed(name, this.loopToolExposureEnabled, availableDefinitions);
     assertAgentModeAllowsHostTool(name, this.agentMode, availableDefinitions);
@@ -321,31 +324,23 @@ export class DesktopToolExecutor
       this.assertAllowedDreamToolRequest(request);
       return request;
     } catch (error) {
-      throw enrichUnknownToolError(
-        error,
-        name,
-        toolNamesFromDefinitions(availableDefinitions),
-      );
+      throw enrichUnknownToolError(error, name, toolNamesFromDefinitions(availableDefinitions));
     }
   }
 
-  async authorize(
-    request: DesktopToolRequest,
-  ): Promise<AuthorizationDecision<string>> {
+  async authorize(request: DesktopToolRequest): Promise<AuthorizationDecision<string>> {
     if (this.mcp.isFetchMcpResourceToolRequest(request as JsonValue)) {
-      return { kind: 'allowed' };
+      return { kind: "allowed" };
     }
     if (this.mcp.isLazyToolGatewayToolRequest(request as JsonValue)) {
-      return this.authorizeLazyToolGateway(
-        request as unknown as LazyToolGatewayToolRequest,
-      );
+      return this.authorizeLazyToolGateway(request as unknown as LazyToolGatewayToolRequest);
     }
     if (this.mcp.isToolRequest(request as JsonValue)) {
       await this.mcp.authorizeToolRequest(request as unknown as McpToolRequest);
-      return { kind: 'allowed' };
+      return { kind: "allowed" };
     }
     if (isLspDiagnosticsToolRequest(request as JsonValue)) {
-      return { kind: 'allowed' };
+      return { kind: "allowed" };
     }
     this.assertAllowedDreamToolRequest(request);
     return this.tools.authorize(request);
@@ -360,7 +355,7 @@ export class DesktopToolExecutor
       return createToolExecutionTextOutput(
         await this.mcp.executeFetchMcpResourceToolRequest(
           request as unknown as {
-            kind: 'fetchMcpResource';
+            kind: "fetchMcpResource";
             server: string;
             uri: string;
           },
@@ -386,7 +381,7 @@ export class DesktopToolExecutor
     if (isLspDiagnosticsToolRequest(jsonRequest)) {
       if (!this.lsp?.enabled) {
         throw new Error(
-          'get_diagnostics is not available because no language server is installed for this workspace',
+          "get_diagnostics is not available because no language server is installed for this workspace",
         );
       }
       const result = await executeGetDiagnostics(this.lsp, jsonRequest.paths);
@@ -396,29 +391,37 @@ export class DesktopToolExecutor
     this.assertAllowedDreamToolRequest(request);
     const output = await this.tools.execute(request);
     const normalized =
-      typeof output === 'string'
+      typeof output === "string"
         ? createToolExecutionTextOutput(output)
         : {
             summaryText: output.summaryText,
             content: output.content.map((part) => {
-              if (part.type === 'text') {
+              if (part.type === "text") {
                 return createLlmTextContentPart(part.text);
               }
-              if (part.type === 'video') {
+              if (part.type === "video") {
                 return createLlmVideoContentPart(part.path);
               }
               return createLlmImageContentPart(part.path);
             }),
           };
-    const withLsp = await appendLspDiagnosticsAfterWriteIfNeeded(this.lsp, request as JsonValue, normalized);
+    const withLsp = await appendLspDiagnosticsAfterWriteIfNeeded(
+      this.lsp,
+      request as JsonValue,
+      normalized,
+    );
     return withLsp;
   }
 
-  async saveGeneratedImage(request: HostGeneratedImageSaveRequest): Promise<HostGeneratedImageFile> {
+  async saveGeneratedImage(
+    request: HostGeneratedImageSaveRequest,
+  ): Promise<HostGeneratedImageFile> {
     return this.tools.saveGeneratedImage(request);
   }
 
-  async saveGeneratedVideo(request: HostGeneratedVideoSaveRequest): Promise<HostGeneratedVideoFile> {
+  async saveGeneratedVideo(
+    request: HostGeneratedVideoSaveRequest,
+  ): Promise<HostGeneratedVideoFile> {
     return this.tools.saveGeneratedVideo(request);
   }
 
@@ -496,10 +499,7 @@ export class DesktopToolExecutor
   }
 
   mcpToolCatalogSnapshot(): ToolAgentMcpToolCatalogSnapshot {
-    return mergeLazyToolCatalogSnapshots(
-      this.mcp.catalogSnapshot(),
-      this.builtInLazyToolIndex(),
-    );
+    return mergeLazyToolCatalogSnapshots(this.mcp.catalogSnapshot(), this.builtInLazyToolIndex());
   }
 
   mcpCatalogRevision(): number {
@@ -544,9 +544,9 @@ export class DesktopToolExecutor
         this.builtInLazyToolIndex(),
         async (callRequest) => {
           if (
-            callRequest.provider !== LAZY_TOOL_PROVIDER_BUILT_IN
-            || callRequest.server !== LAZY_BUILT_IN_SERVER_DESKTOP
-            || callRequest.tool !== CREATE_AUTOMATION_TOOL_NAME
+            callRequest.provider !== LAZY_TOOL_PROVIDER_BUILT_IN ||
+            callRequest.server !== LAZY_BUILT_IN_SERVER_DESKTOP ||
+            callRequest.tool !== CREATE_AUTOMATION_TOOL_NAME
           ) {
             throw new Error(`Unknown built-in tool: ${callRequest.server}/${callRequest.tool}`);
           }
@@ -557,7 +557,7 @@ export class DesktopToolExecutor
             JSON.stringify(args),
           );
           const output = await this.tools.execute(hostRequest);
-          return typeof output === 'string' ? output : output.summaryText;
+          return typeof output === "string" ? output : output.summaryText;
         },
       ),
     });
@@ -566,20 +566,20 @@ export class DesktopToolExecutor
   private authorizeLazyToolGateway(
     request: LazyToolGatewayToolRequest,
   ): AuthorizationDecision<string> {
-    if (request.name === TOOL_CALL_TOOL_NAME && this.approvalLevel !== 'full-approval') {
+    if (request.name === TOOL_CALL_TOOL_NAME && this.approvalLevel !== "full-approval") {
       const parsed = parseLazyToolGatewayArguments(request.name, request.argumentsJson);
       if (
-        parsed.provider === LAZY_TOOL_PROVIDER_BUILT_IN
-        && parsed.server === LAZY_BUILT_IN_SERVER_DESKTOP
-        && parsed.tool === CREATE_AUTOMATION_TOOL_NAME
-        && 'arguments' in parsed
+        parsed.provider === LAZY_TOOL_PROVIDER_BUILT_IN &&
+        parsed.server === LAZY_BUILT_IN_SERVER_DESKTOP &&
+        parsed.tool === CREATE_AUTOMATION_TOOL_NAME &&
+        "arguments" in parsed
       ) {
         try {
           const preview = previewCreateAutomationFromArguments(
             parseBuiltInLazyToolCallArguments(parsed),
           );
           return {
-            kind: 'need-approval',
+            kind: "need-approval",
             prompt: buildCreateAutomationApprovalPrompt(preview),
             trustTarget: `built-in:${parsed.server}:${parsed.tool}`,
           };
@@ -599,7 +599,7 @@ export class DesktopToolExecutor
     if (!this.dreamToolMode) {
       throw new Error(`Dream tools are not enabled for this runtime: ${request.name}`);
     }
-    if (this.dreamToolMode === 'read-only' && !READ_ONLY_DREAM_TOOL_NAMES.has(request.name)) {
+    if (this.dreamToolMode === "read-only" && !READ_ONLY_DREAM_TOOL_NAMES.has(request.name)) {
       throw new Error(`Dream tool is not available in read-only mode: ${request.name}`);
     }
   }
@@ -616,20 +616,15 @@ export class DesktopToolExecutor
     return this.mcp.listPrompts(name);
   }
 
-  async getMcpPrompt(
-    name: string,
-    prompt: string,
-    _argsJson?: string,
-  ): Promise<JsonValue> {
+  async getMcpPrompt(name: string, prompt: string, _argsJson?: string): Promise<JsonValue> {
     return this.mcp.getPrompt(name, prompt, _argsJson);
   }
 }
 
-function isExtensionToolRequest(request: DesktopToolRequest): request is Extract<
-  DesktopToolRequest,
-  { name: 'extension_tool' }
-> {
-  return typeof request === 'object' && request !== null && request.name === 'extension_tool';
+function isExtensionToolRequest(
+  request: DesktopToolRequest,
+): request is Extract<DesktopToolRequest, { name: "extension_tool" }> {
+  return typeof request === "object" && request !== null && request.name === "extension_tool";
 }
 
 function mergeToolDefinitions(...definitions: JsonValue[]): JsonValue {
@@ -650,14 +645,18 @@ function mergeToolDefinitions(...definitions: JsonValue[]): JsonValue {
 }
 
 function toolDefinitionName(value: JsonValue): string | undefined {
-  if (typeof value !== 'object' || value === null || Array.isArray(value)) {
+  if (typeof value !== "object" || value === null || Array.isArray(value)) {
     return undefined;
   }
 
-  const candidateFunction = 'function' in value ? value.function : undefined;
-  if (typeof candidateFunction !== 'object' || candidateFunction === null || Array.isArray(candidateFunction)) {
+  const candidateFunction = "function" in value ? value.function : undefined;
+  if (
+    typeof candidateFunction !== "object" ||
+    candidateFunction === null ||
+    Array.isArray(candidateFunction)
+  ) {
     return undefined;
   }
 
-  return typeof candidateFunction.name === 'string' ? candidateFunction.name : undefined;
+  return typeof candidateFunction.name === "string" ? candidateFunction.name : undefined;
 }

@@ -187,10 +187,7 @@ export function WorkspaceFileContextMenuContent({
   }
 
   return (
-    <ContextMenuContent
-      aria-label={t("workspace.fileActions")}
-      onCloseAutoFocus={onCloseAutoFocus}
-    >
+    <ContextMenuContent aria-label={t("workspace.fileActions")} onCloseAutoFocus={onCloseAutoFocus}>
       <ContextMenuSectionItems items={menuItems} />
     </ContextMenuContent>
   );

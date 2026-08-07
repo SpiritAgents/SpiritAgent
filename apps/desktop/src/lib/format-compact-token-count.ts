@@ -17,5 +17,5 @@ function formatScaledCount(scaled: number): string {
   if (Number.isInteger(roundedOneDecimal)) {
     return String(roundedOneDecimal);
   }
-  return roundedOneDecimal.toFixed(1).replace(/\.0$/, '');
+  return roundedOneDecimal.toFixed(1).replace(/\.0$/, "");
 }

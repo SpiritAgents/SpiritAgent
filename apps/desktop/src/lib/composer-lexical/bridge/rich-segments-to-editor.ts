@@ -53,23 +53,24 @@ export function richSegmentsToEditorState(
   segments: readonly RichSegment[],
   editor: LexicalEditor,
 ): void {
-  const merged = mergeAdjacentTextSegments(
-    segments.length > 0 ? [...segments] : emptySegments(),
+  const merged = mergeAdjacentTextSegments(segments.length > 0 ? [...segments] : emptySegments());
+
+  editor.update(
+    () => {
+      const root = $getRoot();
+      root.clear();
+      const paragraph = $createParagraphNode();
+
+      for (const segment of merged) {
+        appendSegmentToParagraph(paragraph, segment);
+      }
+
+      if (paragraph.getChildrenSize() === 0) {
+        paragraph.append($createTextNode(""));
+      }
+
+      root.append(paragraph);
+    },
+    { discrete: true },
   );
-
-  editor.update(() => {
-    const root = $getRoot();
-    root.clear();
-    const paragraph = $createParagraphNode();
-
-    for (const segment of merged) {
-      appendSegmentToParagraph(paragraph, segment);
-    }
-
-    if (paragraph.getChildrenSize() === 0) {
-      paragraph.append($createTextNode(""));
-    }
-
-    root.append(paragraph);
-  }, { discrete: true });
 }

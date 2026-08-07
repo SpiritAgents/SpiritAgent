@@ -47,17 +47,12 @@ import type { ActiveSkillSlashQuery, SkillSlashSuggestion } from "@/lib/skill-sl
 import { sameWorkspacePath } from "@/lib/workspace-display-label";
 import { normalizePaneSessionPathKey } from "@/lib/pane-desktop-snapshot";
 import { shouldShowComposerChangesCard } from "@/lib/composer-changes-card-visibility";
-import {
-  viewportLengthToScaleRootLocal,
-} from "@/lib/ui-layout-scale";
+import { viewportLengthToScaleRootLocal } from "@/lib/ui-layout-scale";
 import type { ComposerLocalFileAttachmentView } from "@/lib/local-file-attachments";
 import { FONT_WEIGHT_MEDIUM } from "@/lib/desktop-typography";
 import { cn } from "@/lib/utils";
 import { useComposerSuggestionAnchor } from "@/hooks/use-composer-suggestion-anchor";
-import type {
-  DesktopSnapshot,
-  WorkspaceFileReferenceSuggestionsResponse,
-} from "@/types";
+import type { DesktopSnapshot, WorkspaceFileReferenceSuggestionsResponse } from "@/types";
 import type { useDesktopRuntime } from "@/hooks/useDesktopRuntime";
 
 type DesktopRuntime = ReturnType<typeof useDesktopRuntime>;
@@ -71,9 +66,7 @@ export type ComposerDockProps = {
   composerSegments: readonly RichSegment[];
   onComposerSegmentsChange: (segments: RichSegment[]) => void;
   composerLocalFileAttachments: ComposerLocalFileAttachmentView[];
-  onComposerLocalFileAttachmentsChange: (
-    attachments: ComposerLocalFileAttachmentView[],
-  ) => void;
+  onComposerLocalFileAttachmentsChange: (attachments: ComposerLocalFileAttachmentView[]) => void;
   snapshot: DesktopSnapshot | null;
   runtime: DesktopRuntime;
   commitBusy: boolean;
@@ -86,7 +79,9 @@ export type ComposerDockProps = {
   questionDrafts?: Record<string, import("@/hooks/useDesktopRuntime").QuestionDraft>;
   onUpdateQuestionDraft?: (
     questionId: string,
-    updater: (draft: import("@/hooks/useDesktopRuntime").QuestionDraft) => import("@/hooks/useDesktopRuntime").QuestionDraft,
+    updater: (
+      draft: import("@/hooks/useDesktopRuntime").QuestionDraft,
+    ) => import("@/hooks/useDesktopRuntime").QuestionDraft,
   ) => void;
   onSubmitQuestions?: () => void;
   onSkipQuestions?: () => void;
@@ -261,9 +256,7 @@ export const ComposerDock = forwardRef<HTMLDivElement, ComposerDockProps>(functi
         );
       }
 
-      const todo = chrome.querySelector<HTMLElement>(
-        '[data-spirit-surface="composer-todo-card"]',
-      );
+      const todo = chrome.querySelector<HTMLElement>('[data-spirit-surface="composer-todo-card"]');
       if (todo) {
         const topRadius = readElementTopBorderRadius(todo);
         shapes.push(
@@ -277,20 +270,13 @@ export const ComposerDock = forwardRef<HTMLDivElement, ComposerDockProps>(functi
         );
       }
 
-      const surface = chrome.querySelector<HTMLElement>(
-        '[data-spirit-surface="composer-surface"]',
-      );
+      const surface = chrome.querySelector<HTMLElement>('[data-spirit-surface="composer-surface"]');
       let bottomSlabFromY: number | undefined;
       if (surface) {
         const surfaceRect = surface.getBoundingClientRect();
         const radius = readElementUniformBorderRadius(surface);
         shapes.push(
-          conversationScrollOccludeShapeFromRects(
-            viewportRect,
-            surfaceRect,
-            radius,
-            radius,
-          ),
+          conversationScrollOccludeShapeFromRects(viewportRect, surfaceRect, radius, radius),
         );
         // 底带从「底圆角起点」起：封底圆角外侧空隙 + 审批栏；顶圆角空隙不进底带
         bottomSlabFromY = surfaceRect.bottom - viewportRect.top - radius;
@@ -304,9 +290,7 @@ export const ComposerDock = forwardRef<HTMLDivElement, ComposerDockProps>(functi
         height: viewportLengthToScaleRootLocal(shape.height),
       }));
       const localBottomSlabFromY =
-        bottomSlabFromY == null
-          ? undefined
-          : viewportLengthToScaleRootLocal(bottomSlabFromY);
+        bottomSlabFromY == null ? undefined : viewportLengthToScaleRootLocal(bottomSlabFromY);
 
       onScrollOccludeMaskStyleChange(
         buildConversationScrollOccludeMaskStyle({
@@ -332,12 +316,7 @@ export const ComposerDock = forwardRef<HTMLDivElement, ComposerDockProps>(functi
       window.removeEventListener("resize", syncOcclude);
       onScrollOccludeMaskStyleChange(undefined);
     };
-  }, [
-    getScrollViewport,
-    isEmptySession,
-    onScrollOccludeMaskStyleChange,
-    useMicaBackdrop,
-  ]);
+  }, [getScrollViewport, isEmptySession, onScrollOccludeMaskStyleChange, useMicaBackdrop]);
   const fileReferenceAnchor = useComposerSuggestionAnchor(
     composerRichInputRef,
     activeFileReferenceQuery ? composerCursorCodeUnits : null,
@@ -385,7 +364,10 @@ export const ComposerDock = forwardRef<HTMLDivElement, ComposerDockProps>(functi
         {isEmptySession ? (
           <div data-spirit-surface="conversation-empty">
             <p
-              className={cn("mb-6 text-center text-2xl tracking-tight text-foreground sm:text-3xl", FONT_WEIGHT_MEDIUM)}
+              className={cn(
+                "mb-6 text-center text-2xl tracking-tight text-foreground sm:text-3xl",
+                FONT_WEIGHT_MEDIUM,
+              )}
               data-testid="empty-session-greeting"
             >
               {emptySessionGreeting}
@@ -402,9 +384,9 @@ export const ComposerDock = forwardRef<HTMLDivElement, ComposerDockProps>(functi
                 disabled={workspaceControlsDisabled}
                 onSelectWorkspace={(workspaceRoot) => {
                   if (
-                    snapshot?.workspaceBinding === "project"
-                    && snapshot.workspaceRoot
-                    && sameWorkspacePath(snapshot.workspaceRoot, workspaceRoot)
+                    snapshot?.workspaceBinding === "project" &&
+                    snapshot.workspaceRoot &&
+                    sameWorkspacePath(snapshot.workspaceRoot, workspaceRoot)
                   ) {
                     return;
                   }
@@ -455,10 +437,7 @@ export const ComposerDock = forwardRef<HTMLDivElement, ComposerDockProps>(functi
                   />
                   <WorkLocationMenu
                     workLocation={snapshot?.git.workLocation ?? "local"}
-                    disabled={
-                      gitControlsDisabled
-                      || snapshot?.git.isRepository !== true
-                    }
+                    disabled={gitControlsDisabled || snapshot?.git.isRepository !== true}
                     onWorkLocationChange={(workLocation) => {
                       if (useIsolatedPaneWorkspace && paneSessionPath) {
                         void runtime.setPaneWorkLocation(paneSessionPath, workLocation);
@@ -481,7 +460,7 @@ export const ComposerDock = forwardRef<HTMLDivElement, ComposerDockProps>(functi
 
           {rewindWarnings.length > 0 ? (
             <div className="rounded-md border border-amber-500/35 bg-amber-500/10 px-2.5 py-2 text-xs leading-relaxed text-amber-900 dark:text-amber-100">
-              <p>{t('app.rewindComplete', { count: rewindWarnings.length })}</p>
+              <p>{t("app.rewindComplete", { count: rewindWarnings.length })}</p>
               <p className="mt-1 truncate" title={rewindWarnings[0]?.message}>
                 {rewindWarnings[0]?.path}: {rewindWarnings[0]?.message}
               </p>
@@ -496,20 +475,26 @@ export const ComposerDock = forwardRef<HTMLDivElement, ComposerDockProps>(functi
               onApprovalGuidanceChange={runtime.setApprovalGuidance}
               onSubmitApproval={(decision) => {
                 if (decision.kind === "allow") {
-                  void runtime.submitApproval({
-                    kind: "allow",
-                    ...(decision.persistTrust ? { persistTrust: true } : {}),
-                  }, approvalSessionPath);
+                  void runtime.submitApproval(
+                    {
+                      kind: "allow",
+                      ...(decision.persistTrust ? { persistTrust: true } : {}),
+                    },
+                    approvalSessionPath,
+                  );
                   return;
                 }
                 if (decision.kind === "deny") {
                   void runtime.submitApproval({ kind: "deny" }, approvalSessionPath);
                   return;
                 }
-                void runtime.submitApproval({
-                  kind: "guidance",
-                  userMessage: decision.userMessage ?? "",
-                }, approvalSessionPath);
+                void runtime.submitApproval(
+                  {
+                    kind: "guidance",
+                    userMessage: decision.userMessage ?? "",
+                  },
+                  approvalSessionPath,
+                );
               }}
             />
           ) : null}
@@ -671,9 +656,7 @@ export const ComposerDock = forwardRef<HTMLDivElement, ComposerDockProps>(functi
                       void runtime.setApprovalLevel(level);
                     }}
                   />
-                  <ComposerContextUsageRing
-                    usage={snapshot?.conversation.contextUsage}
-                  />
+                  <ComposerContextUsageRing usage={snapshot?.conversation.contextUsage} />
                 </div>
               </div>
             ) : null}

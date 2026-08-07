@@ -1,62 +1,62 @@
-import test from 'node:test';
-import assert from 'node:assert/strict';
-import { mkdtemp, rm } from 'node:fs/promises';
-import os from 'node:os';
-import path from 'node:path';
+import test from "node:test";
+import assert from "node:assert/strict";
+import { mkdtemp, rm } from "node:fs/promises";
+import os from "node:os";
+import path from "node:path";
 
-import { createHostAutomationStore } from '@spiritagent/host-internal';
+import { createHostAutomationStore } from "@spiritagent/host-internal";
 
 import {
   failDanglingAutomationRuns,
   groupGitHubPollMatchesByAutomation,
   runGitHubMatchesAndCollectConsumed,
-} from '../../dist-electron/src/host/automation-scheduler-service.js';
+} from "../../dist-electron/src/host/automation-scheduler-service.js";
 
-test('groupGitHubPollMatchesByAutomation groups matches by automation id', () => {
+test("groupGitHubPollMatchesByAutomation groups matches by automation id", () => {
   const definitionA = {
-    id: 'a',
-    title: 'A',
-    overview: 'A',
-    trigger: { kind: 'github', owner: 'o', repo: 'r', event: 'issue_created' },
-    workspaceRoot: '/tmp',
-    modelRef: { groupId: 'openai', name: 'm' },
-    approvalLevel: 'default',
+    id: "a",
+    title: "A",
+    overview: "A",
+    trigger: { kind: "github", owner: "o", repo: "r", event: "issue_created" },
+    workspaceRoot: "/tmp",
+    modelRef: { groupId: "openai", name: "m" },
+    approvalLevel: "default",
     enabled: true,
     createdAtUnixMs: 1,
     updatedAtUnixMs: 1,
   };
-  const definitionB = { ...definitionA, id: 'b', title: 'B', overview: 'B' };
+  const definitionB = { ...definitionA, id: "b", title: "B", overview: "B" };
   const grouped = groupGitHubPollMatchesByAutomation([
     {
-      automationId: 'a',
+      automationId: "a",
       definition: definitionA,
-      item: { number: 1, htmlUrl: 'https://example/1', isPullRequest: false, createdAt: '' },
+      item: { number: 1, htmlUrl: "https://example/1", isPullRequest: false, createdAt: "" },
       nextLastSeenNumber: 2,
     },
     {
-      automationId: 'b',
+      automationId: "b",
       definition: definitionB,
-      item: { number: 3, htmlUrl: 'https://example/3', isPullRequest: false, createdAt: '' },
+      item: { number: 3, htmlUrl: "https://example/3", isPullRequest: false, createdAt: "" },
       nextLastSeenNumber: 3,
     },
     {
-      automationId: 'a',
+      automationId: "a",
       definition: definitionA,
-      item: { number: 2, htmlUrl: 'https://example/2', isPullRequest: false, createdAt: '' },
+      item: { number: 2, htmlUrl: "https://example/2", isPullRequest: false, createdAt: "" },
       nextLastSeenNumber: 2,
     },
   ]);
 
   assert.equal(grouped.size, 2);
-  assert.equal(grouped.get('a')?.length, 2);
-  assert.equal(grouped.get('b')?.length, 1);
+  assert.equal(grouped.get("a")?.length, 2);
+  assert.equal(grouped.get("b")?.length, 1);
 });
 
 function fakeMatch(number) {
   return {
-    automationId: 'a',
+    automationId: "a",
     definition: {},
-    item: { number, htmlUrl: `https://example/${number}`, isPullRequest: false, createdAt: '' },
+    item: { number, htmlUrl: `https://example/${number}`, isPullRequest: false, createdAt: "" },
     nextLastSeenNumber: number,
   };
 }
@@ -64,30 +64,32 @@ function fakeMatch(number) {
 function fakeRun(status) {
   return {
     id: `run-${status}`,
-    automationId: 'a',
-    sessionPath: '/tmp/session.json',
+    automationId: "a",
+    sessionPath: "/tmp/session.json",
     status,
     startedAtUnixMs: 0,
   };
 }
 
-test('runGitHubMatchesAndCollectConsumed consumes all matches when runs complete', async () => {
+test("runGitHubMatchesAndCollectConsumed consumes all matches when runs complete", async () => {
   const matches = [fakeMatch(1), fakeMatch(2)];
-  const consumed = await runGitHubMatchesAndCollectConsumed(matches, async () => fakeRun('completed'));
+  const consumed = await runGitHubMatchesAndCollectConsumed(matches, async () =>
+    fakeRun("completed"),
+  );
   assert.deepEqual(consumed, matches);
 });
 
-test('runGitHubMatchesAndCollectConsumed consumes blocked and failed runs to advance watermark', async () => {
+test("runGitHubMatchesAndCollectConsumed consumes blocked and failed runs to advance watermark", async () => {
   // blocked/failed 已产生 run（等待用户 / 留下失败记录）：事件视为已消费，
   // 否则每个 tick 都会为同一事件重建 run 与会话文件
-  for (const status of ['blocked', 'failed']) {
+  for (const status of ["blocked", "failed"]) {
     const matches = [fakeMatch(1), fakeMatch(2)];
     const consumed = await runGitHubMatchesAndCollectConsumed(matches, async () => fakeRun(status));
     assert.deepEqual(consumed, [matches[0]]);
   }
 });
 
-test('runGitHubMatchesAndCollectConsumed does not consume matches when no run was created', async () => {
+test("runGitHubMatchesAndCollectConsumed does not consume matches when no run was created", async () => {
   const consumed = await runGitHubMatchesAndCollectConsumed(
     [fakeMatch(1), fakeMatch(2)],
     async () => undefined,
@@ -95,48 +97,48 @@ test('runGitHubMatchesAndCollectConsumed does not consume matches when no run wa
   assert.deepEqual(consumed, []);
 });
 
-test('failDanglingAutomationRuns marks crash-leftover running runs as failed', async () => {
-  const spiritDataDir = await mkdtemp(path.join(os.tmpdir(), 'spirit-desktop-dangling-runs-'));
+test("failDanglingAutomationRuns marks crash-leftover running runs as failed", async () => {
+  const spiritDataDir = await mkdtemp(path.join(os.tmpdir(), "spirit-desktop-dangling-runs-"));
 
   try {
     const store = createHostAutomationStore(spiritDataDir);
     const created = await store.create({
-      title: 'Crashy',
-      overview: 'Crash recovery',
-      trigger: { kind: 'time', schedule: { kind: 'hourly' } },
+      title: "Crashy",
+      overview: "Crash recovery",
+      trigger: { kind: "time", schedule: { kind: "hourly" } },
       workspaceRoot: spiritDataDir,
-      modelRef: { groupId: 'openai', name: 'gpt-test' },
-      approvalLevel: 'default',
+      modelRef: { groupId: "openai", name: "gpt-test" },
+      approvalLevel: "default",
     });
     await store.addRun(created.id, {
-      id: 'run-running',
+      id: "run-running",
       automationId: created.id,
-      sessionPath: '/tmp/session.json',
-      status: 'running',
+      sessionPath: "/tmp/session.json",
+      status: "running",
       startedAtUnixMs: Date.now(),
     });
     await store.addRun(created.id, {
-      id: 'run-blocked',
+      id: "run-blocked",
       automationId: created.id,
-      sessionPath: '/tmp/session-blocked.json',
-      status: 'blocked',
+      sessionPath: "/tmp/session-blocked.json",
+      status: "blocked",
       startedAtUnixMs: Date.now(),
     });
 
-    const affected = await failDanglingAutomationRuns(store, 'interrupted');
+    const affected = await failDanglingAutomationRuns(store, "interrupted");
     assert.deepEqual(affected, [created.id]);
     assert.equal(await store.getActiveRun(created.id), undefined);
 
     const loaded = await store.get(created.id);
-    const recovered = loaded?.runs.find((run) => run.id === 'run-running');
-    assert.equal(recovered?.status, 'failed');
-    assert.equal(recovered?.error, 'interrupted');
+    const recovered = loaded?.runs.find((run) => run.id === "run-running");
+    assert.equal(recovered?.status, "failed");
+    assert.equal(recovered?.error, "interrupted");
     assert.ok(recovered?.completedAtUnixMs);
     // blocked run 不受影响
-    assert.equal(loaded?.runs.find((run) => run.id === 'run-blocked')?.status, 'blocked');
+    assert.equal(loaded?.runs.find((run) => run.id === "run-blocked")?.status, "blocked");
 
     // 无残留 running run 时为空操作
-    assert.deepEqual(await failDanglingAutomationRuns(store, 'interrupted'), []);
+    assert.deepEqual(await failDanglingAutomationRuns(store, "interrupted"), []);
   } finally {
     await rm(spiritDataDir, { recursive: true, force: true });
   }

@@ -1,4 +1,4 @@
-type SupportedImageExtension = '.bmp' | '.gif' | '.ico' | '.jpeg' | '.jpg' | '.png' | '.webp';
+type SupportedImageExtension = ".bmp" | ".gif" | ".ico" | ".jpeg" | ".jpg" | ".png" | ".webp";
 
 export interface SupportedImageFile {
   extension: SupportedImageExtension;
@@ -6,21 +6,21 @@ export interface SupportedImageFile {
 }
 
 const SUPPORTED_IMAGE_MIME_TYPES: Record<SupportedImageExtension, string> = {
-  '.bmp': 'image/bmp',
-  '.gif': 'image/gif',
-  '.ico': 'image/x-icon',
-  '.jpeg': 'image/jpeg',
-  '.jpg': 'image/jpeg',
-  '.png': 'image/png',
-  '.webp': 'image/webp',
+  ".bmp": "image/bmp",
+  ".gif": "image/gif",
+  ".ico": "image/x-icon",
+  ".jpeg": "image/jpeg",
+  ".jpg": "image/jpeg",
+  ".png": "image/png",
+  ".webp": "image/webp",
 };
 
 function fileExtensionFromPath(filePath: string): string {
-  const normalized = filePath.replace(/\\/g, '/');
-  const basename = normalized.slice(normalized.lastIndexOf('/') + 1);
-  const dot = basename.lastIndexOf('.');
+  const normalized = filePath.replace(/\\/g, "/");
+  const basename = normalized.slice(normalized.lastIndexOf("/") + 1);
+  const dot = basename.lastIndexOf(".");
   if (dot < 0) {
-    return '';
+    return "";
   }
   return basename.slice(dot).toLowerCase();
 }
@@ -51,13 +51,13 @@ export function detectSupportedImageFile(
 function supportedImageExtension(filePath: string): SupportedImageExtension | undefined {
   const extension = fileExtensionFromPath(filePath);
   switch (extension) {
-    case '.bmp':
-    case '.gif':
-    case '.ico':
-    case '.jpeg':
-    case '.jpg':
-    case '.png':
-    case '.webp':
+    case ".bmp":
+    case ".gif":
+    case ".ico":
+    case ".jpeg":
+    case ".jpg":
+    case ".png":
+    case ".webp":
       return extension;
     default:
       return undefined;
@@ -66,19 +66,19 @@ function supportedImageExtension(filePath: string): SupportedImageExtension | un
 
 function matchesImageSignature(extension: SupportedImageExtension, bytes: Uint8Array): boolean {
   switch (extension) {
-    case '.bmp':
-      return hasAsciiPrefix(bytes, 'BM');
-    case '.png':
+    case ".bmp":
+      return hasAsciiPrefix(bytes, "BM");
+    case ".png":
       return hasPrefix(bytes, [0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]);
-    case '.jpg':
-    case '.jpeg':
+    case ".jpg":
+    case ".jpeg":
       return hasPrefix(bytes, [0xff, 0xd8, 0xff]);
-    case '.gif':
-      return hasAsciiPrefix(bytes, 'GIF87a') || hasAsciiPrefix(bytes, 'GIF89a');
-    case '.ico':
+    case ".gif":
+      return hasAsciiPrefix(bytes, "GIF87a") || hasAsciiPrefix(bytes, "GIF89a");
+    case ".ico":
       return hasPrefix(bytes, [0x00, 0x00, 0x01, 0x00]);
-    case '.webp':
-      return hasAsciiPrefix(bytes, 'RIFF') && hasAsciiPrefix(bytes.slice(8), 'WEBP');
+    case ".webp":
+      return hasAsciiPrefix(bytes, "RIFF") && hasAsciiPrefix(bytes.slice(8), "WEBP");
   }
 }
 

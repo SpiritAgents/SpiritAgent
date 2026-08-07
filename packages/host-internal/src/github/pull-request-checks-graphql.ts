@@ -1,12 +1,12 @@
-import { executeGitHubGraphQL } from './github-graphql.js';
-import { sortPullRequestChecks } from './pull-request-checks-pages.js';
+import { executeGitHubGraphQL } from "./github-graphql.js";
+import { sortPullRequestChecks } from "./pull-request-checks-pages.js";
 import type {
   GitHubPullRequestCheck,
   GitHubPullRequestCheckState,
   GitHubPullRequestChecksSnapshot,
   GitHubRepositoryRef,
-} from './types.js';
-import type { GetPullRequestChecksOptions } from './pull-request-checks.js';
+} from "./types.js";
+import type { GetPullRequestChecksOptions } from "./pull-request-checks.js";
 
 const STATUS_CHECK_CONTEXTS_PAGE_SIZE = 100;
 const EPOCH_ISO = new Date(0).toISOString();
@@ -62,7 +62,7 @@ query PullRequestChecks($owner: String!, $repo: String!, $number: Int!, $context
 `;
 
 interface GraphQLCheckRunNode {
-  __typename: 'CheckRun';
+  __typename: "CheckRun";
   databaseId?: number | null;
   name?: string | null;
   status?: string | null;
@@ -74,7 +74,7 @@ interface GraphQLCheckRunNode {
 }
 
 interface GraphQLStatusContextNode {
-  __typename: 'StatusContext';
+  __typename: "StatusContext";
   context?: string | null;
   state?: string | null;
   targetUrl?: string | null;
@@ -125,41 +125,43 @@ function mapGraphQLCheckRunState(
   status: string | null | undefined,
   conclusion: string | null | undefined,
 ): GitHubPullRequestCheckState {
-  const normalizedStatus = status?.trim().toUpperCase() || '';
+  const normalizedStatus = status?.trim().toUpperCase() || "";
   if (
-    normalizedStatus === 'QUEUED' ||
-    normalizedStatus === 'IN_PROGRESS' ||
-    normalizedStatus === 'PENDING' ||
-    normalizedStatus === 'WAITING' ||
-    normalizedStatus === 'REQUESTED'
+    normalizedStatus === "QUEUED" ||
+    normalizedStatus === "IN_PROGRESS" ||
+    normalizedStatus === "PENDING" ||
+    normalizedStatus === "WAITING" ||
+    normalizedStatus === "REQUESTED"
   ) {
-    return 'in_progress';
+    return "in_progress";
   }
 
-  const normalizedConclusion = conclusion?.trim().toUpperCase() || '';
+  const normalizedConclusion = conclusion?.trim().toUpperCase() || "";
   if (
-    normalizedConclusion === 'FAILURE' ||
-    normalizedConclusion === 'TIMED_OUT' ||
-    normalizedConclusion === 'STARTUP_FAILURE' ||
-    normalizedConclusion === 'ACTION_REQUIRED' ||
-    normalizedConclusion === 'CANCELLED' ||
-    normalizedConclusion === 'STALE'
+    normalizedConclusion === "FAILURE" ||
+    normalizedConclusion === "TIMED_OUT" ||
+    normalizedConclusion === "STARTUP_FAILURE" ||
+    normalizedConclusion === "ACTION_REQUIRED" ||
+    normalizedConclusion === "CANCELLED" ||
+    normalizedConclusion === "STALE"
   ) {
-    return 'failure';
+    return "failure";
   }
 
-  return 'success';
+  return "success";
 }
 
-function mapGraphQLStatusContextState(state: string | null | undefined): GitHubPullRequestCheckState {
-  const normalized = state?.trim().toUpperCase() || '';
-  if (normalized === 'FAILURE' || normalized === 'ERROR') {
-    return 'failure';
+function mapGraphQLStatusContextState(
+  state: string | null | undefined,
+): GitHubPullRequestCheckState {
+  const normalized = state?.trim().toUpperCase() || "";
+  if (normalized === "FAILURE" || normalized === "ERROR") {
+    return "failure";
   }
-  if (normalized === 'PENDING') {
-    return 'in_progress';
+  if (normalized === "PENDING") {
+    return "in_progress";
   }
-  return 'success';
+  return "success";
 }
 
 export function mapGraphQLCheckRunNode(node: GraphQLCheckRunNode): GitHubPullRequestCheck | null {
@@ -203,8 +205,8 @@ export function mapGraphQLStatusContextNode(
     name,
     state,
     startedAt,
-    ...(state === 'success' && updatedAt ? { completedAt: updatedAt } : {}),
-    ...(state === 'failure' && updatedAt ? { completedAt: updatedAt } : {}),
+    ...(state === "success" && updatedAt ? { completedAt: updatedAt } : {}),
+    ...(state === "failure" && updatedAt ? { completedAt: updatedAt } : {}),
     ...(url ? { url } : {}),
     ...(node.isRequired === true ? { required: true } : {}),
   };
@@ -213,10 +215,10 @@ export function mapGraphQLStatusContextNode(
 export function mapGraphQLStatusCheckContextNode(
   node: GraphQLStatusCheckContextNode,
 ): GitHubPullRequestCheck | null {
-  if (node.__typename === 'CheckRun') {
+  if (node.__typename === "CheckRun") {
     return mapGraphQLCheckRunNode(node);
   }
-  if (node.__typename === 'StatusContext') {
+  if (node.__typename === "StatusContext") {
     return mapGraphQLStatusContextNode(node);
   }
   return null;
@@ -226,7 +228,7 @@ export function createExpectedRequiredCheck(name: string): GitHubPullRequestChec
   return {
     id: `expected:${name}`,
     name,
-    state: 'pending',
+    state: "pending",
     startedAt: EPOCH_ISO,
     required: true,
   };
@@ -274,7 +276,7 @@ export async function getPullRequestChecksViaGraphQL(
   );
 
   const pullRequest = data.repository?.pullRequest;
-  const headSha = pullRequest?.commits?.nodes?.[0]?.commit?.oid?.trim() ?? '';
+  const headSha = pullRequest?.commits?.nodes?.[0]?.commit?.oid?.trim() ?? "";
   const contextNodes = pullRequest?.statusCheckRollup?.contexts?.nodes ?? [];
   const pageInfo = pullRequest?.statusCheckRollup?.contexts?.pageInfo;
   const hasMore = pageInfo?.hasNextPage === true;

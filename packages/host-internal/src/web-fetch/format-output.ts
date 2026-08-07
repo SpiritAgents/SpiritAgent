@@ -1,5 +1,5 @@
-import type { ExtractedWebContent } from './extract-markdown.js';
-import { WEB_FETCH_MAX_CHARS, WEB_FETCH_MAX_LINKS, WEB_FETCH_USER_AGENT } from './constants.js';
+import type { ExtractedWebContent } from "./extract-markdown.js";
+import { WEB_FETCH_MAX_CHARS, WEB_FETCH_MAX_LINKS, WEB_FETCH_USER_AGENT } from "./constants.js";
 
 export interface WebFetchOutputMeta {
   url: string;
@@ -9,7 +9,7 @@ export interface WebFetchOutputMeta {
   title?: string;
   siteName?: string;
   excerpt?: string;
-  extraction: ExtractedWebContent['extraction'];
+  extraction: ExtractedWebContent["extraction"];
   jsonKeys?: string;
   truncated: boolean;
   linksTruncated: boolean;
@@ -22,7 +22,10 @@ export interface TruncateMarkdownResult {
 }
 
 export function sanitizeWebFetchMetaValue(value: string): string {
-  return value.replace(/[\r\n\u2028\u2029]+/gu, ' ').replace(/\s+/gu, ' ').trim();
+  return value
+    .replace(/[\r\n\u2028\u2029]+/gu, " ")
+    .replace(/\s+/gu, " ")
+    .trim();
 }
 
 function formatMetaLine(key: string, value: string): string {
@@ -30,7 +33,7 @@ function formatMetaLine(key: string, value: string): string {
 }
 
 export function escapeMarkdownLinkLabel(text: string): string {
-  return text.replace(/\\/gu, '\\\\').replace(/\[/gu, '\\[').replace(/\]/gu, '\\]');
+  return text.replace(/\\/gu, "\\\\").replace(/\[/gu, "\\[").replace(/\]/gu, "\\]");
 }
 
 export function truncateMarkdownAtHeadingBoundary(
@@ -42,7 +45,7 @@ export function truncateMarkdownAtHeadingBoundary(
     return { text: markdown, truncated: false };
   }
 
-  const slice = chars.slice(0, maxChars).join('');
+  const slice = chars.slice(0, maxChars).join("");
   const headingPattern = /\n#{1,6} /gu;
   let lastHeadingIndex = -1;
   for (const match of slice.matchAll(headingPattern)) {
@@ -59,7 +62,7 @@ export function truncateMarkdownAtHeadingBoundary(
     };
   }
 
-  const paragraphBreak = slice.lastIndexOf('\n\n');
+  const paragraphBreak = slice.lastIndexOf("\n\n");
   if (paragraphBreak > maxChars * 0.5) {
     return {
       text: slice.slice(0, paragraphBreak).trimEnd(),
@@ -73,11 +76,12 @@ export function truncateMarkdownAtHeadingBoundary(
   };
 }
 
-function formatLinksSection(
-  links: ReadonlyArray<{ text: string; url: string }>,
-): { section: string; truncated: boolean } {
+function formatLinksSection(links: ReadonlyArray<{ text: string; url: string }>): {
+  section: string;
+  truncated: boolean;
+} {
   if (links.length === 0) {
-    return { section: '', truncated: false };
+    return { section: "", truncated: false };
   }
 
   const limited = links.slice(0, WEB_FETCH_MAX_LINKS);
@@ -87,7 +91,7 @@ function formatLinksSection(
     lines.push(`- … (${links.length - WEB_FETCH_MAX_LINKS} more links omitted)`);
   }
   return {
-    section: `## links\n${lines.join('\n')}`,
+    section: `## links\n${lines.join("\n")}`,
     truncated,
   };
 }
@@ -101,28 +105,30 @@ export function formatWebFetchToolOutput(input: {
   const { section: linksSection, truncated: linksTruncated } = formatLinksSection(links);
 
   const headerLines = [
-    '[web]',
+    "[web]",
     `url: ${meta.url}`,
     `final_url: ${meta.finalUrl}`,
     `status: ${meta.status}`,
     `content_type: ${meta.contentType}`,
     `user_agent: ${WEB_FETCH_USER_AGENT}`,
     `extraction: ${meta.extraction}`,
-    ...(meta.title ? [formatMetaLine('title', meta.title)] : []),
-    ...(meta.siteName ? [formatMetaLine('site_name', meta.siteName)] : []),
-    ...(meta.excerpt ? [formatMetaLine('excerpt', meta.excerpt)] : []),
-    ...(meta.jsonKeys ? [formatMetaLine('json_keys', meta.jsonKeys)] : []),
+    ...(meta.title ? [formatMetaLine("title", meta.title)] : []),
+    ...(meta.siteName ? [formatMetaLine("site_name", meta.siteName)] : []),
+    ...(meta.excerpt ? [formatMetaLine("excerpt", meta.excerpt)] : []),
+    ...(meta.jsonKeys ? [formatMetaLine("json_keys", meta.jsonKeys)] : []),
     `content_chars: ${meta.contentChars}`,
     `truncated: ${meta.truncated}`,
-    ...(linksSection.length > 0 ? [`links_truncated: ${linksTruncated || meta.linksTruncated}`] : []),
+    ...(linksSection.length > 0
+      ? [`links_truncated: ${linksTruncated || meta.linksTruncated}`]
+      : []),
   ];
 
-  const parts = [`${headerLines.join('\n')}\n\n## content\n${contentMarkdown}`];
+  const parts = [`${headerLines.join("\n")}\n\n## content\n${contentMarkdown}`];
   if (linksSection.length > 0) {
-    parts.push('', linksSection);
+    parts.push("", linksSection);
   }
 
-  return parts.join('\n');
+  return parts.join("\n");
 }
 
 export function buildWebFetchOutput(input: {

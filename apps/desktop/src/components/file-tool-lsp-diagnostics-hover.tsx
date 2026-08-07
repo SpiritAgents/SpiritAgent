@@ -1,29 +1,20 @@
-import {
-  cloneElement,
-  isValidElement,
-  type ReactElement,
-  type ReactNode,
-} from "react";
+import { cloneElement, isValidElement, type ReactElement, type ReactNode } from "react";
 
 import type { LspWriteDiagnosticsUi } from "@spiritagent/agent-core";
 
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipItem,
-  useTooltipContext,
-} from "@/components/ui/tooltip";
+import { Tooltip, TooltipContent, TooltipItem, useTooltipContext } from "@/components/ui/tooltip";
 import { cn } from "@/lib/utils";
 
 function LspDiagnosticsDetailPanel({ diagnostics }: { diagnostics: LspWriteDiagnosticsUi }) {
   return (
     <div className="space-y-2">
-      <p className="text-[10px] font-normal text-muted-foreground/70">
-        {diagnostics.relativePath}
-      </p>
+      <p className="text-[10px] font-normal text-muted-foreground/70">{diagnostics.relativePath}</p>
       <ul className="max-h-64 space-y-1.5 overflow-y-auto text-xs leading-relaxed">
         {diagnostics.items.map((item, index) => (
-          <li key={`${item.severity}:${item.line}:${item.column}:${index}`} className="min-w-0 break-words">
+          <li
+            key={`${item.severity}:${item.line}:${item.column}:${index}`}
+            className="min-w-0 break-words"
+          >
             <span
               className={cn(
                 "font-mono text-[11px]",
@@ -83,7 +74,11 @@ export function FileToolLspDiagnosticsHover({
   children: ReactNode;
 }) {
   return (
-    <Tooltip<LspWriteDiagnosticsUi> getItemId={() => itemId} delayDuration={300} disableHoverableContent>
+    <Tooltip<LspWriteDiagnosticsUi>
+      getItemId={() => itemId}
+      delayDuration={300}
+      disableHoverableContent
+    >
       <Tooltip.Zone className="min-w-0">{children}</Tooltip.Zone>
       <TooltipContent
         appearance="detail"

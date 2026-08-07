@@ -7,10 +7,7 @@ import {
   syncMonacoThemeFromDocument,
 } from "@/lib/monaco-theme";
 import { isMonacoShikiReady, setMonacoShikiReady } from "@/lib/monaco-shiki-state";
-import {
-  SPIRIT_SHIKI_PLUS_THEMES,
-  SPIRIT_SHIKI_WORKSPACE_LANGS,
-} from "@/lib/spirit-shiki-themes";
+import { SPIRIT_SHIKI_PLUS_THEMES, SPIRIT_SHIKI_WORKSPACE_LANGS } from "@/lib/spirit-shiki-themes";
 
 let monacoShikiReadyPromise: Promise<void> | null = null;
 

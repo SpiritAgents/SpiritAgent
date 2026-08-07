@@ -18,20 +18,20 @@ export function buildAiSdkUserImageFilePartFromUrl(url: string): Record<string, 
   const dataUrl = parseImageDataUrl(trimmed);
   if (dataUrl) {
     return {
-      type: 'file',
+      type: "file",
       mediaType: dataUrl.mediaType,
       data: {
-        type: 'data',
+        type: "data",
         data: dataUrl.data,
       },
     };
   }
 
   return {
-    type: 'file',
-    mediaType: 'image/*',
+    type: "file",
+    mediaType: "image/*",
     data: {
-      type: 'url',
+      type: "url",
       url: trimmed,
     },
   };

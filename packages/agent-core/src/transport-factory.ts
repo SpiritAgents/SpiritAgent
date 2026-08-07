@@ -7,19 +7,19 @@ import type {
   LlmTransport,
   ToolExecutionOutput,
   VideoGenerationRequest,
-} from './ports.js';
-import type { LlmTransportConfig } from './provider-config.js';
+} from "./ports.js";
+import type { LlmTransportConfig } from "./provider-config.js";
 import {
   isAnthropicTransportConfig,
   isBedrockTransportConfig,
   isOpenResponsesTransportConfig,
-} from './provider-config.js';
-import type { JsonSchemaTransport } from './json-schema.js';
-import type { LlmToolAgentState } from './llm-tool-agent.js';
-import { AiSdkBedrockTransport } from './bedrock/ai-sdk-transport.js';
-import { AiSdkOpenAiCompatibleTransport } from './openai/ai-sdk-transport.js';
-import { AiSdkAnthropicTransport } from './anthropic/ai-sdk-transport.js';
-import { AiSdkOpenResponsesTransport } from './open-responses/ai-sdk-transport.js';
+} from "./provider-config.js";
+import type { JsonSchemaTransport } from "./json-schema.js";
+import type { LlmToolAgentState } from "./llm-tool-agent.js";
+import { AiSdkBedrockTransport } from "./bedrock/ai-sdk-transport.js";
+import { AiSdkOpenAiCompatibleTransport } from "./openai/ai-sdk-transport.js";
+import { AiSdkAnthropicTransport } from "./anthropic/ai-sdk-transport.js";
+import { AiSdkOpenResponsesTransport } from "./open-responses/ai-sdk-transport.js";
 
 export interface LlmImageGenerationTransport {
   generateImage(
@@ -37,14 +37,11 @@ export interface LlmVideoGenerationTransport {
   ): Promise<ToolExecutionOutput>;
 }
 
-export type SpiritLlmTransport = LlmTransport<
-  LlmTransportConfig,
-  LlmToolAgentState
-> & LlmImageGenerationTransport & LlmVideoGenerationTransport;
+export type SpiritLlmTransport = LlmTransport<LlmTransportConfig, LlmToolAgentState> &
+  LlmImageGenerationTransport &
+  LlmVideoGenerationTransport;
 
-export function createLlmTransport(
-  config?: LlmTransportConfig,
-): SpiritLlmTransport {
+export function createLlmTransport(config?: LlmTransportConfig): SpiritLlmTransport {
   if (isAnthropicTransportConfig(config)) {
     return new AiSdkAnthropicTransport();
   }
@@ -60,9 +57,7 @@ export function createLlmTransport(
   return new AiSdkOpenAiCompatibleTransport() as unknown as SpiritLlmTransport;
 }
 
-export function createJsonSchemaTransport(
-  config?: LlmTransportConfig,
-): JsonSchemaTransport {
+export function createJsonSchemaTransport(config?: LlmTransportConfig): JsonSchemaTransport {
   if (isAnthropicTransportConfig(config)) {
     return new AiSdkAnthropicTransport();
   }

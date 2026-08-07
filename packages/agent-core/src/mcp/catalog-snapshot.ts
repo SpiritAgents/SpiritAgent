@@ -1,10 +1,10 @@
-import { McpRegistry } from './registry.js';
+import { McpRegistry } from "./registry.js";
 import type {
   McpResourceIndexEntry,
   McpToolIndexEntry,
   ResolvedMcpServerConfig,
   ToolAgentMcpToolCatalogSnapshot,
-} from './types.js';
+} from "./types.js";
 
 export const MCP_CATALOG_TOOL_LIMIT = 128;
 export const MCP_CATALOG_RESOURCE_LIMIT = 128;
@@ -23,7 +23,7 @@ export function aggregateListedResourcesForServer(
   for (const resource of resources) {
     const existing = byUri.get(resource.uri);
     const mimeTypes = new Set(existing?.mimeTypes ?? []);
-    if (typeof resource.mimeType === 'string' && resource.mimeType.trim()) {
+    if (typeof resource.mimeType === "string" && resource.mimeType.trim()) {
       mimeTypes.add(resource.mimeType.trim());
     }
 
@@ -31,7 +31,7 @@ export function aggregateListedResourcesForServer(
       server: serverName,
       uri: resource.uri,
       name: resource.name,
-      ...(typeof resource.description === 'string' && resource.description.trim()
+      ...(typeof resource.description === "string" && resource.description.trim()
         ? { description: resource.description.trim() }
         : existing?.description !== undefined
           ? { description: existing.description }
@@ -89,15 +89,14 @@ export function buildMcpToolCatalogSnapshot(
       remainingTools -= visibleTools.length;
 
       const resourcesForServer = groupedResources.get(server.name) ?? [];
-      const visibleResources = remainingResources > 0
-        ? resourcesForServer.slice(0, remainingResources)
-        : [];
+      const visibleResources =
+        remainingResources > 0 ? resourcesForServer.slice(0, remainingResources) : [];
       remainingResources -= visibleResources.length;
 
       return {
         name: server.name,
         displayName: server.displayName,
-        state: status?.state ?? 'idle',
+        state: status?.state ?? "idle",
         ...(status?.lastError === undefined ? {} : { lastError: status.lastError }),
         tools: visibleTools.map((tool) => ({
           name: tool.toolName,
@@ -115,9 +114,7 @@ export function buildMcpToolCatalogSnapshot(
     })
     .filter(
       (server) =>
-        server.tools.length > 0
-        || server.resources.length > 0
-        || server.state === 'error',
+        server.tools.length > 0 || server.resources.length > 0 || server.state === "error",
     );
 
   return {

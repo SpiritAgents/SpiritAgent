@@ -31,7 +31,10 @@ export function formatTerminalChipTitle(attachment: TerminalSnippetAttachment): 
   return `${attachment.terminalName}${linePart}`;
 }
 
-export function makeTerminalChipNode(attachment: TerminalSnippetAttachment, doc: Document): HTMLElement {
+export function makeTerminalChipNode(
+  attachment: TerminalSnippetAttachment,
+  doc: Document,
+): HTMLElement {
   const span = doc.createElement("span");
   span.contentEditable = "false";
   span.dataset.terminalChip = "true";

@@ -1,13 +1,13 @@
-import { randomUUID } from 'node:crypto';
-import path from 'node:path';
+import { randomUUID } from "node:crypto";
+import path from "node:path";
 
-import type { PendingWorkspaceFile, LlmActiveSkill } from '@spiritagent/agent-core';
+import type { PendingWorkspaceFile, LlmActiveSkill } from "@spiritagent/agent-core";
 
-import i18n from '../lib/i18n-host.js';
-import type { ConversationMessageSnapshot, DesktopSnapshot } from '../types.js';
-import { isSessionBundleBusy } from './direct-media-turn.js';
-import type { SessionBundle } from './session-bundle.js';
-import type { SessionTurnOrchestratorContext } from './session-turn-orchestrator.js';
+import i18n from "../lib/i18n-host.js";
+import type { ConversationMessageSnapshot, DesktopSnapshot } from "../types.js";
+import { isSessionBundleBusy } from "./direct-media-turn.js";
+import type { SessionBundle } from "./session-bundle.js";
+import type { SessionTurnOrchestratorContext } from "./session-turn-orchestrator.js";
 
 export interface QueuedUserTurn {
   queueId: string;
@@ -16,7 +16,7 @@ export interface QueuedUserTurn {
   displayText: string;
   explicitWorkspaceFiles?: PendingWorkspaceFile[];
   turnSkills?: LlmActiveSkill[];
-  localFileAttachments?: ConversationMessageSnapshot['localFileAttachments'];
+  localFileAttachments?: ConversationMessageSnapshot["localFileAttachments"];
   enqueuedAtUnixMs: number;
 }
 
@@ -49,12 +49,14 @@ export function projectQueuedUserTurnSnapshots(
 ): ConversationMessageSnapshot[] {
   return queued.map((item) => ({
     id: item.messageId,
-    role: 'user',
+    role: "user",
     content: item.displayText,
     pending: false,
     queued: true,
     queueId: item.queueId,
-    ...(item.localFileAttachments?.length ? { localFileAttachments: item.localFileAttachments } : {}),
+    ...(item.localFileAttachments?.length
+      ? { localFileAttachments: item.localFileAttachments }
+      : {}),
   }));
 }
 
@@ -77,20 +79,20 @@ function defaultDisplayTextForQueuedTurn(
     return trimmed;
   }
   if (explicitWorkspaceFiles.length === 0) {
-    return '';
+    return "";
   }
-  return i18n.t('error.attachedFiles', {
-    files: explicitWorkspaceFiles.map((file) => path.basename(file.path)).join(', '),
+  return i18n.t("error.attachedFiles", {
+    files: explicitWorkspaceFiles.map((file) => path.basename(file.path)).join(", "),
   });
 }
 
 function pendingWorkspaceFilesToAttachmentSnapshots(
   files: readonly PendingWorkspaceFile[],
-): ConversationMessageSnapshot['localFileAttachments'] {
+): ConversationMessageSnapshot["localFileAttachments"] {
   return files.map((file) => ({
     path: file.path,
     name: path.basename(file.path),
-    isImage: file.kind === 'image',
+    isImage: file.kind === "image",
   }));
 }
 
@@ -110,20 +112,20 @@ export async function enqueueUserTurnCommand(
   const turnSkills = input.turnSkills ?? [];
   const trimmed = input.text.trim();
   if (!trimmed && explicitWorkspaceFiles.length === 0) {
-    throw new Error(i18n.t('error.messageRequired'));
+    throw new Error(i18n.t("error.messageRequired"));
   }
   if (bundle.activeSession?.readOnly === true) {
-    throw new Error(i18n.t('error.readonlySessionSend'));
+    throw new Error(i18n.t("error.readonlySessionSend"));
   }
   if (!canEnqueueUserTurn(bundle)) {
-    throw new Error(i18n.t('error.pendingApprovalSend'));
+    throw new Error(i18n.t("error.pendingApprovalSend"));
   }
 
   const displayText = (
     input.displayText ?? defaultDisplayTextForQueuedTurn(input.text, explicitWorkspaceFiles)
   ).trim();
   if (!displayText) {
-    throw new Error(i18n.t('error.messageRequired'));
+    throw new Error(i18n.t("error.messageRequired"));
   }
 
   const localFileAttachments =
@@ -152,7 +154,10 @@ export function findQueuedUserTurnIndex(bundle: SessionBundle, queueId: string):
   return bundle.queuedUserTurns.findIndex((item) => item.queueId === queueId);
 }
 
-export function removeQueuedUserTurn(bundle: SessionBundle, queueId: string): QueuedUserTurn | undefined {
+export function removeQueuedUserTurn(
+  bundle: SessionBundle,
+  queueId: string,
+): QueuedUserTurn | undefined {
   const index = findQueuedUserTurnIndex(bundle, queueId);
   if (index < 0) {
     return undefined;
@@ -167,7 +172,7 @@ export async function reorderQueuedUserTurnCommand(
 ): Promise<DesktopSnapshot> {
   const bundle = ctx.activeBundle();
   if (!moveQueuedUserTurnUp(bundle, queueId)) {
-    throw new Error(i18n.t('error.queuedUserTurnNotFound'));
+    throw new Error(i18n.t("error.queuedUserTurnNotFound"));
   }
   await ctx.persistCurrentSessionIfNeeded();
   return ctx.buildSnapshot();
@@ -179,7 +184,7 @@ export async function removeQueuedUserTurnCommand(
 ): Promise<DesktopSnapshot> {
   const bundle = ctx.activeBundle();
   if (!removeQueuedUserTurn(bundle, queueId)) {
-    throw new Error(i18n.t('error.queuedUserTurnNotFound'));
+    throw new Error(i18n.t("error.queuedUserTurnNotFound"));
   }
   await ctx.persistCurrentSessionIfNeeded();
   return ctx.buildSnapshot();

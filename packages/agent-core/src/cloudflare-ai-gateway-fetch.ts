@@ -1,9 +1,9 @@
-import { mergeLlmFetchInit } from './llm-fetch.js';
+import { mergeLlmFetchInit } from "./llm-fetch.js";
 
-const CLOUDFLARE_AI_GATEWAY_ID_HEADER = 'cf-aig-gateway-id';
+const CLOUDFLARE_AI_GATEWAY_ID_HEADER = "cf-aig-gateway-id";
 
 function tryParseJsonBody(body: BodyInit | null | undefined): unknown {
-  if (typeof body !== 'string') {
+  if (typeof body !== "string") {
     return undefined;
   }
   try {
@@ -14,7 +14,7 @@ function tryParseJsonBody(body: BodyInit | null | undefined): unknown {
 }
 
 function isJsonRecord(value: unknown): value is Record<string, unknown> {
-  return typeof value === 'object' && value !== null && !Array.isArray(value);
+  return typeof value === "object" && value !== null && !Array.isArray(value);
 }
 
 function requestHasFunctionTools(body: Record<string, unknown>): boolean {
@@ -22,7 +22,7 @@ function requestHasFunctionTools(body: Record<string, unknown>): boolean {
   if (!Array.isArray(tools) || tools.length === 0) {
     return false;
   }
-  return tools.some((tool) => isJsonRecord(tool) && tool.type === 'function');
+  return tools.some((tool) => isJsonRecord(tool) && tool.type === "function");
 }
 
 /**
@@ -40,8 +40,8 @@ export function patchCloudflareAiGatewayChatCompletionsBody(
   const reasoning = body.reasoning;
   const nestedEffort = isJsonRecord(reasoning) ? reasoning.effort : undefined;
   const hasNonNoneEffort =
-    (topLevelEffort !== undefined && topLevelEffort !== null && topLevelEffort !== 'none')
-    || (nestedEffort !== undefined && nestedEffort !== null && nestedEffort !== 'none');
+    (topLevelEffort !== undefined && topLevelEffort !== null && topLevelEffort !== "none") ||
+    (nestedEffort !== undefined && nestedEffort !== null && nestedEffort !== "none");
 
   if (!hasNonNoneEffort) {
     return body;
@@ -49,13 +49,18 @@ export function patchCloudflareAiGatewayChatCompletionsBody(
 
   const patched: Record<string, unknown> = {
     ...body,
-    reasoning_effort: 'none',
+    reasoning_effort: "none",
   };
 
-  if (isJsonRecord(reasoning) && nestedEffort !== undefined && nestedEffort !== null && nestedEffort !== 'none') {
+  if (
+    isJsonRecord(reasoning) &&
+    nestedEffort !== undefined &&
+    nestedEffort !== null &&
+    nestedEffort !== "none"
+  ) {
     patched.reasoning = {
       ...reasoning,
-      effort: 'none',
+      effort: "none",
     };
   }
 
@@ -63,7 +68,7 @@ export function patchCloudflareAiGatewayChatCompletionsBody(
 }
 
 function resolveRequestUrl(input: RequestInfo | URL): string {
-  if (typeof input === 'string') {
+  if (typeof input === "string") {
     return input;
   }
   if (input instanceof URL) {
@@ -90,9 +95,9 @@ export function createCloudflareAiGatewayFetch(
     let nextInit = merged;
     const requestUrl = resolveRequestUrl(input);
     if (
-      merged.method?.toUpperCase() === 'POST'
-      && requestUrl.includes('/chat/completions')
-      && merged.body
+      merged.method?.toUpperCase() === "POST" &&
+      requestUrl.includes("/chat/completions") &&
+      merged.body
     ) {
       const parsed = tryParseJsonBody(merged.body);
       if (isJsonRecord(parsed)) {

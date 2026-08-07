@@ -1,24 +1,24 @@
-import type { ModelRef } from '../types.js';
-import type { DesktopConfigFile } from './storage.js';
+import type { ModelRef } from "../types.js";
+import type { DesktopConfigFile } from "./storage.js";
 import {
   flattenProviderGroups,
   modelSupportsChat,
   resolveModelProfile,
   type ResolvedModelProfile,
-} from './model-config-access.js';
+} from "./model-config-access.js";
 
 export type LightweightChatModelResolveInput = Pick<
   DesktopConfigFile,
-  'activeModel' | 'lightweightChatModel' | 'providerGroups'
+  "activeModel" | "lightweightChatModel" | "providerGroups"
 >;
 
 export { modelSupportsChat };
 
-export const LIGHTWEIGHT_CHAT_MODEL_FALLBACK_PATTERNS = ['deepseek-v4-flash'] as const;
+export const LIGHTWEIGHT_CHAT_MODEL_FALLBACK_PATTERNS = ["deepseek-v4-flash"] as const;
 
 export function normalizeLightweightChatModel(
   value: ModelRef | undefined,
-  config: Pick<DesktopConfigFile, 'providerGroups'>,
+  config: Pick<DesktopConfigFile, "providerGroups">,
 ): ModelRef | undefined {
   const profile = resolveModelProfile(config, value);
   return profile && modelSupportsChat(profile) ? profile.ref : undefined;

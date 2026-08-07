@@ -1,13 +1,13 @@
-import assert from 'node:assert/strict';
-import test from 'node:test';
+import assert from "node:assert/strict";
+import test from "node:test";
 
 import {
   appendHookAdditionalContexts,
   runSessionEndHook,
   runSessionStartHookAndApply,
   runSubmitPromptHook,
-} from './integration.js';
-import type { HookRunner, HookRunResult } from './types.js';
+} from "./integration.js";
+import type { HookRunner, HookRunResult } from "./types.js";
 
 function mockResult(overrides: Partial<HookRunResult> = {}): HookRunResult {
   return {
@@ -31,7 +31,7 @@ function createRecordingRunner(): {
   const runner: HookRunner = {
     runSessionStart: async (input) => {
       calls.push(`sessionStart:${input.source}`);
-      return mockResult({ additionalContexts: ['start-context'] });
+      return mockResult({ additionalContexts: ["start-context"] });
     },
     runSessionEnd: async (input) => {
       calls.push(`sessionEnd:${input.reason}`);
@@ -47,7 +47,7 @@ function createRecordingRunner(): {
     },
     runPostToolUse: async (input) => {
       calls.push(`postToolUse:${input.toolName}`);
-      return mockResult({ additionalContexts: ['post-context'] });
+      return mockResult({ additionalContexts: ["post-context"] });
     },
     runSubagentStart: async (input) => {
       calls.push(`subagentStart:${input.subagentType}`);
@@ -55,13 +55,13 @@ function createRecordingRunner(): {
     },
     runSubagentEnd: async (input) => {
       calls.push(`subagentEnd:${input.status}`);
-      return mockResult({ followupMessage: 'follow-up' });
+      return mockResult({ followupMessage: "follow-up" });
     },
   };
   return { runner, calls };
 }
 
-test('runSessionStartHookAndApply records additionalContext', async () => {
+test("runSessionStartHookAndApply records additionalContext", async () => {
   const { runner } = createRecordingRunner();
   const contexts: string[] = [];
   await runSessionStartHookAndApply(
@@ -70,131 +70,134 @@ test('runSessionStartHookAndApply records additionalContext', async () => {
       contexts.push(content);
     },
     {
-      sessionId: 's1',
-      conversationPath: '/tmp/chat.json',
-      workspaceRoot: '/workspace',
-      model: 'test-model',
+      sessionId: "s1",
+      conversationPath: "/tmp/chat.json",
+      workspaceRoot: "/workspace",
+      model: "test-model",
     },
-    'startup',
+    "startup",
   );
-  assert.deepEqual(contexts, ['start-context']);
+  assert.deepEqual(contexts, ["start-context"]);
 });
 
-test('runSessionEndHook invokes runner', async () => {
+test("runSessionEndHook invokes runner", async () => {
   const { runner, calls } = createRecordingRunner();
   await runSessionEndHook(
     runner,
     {
-      sessionId: 's1',
+      sessionId: "s1",
       conversationPath: null,
-      workspaceRoot: '/workspace',
-      model: 'test-model',
+      workspaceRoot: "/workspace",
+      model: "test-model",
     },
-    'close',
+    "close",
   );
-  assert.deepEqual(calls, ['sessionEnd:close']);
+  assert.deepEqual(calls, ["sessionEnd:close"]);
 });
 
-test('appendHookAdditionalContexts skips empty values', () => {
+test("appendHookAdditionalContexts skips empty values", () => {
   const contexts: string[] = [];
-  appendHookAdditionalContexts((_role, content) => {
-    contexts.push(content);
-  }, ['  alpha  ', '', 'beta']);
-  assert.deepEqual(contexts, ['alpha', 'beta']);
+  appendHookAdditionalContexts(
+    (_role, content) => {
+      contexts.push(content);
+    },
+    ["  alpha  ", "", "beta"],
+  );
+  assert.deepEqual(contexts, ["alpha", "beta"]);
 });
 
-test('runSubmitPromptHook forwards prompt to runner', async () => {
+test("runSubmitPromptHook forwards prompt to runner", async () => {
   const { runner, calls } = createRecordingRunner();
   await runSubmitPromptHook(
     {
       hookRunner: runner,
       hookSessionContext: {
-        sessionId: 's1',
+        sessionId: "s1",
         conversationPath: null,
-        workspaceRoot: '/workspace',
-        model: 'm',
+        workspaceRoot: "/workspace",
+        model: "m",
       },
     } as never,
-    'hello hooks',
-    '42',
+    "hello hooks",
+    "42",
   );
-  assert.deepEqual(calls, ['submitPrompt:hello hooks']);
+  assert.deepEqual(calls, ["submitPrompt:hello hooks"]);
 });
 
-test('recording runner covers all seven hook events', async () => {
+test("recording runner covers all seven hook events", async () => {
   const { runner, calls } = createRecordingRunner();
   await runner.runSessionStart({
-    sessionId: 's1',
+    sessionId: "s1",
     conversationPath: null,
-    workspaceRoot: '/w',
-    model: 'm',
-    source: 'open',
+    workspaceRoot: "/w",
+    model: "m",
+    source: "open",
   });
   await runner.runSessionEnd({
-    sessionId: 's1',
+    sessionId: "s1",
     conversationPath: null,
-    workspaceRoot: '/w',
-    model: 'm',
-    reason: 'switch',
+    workspaceRoot: "/w",
+    model: "m",
+    reason: "switch",
   });
   await runner.runSubmitPrompt({
-    sessionId: 's1',
+    sessionId: "s1",
     conversationPath: null,
-    workspaceRoot: '/w',
-    model: 'm',
-    prompt: 'p',
+    workspaceRoot: "/w",
+    model: "m",
+    prompt: "p",
     messageId: undefined,
   });
   await runner.runPreToolUse({
-    sessionId: 's1',
+    sessionId: "s1",
     conversationPath: null,
-    workspaceRoot: '/w',
-    model: 'm',
-    toolName: 'grep',
-    toolCallId: 'tc1',
-    toolInput: { pattern: 'hook' },
+    workspaceRoot: "/w",
+    model: "m",
+    toolName: "grep",
+    toolCallId: "tc1",
+    toolInput: { pattern: "hook" },
   });
   await runner.runPostToolUse({
-    sessionId: 's1',
+    sessionId: "s1",
     conversationPath: null,
-    workspaceRoot: '/w',
-    model: 'm',
-    toolName: 'grep',
-    toolCallId: 'tc1',
-    toolInput: { pattern: 'hook' },
-    toolOutput: 'ok',
+    workspaceRoot: "/w",
+    model: "m",
+    toolName: "grep",
+    toolCallId: "tc1",
+    toolInput: { pattern: "hook" },
+    toolOutput: "ok",
     durationMs: 1,
     failed: false,
   });
   await runner.runSubagentStart({
-    sessionId: 's1',
+    sessionId: "s1",
     conversationPath: null,
-    workspaceRoot: '/w',
-    model: 'm',
-    subagentSessionId: 'child',
-    subagentType: 'explore',
-    task: 'find hooks',
+    workspaceRoot: "/w",
+    model: "m",
+    subagentSessionId: "child",
+    subagentType: "explore",
+    task: "find hooks",
   });
   await runner.runSubagentEnd({
-    sessionId: 's1',
+    sessionId: "s1",
     conversationPath: null,
-    workspaceRoot: '/w',
-    model: 'm',
-    subagentSessionId: 'child',
-    subagentType: 'explore',
-    status: 'completed',
-    task: 'find hooks',
-    summary: 'done',
+    workspaceRoot: "/w",
+    model: "m",
+    subagentSessionId: "child",
+    subagentType: "explore",
+    status: "completed",
+    task: "find hooks",
+    summary: "done",
     modifiedFiles: undefined,
   });
 
   assert.deepEqual(calls, [
-    'sessionStart:open',
-    'sessionEnd:switch',
-    'submitPrompt:p',
-    'preToolUse:grep',
-    'postToolUse:grep',
-    'subagentStart:explore',
-    'subagentEnd:completed',
+    "sessionStart:open",
+    "sessionEnd:switch",
+    "submitPrompt:p",
+    "preToolUse:grep",
+    "postToolUse:grep",
+    "subagentStart:explore",
+    "subagentEnd:completed",
   ]);
 });

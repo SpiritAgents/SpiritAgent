@@ -1,7 +1,7 @@
-import { createHash, randomUUID } from 'node:crypto';
-import { existsSync } from 'node:fs';
-import { mkdir, readFile, unlink, writeFile } from 'node:fs/promises';
-import path from 'node:path';
+import { createHash, randomUUID } from "node:crypto";
+import { existsSync } from "node:fs";
+import { mkdir, readFile, unlink, writeFile } from "node:fs/promises";
+import path from "node:path";
 
 export const HOST_TODO_MAX_ITEMS = 20;
 
@@ -9,7 +9,7 @@ export interface HostTodoScope {
   sessionKey: string;
 }
 
-export type HostTodoStatus = 'pending' | 'in_progress' | 'completed';
+export type HostTodoStatus = "pending" | "in_progress" | "completed";
 
 /** Model-visible todo item (tool list/write payloads). */
 export interface HostTodoItem {
@@ -39,7 +39,7 @@ interface HostTodoFile {
 }
 
 export function todosDirPath(spiritDataDir: string): string {
-  return path.join(spiritDataDir, 'todos');
+  return path.join(spiritDataDir, "todos");
 }
 
 export function createHostTodoStore(input: {
@@ -67,7 +67,7 @@ export class HostTodoStore {
     const file = await this.loadFile();
     const includeCompleted = options.includeCompleted !== false;
     return file.records
-      .filter((record) => includeCompleted || record.status !== 'completed')
+      .filter((record) => includeCompleted || record.status !== "completed")
       .sort((left, right) => left.createdAtUnixMs - right.createdAtUnixMs);
   }
 
@@ -87,11 +87,11 @@ export class HostTodoStore {
     const now = Date.now();
     const records: HostTodoRecord[] = items.map((item) => {
       const status: HostTodoStatus =
-        item.status === 'completed'
-          ? 'completed'
-          : item.status === 'in_progress'
-            ? 'in_progress'
-            : 'pending';
+        item.status === "completed"
+          ? "completed"
+          : item.status === "in_progress"
+            ? "in_progress"
+            : "pending";
       const id = item.id?.trim() || randomUUID().slice(0, 8);
       if (seenIds.has(id)) {
         throw new Error(`会话 TODO id 重复: ${id}`);
@@ -101,13 +101,13 @@ export class HostTodoStore {
       const previous = existingById.get(id);
       const record: HostTodoRecord = {
         id,
-        title: normalizeNonEmpty(item.title, 'title'),
+        title: normalizeNonEmpty(item.title, "title"),
         status,
         createdAtUnixMs: previous?.createdAtUnixMs ?? now,
         updatedAtUnixMs: now,
       };
-      if (status === 'completed') {
-        const wasCompleted = previous?.status === 'completed';
+      if (status === "completed") {
+        const wasCompleted = previous?.status === "completed";
         record.completedAtUnixMs = wasCompleted
           ? (previous.completedAtUnixMs ?? previous.updatedAtUnixMs)
           : now;
@@ -147,7 +147,7 @@ export class HostTodoStore {
       return { version: 1, scope: this.scope, records: [] };
     }
 
-    const raw = await readFile(this.filePath, 'utf8');
+    const raw = await readFile(this.filePath, "utf8");
     let parsed: Partial<HostTodoFile>;
     try {
       parsed = JSON.parse(raw) as Partial<HostTodoFile>;
@@ -172,21 +172,21 @@ export class HostTodoStore {
       return;
     }
     await mkdir(path.dirname(this.filePath), { recursive: true });
-    await writeFile(this.filePath, `${JSON.stringify(file, null, 2)}\n`, 'utf8');
+    await writeFile(this.filePath, `${JSON.stringify(file, null, 2)}\n`, "utf8");
   }
 }
 
 function todoScopeKey(scope: HostTodoScope): string {
-  return createHash('sha256').update(scope.sessionKey).digest('hex').slice(0, 32);
+  return createHash("sha256").update(scope.sessionKey).digest("hex").slice(0, 32);
 }
 
 function normalizeTodoScope(scope: HostTodoScope): HostTodoScope {
   const sessionKey = scope.sessionKey.trim();
   if (!sessionKey) {
-    throw new Error('sessionKey is required for todo scope.');
+    throw new Error("sessionKey is required for todo scope.");
   }
   // Opaque draft scope keys must not be passed through path.resolve (cwd-relative on Windows).
-  if (sessionKey.startsWith('todo-scope:')) {
+  if (sessionKey.startsWith("todo-scope:")) {
     return { sessionKey };
   }
   return { sessionKey: path.resolve(sessionKey) };
@@ -201,26 +201,26 @@ function normalizeNonEmpty(value: string, field: string): string {
 }
 
 function normalizeTodoRecord(value: unknown): HostTodoRecord | undefined {
-  if (!value || typeof value !== 'object' || Array.isArray(value)) {
+  if (!value || typeof value !== "object" || Array.isArray(value)) {
     return undefined;
   }
   const record = value as Partial<HostTodoRecord>;
-  if (typeof record.id !== 'string' || !record.id.trim()) {
+  if (typeof record.id !== "string" || !record.id.trim()) {
     return undefined;
   }
-  if (typeof record.title !== 'string' || !record.title.trim()) {
+  if (typeof record.title !== "string" || !record.title.trim()) {
     return undefined;
   }
   const status: HostTodoStatus =
-    record.status === 'completed'
-      ? 'completed'
-      : record.status === 'in_progress'
-        ? 'in_progress'
-        : 'pending';
+    record.status === "completed"
+      ? "completed"
+      : record.status === "in_progress"
+        ? "in_progress"
+        : "pending";
   const createdAtUnixMs =
-    typeof record.createdAtUnixMs === 'number' ? record.createdAtUnixMs : Date.now();
+    typeof record.createdAtUnixMs === "number" ? record.createdAtUnixMs : Date.now();
   const updatedAtUnixMs =
-    typeof record.updatedAtUnixMs === 'number' ? record.updatedAtUnixMs : createdAtUnixMs;
+    typeof record.updatedAtUnixMs === "number" ? record.updatedAtUnixMs : createdAtUnixMs;
   const normalized: HostTodoRecord = {
     id: record.id.trim(),
     title: record.title.trim(),
@@ -228,9 +228,9 @@ function normalizeTodoRecord(value: unknown): HostTodoRecord | undefined {
     createdAtUnixMs,
     updatedAtUnixMs,
   };
-  if (status === 'completed') {
+  if (status === "completed") {
     normalized.completedAtUnixMs =
-      typeof record.completedAtUnixMs === 'number' ? record.completedAtUnixMs : updatedAtUnixMs;
+      typeof record.completedAtUnixMs === "number" ? record.completedAtUnixMs : updatedAtUnixMs;
   }
   return normalized;
 }

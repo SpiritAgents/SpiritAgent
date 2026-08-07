@@ -36,7 +36,12 @@ import { instantHoverMotionClass } from "@/lib/desktop-chrome";
 import { desktopComposerSurfaceBackdropClass } from "@/lib/desktop-mica-surface";
 import { cn } from "@/lib/utils";
 import { segmentsToPlainText } from "@/lib/composer-segment-model";
-import type { DesktopModelReasoningEffort, DesktopModelReasoningMode, DesktopSnapshot, ModelRef } from "@/types";
+import type {
+  DesktopModelReasoningEffort,
+  DesktopModelReasoningMode,
+  DesktopSnapshot,
+  ModelRef,
+} from "@/types";
 
 function isComposerChromeInteractiveTarget(target: EventTarget | null): boolean {
   if (!(target instanceof HTMLElement)) {
@@ -216,10 +221,10 @@ export function ComposerSurface({
         agentModeChipPlaceholder={agentModeChipPlaceholder}
         readOnly={readOnly}
         loopEnabled={loopEnabled}
-        loopChipLabel={t('composer.loopChipLabel')}
+        loopChipLabel={t("composer.loopChipLabel")}
         agentMode={agentMode}
-        planChipLabel={t('composer.planChipLabel')}
-        askChipLabel={t('composer.askChipLabel')}
+        planChipLabel={t("composer.planChipLabel")}
+        askChipLabel={t("composer.askChipLabel")}
         onElementAttachmentsChange={(atts) => onElementAttachmentsChange?.(atts)}
         onLoopEnabledChange={onLoopEnabledChange}
         onAgentModeChange={onAgentModeChange}
@@ -229,7 +234,7 @@ export function ComposerSurface({
         onKeyDown={(e) => {
           onKeyDown?.(e as unknown as ReactKeyboardEvent<HTMLTextAreaElement>);
           const plainEnter =
-            e.key === 'Enter' &&
+            e.key === "Enter" &&
             !e.shiftKey &&
             !e.ctrlKey &&
             !e.metaKey &&
@@ -247,10 +252,7 @@ export function ComposerSurface({
         }}
         onSelectionChange={onSelectionChange}
       />
-      <div
-        className="cursor-text px-3 pt-0.5 pb-2"
-        onMouseDown={handleComposerChromeMouseDown}
-      >
+      <div className="cursor-text px-3 pt-0.5 pb-2" onMouseDown={handleComposerChromeMouseDown}>
         <div className="flex w-full max-w-full items-center justify-between gap-2">
           <div className="flex min-w-0 flex-1 items-center gap-1.5">
             {showInsertButton ? (
@@ -281,8 +283,9 @@ export function ComposerSurface({
           </div>
           {(() => {
             const resolvedHasComposerPayload =
-              hasComposerPayload
-              ?? (segmentsToPlainText([...segments]).trim().length > 0 || localFileAttachments.length > 0);
+              hasComposerPayload ??
+              (segmentsToPlainText([...segments]).trim().length > 0 ||
+                localFileAttachments.length > 0);
             const showAbortButton = canAbort && Boolean(onAbort) && !resolvedHasComposerPayload;
             const showEnqueueWhileBusy = canAbort && resolvedHasComposerPayload;
             const sendDisabled = showAbortButton ? false : !canSend || (busy && !canAbort);

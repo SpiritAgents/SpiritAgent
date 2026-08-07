@@ -5,13 +5,7 @@ import type { EditFileLineDelta } from "@/lib/edit-file-line-delta";
 
 type SlideDirection = "up" | "down" | "none";
 
-function AnimatedCount({
-  value,
-  className,
-}: {
-  value: number;
-  className: string;
-}) {
+function AnimatedCount({ value, className }: { value: number; className: string }) {
   const previousRef = useRef(value);
   const [direction, setDirection] = useState<SlideDirection>("none");
 
@@ -61,16 +55,25 @@ export function EditFileLineDeltaBadge({
   }
 
   return (
-    <span className={cn("inline-flex shrink-0 items-center gap-1 font-sans text-xs font-normal leading-none", className)}>
+    <span
+      className={cn(
+        "inline-flex shrink-0 items-center gap-1 font-sans text-xs font-normal leading-none",
+        className,
+      )}
+    >
       {delta.added > 0 ? (
         <span className="inline-flex items-baseline leading-none text-emerald-600 dark:text-emerald-400">
-          <span aria-hidden className="leading-none">+</span>
+          <span aria-hidden className="leading-none">
+            +
+          </span>
           <AnimatedCount value={delta.added} className="text-emerald-600 dark:text-emerald-400" />
         </span>
       ) : null}
       {delta.removed > 0 ? (
         <span className="inline-flex items-baseline leading-none text-red-500 dark:text-red-400">
-          <span aria-hidden className="leading-none">-</span>
+          <span aria-hidden className="leading-none">
+            -
+          </span>
           <AnimatedCount value={delta.removed} className="text-red-500 dark:text-red-400" />
         </span>
       ) : null}

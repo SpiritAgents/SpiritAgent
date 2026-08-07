@@ -28,17 +28,14 @@ export function resolveMarkdownFragmentTarget(
   return target instanceof HTMLElement ? target : null;
 }
 
-export function scrollMarkdownFragmentIntoView(
-  fragmentHref: string,
-  anchor: HTMLElement,
-): boolean {
+export function scrollMarkdownFragmentIntoView(fragmentHref: string, anchor: HTMLElement): boolean {
   if (!isMarkdownFragmentHref(fragmentHref)) {
     return false;
   }
   const scrollRoot =
-    anchor.closest("[data-radix-scroll-area-viewport]")
-    ?? anchor.closest("[data-spirit-markdown-root]")
-    ?? document;
+    anchor.closest("[data-radix-scroll-area-viewport]") ??
+    anchor.closest("[data-spirit-markdown-root]") ??
+    document;
   const target = resolveMarkdownFragmentTarget(fragmentHref, scrollRoot);
   if (!target) {
     return false;

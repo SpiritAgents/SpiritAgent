@@ -1,7 +1,4 @@
-import type {
-  DesktopSnapshot,
-  PaneSessionSlice,
-} from "@/types";
+import type { DesktopSnapshot, PaneSessionSlice } from "@/types";
 
 function normalizeSessionPathKey(sessionPath: string): string {
   return sessionPath.replace(/\\/g, "/").toLowerCase();
@@ -45,13 +42,17 @@ export function resolvePaneDesktopSnapshot(
   if (!pane) {
     // Stale layout path after promote: do not project the foreground conversation onto this pane.
     if (snapshot.paneSessions && Object.keys(snapshot.paneSessions).length > 0) {
-      const isProvisional = sessionPath.includes('__provisional__');
+      const isProvisional = sessionPath.includes("__provisional__");
       return {
         ...snapshot,
         activeSession: {
           filePath: sessionPath,
-          displayName: sessionPath.split(/[/\\]/).pop()?.replace(/\.json$/i, '') ?? sessionPath,
-          kind: isProvisional ? 'ephemeral' : 'stored',
+          displayName:
+            sessionPath
+              .split(/[/\\]/)
+              .pop()
+              ?.replace(/\.json$/i, "") ?? sessionPath,
+          kind: isProvisional ? "ephemeral" : "stored",
           readOnly: false,
         },
         conversation: {

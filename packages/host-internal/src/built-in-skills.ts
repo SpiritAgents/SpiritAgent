@@ -1,19 +1,26 @@
-import { existsSync } from 'node:fs';
-import { cp, mkdir } from 'node:fs/promises';
-import path from 'node:path';
-import { fileURLToPath } from 'node:url';
+import { existsSync } from "node:fs";
+import { cp, mkdir } from "node:fs/promises";
+import path from "node:path";
+import { fileURLToPath } from "node:url";
 
-import { SKILL_FILE_NAME, SKILLS_DIR_NAME } from './storage.js';
+import { SKILL_FILE_NAME, SKILLS_DIR_NAME } from "./storage.js";
 
-export const BUILTIN_AUTHORING_SKILL_NAMES = ['create-rule', 'create-skill', 'create-hook'] as const;
+export const BUILTIN_AUTHORING_SKILL_NAMES = [
+  "create-rule",
+  "create-skill",
+  "create-hook",
+] as const;
 
 export type BuiltinAuthoringSkillName = (typeof BUILTIN_AUTHORING_SKILL_NAMES)[number];
 
 export function resolveBuiltinSkillsTemplateRoot(): string {
   const here = path.dirname(fileURLToPath(import.meta.url));
-  const candidates = [path.join(here, '../built-in-skills'), path.join(here, '../../built-in-skills')];
+  const candidates = [
+    path.join(here, "../built-in-skills"),
+    path.join(here, "../../built-in-skills"),
+  ];
   for (const candidate of candidates) {
-    if (existsSync(path.join(candidate, 'create-skill', SKILL_FILE_NAME))) {
+    if (existsSync(path.join(candidate, "create-skill", SKILL_FILE_NAME))) {
       return candidate;
     }
   }

@@ -38,5 +38,8 @@ test("segmentsToMessageText round-trips workspace file chips", () => {
   assert.equal(parts[1].path, "src/App.tsx");
 
   const segments = messageContentToRichSegments(message, "rewind");
-  assert.equal(segments.some((segment) => segment.kind === "workspaceFile"), true);
+  assert.equal(
+    segments.some((segment) => segment.kind === "workspaceFile"),
+    true,
+  );
 });

@@ -1,18 +1,18 @@
-import { readFile, stat } from 'node:fs/promises';
-import { basename } from 'node:path';
+import { readFile, stat } from "node:fs/promises";
+import { basename } from "node:path";
 
-import { FormData } from 'undici';
+import { FormData } from "undici";
 
-import { getLlmFetch } from '../llm-fetch.js';
-import type { OpenAiTransportConfig } from './openai-compat.js';
-import { normalizeOpenAiCompatibleApiBase } from './moonshot-files.js';
+import { getLlmFetch } from "../llm-fetch.js";
+import type { OpenAiTransportConfig } from "./openai-compat.js";
+import { normalizeOpenAiCompatibleApiBase } from "./moonshot-files.js";
 
 /**
  * MiniMax 视频理解：经 Files API 上传，purpose 必须为 video_understanding。
  * 文档：https://platform.minimaxi.com/docs/api-reference/file-management-upload
  * 图片上传留待后续统一，本次不走 Files API。
  */
-const DEFAULT_MINIMAX_FILES_API_BASE = 'https://api.minimax.io/v1';
+const DEFAULT_MINIMAX_FILES_API_BASE = "https://api.minimax.io/v1";
 
 const uploadCache = new Map<string, string>();
 
@@ -23,21 +23,21 @@ export function normalizeMinimaxFilesApiBase(baseUrl: string | undefined): strin
     return DEFAULT_MINIMAX_FILES_API_BASE;
   }
 
-  const withoutAnthropic = trimmed.replace(/\/anthropic\/v1$/i, '/v1');
+  const withoutAnthropic = trimmed.replace(/\/anthropic\/v1$/i, "/v1");
   if (withoutAnthropic !== trimmed) {
     return withoutAnthropic;
   }
 
-  return trimmed.endsWith('/v1') ? trimmed : `${trimmed}/v1`;
+  return trimmed.endsWith("/v1") ? trimmed : `${trimmed}/v1`;
 }
 
 export async function uploadMinimaxVideoFile(
-  config: Pick<OpenAiTransportConfig, 'apiKey' | 'baseUrl'>,
+  config: Pick<OpenAiTransportConfig, "apiKey" | "baseUrl">,
   absolutePath: string,
 ): Promise<string> {
   const apiBase = normalizeMinimaxFilesApiBase(config.baseUrl);
   if (!apiBase) {
-    throw new Error('MiniMax video upload requires baseUrl');
+    throw new Error("MiniMax video upload requires baseUrl");
   }
 
   const metadata = await stat(absolutePath);
@@ -49,11 +49,11 @@ export async function uploadMinimaxVideoFile(
 
   const bytes = await readFile(absolutePath);
   const form = new FormData();
-  form.append('file', new Blob([bytes]), basename(absolutePath));
-  form.append('purpose', 'video_understanding');
+  form.append("file", new Blob([bytes]), basename(absolutePath));
+  form.append("purpose", "video_understanding");
 
   const response = await getLlmFetch()(`${apiBase}/files/upload`, {
-    method: 'POST',
+    method: "POST",
     headers: {
       Authorization: `Bearer ${config.apiKey}`,
     },
@@ -71,7 +71,7 @@ export async function uploadMinimaxVideoFile(
   const payload = (await response.json()) as unknown;
   const fileId = readMinimaxUploadedFileId(payload);
   if (!fileId) {
-    throw new Error('MiniMax video upload returned no file id');
+    throw new Error("MiniMax video upload returned no file id");
   }
 
   const url = `mm_file://${fileId}`;
@@ -85,17 +85,20 @@ export async function uploadMinimaxVideoFile(
  * 兼容顶层 file_id/id 仅作兜底；同时接受 string 与 number。
  */
 function readMinimaxUploadedFileId(payload: unknown): string | undefined {
-  if (typeof payload !== 'object' || payload === null) {
+  if (typeof payload !== "object" || payload === null) {
     return undefined;
   }
   const root = payload as Record<string, unknown>;
-  const file = typeof root.file === 'object' && root.file !== null ? (root.file as Record<string, unknown>) : undefined;
+  const file =
+    typeof root.file === "object" && root.file !== null
+      ? (root.file as Record<string, unknown>)
+      : undefined;
   const candidates: unknown[] = [file?.file_id, file?.id, root.file_id, root.id];
   for (const candidate of candidates) {
-    if (typeof candidate === 'string' && candidate.trim().length > 0) {
+    if (typeof candidate === "string" && candidate.trim().length > 0) {
       return candidate.trim();
     }
-    if (typeof candidate === 'number' && Number.isFinite(candidate)) {
+    if (typeof candidate === "number" && Number.isFinite(candidate)) {
       return String(candidate);
     }
   }

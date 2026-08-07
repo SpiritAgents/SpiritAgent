@@ -1,9 +1,9 @@
-import type { JsonValue, RuntimeEvent, SpiritAgentMode } from '@spiritagent/agent-core';
-import type { HostToolExecutorProxy } from '@spiritagent/agent-core/host-bridge';
-import { deleteTranscriptSessionDir } from '@spiritagent/host-internal';
-import type { AcpServerConfig, AcpSessionState } from './types.js';
-import { AVAILABLE_MODES, normalizeModeId } from './types.js';
-import { createAcpRuntime, type AcpHostRuntime, type AcpRuntimeResult } from './runtime-factory.js';
+import type { JsonValue, RuntimeEvent, SpiritAgentMode } from "@spiritagent/agent-core";
+import type { HostToolExecutorProxy } from "@spiritagent/agent-core/host-bridge";
+import { deleteTranscriptSessionDir } from "@spiritagent/host-internal";
+import type { AcpServerConfig, AcpSessionState } from "./types.js";
+import { AVAILABLE_MODES, normalizeModeId } from "./types.js";
+import { createAcpRuntime, type AcpHostRuntime, type AcpRuntimeResult } from "./runtime-factory.js";
 
 /**
  * Manages ACP sessions, each backed by an independent AgentRuntime instance.
@@ -22,8 +22,12 @@ export class SessionManager {
   async createSession(
     workspaceRoot: string,
     onEvent: (sessionId: string, event: RuntimeEvent<JsonValue>) => void,
-    initialMode: SpiritAgentMode = 'agent',
-  ): Promise<{ sessionId: string; modes: typeof AVAILABLE_MODES; enabledSkillCatalog: import('@spiritagent/agent-core').LlmEnabledSkillCatalogEntry[] }> {
+    initialMode: SpiritAgentMode = "agent",
+  ): Promise<{
+    sessionId: string;
+    modes: typeof AVAILABLE_MODES;
+    enabledSkillCatalog: import("@spiritagent/agent-core").LlmEnabledSkillCatalogEntry[];
+  }> {
     const sessionId = generateSessionId();
 
     const sessionConfig: AcpServerConfig = {
@@ -115,5 +119,5 @@ export class SessionManager {
 function generateSessionId(): string {
   const bytes = new Uint8Array(16);
   crypto.getRandomValues(bytes);
-  return 'sess_' + Array.from(bytes, (b) => b.toString(16).padStart(2, '0')).join('');
+  return "sess_" + Array.from(bytes, (b) => b.toString(16).padStart(2, "0")).join("");
 }

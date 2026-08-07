@@ -27,7 +27,9 @@ export function useFocusedPaneComposerInsertCallbacks(
           attachment,
         ),
       handlePrDiffAddToSession: (attachment) =>
-        (insertRef.current?.handlePrDiffAddToSession ?? fallback.handlePrDiffAddToSession)(attachment),
+        (insertRef.current?.handlePrDiffAddToSession ?? fallback.handlePrDiffAddToSession)(
+          attachment,
+        ),
       handleGitCommitAddToSession: (attachment) =>
         (insertRef.current?.handleGitCommitAddToSession ?? fallback.handleGitCommitAddToSession)(
           attachment,
@@ -37,9 +39,9 @@ export function useFocusedPaneComposerInsertCallbacks(
           attachment,
         ),
       handleFileSnippetAddToSession: (attachment) =>
-        (insertRef.current?.handleFileSnippetAddToSession ?? fallback.handleFileSnippetAddToSession)(
-          attachment,
-        ),
+        (
+          insertRef.current?.handleFileSnippetAddToSession ?? fallback.handleFileSnippetAddToSession
+        )(attachment),
       handleWorkspaceFileAddToSession: (relativePath) =>
         (
           insertRef.current?.handleWorkspaceFileAddToSession ??

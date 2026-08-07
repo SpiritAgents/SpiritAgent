@@ -39,10 +39,7 @@ export function makeGitCommitChipNode(attachment: GitCommitAttachment, doc: Docu
   span.dataset.gitCommitFullMessage = attachment.fullMessage;
   span.title = formatGitCommitChipTitle(attachment);
   span.className = GIT_COMMIT_CHIP_CLASS;
-  span.setAttribute(
-    "aria-label",
-    formatGitCommitChipLabel(attachment.subject),
-  );
+  span.setAttribute("aria-label", formatGitCommitChipLabel(attachment.subject));
 
   const icon = doc.createElementNS("http://www.w3.org/2000/svg", "svg");
   icon.setAttribute("viewBox", "0 0 24 24");

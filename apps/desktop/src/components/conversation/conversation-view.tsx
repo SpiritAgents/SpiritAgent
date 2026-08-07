@@ -20,10 +20,7 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import type { ComposerRichInputHandle } from "@/components/composer-rich-input";
 import type { DesktopAgentMode } from "@/lib/agent-mode";
 import type { BrowserElementAttachment } from "@/lib/browser-element-attachment";
-import {
-  CONVERSATION_GUTTER_X,
-  CONVERSATION_MAX_W,
-} from "@/lib/conversation-layout-constants";
+import { CONVERSATION_GUTTER_X, CONVERSATION_MAX_W } from "@/lib/conversation-layout-constants";
 import { desktopMicaTintClass, desktopMicaTintInnerClass } from "@/lib/desktop-mica-surface";
 import type { EditorFileTarget } from "@/lib/workspace-editor-navigation";
 import { scrollAreaViewport } from "@/lib/scroll-area-viewport";
@@ -44,7 +41,14 @@ import type { ConversationRenderItem } from "@/lib/conversation-process-groups";
 import type { TurnContinuePresentation } from "@/lib/conversation-continue-ui";
 import type { PendingAssistantAux } from "@/types";
 import { useConversationSplit } from "@/contexts/conversation-split-context";
-import { PANE_DROP_ZONE_ORDER, effectiveRepositionZone, paneDropZoneGridCellClass, paneDropZoneGridLayoutClass, visiblePaneDropZonesForDrag, visiblePaneDropZonesForSidebarSessionDrag } from "@/lib/conversation-pane-drop-preview";
+import {
+  PANE_DROP_ZONE_ORDER,
+  effectiveRepositionZone,
+  paneDropZoneGridCellClass,
+  paneDropZoneGridLayoutClass,
+  visiblePaneDropZonesForDrag,
+  visiblePaneDropZonesForSidebarSessionDrag,
+} from "@/lib/conversation-pane-drop-preview";
 import type { PaneDropZone } from "@/lib/conversation-split-layout";
 
 type DesktopRuntime = ReturnType<typeof useDesktopRuntime>;
@@ -92,11 +96,11 @@ export type ComposerDockSectionProps = {
   paneSessionPath?: string;
   useIsolatedPaneWorkspace?: boolean;
   composerSegments: readonly import("@/lib/composer-segment-model").RichSegment[];
-  onComposerSegmentsChange: (segments: import("@/lib/composer-segment-model").RichSegment[]) => void;
-  composerLocalFileAttachments: ComposerLocalFileAttachmentView[];
-  onComposerLocalFileAttachmentsChange: (
-    attachments: ComposerLocalFileAttachmentView[],
+  onComposerSegmentsChange: (
+    segments: import("@/lib/composer-segment-model").RichSegment[],
   ) => void;
+  composerLocalFileAttachments: ComposerLocalFileAttachmentView[];
+  onComposerLocalFileAttachmentsChange: (attachments: ComposerLocalFileAttachmentView[]) => void;
   commitBusy: boolean;
   rewindWarnings: NonNullable<DesktopSnapshot["conversation"]["rewindWarnings"]>;
   showPendingApprovalInComposer: boolean;
@@ -106,7 +110,9 @@ export type ComposerDockSectionProps = {
   questionDrafts?: Record<string, import("@/hooks/useDesktopRuntime").QuestionDraft>;
   onUpdateQuestionDraft?: (
     questionId: string,
-    updater: (draft: import("@/hooks/useDesktopRuntime").QuestionDraft) => import("@/hooks/useDesktopRuntime").QuestionDraft,
+    updater: (
+      draft: import("@/hooks/useDesktopRuntime").QuestionDraft,
+    ) => import("@/hooks/useDesktopRuntime").QuestionDraft,
   ) => void;
   onSubmitQuestions?: () => void;
   onSkipQuestions?: () => void;
@@ -210,10 +216,16 @@ export type ConversationViewProps = {
   paneId?: string;
   onPaneFocus?: () => void;
   onPaneDragStart?: (paneId: string) => void;
-  onPaneDragEnter?: (paneId: string, zone: import("@/lib/conversation-split-layout").PaneRepositionZone) => void;
+  onPaneDragEnter?: (
+    paneId: string,
+    zone: import("@/lib/conversation-split-layout").PaneRepositionZone,
+  ) => void;
   onPaneDragLeave?: () => void;
   onPaneDrop?: (paneId: string, zone: PaneDropZone) => void;
-  onSidebarSessionDrop?: (paneId: string, zone: import("@/lib/conversation-split-layout").PaneRepositionZone) => void;
+  onSidebarSessionDrop?: (
+    paneId: string,
+    zone: import("@/lib/conversation-split-layout").PaneRepositionZone,
+  ) => void;
   paneDropOverlayActive?: boolean;
   paneDragSourcePaneId?: string | null;
   sidebarSessionDragActive?: boolean;
@@ -317,9 +329,7 @@ export function ConversationView({
   });
 
   const dropOverlayActive = Boolean(
-    paneId
-    && paneDropOverlayActive
-    && (onPaneDrop || onSidebarSessionDrop),
+    paneId && paneDropOverlayActive && (onPaneDrop || onSidebarSessionDrop),
   );
   const isDragSourcePane = Boolean(paneId && paneDragSourcePaneId === paneId);
   const showDropTargets = dropOverlayActive && !isDragSourcePane;
@@ -332,9 +342,7 @@ export function ConversationView({
     if (!paneId || !paneDragSourcePaneId) {
       return PANE_DROP_ZONE_ORDER;
     }
-    const sourceHost = document.querySelector(
-      `[data-pane-drop-host="${paneDragSourcePaneId}"]`,
-    );
+    const sourceHost = document.querySelector(`[data-pane-drop-host="${paneDragSourcePaneId}"]`);
     return visiblePaneDropZonesForDrag({
       paneCount: split.paneCount,
       sourcePaneHost: sourceHost instanceof HTMLElement ? sourceHost : null,
@@ -372,9 +380,7 @@ export function ConversationView({
             ? relatedHostEl.getAttribute("data-pane-drop-host")
             : null;
         const enteringValidTargetHost =
-          otherPaneId
-          && otherPaneId !== paneId
-          && otherPaneId !== paneDragSourcePaneId;
+          otherPaneId && otherPaneId !== paneId && otherPaneId !== paneDragSourcePaneId;
         if (enteringValidTargetHost) {
           return;
         }
@@ -387,12 +393,21 @@ export function ConversationView({
   );
 
   return (
-    <div data-spirit-surface="conversation-layout" className={cn("flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden min-w-0", desktopMicaTintInnerClass(useMicaBackdrop))}>
+    <div
+      data-spirit-surface="conversation-layout"
+      className={cn(
+        "flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden min-w-0",
+        desktopMicaTintInnerClass(useMicaBackdrop),
+      )}
+    >
       <div
         ref={dropHostRef}
         data-spirit-surface="conversation-shell"
         {...(paneId ? { "data-pane-drop-host": paneId } : {})}
-        className={cn("relative flex min-h-0 min-w-0 flex-1 flex-col min-w-0", desktopMicaTintInnerClass(useMicaBackdrop))}
+        className={cn(
+          "relative flex min-h-0 min-w-0 flex-1 flex-col min-w-0",
+          desktopMicaTintInnerClass(useMicaBackdrop),
+        )}
         onPointerDown={() => {
           onPaneFocus?.();
         }}
@@ -414,16 +429,10 @@ export function ConversationView({
           onPaneDragEnter={onPaneDragEnter}
           onPaneDragLeave={onPaneDragLeave}
           onPaneDrop={onPaneDrop}
-          sessionTitle={
-            sessionTitleVisible
-              ? snapshot?.activeSession?.displayName
-              : null
-          }
+          sessionTitle={sessionTitleVisible ? snapshot?.activeSession?.displayName : null}
           sessionTitleSuffix={sessionTitleSuffix}
           sessionTooltip={sessionTooltip}
-          subagentPromptText={
-            subagentViewActive ? snapshot?.subagentViewer?.promptText : null
-          }
+          subagentPromptText={subagentViewActive ? snapshot?.subagentViewer?.promptText : null}
           onExitSubagentViewer={onExitSubagentViewer}
           onNewSession={isEmptySession ? undefined : onNewSession}
           newSessionBusy={newSessionBusy}
@@ -440,268 +449,279 @@ export function ConversationView({
           renameSessionBusy={renameSessionBusy}
           onRenameSession={onRenameSession}
         />
-        {showDropTargets ? (() => {
-          const visibleDropZones = resolveVisibleDropZones();
-          return (
-          <div
-            className={cn(
-              "absolute inset-0 z-30 grid cursor-crosshair",
-              paneDropZoneGridLayoutClass(visibleDropZones),
-            )}
-          >
-            {visibleDropZones.map((zone) => (
-              <div
-                key={zone}
-                data-pane-drop-zone={zone}
-                className={cn(
-                  "pointer-events-auto",
-                  paneDropZoneGridCellClass(zone, visibleDropZones),
-                )}
-                onDragEnter={(event) => {
-                  event.preventDefault();
-                  updateDropTarget(zone);
-                }}
-                onDragOver={(event) => {
-                  event.preventDefault();
-                  updateDropTarget(zone);
-                }}
-                onDrop={(event) => {
-                  event.preventDefault();
-                  if (!visibleDropZones.includes(zone)) {
-                    return;
-                  }
-                  const repositionZone = effectiveRepositionZone(zone, visibleDropZones);
-                  if (sidebarSessionDragActive && onSidebarSessionDrop) {
-                    void onSidebarSessionDrop(paneId!, repositionZone);
-                    return;
-                  }
-                  if (zone === "swap") {
-                    onPaneDrop?.(paneId!, zone);
-                    return;
-                  }
-                  onPaneDrop?.(paneId!, repositionZone);
-                }}
-              />
-            ))}
-          </div>
-          );
-        })() : null}
+        {showDropTargets
+          ? (() => {
+              const visibleDropZones = resolveVisibleDropZones();
+              return (
+                <div
+                  className={cn(
+                    "absolute inset-0 z-30 grid cursor-crosshair",
+                    paneDropZoneGridLayoutClass(visibleDropZones),
+                  )}
+                >
+                  {visibleDropZones.map((zone) => (
+                    <div
+                      key={zone}
+                      data-pane-drop-zone={zone}
+                      className={cn(
+                        "pointer-events-auto",
+                        paneDropZoneGridCellClass(zone, visibleDropZones),
+                      )}
+                      onDragEnter={(event) => {
+                        event.preventDefault();
+                        updateDropTarget(zone);
+                      }}
+                      onDragOver={(event) => {
+                        event.preventDefault();
+                        updateDropTarget(zone);
+                      }}
+                      onDrop={(event) => {
+                        event.preventDefault();
+                        if (!visibleDropZones.includes(zone)) {
+                          return;
+                        }
+                        const repositionZone = effectiveRepositionZone(zone, visibleDropZones);
+                        if (sidebarSessionDragActive && onSidebarSessionDrop) {
+                          void onSidebarSessionDrop(paneId!, repositionZone);
+                          return;
+                        }
+                        if (zone === "swap") {
+                          onPaneDrop?.(paneId!, zone);
+                          return;
+                        }
+                        onPaneDrop?.(paneId!, repositionZone);
+                      }}
+                    />
+                  ))}
+                </div>
+              );
+            })()
+          : null}
         <div
           data-spirit-surface="conversation-drop-host"
           className="relative flex min-h-0 min-w-0 flex-1 flex-col"
         >
-        <div
-          data-spirit-surface="conversation-stage"
-          className={cn("relative flex min-h-0 min-w-0 flex-1 flex-col text-sm", desktopMicaTintClass(useMicaBackdrop))}
-        >
-          {compactionDemoActive || longConversationListDemoActive ? (
-            <div
-              data-spirit-surface={
-                longConversationListDemoActive
-                  ? "long-list-demo-banner"
-                  : "compaction-ui-demo-banner"
-              }
-              className={cn("shrink-0", desktopMicaTintInnerClass(useMicaBackdrop))}
-            >
-              <div
-                className={cn(
-                  "mx-auto flex w-full flex-wrap items-center justify-between gap-2 py-2",
-                  CONVERSATION_GUTTER_X,
-                  CONVERSATION_MAX_W,
-                )}
-              >
-                <p className="text-xs text-muted-foreground">
-                  {longConversationListDemoActive ? (
-                    <>
-                      <span className="font-normal text-foreground">
-                        {t("app.longConversationListDemo")}
-                      </span>
-                      <span className="hidden sm:inline">
-                        {" "}
-                        · {t("app.longConversationListDemoDescription")}
-                        {longConversationListDemoStats
-                          ? ` · ${t("app.longConversationListDemoStats", longConversationListDemoStats)}`
-                          : ""}
-                      </span>
-                    </>
-                  ) : (
-                    <>
-                      <span className="font-normal text-foreground">{t('app.compactionDemo')}</span>
-                      <span className="hidden sm:inline">
-                        {" "}
-                        · {t('app.compactionDemoDescription')}
-                      </span>
-                    </>
-                  )}
-                </p>
-                <Button
-                  type="button"
-                  variant="outline"
-                  size="sm"
-                  onClick={
-                    longConversationListDemoActive
-                      ? onLongConversationListDemoStop
-                      : onCompactionDemoStop
-                  }
-                >
-                  {t('app.exitDemo')}
-                </Button>
-              </div>
-            </div>
-          ) : null}
-          {rewindDraft ? (
-            <button
-              type="button"
-              aria-label={t('app.cancelRewind')}
-              className="fixed inset-0 z-30 cursor-default bg-background/35 backdrop-blur-sm"
-              onClick={onRewindDraftClear}
-            />
-          ) : null}
-          <ScrollArea
-            ref={conversationScrollAreaRef}
-            data-spirit-surface="conversation-scroll"
-            className={cn("min-h-0 flex-1", desktopMicaTintInnerClass(useMicaBackdrop))}
-            type="hover"
-            scrollHideDelay={450}
-            viewportStyle={conversationScrollViewportStyle}
+          <div
+            data-spirit-surface="conversation-stage"
+            className={cn(
+              "relative flex min-h-0 min-w-0 flex-1 flex-col text-sm",
+              desktopMicaTintClass(useMicaBackdrop),
+            )}
           >
-            {/* min-h-full：短内容仍铺满视口；pb ≥ dock 实测高度 + 留白，审批卡弹出时同步增高 */}
-            <div
-              data-spirit-surface="conversation-scroll-body"
-              className={cn("min-h-full w-full", desktopMicaTintInnerClass(useMicaBackdrop))}
-              style={{
-                ...((!isEmptySession || subagentViewActive) && !hideStaleConversationMessages
-                  ? { paddingBottom: conversationScrollBedPaddingPx }
-                  : undefined),
-                // 定底 settled 前隐藏列表，避免「估高定底 → 实测修正」两次可见位移
-                ...(listSettling ? { visibility: "hidden" as const } : undefined),
-              }}
+            {compactionDemoActive || longConversationListDemoActive ? (
+              <div
+                data-spirit-surface={
+                  longConversationListDemoActive
+                    ? "long-list-demo-banner"
+                    : "compaction-ui-demo-banner"
+                }
+                className={cn("shrink-0", desktopMicaTintInnerClass(useMicaBackdrop))}
+              >
+                <div
+                  className={cn(
+                    "mx-auto flex w-full flex-wrap items-center justify-between gap-2 py-2",
+                    CONVERSATION_GUTTER_X,
+                    CONVERSATION_MAX_W,
+                  )}
+                >
+                  <p className="text-xs text-muted-foreground">
+                    {longConversationListDemoActive ? (
+                      <>
+                        <span className="font-normal text-foreground">
+                          {t("app.longConversationListDemo")}
+                        </span>
+                        <span className="hidden sm:inline">
+                          {" "}
+                          · {t("app.longConversationListDemoDescription")}
+                          {longConversationListDemoStats
+                            ? ` · ${t("app.longConversationListDemoStats", longConversationListDemoStats)}`
+                            : ""}
+                        </span>
+                      </>
+                    ) : (
+                      <>
+                        <span className="font-normal text-foreground">
+                          {t("app.compactionDemo")}
+                        </span>
+                        <span className="hidden sm:inline">
+                          {" "}
+                          · {t("app.compactionDemoDescription")}
+                        </span>
+                      </>
+                    )}
+                  </p>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    onClick={
+                      longConversationListDemoActive
+                        ? onLongConversationListDemoStop
+                        : onCompactionDemoStop
+                    }
+                  >
+                    {t("app.exitDemo")}
+                  </Button>
+                </div>
+              </div>
+            ) : null}
+            {rewindDraft ? (
+              <button
+                type="button"
+                aria-label={t("app.cancelRewind")}
+                className="fixed inset-0 z-30 cursor-default bg-background/35 backdrop-blur-sm"
+                onClick={onRewindDraftClear}
+              />
+            ) : null}
+            <ScrollArea
+              ref={conversationScrollAreaRef}
+              data-spirit-surface="conversation-scroll"
+              className={cn("min-h-0 flex-1", desktopMicaTintInnerClass(useMicaBackdrop))}
+              type="hover"
+              scrollHideDelay={450}
+              viewportStyle={conversationScrollViewportStyle}
             >
-              {(!isEmptySession || subagentViewActive) && !hideStaleConversationMessages ? (
-                <ConversationList
-                  messages={list.messages}
-                  conversationRenderItems={list.conversationRenderItems}
-                  getScrollElement={getConversationScrollElement}
-                  pinScrollToTail={pinScrollToTail}
-                  subagentViewActive={subagentViewActive}
-                  composerSessionKey={list.composerSessionKey}
-                  conversationListScopeKey={list.conversationListScopeKey}
-                  conversationListRemountEpoch={list.conversationListRemountEpoch}
-                  conversationPendingAuxState={list.conversationPendingAuxState}
-                  processGroupManualOpen={list.processGroupManualOpen}
-                  processGroupManualOpenKey={list.processGroupManualOpenKey}
-                  onProcessGroupManualOpenChange={list.onProcessGroupManualOpenChange}
-                  shouldPlayProcessSealAnimation={list.shouldPlayProcessSealAnimation}
-                  workspaceRoot={snapshot?.workspaceRoot ?? ""}
-                  runtime={list.runtime}
-                  turnContinue={list.turnContinue}
-                  activeSessionReadOnly={list.activeSessionReadOnly}
-                  conversationIsBusy={snapshot?.conversation.isBusy === true}
-                  continueBusy={list.continueBusy}
-                  rewindDraft={list.rewindDraft}
-                  onRewindDraftChange={list.onRewindDraftChange}
-                  messageRewindComposerEnabled={list.messageRewindComposerEnabled}
-                  rewindRichInputRef={list.rewindRichInputRef}
-                  models={list.models}
-                  catalogHints={snapshot?.config.modelCatalogHints}
-                  activeModel={snapshot?.config.activeModel ?? list.runtime.settings.activeModel}
-                  agentMode={list.runtime.settings.agentMode}
-                  onOpenSubagentViewer={list.onOpenSubagentViewer}
-                  onOpenReadFile={list.onOpenReadFile}
-                  onOpenPlan={list.onOpenPlan}
-                  onStartMessageRewind={list.onStartMessageRewind}
-                  onForkMessage={list.onForkMessage}
-                  onSubmitMessageRewind={list.onSubmitMessageRewind}
-                  onRewindRemoveLocalFileAttachment={list.onRewindRemoveLocalFileAttachment}
-                  onRewindPickLocalFile={list.onRewindPickLocalFile}
-                  onRewindPaste={list.onRewindPaste}
-                  onRewindDragOver={list.onRewindDragOver}
-                  onRewindDrop={list.onRewindDrop}
-                  onComposerAgentModeChange={list.onComposerAgentModeChange}
-                />
-              ) : null}
-            </div>
-          </ScrollArea>
+              {/* min-h-full：短内容仍铺满视口；pb ≥ dock 实测高度 + 留白，审批卡弹出时同步增高 */}
+              <div
+                data-spirit-surface="conversation-scroll-body"
+                className={cn("min-h-full w-full", desktopMicaTintInnerClass(useMicaBackdrop))}
+                style={{
+                  ...((!isEmptySession || subagentViewActive) && !hideStaleConversationMessages
+                    ? { paddingBottom: conversationScrollBedPaddingPx }
+                    : undefined),
+                  // 定底 settled 前隐藏列表，避免「估高定底 → 实测修正」两次可见位移
+                  ...(listSettling ? { visibility: "hidden" as const } : undefined),
+                }}
+              >
+                {(!isEmptySession || subagentViewActive) && !hideStaleConversationMessages ? (
+                  <ConversationList
+                    messages={list.messages}
+                    conversationRenderItems={list.conversationRenderItems}
+                    getScrollElement={getConversationScrollElement}
+                    pinScrollToTail={pinScrollToTail}
+                    subagentViewActive={subagentViewActive}
+                    composerSessionKey={list.composerSessionKey}
+                    conversationListScopeKey={list.conversationListScopeKey}
+                    conversationListRemountEpoch={list.conversationListRemountEpoch}
+                    conversationPendingAuxState={list.conversationPendingAuxState}
+                    processGroupManualOpen={list.processGroupManualOpen}
+                    processGroupManualOpenKey={list.processGroupManualOpenKey}
+                    onProcessGroupManualOpenChange={list.onProcessGroupManualOpenChange}
+                    shouldPlayProcessSealAnimation={list.shouldPlayProcessSealAnimation}
+                    workspaceRoot={snapshot?.workspaceRoot ?? ""}
+                    runtime={list.runtime}
+                    turnContinue={list.turnContinue}
+                    activeSessionReadOnly={list.activeSessionReadOnly}
+                    conversationIsBusy={snapshot?.conversation.isBusy === true}
+                    continueBusy={list.continueBusy}
+                    rewindDraft={list.rewindDraft}
+                    onRewindDraftChange={list.onRewindDraftChange}
+                    messageRewindComposerEnabled={list.messageRewindComposerEnabled}
+                    rewindRichInputRef={list.rewindRichInputRef}
+                    models={list.models}
+                    catalogHints={snapshot?.config.modelCatalogHints}
+                    activeModel={snapshot?.config.activeModel ?? list.runtime.settings.activeModel}
+                    agentMode={list.runtime.settings.agentMode}
+                    onOpenSubagentViewer={list.onOpenSubagentViewer}
+                    onOpenReadFile={list.onOpenReadFile}
+                    onOpenPlan={list.onOpenPlan}
+                    onStartMessageRewind={list.onStartMessageRewind}
+                    onForkMessage={list.onForkMessage}
+                    onSubmitMessageRewind={list.onSubmitMessageRewind}
+                    onRewindRemoveLocalFileAttachment={list.onRewindRemoveLocalFileAttachment}
+                    onRewindPickLocalFile={list.onRewindPickLocalFile}
+                    onRewindPaste={list.onRewindPaste}
+                    onRewindDragOver={list.onRewindDragOver}
+                    onRewindDrop={list.onRewindDrop}
+                    onComposerAgentModeChange={list.onComposerAgentModeChange}
+                  />
+                ) : null}
+              </div>
+            </ScrollArea>
 
-          {showComposerDock ? (
-          <ComposerDock
-            ref={composerDock.composerDockRef}
-            isEmptySession={isEmptySession}
-            emptySessionGreeting={composerDock.emptySessionGreeting}
-            showWorkspaceBindingControls={composerDock.showWorkspaceBindingControls}
-            paneSessionPath={composerDock.paneSessionPath}
-            useIsolatedPaneWorkspace={composerDock.useIsolatedPaneWorkspace}
-            composerSegments={composerDock.composerSegments}
-            onComposerSegmentsChange={composerDock.onComposerSegmentsChange}
-            composerLocalFileAttachments={composerDock.composerLocalFileAttachments}
-            onComposerLocalFileAttachmentsChange={composerDock.onComposerLocalFileAttachmentsChange}
-            snapshot={snapshot}
-            runtime={list.runtime}
-            commitBusy={composerDock.commitBusy}
-            activeSessionReadOnly={list.activeSessionReadOnly}
-            rewindWarnings={composerDock.rewindWarnings}
-            showPendingApprovalInComposer={composerDock.showPendingApprovalInComposer}
-            pendingApproval={composerDock.pendingApproval}
-            showPendingQuestionsInComposer={composerDock.showPendingQuestionsInComposer}
-            pendingQuestions={composerDock.pendingQuestions}
-            questionDrafts={composerDock.questionDrafts}
-            onUpdateQuestionDraft={composerDock.onUpdateQuestionDraft}
-            onSubmitQuestions={composerDock.onSubmitQuestions}
-            onSkipQuestions={composerDock.onSkipQuestions}
-            fileReferenceSuggestions={composerDock.fileReferenceSuggestions}
-            fileReferenceSelectedIndex={composerDock.fileReferenceSelectedIndex}
-            onFileReferenceSelectedIndexChange={composerDock.onFileReferenceSelectedIndexChange}
-            onApplyFileReferenceSuggestion={composerDock.onApplyFileReferenceSuggestion}
-            onDismissFileReferenceSuggestions={composerDock.onDismissFileReferenceSuggestions}
-            activeFileReferenceQuery={composerDock.activeFileReferenceQuery}
-            slashQuery={composerDock.slashQuery}
-            slashSuggestions={composerDock.slashSuggestions}
-            slashSelectedIndex={composerDock.slashSelectedIndex}
-            onSlashSelectedIndexChange={composerDock.onSlashSelectedIndexChange}
-            onApplySlashSuggestionItem={composerDock.onApplySlashSuggestionItem}
-            onDismissSlashSuggestions={composerDock.onDismissSlashSuggestions}
-            composerCursorCodeUnits={composerDock.composerCursorCodeUnits}
-            composerPlaceholder={composerDock.composerPlaceholder}
-            composerAgentModeChipPlaceholder={composerDock.composerAgentModeChipPlaceholder}
-            composerCanSend={composerDock.composerCanSend}
-            composerHasPayload={composerDock.composerHasPayload}
-            composerBusy={composerDock.composerBusy}
-            conversationInterruptible={composerDock.conversationInterruptible}
-            continueBusy={list.continueBusy}
-            composerBrowserElementAttachments={composerDock.composerBrowserElementAttachments}
-            onComposerBrowserElementAttachmentsChange={composerDock.onComposerBrowserElementAttachmentsChange}
-            onSubmitComposerMessage={composerDock.onSubmitComposerMessage}
-            onComposerAgentModeChange={composerDock.onComposerAgentModeChange}
-            composerRichInputRef={composerDock.composerRichInputRef}
-            onComposerKeyDown={composerDock.onComposerKeyDown}
-            onComposerCursorCodeUnitsChange={composerDock.onComposerCursorCodeUnitsChange}
-            onInsertFileReferenceTrigger={composerDock.onInsertFileReferenceTrigger}
-            onPickLocalFileFromPalette={composerDock.onPickLocalFileFromPalette}
-            onInsertSkillTriggerFromPalette={composerDock.onInsertSkillTriggerFromPalette}
-            onRemoveLocalFileAttachment={composerDock.onRemoveLocalFileAttachment}
-            onComposerPaste={composerDock.onComposerPaste}
-            onComposerDragOver={composerDock.onComposerDragOver}
-            onComposerDrop={composerDock.onComposerDrop}
-            models={composerDock.models}
-            useMicaBackdrop={useMicaBackdrop}
-            onOpenGitTab={composerDock.onOpenGitTab}
-            getScrollViewport={getConversationScrollElement}
-            onScrollOccludeMaskStyleChange={composerDock.onScrollOccludeMaskStyleChange}
-          />
-          ) : null}
-          {showComposerDock && branchCheckout ? (
-            <BranchCheckoutDialog
-              open={branchCheckout.open}
-              onOpenChange={branchCheckout.onOpenChange}
-              branchCheckoutBlockedByChanges={branchCheckout.branchCheckoutBlockedByChanges}
-              git={snapshot?.git}
-              commitBusy={branchCheckout.commitBusy}
-              onCancel={branchCheckout.onCancel}
-              onConfirmCheckout={branchCheckout.onConfirmCheckout}
-              onDiscardAndCheckout={branchCheckout.onDiscardAndCheckout}
-            />
-          ) : null}
-        </div>
+            {showComposerDock ? (
+              <ComposerDock
+                ref={composerDock.composerDockRef}
+                isEmptySession={isEmptySession}
+                emptySessionGreeting={composerDock.emptySessionGreeting}
+                showWorkspaceBindingControls={composerDock.showWorkspaceBindingControls}
+                paneSessionPath={composerDock.paneSessionPath}
+                useIsolatedPaneWorkspace={composerDock.useIsolatedPaneWorkspace}
+                composerSegments={composerDock.composerSegments}
+                onComposerSegmentsChange={composerDock.onComposerSegmentsChange}
+                composerLocalFileAttachments={composerDock.composerLocalFileAttachments}
+                onComposerLocalFileAttachmentsChange={
+                  composerDock.onComposerLocalFileAttachmentsChange
+                }
+                snapshot={snapshot}
+                runtime={list.runtime}
+                commitBusy={composerDock.commitBusy}
+                activeSessionReadOnly={list.activeSessionReadOnly}
+                rewindWarnings={composerDock.rewindWarnings}
+                showPendingApprovalInComposer={composerDock.showPendingApprovalInComposer}
+                pendingApproval={composerDock.pendingApproval}
+                showPendingQuestionsInComposer={composerDock.showPendingQuestionsInComposer}
+                pendingQuestions={composerDock.pendingQuestions}
+                questionDrafts={composerDock.questionDrafts}
+                onUpdateQuestionDraft={composerDock.onUpdateQuestionDraft}
+                onSubmitQuestions={composerDock.onSubmitQuestions}
+                onSkipQuestions={composerDock.onSkipQuestions}
+                fileReferenceSuggestions={composerDock.fileReferenceSuggestions}
+                fileReferenceSelectedIndex={composerDock.fileReferenceSelectedIndex}
+                onFileReferenceSelectedIndexChange={composerDock.onFileReferenceSelectedIndexChange}
+                onApplyFileReferenceSuggestion={composerDock.onApplyFileReferenceSuggestion}
+                onDismissFileReferenceSuggestions={composerDock.onDismissFileReferenceSuggestions}
+                activeFileReferenceQuery={composerDock.activeFileReferenceQuery}
+                slashQuery={composerDock.slashQuery}
+                slashSuggestions={composerDock.slashSuggestions}
+                slashSelectedIndex={composerDock.slashSelectedIndex}
+                onSlashSelectedIndexChange={composerDock.onSlashSelectedIndexChange}
+                onApplySlashSuggestionItem={composerDock.onApplySlashSuggestionItem}
+                onDismissSlashSuggestions={composerDock.onDismissSlashSuggestions}
+                composerCursorCodeUnits={composerDock.composerCursorCodeUnits}
+                composerPlaceholder={composerDock.composerPlaceholder}
+                composerAgentModeChipPlaceholder={composerDock.composerAgentModeChipPlaceholder}
+                composerCanSend={composerDock.composerCanSend}
+                composerHasPayload={composerDock.composerHasPayload}
+                composerBusy={composerDock.composerBusy}
+                conversationInterruptible={composerDock.conversationInterruptible}
+                continueBusy={list.continueBusy}
+                composerBrowserElementAttachments={composerDock.composerBrowserElementAttachments}
+                onComposerBrowserElementAttachmentsChange={
+                  composerDock.onComposerBrowserElementAttachmentsChange
+                }
+                onSubmitComposerMessage={composerDock.onSubmitComposerMessage}
+                onComposerAgentModeChange={composerDock.onComposerAgentModeChange}
+                composerRichInputRef={composerDock.composerRichInputRef}
+                onComposerKeyDown={composerDock.onComposerKeyDown}
+                onComposerCursorCodeUnitsChange={composerDock.onComposerCursorCodeUnitsChange}
+                onInsertFileReferenceTrigger={composerDock.onInsertFileReferenceTrigger}
+                onPickLocalFileFromPalette={composerDock.onPickLocalFileFromPalette}
+                onInsertSkillTriggerFromPalette={composerDock.onInsertSkillTriggerFromPalette}
+                onRemoveLocalFileAttachment={composerDock.onRemoveLocalFileAttachment}
+                onComposerPaste={composerDock.onComposerPaste}
+                onComposerDragOver={composerDock.onComposerDragOver}
+                onComposerDrop={composerDock.onComposerDrop}
+                models={composerDock.models}
+                useMicaBackdrop={useMicaBackdrop}
+                onOpenGitTab={composerDock.onOpenGitTab}
+                getScrollViewport={getConversationScrollElement}
+                onScrollOccludeMaskStyleChange={composerDock.onScrollOccludeMaskStyleChange}
+              />
+            ) : null}
+            {showComposerDock && branchCheckout ? (
+              <BranchCheckoutDialog
+                open={branchCheckout.open}
+                onOpenChange={branchCheckout.onOpenChange}
+                branchCheckoutBlockedByChanges={branchCheckout.branchCheckoutBlockedByChanges}
+                git={snapshot?.git}
+                commitBusy={branchCheckout.commitBusy}
+                onCancel={branchCheckout.onCancel}
+                onConfirmCheckout={branchCheckout.onConfirmCheckout}
+                onDiscardAndCheckout={branchCheckout.onDiscardAndCheckout}
+              />
+            ) : null}
+          </div>
         </div>
       </div>
     </div>

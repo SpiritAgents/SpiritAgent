@@ -1,11 +1,11 @@
-import { githubApiHeaders, githubFetch, githubHasNextPage, readGitHubJson } from './github-api.js';
-import { commitSubject } from './commit-subject.js';
-import { GITHUB_API_BASE_URL } from './oauth-config.js';
+import { githubApiHeaders, githubFetch, githubHasNextPage, readGitHubJson } from "./github-api.js";
+import { commitSubject } from "./commit-subject.js";
+import { GITHUB_API_BASE_URL } from "./oauth-config.js";
 import type {
   GitHubPullRequestCommit,
   GitHubPullRequestCommitsSnapshot,
   GitHubRepositoryRef,
-} from './types.js';
+} from "./types.js";
 
 const COMMITS_PAGE_SIZE = 100;
 
@@ -33,7 +33,7 @@ function resolveLogin(user: GitHubUserRef | null | undefined, fallbackName: stri
     return login;
   }
   const name = fallbackName.trim();
-  return name || 'unknown';
+  return name || "unknown";
 }
 
 function resolveAvatarUrl(user: GitHubUserRef | null | undefined, login: string): string {
@@ -52,11 +52,11 @@ export function mapPullRequestCommit(
     return null;
   }
 
-  const message = item.commit?.message ?? '';
-  const authorName = item.commit?.author?.name?.trim() || '';
+  const message = item.commit?.message ?? "";
+  const authorName = item.commit?.author?.name?.trim() || "";
   const authorLogin = resolveLogin(item.author, authorName);
   const createdAt = item.commit?.author?.date?.trim() || new Date(0).toISOString();
-  const url = item.html_url?.trim() || '';
+  const url = item.html_url?.trim() || "";
 
   return {
     sha,

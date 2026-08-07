@@ -1,10 +1,10 @@
-import type { JsonObject, JsonValue } from '../ports.js';
-import { isArkLlmVendor } from '../ark/ark-provider.js';
-import { isJsonObject } from '../tool-agent.js';
-import type { OpenResponsesTransportConfig } from './responses-compat.js';
+import type { JsonObject, JsonValue } from "../ports.js";
+import { isArkLlmVendor } from "../ark/ark-provider.js";
+import { isJsonObject } from "../tool-agent.js";
+import type { OpenResponsesTransportConfig } from "./responses-compat.js";
 
 export function shouldPatchArkResponsesInputItemStatus(
-  config: Pick<OpenResponsesTransportConfig, 'llmVendor'>,
+  config: Pick<OpenResponsesTransportConfig, "llmVendor">,
 ): boolean {
   return isArkLlmVendor(config.llmVendor);
 }
@@ -23,13 +23,13 @@ export function patchArkResponsesInputItemStatus(body: JsonObject): void {
     }
 
     const item = rawItem as JsonObject;
-    if (typeof item.status === 'string' && item.status.trim().length > 0) {
+    if (typeof item.status === "string" && item.status.trim().length > 0) {
       continue;
     }
 
     input[index] = {
       ...item,
-      status: 'completed',
+      status: "completed",
     };
   }
 }
