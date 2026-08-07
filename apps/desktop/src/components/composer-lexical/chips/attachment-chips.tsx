@@ -4,7 +4,7 @@ import type { GitCommitAttachment } from "@/lib/git-commit-attachment";
 import type { PrDiffAttachment } from "@/lib/pr-diff-attachment";
 import type { TerminalSnippetAttachment } from "@/lib/terminal-snippet-attachment";
 import { WorkspaceFileIcon } from "@/components/workspace-file-icon";
-import { ChipIconSvg, ChipShell } from "@/components/composer-lexical/chips/chip-shell";
+import { ChipIcon, ChipIconSvg, ChipShell } from "@/components/composer-lexical/chips/chip-shell";
 import {
   BROWSER_ELEMENT_CHIP_CLASS,
   BROWSER_ELEMENT_CHIP_ICON_CLASS,
@@ -170,13 +170,14 @@ export function FileSnippetChip({ attachment }: { attachment: FileSnippetAttachm
         attachment.lineEnd,
       )}
     >
-      <WorkspaceFileIcon
-        path={attachment.filePath}
-        kind="file"
-        size={WORKSPACE_FILE_ICON_CHIP_SIZE_PX}
-        className={FILE_SNIPPET_CHIP_ICON_CLASS}
-        colorMode="inherit"
-      />
+      <ChipIcon className={FILE_SNIPPET_CHIP_ICON_CLASS}>
+        <WorkspaceFileIcon
+          path={attachment.filePath}
+          kind="file"
+          size={WORKSPACE_FILE_ICON_CHIP_SIZE_PX}
+          colorMode="inherit"
+        />
+      </ChipIcon>
       {formatFileSnippetChipLabel(attachment.filePath, attachment.lineStart, attachment.lineEnd)}
     </ChipShell>
   );

@@ -1,5 +1,5 @@
 import { WorkspaceFileIcon } from "@/components/workspace-file-icon";
-import { ChipShell } from "@/components/composer-lexical/chips/chip-shell";
+import { ChipIcon, ChipShell } from "@/components/composer-lexical/chips/chip-shell";
 import { workspaceFileBasename } from "@/lib/file-picker-path";
 import {
   resolveWorkspaceFileChipPresentation,
@@ -22,13 +22,14 @@ export function WorkspaceFileChip({ path }: WorkspaceFileChipProps) {
       title={normalized}
       aria-label={normalized}
     >
-      <WorkspaceFileIcon
-        path={presentation.iconPath}
-        kind={presentation.iconKind}
-        size={WORKSPACE_FILE_ICON_CHIP_SIZE_PX}
-        className={WORKSPACE_FILE_CHIP_ICON_CLASS}
-        colorMode="inherit"
-      />
+      <ChipIcon className={WORKSPACE_FILE_CHIP_ICON_CLASS}>
+        <WorkspaceFileIcon
+          path={presentation.iconPath}
+          kind={presentation.iconKind}
+          size={WORKSPACE_FILE_ICON_CHIP_SIZE_PX}
+          colorMode="inherit"
+        />
+      </ChipIcon>
       {workspaceFileBasename(normalized)}
     </ChipShell>
   );
