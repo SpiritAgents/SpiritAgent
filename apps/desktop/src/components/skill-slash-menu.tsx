@@ -1,6 +1,7 @@
 import { useTranslation } from "react-i18next";
 
 import { ComposerSuggestionMenuItem } from "@/components/composer-suggestion-menu-item";
+import { useComposerSuggestionMenuHighlight } from "@/hooks/useComposerSuggestionMenuHighlight";
 import {
   DESKTOP_OVERLAY_LIST_ITEM_PRIMARY,
   DESKTOP_OVERLAY_LIST_ITEM_SECONDARY,
@@ -25,13 +26,15 @@ export function SkillSlashMenu({
   onApplySuggestion,
 }: SkillSlashMenuProps) {
   const { t } = useTranslation();
+  const { highlightedIndex, menuPointerHandlers, getItemPointerHandlers } =
+    useComposerSuggestionMenuHighlight(selectedIndex, suggestions.length);
 
   if (suggestions.length === 0) {
     return <div className="px-2 py-2.5 text-xs text-muted-foreground">{t("app.noMatches")}</div>;
   }
 
   return (
-    <>
+    <div {...menuPointerHandlers}>
       {suggestions.map((suggestion, index) => {
         const description = suggestion.descriptionKey
           ? t(suggestion.descriptionKey)
@@ -41,10 +44,11 @@ export function SkillSlashMenu({
           <ComposerSuggestionMenuItem
             key={suggestion.id}
             data-skill-slash-index={index}
-            selected={index === selectedIndex}
+            selected={index === highlightedIndex}
             title={`${suggestion.name} — ${description}`}
             onMouseDown={(event) => event.preventDefault()}
             onClick={() => onApplySuggestion(suggestion)}
+            {...getItemPointerHandlers(index)}
           >
             <div className="flex min-w-0 flex-1 items-start gap-2">
               <SlashSuggestionIcon kind={suggestion.kind} />
@@ -60,6 +64,6 @@ export function SkillSlashMenu({
           </ComposerSuggestionMenuItem>
         );
       })}
-    </>
+    </div>
   );
 }

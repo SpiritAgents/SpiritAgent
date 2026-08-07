@@ -29,7 +29,6 @@ export function ComposerSuggestionMenuItem({
       className={cn(
         "items-start",
         DESKTOP_OVERLAY_LIST_ITEM,
-        "hover:bg-accent hover:text-accent-foreground",
         selected && "bg-accent text-accent-foreground",
         className,
       )}

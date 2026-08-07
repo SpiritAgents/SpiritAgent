@@ -442,7 +442,7 @@ export function useComposerController({
   });
 
   useEffect(() => {
-    setSlashSelectedIndex(-1);
+    setSlashSelectedIndex(0);
   }, [slashQuery?.raw, slashQuery?.start, slashQuery?.end]);
 
   useEffect(() => {
@@ -480,8 +480,8 @@ export function useComposerController({
       }
       return;
     }
-    if (slashSelectedIndex >= slashSuggestions.length) {
-      setSlashSelectedIndex(-1);
+    if (slashSelectedIndex < 0 || slashSelectedIndex >= slashSuggestions.length) {
+      setSlashSelectedIndex(0);
     }
   }, [slashSelectedIndex, slashSuggestions.length]);
 
