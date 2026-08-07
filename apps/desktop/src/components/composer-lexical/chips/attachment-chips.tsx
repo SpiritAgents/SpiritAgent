@@ -33,7 +33,7 @@ import {
   TERMINAL_CHIP_CLASS,
   TERMINAL_CHIP_ICON_CLASS,
 } from "@/lib/terminal-chip-styles";
-import { WORKSPACE_FILE_ICON_CHIP_SIZE_PX } from "@/lib/workspace-file-icon-svg";
+import { WORKSPACE_FILE_ICON_CHIP_SIZE_PX } from "@/lib/workspace-file-icon-sizes";
 
 export function ElementChip({ attachment }: { attachment: BrowserElementAttachment }) {
   return (

@@ -1,30 +1,29 @@
+import { createElement } from 'react';
+import { renderToStaticMarkup } from 'react-dom/server';
+
 import { workspaceFileBasename } from '@/lib/file-picker-path';
 import { renderWorkspaceDirectoryIconMarkup } from '@/lib/workspace-directory-icon';
+import { workspaceExplorerIcon } from '@/lib/workspace-explorer-icon';
 import {
-  resolveWorkspaceFileIcon,
+  WORKSPACE_FILE_ICON_LIST_CLASS,
   type WorkspaceFileIconColorMode,
-} from '@/lib/workspace-file-icon-resolver';
-import {
-  prepareSetiSvgForDisplay,
-  resolveDomSetiIconTheme,
-} from '@/lib/workspace-file-icon-svg';
+} from '@/lib/workspace-file-icon-sizes';
 import type { WorkspaceExplorerEntryKind } from '@/types';
 
-export type AppendWorkspaceFileIconSvgOptions = {
+export type AppendWorkspaceFileIconOptions = {
   colorMode?: WorkspaceFileIconColorMode;
-  theme?: 'dark' | 'light';
 };
 
-/** contenteditable chip / DOM：注入 Seti SVG 或目录 Folder，与 React WorkspaceFileIcon 同源。 */
-export function appendWorkspaceFileIconSvg(
+/** contenteditable chip / DOM：注入 Lucide 文件/目录图标，与 React WorkspaceFileIcon 同源。 */
+export function appendWorkspaceFileIcon(
   parent: HTMLElement,
   doc: Document,
   path: string,
   attrs: { size: number; className: string },
   kind: WorkspaceExplorerEntryKind = 'file',
-  options: AppendWorkspaceFileIconSvgOptions = {},
+  options: AppendWorkspaceFileIconOptions = {},
 ): void {
-  const { colorMode = 'seti', theme = resolveDomSetiIconTheme() } = options;
+  const { colorMode = 'list' } = options;
 
   if (kind === 'dir') {
     const template = doc.createElement('template');
@@ -36,34 +35,22 @@ export function appendWorkspaceFileIconSvg(
     return;
   }
 
-  const icon = resolveWorkspaceFileIcon(workspaceFileBasename(path), kind, {
-    colorMode,
-    theme,
-  });
-  if (!icon) {
-    return;
-  }
-
-  const wrapper = doc.createElement('span');
-  wrapper.className = attrs.className;
-  wrapper.setAttribute('aria-hidden', 'true');
-  wrapper.style.display = 'inline-flex';
-  wrapper.style.width = `${attrs.size}px`;
-  wrapper.style.height = `${attrs.size}px`;
-  wrapper.style.alignItems = 'center';
-  wrapper.style.justifyContent = 'center';
-  if (icon.color) {
-    wrapper.style.color = icon.color;
-  }
-  if (icon.opacity !== undefined) {
-    wrapper.style.opacity = String(icon.opacity);
-  }
+  const Icon = workspaceExplorerIcon(workspaceFileBasename(path), kind);
+  const className =
+    colorMode === 'inherit'
+      ? attrs.className
+      : [WORKSPACE_FILE_ICON_LIST_CLASS, attrs.className].filter(Boolean).join(' ');
 
   const template = doc.createElement('template');
-  template.innerHTML = prepareSetiSvgForDisplay(icon.svg, attrs.size);
+  template.innerHTML = renderToStaticMarkup(
+    createElement(Icon, {
+      ...(colorMode === 'inherit' ? { size: attrs.size } : {}),
+      className: className || undefined,
+      'aria-hidden': true,
+    }),
+  ).trim();
   const svg = template.content.firstElementChild;
   if (svg) {
-    wrapper.appendChild(doc.importNode(svg, true));
+    parent.appendChild(doc.importNode(svg, true));
   }
-  parent.appendChild(wrapper);
 }

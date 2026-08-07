@@ -45,7 +45,7 @@ import { workspaceFileBasename } from "@/lib/file-picker-path";
 import { resolveWorkspaceFileChipPresentation } from "@/lib/workspace-file-chip-styles";
 import { SKILL_CHIP_CLASS } from "@/lib/skill-chip-styles";
 import { WorkspaceFileIcon } from "@/components/workspace-file-icon";
-import { WORKSPACE_FILE_ICON_CHIP_SIZE_PX } from "@/lib/workspace-file-icon-svg";
+import { WORKSPACE_FILE_ICON_CHIP_SIZE_PX } from "@/lib/workspace-file-icon-sizes";
 import { cn } from "@/lib/utils";
 import type { ConversationMessageSnapshot } from "@/types";
 
