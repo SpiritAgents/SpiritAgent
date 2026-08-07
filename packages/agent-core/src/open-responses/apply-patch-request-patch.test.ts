@@ -13,7 +13,6 @@ import {
   APPLY_PATCH_HOST_TOOL_NAME,
   buildApplyPatchResponsesFunctionToolDefinition,
   hasApplyPatchToolInResponsesTools,
-  isApplyPatchFunctionToolDefinition,
 } from "./apply-patch-eligibility.js";
 
 const openAiConfig = {

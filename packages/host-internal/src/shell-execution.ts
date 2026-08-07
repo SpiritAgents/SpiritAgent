@@ -120,8 +120,6 @@ export function runShell(options: RunShellOptions): RunShellHandle {
   const result = new Promise<RunShellResult>((resolve) => {
     let stdout = "";
     let stderr = "";
-    let stdoutBytes = 0;
-    let stderrBytes = 0;
     let exitCode = 0;
 
     const appendLimited = (current: string, addition: string): string => {
@@ -144,10 +142,8 @@ export function runShell(options: RunShellOptions): RunShellHandle {
       }
       if (stream === "stdout") {
         stdout = appendLimited(stdout, decoded);
-        stdoutBytes = Buffer.byteLength(stdout, "utf8");
       } else {
         stderr = appendLimited(stderr, decoded);
-        stderrBytes = Buffer.byteLength(stderr, "utf8");
       }
       throttle?.push(decoded);
     };

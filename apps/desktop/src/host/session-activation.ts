@@ -1,6 +1,6 @@
 import path from "node:path";
 
-import { needsHostActiveModelSync, resolveEffectivePaneActiveModel } from "./active-model-sync.js";
+import { resolveEffectivePaneActiveModel } from "./active-model-sync.js";
 
 import type { SessionEndHookInput, SessionStartHookInput } from "@spiritagent/agent-core";
 

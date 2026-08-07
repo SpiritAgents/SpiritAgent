@@ -211,7 +211,6 @@ export async function buildRewindCheckpointSnapshot(
   ctx: RewindHostContext,
 ): Promise<DesktopRewindCheckpointSnapshot> {
   ctx.requireState();
-  const desktopMessages = ctx.desktopMessages();
   const runtime = ctx.runtime();
   const archive = runtime
     ? runtime.toArchive(ctx.archiveMessages(), ctx.archiveAssistantAux())

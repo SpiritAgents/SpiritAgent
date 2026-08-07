@@ -315,7 +315,7 @@ export function shouldUseComposerDirectMediaTurn(
     return null;
   }
   if (explicitWorkspaceFileCount > 0) {
-    console.debug("[desktop][composer-direct-media] attachments present; falling back to chat", {
+    console.warn("[desktop][composer-direct-media] attachments present; falling back to chat", {
       activeModel: activeProfile.name,
       tool: directMediaTool,
     });

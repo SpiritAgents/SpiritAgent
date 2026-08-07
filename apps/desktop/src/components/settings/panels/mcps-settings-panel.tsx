@@ -16,13 +16,6 @@ import {
 } from "@/components/ui/dialog";
 import { DesktopFormInput, DesktopFormTextarea } from "@/components/ui/desktop-form-field";
 import { Label } from "@/components/ui/label";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
 import { cn } from "@/lib/utils";
 import i18n from "@/lib/i18n";
 import {
@@ -30,12 +23,7 @@ import {
   DESKTOP_LIST_ITEM_PRIMARY_CLASS,
   DESKTOP_PAGE_TITLE_CLASS,
 } from "@/lib/desktop-typography";
-import type {
-  DeleteMcpServerRequest,
-  DesktopMcpScope,
-  DesktopMcpServerListItem,
-  DesktopMcpTransportType,
-} from "@/types";
+import type { DeleteMcpServerRequest, DesktopMcpScope, DesktopMcpTransportType } from "@/types";
 
 function mcpTransportTypeLabel(type: DesktopMcpTransportType): string {
   return type === "http" ? "HTTP" : "Stdio";

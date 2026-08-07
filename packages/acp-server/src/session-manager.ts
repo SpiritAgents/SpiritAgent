@@ -1,9 +1,8 @@
 import type { JsonValue, RuntimeEvent, SpiritAgentMode } from "@spiritagent/agent-core";
-import type { HostToolExecutorProxy } from "@spiritagent/agent-core/host-bridge";
 import { deleteTranscriptSessionDir } from "@spiritagent/host-internal";
 import type { AcpServerConfig, AcpSessionState } from "./types.js";
 import { AVAILABLE_MODES, normalizeModeId } from "./types.js";
-import { createAcpRuntime, type AcpHostRuntime, type AcpRuntimeResult } from "./runtime-factory.js";
+import { createAcpRuntime, type AcpRuntimeResult } from "./runtime-factory.js";
 
 /**
  * Manages ACP sessions, each backed by an independent AgentRuntime instance.

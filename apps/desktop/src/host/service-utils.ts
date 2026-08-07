@@ -26,7 +26,6 @@ import {
   mergeRecentWorkspaceRoots,
   resolveDesktopHomeDirectory,
 } from "./storage.js";
-import type { DesktopModelReasoningEffort } from "../types.js";
 import { resolveProfileApiBase } from "./model-config.js";
 import { flattenProviderGroups, resolveActiveModelProfile } from "./model-config-access.js";
 import { DESKTOP_WEB_HOST_POLICY, getDesktopWebHostRuntimeStatus } from "./web-host-state.js";

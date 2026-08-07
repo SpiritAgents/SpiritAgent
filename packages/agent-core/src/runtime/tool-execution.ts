@@ -25,7 +25,7 @@ export async function performToolExecution<Config, State, ToolRequest, TrustTarg
   runtime: ToolExecutionRuntime<Config, State, ToolRequest, TrustTarget>,
   request: ToolRequest,
   toolName: string,
-  toolCallId?: string,
+  _toolCallId?: string,
 ): Promise<ToolExecutionResult> {
   let output: ToolExecutionOutput;
   let failed = false;

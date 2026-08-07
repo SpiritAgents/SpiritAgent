@@ -75,7 +75,7 @@ async function runGit(
     return { stdout: result.stdout, stderr: result.stderr };
   } catch (error) {
     const message = renderGitError(error);
-    throw new Error(`git ${args.join(" ")} failed: ${message}`);
+    throw new Error(`git ${args.join(" ")} failed: ${message}`, { cause: error });
   }
 }
 

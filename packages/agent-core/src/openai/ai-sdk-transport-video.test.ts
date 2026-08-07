@@ -30,7 +30,8 @@ test("openAiUserContentToAiSdkContent drops video_url but Moonshot fetch body ca
   });
 
   assert.equal(aiSdkOnly[0]?.content.length, 1);
-  assert.equal((aiSdkOnly[0]?.content[0] as { type: string }).type, "text");
+  const firstContentPart = aiSdkOnly[0]?.content[0];
+  assert.equal((firstContentPart as { type: string }).type, "text");
 
   const moonshotMessages = takeMoonshotChatCompletionMessages();
   const restoredBody = {

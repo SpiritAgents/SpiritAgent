@@ -45,6 +45,7 @@ export function createSpiritStreamdownCodeComponent(
   resolvedDark: boolean,
 ): ComponentType<StreamdownCodeProps> {
   return function SpiritStreamdownCode(props: StreamdownCodeProps) {
+    const isIncomplete = useIsCodeFenceIncomplete();
     const isInline = !("data-block" in props);
     if (isInline) {
       return createElement(inlineCode, props);
@@ -52,7 +53,6 @@ export function createSpiritStreamdownCodeComponent(
 
     const language = extractFenceLanguage(props.className);
     const code = extractFenceCode(props.children);
-    const isIncomplete = useIsCodeFenceIncomplete();
 
     if (language === "mermaid") {
       return (

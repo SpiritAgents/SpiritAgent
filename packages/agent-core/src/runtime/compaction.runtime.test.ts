@@ -1,11 +1,7 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 
-import {
-  includesCompactSummaryBlock,
-  unwrapCompactSummaryBlock,
-  wrapCompactSummaryBlock,
-} from "../llm-context-block.js";
+import { unwrapCompactSummaryBlock, wrapCompactSummaryBlock } from "../llm-context-block.js";
 import { truncateLlmHistoryForCompaction } from "../llm-tool-agent.js";
 import {
   createLlmMessageContentFromText,

@@ -78,7 +78,6 @@ import {
   resolveOpenAiModelCompatibilityProfile,
   type OpenAiImageGenerationConfig,
   type OpenAiTransportConfig,
-  type OpenAiVideoGenerationConfig,
 } from "./openai-compat.js";
 import { modelSupportsOpenAiGpt56ReasoningControls } from "./gpt-reasoning-controls.js";
 import {
@@ -363,7 +362,7 @@ export class AiSdkOpenAiCompatibleTransport
         requestTrace,
       };
     } catch (error) {
-      throw new Error(renderAiSdkOpenAiError(error));
+      throw new Error(renderAiSdkOpenAiError(error), { cause: error });
     }
   }
 
@@ -558,11 +557,12 @@ export class AiSdkOpenAiCompatibleTransport
 
     const promptMessages = openAiMessagesToAiSdkMessages(
       llmHistoryToOpenAiMessages(
-        buildCompactHistoryPromptMessages(history, {
-          ...(context?.transcriptDirPath === undefined
+        buildCompactHistoryPromptMessages(
+          history,
+          context?.transcriptDirPath === undefined
             ? {}
-            : { transcriptDirPath: context.transcriptDirPath }),
-        }),
+            : { transcriptDirPath: context.transcriptDirPath },
+        ),
         openAiTransportAssetRoot(config),
       ),
     );
@@ -2014,24 +2014,6 @@ function extractAssistantReasoningContentFromJson(message: JsonObject): string {
   return [message.reasoning_content, message.reasoningContent, message.reasoning, message.thinking]
     .filter((value): value is string => typeof value === "string" && value.length > 0)
     .join("");
-}
-
-function tryCountContentLines(argumentsJson: string): number | undefined {
-  try {
-    const parsed = JSON.parse(argumentsJson) as JsonValue;
-    if (!isJsonObject(parsed)) {
-      return undefined;
-    }
-
-    const candidate = parsed.content ?? parsed.new_text;
-    if (typeof candidate !== "string") {
-      return undefined;
-    }
-
-    return candidate.split(/\r?\n/).length;
-  } catch {
-    return undefined;
-  }
 }
 
 function openAiTransportAssetRoot(config: Pick<OpenAiTransportConfig, "workspaceRoot">): string {

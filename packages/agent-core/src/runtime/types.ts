@@ -348,7 +348,7 @@ export type RuntimeManualToolCommandResult<State, ToolRequest, TrustTarget> =
       request?: ToolRequest;
     };
 
-export type RuntimeManualToolCommandStartResult<State, ToolRequest, TrustTarget> =
+export type RuntimeManualToolCommandStartResult<_State, ToolRequest, TrustTarget> =
   | RuntimeCompletedManualToolCommandResult<ToolRequest>
   | {
       kind: "started-background";
@@ -571,7 +571,7 @@ export interface PendingToolCallBackgroundToolExecution<State, ToolRequest> {
 }
 
 /** 后台槽位占用时暂存；真正启动时注入已完成前序工具后的 state。 */
-export interface DeferredBackgroundToolExecutionSpec<State, ToolRequest> {
+export interface DeferredBackgroundToolExecutionSpec<_State, ToolRequest> {
   pendingUserInput: string;
   request: ToolRequest;
   toolCallId: string;

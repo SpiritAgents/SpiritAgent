@@ -62,10 +62,6 @@ function rowPath(
   return `desktopMessageTimeline[${turnIndex}].segments[${segmentIndex}].rows[${rowIndex}]`;
 }
 
-function hasPersistedContent(content: string | undefined): boolean {
-  return typeof content === "string" && content.length > 0;
-}
-
 function hasTrimmedContent(content: string | undefined): boolean {
   return typeof content === "string" && content.trim().length > 0;
 }

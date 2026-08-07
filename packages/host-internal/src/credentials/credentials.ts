@@ -306,7 +306,7 @@ export async function saveProviderSetup(
   }
 
   const config: SpiritConfigFile = {
-    ...(existing ?? {}),
+    ...existing,
     schemaVersion: SPIRIT_CONFIG_SCHEMA_VERSION,
     providerGroups,
     activeModel,

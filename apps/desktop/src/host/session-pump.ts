@@ -65,7 +65,7 @@ export class SessionPump {
     }
     this.running = true;
     if (pumpDebugEnabled()) {
-      console.log("[desktop-host][pump] start");
+      console.warn("[desktop-host][pump] start");
       this.debugTickCount = 0;
       this.debugTickDurationMs = 0;
       this.debugWindowStartedAtMs = Date.now();
@@ -105,7 +105,7 @@ export class SessionPump {
       if (windowMs >= PUMP_DEBUG_STATS_INTERVAL_MS) {
         const hz = (this.debugTickCount / windowMs) * 1_000;
         const avgMs = this.debugTickDurationMs / Math.max(1, this.debugTickCount);
-        console.log(
+        console.warn(
           `[desktop-host][pump] ticks=${this.debugTickCount} rate=${hz.toFixed(1)}/s avgTick=${avgMs.toFixed(1)}ms`,
         );
         this.debugTickCount = 0;
@@ -119,7 +119,7 @@ export class SessionPump {
     if (!this.options.hasPumpWork()) {
       this.running = false;
       if (pumpDebugEnabled()) {
-        console.log("[desktop-host][pump] idle, stop");
+        console.warn("[desktop-host][pump] idle, stop");
       }
       return;
     }

@@ -94,7 +94,7 @@ export type UseGlobalTooltipSwitchResult = {
 };
 
 export function useGlobalTooltipSwitch({
-  defaultOpenDelayMs = DEFAULT_ANCHORED_ITEM_SWITCH_OPEN_DELAY_MS,
+  defaultOpenDelayMs: _defaultOpenDelayMs = DEFAULT_ANCHORED_ITEM_SWITCH_OPEN_DELAY_MS,
   defaultCloseDelayMs = DEFAULT_ANCHORED_ITEM_SWITCH_CLOSE_DELAY_MS,
   defaultAnchorLingerMs = DEFAULT_ANCHORED_ITEM_SWITCH_ANCHOR_LINGER_MS,
 }: UseGlobalTooltipSwitchOptions = {}): UseGlobalTooltipSwitchResult {

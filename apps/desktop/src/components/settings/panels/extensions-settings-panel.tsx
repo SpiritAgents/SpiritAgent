@@ -15,7 +15,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import type { DeleteExtensionRequest, DesktopExtensionListItem } from "@/types";
+import type { DesktopExtensionListItem } from "@/types";
 import {
   DESKTOP_LIST_ITEM_PRIMARY_CLASS,
   DESKTOP_SECTION_LABEL_COMPACT_CLASS,

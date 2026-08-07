@@ -41,7 +41,6 @@ import type {
   ConversationContextUsageSnapshot,
   ConversationMessageSnapshot,
   DesktopModelCatalogHint,
-  MessageAuxSnapshot,
   ToolBlockSnapshot,
 } from "../types.js";
 import type { DesktopToolRequest } from "./contracts.js";
@@ -271,10 +270,6 @@ export class DesktopRuntimeEventOrchestrator {
         if (finishExecution) {
           const summary = finishTaskSummaryFromExecution(finishExecution);
           const notice = finishTaskNoticeFromExecution(finishExecution);
-          const noticeAux: MessageAuxSnapshot = {
-            ...(aux ?? {}),
-            finishTaskNotice: notice,
-          };
           this.options.assistantMessages.applyFinishTaskNotice(
             notice,
             result.assistantText,
@@ -313,7 +308,7 @@ export class DesktopRuntimeEventOrchestrator {
         {
           const aux = this.options.assistantMessages.takeLatestPendingAux();
           const errorAux = {
-            ...(aux ?? {}),
+            ...aux,
             turnError: true as const,
           };
           if (this.turnErrorRetryMessageId !== undefined) {
@@ -1067,7 +1062,7 @@ export class DesktopRuntimeEventOrchestrator {
     const callId = execution.toolCallId || `tool:${execution.toolName}`;
     const images = imagePathsFromExecution(execution).length;
     const videos = videoPathsFromExecution(execution).length;
-    console.log(
+    console.warn(
       `[desktop-host][tool-flow] integrate source=${source} call=${callId} name=${execution.toolName} phase=${execution.failed ? "failed" : "succeeded"} msg=${messageId} images=${images} videos=${videos} tools=${summarizeToolRowsForDebug(messages, 8)} tail=${summarizeMessagesTailForOrderDebug(messages, 8)}`,
     );
   }
@@ -1199,7 +1194,7 @@ export class DesktopRuntimeEventOrchestrator {
     }
 
     const tail = summarizeMessagesTailForOrderDebug(messages, 12);
-    console.log(
+    console.warn(
       `[desktop-host][msg-order] apply#${batchId} kinds=${tags.join(",")} placement=timeline len=${messages.length} tail=${tail}`,
     );
   }
@@ -1209,7 +1204,9 @@ export class DesktopRuntimeEventOrchestrator {
       return;
     }
     const tail = summarizeMessagesTailForOrderDebug(messages, 10);
-    console.log(`[desktop-host][msg-order] prefix-sync ${how} len=${messages.length} tail=${tail}`);
+    console.warn(
+      `[desktop-host][msg-order] prefix-sync ${how} len=${messages.length} tail=${tail}`,
+    );
   }
 }
 

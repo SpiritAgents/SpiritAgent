@@ -941,6 +941,7 @@ export async function dispatchExtensionEvent<THostApi>(
       request.logger?.error(`[extension:${extension.id}] event failed`, error);
       throw new Error(
         `扩展事件执行失败：${extension.manifest.name} (${error instanceof Error ? error.message : String(error)})`,
+        { cause: error },
       );
     }
   }
@@ -1728,6 +1729,7 @@ async function activateExtension<THostApi>(
     options.logger?.error(`[extension:${target.id}] activate failed`, error);
     throw new Error(
       `执行扩展失败：${target.manifest.name} (${error instanceof Error ? error.message : String(error)})`,
+      { cause: error },
     );
   }
 }
@@ -1745,6 +1747,7 @@ async function loadExtensionModule(
     logger?.error(`[extension:${target.id}] load failed`, error);
     throw new Error(
       `加载扩展失败：${target.manifest.name} (${error instanceof Error ? error.message : String(error)})`,
+      { cause: error },
     );
   }
 }
@@ -2100,7 +2103,7 @@ function parseCliUiHookDocument(
   }
 
   if (!isRecord(parsed) || !Array.isArray(parsed.hooks)) {
-    throw new Error(`扩展 CLI hooks 资源必须是形如 { \"hooks\": [...] } 的对象：${resourcePath}`);
+    throw new Error(`扩展 CLI hooks 资源必须是形如 { "hooks": [...] } 的对象：${resourcePath}`);
   }
 
   return parsed.hooks.map((entry, index) =>
@@ -2209,9 +2212,7 @@ function optionalDesktopSettingsPageDefinitionField(
   }
 
   const title = optionalStringField(value.title);
-  return {
-    ...(title ? { title } : {}),
-  };
+  return title ? { title } : {};
 }
 
 function assertHostUiContributionCapabilities(

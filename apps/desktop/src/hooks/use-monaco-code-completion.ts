@@ -248,7 +248,7 @@ export function useMonacoCodeCompletion(options: {
         editor.trigger(null, "editor.action.inlineSuggest.trigger", {});
       } catch (error) {
         if (!isMonacoCanceled(error)) {
-          console.debug("[code-completion] fetch failed:", error);
+          console.warn("[code-completion] fetch failed:", error);
         }
       }
     };

@@ -1,5 +1,5 @@
 import { readFileSync } from "node:fs";
-import { basename, extname, isAbsolute, resolve } from "node:path";
+import { extname, isAbsolute, resolve } from "node:path";
 
 import { createAnthropic } from "@ai-sdk/anthropic";
 import { createMiniMax } from "@ai-sdk/minimax";
@@ -185,7 +185,7 @@ export class AiSdkAnthropicTransport
         requestTrace,
       };
     } catch (error) {
-      throw new Error(renderAiSdkError(error));
+      throw new Error(renderAiSdkError(error), { cause: error });
     }
   }
 
@@ -365,11 +365,12 @@ export class AiSdkAnthropicTransport
 
     const promptMessages = toolStateMessagesToAiSdkMessages(
       llmHistoryToOpenAiMessages(
-        buildCompactHistoryPromptMessages(history, {
-          ...(context?.transcriptDirPath === undefined
+        buildCompactHistoryPromptMessages(
+          history,
+          context?.transcriptDirPath === undefined
             ? {}
-            : { transcriptDirPath: context.transcriptDirPath }),
-        }),
+            : { transcriptDirPath: context.transcriptDirPath },
+        ),
         anthropicTransportAssetRoot(config),
       ),
       config,
@@ -1385,24 +1386,6 @@ function normalizeAnthropicReasoningProviderOptions(value: unknown): JsonObject 
   };
 }
 
-function tryCountContentLines(argumentsJson: string): number | undefined {
-  try {
-    const parsed = JSON.parse(argumentsJson) as JsonValue;
-    if (!isJsonObject(parsed)) {
-      return undefined;
-    }
-
-    const candidate = parsed.content ?? parsed.new_text;
-    if (typeof candidate !== "string") {
-      return undefined;
-    }
-
-    return candidate.split(/\r?\n/).length;
-  } catch {
-    return undefined;
-  }
-}
-
 function llmHistoryToToolStateMessages(
   history: LlmMessage[],
   assetRoot = process.cwd(),
@@ -1589,27 +1572,6 @@ function trimLeadingStreamLineBreaks(existingText: string, nextText: string): st
 }
 
 async function* emptyEventStream(): AsyncGenerator<LlmStreamEvent, void, undefined> {}
-
-function isAnthropicToolCallStreamingStartPart(
-  part: TextStreamPart<any>,
-): part is TextStreamPart<any> & AnthropicToolCallStreamingStartPart {
-  return (
-    (part as { type?: unknown }).type === "tool-call-streaming-start" &&
-    typeof (part as { toolCallId?: unknown }).toolCallId === "string" &&
-    typeof (part as { toolName?: unknown }).toolName === "string"
-  );
-}
-
-function isAnthropicToolCallDeltaPart(
-  part: TextStreamPart<any>,
-): part is TextStreamPart<any> & AnthropicToolCallDeltaPart {
-  return (
-    (part as { type?: unknown }).type === "tool-call-delta" &&
-    typeof (part as { toolCallId?: unknown }).toolCallId === "string" &&
-    typeof (part as { toolName?: unknown }).toolName === "string" &&
-    typeof (part as { argsTextDelta?: unknown }).argsTextDelta === "string"
-  );
-}
 
 /** @internal Exported for unit tests only. */
 export const convertAnthropicToolStateMessagesForTests = toolStateMessagesToAiSdkMessages;

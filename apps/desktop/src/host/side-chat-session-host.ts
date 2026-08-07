@@ -11,7 +11,6 @@ import type {
 } from "../types.js";
 import type { DesktopHostRuntime } from "./runtime.js";
 import type { SessionBundle } from "./session-bundle.js";
-import type { SessionActivationContext } from "./session-activation.js";
 import {
   buildArchiveAssistantAuxFromConversation,
   buildArchiveMessagesFromConversation,

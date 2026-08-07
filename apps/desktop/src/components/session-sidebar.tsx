@@ -1352,7 +1352,7 @@ function SessionSidebarInner({
   const contextMenuWorkspaceGroupRef = useRef<SessionWorkspaceGroup | null>(null);
   const [renamingSessionPath, setRenamingSessionPath] = useState<string | null>(null);
   const [renameValue, setRenameValue] = useState("");
-  const [renameError, setRenameError] = useState("");
+  const [, setRenameError] = useState("");
   const renameCommitInFlightRef = useRef(false);
   const pendingRenameFocusPathRef = useRef<string | null>(null);
   const scrollFadeRegionRef = useRef<HTMLDivElement>(null);

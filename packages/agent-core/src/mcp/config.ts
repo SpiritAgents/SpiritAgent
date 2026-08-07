@@ -201,7 +201,7 @@ export function normalizeTransportConfig(
         type: "stdio",
         command,
         args: [...(transport.args ?? [])],
-        env: { ...(transport.env ?? {}) },
+        env: { ...transport.env },
         stderr: transport.stderr ?? "inherit",
         ...(typeof transport.cwd === "string" && transport.cwd.trim()
           ? { cwd: transport.cwd.trim() }
@@ -219,7 +219,7 @@ export function normalizeTransportConfig(
       const base: ResolvedMcpHttpTransportConfig = {
         type: "http",
         url,
-        headers: { ...(transport.headers ?? {}) },
+        headers: { ...transport.headers },
         ...(typeof transport.timeoutMs === "number" ? { timeoutMs: transport.timeoutMs } : {}),
       };
       return base;

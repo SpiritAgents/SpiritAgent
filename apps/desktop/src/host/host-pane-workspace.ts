@@ -15,7 +15,7 @@ import { applyGitRevision, checkoutWorkspaceGitBranch, readWorkspaceGitSnapshot 
 import type { SessionBundle } from "./session-bundle.js";
 import type { SessionSplitHostContext } from "./session-split.js";
 import { isNoWorkspaceSessionRoot, sameWorkspaceRoot } from "./service-utils.js";
-import { normalizeWorkspaceBinding, resolveDesktopHomeDirectory, saveConfig } from "./storage.js";
+import { normalizeWorkspaceBinding, resolveDesktopHomeDirectory } from "./storage.js";
 
 export interface PaneWorkspaceHostContext extends SessionSplitHostContext {
   adoptProjectWorkspaceForForeground(

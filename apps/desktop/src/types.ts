@@ -36,7 +36,6 @@ export type {
   WorkspaceCapabilityTrustRequest,
 };
 
-import type { BrowserElementAttachment } from "./lib/browser-element-attachment.js";
 import type { RichSegment } from "./lib/composer-segment-model.js";
 import type { ComposerLocalFileAttachmentView } from "./lib/local-file-attachments.js";
 

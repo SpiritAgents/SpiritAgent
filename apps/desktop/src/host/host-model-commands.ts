@@ -27,7 +27,6 @@ import type {
   DesktopAlibabaBillingMode,
   DesktopGlmCodingPlanBillingMode,
   DesktopStepfunBillingMode,
-  DesktopModelCapability,
   DesktopModelProvider,
   DesktopModelReasoningEffort,
   DesktopModelReasoningMode,
@@ -701,15 +700,14 @@ export async function updateConfigCommand(
       !transportOrPlanChanged &&
       !lspEnabledChanged &&
       agentModeNow === prevAgentMode &&
-      !Boolean(request.apiKey?.trim()) &&
+      !request.apiKey?.trim() &&
       activeModelProfile !== null &&
       prevActiveModelInference !== undefined &&
       modelRefsEqual(state.config.activeModel, prevActiveModel) &&
       (activeModelProfile.thinkingEnabled !== prevActiveModelInference.thinkingEnabled ||
         activeModelProfile.reasoningEffort !== prevActiveModelInference.reasoningEffort ||
         activeModelProfile.reasoningMode !== prevActiveModelInference.reasoningMode);
-    const deferRuntimeRefresh =
-      wasBusy && transportOrPlanChanged && !Boolean(request.apiKey?.trim());
+    const deferRuntimeRefresh = wasBusy && transportOrPlanChanged && !request.apiKey?.trim();
 
     if (deferRuntimeRefresh) {
       ctx.activeBundle().deferredRuntimeRefreshWhileBusy = true;

@@ -1,9 +1,6 @@
 import { Entry } from "@napi-rs/keyring";
 
 /** Windows Credential Manager UTF-16 blob limit (bytes). */
-const KEYRING_MAX_UTF16_BYTES = 2560;
-
-/** Chunk size with margin below {@link KEYRING_MAX_UTF16_BYTES}. */
 const KEYRING_MAX_CHUNK_UTF16_BYTES = 2500;
 
 const KEYRING_SHARD_MARKER = "__spirit_keyring_sharded_v1__:";

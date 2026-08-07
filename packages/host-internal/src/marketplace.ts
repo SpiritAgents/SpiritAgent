@@ -431,7 +431,9 @@ async function fetchResponse(
     assertMarketplaceContentLength(response, label, maxBytes);
     return response;
   } catch (error) {
-    throw new Error(`${label} 请求失败：${normalizedUrl}；${extractErrorMessage(error)}`);
+    throw new Error(`${label} 请求失败：${normalizedUrl}；${extractErrorMessage(error)}`, {
+      cause: error,
+    });
   } finally {
     clearTimeout(timeout);
   }

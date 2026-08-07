@@ -231,7 +231,7 @@ export function ConversationList({
 
   // queued 前缀计数一次算好，避免 renderRow 每行 O(index) 的 slice/filter
   const queuedBeforeCounts = useMemo(() => {
-    const counts = new Array<number>(messages.length);
+    const counts = Array.from<number>({ length: messages.length });
     let queued = 0;
     for (let index = 0; index < messages.length; index += 1) {
       counts[index] = queued;

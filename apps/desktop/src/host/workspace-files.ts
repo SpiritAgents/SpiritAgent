@@ -204,7 +204,7 @@ export async function readWorkspaceTextFile(
     if (options?.optional && isENOENT(statError)) {
       return { text: "" };
     }
-    throw new Error(i18n.t("error.fileNotAccessible"));
+    throw new Error(i18n.t("error.fileNotAccessible"), { cause: statError });
   }
   if (!fileStat.isFile()) {
     throw new Error(i18n.t("error.notAFile"));

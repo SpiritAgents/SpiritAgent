@@ -472,17 +472,17 @@ export async function listLocalListeningEndpoints(): Promise<LocalListeningEndpo
 }
 
 /** 模块级缓存 */
-let _cachedEndpoints: LocalListeningEndpoint[] | null = null;
-let _scanningPromise: Promise<LocalListeningEndpoint[]> | null = null;
+let cachedEndpoints: LocalListeningEndpoint[] | null = null;
+let scanningPromise: Promise<LocalListeningEndpoint[]> | null = null;
 
 /** 返回上一次扫描的缓存结果（可能为 null 表示尚未完成首次扫描） */
 export function getCachedLocalListeningEndpoints(): LocalListeningEndpoint[] | null {
-  return _cachedEndpoints;
+  return cachedEndpoints;
 }
 
 /** 返回正在进行的扫描 promise（无扫描时为 null） */
 export function getScanningPromise(): Promise<LocalListeningEndpoint[]> | null {
-  return _scanningPromise;
+  return scanningPromise;
 }
 
 /**
@@ -494,10 +494,10 @@ export function getScanningPromise(): Promise<LocalListeningEndpoint[]> | null {
 export async function startLocalListenersScan(
   onFound?: (item: LocalListeningEndpoint) => void,
 ): Promise<LocalListeningEndpoint[]> {
-  if (_scanningPromise) {
-    await _scanningPromise.catch(() => undefined);
+  if (scanningPromise) {
+    await scanningPromise.catch(() => undefined);
   }
-  _scanningPromise = (async () => {
+  scanningPromise = (async () => {
     try {
       let raw: RawListener[] = [];
       if (process.platform === "win32") {
@@ -509,20 +509,20 @@ export async function startLocalListenersScan(
       }
       const merged = mergeLocalListeningEndpoints(raw.filter((item) => item.port > 0));
       const result = await filterHttpListeningEndpoints(merged, onFound);
-      _cachedEndpoints = result;
+      cachedEndpoints = result;
       return result;
     } catch (error) {
       console.warn("[spirit-desktop] startLocalListenersScan failed:", error);
-      return _cachedEndpoints ?? [];
+      return cachedEndpoints ?? [];
     } finally {
-      _scanningPromise = null;
+      scanningPromise = null;
     }
   })();
-  return _scanningPromise;
+  return scanningPromise;
 }
 
 /** 应用启动时预热：后台静默扫描一次，结果存入缓存 */
-_scanningPromise = startLocalListenersScan();
+scanningPromise = startLocalListenersScan();
 
 export function isAllowedExternalUrl(url: string): boolean {
   try {

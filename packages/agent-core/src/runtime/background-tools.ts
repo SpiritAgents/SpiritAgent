@@ -1,4 +1,4 @@
-import type { LlmMessage, ToolCallRequest, ToolExecutionOutput } from "../ports.js";
+import type { LlmMessage, ToolCallRequest } from "../ports.js";
 import type { JsonObject } from "../ports.js";
 import { createToolExecutionTextOutput } from "../ports.js";
 

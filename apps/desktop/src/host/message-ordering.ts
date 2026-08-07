@@ -1,8 +1,4 @@
-import {
-  formatTriggerLabel,
-  normalizeAutomationTrigger,
-  previewCreateAutomationFromArguments,
-} from "@spiritagent/host-internal";
+import { formatTriggerLabel, normalizeAutomationTrigger } from "@spiritagent/host-internal";
 
 import i18n from "../lib/i18n-host.js";
 import type {

@@ -177,7 +177,7 @@ export function logContinuationSnapshotState(input: {
   const pendingAux = input.pendingAux
     ? `${input.pendingAux.kind}:${truncateOneLineForDebug(input.pendingAux.detailText ?? input.pendingAux.statusText, 36)}`
     : "none";
-  console.log(
+  console.warn(
     `[desktop-host][continue] snapshot busy=${input.isBusy} pendingAux=${pendingAux} raw=${rawMarked.map((message) => describeContinuationMessage(message)).join(",") || "∅"} visible=${visibleMarked.map((message) => describeContinuationMessage(message)).join(",") || "∅"} rawTail=${summarizeMessagesTailForOrderDebug(input.rawMessages, 8)} visibleTail=${summarizeMessagesTailForOrderDebug(input.visibleMessages, 8)}`,
   );
 }
@@ -220,7 +220,7 @@ export function logToolSnapshotState(
   }
   ctx.setLastToolSnapshotLogSignature(signature);
 
-  console.log(
+  console.warn(
     `[desktop-host][tool-flow] snapshot busy=${input.isBusy} raw=${rawTools} timeline=${timelineTools} visible=${visibleTools} rawTail=${rawTail} timelineTail=${timelineTail} visibleTail=${visibleTail}`,
   );
 }
@@ -343,7 +343,7 @@ function logContinuationMarker(
   const target = message ? describeContinuationMessage(message) : "∅";
   const text = normalized ? truncateOneLineForDebug(normalized, 48) : "∅";
   const tail = summarizeMessagesTailForOrderDebug(messages, 8);
-  console.log(
+  console.warn(
     `[desktop-host][continue] mark outcome=${outcome} normalized≈${text}${normalized.length > 48 ? "…" : ""} target=${target} tail=${tail}`,
   );
 }

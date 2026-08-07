@@ -43,9 +43,7 @@ import type {
   McpServerRuntimeState,
   McpResourceIndexEntry,
   McpToolIndexEntry,
-  ResolvedMcpHttpTransportConfig,
   ResolvedMcpServerConfig,
-  ResolvedMcpStdioTransportConfig,
   ResolvedMcpTransportConfig,
   ToolAgentMcpToolCatalogSnapshot,
 } from "./types.js";

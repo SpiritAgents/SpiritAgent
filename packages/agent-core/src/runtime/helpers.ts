@@ -6,9 +6,7 @@ import {
   cloneLlmMessageContent,
   createLlmMessageContentFromText,
   createLlmMessageContentFromTextAndImages,
-  llmMessageHasImages,
   llmMessageImagePaths,
-  llmMessageTextContent,
   llmMessageVideoPaths,
   normalizeStoredLlmMessage,
   type JsonValue,
@@ -534,22 +532,6 @@ function readOptionalStringField(value: unknown, field: string): string | undefi
 
   const candidate = (value as Record<string, unknown>)[field];
   return typeof candidate === "string" ? candidate : undefined;
-}
-
-function safeStringify(value: unknown): string {
-  try {
-    return JSON.stringify(value);
-  } catch {
-    return String(value);
-  }
-}
-
-function truncateForPreview(text: string, maxChars: number): string {
-  const chars = Array.from(text);
-  if (chars.length <= maxChars) {
-    return text;
-  }
-  return `${chars.slice(0, maxChars).join("")}...<truncated>`;
 }
 
 async function pendingWorkspaceFileFromPath(

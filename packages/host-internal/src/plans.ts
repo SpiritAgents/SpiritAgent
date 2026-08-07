@@ -1,10 +1,6 @@
 import path from "node:path";
 
-import {
-  PLANS_DIR_NAME,
-  type InstructionDiscoveryContext,
-  resolveInstructionPaths,
-} from "./storage.js";
+import { type InstructionDiscoveryContext, resolveInstructionPaths } from "./storage.js";
 
 const PLAN_NAME_PATTERN = /^[a-zA-Z0-9_-]+$/;
 const CREATE_PLAN_PATH_PATTERN = /\[plan\]\npath: ([^\n]+)/;

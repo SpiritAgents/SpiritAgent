@@ -20,11 +20,7 @@ import {
   createLlmTransport,
   type AssistantAuxArchiveEntry,
   type ChatArchive,
-  type LlmEnabledRule,
-  type LlmEnabledSkillCatalogEntry,
   type LlmExtensionSystemPrompt,
-  type LlmPlanMetadata,
-  type LlmTransportConfig,
   type McpService,
   type RuntimeApprovalDecision,
   type RuntimeEvent,
@@ -60,13 +56,11 @@ import {
 } from "@spiritagent/host-internal";
 
 import type {
-  ActiveSessionSnapshot,
   AddModelRequest,
   AddMcpServerRequest,
   AddProviderModelsRequest,
   PreviewModelsRequest,
   PreviewModelsResponse,
-  AskQuestionsResult,
   BootstrapRequest,
   CommitChangesRequest,
   CheckoutGitBranchRequest,
@@ -324,8 +318,6 @@ import {
   needsHostActiveModelSync,
   resolveEffectivePaneActiveModel,
   resolvePaneModelProjection,
-  freezePaneActiveModelIfNeeded,
-  ensureVisiblePaneActiveModels,
 } from "./active-model-sync.js";
 import { findModelRefByName, resolveModelProfile } from "./model-config-access.js";
 import { deleteSessionCommand, type SessionDeleteContext } from "./session-delete.js";
@@ -413,46 +405,29 @@ import {
   resolveModelContextLength,
 } from "../lib/context-usage.js";
 import {
-  attachImageGenerationToTransportConfig,
-  attachVideoGenerationToTransportConfig,
-  buildPrimaryTransportConfig,
-  resolveDesktopTransportKind,
-} from "./model-config.js";
-import {
   applyConfiguredModelCatalogRefreshResults,
   fetchConfiguredModelCatalogsOnStartup,
   forceRefreshModelCatalogForProfile,
 } from "./model-catalog-startup-refresh.js";
 import {
-  DEFAULT_API_BASE,
   defaultNewSessionPath,
   isProvisionalSessionPath,
   isSideChatProvisionalSessionPath,
-  provisionalNewSessionPath,
   loadHostMetadata,
   loadStoredSession,
   modelSecretKeyPresence,
-  readBedrockProviderCredentialsFromKeyring,
-  readGoogleVertexProviderCredentialsFromKeyring,
   resolveApiKeyForConfigModel,
   createDesktopExtensionStateStore,
   saveConfig,
   removeModelApiKey,
   spiritAgentDataDir,
-  normalizeAgentsConfig,
   normalizeWorkspaceBinding,
   resolveDesktopHomeDirectory,
   mergeRecentWorkspaceRoots,
   type DesktopConfigFile,
-  type DesktopWebHostConfigFile,
   type DesktopWorkspaceBinding,
   type HostMetadataSummary,
 } from "./storage.js";
-import {
-  hasBedrockRuntimeCredentials,
-  hasGoogleVertexRuntimeCredentials,
-  modelProviderKeyScope,
-} from "./provider-api-key.js";
 import { DesktopToolExecutor } from "./tool-executor.js";
 import { buildDesktopRuntimeBasicInfo, type DesktopHostRuntime } from "./runtime.js";
 import {
@@ -472,12 +447,7 @@ import {
   setRemoteDesktopApprovalLevel,
 } from "./remote-runtime.js";
 import { buildActiveSkillPayload } from "./skills.js";
-import {
-  buildDreamContextText,
-  clearDreamCollectorIssue,
-  emptyDreamCollectorSnapshot,
-  isDreamCollectorDebugSessionPath,
-} from "./dreams.js";
+import { buildDreamContextText, emptyDreamCollectorSnapshot } from "./dreams.js";
 import { resolveLightweightChatModelProfile } from "./lightweight-chat-model.js";
 import { createTodoScope } from "./todos.js";
 import {
@@ -543,7 +513,6 @@ import { persistDesktopSessionBundle } from "./session-persistence.js";
 import { SessionRegistry } from "./session-registry.js";
 import type { SessionBundle } from "./session-bundle.js";
 import {
-  createDesktopRewindMetadata,
   loadRewindCheckpointSnapshot,
   loadRewindFileChange,
   type DesktopRewindCheckpointSnapshot,
@@ -565,7 +534,7 @@ interface HostState {
 
 async function loadDesktopPlanSnapshot(
   planPath: string,
-  existsHint?: boolean,
+  _existsHint?: boolean,
 ): Promise<PlanSnapshot> {
   try {
     const stat = await lstat(planPath);
@@ -586,7 +555,7 @@ async function loadDesktopPlanSnapshot(
   } catch {
     return {
       path: planPath,
-      exists: existsHint === true ? false : false,
+      exists: false,
     };
   }
 }
@@ -1903,7 +1872,6 @@ class DesktopHostService {
   async setLoopEnabled(enabled: boolean): Promise<DesktopSnapshot> {
     return this.runSerialized(async () => {
       await this.ensureInitialized(undefined, { fastPath: true });
-      const state = this.requireState();
       const bundle = this.activeBundle();
       bundle.loopEnabled = enabled;
       const toolExecutor = await this.ensureToolExecutor(bundle);
@@ -2040,7 +2008,6 @@ class DesktopHostService {
   async rewindAndSubmitMessage(request: RewindAndSubmitMessageRequest): Promise<DesktopSnapshot> {
     return this.runSerialized(async () => {
       await this.ensureInitialized(undefined, { fastPath: true });
-      const state = this.requireState();
       const runtime = this.requireRuntime();
       if (runtime.isBusy()) {
         const aborted = await abortConversationInContext(this.sessionTurnContext());
@@ -2224,7 +2191,6 @@ class DesktopHostService {
     displayText: string,
     assistantText: string,
   ): Promise<DesktopSnapshot> {
-    const state = this.requireState();
     this.activeBundle().rewindWarnings = [];
     this.clearAssistantContinuationMarkers();
     this.ensureActiveSession(displayText);
@@ -2910,7 +2876,7 @@ class DesktopHostService {
 
   private async ensureToolExecutor(
     bundle: SessionBundle = this.activeBundle(),
-    options?: { skipMcpCatalogRefresh?: boolean },
+    _options?: { skipMcpCatalogRefresh?: boolean },
   ): Promise<DesktopToolExecutor> {
     const state = this.requireState();
     const isActive = bundle.id === this.sessionRegistry.activeSessionId();
@@ -3203,7 +3169,7 @@ class DesktopHostService {
       const windowMs = Date.now() - this.debugLiveSnapshotEmitWindowStartedAtMs;
       if (windowMs >= 5_000) {
         const hz = (this.debugLiveSnapshotEmitCount / Math.max(1, windowMs)) * 1_000;
-        console.log(
+        console.warn(
           `[desktop-host][pump] snapshot emits=${this.debugLiveSnapshotEmitCount} rate=${hz.toFixed(1)}/s`,
         );
         this.debugLiveSnapshotEmitCount = 0;
@@ -3286,7 +3252,7 @@ class DesktopHostService {
     this.sessionTitleGenerationInFlight.add(filePath);
     void this.generateAndApplySessionTitle(bundle, seedText, filePath, epoch)
       .catch((error) => {
-        console.debug(
+        console.warn(
           "[session-title] generation failed:",
           error instanceof Error ? error.message : String(error),
         );

@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useLayoutEffect, useRef, useState } from "react";
+import { useCallback, useLayoutEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 
 import { SessionSidebarChromeProvider } from "@/contexts/session-sidebar-chrome-context";
@@ -65,7 +65,7 @@ import { cn } from "@/lib/utils";
 export default function App() {
   const { t, i18n } = useTranslation();
   // 只订阅恒定引用的 setter：App 不因 theme 值变化重渲染（隐形 app-body 全量重渲染实测 40–55ms）
-  const setTheme = useThemeSetter();
+  useThemeSetter();
   const { font, setFont } = useFont();
   const { clickablePointerCursor, setClickablePointerCursor } = useClickablePointerCursor();
   const uiLayoutScale = useUiLayoutScale();
@@ -185,7 +185,7 @@ export default function App() {
     },
   });
 
-  const messageRewind = useMessageRewind({
+  useMessageRewind({
     runtime,
     messages: conversation.messages,
     subagentViewer,

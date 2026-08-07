@@ -173,7 +173,7 @@ export class AiSdkOpenResponsesTransport
         requestTrace,
       };
     } catch (error) {
-      throw new Error(renderResponsesTransportError(error));
+      throw new Error(renderResponsesTransportError(error), { cause: error });
     }
   }
 
@@ -424,11 +424,12 @@ export class AiSdkOpenResponsesTransport
 
     const promptMessages = openAiMessagesToResponsesAiSdkMessages(
       llmHistoryToOpenAiMessages(
-        buildCompactHistoryPromptMessages(history, {
-          ...(context?.transcriptDirPath === undefined
+        buildCompactHistoryPromptMessages(
+          history,
+          context?.transcriptDirPath === undefined
             ? {}
-            : { transcriptDirPath: context.transcriptDirPath }),
-        }),
+            : { transcriptDirPath: context.transcriptDirPath },
+        ),
         config.workspaceRoot ?? process.cwd(),
       ),
     );

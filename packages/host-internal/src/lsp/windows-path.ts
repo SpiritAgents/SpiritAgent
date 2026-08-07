@@ -36,7 +36,7 @@ export function buildWindowsCommandCandidates(
   }
 
   const hasDirectorySeparator = trimmedCommand.includes("\\") || trimmedCommand.includes("/");
-  const hasExtension = /\.[^\\/\.]+$/.test(trimmedCommand);
+  const hasExtension = /\.[^\\/.]+$/.test(trimmedCommand);
   const basePaths = hasDirectorySeparator
     ? [trimmedCommand]
     : pathEntries.map((entry) => `${entry.replace(/[\\/]+$/, "")}\\${trimmedCommand}`);

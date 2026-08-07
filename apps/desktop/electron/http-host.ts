@@ -889,9 +889,7 @@ async function handleApiRequest({
       response,
       200,
       await runHostCommand("commitChanges", {
-        request: {
-          ...(typeof jsonBody?.message === "string" ? { message: jsonBody.message } : {}),
-        },
+        request: typeof jsonBody?.message === "string" ? { message: jsonBody.message } : {},
       }),
     );
     return;
@@ -1052,11 +1050,12 @@ async function handleApiRequest({
       request,
       response,
       200,
-      await runHostCommand("abortConversation", {
-        ...(typeof jsonBody?.sessionPath === "string" && jsonBody.sessionPath.trim()
+      await runHostCommand(
+        "abortConversation",
+        typeof jsonBody?.sessionPath === "string" && jsonBody.sessionPath.trim()
           ? { sessionPath: jsonBody.sessionPath.trim() }
-          : {}),
-      }),
+          : {},
+      ),
     );
     return;
   }

@@ -452,5 +452,3 @@ declare global {
     }
   }
 }
-
-export {};

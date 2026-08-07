@@ -525,13 +525,13 @@ test(
   { concurrency: false },
   () => {
     const originalDebug = process.env.SPIRIT_DESKTOP_MESSAGE_ORDER_DEBUG;
-    const originalLog = console.log;
+    const originalLog = console.warn;
     const originalNow = Date.now;
     const logs = [];
     let now = 1_000;
 
     process.env.SPIRIT_DESKTOP_MESSAGE_ORDER_DEBUG = "verbose";
-    console.log = (message) => {
+    console.warn = (message) => {
       logs.push(String(message));
     };
     Date.now = () => now;
@@ -561,7 +561,7 @@ test(
       } else {
         process.env.SPIRIT_DESKTOP_MESSAGE_ORDER_DEBUG = originalDebug;
       }
-      console.log = originalLog;
+      console.warn = originalLog;
       Date.now = originalNow;
     }
 

@@ -47,7 +47,6 @@ test("closePane collapses back to a single leaf", () => {
 });
 
 test("closePane in 4-pane grid removes only the closed leaf", () => {
-  const topLeft = createLeafNode("tl", "/sessions/tl.json");
   const bottomLeft = createLeafNode("bl", "/sessions/bl.json");
   const topRight = createLeafNode("tr", "/sessions/tr.json");
   const bottomRight = createLeafNode("br", "/sessions/br.json");

@@ -2,7 +2,7 @@ import assert from "node:assert/strict";
 import { test } from "node:test";
 
 import { normalizeComposerSegmentsPolicy } from "../../src/lib/composer-lexical/composer-lexical-policy.ts";
-import { emptySegments, mergeAdjacentTextSegments } from "../../src/lib/composer-segment-model.ts";
+import { emptySegments } from "../../src/lib/composer-segment-model.ts";
 import {
   hasAgentModeSegment,
   insertAgentModeSegment,

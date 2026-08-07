@@ -23,7 +23,6 @@ import {
   parseGitDiffNumstat,
   pushGitBranch,
   readGitBranchLabelForBasicInfo,
-  readGitWorkingTreeLineDelta,
   readGitWorkspaceSnapshot,
   readWorktreeContext,
   resolveDefaultBranch,

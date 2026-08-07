@@ -413,7 +413,7 @@ export function useWorkspaceGroupReorder({
   );
 
   const attachWindowDragListeners = useCallback(
-    (session: DragSession) => {
+    (_session: DragSession) => {
       detachWindowDragListeners();
 
       const onWindowPointerMove = (event: PointerEvent) => {

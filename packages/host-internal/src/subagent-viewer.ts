@@ -1,8 +1,4 @@
-import type {
-  LlmMessageContent,
-  LlmToolCall,
-  StoredLlmMessageArchiveEntry,
-} from "@spiritagent/agent-core";
+import type { LlmToolCall, StoredLlmMessageArchiveEntry } from "@spiritagent/agent-core";
 import { llmMessageTextContent } from "@spiritagent/agent-core";
 
 export type SubagentViewerSessionStatus =

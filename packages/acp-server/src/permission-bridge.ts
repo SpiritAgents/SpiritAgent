@@ -5,7 +5,7 @@ import type {
 } from "@spiritagent/agent-core";
 import type { AgentSideConnection } from "@agentclientprotocol/sdk";
 import type * as schema from "@agentclientprotocol/sdk";
-import { mapToolNameToKind, buildToolCallTitle } from "./tool-call-mapper.js";
+import { mapToolNameToKind } from "./tool-call-mapper.js";
 
 /**
  * Handles a runtime approval request by asking the ACP client for permission.

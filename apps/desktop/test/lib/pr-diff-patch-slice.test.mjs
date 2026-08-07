@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 
-import { buildPrDiffSnippetFromPatch, buildPrDiffSnippetText } from "../../src/lib/pr-diff-text.ts";
+import { buildPrDiffSnippetFromPatch } from "../../src/lib/pr-diff-text.ts";
 import {
   extractPatchBodyForLineRange,
   inferLineRangeFromPatch,

@@ -1,11 +1,7 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 
-import {
-  createLlmMessageContentFromText,
-  llmMessageTextContent,
-  type LlmMessage,
-} from "../../ports.js";
+import { llmMessageTextContent, type LlmMessage } from "../../ports.js";
 import { TOOL_OUTPUT_TRUNCATION_LABEL } from "../../tool-agent.js";
 import { prepareAndSyncRuntimeToolResultToHistory } from "../../runtime/tool-output-append.js";
 

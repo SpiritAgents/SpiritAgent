@@ -2,7 +2,7 @@ import { cloneElement, isValidElement, type ReactElement, type ReactNode } from 
 
 import type { LspWriteDiagnosticsUi } from "@spiritagent/agent-core";
 
-import { Tooltip, TooltipContent, TooltipItem, useTooltipContext } from "@/components/ui/tooltip";
+import { Tooltip, TooltipContent, useTooltipContext } from "@/components/ui/tooltip";
 import { cn } from "@/lib/utils";
 
 function LspDiagnosticsDetailPanel({ diagnostics }: { diagnostics: LspWriteDiagnosticsUi }) {
@@ -66,7 +66,7 @@ export function FileToolLspDiagnosticsHoverTrigger({
 
 export function FileToolLspDiagnosticsHover({
   itemId,
-  diagnostics,
+  diagnostics: _diagnostics,
   children,
 }: {
   itemId: string;

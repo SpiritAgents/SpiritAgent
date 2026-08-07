@@ -1,7 +1,6 @@
 import { findLspProvider, installLspProvider } from "@spiritagent/host-internal/lsp";
 
 import type { DesktopSnapshot, InstallLspProviderRequest } from "../types.js";
-import { buildDesktopLspSnapshot } from "./lsp-snapshot.js";
 import type { HostModelCommandContext } from "./host-model-commands.js";
 
 export async function installLspProviderCommand(

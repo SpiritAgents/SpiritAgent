@@ -6,7 +6,6 @@ import {
   registerModelPicker,
   resetModelPickerShortcutBridgeForTests,
   resolveModelPickerToOpen,
-  unregisterModelPicker,
 } from "../../src/lib/model-picker-shortcut-bridge.ts";
 
 function installDomStubs() {

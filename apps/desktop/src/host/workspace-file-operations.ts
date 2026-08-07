@@ -206,7 +206,7 @@ export async function trashWorkspaceEntry(
     await shell.trashItem(absPath);
   } catch (error) {
     const message = error instanceof Error ? error.message : String(error);
-    console.debug("[workspace-file-operations] trashWorkspaceEntry failed", {
+    console.warn("[workspace-file-operations] trashWorkspaceEntry failed", {
       relativePath: sourceRel,
       error: message,
     });

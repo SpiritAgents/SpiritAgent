@@ -711,7 +711,7 @@ export class DesktopAssistantMessageStateMachine {
     }
 
     const tail = summarizeMessagesTailForOrderDebug([...messages], 8);
-    console.log(
+    console.warn(
       `[desktop-host][tool] msg=${messageId} call=${toolCallId} name=${nextTool.toolName} phase=${previousPhase ?? "∅"}->${nextPhase} headline≈${truncateOneLineForDebug(nextHeadline, 42)} tail=${tail}`,
     );
   }
@@ -745,7 +745,7 @@ export class DesktopAssistantMessageStateMachine {
     if (details.extra) {
       parts.push(details.extra);
     }
-    console.log(`[desktop-host][aux] ${parts.join(" ")}`);
+    console.warn(`[desktop-host][aux] ${parts.join(" ")}`);
   }
 
   private logMessageOrderThinkingFinalized(placed: string, lenAfter: number, text: string): void {
@@ -754,7 +754,7 @@ export class DesktopAssistantMessageStateMachine {
     }
     const oneLine = text.replace(/\s+/g, " ").trim();
     const clip = oneLine.slice(0, 72);
-    console.log(
+    console.warn(
       `[desktop-host][msg-order] thinking-finalized ${placed} len=${lenAfter} text≈${clip}${oneLine.length > 72 ? "…" : ""}`,
     );
   }
@@ -763,7 +763,7 @@ export class DesktopAssistantMessageStateMachine {
     if (messageOrderDebugLevel() === "off") {
       return;
     }
-    console.log(`[desktop-host][msg-order] tool-preview-new ${toolName} push@${pushAt}`);
+    console.warn(`[desktop-host][msg-order] tool-preview-new ${toolName} push@${pushAt}`);
   }
 }
 

@@ -260,7 +260,7 @@ export function buildSpiritAgentCoreHostPrompt(model: string): string {
   const modelLabel = trimmed.length > 0 ? trimmed : "(not configured)";
   return [
     "You are Spirit Agent.",
-    `The user\'s model is: ${modelLabel}.`,
+    `The user's model is: ${modelLabel}.`,
     "Keep a neutral, matter-of-fact tone unless the user's enabled rules explicitly ask for a different style.",
     "",
     "When composing replies, follow conventional typography and editorial norms for each language you use (spacing, punctuation, and mixed-script text such as Latin alongside CJK or other scripts).",

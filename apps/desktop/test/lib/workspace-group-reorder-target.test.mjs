@@ -9,7 +9,6 @@ import {
   computeWorkspaceGroupDragProbeY,
   computeWorkspaceGroupTargetIndex,
   computeWorkspaceGroupTargetIndexFromLayoutTops,
-  getWorkspaceGroupDragOffsetBounds,
 } from "../../src/lib/workspace-group-reorder-target.ts";
 
 function rects(entries) {

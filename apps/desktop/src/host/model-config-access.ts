@@ -1,9 +1,4 @@
-import {
-  modelRefsEqual,
-  type ModelEntryV2,
-  type ModelRef,
-  type ProviderGroupV2,
-} from "@spiritagent/host-internal";
+import { type ModelEntryV2, type ModelRef, type ProviderGroupV2 } from "@spiritagent/host-internal";
 
 import type {
   DesktopAlibabaBillingMode,

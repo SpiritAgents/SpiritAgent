@@ -157,15 +157,16 @@ export function createTransport(config: ResolvedMcpTransportConfig): McpSdkTrans
     case "stdio":
       return new StdioClientTransport(buildStdioServerParameters(config));
     case "http":
-      return new StreamableHTTPClientTransport(new URL(config.url), {
-        ...(Object.keys(config.headers).length > 0
+      return new StreamableHTTPClientTransport(
+        new URL(config.url),
+        Object.keys(config.headers).length > 0
           ? {
               requestInit: {
                 headers: config.headers,
               },
             }
-          : {}),
-      });
+          : {},
+      );
   }
 }
 

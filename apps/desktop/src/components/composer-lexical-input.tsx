@@ -55,7 +55,6 @@ import {
   emptySegments,
   caretAfterAgentModeChip,
   currentAgentModeSegment,
-  ensureLoopChipTypingTail,
   ensureLoopPinned,
   hasAgentModeSegment,
   hasLoopSegment,
@@ -76,7 +75,6 @@ import {
   removeLoopSegment,
   segmentsEqual,
   segmentsToAttachments,
-  segmentsToPlainText,
   type RichSegment,
   type SegmentCaret,
 } from "@/lib/composer-segments";
@@ -418,10 +416,10 @@ const ComposerLexicalInputCore = forwardRef<ComposerRichInputHandle, ComposerLex
       readOnly,
       className,
       loopEnabled = false,
-      loopChipLabel = "Loop",
+      loopChipLabel: _loopChipLabel = "Loop",
       agentMode = "agent",
-      planChipLabel = "Plan",
-      askChipLabel = "Ask",
+      planChipLabel: _planChipLabel = "Plan",
+      askChipLabel: _askChipLabel = "Ask",
       onElementAttachmentsChange,
       onSegmentsCommit,
       onLoopEnabledChange,
@@ -467,8 +465,6 @@ const ComposerLexicalInputCore = forwardRef<ComposerRichInputHandle, ComposerLex
     const onSelectionChangeRef = useRef(onSelectionChange);
     const loopEnabledRef = useRef(loopEnabled);
     const agentModeRef = useRef(agentMode);
-    const prevLoopEnabledRef = useRef(false);
-    const prevAgentModeRef = useRef(agentMode);
     const hadLoopRef = useRef(hasLoopSegment(segments));
     const hadAgentModeRef = useRef(isAgentModeChipKind(agentMode));
     const agentModeChipDismissedRef = useRef(agentModeChipDismissed);

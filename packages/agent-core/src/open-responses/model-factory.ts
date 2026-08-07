@@ -2,7 +2,7 @@ import { createGateway } from "@ai-sdk/gateway";
 import { createAzure } from "@ai-sdk/azure";
 import { createOpenAI, type OpenAIProvider } from "@ai-sdk/openai";
 import { createOpenResponses } from "@ai-sdk/open-responses";
-import { createXai, type XaiLanguageModelResponsesOptions } from "@ai-sdk/xai";
+import { createXai } from "@ai-sdk/xai";
 import { createHuggingFace } from "@ai-sdk/huggingface";
 
 import { getLlmFetch } from "../llm-fetch.js";

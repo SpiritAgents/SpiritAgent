@@ -1,4 +1,4 @@
-import { llmMessageTextContent, type JsonValue, type LlmMessage } from "../ports.js";
+import { type JsonValue, type LlmMessage } from "../ports.js";
 import {
   llmHistoryToOpenAiMessages,
   llmMessageToOpenAiMessage,

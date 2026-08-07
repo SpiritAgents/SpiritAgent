@@ -78,7 +78,7 @@ function isSubagentRuntimeStatusTail(after: string): boolean {
   if (/^运行中\s*$/u.test(tail)) {
     return true;
   }
-  if (/^等待/u.test(tail)) {
+  if (tail.startsWith("等待")) {
     return true;
   }
   if (/^已完成\s*$/u.test(tail)) {

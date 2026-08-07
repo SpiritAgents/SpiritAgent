@@ -172,7 +172,7 @@ export function registerSpiritShikiPlusMonacoThemes(): void {
   monaco.editor.defineTheme(SPIRIT_MONACO_SHIKI_DARK, {
     ...darkBase,
     colors: {
-      ...(darkBase.colors ?? {}),
+      ...darkBase.colors,
       ...buildSpiritDarkChromeColors(darkSurface),
     },
   });
@@ -183,7 +183,7 @@ export function registerSpiritShikiPlusMonacoThemes(): void {
   monaco.editor.defineTheme(SPIRIT_MONACO_SHIKI_LIGHT, {
     ...lightBase,
     colors: {
-      ...(lightBase.colors ?? {}),
+      ...lightBase.colors,
       ...buildSpiritLightChromeColors(lightSurface),
     },
   });

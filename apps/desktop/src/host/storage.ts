@@ -27,9 +27,7 @@ import {
   parseModelProviderId,
   parseModelRef,
   SPIRIT_CONFIG_SCHEMA_VERSION,
-  SpiritConfigSchemaError,
   type ExtensionManagementContext,
-  type ExtensionSettingValue,
   type ExtensionStateStore,
   loadHostInstructionMetadata,
   type HostInstructionMetadataSummary,
@@ -46,7 +44,6 @@ import { normalizeContextUsageSnapshot } from "../lib/context-usage.js";
 import { parseModelContextLength } from "../lib/model-context-length.js";
 
 import type {
-  ConversationMessageSnapshot,
   DesktopModelCapability,
   DesktopModelProvider,
   DesktopModelReasoningEffort,

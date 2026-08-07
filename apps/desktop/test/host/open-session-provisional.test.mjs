@@ -60,7 +60,7 @@ function createOpenSessionContext(overrides = {}) {
 test("openSessionCommand creates split provisional bundle when path is not on disk", async () => {
   const { splitPath, ctx, registry } = createOpenSessionContext();
   registry.findBySessionPath = () => undefined;
-  registry.beginSplitPaneSession = (workspaceRoot, paneId) => {
+  registry.beginSplitPaneSession = (workspaceRoot, _paneId) => {
     const bundle = {
       id: splitPath,
       workspaceRoot,

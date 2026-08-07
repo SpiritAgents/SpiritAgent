@@ -1,5 +1,4 @@
 import { Buffer } from "node:buffer";
-import type { ReadStream } from "node:tty";
 
 import type {
   JsonRpcErrorResponse,

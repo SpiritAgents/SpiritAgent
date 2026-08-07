@@ -74,7 +74,7 @@ setDesktopWebHostRuntimeStatus({
 });
 
 if (!webHostConfig.authTokenHash) {
-  console.log(`Spirit desktop web pairing code: ${pairingCode}`);
+  console.warn(`Spirit desktop web pairing code: ${pairingCode}`);
 }
 
 for (const signal of ["SIGINT", "SIGTERM"] as const) {

@@ -1366,7 +1366,7 @@ export class StreamingToolRoundTransport implements LlmTransport<undefined, Scri
 
   async startToolAgentRoundStreaming(
     _config: undefined,
-    state: ScriptedState,
+    _state: ScriptedState,
     _tools: JsonValue,
   ): Promise<StartedToolAgentRound<ScriptedState>> {
     return {

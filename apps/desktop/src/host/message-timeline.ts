@@ -1745,7 +1745,7 @@ export class DesktopMessageTimeline {
     if (messageOrderDebugLevel() === "off") {
       return;
     }
-    console.log(
+    console.warn(
       `[desktop-host][timeline] complete-text ${reused ? "reuse" : "create"} turn=${segment.turnId} segment=${segment.segmentId} msg=${row.messageId} text≈${truncateOneLineForDebug(content, 48)}`,
     );
   }
@@ -1759,7 +1759,7 @@ export class DesktopMessageTimeline {
     if (messageOrderDebugLevel() === "off") {
       return;
     }
-    console.log(
+    console.warn(
       `[desktop-host][timeline] strip-segment-aux kind=${kind} turn=${segment.turnId} segment=${segment.segmentId} cleared=${cleared.join(",") || "∅"} final≈${truncateOneLineForDebug(text, 48)}`,
     );
   }
@@ -1794,7 +1794,7 @@ export class DesktopMessageTimeline {
       }
     }
 
-    console.log(
+    console.warn(
       `[desktop-host][timeline] segment-rows stage=${stage} turn=${segment.turnId} segment=${segment.segmentId} rows=${rows || "∅"}`,
     );
     this.lastSegmentRowsLogSignature = signature;

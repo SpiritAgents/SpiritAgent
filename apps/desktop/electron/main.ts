@@ -16,8 +16,6 @@ import {
   nativeTheme,
   net,
   shell,
-  webContents,
-  type WebContents,
 } from "electron";
 
 import { detectSupportedImageFile } from "@spiritagent/host-internal/image-file-support";
@@ -1240,7 +1238,7 @@ if (gotSpiritSingleInstanceLock) {
     );
 
     ipcMain.handle("desktop:sync-language", async (_event, lang: string) => {
-      console.log("[spirit-desktop] language synced:", lang);
+      console.warn("[spirit-desktop] language synced:", lang);
       try {
         await i18nHost.changeLanguage(lang);
       } catch {

@@ -191,7 +191,7 @@ async function runGit(
     };
   } catch (error) {
     const message = renderGitError(error);
-    throw new Error(`git ${args.join(" ")} failed: ${message}`);
+    throw new Error(`git ${args.join(" ")} failed: ${message}`, { cause: error });
   }
 }
 
@@ -283,7 +283,7 @@ export async function checkoutGitBranch(
     if (!options.discardLocalChanges && isGitCheckoutBlockedByLocalChanges(message)) {
       throw new GitCheckoutBlockedError(message);
     }
-    throw new Error(`git ${args.join(" ")} failed: ${message}`);
+    throw new Error(`git ${args.join(" ")} failed: ${message}`, { cause: error });
   }
 }
 
@@ -859,8 +859,8 @@ export async function mergeSpiritBranchToMain(repoRoot: string, branchName: stri
       } catch {
         // best effort
       }
-      throw new Error(`Merge failed due to conflicts: ${message}`);
+      throw new Error(`Merge failed due to conflicts: ${message}`, { cause: error });
     }
-    throw new Error(`git merge ${normalizedBranch} failed: ${message}`);
+    throw new Error(`git merge ${normalizedBranch} failed: ${message}`, { cause: error });
   }
 }

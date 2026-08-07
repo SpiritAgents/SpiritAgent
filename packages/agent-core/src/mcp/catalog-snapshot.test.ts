@@ -7,7 +7,7 @@ import {
   MCP_CATALOG_RESOURCE_LIMIT,
 } from "./catalog-snapshot.js";
 import { McpRegistry } from "./registry.js";
-import type { McpToolIndexEntry, ResolvedMcpServerConfig } from "./types.js";
+import type { ResolvedMcpServerConfig } from "./types.js";
 
 test("aggregateListedResourcesForServer merges mimeTypes by uri", () => {
   const entries = aggregateListedResourcesForServer("demo", [

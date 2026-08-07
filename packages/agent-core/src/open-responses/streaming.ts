@@ -10,7 +10,7 @@ import {
   registerPendingApplyPatchCallIds,
 } from "./apply-patch-bridge.js";
 import { resolveStreamingToolPreviewEmit } from "../tool-streaming-preview-gate.js";
-import { cloneJsonValue, isJsonObject, type ToolAgentState } from "../tool-agent.js";
+import { isJsonObject, type ToolAgentState } from "../tool-agent.js";
 import { isArkLlmVendor } from "../ark/ark-provider.js";
 import { attachResponseIdToAssistantMessage } from "./provider-state.js";
 import type { OpenResponsesTransportConfig } from "./responses-compat.js";

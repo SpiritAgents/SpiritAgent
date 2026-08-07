@@ -49,7 +49,6 @@ import {
   buildPostSendComposerSegments,
   composerShowsAgentModeChipPlaceholder,
   composerShowsPlaceholder,
-  shouldPinAgentModeChip,
 } from "../src/lib/composer-agent-mode-policy.ts";
 
 const sampleAttachment = {

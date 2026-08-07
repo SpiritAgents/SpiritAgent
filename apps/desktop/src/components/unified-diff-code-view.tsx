@@ -1,5 +1,3 @@
-import type { TokensResult } from "shiki";
-
 import type { DiffDisplayLine } from "@/lib/diff-display-lines";
 import { renderHighlightedCodeLines } from "@/lib/spirit-message-code-highlight";
 import { cn } from "@/lib/utils";

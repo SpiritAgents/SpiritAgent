@@ -42,7 +42,7 @@ export function resolveComposerDirectMediaTool(
     modelRefsEqual(config.imageGenerationModel, activeModel);
 
   if (matchesVideoSlot && matchesImageSlot) {
-    console.debug(
+    console.warn(
       "[desktop][composer-direct-media] active model matches both image and video default slots; preferring generate_video",
       { activeModel },
     );

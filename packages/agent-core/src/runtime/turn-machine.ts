@@ -36,7 +36,7 @@ import {
   type PreToolUseGateResult,
 } from "../hooks/tool-hooks.js";
 import { toolInputFromArgumentsJson } from "../hooks/integration.js";
-import { appendToolResultMessages, isJsonObject } from "../tool-agent.js";
+import { appendToolResultMessages } from "../tool-agent.js";
 import { prepareStateForContextRetryAsync } from "./compaction.js";
 import { syncPreparedToolResultContentToHistory } from "./tool-execution.js";
 import { buildEarlyExecutableArgumentsJson } from "../tool-streaming-preview-gate.js";
@@ -81,7 +81,7 @@ export type EarlyInternalToolCallResult =
     }
   | { kind: "defer-to-formal" };
 
-export interface InternalToolCallRuntime<Config, State, ToolRequest, TrustTarget = string> {
+export interface InternalToolCallRuntime<_Config, State, ToolRequest, TrustTarget = string> {
   maybeExecuteInternalToolCall?: (
     pendingUserInput: string,
     state: State,

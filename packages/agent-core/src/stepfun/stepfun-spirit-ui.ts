@@ -40,9 +40,10 @@ export function buildStepfunWebSearchToolPreviewArgumentsJson(input: {
   outputExcerpt?: string;
 }): string {
   const query = typeof input.query === "string" ? input.query.trim() : "";
-  const spiritUi = buildStepfunWebSearchSpiritUi(query, {
-    ...(input.outputExcerpt ? { outputExcerpt: input.outputExcerpt } : {}),
-  });
+  const spiritUi = buildStepfunWebSearchSpiritUi(
+    query,
+    input.outputExcerpt ? { outputExcerpt: input.outputExcerpt } : {},
+  );
   const payload: JsonObject = {
     status: input.failed ? "failed" : (input.status ?? "completed"),
     [RESPONSES_BUILT_IN_SPIRIT_UI_KEY]: spiritUi as JsonObject,

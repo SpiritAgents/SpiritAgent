@@ -217,7 +217,7 @@ export async function runCommandHook(
 
       resolve({
         record,
-        effectiveOutput: deniedByExit ? { permission: "deny", ...(parsed ?? {}) } : parsed,
+        effectiveOutput: deniedByExit ? { permission: "deny", ...parsed } : parsed,
         denied,
       });
     });

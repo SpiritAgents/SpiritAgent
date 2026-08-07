@@ -113,7 +113,7 @@ export async function requestCodeCompletionCommand(
     if (signal.aborted) {
       return { operations: [] };
     }
-    console.debug("[code-completion] request failed:", error);
+    console.warn("[code-completion] request failed:", error);
     return { operations: [] };
   } finally {
     endCompletionRequest(context.workspaceRoot, signal);

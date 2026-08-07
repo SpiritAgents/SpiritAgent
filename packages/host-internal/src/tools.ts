@@ -1421,7 +1421,7 @@ export class NodeHostToolService<
       if (error instanceof Error && error.message.includes(trimmed)) {
         throw error;
       }
-      throw new Error(`Spirit 托管${assetLabel}不存在: ${trimmed}`);
+      throw new Error(`Spirit 托管${assetLabel}不存在: ${trimmed}`, { cause: error });
     }
   }
 
@@ -1521,7 +1521,7 @@ export class NodeHostToolService<
       if (error instanceof Error && error.message.includes(errorPath)) {
         throw error;
       }
-      throw new Error(`读取文件失败: ${errorPath}`);
+      throw new Error(`读取文件失败: ${errorPath}`, { cause: error });
     }
 
     const image = detectSupportedImageFile(canonical, bytes);
@@ -2042,7 +2042,7 @@ export class NodeHostToolService<
       await this.fileChangeObserver.recordFileChange(change);
     } catch (error) {
       const message = error instanceof Error ? error.message : String(error);
-      throw new Error(`文件变更已写入，但记录回溯快照失败: ${message}`);
+      throw new Error(`文件变更已写入，但记录回溯快照失败: ${message}`, { cause: error });
     }
   }
 

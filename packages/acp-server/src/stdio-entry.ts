@@ -48,7 +48,11 @@ async function main(): Promise<void> {
   const input = Readable.toWeb(process.stdin) as ReadableStream<Uint8Array>;
   const stream = acp.ndJsonStream(output, input);
 
-  new acp.AgentSideConnection((conn) => new SpiritAcpAgent(conn, config, authState), stream);
+  const connection = new acp.AgentSideConnection(
+    (conn) => new SpiritAcpAgent(conn, config, authState),
+    stream,
+  );
+  void connection;
 }
 
 main().catch((err) => {

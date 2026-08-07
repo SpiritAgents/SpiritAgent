@@ -2,7 +2,7 @@ import assert from "node:assert/strict";
 import test from "node:test";
 import type { TextStreamPart } from "ai";
 
-import type { JsonValue, ToolAgentRoundCompletion } from "../ports.js";
+import type { ToolAgentRoundCompletion } from "../ports.js";
 import { extractLastAssistantText, isJsonObject, type ToolAgentState } from "../tool-agent.js";
 import {
   parseResponsesBuiltInToolUiFromArgumentsJson,

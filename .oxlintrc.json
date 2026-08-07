@@ -20,8 +20,24 @@
         "caughtErrorsIgnorePattern": "^_"
       }
     ],
+    "react/react-in-jsx-scope": "off",
     "react-hooks/rules-of-hooks": "error",
-    "react-hooks/exhaustive-deps": "warn"
+    "react-hooks/exhaustive-deps": "off",
+    "eslint/no-underscore-dangle": [
+      "warn",
+      {
+        "allow": ["__dirname", "__filename", "__payload", "_exhaustive", "_event", "__key", "__typename", "_spiritUi", "__hostMeta"]
+      }
+    ],
+    "import/no-named-as-default-member": "off",
+    "import/no-unassigned-import": "off",
+    "import/default": "off",
+    "eslint/preserve-caught-error": "off",
+    "unicorn/no-array-sort": "off",
+    "unicorn/no-array-reverse": "off",
+    "unicorn/consistent-function-scoping": "off",
+    "unicorn/prefer-add-event-listener": "off",
+    "eslint/no-shadow": "off"
   },
   "ignorePatterns": [
     "**/dist/**",
@@ -30,5 +46,19 @@
     "**/target/**",
     "apps/desktop/release/**",
     "scripts/**"
+  ],
+  "overrides": [
+    {
+      "files": [
+        "**/smoke/**",
+        "**/eval/**",
+        "**/scripts/**",
+        "packages/server/src/cli.ts",
+        "packages/acp-server/src/stdio-entry.ts"
+      ],
+      "rules": {
+        "no-console": "off"
+      }
+    }
   ]
 }

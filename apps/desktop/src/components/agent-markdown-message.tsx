@@ -10,8 +10,6 @@ import {
 import { Block, parseMarkdownIntoBlocks, type BlockProps } from "streamdown";
 import type { Pluggable } from "unified";
 
-import type { ReadManagedImagePreviewDataUrl } from "@/components/markdown-image";
-import type { ReadManagedVideoPreviewUrl } from "@/components/markdown-video";
 import { usePrefersReducedMotion } from "@/hooks/use-prefers-reduced-motion";
 import type { MarkdownTone } from "@/lib/markdown-message-components";
 import {
@@ -30,7 +28,7 @@ const streamingAnimateOptions = {
 
 function isAnimateRehypePlugin(entry: Pluggable): boolean {
   const fn = Array.isArray(entry) ? entry[0] : entry;
-  return typeof fn === "function" && /^rehypeAnimate/.test(fn.name ?? "");
+  return typeof fn === "function" && (fn.name ?? "").startsWith("rehypeAnimate");
 }
 
 type StreamBlockAnimateContextValue = {

@@ -269,9 +269,11 @@ export async function createAcpRuntime(
       : {}),
     syncSessionTranscript: async ({ transcript, sessionKey: key }) => {
       const resolvedKey = key ?? sessionKey;
-      return persistSessionTranscript(spiritDataDir, transcript, {
-        ...(resolvedKey !== undefined ? { sessionKey: resolvedKey } : {}),
-      });
+      return persistSessionTranscript(
+        spiritDataDir,
+        transcript,
+        resolvedKey !== undefined ? { sessionKey: resolvedKey } : {},
+      );
     },
     syncSubagentTranscript: async ({ transcript, sessionKey: key, subagentSessionId }) => {
       const resolvedKey = key ?? sessionKey;

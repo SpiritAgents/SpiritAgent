@@ -729,6 +729,27 @@ function TooltipTrigger({
     (): TooltipSwitchItem => itemProp ?? { id: autoId },
     [autoId, itemProp],
   );
+  const triggerElementRef = React.useRef<HTMLElement | null>(null);
+
+  React.useLayoutEffect(() => {
+    if (!global || !registration) {
+      return;
+    }
+    const { registrationId, getItemId } = registration;
+    const itemId = getItemId(switchItem);
+    const anchorIsActive = global.isAnchorSlot(registrationId, itemId);
+    if (!anchorIsActive) {
+      return;
+    }
+    const anchor =
+      triggerElementRef.current?.isConnected === true
+        ? triggerElementRef.current
+        : resolveConnectedOpenTooltipTrigger();
+    if (anchor) {
+      triggerElementRef.current = anchor;
+      global.registerActiveAnchorElement(anchor);
+    }
+  }, [global, registration, switchItem, global?.open]);
 
   if (!global || !registration) {
     return (
@@ -747,21 +768,6 @@ function TooltipTrigger({
   );
   const itemId = getItemId(switchItem);
   const isAnchor = global.isAnchorSlot(registrationId, itemId);
-  const triggerElementRef = React.useRef<HTMLElement | null>(null);
-
-  React.useLayoutEffect(() => {
-    if (!isAnchor) {
-      return;
-    }
-    const anchor =
-      triggerElementRef.current?.isConnected === true
-        ? triggerElementRef.current
-        : resolveConnectedOpenTooltipTrigger();
-    if (anchor) {
-      triggerElementRef.current = anchor;
-      global.registerActiveAnchorElement(anchor);
-    }
-  }, [global, isAnchor, registrationId, global.open]);
 
   const attachTriggerPointerHandlers = (child: React.ReactElement<Record<string, unknown>>) =>
     React.cloneElement(child, {

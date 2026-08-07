@@ -89,7 +89,7 @@ export function DesktopLayoutChromeBar({
   onClosePane,
   paneId,
   onPaneDragStart,
-  onPaneDragEnter,
+  onPaneDragEnter: _onPaneDragEnter,
   onPaneDragLeave,
   onPaneDrop,
   showDeleteSession = false,

@@ -256,7 +256,7 @@ export function getToolCallSummaryParts(tool: ToolBlockSnapshot): ToolCallSummar
     const tOpts = ctx ? { context: ctx } : {};
     const gatewayJson = tool.streamingArgumentsJson?.trim() || tool.argsExcerpt?.trim() || "";
     const triggerLabels = buildAutomationTriggerFormatLabels((key, opts) =>
-      i18n.t(key, { ...(opts ?? {}), ...(ctx ? { context: ctx } : {}) }),
+      i18n.t(key, { ...opts, ...(ctx ? { context: ctx } : {}) }),
     );
     const parts = builtInCreateAutomationToolCallSummaryParts({
       gatewayJson: gatewayJson || undefined,

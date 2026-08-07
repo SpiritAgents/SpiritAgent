@@ -480,7 +480,7 @@ function emitResponsesBuiltInToolPreview(
     `provider-${toolName}-${state.nextPreviewIndex}`;
 
   const mergedItem: JsonObject = {
-    ...(state.items.get(callId)?.item ?? {}),
+    ...state.items.get(callId)?.item,
     ...item,
     id: callId,
     type: responsesBuiltInOutputItemTypeForToolName(toolName),
@@ -537,7 +537,7 @@ export function accumulateResponsesBuiltInToolPreviewsFromRawChunk(
     }
     const existing = state.items.get(itemId);
     const item: JsonObject = {
-      ...(existing?.item ?? {}),
+      ...existing?.item,
       id: itemId,
       type: responsesBuiltInOutputItemTypeForToolName(lifecycle.toolName),
       status: lifecycle.status,

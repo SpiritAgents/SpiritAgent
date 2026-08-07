@@ -47,7 +47,7 @@ async function runGit(
     };
   } catch (error) {
     const message = renderGitError(error);
-    throw new Error(`git ${args.join(" ")} failed: ${message}`);
+    throw new Error(`git ${args.join(" ")} failed: ${message}`, { cause: error });
   }
 }
 

@@ -11,7 +11,7 @@ import {
 import type { ModelProviderId, ProviderModelTransportKind } from "./model-provider-presets.js";
 import { resolveProviderConnectApiBase } from "./model-provider-presets.js";
 import { assertGoogleGeminiApiBase, googleNativeModelsListUrl } from "./google-gemini-endpoints.js";
-import { bedrockApiBaseFromRegion, extractAwsRegionFromBedrockApiBase } from "./bedrock-region.js";
+import { extractAwsRegionFromBedrockApiBase } from "./bedrock-region.js";
 import { extractVertexProjectAndLocationFromApiBase } from "./google-vertex-endpoints.js";
 import { normalizeOpenAiApiBase } from "./openai-api-base.js";
 import { formatModelDisplayNameFromId } from "./model-display-name.js";
@@ -1384,18 +1384,16 @@ function readDeepInfraPricing(
 
   if (type === "image_units") {
     const imagePerUnitUsd = readDeepInfraCentsAsUsd(pricing.cents_per_image_unit);
-    return buildProviderListedModelPricing({
-      ...(imagePerUnitUsd ? { imagePerUnitUsd } : {}),
-    });
+    return buildProviderListedModelPricing(imagePerUnitUsd ? { imagePerUnitUsd } : {});
   }
 
   if (type === "output_length") {
     const costPerSecondUsd = readDeepInfraCentsAsUsd(pricing.cents_per_output_sec);
-    return buildProviderListedModelPricing({
-      ...(costPerSecondUsd
+    return buildProviderListedModelPricing(
+      costPerSecondUsd
         ? { videoDurationPricing: [{ resolution: "default", costPerSecondUsd }] }
-        : {}),
-    });
+        : {},
+    );
   }
 
   // 未知 pricing.type：跳过 pricing，不阻塞 catalog。
@@ -1794,7 +1792,7 @@ async function fetchHuggingFaceHubMediaModelsPage(
     response = await fetch(url, init);
   } catch (cause) {
     const message = cause instanceof Error ? cause.message : String(cause);
-    throw new Error(`列模型请求失败：${message}`);
+    throw new Error(`列模型请求失败：${message}`, { cause: cause });
   }
 
   const text = await response.text();
@@ -2518,7 +2516,7 @@ async function fetchModelsListJson(url: string, init: RequestInit): Promise<unkn
     response = await fetch(url, init);
   } catch (cause) {
     const message = cause instanceof Error ? cause.message : String(cause);
-    throw new Error(`列模型请求失败：${message}`);
+    throw new Error(`列模型请求失败：${message}`, { cause: cause });
   }
 
   const text = await response.text();
@@ -2602,7 +2600,7 @@ export async function listAnthropicModels(
     response = await fetch(url, init);
   } catch (cause) {
     const message = cause instanceof Error ? cause.message : String(cause);
-    throw new Error(`列模型请求失败：${message}`);
+    throw new Error(`列模型请求失败：${message}`, { cause: cause });
   }
 
   const text = await response.text();
@@ -2804,7 +2802,7 @@ export async function listGoogleVertexProviderModels(
     });
   } catch (error) {
     const message = error instanceof Error ? error.message : String(error);
-    throw new Error(`列模型失败（Google Vertex AI）：${message}`);
+    throw new Error(`列模型失败（Google Vertex AI）：${message}`, { cause: error });
   }
 }
 
@@ -2830,7 +2828,7 @@ export async function listBedrockProviderModels(
     });
   } catch (error) {
     const message = error instanceof Error ? error.message : String(error);
-    throw new Error(`列模型失败（Amazon Bedrock）：${message}`);
+    throw new Error(`列模型失败（Amazon Bedrock）：${message}`, { cause: error });
   }
 }
 

@@ -208,7 +208,7 @@ export class DesktopConversationSnapshotView {
       return;
     }
     this.lastStandalonePendingAuxSnapshotLogSignature = signature;
-    console.log(
+    console.warn(
       `[desktop-host][snapshot] standalone-subagent-status source=${standalonePendingAux.source} msg=${standalonePendingAux.message.id} insert=${standalonePendingAux.insertAt} anchorMsg=${standalonePendingAux.anchorMessageId ?? "∅"} anchorIdx=${standalonePendingAux.anchorResolvedIndex ?? "∅"} status≈${status}${standalonePendingAux.message.content.length > 48 ? "…" : ""} tail=${tail}`,
     );
   }

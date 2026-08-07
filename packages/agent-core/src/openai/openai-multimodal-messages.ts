@@ -1,5 +1,5 @@
 import { readFileSync } from "node:fs";
-import { extname, resolve } from "node:path";
+import { extname } from "node:path";
 
 import {
   cloneLlmProviderState,

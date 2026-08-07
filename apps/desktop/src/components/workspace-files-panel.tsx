@@ -214,7 +214,7 @@ function ExplorerRow({
   renaming,
   renameValue,
   renameError,
-  onRenameStart,
+  onRenameStart: _onRenameStart,
   onRenameValueChange,
   onRenameCommit,
   onRenameCancel,

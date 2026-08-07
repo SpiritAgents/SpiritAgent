@@ -14,7 +14,7 @@ export async function runRuntimeParitySmoke(): Promise<void> {
   const approval = await runApprovalCase();
   const compaction = await runCompactionCase();
   const background = await runBackgroundCase();
-  const subagent = await runSubagentCase();
+  await runSubagentCase();
   const generateImage = await runGenerateImageCase();
   const generateVideo = await runGenerateVideoCase();
   const manualTools = await runManualToolsCase();

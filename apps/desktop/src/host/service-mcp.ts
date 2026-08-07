@@ -40,7 +40,7 @@ export function disposeMcpServicesExcept(
   keepWorkspaceRoot?: string,
 ): void {
   const keepPrefix = keepWorkspaceRoot ? `${path.resolve(keepWorkspaceRoot)}|` : undefined;
-  for (const key of [...cache.keys()]) {
+  for (const key of cache.keys()) {
     if (keepPrefix !== undefined && key.startsWith(keepPrefix)) {
       continue;
     }

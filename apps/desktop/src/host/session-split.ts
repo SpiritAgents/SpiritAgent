@@ -152,7 +152,6 @@ async function registerVisiblePaneSessions(
   normalized: readonly string[],
 ): Promise<void> {
   const state = ctx.requireState();
-  const registry = ctx.sessionRegistry();
 
   ctx.setVisiblePaneSessionPaths(normalized);
 

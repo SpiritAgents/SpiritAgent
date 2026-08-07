@@ -5,10 +5,8 @@ import { cloneJsonValue, isJsonObject } from "../tool-agent.js";
 import {
   APPLY_PATCH_HOST_TOOL_NAME,
   type ApplyPatchOperation,
-  buildApplyPatchFunctionToolDefinition,
   buildApplyPatchResponsesFunctionToolDefinition,
   hasApplyPatchToolInResponsesTools,
-  isApplyPatchFunctionToolDefinition,
   shouldUseApplyPatchFileTools,
   shouldUseApplyPatchFunctionTool,
   shouldUseBuiltInApplyPatchRequestItems,

@@ -1,5 +1,4 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { useTranslation } from "react-i18next";
 import { buildSingleTextQuestionNotificationReplyResult } from "@/lib/ask-questions-notification-reply";
 import {
   resolvePendingApprovalSessionPath,
@@ -92,12 +91,9 @@ import type {
   SubmitGitChipRequest,
   SubmitUserTurnRequest,
   AbortConversationRequest,
-  BeginSplitPaneSessionRequest,
   BeginSplitPaneSessionResponse,
   BeginSideChatPaneSessionResponse,
   ForkSessionIntoSideChatRequest,
-  SetVisiblePaneSessionsRequest,
-  CloseSplitPaneSessionRequest,
   UpdateConfigRequest,
   WorkspaceExplorerListResult,
   WorkspaceFileReferenceSuggestionsResponse,
@@ -105,7 +101,6 @@ import type {
   WorkspaceReadTextFileResult,
   WriteHostTextFileRequest,
   WriteWorkspaceTextFileRequest,
-  DesktopModelProvider,
   GitHistorySnapshot,
   GitCommitMessageSnapshot,
   GitWorkingTreeSnapshot,
@@ -114,7 +109,6 @@ import type {
   GetGitHubPullRequestDetailRequest,
   GetGitHubPullRequestTabCountsRequest,
   ListGitHubPullRequestsRequest,
-  SearchGitHubAutomationRepositoriesRequest,
   MergeGitHubPullRequestRequest,
   ApprovalLevel,
   LocalFileComposerRoute,
@@ -1443,7 +1437,10 @@ export function useDesktopRuntime() {
 
     void (async () => {
       try {
-        while (!cancelled) {
+        while (true) {
+          if (cancelled) {
+            break;
+          }
           const pollRequest = webPollRequestForSnapshot(
             api.kind,
             snapshotRef.current,
@@ -1708,7 +1705,7 @@ export function useDesktopRuntime() {
       } catch (error) {
         const message = describeError(error);
         setRuntimeError(message);
-        throw new Error(message);
+        throw new Error(message, { cause: error });
       } finally {
         setBusyAction("");
       }
@@ -1730,7 +1727,7 @@ export function useDesktopRuntime() {
       } catch (error) {
         const message = describeError(error);
         setRuntimeError(message);
-        throw new Error(message);
+        throw new Error(message, { cause: error });
       } finally {
         setBusyAction("");
       }
@@ -1750,7 +1747,7 @@ export function useDesktopRuntime() {
       } catch (error) {
         const message = describeError(error);
         setRuntimeError(message);
-        throw new Error(message);
+        throw new Error(message, { cause: error });
       } finally {
         setBusyAction("");
       }
@@ -1772,7 +1769,7 @@ export function useDesktopRuntime() {
       } catch (error) {
         const message = describeError(error);
         setRuntimeError(message);
-        throw new Error(message);
+        throw new Error(message, { cause: error });
       } finally {
         setBusyAction("");
       }
@@ -1794,7 +1791,7 @@ export function useDesktopRuntime() {
       } catch (error) {
         const message = describeError(error);
         setRuntimeError(message);
-        throw new Error(message);
+        throw new Error(message, { cause: error });
       } finally {
         setBusyAction("");
       }
@@ -1816,7 +1813,7 @@ export function useDesktopRuntime() {
       } catch (error) {
         const message = describeError(error);
         setRuntimeError(message);
-        throw new Error(message);
+        throw new Error(message, { cause: error });
       } finally {
         setBusyAction("");
       }
@@ -1838,7 +1835,7 @@ export function useDesktopRuntime() {
       } catch (error) {
         const message = describeError(error);
         setRuntimeError(message);
-        throw new Error(message);
+        throw new Error(message, { cause: error });
       } finally {
         setBusyAction("");
       }
@@ -1860,7 +1857,7 @@ export function useDesktopRuntime() {
       } catch (error) {
         const message = describeError(error);
         setRuntimeError(message);
-        throw new Error(message);
+        throw new Error(message, { cause: error });
       } finally {
         setBusyAction("");
       }
@@ -1882,7 +1879,7 @@ export function useDesktopRuntime() {
       } catch (error) {
         const message = describeError(error);
         setRuntimeError(message);
-        throw new Error(message);
+        throw new Error(message, { cause: error });
       } finally {
         setBusyAction("");
       }
@@ -1904,7 +1901,7 @@ export function useDesktopRuntime() {
       } catch (error) {
         const message = describeError(error);
         setRuntimeError(message);
-        throw new Error(message);
+        throw new Error(message, { cause: error });
       } finally {
         setBusyAction("");
       }
@@ -1926,7 +1923,7 @@ export function useDesktopRuntime() {
       } catch (error) {
         const message = describeError(error);
         setRuntimeError(message);
-        throw new Error(message);
+        throw new Error(message, { cause: error });
       } finally {
         setBusyAction("");
       }
@@ -1948,7 +1945,7 @@ export function useDesktopRuntime() {
       } catch (error) {
         const message = describeError(error);
         setRuntimeError(message);
-        throw new Error(message);
+        throw new Error(message, { cause: error });
       } finally {
         setBusyAction("");
       }
@@ -1970,7 +1967,7 @@ export function useDesktopRuntime() {
       } catch (error) {
         const message = describeError(error);
         setRuntimeError(message);
-        throw new Error(message);
+        throw new Error(message, { cause: error });
       } finally {
         setBusyAction("");
       }
@@ -2002,7 +1999,7 @@ export function useDesktopRuntime() {
       } catch (error) {
         const message = describeError(error);
         setRuntimeError(message);
-        throw new Error(message);
+        throw new Error(message, { cause: error });
       } finally {
         setBusyAction("");
       }
@@ -2025,7 +2022,7 @@ export function useDesktopRuntime() {
     } catch (error) {
       const message = describeError(error);
       setRuntimeError(message);
-      throw new Error(message);
+      throw new Error(message, { cause: error });
     } finally {
       setBusyAction("");
     }
@@ -2045,7 +2042,7 @@ export function useDesktopRuntime() {
       } catch (error) {
         const message = describeError(error);
         setRuntimeError(message);
-        throw new Error(message);
+        throw new Error(message, { cause: error });
       } finally {
         setBusyAction("");
       }
@@ -2067,7 +2064,7 @@ export function useDesktopRuntime() {
       } catch (error) {
         const message = describeError(error);
         setRuntimeError(message);
-        throw new Error(message);
+        throw new Error(message, { cause: error });
       } finally {
         setBusyAction("");
       }
@@ -2091,7 +2088,7 @@ export function useDesktopRuntime() {
       } catch (error) {
         const message = describeError(error);
         setRuntimeError(message);
-        throw new Error(message);
+        throw new Error(message, { cause: error });
       } finally {
         setBusyAction("");
       }
@@ -2113,7 +2110,7 @@ export function useDesktopRuntime() {
       } catch (error) {
         const message = describeError(error);
         setRuntimeError(message);
-        throw new Error(message);
+        throw new Error(message, { cause: error });
       } finally {
         setBusyAction("");
       }
@@ -2135,7 +2132,7 @@ export function useDesktopRuntime() {
       } catch (error) {
         const message = describeError(error);
         setRuntimeError(message);
-        throw new Error(message);
+        throw new Error(message, { cause: error });
       } finally {
         setBusyAction("");
       }
@@ -2157,7 +2154,7 @@ export function useDesktopRuntime() {
       } catch (error) {
         const message = describeError(error);
         setRuntimeError(message);
-        throw new Error(message);
+        throw new Error(message, { cause: error });
       } finally {
         setBusyAction("");
       }
@@ -2179,7 +2176,7 @@ export function useDesktopRuntime() {
       } catch (error) {
         const message = describeError(error);
         setRuntimeError(message);
-        throw new Error(message);
+        throw new Error(message, { cause: error });
       } finally {
         setBusyAction("");
       }
@@ -2201,7 +2198,7 @@ export function useDesktopRuntime() {
       } catch (error) {
         const message = describeError(error);
         setRuntimeError(message);
-        throw new Error(message);
+        throw new Error(message, { cause: error });
       } finally {
         setBusyAction("");
       }

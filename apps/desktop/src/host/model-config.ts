@@ -62,11 +62,7 @@ import {
   resolveComposerDirectMediaTool,
   type DirectMediaTool,
 } from "../lib/composer-direct-media.js";
-import {
-  DEFAULT_API_BASE,
-  defaultCustomModelCapabilities,
-  type DesktopConfigFile,
-} from "./storage.js";
+import { DEFAULT_API_BASE, defaultCustomModelCapabilities } from "./storage.js";
 
 export { resolveComposerDirectMediaTool, type DirectMediaTool };
 

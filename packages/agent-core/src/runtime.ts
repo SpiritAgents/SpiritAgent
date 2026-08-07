@@ -1,5 +1,3 @@
-import { setImmediate as waitForImmediate } from "node:timers/promises";
-
 import type {
   AskQuestionsResult,
   SubagentRequest,
@@ -27,7 +25,7 @@ import {
   llmMessageTextContent,
   normalizeStoredLlmMessage,
 } from "./ports.js";
-import { STREAM_EVENT_BUDGET_PER_POLL, STREAM_STALL_TIMEOUT_MS } from "./runtime/constants.js";
+import { STREAM_STALL_TIMEOUT_MS } from "./runtime/constants.js";
 import {
   buildToolContinuationStateFromHistory,
   cloneHistory,
@@ -35,8 +33,6 @@ import {
   enqueueDeferredToolOutputGuidance,
   enqueueDeferredUserGuidance,
   hasUnansweredAssistantToolCalls,
-  formatPendingMcpResourceContext,
-  formatPendingWorkspaceFileContext,
   pendingMcpResourceFromReadResult,
   promptMessagesFromValue,
   renderError,
@@ -44,9 +40,7 @@ import {
   repairMissingToolResultsInHistory,
   shortLabelForPendingMcpResource,
   toolArtifactsFromOutput,
-  toolNameFromRequest,
 } from "./runtime/helpers.js";
-import { formatUserMessageContentForLlm } from "./runtime/user-turn-timestamp.js";
 import type { ToolAgentActiveSkill } from "./tool-agent.js";
 import { prependSubagentWorktreeMeta } from "./runtime/subagent-worktree-meta.js";
 import { buildParentSubagentToolResultText } from "./runtime/subagent-parent-tool-result.js";
@@ -54,7 +48,6 @@ import { scopeAgentRuntimeOptionsForSubagentWorkspace } from "./runtime/subagent
 import { prepareSubmittedUserTurn as prepareSubmittedUserTurnInternal } from "./runtime/context.js";
 import {
   appendHookAdditionalContexts,
-  HookDeniedError,
   resolveHookRunner,
   resolveHookSessionContext,
   SubmitPromptHookDeniedError,
@@ -112,21 +105,17 @@ import { prepareAndSyncRuntimeToolResultToHistory } from "./runtime/tool-output-
 import type {
   AgentRuntimeOptions,
   AssistantAuxKind,
-  PendingAutoHistoryCompaction,
   PendingAssistantAux,
   PendingEarlyToolExecution,
   PendingApprovalState,
   PendingBackgroundToolExecution,
   PendingHistoryCompaction,
   PendingQuestionsState,
-  PendingManualBackgroundToolExecution,
-  PendingManualHistoryCompaction,
   PendingMcpResource,
   PendingWorkspaceFile,
   PendingManualApprovalState,
   PendingStreamingRound,
   PendingToolCallContinuation,
-  PendingToolCallBackgroundToolExecution,
   DeferredBackgroundToolExecutionSpec,
   PendingToolAgentRound,
   RuntimeApprovalDecision,
@@ -192,7 +181,7 @@ interface PendingSubagentExecution<Config, State, ToolRequest, TrustTarget> {
   streamingEmitBeginResponse: boolean;
 }
 
-interface PendingSubagentWorktreeBootstrap<State, ToolRequest, TrustTarget> {
+interface PendingSubagentWorktreeBootstrap<State, ToolRequest, _TrustTarget> {
   parentRequest: ToolRequest;
   parentToolCallId: string;
   parentPendingUserInput: string;
@@ -2716,7 +2705,7 @@ export class AgentRuntime<Config, State, ToolRequest, TrustTarget = string> {
 
   private async tryPerformEarlyInternalToolCall(
     request: ToolRequest,
-    toolCallId: string,
+    _toolCallId: string,
     _toolName: string,
   ): Promise<EarlyInternalToolCallResult | undefined> {
     if (extractFinishTaskSummary(request) !== undefined) {
@@ -3317,9 +3306,7 @@ export class AgentRuntime<Config, State, ToolRequest, TrustTarget = string> {
       return;
     }
 
-    for (const [parentToolCallId, pending] of [
-      ...this.pendingSubagentWorktreeBootstraps.entries(),
-    ]) {
+    for (const [parentToolCallId, pending] of this.pendingSubagentWorktreeBootstraps.entries()) {
       this.pendingSubagentWorktreeBootstraps.delete(parentToolCallId);
       try {
         await this.completePendingSubagentWorktreeBootstrap(pending);
@@ -3493,7 +3480,7 @@ export class AgentRuntime<Config, State, ToolRequest, TrustTarget = string> {
       return;
     }
 
-    for (const pending of [...this.pendingSubagentExecutions.values()]) {
+    for (const pending of this.pendingSubagentExecutions.values()) {
       await pending.childRuntime.poll();
       // 不在此处 drain：子会话事件由 desktop syncSubagentConversationProjections 消费。
       this.refreshChildSessionRecord(pending.childRecord, pending.childRuntime);

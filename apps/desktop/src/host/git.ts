@@ -51,7 +51,9 @@ async function runGit(
     };
   } catch (error) {
     const message = renderGitError(error);
-    throw new Error(i18n.t("error.gitCommandFailed", { command: args.join(" "), message }));
+    throw new Error(i18n.t("error.gitCommandFailed", { command: args.join(" "), message }), {
+      cause: error,
+    });
   }
 }
 
@@ -178,7 +180,9 @@ export async function pushWorkspaceGitBranch(workspaceRoot: string): Promise<voi
     await pushGitBranchInternal(workspaceRoot);
   } catch (error) {
     const message = error instanceof Error ? error.message : String(error);
-    throw new Error(message.replace(/^git push .* failed: /u, i18n.t("error.gitPushFailed")));
+    throw new Error(message.replace(/^git push .* failed: /u, i18n.t("error.gitPushFailed")), {
+      cause: error,
+    });
   }
 }
 
@@ -190,7 +194,9 @@ export async function mergeWorktreeBranchToMain(
     await mergeSpiritBranchToMainInternal(primaryRepoRoot, branchName);
   } catch (error) {
     const message = error instanceof Error ? error.message : String(error);
-    throw new Error(message.replace(/^git merge .* failed: /u, i18n.t("error.gitMergeFailed")));
+    throw new Error(message.replace(/^git merge .* failed: /u, i18n.t("error.gitMergeFailed")), {
+      cause: error,
+    });
   }
 }
 
@@ -216,6 +222,7 @@ export async function checkoutWorkspaceGitBranch(
     const message = error instanceof Error ? error.message : String(error);
     throw new Error(
       message.replace(/^git checkout .* failed: /u, i18n.t("error.gitCheckoutFailed")),
+      { cause: error },
     );
   }
   return readWorkspaceGitSnapshot(workspaceRoot);

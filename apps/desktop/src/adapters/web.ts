@@ -4,7 +4,6 @@ import type {
   AddModelRequest,
   AddMcpServerRequest,
   AddProviderModelsRequest,
-  AskQuestionsResult,
   BootstrapRequest,
   CommitChangesRequest,
   GitHistorySnapshot,
@@ -113,7 +112,7 @@ export function createWebHostApi(): HostApi {
     bootstrap(request?: BootstrapRequest) {
       const shouldIsolate = !request?.workspaceRoot;
       return post<DesktopSnapshot>(baseUrl, "/api/bootstrap", {
-        ...(request ?? {}),
+        ...request,
         ...(shouldIsolate ? { isolateSession: true } : {}),
       }).then((snapshot) => {
         rememberWebViewingSession(snapshot);

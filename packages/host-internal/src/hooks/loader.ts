@@ -50,7 +50,7 @@ export function loadHooksConfigFileForMutation(configPath: string): HooksConfigF
     return parseHooksConfigFile(JSON.parse(content) as unknown);
   } catch (error) {
     const detail = error instanceof Error ? error.message : String(error);
-    throw new Error(`Cannot modify hooks config at ${configPath}: ${detail}`);
+    throw new Error(`Cannot modify hooks config at ${configPath}: ${detail}`, { cause: error });
   }
 }
 

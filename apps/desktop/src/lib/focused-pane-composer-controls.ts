@@ -1,5 +1,3 @@
-import type { MutableRefObject } from "react";
-
 export type FocusedPaneComposerControls = {
   focusComposer: () => void;
   setComposerText: (text: string) => void;

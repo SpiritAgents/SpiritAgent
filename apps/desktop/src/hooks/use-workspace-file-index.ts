@@ -47,7 +47,10 @@ export function useWorkspaceFileIndex({
 
       requestPrime();
 
-      while (!cancelled) {
+      while (true) {
+        if (cancelled) {
+          return;
+        }
         try {
           const snapshot = await getWorkspaceFileReferenceIndex();
           if (cancelled) {

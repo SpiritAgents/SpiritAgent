@@ -27,7 +27,6 @@ import { normalizePaneSessionPathKey } from "@/lib/pane-desktop-snapshot";
 import {
   busyActionBlocksConversationAbort,
   resolvePaneCanInterrupt,
-  resolvePaneCanSend,
   resolvePaneComposerBusy,
 } from "@/lib/pane-conversation-controls";
 import type { ConversationMessageSnapshot, DesktopSnapshot, PendingAssistantAux } from "@/types";
@@ -94,7 +93,7 @@ export function stabilizeConversationMessages(
     return next;
   }
   let allReused = previous.length === next.length;
-  const merged: ConversationMessageSnapshot[] = new Array(next.length);
+  const merged: ConversationMessageSnapshot[] = Array.from({ length: next.length });
   for (let index = 0; index < next.length; index += 1) {
     const prevMessage = previous[index];
     const nextMessage = next[index]!;
