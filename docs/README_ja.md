@@ -5,7 +5,7 @@
 
 # Spirit Agent
 
-**生産性を何倍にも引き上げるオープンソース AI エージェント** — ワークスペースに根ざし、実際のツールを備え、計画・実行・デリバリーまであなたと並走します。
+生産性を何倍にも引き上げるオープンソース AI エージェント。
 
 [Desktop アプリ](#desktop) · [CLI](#cli) · [Server](#server) · [ACP Server](#acp-server) · [Agent Core](#agent-core) · [開発](#開発)
 
@@ -197,7 +197,7 @@ scripts/             リリース、eval、リポジトリ自動化
 
 ## コントリビューション
 
-アーキテクチャ境界、コミット規約、agent-core 変更ガイドは [AGENTS.md](../AGENTS.md) と [`.github/copilot-instructions.md`](../.github/copilot-instructions.md) を参照。
+参加方法は [CONTRIBUTING.md](../CONTRIBUTING.md) を参照してください。アーキテクチャ境界、コミット規約、agent-core ガイドラインについては [AGENTS.md](../AGENTS.md) もお読みください。セキュリティ問題の報告は [SECURITY.md](../SECURITY.md) を参照。
 
 ## ライセンス
 

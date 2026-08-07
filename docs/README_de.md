@@ -5,7 +5,7 @@
 
 # Spirit Agent
 
-**Ein Open-Source-KI-Agent, der Ihre Produktivität vervielfacht** — verwurzelt in Ihrem Workspace, mit echten Werkzeugen ausgestattet und bereit, mit Ihnen zu planen, auszuführen und zu liefern.
+Ein Open-Source-KI-Agent, der Ihre Produktivität vervielfacht.
 
 [Desktop-App](#desktop) · [CLI](#cli) · [Server](#server) · [ACP Server](#acp-server) · [Agent Core](#agent-core) · [Entwicklung](#entwicklung)
 
@@ -197,7 +197,7 @@ scripts/             Release-, Eval- und Repo-Automatisierung
 
 ## Mitwirken
 
-Architekturgrenzen, Commit-Konventionen und agent-core-Richtlinien: [AGENTS.md](../AGENTS.md) und [`.github/copilot-instructions.md`](../.github/copilot-instructions.md).
+Einstieg über [CONTRIBUTING.md](../CONTRIBUTING.md). Architekturgrenzen, Commit-Konventionen und agent-core-Richtlinien: [AGENTS.md](../AGENTS.md). Sicherheitsprobleme: [SECURITY.md](../SECURITY.md).
 
 ## Lizenz
 

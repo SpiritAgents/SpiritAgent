@@ -5,7 +5,7 @@
 
 # Spirit Agent
 
-**一款旨在成倍提升生产力的开源 AI 智能体** — 扎根于你的工作区，配备真实工具，随时与你一起规划、执行并交付成果。
+一款开源 AI 智能体，旨在成倍提升你的生产力。
 
 [Desktop 应用](#desktop) · [CLI](#cli) · [Server](#server) · [ACP Server](#acp-server) · [Agent Core](#agent-core) · [开发](#开发)
 
@@ -197,7 +197,7 @@ scripts/             发布、eval 与仓库自动化
 
 ## 参与贡献
 
-架构边界、提交约定与 agent-core 变更指南见 [AGENTS.md](../AGENTS.md) 与 [`.github/copilot-instructions.md`](../.github/copilot-instructions.md)。
+请参阅 [CONTRIBUTING.md](../CONTRIBUTING.md) 开始参与。关于架构边界、提交约定与 agent-core 指南，另请阅读 [AGENTS.md](../AGENTS.md)。报告安全问题请参阅 [SECURITY.md](../SECURITY.md)。
 
 ## 许可证
 
