@@ -1,60 +1,60 @@
-import test from 'node:test';
-import assert from 'node:assert/strict';
+import test from "node:test";
+import assert from "node:assert/strict";
 
-import { mapPullRequestDetail, mapPullRequestSummary } from './pull-request.js';
+import { mapPullRequestDetail, mapPullRequestSummary } from "./pull-request.js";
 
-test('mapPullRequestSummary maps GitHub API payload', () => {
+test("mapPullRequestSummary maps GitHub API payload", () => {
   const summary = mapPullRequestSummary({
     number: 42,
-    title: 'Fix login bug',
-    state: 'open',
-    html_url: 'https://github.com/octocat/Hello-World/pull/42',
+    title: "Fix login bug",
+    state: "open",
+    html_url: "https://github.com/octocat/Hello-World/pull/42",
     draft: false,
-    user: { login: 'octocat' },
-    head: { ref: 'feature/login', sha: 'abc123def456' },
-    base: { ref: 'main' },
+    user: { login: "octocat" },
+    head: { ref: "feature/login", sha: "abc123def456" },
+    base: { ref: "main" },
   });
 
   assert.deepEqual(summary, {
     number: 42,
-    title: 'Fix login bug',
-    state: 'open',
-    url: 'https://github.com/octocat/Hello-World/pull/42',
-    authorLogin: 'octocat',
-    headRef: 'feature/login',
-    headSha: 'abc123def456',
-    baseRef: 'main',
+    title: "Fix login bug",
+    state: "open",
+    url: "https://github.com/octocat/Hello-World/pull/42",
+    authorLogin: "octocat",
+    headRef: "feature/login",
+    headSha: "abc123def456",
+    baseRef: "main",
     draft: false,
   });
 });
 
-test('mapPullRequestDetail includes labels and merge metadata', () => {
+test("mapPullRequestDetail includes labels and merge metadata", () => {
   const detail = mapPullRequestDetail(
     {
       number: 7,
-      title: 'Add tests',
-      state: 'open',
-      html_url: 'https://github.com/octocat/Hello-World/pull/7',
-      node_id: 'PR_kwDOA',
-      body: 'Details here',
+      title: "Add tests",
+      state: "open",
+      html_url: "https://github.com/octocat/Hello-World/pull/7",
+      node_id: "PR_kwDOA",
+      body: "Details here",
       draft: true,
       merged_at: null,
       mergeable: true,
-      mergeable_state: 'clean',
-      user: { login: 'octocat' },
-      head: { ref: 'tests' },
-      base: { ref: 'main' },
-      labels: [{ name: 'enhancement' }, { name: 'ready' }],
+      mergeable_state: "clean",
+      user: { login: "octocat" },
+      head: { ref: "tests" },
+      base: { ref: "main" },
+      labels: [{ name: "enhancement" }, { name: "ready" }],
     },
     { viewerCanMerge: true },
   );
 
-  assert.equal(detail.labels.join(','), 'enhancement,ready');
-  assert.equal(detail.body, 'Details here');
+  assert.equal(detail.labels.join(","), "enhancement,ready");
+  assert.equal(detail.body, "Details here");
   assert.equal(detail.mergeable, true);
   assert.equal(detail.merged, false);
   assert.equal(detail.draft, true);
-  assert.equal(detail.nodeId, 'PR_kwDOA');
+  assert.equal(detail.nodeId, "PR_kwDOA");
   assert.equal(detail.viewerCanMerge, true);
-  assert.equal(detail.mergeableState, 'clean');
+  assert.equal(detail.mergeableState, "clean");
 });

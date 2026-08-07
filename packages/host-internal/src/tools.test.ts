@@ -1,46 +1,44 @@
-import test from 'node:test';
-import assert from 'node:assert/strict';
-import { execFile } from 'node:child_process';
-import { mkdtemp, mkdir, rm, writeFile } from 'node:fs/promises';
-import { tmpdir } from 'node:os';
-import { basename, dirname, join } from 'node:path';
-import { promisify } from 'node:util';
+import test from "node:test";
+import assert from "node:assert/strict";
+import { execFile } from "node:child_process";
+import { mkdtemp, mkdir, rm, writeFile } from "node:fs/promises";
+import { tmpdir } from "node:os";
+import { basename, dirname, join } from "node:path";
+import { promisify } from "node:util";
 
-import {
-  NodeHostToolService,
-  type HostToolExecutionOutput,
-} from './tools.js';
+import { NodeHostToolService, type HostToolExecutionOutput } from "./tools.js";
 
 const execFileAsync = promisify(execFile);
 
 const ONE_PIXEL_PNG_BASE64 =
-  'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO7Zp1cAAAAASUVORK5CYII=';
+  "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO7Zp1cAAAAASUVORK5CYII=";
 
 function createMockImageFetch(): typeof fetch {
   return (async () => {
-    const bytes = Buffer.from(ONE_PIXEL_PNG_BASE64, 'base64');
+    const bytes = Buffer.from(ONE_PIXEL_PNG_BASE64, "base64");
     return {
       status: 200,
-      url: 'https://example.com/final-image',
+      url: "https://example.com/final-image",
       headers: new Headers({
-        'content-type': 'image/png',
+        "content-type": "image/png",
       }),
-      arrayBuffer: async () => bytes.buffer.slice(bytes.byteOffset, bytes.byteOffset + bytes.byteLength),
+      arrayBuffer: async () =>
+        bytes.buffer.slice(bytes.byteOffset, bytes.byteOffset + bytes.byteLength),
       text: async () => {
-        throw new Error('image response should not be read as text');
+        throw new Error("image response should not be read as text");
       },
     } as unknown as Response;
   }) as typeof fetch;
 }
 
-test('read_file returns unsupported image text without image part when model blocks image input', async () => {
-  const workspaceRoot = await mkdtemp(join(tmpdir(), 'spirit-host-tools-image-blocked-'));
-  const spiritDataDir = join(workspaceRoot, '.spirit-data');
-  const imagePath = join(workspaceRoot, 'blocked.png');
+test("read_file returns unsupported image text without image part when model blocks image input", async () => {
+  const workspaceRoot = await mkdtemp(join(tmpdir(), "spirit-host-tools-image-blocked-"));
+  const spiritDataDir = join(workspaceRoot, ".spirit-data");
+  const imagePath = join(workspaceRoot, "blocked.png");
 
   try {
     await mkdir(spiritDataDir, { recursive: true });
-    await writeFile(imagePath, Buffer.from(ONE_PIXEL_PNG_BASE64, 'base64'));
+    await writeFile(imagePath, Buffer.from(ONE_PIXEL_PNG_BASE64, "base64"));
 
     const service = new NodeHostToolService(
       { workspaceRoot, spiritDataDir },
@@ -53,12 +51,15 @@ test('read_file returns unsupported image text without image part when model blo
     );
 
     const output = await service.execute({
-      name: 'read_file',
+      name: "read_file",
       path: imagePath,
     });
     assertHostToolExecutionOutput(output);
     assert.match(output.summaryText, /该模型不支持 Image 输入/u);
-    assert.equal(output.content.some((part) => part.type === 'image'), false);
+    assert.equal(
+      output.content.some((part) => part.type === "image"),
+      false,
+    );
   } finally {
     await rm(workspaceRoot, { recursive: true, force: true });
   }
@@ -68,10 +69,10 @@ const MINIMAL_MP4_HEADER = Buffer.from([
   0x00, 0x00, 0x00, 0x18, 0x66, 0x74, 0x79, 0x70, 0x69, 0x73, 0x6f, 0x6d,
 ]);
 
-test('read_file returns unsupported video text without video part when model blocks video input', async () => {
-  const workspaceRoot = await mkdtemp(join(tmpdir(), 'spirit-host-tools-video-blocked-'));
-  const spiritDataDir = join(workspaceRoot, '.spirit-data');
-  const videoPath = join(workspaceRoot, 'blocked.mp4');
+test("read_file returns unsupported video text without video part when model blocks video input", async () => {
+  const workspaceRoot = await mkdtemp(join(tmpdir(), "spirit-host-tools-video-blocked-"));
+  const spiritDataDir = join(workspaceRoot, ".spirit-data");
+  const videoPath = join(workspaceRoot, "blocked.mp4");
 
   try {
     await mkdir(spiritDataDir, { recursive: true });
@@ -88,21 +89,24 @@ test('read_file returns unsupported video text without video part when model blo
     );
 
     const output = await service.execute({
-      name: 'read_file',
+      name: "read_file",
       path: videoPath,
     });
     assertHostToolExecutionOutput(output);
     assert.match(output.summaryText, /该模型不支持视频输入/u);
-    assert.equal(output.content.some((part) => part.type === 'video'), false);
+    assert.equal(
+      output.content.some((part) => part.type === "video"),
+      false,
+    );
   } finally {
     await rm(workspaceRoot, { recursive: true, force: true });
   }
 });
 
-test('read_file still returns video part when model explicitly supports video input', async () => {
-  const workspaceRoot = await mkdtemp(join(tmpdir(), 'spirit-host-tools-video-allowed-'));
-  const spiritDataDir = join(workspaceRoot, '.spirit-data');
-  const videoPath = join(workspaceRoot, 'allowed.mp4');
+test("read_file still returns video part when model explicitly supports video input", async () => {
+  const workspaceRoot = await mkdtemp(join(tmpdir(), "spirit-host-tools-video-allowed-"));
+  const spiritDataDir = join(workspaceRoot, ".spirit-data");
+  const videoPath = join(workspaceRoot, "allowed.mp4");
 
   try {
     await mkdir(spiritDataDir, { recursive: true });
@@ -119,25 +123,28 @@ test('read_file still returns video part when model explicitly supports video in
     );
 
     const output = await service.execute({
-      name: 'read_file',
+      name: "read_file",
       path: videoPath,
     });
     assertHostToolExecutionOutput(output);
     assert.match(output.summaryText, /视频文件已作为视频输入返回/u);
-    assert.equal(output.content.some((part) => part.type === 'video'), true);
+    assert.equal(
+      output.content.some((part) => part.type === "video"),
+      true,
+    );
   } finally {
     await rm(workspaceRoot, { recursive: true, force: true });
   }
 });
 
-test('read_file still returns image part when model explicitly supports image input', async () => {
-  const workspaceRoot = await mkdtemp(join(tmpdir(), 'spirit-host-tools-image-allowed-'));
-  const spiritDataDir = join(workspaceRoot, '.spirit-data');
-  const imagePath = join(workspaceRoot, 'allowed.png');
+test("read_file still returns image part when model explicitly supports image input", async () => {
+  const workspaceRoot = await mkdtemp(join(tmpdir(), "spirit-host-tools-image-allowed-"));
+  const spiritDataDir = join(workspaceRoot, ".spirit-data");
+  const imagePath = join(workspaceRoot, "allowed.png");
 
   try {
     await mkdir(spiritDataDir, { recursive: true });
-    await writeFile(imagePath, Buffer.from(ONE_PIXEL_PNG_BASE64, 'base64'));
+    await writeFile(imagePath, Buffer.from(ONE_PIXEL_PNG_BASE64, "base64"));
 
     const service = new NodeHostToolService(
       { workspaceRoot, spiritDataDir },
@@ -150,12 +157,15 @@ test('read_file still returns image part when model explicitly supports image in
     );
 
     const output = await service.execute({
-      name: 'read_file',
+      name: "read_file",
       path: imagePath,
     });
     assertHostToolExecutionOutput(output);
     assert.match(output.summaryText, /图像文件已作为图片输入返回/u);
-    assert.equal(output.content.some((part) => part.type === 'image'), true);
+    assert.equal(
+      output.content.some((part) => part.type === "image"),
+      true,
+    );
   } finally {
     await rm(workspaceRoot, { recursive: true, force: true });
   }
@@ -163,10 +173,10 @@ test('read_file still returns image part when model explicitly supports image in
 
 const ICO_HEADER = Buffer.from([0x00, 0x00, 0x01, 0x00, 0x01, 0x00]);
 
-test('read_file returns image part for validated ico files', async () => {
-  const workspaceRoot = await mkdtemp(join(tmpdir(), 'spirit-host-tools-image-ico-'));
-  const spiritDataDir = join(workspaceRoot, '.spirit-data');
-  const imagePath = join(workspaceRoot, 'favicon.ico');
+test("read_file returns image part for validated ico files", async () => {
+  const workspaceRoot = await mkdtemp(join(tmpdir(), "spirit-host-tools-image-ico-"));
+  const spiritDataDir = join(workspaceRoot, ".spirit-data");
+  const imagePath = join(workspaceRoot, "favicon.ico");
 
   try {
     await mkdir(spiritDataDir, { recursive: true });
@@ -183,33 +193,39 @@ test('read_file returns image part for validated ico files', async () => {
     );
 
     const output = await service.execute({
-      name: 'read_file',
+      name: "read_file",
       path: imagePath,
     });
     assertHostToolExecutionOutput(output);
     assert.match(output.summaryText, /^\[read image\]/u);
     assert.match(output.summaryText, /mime_type: image\/x-icon/u);
-    assert.equal(output.content.some((part) => part.type === 'image'), true);
+    assert.equal(
+      output.content.some((part) => part.type === "image"),
+      true,
+    );
   } finally {
     await rm(workspaceRoot, { recursive: true, force: true });
   }
 });
 
-test('web_fetch executes in background like shell', () => {
+test("web_fetch executes in background like shell", () => {
   const service = new NodeHostToolService(
-    { workspaceRoot: '/tmp', spiritDataDir: '/tmp/.spirit-data' },
-    { getApprovalLevel: () => 'full-approval' },
+    { workspaceRoot: "/tmp", spiritDataDir: "/tmp/.spirit-data" },
+    { getApprovalLevel: () => "full-approval" },
   );
   assert.equal(
-    service.shouldExecuteInBackground?.({ name: 'web_fetch', url: 'https://example.com/' }),
+    service.shouldExecuteInBackground?.({ name: "web_fetch", url: "https://example.com/" }),
     true,
   );
-  assert.equal(service.backgroundStatusText?.({ name: 'web_fetch', url: 'https://example.com/' }), undefined);
+  assert.equal(
+    service.backgroundStatusText?.({ name: "web_fetch", url: "https://example.com/" }),
+    undefined,
+  );
 });
 
-test('web_fetch returns image part for supported remote image responses', async () => {
-  const workspaceRoot = await mkdtemp(join(tmpdir(), 'spirit-host-tools-web-fetch-image-'));
-  const spiritDataDir = join(workspaceRoot, '.spirit-data');
+test("web_fetch returns image part for supported remote image responses", async () => {
+  const workspaceRoot = await mkdtemp(join(tmpdir(), "spirit-host-tools-web-fetch-image-"));
+  const spiritDataDir = join(workspaceRoot, ".spirit-data");
   const originalFetch = globalThis.fetch;
 
   try {
@@ -227,21 +243,24 @@ test('web_fetch returns image part for supported remote image responses', async 
     );
 
     const output = await service.execute({
-      name: 'web_fetch',
-      url: 'https://example.com/source-image',
+      name: "web_fetch",
+      url: "https://example.com/source-image",
     });
     assertHostToolExecutionOutput(output);
     assert.match(output.summaryText, /^\[web image\]/u);
-    assert.equal(output.content.some((part) => part.type === 'image'), true);
+    assert.equal(
+      output.content.some((part) => part.type === "image"),
+      true,
+    );
   } finally {
     globalThis.fetch = originalFetch;
     await rm(workspaceRoot, { recursive: true, force: true });
   }
 });
 
-test('web_fetch returns blocked-image text without image part for remote image responses', async () => {
-  const workspaceRoot = await mkdtemp(join(tmpdir(), 'spirit-host-tools-web-fetch-blocked-'));
-  const spiritDataDir = join(workspaceRoot, '.spirit-data');
+test("web_fetch returns blocked-image text without image part for remote image responses", async () => {
+  const workspaceRoot = await mkdtemp(join(tmpdir(), "spirit-host-tools-web-fetch-blocked-"));
+  const spiritDataDir = join(workspaceRoot, ".spirit-data");
   const originalFetch = globalThis.fetch;
 
   try {
@@ -259,12 +278,15 @@ test('web_fetch returns blocked-image text without image part for remote image r
     );
 
     const output = await service.execute({
-      name: 'web_fetch',
-      url: 'https://example.com/source-image',
+      name: "web_fetch",
+      url: "https://example.com/source-image",
     });
     assertHostToolExecutionOutput(output);
     assert.match(output.summaryText, /该模型不支持 Image 输入/u);
-    assert.equal(output.content.some((part) => part.type === 'image'), false);
+    assert.equal(
+      output.content.some((part) => part.type === "image"),
+      false,
+    );
   } finally {
     globalThis.fetch = originalFetch;
     await rm(workspaceRoot, { recursive: true, force: true });
@@ -272,35 +294,38 @@ test('web_fetch returns blocked-image text without image part for remote image r
 });
 
 const MINIMAL_MP4_BYTES = Buffer.from([
-  0x00, 0x00, 0x00, 0x18, 0x66, 0x74, 0x79, 0x70, 0x6d, 0x70, 0x34, 0x32,
-  0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+  0x00, 0x00, 0x00, 0x18, 0x66, 0x74, 0x79, 0x70, 0x6d, 0x70, 0x34, 0x32, 0x00, 0x00, 0x00, 0x00,
+  0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
 ]);
 
-test('saveGeneratedImage returns a managed markdown reference instead of a raw local path', async () => {
-  const workspaceRoot = await mkdtemp(join(tmpdir(), 'spirit-host-tools-generated-image-ref-'));
-  const spiritDataDir = join(workspaceRoot, '.spirit-data');
+test("saveGeneratedImage returns a managed markdown reference instead of a raw local path", async () => {
+  const workspaceRoot = await mkdtemp(join(tmpdir(), "spirit-host-tools-generated-image-ref-"));
+  const spiritDataDir = join(workspaceRoot, ".spirit-data");
 
   try {
     await mkdir(spiritDataDir, { recursive: true });
 
     const service = new NodeHostToolService({ workspaceRoot, spiritDataDir });
     const saved = await service.saveGeneratedImage({
-      data: Buffer.from(ONE_PIXEL_PNG_BASE64, 'base64'),
-      mediaType: 'image/png',
-      prompt: 'concept image',
-      model: 'test-image-model',
+      data: Buffer.from(ONE_PIXEL_PNG_BASE64, "base64"),
+      mediaType: "image/png",
+      prompt: "concept image",
+      model: "test-image-model",
     });
 
-    assert.equal(dirname(saved.path), join(spiritDataDir, 'generated-images'));
-    assert.equal(saved.markdownRef, `spirit://generated/image/${encodeURIComponent(basename(saved.path))}`);
+    assert.equal(dirname(saved.path), join(spiritDataDir, "generated-images"));
+    assert.equal(
+      saved.markdownRef,
+      `spirit://generated/image/${encodeURIComponent(basename(saved.path))}`,
+    );
   } finally {
     await rm(workspaceRoot, { recursive: true, force: true });
   }
 });
 
-test('saveGeneratedVideo returns a managed markdown reference instead of a raw local path', async () => {
-  const workspaceRoot = await mkdtemp(join(tmpdir(), 'spirit-host-tools-generated-video-ref-'));
-  const spiritDataDir = join(workspaceRoot, '.spirit-data');
+test("saveGeneratedVideo returns a managed markdown reference instead of a raw local path", async () => {
+  const workspaceRoot = await mkdtemp(join(tmpdir(), "spirit-host-tools-generated-video-ref-"));
+  const spiritDataDir = join(workspaceRoot, ".spirit-data");
 
   try {
     await mkdir(spiritDataDir, { recursive: true });
@@ -308,21 +333,24 @@ test('saveGeneratedVideo returns a managed markdown reference instead of a raw l
     const service = new NodeHostToolService({ workspaceRoot, spiritDataDir });
     const saved = await service.saveGeneratedVideo({
       data: MINIMAL_MP4_BYTES,
-      mediaType: 'video/mp4',
-      prompt: 'concept video',
-      model: 'test-video-model',
+      mediaType: "video/mp4",
+      prompt: "concept video",
+      model: "test-video-model",
     });
 
-    assert.equal(dirname(saved.path), join(spiritDataDir, 'generated-videos'));
-    assert.equal(saved.markdownRef, `spirit://generated/video/${encodeURIComponent(basename(saved.path))}`);
+    assert.equal(dirname(saved.path), join(spiritDataDir, "generated-videos"));
+    assert.equal(
+      saved.markdownRef,
+      `spirit://generated/video/${encodeURIComponent(basename(saved.path))}`,
+    );
   } finally {
     await rm(workspaceRoot, { recursive: true, force: true });
   }
 });
 
-test('read_file accepts Spirit-managed generated image refs without leaking local paths', async () => {
-  const workspaceRoot = await mkdtemp(join(tmpdir(), 'spirit-host-tools-managed-image-read-'));
-  const spiritDataDir = join(workspaceRoot, '.spirit-data');
+test("read_file accepts Spirit-managed generated image refs without leaking local paths", async () => {
+  const workspaceRoot = await mkdtemp(join(tmpdir(), "spirit-host-tools-managed-image-read-"));
+  const spiritDataDir = join(workspaceRoot, ".spirit-data");
 
   try {
     await mkdir(spiritDataDir, { recursive: true });
@@ -338,35 +366,38 @@ test('read_file accepts Spirit-managed generated image refs without leaking loca
     );
 
     const saved = await service.saveGeneratedImage({
-      data: Buffer.from(ONE_PIXEL_PNG_BASE64, 'base64'),
-      mediaType: 'image/png',
-      prompt: 'concept image',
-      model: 'test-image-model',
+      data: Buffer.from(ONE_PIXEL_PNG_BASE64, "base64"),
+      mediaType: "image/png",
+      prompt: "concept image",
+      model: "test-image-model",
     });
 
     const authorization = await service.authorize({
-      name: 'read_file',
-      path: saved.markdownRef ?? '',
+      name: "read_file",
+      path: saved.markdownRef ?? "",
     });
-    assert.deepEqual(authorization, { kind: 'allowed' });
+    assert.deepEqual(authorization, { kind: "allowed" });
 
     const output = await service.execute({
-      name: 'read_file',
-      path: saved.markdownRef ?? '',
+      name: "read_file",
+      path: saved.markdownRef ?? "",
     });
     assertHostToolExecutionOutput(output);
     assert.match(output.summaryText, /^\[read image\]/u);
-    assert.match(output.summaryText, new RegExp(`path: ${escapeRegExp(saved.markdownRef ?? '')}`));
+    assert.match(output.summaryText, new RegExp(`path: ${escapeRegExp(saved.markdownRef ?? "")}`));
     assert.doesNotMatch(output.summaryText, new RegExp(escapeRegExp(saved.path)));
-    assert.equal(output.content.some((part) => part.type === 'image'), true);
+    assert.equal(
+      output.content.some((part) => part.type === "image"),
+      true,
+    );
   } finally {
     await rm(workspaceRoot, { recursive: true, force: true });
   }
 });
 
-test('read_file accepts Spirit-managed generated image refs with mixed-case URL scheme and host', async () => {
-  const workspaceRoot = await mkdtemp(join(tmpdir(), 'spirit-host-tools-managed-image-read-case-'));
-  const spiritDataDir = join(workspaceRoot, '.spirit-data');
+test("read_file accepts Spirit-managed generated image refs with mixed-case URL scheme and host", async () => {
+  const workspaceRoot = await mkdtemp(join(tmpdir(), "spirit-host-tools-managed-image-read-case-"));
+  const spiritDataDir = join(workspaceRoot, ".spirit-data");
 
   try {
     await mkdir(spiritDataDir, { recursive: true });
@@ -382,39 +413,44 @@ test('read_file accepts Spirit-managed generated image refs with mixed-case URL 
     );
 
     const saved = await service.saveGeneratedImage({
-      data: Buffer.from(ONE_PIXEL_PNG_BASE64, 'base64'),
-      mediaType: 'image/png',
-      prompt: 'concept image',
-      model: 'test-image-model',
+      data: Buffer.from(ONE_PIXEL_PNG_BASE64, "base64"),
+      mediaType: "image/png",
+      prompt: "concept image",
+      model: "test-image-model",
     });
     const mixedCaseRef = saved.markdownRef.replace(
-      'spirit://generated/image/',
-      'SPIRIT://GENERATED/image/',
+      "spirit://generated/image/",
+      "SPIRIT://GENERATED/image/",
     );
 
     const authorization = await service.authorize({
-      name: 'read_file',
+      name: "read_file",
       path: mixedCaseRef,
     });
-    assert.deepEqual(authorization, { kind: 'allowed' });
+    assert.deepEqual(authorization, { kind: "allowed" });
 
     const output = await service.execute({
-      name: 'read_file',
+      name: "read_file",
       path: mixedCaseRef,
     });
     assertHostToolExecutionOutput(output);
     assert.match(output.summaryText, new RegExp(`path: ${escapeRegExp(mixedCaseRef)}`));
-    assert.equal(output.content.some((part) => part.type === 'image'), true);
+    assert.equal(
+      output.content.some((part) => part.type === "image"),
+      true,
+    );
   } finally {
     await rm(workspaceRoot, { recursive: true, force: true });
   }
 });
 
-test('read_file missing Spirit-managed generated image ref reports sanitized error', async () => {
-  const workspaceRoot = await mkdtemp(join(tmpdir(), 'spirit-host-tools-missing-managed-image-read-'));
-  const spiritDataDir = join(workspaceRoot, '.spirit-data');
-  const missingRef = 'spirit://generated/image/missing-image.png';
-  const leakedLocalPath = join(spiritDataDir, 'generated-images', 'missing-image.png');
+test("read_file missing Spirit-managed generated image ref reports sanitized error", async () => {
+  const workspaceRoot = await mkdtemp(
+    join(tmpdir(), "spirit-host-tools-missing-managed-image-read-"),
+  );
+  const spiritDataDir = join(workspaceRoot, ".spirit-data");
+  const missingRef = "spirit://generated/image/missing-image.png";
+  const leakedLocalPath = join(spiritDataDir, "generated-images", "missing-image.png");
 
   try {
     await mkdir(spiritDataDir, { recursive: true });
@@ -423,7 +459,7 @@ test('read_file missing Spirit-managed generated image ref reports sanitized err
     await assert.rejects(
       () =>
         service.execute({
-          name: 'read_file',
+          name: "read_file",
           path: missingRef,
         }),
       (error: unknown) => {
@@ -438,49 +474,52 @@ test('read_file missing Spirit-managed generated image ref reports sanitized err
   }
 });
 
-test('read_file reports canonical path for non-managed files', async () => {
-  const workspaceRoot = await mkdtemp(join(tmpdir(), 'spirit-host-tools-read-file-canonical-'));
-  const spiritDataDir = join(workspaceRoot, '.spirit-data');
-  const nestedDir = join(workspaceRoot, 'nested');
-  const filePath = join(nestedDir, 'note.txt');
+test("read_file reports canonical path for non-managed files", async () => {
+  const workspaceRoot = await mkdtemp(join(tmpdir(), "spirit-host-tools-read-file-canonical-"));
+  const spiritDataDir = join(workspaceRoot, ".spirit-data");
+  const nestedDir = join(workspaceRoot, "nested");
+  const filePath = join(nestedDir, "note.txt");
 
   try {
     await mkdir(nestedDir, { recursive: true });
     await mkdir(spiritDataDir, { recursive: true });
-    await writeFile(filePath, 'alpha\nbeta\n');
+    await writeFile(filePath, "alpha\nbeta\n");
 
     const service = new NodeHostToolService({ workspaceRoot, spiritDataDir });
     const output = await service.execute({
-      name: 'read_file',
-      path: './nested/../nested/note.txt',
+      name: "read_file",
+      path: "./nested/../nested/note.txt",
       offset: 1,
       limit: 1,
     });
 
     assertHostToolExecutionOutput(output);
-    assert.match(output.summaryText, new RegExp(`^\\[read\\]\\npath: ${escapeRegExp(filePath)}\\nrange: 1-1`, 'u'));
+    assert.match(
+      output.summaryText,
+      new RegExp(`^\\[read\\]\\npath: ${escapeRegExp(filePath)}\\nrange: 1-1`, "u"),
+    );
     assert.doesNotMatch(output.summaryText, /\.\/nested\/\.\.\/nested\/note\.txt/u);
   } finally {
     await rm(workspaceRoot, { recursive: true, force: true });
   }
 });
 
-test('grep limits search to files matched by glob', async () => {
-  const workspaceRoot = await mkdtemp(join(tmpdir(), 'spirit-host-tools-search-glob-'));
-  const spiritDataDir = join(workspaceRoot, '.spirit-data');
+test("grep limits search to files matched by glob", async () => {
+  const workspaceRoot = await mkdtemp(join(tmpdir(), "spirit-host-tools-search-glob-"));
+  const spiritDataDir = join(workspaceRoot, ".spirit-data");
 
   try {
-    await mkdir(join(workspaceRoot, 'src'), { recursive: true });
-    await mkdir(join(workspaceRoot, 'docs'), { recursive: true });
+    await mkdir(join(workspaceRoot, "src"), { recursive: true });
+    await mkdir(join(workspaceRoot, "docs"), { recursive: true });
     await mkdir(spiritDataDir, { recursive: true });
-    await writeFile(join(workspaceRoot, 'src', 'app.ts'), 'needle here\n');
-    await writeFile(join(workspaceRoot, 'docs', 'readme.md'), 'needle here\n');
+    await writeFile(join(workspaceRoot, "src", "app.ts"), "needle here\n");
+    await writeFile(join(workspaceRoot, "docs", "readme.md"), "needle here\n");
 
     const service = new NodeHostToolService({ workspaceRoot, spiritDataDir });
     const output = await service.execute({
-      name: 'grep',
-      query: 'needle',
-      glob: 'src/**/*.ts',
+      name: "grep",
+      query: "needle",
+      glob: "src/**/*.ts",
     });
 
     assertTextToolOutput(output);
@@ -492,9 +531,9 @@ test('grep limits search to files matched by glob', async () => {
   }
 });
 
-test('grep rejects glob patterns that escape the workspace', async () => {
-  const workspaceRoot = await mkdtemp(join(tmpdir(), 'spirit-host-tools-search-glob-escape-'));
-  const spiritDataDir = join(workspaceRoot, '.spirit-data');
+test("grep rejects glob patterns that escape the workspace", async () => {
+  const workspaceRoot = await mkdtemp(join(tmpdir(), "spirit-host-tools-search-glob-escape-"));
+  const spiritDataDir = join(workspaceRoot, ".spirit-data");
 
   try {
     await mkdir(spiritDataDir, { recursive: true });
@@ -503,9 +542,9 @@ test('grep rejects glob patterns that escape the workspace', async () => {
     await assert.rejects(
       () =>
         service.execute({
-          name: 'grep',
-          query: 'needle',
-          glob: '../**/*.ts',
+          name: "grep",
+          query: "needle",
+          glob: "../**/*.ts",
         }),
       /glob pattern 不能跳出 workspace/u,
     );
@@ -514,42 +553,42 @@ test('grep rejects glob patterns that escape the workspace', async () => {
   }
 });
 
-test('requestFromFunctionCall parses grep glob', async () => {
-  const workspaceRoot = await mkdtemp(join(tmpdir(), 'spirit-host-tools-search-glob-parse-'));
-  const spiritDataDir = join(workspaceRoot, '.spirit-data');
+test("requestFromFunctionCall parses grep glob", async () => {
+  const workspaceRoot = await mkdtemp(join(tmpdir(), "spirit-host-tools-search-glob-parse-"));
+  const spiritDataDir = join(workspaceRoot, ".spirit-data");
 
   try {
     await mkdir(spiritDataDir, { recursive: true });
 
     const service = new NodeHostToolService({ workspaceRoot, spiritDataDir });
     const request = await service.requestFromFunctionCall(
-      'grep',
+      "grep",
       '{"query":"needle","glob":"src/**/*.ts"}',
     );
 
     assert.deepEqual(request, {
-      name: 'grep',
-      query: 'needle',
-      glob: 'src/**/*.ts',
+      name: "grep",
+      query: "needle",
+      glob: "src/**/*.ts",
     });
   } finally {
     await rm(workspaceRoot, { recursive: true, force: true });
   }
 });
 
-test('grep supports case-insensitive regular expression queries', async () => {
-  const workspaceRoot = await mkdtemp(join(tmpdir(), 'spirit-host-tools-search-regexp-'));
-  const spiritDataDir = join(workspaceRoot, '.spirit-data');
+test("grep supports case-insensitive regular expression queries", async () => {
+  const workspaceRoot = await mkdtemp(join(tmpdir(), "spirit-host-tools-search-regexp-"));
+  const spiritDataDir = join(workspaceRoot, ".spirit-data");
 
   try {
     await mkdir(spiritDataDir, { recursive: true });
-    await writeFile(join(workspaceRoot, 'alpha.txt'), 'Runtime    parity\nsecond line\n');
-    await writeFile(join(workspaceRoot, 'beta.txt'), 'no match here\n');
+    await writeFile(join(workspaceRoot, "alpha.txt"), "Runtime    parity\nsecond line\n");
+    await writeFile(join(workspaceRoot, "beta.txt"), "no match here\n");
 
     const service = new NodeHostToolService({ workspaceRoot, spiritDataDir });
     const output = await service.execute({
-      name: 'grep',
-      query: 'runtime\\s+parity',
+      name: "grep",
+      query: "runtime\\s+parity",
       is_regexp: true,
     });
 
@@ -562,9 +601,9 @@ test('grep supports case-insensitive regular expression queries', async () => {
   }
 });
 
-test('grep rejects invalid regular expressions with a clear error', async () => {
-  const workspaceRoot = await mkdtemp(join(tmpdir(), 'spirit-host-tools-search-regexp-error-'));
-  const spiritDataDir = join(workspaceRoot, '.spirit-data');
+test("grep rejects invalid regular expressions with a clear error", async () => {
+  const workspaceRoot = await mkdtemp(join(tmpdir(), "spirit-host-tools-search-regexp-error-"));
+  const spiritDataDir = join(workspaceRoot, ".spirit-data");
 
   try {
     await mkdir(spiritDataDir, { recursive: true });
@@ -573,8 +612,8 @@ test('grep rejects invalid regular expressions with a clear error', async () => 
     await assert.rejects(
       () =>
         service.execute({
-          name: 'grep',
-          query: '(',
+          name: "grep",
+          query: "(",
           is_regexp: true,
         }),
       /无效正则/u,
@@ -584,21 +623,21 @@ test('grep rejects invalid regular expressions with a clear error', async () => 
   }
 });
 
-test('grep skips files matched by .gitignore', async () => {
-  const workspaceRoot = await mkdtemp(join(tmpdir(), 'spirit-host-tools-search-gitignore-'));
-  const spiritDataDir = join(workspaceRoot, '.spirit-data');
+test("grep skips files matched by .gitignore", async () => {
+  const workspaceRoot = await mkdtemp(join(tmpdir(), "spirit-host-tools-search-gitignore-"));
+  const spiritDataDir = join(workspaceRoot, ".spirit-data");
 
   try {
     await mkdir(spiritDataDir, { recursive: true });
-    await execFileAsync('git', ['init'], { cwd: workspaceRoot, windowsHide: true });
-    await writeFile(join(workspaceRoot, '.gitignore'), 'ignored.txt\n', 'utf8');
-    await writeFile(join(workspaceRoot, 'ignored.txt'), 'needle here\n', 'utf8');
-    await writeFile(join(workspaceRoot, 'tracked.txt'), 'needle here\n', 'utf8');
+    await execFileAsync("git", ["init"], { cwd: workspaceRoot, windowsHide: true });
+    await writeFile(join(workspaceRoot, ".gitignore"), "ignored.txt\n", "utf8");
+    await writeFile(join(workspaceRoot, "ignored.txt"), "needle here\n", "utf8");
+    await writeFile(join(workspaceRoot, "tracked.txt"), "needle here\n", "utf8");
 
     const service = new NodeHostToolService({ workspaceRoot, spiritDataDir });
     const output = await service.execute({
-      name: 'grep',
-      query: 'needle',
+      name: "grep",
+      query: "needle",
     });
 
     assertTextToolOutput(output);
@@ -609,25 +648,25 @@ test('grep skips files matched by .gitignore', async () => {
   }
 });
 
-test('glob returns matching workspace files for a glob pattern', async () => {
-  const workspaceRoot = await mkdtemp(join(tmpdir(), 'spirit-host-tools-glob-'));
-  const spiritDataDir = join(workspaceRoot, '.spirit-data');
+test("glob returns matching workspace files for a glob pattern", async () => {
+  const workspaceRoot = await mkdtemp(join(tmpdir(), "spirit-host-tools-glob-"));
+  const spiritDataDir = join(workspaceRoot, ".spirit-data");
 
   try {
-    await mkdir(join(workspaceRoot, 'src', 'nested'), { recursive: true });
+    await mkdir(join(workspaceRoot, "src", "nested"), { recursive: true });
     await mkdir(spiritDataDir, { recursive: true });
-    await writeFile(join(workspaceRoot, 'src', 'app.ts'), 'export const app = 1;\n');
-    await writeFile(join(workspaceRoot, 'src', 'nested', 'util.ts'), 'export const util = 1;\n');
-    await writeFile(join(workspaceRoot, 'src', 'nested', 'note.md'), '# note\n');
+    await writeFile(join(workspaceRoot, "src", "app.ts"), "export const app = 1;\n");
+    await writeFile(join(workspaceRoot, "src", "nested", "util.ts"), "export const util = 1;\n");
+    await writeFile(join(workspaceRoot, "src", "nested", "note.md"), "# note\n");
 
     const service = new NodeHostToolService({ workspaceRoot, spiritDataDir });
     const output = await service.execute({
-      name: 'glob',
-      pattern: 'src/**/*.ts',
+      name: "glob",
+      pattern: "src/**/*.ts",
     });
 
     assertTextToolOutput(output);
-    assert.match(output, /^\[glob\]\npattern: src\/\*\*\/\*\.ts\nmatches: 2\n/um);
+    assert.match(output, /^\[glob\]\npattern: src\/\*\*\/\*\.ts\nmatches: 2\n/mu);
     assert.match(output, /\nsrc\/app\.ts\n/u);
     assert.match(output, /\nsrc\/nested\/util\.ts\n/u);
     assert.doesNotMatch(output, /note\.md/u);
@@ -636,29 +675,29 @@ test('glob returns matching workspace files for a glob pattern', async () => {
   }
 });
 
-test('glob skips files matched by .gitignore including dist directories', async () => {
-  const workspaceRoot = await mkdtemp(join(tmpdir(), 'spirit-host-tools-glob-gitignore-'));
-  const spiritDataDir = join(workspaceRoot, '.spirit-data');
+test("glob skips files matched by .gitignore including dist directories", async () => {
+  const workspaceRoot = await mkdtemp(join(tmpdir(), "spirit-host-tools-glob-gitignore-"));
+  const spiritDataDir = join(workspaceRoot, ".spirit-data");
 
   try {
-    await mkdir(join(workspaceRoot, 'src'), { recursive: true });
-    await mkdir(join(workspaceRoot, 'packages', 'host-internal', 'dist'), { recursive: true });
-    await mkdir(join(workspaceRoot, 'apps', 'desktop', 'dist-electron'), { recursive: true });
-    await writeFile(join(workspaceRoot, '.gitignore'), '**/dist/\n**/dist-electron/\n', 'utf8');
-    await writeFile(join(workspaceRoot, 'src', 'app.ts'), 'export const app = 1;\n');
+    await mkdir(join(workspaceRoot, "src"), { recursive: true });
+    await mkdir(join(workspaceRoot, "packages", "host-internal", "dist"), { recursive: true });
+    await mkdir(join(workspaceRoot, "apps", "desktop", "dist-electron"), { recursive: true });
+    await writeFile(join(workspaceRoot, ".gitignore"), "**/dist/\n**/dist-electron/\n", "utf8");
+    await writeFile(join(workspaceRoot, "src", "app.ts"), "export const app = 1;\n");
     await writeFile(
-      join(workspaceRoot, 'packages', 'host-internal', 'dist', 'index.js'),
-      'module.exports = {};\n',
+      join(workspaceRoot, "packages", "host-internal", "dist", "index.js"),
+      "module.exports = {};\n",
     );
     await writeFile(
-      join(workspaceRoot, 'apps', 'desktop', 'dist-electron', 'main.js'),
-      'module.exports = {};\n',
+      join(workspaceRoot, "apps", "desktop", "dist-electron", "main.js"),
+      "module.exports = {};\n",
     );
 
     const service = new NodeHostToolService({ workspaceRoot, spiritDataDir });
     const output = await service.execute({
-      name: 'glob',
-      pattern: '**/*',
+      name: "glob",
+      pattern: "**/*",
     });
 
     assertTextToolOutput(output);
@@ -670,9 +709,9 @@ test('glob skips files matched by .gitignore including dist directories', async 
   }
 });
 
-test('glob rejects patterns that escape the workspace', async () => {
-  const workspaceRoot = await mkdtemp(join(tmpdir(), 'spirit-host-tools-glob-escape-'));
-  const spiritDataDir = join(workspaceRoot, '.spirit-data');
+test("glob rejects patterns that escape the workspace", async () => {
+  const workspaceRoot = await mkdtemp(join(tmpdir(), "spirit-host-tools-glob-escape-"));
+  const spiritDataDir = join(workspaceRoot, ".spirit-data");
 
   try {
     await mkdir(spiritDataDir, { recursive: true });
@@ -681,8 +720,8 @@ test('glob rejects patterns that escape the workspace', async () => {
     await assert.rejects(
       () =>
         service.execute({
-          name: 'glob',
-          pattern: '../**/*.ts',
+          name: "glob",
+          pattern: "../**/*.ts",
         }),
       /glob pattern 不能跳出 workspace/u,
     );
@@ -691,44 +730,41 @@ test('glob rejects patterns that escape the workspace', async () => {
   }
 });
 
-test('requestFromFunctionCall parses glob pattern', async () => {
-  const workspaceRoot = await mkdtemp(join(tmpdir(), 'spirit-host-tools-glob-parse-'));
-  const spiritDataDir = join(workspaceRoot, '.spirit-data');
+test("requestFromFunctionCall parses glob pattern", async () => {
+  const workspaceRoot = await mkdtemp(join(tmpdir(), "spirit-host-tools-glob-parse-"));
+  const spiritDataDir = join(workspaceRoot, ".spirit-data");
 
   try {
     await mkdir(spiritDataDir, { recursive: true });
 
     const service = new NodeHostToolService({ workspaceRoot, spiritDataDir });
-    const request = await service.requestFromFunctionCall(
-      'glob',
-      '{"pattern":"src/**/*.ts"}',
-    );
+    const request = await service.requestFromFunctionCall("glob", '{"pattern":"src/**/*.ts"}');
 
     assert.deepEqual(request, {
-      name: 'glob',
-      pattern: 'src/**/*.ts',
+      name: "glob",
+      pattern: "src/**/*.ts",
     });
   } finally {
     await rm(workspaceRoot, { recursive: true, force: true });
   }
 });
 
-test('requestFromFunctionCall parses grep is_regexp flag', async () => {
-  const workspaceRoot = await mkdtemp(join(tmpdir(), 'spirit-host-tools-search-parse-'));
-  const spiritDataDir = join(workspaceRoot, '.spirit-data');
+test("requestFromFunctionCall parses grep is_regexp flag", async () => {
+  const workspaceRoot = await mkdtemp(join(tmpdir(), "spirit-host-tools-search-parse-"));
+  const spiritDataDir = join(workspaceRoot, ".spirit-data");
 
   try {
     await mkdir(spiritDataDir, { recursive: true });
 
     const service = new NodeHostToolService({ workspaceRoot, spiritDataDir });
     const request = await service.requestFromFunctionCall(
-      'grep',
+      "grep",
       '{"query":"runtime\\\\s+parity","is_regexp":true}',
     );
 
     assert.deepEqual(request, {
-      name: 'grep',
-      query: 'runtime\\s+parity',
+      name: "grep",
+      query: "runtime\\s+parity",
       is_regexp: true,
     });
   } finally {
@@ -736,9 +772,9 @@ test('requestFromFunctionCall parses grep is_regexp flag', async () => {
   }
 });
 
-test('abortShell terminates a running shell by toolCallId', async () => {
-  const workspaceRoot = await mkdtemp(join(tmpdir(), 'spirit-host-tools-abort-shell-'));
-  const spiritDataDir = join(workspaceRoot, '.spirit-data');
+test("abortShell terminates a running shell by toolCallId", async () => {
+  const workspaceRoot = await mkdtemp(join(tmpdir(), "spirit-host-tools-abort-shell-"));
+  const spiritDataDir = join(workspaceRoot, ".spirit-data");
 
   try {
     await mkdir(spiritDataDir, { recursive: true });
@@ -746,11 +782,11 @@ test('abortShell terminates a running shell by toolCallId', async () => {
     const service = new NodeHostToolService({ workspaceRoot, spiritDataDir });
     const request = service.attachRequestMetadata!(
       {
-        name: 'shell',
-        command: 'sleep 30',
-        reason: 'test abort',
+        name: "shell",
+        command: "sleep 30",
+        reason: "test abort",
       },
-      { toolCallId: 'call_sleep_30', toolName: 'shell' },
+      { toolCallId: "call_sleep_30", toolName: "shell" },
     );
 
     const executePromise = service.execute(request);
@@ -758,9 +794,9 @@ test('abortShell terminates a running shell by toolCallId', async () => {
       setTimeout(resolve, 50);
     });
 
-    assert.equal(service.abortShell('call_sleep_30'), true);
-    assert.equal(service.abortShell('call_sleep_30'), false);
-    assert.equal(service.abortShell('unknown-id'), false);
+    assert.equal(service.abortShell("call_sleep_30"), true);
+    assert.equal(service.abortShell("call_sleep_30"), false);
+    assert.equal(service.abortShell("unknown-id"), false);
 
     const output = await executePromise;
     assertTextToolOutput(output);
@@ -771,114 +807,116 @@ test('abortShell terminates a running shell by toolCallId', async () => {
   }
 });
 
-test('authorize returns need-approval for shell commands under default approval level', async () => {
-  const workspaceRoot = await mkdtemp(join(tmpdir(), 'spirit-host-tools-auth-default-'));
-  const spiritDataDir = join(workspaceRoot, '.spirit-data');
+test("authorize returns need-approval for shell commands under default approval level", async () => {
+  const workspaceRoot = await mkdtemp(join(tmpdir(), "spirit-host-tools-auth-default-"));
+  const spiritDataDir = join(workspaceRoot, ".spirit-data");
 
   try {
     await mkdir(spiritDataDir, { recursive: true });
 
     const service = new NodeHostToolService(
       { workspaceRoot, spiritDataDir },
-      { getApprovalLevel: () => 'default' },
+      { getApprovalLevel: () => "default" },
     );
     const decision = await service.authorize({
-      name: 'shell',
-      command: 'echo hello',
-      reason: 'test',
+      name: "shell",
+      command: "echo hello",
+      reason: "test",
     });
 
-    assert.equal(decision.kind, 'need-approval');
+    assert.equal(decision.kind, "need-approval");
   } finally {
     await rm(workspaceRoot, { recursive: true, force: true });
   }
 });
 
-test('authorize allows shell commands under full-approval approval level', async () => {
-  const workspaceRoot = await mkdtemp(join(tmpdir(), 'spirit-host-tools-auth-full-'));
-  const spiritDataDir = join(workspaceRoot, '.spirit-data');
+test("authorize allows shell commands under full-approval approval level", async () => {
+  const workspaceRoot = await mkdtemp(join(tmpdir(), "spirit-host-tools-auth-full-"));
+  const spiritDataDir = join(workspaceRoot, ".spirit-data");
 
   try {
     await mkdir(spiritDataDir, { recursive: true });
 
     const service = new NodeHostToolService(
       { workspaceRoot, spiritDataDir },
-      { getApprovalLevel: () => 'full-approval' },
+      { getApprovalLevel: () => "full-approval" },
     );
     const decision = await service.authorize({
-      name: 'shell',
-      command: 'echo hello',
-      reason: 'test',
+      name: "shell",
+      command: "echo hello",
+      reason: "test",
     });
 
-    assert.deepEqual(decision, { kind: 'allowed' });
+    assert.deepEqual(decision, { kind: "allowed" });
   } finally {
     await rm(workspaceRoot, { recursive: true, force: true });
   }
 });
 
-test('authorize still requires ask_questions under full-approval approval level', async () => {
-  const workspaceRoot = await mkdtemp(join(tmpdir(), 'spirit-host-tools-auth-questions-'));
-  const spiritDataDir = join(workspaceRoot, '.spirit-data');
+test("authorize still requires ask_questions under full-approval approval level", async () => {
+  const workspaceRoot = await mkdtemp(join(tmpdir(), "spirit-host-tools-auth-questions-"));
+  const spiritDataDir = join(workspaceRoot, ".spirit-data");
 
   try {
     await mkdir(spiritDataDir, { recursive: true });
 
     const service = new NodeHostToolService(
       { workspaceRoot, spiritDataDir },
-      { getApprovalLevel: () => 'full-approval' },
+      { getApprovalLevel: () => "full-approval" },
     );
     const decision = await service.authorize({
-      name: 'ask_questions',
-      questions: [{
-        id: 'q1',
-        title: 'Choose one',
-        allowMultiple: false,
-        options: [{ id: 'a', label: 'A' }],
-      }],
+      name: "ask_questions",
+      questions: [
+        {
+          id: "q1",
+          title: "Choose one",
+          allowMultiple: false,
+          options: [{ id: "a", label: "A" }],
+        },
+      ],
     });
 
-    assert.equal(decision.kind, 'need-questions');
+    assert.equal(decision.kind, "need-questions");
   } finally {
     await rm(workspaceRoot, { recursive: true, force: true });
   }
 });
 
-test('requestFromFunctionCall accepts empty arguments for finish_task', async () => {
-  const workspaceRoot = await mkdtemp(join(tmpdir(), 'spirit-host-tools-finish-task-parse-'));
-  const spiritDataDir = join(workspaceRoot, '.spirit-data');
+test("requestFromFunctionCall accepts empty arguments for finish_task", async () => {
+  const workspaceRoot = await mkdtemp(join(tmpdir(), "spirit-host-tools-finish-task-parse-"));
+  const spiritDataDir = join(workspaceRoot, ".spirit-data");
 
   try {
     await mkdir(spiritDataDir, { recursive: true });
 
     const service = new NodeHostToolService({ workspaceRoot, spiritDataDir });
-    const request = await service.requestFromFunctionCall('finish_task', '   ');
+    const request = await service.requestFromFunctionCall("finish_task", "   ");
 
     assert.deepEqual(request, {
-      name: 'finish_task',
+      name: "finish_task",
     });
   } finally {
     await rm(workspaceRoot, { recursive: true, force: true });
   }
 });
 
-test('create_plan writes plans/{name}.md and rejects duplicate names', async () => {
-  const workspaceRoot = await mkdtemp(join(tmpdir(), 'spirit-host-tools-create-plan-'));
-  const spiritDataDir = join(workspaceRoot, '.spirit-data');
+test("create_plan writes plans/{name}.md and rejects duplicate names", async () => {
+  const workspaceRoot = await mkdtemp(join(tmpdir(), "spirit-host-tools-create-plan-"));
+  const spiritDataDir = join(workspaceRoot, ".spirit-data");
 
   try {
     await mkdir(spiritDataDir, { recursive: true });
 
     const service = new NodeHostToolService({ workspaceRoot, spiritDataDir });
     const request = await service.requestFromFunctionCall(
-      'create_plan',
-      JSON.stringify({ name: 'demo-plan', content: '# Demo\n\n- [ ] ship it' }),
+      "create_plan",
+      JSON.stringify({ name: "demo-plan", content: "# Demo\n\n- [ ] ship it" }),
     );
 
     assert.deepEqual(request, {
-      name: 'create_plan',
-      plan_name: 'demo-plan',
-      content: '# Demo\n\n- [ ] ship it',
+      name: "create_plan",
+      plan_name: "demo-plan",
+      content: "# Demo\n\n- [ ] ship it",
     });
 
     const output = await service.execute(request);
@@ -887,9 +925,9 @@ test('create_plan writes plans/{name}.md and rejects duplicate names', async () 
     await assert.rejects(
       () =>
         service.execute({
-          name: 'create_plan',
-          plan_name: 'demo-plan',
-          content: '# Again',
+          name: "create_plan",
+          plan_name: "demo-plan",
+          content: "# Again",
         }),
       /已存在/,
     );
@@ -898,9 +936,9 @@ test('create_plan writes plans/{name}.md and rejects duplicate names', async () 
   }
 });
 
-test('create_automation writes automation file when defaults are provided', async () => {
-  const workspaceRoot = await mkdtemp(join(tmpdir(), 'spirit-host-tools-create-automation-'));
-  const spiritDataDir = join(workspaceRoot, '.spirit-data');
+test("create_automation writes automation file when defaults are provided", async () => {
+  const workspaceRoot = await mkdtemp(join(tmpdir(), "spirit-host-tools-create-automation-"));
+  const spiritDataDir = join(workspaceRoot, ".spirit-data");
   let createdId: string | undefined;
 
   try {
@@ -911,7 +949,7 @@ test('create_automation writes automation file when defaults are provided', asyn
       {
         getAutomationCreateDefaults: () => ({
           workspaceRoot,
-          modelRef: { groupId: 'openai', name: 'test-model' },
+          modelRef: { groupId: "openai", name: "test-model" },
         }),
         onAutomationCreated: (definition) => {
           createdId = definition.id;
@@ -919,23 +957,23 @@ test('create_automation writes automation file when defaults are provided', asyn
       },
     );
     const request = await service.requestFromFunctionCall(
-      'create_automation',
+      "create_automation",
       JSON.stringify({
-        overview: 'Check CI status and summarize failures.',
+        overview: "Check CI status and summarize failures.",
         trigger: {
-          kind: 'time',
-          schedule: { kind: 'weekly', weekday: 1, hour: 9, minute: 0 },
+          kind: "time",
+          schedule: { kind: "weekly", weekday: 1, hour: 9, minute: 0 },
         },
       }),
     );
 
-    assert.equal(request.name, 'create_automation');
-    assert.equal(request.title, 'Check CI status and summarize failures.');
+    assert.equal(request.name, "create_automation");
+    assert.equal(request.title, "Check CI status and summarize failures.");
     assert.deepEqual(request.trigger, {
-      kind: 'time',
-      schedule: { kind: 'weekly', weekday: 1, hour: 9, minute: 0 },
+      kind: "time",
+      schedule: { kind: "weekly", weekday: 1, hour: 9, minute: 0 },
     });
-    assert.equal(request.approval_level, 'default');
+    assert.equal(request.approval_level, "default");
 
     const output = await service.execute(request);
     assert.match(String(output), /\[automation\]\naction: create_automation\nid: /);
@@ -945,20 +983,20 @@ test('create_automation writes automation file when defaults are provided', asyn
   }
 });
 
-test('create_file is rejected for new files under plans/', async () => {
-  const workspaceRoot = await mkdtemp(join(tmpdir(), 'spirit-host-tools-plans-whitelist-'));
-  const spiritDataDir = join(workspaceRoot, '.spirit-data');
+test("create_file is rejected for new files under plans/", async () => {
+  const workspaceRoot = await mkdtemp(join(tmpdir(), "spirit-host-tools-plans-whitelist-"));
+  const spiritDataDir = join(workspaceRoot, ".spirit-data");
 
   try {
-    await mkdir(join(spiritDataDir, 'plans'), { recursive: true });
+    await mkdir(join(spiritDataDir, "plans"), { recursive: true });
 
     const service = new NodeHostToolService({ workspaceRoot, spiritDataDir });
     await assert.rejects(
       () =>
         service.execute({
-          name: 'create_file',
-          path: join(spiritDataDir, 'plans', 'blocked.md'),
-          content: 'nope',
+          name: "create_file",
+          path: join(spiritDataDir, "plans", "blocked.md"),
+          content: "nope",
         }),
       /create_plan/,
     );
@@ -970,13 +1008,13 @@ test('create_file is rejected for new files under plans/', async () => {
 function assertHostToolExecutionOutput(
   output: HostToolExecutionOutput | string,
 ): asserts output is HostToolExecutionOutput {
-  assert.notEqual(typeof output, 'string');
+  assert.notEqual(typeof output, "string");
 }
 
 function assertTextToolOutput(output: HostToolExecutionOutput | string): asserts output is string {
-  assert.equal(typeof output, 'string');
+  assert.equal(typeof output, "string");
 }
 
 function escapeRegExp(input: string): string {
-  return input.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  return input.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 }

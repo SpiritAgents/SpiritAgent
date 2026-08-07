@@ -21,16 +21,11 @@ function searchCacheKey(query: string, page = 1): string {
   return `${query}\0${page}`;
 }
 
-export function readGitHubAutomationRepositoriesListCache(
-  page = 1,
-): ListCacheEntry | undefined {
+export function readGitHubAutomationRepositoriesListCache(page = 1): ListCacheEntry | undefined {
   return listCache.get(listCacheKey(page));
 }
 
-export function writeGitHubAutomationRepositoriesListCache(
-  entry: ListCacheEntry,
-  page = 1,
-): void {
+export function writeGitHubAutomationRepositoriesListCache(entry: ListCacheEntry, page = 1): void {
   listCache.set(listCacheKey(page), entry);
 }
 

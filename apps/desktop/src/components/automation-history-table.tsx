@@ -44,14 +44,8 @@ export function AutomationHistoryTable({ runs, onOpenSession }: AutomationHistor
       columnHelper.accessor("startedAtUnixMs", {
         id: "time",
         header: () => t("automations.historyColumnTime"),
-        cell: ({ getValue }) => {
-          const startedAtIso = new Date(getValue()).toISOString();
-          return (
-            <time dateTime={startedAtIso}>
-              {formatRelativeTime(startedAtIso, i18n.language)}
-            </time>
-          );
-        },
+        cell: ({ getValue }) =>
+          formatRelativeTime(new Date(getValue()).toISOString(), i18n.language),
       }),
       columnHelper.accessor("status", {
         id: "status",
@@ -116,10 +110,7 @@ export function AutomationHistoryTable({ runs, onOpenSession }: AutomationHistor
               {row.getVisibleCells().map((cell) => (
                 <TableCell
                   key={cell.id}
-                  className={cn(
-                    "text-foreground/80",
-                    cell.column.id === "status" && "text-right",
-                  )}
+                  className={cn("text-foreground/80", cell.column.id === "status" && "text-right")}
                 >
                   {flexRender(cell.column.columnDef.cell, cell.getContext())}
                 </TableCell>

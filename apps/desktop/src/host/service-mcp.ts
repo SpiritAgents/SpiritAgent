@@ -1,27 +1,27 @@
-import path from 'node:path';
+import path from "node:path";
 
-import { McpService } from '@spiritagent/agent-core';
+import { McpService } from "@spiritagent/agent-core";
 
-import i18n from '../lib/i18n-host.js';
+import i18n from "../lib/i18n-host.js";
 import type {
   AddMcpServerRequest,
   DeleteMcpServerRequest,
   DesktopMcpServerInspection,
-} from '../types.js';
-import type { DesktopWorkspaceBinding } from './storage.js';
+} from "../types.js";
+import type { DesktopWorkspaceBinding } from "./storage.js";
 import {
   addMcpServerToDisk,
   buildMcpServerConfigFromRequest,
   deleteMcpServerFromDisk,
-} from './mcp-config.js';
+} from "./mcp-config.js";
 
 export function sharedMcpServiceForWorkspace(
   cache: Map<string, McpService>,
   workspaceRoot: string,
-  workspaceBinding: DesktopWorkspaceBinding = 'project',
+  workspaceBinding: DesktopWorkspaceBinding = "project",
 ): McpService {
-  const includeWorkspaceConfig = workspaceBinding === 'project';
-  const key = `${path.resolve(workspaceRoot)}|${includeWorkspaceConfig ? 'project' : 'none'}`;
+  const includeWorkspaceConfig = workspaceBinding === "project";
+  const key = `${path.resolve(workspaceRoot)}|${includeWorkspaceConfig ? "project" : "none"}`;
   let service = cache.get(key);
   if (!service) {
     service = new McpService(path.resolve(workspaceRoot), includeWorkspaceConfig);
@@ -40,7 +40,7 @@ export function disposeMcpServicesExcept(
   keepWorkspaceRoot?: string,
 ): void {
   const keepPrefix = keepWorkspaceRoot ? `${path.resolve(keepWorkspaceRoot)}|` : undefined;
-  for (const key of [...cache.keys()]) {
+  for (const key of cache.keys()) {
     if (keepPrefix !== undefined && key.startsWith(keepPrefix)) {
       continue;
     }
@@ -52,24 +52,28 @@ export async function addDesktopMcpServer(input: {
   request: AddMcpServerRequest;
   workspaceRoot: string;
   workspaceBinding: DesktopWorkspaceBinding;
-}): Promise<{ scope: AddMcpServerRequest['scope'] }> {
+}): Promise<{ scope: AddMcpServerRequest["scope"] }> {
   const name = input.request.name.trim();
   if (!name) {
-    throw new Error(i18n.t('error.mcpNameRequired'));
+    throw new Error(i18n.t("error.mcpNameRequired"));
   }
   if (/\s/u.test(name)) {
-    throw new Error(i18n.t('error.mcpNameWhitespace'));
+    throw new Error(i18n.t("error.mcpNameWhitespace"));
   }
 
   const endpoint = input.request.endpoint.trim();
   if (!endpoint) {
-    throw new Error(input.request.transportType === 'http' ? i18n.t('error.urlRequired') : i18n.t('error.commandRequired'));
+    throw new Error(
+      input.request.transportType === "http"
+        ? i18n.t("error.urlRequired")
+        : i18n.t("error.commandRequired"),
+    );
   }
 
-  const scope = input.request.scope ?? 'workspace';
-  if (scope === 'workspace' && input.workspaceBinding === 'none') {
+  const scope = input.request.scope ?? "workspace";
+  if (scope === "workspace" && input.workspaceBinding === "none") {
     throw new Error(
-      'Workspace-scoped MCP servers are unavailable when workspace binding is disabled.',
+      "Workspace-scoped MCP servers are unavailable when workspace binding is disabled.",
     );
   }
   const serverConfig = buildMcpServerConfigFromRequest({ ...input.request, scope });
@@ -80,13 +84,13 @@ export async function addDesktopMcpServer(input: {
 export async function deleteDesktopMcpServer(input: {
   request: DeleteMcpServerRequest;
   workspaceRoot: string;
-}): Promise<{ scope: DeleteMcpServerRequest['scope'] }> {
+}): Promise<{ scope: DeleteMcpServerRequest["scope"] }> {
   const name = input.request.name.trim();
   if (!name) {
-    throw new Error(i18n.t('error.mcpNameRequired'));
+    throw new Error(i18n.t("error.mcpNameRequired"));
   }
 
-  const scope = input.request.scope ?? 'user';
+  const scope = input.request.scope ?? "user";
   await deleteMcpServerFromDisk(scope, input.workspaceRoot, name);
   return { scope };
 }
@@ -97,21 +101,18 @@ export async function inspectDesktopMcpServer(input: {
 }): Promise<DesktopMcpServerInspection> {
   const trimmedName = input.name.trim();
   if (!trimmedName) {
-    throw new Error(i18n.t('error.mcpNameRequired'));
+    throw new Error(i18n.t("error.mcpNameRequired"));
   }
 
-  const inspection = await input.inspect(trimmedName) as Record<string, unknown>;
+  const inspection = (await input.inspect(trimmedName)) as Record<string, unknown>;
   return {
-    name: typeof inspection.name === 'string' ? inspection.name : trimmedName,
-    displayName:
-      typeof inspection.displayName === 'string'
-        ? inspection.displayName
-        : trimmedName,
+    name: typeof inspection.name === "string" ? inspection.name : trimmedName,
+    displayName: typeof inspection.displayName === "string" ? inspection.displayName : trimmedName,
     supportsTools: inspection.supportsTools === true,
     supportsResources: inspection.supportsResources === true,
     supportsPrompts: inspection.supportsPrompts === true,
-    toolsCount: typeof inspection.toolsCount === 'number' ? inspection.toolsCount : 0,
-    resourcesCount: typeof inspection.resourcesCount === 'number' ? inspection.resourcesCount : 0,
-    promptsCount: typeof inspection.promptsCount === 'number' ? inspection.promptsCount : 0,
+    toolsCount: typeof inspection.toolsCount === "number" ? inspection.toolsCount : 0,
+    resourcesCount: typeof inspection.resourcesCount === "number" ? inspection.resourcesCount : 0,
+    promptsCount: typeof inspection.promptsCount === "number" ? inspection.promptsCount : 0,
   };
 }

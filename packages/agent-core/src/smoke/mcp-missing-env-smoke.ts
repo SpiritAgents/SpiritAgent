@@ -1,1 +1,1 @@
-import './host-config/mcp-missing-env-smoke.js';
+import "./host-config/mcp-missing-env-smoke.js";

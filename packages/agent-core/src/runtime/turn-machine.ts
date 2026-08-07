@@ -1,4 +1,4 @@
-import { setImmediate as waitForImmediate } from 'node:timers/promises';
+import { setImmediate as waitForImmediate } from "node:timers/promises";
 
 import type {
   AskQuestionsResult,
@@ -9,26 +9,24 @@ import type {
   ToolExecutionOutput,
   ToolAgentRoundCompletion,
   ToolCallRequest,
-} from '../ports.js';
+} from "../ports.js";
 import {
   cloneLlmMessageContent,
   cloneLlmProviderState,
   createLlmMessageContentFromText,
-} from '../ports.js';
-import { emitContextUsageUpdated } from './context-usage.js';
-import { isOpenResponsesTransportConfig } from '../provider-config.js';
+} from "../ports.js";
+import { emitContextUsageUpdated } from "./context-usage.js";
+import { isOpenResponsesTransportConfig } from "../provider-config.js";
 import {
   handleManagedProviderToolCallInTurn,
   handleManagedProviderToolCallInTurnAsync,
-} from '../moonshot/formula/moonshot-formula-turn-handler.js';
+} from "../moonshot/formula/moonshot-formula-turn-handler.js";
 import {
   buildApplyPatchToolResultProviderState,
   registerPendingApplyPatchCallIds,
-} from '../open-responses/apply-patch-bridge.js';
-import { APPLY_PATCH_HOST_TOOL_NAME } from '../open-responses/apply-patch-eligibility.js';
-import {
-  applyAutoReviewToApprovalGate,
-} from './auto-approval-integration.js';
+} from "../open-responses/apply-patch-bridge.js";
+import { APPLY_PATCH_HOST_TOOL_NAME } from "../open-responses/apply-patch-eligibility.js";
+import { applyAutoReviewToApprovalGate } from "./auto-approval-integration.js";
 import {
   hookDeniedToolOutput,
   postHookToolInputFromPreGate,
@@ -36,12 +34,12 @@ import {
   runPostToolUseSideEffects,
   runPreToolUseGate,
   type PreToolUseGateResult,
-} from '../hooks/tool-hooks.js';
-import { toolInputFromArgumentsJson } from '../hooks/integration.js';
-import { appendToolResultMessages, isJsonObject } from '../tool-agent.js';
-import { prepareStateForContextRetryAsync } from './compaction.js';
-import { syncPreparedToolResultContentToHistory } from './tool-execution.js';
-import { buildEarlyExecutableArgumentsJson } from '../tool-streaming-preview-gate.js';
+} from "../hooks/tool-hooks.js";
+import { toolInputFromArgumentsJson } from "../hooks/integration.js";
+import { appendToolResultMessages } from "../tool-agent.js";
+import { prepareStateForContextRetryAsync } from "./compaction.js";
+import { syncPreparedToolResultContentToHistory } from "./tool-execution.js";
+import { buildEarlyExecutableArgumentsJson } from "../tool-streaming-preview-gate.js";
 import {
   applyDeferredUserGuidance,
   appendLoopContinuationGuidance,
@@ -53,9 +51,9 @@ import {
   renderError,
   resolveFinalAssistantHistoryMessage,
   toolArtifactsFromOutput,
-} from './helpers.js';
-import { prepareAndSyncRuntimeToolResultToHistory } from './tool-output-append.js';
-import type { ToolExecutionResult } from './tool-execution.js';
+} from "./helpers.js";
+import { prepareAndSyncRuntimeToolResultToHistory } from "./tool-output-append.js";
+import type { ToolExecutionResult } from "./tool-execution.js";
 import type {
   AgentRuntimeOptions,
   PendingEarlyToolExecution,
@@ -71,24 +69,19 @@ import type {
   RuntimeToolExecution,
   RuntimeTurnContext,
   RuntimeTurnResult,
-} from './types.js';
+} from "./types.js";
 
 export type EarlyInternalToolCallResult =
   | {
-      kind: 'completed';
+      kind: "completed";
       output: ToolExecutionOutput;
       failed: boolean;
       enqueueDeferredGuidance?: boolean;
       fatalError?: string;
     }
-  | { kind: 'defer-to-formal' };
+  | { kind: "defer-to-formal" };
 
-export interface InternalToolCallRuntime<
-  Config,
-  State,
-  ToolRequest,
-  TrustTarget = string,
-> {
+export interface InternalToolCallRuntime<_Config, State, ToolRequest, TrustTarget = string> {
   maybeExecuteInternalToolCall?: (
     pendingUserInput: string,
     state: State,
@@ -135,7 +128,7 @@ export interface TurnMachineRuntime<
   clearStreamingUiState(): void;
   completeTurn(result: RuntimeTurnResult<State, ToolRequest, TrustTarget>): void;
   emitEvent(event: RuntimeEvent<ToolRequest>): void;
-  recordContextMessage?(role: 'system' | 'user' | 'assistant', content: string): void;
+  recordContextMessage?(role: "system" | "user" | "assistant", content: string): void;
   performToolExecution(
     request: ToolRequest,
     toolName: string,
@@ -168,14 +161,8 @@ export interface TurnMachineRuntime<
     earlyToolExecutions?: Map<string, PendingEarlyToolExecution<ToolRequest>>,
     postHookToolInput?: JsonObject,
   ): void;
-  resolveTurnToolState?: (
-    turn: RuntimeTurnContext<ToolRequest>,
-    fallback: State,
-  ) => State;
-  advanceTurnToolState?: (
-    turn: RuntimeTurnContext<ToolRequest>,
-    state: State,
-  ) => void;
+  resolveTurnToolState?: (turn: RuntimeTurnContext<ToolRequest>, fallback: State) => State;
+  advanceTurnToolState?: (turn: RuntimeTurnContext<ToolRequest>, state: State) => void;
   startHistoryCompactionAsync(
     retryState: State,
     pendingUserInput: string,
@@ -207,30 +194,25 @@ export interface TurnMachineRuntime<
   poll(): Promise<void>;
 }
 
-export async function resumePendingApproval<
-  Config,
-  State,
-  ToolRequest,
-  TrustTarget = string,
->(
+export async function resumePendingApproval<Config, State, ToolRequest, TrustTarget = string>(
   runtime: TurnMachineRuntime<Config, State, ToolRequest, TrustTarget>,
   decision: RuntimeApprovalDecision,
 ): Promise<RuntimeTurnResult<State, ToolRequest, TrustTarget>> {
   const pending = runtime.pendingApproval;
   if (!pending) {
-    throw new Error('当前没有待确认的工具调用。');
+    throw new Error("当前没有待确认的工具调用。");
   }
 
   runtime.pendingApproval = undefined;
   runtime.emitEvent({
-    kind: 'approval-resolved',
+    kind: "approval-resolved",
     toolCallId: pending.toolCallId,
     toolName: pending.toolName,
     request: pending.request,
     decisionKind: decision.kind,
   });
 
-  if (decision.kind === 'allow') {
+  if (decision.kind === "allow") {
     if (decision.persistTrust && pending.trustTarget !== undefined) {
       await runtime.options.toolExecutor.trust(pending.trustTarget);
     }
@@ -248,10 +230,10 @@ export async function resumePendingApproval<
     );
   }
 
-  if (decision.kind === 'guidance') {
+  if (decision.kind === "guidance") {
     const guidanceText = decision.resultText?.trim()
       ? decision.resultText
-      : '[denied by user] tool call rejected by user guidance';
+      : "[denied by user] tool call rejected by user guidance";
     const guidanceMessage = decision.userMessage.trim();
     commitSyntheticToolExecutionFailure(
       runtime,
@@ -287,7 +269,7 @@ export async function resumePendingApproval<
 
   const deniedText = decision.resultText?.trim()
     ? decision.resultText
-    : '[denied by user] tool call rejected by user approval policy';
+    : "[denied by user] tool call rejected by user approval policy";
   commitSyntheticToolExecutionFailure(
     runtime,
     pending.turn,
@@ -311,18 +293,13 @@ export async function resumePendingApproval<
   );
 }
 
-export async function resumePendingQuestions<
-  Config,
-  State,
-  ToolRequest,
-  TrustTarget = string,
->(
+export async function resumePendingQuestions<Config, State, ToolRequest, TrustTarget = string>(
   runtime: TurnMachineRuntime<Config, State, ToolRequest, TrustTarget>,
   result: AskQuestionsResult,
 ): Promise<RuntimeTurnResult<State, ToolRequest, TrustTarget>> {
   const pending = runtime.pendingQuestions;
   if (!pending) {
-    throw new Error('当前没有待回答的问题表单。');
+    throw new Error("当前没有待回答的问题表单。");
   }
 
   runtime.pendingQuestions = undefined;
@@ -336,7 +313,7 @@ export async function resumePendingQuestions<
         runtime,
         pending,
         pending.request,
-        '[continueAfterQuestions error] continued request must stay on the same tool.',
+        "[continueAfterQuestions error] continued request must stay on the same tool.",
       );
     }
 
@@ -352,7 +329,7 @@ export async function resumePendingQuestions<
       );
     }
 
-    if (authorization.kind === 'need-approval') {
+    if (authorization.kind === "need-approval") {
       const activeGate = await applyAutoReviewToApprovalGate(
         runtime.options.getApprovalLevel?.(),
         runtime.options.reviewToolApproval,
@@ -377,9 +354,7 @@ export async function resumePendingQuestions<
           state: pending.state,
           request: continuedRequest,
           prompt: activeGate.prompt,
-          ...(activeGate.trustTarget !== undefined
-            ? { trustTarget: activeGate.trustTarget }
-            : {}),
+          ...(activeGate.trustTarget !== undefined ? { trustTarget: activeGate.trustTarget } : {}),
           ...(activeGate.autoReviewBlockReason !== undefined
             ? { autoReviewBlockReason: activeGate.autoReviewBlockReason }
             : {}),
@@ -392,12 +367,12 @@ export async function resumePendingQuestions<
           streamingEmitBeginResponse: true,
         };
         runtime.emitEvent({
-          kind: 'approval-requested',
+          kind: "approval-requested",
           approval,
         });
 
         return {
-          kind: 'requires-approval',
+          kind: "requires-approval",
           approval,
           requestTrace: [...pending.turn.requestTrace],
           toolExecutions: [...pending.turn.toolExecutions],
@@ -406,12 +381,12 @@ export async function resumePendingQuestions<
       }
     }
 
-    if (authorization.kind === 'need-questions') {
+    if (authorization.kind === "need-questions") {
       return continueAfterQuestionsFailure(
         runtime,
         pending,
         continuedRequest,
-        '[continueAfterQuestions error] continued request cannot require questions again.',
+        "[continueAfterQuestions error] continued request cannot require questions again.",
       );
     }
 
@@ -438,7 +413,7 @@ export async function resumePendingQuestions<
   };
   pending.turn.toolExecutions.push(questionsExecution);
   runtime.emitEvent({
-    kind: 'tool-execution-finished',
+    kind: "tool-execution-finished",
     execution: questionsExecution,
   });
 
@@ -466,12 +441,7 @@ export async function resumePendingQuestions<
   return runTurnLoop(runtime, resumedState, pending.pendingUserInput, pending.turn);
 }
 
-export async function runTurnLoop<
-  Config,
-  State,
-  ToolRequest,
-  TrustTarget = string,
->(
+export async function runTurnLoop<Config, State, ToolRequest, TrustTarget = string>(
   runtime: TurnMachineRuntime<Config, State, ToolRequest, TrustTarget>,
   state: State,
   pendingUserInput: string,
@@ -494,7 +464,7 @@ export async function runTurnLoop<
       runtime.options.toolExecutor.toolDefinitionsJson(),
     );
 
-    if (completion.kind === 'failure') {
+    if (completion.kind === "failure") {
       runtime.appendTrace(completion.requestTrace, turn);
 
       if (
@@ -510,7 +480,7 @@ export async function runTurnLoop<
 
           if (compaction.droppedMessages === 0 && !preparedRetry.changed) {
             return {
-              kind: 'failed',
+              kind: "failed",
               error: `检测到上下文超限，但历史已无法继续压缩。原始错误: ${completion.error}`,
               state: preparedRetry.state,
               requestTrace: [...turn.requestTrace],
@@ -528,11 +498,14 @@ export async function runTurnLoop<
                     currentPendingUserInput,
                     preparedRetry.state,
                   )
-                : runtime.options.createToolAgentState(runtime.historyStore, currentPendingUserInput);
+                : runtime.options.createToolAgentState(
+                    runtime.historyStore,
+                    currentPendingUserInput,
+                  );
           continue;
         } catch (error) {
           return {
-            kind: 'failed',
+            kind: "failed",
             error: `上下文压缩失败: ${renderError(error)} | 原始错误: ${completion.error}`,
             state: currentState,
             requestTrace: [...turn.requestTrace],
@@ -543,7 +516,7 @@ export async function runTurnLoop<
       }
 
       return {
-        kind: 'failed',
+        kind: "failed",
         error: completion.error,
         state: currentState,
         requestTrace: [...turn.requestTrace],
@@ -556,8 +529,14 @@ export async function runTurnLoop<
     runtime.appendTrace(round.requestTrace, turn);
     currentState = round.state;
 
-    if (round.step.kind === 'tool-calls') {
-      return processToolCalls(runtime, currentState, currentPendingUserInput, round.step.calls, turn);
+    if (round.step.kind === "tool-calls") {
+      return processToolCalls(
+        runtime,
+        currentState,
+        currentPendingUserInput,
+        round.step.calls,
+        turn,
+      );
     }
 
     const assistantText = runtime.options.extractAssistantText(currentState)?.trim();
@@ -565,8 +544,8 @@ export async function runTurnLoop<
       emptyAssistantRetries += 1;
       if (emptyAssistantRetries > 1) {
         return {
-          kind: 'failed',
-          error: '模型返回了 final-response-ready，但没有可用的 assistant 正文。',
+          kind: "failed",
+          error: "模型返回了 final-response-ready，但没有可用的 assistant 正文。",
           state: currentState,
           requestTrace: [...turn.requestTrace],
           toolExecutions: [...turn.toolExecutions],
@@ -587,7 +566,7 @@ export async function runTurnLoop<
     runtime.pendingUserTurnStore = undefined;
 
     return {
-      kind: 'completed',
+      kind: "completed",
       assistantText,
       state: currentState,
       requestTrace: [...turn.requestTrace],
@@ -597,12 +576,7 @@ export async function runTurnLoop<
   }
 }
 
-export async function processToolCalls<
-  Config,
-  State,
-  ToolRequest,
-  TrustTarget = string,
->(
+export async function processToolCalls<Config, State, ToolRequest, TrustTarget = string>(
   runtime: TurnMachineRuntime<Config, State, ToolRequest, TrustTarget>,
   state: State,
   pendingUserInput: string,
@@ -628,10 +602,10 @@ export async function processToolCalls<
       remaining,
       turn,
     );
-    if (managedOutcome.kind === 'turn-result') {
+    if (managedOutcome.kind === "turn-result") {
       return managedOutcome.result;
     }
-    if (managedOutcome.kind === 'advance') {
+    if (managedOutcome.kind === "advance") {
       currentState = managedOutcome.state;
       continue;
     }
@@ -643,26 +617,23 @@ export async function processToolCalls<
         call.name,
         call.argumentsJson,
       );
-      request = runtime.options.toolExecutor.attachRequestMetadata?.(request, {
-        toolCallId: call.id,
-        toolName: call.name,
-      }) ?? request;
+      request =
+        runtime.options.toolExecutor.attachRequestMetadata?.(request, {
+          toolCallId: call.id,
+          toolName: call.name,
+        }) ?? request;
 
       preGate = await runPreToolUseGate(runtime, call, request);
-      if (preGate.kind === 'denied') {
+      if (preGate.kind === "denied") {
         const output = `[hook denied] ${hookDeniedToolOutput(preGate.error)}`;
         commitSyntheticToolExecutionFailure(runtime, turn, request, call.id, call.name, output);
-        currentState = runtime.options.appendToolResultMessage(
-          currentState,
-          call.id,
-          output,
-        );
+        currentState = runtime.options.appendToolResultMessage(currentState, call.id, output);
         continue;
       }
       request = preGate.request;
 
       runtime.emitEvent({
-        kind: 'tool-call-started',
+        kind: "tool-call-started",
         toolCallId: call.id,
         toolName: call.name,
         request,
@@ -683,24 +654,20 @@ export async function processToolCalls<
     } catch (error) {
       const output = `[authorization error] ${renderError(error)}`;
       commitSyntheticToolExecutionFailure(runtime, turn, request, call.id, call.name, output);
-      currentState = runtime.options.appendToolResultMessage(
-        currentState,
-        call.id,
-        output,
-      );
+      currentState = runtime.options.appendToolResultMessage(currentState, call.id, output);
       continue;
     }
 
     const initialGate = resolveApprovalGateAfterAuthorize(preGate, authorization);
     const approvalGate = initialGate
       ? await applyAutoReviewToApprovalGate(
-        runtime.options.getApprovalLevel?.(),
-        runtime.options.reviewToolApproval,
-        runtime.options.toolExecutor.toolDefinitionsJson(),
-        call,
-        initialGate,
-        preGate,
-      )
+          runtime.options.getApprovalLevel?.(),
+          runtime.options.reviewToolApproval,
+          runtime.options.toolExecutor.toolDefinitionsJson(),
+          call,
+          initialGate,
+          preGate,
+        )
       : null;
     if (approvalGate) {
       const approval = createApproval(
@@ -731,12 +698,12 @@ export async function processToolCalls<
         streamingEmitBeginResponse: true,
       };
       runtime.emitEvent({
-        kind: 'approval-requested',
+        kind: "approval-requested",
         approval,
       });
 
       return {
-        kind: 'requires-approval',
+        kind: "requires-approval",
         approval,
         requestTrace: [...turn.requestTrace],
         toolExecutions: [...turn.toolExecutions],
@@ -744,7 +711,7 @@ export async function processToolCalls<
       };
     }
 
-    if (authorization.kind === 'need-questions') {
+    if (authorization.kind === "need-questions") {
       const questions = createQuestions(request, call.id, call.name, authorization.questions);
       runtime.pendingQuestions = {
         pendingUserInput,
@@ -760,12 +727,12 @@ export async function processToolCalls<
         streamingEmitBeginResponse: true,
       };
       runtime.emitEvent({
-        kind: 'questions-requested',
+        kind: "questions-requested",
         questions,
       });
 
       return {
-        kind: 'requires-questions',
+        kind: "requires-questions",
         questions,
         requestTrace: [...turn.requestTrace],
         toolExecutions: [...turn.toolExecutions],
@@ -790,12 +757,7 @@ export async function processToolCalls<
   return runTurnLoop(runtime, currentState, pendingUserInput, turn);
 }
 
-async function runPostToolUseForTurnExecution<
-  Config,
-  State,
-  ToolRequest,
-  TrustTarget = string,
->(
+async function runPostToolUseForTurnExecution<Config, State, ToolRequest, TrustTarget = string>(
   runtime: TurnMachineRuntime<Config, State, ToolRequest, TrustTarget>,
   turn: RuntimeTurnContext<ToolRequest>,
   toolCallId: string,
@@ -804,15 +766,14 @@ async function runPostToolUseForTurnExecution<
   startedAt: number,
   postHookToolInput?: JsonObject,
 ): Promise<void> {
-  const execution = [...turn.toolExecutions].reverse().find(
-    (entry) => entry.toolCallId === toolCallId,
-  );
+  const execution = [...turn.toolExecutions]
+    .reverse()
+    .find((entry) => entry.toolCallId === toolCallId);
   if (!execution) {
     return;
   }
-  const summaryText = typeof execution.output === 'string'
-    ? execution.output
-    : JSON.stringify(execution.output);
+  const summaryText =
+    typeof execution.output === "string" ? execution.output : JSON.stringify(execution.output);
   await runPostToolUseSideEffects(
     runtime,
     { id: toolCallId, name: toolName, argumentsJson },
@@ -826,12 +787,7 @@ async function runPostToolUseForTurnExecution<
   );
 }
 
-export async function executeAuthorizedToolCall<
-  Config,
-  State,
-  ToolRequest,
-  TrustTarget = string,
->(
+export async function executeAuthorizedToolCall<Config, State, ToolRequest, TrustTarget = string>(
   runtime: TurnMachineRuntime<Config, State, ToolRequest, TrustTarget>,
   pendingUserInput: string,
   state: State,
@@ -840,7 +796,7 @@ export async function executeAuthorizedToolCall<
   toolName: string,
   remainingCalls: ToolCallRequest[],
   turn: RuntimeTurnContext<ToolRequest>,
-  toolArgumentsJson = '{}',
+  toolArgumentsJson = "{}",
   postHookToolInput?: JsonObject,
 ): Promise<RuntimeTurnResult<State, ToolRequest, TrustTarget>> {
   const startedAt = Date.now();
@@ -902,12 +858,7 @@ export async function executeAuthorizedToolCall<
   return runTurnLoop(runtime, resumedState, pendingUserInput, turn);
 }
 
-async function appendToolResultForRoundAsync<
-  Config,
-  State,
-  ToolRequest,
-  TrustTarget = string,
->(
+async function appendToolResultForRoundAsync<Config, State, ToolRequest, TrustTarget = string>(
   runtime: TurnMachineRuntime<Config, State, ToolRequest, TrustTarget>,
   state: State,
   toolCallId: string,
@@ -916,8 +867,8 @@ async function appendToolResultForRoundAsync<
   failed = false,
 ): Promise<State> {
   if (
-    toolName === APPLY_PATCH_HOST_TOOL_NAME
-    && isOpenResponsesTransportConfig(runtime.options.config as any)
+    toolName === APPLY_PATCH_HOST_TOOL_NAME &&
+    isOpenResponsesTransportConfig(runtime.options.config as any)
   ) {
     registerPendingApplyPatchCallIds([toolCallId]);
     return appendToolResultMessages(state as any, [
@@ -926,7 +877,7 @@ async function appendToolResultForRoundAsync<
         content,
         providerState: buildApplyPatchToolResultProviderState(
           toolCallId,
-          failed ? 'failed' : 'completed',
+          failed ? "failed" : "completed",
           failed ? content : undefined,
         ),
       },
@@ -936,12 +887,7 @@ async function appendToolResultForRoundAsync<
   return runtime.options.appendToolResultMessage(state, toolCallId, content);
 }
 
-async function continueAfterQuestionsFailure<
-  Config,
-  State,
-  ToolRequest,
-  TrustTarget = string,
->(
+async function continueAfterQuestionsFailure<Config, State, ToolRequest, TrustTarget = string>(
   runtime: TurnMachineRuntime<Config, State, ToolRequest, TrustTarget>,
   pending: PendingQuestionsState<State, ToolRequest>,
   request: ToolRequest,
@@ -974,24 +920,14 @@ async function continueAfterQuestionsFailure<
   return runTurnLoop(runtime, resumedState, pending.pendingUserInput, pending.turn);
 }
 
-export function startToolAgentRoundAsync<
-  Config,
-  State,
-  ToolRequest,
-  TrustTarget = string,
->(
+export function startToolAgentRoundAsync<Config, State, ToolRequest, TrustTarget = string>(
   runtime: TurnMachineRuntime<Config, State, ToolRequest, TrustTarget>,
   state: State,
   pendingUserInput: string,
   turn: RuntimeTurnContext<ToolRequest>,
   emptyAssistantRetries = 0,
 ): void {
-  ({ state, pendingUserInput } = applyDeferredUserGuidance(
-    runtime,
-    state,
-    pendingUserInput,
-    turn,
-  ));
+  ({ state, pendingUserInput } = applyDeferredUserGuidance(runtime, state, pendingUserInput, turn));
   runtime.clearStreamingUiState();
 
   const pending: PendingToolAgentRound<State, ToolRequest> = {
@@ -1018,7 +954,7 @@ export function startToolAgentRoundAsync<
     .catch((error: unknown) => {
       if (runtime.pendingToolAgentRound === pending) {
         pending.completion = {
-          kind: 'failure',
+          kind: "failure",
           error: renderError(error),
           requestTrace: [],
         };
@@ -1026,12 +962,7 @@ export function startToolAgentRoundAsync<
     });
 }
 
-export async function pollPendingToolAgentRound<
-  Config,
-  State,
-  ToolRequest,
-  TrustTarget = string,
->(
+export async function pollPendingToolAgentRound<Config, State, ToolRequest, TrustTarget = string>(
   runtime: TurnMachineRuntime<Config, State, ToolRequest, TrustTarget>,
 ): Promise<void> {
   const pending = runtime.pendingToolAgentRound;
@@ -1054,7 +985,7 @@ export async function handlePendingToolAgentRoundCompletion<
   pending: PendingToolAgentRound<State, ToolRequest>,
   completion: ToolAgentRoundCompletion<State>,
 ): Promise<void> {
-  if (completion.kind === 'failure') {
+  if (completion.kind === "failure") {
     runtime.appendTrace(completion.requestTrace, pending.turn);
 
     if (
@@ -1074,7 +1005,7 @@ export async function handlePendingToolAgentRoundCompletion<
     }
 
     runtime.completeTurn({
-      kind: 'failed',
+      kind: "failed",
       error: completion.error,
       state: pending.state,
       requestTrace: [...pending.turn.requestTrace],
@@ -1088,7 +1019,7 @@ export async function handlePendingToolAgentRoundCompletion<
   runtime.appendTrace(round.requestTrace, pending.turn);
   emitContextUsageUpdated(runtime.emitEvent.bind(runtime), round.usage);
 
-  if (round.step.kind === 'tool-calls') {
+  if (round.step.kind === "tool-calls") {
     await processToolCallsAsync(
       runtime,
       round.state,
@@ -1103,8 +1034,8 @@ export async function handlePendingToolAgentRoundCompletion<
   if (!assistantText) {
     if (pending.emptyAssistantRetries >= 1) {
       runtime.completeTurn({
-        kind: 'failed',
-        error: '模型返回了 final-response-ready，但没有可用的 assistant 正文。',
+        kind: "failed",
+        error: "模型返回了 final-response-ready，但没有可用的 assistant 正文。",
         state: round.state,
         requestTrace: [...pending.turn.requestTrace],
         toolExecutions: [...pending.turn.toolExecutions],
@@ -1132,17 +1063,12 @@ export async function handlePendingToolAgentRoundCompletion<
       round.state,
       pending.pendingUserInput,
     );
-    startToolAgentRoundAsync(
-      runtime,
-      continuationState,
-      pending.pendingUserInput,
-      pending.turn,
-    );
+    startToolAgentRoundAsync(runtime, continuationState, pending.pendingUserInput, pending.turn);
     return;
   }
   runtime.pendingUserTurnStore = undefined;
   runtime.completeTurn({
-    kind: 'completed',
+    kind: "completed",
     assistantText,
     state: round.state,
     requestTrace: [...pending.turn.requestTrace],
@@ -1151,12 +1077,7 @@ export async function handlePendingToolAgentRoundCompletion<
   });
 }
 
-export async function processToolCallsAsync<
-  Config,
-  State,
-  ToolRequest,
-  TrustTarget = string,
->(
+export async function processToolCallsAsync<Config, State, ToolRequest, TrustTarget = string>(
   runtime: TurnMachineRuntime<Config, State, ToolRequest, TrustTarget>,
   state: State,
   pendingUserInput: string,
@@ -1192,7 +1113,7 @@ export async function processToolCallsAsync<
     }
 
     const earlyOutcome = await matchingEarlyToolExecutionOutcome(call, earlyToolExecutions);
-    if (earlyOutcome?.kind === 'completed') {
+    if (earlyOutcome?.kind === "completed") {
       commitPreparedToolExecution(
         runtime,
         turn,
@@ -1211,7 +1132,7 @@ export async function processToolCallsAsync<
       );
       if (earlyOutcome.fatalError !== undefined) {
         runtime.completeTurn({
-          kind: 'failed',
+          kind: "failed",
           error: earlyOutcome.fatalError,
           state: currentState,
           requestTrace: [...turn.requestTrace],
@@ -1233,16 +1154,18 @@ export async function processToolCallsAsync<
         preparedOutput,
         earlyOutcome.execution.failed,
       );
-      if (queueRemainingToolCallsAsync(
-        runtime,
-        currentState,
-        pendingUserInput,
-        remaining,
-        turn,
-        resumeAsStreaming,
-        streamingEmitBeginResponse,
-        earlyToolExecutions,
-      )) {
+      if (
+        queueRemainingToolCallsAsync(
+          runtime,
+          currentState,
+          pendingUserInput,
+          remaining,
+          turn,
+          resumeAsStreaming,
+          streamingEmitBeginResponse,
+          earlyToolExecutions,
+        )
+      ) {
         return;
       }
       continue;
@@ -1252,17 +1175,18 @@ export async function processToolCallsAsync<
     let preGate: PreToolUseGateResult<ToolRequest>;
     try {
       const earlyPreGate = await resolveEarlyPreGateForFormalCall(call, earlyToolExecutions);
-      if (earlyPreGate?.kind === 'denied') {
+      if (earlyPreGate?.kind === "denied") {
         let requestForFailure: ToolRequest;
         try {
           requestForFailure = await runtime.options.toolExecutor.requestFromFunctionCall(
             call.name,
             call.argumentsJson,
           );
-          requestForFailure = runtime.options.toolExecutor.attachRequestMetadata?.(requestForFailure, {
-            toolCallId: call.id,
-            toolName: call.name,
-          }) ?? requestForFailure;
+          requestForFailure =
+            runtime.options.toolExecutor.attachRequestMetadata?.(requestForFailure, {
+              toolCallId: call.id,
+              toolName: call.name,
+            }) ?? requestForFailure;
         } catch (error) {
           commitToolCallSchemaError(runtime, turn, call, error);
           currentState = runtime.options.appendToolResultMessage(
@@ -1270,7 +1194,34 @@ export async function processToolCallsAsync<
             call.id,
             `[tool schema error] ${renderError(error)}`,
           );
-          if (queueRemainingToolCallsAsync(
+          if (
+            queueRemainingToolCallsAsync(
+              runtime,
+              currentState,
+              pendingUserInput,
+              remaining,
+              turn,
+              resumeAsStreaming,
+              streamingEmitBeginResponse,
+              earlyToolExecutions,
+            )
+          ) {
+            return;
+          }
+          continue;
+        }
+        const output = `[hook denied] ${hookDeniedToolOutput(earlyPreGate.error)}`;
+        commitSyntheticToolExecutionFailure(
+          runtime,
+          turn,
+          requestForFailure,
+          call.id,
+          call.name,
+          output,
+        );
+        currentState = runtime.options.appendToolResultMessage(currentState, call.id, output);
+        if (
+          queueRemainingToolCallsAsync(
             runtime,
             currentState,
             pendingUserInput,
@@ -1279,28 +1230,8 @@ export async function processToolCallsAsync<
             resumeAsStreaming,
             streamingEmitBeginResponse,
             earlyToolExecutions,
-          )) {
-            return;
-          }
-          continue;
-        }
-        const output = `[hook denied] ${hookDeniedToolOutput(earlyPreGate.error)}`;
-        commitSyntheticToolExecutionFailure(runtime, turn, requestForFailure, call.id, call.name, output);
-        currentState = runtime.options.appendToolResultMessage(
-          currentState,
-          call.id,
-          output,
-        );
-        if (queueRemainingToolCallsAsync(
-          runtime,
-          currentState,
-          pendingUserInput,
-          remaining,
-          turn,
-          resumeAsStreaming,
-          streamingEmitBeginResponse,
-          earlyToolExecutions,
-        )) {
+          )
+        ) {
           return;
         }
         continue;
@@ -1313,30 +1244,29 @@ export async function processToolCallsAsync<
           call.name,
           call.argumentsJson,
         );
-        request = runtime.options.toolExecutor.attachRequestMetadata?.(request, {
-          toolCallId: call.id,
-          toolName: call.name,
-        }) ?? request;
+        request =
+          runtime.options.toolExecutor.attachRequestMetadata?.(request, {
+            toolCallId: call.id,
+            toolName: call.name,
+          }) ?? request;
 
         preGate = await runPreToolUseGate(runtime, call, request);
-        if (preGate.kind === 'denied') {
+        if (preGate.kind === "denied") {
           const output = `[hook denied] ${hookDeniedToolOutput(preGate.error)}`;
           commitSyntheticToolExecutionFailure(runtime, turn, request, call.id, call.name, output);
-          currentState = runtime.options.appendToolResultMessage(
-            currentState,
-            call.id,
-            output,
-          );
-          if (queueRemainingToolCallsAsync(
-            runtime,
-            currentState,
-            pendingUserInput,
-            remaining,
-            turn,
-            resumeAsStreaming,
-            streamingEmitBeginResponse,
-            earlyToolExecutions,
-          )) {
+          currentState = runtime.options.appendToolResultMessage(currentState, call.id, output);
+          if (
+            queueRemainingToolCallsAsync(
+              runtime,
+              currentState,
+              pendingUserInput,
+              remaining,
+              turn,
+              resumeAsStreaming,
+              streamingEmitBeginResponse,
+              earlyToolExecutions,
+            )
+          ) {
             return;
           }
           continue;
@@ -1345,7 +1275,7 @@ export async function processToolCallsAsync<
       }
 
       runtime.emitEvent({
-        kind: 'tool-call-started',
+        kind: "tool-call-started",
         toolCallId: call.id,
         toolName: call.name,
         request,
@@ -1357,16 +1287,18 @@ export async function processToolCallsAsync<
         call.id,
         `[tool schema error] ${renderError(error)}`,
       );
-      if (queueRemainingToolCallsAsync(
-        runtime,
-        currentState,
-        pendingUserInput,
-        remaining,
-        turn,
-        resumeAsStreaming,
-        streamingEmitBeginResponse,
-        earlyToolExecutions,
-      )) {
+      if (
+        queueRemainingToolCallsAsync(
+          runtime,
+          currentState,
+          pendingUserInput,
+          remaining,
+          turn,
+          resumeAsStreaming,
+          streamingEmitBeginResponse,
+          earlyToolExecutions,
+        )
+      ) {
         return;
       }
       continue;
@@ -1378,21 +1310,19 @@ export async function processToolCallsAsync<
     } catch (error) {
       const output = `[authorization error] ${renderError(error)}`;
       commitSyntheticToolExecutionFailure(runtime, turn, request, call.id, call.name, output);
-      currentState = runtime.options.appendToolResultMessage(
-        currentState,
-        call.id,
-        output,
-      );
-      if (queueRemainingToolCallsAsync(
-        runtime,
-        currentState,
-        pendingUserInput,
-        remaining,
-        turn,
-        resumeAsStreaming,
-        streamingEmitBeginResponse,
-        earlyToolExecutions,
-      )) {
+      currentState = runtime.options.appendToolResultMessage(currentState, call.id, output);
+      if (
+        queueRemainingToolCallsAsync(
+          runtime,
+          currentState,
+          pendingUserInput,
+          remaining,
+          turn,
+          resumeAsStreaming,
+          streamingEmitBeginResponse,
+          earlyToolExecutions,
+        )
+      ) {
         return;
       }
       continue;
@@ -1401,13 +1331,13 @@ export async function processToolCallsAsync<
     const initialGate = resolveApprovalGateAfterAuthorize(preGate, authorization);
     const approvalGate = initialGate
       ? await applyAutoReviewToApprovalGate(
-        runtime.options.getApprovalLevel?.(),
-        runtime.options.reviewToolApproval,
-        runtime.options.toolExecutor.toolDefinitionsJson(),
-        call,
-        initialGate,
-        preGate,
-      )
+          runtime.options.getApprovalLevel?.(),
+          runtime.options.reviewToolApproval,
+          runtime.options.toolExecutor.toolDefinitionsJson(),
+          call,
+          initialGate,
+          preGate,
+        )
       : null;
     if (approvalGate) {
       const approval = createApproval(
@@ -1441,12 +1371,12 @@ export async function processToolCallsAsync<
 
       if (resumeAsStreaming) {
         runtime.emitEvent({
-          kind: 'approval-requested',
+          kind: "approval-requested",
           approval,
         });
       } else {
         runtime.completeTurn({
-          kind: 'requires-approval',
+          kind: "requires-approval",
           approval,
           requestTrace: [...turn.requestTrace],
           toolExecutions: [...turn.toolExecutions],
@@ -1456,7 +1386,7 @@ export async function processToolCallsAsync<
       return;
     }
 
-    if (authorization.kind === 'need-questions') {
+    if (authorization.kind === "need-questions") {
       const questions = createQuestions(request, call.id, call.name, authorization.questions);
       runtime.pendingQuestions = {
         pendingUserInput,
@@ -1475,12 +1405,12 @@ export async function processToolCallsAsync<
 
       if (resumeAsStreaming) {
         runtime.emitEvent({
-          kind: 'questions-requested',
+          kind: "questions-requested",
           questions,
         });
       } else {
         runtime.completeTurn({
-          kind: 'requires-questions',
+          kind: "requires-questions",
           questions,
           requestTrace: [...turn.requestTrace],
           toolExecutions: [...turn.toolExecutions],
@@ -1504,16 +1434,18 @@ export async function processToolCallsAsync<
         earlyToolExecutions,
         postHookToolInputFromPreGate(preGate, call.argumentsJson),
       );
-      if (queueRemainingToolCallsAsync(
-        runtime,
-        currentState,
-        pendingUserInput,
-        remaining,
-        turn,
-        resumeAsStreaming,
-        streamingEmitBeginResponse,
-        earlyToolExecutions,
-      )) {
+      if (
+        queueRemainingToolCallsAsync(
+          runtime,
+          currentState,
+          pendingUserInput,
+          remaining,
+          turn,
+          resumeAsStreaming,
+          streamingEmitBeginResponse,
+          earlyToolExecutions,
+        )
+      ) {
         return;
       }
       return;
@@ -1564,16 +1496,18 @@ export async function processToolCallsAsync<
       preparedOutput,
       execution.failed,
     );
-    if (queueRemainingToolCallsAsync(
-      runtime,
-      currentState,
-      pendingUserInput,
-      remaining,
-      turn,
-      resumeAsStreaming,
-      streamingEmitBeginResponse,
-      earlyToolExecutions,
-    )) {
+    if (
+      queueRemainingToolCallsAsync(
+        runtime,
+        currentState,
+        pendingUserInput,
+        remaining,
+        turn,
+        resumeAsStreaming,
+        streamingEmitBeginResponse,
+        earlyToolExecutions,
+      )
+    ) {
       return;
     }
   }
@@ -1634,7 +1568,7 @@ export function shouldSkipPersistAssistantToolCalls(
 
   const pendingIds = new Set(calls.map((call) => call.id));
   for (const message of historyStore) {
-    if (message.role !== 'assistant' || !message.toolCalls?.length) {
+    if (message.role !== "assistant" || !message.toolCalls?.length) {
       continue;
     }
     const existingIds = new Set(message.toolCalls.map((toolCall) => toolCall.id));
@@ -1646,15 +1580,10 @@ export function shouldSkipPersistAssistantToolCalls(
   return false;
 }
 
-function persistAssistantToolCalls<
-  Config,
-  State,
-  ToolRequest,
-  TrustTarget = string,
->(
+function persistAssistantToolCalls<Config, State, ToolRequest, TrustTarget = string>(
   runtime: Pick<
     TurnMachineRuntime<Config, State, ToolRequest, TrustTarget>,
-    'historyStore' | 'options'
+    "historyStore" | "options"
   >,
   state: State,
   calls: ToolCallRequest[],
@@ -1671,7 +1600,7 @@ function persistAssistantToolCalls<
   const preservedMessage = runtime.options.assistantToolCallMessageFromState?.(state, calls);
   if (preservedMessage) {
     runtime.historyStore.push({
-      role: 'assistant',
+      role: "assistant",
       content: cloneLlmMessageContent(preservedMessage.content),
       ...(preservedMessage.toolCalls !== undefined
         ? {
@@ -1690,7 +1619,7 @@ function persistAssistantToolCalls<
   }
 
   runtime.historyStore.push({
-    role: 'assistant',
+    role: "assistant",
     content: [],
     toolCalls: calls.map((call) => ({
       id: call.id,
@@ -1708,7 +1637,7 @@ export function persistProviderBuiltinToolRoundToHistoryStore<
 >(
   runtime: Pick<
     TurnMachineRuntime<Config, State, ToolRequest, TrustTarget>,
-    'historyStore' | 'options'
+    "historyStore" | "options"
   >,
   state: State,
   round: {
@@ -1738,15 +1667,10 @@ function requestStubFromToolCall(call: ToolCallRequest): Record<string, unknown>
   }
 }
 
-export function commitToolCallSchemaError<
-  Config,
-  State,
-  ToolRequest,
-  TrustTarget = string,
->(
+export function commitToolCallSchemaError<Config, State, ToolRequest, TrustTarget = string>(
   runtime: Pick<
     TurnMachineRuntime<Config, State, ToolRequest, TrustTarget>,
-    'emitEvent' | 'historyStore'
+    "emitEvent" | "historyStore"
   >,
   turn: RuntimeTurnContext<ToolRequest>,
   call: ToolCallRequest,
@@ -1771,7 +1695,7 @@ export function commitSyntheticToolExecutionFailure<
 >(
   runtime: Pick<
     TurnMachineRuntime<Config, State, ToolRequest, TrustTarget>,
-    'emitEvent' | 'historyStore'
+    "emitEvent" | "historyStore"
   >,
   turn: RuntimeTurnContext<ToolRequest>,
   request: ToolRequest,
@@ -1781,7 +1705,7 @@ export function commitSyntheticToolExecutionFailure<
 ): RuntimeToolExecution<ToolRequest> {
   const content = createLlmMessageContentFromText(outputText);
   runtime.historyStore.push({
-    role: 'tool',
+    role: "tool",
     toolCallId,
     content,
   });
@@ -1798,13 +1722,8 @@ export function commitSyntheticToolExecutionFailure<
   });
 }
 
-export function commitToolExecutionOutput<
-  Config,
-  State,
-  ToolRequest,
-  TrustTarget = string,
->(
-  runtime: Pick<TurnMachineRuntime<Config, State, ToolRequest, TrustTarget>, 'emitEvent'>,
+export function commitToolExecutionOutput<Config, State, ToolRequest, TrustTarget = string>(
+  runtime: Pick<TurnMachineRuntime<Config, State, ToolRequest, TrustTarget>, "emitEvent">,
   turn: RuntimeTurnContext<ToolRequest>,
   options: CommitToolExecutionOutputOptions<ToolRequest>,
 ): RuntimeToolExecution<ToolRequest> {
@@ -1812,13 +1731,8 @@ export function commitToolExecutionOutput<
   return commitPreparedToolExecution(runtime, turn, finished, options.output, true);
 }
 
-export function commitPreparedToolExecution<
-  Config,
-  State,
-  ToolRequest,
-  TrustTarget = string,
->(
-  runtime: Pick<TurnMachineRuntime<Config, State, ToolRequest, TrustTarget>, 'emitEvent'>,
+export function commitPreparedToolExecution<Config, State, ToolRequest, TrustTarget = string>(
+  runtime: Pick<TurnMachineRuntime<Config, State, ToolRequest, TrustTarget>, "emitEvent">,
   turn: RuntimeTurnContext<ToolRequest>,
   execution: RuntimeToolExecution<ToolRequest>,
   output: ToolExecutionOutput,
@@ -1829,7 +1743,7 @@ export function commitPreparedToolExecution<
     turn.toolExecutions.push(execution);
   }
   if (emitFinishedEvent) {
-    runtime.emitEvent({ kind: 'tool-execution-finished', execution });
+    runtime.emitEvent({ kind: "tool-execution-finished", execution });
   }
   if (enqueueDeferredGuidance) {
     enqueueDeferredToolOutputGuidance(turn, execution.toolName, output);
@@ -1867,12 +1781,7 @@ export function resolveEarlyToolCallArguments(
   return { argumentsJson: builtArgumentsJson, canonicalArgumentsJson: builtCanonical };
 }
 
-export function startEarlyToolExecution<
-  Config,
-  State,
-  ToolRequest,
-  TrustTarget = string,
->(
+export function startEarlyToolExecution<Config, State, ToolRequest, TrustTarget = string>(
   runtime: TurnMachineRuntime<Config, State, ToolRequest, TrustTarget>,
   call: ToolCallRequest,
   earlyToolExecutions: Map<string, PendingEarlyToolExecution<ToolRequest>>,
@@ -1905,12 +1814,7 @@ export function startEarlyToolExecution<
   return record;
 }
 
-async function runEarlyToolExecution<
-  Config,
-  State,
-  ToolRequest,
-  TrustTarget = string,
->(
+async function runEarlyToolExecution<Config, State, ToolRequest, TrustTarget = string>(
   runtime: TurnMachineRuntime<Config, State, ToolRequest, TrustTarget>,
   call: ToolCallRequest,
 ): Promise<PendingEarlyToolExecutionOutcome<ToolRequest>> {
@@ -1920,17 +1824,18 @@ async function runEarlyToolExecution<
       call.name,
       call.argumentsJson,
     );
-    request = runtime.options.toolExecutor.attachRequestMetadata?.(request, {
-      toolCallId: call.id,
-      toolName: call.name,
-    }) ?? request;
+    request =
+      runtime.options.toolExecutor.attachRequestMetadata?.(request, {
+        toolCallId: call.id,
+        toolName: call.name,
+      }) ?? request;
   } catch {
-    return { kind: 'deferred', reason: 'schema-error' };
+    return { kind: "deferred", reason: "schema-error" };
   }
 
   const preGate = await runPreToolUseGate(runtime, call, request);
-  if (preGate.kind === 'denied') {
-    return { kind: 'deferred', reason: 'authorization-error', preGate };
+  if (preGate.kind === "denied") {
+    return { kind: "deferred", reason: "authorization-error", preGate };
   }
   request = preGate.request;
 
@@ -1938,54 +1843,44 @@ async function runEarlyToolExecution<
   try {
     authorization = await runtime.options.toolExecutor.authorize(request);
   } catch {
-    return { kind: 'deferred', reason: 'authorization-error', preGate };
+    return { kind: "deferred", reason: "authorization-error", preGate };
   }
 
   const approvalGate = resolveApprovalGateAfterAuthorize(preGate, authorization);
   if (approvalGate) {
     // TODO: preview 已拿到稳定 toolCallId 和参数时，应直接暴露待审批状态，避免正式 tool-calls 阶段前审批表单仍未打开。
-    return { kind: 'deferred', reason: 'approval-required', preGate };
+    return { kind: "deferred", reason: "approval-required", preGate };
   }
-  if (authorization.kind === 'need-questions') {
-    return { kind: 'deferred', reason: 'questions-required', preGate };
+  if (authorization.kind === "need-questions") {
+    return { kind: "deferred", reason: "questions-required", preGate };
   }
 
   if (runtime.options.toolExecutor.shouldExecuteInBackground?.(request) ?? false) {
-    return { kind: 'deferred', reason: 'background-required', preGate };
+    return { kind: "deferred", reason: "background-required", preGate };
   }
 
-  const internal = await runtime.tryPerformEarlyInternalToolCall?.(
-    request,
-    call.id,
-    call.name,
-  );
-  if (internal?.kind === 'defer-to-formal') {
-    return { kind: 'deferred', reason: 'internal-deferred', preGate };
+  const internal = await runtime.tryPerformEarlyInternalToolCall?.(request, call.id, call.name);
+  if (internal?.kind === "defer-to-formal") {
+    return { kind: "deferred", reason: "internal-deferred", preGate };
   }
 
   runtime.emitEvent({
-    kind: 'tool-call-started',
+    kind: "tool-call-started",
     toolCallId: call.id,
     toolName: call.name,
     request,
   });
 
-  const external = internal === undefined
-    ? await performEarlyExternalToolExecution(runtime, request)
-    : undefined;
-  const output = internal?.kind === 'completed'
-    ? internal.output
-    : external?.output;
-  const failed = internal?.kind === 'completed'
-    ? internal.failed
-    : external?.failed;
+  const external =
+    internal === undefined ? await performEarlyExternalToolExecution(runtime, request) : undefined;
+  const output = internal?.kind === "completed" ? internal.output : external?.output;
+  const failed = internal?.kind === "completed" ? internal.failed : external?.failed;
   if (!output || failed === undefined) {
-    return { kind: 'deferred', reason: 'internal-deferred', preGate };
+    return { kind: "deferred", reason: "internal-deferred", preGate };
   }
-  const fatalError = internal?.kind === 'completed' ? internal.fatalError : undefined;
-  const enqueueDeferredGuidance = internal?.kind === 'completed'
-    ? internal.enqueueDeferredGuidance ?? true
-    : true;
+  const fatalError = internal?.kind === "completed" ? internal.fatalError : undefined;
+  const enqueueDeferredGuidance =
+    internal?.kind === "completed" ? (internal.enqueueDeferredGuidance ?? true) : true;
   const execution = buildRuntimeToolExecution({
     toolCallId: call.id,
     toolName: call.name,
@@ -1993,9 +1888,9 @@ async function runEarlyToolExecution<
     output,
     failed,
   });
-  runtime.emitEvent({ kind: 'tool-execution-finished', execution });
+  runtime.emitEvent({ kind: "tool-execution-finished", execution });
   return {
-    kind: 'completed',
+    kind: "completed",
     request,
     execution,
     output,
@@ -2005,12 +1900,7 @@ async function runEarlyToolExecution<
   };
 }
 
-async function performEarlyExternalToolExecution<
-  Config,
-  State,
-  ToolRequest,
-  TrustTarget = string,
->(
+async function performEarlyExternalToolExecution<Config, State, ToolRequest, TrustTarget = string>(
   runtime: TurnMachineRuntime<Config, State, ToolRequest, TrustTarget>,
   request: ToolRequest,
 ): Promise<ToolExecutionResult> {
@@ -2055,7 +1945,7 @@ async function resolveEarlyPreGateForFormalCall<ToolRequest>(
   }
 
   const outcome = await early.outcome;
-  if (outcome.kind === 'deferred' && outcome.preGate) {
+  if (outcome.kind === "deferred" && outcome.preGate) {
     return outcome.preGate;
   }
   return undefined;
@@ -2082,7 +1972,7 @@ async function matchingEarlyToolExecutionOutcome<ToolRequest>(
   }
 
   const outcome = await early.outcome;
-  return outcome.kind === 'completed' ? outcome : undefined;
+  return outcome.kind === "completed" ? outcome : undefined;
 }
 
 function earlyToolArgumentsMatchFormal(
@@ -2095,11 +1985,7 @@ function earlyToolArgumentsMatchFormal(
     return formalCanonical === earlyCanonicalJson;
   }
 
-  if (
-    toolName !== 'read_file' &&
-    toolName !== 'ls' &&
-    toolName !== 'delete_file'
-  ) {
+  if (toolName !== "read_file" && toolName !== "ls" && toolName !== "delete_file") {
     return false;
   }
 
@@ -2112,16 +1998,16 @@ function earlyToolArgumentsMatchFormal(
     return false;
   }
 
-  if (typeof early.path !== 'string' || early.path !== formal.path) {
+  if (typeof early.path !== "string" || early.path !== formal.path) {
     return false;
   }
 
   const earlyKeys = Object.keys(early).sort();
-  if (earlyKeys.length !== 1 || earlyKeys[0] !== 'path') {
+  if (earlyKeys.length !== 1 || earlyKeys[0] !== "path") {
     return false;
   }
 
-  if (toolName === 'read_file') {
+  if (toolName === "read_file") {
     if (early.offset === formal.offset && early.limit === formal.limit) {
       return true;
     }
@@ -2135,7 +2021,7 @@ function stableJsonValue(value: JsonValue): JsonValue {
   if (Array.isArray(value)) {
     return value.map(stableJsonValue);
   }
-  if (value !== null && typeof value === 'object') {
+  if (value !== null && typeof value === "object") {
     return Object.fromEntries(
       Object.entries(value)
         .sort(([left], [right]) => left.localeCompare(right))
@@ -2145,12 +2031,7 @@ function stableJsonValue(value: JsonValue): JsonValue {
   return value;
 }
 
-export async function waitForCompletedTurnResult<
-  Config,
-  State,
-  ToolRequest,
-  TrustTarget = string,
->(
+export async function waitForCompletedTurnResult<Config, State, ToolRequest, TrustTarget = string>(
   runtime: TurnMachineRuntime<Config, State, ToolRequest, TrustTarget>,
 ): Promise<RuntimeTurnResult<State, ToolRequest, TrustTarget>> {
   while (true) {
@@ -2160,7 +2041,7 @@ export async function waitForCompletedTurnResult<
     }
 
     if (!runtime.isBusy()) {
-      throw new Error('runtime 在未产出结果时提前进入空闲状态。');
+      throw new Error("runtime 在未产出结果时提前进入空闲状态。");
     }
 
     await runtime.poll();
@@ -2171,7 +2052,7 @@ export async function waitForCompletedTurnResult<
     }
 
     if (!runtime.isBusy()) {
-      throw new Error('runtime 在未产出结果时提前进入空闲状态。');
+      throw new Error("runtime 在未产出结果时提前进入空闲状态。");
     }
 
     await waitForImmediate();
@@ -2200,7 +2081,7 @@ function createQuestions<ToolRequest>(
   request: ToolRequest,
   toolCallId: string,
   toolName: string,
-  questions: RuntimePendingQuestions<ToolRequest>['questions'],
+  questions: RuntimePendingQuestions<ToolRequest>["questions"],
 ): RuntimePendingQuestions<ToolRequest> {
   return {
     request,
@@ -2210,12 +2091,7 @@ function createQuestions<ToolRequest>(
   };
 }
 
-function queueRemainingToolCallsAsync<
-  Config,
-  State,
-  ToolRequest,
-  TrustTarget = string,
->(
+function queueRemainingToolCallsAsync<Config, State, ToolRequest, TrustTarget = string>(
   runtime: TurnMachineRuntime<Config, State, ToolRequest, TrustTarget>,
   state: State,
   pendingUserInput: string,

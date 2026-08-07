@@ -50,9 +50,7 @@ export function ComposerTodoCard({
 
   const firstActiveIndex = useMemo(
     () =>
-      todos.items.findIndex(
-        (item) => item.status === "in_progress" || item.status === "pending",
-      ),
+      todos.items.findIndex((item) => item.status === "in_progress" || item.status === "pending"),
     [todos.items],
   );
 
@@ -121,7 +119,15 @@ export function ComposerTodoCard({
           <ul className="space-y-0.5 px-3 pb-2.5 pt-0">
             {todos.items.map((item) => (
               <li key={item.id} className="flex items-start gap-2 text-sm leading-snug">
-                <StatusIcon status={item.status === "completed" ? "completed" : item.status === "in_progress" ? "in-progress" : "pending"} />
+                <StatusIcon
+                  status={
+                    item.status === "completed"
+                      ? "completed"
+                      : item.status === "in_progress"
+                        ? "in-progress"
+                        : "pending"
+                  }
+                />
                 <span
                   className={cn(
                     "min-w-0 flex-1",

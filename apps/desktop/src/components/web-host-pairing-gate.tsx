@@ -4,13 +4,7 @@ import { useTranslation } from "react-i18next";
 import { LoaderCircle } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { DesktopFormInput } from "@/components/ui/desktop-form-field";
 import { Label } from "@/components/ui/label";
 import { showDesktopErrorToast } from "@/lib/desktop-error-toast";
@@ -42,12 +36,12 @@ export function WebHostPairingGate({
     <div className="flex h-full min-h-0 items-center justify-center bg-background px-4 text-foreground">
       <Card className="w-full max-w-sm rounded-lg">
         <CardHeader>
-          <CardTitle>{t('app.firstTimePairing')}</CardTitle>
-          <CardDescription>{t('app.pairingDescription')}</CardDescription>
+          <CardTitle>{t("app.firstTimePairing")}</CardTitle>
+          <CardDescription>{t("app.pairingDescription")}</CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
           <div className="grid gap-2">
-            <Label htmlFor="web-host-pairing-code">{t('app.pairingCode')}</Label>
+            <Label htmlFor="web-host-pairing-code">{t("app.pairingCode")}</Label>
             <DesktopFormInput
               id="web-host-pairing-code"
               value={code}
@@ -65,7 +59,7 @@ export function WebHostPairingGate({
           </div>
           <Button type="button" className="w-full" disabled={busy} onClick={submit}>
             {busy ? <LoaderCircle className="size-4 animate-spin" /> : null}
-            {t('app.pair')}
+            {t("app.pair")}
           </Button>
         </CardContent>
       </Card>

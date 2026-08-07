@@ -10,16 +10,18 @@ import {
   AnimatedCollapseContent,
   AnimatedCollapseTrigger,
 } from "@/components/ui/animated-collapse";
-import {
-  isGenericPendingThinkingStatusText,
-} from "@/lib/subagent-display";
+import { isGenericPendingThinkingStatusText } from "@/lib/subagent-display";
 import { cn } from "@/lib/utils";
 import type { ConversationMessageSnapshot } from "@/types";
 
 type ReadManagedImagePreview = (reference: string) => Promise<string | null>;
 type ReadManagedVideoPreview = (reference: string) => Promise<string | null>;
 
-function ReasoningLabel({ active, activeLabel, idleLabel }: {
+function ReasoningLabel({
+  active,
+  activeLabel,
+  idleLabel,
+}: {
   active: boolean;
   activeLabel: string;
   idleLabel: string;

@@ -1,28 +1,29 @@
-import { readFile } from 'node:fs/promises';
-import path from 'node:path';
+import { readFile } from "node:fs/promises";
+import path from "node:path";
 
-import i18n from '../lib/i18n-host.js';
-import type { DesktopSnapshot } from '../types.js';
-import { deleteSessionRewindData } from './rewind.js';
-import { deleteDesktopTranscriptSessionDir } from './transcript-session.js';
+import i18n from "../lib/i18n-host.js";
+import type { DesktopSnapshot } from "../types.js";
+import { deleteSessionRewindData } from "./rewind.js";
+import { deleteDesktopTranscriptSessionDir } from "./transcript-session.js";
 import {
   ensureStoredSessionBundleRegistered,
   finishSessionActivationCommand,
   type SessionActivationContext,
-} from './session-activation.js';
-import type { SessionBundle } from './session-bundle.js';
-import { sameSessionPath } from './session-path.js';
-import type { SessionSplitHostContext } from './session-split.js';
-import { isEphemeralDebugSessionPath } from './sessions.js';
+} from "./session-activation.js";
+import type { SessionBundle } from "./session-bundle.js";
+import { sameSessionPath } from "./session-path.js";
+import type { SessionSplitHostContext } from "./session-split.js";
+import { isEphemeralDebugSessionPath } from "./sessions.js";
 import {
   deleteStoredSession,
   isSplitProvisionalSessionPath,
   spiritAgentDataDir,
-} from './storage.js';
+} from "./storage.js";
 
 export interface SessionDeleteContext
-  extends SessionActivationContext,
-    Pick<SessionSplitHostContext, 'visiblePaneSessionPaths' | 'setVisiblePaneSessionPaths'> {
+  extends
+    SessionActivationContext,
+    Pick<SessionSplitHostContext, "visiblePaneSessionPaths" | "setVisiblePaneSessionPaths"> {
   removeEphemeralSession(filePath: string): void;
   bundleRuntimeIsBusy(sessionPath: string): boolean;
   clearSessionTitleGeneration(sessionPath: string): void;
@@ -32,10 +33,10 @@ export interface SessionDeleteContext
 /** 会话文件删除前读取 rewind sessionId，用于联动清理 rewind sidecar 目录。 */
 async function readRewindSessionIdFromDisk(filePath: string): Promise<string | undefined> {
   try {
-    const raw = await readFile(filePath, 'utf8');
+    const raw = await readFile(filePath, "utf8");
     const parsed = JSON.parse(raw) as { rewind?: { sessionId?: unknown } };
     const sessionId = parsed.rewind?.sessionId;
-    return typeof sessionId === 'string' && sessionId.trim() ? sessionId.trim() : undefined;
+    return typeof sessionId === "string" && sessionId.trim() ? sessionId.trim() : undefined;
   } catch {
     return undefined;
   }
@@ -50,12 +51,12 @@ export async function deleteSessionCommand(
 
     const trimmed = filePath.trim();
     if (!trimmed) {
-      throw new Error(i18n.t('error.invalidSessionPath'));
+      throw new Error(i18n.t("error.invalidSessionPath"));
     }
 
     const resolvedPath = path.resolve(trimmed);
     if (ctx.bundleRuntimeIsBusy(resolvedPath)) {
-      throw new Error(i18n.t('error.cannotDeleteBusySession'));
+      throw new Error(i18n.t("error.cannotDeleteBusySession"));
     }
 
     const state = ctx.requireState();
@@ -65,13 +66,12 @@ export async function deleteSessionCommand(
     const closingBundle = wasActive ? registry.getActive() : undefined;
 
     if (closingBundle) {
-      await ctx.runSessionEndForBundle?.(closingBundle, 'close');
+      await ctx.runSessionEndForBundle?.(closingBundle, "close");
     }
 
     const visiblePaths = ctx.visiblePaneSessionPaths();
     const deletedFromMultiPane =
-      visiblePaths.length > 1
-      && visiblePaths.some((entry) => sameSessionPath(entry, resolvedPath));
+      visiblePaths.length > 1 && visiblePaths.some((entry) => sameSessionPath(entry, resolvedPath));
     const nextVisible = deletedFromMultiPane
       ? visiblePaths.filter((entry) => !sameSessionPath(entry, resolvedPath))
       : visiblePaths;
@@ -145,7 +145,7 @@ export async function deleteSessionCommand(
     }
     ctx.clearSessionTitleGeneration(resolvedPath);
 
-    ctx.setLastRuntimeError('');
+    ctx.setLastRuntimeError("");
     return ctx.buildSnapshot();
   });
 }

@@ -1,25 +1,25 @@
-import type { JsonObject } from '../ports.js';
-import { isJsonObject } from '../tool-agent.js';
-import type { OpenAiLlmVendor, OpenAiTransportConfig } from './openai-compat.js';
+import type { JsonObject } from "../ports.js";
+import { isJsonObject } from "../tool-agent.js";
+import type { OpenAiLlmVendor, OpenAiTransportConfig } from "./openai-compat.js";
 import {
   isRoutedAnthropicClaudeModel,
   resolveRoutedAnthropicClaudeCapabilities,
   routedAnthropicClaudeThinkingSwitchable,
   ROUTED_ANTHROPIC_BUDGET_TOKENS_BY_EFFORT,
   routedAnthropicEffortFromReasoningEffort,
-} from './routed-anthropic-claude-capabilities.js';
-import type { OpenResponsesTransportConfig } from '../open-responses/responses-compat.js';
+} from "./routed-anthropic-claude-capabilities.js";
+import type { OpenResponsesTransportConfig } from "../open-responses/responses-compat.js";
 
 export type OpenRouterClaudeReasoningConfig = Pick<
   OpenAiTransportConfig,
-  'llmVendor' | 'model' | 'reasoningEffort' | 'vendorExtendedThinking'
+  "llmVendor" | "model" | "reasoningEffort" | "vendorExtendedThinking"
 >;
 
 export function isOpenRouterAnthropicClaudeModel(
   llmVendor: OpenAiLlmVendor | undefined,
   model: string,
 ): boolean {
-  return llmVendor === 'openrouter' && isRoutedAnthropicClaudeModel(model);
+  return llmVendor === "openrouter" && isRoutedAnthropicClaudeModel(model);
 }
 
 export function buildOpenRouterClaudeReasoningBody(
@@ -29,8 +29,8 @@ export function buildOpenRouterClaudeReasoningBody(
     return undefined;
   }
 
-  if (config.reasoningEffort === 'none') {
-    return { effort: 'none' };
+  if (config.reasoningEffort === "none") {
+    return { effort: "none" };
   }
 
   const capabilities = resolveRoutedAnthropicClaudeCapabilities(config.model);
@@ -39,8 +39,11 @@ export function buildOpenRouterClaudeReasoningBody(
     capabilities.supportedEfforts,
   );
 
-  if (capabilities.thinkingMode === 'adaptive') {
-    if (config.vendorExtendedThinking === false && routedAnthropicClaudeThinkingSwitchable(capabilities)) {
+  if (capabilities.thinkingMode === "adaptive") {
+    if (
+      config.vendorExtendedThinking === false &&
+      routedAnthropicClaudeThinkingSwitchable(capabilities)
+    ) {
       return { enabled: false };
     }
     if (effort !== undefined) {
@@ -49,7 +52,7 @@ export function buildOpenRouterClaudeReasoningBody(
     return { enabled: true };
   }
 
-  if (capabilities.thinkingMode === 'budget') {
+  if (capabilities.thinkingMode === "budget") {
     if (config.vendorExtendedThinking === false) {
       return { enabled: false };
     }
@@ -63,14 +66,14 @@ export function buildOpenRouterClaudeReasoningBody(
 }
 
 export function shouldInjectOpenRouterClaudeReasoning(
-  config: Pick<OpenResponsesTransportConfig, 'llmVendor' | 'model' | 'reasoningEffort'>,
+  config: Pick<OpenResponsesTransportConfig, "llmVendor" | "model" | "reasoningEffort">,
 ): boolean {
   return buildOpenRouterClaudeReasoningBody(config) !== undefined;
 }
 
 export function patchResponsesRequestBodyForOpenRouterReasoning(
   body: JsonObject,
-  config: Pick<OpenResponsesTransportConfig, 'llmVendor' | 'model' | 'reasoningEffort'>,
+  config: Pick<OpenResponsesTransportConfig, "llmVendor" | "model" | "reasoningEffort">,
 ): void {
   const reasoning = buildOpenRouterClaudeReasoningBody(config);
   if (reasoning === undefined) {

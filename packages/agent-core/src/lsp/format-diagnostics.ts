@@ -1,8 +1,8 @@
 import {
   DEFAULT_DIAGNOSTICS_MAX_ITEMS,
   DEFAULT_DIAGNOSTICS_MESSAGE_MAX_CHARS,
-} from './constants.js';
-import type { LspDiagnostic, LspDiagnosticSeverity, LspWriteDiagnosticsUi } from './types.js';
+} from "./constants.js";
+import type { LspDiagnostic, LspDiagnosticSeverity, LspWriteDiagnosticsUi } from "./types.js";
 
 export interface FormatDiagnosticsOptions {
   maxItems?: number;
@@ -11,10 +11,10 @@ export interface FormatDiagnosticsOptions {
 }
 
 const SEVERITY_LABEL: Record<LspDiagnosticSeverity, string> = {
-  1: 'error',
-  2: 'warning',
-  3: 'info',
-  4: 'hint',
+  1: "error",
+  2: "warning",
+  3: "info",
+  4: "hint",
 };
 
 const SEVERITY_RANK: Record<LspDiagnosticSeverity, number> = {
@@ -43,17 +43,19 @@ export function formatDiagnosticsForLlm(
     return `No errors or warnings reported for ${relativePath}.`;
   }
 
-  const lines = filtered.slice(0, maxItems).map((item) => formatDiagnosticLine(relativePath, item, messageMaxChars));
+  const lines = filtered
+    .slice(0, maxItems)
+    .map((item) => formatDiagnosticLine(relativePath, item, messageMaxChars));
   const omitted = filtered.length > maxItems ? filtered.length - maxItems : 0;
-  const header = `Diagnostics for ${relativePath} (${Math.min(filtered.length, maxItems)} shown${omitted > 0 ? `, ${omitted} more omitted` : ''}):`;
-  return [header, ...lines].join('\n');
+  const header = `Diagnostics for ${relativePath} (${Math.min(filtered.length, maxItems)} shown${omitted > 0 ? `, ${omitted} more omitted` : ""}):`;
+  return [header, ...lines].join("\n");
 }
 
 export function formatDiagnosticsBatchForLlm(sections: readonly string[]): string {
   return sections
     .map((section) => section.trim())
     .filter((section) => section.length > 0)
-    .join('\n\n');
+    .join("\n\n");
 }
 
 export function formatDiagnosticsSummaryBlock(
@@ -62,7 +64,7 @@ export function formatDiagnosticsSummaryBlock(
   options: FormatDiagnosticsOptions = {},
 ): string | undefined {
   const body = formatDiagnosticsForLlm(relativePath, diagnostics, options).trim();
-  if (!body || body.startsWith('No errors or warnings')) {
+  if (!body || body.startsWith("No errors or warnings")) {
     return undefined;
   }
   return `\n\n[lsp]\n${body}`;
@@ -78,12 +80,12 @@ export function buildLspWriteDiagnosticsUi(
       return severity === 1 || severity === 2;
     })
     .map((item) => {
-      const severity = (item.severity ?? 1) === 2 ? 'warning' : 'error';
+      const severity = (item.severity ?? 1) === 2 ? "warning" : "error";
       return {
-        severity: severity as 'error' | 'warning',
+        severity: severity as "error" | "warning",
         line: item.range.start.line + 1,
         column: item.range.start.character + 1,
-        message: item.message.replace(/\s+/g, ' ').trim(),
+        message: item.message.replace(/\s+/g, " ").trim(),
         ...(item.code !== undefined ? { code: item.code } : {}),
         ...(item.source ? { source: item.source } : {}),
       };
@@ -116,17 +118,17 @@ function formatDiagnosticLine(
   const severity = SEVERITY_LABEL[(diagnostic.severity ?? 1) as LspDiagnosticSeverity];
   const line = diagnostic.range.start.line + 1;
   const column = diagnostic.range.start.character + 1;
-  const source = diagnostic.source ? ` (${diagnostic.source})` : '';
+  const source = diagnostic.source ? ` (${diagnostic.source})` : "";
   const code =
     diagnostic.code === undefined
-      ? ''
-      : ` [${typeof diagnostic.code === 'string' ? diagnostic.code : String(diagnostic.code)}]`;
+      ? ""
+      : ` [${typeof diagnostic.code === "string" ? diagnostic.code : String(diagnostic.code)}]`;
   const message = truncate(diagnostic.message, messageMaxChars);
   return `${severity} ${relativePath}:${line}:${column}${source}${code}: ${message}`;
 }
 
 function truncate(value: string, maxChars: number): string {
-  const normalized = value.replace(/\s+/g, ' ').trim();
+  const normalized = value.replace(/\s+/g, " ").trim();
   if (normalized.length <= maxChars) {
     return normalized;
   }

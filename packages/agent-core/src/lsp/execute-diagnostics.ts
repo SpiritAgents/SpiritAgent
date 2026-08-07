@@ -1,5 +1,5 @@
-import type { LspHostServiceInstance } from '../host-bridge/lsp-host-bindings.js';
-import { formatDiagnosticsBatchForLlm } from './format-diagnostics.js';
+import type { LspHostServiceInstance } from "../host-bridge/lsp-host-bindings.js";
+import { formatDiagnosticsBatchForLlm } from "./format-diagnostics.js";
 
 function formatDiagnosticsFailure(path: string, error: unknown): string {
   const message = error instanceof Error ? error.message : String(error);

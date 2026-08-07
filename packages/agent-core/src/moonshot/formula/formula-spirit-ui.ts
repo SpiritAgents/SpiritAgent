@@ -1,8 +1,8 @@
-import type { JsonObject } from '../../ports.js';
-import { RESPONSES_BUILT_IN_SPIRIT_UI_KEY } from '../../open-responses/responses-built-in-tools.js';
-import { isJsonObject } from '../../tool-agent.js';
+import type { JsonObject } from "../../ports.js";
+import { RESPONSES_BUILT_IN_SPIRIT_UI_KEY } from "../../open-responses/responses-built-in-tools.js";
+import { isJsonObject } from "../../tool-agent.js";
 
-export const MOONSHOT_FORMULA_SPIRIT_UI_SUPPRESS_EXPAND_KEY = 'suppressExpand';
+export const MOONSHOT_FORMULA_SPIRIT_UI_SUPPRESS_EXPAND_KEY = "suppressExpand";
 
 export type MoonshotFormulaSpiritUi = {
   inputExcerpt: string;
@@ -13,7 +13,7 @@ export type MoonshotFormulaSpiritUi = {
 export function buildMoonshotFormulaWebSearchSpiritUi(query: string): MoonshotFormulaSpiritUi {
   const trimmedQuery = query.trim();
   return {
-    inputExcerpt: trimmedQuery.length > 0 ? trimmedQuery : 'Web search',
+    inputExcerpt: trimmedQuery.length > 0 ? trimmedQuery : "Web search",
     ...(trimmedQuery.length > 0 ? { headlineDetail: trimmedQuery } : {}),
     suppressExpand: true,
   };
@@ -24,10 +24,10 @@ export function buildMoonshotFormulaToolPreviewArgumentsJson(input: {
   status?: string;
   failed?: boolean;
 }): string {
-  const query = typeof input.query === 'string' ? input.query.trim() : '';
+  const query = typeof input.query === "string" ? input.query.trim() : "";
   const spiritUi = buildMoonshotFormulaWebSearchSpiritUi(query);
   const payload: JsonObject = {
-    status: input.failed ? 'failed' : (input.status ?? 'completed'),
+    status: input.failed ? "failed" : (input.status ?? "completed"),
     [RESPONSES_BUILT_IN_SPIRIT_UI_KEY]: spiritUi as JsonObject,
   };
   return JSON.stringify(payload);
@@ -54,13 +54,13 @@ export function parseMoonshotFormulaSpiritUiFromArgumentsJson(
     }
 
     const ui = raw as JsonObject;
-    const inputExcerpt = typeof ui.inputExcerpt === 'string' ? ui.inputExcerpt : '';
+    const inputExcerpt = typeof ui.inputExcerpt === "string" ? ui.inputExcerpt : "";
     if (!inputExcerpt.trim()) {
       return undefined;
     }
 
     const headlineDetail =
-      typeof ui.headlineDetail === 'string' && ui.headlineDetail.trim()
+      typeof ui.headlineDetail === "string" && ui.headlineDetail.trim()
         ? ui.headlineDetail.trim()
         : undefined;
     const suppressExpand = ui[MOONSHOT_FORMULA_SPIRIT_UI_SUPPRESS_EXPAND_KEY] === true;

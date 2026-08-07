@@ -43,11 +43,36 @@ export const modelCapabilityOptions: Array<{
   labelKey: string;
   summaryKey: string;
 }> = [
-  { value: "chat", label: "Chat", labelKey: 'settings.capabilityChatLabel', summaryKey: 'settings.capabilityChat' },
-  { value: "image", label: "Image", labelKey: 'settings.capabilityImageLabel', summaryKey: 'settings.capabilityImage' },
-  { value: "video", label: "Video", labelKey: 'settings.capabilityVideoLabel', summaryKey: 'settings.capabilityVideo' },
-  { value: "imageGeneration", label: "Image generation", labelKey: 'settings.capabilityImageGenerationLabel', summaryKey: 'settings.capabilityImageGeneration' },
-  { value: "videoGeneration", label: "Video generation", labelKey: 'settings.capabilityVideoGenerationLabel', summaryKey: 'settings.capabilityVideoGeneration' },
+  {
+    value: "chat",
+    label: "Chat",
+    labelKey: "settings.capabilityChatLabel",
+    summaryKey: "settings.capabilityChat",
+  },
+  {
+    value: "image",
+    label: "Image",
+    labelKey: "settings.capabilityImageLabel",
+    summaryKey: "settings.capabilityImage",
+  },
+  {
+    value: "video",
+    label: "Video",
+    labelKey: "settings.capabilityVideoLabel",
+    summaryKey: "settings.capabilityVideo",
+  },
+  {
+    value: "imageGeneration",
+    label: "Image generation",
+    labelKey: "settings.capabilityImageGenerationLabel",
+    summaryKey: "settings.capabilityImageGeneration",
+  },
+  {
+    value: "videoGeneration",
+    label: "Video generation",
+    labelKey: "settings.capabilityVideoGenerationLabel",
+    summaryKey: "settings.capabilityVideoGeneration",
+  },
 ];
 
 export function normalizeModelCapabilitySelection(
@@ -70,7 +95,9 @@ export function canAssignAsActiveModel(
   model: SettingsModelProfile,
   isCurrentActiveModel: boolean,
 ): boolean {
-  return isCurrentActiveModel || model.capabilities === undefined || model.capabilities.includes("chat");
+  return (
+    isCurrentActiveModel || model.capabilities === undefined || model.capabilities.includes("chat")
+  );
 }
 
 export function canAssignAsImageGenerationModel(
@@ -140,23 +167,23 @@ export function getSupportedModelDefaultRoles(
 
 export function modelDefaultActionLabel(roles: readonly ModelDefaultRole[]): string {
   if (roles.length === 0) {
-    return i18n.t('settings.noDefaultRoles');
+    return i18n.t("settings.noDefaultRoles");
   }
 
   if (roles.length === 1) {
     if (roles[0] === "activeModel") {
-      return i18n.t('settings.setActiveModel');
+      return i18n.t("settings.setActiveModel");
     }
     if (roles[0] === "imageGenerationModel") {
-      return i18n.t('settings.setImageGenModel');
+      return i18n.t("settings.setImageGenModel");
     }
     if (roles[0] === "videoGenerationModel") {
-      return i18n.t('settings.setVideoGenModel');
+      return i18n.t("settings.setVideoGenModel");
     }
-    return i18n.t('settings.setLightweightChatModel');
+    return i18n.t("settings.setLightweightChatModel");
   }
 
-  return i18n.t('settings.selectDefaultRole');
+  return i18n.t("settings.selectDefaultRole");
 }
 
 export { modelRefKey };

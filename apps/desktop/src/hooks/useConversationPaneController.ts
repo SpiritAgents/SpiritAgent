@@ -63,15 +63,15 @@ export function useConversationPaneController({
   compactionDemo,
   longConversationListDemo,
   hideStaleConversationMessages,
-  showWorkspaceBindingControls,
-  sessionNavigationBusy,
+  showWorkspaceBindingControls: _showWorkspaceBindingControls,
+  sessionNavigationBusy: _sessionNavigationBusy,
   newSessionBusy,
   splitPaneCount,
   layoutNavigationPending,
   onNewSession,
   onBeginSideChat,
   workspaceTools,
-  onOpenIntegrationsSettings,
+  onOpenIntegrationsSettings: _onOpenIntegrationsSettings,
   t,
   language,
   conversationAbortShortcutTargetRef,
@@ -100,34 +100,29 @@ export function useConversationPaneController({
     [hideStaleConversationMessages, isFocused, paneMissingSliceDuringNav],
   );
 
-  const paneIsEmptySession = useMemo(
-    () => {
-      if (paneMissingSliceDuringNav) {
-        return false;
-      }
-      return resolveEffectiveEmptySession({
-        sessionMessageCount: paneSnapshot?.conversation.messages.length ?? 0,
-        subagentViewActive: paneSubagentViewActive,
-        compactionDemoActive: paneCompactionDemoActive,
-        longConversationListDemoActive: paneLongConversationListDemoActive,
-        newSessionBusy: isFocused && splitPaneCount <= 1 ? newSessionBusy : false,
-      });
-    },
-    [
-      isFocused,
-      newSessionBusy,
-      paneCompactionDemoActive,
-      paneLongConversationListDemoActive,
-      paneMissingSliceDuringNav,
-      paneSnapshot?.conversation.messages.length,
-      paneSubagentViewActive,
-      splitPaneCount,
-    ],
-  );
+  const paneIsEmptySession = useMemo(() => {
+    if (paneMissingSliceDuringNav) {
+      return false;
+    }
+    return resolveEffectiveEmptySession({
+      sessionMessageCount: paneSnapshot?.conversation.messages.length ?? 0,
+      subagentViewActive: paneSubagentViewActive,
+      compactionDemoActive: paneCompactionDemoActive,
+      longConversationListDemoActive: paneLongConversationListDemoActive,
+      newSessionBusy: isFocused && splitPaneCount <= 1 ? newSessionBusy : false,
+    });
+  }, [
+    isFocused,
+    newSessionBusy,
+    paneCompactionDemoActive,
+    paneLongConversationListDemoActive,
+    paneMissingSliceDuringNav,
+    paneSnapshot?.conversation.messages.length,
+    paneSubagentViewActive,
+    splitPaneCount,
+  ]);
 
-  const paneShowWorkspaceBindingControls =
-    (useIsolatedPane || isAnchorPane) && paneIsEmptySession;
-
+  const paneShowWorkspaceBindingControls = (useIsolatedPane || isAnchorPane) && paneIsEmptySession;
 
   const conversation = useConversationViewState({
     runtime,
@@ -199,7 +194,6 @@ export function useConversationPaneController({
     activeSessionReadOnly: conversation.activeSessionReadOnly,
   });
 
-
   // 传入 MessageCard（memo 行）的回调必须引用稳定，不能用每渲染重建的行内闭包
   const { setProcessGroupManualOpen, processGroupManualOpenKey } = conversation;
   const onProcessGroupManualOpenChange = useCallback(
@@ -249,7 +243,9 @@ export function useConversationPaneController({
     messageRewindComposerEnabled: composer.messageRewindComposerEnabled,
     rewindRichInputRef: messageRewind.rewindRichInputRef,
     models: conversation.models,
-    onOpenSubagentViewer: paneSubagentViewActive ? undefined : conversation.handleOpenSubagentViewer,
+    onOpenSubagentViewer: paneSubagentViewActive
+      ? undefined
+      : conversation.handleOpenSubagentViewer,
     onOpenReadFile,
     onOpenPlan,
     onStartMessageRewind: messageRewind.startMessageRewind,

@@ -1,1 +1,1 @@
-import './runtime/runtime-parity-smoke.js';
+import "./runtime/runtime-parity-smoke.js";

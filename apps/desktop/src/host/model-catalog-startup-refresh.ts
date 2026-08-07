@@ -1,5 +1,8 @@
-import { defaultModelReasoningEffort, type ModelReasoningEffort } from '@spiritagent/agent-core/reasoning-effort';
-import { normalizeOpenAiApiBase } from '@spiritagent/host-internal/openai-api-base';
+import {
+  defaultModelReasoningEffort,
+  type ModelReasoningEffort,
+} from "@spiritagent/agent-core/reasoning-effort";
+import { normalizeOpenAiApiBase } from "@spiritagent/host-internal/openai-api-base";
 
 import type {
   DesktopModelCapability,
@@ -9,11 +12,11 @@ import type {
   DesktopTransportKind,
   ModelProfileSnapshot,
   PreviewModelCatalogEntry,
-} from '../types.js';
+} from "../types.js";
 import {
   providerSupportsModelCatalogListing,
   previewCatalogMapForTransport,
-} from './model-catalog-metadata.js';
+} from "./model-catalog-metadata.js";
 import {
   loadPreviewModelsForTransport,
   reasoningProviderForTransport,
@@ -21,20 +24,20 @@ import {
   supportsImageGeneration,
   supportsVideoGeneration,
   type LoadedPreviewModelsResult,
-} from './model-config.js';
+} from "./model-config.js";
 import {
   findProviderGroup,
   flattenProviderGroups,
   modelExistsInGroup,
   resolveModelProfileFromParts,
-} from './model-config-access.js';
+} from "./model-config-access.js";
 import {
   hasBedrockRuntimeCredentials,
   hasGoogleVertexRuntimeCredentials,
   modelProviderKeyScope,
   applyModelsRemovalToConfig,
   type ModelRemovalTarget,
-} from './provider-api-key.js';
+} from "./provider-api-key.js";
 import {
   DEFAULT_API_BASE,
   normalizeModelCapabilities,
@@ -43,12 +46,14 @@ import {
   readGoogleVertexProviderCredentialsFromKeyring,
   resolveApiKeyForConfigModel,
   type DesktopConfigFile,
-} from './storage.js';
+} from "./storage.js";
 
-export function modelCatalogScopeKey(model: Pick<ModelProfileSnapshot, 'provider' | 'transportKind' | 'apiBase'>): string {
+export function modelCatalogScopeKey(
+  model: Pick<ModelProfileSnapshot, "provider" | "transportKind" | "apiBase">,
+): string {
   const base = model.apiBase.trim() || DEFAULT_API_BASE;
   const transportKind = resolveDesktopTransportKind(model);
-  return `${model.provider ?? 'custom'}::${transportKind}::${normalizeOpenAiApiBase(base)}`;
+  return `${model.provider ?? "custom"}::${transportKind}::${normalizeOpenAiApiBase(base)}`;
 }
 
 export function collectModelCatalogRefreshTargets(
@@ -71,7 +76,7 @@ export function collectModelCatalogRefreshTargets(
 }
 
 export async function loadModelCatalogForProfile(
-  config: Pick<DesktopConfigFile, 'providerGroups'>,
+  config: Pick<DesktopConfigFile, "providerGroups">,
   profile: ModelProfileSnapshot,
   options?: { forceRefresh?: boolean },
 ): Promise<LoadedPreviewModelsResult | undefined> {
@@ -83,16 +88,17 @@ export async function loadModelCatalogForProfile(
 
   const transportKind = resolveDesktopTransportKind(profile);
   const apiBase = profile.apiBase.trim() || DEFAULT_API_BASE;
-  const modelRef = profile.ref ?? (profile.groupId
-    ? { groupId: profile.groupId, name: profile.name }
-    : undefined);
+  const modelRef =
+    profile.ref ?? (profile.groupId ? { groupId: profile.groupId, name: profile.name } : undefined);
   const apiKey = modelRef ? await resolveApiKeyForConfigModel(config, modelRef) : undefined;
 
-  if (transportKind === 'bedrock') {
-    const bedrockCredentials = readBedrockProviderCredentialsFromKeyring(modelProviderKeyScope(provider));
+  if (transportKind === "bedrock") {
+    const bedrockCredentials = readBedrockProviderCredentialsFromKeyring(
+      modelProviderKeyScope(provider),
+    );
     if (
-      !profile.awsRegion?.trim()
-      || !hasBedrockRuntimeCredentials({
+      !profile.awsRegion?.trim() ||
+      !hasBedrockRuntimeCredentials({
         apiKey,
         accessKeyId: bedrockCredentials.accessKeyId,
         secretAccessKey: bedrockCredentials.secretAccessKey,
@@ -104,7 +110,7 @@ export async function loadModelCatalogForProfile(
       provider,
       transportKind,
       apiBase,
-      apiKey: apiKey?.trim() ?? bedrockCredentials.apiKey?.trim() ?? '',
+      apiKey: apiKey?.trim() ?? bedrockCredentials.apiKey?.trim() ?? "",
       awsRegion: profile.awsRegion,
       accessKeyId: bedrockCredentials.accessKeyId,
       secretAccessKey: bedrockCredentials.secretAccessKey,
@@ -112,8 +118,8 @@ export async function loadModelCatalogForProfile(
     });
   }
 
-  if (provider === 'google-vertex-ai') {
-    const vertexCredentials = readGoogleVertexProviderCredentialsFromKeyring('google-vertex-ai');
+  if (provider === "google-vertex-ai") {
+    const vertexCredentials = readGoogleVertexProviderCredentialsFromKeyring("google-vertex-ai");
     if (
       !hasGoogleVertexRuntimeCredentials({
         apiKey,
@@ -129,10 +135,12 @@ export async function loadModelCatalogForProfile(
       provider,
       transportKind,
       apiBase,
-      apiKey: apiKey?.trim() ?? vertexCredentials.apiKey?.trim() ?? '',
+      apiKey: apiKey?.trim() ?? vertexCredentials.apiKey?.trim() ?? "",
       ...(profile.vertexProject ? { vertexProject: profile.vertexProject } : {}),
       ...(profile.vertexLocation ? { vertexLocation: profile.vertexLocation } : {}),
-      ...(vertexCredentials.clientEmail ? { vertexClientEmail: vertexCredentials.clientEmail } : {}),
+      ...(vertexCredentials.clientEmail
+        ? { vertexClientEmail: vertexCredentials.clientEmail }
+        : {}),
       ...(vertexCredentials.privateKey ? { vertexPrivateKey: vertexCredentials.privateKey } : {}),
       forceRefresh,
     });
@@ -152,7 +160,7 @@ export async function loadModelCatalogForProfile(
 }
 
 export async function forceRefreshModelCatalogForProfile(
-  config: Pick<DesktopConfigFile, 'providerGroups'>,
+  config: Pick<DesktopConfigFile, "providerGroups">,
   profile: ModelProfileSnapshot,
 ): Promise<LoadedPreviewModelsResult | undefined> {
   return loadModelCatalogForProfile(config, profile, { forceRefresh: true });
@@ -169,10 +177,10 @@ type StartupMergedProfile = {
   awsRegion?: string;
   providerSite?: DesktopProviderConnectSiteId;
   alibabaWorkspaceId?: string;
-  alibabaBillingMode?: import('../types.js').DesktopAlibabaBillingMode;
-  stepfunBillingMode?: import('../types.js').DesktopStepfunBillingMode;
-  zAiBillingMode?: import('../types.js').DesktopGlmCodingPlanBillingMode;
-  zhipuBillingMode?: import('../types.js').DesktopGlmCodingPlanBillingMode;
+  alibabaBillingMode?: import("../types.js").DesktopAlibabaBillingMode;
+  stepfunBillingMode?: import("../types.js").DesktopStepfunBillingMode;
+  zAiBillingMode?: import("../types.js").DesktopGlmCodingPlanBillingMode;
+  zhipuBillingMode?: import("../types.js").DesktopGlmCodingPlanBillingMode;
   vertexProject?: string;
   vertexLocation?: string;
 };
@@ -227,31 +235,35 @@ export function mergeNewCatalogModelsIntoConfig(
       merged.capabilities = catalogEntry.capabilities;
     }
     merged.provider = provider;
-    if (transportKind === 'anthropic' || transportKind === 'open-responses' || transportKind === 'bedrock') {
+    if (
+      transportKind === "anthropic" ||
+      transportKind === "open-responses" ||
+      transportKind === "bedrock"
+    ) {
       merged.transportKind = transportKind;
     }
-    if (provider === 'amazon-bedrock' && profile.awsRegion?.trim()) {
+    if (provider === "amazon-bedrock" && profile.awsRegion?.trim()) {
       merged.awsRegion = profile.awsRegion.trim();
     }
     if (profile.providerSite) {
       merged.providerSite = profile.providerSite;
     }
-    if (provider === 'alibaba' && profile.alibabaWorkspaceId?.trim()) {
+    if (provider === "alibaba" && profile.alibabaWorkspaceId?.trim()) {
       merged.alibabaWorkspaceId = profile.alibabaWorkspaceId.trim();
     }
-    if (provider === 'alibaba' && profile.alibabaBillingMode === 'token-plan') {
-      merged.alibabaBillingMode = 'token-plan';
+    if (provider === "alibaba" && profile.alibabaBillingMode === "token-plan") {
+      merged.alibabaBillingMode = "token-plan";
     }
-    if (provider === 'stepfun' && profile.stepfunBillingMode === 'step-plan') {
-      merged.stepfunBillingMode = 'step-plan';
+    if (provider === "stepfun" && profile.stepfunBillingMode === "step-plan") {
+      merged.stepfunBillingMode = "step-plan";
     }
-    if (provider === 'z-ai' && profile.zAiBillingMode === 'glm-coding-plan') {
-      merged.zAiBillingMode = 'glm-coding-plan';
+    if (provider === "z-ai" && profile.zAiBillingMode === "glm-coding-plan") {
+      merged.zAiBillingMode = "glm-coding-plan";
     }
-    if (provider === 'zhipu-ai' && profile.zhipuBillingMode === 'glm-coding-plan') {
-      merged.zhipuBillingMode = 'glm-coding-plan';
+    if (provider === "zhipu-ai" && profile.zhipuBillingMode === "glm-coding-plan") {
+      merged.zhipuBillingMode = "glm-coding-plan";
     }
-    if (provider === 'google-vertex-ai') {
+    if (provider === "google-vertex-ai") {
       if (profile.vertexProject?.trim()) {
         merged.vertexProject = profile.vertexProject.trim();
       }
@@ -269,9 +281,13 @@ export function mergeNewCatalogModelsIntoConfig(
   for (const merged of toAdd) {
     group.models.push({
       name: merged.name,
-      reasoningEffort: merged.reasoningEffort as import('@spiritagent/host-internal').ModelEntryV2['reasoningEffort'],
+      reasoningEffort:
+        merged.reasoningEffort as import("@spiritagent/host-internal").ModelEntryV2["reasoningEffort"],
       ...(merged.supportedReasoningEfforts !== undefined
-        ? { supportedReasoningEfforts: merged.supportedReasoningEfforts as import('@spiritagent/host-internal').ModelEntryV2['supportedReasoningEfforts'] }
+        ? {
+            supportedReasoningEfforts:
+              merged.supportedReasoningEfforts as import("@spiritagent/host-internal").ModelEntryV2["supportedReasoningEfforts"],
+          }
         : {}),
       ...(merged.capabilities !== undefined ? { capabilities: merged.capabilities } : {}),
     });
@@ -340,7 +356,7 @@ function normalizedReasoningEffortsEqual(
 }
 
 function parseCatalogContextLength(value: number | undefined): number | undefined {
-  if (typeof value !== 'number' || !Number.isFinite(value) || value <= 0) {
+  if (typeof value !== "number" || !Number.isFinite(value) || value <= 0) {
     return undefined;
   }
   return Math.trunc(value);
@@ -362,7 +378,9 @@ export function applyCatalogEntryToStoredModel(
   }
 
   if (catalogEntry.supportedReasoningEfforts !== undefined) {
-    const nextReasoningEfforts = normalizeSupportedReasoningEfforts(catalogEntry.supportedReasoningEfforts);
+    const nextReasoningEfforts = normalizeSupportedReasoningEfforts(
+      catalogEntry.supportedReasoningEfforts,
+    );
     if (!normalizedReasoningEffortsEqual(model.supportedReasoningEfforts, nextReasoningEfforts)) {
       if (nextReasoningEfforts && nextReasoningEfforts.length > 0) {
         model.supportedReasoningEfforts = nextReasoningEfforts;
@@ -381,8 +399,10 @@ export function applyCatalogEntryToStoredModel(
     }
   }
 
-  if (catalogEntry.supportsThinkingType !== undefined
-    && model.supportsThinkingType !== catalogEntry.supportsThinkingType) {
+  if (
+    catalogEntry.supportsThinkingType !== undefined &&
+    model.supportsThinkingType !== catalogEntry.supportsThinkingType
+  ) {
     model.supportsThinkingType = catalogEntry.supportsThinkingType;
     changed = true;
   }
@@ -421,7 +441,10 @@ export function syncExistingModelsFromCatalog(
   for (const group of config.providerGroups) {
     for (const model of group.models) {
       const resolved = resolveModelProfileFromParts(group, model);
-      if (!resolved || !modelMatchesCatalogRefreshScope(resolved, provider, transportKind, apiBase)) {
+      if (
+        !resolved ||
+        !modelMatchesCatalogRefreshScope(resolved, provider, transportKind, apiBase)
+      ) {
         continue;
       }
       const catalogEntry = catalogEntries.get(model.name);
@@ -433,7 +456,8 @@ export function syncExistingModelsFromCatalog(
           model.capabilities = resolved.capabilities;
         }
         if (resolved.supportedReasoningEfforts !== undefined) {
-          model.supportedReasoningEfforts = resolved.supportedReasoningEfforts as import('@spiritagent/host-internal').ModelEntryV2['supportedReasoningEfforts'];
+          model.supportedReasoningEfforts =
+            resolved.supportedReasoningEfforts as import("@spiritagent/host-internal").ModelEntryV2["supportedReasoningEfforts"];
         } else {
           delete model.supportedReasoningEfforts;
         }
@@ -463,9 +487,7 @@ export function removeDelistedModelsFromCatalog(
   if (!provider) {
     return [];
   }
-  const catalogIds = new Set(
-    result.modelIds.map((id) => id.trim()).filter((id) => id.length > 0),
-  );
+  const catalogIds = new Set(result.modelIds.map((id) => id.trim()).filter((id) => id.length > 0));
   if (catalogIds.size === 0) {
     return [];
   }
@@ -476,7 +498,10 @@ export function removeDelistedModelsFromCatalog(
   for (const group of config.providerGroups) {
     for (const model of group.models) {
       const resolved = resolveModelProfileFromParts(group, model);
-      if (!resolved || !modelMatchesCatalogRefreshScope(resolved, provider, transportKind, apiBase)) {
+      if (
+        !resolved ||
+        !modelMatchesCatalogRefreshScope(resolved, provider, transportKind, apiBase)
+      ) {
         continue;
       }
       if (!catalogIds.has(model.name)) {

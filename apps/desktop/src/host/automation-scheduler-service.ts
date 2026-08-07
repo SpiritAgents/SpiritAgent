@@ -13,13 +13,13 @@ import {
   type GitHubAutomationPollMatch,
   type HostAutomationDefinition,
   type HostAutomationRun,
-} from '@spiritagent/host-internal';
+} from "@spiritagent/host-internal";
 
-import { cloneDesktopConfig } from './service-utils.js';
-import { modelExistsInGroup } from './model-config-access.js';
-import { loadGitHubAccessToken } from './github-auth-storage.js';
-import { spiritAgentDataDir, type DesktopConfigFile } from './storage.js';
-import { runDesktopAutomationOnce } from './automation-runner.js';
+import { cloneDesktopConfig } from "./service-utils.js";
+import { modelExistsInGroup } from "./model-config-access.js";
+import { loadGitHubAccessToken } from "./github-auth-storage.js";
+import { spiritAgentDataDir, type DesktopConfigFile } from "./storage.js";
+import { runDesktopAutomationOnce } from "./automation-runner.js";
 
 export const AUTOMATION_SCHEDULER_MONITOR_INTERVAL_MS = 60_000;
 
@@ -51,7 +51,7 @@ export function startAutomationSchedulerMonitorIfNeeded(
     try {
       const affected = await failDanglingAutomationRuns(
         createHostAutomationStore(spiritAgentDataDir()),
-        'Run interrupted: application exited before the run completed.',
+        "Run interrupted: application exited before the run completed.",
       );
       for (const automationId of affected) {
         ctx.onAutomationUpdated(automationId);
@@ -79,13 +79,13 @@ export async function failDanglingAutomationRuns(
     if (!loaded) {
       continue;
     }
-    const runningRuns = loaded.runs.filter((run) => run.status === 'running');
+    const runningRuns = loaded.runs.filter((run) => run.status === "running");
     if (runningRuns.length === 0) {
       continue;
     }
     for (const run of runningRuns) {
       await store.updateRun(summary.id, run.id, {
-        status: 'failed',
+        status: "failed",
         completedAtUnixMs: Date.now(),
         error,
       });
@@ -95,7 +95,9 @@ export async function failDanglingAutomationRuns(
   return affected;
 }
 
-export async function tickAutomationScheduler(ctx: AutomationSchedulerServiceContext): Promise<void> {
+export async function tickAutomationScheduler(
+  ctx: AutomationSchedulerServiceContext,
+): Promise<void> {
   if (!ctx.initialized()) {
     return;
   }
@@ -125,7 +127,7 @@ async function tickTimeAutomationTriggers(
   now: number,
 ): Promise<void> {
   for (const definition of definitions) {
-    if (definition.trigger.kind !== 'time') {
+    if (definition.trigger.kind !== "time") {
       continue;
     }
     if (ctx.runningAutomationIds().has(definition.id)) {
@@ -145,7 +147,7 @@ async function tickTimeAutomationTriggers(
     void launchAutomationRun(ctx, store, {
       definition,
       config,
-      context: { kind: 'time' },
+      context: { kind: "time" },
       markFiredAtUnixMs: now,
     });
   }
@@ -157,7 +159,9 @@ async function tickGitHubAutomationTriggers(
   definitions: HostAutomationDefinition[],
   config: DesktopConfigFile,
 ): Promise<void> {
-  const githubDefinitions = definitions.filter((definition) => definition.trigger.kind === 'github');
+  const githubDefinitions = definitions.filter(
+    (definition) => definition.trigger.kind === "github",
+  );
   if (githubDefinitions.length === 0) {
     return;
   }
@@ -171,7 +175,7 @@ async function tickGitHubAutomationTriggers(
     if (!githubTriggerNeedsBaseline(definition.trigger)) {
       continue;
     }
-    if (definition.trigger.kind !== 'github') {
+    if (definition.trigger.kind !== "github") {
       continue;
     }
     try {
@@ -188,13 +192,13 @@ async function tickGitHubAutomationTriggers(
 
   const refreshed = await store.listEnabledDefinitions();
   const groups = groupGitHubAutomationsByRepo(
-    refreshed.filter((definition) => definition.trigger.kind === 'github'),
+    refreshed.filter((definition) => definition.trigger.kind === "github"),
   );
 
   for (const group of groups) {
     const minWatermark = Math.min(
       ...group.automations.map((definition) =>
-        definition.trigger.kind === 'github'
+        definition.trigger.kind === "github"
           ? resolveGitHubPollWatermark(definition.trigger)
           : Number.MAX_SAFE_INTEGER,
       ),
@@ -241,15 +245,17 @@ async function tickGitHubAutomationTriggers(
           if (ctx.runningAutomationIds().has(automationId)) {
             return undefined;
           }
-          const latestDefinition = refreshed.find((definition) => definition.id === match.automationId);
-          if (!latestDefinition || latestDefinition.trigger.kind !== 'github') {
+          const latestDefinition = refreshed.find(
+            (definition) => definition.id === match.automationId,
+          );
+          if (!latestDefinition || latestDefinition.trigger.kind !== "github") {
             return undefined;
           }
           return launchAutomationRun(ctx, store, {
             definition: latestDefinition,
             config,
             context: {
-              kind: 'github',
+              kind: "github",
               event: latestDefinition.trigger.event,
               eventUrl: match.item.htmlUrl,
             },
@@ -285,7 +291,7 @@ export async function runGitHubMatchesAndCollectConsumed(
       break;
     }
     consumed.push(match);
-    if (run.status !== 'completed') {
+    if (run.status !== "completed") {
       break;
     }
   }
@@ -347,9 +353,5 @@ export function automationDefinitionNeedsApiKey(
   definition: HostAutomationDefinition,
   config: DesktopConfigFile,
 ): boolean {
-  return modelExistsInGroup(
-    config,
-    definition.modelRef.groupId,
-    definition.modelRef.name,
-  );
+  return modelExistsInGroup(config, definition.modelRef.groupId, definition.modelRef.name);
 }

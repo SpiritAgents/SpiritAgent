@@ -20,11 +20,11 @@ export type WorkspaceToolTab = {
 };
 
 const KIND_BASE_LABEL_KEY: Record<WorkspaceToolTabKind, string> = {
-  files: 'workspace.files',
-  shell: 'workspace.shell',
-  git: 'workspace.gitTab',
-  browser: 'workspace.browser',
-  pr: 'workspace.prTab',
+  files: "workspace.files",
+  shell: "workspace.shell",
+  git: "workspace.gitTab",
+  browser: "workspace.browser",
+  pr: "workspace.prTab",
 };
 
 function newTabId(): string {
@@ -62,9 +62,7 @@ export function createDefaultWorkspaceToolTabs(
   return kinds.map((kind) => createWorkspaceToolTab(kind));
 }
 
-export function createInitialWorkspaceToolsState(
-  includeBrowser = false,
-): {
+export function createInitialWorkspaceToolsState(includeBrowser = false): {
   tabs: WorkspaceToolTab[];
   activeTabId: string;
 } {
@@ -101,7 +99,9 @@ export function workspaceTerminalChipDisplayName(
   if (titled) {
     return titled;
   }
-  const index = tabs.filter((item) => item.kind === "shell").findIndex((item) => item.id === tab.id);
+  const index = tabs
+    .filter((item) => item.kind === "shell")
+    .findIndex((item) => item.id === tab.id);
   const base = translate("workspace.terminalChipDefaultName");
   if (index <= 0) {
     return base;
@@ -238,7 +238,6 @@ export function closeWorkspaceToolTab(
     return { tabs: nextTabs, activeId: recreatedTab.id };
   }
 
-  const nextActiveId =
-    closeIndex > 0 ? nextTabs[closeIndex - 1]!.id : nextTabs[0]!.id;
+  const nextActiveId = closeIndex > 0 ? nextTabs[closeIndex - 1]!.id : nextTabs[0]!.id;
   return { tabs: nextTabs, activeId: nextActiveId };
 }

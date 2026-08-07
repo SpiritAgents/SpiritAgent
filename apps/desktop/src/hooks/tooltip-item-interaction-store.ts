@@ -77,10 +77,10 @@ export function isTooltipAnchorSlot(registrationId: string, itemId: string): boo
 
 export function isTooltipItemHighlighted(registrationId: string, itemId: string): boolean {
   return (
-    (pointerHighlightSlot?.registrationId === registrationId
-      && pointerHighlightSlot.itemId === itemId)
-    || (activeHighlightSlot?.registrationId === registrationId
-      && activeHighlightSlot.itemId === itemId)
+    (pointerHighlightSlot?.registrationId === registrationId &&
+      pointerHighlightSlot.itemId === itemId) ||
+    (activeHighlightSlot?.registrationId === registrationId &&
+      activeHighlightSlot.itemId === itemId)
   );
 }
 

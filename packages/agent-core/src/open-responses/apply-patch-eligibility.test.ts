@@ -1,5 +1,5 @@
-import assert from 'node:assert/strict';
-import test from 'node:test';
+import assert from "node:assert/strict";
+import test from "node:test";
 
 import {
   isOpenAiGptModelAtLeast51,
@@ -10,128 +10,128 @@ import {
   shouldUseBuiltInApplyPatchRequestItems,
   shouldOmitApplyPatchFromAiSdkMessages,
   shouldUseOpenAiSdkApplyPatchTool,
-} from './apply-patch-eligibility.js';
+} from "./apply-patch-eligibility.js";
 
-test('isOpenAiGptModelAtLeast51 boundaries', () => {
-  assert.equal(isOpenAiGptModelAtLeast51('gpt-5.1'), true);
-  assert.equal(isOpenAiGptModelAtLeast51('gpt-5.4'), true);
-  assert.equal(isOpenAiGptModelAtLeast51('GPT-5.2-preview'), true);
-  assert.equal(isOpenAiGptModelAtLeast51('gpt-6'), true);
-  assert.equal(isOpenAiGptModelAtLeast51('gpt-5'), false);
-  assert.equal(isOpenAiGptModelAtLeast51('gpt-5-mini'), false);
-  assert.equal(isOpenAiGptModelAtLeast51('gpt-4.1'), false);
-  assert.equal(isOpenAiGptModelAtLeast51('claude-sonnet-4'), false);
+test("isOpenAiGptModelAtLeast51 boundaries", () => {
+  assert.equal(isOpenAiGptModelAtLeast51("gpt-5.1"), true);
+  assert.equal(isOpenAiGptModelAtLeast51("gpt-5.4"), true);
+  assert.equal(isOpenAiGptModelAtLeast51("GPT-5.2-preview"), true);
+  assert.equal(isOpenAiGptModelAtLeast51("gpt-6"), true);
+  assert.equal(isOpenAiGptModelAtLeast51("gpt-5"), false);
+  assert.equal(isOpenAiGptModelAtLeast51("gpt-5-mini"), false);
+  assert.equal(isOpenAiGptModelAtLeast51("gpt-4.1"), false);
+  assert.equal(isOpenAiGptModelAtLeast51("claude-sonnet-4"), false);
 });
 
-test('normalizeGatewayOpenAiModelId', () => {
-  assert.equal(normalizeGatewayOpenAiModelId('openai/gpt-5.1'), 'gpt-5.1');
-  assert.equal(normalizeGatewayOpenAiModelId('openai/gpt-5.4'), 'gpt-5.4');
-  assert.equal(normalizeGatewayOpenAiModelId('anthropic/claude-sonnet-4'), undefined);
-  assert.equal(normalizeGatewayOpenAiModelId('gpt-5.1'), undefined);
+test("normalizeGatewayOpenAiModelId", () => {
+  assert.equal(normalizeGatewayOpenAiModelId("openai/gpt-5.1"), "gpt-5.1");
+  assert.equal(normalizeGatewayOpenAiModelId("openai/gpt-5.4"), "gpt-5.4");
+  assert.equal(normalizeGatewayOpenAiModelId("anthropic/claude-sonnet-4"), undefined);
+  assert.equal(normalizeGatewayOpenAiModelId("gpt-5.1"), undefined);
 });
 
-test('shouldUseApplyPatchFileTools openai official', () => {
+test("shouldUseApplyPatchFileTools openai official", () => {
   assert.equal(
     shouldUseApplyPatchFileTools({
-      transportKind: 'open-responses',
-      llmVendor: 'openai',
-      responsesProvider: 'openai',
-      model: 'gpt-5.1',
+      transportKind: "open-responses",
+      llmVendor: "openai",
+      responsesProvider: "openai",
+      model: "gpt-5.1",
     }),
     true,
   );
   assert.equal(
     shouldUseApplyPatchFileTools({
-      transportKind: 'open-responses',
-      llmVendor: 'openai',
-      responsesProvider: 'openai',
-      model: 'gpt-5',
+      transportKind: "open-responses",
+      llmVendor: "openai",
+      responsesProvider: "openai",
+      model: "gpt-5",
     }),
     false,
   );
 });
 
-test('shouldUseApplyPatchFileTools vercel gateway', () => {
+test("shouldUseApplyPatchFileTools vercel gateway", () => {
   assert.equal(
     shouldUseApplyPatchFileTools({
-      transportKind: 'open-responses',
-      llmVendor: 'vercel-ai-gateway',
-      model: 'openai/gpt-5.1',
+      transportKind: "open-responses",
+      llmVendor: "vercel-ai-gateway",
+      model: "openai/gpt-5.1",
     }),
     true,
   );
   assert.equal(
     shouldUseApplyPatchFileTools({
-      transportKind: 'open-responses',
-      llmVendor: 'vercel-ai-gateway',
-      model: 'openai/gpt-5.4',
+      transportKind: "open-responses",
+      llmVendor: "vercel-ai-gateway",
+      model: "openai/gpt-5.4",
     }),
     true,
   );
   assert.equal(
     shouldUseApplyPatchFileTools({
-      transportKind: 'open-responses',
-      llmVendor: 'vercel-ai-gateway',
-      responsesProvider: 'open-responses-compatible',
-      model: 'openai/gpt-5.1',
+      transportKind: "open-responses",
+      llmVendor: "vercel-ai-gateway",
+      responsesProvider: "open-responses-compatible",
+      model: "openai/gpt-5.1",
     }),
     true,
   );
   assert.equal(
     shouldUseApplyPatchFileTools({
-      transportKind: 'open-responses',
-      llmVendor: 'vercel-ai-gateway',
-      responsesProvider: 'open-responses-compatible',
-      model: 'openai/gpt-5',
+      transportKind: "open-responses",
+      llmVendor: "vercel-ai-gateway",
+      responsesProvider: "open-responses-compatible",
+      model: "openai/gpt-5",
     }),
     false,
   );
   assert.equal(
     shouldUseApplyPatchFileTools({
-      transportKind: 'open-responses',
-      llmVendor: 'vercel-ai-gateway',
-      responsesProvider: 'open-responses-compatible',
-      model: 'anthropic/claude-sonnet-4',
+      transportKind: "open-responses",
+      llmVendor: "vercel-ai-gateway",
+      responsesProvider: "open-responses-compatible",
+      model: "anthropic/claude-sonnet-4",
     }),
     false,
   );
   assert.equal(
     shouldUseApplyPatchFileTools({
-      transportKind: 'open-responses',
-      llmVendor: 'vercel-ai-gateway',
-      responsesProvider: 'open-responses-compatible',
-      model: 'gpt-5.1',
-    }),
-    false,
-  );
-});
-
-test('shouldUseApplyPatchFileTools openrouter aggregator', () => {
-  assert.equal(
-    shouldUseApplyPatchFileTools({
-      transportKind: 'open-responses',
-      llmVendor: 'openrouter',
-      model: 'openai/gpt-5.1',
-    }),
-    true,
-  );
-  assert.equal(
-    shouldUseApplyPatchFileTools({
-      transportKind: 'open-responses',
-      llmVendor: 'openrouter',
-      model: 'anthropic/claude-sonnet-4',
+      transportKind: "open-responses",
+      llmVendor: "vercel-ai-gateway",
+      responsesProvider: "open-responses-compatible",
+      model: "gpt-5.1",
     }),
     false,
   );
 });
 
-test('Bedrock Mantle openai.gpt uses function apply_patch instead of SDK built-in', () => {
+test("shouldUseApplyPatchFileTools openrouter aggregator", () => {
+  assert.equal(
+    shouldUseApplyPatchFileTools({
+      transportKind: "open-responses",
+      llmVendor: "openrouter",
+      model: "openai/gpt-5.1",
+    }),
+    true,
+  );
+  assert.equal(
+    shouldUseApplyPatchFileTools({
+      transportKind: "open-responses",
+      llmVendor: "openrouter",
+      model: "anthropic/claude-sonnet-4",
+    }),
+    false,
+  );
+});
+
+test("Bedrock Mantle openai.gpt uses function apply_patch instead of SDK built-in", () => {
   const mantleConfig = {
-    transportKind: 'open-responses' as const,
-    llmVendor: 'openai' as const,
-    responsesProvider: 'openai' as const,
-    model: 'openai.gpt-5.5',
-    baseUrl: 'https://bedrock-mantle.us-east-2.api.aws/openai/v1',
+    transportKind: "open-responses" as const,
+    llmVendor: "openai" as const,
+    responsesProvider: "openai" as const,
+    model: "openai.gpt-5.5",
+    baseUrl: "https://bedrock-mantle.us-east-2.api.aws/openai/v1",
   };
 
   assert.equal(shouldUseApplyPatchFileTools(mantleConfig), true);
@@ -140,99 +140,99 @@ test('Bedrock Mantle openai.gpt uses function apply_patch instead of SDK built-i
   assert.equal(shouldUseBuiltInApplyPatchRequestItems(mantleConfig), false);
 });
 
-test('shouldUseApplyPatchFunctionTool only on gateway-compatible routes', () => {
+test("shouldUseApplyPatchFunctionTool only on gateway-compatible routes", () => {
   assert.equal(
     shouldUseApplyPatchFunctionTool({
-      transportKind: 'open-responses',
-      llmVendor: 'vercel-ai-gateway',
-      model: 'openai/gpt-5.4',
+      transportKind: "open-responses",
+      llmVendor: "vercel-ai-gateway",
+      model: "openai/gpt-5.4",
     }),
     true,
   );
   assert.equal(
     shouldUseApplyPatchFunctionTool({
-      transportKind: 'open-responses',
-      llmVendor: 'openrouter',
-      model: 'openai/gpt-5.4',
+      transportKind: "open-responses",
+      llmVendor: "openrouter",
+      model: "openai/gpt-5.4",
     }),
     false,
   );
   assert.equal(
     shouldUseApplyPatchFunctionTool({
-      transportKind: 'open-responses',
-      llmVendor: 'openai',
-      responsesProvider: 'openai',
-      model: 'gpt-5.4',
+      transportKind: "open-responses",
+      llmVendor: "openai",
+      responsesProvider: "openai",
+      model: "gpt-5.4",
     }),
     false,
   );
 });
 
-test('shouldOmitApplyPatchFromAiSdkMessages false on Gateway, true on OpenRouter', () => {
+test("shouldOmitApplyPatchFromAiSdkMessages false on Gateway, true on OpenRouter", () => {
   assert.equal(
     shouldOmitApplyPatchFromAiSdkMessages({
-      transportKind: 'open-responses',
-      llmVendor: 'vercel-ai-gateway',
-      model: 'openai/gpt-5.4',
+      transportKind: "open-responses",
+      llmVendor: "vercel-ai-gateway",
+      model: "openai/gpt-5.4",
     }),
     false,
   );
   assert.equal(
     shouldOmitApplyPatchFromAiSdkMessages({
-      transportKind: 'open-responses',
-      llmVendor: 'openrouter',
-      model: 'openai/gpt-5.4',
-      responsesProvider: 'open-responses-compatible',
+      transportKind: "open-responses",
+      llmVendor: "openrouter",
+      model: "openai/gpt-5.4",
+      responsesProvider: "open-responses-compatible",
     }),
     true,
   );
 });
 
-test('shouldUseBuiltInApplyPatchRequestItems openrouter openai route gpt-5.1+', () => {
+test("shouldUseBuiltInApplyPatchRequestItems openrouter openai route gpt-5.1+", () => {
   assert.equal(
     shouldUseBuiltInApplyPatchRequestItems({
-      llmVendor: 'openrouter',
-      model: 'openai/gpt-5.4',
+      llmVendor: "openrouter",
+      model: "openai/gpt-5.4",
     }),
     true,
   );
   assert.equal(
     shouldUseBuiltInApplyPatchRequestItems({
-      llmVendor: 'openrouter',
-      model: 'anthropic/claude-sonnet-4',
+      llmVendor: "openrouter",
+      model: "anthropic/claude-sonnet-4",
     }),
     false,
   );
   assert.equal(
     shouldUseBuiltInApplyPatchRequestItems({
-      llmVendor: 'vercel-ai-gateway',
-      model: 'openai/gpt-5.4',
+      llmVendor: "vercel-ai-gateway",
+      model: "openai/gpt-5.4",
     }),
     false,
   );
 });
 
-test('shouldUseApplyPatchFileTools rejects other vendors', () => {
+test("shouldUseApplyPatchFileTools rejects other vendors", () => {
   assert.equal(
     shouldUseApplyPatchFileTools({
-      transportKind: 'open-responses',
-      llmVendor: 'xai',
-      responsesProvider: 'xai',
-      model: 'gpt-5.1',
+      transportKind: "open-responses",
+      llmVendor: "xai",
+      responsesProvider: "xai",
+      model: "gpt-5.1",
     }),
     false,
   );
   assert.equal(
     shouldUseApplyPatchFileTools({
-      transportKind: 'openai-compatible',
-      llmVendor: 'openai',
-      model: 'gpt-5.1',
+      transportKind: "openai-compatible",
+      llmVendor: "openai",
+      model: "gpt-5.1",
     } as any),
     false,
   );
 });
 
-test('buildApplyPatchFileToolsPromptSection mentions apply_patch and V4A', () => {
+test("buildApplyPatchFileToolsPromptSection mentions apply_patch and V4A", () => {
   const section = buildApplyPatchFileToolsPromptSection();
   assert.match(section, /apply_patch/);
   assert.match(section, /V4A/);

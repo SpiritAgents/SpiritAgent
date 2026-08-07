@@ -1,13 +1,9 @@
-import type {
-  ApprovalLevel,
-  WorkLocationKind,
-} from '@spiritagent/host-internal';
+import type { ApprovalLevel, WorkLocationKind } from "@spiritagent/host-internal";
 
 import type {
   AddMcpServerRequest,
   AddModelRequest,
   AddProviderModelsRequest,
-  AskQuestionsResult,
   BootstrapRequest,
   CheckoutGitBranchRequest,
   CommitChangesRequest,
@@ -18,7 +14,6 @@ import type {
   DeleteHookEntryRequest,
   DeleteRuleRequest,
   DeleteSkillRequest,
-  DesktopApprovalDecision,
   DesktopCreateAutomationRequest,
   DesktopUpdateAutomationRequest,
   ImportExtensionRequest,
@@ -70,7 +65,7 @@ import type {
   UpdateExtensionSettingsRequest,
   WriteHostTextFileRequest,
   WriteWorkspaceTextFileRequest,
-} from '../types.js';
+} from "../types.js";
 
 export type CommandPayloads = {
   bootstrap: { request?: BootstrapRequest };
@@ -139,7 +134,7 @@ export type CommandPayloads = {
   exportSessionLog: undefined;
   compactHistory: undefined;
   submitUserTurn: SubmitUserTurnRequest;
-  abortConversation: import('../types.js').AbortConversationRequest | undefined;
+  abortConversation: import("../types.js").AbortConversationRequest | undefined;
   abortShell: { toolCallId: string };
   continueAssistantCompletion: { messageId: number };
   poll: { sessionPath?: string } | undefined;
@@ -179,7 +174,7 @@ export type CommandPayloads = {
   getWorkspaceFileReferenceIndex: undefined;
   listWorkspaceExplorerChildren: { relativePath: string };
   readWorkspaceTextFile: { relativePath: string; optional?: boolean };
-  searchWorkspaceContent: { request: import('../types.js').WorkspaceContentSearchRequest };
+  searchWorkspaceContent: { request: import("../types.js").WorkspaceContentSearchRequest };
   writeWorkspaceTextFile: { request: WriteWorkspaceTextFileRequest };
   revealWorkspaceEntry: { relativePath: string; workspaceRoot?: string };
   openPathInDefaultApp: { absolutePath: string };
@@ -187,7 +182,7 @@ export type CommandPayloads = {
   createWorkspaceEntry: {
     parentDirectoryRel: string;
     name: string;
-    kind: 'file' | 'dir';
+    kind: "file" | "dir";
   };
   moveWorkspaceEntry: { relativePath: string; targetDirectoryRel: string };
   trashWorkspaceEntry: { relativePath: string };

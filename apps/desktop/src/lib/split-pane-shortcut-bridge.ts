@@ -14,9 +14,7 @@ export function unregisterSplitPaneShortcut(): void {
   bridge = null;
 }
 
-export function triggerSplitPaneShortcut(
-  direction: SplitDirection,
-): boolean {
+export function triggerSplitPaneShortcut(direction: SplitDirection): boolean {
   if (!bridge) {
     return false;
   }

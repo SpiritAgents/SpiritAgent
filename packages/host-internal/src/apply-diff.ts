@@ -3,32 +3,27 @@
  * Ported from openai-agents-js applyDiff.ts.
  */
 
-export type ApplyDiffMode = 'default' | 'create';
+export type ApplyDiffMode = "default" | "create";
 
 type Chunk = { origIndex: number; delLines: string[]; insLines: string[] };
 
 type ParserState = { lines: string[]; index: number; fuzz: number };
 
-const END_PATCH = '*** End Patch';
-const END_FILE = '*** End of File';
+const END_PATCH = "*** End Patch";
+const END_FILE = "*** End of File";
 const END_SECTION_MARKERS = [
   END_PATCH,
-  '*** Update File:',
-  '*** Delete File:',
-  '*** Add File:',
+  "*** Update File:",
+  "*** Delete File:",
+  "*** Add File:",
   END_FILE,
 ];
-const SECTION_TERMINATORS = [
-  END_PATCH,
-  '*** Update File:',
-  '*** Delete File:',
-  '*** Add File:',
-];
+const SECTION_TERMINATORS = [END_PATCH, "*** Update File:", "*** Delete File:", "*** Add File:"];
 
-export function applyDiff(input: string, diff: string, mode: ApplyDiffMode = 'default'): string {
+export function applyDiff(input: string, diff: string, mode: ApplyDiffMode = "default"): string {
   const newline = detectNewline(input, diff, mode);
   const diffLines = normalizeDiffLines(diff);
-  if (mode === 'create') {
+  if (mode === "create") {
     return parseCreateDiff(diffLines, newline);
   }
 
@@ -39,20 +34,20 @@ export function applyDiff(input: string, diff: string, mode: ApplyDiffMode = 'de
 function normalizeDiffLines(diff: string): string[] {
   return diff
     .split(/\r?\n/)
-    .map((line) => line.replace(/\r$/, ''))
-    .filter((line, idx, arr) => !(idx === arr.length - 1 && line === ''));
+    .map((line) => line.replace(/\r$/, ""))
+    .filter((line, idx, arr) => !(idx === arr.length - 1 && line === ""));
 }
 
 function splitInputLines(input: string): string[] {
-  return input.split('\n').map((line) => line.replace(/\r$/, ''));
+  return input.split("\n").map((line) => line.replace(/\r$/, ""));
 }
 
 function detectNewlineFromText(text: string): string {
-  return text.includes('\r\n') ? '\r\n' : '\n';
+  return text.includes("\r\n") ? "\r\n" : "\n";
 }
 
 function detectNewline(input: string, diff: string, mode: ApplyDiffMode): string {
-  if (mode !== 'create' && input.includes('\n')) {
+  if (mode !== "create" && input.includes("\n")) {
     return detectNewlineFromText(input);
   }
   return detectNewlineFromText(diff);
@@ -67,11 +62,11 @@ function isDone(state: ParserState, prefixes: readonly string[]): boolean {
 
 function readStr(state: ParserState, prefix: string): string {
   const current = state.lines[state.index];
-  if (typeof current === 'string' && current.startsWith(prefix)) {
+  if (typeof current === "string" && current.startsWith(prefix)) {
     state.index += 1;
     return current.slice(prefix.length);
   }
-  return '';
+  return "";
 }
 
 function parseCreateDiff(lines: string[], newline: string): string {
@@ -83,13 +78,13 @@ function parseCreateDiff(lines: string[], newline: string): string {
   const output: string[] = [];
 
   while (!isDone(parser, SECTION_TERMINATORS)) {
-    const line = parser.lines[parser.index] ?? '';
+    const line = parser.lines[parser.index] ?? "";
     parser.index += 1;
     // 模型常在 create_file diff 首行带 bare @@ 锚（与 update 一致）；上游 parseCreateDiff 未跳过
-    if (line === '@@' || line.startsWith('@@ ')) {
+    if (line === "@@" || line.startsWith("@@ ")) {
       continue;
     }
-    if (!line.startsWith('+')) {
+    if (!line.startsWith("+")) {
       throw new Error(`Invalid Add File Line: ${line}`);
     }
     output.push(line.slice(1));
@@ -109,8 +104,8 @@ function parseUpdateDiff(lines: string[], input: string): { chunks: Chunk[]; fuz
   let cursor = 0;
 
   while (!isDone(parser, END_SECTION_MARKERS)) {
-    const anchor = readStr(parser, '@@ ');
-    const hasBareAnchor = !anchor && parser.lines[parser.index] === '@@';
+    const anchor = readStr(parser, "@@ ");
+    const hasBareAnchor = !anchor && parser.lines[parser.index] === "@@";
     if (hasBareAnchor) {
       parser.index += 1;
     }
@@ -126,7 +121,7 @@ function parseUpdateDiff(lines: string[], input: string): { chunks: Chunk[]; fuz
     const section = readSection(parser.lines, parser.index);
     const findResult = findContext(inputLines, section.nextContext, cursor, section.eof);
     if (findResult.newIndex === -1) {
-      const ctxText = section.nextContext.join('\n');
+      const ctxText = section.nextContext.join("\n");
       if (section.eof) {
         throw new Error(`Invalid EOF Context ${cursor}:\n${ctxText}`);
       }
@@ -163,10 +158,7 @@ function advanceCursorToAnchor(
     }
   }
 
-  if (
-    !found
-    && !inputLines.slice(0, cursor).some((s) => s.trim() === anchor.trim())
-  ) {
+  if (!found && !inputLines.slice(0, cursor).some((s) => s.trim() === anchor.trim())) {
     for (let i = cursor; i < inputLines.length; i += 1) {
       if (inputLines[i]?.trim() === anchor.trim()) {
         cursor = i + 1;
@@ -193,49 +185,49 @@ function readSection(
   let delLines: string[] = [];
   let insLines: string[] = [];
   const sectionChunks: Chunk[] = [];
-  let mode: 'keep' | 'add' | 'delete' = 'keep';
+  let mode: "keep" | "add" | "delete" = "keep";
   let index = startIndex;
   const origIndex = index;
 
   while (index < lines.length) {
-    const raw = lines[index] ?? '';
+    const raw = lines[index] ?? "";
     if (
-      raw.startsWith('@@')
-      || raw.startsWith(END_PATCH)
-      || raw.startsWith('*** Update File:')
-      || raw.startsWith('*** Delete File:')
-      || raw.startsWith('*** Add File:')
-      || raw.startsWith(END_FILE)
+      raw.startsWith("@@") ||
+      raw.startsWith(END_PATCH) ||
+      raw.startsWith("*** Update File:") ||
+      raw.startsWith("*** Delete File:") ||
+      raw.startsWith("*** Add File:") ||
+      raw.startsWith(END_FILE)
     ) {
       break;
     }
-    if (raw === '***') {
+    if (raw === "***") {
       break;
     }
-    if (raw.startsWith('***')) {
+    if (raw.startsWith("***")) {
       throw new Error(`Invalid Line: ${raw}`);
     }
 
     index += 1;
     const lastMode = mode;
     let line: string = raw;
-    if (line === '') {
-      line = ' ';
+    if (line === "") {
+      line = " ";
     }
 
-    if (line[0] === '+') {
-      mode = 'add';
-    } else if (line[0] === '-') {
-      mode = 'delete';
-    } else if (line[0] === ' ') {
-      mode = 'keep';
+    if (line[0] === "+") {
+      mode = "add";
+    } else if (line[0] === "-") {
+      mode = "delete";
+    } else if (line[0] === " ") {
+      mode = "keep";
     } else {
       throw new Error(`Invalid Line: ${line}`);
     }
 
     line = line.slice(1);
 
-    const switchingToContext = mode === 'keep' && lastMode !== mode;
+    const switchingToContext = mode === "keep" && lastMode !== mode;
     if (switchingToContext && (insLines.length > 0 || delLines.length > 0)) {
       sectionChunks.push({
         origIndex: context.length - delLines.length,
@@ -246,10 +238,10 @@ function readSection(
       insLines = [];
     }
 
-    if (mode === 'delete') {
+    if (mode === "delete") {
       delLines.push(line);
       context.push(line);
-    } else if (mode === 'add') {
+    } else if (mode === "add") {
       insLines.push(line);
     } else {
       context.push(line);
@@ -331,7 +323,7 @@ function equalsSlice(
     return false;
   }
   for (let i = 0; i < target.length; i += 1) {
-    if (mapFn(source[start + i] ?? '') !== mapFn(target[i] ?? '')) {
+    if (mapFn(source[start + i] ?? "") !== mapFn(target[i] ?? "")) {
       return false;
     }
   }
@@ -350,9 +342,7 @@ function applyChunks(input: string, chunks: Chunk[], newline: string): string {
       );
     }
     if (origIndex > chunk.origIndex) {
-      throw new Error(
-        `applyDiff: overlapping chunk at ${chunk.origIndex} (cursor ${origIndex})`,
-      );
+      throw new Error(`applyDiff: overlapping chunk at ${chunk.origIndex} (cursor ${origIndex})`);
     }
 
     destLines.push(...origLines.slice(origIndex, chunk.origIndex));

@@ -14,9 +14,14 @@ import type {
 
 const PROVIDER_ORDER: DesktopModelProvider[] = [...MODEL_PROVIDER_PICKER_ORDER];
 
-export function providerLabelMetadata(provider: DesktopModelProvider): { labelKey: string; fallbackLabel: string } {
+export function providerLabelMetadata(provider: DesktopModelProvider): {
+  labelKey: string;
+  fallbackLabel: string;
+} {
   const row = PROVIDER_PICKER_ROWS.find((item) => item.id === provider);
-  return row ? { labelKey: row.labelKey, fallbackLabel: row.fallbackLabel } : { labelKey: provider, fallbackLabel: provider };
+  return row
+    ? { labelKey: row.labelKey, fallbackLabel: row.fallbackLabel }
+    : { labelKey: provider, fallbackLabel: provider };
 }
 
 function normalizeTransportKind(
@@ -27,7 +32,7 @@ function normalizeTransportKind(
     return transportKind;
   }
 
-  return provider === 'anthropic' ? 'anthropic' : 'openai-compatible';
+  return provider === "anthropic" ? "anthropic" : "openai-compatible";
 }
 
 function catalogOrderIndex(
@@ -37,9 +42,10 @@ function catalogOrderIndex(
   hints: DesktopModelCatalogHint[] | undefined,
 ): number {
   const normalizedBase = normalizeOpenAiApiBase(apiBase);
-  const hint = hints?.find((h) =>
-    normalizeOpenAiApiBase(h.apiBase) === normalizedBase
-    && normalizeTransportKind(h.transportKind, h.provider) === transportKind,
+  const hint = hints?.find(
+    (h) =>
+      normalizeOpenAiApiBase(h.apiBase) === normalizedBase &&
+      normalizeTransportKind(h.transportKind, h.provider) === transportKind,
   );
   if (!hint) {
     return 10_000;
@@ -65,15 +71,13 @@ export function groupModelsForPicker(
   catalogHints: DesktopModelCatalogHint[] | undefined,
   providerGroups?: readonly ProviderGroupV2[],
 ): ModelPickerGroup[] {
-  const groupMeta = new Map(
-    (providerGroups ?? []).map((group) => [group.id, group] as const),
-  );
+  const groupMeta = new Map((providerGroups ?? []).map((group) => [group.id, group] as const));
   const buckets = new Map<string, ModelProfileSnapshot[]>();
   for (const model of models) {
     const groupId =
-      model.groupId
-      ?? model.ref?.groupId
-      ?? defaultPresetProviderGroupId(model.provider ?? "custom");
+      model.groupId ??
+      model.ref?.groupId ??
+      defaultPresetProviderGroupId(model.provider ?? "custom");
     const list = buckets.get(groupId) ?? [];
     list.push(model);
     buckets.set(groupId, list);

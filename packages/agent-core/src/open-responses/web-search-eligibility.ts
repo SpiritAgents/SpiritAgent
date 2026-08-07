@@ -1,16 +1,13 @@
-import type { JsonObject } from '../ports.js';
-import { shouldUseMinimaxServerToolsWebSearch } from '../anthropic/minimax-server-tools.js';
-import {
-  isOpenResponsesTransportConfig,
-  type LlmTransportConfig,
-} from '../provider-config.js';
-import { shouldUseAlibabaBuiltInTools } from './alibaba-built-in-tools.js';
-import { shouldUseGatewayWebSearch } from './gateway-web-search.js';
+import type { JsonObject } from "../ports.js";
+import { shouldUseMinimaxServerToolsWebSearch } from "../anthropic/minimax-server-tools.js";
+import { isOpenResponsesTransportConfig, type LlmTransportConfig } from "../provider-config.js";
+import { shouldUseAlibabaBuiltInTools } from "./alibaba-built-in-tools.js";
+import { shouldUseGatewayWebSearch } from "./gateway-web-search.js";
 import {
   resolveOpenResponsesSdkProvider,
   isBedrockMantleOpenResponsesConfig,
   type OpenResponsesTransportConfig,
-} from './responses-compat.js';
+} from "./responses-compat.js";
 
 /**
  * Set true when xAI Responses accepts `xai.tools.webSearch()` alongside host function tools.
@@ -19,11 +16,11 @@ import {
 export const XAI_WEB_SEARCH_WITH_LOCAL_TOOLS_ENABLED = true;
 
 export type ProviderWebSearchMode =
-  | 'openai-sdk-web-search'
-  | 'xai-sdk-web-search'
-  | 'gateway-sdk-web-search'
-  | 'alibaba-responses-built-in-tools'
-  | 'minimax-server-tools-web-search';
+  | "openai-sdk-web-search"
+  | "xai-sdk-web-search"
+  | "gateway-sdk-web-search"
+  | "alibaba-responses-built-in-tools"
+  | "minimax-server-tools-web-search";
 
 export function shouldUseProviderWebSearch(config: LlmTransportConfig): boolean {
   return resolveProviderWebSearchMode(config) !== undefined || shouldUseAlibabaBuiltInTools(config);
@@ -33,7 +30,7 @@ export function resolveProviderWebSearchMode(
   config: LlmTransportConfig,
 ): ProviderWebSearchMode | undefined {
   if (shouldUseMinimaxServerToolsWebSearch(config)) {
-    return 'minimax-server-tools-web-search';
+    return "minimax-server-tools-web-search";
   }
 
   if (!isOpenResponsesTransportConfig(config)) {
@@ -51,24 +48,20 @@ function resolveOpenResponsesWebSearchMode(
   }
 
   const provider = resolveOpenResponsesSdkProvider(config);
-  if (config.llmVendor === 'openai' && provider === 'openai') {
-    return 'openai-sdk-web-search';
+  if (config.llmVendor === "openai" && provider === "openai") {
+    return "openai-sdk-web-search";
   }
 
-  if (
-    config.llmVendor === 'xai'
-    && provider === 'xai'
-    && XAI_WEB_SEARCH_WITH_LOCAL_TOOLS_ENABLED
-  ) {
-    return 'xai-sdk-web-search';
+  if (config.llmVendor === "xai" && provider === "xai" && XAI_WEB_SEARCH_WITH_LOCAL_TOOLS_ENABLED) {
+    return "xai-sdk-web-search";
   }
 
-  if (config.llmVendor === 'alibaba') {
-    return 'alibaba-responses-built-in-tools';
+  if (config.llmVendor === "alibaba") {
+    return "alibaba-responses-built-in-tools";
   }
 
   if (shouldUseGatewayWebSearch(config)) {
-    return 'gateway-sdk-web-search';
+    return "gateway-sdk-web-search";
   }
 
   return undefined;
@@ -84,7 +77,7 @@ export function buildProviderWebSearchPromptSection(
 }
 
 export function buildWebSearchResponsesTraceToolEntry(): JsonObject {
-  return { type: 'web_search' };
+  return { type: "web_search" };
 }
 
 /** xAI Responses rejects host function tools unless provider web search is enabled. */
@@ -92,7 +85,7 @@ export function xaiResponsesRejectsLocalFunctionTools(
   config: OpenResponsesTransportConfig,
   localFunctionToolCount: number,
 ): boolean {
-  if (config.llmVendor !== 'xai' || localFunctionToolCount === 0) {
+  if (config.llmVendor !== "xai" || localFunctionToolCount === 0) {
     return false;
   }
 

@@ -1,19 +1,15 @@
-import type { ReactNode } from 'react';
-import { useTranslation } from 'react-i18next';
-import { ArrowUp, Send, Trash2 } from 'lucide-react';
+import type { ReactNode } from "react";
+import { useTranslation } from "react-i18next";
+import { ArrowUp, Send, Trash2 } from "lucide-react";
 
-import {
-  HoverCard,
-  HoverCardContent,
-  HoverCardTrigger,
-} from '@/components/ui/hover-card';
+import { HoverCard, HoverCardContent, HoverCardTrigger } from "@/components/ui/hover-card";
 import {
   DESKTOP_OVERLAY_LIST_DROPDOWN_SURFACE,
   DESKTOP_OVERLAY_LIST_ITEM,
   DESKTOP_OVERLAY_LIST_LIST_GAP,
   DESKTOP_OVERLAY_LIST_LIST_PADDING,
-} from '@/lib/desktop-chrome';
-import { cn } from '@/lib/utils';
+} from "@/lib/desktop-chrome";
+import { cn } from "@/lib/utils";
 
 type QueuedUserMessageHoverActionsProps = {
   queueId: string;
@@ -39,11 +35,11 @@ function QueueActionButton({ disabled = false, icon, label, onClick }: QueueActi
       role="menuitem"
       disabled={disabled}
       className={cn(
-        'flex w-full cursor-pointer select-none items-center gap-2 rounded-sm text-left outline-none',
+        "flex w-full cursor-pointer select-none items-center gap-2 rounded-sm text-left outline-none",
         DESKTOP_OVERLAY_LIST_ITEM,
-        'text-popover-foreground hover:bg-accent hover:text-accent-foreground',
-        'focus-visible:bg-accent focus-visible:text-accent-foreground',
-        'disabled:pointer-events-none disabled:opacity-50',
+        "text-popover-foreground hover:bg-accent hover:text-accent-foreground",
+        "focus-visible:bg-accent focus-visible:text-accent-foreground",
+        "disabled:pointer-events-none disabled:opacity-50",
       )}
       onClick={onClick}
     >
@@ -73,17 +69,21 @@ export function QueuedUserMessageHoverActions({
         side="left"
         align="end"
         sideOffset={8}
-        className={cn(DESKTOP_OVERLAY_LIST_DROPDOWN_SURFACE, 'w-44 p-0')}
-        aria-label={t('queue.actionsAria')}
+        className={cn(DESKTOP_OVERLAY_LIST_DROPDOWN_SURFACE, "w-44 p-0")}
+        aria-label={t("queue.actionsAria")}
       >
         <div
           role="menu"
-          className={cn('flex flex-col', DESKTOP_OVERLAY_LIST_LIST_PADDING, DESKTOP_OVERLAY_LIST_LIST_GAP)}
+          className={cn(
+            "flex flex-col",
+            DESKTOP_OVERLAY_LIST_LIST_PADDING,
+            DESKTOP_OVERLAY_LIST_LIST_GAP,
+          )}
         >
           <QueueActionButton
             disabled={busy || !canMoveUp}
             icon={<ArrowUp className="size-3.5 shrink-0" aria-hidden />}
-            label={t('queue.moveUp')}
+            label={t("queue.moveUp")}
             onClick={() => {
               void onMoveUp(queueId);
             }}
@@ -91,7 +91,7 @@ export function QueuedUserMessageHoverActions({
           <QueueActionButton
             disabled={busy}
             icon={<Send className="size-3.5 shrink-0" aria-hidden />}
-            label={t('queue.sendNow')}
+            label={t("queue.sendNow")}
             onClick={() => {
               void onSendNow(queueId);
             }}
@@ -99,7 +99,7 @@ export function QueuedUserMessageHoverActions({
           <QueueActionButton
             disabled={busy}
             icon={<Trash2 className="size-3.5 shrink-0" aria-hidden />}
-            label={t('queue.delete')}
+            label={t("queue.delete")}
             onClick={() => {
               void onDelete(queueId);
             }}

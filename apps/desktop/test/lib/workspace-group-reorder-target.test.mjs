@@ -9,7 +9,6 @@ import {
   computeWorkspaceGroupDragProbeY,
   computeWorkspaceGroupTargetIndex,
   computeWorkspaceGroupTargetIndexFromLayoutTops,
-  getWorkspaceGroupDragOffsetBounds,
 } from "../../src/lib/workspace-group-reorder-target.ts";
 
 function rects(entries) {
@@ -81,18 +80,9 @@ test("computeWorkspaceGroupTargetIndexFromLayoutTops uses header midpoints for t
 
 test("applyWorkspaceGroupReorderBoundaryTargetIndex advances slot when pinned to top", () => {
   const bounds = { minOffset: -32, maxOffset: 32 };
-  assert.equal(
-    applyWorkspaceGroupReorderBoundaryTargetIndex(1, 1, 3, -32, bounds, -8),
-    0,
-  );
-  assert.equal(
-    applyWorkspaceGroupReorderBoundaryTargetIndex(1, 2, 3, -64, bounds, -8),
-    1,
-  );
-  assert.equal(
-    applyWorkspaceGroupReorderBoundaryTargetIndex(1, 1, 3, -32, bounds, 8),
-    1,
-  );
+  assert.equal(applyWorkspaceGroupReorderBoundaryTargetIndex(1, 1, 3, -32, bounds, -8), 0);
+  assert.equal(applyWorkspaceGroupReorderBoundaryTargetIndex(1, 2, 3, -64, bounds, -8), 1);
+  assert.equal(applyWorkspaceGroupReorderBoundaryTargetIndex(1, 1, 3, -32, bounds, 8), 1);
 });
 
 test("computeWorkspaceGroupTargetIndexFromLayoutTops stays at last index with pointer offset", () => {
@@ -108,14 +98,8 @@ test("computeWorkspaceGroupTargetIndexFromLayoutTops stays at last index with po
 
 test("applyWorkspaceGroupReorderBoundaryTargetIndex advances down only when dragging down", () => {
   const bounds = { minOffset: -32, maxOffset: 98 };
-  assert.equal(
-    applyWorkspaceGroupReorderBoundaryTargetIndex(1, 1, 3, 98, bounds, 12),
-    2,
-  );
-  assert.equal(
-    applyWorkspaceGroupReorderBoundaryTargetIndex(1, 1, 3, 98, bounds, -4),
-    1,
-  );
+  assert.equal(applyWorkspaceGroupReorderBoundaryTargetIndex(1, 1, 3, 98, bounds, 12), 2);
+  assert.equal(applyWorkspaceGroupReorderBoundaryTargetIndex(1, 1, 3, 98, bounds, -4), 1);
 });
 
 test("clampWorkspaceGroupReorderProbeY clamps to header centers of first and last slots", () => {

@@ -1,8 +1,8 @@
-import type { JsonValue } from '../ports.js';
+import type { JsonValue } from "../ports.js";
 
-export const LAZY_TOOL_PROVIDER_MCP = 'mcp';
-export const LAZY_TOOL_PROVIDER_BUILT_IN = 'built-in';
-export const LAZY_BUILT_IN_SERVER_DESKTOP = 'desktop';
+export const LAZY_TOOL_PROVIDER_MCP = "mcp";
+export const LAZY_TOOL_PROVIDER_BUILT_IN = "built-in";
+export const LAZY_BUILT_IN_SERVER_DESKTOP = "desktop";
 
 export interface BuiltInLazyToolIndexEntry {
   server: string;
@@ -10,7 +10,7 @@ export interface BuiltInLazyToolIndexEntry {
   description: string;
   inputSchema: JsonValue;
   excludeFromAskMode?: boolean;
-  agentModeExposure?: 'all' | 'agent';
+  agentModeExposure?: "all" | "agent";
 }
 
 export interface BuiltInLazyToolGatewayBackend {
@@ -43,7 +43,7 @@ export interface LazyToolGatewayBackend {
 
 export interface LazyToolGatewayToolRequest {
   [key: string]: JsonValue;
-  kind: 'lazyToolGateway';
+  kind: "lazyToolGateway";
   name: string;
   argumentsJson: string;
 }

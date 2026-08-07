@@ -83,8 +83,7 @@ export function caretAfterAgentModeChip(segs: RichSegment[]): SegmentCaret {
   const textIndex = merged.findIndex((s, i) => i > modeIndex && s.kind === "text");
   if (textIndex >= 0) {
     const textSeg = merged[textIndex];
-    const offset =
-      textSeg?.kind === "text" && textSeg.value.startsWith(" ") ? 1 : 0;
+    const offset = textSeg?.kind === "text" && textSeg.value.startsWith(" ") ? 1 : 0;
     return { segmentIndex: textIndex, offset };
   }
   return { segmentIndex: modeIndex + 1, offset: 0 };
@@ -155,10 +154,7 @@ export function ensureAgentModePinned(
 }
 
 /** True when caret is immediately after the pinned agent-mode chip (Backspace removes it). */
-export function isCaretAtAgentModeRemovalPoint(
-  segs: RichSegment[],
-  caret: SegmentCaret,
-): boolean {
+export function isCaretAtAgentModeRemovalPoint(segs: RichSegment[], caret: SegmentCaret): boolean {
   const merged = mergeAdjacentTextSegments(segs);
   const modeIndex = agentModeChipIndex(merged);
   if (modeIndex < 0) {

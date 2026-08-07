@@ -1,57 +1,58 @@
-import assert from 'node:assert/strict';
-import { mkdtempSync, writeFileSync } from 'node:fs';
-import { tmpdir } from 'node:os';
-import { join } from 'node:path';
-import test from 'node:test';
+import assert from "node:assert/strict";
+import { mkdtempSync, writeFileSync } from "node:fs";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
+import test from "node:test";
 
-import { AuthState, createAuthState } from '../src/auth/auth-state.js';
-import { buildAuthMethods, buildTerminalAuthMethod } from '../src/auth/build-auth-methods.js';
-import {
-  TERMINAL_AUTH_ARGS,
-  TERMINAL_AUTH_METHOD_ID,
-} from '../src/auth/constants.js';
-import { canCreateSession, createInitialAuthState } from '../src/auth/session-auth.js';
-import { loadBaseConfig } from '../src/config.js';
-import { hasResolvableCredentials, setKeyringStoreForTests } from '@spiritagent/host-internal';
-import { providerKeyAccount, resolveTransportConfig } from '@spiritagent/host-internal';
+import { AuthState, createAuthState } from "../src/auth/auth-state.js";
+import { buildAuthMethods, buildTerminalAuthMethod } from "../src/auth/build-auth-methods.js";
+import { TERMINAL_AUTH_ARGS, TERMINAL_AUTH_METHOD_ID } from "../src/auth/constants.js";
+import { canCreateSession, createInitialAuthState } from "../src/auth/session-auth.js";
+import { loadBaseConfig } from "../src/config.js";
+import { hasResolvableCredentials, setKeyringStoreForTests } from "@spiritagent/host-internal";
+import { providerKeyAccount, resolveTransportConfig } from "@spiritagent/host-internal";
 import {
   validateAzureSetup,
   validateBedrockCredentials,
   validateCustomSetup,
   validateModelName,
   buildSetupProfile,
-} from '../src/setup/provider-wizard.js';
-import { openAiGroup, v2ConfigFixture } from './fixtures/v2-config.js';
+} from "../src/setup/provider-wizard.js";
+import { openAiGroup, v2ConfigFixture } from "./fixtures/v2-config.js";
 
-test('buildTerminalAuthMethod declares terminal setup args', () => {
+test("buildTerminalAuthMethod declares terminal setup args", () => {
   const method = buildTerminalAuthMethod();
   assert.equal(method.id, TERMINAL_AUTH_METHOD_ID);
-  assert.equal((method as { type?: string }).type, 'terminal');
+  assert.equal((method as { type?: string }).type, "terminal");
   assert.deepEqual((method as { args?: string[] }).args, [...TERMINAL_AUTH_ARGS]);
 });
 
-test('buildAuthMethods returns a non-empty terminal method list', () => {
+test("buildAuthMethods returns a non-empty terminal method list", () => {
   const methods = buildAuthMethods();
   assert.equal(methods.length, 1);
-  assert.equal((methods[0] as { type?: string }).type, 'terminal');
+  assert.equal((methods[0] as { type?: string }).type, "terminal");
 });
 
-test('AuthState pre-authenticates when constructed with true', () => {
+test("AuthState pre-authenticates when constructed with true", () => {
   const state = createAuthState(true);
   assert.equal(state.isAuthenticated(), true);
   state.logout();
   assert.equal(state.isAuthenticated(), false);
 });
 
-test('buildAuthMethods returns terminal auth even when shared credentials exist', () => {
-  const dir = mkdtempSync(join(tmpdir(), 'spirit-acp-auth-'));
+test("buildAuthMethods returns terminal auth even when shared credentials exist", () => {
+  const dir = mkdtempSync(join(tmpdir(), "spirit-acp-auth-"));
   writeFileSync(
-    join(dir, 'config.json'),
-    JSON.stringify(v2ConfigFixture({
-      groups: [openAiGroup([{ name: 'gpt-4o-mini', reasoningEffort: 'medium', capabilities: ['chat'] }])],
-      activeModel: { groupId: 'openai', name: 'gpt-4o-mini' },
-    })),
-    'utf8',
+    join(dir, "config.json"),
+    JSON.stringify(
+      v2ConfigFixture({
+        groups: [
+          openAiGroup([{ name: "gpt-4o-mini", reasoningEffort: "medium", capabilities: ["chat"] }]),
+        ],
+        activeModel: { groupId: "openai", name: "gpt-4o-mini" },
+      }),
+    ),
+    "utf8",
   );
 
   const passwords = new Map<string, string>();
@@ -64,7 +65,7 @@ test('buildAuthMethods returns terminal auth even when shared credentials exist'
       passwords.delete(account);
     },
   });
-  passwords.set(providerKeyAccount('openai'), 'stored-key');
+  passwords.set(providerKeyAccount("openai"), "stored-key");
 
   try {
     assert.equal(buildAuthMethods().length, 1);
@@ -73,15 +74,19 @@ test('buildAuthMethods returns terminal auth even when shared credentials exist'
   }
 });
 
-test('logout allows authenticate to restore session creation', () => {
-  const dir = mkdtempSync(join(tmpdir(), 'spirit-acp-auth-'));
+test("logout allows authenticate to restore session creation", () => {
+  const dir = mkdtempSync(join(tmpdir(), "spirit-acp-auth-"));
   writeFileSync(
-    join(dir, 'config.json'),
-    JSON.stringify(v2ConfigFixture({
-      groups: [openAiGroup([{ name: 'gpt-4o-mini', reasoningEffort: 'medium', capabilities: ['chat'] }])],
-      activeModel: { groupId: 'openai', name: 'gpt-4o-mini' },
-    })),
-    'utf8',
+    join(dir, "config.json"),
+    JSON.stringify(
+      v2ConfigFixture({
+        groups: [
+          openAiGroup([{ name: "gpt-4o-mini", reasoningEffort: "medium", capabilities: ["chat"] }]),
+        ],
+        activeModel: { groupId: "openai", name: "gpt-4o-mini" },
+      }),
+    ),
+    "utf8",
   );
 
   const passwords = new Map<string, string>();
@@ -94,7 +99,7 @@ test('logout allows authenticate to restore session creation', () => {
       passwords.delete(account);
     },
   });
-  passwords.set(providerKeyAccount('openai'), 'stored-key');
+  passwords.set(providerKeyAccount("openai"), "stored-key");
 
   try {
     const config = loadBaseConfig();
@@ -112,15 +117,19 @@ test('logout allows authenticate to restore session creation', () => {
   }
 });
 
-test('createInitialAuthState pre-authenticates when shared credentials exist', () => {
-  const dir = mkdtempSync(join(tmpdir(), 'spirit-acp-auth-'));
+test("createInitialAuthState pre-authenticates when shared credentials exist", () => {
+  const dir = mkdtempSync(join(tmpdir(), "spirit-acp-auth-"));
   writeFileSync(
-    join(dir, 'config.json'),
-    JSON.stringify(v2ConfigFixture({
-      groups: [openAiGroup([{ name: 'gpt-4o-mini', reasoningEffort: 'medium', capabilities: ['chat'] }])],
-      activeModel: { groupId: 'openai', name: 'gpt-4o-mini' },
-    })),
-    'utf8',
+    join(dir, "config.json"),
+    JSON.stringify(
+      v2ConfigFixture({
+        groups: [
+          openAiGroup([{ name: "gpt-4o-mini", reasoningEffort: "medium", capabilities: ["chat"] }]),
+        ],
+        activeModel: { groupId: "openai", name: "gpt-4o-mini" },
+      }),
+    ),
+    "utf8",
   );
 
   const passwords = new Map<string, string>();
@@ -133,7 +142,7 @@ test('createInitialAuthState pre-authenticates when shared credentials exist', (
       passwords.delete(account);
     },
   });
-  passwords.set(providerKeyAccount('openai'), 'stored-key');
+  passwords.set(providerKeyAccount("openai"), "stored-key");
 
   try {
     const config = loadBaseConfig();
@@ -146,15 +155,19 @@ test('createInitialAuthState pre-authenticates when shared credentials exist', (
   }
 });
 
-test('canCreateSession requires authenticate when using shared credentials without pre-auth', () => {
-  const dir = mkdtempSync(join(tmpdir(), 'spirit-acp-auth-'));
+test("canCreateSession requires authenticate when using shared credentials without pre-auth", () => {
+  const dir = mkdtempSync(join(tmpdir(), "spirit-acp-auth-"));
   writeFileSync(
-    join(dir, 'config.json'),
-    JSON.stringify(v2ConfigFixture({
-      groups: [openAiGroup([{ name: 'gpt-4o-mini', reasoningEffort: 'medium', capabilities: ['chat'] }])],
-      activeModel: { groupId: 'openai', name: 'gpt-4o-mini' },
-    })),
-    'utf8',
+    join(dir, "config.json"),
+    JSON.stringify(
+      v2ConfigFixture({
+        groups: [
+          openAiGroup([{ name: "gpt-4o-mini", reasoningEffort: "medium", capabilities: ["chat"] }]),
+        ],
+        activeModel: { groupId: "openai", name: "gpt-4o-mini" },
+      }),
+    ),
+    "utf8",
   );
 
   const passwords = new Map<string, string>();
@@ -167,7 +180,7 @@ test('canCreateSession requires authenticate when using shared credentials witho
       passwords.delete(account);
     },
   });
-  passwords.set(providerKeyAccount('openai'), 'stored-key');
+  passwords.set(providerKeyAccount("openai"), "stored-key");
 
   try {
     const config = loadBaseConfig();
@@ -183,22 +196,26 @@ test('canCreateSession requires authenticate when using shared credentials witho
   }
 });
 
-test('loadBaseConfig only resolves runtime paths', () => {
+test("loadBaseConfig only resolves runtime paths", () => {
   const config = loadBaseConfig();
   assert.ok(config.workspaceRoot);
   assert.ok(config.spiritDataDir);
-  assert.equal(Object.keys(config).sort().join(','), 'spiritDataDir,workspaceRoot');
+  assert.equal(Object.keys(config).sort().join(","), "spiritDataDir,workspaceRoot");
 });
 
-test('resolveTransportConfig reads shared config and keyring', () => {
-  const dir = mkdtempSync(join(tmpdir(), 'spirit-acp-transport-'));
+test("resolveTransportConfig reads shared config and keyring", () => {
+  const dir = mkdtempSync(join(tmpdir(), "spirit-acp-transport-"));
   writeFileSync(
-    join(dir, 'config.json'),
-    JSON.stringify(v2ConfigFixture({
-      groups: [openAiGroup([{ name: 'gpt-4o-mini', reasoningEffort: 'medium', capabilities: ['chat'] }])],
-      activeModel: { groupId: 'openai', name: 'gpt-4o-mini' },
-    })),
-    'utf8',
+    join(dir, "config.json"),
+    JSON.stringify(
+      v2ConfigFixture({
+        groups: [
+          openAiGroup([{ name: "gpt-4o-mini", reasoningEffort: "medium", capabilities: ["chat"] }]),
+        ],
+        activeModel: { groupId: "openai", name: "gpt-4o-mini" },
+      }),
+    ),
+    "utf8",
   );
 
   const passwords = new Map<string, string>();
@@ -211,39 +228,39 @@ test('resolveTransportConfig reads shared config and keyring', () => {
       passwords.delete(account);
     },
   });
-  passwords.set(providerKeyAccount('openai'), 'stored-key');
+  passwords.set(providerKeyAccount("openai"), "stored-key");
 
   try {
     const config = loadBaseConfig();
     config.spiritDataDir = dir;
     const transport = resolveTransportConfig(config);
-    assert.equal(transport.transportKind, 'open-responses');
-    if (transport.transportKind === 'open-responses') {
-      assert.equal(transport.apiKey, 'stored-key');
-      assert.equal(transport.model, 'gpt-4o-mini');
+    assert.equal(transport.transportKind, "open-responses");
+    if (transport.transportKind === "open-responses") {
+      assert.equal(transport.apiKey, "stored-key");
+      assert.equal(transport.model, "gpt-4o-mini");
     }
   } finally {
     setKeyringStoreForTests(undefined);
   }
 });
 
-test('setup validation helpers catch missing fields', () => {
-  assert.ok(validateModelName(''));
-  assert.ok(validateBedrockCredentials({ awsRegion: 'us-east-1' }));
-  assert.ok(validateAzureSetup({ azureResourceName: 'my-resource', apiKey: 'k', modelName: '' }));
+test("setup validation helpers catch missing fields", () => {
+  assert.ok(validateModelName(""));
+  assert.ok(validateBedrockCredentials({ awsRegion: "us-east-1" }));
+  assert.ok(validateAzureSetup({ azureResourceName: "my-resource", apiKey: "k", modelName: "" }));
   assert.equal(
-    validateCustomSetup({ apiBase: 'https://example.com/v1', apiKey: 'k', modelName: 'm' }),
+    validateCustomSetup({ apiBase: "https://example.com/v1", apiKey: "k", modelName: "m" }),
     undefined,
   );
 });
 
-test('buildSetupProfile resolves preset provider api base', () => {
+test("buildSetupProfile resolves preset provider api base", () => {
   const profile = buildSetupProfile({
-    provider: 'openai',
-    modelName: 'gpt-4o-mini',
+    provider: "openai",
+    modelName: "gpt-4o-mini",
   });
-  assert.equal(profile.groupId, 'openai');
-  assert.deepEqual(profile.ref, { groupId: 'openai', name: 'gpt-4o-mini' });
-  assert.equal(profile.provider, 'openai');
-  assert.ok(profile.apiBase.includes('openai.com'));
+  assert.equal(profile.groupId, "openai");
+  assert.deepEqual(profile.ref, { groupId: "openai", name: "gpt-4o-mini" });
+  assert.equal(profile.provider, "openai");
+  assert.ok(profile.apiBase.includes("openai.com"));
 });

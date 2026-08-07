@@ -1,11 +1,11 @@
-import { cloudflareAiGatewayApiBaseFromAccountId } from './cloudflare-ai-gateway-resource.js';
+import { cloudflareAiGatewayApiBaseFromAccountId } from "./cloudflare-ai-gateway-resource.js";
 import {
   resolveProviderConnectApiBase,
   type ModelProviderId,
   type ProviderModelTransportKind,
-} from './model-provider-presets.js';
+} from "./model-provider-presets.js";
 
-const DEFAULT_API_BASE = 'https://api.openai.com/v1';
+const DEFAULT_API_BASE = "https://api.openai.com/v1";
 
 /**
  * Shared provider → transport-kind resolution used by host setup flows and
@@ -18,30 +18,30 @@ export function resolveSetupTransportKind(
 ): ProviderModelTransportKind {
   if (requested) {
     if (
-      (provider === 'google' || provider === 'google-vertex-ai')
-      && (requested === 'open-responses' || requested === 'anthropic')
+      (provider === "google" || provider === "google-vertex-ai") &&
+      (requested === "open-responses" || requested === "anthropic")
     ) {
-      return 'openai-compatible';
+      return "openai-compatible";
     }
-    if (provider === 'azure' || provider === 'openai') {
-      return 'open-responses';
+    if (provider === "azure" || provider === "openai") {
+      return "open-responses";
     }
     return requested;
   }
 
-  if (provider === 'anthropic') {
-    return 'anthropic';
+  if (provider === "anthropic") {
+    return "anthropic";
   }
-  if (provider === 'minimax') {
-    return 'anthropic';
+  if (provider === "minimax") {
+    return "anthropic";
   }
-  if (provider === 'amazon-bedrock') {
-    return 'bedrock';
+  if (provider === "amazon-bedrock") {
+    return "bedrock";
   }
-  if (provider === 'azure' || provider === 'openai') {
-    return 'open-responses';
+  if (provider === "azure" || provider === "openai") {
+    return "open-responses";
   }
-  return 'openai-compatible';
+  return "openai-compatible";
 }
 
 export function resolveProfileApiBase(profile: {
@@ -57,14 +57,14 @@ export function resolveProfileApiBase(profile: {
   vertexProject?: string;
   vertexLocation?: string;
 }): string {
-  if (profile.provider === 'amazon-bedrock') {
+  if (profile.provider === "amazon-bedrock") {
     const region = profile.awsRegion?.trim();
     if (region) {
-      return resolveProviderConnectApiBase('amazon-bedrock', 'bedrock');
+      return resolveProviderConnectApiBase("amazon-bedrock", "bedrock");
     }
   }
 
-  if (profile.provider === 'google-vertex-ai') {
+  if (profile.provider === "google-vertex-ai") {
     const project = profile.vertexProject?.trim();
     const location = profile.vertexLocation?.trim();
     if (project && location) {
@@ -74,10 +74,10 @@ export function resolveProfileApiBase(profile: {
     if (trimmed) {
       return trimmed;
     }
-    return '';
+    return "";
   }
 
-  if (profile.provider === 'azure') {
+  if (profile.provider === "azure") {
     const resourceName = profile.azureResourceName?.trim();
     if (resourceName) {
       return `https://${resourceName}.openai.azure.com/openai/v1`;
@@ -86,10 +86,10 @@ export function resolveProfileApiBase(profile: {
     if (trimmed) {
       return trimmed;
     }
-    throw new Error('Azure model is missing azureResourceName.');
+    throw new Error("Azure model is missing azureResourceName.");
   }
 
-  if (profile.provider === 'cloudflare-ai-gateway') {
+  if (profile.provider === "cloudflare-ai-gateway") {
     const accountId = profile.cloudflareAccountId?.trim();
     if (accountId) {
       return cloudflareAiGatewayApiBaseFromAccountId(accountId);
@@ -98,10 +98,10 @@ export function resolveProfileApiBase(profile: {
     if (trimmed) {
       return trimmed;
     }
-    throw new Error('Cloudflare AI Gateway model is missing cloudflareAccountId.');
+    throw new Error("Cloudflare AI Gateway model is missing cloudflareAccountId.");
   }
 
-  if (profile.provider && profile.provider !== 'custom') {
+  if (profile.provider && profile.provider !== "custom") {
     const transportKind = resolveSetupTransportKind(profile.provider, profile.transportKind);
     return resolveProviderConnectApiBase(profile.provider, transportKind, {
       ...(profile.providerSite ? { site: profile.providerSite } : {}),

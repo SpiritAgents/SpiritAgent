@@ -1,23 +1,23 @@
-import path from 'node:path';
+import path from "node:path";
 
-import { DEFAULT_LSP_TIMING, type LspTimingConfig } from './config.js';
-import { LspDisabledError, LspPathError } from './errors.js';
-import { formatDiagnosticsForLlm } from '@spiritagent/agent-core';
-import type { LspDiagnostic, LspFileChangeNotification } from '@spiritagent/agent-core';
+import { DEFAULT_LSP_TIMING, type LspTimingConfig } from "./config.js";
+import { LspDisabledError, LspPathError } from "./errors.js";
+import { formatDiagnosticsForLlm } from "@spiritagent/agent-core";
+import type { LspDiagnostic, LspFileChangeNotification } from "@spiritagent/agent-core";
 import {
   isLspSupportedPath,
   parseLspFileChangeNotification,
   relativePathFromWorkspace,
   resolveWorkspaceFilePath,
-} from './paths.js';
-import { LspProviderSession } from './provider-session.js';
-import { buildJdtlsServerCommand } from './resolve-server-jdtls.js';
+} from "./paths.js";
+import { LspProviderSession } from "./provider-session.js";
+import { buildJdtlsServerCommand } from "./resolve-server-jdtls.js";
 import {
   discoverLspProvider,
   LSP_PROVIDERS,
   routeLspProviderForPath,
   type LspProviderId,
-} from './providers.js';
+} from "./providers.js";
 
 export interface LspOrchestratorUserConfig {
   enabled: boolean;
@@ -75,23 +75,25 @@ export class LspOrchestrator {
       LSP_PROVIDERS.map(async (provider) => {
         const session = this.sessionForProvider(provider.id);
         const ready = await session.probe(async () => {
-          if (provider.id === 'jdtls') {
+          if (provider.id === "jdtls") {
             return buildJdtlsServerCommand(this.workspaceRootStore);
           }
           const discovery = await discoverLspProvider(provider.id, process.env, process.platform, {
             lightweight: true,
           });
-          if (discovery.status !== 'ready' || !discovery.command) {
+          if (discovery.status !== "ready" || !discovery.command) {
             return undefined;
           }
           return { command: discovery.command, args: discovery.args ?? [] };
         });
-        if (!ready && provider.id === 'typescript-language-server') {
-          console.error('[lsp] typescript-language-server not found on PATH; TypeScript diagnostics disabled');
-        }
-        if (!ready && provider.id === 'rust-analyzer') {
+        if (!ready && provider.id === "typescript-language-server") {
           console.error(
-            '[lsp] rust-analyzer is unavailable; run `rustup component add rust-analyzer` or install from settings',
+            "[lsp] typescript-language-server not found on PATH; TypeScript diagnostics disabled",
+          );
+        }
+        if (!ready && provider.id === "rust-analyzer") {
+          console.error(
+            "[lsp] rust-analyzer is unavailable; run `rustup component add rust-analyzer` or install from settings",
           );
         }
       }),
@@ -108,7 +110,7 @@ export class LspOrchestrator {
   }
 
   getResolvedServer(): { command: string; args: string[] } | undefined {
-    return this.sessions.get('typescript-language-server')?.getResolvedServer();
+    return this.sessions.get("typescript-language-server")?.getResolvedServer();
   }
 
   async syncFromRecordedChange(change: unknown): Promise<void> {

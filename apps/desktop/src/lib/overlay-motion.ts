@@ -23,21 +23,13 @@ export type RadixAnchoredOverlayKind =
 
 /** Full class strings per kind so Tailwind can statically scan arbitrary `origin-(…)` utilities. */
 const MOTION_BY_KIND: Record<RadixAnchoredOverlayKind, string> = {
-  popover: cn(
-    "origin-(--radix-popover-content-transform-origin)",
-    SIDE_SLIDE_IN,
-    OPEN_CLOSE,
-  ),
+  popover: cn("origin-(--radix-popover-content-transform-origin)", SIDE_SLIDE_IN, OPEN_CLOSE),
   "dropdown-menu": cn(
     "origin-(--radix-dropdown-menu-content-transform-origin)",
     SIDE_SLIDE_IN,
     OPEN_CLOSE,
   ),
-  select: cn(
-    "origin-(--radix-select-content-transform-origin)",
-    SIDE_SLIDE_IN,
-    SELECT_OPEN_CLOSE,
-  ),
+  select: cn("origin-(--radix-select-content-transform-origin)", SIDE_SLIDE_IN, SELECT_OPEN_CLOSE),
   "hover-card": cn(
     "origin-(--radix-hover-card-content-transform-origin)",
     SIDE_SLIDE_IN,

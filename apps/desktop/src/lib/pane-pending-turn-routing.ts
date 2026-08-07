@@ -1,4 +1,4 @@
-import type { DesktopSnapshot, PaneSessionSlice, PendingQuestionsSnapshot } from '../types.js';
+import type { DesktopSnapshot, PaneSessionSlice, PendingQuestionsSnapshot } from "../types.js";
 
 /** Foreground session path when it holds pending approval; otherwise a background pane slice. */
 export function resolvePendingApprovalSessionPath(

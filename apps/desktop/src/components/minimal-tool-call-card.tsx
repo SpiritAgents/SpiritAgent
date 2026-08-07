@@ -32,10 +32,7 @@ import {
   toolHasExpandableContent,
   type ShellToolSummaryParts,
 } from "@/lib/tool-call-display";
-import {
-  parseShellToolResult,
-  resolveShellToolExpandedCommand,
-} from "@/lib/shell-tool-display";
+import { parseShellToolResult, resolveShellToolExpandedCommand } from "@/lib/shell-tool-display";
 import {
   clickableToolCardTriggerClass,
   shouldShowLspDiagnosticsOnToolCard,
@@ -111,12 +108,10 @@ function ToolCallSummaryRow({
   hideLspBadge?: boolean;
 }) {
   const { t } = useTranslation("settings");
-  const editLineDelta = useMemo(() => resolveToolLineDeltaForDisplay(tool), [
-    tool.phase,
-    tool.toolName,
-    tool.editLineDelta,
-    tool.argsExcerpt,
-  ]);
+  const editLineDelta = useMemo(
+    () => resolveToolLineDeltaForDisplay(tool),
+    [tool.phase, tool.toolName, tool.editLineDelta, tool.argsExcerpt],
+  );
   const statusSuffix = tool.phase === "failed" ? t("failed") : undefined;
   const statusSuffixTone: ToolSummaryStatusSuffixTone | undefined = statusSuffix
     ? shellSummary
@@ -184,15 +179,12 @@ export function MinimalToolSummary({
     <span
       className={cn(
         "min-w-0 text-xs leading-relaxed",
-        truncateSummary
-          ? cn("block truncate", toolCardFileNameDetailClass)
-          : "break-words",
+        truncateSummary ? cn("block truncate", toolCardFileNameDetailClass) : "break-words",
       )}
     >
       {shellSummary ? (
         <>
-          <span className={shimmerClass}>{shellSummary.verb}</span>
-          {" "}
+          <span className={shimmerClass}>{shellSummary.verb}</span>{" "}
           <span className={toolCardSecondaryTextClass}>{shellSummary.reason}</span>
         </>
       ) : (
@@ -274,13 +266,7 @@ function GenericToolExpandedBody({ tool }: { tool: ToolBlockSnapshot }) {
   );
 }
 
-function FileToolDiffExpandedBody({
-  tool,
-  open,
-}: {
-  tool: ToolBlockSnapshot;
-  open: boolean;
-}) {
+function FileToolDiffExpandedBody({ tool, open }: { tool: ToolBlockSnapshot; open: boolean }) {
   const { t } = useTranslation();
   const diffHost = useToolCallDiffHost();
   const readWorkspaceTextFile = diffHost?.readWorkspaceTextFile;
@@ -292,11 +278,14 @@ function FileToolDiffExpandedBody({
     if (!open || tool.toolName !== "create_plan") {
       return undefined;
     }
-    return resolvePlanRelativePath(
-      tool,
-      open ? tool.streamingArgumentsJson : undefined,
-    );
-  }, [open, tool.toolName, tool.phase, tool.argsExcerpt, open ? tool.streamingArgumentsJson : undefined]);
+    return resolvePlanRelativePath(tool, open ? tool.streamingArgumentsJson : undefined);
+  }, [
+    open,
+    tool.toolName,
+    tool.phase,
+    tool.argsExcerpt,
+    open ? tool.streamingArgumentsJson : undefined,
+  ]);
 
   useEffect(() => {
     if (!open || !planRelativePath || !readWorkspaceTextFile) {
@@ -359,7 +348,9 @@ function FileToolDiffExpandedBody({
   if (diffResult === "truncated") {
     return (
       <div className="space-y-2">
-        <p className="text-xs leading-relaxed text-muted-foreground">{t("tool.diffArgsTruncated")}</p>
+        <p className="text-xs leading-relaxed text-muted-foreground">
+          {t("tool.diffArgsTruncated")}
+        </p>
         <GenericToolExpandedBody tool={tool} />
       </div>
     );
@@ -473,7 +464,9 @@ function ShellToolExpandedBody({
             ) : null}
           </div>
           {shellOutput?.truncated ? (
-            <p className="text-xs leading-relaxed text-muted-foreground/70">{t("tool.shellOutputTruncated")}</p>
+            <p className="text-xs leading-relaxed text-muted-foreground/70">
+              {t("tool.shellOutputTruncated")}
+            </p>
           ) : null}
         </div>
       ) : null}
@@ -515,7 +508,8 @@ export function MinimalToolCallCard({
   const subagentToolCallId = tool.toolCallId?.trim() ?? "";
   const canOpenSubagentViewer = Boolean(isSubagent && onOpenSubagentViewer && subagentToolCallId);
   const readFileTarget = useMemo(
-    () => (tool.toolName === "read_file" ? resolveReadFileTargetFromTool(tool, workspaceRoot) : null),
+    () =>
+      tool.toolName === "read_file" ? resolveReadFileTargetFromTool(tool, workspaceRoot) : null,
     [tool, workspaceRoot],
   );
   const canOpenReadFile = Boolean(readFileTarget && onOpenReadFile);
@@ -532,9 +526,8 @@ export function MinimalToolCallCard({
   );
   const canOpenFileDiffNav = Boolean(
     !shimmerActive &&
-      isFileDiffNavTool &&
-      ((tool.toolName === "create_plan" && onOpenPlan) ||
-        (fileDiffEditorTarget && onOpenReadFile)),
+    isFileDiffNavTool &&
+    ((tool.toolName === "create_plan" && onOpenPlan) || (fileDiffEditorTarget && onOpenReadFile)),
   );
   const editLineDelta = useMemo(
     () => resolveToolLineDeltaForDisplay(tool),
@@ -604,29 +597,30 @@ export function MinimalToolCallCard({
       shimmerActive ? undefined : summaryClass,
       isShell && "min-w-0 overflow-hidden",
     );
-    const plainCard = canOpenSubagentViewer || canOpenReadFile ? (
-      <button
-        type="button"
-        onClick={() => {
-          if (canOpenSubagentViewer) {
-            onOpenSubagentViewer?.(subagentToolCallId);
-            return;
-          }
-          if (readFileTarget) {
-            onOpenReadFile?.(readFileTarget);
-          }
-        }}
-        className={cn(
-          "w-full min-w-0 overflow-hidden text-left outline-none",
-          "cursor-pointer focus-visible:ring-2 focus-visible:ring-ring/50",
-          clickableToolCardTriggerClass,
-        )}
-      >
+    const plainCard =
+      canOpenSubagentViewer || canOpenReadFile ? (
+        <button
+          type="button"
+          onClick={() => {
+            if (canOpenSubagentViewer) {
+              onOpenSubagentViewer?.(subagentToolCallId);
+              return;
+            }
+            if (readFileTarget) {
+              onOpenReadFile?.(readFileTarget);
+            }
+          }}
+          className={cn(
+            "w-full min-w-0 overflow-hidden text-left outline-none",
+            "cursor-pointer focus-visible:ring-2 focus-visible:ring-ring/50",
+            clickableToolCardTriggerClass,
+          )}
+        >
+          <p className={plainSummaryClass}>{summaryRow}</p>
+        </button>
+      ) : (
         <p className={plainSummaryClass}>{summaryRow}</p>
-      </button>
-    ) : (
-      <p className={plainSummaryClass}>{summaryRow}</p>
-    );
+      );
     if (!lspDiagnostics) {
       return plainCard;
     }

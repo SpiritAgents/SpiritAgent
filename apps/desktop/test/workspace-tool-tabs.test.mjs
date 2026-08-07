@@ -40,7 +40,10 @@ test("workspaceToolTabLabel numbers duplicate kinds", () => {
   const tabs = [a, b];
   assert.equal(workspaceToolTabLabel("files", tabs, a.id, t), "文件");
   assert.equal(workspaceToolTabLabel("files", tabs, b.id, t), "文件 2");
-  assert.equal(workspaceToolTabLabel("shell", tabs, createWorkspaceToolTab("shell").id, t), "Shell");
+  assert.equal(
+    workspaceToolTabLabel("shell", tabs, createWorkspaceToolTab("shell").id, t),
+    "Shell",
+  );
 });
 
 test("workspaceTerminalChipDisplayName prefers tab title then default label", () => {
@@ -140,7 +143,10 @@ test("normalizeWorkspaceToolTabsForHost strips browser on web host", () => {
   const browserTab = tabs.find((t) => t.kind === "browser");
   assert.ok(browserTab);
   const normalized = normalizeWorkspaceToolTabsForHost(tabs, browserTab.id, false);
-  assert.equal(normalized.tabs.some((t) => t.kind === "browser"), false);
+  assert.equal(
+    normalized.tabs.some((t) => t.kind === "browser"),
+    false,
+  );
   assert.equal(normalized.tabs.length, 3);
   assert.equal(normalized.activeId, normalized.tabs[0].id);
 });
@@ -149,7 +155,10 @@ test("normalizeWorkspaceToolTabsForHost adds browser on electron host", () => {
   const tabs = createDefaultWorkspaceToolTabs();
   const normalized = normalizeWorkspaceToolTabsForHost(tabs, tabs[0].id, true);
   assert.equal(normalized.tabs.length, 4);
-  assert.equal(normalized.tabs.some((t) => t.kind === "browser"), true);
+  assert.equal(
+    normalized.tabs.some((t) => t.kind === "browser"),
+    true,
+  );
 });
 
 test("addWorkspaceToolTab can append pr tab", () => {
@@ -164,7 +173,10 @@ test("normalizeWorkspaceToolTabsForHost strips pr on web host", () => {
   const prTab = tabs.find((tab) => tab.kind === "pr");
   assert.ok(prTab);
   const normalized = normalizeWorkspaceToolTabsForHost(tabs, prTab.id, false, false);
-  assert.equal(normalized.tabs.some((tab) => tab.kind === "pr"), false);
+  assert.equal(
+    normalized.tabs.some((tab) => tab.kind === "pr"),
+    false,
+  );
 });
 
 test("workspaceToolTabLabel supports pr tab", () => {
@@ -185,7 +197,10 @@ test("openBrowserUrlInWorkspaceTabs reuses untitled browser tab", () => {
   const result = openBrowserUrlInWorkspaceTabs(tabs, "https://example.com/docs");
   assert.equal(result.tabs.filter((t) => t.kind === "browser").length, 1);
   assert.equal(result.activeId, browserTab.id);
-  assert.equal(result.tabs.find((t) => t.id === browserTab.id)?.browserUrl, "https://example.com/docs");
+  assert.equal(
+    result.tabs.find((t) => t.id === browserTab.id)?.browserUrl,
+    "https://example.com/docs",
+  );
 });
 
 test("openBrowserUrlInWorkspaceTabs creates new tab when titled browser tab exists", () => {

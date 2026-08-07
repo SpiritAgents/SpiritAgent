@@ -1,25 +1,25 @@
-import { existsSync } from 'node:fs';
-import { readFile, readdir } from 'node:fs/promises';
-import path from 'node:path';
+import { existsSync } from "node:fs";
+import { readFile, readdir } from "node:fs/promises";
+import path from "node:path";
 
 import type {
   LlmActiveSkill,
   LlmActiveSkillResourceEntry,
   LlmEnabledSkillCatalogEntry,
-} from '@spiritagent/agent-core';
-import type * as schema from '@agentclientprotocol/sdk';
+} from "@spiritagent/agent-core";
+import type * as schema from "@agentclientprotocol/sdk";
 
 // --- Constants (aligned with Desktop) ---
 
 const ACTIVE_SKILL_CONTENT_MAX_CHARS = 12_000;
 const ACTIVE_SKILL_RESOURCE_MAX_ENTRIES = 24;
 const ACTIVE_SKILL_RESOURCE_DIRS: ReadonlyArray<{
-  kind: LlmActiveSkillResourceEntry['kind'];
+  kind: LlmActiveSkillResourceEntry["kind"];
   dirname: string;
 }> = [
-  { kind: 'scripts', dirname: 'scripts' },
-  { kind: 'references', dirname: 'references' },
-  { kind: 'assets', dirname: 'assets' },
+  { kind: "scripts", dirname: "scripts" },
+  { kind: "references", dirname: "references" },
+  { kind: "assets", dirname: "assets" },
 ];
 
 // --- ACP Available Commands ---
@@ -56,7 +56,7 @@ export interface ParsedSlashCommand {
  */
 export function parseSlashCommand(text: string): ParsedSlashCommand | null {
   const trimmed = text.trimStart();
-  if (!trimmed.startsWith('/')) {
+  if (!trimmed.startsWith("/")) {
     return null;
   }
 
@@ -68,7 +68,7 @@ export function parseSlashCommand(text: string): ParsedSlashCommand | null {
 
   return {
     skillName: match[1]!,
-    remainingText: (match[2] ?? '').trim(),
+    remainingText: (match[2] ?? "").trim(),
   };
 }
 
@@ -88,7 +88,7 @@ export async function buildActiveSkillPayload(
   const skillRoot = path.dirname(entry.path);
 
   // Read the SKILL.md content (strip frontmatter)
-  const rawContent = await readFile(entry.path, 'utf8');
+  const rawContent = await readFile(entry.path, "utf8");
   const content = stripFrontmatter(rawContent);
   const { content: truncatedContent, truncated } = truncateContent(content);
 
@@ -114,10 +114,7 @@ export async function buildActiveSkillPayload(
  * Adds or replaces a skill in the active skills array by id.
  * Mutates the array in place (closures capture the reference).
  */
-export function upsertActiveSkill(
-  skills: LlmActiveSkill[],
-  newSkill: LlmActiveSkill,
-): void {
+export function upsertActiveSkill(skills: LlmActiveSkill[], newSkill: LlmActiveSkill): void {
   const idx = skills.findIndex((s) => s.id === newSkill.id);
   if (idx >= 0) {
     skills[idx] = newSkill;
@@ -132,10 +129,10 @@ export function upsertActiveSkill(
  * Strips YAML frontmatter (---...---) from skill file content.
  */
 function stripFrontmatter(content: string): string {
-  if (!content.startsWith('---')) {
+  if (!content.startsWith("---")) {
     return content;
   }
-  const endIndex = content.indexOf('---', 3);
+  const endIndex = content.indexOf("---", 3);
   if (endIndex < 0) {
     return content;
   }
@@ -151,7 +148,7 @@ function truncateContent(content: string): { content: string; truncated: boolean
     return { content: content.trim(), truncated: false };
   }
   return {
-    content: `${chars.slice(0, ACTIVE_SKILL_CONTENT_MAX_CHARS).join('').trimEnd()}\n\n...<skill content truncated>`,
+    content: `${chars.slice(0, ACTIVE_SKILL_CONTENT_MAX_CHARS).join("").trimEnd()}\n\n...<skill content truncated>`,
     truncated: true,
   };
 }
@@ -203,7 +200,7 @@ async function collectResources(skillRoot: string): Promise<{
 
         resources.push({
           kind,
-          path: path.relative(skillRoot, fullPath).replace(/\\/gu, '/'),
+          path: path.relative(skillRoot, fullPath).replace(/\\/gu, "/"),
         });
       }
     }

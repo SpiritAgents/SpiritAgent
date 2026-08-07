@@ -36,11 +36,7 @@ export function TextSelectionActionMenu({
   return (
     <DropdownMenu open={open} onOpenChange={onOpenChange} modal={false}>
       <DropdownMenuTrigger asChild>
-        <span
-          aria-hidden
-          tabIndex={-1}
-          style={triggerStyle}
-        />
+        <span aria-hidden tabIndex={-1} style={triggerStyle} />
       </DropdownMenuTrigger>
       <DropdownMenuContent
         align="center"
@@ -59,15 +55,9 @@ type TextSelectionActionMenuItemProps = {
   onSelect(): void;
 };
 
-export function TextSelectionActionMenuItem({
-  label,
-  onSelect,
-}: TextSelectionActionMenuItemProps) {
+export function TextSelectionActionMenuItem({ label, onSelect }: TextSelectionActionMenuItemProps) {
   return (
-    <DropdownMenuItem
-      onSelect={onSelect}
-      onMouseDown={(event) => event.preventDefault()}
-    >
+    <DropdownMenuItem onSelect={onSelect} onMouseDown={(event) => event.preventDefault()}>
       {label}
     </DropdownMenuItem>
   );

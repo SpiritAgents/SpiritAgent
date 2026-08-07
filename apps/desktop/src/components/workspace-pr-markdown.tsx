@@ -9,6 +9,12 @@ export function WorkspacePrMarkdown({
   className?: string;
 }) {
   return (
-    <MarkdownMessage content={content} tone="muted" size="compact" allowHtml className={cn(className)} />
+    <MarkdownMessage
+      content={content}
+      tone="muted"
+      size="compact"
+      allowHtml
+      className={cn(className)}
+    />
   );
 }

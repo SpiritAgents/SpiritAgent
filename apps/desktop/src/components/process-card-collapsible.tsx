@@ -3,9 +3,7 @@ import { useLayoutEffect, useRef, useState, type ReactNode } from "react";
 import { ChevronRight } from "lucide-react";
 import { useTranslation } from "react-i18next";
 
-import {
-  ProcessGroupThinkingBlock,
-} from "@/components/process-group-blocks";
+import { ProcessGroupThinkingBlock } from "@/components/process-group-blocks";
 import type { ReadLocalImagePreview } from "@/components/tool-call/tool-call-types";
 import {
   AnimatedCollapse,
@@ -107,7 +105,9 @@ export function ProcessCardCollapsible({
       <AnimatedCollapseTrigger
         className={cn(
           "group flex w-full min-w-0 items-center gap-1 text-left outline-none",
-          interactive ? "cursor-pointer focus-visible:ring-2 focus-visible:ring-ring/50" : "cursor-default",
+          interactive
+            ? "cursor-pointer focus-visible:ring-2 focus-visible:ring-ring/50"
+            : "cursor-default",
         )}
       >
         <span className="min-w-0 truncate text-xs font-normal tracking-wide text-muted-foreground">
@@ -149,8 +149,7 @@ export function ProcessCardCollapsible({
               />
             ) : null;
 
-            const standaloneThinking =
-              !message.tool && !message.content.trim() && thinkingNode;
+            const standaloneThinking = !message.tool && !message.content.trim() && thinkingNode;
 
             if (standaloneThinking) {
               return (

@@ -1,5 +1,5 @@
-import assert from 'node:assert/strict';
-import { test } from 'node:test';
+import assert from "node:assert/strict";
+import { test } from "node:test";
 
 import {
   AnchoredItemSwitchStateModel,
@@ -8,64 +8,61 @@ import {
   deriveAnchoredItemSwitchContentItem,
   deriveAnchoredItemSwitchOpen,
   isWithinAnchoredItemSwitchRelatedTarget,
-} from '../../src/hooks/use-anchored-item-switch.ts';
+} from "../../src/hooks/use-anchored-item-switch.ts";
 
 const getItemId = (item) => item.id;
 
-test('deriveAnchoredItemSwitchOpen is true only when activeItem is set', () => {
+test("deriveAnchoredItemSwitchOpen is true only when activeItem is set", () => {
   assert.equal(deriveAnchoredItemSwitchOpen(null), false);
-  assert.equal(deriveAnchoredItemSwitchOpen({ id: 'a' }), true);
+  assert.equal(deriveAnchoredItemSwitchOpen({ id: "a" }), true);
 });
 
-test('first pointer enter schedules open; after openDelay activeItem is set', () => {
+test("first pointer enter schedules open; after openDelay activeItem is set", () => {
   const model = new AnchoredItemSwitchStateModel(getItemId);
-  const itemA = { id: 'a' };
+  const itemA = { id: "a" };
 
-  assert.equal(model.onItemPointerEnter(itemA), 'schedule-open');
+  assert.equal(model.onItemPointerEnter(itemA), "schedule-open");
   assert.equal(model.open, false);
 
   assert.equal(model.openScheduledItem(itemA, itemA), true);
   assert.equal(model.open, true);
-  assert.equal(model.activeItemId, 'a');
+  assert.equal(model.activeItemId, "a");
 });
 
-test('switching items while open does not close between items', () => {
+test("switching items while open does not close between items", () => {
   const model = new AnchoredItemSwitchStateModel(getItemId);
-  const itemA = { id: 'a' };
-  const itemB = { id: 'b' };
+  const itemA = { id: "a" };
+  const itemB = { id: "b" };
 
   model.onItemPointerEnter(itemA);
   model.openScheduledItem(itemA, itemA);
   assert.equal(model.open, true);
 
-  assert.equal(model.onItemPointerEnter(itemB), 'instant-switch');
+  assert.equal(model.onItemPointerEnter(itemB), "instant-switch");
   assert.equal(model.open, true);
-  assert.equal(model.activeItemId, 'b');
-  assert.equal(model.anchorItemId, 'b');
+  assert.equal(model.activeItemId, "b");
+  assert.equal(model.anchorItemId, "b");
 });
 
-test('deriveAnchoredItemSwitchContentItem prefers activeItem over linger', () => {
-  const itemA = { id: 'a' };
-  const itemB = { id: 'b' };
+test("deriveAnchoredItemSwitchContentItem prefers activeItem over linger", () => {
+  const itemA = { id: "a" };
+  const itemB = { id: "b" };
   assert.equal(deriveAnchoredItemSwitchContentItem(itemA, itemB), itemA);
   assert.equal(deriveAnchoredItemSwitchContentItem(null, itemB), itemB);
   assert.equal(deriveAnchoredItemSwitchContentItem(null, null), null);
 });
 
-test('beginClose keeps linger anchor id until cleared', () => {
+test("beginClose keeps linger anchor id until cleared", () => {
   const model = new AnchoredItemSwitchStateModel(getItemId);
-  const itemA = { id: 'a' };
+  const itemA = { id: "a" };
 
   model.onItemPointerEnter(itemA);
   model.openScheduledItem(itemA, itemA);
   const closingId = model.beginClose();
 
-  assert.equal(closingId, 'a');
+  assert.equal(closingId, "a");
   assert.equal(model.open, false);
-  assert.equal(
-    deriveAnchoredItemSwitchAnchorId(model.activeItemId, model.lingerAnchorId),
-    'a',
-  );
+  assert.equal(deriveAnchoredItemSwitchAnchorId(model.activeItemId, model.lingerAnchorId), "a");
   assert.equal(model.contentActiveItem, itemA);
 
   model.clearLingerAnchor();
@@ -76,17 +73,17 @@ test('beginClose keeps linger anchor id until cleared', () => {
   assert.equal(model.contentActiveItem, null);
 });
 
-test('open delay default is 400ms', () => {
+test("open delay default is 400ms", () => {
   assert.equal(DEFAULT_ANCHORED_ITEM_SWITCH_OPEN_DELAY_MS, 400);
 });
 
-test('isWithinAnchoredItemSwitchRelatedTarget returns false for null and non-node targets', () => {
+test("isWithinAnchoredItemSwitchRelatedTarget returns false for null and non-node targets", () => {
   assert.equal(
     isWithinAnchoredItemSwitchRelatedTarget(null, { triggerZone: null, content: null }),
     false,
   );
   assert.equal(
-    isWithinAnchoredItemSwitchRelatedTarget('outside', { triggerZone: null, content: null }),
+    isWithinAnchoredItemSwitchRelatedTarget("outside", { triggerZone: null, content: null }),
     false,
   );
 });

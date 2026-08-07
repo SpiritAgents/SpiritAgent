@@ -1,13 +1,13 @@
-import type { JsonObject, JsonValue } from '../../ports.js';
-import { isJsonObject } from '../../tool-agent.js';
-import type { OpenAiTransportConfig } from '../../openai/openai-compat.js';
-import { fetchFormulaTools } from './formula-client.js';
-import { shouldUseMoonshotFormulaWebSearch } from './formula-eligibility.js';
+import type { JsonObject, JsonValue } from "../../ports.js";
+import { isJsonObject } from "../../tool-agent.js";
+import type { OpenAiTransportConfig } from "../../openai/openai-compat.js";
+import { fetchFormulaTools } from "./formula-client.js";
+import { shouldUseMoonshotFormulaWebSearch } from "./formula-eligibility.js";
 import {
   listMoonshotFormulaRegistrations,
   type MoonshotFormulaRegistration,
-} from './formula-registry.js';
-import type { FormulaToolDefinition } from './formula-types.js';
+} from "./formula-registry.js";
+import type { FormulaToolDefinition } from "./formula-types.js";
 
 type FetchFn = typeof fetch;
 
@@ -20,7 +20,7 @@ const FORMULA_TOOLS_CACHE_TTL_MS = 5 * 60 * 1000;
 const formulaToolsCache = new Map<string, FormulaToolsCacheEntry>();
 
 function buildFormulaToolsCacheKey(config: OpenAiTransportConfig): string {
-  return `${config.baseUrl ?? ''}\0${config.apiKey}`;
+  return `${config.baseUrl ?? ""}\0${config.apiKey}`;
 }
 
 async function loadMoonshotFormulaToolsForConfig(
@@ -65,7 +65,7 @@ async function loadMoonshotFormulaToolsForConfig(
 
 export function buildMoonshotFormulaTraceToolEntries(): JsonObject[] {
   return listMoonshotFormulaRegistrations().map((registration: MoonshotFormulaRegistration) => ({
-    type: 'moonshot_formula',
+    type: "moonshot_formula",
     formula_uri: registration.formulaUri,
     function_name: registration.functionName,
   }));
@@ -82,11 +82,11 @@ export function mergeMoonshotFormulaToolsIntoChatCompletionsTools(
         return [];
       }
       const record = tool as JsonObject;
-      if (record.type !== 'function' || !isJsonObject(record.function as JsonValue)) {
+      if (record.type !== "function" || !isJsonObject(record.function as JsonValue)) {
         return [];
       }
       const name = (record.function as JsonObject).name;
-      return typeof name === 'string' ? [name] : [];
+      return typeof name === "string" ? [name] : [];
     }),
   );
 
@@ -111,12 +111,8 @@ export function createMoonshotFormulaChatCompletionsAwareFetch(
 
   return async (input, init) => {
     const requestUrl =
-      typeof input === 'string'
-        ? input
-        : input instanceof URL
-          ? input.toString()
-          : '';
-    if (!requestUrl.includes('/chat/completions')) {
+      typeof input === "string" ? input : input instanceof URL ? input.toString() : "";
+    if (!requestUrl.includes("/chat/completions")) {
       return baseFetch(input, init);
     }
 
@@ -130,7 +126,7 @@ async function patchMoonshotChatCompletionsRequestInit(
   init: RequestInit | undefined,
   fetchImpl: FetchFn,
 ): Promise<RequestInit | undefined> {
-  if (!init?.body || typeof init.body !== 'string') {
+  if (!init?.body || typeof init.body !== "string") {
     return init;
   }
 

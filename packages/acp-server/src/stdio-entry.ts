@@ -15,11 +15,11 @@
  *   SPIRIT_ACP_DATA_DIR  — Optional. Spirit data directory (same as SPIRIT_AGENT_DATA_DIR).
  */
 
-import { Readable, Writable } from 'node:stream';
-import * as acp from '@agentclientprotocol/sdk';
-import { createInitialAuthState } from './auth/session-auth.js';
-import { SpiritAcpAgent } from './acp-agent.js';
-import { loadBaseConfig } from './config.js';
+import { Readable, Writable } from "node:stream";
+import * as acp from "@agentclientprotocol/sdk";
+import { createInitialAuthState } from "./auth/session-auth.js";
+import { SpiritAcpAgent } from "./acp-agent.js";
+import { loadBaseConfig } from "./config.js";
 
 // Redirect console.log → stderr to prevent polluting the ndJSON stdout stream.
 console.log = (...args: unknown[]) => {
@@ -27,16 +27,16 @@ console.log = (...args: unknown[]) => {
 };
 
 // Handle uncaught errors gracefully — write to stderr, never stdout
-process.on('uncaughtException', (err) => {
-  console.error('[acp-server] Uncaught exception:', err);
+process.on("uncaughtException", (err) => {
+  console.error("[acp-server] Uncaught exception:", err);
 });
-process.on('unhandledRejection', (reason) => {
-  console.error('[acp-server] Unhandled rejection:', reason);
+process.on("unhandledRejection", (reason) => {
+  console.error("[acp-server] Unhandled rejection:", reason);
 });
 
 async function main(): Promise<void> {
-  if (process.argv.includes('--setup')) {
-    const { runSetup } = await import('./setup/run-setup.js');
+  if (process.argv.includes("--setup")) {
+    const { runSetup } = await import("./setup/run-setup.js");
     await runSetup();
     return;
   }
@@ -48,13 +48,14 @@ async function main(): Promise<void> {
   const input = Readable.toWeb(process.stdin) as ReadableStream<Uint8Array>;
   const stream = acp.ndJsonStream(output, input);
 
-  new acp.AgentSideConnection(
+  const connection = new acp.AgentSideConnection(
     (conn) => new SpiritAcpAgent(conn, config, authState),
     stream,
   );
+  void connection;
 }
 
 main().catch((err) => {
-  console.error('[acp-server] Fatal error:', err);
+  console.error("[acp-server] Fatal error:", err);
   process.exitCode = 1;
 });

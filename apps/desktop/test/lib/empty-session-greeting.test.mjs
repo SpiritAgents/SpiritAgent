@@ -1,5 +1,5 @@
-import assert from 'node:assert/strict';
-import test from 'node:test';
+import assert from "node:assert/strict";
+import test from "node:test";
 
 import {
   EMPTY_SESSION_GREETING_WORKSPACE_VARIANT,
@@ -13,21 +13,21 @@ import {
   resetEmptySessionGreetingStateForTests,
   resolveEmptySessionGreeting,
   resolveEmptySessionGreetingVariantForSession,
-} from '../../src/lib/empty-session-greeting.ts';
+} from "../../src/lib/empty-session-greeting.ts";
 
-test('emptySessionGreetingPool excludes workspace variant when disabled', () => {
+test("emptySessionGreetingPool excludes workspace variant when disabled", () => {
   const pool = emptySessionGreetingPool(false);
   assert.equal(pool.length, 2);
   assert.ok(!pool.includes(EMPTY_SESSION_GREETING_WORKSPACE_VARIANT));
 });
 
-test('emptySessionGreetingPool includes workspace variant when enabled', () => {
+test("emptySessionGreetingPool includes workspace variant when enabled", () => {
   const pool = emptySessionGreetingPool(true);
   assert.equal(pool.length, 3);
   assert.ok(pool.includes(EMPTY_SESSION_GREETING_WORKSPACE_VARIANT));
 });
 
-test('pickEmptySessionGreetingVariant never picks workspace when disabled', () => {
+test("pickEmptySessionGreetingVariant never picks workspace when disabled", () => {
   for (let i = 0; i < 20; i += 1) {
     const variant = pickEmptySessionGreetingVariant({
       includeWorkspaceVariants: false,
@@ -37,7 +37,7 @@ test('pickEmptySessionGreetingVariant never picks workspace when disabled', () =
   }
 });
 
-test('pickEmptySessionGreetingVariant can pick workspace when enabled', () => {
+test("pickEmptySessionGreetingVariant can pick workspace when enabled", () => {
   const variant = pickEmptySessionGreetingVariant({
     includeWorkspaceVariants: true,
     random: () => 0.99,
@@ -45,7 +45,7 @@ test('pickEmptySessionGreetingVariant can pick workspace when enabled', () => {
   assert.equal(variant, EMPTY_SESSION_GREETING_WORKSPACE_VARIANT);
 });
 
-test('beginEmptySessionGreetingNavigation exposes pending variant until commit', () => {
+test("beginEmptySessionGreetingNavigation exposes pending variant until commit", () => {
   resetEmptySessionGreetingStateForTests();
   const variant = beginEmptySessionGreetingNavigation(7, {
     includeWorkspaceVariants: true,
@@ -53,10 +53,10 @@ test('beginEmptySessionGreetingNavigation exposes pending variant until commit',
   });
   assert.equal(variant, EMPTY_SESSION_GREETING_WORKSPACE_VARIANT);
   assert.equal(activeEmptySessionGreetingNavigationVariant(7), variant);
-  commitEmptySessionGreetingNavigation(7, 'session-b');
+  commitEmptySessionGreetingNavigation(7, "session-b");
   assert.equal(activeEmptySessionGreetingNavigationVariant(7), null);
   assert.equal(
-    resolveEmptySessionGreetingVariantForSession('session-b', {
+    resolveEmptySessionGreetingVariantForSession("session-b", {
       includeWorkspaceVariants: true,
       random: () => 0,
     }),
@@ -64,7 +64,7 @@ test('beginEmptySessionGreetingNavigation exposes pending variant until commit',
   );
 });
 
-test('cancelEmptySessionGreetingNavigation drops pending variant', () => {
+test("cancelEmptySessionGreetingNavigation drops pending variant", () => {
   resetEmptySessionGreetingStateForTests();
   beginEmptySessionGreetingNavigation(9, {
     includeWorkspaceVariants: false,
@@ -74,13 +74,13 @@ test('cancelEmptySessionGreetingNavigation drops pending variant', () => {
   assert.equal(activeEmptySessionGreetingNavigationVariant(9), null);
 });
 
-test('resolveEmptySessionGreetingVariantForSession returns stable variant per session key', () => {
+test("resolveEmptySessionGreetingVariantForSession returns stable variant per session key", () => {
   resetEmptySessionGreetingStateForTests();
-  const first = resolveEmptySessionGreetingVariantForSession('session-a', {
+  const first = resolveEmptySessionGreetingVariantForSession("session-a", {
     includeWorkspaceVariants: true,
     random: () => 0.99,
   });
-  const second = resolveEmptySessionGreetingVariantForSession('session-a', {
+  const second = resolveEmptySessionGreetingVariantForSession("session-a", {
     includeWorkspaceVariants: false,
     random: () => 0,
   });
@@ -88,14 +88,14 @@ test('resolveEmptySessionGreetingVariantForSession returns stable variant per se
   assert.equal(second, first);
 });
 
-test('resolveEmptySessionGreeting passes workspace to t', () => {
+test("resolveEmptySessionGreeting passes workspace to t", () => {
   const calls = [];
   const t = (key, options) => {
     calls.push({ key, options });
-    return `${key}:${options?.workspace ?? ''}`;
+    return `${key}:${options?.workspace ?? ""}`;
   };
-  const resolved = resolveEmptySessionGreeting(t, 'doSomethingIn', 'SpiritAgent');
-  assert.equal(resolved, 'app.emptySessionGreeting.doSomethingIn:SpiritAgent');
+  const resolved = resolveEmptySessionGreeting(t, "doSomethingIn", "SpiritAgent");
+  assert.equal(resolved, "app.emptySessionGreeting.doSomethingIn:SpiritAgent");
   assert.equal(calls.length, 1);
-  assert.equal(calls[0].options.workspace, 'SpiritAgent');
+  assert.equal(calls[0].options.workspace, "SpiritAgent");
 });

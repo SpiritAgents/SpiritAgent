@@ -1,6 +1,4 @@
-import type {
-  ConversationLocalFileAttachmentSnapshot,
-} from '../types.js';
+import type { ConversationLocalFileAttachmentSnapshot } from "../types.js";
 
 export interface ComposerLocalFileAttachmentView {
   id: string;
@@ -11,24 +9,24 @@ export interface ComposerLocalFileAttachmentView {
 }
 
 export function basenameFromPath(value: string): string {
-  const normalized = value.replace(/\\/g, '/');
-  const segments = normalized.split('/').filter(Boolean);
+  const normalized = value.replace(/\\/g, "/");
+  const segments = normalized.split("/").filter(Boolean);
   return segments[segments.length - 1] ?? normalized;
 }
 
 const PREVIEWABLE_IMAGE_EXTENSIONS = new Set([
-  '.png',
-  '.jpg',
-  '.jpeg',
-  '.gif',
-  '.webp',
-  '.bmp',
-  '.svg',
+  ".png",
+  ".jpg",
+  ".jpeg",
+  ".gif",
+  ".webp",
+  ".bmp",
+  ".svg",
 ]);
 
 export function isPreviewableImagePath(value: string): boolean {
   const lower = basenameFromPath(value).toLowerCase();
-  const dot = lower.lastIndexOf('.');
+  const dot = lower.lastIndexOf(".");
   if (dot < 0) {
     return false;
   }
@@ -38,22 +36,18 @@ export function isPreviewableImagePath(value: string): boolean {
 export function canPreviewComposerLocalFileAttachment(
   attachment: ComposerLocalFileAttachmentView,
 ): boolean {
-  return attachment.isImage
-    && isPreviewableImagePath(attachment.path)
-    && Boolean(attachment.previewDataUrl);
+  return (
+    attachment.isImage &&
+    isPreviewableImagePath(attachment.path) &&
+    Boolean(attachment.previewDataUrl)
+  );
 }
 
-const PREVIEWABLE_VIDEO_EXTENSIONS = new Set([
-  '.mp4',
-  '.webm',
-  '.mov',
-  '.mpeg',
-  '.mpg',
-]);
+const PREVIEWABLE_VIDEO_EXTENSIONS = new Set([".mp4", ".webm", ".mov", ".mpeg", ".mpg"]);
 
 export function isPreviewableVideoPath(value: string): boolean {
   const lower = basenameFromPath(value).toLowerCase();
-  const dot = lower.lastIndexOf('.');
+  const dot = lower.lastIndexOf(".");
   if (dot < 0) {
     return false;
   }
@@ -61,7 +55,7 @@ export function isPreviewableVideoPath(value: string): boolean {
 }
 
 export function normalizeSlashPath(value: string): string {
-  return value.replace(/\\/g, '/');
+  return value.replace(/\\/g, "/");
 }
 
 export function snapshotToComposerAttachmentView(
@@ -113,14 +107,14 @@ export function localFileAttachmentsSnapshotKey(
   snapshots: readonly ConversationLocalFileAttachmentSnapshot[] | undefined,
 ): string {
   if (!snapshots?.length) {
-    return '';
+    return "";
   }
   return snapshots
     .map(
       (snapshot) =>
         `${normalizeSlashPath(snapshot.path)}|${snapshot.name}|${snapshot.isImage ? 1 : 0}`,
     )
-    .join('\0');
+    .join("\0");
 }
 
 export function mergeComposerAttachmentViews(
@@ -135,14 +129,11 @@ export function mergeComposerAttachmentViews(
     const normalizedPath = normalizeSlashPath(item.path);
     const prior = previousByPath.get(normalizedPath);
     const cachedPreview = readCachedLocalFilePreviewDataUrl(normalizedPath);
-    const previewDataUrl =
-      item.previewDataUrl ?? prior?.previewDataUrl ?? cachedPreview ?? null;
+    const previewDataUrl = item.previewDataUrl ?? prior?.previewDataUrl ?? cachedPreview ?? null;
     if (previewDataUrl) {
       rememberLocalFilePreviewDataUrl(normalizedPath, previewDataUrl);
     }
-    return previewDataUrl === item.previewDataUrl
-      ? item
-      : { ...item, previewDataUrl };
+    return previewDataUrl === item.previewDataUrl ? item : { ...item, previewDataUrl };
   });
 }
 
@@ -186,7 +177,9 @@ export function composerAttachmentViewFromPath(filePath: string): ComposerLocalF
 }
 
 type AttachmentListUpdater = (
-  update: ComposerLocalFileAttachmentView[] | ((current: ComposerLocalFileAttachmentView[]) => ComposerLocalFileAttachmentView[]),
+  update:
+    | ComposerLocalFileAttachmentView[]
+    | ((current: ComposerLocalFileAttachmentView[]) => ComposerLocalFileAttachmentView[]),
 ) => void;
 
 export function appendComposerLocalFileAttachment(

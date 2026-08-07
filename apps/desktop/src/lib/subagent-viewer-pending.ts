@@ -1,4 +1,4 @@
-import type { ConversationMessageSnapshot } from '@/types';
+import type { ConversationMessageSnapshot } from "@/types";
 
 export function isSubagentToolCallPending(
   messages: ReadonlyArray<ConversationMessageSnapshot>,
@@ -15,7 +15,7 @@ export function isSubagentToolCallPending(
       continue;
     }
     const phase = message.tool.phase;
-    return phase === 'preview' || phase === 'running' || phase === 'pending-approval';
+    return phase === "preview" || phase === "running" || phase === "pending-approval";
   }
 
   return false;

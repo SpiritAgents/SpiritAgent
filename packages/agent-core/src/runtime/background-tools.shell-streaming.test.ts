@@ -1,5 +1,5 @@
-import assert from 'node:assert/strict';
-import test from 'node:test';
+import assert from "node:assert/strict";
+import test from "node:test";
 
 import {
   createToolExecutionTextOutput,
@@ -8,12 +8,15 @@ import {
   type ToolExecutionOutput,
   type ToolExecutor,
   type ToolRequestExecutionMetadata,
-} from '../ports.js';
-import { startBackgroundToolExecutionAsync, type BackgroundToolsRuntime } from './background-tools.js';
-import type { RuntimeEvent, RuntimeTurnContext } from './types.js';
+} from "../ports.js";
+import {
+  startBackgroundToolExecutionAsync,
+  type BackgroundToolsRuntime,
+} from "./background-tools.js";
+import type { RuntimeEvent, RuntimeTurnContext } from "./types.js";
 
 interface ShellToolRequest {
-  name: 'shell';
+  name: "shell";
   command: string;
 }
 
@@ -23,15 +26,15 @@ class StreamingShellExecutor implements ToolExecutor<ShellToolRequest> {
   }
 
   async parseCommand(): Promise<ShellToolRequest> {
-    throw new Error('not implemented');
+    throw new Error("not implemented");
   }
 
   async requestFromFunctionCall(): Promise<ShellToolRequest> {
-    throw new Error('not implemented');
+    throw new Error("not implemented");
   }
 
   async authorize(): Promise<AuthorizationDecision> {
-    return { kind: 'allowed' };
+    return { kind: "allowed" };
   }
 
   async trust(): Promise<void> {}
@@ -47,13 +50,13 @@ class StreamingShellExecutor implements ToolExecutor<ShellToolRequest> {
   lastMetadata: ToolRequestExecutionMetadata | undefined;
 
   async execute(request: ShellToolRequest): Promise<ToolExecutionOutput> {
-    this.lastMetadata?.onOutputChunk?.('line1\n');
-    this.lastMetadata?.onOutputChunk?.('line2\n');
+    this.lastMetadata?.onOutputChunk?.("line1\n");
+    this.lastMetadata?.onOutputChunk?.("line2\n");
     return createToolExecutionTextOutput(`shell done: ${request.command}`);
   }
 
   shouldExecuteInBackground(request: ShellToolRequest): boolean {
-    return request.name === 'shell';
+    return request.name === "shell";
   }
 
   backgroundStatusText(request: ShellToolRequest): string | undefined {
@@ -65,7 +68,7 @@ class StreamingShellExecutor implements ToolExecutor<ShellToolRequest> {
   mcpStatusSnapshot() {
     return {
       revision: 0,
-      state: 'idle' as const,
+      state: "idle" as const,
       configuredServers: 0,
       loadedServers: 0,
       cachedTools: 0,
@@ -73,7 +76,7 @@ class StreamingShellExecutor implements ToolExecutor<ShellToolRequest> {
   }
 
   async addMcpServer(): Promise<string> {
-    throw new Error('not implemented');
+    throw new Error("not implemented");
   }
 
   async listMcpServers(): Promise<never[]> {
@@ -81,7 +84,7 @@ class StreamingShellExecutor implements ToolExecutor<ShellToolRequest> {
   }
 
   async inspectMcpServer(): Promise<never> {
-    throw new Error('not implemented');
+    throw new Error("not implemented");
   }
 
   async listMcpTools(): Promise<never[]> {
@@ -93,7 +96,7 @@ class StreamingShellExecutor implements ToolExecutor<ShellToolRequest> {
   }
 
   async readMcpResource(): Promise<JsonValue> {
-    throw new Error('not implemented');
+    throw new Error("not implemented");
   }
 
   async listCachedMcpPrompts(): Promise<never[]> {
@@ -105,16 +108,16 @@ class StreamingShellExecutor implements ToolExecutor<ShellToolRequest> {
   }
 
   async getMcpPrompt(): Promise<JsonValue> {
-    throw new Error('not implemented');
+    throw new Error("not implemented");
   }
 }
 
-test('startBackgroundToolExecutionAsync emits tool-execution-output-chunk for shell', async () => {
+test("startBackgroundToolExecutionAsync emits tool-execution-output-chunk for shell", async () => {
   const executor = new StreamingShellExecutor();
   const events: RuntimeEvent<ShellToolRequest>[] = [];
   const request: ShellToolRequest = {
-    name: 'shell',
-    command: 'echo hello',
+    name: "shell",
+    command: "echo hello",
   };
   const turn: RuntimeTurnContext<ShellToolRequest> = {
     requestTrace: [],
@@ -146,11 +149,11 @@ test('startBackgroundToolExecutionAsync emits tool-execution-output-chunk for sh
 
   startBackgroundToolExecutionAsync(
     runtime,
-    'run shell',
+    "run shell",
     { messages: [] },
     request,
-    'call_shell_1',
-    'shell',
+    "call_shell_1",
+    "shell",
     '{"command":"echo hello"}',
     [],
     turn,
@@ -161,14 +164,18 @@ test('startBackgroundToolExecutionAsync emits tool-execution-output-chunk for sh
   });
 
   const chunkEvents = events.filter(
-    (event): event is Extract<RuntimeEvent<ShellToolRequest>, { kind: 'tool-execution-output-chunk' }> =>
-      event.kind === 'tool-execution-output-chunk',
+    (
+      event,
+    ): event is Extract<RuntimeEvent<ShellToolRequest>, { kind: "tool-execution-output-chunk" }> =>
+      event.kind === "tool-execution-output-chunk",
   );
   assert.equal(chunkEvents.length, 2);
-  assert.equal(chunkEvents[0]?.chunk, 'line1\n');
-  assert.equal(chunkEvents[1]?.chunk, 'line2\n');
-  assert.ok(events.some((event) => event.kind === 'background-tool-status' && event.phase === 'started'));
+  assert.equal(chunkEvents[0]?.chunk, "line1\n");
+  assert.equal(chunkEvents[1]?.chunk, "line2\n");
+  assert.ok(
+    events.some((event) => event.kind === "background-tool-status" && event.phase === "started"),
+  );
   const pending = runtime.pendingBackgroundToolExecution;
-  assert.ok(pending && pending.kind === 'tool-call');
-  assert.equal(pending.output?.summaryText, 'shell done: echo hello');
+  assert.ok(pending && pending.kind === "tool-call");
+  assert.equal(pending.output?.summaryText, "shell done: echo hello");
 });

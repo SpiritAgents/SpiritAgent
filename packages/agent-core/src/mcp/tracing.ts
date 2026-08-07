@@ -1,20 +1,20 @@
-import type { JsonValue } from '../ports.js';
-import { summarizeTransport } from './config.js';
-import type { ResolvedMcpTransportConfig } from './types.js';
+import type { JsonValue } from "../ports.js";
+import { summarizeTransport } from "./config.js";
+import type { ResolvedMcpTransportConfig } from "./types.js";
 
 export type McpTraceOperation =
-  | 'connect'
-  | 'disconnect'
-  | 'inspect'
-  | 'list-tools'
-  | 'list-resources'
-  | 'read-resource'
-  | 'list-prompts'
-  | 'get-prompt'
-  | 'call-tool';
+  | "connect"
+  | "disconnect"
+  | "inspect"
+  | "list-tools"
+  | "list-resources"
+  | "read-resource"
+  | "list-prompts"
+  | "get-prompt"
+  | "call-tool";
 
 export interface McpTraceEntry {
-  kind: 'mcp';
+  kind: "mcp";
   timestamp: string;
   server: string;
   operation: McpTraceOperation;
@@ -36,7 +36,7 @@ export function buildMcpTraceEntry(input: {
   error?: string;
 }): McpTraceEntry {
   return {
-    kind: 'mcp',
+    kind: "mcp",
     timestamp: input.timestamp ?? new Date().toISOString(),
     server: input.server,
     operation: input.operation,

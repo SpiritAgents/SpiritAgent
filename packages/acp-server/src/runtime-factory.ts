@@ -1,4 +1,4 @@
-import { release as osRelease } from 'node:os';
+import { release as osRelease } from "node:os";
 
 import {
   AgentRuntime,
@@ -9,7 +9,7 @@ import {
   type JsonValue,
   type RuntimeEvent,
   type GeneratedImageSaveRequest,
-} from '@spiritagent/agent-core';
+} from "@spiritagent/agent-core";
 import {
   startLlmToolAgentState,
   continueLlmToolAgentState,
@@ -28,12 +28,12 @@ import {
   type LlmEnabledRule,
   type LlmEnabledSkillCatalogEntry,
   type LlmPlanMetadata,
-} from '@spiritagent/agent-core';
-import { buildApplyPatchFileToolsPromptSection } from '@spiritagent/agent-core';
-import { buildProviderWebSearchPromptSection } from '@spiritagent/agent-core';
-import type { SpiritAgentMode } from '@spiritagent/agent-core';
-import type { LocalHostToolService } from '@spiritagent/agent-core/host-bridge';
-import { HostToolExecutorProxy } from '@spiritagent/agent-core/host-bridge';
+} from "@spiritagent/agent-core";
+import { buildApplyPatchFileToolsPromptSection } from "@spiritagent/agent-core";
+import { buildProviderWebSearchPromptSection } from "@spiritagent/agent-core";
+import type { SpiritAgentMode } from "@spiritagent/agent-core";
+import type { LocalHostToolService } from "@spiritagent/agent-core/host-bridge";
+import { HostToolExecutorProxy } from "@spiritagent/agent-core/host-bridge";
 
 import {
   NodeHostToolService,
@@ -47,13 +47,18 @@ import {
   readGitBranchLabelForBasicInfo,
   resolveSubagentTranscriptFilePath,
   resolveTranscriptSessionDir,
-} from '@spiritagent/host-internal';
+} from "@spiritagent/host-internal";
 
-import { createNoopPeer } from './noop-peer.js';
-import { resolveTransportConfig } from '@spiritagent/host-internal';
-import type { AcpServerConfig } from './types.js';
+import { createNoopPeer } from "./noop-peer.js";
+import { resolveTransportConfig } from "@spiritagent/host-internal";
+import type { AcpServerConfig } from "./types.js";
 
-export type AcpHostRuntime = AgentRuntime<LlmTransportConfig, LlmToolAgentState, JsonValue, JsonValue>;
+export type AcpHostRuntime = AgentRuntime<
+  LlmTransportConfig,
+  LlmToolAgentState,
+  JsonValue,
+  JsonValue
+>;
 
 export interface AcpRuntimeResult {
   runtime: AcpHostRuntime;
@@ -78,7 +83,7 @@ export interface AcpRuntimeResult {
 export async function createAcpRuntime(
   config: AcpServerConfig,
   onEvent: (event: RuntimeEvent<JsonValue>) => void,
-  initialMode: SpiritAgentMode = 'agent',
+  initialMode: SpiritAgentMode = "agent",
   transcriptSessionKey?: string,
 ): Promise<AcpRuntimeResult> {
   const transportConfig = resolveTransportConfig(config);
@@ -108,10 +113,12 @@ export async function createAcpRuntime(
   // 3. Load rules/skills via host-internal discovery
   const metadata = await loadHostInstructionMetadata(
     { workspaceRoot, spiritDataDir },
-    { planMode: initialMode === 'plan', agentMode: initialMode },
+    { planMode: initialMode === "plan", agentMode: initialMode },
   );
   const enabledRules: LlmEnabledRule[] = [...metadata.rules.enabledRules];
-  const enabledSkillCatalog: LlmEnabledSkillCatalogEntry[] = [...metadata.skills.enabledSkillCatalog];
+  const enabledSkillCatalog: LlmEnabledSkillCatalogEntry[] = [
+    ...metadata.skills.enabledSkillCatalog,
+  ];
   // Mutable: closures capture the binding, setAgentMode() reassigns it
   let currentPlanMetadata: LlmPlanMetadata | undefined = metadata.planMetadata;
 
@@ -129,15 +136,23 @@ export async function createAcpRuntime(
     gitBranch: await readGitBranchLabelForBasicInfo(workspaceRoot),
     ...(sessionTranscript ? { sessionTranscript } : {}),
     system: service.operatingSystemInfo?.() ?? {
-      name: process.platform === 'win32' ? 'Windows' : process.platform === 'darwin' ? 'macOS' : process.platform === 'linux' ? 'Linux' : process.platform,
+      name:
+        process.platform === "win32"
+          ? "Windows"
+          : process.platform === "darwin"
+            ? "macOS"
+            : process.platform === "linux"
+              ? "Linux"
+              : process.platform,
       version: osRelease(),
     },
   };
 
   // 6. Build prompt sections
-  const applyPatchPromptSection = transportConfig.transportKind === 'open-responses'
-    ? buildApplyPatchFileToolsPromptSection()
-    : undefined;
+  const applyPatchPromptSection =
+    transportConfig.transportKind === "open-responses"
+      ? buildApplyPatchFileToolsPromptSection()
+      : undefined;
   const providerWebSearchPromptSection = buildProviderWebSearchPromptSection(transportConfig);
 
   // 7. Mutable active skills array — session bookkeeping for slash activation
@@ -197,7 +212,8 @@ export async function createAcpRuntime(
     assistantToolCallMessageFromState: assistantToolCallMessageFromLlmState,
     finalAssistantHistoryMessageFromState: finalAssistantHistoryMessageFromLlmState,
     appendUserMessage: appendLlmUserMessage,
-    appendUserLlmMessage: (state, message) => appendLlmUserLlmMessage(state, message, workspaceRoot),
+    appendUserLlmMessage: (state, message) =>
+      appendLlmUserLlmMessage(state, message, workspaceRoot),
     extractAssistantText: extractLastLlmAssistantText,
     truncateStateForContextRetry: truncateLlmToolAgentStateForContextRetry,
     truncateHistoryForCompaction: truncateLlmHistoryForCompaction,
@@ -221,18 +237,22 @@ export async function createAcpRuntime(
         attribution,
       ),
     generateImage: (request) =>
-      llmTransport.generateImage(transportConfig, request, async (saveRequest: GeneratedImageSaveRequest) => {
-        const saveGeneratedImage = service.saveGeneratedImage;
-        if (!saveGeneratedImage) {
-          throw new Error('ACP host: image generation not supported');
-        }
-        return saveGeneratedImage.call(service, saveRequest);
-      }),
+      llmTransport.generateImage(
+        transportConfig,
+        request,
+        async (saveRequest: GeneratedImageSaveRequest) => {
+          const saveGeneratedImage = service.saveGeneratedImage;
+          if (!saveGeneratedImage) {
+            throw new Error("ACP host: image generation not supported");
+          }
+          return saveGeneratedImage.call(service, saveRequest);
+        },
+      ),
     generateVideo: (request) =>
       llmTransport.generateVideo(transportConfig, request, async (saveRequest) => {
         const saveGeneratedVideo = service.saveGeneratedVideo;
         if (!saveGeneratedVideo) {
-          throw new Error('ACP host: video generation not supported');
+          throw new Error("ACP host: video generation not supported");
         }
         return saveGeneratedVideo.call(service, saveRequest);
       }),
@@ -249,9 +269,11 @@ export async function createAcpRuntime(
       : {}),
     syncSessionTranscript: async ({ transcript, sessionKey: key }) => {
       const resolvedKey = key ?? sessionKey;
-      return persistSessionTranscript(spiritDataDir, transcript, {
-        ...(resolvedKey !== undefined ? { sessionKey: resolvedKey } : {}),
-      });
+      return persistSessionTranscript(
+        spiritDataDir,
+        transcript,
+        resolvedKey !== undefined ? { sessionKey: resolvedKey } : {},
+      );
     },
     syncSubagentTranscript: async ({ transcript, sessionKey: key, subagentSessionId }) => {
       const resolvedKey = key ?? sessionKey;
@@ -262,8 +284,7 @@ export async function createAcpRuntime(
     },
     resolveSubagentTranscriptPath: ({ sessionKey: key, subagentSessionId }) =>
       resolveSubagentTranscriptFilePath(spiritDataDir, key ?? sessionKey, subagentSessionId),
-    persistToolOutputArchive: async (input) =>
-      persistToolOutputArchive(spiritDataDir, input),
+    persistToolOutputArchive: async (input) => persistToolOutputArchive(spiritDataDir, input),
     onEvent,
   });
 
@@ -272,7 +293,7 @@ export async function createAcpRuntime(
     toolExecutor.setAgentModeToolExposure(mode);
     const refreshed = await loadHostInstructionMetadata(
       { workspaceRoot, spiritDataDir },
-      { planMode: mode === 'plan', agentMode: mode },
+      { planMode: mode === "plan", agentMode: mode },
     );
     currentPlanMetadata = refreshed.planMetadata;
   };

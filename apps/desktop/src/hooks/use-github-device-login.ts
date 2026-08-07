@@ -1,9 +1,6 @@
 import { useCallback, useMemo, useRef, useState } from "react";
 
-import {
-  GitHubDeviceLoginModel,
-  type GitHubDeviceLoginRuntime,
-} from "./github-device-login-model";
+import { GitHubDeviceLoginModel, type GitHubDeviceLoginRuntime } from "./github-device-login-model";
 
 import type { GitHubAuthStatus } from "@/types";
 

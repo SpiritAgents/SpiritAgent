@@ -1,9 +1,9 @@
-import path from 'node:path';
+import path from "node:path";
 
-import i18n from '../lib/i18n-host.js';
-import type { DesktopSnapshot } from '../types.js';
-import type { SessionActivationContext } from './session-activation.js';
-import { loadStoredSession, saveStoredSession } from './storage.js';
+import i18n from "../lib/i18n-host.js";
+import type { DesktopSnapshot } from "../types.js";
+import type { SessionActivationContext } from "./session-activation.js";
+import { loadStoredSession, saveStoredSession } from "./storage.js";
 
 function sameSessionPath(left: string, right: string): boolean {
   return path.resolve(left).toLowerCase() === path.resolve(right).toLowerCase();
@@ -25,31 +25,27 @@ export async function renameSessionCommand(
 
     const trimmedPath = filePath.trim();
     if (!trimmedPath) {
-      throw new Error(i18n.t('error.invalidSessionPath'));
+      throw new Error(i18n.t("error.invalidSessionPath"));
     }
 
     const trimmedName = displayName.trim();
     if (!trimmedName) {
-      throw new Error(i18n.t('error.emptySessionDisplayName'));
+      throw new Error(i18n.t("error.emptySessionDisplayName"));
     }
 
     const resolvedPath = path.resolve(trimmedPath);
     if (ctx.bundleRuntimeIsBusy(resolvedPath)) {
-      throw new Error(i18n.t('error.cannotRenameBusySession'));
+      throw new Error(i18n.t("error.cannotRenameBusySession"));
     }
 
     const registry = ctx.sessionRegistry();
     const bundle = registry.findBySessionPath(resolvedPath);
     const activeId = registry.activeSessionId();
-    const isActiveSession =
-      activeId !== undefined && sameSessionPath(activeId, resolvedPath);
+    const isActiveSession = activeId !== undefined && sameSessionPath(activeId, resolvedPath);
 
-    if (
-      bundle?.activeSession
-      && path.resolve(bundle.activeSession.filePath) === resolvedPath
-    ) {
+    if (bundle?.activeSession && path.resolve(bundle.activeSession.filePath) === resolvedPath) {
       bundle.activeSession.displayName = trimmedName;
-      bundle.sessionTitleSource = 'manual';
+      bundle.sessionTitleSource = "manual";
       await ctx.persistSessionBundle(bundle, {
         fromRuntime: bundle.runtime,
         bumpListSortAt: false,
@@ -59,7 +55,7 @@ export async function renameSessionCommand(
       } else {
         ctx.notifySessionListUpdated();
       }
-      ctx.setLastRuntimeError('');
+      ctx.setLastRuntimeError("");
       return ctx.buildSnapshot();
     }
 
@@ -67,10 +63,10 @@ export async function renameSessionCommand(
     await saveStoredSession(resolvedPath, {
       ...stored,
       sessionDisplayName: trimmedName,
-      sessionTitleSource: 'manual',
+      sessionTitleSource: "manual",
     });
     ctx.notifySessionListUpdated();
-    ctx.setLastRuntimeError('');
+    ctx.setLastRuntimeError("");
     return ctx.buildSnapshot();
   });
 }

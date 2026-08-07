@@ -1,6 +1,11 @@
 import { useCallback, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { ArrowRight, GitPullRequest, GitPullRequestClosed, GitPullRequestDraft } from "lucide-react";
+import {
+  ArrowRight,
+  GitPullRequest,
+  GitPullRequestClosed,
+  GitPullRequestDraft,
+} from "lucide-react";
 
 import { Badge } from "@/components/ui/badge";
 import { DetailPageTabs } from "@/components/detail-page-tabs";
@@ -156,18 +161,14 @@ export function WorkspacePrDetailView({
   const overviewSplitDragRef = useRef<{ startY: number; startHeight: number } | null>(null);
   const hasInitializedOverviewSplitRef = useRef(false);
 
-  const prShellDividerWatchRefs = useMemo(
-    () => [overviewPaneRef, overviewTabsSplitterRef],
-    [],
-  );
+  const prShellDividerWatchRefs = useMemo(() => [overviewPaneRef, overviewTabsSplitterRef], []);
 
   const clampOverviewPaneHeight = useCallback((height: number): number => {
     const container = splitContainerRef.current;
     if (!container) {
       return Math.max(PR_OVERVIEW_MIN_PX, height);
     }
-    const max =
-      container.clientHeight - PR_TABS_SECTION_MIN_PX - PR_OVERVIEW_SPLITTER_PX;
+    const max = container.clientHeight - PR_TABS_SECTION_MIN_PX - PR_OVERVIEW_SPLITTER_PX;
     return Math.min(max, Math.max(PR_OVERVIEW_MIN_PX, height));
   }, []);
 
@@ -273,9 +274,7 @@ export function WorkspacePrDetailView({
         className="shrink-0 overflow-hidden"
         type="auto"
         style={
-          overviewPaneHeightPx !== null
-            ? { height: overviewPaneHeightPx }
-            : { maxHeight: "38%" }
+          overviewPaneHeightPx !== null ? { height: overviewPaneHeightPx } : { maxHeight: "38%" }
         }
       >
         <header className="space-y-2 px-3 pt-3 pb-3">
@@ -283,7 +282,9 @@ export function WorkspacePrDetailView({
             <div
               className={cn(
                 "min-w-0",
-                actionMode && onMerge && onMarkReady ? "pr-[calc(theme(spacing.28)+0.25rem)]" : null,
+                actionMode && onMerge && onMarkReady
+                  ? "pr-[calc(theme(spacing.28)+0.25rem)]"
+                  : null,
               )}
             >
               <h2 className="m-0">
@@ -297,7 +298,9 @@ export function WorkspacePrDetailView({
                   }}
                 >
                   {detail.title}{" "}
-                  <span className="text-[13px] font-normal text-muted-foreground">#{detail.number}</span>
+                  <span className="text-[13px] font-normal text-muted-foreground">
+                    #{detail.number}
+                  </span>
                 </a>
               </h2>
               <div className="mt-1 flex flex-wrap items-center gap-2 text-xs text-muted-foreground">

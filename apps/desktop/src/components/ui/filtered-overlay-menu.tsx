@@ -113,9 +113,10 @@ export function FilteredOverlayMenu({
   };
 
   const handleListKeyDown = (event: KeyboardEvent<HTMLDivElement>) => {
-    const item = event.target instanceof Element
-      ? event.target.closest<HTMLElement>('[role="menuitem"]:not([data-disabled])')
-      : null;
+    const item =
+      event.target instanceof Element
+        ? event.target.closest<HTMLElement>('[role="menuitem"]:not([data-disabled])')
+        : null;
     if (!item) {
       return;
     }
@@ -141,9 +142,7 @@ export function FilteredOverlayMenu({
     }
   };
 
-  const filterInputKeyDownProps = showFilter
-    ? { onKeyDown: handleFilterKeyDown }
-    : {};
+  const filterInputKeyDownProps = showFilter ? { onKeyDown: handleFilterKeyDown } : {};
 
   const contentClasses =
     variant === "workspace-panel"
@@ -220,9 +219,7 @@ export function FilteredOverlayMenu({
             {children}
           </FilteredOverlayMenuList>
         </ScrollArea>
-        {footer ? (
-          <div className="shrink-0 border-t border-border/40 p-1">{footer}</div>
-        ) : null}
+        {footer ? <div className="shrink-0 border-t border-border/40 p-1">{footer}</div> : null}
       </DropdownMenuContent>
     </DropdownMenu>
   );

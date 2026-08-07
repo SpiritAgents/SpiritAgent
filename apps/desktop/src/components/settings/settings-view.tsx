@@ -108,7 +108,16 @@ export function SettingsView({
       <ScrollArea className="min-h-0 flex-1" type="hover" scrollHideDelay={450}>
         <div className="flex min-h-full flex-col justify-center">
           <div className="mx-auto w-full max-w-2xl px-4 py-8 sm:px-6">
-            {!extensionSettingsItem && tab !== "models" && tab !== "skills" && tab !== "rules" && tab !== "mcps" && tab !== "hooks" && tab !== "extensions" && tab !== "agents" && tab !== "tab" && tab !== "integrations" ? (
+            {!extensionSettingsItem &&
+            tab !== "models" &&
+            tab !== "skills" &&
+            tab !== "rules" &&
+            tab !== "mcps" &&
+            tab !== "hooks" &&
+            tab !== "extensions" &&
+            tab !== "agents" &&
+            tab !== "tab" &&
+            tab !== "integrations" ? (
               <h1 className={cn("mb-6 flex items-center gap-2", DESKTOP_PAGE_TITLE_CLASS)}>
                 {t(settingsPageTitleKey[tab])}
                 {tab === "dreams" ? <Badge variant="outline">Beta</Badge> : null}

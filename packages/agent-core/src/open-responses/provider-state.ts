@@ -1,8 +1,11 @@
-import type { JsonObject, JsonValue } from '../ports.js';
-import { cloneJsonValue, isJsonObject } from '../tool-agent.js';
-import { resolveOpenResponsesSdkProvider, type OpenResponsesTransportConfig } from './responses-compat.js';
+import type { JsonObject, JsonValue } from "../ports.js";
+import { cloneJsonValue, isJsonObject } from "../tool-agent.js";
+import {
+  resolveOpenResponsesSdkProvider,
+  type OpenResponsesTransportConfig,
+} from "./responses-compat.js";
 
-const RESPONSE_ID_PROVIDER_KEYS = ['openAiResponses', 'openResponses'] as const;
+const RESPONSE_ID_PROVIDER_KEYS = ["openAiResponses", "openResponses"] as const;
 
 function readResponseIdFromProviderBucket(bucket: unknown): string | undefined {
   if (!isJsonObject(bucket as JsonValue | undefined)) {
@@ -10,7 +13,7 @@ function readResponseIdFromProviderBucket(bucket: unknown): string | undefined {
   }
 
   const responseId = (bucket as JsonObject).responseId;
-  return typeof responseId === 'string' && responseId.length > 0 ? responseId : undefined;
+  return typeof responseId === "string" && responseId.length > 0 ? responseId : undefined;
 }
 
 export function readResponseIdFromMessage(message: JsonObject): string | undefined {
@@ -32,7 +35,7 @@ export function readResponseIdFromMessage(message: JsonObject): string | undefin
 export function findPreviousResponseId(messages: readonly JsonValue[]): string | undefined {
   for (let index = messages.length - 1; index >= 0; index -= 1) {
     const message = messages[index];
-    if (!isJsonObject(message) || message.role !== 'assistant') {
+    if (!isJsonObject(message) || message.role !== "assistant") {
       continue;
     }
 
@@ -51,7 +54,7 @@ export function findAnchorIndexForResponseId(
 ): number {
   for (let index = messages.length - 1; index >= 0; index -= 1) {
     const message = messages[index];
-    if (!isJsonObject(message) || message.role !== 'assistant') {
+    if (!isJsonObject(message) || message.role !== "assistant") {
       continue;
     }
 
@@ -88,7 +91,7 @@ export function attachResponseIdToAssistantMessage(
   }
 
   const providerKey =
-    resolveOpenResponsesSdkProvider(config) === 'openai' ? 'openAiResponses' : 'openResponses';
+    resolveOpenResponsesSdkProvider(config) === "openai" ? "openAiResponses" : "openResponses";
   const existingProviderState: JsonObject = isJsonObject(message.providerState)
     ? (cloneJsonValue(message.providerState) as JsonObject)
     : {};
@@ -109,7 +112,7 @@ export function extractResponseIdFromGenerateTextResult(result: {
   response?: { id?: string };
 }): string | undefined {
   const fromResponse =
-    result.response && typeof result.response.id === 'string' && result.response.id.length > 0
+    result.response && typeof result.response.id === "string" && result.response.id.length > 0
       ? result.response.id
       : undefined;
   if (fromResponse) {
@@ -121,7 +124,11 @@ export function extractResponseIdFromGenerateTextResult(result: {
   }
 
   const openai = (result.providerMetadata as JsonObject).openai;
-  if (isJsonObject(openai) && typeof openai.responseId === 'string' && openai.responseId.length > 0) {
+  if (
+    isJsonObject(openai) &&
+    typeof openai.responseId === "string" &&
+    openai.responseId.length > 0
+  ) {
     return openai.responseId;
   }
 

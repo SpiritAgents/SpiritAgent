@@ -1,10 +1,5 @@
-import type {
-  ConversationMessageSnapshot,
-  PendingAssistantAux,
-} from '../types.js';
-import {
-  buildVisibleMessageSnapshots,
-} from './message-snapshots.js';
+import type { ConversationMessageSnapshot, PendingAssistantAux } from "../types.js";
+import { buildVisibleMessageSnapshots } from "./message-snapshots.js";
 import {
   hasActiveSubagentToolInMessages,
   isStandaloneSubagentStatusAux,
@@ -14,8 +9,8 @@ import {
   shouldReanchorPersistedStandaloneSubagentStatusOnBeginAssistantResponse,
   summarizeMessagesTailForOrderDebug,
   truncateOneLineForDebug,
-} from './message-ordering.js';
-import type { StoredDesktopRewindMetadata } from './rewind.js';
+} from "./message-ordering.js";
+import type { StoredDesktopRewindMetadata } from "./rewind.js";
 
 export interface BuildConversationMessagesInput {
   messages: ConversationMessageSnapshot[];
@@ -32,7 +27,7 @@ export interface SyncStandalonePendingAuxInput {
 interface StandalonePendingAuxSnapshot {
   message: ConversationMessageSnapshot;
   insertAt: number;
-  source: 'live' | 'persisted';
+  source: "live" | "persisted";
   anchorMessageId?: number;
   anchorResolvedIndex?: number;
 }
@@ -45,7 +40,9 @@ export class DesktopConversationSnapshotView {
 
   constructor(private readonly allocateMessageId: () => number) {}
 
-  buildMessagesWithPendingAssistant(input: BuildConversationMessagesInput): ConversationMessageSnapshot[] {
+  buildMessagesWithPendingAssistant(
+    input: BuildConversationMessagesInput,
+  ): ConversationMessageSnapshot[] {
     const snapshots = buildVisibleMessageSnapshots({
       messages: input.messages,
       livePendingAux: input.livePendingAux,
@@ -69,7 +66,8 @@ export class DesktopConversationSnapshotView {
       if (this.standalonePendingAuxMessageId === undefined) {
         this.standalonePendingAuxMessageId = this.allocateMessageId();
       }
-      const anchorMessageId = input.pendingAssistantMessageId ?? input.lastSettledAssistantMessageId;
+      const anchorMessageId =
+        input.pendingAssistantMessageId ?? input.lastSettledAssistantMessageId;
       if (anchorMessageId !== undefined) {
         this.persistedStandalonePendingAuxAnchorMessageId = anchorMessageId;
       }
@@ -109,9 +107,7 @@ export class DesktopConversationSnapshotView {
     snapshots: ConversationMessageSnapshot[],
   ): StandalonePendingAuxSnapshot | undefined {
     const liveStandalonePendingAux =
-      livePendingAux && isStandaloneSubagentStatusAux(livePendingAux)
-        ? livePendingAux
-        : undefined;
+      livePendingAux && isStandaloneSubagentStatusAux(livePendingAux) ? livePendingAux : undefined;
     const liveStatusText = liveStandalonePendingAux
       ? parsePendingSubagentStatusText(liveStandalonePendingAux.statusText)
       : undefined;
@@ -120,14 +116,15 @@ export class DesktopConversationSnapshotView {
         return undefined;
       }
       return {
-        source: 'live',
+        source: "live",
         insertAt: this.subagentStatusInsertIndex(snapshots),
         message: this.standalonePendingAuxMessage(liveStatusText),
       };
     }
 
     const persistedStandalonePendingAux =
-      this.persistedStandalonePendingAux && isStandaloneSubagentStatusAux(this.persistedStandalonePendingAux)
+      this.persistedStandalonePendingAux &&
+      isStandaloneSubagentStatusAux(this.persistedStandalonePendingAux)
         ? this.persistedStandalonePendingAux
         : undefined;
     const persistedStatusText = persistedStandalonePendingAux
@@ -157,7 +154,7 @@ export class DesktopConversationSnapshotView {
     }
 
     return {
-      source: 'persisted',
+      source: "persisted",
       anchorMessageId,
       anchorResolvedIndex,
       insertAt,
@@ -168,10 +165,7 @@ export class DesktopConversationSnapshotView {
   private subagentStatusInsertIndex(snapshots: ConversationMessageSnapshot[]): number {
     for (let index = snapshots.length - 1; index >= 0; index -= 1) {
       const message = snapshots[index];
-      if (
-        message?.role === 'assistant' &&
-        message.tool?.toolName === 'subagent'
-      ) {
+      if (message?.role === "assistant" && message.tool?.toolName === "subagent") {
         return index + 1;
       }
     }
@@ -185,7 +179,7 @@ export class DesktopConversationSnapshotView {
 
     return {
       id: this.standalonePendingAuxMessageId,
-      role: 'assistant',
+      role: "assistant",
       content: statusText,
       pending: false,
     };
@@ -195,7 +189,7 @@ export class DesktopConversationSnapshotView {
     standalonePendingAux: StandalonePendingAuxSnapshot,
     snapshots: ConversationMessageSnapshot[],
   ): void {
-    if (messageOrderDebugLevel() !== 'verbose') {
+    if (messageOrderDebugLevel() !== "verbose") {
       return;
     }
 
@@ -205,17 +199,17 @@ export class DesktopConversationSnapshotView {
       standalonePendingAux.source,
       standalonePendingAux.message.id,
       standalonePendingAux.insertAt,
-      standalonePendingAux.anchorMessageId ?? '∅',
-      standalonePendingAux.anchorResolvedIndex ?? '∅',
+      standalonePendingAux.anchorMessageId ?? "∅",
+      standalonePendingAux.anchorResolvedIndex ?? "∅",
       standalonePendingAux.message.content,
       tail,
-    ].join('|');
+    ].join("|");
     if (signature === this.lastStandalonePendingAuxSnapshotLogSignature) {
       return;
     }
     this.lastStandalonePendingAuxSnapshotLogSignature = signature;
-    console.log(
-      `[desktop-host][snapshot] standalone-subagent-status source=${standalonePendingAux.source} msg=${standalonePendingAux.message.id} insert=${standalonePendingAux.insertAt} anchorMsg=${standalonePendingAux.anchorMessageId ?? '∅'} anchorIdx=${standalonePendingAux.anchorResolvedIndex ?? '∅'} status≈${status}${standalonePendingAux.message.content.length > 48 ? '…' : ''} tail=${tail}`,
+    console.warn(
+      `[desktop-host][snapshot] standalone-subagent-status source=${standalonePendingAux.source} msg=${standalonePendingAux.message.id} insert=${standalonePendingAux.insertAt} anchorMsg=${standalonePendingAux.anchorMessageId ?? "∅"} anchorIdx=${standalonePendingAux.anchorResolvedIndex ?? "∅"} status≈${status}${standalonePendingAux.message.content.length > 48 ? "…" : ""} tail=${tail}`,
     );
   }
 }

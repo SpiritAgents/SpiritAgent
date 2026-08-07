@@ -8,8 +8,7 @@ import {
 } from "../../src/lib/markdown-streamdown-plugins.ts";
 
 test("streamdown sanitize schema keeps spirit-agent img src", () => {
-  const ref =
-    "spirit://generated/image/1780701216913-a51ab479-f44c-4efc-86f8-a0a2fe4f85e7.png";
+  const ref = "spirit://generated/image/1780701216913-a51ab479-f44c-4efc-86f8-a0a2fe4f85e7.png";
   const tree = {
     type: "root",
     children: [

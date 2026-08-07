@@ -13,9 +13,7 @@ import { segmentsToMessageText } from "@/components/composer-rich-input";
 import { useLocalFileAttachmentPreviews } from "@/hooks/useLocalFileAttachmentPreviews";
 import type { useDesktopRuntime } from "@/hooks/useDesktopRuntime";
 import type { useSubagentViewer } from "@/hooks/useSubagentViewer";
-import {
-  messageContentToRichSegments,
-} from "@/lib/composer-segment-model";
+import { messageContentToRichSegments } from "@/lib/composer-segment-model";
 import {
   composerAttachmentViewFromPath,
   normalizeSlashPath as normalizeAttachmentPath,
@@ -76,8 +74,7 @@ export function useMessageRewind({
       return;
     }
     const anchor = messages[rewindDraft.listIndex];
-    const stillAvailable =
-      anchor?.id === rewindDraft.messageId && anchor.canRewind === true;
+    const stillAvailable = anchor?.id === rewindDraft.messageId && anchor.canRewind === true;
     if (!stillAvailable) {
       setRewindDraft(null);
     }

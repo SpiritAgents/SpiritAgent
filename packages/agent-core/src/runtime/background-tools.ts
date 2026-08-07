@@ -1,12 +1,12 @@
-import type { LlmMessage, ToolCallRequest, ToolExecutionOutput } from '../ports.js';
-import type { JsonObject } from '../ports.js';
-import { createToolExecutionTextOutput } from '../ports.js';
+import type { LlmMessage, ToolCallRequest } from "../ports.js";
+import type { JsonObject } from "../ports.js";
+import { createToolExecutionTextOutput } from "../ports.js";
 
-import { renderError, buildToolContinuationStateFromHistory } from './helpers.js';
-import { prepareAndSyncRuntimeToolResultToHistory } from './tool-output-append.js';
-import { toolInputFromArgumentsJson } from '../hooks/integration.js';
-import { runPostToolUseSideEffects } from '../hooks/tool-hooks.js';
-import { commitToolExecutionOutput, type TurnMachineRuntime } from './turn-machine.js';
+import { renderError, buildToolContinuationStateFromHistory } from "./helpers.js";
+import { prepareAndSyncRuntimeToolResultToHistory } from "./tool-output-append.js";
+import { toolInputFromArgumentsJson } from "../hooks/integration.js";
+import { runPostToolUseSideEffects } from "../hooks/tool-hooks.js";
+import { commitToolExecutionOutput, type TurnMachineRuntime } from "./turn-machine.js";
 import type {
   AgentRuntimeOptions,
   DeferredBackgroundToolExecutionSpec,
@@ -17,20 +17,13 @@ import type {
   RuntimeCompletedManualToolCommandResult,
   RuntimeEvent,
   RuntimeTurnContext,
-} from './types.js';
+} from "./types.js";
 
-export interface BackgroundToolsRuntime<
-  Config,
-  State,
-  ToolRequest,
-  TrustTarget = string,
-> {
+export interface BackgroundToolsRuntime<Config, State, ToolRequest, TrustTarget = string> {
   options: AgentRuntimeOptions<Config, State, ToolRequest, TrustTarget>;
   historyStore: LlmMessage[];
   pendingBackgroundToolStatusStore: string | undefined;
-  pendingBackgroundToolExecution:
-    | PendingBackgroundToolExecution<State, ToolRequest>
-    | undefined;
+  pendingBackgroundToolExecution: PendingBackgroundToolExecution<State, ToolRequest> | undefined;
   deferredBackgroundToolExecutions: DeferredBackgroundToolExecutionSpec<State, ToolRequest>[];
   completedManualToolCommandResultStore:
     | RuntimeCompletedManualToolCommandResult<ToolRequest>
@@ -71,41 +64,27 @@ export interface BackgroundToolsRuntime<
     hasPendingQuestions: boolean;
     deferredBgCount: number;
   };
-  advanceTurnToolState?: (
-    turn: RuntimeTurnContext<ToolRequest>,
-    state: State,
-  ) => void;
-  resolveTurnToolState?: (
-    turn: RuntimeTurnContext<ToolRequest>,
-    fallback: State,
-  ) => State;
+  advanceTurnToolState?: (turn: RuntimeTurnContext<ToolRequest>, state: State) => void;
+  resolveTurnToolState?: (turn: RuntimeTurnContext<ToolRequest>, fallback: State) => State;
 }
 
-function hasOutstandingToolTurnWork<
-  Config,
-  State,
-  ToolRequest,
-  TrustTarget = string,
->(
+function hasOutstandingToolTurnWork<Config, State, ToolRequest, TrustTarget = string>(
   runtime: BackgroundToolsRuntime<Config, State, ToolRequest, TrustTarget>,
 ): boolean {
   const flags = runtime.readOutstandingToolTurnFlags?.();
   if (!flags) {
     return false;
   }
-  return flags.hasPendingApproval
-    || flags.hasPendingContinuation
-    || flags.hasPendingQuestions
-    || flags.deferredBgCount > 0;
+  return (
+    flags.hasPendingApproval ||
+    flags.hasPendingContinuation ||
+    flags.hasPendingQuestions ||
+    flags.deferredBgCount > 0
+  );
 }
 
 /** persistAssistantToolCalls 只写 historyStore；续跑 LLM 须从 history 重建 state，避免 pending.state 缺 assistant tool_calls。 */
-function buildBackgroundToolContinuationState<
-  Config,
-  State,
-  ToolRequest,
-  TrustTarget = string,
->(
+function buildBackgroundToolContinuationState<Config, State, ToolRequest, TrustTarget = string>(
   runtime: BackgroundToolsRuntime<Config, State, ToolRequest, TrustTarget>,
   pendingUserInput: string,
 ): State {
@@ -116,12 +95,7 @@ function buildBackgroundToolContinuationState<
   );
 }
 
-export function startBackgroundToolExecutionAsync<
-  Config,
-  State,
-  ToolRequest,
-  TrustTarget = string,
->(
+export function startBackgroundToolExecutionAsync<Config, State, ToolRequest, TrustTarget = string>(
   runtime: BackgroundToolsRuntime<Config, State, ToolRequest, TrustTarget>,
   pendingUserInput: string,
   state: State,
@@ -139,15 +113,15 @@ export function startBackgroundToolExecutionAsync<
   const statusText = runtime.options.toolExecutor.backgroundStatusText?.(request);
   runtime.pendingBackgroundToolStatusStore = statusText;
   runtime.emitEvent({
-    kind: 'background-tool-status',
-    phase: 'started',
+    kind: "background-tool-status",
+    phase: "started",
     toolName,
     request,
     ...(statusText !== undefined ? { statusText } : {}),
   });
 
   const pending: PendingToolCallBackgroundToolExecution<State, ToolRequest> = {
-    kind: 'tool-call',
+    kind: "tool-call",
     pendingUserInput,
     state,
     request,
@@ -167,19 +141,20 @@ export function startBackgroundToolExecutionAsync<
   };
   runtime.pendingBackgroundToolExecution = pending;
 
-  const requestForExecution = runtime.options.toolExecutor.attachRequestMetadata?.(request, {
-    toolCallId,
-    toolName,
-    onOutputChunk: (chunk) => {
-      runtime.emitEvent({
-        kind: 'tool-execution-output-chunk',
-        toolCallId,
-        toolName,
-        request,
-        chunk,
-      });
-    },
-  }) ?? request;
+  const requestForExecution =
+    runtime.options.toolExecutor.attachRequestMetadata?.(request, {
+      toolCallId,
+      toolName,
+      onOutputChunk: (chunk) => {
+        runtime.emitEvent({
+          kind: "tool-execution-output-chunk",
+          toolCallId,
+          toolName,
+          request,
+          chunk,
+        });
+      },
+    }) ?? request;
 
   void runtime.options.toolExecutor
     .execute(requestForExecution)
@@ -249,12 +224,7 @@ export function scheduleBackgroundToolExecutionAsync<
   );
 }
 
-function startNextDeferredBackgroundToolExecution<
-  Config,
-  State,
-  ToolRequest,
-  TrustTarget = string,
->(
+function startNextDeferredBackgroundToolExecution<Config, State, ToolRequest, TrustTarget = string>(
   runtime: BackgroundToolsRuntime<Config, State, ToolRequest, TrustTarget>,
   resumedState: State,
 ): void {
@@ -293,15 +263,15 @@ export function startManualBackgroundToolExecution<
   const statusText = runtime.options.toolExecutor.backgroundStatusText?.(request);
   runtime.pendingBackgroundToolStatusStore = statusText;
   runtime.emitEvent({
-    kind: 'background-tool-status',
-    phase: 'started',
+    kind: "background-tool-status",
+    phase: "started",
     toolName,
     request,
     ...(statusText !== undefined ? { statusText } : {}),
   });
 
   const pending: PendingManualBackgroundToolExecution<ToolRequest> = {
-    kind: 'manual',
+    kind: "manual",
     request,
     toolName,
     statusText,
@@ -310,18 +280,19 @@ export function startManualBackgroundToolExecution<
   };
   runtime.pendingBackgroundToolExecution = pending;
 
-  const requestForExecution = runtime.options.toolExecutor.attachRequestMetadata?.(request, {
-    toolName,
-    onOutputChunk: (chunk) => {
-      runtime.emitEvent({
-        kind: 'tool-execution-output-chunk',
-        toolCallId: `manual:${toolName}`,
-        toolName,
-        request,
-        chunk,
-      });
-    },
-  }) ?? request;
+  const requestForExecution =
+    runtime.options.toolExecutor.attachRequestMetadata?.(request, {
+      toolName,
+      onOutputChunk: (chunk) => {
+        runtime.emitEvent({
+          kind: "tool-execution-output-chunk",
+          toolCallId: `manual:${toolName}`,
+          toolName,
+          request,
+          chunk,
+        });
+      },
+    }) ?? request;
 
   void runtime.options.toolExecutor
     .execute(requestForExecution)
@@ -346,9 +317,7 @@ export async function pollPendingBackgroundToolExecution<
   State,
   ToolRequest,
   TrustTarget = string,
->(
-  runtime: BackgroundToolsRuntime<Config, State, ToolRequest, TrustTarget>,
-): Promise<void> {
+>(runtime: BackgroundToolsRuntime<Config, State, ToolRequest, TrustTarget>): Promise<void> {
   const pending = runtime.pendingBackgroundToolExecution;
   if (!pending || pending.output === undefined || pending.failed === undefined) {
     return;
@@ -357,17 +326,17 @@ export async function pollPendingBackgroundToolExecution<
   runtime.pendingBackgroundToolExecution = undefined;
   runtime.pendingBackgroundToolStatusStore = undefined;
   runtime.emitEvent({
-    kind: 'background-tool-status',
-    phase: 'finished',
+    kind: "background-tool-status",
+    phase: "finished",
     toolName: pending.toolName,
     request: pending.request,
     ...(pending.statusText !== undefined ? { statusText: pending.statusText } : {}),
     failed: pending.failed,
   });
 
-  if (pending.kind === 'manual') {
+  if (pending.kind === "manual") {
     runtime.completedManualToolCommandResultStore = {
-      kind: 'completed',
+      kind: "completed",
       request: pending.request,
       toolName: pending.toolName,
       output: pending.output.summaryText,
@@ -402,10 +371,7 @@ export async function pollPendingBackgroundToolExecution<
     pending.toolCallId,
     pending.output.summaryText,
   );
-  const continuationState = buildBackgroundToolContinuationState(
-    runtime,
-    pending.pendingUserInput,
-  );
+  const continuationState = buildBackgroundToolContinuationState(runtime, pending.pendingUserInput);
   runtime.advanceTurnToolState?.(pending.turn, continuationState);
   if (runtime.deferredBackgroundToolExecutions.length > 0) {
     startNextDeferredBackgroundToolExecution(runtime, continuationState);

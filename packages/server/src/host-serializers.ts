@@ -1,4 +1,4 @@
-import type { JsonObject, JsonValue } from '@spiritagent/agent-core';
+import type { JsonObject, JsonValue } from "@spiritagent/agent-core";
 
 /**
  * Serializers mirroring the legacy host-bridge shapes — CLI/Desktop clients
@@ -22,7 +22,7 @@ interface ExtensionManifestLike {
   author?: string;
   homepage?: string;
   main?: string;
-  supportedHosts: Array<'cli' | 'desktop'>;
+  supportedHosts: Array<"cli" | "desktop">;
   activationEvents?: string[];
   requestedCapabilities?: string[];
   contributes?: {
@@ -56,7 +56,9 @@ interface ExtensionManifestLike {
   }>;
 }
 
-function serializeExtensionContributes(item: ExtensionManifestLike['contributes']): JsonObject | Record<string, never> {
+function serializeExtensionContributes(
+  item: ExtensionManifestLike["contributes"],
+): JsonObject | Record<string, never> {
   if (!item) {
     return {};
   }

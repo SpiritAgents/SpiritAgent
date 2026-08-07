@@ -1,4 +1,12 @@
-import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState, type ComponentRef } from "react";
+import {
+  useCallback,
+  useEffect,
+  useLayoutEffect,
+  useMemo,
+  useRef,
+  useState,
+  type ComponentRef,
+} from "react";
 import { useTranslation } from "react-i18next";
 import type * as Monaco from "monaco-editor";
 
@@ -27,7 +35,10 @@ import {
 } from "@/components/workspace-monaco-editor";
 import { dirnameLocalPath } from "@/lib/markdown-local-image-src";
 import { cn } from "@/lib/utils";
-import { DESKTOP_FILES_EXPLORER_TOOLBAR_ICON_BTN, DESKTOP_SHELL_LAYOUT_TRANSITION } from "@/lib/desktop-chrome";
+import {
+  DESKTOP_FILES_EXPLORER_TOOLBAR_ICON_BTN,
+  DESKTOP_SHELL_LAYOUT_TRANSITION,
+} from "@/lib/desktop-chrome";
 import { desktopMicaFileDetailSurfaceClass } from "@/lib/desktop-mica-surface";
 import {
   WORKSPACE_FILES_TREE_MIN_WIDTH_PX,
@@ -279,7 +290,9 @@ function WorkspaceFilesExplorerToolbar({
                 value="edit"
                 className="h-6 gap-1 rounded-sm px-1.5 text-[10px]"
                 aria-label={t("workspace.markdownEdit")}
-                title={docReadOnly ? t("workspace.currentDocReadOnly") : t("workspace.markdownEdit")}
+                title={
+                  docReadOnly ? t("workspace.currentDocReadOnly") : t("workspace.markdownEdit")
+                }
                 disabled={!docReady || docReadOnly}
               >
                 <SquarePen className="size-3" aria-hidden />
@@ -656,7 +669,7 @@ export function WorkspaceFilesTab({
         setSavedText("");
         setDoc({
           status: "empty",
-          message: t('workspace.planNotCreated'),
+          message: t("workspace.planNotCreated"),
           readOnly: true,
           title: "Plan",
           subtitle: plan.path,
@@ -677,11 +690,8 @@ export function WorkspaceFilesTab({
     }
 
     const filePath =
-      selectedEntry.kind === "external"
-        ? selectedEntry.absolutePath
-        : selectedEntry.relativePath;
-    const readFile =
-      selectedEntry.kind === "external" ? readHostTextFile : readWorkspaceTextFile;
+      selectedEntry.kind === "external" ? selectedEntry.absolutePath : selectedEntry.relativePath;
+    const readFile = selectedEntry.kind === "external" ? readHostTextFile : readWorkspaceTextFile;
     let cancelled = false;
     setDoc({
       status: "loading",
@@ -797,7 +807,10 @@ export function WorkspaceFilesTab({
 
   const persistEditorText = useCallback(
     async (text: string) => {
-      if (!selectedEntry || (selectedEntry.kind !== "workspace" && selectedEntry.kind !== "external")) {
+      if (
+        !selectedEntry ||
+        (selectedEntry.kind !== "workspace" && selectedEntry.kind !== "external")
+      ) {
         return;
       }
       setSaveError("");
@@ -868,7 +881,8 @@ export function WorkspaceFilesTab({
     onDirtyChangeRef.current?.(dirty);
   }, [draftText, doc?.readOnly, isPreviewVisible, savedText]);
 
-  const selectionEnabled = doc?.status === "ready" && Boolean(onFileSnippetAddToSession && selectedPath);
+  const selectionEnabled =
+    doc?.status === "ready" && Boolean(onFileSnippetAddToSession && selectedPath);
 
   const onToggleMarkdownViewMode = useCallback((value: string) => {
     if (value === "preview" || value === "edit") {
@@ -907,7 +921,9 @@ export function WorkspaceFilesTab({
   }, []);
 
   const onSearchSessionChange = useCallback(
-    (session: { query: string; matchesByPath: Map<string, WorkspaceContentSearchMatch[]> } | null) => {
+    (
+      session: { query: string; matchesByPath: Map<string, WorkspaceContentSearchMatch[]> } | null,
+    ) => {
       setSearchHighlightSession(session);
     },
     [],
@@ -917,10 +933,7 @@ export function WorkspaceFilesTab({
     (relativePath: string, reveal: EditorFileRevealLocation) => {
       setMarkdownViewMode("edit");
       setEditorRevealLocation(reveal);
-      if (
-        selectedEntry?.kind === "workspace" &&
-        selectedEntry.relativePath === relativePath
-      ) {
+      if (selectedEntry?.kind === "workspace" && selectedEntry.relativePath === relativePath) {
         return;
       }
       if (selectedEntry !== null && editorDirty && onOpenWorkspaceFileInNewTab) {
@@ -1000,15 +1013,9 @@ export function WorkspaceFilesTab({
           className={cn(
             "flex min-h-0 shrink-0 flex-col overflow-hidden",
             !isResizingFileTree && DESKTOP_SHELL_LAYOUT_TRANSITION,
-            fileTreeOpen
-              ? selectedEntry
-                ? "border-r border-border/40"
-                : "min-w-0 flex-1"
-              : "w-0",
+            fileTreeOpen ? (selectedEntry ? "border-r border-border/40" : "min-w-0 flex-1") : "w-0",
           )}
-          style={
-            fileTreeOpen && selectedEntry ? { width: fileTreeWidthPx } : undefined
-          }
+          style={fileTreeOpen && selectedEntry ? { width: fileTreeWidthPx } : undefined}
         >
           <div
             className={cn(
@@ -1139,104 +1146,102 @@ export function WorkspaceFilesTab({
         ) : null}
         {selectedEntry ? (
           <div className="flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden pl-2">
-          <div className="min-h-0 min-w-0 flex-1 overflow-hidden">
-            {doc?.status === "loading" ? (
-              <div className="h-full min-h-0 w-full" />
-            ) : doc?.status === "error" ? (
-              <p className="p-2 text-xs text-destructive/90">{doc.message}</p>
-            ) : doc?.status === "empty" ? (
-              <div className="flex h-full items-center justify-center p-4 text-center text-xs leading-relaxed text-muted-foreground">
-                {doc.message}
-              </div>
-            ) : doc?.status === "binary" ? (
-              <div className="flex h-full items-center justify-center p-4 text-center text-xs leading-relaxed text-muted-foreground">
-                {t("workspace.binaryFileNotSupported")}
-              </div>
-            ) : doc?.status === "image" ? (
-              <WorkspaceImagePreviewPane
-                className={desktopMicaFileDetailSurfaceClass(useMicaBackdrop)}
-                previewState={imagePreviewState}
-                previewDataUrl={imagePreviewDataUrl}
-                fileLabel={doc.title}
-              />
-            ) : doc?.status === "ready" ? (
-              isPreviewVisible ? (
-                <>
-                  <ScrollArea
-                    ref={previewScrollRef}
-                    className={cn(
-                      "h-full min-h-0 w-full",
-                      desktopMicaFileDetailSurfaceClass(useMicaBackdrop),
-                    )}
-                  >
-                    <div className="mx-auto flex min-h-full w-full max-w-4xl flex-col px-4 py-4 sm:px-6">
-                      {draftText.trim() ? (
-                        <MarkdownMessage
-                          content={draftText}
-                          className="text-sm"
-                          allowHtml
-                          singleLineBreaks={false}
-                          readManagedImagePreviewDataUrl={readManagedImagePreviewDataUrl}
-                          readLocalImagePreviewDataUrl={readLocalImagePreviewDataUrl}
-                          localImageBaseDir={markdownPreviewImageBaseDir}
-                          localImageAllowedRootDir={markdownPreviewImageAllowedRootDir}
-                        />
-                      ) : (
-                        <div
-                          className={cn(
-                            "flex min-h-[8rem] items-center justify-center rounded-md border border-dashed border-border/50 px-4 text-center text-xs text-muted-foreground",
-                            desktopMicaFileDetailSurfaceClass(useMicaBackdrop),
-                          )}
-                        >
-                          {t('workspace.emptyMarkdownDoc')}
-                        </div>
-                      )}
-                    </div>
-                  </ScrollArea>
-                  {selectionEnabled ? (
-                    <FileDomSelectionMenu
-                      rootRef={previewRootRef}
-                      filePath={selectedPath}
-                      onFileSnippetAddToSession={onFileSnippetAddToSession}
-                    />
-                  ) : null}
-                </>
-              ) : (
-                <div ref={monacoContainerRef} className="relative h-full min-h-0 w-full">
-                  <WorkspaceMonacoEditor
-                    key={selectedEntryKey}
-                    ref={editorRef}
-                    relativePath={
-                      doc.readOnly
-                        ? (plan.path.split(/[/\\]/).pop() ?? "plan")
-                        : doc.subtitle
-                    }
-                    initialText={draftText}
-                    baselineText={savedText}
-                    onSave={onEditorSave}
-                    onTextChange={isMarkdownDocument ? setDraftText : undefined}
-                    onDirtyChange={doc.readOnly ? undefined : onMonacoDirtyChange}
-                    readOnly={doc.readOnly}
-                    codeCompletionEnabled={codeCompletionEnabled}
-                    onEditorReady={setMonacoEditor}
-                    revealLocation={editorRevealLocation}
-                    onRevealConsumed={onEditorRevealConsumed}
-                    searchMatchRanges={monacoSearchMatchRanges}
-                  />
-                  {selectionEnabled ? (
-                    <FileMonacoSelectionMenu
-                      containerRef={monacoContainerRef}
-                      editor={monacoEditor}
-                      filePath={selectedPath}
-                      onFileSnippetAddToSession={onFileSnippetAddToSession}
-                    />
-                  ) : null}
+            <div className="min-h-0 min-w-0 flex-1 overflow-hidden">
+              {doc?.status === "loading" ? (
+                <div className="h-full min-h-0 w-full" />
+              ) : doc?.status === "error" ? (
+                <p className="p-2 text-xs text-destructive/90">{doc.message}</p>
+              ) : doc?.status === "empty" ? (
+                <div className="flex h-full items-center justify-center p-4 text-center text-xs leading-relaxed text-muted-foreground">
+                  {doc.message}
                 </div>
-              )
-            ) : null}
+              ) : doc?.status === "binary" ? (
+                <div className="flex h-full items-center justify-center p-4 text-center text-xs leading-relaxed text-muted-foreground">
+                  {t("workspace.binaryFileNotSupported")}
+                </div>
+              ) : doc?.status === "image" ? (
+                <WorkspaceImagePreviewPane
+                  className={desktopMicaFileDetailSurfaceClass(useMicaBackdrop)}
+                  previewState={imagePreviewState}
+                  previewDataUrl={imagePreviewDataUrl}
+                  fileLabel={doc.title}
+                />
+              ) : doc?.status === "ready" ? (
+                isPreviewVisible ? (
+                  <>
+                    <ScrollArea
+                      ref={previewScrollRef}
+                      className={cn(
+                        "h-full min-h-0 w-full",
+                        desktopMicaFileDetailSurfaceClass(useMicaBackdrop),
+                      )}
+                    >
+                      <div className="mx-auto flex min-h-full w-full max-w-4xl flex-col px-4 py-4 sm:px-6">
+                        {draftText.trim() ? (
+                          <MarkdownMessage
+                            content={draftText}
+                            className="text-sm"
+                            allowHtml
+                            singleLineBreaks={false}
+                            readManagedImagePreviewDataUrl={readManagedImagePreviewDataUrl}
+                            readLocalImagePreviewDataUrl={readLocalImagePreviewDataUrl}
+                            localImageBaseDir={markdownPreviewImageBaseDir}
+                            localImageAllowedRootDir={markdownPreviewImageAllowedRootDir}
+                          />
+                        ) : (
+                          <div
+                            className={cn(
+                              "flex min-h-[8rem] items-center justify-center rounded-md border border-dashed border-border/50 px-4 text-center text-xs text-muted-foreground",
+                              desktopMicaFileDetailSurfaceClass(useMicaBackdrop),
+                            )}
+                          >
+                            {t("workspace.emptyMarkdownDoc")}
+                          </div>
+                        )}
+                      </div>
+                    </ScrollArea>
+                    {selectionEnabled ? (
+                      <FileDomSelectionMenu
+                        rootRef={previewRootRef}
+                        filePath={selectedPath}
+                        onFileSnippetAddToSession={onFileSnippetAddToSession}
+                      />
+                    ) : null}
+                  </>
+                ) : (
+                  <div ref={monacoContainerRef} className="relative h-full min-h-0 w-full">
+                    <WorkspaceMonacoEditor
+                      key={selectedEntryKey}
+                      ref={editorRef}
+                      relativePath={
+                        doc.readOnly ? (plan.path.split(/[/\\]/).pop() ?? "plan") : doc.subtitle
+                      }
+                      initialText={draftText}
+                      baselineText={savedText}
+                      onSave={onEditorSave}
+                      onTextChange={isMarkdownDocument ? setDraftText : undefined}
+                      onDirtyChange={doc.readOnly ? undefined : onMonacoDirtyChange}
+                      readOnly={doc.readOnly}
+                      codeCompletionEnabled={codeCompletionEnabled}
+                      onEditorReady={setMonacoEditor}
+                      revealLocation={editorRevealLocation}
+                      onRevealConsumed={onEditorRevealConsumed}
+                      searchMatchRanges={monacoSearchMatchRanges}
+                    />
+                    {selectionEnabled ? (
+                      <FileMonacoSelectionMenu
+                        containerRef={monacoContainerRef}
+                        editor={monacoEditor}
+                        filePath={selectedPath}
+                        onFileSnippetAddToSession={onFileSnippetAddToSession}
+                      />
+                    ) : null}
+                  </div>
+                )
+              ) : null}
+            </div>
           </div>
-        </div>
-      ) : null}
+        ) : null}
       </div>
     </div>
   );

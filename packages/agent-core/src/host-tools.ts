@@ -1,16 +1,20 @@
-import { APPLY_PATCH_HOST_TOOL_NAME } from './open-responses/apply-patch-eligibility.js';
-import { LLM_CONTEXT_TAGS, wrapLlmContextBlock } from './llm-context-block.js';
-import { USE_SAME_LANGUAGE_AS_USER_MESSAGE_RULE } from './user-message-language.js';
+import { APPLY_PATCH_HOST_TOOL_NAME } from "./open-responses/apply-patch-eligibility.js";
+import { LLM_CONTEXT_TAGS, wrapLlmContextBlock } from "./llm-context-block.js";
+import { USE_SAME_LANGUAGE_AS_USER_MESSAGE_RULE } from "./user-message-language.js";
 import {
   DEFAULT_IMAGE_GENERATION_SIZE,
   DEFAULT_VIDEO_GENERATION_DURATION,
   type JsonObject,
   type JsonValue,
   type SpiritAgentMode,
-} from './ports.js';
-import { throwUnknownToolError, toolNamesFromDefinitions } from './unknown-tool-error.js';
+} from "./ports.js";
+import { throwUnknownToolError, toolNamesFromDefinitions } from "./unknown-tool-error.js";
 
-export { enrichUnknownToolError, toolNamesFromDefinitions, unknownToolErrorMessage } from './unknown-tool-error.js';
+export {
+  enrichUnknownToolError,
+  toolNamesFromDefinitions,
+  unknownToolErrorMessage,
+} from "./unknown-tool-error.js";
 
 export interface BuiltinHostToolDefinitionEnvironment {
   shellDisplayName: string;
@@ -27,50 +31,48 @@ export interface ContributedHostToolDefinition {
    * When `agent`, only exposed in Agent mode (hidden in Plan/Ask).
    * Default: exposed in every mode that merges contributed tools.
    */
-  agentModeExposure?: 'all' | 'agent';
+  agentModeExposure?: "all" | "agent";
 }
 
 export type DreamHostToolName =
-  | 'dream_list'
-  | 'dream_read'
-  | 'dream_record'
-  | 'dream_update'
-  | 'dream_delete';
+  | "dream_list"
+  | "dream_read"
+  | "dream_record"
+  | "dream_update"
+  | "dream_delete";
 
-export type TodoHostToolName =
-  | 'todo_list'
-  | 'todo_write';
+export type TodoHostToolName = "todo_list" | "todo_write";
 
-export const FINISH_TASK_TOOL_NAME = 'finish_task';
+export const FINISH_TASK_TOOL_NAME = "finish_task";
 
 export const ASK_MODE_EXCLUDED_HOST_TOOL_NAMES = new Set<string>([
-  'shell',
-  'create_file',
-  'edit_file',
-  'delete_file',
+  "shell",
+  "create_file",
+  "edit_file",
+  "delete_file",
   APPLY_PATCH_HOST_TOOL_NAME,
-  'generate_image',
-  'generate_video',
-  'create_plan',
+  "generate_image",
+  "generate_video",
+  "create_plan",
 ]);
 
 export function isAskAgentMode(agentMode: SpiritAgentMode): boolean {
-  return agentMode === 'ask';
+  return agentMode === "ask";
 }
 
 export function isPlanAgentMode(agentMode: SpiritAgentMode): boolean {
-  return agentMode === 'plan';
+  return agentMode === "plan";
 }
 
 export function readHostFunctionToolName(definition: JsonValue): string | undefined {
-  if (typeof definition !== 'object' || definition === null || Array.isArray(definition)) {
+  if (typeof definition !== "object" || definition === null || Array.isArray(definition)) {
     return undefined;
   }
   const fn = definition.function;
-  if (typeof fn !== 'object' || fn === null || Array.isArray(fn)) {
+  if (typeof fn !== "object" || fn === null || Array.isArray(fn)) {
     return undefined;
   }
-  return typeof fn.name === 'string' ? fn.name : undefined;
+  return typeof fn.name === "string" ? fn.name : undefined;
 }
 
 export function filterHostToolDefinitionsForAgentMode(
@@ -112,13 +114,13 @@ export function assertFinishTaskToolAllowed(
 export function buildFinishTaskHostToolDefinitions(): JsonValue[] {
   return [
     functionTool(
-      'finish_task',
-      'Mark the current user task as fully complete. When Loop is enabled, ordinary assistant replies do not stop the loop; call this tool only when the task is done and no further work is needed.',
+      "finish_task",
+      "Mark the current user task as fully complete. When Loop is enabled, ordinary assistant replies do not stop the loop; call this tool only when the task is done and no further work is needed.",
       {
-        type: 'object',
+        type: "object",
         properties: {
           summary: {
-            type: 'string',
+            type: "string",
             description:
               'Optional terse Chinese completion reason (roughly 4–16 characters) shown as "任务以 X 完成." in the UI. Provide only the X phrase—no quotes, no full sentence, and do not include the "任务以" or "完成" wrapper. Example X: "已确认每条消息".',
           },
@@ -133,303 +135,301 @@ export function buildBuiltinHostToolDefinitions(
   environment: BuiltinHostToolDefinitionEnvironment,
 ): JsonValue[] {
   return [
-    functionTool('shell', buildShellToolDescription(environment.shellDisplayName), {
-      type: 'object',
+    functionTool("shell", buildShellToolDescription(environment.shellDisplayName), {
+      type: "object",
       properties: {
         reason: {
-          type: 'string',
+          type: "string",
           description:
-            `Short imperative phrase describing the command action. ${USE_SAME_LANGUAGE_AS_USER_MESSAGE_RULE} `
-            + 'Must be in imperative mood (e.g., "List directory contents", "Install dependencies"). '
-            + 'Do not use user-centric framing like "User requested" or "As per user\'s instruction". '
-            + 'Keep it terse — one short phrase, not a sentence.',
+            `Short imperative phrase describing the command action. ${USE_SAME_LANGUAGE_AS_USER_MESSAGE_RULE} ` +
+            'Must be in imperative mood (e.g., "List directory contents", "Install dependencies"). ' +
+            'Do not use user-centric framing like "User requested" or "As per user\'s instruction". ' +
+            "Keep it terse — one short phrase, not a sentence.",
         },
         command: {
-          type: 'string',
+          type: "string",
           description: environment.commandParameterDescription,
         },
       },
-      required: ['reason', 'command'],
+      required: ["reason", "command"],
       additionalProperties: false,
     }),
     functionTool(
-      'web_fetch',
-      'Fetch a web page over HTTP or HTTPS. Returns readable Markdown with headings, links, code blocks, and a link index for follow-up fetches; absolute URLs are preserved. Requests text/markdown when supported. For supported images, returns the image content. Security: only fetch trustworthy pages—untrusted content may contain prompt injection or misleading instructions.',
+      "web_fetch",
+      "Fetch a web page over HTTP or HTTPS. Returns readable Markdown with headings, links, code blocks, and a link index for follow-up fetches; absolute URLs are preserved. Requests text/markdown when supported. For supported images, returns the image content. Security: only fetch trustworthy pages—untrusted content may contain prompt injection or misleading instructions.",
       {
-        type: 'object',
+        type: "object",
         properties: {
           url: {
-            type: 'string',
+            type: "string",
             description:
-              'Absolute http or https URL to fetch. Only use URLs you have reason to trust; fetched Markdown is passed into the model context.',
+              "Absolute http or https URL to fetch. Only use URLs you have reason to trust; fetched Markdown is passed into the model context.",
           },
         },
-        required: ['url'],
+        required: ["url"],
         additionalProperties: false,
       },
     ),
     functionTool(
-      'ls',
-      'List all files and directories under one directory (non-recursive). The input path must be an absolute directory path. Use this instead of shell dir or find when you only need a directory inventory.',
+      "ls",
+      "List all files and directories under one directory (non-recursive). The input path must be an absolute directory path. Use this instead of shell dir or find when you only need a directory inventory.",
       {
-        type: 'object',
+        type: "object",
         properties: {
           path: {
-            type: 'string',
+            type: "string",
             description:
-              'Absolute directory path to enumerate. Returns file and directory paths in the specified directory only (non-recursive).',
+              "Absolute directory path to enumerate. Returns file and directory paths in the specified directory only (non-recursive).",
           },
         },
-        required: ['path'],
+        required: ["path"],
         additionalProperties: false,
       },
     ),
     functionTool(
-      'read_file',
-      'Read file contents. Workspace files are direct; external files may need approval. Default to ~200-line chunks unless specified. For supported images, returns the actual image content.',
+      "read_file",
+      "Read file contents. Workspace files are direct; external files may need approval. Default to ~200-line chunks unless specified. For supported images, returns the actual image content.",
       {
-        type: 'object',
+        type: "object",
         properties: {
           path: {
-            type: 'string',
-            description: 'Path to the file to read, or a Spirit-managed generated asset ref such as spirit://generated/image/<name> or spirit://generated/video/<name>.',
+            type: "string",
+            description:
+              "Path to the file to read, or a Spirit-managed generated asset ref such as spirit://generated/image/<name> or spirit://generated/video/<name>.",
           },
           offset: {
-            type: 'integer',
+            type: "integer",
             minimum: 1,
             description:
-              '1-based line number to start reading from. When paging through a file, prefer broad windows such as 1, 201, 401 instead of tiny slices.',
+              "1-based line number to start reading from. When paging through a file, prefer broad windows such as 1, 201, 401 instead of tiny slices.",
           },
           limit: {
-            type: 'integer',
+            type: "integer",
             minimum: 1,
             description:
-              'Number of lines to read. Defaults to about 200 when omitted. For image files, line ranges may be ignored.',
+              "Number of lines to read. Defaults to about 200 when omitted. For image files, line ranges may be ignored.",
           },
         },
-        required: ['path'],
+        required: ["path"],
         additionalProperties: false,
       },
     ),
     functionTool(
-      'glob',
-      'Match workspace file paths with a glob pattern such as src/**/*.ts or **/*.{json,md}. Returns matching relative file paths only. Respects .gitignore. Use grep to search file contents and ls for a single directory inventory.',
+      "glob",
+      "Match workspace file paths with a glob pattern such as src/**/*.ts or **/*.{json,md}. Returns matching relative file paths only. Respects .gitignore. Use grep to search file contents and ls for a single directory inventory.",
       {
-        type: 'object',
+        type: "object",
         properties: {
           pattern: {
-            type: 'string',
+            type: "string",
             description:
-              'Workspace-relative glob pattern used to match file paths. Examples: src/**/*.ts, **/*.{ts,tsx}, .github/**/*.md.',
+              "Workspace-relative glob pattern used to match file paths. Examples: src/**/*.ts, **/*.{ts,tsx}, .github/**/*.md.",
           },
         },
-        required: ['pattern'],
+        required: ["pattern"],
         additionalProperties: false,
       },
     ),
     functionTool(
-      'grep',
-      'Search text within workspace file contents. Respects .gitignore. By default query is matched as case-insensitive literal text; set is_regexp to true for a regular expression. Optionally pass glob to limit which files are searched. Use the glob tool to list paths only and ls for a single directory inventory.',
+      "grep",
+      "Search text within workspace file contents. Respects .gitignore. By default query is matched as case-insensitive literal text; set is_regexp to true for a regular expression. Optionally pass glob to limit which files are searched. Use the glob tool to list paths only and ls for a single directory inventory.",
       {
-        type: 'object',
+        type: "object",
         properties: {
           query: {
-            type: 'string',
+            type: "string",
             description:
-              'Literal text to search for, or a regular expression pattern when is_regexp is true.',
+              "Literal text to search for, or a regular expression pattern when is_regexp is true.",
           },
           is_regexp: {
-            type: 'boolean',
+            type: "boolean",
             description:
-              'When true, treat query as a regular expression. Regex searches are case-insensitive by default.',
+              "When true, treat query as a regular expression. Regex searches are case-insensitive by default.",
           },
           glob: {
-            type: 'string',
+            type: "string",
             description:
-              'Optional workspace-relative glob that limits searched file paths, e.g. packages/**/*.ts or src/**/*.{ts,tsx}.',
+              "Optional workspace-relative glob that limits searched file paths, e.g. packages/**/*.ts or src/**/*.{ts,tsx}.",
           },
         },
-        required: ['query'],
+        required: ["query"],
         additionalProperties: false,
       },
     ),
     functionTool(
-      'subagent',
-      'Delegate a scoped task to a child agent session. Use this when the task can be isolated from the main conversation and you want the child agent to return only its final result.',
+      "subagent",
+      "Delegate a scoped task to a child agent session. Use this when the task can be isolated from the main conversation and you want the child agent to return only its final result.",
       {
-        type: 'object',
+        type: "object",
         properties: {
-          task: { type: 'string' },
-          success_criteria: { type: 'string' },
-          context_summary: { type: 'string' },
+          task: { type: "string" },
+          success_criteria: { type: "string" },
+          context_summary: { type: "string" },
           files_to_inspect: {
-            type: 'array',
-            items: { type: 'string' },
+            type: "array",
+            items: { type: "string" },
           },
-          expected_output: { type: 'string' },
+          expected_output: { type: "string" },
           worktree: {
-            type: 'boolean',
+            type: "boolean",
             description:
-              'When true, run the subagent in an isolated git worktree so parallel subagents can edit files without conflicting. Use when the subagent will modify workspace files and other subagents may edit at the same time; omit for read-only tasks.',
+              "When true, run the subagent in an isolated git worktree so parallel subagents can edit files without conflicting. Use when the subagent will modify workspace files and other subagents may edit at the same time; omit for read-only tasks.",
           },
         },
-        required: ['task'],
+        required: ["task"],
         additionalProperties: false,
       },
     ),
     functionTool(
-      'generate_image',
-      'Generate one image with the configured image generation model. Use this only when the user explicitly wants an image. First gather enough context and rewrite the final image prompt yourself, then call this tool. After it completes, you may continue with a normal assistant message when that helps the user.',
+      "generate_image",
+      "Generate one image with the configured image generation model. Use this only when the user explicitly wants an image. First gather enough context and rewrite the final image prompt yourself, then call this tool. After it completes, you may continue with a normal assistant message when that helps the user.",
       {
-        type: 'object',
+        type: "object",
         properties: {
           prompt: {
-            type: 'string',
+            type: "string",
             description:
-              'Detailed final prompt for the image generation model. Include subject, composition, style, lighting, colors, constraints, and any user-requested details.',
+              "Detailed final prompt for the image generation model. Include subject, composition, style, lighting, colors, constraints, and any user-requested details.",
           },
           size: {
-            type: 'string',
-            pattern: '^[1-9][0-9]{1,4}x[1-9][0-9]{1,4}$',
-            description:
-              `Optional pixel size in WIDTHxHEIGHT format, such as 1024x1024 or 1536x1024. If omitted, default to ${DEFAULT_IMAGE_GENERATION_SIZE} so the image matches the square card unless the user asked otherwise.`,
+            type: "string",
+            pattern: "^[1-9][0-9]{1,4}x[1-9][0-9]{1,4}$",
+            description: `Optional pixel size in WIDTHxHEIGHT format, such as 1024x1024 or 1536x1024. If omitted, default to ${DEFAULT_IMAGE_GENERATION_SIZE} so the image matches the square card unless the user asked otherwise.`,
           },
         },
-        required: ['prompt'],
+        required: ["prompt"],
         additionalProperties: false,
       },
     ),
     functionTool(
-      'generate_video',
-      'Generate one video with the configured video generation model. Use this only when the user explicitly wants a video. First gather enough context and rewrite the final video prompt yourself, then call this tool. After it completes, you may continue with a normal assistant message when that helps the user.',
+      "generate_video",
+      "Generate one video with the configured video generation model. Use this only when the user explicitly wants a video. First gather enough context and rewrite the final video prompt yourself, then call this tool. After it completes, you may continue with a normal assistant message when that helps the user.",
       {
-        type: 'object',
+        type: "object",
         properties: {
           prompt: {
-            type: 'string',
+            type: "string",
             description:
-              'Detailed final prompt for the video generation model. Include subject, motion, camera, style, lighting, duration intent, and any user-requested details.',
+              "Detailed final prompt for the video generation model. Include subject, motion, camera, style, lighting, duration intent, and any user-requested details.",
           },
           duration: {
-            type: 'integer',
+            type: "integer",
             minimum: 4,
             maximum: 15,
-            description:
-              `Optional clip duration in seconds. If omitted, default to ${DEFAULT_VIDEO_GENERATION_DURATION}.`,
+            description: `Optional clip duration in seconds. If omitted, default to ${DEFAULT_VIDEO_GENERATION_DURATION}.`,
           },
           aspect_ratio: {
-            type: 'string',
-            description: 'Optional aspect ratio such as 16:9, 9:16, or 1:1.',
+            type: "string",
+            description: "Optional aspect ratio such as 16:9, 9:16, or 1:1.",
           },
           resolution: {
-            type: 'string',
-            description: 'Optional output resolution such as 720p or 1080p.',
+            type: "string",
+            description: "Optional output resolution such as 720p or 1080p.",
           },
         },
-        required: ['prompt'],
+        required: ["prompt"],
         additionalProperties: false,
       },
     ),
     functionTool(
-      'ask_questions',
-      'Ask structured follow-up questions when a user decision is required to continue. The host always shows a custom text field per question.',
+      "ask_questions",
+      "Ask structured follow-up questions when a user decision is required to continue. The host always shows a custom text field per question.",
       {
-        type: 'object',
+        type: "object",
         properties: {
           title: {
-            type: 'string',
-            description: 'Optional short title for the questionnaire panel.',
+            type: "string",
+            description: "Optional short title for the questionnaire panel.",
           },
           questions: {
-            type: 'array',
-            description: 'Ordered list of questions to ask.',
+            type: "array",
+            description: "Ordered list of questions to ask.",
             items: {
-              type: 'object',
+              type: "object",
               properties: {
                 id: {
-                  type: 'string',
-                  description: 'Stable machine-readable question id used in the returned JSON.',
+                  type: "string",
+                  description: "Stable machine-readable question id used in the returned JSON.",
                 },
                 title: {
-                  type: 'string',
-                  description: 'Question title shown to the user.',
+                  type: "string",
+                  description: "Question title shown to the user.",
                 },
                 allowMultiple: {
-                  type: 'boolean',
+                  type: "boolean",
                   description:
-                    'When true, the user may select multiple preset options. Defaults to false.',
+                    "When true, the user may select multiple preset options. Defaults to false.",
                 },
                 options: {
-                  type: 'array',
+                  type: "array",
                   description:
-                    'Preset options for this question. Omit or use an empty array for a custom-text-only question.',
+                    "Preset options for this question. Omit or use an empty array for a custom-text-only question.",
                   items: {
-                    type: 'object',
+                    type: "object",
                     properties: {
                       id: {
-                        type: 'string',
-                        description: 'Stable machine-readable option id used in the returned JSON.',
+                        type: "string",
+                        description: "Stable machine-readable option id used in the returned JSON.",
                       },
                       label: {
-                        type: 'string',
-                        description: 'Visible option label.',
+                        type: "string",
+                        description: "Visible option label.",
                       },
                       summary: {
-                        type: 'string',
-                        description:
-                          'Optional short gray summary shown under the option label.',
+                        type: "string",
+                        description: "Optional short gray summary shown under the option label.",
                       },
                     },
-                    required: ['id', 'label'],
+                    required: ["id", "label"],
                     additionalProperties: false,
                   },
                 },
               },
-              required: ['id', 'title'],
+              required: ["id", "title"],
               additionalProperties: false,
             },
           },
         },
-        required: ['questions'],
+        required: ["questions"],
         additionalProperties: false,
       },
     ),
     functionTool(
-      'create_file',
-      'Create a new file inside the workspace or under Spirit-managed user rule/plan/skills paths. Fails if the file already exists.',
+      "create_file",
+      "Create a new file inside the workspace or under Spirit-managed user rule/plan/skills paths. Fails if the file already exists.",
       {
-        type: 'object',
+        type: "object",
         properties: {
-          path: { type: 'string' },
-          content: { type: 'string' },
+          path: { type: "string" },
+          content: { type: "string" },
         },
-        required: ['path', 'content'],
+        required: ["path", "content"],
         additionalProperties: false,
       },
     ),
     functionTool(
-      'edit_file',
-      'Edit an existing file inside the workspace or under Spirit-managed user rule/plan/skills paths by replacing one exact old_text snippet with new_text. This prevents accidental full-file overwrite.',
+      "edit_file",
+      "Edit an existing file inside the workspace or under Spirit-managed user rule/plan/skills paths by replacing one exact old_text snippet with new_text. This prevents accidental full-file overwrite.",
       {
-        type: 'object',
+        type: "object",
         properties: {
-          path: { type: 'string' },
-          old_text: { type: 'string' },
-          new_text: { type: 'string' },
+          path: { type: "string" },
+          old_text: { type: "string" },
+          new_text: { type: "string" },
         },
-        required: ['path', 'old_text', 'new_text'],
+        required: ["path", "old_text", "new_text"],
         additionalProperties: false,
       },
     ),
     functionTool(
-      'delete_file',
-      'Delete an existing file inside the workspace or under Spirit-managed user rule/plan/skills paths.',
+      "delete_file",
+      "Delete an existing file inside the workspace or under Spirit-managed user rule/plan/skills paths.",
       {
-        type: 'object',
+        type: "object",
         properties: {
-          path: { type: 'string' },
+          path: { type: "string" },
         },
-        required: ['path'],
+        required: ["path"],
         additionalProperties: false,
       },
     ),
@@ -441,7 +441,11 @@ export function filterContributedToolDefinitionsForAgentMode(
   agentMode: SpiritAgentMode,
 ): ContributedHostToolDefinition[] {
   return definitions.filter((definition) => {
-    if (definition.agentModeExposure === 'agent' && agentMode !== 'agent' && agentMode !== 'debug') {
+    if (
+      definition.agentModeExposure === "agent" &&
+      agentMode !== "agent" &&
+      agentMode !== "debug"
+    ) {
       return false;
     }
     if (isAskAgentMode(agentMode) && definition.excludeFromAskMode === true) {
@@ -479,116 +483,118 @@ export function buildContributedHostToolDefinitions(
 export function buildDreamHostToolDefinitions(): JsonValue[] {
   return [
     functionTool(
-      'dream_list',
-      'List all non-expired dream summaries in the current collector scope. The host scope is fixed to the collector workspace and Git branch; do not ask for broader memory. Use this before recording a new dream so you can update or delete stale dreams instead of duplicating them.',
+      "dream_list",
+      "List all non-expired dream summaries in the current collector scope. The host scope is fixed to the collector workspace and Git branch; do not ask for broader memory. Use this before recording a new dream so you can update or delete stale dreams instead of duplicating them.",
       {
-        type: 'object',
+        type: "object",
         properties: {
           include_deleted: {
-            type: 'boolean',
-            description: 'Whether to include dreams previously marked as deleted. Defaults to false.',
+            type: "boolean",
+            description:
+              "Whether to include dreams previously marked as deleted. Defaults to false.",
           },
           include_expired: {
-            type: 'boolean',
-            description: 'Whether to include expired dreams. Defaults to false.',
+            type: "boolean",
+            description: "Whether to include expired dreams. Defaults to false.",
           },
         },
         additionalProperties: false,
       },
     ),
     functionTool(
-      'dream_read',
-      'Read one dream summary by id within the current collector scope. Use this when the list result indicates an existing dream may need to be updated or deleted.',
+      "dream_read",
+      "Read one dream summary by id within the current collector scope. Use this when the list result indicates an existing dream may need to be updated or deleted.",
       {
-        type: 'object',
+        type: "object",
         properties: {
           id: {
-            type: 'string',
-            description: 'Dream id returned by dream_list.',
+            type: "string",
+            description: "Dream id returned by dream_list.",
           },
         },
-        required: ['id'],
+        required: ["id"],
         additionalProperties: false,
       },
     ),
     functionTool(
-      'dream_record',
-      'Record a new dream summary for the current collector scope. Only use this when existing dreams do not already cover the source session movement.',
+      "dream_record",
+      "Record a new dream summary for the current collector scope. Only use this when existing dreams do not already cover the source session movement.",
       {
-        type: 'object',
+        type: "object",
         properties: {
           title: {
-            type: 'string',
-            description: 'Short human-readable title for the recent work movement.',
+            type: "string",
+            description: "Short human-readable title for the recent work movement.",
           },
           summary: {
-            type: 'string',
-            description: 'Concise summary of what changed and why it matters.',
+            type: "string",
+            description: "Concise summary of what changed and why it matters.",
           },
           details: {
-            type: 'string',
-            description: 'Optional supporting detail, decisions, constraints, or unresolved follow-ups.',
+            type: "string",
+            description:
+              "Optional supporting detail, decisions, constraints, or unresolved follow-ups.",
           },
           tags: {
-            type: 'array',
-            items: { type: 'string' },
+            type: "array",
+            items: { type: "string" },
             description:
-              'Optional high-signal tags only. Prefer 1-2 word lowercase tags such as desktop, git, commit. Keep the list short and do not enumerate every subtopic.',
+              "Optional high-signal tags only. Prefer 1-2 word lowercase tags such as desktop, git, commit. Keep the list short and do not enumerate every subtopic.",
           },
         },
-        required: ['title', 'summary'],
+        required: ["title", "summary"],
         additionalProperties: false,
       },
     ),
     functionTool(
-      'dream_update',
-      'Update an existing dream summary in the current collector scope. Prefer updating a related dream over creating a duplicate when a source session continues the same work movement.',
+      "dream_update",
+      "Update an existing dream summary in the current collector scope. Prefer updating a related dream over creating a duplicate when a source session continues the same work movement.",
       {
-        type: 'object',
+        type: "object",
         properties: {
           id: {
-            type: 'string',
-            description: 'Dream id returned by dream_list.',
+            type: "string",
+            description: "Dream id returned by dream_list.",
           },
           title: {
-            type: 'string',
-            description: 'Replacement title, if the existing title is no longer accurate.',
+            type: "string",
+            description: "Replacement title, if the existing title is no longer accurate.",
           },
           summary: {
-            type: 'string',
-            description: 'Replacement concise summary.',
+            type: "string",
+            description: "Replacement concise summary.",
           },
           details: {
-            type: 'string',
-            description: 'Replacement supporting detail. Omit to keep existing details.',
+            type: "string",
+            description: "Replacement supporting detail. Omit to keep existing details.",
           },
           tags: {
-            type: 'array',
-            items: { type: 'string' },
+            type: "array",
+            items: { type: "string" },
             description:
-              'Replacement high-signal tags only. Prefer a short list of 1-2 word lowercase tags. Omit to keep existing tags.',
+              "Replacement high-signal tags only. Prefer a short list of 1-2 word lowercase tags. Omit to keep existing tags.",
           },
         },
-        required: ['id'],
+        required: ["id"],
         additionalProperties: false,
       },
     ),
     functionTool(
-      'dream_delete',
-      'Mark an existing dream as deleted within the current collector scope. Use this only when the dream is stale, misleading, or superseded by another dream. Normal expiry is handled by the host.',
+      "dream_delete",
+      "Mark an existing dream as deleted within the current collector scope. Use this only when the dream is stale, misleading, or superseded by another dream. Normal expiry is handled by the host.",
       {
-        type: 'object',
+        type: "object",
         properties: {
           id: {
-            type: 'string',
-            description: 'Dream id returned by dream_list.',
+            type: "string",
+            description: "Dream id returned by dream_list.",
           },
           reason: {
-            type: 'string',
-            description: 'Short reason for deleting the dream.',
+            type: "string",
+            description: "Short reason for deleting the dream.",
           },
         },
-        required: ['id', 'reason'],
+        required: ["id", "reason"],
         additionalProperties: false,
       },
     ),
@@ -598,35 +604,37 @@ export function buildDreamHostToolDefinitions(): JsonValue[] {
 export function buildDreamReadHostToolDefinitions(): JsonValue[] {
   return [
     functionTool(
-      'dream_list',
-      'List short-lived dream summaries for the current workspace and Git branch. Use this when the dream catalog in the system message suggests relevant prior work, or when you want the freshest list of dream ids before reading one in detail.',
+      "dream_list",
+      "List short-lived dream summaries for the current workspace and Git branch. Use this when the dream catalog in the system message suggests relevant prior work, or when you want the freshest list of dream ids before reading one in detail.",
       {
-        type: 'object',
+        type: "object",
         properties: {
           include_deleted: {
-            type: 'boolean',
-            description: 'Whether to include dreams previously marked as deleted. Defaults to false.',
+            type: "boolean",
+            description:
+              "Whether to include dreams previously marked as deleted. Defaults to false.",
           },
           include_expired: {
-            type: 'boolean',
-            description: 'Whether to include expired dreams. Defaults to false.',
+            type: "boolean",
+            description: "Whether to include expired dreams. Defaults to false.",
           },
         },
         additionalProperties: false,
       },
     ),
     functionTool(
-      'dream_read',
-      'Read one dream by id for the current workspace and Git branch. Use this after dream_list or after the dream catalog in the system message highlights a potentially relevant dream id.',
+      "dream_read",
+      "Read one dream by id for the current workspace and Git branch. Use this after dream_list or after the dream catalog in the system message highlights a potentially relevant dream id.",
       {
-        type: 'object',
+        type: "object",
         properties: {
           id: {
-            type: 'string',
-            description: 'Dream id returned by dream_list or shown in the system message dream catalog.',
+            type: "string",
+            description:
+              "Dream id returned by dream_list or shown in the system message dream catalog.",
           },
         },
-        required: ['id'],
+        required: ["id"],
         additionalProperties: false,
       },
     ),
@@ -635,56 +643,56 @@ export function buildDreamReadHostToolDefinitions(): JsonValue[] {
 
 export function buildTodoHostToolDefinitions(): JsonValue[] {
   const todoItemSchema: JsonObject = {
-    type: 'object',
+    type: "object",
     properties: {
       id: {
-        type: 'string',
+        type: "string",
         description:
-          'Stable todo identifier. Reuse ids from todo_list when updating items; omit for new items to let the host assign one.',
+          "Stable todo identifier. Reuse ids from todo_list when updating items; omit for new items to let the host assign one.",
       },
       title: {
-        type: 'string',
-        description: 'Human-readable todo title.',
+        type: "string",
+        description: "Human-readable todo title.",
       },
       status: {
-        type: 'string',
-        enum: ['pending', 'in_progress', 'completed'],
+        type: "string",
+        enum: ["pending", "in_progress", "completed"],
         description:
           'Todo status: "pending" (not started), "in_progress" (actively working), or "completed" (done).',
       },
     },
-    required: ['title', 'status'],
+    required: ["title", "status"],
     additionalProperties: false,
   };
 
   return [
     functionTool(
-      'todo_list',
-      'List todos for the current chat session. Returns the same shape as todo_write accepts.',
+      "todo_list",
+      "List todos for the current chat session. Returns the same shape as todo_write accepts.",
       {
-        type: 'object',
+        type: "object",
         properties: {
           include_completed: {
-            type: 'boolean',
-            description: 'Whether to include completed todos. Defaults to true.',
+            type: "boolean",
+            description: "Whether to include completed todos. Defaults to true.",
           },
         },
         additionalProperties: false,
       },
     ),
     functionTool(
-      'todo_write',
-      'Replace the full session todo list. Pass the entire list each time (same shape as todo_list returns). Use an empty list to clear todos. Call this tool frequently as you work through tasks to keep your progress tracked and visible to the user.',
+      "todo_write",
+      "Replace the full session todo list. Pass the entire list each time (same shape as todo_list returns). Use an empty list to clear todos. Call this tool frequently as you work through tasks to keep your progress tracked and visible to the user.",
       {
-        type: 'object',
+        type: "object",
         properties: {
           todos: {
-            type: 'array',
+            type: "array",
             items: todoItemSchema,
-            description: 'Full session todo list to store.',
+            description: "Full session todo list to store.",
           },
         },
-        required: ['todos'],
+        required: ["todos"],
         additionalProperties: false,
       },
     ),
@@ -694,23 +702,23 @@ export function buildTodoHostToolDefinitions(): JsonValue[] {
 export function buildPlanModeHostToolDefinitions(): JsonValue[] {
   return [
     functionTool(
-      'create_plan',
-      'Create a named implementation plan stored as plans/{name}.md for a later Agent turn to execute.',
+      "create_plan",
+      "Create a named implementation plan stored as plans/{name}.md for a later Agent turn to execute.",
       {
-        type: 'object',
+        type: "object",
         properties: {
           name: {
-            type: 'string',
+            type: "string",
             description:
-              'Short plan slug used as the file stem only: letters, digits, hyphens, underscores. No directories, no .md suffix, no spaces (example: desktop-plans-dir).',
+              "Short plan slug used as the file stem only: letters, digits, hyphens, underscores. No directories, no .md suffix, no spaces (example: desktop-plans-dir).",
           },
           content: {
-            type: 'string',
+            type: "string",
             description:
               'Full markdown body of the implementation plan—the document a coding agent will follow in a later turn.\n\nUnless the user explicitly asks for another shape (one-pager, ADR-only, research notes), write an execution-ready plan, not a roadmap deck:\n\n- Start with a "# Title" and one short paragraph: goal, non-goals, and what "done" means.\n- Split work into ordered phases: "## Phase 1: <short title>", "## Phase 2: ...", and so on.\n- Under each phase use markdown task checkboxes only for actionable work: "- [ ] <imperative task>". Each task should be specific enough to implement or verify in one sitting; name files, modules, or APIs when known from the repo.\n- End each phase with a "**Verify**" bullet list: commands, tests, or observable checks that prove the phase is complete.\n- Phase 1 must state workspace assumptions that affect implementation (e.g. target git branch name, feature flags, or "no schema migrations") when relevant; do not invent repo facts—read the codebase first when unsure.\n- Prefer depth on the current user request over generic process filler; skip empty checklist boilerplate.\n\nAfter creation, revise this plan with edit_file on the same path (old_text/new_text), not another create_plan call.',
           },
         },
-        required: ['name', 'content'],
+        required: ["name", "content"],
         additionalProperties: false,
       },
     ),
@@ -721,17 +729,17 @@ export function buildDreamCollectorSystemMessage(): string {
   return wrapLlmContextBlock(
     LLM_CONTEXT_TAGS.dream_collector,
     [
-      'You are the dream collector for Spirit Agent.',
-      'Dreams are short-lived summaries of recent work movement, not permanent memory.',
-      'The host has already scoped this collection run to one workspace and one Git branch.',
-      'First call dream_list to inspect existing dreams in this scope.',
-      'Then decide whether the source session should create a new dream, update an existing dream, delete a stale dream, or leave dreams unchanged.',
-      'Prefer updating an existing related dream over creating duplicates.',
-      'When the host marks the source session context as incremental, focus on the newly added movement and merge it into existing dreams instead of restating older context.',
-      'Record why the work matters, user intent, important decisions, constraints, and unresolved follow-ups.',
-      'Do not summarize every message mechanically. Preserve signal that helps future host consumers understand the current work direction.',
-      'Do not perform production work. Only read the provided context and maintain dreams through the dream tools.',
-    ].join('\n'),
+      "You are the dream collector for Spirit Agent.",
+      "Dreams are short-lived summaries of recent work movement, not permanent memory.",
+      "The host has already scoped this collection run to one workspace and one Git branch.",
+      "First call dream_list to inspect existing dreams in this scope.",
+      "Then decide whether the source session should create a new dream, update an existing dream, delete a stale dream, or leave dreams unchanged.",
+      "Prefer updating an existing related dream over creating duplicates.",
+      "When the host marks the source session context as incremental, focus on the newly added movement and merge it into existing dreams instead of restating older context.",
+      "Record why the work matters, user intent, important decisions, constraints, and unresolved follow-ups.",
+      "Do not summarize every message mechanically. Preserve signal that helps future host consumers understand the current work direction.",
+      "Do not perform production work. Only read the provided context and maintain dreams through the dream tools.",
+    ].join("\n"),
   );
 }
 
@@ -741,7 +749,7 @@ function buildShellToolDescription(shellDisplayName: string): string {
 
 function functionTool(name: string, description: string, parameters: JsonObject): JsonValue {
   return {
-    type: 'function',
+    type: "function",
     function: {
       name,
       description,

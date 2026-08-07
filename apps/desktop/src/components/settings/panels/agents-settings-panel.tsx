@@ -19,7 +19,11 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { cn } from "@/lib/utils";
 import type { DesktopLspProviderSnapshot, DesktopSnapshot } from "@/types";
 import { isDesktopInstallableProvider } from "@/lib/lsp-provider-install";
-import {DESKTOP_LIST_ITEM_PRIMARY_CLASS, DESKTOP_SETTINGS_LABEL_CLASS, DESKTOP_PAGE_TITLE_CLASS } from "@/lib/desktop-typography";
+import {
+  DESKTOP_LIST_ITEM_PRIMARY_CLASS,
+  DESKTOP_SETTINGS_LABEL_CLASS,
+  DESKTOP_PAGE_TITLE_CLASS,
+} from "@/lib/desktop-typography";
 
 /** Agents 面板专用行布局（grid）；与 appearance 等面板的 flex SettingsRow 不同。 */
 export function AgentsSettingsRow({
@@ -46,10 +50,7 @@ export function AgentsSettingsRow({
   );
 }
 
-function providerStatusBadge(
-  provider: DesktopLspProviderSnapshot,
-  t: (key: string) => string,
-) {
+function providerStatusBadge(provider: DesktopLspProviderSnapshot, t: (key: string) => string) {
   if (provider.status === "ready") {
     return <Badge variant="outline">{t("settings.lspStatusReady")}</Badge>;
   }
@@ -114,12 +115,17 @@ export function AgentsSettingsPanel({
                 </div>
                 <p className="text-xs text-muted-foreground">{provider.languages.join(" · ")}</p>
                 {provider.command ? (
-                  <p className="truncate font-mono text-[11px] text-muted-foreground/80" title={provider.command}>
+                  <p
+                    className="truncate font-mono text-[11px] text-muted-foreground/80"
+                    title={provider.command}
+                  >
                     {provider.command}
                   </p>
                 ) : null}
               </div>
-              {provider.status === "not_found" && settings.lspEnabled && isDesktopInstallableProvider(provider) ? (
+              {provider.status === "not_found" &&
+              settings.lspEnabled &&
+              isDesktopInstallableProvider(provider) ? (
                 <Button
                   type="button"
                   variant="outline"
@@ -200,29 +206,29 @@ export function AgentsSettingsPanel({
           </DialogHeader>
           <DialogFooter>
             <DialogFooterActions>
-            <Button
-              type="button"
-              variant="outline"
-              size="sm"
-              onClick={() => setInstallTarget(null)}
-              disabled={lspInstallBusy}
-            >
-              {t("common.cancel")}
-            </Button>
-            <Button
-              type="button"
-              size="sm"
-              disabled={lspInstallBusy || !installTarget}
-              onClick={() => {
-                if (!installTarget) {
-                  return;
-                }
-                void onInstallLspProvider(installTarget.id).finally(() => setInstallTarget(null));
-              }}
-            >
-              {lspInstallBusy ? <LoaderCircle className="size-4 animate-spin" /> : null}
-              {t("settings.lspInstallConfirmAction")}
-            </Button>
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={() => setInstallTarget(null)}
+                disabled={lspInstallBusy}
+              >
+                {t("common.cancel")}
+              </Button>
+              <Button
+                type="button"
+                size="sm"
+                disabled={lspInstallBusy || !installTarget}
+                onClick={() => {
+                  if (!installTarget) {
+                    return;
+                  }
+                  void onInstallLspProvider(installTarget.id).finally(() => setInstallTarget(null));
+                }}
+              >
+                {lspInstallBusy ? <LoaderCircle className="size-4 animate-spin" /> : null}
+                {t("settings.lspInstallConfirmAction")}
+              </Button>
             </DialogFooterActions>
           </DialogFooter>
         </DialogContent>

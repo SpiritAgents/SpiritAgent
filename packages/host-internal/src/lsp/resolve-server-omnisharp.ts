@@ -1,8 +1,8 @@
-import { access } from 'node:fs/promises';
-import { constants } from 'node:fs';
-import path from 'node:path';
+import { access } from "node:fs/promises";
+import { constants } from "node:fs";
+import path from "node:path";
 
-import { resolveCommandOnPath, type ResolvedLanguageServerCommand } from './resolve-server.js';
+import { resolveCommandOnPath, type ResolvedLanguageServerCommand } from "./resolve-server.js";
 
 async function fileExists(filePath: string): Promise<boolean> {
   try {
@@ -14,24 +14,24 @@ async function fileExists(filePath: string): Promise<boolean> {
 }
 
 function omnisharpDllCandidates(env: NodeJS.ProcessEnv): string[] {
-  const home = env.HOME ?? env.USERPROFILE ?? '';
+  const home = env.HOME ?? env.USERPROFILE ?? "";
   return [
     env.OMNISHARP_PATH,
-    path.join(home, '.omnisharp', 'OmniSharp.dll'),
-    path.join(home, '.cache', 'omnisharp', 'OmniSharp.dll'),
-  ].filter((value): value is string => typeof value === 'string' && value.trim().length > 0);
+    path.join(home, ".omnisharp", "OmniSharp.dll"),
+    path.join(home, ".cache", "omnisharp", "OmniSharp.dll"),
+  ].filter((value): value is string => typeof value === "string" && value.trim().length > 0);
 }
 
 export async function resolveOmnisharpOnPath(
   env: NodeJS.ProcessEnv = process.env,
   platform: NodeJS.Platform = process.platform,
 ): Promise<ResolvedLanguageServerCommand | undefined> {
-  const onPath = await resolveCommandOnPath('OmniSharp', env, platform, ['--languageserver']);
+  const onPath = await resolveCommandOnPath("OmniSharp", env, platform, ["--languageserver"]);
   if (onPath) {
     return onPath;
   }
 
-  const dotnet = await resolveCommandOnPath('dotnet', env, platform, []);
+  const dotnet = await resolveCommandOnPath("dotnet", env, platform, []);
   if (!dotnet) {
     return undefined;
   }
@@ -40,7 +40,7 @@ export async function resolveOmnisharpOnPath(
     if (await fileExists(candidate)) {
       return {
         command: dotnet.command,
-        args: [candidate, '--languageserver'],
+        args: [candidate, "--languageserver"],
       };
     }
   }

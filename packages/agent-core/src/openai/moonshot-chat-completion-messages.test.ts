@@ -1,38 +1,35 @@
-import assert from 'node:assert/strict';
-import test from 'node:test';
+import assert from "node:assert/strict";
+import test from "node:test";
 
 import {
   clearMoonshotChatCompletionMessages,
   openAiMessagesContainVideoUrl,
   peekMoonshotChatCompletionMessages,
   stashMoonshotChatCompletionMessages,
-} from './moonshot-chat-completion-messages.js';
+} from "./moonshot-chat-completion-messages.js";
 
-test('openAiMessagesContainVideoUrl detects video_url user parts', () => {
+test("openAiMessagesContainVideoUrl detects video_url user parts", () => {
   assert.equal(
     openAiMessagesContainVideoUrl([
       {
-        role: 'user',
+        role: "user",
         content: [
-          { type: 'text', text: 'describe' },
-          { type: 'video_url', video_url: { url: 'ms://file-abc' } },
+          { type: "text", text: "describe" },
+          { type: "video_url", video_url: { url: "ms://file-abc" } },
         ],
       },
     ]),
     true,
   );
-  assert.equal(
-    openAiMessagesContainVideoUrl([{ role: 'user', content: 'plain text' }]),
-    false,
-  );
+  assert.equal(openAiMessagesContainVideoUrl([{ role: "user", content: "plain text" }]), false);
 });
 
-test('stash and peek preserve OpenAI-shaped messages for fetch restoration', () => {
+test("stash and peek preserve OpenAI-shaped messages for fetch restoration", () => {
   clearMoonshotChatCompletionMessages();
   const messages = [
     {
-      role: 'user',
-      content: [{ type: 'video_url', video_url: { url: 'ms://file-abc' } }],
+      role: "user",
+      content: [{ type: "video_url", video_url: { url: "ms://file-abc" } }],
     },
   ];
 

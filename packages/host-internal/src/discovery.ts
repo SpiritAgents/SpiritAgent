@@ -1,15 +1,15 @@
-import { existsSync } from 'node:fs';
+import { existsSync } from "node:fs";
 
-import { normalizeSpiritAgentMode, type SpiritAgentMode } from '@spiritagent/agent-core';
-import { readdir, readFile } from 'node:fs/promises';
-import path from 'node:path';
+import { normalizeSpiritAgentMode, type SpiritAgentMode } from "@spiritagent/agent-core";
+import { readdir, readFile } from "node:fs/promises";
+import path from "node:path";
 
 import {
   parseSkillFrontmatterFields,
   SKILL_FILE_NAME,
   SKILLS_DIR_NAME,
   splitSkillFrontmatter,
-} from './skill-paths.js';
+} from "./skill-paths.js";
 import {
   AGENTS_DIR_NAME,
   SPIRIT_DIR_NAME,
@@ -21,7 +21,7 @@ import {
   stablePathId,
   type HostToggleState,
   type InstructionDiscoveryContext,
-} from './storage.js';
+} from "./storage.js";
 
 const RULE_PREVIEW_MAX_LINES = 8;
 const RULE_PREVIEW_MAX_CHARS = 1_200;
@@ -29,9 +29,9 @@ const SKILL_PREVIEW_MAX_LINES = 8;
 const SKILL_PREVIEW_MAX_CHARS = 1_200;
 const SKILL_NAME_MAX_CHARS = 64;
 
-export type HostRuleScope = 'workspace' | 'user';
-export type HostSkillScope = 'workspace' | 'user';
-export type HostSkillRootKind = 'workspaceSpirit' | 'workspaceAgents' | 'user';
+export type HostRuleScope = "workspace" | "user";
+export type HostSkillScope = "workspace" | "user";
+export type HostSkillRootKind = "workspaceSpirit" | "workspaceAgents" | "user";
 
 export type HostRuleRootKind = HostSkillRootKind;
 
@@ -166,9 +166,7 @@ export async function loadHostInstructionMetadata(
     skills,
     planMetadata: planMetadataSnapshot(context, normalizeSpiritAgentMode(options), {
       useApplyPatchFileTools: options.useApplyPatchFileTools === true,
-      ...(options.activePlanPath?.trim()
-        ? { activePlanPath: options.activePlanPath.trim() }
-        : {}),
+      ...(options.activePlanPath?.trim() ? { activePlanPath: options.activePlanPath.trim() } : {}),
     }),
   };
 }
@@ -188,23 +186,23 @@ export async function discoverRuleEntries(
     ? [
         buildRuleSource(
           paths.workspaceSpiritRuleFile,
-          'workspace',
-          'workspaceSpirit',
-          '工作区 Spirit 规则',
-          WORKSPACE_SPIRIT_RULE_FILE_NAME.replace(/\\/gu, '/'),
+          "workspace",
+          "workspaceSpirit",
+          "工作区 Spirit 规则",
+          WORKSPACE_SPIRIT_RULE_FILE_NAME.replace(/\\/gu, "/"),
         ),
         buildRuleSource(
           paths.workspaceAgentsRuleFile,
-          'workspace',
-          'workspaceAgents',
-          '工作区 AGENTS 规则',
+          "workspace",
+          "workspaceAgents",
+          "工作区 AGENTS 规则",
           WORKSPACE_RULE_FILE_NAME,
         ),
       ]
     : [];
   const sources = await Promise.all([
     ...workspaceSources,
-    buildRuleSource(paths.userRuleFile, 'user', 'user', '用户规则', USER_RULE_FILE_NAME),
+    buildRuleSource(paths.userRuleFile, "user", "user", "用户规则", USER_RULE_FILE_NAME),
   ]);
 
   return Promise.all(
@@ -217,7 +215,7 @@ export async function discoverRuleEntries(
         } satisfies HostRuleEntry;
       }
 
-      const content = await readFile(source.path, 'utf8');
+      const content = await readFile(source.path, "utf8");
       return {
         source,
         exists: true,
@@ -267,26 +265,32 @@ export async function discoverSkillEntries(
       ? [
           {
             rootPath: paths.workspaceSpiritSkillsDir,
-            scope: 'workspace' as const,
-            rootKind: 'workspaceSpirit' as const,
+            scope: "workspace" as const,
+            rootKind: "workspaceSpirit" as const,
           },
           {
             rootPath: paths.workspaceAgentsSkillsDir,
-            scope: 'workspace' as const,
-            rootKind: 'workspaceAgents' as const,
+            scope: "workspace" as const,
+            rootKind: "workspaceAgents" as const,
           },
         ]
       : []),
     {
       rootPath: paths.userSkillsDir,
-      scope: 'user' as const,
-      rootKind: 'user' as const,
+      scope: "user" as const,
+      rootKind: "user" as const,
     },
   ];
 
   const discovered = new Map<string, HostSkillEntry>();
   for (const root of roots) {
-    const entries = await discoverSkillsInRoot(root.rootPath, root.scope, root.rootKind, overrides, log);
+    const entries = await discoverSkillsInRoot(
+      root.rootPath,
+      root.scope,
+      root.rootKind,
+      overrides,
+      log,
+    );
     for (const entry of entries) {
       const existing = discovered.get(entry.source.name);
       if (existing) {
@@ -301,9 +305,11 @@ export async function discoverSkillEntries(
   }
 
   return [...discovered.values()].sort((left, right) => {
-    return scopeRank(left.source.scope) - scopeRank(right.source.scope)
-      || left.source.name.localeCompare(right.source.name)
-      || left.source.path.localeCompare(right.source.path);
+    return (
+      scopeRank(left.source.scope) - scopeRank(right.source.scope) ||
+      left.source.name.localeCompare(right.source.name) ||
+      left.source.path.localeCompare(right.source.path)
+    );
   });
 }
 
@@ -346,17 +352,13 @@ export function planMetadataSnapshot(
   options?: PlanMetadataSnapshotOptions,
 ): HostPlanMetadata {
   const agentMode =
-    typeof agentModeInput === 'boolean'
-      ? agentModeInput
-        ? 'plan'
-        : 'agent'
-      : agentModeInput;
-  const activePath = options?.activePlanPath?.trim() ?? '';
+    typeof agentModeInput === "boolean" ? (agentModeInput ? "plan" : "agent") : agentModeInput;
+  const activePath = options?.activePlanPath?.trim() ?? "";
   return {
     path: activePath,
     exists: activePath.length > 0 && existsSync(activePath),
     agentMode,
-    planMode: agentMode === 'plan',
+    planMode: agentMode === "plan",
   };
 }
 
@@ -366,7 +368,7 @@ export function buildStartImplementingUserTurn(
 ): string {
   const trimmed = activePlanPath?.trim();
   if (!trimmed) {
-    return '用户已确认方案并要求开始实现。本会话尚未记录可用的实施计划路径；请先使用 create_plan 创建计划后再开始实现。';
+    return "用户已确认方案并要求开始实现。本会话尚未记录可用的实施计划路径；请先使用 create_plan 创建计划后再开始实现。";
   }
   return `用户已确认方案并要求开始实现。开始实现前，先读取 Spirit 托管的计划文件 ${trimmed}，理解其中执行方案后再开始编码与验证。若该文件不存在、无法读取，或内容与当前需求明显不一致，先明确说明并请求用户重新生成或确认计划，不要假设计划内容。`;
 }
@@ -448,7 +450,7 @@ async function parseSkillDocument(
   filePath: string,
   log?: (message: string) => void,
 ): Promise<ParsedSkillDocument | undefined> {
-  const raw = await readFile(filePath, 'utf8');
+  const raw = await readFile(filePath, "utf8");
   const split = splitSkillFrontmatter(raw);
   if (!split) {
     log?.(`[skills] skipped missing frontmatter path=${filePath}`);
@@ -475,7 +477,9 @@ async function parseSkillDocument(
 
   const directoryName = path.basename(path.dirname(filePath));
   if (directoryName !== name) {
-    log?.(`[skills] name-directory mismatch path=${filePath} name=${name} directory=${directoryName}`);
+    log?.(
+      `[skills] name-directory mismatch path=${filePath} name=${name} directory=${directoryName}`,
+    );
   }
 
   return {
@@ -489,14 +493,14 @@ export function validateSkillName(name: string): string | undefined {
   if (!name || [...name].length > SKILL_NAME_MAX_CHARS) {
     return `skill-name 必须为 1-${SKILL_NAME_MAX_CHARS} 个字符`;
   }
-  if (name.startsWith('-') || name.endsWith('-')) {
-    return 'skill-name 不能以连字符开头或结尾';
+  if (name.startsWith("-") || name.endsWith("-")) {
+    return "skill-name 不能以连字符开头或结尾";
   }
-  if (name.includes('--')) {
-    return 'skill-name 不能包含连续连字符';
+  if (name.includes("--")) {
+    return "skill-name 不能包含连续连字符";
   }
   if (![...name].every((character) => /[a-z0-9-]/u.test(character))) {
-    return 'skill-name 仅允许小写字母、数字和连字符';
+    return "skill-name 仅允许小写字母、数字和连字符";
   }
 
   return undefined;
@@ -504,17 +508,17 @@ export function validateSkillName(name: string): string | undefined {
 
 function shortLabelForSkill(rootKind: HostSkillRootKind, skillName: string): string {
   switch (rootKind) {
-    case 'workspaceSpirit':
+    case "workspaceSpirit":
       return `${SPIRIT_DIR_NAME}/${SKILLS_DIR_NAME}/${skillName}/${SKILL_FILE_NAME}`;
-    case 'workspaceAgents':
+    case "workspaceAgents":
       return `${AGENTS_DIR_NAME}/${SKILLS_DIR_NAME}/${skillName}/${SKILL_FILE_NAME}`;
-    case 'user':
+    case "user":
       return `${SKILLS_DIR_NAME}/${skillName}/${SKILL_FILE_NAME}`;
   }
 }
 
 function scopeRank(scope: HostSkillScope): number {
-  return scope === 'workspace' ? 0 : 1;
+  return scope === "workspace" ? 0 : 1;
 }
 
 function buildPreview(content: string, maxLines: number, maxChars: number): HostRulePreview {
@@ -548,14 +552,14 @@ function buildPreview(content: string, maxLines: number, maxChars: number): Host
   }
 
   return {
-    excerpt: excerptLines.join('\n').trimEnd(),
+    excerpt: excerptLines.join("\n").trimEnd(),
     truncated,
   };
 }
 
 function truncateChars(text: string, count: number): string {
   if (count <= 0) {
-    return '';
+    return "";
   }
 
   const chars = [...text];
@@ -563,5 +567,5 @@ function truncateChars(text: string, count: number): string {
     return text;
   }
 
-  return `${chars.slice(0, count).join('')}…`;
+  return `${chars.slice(0, count).join("")}…`;
 }

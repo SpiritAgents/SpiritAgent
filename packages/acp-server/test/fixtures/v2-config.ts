@@ -1,4 +1,4 @@
-import type { ModelRef, ProviderGroupV2 } from '@spiritagent/host-internal';
+import type { ModelRef, ProviderGroupV2 } from "@spiritagent/host-internal";
 
 export function v2ConfigFixture(input: {
   groups: ProviderGroupV2[];
@@ -13,11 +13,11 @@ export function v2ConfigFixture(input: {
   };
 }
 
-export function openAiGroup(models: ProviderGroupV2['models']): ProviderGroupV2 {
+export function openAiGroup(models: ProviderGroupV2["models"]): ProviderGroupV2 {
   return {
-    id: 'openai',
-    provider: 'openai',
-    apiBase: 'https://api.openai.com/v1',
+    id: "openai",
+    provider: "openai",
+    apiBase: "https://api.openai.com/v1",
     models,
   };
 }

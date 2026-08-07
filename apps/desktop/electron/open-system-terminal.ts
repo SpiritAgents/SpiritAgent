@@ -1,15 +1,15 @@
-import { spawn } from 'node:child_process';
-import { existsSync } from 'node:fs';
-import path from 'node:path';
+import { spawn } from "node:child_process";
+import { existsSync } from "node:fs";
+import path from "node:path";
 
-import { shell } from 'electron';
+import { shell } from "electron";
 
-import { defaultShellForPty } from '@spiritagent/host-internal/default-terminal-shell';
+import { defaultShellForPty } from "@spiritagent/host-internal/default-terminal-shell";
 
 function assertDirectory(cwd: string): string {
   const resolved = path.resolve(cwd);
   if (!existsSync(resolved)) {
-    throw new Error('工作区目录不存在');
+    throw new Error("工作区目录不存在");
   }
   return resolved;
 }
@@ -24,65 +24,65 @@ function assertDirectory(cwd: string): string {
 export function openSystemTerminalInDirectory(cwd: string): void {
   const dir = assertDirectory(cwd);
 
-  if (process.platform === 'win32') {
+  if (process.platform === "win32") {
     const { file: shellFile } = defaultShellForPty();
     const wtCandidates = [
-      path.join(process.env.LocalAppData || '', 'Microsoft', 'Windows Apps', 'wt.exe'),
-      path.join(process.env.ProgramFiles || 'C:\\Program Files', 'Windows Terminal', 'wt.exe'),
+      path.join(process.env.LocalAppData || "", "Microsoft", "Windows Apps", "wt.exe"),
+      path.join(process.env.ProgramFiles || "C:\\Program Files", "Windows Terminal", "wt.exe"),
     ];
     const wtFromDisk = wtCandidates.find((p) => p.length > 0 && existsSync(p));
     const comspec =
       process.env.ComSpec ||
-      path.join(process.env.SystemRoot || 'C:\\Windows', 'System32', 'cmd.exe');
+      path.join(process.env.SystemRoot || "C:\\Windows", "System32", "cmd.exe");
 
     const fallback = (): void => {
-      spawn(comspec, ['/c', 'start', '', '/D', dir, shellFile], {
+      spawn(comspec, ["/c", "start", "", "/D", dir, shellFile], {
         detached: true,
-        stdio: 'ignore',
+        stdio: "ignore",
         windowsHide: true,
       }).unref();
     };
 
-    const exe = wtFromDisk ?? 'wt.exe';
-    const child = spawn(exe, ['-d', dir, shellFile], {
+    const exe = wtFromDisk ?? "wt.exe";
+    const child = spawn(exe, ["-d", dir, shellFile], {
       detached: true,
-      stdio: 'ignore',
+      stdio: "ignore",
       windowsHide: true,
     });
-    child.on('error', fallback);
+    child.on("error", fallback);
     child.unref();
     return;
   }
 
-  if (process.platform === 'darwin') {
-    spawn('open', ['-a', 'Terminal', '.'], {
+  if (process.platform === "darwin") {
+    spawn("open", ["-a", "Terminal", "."], {
       cwd: dir,
       detached: true,
-      stdio: 'ignore',
+      stdio: "ignore",
     }).unref();
     return;
   }
 
-  if (existsSync('/usr/bin/gnome-terminal')) {
-    spawn('/usr/bin/gnome-terminal', [`--working-directory=${dir}`], {
+  if (existsSync("/usr/bin/gnome-terminal")) {
+    spawn("/usr/bin/gnome-terminal", [`--working-directory=${dir}`], {
       detached: true,
-      stdio: 'ignore',
+      stdio: "ignore",
     }).unref();
     return;
   }
-  if (existsSync('/usr/bin/konsole')) {
-    spawn('/usr/bin/konsole', ['--workdir', dir], {
+  if (existsSync("/usr/bin/konsole")) {
+    spawn("/usr/bin/konsole", ["--workdir", dir], {
       detached: true,
-      stdio: 'ignore',
+      stdio: "ignore",
     }).unref();
     return;
   }
 
   try {
-    spawn('x-terminal-emulator', [], {
+    spawn("x-terminal-emulator", [], {
       cwd: dir,
       detached: true,
-      stdio: 'ignore',
+      stdio: "ignore",
     }).unref();
   } catch {
     void shell.openPath(dir);

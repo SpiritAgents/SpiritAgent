@@ -1,1 +1,1 @@
-import './contract/ai-sdk-anthropic-streaming-smoke.js';
+import "./contract/ai-sdk-anthropic-streaming-smoke.js";

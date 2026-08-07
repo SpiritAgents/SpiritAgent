@@ -1,4 +1,4 @@
-export type CodeCompletionKind = 'insert' | 'replace' | 'delete';
+export type CodeCompletionKind = "insert" | "replace" | "delete";
 
 export interface CodeCompletionPosition {
   line: number;

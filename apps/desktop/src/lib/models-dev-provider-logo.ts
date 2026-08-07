@@ -1,6 +1,6 @@
-import type { DesktopModelProvider } from '@/types';
+import type { DesktopModelProvider } from "@/types";
 
-const MODELS_DEV_LOGO_ORIGIN = 'https://models.dev';
+const MODELS_DEV_LOGO_ORIGIN = "https://models.dev";
 
 /** Probe timeout for models.dev reachability (logo CDN). */
 const MODELS_DEV_PROBE_TIMEOUT_MS = 3_000;
@@ -17,17 +17,17 @@ const MODELS_DEV_PROBE_URL = `${MODELS_DEV_LOGO_ORIGIN}/logos/openai.svg`;
  * models.dev 对未知 id 会回默认 sparkles SVG，而非 404。
  */
 const MODELS_DEV_LOGO_ID_ALIASES: Partial<Record<DesktopModelProvider, string>> = {
-  'vercel-ai-gateway': 'vercel',
-  'moonshot-ai': 'moonshotai',
-  'kimi-code': 'moonshotai',
-  'z-ai': 'zai',
-  'zhipu-ai': 'zhipuai',
-  'google-vertex-ai': 'google-vertex',
-  'together-ai': 'togetherai',
-  groq: 'groq',
-  deepinfra: 'deepinfra',
-  'hugging-face': 'huggingface',
-  baseten: 'baseten',
+  "vercel-ai-gateway": "vercel",
+  "moonshot-ai": "moonshotai",
+  "kimi-code": "moonshotai",
+  "z-ai": "zai",
+  "zhipu-ai": "zhipuai",
+  "google-vertex-ai": "google-vertex",
+  "together-ai": "togetherai",
+  groq: "groq",
+  deepinfra: "deepinfra",
+  "hugging-face": "huggingface",
+  baseten: "baseten",
 };
 
 let modelsDevReachableCache: boolean | null = null;
@@ -56,7 +56,7 @@ export function probeModelsDevReachability(): Promise<boolean> {
     const timeout = setTimeout(() => controller.abort(), MODELS_DEV_PROBE_TIMEOUT_MS);
     try {
       const response = await fetch(MODELS_DEV_PROBE_URL, {
-        method: 'HEAD',
+        method: "HEAD",
         signal: controller.signal,
       });
       modelsDevReachableCache = response.ok;

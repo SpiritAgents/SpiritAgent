@@ -5,25 +5,21 @@ export function busyActionBlocksConversationAbort(busyAction: string): boolean {
   return busyAction !== "" && busyAction !== "approve";
 }
 
-export function resolvePaneCanInterrupt(
-  snapshot: DesktopSnapshot | null | undefined,
-): boolean {
+export function resolvePaneCanInterrupt(snapshot: DesktopSnapshot | null | undefined): boolean {
   return Boolean(
-    snapshot?.runtimeReady
-    && snapshot.conversation.isBusy
-    && !snapshot.conversation.pendingToolApproval
-    && !snapshot.conversation.pendingQuestions,
+    snapshot?.runtimeReady &&
+    snapshot.conversation.isBusy &&
+    !snapshot.conversation.pendingToolApproval &&
+    !snapshot.conversation.pendingQuestions,
   );
 }
 
-export function resolvePaneCanSend(
-  snapshot: DesktopSnapshot | null | undefined,
-): boolean {
+export function resolvePaneCanSend(snapshot: DesktopSnapshot | null | undefined): boolean {
   return Boolean(
-    snapshot?.runtimeReady
-    && !snapshot.conversation.isBusy
-    && !snapshot.conversation.pendingToolApproval
-    && !snapshot.conversation.pendingQuestions,
+    snapshot?.runtimeReady &&
+    !snapshot.conversation.isBusy &&
+    !snapshot.conversation.pendingToolApproval &&
+    !snapshot.conversation.pendingQuestions,
   );
 }
 

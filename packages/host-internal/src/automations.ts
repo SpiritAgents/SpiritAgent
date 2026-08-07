@@ -1,28 +1,28 @@
-import { randomUUID } from 'node:crypto';
-import { existsSync } from 'node:fs';
-import { mkdir, readdir, readFile, rename, unlink, writeFile } from 'node:fs/promises';
-import path from 'node:path';
+import { randomUUID } from "node:crypto";
+import { existsSync } from "node:fs";
+import { mkdir, readdir, readFile, rename, unlink, writeFile } from "node:fs/promises";
+import path from "node:path";
 
-import { parseModelRef, type ModelRef } from './config-v2.js';
-import type { ModelReasoningEffort } from './reasoning-effort.js';
-import { normalizeApprovalLevel, type ApprovalLevel } from './tools.js';
+import { parseModelRef, type ModelRef } from "./config-v2.js";
+import type { ModelReasoningEffort } from "./reasoning-effort.js";
+import { normalizeApprovalLevel, type ApprovalLevel } from "./tools.js";
 
 export type HostAutomationWeekday = 0 | 1 | 2 | 3 | 4 | 5 | 6;
 
 /** @deprecated Use HostAutomationTimeSchedule via HostAutomationTrigger.kind === 'time'. */
 export type HostAutomationSchedule =
-  | { kind: 'hourly' }
-  | { kind: 'daily'; hour: number; minute: number }
-  | { kind: 'weekly'; weekday: HostAutomationWeekday; hour: number; minute: number };
+  | { kind: "hourly" }
+  | { kind: "daily"; hour: number; minute: number }
+  | { kind: "weekly"; weekday: HostAutomationWeekday; hour: number; minute: number };
 
 export type HostAutomationTimeSchedule = HostAutomationSchedule;
 
-export type HostAutomationGitHubEvent = 'pull_request_created' | 'issue_created';
+export type HostAutomationGitHubEvent = "pull_request_created" | "issue_created";
 
 export type HostAutomationTrigger =
-  | { kind: 'time'; schedule: HostAutomationTimeSchedule }
+  | { kind: "time"; schedule: HostAutomationTimeSchedule }
   | {
-      kind: 'github';
+      kind: "github";
       owner: string;
       repo: string;
       event: HostAutomationGitHubEvent;
@@ -46,7 +46,7 @@ export interface HostAutomationDefinition {
   githubPollError?: string;
 }
 
-export type HostAutomationRunStatus = 'running' | 'blocked' | 'completed' | 'failed';
+export type HostAutomationRunStatus = "running" | "blocked" | "completed" | "failed";
 
 export interface HostAutomationRun {
   id: string;
@@ -97,7 +97,7 @@ interface HostAutomationFile {
   runs: HostAutomationRun[];
 }
 
-const AUTOMATIONS_DIR_NAME = 'automations';
+const AUTOMATIONS_DIR_NAME = "automations";
 
 export function automationsDirPath(spiritDataDir: string): string {
   return path.join(spiritDataDir, AUTOMATIONS_DIR_NAME);
@@ -111,49 +111,51 @@ export function createHostAutomationStore(spiritDataDir: string): HostAutomation
   return new HostAutomationStore(spiritDataDir);
 }
 
-export function normalizeAutomationSchedule(value: unknown): HostAutomationTimeSchedule | undefined {
-  if (!value || typeof value !== 'object' || Array.isArray(value)) {
+export function normalizeAutomationSchedule(
+  value: unknown,
+): HostAutomationTimeSchedule | undefined {
+  if (!value || typeof value !== "object" || Array.isArray(value)) {
     return undefined;
   }
   const schedule = value as Partial<HostAutomationTimeSchedule>;
-  if (schedule.kind === 'hourly') {
-    return { kind: 'hourly' };
+  if (schedule.kind === "hourly") {
+    return { kind: "hourly" };
   }
-  if (schedule.kind === 'daily') {
+  if (schedule.kind === "daily") {
     const hour = normalizeHour(schedule.hour);
     const minute = normalizeMinute(schedule.minute);
     if (hour === undefined || minute === undefined) {
       return undefined;
     }
-    return { kind: 'daily', hour, minute };
+    return { kind: "daily", hour, minute };
   }
-  if (schedule.kind === 'weekly') {
+  if (schedule.kind === "weekly") {
     const weekday = normalizeWeekday(schedule.weekday);
     const hour = normalizeHour(schedule.hour);
     const minute = normalizeMinute(schedule.minute);
     if (weekday === undefined || hour === undefined || minute === undefined) {
       return undefined;
     }
-    return { kind: 'weekly', weekday, hour, minute };
+    return { kind: "weekly", weekday, hour, minute };
   }
   return undefined;
 }
 
 export function normalizeAutomationTrigger(value: unknown): HostAutomationTrigger | undefined {
-  if (!value || typeof value !== 'object' || Array.isArray(value)) {
+  if (!value || typeof value !== "object" || Array.isArray(value)) {
     return undefined;
   }
   const record = value as Partial<HostAutomationTrigger> & { schedule?: unknown };
-  if (record.kind === 'time') {
+  if (record.kind === "time") {
     const schedule = normalizeAutomationSchedule(record.schedule);
     if (!schedule) {
       return undefined;
     }
-    return { kind: 'time', schedule };
+    return { kind: "time", schedule };
   }
-  if (record.kind === 'github') {
-    const owner = typeof record.owner === 'string' ? record.owner.trim() : '';
-    const repo = typeof record.repo === 'string' ? record.repo.trim() : '';
+  if (record.kind === "github") {
+    const owner = typeof record.owner === "string" ? record.owner.trim() : "";
+    const repo = typeof record.repo === "string" ? record.repo.trim() : "";
     if (!owner || !repo) {
       return undefined;
     }
@@ -163,7 +165,7 @@ export function normalizeAutomationTrigger(value: unknown): HostAutomationTrigge
     }
     const poll = normalizeGitHubPoll(record.poll);
     return {
-      kind: 'github',
+      kind: "github",
       owner,
       repo,
       event,
@@ -177,24 +179,24 @@ export function reconcileGitHubTriggerPollState(
   previous: HostAutomationTrigger,
   next: HostAutomationTrigger,
 ): HostAutomationTrigger {
-  if (next.kind !== 'github') {
+  if (next.kind !== "github") {
     return next;
   }
-  if (previous.kind !== 'github') {
+  if (previous.kind !== "github") {
     return {
-      kind: 'github',
+      kind: "github",
       owner: next.owner,
       repo: next.repo,
       event: next.event,
     };
   }
   if (
-    previous.owner !== next.owner
-    || previous.repo !== next.repo
-    || previous.event !== next.event
+    previous.owner !== next.owner ||
+    previous.repo !== next.repo ||
+    previous.event !== next.event
   ) {
     return {
-      kind: 'github',
+      kind: "github",
       owner: next.owner,
       repo: next.repo,
       event: next.event,
@@ -206,7 +208,7 @@ export function reconcileGitHubTriggerPollState(
 export function automationTimeScheduleFromTrigger(
   trigger: HostAutomationTrigger,
 ): HostAutomationTimeSchedule | undefined {
-  return trigger.kind === 'time' ? trigger.schedule : undefined;
+  return trigger.kind === "time" ? trigger.schedule : undefined;
 }
 
 export interface TriggerFormatLabels extends ScheduleFormatLabels {
@@ -218,9 +220,9 @@ export interface TriggerFormatLabels extends ScheduleFormatLabels {
 function defaultTriggerFormatLabels(): TriggerFormatLabels {
   return {
     ...defaultScheduleFormatLabels(),
-    githubPrefix: 'GitHub',
-    githubPullRequestCreated: 'PR created',
-    githubIssueCreated: 'Issue created',
+    githubPrefix: "GitHub",
+    githubPullRequestCreated: "PR created",
+    githubIssueCreated: "Issue created",
   };
 }
 
@@ -229,13 +231,11 @@ export function formatTriggerLabel(
   labels?: Partial<TriggerFormatLabels>,
 ): string {
   const l = { ...defaultTriggerFormatLabels(), ...labels };
-  if (trigger.kind === 'time') {
+  if (trigger.kind === "time") {
     return formatScheduleLabel(trigger.schedule, l);
   }
   const eventLabel =
-    trigger.event === 'pull_request_created'
-      ? l.githubPullRequestCreated
-      : l.githubIssueCreated;
+    trigger.event === "pull_request_created" ? l.githubPullRequestCreated : l.githubIssueCreated;
   return `${l.githubPrefix} · ${trigger.owner}/${trigger.repo} · ${eventLabel}`;
 }
 
@@ -244,11 +244,11 @@ export function formatScheduleLabel(
   labels?: Partial<ScheduleFormatLabels>,
 ): string {
   const l = { ...defaultScheduleFormatLabels(), ...labels };
-  if (schedule.kind === 'hourly') {
+  if (schedule.kind === "hourly") {
     return l.hourly;
   }
   const time = formatTimeOfDay(schedule.hour, schedule.minute);
-  if (schedule.kind === 'daily') {
+  if (schedule.kind === "daily") {
     return `${l.dailyPrefix} ${time}`;
   }
   const weekday = l.weekdays[schedule.weekday] ?? String(schedule.weekday);
@@ -268,24 +268,24 @@ export interface ScheduleFormatLabels {
 
 function defaultScheduleFormatLabels(): ScheduleFormatLabels {
   return {
-    hourly: 'Hourly',
-    dailyPrefix: 'Daily',
-    weeklyPrefix: 'Weekly',
-    weekdays: ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'],
+    hourly: "Hourly",
+    dailyPrefix: "Daily",
+    weeklyPrefix: "Weekly",
+    weekdays: ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"],
     formatWeekly: (weekday, time) => `Weekly ${weekday} ${time}`,
   };
 }
 
 export function computeNextRunAt(schedule: HostAutomationTimeSchedule, afterMs: number): number {
   const after = new Date(afterMs);
-  if (schedule.kind === 'hourly') {
+  if (schedule.kind === "hourly") {
     const next = new Date(after);
     next.setSeconds(0, 0);
     next.setMinutes(0);
     next.setHours(next.getHours() + 1);
     return next.getTime();
   }
-  if (schedule.kind === 'daily') {
+  if (schedule.kind === "daily") {
     return nextDailyOrWeeklyRun(after, schedule.hour, schedule.minute, undefined);
   }
   return nextDailyOrWeeklyRun(after, schedule.hour, schedule.minute, schedule.weekday);
@@ -295,12 +295,12 @@ export function computeNextRunAt(schedule: HostAutomationTimeSchedule, afterMs: 
 export function mostRecentDueAt(schedule: HostAutomationTimeSchedule, nowMs: number): number {
   const candidate = new Date(nowMs);
   candidate.setSeconds(0, 0);
-  if (schedule.kind === 'hourly') {
+  if (schedule.kind === "hourly") {
     candidate.setMinutes(0);
     return candidate.getTime();
   }
   candidate.setHours(schedule.hour, schedule.minute, 0, 0);
-  if (schedule.kind === 'daily') {
+  if (schedule.kind === "daily") {
     if (candidate.getTime() > nowMs) {
       candidate.setDate(candidate.getDate() - 1);
     }
@@ -381,7 +381,9 @@ export class HostAutomationStore {
     return summaries.sort((left, right) => right.updatedAtUnixMs - left.updatedAtUnixMs);
   }
 
-  async get(automationId: string): Promise<{ definition: HostAutomationDefinition; runs: HostAutomationRun[] } | undefined> {
+  async get(
+    automationId: string,
+  ): Promise<{ definition: HostAutomationDefinition; runs: HostAutomationRun[] } | undefined> {
     const file = await this.loadFile(automationId);
     if (!file) {
       return undefined;
@@ -396,15 +398,15 @@ export class HostAutomationStore {
     const now = Date.now();
     const trigger = normalizeAutomationTrigger(input.trigger);
     if (!trigger) {
-      throw new Error('Invalid automation trigger.');
+      throw new Error("Invalid automation trigger.");
     }
     const definition: HostAutomationDefinition = {
       id: randomUUID(),
-      title: normalizeNonEmpty(input.title, 'title'),
-      overview: normalizeNonEmpty(input.overview, 'overview'),
+      title: normalizeNonEmpty(input.title, "title"),
+      overview: normalizeNonEmpty(input.overview, "overview"),
       trigger,
-      workspaceRoot: path.resolve(normalizeNonEmpty(input.workspaceRoot, 'workspaceRoot')),
-      modelRef: normalizeAutomationModelRef(input.modelRef, 'modelRef'),
+      workspaceRoot: path.resolve(normalizeNonEmpty(input.workspaceRoot, "workspaceRoot")),
+      modelRef: normalizeAutomationModelRef(input.modelRef, "modelRef"),
       ...(input.reasoningEffort ? { reasoningEffort: input.reasoningEffort } : {}),
       approvalLevel: normalizeApprovalLevel(input.approvalLevel),
       enabled: input.enabled !== false,
@@ -412,9 +414,8 @@ export class HostAutomationStore {
       updatedAtUnixMs: now,
     };
     const file: HostAutomationFile = { version: 1, definition, runs: [] };
-    await enqueueAutomationFileTask(
-      automationFilePath(this.spiritDataDir, definition.id),
-      () => this.saveFile(definition.id, file),
+    await enqueueAutomationFileTask(automationFilePath(this.spiritDataDir, definition.id), () =>
+      this.saveFile(definition.id, file),
     );
     return { ...definition };
   }
@@ -424,8 +425,8 @@ export class HostAutomationStore {
     lastSeenNumber: number,
   ): Promise<HostAutomationDefinition> {
     return this.mutateFile(automationId, (file) => {
-      if (file.definition.trigger.kind !== 'github') {
-        throw new Error('Automation trigger is not GitHub.');
+      if (file.definition.trigger.kind !== "github") {
+        throw new Error("Automation trigger is not GitHub.");
       }
       file.definition.trigger = {
         ...file.definition.trigger,
@@ -436,27 +437,32 @@ export class HostAutomationStore {
     });
   }
 
-  async update(automationId: string, patch: HostAutomationUpdateInput): Promise<HostAutomationDefinition> {
+  async update(
+    automationId: string,
+    patch: HostAutomationUpdateInput,
+  ): Promise<HostAutomationDefinition> {
     return this.mutateFile(automationId, (file) => {
       const now = Date.now();
       if (patch.title !== undefined) {
-        file.definition.title = normalizeNonEmpty(patch.title, 'title');
+        file.definition.title = normalizeNonEmpty(patch.title, "title");
       }
       if (patch.overview !== undefined) {
-        file.definition.overview = normalizeNonEmpty(patch.overview, 'overview');
+        file.definition.overview = normalizeNonEmpty(patch.overview, "overview");
       }
       if (patch.trigger !== undefined) {
         const trigger = normalizeAutomationTrigger(patch.trigger);
         if (!trigger) {
-          throw new Error('Invalid automation trigger.');
+          throw new Error("Invalid automation trigger.");
         }
         file.definition.trigger = reconcileGitHubTriggerPollState(file.definition.trigger, trigger);
       }
       if (patch.workspaceRoot !== undefined) {
-        file.definition.workspaceRoot = path.resolve(normalizeNonEmpty(patch.workspaceRoot, 'workspaceRoot'));
+        file.definition.workspaceRoot = path.resolve(
+          normalizeNonEmpty(patch.workspaceRoot, "workspaceRoot"),
+        );
       }
       if (patch.modelRef !== undefined) {
-        file.definition.modelRef = normalizeAutomationModelRef(patch.modelRef, 'modelRef');
+        file.definition.modelRef = normalizeAutomationModelRef(patch.modelRef, "modelRef");
       }
       if (patch.reasoningEffort !== undefined) {
         file.definition.reasoningEffort = patch.reasoningEffort;
@@ -502,8 +508,8 @@ export class HostAutomationStore {
     lastSeenNumber: number,
   ): Promise<HostAutomationDefinition> {
     return this.mutateFile(automationId, (file) => {
-      if (file.definition.trigger.kind !== 'github') {
-        throw new Error('Automation trigger is not GitHub.');
+      if (file.definition.trigger.kind !== "github") {
+        throw new Error("Automation trigger is not GitHub.");
       }
       file.definition.trigger = {
         ...file.definition.trigger,
@@ -520,8 +526,8 @@ export class HostAutomationStore {
     error: string | undefined,
   ): Promise<HostAutomationDefinition> {
     return this.mutateFile(automationId, (file) => {
-      if (file.definition.trigger.kind !== 'github') {
-        throw new Error('Automation trigger is not GitHub.');
+      if (file.definition.trigger.kind !== "github") {
+        throw new Error("Automation trigger is not GitHub.");
       }
       if (error?.trim()) {
         file.definition.githubPollError = error.trim();
@@ -544,7 +550,7 @@ export class HostAutomationStore {
     return this.mutateFile(automationId, (file) => {
       const normalized = normalizeAutomationRun(run);
       if (!normalized) {
-        throw new Error('Invalid automation run.');
+        throw new Error("Invalid automation run.");
       }
       file.runs.push(normalized);
       file.definition.updatedAtUnixMs = Date.now();
@@ -555,7 +561,9 @@ export class HostAutomationStore {
   async updateRun(
     automationId: string,
     runId: string,
-    patch: Partial<Pick<HostAutomationRun, 'status' | 'completedAtUnixMs' | 'error' | 'sessionPath'>>,
+    patch: Partial<
+      Pick<HostAutomationRun, "status" | "completedAtUnixMs" | "error" | "sessionPath">
+    >,
   ): Promise<HostAutomationRun> {
     return this.mutateFile(automationId, (file) => {
       const index = file.runs.findIndex((run) => run.id === runId);
@@ -567,7 +575,9 @@ export class HostAutomationStore {
         ...current,
         ...(patch.sessionPath !== undefined ? { sessionPath: patch.sessionPath } : {}),
         ...(patch.status !== undefined ? { status: patch.status } : {}),
-        ...(patch.completedAtUnixMs !== undefined ? { completedAtUnixMs: patch.completedAtUnixMs } : {}),
+        ...(patch.completedAtUnixMs !== undefined
+          ? { completedAtUnixMs: patch.completedAtUnixMs }
+          : {}),
         ...(patch.error !== undefined ? { error: patch.error } : {}),
       };
       file.runs[index] = next;
@@ -581,7 +591,7 @@ export class HostAutomationStore {
     if (!file) {
       return undefined;
     }
-    return file.runs.find((run) => run.status === 'running');
+    return file.runs.find((run) => run.status === "running");
   }
 
   private async mutateFile<T>(
@@ -606,7 +616,7 @@ export class HostAutomationStore {
     }
     const entries = await readdir(dirPath, { withFileTypes: true });
     return entries
-      .filter((entry) => entry.isFile() && entry.name.endsWith('.json'))
+      .filter((entry) => entry.isFile() && entry.name.endsWith(".json"))
       .map((entry) => path.join(dirPath, entry.name));
   }
 
@@ -626,7 +636,7 @@ export class HostAutomationStore {
     if (!existsSync(filePath)) {
       return undefined;
     }
-    const raw = await readFile(filePath, 'utf8');
+    const raw = await readFile(filePath, "utf8");
     let parsed: Partial<HostAutomationFile>;
     try {
       parsed = JSON.parse(raw) as Partial<HostAutomationFile>;
@@ -654,30 +664,30 @@ export class HostAutomationStore {
     // tmp+rename 原子落盘，避免崩溃时留下半截 JSON；写已按文件串行化，
     // 固定 tmp 名不会被并发复用（后缀非 .json，不会被 listAutomationFiles 读到）。
     const tmpPath = `${filePath}.tmp`;
-    await writeFile(tmpPath, `${JSON.stringify(file, null, 2)}\n`, 'utf8');
+    await writeFile(tmpPath, `${JSON.stringify(file, null, 2)}\n`, "utf8");
     await rename(tmpPath, filePath);
   }
 }
 
 function normalizeAutomationDefinition(value: unknown): HostAutomationDefinition | undefined {
-  if (!value || typeof value !== 'object' || Array.isArray(value)) {
+  if (!value || typeof value !== "object" || Array.isArray(value)) {
     return undefined;
   }
   const record = value as Partial<HostAutomationDefinition>;
-  if (typeof record.id !== 'string' || !record.id.trim()) {
+  if (typeof record.id !== "string" || !record.id.trim()) {
     return undefined;
   }
   const trigger = normalizeAutomationTrigger(record.trigger);
   if (!trigger) {
     return undefined;
   }
-  if (typeof record.title !== 'string' || !record.title.trim()) {
+  if (typeof record.title !== "string" || !record.title.trim()) {
     return undefined;
   }
-  if (typeof record.overview !== 'string' || !record.overview.trim()) {
+  if (typeof record.overview !== "string" || !record.overview.trim()) {
     return undefined;
   }
-  if (typeof record.workspaceRoot !== 'string' || !record.workspaceRoot.trim()) {
+  if (typeof record.workspaceRoot !== "string" || !record.workspaceRoot.trim()) {
     return undefined;
   }
   const modelRef = parseModelRef(record.modelRef);
@@ -685,9 +695,9 @@ function normalizeAutomationDefinition(value: unknown): HostAutomationDefinition
     return undefined;
   }
   const createdAtUnixMs =
-    typeof record.createdAtUnixMs === 'number' ? record.createdAtUnixMs : Date.now();
+    typeof record.createdAtUnixMs === "number" ? record.createdAtUnixMs : Date.now();
   const updatedAtUnixMs =
-    typeof record.updatedAtUnixMs === 'number' ? record.updatedAtUnixMs : createdAtUnixMs;
+    typeof record.updatedAtUnixMs === "number" ? record.updatedAtUnixMs : createdAtUnixMs;
   return {
     id: record.id.trim(),
     title: record.title.trim(),
@@ -700,40 +710,40 @@ function normalizeAutomationDefinition(value: unknown): HostAutomationDefinition
     enabled: record.enabled !== false,
     createdAtUnixMs,
     updatedAtUnixMs,
-    ...(typeof record.lastFiredAtUnixMs === 'number'
+    ...(typeof record.lastFiredAtUnixMs === "number"
       ? { lastFiredAtUnixMs: record.lastFiredAtUnixMs }
       : {}),
-    ...(typeof record.githubPollError === 'string' && record.githubPollError.trim()
+    ...(typeof record.githubPollError === "string" && record.githubPollError.trim()
       ? { githubPollError: record.githubPollError.trim() }
       : {}),
   };
 }
 
 function normalizeAutomationRun(value: unknown): HostAutomationRun | undefined {
-  if (!value || typeof value !== 'object' || Array.isArray(value)) {
+  if (!value || typeof value !== "object" || Array.isArray(value)) {
     return undefined;
   }
   const record = value as Partial<HostAutomationRun>;
-  if (typeof record.id !== 'string' || !record.id.trim()) {
+  if (typeof record.id !== "string" || !record.id.trim()) {
     return undefined;
   }
-  if (typeof record.automationId !== 'string' || !record.automationId.trim()) {
+  if (typeof record.automationId !== "string" || !record.automationId.trim()) {
     return undefined;
   }
-  if (typeof record.sessionPath !== 'string' || !record.sessionPath.trim()) {
+  if (typeof record.sessionPath !== "string" || !record.sessionPath.trim()) {
     return undefined;
   }
   const status =
-    record.status === 'running'
-    || record.status === 'blocked'
-    || record.status === 'completed'
-    || record.status === 'failed'
+    record.status === "running" ||
+    record.status === "blocked" ||
+    record.status === "completed" ||
+    record.status === "failed"
       ? record.status
       : undefined;
   if (!status) {
     return undefined;
   }
-  if (typeof record.startedAtUnixMs !== 'number') {
+  if (typeof record.startedAtUnixMs !== "number") {
     return undefined;
   }
   return {
@@ -742,10 +752,10 @@ function normalizeAutomationRun(value: unknown): HostAutomationRun | undefined {
     sessionPath: record.sessionPath.trim(),
     status,
     startedAtUnixMs: record.startedAtUnixMs,
-    ...(typeof record.completedAtUnixMs === 'number'
+    ...(typeof record.completedAtUnixMs === "number"
       ? { completedAtUnixMs: record.completedAtUnixMs }
       : {}),
-    ...(typeof record.error === 'string' && record.error.trim()
+    ...(typeof record.error === "string" && record.error.trim()
       ? { error: record.error.trim() }
       : {}),
   };
@@ -768,42 +778,42 @@ function normalizeNonEmpty(value: string, field: string): string {
 }
 
 function normalizeHour(value: unknown): number | undefined {
-  if (typeof value !== 'number' || !Number.isInteger(value) || value < 0 || value > 23) {
+  if (typeof value !== "number" || !Number.isInteger(value) || value < 0 || value > 23) {
     return undefined;
   }
   return value;
 }
 
 function normalizeMinute(value: unknown): number | undefined {
-  if (typeof value !== 'number' || !Number.isInteger(value) || value < 0 || value > 59) {
+  if (typeof value !== "number" || !Number.isInteger(value) || value < 0 || value > 59) {
     return undefined;
   }
   return value;
 }
 
 function normalizeWeekday(value: unknown): HostAutomationWeekday | undefined {
-  if (typeof value !== 'number' || !Number.isInteger(value) || value < 0 || value > 6) {
+  if (typeof value !== "number" || !Number.isInteger(value) || value < 0 || value > 6) {
     return undefined;
   }
   return value as HostAutomationWeekday;
 }
 
 function normalizeGitHubEvent(value: unknown): HostAutomationGitHubEvent | undefined {
-  if (value === 'pull_request_created' || value === 'issue_created') {
+  if (value === "pull_request_created" || value === "issue_created") {
     return value;
   }
   return undefined;
 }
 
 function normalizeGitHubPoll(value: unknown): { lastSeenNumber: number } | undefined {
-  if (!value || typeof value !== 'object' || Array.isArray(value)) {
+  if (!value || typeof value !== "object" || Array.isArray(value)) {
     return undefined;
   }
   const record = value as { lastSeenNumber?: unknown };
   if (
-    typeof record.lastSeenNumber !== 'number'
-    || !Number.isInteger(record.lastSeenNumber)
-    || record.lastSeenNumber < 0
+    typeof record.lastSeenNumber !== "number" ||
+    !Number.isInteger(record.lastSeenNumber) ||
+    record.lastSeenNumber < 0
   ) {
     return undefined;
   }
@@ -811,7 +821,7 @@ function normalizeGitHubPoll(value: unknown): { lastSeenNumber: number } | undef
 }
 
 function formatTimeOfDay(hour: number, minute: number): string {
-  return `${String(hour).padStart(2, '0')}:${String(minute).padStart(2, '0')}`;
+  return `${String(hour).padStart(2, "0")}:${String(minute).padStart(2, "0")}`;
 }
 
 function floorToMinute(ms: number): number {

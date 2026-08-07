@@ -12,7 +12,7 @@ files:
   - dist-electron/**/*
   - build/tray/**/*
   - node_modules/**/*
-  - '!**/target/**/*'
+  - "!**/target/**/*"
   - from: node_modules/@vscode
     to: node_modules/@vscode
     filter:

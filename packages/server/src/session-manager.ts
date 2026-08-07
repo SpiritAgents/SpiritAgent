@@ -1,4 +1,4 @@
-import { randomUUID } from 'node:crypto';
+import { randomUUID } from "node:crypto";
 
 import type {
   JsonValue,
@@ -6,29 +6,35 @@ import type {
   PendingWorkspaceFile,
   RuntimeEvent,
   SpiritAgentMode,
-} from '@spiritagent/agent-core';
-import type { BridgeRuntimeSnapshot } from '@spiritagent/agent-core/host-bridge';
-import { createHostTodoStore, type ApprovalLevel, type HostDreamScope, type HostDreamSourceSessionRef, type ModelRef } from '@spiritagent/host-internal';
+} from "@spiritagent/agent-core";
+import type { BridgeRuntimeSnapshot } from "@spiritagent/agent-core/host-bridge";
+import {
+  createHostTodoStore,
+  type ApprovalLevel,
+  type HostDreamScope,
+  type HostDreamSourceSessionRef,
+  type ModelRef,
+} from "@spiritagent/host-internal";
 
 import {
   createServerRuntime,
   type ServerClientKind,
   type ServerRuntimeResult,
   type ServerSessionKind,
-} from './runtime-factory.js';
-import { McpRegistry } from './mcp-registry.js';
-import { buildServerSnapshot } from './snapshot-projector.js';
+} from "./runtime-factory.js";
+import { McpRegistry } from "./mcp-registry.js";
+import { buildServerSnapshot } from "./snapshot-projector.js";
 
-export type TurnStopReason = 'completed' | 'failed' | 'cancelled';
+export type TurnStopReason = "completed" | "failed" | "cancelled";
 
 export type ServerTurnResult =
   | {
-      kind: 'completed';
+      kind: "completed";
       assistantText: string;
       toolExecutions: unknown[];
     }
   | {
-      kind: 'failed';
+      kind: "failed";
       error: string;
       toolExecutions: unknown[];
     };
@@ -62,7 +68,7 @@ export interface WorkspaceCapabilityTrustRequestPayload {
   hooks: Array<{ event: string; command: string; resolvedPath: string }>;
 }
 
-export type WorkspaceCapabilityTrustDecision = 'allowOnce' | 'deny' | 'alwaysTrust';
+export type WorkspaceCapabilityTrustDecision = "allowOnce" | "deny" | "alwaysTrust";
 
 interface PendingTrustRequest {
   sessionId: string;
@@ -92,11 +98,13 @@ interface ServerSession {
    * the daemon never derives it from llm_history). Revision is assigned here
    * and increments per accepted push.
    */
-  desktopTimeline?: {
-    revision: number;
-    timeline: unknown[];
-    updatedAtUnixMs: number;
-  } | undefined;
+  desktopTimeline?:
+    | {
+        revision: number;
+        timeline: unknown[];
+        updatedAtUnixMs: number;
+      }
+    | undefined;
 }
 
 export interface SessionManagerCallbacks {
@@ -167,9 +175,7 @@ export interface SubmitUserTurnParams {
   activeSkills?: LlmActiveSkill[];
 }
 
-export type SubmitUserTurnOutcome =
-  | { accepted: true }
-  | { queued: true; position: number };
+export type SubmitUserTurnOutcome = { accepted: true } | { queued: true; position: number };
 
 const TRUST_REQUEST_TIMEOUT_MS = 120_000;
 const PUMP_INTERVAL_MS = 25;
@@ -253,18 +259,18 @@ export class SessionManager {
       }
     }
 
-    const sessionId = `sess_${randomUUID().replaceAll('-', '')}`;
+    const sessionId = `sess_${randomUUID().replaceAll("-", "")}`;
     const runtimeResult = await createServerRuntime({
       workspaceRoot: params.workspaceRoot,
       spiritDataDir: this.spiritDataDir,
       sessionKey: sessionId,
       ...(params.modelRef ? { modelRef: params.modelRef } : {}),
       ...(params.todoSessionKey?.trim() ? { todoSessionKey: params.todoSessionKey.trim() } : {}),
-      ...(params.sessionKind === 'dream-collector'
+      ...(params.sessionKind === "dream-collector"
         ? {}
         : { mcpService: this.mcpRegistry.forWorkspace(params.workspaceRoot) }),
-      hostKind: params.hostKind === 'web' ? 'cli' : params.hostKind,
-      approvalLevel: params.approvalLevel ?? 'default',
+      hostKind: params.hostKind === "web" ? "cli" : params.hostKind,
+      approvalLevel: params.approvalLevel ?? "default",
       ...(params.sessionKind ? { sessionKind: params.sessionKind } : {}),
       ...(params.dreamScope ? { dreamScope: params.dreamScope } : {}),
       ...(params.dreamSourceSession ? { dreamSourceSession: params.dreamSourceSession } : {}),
@@ -274,7 +280,7 @@ export class SessionManager {
         this.requestWorkspaceCapabilityTrust(sessionId, request),
       ...(this.callbacks.log ? { log: this.callbacks.log } : {}),
     });
-    await runtimeResult.setAgentMode(params.agentMode ?? 'agent');
+    await runtimeResult.setAgentMode(params.agentMode ?? "agent");
 
     const info: ServerSessionInfo = {
       sessionId,
@@ -282,7 +288,7 @@ export class SessionManager {
       hostKind: params.hostKind,
       createdAt: new Date().toISOString(),
       isBusy: false,
-      approvalLevel: params.approvalLevel ?? 'default',
+      approvalLevel: params.approvalLevel ?? "default",
       model: runtimeResult.transportConfig.model,
       queuedTurns: 0,
       attachmentCount: 0,
@@ -343,7 +349,7 @@ export class SessionManager {
   migrateConversationKey(sessionId: string, nextKey: string): void {
     const trimmed = nextKey.trim();
     if (!trimmed) {
-      throw new Error('missing conversationKey');
+      throw new Error("missing conversationKey");
     }
     const session = this.requireSession(sessionId);
     const previousKey = session.info.conversationKey?.trim();
@@ -371,7 +377,7 @@ export class SessionManager {
     }
     const key = params.conversationKey?.trim();
     if (!key) {
-      throw new Error('missing sessionId or conversationKey');
+      throw new Error("missing sessionId or conversationKey");
     }
     const sessionId = this.conversationIndex.get(key);
     if (!sessionId) {
@@ -427,9 +433,9 @@ export class SessionManager {
     // Approval/question lifecycle changes are exactly when clients need a
     // fresh projection (to open or close the interactive UI).
     if (
-      event.kind === 'approval-requested'
-      || event.kind === 'approval-resolved'
-      || event.kind === 'questions-requested'
+      event.kind === "approval-requested" ||
+      event.kind === "approval-resolved" ||
+      event.kind === "questions-requested"
     ) {
       const session = this.sessions.get(sessionId);
       if (session) {
@@ -461,21 +467,21 @@ export class SessionManager {
 
       const turnResult = runtime.takeCompletedTurnResult();
       if (turnResult && session.turnActive) {
-        if (turnResult.kind !== 'completed' && turnResult.kind !== 'failed') {
+        if (turnResult.kind !== "completed" && turnResult.kind !== "failed") {
           return;
         }
         this.finishTurn(
           session,
           session.turnGeneration,
-          turnResult.kind === 'failed' ? 'failed' : 'completed',
-          turnResult.kind === 'failed'
+          turnResult.kind === "failed" ? "failed" : "completed",
+          turnResult.kind === "failed"
             ? {
-                kind: 'failed',
+                kind: "failed",
                 error: turnResult.error,
                 toolExecutions: turnResult.toolExecutions,
               }
             : {
-                kind: 'completed',
+                kind: "completed",
                 assistantText: turnResult.assistantText,
                 toolExecutions: turnResult.toolExecutions,
               },
@@ -484,19 +490,18 @@ export class SessionManager {
       }
       const compactionResult = runtime.takeCompletedManualHistoryCompactionResult();
       if (compactionResult && session.turnActive) {
-        this.finishTurn(session, session.turnGeneration, 'completed');
+        this.finishTurn(session, session.turnGeneration, "completed");
         return;
       }
 
       if (session.turnActive) {
-        const idle = !runtime.isBusy()
-          && !runtime.hasPendingApproval()
-          && !runtime.hasPendingQuestions();
+        const idle =
+          !runtime.isBusy() && !runtime.hasPendingApproval() && !runtime.hasPendingQuestions();
         session.idleTicksWhileActive = idle ? session.idleTicksWhileActive + 1 : 0;
         if (session.idleTicksWhileActive >= IDLE_GRACE_TICKS) {
           // The turn machine went idle without producing a result (should not
           // happen outside abort); release the session instead of hanging.
-          this.finishTurn(session, session.turnGeneration, 'cancelled');
+          this.finishTurn(session, session.turnGeneration, "cancelled");
           return;
         }
       } else {
@@ -525,7 +530,7 @@ export class SessionManager {
     const { runtime } = session.runtimeResult;
     const text = params.text.trim();
     if (!text) {
-      throw new Error('empty user turn');
+      throw new Error("empty user turn");
     }
 
     const turn: QueuedUserTurn = {
@@ -542,7 +547,7 @@ export class SessionManager {
       return { queued: true, position: session.queue.length };
     }
     if (runtime.hasPendingApproval() || runtime.hasPendingQuestions()) {
-      throw new Error('session has a pending approval or questionnaire; answer it first');
+      throw new Error("session has a pending approval or questionnaire; answer it first");
     }
 
     await this.startTurn(session, turn);
@@ -611,8 +616,8 @@ export class SessionManager {
       session.turnActive = false;
       session.info.isBusy = false;
       const message = err instanceof Error ? err.message : String(err);
-      this.callbacks.broadcastTurnFinished(session.info.sessionId, 'failed', {
-        kind: 'failed',
+      this.callbacks.broadcastTurnFinished(session.info.sessionId, "failed", {
+        kind: "failed",
         error: message,
         toolExecutions: [],
       });
@@ -628,7 +633,7 @@ export class SessionManager {
     session.turnActive = false;
     session.idleTicksWhileActive = 0;
     session.info.isBusy = false;
-    this.callbacks.broadcastTurnFinished(sessionId, 'cancelled');
+    this.callbacks.broadcastTurnFinished(sessionId, "cancelled");
     this.callbacks.broadcastSnapshot(sessionId, this.snapshotForSession(session));
     this.drainQueue(session);
   }
@@ -641,7 +646,7 @@ export class SessionManager {
     const session = this.requireSession(sessionId);
     const { runtime } = session.runtimeResult;
     if (runtime.isBusy() || session.turnActive) {
-      throw new Error('session is busy; wait for the current turn to finish');
+      throw new Error("session is busy; wait for the current turn to finish");
     }
     session.turnActive = true;
     session.idleTicksWhileActive = 0;
@@ -654,7 +659,7 @@ export class SessionManager {
     const session = this.requireSession(sessionId);
     const { runtime } = session.runtimeResult;
     if (runtime.isBusy() || session.turnActive) {
-      throw new Error('session is busy; wait for the current turn to finish');
+      throw new Error("session is busy; wait for the current turn to finish");
     }
     session.turnActive = true;
     session.idleTicksWhileActive = 0;
@@ -717,7 +722,7 @@ export class SessionManager {
     const session = this.requireSession(sessionId);
     const { runtime } = session.runtimeResult;
     if (runtime.isBusy() || session.turnActive) {
-      throw new Error('session is busy; cannot replace archive while a turn is active');
+      throw new Error("session is busy; cannot replace archive while a turn is active");
     }
     session.runtimeResult.runtime.replaceFromArchive(archive as never);
     // History was replaced wholesale; the previous timeline is stale until
@@ -727,7 +732,10 @@ export class SessionManager {
 
   exportArchive(sessionId: string, messages: unknown, assistantAux: unknown): unknown {
     const session = this.requireSession(sessionId);
-    const archive = session.runtimeResult.runtime.toArchive(messages as never, assistantAux as never);
+    const archive = session.runtimeResult.runtime.toArchive(
+      messages as never,
+      assistantAux as never,
+    );
     const stored = session.desktopTimeline;
     if (!stored) {
       return archive;
@@ -747,7 +755,7 @@ export class SessionManager {
   pushDesktopTimeline(sessionId: string, timeline: unknown): { ok: true; revision: number } {
     const session = this.requireSession(sessionId);
     if (!Array.isArray(timeline)) {
-      throw new Error('desktop timeline must be an array');
+      throw new Error("desktop timeline must be an array");
     }
     const revision = (session.desktopTimeline?.revision ?? 0) + 1;
     session.desktopTimeline = {
@@ -820,50 +828,54 @@ export class SessionManager {
   }
 
   /** MCP management/read pass-throughs to the session's tool executor. */
-  async mcpCall(sessionId: string, action: string, params: Record<string, unknown>): Promise<unknown> {
+  async mcpCall(
+    sessionId: string,
+    action: string,
+    params: Record<string, unknown>,
+  ): Promise<unknown> {
     const { toolExecutor, runtime } = this.requireSession(sessionId).runtimeResult;
     switch (action) {
-      case 'listMcpServers':
+      case "listMcpServers":
         return toolExecutor.listMcpServers();
-      case 'inspectMcpServer':
-        return toolExecutor.inspectMcpServer(String(params['name'] ?? ''));
-      case 'listMcpTools':
-        return toolExecutor.listMcpTools(String(params['name'] ?? ''));
-      case 'listMcpResources':
-        return toolExecutor.listMcpResources(String(params['name'] ?? ''));
-      case 'listMcpPrompts':
-        return toolExecutor.listMcpPrompts(String(params['name'] ?? ''));
-      case 'listCachedMcpPrompts':
-        return toolExecutor.listCachedMcpPrompts(String(params['name'] ?? ''));
-      case 'getMcpPrompt':
+      case "inspectMcpServer":
+        return toolExecutor.inspectMcpServer(String(params["name"] ?? ""));
+      case "listMcpTools":
+        return toolExecutor.listMcpTools(String(params["name"] ?? ""));
+      case "listMcpResources":
+        return toolExecutor.listMcpResources(String(params["name"] ?? ""));
+      case "listMcpPrompts":
+        return toolExecutor.listMcpPrompts(String(params["name"] ?? ""));
+      case "listCachedMcpPrompts":
+        return toolExecutor.listCachedMcpPrompts(String(params["name"] ?? ""));
+      case "getMcpPrompt":
         return toolExecutor.getMcpPrompt(
-          String(params['server'] ?? ''),
-          String(params['prompt'] ?? ''),
-          typeof params['argsJson'] === 'string' ? params['argsJson'] : undefined,
+          String(params["server"] ?? ""),
+          String(params["prompt"] ?? ""),
+          typeof params["argsJson"] === "string" ? params["argsJson"] : undefined,
         );
-      case 'callMcpTool':
+      case "callMcpTool":
         return toolExecutor.callMcpTool(
-          String(params['server'] ?? ''),
-          String(params['tool'] ?? ''),
-          typeof params['argsJson'] === 'string' ? params['argsJson'] : undefined,
+          String(params["server"] ?? ""),
+          String(params["tool"] ?? ""),
+          typeof params["argsJson"] === "string" ? params["argsJson"] : undefined,
         );
-      case 'readMcpResource':
+      case "readMcpResource":
         return toolExecutor.readMcpResource(
-          String(params['server'] ?? ''),
-          String(params['uri'] ?? ''),
+          String(params["server"] ?? ""),
+          String(params["uri"] ?? ""),
         );
-      case 'mcpStatusSnapshot':
+      case "mcpStatusSnapshot":
         return toolExecutor.mcpStatusSnapshot();
-      case 'startMcpBackgroundRefresh':
+      case "startMcpBackgroundRefresh":
         toolExecutor.startMcpBackgroundRefresh();
         return toolExecutor.mcpStatusSnapshot();
-      case 'startManualMcpTool': {
+      case "startManualMcpTool": {
         const request = await toolExecutor.createMcpToolRequest(
-          String(params['server'] ?? ''),
-          String(params['tool'] ?? ''),
-          typeof params['argsJson'] === 'string' ? params['argsJson'] : undefined,
+          String(params["server"] ?? ""),
+          String(params["tool"] ?? ""),
+          typeof params["argsJson"] === "string" ? params["argsJson"] : undefined,
         );
-        return runtime.startManualToolRequestDirect(request, 'manual');
+        return runtime.startManualToolRequestDirect(request, "manual");
       }
       default:
         throw new Error(`unknown mcp action: ${action}`);
@@ -885,17 +897,27 @@ export class SessionManager {
   }
 
   takeCompletedManualToolCommandResult(sessionId: string): unknown {
-    return this.requireSession(sessionId).runtimeResult.runtime.takeCompletedManualToolCommandResult() ?? null;
+    return (
+      this.requireSession(sessionId).runtimeResult.runtime.takeCompletedManualToolCommandResult() ??
+      null
+    );
   }
 
   // ------------------------------------------------------------ subagents
 
   subagentSessionArchive(sessionId: string, subagentSessionId: string): unknown {
-    return this.requireSession(sessionId).runtimeResult.runtime.childSessionArchive(subagentSessionId) ?? null;
+    return (
+      this.requireSession(sessionId).runtimeResult.runtime.childSessionArchive(subagentSessionId) ??
+      null
+    );
   }
 
   subagentPendingAuxState(sessionId: string, subagentSessionId: string): unknown {
-    return this.requireSession(sessionId).runtimeResult.runtime.childSessionPendingAuxState(subagentSessionId) ?? null;
+    return (
+      this.requireSession(sessionId).runtimeResult.runtime.childSessionPendingAuxState(
+        subagentSessionId,
+      ) ?? null
+    );
   }
 
   // ------------------------------------------------- config / hooks / mode
@@ -912,7 +934,7 @@ export class SessionManager {
       delete session.createParams.modelRef;
     }
     const old = session.runtimeResult;
-    await old.runSessionEnd('switch');
+    await old.runSessionEnd("switch");
     old.runtime.abort();
     const history = [...old.runtime.history()];
 
@@ -923,7 +945,7 @@ export class SessionManager {
       ...(session.createParams.modelRef ? { modelRef: session.createParams.modelRef } : {}),
       todoSessionKey: session.todoSessionKey,
       mcpService: this.mcpRegistry.forWorkspace(session.createParams.workspaceRoot),
-      hostKind: session.createParams.hostKind === 'web' ? 'cli' : session.createParams.hostKind,
+      hostKind: session.createParams.hostKind === "web" ? "cli" : session.createParams.hostKind,
       approvalLevel: session.info.approvalLevel,
       onEvent: (event) => this.handleRuntimeEvent(sessionId, event),
       onFileChange: (change) => this.callbacks.broadcastFileChange(sessionId, change),
@@ -933,11 +955,11 @@ export class SessionManager {
     });
     fresh.runtime.replaceHistory(history);
     fresh.setLoopEnabled(old.runtime.loopEnabled());
-    await fresh.setAgentMode(session.createParams.agentMode ?? 'agent');
+    await fresh.setAgentMode(session.createParams.agentMode ?? "agent");
     session.runtimeResult = fresh;
     session.info.model = fresh.transportConfig.model;
     await old.toolExecutor.disposeLsp();
-    await fresh.runSessionStart('resume');
+    await fresh.runSessionStart("resume");
   }
 
   async reloadHostMetadata(sessionId: string, mode: SpiritAgentMode): Promise<void> {
@@ -946,15 +968,18 @@ export class SessionManager {
     session.runtimeResult.toolExecutor.setAgentModeToolExposure(mode);
   }
 
-  async runSessionStart(sessionId: string, source: 'startup' | 'resume' | 'open'): Promise<void> {
+  async runSessionStart(sessionId: string, source: "startup" | "resume" | "open"): Promise<void> {
     await this.requireSession(sessionId).runtimeResult.runSessionStart(source);
   }
 
-  async runSessionEnd(sessionId: string, reason: 'abort' | 'close' | 'switch'): Promise<void> {
+  async runSessionEnd(sessionId: string, reason: "abort" | "close" | "switch"): Promise<void> {
     await this.requireSession(sessionId).runtimeResult.runSessionEnd(reason);
   }
 
-  setAttribution(sessionId: string, attribution: { commitEnabled?: boolean; prEnabled?: boolean }): void {
+  setAttribution(
+    sessionId: string,
+    attribution: { commitEnabled?: boolean; prEnabled?: boolean },
+  ): void {
     this.requireSession(sessionId).runtimeResult.setAttribution(attribution);
   }
 
@@ -968,7 +993,7 @@ export class SessionManager {
 
   async replyPendingApproval(
     sessionId: string,
-    decision: Parameters<ServerRuntimeResult['runtime']['continuePendingApproval']>[0],
+    decision: Parameters<ServerRuntimeResult["runtime"]["continuePendingApproval"]>[0],
   ): Promise<void> {
     const session = this.requireSession(sessionId);
     await session.runtimeResult.runtime.continuePendingApproval(decision);
@@ -980,7 +1005,7 @@ export class SessionManager {
 
   async replyPendingQuestions(
     sessionId: string,
-    result: Parameters<ServerRuntimeResult['runtime']['continuePendingQuestions']>[0],
+    result: Parameters<ServerRuntimeResult["runtime"]["continuePendingQuestions"]>[0],
   ): Promise<void> {
     const session = this.requireSession(sessionId);
     await session.runtimeResult.runtime.continuePendingQuestions(result);
@@ -995,7 +1020,7 @@ export class SessionManager {
       const requestId = randomUUID();
       const timer = setTimeout(() => {
         this.pendingTrustRequests.delete(requestId);
-        resolve('deny');
+        resolve("deny");
       }, TRUST_REQUEST_TIMEOUT_MS);
       timer.unref();
       this.pendingTrustRequests.set(requestId, { sessionId, resolve, timer });
@@ -1031,8 +1056,8 @@ export class SessionManager {
       if (runtime.hasPendingApproval()) {
         runtime
           .continuePendingApproval({
-            kind: 'deny',
-            resultText: 'All clients disconnected.',
+            kind: "deny",
+            resultText: "All clients disconnected.",
           })
           .catch((err) =>
             this.callbacks.log?.(
@@ -1041,17 +1066,19 @@ export class SessionManager {
           );
       }
       if (runtime.hasPendingQuestions()) {
-        runtime.continuePendingQuestions({ status: 'skipped' }).catch((err) =>
-          this.callbacks.log?.(
-            `session ${session.info.sessionId}: skip questions failed: ${err instanceof Error ? err.message : String(err)}`,
-          ),
-        );
+        runtime
+          .continuePendingQuestions({ status: "skipped" })
+          .catch((err) =>
+            this.callbacks.log?.(
+              `session ${session.info.sessionId}: skip questions failed: ${err instanceof Error ? err.message : String(err)}`,
+            ),
+          );
       }
     }
     for (const [requestId, pending] of this.pendingTrustRequests) {
       this.pendingTrustRequests.delete(requestId);
       clearTimeout(pending.timer);
-      pending.resolve('deny');
+      pending.resolve("deny");
     }
   }
 
@@ -1099,7 +1126,7 @@ export class SessionManager {
     for (const [requestId, pending] of this.pendingTrustRequests) {
       this.pendingTrustRequests.delete(requestId);
       clearTimeout(pending.timer);
-      pending.resolve('deny');
+      pending.resolve("deny");
     }
     await Promise.all(disposals);
   }

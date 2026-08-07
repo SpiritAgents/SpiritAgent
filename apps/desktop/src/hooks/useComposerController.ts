@@ -10,9 +10,7 @@ import {
 } from "react";
 import type { TFunction } from "i18next";
 
-import {
-  codeUnitIndexToCharCount,
-} from "@spiritagent/host-internal/workspace-file-reference-query";
+import { codeUnitIndexToCharCount } from "@spiritagent/host-internal/workspace-file-reference-query";
 
 import type { ComposerRichInputHandle } from "@/components/composer-rich-input";
 import { segmentsToMessageText, segmentsToPlainText } from "@/components/composer-rich-input";
@@ -22,9 +20,7 @@ import { buildPostSendComposerSegments } from "@/lib/composer-agent-mode-policy"
 import { currentAgentModeSegment, isAgentModeChipKind } from "@/lib/composer-agent-mode-segments";
 import { cycleAgentMode, type DesktopAgentMode } from "@/lib/agent-mode";
 import { currentWorkspaceFileReferenceQueryFromSegments } from "@/lib/composer-file-reference-query";
-import {
-  resolveComposerDirectMediaTool,
-} from "@/lib/composer-direct-media";
+import { resolveComposerDirectMediaTool } from "@/lib/composer-direct-media";
 import type { BrowserElementAttachment } from "@/lib/browser-element-attachment";
 import type { PrDiffAttachment } from "@/lib/pr-diff-attachment";
 import type { GitCommitAttachment } from "@/lib/git-commit-attachment";
@@ -39,10 +35,7 @@ import {
   normalizeSlashPath,
   removeComposerLocalFileAttachment,
 } from "@/lib/local-file-attachments";
-import {
-  isNewSessionAction,
-  type ActionPaletteItem,
-} from "@/lib/action-palette";
+import { isNewSessionAction, type ActionPaletteItem } from "@/lib/action-palette";
 import {
   buildSkillSlashSuggestions,
   COMPACT_SLASH_ALIAS,
@@ -67,10 +60,7 @@ import {
   resolveComposerDropEffect,
 } from "@/lib/composer-file-drop";
 import { normalizePaneSessionPathKey } from "@/lib/pane-desktop-snapshot";
-import {
-  resolvePaneCanSend,
-  resolvePaneComposerBusy,
-} from "@/lib/pane-conversation-controls";
+import { resolvePaneCanSend, resolvePaneComposerBusy } from "@/lib/pane-conversation-controls";
 import type {
   DesktopSnapshot,
   SubmitUserTurnRequest,
@@ -124,7 +114,9 @@ export function useComposerController({
   onBeginSideChat,
 }: UseComposerControllerOptions) {
   const isPaneIsolated = Boolean(paneSessionPath?.trim());
-  const [paneComposerSegments, setPaneComposerSegments] = useState<RichSegment[]>(() => emptySegments());
+  const [paneComposerSegments, setPaneComposerSegments] = useState<RichSegment[]>(() =>
+    emptySegments(),
+  );
   const [paneLocalFileAttachments, setPaneLocalFileAttachments] = useState(
     runtime.composerLocalFileAttachments,
   );
@@ -161,7 +153,9 @@ export function useComposerController({
   }, [isPaneIsolated, pendingQuestions]);
 
   const composerSegments = isPaneIsolated ? paneComposerSegments : runtime.composerSegments;
-  const setComposerSegments = isPaneIsolated ? setPaneComposerSegments : runtime.setComposerSegments;
+  const setComposerSegments = isPaneIsolated
+    ? setPaneComposerSegments
+    : runtime.setComposerSegments;
   const composerText = useMemo(
     () => normalizeComposerPlain(segmentsToPlainText(composerSegments)),
     [composerSegments],
@@ -326,18 +320,18 @@ export function useComposerController({
 
   const composerHasPayload = useMemo(() => {
     return (
-      Boolean(composerText.trim())
-      || composerLocalFileAttachments.length > 0
-      || isCompactSlashComposerSegments(composerSegments)
+      Boolean(composerText.trim()) ||
+      composerLocalFileAttachments.length > 0 ||
+      isCompactSlashComposerSegments(composerSegments)
     );
   }, [composerSegments, composerText, composerLocalFileAttachments.length]);
 
-  const paneSessionPathKey = isPaneIsolated && paneSessionPath
-    ? normalizePaneSessionPathKey(paneSessionPath)
-    : "";
-  const paneSendBusy = isPaneIsolated
-    && Boolean(paneSessionPathKey)
-    && runtime.paneSendBusySessionPath === paneSessionPathKey;
+  const paneSessionPathKey =
+    isPaneIsolated && paneSessionPath ? normalizePaneSessionPathKey(paneSessionPath) : "";
+  const paneSendBusy =
+    isPaneIsolated &&
+    Boolean(paneSessionPathKey) &&
+    runtime.paneSendBusySessionPath === paneSessionPathKey;
   const composerCanSend =
     !compactionDemoActive &&
     !longConversationListDemoActive &&
@@ -348,8 +342,8 @@ export function useComposerController({
     !pendingApproval &&
     !pendingQuestions &&
     (isPaneIsolated
-      ? (resolvePaneCanSend(snapshot) || conversationInterruptible)
-      : (runtime.summary.canSend || conversationInterruptible)) &&
+      ? resolvePaneCanSend(snapshot) || conversationInterruptible
+      : runtime.summary.canSend || conversationInterruptible) &&
     !(isPaneIsolated
       ? paneSendBusy && !conversationInterruptible
       : runtime.busyAction === "send" && !conversationInterruptible);
@@ -590,8 +584,8 @@ export function useComposerController({
     const conversationBusy = snapshot?.conversation.isBusy === true;
     const forkBusy = runtime.busyAction === "fork";
     if (
-      !messageId
-      || !canForkSession({
+      !messageId ||
+      !canForkSession({
         conversationBusy,
         activeSessionReadOnly,
         forkBusy,
@@ -607,7 +601,13 @@ export function useComposerController({
         resetComposerAfterSend();
       }
     });
-  }, [activeSessionReadOnly, resetComposerAfterSend, runtime, snapshot?.conversation.isBusy, snapshot?.conversation.messages]);
+  }, [
+    activeSessionReadOnly,
+    resetComposerAfterSend,
+    runtime,
+    snapshot?.conversation.isBusy,
+    snapshot?.conversation.messages,
+  ]);
 
   const applySideChatSlash = useCallback(() => {
     setSlashSelectedIndex(-1);
@@ -659,7 +659,16 @@ export function useComposerController({
       }
       applySlashSuggestion(`${suggestion.alias} `);
     },
-    [applyAskSlash, applyDebugSlash, applyForkSlash, applyLoopSlash, applyPlanSlash, applySideChatSlash, applySlashSuggestion, slashQuery],
+    [
+      applyAskSlash,
+      applyDebugSlash,
+      applyForkSlash,
+      applyLoopSlash,
+      applyPlanSlash,
+      applySideChatSlash,
+      applySlashSuggestion,
+      slashQuery,
+    ],
   );
 
   const ensureConversationSurface = useCallback(() => {
@@ -714,7 +723,12 @@ export function useComposerController({
       if (isNewSessionAction(item)) {
         return true;
       }
-      return item.kind === "log-session" || item.kind === "compact" || item.kind === "fork" || item.kind === "side-chat";
+      return (
+        item.kind === "log-session" ||
+        item.kind === "compact" ||
+        item.kind === "fork" ||
+        item.kind === "side-chat"
+      );
     },
     [runtime.busyAction],
   );
@@ -816,9 +830,12 @@ export function useComposerController({
     insertComposerText("/");
   }, [insertComposerText]);
 
-  const removeLocalFileAttachment = useCallback((path: string) => {
-    removeComposerLocalFileAttachment(setComposerLocalFileAttachments, path);
-  }, [setComposerLocalFileAttachments]);
+  const removeLocalFileAttachment = useCallback(
+    (path: string) => {
+      removeComposerLocalFileAttachment(setComposerLocalFileAttachments, path);
+    },
+    [setComposerLocalFileAttachments],
+  );
 
   const attachLocalFilePath = useCallback(
     async (filePath: string) => {
@@ -859,11 +876,14 @@ export function useComposerController({
     composerRichInputRef.current?.focus();
   }, []);
 
-  const handleGitCommitAddToSession = useCallback((attachment: GitCommitAttachment) => {
-    ensureConversationSurface();
-    composerRichInputRef.current?.insertGitCommitAttachment(attachment);
-    composerRichInputRef.current?.focus();
-  }, [ensureConversationSurface]);
+  const handleGitCommitAddToSession = useCallback(
+    (attachment: GitCommitAttachment) => {
+      ensureConversationSurface();
+      composerRichInputRef.current?.insertGitCommitAttachment(attachment);
+      composerRichInputRef.current?.focus();
+    },
+    [ensureConversationSurface],
+  );
 
   const handleTerminalAddToSession = useCallback((attachment: TerminalSnippetAttachment) => {
     composerRichInputRef.current?.insertTerminalSnippet(attachment);
@@ -1011,7 +1031,16 @@ export function useComposerController({
         resetComposerAfterSend();
       }
     });
-  }, [applyForkSlash, composerSegments, isEmptySession, isPaneIsolated, resetComposerAfterSend, runtime, snapshot?.git, withPaneSessionPath]);
+  }, [
+    applyForkSlash,
+    composerSegments,
+    isEmptySession,
+    isPaneIsolated,
+    resetComposerAfterSend,
+    runtime,
+    snapshot?.git,
+    withPaneSessionPath,
+  ]);
 
   const confirmBranchCheckoutAndSend = useCallback(() => {
     void (async () => {
@@ -1039,7 +1068,14 @@ export function useComposerController({
         setBranchCheckoutBlockedByChanges(true);
       }
     })();
-  }, [checkoutBranchForComposer, isPaneIsolated, resetComposerAfterSend, runtime, snapshot?.git, withPaneSessionPath]);
+  }, [
+    checkoutBranchForComposer,
+    isPaneIsolated,
+    resetComposerAfterSend,
+    runtime,
+    snapshot?.git,
+    withPaneSessionPath,
+  ]);
 
   const discardBranchChangesAndCheckoutSend = useCallback(() => {
     void (async () => {
@@ -1064,7 +1100,14 @@ export function useComposerController({
         }
       });
     })();
-  }, [checkoutBranchForComposer, isPaneIsolated, resetComposerAfterSend, runtime, snapshot?.git, withPaneSessionPath]);
+  }, [
+    checkoutBranchForComposer,
+    isPaneIsolated,
+    resetComposerAfterSend,
+    runtime,
+    snapshot?.git,
+    withPaneSessionPath,
+  ]);
 
   const handleBranchCheckoutDialogOpenChange = useCallback((open: boolean) => {
     setBranchCheckoutDialogOpen(open);
@@ -1319,25 +1362,28 @@ export function useComposerController({
     focusComposer,
     dismissFileReferenceSuggestions,
     dismissSlashSuggestions,
-    paneQuestionControls: isPaneIsolated && pendingQuestions
-      ? {
-          questionDrafts: paneQuestionDrafts,
-          onUpdateQuestionDraft: (
-            questionId: string,
-            updater: (draft: QuestionDraft) => QuestionDraft,
-          ) => {
-            setPaneQuestionDrafts((current) => ({
-              ...current,
-              [questionId]: updater(current[questionId] ?? { selectedOptionIds: [], customText: "" }),
-            }));
-          },
-          onSubmitQuestions: () => {
-            void runtime.submitQuestions(paneSessionPath, pendingQuestions, paneQuestionDrafts);
-          },
-          onSkipQuestions: () => {
-            void runtime.skipQuestions(paneSessionPath, pendingQuestions);
-          },
-        }
-      : null,
+    paneQuestionControls:
+      isPaneIsolated && pendingQuestions
+        ? {
+            questionDrafts: paneQuestionDrafts,
+            onUpdateQuestionDraft: (
+              questionId: string,
+              updater: (draft: QuestionDraft) => QuestionDraft,
+            ) => {
+              setPaneQuestionDrafts((current) => ({
+                ...current,
+                [questionId]: updater(
+                  current[questionId] ?? { selectedOptionIds: [], customText: "" },
+                ),
+              }));
+            },
+            onSubmitQuestions: () => {
+              void runtime.submitQuestions(paneSessionPath, pendingQuestions, paneQuestionDrafts);
+            },
+            onSkipQuestions: () => {
+              void runtime.skipQuestions(paneSessionPath, pendingQuestions);
+            },
+          }
+        : null,
   };
 }

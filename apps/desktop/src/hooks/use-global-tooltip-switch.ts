@@ -94,7 +94,7 @@ export type UseGlobalTooltipSwitchResult = {
 };
 
 export function useGlobalTooltipSwitch({
-  defaultOpenDelayMs = DEFAULT_ANCHORED_ITEM_SWITCH_OPEN_DELAY_MS,
+  defaultOpenDelayMs: _defaultOpenDelayMs = DEFAULT_ANCHORED_ITEM_SWITCH_OPEN_DELAY_MS,
   defaultCloseDelayMs = DEFAULT_ANCHORED_ITEM_SWITCH_CLOSE_DELAY_MS,
   defaultAnchorLingerMs = DEFAULT_ANCHORED_ITEM_SWITCH_ANCHOR_LINGER_MS,
 }: UseGlobalTooltipSwitchOptions = {}): UseGlobalTooltipSwitchResult {
@@ -232,9 +232,7 @@ export function useGlobalTooltipSwitch({
       const closingItem = activeItemRef.current;
       const closingSlot = activeSlotRef.current;
       const anchorEl = activeAnchorElementRef.current;
-      const anchorRectSnapshot = anchorEl?.isConnected
-        ? anchorEl.getBoundingClientRect()
-        : null;
+      const anchorRectSnapshot = anchorEl?.isConnected ? anchorEl.getBoundingClientRect() : null;
       if (anchorRectSnapshot) {
         setLingerAnchorScreenRect({
           top: anchorRectSnapshot.top,
@@ -362,17 +360,20 @@ export function useGlobalTooltipSwitch({
     [clearHoverCloseTimer, clearHoverOpenTimer, commitClose],
   );
 
-  const isRelatedTarget = useCallback((target: EventTarget | null) => {
-    if (isDomNode(target) && activeAnchorElementRef.current?.contains(target)) {
-      return true;
-    }
-    const registrationId = activeSlotRef.current?.registrationId ?? null;
-    return isWithinGlobalTooltipRelatedTarget(target, {
-      triggerZones: triggerZonesRef.current.values(),
-      triggerElements: triggerElementsRef.current.values(),
-      content: isRegistrationHoverableContent(registrationId) ? contentRef.current : null,
-    });
-  }, [isRegistrationHoverableContent]);
+  const isRelatedTarget = useCallback(
+    (target: EventTarget | null) => {
+      if (isDomNode(target) && activeAnchorElementRef.current?.contains(target)) {
+        return true;
+      }
+      const registrationId = activeSlotRef.current?.registrationId ?? null;
+      return isWithinGlobalTooltipRelatedTarget(target, {
+        triggerZones: triggerZonesRef.current.values(),
+        triggerElements: triggerElementsRef.current.values(),
+        content: isRegistrationHoverableContent(registrationId) ? contentRef.current : null,
+      });
+    },
+    [isRegistrationHoverableContent],
+  );
 
   const registerActiveAnchorElement = useCallback((element: HTMLElement | null) => {
     activeAnchorElementRef.current = element;
@@ -383,13 +384,10 @@ export function useGlobalTooltipSwitch({
     }
   }, []);
 
-  const notePointerEnterTarget = useCallback(
-    (registrationId: string, element: HTMLElement) => {
-      lastEnterTargetByRegistrationRef.current.set(registrationId, element);
-      triggerElementsRef.current.set(registrationId, element);
-    },
-    [],
-  );
+  const notePointerEnterTarget = useCallback((registrationId: string, element: HTMLElement) => {
+    lastEnterTargetByRegistrationRef.current.set(registrationId, element);
+    triggerElementsRef.current.set(registrationId, element);
+  }, []);
 
   const reapplyCachedTriggerElement = useCallback((registrationId: string) => {
     const cached = lastEnterTargetByRegistrationRef.current.get(registrationId);
@@ -398,21 +396,18 @@ export function useGlobalTooltipSwitch({
     }
   }, []);
 
-  const isTargetWithinRegistration = useCallback(
-    (registrationId: string, target: Node) => {
-      const cached = lastEnterTargetByRegistrationRef.current.get(registrationId);
-      if (cached?.contains(target)) {
-        return true;
-      }
-      const triggerEl = triggerElementsRef.current.get(registrationId);
-      if (triggerEl?.contains(target)) {
-        return true;
-      }
-      const zone = triggerZonesRef.current.get(registrationId);
-      return zone?.contains(target) ?? false;
-    },
-    [],
-  );
+  const isTargetWithinRegistration = useCallback((registrationId: string, target: Node) => {
+    const cached = lastEnterTargetByRegistrationRef.current.get(registrationId);
+    if (cached?.contains(target)) {
+      return true;
+    }
+    const triggerEl = triggerElementsRef.current.get(registrationId);
+    if (triggerEl?.contains(target)) {
+      return true;
+    }
+    const zone = triggerZonesRef.current.get(registrationId);
+    return zone?.contains(target) ?? false;
+  }, []);
 
   const reaffirmActiveRegistrationTrigger = useCallback(
     (event: PointerEvent) => {
@@ -434,7 +429,7 @@ export function useGlobalTooltipSwitch({
   );
 
   const handleItemPointerEnter = useCallback(
-    <TItem,>(
+    <TItem>(
       registrationId: string,
       item: TItem,
       getItemId: (item: TItem) => string,
@@ -508,11 +503,17 @@ export function useGlobalTooltipSwitch({
         reapplyCachedTriggerElement(registrationId);
       }, openDelayMs);
     },
-    [applyActiveSlot, applyPointerSlot, clearHoverCloseTimer, clearHoverOpenTimer, reapplyCachedTriggerElement],
+    [
+      applyActiveSlot,
+      applyPointerSlot,
+      clearHoverCloseTimer,
+      clearHoverOpenTimer,
+      reapplyCachedTriggerElement,
+    ],
   );
 
   const getTriggerProps = useCallback(
-    <TItem,>(
+    <TItem>(
       registrationId: string,
       item: TItem,
       getItemId: (item: TItem) => string,
@@ -620,15 +621,13 @@ export function useGlobalTooltipSwitch({
       const registrationId = activeSlotRef.current?.registrationId ?? null;
       const hoverableContent = isRegistrationHoverableContent(registrationId);
       const isRelated =
-        (isDomNode(event.target) &&
-          activeAnchorElementRef.current?.contains(event.target)) ||
+        (isDomNode(event.target) && activeAnchorElementRef.current?.contains(event.target)) ||
         isWithinGlobalTooltipRelatedTarget(event.target, {
           triggerZones: triggerZonesRef.current.values(),
           triggerElements: triggerElementsRef.current.values(),
           content: hoverableContent ? contentRef.current : null,
         }) ||
-        (hoverableContent &&
-          isPointerOverTooltipCompanionOverlays(event.clientX, event.clientY));
+        (hoverableContent && isPointerOverTooltipCompanionOverlays(event.clientX, event.clientY));
       if (isRelated) {
         clearHoverCloseTimer();
         return;
@@ -638,9 +637,14 @@ export function useGlobalTooltipSwitch({
       }
     };
     document.addEventListener("pointermove", handleDocumentPointerMove, true);
-    return () =>
-      document.removeEventListener("pointermove", handleDocumentPointerMove, true);
-  }, [clearHoverCloseTimer, isRegistrationHoverableContent, open, reaffirmActiveRegistrationTrigger, scheduleHoverClose]);
+    return () => document.removeEventListener("pointermove", handleDocumentPointerMove, true);
+  }, [
+    clearHoverCloseTimer,
+    isRegistrationHoverableContent,
+    open,
+    reaffirmActiveRegistrationTrigger,
+    scheduleHoverClose,
+  ]);
 
   useEffect(() => {
     return () => {

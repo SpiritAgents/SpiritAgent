@@ -1,14 +1,19 @@
-import type { LlmMessageContent, LlmToolCall, StoredLlmMessageArchiveEntry } from '@spiritagent/agent-core';
-import { llmMessageTextContent } from '@spiritagent/agent-core';
+import type { LlmToolCall, StoredLlmMessageArchiveEntry } from "@spiritagent/agent-core";
+import { llmMessageTextContent } from "@spiritagent/agent-core";
 
-export type SubagentViewerSessionStatus = 'bootstrapping' | 'running' | 'completed' | 'failed' | 'blocked';
+export type SubagentViewerSessionStatus =
+  | "bootstrapping"
+  | "running"
+  | "completed"
+  | "failed"
+  | "blocked";
 
 export type SubagentViewerToolPhase =
-  | 'preview'
-  | 'pending-approval'
-  | 'running'
-  | 'succeeded'
-  | 'failed';
+  | "preview"
+  | "pending-approval"
+  | "running"
+  | "succeeded"
+  | "failed";
 
 export interface SubagentViewerToolBlock {
   toolCallId?: string;
@@ -23,19 +28,21 @@ export interface SubagentViewerToolBlock {
 
 export interface SubagentViewerMessage {
   id: number;
-  role: 'user' | 'assistant';
+  role: "user" | "assistant";
   content: string;
   tool?: SubagentViewerToolBlock;
   aux?: { thinking?: string };
   pending: boolean;
 }
 
-export type SubagentLlmHistoryEntry = StoredLlmMessageArchiveEntry | {
-  role: string;
-  content: unknown;
-  toolCallId?: string;
-  toolCalls?: LlmToolCall[];
-};
+export type SubagentLlmHistoryEntry =
+  | StoredLlmMessageArchiveEntry
+  | {
+      role: string;
+      content: unknown;
+      toolCallId?: string;
+      toolCalls?: LlmToolCall[];
+    };
 
 export interface BuildSubagentConversationSnapshotsOptions {
   sessionStatus: SubagentViewerSessionStatus;
@@ -48,13 +55,13 @@ export interface BuildSubagentConversationSnapshotsOptions {
 }
 
 function historyText(content: unknown): string {
-  if (typeof content === 'string') {
+  if (typeof content === "string") {
     return content;
   }
   if (Array.isArray(content)) {
     return llmMessageTextContent(content);
   }
-  return '';
+  return "";
 }
 
 function truncateExcerpt(value: string, maxChars: number): string {
@@ -71,18 +78,22 @@ function inferToolPhase(
   isLastUnresolvedTool: boolean,
 ): SubagentViewerToolPhase {
   if (hasOutput) {
-    return sessionStatus === 'failed' ? 'failed' : 'succeeded';
+    return sessionStatus === "failed" ? "failed" : "succeeded";
   }
-  if (sessionStatus === 'failed') {
-    return 'failed';
+  if (sessionStatus === "failed") {
+    return "failed";
   }
-  if (sessionStatus === 'blocked' && isLastUnresolvedTool) {
-    return 'pending-approval';
+  if (sessionStatus === "blocked" && isLastUnresolvedTool) {
+    return "pending-approval";
   }
-  if (sessionStatus === 'running' || sessionStatus === 'blocked' || sessionStatus === 'bootstrapping') {
-    return 'running';
+  if (
+    sessionStatus === "running" ||
+    sessionStatus === "blocked" ||
+    sessionStatus === "bootstrapping"
+  ) {
+    return "running";
   }
-  return 'succeeded';
+  return "succeeded";
 }
 
 function parseToolRequest(argumentsJson: string): unknown {
@@ -98,21 +109,21 @@ function parseToolRequest(argumentsJson: string): unknown {
 }
 
 function extractAssistantReasoningFromHistoryEntry(entry: SubagentLlmHistoryEntry): string {
-  if (entry.role !== 'assistant') {
-    return '';
+  if (entry.role !== "assistant") {
+    return "";
   }
 
   const providerState =
-    'providerState' in entry &&
+    "providerState" in entry &&
     entry.providerState &&
-    typeof entry.providerState === 'object' &&
+    typeof entry.providerState === "object" &&
     !Array.isArray(entry.providerState)
       ? (entry.providerState as Record<string, unknown>)
       : undefined;
   if (providerState) {
-    for (const key of ['reasoning_content', 'reasoningContent', 'reasoning', 'thinking'] as const) {
+    for (const key of ["reasoning_content", "reasoningContent", "reasoning", "thinking"] as const) {
       const value = providerState[key];
-      if (typeof value === 'string' && value.trim()) {
+      if (typeof value === "string" && value.trim()) {
         return value.trim();
       }
     }
@@ -121,20 +132,20 @@ function extractAssistantReasoningFromHistoryEntry(entry: SubagentLlmHistoryEntr
   if (Array.isArray(entry.content)) {
     const reasoningParts: string[] = [];
     for (const part of entry.content) {
-      if (!part || typeof part !== 'object') {
+      if (!part || typeof part !== "object") {
         continue;
       }
       const record = part as Record<string, unknown>;
-      if (record.type === 'reasoning' && typeof record.text === 'string' && record.text.trim()) {
+      if (record.type === "reasoning" && typeof record.text === "string" && record.text.trim()) {
         reasoningParts.push(record.text.trim());
       }
     }
     if (reasoningParts.length > 0) {
-      return reasoningParts.join('\n\n');
+      return reasoningParts.join("\n\n");
     }
   }
 
-  return '';
+  return "";
 }
 
 function pushAssistantThinkingMessage(
@@ -148,8 +159,8 @@ function pushAssistantThinkingMessage(
   }
   messages.push({
     id: nextIdRef.value,
-    role: 'assistant',
-    content: '',
+    role: "assistant",
+    content: "",
     aux: { thinking: trimmed },
     pending: false,
   });
@@ -162,7 +173,7 @@ export function buildSubagentConversationSnapshots(
 ): SubagentViewerMessage[] {
   const toolOutputs = new Map<string, string>();
   for (const entry of llmHistory) {
-    if (entry.role !== 'tool') {
+    if (entry.role !== "tool") {
       continue;
     }
     const toolCallId = entry.toolCallId?.trim();
@@ -174,7 +185,7 @@ export function buildSubagentConversationSnapshots(
 
   const unresolvedToolCallIds = new Set<string>();
   for (const entry of llmHistory) {
-    if (entry.role !== 'assistant') {
+    if (entry.role !== "assistant") {
       continue;
     }
     for (const toolCall of entry.toolCalls ?? []) {
@@ -191,7 +202,7 @@ export function buildSubagentConversationSnapshots(
   let lastUnresolvedToolCallId: string | undefined;
   for (let index = llmHistory.length - 1; index >= 0; index -= 1) {
     const entry = llmHistory[index];
-    if (entry?.role !== 'assistant') {
+    if (entry?.role !== "assistant") {
       continue;
     }
     const toolCalls = entry.toolCalls ?? [];
@@ -211,18 +222,18 @@ export function buildSubagentConversationSnapshots(
   const nextIdRef = { value: 1 };
 
   for (const entry of llmHistory) {
-    if (entry.role === 'tool') {
+    if (entry.role === "tool") {
       continue;
     }
 
-    if (entry.role === 'user') {
+    if (entry.role === "user") {
       const content = historyText(entry.content).trim();
       if (!content) {
         continue;
       }
       messages.push({
         id: nextIdRef.value,
-        role: 'user',
+        role: "user",
         content,
         pending: false,
       });
@@ -230,7 +241,7 @@ export function buildSubagentConversationSnapshots(
       continue;
     }
 
-    if (entry.role !== 'assistant') {
+    if (entry.role !== "assistant") {
       continue;
     }
 
@@ -245,7 +256,7 @@ export function buildSubagentConversationSnapshots(
       if (text) {
         messages.push({
           id: nextIdRef.value,
-          role: 'assistant',
+          role: "assistant",
           content: text,
           pending: false,
         });
@@ -256,9 +267,7 @@ export function buildSubagentConversationSnapshots(
         const toolCallId = toolCall.id?.trim();
         const output = toolCallId ? toolOutputs.get(toolCallId) : undefined;
         const hasOutput = Boolean(output?.trim());
-        const isLastUnresolvedTool = Boolean(
-          toolCallId && toolCallId === lastUnresolvedToolCallId,
-        );
+        const isLastUnresolvedTool = Boolean(toolCallId && toolCallId === lastUnresolvedToolCallId);
         const phase = inferToolPhase(options.sessionStatus, hasOutput, isLastUnresolvedTool);
         const request = parseToolRequest(toolCall.argumentsJson);
         let tool: SubagentViewerToolBlock = {
@@ -280,10 +289,10 @@ export function buildSubagentConversationSnapshots(
         }
         messages.push({
           id: nextIdRef.value,
-          role: 'assistant',
-          content: '',
+          role: "assistant",
+          content: "",
           tool,
-          pending: phase === 'running' || phase === 'preview' || phase === 'pending-approval',
+          pending: phase === "running" || phase === "preview" || phase === "pending-approval",
         });
         nextIdRef.value += 1;
       }
@@ -296,7 +305,7 @@ export function buildSubagentConversationSnapshots(
       }
       messages.push({
         id: nextIdRef.value,
-        role: 'assistant',
+        role: "assistant",
         content: text,
         pending: false,
       });
@@ -322,5 +331,5 @@ export function resolveSubagentPromptFromTaskFields(input: {
   if (contextSummary) {
     return contextSummary;
   }
-  return input.title?.trim() ?? '';
+  return input.title?.trim() ?? "";
 }

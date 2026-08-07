@@ -1,6 +1,6 @@
-import { githubApiHeaders, githubFetch } from './github-api.js';
-import { GITHUB_API_BASE_URL } from './oauth-config.js';
-import { GitHubOAuthError } from './oauth.js';
+import { githubApiHeaders, githubFetch } from "./github-api.js";
+import { GITHUB_API_BASE_URL } from "./oauth-config.js";
+import { GitHubOAuthError } from "./oauth.js";
 
 interface GitHubGraphQLError {
   message?: string;
@@ -17,7 +17,7 @@ export async function executeGitHubGraphQL<T>(
   variables?: Record<string, unknown>,
 ): Promise<T> {
   const response = await githubFetch(`${GITHUB_API_BASE_URL}/graphql`, {
-    method: 'POST',
+    method: "POST",
     headers: githubApiHeaders(accessToken),
     body: JSON.stringify({ query, variables }),
   });
@@ -45,7 +45,7 @@ export async function executeGitHubGraphQL<T>(
   }
 
   if (payload.data == null) {
-    throw new GitHubOAuthError('GitHub GraphQL request returned no data.');
+    throw new GitHubOAuthError("GitHub GraphQL request returned no data.");
   }
 
   return payload.data;

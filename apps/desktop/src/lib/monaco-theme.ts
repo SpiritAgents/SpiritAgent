@@ -4,10 +4,7 @@ import lightPlus from "@shikijs/themes/light-plus";
 import type { ThemeRegistrationResolved } from "@shikijs/types";
 import * as monaco from "monaco-editor";
 
-import {
-  SPIRIT_MONACO_SHIKI_DARK,
-  SPIRIT_MONACO_SHIKI_LIGHT,
-} from "@/lib/spirit-shiki-themes";
+import { SPIRIT_MONACO_SHIKI_DARK, SPIRIT_MONACO_SHIKI_LIGHT } from "@/lib/spirit-shiki-themes";
 import { isMonacoShikiReady } from "@/lib/monaco-shiki-state";
 
 const FALLBACK_DARK_BG = "#000000";
@@ -26,7 +23,9 @@ function rgbaToMonacoHex(r: number, g: number, b: number, a: number): string {
   if (a >= 0.998) {
     return `#${R}${G}${B}`;
   }
-  const A = clampByte(a * 255).toString(16).padStart(2, "0");
+  const A = clampByte(a * 255)
+    .toString(16)
+    .padStart(2, "0");
   return `#${R}${G}${B}${A}`;
 }
 
@@ -173,7 +172,7 @@ export function registerSpiritShikiPlusMonacoThemes(): void {
   monaco.editor.defineTheme(SPIRIT_MONACO_SHIKI_DARK, {
     ...darkBase,
     colors: {
-      ...(darkBase.colors ?? {}),
+      ...darkBase.colors,
       ...buildSpiritDarkChromeColors(darkSurface),
     },
   });
@@ -184,7 +183,7 @@ export function registerSpiritShikiPlusMonacoThemes(): void {
   monaco.editor.defineTheme(SPIRIT_MONACO_SHIKI_LIGHT, {
     ...lightBase,
     colors: {
-      ...(lightBase.colors ?? {}),
+      ...lightBase.colors,
       ...buildSpiritLightChromeColors(lightSurface),
     },
   });

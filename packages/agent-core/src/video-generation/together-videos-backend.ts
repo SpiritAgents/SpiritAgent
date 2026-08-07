@@ -1,14 +1,14 @@
-import { getLlmFetch } from '../llm-fetch.js';
-import type { OpenAiVideoGenerationConfig } from '../openai/openai-compat.js';
+import { getLlmFetch } from "../llm-fetch.js";
+import type { OpenAiVideoGenerationConfig } from "../openai/openai-compat.js";
 import type {
   GeneratedVideoFile,
   GeneratedVideoSaveRequest,
   ToolExecutionOutput,
   VideoGenerationRequest,
-} from '../ports.js';
-import { pollUntil } from './poll.js';
-import { buildGeneratedVideoToolOutput } from './output.js';
-import type { VideoGenerationBackend } from './types.js';
+} from "../ports.js";
+import { pollUntil } from "./poll.js";
+import { buildGeneratedVideoToolOutput } from "./output.js";
+import type { VideoGenerationBackend } from "./types.js";
 
 interface TogetherVideoCreateResponse {
   id?: string;
@@ -22,7 +22,7 @@ interface TogetherVideoStatusResponse {
   };
 }
 
-const DEFAULT_TOGETHER_VIDEO_API_BASE = 'https://api.together.ai/v2';
+const DEFAULT_TOGETHER_VIDEO_API_BASE = "https://api.together.ai/v2";
 
 /** Derive Together `/v2` video API base from an openai-compatible `/v1` apiBase. */
 export function resolveTogetherVideoApiBase(baseUrl: string | undefined): string {
@@ -34,20 +34,20 @@ export function resolveTogetherVideoApiBase(baseUrl: string | undefined): string
   try {
     const url = new URL(trimmed);
     const hostname = url.hostname.toLowerCase();
-    if (!hostname.includes('together.ai') && !hostname.includes('together.xyz')) {
-      return trimmed.replace(/\/$/, '');
+    if (!hostname.includes("together.ai") && !hostname.includes("together.xyz")) {
+      return trimmed.replace(/\/$/, "");
     }
-    url.pathname = '/v2';
-    url.search = '';
-    url.hash = '';
-    return url.toString().replace(/\/$/, '');
+    url.pathname = "/v2";
+    url.search = "";
+    url.hash = "";
+    return url.toString().replace(/\/$/, "");
   } catch {
-    return trimmed.replace(/\/v1\/?$/i, '/v2').replace(/\/$/, '');
+    return trimmed.replace(/\/v1\/?$/i, "/v2").replace(/\/$/, "");
   }
 }
 
 export class TogetherVideosBackend implements VideoGenerationBackend {
-  readonly id = 'together-videos';
+  readonly id = "together-videos";
 
   async generate(
     config: OpenAiVideoGenerationConfig,
@@ -57,7 +57,7 @@ export class TogetherVideosBackend implements VideoGenerationBackend {
     const videoBaseUrl = resolveTogetherVideoApiBase(config.baseUrl);
     const createUrl = `${videoBaseUrl}/videos`;
 
-    console.error('[agent-core][generate-video] request.start', {
+    console.error("[agent-core][generate-video] request.start", {
       adapter: this.id,
       model: config.model,
       baseUrl: config.baseUrl,
@@ -69,10 +69,10 @@ export class TogetherVideosBackend implements VideoGenerationBackend {
     });
 
     const createResponse = await getLlmFetch()(createUrl, {
-      method: 'POST',
+      method: "POST",
       headers: {
         Authorization: `Bearer ${config.apiKey}`,
-        'Content-Type': 'application/json',
+        "Content-Type": "application/json",
       },
       body: JSON.stringify({
         model: config.model,
@@ -91,7 +91,7 @@ export class TogetherVideosBackend implements VideoGenerationBackend {
     const created = (await createResponse.json()) as TogetherVideoCreateResponse;
     const taskId = created.id?.trim();
     if (!taskId) {
-      throw new Error('Together AI video task creation returned no task id.');
+      throw new Error("Together AI video task creation returned no task id.");
     }
 
     const statusUrl = `${videoBaseUrl}/videos/${encodeURIComponent(taskId)}`;
@@ -103,23 +103,27 @@ export class TogetherVideosBackend implements VideoGenerationBackend {
       });
       if (!statusResponse.ok) {
         const body = await statusResponse.text();
-        throw new Error(`Together AI video task polling failed (${statusResponse.status}): ${body}`);
+        throw new Error(
+          `Together AI video task polling failed (${statusResponse.status}): ${body}`,
+        );
       }
 
       const status = (await statusResponse.json()) as TogetherVideoStatusResponse;
       const state = status.status?.toLowerCase();
-      if (state === 'completed') {
+      if (state === "completed") {
         return status;
       }
-      if (state === 'failed') {
-        throw new Error(status.error?.message ?? `Together AI video task ended with status: ${status.status}`);
+      if (state === "failed") {
+        throw new Error(
+          status.error?.message ?? `Together AI video task ended with status: ${status.status}`,
+        );
       }
       return undefined;
     });
 
     const videoUrl = completed.outputs?.video_url?.trim();
     if (!videoUrl) {
-      throw new Error('Together AI video task completed without a downloadable video URL.');
+      throw new Error("Together AI video task completed without a downloadable video URL.");
     }
 
     const downloadResponse = await fetch(videoUrl);
@@ -127,7 +131,8 @@ export class TogetherVideosBackend implements VideoGenerationBackend {
       throw new Error(`Failed to download Together AI video (${downloadResponse.status}).`);
     }
 
-    const mediaType = downloadResponse.headers.get('content-type')?.split(';', 1)[0]?.trim() || 'video/mp4';
+    const mediaType =
+      downloadResponse.headers.get("content-type")?.split(";", 1)[0]?.trim() || "video/mp4";
     const data = new Uint8Array(await downloadResponse.arrayBuffer());
     const saved = await saveGeneratedVideo({
       data,
@@ -136,7 +141,7 @@ export class TogetherVideosBackend implements VideoGenerationBackend {
       model: config.model,
     });
 
-    console.error('[agent-core][generate-video] request.success', {
+    console.error("[agent-core][generate-video] request.success", {
       adapter: this.id,
       model: config.model,
       taskId,

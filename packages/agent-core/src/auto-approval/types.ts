@@ -1,6 +1,6 @@
-import type { JsonValue } from '../ports.js';
+import type { JsonValue } from "../ports.js";
 
-export type SessionApprovalLevel = 'default' | 'auto-approval' | 'full-approval';
+export type SessionApprovalLevel = "default" | "auto-approval" | "full-approval";
 
 export interface ToolAutoReviewInput {
   toolName: string;
@@ -15,9 +15,11 @@ export interface ToolAutoReviewResult {
   reason: string;
 }
 
-export type ToolAutoReviewer = (input: ToolAutoReviewInput) => Promise<ToolAutoReviewResult | undefined>;
+export type ToolAutoReviewer = (
+  input: ToolAutoReviewInput,
+) => Promise<ToolAutoReviewResult | undefined>;
 
 export type ToolAutoReviewGateOutcome =
-  | { kind: 'manual' }
-  | { kind: 'allowed' }
-  | { kind: 'blocked'; reason: string };
+  | { kind: "manual" }
+  | { kind: "allowed" }
+  | { kind: "blocked"; reason: string };

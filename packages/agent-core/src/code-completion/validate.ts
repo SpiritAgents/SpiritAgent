@@ -1,10 +1,10 @@
-import { isJsonObject } from '../tool-agent.js';
-import type { JsonValue } from '../ports.js';
+import { isJsonObject } from "../tool-agent.js";
+import type { JsonValue } from "../ports.js";
 
-import type { CodeCompletionOperation, CodeCompletionResult } from './types.js';
+import type { CodeCompletionOperation, CodeCompletionResult } from "./types.js";
 
 function isPositiveInt(value: unknown): value is number {
-  return typeof value === 'number' && Number.isInteger(value) && value >= 1;
+  return typeof value === "number" && Number.isInteger(value) && value >= 1;
 }
 
 function parseOperation(value: JsonValue | undefined): CodeCompletionOperation | undefined {
@@ -13,7 +13,7 @@ function parseOperation(value: JsonValue | undefined): CodeCompletionOperation |
   }
 
   const kind = value.kind;
-  if (kind !== 'insert' && kind !== 'replace' && kind !== 'delete') {
+  if (kind !== "insert" && kind !== "replace" && kind !== "delete") {
     return undefined;
   }
 
@@ -35,29 +35,29 @@ function parseOperation(value: JsonValue | undefined): CodeCompletionOperation |
   }
 
   const text = value.text;
-  if (text !== undefined && typeof text !== 'string') {
+  if (text !== undefined && typeof text !== "string") {
     return undefined;
   }
 
-  if (kind === 'insert') {
+  if (kind === "insert") {
     if (startLine !== endLine || startColumn !== endColumn) {
       return undefined;
     }
-    if (typeof text !== 'string') {
+    if (typeof text !== "string") {
       return undefined;
     }
   }
 
-  if (kind === 'replace') {
+  if (kind === "replace") {
     if (startLine === endLine && startColumn === endColumn) {
       return undefined;
     }
-    if (typeof text !== 'string') {
+    if (typeof text !== "string") {
       return undefined;
     }
   }
 
-  if (kind === 'delete') {
+  if (kind === "delete") {
     if (startLine === endLine && startColumn === endColumn) {
       return undefined;
     }
@@ -69,7 +69,7 @@ function parseOperation(value: JsonValue | undefined): CodeCompletionOperation |
     startColumn,
     endLine,
     endColumn,
-    ...(typeof text === 'string' ? { text } : {}),
+    ...(typeof text === "string" ? { text } : {}),
   };
 }
 

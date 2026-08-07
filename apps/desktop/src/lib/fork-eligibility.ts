@@ -1,14 +1,16 @@
-import type { ConversationMessageSnapshot } from '@/types';
+import type { ConversationMessageSnapshot } from "@/types";
 
 function isForkableAssistantMessage(message: ConversationMessageSnapshot): boolean {
-  return message.role === 'assistant'
-    && !message.pending
-    && Boolean(
-      message.content.trim()
-      || message.tool
-      || message.aux?.thinking?.trim()
-      || message.aux?.compaction?.trim(),
-    );
+  return (
+    message.role === "assistant" &&
+    !message.pending &&
+    Boolean(
+      message.content.trim() ||
+      message.tool ||
+      message.aux?.thinking?.trim() ||
+      message.aux?.compaction?.trim(),
+    )
+  );
 }
 
 export type ForkMessageEligibilityInput = {
@@ -28,7 +30,7 @@ export type ForkSessionEligibilityInput = {
 export function canShowForkMessage({
   message,
   activeSessionReadOnly,
-}: Pick<ForkMessageEligibilityInput, 'message' | 'activeSessionReadOnly'>): boolean {
+}: Pick<ForkMessageEligibilityInput, "message" | "activeSessionReadOnly">): boolean {
   if (activeSessionReadOnly) {
     return false;
   }

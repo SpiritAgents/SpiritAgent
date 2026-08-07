@@ -92,14 +92,16 @@ const ADJACENCY_TOLERANCE_PX = 4;
 
 /** True when two pane hosts share a screen edge (siblings in the layout chrome). */
 export function arePaneHostsAdjacent(sourceRect: DOMRect, targetRect: DOMRect): boolean {
-  const overlapX = Math.min(sourceRect.right, targetRect.right) - Math.max(sourceRect.left, targetRect.left);
-  const overlapY = Math.min(sourceRect.bottom, targetRect.bottom) - Math.max(sourceRect.top, targetRect.top);
+  const overlapX =
+    Math.min(sourceRect.right, targetRect.right) - Math.max(sourceRect.left, targetRect.left);
+  const overlapY =
+    Math.min(sourceRect.bottom, targetRect.bottom) - Math.max(sourceRect.top, targetRect.top);
   const verticalEdgeTouch =
-    Math.abs(sourceRect.right - targetRect.left) <= ADJACENCY_TOLERANCE_PX
-    || Math.abs(sourceRect.left - targetRect.right) <= ADJACENCY_TOLERANCE_PX;
+    Math.abs(sourceRect.right - targetRect.left) <= ADJACENCY_TOLERANCE_PX ||
+    Math.abs(sourceRect.left - targetRect.right) <= ADJACENCY_TOLERANCE_PX;
   const horizontalEdgeTouch =
-    Math.abs(sourceRect.bottom - targetRect.top) <= ADJACENCY_TOLERANCE_PX
-    || Math.abs(sourceRect.top - targetRect.bottom) <= ADJACENCY_TOLERANCE_PX;
+    Math.abs(sourceRect.bottom - targetRect.top) <= ADJACENCY_TOLERANCE_PX ||
+    Math.abs(sourceRect.top - targetRect.bottom) <= ADJACENCY_TOLERANCE_PX;
 
   if (verticalEdgeTouch && overlapY > ADJACENCY_TOLERANCE_PX) {
     return true;
@@ -141,18 +143,16 @@ type VisibleZoneLayout =
 function isSidebarSplitZoneSet(visibleZones: readonly PaneDropZone[]): boolean {
   const set = new Set(visibleZones);
   return (
-    visibleZones.length === 4
-    && set.has("before")
-    && set.has("after")
-    && set.has("above")
-    && set.has("below")
-    && !set.has("swap")
+    visibleZones.length === 4 &&
+    set.has("before") &&
+    set.has("after") &&
+    set.has("above") &&
+    set.has("below") &&
+    !set.has("swap")
   );
 }
 
-function visibleZoneLayout(
-  visibleZones: readonly PaneDropZone[],
-): VisibleZoneLayout | null {
+function visibleZoneLayout(visibleZones: readonly PaneDropZone[]): VisibleZoneLayout | null {
   if (isSidebarSplitZoneSet(visibleZones)) {
     return "sidebar-split";
   }
@@ -310,9 +310,7 @@ function sidebarSplitIndicatorRect(hostRect: DOMRect, zone: PaneRepositionZone):
   }
 }
 
-export function paneDropZoneGridLayoutClass(
-  visibleZones: readonly PaneDropZone[],
-): string {
+export function paneDropZoneGridLayoutClass(visibleZones: readonly PaneDropZone[]): string {
   const layout = visibleZoneLayout(visibleZones);
   if (layout === "sidebar-split") {
     return `grid-cols-[${TRIPLE_EDGE_FR}fr_${SWAP_BAND_FR}fr_${TRIPLE_EDGE_FR}fr] grid-rows-2`;
@@ -331,7 +329,10 @@ export function paneDropZoneGridCellClass(
   visibleZones: readonly PaneDropZone[],
 ): string | undefined {
   const layout = visibleZoneLayout(visibleZones);
-  if (layout === "sidebar-split" && (zone === "before" || zone === "above" || zone === "after" || zone === "below")) {
+  if (
+    layout === "sidebar-split" &&
+    (zone === "before" || zone === "above" || zone === "after" || zone === "below")
+  ) {
     return PANE_DROP_ZONE_SIDEBAR_SPLIT_CLASS[zone];
   }
   if (layout === "triple-row" && (zone === "above" || zone === "swap" || zone === "below")) {

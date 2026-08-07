@@ -1,5 +1,5 @@
-import assert from 'node:assert/strict';
-import test from 'node:test';
+import assert from "node:assert/strict";
+import test from "node:test";
 
 import {
   computeWorkspaceToolsMaxWidthPx,
@@ -9,10 +9,10 @@ import {
   writeWorkspaceToolsWidthRatio,
   WORKSPACE_TOOLS_DEFAULT_WIDTH_RATIO,
   WORKSPACE_TOOLS_MIN_WIDTH_PX,
-} from '../../src/lib/layout-prefs.ts';
+} from "../../src/lib/layout-prefs.ts";
 
-const RATIO_KEY = 'spirit-desktop-workspace-tools-width-ratio';
-const LEGACY_PX_KEY = 'spirit-desktop-workspace-tools-width-px';
+const RATIO_KEY = "spirit-desktop-workspace-tools-width-ratio";
+const LEGACY_PX_KEY = "spirit-desktop-workspace-tools-width-px";
 
 function withLocalStorage(run) {
   const previous = globalThis.localStorage;
@@ -38,7 +38,7 @@ function withLocalStorage(run) {
   }
 }
 
-test('readWorkspaceToolsWidthPx scales with viewport from stored ratio', () => {
+test("readWorkspaceToolsWidthPx scales with viewport from stored ratio", () => {
   withLocalStorage(() => {
     writeWorkspaceToolsWidthRatio(0.5, 1000);
     assert.equal(readWorkspaceToolsWidthPx(1000), 500);
@@ -46,25 +46,25 @@ test('readWorkspaceToolsWidthPx scales with viewport from stored ratio', () => {
   });
 });
 
-test('writeWorkspaceToolsWidthPx persists ratio not absolute pixels', () => {
+test("writeWorkspaceToolsWidthPx persists ratio not absolute pixels", () => {
   withLocalStorage((store) => {
     writeWorkspaceToolsWidthPx(600, 1200);
-    assert.equal(store.get(RATIO_KEY), '0.5');
+    assert.equal(store.get(RATIO_KEY), "0.5");
     assert.equal(store.has(LEGACY_PX_KEY), false);
     assert.equal(readWorkspaceToolsWidthPx(2400), 1200);
   });
 });
 
-test('legacy pixel width migrates to ratio once', () => {
+test("legacy pixel width migrates to ratio once", () => {
   withLocalStorage((store) => {
-    store.set(LEGACY_PX_KEY, '600');
+    store.set(LEGACY_PX_KEY, "600");
     assert.equal(readWorkspaceToolsWidthRatio(1200), 0.5);
-    assert.equal(store.get(RATIO_KEY), '0.5');
+    assert.equal(store.get(RATIO_KEY), "0.5");
     assert.equal(readWorkspaceToolsWidthPx(2400), 1200);
   });
 });
 
-test('readWorkspaceToolsWidthPx clamps to min and max', () => {
+test("readWorkspaceToolsWidthPx clamps to min and max", () => {
   withLocalStorage(() => {
     writeWorkspaceToolsWidthRatio(0.05, 1000);
     assert.equal(readWorkspaceToolsWidthPx(1000), WORKSPACE_TOOLS_MIN_WIDTH_PX);
@@ -74,7 +74,7 @@ test('readWorkspaceToolsWidthPx clamps to min and max', () => {
   });
 });
 
-test('default ratio is used when no prefs exist', () => {
+test("default ratio is used when no prefs exist", () => {
   withLocalStorage(() => {
     assert.equal(readWorkspaceToolsWidthRatio(1200), WORKSPACE_TOOLS_DEFAULT_WIDTH_RATIO);
   });

@@ -5,9 +5,6 @@ export function setGitHubFetchImplementation(fetchImpl: typeof fetch | undefined
   githubFetchImpl = fetchImpl;
 }
 
-export function githubFetch(
-  input: RequestInfo | URL,
-  init?: RequestInit,
-): Promise<Response> {
+export function githubFetch(input: RequestInfo | URL, init?: RequestInit): Promise<Response> {
   return (githubFetchImpl ?? globalThis.fetch)(input, init);
 }

@@ -1,10 +1,7 @@
 import type { DesktopAutomationTriggerFormatLabels } from "@/lib/automation-trigger";
 
 /** 兼容 react-i18next `t` 的最小签名，避免直接依赖 TFunction 泛型。 */
-export type AutomationTriggerTranslate = (
-  key: string,
-  options?: Record<string, unknown>,
-) => string;
+export type AutomationTriggerTranslate = (key: string, options?: Record<string, unknown>) => string;
 
 export function buildAutomationTriggerFormatLabels(
   t: AutomationTriggerTranslate,

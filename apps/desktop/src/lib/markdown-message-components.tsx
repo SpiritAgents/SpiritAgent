@@ -46,8 +46,16 @@ export function createMarkdownMessageComponents(
     : compact
       ? "text-xs leading-relaxed text-foreground"
       : "text-sm leading-relaxed text-foreground";
-  const headingText = muted ? (compact ? "text-foreground/85" : "text-muted-foreground") : defaultText;
-  const inlineCodeText = muted ? (compact ? "text-foreground/80" : "text-muted-foreground") : defaultText;
+  const headingText = muted
+    ? compact
+      ? "text-foreground/85"
+      : "text-muted-foreground"
+    : defaultText;
+  const inlineCodeText = muted
+    ? compact
+      ? "text-foreground/80"
+      : "text-muted-foreground"
+    : defaultText;
   const blockCodeText = inlineCodeText;
   const tableCellText = muted
     ? compact
@@ -127,7 +135,10 @@ export function createMarkdownMessageComponents(
       <p className={cn("mb-2 last:mb-0", bodyText, className)} {...props} />
     ),
     ul: ({ className, ...props }: HTMLAttributes<HTMLUListElement>) => (
-      <ul className={cn("mb-2 list-disc space-y-1 pl-5 last:mb-0", bodyText, className)} {...props} />
+      <ul
+        className={cn("mb-2 list-disc space-y-1 pl-5 last:mb-0", bodyText, className)}
+        {...props}
+      />
     ),
     ol: ({ className, ...props }: HTMLAttributes<HTMLOListElement>) => (
       <ol
@@ -150,35 +161,41 @@ export function createMarkdownMessageComponents(
     hr: ({ className, ...props }: HTMLAttributes<HTMLHRElement>) => (
       <hr className={cn("my-4 border-border/60", className)} {...props} />
     ),
-    a: ({ className, href, children, onClick, ...props }: AnchorHTMLAttributes<HTMLAnchorElement>) => {
+    a: ({
+      className,
+      href,
+      children,
+      onClick,
+      ...props
+    }: AnchorHTMLAttributes<HTMLAnchorElement>) => {
       const hrefValue = href?.trim() ?? "";
       const isFragmentLink = isMarkdownFragmentHref(hrefValue);
       return (
-      <a
-        className={cn(
-          muted
-            ? "break-words text-muted-foreground underline underline-offset-2 hover:text-sidebar-foreground/80"
-            : "break-words text-foreground underline underline-offset-2 hover:text-sidebar-foreground",
-          className,
-        )}
-        href={href}
-        target={isFragmentLink ? undefined : "_blank"}
-        rel={isFragmentLink ? undefined : "noopener noreferrer"}
-        onClick={(event: MouseEvent<HTMLAnchorElement>) => {
-          onClick?.(event);
-          if (isFragmentLink) {
-            event.preventDefault();
-            scrollMarkdownFragmentIntoView(hrefValue, event.currentTarget);
-            return;
-          }
-          if (hrefValue && onLinkClick?.(hrefValue, event)) {
-            event.preventDefault();
-          }
-        }}
-        {...props}
-      >
-        {children}
-      </a>
+        <a
+          className={cn(
+            muted
+              ? "break-words text-muted-foreground underline underline-offset-2 hover:text-sidebar-foreground/80"
+              : "break-words text-foreground underline underline-offset-2 hover:text-sidebar-foreground",
+            className,
+          )}
+          href={href}
+          target={isFragmentLink ? undefined : "_blank"}
+          rel={isFragmentLink ? undefined : "noopener noreferrer"}
+          onClick={(event: MouseEvent<HTMLAnchorElement>) => {
+            onClick?.(event);
+            if (isFragmentLink) {
+              event.preventDefault();
+              scrollMarkdownFragmentIntoView(hrefValue, event.currentTarget);
+              return;
+            }
+            if (hrefValue && onLinkClick?.(hrefValue, event)) {
+              event.preventDefault();
+            }
+          }}
+          {...props}
+        >
+          {children}
+        </a>
       );
     },
     strong: ({ className, ...props }: HTMLAttributes<HTMLElement>) => (
@@ -253,7 +270,10 @@ export function createMarkdownMessageComponents(
       />
     ),
     td: ({ className, ...props }: HTMLAttributes<HTMLTableCellElement>) => (
-      <td className={cn("border border-border/50 px-2 py-1.5 align-top", tableCellText, className)} {...props} />
+      <td
+        className={cn("border border-border/50 px-2 py-1.5 align-top", tableCellText, className)}
+        {...props}
+      />
     ),
     tr: ({ className, ...props }: HTMLAttributes<HTMLTableRowElement>) => (
       <tr className={cn("", className)} {...props} />
@@ -278,7 +298,12 @@ export function createMarkdownMessageComponents(
     input: ({ type, className, ...props }: InputHTMLAttributes<HTMLInputElement>) => {
       if (type === "checkbox") {
         return (
-          <input type="checkbox" readOnly className={cn("mr-1.5 align-middle", className)} {...props} />
+          <input
+            type="checkbox"
+            readOnly
+            className={cn("mr-1.5 align-middle", className)}
+            {...props}
+          />
         );
       }
       return <input type={type} className={className} {...props} />;

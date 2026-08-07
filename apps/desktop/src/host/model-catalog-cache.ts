@@ -1,9 +1,9 @@
-import { createHash } from 'node:crypto';
-import { readFileSync } from 'node:fs';
-import { mkdir, readFile, rename, writeFile } from 'node:fs/promises';
-import path from 'node:path';
+import { createHash } from "node:crypto";
+import { readFileSync } from "node:fs";
+import { mkdir, readFile, rename, writeFile } from "node:fs/promises";
+import path from "node:path";
 
-import { normalizeOpenAiApiBase } from '@spiritagent/host-internal';
+import { normalizeOpenAiApiBase } from "@spiritagent/host-internal";
 
 import type {
   DesktopModelCapability,
@@ -12,9 +12,9 @@ import type {
   DesktopTransportKind,
   PreviewModelCatalogEntry,
   PreviewModelCatalogPricing,
-} from '../types.js';
+} from "../types.js";
 
-import { spiritAgentDataDir } from './storage.js';
+import { spiritAgentDataDir } from "./storage.js";
 
 /** 模型目录缓存 TTL（24h）。 */
 export const MODEL_CATALOG_CACHE_TTL_MS = 24 * 60 * 60 * 1000;
@@ -23,7 +23,7 @@ export const MODEL_CATALOG_CACHE_TTL_MS = 24 * 60 * 60 * 1000;
 export const HUGGING_FACE_MODEL_CATALOG_CACHE_TTL_MS = 15 * 60 * 1000;
 
 const PROVIDER_MODEL_CATALOG_CACHE_TTL_MS: Partial<Record<DesktopModelProvider, number>> = {
-  'hugging-face': HUGGING_FACE_MODEL_CATALOG_CACHE_TTL_MS,
+  "hugging-face": HUGGING_FACE_MODEL_CATALOG_CACHE_TTL_MS,
 };
 
 function modelCatalogCacheTtlMs(provider?: DesktopModelProvider): number {
@@ -35,10 +35,10 @@ function modelCatalogCacheTtlMs(provider?: DesktopModelProvider): number {
 
 /** 与 `writeModelCatalogCache` 写入的 `apiKeyFingerprint` 一致，供调用方比对。 */
 export function modelCatalogApiKeyFingerprint(apiKey: string): string {
-  return createHash('sha256').update(apiKey.trim(), 'utf8').digest('hex').slice(0, 24);
+  return createHash("sha256").update(apiKey.trim(), "utf8").digest("hex").slice(0, 24);
 }
 
-const CACHE_DIR_NAME = 'model-catalog-cache';
+const CACHE_DIR_NAME = "model-catalog-cache";
 
 function modelCatalogCacheDir(): string {
   return path.join(spiritAgentDataDir(), CACHE_DIR_NAME);
@@ -50,7 +50,7 @@ function modelCatalogCacheKey(
   transportKind?: DesktopTransportKind,
 ): string {
   const normalized = normalizeOpenAiApiBase(apiBase);
-  return `${provider ?? 'custom'}::${transportKind ?? 'openai-compatible'}::${normalized}`;
+  return `${provider ?? "custom"}::${transportKind ?? "openai-compatible"}::${normalized}`;
 }
 
 function modelCatalogCacheFilePath(
@@ -58,9 +58,9 @@ function modelCatalogCacheFilePath(
   provider?: DesktopModelProvider,
   transportKind?: DesktopTransportKind,
 ): string {
-  const hash = createHash('sha256')
-    .update(modelCatalogCacheKey(apiBase, provider, transportKind), 'utf8')
-    .digest('hex')
+  const hash = createHash("sha256")
+    .update(modelCatalogCacheKey(apiBase, provider, transportKind), "utf8")
+    .digest("hex")
     .slice(0, 32);
   return path.join(modelCatalogCacheDir(), `${hash}.json`);
 }
@@ -83,7 +83,7 @@ function parseCacheEntry(raw: string): ModelCatalogCacheEntry | undefined {
   } catch {
     return undefined;
   }
-  if (typeof parsed !== 'object' || parsed === null) {
+  if (typeof parsed !== "object" || parsed === null) {
     return undefined;
   }
   const obj = parsed as Record<string, unknown>;
@@ -91,24 +91,23 @@ function parseCacheEntry(raw: string): ModelCatalogCacheEntry | undefined {
   const modelIds = obj.modelIds;
   const modelCatalog = normalizePreviewModelCatalog(obj.modelCatalog);
   const base = obj.apiBase;
-  if (typeof fetchedAt !== 'number' || !Array.isArray(modelIds)) {
+  if (typeof fetchedAt !== "number" || !Array.isArray(modelIds)) {
     return undefined;
   }
-  const ids = modelIds.filter((id): id is string => typeof id === 'string' && id.trim().length > 0);
-  if (typeof base !== 'string' || base.trim().length === 0) {
+  const ids = modelIds.filter((id): id is string => typeof id === "string" && id.trim().length > 0);
+  if (typeof base !== "string" || base.trim().length === 0) {
     return undefined;
   }
   const fpRaw = obj.apiKeyFingerprint;
-  const apiKeyFingerprint =
-    typeof fpRaw === 'string' && fpRaw.length > 0 ? fpRaw : undefined;
+  const apiKeyFingerprint = typeof fpRaw === "string" && fpRaw.length > 0 ? fpRaw : undefined;
   const provider =
-    typeof obj.provider === 'string' && obj.provider.trim().length > 0
+    typeof obj.provider === "string" && obj.provider.trim().length > 0
       ? (obj.provider.trim() as DesktopModelProvider)
       : undefined;
   const transportKind =
-    obj.transportKind === 'openai-compatible'
-      || obj.transportKind === 'open-responses'
-      || obj.transportKind === 'anthropic'
+    obj.transportKind === "openai-compatible" ||
+    obj.transportKind === "open-responses" ||
+    obj.transportKind === "anthropic"
       ? obj.transportKind
       : undefined;
   const entry: ModelCatalogCacheEntry = {
@@ -134,20 +133,20 @@ function parseCacheEntry(raw: string): ModelCatalogCacheEntry | undefined {
 
 /** TokenHub 旧缓存仅含 modelIds、缺 catalog displayName 时需重拉。 */
 function isTencentTokenHubCatalogCacheStale(entry: ModelCatalogCacheEntry): boolean {
-  if (entry.provider !== 'tencent-tokenhub') {
+  if (entry.provider !== "tencent-tokenhub") {
     return false;
   }
   return !entry.modelCatalog?.some(
-    (item) => typeof item.displayName === 'string' && item.displayName.trim().length > 0,
+    (item) => typeof item.displayName === "string" && item.displayName.trim().length > 0,
   );
 }
 
 /** Meituan LongCat 旧缓存缺 supportsThinkingSwitch 时需重拉详情。 */
 function isMeituanThinkingCatalogCacheStale(entry: ModelCatalogCacheEntry): boolean {
-  if (entry.provider !== 'meituan' || !entry.modelCatalog?.length) {
+  if (entry.provider !== "meituan" || !entry.modelCatalog?.length) {
     return false;
   }
-  const longCat = entry.modelCatalog.find((item) => item.id === 'LongCat-2.0');
+  const longCat = entry.modelCatalog.find((item) => item.id === "LongCat-2.0");
   if (!longCat) {
     return false;
   }
@@ -156,14 +155,14 @@ function isMeituanThinkingCatalogCacheStale(entry: ModelCatalogCacheEntry): bool
 
 /** Gateway/OpenRouter 圆环依赖 contextLength；旧版写入漏字段时视为未命中以触发重拉。 */
 function isContextUsageCatalogCacheStale(entry: ModelCatalogCacheEntry): boolean {
-  if (entry.provider !== 'vercel-ai-gateway' && entry.provider !== 'openrouter') {
+  if (entry.provider !== "vercel-ai-gateway" && entry.provider !== "openrouter") {
     return false;
   }
   if (!entry.modelCatalog || entry.modelCatalog.length === 0) {
     return false;
   }
   return !entry.modelCatalog.some(
-    (item) => typeof item.contextLength === 'number' && item.contextLength > 0,
+    (item) => typeof item.contextLength === "number" && item.contextLength > 0,
   );
 }
 
@@ -177,12 +176,12 @@ export async function readModelCatalogCache(
   transportKind?: DesktopTransportKind,
 ): Promise<ModelCatalogCacheEntry | undefined> {
   try {
-    const raw = await readFile(modelCatalogCacheFilePath(apiBase, provider, transportKind), 'utf8');
+    const raw = await readFile(modelCatalogCacheFilePath(apiBase, provider, transportKind), "utf8");
     const entry = parseCacheEntry(raw);
     if (!entry) {
       return undefined;
     }
-    const trimmedKey = apiKey?.trim() ?? '';
+    const trimmedKey = apiKey?.trim() ?? "";
     if (trimmedKey.length > 0) {
       const expected = modelCatalogApiKeyFingerprint(trimmedKey);
       if (entry.apiKeyFingerprint !== expected) {
@@ -202,7 +201,7 @@ export function readModelCatalogCacheSync(
   transportKind?: DesktopTransportKind,
 ): ModelCatalogCacheEntry | undefined {
   try {
-    const raw = readFileSync(modelCatalogCacheFilePath(apiBase, provider, transportKind), 'utf8');
+    const raw = readFileSync(modelCatalogCacheFilePath(apiBase, provider, transportKind), "utf8");
     return parseCacheEntry(raw);
   } catch {
     return undefined;
@@ -231,7 +230,7 @@ export async function writeModelCatalogCache(
   };
   const filePath = modelCatalogCacheFilePath(apiBase, provider, transportKind);
   const tempPath = `${filePath}.${String(process.pid)}.${String(Math.random()).slice(2)}.tmp`;
-  await writeFile(tempPath, `${JSON.stringify(entry)}\n`, 'utf8');
+  await writeFile(tempPath, `${JSON.stringify(entry)}\n`, "utf8");
   await rename(tempPath, filePath);
 }
 
@@ -254,35 +253,40 @@ function normalizePreviewModelCatalog(value: unknown): PreviewModelCatalogEntry[
 
   const normalized: PreviewModelCatalogEntry[] = [];
   for (const item of value) {
-    if (typeof item !== 'object' || item === null) {
+    if (typeof item !== "object" || item === null) {
       continue;
     }
     const record = item as Record<string, unknown>;
-    const id = typeof record.id === 'string' && record.id.trim().length > 0 ? record.id.trim() : undefined;
+    const id =
+      typeof record.id === "string" && record.id.trim().length > 0 ? record.id.trim() : undefined;
     if (!id) {
       continue;
     }
     const displayName =
-      typeof record.displayName === 'string' && record.displayName.trim().length > 0
+      typeof record.displayName === "string" && record.displayName.trim().length > 0
         ? record.displayName.trim()
         : undefined;
     const description =
-      typeof record.description === 'string' && record.description.trim().length > 0
+      typeof record.description === "string" && record.description.trim().length > 0
         ? record.description.trim()
         : undefined;
     const pricing = normalizeCachedPricing(record.pricing);
     const capabilities = normalizeCachedCapabilities(record.capabilities);
-    const supportedReasoningEfforts = normalizeCachedSupportedReasoningEfforts(record.supportedReasoningEfforts);
+    const supportedReasoningEfforts = normalizeCachedSupportedReasoningEfforts(
+      record.supportedReasoningEfforts,
+    );
     const contextLength =
-      typeof record.contextLength === 'number'
-      && Number.isFinite(record.contextLength)
-      && record.contextLength > 0
+      typeof record.contextLength === "number" &&
+      Number.isFinite(record.contextLength) &&
+      record.contextLength > 0
         ? Math.trunc(record.contextLength)
         : undefined;
-    const supportsThinkingType = record.supportsThinkingType === 'only' ? 'only' as const : undefined;
-    const supportsThinkingSwitch = record.supportsThinkingSwitch === true ? true as const : undefined;
+    const supportsThinkingType =
+      record.supportsThinkingType === "only" ? ("only" as const) : undefined;
+    const supportsThinkingSwitch =
+      record.supportsThinkingSwitch === true ? (true as const) : undefined;
     const inferenceProvider =
-      typeof record.inferenceProvider === 'string' && record.inferenceProvider.trim().length > 0
+      typeof record.inferenceProvider === "string" && record.inferenceProvider.trim().length > 0
         ? record.inferenceProvider.trim()
         : undefined;
     normalized.push({
@@ -303,27 +307,27 @@ function normalizePreviewModelCatalog(value: unknown): PreviewModelCatalogEntry[
 }
 
 function normalizeCachedPricing(value: unknown): PreviewModelCatalogPricing | undefined {
-  if (typeof value !== 'object' || value === null) {
+  if (typeof value !== "object" || value === null) {
     return undefined;
   }
   const record = value as Record<string, unknown>;
-  const inputPerTokenUsd = readCachedPricingField(record, 'inputPerTokenUsd');
-  const outputPerTokenUsd = readCachedPricingField(record, 'outputPerTokenUsd');
-  const imagePerUnitUsd = readCachedPricingField(record, 'imagePerUnitUsd');
-  const requestPerCallUsd = readCachedPricingField(record, 'requestPerCallUsd');
-  const imagePerMegapixelUsd = readCachedPricingField(record, 'imagePerMegapixelUsd');
+  const inputPerTokenUsd = readCachedPricingField(record, "inputPerTokenUsd");
+  const outputPerTokenUsd = readCachedPricingField(record, "outputPerTokenUsd");
+  const imagePerUnitUsd = readCachedPricingField(record, "imagePerUnitUsd");
+  const requestPerCallUsd = readCachedPricingField(record, "requestPerCallUsd");
+  const imagePerMegapixelUsd = readCachedPricingField(record, "imagePerMegapixelUsd");
   const imageExamplePricing = normalizeCachedExamplePricing(record.imageExamplePricing);
   const videoExamplePricing = normalizeCachedExamplePricing(record.videoExamplePricing);
   const videoDurationPricing = normalizeCachedVideoDurationPricing(record.videoDurationPricing);
   if (
-    !inputPerTokenUsd
-    && !outputPerTokenUsd
-    && !imagePerUnitUsd
-    && requestPerCallUsd === undefined
-    && !imagePerMegapixelUsd
-    && imageExamplePricing === undefined
-    && videoExamplePricing === undefined
-    && videoDurationPricing === undefined
+    !inputPerTokenUsd &&
+    !outputPerTokenUsd &&
+    !imagePerUnitUsd &&
+    requestPerCallUsd === undefined &&
+    !imagePerMegapixelUsd &&
+    imageExamplePricing === undefined &&
+    videoExamplePricing === undefined &&
+    videoDurationPricing === undefined
   ) {
     return undefined;
   }
@@ -341,17 +345,17 @@ function normalizeCachedPricing(value: unknown): PreviewModelCatalogPricing | un
 
 function normalizeCachedExamplePricing(
   value: unknown,
-): NonNullable<PreviewModelCatalogPricing['imageExamplePricing']> | undefined {
-  if (typeof value !== 'object' || value === null) {
+): NonNullable<PreviewModelCatalogPricing["imageExamplePricing"]> | undefined {
+  if (typeof value !== "object" || value === null) {
     return undefined;
   }
   const record = value as Record<string, unknown>;
   const priceUsd =
-    typeof record.priceUsd === 'string' && record.priceUsd.trim().length > 0
+    typeof record.priceUsd === "string" && record.priceUsd.trim().length > 0
       ? record.priceUsd.trim()
       : undefined;
   const description =
-    typeof record.description === 'string' && record.description.trim().length > 0
+    typeof record.description === "string" && record.description.trim().length > 0
       ? record.description.trim()
       : undefined;
   if (!priceUsd || !description) {
@@ -362,22 +366,22 @@ function normalizeCachedExamplePricing(
 
 function normalizeCachedVideoDurationPricing(
   value: unknown,
-): PreviewModelCatalogPricing['videoDurationPricing'] {
+): PreviewModelCatalogPricing["videoDurationPricing"] {
   if (!Array.isArray(value) || value.length === 0) {
     return undefined;
   }
-  const normalized: NonNullable<PreviewModelCatalogPricing['videoDurationPricing']> = [];
+  const normalized: NonNullable<PreviewModelCatalogPricing["videoDurationPricing"]> = [];
   for (const item of value) {
-    if (typeof item !== 'object' || item === null) {
+    if (typeof item !== "object" || item === null) {
       continue;
     }
     const record = item as Record<string, unknown>;
     const resolution =
-      typeof record.resolution === 'string' && record.resolution.trim().length > 0
+      typeof record.resolution === "string" && record.resolution.trim().length > 0
         ? record.resolution.trim()
         : undefined;
     const costPerSecondUsd =
-      typeof record.costPerSecondUsd === 'string' && record.costPerSecondUsd.trim().length > 0
+      typeof record.costPerSecondUsd === "string" && record.costPerSecondUsd.trim().length > 0
         ? record.costPerSecondUsd.trim()
         : undefined;
     if (!resolution || !costPerSecondUsd) {
@@ -398,7 +402,7 @@ function readCachedPricingField(
   key: keyof PreviewModelCatalogPricing,
 ): string | undefined {
   const value = record[key];
-  if (typeof value !== 'string') {
+  if (typeof value !== "string") {
     return undefined;
   }
   const trimmed = value.trim();
@@ -409,14 +413,20 @@ function normalizeCachedCapabilities(value: unknown): DesktopModelCapability[] |
   if (!Array.isArray(value)) {
     return undefined;
   }
-  const allowed = new Set<DesktopModelCapability>(['chat', 'image', 'video', 'imageGeneration', 'videoGeneration']);
+  const allowed = new Set<DesktopModelCapability>([
+    "chat",
+    "image",
+    "video",
+    "imageGeneration",
+    "videoGeneration",
+  ]);
   const seen = new Set<DesktopModelCapability>();
   const normalized: DesktopModelCapability[] = [];
   for (const item of value) {
-    if (typeof item !== 'string') {
+    if (typeof item !== "string") {
       continue;
     }
-    const normalizedItem = item === 'vision' ? 'image' : item;
+    const normalizedItem = item === "vision" ? "image" : item;
     if (!allowed.has(normalizedItem as DesktopModelCapability)) {
       continue;
     }
@@ -439,7 +449,7 @@ function normalizeCachedSupportedReasoningEfforts(
   const seen = new Set<string>();
   const normalized: DesktopModelReasoningEffort[] = [];
   for (const item of value) {
-    if (typeof item !== 'string') {
+    if (typeof item !== "string") {
       continue;
     }
     const effort = item.trim().toLowerCase();
@@ -469,6 +479,8 @@ function clonePreviewModelCatalog(
       ? { supportsThinkingType: entry.supportsThinkingType }
       : {}),
     ...(entry.supportsThinkingSwitch === true ? { supportsThinkingSwitch: true } : {}),
-    ...(entry.inferenceProvider !== undefined ? { inferenceProvider: entry.inferenceProvider } : {}),
+    ...(entry.inferenceProvider !== undefined
+      ? { inferenceProvider: entry.inferenceProvider }
+      : {}),
   }));
 }

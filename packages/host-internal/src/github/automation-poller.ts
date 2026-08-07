@@ -1,11 +1,11 @@
-import type { HostAutomationDefinition, HostAutomationTrigger } from '../automations.js';
+import type { HostAutomationDefinition, HostAutomationTrigger } from "../automations.js";
 import {
   fetchRepositoryMaxIssueNumber,
   filterNewGitHubAutomationEvents,
   githubAutomationRepoKey,
   listRepositoryIssuesForAutomation,
   type GitHubAutomationIssueItem,
-} from './automation-events.js';
+} from "./automation-events.js";
 
 export interface GitHubAutomationPollMatch {
   automationId: string;
@@ -26,7 +26,7 @@ export function groupGitHubAutomationsByRepo(
 ): GitHubAutomationRepoPollGroup[] {
   const groups = new Map<string, GitHubAutomationRepoPollGroup>();
   for (const definition of definitions) {
-    if (definition.trigger.kind !== 'github') {
+    if (definition.trigger.kind !== "github") {
       continue;
     }
     const { owner, repo } = definition.trigger;
@@ -47,10 +47,12 @@ export function groupGitHubAutomationsByRepo(
 }
 
 export function githubTriggerNeedsBaseline(trigger: HostAutomationTrigger): boolean {
-  return trigger.kind === 'github' && trigger.poll?.lastSeenNumber === undefined;
+  return trigger.kind === "github" && trigger.poll?.lastSeenNumber === undefined;
 }
 
-export function resolveGitHubPollWatermark(trigger: Extract<HostAutomationTrigger, { kind: 'github' }>): number {
+export function resolveGitHubPollWatermark(
+  trigger: Extract<HostAutomationTrigger, { kind: "github" }>,
+): number {
   return trigger.poll?.lastSeenNumber ?? 0;
 }
 
@@ -58,7 +60,7 @@ export function computeGitHubPollMatchesForAutomation(
   definition: HostAutomationDefinition,
   items: GitHubAutomationIssueItem[],
 ): GitHubAutomationPollMatch[] {
-  if (definition.trigger.kind !== 'github') {
+  if (definition.trigger.kind !== "github") {
     return [];
   }
   const trigger = definition.trigger;

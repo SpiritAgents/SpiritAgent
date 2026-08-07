@@ -1,15 +1,15 @@
-import { randomUUID } from 'node:crypto';
-import { existsSync } from 'node:fs';
-import { mkdir, readFile, rm, writeFile } from 'node:fs/promises';
-import path from 'node:path';
+import { randomUUID } from "node:crypto";
+import { existsSync } from "node:fs";
+import { mkdir, readFile, rm, writeFile } from "node:fs/promises";
+import path from "node:path";
 
-import type { ChatArchive } from '@spiritagent/agent-core';
-import type { HostRecordedFileChange, HostTodoRecord } from '@spiritagent/host-internal';
+import type { ChatArchive } from "@spiritagent/agent-core";
+import type { HostRecordedFileChange, HostTodoRecord } from "@spiritagent/host-internal";
 
-import type { PersistedDesktopTimelineTurnSnapshot } from './chat-schema.js';
-import type { ConversationMessageSnapshot } from '../types.js';
+import type { PersistedDesktopTimelineTurnSnapshot } from "./chat-schema.js";
+import type { ConversationMessageSnapshot } from "../types.js";
 
-const REWIND_DIR_NAME = 'rewind';
+const REWIND_DIR_NAME = "rewind";
 
 export interface StoredDesktopRewindMetadata {
   sessionId: string;
@@ -28,7 +28,7 @@ export interface DesktopRewindCheckpointMetadata {
 
 export interface DesktopRewindFileChangeMetadata {
   id: string;
-  kind: HostRecordedFileChange['kind'];
+  kind: HostRecordedFileChange["kind"];
   path: string;
   resolvedPath: string;
   toolName: string;
@@ -62,9 +62,7 @@ export function createDesktopRewindMetadata(): StoredDesktopRewindMetadata {
   };
 }
 
-export function normalizeDesktopRewindMetadata(
-  value: unknown,
-): StoredDesktopRewindMetadata {
+export function normalizeDesktopRewindMetadata(value: unknown): StoredDesktopRewindMetadata {
   if (!isRecord(value)) {
     return createDesktopRewindMetadata();
   }
@@ -81,13 +79,13 @@ export function normalizeDesktopRewindMetadata(
     ...fileChanges.map((entry) => entry.sequence),
   );
   const nextSequence =
-    typeof value.nextSequence === 'number' && value.nextSequence > largestSequence
+    typeof value.nextSequence === "number" && value.nextSequence > largestSequence
       ? Math.floor(value.nextSequence)
       : largestSequence + 1;
 
   return {
     sessionId:
-      typeof value.sessionId === 'string' && value.sessionId.trim()
+      typeof value.sessionId === "string" && value.sessionId.trim()
         ? value.sessionId.trim()
         : randomUUID(),
     nextSequence,
@@ -187,7 +185,7 @@ export function canRewindMessage(
   metadata: StoredDesktopRewindMetadata,
   message: ConversationMessageSnapshot,
 ): boolean {
-  if (message.pending || message.role !== 'user') {
+  if (message.pending || message.role !== "user") {
     return false;
   }
   return metadata.checkpoints.some((checkpoint) => checkpoint.messageId === message.id);
@@ -259,10 +257,7 @@ export async function saveRewindCheckpointSnapshot(
   checkpointId: string,
   snapshot: DesktopRewindCheckpointSnapshot,
 ): Promise<void> {
-  await writeSidecarJson(
-    checkpointPath(spiritDataDir, sessionId, checkpointId),
-    snapshot,
-  );
+  await writeSidecarJson(checkpointPath(spiritDataDir, sessionId, checkpointId), snapshot);
 }
 
 export async function loadRewindCheckpointSnapshot(
@@ -274,7 +269,7 @@ export async function loadRewindCheckpointSnapshot(
   if (!existsSync(filePath)) {
     return undefined;
   }
-  const raw = await readFile(filePath, 'utf8');
+  const raw = await readFile(filePath, "utf8");
   return JSON.parse(raw) as DesktopRewindCheckpointSnapshot;
 }
 
@@ -295,16 +290,24 @@ export async function loadRewindFileChange(
   if (!existsSync(filePath)) {
     return undefined;
   }
-  const raw = await readFile(filePath, 'utf8');
+  const raw = await readFile(filePath, "utf8");
   return JSON.parse(raw) as DesktopStoredFileChange;
 }
 
 function checkpointPath(spiritDataDir: string, sessionId: string, checkpointId: string): string {
-  return path.join(sessionRewindDir(spiritDataDir, sessionId), 'checkpoints', `${safeName(checkpointId)}.json`);
+  return path.join(
+    sessionRewindDir(spiritDataDir, sessionId),
+    "checkpoints",
+    `${safeName(checkpointId)}.json`,
+  );
 }
 
 function fileChangePath(spiritDataDir: string, sessionId: string, changeId: string): string {
-  return path.join(sessionRewindDir(spiritDataDir, sessionId), 'file-changes', `${safeName(changeId)}.json`);
+  return path.join(
+    sessionRewindDir(spiritDataDir, sessionId),
+    "file-changes",
+    `${safeName(changeId)}.json`,
+  );
 }
 
 function sessionRewindDir(spiritDataDir: string, sessionId: string): string {
@@ -313,7 +316,7 @@ function sessionRewindDir(spiritDataDir: string, sessionId: string): string {
 
 async function writeSidecarJson(filePath: string, value: unknown): Promise<void> {
   await mkdir(path.dirname(filePath), { recursive: true });
-  await writeFile(filePath, `${JSON.stringify(value, null, 2)}\n`, 'utf8');
+  await writeFile(filePath, `${JSON.stringify(value, null, 2)}\n`, "utf8");
 }
 
 function normalizeCheckpoint(value: unknown): DesktopRewindCheckpointMetadata[] {
@@ -321,21 +324,23 @@ function normalizeCheckpoint(value: unknown): DesktopRewindCheckpointMetadata[] 
     return [];
   }
   if (
-    typeof value.id !== 'string' ||
-    typeof value.messageId !== 'number' ||
-    typeof value.messageIndex !== 'number' ||
-    typeof value.sequence !== 'number' ||
-    typeof value.createdAtUnixMs !== 'number'
+    typeof value.id !== "string" ||
+    typeof value.messageId !== "number" ||
+    typeof value.messageIndex !== "number" ||
+    typeof value.sequence !== "number" ||
+    typeof value.createdAtUnixMs !== "number"
   ) {
     return [];
   }
-  return [{
-    id: value.id,
-    messageId: Math.floor(value.messageId),
-    messageIndex: Math.floor(value.messageIndex),
-    sequence: Math.floor(value.sequence),
-    createdAtUnixMs: value.createdAtUnixMs,
-  }];
+  return [
+    {
+      id: value.id,
+      messageId: Math.floor(value.messageId),
+      messageIndex: Math.floor(value.messageIndex),
+      sequence: Math.floor(value.sequence),
+      createdAtUnixMs: value.createdAtUnixMs,
+    },
+  ];
 }
 
 function normalizeFileChange(value: unknown): DesktopRewindFileChangeMetadata[] {
@@ -343,37 +348,39 @@ function normalizeFileChange(value: unknown): DesktopRewindFileChangeMetadata[] 
     return [];
   }
   if (
-    typeof value.id !== 'string' ||
+    typeof value.id !== "string" ||
     !isFileChangeKind(value.kind) ||
-    typeof value.path !== 'string' ||
-    typeof value.resolvedPath !== 'string' ||
-    typeof value.toolName !== 'string' ||
-    typeof value.sequence !== 'number' ||
-    typeof value.createdAtUnixMs !== 'number'
+    typeof value.path !== "string" ||
+    typeof value.resolvedPath !== "string" ||
+    typeof value.toolName !== "string" ||
+    typeof value.sequence !== "number" ||
+    typeof value.createdAtUnixMs !== "number"
   ) {
     return [];
   }
-  return [{
-    id: value.id,
-    kind: value.kind,
-    path: value.path,
-    resolvedPath: value.resolvedPath,
-    toolName: value.toolName,
-    ...(typeof value.toolCallId === 'string' ? { toolCallId: value.toolCallId } : {}),
-    ...(typeof value.messageId === 'number' ? { messageId: Math.floor(value.messageId) } : {}),
-    sequence: Math.floor(value.sequence),
-    createdAtUnixMs: value.createdAtUnixMs,
-  }];
+  return [
+    {
+      id: value.id,
+      kind: value.kind,
+      path: value.path,
+      resolvedPath: value.resolvedPath,
+      toolName: value.toolName,
+      ...(typeof value.toolCallId === "string" ? { toolCallId: value.toolCallId } : {}),
+      ...(typeof value.messageId === "number" ? { messageId: Math.floor(value.messageId) } : {}),
+      sequence: Math.floor(value.sequence),
+      createdAtUnixMs: value.createdAtUnixMs,
+    },
+  ];
 }
 
-function isFileChangeKind(value: unknown): value is HostRecordedFileChange['kind'] {
-  return value === 'create_file' || value === 'edit_file' || value === 'delete_file';
+function isFileChangeKind(value: unknown): value is HostRecordedFileChange["kind"] {
+  return value === "create_file" || value === "edit_file" || value === "delete_file";
 }
 
 function isRecord(value: unknown): value is Record<string, unknown> {
-  return typeof value === 'object' && value !== null && !Array.isArray(value);
+  return typeof value === "object" && value !== null && !Array.isArray(value);
 }
 
 function safeName(value: string): string {
-  return value.replace(/[^a-zA-Z0-9_.-]/gu, '_');
+  return value.replace(/[^a-zA-Z0-9_.-]/gu, "_");
 }

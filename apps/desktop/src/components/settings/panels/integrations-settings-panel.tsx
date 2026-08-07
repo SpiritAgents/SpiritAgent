@@ -78,9 +78,7 @@ export function IntegrationsSettingsPanel({
 
   return (
     <div className="space-y-4">
-      <h1 className={DESKTOP_PAGE_TITLE_CLASS}>
-        {t("settings.integrations")}
-      </h1>
+      <h1 className={DESKTOP_PAGE_TITLE_CLASS}>{t("settings.integrations")}</h1>
 
       {!isElectronShell ? (
         <p className="text-sm text-muted-foreground">{t("settings.integrationsDesktopOnly")}</p>

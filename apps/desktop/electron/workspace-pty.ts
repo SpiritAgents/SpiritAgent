@@ -1,13 +1,19 @@
-import { randomUUID } from 'node:crypto';
-import { existsSync, statSync } from 'node:fs';
-import { createRequire } from 'node:module';
-import path from 'node:path';
+import { randomUUID } from "node:crypto";
+import { existsSync, statSync } from "node:fs";
+import { createRequire } from "node:module";
+import path from "node:path";
 
-import type { WebContents } from 'electron';
+import type { WebContents } from "electron";
 
-import { defaultShellForPty, shellDisplayNameForResolvedShell } from '@spiritagent/host-internal/default-terminal-shell';
+import {
+  defaultShellForPty,
+  shellDisplayNameForResolvedShell,
+} from "@spiritagent/host-internal/default-terminal-shell";
 
-export { defaultShellForPty, shellDisplayNameForResolvedShell } from '@spiritagent/host-internal/default-terminal-shell';
+export {
+  defaultShellForPty,
+  shellDisplayNameForResolvedShell,
+} from "@spiritagent/host-internal/default-terminal-shell";
 
 const require = createRequire(import.meta.url);
 
@@ -23,7 +29,7 @@ function formatPtyProcessTitle(raw: string): string {
   if (!base) {
     return raw.trim();
   }
-  if (process.platform === 'win32' && base.toLowerCase().endsWith('.exe')) {
+  if (process.platform === "win32" && base.toLowerCase().endsWith(".exe")) {
     return base.slice(0, -4);
   }
   return base;
@@ -32,13 +38,13 @@ function formatPtyProcessTitle(raw: string): string {
 function resolveValidatedCwd(raw: string): string {
   const resolved = path.resolve(raw.trim());
   if (!existsSync(resolved) || !statSync(resolved).isDirectory()) {
-    throw new Error('cwd 不是有效目录');
+    throw new Error("cwd 不是有效目录");
   }
   return resolved;
 }
 
-function loadPtyModule(): typeof import('node-pty') {
-  return require('node-pty') as typeof import('node-pty');
+function loadPtyModule(): typeof import("node-pty") {
+  return require("node-pty") as typeof import("node-pty");
 }
 
 export class WorkspacePtyManager {
@@ -51,21 +57,21 @@ export class WorkspacePtyManager {
     const cwd = resolveValidatedCwd(request.cwd);
     const cols = Math.max(2, Math.min(512, Math.floor(request.cols)));
     const rows = Math.max(1, Math.min(256, Math.floor(request.rows)));
-    let pty: import('node-pty').IPty;
-    let shellFile = '';
+    let pty: import("node-pty").IPty;
+    let shellFile = "";
     try {
       const mod = loadPtyModule();
       const { file, args } = defaultShellForPty();
       shellFile = file;
       const spawnOptions = {
-        name: 'xterm-256color',
+        name: "xterm-256color",
         cols,
         rows,
         cwd,
         env: process.env as Record<string, string>,
       };
       const preferConpty =
-        process.platform === 'win32' && process.env.SPIRIT_PTY_USE_WINPTY !== '1';
+        process.platform === "win32" && process.env.SPIRIT_PTY_USE_WINPTY !== "1";
       try {
         pty = mod.spawn(file, args, {
           ...spawnOptions,
@@ -91,7 +97,7 @@ export class WorkspacePtyManager {
 
     const forward = (data: string): void => {
       if (!webContents.isDestroyed()) {
-        webContents.send('desktop:pty-data', { id, data });
+        webContents.send("desktop:pty-data", { id, data });
       }
     };
 
@@ -99,7 +105,7 @@ export class WorkspacePtyManager {
 
     let lastProcessTitle = formatPtyProcessTitle(pty.process);
     const emitProcessTitle = (): void => {
-      let raw = '';
+      let raw = "";
       try {
         raw = pty.process;
       } catch {
@@ -111,7 +117,7 @@ export class WorkspacePtyManager {
       }
       lastProcessTitle = title;
       if (!webContents.isDestroyed()) {
-        webContents.send('desktop:pty-process-title', { id, title });
+        webContents.send("desktop:pty-process-title", { id, title });
       }
     };
 
@@ -122,7 +128,7 @@ export class WorkspacePtyManager {
       clearInterval(processPollTimer);
       this.sessions.delete(id);
       if (!webContents.isDestroyed()) {
-        webContents.send('desktop:pty-exit', { id, exitCode, signal });
+        webContents.send("desktop:pty-exit", { id, exitCode, signal });
       }
     });
 

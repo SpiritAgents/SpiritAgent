@@ -1,16 +1,16 @@
-export type DesktopNotificationKind = 'task-complete' | 'approval' | 'ask-questions' | 'generic';
+export type DesktopNotificationKind = "task-complete" | "approval" | "ask-questions" | "generic";
 
 export type DesktopNotificationAction =
   | {
-      type: 'button';
+      type: "button";
       text: string;
-      action?: 'allow' | 'deny' | 'focus';
+      action?: "allow" | "deny" | "focus";
     }
   | {
-      type: 'text';
+      type: "text";
       text: string;
       placeholder?: string;
-      action: 'reply';
+      action: "reply";
     };
 
 export type DesktopNotificationContext = {

@@ -19,34 +19,34 @@ import {
   type JsonValue,
   type RuntimeParityCaseResult,
   writeFile,
-} from './harness.js';
+} from "./harness.js";
 
 export async function runContextProjectionCase(): Promise<RuntimeParityCaseResult> {
-  const workspaceRoot = await mkdtemp(join(tmpdir(), 'spirit-agent-runtime-'));
+  const workspaceRoot = await mkdtemp(join(tmpdir(), "spirit-agent-runtime-"));
   let workspaceFileSmoke: JsonValue;
   try {
-    await mkdir(join(workspaceRoot, 'src'), { recursive: true });
-    await writeFile(join(workspaceRoot, 'src', 'runtime.ts'), 'export const runtime = true;\n');
-    await writeFile(join(workspaceRoot, 'README.md'), 'hello from readme\n');
-    await writeFile(join(workspaceRoot, 'large.txt'), 'x'.repeat(24_050));
+    await mkdir(join(workspaceRoot, "src"), { recursive: true });
+    await writeFile(join(workspaceRoot, "src", "runtime.ts"), "export const runtime = true;\n");
+    await writeFile(join(workspaceRoot, "README.md"), "hello from readme\n");
+    await writeFile(join(workspaceRoot, "large.txt"), "x".repeat(24_050));
 
     const referencedFiles = await pendingWorkspaceFilesFromInput(
       workspaceRoot,
-      '@src/runtime.ts 请参考 @README.md 和 @missing.rs 以及 @large.txt',
+      "@src/runtime.ts 请参考 @README.md 和 @missing.rs 以及 @large.txt",
     );
     const referencedPaths = referencedFiles.map((file) => file.path);
-    if (referencedPaths.join('|') !== 'src/runtime.ts|README.md|large.txt') {
-      throw new Error('workspace file helper smoke 未按预期提取现有引用。');
+    if (referencedPaths.join("|") !== "src/runtime.ts|README.md|large.txt") {
+      throw new Error("workspace file helper smoke 未按预期提取现有引用。");
     }
 
-    const largeFile = referencedFiles.find((file) => file.path === 'large.txt');
+    const largeFile = referencedFiles.find((file) => file.path === "large.txt");
     if (
       !largeFile ||
-      largeFile.kind !== 'text' ||
+      largeFile.kind !== "text" ||
       !largeFile.truncated ||
-      !largeFile.content.endsWith('...<文件内容已截断>')
+      !largeFile.content.endsWith("...<文件内容已截断>")
     ) {
-      throw new Error('workspace file helper smoke 未按预期截断超长文件。');
+      throw new Error("workspace file helper smoke 未按预期截断超长文件。");
     }
 
     const workspaceRuntime = new AgentRuntime({
@@ -61,21 +61,24 @@ export async function runContextProjectionCase(): Promise<RuntimeParityCaseResul
     });
 
     const workspaceResult = await workspaceRuntime.submitUserTurn(
-      '@src/runtime.ts 请结合 @README.md 总结',
+      "@src/runtime.ts 请结合 @README.md 总结",
     );
     if (
-      workspaceResult.kind !== 'completed' ||
-      workspaceResult.assistantText !== 'WORKSPACE_CONTEXT_OK'
+      workspaceResult.kind !== "completed" ||
+      workspaceResult.assistantText !== "WORKSPACE_CONTEXT_OK"
     ) {
-      throw new Error('workspace file context smoke 未完成闭环。');
+      throw new Error("workspace file context smoke 未完成闭环。");
     }
 
-    const injectedContexts = workspaceRuntime.history().filter(
-      (message) =>
-        message.role === 'system' && llmMessageTextContent(message.content).startsWith('[WORKSPACE_FILE]'),
-    );
+    const injectedContexts = workspaceRuntime
+      .history()
+      .filter(
+        (message) =>
+          message.role === "system" &&
+          llmMessageTextContent(message.content).startsWith("[WORKSPACE_FILE]"),
+      );
     if (injectedContexts.length !== 2) {
-      throw new Error('workspace file context smoke 注入的 system context 数量不正确。');
+      throw new Error("workspace file context smoke 注入的 system context 数量不正确。");
     }
 
     workspaceFileSmoke = {
@@ -99,12 +102,13 @@ export async function runContextProjectionCase(): Promise<RuntimeParityCaseResul
     extractAssistantText: extractScriptedAssistantText,
   });
 
-  const toolImageProjectionResult = await toolImageProjectionRuntime.submitUserTurn('请读取图片后继续分析。');
+  const toolImageProjectionResult =
+    await toolImageProjectionRuntime.submitUserTurn("请读取图片后继续分析。");
   if (
-    toolImageProjectionResult.kind !== 'completed' ||
-    toolImageProjectionResult.assistantText !== 'TOOL_IMAGE_PROJECTION_OK'
+    toolImageProjectionResult.kind !== "completed" ||
+    toolImageProjectionResult.assistantText !== "TOOL_IMAGE_PROJECTION_OK"
   ) {
-    throw new Error('tool image projection smoke 未完成闭环。');
+    throw new Error("tool image projection smoke 未完成闭环。");
   }
 
   return { workspaceFileSmoke, toolImageProjectionResult };

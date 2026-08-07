@@ -7,8 +7,13 @@ export type ConversationAbortShortcutTarget = {
 
 export type ConversationAbortShortcutTargetRef = MutableRefObject<ConversationAbortShortcutTarget>;
 
-export function countVisiblePaneSessions(snapshot: {
-  paneSessions?: Record<string, unknown>;
-} | null | undefined): number {
+export function countVisiblePaneSessions(
+  snapshot:
+    | {
+        paneSessions?: Record<string, unknown>;
+      }
+    | null
+    | undefined,
+): number {
   return snapshot?.paneSessions ? Object.keys(snapshot.paneSessions).length : 1;
 }

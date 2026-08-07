@@ -17,99 +17,111 @@ import {
   type RuntimeTurnResult,
   type ScriptedState,
   type ScriptedToolRequest,
-} from './harness.js';
-import { truncateLlmHistoryForCompaction } from '../../../../llm-tool-agent.js';
+} from "./harness.js";
+import { truncateLlmHistoryForCompaction } from "../../../../llm-tool-agent.js";
 
 export async function runCompactionCase(): Promise<RuntimeParityCaseResult> {
   const pollingCompactEvents: RuntimeEvent<ScriptedToolRequest>[] = [];
 
-  const compactRuntime = new AgentRuntime({
-    config: undefined,
-    llmTransport: new CompactTransport(),
-    toolExecutor: new CompactExecutor(),
-    createToolAgentState: createScriptedState,
-    appendToolResultMessage: appendScriptedToolResult,
-    appendUserMessage: appendScriptedUserMessage,
-    extractAssistantText: extractScriptedAssistantText,
-    truncateStateForContextRetry: truncateScriptedStateForContextRetry,
-    truncateHistoryForCompaction: truncateScriptedHistoryForCompaction,
-    rebuildRetryStateAfterCompaction: rebuildScriptedStateAfterCompaction,
-  }, [
+  const compactRuntime = new AgentRuntime(
     {
-      role: 'assistant',
-      content: [],
-      toolCalls: [{ id: 'call-old-compact', name: 'read_file', argumentsJson: '{}' }],
+      config: undefined,
+      llmTransport: new CompactTransport(),
+      toolExecutor: new CompactExecutor(),
+      createToolAgentState: createScriptedState,
+      appendToolResultMessage: appendScriptedToolResult,
+      appendUserMessage: appendScriptedUserMessage,
+      extractAssistantText: extractScriptedAssistantText,
+      truncateStateForContextRetry: truncateScriptedStateForContextRetry,
+      truncateHistoryForCompaction: truncateScriptedHistoryForCompaction,
+      rebuildRetryStateAfterCompaction: rebuildScriptedStateAfterCompaction,
     },
-    {
-      role: 'tool',
-      toolCallId: 'call-old-compact',
-      content: createLlmMessageContentFromText('old tool output\n' + 'x'.repeat(5000)),
-    },
-    {
-      role: 'assistant',
-      content: createLlmMessageContentFromText('旧回答。'),
-    },
-  ]);
+    [
+      {
+        role: "assistant",
+        content: [],
+        toolCalls: [{ id: "call-old-compact", name: "read_file", argumentsJson: "{}" }],
+      },
+      {
+        role: "tool",
+        toolCallId: "call-old-compact",
+        content: createLlmMessageContentFromText("old tool output\n" + "x".repeat(5000)),
+      },
+      {
+        role: "assistant",
+        content: createLlmMessageContentFromText("旧回答。"),
+      },
+    ],
+  );
 
-  const compactResult = await compactRuntime.submitUserTurn('继续处理 runtime parity。');
-  if (compactResult.kind !== 'completed' || compactResult.assistantText !== 'COMPACT_OK') {
-    throw new Error('compact retry smoke 未完成闭环。');
+  const compactResult = await compactRuntime.submitUserTurn("继续处理 runtime parity。");
+  if (compactResult.kind !== "completed" || compactResult.assistantText !== "COMPACT_OK") {
+    throw new Error("compact retry smoke 未完成闭环。");
   }
 
   const firstCompaction = compactResult.compactions.at(0);
-  if (compactResult.compactions.length !== 1 || !firstCompaction || firstCompaction.droppedMessages <= 0) {
-    throw new Error('compact retry smoke 未记录有效压缩。');
+  if (
+    compactResult.compactions.length !== 1 ||
+    !firstCompaction ||
+    firstCompaction.droppedMessages <= 0
+  ) {
+    throw new Error("compact retry smoke 未记录有效压缩。");
   }
 
   const pollingCompactTransport = new PollingCompactTransport();
-  const pollingCompactRuntime = new AgentRuntime({
-    config: undefined,
-    llmTransport: pollingCompactTransport,
-    toolExecutor: new CompactExecutor(),
-    createToolAgentState: createScriptedState,
-    appendToolResultMessage: appendScriptedToolResult,
-    appendUserMessage: appendScriptedUserMessage,
-    extractAssistantText: extractScriptedAssistantText,
-    truncateStateForContextRetry: truncateScriptedStateForContextRetry,
-    truncateHistoryForCompaction: truncateScriptedHistoryForCompaction,
-    rebuildRetryStateAfterCompaction: rebuildScriptedStateAfterCompaction,
-    maxAutoCompactRetries: 2,
-    onEvent: (event) => pollingCompactEvents.push(event),
-  }, [
+  const pollingCompactRuntime = new AgentRuntime(
     {
-      role: 'assistant',
-      content: [],
-      toolCalls: [{ id: 'call-old-compact', name: 'read_file', argumentsJson: '{}' }],
+      config: undefined,
+      llmTransport: pollingCompactTransport,
+      toolExecutor: new CompactExecutor(),
+      createToolAgentState: createScriptedState,
+      appendToolResultMessage: appendScriptedToolResult,
+      appendUserMessage: appendScriptedUserMessage,
+      extractAssistantText: extractScriptedAssistantText,
+      truncateStateForContextRetry: truncateScriptedStateForContextRetry,
+      truncateHistoryForCompaction: truncateScriptedHistoryForCompaction,
+      rebuildRetryStateAfterCompaction: rebuildScriptedStateAfterCompaction,
+      maxAutoCompactRetries: 2,
+      onEvent: (event) => pollingCompactEvents.push(event),
     },
-    {
-      role: 'tool',
-      toolCallId: 'call-old-compact',
-      content: createLlmMessageContentFromText('old tool output\n' + 'x'.repeat(5000)),
-    },
-    {
-      role: 'assistant',
-      content: createLlmMessageContentFromText('旧回答。'),
-    },
-  ]);
+    [
+      {
+        role: "assistant",
+        content: [],
+        toolCalls: [{ id: "call-old-compact", name: "read_file", argumentsJson: "{}" }],
+      },
+      {
+        role: "tool",
+        toolCallId: "call-old-compact",
+        content: createLlmMessageContentFromText("old tool output\n" + "x".repeat(5000)),
+      },
+      {
+        role: "assistant",
+        content: createLlmMessageContentFromText("旧回答。"),
+      },
+    ],
+  );
 
-  await pollingCompactRuntime.startUserTurn('继续处理 runtime parity。');
+  await pollingCompactRuntime.startUserTurn("继续处理 runtime parity。");
   await flushMicrotasks(4);
   await pollingCompactRuntime.poll();
   await flushMicrotasks(4);
   await pollingCompactRuntime.poll();
   if (!pollingCompactRuntime.isBusy()) {
-    throw new Error('polling compact smoke 应在自动压缩期间保持 busy。');
+    throw new Error("polling compact smoke 应在自动压缩期间保持 busy。");
   }
   const compactAux = pollingCompactRuntime.pendingAuxState();
-  if (!compactAux || compactAux.kind !== 'compressing') {
-    throw new Error('polling compact smoke 未暴露 compressing aux 状态。');
+  if (!compactAux || compactAux.kind !== "compressing") {
+    throw new Error("polling compact smoke 未暴露 compressing aux 状态。");
   }
   if (pollingCompactRuntime.takeCompletedTurnResult()) {
-    throw new Error('polling compact smoke 在压缩完成前不应产出结果。');
+    throw new Error("polling compact smoke 在压缩完成前不应产出结果。");
   }
 
   pollingCompactTransport.finishCompaction();
-  let pollingCompactResult: RuntimeTurnResult<ScriptedState, ScriptedToolRequest, string> | undefined;
+  let pollingCompactResult:
+    | RuntimeTurnResult<ScriptedState, ScriptedToolRequest, string>
+    | undefined;
   for (let index = 0; index < 8; index += 1) {
     await flushMicrotasks(4);
     await pollingCompactRuntime.poll();
@@ -120,116 +132,123 @@ export async function runCompactionCase(): Promise<RuntimeParityCaseResult> {
   }
   if (
     !pollingCompactResult ||
-    pollingCompactResult.kind !== 'completed' ||
-    pollingCompactResult.assistantText !== 'COMPACT_OK'
+    pollingCompactResult.kind !== "completed" ||
+    pollingCompactResult.assistantText !== "COMPACT_OK"
   ) {
-    throw new Error('polling compact smoke 未得到自动压缩后的最终结果。');
+    throw new Error("polling compact smoke 未得到自动压缩后的最终结果。");
   }
   if (
     !pollingCompactEvents.some(
       (event) =>
-        event.kind === 'update-pending-assistant-compaction' &&
-        event.text.includes('compacted history'),
+        event.kind === "update-pending-assistant-compaction" &&
+        event.text.includes("compacted history"),
     )
   ) {
-    throw new Error('polling compact smoke 缺少 compaction update 事件。');
+    throw new Error("polling compact smoke 缺少 compaction update 事件。");
   }
 
-  const transcriptDirPath = '/tmp/spirit-smoke/transcripts/smoke-compact-transcript';
+  const transcriptDirPath = "/tmp/spirit-smoke/transcripts/smoke-compact-transcript";
   let persistedMessageCount = 0;
-  const transcriptRuntime = new AgentRuntime({
-    config: undefined,
-    llmTransport: new CompactTransport(),
-    toolExecutor: new CompactExecutor(),
-    createToolAgentState: createScriptedState,
-    appendToolResultMessage: appendScriptedToolResult,
-    appendUserMessage: appendScriptedUserMessage,
-    extractAssistantText: extractScriptedAssistantText,
-    truncateStateForContextRetry: truncateScriptedStateForContextRetry,
-    truncateHistoryForCompaction: truncateScriptedHistoryForCompaction,
-    rebuildRetryStateAfterCompaction: rebuildScriptedStateAfterCompaction,
-    hookSessionContext: {
-      sessionId: 'smoke-compact-transcript',
-      conversationPath: null,
-      workspaceRoot: '/tmp',
-      model: 'test-model',
-    },
-    syncSessionTranscript: async ({ transcript }) => {
-      persistedMessageCount = transcript.message_count;
-      if (transcript.messages.length === 0) {
-        throw new Error('transcript smoke 未写入任何消息。');
-      }
-      return transcriptDirPath;
-    },
-  }, [
+  const transcriptRuntime = new AgentRuntime(
     {
-      role: 'user',
-      content: createLlmMessageContentFromText('first user turn'),
+      config: undefined,
+      llmTransport: new CompactTransport(),
+      toolExecutor: new CompactExecutor(),
+      createToolAgentState: createScriptedState,
+      appendToolResultMessage: appendScriptedToolResult,
+      appendUserMessage: appendScriptedUserMessage,
+      extractAssistantText: extractScriptedAssistantText,
+      truncateStateForContextRetry: truncateScriptedStateForContextRetry,
+      truncateHistoryForCompaction: truncateScriptedHistoryForCompaction,
+      rebuildRetryStateAfterCompaction: rebuildScriptedStateAfterCompaction,
+      hookSessionContext: {
+        sessionId: "smoke-compact-transcript",
+        conversationPath: null,
+        workspaceRoot: "/tmp",
+        model: "test-model",
+      },
+      syncSessionTranscript: async ({ transcript }) => {
+        persistedMessageCount = transcript.message_count;
+        if (transcript.messages.length === 0) {
+          throw new Error("transcript smoke 未写入任何消息。");
+        }
+        return transcriptDirPath;
+      },
     },
-    {
-      role: 'assistant',
-      content: [],
-      toolCalls: [{ id: 'call-transcript', name: 'read_file', argumentsJson: '{"path":"a.ts"}' }],
-    },
-    {
-      role: 'tool',
-      toolCallId: 'call-transcript',
-      content: createLlmMessageContentFromText('tool output should be omitted from transcript'),
-    },
-    {
-      role: 'assistant',
-      content: createLlmMessageContentFromText('assistant follow-up'),
-    },
-  ]);
+    [
+      {
+        role: "user",
+        content: createLlmMessageContentFromText("first user turn"),
+      },
+      {
+        role: "assistant",
+        content: [],
+        toolCalls: [{ id: "call-transcript", name: "read_file", argumentsJson: '{"path":"a.ts"}' }],
+      },
+      {
+        role: "tool",
+        toolCallId: "call-transcript",
+        content: createLlmMessageContentFromText("tool output should be omitted from transcript"),
+      },
+      {
+        role: "assistant",
+        content: createLlmMessageContentFromText("assistant follow-up"),
+      },
+    ],
+  );
 
   const transcriptRecord = await transcriptRuntime.compactHistory();
   if (transcriptRecord.transcriptDirPath !== transcriptDirPath) {
-    throw new Error('transcript smoke 未记录转录目录路径。');
+    throw new Error("transcript smoke 未记录转录目录路径。");
   }
   if (persistedMessageCount !== 3) {
     throw new Error(`transcript smoke 转录消息数异常: ${persistedMessageCount}`);
   }
 
-  const toolOutputArchivePath = '/tmp/spirit-smoke/tool-output-archives/smoke-tool-archive/call-archive-tool.txt';
-  let persistedToolOutput = '';
-  const toolOutputArchiveRuntime = new AgentRuntime({
-    config: undefined,
-    llmTransport: new CompactTransport(),
-    toolExecutor: new CompactExecutor(),
-    createToolAgentState: createScriptedState,
-    appendToolResultMessage: appendScriptedToolResult,
-    appendUserMessage: appendScriptedUserMessage,
-    extractAssistantText: extractScriptedAssistantText,
-    truncateHistoryForCompaction: truncateLlmHistoryForCompaction,
-    rebuildRetryStateAfterCompaction: rebuildScriptedStateAfterCompaction,
-    hookSessionContext: {
-      sessionId: 'smoke-tool-archive',
-      conversationPath: null,
-      workspaceRoot: '/tmp',
-      model: 'test-model',
-    },
-    persistToolOutputArchive: async ({ content }) => {
-      persistedToolOutput = content;
-      return toolOutputArchivePath;
-    },
-  }, [
+  const toolOutputArchivePath =
+    "/tmp/spirit-smoke/tool-output-archives/smoke-tool-archive/call-archive-tool.txt";
+  let persistedToolOutput = "";
+  const toolOutputArchiveRuntime = new AgentRuntime(
     {
-      role: 'user',
-      content: createLlmMessageContentFromText('inspect large tool output'),
+      config: undefined,
+      llmTransport: new CompactTransport(),
+      toolExecutor: new CompactExecutor(),
+      createToolAgentState: createScriptedState,
+      appendToolResultMessage: appendScriptedToolResult,
+      appendUserMessage: appendScriptedUserMessage,
+      extractAssistantText: extractScriptedAssistantText,
+      truncateHistoryForCompaction: truncateLlmHistoryForCompaction,
+      rebuildRetryStateAfterCompaction: rebuildScriptedStateAfterCompaction,
+      hookSessionContext: {
+        sessionId: "smoke-tool-archive",
+        conversationPath: null,
+        workspaceRoot: "/tmp",
+        model: "test-model",
+      },
+      persistToolOutputArchive: async ({ content }) => {
+        persistedToolOutput = content;
+        return toolOutputArchivePath;
+      },
     },
-    {
-      role: 'tool',
-      toolCallId: 'call-archive-tool',
-      content: createLlmMessageContentFromText('z'.repeat(20_000)),
-    },
-  ]);
+    [
+      {
+        role: "user",
+        content: createLlmMessageContentFromText("inspect large tool output"),
+      },
+      {
+        role: "tool",
+        toolCallId: "call-archive-tool",
+        content: createLlmMessageContentFromText("z".repeat(20_000)),
+      },
+    ],
+  );
 
   const toolOutputArchiveRecord = await toolOutputArchiveRuntime.compactHistory();
   if (!persistedToolOutput || persistedToolOutput.length !== 20_000) {
-    throw new Error('tool output archive smoke 未持久化完整 tool 输出。');
+    throw new Error("tool output archive smoke 未持久化完整 tool 输出。");
   }
   if (toolOutputArchiveRecord.beforeLength < 2) {
-    throw new Error('tool output archive smoke 压缩前后长度异常。');
+    throw new Error("tool output archive smoke 压缩前后长度异常。");
   }
 
   return {

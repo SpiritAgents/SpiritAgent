@@ -1,10 +1,10 @@
 #!/usr/bin/env node
-import fs from 'node:fs';
-import path from 'node:path';
-import { fileURLToPath } from 'node:url';
+import fs from "node:fs";
+import path from "node:path";
+import { fileURLToPath } from "node:url";
 
-const desktopRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
-const repoRoot = path.resolve(desktopRoot, '../..');
+const desktopRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
+const repoRoot = path.resolve(desktopRoot, "../..");
 
 /** node-pty prebuild 的 spawn-helper 有时无执行位，macOS posix_spawn 会失败。 */
 function ensureExecutable(filePath) {
@@ -32,10 +32,20 @@ function ensureExecutable(filePath) {
 }
 
 const candidates = [
-  path.join(desktopRoot, 'node_modules/node-pty/prebuilds', `${process.platform}-${process.arch}`, 'spawn-helper'),
-  path.join(desktopRoot, 'node_modules/node-pty/build/Release/spawn-helper'),
-  path.join(repoRoot, 'node_modules/node-pty/prebuilds', `${process.platform}-${process.arch}`, 'spawn-helper'),
-  path.join(repoRoot, 'node_modules/node-pty/build/Release/spawn-helper'),
+  path.join(
+    desktopRoot,
+    "node_modules/node-pty/prebuilds",
+    `${process.platform}-${process.arch}`,
+    "spawn-helper",
+  ),
+  path.join(desktopRoot, "node_modules/node-pty/build/Release/spawn-helper"),
+  path.join(
+    repoRoot,
+    "node_modules/node-pty/prebuilds",
+    `${process.platform}-${process.arch}`,
+    "spawn-helper",
+  ),
+  path.join(repoRoot, "node_modules/node-pty/build/Release/spawn-helper"),
 ];
 
 for (const candidate of candidates) {

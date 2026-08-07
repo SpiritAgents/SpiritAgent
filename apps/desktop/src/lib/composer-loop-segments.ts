@@ -134,8 +134,7 @@ export function caretAfterLoopChip(segs: RichSegment[]): SegmentCaret {
   const textIndex = merged.findIndex((s, i) => i > loopIndex && s.kind === "text");
   if (textIndex >= 0) {
     const textSeg = merged[textIndex];
-    const offset =
-      textSeg?.kind === "text" && textSeg.value.startsWith(" ") ? 1 : 0;
+    const offset = textSeg?.kind === "text" && textSeg.value.startsWith(" ") ? 1 : 0;
     return { segmentIndex: textIndex, offset };
   }
   return { segmentIndex: loopIndex + 1, offset: 0 };
@@ -164,10 +163,7 @@ export function normalizeCaretForPinnedLoopChip(
 }
 
 /** True when caret is immediately after the pinned loop chip (Backspace removes loop). */
-export function isCaretAtLoopRemovalPoint(
-  segs: RichSegment[],
-  caret: SegmentCaret,
-): boolean {
+export function isCaretAtLoopRemovalPoint(segs: RichSegment[], caret: SegmentCaret): boolean {
   const merged = mergeAdjacentTextSegments(segs);
   const loopIndex = loopChipIndex(merged);
   if (loopIndex < 0) {
@@ -188,16 +184,11 @@ export function ensureLoopChipTypingTail(segs: RichSegment[]): RichSegment[] {
     afterIndex += 1;
   }
   const rest = merged.slice(afterIndex);
-  const hasNonEmptyBody = rest.some(
-    (s) => s.kind !== "text" || s.value.trim().length > 0,
-  );
+  const hasNonEmptyBody = rest.some((s) => s.kind !== "text" || s.value.trim().length > 0);
   if (hasNonEmptyBody) {
     return merged;
   }
-  return mergeAdjacentTextSegments([
-    ...merged.slice(0, afterIndex),
-    ...tailAfterLoopChip(rest),
-  ]);
+  return mergeAdjacentTextSegments([...merged.slice(0, afterIndex), ...tailAfterLoopChip(rest)]);
 }
 
 export function emptySegmentsWithOptionalLoop(loopEnabled: boolean): RichSegment[] {

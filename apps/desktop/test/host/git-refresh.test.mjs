@@ -1,25 +1,25 @@
-import assert from 'node:assert/strict';
-import { test } from 'node:test';
+import assert from "node:assert/strict";
+import { test } from "node:test";
 
-import { applyGitRevision } from '../../dist-electron/src/host/git.js';
+import { applyGitRevision } from "../../dist-electron/src/host/git.js";
 
-test('applyGitRevision increments from previous revision', () => {
+test("applyGitRevision increments from previous revision", () => {
   const snapshot = applyGitRevision(
     {
       isRepository: true,
       hasChanges: false,
-      branches: ['main'],
+      branches: ["main"],
       aheadCount: 0,
       behindCount: 0,
       needsPush: false,
-      branch: 'main',
+      branch: "main",
     },
     3,
   );
   assert.equal(snapshot.revision, 4);
 });
 
-test('applyGitRevision reset sets revision to 1', () => {
+test("applyGitRevision reset sets revision to 1", () => {
   const snapshot = applyGitRevision(
     {
       isRepository: true,

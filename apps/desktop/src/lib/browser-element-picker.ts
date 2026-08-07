@@ -44,8 +44,7 @@ export function pickerRectsEqual(
   return a.x === b.x && a.y === b.y && a.width === b.width && a.height === b.height;
 }
 
-const PICKER_OVERLAY_RING =
-  "inset 0 0 0 2px #60a5fa";
+const PICKER_OVERLAY_RING = "inset 0 0 0 2px #60a5fa";
 
 /** Shared with in-app split pane drop preview (matches guest-page picker overlay). */
 export const PICKER_OVERLAY_RING_SHADOW = PICKER_OVERLAY_RING;

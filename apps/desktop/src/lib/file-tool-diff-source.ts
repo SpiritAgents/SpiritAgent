@@ -1,28 +1,28 @@
 import {
   tryExtractPartialJsonStringValue,
   tryExtractPartialPlanName,
-} from './edit-file-line-delta.js';
-import { monacoLanguageId } from './monaco-language.js';
-import type { ToolBlockSnapshot } from '../types.js';
+} from "./edit-file-line-delta.js";
+import { monacoLanguageId } from "./monaco-language.js";
+import type { ToolBlockSnapshot } from "../types.js";
 
 /** Host request uses `plan_name`; streaming / model JSON uses slug in `name`. */
 function planSlugFromCreatePlanRecord(record: Record<string, unknown>): string | undefined {
-  const planName = typeof record.plan_name === 'string' ? record.plan_name.trim() : '';
+  const planName = typeof record.plan_name === "string" ? record.plan_name.trim() : "";
   if (planName) {
     return planName;
   }
-  const streamedName = typeof record.name === 'string' ? record.name.trim() : '';
-  if (!streamedName || streamedName === 'create_plan') {
+  const streamedName = typeof record.name === "string" ? record.name.trim() : "";
+  if (!streamedName || streamedName === "create_plan") {
     return undefined;
   }
   return streamedName;
 }
 
 export const FILE_DIFF_TOOL_NAMES = new Set([
-  'create_file',
-  'create_plan',
-  'edit_file',
-  'delete_file',
+  "create_file",
+  "create_plan",
+  "edit_file",
+  "delete_file",
 ]);
 
 /** 与 delete-file-line-delta / readWorkspaceTextFile 一致。 */
@@ -40,7 +40,7 @@ export function serializeFileToolDiffArgumentsJson(request: unknown): string | u
 }
 
 function fileToolDiffArgumentsJsonForTool(tool: ToolBlockSnapshot): string | undefined {
-  if (tool.phase === 'preview') {
+  if (tool.phase === "preview") {
     return tool.streamingArgumentsJson;
   }
   return tool.fileToolDiffArgumentsJson ?? tool.streamingArgumentsJson;
@@ -73,11 +73,7 @@ export type FileToolDiffSource = {
   modified: string;
 };
 
-export type FileToolDiffResolveResult =
-  | FileToolDiffSource
-  | 'truncated'
-  | 'too-large'
-  | undefined;
+export type FileToolDiffResolveResult = FileToolDiffSource | "truncated" | "too-large" | undefined;
 
 export type ResolveFileToolDiffOptions = {
   open: boolean;
@@ -99,21 +95,18 @@ export function resolvePlanRelativePath(
   tool: ToolBlockSnapshot,
   argumentsJson?: string,
 ): string | undefined {
-  if (tool.toolName !== 'create_plan') {
+  if (tool.toolName !== "create_plan") {
     return undefined;
   }
-  const json =
-    argumentsJson?.trim() ||
-    fileToolDiffArgumentsJsonForTool(tool) ||
-    tool.argsExcerpt;
+  const json = argumentsJson?.trim() || fileToolDiffArgumentsJsonForTool(tool) || tool.argsExcerpt;
   if (!json?.trim()) {
     return undefined;
   }
   try {
     const parsed = JSON.parse(json) as unknown;
-    if (parsed && typeof parsed === 'object') {
+    if (parsed && typeof parsed === "object") {
       const name = (parsed as Record<string, unknown>).name;
-      if (typeof name === 'string' && name.trim()) {
+      if (typeof name === "string" && name.trim()) {
         return planRelativePath(name);
       }
     }
@@ -130,12 +123,12 @@ export function extractPathFromRequest(
   toolName: string,
   record: Record<string, unknown>,
 ): string | undefined {
-  if (toolName === 'create_plan') {
+  if (toolName === "create_plan") {
     const slug = planSlugFromCreatePlanRecord(record);
     return slug ? planRelativePath(slug) : undefined;
   }
   const pathValue = record.path;
-  return typeof pathValue === 'string' && pathValue.trim() ? pathValue.trim() : undefined;
+  return typeof pathValue === "string" && pathValue.trim() ? pathValue.trim() : undefined;
 }
 
 export function parseRequestRecord(
@@ -145,7 +138,7 @@ export function parseRequestRecord(
   if (argumentsJson?.trim()) {
     try {
       const parsed = JSON.parse(argumentsJson) as unknown;
-      if (parsed && typeof parsed === 'object') {
+      if (parsed && typeof parsed === "object") {
         return parsed as Record<string, unknown>;
       }
     } catch {
@@ -160,7 +153,7 @@ export function parseRequestRecord(
 
   try {
     const parsed = JSON.parse(excerpt) as unknown;
-    if (parsed && typeof parsed === 'object') {
+    if (parsed && typeof parsed === "object") {
       return parsed as Record<string, unknown>;
     }
   } catch {
@@ -174,24 +167,26 @@ function parsePartialRequestRecord(
   toolName: string,
   argumentsJson: string,
 ): Record<string, unknown> | undefined {
-  if (toolName === 'create_plan') {
+  if (toolName === "create_plan") {
     const name = tryExtractPartialPlanName(argumentsJson);
-    return name ? { name, content: tryExtractPartialJsonStringValue(argumentsJson, 'content') ?? '' } : undefined;
+    return name
+      ? { name, content: tryExtractPartialJsonStringValue(argumentsJson, "content") ?? "" }
+      : undefined;
   }
 
-  const path = tryExtractPartialJsonStringValue(argumentsJson, 'path');
+  const path = tryExtractPartialJsonStringValue(argumentsJson, "path");
   if (!path) {
     return undefined;
   }
 
-  if (toolName === 'create_file') {
-    const content = tryExtractPartialJsonStringValue(argumentsJson, 'content');
+  if (toolName === "create_file") {
+    const content = tryExtractPartialJsonStringValue(argumentsJson, "content");
     return { path, ...(content !== undefined ? { content } : {}) };
   }
 
-  if (toolName === 'edit_file') {
-    const oldText = tryExtractPartialJsonStringValue(argumentsJson, 'old_text');
-    const newText = tryExtractPartialJsonStringValue(argumentsJson, 'new_text');
+  if (toolName === "edit_file") {
+    const oldText = tryExtractPartialJsonStringValue(argumentsJson, "old_text");
+    const newText = tryExtractPartialJsonStringValue(argumentsJson, "new_text");
     return {
       path,
       ...(oldText !== undefined ? { old_text: oldText } : {}),
@@ -199,7 +194,7 @@ function parsePartialRequestRecord(
     };
   }
 
-  if (toolName === 'delete_file') {
+  if (toolName === "delete_file") {
     return { path };
   }
 
@@ -228,27 +223,27 @@ function resolveFromRecord(
     return undefined;
   }
 
-  if (tool.toolName === 'delete_file') {
-    const original = tool.deleteFileBaselineText ?? '';
+  if (tool.toolName === "delete_file") {
+    const original = tool.deleteFileBaselineText ?? "";
     if (textExceedsDiffLimit(original)) {
-      return 'too-large';
+      return "too-large";
     }
     return {
       relativePath,
       languageId: monacoLanguageId(relativePath),
       original,
-      modified: '',
+      modified: "",
     };
   }
 
-  if (tool.toolName === 'create_file' || tool.toolName === 'create_plan') {
-    const content = typeof record.content === 'string' ? record.content : '';
+  if (tool.toolName === "create_file" || tool.toolName === "create_plan") {
+    const content = typeof record.content === "string" ? record.content : "";
     const original =
-      tool.toolName === 'create_plan' && options.planBaselineText !== undefined
+      tool.toolName === "create_plan" && options.planBaselineText !== undefined
         ? options.planBaselineText
-        : '';
+        : "";
     if (textExceedsDiffLimit(content) || textExceedsDiffLimit(original)) {
-      return 'too-large';
+      return "too-large";
     }
     if (!content && !original) {
       return undefined;
@@ -261,10 +256,10 @@ function resolveFromRecord(
     };
   }
 
-  const oldText = typeof record.old_text === 'string' ? record.old_text : '';
-  const newText = typeof record.new_text === 'string' ? record.new_text : '';
+  const oldText = typeof record.old_text === "string" ? record.old_text : "";
+  const newText = typeof record.new_text === "string" ? record.new_text : "";
   if (textExceedsDiffLimit(oldText) || textExceedsDiffLimit(newText)) {
-    return 'too-large';
+    return "too-large";
   }
   if (!oldText && !newText) {
     return undefined;
@@ -303,12 +298,8 @@ export function resolveFileToolDiffSource(
   if (argumentsJson?.trim()) {
     try {
       const parsed = JSON.parse(argumentsJson) as unknown;
-      if (parsed && typeof parsed === 'object') {
-        const fromComplete = resolveFromRecord(
-          tool,
-          parsed as Record<string, unknown>,
-          options,
-        );
+      if (parsed && typeof parsed === "object") {
+        const fromComplete = resolveFromRecord(tool, parsed as Record<string, unknown>, options);
         if (fromComplete !== undefined) {
           return fromComplete;
         }
@@ -330,22 +321,22 @@ export function resolveFileToolDiffSource(
     return resolveFromRecord(tool, fromExcerpt, options);
   }
 
-  if (tool.toolName === 'delete_file' && tool.deleteFileBaselineText !== undefined) {
-    const pathFromExcerpt = tryExtractPartialJsonStringValue(tool.argsExcerpt ?? '', 'path');
+  if (tool.toolName === "delete_file" && tool.deleteFileBaselineText !== undefined) {
+    const pathFromExcerpt = tryExtractPartialJsonStringValue(tool.argsExcerpt ?? "", "path");
     const pathFromStream = argumentsJson
-      ? tryExtractPartialJsonStringValue(argumentsJson, 'path')
+      ? tryExtractPartialJsonStringValue(argumentsJson, "path")
       : undefined;
-    const pathValue = pathFromStream ?? pathFromExcerpt ?? 'file';
+    const pathValue = pathFromStream ?? pathFromExcerpt ?? "file";
     return resolveFromRecord(tool, { path: pathValue }, options);
   }
 
   if (
-    tool.phase !== 'preview' &&
+    tool.phase !== "preview" &&
     !fileToolDiffArgumentsJsonForTool(tool)?.trim() &&
     tool.argsExcerpt &&
     argsExcerptLooksTruncated(tool.argsExcerpt)
   ) {
-    return 'truncated';
+    return "truncated";
   }
 
   return undefined;

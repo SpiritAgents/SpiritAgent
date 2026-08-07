@@ -1,4 +1,4 @@
-import type { GitHubPullRequestCheck, GitHubPullRequestCheckState } from './types.js';
+import type { GitHubPullRequestCheck, GitHubPullRequestCheckState } from "./types.js";
 
 const CHECK_STATE_ORDER: Record<GitHubPullRequestCheckState, number> = {
   pending: 0,
@@ -16,8 +16,7 @@ export function comparePullRequestChecks(
     return requiredDelta;
   }
 
-  const stateDelta =
-    (CHECK_STATE_ORDER[left.state] ?? 0) - (CHECK_STATE_ORDER[right.state] ?? 0);
+  const stateDelta = (CHECK_STATE_ORDER[left.state] ?? 0) - (CHECK_STATE_ORDER[right.state] ?? 0);
   if (stateDelta !== 0) {
     return stateDelta;
   }

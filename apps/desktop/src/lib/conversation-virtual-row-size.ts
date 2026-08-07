@@ -1,10 +1,10 @@
-import type { ConversationRenderItem } from '@/lib/conversation-process-groups';
+import type { ConversationRenderItem } from "@/lib/conversation-process-groups";
 import {
   conversationRenderItemGapBeforePx,
   shouldCompactAfterPreviousRenderItem,
   shouldTightenAfterPreviousRenderItem,
-} from '@/lib/message-card-spacing';
-import type { ConversationMessageSnapshot } from '@/types';
+} from "@/lib/message-card-spacing";
+import type { ConversationMessageSnapshot } from "@/types";
 
 // 估高误差 = virtual-core 首测补偿量 = 手动上滑时的可感知跳变幅度（补偿同步写
 // scrollTop，行位置经 React 异步更新，错帧暴露为跳动），故必须贴近实测：
@@ -41,7 +41,7 @@ function gapBeforePxForRenderIndex(
 }
 
 function bodyEstimateForMessage(message: ConversationMessageSnapshot): number {
-  if (message.role === 'user') {
+  if (message.role === "user") {
     return USER_MESSAGE_BODY_ESTIMATE_PX;
   }
   if (message.tool) {
@@ -62,8 +62,7 @@ export function conversationRenderItemGapBeforePxAt(
   if (!item) {
     return 0;
   }
-  const messageIndex =
-    item.kind === 'process-group' ? item.messageIndices[0] : item.messageIndex;
+  const messageIndex = item.kind === "process-group" ? item.messageIndices[0] : item.messageIndex;
   if (messageIndex === undefined) {
     return 0;
   }
@@ -80,12 +79,10 @@ export function estimateConversationRenderItemHeight(
     return FALLBACK_BODY_ESTIMATE_PX;
   }
 
-  if (item.kind === 'process-group') {
+  if (item.kind === "process-group") {
     const anchorIndex = item.messageIndices[0];
     const anchor = anchorIndex === undefined ? undefined : messages[anchorIndex];
-    const gap = anchor
-      ? gapBeforePxForRenderIndex(index, items, messages, anchorIndex)
-      : 0;
+    const gap = anchor ? gapBeforePxForRenderIndex(index, items, messages, anchorIndex) : 0;
     return gap + PROCESS_GROUP_BODY_ESTIMATE_PX;
   }
 

@@ -1,29 +1,29 @@
-import path from 'node:path';
+import path from "node:path";
 
 /**
  * 主会话首条 Worktree 消息的非阻塞 bootstrap：先入 timeline，再在 poll tick 中完成 git/LLM 命名并 gate LLM turn。
  */
-import type { PendingWorkspaceFile } from '@spiritagent/agent-core';
-import { cloneActiveSkills } from './runtime.js';
+import type { PendingWorkspaceFile } from "@spiritagent/agent-core";
+import { cloneActiveSkills } from "./runtime.js";
 
-import i18n from '../lib/i18n-host.js';
-import type { ConversationMessageSnapshot, DesktopSnapshot } from '../types.js';
-import type { DesktopRewindCheckpointSnapshot } from './rewind.js';
-import type { SessionBundle } from './session-bundle.js';
+import i18n from "../lib/i18n-host.js";
+import type { ConversationMessageSnapshot, DesktopSnapshot } from "../types.js";
+import type { DesktopRewindCheckpointSnapshot } from "./rewind.js";
+import type { SessionBundle } from "./session-bundle.js";
 import {
   buildWorktreeBootstrapToolSnapshot,
   isWorktreeBootstrapInFlight,
   type PendingWorktreeBootstrap,
   worktreeBootstrapToolCallId,
-} from './worktree-bootstrap-card.js';
+} from "./worktree-bootstrap-card.js";
 import type {
   SessionTurnOrchestratorContext,
   SubmitUserTurnAfterInitializedOptions,
-} from './session-turn-orchestrator.js';
+} from "./session-turn-orchestrator.js";
 import {
   applyDrainedRuntimeHostEvents,
   drainQueuedUserTurnIfIdle,
-} from './session-turn-orchestrator.js';
+} from "./session-turn-orchestrator.js";
 
 export interface WorktreeBootstrapHostContext {
   validateWorktreeBootstrapPreconditions(): void;
@@ -41,20 +41,20 @@ function defaultDisplayTextForUserTurn(
     return trimmed;
   }
   if (explicitWorkspaceFiles.length === 0) {
-    return '';
+    return "";
   }
-  return i18n.t('error.attachedFiles', {
-    files: explicitWorkspaceFiles.map((file) => path.basename(file.path)).join(', '),
+  return i18n.t("error.attachedFiles", {
+    files: explicitWorkspaceFiles.map((file) => path.basename(file.path)).join(", "),
   });
 }
 
 function pendingWorkspaceFilesToAttachmentSnapshots(
   files: readonly PendingWorkspaceFile[],
-): ConversationMessageSnapshot['localFileAttachments'] {
+): ConversationMessageSnapshot["localFileAttachments"] {
   return files.map((file) => ({
     path: file.path,
     name: path.basename(file.path),
-    isImage: file.kind === 'image',
+    isImage: file.kind === "image",
   }));
 }
 
@@ -65,7 +65,7 @@ function syncMessagesFromTimeline(bundle: SessionBundle): void {
 function upsertWorktreeBootstrapCard(
   bundle: SessionBundle,
   toolCallId: string,
-  phase: PendingWorktreeBootstrap['phase'],
+  phase: PendingWorktreeBootstrap["phase"],
 ): void {
   const snapshot = buildWorktreeBootstrapToolSnapshot(phase);
   snapshot.toolCallId = toolCallId;
@@ -84,12 +84,14 @@ export async function startWorktreeBootstrapTurnCommand(
   const bundle = ctx.activeBundle();
   const trimmed = text.trim();
   const explicitWorkspaceFiles = options.explicitWorkspaceFiles ?? [];
-  const displayText = (options.displayText ?? defaultDisplayTextForUserTurn(text, explicitWorkspaceFiles)).trim();
+  const displayText = (
+    options.displayText ?? defaultDisplayTextForUserTurn(text, explicitWorkspaceFiles)
+  ).trim();
   if (!trimmed && explicitWorkspaceFiles.length === 0) {
-    throw new Error(i18n.t('error.messageRequired'));
+    throw new Error(i18n.t("error.messageRequired"));
   }
   if (!displayText) {
-    throw new Error(i18n.t('error.messageRequired'));
+    throw new Error(i18n.t("error.messageRequired"));
   }
 
   const turnSkills = cloneActiveSkills(options.turnSkills ?? []);
@@ -101,7 +103,7 @@ export async function startWorktreeBootstrapTurnCommand(
 
   ctx.requireState();
   if (bundle.activeSession?.readOnly) {
-    throw new Error(i18n.t('error.readonlySessionSend'));
+    throw new Error(i18n.t("error.readonlySessionSend"));
   }
   bundle.rewindWarnings = [];
   ctx.clearAssistantContinuationMarkers();
@@ -110,14 +112,15 @@ export async function startWorktreeBootstrapTurnCommand(
   ctx.prepareSessionTitleForFirstUserTurn(displayText);
   await ctx.reconcileTodoScopeAfterSessionPathChange(bundle, todoSessionKeyBeforeEnsure);
   await ctx.maybeRefreshRuntimeAfterTodoScopeChange(bundle, todoSessionKeyBeforeEnsure);
-  const beforeUserCheckpoint = await ctx.buildRewindCheckpointSnapshot() as DesktopRewindCheckpointSnapshot;
+  const beforeUserCheckpoint =
+    (await ctx.buildRewindCheckpointSnapshot()) as DesktopRewindCheckpointSnapshot;
   const localFileAttachments =
     explicitWorkspaceFiles.length > 0
       ? pendingWorkspaceFilesToAttachmentSnapshots(explicitWorkspaceFiles)
       : undefined;
   const userMessage: ConversationMessageSnapshot = {
     id: options.preallocatedMessageId ?? ctx.allocateMessageId(),
-    role: 'user',
+    role: "user",
     content: displayText,
     pending: false,
     ...(localFileAttachments ? { localFileAttachments } : {}),
@@ -130,16 +133,17 @@ export async function startWorktreeBootstrapTurnCommand(
   ctx.resetStreamingPlacementState(false);
 
   const toolCallId = worktreeBootstrapToolCallId(host.resolveWorktreeBootstrapSessionKey());
-  upsertWorktreeBootstrapCard(bundle, toolCallId, 'running');
+  upsertWorktreeBootstrapCard(bundle, toolCallId, "running");
 
   bundle.pendingWorktreeBootstrap = {
     toolCallId,
     userPrompt: trimmed,
     displayText,
-    explicitWorkspaceFiles: explicitWorkspaceFiles.length > 0 ? [...explicitWorkspaceFiles] : undefined,
+    explicitWorkspaceFiles:
+      explicitWorkspaceFiles.length > 0 ? [...explicitWorkspaceFiles] : undefined,
     userMessageId: userMessage.id,
     beforeUserCheckpoint,
-    phase: 'running',
+    phase: "running",
   };
 
   const todoSessionKeyBeforePersist = ctx.resolveTodoSessionKeyForBundle(bundle);
@@ -172,11 +176,13 @@ async function startStreamingAfterWorktreeBootstrap(
     applyDrainedRuntimeHostEvents(ctx, bundle, runtime.drainEvents());
   } catch (error) {
     bundle.currentTurnSkills = [];
-    ctx.orchestrationFor(bundle).assistantMessages.handleMessageRemoved(
-      bundle.messages.length - 1,
-      pending.userMessageId,
-      'send-user-rollback',
-    );
+    ctx
+      .orchestrationFor(bundle)
+      .assistantMessages.handleMessageRemoved(
+        bundle.messages.length - 1,
+        pending.userMessageId,
+        "send-user-rollback",
+      );
     bundle.messages.pop();
     ctx.rebuildMessageTimelineFromMessages();
     throw error;
@@ -202,8 +208,8 @@ export async function advancePendingWorktreeBootstrapCommand(
 
   try {
     await host.executeWorktreeBootstrap(pending!.userPrompt);
-    upsertWorktreeBootstrapCard(bundle, pending!.toolCallId, 'succeeded');
-    host.setLastRuntimeError('');
+    upsertWorktreeBootstrapCard(bundle, pending!.toolCallId, "succeeded");
+    host.setLastRuntimeError("");
     ctx.emitLiveSnapshotUpdate();
     await startStreamingAfterWorktreeBootstrap(ctx, bundle, pending!);
     bundle.pendingWorktreeBootstrap = undefined;
@@ -212,8 +218,8 @@ export async function advancePendingWorktreeBootstrapCommand(
     await drainQueuedUserTurnIfIdle(ctx, bundle);
   } catch (error) {
     const message = error instanceof Error ? error.message : String(error);
-    upsertWorktreeBootstrapCard(bundle, pending!.toolCallId, 'failed');
-    pending!.phase = 'failed';
+    upsertWorktreeBootstrapCard(bundle, pending!.toolCallId, "failed");
+    pending!.phase = "failed";
     pending!.error = message;
     host.setLastRuntimeError(message);
     bundle.pendingWorktreeBootstrap = undefined;
@@ -233,7 +239,7 @@ export function cancelPendingWorktreeBootstrapOnBundle(bundle: SessionBundle): v
   if (!isWorktreeBootstrapInFlight(pending)) {
     return;
   }
-  upsertWorktreeBootstrapCard(bundle, pending!.toolCallId, 'failed');
+  upsertWorktreeBootstrapCard(bundle, pending!.toolCallId, "failed");
   bundle.pendingWorktreeBootstrap = undefined;
   bundle.currentTurnSkills = [];
 }
@@ -247,7 +253,7 @@ export function abortPendingWorktreeBootstrap(
     return false;
   }
   cancelPendingWorktreeBootstrapOnBundle(bundle);
-  host.setLastRuntimeError('');
+  host.setLastRuntimeError("");
   void ctx.persistCurrentSessionIfNeeded();
   ctx.emitLiveSnapshotUpdate();
   return true;

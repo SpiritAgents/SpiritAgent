@@ -129,10 +129,7 @@ export function GitChangesSection({
 
   return (
     <section className={cn("flex min-h-0 flex-col", className)} style={style}>
-      <div
-        ref={headerRef}
-        className="flex shrink-0 items-center justify-between gap-2 px-2 py-1.5"
-      >
+      <div ref={headerRef} className="flex shrink-0 items-center justify-between gap-2 px-2 py-1.5">
         <div className="flex min-w-0 items-center gap-1">
           <h3 className="m-0 shrink-0 text-xs font-normal leading-none text-foreground">
             {t("workspace.git.changes")}

@@ -19,9 +19,9 @@ export function buildCodeCompletionContextSlices(input: {
   prefixMaxChars?: number;
   suffixMaxChars?: number;
 }): CodeCompletionContextSlices {
-  const lines = input.documentText.split('\n');
+  const lines = input.documentText.split("\n");
   const lineIndex = Math.max(0, Math.min(lines.length - 1, input.cursorLine - 1));
-  const lineText = lines[lineIndex] ?? '';
+  const lineText = lines[lineIndex] ?? "";
   const columnIndex = Math.max(0, Math.min(lineText.length, input.cursorColumn - 1));
 
   const prefixMaxLines = input.prefixMaxLines ?? DEFAULT_PREFIX_MAX_LINES;
@@ -32,10 +32,10 @@ export function buildCodeCompletionContextSlices(input: {
   const prefixStartLine = Math.max(0, lineIndex - prefixMaxLines + 1);
   const prefixLines = lines.slice(prefixStartLine, lineIndex + 1);
   if (prefixLines.length > 0) {
-    const last = prefixLines[prefixLines.length - 1] ?? '';
+    const last = prefixLines[prefixLines.length - 1] ?? "";
     prefixLines[prefixLines.length - 1] = last.slice(0, columnIndex);
   }
-  let prefix = prefixLines.join('\n');
+  let prefix = prefixLines.join("\n");
   let prefixTruncated = prefixStartLine > 0;
   if (prefix.length > prefixMaxChars) {
     prefix = prefix.slice(prefix.length - prefixMaxChars);
@@ -44,11 +44,11 @@ export function buildCodeCompletionContextSlices(input: {
 
   const suffixLines = lines.slice(lineIndex);
   if (suffixLines.length > 0) {
-    const first = suffixLines[0] ?? '';
+    const first = suffixLines[0] ?? "";
     suffixLines[0] = first.slice(columnIndex);
   }
   const suffixEnd = Math.min(suffixLines.length, suffixMaxLines);
-  let suffix = suffixLines.slice(0, suffixEnd).join('\n');
+  let suffix = suffixLines.slice(0, suffixEnd).join("\n");
   let suffixTruncated = suffixLines.length > suffixEnd;
   if (suffix.length > suffixMaxChars) {
     suffix = suffix.slice(0, suffixMaxChars);

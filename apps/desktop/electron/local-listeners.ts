@@ -1,7 +1,7 @@
-import { execFile } from 'node:child_process';
-import http from 'node:http';
-import https from 'node:https';
-import { promisify } from 'node:util';
+import { execFile } from "node:child_process";
+import http from "node:http";
+import https from "node:https";
+import { promisify } from "node:util";
 
 const execFileAsync = promisify(execFile);
 
@@ -30,8 +30,8 @@ export function isHtmlContentType(contentType: string | undefined): boolean {
   if (!contentType) {
     return false;
   }
-  const base = contentType.split(';')[0]?.trim().toLowerCase() ?? '';
-  return base === 'text/html' || base === 'application/xhtml+xml';
+  const base = contentType.split(";")[0]?.trim().toLowerCase() ?? "";
+  return base === "text/html" || base === "application/xhtml+xml";
 }
 
 export function extractHtmlTitle(html: string): string | null {
@@ -40,8 +40,8 @@ export function extractHtmlTitle(html: string): string | null {
     return null;
   }
   const text = match[1]
-    .replace(/<!--[\s\S]*?-->/g, '')
-    .replace(/<[^>]+>/g, '')
+    .replace(/<!--[\s\S]*?-->/g, "")
+    .replace(/<[^>]+>/g, "")
     .trim();
   if (!text) {
     return null;
@@ -51,9 +51,9 @@ export function extractHtmlTitle(html: string): string | null {
 
 function decodeHtmlEntities(text: string): string {
   return text
-    .replace(/&amp;/g, '&')
-    .replace(/&lt;/g, '<')
-    .replace(/&gt;/g, '>')
+    .replace(/&amp;/g, "&")
+    .replace(/&lt;/g, "<")
+    .replace(/&gt;/g, ">")
     .replace(/&quot;/g, '"')
     .replace(/&#39;/g, "'")
     .replace(/&#(\d+);/g, (_, code) => String.fromCharCode(Number(code)));
@@ -66,7 +66,11 @@ export function isLikelyWebPage(contentType: string | undefined, body: string): 
   return extractHtmlTitle(body) != null;
 }
 
-export function probeHttpUrl(url: string, timeoutMs = HTTP_PROBE_TIMEOUT_MS, _redirectsLeft = 3): Promise<{ url: string; title?: string } | null> {
+export function probeHttpUrl(
+  url: string,
+  timeoutMs = HTTP_PROBE_TIMEOUT_MS,
+  _redirectsLeft = 3,
+): Promise<{ url: string; title?: string } | null> {
   return new Promise((resolve) => {
     let settled = false;
     const finish = (value: { url: string; title?: string } | null) => {
@@ -85,19 +89,19 @@ export function probeHttpUrl(url: string, timeoutMs = HTTP_PROBE_TIMEOUT_MS, _re
       return;
     }
 
-    const lib = parsed.protocol === 'https:' ? https : http;
+    const lib = parsed.protocol === "https:" ? https : http;
     const req = lib.request(
       {
         protocol: parsed.protocol,
         hostname: parsed.hostname,
         port: parsed.port,
         path: `${parsed.pathname}${parsed.search}`,
-        method: 'GET',
+        method: "GET",
         timeout: timeoutMs,
         rejectUnauthorized: false,
         headers: {
-          Accept: 'text/html,application/xhtml+xml,*/*',
-          'User-Agent': 'SpiritAgent-Desktop-LocalProbe/1.0',
+          Accept: "text/html,application/xhtml+xml,*/*",
+          "User-Agent": "SpiritAgent-Desktop-LocalProbe/1.0",
         },
       },
       (res) => {
@@ -116,7 +120,12 @@ export function probeHttpUrl(url: string, timeoutMs = HTTP_PROBE_TIMEOUT_MS, _re
               return;
             }
             const host = redirectUrl.hostname.toLowerCase();
-            if (host === '127.0.0.1' || host === 'localhost' || host === '::1' || host === '[::1]') {
+            if (
+              host === "127.0.0.1" ||
+              host === "localhost" ||
+              host === "::1" ||
+              host === "[::1]"
+            ) {
               resolve(probeHttpUrl(redirectUrl.toString(), timeoutMs, _redirectsLeft - 1));
             } else {
               finish(null);
@@ -127,14 +136,14 @@ export function probeHttpUrl(url: string, timeoutMs = HTTP_PROBE_TIMEOUT_MS, _re
           return;
         }
 
-        const contentTypeHeader = res.headers['content-type'];
+        const contentTypeHeader = res.headers["content-type"];
         const contentType = Array.isArray(contentTypeHeader)
           ? contentTypeHeader[0]
           : contentTypeHeader;
         const chunks: Buffer[] = [];
         let size = 0;
 
-        res.on('data', (chunk: Buffer) => {
+        res.on("data", (chunk: Buffer) => {
           if (size >= PROBE_BODY_LIMIT_BYTES) {
             return;
           }
@@ -142,8 +151,8 @@ export function probeHttpUrl(url: string, timeoutMs = HTTP_PROBE_TIMEOUT_MS, _re
           size += chunk.length;
         });
 
-        res.on('end', () => {
-          const body = Buffer.concat(chunks).toString('utf8');
+        res.on("end", () => {
+          const body = Buffer.concat(chunks).toString("utf8");
           if (!isLikelyWebPage(contentType, body)) {
             finish(null);
             return;
@@ -152,20 +161,22 @@ export function probeHttpUrl(url: string, timeoutMs = HTTP_PROBE_TIMEOUT_MS, _re
           finish({ url, title });
         });
 
-        res.on('error', () => finish(null));
+        res.on("error", () => finish(null));
       },
     );
-    req.on('timeout', () => {
+    req.on("timeout", () => {
       req.destroy();
       finish(null);
     });
-    req.on('error', () => finish(null));
+    req.on("error", () => finish(null));
     req.end();
   });
 }
 
 /** 依次尝试 http / https，返回首个像网页的 URL。 */
-export async function probeLocalHttpPort(port: number): Promise<{ url: string; title?: string } | null> {
+export async function probeLocalHttpPort(
+  port: number,
+): Promise<{ url: string; title?: string } | null> {
   const candidates = [
     `http://127.0.0.1:${port}/`,
     `http://[::1]:${port}/`,
@@ -204,19 +215,21 @@ export async function filterHttpListeningEndpoints(
 
 export function isLocalhostReachableAddress(address: string): boolean {
   const normalized = address.trim().toLowerCase();
-  if (!normalized || normalized === '*' || normalized === '0.0.0.0') {
+  if (!normalized || normalized === "*" || normalized === "0.0.0.0") {
     return true;
   }
-  if (normalized === '127.0.0.1' || normalized === 'localhost' || normalized === '::1') {
+  if (normalized === "127.0.0.1" || normalized === "localhost" || normalized === "::1") {
     return true;
   }
-  if (normalized === '[::]' || normalized === '::') {
+  if (normalized === "[::]" || normalized === "::") {
     return true;
   }
   return false;
 }
 
-export function mergeLocalListeningEndpoints(raw: readonly RawListener[]): LocalListeningEndpoint[] {
+export function mergeLocalListeningEndpoints(
+  raw: readonly RawListener[],
+): LocalListeningEndpoint[] {
   const byPort = new Map<number, LocalListeningEndpoint>();
   for (const item of raw) {
     if (!Number.isInteger(item.port) || item.port < 1 || item.port > 65_535) {
@@ -253,12 +266,12 @@ export function parseWindowsPowerShellListeners(stdout: string): RawListener[] {
     if (!trimmed) {
       continue;
     }
-    const parts = trimmed.split('|');
+    const parts = trimmed.split("|");
     if (parts.length < 2) {
       continue;
     }
-    const address = parts[0]?.trim() ?? '';
-    const port = Number.parseInt(parts[1]?.trim() ?? '', 10);
+    const address = parts[0]?.trim() ?? "";
+    const port = Number.parseInt(parts[1]?.trim() ?? "", 10);
     if (!Number.isInteger(port)) {
       continue;
     }
@@ -272,7 +285,7 @@ export function parseWindowsNetstat(stdout: string): RawListener[] {
   const results: RawListener[] = [];
   for (const line of stdout.split(/\r?\n/)) {
     const trimmed = line.trim();
-    if (!trimmed.startsWith('TCP') || !trimmed.includes('LISTENING')) {
+    if (!trimmed.startsWith("TCP") || !trimmed.includes("LISTENING")) {
       continue;
     }
     const columns = trimmed.split(/\s+/);
@@ -280,11 +293,11 @@ export function parseWindowsNetstat(stdout: string): RawListener[] {
     if (!local) {
       continue;
     }
-    const lastColon = local.lastIndexOf(':');
+    const lastColon = local.lastIndexOf(":");
     if (lastColon <= 0) {
       continue;
     }
-    const address = local.slice(0, lastColon).replace(/^\[(.*)\]$/, '$1');
+    const address = local.slice(0, lastColon).replace(/^\[(.*)\]$/, "$1");
     const port = Number.parseInt(local.slice(lastColon + 1), 10);
     if (!Number.isInteger(port)) {
       continue;
@@ -299,7 +312,7 @@ export function parseSsOutput(stdout: string): RawListener[] {
   const results: RawListener[] = [];
   for (const line of stdout.split(/\r?\n/)) {
     const trimmed = line.trim();
-    if (!trimmed.startsWith('LISTEN')) {
+    if (!trimmed.startsWith("LISTEN")) {
       continue;
     }
     const columns = trimmed.split(/\s+/);
@@ -320,7 +333,7 @@ export function parseUnixNetstat(stdout: string): RawListener[] {
   const results: RawListener[] = [];
   for (const line of stdout.split(/\r?\n/)) {
     const trimmed = line.trim();
-    if (!trimmed.includes('LISTEN')) {
+    if (!trimmed.includes("LISTEN")) {
       continue;
     }
     const columns = trimmed.split(/\s+/);
@@ -331,8 +344,8 @@ export function parseUnixNetstat(stdout: string): RawListener[] {
     const dotForm = /^(.+)\.(\d+)$/.exec(local);
     if (dotForm) {
       results.push({
-        address: dotForm[1] ?? '',
-        port: Number.parseInt(dotForm[2] ?? '', 10),
+        address: dotForm[1] ?? "",
+        port: Number.parseInt(dotForm[2] ?? "", 10),
       });
       continue;
     }
@@ -345,34 +358,34 @@ export function parseUnixNetstat(stdout: string): RawListener[] {
 }
 
 function parseHostPortToken(token: string): RawListener | null {
-  if (token === '*:*' || token === '*.*') {
-    return { address: '0.0.0.0', port: 0 };
+  if (token === "*:*" || token === "*.*") {
+    return { address: "0.0.0.0", port: 0 };
   }
   const bracket = /^\[(.+)\]:(\d+)$/.exec(token);
   if (bracket) {
-    const port = Number.parseInt(bracket[2] ?? '', 10);
+    const port = Number.parseInt(bracket[2] ?? "", 10);
     if (!Number.isInteger(port)) {
       return null;
     }
-    return { address: bracket[1] ?? '', port };
+    return { address: bracket[1] ?? "", port };
   }
   const wildcardPort = /^\*:(\d+)$/.exec(token);
   if (wildcardPort) {
-    const port = Number.parseInt(wildcardPort[1] ?? '', 10);
+    const port = Number.parseInt(wildcardPort[1] ?? "", 10);
     if (!Number.isInteger(port)) {
       return null;
     }
-    return { address: '0.0.0.0', port };
+    return { address: "0.0.0.0", port };
   }
   const hostPort = /^(.+):(\d+)$/.exec(token);
   if (!hostPort) {
     return null;
   }
-  const port = Number.parseInt(hostPort[2] ?? '', 10);
+  const port = Number.parseInt(hostPort[2] ?? "", 10);
   if (!Number.isInteger(port)) {
     return null;
   }
-  return { address: hostPort[1] ?? '', port };
+  return { address: hostPort[1] ?? "", port };
 }
 
 async function runWithTimeout(
@@ -384,8 +397,8 @@ async function runWithTimeout(
     windowsHide: true,
     maxBuffer: 4 * 1024 * 1024,
   });
-  const stdout = String(result.stdout ?? '');
-  const stderr = String(result.stderr ?? '');
+  const stdout = String(result.stdout ?? "");
+  const stderr = String(result.stderr ?? "");
   return { stdout, stderr };
 }
 
@@ -393,7 +406,7 @@ async function scanWindowsListeners(): Promise<RawListener[]> {
   const psScript =
     'Get-NetTCPConnection -State Listen | ForEach-Object { "$($_.LocalAddress)|$($_.LocalPort)|$($_.OwningProcess)" }';
   try {
-    const { stdout } = await runWithTimeout('powershell.exe', ['-NoProfile', '-Command', psScript]);
+    const { stdout } = await runWithTimeout("powershell.exe", ["-NoProfile", "-Command", psScript]);
     const parsed = parseWindowsPowerShellListeners(stdout);
     if (parsed.length > 0) {
       return parsed;
@@ -402,7 +415,7 @@ async function scanWindowsListeners(): Promise<RawListener[]> {
     // fallback below
   }
   try {
-    const { stdout } = await runWithTimeout('netstat.exe', ['-ano', '-p', 'tcp']);
+    const { stdout } = await runWithTimeout("netstat.exe", ["-ano", "-p", "tcp"]);
     return parseWindowsNetstat(stdout);
   } catch {
     return [];
@@ -411,7 +424,7 @@ async function scanWindowsListeners(): Promise<RawListener[]> {
 
 async function scanDarwinListeners(): Promise<RawListener[]> {
   try {
-    const { stdout } = await runWithTimeout('netstat', ['-an', '-p', 'tcp']);
+    const { stdout } = await runWithTimeout("netstat", ["-an", "-p", "tcp"]);
     return parseUnixNetstat(stdout);
   } catch {
     return [];
@@ -420,7 +433,7 @@ async function scanDarwinListeners(): Promise<RawListener[]> {
 
 async function scanLinuxListeners(): Promise<RawListener[]> {
   try {
-    const { stdout } = await runWithTimeout('ss', ['-tlnH']);
+    const { stdout } = await runWithTimeout("ss", ["-tlnH"]);
     const parsed = parseSsOutput(stdout);
     if (parsed.length > 0) {
       return parsed;
@@ -429,7 +442,7 @@ async function scanLinuxListeners(): Promise<RawListener[]> {
     // fallback below
   }
   try {
-    const { stdout } = await runWithTimeout('netstat', ['-tln']);
+    const { stdout } = await runWithTimeout("netstat", ["-tln"]);
     const ssParsed = parseSsOutput(stdout);
     if (ssParsed.length > 0) {
       return ssParsed;
@@ -443,9 +456,9 @@ async function scanLinuxListeners(): Promise<RawListener[]> {
 export async function listLocalListeningEndpoints(): Promise<LocalListeningEndpoint[]> {
   try {
     let raw: RawListener[] = [];
-    if (process.platform === 'win32') {
+    if (process.platform === "win32") {
       raw = await scanWindowsListeners();
-    } else if (process.platform === 'darwin') {
+    } else if (process.platform === "darwin") {
       raw = await scanDarwinListeners();
     } else {
       raw = await scanLinuxListeners();
@@ -453,23 +466,23 @@ export async function listLocalListeningEndpoints(): Promise<LocalListeningEndpo
     const merged = mergeLocalListeningEndpoints(raw.filter((item) => item.port > 0));
     return filterHttpListeningEndpoints(merged);
   } catch (error) {
-    console.warn('[spirit-desktop] listLocalListeningEndpoints failed:', error);
+    console.warn("[spirit-desktop] listLocalListeningEndpoints failed:", error);
     return [];
   }
 }
 
 /** 模块级缓存 */
-let _cachedEndpoints: LocalListeningEndpoint[] | null = null;
-let _scanningPromise: Promise<LocalListeningEndpoint[]> | null = null;
+let cachedEndpoints: LocalListeningEndpoint[] | null = null;
+let scanningPromise: Promise<LocalListeningEndpoint[]> | null = null;
 
 /** 返回上一次扫描的缓存结果（可能为 null 表示尚未完成首次扫描） */
 export function getCachedLocalListeningEndpoints(): LocalListeningEndpoint[] | null {
-  return _cachedEndpoints;
+  return cachedEndpoints;
 }
 
 /** 返回正在进行的扫描 promise（无扫描时为 null） */
 export function getScanningPromise(): Promise<LocalListeningEndpoint[]> | null {
-  return _scanningPromise;
+  return scanningPromise;
 }
 
 /**
@@ -481,40 +494,40 @@ export function getScanningPromise(): Promise<LocalListeningEndpoint[]> | null {
 export async function startLocalListenersScan(
   onFound?: (item: LocalListeningEndpoint) => void,
 ): Promise<LocalListeningEndpoint[]> {
-  if (_scanningPromise) {
-    await _scanningPromise.catch(() => undefined);
+  if (scanningPromise) {
+    await scanningPromise.catch(() => undefined);
   }
-  _scanningPromise = (async () => {
+  scanningPromise = (async () => {
     try {
       let raw: RawListener[] = [];
-      if (process.platform === 'win32') {
+      if (process.platform === "win32") {
         raw = await scanWindowsListeners();
-      } else if (process.platform === 'darwin') {
+      } else if (process.platform === "darwin") {
         raw = await scanDarwinListeners();
       } else {
         raw = await scanLinuxListeners();
       }
       const merged = mergeLocalListeningEndpoints(raw.filter((item) => item.port > 0));
       const result = await filterHttpListeningEndpoints(merged, onFound);
-      _cachedEndpoints = result;
+      cachedEndpoints = result;
       return result;
     } catch (error) {
-      console.warn('[spirit-desktop] startLocalListenersScan failed:', error);
-      return _cachedEndpoints ?? [];
+      console.warn("[spirit-desktop] startLocalListenersScan failed:", error);
+      return cachedEndpoints ?? [];
     } finally {
-      _scanningPromise = null;
+      scanningPromise = null;
     }
   })();
-  return _scanningPromise;
+  return scanningPromise;
 }
 
 /** 应用启动时预热：后台静默扫描一次，结果存入缓存 */
-_scanningPromise = startLocalListenersScan();
+scanningPromise = startLocalListenersScan();
 
 export function isAllowedExternalUrl(url: string): boolean {
   try {
     const parsed = new URL(url);
-    return parsed.protocol === 'http:' || parsed.protocol === 'https:';
+    return parsed.protocol === "http:" || parsed.protocol === "https:";
   } catch {
     return false;
   }

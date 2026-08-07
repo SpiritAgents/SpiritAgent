@@ -29,9 +29,7 @@ export function richSegmentsRoundTrip(segments: readonly RichSegment[]): RichSeg
   return editorStateToRichSegments(editor);
 }
 
-export function assertRichSegmentsRoundTrip(
-  segments: readonly RichSegment[],
-): boolean {
+export function assertRichSegmentsRoundTrip(segments: readonly RichSegment[]): boolean {
   const roundTripped = richSegmentsRoundTrip(segments);
   return segmentsEqual([...segments], roundTripped);
 }

@@ -1,9 +1,9 @@
-import { existsSync } from 'node:fs';
-import path from 'node:path';
+import { existsSync } from "node:fs";
+import path from "node:path";
 
 /** Appended to every shell `command` parameter description. */
 export const SHELL_COMMAND_HIGH_RISK_CONFIRM_HINT =
-  'Confirm with the user before running high-risk commands.';
+  "Confirm with the user before running high-risk commands.";
 
 export function withShellCommandHighRiskConfirmHint(description: string): string {
   return `${description.trim()} ${SHELL_COMMAND_HIGH_RISK_CONFIRM_HINT}`;
@@ -33,57 +33,51 @@ export function defaultShellForPty(): { file: string; args: string[] } {
     return { file: override, args: [] };
   }
 
-  if (process.platform === 'win32') {
-    const programFiles = process.env.ProgramFiles || 'C:\\Program Files';
-    const systemRoot = process.env.SystemRoot || 'C:\\Windows';
+  if (process.platform === "win32") {
+    const programFiles = process.env.ProgramFiles || "C:\\Program Files";
+    const systemRoot = process.env.SystemRoot || "C:\\Windows";
     const pwsh =
       firstExistingFile([
-        process.env.PWSH_PATH || '',
-        path.join(programFiles, 'PowerShell', '7', 'pwsh.exe'),
-        path.join(programFiles, 'PowerShell', '7-preview', 'pwsh.exe'),
-        path.join(
-          process.env.LOCALAPPDATA || '',
-          'Microsoft',
-          'WindowsApps',
-          'pwsh.exe',
-        ),
+        process.env.PWSH_PATH || "",
+        path.join(programFiles, "PowerShell", "7", "pwsh.exe"),
+        path.join(programFiles, "PowerShell", "7-preview", "pwsh.exe"),
+        path.join(process.env.LOCALAPPDATA || "", "Microsoft", "WindowsApps", "pwsh.exe"),
       ]) ||
       firstExistingFile([
-        path.join(systemRoot, 'System32', 'WindowsPowerShell', 'v1.0', 'powershell.exe'),
+        path.join(systemRoot, "System32", "WindowsPowerShell", "v1.0", "powershell.exe"),
       ]);
     if (pwsh) {
       return { file: pwsh, args: [] };
     }
-    const comspec =
-      process.env.ComSpec || path.join(systemRoot, 'System32', 'cmd.exe');
+    const comspec = process.env.ComSpec || path.join(systemRoot, "System32", "cmd.exe");
     return { file: comspec, args: [] };
   }
 
-  const shellPath = process.env.SHELL || '/bin/bash';
+  const shellPath = process.env.SHELL || "/bin/bash";
   return { file: shellPath, args: [] };
 }
 
 export function shellDisplayNameForResolvedShell(file: string): string {
   const base = path.basename(file).toLowerCase();
-  if (base === 'pwsh.exe') {
-    return 'PowerShell 7 (pwsh)';
+  if (base === "pwsh.exe") {
+    return "PowerShell 7 (pwsh)";
   }
-  if (base === 'powershell.exe') {
-    return 'Windows PowerShell';
+  if (base === "powershell.exe") {
+    return "Windows PowerShell";
   }
-  if (base === 'cmd.exe') {
-    return 'Command Prompt (cmd.exe)';
+  if (base === "cmd.exe") {
+    return "Command Prompt (cmd.exe)";
   }
   return path.basename(file);
 }
 
 export function isWindowsPowerShellExecutable(file: string): boolean {
   const base = path.basename(file).toLowerCase();
-  return base === 'pwsh.exe' || base === 'powershell.exe';
+  return base === "pwsh.exe" || base === "powershell.exe";
 }
 
 export function isWindowsCmdExecutable(file: string): boolean {
-  return path.basename(file).toLowerCase() === 'cmd.exe';
+  return path.basename(file).toLowerCase() === "cmd.exe";
 }
 
 /**
@@ -91,7 +85,7 @@ export function isWindowsCmdExecutable(file: string): boolean {
  * PowerShell：设置 OutputEncoding；cmd：保留 chcp 65001 前缀（输出解码见 {@link decodeShellHostOutput}）。
  */
 export function prepareShellForHostExecution(shellFile: string, command: string): string {
-  if (process.platform !== 'win32') {
+  if (process.platform !== "win32") {
     return command;
   }
   if (isWindowsPowerShellExecutable(shellFile)) {
@@ -106,28 +100,28 @@ export function prepareShellForHostExecution(shellFile: string, command: string)
 /** cmd.exe 子进程在中文 Windows 上常输出 GBK；PowerShell 经 UTF-8 前缀后按 utf8 解码。 */
 export function decodeShellHostOutput(shellFile: string, chunk: Buffer): string {
   if (chunk.length === 0) {
-    return '';
+    return "";
   }
-  if (process.platform === 'win32' && isWindowsCmdExecutable(shellFile)) {
-    return new TextDecoder('gbk').decode(chunk);
+  if (process.platform === "win32" && isWindowsCmdExecutable(shellFile)) {
+    return new TextDecoder("gbk").decode(chunk);
   }
-  return chunk.toString('utf8');
+  return chunk.toString("utf8");
 }
 
 export function shellHostExecUsesBufferOutput(shellFile: string): boolean {
-  return process.platform === 'win32' && isWindowsCmdExecutable(shellFile);
+  return process.platform === "win32" && isWindowsCmdExecutable(shellFile);
 }
 
 export function commandParameterDescriptionForResolvedShell(file: string): string {
   const base = path.basename(file).toLowerCase();
-  if (base === 'pwsh.exe' || base === 'powershell.exe') {
+  if (base === "pwsh.exe" || base === "powershell.exe") {
     return withShellCommandHighRiskConfirmHint(
-      'The command to execute in Windows PowerShell. Prefer PowerShell syntax such as Get-ChildItem, Select-String, Get-Content, Set-Location, and Test-Path.',
+      "The command to execute in Windows PowerShell. Prefer PowerShell syntax such as Get-ChildItem, Select-String, Get-Content, Set-Location, and Test-Path.",
     );
   }
-  if (base === 'cmd.exe') {
+  if (base === "cmd.exe") {
     return withShellCommandHighRiskConfirmHint(
-      'The command to execute in Command Prompt (cmd.exe). Prefer cmd.exe syntax such as dir, type, where, findstr, and cd.',
+      "The command to execute in Command Prompt (cmd.exe). Prefer cmd.exe syntax such as dir, type, where, findstr, and cd.",
     );
   }
   const name = path.basename(file);

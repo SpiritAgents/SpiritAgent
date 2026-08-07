@@ -47,8 +47,9 @@ export const INSERT_WORKSPACE_FILE_REFERENCE_COMMAND: LexicalCommand<ReplaceWork
 export const INSERT_SKILL_CHIP_COMMAND: LexicalCommand<InsertSkillChipCommandPayload> =
   createCommand("SPIRIT_INSERT_SKILL_CHIP");
 
-export const INSERT_PLAIN_TEXT_COMMAND: LexicalCommand<{ text: string }> =
-  createCommand("SPIRIT_INSERT_PLAIN_TEXT");
+export const INSERT_PLAIN_TEXT_COMMAND: LexicalCommand<{ text: string }> = createCommand(
+  "SPIRIT_INSERT_PLAIN_TEXT",
+);
 
 export const REPLACE_SKILL_SLASH_COMMAND: LexicalCommand<ReplaceSkillSlashCommandPayload> =
   createCommand("SPIRIT_REPLACE_SKILL_SLASH");

@@ -41,10 +41,7 @@ type DeletePreviewState = {
   widget: DeleteDiffPreviewWidget | null;
 };
 
-function positionsEqual(
-  a: monaco.Position,
-  b: monaco.Position,
-): boolean {
+function positionsEqual(a: monaco.Position, b: monaco.Position): boolean {
   return a.lineNumber === b.lineNumber && a.column === b.column;
 }
 
@@ -63,14 +60,11 @@ function toInlineItem(
   model: monaco.editor.ITextModel,
   position: monaco.Position,
 ): monaco.languages.InlineCompletion | undefined {
-  const spec = codeCompletionOperationToInlineItemAtCursor(
-    operation as CodeCompletionOperation,
-    {
-      lineText: model.getLineContent(position.lineNumber),
-      cursorLine: position.lineNumber,
-      cursorColumn: position.column,
-    },
-  );
+  const spec = codeCompletionOperationToInlineItemAtCursor(operation as CodeCompletionOperation, {
+    lineText: model.getLineContent(position.lineNumber),
+    cursorLine: position.lineNumber,
+    cursorColumn: position.column,
+  });
   if (!spec) {
     return undefined;
   }
@@ -254,7 +248,7 @@ export function useMonacoCodeCompletion(options: {
         editor.trigger(null, "editor.action.inlineSuggest.trigger", {});
       } catch (error) {
         if (!isMonacoCanceled(error)) {
-          console.debug("[code-completion] fetch failed:", error);
+          console.warn("[code-completion] fetch failed:", error);
         }
       }
     };
@@ -279,10 +273,7 @@ export function useMonacoCodeCompletion(options: {
       }
     };
 
-    const scheduleFetch = (
-      position: monaco.Position,
-      model: monaco.editor.ITextModel,
-    ) => {
+    const scheduleFetch = (position: monaco.Position, model: monaco.editor.ITextModel) => {
       const target = { line: position.lineNumber, column: position.column };
       const alreadyScheduled =
         scheduledTargetRef.current?.line === target.line &&
@@ -313,11 +304,7 @@ export function useMonacoCodeCompletion(options: {
           return { items: [] };
         }
         const cache = cacheRef.current;
-        if (
-          cache &&
-          cache.line === position.lineNumber &&
-          cache.column === position.column
-        ) {
+        if (cache && cache.line === position.lineNumber && cache.column === position.column) {
           return { items: cache.items, enableForwardStability: true };
         }
 

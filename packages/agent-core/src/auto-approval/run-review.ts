@@ -1,17 +1,17 @@
-import type { JsonSchemaTransport } from '../json-schema.js';
-import type { LlmTransportConfig } from '../provider-config.js';
+import type { JsonSchemaTransport } from "../json-schema.js";
+import type { LlmTransportConfig } from "../provider-config.js";
 
-import { buildAutoApprovalReviewPrompt } from './prompt.js';
-import { AUTO_APPROVAL_REVIEW_JSON_SCHEMA, AUTO_APPROVAL_REVIEW_SCHEMA_NAME } from './schema.js';
-import type { ToolAutoReviewInput, ToolAutoReviewResult } from './types.js';
+import { buildAutoApprovalReviewPrompt } from "./prompt.js";
+import { AUTO_APPROVAL_REVIEW_JSON_SCHEMA, AUTO_APPROVAL_REVIEW_SCHEMA_NAME } from "./schema.js";
+import type { ToolAutoReviewInput, ToolAutoReviewResult } from "./types.js";
 
 export function normalizeAutoApprovalReviewResult(
   value: { allow?: unknown; reason?: unknown } | undefined,
 ): ToolAutoReviewResult | undefined {
-  if (!value || typeof value.allow !== 'boolean') {
+  if (!value || typeof value.allow !== "boolean") {
     return undefined;
   }
-  const reason = typeof value.reason === 'string' ? value.reason.trim() : '';
+  const reason = typeof value.reason === "string" ? value.reason.trim() : "";
   if (!reason) {
     return undefined;
   }

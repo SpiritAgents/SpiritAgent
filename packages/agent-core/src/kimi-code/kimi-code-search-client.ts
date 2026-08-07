@@ -1,6 +1,6 @@
-import { getLlmFetch } from '../llm-fetch.js';
+import { getLlmFetch } from "../llm-fetch.js";
 
-export const KIMI_CODE_SEARCH_URL = 'https://api.kimi.com/coding/v1/search';
+export const KIMI_CODE_SEARCH_URL = "https://api.kimi.com/coding/v1/search";
 
 type KimiCodeSearchResult = {
   url?: string;
@@ -16,17 +16,17 @@ type KimiCodeSearchResponse = {
 };
 
 export type KimiCodeSearchInvokeResult =
-  | { kind: 'succeeded'; content: string }
-  | { kind: 'failed'; error: string };
+  | { kind: "succeeded"; content: string }
+  | { kind: "failed"; error: string };
 
 export function formatKimiCodeSearchResults(results: readonly KimiCodeSearchResult[]): string {
   if (results.length === 0) {
-    return 'No search results.';
+    return "No search results.";
   }
 
   return results
     .map((result, index) => {
-      const lines = [`## ${index + 1}. ${result.title?.trim() || 'Untitled'}`];
+      const lines = [`## ${index + 1}. ${result.title?.trim() || "Untitled"}`];
       if (result.url?.trim()) {
         lines.push(`URL: ${result.url.trim()}`);
       }
@@ -42,9 +42,9 @@ export function formatKimiCodeSearchResults(results: readonly KimiCodeSearchResu
       if (result.content?.trim()) {
         lines.push(`Content: ${result.content.trim()}`);
       }
-      return lines.join('\n');
+      return lines.join("\n");
     })
-    .join('\n\n');
+    .join("\n\n");
 }
 
 export async function invokeKimiCodeSearch(
@@ -54,42 +54,42 @@ export async function invokeKimiCodeSearch(
 ): Promise<KimiCodeSearchInvokeResult> {
   const query = body.query.trim();
   if (!query) {
-    return { kind: 'failed', error: 'web_search requires a non-empty query.' };
+    return { kind: "failed", error: "web_search requires a non-empty query." };
   }
 
   const trimmedKey = apiKey.trim();
   if (!trimmedKey) {
-    return { kind: 'failed', error: 'Kimi Code search requires an API key.' };
+    return { kind: "failed", error: "Kimi Code search requires an API key." };
   }
 
   try {
     const response = await fetchImpl(KIMI_CODE_SEARCH_URL, {
-      method: 'POST',
+      method: "POST",
       headers: {
         Authorization: `Bearer ${trimmedKey}`,
-        'Content-Type': 'application/json',
+        "Content-Type": "application/json",
       },
       body: JSON.stringify({ text_query: query }),
     });
 
     if (!response.ok) {
-      const text = await response.text().catch(() => '');
-      const suffix = text.trim() ? `: ${text.trim()}` : '';
+      const text = await response.text().catch(() => "");
+      const suffix = text.trim() ? `: ${text.trim()}` : "";
       return {
-        kind: 'failed',
+        kind: "failed",
         error: `Kimi Code search failed (${response.status})${suffix}`,
       };
     }
 
     const json = (await response.json()) as KimiCodeSearchResponse;
     return {
-      kind: 'succeeded',
+      kind: "succeeded",
       content: formatKimiCodeSearchResults(
         Array.isArray(json.search_results) ? json.search_results : [],
       ),
     };
   } catch (error) {
     const message = error instanceof Error ? error.message : String(error);
-    return { kind: 'failed', error: message };
+    return { kind: "failed", error: message };
   }
 }

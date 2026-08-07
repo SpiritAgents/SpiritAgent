@@ -1,14 +1,14 @@
-import { spawn } from 'node:child_process';
-import { fileURLToPath } from 'node:url';
+import { spawn } from "node:child_process";
+import { fileURLToPath } from "node:url";
 
-import { readCurrentToken } from './auth-token.js';
-import { listInstances, type ServerInstanceRecord } from './instance-registry.js';
+import { readCurrentToken } from "./auth-token.js";
+import { listInstances, type ServerInstanceRecord } from "./instance-registry.js";
 import type {
   JsonRpcErrorResponse,
   JsonRpcId,
   JsonRpcNotification,
   JsonRpcSuccessResponse,
-} from './protocol/index.js';
+} from "./protocol/index.js";
 
 export interface ServerRpcClientOptions {
   url: string;
@@ -32,7 +32,7 @@ export interface ConnectedServer {
 }
 
 function isLoopbackHost(host: string): boolean {
-  return host === '127.0.0.1' || host === 'localhost' || host === '::1';
+  return host === "127.0.0.1" || host === "localhost" || host === "::1";
 }
 
 type JsonRpcResponse = JsonRpcSuccessResponse | JsonRpcErrorResponse;
@@ -57,7 +57,7 @@ export class ServerRpcClient {
     // Node's WebSocket API cannot set Authorization headers; the daemon also
     // accepts ?token= on the upgrade URL (see daemon.ts extractPresentedToken).
     const url = new URL(this.options.url);
-    url.searchParams.set('token', this.options.token);
+    url.searchParams.set("token", this.options.token);
     const socket = new WebSocket(url);
     this.socket = socket;
 
@@ -71,21 +71,21 @@ export class ServerRpcClient {
         reject(new Error(`failed to connect to Spirit Server at ${url.host}`));
       };
       const cleanup = () => {
-        socket.removeEventListener('open', onOpen);
-        socket.removeEventListener('error', onError);
+        socket.removeEventListener("open", onOpen);
+        socket.removeEventListener("error", onError);
       };
-      socket.addEventListener('open', onOpen);
-      socket.addEventListener('error', onError);
+      socket.addEventListener("open", onOpen);
+      socket.addEventListener("error", onError);
     });
 
-    socket.addEventListener('message', (event) => {
+    socket.addEventListener("message", (event) => {
       this.handleMessage(String(event.data));
     });
-    socket.addEventListener('close', () => {
+    socket.addEventListener("close", () => {
       if (this.socket === socket) {
         this.socket = undefined;
       }
-      const error = new Error('Spirit Server connection closed');
+      const error = new Error("Spirit Server connection closed");
       this.rejectPending(error);
       for (const listener of this.disconnectListeners) {
         listener(error);
@@ -100,7 +100,7 @@ export class ServerRpcClient {
   async call<Result = unknown>(method: string, params?: unknown): Promise<Result> {
     const socket = this.socket;
     if (!socket || socket.readyState !== WebSocket.OPEN) {
-      throw new Error('Spirit Server is not connected');
+      throw new Error("Spirit Server is not connected");
     }
     const id = this.nextRequestId++;
     const response = new Promise<Result>((resolve, reject) => {
@@ -109,12 +109,14 @@ export class ServerRpcClient {
         reject,
       });
     });
-    socket.send(JSON.stringify({
-      jsonrpc: '2.0',
-      id,
-      method,
-      ...(params === undefined ? {} : { params }),
-    }));
+    socket.send(
+      JSON.stringify({
+        jsonrpc: "2.0",
+        id,
+        method,
+        ...(params === undefined ? {} : { params }),
+      }),
+    );
     return response;
   }
 
@@ -132,7 +134,7 @@ export class ServerRpcClient {
     const socket = this.socket;
     this.socket = undefined;
     socket?.close();
-    this.rejectPending(new Error('Spirit Server client closed'));
+    this.rejectPending(new Error("Spirit Server client closed"));
   }
 
   private handleMessage(raw: string): void {
@@ -142,15 +144,15 @@ export class ServerRpcClient {
     } catch {
       return;
     }
-    if (!message || typeof message !== 'object') {
+    if (!message || typeof message !== "object") {
       return;
     }
     const record = message as Record<string, unknown>;
-    if (record['id'] !== undefined) {
+    if (record["id"] !== undefined) {
       this.handleResponse(message as JsonRpcResponse);
       return;
     }
-    if (typeof record['method'] === 'string') {
+    if (typeof record["method"] === "string") {
       for (const listener of this.notificationListeners) {
         listener(message as JsonRpcNotification);
       }
@@ -163,7 +165,7 @@ export class ServerRpcClient {
       return;
     }
     this.pending.delete(response.id as JsonRpcId);
-    if ('error' in response) {
+    if ("error" in response) {
       pending.reject(new Error(response.error.message));
       return;
     }
@@ -186,19 +188,19 @@ export async function connectOrSpawnServer(
     return existing;
   }
 
-  const entryPath = options.entryPath ?? fileURLToPath(new URL('./entry.js', import.meta.url));
+  const entryPath = options.entryPath ?? fileURLToPath(new URL("./entry.js", import.meta.url));
   const forwardStderr = options.forwardStderr === true;
-  const child = spawn(process.execPath, [entryPath, 'serve'], {
+  const child = spawn(process.execPath, [entryPath, "serve"], {
     detached: true,
-    stdio: forwardStderr ? ['ignore', 'ignore', 'pipe'] : 'ignore',
+    stdio: forwardStderr ? ["ignore", "ignore", "pipe"] : "ignore",
     env: {
       ...process.env,
-      ...(process.versions.electron ? { ELECTRON_RUN_AS_NODE: '1' } : {}),
+      ...(process.versions.electron ? { ELECTRON_RUN_AS_NODE: "1" } : {}),
       SPIRIT_AGENT_DATA_DIR: options.dataDir,
     },
   });
   if (forwardStderr && child.stderr) {
-    child.stderr.on('data', (chunk: Buffer | string) => {
+    child.stderr.on("data", (chunk: Buffer | string) => {
       process.stderr.write(chunk);
     });
   }
@@ -212,7 +214,7 @@ export async function connectOrSpawnServer(
       return connected;
     }
   }
-  throw new Error('timed out waiting for Spirit Server to start');
+  throw new Error("timed out waiting for Spirit Server to start");
 }
 
 async function connectToRegisteredServer(
@@ -224,12 +226,13 @@ async function connectToRegisteredServer(
     return undefined;
   }
   const instances = await listInstances(dataDir);
-  const ordered = preferredPid === undefined
-    ? [...instances].reverse()
-    : [
-        ...instances.filter((instance) => instance.pid === preferredPid),
-        ...instances.filter((instance) => instance.pid !== preferredPid).reverse(),
-      ];
+  const ordered =
+    preferredPid === undefined
+      ? [...instances].reverse()
+      : [
+          ...instances.filter((instance) => instance.pid === preferredPid),
+          ...instances.filter((instance) => instance.pid !== preferredPid).reverse(),
+        ];
   for (const instance of ordered) {
     if (!isLoopbackHost(instance.host)) {
       continue;
@@ -240,9 +243,9 @@ async function connectToRegisteredServer(
     });
     try {
       await client.connect();
-      const health = await client.call<{ instanceId: string }>('server.health');
+      const health = await client.call<{ instanceId: string }>("server.health");
       if (health.instanceId !== instance.instanceId) {
-        throw new Error('daemon health instanceId mismatch');
+        throw new Error("daemon health instanceId mismatch");
       }
       return { client, instance };
     } catch {

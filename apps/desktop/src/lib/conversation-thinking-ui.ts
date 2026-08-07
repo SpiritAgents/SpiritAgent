@@ -1,18 +1,18 @@
 import {
   isGenericPendingThinkingStatusText,
   isLivePendingReasoningAux,
-} from './subagent-display.js';
-import { toolCallPhaseShowsShimmer } from './tool-call-shimmer.js';
-import type { ConversationMessageSnapshot, PendingAssistantAux } from '../types.js';
+} from "./subagent-display.js";
+import { toolCallPhaseShowsShimmer } from "./tool-call-shimmer.js";
+import type { ConversationMessageSnapshot, PendingAssistantAux } from "../types.js";
 
 export function isStandaloneThinkingMessage(
   message: ConversationMessageSnapshot | undefined,
 ): boolean {
   return Boolean(
-    message?.role === 'assistant' &&
-      !message.tool &&
-      !message.content.trim() &&
-      message.aux?.thinking?.trim(),
+    message?.role === "assistant" &&
+    !message.tool &&
+    !message.content.trim() &&
+    message.aux?.thinking?.trim(),
   );
 }
 
@@ -25,10 +25,10 @@ export function hasAssistantBodyTextLaterInTurn(
     if (!candidate) {
       continue;
     }
-    if (candidate.role === 'user') {
+    if (candidate.role === "user") {
       break;
     }
-    if (candidate.role === 'assistant' && !candidate.tool && candidate.content.trim()) {
+    if (candidate.role === "assistant" && !candidate.tool && candidate.content.trim()) {
       return true;
     }
   }
@@ -40,13 +40,13 @@ function isLiveReasoningPlaceholderMessage(
   pendingAuxState: PendingAssistantAux | undefined,
 ): boolean {
   return Boolean(
-    message.role === 'assistant' &&
-      message.pending &&
-      !message.content.trim() &&
-      !message.tool &&
-      isLivePendingReasoningAux(pendingAuxState) &&
-      pendingAuxState?.kind === 'thinking' &&
-      pendingAuxState.detailText === undefined,
+    message.role === "assistant" &&
+    message.pending &&
+    !message.content.trim() &&
+    !message.tool &&
+    isLivePendingReasoningAux(pendingAuxState) &&
+    pendingAuxState?.kind === "thinking" &&
+    pendingAuxState.detailText === undefined,
   );
 }
 
@@ -57,7 +57,7 @@ export function isAssistantReasoningLive(
   messages?: readonly ConversationMessageSnapshot[],
   messageIndex?: number,
 ): boolean {
-  if (message.role !== 'assistant' || !message.pending || message.content.trim() || message.tool) {
+  if (message.role !== "assistant" || !message.pending || message.content.trim() || message.tool) {
     return false;
   }
   if (
@@ -72,10 +72,10 @@ export function isAssistantReasoningLive(
     return true;
   }
   if (
-    isLiveReasoningPlaceholderMessage(message, pendingAuxState)
-    && messages !== undefined
-    && messageIndex !== undefined
-    && hasAssistantNonTerminalToolInCurrentTurn(messages, messageIndex)
+    isLiveReasoningPlaceholderMessage(message, pendingAuxState) &&
+    messages !== undefined &&
+    messageIndex !== undefined &&
+    hasAssistantNonTerminalToolInCurrentTurn(messages, messageIndex)
   ) {
     return false;
   }
@@ -93,18 +93,13 @@ export function hasAssistantLiveReasoningLaterInTurn(
   pendingAuxState: PendingAssistantAux | undefined,
 ): boolean {
   const next = messages[messageIndex + 1];
-  if (!next || next.role === 'user') {
+  if (!next || next.role === "user") {
     return false;
   }
-  if (next.role === 'assistant' && next.tool) {
+  if (next.role === "assistant" && next.tool) {
     return false;
   }
-  if (
-    next.role === 'assistant' &&
-    !next.pending &&
-    !next.tool &&
-    next.content.trim()
-  ) {
+  if (next.role === "assistant" && !next.pending && !next.tool && next.content.trim()) {
     return false;
   }
   return isAssistantReasoningLive(next, pendingAuxState, messages, messageIndex + 1);
@@ -119,10 +114,10 @@ export function hasAssistantToolLaterInTurn(
     if (!candidate) {
       continue;
     }
-    if (candidate.role === 'user') {
+    if (candidate.role === "user") {
       break;
     }
-    if (candidate.role === 'assistant' && candidate.tool) {
+    if (candidate.role === "assistant" && candidate.tool) {
       return true;
     }
   }
@@ -141,9 +136,9 @@ export function hasAssistantNonTerminalToolInCurrentTurn(
   for (let index = lastUser + 1; index < messages.length; index += 1) {
     const candidate = messages[index];
     if (
-      candidate?.role === 'assistant'
-      && candidate.tool
-      && toolCallPhaseShowsShimmer(candidate.tool.phase)
+      candidate?.role === "assistant" &&
+      candidate.tool &&
+      toolCallPhaseShowsShimmer(candidate.tool.phase)
     ) {
       return true;
     }
@@ -153,7 +148,7 @@ export function hasAssistantNonTerminalToolInCurrentTurn(
 
 function lastUserMessageIndex(messages: readonly ConversationMessageSnapshot[]): number {
   for (let index = messages.length - 1; index >= 0; index -= 1) {
-    if (messages[index]?.role === 'user') {
+    if (messages[index]?.role === "user") {
       return index;
     }
   }
@@ -170,7 +165,7 @@ export function hasAssistantToolInCurrentTurn(
   }
   for (let index = lastUser + 1; index < messages.length; index += 1) {
     const candidate = messages[index];
-    if (candidate?.role === 'assistant' && candidate.tool) {
+    if (candidate?.role === "assistant" && candidate.tool) {
       return true;
     }
   }
@@ -216,15 +211,15 @@ export function shouldShowAssistantThinkingCollapsible(
       return false;
     }
   }
-  if (message.role === 'user') {
+  if (message.role === "user") {
     return false;
   }
 
   const thinking = message.aux?.thinking?.trim();
   const hasDisplayableThinkingAux = Boolean(
     thinking &&
-      !isGenericPendingThinkingStatusText(thinking) &&
-      (!message.content.trim() || thinking !== message.content.trim()),
+    !isGenericPendingThinkingStatusText(thinking) &&
+    (!message.content.trim() || thinking !== message.content.trim()),
   );
   const show =
     hasDisplayableThinkingAux || isLiveReasoningPlaceholderMessage(message, pendingAuxState);
@@ -247,15 +242,18 @@ export function shouldShowAssistantThinkingCollapsible(
     }
     // Abort + continue (no tools): prior standalone Thought must stay visible while the next
     // segment streams live Thinking — deferAfterStream normally prevents this adjacency.
-    if (isStandaloneThinkingMessage(message) && !hasAssistantToolInCurrentTurn(messages, listIndex)) {
+    if (
+      isStandaloneThinkingMessage(message) &&
+      !hasAssistantToolInCurrentTurn(messages, listIndex)
+    ) {
       return true;
     }
     return false;
   }
 
   if (
-    isLiveReasoningPlaceholderMessage(message, pendingAuxState)
-    && hasAssistantNonTerminalToolInCurrentTurn(messages, listIndex)
+    isLiveReasoningPlaceholderMessage(message, pendingAuxState) &&
+    hasAssistantNonTerminalToolInCurrentTurn(messages, listIndex)
   ) {
     return false;
   }

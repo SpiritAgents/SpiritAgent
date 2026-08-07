@@ -1,6 +1,6 @@
-import { BrowserWindow } from 'electron';
+import { BrowserWindow } from "electron";
 
-import { refreshDesktopAttention } from './desktop-attention.js';
+import { refreshDesktopAttention } from "./desktop-attention.js";
 
 let mainWindowRef: BrowserWindow | undefined;
 let rendererHidden = false;
@@ -10,7 +10,7 @@ function broadcastAwayChanged(away: boolean): void {
   if (!window || window.isDestroyed()) {
     return;
   }
-  window.webContents.send('desktop:app-away-changed', { away });
+  window.webContents.send("desktop:app-away-changed", { away });
 }
 
 function recomputeAway(): boolean {
@@ -25,12 +25,12 @@ export function registerWindowPresence(mainWindow: BrowserWindow): void {
   const update = () => {
     recomputeAway();
   };
-  mainWindow.on('blur', update);
-  mainWindow.on('focus', update);
-  mainWindow.on('minimize', update);
-  mainWindow.on('restore', update);
-  mainWindow.on('hide', update);
-  mainWindow.on('show', update);
+  mainWindow.on("blur", update);
+  mainWindow.on("focus", update);
+  mainWindow.on("minimize", update);
+  mainWindow.on("restore", update);
+  mainWindow.on("hide", update);
+  mainWindow.on("show", update);
   recomputeAway();
 }
 

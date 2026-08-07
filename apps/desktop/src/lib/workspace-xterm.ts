@@ -4,10 +4,7 @@ import { Terminal } from "@xterm/xterm";
 
 import { configureWorkspaceTerminalLinks } from "@/lib/workspace-terminal-links";
 import { attachWorkspaceTerminalResizeObserver } from "@/lib/workspace-terminal-resize";
-import {
-  readTerminalThemeFromDocument,
-  trackTerminalTheme,
-} from "@/lib/workspace-terminal-theme";
+import { readTerminalThemeFromDocument, trackTerminalTheme } from "@/lib/workspace-terminal-theme";
 
 /** Windows 上优先系统 Cascadia / Consolas；不把 webfont 置于栈首，以免覆盖已安装的系统等宽字体。 */
 export const WORKSPACE_TERMINAL_FONT_FAMILY =

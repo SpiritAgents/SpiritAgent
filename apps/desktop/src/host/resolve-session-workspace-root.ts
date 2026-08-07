@@ -1,12 +1,12 @@
-import { existsSync } from 'node:fs';
-import path from 'node:path';
+import { existsSync } from "node:fs";
+import path from "node:path";
 
 import {
   isSpiritBranchName,
   listGitWorktrees,
   readWorktreeContext,
   resolvePrimaryRepoRoot,
-} from '@spiritagent/host-internal';
+} from "@spiritagent/host-internal";
 
 export async function resolveStoredSessionWorkspaceRoot(input: {
   workspaceRoot: string;

@@ -59,7 +59,11 @@ function AutomationDetailTabs({
 
   return (
     <div className="space-y-4">
-      <div className="flex flex-wrap gap-1 pt-0.5" role="tablist" aria-label={t("automations.detailTabsAria")}>
+      <div
+        className="flex flex-wrap gap-1 pt-0.5"
+        role="tablist"
+        aria-label={t("automations.detailTabsAria")}
+      >
         {AUTOMATION_DETAIL_TABS.map(({ id, labelKey }) => (
           <button
             key={id}
@@ -104,20 +108,23 @@ export function AutomationDetailView({
   const [loading, setLoading] = useState(true);
   const showInitialLoadingRef = useRef(true);
 
-  const refresh = useCallback(async (options?: { silent?: boolean }) => {
-    const silent = options?.silent === true;
-    if (!silent) {
-      setLoading(true);
-    }
-    try {
-      const next = await getAutomation(automationId);
-      setDetail(next);
-    } finally {
+  const refresh = useCallback(
+    async (options?: { silent?: boolean }) => {
+      const silent = options?.silent === true;
       if (!silent) {
-        setLoading(false);
+        setLoading(true);
       }
-    }
-  }, [automationId, getAutomation]);
+      try {
+        const next = await getAutomation(automationId);
+        setDetail(next);
+      } finally {
+        if (!silent) {
+          setLoading(false);
+        }
+      }
+    },
+    [automationId, getAutomation],
+  );
 
   useEffect(() => {
     setActiveTab("history");
@@ -154,10 +161,7 @@ export function AutomationDetailView({
           <AutomationDetailTabs activeTab={activeTab} onTabChange={setActiveTab}>
             {activeTab === "history" ? (
               <div className={cn(loading && "opacity-70")}>
-                <AutomationHistoryTable
-                  runs={detail?.runs ?? []}
-                  onOpenSession={onOpenSession}
-                />
+                <AutomationHistoryTable runs={detail?.runs ?? []} onOpenSession={onOpenSession} />
               </div>
             ) : null}
             {activeTab === "settings" ? (

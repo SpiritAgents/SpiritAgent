@@ -1,5 +1,5 @@
-import { readFileSync } from 'node:fs';
-import { extname, resolve } from 'node:path';
+import { readFileSync } from "node:fs";
+import { extname } from "node:path";
 
 import {
   cloneLlmProviderState,
@@ -8,16 +8,16 @@ import {
   type JsonObject,
   type JsonValue,
   type LlmMessage,
-} from '../ports.js';
-import { uploadOpenAiCompatibleVideoFile } from './moonshot-files.js';
+} from "../ports.js";
+import { uploadOpenAiCompatibleVideoFile } from "./moonshot-files.js";
 import {
   pathToLocalVideoReference,
   resolveLocalMediaPath,
-} from './openai-multimodal-media-path.js';
+} from "./openai-multimodal-media-path.js";
 import {
   resolveOpenAiModelCompatibilityProfile,
   type OpenAiTransportConfig,
-} from './openai-compat.js';
+} from "./openai-compat.js";
 
 export function llmHistoryToOpenAiMessages(
   history: LlmMessage[],
@@ -27,15 +27,19 @@ export function llmHistoryToOpenAiMessages(
 }
 
 export function llmMessageToOpenAiMessage(message: LlmMessage, assetRoot: string): JsonValue {
-  if (message.role === 'assistant' && Array.isArray(message.toolCalls) && message.toolCalls.length > 0) {
+  if (
+    message.role === "assistant" &&
+    Array.isArray(message.toolCalls) &&
+    message.toolCalls.length > 0
+  ) {
     const textContent = llmMessageTextContent(message.content);
     return {
       ...llmMessageProviderState(message),
-      role: 'assistant',
+      role: "assistant",
       content: textContent.length > 0 ? textContent : null,
       tool_calls: message.toolCalls.map((toolCall) => ({
         id: toolCall.id,
-        type: 'function',
+        type: "function",
         function: {
           name: toolCall.name,
           arguments: toolCall.argumentsJson,
@@ -44,18 +48,18 @@ export function llmMessageToOpenAiMessage(message: LlmMessage, assetRoot: string
     };
   }
 
-  if (message.role === 'user' && llmMessageHasMedia(message.content)) {
+  if (message.role === "user" && llmMessageHasMedia(message.content)) {
     const parts: JsonValue[] = [];
 
     for (const part of message.content) {
-      if (part.type === 'text' && part.text.length > 0) {
-        parts.push({ type: 'text', text: part.text });
+      if (part.type === "text" && part.text.length > 0) {
+        parts.push({ type: "text", text: part.text });
         continue;
       }
 
-      if (part.type === 'image') {
+      if (part.type === "image") {
         parts.push({
-          type: 'image_url',
+          type: "image_url",
           image_url: {
             url: pathToImageUrl(part.path, assetRoot),
           },
@@ -63,9 +67,9 @@ export function llmMessageToOpenAiMessage(message: LlmMessage, assetRoot: string
         continue;
       }
 
-      if (part.type === 'video') {
+      if (part.type === "video") {
         parts.push({
-          type: 'video_url',
+          type: "video_url",
           video_url: {
             url: pathToLocalVideoReference(part.path, assetRoot),
           },
@@ -74,7 +78,7 @@ export function llmMessageToOpenAiMessage(message: LlmMessage, assetRoot: string
     }
 
     if (parts.length === 0) {
-      return { role: message.role, content: '' };
+      return { role: message.role, content: "" };
     }
 
     return {
@@ -97,7 +101,7 @@ export async function resolveMoonshotVideoUrlsInOpenAiMessages(
   messages: JsonValue[],
   assetRoot = process.cwd(),
 ): Promise<void> {
-  if (config.llmVendor !== 'moonshot-ai') {
+  if (config.llmVendor !== "moonshot-ai") {
     return;
   }
 
@@ -107,22 +111,22 @@ export async function resolveMoonshotVideoUrlsInOpenAiMessages(
   }
 
   for (const message of messages) {
-    if (!isJsonObject(message) || message.role !== 'user' || !Array.isArray(message.content)) {
+    if (!isJsonObject(message) || message.role !== "user" || !Array.isArray(message.content)) {
       continue;
     }
 
     for (const part of message.content) {
-      if (!isJsonObject(part) || part.type !== 'video_url') {
+      if (!isJsonObject(part) || part.type !== "video_url") {
         continue;
       }
 
-      const rawVideoUrl = part['video_url'];
-      if (typeof rawVideoUrl !== 'object' || rawVideoUrl === null || Array.isArray(rawVideoUrl)) {
+      const rawVideoUrl = part["video_url"];
+      if (typeof rawVideoUrl !== "object" || rawVideoUrl === null || Array.isArray(rawVideoUrl)) {
         continue;
       }
 
-      const urlValue = rawVideoUrl['url'];
-      if (typeof urlValue !== 'string') {
+      const urlValue = rawVideoUrl["url"];
+      if (typeof urlValue !== "string") {
         continue;
       }
 
@@ -132,28 +136,28 @@ export async function resolveMoonshotVideoUrlsInOpenAiMessages(
       }
 
       const absolutePath = resolveLocalMediaPath(url, assetRoot);
-      rawVideoUrl['url'] = await uploadOpenAiCompatibleVideoFile(config, absolutePath);
+      rawVideoUrl["url"] = await uploadOpenAiCompatibleVideoFile(config, absolutePath);
     }
   }
 }
 
 function needsMoonshotVideoUpload(url: string): boolean {
   return (
-    url.length > 0
-    && !url.startsWith('http://')
-    && !url.startsWith('https://')
-    && !url.startsWith('data:')
-    && !url.startsWith('ms://')
+    url.length > 0 &&
+    !url.startsWith("http://") &&
+    !url.startsWith("https://") &&
+    !url.startsWith("data:") &&
+    !url.startsWith("ms://")
   );
 }
 
 function pathToImageUrl(path: string, assetRoot: string): string {
   const normalized = path.trim();
   if (
-    normalized.startsWith('http://')
-    || normalized.startsWith('https://')
-    || normalized.startsWith('data:')
-    || normalized.startsWith('file://')
+    normalized.startsWith("http://") ||
+    normalized.startsWith("https://") ||
+    normalized.startsWith("data:") ||
+    normalized.startsWith("file://")
   ) {
     return normalized;
   }
@@ -163,34 +167,34 @@ function pathToImageUrl(path: string, assetRoot: string): string {
 
   try {
     const bytes = readFileSync(absolutePath);
-    return `data:${mime};base64,${bytes.toString('base64')}`;
+    return `data:${mime};base64,${bytes.toString("base64")}`;
   } catch {
     return toFileUrl(absolutePath);
   }
 }
 
 function toFileUrl(absolutePath: string): string {
-  const normalized = absolutePath.replace(/\\/g, '/');
-  return normalized.startsWith('/') ? `file://${normalized}` : `file:///${normalized}`;
+  const normalized = absolutePath.replace(/\\/g, "/");
+  return normalized.startsWith("/") ? `file://${normalized}` : `file:///${normalized}`;
 }
 
 function guessImageMimeFromPath(path: string): string {
   switch (extname(path).toLowerCase()) {
-    case '.png':
-      return 'image/png';
-    case '.jpg':
-    case '.jpeg':
-      return 'image/jpeg';
-    case '.webp':
-      return 'image/webp';
-    case '.gif':
-      return 'image/gif';
-    case '.ico':
-      return 'image/x-icon';
-    case '.bmp':
-      return 'image/bmp';
+    case ".png":
+      return "image/png";
+    case ".jpg":
+    case ".jpeg":
+      return "image/jpeg";
+    case ".webp":
+      return "image/webp";
+    case ".gif":
+      return "image/gif";
+    case ".ico":
+      return "image/x-icon";
+    case ".bmp":
+      return "image/bmp";
     default:
-      return 'application/octet-stream';
+      return "application/octet-stream";
   }
 }
 
@@ -203,5 +207,5 @@ function llmMessageProviderState(message: LlmMessage): JsonObject {
 }
 
 function isJsonObject(value: JsonValue): value is JsonObject {
-  return typeof value === 'object' && value !== null && !Array.isArray(value);
+  return typeof value === "object" && value !== null && !Array.isArray(value);
 }

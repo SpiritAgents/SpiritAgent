@@ -1,16 +1,16 @@
-import { AsyncLocalStorage } from 'node:async_hooks';
+import { AsyncLocalStorage } from "node:async_hooks";
 
 /** AI SDK `maxRetries`：初始请求之外允许的重试次数。 */
 export const LLM_MAX_RETRIES = 2;
 
 export type LlmRetryObserverEvent =
   | {
-      kind: 'retry';
+      kind: "retry";
       attempt: number;
       maxAttempts: number;
       error: string;
     }
-  | { kind: 'cleared' };
+  | { kind: "cleared" };
 
 export type LlmRetryObserver = (event: LlmRetryObserverEvent) => void;
 
@@ -51,17 +51,17 @@ export async function readLlmRetryErrorMessage(response: Response): Promise<stri
     }
     try {
       const parsed = JSON.parse(trimmed) as unknown;
-      if (parsed && typeof parsed === 'object') {
+      if (parsed && typeof parsed === "object") {
         const record = parsed as Record<string, unknown>;
         const nestedError = record.error;
-        if (nestedError && typeof nestedError === 'object') {
+        if (nestedError && typeof nestedError === "object") {
           const message = (nestedError as Record<string, unknown>).message;
-          if (typeof message === 'string' && message.trim()) {
+          if (typeof message === "string" && message.trim()) {
             return message.trim();
           }
         }
         const message = record.message;
-        if (typeof message === 'string' && message.trim()) {
+        if (typeof message === "string" && message.trim()) {
           return message.trim();
         }
       }
@@ -85,7 +85,7 @@ export async function observeLlmFetchResponse(response: Response): Promise<Respo
     const maxAttempts = store.maxRetries + 1;
     const error = (await readLlmRetryErrorMessage(response)) ?? `HTTP ${response.status}`;
     store.observer({
-      kind: 'retry',
+      kind: "retry",
       attempt: store.retryableFailureCount,
       maxAttempts,
       error,
@@ -94,7 +94,7 @@ export async function observeLlmFetchResponse(response: Response): Promise<Respo
   }
 
   if (response.ok && store.retryableFailureCount > 0) {
-    store.observer({ kind: 'cleared' });
+    store.observer({ kind: "cleared" });
   }
 
   return response;

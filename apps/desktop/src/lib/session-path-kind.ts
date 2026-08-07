@@ -6,9 +6,7 @@ export function normalizeSessionPathKey(sessionPath: string): string {
 export function isForegroundProvisionalSessionPath(sessionPath: string): boolean {
   const key = normalizeSessionPathKey(sessionPath);
   return (
-    key.includes("/__provisional__/")
-    && !key.includes("/split-")
-    && !key.includes("/side-chat-")
+    key.includes("/__provisional__/") && !key.includes("/split-") && !key.includes("/side-chat-")
   );
 }
 
@@ -30,10 +28,7 @@ export function isStableChatSessionPath(sessionPath: string): boolean {
 }
 
 /** First-send promotion from a provisional draft slot to a persisted chat file. */
-export function isProvisionalSessionPromotion(
-  previousPath: string,
-  nextPath: string,
-): boolean {
+export function isProvisionalSessionPromotion(previousPath: string, nextPath: string): boolean {
   const prevKey = normalizeSessionPathKey(previousPath);
   if (!prevKey.includes("/__provisional__/")) {
     return false;

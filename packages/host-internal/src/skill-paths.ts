@@ -2,15 +2,15 @@
  * Skill 路径常量与纯路径工具（无 Node 内置依赖，可供 Desktop renderer 安全 import）。
  */
 
-export const SKILLS_DIR_NAME = 'skills';
-export const SKILL_FILE_NAME = 'SKILL.md';
+export const SKILLS_DIR_NAME = "skills";
+export const SKILL_FILE_NAME = "SKILL.md";
 
 function normalizePath(path: string): string {
-  return path.trim().replace(/\\/g, '/');
+  return path.trim().replace(/\\/g, "/");
 }
 
 function pathSegments(path: string): string[] {
-  return normalizePath(path).split('/').filter(Boolean);
+  return normalizePath(path).split("/").filter(Boolean);
 }
 
 function pathBasename(path: string): string {
@@ -25,16 +25,18 @@ export function isSkillMarkdownPath(path: string): boolean {
   return pathBasename(path) === SKILL_FILE_NAME;
 }
 
-export function splitSkillFrontmatter(raw: string): { frontmatter: string; body: string } | undefined {
-  const content = raw.startsWith('\uFEFF') ? raw.slice(1) : raw;
+export function splitSkillFrontmatter(
+  raw: string,
+): { frontmatter: string; body: string } | undefined {
+  const content = raw.startsWith("\uFEFF") ? raw.slice(1) : raw;
   const segments = content.split(/\r?\n/u);
-  if (segments[0] !== '---') {
+  if (segments[0] !== "---") {
     return undefined;
   }
 
   let closingIndex = -1;
   for (let index = 1; index < segments.length; index += 1) {
-    if (segments[index] === '---') {
+    if (segments[index] === "---") {
       closingIndex = index;
       break;
     }
@@ -45,8 +47,8 @@ export function splitSkillFrontmatter(raw: string): { frontmatter: string; body:
   }
 
   return {
-    frontmatter: segments.slice(1, closingIndex).join('\n'),
-    body: segments.slice(closingIndex + 1).join('\n'),
+    frontmatter: segments.slice(1, closingIndex).join("\n"),
+    body: segments.slice(closingIndex + 1).join("\n"),
   };
 }
 
@@ -54,7 +56,7 @@ function unquoteYamlScalar(value: string): string {
   if (value.length >= 2) {
     const first = value[0];
     const last = value[value.length - 1];
-    if ((first === '"' && last === '"') || (first === '\'' && last === '\'')) {
+    if ((first === '"' && last === '"') || (first === "'" && last === "'")) {
       return value.slice(1, -1);
     }
   }
@@ -62,23 +64,26 @@ function unquoteYamlScalar(value: string): string {
   return value;
 }
 
-export function parseSkillFrontmatterFields(frontmatter: string): { name?: string; description?: string } {
+export function parseSkillFrontmatterFields(frontmatter: string): {
+  name?: string;
+  description?: string;
+} {
   const parsed: { name?: string; description?: string } = {};
   for (const line of frontmatter.split(/\r?\n/u)) {
     const trimmed = line.trim();
-    if (!trimmed || trimmed.startsWith('#')) {
+    if (!trimmed || trimmed.startsWith("#")) {
       continue;
     }
-    if (line.startsWith(' ') || line.startsWith('\t')) {
+    if (line.startsWith(" ") || line.startsWith("\t")) {
       continue;
     }
 
-    if (parsed.name === undefined && trimmed.startsWith('name:')) {
-      parsed.name = unquoteYamlScalar(trimmed.slice('name:'.length).trim());
+    if (parsed.name === undefined && trimmed.startsWith("name:")) {
+      parsed.name = unquoteYamlScalar(trimmed.slice("name:".length).trim());
       continue;
     }
-    if (parsed.description === undefined && trimmed.startsWith('description:')) {
-      parsed.description = unquoteYamlScalar(trimmed.slice('description:'.length).trim());
+    if (parsed.description === undefined && trimmed.startsWith("description:")) {
+      parsed.description = unquoteYamlScalar(trimmed.slice("description:".length).trim());
     }
   }
 
@@ -95,18 +100,18 @@ export function parseSkillNameFromMarkdown(raw: string): string | undefined {
     }
   }
 
-  const content = raw.startsWith('\uFEFF') ? raw.slice(1) : raw;
-  if (!content.startsWith('---')) {
+  const content = raw.startsWith("\uFEFF") ? raw.slice(1) : raw;
+  if (!content.startsWith("---")) {
     return undefined;
   }
 
   for (const line of content.split(/\r?\n/u).slice(1)) {
-    if (line === '---') {
+    if (line === "---") {
       break;
     }
     const trimmed = line.trim();
-    if (trimmed.startsWith('name:')) {
-      const name = unquoteYamlScalar(trimmed.slice('name:'.length).trim()).trim();
+    if (trimmed.startsWith("name:")) {
+      const name = unquoteYamlScalar(trimmed.slice("name:".length).trim()).trim();
       return name || undefined;
     }
   }
@@ -118,7 +123,7 @@ export function parseSkillNameFromMarkdown(raw: string): string | undefined {
 const READ_FILE_TOOL_OUTPUT_LINE = /^\s*\d+\s*\|\s?(.*)$/u;
 
 function stripReadFileToolOutputWrapper(output: string): string | undefined {
-  if (!output.trimStart().startsWith('[read]')) {
+  if (!output.trimStart().startsWith("[read]")) {
     return undefined;
   }
 
@@ -126,10 +131,10 @@ function stripReadFileToolOutputWrapper(output: string): string | undefined {
   for (const line of output.split(/\r?\n/u)) {
     const match = READ_FILE_TOOL_OUTPUT_LINE.exec(line);
     if (match) {
-      bodyLines.push(match[1] ?? '');
+      bodyLines.push(match[1] ?? "");
     }
   }
-  return bodyLines.length > 0 ? bodyLines.join('\n') : undefined;
+  return bodyLines.length > 0 ? bodyLines.join("\n") : undefined;
 }
 
 function readFileSkillDisplayName(skillMarkdownContent?: string): string | undefined {
@@ -160,11 +165,11 @@ function workspaceRelativeDirectoryPath(path: string, workspaceRoot: string): st
   }
   const relativeSegs = pathSegs.slice(rootSegs.length);
   if (relativeSegs.length === 0) {
-    return '.';
+    return ".";
   }
-  let relative = relativeSegs.join('/');
-  if (normalizePath(path).endsWith('/') && relative) {
-    relative += '/';
+  let relative = relativeSegs.join("/");
+  if (normalizePath(path).endsWith("/") && relative) {
+    relative += "/";
   }
   return relative;
 }
@@ -203,11 +208,11 @@ export function readFileToolDisplayBase(
     return emptyLabel;
   }
   if (isSkillMarkdownPath(trimmed)) {
-    return readFileSkillDisplayName(options?.skillMarkdownContent) ?? '';
+    return readFileSkillDisplayName(options?.skillMarkdownContent) ?? "";
   }
 
   const normalized = normalizePath(trimmed);
-  const absolute = normalized.startsWith('/') || /^[A-Za-z]:\//u.test(normalized);
+  const absolute = normalized.startsWith("/") || /^[A-Za-z]:\//u.test(normalized);
   if (!absolute) {
     return normalized;
   }

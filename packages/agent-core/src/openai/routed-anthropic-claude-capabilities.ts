@@ -1,22 +1,22 @@
-import type { AnthropicEffort } from '../anthropic/anthropic-compat.js';
-import type { OpenAiTransportConfig } from './openai-compat.js';
+import type { AnthropicEffort } from "../anthropic/anthropic-compat.js";
+import type { OpenAiTransportConfig } from "./openai-compat.js";
 
-export type RoutedAnthropicThinkingMode = 'adaptive' | 'budget' | 'none';
+export type RoutedAnthropicThinkingMode = "adaptive" | "budget" | "none";
 
 export interface RoutedAnthropicClaudeCapabilities {
   thinkingMode: RoutedAnthropicThinkingMode;
   supportedEfforts: readonly AnthropicEffort[];
-  adaptiveDisplay?: 'summarized';
+  adaptiveDisplay?: "summarized";
   /** false 时 API 不接受 thinking: disabled（如 Claude Fable/Mythos 5 常开 adaptive thinking）。 */
   thinkingSwitchable?: boolean;
 }
 
-const CLAUDE_5_FULL_EFFORTS: readonly AnthropicEffort[] = ['low', 'medium', 'high', 'xhigh', 'max'];
+const CLAUDE_5_FULL_EFFORTS: readonly AnthropicEffort[] = ["low", "medium", "high", "xhigh", "max"];
 
 /** Claude 5 代际中 thinking 常开的族（fable / mythos）。 */
-const CLAUDE_5_ALWAYS_ON_ADAPTIVE_FAMILIES = new Set(['fable', 'mythos']);
+const CLAUDE_5_ALWAYS_ON_ADAPTIVE_FAMILIES = new Set(["fable", "mythos"]);
 
-export const ROUTED_ANTHROPIC_BUDGET_TOKENS_BY_EFFORT: Record<'low' | 'medium' | 'high', number> = {
+export const ROUTED_ANTHROPIC_BUDGET_TOKENS_BY_EFFORT: Record<"low" | "medium" | "high", number> = {
   low: 4_000,
   medium: 8_000,
   high: 12_000,
@@ -26,12 +26,12 @@ export function normalizeRoutedAnthropicClaudeModelId(model: string): string {
   return model
     .trim()
     .toLowerCase()
-    .replace(/^anthropic\//, '')
-    .replace(/(\d)\.(\d)/g, '$1-$2');
+    .replace(/^anthropic\//, "")
+    .replace(/(\d)\.(\d)/g, "$1-$2");
 }
 
 export function isRoutedAnthropicClaudeModel(model: string): boolean {
-  return model.trim().toLowerCase().startsWith('anthropic/claude-');
+  return model.trim().toLowerCase().startsWith("anthropic/claude-");
 }
 
 function parseClaudeModelFamilyAndGeneration(
@@ -61,18 +61,18 @@ function resolveClaude5GenerationCapabilities(
 
   if (CLAUDE_5_ALWAYS_ON_ADAPTIVE_FAMILIES.has(parsed.family)) {
     return {
-      thinkingMode: 'adaptive',
+      thinkingMode: "adaptive",
       supportedEfforts: CLAUDE_5_FULL_EFFORTS,
-      adaptiveDisplay: 'summarized',
+      adaptiveDisplay: "summarized",
       thinkingSwitchable: false,
     };
   }
 
-  if (parsed.family === 'sonnet' || parsed.family === 'opus') {
+  if (parsed.family === "sonnet" || parsed.family === "opus") {
     return {
-      thinkingMode: 'adaptive',
+      thinkingMode: "adaptive",
       supportedEfforts: CLAUDE_5_FULL_EFFORTS,
-      ...(parsed.family === 'opus' ? { adaptiveDisplay: 'summarized' as const } : {}),
+      ...(parsed.family === "opus" ? { adaptiveDisplay: "summarized" as const } : {}),
     };
   }
 
@@ -85,7 +85,7 @@ export function routedAnthropicClaudeThinkingSwitchable(
   if (capabilities.thinkingSwitchable === false) {
     return false;
   }
-  return capabilities.thinkingMode === 'adaptive' || capabilities.thinkingMode === 'budget';
+  return capabilities.thinkingMode === "adaptive" || capabilities.thinkingMode === "budget";
 }
 
 export function resolveRoutedAnthropicClaudeCapabilities(
@@ -98,37 +98,37 @@ export function resolveRoutedAnthropicClaudeCapabilities(
     return claude5Capabilities;
   }
 
-  if (modelId.includes('claude-opus-4-7') || modelId.includes('claude-opus-4-8')) {
+  if (modelId.includes("claude-opus-4-7") || modelId.includes("claude-opus-4-8")) {
     return {
-      thinkingMode: 'adaptive',
-      supportedEfforts: ['low', 'medium', 'high', 'xhigh', 'max'],
-      adaptiveDisplay: 'summarized',
+      thinkingMode: "adaptive",
+      supportedEfforts: ["low", "medium", "high", "xhigh", "max"],
+      adaptiveDisplay: "summarized",
     };
   }
 
-  if (modelId.includes('claude-opus-4-6')) {
+  if (modelId.includes("claude-opus-4-6")) {
     return {
-      thinkingMode: 'adaptive',
-      supportedEfforts: ['low', 'medium', 'high', 'max'],
+      thinkingMode: "adaptive",
+      supportedEfforts: ["low", "medium", "high", "max"],
     };
   }
 
-  if (modelId.includes('claude-sonnet-4-6')) {
+  if (modelId.includes("claude-sonnet-4-6")) {
     return {
-      thinkingMode: 'adaptive',
-      supportedEfforts: ['low', 'medium', 'high'],
+      thinkingMode: "adaptive",
+      supportedEfforts: ["low", "medium", "high"],
     };
   }
 
   if (isLegacyRoutedAnthropicClaudeModel(modelId)) {
     return {
-      thinkingMode: 'budget',
+      thinkingMode: "budget",
       supportedEfforts: [],
     };
   }
 
   return {
-    thinkingMode: 'none',
+    thinkingMode: "none",
     supportedEfforts: [],
   };
 }
@@ -149,25 +149,25 @@ export function routedAnthropicClaudeSupportedEfforts(
 }
 
 function isLegacyRoutedAnthropicClaudeModel(modelId: string): boolean {
-  if (!modelId.includes('claude')) {
+  if (!modelId.includes("claude")) {
     return false;
   }
 
   return (
-    modelId.includes('haiku-4-5')
-    || modelId.includes('opus-4-5')
-    || modelId.includes('sonnet-4-5')
-    || /claude-opus-4(?:-|$)/.test(modelId)
-    || /claude-sonnet-4(?:-|$)/.test(modelId)
-    || modelId.includes('claude-opus-4-1')
+    modelId.includes("haiku-4-5") ||
+    modelId.includes("opus-4-5") ||
+    modelId.includes("sonnet-4-5") ||
+    /claude-opus-4(?:-|$)/.test(modelId) ||
+    /claude-sonnet-4(?:-|$)/.test(modelId) ||
+    modelId.includes("claude-opus-4-1")
   );
 }
 
 export function routedAnthropicEffortFromReasoningEffort(
-  reasoningEffort: OpenAiTransportConfig['reasoningEffort'],
+  reasoningEffort: OpenAiTransportConfig["reasoningEffort"],
   supportedEfforts: readonly AnthropicEffort[],
 ): AnthropicEffort | undefined {
-  if (reasoningEffort === undefined || reasoningEffort === 'default') {
+  if (reasoningEffort === undefined || reasoningEffort === "default") {
     return undefined;
   }
 

@@ -1,8 +1,9 @@
-import type { FormulaUri } from './formula-types.js';
+import type { FormulaUri } from "./formula-types.js";
 
-export const MOONSHOT_FORMULA_WEB_SEARCH_URI = 'moonshot/web-search:latest' as const satisfies FormulaUri;
+export const MOONSHOT_FORMULA_WEB_SEARCH_URI =
+  "moonshot/web-search:latest" as const satisfies FormulaUri;
 
-export const MOONSHOT_FORMULA_WEB_SEARCH_FUNCTION_NAME = 'web_search' as const;
+export const MOONSHOT_FORMULA_WEB_SEARCH_FUNCTION_NAME = "web_search" as const;
 
 export type MoonshotFormulaRegistration = {
   formulaUri: FormulaUri;

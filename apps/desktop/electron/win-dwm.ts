@@ -3,8 +3,8 @@
  * `DWMWA_USE_IMMERSIVE_DARK_MODE`。Electron 的 `nativeTheme` + `setBackgroundMaterial`
  * 在「系统浅色 / 应用深色」组合下仍常把 Mica 合成成浅色块；必须对 HWND 写入 DWM 属性。
  */
-import type { BrowserWindow } from 'electron';
-import koffi from 'koffi';
+import type { BrowserWindow } from "electron";
+import koffi from "koffi";
 
 const DWMWA_USE_IMMERSIVE_DARK_MODE = 20;
 const SWP_NOSIZE = 0x0001;
@@ -28,26 +28,26 @@ let setWindowPos:
   | undefined;
 
 function ensureWin32Api(): boolean {
-  if (process.platform !== 'win32') {
+  if (process.platform !== "win32") {
     return false;
   }
   if (dwmSetWindowAttribute && setWindowPos) {
     return true;
   }
   try {
-    const dwm = koffi.load('dwmapi.dll');
+    const dwm = koffi.load("dwmapi.dll");
     // HWND 用 uintptr_t，避免 void* 与 JS BigInt 转换歧义
     dwmSetWindowAttribute = dwm.func(
-      'int __stdcall DwmSetWindowAttribute(uintptr_t hwnd, uint32_t dwAttribute, void *pvAttribute, uint32_t cbAttribute)',
+      "int __stdcall DwmSetWindowAttribute(uintptr_t hwnd, uint32_t dwAttribute, void *pvAttribute, uint32_t cbAttribute)",
     ) as typeof dwmSetWindowAttribute;
 
-    const user32 = koffi.load('user32.dll');
+    const user32 = koffi.load("user32.dll");
     setWindowPos = user32.func(
-      'int __stdcall SetWindowPos(uintptr_t hWnd, uintptr_t hWndInsertAfter, int X, int Y, int cx, int cy, uint32_t uFlags)',
+      "int __stdcall SetWindowPos(uintptr_t hWnd, uintptr_t hWndInsertAfter, int X, int Y, int cx, int cy, uint32_t uFlags)",
     ) as typeof setWindowPos;
     return true;
   } catch (err) {
-    console.error('[spirit-desktop] koffi load dwmapi/user32 failed', err);
+    console.error("[spirit-desktop] koffi load dwmapi/user32 failed", err);
     dwmSetWindowAttribute = undefined;
     setWindowPos = undefined;
     return false;
@@ -59,7 +59,7 @@ function hwndFromBrowserWindow(window: BrowserWindow): bigint | undefined {
   if (!raw || raw.length < 4) {
     return undefined;
   }
-  if (process.arch === 'x64' || process.arch === 'arm64') {
+  if (process.arch === "x64" || process.arch === "arm64") {
     if (raw.length >= 8) {
       return raw.readBigUInt64LE(0);
     }
@@ -83,6 +83,6 @@ export function syncWindowsImmersiveDarkMode(window: BrowserWindow, darkContent:
     const flags = SWP_NOMOVE | SWP_NOSIZE | SWP_NOZORDER | SWP_FRAMECHANGED;
     setWindowPos(hwnd, 0n, 0, 0, 0, 0, flags);
   } catch (err) {
-    console.error('[spirit-desktop] DWM/SetWindowPos failed', err);
+    console.error("[spirit-desktop] DWM/SetWindowPos failed", err);
   }
 }

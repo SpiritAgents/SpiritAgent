@@ -3,10 +3,7 @@ import { PROVIDER_PICKER_ROWS } from "@spiritagent/host-internal/model-provider-
 import type { DesktopModelProvider } from "@/types";
 
 /** 兼容 react-i18next `t` 的最小签名，避免直接依赖 TFunction 泛型。 */
-export type ProviderLabelTranslate = (
-  key: string,
-  options?: { defaultValue?: string },
-) => string;
+export type ProviderLabelTranslate = (key: string, options?: { defaultValue?: string }) => string;
 
 export type LocalizedProviderRow = {
   id: DesktopModelProvider;

@@ -1,7 +1,10 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { useTranslation } from "react-i18next";
 import { buildSingleTextQuestionNotificationReplyResult } from "@/lib/ask-questions-notification-reply";
-import { resolvePendingApprovalSessionPath, resolvePendingQuestionsSessionPath, resolvePendingQuestionsSnapshot } from "@/lib/pane-pending-turn-routing";
+import {
+  resolvePendingApprovalSessionPath,
+  resolvePendingQuestionsSessionPath,
+  resolvePendingQuestionsSnapshot,
+} from "@/lib/pane-pending-turn-routing";
 import i18n, { getStoredLanguage } from "@/lib/i18n";
 
 import type { SettingsFormState } from "@/components/settings/types";
@@ -17,10 +20,7 @@ import {
   composerAttachmentViewFromPath,
   type ComposerLocalFileAttachmentView,
 } from "@/lib/local-file-attachments";
-import {
-  isCompactSlashComposerRequest,
-  isLogSessionSlashInput,
-} from "@/lib/skill-slash";
+import { isCompactSlashComposerRequest, isLogSessionSlashInput } from "@/lib/skill-slash";
 import type { DesktopAgentMode } from "@/lib/agent-mode";
 import type { RichSegment } from "@/lib/composer-segment-model";
 import { normalizeComposerPlain, segmentsToPlainText } from "@/lib/composer-segment-model";
@@ -38,7 +38,10 @@ import {
 import { readSessionSplitBinding } from "@/lib/session-split-binding";
 import { resolveWorkspaceGroupingRoot } from "@/lib/workspace-grouping";
 import { collectPaneSessionPaths } from "@/lib/conversation-split-layout";
-import { normalizePaneSessionPathKey, resolvePaneDesktopSnapshot } from "@/lib/pane-desktop-snapshot";
+import {
+  normalizePaneSessionPathKey,
+  resolvePaneDesktopSnapshot,
+} from "@/lib/pane-desktop-snapshot";
 import { isProvisionalSessionPromotion } from "@/lib/session-path-kind";
 import { getWebClientViewingSessionPath, setWebClientViewingSessionPath } from "@/adapters/web";
 import { useDesktopSystemNotifications } from "@/hooks/useDesktopSystemNotifications";
@@ -88,12 +91,9 @@ import type {
   SubmitGitChipRequest,
   SubmitUserTurnRequest,
   AbortConversationRequest,
-  BeginSplitPaneSessionRequest,
   BeginSplitPaneSessionResponse,
   BeginSideChatPaneSessionResponse,
   ForkSessionIntoSideChatRequest,
-  SetVisiblePaneSessionsRequest,
-  CloseSplitPaneSessionRequest,
   UpdateConfigRequest,
   WorkspaceExplorerListResult,
   WorkspaceFileReferenceSuggestionsResponse,
@@ -101,7 +101,6 @@ import type {
   WorkspaceReadTextFileResult,
   WriteHostTextFileRequest,
   WriteWorkspaceTextFileRequest,
-  DesktopModelProvider,
   GitHistorySnapshot,
   GitCommitMessageSnapshot,
   GitWorkingTreeSnapshot,
@@ -110,7 +109,6 @@ import type {
   GetGitHubPullRequestDetailRequest,
   GetGitHubPullRequestTabCountsRequest,
   ListGitHubPullRequestsRequest,
-  SearchGitHubAutomationRepositoriesRequest,
   MergeGitHubPullRequestRequest,
   ApprovalLevel,
   LocalFileComposerRoute,
@@ -203,9 +201,11 @@ function isCheckoutBlockedByLocalChanges(error: unknown): boolean {
   }
 
   const message = describeError(error);
-  return /local changes to the following files would be overwritten by checkout/i.test(message)
-    || /please commit your changes or stash them before you switch branches/i.test(message)
-    || message.includes(i18n.t('error.uncommittedChangesBlockCheckout'));
+  return (
+    /local changes to the following files would be overwritten by checkout/i.test(message) ||
+    /please commit your changes or stash them before you switch branches/i.test(message) ||
+    message.includes(i18n.t("error.uncommittedChangesBlockCheckout"))
+  );
 }
 
 function sanitizeGitErrorMessage(error: unknown): string {
@@ -364,32 +364,32 @@ function shouldHoldSessionBusyForSplitRestore(
 }
 
 function isRemoteWebHostClient(apiKind: string | null | undefined): boolean {
-  if (apiKind === 'web') {
+  if (apiKind === "web") {
     return true;
   }
-  return typeof window !== 'undefined' && !window.spiritDesktop;
+  return typeof window !== "undefined" && !window.spiritDesktop;
 }
 
 function webPollRequestForSnapshot(
   apiKind: string | null | undefined,
   snapshot: DesktopSnapshot | null | undefined,
   viewingSessionPath?: string,
-): import('../types').PollRequest | undefined {
+): import("../types").PollRequest | undefined {
   if (!isRemoteWebHostClient(apiKind)) {
     return undefined;
   }
   const sessionPath =
-    viewingSessionPath?.trim()
-    ?? getWebClientViewingSessionPath().trim()
-    ?? snapshot?.activeSession?.filePath?.trim();
+    viewingSessionPath?.trim() ??
+    getWebClientViewingSessionPath().trim() ??
+    snapshot?.activeSession?.filePath?.trim();
   return sessionPath ? { sessionPath } : undefined;
 }
 
 function snapshotIncludesWorkspaceGreetingVariants(
-  snapshot: Pick<
-    DesktopSnapshot,
-    "workspaceRoot" | "workspaceBinding" | "availableWorkspaces"
-  > | null | undefined,
+  snapshot:
+    | Pick<DesktopSnapshot, "workspaceRoot" | "workspaceBinding" | "availableWorkspaces">
+    | null
+    | undefined,
 ): boolean {
   return (
     resolveWorkspaceDisplayLabel(
@@ -444,9 +444,9 @@ export function useDesktopRuntime() {
   const [paneSendBusySessionPath, setPaneSendBusySessionPath] = useState<string | null>(null);
   const [layoutNavigationPending, setLayoutNavigationPendingState] = useState(false);
   const [sessions, setSessions] = useState<SessionListItem[]>([]);
-  const [unseenCompletedSessionPaths, setUnseenCompletedSessionPaths] = useState<ReadonlySet<string>>(
-    () => new Set(),
-  );
+  const [unseenCompletedSessionPaths, setUnseenCompletedSessionPaths] = useState<
+    ReadonlySet<string>
+  >(() => new Set());
   const sessionsBusySnapshotRef = useRef<Map<string, boolean>>(new Map());
   const [questionDrafts, setQuestionDrafts] = useState<Record<string, QuestionDraft>>({});
   const [composerLocalFileAttachments, setComposerLocalFileAttachments] = useState<
@@ -458,8 +458,9 @@ export function useDesktopRuntime() {
   const appliedComposerSessionKeyRef = useRef("");
   const sessionNavigationGenerationRef = useRef(0);
   const [sessionNavigationGeneration, setSessionNavigationGeneration] = useState(0);
-  const [navigationGreetingVariant, setNavigationGreetingVariant] =
-    useState<import("@/lib/empty-session-greeting").EmptySessionGreetingVariantId | null>(null);
+  const [navigationGreetingVariant, setNavigationGreetingVariant] = useState<
+    import("@/lib/empty-session-greeting").EmptySessionGreetingVariantId | null
+  >(null);
   const busyActionRef = useRef<BusyAction>("");
   const paneWorkspaceBusySessionPathRef = useRef<string | null>(null);
   const settingsRef = useRef(settings);
@@ -501,11 +502,15 @@ export function useDesktopRuntime() {
     setNavigationGreetingVariant(null);
   }, []);
 
-  const sessionUiKey = useCallback((sessionKey: string | undefined) => sessionKey?.trim() || "", []);
+  const sessionUiKey = useCallback(
+    (sessionKey: string | undefined) => sessionKey?.trim() || "",
+    [],
+  );
 
   const resetComposerAfterSend = useCallback(
     (agentMode: DesktopAgentMode, options?: { loopEnabled?: boolean }) => {
-      const loopEnabled = options?.loopEnabled ?? snapshotRef.current?.conversation.loopEnabled === true;
+      const loopEnabled =
+        options?.loopEnabled ?? snapshotRef.current?.conversation.loopEnabled === true;
       const segments = buildPostSendComposerSegments(agentMode, loopEnabled);
       const key = sessionUiKey(snapshotRef.current?.composerSessionKey);
 
@@ -533,7 +538,12 @@ export function useDesktopRuntime() {
   );
 
   const stashSessionUi = useCallback(
-    (targetSnapshot: Pick<DesktopSnapshot, "composerSessionKey" | "activeSession"> | null | undefined) => {
+    (
+      targetSnapshot:
+        | Pick<DesktopSnapshot, "composerSessionKey" | "activeSession">
+        | null
+        | undefined,
+    ) => {
       const snapshotLike = targetSnapshot ?? snapshotRef.current;
       if (snapshotLike?.activeSession?.readOnly) {
         return;
@@ -554,11 +564,22 @@ export function useDesktopRuntime() {
         composerSegments: state.composerSegments,
       });
     },
-    [agentModeChipDismissed, composerLocalFileAttachments, composerSegments, questionDrafts, sessionUiKey],
+    [
+      agentModeChipDismissed,
+      composerLocalFileAttachments,
+      composerSegments,
+      questionDrafts,
+      sessionUiKey,
+    ],
   );
 
   const restoreSessionUi = useCallback(
-    (targetSnapshot: Pick<DesktopSnapshot, "composerSessionKey" | "activeSession"> | null | undefined) => {
+    (
+      targetSnapshot:
+        | Pick<DesktopSnapshot, "composerSessionKey" | "activeSession">
+        | null
+        | undefined,
+    ) => {
       const snapshotLike = targetSnapshot ?? snapshotRef.current;
       const key = sessionUiKey(snapshotLike?.composerSessionKey);
       if (snapshotLike?.activeSession?.readOnly) {
@@ -597,7 +618,10 @@ export function useDesktopRuntime() {
   );
 
   const applyComposerSeed = useCallback(
-    (seed: string, targetSnapshot: Pick<DesktopSnapshot, "composerSessionKey" | "activeSession">) => {
+    (
+      seed: string,
+      targetSnapshot: Pick<DesktopSnapshot, "composerSessionKey" | "activeSession">,
+    ) => {
       const key = sessionUiKey(targetSnapshot.composerSessionKey);
       const seedSegments = syncSegmentsFromExternalValue(emptySegments(), seed);
       const seedPayload = {
@@ -694,127 +718,129 @@ export function useDesktopRuntime() {
     snapshot?.composerSessionKey,
   ]);
 
-  const applySnapshot = useCallback((next: DesktopSnapshot, options?: {
-    navGeneration?: number;
-    fromPaneWorkspaceSwitch?: boolean;
-  }) => {
-    if (
-      paneWorkspaceBusySessionPathRef.current
-      && !options?.fromPaneWorkspaceSwitch
-    ) {
-      return;
-    }
+  const applySnapshot = useCallback(
+    (
+      next: DesktopSnapshot,
+      options?: {
+        navGeneration?: number;
+        fromPaneWorkspaceSwitch?: boolean;
+      },
+    ) => {
+      if (paneWorkspaceBusySessionPathRef.current && !options?.fromPaneWorkspaceSwitch) {
+        return;
+      }
 
-    if (
-      options?.navGeneration === undefined &&
-      (busyActionRef.current === "session" || busyActionRef.current === "reset")
-    ) {
-      return;
-    }
+      if (
+        options?.navGeneration === undefined &&
+        (busyActionRef.current === "session" || busyActionRef.current === "reset")
+      ) {
+        return;
+      }
 
-    if (
-      options?.navGeneration !== undefined &&
-      options.navGeneration !== sessionNavigationGenerationRef.current
-    ) {
-      return;
-    }
+      if (
+        options?.navGeneration !== undefined &&
+        options.navGeneration !== sessionNavigationGenerationRef.current
+      ) {
+        return;
+      }
 
-    const revision = next.conversation.revision ?? 0;
-    const sessionKey = next.composerSessionKey;
-    const sameSession = sessionKey === appliedComposerSessionKeyRef.current;
-    if (sameSession && revision < appliedConversationRevisionRef.current) {
-      return;
-    }
+      const revision = next.conversation.revision ?? 0;
+      const sessionKey = next.composerSessionKey;
+      const sameSession = sessionKey === appliedComposerSessionKeyRef.current;
+      if (sameSession && revision < appliedConversationRevisionRef.current) {
+        return;
+      }
 
-    if (!sameSession) {
-      appliedConversationRevisionRef.current = 0;
-    }
+      if (!sameSession) {
+        appliedConversationRevisionRef.current = 0;
+      }
 
-    let effectiveNext = next;
-    if (isRemoteWebHostClient(api?.kind)) {
-      const viewingPath =
-        webViewingSessionPathRef.current.trim() || webViewingSessionPath.trim();
-      const incomingPath = next.activeSession?.filePath?.trim() ?? "";
-      if (viewingPath && incomingPath && viewingPath !== incomingPath) {
-        const projected = resolvePaneDesktopSnapshot(next, viewingPath);
-        if (projected) {
-          effectiveNext = projected;
+      let effectiveNext = next;
+      if (isRemoteWebHostClient(api?.kind)) {
+        const viewingPath = webViewingSessionPathRef.current.trim() || webViewingSessionPath.trim();
+        const incomingPath = next.activeSession?.filePath?.trim() ?? "";
+        if (viewingPath && incomingPath && viewingPath !== incomingPath) {
+          const projected = resolvePaneDesktopSnapshot(next, viewingPath);
+          if (projected) {
+            effectiveNext = projected;
+          }
         }
       }
-    }
-    appliedComposerSessionKeyRef.current = effectiveNext.composerSessionKey;
-    appliedConversationRevisionRef.current = effectiveNext.conversation.revision ?? revision;
-    setSnapshot(effectiveNext);
-    setSessions((current) => {
-      const patched = patchActiveSessionDisplayNameInList(
-        current,
-        effectiveNext.activeSession?.filePath,
-        effectiveNext.activeSession?.displayName,
-      );
-      return patched ?? current;
-    });
-    setRuntimeError(effectiveNext.runtimeError ?? "");
-    setSettings((current) => {
-      const activeModelProfile = effectiveNext.config.models.find((model) =>
-        modelRefsEqual(
-          model.ref ?? { groupId: model.groupId ?? "", name: model.name },
-          effectiveNext.config.activeModel,
-        ),
-      );
-      const configAgentMode = (effectiveNext.config.agentMode ?? "agent") as DesktopAgentMode;
-      // 回合进行中 poll 可能仍带旧 config.agentMode；勿覆盖用户 dismiss Chip 后 saveSettingsPatch 的乐观 agentMode。
-      const turnInFlight =
-        effectiveNext.conversation.isBusy === true || busyActionRef.current === "send";
-      const chipDismissed = agentModeChipDismissedRef.current;
-      let agentMode: DesktopAgentMode =
-        turnInFlight && current.agentMode !== configAgentMode
-          ? current.agentMode
-          : configAgentMode;
-      // saveSettingsPatch 乐观更新后、poll 快照尚未追上时，勿覆盖本地 chip 模式。
-      if (
-        !chipDismissed &&
-        isAgentModeChipKind(current.agentMode) &&
-        current.agentMode !== configAgentMode
-      ) {
-        agentMode = current.agentMode;
-      }
-      // 用户 Backspace 去掉 chip 后，poll 不得再把 settings.agentMode 设回 ask/plan（否则 agentMode effect 会重插 chip）。
-      if (chipDismissed && isAgentModeChipKind(agentMode)) {
-        agentMode = "agent";
-      }
+      appliedComposerSessionKeyRef.current = effectiveNext.composerSessionKey;
+      appliedConversationRevisionRef.current = effectiveNext.conversation.revision ?? revision;
+      setSnapshot(effectiveNext);
+      setSessions((current) => {
+        const patched = patchActiveSessionDisplayNameInList(
+          current,
+          effectiveNext.activeSession?.filePath,
+          effectiveNext.activeSession?.displayName,
+        );
+        return patched ?? current;
+      });
+      setRuntimeError(effectiveNext.runtimeError ?? "");
+      setSettings((current) => {
+        const activeModelProfile = effectiveNext.config.models.find((model) =>
+          modelRefsEqual(
+            model.ref ?? { groupId: model.groupId ?? "", name: model.name },
+            effectiveNext.config.activeModel,
+          ),
+        );
+        const configAgentMode = (effectiveNext.config.agentMode ?? "agent") as DesktopAgentMode;
+        // 回合进行中 poll 可能仍带旧 config.agentMode；勿覆盖用户 dismiss Chip 后 saveSettingsPatch 的乐观 agentMode。
+        const turnInFlight =
+          effectiveNext.conversation.isBusy === true || busyActionRef.current === "send";
+        const chipDismissed = agentModeChipDismissedRef.current;
+        let agentMode: DesktopAgentMode =
+          turnInFlight && current.agentMode !== configAgentMode
+            ? current.agentMode
+            : configAgentMode;
+        // saveSettingsPatch 乐观更新后、poll 快照尚未追上时，勿覆盖本地 chip 模式。
+        if (
+          !chipDismissed &&
+          isAgentModeChipKind(current.agentMode) &&
+          current.agentMode !== configAgentMode
+        ) {
+          agentMode = current.agentMode;
+        }
+        // 用户 Backspace 去掉 chip 后，poll 不得再把 settings.agentMode 设回 ask/plan（否则 agentMode effect 会重插 chip）。
+        if (chipDismissed && isAgentModeChipKind(agentMode)) {
+          agentMode = "agent";
+        }
 
-      const snapshotWindowsMica = next.config.windowsMica !== false;
-      const windowsMica =
-        micaInFlightRef.current > 0 && current.windowsMica !== snapshotWindowsMica
-          ? current.windowsMica
-          : snapshotWindowsMica;
+        const snapshotWindowsMica = next.config.windowsMica !== false;
+        const windowsMica =
+          micaInFlightRef.current > 0 && current.windowsMica !== snapshotWindowsMica
+            ? current.windowsMica
+            : snapshotWindowsMica;
 
-      return {
-        activeModel: effectiveNext.config.activeModel,
-        imageGenerationModel: effectiveNext.config.imageGenerationModel,
-        videoGenerationModel: effectiveNext.config.videoGenerationModel,
-        lightweightChatModel: effectiveNext.config.lightweightChatModel,
-        apiBase: activeModelProfile?.apiBase ?? current.apiBase,
-        uiLocale: next.config.uiLocale ?? getStoredLanguage(),
-        apiKey: current.apiKey,
-        windowsMica,
-        systemNotifications: next.config.systemNotifications !== false,
-        trayIcon: next.config.trayIcon !== false,
-        onboardingCompleted: next.config.onboardingCompleted === true,
-        agentMode,
-        webHostEnabled: next.webHost.config.enabled,
-        webHostHost: next.webHost.config.host,
-        webHostPort: next.webHost.config.port,
-        dreamEnabled: next.dreams.settings.enabled,
-        dreamDebugMode: next.dreams.settings.debugMode,
-        lspEnabled: next.lsp.userEnabled,
-        codeCompletionEnabled: next.codeCompletion.userEnabled,
-        commitAttributionEnabled: next.attribution.commitEnabled,
-        prAttributionEnabled: next.attribution.prEnabled,
-        llmHttpVersion: next.config.networks.llmHttpVersion,
-      };
-    });
-  }, []);
+        return {
+          activeModel: effectiveNext.config.activeModel,
+          imageGenerationModel: effectiveNext.config.imageGenerationModel,
+          videoGenerationModel: effectiveNext.config.videoGenerationModel,
+          lightweightChatModel: effectiveNext.config.lightweightChatModel,
+          apiBase: activeModelProfile?.apiBase ?? current.apiBase,
+          uiLocale: next.config.uiLocale ?? getStoredLanguage(),
+          apiKey: current.apiKey,
+          windowsMica,
+          systemNotifications: next.config.systemNotifications !== false,
+          trayIcon: next.config.trayIcon !== false,
+          onboardingCompleted: next.config.onboardingCompleted === true,
+          agentMode,
+          webHostEnabled: next.webHost.config.enabled,
+          webHostHost: next.webHost.config.host,
+          webHostPort: next.webHost.config.port,
+          dreamEnabled: next.dreams.settings.enabled,
+          dreamDebugMode: next.dreams.settings.debugMode,
+          lspEnabled: next.lsp.userEnabled,
+          codeCompletionEnabled: next.codeCompletion.userEnabled,
+          commitAttributionEnabled: next.attribution.commitEnabled,
+          prAttributionEnabled: next.attribution.prEnabled,
+          llmHttpVersion: next.config.networks.llmHttpVersion,
+        };
+      });
+    },
+    [],
+  );
 
   const acknowledgeSessionAttention = useCallback((path: string) => {
     setUnseenCompletedSessionPaths((current) => {
@@ -882,100 +908,118 @@ export function useDesktopRuntime() {
     return api.listAutomations();
   }, [api]);
 
-  const getAutomation = useCallback(async (automationId: string): Promise<DesktopAutomationDetail | undefined> => {
-    if (!api) {
-      return undefined;
-    }
-    return api.getAutomation(automationId);
-  }, [api]);
-
-  const createAutomation = useCallback(async (request: DesktopCreateAutomationRequest) => {
-    if (!api) {
-      return;
-    }
-    setBusyAction("automation");
-    try {
-      const next = await api.createAutomation(request);
-      applySnapshot(next);
-      setRuntimeError("");
-    } catch (error) {
-      setRuntimeError(describeError(error));
-    } finally {
-      setBusyAction("");
-    }
-  }, [api, applySnapshot]);
-
-  const updateAutomation = useCallback(async (automationId: string, patch: DesktopUpdateAutomationRequest) => {
-    if (!api) {
-      return;
-    }
-    setBusyAction("automation");
-    try {
-      const next = await api.updateAutomation(automationId, patch);
-      applySnapshot(next);
-      setRuntimeError("");
-    } catch (error) {
-      setRuntimeError(describeError(error));
-    } finally {
-      setBusyAction("");
-    }
-  }, [api, applySnapshot]);
-
-  const deleteAutomation = useCallback(async (automationId: string) => {
-    if (!api) {
-      return;
-    }
-    setBusyAction("automation");
-    try {
-      const next = await api.deleteAutomation(automationId);
-      applySnapshot(next);
-      setRuntimeError("");
-    } catch (error) {
-      setRuntimeError(describeError(error));
-    } finally {
-      setBusyAction("");
-    }
-  }, [api, applySnapshot]);
-
-  const setAutomationEnabled = useCallback(async (automationId: string, enabled: boolean) => {
-    if (!api) {
-      return;
-    }
-    setBusyAction("automation");
-    try {
-      const next = await api.setAutomationEnabled(automationId, enabled);
-      applySnapshot(next);
-      setRuntimeError("");
-    } catch (error) {
-      setRuntimeError(describeError(error));
-    } finally {
-      setBusyAction("");
-    }
-  }, [api, applySnapshot]);
-
-  const bootstrap = useCallback(async (request?: BootstrapRequest) => {
-    if (!api) {
-      return;
-    }
-
-    setBusyAction("bootstrap");
-    try {
-      const next = await api.bootstrap(request);
-      if (isRemoteWebHostClient(api.kind)) {
-        syncWebViewingSessionPath(next.activeSession?.filePath);
+  const getAutomation = useCallback(
+    async (automationId: string): Promise<DesktopAutomationDetail | undefined> => {
+      if (!api) {
+        return undefined;
       }
-      applySnapshot(next);
-      restoreSessionUi(next);
-      setRuntimeError("");
-      setWebHostPairingRequired(false);
-      void refreshSessions();
-    } catch (error) {
-      setWebHostPairingRequired(errorCode(error) === "PAIRING_REQUIRED");
-      setRuntimeError(describeError(error));
-    } finally {
-      setBusyAction("");
-    }
-  }, [api, applySnapshot, refreshSessions, restoreSessionUi, syncWebViewingSessionPath]);
+      return api.getAutomation(automationId);
+    },
+    [api],
+  );
+
+  const createAutomation = useCallback(
+    async (request: DesktopCreateAutomationRequest) => {
+      if (!api) {
+        return;
+      }
+      setBusyAction("automation");
+      try {
+        const next = await api.createAutomation(request);
+        applySnapshot(next);
+        setRuntimeError("");
+      } catch (error) {
+        setRuntimeError(describeError(error));
+      } finally {
+        setBusyAction("");
+      }
+    },
+    [api, applySnapshot],
+  );
+
+  const updateAutomation = useCallback(
+    async (automationId: string, patch: DesktopUpdateAutomationRequest) => {
+      if (!api) {
+        return;
+      }
+      setBusyAction("automation");
+      try {
+        const next = await api.updateAutomation(automationId, patch);
+        applySnapshot(next);
+        setRuntimeError("");
+      } catch (error) {
+        setRuntimeError(describeError(error));
+      } finally {
+        setBusyAction("");
+      }
+    },
+    [api, applySnapshot],
+  );
+
+  const deleteAutomation = useCallback(
+    async (automationId: string) => {
+      if (!api) {
+        return;
+      }
+      setBusyAction("automation");
+      try {
+        const next = await api.deleteAutomation(automationId);
+        applySnapshot(next);
+        setRuntimeError("");
+      } catch (error) {
+        setRuntimeError(describeError(error));
+      } finally {
+        setBusyAction("");
+      }
+    },
+    [api, applySnapshot],
+  );
+
+  const setAutomationEnabled = useCallback(
+    async (automationId: string, enabled: boolean) => {
+      if (!api) {
+        return;
+      }
+      setBusyAction("automation");
+      try {
+        const next = await api.setAutomationEnabled(automationId, enabled);
+        applySnapshot(next);
+        setRuntimeError("");
+      } catch (error) {
+        setRuntimeError(describeError(error));
+      } finally {
+        setBusyAction("");
+      }
+    },
+    [api, applySnapshot],
+  );
+
+  const bootstrap = useCallback(
+    async (request?: BootstrapRequest) => {
+      if (!api) {
+        return;
+      }
+
+      setBusyAction("bootstrap");
+      try {
+        const next = await api.bootstrap(request);
+        if (isRemoteWebHostClient(api.kind)) {
+          syncWebViewingSessionPath(next.activeSession?.filePath);
+        }
+        applySnapshot(next);
+        restoreSessionUi(next);
+        setRuntimeError("");
+        setWebHostPairingRequired(false);
+        void refreshSessions();
+      } catch (error) {
+        setWebHostPairingRequired(errorCode(error) === "PAIRING_REQUIRED");
+        setRuntimeError(describeError(error));
+      } finally {
+        setBusyAction("");
+      }
+    },
+    [api, applySnapshot, refreshSessions, restoreSessionUi, syncWebViewingSessionPath],
+  );
 
   const switchWorkspaceRoot = useCallback(
     async (workspaceRoot: string): Promise<boolean> => {
@@ -986,7 +1030,7 @@ export function useDesktopRuntime() {
       setBusyAction("bootstrap");
       try {
         stashSessionUi(snapshotRef.current);
-        const next = await api.bootstrap({ workspaceRoot, workspaceBinding: 'project' });
+        const next = await api.bootstrap({ workspaceRoot, workspaceBinding: "project" });
         applySnapshot(next);
         restoreSessionUi(next);
         setQuestionError("");
@@ -1011,7 +1055,7 @@ export function useDesktopRuntime() {
     setBusyAction("bootstrap");
     try {
       stashSessionUi(snapshotRef.current);
-      const next = await api.bootstrap({ workspaceBinding: 'none' });
+      const next = await api.bootstrap({ workspaceBinding: "none" });
       applySnapshot(next);
       restoreSessionUi(next);
       setQuestionError("");
@@ -1140,7 +1184,7 @@ export function useDesktopRuntime() {
   const rememberWorkspaceRoot = useCallback(
     async (workspaceRoot: string): Promise<boolean> => {
       if (!api?.rememberWorkspaceRoot) {
-        setRuntimeError(i18n.t('error.hostNotSupportAddWorkspace'));
+        setRuntimeError(i18n.t("error.hostNotSupportAddWorkspace"));
         return false;
       }
 
@@ -1162,7 +1206,7 @@ export function useDesktopRuntime() {
 
   const pickWorkspaceDirectory = useCallback(async (): Promise<string | null> => {
     if (!api?.pickWorkspaceDirectory) {
-      setRuntimeError(i18n.t('error.hostNotSupportPickWorkspace'));
+      setRuntimeError(i18n.t("error.hostNotSupportPickWorkspace"));
       return null;
     }
 
@@ -1176,7 +1220,7 @@ export function useDesktopRuntime() {
 
   const pickLocalFile = useCallback(async (): Promise<string | null> => {
     if (!api?.pickLocalFile) {
-      setRuntimeError(i18n.t('error.hostNotSupportPickFile'));
+      setRuntimeError(i18n.t("error.hostNotSupportPickFile"));
       return null;
     }
 
@@ -1191,13 +1235,13 @@ export function useDesktopRuntime() {
   const classifyLocalFileComposerRoute = useCallback(
     async (absolutePath: string): Promise<LocalFileComposerRoute> => {
       if (!api) {
-        return 'reference';
+        return "reference";
       }
       try {
         return await api.classifyLocalFileComposerRoute(absolutePath);
       } catch (error) {
         setRuntimeError(describeError(error));
-        return 'reference';
+        return "reference";
       }
     },
     [api],
@@ -1264,7 +1308,7 @@ export function useDesktopRuntime() {
   const saveLocalImageAs = useCallback(
     async (filePath: string): Promise<boolean> => {
       if (!api?.saveLocalImageAs) {
-        setRuntimeError(i18n.t('error.hostNotSupportSaveImage'));
+        setRuntimeError(i18n.t("error.hostNotSupportSaveImage"));
         return false;
       }
 
@@ -1334,7 +1378,7 @@ export function useDesktopRuntime() {
   const pairWebHost = useCallback(
     async (code: string): Promise<boolean> => {
       if (!api?.pairWebHost) {
-        setRuntimeError(i18n.t('error.hostNotSupportWebPair'));
+        setRuntimeError(i18n.t("error.hostNotSupportWebPair"));
         return false;
       }
 
@@ -1393,7 +1437,10 @@ export function useDesktopRuntime() {
 
     void (async () => {
       try {
-        while (!cancelled) {
+        while (true) {
+          if (cancelled) {
+            break;
+          }
           const pollRequest = webPollRequestForSnapshot(
             api.kind,
             snapshotRef.current,
@@ -1439,14 +1486,14 @@ export function useDesktopRuntime() {
       const prevPath = previous?.activeSession?.filePath;
       const nextPath = next.activeSession?.filePath;
       const blockForegroundSwap =
-        api.kind === 'electron'
-        && Boolean(prevPath)
-        && Boolean(nextPath)
-        && prevPath !== nextPath
-        && busyActionRef.current !== 'session'
-        && prevPath
-        && nextPath
-        && !isProvisionalSessionPromotion(prevPath, nextPath);
+        api.kind === "electron" &&
+        Boolean(prevPath) &&
+        Boolean(nextPath) &&
+        prevPath !== nextPath &&
+        busyActionRef.current !== "session" &&
+        prevPath &&
+        nextPath &&
+        !isProvisionalSessionPromotion(prevPath, nextPath);
       if (blockForegroundSwap && previous) {
         applySnapshot({
           ...next,
@@ -1537,7 +1584,7 @@ export function useDesktopRuntime() {
     if (!api?.refreshGitSnapshot) {
       return;
     }
-    if (!snapshot || snapshot.workspaceBinding !== 'project' || !snapshot.git.isRepository) {
+    if (!snapshot || snapshot.workspaceBinding !== "project" || !snapshot.git.isRepository) {
       return;
     }
 
@@ -1553,7 +1600,7 @@ export function useDesktopRuntime() {
         timer = setTimeout(tick, GIT_STATE_POLL_INTERVAL_MS);
         return;
       }
-      if (typeof document !== 'undefined' && document.visibilityState === 'hidden') {
+      if (typeof document !== "undefined" && document.visibilityState === "hidden") {
         timer = setTimeout(tick, GIT_STATE_POLL_INTERVAL_MS);
         return;
       }
@@ -1608,10 +1655,7 @@ export function useDesktopRuntime() {
       }
 
       const model = snapshot.config.models.find((item) =>
-        modelRefsEqual(
-          item.ref ?? { groupId: item.groupId ?? "", name: item.name },
-          modelRef,
-        ),
+        modelRefsEqual(item.ref ?? { groupId: item.groupId ?? "", name: item.name }, modelRef),
       );
       const current = settingsRef.current;
       const next: typeof settings = {
@@ -1661,7 +1705,7 @@ export function useDesktopRuntime() {
       } catch (error) {
         const message = describeError(error);
         setRuntimeError(message);
-        throw new Error(message);
+        throw new Error(message, { cause: error });
       } finally {
         setBusyAction("");
       }
@@ -1683,7 +1727,7 @@ export function useDesktopRuntime() {
       } catch (error) {
         const message = describeError(error);
         setRuntimeError(message);
-        throw new Error(message);
+        throw new Error(message, { cause: error });
       } finally {
         setBusyAction("");
       }
@@ -1694,7 +1738,7 @@ export function useDesktopRuntime() {
   const previewModels = useCallback(
     async (request: PreviewModelsRequest): Promise<PreviewModelsResponse> => {
       if (!api) {
-        throw new Error(i18n.t('error.hostNotReady'));
+        throw new Error(i18n.t("error.hostNotReady"));
       }
       setBusyAction("modelsPreview");
       try {
@@ -1703,7 +1747,7 @@ export function useDesktopRuntime() {
       } catch (error) {
         const message = describeError(error);
         setRuntimeError(message);
-        throw new Error(message);
+        throw new Error(message, { cause: error });
       } finally {
         setBusyAction("");
       }
@@ -1725,7 +1769,7 @@ export function useDesktopRuntime() {
       } catch (error) {
         const message = describeError(error);
         setRuntimeError(message);
-        throw new Error(message);
+        throw new Error(message, { cause: error });
       } finally {
         setBusyAction("");
       }
@@ -1747,7 +1791,7 @@ export function useDesktopRuntime() {
       } catch (error) {
         const message = describeError(error);
         setRuntimeError(message);
-        throw new Error(message);
+        throw new Error(message, { cause: error });
       } finally {
         setBusyAction("");
       }
@@ -1769,7 +1813,7 @@ export function useDesktopRuntime() {
       } catch (error) {
         const message = describeError(error);
         setRuntimeError(message);
-        throw new Error(message);
+        throw new Error(message, { cause: error });
       } finally {
         setBusyAction("");
       }
@@ -1791,7 +1835,7 @@ export function useDesktopRuntime() {
       } catch (error) {
         const message = describeError(error);
         setRuntimeError(message);
-        throw new Error(message);
+        throw new Error(message, { cause: error });
       } finally {
         setBusyAction("");
       }
@@ -1813,7 +1857,7 @@ export function useDesktopRuntime() {
       } catch (error) {
         const message = describeError(error);
         setRuntimeError(message);
-        throw new Error(message);
+        throw new Error(message, { cause: error });
       } finally {
         setBusyAction("");
       }
@@ -1835,7 +1879,7 @@ export function useDesktopRuntime() {
       } catch (error) {
         const message = describeError(error);
         setRuntimeError(message);
-        throw new Error(message);
+        throw new Error(message, { cause: error });
       } finally {
         setBusyAction("");
       }
@@ -1857,7 +1901,7 @@ export function useDesktopRuntime() {
       } catch (error) {
         const message = describeError(error);
         setRuntimeError(message);
-        throw new Error(message);
+        throw new Error(message, { cause: error });
       } finally {
         setBusyAction("");
       }
@@ -1879,7 +1923,7 @@ export function useDesktopRuntime() {
       } catch (error) {
         const message = describeError(error);
         setRuntimeError(message);
-        throw new Error(message);
+        throw new Error(message, { cause: error });
       } finally {
         setBusyAction("");
       }
@@ -1901,7 +1945,7 @@ export function useDesktopRuntime() {
       } catch (error) {
         const message = describeError(error);
         setRuntimeError(message);
-        throw new Error(message);
+        throw new Error(message, { cause: error });
       } finally {
         setBusyAction("");
       }
@@ -1923,7 +1967,7 @@ export function useDesktopRuntime() {
       } catch (error) {
         const message = describeError(error);
         setRuntimeError(message);
-        throw new Error(message);
+        throw new Error(message, { cause: error });
       } finally {
         setBusyAction("");
       }
@@ -1934,7 +1978,7 @@ export function useDesktopRuntime() {
   const inspectMcpServer = useCallback(
     async (name: string): Promise<DesktopMcpServerInspection> => {
       if (!api) {
-        throw new Error(i18n.t('error.hostNotReady'));
+        throw new Error(i18n.t("error.hostNotReady"));
       }
       return api.inspectMcpServer(name);
     },
@@ -1955,7 +1999,7 @@ export function useDesktopRuntime() {
       } catch (error) {
         const message = describeError(error);
         setRuntimeError(message);
-        throw new Error(message);
+        throw new Error(message, { cause: error });
       } finally {
         setBusyAction("");
       }
@@ -1963,32 +2007,31 @@ export function useDesktopRuntime() {
     [api, applySnapshot],
   );
 
-  const listMarketplaceExtensions = useCallback(
-    async (): Promise<DesktopMarketplaceCatalogItem[]> => {
-      if (!api) {
-        return [];
-      }
+  const listMarketplaceExtensions = useCallback(async (): Promise<
+    DesktopMarketplaceCatalogItem[]
+  > => {
+    if (!api) {
+      return [];
+    }
 
-      setBusyAction("marketplace");
-      try {
-        const items = await api.listMarketplaceExtensions();
-        setRuntimeError("");
-        return items;
-      } catch (error) {
-        const message = describeError(error);
-        setRuntimeError(message);
-        throw new Error(message);
-      } finally {
-        setBusyAction("");
-      }
-    },
-    [api],
-  );
+    setBusyAction("marketplace");
+    try {
+      const items = await api.listMarketplaceExtensions();
+      setRuntimeError("");
+      return items;
+    } catch (error) {
+      const message = describeError(error);
+      setRuntimeError(message);
+      throw new Error(message, { cause: error });
+    } finally {
+      setBusyAction("");
+    }
+  }, [api]);
 
   const getMarketplaceExtensionDetail = useCallback(
     async (extensionId: string): Promise<DesktopMarketplaceDetail> => {
       if (!api) {
-        throw new Error(i18n.t('error.hostNotReady'));
+        throw new Error(i18n.t("error.hostNotReady"));
       }
 
       setBusyAction("marketplace");
@@ -1999,7 +2042,7 @@ export function useDesktopRuntime() {
       } catch (error) {
         const message = describeError(error);
         setRuntimeError(message);
-        throw new Error(message);
+        throw new Error(message, { cause: error });
       } finally {
         setBusyAction("");
       }
@@ -2010,7 +2053,7 @@ export function useDesktopRuntime() {
   const getMarketplaceExtensionReadme = useCallback(
     async (extensionId: string): Promise<string> => {
       if (!api) {
-        throw new Error(i18n.t('error.hostNotReady'));
+        throw new Error(i18n.t("error.hostNotReady"));
       }
 
       setBusyAction("marketplace");
@@ -2021,7 +2064,7 @@ export function useDesktopRuntime() {
       } catch (error) {
         const message = describeError(error);
         setRuntimeError(message);
-        throw new Error(message);
+        throw new Error(message, { cause: error });
       } finally {
         setBusyAction("");
       }
@@ -2034,7 +2077,7 @@ export function useDesktopRuntime() {
       request: PrepareMarketplaceExtensionInstallRequest,
     ): Promise<DesktopMarketplacePreparedInstall> => {
       if (!api) {
-        throw new Error(i18n.t('error.hostNotReady'));
+        throw new Error(i18n.t("error.hostNotReady"));
       }
 
       setBusyAction("marketplace");
@@ -2045,7 +2088,7 @@ export function useDesktopRuntime() {
       } catch (error) {
         const message = describeError(error);
         setRuntimeError(message);
-        throw new Error(message);
+        throw new Error(message, { cause: error });
       } finally {
         setBusyAction("");
       }
@@ -2067,7 +2110,7 @@ export function useDesktopRuntime() {
       } catch (error) {
         const message = describeError(error);
         setRuntimeError(message);
-        throw new Error(message);
+        throw new Error(message, { cause: error });
       } finally {
         setBusyAction("");
       }
@@ -2089,7 +2132,7 @@ export function useDesktopRuntime() {
       } catch (error) {
         const message = describeError(error);
         setRuntimeError(message);
-        throw new Error(message);
+        throw new Error(message, { cause: error });
       } finally {
         setBusyAction("");
       }
@@ -2111,7 +2154,7 @@ export function useDesktopRuntime() {
       } catch (error) {
         const message = describeError(error);
         setRuntimeError(message);
-        throw new Error(message);
+        throw new Error(message, { cause: error });
       } finally {
         setBusyAction("");
       }
@@ -2133,7 +2176,7 @@ export function useDesktopRuntime() {
       } catch (error) {
         const message = describeError(error);
         setRuntimeError(message);
-        throw new Error(message);
+        throw new Error(message, { cause: error });
       } finally {
         setBusyAction("");
       }
@@ -2155,7 +2198,7 @@ export function useDesktopRuntime() {
       } catch (error) {
         const message = describeError(error);
         setRuntimeError(message);
-        throw new Error(message);
+        throw new Error(message, { cause: error });
       } finally {
         setBusyAction("");
       }
@@ -2178,12 +2221,12 @@ export function useDesktopRuntime() {
       const resolvedApiBase =
         patch.apiBase ??
         (patch.activeModel !== undefined
-          ? snapshotRef.current?.config.models.find((model) =>
+          ? (snapshotRef.current?.config.models.find((model) =>
               modelRefsEqual(
                 model.ref ?? { groupId: model.groupId ?? "", name: model.name },
                 nextActiveModel,
               ),
-            )?.apiBase ?? prev.apiBase
+            )?.apiBase ?? prev.apiBase)
           : prev.apiBase);
       const s = {
         ...prev,
@@ -2256,10 +2299,7 @@ export function useDesktopRuntime() {
       }
 
       const model = snapshot.config.models.find((item) =>
-        modelRefsEqual(
-          item.ref ?? { groupId: item.groupId ?? "", name: item.name },
-          modelRef,
-        ),
+        modelRefsEqual(item.ref ?? { groupId: item.groupId ?? "", name: item.name }, modelRef),
       );
       if (!model) {
         return;
@@ -2299,10 +2339,7 @@ export function useDesktopRuntime() {
       }
 
       const model = snapshot.config.models.find((item) =>
-        modelRefsEqual(
-          item.ref ?? { groupId: item.groupId ?? "", name: item.name },
-          modelRef,
-        ),
+        modelRefsEqual(item.ref ?? { groupId: item.groupId ?? "", name: item.name }, modelRef),
       );
       if (!model) {
         return;
@@ -2342,10 +2379,7 @@ export function useDesktopRuntime() {
       }
 
       const model = snapshot.config.models.find((item) =>
-        modelRefsEqual(
-          item.ref ?? { groupId: item.groupId ?? "", name: item.name },
-          modelRef,
-        ),
+        modelRefsEqual(item.ref ?? { groupId: item.groupId ?? "", name: item.name }, modelRef),
       );
       if (!model) {
         return false;
@@ -2409,135 +2443,137 @@ export function useDesktopRuntime() {
     }
   }, [api, applySnapshot]);
 
-  const sendMessage = useCallback(async (request: SubmitUserTurnRequest = { text: composer }) => {
-    if (!api) {
-      return false;
-    }
-
-    const localFilePaths = request.localFilePaths ?? [];
-    const referencedWorkspaceFilePaths = request.referencedWorkspaceFilePaths ?? [];
-    const skillChipAliases = request.skillChipAliases ?? [];
-    const hasLocalFiles = localFilePaths.length > 0;
-    const hasReferencedPaths = referencedWorkspaceFilePaths.length > 0;
-    const text = request.text.trim();
-    if (!text && !hasLocalFiles && !hasReferencedPaths) {
-      return false;
-    }
-    if (isLogSessionSlashInput(text)) {
-      if (hasLocalFiles) {
-        setRuntimeError(i18n.t('error.attachmentsNotSupportedWithSlash'));
-        return false;
-      }
-      if (!api.exportSessionLog) {
-        setRuntimeError(i18n.t('error.hostNotSupportLogSession'));
+  const sendMessage = useCallback(
+    async (request: SubmitUserTurnRequest = { text: composer }) => {
+      if (!api) {
         return false;
       }
 
-      setBusyAction("send");
-      try {
-        const next = await api.exportSessionLog();
-        applySnapshot(next);
-        resetComposerAfterSend(settingsRef.current.agentMode);
-        setRuntimeError("");
-        void refreshSessions();
-        return true;
-      } catch (error) {
-        setRuntimeError(describeError(error));
+      const localFilePaths = request.localFilePaths ?? [];
+      const referencedWorkspaceFilePaths = request.referencedWorkspaceFilePaths ?? [];
+      const skillChipAliases = request.skillChipAliases ?? [];
+      const hasLocalFiles = localFilePaths.length > 0;
+      const hasReferencedPaths = referencedWorkspaceFilePaths.length > 0;
+      const text = request.text.trim();
+      if (!text && !hasLocalFiles && !hasReferencedPaths) {
         return false;
-      } finally {
-        setBusyAction("");
       }
-    }
-    if (isCompactSlashComposerRequest(text, skillChipAliases)) {
-      if (hasLocalFiles) {
-        setRuntimeError(i18n.t('error.attachmentsNotSupportedWithSlash'));
+      if (isLogSessionSlashInput(text)) {
+        if (hasLocalFiles) {
+          setRuntimeError(i18n.t("error.attachmentsNotSupportedWithSlash"));
+          return false;
+        }
+        if (!api.exportSessionLog) {
+          setRuntimeError(i18n.t("error.hostNotSupportLogSession"));
+          return false;
+        }
+
+        setBusyAction("send");
+        try {
+          const next = await api.exportSessionLog();
+          applySnapshot(next);
+          resetComposerAfterSend(settingsRef.current.agentMode);
+          setRuntimeError("");
+          void refreshSessions();
+          return true;
+        } catch (error) {
+          setRuntimeError(describeError(error));
+          return false;
+        } finally {
+          setBusyAction("");
+        }
+      }
+      if (isCompactSlashComposerRequest(text, skillChipAliases)) {
+        if (hasLocalFiles) {
+          setRuntimeError(i18n.t("error.attachmentsNotSupportedWithSlash"));
+          return false;
+        }
+
+        setBusyAction("send");
+        try {
+          const next = await api.compactHistory();
+          applySnapshot(next);
+          resetComposerAfterSend(settingsRef.current.agentMode);
+          setRuntimeError("");
+          void refreshSessions();
+          return true;
+        } catch (error) {
+          setRuntimeError(describeError(error));
+          return false;
+        } finally {
+          setBusyAction("");
+        }
+      }
+      const targetSessionPath =
+        request.sessionPath?.trim() ??
+        (isRemoteWebHostClient(api.kind)
+          ? webViewingSessionPathRef.current.trim() || webViewingSessionPath.trim()
+          : undefined);
+      if (isRemoteWebHostClient(api.kind) && !targetSessionPath) {
+        return false;
+      }
+      const effectiveSnapshot =
+        targetSessionPath && snapshot
+          ? resolvePaneDesktopSnapshot(snapshot, targetSessionPath)
+          : snapshot;
+
+      if (effectiveSnapshot?.activeSession?.readOnly) {
+        setRuntimeError(i18n.t("error.readonlySessionSend"));
         return false;
       }
 
-      setBusyAction("send");
-      try {
-        const next = await api.compactHistory();
-        applySnapshot(next);
-        resetComposerAfterSend(settingsRef.current.agentMode);
-        setRuntimeError("");
-        void refreshSessions();
-        return true;
-      } catch (error) {
-        setRuntimeError(describeError(error));
-        return false;
-      } finally {
-        setBusyAction("");
-      }
-    }
-    const targetSessionPath =
-      request.sessionPath?.trim()
-      ?? (isRemoteWebHostClient(api.kind)
-        ? webViewingSessionPathRef.current.trim() || webViewingSessionPath.trim()
-        : undefined);
-    if (isRemoteWebHostClient(api.kind) && !targetSessionPath) {
-      return false;
-    }
-    const effectiveSnapshot = targetSessionPath && snapshot
-      ? resolvePaneDesktopSnapshot(snapshot, targetSessionPath)
-      : snapshot;
-
-    if (effectiveSnapshot?.activeSession?.readOnly) {
-      setRuntimeError(i18n.t('error.readonlySessionSend'));
-      return false;
-    }
-
-    const canEnqueueWhileBusy =
-      effectiveSnapshot?.conversation.isBusy === true &&
-      !effectiveSnapshot.conversation.pendingToolApproval &&
-      !effectiveSnapshot.conversation.pendingQuestions;
-    if (effectiveSnapshot?.conversation.isBusy && !canEnqueueWhileBusy) {
-      setRuntimeError(i18n.t('error.pendingApprovalSend'));
-      return false;
-    }
-
-    const paneSendKey = targetSessionPath
-      ? normalizePaneSessionPathKey(targetSessionPath)
-      : null;
-    if (paneSendKey) {
-      setPaneSendBusySessionPath(paneSendKey);
-    } else {
-      setBusyAction("send");
-    }
-    try {
-      if (hasLocalFiles && skillChipAliases.length > 0) {
-        setRuntimeError(i18n.t('error.attachmentsNotSupportedWithSlash'));
+      const canEnqueueWhileBusy =
+        effectiveSnapshot?.conversation.isBusy === true &&
+        !effectiveSnapshot.conversation.pendingToolApproval &&
+        !effectiveSnapshot.conversation.pendingQuestions;
+      if (effectiveSnapshot?.conversation.isBusy && !canEnqueueWhileBusy) {
+        setRuntimeError(i18n.t("error.pendingApprovalSend"));
         return false;
       }
-      const next = await api.submitUserTurn({
-        text: request.text,
-        ...(hasLocalFiles ? { localFilePaths } : {}),
-        ...(hasReferencedPaths ? { referencedWorkspaceFilePaths } : {}),
-        ...(skillChipAliases.length > 0 ? { skillChipAliases } : {}),
-        ...(targetSessionPath ? { sessionPath: targetSessionPath } : {}),
-      });
-      if (isRemoteWebHostClient(api.kind)) {
-        syncWebViewingSessionPath(next.activeSession?.filePath ?? targetSessionPath);
-      }
-      applySnapshot(next);
-      if (!targetSessionPath) {
-        resetComposerAfterSend(settingsRef.current.agentMode, {
-          loopEnabled: next.conversation.loopEnabled === true,
-        });
-      }
-      setRuntimeError("");
-      void refreshSessions();
-      return true;
-    } catch (error) {
-      setRuntimeError(describeError(error));
-      return false;
-    } finally {
+
+      const paneSendKey = targetSessionPath ? normalizePaneSessionPathKey(targetSessionPath) : null;
       if (paneSendKey) {
-        setPaneSendBusySessionPath(null);
+        setPaneSendBusySessionPath(paneSendKey);
       } else {
-        setBusyAction("");
+        setBusyAction("send");
       }
-    }
-  }, [api, applySnapshot, resetComposerAfterSend, composer, refreshSessions, snapshot]);
+      try {
+        if (hasLocalFiles && skillChipAliases.length > 0) {
+          setRuntimeError(i18n.t("error.attachmentsNotSupportedWithSlash"));
+          return false;
+        }
+        const next = await api.submitUserTurn({
+          text: request.text,
+          ...(hasLocalFiles ? { localFilePaths } : {}),
+          ...(hasReferencedPaths ? { referencedWorkspaceFilePaths } : {}),
+          ...(skillChipAliases.length > 0 ? { skillChipAliases } : {}),
+          ...(targetSessionPath ? { sessionPath: targetSessionPath } : {}),
+        });
+        if (isRemoteWebHostClient(api.kind)) {
+          syncWebViewingSessionPath(next.activeSession?.filePath ?? targetSessionPath);
+        }
+        applySnapshot(next);
+        if (!targetSessionPath) {
+          resetComposerAfterSend(settingsRef.current.agentMode, {
+            loopEnabled: next.conversation.loopEnabled === true,
+          });
+        }
+        setRuntimeError("");
+        void refreshSessions();
+        return true;
+      } catch (error) {
+        setRuntimeError(describeError(error));
+        return false;
+      } finally {
+        if (paneSendKey) {
+          setPaneSendBusySessionPath(null);
+        } else {
+          setBusyAction("");
+        }
+      }
+    },
+    [api, applySnapshot, resetComposerAfterSend, composer, refreshSessions, snapshot],
+  );
 
   const submitGitChip = useCallback(
     async (request: SubmitGitChipRequest): Promise<boolean> => {
@@ -2591,198 +2627,225 @@ export function useDesktopRuntime() {
     }
   }, [api, applySnapshot, resetComposerAfterSend, refreshSessions]);
 
-  const abortConversation = useCallback(async (request?: AbortConversationRequest): Promise<boolean> => {
-    if (!api) {
-      return false;
-    }
-
-    try {
-      const next = await api.abortConversation(request);
-      applySnapshot(next);
-      setRuntimeError("");
-      const targetSessionPath = request?.sessionPath?.trim();
-      const targetBusy = targetSessionPath
-        ? resolvePaneDesktopSnapshot(next, targetSessionPath)?.conversation.isBusy === true
-        : next.conversation.isBusy;
-      if (!targetBusy) {
-        void refreshSessions();
+  const abortConversation = useCallback(
+    async (request?: AbortConversationRequest): Promise<boolean> => {
+      if (!api) {
+        return false;
       }
-      return true;
-    } catch (error) {
-      setRuntimeError(describeError(error));
-      return false;
-    }
-  }, [api, applySnapshot, refreshSessions]);
 
-  const abortShell = useCallback(async (toolCallId: string): Promise<boolean> => {
-    if (!api?.abortShell) {
-      return false;
-    }
-
-    const trimmed = toolCallId.trim();
-    if (!trimmed) {
-      return false;
-    }
-
-    try {
-      const next = await api.abortShell(trimmed);
-      applySnapshot(next);
-      setRuntimeError("");
-      return true;
-    } catch (error) {
-      setRuntimeError(describeError(error));
-      return false;
-    }
-  }, [api, applySnapshot]);
-
-  const setLoopEnabled = useCallback(async (enabled: boolean): Promise<boolean> => {
-    if (!api) {
-      return false;
-    }
-
-    try {
-      const next = await api.setLoopEnabled(enabled);
-      applySnapshot(next);
-      setRuntimeError("");
-      void refreshSessions();
-      return true;
-    } catch (error) {
-      setRuntimeError(describeError(error));
-      return false;
-    }
-  }, [api, applySnapshot, refreshSessions]);
-
-  const setSubagentViewerTarget = useCallback(async (parentToolCallId: string | null): Promise<boolean> => {
-    if (!api?.setSubagentViewerTarget) {
-      return false;
-    }
-
-    try {
-      const next = await api.setSubagentViewerTarget(parentToolCallId);
-      applySnapshot(next);
-      setRuntimeError("");
-      if (!parentToolCallId?.trim()) {
+      try {
+        const next = await api.abortConversation(request);
+        applySnapshot(next);
+        setRuntimeError("");
+        const targetSessionPath = request?.sessionPath?.trim();
+        const targetBusy = targetSessionPath
+          ? resolvePaneDesktopSnapshot(next, targetSessionPath)?.conversation.isBusy === true
+          : next.conversation.isBusy;
+        if (!targetBusy) {
+          void refreshSessions();
+        }
         return true;
+      } catch (error) {
+        setRuntimeError(describeError(error));
+        return false;
       }
-      const trimmed = parentToolCallId.trim();
-      return Boolean(next.subagentViewer)
-        || isSubagentToolCallPending(next.conversation.messages, trimmed);
-    } catch (error) {
-      setRuntimeError(describeError(error));
-      return false;
-    }
-  }, [api, applySnapshot]);
+    },
+    [api, applySnapshot, refreshSessions],
+  );
 
-  const setApprovalLevel = useCallback(async (approvalLevel: ApprovalLevel): Promise<boolean> => {
-    if (!api) {
-      return false;
-    }
-
-    try {
-      const next = await api.setApprovalLevel(approvalLevel);
-      applySnapshot(next);
-      setRuntimeError("");
-      void refreshSessions();
-      return true;
-    } catch (error) {
-      setRuntimeError(describeError(error));
-      return false;
-    }
-  }, [api, applySnapshot, refreshSessions]);
-
-  const setPendingGitBranch = useCallback(async (branch: string): Promise<boolean> => {
-    if (!api) {
-      return false;
-    }
-
-    try {
-      const next = await api.setPendingGitBranch(branch);
-      applySnapshot(next);
-      setRuntimeError("");
-      return true;
-    } catch (error) {
-      setRuntimeError(describeError(error));
-      return false;
-    }
-  }, [api, applySnapshot]);
-
-  const setWorkLocation = useCallback(async (
-    workLocation: WorkLocationKind,
-  ): Promise<boolean> => {
-    if (!api) {
-      return false;
-    }
-
-    try {
-      const next = await api.setWorkLocation(workLocation);
-      applySnapshot(next);
-      setRuntimeError("");
-      return true;
-    } catch (error) {
-      setRuntimeError(describeError(error));
-      return false;
-    }
-  }, [api, applySnapshot]);
-
-  const checkoutGitBranch = useCallback(async (
-    branch: string,
-    options?: { discardLocalChanges?: boolean },
-  ): Promise<CheckoutGitBranchResult> => {
-    if (!api) {
-      return { ok: false, reason: "error" };
-    }
-
-    setBusyAction("git");
-    try {
-      const next = await api.checkoutGitBranch({
-        branch,
-        discardLocalChanges: options?.discardLocalChanges === true,
-      });
-      applySnapshot(next);
-      setRuntimeError("");
-      void refreshSessions();
-      return { ok: true };
-    } catch (error) {
-      if (isCheckoutBlockedByLocalChanges(error)) {
-        return { ok: false, reason: "local-changes" };
+  const abortShell = useCallback(
+    async (toolCallId: string): Promise<boolean> => {
+      if (!api?.abortShell) {
+        return false;
       }
-      setRuntimeError(sanitizeGitErrorMessage(error));
-      return { ok: false, reason: "error" };
-    } finally {
-      setBusyAction("");
-    }
-  }, [api, applySnapshot, refreshSessions]);
 
-  const checkoutPaneGitBranch = useCallback(async (
-    sessionPath: string,
-    branch: string,
-    options?: { discardLocalChanges?: boolean },
-  ): Promise<CheckoutGitBranchResult> => {
-    if (!api?.checkoutPaneGitBranch) {
-      return { ok: false, reason: "error" };
-    }
-
-    setBusyAction("git");
-    try {
-      const next = await api.checkoutPaneGitBranch({
-        sessionPath,
-        branch,
-        discardLocalChanges: options?.discardLocalChanges === true,
-      });
-      applySnapshot(next);
-      setRuntimeError("");
-      void refreshSessions();
-      return { ok: true };
-    } catch (error) {
-      if (isCheckoutBlockedByLocalChanges(error)) {
-        return { ok: false, reason: "local-changes" };
+      const trimmed = toolCallId.trim();
+      if (!trimmed) {
+        return false;
       }
-      setRuntimeError(sanitizeGitErrorMessage(error));
-      return { ok: false, reason: "error" };
-    } finally {
-      setBusyAction("");
-    }
-  }, [api, applySnapshot, refreshSessions]);
+
+      try {
+        const next = await api.abortShell(trimmed);
+        applySnapshot(next);
+        setRuntimeError("");
+        return true;
+      } catch (error) {
+        setRuntimeError(describeError(error));
+        return false;
+      }
+    },
+    [api, applySnapshot],
+  );
+
+  const setLoopEnabled = useCallback(
+    async (enabled: boolean): Promise<boolean> => {
+      if (!api) {
+        return false;
+      }
+
+      try {
+        const next = await api.setLoopEnabled(enabled);
+        applySnapshot(next);
+        setRuntimeError("");
+        void refreshSessions();
+        return true;
+      } catch (error) {
+        setRuntimeError(describeError(error));
+        return false;
+      }
+    },
+    [api, applySnapshot, refreshSessions],
+  );
+
+  const setSubagentViewerTarget = useCallback(
+    async (parentToolCallId: string | null): Promise<boolean> => {
+      if (!api?.setSubagentViewerTarget) {
+        return false;
+      }
+
+      try {
+        const next = await api.setSubagentViewerTarget(parentToolCallId);
+        applySnapshot(next);
+        setRuntimeError("");
+        if (!parentToolCallId?.trim()) {
+          return true;
+        }
+        const trimmed = parentToolCallId.trim();
+        return (
+          Boolean(next.subagentViewer) ||
+          isSubagentToolCallPending(next.conversation.messages, trimmed)
+        );
+      } catch (error) {
+        setRuntimeError(describeError(error));
+        return false;
+      }
+    },
+    [api, applySnapshot],
+  );
+
+  const setApprovalLevel = useCallback(
+    async (approvalLevel: ApprovalLevel): Promise<boolean> => {
+      if (!api) {
+        return false;
+      }
+
+      try {
+        const next = await api.setApprovalLevel(approvalLevel);
+        applySnapshot(next);
+        setRuntimeError("");
+        void refreshSessions();
+        return true;
+      } catch (error) {
+        setRuntimeError(describeError(error));
+        return false;
+      }
+    },
+    [api, applySnapshot, refreshSessions],
+  );
+
+  const setPendingGitBranch = useCallback(
+    async (branch: string): Promise<boolean> => {
+      if (!api) {
+        return false;
+      }
+
+      try {
+        const next = await api.setPendingGitBranch(branch);
+        applySnapshot(next);
+        setRuntimeError("");
+        return true;
+      } catch (error) {
+        setRuntimeError(describeError(error));
+        return false;
+      }
+    },
+    [api, applySnapshot],
+  );
+
+  const setWorkLocation = useCallback(
+    async (workLocation: WorkLocationKind): Promise<boolean> => {
+      if (!api) {
+        return false;
+      }
+
+      try {
+        const next = await api.setWorkLocation(workLocation);
+        applySnapshot(next);
+        setRuntimeError("");
+        return true;
+      } catch (error) {
+        setRuntimeError(describeError(error));
+        return false;
+      }
+    },
+    [api, applySnapshot],
+  );
+
+  const checkoutGitBranch = useCallback(
+    async (
+      branch: string,
+      options?: { discardLocalChanges?: boolean },
+    ): Promise<CheckoutGitBranchResult> => {
+      if (!api) {
+        return { ok: false, reason: "error" };
+      }
+
+      setBusyAction("git");
+      try {
+        const next = await api.checkoutGitBranch({
+          branch,
+          discardLocalChanges: options?.discardLocalChanges === true,
+        });
+        applySnapshot(next);
+        setRuntimeError("");
+        void refreshSessions();
+        return { ok: true };
+      } catch (error) {
+        if (isCheckoutBlockedByLocalChanges(error)) {
+          return { ok: false, reason: "local-changes" };
+        }
+        setRuntimeError(sanitizeGitErrorMessage(error));
+        return { ok: false, reason: "error" };
+      } finally {
+        setBusyAction("");
+      }
+    },
+    [api, applySnapshot, refreshSessions],
+  );
+
+  const checkoutPaneGitBranch = useCallback(
+    async (
+      sessionPath: string,
+      branch: string,
+      options?: { discardLocalChanges?: boolean },
+    ): Promise<CheckoutGitBranchResult> => {
+      if (!api?.checkoutPaneGitBranch) {
+        return { ok: false, reason: "error" };
+      }
+
+      setBusyAction("git");
+      try {
+        const next = await api.checkoutPaneGitBranch({
+          sessionPath,
+          branch,
+          discardLocalChanges: options?.discardLocalChanges === true,
+        });
+        applySnapshot(next);
+        setRuntimeError("");
+        void refreshSessions();
+        return { ok: true };
+      } catch (error) {
+        if (isCheckoutBlockedByLocalChanges(error)) {
+          return { ok: false, reason: "local-changes" };
+        }
+        setRuntimeError(sanitizeGitErrorMessage(error));
+        return { ok: false, reason: "error" };
+      } finally {
+        setBusyAction("");
+      }
+    },
+    [api, applySnapshot, refreshSessions],
+  );
 
   const mergeWorktreeToMain = useCallback(async (): Promise<boolean> => {
     if (!api) {
@@ -2848,23 +2911,23 @@ export function useDesktopRuntime() {
     },
     [api, applySnapshot, refreshSessions],
   );
-  
+
   const reorderQueuedUserTurn = useCallback(
     async (queueId: string): Promise<boolean> => {
       if (!api) {
         return false;
       }
-      setBusyAction('send');
+      setBusyAction("send");
       try {
         const next = await api.reorderQueuedUserTurn({ queueId });
         applySnapshot(next);
-        setRuntimeError('');
+        setRuntimeError("");
         return true;
       } catch (error) {
         setRuntimeError(describeError(error));
         return false;
       } finally {
-        setBusyAction('');
+        setBusyAction("");
       }
     },
     [api, applySnapshot],
@@ -2875,18 +2938,18 @@ export function useDesktopRuntime() {
       if (!api) {
         return false;
       }
-      setBusyAction('send');
+      setBusyAction("send");
       try {
         const next = await api.sendQueuedUserTurnNow({ queueId });
         applySnapshot(next);
-        setRuntimeError('');
+        setRuntimeError("");
         void refreshSessions();
         return true;
       } catch (error) {
         setRuntimeError(describeError(error));
         return false;
       } finally {
-        setBusyAction('');
+        setBusyAction("");
       }
     },
     [api, applySnapshot, refreshSessions],
@@ -2897,17 +2960,17 @@ export function useDesktopRuntime() {
       if (!api) {
         return false;
       }
-      setBusyAction('send');
+      setBusyAction("send");
       try {
         const next = await api.removeQueuedUserTurn({ queueId });
         applySnapshot(next);
-        setRuntimeError('');
+        setRuntimeError("");
         return true;
       } catch (error) {
         setRuntimeError(describeError(error));
         return false;
       } finally {
-        setBusyAction('');
+        setBusyAction("");
       }
     },
     [api, applySnapshot],
@@ -2997,53 +3060,54 @@ export function useDesktopRuntime() {
     [api, applySnapshot],
   );
 
-  const submitApproval = useCallback(async (
-    decision: DesktopApprovalDecision,
-    sessionPath?: string,
-  ) => {
-    if (!api) {
-      return;
-    }
+  const submitApproval = useCallback(
+    async (decision: DesktopApprovalDecision, sessionPath?: string) => {
+      if (!api) {
+        return;
+      }
 
-    if (decision.kind === "guidance" && !decision.userMessage.trim()) {
-      setRuntimeError(i18n.t('error.enterGuidance'));
-      return;
-    }
+      if (decision.kind === "guidance" && !decision.userMessage.trim()) {
+        setRuntimeError(i18n.t("error.enterGuidance"));
+        return;
+      }
 
-    setBusyAction("approve");
-    try {
-      const next = await api.replyPendingApproval({
-        decision,
-        ...(sessionPath?.trim() ? { sessionPath: sessionPath.trim() } : {}),
-      });
-      applySnapshot(next);
-      setApprovalGuidance("");
-      setRuntimeError("");
-    } catch (error) {
-      setRuntimeError(describeError(error));
-    } finally {
-      setBusyAction("");
-    }
-  }, [api, applySnapshot]);
+      setBusyAction("approve");
+      try {
+        const next = await api.replyPendingApproval({
+          decision,
+          ...(sessionPath?.trim() ? { sessionPath: sessionPath.trim() } : {}),
+        });
+        applySnapshot(next);
+        setApprovalGuidance("");
+        setRuntimeError("");
+      } catch (error) {
+        setRuntimeError(describeError(error));
+      } finally {
+        setBusyAction("");
+      }
+    },
+    [api, applySnapshot],
+  );
 
-  const replyWorkspaceCapabilityTrust = useCallback(async (
-    decision: WorkspaceCapabilityTrustDecision,
-  ) => {
-    if (!api) {
-      return;
-    }
+  const replyWorkspaceCapabilityTrust = useCallback(
+    async (decision: WorkspaceCapabilityTrustDecision) => {
+      if (!api) {
+        return;
+      }
 
-    setBusyAction("workspaceTrust");
-    try {
-      const next = await api.replyWorkspaceCapabilityTrust({ decision });
-      applySnapshot(next);
-      setRuntimeError("");
-    } catch (error) {
-      setRuntimeError(describeError(error));
-    } finally {
-      setBusyAction("");
-    }
-  }, [api, applySnapshot]);
+      setBusyAction("workspaceTrust");
+      try {
+        const next = await api.replyWorkspaceCapabilityTrust({ decision });
+        applySnapshot(next);
+        setRuntimeError("");
+      } catch (error) {
+        setRuntimeError(describeError(error));
+      } finally {
+        setBusyAction("");
+      }
+    },
+    [api, applySnapshot],
+  );
 
   useEffect(() => {
     const bridge = window.spiritDesktop;
@@ -3062,7 +3126,7 @@ export function useDesktopRuntime() {
       return;
     }
     return bridge.subscribeNotificationReply((payload) => {
-      if (payload.kind !== 'approval') {
+      if (payload.kind !== "approval") {
         return;
       }
       const current = snapshotRef.current?.conversation.pendingToolApproval;
@@ -3071,7 +3135,7 @@ export function useDesktopRuntime() {
         return;
       }
       const sessionPath = resolvePendingApprovalSessionPath(snapshotRef.current);
-      void submitApproval({ kind: 'guidance', userMessage }, sessionPath);
+      void submitApproval({ kind: "guidance", userMessage }, sessionPath);
     });
   }, [submitApproval]);
 
@@ -3081,93 +3145,96 @@ export function useDesktopRuntime() {
       return;
     }
     return bridge.subscribeNotificationReply((payload) => {
-      if (payload.kind !== 'ask-questions') {
+      if (payload.kind !== "ask-questions") {
         return;
       }
       const sessionPath = resolvePendingQuestionsSessionPath(snapshotRef.current);
       const pendingForReply = resolvePendingQuestionsSnapshot(snapshotRef.current, sessionPath);
-      const result = buildSingleTextQuestionNotificationReplyResult(
-        pendingForReply,
-        payload,
-      );
+      const result = buildSingleTextQuestionNotificationReplyResult(pendingForReply, payload);
       if (!result) {
         return;
       }
       void (async () => {
-        setBusyAction('questions');
+        setBusyAction("questions");
         try {
           const next = await api.replyPendingQuestions({
             result,
             ...(sessionPath ? { sessionPath } : {}),
           });
           applySnapshot(next);
-          setQuestionError('');
-          setRuntimeError('');
+          setQuestionError("");
+          setRuntimeError("");
         } catch (error) {
           setRuntimeError(describeError(error));
         } finally {
-          setBusyAction('');
+          setBusyAction("");
         }
       })();
     });
   }, [api, applySnapshot]);
 
-  const submitQuestions = useCallback(async (
-    sessionPath?: string,
-    questionsSource?: typeof pendingQuestions,
-    draftsSource?: Record<string, QuestionDraft>,
-  ) => {
-    const effectiveQuestions = questionsSource ?? pendingQuestions;
-    if (!api || !effectiveQuestions) {
-      return;
-    }
+  const submitQuestions = useCallback(
+    async (
+      sessionPath?: string,
+      questionsSource?: typeof pendingQuestions,
+      draftsSource?: Record<string, QuestionDraft>,
+    ) => {
+      const effectiveQuestions = questionsSource ?? pendingQuestions;
+      if (!api || !effectiveQuestions) {
+        return;
+      }
 
-    const built = buildAskQuestionsResult(effectiveQuestions.request, draftsSource ?? questionDrafts);
-    if (!built.result) {
-      setQuestionError(built.error ?? i18n.t('error.completeQuestionnaire'));
-      return;
-    }
+      const built = buildAskQuestionsResult(
+        effectiveQuestions.request,
+        draftsSource ?? questionDrafts,
+      );
+      if (!built.result) {
+        setQuestionError(built.error ?? i18n.t("error.completeQuestionnaire"));
+        return;
+      }
 
-    setBusyAction("questions");
-    try {
-      const next = await api.replyPendingQuestions({
-        result: built.result,
-        ...(sessionPath?.trim() ? { sessionPath: sessionPath.trim() } : {}),
-      });
-      applySnapshot(next);
-      setQuestionError("");
-      setRuntimeError("");
-    } catch (error) {
-      setRuntimeError(describeError(error));
-    } finally {
-      setBusyAction("");
-    }
-  }, [api, applySnapshot, pendingQuestions, questionDrafts]);
+      setBusyAction("questions");
+      try {
+        const next = await api.replyPendingQuestions({
+          result: built.result,
+          ...(sessionPath?.trim() ? { sessionPath: sessionPath.trim() } : {}),
+        });
+        applySnapshot(next);
+        setQuestionError("");
+        setRuntimeError("");
+      } catch (error) {
+        setRuntimeError(describeError(error));
+      } finally {
+        setBusyAction("");
+      }
+    },
+    [api, applySnapshot, pendingQuestions, questionDrafts],
+  );
 
-  const skipQuestions = useCallback(async (
-    sessionPath?: string,
-    questionsSource?: typeof pendingQuestions,
-  ) => {
-    const effectiveQuestions = questionsSource ?? pendingQuestions;
-    if (!api || !effectiveQuestions) {
-      return;
-    }
+  const skipQuestions = useCallback(
+    async (sessionPath?: string, questionsSource?: typeof pendingQuestions) => {
+      const effectiveQuestions = questionsSource ?? pendingQuestions;
+      if (!api || !effectiveQuestions) {
+        return;
+      }
 
-    setBusyAction("questions");
-    try {
-      const next = await api.replyPendingQuestions({
-        result: { status: "skipped" },
-        ...(sessionPath?.trim() ? { sessionPath: sessionPath.trim() } : {}),
-      });
-      applySnapshot(next);
-      setQuestionError("");
-      setRuntimeError("");
-    } catch (error) {
-      setRuntimeError(describeError(error));
-    } finally {
-      setBusyAction("");
-    }
-  }, [api, applySnapshot, pendingQuestions]);
+      setBusyAction("questions");
+      try {
+        const next = await api.replyPendingQuestions({
+          result: { status: "skipped" },
+          ...(sessionPath?.trim() ? { sessionPath: sessionPath.trim() } : {}),
+        });
+        applySnapshot(next);
+        setQuestionError("");
+        setRuntimeError("");
+      } catch (error) {
+        setRuntimeError(describeError(error));
+      } finally {
+        setBusyAction("");
+      }
+    },
+    [api, applySnapshot, pendingQuestions],
+  );
 
   const openSession = useCallback(
     async (path: string) => {
@@ -3204,7 +3271,15 @@ export function useDesktopRuntime() {
         }
       }
     },
-    [acknowledgeSessionAttention, api, applySnapshot, refreshSessions, restoreSessionUi, stashSessionUi, syncWebViewingSessionPath],
+    [
+      acknowledgeSessionAttention,
+      api,
+      applySnapshot,
+      refreshSessions,
+      restoreSessionUi,
+      stashSessionUi,
+      syncWebViewingSessionPath,
+    ],
   );
 
   const releaseSessionNavigationBusy = useCallback(() => {
@@ -3247,9 +3322,7 @@ export function useDesktopRuntime() {
       }
       const next = await api.setVisiblePaneSessions({ sessionPaths });
       const navGeneration =
-        busyActionRef.current === "session"
-          ? sessionNavigationGenerationRef.current
-          : undefined;
+        busyActionRef.current === "session" ? sessionNavigationGenerationRef.current : undefined;
       applySnapshot(next, navGeneration !== undefined ? { navGeneration } : undefined);
     },
     [api, applySnapshot],
@@ -3436,11 +3509,11 @@ export function useDesktopRuntime() {
       if (!api) {
         return {
           isRepository: false,
-          oid: '',
-          subject: '',
-          author: '',
-          authoredAt: '',
-          fullMessage: '',
+          oid: "",
+          subject: "",
+          author: "",
+          authoredAt: "",
+          fullMessage: "",
         };
       }
       return api.readGitCommitMessage(request);
@@ -3457,14 +3530,14 @@ export function useDesktopRuntime() {
 
   const beginGitHubDeviceLogin = useCallback(async () => {
     if (!api) {
-      throw new Error(i18n.t('error.hostNotReady'));
+      throw new Error(i18n.t("error.hostNotReady"));
     }
     return api.beginGitHubDeviceLogin();
   }, [api]);
 
   const completeGitHubDeviceLogin = useCallback(async () => {
     if (!api) {
-      throw new Error(i18n.t('error.hostNotReady'));
+      throw new Error(i18n.t("error.hostNotReady"));
     }
     return api.completeGitHubDeviceLogin();
   }, [api]);
@@ -3495,7 +3568,7 @@ export function useDesktopRuntime() {
   const getGitHubPullRequestDetail = useCallback(
     async (request: GetGitHubPullRequestDetailRequest) => {
       if (!api) {
-        throw new Error(i18n.t('error.hostNotReady'));
+        throw new Error(i18n.t("error.hostNotReady"));
       }
       return api.getGitHubPullRequestDetail(request);
     },
@@ -3505,7 +3578,7 @@ export function useDesktopRuntime() {
   const getGitHubPullRequestConversation = useCallback(
     async (request: GetGitHubPullRequestDetailRequest) => {
       if (!api) {
-        throw new Error(i18n.t('error.hostNotReady'));
+        throw new Error(i18n.t("error.hostNotReady"));
       }
       return api.getGitHubPullRequestConversation(request);
     },
@@ -3515,7 +3588,7 @@ export function useDesktopRuntime() {
   const getGitHubPullRequestFiles = useCallback(
     async (request: GetGitHubPullRequestDetailRequest) => {
       if (!api) {
-        throw new Error(i18n.t('error.hostNotReady'));
+        throw new Error(i18n.t("error.hostNotReady"));
       }
       return api.getGitHubPullRequestFiles(request);
     },
@@ -3525,7 +3598,7 @@ export function useDesktopRuntime() {
   const getGitHubPullRequestCommits = useCallback(
     async (request: GetGitHubPullRequestDetailRequest) => {
       if (!api) {
-        throw new Error(i18n.t('error.hostNotReady'));
+        throw new Error(i18n.t("error.hostNotReady"));
       }
       return api.getGitHubPullRequestCommits(request);
     },
@@ -3535,7 +3608,7 @@ export function useDesktopRuntime() {
   const getGitHubPullRequestChecks = useCallback(
     async (request: GetGitHubPullRequestDetailRequest) => {
       if (!api) {
-        throw new Error(i18n.t('error.hostNotReady'));
+        throw new Error(i18n.t("error.hostNotReady"));
       }
       return api.getGitHubPullRequestChecks(request);
     },
@@ -3545,7 +3618,7 @@ export function useDesktopRuntime() {
   const mergeGitHubPullRequest = useCallback(
     async (request: MergeGitHubPullRequestRequest) => {
       if (!api) {
-        throw new Error(i18n.t('error.hostNotReady'));
+        throw new Error(i18n.t("error.hostNotReady"));
       }
       return api.mergeGitHubPullRequest(request);
     },
@@ -3555,7 +3628,7 @@ export function useDesktopRuntime() {
   const markGitHubPullRequestReady = useCallback(
     async (request: GetGitHubPullRequestDetailRequest) => {
       if (!api) {
-        throw new Error(i18n.t('error.hostNotReady'));
+        throw new Error(i18n.t("error.hostNotReady"));
       }
       return api.markGitHubPullRequestReady(request);
     },
@@ -3605,10 +3678,10 @@ export function useDesktopRuntime() {
   const readWorkspaceTextFile = useCallback(
     async (
       relativePath: string,
-      options?: import('@/types').ReadWorkspaceTextFileOptions,
+      options?: import("@/types").ReadWorkspaceTextFileOptions,
     ): Promise<WorkspaceReadTextFileResult> => {
       if (!api) {
-        throw new Error(i18n.t('error.hostNotReady'));
+        throw new Error(i18n.t("error.hostNotReady"));
       }
       return api.readWorkspaceTextFile(relativePath, options);
     },
@@ -3617,10 +3690,10 @@ export function useDesktopRuntime() {
 
   const searchWorkspaceContent = useCallback(
     async (
-      request: import('@/types').WorkspaceContentSearchRequest,
-    ): Promise<import('@/types').WorkspaceContentSearchResult> => {
+      request: import("@/types").WorkspaceContentSearchRequest,
+    ): Promise<import("@/types").WorkspaceContentSearchResult> => {
       if (!api) {
-        throw new Error(i18n.t('error.hostNotReady'));
+        throw new Error(i18n.t("error.hostNotReady"));
       }
       return api.searchWorkspaceContent(request);
     },
@@ -3630,7 +3703,7 @@ export function useDesktopRuntime() {
   const writeWorkspaceTextFile = useCallback(
     async (request: WriteWorkspaceTextFileRequest): Promise<void> => {
       if (!api) {
-        throw new Error(i18n.t('error.hostNotReady'));
+        throw new Error(i18n.t("error.hostNotReady"));
       }
       return api.writeWorkspaceTextFile(request);
     },
@@ -3640,7 +3713,7 @@ export function useDesktopRuntime() {
   const readHostTextFile = useCallback(
     async (absolutePath: string): Promise<WorkspaceReadTextFileResult> => {
       if (!api) {
-        throw new Error(i18n.t('error.hostNotReady'));
+        throw new Error(i18n.t("error.hostNotReady"));
       }
       return api.readHostTextFile(absolutePath);
     },
@@ -3650,7 +3723,7 @@ export function useDesktopRuntime() {
   const writeHostTextFile = useCallback(
     async (request: WriteHostTextFileRequest): Promise<void> => {
       if (!api) {
-        throw new Error(i18n.t('error.hostNotReady'));
+        throw new Error(i18n.t("error.hostNotReady"));
       }
       return api.writeHostTextFile(request);
     },
@@ -3660,51 +3733,65 @@ export function useDesktopRuntime() {
   const statHostTextFile = useCallback(
     async (absolutePath: string): Promise<HostTextFileStatResult> => {
       if (!api) {
-        throw new Error(i18n.t('error.hostNotReady'));
+        throw new Error(i18n.t("error.hostNotReady"));
       }
       return api.statHostTextFile(absolutePath);
     },
     [api],
   );
 
-  const resetSession = useCallback(async (options?: { composerSeed?: string }): Promise<boolean> => {
-    if (!api) {
-      return false;
-    }
-
-    const navGeneration = advanceSessionNavigationGeneration();
-    beginNavigationEmptySessionGreeting(navGeneration);
-    setBusyAction("reset");
-    try {
-      stashSessionUi(snapshotRef.current);
-      const next = await api.resetSession();
-      if (navGeneration !== sessionNavigationGenerationRef.current) {
-        finishNavigationEmptySessionGreeting(navGeneration);
+  const resetSession = useCallback(
+    async (options?: { composerSeed?: string }): Promise<boolean> => {
+      if (!api) {
         return false;
       }
-      if (isRemoteWebHostClient(api.kind)) {
-        syncWebViewingSessionPath(next.activeSession?.filePath);
+
+      const navGeneration = advanceSessionNavigationGeneration();
+      beginNavigationEmptySessionGreeting(navGeneration);
+      setBusyAction("reset");
+      try {
+        stashSessionUi(snapshotRef.current);
+        const next = await api.resetSession();
+        if (navGeneration !== sessionNavigationGenerationRef.current) {
+          finishNavigationEmptySessionGreeting(navGeneration);
+          return false;
+        }
+        if (isRemoteWebHostClient(api.kind)) {
+          syncWebViewingSessionPath(next.activeSession?.filePath);
+        }
+        applySnapshot(next, { navGeneration });
+        restoreSessionUi(next);
+        commitEmptySessionGreetingNavigation(navGeneration, next.composerSessionKey);
+        setNavigationGreetingVariant(null);
+        if (options?.composerSeed !== undefined) {
+          applyComposerSeed(options.composerSeed, next);
+        }
+        setRuntimeError("");
+        void refreshSessions();
+        return true;
+      } catch (error) {
+        finishNavigationEmptySessionGreeting(navGeneration);
+        setRuntimeError(describeError(error));
+        return false;
+      } finally {
+        if (navGeneration === sessionNavigationGenerationRef.current) {
+          setBusyAction("");
+        }
       }
-      applySnapshot(next, { navGeneration });
-      restoreSessionUi(next);
-      commitEmptySessionGreetingNavigation(navGeneration, next.composerSessionKey);
-      setNavigationGreetingVariant(null);
-      if (options?.composerSeed !== undefined) {
-        applyComposerSeed(options.composerSeed, next);
-      }
-      setRuntimeError("");
-      void refreshSessions();
-      return true;
-    } catch (error) {
-      finishNavigationEmptySessionGreeting(navGeneration);
-      setRuntimeError(describeError(error));
-      return false;
-    } finally {
-      if (navGeneration === sessionNavigationGenerationRef.current) {
-        setBusyAction("");
-      }
-    }
-  }, [api, advanceSessionNavigationGeneration, applyComposerSeed, applySnapshot, beginNavigationEmptySessionGreeting, finishNavigationEmptySessionGreeting, refreshSessions, restoreSessionUi, stashSessionUi, syncWebViewingSessionPath]);
+    },
+    [
+      api,
+      advanceSessionNavigationGeneration,
+      applyComposerSeed,
+      applySnapshot,
+      beginNavigationEmptySessionGreeting,
+      finishNavigationEmptySessionGreeting,
+      refreshSessions,
+      restoreSessionUi,
+      stashSessionUi,
+      syncWebViewingSessionPath,
+    ],
+  );
 
   const summary = useMemo(() => {
     const canEnqueueWhileBusy =
@@ -3726,7 +3813,7 @@ export function useDesktopRuntime() {
           ? kind === "electron"
             ? "Electron Desktop"
             : "localhost Web Host"
-          : i18n.t('common.connectingHost'),
+          : i18n.t("common.connectingHost"),
     };
   }, [hostError, hostReady, kind, snapshot]);
 
@@ -3794,7 +3881,7 @@ export function useDesktopRuntime() {
     resetComposerAfterSend,
     hostKind: kind,
     viewingSessionPath: isRemoteWebHostClient(kind)
-      ? (webViewingSessionPath || snapshot?.activeSession?.filePath || null)
+      ? webViewingSessionPath || snapshot?.activeSession?.filePath || null
       : (snapshot?.activeSession?.filePath ?? null),
     pendingQuestions,
     questionDrafts,

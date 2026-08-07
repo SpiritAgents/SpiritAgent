@@ -2,12 +2,9 @@ import type {
   PendingAssistantAux,
   PendingMcpResource,
   PendingToolApprovalSnapshot,
-} from '../types.js';
-import type { DesktopToolRequest } from './contracts.js';
-import {
-  displayTitleForTool,
-  stripReasonLineFromShellPrompt,
-} from './message-ordering.js';
+} from "../types.js";
+import type { DesktopToolRequest } from "./contracts.js";
+import { displayTitleForTool, stripReasonLineFromShellPrompt } from "./message-ordering.js";
 
 export function mapPendingMcpResources(
   resources: readonly PendingMcpResource[],
@@ -44,21 +41,13 @@ export function mapPendingToolApproval(input: {
   autoReviewBlockReason?: string;
 }): PendingToolApprovalSnapshot {
   return {
-    toolName: displayTitleForTool(
-      input.toolName,
-      input.request,
-    ),
-    prompt: stripReasonLineFromShellPrompt(
-      input.toolName,
-      input.prompt,
-    ),
-    ...(typeof input.trustTarget === 'string'
-      ? { trustTarget: input.trustTarget }
-      : {}),
-    ...(typeof input.subagentSessionId === 'string' && input.subagentSessionId.trim()
+    toolName: displayTitleForTool(input.toolName, input.request),
+    prompt: stripReasonLineFromShellPrompt(input.toolName, input.prompt),
+    ...(typeof input.trustTarget === "string" ? { trustTarget: input.trustTarget } : {}),
+    ...(typeof input.subagentSessionId === "string" && input.subagentSessionId.trim()
       ? { subagentSessionId: input.subagentSessionId.trim() }
       : {}),
-    ...(typeof input.autoReviewBlockReason === 'string' && input.autoReviewBlockReason.trim()
+    ...(typeof input.autoReviewBlockReason === "string" && input.autoReviewBlockReason.trim()
       ? { autoReviewBlockReason: input.autoReviewBlockReason.trim() }
       : {}),
   };

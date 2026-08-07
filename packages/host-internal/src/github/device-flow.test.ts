@@ -1,8 +1,8 @@
-import test from 'node:test';
-import assert from 'node:assert/strict';
+import test from "node:test";
+import assert from "node:assert/strict";
 
-import { pollGitHubDeviceToken, requestGitHubDeviceCode } from './device-flow.js';
-import { GitHubOAuthError } from './oauth.js';
+import { pollGitHubDeviceToken, requestGitHubDeviceCode } from "./device-flow.js";
+import { GitHubOAuthError } from "./oauth.js";
 
 const originalFetch = globalThis.fetch;
 
@@ -16,18 +16,18 @@ function restoreFetch(): void {
   globalThis.fetch = originalFetch;
 }
 
-test('requestGitHubDeviceCode maps GitHub device code response', async () => {
+test("requestGitHubDeviceCode maps GitHub device code response", async () => {
   const previousClientId = process.env.SPIRIT_GITHUB_OAUTH_CLIENT_ID;
-  process.env.SPIRIT_GITHUB_OAUTH_CLIENT_ID = 'test-client-id';
+  process.env.SPIRIT_GITHUB_OAUTH_CLIENT_ID = "test-client-id";
 
   mockFetch(async (_input, init) => {
     const body = new URLSearchParams(String(init?.body));
-    assert.equal(body.get('client_id'), 'test-client-id');
-    assert.equal(body.get('scope'), 'repo read:user');
+    assert.equal(body.get("client_id"), "test-client-id");
+    assert.equal(body.get("scope"), "repo read:user");
     return Response.json({
-      device_code: 'device-code-1',
-      user_code: 'ABCD-1234',
-      verification_uri: 'https://github.com/login/device',
+      device_code: "device-code-1",
+      user_code: "ABCD-1234",
+      verification_uri: "https://github.com/login/device",
       expires_in: 900,
       interval: 5,
     });
@@ -35,9 +35,9 @@ test('requestGitHubDeviceCode maps GitHub device code response', async () => {
 
   try {
     const challenge = await requestGitHubDeviceCode();
-    assert.equal(challenge.deviceCode, 'device-code-1');
-    assert.equal(challenge.userCode, 'ABCD-1234');
-    assert.equal(challenge.verificationUri, 'https://github.com/login/device');
+    assert.equal(challenge.deviceCode, "device-code-1");
+    assert.equal(challenge.userCode, "ABCD-1234");
+    assert.equal(challenge.verificationUri, "https://github.com/login/device");
     assert.equal(challenge.expiresIn, 900);
     assert.equal(challenge.intervalSeconds, 5);
   } finally {
@@ -50,20 +50,20 @@ test('requestGitHubDeviceCode maps GitHub device code response', async () => {
   }
 });
 
-test('requestGitHubDeviceCode retries fetch failures until device code is returned', async () => {
+test("requestGitHubDeviceCode retries fetch failures until device code is returned", async () => {
   const previousClientId = process.env.SPIRIT_GITHUB_OAUTH_CLIENT_ID;
-  process.env.SPIRIT_GITHUB_OAUTH_CLIENT_ID = 'test-client-id';
+  process.env.SPIRIT_GITHUB_OAUTH_CLIENT_ID = "test-client-id";
 
   let requestCount = 0;
   mockFetch(async () => {
     requestCount += 1;
     if (requestCount === 1) {
-      throw new TypeError('fetch failed');
+      throw new TypeError("fetch failed");
     }
     return Response.json({
-      device_code: 'device-code-1',
-      user_code: 'ABCD-1234',
-      verification_uri: 'https://github.com/login/device',
+      device_code: "device-code-1",
+      user_code: "ABCD-1234",
+      verification_uri: "https://github.com/login/device",
       expires_in: 900,
       interval: 5,
     });
@@ -71,7 +71,7 @@ test('requestGitHubDeviceCode retries fetch failures until device code is return
 
   try {
     const challenge = await requestGitHubDeviceCode();
-    assert.equal(challenge.deviceCode, 'device-code-1');
+    assert.equal(challenge.deviceCode, "device-code-1");
     assert.equal(requestCount, 2);
   } finally {
     restoreFetch();
@@ -83,30 +83,30 @@ test('requestGitHubDeviceCode retries fetch failures until device code is return
   }
 });
 
-test('pollGitHubDeviceToken waits for authorization_pending then returns token', async () => {
+test("pollGitHubDeviceToken waits for authorization_pending then returns token", async () => {
   const previousClientId = process.env.SPIRIT_GITHUB_OAUTH_CLIENT_ID;
-  process.env.SPIRIT_GITHUB_OAUTH_CLIENT_ID = 'test-client-id';
+  process.env.SPIRIT_GITHUB_OAUTH_CLIENT_ID = "test-client-id";
 
   let pollCount = 0;
   mockFetch(async () => {
     pollCount += 1;
     if (pollCount === 1) {
-      return Response.json({ error: 'authorization_pending' });
+      return Response.json({ error: "authorization_pending" });
     }
     return Response.json({
-      access_token: 'gho_test_token',
-      token_type: 'bearer',
-      scope: 'repo,read:user',
+      access_token: "gho_test_token",
+      token_type: "bearer",
+      scope: "repo,read:user",
     });
   });
 
   try {
     const token = await pollGitHubDeviceToken({
-      deviceCode: 'device-code-1',
+      deviceCode: "device-code-1",
       intervalSeconds: 0,
       expiresIn: 5,
     });
-    assert.equal(token.access_token, 'gho_test_token');
+    assert.equal(token.access_token, "gho_test_token");
     assert.equal(pollCount, 2);
   } finally {
     restoreFetch();
@@ -118,21 +118,21 @@ test('pollGitHubDeviceToken waits for authorization_pending then returns token',
   }
 });
 
-test('pollGitHubDeviceToken honors abort signal', async () => {
+test("pollGitHubDeviceToken honors abort signal", async () => {
   const previousClientId = process.env.SPIRIT_GITHUB_OAUTH_CLIENT_ID;
-  process.env.SPIRIT_GITHUB_OAUTH_CLIENT_ID = 'test-client-id';
+  process.env.SPIRIT_GITHUB_OAUTH_CLIENT_ID = "test-client-id";
 
   const abort = new AbortController();
   mockFetch(async () => {
     abort.abort();
-    return Response.json({ error: 'authorization_pending' });
+    return Response.json({ error: "authorization_pending" });
   });
 
   try {
     await assert.rejects(
       () =>
         pollGitHubDeviceToken({
-          deviceCode: 'device-code-1',
+          deviceCode: "device-code-1",
           intervalSeconds: 0,
           expiresIn: 5,
           signal: abort.signal,
@@ -153,29 +153,29 @@ test('pollGitHubDeviceToken honors abort signal', async () => {
   }
 });
 
-test('pollGitHubDeviceToken retries fetch failures until token is returned', async () => {
+test("pollGitHubDeviceToken retries fetch failures until token is returned", async () => {
   const previousClientId = process.env.SPIRIT_GITHUB_OAUTH_CLIENT_ID;
-  process.env.SPIRIT_GITHUB_OAUTH_CLIENT_ID = 'test-client-id';
+  process.env.SPIRIT_GITHUB_OAUTH_CLIENT_ID = "test-client-id";
 
   let pollCount = 0;
   mockFetch(async () => {
     pollCount += 1;
     if (pollCount === 1) {
-      throw new TypeError('fetch failed');
+      throw new TypeError("fetch failed");
     }
     return Response.json({
-      access_token: 'gho_test_token',
-      token_type: 'bearer',
+      access_token: "gho_test_token",
+      token_type: "bearer",
     });
   });
 
   try {
     const token = await pollGitHubDeviceToken({
-      deviceCode: 'device-code-1',
+      deviceCode: "device-code-1",
       intervalSeconds: 0,
       expiresIn: 5,
     });
-    assert.equal(token.access_token, 'gho_test_token');
+    assert.equal(token.access_token, "gho_test_token");
     assert.equal(pollCount, 2);
   } finally {
     restoreFetch();
@@ -187,17 +187,17 @@ test('pollGitHubDeviceToken retries fetch failures until token is returned', asy
   }
 });
 
-test('pollGitHubDeviceToken maps access_denied to GitHubOAuthError', async () => {
+test("pollGitHubDeviceToken maps access_denied to GitHubOAuthError", async () => {
   const previousClientId = process.env.SPIRIT_GITHUB_OAUTH_CLIENT_ID;
-  process.env.SPIRIT_GITHUB_OAUTH_CLIENT_ID = 'test-client-id';
+  process.env.SPIRIT_GITHUB_OAUTH_CLIENT_ID = "test-client-id";
 
-  mockFetch(async () => Response.json({ error: 'access_denied' }));
+  mockFetch(async () => Response.json({ error: "access_denied" }));
 
   try {
     await assert.rejects(
       () =>
         pollGitHubDeviceToken({
-          deviceCode: 'device-code-1',
+          deviceCode: "device-code-1",
           intervalSeconds: 0,
           expiresIn: 5,
         }),

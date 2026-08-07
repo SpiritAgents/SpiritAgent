@@ -11,13 +11,13 @@ import {
   type LlmToolAgentBasicInfo,
   type LlmTransportConfig,
   type ToolExecutor,
-} from '@spiritagent/agent-core';
+} from "@spiritagent/agent-core";
 
 import {
   buildWorktreeNamingPrompt,
   parseGeneratedWorktreeNamingResponse,
   type GeneratedWorktreeNames,
-} from './worktree-naming.js';
+} from "./worktree-naming.js";
 
 export interface WorktreeNamingErrorMessages {
   failurePrefix: (error: string) => string;
@@ -45,9 +45,9 @@ export interface GenerateWorktreeNamesFromTaskInput {
 
 const defaultErrorMessages: WorktreeNamingErrorMessages = {
   failurePrefix: (error) => `Worktree naming failed: ${error}`,
-  noBody: 'Worktree naming returned no assistant text.',
+  noBody: "Worktree naming returned no assistant text.",
   interactiveTool: (toolName) => `Worktree naming cannot run interactive tool: ${toolName}`,
-  incomplete: 'Worktree naming did not finish within the allowed rounds.',
+  incomplete: "Worktree naming did not finish within the allowed rounds.",
 };
 
 export async function generateWorktreeNamesFromTask(
@@ -115,13 +115,13 @@ async function runWorktreeNamingToolAgentRounds(input: {
       input.extraToolDefinitions,
     );
 
-    if (completion.kind !== 'success') {
+    if (completion.kind !== "success") {
       throw new Error(input.errorMessages.failurePrefix(completion.error));
     }
 
     toolState = completion.result.state;
 
-    if (completion.result.step.kind === 'final-response-ready') {
+    if (completion.result.step.kind === "final-response-ready") {
       const assistantText = extractLastLlmAssistantText(toolState)?.trim();
       if (!assistantText) {
         throw new Error(input.errorMessages.noBody);
@@ -131,7 +131,10 @@ async function runWorktreeNamingToolAgentRounds(input: {
 
     const toolResults = [];
     for (const call of completion.result.step.calls) {
-      const request = await input.toolExecutor.requestFromFunctionCall(call.name, call.argumentsJson);
+      const request = await input.toolExecutor.requestFromFunctionCall(
+        call.name,
+        call.argumentsJson,
+      );
       const requestWithMetadata = input.toolExecutor.attachRequestMetadata
         ? input.toolExecutor.attachRequestMetadata(request, {
             toolCallId: call.id,
@@ -139,7 +142,7 @@ async function runWorktreeNamingToolAgentRounds(input: {
           })
         : request;
       const authorization = await input.toolExecutor.authorize(requestWithMetadata);
-      if (authorization.kind !== 'allowed') {
+      if (authorization.kind !== "allowed") {
         throw new Error(input.errorMessages.interactiveTool(call.name));
       }
       const output = await input.toolExecutor.execute(requestWithMetadata);

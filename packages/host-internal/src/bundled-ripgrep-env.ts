@@ -1,30 +1,33 @@
-import { existsSync } from 'node:fs';
-import path from 'node:path';
+import { existsSync } from "node:fs";
+import path from "node:path";
 
-import { rgPath } from '@vscode/ripgrep';
+import { rgPath } from "@vscode/ripgrep";
 
-export const SPIRIT_RG_PATH_ENV = 'SPIRIT_RG_PATH';
-export const SPIRIT_RG_BIN_DIR_ENV = 'SPIRIT_RG_BIN_DIR';
-export const SPIRIT_SHELL_USE_BUNDLED_RG_ENV = 'SPIRIT_SHELL_USE_BUNDLED_RG';
+export const SPIRIT_RG_PATH_ENV = "SPIRIT_RG_PATH";
+export const SPIRIT_RG_BIN_DIR_ENV = "SPIRIT_RG_BIN_DIR";
+export const SPIRIT_SHELL_USE_BUNDLED_RG_ENV = "SPIRIT_SHELL_USE_BUNDLED_RG";
 
 function isBundledRipgrepInjectionDisabled(env: NodeJS.ProcessEnv): boolean {
   const raw = env[SPIRIT_SHELL_USE_BUNDLED_RG_ENV]?.trim().toLowerCase();
-  return raw === '0' || raw === 'false' || raw === 'no' || raw === 'off';
+  return raw === "0" || raw === "false" || raw === "no" || raw === "off";
 }
 
 function resolvePathEnvKey(env: NodeJS.ProcessEnv): string {
-  if (process.platform !== 'win32') {
-    return 'PATH';
+  if (process.platform !== "win32") {
+    return "PATH";
   }
-  return Object.keys(env).find((key) => key.toLowerCase() === 'path') ?? 'Path';
+  return Object.keys(env).find((key) => key.toLowerCase() === "path") ?? "Path";
 }
 
 function pathEntries(value: string | undefined): string[] {
   if (!value) {
     return [];
   }
-  const separator = process.platform === 'win32' ? ';' : ':';
-  return value.split(separator).map((entry) => entry.trim()).filter((entry) => entry.length > 0);
+  const separator = process.platform === "win32" ? ";" : ":";
+  return value
+    .split(separator)
+    .map((entry) => entry.trim())
+    .filter((entry) => entry.length > 0);
 }
 
 function pathsEqual(left: string, right: string): boolean {
@@ -35,7 +38,9 @@ function pathsEqual(left: string, right: string): boolean {
   }
 }
 
-export function resolveBundledRipgrepPath(env: NodeJS.ProcessEnv = process.env): string | undefined {
+export function resolveBundledRipgrepPath(
+  env: NodeJS.ProcessEnv = process.env,
+): string | undefined {
   const override = env[SPIRIT_RG_PATH_ENV]?.trim();
   if (override && existsSync(override)) {
     return override;
@@ -52,7 +57,9 @@ export function resolveBundledRipgrepPath(env: NodeJS.ProcessEnv = process.env):
   return undefined;
 }
 
-export function buildAgentShellEnvironment(baseEnv: NodeJS.ProcessEnv = process.env): NodeJS.ProcessEnv {
+export function buildAgentShellEnvironment(
+  baseEnv: NodeJS.ProcessEnv = process.env,
+): NodeJS.ProcessEnv {
   const env = { ...baseEnv };
 
   if (isBundledRipgrepInjectionDisabled(env)) {
@@ -74,8 +81,8 @@ export function buildAgentShellEnvironment(baseEnv: NodeJS.ProcessEnv = process.
     return env;
   }
 
-  const separator = process.platform === 'win32' ? ';' : ':';
-  const existingPath = env[pathKey] ?? '';
+  const separator = process.platform === "win32" ? ";" : ":";
+  const existingPath = env[pathKey] ?? "";
   env[pathKey] = existingPath.length > 0 ? `${binDir}${separator}${existingPath}` : binDir;
 
   return env;

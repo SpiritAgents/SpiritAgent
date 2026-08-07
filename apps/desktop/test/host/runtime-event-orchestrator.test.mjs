@@ -1,25 +1,25 @@
-import assert from 'node:assert/strict';
-import { test } from 'node:test';
+import assert from "node:assert/strict";
+import { test } from "node:test";
 
-import { DesktopAssistantMessageStateMachine } from '../../dist-electron/src/host/assistant-message-state.js';
-import { DesktopConversationSnapshotView } from '../../dist-electron/src/host/conversation-snapshot.js';
-import { DesktopMessageTimeline } from '../../dist-electron/src/host/message-timeline.js';
-import { buildVisibleMessageSnapshots } from '../../dist-electron/src/host/message-snapshots.js';
-import { createDesktopRewindMetadata } from '../../dist-electron/src/host/rewind.js';
+import { DesktopAssistantMessageStateMachine } from "../../dist-electron/src/host/assistant-message-state.js";
+import { DesktopConversationSnapshotView } from "../../dist-electron/src/host/conversation-snapshot.js";
+import { DesktopMessageTimeline } from "../../dist-electron/src/host/message-timeline.js";
+import { buildVisibleMessageSnapshots } from "../../dist-electron/src/host/message-snapshots.js";
+import { createDesktopRewindMetadata } from "../../dist-electron/src/host/rewind.js";
 import {
   DesktopRuntimeEventOrchestrator,
   splitRuntimeEventsForIncrementalFinishTaskPreview,
   splitRuntimeEventsForIncrementalResponsesBuiltInToolPreview,
   runtimeEventsIncludeAppliedResponsesBuiltInToolStreamingUpdate,
   runtimeEventsIncludeAppliedHostToolStreamingUpdate,
-} from '../../dist-electron/src/host/runtime-event-orchestrator.js';
-import { shouldShowAssistantThinkingCollapsible } from '../../dist-electron/src/lib/conversation-thinking-ui.js';
+} from "../../dist-electron/src/host/runtime-event-orchestrator.js";
+import { shouldShowAssistantThinkingCollapsible } from "../../dist-electron/src/lib/conversation-thinking-ui.js";
 
 function createHarness() {
   let messages = [];
   let nextMessageId = 1;
   let nextTimelineMessageId = 1;
-  let nextSegmentKind = 'initial';
+  let nextSegmentKind = "initial";
   let completedTurnResult = undefined;
   const allocateMessageId = () => nextMessageId++;
   const timeline = new DesktopMessageTimeline({
@@ -54,7 +54,7 @@ function createHarness() {
     messageTimeline: () => timeline,
     takeNextAssistantSegmentKind: () => {
       const kind = nextSegmentKind;
-      nextSegmentKind = 'initial';
+      nextSegmentKind = "initial";
       return kind;
     },
     conversationSnapshotView,
@@ -79,7 +79,7 @@ function createHarness() {
     pushUser(content) {
       const message = {
         id: allocateMessageId(),
-        role: 'user',
+        role: "user",
         content,
         pending: false,
       };
@@ -90,10 +90,10 @@ function createHarness() {
 }
 
 function rowToken(message) {
-  if (message.role === 'user') return 'user';
+  if (message.role === "user") return "user";
   if (message.tool) return `tool:${message.tool.toolCallId}`;
   if (message.aux?.thinking) return `thinking:${message.aux.thinking}`;
-  if (message.pending) return 'pending-assistant';
+  if (message.pending) return "pending-assistant";
   return `assistant:${message.content}`;
 }
 
@@ -104,14 +104,14 @@ function visibleRowTokens(messages) {
   }).map(rowToken);
 }
 
-test('abort preemptive thinking finalize ignores duplicate deferred after-stream finalize event', () => {
+test("abort preemptive thinking finalize ignores duplicate deferred after-stream finalize event", () => {
   const harness = createHarness();
-  const thinking = 'The user just sent random typing.';
-  harness.pushUser('enn');
+  const thinking = "The user just sent random typing.";
+  harness.pushUser("enn");
 
   harness.orchestrator.applyRuntimeHostEvents([
-    { kind: 'begin-assistant-response' },
-    { kind: 'update-pending-assistant-thinking', text: thinking },
+    { kind: "begin-assistant-response" },
+    { kind: "update-pending-assistant-thinking", text: thinking },
   ]);
 
   harness.orchestrator.finalizeInterruptedDeferredThinking({ thinkingText: thinking });
@@ -119,430 +119,444 @@ test('abort preemptive thinking finalize ignores duplicate deferred after-stream
 
   harness.orchestrator.applyRuntimeHostEvents([
     {
-      kind: 'assistant-thinking-segment-finalized',
+      kind: "assistant-thinking-segment-finalized",
       text: thinking,
-      placement: 'after-stream',
+      placement: "after-stream",
     },
   ]);
 
-  assert.deepEqual(harness.timeline.toMessages().map(rowToken), [
-    'user',
-    `thinking:${thinking}`,
-  ]);
+  assert.deepEqual(harness.timeline.toMessages().map(rowToken), ["user", `thinking:${thinking}`]);
 });
 
-test('runtime events are mirrored into continuation timeline segments', () => {
+test("runtime events are mirrored into continuation timeline segments", () => {
   const harness = createHarness();
-  harness.pushUser('inspect this file');
+  harness.pushUser("inspect this file");
 
   harness.orchestrator.applyRuntimeHostEvents([
-    { kind: 'begin-assistant-response' },
-    { kind: 'assistant-thinking-segment-finalized', text: 'first reasoning' },
+    { kind: "begin-assistant-response" },
+    { kind: "assistant-thinking-segment-finalized", text: "first reasoning" },
     {
-      kind: 'streaming-tool-preview',
-      toolCallId: 'call-1',
-      toolName: 'read_file',
-      argumentsJson: '{}',
+      kind: "streaming-tool-preview",
+      toolCallId: "call-1",
+      toolName: "read_file",
+      argumentsJson: "{}",
     },
-    { kind: 'remove-pending-assistant' },
+    { kind: "remove-pending-assistant" },
   ]);
 
   harness.assistantMessages.resetStreamingPlacementState(false);
-  harness.setNextSegmentKind('continuation');
+  harness.setNextSegmentKind("continuation");
   harness.orchestrator.applyRuntimeHostEvents([
-    { kind: 'begin-assistant-response' },
+    { kind: "begin-assistant-response" },
     {
-      kind: 'streaming-tool-preview',
-      toolCallId: 'call-2',
-      toolName: 'read_file',
-      argumentsJson: '{}',
+      kind: "streaming-tool-preview",
+      toolCallId: "call-2",
+      toolName: "read_file",
+      argumentsJson: "{}",
     },
-    { kind: 'assistant-thinking-segment-finalized', text: 'second reasoning' },
-    { kind: 'remove-pending-assistant' },
+    { kind: "assistant-thinking-segment-finalized", text: "second reasoning" },
+    { kind: "remove-pending-assistant" },
   ]);
 
   assert.deepEqual(harness.timeline.toMessages().map(rowToken), [
-    'user',
-    'thinking:first reasoning',
-    'tool:call-1',
-    'thinking:second reasoning',
-    'tool:call-2',
+    "user",
+    "thinking:first reasoning",
+    "tool:call-1",
+    "thinking:second reasoning",
+    "tool:call-2",
   ]);
 });
 
-test('deferred after-stream thinking is materialized before the first tool preview', () => {
+test("deferred after-stream thinking is materialized before the first tool preview", () => {
   const harness = createHarness();
-  harness.pushUser('制造一个错误');
+  harness.pushUser("制造一个错误");
 
   harness.orchestrator.applyRuntimeHostEvents([
-    { kind: 'begin-assistant-response' },
-    { kind: 'assistant-chunk', text: '先看看文件结尾。' },
+    { kind: "begin-assistant-response" },
+    { kind: "assistant-chunk", text: "先看看文件结尾。" },
     {
-      kind: 'assistant-thinking-segment-finalized',
-      text: 'Plan to read the file end first.',
-      placement: 'after-stream',
+      kind: "assistant-thinking-segment-finalized",
+      text: "Plan to read the file end first.",
+      placement: "after-stream",
     },
     {
-      kind: 'streaming-tool-preview',
-      toolCallId: 'read-1',
-      toolName: 'read_file',
+      kind: "streaming-tool-preview",
+      toolCallId: "read-1",
+      toolName: "read_file",
       argumentsJson: '{"path":"packages/agent-core/src/ports.ts"}',
     },
   ]);
 
   const tokens = visibleRowTokens(harness.timeline.toMessages());
-  const thinkingIndex = tokens.findIndex((token) => token === 'thinking:Plan to read the file end first.');
-  const toolIndex = tokens.findIndex((token) => token === 'tool:read-1');
+  const thinkingIndex = tokens.findIndex(
+    (token) => token === "thinking:Plan to read the file end first.",
+  );
+  const toolIndex = tokens.findIndex((token) => token === "tool:read-1");
   assert.ok(thinkingIndex >= 0 && toolIndex >= 0 && thinkingIndex < toolIndex);
 });
 
-test('after-stream thinking is finalized before later tools when the turn already has a tool preview', () => {
+test("after-stream thinking is finalized before later tools when the turn already has a tool preview", () => {
   const harness = createHarness();
-  harness.pushUser('run diagnostics');
+  harness.pushUser("run diagnostics");
 
   harness.orchestrator.applyRuntimeHostEvents([
-    { kind: 'begin-assistant-response' },
-    { kind: 'assistant-thinking-segment-finalized', text: 'Pick a TypeScript file.', placement: 'after-stream' },
+    { kind: "begin-assistant-response" },
     {
-      kind: 'streaming-tool-preview',
-      toolCallId: 'glob-1',
-      toolName: 'glob',
+      kind: "assistant-thinking-segment-finalized",
+      text: "Pick a TypeScript file.",
+      placement: "after-stream",
+    },
+    {
+      kind: "streaming-tool-preview",
+      toolCallId: "glob-1",
+      toolName: "glob",
       argumentsJson: '{"pattern":"**/*.ts"}',
     },
     {
-      kind: 'assistant-thinking-segment-finalized',
-      text: 'Use packages/agent-core/src/runtime/helpers.ts.',
-      placement: 'after-stream',
+      kind: "assistant-thinking-segment-finalized",
+      text: "Use packages/agent-core/src/runtime/helpers.ts.",
+      placement: "after-stream",
     },
     {
-      kind: 'streaming-tool-preview',
-      toolCallId: 'diag-1',
-      toolName: 'get_diagnostics',
+      kind: "streaming-tool-preview",
+      toolCallId: "diag-1",
+      toolName: "get_diagnostics",
       argumentsJson: '{"paths":["packages/agent-core/src/runtime/helpers.ts"]}',
     },
   ]);
 
   const tokens = visibleRowTokens(harness.timeline.toMessages());
-  const globIndex = tokens.findIndex((token) => token === 'tool:glob-1');
-  const firstThinkingIndex = tokens.findIndex((token) => token === 'thinking:Pick a TypeScript file.');
-  const secondThinkingIndex = tokens.findIndex(
-    (token) => token === 'thinking:Use packages/agent-core/src/runtime/helpers.ts.',
+  const globIndex = tokens.findIndex((token) => token === "tool:glob-1");
+  const firstThinkingIndex = tokens.findIndex(
+    (token) => token === "thinking:Pick a TypeScript file.",
   );
-  const diagIndex = tokens.findIndex((token) => token === 'tool:diag-1');
+  const secondThinkingIndex = tokens.findIndex(
+    (token) => token === "thinking:Use packages/agent-core/src/runtime/helpers.ts.",
+  );
+  const diagIndex = tokens.findIndex((token) => token === "tool:diag-1");
   assert.ok(firstThinkingIndex >= 0 && globIndex >= 0 && firstThinkingIndex < globIndex);
   assert.ok(secondThinkingIndex > globIndex && secondThinkingIndex < diagIndex);
 });
 
-test('completed turn result reuses the finalized assistant text row instead of duplicating it', () => {
+test("completed turn result reuses the finalized assistant text row instead of duplicating it", () => {
   const harness = createHarness();
-  harness.pushUser('Hi');
+  harness.pushUser("Hi");
 
   harness.orchestrator.applyRuntimeHostEvents([
-    { kind: 'begin-assistant-response' },
-    { kind: 'assistant-chunk', text: "Hi! I'm the Spirit Agent." },
-    { kind: 'assistant-thinking-segment-finalized', text: 'The user greeted me.' },
-    { kind: 'assistant-response-completed' },
+    { kind: "begin-assistant-response" },
+    { kind: "assistant-chunk", text: "Hi! I'm the Spirit Agent." },
+    { kind: "assistant-thinking-segment-finalized", text: "The user greeted me." },
+    { kind: "assistant-response-completed" },
   ]);
 
   harness.setCompletedTurnResult({
-    kind: 'completed',
+    kind: "completed",
     assistantText: "Hi! I'm the Spirit Agent.",
     toolExecutions: [],
   });
   harness.orchestrator.consumeCompletedTurnResult();
 
   assert.deepEqual(harness.timeline.toMessages().map(rowToken), [
-    'user',
-    'thinking:The user greeted me.',
+    "user",
+    "thinking:The user greeted me.",
     "assistant:Hi! I'm the Spirit Agent.",
   ]);
 });
 
-test('completed Chinese greeting keeps finalized thinking above the final assistant text', () => {
+test("completed Chinese greeting keeps finalized thinking above the final assistant text", () => {
   const harness = createHarness();
-  harness.pushUser('你好啊');
+  harness.pushUser("你好啊");
 
   harness.orchestrator.applyRuntimeHostEvents([
-    { kind: 'begin-assistant-response' },
-    { kind: 'assistant-chunk', text: '你好！有什么可以帮你的吗？' },
+    { kind: "begin-assistant-response" },
+    { kind: "assistant-chunk", text: "你好！有什么可以帮你的吗？" },
     {
-      kind: 'assistant-thinking-segment-finalized',
+      kind: "assistant-thinking-segment-finalized",
       text: 'The user is just greeting me with "你好啊" (Hello).',
     },
-    { kind: 'assistant-response-completed' },
+    { kind: "assistant-response-completed" },
   ]);
 
   harness.setCompletedTurnResult({
-    kind: 'completed',
-    assistantText: '你好！有什么可以帮你的吗？',
+    kind: "completed",
+    assistantText: "你好！有什么可以帮你的吗？",
     toolExecutions: [],
   });
   harness.orchestrator.consumeCompletedTurnResult();
 
   assert.deepEqual(harness.timeline.toMessages().map(rowToken), [
-    'user',
+    "user",
     'thinking:The user is just greeting me with "你好啊" (Hello).',
-    'assistant:你好！有什么可以帮你的吗？',
+    "assistant:你好！有什么可以帮你的吗？",
   ]);
 });
 
-test('after-stream thinking stays on the body row until completion (same-instance collapse)', () => {
+test("after-stream thinking stays on the body row until completion (same-instance collapse)", () => {
   const harness = createHarness();
-  harness.pushUser('hi');
+  harness.pushUser("hi");
 
   // Real streaming order: thinking deltas, then after-stream finalize emitted right before
   // the first body chunk. The thinking must NOT split yet — it stays on the streaming body
   // row so AnimatedCollapse can collapse on the same instance once the body arrives.
   harness.orchestrator.applyRuntimeHostEvents([
-    { kind: 'begin-assistant-response' },
-    { kind: 'update-pending-assistant-thinking', text: 'Planning the greeting.' },
+    { kind: "begin-assistant-response" },
+    { kind: "update-pending-assistant-thinking", text: "Planning the greeting." },
     {
-      kind: 'assistant-thinking-segment-finalized',
-      text: 'Planning the greeting.',
-      placement: 'after-stream',
+      kind: "assistant-thinking-segment-finalized",
+      text: "Planning the greeting.",
+      placement: "after-stream",
     },
-    { kind: 'assistant-chunk', text: 'Hello!' },
+    { kind: "assistant-chunk", text: "Hello!" },
   ]);
 
   const streaming = harness.timeline
     .toMessages()
-    .filter((message) => message.role === 'assistant' && !message.tool);
+    .filter((message) => message.role === "assistant" && !message.tool);
   assert.equal(streaming.length, 1);
-  assert.equal(streaming[0].content, 'Hello!');
-  assert.equal(streaming[0].aux?.thinking, 'Planning the greeting.');
+  assert.equal(streaming[0].content, "Hello!");
+  assert.equal(streaming[0].aux?.thinking, "Planning the greeting.");
 
-  harness.orchestrator.applyRuntimeHostEvents([
-    { kind: 'assistant-response-completed' },
-  ]);
+  harness.orchestrator.applyRuntimeHostEvents([{ kind: "assistant-response-completed" }]);
 
   assert.deepEqual(harness.timeline.toMessages().map(rowToken), [
-    'user',
-    'thinking:Planning the greeting.',
-    'assistant:Hello!',
+    "user",
+    "thinking:Planning the greeting.",
+    "assistant:Hello!",
   ]);
 });
 
-test('empty assistant turn flushes deferred after-stream thinking on consumeCompletedTurnResult', () => {
+test("empty assistant turn flushes deferred after-stream thinking on consumeCompletedTurnResult", () => {
   const harness = createHarness();
-  harness.pushUser('hi');
+  harness.pushUser("hi");
 
   // Mirrors agent-core `done` with empty pendingAssistantTextStore:
   // remove-pending-assistant, then clearStreamingUiState thinking finalize — no
   // assistant-response-completed.
   harness.orchestrator.applyRuntimeHostEvents([
-    { kind: 'begin-assistant-response' },
-    { kind: 'update-pending-assistant-thinking', text: 'Only thinking, no body.' },
-    { kind: 'remove-pending-assistant' },
+    { kind: "begin-assistant-response" },
+    { kind: "update-pending-assistant-thinking", text: "Only thinking, no body." },
+    { kind: "remove-pending-assistant" },
     {
-      kind: 'assistant-thinking-segment-finalized',
-      text: 'Only thinking, no body.',
-      placement: 'after-stream',
+      kind: "assistant-thinking-segment-finalized",
+      text: "Only thinking, no body.",
+      placement: "after-stream",
     },
   ]);
 
   harness.setCompletedTurnResult({
-    kind: 'completed',
-    assistantText: '',
+    kind: "completed",
+    assistantText: "",
     toolExecutions: [],
   });
   harness.orchestrator.consumeCompletedTurnResult();
 
   assert.deepEqual(harness.timeline.toMessages().map(rowToken), [
-    'user',
-    'thinking:Only thinking, no body.',
+    "user",
+    "thinking:Only thinking, no body.",
   ]);
 });
 
-test('read_file streaming preview shows filename from partial arguments JSON', () => {
+test("read_file streaming preview shows filename from partial arguments JSON", () => {
   const harness = createHarness();
-  harness.pushUser('read Cargo.toml');
+  harness.pushUser("read Cargo.toml");
 
   harness.orchestrator.applyRuntimeHostEvents([
-    { kind: 'begin-assistant-response' },
+    { kind: "begin-assistant-response" },
     {
-      kind: 'streaming-tool-preview',
-      toolCallId: 'call-partial',
-      toolName: 'read_file',
+      kind: "streaming-tool-preview",
+      toolCallId: "call-partial",
+      toolName: "read_file",
       argumentsJson: '{"path":"Cargo.toml"',
     },
   ]);
 
-  const previewTool = harness.timeline.toMessages().find((message) => message.tool?.toolCallId === 'call-partial')?.tool;
-  assert.equal(previewTool?.phase, 'preview');
-  assert.equal(previewTool?.headline, '读取中');
-  assert.equal(previewTool?.headlineDetail, 'Cargo.toml');
+  const previewTool = harness.timeline
+    .toMessages()
+    .find((message) => message.tool?.toolCallId === "call-partial")?.tool;
+  assert.equal(previewTool?.phase, "preview");
+  assert.equal(previewTool?.headline, "读取中");
+  assert.equal(previewTool?.headlineDetail, "Cargo.toml");
 
   harness.orchestrator.applyRuntimeHostEvents([
     {
-      kind: 'streaming-tool-preview',
-      toolCallId: 'call-partial',
-      toolName: 'read_file',
+      kind: "streaming-tool-preview",
+      toolCallId: "call-partial",
+      toolName: "read_file",
       argumentsJson: '{"path":"Cargo.toml","offset":1,"limit":80',
     },
   ]);
 
-  const updatedTool = harness.timeline.toMessages().find((message) => message.tool?.toolCallId === 'call-partial')?.tool;
-  assert.equal(updatedTool?.headlineDetail, 'Cargo.toml 1 - 80');
+  const updatedTool = harness.timeline
+    .toMessages()
+    .find((message) => message.tool?.toolCallId === "call-partial")?.tool;
+  assert.equal(updatedTool?.headlineDetail, "Cargo.toml 1 - 80");
 });
 
-test('tool previews keep live and finalized thinking above the tool card without duplicates', () => {
+test("tool previews keep live and finalized thinking above the tool card without duplicates", () => {
   const harness = createHarness();
-  harness.pushUser('read README.md');
+  harness.pushUser("read README.md");
 
   harness.orchestrator.applyRuntimeHostEvents([
-    { kind: 'begin-assistant-response' },
+    { kind: "begin-assistant-response" },
     {
-      kind: 'streaming-tool-preview',
-      toolCallId: 'call-1',
-      toolName: 'read_file',
+      kind: "streaming-tool-preview",
+      toolCallId: "call-1",
+      toolName: "read_file",
       argumentsJson: '{"path":"README.md","offset":10,"limit":41}',
     },
-    { kind: 'update-pending-assistant-thinking', text: 'Need to inspect README.md first.' },
+    { kind: "update-pending-assistant-thinking", text: "Need to inspect README.md first." },
   ]);
 
   assert.deepEqual(visibleRowTokens(harness.timeline.toMessages()), [
-    'user',
-    'thinking:Need to inspect README.md first.',
-    'tool:call-1',
+    "user",
+    "thinking:Need to inspect README.md first.",
+    "tool:call-1",
   ]);
 
-  const previewTool = harness.timeline.toMessages().find((message) => message.tool?.toolCallId === 'call-1')?.tool;
-  assert.equal(previewTool?.phase, 'preview');
-  assert.equal(previewTool?.headline, '读取中');
-  assert.equal(previewTool?.headlineDetail, 'README.md 10 - 50');
+  const previewTool = harness.timeline
+    .toMessages()
+    .find((message) => message.tool?.toolCallId === "call-1")?.tool;
+  assert.equal(previewTool?.phase, "preview");
+  assert.equal(previewTool?.headline, "读取中");
+  assert.equal(previewTool?.headlineDetail, "README.md 10 - 50");
 
   harness.orchestrator.applyRuntimeHostEvents([
     {
-      kind: 'tool-call-started',
-      toolCallId: 'call-1',
-      toolName: 'read_file',
-      request: { path: 'README.md', offset: 10, limit: 41 },
+      kind: "tool-call-started",
+      toolCallId: "call-1",
+      toolName: "read_file",
+      request: { path: "README.md", offset: 10, limit: 41 },
     },
-    { kind: 'assistant-thinking-segment-finalized', text: 'Need to inspect README.md first.' },
+    { kind: "assistant-thinking-segment-finalized", text: "Need to inspect README.md first." },
   ]);
 
   assert.deepEqual(visibleRowTokens(harness.timeline.toMessages()), [
-    'user',
-    'thinking:Need to inspect README.md first.',
-    'tool:call-1',
+    "user",
+    "thinking:Need to inspect README.md first.",
+    "tool:call-1",
   ]);
 
-  const runningTool = harness.timeline.toMessages().find((message) => message.tool?.toolCallId === 'call-1')?.tool;
-  assert.equal(runningTool?.phase, 'running');
-  assert.equal(runningTool?.headline, '读取中');
-  assert.equal(runningTool?.headlineDetail, 'README.md 10 - 50');
+  const runningTool = harness.timeline
+    .toMessages()
+    .find((message) => message.tool?.toolCallId === "call-1")?.tool;
+  assert.equal(runningTool?.phase, "running");
+  assert.equal(runningTool?.headline, "读取中");
+  assert.equal(runningTool?.headlineDetail, "README.md 10 - 50");
 });
 
-test('tool previews do not clone the first thinking block when multiple tool previews arrive', () => {
+test("tool previews do not clone the first thinking block when multiple tool previews arrive", () => {
   const harness = createHarness();
-  harness.pushUser('parallel tools');
+  harness.pushUser("parallel tools");
 
   harness.orchestrator.applyRuntimeHostEvents([
-    { kind: 'begin-assistant-response' },
-    { kind: 'replace-pending-assistant', text: '好的，我先并发调用两个工具，然后执行 echo。' },
-    { kind: 'update-pending-assistant-thinking', text: 'The user is asking me to call a few tools.' },
+    { kind: "begin-assistant-response" },
+    { kind: "replace-pending-assistant", text: "好的，我先并发调用两个工具，然后执行 echo。" },
     {
-      kind: 'streaming-tool-preview',
-      toolCallId: 'call-1',
-      toolName: 'ls',
-      argumentsJson: '{}',
+      kind: "update-pending-assistant-thinking",
+      text: "The user is asking me to call a few tools.",
     },
     {
-      kind: 'update-pending-assistant-thinking',
-      text: 'The user is asking me to call a few tools (preferably concurrently).',
+      kind: "streaming-tool-preview",
+      toolCallId: "call-1",
+      toolName: "ls",
+      argumentsJson: "{}",
     },
     {
-      kind: 'streaming-tool-preview',
-      toolCallId: 'call-2',
-      toolName: 'read_file',
-      argumentsJson: '{}',
+      kind: "update-pending-assistant-thinking",
+      text: "The user is asking me to call a few tools (preferably concurrently).",
+    },
+    {
+      kind: "streaming-tool-preview",
+      toolCallId: "call-2",
+      toolName: "read_file",
+      argumentsJson: "{}",
     },
   ]);
 
   const messages = harness.timeline.toMessages();
-  const assistantRows = messages.filter((message) => message.role === 'assistant' && !message.tool);
+  const assistantRows = messages.filter((message) => message.role === "assistant" && !message.tool);
 
   assert.equal(assistantRows.length, 1);
-  assert.equal(assistantRows[0].content, '好的，我先并发调用两个工具，然后执行 echo。');
+  assert.equal(assistantRows[0].content, "好的，我先并发调用两个工具，然后执行 echo。");
   assert.equal(
     assistantRows[0].aux?.thinking,
-    'The user is asking me to call a few tools (preferably concurrently).',
+    "The user is asking me to call a few tools (preferably concurrently).",
   );
   assert.deepEqual(
     messages.filter((message) => message.tool).map((message) => message.tool.toolCallId),
-    ['call-1', 'call-2'],
+    ["call-1", "call-2"],
   );
 });
 
-test('finish_task streaming preview updates finishTaskNotice on assistant text row', () => {
+test("finish_task streaming preview updates finishTaskNotice on assistant text row", () => {
   const harness = createHarness();
-  harness.pushUser('loop task');
+  harness.pushUser("loop task");
 
   harness.orchestrator.applyRuntimeHostEvents([
-    { kind: 'begin-assistant-response' },
+    { kind: "begin-assistant-response" },
     {
-      kind: 'replace-pending-assistant',
-      text: '明白，我会在每条回复末尾调用 finish_task。',
+      kind: "replace-pending-assistant",
+      text: "明白，我会在每条回复末尾调用 finish_task。",
     },
     {
-      kind: 'streaming-tool-preview',
-      toolCallId: 'call-finish',
-      toolName: 'finish_task',
+      kind: "streaming-tool-preview",
+      toolCallId: "call-finish",
+      toolName: "finish_task",
       argumentsJson: '{"summary":"确认每条',
     },
   ]);
 
   const assistantRow = harness.timeline
     .toMessages()
-    .find((message) => message.role === 'assistant' && !message.tool);
-  assert.equal(assistantRow?.content, '明白，我会在每条回复末尾调用 finish_task。');
-  assert.equal(assistantRow?.aux?.finishTaskNotice, '任务以 确认每条');
+    .find((message) => message.role === "assistant" && !message.tool);
+  assert.equal(assistantRow?.content, "明白，我会在每条回复末尾调用 finish_task。");
+  assert.equal(assistantRow?.aux?.finishTaskNotice, "任务以 确认每条");
   assert.equal(
-    harness.timeline.toMessages().some((message) => message.tool?.toolName === 'finish_task'),
+    harness.timeline.toMessages().some((message) => message.tool?.toolName === "finish_task"),
     false,
   );
 
   harness.orchestrator.applyRuntimeHostEvents([
     {
-      kind: 'streaming-tool-preview',
-      toolCallId: 'call-finish',
-      toolName: 'finish_task',
+      kind: "streaming-tool-preview",
+      toolCallId: "call-finish",
+      toolName: "finish_task",
       argumentsJson: '{"summary":"确认每条消息输出完毕后调用 finish_task。"}',
     },
   ]);
 
   const updatedAssistantRow = harness.timeline
     .toMessages()
-    .find((message) => message.role === 'assistant' && !message.tool);
+    .find((message) => message.role === "assistant" && !message.tool);
   assert.equal(
     updatedAssistantRow?.aux?.finishTaskNotice,
-    '任务以 确认每条消息输出完毕后调用 finish_task。 完成。',
+    "任务以 确认每条消息输出完毕后调用 finish_task。 完成。",
   );
 });
 
-test('failed finish_task clears streaming finishTaskNotice preview', () => {
+test("failed finish_task clears streaming finishTaskNotice preview", () => {
   const harness = createHarness();
-  harness.pushUser('再调用一次');
+  harness.pushUser("再调用一次");
 
   harness.orchestrator.applyRuntimeHostEvents([
-    { kind: 'begin-assistant-response' },
+    { kind: "begin-assistant-response" },
     {
-      kind: 'replace-pending-assistant',
-      text: '这次报错了：未知工具 finish_task。',
+      kind: "replace-pending-assistant",
+      text: "这次报错了：未知工具 finish_task。",
     },
     {
-      kind: 'streaming-tool-preview',
-      toolCallId: 'call-finish',
-      toolName: 'finish_task',
+      kind: "streaming-tool-preview",
+      toolCallId: "call-finish",
+      toolName: "finish_task",
       argumentsJson: '{"summary":"按用户要求再次调用"}',
     },
     {
-      kind: 'tool-execution-finished',
+      kind: "tool-execution-finished",
       execution: {
-        toolCallId: 'call-finish',
-        toolName: 'finish_task',
-        request: { name: 'finish_task', summary: '按用户要求再次调用' },
-        output: '[tool schema error] 未知工具: finish_task',
+        toolCallId: "call-finish",
+        toolName: "finish_task",
+        request: { name: "finish_task", summary: "按用户要求再次调用" },
+        output: "[tool schema error] 未知工具: finish_task",
         failed: true,
       },
     },
@@ -550,88 +564,89 @@ test('failed finish_task clears streaming finishTaskNotice preview', () => {
 
   const assistantRow = harness.timeline
     .toMessages()
-    .find((message) => message.role === 'assistant' && !message.tool);
-  assert.equal(assistantRow?.content, '这次报错了：未知工具 finish_task。');
+    .find((message) => message.role === "assistant" && !message.tool);
+  assert.equal(assistantRow?.content, "这次报错了：未知工具 finish_task。");
   assert.equal(assistantRow?.aux?.finishTaskNotice, undefined);
 });
 
-test('failed finish_task clears notice when preview and tool-finished are split across batches', () => {
+test("failed finish_task clears notice when preview and tool-finished are split across batches", () => {
   const harness = createHarness();
-  harness.pushUser('再调用一次');
+  harness.pushUser("再调用一次");
 
   harness.orchestrator.applyRuntimeHostEvents([
-    { kind: 'begin-assistant-response' },
+    { kind: "begin-assistant-response" },
     {
-      kind: 'streaming-tool-preview',
-      toolCallId: 'call-finish',
-      toolName: 'finish_task',
+      kind: "streaming-tool-preview",
+      toolCallId: "call-finish",
+      toolName: "finish_task",
       argumentsJson: '{"summary":"再次确认 finish_task 可用"}',
     },
   ]);
 
   const afterPreview = harness.timeline
     .toMessages()
-    .find((message) => message.role === 'assistant' && !message.tool);
-  assert.equal(afterPreview?.aux?.finishTaskNotice, '任务以 再次确认 finish_task 可用 完成。');
+    .find((message) => message.role === "assistant" && !message.tool);
+  assert.equal(afterPreview?.aux?.finishTaskNotice, "任务以 再次确认 finish_task 可用 完成。");
 
   harness.orchestrator.applyRuntimeHostEvents([
     {
-      kind: 'tool-execution-finished',
+      kind: "tool-execution-finished",
       execution: {
-        toolCallId: 'call-finish',
-        toolName: 'finish_task',
-        request: { name: 'finish_task', summary: '再次确认 finish_task 可用' },
-        output: '[tool schema error] 未知工具: finish_task',
+        toolCallId: "call-finish",
+        toolName: "finish_task",
+        request: { name: "finish_task", summary: "再次确认 finish_task 可用" },
+        output: "[tool schema error] 未知工具: finish_task",
         failed: true,
       },
     },
     {
-      kind: 'replace-pending-assistant',
-      text: '这次调用失败了——返回了 `未知工具: finish_task`。',
+      kind: "replace-pending-assistant",
+      text: "这次调用失败了——返回了 `未知工具: finish_task`。",
     },
   ]);
 
   const assistantRow = harness.timeline
     .toMessages()
-    .find((message) => message.role === 'assistant' && !message.tool);
-  assert.equal(
-    assistantRow?.content,
-    '这次调用失败了——返回了 `未知工具: finish_task`。',
-  );
+    .find((message) => message.role === "assistant" && !message.tool);
+  assert.equal(assistantRow?.content, "这次调用失败了——返回了 `未知工具: finish_task`。");
   assert.equal(assistantRow?.aux?.finishTaskNotice, undefined);
 });
 
-test('inter-tool thinking finalizes before the next provider builtin tool card', () => {
+test("inter-tool thinking finalizes before the next provider builtin tool card", () => {
   const harness = createHarness();
-  harness.pushUser('search and run code');
+  harness.pushUser("search and run code");
 
   harness.orchestrator.applyRuntimeHostEvents([
-    { kind: 'begin-assistant-response' },
-    { kind: 'assistant-thinking-segment-finalized', text: 'Plan web search.', placement: undefined },
+    { kind: "begin-assistant-response" },
     {
-      kind: 'streaming-tool-preview',
-      toolCallId: 'ws_1',
-      toolName: 'web_search',
-      argumentsJson: JSON.stringify({ query: 'DeepSeek', status: 'completed' }),
-    },
-    { kind: 'update-pending-assistant-thinking', text: 'Need to run a quick computation next.' },
-    {
-      kind: 'assistant-thinking-segment-finalized',
-      text: 'Need to run a quick computation next.',
-      placement: 'before-next-tool',
+      kind: "assistant-thinking-segment-finalized",
+      text: "Plan web search.",
+      placement: undefined,
     },
     {
-      kind: 'streaming-tool-preview',
-      toolCallId: 'ci_1',
-      toolName: 'code_interpreter',
-      argumentsJson: JSON.stringify({ code: 'print(1+1)', status: 'completed' }),
+      kind: "streaming-tool-preview",
+      toolCallId: "ws_1",
+      toolName: "web_search",
+      argumentsJson: JSON.stringify({ query: "DeepSeek", status: "completed" }),
+    },
+    { kind: "update-pending-assistant-thinking", text: "Need to run a quick computation next." },
+    {
+      kind: "assistant-thinking-segment-finalized",
+      text: "Need to run a quick computation next.",
+      placement: "before-next-tool",
+    },
+    {
+      kind: "streaming-tool-preview",
+      toolCallId: "ci_1",
+      toolName: "code_interpreter",
+      argumentsJson: JSON.stringify({ code: "print(1+1)", status: "completed" }),
     },
   ]);
 
   assert.deepEqual(
     harness.timeline
       .toMessages()
-      .filter((message) => message.role === 'assistant')
+      .filter((message) => message.role === "assistant")
       .map((message) => {
         if (message.tool) {
           return `tool:${message.tool.toolName}`;
@@ -639,161 +654,167 @@ test('inter-tool thinking finalizes before the next provider builtin tool card',
         if (message.aux?.thinking) {
           return `thinking:${message.aux.thinking}`;
         }
-        return 'assistant-text';
+        return "assistant-text";
       }),
     [
-      'thinking:Plan web search.',
-      'tool:web_search',
-      'thinking:Need to run a quick computation next.',
-      'tool:code_interpreter',
-      'assistant-text',
+      "thinking:Plan web search.",
+      "tool:web_search",
+      "thinking:Need to run a quick computation next.",
+      "tool:code_interpreter",
+      "assistant-text",
     ],
   );
 });
 
-test('provider builtin tool card maps _spiritUi to headline detail and output excerpt', () => {
+test("provider builtin tool card maps _spiritUi to headline detail and output excerpt", () => {
   const harness = createHarness();
-  harness.pushUser('search DeepSeek');
+  harness.pushUser("search DeepSeek");
 
   const argumentsJson = JSON.stringify({
-    query: 'DeepSeek V4',
-    status: 'completed',
+    query: "DeepSeek V4",
+    status: "completed",
     action: {
-      type: 'search',
-      query: 'DeepSeek V4',
-      sources: [{ type: 'url', url: 'https://www.deepseek.com/' }],
+      type: "search",
+      query: "DeepSeek V4",
+      sources: [{ type: "url", url: "https://www.deepseek.com/" }],
     },
     _spiritUi: {
       sourceCount: 1,
       inputExcerpt:
         '{\n  "query": "DeepSeek V4",\n  "status": "completed",\n  "action": {\n    "type": "search",\n    "query": "DeepSeek V4"\n  }\n}',
-      outputExcerpt: '1. https://www.deepseek.com/',
+      outputExcerpt: "1. https://www.deepseek.com/",
     },
   });
 
   harness.orchestrator.applyRuntimeHostEvents([
-    { kind: 'begin-assistant-response' },
+    { kind: "begin-assistant-response" },
     {
-      kind: 'streaming-tool-preview',
-      toolCallId: 'ws_1',
-      toolName: 'web_search',
+      kind: "streaming-tool-preview",
+      toolCallId: "ws_1",
+      toolName: "web_search",
       argumentsJson,
     },
   ]);
 
-  const tool = harness.timeline.toMessages().find((message) => message.tool?.toolCallId === 'ws_1')?.tool;
-  assert.equal(tool?.phase, 'succeeded');
-  assert.equal(tool?.headlineDetail, 'DeepSeek V4');
-  assert.equal(tool?.outputExcerpt, '1. https://www.deepseek.com/');
-  assert.match(tool?.argsExcerpt ?? '', /DeepSeek V4/);
+  const tool = harness.timeline
+    .toMessages()
+    .find((message) => message.tool?.toolCallId === "ws_1")?.tool;
+  assert.equal(tool?.phase, "succeeded");
+  assert.equal(tool?.headlineDetail, "DeepSeek V4");
+  assert.equal(tool?.outputExcerpt, "1. https://www.deepseek.com/");
+  assert.match(tool?.argsExcerpt ?? "", /DeepSeek V4/);
   assert.ok(tool?.outputExcerpt?.trim() && tool?.argsExcerpt?.trim());
 });
 
-test('web_search provider builtin preview completes when output_item.done reports completed', () => {
+test("web_search provider builtin preview completes when output_item.done reports completed", () => {
   const harness = createHarness();
-  harness.pushUser('search DeepSeek generation');
+  harness.pushUser("search DeepSeek generation");
 
   harness.orchestrator.applyRuntimeHostEvents([
-    { kind: 'begin-assistant-response' },
+    { kind: "begin-assistant-response" },
     {
-      kind: 'streaming-tool-preview',
-      toolCallId: 'ws_1',
-      toolName: 'web_search',
-      argumentsJson: JSON.stringify({ query: 'DeepSeek generation', status: 'in_progress' }),
+      kind: "streaming-tool-preview",
+      toolCallId: "ws_1",
+      toolName: "web_search",
+      argumentsJson: JSON.stringify({ query: "DeepSeek generation", status: "in_progress" }),
     },
   ]);
 
-  const previewTool = harness.timeline.toMessages().find((message) => message.tool?.toolCallId === 'ws_1')?.tool;
-  assert.equal(previewTool?.phase, 'preview');
-  assert.equal(previewTool?.headlineDetail, 'DeepSeek generation');
+  const previewTool = harness.timeline
+    .toMessages()
+    .find((message) => message.tool?.toolCallId === "ws_1")?.tool;
+  assert.equal(previewTool?.phase, "preview");
+  assert.equal(previewTool?.headlineDetail, "DeepSeek generation");
 
   harness.orchestrator.applyRuntimeHostEvents([
     {
-      kind: 'streaming-tool-preview',
-      toolCallId: 'ws_1',
-      toolName: 'web_search',
-      argumentsJson: JSON.stringify({ query: 'DeepSeek generation', status: 'completed' }),
+      kind: "streaming-tool-preview",
+      toolCallId: "ws_1",
+      toolName: "web_search",
+      argumentsJson: JSON.stringify({ query: "DeepSeek generation", status: "completed" }),
     },
   ]);
 
-  const completedTool = harness.timeline.toMessages().find((message) => message.tool?.toolCallId === 'ws_1')?.tool;
-  assert.equal(completedTool?.phase, 'succeeded');
+  const completedTool = harness.timeline
+    .toMessages()
+    .find((message) => message.tool?.toolCallId === "ws_1")?.tool;
+  assert.equal(completedTool?.phase, "succeeded");
 });
 
-test('remove-pending after terminal web_search seeds after-tools Thinking placeholder while busy', () => {
+test("remove-pending after terminal web_search seeds after-tools Thinking placeholder while busy", () => {
   const harness = createHarness();
-  harness.pushUser('search DeepSeek generation');
+  harness.pushUser("search DeepSeek generation");
 
   harness.orchestrator.applyRuntimeHostEvents([
-    { kind: 'begin-assistant-response' },
+    { kind: "begin-assistant-response" },
     {
-      kind: 'assistant-thinking-segment-finalized',
-      text: 'Need web search for current DeepSeek versions.',
+      kind: "assistant-thinking-segment-finalized",
+      text: "Need web search for current DeepSeek versions.",
     },
     {
-      kind: 'streaming-tool-preview',
-      toolCallId: 'ws_1',
-      toolName: 'web_search',
-      argumentsJson: JSON.stringify({ query: 'DeepSeek generation', status: 'completed' }),
+      kind: "streaming-tool-preview",
+      toolCallId: "ws_1",
+      toolName: "web_search",
+      argumentsJson: JSON.stringify({ query: "DeepSeek generation", status: "completed" }),
     },
-    { kind: 'remove-pending-assistant' },
+    { kind: "remove-pending-assistant" },
   ]);
 
   const timelineMessages = harness.timeline.toMessages();
   const pendingAfterTool = timelineMessages.find(
     (message, index) =>
-      index > timelineMessages.findIndex((candidate) => candidate.tool?.toolCallId === 'ws_1')
-      && message.role === 'assistant'
-      && message.pending
-      && !message.tool,
+      index > timelineMessages.findIndex((candidate) => candidate.tool?.toolCallId === "ws_1") &&
+      message.role === "assistant" &&
+      message.pending &&
+      !message.tool,
   );
-  assert.ok(pendingAfterTool, 'expected after-tools pending row after remove-pending');
+  assert.ok(pendingAfterTool, "expected after-tools pending row after remove-pending");
 
   assert.deepEqual(
     buildVisibleMessageSnapshots({
       messages: timelineMessages,
-      livePendingAux: { kind: 'thinking', statusText: '| Thinking...' },
+      livePendingAux: { kind: "thinking", statusText: "| Thinking..." },
       rewind: createDesktopRewindMetadata(),
     }).map(rowToken),
     [
-      'user',
-      'thinking:Need web search for current DeepSeek versions.',
-      'tool:ws_1',
-      'pending-assistant',
+      "user",
+      "thinking:Need web search for current DeepSeek versions.",
+      "tool:ws_1",
+      "pending-assistant",
     ],
   );
 });
 
-test('splitRuntimeEventsForIncrementalResponsesBuiltInToolPreview defers terminal preview after in-progress', () => {
+test("splitRuntimeEventsForIncrementalResponsesBuiltInToolPreview defers terminal preview after in-progress", () => {
   const events = [
     {
-      kind: 'streaming-tool-preview',
-      toolCallId: 'ws_1',
-      toolName: 'web_search',
-      argumentsJson: JSON.stringify({ status: 'in_progress' }),
+      kind: "streaming-tool-preview",
+      toolCallId: "ws_1",
+      toolName: "web_search",
+      argumentsJson: JSON.stringify({ status: "in_progress" }),
     },
     {
-      kind: 'streaming-tool-preview',
-      toolCallId: 'ws_1',
-      toolName: 'web_search',
-      argumentsJson: JSON.stringify({ status: 'completed' }),
+      kind: "streaming-tool-preview",
+      toolCallId: "ws_1",
+      toolName: "web_search",
+      argumentsJson: JSON.stringify({ status: "completed" }),
     },
-    { kind: 'assistant-chunk', text: 'done' },
+    { kind: "assistant-chunk", text: "done" },
   ];
   const split = splitRuntimeEventsForIncrementalResponsesBuiltInToolPreview(events);
   assert.equal(split.toApply.length, 2);
   assert.equal(split.deferred.length, 1);
-  assert.equal(split.toApply[0]?.toolCallId, 'ws_1');
-  assert.equal(split.deferred[0]?.argumentsJson, JSON.stringify({ status: 'completed' }));
+  assert.equal(split.toApply[0]?.toolCallId, "ws_1");
+  assert.equal(split.deferred[0]?.argumentsJson, JSON.stringify({ status: "completed" }));
 });
 
-test('splitRuntimeEventsForIncrementalResponsesBuiltInToolPreview defers terminal until preview seen in prior drain', () => {
+test("splitRuntimeEventsForIncrementalResponsesBuiltInToolPreview defers terminal until preview seen in prior drain", () => {
   const events = [
     {
-      kind: 'streaming-tool-preview',
-      toolCallId: 'ws_1',
-      toolName: 'web_search',
-      argumentsJson: JSON.stringify({ status: 'completed' }),
+      kind: "streaming-tool-preview",
+      toolCallId: "ws_1",
+      toolName: "web_search",
+      argumentsJson: JSON.stringify({ status: "completed" }),
     },
   ];
   const split = splitRuntimeEventsForIncrementalResponsesBuiltInToolPreview(events, new Set());
@@ -801,30 +822,31 @@ test('splitRuntimeEventsForIncrementalResponsesBuiltInToolPreview defers termina
   assert.equal(split.deferred.length, 1);
 });
 
-test('splitRuntimeEventsForIncrementalResponsesBuiltInToolPreview applies deferred terminal after preview seen', () => {
+test("splitRuntimeEventsForIncrementalResponsesBuiltInToolPreview applies deferred terminal after preview seen", () => {
   const events = [
     {
-      kind: 'streaming-tool-preview',
-      toolCallId: 'ws_1',
-      toolName: 'web_search',
-      argumentsJson: JSON.stringify({ status: 'completed', _spiritUi: { sourceCount: 3 } }),
+      kind: "streaming-tool-preview",
+      toolCallId: "ws_1",
+      toolName: "web_search",
+      argumentsJson: JSON.stringify({ status: "completed", _spiritUi: { sourceCount: 3 } }),
     },
   ];
-  const split = splitRuntimeEventsForIncrementalResponsesBuiltInToolPreview(events, new Set(['ws_1']));
+  const split = splitRuntimeEventsForIncrementalResponsesBuiltInToolPreview(
+    events,
+    new Set(["ws_1"]),
+  );
   assert.equal(split.toApply.length, 1);
   assert.equal(split.deferred.length, 0);
-  assert.ok(
-    runtimeEventsIncludeAppliedResponsesBuiltInToolStreamingUpdate(split.toApply),
-  );
+  assert.ok(runtimeEventsIncludeAppliedResponsesBuiltInToolStreamingUpdate(split.toApply));
 });
 
-test('runtimeEventsIncludeAppliedHostToolStreamingUpdate matches host tool preview and started events', () => {
+test("runtimeEventsIncludeAppliedHostToolStreamingUpdate matches host tool preview and started events", () => {
   assert.ok(
     runtimeEventsIncludeAppliedHostToolStreamingUpdate([
       {
-        kind: 'streaming-tool-preview',
-        toolCallId: 'glob_1',
-        toolName: 'glob',
+        kind: "streaming-tool-preview",
+        toolCallId: "glob_1",
+        toolName: "glob",
         argumentsJson: '{"pattern":"**/*.md"}',
       },
     ]),
@@ -832,20 +854,20 @@ test('runtimeEventsIncludeAppliedHostToolStreamingUpdate matches host tool previ
   assert.ok(
     runtimeEventsIncludeAppliedHostToolStreamingUpdate([
       {
-        kind: 'tool-call-started',
-        toolCallId: 'glob_1',
-        toolName: 'glob',
-        request: { name: 'glob', pattern: '**/*.md' },
+        kind: "tool-call-started",
+        toolCallId: "glob_1",
+        toolName: "glob",
+        request: { name: "glob", pattern: "**/*.md" },
       },
     ]),
   );
   assert.equal(
     runtimeEventsIncludeAppliedHostToolStreamingUpdate([
       {
-        kind: 'streaming-tool-preview',
-        toolCallId: 'ws_1',
-        toolName: 'web_search',
-        argumentsJson: '{}',
+        kind: "streaming-tool-preview",
+        toolCallId: "ws_1",
+        toolName: "web_search",
+        argumentsJson: "{}",
       },
     ]),
     false,
@@ -853,9 +875,9 @@ test('runtimeEventsIncludeAppliedHostToolStreamingUpdate matches host tool previ
   assert.equal(
     runtimeEventsIncludeAppliedHostToolStreamingUpdate([
       {
-        kind: 'streaming-tool-preview',
-        toolCallId: 'finish_1',
-        toolName: 'finish_task',
+        kind: "streaming-tool-preview",
+        toolCallId: "finish_1",
+        toolName: "finish_task",
         argumentsJson: '{"summary":"done"}',
       },
     ]),
@@ -863,19 +885,19 @@ test('runtimeEventsIncludeAppliedHostToolStreamingUpdate matches host tool previ
   );
 });
 
-test('splitRuntimeEventsForIncrementalFinishTaskPreview applies one finish_task preview per batch', () => {
+test("splitRuntimeEventsForIncrementalFinishTaskPreview applies one finish_task preview per batch", () => {
   const events = [
-    { kind: 'assistant-chunk', text: 'hello' },
+    { kind: "assistant-chunk", text: "hello" },
     {
-      kind: 'streaming-tool-preview',
-      toolCallId: 'call-finish',
-      toolName: 'finish_task',
+      kind: "streaming-tool-preview",
+      toolCallId: "call-finish",
+      toolName: "finish_task",
       argumentsJson: '{"summary":"a"}',
     },
     {
-      kind: 'streaming-tool-preview',
-      toolCallId: 'call-finish',
-      toolName: 'finish_task',
+      kind: "streaming-tool-preview",
+      toolCallId: "call-finish",
+      toolName: "finish_task",
       argumentsJson: '{"summary":"ab"}',
     },
   ];
@@ -886,36 +908,37 @@ test('splitRuntimeEventsForIncrementalFinishTaskPreview applies one finish_task 
   assert.equal(split.deferred[0].argumentsJson, '{"summary":"ab"}');
 });
 
-test('edit_file tool-execution-finished preserves lspWriteDiagnostics on tool snapshot', () => {
+test("edit_file tool-execution-finished preserves lspWriteDiagnostics on tool snapshot", () => {
   const harness = createHarness();
-  harness.pushUser('fix types');
+  harness.pushUser("fix types");
 
   harness.orchestrator.applyRuntimeHostEvents([
-    { kind: 'begin-assistant-response' },
+    { kind: "begin-assistant-response" },
     {
-      kind: 'tool-execution-finished',
+      kind: "tool-execution-finished",
       execution: {
-        toolCallId: 'call-edit',
-        toolName: 'edit_file',
+        toolCallId: "call-edit",
+        toolName: "edit_file",
         request: {
-          name: 'edit_file',
-          path: 'packages/agent-core/src/a.ts',
-          old_text: 'const x = 1',
+          name: "edit_file",
+          path: "packages/agent-core/src/a.ts",
+          old_text: "const x = 1",
           new_text: 'const x = "1"',
         },
-        output: '[write]\naction: edit_file\n\n[lsp]\nDiagnostics for packages/agent-core/src/a.ts (1 shown):',
+        output:
+          "[write]\naction: edit_file\n\n[lsp]\nDiagnostics for packages/agent-core/src/a.ts (1 shown):",
         failed: false,
         hostUi: {
           lspWriteDiagnostics: {
-            relativePath: 'packages/agent-core/src/a.ts',
+            relativePath: "packages/agent-core/src/a.ts",
             items: [
               {
-                severity: 'error',
+                severity: "error",
                 line: 81,
                 column: 7,
                 message: "Type 'string' is not assignable to type 'number'.",
                 code: 2322,
-                source: 'typescript',
+                source: "typescript",
               },
             ],
           },
@@ -926,40 +949,40 @@ test('edit_file tool-execution-finished preserves lspWriteDiagnostics on tool sn
 
   const toolMessage = harness.timeline
     .toMessages()
-    .find((message) => message.tool?.toolCallId === 'call-edit');
-  assert.equal(toolMessage?.tool?.toolName, 'edit_file');
+    .find((message) => message.tool?.toolCallId === "call-edit");
+  assert.equal(toolMessage?.tool?.toolName, "edit_file");
   assert.equal(toolMessage?.tool?.lspWriteDiagnostics?.items.length, 1);
-  assert.equal(toolMessage?.tool?.lspWriteDiagnostics?.items[0]?.severity, 'error');
+  assert.equal(toolMessage?.tool?.lspWriteDiagnostics?.items[0]?.severity, "error");
 });
 
-test('Moonshot Formula web_search tool-execution-finished preserves preview suppressExpand and argsExcerpt', () => {
+test("Moonshot Formula web_search tool-execution-finished preserves preview suppressExpand and argsExcerpt", () => {
   const harness = createHarness();
-  harness.pushUser('search DeepSeek');
+  harness.pushUser("search DeepSeek");
 
   const argumentsJson = JSON.stringify({
-    status: 'completed',
+    status: "completed",
     _spiritUi: {
-      inputExcerpt: 'DeepSeek 是什么',
-      headlineDetail: 'DeepSeek 是什么',
+      inputExcerpt: "DeepSeek 是什么",
+      headlineDetail: "DeepSeek 是什么",
       suppressExpand: true,
     },
   });
 
   harness.orchestrator.applyRuntimeHostEvents([
-    { kind: 'begin-assistant-response' },
+    { kind: "begin-assistant-response" },
     {
-      kind: 'streaming-tool-preview',
-      toolCallId: 'ws_formula_1',
-      toolName: 'web_search',
+      kind: "streaming-tool-preview",
+      toolCallId: "ws_formula_1",
+      toolName: "web_search",
       argumentsJson,
     },
     {
-      kind: 'tool-execution-finished',
+      kind: "tool-execution-finished",
       execution: {
-        toolCallId: 'ws_formula_1',
-        toolName: 'web_search',
-        request: { name: 'web_search', argumentsJson: '{"query":"DeepSeek 是什么"}' },
-        output: '[moonshot formula web_search] completed',
+        toolCallId: "ws_formula_1",
+        toolName: "web_search",
+        request: { name: "web_search", argumentsJson: '{"query":"DeepSeek 是什么"}' },
+        output: "[moonshot formula web_search] completed",
         failed: false,
       },
     },
@@ -967,25 +990,25 @@ test('Moonshot Formula web_search tool-execution-finished preserves preview supp
 
   const tool = harness.timeline
     .toMessages()
-    .find((message) => message.tool?.toolCallId === 'ws_formula_1')?.tool;
-  assert.equal(tool?.phase, 'succeeded');
+    .find((message) => message.tool?.toolCallId === "ws_formula_1")?.tool;
+  assert.equal(tool?.phase, "succeeded");
   assert.equal(tool?.suppressExpand, true);
-  assert.equal(tool?.argsExcerpt, 'DeepSeek 是什么');
-  assert.equal(tool?.headlineDetail, 'DeepSeek 是什么');
+  assert.equal(tool?.argsExcerpt, "DeepSeek 是什么");
+  assert.equal(tool?.headlineDetail, "DeepSeek 是什么");
 });
 
-test('failed llm turn reuses streamed error text instead of duplicating assistant rows', () => {
+test("failed llm turn reuses streamed error text instead of duplicating assistant rows", () => {
   const harness = createHarness();
-  const error = 'Insufficient Balance';
-  harness.pushUser('hello');
+  const error = "Insufficient Balance";
+  harness.pushUser("hello");
 
   harness.orchestrator.applyRuntimeHostEvents([
-    { kind: 'begin-assistant-response' },
-    { kind: 'replace-pending-assistant', text: error },
-    { kind: 'assistant-response-completed' },
+    { kind: "begin-assistant-response" },
+    { kind: "replace-pending-assistant", text: error },
+    { kind: "assistant-response-completed" },
   ]);
   harness.setCompletedTurnResult({
-    kind: 'failed',
+    kind: "failed",
     error,
     requestTrace: [],
     toolExecutions: [],
@@ -995,11 +1018,13 @@ test('failed llm turn reuses streamed error text instead of duplicating assistan
 
   const assistantMessages = harness
     .messages()
-    .filter((message) => message.role === 'assistant' && !message.tool);
+    .filter((message) => message.role === "assistant" && !message.tool);
   assert.equal(assistantMessages.length, 1);
   assert.equal(assistantMessages[0]?.content, error);
   assert.deepEqual(
-    visibleRowTokens(harness.timeline.toMessages()).filter((token) => token.startsWith('assistant:')),
+    visibleRowTokens(harness.timeline.toMessages()).filter((token) =>
+      token.startsWith("assistant:"),
+    ),
     [`assistant:${error}`],
   );
 });
@@ -1034,7 +1059,7 @@ function createContextUsageHarness(options = {}) {
     allocateMessageId: () => nextMessageId++,
     assistantMessages,
     messageTimeline: () => timeline,
-    takeNextAssistantSegmentKind: () => 'initial',
+    takeNextAssistantSegmentKind: () => "initial",
     conversationSnapshotView: new DesktopConversationSnapshotView(() => nextMessageId++),
     clearCurrentTurnSkills: () => {},
     setLastRuntimeError: () => {},
@@ -1058,21 +1083,21 @@ function createContextUsageHarness(options = {}) {
   };
 }
 
-test('context-usage-updated queues catalog refresh without clearing cached usage', () => {
+test("context-usage-updated queues catalog refresh without clearing cached usage", () => {
   const previousUsage = { inputTokens: 1000, contextLength: 128000, percent: 1 };
   const harness = createContextUsageHarness({
     initialContextUsage: previousUsage,
     resolveActiveModel: () => ({
-      name: 'openai/gpt-5',
-      apiBase: 'https://gateway.example/v1',
-      provider: 'vercel-ai-gateway',
-      transportKind: 'openai-compatible',
+      name: "openai/gpt-5",
+      apiBase: "https://gateway.example/v1",
+      provider: "vercel-ai-gateway",
+      transportKind: "openai-compatible",
     }),
     resolveCatalogHints: () => [],
   });
 
   harness.orchestrator.applyRuntimeHostEvents([
-    { kind: 'context-usage-updated', usage: { inputTokens: 2000 } },
+    { kind: "context-usage-updated", usage: { inputTokens: 2000 } },
   ]);
 
   assert.equal(harness.refreshCatalogCalls.length, 1);
@@ -1080,36 +1105,36 @@ test('context-usage-updated queues catalog refresh without clearing cached usage
   assert.deepEqual(harness.getContextUsage(), previousUsage);
 });
 
-test('context-usage-updated clears usage when provider cannot resolve context length', () => {
+test("context-usage-updated clears usage when provider cannot resolve context length", () => {
   const harness = createContextUsageHarness({
     initialContextUsage: { inputTokens: 1000, contextLength: 128000, percent: 1 },
     resolveActiveModel: () => ({
-      name: 'custom-model',
-      apiBase: 'https://example.invalid/v1',
-      provider: 'custom',
+      name: "custom-model",
+      apiBase: "https://example.invalid/v1",
+      provider: "custom",
     }),
   });
 
   harness.orchestrator.applyRuntimeHostEvents([
-    { kind: 'context-usage-updated', usage: { inputTokens: 2000 } },
+    { kind: "context-usage-updated", usage: { inputTokens: 2000 } },
   ]);
 
   assert.equal(harness.refreshCatalogCalls.length, 0);
   assert.equal(harness.getContextUsage(), undefined);
 });
 
-test('context-usage-updated updates usage when context length is already known', () => {
+test("context-usage-updated updates usage when context length is already known", () => {
   const harness = createContextUsageHarness({
     resolveActiveModel: () => ({
-      name: 'custom-model',
-      apiBase: 'https://example.invalid/v1',
-      provider: 'custom',
+      name: "custom-model",
+      apiBase: "https://example.invalid/v1",
+      provider: "custom",
       contextLength: 128000,
     }),
   });
 
   harness.orchestrator.applyRuntimeHostEvents([
-    { kind: 'context-usage-updated', usage: { inputTokens: 64000 } },
+    { kind: "context-usage-updated", usage: { inputTokens: 64000 } },
   ]);
 
   assert.deepEqual(harness.getContextUsage(), {
@@ -1119,39 +1144,42 @@ test('context-usage-updated updates usage when context length is already known',
   });
 });
 
-test('sequential web_search clears Thinking placeholder during next preview and restores it after terminal', () => {
+test("sequential web_search clears Thinking placeholder during next preview and restores it after terminal", () => {
   const harness = createHarness();
-  harness.pushUser('search twice');
+  harness.pushUser("search twice");
 
   harness.orchestrator.applyRuntimeHostEvents([
-    { kind: 'begin-assistant-response' },
+    { kind: "begin-assistant-response" },
     {
-      kind: 'streaming-tool-preview',
-      toolCallId: 'ws_1',
-      toolName: 'web_search',
-      argumentsJson: JSON.stringify({ query: 'DeepSeek V4 Pro', status: 'in_progress' }),
+      kind: "streaming-tool-preview",
+      toolCallId: "ws_1",
+      toolName: "web_search",
+      argumentsJson: JSON.stringify({ query: "DeepSeek V4 Pro", status: "in_progress" }),
     },
     {
-      kind: 'streaming-tool-preview',
-      toolCallId: 'ws_1',
-      toolName: 'web_search',
-      argumentsJson: JSON.stringify({ query: 'DeepSeek V4 Pro', status: 'completed' }),
+      kind: "streaming-tool-preview",
+      toolCallId: "ws_1",
+      toolName: "web_search",
+      argumentsJson: JSON.stringify({ query: "DeepSeek V4 Pro", status: "completed" }),
     },
     {
-      kind: 'streaming-tool-preview',
-      toolCallId: 'ws_2',
-      toolName: 'web_search',
-      argumentsJson: JSON.stringify({ query: 'DeepSeek V4 Pro architecture', status: 'in_progress' }),
+      kind: "streaming-tool-preview",
+      toolCallId: "ws_2",
+      toolName: "web_search",
+      argumentsJson: JSON.stringify({
+        query: "DeepSeek V4 Pro architecture",
+        status: "in_progress",
+      }),
     },
   ]);
 
   const timelineMessages = harness.timeline.toMessages();
-  const ws2Index = timelineMessages.findIndex((message) => message.tool?.toolCallId === 'ws_2');
+  const ws2Index = timelineMessages.findIndex((message) => message.tool?.toolCallId === "ws_2");
   const pendingAfterWs2 = timelineMessages.find(
     (message, index) =>
       index > ws2Index &&
       ws2Index >= 0 &&
-      message.role === 'assistant' &&
+      message.role === "assistant" &&
       message.pending &&
       !message.tool,
   );
@@ -1159,31 +1187,35 @@ test('sequential web_search clears Thinking placeholder during next preview and 
   const showThinking = pendingAfterWs2
     ? shouldShowAssistantThinkingCollapsible(
         pendingAfterWs2,
-        { kind: 'thinking', statusText: '| Thinking...' },
+        { kind: "thinking", statusText: "| Thinking..." },
         timelineMessages,
         timelineMessages.indexOf(pendingAfterWs2),
       )
     : false;
 
-  assert.ok(ws2Index >= 0, 'expected second web_search tool row');
+  assert.ok(ws2Index >= 0, "expected second web_search tool row");
   assert.equal(
     pendingAfterWs2,
     undefined,
-    'premature after-tools placeholder should be cleared once the next search preview arrives',
+    "premature after-tools placeholder should be cleared once the next search preview arrives",
   );
   assert.equal(
     timelineMessages[ws2Index]?.tool?.phase,
-    'preview',
-    'second search should still be in preview',
+    "preview",
+    "second search should still be in preview",
   );
-  assert.equal(showThinking, false, 'Thinking placeholder must not show while a search tool is shimmering');
+  assert.equal(
+    showThinking,
+    false,
+    "Thinking placeholder must not show while a search tool is shimmering",
+  );
 
   harness.orchestrator.applyRuntimeHostEvents([
     {
-      kind: 'streaming-tool-preview',
-      toolCallId: 'ws_2',
-      toolName: 'web_search',
-      argumentsJson: JSON.stringify({ query: 'DeepSeek V4 Pro architecture', status: 'completed' }),
+      kind: "streaming-tool-preview",
+      toolCallId: "ws_2",
+      toolName: "web_search",
+      argumentsJson: JSON.stringify({ query: "DeepSeek V4 Pro architecture", status: "completed" }),
     },
   ]);
 
@@ -1192,7 +1224,7 @@ test('sequential web_search clears Thinking placeholder during next preview and 
   const pendingAfterAllTools = afterTerminalMessages.find(
     (message, index) =>
       index > lastToolIndex &&
-      message.role === 'assistant' &&
+      message.role === "assistant" &&
       message.pending &&
       !message.tool &&
       !message.aux?.thinking?.trim(),
@@ -1200,16 +1232,16 @@ test('sequential web_search clears Thinking placeholder during next preview and 
   const showThinkingAfterTerminal = pendingAfterAllTools
     ? shouldShowAssistantThinkingCollapsible(
         pendingAfterAllTools,
-        { kind: 'thinking', statusText: '| Thinking...' },
+        { kind: "thinking", statusText: "| Thinking..." },
         afterTerminalMessages,
         afterTerminalMessages.indexOf(pendingAfterAllTools),
       )
     : false;
 
-  assert.ok(pendingAfterAllTools, 'expected after-tools placeholder once all searches complete');
+  assert.ok(pendingAfterAllTools, "expected after-tools placeholder once all searches complete");
   assert.equal(
     showThinkingAfterTerminal,
     true,
-    'Thinking placeholder should show after the last search completes',
+    "Thinking placeholder should show after the last search completes",
   );
 });

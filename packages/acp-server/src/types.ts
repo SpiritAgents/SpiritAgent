@@ -1,6 +1,12 @@
-import type { AgentRuntime, LlmActiveSkill, LlmEnabledSkillCatalogEntry, LlmTransportConfig, SpiritAgentMode } from '@spiritagent/agent-core';
-import type { HostToolExecutorProxy } from '@spiritagent/agent-core/host-bridge';
-import type { JsonValue } from '@spiritagent/agent-core';
+import type {
+  AgentRuntime,
+  LlmActiveSkill,
+  LlmEnabledSkillCatalogEntry,
+  LlmTransportConfig,
+  SpiritAgentMode,
+} from "@spiritagent/agent-core";
+import type { HostToolExecutorProxy } from "@spiritagent/agent-core/host-bridge";
+import type { JsonValue } from "@spiritagent/agent-core";
 
 /**
  * ACP Server runtime paths. LLM transport is resolved from shared Spirit config + keyring.
@@ -35,10 +41,10 @@ export interface AcpSessionState {
  * Available ACP session modes advertised by Spirit Agent.
  */
 export const AVAILABLE_MODES = [
-  { id: 'agent' as const, name: 'Agent', description: 'Full tool access, autonomous coding' },
-  { id: 'plan' as const, name: 'Plan', description: 'Design and plan without making changes' },
-  { id: 'ask' as const, name: 'Ask', description: 'Ask permission before every change' },
-  { id: 'debug' as const, name: 'Debug', description: 'Systematic bug investigation' },
+  { id: "agent" as const, name: "Agent", description: "Full tool access, autonomous coding" },
+  { id: "plan" as const, name: "Plan", description: "Design and plan without making changes" },
+  { id: "ask" as const, name: "Ask", description: "Ask permission before every change" },
+  { id: "debug" as const, name: "Debug", description: "Systematic bug investigation" },
 ] as const;
 
 /**
@@ -46,12 +52,12 @@ export const AVAILABLE_MODES = [
  */
 export function normalizeModeId(modeId: string): SpiritAgentMode {
   switch (modeId) {
-    case 'agent':
-    case 'plan':
-    case 'ask':
-    case 'debug':
+    case "agent":
+    case "plan":
+    case "ask":
+    case "debug":
       return modeId;
     default:
-      return 'agent';
+      return "agent";
   }
 }

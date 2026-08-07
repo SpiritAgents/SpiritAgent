@@ -1,5 +1,5 @@
-import type { JsonValue } from '../ports.js';
-import { cloneJsonValue } from '../tool-agent.js';
+import type { JsonValue } from "../ports.js";
+import { cloneJsonValue } from "../tool-agent.js";
 
 /**
  * Moonshot AI 视频输入兼容：AI SDK 的 OpenAI-compatible 适配层不会把 `video_url` 传给上游。
@@ -28,19 +28,19 @@ export function clearMoonshotChatCompletionMessages(): void {
 
 export function openAiMessagesContainVideoUrl(messages: readonly JsonValue[]): boolean {
   for (const message of messages) {
-    if (typeof message !== 'object' || message === null || Array.isArray(message)) {
+    if (typeof message !== "object" || message === null || Array.isArray(message)) {
       continue;
     }
 
     const record = message as Record<string, JsonValue>;
-    if (record.role !== 'user' || !Array.isArray(record.content)) {
+    if (record.role !== "user" || !Array.isArray(record.content)) {
       continue;
     }
 
     for (const part of record.content) {
-      if (typeof part === 'object' && part !== null && !Array.isArray(part)) {
+      if (typeof part === "object" && part !== null && !Array.isArray(part)) {
         const partRecord = part as Record<string, JsonValue>;
-        if (partRecord.type === 'video_url') {
+        if (partRecord.type === "video_url") {
           return true;
         }
       }

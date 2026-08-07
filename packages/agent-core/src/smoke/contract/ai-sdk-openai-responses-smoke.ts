@@ -1,13 +1,13 @@
-import { once } from 'node:events';
-import { createServer } from 'node:http';
-import type { AddressInfo } from 'node:net';
+import { once } from "node:events";
+import { createServer } from "node:http";
+import type { AddressInfo } from "node:net";
 
-import type { JsonValue } from '../../ports.js';
-import { AiSdkOpenResponsesTransport } from '../../open-responses/ai-sdk-transport.js';
-import { startOpenAiToolAgentState } from '../../openai/tool-agent-helpers.js';
+import type { JsonValue } from "../../ports.js";
+import { AiSdkOpenResponsesTransport } from "../../open-responses/ai-sdk-transport.js";
+import { startOpenAiToolAgentState } from "../../openai/tool-agent-helpers.js";
 
-import { demoLookupToolDefinition, printSmokeSection } from '../shared/index.js';
-import { buildOpenResponsesToolCallBody } from './open-responses-mock.js';
+import { demoLookupToolDefinition, printSmokeSection } from "../shared/index.js";
+import { buildOpenResponsesToolCallBody } from "./open-responses-mock.js";
 
 /**
  * 验证 @ai-sdk/openai 的 responses 分支（单轮 tool call）。
@@ -16,35 +16,35 @@ import { buildOpenResponsesToolCallBody } from './open-responses-mock.js';
  */
 async function main(): Promise<void> {
   const server = createServer(async (request, response) => {
-    if (request.method !== 'POST' || !request.url?.includes('/responses')) {
+    if (request.method !== "POST" || !request.url?.includes("/responses")) {
       response.statusCode = 404;
-      response.end('not found');
+      response.end("not found");
       return;
     }
 
     response.writeHead(200, {
-      'content-type': 'application/json',
+      "content-type": "application/json",
     });
-    response.end(JSON.stringify(buildOpenResponsesToolCallBody('gpt-test-responses')));
+    response.end(JSON.stringify(buildOpenResponsesToolCallBody("gpt-test-responses")));
   });
 
-  server.listen(0, '127.0.0.1');
-  await once(server, 'listening');
+  server.listen(0, "127.0.0.1");
+  await once(server, "listening");
 
   const address = server.address();
-  if (!address || typeof address === 'string') {
+  if (!address || typeof address === "string") {
     server.close();
-    throw new Error('无法获取本地 smoke server 端口。');
+    throw new Error("无法获取本地 smoke server 端口。");
   }
 
   const transport = new AiSdkOpenResponsesTransport();
   const config = {
-    transportKind: 'open-responses' as const,
-    apiKey: 'test-key',
-    model: 'gpt-test-responses',
+    transportKind: "open-responses" as const,
+    apiKey: "test-key",
+    model: "gpt-test-responses",
     baseUrl: `http://127.0.0.1:${(address as AddressInfo).port}/v1`,
-    responsesProvider: 'openai' as const,
-    llmVendor: 'openai' as const,
+    responsesProvider: "openai" as const,
+    llmVendor: "openai" as const,
   };
   const tools = demoLookupToolDefinition();
 
@@ -58,16 +58,16 @@ async function main(): Promise<void> {
   );
 
   const firstRound = await transport.startToolAgentRound(config, initialState, tools);
-  printSmokeSection('ai-sdk openai responses smoke step 1', firstRound);
+  printSmokeSection("ai-sdk openai responses smoke step 1", firstRound);
   server.close();
 
-  if (firstRound.kind !== 'success' || firstRound.result.step.kind !== 'tool-calls') {
-    throw new Error('ai-sdk openai responses smoke step 1 未进入 tool-calls。');
+  if (firstRound.kind !== "success" || firstRound.result.step.kind !== "tool-calls") {
+    throw new Error("ai-sdk openai responses smoke step 1 未进入 tool-calls。");
   }
 
   const traceKind = firstRound.result.requestTrace[0];
-  if (!isJsonObject(traceKind) || traceKind.kind !== 'openai_sdk_responses') {
-    throw new Error('ai-sdk openai responses smoke 未写入 openai_sdk_responses trace。');
+  if (!isJsonObject(traceKind) || traceKind.kind !== "openai_sdk_responses") {
+    throw new Error("ai-sdk openai responses smoke 未写入 openai_sdk_responses trace。");
   }
 
   const assistantMessage = firstRound.result.state.messages.at(-1);
@@ -75,14 +75,14 @@ async function main(): Promise<void> {
     !isJsonObject(assistantMessage) ||
     !isJsonObject(assistantMessage.providerState) ||
     !isJsonObject(assistantMessage.providerState.openAiResponses) ||
-    typeof assistantMessage.providerState.openAiResponses.responseId !== 'string'
+    typeof assistantMessage.providerState.openAiResponses.responseId !== "string"
   ) {
-    throw new Error('ai-sdk openai responses smoke 未在 providerState 中保留 responseId。');
+    throw new Error("ai-sdk openai responses smoke 未在 providerState 中保留 responseId。");
   }
 }
 
 function isJsonObject(value: JsonValue | undefined): value is Record<string, JsonValue> {
-  return typeof value === 'object' && value !== null && !Array.isArray(value);
+  return typeof value === "object" && value !== null && !Array.isArray(value);
 }
 
 main().catch((error: unknown) => {

@@ -13,7 +13,12 @@ import { useVirtualizer } from "@tanstack/react-virtual";
 import { Check, Copy, GitCommit, LoaderCircle } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
-import { Tooltip, TooltipContent, TooltipItem, useTooltipTriggerProps } from "@/components/ui/tooltip";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipItem,
+  useTooltipTriggerProps,
+} from "@/components/ui/tooltip";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { ContextMenu, ContextMenuTrigger } from "@/components/ui/context-menu";
 import { PrConversationTimelineNode } from "@/components/workspace-pr-conversation-timeline";
@@ -238,9 +243,7 @@ function CommitGraphGutter({
     const prevRow = rows[rowIndex - 1];
     const mergeLanes = new Set(row.mergeLanes);
 
-    const branchFromParentBelow = Boolean(
-      nextRow && nextRow.lane !== row.lane,
-    );
+    const branchFromParentBelow = Boolean(nextRow && nextRow.lane !== row.lane);
     const parentLaneIsMergeParent = Boolean(
       nextRow && row.mergeLanes.length > 0 && row.mergeLanes.includes(nextRow.lane),
     );
@@ -250,12 +253,10 @@ function CommitGraphGutter({
     // the merge parent, in which case the rejoin curve must still be drawn.
     const isMergeParentOfNext = Boolean(
       nextRow &&
-        nextRow.mergeLanes.includes(row.lane) &&
-        mergeParentRowIndex(rowIndex + 1, row.lane, rows) === rowIndex,
+      nextRow.mergeLanes.includes(row.lane) &&
+      mergeParentRowIndex(rowIndex + 1, row.lane, rows) === rowIndex,
     );
-    const branchFromChildAbove = Boolean(
-      prevRow && prevRow.lane !== row.lane,
-    );
+    const branchFromChildAbove = Boolean(prevRow && prevRow.lane !== row.lane);
     const childRowIsMerge = Boolean(prevRow && prevRow.mergeLanes.length > 0);
     /**
      * Mainline commit right after a branch block: the rejoin curve is emitted by the
@@ -336,8 +337,8 @@ function CommitGraphGutter({
         // Connected from above by a merge curve (not a straight line) → no upward stub.
         const connectedFromAboveByCurve = Boolean(
           prevRow &&
-            prevRow.mergeLanes.includes(lane) &&
-            mergeParentRowIndex(rowIndex - 1, lane, rows) === rowIndex,
+          prevRow.mergeLanes.includes(lane) &&
+          mergeParentRowIndex(rowIndex - 1, lane, rows) === rowIndex,
         );
         // Parent sits on the trunk below → connected downward by a rejoin curve.
         const rejoinsMainBelow = Boolean(nextRow && nextRow.lane === 0 && row.lane > 0);
@@ -353,17 +354,13 @@ function CommitGraphGutter({
 
       const mergedIntoFromAbove = Boolean(
         prevRow &&
-          prevRow.mergeLanes.includes(lane) &&
-          mergeParentRowIndex(rowIndex - 1, lane, rows) === rowIndex,
+        prevRow.mergeLanes.includes(lane) &&
+        mergeParentRowIndex(rowIndex - 1, lane, rows) === rowIndex,
       );
 
       // Passing lane: stop at row center only when a branch/merge curve leaves this lane on this row.
-      const parentOnLaneBranches = Boolean(
-        nextRow && nextRow.lane === lane && row.lane !== lane,
-      );
-      const childAboveBranchesFromLane = Boolean(
-        prevRow && fromAbove && prevRow.lane !== lane,
-      );
+      const parentOnLaneBranches = Boolean(nextRow && nextRow.lane === lane && row.lane !== lane);
+      const childAboveBranchesFromLane = Boolean(prevRow && fromAbove && prevRow.lane !== lane);
 
       if (fromAbove && toBelow && mergedIntoFromAbove) {
         pushVertical(lane, x, yTop, yCenter);
@@ -394,7 +391,7 @@ function CommitGraphGutter({
         aria-hidden
       >
         <g className="text-border/40">
-          {verticals.map((d, index) => (
+          {verticals.map((d, index) =>
             d ? (
               <path
                 key={`v-${index}`}
@@ -405,9 +402,9 @@ function CommitGraphGutter({
                 strokeLinecap="butt"
                 strokeLinejoin="round"
               />
-            ) : null
-          ))}
-          {curves.map((d, index) => (
+            ) : null,
+          )}
+          {curves.map((d, index) =>
             d ? (
               <path
                 key={`c-${index}`}
@@ -418,8 +415,8 @@ function CommitGraphGutter({
                 strokeLinecap="butt"
                 strokeLinejoin="round"
               />
-            ) : null
-          ))}
+            ) : null,
+          )}
         </g>
       </svg>
       <div
@@ -463,8 +460,7 @@ function CommitGraphRowDetail({ row }: { row: GitCommitGraphRow }) {
     <div className="space-y-2">
       <p className="text-sm font-normal leading-snug">{row.commit.subject}</p>
       <p className="text-[11px]">
-        <span className="font-normal">{row.commit.author}</span>
-        {" "}
+        <span className="font-normal">{row.commit.author}</span>{" "}
         <span className="text-muted-foreground">{row.commit.authoredAt}</span>
       </p>
       {row.commit.refs.length > 0 ? (
@@ -538,10 +534,7 @@ function CommitGraphRowWithHover({
   );
 
   return (
-    <div
-      className="relative min-w-0"
-      style={{ minHeight: ROW_HEIGHT_PX, paddingLeft: textInset }}
-    >
+    <div className="relative min-w-0" style={{ minHeight: ROW_HEIGHT_PX, paddingLeft: textInset }}>
       <TooltipItem item={row}>{rowButton}</TooltipItem>
     </div>
   );
@@ -594,9 +587,7 @@ export function GitCommitGraph({
     if (!hasMore || !onLoadMore || loadingMore) {
       return;
     }
-    const root = scrollAreaRef.current?.querySelector(
-      "[data-radix-scroll-area-viewport]",
-    );
+    const root = scrollAreaRef.current?.querySelector("[data-radix-scroll-area-viewport]");
     const sentinel = loadMoreSentinelRef.current;
     if (!root || !sentinel) {
       return;
@@ -634,7 +625,12 @@ export function GitCommitGraph({
 
   if (loading) {
     return (
-      <div className={cn("flex flex-1 items-center justify-center gap-2 p-4 text-xs text-muted-foreground", className)}>
+      <div
+        className={cn(
+          "flex flex-1 items-center justify-center gap-2 p-4 text-xs text-muted-foreground",
+          className,
+        )}
+      >
         <LoaderCircle className="size-3.5 animate-spin" aria-hidden />
         {t("workspace.git.loadingHistory")}
       </div>
@@ -643,7 +639,9 @@ export function GitCommitGraph({
 
   if (history && !history.isRepository) {
     return (
-      <p className={cn("p-3 text-xs text-muted-foreground", className)}>{t("workspace.git.noRepo")}</p>
+      <p className={cn("p-3 text-xs text-muted-foreground", className)}>
+        {t("workspace.git.noRepo")}
+      </p>
     );
   }
 
@@ -652,7 +650,11 @@ export function GitCommitGraph({
   }
 
   if (rows.length === 0) {
-    return <p className={cn("p-3 text-xs text-muted-foreground", className)}>{t("workspace.git.noHistory")}</p>;
+    return (
+      <p className={cn("p-3 text-xs text-muted-foreground", className)}>
+        {t("workspace.git.noHistory")}
+      </p>
+    );
   }
 
   const showLoadMoreFooter = hasMore || loadingMore;
@@ -665,10 +667,7 @@ export function GitCommitGraph({
       <CommitGraphGutter rows={rows} graphWidth={graphWidth} />
       <Tooltip<GitCommitGraphRow> getItemId={(row) => row.commit.oid}>
         <Tooltip.Zone className="relative">
-          <div
-            className="relative w-full"
-            style={{ height: `${virtualizer.getTotalSize()}px` }}
-          >
+          <div className="relative w-full" style={{ height: `${virtualizer.getTotalSize()}px` }}>
             {virtualizer.getVirtualItems().map((virtualItem) => {
               const row = rows[virtualItem.index]!;
               const rowIndex = virtualItem.index;
@@ -696,7 +695,8 @@ export function GitCommitGraph({
           className="w-72 p-3"
         >
           {(activeRow) =>
-            activeRow ? <CommitGraphRowDetail row={activeRow as GitCommitGraphRow} /> : null}
+            activeRow ? <CommitGraphRowDetail row={activeRow as GitCommitGraphRow} /> : null
+          }
         </TooltipContent>
       </Tooltip>
       {showLoadMoreFooter ? (

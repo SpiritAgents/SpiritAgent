@@ -1,40 +1,40 @@
 import {
   isSkillMarkdownPath,
   readFileToolDisplayBase,
-} from '@spiritagent/host-internal/skill-paths';
+} from "@spiritagent/host-internal/skill-paths";
 
-import type { ToolBlockSnapshot } from '../types.js';
+import type { ToolBlockSnapshot } from "../types.js";
 
-export { isSkillMarkdownPath } from '@spiritagent/host-internal/skill-paths';
+export { isSkillMarkdownPath } from "@spiritagent/host-internal/skill-paths";
 
 export const LEGACY_READ_FILE_HEADLINE =
   /^(?:查看|使用|View(?:ing|ed)?|Read(?:ing|ed)?|Us(?:ing|ed)?)\u002e?\s+(.+)$/u;
 
 export function parseReadFilePathFromRequest(request: unknown): string {
-  if (!request || typeof request !== 'object') {
-    return '';
+  if (!request || typeof request !== "object") {
+    return "";
   }
   const record = request as Record<string, unknown>;
-  if (typeof record.path === 'string') {
+  if (typeof record.path === "string") {
     return record.path;
   }
-  if (typeof record.filePath === 'string') {
+  if (typeof record.filePath === "string") {
     return record.filePath;
   }
-  return '';
+  return "";
 }
 
 export function parseReadFilePathFromToolSnapshot(
-  tool: Pick<ToolBlockSnapshot, 'argsExcerpt' | 'headline' | 'detailLines'>,
+  tool: Pick<ToolBlockSnapshot, "argsExcerpt" | "headline" | "detailLines">,
 ): string {
   const excerpt = tool.argsExcerpt?.trim();
   if (excerpt) {
     try {
       const parsed = JSON.parse(excerpt) as { path?: unknown; filePath?: unknown };
-      if (typeof parsed.path === 'string') {
+      if (typeof parsed.path === "string") {
         return parsed.path;
       }
-      if (typeof parsed.filePath === 'string') {
+      if (typeof parsed.filePath === "string") {
         return parsed.filePath;
       }
     } catch {
@@ -47,11 +47,11 @@ export function parseReadFilePathFromToolSnapshot(
     return legacy[1].trim();
   }
 
-  return '';
+  return "";
 }
 
-export function readFileVerbKey(path: string): 'tool.use' | 'tool.read' {
-  return isSkillMarkdownPath(path) ? 'tool.use' : 'tool.read';
+export function readFileVerbKey(path: string): "tool.use" | "tool.read" {
+  return isSkillMarkdownPath(path) ? "tool.use" : "tool.read";
 }
 
 export function readFileDisplayBase(path: string, emptyLabel: string): string {
@@ -66,7 +66,7 @@ export function readFileHeadlineDetailForPath(
     skillMarkdownContent?: string;
   },
 ): string {
-  const lineRange = options.lineRange ?? '';
+  const lineRange = options.lineRange ?? "";
   const base = isSkillMarkdownPath(rawPath)
     ? readFileToolDisplayBase(rawPath, options.emptyFileLabel, {
         skillMarkdownContent: options.skillMarkdownContent,
@@ -76,9 +76,7 @@ export function readFileHeadlineDetailForPath(
 }
 
 function positiveLineNumber(value: unknown): number | undefined {
-  return typeof value === 'number' && Number.isInteger(value) && value > 0
-    ? value
-    : undefined;
+  return typeof value === "number" && Number.isInteger(value) && value > 0 ? value : undefined;
 }
 
 export function lineRangeForReadFile(offset: unknown, limit: unknown): string {
@@ -93,7 +91,7 @@ export function lineRangeForReadFile(offset: unknown, limit: unknown): string {
   if (lim !== undefined) {
     return ` 1 - ${lim}`;
   }
-  return '';
+  return "";
 }
 
 export function parseReadFileRequestRecordFromArgsExcerpt(
@@ -105,19 +103,19 @@ export function parseReadFileRequestRecordFromArgsExcerpt(
   }
   try {
     const parsed = JSON.parse(excerpt) as Record<string, unknown>;
-    return typeof parsed === 'object' && parsed !== null ? parsed : undefined;
+    return typeof parsed === "object" && parsed !== null ? parsed : undefined;
   } catch {
     return undefined;
   }
 }
 
 const STORED_READ_FILE_USE_HEADLINES = new Set([
-  '使用',
-  '使用中',
-  '已使用',
-  'Use',
-  'Using',
-  'Used',
+  "使用",
+  "使用中",
+  "已使用",
+  "Use",
+  "Using",
+  "Used",
 ]);
 
 export function storedReadFileHeadlineUsesSkillVerb(headline: string): boolean {

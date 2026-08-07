@@ -1,27 +1,25 @@
-import { getLlmFetch } from '../llm-fetch.js';
-import type { JsonObject, JsonValue } from '../ports.js';
-import { isJsonObject } from '../tool-agent.js';
+import { getLlmFetch } from "../llm-fetch.js";
+import type { JsonObject, JsonValue } from "../ports.js";
+import { isJsonObject } from "../tool-agent.js";
 import {
   readResponsesStoredStateRequestPreviousResponseId,
   responsesUsesStoredState,
-} from './responses-incremental-input.js';
+} from "./responses-incremental-input.js";
 import {
   patchArkResponsesInputItemStatus,
   shouldPatchArkResponsesInputItemStatus,
-} from './compat-responses-input-status.js';
+} from "./compat-responses-input-status.js";
 import {
   resolveOpenResponsesSdkProvider,
   type OpenResponsesTransportConfig,
-} from './responses-compat.js';
+} from "./responses-compat.js";
 
 type FetchFn = typeof fetch;
 
-export function shouldUseResponsesStoredStateFetch(
-  config: OpenResponsesTransportConfig,
-): boolean {
+export function shouldUseResponsesStoredStateFetch(config: OpenResponsesTransportConfig): boolean {
   return (
-    responsesUsesStoredState(config)
-    && resolveOpenResponsesSdkProvider(config) === 'open-responses-compatible'
+    responsesUsesStoredState(config) &&
+    resolveOpenResponsesSdkProvider(config) === "open-responses-compatible"
   );
 }
 
@@ -43,7 +41,7 @@ export function patchResponsesStoredStateRequestInit(
   init: RequestInit | undefined,
   config: OpenResponsesTransportConfig,
 ): RequestInit | undefined {
-  if (!responsesUsesStoredState(config) || !init?.body || typeof init.body !== 'string') {
+  if (!responsesUsesStoredState(config) || !init?.body || typeof init.body !== "string") {
     return init;
   }
 

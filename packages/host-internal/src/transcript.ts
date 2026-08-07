@@ -1,16 +1,13 @@
-import { mkdir, readFile, rm, writeFile } from 'node:fs/promises';
-import path from 'node:path';
+import { mkdir, readFile, rm, writeFile } from "node:fs/promises";
+import path from "node:path";
 
-import {
-  mergeSessionTranscripts,
-  type SessionTranscript,
-} from '@spiritagent/agent-core';
+import { mergeSessionTranscripts, type SessionTranscript } from "@spiritagent/agent-core";
 
-import { sanitizeSessionIdForFilename } from './spirit-filename-sanitize.js';
+import { sanitizeSessionIdForFilename } from "./spirit-filename-sanitize.js";
 
-export const TRANSCRIPTS_DIR_NAME = 'transcripts';
-export const SESSION_TRANSCRIPT_FILE_NAME = 'transcript.json';
-export const SUBAGENT_TRANSCRIPTS_DIR_NAME = 'subagents';
+export const TRANSCRIPTS_DIR_NAME = "transcripts";
+export const SESSION_TRANSCRIPT_FILE_NAME = "transcript.json";
+export const SUBAGENT_TRANSCRIPTS_DIR_NAME = "subagents";
 
 export function resolveTranscriptsDir(spiritDataDir: string): string {
   return path.join(spiritDataDir, TRANSCRIPTS_DIR_NAME);
@@ -27,7 +24,10 @@ export function resolveSessionTranscriptFilePath(
   spiritDataDir: string,
   sessionKey: string | undefined,
 ): string {
-  return path.join(resolveTranscriptSessionDir(spiritDataDir, sessionKey), SESSION_TRANSCRIPT_FILE_NAME);
+  return path.join(
+    resolveTranscriptSessionDir(spiritDataDir, sessionKey),
+    SESSION_TRANSCRIPT_FILE_NAME,
+  );
 }
 
 export function resolveSubagentTranscriptFilePath(
@@ -46,12 +46,9 @@ async function readExistingSessionTranscript(
   filePath: string,
 ): Promise<SessionTranscript | undefined> {
   try {
-    const raw = await readFile(filePath, 'utf8');
+    const raw = await readFile(filePath, "utf8");
     const parsed = JSON.parse(raw) as SessionTranscript;
-    if (
-      parsed?.kind !== 'session_transcript'
-      || !Array.isArray(parsed.messages)
-    ) {
+    if (parsed?.kind !== "session_transcript" || !Array.isArray(parsed.messages)) {
       return undefined;
     }
     return parsed;
@@ -75,7 +72,7 @@ export async function persistSessionTranscript(
   const filePath = path.join(sessionDir, SESSION_TRANSCRIPT_FILE_NAME);
   const existing = await readExistingSessionTranscript(filePath);
   const merged = mergeSessionTranscripts(existing, transcript);
-  await writeFile(filePath, `${JSON.stringify(merged, null, 2)}\n`, 'utf8');
+  await writeFile(filePath, `${JSON.stringify(merged, null, 2)}\n`, "utf8");
   return sessionDir;
 }
 
@@ -93,7 +90,7 @@ export async function persistSubagentTranscript(
     options.subagentSessionId,
   );
   await mkdir(path.dirname(filePath), { recursive: true });
-  await writeFile(filePath, `${JSON.stringify(transcript, null, 2)}\n`, 'utf8');
+  await writeFile(filePath, `${JSON.stringify(transcript, null, 2)}\n`, "utf8");
   return filePath;
 }
 

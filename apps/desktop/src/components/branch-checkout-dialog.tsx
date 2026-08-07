@@ -60,37 +60,32 @@ export function BranchCheckoutDialog({
         </DialogHeader>
         <DialogFooter>
           <DialogFooterActions>
-          <Button
-            type="button"
-            variant="outline"
-            size="sm"
-            onClick={onCancel}
-            disabled={commitBusy}
-          >
-            {t("common.cancel")}
-          </Button>
-          {branchCheckoutBlockedByChanges ? (
             <Button
               type="button"
+              variant="outline"
               size="sm"
-              variant="destructive"
-              onClick={onDiscardAndCheckout}
+              onClick={onCancel}
               disabled={commitBusy}
             >
-              {commitBusy ? <LoaderCircle className="size-4 animate-spin" /> : null}
-              {t("app.discardAndSwitch")}
+              {t("common.cancel")}
             </Button>
-          ) : (
-            <Button
-              type="button"
-              size="sm"
-              onClick={onConfirmCheckout}
-              disabled={commitBusy}
-            >
-              {commitBusy ? <LoaderCircle className="size-4 animate-spin" /> : null}
-              {t("app.switchAndSend")}
-            </Button>
-          )}
+            {branchCheckoutBlockedByChanges ? (
+              <Button
+                type="button"
+                size="sm"
+                variant="destructive"
+                onClick={onDiscardAndCheckout}
+                disabled={commitBusy}
+              >
+                {commitBusy ? <LoaderCircle className="size-4 animate-spin" /> : null}
+                {t("app.discardAndSwitch")}
+              </Button>
+            ) : (
+              <Button type="button" size="sm" onClick={onConfirmCheckout} disabled={commitBusy}>
+                {commitBusy ? <LoaderCircle className="size-4 animate-spin" /> : null}
+                {t("app.switchAndSend")}
+              </Button>
+            )}
           </DialogFooterActions>
         </DialogFooter>
       </DialogContent>

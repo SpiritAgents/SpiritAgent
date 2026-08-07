@@ -1,4 +1,1 @@
-export {
-  buildWorktreeNamingPrompt,
-  type GeneratedWorktreeNames,
-} from '@spiritagent/host-internal';
+export { buildWorktreeNamingPrompt, type GeneratedWorktreeNames } from "@spiritagent/host-internal";

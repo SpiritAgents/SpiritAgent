@@ -1,7 +1,7 @@
-import type { JsonObject, JsonValue } from '../ports.js';
+import type { JsonObject, JsonValue } from "../ports.js";
 
 function isJsonObject(value: JsonValue): value is JsonObject {
-  return typeof value === 'object' && value !== null && !Array.isArray(value);
+  return typeof value === "object" && value !== null && !Array.isArray(value);
 }
 
 export function resolveToolInputSchema(
@@ -27,10 +27,10 @@ export function resolveToolInputSchema(
 
     const parameters = entry.parameters;
     if (
-      entry.type === 'function'
-      && entry.name === toolName
-      && parameters !== undefined
-      && isJsonObject(parameters)
+      entry.type === "function" &&
+      entry.name === toolName &&
+      parameters !== undefined &&
+      isJsonObject(parameters)
     ) {
       return parameters;
     }

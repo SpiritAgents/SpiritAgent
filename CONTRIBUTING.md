@@ -93,12 +93,16 @@ Maintainer and agent-side commit conventions are documented in [AGENTS.md](AGENT
 Every push runs the [Verify workflow](.github/workflows/verify.yml):
 
 - `pnpm turbo run build` (TypeScript packages and Desktop)
+- `pnpm exec oxlint --deny-warnings packages apps/desktop` and `pnpm exec oxfmt --check packages apps/desktop`
 - `cargo build`, `cargo clippy -D warnings`, and `cargo test` for the CLI
 
 Before opening a PR, run locally when relevant:
 
 ```bash
 pnpm run build
+pnpm run lint        # oxlint --deny-warnings packages apps/desktop
+pnpm run format      # oxfmt --check packages apps/desktop
+pnpm run lint:fix && pnpm run format:fix  # before commit
 pnpm --filter @spiritagent/agent-core test   # if you changed agent-core
 cargo test -p spirit-agent                   # if you changed the CLI
 cargo clippy -p spirit-agent -- -D warnings

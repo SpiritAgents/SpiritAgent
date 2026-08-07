@@ -3,7 +3,10 @@ import { flushSync } from "react-dom";
 import { useTranslation } from "react-i18next";
 import { ChevronDown } from "lucide-react";
 
-import { ModelPickerInspectorPanel, modelPickerInspectorNeedsWideLayout } from "@/components/model-picker-inspector-panel";
+import {
+  ModelPickerInspectorPanel,
+  modelPickerInspectorNeedsWideLayout,
+} from "@/components/model-picker-inspector-panel";
 import {
   FilteredOverlayMenu,
   FilteredOverlayMenuTrigger,
@@ -72,7 +75,10 @@ function resolveModelPickerDetailTooltipWidthClass(
   if (!hoveredModel) {
     return "w-max";
   }
-  const model = models.find((entry) => modelRefsEqual(modelPickerItemRef(entry), modelPickerItemRef(hoveredModel))) ?? hoveredModel;
+  const model =
+    models.find((entry) =>
+      modelRefsEqual(modelPickerItemRef(entry), modelPickerItemRef(hoveredModel)),
+    ) ?? hoveredModel;
   const catalogEntry = catalogDetailByModelName.get(modelCatalogScopeEntryKey(model));
   return modelPickerInspectorNeedsWideLayout(model, catalogEntry) ? "w-80" : "w-max";
 }
@@ -210,14 +216,17 @@ export function ModelPickerMenu({
       .filter((group) => group.items.length > 0);
   }, [displayTitleByModelName, modelFilter, modelGroups]);
 
-  const handleModelFilterChange = useCallback((next: string) => {
-    if (next !== modelFilter) {
-      flushSync(() => {
-        tooltipActions?.dismissActiveItem();
-      });
-    }
-    setModelFilter(next);
-  }, [modelFilter, tooltipActions]);
+  const handleModelFilterChange = useCallback(
+    (next: string) => {
+      if (next !== modelFilter) {
+        flushSync(() => {
+          tooltipActions?.dismissActiveItem();
+        });
+      }
+      setModelFilter(next);
+    },
+    [modelFilter, tooltipActions],
+  );
 
   const dismissOpenListTooltip = useCallback(() => {
     flushSync(() => {
@@ -225,13 +234,15 @@ export function ModelPickerMenu({
     });
   }, [tooltipActions]);
 
-  const handleSelectModel = useCallback((ref: ModelRef) => {
-    dismissOpenListTooltip();
-    onModelSelect(ref);
-    setModelFilter("");
-    setModelMenuOpen(false);
-  }, [dismissOpenListTooltip, onModelSelect, setModelMenuOpen]);
-
+  const handleSelectModel = useCallback(
+    (ref: ModelRef) => {
+      dismissOpenListTooltip();
+      onModelSelect(ref);
+      setModelFilter("");
+      setModelMenuOpen(false);
+    },
+    [dismissOpenListTooltip, onModelSelect, setModelMenuOpen],
+  );
 
   useEffect(() => {
     const id = registerModelPicker({
@@ -302,13 +313,8 @@ export function ModelPickerMenu({
                 >
                   {activeModelProfile ? (
                     <ModelPickerTriggerLabel
-                      name={modelDisplayTitleFromMap(
-                        activeModelProfile,
-                        displayTitleByModelName,
-                      )}
-                      reasoningEffort={
-                        activeReasoningEffort ?? activeModelProfile.reasoningEffort
-                      }
+                      name={modelDisplayTitleFromMap(activeModelProfile, displayTitleByModelName)}
+                      reasoningEffort={activeReasoningEffort ?? activeModelProfile.reasoningEffort}
                       model={activeModelProfile}
                       catalogEntry={catalogDetailByModelName.get(
                         modelCatalogScopeEntryKey(activeModelProfile),
@@ -328,7 +334,9 @@ export function ModelPickerMenu({
         }
       >
         {filteredModelGroups.length === 0 ? (
-          <p className="px-2 py-4 text-center text-xs text-muted-foreground">{t("app.noMatches")}</p>
+          <p className="px-2 py-4 text-center text-xs text-muted-foreground">
+            {t("app.noMatches")}
+          </p>
         ) : null}
         <Tooltip<ModelPickerItem> getItemId={(model) => model.name} delayDuration={0}>
           <Tooltip.Zone>
@@ -337,8 +345,8 @@ export function ModelPickerMenu({
               : filteredModelGroups.map((group) => (
                   <div key={group.groupId} className="mb-2 last:mb-0">
                     <div className={DESKTOP_OVERLAY_LIST_GROUP_LABEL}>
-                      {group.customLabel
-                        ?? t(group.labelKey, { defaultValue: group.fallbackLabel })}
+                      {group.customLabel ??
+                        t(group.labelKey, { defaultValue: group.fallbackLabel })}
                     </div>
                     {group.items.map((model) => {
                       const displayTitle = modelDisplayTitleFromMap(model, displayTitleByModelName);
@@ -348,7 +356,10 @@ export function ModelPickerMenu({
                           key={`${group.groupId}:${modelRefKey(modelRef)}`}
                           model={model}
                           displayTitle={displayTitle}
-                          isActive={modelRefsEqual(activeModelProfile ? modelPickerItemRef(activeModelProfile) : undefined, modelRef)}
+                          isActive={modelRefsEqual(
+                            activeModelProfile ? modelPickerItemRef(activeModelProfile) : undefined,
+                            modelRef,
+                          )}
                           onSelectModel={handleSelectModel}
                         />
                       );
@@ -362,10 +373,7 @@ export function ModelPickerMenu({
             align="start"
             sideOffset={8}
             collisionPadding={16}
-            className={cn(
-              "z-[200] max-w-[min(20rem,calc(100vw-2rem))] p-3",
-              menuContentClassName,
-            )}
+            className={cn("z-[200] max-w-[min(20rem,calc(100vw-2rem))] p-3", menuContentClassName)}
             resolveClassName={(activeItem) =>
               resolveModelPickerDetailTooltipWidthClass(
                 activeItem,
@@ -379,14 +387,20 @@ export function ModelPickerMenu({
               if (!hoveredModel) {
                 return null;
               }
-              const model = models.find((entry) => modelRefsEqual(modelPickerItemRef(entry), modelPickerItemRef(hoveredModel))) ?? hoveredModel;
+              const model =
+                models.find((entry) =>
+                  modelRefsEqual(modelPickerItemRef(entry), modelPickerItemRef(hoveredModel)),
+                ) ?? hoveredModel;
               const group = filteredModelGroups.find((entry) =>
-                entry.items.some((item) => modelRefsEqual(modelPickerItemRef(item), modelPickerItemRef(model))),
+                entry.items.some((item) =>
+                  modelRefsEqual(modelPickerItemRef(item), modelPickerItemRef(model)),
+                ),
               );
-              const providerLabel = group?.customLabel
-                ?? (group
+              const providerLabel =
+                group?.customLabel ??
+                (group
                   ? t(group.labelKey, { defaultValue: group.fallbackLabel })
-                  : model.provider ?? model.name);
+                  : (model.provider ?? model.name));
               const catalogEntry = catalogDetailByModelName.get(modelCatalogScopeEntryKey(model));
 
               return (
@@ -453,13 +467,13 @@ function ModelPickerTriggerLabel({
   const thinkingEnabled = resolveModelThinkingEnabled(model.thinkingEnabled);
 
   const secondaryLabels: string[] = [];
-  if (supportsReasoningMode && reasoningMode === 'pro') {
-    secondaryLabels.push(t('app.modelPickerReasoningModePro'));
+  if (supportsReasoningMode && reasoningMode === "pro") {
+    secondaryLabels.push(t("app.modelPickerReasoningModePro"));
   }
 
   const effortOrThinkingLabel =
     supportsThinkingSwitch && !thinkingEnabled
-      ? t('app.modelPickerNotThinking')
+      ? t("app.modelPickerNotThinking")
       : modelReasoningEffortLabel(reasoningEffort);
 
   secondaryLabels.push(effortOrThinkingLabel);
@@ -468,7 +482,7 @@ function ModelPickerTriggerLabel({
     <span className="inline-flex min-w-0 max-w-full items-baseline gap-1.5">
       <span className="min-w-0 truncate">{name}</span>
       {secondaryLabels.map((label) => (
-        <span key={label} className={cn('shrink-0', toolCardSecondaryTextClass)}>
+        <span key={label} className={cn("shrink-0", toolCardSecondaryTextClass)}>
           {label}
         </span>
       ))}

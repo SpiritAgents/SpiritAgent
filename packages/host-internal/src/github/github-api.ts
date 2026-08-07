@@ -1,14 +1,14 @@
-import { GITHUB_API_BASE_URL } from './oauth-config.js';
-import { GitHubOAuthError } from './oauth.js';
+import { GITHUB_API_BASE_URL } from "./oauth-config.js";
+import { GitHubOAuthError } from "./oauth.js";
 
 export { GITHUB_API_BASE_URL };
-export { githubFetch, setGitHubFetchImplementation } from './github-fetch.js';
+export { githubFetch, setGitHubFetchImplementation } from "./github-fetch.js";
 
 export function githubApiHeaders(accessToken: string): Record<string, string> {
   return {
-    Accept: 'application/vnd.github+json',
+    Accept: "application/vnd.github+json",
     Authorization: `Bearer ${accessToken}`,
-    'X-GitHub-Api-Version': '2022-11-28',
+    "X-GitHub-Api-Version": "2022-11-28",
   };
 }
 
@@ -31,9 +31,9 @@ export async function readGitHubJson<T>(response: Response): Promise<T> {
 }
 
 export function githubHasNextPage(response: Response): boolean {
-  const link = response.headers.get('link');
+  const link = response.headers.get("link");
   if (!link) {
     return false;
   }
-  return link.split(',').some((part) => part.includes('rel="next"'));
+  return link.split(",").some((part) => part.includes('rel="next"'));
 }

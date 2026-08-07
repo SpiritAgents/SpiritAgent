@@ -17,8 +17,6 @@ export function $createSpiritParagraphNode(): SpiritParagraphNode {
   return new SpiritParagraphNode();
 }
 
-export function $isSpiritParagraphNode(
-  node: unknown,
-): node is SpiritParagraphNode {
+export function $isSpiritParagraphNode(node: unknown): node is SpiritParagraphNode {
   return node instanceof SpiritParagraphNode;
 }

@@ -104,10 +104,7 @@ export function WorkspaceImagePreviewPane({
     event.preventDefault();
     const dx = event.clientX - dragStartRef.current.x;
     const dy = event.clientY - dragStartRef.current.y;
-    if (
-      Math.abs(dx) > DRAG_CLICK_THRESHOLD_PX ||
-      Math.abs(dy) > DRAG_CLICK_THRESHOLD_PX
-    ) {
+    if (Math.abs(dx) > DRAG_CLICK_THRESHOLD_PX || Math.abs(dy) > DRAG_CLICK_THRESHOLD_PX) {
       movedDuringDragRef.current = true;
     }
     setPan({
@@ -167,47 +164,47 @@ export function WorkspaceImagePreviewPane({
 
   return (
     <div
-        ref={containerRef}
-        data-spirit-surface="workspace-image-preview"
-        tabIndex={canInteract ? 0 : undefined}
-        role={canInteract ? "button" : undefined}
-        aria-label={canInteract ? fileLabel : undefined}
-        onKeyDown={handleKeyDown}
-        className={cn(
-          "relative flex h-full min-h-0 w-full flex-col overflow-hidden outline-none",
-          canInteract && (isDragging ? "cursor-grabbing" : "cursor-zoom-in"),
-          className,
-        )}
-      >
-        {previewState === "loading" ? (
-          <div className="flex h-full items-center justify-center">
-            <Spinner className="size-5 text-muted-foreground" />
-          </div>
-        ) : previewState === "unavailable" || !previewDataUrl ? (
-          <div className="flex h-full items-center justify-center p-4 text-center text-xs leading-relaxed text-muted-foreground">
-            {t("workspace.imagePreviewUnavailable")}
-          </div>
-        ) : (
-          <div
-            ref={contentRef}
-            className="flex h-full min-h-0 w-full items-center justify-center overflow-hidden"
-            onPointerDown={handlePointerDown}
-            onPointerMove={handlePointerMove}
-            onPointerUp={handlePointerEnd}
-            onPointerCancel={handlePointerEnd}
-          >
-            <img
-              src={previewDataUrl}
-              alt={fileLabel}
-              draggable={false}
-              className="max-h-full max-w-full select-none object-contain"
-              style={{
-                transform: `translate(${pan.x}px, ${pan.y}px) scale(${zoom})`,
-                transformOrigin: "center center",
-              }}
-            />
-          </div>
-        )}
+      ref={containerRef}
+      data-spirit-surface="workspace-image-preview"
+      tabIndex={canInteract ? 0 : undefined}
+      role={canInteract ? "button" : undefined}
+      aria-label={canInteract ? fileLabel : undefined}
+      onKeyDown={handleKeyDown}
+      className={cn(
+        "relative flex h-full min-h-0 w-full flex-col overflow-hidden outline-none",
+        canInteract && (isDragging ? "cursor-grabbing" : "cursor-zoom-in"),
+        className,
+      )}
+    >
+      {previewState === "loading" ? (
+        <div className="flex h-full items-center justify-center">
+          <Spinner className="size-5 text-muted-foreground" />
+        </div>
+      ) : previewState === "unavailable" || !previewDataUrl ? (
+        <div className="flex h-full items-center justify-center p-4 text-center text-xs leading-relaxed text-muted-foreground">
+          {t("workspace.imagePreviewUnavailable")}
+        </div>
+      ) : (
+        <div
+          ref={contentRef}
+          className="flex h-full min-h-0 w-full items-center justify-center overflow-hidden"
+          onPointerDown={handlePointerDown}
+          onPointerMove={handlePointerMove}
+          onPointerUp={handlePointerEnd}
+          onPointerCancel={handlePointerEnd}
+        >
+          <img
+            src={previewDataUrl}
+            alt={fileLabel}
+            draggable={false}
+            className="max-h-full max-w-full select-none object-contain"
+            style={{
+              transform: `translate(${pan.x}px, ${pan.y}px) scale(${zoom})`,
+              transformOrigin: "center center",
+            }}
+          />
+        </div>
+      )}
     </div>
   );
 }

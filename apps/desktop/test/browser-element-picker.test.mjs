@@ -29,7 +29,10 @@ test("buildPickerInjectScript supports element hover/click and marquee drag", ()
   const script = buildPickerInjectScript();
   assert.match(script, /hoverElement/);
   assert.match(script, /setPickerRect\(elementRect\(el\), 'element'\)/);
-  assert.match(script, /setPickerRect\(normalizeRect\(startX, startY, e\.clientX, e\.clientY\), 'marquee'\)/);
+  assert.match(
+    script,
+    /setPickerRect\(normalizeRect\(startX, startY, e\.clientX, e\.clientY\), 'marquee'\)/,
+  );
   assert.match(script, new RegExp(`MARQUEE_THRESHOLD = ${MIN_MARQUEE_PX}`));
   assert.match(script, /elementFromPoint/);
   assert.match(script, /getBoundingClientRect/);

@@ -1,13 +1,13 @@
-import { useEffect, type Dispatch, type SetStateAction } from 'react';
+import { useEffect, type Dispatch, type SetStateAction } from "react";
 
-import type { ComposerLocalFileAttachmentView } from '../lib/local-file-attachments.js';
+import type { ComposerLocalFileAttachmentView } from "../lib/local-file-attachments.js";
 import {
   isPreviewableImagePath,
   localFileAttachmentsSnapshotKey,
   normalizeSlashPath,
   readCachedLocalFilePreviewDataUrl,
   rememberLocalFilePreviewDataUrl,
-} from '../lib/local-file-attachments.js';
+} from "../lib/local-file-attachments.js";
 
 type ReadLocalImagePreview = (filePath: string) => Promise<string | null>;
 

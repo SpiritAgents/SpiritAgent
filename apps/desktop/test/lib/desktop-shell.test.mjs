@@ -172,23 +172,11 @@ test("isModShortcutPressed uses Command on macOS and Ctrl elsewhere", () => {
 
 test("isModAltShortcutPressed requires Alt plus the platform primary modifier", () => {
   withDesktopPlatform("darwin", () => {
-    assert.equal(
-      isModAltShortcutPressed({ altKey: true, ctrlKey: true, metaKey: false }),
-      false,
-    );
-    assert.equal(
-      isModAltShortcutPressed({ altKey: true, ctrlKey: false, metaKey: true }),
-      true,
-    );
+    assert.equal(isModAltShortcutPressed({ altKey: true, ctrlKey: true, metaKey: false }), false);
+    assert.equal(isModAltShortcutPressed({ altKey: true, ctrlKey: false, metaKey: true }), true);
   });
   withDesktopPlatform("win32", () => {
-    assert.equal(
-      isModAltShortcutPressed({ altKey: true, ctrlKey: true, metaKey: false }),
-      true,
-    );
-    assert.equal(
-      isModAltShortcutPressed({ altKey: true, ctrlKey: false, metaKey: true }),
-      false,
-    );
+    assert.equal(isModAltShortcutPressed({ altKey: true, ctrlKey: true, metaKey: false }), true);
+    assert.equal(isModAltShortcutPressed({ altKey: true, ctrlKey: false, metaKey: true }), false);
   });
 });

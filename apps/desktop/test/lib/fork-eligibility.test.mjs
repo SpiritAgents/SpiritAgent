@@ -1,20 +1,24 @@
-import assert from 'node:assert/strict';
-import { test } from 'node:test';
+import assert from "node:assert/strict";
+import { test } from "node:test";
 
-import { canForkMessage, canForkSession, canShowForkMessage } from '../../src/lib/fork-eligibility.ts';
+import {
+  canForkMessage,
+  canForkSession,
+  canShowForkMessage,
+} from "../../src/lib/fork-eligibility.ts";
 
-const assistant = { id: 2, role: 'assistant', content: 'hi', pending: false };
+const assistant = { id: 2, role: "assistant", content: "hi", pending: false };
 const thinkingAssistant = {
   id: 4,
-  role: 'assistant',
-  content: '',
+  role: "assistant",
+  content: "",
   pending: false,
-  aux: { thinking: 'plan' },
+  aux: { thinking: "plan" },
 };
-const pendingAssistant = { id: 3, role: 'assistant', content: 'wait', pending: true };
-const user = { id: 1, role: 'user', content: 'hello', pending: false };
+const pendingAssistant = { id: 3, role: "assistant", content: "wait", pending: true };
+const user = { id: 1, role: "user", content: "hello", pending: false };
 
-test('canForkMessage allows completed assistant messages when session is idle', () => {
+test("canForkMessage allows completed assistant messages when session is idle", () => {
   assert.equal(
     canForkMessage({
       message: assistant,
@@ -26,7 +30,7 @@ test('canForkMessage allows completed assistant messages when session is idle', 
   );
 });
 
-test('canShowForkMessage allows finalized thinking-only assistant rows', () => {
+test("canShowForkMessage allows finalized thinking-only assistant rows", () => {
   assert.equal(
     canShowForkMessage({
       message: thinkingAssistant,
@@ -45,7 +49,7 @@ test('canShowForkMessage allows finalized thinking-only assistant rows', () => {
   );
 });
 
-test('canForkMessage blocks pending assistant and user messages', () => {
+test("canForkMessage blocks pending assistant and user messages", () => {
   assert.equal(
     canForkMessage({
       message: pendingAssistant,
@@ -66,7 +70,7 @@ test('canForkMessage blocks pending assistant and user messages', () => {
   );
 });
 
-test('canShowForkMessage stays visible while conversation is busy', () => {
+test("canShowForkMessage stays visible while conversation is busy", () => {
   assert.equal(
     canShowForkMessage({
       message: assistant,
@@ -85,7 +89,7 @@ test('canShowForkMessage stays visible while conversation is busy', () => {
   );
 });
 
-test('canForkSession requires idle writable session with forkable assistant', () => {
+test("canForkSession requires idle writable session with forkable assistant", () => {
   assert.equal(
     canForkSession({
       conversationBusy: false,

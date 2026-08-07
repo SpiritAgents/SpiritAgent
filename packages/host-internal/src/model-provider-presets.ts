@@ -1,102 +1,104 @@
-import rawImport from './model-provider-presets.json' with { type: 'json' };
+import rawImport from "./model-provider-presets.json" with { type: "json" };
 
 /** 与 `config.json` / CLI `ModelProvider` 小写字符串对齐（须与 `pickerOrder` 一致）。 */
 export type ModelProviderId =
-  | 'deepseek'
-  | 'xai'
-  | 'moonshot-ai'
-  | 'kimi-code'
-  | 'z-ai'
-  | 'zhipu-ai'
-  | 'minimax'
-  | 'xiaomi'
-  | 'siliconflow'
-  | 'stepfun'
-  | 'alibaba'
-  | 'anthropic'
-  | 'vercel-ai-gateway'
-  | 'cloudflare-ai-gateway'
-  | 'openrouter'
-  | 'fireworks-ai'
-  | 'together-ai'
-  | 'groq'
-  | 'deepinfra'
-  | 'hugging-face'
-  | 'baseten'
-  | 'openai'
-  | 'google'
-  | 'google-vertex-ai'
-  | 'volcengine'
-  | 'byteplus'
-  | 'meituan'
-  | 'tencent-tokenhub'
-  | 'mistral'
-  | 'cohere'
-  | 'azure'
-  | 'amazon-bedrock'
-  | 'custom';
-export type PresetModelProviderId = Exclude<ModelProviderId, 'custom'>;
+  | "deepseek"
+  | "xai"
+  | "moonshot-ai"
+  | "kimi-code"
+  | "z-ai"
+  | "zhipu-ai"
+  | "minimax"
+  | "xiaomi"
+  | "siliconflow"
+  | "stepfun"
+  | "alibaba"
+  | "anthropic"
+  | "vercel-ai-gateway"
+  | "cloudflare-ai-gateway"
+  | "openrouter"
+  | "fireworks-ai"
+  | "together-ai"
+  | "groq"
+  | "deepinfra"
+  | "hugging-face"
+  | "baseten"
+  | "openai"
+  | "google"
+  | "google-vertex-ai"
+  | "volcengine"
+  | "byteplus"
+  | "meituan"
+  | "tencent-tokenhub"
+  | "mistral"
+  | "cohere"
+  | "azure"
+  | "amazon-bedrock"
+  | "custom";
+export type PresetModelProviderId = Exclude<ModelProviderId, "custom">;
 
 /** 与 Desktop `DesktopTransportKind` / openai-models `ProviderModelTransportKind` 对齐。 */
 export type ProviderModelTransportKind =
-  | 'openai-compatible'
-  | 'open-responses'
-  | 'anthropic'
-  | 'bedrock';
+  | "openai-compatible"
+  | "open-responses"
+  | "anthropic"
+  | "bedrock";
 
 const PROVIDER_MODEL_TRANSPORT_KINDS: readonly ProviderModelTransportKind[] = [
-  'openai-compatible',
-  'open-responses',
-  'anthropic',
-  'bedrock',
+  "openai-compatible",
+  "open-responses",
+  "anthropic",
+  "bedrock",
 ];
 
 const CANONICAL_PICKER_ORDER: readonly ModelProviderId[] = [
-  'openai',
-  'anthropic',
-  'google',
-  'xai',
-  'vercel-ai-gateway',
-  'cloudflare-ai-gateway',
-  'deepseek',
-  'openrouter',
-  'fireworks-ai',
-  'together-ai',
-  'groq',
-  'deepinfra',
-  'baseten',
-  'hugging-face',
-  'moonshot-ai',
-  'kimi-code',
-  'z-ai',
-  'zhipu-ai',
-  'alibaba',
-  'minimax',
-  'xiaomi',
-  'siliconflow',
-  'stepfun',
-  'volcengine',
-  'byteplus',
-  'meituan',
-  'tencent-tokenhub',
-  'mistral',
-  'cohere',
-  'azure',
-  'amazon-bedrock',
-  'google-vertex-ai',
-  'custom',
+  "openai",
+  "anthropic",
+  "google",
+  "xai",
+  "vercel-ai-gateway",
+  "cloudflare-ai-gateway",
+  "deepseek",
+  "openrouter",
+  "fireworks-ai",
+  "together-ai",
+  "groq",
+  "deepinfra",
+  "baseten",
+  "hugging-face",
+  "moonshot-ai",
+  "kimi-code",
+  "z-ai",
+  "zhipu-ai",
+  "alibaba",
+  "minimax",
+  "xiaomi",
+  "siliconflow",
+  "stepfun",
+  "volcengine",
+  "byteplus",
+  "meituan",
+  "tencent-tokenhub",
+  "mistral",
+  "cohere",
+  "azure",
+  "amazon-bedrock",
+  "google-vertex-ai",
+  "custom",
 ];
 
 const MODEL_PROVIDER_ID_SET: ReadonlySet<ModelProviderId> = new Set(CANONICAL_PICKER_ORDER);
 const PRESET_PROVIDER_PICKER_ORDER = CANONICAL_PICKER_ORDER.filter(
-  (id): id is PresetModelProviderId => id !== 'custom',
+  (id): id is PresetModelProviderId => id !== "custom",
 );
 
 function isJsonRecord(value: unknown): value is Record<string, unknown> {
-  return typeof value === 'object' && value !== null && !Array.isArray(value);
+  return typeof value === "object" && value !== null && !Array.isArray(value);
 }
 
-function assertCanonicalPickerOrder(order: readonly string[]): asserts order is typeof CANONICAL_PICKER_ORDER {
+function assertCanonicalPickerOrder(
+  order: readonly string[],
+): asserts order is typeof CANONICAL_PICKER_ORDER {
   if (
     order.length !== CANONICAL_PICKER_ORDER.length ||
     order.some((id, index) => id !== CANONICAL_PICKER_ORDER[index])
@@ -137,11 +139,11 @@ type ProviderSiteSelectionByProvider = Partial<
   Record<PresetModelProviderId, ProviderSiteSelectionConfig>
 >;
 
-export type AlibabaBillingMode = 'token-plan';
+export type AlibabaBillingMode = "token-plan";
 
-export type StepfunBillingMode = 'step-plan';
+export type StepfunBillingMode = "step-plan";
 
-export type GlmCodingPlanBillingMode = 'glm-coding-plan';
+export type GlmCodingPlanBillingMode = "glm-coding-plan";
 
 export interface AlibabaTokenPlanConfig {
   compatibleApiBase: string;
@@ -184,38 +186,38 @@ export interface ProviderPickerRow extends ProviderPickerLabel {
 interface ParsedModelProviderPresets {
   defaultCustomApiBase: string;
   presetApiBaseByProvider: Record<
-    | 'deepseek'
-    | 'xai'
-    | 'moonshot-ai'
-    | 'kimi-code'
-    | 'z-ai'
-    | 'zhipu-ai'
-    | 'minimax'
-    | 'xiaomi'
-    | 'siliconflow'
-    | 'stepfun'
-    | 'alibaba'
-    | 'anthropic'
-    | 'vercel-ai-gateway'
-    | 'cloudflare-ai-gateway'
-    | 'openrouter'
-    | 'fireworks-ai'
-    | 'together-ai'
-    | 'groq'
-    | 'deepinfra'
-    | 'hugging-face'
-    | 'baseten'
-    | 'openai'
-    | 'google'
-    | 'google-vertex-ai'
-    | 'volcengine'
-    | 'byteplus'
-    | 'meituan'
-    | 'tencent-tokenhub'
-    | 'mistral'
-    | 'cohere'
-    | 'azure'
-    | 'amazon-bedrock',
+    | "deepseek"
+    | "xai"
+    | "moonshot-ai"
+    | "kimi-code"
+    | "z-ai"
+    | "zhipu-ai"
+    | "minimax"
+    | "xiaomi"
+    | "siliconflow"
+    | "stepfun"
+    | "alibaba"
+    | "anthropic"
+    | "vercel-ai-gateway"
+    | "cloudflare-ai-gateway"
+    | "openrouter"
+    | "fireworks-ai"
+    | "together-ai"
+    | "groq"
+    | "deepinfra"
+    | "hugging-face"
+    | "baseten"
+    | "openai"
+    | "google"
+    | "google-vertex-ai"
+    | "volcengine"
+    | "byteplus"
+    | "meituan"
+    | "tencent-tokenhub"
+    | "mistral"
+    | "cohere"
+    | "azure"
+    | "amazon-bedrock",
     string
   >;
   presetApiBaseByTransport: PresetApiBaseByTransport;
@@ -230,7 +232,7 @@ interface ParsedModelProviderPresets {
 
 function requireStringField(obj: Record<string, unknown>, key: string): string {
   const value = obj[key];
-  if (typeof value !== 'string' || value.trim() === '') {
+  if (typeof value !== "string" || value.trim() === "") {
     throw new Error(`model-provider-presets.json: missing or invalid string field "${key}"`);
   }
   return value;
@@ -238,7 +240,7 @@ function requireStringField(obj: Record<string, unknown>, key: string): string {
 
 function isProviderModelTransportKind(value: unknown): value is ProviderModelTransportKind {
   return (
-    typeof value === 'string' &&
+    typeof value === "string" &&
     (PROVIDER_MODEL_TRANSPORT_KINDS as readonly string[]).includes(value)
   );
 }
@@ -269,7 +271,7 @@ function parsePresetApiBaseByTransport(data: unknown): PresetApiBaseByTransport 
           `model-provider-presets.json: presetApiBaseByTransport.${providerKey}.${transportKey} is not a valid transport kind`,
         );
       }
-      if (typeof baseUrl !== 'string' || baseUrl.trim() === '') {
+      if (typeof baseUrl !== "string" || baseUrl.trim() === "") {
         throw new Error(
           `model-provider-presets.json: presetApiBaseByTransport.${providerKey}.${transportKey} must be a non-empty string`,
         );
@@ -288,7 +290,7 @@ export function parseProviderSiteSelection(data: unknown): ProviderSiteSelection
     return {};
   }
   if (!isJsonRecord(data)) {
-    throw new Error('model-provider-presets.json: providerSiteSelection must be an object');
+    throw new Error("model-provider-presets.json: providerSiteSelection must be an object");
   }
 
   const result: ProviderSiteSelectionByProvider = {};
@@ -305,7 +307,7 @@ export function parseProviderSiteSelection(data: unknown): ProviderSiteSelection
       );
     }
 
-    const defaultSite = requireStringField(selectionRaw, 'defaultSite');
+    const defaultSite = requireStringField(selectionRaw, "defaultSite");
     const sitesRaw = selectionRaw.sites;
     if (!isJsonRecord(sitesRaw) || Object.keys(sitesRaw).length === 0) {
       throw new Error(
@@ -321,9 +323,9 @@ export function parseProviderSiteSelection(data: unknown): ProviderSiteSelection
         );
       }
       sites[siteId] = {
-        labelKey: requireStringField(siteRaw, 'labelKey'),
-        fallbackLabel: requireStringField(siteRaw, 'fallbackLabel'),
-        apiBase: requireStringField(siteRaw, 'apiBase'),
+        labelKey: requireStringField(siteRaw, "labelKey"),
+        fallbackLabel: requireStringField(siteRaw, "fallbackLabel"),
+        apiBase: requireStringField(siteRaw, "apiBase"),
         ...(siteRaw.requiresWorkspaceId === true ? { requiresWorkspaceId: true } : {}),
       };
     }
@@ -342,21 +344,21 @@ export function parseProviderSiteSelection(data: unknown): ProviderSiteSelection
 
 function parseAlibabaTokenPlanConfig(data: unknown): AlibabaTokenPlanConfig {
   if (!isJsonRecord(data)) {
-    throw new Error('model-provider-presets.json: alibabaTokenPlan must be an object');
+    throw new Error("model-provider-presets.json: alibabaTokenPlan must be an object");
   }
   return {
-    compatibleApiBase: requireStringField(data, 'compatibleApiBase'),
-    docUrl: requireStringField(data, 'docUrl'),
+    compatibleApiBase: requireStringField(data, "compatibleApiBase"),
+    docUrl: requireStringField(data, "docUrl"),
   };
 }
 
 function parseStepfunStepPlanConfig(data: unknown): StepfunStepPlanConfig {
   if (!isJsonRecord(data)) {
-    throw new Error('model-provider-presets.json: stepfunStepPlan must be an object');
+    throw new Error("model-provider-presets.json: stepfunStepPlan must be an object");
   }
   return {
-    compatibleApiBase: requireStringField(data, 'compatibleApiBase'),
-    docUrl: requireStringField(data, 'docUrl'),
+    compatibleApiBase: requireStringField(data, "compatibleApiBase"),
+    docUrl: requireStringField(data, "docUrl"),
   };
 }
 
@@ -365,8 +367,8 @@ function parseGlmCodingPlanConfig(data: unknown, fieldName: string): GlmCodingPl
     throw new Error(`model-provider-presets.json: ${fieldName} must be an object`);
   }
   return {
-    compatibleApiBase: requireStringField(data, 'compatibleApiBase'),
-    docUrl: requireStringField(data, 'docUrl'),
+    compatibleApiBase: requireStringField(data, "compatibleApiBase"),
+    docUrl: requireStringField(data, "docUrl"),
   };
 }
 
@@ -374,68 +376,68 @@ function parsePickerLabel(data: unknown, id: ModelProviderId): ProviderPickerLab
   if (!isJsonRecord(data)) {
     throw new Error(`model-provider-presets.json: pickerLabels.${id} must be an object`);
   }
-  const labelKey = requireStringField(data, 'labelKey');
-  const fallbackLabel = requireStringField(data, 'fallbackLabel');
+  const labelKey = requireStringField(data, "labelKey");
+  const fallbackLabel = requireStringField(data, "fallbackLabel");
   return { labelKey, fallbackLabel };
 }
 
 function parseModelProviderPresetsJson(data: unknown): ParsedModelProviderPresets {
   if (!isJsonRecord(data)) {
-    throw new Error('model-provider-presets.json: root must be a JSON object');
+    throw new Error("model-provider-presets.json: root must be a JSON object");
   }
 
   const pickerOrderRaw = data.pickerOrder;
   if (!Array.isArray(pickerOrderRaw)) {
-    throw new Error('model-provider-presets.json: pickerOrder must be an array');
+    throw new Error("model-provider-presets.json: pickerOrder must be an array");
   }
-  if (!pickerOrderRaw.every((id): id is string => typeof id === 'string')) {
-    throw new Error('model-provider-presets.json: pickerOrder must be an array of strings');
+  if (!pickerOrderRaw.every((id): id is string => typeof id === "string")) {
+    throw new Error("model-provider-presets.json: pickerOrder must be an array of strings");
   }
   assertCanonicalPickerOrder(pickerOrderRaw);
   const pickerOrder = pickerOrderRaw as readonly ModelProviderId[];
 
   const presetRaw = data.presetApiBaseByProvider;
   if (!isJsonRecord(presetRaw)) {
-    throw new Error('model-provider-presets.json: presetApiBaseByProvider must be an object');
+    throw new Error("model-provider-presets.json: presetApiBaseByProvider must be an object");
   }
   const presetApiBaseByProvider = {
-    deepseek: requireStringField(presetRaw, 'deepseek'),
-    xai: requireStringField(presetRaw, 'xai'),
-    'moonshot-ai': requireStringField(presetRaw, 'moonshot-ai'),
-    'kimi-code': requireStringField(presetRaw, 'kimi-code'),
-    'z-ai': requireStringField(presetRaw, 'z-ai'),
-    'zhipu-ai': requireStringField(presetRaw, 'zhipu-ai'),
-    minimax: requireStringField(presetRaw, 'minimax'),
-    xiaomi: requireStringField(presetRaw, 'xiaomi'),
-    siliconflow: requireStringField(presetRaw, 'siliconflow'),
-    stepfun: requireStringField(presetRaw, 'stepfun'),
-    alibaba: requireStringField(presetRaw, 'alibaba'),
-    anthropic: requireStringField(presetRaw, 'anthropic'),
-    'vercel-ai-gateway': requireStringField(presetRaw, 'vercel-ai-gateway'),
-    'cloudflare-ai-gateway': requireStringField(presetRaw, 'cloudflare-ai-gateway'),
-    openrouter: requireStringField(presetRaw, 'openrouter'),
-    'fireworks-ai': requireStringField(presetRaw, 'fireworks-ai'),
-    'together-ai': requireStringField(presetRaw, 'together-ai'),
-    groq: requireStringField(presetRaw, 'groq'),
-    deepinfra: requireStringField(presetRaw, 'deepinfra'),
-    'hugging-face': requireStringField(presetRaw, 'hugging-face'),
-    baseten: requireStringField(presetRaw, 'baseten'),
-    openai: requireStringField(presetRaw, 'openai'),
-    google: requireStringField(presetRaw, 'google'),
-    'google-vertex-ai': requireStringField(presetRaw, 'google-vertex-ai'),
-    volcengine: requireStringField(presetRaw, 'volcengine'),
-    byteplus: requireStringField(presetRaw, 'byteplus'),
-    meituan: requireStringField(presetRaw, 'meituan'),
-    'tencent-tokenhub': requireStringField(presetRaw, 'tencent-tokenhub'),
-    mistral: requireStringField(presetRaw, 'mistral'),
-    cohere: requireStringField(presetRaw, 'cohere'),
-    azure: requireStringField(presetRaw, 'azure'),
-    'amazon-bedrock': requireStringField(presetRaw, 'amazon-bedrock'),
+    deepseek: requireStringField(presetRaw, "deepseek"),
+    xai: requireStringField(presetRaw, "xai"),
+    "moonshot-ai": requireStringField(presetRaw, "moonshot-ai"),
+    "kimi-code": requireStringField(presetRaw, "kimi-code"),
+    "z-ai": requireStringField(presetRaw, "z-ai"),
+    "zhipu-ai": requireStringField(presetRaw, "zhipu-ai"),
+    minimax: requireStringField(presetRaw, "minimax"),
+    xiaomi: requireStringField(presetRaw, "xiaomi"),
+    siliconflow: requireStringField(presetRaw, "siliconflow"),
+    stepfun: requireStringField(presetRaw, "stepfun"),
+    alibaba: requireStringField(presetRaw, "alibaba"),
+    anthropic: requireStringField(presetRaw, "anthropic"),
+    "vercel-ai-gateway": requireStringField(presetRaw, "vercel-ai-gateway"),
+    "cloudflare-ai-gateway": requireStringField(presetRaw, "cloudflare-ai-gateway"),
+    openrouter: requireStringField(presetRaw, "openrouter"),
+    "fireworks-ai": requireStringField(presetRaw, "fireworks-ai"),
+    "together-ai": requireStringField(presetRaw, "together-ai"),
+    groq: requireStringField(presetRaw, "groq"),
+    deepinfra: requireStringField(presetRaw, "deepinfra"),
+    "hugging-face": requireStringField(presetRaw, "hugging-face"),
+    baseten: requireStringField(presetRaw, "baseten"),
+    openai: requireStringField(presetRaw, "openai"),
+    google: requireStringField(presetRaw, "google"),
+    "google-vertex-ai": requireStringField(presetRaw, "google-vertex-ai"),
+    volcengine: requireStringField(presetRaw, "volcengine"),
+    byteplus: requireStringField(presetRaw, "byteplus"),
+    meituan: requireStringField(presetRaw, "meituan"),
+    "tencent-tokenhub": requireStringField(presetRaw, "tencent-tokenhub"),
+    mistral: requireStringField(presetRaw, "mistral"),
+    cohere: requireStringField(presetRaw, "cohere"),
+    azure: requireStringField(presetRaw, "azure"),
+    "amazon-bedrock": requireStringField(presetRaw, "amazon-bedrock"),
   };
 
   const labelsRaw = data.pickerLabels;
   if (!isJsonRecord(labelsRaw)) {
-    throw new Error('model-provider-presets.json: pickerLabels must be an object');
+    throw new Error("model-provider-presets.json: pickerLabels must be an object");
   }
   const pickerLabels: Partial<Record<ModelProviderId, ProviderPickerLabel>> = {};
   for (const id of pickerOrder) {
@@ -443,7 +445,7 @@ function parseModelProviderPresetsJson(data: unknown): ParsedModelProviderPreset
     pickerLabels[id] = parsePickerLabel(label, id);
   }
 
-  const defaultCustomApiBase = requireStringField(data, 'defaultCustomApiBase');
+  const defaultCustomApiBase = requireStringField(data, "defaultCustomApiBase");
 
   const presetApiBaseByTransportRaw = data.presetApiBaseByTransport;
   const presetApiBaseByTransport =
@@ -454,10 +456,10 @@ function parseModelProviderPresetsJson(data: unknown): ParsedModelProviderPreset
   const providerSiteSelection = parseProviderSiteSelection(data.providerSiteSelection);
   const alibabaTokenPlan = parseAlibabaTokenPlanConfig(data.alibabaTokenPlan);
   const stepfunStepPlan = parseStepfunStepPlanConfig(data.stepfunStepPlan);
-  const zAiGlmCodingPlan = parseGlmCodingPlanConfig(data.zAiGlmCodingPlan, 'zAiGlmCodingPlan');
+  const zAiGlmCodingPlan = parseGlmCodingPlanConfig(data.zAiGlmCodingPlan, "zAiGlmCodingPlan");
   const zhipuAiGlmCodingPlan = parseGlmCodingPlanConfig(
     data.zhipuAiGlmCodingPlan,
-    'zhipuAiGlmCodingPlan',
+    "zhipuAiGlmCodingPlan",
   );
 
   return {
@@ -476,7 +478,8 @@ function parseModelProviderPresetsJson(data: unknown): ParsedModelProviderPreset
 
 const raw = parseModelProviderPresetsJson(rawImport as unknown);
 
-export const ALIBABA_TOKEN_PLAN_COMPATIBLE_API_BASE: string = raw.alibabaTokenPlan.compatibleApiBase;
+export const ALIBABA_TOKEN_PLAN_COMPATIBLE_API_BASE: string =
+  raw.alibabaTokenPlan.compatibleApiBase;
 export const ALIBABA_TOKEN_PLAN_DOC_URL: string = raw.alibabaTokenPlan.docUrl;
 export const STEPFUN_STEP_PLAN_COMPATIBLE_API_BASE: string = raw.stepfunStepPlan.compatibleApiBase;
 export const STEPFUN_STEP_PLAN_DOC_URL: string = raw.stepfunStepPlan.docUrl;
@@ -491,85 +494,87 @@ export const DEFAULT_CUSTOM_API_BASE: string = raw.defaultCustomApiBase;
 
 const deepseekBase = raw.presetApiBaseByProvider.deepseek;
 const xaiBase = raw.presetApiBaseByProvider.xai;
-const moonshotAiBase = raw.presetApiBaseByProvider['moonshot-ai'];
-const kimiCodeBase = raw.presetApiBaseByProvider['kimi-code'];
-const zAiBase = raw.presetApiBaseByProvider['z-ai'];
-const zhipuAiBase = raw.presetApiBaseByProvider['zhipu-ai'];
+const moonshotAiBase = raw.presetApiBaseByProvider["moonshot-ai"];
+const kimiCodeBase = raw.presetApiBaseByProvider["kimi-code"];
+const zAiBase = raw.presetApiBaseByProvider["z-ai"];
+const zhipuAiBase = raw.presetApiBaseByProvider["zhipu-ai"];
 const minimaxBase = raw.presetApiBaseByProvider.minimax;
 const xiaomiBase = raw.presetApiBaseByProvider.xiaomi;
 const siliconflowBase = raw.presetApiBaseByProvider.siliconflow;
 const stepfunBase = raw.presetApiBaseByProvider.stepfun;
 const alibabaBase = raw.presetApiBaseByProvider.alibaba;
 const anthropicBase = raw.presetApiBaseByProvider.anthropic;
-const vercelAiGatewayBase = raw.presetApiBaseByProvider['vercel-ai-gateway'];
-const cloudflareAiGatewayBase = raw.presetApiBaseByProvider['cloudflare-ai-gateway'];
+const vercelAiGatewayBase = raw.presetApiBaseByProvider["vercel-ai-gateway"];
+const cloudflareAiGatewayBase = raw.presetApiBaseByProvider["cloudflare-ai-gateway"];
 const openrouterBase = raw.presetApiBaseByProvider.openrouter;
-const fireworksAiBase = raw.presetApiBaseByProvider['fireworks-ai'];
-const togetherAiBase = raw.presetApiBaseByProvider['together-ai'];
+const fireworksAiBase = raw.presetApiBaseByProvider["fireworks-ai"];
+const togetherAiBase = raw.presetApiBaseByProvider["together-ai"];
 const groqBase = raw.presetApiBaseByProvider.groq;
 const deepinfraBase = raw.presetApiBaseByProvider.deepinfra;
-const huggingFaceBase = raw.presetApiBaseByProvider['hugging-face'];
+const huggingFaceBase = raw.presetApiBaseByProvider["hugging-face"];
 const basetenBase = raw.presetApiBaseByProvider.baseten;
 const openaiBase = raw.presetApiBaseByProvider.openai;
 const googleBase = raw.presetApiBaseByProvider.google;
-const googleVertexAiBase = raw.presetApiBaseByProvider['google-vertex-ai'];
+const googleVertexAiBase = raw.presetApiBaseByProvider["google-vertex-ai"];
 const volcengineBase = raw.presetApiBaseByProvider.volcengine;
 const byteplusBase = raw.presetApiBaseByProvider.byteplus;
 const meituanBase = raw.presetApiBaseByProvider.meituan;
-const tencentTokenhubBase = raw.presetApiBaseByProvider['tencent-tokenhub'];
+const tencentTokenhubBase = raw.presetApiBaseByProvider["tencent-tokenhub"];
 const mistralBase = raw.presetApiBaseByProvider.mistral;
 const cohereBase = raw.presetApiBaseByProvider.cohere;
 const azureBase = raw.presetApiBaseByProvider.azure;
-const amazonBedrockBase = raw.presetApiBaseByProvider['amazon-bedrock'];
+const amazonBedrockBase = raw.presetApiBaseByProvider["amazon-bedrock"];
 
 export const PROVIDER_PRESET_API_BASE = {
   deepseek: deepseekBase,
   xai: xaiBase,
-  'moonshot-ai': moonshotAiBase,
-  'kimi-code': kimiCodeBase,
-  'z-ai': zAiBase,
-  'zhipu-ai': zhipuAiBase,
+  "moonshot-ai": moonshotAiBase,
+  "kimi-code": kimiCodeBase,
+  "z-ai": zAiBase,
+  "zhipu-ai": zhipuAiBase,
   minimax: minimaxBase,
   xiaomi: xiaomiBase,
   siliconflow: siliconflowBase,
   stepfun: stepfunBase,
   alibaba: alibabaBase,
   anthropic: anthropicBase,
-  'vercel-ai-gateway': vercelAiGatewayBase,
-  'cloudflare-ai-gateway': cloudflareAiGatewayBase,
+  "vercel-ai-gateway": vercelAiGatewayBase,
+  "cloudflare-ai-gateway": cloudflareAiGatewayBase,
   openrouter: openrouterBase,
-  'fireworks-ai': fireworksAiBase,
-  'together-ai': togetherAiBase,
+  "fireworks-ai": fireworksAiBase,
+  "together-ai": togetherAiBase,
   groq: groqBase,
   deepinfra: deepinfraBase,
-  'hugging-face': huggingFaceBase,
+  "hugging-face": huggingFaceBase,
   baseten: basetenBase,
   openai: openaiBase,
   google: googleBase,
-  'google-vertex-ai': googleVertexAiBase,
+  "google-vertex-ai": googleVertexAiBase,
   volcengine: volcengineBase,
   byteplus: byteplusBase,
   meituan: meituanBase,
-  'tencent-tokenhub': tencentTokenhubBase,
+  "tencent-tokenhub": tencentTokenhubBase,
   mistral: mistralBase,
   cohere: cohereBase,
   azure: azureBase,
-  'amazon-bedrock': amazonBedrockBase,
-} as const satisfies Record<Exclude<ModelProviderId, 'custom'>, string>;
+  "amazon-bedrock": amazonBedrockBase,
+} as const satisfies Record<Exclude<ModelProviderId, "custom">, string>;
 
 const pickerLabels = raw.pickerLabels;
 
 /** 设置页等：按固定顺序展示提供商选项。 */
-export const PROVIDER_PICKER_ROWS: ProviderPickerRow[] = raw.pickerOrder.map(
-  (id) => ({ id, ...pickerLabels[id] }),
-);
+export const PROVIDER_PICKER_ROWS: ProviderPickerRow[] = raw.pickerOrder.map((id) => ({
+  id,
+  ...pickerLabels[id],
+}));
 
 /** 分组排序等与 `pickerOrder` 一致。 */
 export const MODEL_PROVIDER_PICKER_ORDER: readonly ModelProviderId[] = CANONICAL_PICKER_ORDER;
-export const PRESET_MODEL_PROVIDER_PICKER_ORDER: readonly PresetModelProviderId[] = PRESET_PROVIDER_PICKER_ORDER;
+export const PRESET_MODEL_PROVIDER_PICKER_ORDER: readonly PresetModelProviderId[] =
+  PRESET_PROVIDER_PICKER_ORDER;
 
 export function isModelProviderId(value: unknown): value is ModelProviderId {
-  return typeof value === 'string' && MODEL_PROVIDER_ID_SET.has(value as ModelProviderId);
+  return typeof value === "string" && MODEL_PROVIDER_ID_SET.has(value as ModelProviderId);
 }
 
 export function parseModelProviderId(value: unknown): ModelProviderId | undefined {
@@ -577,7 +582,11 @@ export function parseModelProviderId(value: unknown): ModelProviderId | undefine
 }
 
 export function isPresetModelProviderId(value: unknown): value is PresetModelProviderId {
-  return typeof value === 'string' && value !== 'custom' && MODEL_PROVIDER_ID_SET.has(value as ModelProviderId);
+  return (
+    typeof value === "string" &&
+    value !== "custom" &&
+    MODEL_PROVIDER_ID_SET.has(value as ModelProviderId)
+  );
 }
 
 export function parsePresetModelProviderId(value: unknown): PresetModelProviderId | undefined {
@@ -605,14 +614,14 @@ export function partitionModelsByProvider<Model extends { provider?: ModelProvid
 function normalizeResolveProviderConnectApiBaseOptions(
   options?: ResolveProviderConnectApiBaseOptions | string,
 ): ResolveProviderConnectApiBaseOptions {
-  if (typeof options === 'string') {
+  if (typeof options === "string") {
     return { customApiBaseTrimmed: options };
   }
   return options ?? {};
 }
 
 export function providerSupportsSiteSelection(provider: ModelProviderId): boolean {
-  if (provider === 'custom') {
+  if (provider === "custom") {
     return false;
   }
   return raw.providerSiteSelection[provider] !== undefined;
@@ -621,7 +630,7 @@ export function providerSupportsSiteSelection(provider: ModelProviderId): boolea
 export function defaultProviderConnectSite(
   provider: ModelProviderId,
 ): ProviderConnectSiteId | undefined {
-  if (provider === 'custom') {
+  if (provider === "custom") {
     return undefined;
   }
   return raw.providerSiteSelection[provider]?.defaultSite;
@@ -630,7 +639,7 @@ export function defaultProviderConnectSite(
 export function listProviderConnectSiteOptions(
   provider: ModelProviderId,
 ): ProviderConnectSiteOption[] {
-  if (provider === 'custom') {
+  if (provider === "custom") {
     return [];
   }
   const selection = raw.providerSiteSelection[provider];
@@ -645,12 +654,12 @@ export function listProviderConnectSiteOptions(
   }));
 }
 
-const PROVIDER_SITE_WORKSPACE_ID_PLACEHOLDER = '{workspaceId}';
+const PROVIDER_SITE_WORKSPACE_ID_PLACEHOLDER = "{workspaceId}";
 
 function siteDefinitionRequiresWorkspaceId(site: ProviderConnectSiteDefinition): boolean {
   return (
-    site.requiresWorkspaceId === true
-    || site.apiBase.includes(PROVIDER_SITE_WORKSPACE_ID_PLACEHOLDER)
+    site.requiresWorkspaceId === true ||
+    site.apiBase.includes(PROVIDER_SITE_WORKSPACE_ID_PLACEHOLDER)
   );
 }
 
@@ -658,7 +667,7 @@ export function providerConnectSiteRequiresWorkspaceId(
   provider: ModelProviderId,
   site: ProviderConnectSiteId,
 ): boolean {
-  if (provider === 'custom') {
+  if (provider === "custom") {
     return false;
   }
   const selection = raw.providerSiteSelection[provider];
@@ -675,7 +684,7 @@ export function resolveProviderConnectSiteApiBase(
   site: ProviderConnectSiteId,
   workspaceId?: string,
 ): string | undefined {
-  if (provider === 'custom') {
+  if (provider === "custom") {
     return undefined;
   }
   const selection = raw.providerSiteSelection[provider];
@@ -700,10 +709,10 @@ export function isProviderConnectSiteId(
   provider: ModelProviderId,
   site: unknown,
 ): site is ProviderConnectSiteId {
-  if (typeof site !== 'string' || site.trim() === '') {
+  if (typeof site !== "string" || site.trim() === "") {
     return false;
   }
-  if (provider === 'custom') {
+  if (provider === "custom") {
     return false;
   }
   const selection = raw.providerSiteSelection[provider];
@@ -725,7 +734,7 @@ function resolveTransportApiBaseForProviderSite(
     return undefined;
   }
 
-  if (transportKind === 'openai-compatible') {
+  if (transportKind === "openai-compatible") {
     return siteBase;
   }
 
@@ -745,8 +754,8 @@ function resolveTransportApiBaseForProviderSite(
 export function resolveStepfunStepPlanConnectApiBase(
   transportKind: ProviderModelTransportKind,
 ): string {
-  if (transportKind === 'anthropic') {
-    return 'https://api.stepfun.com/step_plan';
+  if (transportKind === "anthropic") {
+    return "https://api.stepfun.com/step_plan";
   }
   return STEPFUN_STEP_PLAN_COMPATIBLE_API_BASE;
 }
@@ -766,7 +775,11 @@ export function resolveAlibabaTokenPlanConnectApiBase(
   transportKind: ProviderModelTransportKind,
 ): string {
   const siteBase = ALIBABA_TOKEN_PLAN_COMPATIBLE_API_BASE;
-  const transportAdjusted = resolveTransportApiBaseForProviderSite('alibaba', transportKind, siteBase);
+  const transportAdjusted = resolveTransportApiBaseForProviderSite(
+    "alibaba",
+    transportKind,
+    siteBase,
+  );
   return transportAdjusted ?? siteBase;
 }
 
@@ -775,71 +788,71 @@ export function resolveConnectApiBase(
   customApiBaseTrimmed: string,
 ): string {
   switch (provider) {
-    case 'deepseek':
+    case "deepseek":
       return PROVIDER_PRESET_API_BASE.deepseek;
-    case 'xai':
+    case "xai":
       return PROVIDER_PRESET_API_BASE.xai;
-    case 'moonshot-ai':
-      return PROVIDER_PRESET_API_BASE['moonshot-ai'];
-    case 'kimi-code':
-      return PROVIDER_PRESET_API_BASE['kimi-code'];
-    case 'z-ai':
-      return PROVIDER_PRESET_API_BASE['z-ai'];
-    case 'zhipu-ai':
-      return PROVIDER_PRESET_API_BASE['zhipu-ai'];
-    case 'minimax':
+    case "moonshot-ai":
+      return PROVIDER_PRESET_API_BASE["moonshot-ai"];
+    case "kimi-code":
+      return PROVIDER_PRESET_API_BASE["kimi-code"];
+    case "z-ai":
+      return PROVIDER_PRESET_API_BASE["z-ai"];
+    case "zhipu-ai":
+      return PROVIDER_PRESET_API_BASE["zhipu-ai"];
+    case "minimax":
       return PROVIDER_PRESET_API_BASE.minimax;
-    case 'xiaomi':
+    case "xiaomi":
       return PROVIDER_PRESET_API_BASE.xiaomi;
-    case 'siliconflow':
+    case "siliconflow":
       return PROVIDER_PRESET_API_BASE.siliconflow;
-    case 'stepfun':
+    case "stepfun":
       return PROVIDER_PRESET_API_BASE.stepfun;
-    case 'alibaba':
+    case "alibaba":
       return PROVIDER_PRESET_API_BASE.alibaba;
-    case 'anthropic':
+    case "anthropic":
       return PROVIDER_PRESET_API_BASE.anthropic;
-    case 'vercel-ai-gateway':
-      return PROVIDER_PRESET_API_BASE['vercel-ai-gateway'];
-    case 'cloudflare-ai-gateway':
-      return PROVIDER_PRESET_API_BASE['cloudflare-ai-gateway'];
-    case 'openrouter':
+    case "vercel-ai-gateway":
+      return PROVIDER_PRESET_API_BASE["vercel-ai-gateway"];
+    case "cloudflare-ai-gateway":
+      return PROVIDER_PRESET_API_BASE["cloudflare-ai-gateway"];
+    case "openrouter":
       return PROVIDER_PRESET_API_BASE.openrouter;
-    case 'fireworks-ai':
-      return PROVIDER_PRESET_API_BASE['fireworks-ai'];
-    case 'together-ai':
-      return PROVIDER_PRESET_API_BASE['together-ai'];
-    case 'groq':
+    case "fireworks-ai":
+      return PROVIDER_PRESET_API_BASE["fireworks-ai"];
+    case "together-ai":
+      return PROVIDER_PRESET_API_BASE["together-ai"];
+    case "groq":
       return PROVIDER_PRESET_API_BASE.groq;
-    case 'deepinfra':
+    case "deepinfra":
       return PROVIDER_PRESET_API_BASE.deepinfra;
-    case 'hugging-face':
-      return PROVIDER_PRESET_API_BASE['hugging-face'];
-    case 'baseten':
+    case "hugging-face":
+      return PROVIDER_PRESET_API_BASE["hugging-face"];
+    case "baseten":
       return PROVIDER_PRESET_API_BASE.baseten;
-    case 'openai':
+    case "openai":
       return PROVIDER_PRESET_API_BASE.openai;
-    case 'google':
+    case "google":
       return PROVIDER_PRESET_API_BASE.google;
-    case 'google-vertex-ai':
-      return PROVIDER_PRESET_API_BASE['google-vertex-ai'];
-    case 'volcengine':
+    case "google-vertex-ai":
+      return PROVIDER_PRESET_API_BASE["google-vertex-ai"];
+    case "volcengine":
       return PROVIDER_PRESET_API_BASE.volcengine;
-    case 'byteplus':
+    case "byteplus":
       return PROVIDER_PRESET_API_BASE.byteplus;
-    case 'meituan':
+    case "meituan":
       return PROVIDER_PRESET_API_BASE.meituan;
-    case 'tencent-tokenhub':
-      return PROVIDER_PRESET_API_BASE['tencent-tokenhub'];
-    case 'mistral':
+    case "tencent-tokenhub":
+      return PROVIDER_PRESET_API_BASE["tencent-tokenhub"];
+    case "mistral":
       return PROVIDER_PRESET_API_BASE.mistral;
-    case 'cohere':
+    case "cohere":
       return PROVIDER_PRESET_API_BASE.cohere;
-    case 'azure':
+    case "azure":
       return PROVIDER_PRESET_API_BASE.azure;
-    case 'amazon-bedrock':
-      return PROVIDER_PRESET_API_BASE['amazon-bedrock'];
-    case 'custom': {
+    case "amazon-bedrock":
+      return PROVIDER_PRESET_API_BASE["amazon-bedrock"];
+    case "custom": {
       return customApiBaseTrimmed.trim();
     }
   }
@@ -856,34 +869,36 @@ export function resolveProviderConnectApiBase(
   const {
     site,
     workspaceId,
-    customApiBaseTrimmed = '',
+    customApiBaseTrimmed = "",
     billingMode,
     stepfunBillingMode,
     zAiBillingMode,
     zhipuBillingMode,
   } = normalizeResolveProviderConnectApiBaseOptions(options);
 
-  if (provider === 'custom') {
+  if (provider === "custom") {
     return customApiBaseTrimmed.trim();
   }
 
-  if (provider === 'alibaba' && billingMode === 'token-plan') {
+  if (provider === "alibaba" && billingMode === "token-plan") {
     return resolveAlibabaTokenPlanConnectApiBase(transportKind);
   }
 
-  if (provider === 'stepfun' && stepfunBillingMode === 'step-plan') {
+  if (provider === "stepfun" && stepfunBillingMode === "step-plan") {
     return resolveStepfunStepPlanConnectApiBase(transportKind);
   }
 
-  if (provider === 'z-ai' && zAiBillingMode === 'glm-coding-plan') {
+  if (provider === "z-ai" && zAiBillingMode === "glm-coding-plan") {
     return resolveZAiGlmCodingPlanConnectApiBase();
   }
 
-  if (provider === 'zhipu-ai' && zhipuBillingMode === 'glm-coding-plan') {
+  if (provider === "zhipu-ai" && zhipuBillingMode === "glm-coding-plan") {
     return resolveZhipuAiGlmCodingPlanConnectApiBase();
   }
 
-  const siteBase = site ? resolveProviderConnectSiteApiBase(provider, site, workspaceId) : undefined;
+  const siteBase = site
+    ? resolveProviderConnectSiteApiBase(provider, site, workspaceId)
+    : undefined;
   if (siteBase) {
     const transportAdjusted = resolveTransportApiBaseForProviderSite(
       provider as PresetModelProviderId,
@@ -893,7 +908,7 @@ export function resolveProviderConnectApiBase(
     return transportAdjusted ?? siteBase;
   }
 
-  if (provider === 'openai') {
+  if (provider === "openai") {
     return PROVIDER_PRESET_API_BASE.openai;
   }
 

@@ -17,7 +17,10 @@ import {
   resolveEffectiveModelRef,
   settingsModelRef,
 } from "@/components/settings/models/model-defaults";
-import { ModelSettingsRowButton, ModelSettingsRowWithHover } from "@/components/settings/models/model-settings-row";
+import {
+  ModelSettingsRowButton,
+  ModelSettingsRowWithHover,
+} from "@/components/settings/models/model-settings-row";
 import { ProviderConnectDialog } from "@/components/settings/models/provider-connect-dialog";
 import {
   ProviderPickerRowButton,
@@ -51,7 +54,10 @@ import {
 import { runAfterRadixOverlayClose } from "@/lib/overlay-motion";
 import type { DesktopModelProvider, ProviderGroupV2 } from "@/types";
 import { modelRefsEqual } from "@spiritagent/host-internal/config-v2";
-import { DESKTOP_LIST_ITEM_PRIMARY_CLASS, DESKTOP_PAGE_TITLE_CLASS } from "@/lib/desktop-typography";
+import {
+  DESKTOP_LIST_ITEM_PRIMARY_CLASS,
+  DESKTOP_PAGE_TITLE_CLASS,
+} from "@/lib/desktop-typography";
 
 export function ModelsSettingsPanel({
   settings,
@@ -111,7 +117,9 @@ export function ModelsSettingsPanel({
   const modelDefaultsDialogModel =
     modelDefaultsDialogTarget === null
       ? null
-      : models.find((model) => modelRefKey(settingsModelRef(model)) === modelDefaultsDialogTarget) ?? null;
+      : (models.find(
+          (model) => modelRefKey(settingsModelRef(model)) === modelDefaultsDialogTarget,
+        ) ?? null);
   const modelDefaultsDialogRef =
     modelDefaultsDialogModel === null ? null : settingsModelRef(modelDefaultsDialogModel);
   const canAssignActiveRole =
@@ -124,43 +132,43 @@ export function ModelsSettingsPanel({
     modelDefaultsDialogModel !== null &&
     canAssignAsImageGenerationModel(
       modelDefaultsDialogModel,
-      imageGenerationModel !== undefined
-        && modelDefaultsDialogRef !== null
-        && modelRefsEqual(modelDefaultsDialogRef, imageGenerationModel),
+      imageGenerationModel !== undefined &&
+        modelDefaultsDialogRef !== null &&
+        modelRefsEqual(modelDefaultsDialogRef, imageGenerationModel),
     );
   const canAssignVideoGenerationRole =
     modelDefaultsDialogModel !== null &&
     canAssignAsVideoGenerationModel(
       modelDefaultsDialogModel,
-      videoGenerationModel !== undefined
-        && modelDefaultsDialogRef !== null
-        && modelRefsEqual(modelDefaultsDialogRef, videoGenerationModel),
+      videoGenerationModel !== undefined &&
+        modelDefaultsDialogRef !== null &&
+        modelRefsEqual(modelDefaultsDialogRef, videoGenerationModel),
     );
   const canAssignLightweightChatRole =
     modelDefaultsDialogModel !== null &&
     canAssignAsLightweightChatModel(
       modelDefaultsDialogModel,
-      lightweightChatModel !== undefined
-        && modelDefaultsDialogRef !== null
-        && modelRefsEqual(modelDefaultsDialogRef, lightweightChatModel),
+      lightweightChatModel !== undefined &&
+        modelDefaultsDialogRef !== null &&
+        modelRefsEqual(modelDefaultsDialogRef, lightweightChatModel),
     );
   const isModelDefaultsDialogModelActive =
     modelDefaultsDialogRef !== null && modelRefsEqual(modelDefaultsDialogRef, activeModel);
   const isModelDefaultsDialogModelLightweight =
-    lightweightChatModel !== undefined
-    && modelDefaultsDialogRef !== null
-    && modelRefsEqual(modelDefaultsDialogRef, lightweightChatModel);
+    lightweightChatModel !== undefined &&
+    modelDefaultsDialogRef !== null &&
+    modelRefsEqual(modelDefaultsDialogRef, lightweightChatModel);
   const hasModelDefaultAssignmentChanges =
     modelDefaultsDialogModel !== null &&
     (modelDefaultAssignments.activeModel !== isModelDefaultsDialogModelActive ||
       modelDefaultAssignments.imageGenerationModel !==
-        (modelDefaultsDialogRef !== null
-          && imageGenerationModel !== undefined
-          && modelRefsEqual(modelDefaultsDialogRef, imageGenerationModel)) ||
+        (modelDefaultsDialogRef !== null &&
+          imageGenerationModel !== undefined &&
+          modelRefsEqual(modelDefaultsDialogRef, imageGenerationModel)) ||
       modelDefaultAssignments.videoGenerationModel !==
-        (modelDefaultsDialogRef !== null
-          && videoGenerationModel !== undefined
-          && modelRefsEqual(modelDefaultsDialogRef, videoGenerationModel)) ||
+        (modelDefaultsDialogRef !== null &&
+          videoGenerationModel !== undefined &&
+          modelRefsEqual(modelDefaultsDialogRef, videoGenerationModel)) ||
       modelDefaultAssignments.lightweightChatModel !== isModelDefaultsDialogModelLightweight);
 
   const catalogDetailByModelName = useMemo(
@@ -293,20 +301,24 @@ export function ModelsSettingsPanel({
 
     const patch: Partial<SettingsFormState> = {};
 
-    if (modelDefaultAssignments.activeModel && !modelRefsEqual(modelDefaultsDialogRef!, activeModel)) {
+    if (
+      modelDefaultAssignments.activeModel &&
+      !modelRefsEqual(modelDefaultsDialogRef!, activeModel)
+    ) {
       patch.activeModel = modelDefaultsDialogRef!;
     }
 
     if (canAssignImageGenerationRole) {
       if (
-        modelDefaultAssignments.imageGenerationModel
-        && (imageGenerationModel === undefined || !modelRefsEqual(modelDefaultsDialogRef!, imageGenerationModel))
+        modelDefaultAssignments.imageGenerationModel &&
+        (imageGenerationModel === undefined ||
+          !modelRefsEqual(modelDefaultsDialogRef!, imageGenerationModel))
       ) {
         patch.imageGenerationModel = modelDefaultsDialogRef!;
       } else if (
-        !modelDefaultAssignments.imageGenerationModel
-        && imageGenerationModel !== undefined
-        && modelRefsEqual(modelDefaultsDialogRef!, imageGenerationModel)
+        !modelDefaultAssignments.imageGenerationModel &&
+        imageGenerationModel !== undefined &&
+        modelRefsEqual(modelDefaultsDialogRef!, imageGenerationModel)
       ) {
         patch.imageGenerationModel = undefined;
       }
@@ -314,14 +326,15 @@ export function ModelsSettingsPanel({
 
     if (canAssignVideoGenerationRole) {
       if (
-        modelDefaultAssignments.videoGenerationModel
-        && (videoGenerationModel === undefined || !modelRefsEqual(modelDefaultsDialogRef!, videoGenerationModel))
+        modelDefaultAssignments.videoGenerationModel &&
+        (videoGenerationModel === undefined ||
+          !modelRefsEqual(modelDefaultsDialogRef!, videoGenerationModel))
       ) {
         patch.videoGenerationModel = modelDefaultsDialogRef!;
       } else if (
-        !modelDefaultAssignments.videoGenerationModel
-        && videoGenerationModel !== undefined
-        && modelRefsEqual(modelDefaultsDialogRef!, videoGenerationModel)
+        !modelDefaultAssignments.videoGenerationModel &&
+        videoGenerationModel !== undefined &&
+        modelRefsEqual(modelDefaultsDialogRef!, videoGenerationModel)
       ) {
         patch.videoGenerationModel = undefined;
       }
@@ -329,14 +342,15 @@ export function ModelsSettingsPanel({
 
     if (canAssignLightweightChatRole) {
       if (
-        modelDefaultAssignments.lightweightChatModel
-        && (lightweightChatModel === undefined || !modelRefsEqual(modelDefaultsDialogRef!, lightweightChatModel))
+        modelDefaultAssignments.lightweightChatModel &&
+        (lightweightChatModel === undefined ||
+          !modelRefsEqual(modelDefaultsDialogRef!, lightweightChatModel))
       ) {
         patch.lightweightChatModel = modelDefaultsDialogRef!;
       } else if (
-        !modelDefaultAssignments.lightweightChatModel
-        && lightweightChatModel !== undefined
-        && modelRefsEqual(modelDefaultsDialogRef!, lightweightChatModel)
+        !modelDefaultAssignments.lightweightChatModel &&
+        lightweightChatModel !== undefined &&
+        modelRefsEqual(modelDefaultsDialogRef!, lightweightChatModel)
       ) {
         patch.lightweightChatModel = undefined;
       }
@@ -371,7 +385,10 @@ export function ModelsSettingsPanel({
       if (videoGenerationModel === undefined || !modelRefsEqual(modelRef, videoGenerationModel)) {
         patch.videoGenerationModel = modelRef;
       }
-    } else if (lightweightChatModel === undefined || !modelRefsEqual(modelRef, lightweightChatModel)) {
+    } else if (
+      lightweightChatModel === undefined ||
+      !modelRefsEqual(modelRef, lightweightChatModel)
+    ) {
       patch.lightweightChatModel = modelRef;
     }
 
@@ -413,7 +430,7 @@ export function ModelsSettingsPanel({
   return (
     <div className="space-y-4">
       <div className="flex flex-wrap items-center justify-between gap-3">
-        <h1 className={DESKTOP_PAGE_TITLE_CLASS}>{t('settings.modelsTitle')}</h1>
+        <h1 className={DESKTOP_PAGE_TITLE_CLASS}>{t("settings.modelsTitle")}</h1>
         <Button
           type="button"
           size="sm"
@@ -422,14 +439,14 @@ export function ModelsSettingsPanel({
           }}
           disabled={modelsBusy || modelsPreviewBusy}
         >
-          {t('settings.connectProvider')}
+          {t("settings.connectProvider")}
         </Button>
       </div>
 
       <div className="space-y-3">
         {models.length === 0 ? (
           <div className="rounded-lg border border-border/40 bg-background/80 px-4 py-10 text-center">
-            <p className="text-sm text-muted-foreground">{t('settings.noSavedModels')}</p>
+            <p className="text-sm text-muted-foreground">{t("settings.noSavedModels")}</p>
           </div>
         ) : (
           <>
@@ -441,21 +458,16 @@ export function ModelsSettingsPanel({
               const groupHasKey = groupModels.some((m) => m.keyConfigured);
               const groupLabel = groupDisplayLabel(group);
               return (
-                <div
-                  key={group.id}
-                  className="rounded-lg border border-border/40 bg-background/80"
-                >
+                <div key={group.id} className="rounded-lg border border-border/40 bg-background/80">
                   <div className="flex items-center justify-between gap-3 border-b border-border/35 px-4 py-3">
                     <div className="flex min-w-0 items-center gap-2">
-                      <span className={DESKTOP_LIST_ITEM_PRIMARY_CLASS}>
-                        {groupLabel}
-                      </span>
+                      <span className={DESKTOP_LIST_ITEM_PRIMARY_CLASS}>{groupLabel}</span>
                       <Badge variant="secondary" className="text-muted-foreground shrink-0">
-                        {groupModels.length} {t('settings.modelsCount')}
+                        {groupModels.length} {t("settings.modelsCount")}
                       </Badge>
                       {groupHasKey ? (
                         <Badge variant="secondary" className="text-muted-foreground shrink-0">
-                          {t('settings.keySaved')}
+                          {t("settings.keySaved")}
                         </Badge>
                       ) : null}
                     </div>
@@ -467,10 +479,12 @@ export function ModelsSettingsPanel({
                       disabled={modelsBusy || modelsPreviewBusy}
                       onClick={() => setDeleteGroupTarget(group.id)}
                     >
-                      {t('settings.deleteGroup')}
+                      {t("settings.deleteGroup")}
                     </Button>
                   </div>
-                  {groupModels.some((model) => catalogDetailByModelName.has(modelCatalogScopeEntryKey(model))) ? (
+                  {groupModels.some((model) =>
+                    catalogDetailByModelName.has(modelCatalogScopeEntryKey(model)),
+                  ) ? (
                     <Tooltip<SettingsModelProfile>
                       getItemId={(model) => modelRefKey(settingsModelRef(model))}
                       delayDuration={300}
@@ -480,11 +494,11 @@ export function ModelsSettingsPanel({
                           const modelRef = settingsModelRef(model);
                           const isActive = modelRefsEqual(modelRef, activeModel);
                           const isImageDefault =
-                            imageGenerationModel !== undefined
-                            && modelRefsEqual(modelRef, imageGenerationModel);
+                            imageGenerationModel !== undefined &&
+                            modelRefsEqual(modelRef, imageGenerationModel);
                           const isLightweightDefault =
-                            lightweightChatModel !== undefined
-                            && modelRefsEqual(modelRef, lightweightChatModel);
+                            lightweightChatModel !== undefined &&
+                            modelRefsEqual(modelRef, lightweightChatModel);
                           const supportedDefaultRoles = getSupportedModelDefaultRoles(
                             model,
                             activeModel,
@@ -494,7 +508,9 @@ export function ModelsSettingsPanel({
                           );
                           const defaultActionLabel = modelDefaultActionLabel(supportedDefaultRoles);
                           const rowDisabled = modelsBusy || modelsPreviewBusy;
-                          const hasDetail = catalogDetailByModelName.has(modelCatalogScopeEntryKey(model));
+                          const hasDetail = catalogDetailByModelName.has(
+                            modelCatalogScopeEntryKey(model),
+                          );
                           const displayTitle = modelDisplayTitleFromMap(
                             model,
                             displayTitleByModelName,
@@ -544,7 +560,9 @@ export function ModelsSettingsPanel({
                           if (!row) {
                             return null;
                           }
-                          const catalogEntry = catalogDetailByModelName.get(modelCatalogScopeEntryKey(row));
+                          const catalogEntry = catalogDetailByModelName.get(
+                            modelCatalogScopeEntryKey(row),
+                          );
                           if (!catalogEntry) {
                             return null;
                           }
@@ -564,11 +582,11 @@ export function ModelsSettingsPanel({
                         const modelRef = settingsModelRef(model);
                         const isActive = modelRefsEqual(modelRef, activeModel);
                         const isImageDefault =
-                          imageGenerationModel !== undefined
-                          && modelRefsEqual(modelRef, imageGenerationModel);
+                          imageGenerationModel !== undefined &&
+                          modelRefsEqual(modelRef, imageGenerationModel);
                         const isLightweightDefault =
-                          lightweightChatModel !== undefined
-                          && modelRefsEqual(modelRef, lightweightChatModel);
+                          lightweightChatModel !== undefined &&
+                          modelRefsEqual(modelRef, lightweightChatModel);
                         const supportedDefaultRoles = getSupportedModelDefaultRoles(
                           model,
                           activeModel,
@@ -616,12 +634,12 @@ export function ModelsSettingsPanel({
       >
         <DialogContent className="sm:max-w-md" showCloseButton>
           <DialogHeader>
-            <DialogTitle>{t('settings.setAsDefault')}</DialogTitle>
+            <DialogTitle>{t("settings.setAsDefault")}</DialogTitle>
             <DialogDescription>
-              {t('settings.setAsDefaultDescription', {
+              {t("settings.setAsDefaultDescription", {
                 name: modelDefaultsDialogModel
                   ? modelDisplayTitleFromMap(modelDefaultsDialogModel, displayTitleByModelName)
-                  : '',
+                  : "",
               })}
             </DialogDescription>
           </DialogHeader>
@@ -629,7 +647,9 @@ export function ModelsSettingsPanel({
             {canAssignActiveRole ? (
               <div
                 className="group/field flex items-start gap-3 rounded-lg border border-dialog-panel-border px-3 py-3 transition-colors data-[disabled=true]:opacity-70"
-                data-disabled={modelsBusy || modelsPreviewBusy || isModelDefaultsDialogModelActive || undefined}
+                data-disabled={
+                  modelsBusy || modelsPreviewBusy || isModelDefaultsDialogModelActive || undefined
+                }
               >
                 <Checkbox
                   id="model-default-active"
@@ -644,12 +664,12 @@ export function ModelsSettingsPanel({
                 />
                 <div className="grid gap-1.5">
                   <Label htmlFor="model-default-active" className={DESKTOP_LIST_ITEM_PRIMARY_CLASS}>
-                    {t('settings.activeModelLabel')}
+                    {t("settings.activeModelLabel")}
                   </Label>
                   <p className="text-xs leading-5 text-muted-foreground">
                     {isModelDefaultsDialogModelActive
-                      ? t('settings.activeModelKeepHint')
-                      : t('settings.activeModelUsage')}
+                      ? t("settings.activeModelKeepHint")
+                      : t("settings.activeModelUsage")}
                   </p>
                 </div>
               </div>
@@ -675,10 +695,10 @@ export function ModelsSettingsPanel({
                     htmlFor="model-default-image-generation"
                     className={DESKTOP_LIST_ITEM_PRIMARY_CLASS}
                   >
-                    {t('settings.imageGenModelLabel')}
+                    {t("settings.imageGenModelLabel")}
                   </Label>
                   <p className="text-xs leading-5 text-muted-foreground">
-                    {t('settings.imageGenModelUsage')}
+                    {t("settings.imageGenModelUsage")}
                   </p>
                 </div>
               </div>
@@ -704,10 +724,10 @@ export function ModelsSettingsPanel({
                     htmlFor="model-default-video-generation"
                     className={DESKTOP_LIST_ITEM_PRIMARY_CLASS}
                   >
-                    {t('settings.videoGenModelLabel')}
+                    {t("settings.videoGenModelLabel")}
                   </Label>
                   <p className="text-xs leading-5 text-muted-foreground">
-                    {t('settings.videoGenModelUsage')}
+                    {t("settings.videoGenModelUsage")}
                   </p>
                 </div>
               </div>
@@ -733,51 +753,51 @@ export function ModelsSettingsPanel({
                     htmlFor="model-default-lightweight-chat"
                     className={DESKTOP_LIST_ITEM_PRIMARY_CLASS}
                   >
-                    {t('settings.lightweightChatModelLabel')}
+                    {t("settings.lightweightChatModelLabel")}
                   </Label>
                   <p className="text-xs leading-5 text-muted-foreground">
-                    {t('settings.lightweightChatModelUsage')}
+                    {t("settings.lightweightChatModelUsage")}
                   </p>
                 </div>
               </div>
             ) : null}
-            {!canAssignActiveRole
-            && !canAssignImageGenerationRole
-            && !canAssignVideoGenerationRole
-            && !canAssignLightweightChatRole ? (
+            {!canAssignActiveRole &&
+            !canAssignImageGenerationRole &&
+            !canAssignVideoGenerationRole &&
+            !canAssignLightweightChatRole ? (
               <div className="rounded-lg border border-dashed border-dialog-panel-border px-3 py-4 text-sm text-muted-foreground">
-                {t('settings.noDefaultRolesForModel')}
+                {t("settings.noDefaultRolesForModel")}
               </div>
             ) : null}
           </div>
           <DialogFooter>
             <DialogFooterActions>
-            <Button
-              type="button"
-              variant="outline"
-              size="sm"
-              onClick={dismissModelDefaultsDialog}
-              disabled={modelsBusy || modelsPreviewBusy}
-            >
-              {t('common.cancel')}
-            </Button>
-            <Button
-              type="button"
-              size="sm"
-              disabled={modelsBusy || modelsPreviewBusy || !hasModelDefaultAssignmentChanges}
-              onClick={() => {
-                void (async () => {
-                  try {
-                    await saveModelDefaultAssignments();
-                  } catch {
-                    /* runtimeError */
-                  }
-                })();
-              }}
-            >
-              {modelsBusy ? <LoaderCircle className="size-4 animate-spin" /> : null}
-              {t('common.save')}
-            </Button>
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={dismissModelDefaultsDialog}
+                disabled={modelsBusy || modelsPreviewBusy}
+              >
+                {t("common.cancel")}
+              </Button>
+              <Button
+                type="button"
+                size="sm"
+                disabled={modelsBusy || modelsPreviewBusy || !hasModelDefaultAssignmentChanges}
+                onClick={() => {
+                  void (async () => {
+                    try {
+                      await saveModelDefaultAssignments();
+                    } catch {
+                      /* runtimeError */
+                    }
+                  })();
+                }}
+              >
+                {modelsBusy ? <LoaderCircle className="size-4 animate-spin" /> : null}
+                {t("common.save")}
+              </Button>
             </DialogFooterActions>
           </DialogFooter>
         </DialogContent>
@@ -793,45 +813,45 @@ export function ModelsSettingsPanel({
       >
         <DialogContent className="sm:max-w-md" showCloseButton>
           <DialogHeader>
-            <DialogTitle>{t('settings.deleteModel')}</DialogTitle>
+            <DialogTitle>{t("settings.deleteModel")}</DialogTitle>
             <DialogDescription>
-              {t('settings.deleteModelConfirm', { name: deleteTarget ?? '' })}
+              {t("settings.deleteModelConfirm", { name: deleteTarget ?? "" })}
             </DialogDescription>
           </DialogHeader>
           <DialogFooter>
             <DialogFooterActions>
-            <Button
-              type="button"
-              variant="outline"
-              size="sm"
-              onClick={() => setDeleteTarget(null)}
-              disabled={modelsBusy}
-            >
-              {t('common.cancel')}
-            </Button>
-            <Button
-              type="button"
-              variant="destructive"
-              size="sm"
-              disabled={modelsBusy || !deleteTarget}
-              onClick={() => {
-                const name = deleteTarget;
-                if (!name) {
-                  return;
-                }
-                void (async () => {
-                  try {
-                    await onRemoveModel(name);
-                    setDeleteTarget(null);
-                  } catch {
-                    /* runtimeError */
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={() => setDeleteTarget(null)}
+                disabled={modelsBusy}
+              >
+                {t("common.cancel")}
+              </Button>
+              <Button
+                type="button"
+                variant="destructive"
+                size="sm"
+                disabled={modelsBusy || !deleteTarget}
+                onClick={() => {
+                  const name = deleteTarget;
+                  if (!name) {
+                    return;
                   }
-                })();
-              }}
-            >
-              {modelsBusy ? <LoaderCircle className="size-4 animate-spin" /> : null}
-              {t('common.delete')}
-            </Button>
+                  void (async () => {
+                    try {
+                      await onRemoveModel(name);
+                      setDeleteTarget(null);
+                    } catch {
+                      /* runtimeError */
+                    }
+                  })();
+                }}
+              >
+                {modelsBusy ? <LoaderCircle className="size-4 animate-spin" /> : null}
+                {t("common.delete")}
+              </Button>
             </DialogFooterActions>
           </DialogFooter>
         </DialogContent>
@@ -847,53 +867,53 @@ export function ModelsSettingsPanel({
       >
         <DialogContent className="sm:max-w-md" showCloseButton>
           <DialogHeader>
-            <DialogTitle>{t('settings.deleteProviderGroup')}</DialogTitle>
+            <DialogTitle>{t("settings.deleteProviderGroup")}</DialogTitle>
             <DialogDescription>
-              {t('settings.deleteProviderGroupConfirm', {
+              {t("settings.deleteProviderGroupConfirm", {
                 provider: deleteGroupTarget
-                  ? (configProviderGroups.find((group) => group.id === deleteGroupTarget)
-                      ? groupDisplayLabel(
-                          configProviderGroups.find((group) => group.id === deleteGroupTarget)!,
-                        )
-                      : deleteGroupTarget)
-                  : '',
+                  ? configProviderGroups.find((group) => group.id === deleteGroupTarget)
+                    ? groupDisplayLabel(
+                        configProviderGroups.find((group) => group.id === deleteGroupTarget)!,
+                      )
+                    : deleteGroupTarget
+                  : "",
               })}
             </DialogDescription>
           </DialogHeader>
           <DialogFooter>
             <DialogFooterActions>
-            <Button
-              type="button"
-              variant="outline"
-              size="sm"
-              onClick={() => setDeleteGroupTarget(null)}
-              disabled={modelsBusy}
-            >
-              {t('common.cancel')}
-            </Button>
-            <Button
-              type="button"
-              variant="destructive"
-              size="sm"
-              disabled={modelsBusy || !deleteGroupTarget}
-              onClick={() => {
-                const groupId = deleteGroupTarget;
-                if (!groupId) {
-                  return;
-                }
-                void (async () => {
-                  try {
-                    await onRemoveProviderModels(groupId);
-                    setDeleteGroupTarget(null);
-                  } catch {
-                    /* runtimeError */
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={() => setDeleteGroupTarget(null)}
+                disabled={modelsBusy}
+              >
+                {t("common.cancel")}
+              </Button>
+              <Button
+                type="button"
+                variant="destructive"
+                size="sm"
+                disabled={modelsBusy || !deleteGroupTarget}
+                onClick={() => {
+                  const groupId = deleteGroupTarget;
+                  if (!groupId) {
+                    return;
                   }
-                })();
-              }}
-            >
-              {modelsBusy ? <LoaderCircle className="size-4 animate-spin" /> : null}
-              {t('settings.deleteGroup')}
-            </Button>
+                  void (async () => {
+                    try {
+                      await onRemoveProviderModels(groupId);
+                      setDeleteGroupTarget(null);
+                    } catch {
+                      /* runtimeError */
+                    }
+                  })();
+                }}
+              >
+                {modelsBusy ? <LoaderCircle className="size-4 animate-spin" /> : null}
+                {t("settings.deleteGroup")}
+              </Button>
             </DialogFooterActions>
           </DialogFooter>
         </DialogContent>
@@ -910,7 +930,7 @@ export function ModelsSettingsPanel({
       >
         <DialogContent className="sm:max-w-xl" showCloseButton>
           <DialogHeader>
-            <DialogTitle>{t('settings.selectProvider')}</DialogTitle>
+            <DialogTitle>{t("settings.selectProvider")}</DialogTitle>
           </DialogHeader>
           <div className="grid gap-3 py-1">
             <DesktopFormInput
@@ -918,13 +938,15 @@ export function ModelsSettingsPanel({
               value={providerQuery}
               onChange={(e) => setProviderQuery(e.target.value)}
               onKeyDown={handleProviderSearchKeyDown}
-              placeholder={t('common.search')}
+              placeholder={t("common.search")}
               autoComplete="off"
             />
             <ScrollArea className="h-80">
               <div ref={providerListRef} className="px-0.5" onKeyDown={handleProviderListKeyDown}>
                 {filteredProviders.length === 0 ? (
-                  <p className="px-2 py-6 text-center text-sm text-muted-foreground">{t('app.noMatches')}</p>
+                  <p className="px-2 py-6 text-center text-sm text-muted-foreground">
+                    {t("app.noMatches")}
+                  </p>
                 ) : (
                   filteredProviders.map((row) => (
                     <ProviderPickerRowButton key={row.id} row={row} onSelect={startConnect} />

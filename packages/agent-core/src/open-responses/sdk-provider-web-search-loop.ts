@@ -1,14 +1,14 @@
-import { isStepCount } from 'ai';
+import { isStepCount } from "ai";
 
-import type { AiSdkUsageSource } from '../ai-sdk-usage.js';
-import type { JsonValue, ToolCallRequest } from '../ports.js';
-import { isJsonObject, type ToolAgentState } from '../tool-agent.js';
-import { isResponsesBuiltInToolName } from './responses-built-in-tools.js';
-import type { OpenResponsesTransportConfig } from './responses-compat.js';
+import type { AiSdkUsageSource } from "../ai-sdk-usage.js";
+import type { JsonValue, ToolCallRequest } from "../ports.js";
+import { isJsonObject, type ToolAgentState } from "../tool-agent.js";
+import { isResponsesBuiltInToolName } from "./responses-built-in-tools.js";
+import type { OpenResponsesTransportConfig } from "./responses-compat.js";
 import {
   resolveProviderWebSearchMode,
   type ProviderWebSearchMode,
-} from './web-search-eligibility.js';
+} from "./web-search-eligibility.js";
 
 export const SDK_PROVIDER_WEB_SEARCH_STEP_LIMIT = 5;
 
@@ -23,13 +23,15 @@ export function shouldUseSdkProviderWebSearchMultiStep(
 export function shouldUseGatewaySdkProviderWebSearchStreamPatch(
   config: OpenResponsesTransportConfig,
 ): boolean {
-  return resolveProviderWebSearchMode(config) === 'gateway-sdk-web-search';
+  return resolveProviderWebSearchMode(config) === "gateway-sdk-web-search";
 }
 
 function isSdkProviderWebSearchMode(mode: ProviderWebSearchMode | undefined): boolean {
-  return mode === 'gateway-sdk-web-search'
-    || mode === 'openai-sdk-web-search'
-    || mode === 'xai-sdk-web-search';
+  return (
+    mode === "gateway-sdk-web-search" ||
+    mode === "openai-sdk-web-search" ||
+    mode === "xai-sdk-web-search"
+  );
 }
 
 export function buildSdkProviderWebSearchStopWhen(
@@ -45,10 +47,8 @@ export function filterPendingHostToolCalls(
   executedProviderBuiltinToolCallIds: ReadonlySet<string>,
 ): ToolCallRequest[] {
   return calls.filter(
-    (call) => !(
-      isResponsesBuiltInToolName(call.name)
-      && executedProviderBuiltinToolCallIds.has(call.id)
-    ),
+    (call) =>
+      !(isResponsesBuiltInToolName(call.name) && executedProviderBuiltinToolCallIds.has(call.id)),
   );
 }
 
@@ -95,12 +95,10 @@ export async function resolveAiSdkStreamAssistantText(
   streamedText: string,
 ): Promise<{ text: string; finalStepText: string; sdkStepCount: number }> {
   const steps = await resolveMaybePromise(source.steps);
-  const stepTexts = (steps ?? [])
-    .map((step) => step.text.trim())
-    .filter((text) => text.length > 0);
-  const finalStepText = stepTexts.at(-1) ?? '';
-  const aggregateText = (await resolveMaybePromise(source.text))?.trim() ?? '';
-  const allStepText = stepTexts.join('\n\n');
+  const stepTexts = (steps ?? []).map((step) => step.text.trim()).filter((text) => text.length > 0);
+  const finalStepText = stepTexts.at(-1) ?? "";
+  const aggregateText = (await resolveMaybePromise(source.text))?.trim() ?? "";
+  const allStepText = stepTexts.join("\n\n");
   const streamed = streamedText.trim();
 
   let resolved = streamed;
@@ -139,11 +137,11 @@ export type AccumulatedProviderBuiltinToolResult = {
 };
 
 export function formatProviderBuiltinToolResultContent(toolName: string, output: unknown): string {
-  if (toolName === 'web_search') {
+  if (toolName === "web_search") {
     return formatGatewayPerplexitySearchToolResult(output);
   }
 
-  return typeof output === 'string' ? output : JSON.stringify(output, null, 2);
+  return typeof output === "string" ? output : JSON.stringify(output, null, 2);
 }
 
 function formatGatewayPerplexitySearchToolResult(output: unknown): string {
@@ -152,14 +150,14 @@ function formatGatewayPerplexitySearchToolResult(output: unknown): string {
   }
 
   const record = output as Record<string, JsonValue>;
-  if (typeof record.error === 'string') {
-    const message = typeof record.message === 'string' ? record.message : record.error;
+  if (typeof record.error === "string") {
+    const message = typeof record.message === "string" ? record.message : record.error;
     return `[web_search error] ${message}`;
   }
 
   const results = Array.isArray(record.results) ? record.results : [];
   if (results.length === 0) {
-    return '[web_search] No results returned.';
+    return "[web_search] No results returned.";
   }
 
   const lines = results.map((result, index) => {
@@ -168,13 +166,13 @@ function formatGatewayPerplexitySearchToolResult(output: unknown): string {
     }
 
     const entry = result as Record<string, JsonValue>;
-    const title = typeof entry.title === 'string' ? entry.title : 'Untitled';
-    const url = typeof entry.url === 'string' ? entry.url : '';
-    const snippet = typeof entry.snippet === 'string' ? entry.snippet : '';
+    const title = typeof entry.title === "string" ? entry.title : "Untitled";
+    const url = typeof entry.url === "string" ? entry.url : "";
+    const snippet = typeof entry.snippet === "string" ? entry.snippet : "";
     return `${index + 1}. ${title}\nurl: ${url}\nsnippet: ${snippet}`;
   });
 
-  return `[web_search]\n${lines.join('\n\n')}`;
+  return `[web_search]\n${lines.join("\n\n")}`;
 }
 
 export function persistProviderBuiltinToolRoundToState(
@@ -191,27 +189,27 @@ export function persistProviderBuiltinToolRoundToState(
 
   for (const result of orderedResults) {
     state.messages.push({
-      role: 'tool',
+      role: "tool",
       tool_call_id: result.toolCallId,
       content: formatProviderBuiltinToolResultContent(result.toolName, result.output),
     });
   }
 }
 
-export function findLatestProviderBuiltinToolRoundInState(
-  state: ToolAgentState,
-): {
-  calls: ToolCallRequest[];
-  toolResults: Array<{ toolCallId: string; content: string }>;
-} | undefined {
+export function findLatestProviderBuiltinToolRoundInState(state: ToolAgentState):
+  | {
+      calls: ToolCallRequest[];
+      toolResults: Array<{ toolCallId: string; content: string }>;
+    }
+  | undefined {
   const toolResultsById = new Map<string, string>();
   for (const message of state.messages) {
-    if (!isJsonObject(message) || message.role !== 'tool') {
+    if (!isJsonObject(message) || message.role !== "tool") {
       continue;
     }
 
-    const toolCallId = typeof message.tool_call_id === 'string' ? message.tool_call_id : undefined;
-    const content = typeof message.content === 'string' ? message.content : undefined;
+    const toolCallId = typeof message.tool_call_id === "string" ? message.tool_call_id : undefined;
+    const content = typeof message.content === "string" ? message.content : undefined;
     if (toolCallId && content !== undefined) {
       toolResultsById.set(toolCallId, content);
     }
@@ -219,7 +217,7 @@ export function findLatestProviderBuiltinToolRoundInState(
 
   for (let index = state.messages.length - 1; index >= 0; index -= 1) {
     const message = state.messages[index];
-    if (!isJsonObject(message) || message.role !== 'assistant') {
+    if (!isJsonObject(message) || message.role !== "assistant") {
       continue;
     }
     if (!Array.isArray(message.tool_calls)) {
@@ -231,7 +229,7 @@ export function findLatestProviderBuiltinToolRoundInState(
       if (!isJsonObject(entry) || !isJsonObject(entry.function)) {
         continue;
       }
-      if (typeof entry.id !== 'string' || typeof entry.function.name !== 'string') {
+      if (typeof entry.id !== "string" || typeof entry.function.name !== "string") {
         continue;
       }
       if (!isResponsesBuiltInToolName(entry.function.name)) {
@@ -241,9 +239,10 @@ export function findLatestProviderBuiltinToolRoundInState(
       calls.push({
         id: entry.id,
         name: entry.function.name,
-        argumentsJson: typeof entry.function.arguments === 'string'
-          ? entry.function.arguments
-          : JSON.stringify(entry.function.arguments ?? {}),
+        argumentsJson:
+          typeof entry.function.arguments === "string"
+            ? entry.function.arguments
+            : JSON.stringify(entry.function.arguments ?? {}),
       });
     }
 
@@ -279,9 +278,9 @@ export function shouldResumeStreamingAfterProviderSearch(
   hasPostToolAssistantText = false,
 ): boolean {
   if (
-    !shouldUseGatewaySdkProviderWebSearchStreamPatch(config)
-    || executedProviderBuiltinToolCallIds.size === 0
-    || pendingHostCallCount > 0
+    !shouldUseGatewaySdkProviderWebSearchStreamPatch(config) ||
+    executedProviderBuiltinToolCallIds.size === 0 ||
+    pendingHostCallCount > 0
   ) {
     return false;
   }

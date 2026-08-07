@@ -1,26 +1,26 @@
-import type { TextStreamPart } from 'ai';
+import type { TextStreamPart } from "ai";
 
-import { readAiSdkUsage } from '../ai-sdk-usage.js';
-import type { JsonObject, JsonValue, LlmStreamEvent, ToolAgentRoundCompletion } from '../ports.js';
-import { APPLY_PATCH_HOST_TOOL_NAME } from './apply-patch-eligibility.js';
+import { readAiSdkUsage } from "../ai-sdk-usage.js";
+import type { JsonObject, JsonValue, LlmStreamEvent, ToolAgentRoundCompletion } from "../ports.js";
+import { APPLY_PATCH_HOST_TOOL_NAME } from "./apply-patch-eligibility.js";
 import {
   buildApplyPatchToolCallArgumentsJson,
   normalizeApplyPatchToolCallArgumentsJson,
   parseApplyPatchOperationFromArguments,
   registerPendingApplyPatchCallIds,
-} from './apply-patch-bridge.js';
-import { resolveStreamingToolPreviewEmit } from '../tool-streaming-preview-gate.js';
-import { cloneJsonValue, isJsonObject, type ToolAgentState } from '../tool-agent.js';
-import { isArkLlmVendor } from '../ark/ark-provider.js';
-import { attachResponseIdToAssistantMessage } from './provider-state.js';
-import type { OpenResponsesTransportConfig } from './responses-compat.js';
-import { renderResponsesTransportError } from './ai-sdk-message-bridge.js';
+} from "./apply-patch-bridge.js";
+import { resolveStreamingToolPreviewEmit } from "../tool-streaming-preview-gate.js";
+import { isJsonObject, type ToolAgentState } from "../tool-agent.js";
+import { isArkLlmVendor } from "../ark/ark-provider.js";
+import { attachResponseIdToAssistantMessage } from "./provider-state.js";
+import type { OpenResponsesTransportConfig } from "./responses-compat.js";
+import { renderResponsesTransportError } from "./ai-sdk-message-bridge.js";
 import {
   accumulateResponsesBuiltInToolPreviewsFromRawChunk,
   buildGatewaySdkProviderBuiltinToolResultArgumentsJson,
   createResponsesBuiltInPreviewStreamState,
   isResponsesBuiltInToolName,
-} from './responses-built-in-tools.js';
+} from "./responses-built-in-tools.js";
 import {
   type AccumulatedProviderBuiltinToolResult,
   filterPendingHostToolCalls,
@@ -28,12 +28,12 @@ import {
   resolveAiSdkStreamAssistantText,
   shouldResumeStreamingAfterProviderSearch,
   shouldUseGatewaySdkProviderWebSearchStreamPatch,
-} from './sdk-provider-web-search-loop.js';
+} from "./sdk-provider-web-search-loop.js";
 interface AggregatedStreamingToolCall {
   index: number;
   id: string;
   streamItemId?: string;
-  type: 'function';
+  type: "function";
   functionName: string;
   functionArguments: string;
   readyPreviewEmitted: boolean;
@@ -67,8 +67,8 @@ export async function* responsesEventStreamToRuntimeEvents(
   completion: Deferred<ToolAgentRoundCompletion<ToolAgentState>>,
 ): AsyncGenerator<LlmStreamEvent, void, undefined> {
   const toolCalls = new Map<number, AggregatedStreamingToolCall>();
-  let assistantContent = '';
-  let reasoningContent = '';
+  let assistantContent = "";
+  let reasoningContent = "";
   let sawAnswerOrToolOutput = false;
   let nextToolIndex = 0;
   let providerPreviewState = createResponsesBuiltInPreviewStreamState();
@@ -83,35 +83,32 @@ export async function* responsesEventStreamToRuntimeEvents(
   try {
     for await (const part of stream) {
       switch (part.type) {
-        case 'reasoning-delta': {
+        case "reasoning-delta": {
           if (part.text) {
-            if (
-              activeReasoningDeltaId !== undefined &&
-              part.id !== activeReasoningDeltaId
-            ) {
+            if (activeReasoningDeltaId !== undefined && part.id !== activeReasoningDeltaId) {
               break;
             }
             activeReasoningDeltaId = part.id;
             reasoningContent += part.text;
-            yield { kind: 'thinking-chunk', text: part.text };
+            yield { kind: "thinking-chunk", text: part.text };
           }
           break;
         }
-        case 'text-delta': {
+        case "text-delta": {
           sawAnswerOrToolOutput = true;
           if (executedProviderBuiltinToolCallIds.size > 0 && part.text) {
             hasPostToolAssistantText = true;
           }
           assistantContent += part.text;
-          yield { kind: 'assistant-chunk', text: part.text };
+          yield { kind: "assistant-chunk", text: part.text };
           break;
         }
-        case 'tool-result': {
+        case "tool-result": {
           sawAnswerOrToolOutput = true;
           if (
-            shouldUseGatewaySdkProviderWebSearchStreamPatch(config)
-            && typeof part.toolCallId === 'string'
-            && isResponsesBuiltInToolName(part.toolName)
+            shouldUseGatewaySdkProviderWebSearchStreamPatch(config) &&
+            typeof part.toolCallId === "string" &&
+            isResponsesBuiltInToolName(part.toolName)
           ) {
             executedProviderBuiltinToolCallIds.add(part.toolCallId);
             providerBuiltinToolResults.set(part.toolCallId, {
@@ -133,7 +130,7 @@ export async function* responsesEventStreamToRuntimeEvents(
                 existing.readyPreviewEmitted = true;
               }
               yield {
-                kind: 'streaming-tool-preview',
+                kind: "streaming-tool-preview",
                 toolCallId: part.toolCallId,
                 toolName: part.toolName,
                 argumentsJson: succeededArgumentsJson,
@@ -142,12 +139,12 @@ export async function* responsesEventStreamToRuntimeEvents(
           }
           break;
         }
-        case 'tool-error': {
+        case "tool-error": {
           sawAnswerOrToolOutput = true;
           if (
-            shouldUseGatewaySdkProviderWebSearchStreamPatch(config)
-            && typeof part.toolCallId === 'string'
-            && isResponsesBuiltInToolName(part.toolName)
+            shouldUseGatewaySdkProviderWebSearchStreamPatch(config) &&
+            typeof part.toolCallId === "string" &&
+            isResponsesBuiltInToolName(part.toolName)
           ) {
             executedProviderBuiltinToolCallIds.add(part.toolCallId);
             providerBuiltinToolResults.set(part.toolCallId, {
@@ -169,7 +166,7 @@ export async function* responsesEventStreamToRuntimeEvents(
                 existing.readyPreviewEmitted = true;
               }
               yield {
-                kind: 'streaming-tool-preview',
+                kind: "streaming-tool-preview",
                 toolCallId: part.toolCallId,
                 toolName: part.toolName,
                 argumentsJson: failedArgumentsJson,
@@ -178,7 +175,7 @@ export async function* responsesEventStreamToRuntimeEvents(
           }
           break;
         }
-        case 'tool-call': {
+        case "tool-call": {
           sawAnswerOrToolOutput = true;
           // Open Responses SSE 仍只从 raw output_item 聚合；Vercel AI Gateway v3 language-model 无该形态。
           if (!shouldAggregateGatewaySdkToolCalls(config)) {
@@ -197,7 +194,7 @@ export async function* responsesEventStreamToRuntimeEvents(
           }
           break;
         }
-        case 'tool-input-start': {
+        case "tool-input-start": {
           if (!shouldAggregateGatewaySdkToolCalls(config)) {
             break;
           }
@@ -207,7 +204,7 @@ export async function* responsesEventStreamToRuntimeEvents(
             nextToolIndex,
             part.id,
             part.toolName,
-            '',
+            "",
           );
           nextToolIndex = gatewayUpdates.nextToolIndex;
           for (const update of gatewayUpdates.events) {
@@ -215,7 +212,7 @@ export async function* responsesEventStreamToRuntimeEvents(
           }
           break;
         }
-        case 'tool-input-delta': {
+        case "tool-input-delta": {
           sawAnswerOrToolOutput = true;
           let existing = findToolCallByStreamId(toolCalls, part.id);
           if (!existing && shouldAggregateGatewaySdkToolCalls(config)) {
@@ -223,8 +220,8 @@ export async function* responsesEventStreamToRuntimeEvents(
               toolCalls,
               nextToolIndex,
               part.id,
-              'toolName' in part && typeof part.toolName === 'string' ? part.toolName : '',
-              '',
+              "toolName" in part && typeof part.toolName === "string" ? part.toolName : "",
+              "",
             );
             nextToolIndex = gatewayUpdates.nextToolIndex;
             existing = gatewayUpdates.call;
@@ -232,7 +229,7 @@ export async function* responsesEventStreamToRuntimeEvents(
               yield update;
             }
           }
-          if (existing && typeof part.delta === 'string') {
+          if (existing && typeof part.delta === "string") {
             existing.functionArguments += part.delta;
             const previewEvents: LlmStreamEvent[] = [];
             maybeEmitPreview(previewEvents, existing);
@@ -242,10 +239,10 @@ export async function* responsesEventStreamToRuntimeEvents(
           }
           break;
         }
-        case 'error': {
+        case "error": {
           throw part.error;
         }
-        case 'raw': {
+        case "raw": {
           const rawUpdates = accumulateOpenResponsesToolCallProgressFromRawChunk(
             toolCalls,
             part.rawValue,
@@ -279,13 +276,13 @@ export async function* responsesEventStreamToRuntimeEvents(
           }
 
           if (
-            activeReasoningDeltaId === undefined
-            && shouldUseRawResponsesReasoningFallback(config)
+            activeReasoningDeltaId === undefined &&
+            shouldUseRawResponsesReasoningFallback(config)
           ) {
             const rawReasoningText = extractOpenResponsesReasoningTextFromRawChunk(part.rawValue);
             if (rawReasoningText) {
               reasoningContent += rawReasoningText;
-              yield { kind: 'thinking-chunk', text: rawReasoningText };
+              yield { kind: "thinking-chunk", text: rawReasoningText };
             }
           }
 
@@ -297,7 +294,7 @@ export async function* responsesEventStreamToRuntimeEvents(
     }
 
     if (!sawAnswerOrToolOutput && !reasoningContent.trim()) {
-      throw new Error('流式 Responses 响应无任何 text / tool 输出。');
+      throw new Error("流式 Responses 响应无任何 text / tool 输出。");
     }
 
     const resolvedAssistant = await resolveAiSdkStreamAssistantText(usageSource, assistantContent);
@@ -305,7 +302,7 @@ export async function* responsesEventStreamToRuntimeEvents(
     if (resolvedAssistantContent.length > assistantContent.length) {
       const tail = resolvedAssistantContent.slice(assistantContent.length);
       if (tail) {
-        yield { kind: 'assistant-chunk', text: tail };
+        yield { kind: "assistant-chunk", text: tail };
         sawAnswerOrToolOutput = true;
       }
     }
@@ -330,8 +327,8 @@ export async function* responsesEventStreamToRuntimeEvents(
         attachResponseIdToAssistantMessage(
           config,
           buildStreamingAssistantMessage(
-            resumeStreamingAfterProviderSearch ? resolvedAssistantContent : '',
-            resumeStreamingAfterProviderSearch ? reasoningContent : '',
+            resumeStreamingAfterProviderSearch ? resolvedAssistantContent : "",
+            resumeStreamingAfterProviderSearch ? reasoningContent : "",
             toolCalls,
             pendingHostToolCallIds,
           ),
@@ -362,27 +359,25 @@ export async function* responsesEventStreamToRuntimeEvents(
     }
     const usage = await readAiSdkUsage(usageSource);
     completion.resolve({
-      kind: 'success',
+      kind: "success",
       result: {
         state: nextState,
-        step: calls.length > 0 ? { kind: 'tool-calls', calls } : { kind: 'final-response-ready' },
+        step: calls.length > 0 ? { kind: "tool-calls", calls } : { kind: "final-response-ready" },
         requestTrace,
         ...(usage ? { usage } : {}),
-        ...(resumeStreamingAfterProviderSearch
-          ? { resumeStreamingAfterProviderSearch: true }
-          : {}),
+        ...(resumeStreamingAfterProviderSearch ? { resumeStreamingAfterProviderSearch: true } : {}),
       },
     });
-    yield { kind: 'done' };
+    yield { kind: "done" };
   } catch (error) {
     const rendered = renderResponsesTransportError(error);
     completion.resolve({
-      kind: 'failure',
+      kind: "failure",
       error: rendered,
       requestTrace,
     });
     yield {
-      kind: 'error',
+      kind: "error",
       error: rendered,
     };
   }
@@ -411,7 +406,7 @@ function buildStreamingAssistantMessage(
     }));
 
   const message: JsonValue = {
-    role: 'assistant',
+    role: "assistant",
     content: assistantContent || null,
     ...(functionToolCalls.length > 0 ? { tool_calls: functionToolCalls } : {}),
   };
@@ -421,15 +416,13 @@ function buildStreamingAssistantMessage(
   }
 
   if (functionToolCalls.length > 0) {
-    return { ...(message as JsonObject), reasoning_content: '' };
+    return { ...(message as JsonObject), reasoning_content: "" };
   }
 
   return message;
 }
 
-function extractToolCallsFromAggregatedMap(
-  toolCalls: Map<number, AggregatedStreamingToolCall>,
-) {
+function extractToolCallsFromAggregatedMap(toolCalls: Map<number, AggregatedStreamingToolCall>) {
   return [...toolCalls.values()]
     .sort((left, right) => left.index - right.index)
     .filter((call) => call.functionName.trim().length > 0)
@@ -445,12 +438,12 @@ function accumulateOpenResponsesToolCallProgressFromRawChunk(
   rawValue: unknown,
   nextToolIndex: number,
 ): { events: LlmStreamEvent[]; nextToolIndex: number } {
-  if (!isJsonObject(rawValue as JsonValue) || typeof (rawValue as JsonObject).type !== 'string') {
+  if (!isJsonObject(rawValue as JsonValue) || typeof (rawValue as JsonObject).type !== "string") {
     return { events: [], nextToolIndex };
   }
 
   const chunk = asJsonObject(rawValue);
-  if (!chunk || typeof chunk.type !== 'string') {
+  if (!chunk || typeof chunk.type !== "string") {
     return { events: [], nextToolIndex };
   }
 
@@ -458,51 +451,51 @@ function accumulateOpenResponsesToolCallProgressFromRawChunk(
   let toolIndex = nextToolIndex;
 
   if (
-    chunk.type === 'response.output_item.added' &&
+    chunk.type === "response.output_item.added" &&
     isJsonObject(chunk.item) &&
-    chunk.item.type === 'apply_patch_call'
+    chunk.item.type === "apply_patch_call"
   ) {
     const item = chunk.item;
     const index = toolIndex;
     toolIndex += 1;
-    const callId = typeof item.call_id === 'string' ? item.call_id : `stream-apply-patch-${index}`;
+    const callId = typeof item.call_id === "string" ? item.call_id : `stream-apply-patch-${index}`;
     const parsedOperation = isJsonObject(item.operation as JsonValue)
       ? parseApplyPatchOperationFromArguments(item.operation)
       : undefined;
     toolCalls.set(index, {
       index,
       id: callId,
-      ...(typeof item.id === 'string' ? { streamItemId: item.id } : {}),
-      type: 'function',
+      ...(typeof item.id === "string" ? { streamItemId: item.id } : {}),
+      type: "function",
       functionName: APPLY_PATCH_HOST_TOOL_NAME,
       functionArguments: parsedOperation
         ? buildApplyPatchToolCallArgumentsJson(callId, parsedOperation)
-        : '{}',
+        : "{}",
       readyPreviewEmitted: false,
     });
   }
 
   if (
-    chunk.type === 'response.output_item.added' &&
+    chunk.type === "response.output_item.added" &&
     isJsonObject(chunk.item) &&
-    chunk.item.type === 'function_call'
+    chunk.item.type === "function_call"
   ) {
     const item = chunk.item;
     const index = toolIndex;
     toolIndex += 1;
     const call: AggregatedStreamingToolCall = {
       index,
-      id: typeof item.call_id === 'string' ? item.call_id : `stream-tool-call-${index}`,
-      ...(typeof item.id === 'string' ? { streamItemId: item.id } : {}),
-      type: 'function',
-      functionName: typeof item.name === 'string' ? item.name : '',
-      functionArguments: typeof item.arguments === 'string' ? item.arguments : '',
+      id: typeof item.call_id === "string" ? item.call_id : `stream-tool-call-${index}`,
+      ...(typeof item.id === "string" ? { streamItemId: item.id } : {}),
+      type: "function",
+      functionName: typeof item.name === "string" ? item.name : "",
+      functionArguments: typeof item.arguments === "string" ? item.arguments : "",
       readyPreviewEmitted: false,
     };
     toolCalls.set(index, call);
     if (call.functionName.trim()) {
       events.push({
-        kind: 'streaming-tool-preview',
+        kind: "streaming-tool-preview",
         toolCallId: call.id,
         toolName: call.functionName,
         argumentsJson: call.functionArguments,
@@ -510,21 +503,24 @@ function accumulateOpenResponsesToolCallProgressFromRawChunk(
     }
   }
 
-  if (chunk.type === 'response.function_call_arguments.delta' && typeof chunk.item_id === 'string') {
+  if (
+    chunk.type === "response.function_call_arguments.delta" &&
+    typeof chunk.item_id === "string"
+  ) {
     const existing = findToolCallByItemId(toolCalls, chunk.item_id);
-    if (existing && typeof chunk.delta === 'string') {
+    if (existing && typeof chunk.delta === "string") {
       existing.functionArguments += chunk.delta;
       maybeEmitPreview(events, existing);
     }
   }
 
   if (
-    chunk.type === 'response.output_item.done' &&
+    chunk.type === "response.output_item.done" &&
     isJsonObject(chunk.item) &&
-    chunk.item.type === 'apply_patch_call'
+    chunk.item.type === "apply_patch_call"
   ) {
     const item = chunk.item;
-    const existing = findToolCallByItemId(toolCalls, typeof item.id === 'string' ? item.id : '');
+    const existing = findToolCallByItemId(toolCalls, typeof item.id === "string" ? item.id : "");
     const target =
       existing ??
       (() => {
@@ -532,17 +528,17 @@ function accumulateOpenResponsesToolCallProgressFromRawChunk(
         toolIndex += 1;
         const created: AggregatedStreamingToolCall = {
           index,
-          id: typeof item.call_id === 'string' ? item.call_id : `stream-apply-patch-${index}`,
-          type: 'function',
+          id: typeof item.call_id === "string" ? item.call_id : `stream-apply-patch-${index}`,
+          type: "function",
           functionName: APPLY_PATCH_HOST_TOOL_NAME,
-          functionArguments: '{}',
+          functionArguments: "{}",
           readyPreviewEmitted: false,
         };
         toolCalls.set(index, created);
         return created;
       })();
 
-    if (typeof item.call_id === 'string') {
+    if (typeof item.call_id === "string") {
       target.id = item.call_id;
     }
     const parsedOperation = isJsonObject(item.operation as JsonValue)
@@ -555,12 +551,12 @@ function accumulateOpenResponsesToolCallProgressFromRawChunk(
   }
 
   if (
-    chunk.type === 'response.output_item.done' &&
+    chunk.type === "response.output_item.done" &&
     isJsonObject(chunk.item) &&
-    chunk.item.type === 'function_call'
+    chunk.item.type === "function_call"
   ) {
     const item = chunk.item;
-    const existing = findToolCallByItemId(toolCalls, typeof item.id === 'string' ? item.id : '');
+    const existing = findToolCallByItemId(toolCalls, typeof item.id === "string" ? item.id : "");
     const target =
       existing ??
       (() => {
@@ -568,23 +564,23 @@ function accumulateOpenResponsesToolCallProgressFromRawChunk(
         toolIndex += 1;
         const created: AggregatedStreamingToolCall = {
           index,
-          id: typeof item.call_id === 'string' ? item.call_id : `stream-tool-call-${index}`,
-          type: 'function',
-          functionName: typeof item.name === 'string' ? item.name : '',
-          functionArguments: typeof item.arguments === 'string' ? item.arguments : '',
+          id: typeof item.call_id === "string" ? item.call_id : `stream-tool-call-${index}`,
+          type: "function",
+          functionName: typeof item.name === "string" ? item.name : "",
+          functionArguments: typeof item.arguments === "string" ? item.arguments : "",
           readyPreviewEmitted: false,
         };
         toolCalls.set(index, created);
         return created;
       })();
 
-    if (typeof item.call_id === 'string') {
+    if (typeof item.call_id === "string") {
       target.id = item.call_id;
     }
-    if (typeof item.name === 'string') {
+    if (typeof item.name === "string") {
       target.functionName = item.name;
     }
-    if (typeof item.arguments === 'string') {
+    if (typeof item.arguments === "string") {
       target.functionArguments = item.arguments;
     }
     maybeEmitPreview(events, target);
@@ -593,15 +589,13 @@ function accumulateOpenResponsesToolCallProgressFromRawChunk(
   return { events, nextToolIndex: toolIndex };
 }
 
-function shouldUseRawResponsesReasoningFallback(
-  config: OpenResponsesTransportConfig,
-): boolean {
+function shouldUseRawResponsesReasoningFallback(config: OpenResponsesTransportConfig): boolean {
   // Ark Responses 流仅经 raw SSE 返回 reasoning_summary_text.delta，AI SDK 不发 reasoning-delta。
   return isArkLlmVendor(config.llmVendor);
 }
 
 function shouldAggregateGatewaySdkToolCalls(config: OpenResponsesTransportConfig): boolean {
-  return config.llmVendor === 'vercel-ai-gateway';
+  return config.llmVendor === "vercel-ai-gateway";
 }
 
 function findToolCallByStreamId(
@@ -612,7 +606,9 @@ function findToolCallByStreamId(
     return undefined;
   }
 
-  return [...toolCalls.values()].find((call) => call.id === streamId || call.streamItemId === streamId);
+  return [...toolCalls.values()].find(
+    (call) => call.id === streamId || call.streamItemId === streamId,
+  );
 }
 
 function accumulateGatewaySdkToolCallPart(
@@ -626,10 +622,11 @@ function accumulateGatewaySdkToolCallPart(
   nextToolIndex: number;
   events: LlmStreamEvent[];
 } {
-  const normalizedId = typeof toolCallId === 'string' && toolCallId.length > 0
-    ? toolCallId
-    : `stream-tool-call-${nextToolIndex}`;
-  const normalizedName = typeof toolName === 'string' ? toolName : '';
+  const normalizedId =
+    typeof toolCallId === "string" && toolCallId.length > 0
+      ? toolCallId
+      : `stream-tool-call-${nextToolIndex}`;
+  const normalizedName = typeof toolName === "string" ? toolName : "";
   const existing = findToolCallByStreamId(toolCalls, normalizedId);
   const events: LlmStreamEvent[] = [];
 
@@ -649,7 +646,7 @@ function accumulateGatewaySdkToolCallPart(
   const call: AggregatedStreamingToolCall = {
     index,
     id: normalizedId,
-    type: 'function',
+    type: "function",
     functionName: normalizedName,
     functionArguments,
     readyPreviewEmitted: false,
@@ -680,7 +677,9 @@ function maybeEmitPreview(events: LlmStreamEvent[], call: AggregatedStreamingToo
 
   const previewState = {
     readyPreviewEmitted: call.readyPreviewEmitted,
-    ...(call.lastPreviewArgsLen === undefined ? {} : { lastPreviewArgsLen: call.lastPreviewArgsLen }),
+    ...(call.lastPreviewArgsLen === undefined
+      ? {}
+      : { lastPreviewArgsLen: call.lastPreviewArgsLen }),
     ...(call.lastPreviewDetailSignature === undefined
       ? {}
       : { lastPreviewDetailSignature: call.lastPreviewDetailSignature }),
@@ -695,7 +694,7 @@ function maybeEmitPreview(events: LlmStreamEvent[], call: AggregatedStreamingToo
   }
 
   events.push({
-    kind: 'streaming-tool-preview',
+    kind: "streaming-tool-preview",
     toolCallId: call.id,
     toolName: call.functionName,
     argumentsJson: call.functionArguments,
@@ -710,17 +709,19 @@ function maybeEmitPreview(events: LlmStreamEvent[], call: AggregatedStreamingToo
 }
 
 /** OpenAI / Open Responses SSE：reasoning text / summary deltas. */
-export function extractOpenResponsesReasoningTextFromRawChunk(rawValue: unknown): string | undefined {
+export function extractOpenResponsesReasoningTextFromRawChunk(
+  rawValue: unknown,
+): string | undefined {
   const chunk = asJsonObject(rawValue);
-  if (!chunk || typeof chunk.type !== 'string') {
+  if (!chunk || typeof chunk.type !== "string") {
     return undefined;
   }
 
   switch (chunk.type) {
-    case 'response.reasoning_summary_text.delta':
-    case 'response.reasoning_text.delta': {
+    case "response.reasoning_summary_text.delta":
+    case "response.reasoning_text.delta": {
       const delta = chunk.delta;
-      return typeof delta === 'string' && delta.length > 0 ? delta : undefined;
+      return typeof delta === "string" && delta.length > 0 ? delta : undefined;
     }
     default:
       return undefined;
@@ -733,9 +734,9 @@ function readResponseIdFromRawChunk(rawValue: unknown): string | undefined {
   }
 
   const chunk = rawValue as JsonObject;
-  if (chunk.type === 'response.completed' && isJsonObject(chunk.response)) {
+  if (chunk.type === "response.completed" && isJsonObject(chunk.response)) {
     const id = chunk.response.id;
-    return typeof id === 'string' && id.length > 0 ? id : undefined;
+    return typeof id === "string" && id.length > 0 ? id : undefined;
   }
 
   return undefined;

@@ -3,51 +3,51 @@ import {
   type GeneratedVideoFile,
   type ToolExecutionOutput,
   type VideoGenerationRequest,
-} from '../ports.js';
-import type { OpenAiVideoGenerationConfig } from '../openai/openai-compat.js';
+} from "../ports.js";
+import type { OpenAiVideoGenerationConfig } from "../openai/openai-compat.js";
 
 export function normalizeGeneratedVideoMarkdownRef(markdownRef: string): string {
   const trimmed = markdownRef.trim();
   if (!trimmed) {
-    throw new Error('Host returned an empty generated video markdownRef.');
+    throw new Error("Host returned an empty generated video markdownRef.");
   }
 
   let url: URL;
   try {
     url = new URL(trimmed);
   } catch {
-    throw new Error('Host returned an invalid generated video markdownRef.');
+    throw new Error("Host returned an invalid generated video markdownRef.");
   }
 
   if (
-    url.protocol.toLowerCase() !== 'spirit:' ||
-    url.hostname.toLowerCase() !== 'generated' ||
+    url.protocol.toLowerCase() !== "spirit:" ||
+    url.hostname.toLowerCase() !== "generated" ||
     url.search.length > 0 ||
     url.hash.length > 0
   ) {
-    throw new Error('Host returned an invalid generated video markdownRef.');
+    throw new Error("Host returned an invalid generated video markdownRef.");
   }
 
-  const segments = url.pathname.replace(/^\/+/, '').split('/').filter(Boolean);
-  if (segments.length !== 2 || segments[0]?.toLowerCase() !== 'video') {
-    throw new Error('Host returned an invalid generated video markdownRef.');
+  const segments = url.pathname.replace(/^\/+/, "").split("/").filter(Boolean);
+  if (segments.length !== 2 || segments[0]?.toLowerCase() !== "video") {
+    throw new Error("Host returned an invalid generated video markdownRef.");
   }
 
   let videoId: string;
   try {
-    videoId = decodeURIComponent(segments[1] ?? '').trim();
+    videoId = decodeURIComponent(segments[1] ?? "").trim();
   } catch {
-    throw new Error('Host returned an invalid generated video markdownRef.');
+    throw new Error("Host returned an invalid generated video markdownRef.");
   }
 
   if (
     !videoId ||
-    videoId.includes('/') ||
-    videoId.includes('\\') ||
-    videoId === '.' ||
-    videoId === '..'
+    videoId.includes("/") ||
+    videoId.includes("\\") ||
+    videoId === "." ||
+    videoId === ".."
   ) {
-    throw new Error('Host returned an invalid generated video markdownRef.');
+    throw new Error("Host returned an invalid generated video markdownRef.");
   }
 
   return `spirit://generated/video/${encodeURIComponent(videoId)}`;
@@ -58,7 +58,7 @@ export function buildGeneratedVideoToolOutput(
   config: OpenAiVideoGenerationConfig,
   request: VideoGenerationRequest,
 ): ToolExecutionOutput {
-  const summaryLines = ['[generated video]'];
+  const summaryLines = ["[generated video]"];
   const markdownRef = normalizeGeneratedVideoMarkdownRef(saved.markdownRef);
   summaryLines.push(
     `video_ref: ${markdownRef}`,
@@ -75,7 +75,7 @@ export function buildGeneratedVideoToolOutput(
   if (request.resolution) {
     summaryLines.push(`resolution: ${request.resolution}`);
   }
-  const summaryText = summaryLines.join('\n');
+  const summaryText = summaryLines.join("\n");
 
   return {
     content: createLlmMessageContentFromTextAndImages(summaryText, [], [saved.path]),

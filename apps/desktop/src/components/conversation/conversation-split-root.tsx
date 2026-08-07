@@ -1,4 +1,12 @@
-import { useCallback, useLayoutEffect, useRef, useState, type RefObject, type PointerEvent as ReactPointerEvent, type ReactNode } from "react";
+import {
+  useCallback,
+  useLayoutEffect,
+  useRef,
+  useState,
+  type RefObject,
+  type PointerEvent as ReactPointerEvent,
+  type ReactNode,
+} from "react";
 
 import { ConversationPaneDropIndicator } from "@/components/conversation/conversation-pane-drop-indicator";
 import { useConversationSplit } from "@/contexts/conversation-split-context";
@@ -9,12 +17,15 @@ import {
   type SplitLayoutNode,
   type SplitLayoutSplitNode,
 } from "@/lib/conversation-split-layout";
-import { useConversationSplitShellDivider, syncAllConversationSplitShellDividers } from "@/lib/use-conversation-split-shell-divider";
+import {
+  useConversationSplitShellDivider,
+  syncAllConversationSplitShellDividers,
+} from "@/lib/use-conversation-split-shell-divider";
 import { cn } from "@/lib/utils";
 
 type ConversationSplitRootProps = {
   useMicaBackdrop: boolean;
-    renderPane: (input: {
+  renderPane: (input: {
     paneId: string;
     sessionPath: string;
     isFocused: boolean;
@@ -31,8 +42,14 @@ type ConversationSplitRootProps = {
     paneReorderEnabled: boolean;
     onPaneDragStart: (paneId: string) => void;
     onPaneDragLeave: () => void;
-    onPaneDrop: (targetPaneId: string, zone: import("@/lib/conversation-split-layout").PaneDropZone) => void;
-    onSidebarSessionDrop: (targetPaneId: string, zone: import("@/lib/conversation-split-layout").PaneRepositionZone) => void;
+    onPaneDrop: (
+      targetPaneId: string,
+      zone: import("@/lib/conversation-split-layout").PaneDropZone,
+    ) => void;
+    onSidebarSessionDrop: (
+      targetPaneId: string,
+      zone: import("@/lib/conversation-split-layout").PaneRepositionZone,
+    ) => void;
     paneDropOverlayActive: boolean;
     paneDragSourcePaneId: string | null;
     sidebarSessionDragActive: boolean;
@@ -80,25 +97,28 @@ function SplitDivider({
     [lineActive, ratio],
   );
 
-  const onPointerDown = useCallback((event: ReactPointerEvent<HTMLDivElement>) => {
-    event.preventDefault();
-    const container = containerRef.current?.parentElement;
-    if (!container) {
-      return;
-    }
-    const rect = container.getBoundingClientRect();
-    const startRatio =
-      direction === "horizontal"
-        ? (event.clientX - rect.left) / Math.max(rect.width, 1)
-        : (event.clientY - rect.top) / Math.max(rect.height, 1);
-    dragRef.current = {
-      start: direction === "horizontal" ? event.clientX : event.clientY,
-      startRatio,
-    };
-    setIsResizing(true);
-    onResizeBegin();
-    event.currentTarget.setPointerCapture(event.pointerId);
-  }, [direction, onResizeBegin]);
+  const onPointerDown = useCallback(
+    (event: ReactPointerEvent<HTMLDivElement>) => {
+      event.preventDefault();
+      const container = containerRef.current?.parentElement;
+      if (!container) {
+        return;
+      }
+      const rect = container.getBoundingClientRect();
+      const startRatio =
+        direction === "horizontal"
+          ? (event.clientX - rect.left) / Math.max(rect.width, 1)
+          : (event.clientY - rect.top) / Math.max(rect.height, 1);
+      dragRef.current = {
+        start: direction === "horizontal" ? event.clientX : event.clientY,
+        startRatio,
+      };
+      setIsResizing(true);
+      onResizeBegin();
+      event.currentTarget.setPointerCapture(event.pointerId);
+    },
+    [direction, onResizeBegin],
+  );
 
   const onPointerMove = useCallback(
     (event: ReactPointerEvent<HTMLDivElement>) => {
@@ -121,19 +141,22 @@ function SplitDivider({
     [direction, onRatioPreview],
   );
 
-  const endResize = useCallback((event: ReactPointerEvent<HTMLDivElement>) => {
-    dragRef.current = null;
-    setIsResizing(false);
-    onRatioCommit();
-    try {
-      event.currentTarget.releasePointerCapture(event.pointerId);
-    } catch {
-      // already released
-    }
-    requestAnimationFrame(() => {
-      syncAllConversationSplitShellDividers();
-    });
-  }, [onRatioCommit]);
+  const endResize = useCallback(
+    (event: ReactPointerEvent<HTMLDivElement>) => {
+      dragRef.current = null;
+      setIsResizing(false);
+      onRatioCommit();
+      try {
+        event.currentTarget.releasePointerCapture(event.pointerId);
+      } catch {
+        // already released
+      }
+      requestAnimationFrame(() => {
+        syncAllConversationSplitShellDividers();
+      });
+    },
+    [onRatioCommit],
+  );
 
   return (
     <div
@@ -432,10 +455,7 @@ function SplitLayoutSplitRenderer({
   );
 }
 
-export function ConversationSplitRoot({
-  useMicaBackdrop,
-  renderPane,
-}: ConversationSplitRootProps) {
+export function ConversationSplitRoot({ useMicaBackdrop, renderPane }: ConversationSplitRootProps) {
   const { layout } = useConversationSplit();
 
   if (!layout) {

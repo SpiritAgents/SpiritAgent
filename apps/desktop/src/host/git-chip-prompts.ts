@@ -1,4 +1,4 @@
-import type { GitChipAction } from '../types.js';
+import type { GitChipAction } from "../types.js";
 
 export const GIT_CHIP_PROMPT_COMMIT = `## Goal
 
@@ -56,7 +56,7 @@ export function buildGitChipUserTurn(action: GitChipAction, extraNote?: string):
 
 /** i18n keys aligned with git-changes-actions button labels. */
 export const GIT_CHIP_DISPLAY_I18N_KEYS: Record<GitChipAction, string> = {
-  commit: 'app.commit',
-  push: 'workspace.git.push',
-  merge: 'app.merge',
+  commit: "app.commit",
+  push: "workspace.git.push",
+  merge: "app.merge",
 };

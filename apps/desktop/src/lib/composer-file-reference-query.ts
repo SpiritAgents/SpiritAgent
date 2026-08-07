@@ -37,11 +37,7 @@ export function currentWorkspaceFileReferenceQueryFromSegments(
     const len = segmentPlainTextCharCount(seg);
     const segStart = pos;
     const segEnd = pos + len;
-    if (
-      seg.kind === "workspaceFile"
-      && query.start >= segStart
-      && query.end <= segEnd
-    ) {
+    if (seg.kind === "workspaceFile" && query.start >= segStart && query.end <= segEnd) {
       return undefined;
     }
     pos = segEnd;

@@ -3,40 +3,38 @@
  * Desktop renderer 仅允许从 host-internal 的 renderer-safe 子路径 import。
  * 主入口 @spiritagent/host-internal 会拉入 extensions / node:fs 依赖链（含 import type）。
  */
-import { readFileSync, readdirSync, statSync } from 'node:fs';
-import { join, relative } from 'node:path';
-import { fileURLToPath } from 'node:url';
+import { readFileSync, readdirSync, statSync } from "node:fs";
+import { join, relative } from "node:path";
+import { fileURLToPath } from "node:url";
 
-const repoRoot = join(fileURLToPath(new URL('.', import.meta.url)), '..', '..', '..');
-const desktopSrc = join(repoRoot, 'apps', 'desktop', 'src');
+const repoRoot = join(fileURLToPath(new URL(".", import.meta.url)), "..", "..", "..");
+const desktopSrc = join(repoRoot, "apps", "desktop", "src");
 
 /** value import 允许的 host-internal 子路径（不含 node 依赖）。 */
 const RENDERER_SAFE_HOST_INTERNAL_SUBPATHS = new Set([
-  'config-v2',
-  'workspace-file-reference-query',
-  'model-provider-presets',
-  'model-display-name',
-  'openai-api-base',
-  'azure-resource',
-  'bedrock-region',
-  'bedrock-mantle',
-  'cloudflare-ai-gateway-resource',
-  'google-vertex-endpoints',
-  'skill-paths',
-  'tool-output-archive-path',
-  'github-pull-request-url',
-  'github-pull-request-checks-pages',
-  'github-pull-request-conversation-pages',
-  'github/types',
-  'approval-level',
-  'work-location',
-  'local-file-composer-route',
-  'image-file-support',
+  "config-v2",
+  "workspace-file-reference-query",
+  "model-provider-presets",
+  "model-display-name",
+  "openai-api-base",
+  "azure-resource",
+  "bedrock-region",
+  "bedrock-mantle",
+  "cloudflare-ai-gateway-resource",
+  "google-vertex-endpoints",
+  "skill-paths",
+  "tool-output-archive-path",
+  "github-pull-request-url",
+  "github-pull-request-checks-pages",
+  "github-pull-request-conversation-pages",
+  "github/types",
+  "approval-level",
+  "work-location",
+  "local-file-composer-route",
+  "image-file-support",
 ]);
 
-const RENDERER_EXCLUDED_PREFIXES = [
-  join(desktopSrc, 'host'),
-];
+const RENDERER_EXCLUDED_PREFIXES = [join(desktopSrc, "host")];
 
 function isRendererExcluded(filePath) {
   return RENDERER_EXCLUDED_PREFIXES.some(
@@ -55,7 +53,11 @@ function collectSourceFiles(entryPath) {
   const files = [];
   for (const name of readdirSync(entryPath)) {
     const childPath = join(entryPath, name);
-    if (RENDERER_EXCLUDED_PREFIXES.some((prefix) => childPath === prefix || childPath.startsWith(`${prefix}/`))) {
+    if (
+      RENDERER_EXCLUDED_PREFIXES.some(
+        (prefix) => childPath === prefix || childPath.startsWith(`${prefix}/`),
+      )
+    ) {
       continue;
     }
     files.push(...collectSourceFiles(childPath));
@@ -76,14 +78,14 @@ function scanHostStorageImports(filePath, content) {
     violations.push({
       file: relative(repoRoot, filePath),
       line,
-      reason: 'renderer 禁止 import apps/desktop/src/host（会拉入 host-internal 主入口）',
+      reason: "renderer 禁止 import apps/desktop/src/host（会拉入 host-internal 主入口）",
     });
   }
   return violations;
 }
 
 function scanFile(filePath) {
-  const content = readFileSync(filePath, 'utf8');
+  const content = readFileSync(filePath, "utf8");
   const violations = [];
 
   const importBlocks = content.matchAll(
@@ -97,7 +99,7 @@ function scanFile(filePath) {
       violations.push({
         file: relative(repoRoot, filePath),
         line,
-        reason: '禁止从 @spiritagent/host-internal 主入口 import（含 import type）',
+        reason: "禁止从 @spiritagent/host-internal 主入口 import（含 import type）",
       });
       continue;
     }
@@ -147,11 +149,11 @@ const files = collectSourceFiles(desktopSrc);
 const violations = files.flatMap(scanFile);
 
 if (violations.length > 0) {
-  console.error('renderer host-internal import 检查失败:\n');
+  console.error("renderer host-internal import 检查失败:\n");
   for (const item of violations) {
     console.error(`  ${item.file}:${item.line} — ${item.reason}`);
   }
   process.exit(1);
 }
 
-console.log('renderer host-internal import 检查通过');
+console.log("renderer host-internal import 检查通过");

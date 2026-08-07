@@ -1,6 +1,6 @@
-import { createContext, useContext, type ReactNode } from 'react';
+import { createContext, useContext, type ReactNode } from "react";
 
-import type { WorkspaceReadTextFileResult, ReadWorkspaceTextFileOptions } from '@/types';
+import type { WorkspaceReadTextFileResult, ReadWorkspaceTextFileOptions } from "@/types";
 
 export type ToolCallDiffHostContextValue = {
   workspaceRoot: string;

@@ -1,8 +1,8 @@
-import { AiSdkOpenAiCompatibleTransport } from '../../openai/ai-sdk-transport.js';
-import type { OpenAiJsonSchemaCompletionRequest } from '../../openai/json-schema.js';
+import { AiSdkOpenAiCompatibleTransport } from "../../openai/ai-sdk-transport.js";
+import type { OpenAiJsonSchemaCompletionRequest } from "../../openai/json-schema.js";
 
-import { printSmokeSection } from '../shared/print.js';
-import { createLiveOpenAiCompatibleSmokeConfig, shouldRunLiveSmoke } from './env.js';
+import { printSmokeSection } from "../shared/print.js";
+import { createLiveOpenAiCompatibleSmokeConfig, shouldRunLiveSmoke } from "./env.js";
 
 async function main(): Promise<void> {
   if (!shouldRunLiveSmoke()) {
@@ -12,22 +12,22 @@ async function main(): Promise<void> {
   const config = createLiveOpenAiCompatibleSmokeConfig();
   const transport = new AiSdkOpenAiCompatibleTransport();
   const request: OpenAiJsonSchemaCompletionRequest = {
-    userPrompt: 'Return a JSON object with message set to LIVE_SMOKE_OK.',
-    schemaName: 'live_smoke_result',
+    userPrompt: "Return a JSON object with message set to LIVE_SMOKE_OK.",
+    schemaName: "live_smoke_result",
     schema: {
-      type: 'object',
+      type: "object",
       additionalProperties: false,
       properties: {
         message: {
-          type: 'string',
+          type: "string",
         },
       },
-      required: ['message'],
+      required: ["message"],
     },
   };
 
   const result = await transport.createJsonSchemaCompletion<{ message: string }>(config, request);
-  printSmokeSection('live openai-compatible json-schema smoke', {
+  printSmokeSection("live openai-compatible json-schema smoke", {
     model: config.model,
     llmVendor: config.llmVendor ?? null,
     output: result.output,
@@ -35,7 +35,7 @@ async function main(): Promise<void> {
   });
 
   if (!result.output.message.trim()) {
-    throw new Error('live openai-compatible smoke 未拿到非空 JSON message。');
+    throw new Error("live openai-compatible smoke 未拿到非空 JSON message。");
   }
 }
 

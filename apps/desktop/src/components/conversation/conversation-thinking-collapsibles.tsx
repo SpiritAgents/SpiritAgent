@@ -119,7 +119,9 @@ export function AssistantThinkingCollapsible({
       <AnimatedCollapseTrigger
         className={cn(
           "group flex w-full min-w-0 items-center gap-1 text-left outline-none",
-          interactive ? "cursor-pointer focus-visible:ring-2 focus-visible:ring-ring/50" : "cursor-default",
+          interactive
+            ? "cursor-pointer focus-visible:ring-2 focus-visible:ring-ring/50"
+            : "cursor-default",
         )}
       >
         <ThinkingLabelWithShimmer active={thinkingActive} />
@@ -205,7 +207,9 @@ export function AssistantCompactionCollapsible({
       <AnimatedCollapseTrigger
         className={cn(
           "group flex w-full min-w-0 items-center gap-1 text-left outline-none",
-          interactive ? "cursor-pointer focus-visible:ring-2 focus-visible:ring-ring/50" : "cursor-default",
+          interactive
+            ? "cursor-pointer focus-visible:ring-2 focus-visible:ring-ring/50"
+            : "cursor-default",
         )}
       >
         <CompactionLabelWithShimmer active={compactionActive} />

@@ -1,82 +1,82 @@
-import assert from 'node:assert/strict';
-import test from 'node:test';
+import assert from "node:assert/strict";
+import test from "node:test";
 
-import { authorizeLazyToolGatewayRequest } from './authorize.js';
-import { TOOL_CALL_TOOL_NAME, TOOL_DESCRIBE_TOOL_NAME } from './definitions.js';
-import type { LazyToolGatewayToolRequest } from './types.js';
+import { authorizeLazyToolGatewayRequest } from "./authorize.js";
+import { TOOL_CALL_TOOL_NAME, TOOL_DESCRIBE_TOOL_NAME } from "./definitions.js";
+import type { LazyToolGatewayToolRequest } from "./types.js";
 
 function lazyRequest(name: string, args: Record<string, unknown>): LazyToolGatewayToolRequest {
   return {
-    kind: 'lazyToolGateway',
+    kind: "lazyToolGateway",
     name,
     argumentsJson: JSON.stringify(args),
   };
 }
 
-test('authorizeLazyToolGatewayRequest allows tool_describe without approval', () => {
+test("authorizeLazyToolGatewayRequest allows tool_describe without approval", () => {
   const decision = authorizeLazyToolGatewayRequest(
-    lazyRequest(TOOL_DESCRIBE_TOOL_NAME, { provider: 'mcp', server: 'github', tool: 'search' }),
-    'default',
+    lazyRequest(TOOL_DESCRIBE_TOOL_NAME, { provider: "mcp", server: "github", tool: "search" }),
+    "default",
   );
-  assert.equal(decision.kind, 'allowed');
+  assert.equal(decision.kind, "allowed");
 });
 
-test('authorizeLazyToolGatewayRequest requires approval for tool_call under default', () => {
+test("authorizeLazyToolGatewayRequest requires approval for tool_call under default", () => {
   const decision = authorizeLazyToolGatewayRequest(
     lazyRequest(TOOL_CALL_TOOL_NAME, {
-      provider: 'mcp',
-      server: 'msftlearn',
-      tool: 'microsoft_docs_search',
-      arguments: { query: 'azure' },
+      provider: "mcp",
+      server: "msftlearn",
+      tool: "microsoft_docs_search",
+      arguments: { query: "azure" },
     }),
-    'default',
+    "default",
   );
-  assert.equal(decision.kind, 'need-approval');
-  if (decision.kind === 'need-approval') {
+  assert.equal(decision.kind, "need-approval");
+  if (decision.kind === "need-approval") {
     assert.match(decision.prompt, /msftlearn/u);
     assert.match(decision.prompt, /microsoft_docs_search/u);
-    assert.equal(decision.trustTarget, 'mcp:msftlearn:microsoft_docs_search');
+    assert.equal(decision.trustTarget, "mcp:msftlearn:microsoft_docs_search");
   }
 });
 
-test('authorizeLazyToolGatewayRequest requires approval for tool_call under auto-approval', () => {
+test("authorizeLazyToolGatewayRequest requires approval for tool_call under auto-approval", () => {
   const decision = authorizeLazyToolGatewayRequest(
     lazyRequest(TOOL_CALL_TOOL_NAME, {
-      provider: 'mcp',
-      server: 'msftlearn',
-      tool: 'microsoft_docs_search',
+      provider: "mcp",
+      server: "msftlearn",
+      tool: "microsoft_docs_search",
     }),
-    'auto-approval',
+    "auto-approval",
   );
-  assert.equal(decision.kind, 'need-approval');
+  assert.equal(decision.kind, "need-approval");
 });
 
-test('authorizeLazyToolGatewayRequest requires approval for built-in tool_call under default', () => {
+test("authorizeLazyToolGatewayRequest requires approval for built-in tool_call under default", () => {
   const decision = authorizeLazyToolGatewayRequest(
     lazyRequest(TOOL_CALL_TOOL_NAME, {
-      provider: 'built-in',
-      server: 'desktop',
-      tool: 'create_automation',
-      arguments: { overview: 'Daily summary.' },
+      provider: "built-in",
+      server: "desktop",
+      tool: "create_automation",
+      arguments: { overview: "Daily summary." },
     }),
-    'default',
+    "default",
   );
-  assert.equal(decision.kind, 'need-approval');
-  if (decision.kind === 'need-approval') {
+  assert.equal(decision.kind, "need-approval");
+  if (decision.kind === "need-approval") {
     assert.match(decision.prompt, /built-in tool_call/u);
     assert.match(decision.prompt, /create_automation/u);
-    assert.equal(decision.trustTarget, 'built-in:desktop:create_automation');
+    assert.equal(decision.trustTarget, "built-in:desktop:create_automation");
   }
 });
 
-test('authorizeLazyToolGatewayRequest allows tool_call under full-approval', () => {
+test("authorizeLazyToolGatewayRequest allows tool_call under full-approval", () => {
   const decision = authorizeLazyToolGatewayRequest(
     lazyRequest(TOOL_CALL_TOOL_NAME, {
-      provider: 'mcp',
-      server: 'msftlearn',
-      tool: 'microsoft_docs_search',
+      provider: "mcp",
+      server: "msftlearn",
+      tool: "microsoft_docs_search",
     }),
-    'full-approval',
+    "full-approval",
   );
-  assert.equal(decision.kind, 'allowed');
+  assert.equal(decision.kind, "allowed");
 });

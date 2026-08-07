@@ -27,11 +27,8 @@ const {
   richSegmentsRoundTrip,
   richSegmentsToEditorState,
 } = await import("../../src/lib/composer-lexical/bridge/index.ts");
-const {
-  emptySegments,
-  segmentsEqual,
-  segmentsToMessageText,
-} = await import("../../src/lib/composer-segment-model.ts");
+const { emptySegments, segmentsEqual, segmentsToMessageText } =
+  await import("../../src/lib/composer-segment-model.ts");
 
 const sampleElement = {
   id: "el-1",
@@ -90,43 +87,53 @@ const fixtureCases = [
   },
   {
     name: "prDiff chip",
-    segments: [{ kind: "prDiff", attachment: samplePrDiff }, { kind: "text", value: " " }],
-  },
-  {
-    name: "gitCommit chip",
-    segments: [{ kind: "gitCommit", attachment: sampleGitCommit }, { kind: "text", value: " " }],
-  },
-  {
-    name: "terminalSnippet chip",
-    segments: [{ kind: "terminalSnippet", attachment: sampleTerminal }, { kind: "text", value: " " }],
-  },
-  {
-    name: "fileSnippet chip",
-    segments: [{ kind: "fileSnippet", attachment: sampleFileSnippet }, { kind: "text", value: " " }],
-  },
-  {
-    name: "workspaceFile chip",
-    segments: [{ kind: "workspaceFile", path: "src/index.ts" }, { kind: "text", value: " " }],
-  },
-  {
-    name: "skill chip",
-    segments: [{ kind: "skill", alias: "/git-commit" }, { kind: "text", value: " " }],
-  },
-  {
-    name: "structural chips",
     segments: [
-      { kind: "loop" },
-      { kind: "plan" },
+      { kind: "prDiff", attachment: samplePrDiff },
       { kind: "text", value: " " },
     ],
   },
   {
-    name: "ask and debug chips",
+    name: "gitCommit chip",
     segments: [
-      { kind: "ask" },
-      { kind: "debug" },
-      { kind: "text", value: "draft" },
+      { kind: "gitCommit", attachment: sampleGitCommit },
+      { kind: "text", value: " " },
     ],
+  },
+  {
+    name: "terminalSnippet chip",
+    segments: [
+      { kind: "terminalSnippet", attachment: sampleTerminal },
+      { kind: "text", value: " " },
+    ],
+  },
+  {
+    name: "fileSnippet chip",
+    segments: [
+      { kind: "fileSnippet", attachment: sampleFileSnippet },
+      { kind: "text", value: " " },
+    ],
+  },
+  {
+    name: "workspaceFile chip",
+    segments: [
+      { kind: "workspaceFile", path: "src/index.ts" },
+      { kind: "text", value: " " },
+    ],
+  },
+  {
+    name: "skill chip",
+    segments: [
+      { kind: "skill", alias: "/git-commit" },
+      { kind: "text", value: " " },
+    ],
+  },
+  {
+    name: "structural chips",
+    segments: [{ kind: "loop" }, { kind: "plan" }, { kind: "text", value: " " }],
+  },
+  {
+    name: "ask and debug chips",
+    segments: [{ kind: "ask" }, { kind: "debug" }, { kind: "text", value: "draft" }],
   },
 ];
 

@@ -1,29 +1,29 @@
-import { Buffer } from 'node:buffer';
-import { existsSync } from 'node:fs';
-import { mkdir, readFile, realpath, writeFile } from 'node:fs/promises';
-import path from 'node:path';
+import { Buffer } from "node:buffer";
+import { existsSync } from "node:fs";
+import { mkdir, readFile, realpath, writeFile } from "node:fs/promises";
+import path from "node:path";
 
-import { SKILLS_DIR_NAME } from './skill-paths.js';
+import { SKILLS_DIR_NAME } from "./skill-paths.js";
 
-export { SKILL_FILE_NAME, SKILLS_DIR_NAME } from './skill-paths.js';
+export { SKILL_FILE_NAME, SKILLS_DIR_NAME } from "./skill-paths.js";
 
-export const SPIRIT_DIR_NAME = '.spirit';
-export const AGENTS_DIR_NAME = '.agents';
-export const USER_RULE_FILE_NAME = 'rule.md';
-export const WORKSPACE_RULE_FILE_NAME = 'AGENTS.md';
-export const WORKSPACE_SPIRIT_RULE_FILE_NAME = path.join(SPIRIT_DIR_NAME, 'rule.md');
+export const SPIRIT_DIR_NAME = ".spirit";
+export const AGENTS_DIR_NAME = ".agents";
+export const USER_RULE_FILE_NAME = "rule.md";
+export const WORKSPACE_RULE_FILE_NAME = "AGENTS.md";
+export const WORKSPACE_SPIRIT_RULE_FILE_NAME = path.join(SPIRIT_DIR_NAME, "rule.md");
 export const WORKSPACE_SPIRIT_SKILLS_DIR = path.join(SPIRIT_DIR_NAME, SKILLS_DIR_NAME);
-export const WORKSPACE_SPIRIT_MCP_CONFIG = path.join(SPIRIT_DIR_NAME, 'mcp.json');
+export const WORKSPACE_SPIRIT_MCP_CONFIG = path.join(SPIRIT_DIR_NAME, "mcp.json");
 export const WORKSPACE_AGENTS_SKILLS_DIR = path.join(AGENTS_DIR_NAME, SKILLS_DIR_NAME);
-export const PLANS_DIR_NAME = 'plans';
-export const RULES_STATE_FILE_NAME = 'rules-state.json';
-export const SKILLS_STATE_FILE_NAME = 'skills-state.json';
-export const EXTENSIONS_DIR_NAME = 'extensions';
-export const EXTENSION_MANIFEST_FILE_NAME = 'package.json';
-export const EXTENSIONS_INDEX_FILE_NAME = 'extensions.json';
-export const EXTENSION_STATE_DIR_NAME = 'extension-state';
+export const PLANS_DIR_NAME = "plans";
+export const RULES_STATE_FILE_NAME = "rules-state.json";
+export const SKILLS_STATE_FILE_NAME = "skills-state.json";
+export const EXTENSIONS_DIR_NAME = "extensions";
+export const EXTENSION_MANIFEST_FILE_NAME = "package.json";
+export const EXTENSIONS_INDEX_FILE_NAME = "extensions.json";
+export const EXTENSION_STATE_DIR_NAME = "extension-state";
 
-export const SUPPORTED_EXTENSION_HOST_KINDS = ['desktop', 'cli'] as const;
+export const SUPPORTED_EXTENSION_HOST_KINDS = ["desktop", "cli"] as const;
 
 export type ExtensionHostKind = (typeof SUPPORTED_EXTENSION_HOST_KINDS)[number];
 
@@ -31,10 +31,7 @@ export type ExtensionSettingValue = string | number | boolean | null;
 
 export interface ExtensionStateStore {
   loadSettings(extensionId: string): Promise<Record<string, ExtensionSettingValue>>;
-  saveSettings(
-    extensionId: string,
-    values: Record<string, ExtensionSettingValue>,
-  ): Promise<void>;
+  saveSettings(extensionId: string, values: Record<string, ExtensionSettingValue>): Promise<void>;
   loadSecret?(extensionId: string, key: string): Promise<string | undefined>;
   saveSecret?(extensionId: string, key: string, value: string): Promise<void>;
   deleteSecret?(extensionId: string, key: string): Promise<void>;
@@ -133,7 +130,7 @@ export function createFileExtensionStateStore(
       }
 
       try {
-        const raw = await readFile(filePath, 'utf8');
+        const raw = await readFile(filePath, "utf8");
         const parsed = JSON.parse(raw) as Record<string, ExtensionSettingValue>;
         return isExtensionSettingsRecord(parsed) ? parsed : {};
       } catch {
@@ -143,7 +140,7 @@ export function createFileExtensionStateStore(
     async saveSettings(extensionId, values) {
       const filePath = extensionSettingsFilePath(paths, extensionId);
       await mkdir(path.dirname(filePath), { recursive: true });
-      await writeFile(filePath, `${JSON.stringify(values, null, 2)}\n`, 'utf8');
+      await writeFile(filePath, `${JSON.stringify(values, null, 2)}\n`, "utf8");
     },
   };
 }
@@ -154,7 +151,7 @@ export async function loadToggleState(filePath: string): Promise<HostToggleState
   }
 
   try {
-    const raw = await readFile(filePath, 'utf8');
+    const raw = await readFile(filePath, "utf8");
     const parsed = JSON.parse(raw) as HostToggleState;
     return parsed.enabledOverrides ? parsed : {};
   } catch {
@@ -164,7 +161,7 @@ export async function loadToggleState(filePath: string): Promise<HostToggleState
 
 export async function saveToggleState(filePath: string, state: HostToggleState): Promise<void> {
   await mkdir(path.dirname(filePath), { recursive: true });
-  await writeFile(filePath, `${JSON.stringify(state, null, 2)}\n`, 'utf8');
+  await writeFile(filePath, `${JSON.stringify(state, null, 2)}\n`, "utf8");
 }
 
 export async function stablePathId(filePath: string): Promise<string> {
@@ -177,7 +174,7 @@ export async function stablePathId(filePath: string): Promise<string> {
 }
 
 function normalizePath(filePath: string): string {
-  return filePath.replace(/\\/gu, '/');
+  return filePath.replace(/\\/gu, "/");
 }
 
 function extensionSettingsFilePath(paths: ExtensionPaths, extensionId: string): string {
@@ -185,21 +182,21 @@ function extensionSettingsFilePath(paths: ExtensionPaths, extensionId: string): 
 }
 
 function encodeExtensionStorageName(extensionId: string): string {
-  return `ext-${Buffer.from(extensionId, 'utf8').toString('base64url')}`;
+  return `ext-${Buffer.from(extensionId, "utf8").toString("base64url")}`;
 }
 
 function isExtensionSettingsRecord(
   value: Record<string, ExtensionSettingValue> | unknown,
 ): value is Record<string, ExtensionSettingValue> {
-  if (typeof value !== 'object' || value === null || Array.isArray(value)) {
+  if (typeof value !== "object" || value === null || Array.isArray(value)) {
     return false;
   }
 
   return Object.values(value).every(
     (entry) =>
       entry === null ||
-      typeof entry === 'string' ||
-      typeof entry === 'number' ||
-      typeof entry === 'boolean',
+      typeof entry === "string" ||
+      typeof entry === "number" ||
+      typeof entry === "boolean",
   );
 }

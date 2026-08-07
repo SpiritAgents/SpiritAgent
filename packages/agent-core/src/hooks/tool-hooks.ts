@@ -1,19 +1,34 @@
-import type { AuthorizationDecision, JsonObject, ToolCallRequest, ToolExecutionOutput } from '../ports.js';
-import type { TurnMachineRuntime } from '../runtime/turn-machine.js';
+import type {
+  AuthorizationDecision,
+  JsonObject,
+  ToolCallRequest,
+  ToolExecutionOutput,
+} from "../ports.js";
+import type { TurnMachineRuntime } from "../runtime/turn-machine.js";
 
-import { HookDeniedError } from './errors.js';
+import { HookDeniedError } from "./errors.js";
 import {
   appendHookAdditionalContexts,
   applyUpdatedToolRequest,
   runPostToolUseHook,
   runPreToolUseHook,
   toolInputFromArgumentsJson,
-} from './integration.js';
+} from "./integration.js";
 
 export type PreToolUseGateResult<ToolRequest> =
-  | { kind: 'ready'; request: ToolRequest; hookBypassApproval?: boolean; effectiveToolInput?: JsonObject }
-  | { kind: 'needs-approval'; request: ToolRequest; prompt: string; effectiveToolInput?: JsonObject }
-  | { kind: 'denied'; error: HookDeniedError };
+  | {
+      kind: "ready";
+      request: ToolRequest;
+      hookBypassApproval?: boolean;
+      effectiveToolInput?: JsonObject;
+    }
+  | {
+      kind: "needs-approval";
+      request: ToolRequest;
+      prompt: string;
+      effectiveToolInput?: JsonObject;
+    }
+  | { kind: "denied"; error: HookDeniedError };
 
 export interface ToolApprovalGate<TrustTarget = string> {
   prompt: string;
@@ -24,15 +39,15 @@ export function resolveApprovalGateAfterAuthorize<ToolRequest, TrustTarget>(
   preGate: PreToolUseGateResult<ToolRequest>,
   authorization: AuthorizationDecision<TrustTarget>,
 ): ToolApprovalGate<TrustTarget> | null {
-  if (preGate.kind === 'needs-approval') {
+  if (preGate.kind === "needs-approval") {
     return {
       prompt: preGate.prompt,
-      trustTarget: authorization.kind === 'need-approval' ? authorization.trustTarget : undefined,
+      trustTarget: authorization.kind === "need-approval" ? authorization.trustTarget : undefined,
     };
   }
 
-  if (authorization.kind === 'need-approval') {
-    if (preGate.kind === 'ready' && preGate.hookBypassApproval) {
+  if (authorization.kind === "need-approval") {
+    if (preGate.kind === "ready" && preGate.hookBypassApproval) {
       return null;
     }
     return {
@@ -47,30 +62,25 @@ export function resolveApprovalGateAfterAuthorize<ToolRequest, TrustTarget>(
 function preToolUseGateFromHookResult<ToolRequest>(
   call: ToolCallRequest,
   request: ToolRequest,
-  permission: 'allow' | 'ask' | undefined,
+  permission: "allow" | "ask" | undefined,
   userMessage: string | undefined,
 ): PreToolUseGateResult<ToolRequest> {
-  if (permission === 'ask') {
+  if (permission === "ask") {
     return {
-      kind: 'needs-approval',
+      kind: "needs-approval",
       request,
       prompt: userMessage?.trim() || `Hook requested approval for ${call.name}.`,
     };
   }
 
   return {
-    kind: 'ready',
+    kind: "ready",
     request,
-    ...(permission === 'allow' ? { hookBypassApproval: true } : {}),
+    ...(permission === "allow" ? { hookBypassApproval: true } : {}),
   };
 }
 
-export async function runPreToolUseGate<
-  Config,
-  State,
-  ToolRequest,
-  TrustTarget = string,
->(
+export async function runPreToolUseGate<Config, State, ToolRequest, TrustTarget = string>(
   runtime: TurnMachineRuntime<Config, State, ToolRequest, TrustTarget>,
   call: ToolCallRequest,
   request: ToolRequest,
@@ -99,10 +109,12 @@ export async function runPreToolUseGate<
     const gate = preToolUseGateFromHookResult(
       call,
       resolvedRequest,
-      preHook.permission === 'allow' || preHook.permission === 'ask' ? preHook.permission : undefined,
+      preHook.permission === "allow" || preHook.permission === "ask"
+        ? preHook.permission
+        : undefined,
       preHook.userMessage,
     );
-    if (gate.kind === 'denied') {
+    if (gate.kind === "denied") {
       return gate;
     }
     return {
@@ -111,20 +123,15 @@ export async function runPreToolUseGate<
     };
   } catch (error) {
     if (error instanceof HookDeniedError) {
-      return { kind: 'denied', error };
+      return { kind: "denied", error };
     }
     throw error;
   }
 }
 
-export async function runPostToolUseSideEffects<
-  Config,
-  State,
-  ToolRequest,
-  TrustTarget = string,
->(
+export async function runPostToolUseSideEffects<Config, State, ToolRequest, TrustTarget = string>(
   runtime: TurnMachineRuntime<Config, State, ToolRequest, TrustTarget>,
-  call: Pick<ToolCallRequest, 'id' | 'name' | 'argumentsJson'>,
+  call: Pick<ToolCallRequest, "id" | "name" | "argumentsJson">,
   toolInput: JsonObject,
   output: ToolExecutionOutput,
   durationMs: number,
@@ -154,7 +161,7 @@ export function postHookToolInputFromPreGate<ToolRequest>(
   preGate: PreToolUseGateResult<ToolRequest>,
   argumentsJson: string,
 ): JsonObject {
-  if (preGate.kind === 'denied') {
+  if (preGate.kind === "denied") {
     return toolInputFromArgumentsJson(argumentsJson);
   }
   return preGate.effectiveToolInput ?? toolInputFromArgumentsJson(argumentsJson);

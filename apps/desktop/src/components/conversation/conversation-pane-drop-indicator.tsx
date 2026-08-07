@@ -6,15 +6,24 @@ import {
   applyPickerOverlayGeometry,
   hidePickerOverlayBox,
 } from "@/lib/browser-element-picker";
-import { paneDropIndicatorRect, visiblePaneDropZonesForDrag, visiblePaneDropZonesForSidebarSessionDrag } from "@/lib/conversation-pane-drop-preview";
+import {
+  paneDropIndicatorRect,
+  visiblePaneDropZonesForDrag,
+  visiblePaneDropZonesForSidebarSessionDrag,
+} from "@/lib/conversation-pane-drop-preview";
 
 const OVERLAY_MOTION_TRANSITION =
   "left 120ms ease-out, top 120ms ease-out, width 120ms ease-out, height 120ms ease-out, opacity 150ms ease-out";
 
 /** Single viewport-fixed ring that glides between pane drop quadrants (matches browser element picker). */
 export function ConversationPaneDropIndicator() {
-  const { paneDragActive, sidebarSessionDragActive, paneDragSourcePaneId, paneDropTarget, paneCount } =
-    useConversationSplit();
+  const {
+    paneDragActive,
+    sidebarSessionDragActive,
+    paneDragSourcePaneId,
+    paneDropTarget,
+    paneCount,
+  } = useConversationSplit();
   const dropDragActive = paneDragActive || sidebarSessionDragActive;
   const overlayRef = useRef<HTMLDivElement | null>(null);
   const motionEnabledRef = useRef(false);
@@ -26,9 +35,9 @@ export function ConversationPaneDropIndicator() {
     }
 
     const shouldHide =
-      !dropDragActive
-      || !paneDropTarget
-      || (paneDragSourcePaneId !== null && paneDropTarget.paneId === paneDragSourcePaneId);
+      !dropDragActive ||
+      !paneDropTarget ||
+      (paneDragSourcePaneId !== null && paneDropTarget.paneId === paneDragSourcePaneId);
 
     if (shouldHide) {
       if (el.style.opacity === "1" || motionEnabledRef.current) {
@@ -41,9 +50,7 @@ export function ConversationPaneDropIndicator() {
       return;
     }
 
-    const host = document.querySelector(
-      `[data-pane-drop-host="${paneDropTarget.paneId}"]`,
-    );
+    const host = document.querySelector(`[data-pane-drop-host="${paneDropTarget.paneId}"]`);
     if (!(host instanceof HTMLElement)) {
       el.style.transition = OVERLAY_MOTION_TRANSITION;
       hidePickerOverlayBox(el);
@@ -58,12 +65,11 @@ export function ConversationPaneDropIndicator() {
       ? visiblePaneDropZonesForSidebarSessionDrag()
       : visiblePaneDropZonesForDrag({
           paneCount,
-          sourcePaneHost:
-            !paneDragSourcePaneId
-              ? null
-              : sourceHost instanceof HTMLElement
-                ? sourceHost
-                : null,
+          sourcePaneHost: !paneDragSourcePaneId
+            ? null
+            : sourceHost instanceof HTMLElement
+              ? sourceHost
+              : null,
           targetPaneHost: host,
         });
     if (!visibleZones.includes(paneDropTarget.zone)) {

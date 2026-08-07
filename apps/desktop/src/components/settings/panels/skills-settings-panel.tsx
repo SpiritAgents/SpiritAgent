@@ -18,8 +18,17 @@ import {
 import { DesktopFormInput, DesktopFormTextarea } from "@/components/ui/desktop-form-field";
 import { Label } from "@/components/ui/label";
 import { cn } from "@/lib/utils";
-import type { CreateSkillRequest, DeleteSkillRequest, DesktopSkillListItem, DesktopSkillRootKind } from "@/types";
-import {DESKTOP_EDITOR_TAB_CLASS, DESKTOP_LIST_ITEM_PRIMARY_CLASS, DESKTOP_PAGE_TITLE_CLASS } from "@/lib/desktop-typography";
+import type {
+  CreateSkillRequest,
+  DeleteSkillRequest,
+  DesktopSkillListItem,
+  DesktopSkillRootKind,
+} from "@/types";
+import {
+  DESKTOP_EDITOR_TAB_CLASS,
+  DESKTOP_LIST_ITEM_PRIMARY_CLASS,
+  DESKTOP_PAGE_TITLE_CLASS,
+} from "@/lib/desktop-typography";
 
 function skillLocationLabel(item: DesktopSkillListItem): string {
   return skillRootKindLabel(item.rootKind);
@@ -31,9 +40,22 @@ const skillCreateRootOptions: Array<{
   labelFallback: string;
   hintKey: string;
 }> = [
-  { kind: "user", labelKey: 'settings.skillUserDirShort', labelFallback: 'User', hintKey: 'settings.skillUserDirHint' },
-  { kind: "workspaceSpirit", labelFallback: ".spirit", hintKey: 'settings.skillWorkspaceSpiritHint' },
-  { kind: "workspaceAgents", labelFallback: ".agents", hintKey: 'settings.skillWorkspaceAgentsHint' },
+  {
+    kind: "user",
+    labelKey: "settings.skillUserDirShort",
+    labelFallback: "User",
+    hintKey: "settings.skillUserDirHint",
+  },
+  {
+    kind: "workspaceSpirit",
+    labelFallback: ".spirit",
+    hintKey: "settings.skillWorkspaceSpiritHint",
+  },
+  {
+    kind: "workspaceAgents",
+    labelFallback: ".agents",
+    hintKey: "settings.skillWorkspaceAgentsHint",
+  },
 ];
 
 export function SkillsSettingsPanel({
@@ -86,7 +108,7 @@ export function SkillsSettingsPanel({
         <div className="min-w-0 flex-1 space-y-1">
           <h1 className={DESKTOP_PAGE_TITLE_CLASS}>Skills</h1>
           {workspaceBindingDisabled ? (
-            <p className="text-xs text-muted-foreground">{t('app.noWorkspaceBindingHint')}</p>
+            <p className="text-xs text-muted-foreground">{t("app.noWorkspaceBindingHint")}</p>
           ) : null}
         </div>
         <div className="flex shrink-0 items-center gap-2">
@@ -97,11 +119,11 @@ export function SkillsSettingsPanel({
               size="sm"
               className="shrink-0 gap-1.5"
               disabled={!apiReady}
-              title={t('settings.generateSkillTooltip')}
+              title={t("settings.generateSkillTooltip")}
               onClick={() => onGenerateSkillNavigate()}
             >
               <Sparkles className="size-3.5 shrink-0" aria-hidden />
-              {t('settings.generateSkill')}
+              {t("settings.generateSkill")}
             </Button>
           ) : null}
           <Button
@@ -114,14 +136,16 @@ export function SkillsSettingsPanel({
             }}
             disabled={skillsBusy}
           >
-            {t('settings.newSkill')}
+            {t("settings.newSkill")}
           </Button>
         </div>
       </div>
 
       <div className="divide-y divide-border/35 rounded-lg border border-border/40 bg-background/80">
         {items.length === 0 ? (
-          <p className="px-4 py-10 text-center text-sm text-muted-foreground">{t('settings.noSkillsFound')}</p>
+          <p className="px-4 py-10 text-center text-sm text-muted-foreground">
+            {t("settings.noSkillsFound")}
+          </p>
         ) : (
           items.map((item) => (
             <div
@@ -136,12 +160,15 @@ export function SkillsSettingsPanel({
                   </Badge>
                   {!item.enabled ? (
                     <Badge variant="secondary" className="text-muted-foreground">
-                      {t('settings.skillDisabled')}
+                      {t("settings.skillDisabled")}
                     </Badge>
                   ) : null}
                 </div>
                 <p className="text-xs text-muted-foreground">{item.description}</p>
-                <p className="truncate font-mono text-[0.65rem] text-muted-foreground/90" title={item.shortLabel}>
+                <p
+                  className="truncate font-mono text-[0.65rem] text-muted-foreground/90"
+                  title={item.shortLabel}
+                >
                   {item.shortLabel}
                 </p>
               </div>
@@ -153,7 +180,7 @@ export function SkillsSettingsPanel({
                 disabled={skillsBusy}
                 onClick={() => setDeleteTarget({ name: item.name, rootKind: item.rootKind })}
               >
-                {t('common.delete')}
+                {t("common.delete")}
               </Button>
             </div>
           ))
@@ -170,45 +197,48 @@ export function SkillsSettingsPanel({
       >
         <DialogContent className="sm:max-w-md" showCloseButton>
           <DialogHeader>
-            <DialogTitle>{t('settings.deleteSkill')}</DialogTitle>
+            <DialogTitle>{t("settings.deleteSkill")}</DialogTitle>
             <DialogDescription>
-              {t('settings.deleteSkillConfirm', { name: deleteTarget?.name ?? '', location: deleteTarget ? skillRootKindLabel(deleteTarget.rootKind) : '' })}
+              {t("settings.deleteSkillConfirm", {
+                name: deleteTarget?.name ?? "",
+                location: deleteTarget ? skillRootKindLabel(deleteTarget.rootKind) : "",
+              })}
             </DialogDescription>
           </DialogHeader>
           <DialogFooter>
             <DialogFooterActions>
-            <Button
-              type="button"
-              variant="outline"
-              size="sm"
-              onClick={() => setDeleteTarget(null)}
-              disabled={skillsBusy}
-            >
-              {t('common.cancel')}
-            </Button>
-            <Button
-              type="button"
-              variant="destructive"
-              size="sm"
-              disabled={skillsBusy || !deleteTarget}
-              onClick={() => {
-                const target = deleteTarget;
-                if (!target) {
-                  return;
-                }
-                void (async () => {
-                  try {
-                    await onDeleteSkill(target);
-                    setDeleteTarget(null);
-                  } catch {
-                    /* runtimeError */
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={() => setDeleteTarget(null)}
+                disabled={skillsBusy}
+              >
+                {t("common.cancel")}
+              </Button>
+              <Button
+                type="button"
+                variant="destructive"
+                size="sm"
+                disabled={skillsBusy || !deleteTarget}
+                onClick={() => {
+                  const target = deleteTarget;
+                  if (!target) {
+                    return;
                   }
-                })();
-              }}
-            >
-              {skillsBusy ? <LoaderCircle className="size-4 animate-spin" /> : null}
-              {t('common.delete')}
-            </Button>
+                  void (async () => {
+                    try {
+                      await onDeleteSkill(target);
+                      setDeleteTarget(null);
+                    } catch {
+                      /* runtimeError */
+                    }
+                  })();
+                }}
+              >
+                {skillsBusy ? <LoaderCircle className="size-4 animate-spin" /> : null}
+                {t("common.delete")}
+              </Button>
             </DialogFooterActions>
           </DialogFooter>
         </DialogContent>
@@ -225,15 +255,15 @@ export function SkillsSettingsPanel({
       >
         <DialogContent className="sm:max-w-lg" showCloseButton>
           <DialogHeader>
-            <DialogTitle>{t('settings.newSkill')}</DialogTitle>
-            <DialogDescription>{t('settings.newSkillDescription')}</DialogDescription>
+            <DialogTitle>{t("settings.newSkill")}</DialogTitle>
+            <DialogDescription>{t("settings.newSkillDescription")}</DialogDescription>
           </DialogHeader>
           <div className="grid gap-3 py-1">
             <div className="grid gap-2">
-              <Label>{t('settings.saveLocation')}</Label>
+              <Label>{t("settings.saveLocation")}</Label>
               <div
                 role="tablist"
-                aria-label={t('settings.saveLocation')}
+                aria-label={t("settings.saveLocation")}
                 className="inline-flex h-9 shrink-0 rounded-lg border border-border/40 bg-muted/30 p-0.5"
               >
                 {localizedSkillCreateRootOptions.map((opt) => (
@@ -261,32 +291,32 @@ export function SkillsSettingsPanel({
               </p>
             </div>
             <div className="grid gap-2">
-              <Label htmlFor="new-skill-name">{t('settings.name')}</Label>
+              <Label htmlFor="new-skill-name">{t("settings.name")}</Label>
               <DesktopFormInput
                 id="new-skill-name"
                 value={newName}
                 onChange={(e) => setNewName(e.target.value)}
-                placeholder={t('settings.skillNamePlaceholder')}
+                placeholder={t("settings.skillNamePlaceholder")}
                 autoComplete="off"
               />
             </div>
             <div className="grid gap-2">
-              <Label htmlFor="new-skill-summary">{t('settings.description')}</Label>
+              <Label htmlFor="new-skill-summary">{t("settings.description")}</Label>
               <DesktopFormInput
                 id="new-skill-summary"
                 value={newSummary}
                 onChange={(e) => setNewSummary(e.target.value)}
-                placeholder={t('settings.skillDescPlaceholder')}
+                placeholder={t("settings.skillDescPlaceholder")}
                 autoComplete="off"
               />
             </div>
             <div className="grid gap-2">
-              <Label htmlFor="new-skill-content">{t('settings.content')}</Label>
+              <Label htmlFor="new-skill-content">{t("settings.content")}</Label>
               <DesktopFormTextarea
                 id="new-skill-content"
                 value={newContent}
                 onChange={(e) => setNewContent(e.target.value)}
-                placeholder={t('settings.skillContentPlaceholder')}
+                placeholder={t("settings.skillContentPlaceholder")}
                 autoComplete="off"
                 className="min-h-24 resize-y"
                 required
@@ -295,42 +325,40 @@ export function SkillsSettingsPanel({
           </div>
           <DialogFooter>
             <DialogFooterActions>
-            <Button
-              type="button"
-              variant="outline"
-              size="sm"
-              onClick={() => setAddDialogOpen(false)}
-              disabled={skillsBusy}
-            >
-              {t('common.cancel')}
-            </Button>
-            <Button
-              type="button"
-              size="sm"
-              disabled={
-                skillsBusy || !newName.trim() || !newSummary.trim() || !newContent.trim()
-              }
-              onClick={() => {
-                void (async () => {
-                  try {
-                    const payload: CreateSkillRequest = {
-                      name: newName,
-                      rootKind: createRootKind,
-                      summary: newSummary.trim(),
-                      content: newContent.trim(),
-                    };
-                    await onCreateSkill(payload);
-                    setAddDialogOpen(false);
-                    resetForm();
-                  } catch {
-                    /* runtimeError */
-                  }
-                })();
-              }}
-            >
-              {skillsBusy ? <LoaderCircle className="size-4 animate-spin" /> : null}
-              {t('common.create')}
-            </Button>
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={() => setAddDialogOpen(false)}
+                disabled={skillsBusy}
+              >
+                {t("common.cancel")}
+              </Button>
+              <Button
+                type="button"
+                size="sm"
+                disabled={skillsBusy || !newName.trim() || !newSummary.trim() || !newContent.trim()}
+                onClick={() => {
+                  void (async () => {
+                    try {
+                      const payload: CreateSkillRequest = {
+                        name: newName,
+                        rootKind: createRootKind,
+                        summary: newSummary.trim(),
+                        content: newContent.trim(),
+                      };
+                      await onCreateSkill(payload);
+                      setAddDialogOpen(false);
+                      resetForm();
+                    } catch {
+                      /* runtimeError */
+                    }
+                  })();
+                }}
+              >
+                {skillsBusy ? <LoaderCircle className="size-4 animate-spin" /> : null}
+                {t("common.create")}
+              </Button>
             </DialogFooterActions>
           </DialogFooter>
         </DialogContent>

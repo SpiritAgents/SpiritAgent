@@ -1,7 +1,19 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 
-import { LoaderCircle, MessageSquare, PanelRightClose, PanelRightOpen, Pencil, Plus, MoreHorizontal, SquareSplitHorizontal, SquareSplitVertical, Trash2, X } from "lucide-react";
+import {
+  LoaderCircle,
+  MessageSquare,
+  PanelRightClose,
+  PanelRightOpen,
+  Pencil,
+  Plus,
+  MoreHorizontal,
+  SquareSplitHorizontal,
+  SquareSplitVertical,
+  Trash2,
+  X,
+} from "lucide-react";
 
 import {
   NewSessionShortcutKbd,
@@ -50,8 +62,10 @@ const splitDownShortcutLabel = modShiftBackslashShortcutLabel();
 
 function isPaneDragBlockedTarget(target: EventTarget | null): boolean {
   return (
-    target instanceof Element
-    && Boolean(target.closest('button, a, input, textarea, select, [role="menuitem"], [data-no-pane-drag]'))
+    target instanceof Element &&
+    Boolean(
+      target.closest('button, a, input, textarea, select, [role="menuitem"], [data-no-pane-drag]'),
+    )
   );
 }
 
@@ -75,7 +89,7 @@ export function DesktopLayoutChromeBar({
   onClosePane,
   paneId,
   onPaneDragStart,
-  onPaneDragEnter,
+  onPaneDragEnter: _onPaneDragEnter,
   onPaneDragLeave,
   onPaneDrop,
   showDeleteSession = false,
@@ -110,9 +124,15 @@ export function DesktopLayoutChromeBar({
   onClosePane?: () => void;
   paneId?: string;
   onPaneDragStart?: (paneId: string) => void;
-  onPaneDragEnter?: (paneId: string, zone: import("@/lib/conversation-split-layout").PaneRepositionZone) => void;
+  onPaneDragEnter?: (
+    paneId: string,
+    zone: import("@/lib/conversation-split-layout").PaneRepositionZone,
+  ) => void;
   onPaneDragLeave?: () => void;
-  onPaneDrop?: (paneId: string, zone: import("@/lib/conversation-split-layout").PaneRepositionZone) => void;
+  onPaneDrop?: (
+    paneId: string,
+    zone: import("@/lib/conversation-split-layout").PaneRepositionZone,
+  ) => void;
   showDeleteSession?: boolean;
   deleteSessionDisplayName?: string | null;
   deleteSessionPath?: string | null;
@@ -146,10 +166,10 @@ export function DesktopLayoutChromeBar({
   const trimmedRenameSessionDisplayName = renameSessionDisplayName?.trim() ?? "";
   const trimmedSubagentPromptText = subagentPromptText?.trim() ?? "";
   const canRenameTitle =
-    showRenameSession
-    && Boolean(onRenameSession)
-    && Boolean(trimmedRenameSessionPath)
-    && !trimmedSubagentPromptText;
+    showRenameSession &&
+    Boolean(onRenameSession) &&
+    Boolean(trimmedRenameSessionPath) &&
+    !trimmedSubagentPromptText;
 
   const handleRenameCancel = useCallback(() => {
     setRenamingTitle(false);
@@ -217,7 +237,7 @@ export function DesktopLayoutChromeBar({
   return (
     <div
       role="toolbar"
-      aria-label={t('app.sidebarAndTools')}
+      aria-label={t("app.sidebarAndTools")}
       data-spirit-surface="layout-chrome"
       data-session-sidebar-open={sessionSidebarOpen ? "true" : "false"}
       data-macos-leading-inset={showSessionSidebarToggle ? "true" : "false"}
@@ -297,8 +317,7 @@ export function DesktopLayoutChromeBar({
                 </Button>
               </TooltipTrigger>
               <TooltipContent side="top" align="start" sideOffset={4}>
-                {t("sidebar.newSession")}{" "}
-                <NewSessionShortcutKbd />
+                {t("sidebar.newSession")} <NewSessionShortcutKbd />
               </TooltipContent>
             </Tooltip>
           </div>
@@ -347,35 +366,32 @@ export function DesktopLayoutChromeBar({
               >
                 <div className="p-1">
                   {showSideChat ? (
-                    <DropdownMenuItem
-                      className="gap-2"
-                      onSelect={() => onSideChat?.()}
-                    >
-                      <MessageSquare className="size-3.5 shrink-0 text-muted-foreground" aria-hidden />
+                    <DropdownMenuItem className="gap-2" onSelect={() => onSideChat?.()}>
+                      <MessageSquare
+                        className="size-3.5 shrink-0 text-muted-foreground"
+                        aria-hidden
+                      />
                       <span>{t("app.sideChat")}</span>
                     </DropdownMenuItem>
                   ) : null}
-                  <DropdownMenuItem
-                    className="gap-2"
-                    onSelect={() => onSplit?.()}
-                  >
-                    <SquareSplitHorizontal className="size-3.5 shrink-0 text-muted-foreground" aria-hidden />
+                  <DropdownMenuItem className="gap-2" onSelect={() => onSplit?.()}>
+                    <SquareSplitHorizontal
+                      className="size-3.5 shrink-0 text-muted-foreground"
+                      aria-hidden
+                    />
                     <span>{t("app.splitRight")}</span>
                     <DropdownMenuShortcut>{splitRightShortcutLabel}</DropdownMenuShortcut>
                   </DropdownMenuItem>
-                  <DropdownMenuItem
-                    className="gap-2"
-                    onSelect={() => onSplitVertical?.()}
-                  >
-                    <SquareSplitVertical className="size-3.5 shrink-0 text-muted-foreground" aria-hidden />
+                  <DropdownMenuItem className="gap-2" onSelect={() => onSplitVertical?.()}>
+                    <SquareSplitVertical
+                      className="size-3.5 shrink-0 text-muted-foreground"
+                      aria-hidden
+                    />
                     <span>{t("app.splitDown")}</span>
                     <DropdownMenuShortcut>{splitDownShortcutLabel}</DropdownMenuShortcut>
                   </DropdownMenuItem>
                   {showClosePane ? (
-                    <DropdownMenuItem
-                      className="gap-2"
-                      onSelect={() => onClosePane?.()}
-                    >
+                    <DropdownMenuItem className="gap-2" onSelect={() => onClosePane?.()}>
                       <X className="size-3.5 shrink-0 text-muted-foreground" aria-hidden />
                       <span>{t("app.closePane")}</span>
                     </DropdownMenuItem>
@@ -431,7 +447,7 @@ export function DesktopLayoutChromeBar({
                   size="icon"
                   className={DESKTOP_CHROME_TOGGLE_ICON_BTN}
                   onClick={onToggleWorkspaceTools}
-                  aria-label={workspaceToolsOpen ? t('app.collapseTools') : t('app.expandTools')}
+                  aria-label={workspaceToolsOpen ? t("app.collapseTools") : t("app.expandTools")}
                   aria-expanded={workspaceToolsOpen}
                   {...(workspaceToolsOpen ? { "aria-controls": "workspace-tools-panel" } : {})}
                 >
@@ -442,7 +458,11 @@ export function DesktopLayoutChromeBar({
                   )}
                 </Button>
               </TooltipTrigger>
-              <TooltipContent side="top" align={workspaceToolsOpen ? "center" : "end"} sideOffset={4}>
+              <TooltipContent
+                side="top"
+                align={workspaceToolsOpen ? "center" : "end"}
+                sideOffset={4}
+              >
                 {workspaceToolsOpen ? t("app.collapseTools") : t("app.expandTools")}{" "}
                 <WorkspaceToolsShortcutKbd />
               </TooltipContent>
@@ -503,7 +523,9 @@ export function DesktopLayoutChromeBar({
                   })();
                 }}
               >
-                {deleteSessionBusy ? <LoaderCircle className="size-4 animate-spin" aria-hidden /> : null}
+                {deleteSessionBusy ? (
+                  <LoaderCircle className="size-4 animate-spin" aria-hidden />
+                ) : null}
                 {t("common.delete")}
               </Button>
             </DialogFooterActions>

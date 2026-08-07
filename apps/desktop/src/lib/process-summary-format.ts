@@ -1,26 +1,26 @@
-import type { TFunction } from 'i18next';
+import type { TFunction } from "i18next";
 
 import {
   PROCESS_TOOL_CATEGORY_ORDER,
   collectProcessCategoryOrder,
   type ProcessToolCategory,
   type ProcessToolCounts,
-} from '@/lib/process-tool-category';
-import type { ConversationMessageSnapshot } from '@/types';
+} from "@/lib/process-tool-category";
+import type { ConversationMessageSnapshot } from "@/types";
 
 export const PROCESS_SUMMARY_MAX_VISIBLE_CATEGORIES = 3;
 
 const CATEGORY_I18N_KEY: Record<ProcessToolCategory, string> = {
-  explore: 'process.explored',
-  view: 'process.viewed',
-  create: 'process.created',
-  edit: 'process.edited',
-  delete: 'process.deleted',
-  ask: 'process.asked',
-  diagnose: 'process.diagnosed',
-  generate: 'process.generated',
-  run: 'process.ran',
-  other: 'process.other',
+  explore: "process.explored",
+  view: "process.viewed",
+  create: "process.created",
+  edit: "process.edited",
+  delete: "process.deleted",
+  ask: "process.asked",
+  diagnose: "process.diagnosed",
+  generate: "process.generated",
+  run: "process.ran",
+  other: "process.other",
 };
 
 export function formatProcessCategoryLabel(
@@ -41,17 +41,17 @@ export function formatProcessSummary(
     ? categoryOrder.filter((category) => counts[category] > 0)
     : PROCESS_TOOL_CATEGORY_ORDER.filter((category) => counts[category] > 0);
   if (activeCategories.length === 0) {
-    return '';
+    return "";
   }
 
   const visibleCategories = activeCategories.slice(0, maxVisibleCategories);
   const labels = visibleCategories.map((category) =>
     formatProcessCategoryLabel(t, category, counts[category]),
   );
-  const summary = labels.join(t('process.separator'));
+  const summary = labels.join(t("process.separator"));
 
   if (activeCategories.length > maxVisibleCategories) {
-    return `${summary}${t('process.separator')}${t('process.andMore')}`;
+    return `${summary}${t("process.separator")}${t("process.andMore")}`;
   }
 
   return summary;
@@ -96,7 +96,7 @@ export function formatProcessGroupSummary(
 
   const { thoughtCount } = countProcessAuxMessages(messages, messageIndices);
   if (thoughtCount > 0) {
-    return t('process.thought', { count: thoughtCount });
+    return t("process.thought", { count: thoughtCount });
   }
-  return '';
+  return "";
 }

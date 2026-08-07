@@ -1,4 +1,4 @@
-import type { SessionTranscript } from '../transcript.js';
+import type { SessionTranscript } from "../transcript.js";
 import type {
   AskQuestionsRequest,
   ImageGenerationRequest,
@@ -15,11 +15,11 @@ import type {
   ToolCallRequest,
   ToolExecutionOutput,
   ToolExecutor,
-} from '../ports.js';
-import type { HookRunner, HookSessionContext } from '../hooks/types.js';
+} from "../ports.js";
+import type { HookRunner, HookSessionContext } from "../hooks/types.js";
 
 export interface RuntimeToolArtifact {
-  kind: 'image' | 'video';
+  kind: "image" | "video";
   path: string;
   mimeType?: string;
 }
@@ -31,17 +31,17 @@ export interface RuntimeToolExecution<ToolRequest> {
   output: string;
   failed: boolean;
   artifacts?: RuntimeToolArtifact[];
-  hostUi?: import('../ports.js').ToolExecutionHostUi;
+  hostUi?: import("../ports.js").ToolExecutionHostUi;
 }
 
-import type { PreToolUseGateResult } from '../hooks/tool-hooks.js';
+import type { PreToolUseGateResult } from "../hooks/tool-hooks.js";
 
 /** Where the host should anchor a finalized thinking segment in the timeline. */
-export type AssistantThinkingSegmentPlacement = 'before-next-tool' | 'after-stream';
+export type AssistantThinkingSegmentPlacement = "before-next-tool" | "after-stream";
 
 export type PendingEarlyToolExecutionOutcome<ToolRequest> =
   | {
-      kind: 'completed';
+      kind: "completed";
       request: ToolRequest;
       execution: RuntimeToolExecution<ToolRequest>;
       output: ToolExecutionOutput;
@@ -50,14 +50,14 @@ export type PendingEarlyToolExecutionOutcome<ToolRequest> =
       fatalError?: string;
     }
   | {
-      kind: 'deferred';
+      kind: "deferred";
       reason:
-        | 'schema-error'
-        | 'authorization-error'
-        | 'background-required'
-        | 'approval-required'
-        | 'questions-required'
-        | 'internal-deferred';
+        | "schema-error"
+        | "authorization-error"
+        | "background-required"
+        | "approval-required"
+        | "questions-required"
+        | "internal-deferred";
       preGate?: PreToolUseGateResult<ToolRequest>;
     };
 
@@ -95,15 +95,15 @@ export interface RuntimeHistoryPreparationResult {
 
 export type RuntimeEvent<ToolRequest> =
   | {
-      kind: 'begin-assistant-response';
+      kind: "begin-assistant-response";
     }
   | {
-      kind: 'update-pending-assistant-thinking';
+      kind: "update-pending-assistant-thinking";
       text: string;
     }
   | {
       /** 清空 `thinkingTextStore` 前发出，宿主可固化为一条独立 UI 消息。 */
-      kind: 'assistant-thinking-segment-finalized';
+      kind: "assistant-thinking-segment-finalized";
       text: string;
       /**
        * `before-next-tool`：固化在下一工具卡片之前（同段多工具之间）。
@@ -112,90 +112,90 @@ export type RuntimeEvent<ToolRequest> =
       placement?: AssistantThinkingSegmentPlacement;
     }
   | {
-      kind: 'update-pending-assistant-compaction';
+      kind: "update-pending-assistant-compaction";
       text: string;
     }
   | {
-      kind: 'assistant-chunk';
+      kind: "assistant-chunk";
       text: string;
     }
   | {
-      kind: 'replace-pending-assistant';
+      kind: "replace-pending-assistant";
       text: string;
     }
   | {
-      kind: 'assistant-response-completed';
+      kind: "assistant-response-completed";
     }
   | {
-      kind: 'remove-pending-assistant';
+      kind: "remove-pending-assistant";
     }
   | {
-      kind: 'history-compacted';
+      kind: "history-compacted";
       droppedMessages: number;
       summaryPreview?: string;
     }
   | {
-      kind: 'session-transcript-sync-failed';
+      kind: "session-transcript-sync-failed";
       error: string;
     }
   | {
-      kind: 'approval-requested';
+      kind: "approval-requested";
       approval: RuntimePendingApproval<ToolRequest, unknown>;
     }
   | {
-      kind: 'questions-requested';
+      kind: "questions-requested";
       questions: RuntimePendingQuestions<ToolRequest>;
     }
   | {
-      kind: 'tool-call-started';
+      kind: "tool-call-started";
       toolCallId: string;
       toolName: string;
       request: ToolRequest;
     }
   | {
-      kind: 'approval-resolved';
+      kind: "approval-resolved";
       toolCallId: string;
       toolName: string;
       request: ToolRequest;
-      decisionKind: RuntimeApprovalDecision['kind'];
+      decisionKind: RuntimeApprovalDecision["kind"];
     }
   | {
-      kind: 'background-tool-status';
-      phase: 'started' | 'finished';
+      kind: "background-tool-status";
+      phase: "started" | "finished";
       toolName: string;
       request: ToolRequest;
       statusText?: string;
       failed?: boolean;
     }
   | {
-      kind: 'streaming-tool-preview';
+      kind: "streaming-tool-preview";
       toolCallId: string;
       toolName: string;
       argumentsJson: string;
     }
   | {
-      kind: 'tool-execution-finished';
+      kind: "tool-execution-finished";
       execution: RuntimeToolExecution<ToolRequest>;
     }
   | {
-      kind: 'tool-execution-output-chunk';
+      kind: "tool-execution-output-chunk";
       toolCallId: string;
       toolName: string;
       request: ToolRequest;
       chunk: string;
     }
   | {
-      kind: 'context-usage-updated';
+      kind: "context-usage-updated";
       usage: LlmTokenUsage;
     }
   | {
-      kind: 'turn-error-retry';
+      kind: "turn-error-retry";
       attempt: number;
       maxAttempts: number;
       error: string;
     }
   | {
-      kind: 'turn-error-retry-cleared';
+      kind: "turn-error-retry-cleared";
     };
 
 export interface RuntimePendingApproval<ToolRequest, TrustTarget> {
@@ -246,7 +246,7 @@ export interface PendingMcpResource {
 }
 
 export interface PendingWorkspaceTextFile {
-  kind: 'text';
+  kind: "text";
   path: string;
   totalChars: number;
   truncated: boolean;
@@ -255,13 +255,13 @@ export interface PendingWorkspaceTextFile {
 }
 
 export interface PendingWorkspaceImageFile {
-  kind: 'image';
+  kind: "image";
   path: string;
   attachedAtUnixMs: number;
 }
 
 export interface PendingWorkspaceVideoFile {
-  kind: 'video';
+  kind: "video";
   path: string;
   attachedAtUnixMs: number;
 }
@@ -271,7 +271,7 @@ export type PendingWorkspaceFile =
   | PendingWorkspaceImageFile
   | PendingWorkspaceVideoFile;
 
-export type AssistantAuxKind = 'thinking' | 'compressing';
+export type AssistantAuxKind = "thinking" | "compressing";
 
 export interface PendingAssistantAux {
   kind: AssistantAuxKind;
@@ -280,13 +280,13 @@ export interface PendingAssistantAux {
 }
 
 export type RuntimeApprovalDecision =
-  | { kind: 'allow'; persistTrust?: boolean }
-  | { kind: 'deny'; resultText?: string }
-  | { kind: 'guidance'; userMessage: string; resultText?: string };
+  | { kind: "allow"; persistTrust?: boolean }
+  | { kind: "deny"; resultText?: string }
+  | { kind: "guidance"; userMessage: string; resultText?: string };
 
 export type RuntimeTurnResult<State, ToolRequest, TrustTarget> =
   | {
-      kind: 'completed';
+      kind: "completed";
       assistantText: string;
       state: State;
       requestTrace: JsonValue[];
@@ -294,21 +294,21 @@ export type RuntimeTurnResult<State, ToolRequest, TrustTarget> =
       compactions: RuntimeCompactionRecord[];
     }
   | {
-      kind: 'requires-approval';
+      kind: "requires-approval";
       approval: RuntimePendingApproval<ToolRequest, TrustTarget>;
       requestTrace: JsonValue[];
       toolExecutions: RuntimeToolExecution<ToolRequest>[];
       compactions: RuntimeCompactionRecord[];
     }
   | {
-      kind: 'requires-questions';
+      kind: "requires-questions";
       questions: RuntimePendingQuestions<ToolRequest>;
       requestTrace: JsonValue[];
       toolExecutions: RuntimeToolExecution<ToolRequest>[];
       compactions: RuntimeCompactionRecord[];
     }
   | {
-      kind: 'failed';
+      kind: "failed";
       error: string;
       state?: State;
       requestTrace: JsonValue[];
@@ -317,7 +317,7 @@ export type RuntimeTurnResult<State, ToolRequest, TrustTarget> =
     };
 
 export interface RuntimeCompletedManualToolCommandResult<ToolRequest> {
-  kind: 'completed';
+  kind: "completed";
   request: ToolRequest;
   toolName: string;
   output: string;
@@ -328,70 +328,65 @@ export interface RuntimeCompletedManualToolCommandResult<ToolRequest> {
 export type RuntimeManualToolCommandResult<State, ToolRequest, TrustTarget> =
   | RuntimeCompletedManualToolCommandResult<ToolRequest>
   | {
-      kind: 'requires-approval';
+      kind: "requires-approval";
       approval: RuntimePendingApproval<ToolRequest, TrustTarget>;
     }
   | {
-      kind: 'denied';
+      kind: "denied";
       request: ToolRequest;
       toolName: string;
       message: string;
     }
   | {
-      kind: 'submitted-user-turn';
+      kind: "submitted-user-turn";
       userMessage: string;
       result: RuntimeTurnResult<State, ToolRequest, TrustTarget>;
     }
   | {
-      kind: 'failed';
+      kind: "failed";
       error: string;
       request?: ToolRequest;
     };
 
-export type RuntimeManualToolCommandStartResult<State, ToolRequest, TrustTarget> =
+export type RuntimeManualToolCommandStartResult<_State, ToolRequest, TrustTarget> =
   | RuntimeCompletedManualToolCommandResult<ToolRequest>
   | {
-      kind: 'started-background';
+      kind: "started-background";
       request: ToolRequest;
       toolName: string;
       statusText?: string;
     }
   | {
-      kind: 'started-user-turn';
+      kind: "started-user-turn";
       userMessage: string;
     }
   | {
-      kind: 'requires-approval';
+      kind: "requires-approval";
       approval: RuntimePendingApproval<ToolRequest, TrustTarget>;
     }
   | {
-      kind: 'denied';
+      kind: "denied";
       request: ToolRequest;
       toolName: string;
       message: string;
     }
   | {
-      kind: 'failed';
+      kind: "failed";
       error: string;
       request?: ToolRequest;
     };
 
 export type RuntimeManualHistoryCompactionResult =
   | {
-      kind: 'completed';
+      kind: "completed";
       result: RuntimeCompactionRecord;
     }
   | {
-      kind: 'failed';
+      kind: "failed";
       error: string;
     };
 
-export interface AgentRuntimeOptions<
-  Config,
-  State,
-  ToolRequest,
-  TrustTarget = string,
-> {
+export interface AgentRuntimeOptions<Config, State, ToolRequest, TrustTarget = string> {
   config: Config;
   llmTransport: LlmTransport<Config, State>;
   toolExecutor: ToolExecutor<ToolRequest, TrustTarget>;
@@ -402,19 +397,16 @@ export interface AgentRuntimeOptions<
     state: State,
     calls: ToolCallRequest[],
   ) => LlmMessage | undefined;
-  finalAssistantHistoryMessageFromState?: (
-    state: State,
-    assistantText: string,
-  ) => LlmMessage;
+  finalAssistantHistoryMessageFromState?: (state: State, assistantText: string) => LlmMessage;
   appendUserMessage?: (state: State, content: string) => State;
   appendUserLlmMessage?: (state: State, message: LlmMessage) => State;
   extractAssistantText: (state: State) => string | undefined;
   generateImage?: (request: ImageGenerationRequest) => Promise<ToolExecutionOutput>;
-  generateVideo?: (request: import('../ports.js').VideoGenerationRequest) => Promise<ToolExecutionOutput>;
+  generateVideo?: (
+    request: import("../ports.js").VideoGenerationRequest,
+  ) => Promise<ToolExecutionOutput>;
   truncateStateForContextRetry?: (state: State) => RuntimeStatePreparationResult<State>;
-  truncateHistoryForCompaction?: (
-    history: LlmMessage[],
-  ) => RuntimeHistoryPreparationResult;
+  truncateHistoryForCompaction?: (history: LlmMessage[]) => RuntimeHistoryPreparationResult;
   rebuildRetryStateAfterCompaction?: (
     history: LlmMessage[],
     pendingUserInput: string,
@@ -455,8 +447,8 @@ export interface AgentRuntimeOptions<
     userInput: string,
   ) => Promise<PendingWorkspaceFile[]> | PendingWorkspaceFile[];
   bootstrapSubagentWorkspace?: SubagentWorkspaceBootstrap<ToolRequest, TrustTarget>;
-  getApprovalLevel?: () => import('../auto-approval/types.js').SessionApprovalLevel;
-  reviewToolApproval?: import('../auto-approval/types.js').ToolAutoReviewer;
+  getApprovalLevel?: () => import("../auto-approval/types.js").SessionApprovalLevel;
+  reviewToolApproval?: import("../auto-approval/types.js").ToolAutoReviewer;
 }
 
 export interface SubagentWorkspaceBootstrapInput {
@@ -466,10 +458,7 @@ export interface SubagentWorkspaceBootstrapInput {
   parentWorkspaceRoot: string;
 }
 
-export type SubagentWorkspaceBootstrapResult<
-  ToolRequest = unknown,
-  TrustTarget = string,
-> =
+export type SubagentWorkspaceBootstrapResult<ToolRequest = unknown, TrustTarget = string> =
   | {
       workspaceRoot: string;
       worktreePath?: string;
@@ -478,10 +467,7 @@ export type SubagentWorkspaceBootstrapResult<
     }
   | { error: string };
 
-export type SubagentWorkspaceBootstrap<
-  ToolRequest = unknown,
-  TrustTarget = string,
-> = (
+export type SubagentWorkspaceBootstrap<ToolRequest = unknown, TrustTarget = string> = (
   input: SubagentWorkspaceBootstrapInput,
 ) => Promise<SubagentWorkspaceBootstrapResult<ToolRequest, TrustTarget>>;
 
@@ -565,7 +551,7 @@ export interface PendingToolAgentRound<State, ToolRequest> {
 }
 
 export interface PendingToolCallBackgroundToolExecution<State, ToolRequest> {
-  kind: 'tool-call';
+  kind: "tool-call";
   pendingUserInput: string;
   state: State;
   request: ToolRequest;
@@ -585,7 +571,7 @@ export interface PendingToolCallBackgroundToolExecution<State, ToolRequest> {
 }
 
 /** 后台槽位占用时暂存；真正启动时注入已完成前序工具后的 state。 */
-export interface DeferredBackgroundToolExecutionSpec<State, ToolRequest> {
+export interface DeferredBackgroundToolExecutionSpec<_State, ToolRequest> {
   pendingUserInput: string;
   request: ToolRequest;
   toolCallId: string;
@@ -599,7 +585,7 @@ export interface DeferredBackgroundToolExecutionSpec<State, ToolRequest> {
 }
 
 export interface PendingManualBackgroundToolExecution<ToolRequest> {
-  kind: 'manual';
+  kind: "manual";
   request: ToolRequest;
   toolName: string;
   statusText: string | undefined;
@@ -612,7 +598,7 @@ export type PendingBackgroundToolExecution<State, ToolRequest> =
   | PendingManualBackgroundToolExecution<ToolRequest>;
 
 export interface PendingAutoHistoryCompaction<State, ToolRequest> {
-  kind: 'auto-retry';
+  kind: "auto-retry";
   pendingUserInput: string;
   retryState: State;
   turn: RuntimeTurnContext<ToolRequest>;
@@ -626,7 +612,7 @@ export interface PendingAutoHistoryCompaction<State, ToolRequest> {
 }
 
 export interface PendingManualHistoryCompaction {
-  kind: 'manual';
+  kind: "manual";
   compactedHistory: LlmMessage[] | undefined;
   result: RuntimeCompactionRecord | undefined;
   failure: string | undefined;

@@ -1,5 +1,5 @@
-import type { AnthropicThinkingConfig } from './anthropic/anthropic-compat.js';
-import type { ModelReasoningEffortContext, ModelReasoningProvider } from './reasoning-effort.js';
+import type { AnthropicThinkingConfig } from "./anthropic/anthropic-compat.js";
+import type { ModelReasoningEffortContext, ModelReasoningProvider } from "./reasoning-effort.js";
 import {
   isDeepSeekV4ReasoningEffortModel,
   isGoogleReasoningEffortModel,
@@ -9,53 +9,51 @@ import {
   isMoonshotReasoningEffortModel,
   isOpenRouterAnthropicClaudeReasoningModel,
   isXaiReasoningEffortModel,
-} from './reasoning-effort.js';
-import { parseGatewayUpstreamSlug } from './openai/gateway-code-completion-thinking.js';
-import { isMinimaxM3ThinkingSwitchModel } from './openai/gateway-minimax-thinking.js';
-import { isThinkingSwitchDisabledModel } from './openai/thinking-switch-disabled-models.js';
-import { isMoonshotThinkingSwitchModel } from './openai/moonshot-thinking-switch.js';
-import { isXiaomiResponsesReasoningEffortContext, isXiaomiThinkingSwitchEligibleModel } from './openai/gateway-xiaomi-thinking.js';
-import { isZaiThinkingSwitchEligibleModel } from './openai/gateway-zai-thinking.js';
-import { isTokenHubReasoningEffortModel } from './openai/tokenhub-reasoning-effort.js';
+} from "./reasoning-effort.js";
+import { parseGatewayUpstreamSlug } from "./openai/gateway-code-completion-thinking.js";
+import { isMinimaxM3ThinkingSwitchModel } from "./openai/gateway-minimax-thinking.js";
+import { isThinkingSwitchDisabledModel } from "./openai/thinking-switch-disabled-models.js";
+import { isMoonshotThinkingSwitchModel } from "./openai/moonshot-thinking-switch.js";
+import {
+  isXiaomiResponsesReasoningEffortContext,
+  isXiaomiThinkingSwitchEligibleModel,
+} from "./openai/gateway-xiaomi-thinking.js";
+import { isZaiThinkingSwitchEligibleModel } from "./openai/gateway-zai-thinking.js";
+import { isTokenHubReasoningEffortModel } from "./openai/tokenhub-reasoning-effort.js";
 import {
   isRoutedAnthropicClaudeModel,
   resolveRoutedAnthropicClaudeCapabilities,
   routedAnthropicClaudeThinkingSwitchable,
   type RoutedAnthropicClaudeCapabilities,
-} from './openai/routed-anthropic-claude-capabilities.js';
+} from "./openai/routed-anthropic-claude-capabilities.js";
 
 const DIRECT_THINKING_SWITCH_PROVIDERS = new Set([
-  'z-ai',
-  'zhipu-ai',
-  'xiaomi',
-  'volcengine',
-  'byteplus',
-  'alibaba',
-  'siliconflow',
-  'tencent-tokenhub',
+  "z-ai",
+  "zhipu-ai",
+  "xiaomi",
+  "volcengine",
+  "byteplus",
+  "alibaba",
+  "siliconflow",
+  "tencent-tokenhub",
   // DeepInfra 经扁平 reasoning_effort / reasoning.enabled 运行时字段关思考（OpenAPI 层保证）。
-  'deepinfra',
+  "deepinfra",
 ]);
 
-const GATEWAY_REASONING_EFFORT_SLUGS = new Set([
-  'openai',
-  'google',
-  'anthropic',
-  'xai',
-]);
+const GATEWAY_REASONING_EFFORT_SLUGS = new Set(["openai", "google", "anthropic", "xai"]);
 
 /** 聚合商：目录能力字段不全，推理强度 UI 与 OpenAI 兼容档位全开。 */
 const AGGREGATED_REASONING_EFFORT_PRIMARY_PROVIDERS = new Set<ModelReasoningProvider>([
-  'fireworks-ai',
-  'hugging-face',
-  'openrouter',
-  'cloudflare-ai-gateway',
+  "fireworks-ai",
+  "hugging-face",
+  "openrouter",
+  "cloudflare-ai-gateway",
 ]);
 
-export type ModelEffortControlLabelKind = 'effort' | 'reasoningEffort';
+export type ModelEffortControlLabelKind = "effort" | "reasoningEffort";
 
 function normalizeModelId(value: unknown): string {
-  return typeof value === 'string' ? value.trim().toLowerCase() : '';
+  return typeof value === "string" ? value.trim().toLowerCase() : "";
 }
 
 function routedAnthropicModelId(context?: ModelReasoningEffortContext): string | undefined {
@@ -90,7 +88,7 @@ export function isAnthropicClaudeAdaptiveThinkingModel(
   context?: ModelReasoningEffortContext,
 ): boolean {
   const capabilities = resolveAnthropicClaudeCapabilitiesForContext(context);
-  return capabilities?.thinkingMode === 'adaptive';
+  return capabilities?.thinkingMode === "adaptive";
 }
 
 /** Claude budget thinking（4.5 及更早支持 extended thinking 的型号）：开启时 thinking.type=enabled。 */
@@ -98,7 +96,7 @@ export function isAnthropicClaudeBudgetThinkingModel(
   context?: ModelReasoningEffortContext,
 ): boolean {
   const capabilities = resolveAnthropicClaudeCapabilitiesForContext(context);
-  return capabilities?.thinkingMode === 'budget';
+  return capabilities?.thinkingMode === "budget";
 }
 
 /** Claude 可开关 thinking（adaptive 或 budget）；thinkingMode=none 与常开 adaptive 不在此列。 */
@@ -115,22 +113,22 @@ export function isAnthropicClaudeSwitchableThinkingModel(
 export function modelEffortControlLabelKind(
   context?: ModelReasoningEffortContext,
 ): ModelEffortControlLabelKind {
-  return isAnthropicClaudeEffortModel(context) ? 'effort' : 'reasoningEffort';
+  return isAnthropicClaudeEffortModel(context) ? "effort" : "reasoningEffort";
 }
 
 /** DeepSeek R1 / reasoner：始终思考，无 thinking toggle。 */
 export function isDeepSeekReasoningOnlyModel(context?: ModelReasoningEffortContext): boolean {
-  if (context?.provider !== 'deepseek') {
+  if (context?.provider !== "deepseek") {
     return false;
   }
   const model = normalizeModelId(context.model);
-  return model.includes('deepseek-reasoner')
-    || model.includes('deepseek-r1')
-    || model === 'deepseek-r1';
+  return (
+    model.includes("deepseek-reasoner") || model.includes("deepseek-r1") || model === "deepseek-r1"
+  );
 }
 
 function isDeepSeekThinkingSwitchModel(context?: ModelReasoningEffortContext): boolean {
-  if (context?.provider !== 'deepseek') {
+  if (context?.provider !== "deepseek") {
     return false;
   }
   if (isDeepSeekReasoningOnlyModel(context)) {
@@ -140,10 +138,10 @@ function isDeepSeekThinkingSwitchModel(context?: ModelReasoningEffortContext): b
 }
 
 function isGatewayThinkingSwitchModel(context?: ModelReasoningEffortContext): boolean {
-  if (context?.provider !== 'vercel-ai-gateway') {
+  if (context?.provider !== "vercel-ai-gateway") {
     return false;
   }
-  const slug = parseGatewayUpstreamSlug(context.model ?? '');
+  const slug = parseGatewayUpstreamSlug(context.model ?? "");
   if (slug === undefined) {
     return false;
   }
@@ -151,23 +149,23 @@ function isGatewayThinkingSwitchModel(context?: ModelReasoningEffortContext): bo
     return false;
   }
   // DeepSeek V3 及以下靠模型名区分 thinking 变体，无 extended thinking 开关。
-  if (slug === 'deepseek') {
+  if (slug === "deepseek") {
     return isDeepSeekV4ReasoningEffortModel(context);
   }
-  if (slug === 'moonshotai') {
+  if (slug === "moonshotai") {
     return isMoonshotThinkingSwitchModel(context);
   }
-  if (slug === 'xiaomi') {
-    if (context.transportKind === 'open-responses') {
+  if (slug === "xiaomi") {
+    if (context.transportKind === "open-responses") {
       return false;
     }
-    return isXiaomiThinkingSwitchEligibleModel(context.model ?? '');
+    return isXiaomiThinkingSwitchEligibleModel(context.model ?? "");
   }
-  if (slug === 'zai') {
-    return isZaiThinkingSwitchEligibleModel(context.model ?? '');
+  if (slug === "zai") {
+    return isZaiThinkingSwitchEligibleModel(context.model ?? "");
   }
-  if (slug === 'minimax') {
-    return isMinimaxM3ThinkingSwitchModel(context.model ?? '');
+  if (slug === "minimax") {
+    return isMinimaxM3ThinkingSwitchModel(context.model ?? "");
   }
   return true;
 }
@@ -175,14 +173,14 @@ function isGatewayThinkingSwitchModel(context?: ModelReasoningEffortContext): bo
 function isGatewayReasoningEffortPrimaryControlModel(
   context?: ModelReasoningEffortContext,
 ): boolean {
-  if (context?.provider !== 'vercel-ai-gateway') {
+  if (context?.provider !== "vercel-ai-gateway") {
     return false;
   }
-  const slug = parseGatewayUpstreamSlug(context.model ?? '');
+  const slug = parseGatewayUpstreamSlug(context.model ?? "");
   if (slug === undefined) {
     return false;
   }
-  if (slug === 'moonshotai') {
+  if (slug === "moonshotai") {
     return !isMoonshotThinkingSwitchModel(context);
   }
   return GATEWAY_REASONING_EFFORT_SLUGS.has(slug);
@@ -200,10 +198,10 @@ export function modelUsesReasoningEffortPrimaryControl(
   }
 
   const provider = context?.provider;
-  if (provider === 'openai' || provider === 'azure' || provider === 'amazon-bedrock') {
+  if (provider === "openai" || provider === "azure" || provider === "amazon-bedrock") {
     return true;
   }
-  if (provider === 'anthropic') {
+  if (provider === "anthropic") {
     return true;
   }
   if (isXaiReasoningEffortModel(context)) {
@@ -241,13 +239,13 @@ export function modelUsesReasoningEffortPrimaryControl(
 }
 
 export function modelSupportsThinkingSwitch(context?: ModelReasoningEffortContext): boolean {
-  if (isThinkingSwitchDisabledModel(context?.model ?? '')) {
+  if (isThinkingSwitchDisabledModel(context?.model ?? "")) {
     return false;
   }
   if (isAnthropicClaudeSwitchableThinkingModel(context)) {
     return true;
   }
-  if (context?.supportsThinkingType === 'only') {
+  if (context?.supportsThinkingType === "only") {
     return false;
   }
   if (context?.supportsThinkingSwitch === true) {
@@ -261,11 +259,11 @@ export function modelSupportsThinkingSwitch(context?: ModelReasoningEffortContex
   }
 
   const provider = context?.provider;
-  if (provider === 'minimax') {
-    return isMinimaxM3ThinkingSwitchModel(context?.model ?? '');
+  if (provider === "minimax") {
+    return isMinimaxM3ThinkingSwitchModel(context?.model ?? "");
   }
   if (provider !== undefined && DIRECT_THINKING_SWITCH_PROVIDERS.has(provider)) {
-    if (provider === 'xiaomi' && context?.transportKind === 'open-responses') {
+    if (provider === "xiaomi" && context?.transportKind === "open-responses") {
       return false;
     }
     return true;
@@ -308,7 +306,7 @@ export function modelShowsReasoningEffortControl(
   if (modelUsesReasoningEffortPrimaryControl(context)) {
     return true;
   }
-  if (context?.provider === 'tencent-tokenhub' && !isTokenHubReasoningEffortModel(context)) {
+  if (context?.provider === "tencent-tokenhub" && !isTokenHubReasoningEffortModel(context)) {
     return false;
   }
   if (!modelSupportsThinkingSwitch(context)) {
@@ -349,25 +347,25 @@ export function resolveAnthropicExplicitThinkingConfig(
 ): AnthropicThinkingConfig | undefined {
   const capabilities = resolveAnthropicClaudeCapabilitiesForContext(context);
 
-  if (capabilities?.thinkingMode === 'adaptive') {
+  if (capabilities?.thinkingMode === "adaptive") {
     if (thinkingEnabled === false && routedAnthropicClaudeThinkingSwitchable(capabilities)) {
-      return { type: 'disabled' };
+      return { type: "disabled" };
     }
     return {
-      type: 'adaptive',
+      type: "adaptive",
       ...(capabilities.adaptiveDisplay ? { display: capabilities.adaptiveDisplay } : {}),
     };
   }
 
-  if (capabilities?.thinkingMode === 'budget') {
+  if (capabilities?.thinkingMode === "budget") {
     if (thinkingEnabled === false) {
-      return { type: 'disabled' };
+      return { type: "disabled" };
     }
     return undefined;
   }
 
   if (thinkingEnabled === false && modelSupportsThinkingSwitch(context)) {
-    return { type: 'disabled' };
+    return { type: "disabled" };
   }
 
   return undefined;

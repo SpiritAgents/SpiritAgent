@@ -1,10 +1,10 @@
-import { setImmediate as waitForImmediate } from 'node:timers/promises';
+import { setImmediate as waitForImmediate } from "node:timers/promises";
 
-import type { AuthorizationDecision } from '../ports.js';
+import type { AuthorizationDecision } from "../ports.js";
 
-import { renderError, toolNameFromRequest } from './helpers.js';
-import { applyAutoReviewToApprovalGate } from './auto-approval-integration.js';
-import type { ToolExecutionResult } from './tool-execution.js';
+import { renderError, toolNameFromRequest } from "./helpers.js";
+import { applyAutoReviewToApprovalGate } from "./auto-approval-integration.js";
+import type { ToolExecutionResult } from "./tool-execution.js";
 import type {
   AgentRuntimeOptions,
   PendingManualApprovalState,
@@ -14,14 +14,9 @@ import type {
   RuntimeManualToolCommandResult,
   RuntimeManualToolCommandStartResult,
   RuntimeTurnResult,
-} from './types.js';
+} from "./types.js";
 
-export interface ManualToolsRuntime<
-  Config,
-  State,
-  ToolRequest,
-  TrustTarget = string,
-> {
+export interface ManualToolsRuntime<Config, State, ToolRequest, TrustTarget = string> {
   options: AgentRuntimeOptions<Config, State, ToolRequest, TrustTarget>;
   pendingManualApproval: PendingManualApprovalState<ToolRequest, TrustTarget> | undefined;
   completedManualToolCommandResultStore:
@@ -43,17 +38,12 @@ export interface ManualToolsRuntime<
   poll(): Promise<void>;
 }
 
-export async function startManualToolCommand<
-  Config,
-  State,
-  ToolRequest,
-  TrustTarget = string,
->(
+export async function startManualToolCommand<Config, State, ToolRequest, TrustTarget = string>(
   runtime: ManualToolsRuntime<Config, State, ToolRequest, TrustTarget>,
   message: string,
 ): Promise<RuntimeManualToolCommandStartResult<State, ToolRequest, TrustTarget>> {
   if (runtime.isBusy()) {
-    throw new Error('当前已有响应或审批在处理中，请稍候。');
+    throw new Error("当前已有响应或审批在处理中，请稍候。");
   }
 
   runtime.completedManualToolCommandResultStore = undefined;
@@ -61,13 +51,14 @@ export async function startManualToolCommand<
   let request: ToolRequest;
   try {
     request = await runtime.options.toolExecutor.parseCommand(message);
-    request = runtime.options.toolExecutor.attachRequestMetadata?.(request, {
-      toolName: toolNameFromRequest(request),
-      userInitiated: true,
-    }) ?? request;
+    request =
+      runtime.options.toolExecutor.attachRequestMetadata?.(request, {
+        toolName: toolNameFromRequest(request),
+        userInitiated: true,
+      }) ?? request;
   } catch (error) {
     return {
-      kind: 'failed',
+      kind: "failed",
       error: `工具命令解析失败: ${renderError(error)}`,
     };
   }
@@ -79,13 +70,13 @@ export async function startManualToolCommand<
     authorization = await runtime.options.toolExecutor.authorize(request);
   } catch (error) {
     return {
-      kind: 'failed',
+      kind: "failed",
       error: `工具权限检查失败: ${renderError(error)}`,
       request,
     };
   }
 
-  if (authorization.kind === 'need-approval') {
+  if (authorization.kind === "need-approval") {
     const activeGate = await applyAutoReviewToApprovalGate(
       runtime.options.getApprovalLevel?.(),
       runtime.options.reviewToolApproval,
@@ -103,22 +94,18 @@ export async function startManualToolCommand<
       runtime.pendingManualApproval = {
         request,
         prompt: activeGate.prompt,
-        ...(activeGate.trustTarget !== undefined
-          ? { trustTarget: activeGate.trustTarget }
-          : {}),
+        ...(activeGate.trustTarget !== undefined ? { trustTarget: activeGate.trustTarget } : {}),
         ...(activeGate.autoReviewBlockReason !== undefined
           ? { autoReviewBlockReason: activeGate.autoReviewBlockReason }
           : {}),
         toolName,
       };
       runtime.emitEvent({
-        kind: 'approval-requested',
+        kind: "approval-requested",
         approval: {
           prompt: activeGate.prompt,
           request,
-          ...(activeGate.trustTarget !== undefined
-            ? { trustTarget: activeGate.trustTarget }
-            : {}),
+          ...(activeGate.trustTarget !== undefined ? { trustTarget: activeGate.trustTarget } : {}),
           ...(activeGate.autoReviewBlockReason !== undefined
             ? { autoReviewBlockReason: activeGate.autoReviewBlockReason }
             : {}),
@@ -126,13 +113,11 @@ export async function startManualToolCommand<
         },
       });
       return {
-        kind: 'requires-approval',
+        kind: "requires-approval",
         approval: {
           prompt: activeGate.prompt,
           request,
-          ...(activeGate.trustTarget !== undefined
-            ? { trustTarget: activeGate.trustTarget }
-            : {}),
+          ...(activeGate.trustTarget !== undefined ? { trustTarget: activeGate.trustTarget } : {}),
           ...(activeGate.autoReviewBlockReason !== undefined
             ? { autoReviewBlockReason: activeGate.autoReviewBlockReason }
             : {}),
@@ -142,10 +127,10 @@ export async function startManualToolCommand<
     }
   }
 
-  if (authorization.kind === 'need-questions') {
+  if (authorization.kind === "need-questions") {
     return {
-      kind: 'failed',
-      error: '手动工具命令不支持 ask_questions 交互。',
+      kind: "failed",
+      error: "手动工具命令不支持 ask_questions 交互。",
       request,
     };
   }
@@ -164,13 +149,13 @@ export async function continuePendingManualToolApproval<
 ): Promise<RuntimeManualToolCommandStartResult<State, ToolRequest, TrustTarget>> {
   const pending = runtime.pendingManualApproval;
   if (!pending) {
-    throw new Error('当前没有待确认的手动工具调用。');
+    throw new Error("当前没有待确认的手动工具调用。");
   }
 
   runtime.pendingManualApproval = undefined;
   runtime.completedManualToolCommandResultStore = undefined;
 
-  if (decision.kind === 'allow') {
+  if (decision.kind === "allow") {
     if (decision.persistTrust && pending.trustTarget !== undefined) {
       await runtime.options.toolExecutor.trust(pending.trustTarget);
     }
@@ -178,38 +163,33 @@ export async function continuePendingManualToolApproval<
     return startManualToolRequest(runtime, pending.request, pending.toolName);
   }
 
-  if (decision.kind === 'guidance') {
+  if (decision.kind === "guidance") {
     const userMessage = decision.userMessage.trim();
     if (!userMessage) {
       return {
-        kind: 'denied',
+        kind: "denied",
         request: pending.request,
         toolName: pending.toolName,
-        message: '已拒绝本次工具调用。',
+        message: "已拒绝本次工具调用。",
       };
     }
 
     await runtime.startUserTurn(userMessage);
     return {
-      kind: 'started-user-turn',
+      kind: "started-user-turn",
       userMessage,
     };
   }
 
   return {
-    kind: 'denied',
+    kind: "denied",
     request: pending.request,
     toolName: pending.toolName,
-    message: '已拒绝本次工具调用。',
+    message: "已拒绝本次工具调用。",
   };
 }
 
-export async function startManualToolRequest<
-  Config,
-  State,
-  ToolRequest,
-  TrustTarget = string,
->(
+export async function startManualToolRequest<Config, State, ToolRequest, TrustTarget = string>(
   runtime: ManualToolsRuntime<Config, State, ToolRequest, TrustTarget>,
   request: ToolRequest,
   toolName: string,
@@ -217,7 +197,7 @@ export async function startManualToolRequest<
   if (runtime.options.toolExecutor.shouldExecuteInBackground?.(request) ?? false) {
     const statusText = runtime.startManualBackgroundToolExecution(request, toolName);
     return {
-      kind: 'started-background',
+      kind: "started-background",
       request,
       toolName,
       ...(statusText !== undefined ? { statusText } : {}),
@@ -226,7 +206,7 @@ export async function startManualToolRequest<
 
   const execution = await runtime.performToolExecution(request, toolName);
   return {
-    kind: 'completed',
+    kind: "completed",
     request,
     toolName,
     output: execution.output.summaryText,
@@ -244,13 +224,13 @@ export async function waitForStartedManualToolCommandResult<
   runtime: ManualToolsRuntime<Config, State, ToolRequest, TrustTarget>,
   result: RuntimeManualToolCommandStartResult<State, ToolRequest, TrustTarget>,
 ): Promise<RuntimeManualToolCommandResult<State, ToolRequest, TrustTarget>> {
-  if (result.kind === 'started-background') {
+  if (result.kind === "started-background") {
     return waitForCompletedManualToolCommandResult(runtime);
   }
 
-  if (result.kind === 'started-user-turn') {
+  if (result.kind === "started-user-turn") {
     return {
-      kind: 'submitted-user-turn',
+      kind: "submitted-user-turn",
       userMessage: result.userMessage,
       result: await runtime.waitForCompletedTurnResult(),
     };
@@ -274,7 +254,7 @@ export async function waitForCompletedManualToolCommandResult<
     }
 
     if (!runtime.isBusy()) {
-      throw new Error('runtime 在未产出手动工具结果时提前进入空闲状态。');
+      throw new Error("runtime 在未产出手动工具结果时提前进入空闲状态。");
     }
 
     await runtime.poll();
@@ -285,7 +265,7 @@ export async function waitForCompletedManualToolCommandResult<
     }
 
     if (!runtime.isBusy()) {
-      throw new Error('runtime 在未产出手动工具结果时提前进入空闲状态。');
+      throw new Error("runtime 在未产出手动工具结果时提前进入空闲状态。");
     }
 
     await waitForImmediate();

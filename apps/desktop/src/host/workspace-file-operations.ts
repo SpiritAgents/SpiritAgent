@@ -1,37 +1,37 @@
-import { lstat, mkdir, realpath, rename, rm, stat, unlink, writeFile } from 'node:fs/promises';
-import path from 'node:path';
+import { lstat, mkdir, realpath, rename, rm, stat, unlink, writeFile } from "node:fs/promises";
+import path from "node:path";
 
-import i18n from '../lib/i18n-host.js';
-import { resolveWorkspaceRelativePath } from './workspace-files.js';
+import i18n from "../lib/i18n-host.js";
+import { resolveWorkspaceRelativePath } from "./workspace-files.js";
 
 export function validateEntryName(name: string): void {
   const trimmed = name.trim();
-  if (!trimmed || trimmed === '.' || trimmed === '..') {
-    throw new Error(i18n.t('error.invalidFileName'));
+  if (!trimmed || trimmed === "." || trimmed === "..") {
+    throw new Error(i18n.t("error.invalidFileName"));
   }
   if (/[\0/\\]/.test(trimmed)) {
-    throw new Error(i18n.t('error.invalidFileName'));
+    throw new Error(i18n.t("error.invalidFileName"));
   }
 }
 
 export function joinWorkspaceRelativePath(parentRel: string, name: string): string {
-  return parentRel === '' ? name : `${parentRel}/${name}`;
+  return parentRel === "" ? name : `${parentRel}/${name}`;
 }
 
 export function parentWorkspaceRelativePath(relativePath: string): string {
-  const posix = relativePath.replace(/\\/g, '/');
-  const index = posix.lastIndexOf('/');
-  return index >= 0 ? posix.slice(0, index) : '';
+  const posix = relativePath.replace(/\\/g, "/");
+  const index = posix.lastIndexOf("/");
+  return index >= 0 ? posix.slice(0, index) : "";
 }
 
 export function isDescendantOrSelf(ancestorRel: string, candidateRel: string): boolean {
-  const ancestor = ancestorRel.replace(/\\/g, '/');
-  const candidate = candidateRel.replace(/\\/g, '/');
+  const ancestor = ancestorRel.replace(/\\/g, "/");
+  const candidate = candidateRel.replace(/\\/g, "/");
   if (ancestor === candidate) {
     return true;
   }
   // 空 ancestor 仅匹配自身；moveIntoSelf 校验时 sourceRel 已保证非空。
-  if (ancestor === '') {
+  if (ancestor === "") {
     return false;
   }
   return candidate.startsWith(`${ancestor}/`);
@@ -44,9 +44,9 @@ async function assertTargetDoesNotExist(
   const absPath = await resolveWorkspaceRelativePath(workspaceRoot, relativePath);
   try {
     await stat(absPath);
-    throw new Error(i18n.t('error.fileAlreadyExists'));
+    throw new Error(i18n.t("error.fileAlreadyExists"));
   } catch (error) {
-    if (error instanceof Error && error.message === i18n.t('error.fileAlreadyExists')) {
+    if (error instanceof Error && error.message === i18n.t("error.fileAlreadyExists")) {
       throw error;
     }
   }
@@ -59,11 +59,11 @@ async function assertParentDirectoryExists(
   const parentAbs = await resolveWorkspaceRelativePath(workspaceRoot, parentDirectoryRel);
   const parentStat = await stat(parentAbs);
   if (!parentStat.isDirectory()) {
-    throw new Error(i18n.t('error.notADirectory'));
+    throw new Error(i18n.t("error.notADirectory"));
   }
 }
 
-export type WorkspaceEntryKind = 'file' | 'dir';
+export type WorkspaceEntryKind = "file" | "dir";
 
 export async function createWorkspaceEntry(
   workspaceRoot: string,
@@ -72,7 +72,7 @@ export async function createWorkspaceEntry(
   kind: WorkspaceEntryKind,
 ): Promise<{ relativePath: string }> {
   validateEntryName(name);
-  const parentRel = parentDirectoryRel.replace(/\\/g, '/').trim();
+  const parentRel = parentDirectoryRel.replace(/\\/g, "/").trim();
   const trimmedName = name.trim();
   const newRel = joinWorkspaceRelativePath(parentRel, trimmedName);
 
@@ -80,10 +80,10 @@ export async function createWorkspaceEntry(
   await assertTargetDoesNotExist(workspaceRoot, newRel);
 
   const absPath = await resolveWorkspaceRelativePath(workspaceRoot, newRel);
-  if (kind === 'dir') {
+  if (kind === "dir") {
     await mkdir(absPath);
   } else {
-    await writeFile(absPath, '', 'utf8');
+    await writeFile(absPath, "", "utf8");
   }
   return { relativePath: newRel };
 }
@@ -94,9 +94,9 @@ export async function renameWorkspaceEntry(
   newName: string,
 ): Promise<{ relativePath: string }> {
   validateEntryName(newName);
-  const sourceRel = relativePath.replace(/\\/g, '/').trim();
+  const sourceRel = relativePath.replace(/\\/g, "/").trim();
   if (!sourceRel) {
-    throw new Error(i18n.t('error.invalidPath'));
+    throw new Error(i18n.t("error.invalidPath"));
   }
 
   const parentRel = parentWorkspaceRelativePath(sourceRel);
@@ -120,11 +120,8 @@ export async function renameWorkspaceEntry(
     } catch {
       targetStat = undefined;
     }
-    if (
-      targetStat
-      && !(targetStat.ino === sourceStat.ino && targetStat.dev === sourceStat.dev)
-    ) {
-      throw new Error(i18n.t('error.fileAlreadyExists'));
+    if (targetStat && !(targetStat.ino === sourceStat.ino && targetStat.dev === sourceStat.dev)) {
+      throw new Error(i18n.t("error.fileAlreadyExists"));
     }
   } else {
     await assertTargetDoesNotExist(workspaceRoot, newRel);
@@ -139,20 +136,20 @@ export async function moveWorkspaceEntry(
   relativePath: string,
   targetDirectoryRel: string,
 ): Promise<{ relativePath: string }> {
-  const sourceRel = relativePath.replace(/\\/g, '/').trim();
+  const sourceRel = relativePath.replace(/\\/g, "/").trim();
   if (!sourceRel) {
-    throw new Error(i18n.t('error.invalidPath'));
+    throw new Error(i18n.t("error.invalidPath"));
   }
 
-  const targetDir = targetDirectoryRel.replace(/\\/g, '/').trim();
+  const targetDir = targetDirectoryRel.replace(/\\/g, "/").trim();
   if (isDescendantOrSelf(sourceRel, targetDir)) {
-    throw new Error(i18n.t('error.moveIntoSelf'));
+    throw new Error(i18n.t("error.moveIntoSelf"));
   }
 
   const targetAbs = await resolveWorkspaceRelativePath(workspaceRoot, targetDir);
   const targetStat = await stat(targetAbs);
   if (!targetStat.isDirectory()) {
-    throw new Error(i18n.t('error.notADirectory'));
+    throw new Error(i18n.t("error.notADirectory"));
   }
 
   const basename = path.posix.basename(sourceRel);
@@ -173,9 +170,9 @@ export async function forceDeleteWorkspaceEntry(
   workspaceRoot: string,
   relativePath: string,
 ): Promise<void> {
-  const sourceRel = relativePath.replace(/\\/g, '/').trim();
+  const sourceRel = relativePath.replace(/\\/g, "/").trim();
   if (!sourceRel) {
-    throw new Error(i18n.t('error.invalidPath'));
+    throw new Error(i18n.t("error.invalidPath"));
   }
 
   const absPath = await resolveWorkspaceRelativePath(workspaceRoot, sourceRel);
@@ -190,7 +187,7 @@ export async function forceDeleteWorkspaceEntry(
 export class WorkspaceTrashError extends Error {
   constructor(message: string) {
     super(message);
-    this.name = 'WorkspaceTrashError';
+    this.name = "WorkspaceTrashError";
   }
 }
 
@@ -198,18 +195,18 @@ export async function trashWorkspaceEntry(
   workspaceRoot: string,
   relativePath: string,
 ): Promise<void> {
-  const sourceRel = relativePath.replace(/\\/g, '/').trim();
+  const sourceRel = relativePath.replace(/\\/g, "/").trim();
   if (!sourceRel) {
-    throw new Error(i18n.t('error.invalidPath'));
+    throw new Error(i18n.t("error.invalidPath"));
   }
 
   const absPath = await resolveWorkspaceRelativePath(workspaceRoot, sourceRel);
   try {
-    const { shell } = await import('electron');
+    const { shell } = await import("electron");
     await shell.trashItem(absPath);
   } catch (error) {
     const message = error instanceof Error ? error.message : String(error);
-    console.debug('[workspace-file-operations] trashWorkspaceEntry failed', {
+    console.warn("[workspace-file-operations] trashWorkspaceEntry failed", {
       relativePath: sourceRel,
       error: message,
     });
@@ -221,10 +218,10 @@ export async function revealWorkspaceEntry(
   workspaceRoot: string,
   relativePath: string,
 ): Promise<void> {
-  const sourceRel = relativePath.replace(/\\/g, '/').trim();
+  const sourceRel = relativePath.replace(/\\/g, "/").trim();
   if (!sourceRel) {
     const absRoot = path.resolve(workspaceRoot);
-    const { shell } = await import('electron');
+    const { shell } = await import("electron");
     const result = await shell.openPath(absRoot);
     if (result) {
       throw new Error(result);
@@ -234,7 +231,7 @@ export async function revealWorkspaceEntry(
 
   const absPath = await resolveWorkspaceRelativePath(workspaceRoot, sourceRel);
   const entry = await stat(absPath);
-  const { shell } = await import('electron');
+  const { shell } = await import("electron");
   if (entry.isDirectory()) {
     const result = await shell.openPath(absPath);
     if (result) {
@@ -252,7 +249,7 @@ export async function openAbsolutePathInDefaultApp(
 ): Promise<void> {
   const trimmed = absolutePath.trim();
   if (!trimmed || !path.isAbsolute(trimmed)) {
-    throw new Error(i18n.t('error.invalidPath'));
+    throw new Error(i18n.t("error.invalidPath"));
   }
 
   const root = path.resolve(workspaceRoot);
@@ -260,15 +257,15 @@ export async function openAbsolutePathInDefaultApp(
   const resolved = path.resolve(trimmed);
   const entry = await stat(resolved);
   if (!entry.isFile()) {
-    throw new Error(i18n.t('error.invalidPath'));
+    throw new Error(i18n.t("error.invalidPath"));
   }
   const canonicalTarget = await realpath(resolved);
   const rel = path.relative(canonicalRoot, canonicalTarget);
-  if (rel.startsWith('..') || path.isAbsolute(rel)) {
-    throw new Error(i18n.t('error.pathOutsideWorkspace'));
+  if (rel.startsWith("..") || path.isAbsolute(rel)) {
+    throw new Error(i18n.t("error.pathOutsideWorkspace"));
   }
 
-  const { shell } = await import('electron');
+  const { shell } = await import("electron");
   const result = await shell.openPath(canonicalTarget);
   if (result) {
     throw new Error(result);

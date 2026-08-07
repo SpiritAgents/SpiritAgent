@@ -1,4 +1,4 @@
-import type { GitHubRepositoryRef } from './types.js';
+import type { GitHubRepositoryRef } from "./types.js";
 
 export type GitHubPullRequestUrlRef = GitHubRepositoryRef & {
   number: number;
@@ -12,20 +12,20 @@ export function parseGitHubPullRequestUrl(rawUrl: string): GitHubPullRequestUrlR
 
   try {
     const parsed = new URL(trimmed);
-    if (parsed.hostname !== 'github.com') {
+    if (parsed.hostname !== "github.com") {
       return null;
     }
 
-    const segments = parsed.pathname.split('/').filter(Boolean);
+    const segments = parsed.pathname.split("/").filter(Boolean);
     if (segments.length < 4) {
       return null;
     }
 
     const owner = segments[0]?.trim();
-    const repo = segments[1]?.replace(/\.git$/u, '').trim();
+    const repo = segments[1]?.replace(/\.git$/u, "").trim();
     const pullSegment = segments[2]?.trim().toLowerCase();
     const numberRaw = segments[3]?.trim();
-    if (!owner || !repo || pullSegment !== 'pull' || !numberRaw) {
+    if (!owner || !repo || pullSegment !== "pull" || !numberRaw) {
       return null;
     }
 

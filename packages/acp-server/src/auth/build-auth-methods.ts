@@ -1,11 +1,11 @@
-import type * as schema from '@agentclientprotocol/sdk';
+import type * as schema from "@agentclientprotocol/sdk";
 
 import {
   TERMINAL_AUTH_ARGS,
   TERMINAL_AUTH_DESCRIPTION,
   TERMINAL_AUTH_METHOD_ID,
   TERMINAL_AUTH_NAME,
-} from './constants.js';
+} from "./constants.js";
 
 /** Terminal Auth method advertised during initialize. */
 export function buildTerminalAuthMethod(): schema.AuthMethod {
@@ -13,7 +13,7 @@ export function buildTerminalAuthMethod(): schema.AuthMethod {
     id: TERMINAL_AUTH_METHOD_ID,
     name: TERMINAL_AUTH_NAME,
     description: TERMINAL_AUTH_DESCRIPTION,
-    type: 'terminal',
+    type: "terminal",
     args: [...TERMINAL_AUTH_ARGS],
   };
 }

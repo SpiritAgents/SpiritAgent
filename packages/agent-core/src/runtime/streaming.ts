@@ -1,21 +1,21 @@
-import { emitContextUsageUpdated } from './context-usage.js';
+import { emitContextUsageUpdated } from "./context-usage.js";
 import {
   createLlmMessageContentFromText,
   type LlmMessage,
   type LlmStreamEvent,
   type ToolAgentRoundCompletion,
   type ToolCallRequest,
-} from '../ports.js';
+} from "../ports.js";
 
-import { STREAM_EVENT_BUDGET_PER_POLL, STREAM_STALL_TIMEOUT_MS } from './constants.js';
+import { STREAM_EVENT_BUDGET_PER_POLL, STREAM_STALL_TIMEOUT_MS } from "./constants.js";
 import {
   applyDeferredUserGuidance,
   appendLoopContinuationGuidance,
   cloneHistory,
   renderError,
   resolveFinalAssistantHistoryMessage,
-} from './helpers.js';
-import { runInLlmRetryObservationContext } from '../llm-retry.js';
+} from "./helpers.js";
+import { runInLlmRetryObservationContext } from "../llm-retry.js";
 import type {
   AgentRuntimeOptions,
   AssistantAuxKind,
@@ -27,28 +27,29 @@ import type {
   RuntimeEvent,
   RuntimeTurnResult,
   RuntimeTurnContext,
-} from './types.js';
-import type { ToolExecutionResult } from './tool-execution.js';
-import type { EarlyInternalToolCallResult, TurnMachineRuntime } from './turn-machine.js';
-import { prepareStateForContextRetryAsync } from './compaction.js';
-import { isResponsesBuiltInToolName, resolveResponsesBuiltInToolStreamPhaseFromArgumentsJson } from '../open-responses/responses-built-in-tools.js';
-import { findLatestProviderBuiltinToolRoundInState } from '../open-responses/sdk-provider-web-search-loop.js';
-import { shouldSkipEarlyExecutionForManagedProviderTool } from '../moonshot/formula/moonshot-formula-turn-handler.js';
-import type { ToolAgentState } from '../tool-agent.js';
-import { startEarlyToolExecution, persistProviderBuiltinToolRoundToHistoryStore } from './turn-machine.js';
+} from "./types.js";
+import type { ToolExecutionResult } from "./tool-execution.js";
+import type { EarlyInternalToolCallResult, TurnMachineRuntime } from "./turn-machine.js";
+import { prepareStateForContextRetryAsync } from "./compaction.js";
+import {
+  isResponsesBuiltInToolName,
+  resolveResponsesBuiltInToolStreamPhaseFromArgumentsJson,
+} from "../open-responses/responses-built-in-tools.js";
+import { findLatestProviderBuiltinToolRoundInState } from "../open-responses/sdk-provider-web-search-loop.js";
+import { shouldSkipEarlyExecutionForManagedProviderTool } from "../moonshot/formula/moonshot-formula-turn-handler.js";
+import type { ToolAgentState } from "../tool-agent.js";
+import {
+  startEarlyToolExecution,
+  persistProviderBuiltinToolRoundToHistoryStore,
+} from "./turn-machine.js";
 
 function streamingRoundWillContinueWithToolCalls<State>(
   completion: ToolAgentRoundCompletion<State> | undefined,
 ): boolean {
-  return completion?.kind === 'success' && completion.result.step.kind === 'tool-calls';
+  return completion?.kind === "success" && completion.result.step.kind === "tool-calls";
 }
 
-function syncProviderBuiltinSearchRoundToHistory<
-  Config,
-  State,
-  ToolRequest,
-  TrustTarget = string,
->(
+function syncProviderBuiltinSearchRoundToHistory<Config, State, ToolRequest, TrustTarget = string>(
   runtime: StreamingRuntime<Config, State, ToolRequest, TrustTarget>,
   state: State,
 ): void {
@@ -58,20 +59,13 @@ function syncProviderBuiltinSearchRoundToHistory<
   }
 }
 
-export interface StreamingRuntime<
-  Config,
-  State,
-  ToolRequest,
-  TrustTarget = string,
-> {
+export interface StreamingRuntime<Config, State, ToolRequest, TrustTarget = string> {
   options: AgentRuntimeOptions<Config, State, ToolRequest, TrustTarget>;
   historyStore: LlmMessage[];
   pendingUserTurnStore: string | undefined;
   pendingStreamingRound: PendingStreamingRound<State, ToolRequest> | undefined;
   pendingToolAgentRound: PendingToolAgentRound<State, ToolRequest> | undefined;
-  pendingBackgroundToolExecution:
-    | PendingBackgroundToolExecution<State, ToolRequest>
-    | undefined;
+  pendingBackgroundToolExecution: PendingBackgroundToolExecution<State, ToolRequest> | undefined;
   pendingHistoryCompaction: PendingHistoryCompaction<State, ToolRequest> | undefined;
   pendingBackgroundToolStatusStore: string | undefined;
   pendingAssistantTextStore: string;
@@ -127,12 +121,7 @@ export interface StreamingRuntime<
   loopEnabled(): boolean;
 }
 
-export function handleStreamStallTimeout<
-  Config,
-  State,
-  ToolRequest,
-  TrustTarget = string,
->(
+export function handleStreamStallTimeout<Config, State, ToolRequest, TrustTarget = string>(
   runtime: StreamingRuntime<Config, State, ToolRequest, TrustTarget>,
   nowMs = Date.now(),
   stallTimeoutMs = STREAM_STALL_TIMEOUT_MS,
@@ -153,41 +142,31 @@ export function handleStreamStallTimeout<
 
   if (!runtime.pendingAssistantTextStore.trim()) {
     runtime.emitEvent({
-      kind: 'replace-pending-assistant',
-      text: '流式响应超时，连接已中断。',
+      kind: "replace-pending-assistant",
+      text: "流式响应超时，连接已中断。",
     });
   } else {
-    const suffix = '\n\n[stream timeout] 响应长时间无数据，已自动停止等待。';
+    const suffix = "\n\n[stream timeout] 响应长时间无数据，已自动停止等待。";
     runtime.pendingAssistantTextStore += suffix;
     runtime.emitEvent({
-      kind: 'assistant-chunk',
+      kind: "assistant-chunk",
       text: suffix,
     });
   }
 
   runtime.pendingUserTurnStore = undefined;
   clearPendingStreamingState(runtime);
-  runtime.emitEvent({ kind: 'assistant-response-completed' });
+  runtime.emitEvent({ kind: "assistant-response-completed" });
 }
 
-export async function startStreamingRound<
-  Config,
-  State,
-  ToolRequest,
-  TrustTarget = string,
->(
+export async function startStreamingRound<Config, State, ToolRequest, TrustTarget = string>(
   runtime: StreamingRuntime<Config, State, ToolRequest, TrustTarget>,
   state: State,
   pendingUserInput: string,
   turn: RuntimeTurnContext<ToolRequest>,
   emitBeginResponse: boolean,
 ): Promise<void> {
-  ({ state, pendingUserInput } = applyDeferredUserGuidance(
-    runtime,
-    state,
-    pendingUserInput,
-    turn,
-  ));
+  ({ state, pendingUserInput } = applyDeferredUserGuidance(runtime, state, pendingUserInput, turn));
   clearPendingStreamingState(runtime);
   runtime.pendingStartedAtStore = Date.now();
   runtime.pendingLastEventAtStore = runtime.pendingStartedAtStore;
@@ -206,99 +185,103 @@ export async function startStreamingRound<
   runtime.pendingStreamingRound = pending;
 
   if (emitBeginResponse) {
-    runtime.emitEvent({ kind: 'begin-assistant-response' });
+    runtime.emitEvent({ kind: "begin-assistant-response" });
   }
 
   const transport = runtime.options.llmTransport;
 
-  runInLlmRetryObservationContext({
-    observer: (event) => {
-      if (event.kind === 'retry') {
-        runtime.emitEvent({
-          kind: 'turn-error-retry',
-          attempt: event.attempt,
-          maxAttempts: event.maxAttempts,
-          error: event.error,
-        });
+  runInLlmRetryObservationContext(
+    {
+      observer: (event) => {
+        if (event.kind === "retry") {
+          runtime.emitEvent({
+            kind: "turn-error-retry",
+            attempt: event.attempt,
+            maxAttempts: event.maxAttempts,
+            error: event.error,
+          });
+          return;
+        }
+        runtime.emitEvent({ kind: "turn-error-retry-cleared" });
+      },
+    },
+    () => {
+      if (transport.startToolAgentRoundStreaming) {
+        void transport
+          .startToolAgentRoundStreaming(
+            runtime.options.config,
+            state,
+            runtime.options.toolExecutor.toolDefinitionsJson(),
+          )
+          .then((started) => {
+            if (runtime.pendingStreamingRound !== pending) {
+              started.cancel?.();
+              return;
+            }
+
+            pending.cancel = started.cancel;
+            void consumeStreamEvents(runtime, pending, started.eventStream);
+            void started.completion
+              .then((completion) => {
+                pending.completion = completion;
+              })
+              .catch((error: unknown) => {
+                pending.completion = {
+                  kind: "failure",
+                  error: renderError(error),
+                  requestTrace: [],
+                };
+              });
+          })
+          .catch((error: unknown) => {
+            if (runtime.pendingStreamingRound !== pending) {
+              return;
+            }
+
+            pending.completion = {
+              kind: "failure",
+              error: renderError(error),
+              requestTrace: [],
+            };
+          });
         return;
       }
-      runtime.emitEvent({ kind: 'turn-error-retry-cleared' });
-    },
-  }, () => {
-    if (transport.startToolAgentRoundStreaming) {
-      void transport.startToolAgentRoundStreaming(
-        runtime.options.config,
-        state,
-        runtime.options.toolExecutor.toolDefinitionsJson(),
-      )
-        .then((started) => {
-          if (runtime.pendingStreamingRound !== pending) {
-            started.cancel?.();
-            return;
-          }
 
-          pending.cancel = started.cancel;
-          void consumeStreamEvents(runtime, pending, started.eventStream);
-          void started.completion
-            .then((completion) => {
-              pending.completion = completion;
-            })
-            .catch((error: unknown) => {
-              pending.completion = {
-                kind: 'failure',
-                error: renderError(error),
-                requestTrace: [],
-              };
-            });
+      void runtime.options.llmTransport
+        .startToolAgentRound(
+          runtime.options.config,
+          state,
+          runtime.options.toolExecutor.toolDefinitionsJson(),
+        )
+        .then((completion) => {
+          pending.completion = completion;
+          pending.streamConsumerFinished = true;
+          if (
+            completion.kind === "success" &&
+            completion.result.step.kind === "final-response-ready"
+          ) {
+            const assistantText = runtime.options
+              .extractAssistantText(completion.result.state)
+              ?.trim();
+            if (assistantText) {
+              pending.rawEvents.push({ kind: "assistant-chunk", text: assistantText });
+            }
+            pending.rawEvents.push({ kind: "done" });
+          }
         })
         .catch((error: unknown) => {
-          if (runtime.pendingStreamingRound !== pending) {
-            return;
-          }
-
           pending.completion = {
-            kind: 'failure',
+            kind: "failure",
             error: renderError(error),
             requestTrace: [],
           };
+          pending.streamConsumerFinished = true;
         });
-      return;
-    }
-
-    void runtime.options.llmTransport
-      .startToolAgentRound(
-        runtime.options.config,
-        state,
-        runtime.options.toolExecutor.toolDefinitionsJson(),
-      )
-      .then((completion) => {
-        pending.completion = completion;
-        pending.streamConsumerFinished = true;
-        if (completion.kind === 'success' && completion.result.step.kind === 'final-response-ready') {
-          const assistantText = runtime.options.extractAssistantText(completion.result.state)?.trim();
-          if (assistantText) {
-            pending.rawEvents.push({ kind: 'assistant-chunk', text: assistantText });
-          }
-          pending.rawEvents.push({ kind: 'done' });
-        }
-      })
-      .catch((error: unknown) => {
-        pending.completion = {
-          kind: 'failure',
-          error: renderError(error),
-          requestTrace: [],
-        };
-        pending.streamConsumerFinished = true;
-      });
-  });
+    },
+  );
 }
 
-export async function pollPendingStreamingRound<
-  Config,
-  State,
-  ToolRequest,
-  TrustTarget = string,
->(
+export async function pollPendingStreamingRound<Config, State, ToolRequest, TrustTarget = string>(
   runtime: StreamingRuntime<Config, State, ToolRequest, TrustTarget>,
 ): Promise<void> {
   const pending = runtime.pendingStreamingRound;
@@ -320,7 +303,11 @@ export async function pollPendingStreamingRound<
     }
   }
 
-  if (runtime.pendingStreamingRound !== pending || pending.completionHandled || !pending.completion) {
+  if (
+    runtime.pendingStreamingRound !== pending ||
+    pending.completionHandled ||
+    !pending.completion
+  ) {
     return;
   }
 
@@ -334,16 +321,11 @@ export async function pollPendingStreamingRound<
   await handlePendingStreamingCompletion(runtime, pending, pending.completion);
 }
 
-export function currentAuxKind<
-  Config,
-  State,
-  ToolRequest,
-  TrustTarget = string,
->(
+export function currentAuxKind<Config, State, ToolRequest, TrustTarget = string>(
   runtime: StreamingRuntime<Config, State, ToolRequest, TrustTarget>,
 ): AssistantAuxKind | undefined {
   if (runtime.pendingHistoryCompaction) {
-    return 'compressing';
+    return "compressing";
   }
 
   if (
@@ -371,18 +353,13 @@ export function currentAuxKind<
     ) {
       return undefined;
     }
-    return 'thinking';
+    return "thinking";
   }
 
   return undefined;
 }
 
-export function currentAuxText<
-  Config,
-  State,
-  ToolRequest,
-  TrustTarget = string,
->(
+export function currentAuxText<Config, State, ToolRequest, TrustTarget = string>(
   runtime: StreamingRuntime<Config, State, ToolRequest, TrustTarget>,
 ): string | undefined {
   if (runtime.pendingBackgroundToolStatusStore?.trim()) {
@@ -405,26 +382,19 @@ export function currentAuxText<
   return undefined;
 }
 
-function finalizeInFlightStreamThinking<
-  Config,
-  State,
-  ToolRequest,
-  TrustTarget = string,
->(
+function finalizeInFlightStreamThinking<Config, State, ToolRequest, TrustTarget = string>(
   runtime: StreamingRuntime<Config, State, ToolRequest, TrustTarget>,
 ): void {
   if (!runtime.thinkingTextStore.trim()) {
     return;
   }
-  const placement = runtime.toolPreviewSeenInStreamRoundStore
-    ? 'before-next-tool'
-    : 'after-stream';
+  const placement = runtime.toolPreviewSeenInStreamRoundStore ? "before-next-tool" : "after-stream";
   runtime.emitEvent({
-    kind: 'assistant-thinking-segment-finalized',
+    kind: "assistant-thinking-segment-finalized",
     text: runtime.thinkingTextStore,
     placement,
   });
-  runtime.thinkingTextStore = '';
+  runtime.thinkingTextStore = "";
 }
 
 function discardPendingAssistantBubbleOnTurnFailure<
@@ -432,39 +402,27 @@ function discardPendingAssistantBubbleOnTurnFailure<
   State,
   ToolRequest,
   TrustTarget = string,
->(
-  runtime: StreamingRuntime<Config, State, ToolRequest, TrustTarget>,
-): void {
-  runtime.pendingAssistantTextStore = '';
-  runtime.emitEvent({ kind: 'replace-pending-assistant', text: '' });
-  runtime.emitEvent({ kind: 'remove-pending-assistant' });
+>(runtime: StreamingRuntime<Config, State, ToolRequest, TrustTarget>): void {
+  runtime.pendingAssistantTextStore = "";
+  runtime.emitEvent({ kind: "replace-pending-assistant", text: "" });
+  runtime.emitEvent({ kind: "remove-pending-assistant" });
 }
 
-export function clearStreamingUiState<
-  Config,
-  State,
-  ToolRequest,
-  TrustTarget = string,
->(
+export function clearStreamingUiState<Config, State, ToolRequest, TrustTarget = string>(
   runtime: StreamingRuntime<Config, State, ToolRequest, TrustTarget>,
 ): void {
   finalizeInFlightStreamThinking(runtime);
   runtime.pendingStartedAtStore = undefined;
   runtime.pendingLastEventAtStore = undefined;
   runtime.streamChunkCounterStore = 0;
-  runtime.pendingAssistantTextStore = '';
-  runtime.thinkingTextStore = '';
-  runtime.compactionTextStore = '';
+  runtime.pendingAssistantTextStore = "";
+  runtime.thinkingTextStore = "";
+  runtime.compactionTextStore = "";
   runtime.toolPreviewSeenInStreamRoundStore = false;
   runtime.providerBuiltinToolTerminalSeenInStreamRoundStore = false;
 }
 
-export function clearPendingStreamingState<
-  Config,
-  State,
-  ToolRequest,
-  TrustTarget = string,
->(
+export function clearPendingStreamingState<Config, State, ToolRequest, TrustTarget = string>(
   runtime: StreamingRuntime<Config, State, ToolRequest, TrustTarget>,
 ): void {
   runtime.pendingStreamingRound?.cancel?.();
@@ -472,12 +430,7 @@ export function clearPendingStreamingState<
   clearStreamingUiState(runtime);
 }
 
-export async function consumeStreamEvents<
-  Config,
-  State,
-  ToolRequest,
-  TrustTarget = string,
->(
+export async function consumeStreamEvents<Config, State, ToolRequest, TrustTarget = string>(
   runtime: StreamingRuntime<Config, State, ToolRequest, TrustTarget>,
   pending: PendingStreamingRound<State, ToolRequest>,
   eventStream: AsyncIterable<LlmStreamEvent>,
@@ -488,7 +441,7 @@ export async function consumeStreamEvents<
     }
   } catch (error) {
     pending.rawEvents.push({
-      kind: 'error',
+      kind: "error",
       error: renderError(error),
     });
   } finally {
@@ -496,32 +449,27 @@ export async function consumeStreamEvents<
   }
 }
 
-export async function handlePendingStreamEvent<
-  Config,
-  State,
-  ToolRequest,
-  TrustTarget = string,
->(
+export async function handlePendingStreamEvent<Config, State, ToolRequest, TrustTarget = string>(
   runtime: StreamingRuntime<Config, State, ToolRequest, TrustTarget>,
   pending: PendingStreamingRound<State, ToolRequest>,
   event: LlmStreamEvent,
 ): Promise<boolean> {
   runtime.pendingLastEventAtStore = Date.now();
 
-  if (event.kind === 'thinking-chunk') {
+  if (event.kind === "thinking-chunk") {
     runtime.thinkingTextStore += event.text;
     runtime.emitEvent({
-      kind: 'update-pending-assistant-thinking',
+      kind: "update-pending-assistant-thinking",
       text: runtime.thinkingTextStore,
     });
     return false;
   }
 
-  if (event.kind === 'streaming-tool-preview') {
+  if (event.kind === "streaming-tool-preview") {
     runtime.toolPreviewSeenInStreamRoundStore = true;
     if (isResponsesBuiltInToolName(event.toolName)) {
       const phase = resolveResponsesBuiltInToolStreamPhaseFromArgumentsJson(event.argumentsJson);
-      if (phase === 'succeeded' || phase === 'failed') {
+      if (phase === "succeeded" || phase === "failed") {
         runtime.providerBuiltinToolTerminalSeenInStreamRoundStore = true;
       }
     }
@@ -529,17 +477,17 @@ export async function handlePendingStreamEvent<
       finalizeInFlightStreamThinking(runtime);
     }
     runtime.emitEvent({
-      kind: 'streaming-tool-preview',
+      kind: "streaming-tool-preview",
       toolCallId: event.toolCallId,
       toolName: event.toolName,
       argumentsJson: event.argumentsJson,
     });
     const allowEarlyExecutionDuringStream =
-      event.toolName === 'read_file' || event.toolName === 'ls';
+      event.toolName === "read_file" || event.toolName === "ls";
     if (
-      !isResponsesBuiltInToolName(event.toolName)
-      && !shouldSkipEarlyExecutionForManagedProviderTool(event.toolName, runtime.options.config)
-      && (allowEarlyExecutionDuringStream || pending.streamConsumerFinished)
+      !isResponsesBuiltInToolName(event.toolName) &&
+      !shouldSkipEarlyExecutionForManagedProviderTool(event.toolName, runtime.options.config) &&
+      (allowEarlyExecutionDuringStream || pending.streamConsumerFinished)
     ) {
       startEarlyToolExecution(
         runtime as unknown as TurnMachineRuntime<Config, State, ToolRequest, TrustTarget>,
@@ -554,44 +502,44 @@ export async function handlePendingStreamEvent<
     return false;
   }
 
-  if (event.kind === 'assistant-chunk') {
+  if (event.kind === "assistant-chunk") {
     if (runtime.thinkingTextStore.trim()) {
       finalizeInFlightStreamThinking(runtime);
     }
     runtime.streamChunkCounterStore += 1;
     runtime.pendingAssistantTextStore += event.text;
     runtime.emitEvent({
-      kind: 'assistant-chunk',
+      kind: "assistant-chunk",
       text: event.text,
     });
     return false;
   }
 
-  if (event.kind === 'history-compacted') {
+  if (event.kind === "history-compacted") {
     runtime.historyStore = cloneHistory(event.newHistory);
     const summaryPreview = runtime.options.llmTransport.compactSummaryText(runtime.historyStore);
     runtime.emitEvent({
-      kind: 'history-compacted',
+      kind: "history-compacted",
       droppedMessages: event.droppedMessages,
       ...(summaryPreview !== undefined ? { summaryPreview } : {}),
     });
     return false;
   }
 
-  if (event.kind === 'done') {
+  if (event.kind === "done") {
     pending.streamEnded = true;
     const resumeAfterProviderSearch =
-      pending.completion?.kind === 'success'
-      && pending.completion.result.resumeStreamingAfterProviderSearch === true;
-    if (pending.completion?.kind === 'success') {
+      pending.completion?.kind === "success" &&
+      pending.completion.result.resumeStreamingAfterProviderSearch === true;
+    if (pending.completion?.kind === "success") {
       syncProviderBuiltinSearchRoundToHistory(runtime, pending.completion.result.state);
     }
     if (!runtime.pendingAssistantTextStore.trim()) {
-      runtime.emitEvent({ kind: 'remove-pending-assistant' });
+      runtime.emitEvent({ kind: "remove-pending-assistant" });
     } else if (!resumeAfterProviderSearch) {
       if (!streamingRoundWillContinueWithToolCalls(pending.completion)) {
         const finalState =
-          pending.completion?.kind === 'success' ? pending.completion.result.state : undefined;
+          pending.completion?.kind === "success" ? pending.completion.result.state : undefined;
         runtime.historyStore.push(
           finalState !== undefined
             ? resolveFinalAssistantHistoryMessage(
@@ -600,25 +548,31 @@ export async function handlePendingStreamEvent<
                 runtime.pendingAssistantTextStore,
               )
             : {
-                role: 'assistant',
+                role: "assistant",
                 content: createLlmMessageContentFromText(runtime.pendingAssistantTextStore),
               },
         );
         runtime.pendingUserTurnStore = undefined;
-        runtime.emitEvent({ kind: 'assistant-response-completed' });
+        runtime.emitEvent({ kind: "assistant-response-completed" });
       }
     }
 
     clearStreamingUiState(runtime);
 
-    if (pending.completionHandled && pending.completion?.kind === 'success') {
+    if (pending.completionHandled && pending.completion?.kind === "success") {
       const round = pending.completion.result;
       if (round.resumeStreamingAfterProviderSearch) {
         clearPendingStreamingState(runtime);
-        await startStreamingRound(runtime, round.state, pending.pendingUserInput, pending.turn, false);
+        await startStreamingRound(
+          runtime,
+          round.state,
+          pending.pendingUserInput,
+          pending.turn,
+          false,
+        );
         return true;
       }
-      if (round.step.kind === 'tool-calls') {
+      if (round.step.kind === "tool-calls") {
         const earlyToolExecutions = pending.earlyToolExecutions;
         clearPendingStreamingState(runtime);
         runtime.queuePendingToolCallContinuation(
@@ -642,11 +596,17 @@ export async function handlePendingStreamEvent<
             round.state,
             pending.pendingUserInput,
           );
-          await startStreamingRound(runtime, continuationState, pending.pendingUserInput, pending.turn, true);
+          await startStreamingRound(
+            runtime,
+            continuationState,
+            pending.pendingUserInput,
+            pending.turn,
+            true,
+          );
           return true;
         }
         runtime.storeCompletedTurnResult({
-          kind: 'completed',
+          kind: "completed",
           assistantText,
           state: round.state,
           requestTrace: [...pending.turn.requestTrace],
@@ -672,7 +632,7 @@ export async function handlePendingStreamEvent<
     const preparedRetry = await prepareStateForContextRetryAsync(runtime.options, retryState);
 
     if (runtime.pendingAssistantTextStore.trim()) {
-      runtime.emitEvent({ kind: 'replace-pending-assistant', text: '' });
+      runtime.emitEvent({ kind: "replace-pending-assistant", text: "" });
     }
     clearPendingStreamingState(runtime);
     runtime.startHistoryCompactionAsync(
@@ -691,14 +651,14 @@ export async function handlePendingStreamEvent<
 
   runtime.pendingUserTurnStore = undefined;
   runtime.storeCompletedTurnResult({
-    kind: 'failed',
+    kind: "failed",
     error: event.error,
     requestTrace: [...pending.turn.requestTrace],
     toolExecutions: [...pending.turn.toolExecutions],
     compactions: [...pending.turn.compactions],
   });
   clearPendingStreamingState(runtime);
-  runtime.emitEvent({ kind: 'assistant-response-completed' });
+  runtime.emitEvent({ kind: "assistant-response-completed" });
   return true;
 }
 
@@ -712,7 +672,7 @@ export async function handlePendingStreamingCompletion<
   pending: PendingStreamingRound<State, ToolRequest>,
   completion: ToolAgentRoundCompletion<State>,
 ): Promise<void> {
-  if (completion.kind === 'failure') {
+  if (completion.kind === "failure") {
     runtime.appendTrace(completion.requestTrace, pending.turn);
 
     if (
@@ -727,7 +687,7 @@ export async function handlePendingStreamingCompletion<
       const preparedRetry = await prepareStateForContextRetryAsync(runtime.options, retryState);
 
       if (runtime.pendingAssistantTextStore.trim()) {
-        runtime.emitEvent({ kind: 'replace-pending-assistant', text: '' });
+        runtime.emitEvent({ kind: "replace-pending-assistant", text: "" });
       }
       clearPendingStreamingState(runtime);
       runtime.startHistoryCompactionAsync(
@@ -746,13 +706,13 @@ export async function handlePendingStreamingCompletion<
     runtime.pendingUserTurnStore = undefined;
     clearPendingStreamingState(runtime);
     runtime.storeCompletedTurnResult({
-      kind: 'failed',
+      kind: "failed",
       error: completion.error,
       requestTrace: [...pending.turn.requestTrace],
       toolExecutions: [...pending.turn.toolExecutions],
       compactions: [...pending.turn.compactions],
     });
-    runtime.emitEvent({ kind: 'assistant-response-completed' });
+    runtime.emitEvent({ kind: "assistant-response-completed" });
     return;
   }
 
@@ -763,7 +723,7 @@ export async function handlePendingStreamingCompletion<
 
   if (round.resumeStreamingAfterProviderSearch) {
     const lastHistoryMessage = runtime.historyStore.at(-1);
-    if (lastHistoryMessage?.role === 'assistant') {
+    if (lastHistoryMessage?.role === "assistant") {
       runtime.historyStore.pop();
     }
     clearPendingStreamingState(runtime);
@@ -771,9 +731,9 @@ export async function handlePendingStreamingCompletion<
     return;
   }
 
-  if (round.step.kind === 'tool-calls') {
+  if (round.step.kind === "tool-calls") {
     if (!pending.streamEnded && !runtime.pendingAssistantTextStore.trim()) {
-      runtime.emitEvent({ kind: 'remove-pending-assistant' });
+      runtime.emitEvent({ kind: "remove-pending-assistant" });
     }
     const earlyToolExecutions = pending.earlyToolExecutions;
     clearPendingStreamingState(runtime);
@@ -796,7 +756,7 @@ export async function handlePendingStreamingCompletion<
   }
 
   const completedResult: RuntimeTurnResult<State, ToolRequest, TrustTarget> = {
-    kind: 'completed',
+    kind: "completed",
     assistantText,
     state: round.state,
     requestTrace: [...pending.turn.requestTrace],
@@ -806,7 +766,7 @@ export async function handlePendingStreamingCompletion<
 
   if (!pending.streamEnded && !runtime.pendingAssistantTextStore.trim()) {
     runtime.pendingAssistantTextStore = assistantText;
-    runtime.emitEvent({ kind: 'assistant-chunk', text: assistantText });
+    runtime.emitEvent({ kind: "assistant-chunk", text: assistantText });
     runtime.historyStore.push(
       resolveFinalAssistantHistoryMessage(runtime.options, round.state, assistantText),
     );
@@ -818,11 +778,17 @@ export async function handlePendingStreamingCompletion<
         round.state,
         pending.pendingUserInput,
       );
-      await startStreamingRound(runtime, continuationState, pending.pendingUserInput, pending.turn, true);
+      await startStreamingRound(
+        runtime,
+        continuationState,
+        pending.pendingUserInput,
+        pending.turn,
+        true,
+      );
       return;
     }
     runtime.storeCompletedTurnResult(completedResult);
-    runtime.emitEvent({ kind: 'assistant-response-completed' });
+    runtime.emitEvent({ kind: "assistant-response-completed" });
     return;
   }
 
@@ -834,10 +800,15 @@ export async function handlePendingStreamingCompletion<
         round.state,
         pending.pendingUserInput,
       );
-      await startStreamingRound(runtime, continuationState, pending.pendingUserInput, pending.turn, true);
+      await startStreamingRound(
+        runtime,
+        continuationState,
+        pending.pendingUserInput,
+        pending.turn,
+        true,
+      );
       return;
     }
     runtime.storeCompletedTurnResult(completedResult);
   }
 }
-

@@ -1,4 +1,4 @@
-import path from 'node:path';
+import path from "node:path";
 
 /**
  * 会话文件路径的比较键：Windows 文件系统不区分大小写，统一折叠为小写；
@@ -7,7 +7,7 @@ import path from 'node:path';
  */
 export function normalizeSessionPathKey(filePath: string): string {
   const resolved = path.resolve(filePath);
-  return process.platform === 'win32' ? resolved.toLowerCase() : resolved;
+  return process.platform === "win32" ? resolved.toLowerCase() : resolved;
 }
 
 export function sameSessionPath(left: string, right: string): boolean {

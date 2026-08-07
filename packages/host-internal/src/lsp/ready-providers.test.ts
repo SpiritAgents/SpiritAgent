@@ -1,10 +1,10 @@
-import assert from 'node:assert/strict';
-import test from 'node:test';
+import assert from "node:assert/strict";
+import test from "node:test";
 
-import { LspOrchestrator } from './orchestrator.js';
-import { readyProvidersForToolDefinitions } from './ready-providers.js';
+import { LspOrchestrator } from "./orchestrator.js";
+import { readyProvidersForToolDefinitions } from "./ready-providers.js";
 
-test('readyProvidersForToolDefinitions returns only enabled sessions', async () => {
+test("readyProvidersForToolDefinitions returns only enabled sessions", async () => {
   const orchestrator = new LspOrchestrator(process.cwd(), undefined, { enabled: true });
   await orchestrator.probe();
   const summaries = readyProvidersForToolDefinitions(orchestrator);

@@ -1,4 +1,11 @@
-import { useCallback, useEffect, useLayoutEffect, useRef, type ComponentRef, type RefObject } from "react";
+import {
+  useCallback,
+  useEffect,
+  useLayoutEffect,
+  useRef,
+  type ComponentRef,
+  type RefObject,
+} from "react";
 
 import type { ScrollArea } from "@/components/ui/scroll-area";
 import {
@@ -166,9 +173,9 @@ export function useConversationStreamScrollTail({
         return;
       }
       if (
-        !stickToBottomRef.current
-        && movedTowardBottom
-        && isScrollNearBottom(viewport, STICK_TO_BOTTOM_THRESHOLD_PX)
+        !stickToBottomRef.current &&
+        movedTowardBottom &&
+        isScrollNearBottom(viewport, STICK_TO_BOTTOM_THRESHOLD_PX)
       ) {
         stickToBottomRef.current = true;
       }

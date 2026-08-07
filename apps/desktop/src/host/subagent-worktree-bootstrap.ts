@@ -1,19 +1,23 @@
-import path from 'node:path';
+import path from "node:path";
 
-import type { SubagentWorkspaceBootstrap } from '@spiritagent/agent-core';
+import type { SubagentWorkspaceBootstrap } from "@spiritagent/agent-core";
 
-import type { DesktopToolRequest } from './contracts.js';
-import type { DesktopToolExecutor } from './tool-executor.js';
+import type { DesktopToolRequest } from "./contracts.js";
+import type { DesktopToolExecutor } from "./tool-executor.js";
 import {
   createWorkspaceGitWorktree,
   readPrimaryRepoRoot,
   readWorkspaceGitSnapshot,
   removeWorkspaceGitWorktree,
-} from './git.js';
+} from "./git.js";
 
 export type DesktopSubagentWorktreeBootstrapDeps = {
   parentWorkspaceRoot: string;
-  generateWorktreeNames: (task: string, baseBranch: string, repoRoot: string) => Promise<{
+  generateWorktreeNames: (
+    task: string,
+    baseBranch: string,
+    repoRoot: string,
+  ) => Promise<{
     worktreeName: string;
     branchName: string;
   }>;
@@ -31,7 +35,7 @@ export function createDesktopSubagentWorkspaceBootstrap(
     }
 
     if (!deps.isGitRepository) {
-      return { error: 'worktree subagents require a git repository' };
+      return { error: "worktree subagents require a git repository" };
     }
 
     let repoRoot: string | undefined;
@@ -41,12 +45,14 @@ export function createDesktopSubagentWorkspaceBootstrap(
       repoRoot = await readPrimaryRepoRoot(parentRoot);
       const worktreeContext = await readWorkspaceGitSnapshot(parentRoot);
       if (worktreeContext.isWorktreeSession) {
-        return { error: 'worktree subagents cannot start from inside an existing worktree session' };
+        return {
+          error: "worktree subagents cannot start from inside an existing worktree session",
+        };
       }
 
       const baseBranch = deps.resolveBaseBranch();
       if (!baseBranch) {
-        return { error: 'cannot determine base branch for subagent worktree' };
+        return { error: "cannot determine base branch for subagent worktree" };
       }
 
       const names = await deps.generateWorktreeNames(input.task, baseBranch, repoRoot);

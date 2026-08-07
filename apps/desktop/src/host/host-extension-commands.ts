@@ -3,28 +3,21 @@ import {
   buildActivateSkillUserTurn,
   createSkillFile,
   deleteSkillDir,
-} from './skills.js';
-import {
-  buildRuleDiscoveryContext,
-  createRuleFile,
-  deleteRuleFile,
-} from './rules.js';
+} from "./skills.js";
+import { buildRuleDiscoveryContext, createRuleFile, deleteRuleFile } from "./rules.js";
 import {
   addDesktopMcpServer,
   deleteDesktopMcpServer,
   inspectDesktopMcpServer,
-} from './service-mcp.js';
-import {
-  deleteDesktopHookEntry,
-  saveDesktopHookEntry,
-} from './hooks.js';
+} from "./service-mcp.js";
+import { deleteDesktopHookEntry, saveDesktopHookEntry } from "./hooks.js";
 import {
   toDesktopMarketplaceCatalogItem,
   toDesktopMarketplaceDetail,
   toDesktopMarketplacePreparedInstall,
-} from './extensions.js';
-import { invalidateSharedUserMcpToolingCache } from '@spiritagent/agent-core';
-import i18n from '../lib/i18n-host.js';
+} from "./extensions.js";
+import { invalidateSharedUserMcpToolingCache } from "@spiritagent/agent-core";
+import i18n from "../lib/i18n-host.js";
 import type {
   AddMcpServerRequest,
   CreateRuleRequest,
@@ -47,15 +40,15 @@ import type {
   SubmitSkillSlashRequest,
   UpdateExtensionSecretRequest,
   UpdateExtensionSettingsRequest,
-} from '../types.js';
+} from "../types.js";
 import type {
   HostExtensionEvent,
   HostExtensionMarketplaceManager,
-} from '@spiritagent/host-internal';
-import type { LlmActiveSkill } from '@spiritagent/agent-core';
-import type { DesktopExtensionHostAdapter } from './extension-host-adapter.js';
-import type { DesktopConfigFile, DesktopWorkspaceBinding, HostMetadataSummary } from './storage.js';
-import type { DesktopGitSnapshot } from '../types.js';
+} from "@spiritagent/host-internal";
+import type { LlmActiveSkill } from "@spiritagent/agent-core";
+import type { DesktopExtensionHostAdapter } from "./extension-host-adapter.js";
+import type { DesktopConfigFile, DesktopWorkspaceBinding, HostMetadataSummary } from "./storage.js";
+import type { DesktopGitSnapshot } from "../types.js";
 
 interface HostExtensionState {
   workspaceRoot: string;
@@ -72,7 +65,10 @@ type HostExtensionManager = {
   }>;
   remove(id: string): Promise<void>;
   run(input: { id: string; host: DesktopExtensionHostAdapter; logger: Console }): Promise<void>;
-  setSettingsValues(input: { id: string; values: UpdateExtensionSettingsRequest['values'] }): Promise<unknown>;
+  setSettingsValues(input: {
+    id: string;
+    values: UpdateExtensionSettingsRequest["values"];
+  }): Promise<unknown>;
   setSecretValue(input: { id: string; key: string; value?: string }): Promise<unknown>;
 };
 
@@ -90,14 +86,20 @@ type McpBackgroundRefreshable = {
 
 export interface HostExtensionCommandContext {
   runSerialized<T>(work: () => Promise<T>, label?: string): Promise<T>;
-  ensureInitialized(workspaceRootOverride?: string, options?: { fastPath?: boolean }): Promise<void>;
+  ensureInitialized(
+    workspaceRootOverride?: string,
+    options?: { fastPath?: boolean },
+  ): Promise<void>;
   isInitialized(): boolean;
   requireState(): HostExtensionState;
   isRuntimeBusy(): boolean;
   requireRuntime(): { isBusy(): boolean };
   requireToolExecutor(): McpInspectable;
   toolExecutor(): McpBackgroundRefreshable | undefined;
-  sharedMcpServiceForWorkspace(workspaceRoot: string, workspaceBinding: DesktopWorkspaceBinding): McpRefreshable;
+  sharedMcpServiceForWorkspace(
+    workspaceRoot: string,
+    workspaceBinding: DesktopWorkspaceBinding,
+  ): McpRefreshable;
   extensionManager(): HostExtensionManager;
   marketplace(): HostExtensionMarketplaceManager;
   requireExtensionHostAdapter(): DesktopExtensionHostAdapter;
@@ -105,8 +107,11 @@ export interface HostExtensionCommandContext {
   refreshRuntime(): Promise<void>;
   refreshRuntimeAfterExtensionMutation(): Promise<void>;
   persistCurrentSessionIfNeeded(): Promise<void>;
-  dispatchExtensionEvent(event: HostExtensionEvent, options?: { targetExtensionIds?: readonly string[] }): Promise<void>;
-  requireEnabledSkillEntry(skillName: string): HostMetadataSummary['skills']['entries'][number];
+  dispatchExtensionEvent(
+    event: HostExtensionEvent,
+    options?: { targetExtensionIds?: readonly string[] },
+  ): Promise<void>;
+  requireEnabledSkillEntry(skillName: string): HostMetadataSummary["skills"]["entries"][number];
   submitUserTurnAfterInitialized(
     text: string,
     options?: {
@@ -139,20 +144,20 @@ export async function createRuleCommand(
   return ctx.runSerialized(async () => {
     await ctx.ensureInitialized();
     if (ctx.isRuntimeBusy()) {
-      throw new Error(i18n.t('error.runtimeBusyRule'));
+      throw new Error(i18n.t("error.runtimeBusyRule"));
     }
     const state = ctx.requireState();
-    const rootKind = request.rootKind ?? 'workspaceSpirit';
+    const rootKind = request.rootKind ?? "workspaceSpirit";
     if (
-      state.workspaceBinding === 'none'
-      && (rootKind === 'workspaceSpirit' || rootKind === 'workspaceAgents')
+      state.workspaceBinding === "none" &&
+      (rootKind === "workspaceSpirit" || rootKind === "workspaceAgents")
     ) {
-      throw new Error(i18n.t('error.workspaceRulesUnavailable'));
+      throw new Error(i18n.t("error.workspaceRulesUnavailable"));
     }
     await createRuleFile(state.workspaceRoot, request);
 
     await ctx.refreshRuntime();
-    ctx.setLastRuntimeError('');
+    ctx.setLastRuntimeError("");
     await ctx.persistCurrentSessionIfNeeded();
     return ctx.buildSnapshot();
   });
@@ -165,7 +170,7 @@ export async function deleteRuleCommand(
   return ctx.runSerialized(async () => {
     await ctx.ensureInitialized();
     if (ctx.isRuntimeBusy()) {
-      throw new Error(i18n.t('error.runtimeBusyDeleteRule'));
+      throw new Error(i18n.t("error.runtimeBusyDeleteRule"));
     }
     const state = ctx.requireState();
     await deleteRuleFile(
@@ -175,7 +180,7 @@ export async function deleteRuleCommand(
     );
 
     await ctx.refreshRuntime();
-    ctx.setLastRuntimeError('');
+    ctx.setLastRuntimeError("");
     await ctx.persistCurrentSessionIfNeeded();
     return ctx.buildSnapshot();
   });
@@ -188,22 +193,22 @@ export async function createSkillCommand(
   return ctx.runSerialized(async () => {
     await ctx.ensureInitialized();
     if (ctx.isRuntimeBusy()) {
-      throw new Error(i18n.t('error.runtimeBusySkill'));
+      throw new Error(i18n.t("error.runtimeBusySkill"));
     }
     const state = ctx.requireState();
-    const rootKind = request.rootKind ?? 'workspaceSpirit';
+    const rootKind = request.rootKind ?? "workspaceSpirit";
     if (
-      state.workspaceBinding === 'none'
-      && (rootKind === 'workspaceSpirit' || rootKind === 'workspaceAgents')
+      state.workspaceBinding === "none" &&
+      (rootKind === "workspaceSpirit" || rootKind === "workspaceAgents")
     ) {
       throw new Error(
-        'Workspace-scoped skills are unavailable when workspace binding is disabled.',
+        "Workspace-scoped skills are unavailable when workspace binding is disabled.",
       );
     }
     await createSkillFile(state.workspaceRoot, request);
 
     await ctx.refreshRuntime();
-    ctx.setLastRuntimeError('');
+    ctx.setLastRuntimeError("");
     await ctx.persistCurrentSessionIfNeeded();
     return ctx.buildSnapshot();
   });
@@ -223,10 +228,11 @@ export async function addMcpServerCommand(
       workspaceBinding: state.workspaceBinding,
     });
     ctx.invalidateConfigListCaches();
-    if (scope === 'user') {
+    if (scope === "user") {
       invalidateSharedUserMcpToolingCache();
     }
-    ctx.sharedMcpServiceForWorkspace(state.workspaceRoot, state.workspaceBinding)
+    ctx
+      .sharedMcpServiceForWorkspace(state.workspaceRoot, state.workspaceBinding)
       .startBackgroundRefreshInBackground(true);
     ctx.toolExecutor()?.startMcpBackgroundRefresh();
     return ctx.buildSnapshot();
@@ -246,10 +252,11 @@ export async function deleteMcpServerCommand(
       workspaceRoot: state.workspaceRoot,
     });
     ctx.invalidateConfigListCaches();
-    if (scope === 'user') {
+    if (scope === "user") {
       invalidateSharedUserMcpToolingCache();
     }
-    ctx.sharedMcpServiceForWorkspace(state.workspaceRoot, state.workspaceBinding)
+    ctx
+      .sharedMcpServiceForWorkspace(state.workspaceRoot, state.workspaceBinding)
       .startBackgroundRefreshInBackground(true);
     ctx.toolExecutor()?.startMcpBackgroundRefresh();
     return ctx.buildSnapshot();
@@ -277,7 +284,7 @@ export async function importExtensionCommand(
     await ctx.ensureInitialized();
     const archiveBase64 = request.archiveBase64.trim();
     if (!archiveBase64) {
-      throw new Error(i18n.t('error.extensionZipRequired'));
+      throw new Error(i18n.t("error.extensionZipRequired"));
     }
 
     const installed = await ctx.extensionManager().importArchive({
@@ -288,7 +295,7 @@ export async function importExtensionCommand(
     await ctx.refreshRuntimeAfterExtensionMutation();
     await ctx.dispatchExtensionEvent(
       {
-        type: 'onExtensionInstalled',
+        type: "onExtensionInstalled",
         detail: {
           extensionId: installed.id,
           name: installed.manifest.name,
@@ -316,7 +323,7 @@ export async function getMarketplaceExtensionDetailCommand(
   await ensureInitializedForReadOnlyMarketplace(ctx);
   const trimmedId = extensionId.trim();
   if (!trimmedId) {
-    throw new Error(i18n.t('error.extensionIdRequired'));
+    throw new Error(i18n.t("error.extensionIdRequired"));
   }
 
   const detail = await ctx.marketplace().getDetail(trimmedId);
@@ -330,7 +337,7 @@ export async function getMarketplaceExtensionReadmeCommand(
   await ensureInitializedForReadOnlyMarketplace(ctx);
   const trimmedId = extensionId.trim();
   if (!trimmedId) {
-    throw new Error(i18n.t('error.extensionIdRequired'));
+    throw new Error(i18n.t("error.extensionIdRequired"));
   }
 
   return ctx.marketplace().getReadme(trimmedId);
@@ -343,7 +350,7 @@ export async function prepareMarketplaceExtensionInstallCommand(
   await ensureInitializedForReadOnlyMarketplace(ctx);
   const extensionId = request.extensionId.trim();
   if (!extensionId) {
-    throw new Error(i18n.t('error.extensionIdRequired'));
+    throw new Error(i18n.t("error.extensionIdRequired"));
   }
 
   const prepared = await ctx.marketplace().prepareInstall({
@@ -361,7 +368,7 @@ export async function installMarketplaceExtensionCommand(
     await ctx.ensureInitialized();
     const extensionId = request.extensionId.trim();
     if (!extensionId) {
-      throw new Error(i18n.t('error.extensionIdRequired'));
+      throw new Error(i18n.t("error.extensionIdRequired"));
     }
 
     const installed = await ctx.marketplace().install({
@@ -373,7 +380,7 @@ export async function installMarketplaceExtensionCommand(
     await ctx.refreshRuntimeAfterExtensionMutation();
     await ctx.dispatchExtensionEvent(
       {
-        type: 'onExtensionInstalled',
+        type: "onExtensionInstalled",
         detail: {
           extensionId: installed.id,
           name: installed.manifest.name,
@@ -394,7 +401,7 @@ export async function deleteExtensionCommand(
     await ctx.ensureInitialized();
     const id = request.id.trim();
     if (!id) {
-      throw new Error(i18n.t('error.extensionIdRequired'));
+      throw new Error(i18n.t("error.extensionIdRequired"));
     }
 
     await ctx.extensionManager().remove(id);
@@ -412,7 +419,7 @@ export async function runExtensionCommand(
     await ctx.ensureInitialized();
     const id = request.id.trim();
     if (!id) {
-      throw new Error(i18n.t('error.extensionIdRequired'));
+      throw new Error(i18n.t("error.extensionIdRequired"));
     }
 
     await ctx.extensionManager().run({
@@ -432,7 +439,7 @@ export async function updateExtensionSettingsCommand(
     await ctx.ensureInitialized();
     const id = request.id.trim();
     if (!id) {
-      throw new Error(i18n.t('error.extensionIdRequired'));
+      throw new Error(i18n.t("error.extensionIdRequired"));
     }
 
     await ctx.extensionManager().setSettingsValues({
@@ -454,10 +461,10 @@ export async function updateExtensionSecretCommand(
     const id = request.id.trim();
     const key = request.key.trim();
     if (!id) {
-      throw new Error(i18n.t('error.extensionIdRequired'));
+      throw new Error(i18n.t("error.extensionIdRequired"));
     }
     if (!key) {
-      throw new Error(i18n.t('error.secretKeyRequired'));
+      throw new Error(i18n.t("error.secretKeyRequired"));
     }
 
     await ctx.extensionManager().setSecretValue({
@@ -478,13 +485,13 @@ export async function deleteSkillCommand(
   return ctx.runSerialized(async () => {
     await ctx.ensureInitialized();
     if (ctx.isRuntimeBusy()) {
-      throw new Error(i18n.t('error.runtimeBusyDeleteSkill'));
+      throw new Error(i18n.t("error.runtimeBusyDeleteSkill"));
     }
     const state = ctx.requireState();
     await deleteSkillDir(state.workspaceRoot, request);
 
     await ctx.refreshRuntime();
-    ctx.setLastRuntimeError('');
+    ctx.setLastRuntimeError("");
     await ctx.persistCurrentSessionIfNeeded();
     return ctx.buildSnapshot();
   });
@@ -498,19 +505,19 @@ export async function submitSkillSlashCommand(
     await ctx.ensureInitialized(undefined, { fastPath: true });
     const runtime = ctx.requireRuntime();
     if (runtime.isBusy()) {
-      throw new Error(i18n.t('error.runtimeBusy'));
+      throw new Error(i18n.t("error.runtimeBusy"));
     }
 
     const skillName = request.skillName.trim();
     if (!skillName) {
-      throw new Error(i18n.t('error.skillNameRequired'));
+      throw new Error(i18n.t("error.skillNameRequired"));
     }
 
     const skill = ctx.requireEnabledSkillEntry(skillName);
     const payload = await buildActiveSkillPayload(skill);
 
     return ctx.submitUserTurnAfterInitialized(
-      buildActivateSkillUserTurn(skillName, request.extraNote ?? ''),
+      buildActivateSkillUserTurn(skillName, request.extraNote ?? ""),
       {
         displayText: request.rawText,
         turnSkills: [payload],
@@ -552,4 +559,3 @@ export async function deleteHookEntryCommand(
     return ctx.buildSnapshot();
   });
 }
-

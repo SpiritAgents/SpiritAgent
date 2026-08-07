@@ -1,16 +1,11 @@
-import * as React from "react"
-import { Checkbox as CheckboxPrimitive } from "radix-ui"
+import * as React from "react";
+import { Checkbox as CheckboxPrimitive } from "radix-ui";
 
-import {
-  DESKTOP_CONTROL_BORDER,
-} from "@/lib/desktop-chrome";
-import { cn } from "@/lib/utils"
-import { CheckIcon } from "lucide-react"
+import { DESKTOP_CONTROL_BORDER } from "@/lib/desktop-chrome";
+import { cn } from "@/lib/utils";
+import { CheckIcon } from "lucide-react";
 
-function Checkbox({
-  className,
-  ...props
-}: React.ComponentProps<typeof CheckboxPrimitive.Root>) {
+function Checkbox({ className, ...props }: React.ComponentProps<typeof CheckboxPrimitive.Root>) {
   return (
     <CheckboxPrimitive.Root
       data-slot="checkbox"
@@ -22,7 +17,7 @@ function Checkbox({
         "focus-visible:not-data-checked:border-ring focus-visible:not-data-checked:ring-3 focus-visible:not-data-checked:ring-ring/50",
         "focus-visible:data-checked:ring-3 focus-visible:data-checked:ring-ring/50",
         "transition-none",
-        className
+        className,
       )}
       {...props}
     >
@@ -30,11 +25,10 @@ function Checkbox({
         data-slot="checkbox-indicator"
         className="grid place-content-center text-current transition-none [&>svg]:size-3.5"
       >
-        <CheckIcon
-        />
+        <CheckIcon />
       </CheckboxPrimitive.Indicator>
     </CheckboxPrimitive.Root>
-  )
+  );
 }
 
-export { Checkbox }
+export { Checkbox };

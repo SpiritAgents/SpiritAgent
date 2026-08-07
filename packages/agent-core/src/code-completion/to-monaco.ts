@@ -3,27 +3,27 @@ import type {
   CodeCompletionPosition,
   InlineCompletionItemSpec,
   InlineCompletionMapContext,
-} from './types.js';
+} from "./types.js";
 
 export type {
   CodeCompletionOperation,
   CodeCompletionPosition,
   InlineCompletionItemSpec,
   InlineCompletionMapContext,
-} from './types.js';
+} from "./types.js";
 
 const MAX_INLINE_INSERT_CHARS = 500;
 
 /** Normalize and cap inline ghost insert text (may span multiple lines). */
 export function sanitizeInlineInsertText(text: string): string {
-  const normalized = text.replace(/\r\n/g, '\n');
+  const normalized = text.replace(/\r\n/g, "\n");
   return normalized.length > MAX_INLINE_INSERT_CHARS
     ? normalized.slice(0, MAX_INLINE_INSERT_CHARS)
     : normalized;
 }
 
 export function inlineInsertContainsNewline(text: string): boolean {
-  return sanitizeInlineInsertText(text).includes('\n');
+  return sanitizeInlineInsertText(text).includes("\n");
 }
 
 /** 1-based column immediately after the last character on the line. */
@@ -39,7 +39,7 @@ export function completionSuffixAtCursor(
 ): string {
   const sanitized = sanitizeInlineInsertText(insertText);
   if (sanitized.length === 0) {
-    return '';
+    return "";
   }
   const linePrefix = lineText.slice(0, Math.max(0, cursorColumn - 1));
   if (sanitized.startsWith(linePrefix)) {
@@ -68,7 +68,7 @@ export function wouldInsertDuplicateAtCursor(
   if (after.length === 0) {
     return false;
   }
-  const firstLine = sanitized.split('\n', 1)[0] ?? '';
+  const firstLine = sanitized.split("\n", 1)[0] ?? "";
   if (firstLine.length === 0) {
     return false;
   }
@@ -84,7 +84,10 @@ function buildInsertInlineRange(
   cursorColumn: number,
   lineText: string,
   insertText: string,
-): Pick<InlineCompletionItemSpec, 'startLineNumber' | 'startColumn' | 'endLineNumber' | 'endColumn'> {
+): Pick<
+  InlineCompletionItemSpec,
+  "startLineNumber" | "startColumn" | "endLineNumber" | "endColumn"
+> {
   // Monaco: multiline insertText requires the replace range to end at end-of-line.
   if (inlineInsertContainsNewline(insertText)) {
     return {
@@ -118,15 +121,15 @@ export function isCodeCompletionInlineGhostRenderable(
   operation: CodeCompletionOperation,
   ctx: InlineCompletionMapContext,
 ): boolean {
-  if (operation.kind === 'insert') {
-    const suffix = completionSuffixAtCursor(ctx.lineText, ctx.cursorColumn, operation.text ?? '');
+  if (operation.kind === "insert") {
+    const suffix = completionSuffixAtCursor(ctx.lineText, ctx.cursorColumn, operation.text ?? "");
     if (suffix.length === 0) {
       return false;
     }
-    return !wouldInsertDuplicateAtCursor(ctx.lineText, ctx.cursorColumn, operation.text ?? '');
+    return !wouldInsertDuplicateAtCursor(ctx.lineText, ctx.cursorColumn, operation.text ?? "");
   }
 
-  if (operation.kind !== 'replace') {
+  if (operation.kind !== "replace") {
     return false;
   }
 
@@ -138,12 +141,9 @@ export function isCodeCompletionInlineGhostRenderable(
     return false;
   }
 
-  const lineText =
-    operation.startLine === ctx.cursorLine
-      ? ctx.lineText
-      : '';
+  const lineText = operation.startLine === ctx.cursorLine ? ctx.lineText : "";
   const existing = extractSpanFromLine(lineText, operation.startColumn, operation.endColumn);
-  const insertText = sanitizeInlineInsertText(operation.text ?? '');
+  const insertText = sanitizeInlineInsertText(operation.text ?? "");
   if (insertText.length === 0 || inlineInsertContainsNewline(insertText)) {
     return false;
   }
@@ -154,11 +154,15 @@ export function codeCompletionOperationToInlineItemAtCursor(
   operation: CodeCompletionOperation,
   ctx: InlineCompletionMapContext,
 ): InlineCompletionItemSpec | undefined {
-  if (operation.kind === 'insert') {
-    const insertText = completionSuffixAtCursor(ctx.lineText, ctx.cursorColumn, operation.text ?? '');
+  if (operation.kind === "insert") {
+    const insertText = completionSuffixAtCursor(
+      ctx.lineText,
+      ctx.cursorColumn,
+      operation.text ?? "",
+    );
     if (
       insertText.length === 0 ||
-      wouldInsertDuplicateAtCursor(ctx.lineText, ctx.cursorColumn, operation.text ?? '')
+      wouldInsertDuplicateAtCursor(ctx.lineText, ctx.cursorColumn, operation.text ?? "")
     ) {
       return undefined;
     }
@@ -168,7 +172,7 @@ export function codeCompletionOperationToInlineItemAtCursor(
     };
   }
 
-  if (operation.kind === 'replace') {
+  if (operation.kind === "replace") {
     if (!isCodeCompletionInlineGhostRenderable(operation, ctx)) {
       return undefined;
     }
@@ -177,7 +181,7 @@ export function codeCompletionOperationToInlineItemAtCursor(
       startColumn: operation.startColumn,
       endLineNumber: operation.endLine,
       endColumn: operation.endColumn,
-      insertText: sanitizeInlineInsertText(operation.text ?? ''),
+      insertText: sanitizeInlineInsertText(operation.text ?? ""),
     };
   }
 
@@ -187,33 +191,33 @@ export function codeCompletionOperationToInlineItemAtCursor(
 export function codeCompletionOperationToInlineItem(
   operation: CodeCompletionOperation,
 ): InlineCompletionItemSpec | undefined {
-  if (operation.kind === 'insert') {
+  if (operation.kind === "insert") {
     return {
       startLineNumber: operation.startLine,
       startColumn: operation.startColumn,
       endLineNumber: operation.endLine,
       endColumn: operation.endColumn,
-      insertText: operation.text ?? '',
+      insertText: operation.text ?? "",
     };
   }
 
-  if (operation.kind === 'replace') {
+  if (operation.kind === "replace") {
     return {
       startLineNumber: operation.startLine,
       startColumn: operation.startColumn,
       endLineNumber: operation.endLine,
       endColumn: operation.endColumn,
-      insertText: operation.text ?? '',
+      insertText: operation.text ?? "",
     };
   }
 
-  if (operation.kind === 'delete') {
+  if (operation.kind === "delete") {
     return {
       startLineNumber: operation.startLine,
       startColumn: operation.startColumn,
       endLineNumber: operation.endLine,
       endColumn: operation.endColumn,
-      insertText: '',
+      insertText: "",
     };
   }
 

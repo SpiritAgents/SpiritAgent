@@ -8,12 +8,12 @@ import { Button } from "@/components/ui/button";
 import { GitHubSignInPrompt } from "@/components/github-sign-in-prompt";
 import { WorkspacePrDetailSkeleton } from "@/components/workspace-pr-detail-skeleton";
 import { WorkspacePrDetailView } from "@/components/workspace-pr-detail-view";
-import { WorkspacePrListView, type WorkspacePrListViewHandle } from "@/components/workspace-pr-list-view";
-import type { GitHubPullRequestRevealRequest } from "@/lib/workspace-pr-navigation";
 import {
-  resolvePullRequestChipStatus,
-  type PullRequestChipStatus,
-} from "@/lib/pr-diff-attachment";
+  WorkspacePrListView,
+  type WorkspacePrListViewHandle,
+} from "@/components/workspace-pr-list-view";
+import type { GitHubPullRequestRevealRequest } from "@/lib/workspace-pr-navigation";
+import { resolvePullRequestChipStatus, type PullRequestChipStatus } from "@/lib/pr-diff-attachment";
 import { instantHoverMotionClass } from "@/lib/desktop-chrome";
 import { cn } from "@/lib/utils";
 import type {
@@ -225,10 +225,7 @@ export function WorkspacePrTab({
   }, [getGitHubAuthStatus, prTabEnabled]);
 
   const loadPullRequestBundle = useCallback(
-    async (
-      request: GetGitHubPullRequestDetailRequest,
-      options?: { background?: boolean },
-    ) => {
+    async (request: GetGitHubPullRequestDetailRequest, options?: { background?: boolean }) => {
       const background = options?.background ?? false;
       if (!background) {
         setDetail(null);
@@ -244,13 +241,14 @@ export function WorkspacePrTab({
       }
       setError(null);
       try {
-        const [nextDetail, nextConversation, nextFiles, nextCommits, nextChecks] = await Promise.all([
-          getGitHubPullRequestDetail(request),
-          getGitHubPullRequestConversation(request),
-          getGitHubPullRequestFiles(request),
-          getGitHubPullRequestCommits(request),
-          getGitHubPullRequestChecks(request),
-        ]);
+        const [nextDetail, nextConversation, nextFiles, nextCommits, nextChecks] =
+          await Promise.all([
+            getGitHubPullRequestDetail(request),
+            getGitHubPullRequestConversation(request),
+            getGitHubPullRequestFiles(request),
+            getGitHubPullRequestCommits(request),
+            getGitHubPullRequestChecks(request),
+          ]);
         setDetail(nextDetail);
         setBranchResult({
           repository: { owner: request.owner, repo: request.repo },
@@ -526,19 +524,10 @@ export function WorkspacePrTab({
       checksLoadMoreInFlightRef.current = false;
       setLoadingMoreChecks(false);
     }
-  }, [
-    checksSnapshot,
-    getGitHubPullRequestChecks,
-    loadingChecks,
-    loadingMoreChecks,
-  ]);
+  }, [checksSnapshot, getGitHubPullRequestChecks, loadingChecks, loadingMoreChecks]);
 
   const loadMoreConversation = useCallback(async () => {
-    if (
-      conversationLoadMoreInFlightRef.current
-      || loadingMoreConversation
-      || loadingConversation
-    ) {
+    if (conversationLoadMoreInFlightRef.current || loadingMoreConversation || loadingConversation) {
       return;
     }
 
@@ -549,13 +538,11 @@ export function WorkspacePrTab({
     );
     const snapshot = conversation;
     if (
-      !request
-      || !snapshot?.hasMore
-      || (
-        snapshot.nextTimelinePage == null
-        && snapshot.nextReviewCommentsPage == null
-        && snapshot.nextCommitsPage == null
-      )
+      !request ||
+      !snapshot?.hasMore ||
+      (snapshot.nextTimelinePage == null &&
+        snapshot.nextReviewCommentsPage == null &&
+        snapshot.nextCommitsPage == null)
     ) {
       return;
     }
@@ -749,8 +736,7 @@ export function WorkspacePrTab({
     void window.spiritDesktop?.openExternalUrl(url);
   };
 
-  const isInitialPrLoad =
-    viewMode === "detail" && (loadingBranch || loadingDetail) && !detail;
+  const isInitialPrLoad = viewMode === "detail" && (loadingBranch || loadingDetail) && !detail;
   const isInitialListLoad =
     viewMode === "list" &&
     ((loadingBranch && branchResult == null) ||

@@ -1,31 +1,26 @@
-import { createHash, randomUUID } from 'node:crypto';
-import { mkdir, writeFile } from 'node:fs/promises';
-import path from 'node:path';
+import { createHash, randomUUID } from "node:crypto";
+import { mkdir, writeFile } from "node:fs/promises";
+import path from "node:path";
 
-import i18n from '../lib/i18n-host.js';
-import type {
-  LlmPlanMetadata,
-} from '@spiritagent/agent-core';
-import {
-  llmMessageTextContent,
-  normalizeStoredLlmMessage,
-} from '@spiritagent/agent-core';
+import i18n from "../lib/i18n-host.js";
+import type { LlmPlanMetadata } from "@spiritagent/agent-core";
+import { llmMessageTextContent, normalizeStoredLlmMessage } from "@spiritagent/agent-core";
 import {
   createHostDreamStore,
   DREAM_RETENTION_MS as HOST_DREAM_RETENTION_MS,
   dreamLogsDirPath,
   type HostDreamRecord,
   type HostDreamSessionProgress,
-} from '@spiritagent/host-internal';
+} from "@spiritagent/host-internal";
 
 import type {
   ConversationMessageSnapshot,
   DesktopDreamCollectorSnapshot,
   ModelRef,
   SessionListItem,
-} from '../types.js';
-import type { StoredDesktopSession } from './contracts.js';
-import { resolveModelProfile } from './model-config-access.js';
+} from "../types.js";
+import type { StoredDesktopSession } from "./contracts.js";
+import { resolveModelProfile } from "./model-config-access.js";
 import {
   chatsDirPath,
   listStoredSessions,
@@ -34,22 +29,20 @@ import {
   saveStoredSession,
   spiritAgentDataDir,
   type DesktopConfigFile,
-} from './storage.js';
+} from "./storage.js";
 import {
   createDreamCollectorRuntime,
   disposeDreamCollectorRuntime,
   resumeDreamCollectorTurn,
   submitDreamCollectorTurn,
-} from './dream-collector-runtime.js';
-import { DesktopMessageTimeline } from './message-timeline.js';
-import { createDesktopRewindMetadata } from './rewind.js';
-import { buildStoredDesktopSession } from './sessions.js';
-import { timelinePersistedSnapshotToMessages } from './chat-schema.js';
-import {
-  sameWorkspaceRoot,
-} from './service-utils.js';
+} from "./dream-collector-runtime.js";
+import { DesktopMessageTimeline } from "./message-timeline.js";
+import { createDesktopRewindMetadata } from "./rewind.js";
+import { buildStoredDesktopSession } from "./sessions.js";
+import { timelinePersistedSnapshotToMessages } from "./chat-schema.js";
+import { sameWorkspaceRoot } from "./service-utils.js";
 
-export const DREAM_DEBUG_SESSION_FILE_PREFIX = 'dream-collector-';
+export const DREAM_DEBUG_SESSION_FILE_PREFIX = "dream-collector-";
 export const DREAM_COLLECTOR_TICK_INTERVAL_MS = 30_000;
 export const DREAM_COLLECTOR_MONITOR_INTERVAL_MS = 5_000;
 export const DREAM_COLLECTOR_BACKOFF_MS = 60_000;
@@ -87,18 +80,20 @@ export async function buildDreamContextText(input: {
 }): Promise<string> {
   const dreams = await listActiveDreams(input);
   if (dreams.length === 0) {
-    return '';
+    return "";
   }
 
-  const rendered = dreams.map((dream, index) => {
-    const lines = [
-      `${index + 1}. [id=${dream.id}] ${dream.title}`,
-      `summary: ${dream.summary}`,
-      dream.tags?.length ? `tags: ${dream.tags.join(', ')}` : '',
-      `updatedAtUnixMs: ${dream.updatedAtUnixMs}`,
-    ].filter(Boolean);
-    return lines.join('\n');
-  }).join('\n\n');
+  const rendered = dreams
+    .map((dream, index) => {
+      const lines = [
+        `${index + 1}. [id=${dream.id}] ${dream.title}`,
+        `summary: ${dream.summary}`,
+        dream.tags?.length ? `tags: ${dream.tags.join(", ")}` : "",
+        `updatedAtUnixMs: ${dream.updatedAtUnixMs}`,
+      ].filter(Boolean);
+      return lines.join("\n");
+    })
+    .join("\n\n");
   return truncateText(rendered, DREAM_CONTEXT_MAX_CHARS);
 }
 
@@ -108,28 +103,28 @@ export async function buildDreamCommitContext(input: {
 }): Promise<string> {
   const dreams = await listActiveDreams(input);
   if (dreams.length === 0) {
-    return '';
+    return "";
   }
 
-  const rendered = dreams.map((dream, index) => {
-    const lines = [
-      `${index + 1}. [id=${dream.id}] ${dream.title}`,
-      `summary: ${dream.summary}`,
-      dream.details ? `details: ${dream.details}` : '',
-      dream.tags?.length ? `tags: ${dream.tags.join(', ')}` : '',
-      `updatedAtUnixMs: ${dream.updatedAtUnixMs}`,
-    ].filter(Boolean);
-    return lines.join('\n');
-  }).join('\n\n');
+  const rendered = dreams
+    .map((dream, index) => {
+      const lines = [
+        `${index + 1}. [id=${dream.id}] ${dream.title}`,
+        `summary: ${dream.summary}`,
+        dream.details ? `details: ${dream.details}` : "",
+        dream.tags?.length ? `tags: ${dream.tags.join(", ")}` : "",
+        `updatedAtUnixMs: ${dream.updatedAtUnixMs}`,
+      ].filter(Boolean);
+      return lines.join("\n");
+    })
+    .join("\n\n");
   return truncateText(rendered, DREAM_CONTEXT_MAX_CHARS);
 }
 
-export function buildDreamCollectorPlanMetadata(
-  planMetadata: LlmPlanMetadata,
-): LlmPlanMetadata {
+export function buildDreamCollectorPlanMetadata(planMetadata: LlmPlanMetadata): LlmPlanMetadata {
   return {
     ...planMetadata,
-    agentMode: 'agent',
+    agentMode: "agent",
     planMode: false,
   };
 }
@@ -160,9 +155,9 @@ export async function runDesktopDreamCollectorOnce(
   let sourceSession: SessionListItem | undefined;
   let sourceContextMode: DreamCollectorSourceContextMode | undefined;
   let pendingCount = 0;
-  let toolCalls: DesktopDreamCollectorRunLog['toolCalls'] = [];
+  let toolCalls: DesktopDreamCollectorRunLog["toolCalls"] = [];
   let blockedToolName: string | undefined;
-  let promptForDebug = '';
+  let promptForDebug = "";
   let debugSessionPersisted = false;
   try {
     const cutoffUnixMs = Date.now() - HOST_DREAM_RETENTION_MS;
@@ -183,28 +178,32 @@ export async function runDesktopDreamCollectorOnce(
     );
     pendingCount = pendingSessions.length;
     if (pendingSessions.length === 0) {
-      deps.setStatus(clearDreamCollectorIssue({
-        ...deps.getStatus(),
-        state: 'idle',
-        pendingCount: 0,
-      }));
+      deps.setStatus(
+        clearDreamCollectorIssue({
+          ...deps.getStatus(),
+          state: "idle",
+          pendingCount: 0,
+        }),
+      );
       return;
     }
 
     sourceSession = pendingSessions[0]!;
-    deps.setStatus(clearDreamCollectorIssue({
-      ...deps.getStatus(),
-      state: 'running',
-      pendingCount: pendingSessions.length,
-    }));
+    deps.setStatus(
+      clearDreamCollectorIssue({
+        ...deps.getStatus(),
+        state: "running",
+        pendingCount: pendingSessions.length,
+      }),
+    );
 
     const activeProfile = resolveModelProfile(input.config, input.collectorModel);
     if (!activeProfile) {
-      throw new Error(i18n.t('error.dreamCollectorApiKeyMissing'));
+      throw new Error(i18n.t("error.dreamCollectorApiKeyMissing"));
     }
     const apiKey = await resolveApiKeyForConfigModel(input.config, input.collectorModel);
     if (!apiKey) {
-      throw new Error(i18n.t('error.dreamCollectorApiKeyMissing'));
+      throw new Error(i18n.t("error.dreamCollectorApiKeyMissing"));
     }
     const archive = await loadStoredSession(sourceSession.path);
     const sessionProgress = sessionProgressMap.get(sourceSession.path);
@@ -220,11 +219,13 @@ export async function runDesktopDreamCollectorOnce(
         lastRunAtUnixMs: Date.now(),
         cooldownUntilUnixMs: Date.now() + DREAM_COLLECTOR_SESSION_COOLDOWN_MS,
       });
-      deps.setStatus(clearDreamCollectorIssue({
-        ...deps.getStatus(),
-        state: 'idle',
-        pendingCount: Math.max(0, pendingSessions.length - 1),
-      }));
+      deps.setStatus(
+        clearDreamCollectorIssue({
+          ...deps.getStatus(),
+          state: "idle",
+          pendingCount: Math.max(0, pendingSessions.length - 1),
+        }),
+      );
       return;
     }
     const collectorHandle = await createDreamCollectorRuntime({
@@ -236,7 +237,7 @@ export async function runDesktopDreamCollectorOnce(
         displayName: sourceSession.displayName,
         savedAtUnixMs: sourceSession.modifiedAtUnixMs,
       },
-      approvalLevel: 'auto-approval',
+      approvalLevel: "auto-approval",
     });
     const runtime = collectorHandle.runtime;
     try {
@@ -251,21 +252,21 @@ export async function runDesktopDreamCollectorOnce(
           toolName: execution.toolName,
           failed: execution.failed,
         }));
-        if (result.kind === 'requires-approval') {
+        if (result.kind === "requires-approval") {
           blockedToolName = result.approval.toolName;
           const deniedToolName = result.approval.toolName;
           result = await resumeDreamCollectorTurn(runtime, () =>
             runtime.continuePendingApproval({
-              kind: 'deny',
+              kind: "deny",
               resultText: `[dream collector policy] denied non-dream tool: ${deniedToolName}`,
             }),
           );
           continue;
         }
-        if (result.kind === 'requires-questions') {
+        if (result.kind === "requires-questions") {
           blockedToolName = result.questions.toolName;
           result = await resumeDreamCollectorTurn(runtime, () =>
-            runtime.continuePendingQuestions({ status: 'skipped' }),
+            runtime.continuePendingQuestions({ status: "skipped" }),
           );
           continue;
         }
@@ -275,8 +276,12 @@ export async function runDesktopDreamCollectorOnce(
         toolName: execution.toolName,
         failed: execution.failed,
       }));
-      if (result.kind !== 'completed') {
-        throw new Error(result.kind === 'failed' ? result.error : i18n.t('error.dreamCollectorIncomplete', { kind: result.kind }));
+      if (result.kind !== "completed") {
+        throw new Error(
+          result.kind === "failed"
+            ? result.error
+            : i18n.t("error.dreamCollectorIncomplete", { kind: result.kind }),
+        );
       }
       if (input.config.dreams.debugMode) {
         await persistDreamCollectorDebugSession({
@@ -301,13 +306,15 @@ export async function runDesktopDreamCollectorOnce(
         lastRunAtUnixMs: Date.now(),
         cooldownUntilUnixMs: Date.now() + DREAM_COLLECTOR_SESSION_COOLDOWN_MS,
       });
-      deps.setStatus(clearDreamCollectorIssue({
-        ...deps.getStatus(),
-        state: 'idle',
-        lastSuccessAtUnixMs: Date.now(),
-        pendingCount: Math.max(0, pendingSessions.length - 1),
-        processedCount: deps.getStatus().processedCount + 1,
-      }));
+      deps.setStatus(
+        clearDreamCollectorIssue({
+          ...deps.getStatus(),
+          state: "idle",
+          lastSuccessAtUnixMs: Date.now(),
+          pendingCount: Math.max(0, pendingSessions.length - 1),
+          processedCount: deps.getStatus().processedCount + 1,
+        }),
+      );
       await writeDreamCollectorRunLog({
         runId,
         startedAtUnixMs,
@@ -316,7 +323,7 @@ export async function runDesktopDreamCollectorOnce(
         gitBranch: input.gitBranch,
         collectorModel: input.collectorModel.name,
         sourceSessionPath: sourceSession.path,
-        decision: 'processed',
+        decision: "processed",
         ...(sourceContextMode ? { sourceContextMode } : {}),
         pendingCount,
         resultSummary: truncateText(result.assistantText, 1_000),
@@ -327,7 +334,12 @@ export async function runDesktopDreamCollectorOnce(
       await disposeDreamCollectorRuntime(collectorHandle);
     }
   } catch (error) {
-    if (input.config.dreams.debugMode && sourceSession && promptForDebug && !debugSessionPersisted) {
+    if (
+      input.config.dreams.debugMode &&
+      sourceSession &&
+      promptForDebug &&
+      !debugSessionPersisted
+    ) {
       await persistDreamCollectorDebugSession({
         runId,
         workspaceRoot: input.workspaceRoot,
@@ -347,7 +359,7 @@ export async function runDesktopDreamCollectorOnce(
       gitBranch: input.gitBranch,
       collectorModel: input.collectorModel.name,
       ...(sourceSession ? { sourceSessionPath: sourceSession.path } : {}),
-      decision: 'failed',
+      decision: "failed",
       ...(sourceContextMode ? { sourceContextMode } : {}),
       pendingCount,
       error: error instanceof Error ? error.message : String(error),
@@ -358,10 +370,10 @@ export async function runDesktopDreamCollectorOnce(
   }
 }
 
-type DreamCollectorSourceContextMode = 'full' | 'incremental';
+type DreamCollectorSourceContextMode = "full" | "incremental";
 
 interface DreamCollectorNormalizedMessage {
-  role: 'user' | 'assistant';
+  role: "user" | "assistant";
   rendered: string;
 }
 
@@ -382,7 +394,7 @@ function buildDreamCollectorSourceContext(
   const prefixHash = hashDreamCollectorMessages(normalizedMessages);
   if (!progress) {
     return {
-      mode: 'full',
+      mode: "full",
       rendered: renderDreamCollectorFullContext(normalizedMessages),
       prefixHash,
       processedMessageCount,
@@ -393,11 +405,14 @@ function buildDreamCollectorSourceContext(
   const needsFullRebuild =
     progress.lastProcessedMessageCount > processedMessageCount ||
     hashDreamCollectorMessages(
-      normalizedMessages.slice(0, Math.min(progress.lastProcessedMessageCount, processedMessageCount)),
+      normalizedMessages.slice(
+        0,
+        Math.min(progress.lastProcessedMessageCount, processedMessageCount),
+      ),
     ) !== progress.lastProcessedPrefixHash;
   if (needsFullRebuild) {
     return {
-      mode: 'full',
+      mode: "full",
       rendered: renderDreamCollectorFullContext(normalizedMessages),
       prefixHash,
       processedMessageCount,
@@ -408,8 +423,8 @@ function buildDreamCollectorSourceContext(
   const newMessages = normalizedMessages.slice(progress.lastProcessedMessageCount);
   if (newMessages.length === 0) {
     return {
-      mode: 'incremental',
-      rendered: '',
+      mode: "incremental",
+      rendered: "",
       prefixHash,
       processedMessageCount,
       shouldRunCollector: false,
@@ -421,7 +436,7 @@ function buildDreamCollectorSourceContext(
     progress.lastProcessedMessageCount,
   );
   return {
-    mode: 'incremental',
+    mode: "incremental",
     rendered: renderDreamCollectorIncrementalContext(anchorMessages, newMessages),
     prefixHash,
     processedMessageCount,
@@ -432,22 +447,23 @@ function buildDreamCollectorSourceContext(
 function normalizeDreamCollectorMessages(
   archive: StoredDesktopSession,
 ): DreamCollectorNormalizedMessage[] {
-  const source = archive.llmHistory.length > 0
-    ? archive.llmHistory.map((message) => {
-        const normalized = normalizeStoredLlmMessage(message);
-        return {
-          role: normalized.role,
-          content: llmMessageTextContent(normalized.content),
-        };
-      })
-    : timelinePersistedSnapshotToMessages(archive.desktopMessageTimeline).map((message) => ({
-        role: message.role,
-        content: message.content,
-      }));
+  const source =
+    archive.llmHistory.length > 0
+      ? archive.llmHistory.map((message) => {
+          const normalized = normalizeStoredLlmMessage(message);
+          return {
+            role: normalized.role,
+            content: llmMessageTextContent(normalized.content),
+          };
+        })
+      : timelinePersistedSnapshotToMessages(archive.desktopMessageTimeline).map((message) => ({
+          role: message.role,
+          content: message.content,
+        }));
   return source
     .filter(
-      (message): message is { role: 'user' | 'assistant'; content: string } =>
-        message.role === 'user' || message.role === 'assistant',
+      (message): message is { role: "user" | "assistant"; content: string } =>
+        message.role === "user" || message.role === "assistant",
     )
     .filter((message) => message.content.trim().length > 0)
     .map((message) => ({
@@ -456,20 +472,16 @@ function normalizeDreamCollectorMessages(
     }));
 }
 
-function hashDreamCollectorMessages(
-  messages: DreamCollectorNormalizedMessage[],
-): string {
-  return createHash('sha256')
-    .update(messages.map((message) => message.rendered).join('\n\n'), 'utf8')
-    .digest('hex')
+function hashDreamCollectorMessages(messages: DreamCollectorNormalizedMessage[]): string {
+  return createHash("sha256")
+    .update(messages.map((message) => message.rendered).join("\n\n"), "utf8")
+    .digest("hex")
     .slice(0, 32);
 }
 
-function renderDreamCollectorFullContext(
-  messages: DreamCollectorNormalizedMessage[],
-): string {
+function renderDreamCollectorFullContext(messages: DreamCollectorNormalizedMessage[]): string {
   return truncateText(
-    messages.map((message) => message.rendered).join('\n\n') || '(empty session)',
+    messages.map((message) => message.rendered).join("\n\n") || "(empty session)",
     DREAM_COLLECTOR_SOURCE_CONTEXT_MAX_CHARS,
   );
 }
@@ -479,20 +491,14 @@ function renderDreamCollectorIncrementalContext(
   newMessages: DreamCollectorNormalizedMessage[],
 ): string {
   const anchorText = truncateText(
-    anchorMessages.map((message) => message.rendered).join('\n\n') || '(no prior anchor)',
+    anchorMessages.map((message) => message.rendered).join("\n\n") || "(no prior anchor)",
     DREAM_COLLECTOR_ANCHOR_CONTEXT_MAX_CHARS,
   );
   const deltaText = truncateText(
-    newMessages.map((message) => message.rendered).join('\n\n') || '(no delta)',
+    newMessages.map((message) => message.rendered).join("\n\n") || "(no delta)",
     DREAM_COLLECTOR_INCREMENTAL_CONTEXT_MAX_CHARS,
   );
-  return [
-    '[recent_anchor]',
-    anchorText,
-    '',
-    '[new_delta]',
-    deltaText,
-  ].join('\n');
+  return ["[recent_anchor]", anchorText, "", "[new_delta]", deltaText].join("\n");
 }
 
 function shouldQueueDreamCollectorSession(
@@ -517,32 +523,30 @@ function buildDreamCollectorPrompt(input: {
   scope: { workspaceRoot: string; gitBranch: string };
   sourceContext: DreamCollectorSourceContext;
 }): string {
-  const modeBlock = input.sourceContext.mode === 'incremental'
-    ? [
-        '这是同一会话在上次梦境收集后的新增内容。优先更新已有梦境，不要重复总结旧内容。',
-        '[source_session_incremental_context]',
-      ]
-    : [
-        '这是该会话当前可用的完整摘要上下文。',
-        '[source_session_full_context]',
-      ];
+  const modeBlock =
+    input.sourceContext.mode === "incremental"
+      ? [
+          "这是同一会话在上次梦境收集后的新增内容。优先更新已有梦境，不要重复总结旧内容。",
+          "[source_session_incremental_context]",
+        ]
+      : ["这是该会话当前可用的完整摘要上下文。", "[source_session_full_context]"];
   return [
-    '请收集这条源会话的梦境摘要。',
-    '你必须先调用 dream_list 查看当前 scope 的已有梦境。',
-    '如果源会话延续了已有动向，请调用 dream_update；如果是新动向，请调用 dream_record；如果已有梦境已经误导或过时，可调用 dream_delete。',
-    '如果写 tags，只保留最关键的 2 到 4 个短标签；优先使用简短 lowercase/kebab-case 词，不要把所有子话题都枚举进去。',
-    '如果源会话完全没有可沉淀的近期工作动向，可以不写入梦境，但不要执行任何非梦境维护操作。',
-    '',
+    "请收集这条源会话的梦境摘要。",
+    "你必须先调用 dream_list 查看当前 scope 的已有梦境。",
+    "如果源会话延续了已有动向，请调用 dream_update；如果是新动向，请调用 dream_record；如果已有梦境已经误导或过时，可调用 dream_delete。",
+    "如果写 tags，只保留最关键的 2 到 4 个短标签；优先使用简短 lowercase/kebab-case 词，不要把所有子话题都枚举进去。",
+    "如果源会话完全没有可沉淀的近期工作动向，可以不写入梦境，但不要执行任何非梦境维护操作。",
+    "",
     `[scope] workspace=${input.scope.workspaceRoot}`,
     `[scope] branch=${input.scope.gitBranch}`,
     `[source_session] path=${input.sourceSession.path}`,
     `[source_session] title=${input.sourceSession.displayName}`,
     `[source_session] modifiedAtUnixMs=${input.sourceSession.modifiedAtUnixMs}`,
     `[source_session] mode=${input.sourceContext.mode}`,
-    '',
+    "",
     ...modeBlock,
     input.sourceContext.rendered,
-  ].join('\n');
+  ].join("\n");
 }
 
 interface DesktopDreamCollectorRunLog {
@@ -553,7 +557,7 @@ interface DesktopDreamCollectorRunLog {
   gitBranch: string;
   collectorModel: string;
   sourceSessionPath?: string;
-  decision: 'no-pending' | 'processed' | 'failed';
+  decision: "no-pending" | "processed" | "failed";
   sourceContextMode?: DreamCollectorSourceContextMode;
   pendingCount: number;
   resultSummary?: string;
@@ -569,7 +573,7 @@ async function writeDreamCollectorRunLog(log: DesktopDreamCollectorRunLog): Prom
   const logsDir = dreamLogsDirPath(spiritAgentDataDir());
   await mkdir(logsDir, { recursive: true });
   const fileName = `${log.startedAtUnixMs}-${log.runId}.json`;
-  await writeFile(path.join(logsDir, fileName), `${JSON.stringify(log, null, 2)}\n`, 'utf8');
+  await writeFile(path.join(logsDir, fileName), `${JSON.stringify(log, null, 2)}\n`, "utf8");
 }
 
 async function persistDreamCollectorDebugSession(input: {
@@ -586,37 +590,47 @@ async function persistDreamCollectorDebugSession(input: {
   const messages: ConversationMessageSnapshot[] = [
     {
       id: 1,
-      role: 'user',
+      role: "user",
       content: input.prompt,
       pending: false,
     },
     {
       id: 2,
-      role: 'assistant',
-      content: input.failed ? i18n.t('error.dreamGenerationFailed', { text: input.assistantText }) : input.assistantText,
+      role: "assistant",
+      content: input.failed
+        ? i18n.t("error.dreamGenerationFailed", { text: input.assistantText })
+        : input.assistantText,
       pending: false,
     },
   ];
-  const sessionFile = path.join(chatsDirPath(), `${DREAM_DEBUG_SESSION_FILE_PREFIX}${now}-${input.runId}.json`);
+  const sessionFile = path.join(
+    chatsDirPath(),
+    `${DREAM_DEBUG_SESSION_FILE_PREFIX}${now}-${input.runId}.json`,
+  );
   let nextMessageId = 1;
   const timeline = DesktopMessageTimeline.fromMessages(messages, {
     allocateMessageId: () => nextMessageId++,
   });
-  await saveStoredSession(sessionFile, buildStoredDesktopSession({
-    llmHistory: messages.map((message) => ({
-      role: message.role,
-      content: message.content,
-      imagePaths: [],
-    })),
-    savedAtUnixMs: now,
-    sessionDisplayName: i18n.t('error.dreamSessionDisplayName', { name: input.sourceSession.displayName }),
-    workspaceRoot: input.workspaceRoot,
-    gitBranch: input.gitBranch,
-    desktopMessageTimeline: timeline.snapshot(),
-    rewind: createDesktopRewindMetadata(),
-    loopEnabled: false,
-    approvalLevel: 'default',
-  }));
+  await saveStoredSession(
+    sessionFile,
+    buildStoredDesktopSession({
+      llmHistory: messages.map((message) => ({
+        role: message.role,
+        content: message.content,
+        imagePaths: [],
+      })),
+      savedAtUnixMs: now,
+      sessionDisplayName: i18n.t("error.dreamSessionDisplayName", {
+        name: input.sourceSession.displayName,
+      }),
+      workspaceRoot: input.workspaceRoot,
+      gitBranch: input.gitBranch,
+      desktopMessageTimeline: timeline.snapshot(),
+      rewind: createDesktopRewindMetadata(),
+      loopEnabled: false,
+      approvalLevel: "default",
+    }),
+  );
 }
 
 export function isDreamCollectorDebugSessionPath(filePath: string): boolean {
@@ -624,7 +638,7 @@ export function isDreamCollectorDebugSessionPath(filePath: string): boolean {
 }
 
 export function emptyDreamCollectorSnapshot(
-  state: DesktopDreamCollectorSnapshot['state'],
+  state: DesktopDreamCollectorSnapshot["state"],
 ): DesktopDreamCollectorSnapshot {
   return {
     state,
@@ -645,5 +659,5 @@ function truncateText(value: string, maxChars: number): string {
   if (chars.length <= maxChars) {
     return value;
   }
-  return `${chars.slice(0, maxChars).join('')}...<truncated>`;
+  return `${chars.slice(0, maxChars).join("")}...<truncated>`;
 }

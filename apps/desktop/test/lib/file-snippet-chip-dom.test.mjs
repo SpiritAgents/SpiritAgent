@@ -1,10 +1,8 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 
-const {
-  assertRichSegmentsRoundTrip,
-  richSegmentsRoundTrip,
-} = await import("../../src/lib/composer-lexical/bridge/index.ts");
+const { assertRichSegmentsRoundTrip, richSegmentsRoundTrip } =
+  await import("../../src/lib/composer-lexical/bridge/index.ts");
 const { segmentsToPlainText } = await import("../../src/lib/composer-segment-model.ts");
 
 const sampleAttachment = {

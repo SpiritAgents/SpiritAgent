@@ -1,5 +1,5 @@
-import assert from 'node:assert/strict';
-import test from 'node:test';
+import assert from "node:assert/strict";
+import test from "node:test";
 
 import {
   JUMP_LIST_RECENT_LIMIT,
@@ -9,98 +9,101 @@ import {
   pickRecentSessions,
   pickRecentSessionsForJumpList,
   truncateJumpListTitle,
-} from '../../dist-electron/src/lib/windows-jump-list-build.js';
+} from "../../dist-electron/src/lib/windows-jump-list-build.js";
 
 function session(path, displayName, modifiedAtUnixMs) {
   return {
     path,
     displayName,
     modifiedAtUnixMs,
-    workspaceRoot: '/workspace',
+    workspaceRoot: "/workspace",
   };
 }
 
-test('pickRecentSessionsForJumpList sorts by modifiedAt desc and caps at five', () => {
+test("pickRecentSessionsForJumpList sorts by modifiedAt desc and caps at five", () => {
   const sessions = [
-    session('a', 'A', 100),
-    session('b', 'B', 300),
-    session('c', 'C', 200),
-    session('d', 'D', 500),
-    session('e', 'E', 400),
-    session('f', 'F', 600),
-    session('g', 'G', 50),
+    session("a", "A", 100),
+    session("b", "B", 300),
+    session("c", "C", 200),
+    session("d", "D", 500),
+    session("e", "E", 400),
+    session("f", "F", 600),
+    session("g", "G", 50),
   ];
   const picked = pickRecentSessionsForJumpList(sessions);
   assert.equal(picked.length, JUMP_LIST_RECENT_LIMIT);
   assert.deepEqual(
     picked.map((item) => item.path),
-    ['f', 'd', 'e', 'b', 'c'],
+    ["f", "d", "e", "b", "c"],
   );
 });
 
-test('pickRecentSessions respects custom limit for tray more menu', () => {
+test("pickRecentSessions respects custom limit for tray more menu", () => {
   const sessions = Array.from({ length: 12 }, (_, index) =>
     session(`s${index}`, `S${index}`, index + 1),
   );
   const picked = pickRecentSessions(sessions, TRAY_MORE_LIMIT);
   assert.equal(picked.length, TRAY_MORE_LIMIT);
-  assert.equal(picked[0]?.path, 's11');
-  assert.equal(picked[9]?.path, 's2');
+  assert.equal(picked[0]?.path, "s11");
+  assert.equal(picked[9]?.path, "s2");
 });
 
-test('buildJumpListLaunchArgs uses protocol only when packaged', () => {
-  assert.equal(buildJumpListLaunchArgs('spirit://new-session'), 'spirit://new-session');
+test("buildJumpListLaunchArgs uses protocol only when packaged", () => {
+  assert.equal(buildJumpListLaunchArgs("spirit://new-session"), "spirit://new-session");
 });
 
-test('buildJumpListLaunchArgs quotes dev main script and protocol url', () => {
+test("buildJumpListLaunchArgs quotes dev main script and protocol url", () => {
   assert.equal(
-    buildJumpListLaunchArgs('spirit://new-session', 'D:\\SpiritAgent\\apps\\desktop\\electron\\main.ts'),
+    buildJumpListLaunchArgs(
+      "spirit://new-session",
+      "D:\\SpiritAgent\\apps\\desktop\\electron\\main.ts",
+    ),
     '"D:\\SpiritAgent\\apps\\desktop\\electron\\main.ts" "spirit://new-session"',
   );
 });
 
-test('buildWindowsJumpListCategories omits custom group when no sessions', () => {
+test("buildWindowsJumpListCategories omits custom group when no sessions", () => {
   const categories = buildWindowsJumpListCategories({
-    recentLabel: 'Recent',
-    newAgentLabel: 'New Session',
+    recentLabel: "Recent",
+    newAgentLabel: "New Session",
     sessions: [],
-    execPath: 'C:\\Spirit.exe',
-    iconPath: 'C:\\Spirit.ico',
+    execPath: "C:\\Spirit.exe",
+    iconPath: "C:\\Spirit.ico",
   });
   assert.equal(categories.length, 1);
-  assert.equal(categories[0]?.type, 'tasks');
-  assert.equal(categories[0]?.items[0]?.title, 'New Session');
-  assert.equal(categories[0]?.items[0]?.args, 'spirit://new-session');
+  assert.equal(categories[0]?.type, "tasks");
+  assert.equal(categories[0]?.items[0]?.title, "New Session");
+  assert.equal(categories[0]?.items[0]?.args, "spirit://new-session");
 });
 
-test('buildWindowsJumpListCategories builds recent custom group before tasks', () => {
+test("buildWindowsJumpListCategories builds recent custom group before tasks", () => {
   const categories = buildWindowsJumpListCategories({
-    recentLabel: '最近',
-    newAgentLabel: '新会话',
-    sessions: [session('s1', 'Chat One', 10), session('s2', 'Chat Two', 20)],
-    execPath: 'C:\\Spirit.exe',
-    iconPath: 'C:\\Spirit.ico',
-    devMainScript: 'C:\\main.ts',
+    recentLabel: "最近",
+    newAgentLabel: "新会话",
+    sessions: [session("s1", "Chat One", 10), session("s2", "Chat Two", 20)],
+    execPath: "C:\\Spirit.exe",
+    iconPath: "C:\\Spirit.ico",
+    devMainScript: "C:\\main.ts",
   });
   assert.equal(categories.length, 2);
-  assert.equal(categories[0]?.type, 'custom');
-  assert.equal(categories[0]?.name, '最近');
+  assert.equal(categories[0]?.type, "custom");
+  assert.equal(categories[0]?.name, "最近");
   assert.equal(categories[0]?.items.length, 2);
-  assert.match(categories[0]?.items[0]?.args ?? '', /"C:\\main.ts"/);
-  assert.match(categories[0]?.items[0]?.args ?? '', /open-session/);
-  assert.equal(categories[1]?.type, 'tasks');
-  assert.equal(categories[1]?.items[0]?.title, '新会话');
+  assert.match(categories[0]?.items[0]?.args ?? "", /"C:\\main.ts"/);
+  assert.match(categories[0]?.items[0]?.args ?? "", /open-session/);
+  assert.equal(categories[1]?.type, "tasks");
+  assert.equal(categories[1]?.items[0]?.title, "新会话");
 });
 
-test('truncateJumpListTitle shortens long display names', () => {
-  const long = 'x'.repeat(300);
+test("truncateJumpListTitle shortens long display names", () => {
+  const long = "x".repeat(300);
   const truncated = truncateJumpListTitle(long, 20);
   assert.equal(truncated.length, 20);
   assert.match(truncated, /…$/u);
 });
 
-test('truncateJumpListTitle truncates by code points without splitting surrogate pairs', () => {
-  const truncated = truncateJumpListTitle('🎉'.repeat(30), 10);
-  assert.equal(truncated, `${'🎉'.repeat(9)}…`);
+test("truncateJumpListTitle truncates by code points without splitting surrogate pairs", () => {
+  const truncated = truncateJumpListTitle("🎉".repeat(30), 10);
+  assert.equal(truncated, `${"🎉".repeat(9)}…`);
   assert.equal(truncated.isWellFormed(), true);
 });

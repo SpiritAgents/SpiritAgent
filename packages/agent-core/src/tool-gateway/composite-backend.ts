@@ -1,4 +1,4 @@
-import { McpConfigError } from '../mcp/errors.js';
+import { McpConfigError } from "../mcp/errors.js";
 import {
   LAZY_TOOL_PROVIDER_BUILT_IN,
   LAZY_TOOL_PROVIDER_MCP,
@@ -6,7 +6,7 @@ import {
   type LazyToolCallRequest,
   type LazyToolDescribeRequest,
   type LazyToolGatewayBackend,
-} from './types.js';
+} from "./types.js";
 
 export function createCompositeLazyToolGatewayBackend(options: {
   mcp?: LazyToolGatewayBackend;
@@ -24,17 +24,17 @@ async function describeLazyTool(
     mcp?: LazyToolGatewayBackend;
     builtIn?: BuiltInLazyToolGatewayBackend;
   },
-): ReturnType<LazyToolGatewayBackend['describe']> {
+): ReturnType<LazyToolGatewayBackend["describe"]> {
   if (request.provider === LAZY_TOOL_PROVIDER_MCP) {
     if (!options.mcp) {
-      throw new McpConfigError('MCP lazy tool backend is not available in this host.');
+      throw new McpConfigError("MCP lazy tool backend is not available in this host.");
     }
     return options.mcp.describe(request);
   }
 
   if (request.provider === LAZY_TOOL_PROVIDER_BUILT_IN) {
     if (!options.builtIn) {
-      throw new McpConfigError('Built-in lazy tool backend is not available in this host.');
+      throw new McpConfigError("Built-in lazy tool backend is not available in this host.");
     }
     return options.builtIn.describe(request);
   }
@@ -48,17 +48,17 @@ async function callLazyTool(
     mcp?: LazyToolGatewayBackend;
     builtIn?: BuiltInLazyToolGatewayBackend;
   },
-): ReturnType<LazyToolGatewayBackend['call']> {
+): ReturnType<LazyToolGatewayBackend["call"]> {
   if (request.provider === LAZY_TOOL_PROVIDER_MCP) {
     if (!options.mcp) {
-      throw new McpConfigError('MCP lazy tool backend is not available in this host.');
+      throw new McpConfigError("MCP lazy tool backend is not available in this host.");
     }
     return options.mcp.call(request);
   }
 
   if (request.provider === LAZY_TOOL_PROVIDER_BUILT_IN) {
     if (!options.builtIn) {
-      throw new McpConfigError('Built-in lazy tool backend is not available in this host.');
+      throw new McpConfigError("Built-in lazy tool backend is not available in this host.");
     }
     return options.builtIn.call(request);
   }

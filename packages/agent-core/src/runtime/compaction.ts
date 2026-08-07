@@ -1,14 +1,14 @@
-import { setImmediate as waitForImmediate } from 'node:timers/promises';
+import { setImmediate as waitForImmediate } from "node:timers/promises";
 
-import { MANUAL_COMPACTION_SKIPPED_STATUS_ZH } from '../compaction-ui-status.js';
-import type { CompactHistoryManualContext, LlmMessage } from '../ports.js';
-import { resolveHookSessionContext } from '../hooks/integration.js';
+import { MANUAL_COMPACTION_SKIPPED_STATUS_ZH } from "../compaction-ui-status.js";
+import type { CompactHistoryManualContext, LlmMessage } from "../ports.js";
+import { resolveHookSessionContext } from "../hooks/integration.js";
 import {
   prepareToolOutputTruncationForHistory,
   prepareToolOutputTruncationForToolAgentState,
-} from '../tool-output-truncation.js';
+} from "../tool-output-truncation.js";
 
-import { cloneHistory, renderError } from './helpers.js';
+import { cloneHistory, renderError } from "./helpers.js";
 import type {
   AgentRuntimeOptions,
   PendingHistoryCompaction,
@@ -19,21 +19,14 @@ import type {
   RuntimeManualHistoryCompactionResult,
   RuntimeTurnContext,
   RuntimeTurnResult,
-} from './types.js';
+} from "./types.js";
 
-export interface CompactionRuntime<
-  Config,
-  State,
-  ToolRequest,
-  TrustTarget = string,
-> {
+export interface CompactionRuntime<Config, State, ToolRequest, TrustTarget = string> {
   options: AgentRuntimeOptions<Config, State, ToolRequest, TrustTarget>;
   historyStore: LlmMessage[];
   compactionTextStore: string;
   pendingHistoryCompaction: PendingHistoryCompaction<State, ToolRequest> | undefined;
-  completedManualHistoryCompactionResultStore:
-    | RuntimeManualHistoryCompactionResult
-    | undefined;
+  completedManualHistoryCompactionResultStore: RuntimeManualHistoryCompactionResult | undefined;
   emitEvent(event: RuntimeEvent<ToolRequest>): void;
   completeTurn(result: RuntimeTurnResult<State, ToolRequest, TrustTarget>): void;
   startToolAgentRoundAsync(
@@ -72,12 +65,9 @@ function buildCompactionRecord(
   };
 }
 
-function shouldPrepareToolOutputTruncation<
-  Config,
-  State,
-  ToolRequest,
-  TrustTarget = string,
->(runtime: CompactionRuntime<Config, State, ToolRequest, TrustTarget>): boolean {
+function shouldPrepareToolOutputTruncation<Config, State, ToolRequest, TrustTarget = string>(
+  runtime: CompactionRuntime<Config, State, ToolRequest, TrustTarget>,
+): boolean {
   return (
     runtime.options.truncateHistoryForCompaction !== undefined ||
     runtime.options.persistToolOutputArchive !== undefined
@@ -93,10 +83,7 @@ export async function prepareStateForContextRetryAsync<
   options: AgentRuntimeOptions<Config, State, ToolRequest, TrustTarget>,
   state: State,
 ): Promise<{ state: State; changed: boolean }> {
-  if (
-    !options.truncateStateForContextRetry &&
-    !options.persistToolOutputArchive
-  ) {
+  if (!options.truncateStateForContextRetry && !options.persistToolOutputArchive) {
     return { state, changed: false };
   }
 
@@ -113,12 +100,7 @@ export async function prepareStateForContextRetryAsync<
   }>;
 }
 
-async function prepareHistoryForCompaction<
-  Config,
-  State,
-  ToolRequest,
-  TrustTarget = string,
->(
+async function prepareHistoryForCompaction<Config, State, ToolRequest, TrustTarget = string>(
   runtime: CompactionRuntime<Config, State, ToolRequest, TrustTarget>,
   archiveSourceHistory: LlmMessage[],
 ): Promise<LlmMessage[]> {
@@ -133,16 +115,14 @@ async function prepareHistoryForCompaction<
       ? { persistArchive: runtime.options.persistToolOutputArchive }
       : {}),
   };
-  const prepared = await prepareToolOutputTruncationForHistory(archiveSourceHistory, prepareOptions);
+  const prepared = await prepareToolOutputTruncationForHistory(
+    archiveSourceHistory,
+    prepareOptions,
+  );
   return cloneHistory(prepared.history);
 }
 
-export async function compactHistoryImmediate<
-  Config,
-  State,
-  ToolRequest,
-  TrustTarget = string,
->(
+export async function compactHistoryImmediate<Config, State, ToolRequest, TrustTarget = string>(
   runtime: CompactionRuntime<Config, State, ToolRequest, TrustTarget>,
 ): Promise<RuntimeCompactionRecord> {
   const archiveSourceHistory = cloneHistory(runtime.historyStore);
@@ -151,9 +131,7 @@ export async function compactHistoryImmediate<
   runtime.historyStore = cloneHistory(historyForCompaction);
 
   const compactionContext: CompactHistoryManualContext | undefined =
-    transcriptDirPath !== undefined
-      ? { transcriptDirPath }
-      : undefined;
+    transcriptDirPath !== undefined ? { transcriptDirPath } : undefined;
 
   const result = await runtime.options.llmTransport.compactHistoryManual(
     runtime.options.config,
@@ -165,12 +143,7 @@ export async function compactHistoryImmediate<
   return buildCompactionRecord(result, summary, transcriptDirPath);
 }
 
-export function startHistoryCompactionAsync<
-  Config,
-  State,
-  ToolRequest,
-  TrustTarget = string,
->(
+export function startHistoryCompactionAsync<Config, State, ToolRequest, TrustTarget = string>(
   runtime: CompactionRuntime<Config, State, ToolRequest, TrustTarget>,
   retryState: State,
   pendingUserInput: string,
@@ -180,9 +153,9 @@ export function startHistoryCompactionAsync<
   resumeAsStreaming = false,
   streamingEmitBeginResponse = true,
 ): void {
-  runtime.compactionTextStore = '';
+  runtime.compactionTextStore = "";
   const pending: PendingAutoHistoryCompaction<State, ToolRequest> = {
-    kind: 'auto-retry',
+    kind: "auto-retry",
     pendingUserInput,
     retryState,
     turn,
@@ -211,17 +184,12 @@ export function startHistoryCompactionAsync<
   })();
 }
 
-export function startManualHistoryCompactionAsync<
-  Config,
-  State,
-  ToolRequest,
-  TrustTarget = string,
->(
+export function startManualHistoryCompactionAsync<Config, State, ToolRequest, TrustTarget = string>(
   runtime: CompactionRuntime<Config, State, ToolRequest, TrustTarget>,
 ): void {
-  runtime.compactionTextStore = '';
+  runtime.compactionTextStore = "";
   const pending: PendingManualHistoryCompaction = {
-    kind: 'manual',
+    kind: "manual",
     compactedHistory: undefined,
     result: undefined,
     failure: undefined,
@@ -243,12 +211,7 @@ export function startManualHistoryCompactionAsync<
   })();
 }
 
-export function launchHistoryCompaction<
-  Config,
-  State,
-  ToolRequest,
-  TrustTarget = string,
->(
+export function launchHistoryCompaction<Config, State, ToolRequest, TrustTarget = string>(
   runtime: CompactionRuntime<Config, State, ToolRequest, TrustTarget>,
   pending: PendingHistoryCompaction<State, ToolRequest>,
   history: LlmMessage[],
@@ -258,11 +221,10 @@ export function launchHistoryCompaction<
 
   void (async () => {
     try {
-      const transcriptDirPath = await runtime.syncSessionTranscriptFromHistory(archiveSourceHistory);
+      const transcriptDirPath =
+        await runtime.syncSessionTranscriptFromHistory(archiveSourceHistory);
       const compactionContext: CompactHistoryManualContext | undefined =
-        transcriptDirPath !== undefined
-          ? { transcriptDirPath }
-          : undefined;
+        transcriptDirPath !== undefined ? { transcriptDirPath } : undefined;
 
       const result = await runtime.options.llmTransport.compactHistoryManual(
         runtime.options.config,
@@ -274,7 +236,7 @@ export function launchHistoryCompaction<
 
           runtime.compactionTextStore += chunk;
           runtime.emitEvent({
-            kind: 'update-pending-assistant-compaction',
+            kind: "update-pending-assistant-compaction",
             text: runtime.compactionTextStore,
           });
         },
@@ -301,25 +263,23 @@ export async function pollPendingHistoryCompaction<
   State,
   ToolRequest,
   TrustTarget = string,
->(
-  runtime: CompactionRuntime<Config, State, ToolRequest, TrustTarget>,
-): Promise<void> {
+>(runtime: CompactionRuntime<Config, State, ToolRequest, TrustTarget>): Promise<void> {
   const pending = runtime.pendingHistoryCompaction;
   if (!pending || (pending.result === undefined && pending.failure === undefined)) {
     return;
   }
 
   runtime.pendingHistoryCompaction = undefined;
-  if (pending.kind === 'manual') {
+  if (pending.kind === "manual") {
     if (pending.failure !== undefined) {
       runtime.emitEvent({
-        kind: 'replace-pending-assistant',
+        kind: "replace-pending-assistant",
         text: `压缩失败: ${pending.failure}`,
       });
-      runtime.emitEvent({ kind: 'assistant-response-completed' });
-      runtime.compactionTextStore = '';
+      runtime.emitEvent({ kind: "assistant-response-completed" });
+      runtime.compactionTextStore = "";
       runtime.completedManualHistoryCompactionResultStore = {
-        kind: 'failed',
+        kind: "failed",
         error: `压缩失败: ${pending.failure}`,
       };
       return;
@@ -329,14 +289,14 @@ export async function pollPendingHistoryCompaction<
     const compactedHistory = pending.compactedHistory;
     if (!result || !compactedHistory) {
       runtime.emitEvent({
-        kind: 'replace-pending-assistant',
-        text: '压缩失败: 未产生有效结果',
+        kind: "replace-pending-assistant",
+        text: "压缩失败: 未产生有效结果",
       });
-      runtime.emitEvent({ kind: 'assistant-response-completed' });
-      runtime.compactionTextStore = '';
+      runtime.emitEvent({ kind: "assistant-response-completed" });
+      runtime.compactionTextStore = "";
       runtime.completedManualHistoryCompactionResultStore = {
-        kind: 'failed',
-        error: '压缩失败: 未产生有效结果',
+        kind: "failed",
+        error: "压缩失败: 未产生有效结果",
       };
       return;
     }
@@ -345,22 +305,22 @@ export async function pollPendingHistoryCompaction<
     if (!runtime.compactionTextStore.trim() && result.summary?.trim()) {
       runtime.compactionTextStore = result.summary;
       runtime.emitEvent({
-        kind: 'update-pending-assistant-compaction',
+        kind: "update-pending-assistant-compaction",
         text: runtime.compactionTextStore,
       });
     }
 
     runtime.emitEvent({
-      kind: 'replace-pending-assistant',
+      kind: "replace-pending-assistant",
       text:
         result.droppedMessages === 0
           ? MANUAL_COMPACTION_SKIPPED_STATUS_ZH
           : `压缩完成：上下文消息 ${result.beforeLength} -> ${result.afterLength}，已合并 ${result.droppedMessages} 条历史消息。`,
     });
-    runtime.emitEvent({ kind: 'assistant-response-completed' });
-    runtime.compactionTextStore = '';
+    runtime.emitEvent({ kind: "assistant-response-completed" });
+    runtime.compactionTextStore = "";
     runtime.completedManualHistoryCompactionResultStore = {
-      kind: 'completed',
+      kind: "completed",
       result,
     };
     return;
@@ -369,13 +329,13 @@ export async function pollPendingHistoryCompaction<
   if (pending.failure !== undefined) {
     if (pending.resumeAsStreaming) {
       runtime.emitEvent({
-        kind: 'replace-pending-assistant',
+        kind: "replace-pending-assistant",
         text: `上下文压缩失败: ${pending.failure} | 原始错误: ${pending.originalError}`,
       });
-      runtime.emitEvent({ kind: 'assistant-response-completed' });
+      runtime.emitEvent({ kind: "assistant-response-completed" });
     } else {
       runtime.completeTurn({
-        kind: 'failed',
+        kind: "failed",
         error: `上下文压缩失败: ${pending.failure} | 原始错误: ${pending.originalError}`,
         state: pending.retryState,
         requestTrace: [...pending.turn.requestTrace],
@@ -391,13 +351,13 @@ export async function pollPendingHistoryCompaction<
   if (!result || !compactedHistory) {
     if (pending.resumeAsStreaming) {
       runtime.emitEvent({
-        kind: 'replace-pending-assistant',
+        kind: "replace-pending-assistant",
         text: `上下文压缩失败: 未产生有效结果 | 原始错误: ${pending.originalError}`,
       });
-      runtime.emitEvent({ kind: 'assistant-response-completed' });
+      runtime.emitEvent({ kind: "assistant-response-completed" });
     } else {
       runtime.completeTurn({
-        kind: 'failed',
+        kind: "failed",
         error: `上下文压缩失败: 未产生有效结果 | 原始错误: ${pending.originalError}`,
         state: pending.retryState,
         requestTrace: [...pending.turn.requestTrace],
@@ -413,7 +373,7 @@ export async function pollPendingHistoryCompaction<
   if (!runtime.compactionTextStore.trim() && result.summary?.trim()) {
     runtime.compactionTextStore = result.summary;
     runtime.emitEvent({
-      kind: 'update-pending-assistant-compaction',
+      kind: "update-pending-assistant-compaction",
       text: runtime.compactionTextStore,
     });
   }
@@ -421,13 +381,13 @@ export async function pollPendingHistoryCompaction<
   if (result.droppedMessages === 0 && !pending.toolTruncationApplied) {
     if (pending.resumeAsStreaming) {
       runtime.emitEvent({
-        kind: 'replace-pending-assistant',
+        kind: "replace-pending-assistant",
         text: `检测到上下文超限，但历史已无法继续压缩。原始错误: ${pending.originalError}`,
       });
-      runtime.emitEvent({ kind: 'assistant-response-completed' });
+      runtime.emitEvent({ kind: "assistant-response-completed" });
     } else {
       runtime.completeTurn({
-        kind: 'failed',
+        kind: "failed",
         error: `检测到上下文超限，但历史已无法继续压缩。原始错误: ${pending.originalError}`,
         state: pending.retryState,
         requestTrace: [...pending.turn.requestTrace],
@@ -477,7 +437,7 @@ export async function waitForCompletedManualHistoryCompactionResult<
     }
 
     if (!runtime.isBusy()) {
-      throw new Error('runtime 在未产出手动压缩结果时提前进入空闲状态。');
+      throw new Error("runtime 在未产出手动压缩结果时提前进入空闲状态。");
     }
 
     await runtime.poll();
@@ -488,7 +448,7 @@ export async function waitForCompletedManualHistoryCompactionResult<
     }
 
     if (!runtime.isBusy()) {
-      throw new Error('runtime 在未产出手动压缩结果时提前进入空闲状态。');
+      throw new Error("runtime 在未产出手动压缩结果时提前进入空闲状态。");
     }
 
     await waitForImmediate();

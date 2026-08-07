@@ -1,51 +1,50 @@
-import path from 'node:path';
+import path from "node:path";
 
 import type {
   LlmActiveSkill,
   PendingWorkspaceFile,
   RuntimeApprovalDecision,
   RuntimeEvent,
-} from '@spiritagent/agent-core';
-import { cloneActiveSkills } from './runtime.js';
+} from "@spiritagent/agent-core";
+import { cloneActiveSkills } from "./runtime.js";
 
-import i18n from '../lib/i18n-host.js';
+import i18n from "../lib/i18n-host.js";
 import type {
   AskQuestionsResult,
   ConversationMessageSnapshot,
   DesktopApprovalDecision,
   DesktopSnapshot,
-} from '../types.js';
-import type { DesktopToolRequest } from './contracts.js';
-import type { DesktopHostRuntime } from './runtime.js';
-import type { SessionBundle } from './session-bundle.js';
-import { toolMessageKey } from './message-ordering.js';
+} from "../types.js";
+import type { DesktopToolRequest } from "./contracts.js";
+import type { DesktopHostRuntime } from "./runtime.js";
+import type { SessionBundle } from "./session-bundle.js";
+import { toolMessageKey } from "./message-ordering.js";
 import {
   runtimeEventsIncludeAppliedResponsesBuiltInToolPreview,
   splitRuntimeEventsForIncrementalFinishTaskPreview,
   splitRuntimeEventsForIncrementalResponsesBuiltInToolPreview,
-} from './runtime-event-orchestrator.js';
+} from "./runtime-event-orchestrator.js";
 import {
   canDrainQueuedUserTurn,
   explicitWorkspaceFilesFromQueuedItem,
   turnSkillsFromQueuedItem,
   findQueuedUserTurnIndex,
   isSessionBundleQueueBlocked,
-  removeQueuedUserTurn,
   shiftNextQueuedUserTurn,
-} from './message-queue.js';
+} from "./message-queue.js";
 import {
   isSessionBundleBusy,
   shouldUseComposerDirectMediaTurn,
   startComposerDirectMediaTurn,
-} from './direct-media-turn.js';
-import { syncSubagentConversationProjections } from './subagent-conversation-projection.js';
-import { toRuntimeAskQuestionsResult } from './service-utils.js';
+} from "./direct-media-turn.js";
+import { syncSubagentConversationProjections } from "./subagent-conversation-projection.js";
+import { toRuntimeAskQuestionsResult } from "./service-utils.js";
 import {
   advancePendingWorktreeBootstrapCommand,
   abortPendingWorktreeBootstrap,
   shouldAdvanceWorktreeBootstrap,
   type WorktreeBootstrapHostContext,
-} from './worktree-bootstrap-orchestrator.js';
+} from "./worktree-bootstrap-orchestrator.js";
 
 type RuntimeEventsFacade = {
   applyRuntimeHostEvents(events: RuntimeEvent<DesktopToolRequest>[]): void;
@@ -81,11 +80,14 @@ export interface SubmitUserTurnAfterInitializedOptions {
 
 export interface SessionTurnOrchestratorContext {
   runSerialized<T>(work: () => Promise<T>, label?: string): Promise<T>;
-  ensureInitialized(workspaceRootOverride?: string, options?: { fastPath?: boolean }): Promise<void>;
+  ensureInitialized(
+    workspaceRootOverride?: string,
+    options?: { fastPath?: boolean },
+  ): Promise<void>;
   requireRuntime(): DesktopHostRuntime;
   requireState(): { workspaceRoot: string };
-  requireConfig(): import('./storage.js').DesktopConfigFile;
-  resolveApiKeyForConfigModel(model: import('../types.js').ModelRef): Promise<string | undefined>;
+  requireConfig(): import("./storage.js").DesktopConfigFile;
+  resolveApiKeyForConfigModel(model: import("../types.js").ModelRef): Promise<string | undefined>;
   activeBundle(): SessionBundle;
   allBundles(): Iterable<SessionBundle>;
   bundleNeedsRuntimeProjection(bundle: SessionBundle): boolean;
@@ -101,24 +103,41 @@ export interface SessionTurnOrchestratorContext {
   resolveTodoSessionKeyForBundle(bundle: SessionBundle): string;
   ensureActiveSession(displayText: string, bundle?: SessionBundle): void;
   prepareSessionTitleForFirstUserTurn(displayText: string, bundle?: SessionBundle): void;
-  reconcileTodoScopeAfterSessionPathChange(bundle: SessionBundle, previousSessionKey: string): Promise<void>;
-  maybeRefreshRuntimeAfterTodoScopeChange(bundle: SessionBundle, previousSessionKey: string): Promise<void>;
+  reconcileTodoScopeAfterSessionPathChange(
+    bundle: SessionBundle,
+    previousSessionKey: string,
+  ): Promise<void>;
+  maybeRefreshRuntimeAfterTodoScopeChange(
+    bundle: SessionBundle,
+    previousSessionKey: string,
+  ): Promise<void>;
   buildRewindCheckpointSnapshot(bundle?: SessionBundle): Promise<unknown>;
   allocateMessageId(bundle?: SessionBundle): number;
   resetStreamingPlacementState(full: boolean, bundle?: SessionBundle): void;
   persistCurrentSessionIfNeeded(bundle?: SessionBundle): Promise<void>;
   scheduleSessionTitleGenerationIfNeeded(seedText: string, bundle?: SessionBundle): void;
-  dispatchUserMessageExtensionEvent(text: string, displayText: string, messageId: number): Promise<void>;
+  dispatchUserMessageExtensionEvent(
+    text: string,
+    displayText: string,
+    messageId: number,
+  ): Promise<void>;
   ensureToolExecutor(bundle?: SessionBundle): Promise<unknown>;
   refreshArchiveFromRuntime(bundle?: SessionBundle): void;
-  recordRewindCheckpoint(messageId: number, beforeUserCheckpoint?: unknown, bundle?: SessionBundle): Promise<void>;
+  recordRewindCheckpoint(
+    messageId: number,
+    beforeUserCheckpoint?: unknown,
+    bundle?: SessionBundle,
+  ): Promise<void>;
   orchestrationFor(bundle: SessionBundle): TurnOrchestration;
   rebuildMessageTimelineFromMessages(bundle?: SessionBundle): void;
   flushDeferredRuntimeRefreshIfIdle(bundle?: SessionBundle): Promise<void>;
   refreshTodoSnapshotForBundle(bundle: SessionBundle): Promise<void>;
   buildSnapshot(): DesktopSnapshot;
   startDreamCollectorIfNeeded(): void;
-  persistSessionBundle(bundle: SessionBundle, options: { fromRuntime?: DesktopHostRuntime; bumpListSortAt?: boolean }): Promise<void>;
+  persistSessionBundle(
+    bundle: SessionBundle,
+    options: { fromRuntime?: DesktopHostRuntime; bumpListSortAt?: boolean },
+  ): Promise<void>;
   syncSubagentToolStreamingOutput(bundle: SessionBundle): void;
   markInterruptedToolsInCurrentTurn(): void;
   markAssistantMessageContinuable(content: string): void;
@@ -126,7 +145,9 @@ export interface SessionTurnOrchestratorContext {
   latestContinuableAssistantMessage(): ConversationMessageSnapshot | undefined;
   insertUserApprovalReplyMessage(content: string, pendingToolCallId?: string): void;
   normalizeApprovalDecision(decision: DesktopApprovalDecision | undefined): RuntimeApprovalDecision;
-  runSessionEndForActive?(reason: import('@spiritagent/agent-core').SessionEndHookInput['reason']): Promise<void>;
+  runSessionEndForActive?(
+    reason: import("@spiritagent/agent-core").SessionEndHookInput["reason"],
+  ): Promise<void>;
   worktreeBootstrapHost?: WorktreeBootstrapHostContext;
 }
 
@@ -138,12 +159,14 @@ export async function submitUserTurnAfterInitializedCommand(
   const bundle = options.bundle ?? ctx.activeBundle();
   const trimmed = text.trim();
   const explicitWorkspaceFiles = options.explicitWorkspaceFiles ?? [];
-  const displayText = (options.displayText ?? defaultDisplayTextForUserTurn(text, explicitWorkspaceFiles)).trim();
+  const displayText = (
+    options.displayText ?? defaultDisplayTextForUserTurn(text, explicitWorkspaceFiles)
+  ).trim();
   if (!trimmed && explicitWorkspaceFiles.length === 0) {
-    throw new Error(i18n.t('error.messageRequired'));
+    throw new Error(i18n.t("error.messageRequired"));
   }
   if (!displayText) {
-    throw new Error(i18n.t('error.messageRequired'));
+    throw new Error(i18n.t("error.messageRequired"));
   }
 
   const turnSkills = cloneActiveSkills(options.turnSkills ?? []);
@@ -155,7 +178,7 @@ export async function submitUserTurnAfterInitializedCommand(
 
   ctx.requireState();
   if (bundle.activeSession?.readOnly) {
-    throw new Error(i18n.t('error.readonlySessionSend'));
+    throw new Error(i18n.t("error.readonlySessionSend"));
   }
   if (!options.preserveRewindWarnings) {
     bundle.rewindWarnings = [];
@@ -173,7 +196,7 @@ export async function submitUserTurnAfterInitializedCommand(
       : undefined;
   const userMessage: ConversationMessageSnapshot = {
     id: options.preallocatedMessageId ?? ctx.allocateMessageId(bundle),
-    role: 'user',
+    role: "user",
     content: displayText,
     pending: false,
     ...(localFileAttachments ? { localFileAttachments } : {}),
@@ -209,11 +232,13 @@ export async function submitUserTurnAfterInitializedCommand(
       });
     } catch (error) {
       bundle.currentTurnSkills = [];
-      ctx.orchestrationFor(bundle).assistantMessages.handleMessageRemoved(
-        bundle.messages.length - 1,
-        userMessage.id,
-        'send-user-rollback',
-      );
+      ctx
+        .orchestrationFor(bundle)
+        .assistantMessages.handleMessageRemoved(
+          bundle.messages.length - 1,
+          userMessage.id,
+          "send-user-rollback",
+        );
       bundle.messages.pop();
       ctx.rebuildMessageTimelineFromMessages(bundle);
       throw error;
@@ -224,7 +249,7 @@ export async function submitUserTurnAfterInitializedCommand(
   // Re-resolve after promote/persist may have replaced bundle.runtime (todo scope refresh).
   const runtime = bundle.runtime;
   if (!runtime) {
-    throw new Error(i18n.t('error.runtimeNotReady'));
+    throw new Error(i18n.t("error.runtimeNotReady"));
   }
   try {
     await runtime.startUserTurnStreaming(trimmed, [], explicitWorkspaceFiles, turnSkills);
@@ -234,11 +259,13 @@ export async function submitUserTurnAfterInitializedCommand(
     applyDrainedRuntimeHostEvents(ctx, bundle, runtime.drainEvents());
   } catch (error) {
     bundle.currentTurnSkills = [];
-    ctx.orchestrationFor(bundle).assistantMessages.handleMessageRemoved(
-      bundle.messages.length - 1,
-      userMessage.id,
-      'send-user-rollback',
-    );
+    ctx
+      .orchestrationFor(bundle)
+      .assistantMessages.handleMessageRemoved(
+        bundle.messages.length - 1,
+        userMessage.id,
+        "send-user-rollback",
+      );
     bundle.messages.pop();
     ctx.rebuildMessageTimelineFromMessages(bundle);
     throw error;
@@ -261,18 +288,18 @@ export async function sendQueuedUserTurnNowCommand(
   const bundle = ctx.activeBundle();
   const index = findQueuedUserTurnIndex(bundle, queueId);
   if (index < 0) {
-    throw new Error(i18n.t('error.queuedUserTurnNotFound'));
+    throw new Error(i18n.t("error.queuedUserTurnNotFound"));
   }
   if (bundle.activeSession?.readOnly === true) {
-    throw new Error(i18n.t('error.readonlySessionSend'));
+    throw new Error(i18n.t("error.readonlySessionSend"));
   }
   if (isSessionBundleQueueBlocked(bundle)) {
-    throw new Error(i18n.t('error.pendingApprovalSend'));
+    throw new Error(i18n.t("error.pendingApprovalSend"));
   }
 
   const item = bundle.queuedUserTurns[index];
   if (!item) {
-    throw new Error(i18n.t('error.queuedUserTurnNotFound'));
+    throw new Error(i18n.t("error.queuedUserTurnNotFound"));
   }
 
   if (isSessionBundleBusy(bundle)) {
@@ -329,9 +356,9 @@ async function runSessionsPumpTick(ctx: SessionTurnOrchestratorContext): Promise
   const fullyTicked = new Set<SessionBundle>();
   for (const bundle of ctx.allBundles()) {
     if (
-      bundle.runtime?.isBusy()
-      || shouldAdvanceWorktreeBootstrap(bundle)
-      || ctx.bundleNeedsRuntimeProjection(bundle)
+      bundle.runtime?.isBusy() ||
+      shouldAdvanceWorktreeBootstrap(bundle) ||
+      ctx.bundleNeedsRuntimeProjection(bundle)
     ) {
       await tickSessionCommand(ctx, bundle);
       fullyTicked.add(bundle);
@@ -347,14 +374,14 @@ async function runSessionsPumpTick(ctx: SessionTurnOrchestratorContext): Promise
 
 /** SessionPump 每 tick 调用：与 pollCommand 同体，但不构建快照。 */
 export async function pumpSessionsCommand(ctx: SessionTurnOrchestratorContext): Promise<void> {
-  return ctx.runSerialized(() => runSessionsPumpTick(ctx), 'pump-tick');
+  return ctx.runSerialized(() => runSessionsPumpTick(ctx), "pump-tick");
 }
 
 export async function pollCommand(ctx: SessionTurnOrchestratorContext): Promise<DesktopSnapshot> {
   return ctx.runSerialized(async () => {
     await runSessionsPumpTick(ctx);
     return ctx.buildSnapshot();
-  }, 'poll');
+  }, "poll");
 }
 
 /** busy 期间 tick 落盘的最小间隔；回合终态与进入阻塞时不受此限制。 */
@@ -418,9 +445,7 @@ export async function tickSessionCommand(
   const busyAfterTick = bundle.runtime?.isBusy() === true;
   const blockedAfterTick = isRuntimeBlocked(bundle);
   const forcePersist =
-    (wasBusy && !busyAfterTick)
-    || (blockedAfterTick && !wasBlocked)
-    || consumedTurnResult;
+    (wasBusy && !busyAfterTick) || (blockedAfterTick && !wasBlocked) || consumedTurnResult;
   const persistDue =
     Date.now() - (bundle.lastTickPersistAtMs ?? 0) >= TICK_SESSION_PERSIST_INTERVAL_MS;
   if (forcePersist || persistDue) {
@@ -439,7 +464,10 @@ export async function abortConversationInContext(
   ctx: SessionTurnOrchestratorContext,
 ): Promise<boolean> {
   const bundle = ctx.activeBundle();
-  if (ctx.worktreeBootstrapHost && abortPendingWorktreeBootstrap(ctx, ctx.worktreeBootstrapHost, bundle)) {
+  if (
+    ctx.worktreeBootstrapHost &&
+    abortPendingWorktreeBootstrap(ctx, ctx.worktreeBootstrapHost, bundle)
+  ) {
     return true;
   }
 
@@ -447,12 +475,9 @@ export async function abortConversationInContext(
   const interruptedAssistantText = runtime.pendingAssistantText().trim();
   const interruptedThinkingText = runtime.thinkingText().trim();
   const interruptedCompactionText = runtime.compactionText().trim();
-  const interruptedAssistantAuxText =
-    interruptedThinkingText || interruptedCompactionText;
+  const interruptedAssistantAuxText = interruptedThinkingText || interruptedCompactionText;
   const interruptible =
-    runtime.isBusy() &&
-    !runtime.currentPendingApproval() &&
-    !runtime.currentPendingQuestions();
+    runtime.isBusy() && !runtime.currentPendingApproval() && !runtime.currentPendingQuestions();
 
   if (!interruptible) {
     return false;
@@ -482,12 +507,14 @@ export async function abortConversationInContext(
   return true;
 }
 
-export async function abortConversationCommand(ctx: SessionTurnOrchestratorContext): Promise<DesktopSnapshot> {
+export async function abortConversationCommand(
+  ctx: SessionTurnOrchestratorContext,
+): Promise<DesktopSnapshot> {
   return ctx.runSerialized(async () => {
     await ctx.ensureInitialized(undefined, { fastPath: true });
     const aborted = await abortConversationInContext(ctx);
     if (aborted) {
-      await ctx.runSessionEndForActive?.('abort');
+      await ctx.runSessionEndForActive?.("abort");
     }
     await drainQueuedUserTurnIfIdle(ctx, ctx.activeBundle());
     return ctx.buildSnapshot();
@@ -502,33 +529,34 @@ export async function continueAssistantCompletionCommand(
     await ctx.ensureInitialized(undefined, { fastPath: true });
     const runtime = ctx.requireRuntime();
     if (runtime.isBusy()) {
-      throw new Error(i18n.t('error.runtimeBusy'));
+      throw new Error(i18n.t("error.runtimeBusy"));
     }
     if (!Number.isFinite(messageId)) {
-      throw new Error(i18n.t('error.invalidMessageId'));
+      throw new Error(i18n.t("error.invalidMessageId"));
     }
 
     ctx.requireState();
     if (ctx.activeBundle().activeSession?.readOnly) {
-      throw new Error(i18n.t('error.readonlySessionContinue'));
+      throw new Error(i18n.t("error.readonlySessionContinue"));
     }
 
     const continuable = ctx.latestContinuableAssistantMessage();
     if (!continuable || continuable.id !== messageId) {
-      throw new Error(i18n.t('error.messageNotContinuable'));
+      throw new Error(i18n.t("error.messageNotContinuable"));
     }
 
-    const previousContinuationIds = ctx.activeBundle().messages
-      .filter((message) => message.canContinue === true)
+    const previousContinuationIds = ctx
+      .activeBundle()
+      .messages.filter((message) => message.canContinue === true)
       .map((message) => message.id);
     try {
       ctx.clearAssistantContinuationMarkers();
       ctx.resetStreamingPlacementState(false);
       await ctx.persistCurrentSessionIfNeeded();
-      ctx.activeBundle().nextTimelineAssistantSegmentKind = 'continuation';
+      ctx.activeBundle().nextTimelineAssistantSegmentKind = "continuation";
       await runtime.continueAssistantCompletionStreaming();
     } catch (error) {
-      ctx.activeBundle().nextTimelineAssistantSegmentKind = 'initial';
+      ctx.activeBundle().nextTimelineAssistantSegmentKind = "initial";
       for (const message of ctx.activeBundle().messages) {
         if (previousContinuationIds.includes(message.id)) {
           message.canContinue = true;
@@ -557,7 +585,7 @@ export async function replyPendingApprovalCommand(
     const runtime = ctx.requireRuntime();
     const pendingApproval = runtime.currentPendingApproval();
     const runtimeDecision = ctx.normalizeApprovalDecision(decision);
-    if (runtimeDecision.kind === 'guidance' && runtimeDecision.userMessage.trim()) {
+    if (runtimeDecision.kind === "guidance" && runtimeDecision.userMessage.trim()) {
       ctx.insertUserApprovalReplyMessage(
         runtimeDecision.userMessage.trim(),
         pendingApproval ? toolMessageKey(pendingApproval) : undefined,
@@ -615,8 +643,8 @@ export function applyDrainedRuntimeHostEvents(
   orchestration.runtimeEvents.applyRuntimeHostEvents(splitBuiltin.toApply);
   for (const event of splitBuiltin.toApply) {
     if (
-      event.kind === 'streaming-tool-preview'
-      && runtimeEventsIncludeAppliedResponsesBuiltInToolPreview([event])
+      event.kind === "streaming-tool-preview" &&
+      runtimeEventsIncludeAppliedResponsesBuiltInToolPreview([event])
     ) {
       bundle.responsesBuiltInPreviewSeenCallIds.add(event.toolCallId);
     }
@@ -639,18 +667,20 @@ function defaultDisplayTextForUserTurn(
   }
 
   if (explicitWorkspaceFiles.length === 0) {
-    return '';
+    return "";
   }
 
-  return i18n.t('error.attachedFiles', { files: explicitWorkspaceFiles.map((file) => path.basename(file.path)).join(', ') });
+  return i18n.t("error.attachedFiles", {
+    files: explicitWorkspaceFiles.map((file) => path.basename(file.path)).join(", "),
+  });
 }
 
 function pendingWorkspaceFilesToAttachmentSnapshots(
   files: readonly PendingWorkspaceFile[],
-): ConversationMessageSnapshot['localFileAttachments'] {
+): ConversationMessageSnapshot["localFileAttachments"] {
   return files.map((file) => ({
     path: file.path,
     name: path.basename(file.path),
-    isImage: file.kind === 'image',
+    isImage: file.kind === "image",
   }));
 }

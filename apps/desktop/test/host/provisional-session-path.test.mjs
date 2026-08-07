@@ -1,6 +1,6 @@
-import assert from 'node:assert/strict';
-import path from 'node:path';
-import { test } from 'node:test';
+import assert from "node:assert/strict";
+import path from "node:path";
+import { test } from "node:test";
 
 import {
   isProvisionalSessionPath,
@@ -8,21 +8,21 @@ import {
   parseSideChatPaneIdFromSessionPath,
   provisionalNewSessionPath,
   sideChatPaneSessionPath,
-} from '../../dist-electron/src/host/storage.js';
+} from "../../dist-electron/src/host/storage.js";
 
-test('sideChatPaneSessionPath normalizes pane id', () => {
-  const sessionPath = sideChatPaneSessionPath('pane/a');
+test("sideChatPaneSessionPath normalizes pane id", () => {
+  const sessionPath = sideChatPaneSessionPath("pane/a");
   assert.match(path.basename(sessionPath), /^side-chat-pane-a\.json$/u);
   assert.equal(isSideChatProvisionalSessionPath(sessionPath), true);
   assert.equal(isProvisionalSessionPath(sessionPath), true);
-  assert.equal(parseSideChatPaneIdFromSessionPath(sessionPath), 'pane-a');
+  assert.equal(parseSideChatPaneIdFromSessionPath(sessionPath), "pane-a");
 });
 
-test('isProvisionalSessionPath detects provisional chat paths only', () => {
-  const provisionalPath = provisionalNewSessionPath('D:/SpiritAgent/repo');
+test("isProvisionalSessionPath detects provisional chat paths only", () => {
+  const provisionalPath = provisionalNewSessionPath("D:/SpiritAgent/repo");
   assert.equal(isProvisionalSessionPath(provisionalPath), true);
   assert.equal(
-    isProvisionalSessionPath(path.join(path.dirname(provisionalPath), '..', 'chat-1.json')),
+    isProvisionalSessionPath(path.join(path.dirname(provisionalPath), "..", "chat-1.json")),
     false,
   );
 });

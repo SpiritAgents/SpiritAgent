@@ -1,42 +1,47 @@
-import { useCallback, useRef, useState } from 'react'
-import { useTranslation } from 'react-i18next'
+import { useCallback, useRef, useState } from "react";
+import { useTranslation } from "react-i18next";
 
-import { AtSign, File, Plus } from 'lucide-react'
+import { AtSign, File, Plus } from "lucide-react";
 
-import { Button } from '@/components/ui/button'
+import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu'
-import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip'
+} from "@/components/ui/dropdown-menu";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import {
   DESKTOP_OVERLAY_LIST_DROPDOWN_SURFACE,
   DESKTOP_OVERLAY_LIST_ITEM,
   DESKTOP_OVERLAY_LIST_LIST_GAP,
   DESKTOP_OVERLAY_LIST_LIST_PADDING,
   instantHoverMotionClass,
-} from '@/lib/desktop-chrome'
-import { FONT_WEIGHT_MEDIUM } from '@/lib/desktop-typography'
-import { cn } from '@/lib/utils'
+} from "@/lib/desktop-chrome";
+import { FONT_WEIGHT_MEDIUM } from "@/lib/desktop-typography";
+import { cn } from "@/lib/utils";
 
 type ComposerInsertMenuProps = {
-  disabled?: boolean
-  canPickLocalFile?: boolean
-  onInsertWorkspaceReference(): void
-  onPickLocalFile(): void | Promise<void>
-  onInsertSkillTrigger(): void
-}
+  disabled?: boolean;
+  canPickLocalFile?: boolean;
+  onInsertWorkspaceReference(): void;
+  onPickLocalFile(): void | Promise<void>;
+  onInsertSkillTrigger(): void;
+};
 
-type PendingInsertAction = 'at' | 'slash' | 'local'
+type PendingInsertAction = "at" | "slash" | "local";
 
 function SlashBadge() {
   return (
-    <span className={cn("inline-flex size-4 shrink-0 items-center justify-center rounded-sm bg-muted/65 text-[10px] text-muted-foreground", FONT_WEIGHT_MEDIUM)}>
+    <span
+      className={cn(
+        "inline-flex size-4 shrink-0 items-center justify-center rounded-sm bg-muted/65 text-[10px] text-muted-foreground",
+        FONT_WEIGHT_MEDIUM,
+      )}
+    >
       /
     </span>
-  )
+  );
 }
 
 export function ComposerInsertMenu({
@@ -46,33 +51,36 @@ export function ComposerInsertMenu({
   onPickLocalFile,
   onInsertSkillTrigger,
 }: ComposerInsertMenuProps) {
-  const { t } = useTranslation()
-  const [menuOpen, setMenuOpen] = useState(false)
-  const pendingActionRef = useRef<PendingInsertAction | null>(null)
-  const suppressTooltip = menuOpen || disabled
+  const { t } = useTranslation();
+  const [menuOpen, setMenuOpen] = useState(false);
+  const pendingActionRef = useRef<PendingInsertAction | null>(null);
+  const suppressTooltip = menuOpen || disabled;
 
-  const handleMenuOpenChange = useCallback((open: boolean) => {
-    setMenuOpen(open)
-    if (open) {
-      return
-    }
-    const action = pendingActionRef.current
-    if (!action) {
-      return
-    }
-    pendingActionRef.current = null
-    switch (action) {
-      case 'at':
-        onInsertWorkspaceReference()
-        break
-      case 'slash':
-        onInsertSkillTrigger()
-        break
-      case 'local':
-        void onPickLocalFile()
-        break
-    }
-  }, [onInsertSkillTrigger, onInsertWorkspaceReference, onPickLocalFile])
+  const handleMenuOpenChange = useCallback(
+    (open: boolean) => {
+      setMenuOpen(open);
+      if (open) {
+        return;
+      }
+      const action = pendingActionRef.current;
+      if (!action) {
+        return;
+      }
+      pendingActionRef.current = null;
+      switch (action) {
+        case "at":
+          onInsertWorkspaceReference();
+          break;
+        case "slash":
+          onInsertSkillTrigger();
+          break;
+        case "local":
+          void onPickLocalFile();
+          break;
+      }
+    },
+    [onInsertSkillTrigger, onInsertWorkspaceReference, onPickLocalFile],
+  );
 
   return (
     <DropdownMenu modal onOpenChange={handleMenuOpenChange}>
@@ -87,11 +95,11 @@ export function ComposerInsertMenu({
               type="button"
               variant="ghost"
               size="icon"
-              aria-label={t('composer.openInsertPanel')}
+              aria-label={t("composer.openInsertPanel")}
               disabled={disabled}
               className={cn(
-                'size-7 shrink-0 rounded-full p-0 text-muted-foreground shadow-none hover:bg-muted/50 hover:text-sidebar-foreground',
-                'aria-expanded:bg-muted/35 aria-expanded:text-sidebar-foreground aria-expanded:hover:bg-muted/50',
+                "size-7 shrink-0 rounded-full p-0 text-muted-foreground shadow-none hover:bg-muted/50 hover:text-sidebar-foreground",
+                "aria-expanded:bg-muted/35 aria-expanded:text-sidebar-foreground aria-expanded:hover:bg-muted/50",
                 instantHoverMotionClass,
               )}
             >
@@ -100,7 +108,7 @@ export function ComposerInsertMenu({
           </DropdownMenuTrigger>
         </TooltipTrigger>
         <TooltipContent side="top" sideOffset={4}>
-          {t('composer.insert')}
+          {t("composer.insert")}
         </TooltipContent>
       </Tooltip>
       <DropdownMenuContent
@@ -108,10 +116,10 @@ export function ComposerInsertMenu({
         side="top"
         sideOffset={10}
         onCloseAutoFocus={(event) => {
-          event.preventDefault()
+          event.preventDefault();
         }}
         className={cn(
-          'flex w-max min-w-[11rem] max-w-[min(15rem,calc(100vw-1.25rem))] flex-col',
+          "flex w-max min-w-[11rem] max-w-[min(15rem,calc(100vw-1.25rem))] flex-col",
           DESKTOP_OVERLAY_LIST_DROPDOWN_SURFACE,
           DESKTOP_OVERLAY_LIST_LIST_PADDING,
           DESKTOP_OVERLAY_LIST_LIST_GAP,
@@ -119,45 +127,45 @@ export function ComposerInsertMenu({
       >
         <DropdownMenuItem
           className={cn(
-            'flex w-full cursor-pointer select-none items-center gap-2 rounded-sm text-left outline-none',
+            "flex w-full cursor-pointer select-none items-center gap-2 rounded-sm text-left outline-none",
             DESKTOP_OVERLAY_LIST_ITEM,
-            'text-popover-foreground',
+            "text-popover-foreground",
           )}
           onSelect={() => {
-            pendingActionRef.current = 'at'
+            pendingActionRef.current = "at";
           }}
         >
           <AtSign className="size-4 shrink-0 text-muted-foreground" aria-hidden />
-          <span className="min-w-0 flex-1 truncate">{t('composer.insertWorkspaceFile')}</span>
+          <span className="min-w-0 flex-1 truncate">{t("composer.insertWorkspaceFile")}</span>
         </DropdownMenuItem>
         <DropdownMenuItem
           disabled={!canPickLocalFile}
           className={cn(
-            'flex w-full cursor-pointer select-none items-center gap-2 rounded-sm text-left outline-none',
+            "flex w-full cursor-pointer select-none items-center gap-2 rounded-sm text-left outline-none",
             DESKTOP_OVERLAY_LIST_ITEM,
-            'text-popover-foreground',
+            "text-popover-foreground",
           )}
           onSelect={() => {
-            pendingActionRef.current = 'local'
+            pendingActionRef.current = "local";
           }}
         >
           <File className="size-4 shrink-0 text-muted-foreground" aria-hidden />
-          <span className="min-w-0 flex-1 truncate">{t('composer.selectLocalFile')}</span>
+          <span className="min-w-0 flex-1 truncate">{t("composer.selectLocalFile")}</span>
         </DropdownMenuItem>
         <DropdownMenuItem
           className={cn(
-            'flex w-full cursor-pointer select-none items-center gap-2 rounded-sm text-left outline-none',
+            "flex w-full cursor-pointer select-none items-center gap-2 rounded-sm text-left outline-none",
             DESKTOP_OVERLAY_LIST_ITEM,
-            'text-popover-foreground',
+            "text-popover-foreground",
           )}
           onSelect={() => {
-            pendingActionRef.current = 'slash'
+            pendingActionRef.current = "slash";
           }}
         >
           <SlashBadge />
-          <span className="min-w-0 flex-1 truncate">{t('composer.slashCommand')}</span>
+          <span className="min-w-0 flex-1 truncate">{t("composer.slashCommand")}</span>
         </DropdownMenuItem>
       </DropdownMenuContent>
     </DropdownMenu>
-  )
+  );
 }

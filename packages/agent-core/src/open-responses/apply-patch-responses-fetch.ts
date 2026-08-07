@@ -1,15 +1,18 @@
-import { getLlmFetch } from '../llm-fetch.js';
-import type { JsonObject, JsonValue } from '../ports.js';
-import { isJsonObject } from '../tool-agent.js';
+import { getLlmFetch } from "../llm-fetch.js";
+import type { JsonObject, JsonValue } from "../ports.js";
+import { isJsonObject } from "../tool-agent.js";
 import {
   extractApplyPatchCallsFromResponsesBody,
   patchResponsesRequestBodyForApplyPatch,
   registerPendingApplyPatchCallIds,
   stashLastExtractedApplyPatchCalls,
   stripApplyPatchCallsFromResponsesBody,
-} from './apply-patch-bridge.js';
-import { shouldUseApplyPatchFileTools, shouldUseOpenAiSdkApplyPatchTool } from './apply-patch-eligibility.js';
-import type { OpenResponsesTransportConfig } from './responses-compat.js';
+} from "./apply-patch-bridge.js";
+import {
+  shouldUseApplyPatchFileTools,
+  shouldUseOpenAiSdkApplyPatchTool,
+} from "./apply-patch-eligibility.js";
+import type { OpenResponsesTransportConfig } from "./responses-compat.js";
 
 type FetchFn = typeof fetch;
 
@@ -42,7 +45,7 @@ function patchRequestInitBody(
   init: RequestInit | undefined,
   config: OpenResponsesTransportConfig,
 ): RequestInit | undefined {
-  if (!init?.body || typeof init.body !== 'string') {
+  if (!init?.body || typeof init.body !== "string") {
     return init;
   }
 
@@ -69,8 +72,8 @@ function patchRequestInitBody(
 }
 
 async function patchResponsesJsonResponse(response: Response): Promise<Response> {
-  const contentType = response.headers.get('content-type') ?? '';
-  if (!contentType.includes('application/json')) {
+  const contentType = response.headers.get("content-type") ?? "";
+  if (!contentType.includes("application/json")) {
     return response;
   }
 

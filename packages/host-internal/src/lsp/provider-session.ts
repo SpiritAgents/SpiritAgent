@@ -1,17 +1,13 @@
-import { readFile } from 'node:fs/promises';
+import { readFile } from "node:fs/promises";
 
-import { DEFAULT_LSP_TIMING, type LspTimingConfig } from './config.js';
-import { LspConnection } from './connection.js';
-import { LspDocumentStore } from './document-store.js';
-import { LspDisabledError, LspTimeoutError } from './errors.js';
-import type { LspDiagnostic, LspFileChangeNotification } from '@spiritagent/agent-core';
-import {
-  fileUriForResolvedPath,
-  normalizeLspFileUri,
-  relativePathFromWorkspace,
-} from './paths.js';
-import type { LspProviderId } from './providers.js';
-import type { ResolvedLanguageServerCommand } from './resolve-server.js';
+import { DEFAULT_LSP_TIMING, type LspTimingConfig } from "./config.js";
+import { LspConnection } from "./connection.js";
+import { LspDocumentStore } from "./document-store.js";
+import { LspDisabledError, LspTimeoutError } from "./errors.js";
+import type { LspDiagnostic, LspFileChangeNotification } from "@spiritagent/agent-core";
+import { fileUriForResolvedPath, normalizeLspFileUri, relativePathFromWorkspace } from "./paths.js";
+import type { LspProviderId } from "./providers.js";
+import type { ResolvedLanguageServerCommand } from "./resolve-server.js";
 
 export interface LspProviderSessionOptions {
   providerId: LspProviderId;
@@ -23,7 +19,10 @@ export interface LspProviderSessionOptions {
 export class LspProviderSession {
   private readonly documentStore = new LspDocumentStore();
   private readonly diagnosticsByUri = new Map<string, LspDiagnostic[]>();
-  private readonly diagnosticWaiters = new Map<string, Set<(diagnostics: LspDiagnostic[]) => void>>();
+  private readonly diagnosticWaiters = new Map<
+    string,
+    Set<(diagnostics: LspDiagnostic[]) => void>
+  >();
   private readonly debounceTimers = new Map<string, ReturnType<typeof setTimeout>>();
   private readonly pendingSync = new Map<string, LspFileChangeNotification>();
 
@@ -76,7 +75,7 @@ export class LspProviderSession {
     }
 
     const uri = fileUriForResolvedPath(notification.resolvedPath);
-    if (notification.kind === 'delete_file' || !notification.after.exists) {
+    if (notification.kind === "delete_file" || !notification.after.exists) {
       this.clearDebounce(uri);
       this.pendingSync.delete(uri);
       await this.ensureStarted();
@@ -84,7 +83,7 @@ export class LspProviderSession {
       return;
     }
 
-    const text = notification.after.content ?? '';
+    const text = notification.after.content ?? "";
     this.pendingSync.set(uri, {
       ...notification,
       after: { exists: true, content: text },
@@ -146,7 +145,7 @@ export class LspProviderSession {
       return;
     }
     this.pendingSync.delete(uri);
-    const text = notification.after.content ?? '';
+    const text = notification.after.content ?? "";
     await this.ensureStarted();
     const connection = this.connection?.connection;
     if (!connection) {
@@ -160,7 +159,7 @@ export class LspProviderSession {
         resolvedPath: notification.resolvedPath,
         text,
       });
-      connection.sendNotification('textDocument/didOpen', {
+      connection.sendNotification("textDocument/didOpen", {
         textDocument: {
           uri: opened.uri,
           languageId: opened.languageId,
@@ -175,7 +174,7 @@ export class LspProviderSession {
     if (!updated) {
       return;
     }
-    connection.sendNotification('textDocument/didChange', {
+    connection.sendNotification("textDocument/didChange", {
       textDocument: { uri, version: updated.version },
       contentChanges: [{ text }],
     });
@@ -227,9 +226,9 @@ export class LspProviderSession {
   }
 
   private async openOrSyncDocument(resolvedPath: string): Promise<void> {
-    const text = await readFile(resolvedPath, 'utf8');
+    const text = await readFile(resolvedPath, "utf8");
     await this.syncFileChange({
-      kind: 'edit_file',
+      kind: "edit_file",
       path: relativePathFromWorkspace(this.options.workspaceRoot, resolvedPath),
       resolvedPath,
       before: { exists: true, content: text },
@@ -241,7 +240,7 @@ export class LspProviderSession {
   private async closeDocument(uri: string): Promise<void> {
     const connection = this.connection?.connection;
     if (connection && this.documentStore.has(uri)) {
-      connection.sendNotification('textDocument/didClose', {
+      connection.sendNotification("textDocument/didClose", {
         textDocument: { uri },
       });
     }

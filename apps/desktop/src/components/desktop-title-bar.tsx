@@ -46,8 +46,7 @@ const TITLE_BAR_ICON_PX = 14;
 const TITLE_BAR_ICON_MICA_PX = 20;
 
 /** 与侧栏交互项默认字色一致（`text-sidebar-action-foreground`） */
-const TITLE_BAR_MENUBAR_TRIGGER_CLASS =
-  "px-2 py-1 text-[13px] text-sidebar-action-foreground";
+const TITLE_BAR_MENUBAR_TRIGGER_CLASS = "px-2 py-1 text-[13px] text-sidebar-action-foreground";
 
 function execWindowAction(action: string): void {
   void window.spiritDesktop?.executeWindowAction(action);
@@ -93,20 +92,20 @@ function TitleBarMenuCluster({
       <TitleBarAppIcon useMicaBackdrop={useMicaBackdrop} />
       <Menubar
         className="h-auto border-none bg-transparent p-0 shadow-none"
-        aria-label={t('titleBar.appMenu')}
+        aria-label={t("titleBar.appMenu")}
       >
         <MenubarMenu>
           <MenubarTrigger className={TITLE_BAR_MENUBAR_TRIGGER_CLASS}>
-            {t('titleBar.file')}
+            {t("titleBar.file")}
           </MenubarTrigger>
           <MenubarContent>
             <MenubarItem onSelect={() => void window.spiritDesktop?.resetSession()}>
-              {t('titleBar.newSession')}
+              {t("titleBar.newSession")}
               <MenubarShortcut>Ctrl+N</MenubarShortcut>
             </MenubarItem>
             <MenubarSeparator />
-            <MenubarItem onSelect={() => execWindowAction('quit')}>
-              {t('titleBar.quit')}
+            <MenubarItem onSelect={() => execWindowAction("quit")}>
+              {t("titleBar.quit")}
               <MenubarShortcut>Ctrl+Q</MenubarShortcut>
             </MenubarItem>
           </MenubarContent>
@@ -114,32 +113,32 @@ function TitleBarMenuCluster({
 
         <MenubarMenu>
           <MenubarTrigger className={TITLE_BAR_MENUBAR_TRIGGER_CLASS}>
-            {t('titleBar.edit')}
+            {t("titleBar.edit")}
           </MenubarTrigger>
           <MenubarContent>
-            <MenubarItem onSelect={() => document.execCommand('undo')}>
-              {t('titleBar.undo')}
+            <MenubarItem onSelect={() => document.execCommand("undo")}>
+              {t("titleBar.undo")}
               <MenubarShortcut>Ctrl+Z</MenubarShortcut>
             </MenubarItem>
-            <MenubarItem onSelect={() => document.execCommand('redo')}>
-              {t('titleBar.redo')}
+            <MenubarItem onSelect={() => document.execCommand("redo")}>
+              {t("titleBar.redo")}
               <MenubarShortcut>Ctrl+Y</MenubarShortcut>
             </MenubarItem>
             <MenubarSeparator />
-            <MenubarItem onSelect={() => document.execCommand('cut')}>
-              {t('titleBar.cut')}
+            <MenubarItem onSelect={() => document.execCommand("cut")}>
+              {t("titleBar.cut")}
               <MenubarShortcut>Ctrl+X</MenubarShortcut>
             </MenubarItem>
-            <MenubarItem onSelect={() => document.execCommand('copy')}>
-              {t('titleBar.copy')}
+            <MenubarItem onSelect={() => document.execCommand("copy")}>
+              {t("titleBar.copy")}
               <MenubarShortcut>Ctrl+C</MenubarShortcut>
             </MenubarItem>
-            <MenubarItem onSelect={() => document.execCommand('paste')}>
-              {t('titleBar.paste')}
+            <MenubarItem onSelect={() => document.execCommand("paste")}>
+              {t("titleBar.paste")}
               <MenubarShortcut>Ctrl+V</MenubarShortcut>
             </MenubarItem>
-            <MenubarItem onSelect={() => document.execCommand('selectAll')}>
-              {t('titleBar.selectAll')}
+            <MenubarItem onSelect={() => document.execCommand("selectAll")}>
+              {t("titleBar.selectAll")}
               <MenubarShortcut>Ctrl+A</MenubarShortcut>
             </MenubarItem>
           </MenubarContent>
@@ -147,41 +146,41 @@ function TitleBarMenuCluster({
 
         <MenubarMenu>
           <MenubarTrigger className={TITLE_BAR_MENUBAR_TRIGGER_CLASS}>
-            {t('titleBar.view')}
+            {t("titleBar.view")}
           </MenubarTrigger>
           <MenubarContent>
             {isDevChrome && (
               <>
-                <MenubarItem onSelect={() => execWindowAction('reload')}>
-                  {t('titleBar.reload')}
+                <MenubarItem onSelect={() => execWindowAction("reload")}>
+                  {t("titleBar.reload")}
                   <MenubarShortcut>Ctrl+R</MenubarShortcut>
                 </MenubarItem>
-                <MenubarItem onSelect={() => execWindowAction('forceReload')}>
-                  {t('titleBar.forceReload')}
+                <MenubarItem onSelect={() => execWindowAction("forceReload")}>
+                  {t("titleBar.forceReload")}
                   <MenubarShortcut>Ctrl+Shift+R</MenubarShortcut>
                 </MenubarItem>
-                <MenubarItem onSelect={() => execWindowAction('toggleDevTools')}>
-                  {t('titleBar.devTools')}
+                <MenubarItem onSelect={() => execWindowAction("toggleDevTools")}>
+                  {t("titleBar.devTools")}
                   <MenubarShortcut>F12</MenubarShortcut>
                 </MenubarItem>
                 <MenubarSeparator />
               </>
             )}
             <MenubarItem onSelect={onZoomIn}>
-              {t('titleBar.zoomIn')}
+              {t("titleBar.zoomIn")}
               <MenubarShortcut>Ctrl+=</MenubarShortcut>
             </MenubarItem>
             <MenubarItem onSelect={onZoomOut}>
-              {t('titleBar.zoomOut')}
+              {t("titleBar.zoomOut")}
               <MenubarShortcut>Ctrl+-</MenubarShortcut>
             </MenubarItem>
             <MenubarItem onSelect={onZoomReset}>
-              {t('titleBar.zoomReset')}
+              {t("titleBar.zoomReset")}
               <MenubarShortcut>Ctrl+0</MenubarShortcut>
             </MenubarItem>
             <MenubarSeparator />
-            <MenubarItem onSelect={() => execWindowAction('toggleFullscreen')}>
-              {t('titleBar.toggleFullscreen')}
+            <MenubarItem onSelect={() => execWindowAction("toggleFullscreen")}>
+              {t("titleBar.toggleFullscreen")}
               <MenubarShortcut>F11</MenubarShortcut>
             </MenubarItem>
           </MenubarContent>
@@ -189,19 +188,19 @@ function TitleBarMenuCluster({
 
         <MenubarMenu>
           <MenubarTrigger className={TITLE_BAR_MENUBAR_TRIGGER_CLASS}>
-            {t('titleBar.window')}
+            {t("titleBar.window")}
           </MenubarTrigger>
           <MenubarContent>
-            <MenubarItem onSelect={() => execWindowAction('minimize')}>
-              {t('titleBar.minimize')}
+            <MenubarItem onSelect={() => execWindowAction("minimize")}>
+              {t("titleBar.minimize")}
               <MenubarShortcut>Win+↓</MenubarShortcut>
             </MenubarItem>
-            <MenubarItem onSelect={() => execWindowAction('maximize')}>
-              {t('titleBar.maximize')}
+            <MenubarItem onSelect={() => execWindowAction("maximize")}>
+              {t("titleBar.maximize")}
               <MenubarShortcut>Win+↑</MenubarShortcut>
             </MenubarItem>
-            <MenubarItem onSelect={() => execWindowAction('close')}>
-              {t('titleBar.close')}
+            <MenubarItem onSelect={() => execWindowAction("close")}>
+              {t("titleBar.close")}
               <MenubarShortcut>Alt+F4</MenubarShortcut>
             </MenubarItem>
           </MenubarContent>
@@ -209,11 +208,11 @@ function TitleBarMenuCluster({
 
         <MenubarMenu>
           <MenubarTrigger className={TITLE_BAR_MENUBAR_TRIGGER_CLASS}>
-            {t('titleBar.help')}
+            {t("titleBar.help")}
           </MenubarTrigger>
           <MenubarContent>
-            <MenubarItem onSelect={() => execWindowAction('showAbout')}>
-              {t('titleBar.about')}
+            <MenubarItem onSelect={() => execWindowAction("showAbout")}>
+              {t("titleBar.about")}
             </MenubarItem>
           </MenubarContent>
         </MenubarMenu>
@@ -269,10 +268,7 @@ export function DesktopTitleBar({
           onZoomReset={onZoomReset}
         />
       </div>
-      <div
-        className="electron-drag relative h-full min-w-0 flex-1"
-        aria-hidden
-      />
+      <div className="electron-drag relative h-full min-w-0 flex-1" aria-hidden />
     </header>
   );
 }

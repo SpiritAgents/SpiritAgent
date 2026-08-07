@@ -1,25 +1,25 @@
-import { HfInference } from '@huggingface/inference';
+import { HfInference } from "@huggingface/inference";
 
-import { resolveHuggingFaceInferenceProvider } from '../huggingface/inference-provider.js';
-import type { OpenAiVideoGenerationConfig } from '../openai/openai-compat.js';
+import { resolveHuggingFaceInferenceProvider } from "../huggingface/inference-provider.js";
+import type { OpenAiVideoGenerationConfig } from "../openai/openai-compat.js";
 import type {
   GeneratedVideoFile,
   GeneratedVideoSaveRequest,
   ToolExecutionOutput,
   VideoGenerationRequest,
-} from '../ports.js';
-import { buildGeneratedVideoToolOutput } from './output.js';
-import type { VideoGenerationBackend } from './types.js';
+} from "../ports.js";
+import { buildGeneratedVideoToolOutput } from "./output.js";
+import type { VideoGenerationBackend } from "./types.js";
 
 const DEFAULT_HUGGING_FACE_VIDEO_TIMEOUT_MS = 10 * 60 * 1000;
 
 function blobMediaType(blob: Blob): string {
-  const type = blob.type?.split(';')[0]?.trim();
-  return type && type.length > 0 ? type : 'video/mp4';
+  const type = blob.type?.split(";")[0]?.trim();
+  return type && type.length > 0 ? type : "video/mp4";
 }
 
 export class HuggingFaceVideoBackend implements VideoGenerationBackend {
-  readonly id = 'huggingface';
+  readonly id = "huggingface";
 
   async generate(
     config: OpenAiVideoGenerationConfig,
@@ -31,7 +31,7 @@ export class HuggingFaceVideoBackend implements VideoGenerationBackend {
       ...(config.inferenceProvider ? { inferenceProvider: config.inferenceProvider } : {}),
     });
 
-    console.error('[agent-core][generate-video] request.start', {
+    console.error("[agent-core][generate-video] request.start", {
       adapter: this.id,
       model: config.model,
       provider,
@@ -42,17 +42,23 @@ export class HuggingFaceVideoBackend implements VideoGenerationBackend {
 
     const hf = new HfInference(config.apiKey);
     const abortController = new AbortController();
-    const timeout = setTimeout(() => abortController.abort(), DEFAULT_HUGGING_FACE_VIDEO_TIMEOUT_MS);
+    const timeout = setTimeout(
+      () => abortController.abort(),
+      DEFAULT_HUGGING_FACE_VIDEO_TIMEOUT_MS,
+    );
 
     let blob: Blob;
     try {
-      blob = await hf.textToVideo({
-        model: config.model,
-        inputs: request.prompt,
-        ...(provider ? { provider: provider as never } : {}),
-      }, {
-        signal: abortController.signal,
-      });
+      blob = await hf.textToVideo(
+        {
+          model: config.model,
+          inputs: request.prompt,
+          ...(provider ? { provider: provider as never } : {}),
+        },
+        {
+          signal: abortController.signal,
+        },
+      );
     } finally {
       clearTimeout(timeout);
     }
@@ -66,7 +72,7 @@ export class HuggingFaceVideoBackend implements VideoGenerationBackend {
       model: config.model,
     });
 
-    console.error('[agent-core][generate-video] request.success', {
+    console.error("[agent-core][generate-video] request.success", {
       adapter: this.id,
       model: config.model,
       mimeType: saved.mimeType,

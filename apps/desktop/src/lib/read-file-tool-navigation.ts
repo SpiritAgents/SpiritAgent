@@ -1,11 +1,11 @@
-import { isMarkdownPath, looksLikeAbsolutePath } from '@/lib/file-picker-path';
-import { parseReadFilePathFromToolSnapshot } from '@/lib/read-file-skill-display';
-import { normalizeWorkspaceEntryRel } from '@/lib/workspace-entry-path-sync';
-import type { EditorFileTarget } from '@/lib/workspace-editor-navigation';
-import type { ToolBlockSnapshot } from '@/types';
+import { isMarkdownPath, looksLikeAbsolutePath } from "@/lib/file-picker-path";
+import { parseReadFilePathFromToolSnapshot } from "@/lib/read-file-skill-display";
+import { normalizeWorkspaceEntryRel } from "@/lib/workspace-entry-path-sync";
+import type { EditorFileTarget } from "@/lib/workspace-editor-navigation";
+import type { ToolBlockSnapshot } from "@/types";
 
 function normalizePathForCompare(path: string): string {
-  return path.replace(/\\/g, '/').replace(/\/+$/u, '');
+  return path.replace(/\\/g, "/").replace(/\/+$/u, "");
 }
 
 function isWindowsStylePath(path: string): boolean {
@@ -49,14 +49,14 @@ export function tryResolveWorkspaceRelativePath(
   const rootNormalized = normalizePathForCompare(root);
   const absoluteNormalized = normalizePathForCompare(absolute);
   if (pathsEqual(rootNormalized, absoluteNormalized)) {
-    return '.';
+    return ".";
   }
-  const suffix = absoluteNormalized.slice(rootNormalized.length).replace(/^\//u, '');
-  return normalizeWorkspaceEntryRel(suffix) || '.';
+  const suffix = absoluteNormalized.slice(rootNormalized.length).replace(/^\//u, "");
+  return normalizeWorkspaceEntryRel(suffix) || ".";
 }
 
-function viewModeForPath(path: string): EditorFileTarget['viewMode'] {
-  return isMarkdownPath(path) ? 'preview' : 'edit';
+function viewModeForPath(path: string): EditorFileTarget["viewMode"] {
+  return isMarkdownPath(path) ? "preview" : "edit";
 }
 
 export function resolveReadFileEditorTarget(
@@ -71,7 +71,7 @@ export function resolveReadFileEditorTarget(
   if (!looksLikeAbsolutePath(trimmed)) {
     const relativePath = normalizeWorkspaceEntryRel(trimmed);
     return {
-      scope: 'workspace',
+      scope: "workspace",
       relativePath,
       viewMode: viewModeForPath(relativePath),
     };
@@ -80,21 +80,21 @@ export function resolveReadFileEditorTarget(
   const relativePath = tryResolveWorkspaceRelativePath(workspaceRoot, trimmed);
   if (relativePath) {
     return {
-      scope: 'workspace',
+      scope: "workspace",
       relativePath,
       viewMode: viewModeForPath(relativePath),
     };
   }
 
   return {
-    scope: 'external',
+    scope: "external",
     absolutePath: trimmed,
     viewMode: viewModeForPath(trimmed),
   };
 }
 
 export function resolveReadFileTargetFromTool(
-  tool: Pick<ToolBlockSnapshot, 'argsExcerpt' | 'headline' | 'detailLines'>,
+  tool: Pick<ToolBlockSnapshot, "argsExcerpt" | "headline" | "detailLines">,
   workspaceRoot: string,
 ): EditorFileTarget | null {
   const rawPath = parseReadFilePathFromToolSnapshot(tool);

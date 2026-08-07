@@ -1,21 +1,21 @@
-import { createHash } from 'node:crypto';
-import { existsSync, readFileSync, realpathSync } from 'node:fs';
-import { mkdir, readFile, writeFile } from 'node:fs/promises';
-import { join } from 'node:path';
+import { createHash } from "node:crypto";
+import { existsSync, readFileSync, realpathSync } from "node:fs";
+import { mkdir, readFile, writeFile } from "node:fs/promises";
+import { join } from "node:path";
 
 import {
   HOOK_EVENT_NAMES,
   resolveHookCommandPath,
   type HookEventName,
   type ResolvedHookDefinition,
-} from '@spiritagent/agent-core';
+} from "@spiritagent/agent-core";
 
-import type { LoadedHooksConfig } from './loader.js';
+import type { LoadedHooksConfig } from "./loader.js";
 
-export const WORKSPACE_CAPABILITY_TRUST_FILE = 'workspace-capability-trust.json';
+export const WORKSPACE_CAPABILITY_TRUST_FILE = "workspace-capability-trust.json";
 export const WORKSPACE_CAPABILITY_TRUST_VERSION = 1 as const;
 
-export type WorkspaceCapabilityTrustDecision = 'allowOnce' | 'deny' | 'alwaysTrust';
+export type WorkspaceCapabilityTrustDecision = "allowOnce" | "deny" | "alwaysTrust";
 
 export interface WorkspaceHookTrustListEntry {
   event: HookEventName;
@@ -34,7 +34,7 @@ export interface WorkspaceCapabilityTrustRequest {
 export interface WorkspaceCapabilityTrustRecord {
   workspaceRoot: string;
   contentHash: string;
-  decision: 'allow';
+  decision: "allow";
   decidedAt: string;
 }
 
@@ -87,7 +87,7 @@ export function listWorkspaceHookTrustEntries(
       try {
         resolvedPath = resolveHookCommandPath({
           ...entry,
-          scope: 'workspace',
+          scope: "workspace",
           configDir: loaded.workspaceConfigDir,
           ...(entry.timeout !== undefined ? { timeout: entry.timeout } : {}),
         });
@@ -110,27 +110,27 @@ export function computeWorkspaceHooksContentHash(loaded: LoadedHooksConfig): str
     return undefined;
   }
 
-  const hash = createHash('sha256');
+  const hash = createHash("sha256");
   hash.update(JSON.stringify(loaded.workspace));
   for (const entry of entries) {
-    hash.update('\0');
+    hash.update("\0");
     hash.update(entry.event);
-    hash.update('\0');
+    hash.update("\0");
     hash.update(entry.command);
-    hash.update('\0');
+    hash.update("\0");
     hash.update(entry.resolvedPath);
-    hash.update('\0');
+    hash.update("\0");
     if (existsSync(entry.resolvedPath)) {
       try {
         hash.update(readFileSync(entry.resolvedPath));
       } catch {
-        hash.update('<unreadable>');
+        hash.update("<unreadable>");
       }
     } else {
-      hash.update('<missing>');
+      hash.update("<missing>");
     }
   }
-  return hash.digest('hex');
+  return hash.digest("hex");
 }
 
 export async function loadWorkspaceCapabilityTrustStore(
@@ -141,15 +141,15 @@ export async function loadWorkspaceCapabilityTrustStore(
     return { version: WORKSPACE_CAPABILITY_TRUST_VERSION, hooks: [] };
   }
   try {
-    const raw = await readFile(filePath, 'utf8');
+    const raw = await readFile(filePath, "utf8");
     const parsed = JSON.parse(raw) as Partial<WorkspaceCapabilityTrustStoreFile>;
     const hooks = Array.isArray(parsed.hooks)
       ? parsed.hooks.filter(
           (entry): entry is WorkspaceCapabilityTrustRecord =>
-            typeof entry?.workspaceRoot === 'string'
-            && typeof entry?.contentHash === 'string'
-            && entry.decision === 'allow'
-            && typeof entry?.decidedAt === 'string',
+            typeof entry?.workspaceRoot === "string" &&
+            typeof entry?.contentHash === "string" &&
+            entry.decision === "allow" &&
+            typeof entry?.decidedAt === "string",
         )
       : [];
     return { version: WORKSPACE_CAPABILITY_TRUST_VERSION, hooks };
@@ -164,7 +164,7 @@ export async function saveWorkspaceCapabilityTrustStore(
 ): Promise<void> {
   const filePath = workspaceCapabilityTrustPath(spiritDataDir);
   await mkdir(spiritDataDir, { recursive: true });
-  await writeFile(filePath, `${JSON.stringify(store, null, 2)}\n`, 'utf8');
+  await writeFile(filePath, `${JSON.stringify(store, null, 2)}\n`, "utf8");
 }
 
 export async function findPermanentWorkspaceHooksTrust(
@@ -186,7 +186,7 @@ export async function persistPermanentWorkspaceHooksTrust(
   const next: WorkspaceCapabilityTrustRecord = {
     workspaceRoot: root,
     contentHash,
-    decision: 'allow',
+    decision: "allow",
     decidedAt: new Date().toISOString(),
   };
   const hooks = store.hooks.filter(
@@ -206,10 +206,7 @@ export function rememberSessionWorkspaceHooksAllow(
   sessionAllow.set(sessionKey(workspaceRoot), contentHash);
 }
 
-export function hasSessionWorkspaceHooksAllow(
-  workspaceRoot: string,
-  contentHash: string,
-): boolean {
+export function hasSessionWorkspaceHooksAllow(workspaceRoot: string, contentHash: string): boolean {
   return sessionAllow.get(sessionKey(workspaceRoot)) === contentHash;
 }
 
@@ -220,10 +217,10 @@ export function rememberSessionWorkspaceHooksDeny(workspaceRoot: string): void {
 }
 
 export type WorkspaceHooksTrustGateResult =
-  | { status: 'noWorkspaceHooks' }
-  | { status: 'allow'; contentHash: string; hashChanged: boolean }
+  | { status: "noWorkspaceHooks" }
+  | { status: "allow"; contentHash: string; hashChanged: boolean }
   | {
-      status: 'needsPrompt';
+      status: "needsPrompt";
       request: WorkspaceCapabilityTrustRequest;
     };
 
@@ -234,29 +231,26 @@ export async function evaluateWorkspaceHooksTrustGate(options: {
 }): Promise<WorkspaceHooksTrustGateResult> {
   const workspaceRoot = options.workspaceRoot?.trim();
   if (!workspaceRoot || !options.loaded.workspaceConfigDir) {
-    return { status: 'noWorkspaceHooks' };
+    return { status: "noWorkspaceHooks" };
   }
   const contentHash = computeWorkspaceHooksContentHash(options.loaded);
   if (!contentHash) {
-    return { status: 'noWorkspaceHooks' };
+    return { status: "noWorkspaceHooks" };
   }
 
   const hooks = listWorkspaceHookTrustEntries(options.loaded);
-  const permanent = await findPermanentWorkspaceHooksTrust(
-    options.spiritDataDir,
-    workspaceRoot,
-  );
+  const permanent = await findPermanentWorkspaceHooksTrust(options.spiritDataDir, workspaceRoot);
   const hashChanged = Boolean(permanent && permanent.contentHash !== contentHash);
 
   if (permanent && permanent.contentHash === contentHash) {
-    return { status: 'allow', contentHash, hashChanged: false };
+    return { status: "allow", contentHash, hashChanged: false };
   }
   if (hasSessionWorkspaceHooksAllow(workspaceRoot, contentHash)) {
-    return { status: 'allow', contentHash, hashChanged };
+    return { status: "allow", contentHash, hashChanged };
   }
 
   return {
-    status: 'needsPrompt',
+    status: "needsPrompt",
     request: {
       workspaceRoot: canonicalizeWorkspaceRoot(workspaceRoot),
       contentHash,
@@ -271,11 +265,11 @@ export async function applyWorkspaceCapabilityTrustDecision(options: {
   workspaceRoot: string;
   contentHash: string;
   decision: WorkspaceCapabilityTrustDecision;
-}): Promise<'allow' | 'deny'> {
-  if (options.decision === 'deny') {
-    return 'deny';
+}): Promise<"allow" | "deny"> {
+  if (options.decision === "deny") {
+    return "deny";
   }
-  if (options.decision === 'alwaysTrust') {
+  if (options.decision === "alwaysTrust") {
     await persistPermanentWorkspaceHooksTrust(
       options.spiritDataDir,
       options.workspaceRoot,
@@ -283,7 +277,7 @@ export async function applyWorkspaceCapabilityTrustDecision(options: {
     );
   }
   rememberSessionWorkspaceHooksAllow(options.workspaceRoot, options.contentHash);
-  return 'allow';
+  return "allow";
 }
 
 export function filterDefinitionsByWorkspaceTrust(
@@ -293,5 +287,5 @@ export function filterDefinitionsByWorkspaceTrust(
   if (workspaceAllowed) {
     return definitions;
   }
-  return definitions.filter((definition) => definition.scope !== 'workspace');
+  return definitions.filter((definition) => definition.scope !== "workspace");
 }

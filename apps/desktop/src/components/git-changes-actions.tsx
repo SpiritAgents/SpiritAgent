@@ -123,9 +123,7 @@ export function GitChangesActions({
     return null;
   }
 
-  const busyIcon = gitBusy ? (
-    <LoaderCircle className="size-3 animate-spin" aria-hidden />
-  ) : null;
+  const busyIcon = gitBusy ? <LoaderCircle className="size-3 animate-spin" aria-hidden /> : null;
 
   if (!hasChanges) {
     return (

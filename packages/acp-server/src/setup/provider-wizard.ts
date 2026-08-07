@@ -3,7 +3,7 @@ import type {
   ModelProviderId,
   ProviderGroupV2,
   ProviderModelTransportKind,
-} from '@spiritagent/host-internal';
+} from "@spiritagent/host-internal";
 import {
   defaultPresetProviderGroupId,
   isValidCloudflareAccountId,
@@ -13,26 +13,29 @@ import {
   providerSupportsSiteSelection,
   resolveProfileApiBase,
   resolveSetupTransportKind,
-} from '@spiritagent/host-internal';
+} from "@spiritagent/host-internal";
 
-import type { ProviderSetupResult, SpiritModelProfile } from '@spiritagent/host-internal';
+import type { ProviderSetupResult, SpiritModelProfile } from "@spiritagent/host-internal";
 
 export { resolveProfileApiBase, resolveSetupTransportKind };
 
 export function validateModelName(modelName: string): string | undefined {
   const trimmed = modelName.trim();
   if (!trimmed) {
-    return 'Model name is required.';
+    return "Model name is required.";
   }
   return undefined;
 }
 
-export function validateApiKeyRequired(provider: ModelProviderId, apiKey: string): string | undefined {
-  if (provider === 'amazon-bedrock' || provider === 'google-vertex-ai' || provider === 'custom') {
+export function validateApiKeyRequired(
+  provider: ModelProviderId,
+  apiKey: string,
+): string | undefined {
+  if (provider === "amazon-bedrock" || provider === "google-vertex-ai" || provider === "custom") {
     return undefined;
   }
   if (!apiKey.trim()) {
-    return 'API key is required for this provider.';
+    return "API key is required for this provider.";
   }
   return undefined;
 }
@@ -44,12 +47,12 @@ export function validateBedrockCredentials(input: {
   awsRegion?: string;
 }): string | undefined {
   if (!input.awsRegion?.trim()) {
-    return 'AWS region is required for Amazon Bedrock.';
+    return "AWS region is required for Amazon Bedrock.";
   }
   const hasApiKey = Boolean(input.apiKey?.trim());
   const hasIam = Boolean(input.accessKeyId?.trim() && input.secretAccessKey?.trim());
   if (!hasApiKey && !hasIam) {
-    return 'Provide either a Bedrock API key or IAM access key credentials.';
+    return "Provide either a Bedrock API key or IAM access key credentials.";
   }
   return undefined;
 }
@@ -62,12 +65,12 @@ export function validateVertexCredentials(input: {
   vertexLocation?: string;
 }): string | undefined {
   if (!input.vertexProject?.trim() || !input.vertexLocation?.trim()) {
-    return 'GCP project ID and location are required for Google Vertex AI.';
+    return "GCP project ID and location are required for Google Vertex AI.";
   }
   const hasApiKey = Boolean(input.apiKey?.trim());
   const hasSa = Boolean(input.clientEmail?.trim() && input.privateKey?.trim());
   if (!hasApiKey && !hasSa) {
-    return 'Provide either a Vertex API key or a service account email and private key.';
+    return "Provide either a Vertex API key or a service account email and private key.";
   }
   return undefined;
 }
@@ -78,13 +81,13 @@ export function validateAzureSetup(input: {
   modelName?: string;
 }): string | undefined {
   if (!input.azureResourceName?.trim()) {
-    return 'Azure resource name is required.';
+    return "Azure resource name is required.";
   }
   if (!input.apiKey?.trim()) {
-    return 'Azure API key is required.';
+    return "Azure API key is required.";
   }
   if (!input.modelName?.trim()) {
-    return 'Azure deployment name is required.';
+    return "Azure deployment name is required.";
   }
   return undefined;
 }
@@ -96,33 +99,37 @@ export function validateCloudflareSetup(input: {
 }): string | undefined {
   const accountId = input.cloudflareAccountId?.trim();
   if (!accountId) {
-    return 'Cloudflare Account ID is required.';
+    return "Cloudflare Account ID is required.";
   }
   if (!isValidCloudflareAccountId(accountId)) {
-    return 'Cloudflare Account ID must be a 32-character hexadecimal string.';
+    return "Cloudflare Account ID must be a 32-character hexadecimal string.";
   }
   const gatewayId = input.cloudflareGatewayId?.trim();
   if (!gatewayId) {
-    return 'Cloudflare Gateway ID is required.';
+    return "Cloudflare Gateway ID is required.";
   }
   if (!isValidCloudflareGatewayId(gatewayId)) {
-    return 'Cloudflare Gateway ID is invalid.';
+    return "Cloudflare Gateway ID is invalid.";
   }
   if (!input.apiKey?.trim()) {
-    return 'Cloudflare API token is required.';
+    return "Cloudflare API token is required.";
   }
   return undefined;
 }
 
-export function validateCustomSetup(input: { apiBase?: string; apiKey?: string; modelName?: string }): string | undefined {
+export function validateCustomSetup(input: {
+  apiBase?: string;
+  apiKey?: string;
+  modelName?: string;
+}): string | undefined {
   if (!input.apiBase?.trim()) {
-    return 'API base URL is required for custom providers.';
+    return "API base URL is required for custom providers.";
   }
   if (!input.apiKey?.trim()) {
-    return 'API key is required for custom providers.';
+    return "API key is required for custom providers.";
   }
   if (!input.modelName?.trim()) {
-    return 'Model name is required.';
+    return "Model name is required.";
   }
   return undefined;
 }
@@ -150,10 +157,10 @@ export function buildSetupProfile(input: {
     groupId,
     ref,
     name,
-    apiBase: input.apiBaseOverride?.trim() || '',
-    reasoningEffort: 'medium',
-    capabilities: ['chat', 'image'],
-    provider: input.provider === 'custom' ? 'custom' : input.provider,
+    apiBase: input.apiBaseOverride?.trim() || "",
+    reasoningEffort: "medium",
+    capabilities: ["chat", "image"],
+    provider: input.provider === "custom" ? "custom" : input.provider,
     transportKind,
   };
   if (input.providerSite) {
@@ -200,11 +207,11 @@ export function buildProviderSetupResult(input: {
   vertexProject?: string;
   vertexLocation?: string;
   apiBaseOverride?: string;
-}): Pick<ProviderSetupResult, 'groupId' | 'group' | 'model' | 'providerScope'> {
+}): Pick<ProviderSetupResult, "groupId" | "group" | "model" | "providerScope"> {
   const profile = buildSetupProfile(input);
-  const group: Omit<ProviderGroupV2, 'models'> = {
+  const group: Omit<ProviderGroupV2, "models"> = {
     id: profile.groupId,
-    provider: profile.provider ?? 'custom',
+    provider: profile.provider ?? "custom",
     apiBase: profile.apiBase,
     ...(profile.transportKind ? { transportKind: profile.transportKind } : {}),
     ...(profile.providerSite ? { providerSite: profile.providerSite } : {}),
@@ -216,7 +223,7 @@ export function buildProviderSetupResult(input: {
   };
   const model: ModelEntryV2 = {
     name: profile.name,
-    reasoningEffort: profile.reasoningEffort ?? 'medium',
+    reasoningEffort: profile.reasoningEffort ?? "medium",
     ...(profile.supportedReasoningEfforts !== undefined
       ? { supportedReasoningEfforts: profile.supportedReasoningEfforts }
       : {}),

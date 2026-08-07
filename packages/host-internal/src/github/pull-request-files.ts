@@ -1,11 +1,11 @@
-import { githubApiHeaders, githubFetch, githubHasNextPage, readGitHubJson } from './github-api.js';
-import { GITHUB_API_BASE_URL } from './oauth-config.js';
+import { githubApiHeaders, githubFetch, githubHasNextPage, readGitHubJson } from "./github-api.js";
+import { GITHUB_API_BASE_URL } from "./oauth-config.js";
 import type {
   GitHubPullRequestChangedFile,
   GitHubPullRequestFileStatus,
   GitHubPullRequestFilesSnapshot,
   GitHubRepositoryRef,
-} from './types.js';
+} from "./types.js";
 
 const FILES_PAGE_SIZE = 100;
 
@@ -23,22 +23,22 @@ interface GitHubPullRequestFileApiItem {
 
 function normalizeFileStatus(status: string | null | undefined): GitHubPullRequestFileStatus {
   switch (status?.trim().toLowerCase()) {
-    case 'added':
-      return 'added';
-    case 'removed':
-      return 'removed';
-    case 'modified':
-      return 'modified';
-    case 'renamed':
-      return 'renamed';
-    case 'copied':
-      return 'copied';
-    case 'changed':
-      return 'changed';
-    case 'unchanged':
-      return 'unchanged';
+    case "added":
+      return "added";
+    case "removed":
+      return "removed";
+    case "modified":
+      return "modified";
+    case "renamed":
+      return "renamed";
+    case "copied":
+      return "copied";
+    case "changed":
+      return "changed";
+    case "unchanged":
+      return "unchanged";
     default:
-      return 'modified';
+      return "modified";
   }
 }
 

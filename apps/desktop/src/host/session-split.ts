@@ -1,4 +1,4 @@
-import path from 'node:path';
+import path from "node:path";
 
 import type {
   BeginSplitPaneSessionRequest,
@@ -7,18 +7,25 @@ import type {
   FocusPaneSessionRequest,
   SyncSplitPaneSessionsRequest,
   SetVisiblePaneSessionsRequest,
-} from '../types.js';
+} from "../types.js";
 import {
   ensureStoredSessionBundleRegistered,
   finishSessionActivationCommand,
   type SessionActivationContext,
-} from './session-activation.js';
-import { isProvisionalSessionPath, isSideChatProvisionalSessionPath, isSplitProvisionalSessionPath, parseSideChatPaneIdFromSessionPath, parseSplitPaneIdFromSessionPath, splitPaneSessionPath } from './storage.js';
-import type { SessionBundle } from './session-bundle.js';
+} from "./session-activation.js";
+import {
+  isProvisionalSessionPath,
+  isSideChatProvisionalSessionPath,
+  isSplitProvisionalSessionPath,
+  parseSideChatPaneIdFromSessionPath,
+  parseSplitPaneIdFromSessionPath,
+  splitPaneSessionPath,
+} from "./storage.js";
+import type { SessionBundle } from "./session-bundle.js";
 import {
   ensureVisiblePaneActiveModels,
   freezePaneActiveModelIfNeeded,
-} from './active-model-sync.js';
+} from "./active-model-sync.js";
 
 export interface SessionSplitHostContext extends SessionActivationContext {
   visiblePaneSessionPaths(): readonly string[];
@@ -38,7 +45,11 @@ export async function ensureActiveFromVisiblePanePaths(
 
   for (const sessionPath of visiblePaths) {
     let bundle = registry.findBySessionPath(sessionPath);
-    if (!bundle && !isSplitProvisionalSessionPath(sessionPath) && !isSideChatProvisionalSessionPath(sessionPath)) {
+    if (
+      !bundle &&
+      !isSplitProvisionalSessionPath(sessionPath) &&
+      !isSideChatProvisionalSessionPath(sessionPath)
+    ) {
       try {
         const registered = await ensureStoredSessionBundleRegistered(ctx, sessionPath);
         if (registered) {
@@ -67,7 +78,7 @@ export async function beginSplitPaneSessionCommand(
     await ctx.ensureInitialized(undefined, { fastPath: true });
     const paneId = request.paneId.trim();
     if (!paneId) {
-      throw new Error('Split pane id is required.');
+      throw new Error("Split pane id is required.");
     }
 
     const state = ctx.requireState();
@@ -141,7 +152,6 @@ async function registerVisiblePaneSessions(
   normalized: readonly string[],
 ): Promise<void> {
   const state = ctx.requireState();
-  const registry = ctx.sessionRegistry();
 
   ctx.setVisiblePaneSessionPaths(normalized);
 
@@ -154,7 +164,10 @@ async function registerVisiblePaneSessions(
   }
 
   for (const sessionPath of normalized) {
-    if (!isSplitProvisionalSessionPath(sessionPath) && !isSideChatProvisionalSessionPath(sessionPath)) {
+    if (
+      !isSplitProvisionalSessionPath(sessionPath) &&
+      !isSideChatProvisionalSessionPath(sessionPath)
+    ) {
       continue;
     }
     await registerEmptyProvisionalPaneIfNeeded(ctx, sessionPath, state.workspaceRoot);
@@ -174,11 +187,7 @@ export async function setVisiblePaneSessionsCommand(
 
     await registerVisiblePaneSessions(ctx, normalized);
 
-    if (
-      activeBefore
-      && activeIdBefore
-      && registry.activeSessionId() !== activeIdBefore
-    ) {
+    if (activeBefore && activeIdBefore && registry.activeSessionId() !== activeIdBefore) {
       registry.activateExisting(activeBefore);
     }
 
@@ -204,7 +213,7 @@ export async function syncSplitPaneSessionsCommand(
       const resolved = path.resolve(focusSessionPath);
       const bundle = registry.findBySessionPath(resolved);
       if (!bundle) {
-        throw new Error('Session not found.');
+        throw new Error("Session not found.");
       }
       ctx.clearSubagentViewerTarget();
       if (registry.getActive() !== bundle) {
@@ -228,7 +237,7 @@ export async function focusPaneSessionCommand(
     await ctx.ensureInitialized(undefined, { fastPath: true });
     const sessionPath = path.resolve(request.sessionPath.trim());
     if (!sessionPath) {
-      throw new Error('Split pane session path is required.');
+      throw new Error("Split pane session path is required.");
     }
     const registry = ctx.sessionRegistry();
     const previous = registry.getActive();
@@ -237,7 +246,7 @@ export async function focusPaneSessionCommand(
     }
     const bundle = registry.findBySessionPath(sessionPath);
     if (!bundle) {
-      throw new Error('Session not found.');
+      throw new Error("Session not found.");
     }
     ctx.clearSubagentViewerTarget();
     if (registry.getActive() !== bundle) {
@@ -257,9 +266,9 @@ export async function closeSplitPaneSessionCommand(
     const sessionPath = path.resolve(request.sessionPath);
     const bundle = ctx.sessionRegistry().findBySessionPath(sessionPath);
     if (!bundle) {
-      const nextVisible = ctx.visiblePaneSessionPaths().filter(
-        (entry) => path.resolve(entry) !== sessionPath,
-      );
+      const nextVisible = ctx
+        .visiblePaneSessionPaths()
+        .filter((entry) => path.resolve(entry) !== sessionPath);
       ctx.setVisiblePaneSessionPaths(nextVisible);
       await ensureActiveFromVisiblePanePaths(ctx, nextVisible);
       return ctx.buildSnapshot();
@@ -267,25 +276,25 @@ export async function closeSplitPaneSessionCommand(
 
     const messageCount = bundle.messageTimeline.toMessages().length;
     const isEmptySplitProvisional =
-      messageCount === 0
-      && bundle.activeSession
-      && isSplitProvisionalSessionPath(bundle.activeSession.filePath);
+      messageCount === 0 &&
+      bundle.activeSession &&
+      isSplitProvisionalSessionPath(bundle.activeSession.filePath);
     const isEmptySideChatProvisional =
-      messageCount === 0
-      && bundle.activeSession
-      && isSideChatProvisionalSessionPath(bundle.activeSession.filePath);
+      messageCount === 0 &&
+      bundle.activeSession &&
+      isSideChatProvisionalSessionPath(bundle.activeSession.filePath);
 
     if (
-      isEmptySplitProvisional
-      || isEmptySideChatProvisional
-      || (messageCount === 0 && isProvisionalSessionPath(sessionPath))
+      isEmptySplitProvisional ||
+      isEmptySideChatProvisional ||
+      (messageCount === 0 && isProvisionalSessionPath(sessionPath))
     ) {
       ctx.sessionRegistry().removeBySessionPath(sessionPath);
     }
 
-    const nextVisible = ctx.visiblePaneSessionPaths().filter(
-      (entry) => path.resolve(entry) !== sessionPath,
-    );
+    const nextVisible = ctx
+      .visiblePaneSessionPaths()
+      .filter((entry) => path.resolve(entry) !== sessionPath);
     ctx.setVisiblePaneSessionPaths(nextVisible);
     await ensureActiveFromVisiblePanePaths(ctx, nextVisible);
     return ctx.buildSnapshot();

@@ -18,7 +18,5 @@
     "incremental": true,
     "tsBuildInfoFile": "./.tsbuildinfo"
   },
-  "include": [
-    "src/**/*.ts"
-  ]
+  "include": ["src/**/*.ts"]
 }

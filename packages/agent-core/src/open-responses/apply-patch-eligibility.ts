@@ -3,25 +3,25 @@ import {
   type JsonObject,
   type JsonValue,
   type SpiritAgentMode,
-} from '../ports.js';
-import type { OpenAiLlmVendor } from '../openai/openai-compat.js';
+} from "../ports.js";
+import type { OpenAiLlmVendor } from "../openai/openai-compat.js";
 import {
   isAggregatedOpenAiRoutedVendor,
   isBedrockMantleOpenResponsesConfig,
   normalizeGatewayOpenAiModelId,
   resolveOpenResponsesSdkProvider,
   type OpenResponsesTransportConfig,
-} from './responses-compat.js';
-import { shouldUseGatewayWebSearch } from './gateway-web-search.js';
+} from "./responses-compat.js";
+import { shouldUseGatewayWebSearch } from "./gateway-web-search.js";
 
-export { normalizeGatewayOpenAiModelId } from './responses-compat.js';
+export { normalizeGatewayOpenAiModelId } from "./responses-compat.js";
 
-const LEGACY_FILE_TOOL_NAMES = new Set(['create_file', 'edit_file', 'delete_file']);
+const LEGACY_FILE_TOOL_NAMES = new Set(["create_file", "edit_file", "delete_file"]);
 
-export const APPLY_PATCH_HOST_TOOL_NAME = 'apply_patch';
+export const APPLY_PATCH_HOST_TOOL_NAME = "apply_patch";
 
 /** OpenAI Responses apply_patch operation types (API names, not host function tools). */
-export type ApplyPatchOperationType = 'create_file' | 'update_file' | 'delete_file';
+export type ApplyPatchOperationType = "create_file" | "update_file" | "delete_file";
 
 export interface ApplyPatchOperation {
   type: ApplyPatchOperationType;
@@ -33,7 +33,9 @@ export interface ApplyPatchOperation {
  * Parses `gpt-{major}.{minor}` from a model id after optional vendor routing normalization.
  * Returns undefined when the id is not an OpenAI GPT versioned model.
  */
-export function parseOpenAiGptModelVersion(modelId: string): { major: number; minor: number } | undefined {
+export function parseOpenAiGptModelVersion(
+  modelId: string,
+): { major: number; minor: number } | undefined {
   const trimmed = modelId.trim().toLowerCase();
   const bedrockMantle = /^openai\.(gpt-\d+(?:\.\d+)?)/.exec(trimmed);
   if (bedrockMantle?.[1]) {
@@ -43,15 +45,15 @@ export function parseOpenAiGptModelVersion(modelId: string): { major: number; mi
   const versioned = /^gpt-(\d+)\.(\d+)/.exec(trimmed);
   if (versioned) {
     return {
-      major: Number.parseInt(versioned[1] ?? '', 10),
-      minor: Number.parseInt(versioned[2] ?? '', 10),
+      major: Number.parseInt(versioned[1] ?? "", 10),
+      minor: Number.parseInt(versioned[2] ?? "", 10),
     };
   }
 
   const majorOnly = /^gpt-(\d+)(?:$|[-_])/.exec(trimmed);
   if (majorOnly) {
     return {
-      major: Number.parseInt(majorOnly[1] ?? '', 10),
+      major: Number.parseInt(majorOnly[1] ?? "", 10),
       minor: 0,
     };
   }
@@ -76,7 +78,10 @@ export function isOpenAiGptModelAtLeast51(modelId: string): boolean {
   return false;
 }
 
-function isEligibleOpenAiRoutedModel(model: string, llmVendor: OpenAiLlmVendor | undefined): boolean {
+function isEligibleOpenAiRoutedModel(
+  model: string,
+  llmVendor: OpenAiLlmVendor | undefined,
+): boolean {
   if (isAggregatedOpenAiRoutedVendor(llmVendor)) {
     const routed = normalizeGatewayOpenAiModelId(model);
     if (!routed) {
@@ -85,7 +90,7 @@ function isEligibleOpenAiRoutedModel(model: string, llmVendor: OpenAiLlmVendor |
     return isOpenAiGptModelAtLeast51(routed);
   }
 
-  if (llmVendor === 'openai') {
+  if (llmVendor === "openai") {
     return isOpenAiGptModelAtLeast51(model);
   }
 
@@ -93,25 +98,27 @@ function isEligibleOpenAiRoutedModel(model: string, llmVendor: OpenAiLlmVendor |
 }
 
 function isEligibleResponsesProvider(
-  config: Pick<OpenResponsesTransportConfig, 'llmVendor' | 'responsesProvider' | 'model'>,
+  config: Pick<OpenResponsesTransportConfig, "llmVendor" | "responsesProvider" | "model">,
 ): boolean {
   const provider = resolveOpenResponsesSdkProvider(config);
-  if (provider === 'openai') {
+  if (provider === "openai") {
     return (
-      config.llmVendor === 'openai'
-      || (config.llmVendor === 'vercel-ai-gateway'
-        && normalizeGatewayOpenAiModelId(config.model) !== undefined)
+      config.llmVendor === "openai" ||
+      (config.llmVendor === "vercel-ai-gateway" &&
+        normalizeGatewayOpenAiModelId(config.model) !== undefined)
     );
   }
 
   // Gateway：function apply_patch；OpenRouter：built-in apply_patch（均走 open-responses-compatible）。
-  return config.llmVendor === 'vercel-ai-gateway'
-    || config.llmVendor === 'cloudflare-ai-gateway'
-    || config.llmVendor === 'openrouter';
+  return (
+    config.llmVendor === "vercel-ai-gateway" ||
+    config.llmVendor === "cloudflare-ai-gateway" ||
+    config.llmVendor === "openrouter"
+  );
 }
 
 function isEligibleOpenRouterBuiltInApplyPatchModel(
-  config: Pick<OpenResponsesTransportConfig, 'model'>,
+  config: Pick<OpenResponsesTransportConfig, "model">,
 ): boolean {
   const routed = normalizeGatewayOpenAiModelId(config.model);
   return routed !== undefined && isOpenAiGptModelAtLeast51(routed);
@@ -119,17 +126,20 @@ function isEligibleOpenRouterBuiltInApplyPatchModel(
 
 /** OpenAI / OpenRouter 官方形态：apply_patch_call/output；Vercel AI Gateway 用 function_call 对。 */
 export function shouldUseBuiltInApplyPatchRequestItems(
-  config: Pick<OpenResponsesTransportConfig, 'baseUrl' | 'llmVendor' | 'responsesProvider' | 'model'>,
+  config: Pick<
+    OpenResponsesTransportConfig,
+    "baseUrl" | "llmVendor" | "responsesProvider" | "model"
+  >,
 ): boolean {
   if (isBedrockMantleOpenResponsesConfig(config)) {
     return false;
   }
 
-  if (config.llmVendor === 'openai') {
+  if (config.llmVendor === "openai") {
     return true;
   }
 
-  if (config.llmVendor === 'openrouter' || config.llmVendor === 'cloudflare-ai-gateway') {
+  if (config.llmVendor === "openrouter" || config.llmVendor === "cloudflare-ai-gateway") {
     return isEligibleOpenRouterBuiltInApplyPatchModel(config);
   }
 
@@ -143,13 +153,13 @@ export function shouldUseBuiltInApplyPatchRequestItems(
 export function shouldUseApplyPatchFunctionTool(
   config: Pick<
     OpenResponsesTransportConfig,
-    'baseUrl' | 'transportKind' | 'model' | 'llmVendor' | 'responsesProvider'
+    "baseUrl" | "transportKind" | "model" | "llmVendor" | "responsesProvider"
   >,
 ): boolean {
   return (
-    shouldUseApplyPatchFileTools(config)
-    && !shouldUseOpenAiSdkApplyPatchTool(config)
-    && (config.llmVendor === 'vercel-ai-gateway' || isBedrockMantleOpenResponsesConfig(config))
+    shouldUseApplyPatchFileTools(config) &&
+    !shouldUseOpenAiSdkApplyPatchTool(config) &&
+    (config.llmVendor === "vercel-ai-gateway" || isBedrockMantleOpenResponsesConfig(config))
   );
 }
 
@@ -157,13 +167,13 @@ export function shouldUseApplyPatchFunctionTool(
 export function shouldUseOpenAiSdkApplyPatchTool(
   config: Pick<
     OpenResponsesTransportConfig,
-    'baseUrl' | 'transportKind' | 'model' | 'llmVendor' | 'responsesProvider'
+    "baseUrl" | "transportKind" | "model" | "llmVendor" | "responsesProvider"
   >,
 ): boolean {
   return (
-    shouldUseApplyPatchFileTools(config)
-    && config.llmVendor === 'openai'
-    && !isBedrockMantleOpenResponsesConfig(config)
+    shouldUseApplyPatchFileTools(config) &&
+    config.llmVendor === "openai" &&
+    !isBedrockMantleOpenResponsesConfig(config)
   );
 }
 
@@ -173,7 +183,7 @@ export function shouldUseOpenAiSdkApplyPatchTool(
 export function shouldOmitApplyPatchFromAiSdkMessages(
   config: Pick<
     OpenResponsesTransportConfig,
-    'baseUrl' | 'transportKind' | 'model' | 'llmVendor' | 'responsesProvider'
+    "baseUrl" | "transportKind" | "model" | "llmVendor" | "responsesProvider"
   >,
 ): boolean {
   if (!shouldUseApplyPatchFileTools(config)) {
@@ -191,16 +201,16 @@ export function shouldOmitApplyPatchFromAiSdkMessages(
 export function shouldUseApplyPatchFileTools(
   config: Pick<
     OpenResponsesTransportConfig,
-    'transportKind' | 'model' | 'llmVendor' | 'responsesProvider' | 'spiritAgentMode'
+    "transportKind" | "model" | "llmVendor" | "responsesProvider" | "spiritAgentMode"
   >,
   options?: { agentMode?: SpiritAgentMode },
 ): boolean {
   const agentMode = options?.agentMode ?? readSpiritAgentModeFromTransportConfig(config);
-  if (agentMode === 'ask') {
+  if (agentMode === "ask") {
     return false;
   }
 
-  if (config.transportKind !== 'open-responses') {
+  if (config.transportKind !== "open-responses") {
     return false;
   }
 
@@ -218,7 +228,9 @@ export function isLegacyHostFileToolName(name: string): boolean {
   return LEGACY_FILE_TOOL_NAMES.has(name);
 }
 
-export function filterLegacyHostFileToolDefinitions(definitions: readonly JsonValue[]): JsonValue[] {
+export function filterLegacyHostFileToolDefinitions(
+  definitions: readonly JsonValue[],
+): JsonValue[] {
   return definitions.filter((definition) => {
     const name = readFunctionToolName(definition);
     return name === undefined || !LEGACY_FILE_TOOL_NAMES.has(name);
@@ -229,30 +241,30 @@ export function filterLegacyHostFileToolDefinitions(definitions: readonly JsonVa
 export const filterBuiltinFileToolsForApplyPatch = filterLegacyHostFileToolDefinitions;
 
 const APPLY_PATCH_OPERATION_SCHEMA: JsonObject = {
-  type: 'object',
+  type: "object",
   properties: {
     type: {
-      type: 'string',
-      enum: ['create_file', 'update_file', 'delete_file'],
-      description: 'Patch operation kind.',
+      type: "string",
+      enum: ["create_file", "update_file", "delete_file"],
+      description: "Patch operation kind.",
     },
     path: {
-      type: 'string',
-      description: 'Workspace-relative or absolute file path to create, update, or delete.',
+      type: "string",
+      description: "Workspace-relative or absolute file path to create, update, or delete.",
     },
     diff: {
-      type: 'string',
-      description: 'Headerless V4A unified diff for create_file or update_file.',
+      type: "string",
+      description: "Headerless V4A unified diff for create_file or update_file.",
     },
   },
-  required: ['type', 'path'],
+  required: ["type", "path"],
   additionalProperties: false,
 };
 
 /** Chat Completions `tools[]` shape (trace export / legacy). */
 export function buildApplyPatchFunctionToolDefinition(): JsonObject {
   return {
-    type: 'function',
+    type: "function",
     function: {
       name: APPLY_PATCH_HOST_TOOL_NAME,
       description: applyPatchFunctionToolDescription(),
@@ -264,7 +276,7 @@ export function buildApplyPatchFunctionToolDefinition(): JsonObject {
 /** OpenAI Responses `tools[]` flat function entry (Gateway / `@ai-sdk/openai`). */
 export function buildApplyPatchResponsesFunctionToolDefinition(): JsonObject {
   return {
-    type: 'function',
+    type: "function",
     name: APPLY_PATCH_HOST_TOOL_NAME,
     description: applyPatchFunctionToolDescription(),
     parameters: applyPatchFunctionToolParameters(),
@@ -281,14 +293,14 @@ export function hasApplyPatchToolInResponsesTools(tools: unknown): boolean {
   }
 
   for (const tool of tools) {
-    if (typeof tool !== 'object' || tool === null || Array.isArray(tool)) {
+    if (typeof tool !== "object" || tool === null || Array.isArray(tool)) {
       continue;
     }
     const record = tool as JsonObject;
-    if (record.type === 'apply_patch') {
+    if (record.type === "apply_patch") {
       return true;
     }
-    if (record.type === 'function' && record.name === APPLY_PATCH_HOST_TOOL_NAME) {
+    if (record.type === "function" && record.name === APPLY_PATCH_HOST_TOOL_NAME) {
       return true;
     }
     if (isApplyPatchFunctionToolDefinition(record)) {
@@ -301,36 +313,36 @@ export function hasApplyPatchToolInResponsesTools(tools: unknown): boolean {
 
 function applyPatchFunctionToolDescription(): string {
   return (
-    'Apply a headerless V4A unified diff to create, update, or delete a file. '
-    + 'Provide operation.type, operation.path, and operation.diff for create/update.'
+    "Apply a headerless V4A unified diff to create, update, or delete a file. " +
+    "Provide operation.type, operation.path, and operation.diff for create/update."
   );
 }
 
 function applyPatchFunctionToolParameters(): JsonObject {
   return {
-    type: 'object',
+    type: "object",
     properties: {
       operation: APPLY_PATCH_OPERATION_SCHEMA,
     },
-    required: ['operation'],
+    required: ["operation"],
     additionalProperties: false,
   };
 }
 
 /** Model-visible guidance when legacy file tools are hidden in favor of apply_patch. */
 export function buildApplyPatchFileToolsPromptSection(): string {
-  return 'File edits on this transport: use apply_patch with headerless V4A unified diffs only.';
+  return "File edits on this transport: use apply_patch with headerless V4A unified diffs only.";
 }
 
 function readFunctionToolName(definition: JsonValue): string | undefined {
-  if (typeof definition !== 'object' || definition === null || Array.isArray(definition)) {
+  if (typeof definition !== "object" || definition === null || Array.isArray(definition)) {
     return undefined;
   }
 
   const fn = definition.function;
-  if (typeof fn !== 'object' || fn === null || Array.isArray(fn)) {
+  if (typeof fn !== "object" || fn === null || Array.isArray(fn)) {
     return undefined;
   }
 
-  return typeof fn.name === 'string' ? fn.name : undefined;
+  return typeof fn.name === "string" ? fn.name : undefined;
 }

@@ -1,5 +1,5 @@
-import type { JsonObject, JsonValue } from './ports.js';
-import type { LlmTransportConfig } from './provider-config.js';
+import type { JsonObject, JsonValue } from "./ports.js";
+import type { LlmTransportConfig } from "./provider-config.js";
 
 export interface JsonSchemaCompletionRequest {
   userPrompt: string;

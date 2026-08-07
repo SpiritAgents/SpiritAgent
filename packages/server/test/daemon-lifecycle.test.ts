@@ -1,18 +1,18 @@
-import assert from 'node:assert/strict';
-import { mkdtemp } from 'node:fs/promises';
-import { tmpdir } from 'node:os';
-import { join } from 'node:path';
-import { describe, it } from 'node:test';
+import assert from "node:assert/strict";
+import { mkdtemp } from "node:fs/promises";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
+import { describe, it } from "node:test";
 
-import { readCurrentToken } from '../src/auth-token.js';
-import { ServerRpcClient } from '../src/client.js';
-import { startDaemon, type RunningDaemon } from '../src/daemon.js';
-import { listInstances } from '../src/instance-registry.js';
+import { readCurrentToken } from "../src/auth-token.js";
+import { ServerRpcClient } from "../src/client.js";
+import { startDaemon, type RunningDaemon } from "../src/daemon.js";
+import { listInstances } from "../src/instance-registry.js";
 import {
   JSON_RPC_METHOD_NOT_FOUND,
   PROTOCOL_VERSION,
   SERVER_CONNECTED,
-} from '../src/protocol/index.js';
+} from "../src/protocol/index.js";
 
 interface RpcReply {
   id?: number;
@@ -34,7 +34,7 @@ class TestWsClient {
 
   constructor(url: string) {
     this.ws = new WebSocket(url);
-    this.ws.addEventListener('message', (event: MessageEvent) => {
+    this.ws.addEventListener("message", (event: MessageEvent) => {
       const reply = JSON.parse(String(event.data)) as RpcReply;
       const waiter = this.waiters.shift();
       if (waiter) {
@@ -44,7 +44,7 @@ class TestWsClient {
       }
     });
     this.closed = new Promise((resolve) => {
-      this.ws.addEventListener('close', (event: CloseEvent) => {
+      this.ws.addEventListener("close", (event: CloseEvent) => {
         resolve({ code: event.code, reason: event.reason });
       });
     });
@@ -55,8 +55,10 @@ class TestWsClient {
       return;
     }
     await new Promise<void>((resolve, reject) => {
-      this.ws.addEventListener('open', () => resolve(), { once: true });
-      this.ws.addEventListener('error', () => reject(new Error('ws connect failed')), { once: true });
+      this.ws.addEventListener("open", () => resolve(), { once: true });
+      this.ws.addEventListener("error", () => reject(new Error("ws connect failed")), {
+        once: true,
+      });
     });
   }
 
@@ -83,10 +85,10 @@ async function startTestDaemon(options?: {
   idleExitGraceMs?: number | null;
   onIdleExit?: () => void;
 }): Promise<{ daemon: RunningDaemon; dataDir: string }> {
-  const dataDir = await mkdtemp(join(tmpdir(), 'spirit-server-test-'));
+  const dataDir = await mkdtemp(join(tmpdir(), "spirit-server-test-"));
   const daemon = await startDaemon({
     dataDir,
-    version: '0.0.0-test',
+    version: "0.0.0-test",
     port: 0,
     log: () => {},
     // Existing tests assert disconnect/approval behavior without wanting the process to self-exit.
@@ -96,11 +98,11 @@ async function startTestDaemon(options?: {
   return { daemon, dataDir };
 }
 
-describe('daemon lifecycle (smoke #1)', () => {
-  it('starts on a random port, registers, serves health/initialize, unregisters on close', async () => {
+describe("daemon lifecycle (smoke #1)", () => {
+  it("starts on a random port, registers, serves health/initialize, unregisters on close", async () => {
     const { daemon, dataDir } = await startTestDaemon();
     try {
-      assert.ok(daemon.port > 0, 'OS assigned a free port');
+      assert.ok(daemon.port > 0, "OS assigned a free port");
 
       const instances = await listInstances(dataDir);
       assert.deepEqual(
@@ -111,7 +113,7 @@ describe('daemon lifecycle (smoke #1)', () => {
       assert.equal(instances[0]!.pid, process.pid);
 
       const token = await readCurrentToken(dataDir);
-      assert.ok(token, 'token file created');
+      assert.ok(token, "token file created");
 
       const client = new TestWsClient(`ws://127.0.0.1:${daemon.port}/?token=${token}`);
       await client.open();
@@ -120,24 +122,24 @@ describe('daemon lifecycle (smoke #1)', () => {
       assert.equal(connected.method, SERVER_CONNECTED);
       assert.equal(connected.result, undefined);
 
-      client.send({ jsonrpc: '2.0', id: 1, method: 'server.health' });
+      client.send({ jsonrpc: "2.0", id: 1, method: "server.health" });
       const health = await client.nextMessage();
       assert.equal(health.id, 1);
-      assert.equal(health.result?.['ok'], true);
-      assert.equal(health.result?.['instanceId'], daemon.instanceId);
+      assert.equal(health.result?.["ok"], true);
+      assert.equal(health.result?.["instanceId"], daemon.instanceId);
 
       client.send({
-        jsonrpc: '2.0',
+        jsonrpc: "2.0",
         id: 2,
-        method: 'server.initialize',
-        params: { clientKind: 'cli', clientId: 'test-client' },
+        method: "server.initialize",
+        params: { clientKind: "cli", clientId: "test-client" },
       });
       const initialized = await client.nextMessage();
       assert.equal(initialized.id, 2);
-      assert.equal(initialized.result?.['protocolVersion'], PROTOCOL_VERSION);
-      assert.equal(initialized.result?.['instanceId'], daemon.instanceId);
+      assert.equal(initialized.result?.["protocolVersion"], PROTOCOL_VERSION);
+      assert.equal(initialized.result?.["instanceId"], daemon.instanceId);
 
-      client.send({ jsonrpc: '2.0', id: 3, method: 'no.such.method' });
+      client.send({ jsonrpc: "2.0", id: 3, method: "no.such.method" });
       const unknown = await client.nextMessage();
       assert.equal(unknown.error?.code, JSON_RPC_METHOD_NOT_FOUND);
 
@@ -148,7 +150,7 @@ describe('daemon lifecycle (smoke #1)', () => {
     assert.deepEqual(await listInstances(dataDir), []);
   });
 
-  it('rejects connections without a valid token', async () => {
+  it("rejects connections without a valid token", async () => {
     const { daemon, dataDir } = await startTestDaemon();
     try {
       const client = new TestWsClient(`ws://127.0.0.1:${daemon.port}/?token=wrong-token`);
@@ -162,10 +164,10 @@ describe('daemon lifecycle (smoke #1)', () => {
     }
   });
 
-  it('rotate-token takes effect for new handshakes without restart', async () => {
+  it("rotate-token takes effect for new handshakes without restart", async () => {
     const { daemon, dataDir } = await startTestDaemon();
     try {
-      const { rotateToken } = await import('../src/auth-token.js');
+      const { rotateToken } = await import("../src/auth-token.js");
       const rotated = await rotateToken(dataDir);
 
       const stale = new TestWsClient(`ws://127.0.0.1:${daemon.port}/?token=${rotated}-stale`);
@@ -181,7 +183,7 @@ describe('daemon lifecycle (smoke #1)', () => {
     }
   });
 
-  it('notifies shared clients when the daemon disconnects', async () => {
+  it("notifies shared clients when the daemon disconnects", async () => {
     const { daemon, dataDir } = await startTestDaemon();
     const token = await readCurrentToken(dataDir);
     assert.ok(token);
@@ -197,7 +199,7 @@ describe('daemon lifecycle (smoke #1)', () => {
     assert.match((await disconnected).message, /connection closed/iu);
   });
 
-  it('idle-exits after client process hard-exits (TCP half-close / CLOSE_WAIT)', async () => {
+  it("idle-exits after client process hard-exits (TCP half-close / CLOSE_WAIT)", async () => {
     const idleExits: number[] = [];
     const { daemon, dataDir } = await startTestDaemon({
       idleExitGraceMs: 150,
@@ -208,12 +210,12 @@ describe('daemon lifecycle (smoke #1)', () => {
     const token = await readCurrentToken(dataDir);
     assert.ok(token);
 
-    const { spawn } = await import('node:child_process');
+    const { spawn } = await import("node:child_process");
     const client = spawn(
       process.execPath,
       [
-        '--input-type=module',
-        '-e',
+        "--input-type=module",
+        "-e",
         `
 const url = new URL('ws://127.0.0.1:${daemon.port}/');
 url.searchParams.set('token', ${JSON.stringify(token)});
@@ -222,15 +224,15 @@ ws.addEventListener('open', () => setTimeout(() => process.exit(0), 50));
 ws.addEventListener('error', () => process.exit(1));
 `,
       ],
-      { stdio: 'ignore' },
+      { stdio: "ignore" },
     );
-    assert.equal(await new Promise<number | null>((resolve) => client.on('exit', resolve)), 0);
+    assert.equal(await new Promise<number | null>((resolve) => client.on("exit", resolve)), 0);
     await new Promise((resolve) => setTimeout(resolve, 500));
-    assert.equal(idleExits.length, 1, 'hard client exit must still trigger idle-exit');
+    assert.equal(idleExits.length, 1, "hard client exit must still trigger idle-exit");
     assert.equal((await listInstances(dataDir)).length, 0);
   });
 
-  it('idle-exits after the last client disconnects (grace), cancelled by a new client', async () => {
+  it("idle-exits after the last client disconnects (grace), cancelled by a new client", async () => {
     const idleExits: number[] = [];
     const { daemon, dataDir } = await startTestDaemon({
       idleExitGraceMs: 200,
@@ -253,14 +255,14 @@ ws.addEventListener('error', () => process.exit(1));
     await second.open();
     assert.equal((await second.nextMessage()).method, SERVER_CONNECTED);
     await new Promise((resolve) => setTimeout(resolve, 300));
-    assert.equal(idleExits.length, 0, 'idle-exit must not fire while a client is connected');
+    assert.equal(idleExits.length, 0, "idle-exit must not fire while a client is connected");
 
     second.close();
     await second.closed;
     await new Promise((resolve) => setTimeout(resolve, 350));
-    assert.equal(idleExits.length, 1, 'idle-exit fires after last client + grace');
+    assert.equal(idleExits.length, 1, "idle-exit fires after last client + grace");
 
     const instances = await listInstances(dataDir);
-    assert.equal(instances.length, 0, 'registry entry removed on idle-exit');
+    assert.equal(instances.length, 0, "registry entry removed on idle-exit");
   });
 });

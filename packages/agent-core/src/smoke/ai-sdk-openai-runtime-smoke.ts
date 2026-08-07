@@ -1,1 +1,1 @@
-import './runtime/ai-sdk-openai-runtime-smoke.js';
+import "./runtime/ai-sdk-openai-runtime-smoke.js";

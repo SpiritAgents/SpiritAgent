@@ -20,10 +20,7 @@ import {
   DESKTOP_OVERLAY_LIST_WIDTH,
   stopOverlayScrollPropagation,
 } from "@/lib/desktop-chrome";
-import {
-  RADIX_OVERLAY_CLOSE_MS,
-  runAfterRadixOverlayClose,
-} from "@/lib/overlay-motion";
+import { RADIX_OVERLAY_CLOSE_MS, runAfterRadixOverlayClose } from "@/lib/overlay-motion";
 import { scaleRootFixedAnchorStyle } from "@/lib/scale-root-fixed-anchor-style";
 import { cn } from "@/lib/utils";
 
@@ -59,8 +56,8 @@ function isMenuFocusTarget(target: EventTarget | null): boolean {
     return false;
   }
   return Boolean(
-    target.closest('[data-slot="dropdown-menu-content"]')
-    || target.closest('[data-radix-menu-content]'),
+    target.closest('[data-slot="dropdown-menu-content"]') ||
+    target.closest("[data-radix-menu-content]"),
   );
 }
 
@@ -163,7 +160,10 @@ export function ComposerSuggestionDropdown({
     setRadixOpen(true);
   };
 
-  const preventComposerOutsideDismiss = (event: { target: EventTarget | null; preventDefault(): void }) => {
+  const preventComposerOutsideDismiss = (event: {
+    target: EventTarget | null;
+    preventDefault(): void;
+  }) => {
     if (isTargetWithinComposer(event.target, composerRootRef.current)) {
       event.preventDefault();
     }
@@ -172,11 +172,7 @@ export function ComposerSuggestionDropdown({
   return (
     <DropdownMenu open={radixOpen} onOpenChange={handleOpenChange} modal={false}>
       <DropdownMenuTrigger asChild>
-        <span
-          aria-hidden
-          tabIndex={-1}
-          style={triggerStyle}
-        />
+        <span aria-hidden tabIndex={-1} style={triggerStyle} />
       </DropdownMenuTrigger>
       <DropdownMenuContent
         align="start"
@@ -204,9 +200,7 @@ export function ComposerSuggestionDropdown({
           onWheel={stopOverlayScrollPropagation}
           onTouchMove={stopOverlayScrollPropagation}
         >
-          <div className={DESKTOP_OVERLAY_LIST_LIST_PADDING}>
-            {displayChildren}
-          </div>
+          <div className={DESKTOP_OVERLAY_LIST_LIST_PADDING}>{displayChildren}</div>
         </ScrollArea>
       </DropdownMenuContent>
     </DropdownMenu>

@@ -1,7 +1,7 @@
 export class HookConfigError extends Error {
   constructor(message: string) {
     super(message);
-    this.name = 'HookConfigError';
+    this.name = "HookConfigError";
   }
 }
 
@@ -16,8 +16,8 @@ export class HookDeniedError extends Error {
     agentMessage: string | undefined;
     message?: string;
   }) {
-    super(options.message ?? options.userMessage ?? 'Hook denied this action.');
-    this.name = 'HookDeniedError';
+    super(options.message ?? options.userMessage ?? "Hook denied this action.");
+    this.name = "HookDeniedError";
     this.hookEventName = options.hookEventName;
     this.userMessage = options.userMessage;
     this.agentMessage = options.agentMessage;
@@ -30,7 +30,7 @@ export class SubmitPromptHookDeniedError extends Error {
 
   constructor(denialMessage: string, followupMessage: string | undefined) {
     super(denialMessage);
-    this.name = 'SubmitPromptHookDeniedError';
+    this.name = "SubmitPromptHookDeniedError";
     this.denialMessage = denialMessage;
     this.followupMessage = followupMessage;
   }

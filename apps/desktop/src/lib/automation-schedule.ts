@@ -3,9 +3,9 @@
 export type DesktopAutomationWeekday = 0 | 1 | 2 | 3 | 4 | 5 | 6;
 
 export type DesktopAutomationSchedule =
-  | { kind: 'hourly' }
-  | { kind: 'daily'; hour: number; minute: number }
-  | { kind: 'weekly'; weekday: DesktopAutomationWeekday; hour: number; minute: number };
+  | { kind: "hourly" }
+  | { kind: "daily"; hour: number; minute: number }
+  | { kind: "weekly"; weekday: DesktopAutomationWeekday; hour: number; minute: number };
 
 export interface DesktopAutomationScheduleFormatLabels {
   hourly: string;
@@ -16,18 +16,18 @@ export interface DesktopAutomationScheduleFormatLabels {
 }
 
 function formatTimeOfDay(hour: number, minute: number): string {
-  return `${String(hour).padStart(2, '0')}:${String(minute).padStart(2, '0')}`;
+  return `${String(hour).padStart(2, "0")}:${String(minute).padStart(2, "0")}`;
 }
 
 export function formatDesktopAutomationScheduleLabel(
   schedule: DesktopAutomationSchedule,
   labels: DesktopAutomationScheduleFormatLabels,
 ): string {
-  if (schedule.kind === 'hourly') {
+  if (schedule.kind === "hourly") {
     return labels.hourly;
   }
   const time = formatTimeOfDay(schedule.hour, schedule.minute);
-  if (schedule.kind === 'daily') {
+  if (schedule.kind === "daily") {
     return `${labels.dailyPrefix} ${time}`;
   }
   const weekday = labels.weekdays[schedule.weekday] ?? String(schedule.weekday);
@@ -38,27 +38,25 @@ export function formatDesktopAutomationScheduleLabel(
 }
 
 function isValidHour(value: unknown): value is number {
-  return typeof value === 'number' && Number.isInteger(value) && value >= 0 && value <= 23;
+  return typeof value === "number" && Number.isInteger(value) && value >= 0 && value <= 23;
 }
 
 function isValidMinute(value: unknown): value is number {
-  return typeof value === 'number' && Number.isInteger(value) && value >= 0 && value <= 59;
+  return typeof value === "number" && Number.isInteger(value) && value >= 0 && value <= 59;
 }
 
 function isValidWeekday(value: unknown): value is DesktopAutomationWeekday {
-  return typeof value === 'number' && Number.isInteger(value) && value >= 0 && value <= 6;
+  return typeof value === "number" && Number.isInteger(value) && value >= 0 && value <= 6;
 }
 
 export function isValidDesktopAutomationSchedule(schedule: DesktopAutomationSchedule): boolean {
-  if (schedule.kind === 'hourly') {
+  if (schedule.kind === "hourly") {
     return true;
   }
-  if (schedule.kind === 'daily') {
+  if (schedule.kind === "daily") {
     return isValidHour(schedule.hour) && isValidMinute(schedule.minute);
   }
   return (
-    isValidWeekday(schedule.weekday)
-    && isValidHour(schedule.hour)
-    && isValidMinute(schedule.minute)
+    isValidWeekday(schedule.weekday) && isValidHour(schedule.hour) && isValidMinute(schedule.minute)
   );
 }

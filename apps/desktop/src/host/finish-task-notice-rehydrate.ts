@@ -3,22 +3,22 @@ import {
   normalizeStoredLlmMessage,
   type ChatArchive,
   type LlmMessage,
-} from '@spiritagent/agent-core';
+} from "@spiritagent/agent-core";
 
-import type { ConversationMessageSnapshot } from '../types.js';
+import type { ConversationMessageSnapshot } from "../types.js";
 import {
   finishTaskNoticeFromExecution,
   isFinishTaskToolName,
   normalizeMessageAuxSnapshot,
-} from './message-ordering.js';
-import type { DesktopMessageTimeline } from './message-timeline.js';
+} from "./message-ordering.js";
+import type { DesktopMessageTimeline } from "./message-timeline.js";
 
-const FINISH_TASK_DEFAULT_OUTPUT = 'Task marked complete.';
+const FINISH_TASK_DEFAULT_OUTPUT = "Task marked complete.";
 
 export function rehydrateFinishTaskNoticesForRestoredSession(input: {
   messages: ConversationMessageSnapshot[];
   messageTimeline: DesktopMessageTimeline;
-  archiveHistory: ChatArchive['llmHistory'];
+  archiveHistory: ChatArchive["llmHistory"];
 }): ConversationMessageSnapshot[] {
   rehydrateFinishTaskNoticesInConversation(input.messages, input.archiveHistory);
   rehydrateFinishTaskNoticesInTimeline(input.messageTimeline, input.archiveHistory);
@@ -27,7 +27,7 @@ export function rehydrateFinishTaskNoticesForRestoredSession(input: {
 
 export function rehydrateFinishTaskNoticesInConversation(
   messages: ConversationMessageSnapshot[],
-  llmHistory: ChatArchive['llmHistory'],
+  llmHistory: ChatArchive["llmHistory"],
 ): void {
   const historyTurns = splitLlmHistoryIntoTurns(llmHistory);
   const conversationTurns = splitConversationIntoTurns(messages);
@@ -46,7 +46,7 @@ export function rehydrateFinishTaskNoticesInConversation(
 
 export function rehydrateFinishTaskNoticesInTimeline(
   timeline: DesktopMessageTimeline,
-  llmHistory: ChatArchive['llmHistory'],
+  llmHistory: ChatArchive["llmHistory"],
 ): void {
   const messages = timeline.toMessages();
   const historyTurns = splitLlmHistoryIntoTurns(llmHistory);
@@ -61,7 +61,7 @@ export function rehydrateFinishTaskNoticesInTimeline(
     const turnMessages = conversationTurns[turnIndex]!;
     for (let index = turnMessages.length - 1; index >= 0; index -= 1) {
       const message = turnMessages[index]!;
-      if (message.role !== 'assistant' || message.tool) {
+      if (message.role !== "assistant" || message.tool) {
         continue;
       }
       if (message.aux?.finishTaskNotice?.trim() === notice.trim()) {
@@ -79,7 +79,7 @@ function splitConversationIntoTurns(
   const turns: ConversationMessageSnapshot[][] = [];
   let current: ConversationMessageSnapshot[] = [];
   for (const message of messages) {
-    if (message.role === 'user') {
+    if (message.role === "user") {
       if (current.length > 0) {
         turns.push(current);
       }
@@ -97,14 +97,12 @@ function splitConversationIntoTurns(
   return turns;
 }
 
-function splitLlmHistoryIntoTurns(
-  llmHistory: ChatArchive['llmHistory'],
-): LlmMessage[][] {
+function splitLlmHistoryIntoTurns(llmHistory: ChatArchive["llmHistory"]): LlmMessage[][] {
   const turns: LlmMessage[][] = [];
   let current: LlmMessage[] = [];
   for (const entry of llmHistory) {
     const message = normalizeStoredLlmMessage(entry);
-    if (message.role === 'user') {
+    if (message.role === "user") {
       if (current.length > 0) {
         turns.push(current);
       }
@@ -126,7 +124,7 @@ function finishTaskNoticesFromHistoryTurn(historyTurn: LlmMessage[]): string[] {
   const notices: string[] = [];
   for (let index = 0; index < historyTurn.length; index += 1) {
     const message = historyTurn[index]!;
-    if (message.role !== 'assistant' || !message.toolCalls) {
+    if (message.role !== "assistant" || !message.toolCalls) {
       continue;
     }
     for (const toolCall of message.toolCalls) {
@@ -136,18 +134,18 @@ function finishTaskNoticesFromHistoryTurn(historyTurn: LlmMessage[]): string[] {
       let request: unknown;
       try {
         request = {
-          name: 'finish_task',
+          name: "finish_task",
           ...(JSON.parse(toolCall.argumentsJson) as Record<string, unknown>),
         };
       } catch {
-        request = { name: 'finish_task' };
+        request = { name: "finish_task" };
       }
       const toolResult = historyTurn[index + 1];
       const output =
-        toolResult?.role === 'tool' && toolResult.toolCallId === toolCall.id
+        toolResult?.role === "tool" && toolResult.toolCallId === toolCall.id
           ? llmMessageTextContent(toolResult.content).trim()
           : undefined;
-      if (!output || output.startsWith('[tool schema error]')) {
+      if (!output || output.startsWith("[tool schema error]")) {
         continue;
       }
       if (output === FINISH_TASK_DEFAULT_OUTPUT) {
@@ -170,7 +168,7 @@ function applyFinishTaskNoticeToConversationTurn(
   }
   for (let index = turnMessages.length - 1; index >= 0; index -= 1) {
     const message = turnMessages[index]!;
-    if (message.role !== 'assistant' || message.tool) {
+    if (message.role !== "assistant" || message.tool) {
       continue;
     }
     if (message.aux?.finishTaskNotice?.trim() === normalizedNotice) {

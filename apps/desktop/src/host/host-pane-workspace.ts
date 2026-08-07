@@ -1,8 +1,8 @@
-import path from 'node:path';
+import path from "node:path";
 
-import { normalizeWorkLocationKind } from '@spiritagent/host-internal';
+import { normalizeWorkLocationKind } from "@spiritagent/host-internal";
 
-import i18n from '../lib/i18n-host.js';
+import i18n from "../lib/i18n-host.js";
 import type {
   DesktopGitSnapshot,
   DesktopSnapshot,
@@ -10,15 +10,12 @@ import type {
   SetPaneWorkLocationRequest,
   CheckoutPaneGitBranchRequest,
   SwitchPaneWorkspaceRequest,
-} from '../types.js';
-import { applyGitRevision, checkoutWorkspaceGitBranch, readWorkspaceGitSnapshot } from './git.js';
-import type { SessionBundle } from './session-bundle.js';
-import type { SessionSplitHostContext } from './session-split.js';
-import {
-  isNoWorkspaceSessionRoot,
-  sameWorkspaceRoot,
-} from './service-utils.js';
-import { normalizeWorkspaceBinding, resolveDesktopHomeDirectory, saveConfig } from './storage.js';
+} from "../types.js";
+import { applyGitRevision, checkoutWorkspaceGitBranch, readWorkspaceGitSnapshot } from "./git.js";
+import type { SessionBundle } from "./session-bundle.js";
+import type { SessionSplitHostContext } from "./session-split.js";
+import { isNoWorkspaceSessionRoot, sameWorkspaceRoot } from "./service-utils.js";
+import { normalizeWorkspaceBinding, resolveDesktopHomeDirectory } from "./storage.js";
 
 export interface PaneWorkspaceHostContext extends SessionSplitHostContext {
   adoptProjectWorkspaceForForeground(
@@ -35,7 +32,7 @@ export interface PaneWorkspaceHostContext extends SessionSplitHostContext {
 export async function ensureVisiblePaneScopedGitSnapshots(
   ctx: Pick<
     PaneWorkspaceHostContext,
-    'sessionRegistry' | 'requireState' | 'visiblePaneSessionPaths'
+    "sessionRegistry" | "requireState" | "visiblePaneSessionPaths"
   >,
 ): Promise<{ syncedSessionPaths: string[]; clearedSessionPaths: string[] }> {
   const state = ctx.requireState();
@@ -53,14 +50,11 @@ export async function ensureVisiblePaneScopedGitSnapshots(
 
     const workspaceRoot = resolveEffectivePaneWorkspaceRoot(bundle, state);
     const workspaceBinding =
-      bundle.workspaceBinding
-      ?? (isNoWorkspaceSessionRoot(workspaceRoot) ? 'none' : 'project');
+      bundle.workspaceBinding ?? (isNoWorkspaceSessionRoot(workspaceRoot) ? "none" : "project");
     const usesGlobalGit =
-      bundle === activeBundle
-      || (
-        sameWorkspaceRoot(workspaceRoot, state.workspaceRoot)
-        && workspaceBinding === normalizeWorkspaceBinding(state.workspaceBinding)
-      );
+      bundle === activeBundle ||
+      (sameWorkspaceRoot(workspaceRoot, state.workspaceRoot) &&
+        workspaceBinding === normalizeWorkspaceBinding(state.workspaceBinding));
 
     if (usesGlobalGit) {
       if (bundle.scopedGit) {
@@ -90,10 +84,10 @@ export async function ensureVisiblePaneScopedGitSnapshots(
 export async function prefetchScopedGitBeforeGlobalWorkspaceChange(
   ctx: Pick<
     PaneWorkspaceHostContext,
-    'sessionRegistry' | 'requireState' | 'visiblePaneSessionPaths'
+    "sessionRegistry" | "requireState" | "visiblePaneSessionPaths"
   >,
   nextWorkspaceRoot: string,
-  nextWorkspaceBinding: import('../types.js').DesktopWorkspaceBinding,
+  nextWorkspaceBinding: import("../types.js").DesktopWorkspaceBinding,
 ): Promise<void> {
   const state = ctx.requireState();
   const registry = ctx.sessionRegistry();
@@ -111,11 +105,9 @@ export async function prefetchScopedGitBeforeGlobalWorkspaceChange(
 
     const workspaceRoot = resolveEffectivePaneWorkspaceRoot(bundle, state);
     const workspaceBinding =
-      bundle.workspaceBinding
-      ?? (isNoWorkspaceSessionRoot(workspaceRoot) ? 'none' : 'project');
+      bundle.workspaceBinding ?? (isNoWorkspaceSessionRoot(workspaceRoot) ? "none" : "project");
     const willShareGlobal =
-      sameWorkspaceRoot(workspaceRoot, nextRoot)
-      && workspaceBinding === nextBinding;
+      sameWorkspaceRoot(workspaceRoot, nextRoot) && workspaceBinding === nextBinding;
 
     if (willShareGlobal) {
       if (bundle.scopedGit) {
@@ -124,11 +116,7 @@ export async function prefetchScopedGitBeforeGlobalWorkspaceChange(
       continue;
     }
 
-    const git = applyGitRevision(
-      await readWorkspaceGitSnapshot(workspaceRoot),
-      0,
-      { reset: true },
-    );
+    const git = applyGitRevision(await readWorkspaceGitSnapshot(workspaceRoot), 0, { reset: true });
     git.workLocation = bundle.workLocation;
     if (bundle.pendingGitBranch) {
       git.selectedBranch = bundle.pendingGitBranch;
@@ -136,7 +124,6 @@ export async function prefetchScopedGitBeforeGlobalWorkspaceChange(
     bundle.scopedGit = git;
     prefetched.push(resolved);
   }
-
 }
 
 export async function switchPaneWorkspaceCommand(
@@ -148,13 +135,13 @@ export async function switchPaneWorkspaceCommand(
 
     const sessionPath = path.resolve(request.sessionPath.trim());
     if (!sessionPath) {
-      throw new Error('Split pane session path is required.');
+      throw new Error("Split pane session path is required.");
     }
 
     const registry = ctx.sessionRegistry();
     const bundle = registry.findBySessionPath(sessionPath);
     if (!bundle) {
-      throw new Error('Session not found.');
+      throw new Error("Session not found.");
     }
 
     const state = ctx.requireState();
@@ -162,41 +149,40 @@ export async function switchPaneWorkspaceCommand(
     const visiblePaneCount = ctx.visiblePaneSessionPaths().length;
 
     let workspaceRoot: string;
-    if (request.workspaceBinding === 'none') {
+    if (request.workspaceBinding === "none") {
       workspaceRoot = resolveDesktopHomeDirectory();
     } else {
       const trimmed = request.workspaceRoot?.trim();
       if (!trimmed) {
-        throw new Error('Project workspace path is required.');
+        throw new Error("Project workspace path is required.");
       }
       workspaceRoot = path.resolve(trimmed);
     }
 
-    const workspaceBinding = request.workspaceBinding ?? 'project';
+    const workspaceBinding = request.workspaceBinding ?? "project";
     const previousRoot = resolveEffectivePaneWorkspaceRoot(bundle, state);
     const workspaceChanged =
-      !sameWorkspaceRoot(previousRoot, workspaceRoot)
-      || normalizeWorkspaceBinding(bundle.workspaceBinding ?? state.workspaceBinding) !== workspaceBinding;
+      !sameWorkspaceRoot(previousRoot, workspaceRoot) ||
+      normalizeWorkspaceBinding(bundle.workspaceBinding ?? state.workspaceBinding) !==
+        workspaceBinding;
 
     bundle.workspaceRoot = workspaceRoot;
     bundle.workspaceBinding = workspaceBinding;
     bundle.pendingGitBranch = undefined;
-    bundle.workLocation = 'local';
+    bundle.workLocation = "local";
 
     if (isForeground) {
       bundle.scopedGit = undefined;
       const deferHeavyWork = visiblePaneCount > 1;
-      if (workspaceBinding === 'none') {
+      if (workspaceBinding === "none") {
         await ctx.adoptNoWorkspaceForForeground({ deferHeavyWork });
       } else {
         await ctx.adoptProjectWorkspaceForForeground(workspaceRoot, { deferHeavyWork });
       }
     } else {
-      const git = applyGitRevision(
-        await readWorkspaceGitSnapshot(workspaceRoot),
-        0,
-        { reset: true },
-      );
+      const git = applyGitRevision(await readWorkspaceGitSnapshot(workspaceRoot), 0, {
+        reset: true,
+      });
       git.workLocation = bundle.workLocation;
       bundle.scopedGit = git;
       if (workspaceChanged && bundle.runtime && !bundle.runtime.isBusy()) {
@@ -217,7 +203,7 @@ export async function switchPaneWorkspaceCommand(
 }
 
 export function resolveEffectivePaneWorkspaceRoot(
-  bundle: Pick<SessionBundle, 'workspaceRoot'>,
+  bundle: Pick<SessionBundle, "workspaceRoot">,
   state: { workspaceRoot: string },
 ): string {
   const fromBundle = bundle.workspaceRoot?.trim();
@@ -231,39 +217,37 @@ export function resolvePaneWorkspaceProjection(input: {
   bundle: SessionBundle;
   state: {
     workspaceRoot: string;
-    workspaceBinding: import('../types.js').DesktopWorkspaceBinding;
-    git: import('../types.js').DesktopGitSnapshot;
+    workspaceBinding: import("../types.js").DesktopWorkspaceBinding;
+    git: import("../types.js").DesktopGitSnapshot;
   };
   isForegroundActive: boolean;
-}): {
-  workspaceRoot: string;
-  workspaceBinding: import('../types.js').DesktopWorkspaceBinding;
-  git: import('../types.js').DesktopGitSnapshot;
-} | undefined {
+}):
+  | {
+      workspaceRoot: string;
+      workspaceBinding: import("../types.js").DesktopWorkspaceBinding;
+      git: import("../types.js").DesktopGitSnapshot;
+    }
+  | undefined {
   if (input.isForegroundActive) {
     return undefined;
   }
 
   const workspaceRoot = resolveEffectivePaneWorkspaceRoot(input.bundle, input.state);
   const workspaceBinding =
-    input.bundle.workspaceBinding
-    ?? (isNoWorkspaceSessionRoot(workspaceRoot) ? 'none' : 'project');
+    input.bundle.workspaceBinding ?? (isNoWorkspaceSessionRoot(workspaceRoot) ? "none" : "project");
 
-  const baseGit = input.bundle.scopedGit
-    ?? (
-      sameWorkspaceRoot(workspaceRoot, input.state.workspaceRoot)
-      && workspaceBinding === normalizeWorkspaceBinding(input.state.workspaceBinding)
-        ? input.state.git
-        : undefined
-    );
+  const baseGit =
+    input.bundle.scopedGit ??
+    (sameWorkspaceRoot(workspaceRoot, input.state.workspaceRoot) &&
+    workspaceBinding === normalizeWorkspaceBinding(input.state.workspaceBinding)
+      ? input.state.git
+      : undefined);
 
-  const git: import('../types.js').DesktopGitSnapshot = baseGit
+  const git: import("../types.js").DesktopGitSnapshot = baseGit
     ? {
         ...baseGit,
         workLocation: input.bundle.workLocation,
-        ...(input.bundle.pendingGitBranch
-          ? { selectedBranch: input.bundle.pendingGitBranch }
-          : {}),
+        ...(input.bundle.pendingGitBranch ? { selectedBranch: input.bundle.pendingGitBranch } : {}),
       }
     : {
         revision: 0,
@@ -284,7 +268,7 @@ export function resolvePaneWorkspaceProjection(input: {
 }
 
 async function resolvePaneGitSnapshotForMutation(
-  ctx: Pick<PaneWorkspaceHostContext, 'sessionRegistry' | 'requireState'>,
+  ctx: Pick<PaneWorkspaceHostContext, "sessionRegistry" | "requireState">,
   bundle: SessionBundle,
 ): Promise<DesktopGitSnapshot> {
   const state = ctx.requireState();
@@ -296,11 +280,7 @@ async function resolvePaneGitSnapshotForMutation(
     return bundle.scopedGit;
   }
   const workspaceRoot = resolveEffectivePaneWorkspaceRoot(bundle, state);
-  return applyGitRevision(
-    await readWorkspaceGitSnapshot(workspaceRoot),
-    0,
-    { reset: true },
-  );
+  return applyGitRevision(await readWorkspaceGitSnapshot(workspaceRoot), 0, { reset: true });
 }
 
 export async function setPanePendingGitBranchCommand(
@@ -312,26 +292,26 @@ export async function setPanePendingGitBranchCommand(
 
     const sessionPath = path.resolve(request.sessionPath.trim());
     if (!sessionPath) {
-      throw new Error('Split pane session path is required.');
+      throw new Error("Split pane session path is required.");
     }
 
     const normalized = request.branch.trim();
     if (!normalized) {
-      throw new Error(i18n.t('error.branchNameRequired'));
+      throw new Error(i18n.t("error.branchNameRequired"));
     }
 
     const registry = ctx.sessionRegistry();
     const bundle = registry.findBySessionPath(sessionPath);
     if (!bundle) {
-      throw new Error('Session not found.');
+      throw new Error("Session not found.");
     }
 
     const git = await resolvePaneGitSnapshotForMutation(ctx, bundle);
     if (!git.isRepository) {
-      throw new Error(i18n.t('error.notGitRepo'));
+      throw new Error(i18n.t("error.notGitRepo"));
     }
     if (!git.branches.includes(normalized)) {
-      throw new Error(i18n.t('error.branchNotFound', { branch: normalized }));
+      throw new Error(i18n.t("error.branchNotFound", { branch: normalized }));
     }
 
     const isForeground = registry.getActive() === bundle;
@@ -359,13 +339,13 @@ export async function setPaneWorkLocationCommand(
 
     const sessionPath = path.resolve(request.sessionPath.trim());
     if (!sessionPath) {
-      throw new Error('Split pane session path is required.');
+      throw new Error("Split pane session path is required.");
     }
 
     const registry = ctx.sessionRegistry();
     const bundle = registry.findBySessionPath(sessionPath);
     if (!bundle) {
-      throw new Error('Session not found.');
+      throw new Error("Session not found.");
     }
 
     const isForeground = registry.getActive() === bundle;
@@ -394,30 +374,30 @@ export async function checkoutPaneGitBranchCommand(
 
     const sessionPath = path.resolve(request.sessionPath.trim());
     if (!sessionPath) {
-      throw new Error('Split pane session path is required.');
+      throw new Error("Split pane session path is required.");
     }
 
     const normalized = request.branch.trim();
     if (!normalized) {
-      throw new Error(i18n.t('error.branchNameRequired'));
+      throw new Error(i18n.t("error.branchNameRequired"));
     }
 
     const state = ctx.requireState();
     const registry = ctx.sessionRegistry();
     const bundle = registry.findBySessionPath(sessionPath);
     if (!bundle) {
-      throw new Error('Session not found.');
+      throw new Error("Session not found.");
     }
     if (bundle.runtime?.isBusy()) {
-      throw new Error(i18n.t('error.runtimeBusy'));
+      throw new Error(i18n.t("error.runtimeBusy"));
     }
 
     const git = await resolvePaneGitSnapshotForMutation(ctx, bundle);
     if (!git.isRepository) {
-      throw new Error(i18n.t('error.notGitRepo'));
+      throw new Error(i18n.t("error.notGitRepo"));
     }
     if (!git.branches.includes(normalized)) {
-      throw new Error(i18n.t('error.branchNotFound', { branch: normalized }));
+      throw new Error(i18n.t("error.branchNotFound", { branch: normalized }));
     }
 
     const workspaceRoot = resolveEffectivePaneWorkspaceRoot(bundle, state);
@@ -433,11 +413,9 @@ export async function checkoutPaneGitBranchCommand(
       await ctx.refreshRuntimeForBundle(bundle);
       ctx.syncActiveRuntimePointer();
     } else {
-      bundle.scopedGit = applyGitRevision(
-        checkedOut,
-        bundle.scopedGit?.revision ?? 0,
-        { reset: true },
-      );
+      bundle.scopedGit = applyGitRevision(checkedOut, bundle.scopedGit?.revision ?? 0, {
+        reset: true,
+      });
       await ctx.refreshRuntimeForBundle(bundle);
     }
 

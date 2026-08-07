@@ -21,10 +21,7 @@ export function FileToolLspDiagnosticsBadge({
 
   return (
     <span
-      className={cn(
-        "inline-flex shrink-0 text-xs leading-relaxed",
-        toolCardSecondaryTextClass,
-      )}
+      className={cn("inline-flex shrink-0 text-xs leading-relaxed", toolCardSecondaryTextClass)}
     >
       {t("tool.diagnosticsIssueCount", { count: totalIssues })}
     </span>

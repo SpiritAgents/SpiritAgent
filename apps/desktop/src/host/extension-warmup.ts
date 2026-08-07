@@ -1,9 +1,9 @@
-import type { LlmExtensionSystemPrompt } from '@spiritagent/agent-core';
-import type { HostExtensionEvent } from '@spiritagent/host-internal';
+import type { LlmExtensionSystemPrompt } from "@spiritagent/agent-core";
+import type { HostExtensionEvent } from "@spiritagent/host-internal";
 
 export type ExtensionWarmupTrigger =
-  | { type: 'startup'; workspaceRoot: string }
-  | { type: 'session'; event: HostExtensionEvent };
+  | { type: "startup"; workspaceRoot: string }
+  | { type: "session"; event: HostExtensionEvent };
 
 export interface ExtensionWarmupCallbacks {
   collectSystemPrompts(): Promise<LlmExtensionSystemPrompt[]>;
@@ -36,7 +36,7 @@ export class ExtensionWarmupCoordinator {
   }
 
   async refreshSystemPromptsCache(
-    callbacks: Pick<ExtensionWarmupCallbacks, 'collectSystemPrompts'>,
+    callbacks: Pick<ExtensionWarmupCallbacks, "collectSystemPrompts">,
   ): Promise<void> {
     this.systemPromptsCache = await callbacks.collectSystemPrompts();
     this.warmupReady = true;
@@ -61,9 +61,9 @@ export class ExtensionWarmupCoordinator {
         return;
       }
 
-      if (trigger.type === 'startup') {
+      if (trigger.type === "startup") {
         await callbacks.dispatchEvent({
-          type: 'onStartup',
+          type: "onStartup",
           detail: { workspaceRoot: trigger.workspaceRoot },
         });
       } else {

@@ -8,7 +8,10 @@ import {
   LOCAL_IMAGE_FLOATING_ACTION_BUTTON_CLASS,
   LocalImagePreviewDialog,
 } from "@/components/local-image-preview-dialog";
-import type { ReadLocalImagePreview, SaveLocalImageAs } from "@/components/tool-call/tool-call-types";
+import type {
+  ReadLocalImagePreview,
+  SaveLocalImageAs,
+} from "@/components/tool-call/tool-call-types";
 import {
   isPreviewableImagePath,
   readCachedLocalFilePreviewDataUrl,
@@ -30,7 +33,9 @@ export function ImageGenerationToolCard({
   const previewableImagePath = tool.imagePaths?.find(isPreviewableImagePath) ?? "";
   const imagePath = tool.imagePaths?.find((path) => path.trim().length > 0) ?? "";
   const [previewDataUrl, setPreviewDataUrl] = useState<string | null>(null);
-  const [previewState, setPreviewState] = useState<"idle" | "loading" | "ready" | "unavailable">("idle");
+  const [previewState, setPreviewState] = useState<"idle" | "loading" | "ready" | "unavailable">(
+    "idle",
+  );
   const [viewerOpen, setViewerOpen] = useState(false);
   const [saving, setSaving] = useState(false);
 
@@ -78,7 +83,8 @@ export function ImageGenerationToolCard({
     };
   }, [previewableImagePath, readLocalImagePreviewDataUrl]);
 
-  const loading = tool.phase === "preview" || tool.phase === "running" || previewState === "loading";
+  const loading =
+    tool.phase === "preview" || tool.phase === "running" || previewState === "loading";
   const canInteract = Boolean(previewDataUrl && previewableImagePath);
   const floatingActionCardRevealClass =
     "opacity-0 group-hover/image-card:opacity-100 group-focus-within/image-card:opacity-100";
@@ -132,7 +138,7 @@ export function ImageGenerationToolCard({
                 loading ? "spirit-thinking-shimmer-text" : "text-muted-foreground",
               )}
             >
-              {loading ? t('common.loading') : t('app.previewUnavailable')}
+              {loading ? t("common.loading") : t("app.previewUnavailable")}
             </span>
           </div>
         )}
@@ -152,10 +158,14 @@ export function ImageGenerationToolCard({
                 void handleSaveImage();
               }}
               disabled={saving}
-              title={t('app.downloadImage')}
-              aria-label={t('app.downloadImage')}
+              title={t("app.downloadImage")}
+              aria-label={t("app.downloadImage")}
             >
-              {saving ? <LoaderCircle className="size-4 animate-spin" aria-hidden /> : <Download className="size-4" aria-hidden />}
+              {saving ? (
+                <LoaderCircle className="size-4 animate-spin" aria-hidden />
+              ) : (
+                <Download className="size-4" aria-hidden />
+              )}
             </Button>
             <Button
               type="button"
@@ -170,8 +180,8 @@ export function ImageGenerationToolCard({
                 event.stopPropagation();
                 setViewerOpen(true);
               }}
-              title={t('app.viewLargeImage')}
-              aria-label={t('app.viewLargeImage')}
+              title={t("app.viewLargeImage")}
+              aria-label={t("app.viewLargeImage")}
             >
               <Maximize2 className="size-4" aria-hidden />
             </Button>

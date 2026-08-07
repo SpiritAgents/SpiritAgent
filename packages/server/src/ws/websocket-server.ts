@@ -6,12 +6,12 @@
  * Server frames are never masked, per spec.
  */
 
-import { createHash } from 'node:crypto';
-import { EventEmitter } from 'node:events';
-import type { IncomingMessage } from 'node:http';
-import type { Socket } from 'node:net';
+import { createHash } from "node:crypto";
+import { EventEmitter } from "node:events";
+import type { IncomingMessage } from "node:http";
+import type { Socket } from "node:net";
 
-const WS_GUID = '258EAFA5-E914-47DA-95CA-C5AB0DC85B11';
+const WS_GUID = "258EAFA5-E914-47DA-95CA-C5AB0DC85B11";
 
 export const OPCODE_CONTINUATION = 0x0;
 export const OPCODE_TEXT = 0x1;
@@ -24,9 +24,9 @@ export const OPCODE_PONG = 0xa;
 export const MAX_FRAME_PAYLOAD_BYTES = 64 * 1024 * 1024;
 
 export function computeAcceptKey(secWebSocketKey: string): string {
-  return createHash('sha1')
+  return createHash("sha1")
     .update(secWebSocketKey + WS_GUID)
-    .digest('base64');
+    .digest("base64");
 }
 
 export function encodeFrame(opcode: number, payload: Buffer, fin = true): Buffer {
@@ -99,13 +99,13 @@ export class WebSocketFrameParser {
       }
       const bigLength = buf.readBigUInt64BE(offset);
       if (bigLength > BigInt(MAX_FRAME_PAYLOAD_BYTES)) {
-        throw new WebSocketProtocolError(1009, 'frame too large');
+        throw new WebSocketProtocolError(1009, "frame too large");
       }
       length = Number(bigLength);
       offset += 8;
     }
     if (length > MAX_FRAME_PAYLOAD_BYTES) {
-      throw new WebSocketProtocolError(1009, 'frame too large');
+      throw new WebSocketProtocolError(1009, "frame too large");
     }
 
     let maskingKey: Buffer | null = null;
@@ -139,7 +139,7 @@ export class WebSocketProtocolError extends Error {
     message: string,
   ) {
     super(message);
-    this.name = 'WebSocketProtocolError';
+    this.name = "WebSocketProtocolError";
   }
 }
 
@@ -162,19 +162,19 @@ export class WebSocketConnection extends EventEmitter {
 
   constructor(private readonly socket: Socket) {
     super();
-    socket.on('data', (chunk: Buffer) => this.handleData(chunk));
-    socket.on('error', (err: Error) => this.emit('error', err));
+    socket.on("data", (chunk: Buffer) => this.handleData(chunk));
+    socket.on("error", (err: Error) => this.emit("error", err));
     // Host SIGINT / process.exit often FIN without a WS close frame; the socket
     // stays in CLOSE_WAIT until we destroy it so 'close' can propagate.
-    socket.on('end', () => {
+    socket.on("end", () => {
       if (!this.closed) {
         socket.destroy();
       }
     });
-    socket.on('close', () => {
+    socket.on("close", () => {
       if (!this.closed) {
         this.closed = true;
-        this.emit('close', 1006, 'abnormal closure');
+        this.emit("close", 1006, "abnormal closure");
       }
     });
   }
@@ -183,7 +183,7 @@ export class WebSocketConnection extends EventEmitter {
     if (this.closed) {
       return;
     }
-    this.socket.write(encodeFrame(OPCODE_TEXT, Buffer.from(text, 'utf8')));
+    this.socket.write(encodeFrame(OPCODE_TEXT, Buffer.from(text, "utf8")));
   }
 
   ping(payload: Buffer = Buffer.alloc(0)): void {
@@ -193,13 +193,13 @@ export class WebSocketConnection extends EventEmitter {
     this.socket.write(encodeFrame(OPCODE_PING, payload));
   }
 
-  close(code = 1000, reason = ''): void {
+  close(code = 1000, reason = ""): void {
     if (this.closed) {
       return;
     }
     if (!this.closeSent) {
       this.closeSent = true;
-      const reasonBuffer = Buffer.from(reason, 'utf8');
+      const reasonBuffer = Buffer.from(reason, "utf8");
       const payload = Buffer.alloc(2 + reasonBuffer.length);
       payload.writeUInt16BE(code, 0);
       reasonBuffer.copy(payload, 2);
@@ -232,7 +232,7 @@ export class WebSocketConnection extends EventEmitter {
       case OPCODE_TEXT:
       case OPCODE_BINARY:
         if (this.fragmentOpcode !== null) {
-          this.close(1002, 'new message before finishing continuation');
+          this.close(1002, "new message before finishing continuation");
           return;
         }
         if (frame.fin) {
@@ -244,7 +244,7 @@ export class WebSocketConnection extends EventEmitter {
         return;
       case OPCODE_CONTINUATION: {
         if (this.fragmentOpcode === null) {
-          this.close(1002, 'unexpected continuation frame');
+          this.close(1002, "unexpected continuation frame");
           return;
         }
         this.fragments.push(frame.payload);
@@ -266,15 +266,14 @@ export class WebSocketConnection extends EventEmitter {
         return;
       case OPCODE_CLOSE: {
         const code = frame.payload.length >= 2 ? frame.payload.readUInt16BE(0) : 1000;
-        const reason =
-          frame.payload.length > 2 ? frame.payload.subarray(2).toString('utf8') : '';
+        const reason = frame.payload.length > 2 ? frame.payload.subarray(2).toString("utf8") : "";
         if (!this.closeSent) {
           this.closeSent = true;
           this.socket.write(encodeFrame(OPCODE_CLOSE, frame.payload));
         }
         this.closed = true;
         this.socket.end();
-        this.emit('close', code, reason);
+        this.emit("close", code, reason);
         return;
       }
       default:
@@ -284,16 +283,16 @@ export class WebSocketConnection extends EventEmitter {
 
   private emitMessage(opcode: number, payload: Buffer): void {
     if (opcode === OPCODE_TEXT) {
-      this.emit('message', payload.toString('utf8'));
+      this.emit("message", payload.toString("utf8"));
     } else {
-      this.emit('message', payload);
+      this.emit("message", payload);
     }
   }
 }
 
 export function isWebSocketUpgrade(req: IncomingMessage): boolean {
-  const upgrade = req.headers['upgrade'];
-  return typeof upgrade === 'string' && upgrade.toLowerCase() === 'websocket';
+  const upgrade = req.headers["upgrade"];
+  return typeof upgrade === "string" && upgrade.toLowerCase() === "websocket";
 }
 
 /**
@@ -301,19 +300,19 @@ export function isWebSocketUpgrade(req: IncomingMessage): boolean {
  * Returns null (after writing a 400 response) when headers are invalid.
  */
 export function acceptUpgrade(req: IncomingMessage, socket: Socket): WebSocketConnection | null {
-  const key = req.headers['sec-websocket-key'];
-  if (typeof key !== 'string' || key.length === 0) {
-    socket.write('HTTP/1.1 400 Bad Request\r\n\r\n');
+  const key = req.headers["sec-websocket-key"];
+  if (typeof key !== "string" || key.length === 0) {
+    socket.write("HTTP/1.1 400 Bad Request\r\n\r\n");
     socket.destroy();
     return null;
   }
   const accept = computeAcceptKey(key);
   socket.write(
-    'HTTP/1.1 101 Switching Protocols\r\n' +
-      'Upgrade: websocket\r\n' +
-      'Connection: Upgrade\r\n' +
+    "HTTP/1.1 101 Switching Protocols\r\n" +
+      "Upgrade: websocket\r\n" +
+      "Connection: Upgrade\r\n" +
       `Sec-WebSocket-Accept: ${accept}\r\n` +
-      '\r\n',
+      "\r\n",
   );
   return new WebSocketConnection(socket);
 }

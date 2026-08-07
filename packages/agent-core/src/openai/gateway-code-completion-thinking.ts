@@ -1,18 +1,18 @@
-import type { JsonObject, JsonValue } from '../ports.js';
-import { isCodeCompletionTransportProfile } from '../code-completion/transport-profile.js';
-import type { OpenAiTransportConfig } from './openai-compat.js';
+import type { JsonObject, JsonValue } from "../ports.js";
+import { isCodeCompletionTransportProfile } from "../code-completion/transport-profile.js";
+import type { OpenAiTransportConfig } from "./openai-compat.js";
 import {
   buildGatewayGoogleProviderOptions,
   isGatewayGoogleGeminiModel,
-} from './gateway-google-thinking.js';
-import { buildGatewayAlibabaProviderOptions } from './gateway-alibaba-thinking.js';
-import { buildGatewayMinimaxProviderOptions } from './gateway-minimax-thinking.js';
-import { isGatewayAnthropicClaudeModel } from './gateway-anthropic-thinking.js';
+} from "./gateway-google-thinking.js";
+import { buildGatewayAlibabaProviderOptions } from "./gateway-alibaba-thinking.js";
+import { buildGatewayMinimaxProviderOptions } from "./gateway-minimax-thinking.js";
+import { isGatewayAnthropicClaudeModel } from "./gateway-anthropic-thinking.js";
 
 /** 解析 Gateway 模型 ID 的上游 slug，如 `deepseek/deepseek-v3` → `deepseek`。 */
 export function parseGatewayUpstreamSlug(model: string): string | undefined {
   const normalized = model.trim();
-  const slashIndex = normalized.indexOf('/');
+  const slashIndex = normalized.indexOf("/");
   if (slashIndex <= 0) {
     return undefined;
   }
@@ -22,8 +22,8 @@ export function parseGatewayUpstreamSlug(model: string): string | undefined {
 function openAiNoneReasoningOptions(): Record<string, JsonObject> {
   return {
     openai: {
-      reasoningEffort: 'none',
-      reasoningSummary: 'off',
+      reasoningEffort: "none",
+      reasoningSummary: "off",
     },
   };
 }
@@ -32,7 +32,7 @@ function thinkingTypeDisabledOptions(providerKey: string): Record<string, JsonOb
   return {
     [providerKey]: {
       thinking: {
-        type: 'disabled',
+        type: "disabled",
       },
     } as JsonObject,
   };
@@ -45,7 +45,7 @@ function thinkingTypeDisabledOptions(providerKey: string): Record<string, JsonOb
 export function buildGatewayCodeCompletionProviderOptions(
   config: Pick<
     OpenAiTransportConfig,
-    'llmVendor' | 'model' | 'reasoningEffort' | 'transportRequestProfile'
+    "llmVendor" | "model" | "reasoningEffort" | "transportRequestProfile"
   >,
 ): Record<string, JsonObject> {
   const slug = parseGatewayUpstreamSlug(config.model);
@@ -54,45 +54,45 @@ export function buildGatewayCodeCompletionProviderOptions(
     return openAiNoneReasoningOptions();
   }
 
-  if (slug === 'anthropic' && isGatewayAnthropicClaudeModel(config.llmVendor, config.model)) {
+  if (slug === "anthropic" && isGatewayAnthropicClaudeModel(config.llmVendor, config.model)) {
     return {
       anthropic: {
-        thinking: { type: 'disabled' } as JsonValue,
+        thinking: { type: "disabled" } as JsonValue,
         toolStreaming: true,
       },
     };
   }
 
-  if (slug === 'google' && isGatewayGoogleGeminiModel(config.llmVendor, config.model)) {
-    return buildGatewayGoogleProviderOptions(config, 'none');
+  if (slug === "google" && isGatewayGoogleGeminiModel(config.llmVendor, config.model)) {
+    return buildGatewayGoogleProviderOptions(config, "none");
   }
 
   switch (slug) {
-    case 'openai':
+    case "openai":
       return openAiNoneReasoningOptions();
-    case 'deepseek':
-      return thinkingTypeDisabledOptions('deepseek');
-    case 'moonshotai':
-      return thinkingTypeDisabledOptions('moonshotai');
-    case 'xai':
+    case "deepseek":
+      return thinkingTypeDisabledOptions("deepseek");
+    case "moonshotai":
+      return thinkingTypeDisabledOptions("moonshotai");
+    case "xai":
       return {
         xai: {
-          reasoningEffort: 'none',
+          reasoningEffort: "none",
         } as JsonObject,
       };
-    case 'zai':
-      return thinkingTypeDisabledOptions('zai');
-    case 'alibaba':
+    case "zai":
+      return thinkingTypeDisabledOptions("zai");
+    case "alibaba":
       return buildGatewayAlibabaProviderOptions({
         ...config,
         vendorExtendedThinking: false,
       });
-    case 'minimax':
+    case "minimax":
       return buildGatewayMinimaxProviderOptions({
         ...config,
         vendorExtendedThinking: false,
       });
-    case 'xiaomi':
+    case "xiaomi":
       return openAiNoneReasoningOptions();
     default:
       return openAiNoneReasoningOptions();
@@ -100,7 +100,7 @@ export function buildGatewayCodeCompletionProviderOptions(
 }
 
 export function shouldUseGatewayCodeCompletionProviderOptions(
-  config: Pick<OpenAiTransportConfig, 'llmVendor' | 'transportRequestProfile'>,
+  config: Pick<OpenAiTransportConfig, "llmVendor" | "transportRequestProfile">,
 ): boolean {
-  return config.llmVendor === 'vercel-ai-gateway' && isCodeCompletionTransportProfile(config);
+  return config.llmVendor === "vercel-ai-gateway" && isCodeCompletionTransportProfile(config);
 }

@@ -1,6 +1,6 @@
-import { hasResolvableCredentials } from '@spiritagent/host-internal';
-import type { AcpServerConfig } from '../types.js';
-import { AuthState } from './auth-state.js';
+import { hasResolvableCredentials } from "@spiritagent/host-internal";
+import type { AcpServerConfig } from "../types.js";
+import { AuthState } from "./auth-state.js";
 
 export function shouldPreAuthenticateFromSharedConfig(spiritDataDir: string): boolean {
   return hasResolvableCredentials(spiritDataDir);

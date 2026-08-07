@@ -1,21 +1,19 @@
-import type { TextStreamPart } from 'ai';
+import type { TextStreamPart } from "ai";
 
-import type { JsonObject, JsonValue, LlmStreamEvent } from '../ports.js';
-import { filterPendingHostToolCalls } from '../open-responses/sdk-provider-web-search-loop.js';
-import { isResponsesBuiltInToolName } from '../open-responses/responses-built-in-tools.js';
-import { resolveStreamingToolPreviewEmit } from '../tool-streaming-preview-gate.js';
-import { isJsonObject } from '../tool-agent.js';
-import {
-  MINIMAX_WEB_SEARCH_SERVER_TOOL_NAME,
-} from './minimax-server-tools.js';
+import type { JsonObject, JsonValue, LlmStreamEvent } from "../ports.js";
+import { filterPendingHostToolCalls } from "../open-responses/sdk-provider-web-search-loop.js";
+import { isResponsesBuiltInToolName } from "../open-responses/responses-built-in-tools.js";
+import { resolveStreamingToolPreviewEmit } from "../tool-streaming-preview-gate.js";
+import { isJsonObject } from "../tool-agent.js";
+import { MINIMAX_WEB_SEARCH_SERVER_TOOL_NAME } from "./minimax-server-tools.js";
 import {
   buildMinimaxWebSearchPreviewArgumentsJson,
   buildMinimaxWebSearchSucceededArgumentsJson,
   parseMinimaxWebSearchResults,
   type MinimaxWebSearchResult,
-} from './minimax-web-search-cards.js';
+} from "./minimax-web-search-cards.js";
 
-export const ANTHROPIC_ASSISTANT_CONTENT_BLOCKS_KEY = '_anthropicContentBlocks';
+export const ANTHROPIC_ASSISTANT_CONTENT_BLOCKS_KEY = "_anthropicContentBlocks";
 
 type MinimaxWebSearchPreviewState = {
   readyPreviewEmitted: boolean;
@@ -56,11 +54,11 @@ export function shouldSuppressMinimaxWebSearchStreamError(
   }
 
   const message = error instanceof Error ? error.message : String(error);
-  if (!message.includes('web_search_tool_result')) {
+  if (!message.includes("web_search_tool_result")) {
     return false;
   }
 
-  const marker = 'web_search_tool_result';
+  const marker = "web_search_tool_result";
   if (state.handledWebSearchValidationErrors.has(marker)) {
     return true;
   }
@@ -69,23 +67,23 @@ export function shouldSuppressMinimaxWebSearchStreamError(
 }
 
 function readToolCallId(part: { toolCallId?: string; id?: string }): string | undefined {
-  if (typeof part.toolCallId === 'string' && part.toolCallId.trim()) {
+  if (typeof part.toolCallId === "string" && part.toolCallId.trim()) {
     return part.toolCallId;
   }
-  if (typeof part.id === 'string' && part.id.trim()) {
+  if (typeof part.id === "string" && part.id.trim()) {
     return part.id;
   }
   return undefined;
 }
 
 function readToolName(part: { toolName?: string }): string | undefined {
-  return typeof part.toolName === 'string' && part.toolName.trim() ? part.toolName : undefined;
+  return typeof part.toolName === "string" && part.toolName.trim() ? part.toolName : undefined;
 }
 
 function tryParseQueryFromArgumentsJson(argumentsJson: string): string | undefined {
   try {
     const parsed = JSON.parse(argumentsJson) as JsonValue;
-    if (!isJsonObject(parsed) || typeof parsed.query !== 'string') {
+    if (!isJsonObject(parsed) || typeof parsed.query !== "string") {
       return undefined;
     }
     const trimmed = parsed.query.trim();
@@ -111,7 +109,7 @@ function emitMinimaxWebSearchPreview(
   }
 
   events.push({
-    kind: 'streaming-tool-preview',
+    kind: "streaming-tool-preview",
     toolCallId,
     toolName: MINIMAX_WEB_SEARCH_SERVER_TOOL_NAME,
     argumentsJson,
@@ -141,31 +139,30 @@ function handleRawMinimaxWebSearchChunk(
   }
 
   const chunk = rawValue as JsonObject;
-  if (chunk.type !== 'content_block_start') {
+  if (chunk.type !== "content_block_start") {
     return false;
   }
 
   const contentBlock = isJsonObject(chunk.content_block as JsonValue)
     ? (chunk.content_block as JsonObject)
     : undefined;
-  if (!contentBlock || typeof contentBlock.type !== 'string') {
+  if (!contentBlock || typeof contentBlock.type !== "string") {
     return false;
   }
 
-  if (contentBlock.type === 'server_tool_use') {
+  if (contentBlock.type === "server_tool_use") {
     appendUniqueAnthropicContentBlock(state, cloneJsonBlock(contentBlock));
-    const toolCallId = typeof contentBlock.id === 'string' ? contentBlock.id : undefined;
+    const toolCallId = typeof contentBlock.id === "string" ? contentBlock.id : undefined;
     if (toolCallId && isJsonObject(contentBlock.input as JsonValue)) {
       state.webSearchInputByCallId.set(toolCallId, JSON.stringify(contentBlock.input));
     }
     return true;
   }
 
-  if (contentBlock.type === 'web_search_tool_result') {
+  if (contentBlock.type === "web_search_tool_result") {
     appendUniqueAnthropicContentBlock(state, cloneJsonBlock(contentBlock));
-    const toolCallId = typeof contentBlock.tool_use_id === 'string'
-      ? contentBlock.tool_use_id
-      : undefined;
+    const toolCallId =
+      typeof contentBlock.tool_use_id === "string" ? contentBlock.tool_use_id : undefined;
     if (!toolCallId) {
       return true;
     }
@@ -175,12 +172,11 @@ function handleRawMinimaxWebSearchChunk(
     state.executedProviderBuiltinToolCallIds.add(toolCallId);
 
     const query =
-      tryParseQueryFromArgumentsJson(state.webSearchInputByCallId.get(toolCallId) ?? '{}')
-      ?? '';
+      tryParseQueryFromArgumentsJson(state.webSearchInputByCallId.get(toolCallId) ?? "{}") ?? "";
     const succeededArgumentsJson = buildMinimaxWebSearchSucceededArgumentsJson(query, results);
     state.webSearchInputByCallId.set(toolCallId, succeededArgumentsJson);
     events.push({
-      kind: 'streaming-tool-preview',
+      kind: "streaming-tool-preview",
       toolCallId,
       toolName: MINIMAX_WEB_SEARCH_SERVER_TOOL_NAME,
       argumentsJson: succeededArgumentsJson,
@@ -188,8 +184,8 @@ function handleRawMinimaxWebSearchChunk(
     return true;
   }
 
-  if (contentBlock.type === 'text' && typeof contentBlock.text === 'string') {
-    appendUniqueAnthropicContentBlock(state, { type: 'text', text: contentBlock.text });
+  if (contentBlock.type === "text" && typeof contentBlock.text === "string") {
+    appendUniqueAnthropicContentBlock(state, { type: "text", text: contentBlock.text });
     return false;
   }
 
@@ -208,21 +204,21 @@ export function handleMinimaxWebSearchStreamPart(
   const toolName = readToolName(part as { toolName?: string });
   const toolCallId = readToolCallId(part as { toolCallId?: string; id?: string });
 
-  if (part.type === 'tool-input-start') {
-    if (!toolCallId || !isMinimaxProviderBuiltinWebSearchToolName(toolName ?? '')) {
+  if (part.type === "tool-input-start") {
+    if (!toolCallId || !isMinimaxProviderBuiltinWebSearchToolName(toolName ?? "")) {
       return { handled: false, sawAnswerOrToolOutput: false };
     }
-    state.webSearchInputByCallId.set(toolCallId, '');
+    state.webSearchInputByCallId.set(toolCallId, "");
     state.webSearchPreviewStateByCallId.set(toolCallId, { readyPreviewEmitted: false });
     return { handled: true, sawAnswerOrToolOutput: true };
   }
 
-  if (part.type === 'tool-input-delta') {
+  if (part.type === "tool-input-delta") {
     if (!toolCallId) {
       return { handled: false, sawAnswerOrToolOutput: false };
     }
-    const currentInput = state.webSearchInputByCallId.get(toolCallId) ?? '';
-    const delta = typeof part.delta === 'string' ? part.delta : '';
+    const currentInput = state.webSearchInputByCallId.get(toolCallId) ?? "";
+    const delta = typeof part.delta === "string" ? part.delta : "";
     const nextInput = currentInput + delta;
     state.webSearchInputByCallId.set(toolCallId, nextInput);
 
@@ -230,7 +226,7 @@ export function handleMinimaxWebSearchStreamPart(
       readyPreviewEmitted: false,
     };
     const previewArgumentsJson = buildMinimaxWebSearchPreviewArgumentsJson(
-      tryParseQueryFromArgumentsJson(nextInput) ?? '',
+      tryParseQueryFromArgumentsJson(nextInput) ?? "",
     );
     state.webSearchPreviewStateByCallId.set(
       toolCallId,
@@ -239,25 +235,25 @@ export function handleMinimaxWebSearchStreamPart(
     return { handled: true, sawAnswerOrToolOutput: true };
   }
 
-  if (part.type === 'tool-input-end') {
+  if (part.type === "tool-input-end") {
     if (!toolCallId || !state.webSearchInputByCallId.has(toolCallId)) {
       return { handled: false, sawAnswerOrToolOutput: false };
     }
     return { handled: true, sawAnswerOrToolOutput: true };
   }
 
-  if (part.type === 'tool-call') {
-    if (!toolCallId || !isMinimaxProviderBuiltinWebSearchToolName(toolName ?? '')) {
+  if (part.type === "tool-call") {
+    if (!toolCallId || !isMinimaxProviderBuiltinWebSearchToolName(toolName ?? "")) {
       return { handled: false, sawAnswerOrToolOutput: false };
     }
     state.executedProviderBuiltinToolCallIds.add(toolCallId);
     const argumentsJson = JSON.stringify(part.input ?? {});
     state.webSearchInputByCallId.set(toolCallId, argumentsJson);
     const previewArgumentsJson = buildMinimaxWebSearchPreviewArgumentsJson(
-      tryParseQueryFromArgumentsJson(argumentsJson) ?? '',
+      tryParseQueryFromArgumentsJson(argumentsJson) ?? "",
     );
     events.push({
-      kind: 'streaming-tool-preview',
+      kind: "streaming-tool-preview",
       toolCallId,
       toolName: MINIMAX_WEB_SEARCH_SERVER_TOOL_NAME,
       argumentsJson: previewArgumentsJson,
@@ -265,8 +261,8 @@ export function handleMinimaxWebSearchStreamPart(
     return { handled: true, sawAnswerOrToolOutput: true };
   }
 
-  if (part.type === 'tool-error') {
-    if (!toolCallId || !isMinimaxProviderBuiltinWebSearchToolName(toolName ?? '')) {
+  if (part.type === "tool-error") {
+    if (!toolCallId || !isMinimaxProviderBuiltinWebSearchToolName(toolName ?? "")) {
       return { handled: false, sawAnswerOrToolOutput: false };
     }
     if (state.webSearchResultsByCallId.has(toolCallId)) {
@@ -276,7 +272,7 @@ export function handleMinimaxWebSearchStreamPart(
     return { handled: true, sawAnswerOrToolOutput: true };
   }
 
-  if (part.type === 'raw') {
+  if (part.type === "raw") {
     const rawValue = (part as { rawValue?: unknown }).rawValue;
     const sawToolBlock = handleRawMinimaxWebSearchChunk(rawValue, state, events);
     return { handled: sawToolBlock, sawAnswerOrToolOutput: sawToolBlock };
@@ -298,7 +294,7 @@ export function filterAnthropicHostToolCalls<T extends { id: string; name: strin
       calls.map((call) => ({
         id: call.id,
         name: call.name,
-        argumentsJson: '',
+        argumentsJson: "",
       })),
       state.executedProviderBuiltinToolCallIds,
     ).map((call) => call.id),
@@ -319,13 +315,13 @@ export function appendStreamingTextAnthropicBlock(
   const lastBlock = state.anthropicContentBlocks.at(-1);
   if (lastBlock !== undefined && isJsonObject(lastBlock as JsonValue)) {
     const textBlock = lastBlock as JsonObject;
-    if (textBlock.type === 'text' && typeof textBlock.text === 'string') {
+    if (textBlock.type === "text" && typeof textBlock.text === "string") {
       textBlock.text = `${textBlock.text}${text}`;
       return;
     }
   }
 
-  state.anthropicContentBlocks.push({ type: 'text', text });
+  state.anthropicContentBlocks.push({ type: "text", text });
 }
 
 export function buildMinimaxWebSearchAssistantMessageFields(
@@ -359,18 +355,21 @@ export function resolveMinimaxWebSearchAssistantReplayText(
   message: JsonObject,
   blocks: readonly JsonValue[],
 ): string {
-  if (typeof message.content === 'string' && message.content.trim().length > 0) {
+  if (typeof message.content === "string" && message.content.trim().length > 0) {
     return message.content;
   }
 
-  return blocks.flatMap((block) => {
-    if (!isJsonObject(block as JsonValue)) {
-      return [];
-    }
-    const record = block as JsonObject;
-    if (record.type !== 'text' || typeof record.text !== 'string') {
-      return [];
-    }
-    return [record.text];
-  }).join('\n\n').trim();
+  return blocks
+    .flatMap((block) => {
+      if (!isJsonObject(block as JsonValue)) {
+        return [];
+      }
+      const record = block as JsonObject;
+      if (record.type !== "text" || typeof record.text !== "string") {
+        return [];
+      }
+      return [record.text];
+    })
+    .join("\n\n")
+    .trim();
 }

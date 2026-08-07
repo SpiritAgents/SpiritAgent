@@ -1,14 +1,11 @@
-import type { JsonValue, ToolExecutionOutput } from '@spiritagent/agent-core';
-import { APPEND_DIAGNOSTICS_AFTER_WRITES, HOST_WRITE_TOOL_NAMES } from '@spiritagent/agent-core';
-import {
-  buildLspWriteDiagnosticsUi,
-  formatDiagnosticsSummaryBlock,
-} from '@spiritagent/agent-core';
+import type { JsonValue, ToolExecutionOutput } from "@spiritagent/agent-core";
+import { APPEND_DIAGNOSTICS_AFTER_WRITES, HOST_WRITE_TOOL_NAMES } from "@spiritagent/agent-core";
+import { buildLspWriteDiagnosticsUi, formatDiagnosticsSummaryBlock } from "@spiritagent/agent-core";
 
-import { DEFAULT_LSP_TIMING } from './config.js';
-import { LspTimeoutError } from './errors.js';
-import { resolveWorkspaceFilePath } from './paths.js';
-import type { LspService } from './service.js';
+import { DEFAULT_LSP_TIMING } from "./config.js";
+import { LspTimeoutError } from "./errors.js";
+import { resolveWorkspaceFilePath } from "./paths.js";
+import type { LspService } from "./service.js";
 
 export async function appendLspDiagnosticsAfterWriteIfNeeded(
   lsp: LspService | undefined,
@@ -35,19 +32,17 @@ export async function appendLspDiagnosticsAfterWriteIfNeeded(
       diagnostics.diagnostics,
     );
     if (!block) {
-      return lspWriteDiagnostics
-        ? { ...output, hostUi: { lspWriteDiagnostics } }
-        : output;
+      return lspWriteDiagnostics ? { ...output, hostUi: { lspWriteDiagnostics } } : output;
     }
-    const summaryText = `${output.summaryText ?? ''}${block}`.trim();
+    const summaryText = `${output.summaryText ?? ""}${block}`.trim();
     return {
       ...output,
       summaryText,
       content: output.content.map((part) => {
-        if (part.type !== 'text') {
+        if (part.type !== "text") {
           return part;
         }
-        return { type: 'text', text: `${part.text}${block}` };
+        return { type: "text", text: `${part.text}${block}` };
       }),
       ...(lspWriteDiagnostics ? { hostUi: { lspWriteDiagnostics } } : {}),
     };
@@ -55,36 +50,39 @@ export async function appendLspDiagnosticsAfterWriteIfNeeded(
     if (!(error instanceof LspTimeoutError)) {
       return output;
     }
-    const note = '\n\n[lsp]\n(diagnostics pending or timed out)';
+    const note = "\n\n[lsp]\n(diagnostics pending or timed out)";
     return {
       ...output,
-      summaryText: `${output.summaryText ?? ''}${note}`.trim(),
+      summaryText: `${output.summaryText ?? ""}${note}`.trim(),
       content: output.content.map((part) => {
-        if (part.type !== 'text') {
+        if (part.type !== "text") {
           return part;
         }
-        return { type: 'text', text: `${part.text}${note}` };
+        return { type: "text", text: `${part.text}${note}` };
       }),
     };
   }
 }
 
-function resolvedPathFromWriteRequest(workspaceRoot: string, request: JsonValue): string | undefined {
-  if (typeof request !== 'object' || request === null || Array.isArray(request)) {
+function resolvedPathFromWriteRequest(
+  workspaceRoot: string,
+  request: JsonValue,
+): string | undefined {
+  if (typeof request !== "object" || request === null || Array.isArray(request)) {
     return undefined;
   }
   const record = request as Record<string, unknown>;
-  const name = typeof record.name === 'string' ? record.name : '';
+  const name = typeof record.name === "string" ? record.name : "";
   if (!HOST_WRITE_TOOL_NAMES.has(name)) {
     return undefined;
   }
-  if (name === 'apply_patch') {
+  if (name === "apply_patch") {
     const operation = record.operation;
-    if (typeof operation !== 'object' || operation === null || Array.isArray(operation)) {
+    if (typeof operation !== "object" || operation === null || Array.isArray(operation)) {
       return undefined;
     }
     const pathValue = (operation as Record<string, unknown>).path;
-    if (typeof pathValue !== 'string') {
+    if (typeof pathValue !== "string") {
       return undefined;
     }
     try {
@@ -94,7 +92,7 @@ function resolvedPathFromWriteRequest(workspaceRoot: string, request: JsonValue)
     }
   }
   const pathValue = record.path;
-  if (typeof pathValue !== 'string') {
+  if (typeof pathValue !== "string") {
     return undefined;
   }
   try {

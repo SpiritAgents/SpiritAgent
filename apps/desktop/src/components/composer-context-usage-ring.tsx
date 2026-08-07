@@ -1,12 +1,8 @@
-import { useTranslation } from 'react-i18next';
+import { useTranslation } from "react-i18next";
 
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipTrigger,
-} from '@/components/ui/tooltip';
-import { formatCompactTokenCount } from '@/lib/format-compact-token-count';
-import type { ConversationContextUsageSnapshot } from '@/types';
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
+import { formatCompactTokenCount } from "@/lib/format-compact-token-count";
+import type { ConversationContextUsageSnapshot } from "@/types";
 
 const RING_SIZE_PX = 13;
 const RING_STROKE_PX = 1.75;
@@ -19,10 +15,10 @@ function ContextUsageDetailPanel({ usage }: { usage: ConversationContextUsageSna
   return (
     <div className="space-y-1 text-xs leading-snug">
       <p className="text-foreground">
-        {t('composer.contextUsageHoverPercent', { percent: usage.percent })}
+        {t("composer.contextUsageHoverPercent", { percent: usage.percent })}
       </p>
       <p className="text-muted-foreground">
-        {t('composer.contextUsageHoverTokens', {
+        {t("composer.contextUsageHoverTokens", {
           input: formatCompactTokenCount(usage.inputTokens),
           total: formatCompactTokenCount(usage.contextLength),
         })}
@@ -31,11 +27,7 @@ function ContextUsageDetailPanel({ usage }: { usage: ConversationContextUsageSna
   );
 }
 
-export function ComposerContextUsageRing({
-  usage,
-}: {
-  usage?: ConversationContextUsageSnapshot;
-}) {
+export function ComposerContextUsageRing({ usage }: { usage?: ConversationContextUsageSnapshot }) {
   const { t } = useTranslation();
 
   if (!usage) {
@@ -43,7 +35,7 @@ export function ComposerContextUsageRing({
   }
 
   const dashOffset = RING_CIRCUMFERENCE * (1 - usage.percent / 100);
-  const ariaLabel = t('composer.contextUsageAria', {
+  const ariaLabel = t("composer.contextUsageAria", {
     percent: usage.percent,
     inputTokens: usage.inputTokens,
     contextLength: usage.contextLength,

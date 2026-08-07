@@ -1,6 +1,6 @@
-import { webContents, type WebContents } from 'electron';
+import { webContents, type WebContents } from "electron";
 
-import { toggleBrowserWindowFullScreen } from './window-fullscreen.js';
+import { toggleBrowserWindowFullScreen } from "./window-fullscreen.js";
 
 type GuestF12Registration = {
   host: WebContents;
@@ -20,8 +20,8 @@ function findOwnedWebviewGuest(host: WebContents, guestWebContentsId: number): W
   if (!guest || guest.isDestroyed()) {
     return null;
   }
-  if (guest.getType() !== 'webview' || guest.hostWebContents?.id !== host.id) {
-    throw new Error('Invalid browser guest webContents');
+  if (guest.getType() !== "webview" || guest.hostWebContents?.id !== host.id) {
+    throw new Error("Invalid browser guest webContents");
   }
   return guest;
 }
@@ -29,7 +29,7 @@ function findOwnedWebviewGuest(host: WebContents, guestWebContentsId: number): W
 function requireOwnedWebviewGuest(host: WebContents, guestWebContentsId: number): WebContents {
   const guest = findOwnedWebviewGuest(host, guestWebContentsId);
   if (!guest) {
-    throw new Error('Invalid browser guest webContents');
+    throw new Error("Invalid browser guest webContents");
   }
   return guest;
 }
@@ -43,25 +43,25 @@ export function registerBrowserGuestF12(
   const guest = requireOwnedWebviewGuest(host, guestWebContentsId);
 
   const onBeforeInput = (event: Electron.Event, input: Electron.Input) => {
-    if (input.type !== 'keyDown') {
+    if (input.type !== "keyDown") {
       return;
     }
 
-    if (process.platform === 'win32' && input.key === 'F11') {
+    if (process.platform === "win32" && input.key === "F11") {
       event.preventDefault();
       toggleBrowserWindowFullScreen(host);
       return;
     }
 
-    if (input.key === 'F12') {
+    if (input.key === "F12") {
       event.preventDefault();
       if (!host.isDestroyed()) {
-        host.send('desktop:browser-guest-f12', { tabId });
+        host.send("desktop:browser-guest-f12", { tabId });
       }
     }
   };
 
-  guest.on('before-input-event', onBeforeInput);
+  guest.on("before-input-event", onBeforeInput);
   f12ByGuestId.set(guestWebContentsId, { host, tabId, onBeforeInput });
 }
 
@@ -72,7 +72,7 @@ export function unregisterBrowserGuestF12(host: WebContents, guestWebContentsId:
   }
   const guest = webContents.fromId(guestWebContentsId);
   if (guest && !guest.isDestroyed()) {
-    guest.removeListener('before-input-event', registration.onBeforeInput);
+    guest.removeListener("before-input-event", registration.onBeforeInput);
   }
   f12ByGuestId.delete(guestWebContentsId);
 }
@@ -92,7 +92,7 @@ export function openBrowserGuestDevtools(host: WebContents, pageGuestId: number)
   if (!page || page.isDevToolsOpened()) {
     return false;
   }
-  page.openDevTools({ mode: 'detach', activate: true });
+  page.openDevTools({ mode: "detach", activate: true });
   return true;
 }
 

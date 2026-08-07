@@ -83,7 +83,11 @@ export function SpiritStreamdownMarkdown({
   );
 
   const components = useMemo(() => {
-    const { pre: _pre, code: inlineCode, ...rest } = createMarkdownMessageComponents(
+    const {
+      pre: _pre,
+      code: inlineCode,
+      ...rest
+    } = createMarkdownMessageComponents(
       readManagedImagePreviewDataUrl,
       tone,
       readManagedVideoPreviewUrl,

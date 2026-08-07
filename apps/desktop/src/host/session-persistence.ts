@@ -1,18 +1,21 @@
-import path from 'node:path';
+import path from "node:path";
 
-import type { ChatArchive } from '@spiritagent/agent-core';
+import type { ChatArchive } from "@spiritagent/agent-core";
 
-import { normalizeTimelineSnapshotForPersistence, type PersistedDesktopTimelineTurnSnapshot } from './chat-schema.js';
+import {
+  normalizeTimelineSnapshotForPersistence,
+  type PersistedDesktopTimelineTurnSnapshot,
+} from "./chat-schema.js";
 import {
   buildArchiveAssistantAuxFromConversation,
   buildArchiveMessagesFromConversation,
   buildStoredDesktopSession,
   cloneQueuedUserTurns,
   serializeSubagentTimelinesFromMessages,
-} from './sessions.js';
-import type { SessionBundle } from './session-bundle.js';
-import type { DesktopHostRuntime } from './runtime.js';
-import { saveStoredSession } from './storage.js';
+} from "./sessions.js";
+import type { SessionBundle } from "./session-bundle.js";
+import type { DesktopHostRuntime } from "./runtime.js";
+import { saveStoredSession } from "./storage.js";
 
 export interface PersistDesktopSessionBundleInput {
   bundle: SessionBundle;
@@ -35,7 +38,7 @@ export async function persistDesktopSessionBundle(
 ): Promise<PersistDesktopSessionBundleResult> {
   const { bundle } = input;
   const activeSession = bundle.activeSession;
-  if (!activeSession || activeSession.kind === 'ephemeral') {
+  if (!activeSession || activeSession.kind === "ephemeral") {
     return { rekeyNeeded: false };
   }
 
@@ -50,23 +53,21 @@ export async function persistDesktopSessionBundle(
   const archiveAssistantAux = buildArchiveAssistantAuxFromConversation(desktopMessages);
   const archive = input.fromRuntime
     ? input.fromRuntime.toArchive(archiveMessages, archiveAssistantAux)
-    : {
+    : ({
         messages: archiveMessages,
         assistantAux: archiveAssistantAux,
         llmHistory: bundle.archiveHistory,
         subagentSessions: bundle.archiveSubagentSessions ?? [],
         loopEnabled: bundle.loopEnabled,
-      } satisfies ChatArchive;
+      } satisfies ChatArchive);
 
   bundle.archiveHistory = archive.llmHistory;
   bundle.archiveSubagentSessions = archive.subagentSessions ?? [];
   bundle.loopEnabled = archive.loopEnabled === true;
 
   const bumpListSortAt = input.bumpListSortAt === true;
-  const savedAtUnixMs = bumpListSortAt
-    ? Date.now()
-    : (bundle.listSortSavedAtUnixMs ?? Date.now());
-  const sessionTitleSource = bundle.sessionTitleSource ?? 'seed';
+  const savedAtUnixMs = bumpListSortAt ? Date.now() : (bundle.listSortSavedAtUnixMs ?? Date.now());
+  const sessionTitleSource = bundle.sessionTitleSource ?? "seed";
   bundle.sessionTitleSource = sessionTitleSource;
   const subagentDesktopTimelines = serializeSubagentTimelinesFromMessages(
     bundle.subagentDesktopMessagesBySessionId,

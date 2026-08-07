@@ -1,19 +1,19 @@
-import { app, BrowserWindow, Notification } from 'electron';
+import { app, BrowserWindow, Notification } from "electron";
 
 import type {
   DesktopNotificationAction,
   DesktopNotificationContext,
   DesktopNotificationKind,
-} from '../src/lib/desktop-notification-types.js';
+} from "../src/lib/desktop-notification-types.js";
 
 import {
   buildWindowsToastXml,
   parseWindowsToastActivation,
   resolveNotificationActionIndex,
   shouldUseWindowsToastXml,
-} from '../src/lib/windows-toast-xml.js';
+} from "../src/lib/windows-toast-xml.js";
 
-const DESKTOP_APP_USER_MODEL_ID = 'ai.spiritagent.desktop';
+const DESKTOP_APP_USER_MODEL_ID = "ai.spiritagent.desktop";
 
 export type DesktopNotificationPayload = {
   title: string;
@@ -26,14 +26,12 @@ export type DesktopNotificationPayload = {
 };
 
 export type DesktopNotificationReplyPayload = {
-  kind: Extract<DesktopNotificationKind, 'approval' | 'ask-questions'>;
+  kind: Extract<DesktopNotificationKind, "approval" | "ask-questions">;
   text: string;
   context?: DesktopNotificationContext;
 };
 
-export type ApprovalNotificationHandler = (
-  decision: 'allow' | 'deny',
-) => Promise<void>;
+export type ApprovalNotificationHandler = (decision: "allow" | "deny") => Promise<void>;
 
 export type NotificationReplyHandler = (
   payload: DesktopNotificationReplyPayload,
@@ -72,9 +70,9 @@ function handleApprovalActionIndex(index: number | undefined): void {
     approvalActionInFlight = true;
     try {
       if (index === 0) {
-        await approvalHandler?.('allow');
+        await approvalHandler?.("allow");
       } else {
-        await approvalHandler?.('deny');
+        await approvalHandler?.("deny");
       }
     } finally {
       approvalActionInFlight = false;
@@ -89,7 +87,7 @@ function handleWindowsToastActivation(details: {
   arguments?: string;
 }): void {
   const parsed = parseWindowsToastActivation(details);
-  if (parsed.kind === 'action') {
+  if (parsed.kind === "action") {
     handleApprovalActionIndex(parsed.actionIndex);
     return;
   }
@@ -97,19 +95,15 @@ function handleWindowsToastActivation(details: {
 }
 
 function registerWindowsNotificationActivationHandler(): void {
-  if (windowsActivationHandlerRegistered || process.platform !== 'win32') {
+  if (windowsActivationHandlerRegistered || process.platform !== "win32") {
     return;
   }
   const notificationWithActivation = Notification as typeof Notification & {
     handleActivation?: (
-      callback: (details: {
-        type?: string;
-        actionIndex?: number;
-        arguments?: string;
-      }) => void,
+      callback: (details: { type?: string; actionIndex?: number; arguments?: string }) => void,
     ) => void;
   };
-  if (typeof notificationWithActivation.handleActivation !== 'function') {
+  if (typeof notificationWithActivation.handleActivation !== "function") {
     return;
   }
   windowsActivationHandlerRegistered = true;
@@ -120,7 +114,7 @@ function registerWindowsNotificationActivationHandler(): void {
 
 /** Register early in `app.whenReady()` so toast button clicks are not missed. */
 export function registerWindowsToastActivationHandler(): void {
-  if (process.platform === 'win32') {
+  if (process.platform === "win32") {
     app.setAppUserModelId(DESKTOP_APP_USER_MODEL_ID);
     registerWindowsNotificationActivationHandler();
   }
@@ -130,13 +124,13 @@ async function ensureNotificationPermission(): Promise<boolean> {
   if (!Notification.isSupported()) {
     return false;
   }
-  if (process.platform !== 'darwin') {
+  if (process.platform !== "darwin") {
     return true;
   }
   const notificationWithPermission = Notification as typeof Notification & {
-    requestPermission?: () => Promise<'granted' | 'denied' | 'default'>;
+    requestPermission?: () => Promise<"granted" | "denied" | "default">;
   };
-  if (!permissionRequested && typeof notificationWithPermission.requestPermission === 'function') {
+  if (!permissionRequested && typeof notificationWithPermission.requestPermission === "function") {
     permissionRequested = true;
     try {
       await notificationWithPermission.requestPermission();
@@ -160,7 +154,9 @@ export function registerDesktopNotifications(
   registerWindowsToastActivationHandler();
 }
 
-export function setApprovalNotificationHandler(handler: ApprovalNotificationHandler | undefined): void {
+export function setApprovalNotificationHandler(
+  handler: ApprovalNotificationHandler | undefined,
+): void {
   approvalHandler = handler;
 }
 
@@ -168,7 +164,9 @@ export function setNotificationReplyHandler(handler: NotificationReplyHandler | 
   replyHandler = handler;
 }
 
-export async function showDesktopNotification(payload: DesktopNotificationPayload): Promise<boolean> {
+export async function showDesktopNotification(
+  payload: DesktopNotificationPayload,
+): Promise<boolean> {
   if (!(await ensureNotificationPermission())) {
     return false;
   }
@@ -182,17 +180,18 @@ export async function showDesktopNotification(payload: DesktopNotificationPayloa
     }
   }
 
-  const textAction = payload.actions?.find((action) => action.type === 'text');
-  const buttonActions = payload.actions?.filter((action) => action.type === 'button') ?? [];
-  const replyKind = payload.kind === 'approval' || payload.kind === 'ask-questions' ? payload.kind : undefined;
+  const textAction = payload.actions?.find((action) => action.type === "text");
+  const buttonActions = payload.actions?.filter((action) => action.type === "button") ?? [];
+  const replyKind =
+    payload.kind === "approval" || payload.kind === "ask-questions" ? payload.kind : undefined;
   const windowsToastPayload = {
     title: payload.title,
     body: payload.body,
     tag,
-    actions: buttonActions.map((action) => ({ type: 'button' as const, text: action.text })),
+    actions: buttonActions.map((action) => ({ type: "button" as const, text: action.text })),
   };
   const useWindowsToastXml =
-    process.platform === 'win32' && shouldUseWindowsToastXml(windowsToastPayload);
+    process.platform === "win32" && shouldUseWindowsToastXml(windowsToastPayload);
 
   const notification = useWindowsToastXml
     ? new Notification({
@@ -206,25 +205,30 @@ export async function showDesktopNotification(payload: DesktopNotificationPayloa
         silent: payload.silent === true,
         ...(tag ? { tag } : {}),
         ...(buttonActions.length > 0
-          ? { actions: buttonActions.map((action) => ({ type: 'button' as const, text: action.text })) }
+          ? {
+              actions: buttonActions.map((action) => ({
+                type: "button" as const,
+                text: action.text,
+              })),
+            }
           : {}),
-        ...(textAction && replyKind && process.platform === 'darwin'
+        ...(textAction && replyKind && process.platform === "darwin"
           ? { hasReply: true, replyPlaceholder: textAction.placeholder ?? textAction.text }
           : {}),
       });
 
-  notification.on('click', () => {
+  notification.on("click", () => {
     focusMainWindow();
   });
 
-  if (payload.kind === 'approval' && buttonActions.length > 0) {
-    notification.on('action', (event, legacyIndex) => {
+  if (payload.kind === "approval" && buttonActions.length > 0) {
+    notification.on("action", (event, legacyIndex) => {
       handleApprovalActionIndex(resolveNotificationActionIndex(event, legacyIndex));
     });
   }
 
   if (replyKind && textAction) {
-    notification.on('reply', (_event, reply) => {
+    notification.on("reply", (_event, reply) => {
       void Promise.resolve(
         replyHandler?.({
           kind: replyKind,
@@ -235,7 +239,7 @@ export async function showDesktopNotification(payload: DesktopNotificationPayloa
     });
   }
 
-  notification.on('close', () => {
+  notification.on("close", () => {
     if (tag) {
       activeTags.delete(tag);
     }

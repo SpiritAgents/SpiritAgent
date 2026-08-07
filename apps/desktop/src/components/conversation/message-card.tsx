@@ -1,4 +1,11 @@
-import { memo, useMemo, type ClipboardEvent as ReactClipboardEvent, type DragEvent as ReactDragEvent, type PointerEvent as ReactPointerEvent, type RefObject } from "react";
+import {
+  memo,
+  useMemo,
+  type ClipboardEvent as ReactClipboardEvent,
+  type DragEvent as ReactDragEvent,
+  type PointerEvent as ReactPointerEvent,
+  type RefObject,
+} from "react";
 import { useTranslation } from "react-i18next";
 
 import { AgentMarkdownMessage } from "@/components/agent-markdown-message";
@@ -197,24 +204,20 @@ function MessageCardImpl({
   const turnErrorSurface = !isUser && isTurnErrorAssistantMessage(message);
   const showThinkingCollapsible = !hiddenByProcessGroup && showThinkingCollapsibleEligible;
   const showCompactionCollapsible =
-    !hiddenByProcessGroup &&
-    shouldShowAssistantCompactionCollapsible(message, pendingAuxState);
+    !hiddenByProcessGroup && shouldShowAssistantCompactionCollapsible(message, pendingAuxState);
   const showTurnActions =
-    !hiddenByProcessGroup
-    && !inActiveStreamingTurn
-    && (
-      turnActionsEligible
-      || (showContinueButton && Boolean(continueTarget))
-    );
+    !hiddenByProcessGroup &&
+    !inActiveStreamingTurn &&
+    (turnActionsEligible || (showContinueButton && Boolean(continueTarget)));
   const showForkMenu =
-    showTurnActions
-    && canShowForkMessage({
+    showTurnActions &&
+    canShowForkMessage({
       message,
       activeSessionReadOnly,
     });
   const canFork =
-    showForkMenu
-    && canForkMessage({
+    showForkMenu &&
+    canForkMessage({
       message,
       conversationBusy: conversationIsBusy,
       activeSessionReadOnly,
@@ -271,7 +274,7 @@ function MessageCardImpl({
             onElementAttachmentsChange={() => {}}
             localFileAttachments={rewindLocalFileAttachments}
             onSubmit={onRewindSubmit}
-            placeholder={t('app.typeMessage')}
+            placeholder={t("app.typeMessage")}
             models={models}
             catalogHints={catalogHints}
             activeModel={activeModel}
@@ -352,25 +355,22 @@ function MessageCardImpl({
         ) : null}
         {!isUser && message.content.trim() ? (
           turnErrorSurface ? (
-            <TurnErrorMessageCard
-              content={message.content}
-              retry={message.aux?.turnErrorRetry}
-            />
+            <TurnErrorMessageCard content={message.content} retry={message.aux?.turnErrorRetry} />
           ) : subagentStatusSurface ? (
             <p className="text-sm leading-relaxed text-muted-foreground">{message.content}</p>
           ) : (
-          <div data-spirit-surface="message-bubble">
-            <AgentMarkdownMessage
-              content={message.content}
-              streaming={message.pending}
-              className="font-sans"
-              readManagedImagePreviewDataUrl={readManagedImagePreviewDataUrl}
-              readManagedVideoPreviewUrl={readManagedVideoPreviewUrl}
-              readLocalImagePreviewDataUrl={readLocalImagePreviewDataUrl}
-              localImageBaseDir={workspaceRoot}
-              localImageAllowedRootDir={workspaceRoot}
-            />
-          </div>
+            <div data-spirit-surface="message-bubble">
+              <AgentMarkdownMessage
+                content={message.content}
+                streaming={message.pending}
+                className="font-sans"
+                readManagedImagePreviewDataUrl={readManagedImagePreviewDataUrl}
+                readManagedVideoPreviewUrl={readManagedVideoPreviewUrl}
+                readLocalImagePreviewDataUrl={readLocalImagePreviewDataUrl}
+                localImageBaseDir={workspaceRoot}
+                localImageAllowedRootDir={workspaceRoot}
+              />
+            </div>
           )
         ) : null}
         {!isUser && message.aux?.finishTaskNotice ? (

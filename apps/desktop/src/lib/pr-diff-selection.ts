@@ -11,11 +11,11 @@ const ELEMENT_NODE = 1;
 
 function isHtmlElement(node: unknown): node is HTMLElement {
   return (
-    typeof node === "object"
-    && node !== null
-    && "nodeType" in node
-    && (node as { nodeType: number }).nodeType === ELEMENT_NODE
-    && "classList" in node
+    typeof node === "object" &&
+    node !== null &&
+    "nodeType" in node &&
+    (node as { nodeType: number }).nodeType === ELEMENT_NODE &&
+    "classList" in node
   );
 }
 
@@ -33,7 +33,10 @@ export function findChangedFileFromNode(node: Node | null, root: HTMLElement): s
   return null;
 }
 
-export function resolveChangedFileFromSelection(selection: Selection, root: HTMLElement): string | null {
+export function resolveChangedFileFromSelection(
+  selection: Selection,
+  root: HTMLElement,
+): string | null {
   const anchorFile = findChangedFileFromNode(selection.anchorNode, root);
   const focusFile = findChangedFileFromNode(selection.focusNode, root);
   if (!anchorFile || !focusFile || anchorFile !== focusFile) {
@@ -98,7 +101,9 @@ function lineNumberFromDiffRow(row: HTMLElement): number | null {
 }
 
 function collectDiffLinesInRange(range: Range, root: HTMLElement): HTMLElement[] {
-  const rows = Array.from(root.querySelectorAll(`div.${UNIFIED_DIFF_LINE_CLASS}`)).filter(isHtmlElement);
+  const rows = Array.from(root.querySelectorAll(`div.${UNIFIED_DIFF_LINE_CLASS}`)).filter(
+    isHtmlElement,
+  );
   return rows.filter((row) => {
     try {
       return range.intersectsNode(row);
@@ -109,7 +114,10 @@ function collectDiffLinesInRange(range: Range, root: HTMLElement): HTMLElement[]
 }
 
 /** Resolve unified diff gutter line numbers for the current DOM selection. */
-export function resolveDiffSelectionLineRange(root: HTMLElement, selection: Selection | null): PrDiffLineRange | null {
+export function resolveDiffSelectionLineRange(
+  root: HTMLElement,
+  selection: Selection | null,
+): PrDiffLineRange | null {
   if (!selection || selection.rangeCount === 0 || selection.isCollapsed) {
     return null;
   }

@@ -1,10 +1,10 @@
-import { useCallback, useMemo, useState } from 'react';
+import { useCallback, useMemo, useState } from "react";
 
 import {
   buildLongConversationListDemoMessages,
   longConversationListDemoStats,
-} from '@/lib/long-conversation-list-demo';
-import type { ConversationMessageSnapshot } from '@/types';
+} from "@/lib/long-conversation-list-demo";
+import type { ConversationMessageSnapshot } from "@/types";
 
 export function useLongConversationListDemo() {
   const [active, setActive] = useState(false);

@@ -1,22 +1,32 @@
-export type SpiritAgentMode = 'agent' | 'plan' | 'ask' | 'debug';
+export type SpiritAgentMode = "agent" | "plan" | "ask" | "debug";
 
 export function normalizeSpiritAgentMode(input?: {
   agentMode?: unknown;
   planMode?: boolean;
 }): SpiritAgentMode {
-  if (input?.agentMode === 'agent' || input?.agentMode === 'plan' || input?.agentMode === 'ask' || input?.agentMode === 'debug') {
+  if (
+    input?.agentMode === "agent" ||
+    input?.agentMode === "plan" ||
+    input?.agentMode === "ask" ||
+    input?.agentMode === "debug"
+  ) {
     return input.agentMode;
   }
-  return input?.planMode === true ? 'plan' : 'agent';
+  return input?.planMode === true ? "plan" : "agent";
 }
 
 export function readSpiritAgentModeFromTransportConfig(
   config: { spiritAgentMode?: SpiritAgentMode; planMode?: boolean } | undefined,
 ): SpiritAgentMode {
-  if (config?.spiritAgentMode === 'agent' || config?.spiritAgentMode === 'plan' || config?.spiritAgentMode === 'ask' || config?.spiritAgentMode === 'debug') {
+  if (
+    config?.spiritAgentMode === "agent" ||
+    config?.spiritAgentMode === "plan" ||
+    config?.spiritAgentMode === "ask" ||
+    config?.spiritAgentMode === "debug"
+  ) {
     return config.spiritAgentMode;
   }
-  return config?.planMode === true ? 'plan' : 'agent';
+  return config?.planMode === true ? "plan" : "agent";
 }
 
 export type JsonPrimitive = string | number | boolean | null;
@@ -26,7 +36,7 @@ export interface JsonObject {
   [key: string]: JsonValue;
 }
 
-export type ChatRole = 'system' | 'user' | 'assistant' | 'tool';
+export type ChatRole = "system" | "user" | "assistant" | "tool";
 
 export interface LlmToolCall {
   id: string;
@@ -35,17 +45,17 @@ export interface LlmToolCall {
 }
 
 export interface LlmTextContentPart extends JsonObject {
-  type: 'text';
+  type: "text";
   text: string;
 }
 
 export interface LlmImageContentPart extends JsonObject {
-  type: 'image';
+  type: "image";
   path: string;
 }
 
 export interface LlmVideoContentPart extends JsonObject {
-  type: 'video';
+  type: "video";
   path: string;
 }
 
@@ -95,7 +105,7 @@ function cloneJsonValue(value: JsonValue): JsonValue {
   if (Array.isArray(value)) {
     return value.map((item) => cloneJsonValue(item));
   }
-  if (typeof value === 'object' && value !== null) {
+  if (typeof value === "object" && value !== null) {
     return cloneLlmProviderState(value);
   }
   return value;
@@ -108,10 +118,10 @@ export interface ToolExecutionOutput {
 }
 
 export interface ToolExecutionHostUi {
-  lspWriteDiagnostics?: import('./lsp/types.js').LspWriteDiagnosticsUi;
+  lspWriteDiagnostics?: import("./lsp/types.js").LspWriteDiagnosticsUi;
 }
 
-export const DEFAULT_IMAGE_GENERATION_SIZE = '1024x1024';
+export const DEFAULT_IMAGE_GENERATION_SIZE = "1024x1024";
 export const DEFAULT_VIDEO_GENERATION_DURATION = 5;
 
 export interface ImageGenerationRequest {
@@ -160,15 +170,15 @@ export function createToolExecutionTextOutput(text: string): ToolExecutionOutput
 }
 
 export function createLlmTextContentPart(text: string): LlmTextContentPart {
-  return { type: 'text', text };
+  return { type: "text", text };
 }
 
 export function createLlmImageContentPart(path: string): LlmImageContentPart {
-  return { type: 'image', path };
+  return { type: "image", path };
 }
 
 export function createLlmVideoContentPart(path: string): LlmVideoContentPart {
-  return { type: 'video', path };
+  return { type: "video", path };
 }
 
 export function createLlmMessageContentFromText(text: string): LlmMessageContent {
@@ -195,43 +205,43 @@ export function createLlmMessageContentFromTextAndImages(
 
 export function cloneLlmMessageContent(content: readonly LlmContentPart[]): LlmMessageContent {
   return content.map((part) => {
-    if (part.type === 'text') {
-      return { type: 'text', text: part.text };
+    if (part.type === "text") {
+      return { type: "text", text: part.text };
     }
 
-    if (part.type === 'video') {
-      return { type: 'video', path: part.path };
+    if (part.type === "video") {
+      return { type: "video", path: part.path };
     }
 
-    return { type: 'image', path: part.path };
+    return { type: "image", path: part.path };
   });
 }
 
 export function llmMessageTextContent(content: readonly LlmContentPart[]): string {
   return content
-    .filter((part): part is LlmTextContentPart => part.type === 'text')
+    .filter((part): part is LlmTextContentPart => part.type === "text")
     .map((part) => part.text)
-    .join('');
+    .join("");
 }
 
 export function llmMessageImagePaths(content: readonly LlmContentPart[]): string[] {
   return content
-    .filter((part): part is LlmImageContentPart => part.type === 'image')
+    .filter((part): part is LlmImageContentPart => part.type === "image")
     .map((part) => part.path);
 }
 
 export function llmMessageHasImages(content: readonly LlmContentPart[]): boolean {
-  return content.some((part) => part.type === 'image');
+  return content.some((part) => part.type === "image");
 }
 
 export function llmMessageVideoPaths(content: readonly LlmContentPart[]): string[] {
   return content
-    .filter((part): part is LlmVideoContentPart => part.type === 'video')
+    .filter((part): part is LlmVideoContentPart => part.type === "video")
     .map((part) => part.path);
 }
 
 export function llmMessageHasVideos(content: readonly LlmContentPart[]): boolean {
-  return content.some((part) => part.type === 'video');
+  return content.some((part) => part.type === "video");
 }
 
 export function llmMessageHasMedia(content: readonly LlmContentPart[]): boolean {
@@ -239,38 +249,40 @@ export function llmMessageHasMedia(content: readonly LlmContentPart[]): boolean 
 }
 
 export function llmMessageHasText(content: readonly LlmContentPart[]): boolean {
-  return content.some((part) => part.type === 'text' && part.text.trim().length > 0);
+  return content.some((part) => part.type === "text" && part.text.trim().length > 0);
 }
 
 export function llmMessageContentWithoutImages(
   content: readonly LlmContentPart[],
 ): LlmMessageContent {
   return content
-    .filter((part): part is LlmTextContentPart => part.type === 'text')
-    .map((part) => ({ type: 'text', text: part.text }));
+    .filter((part): part is LlmTextContentPart => part.type === "text")
+    .map((part) => ({ type: "text", text: part.text }));
 }
 
 export function normalizeStoredLlmMessage(
   message: StoredLlmMessageArchiveEntry | LegacyLlmMessageArchiveEntry,
 ): LlmMessage {
   const toolCallId =
-    'toolCallId' in message && typeof message.toolCallId === 'string'
+    "toolCallId" in message && typeof message.toolCallId === "string"
       ? message.toolCallId
-      : 'tool_call_id' in message && typeof message.tool_call_id === 'string'
+      : "tool_call_id" in message && typeof message.tool_call_id === "string"
         ? message.tool_call_id
         : undefined;
   const toolCalls =
-    'toolCalls' in message && Array.isArray(message.toolCalls)
+    "toolCalls" in message && Array.isArray(message.toolCalls)
       ? cloneLlmToolCalls(message.toolCalls)
-      : 'tool_calls' in message && Array.isArray(message.tool_calls)
+      : "tool_calls" in message && Array.isArray(message.tool_calls)
         ? cloneLlmToolCalls(message.tool_calls)
         : undefined;
   const providerState =
-    'providerState' in message && typeof message.providerState === 'object' && message.providerState !== null
+    "providerState" in message &&
+    typeof message.providerState === "object" &&
+    message.providerState !== null
       ? cloneLlmProviderState(message.providerState)
-      : 'provider_state' in message
-          && typeof message.provider_state === 'object'
-          && message.provider_state !== null
+      : "provider_state" in message &&
+          typeof message.provider_state === "object" &&
+          message.provider_state !== null
         ? cloneLlmProviderState(message.provider_state as JsonObject)
         : undefined;
 
@@ -288,7 +300,7 @@ export function normalizeStoredLlmMessage(
     role: message.role,
     content: createLlmMessageContentFromTextAndImages(
       message.content,
-      'imagePaths' in message ? message.imagePaths ?? [] : [],
+      "imagePaths" in message ? (message.imagePaths ?? []) : [],
     ),
     ...(toolCallId !== undefined ? { toolCallId } : {}),
     ...(toolCalls !== undefined ? { toolCalls } : {}),
@@ -303,7 +315,12 @@ export interface AssistantAuxArchiveEntry {
   finishTaskNotice?: string;
 }
 
-export type SubagentSessionStatus = 'bootstrapping' | 'running' | 'completed' | 'failed' | 'blocked';
+export type SubagentSessionStatus =
+  | "bootstrapping"
+  | "running"
+  | "completed"
+  | "failed"
+  | "blocked";
 
 export interface SubagentSessionSummary {
   sessionId: string;
@@ -330,7 +347,7 @@ export interface DreamScope {
   gitBranch: string;
 }
 
-export type DreamRecordStatus = 'active' | 'superseded' | 'deleted';
+export type DreamRecordStatus = "active" | "superseded" | "deleted";
 
 export interface DreamSourceSessionRef {
   path: string;
@@ -360,14 +377,14 @@ export interface DreamQuery {
 }
 
 export type DreamCollectorRunStatus =
-  | 'queued'
-  | 'running'
-  | 'completed'
-  | 'failed'
-  | 'skipped'
-  | 'backoff';
+  | "queued"
+  | "running"
+  | "completed"
+  | "failed"
+  | "skipped"
+  | "backoff";
 
-export type DreamCollectorDecision = 'created' | 'updated' | 'deleted' | 'unchanged' | 'skipped';
+export type DreamCollectorDecision = "created" | "updated" | "deleted" | "unchanged" | "skipped";
 
 export interface DreamCollectorRun {
   runId: string;
@@ -383,7 +400,7 @@ export interface DreamCollectorRun {
   logPath?: string;
 }
 
-export type DreamLogLevel = 'debug' | 'info' | 'warn' | 'error';
+export type DreamLogLevel = "debug" | "info" | "warn" | "error";
 
 export interface DreamLogEntry {
   timeUnixMs: number;
@@ -403,15 +420,15 @@ export interface DreamSettings {
 }
 
 export interface ChatArchive {
-  messages: Array<{ role: 'user' | 'assistant'; content: string }>;
+  messages: Array<{ role: "user" | "assistant"; content: string }>;
   assistantAux: AssistantAuxArchiveEntry[];
   llmHistory: Array<StoredLlmMessageArchiveEntry | LegacyLlmMessageArchiveEntry>;
   subagentSessions?: SubagentSessionArchiveEntry[];
   loopEnabled?: boolean;
-  approvalLevel?: 'default' | 'auto-approval' | 'full-approval';
+  approvalLevel?: "default" | "auto-approval" | "full-approval";
 }
 
-export type McpStatusState = 'idle' | 'loading' | 'ready' | 'error';
+export type McpStatusState = "idle" | "loading" | "ready" | "error";
 
 export interface McpStatusSnapshot {
   revision: number;
@@ -463,8 +480,8 @@ export interface ToolCallRequest {
 }
 
 export type ToolAgentStep =
-  | { kind: 'tool-calls'; calls: ToolCallRequest[] }
-  | { kind: 'final-response-ready' };
+  | { kind: "tool-calls"; calls: ToolCallRequest[] }
+  | { kind: "final-response-ready" };
 
 export interface LlmTokenUsage {
   inputTokens: number;
@@ -484,25 +501,25 @@ export interface ToolAgentRoundResult<State = JsonValue> {
 }
 
 export type ToolAgentRoundCompletion<State = JsonValue> =
-  | { kind: 'success'; result: ToolAgentRoundResult<State> }
-  | { kind: 'failure'; error: string; requestTrace: JsonValue[] };
+  | { kind: "success"; result: ToolAgentRoundResult<State> }
+  | { kind: "failure"; error: string; requestTrace: JsonValue[] };
 
 export type LlmStreamEvent =
-  | { kind: 'thinking-chunk'; text: string }
+  | { kind: "thinking-chunk"; text: string }
   | {
-      kind: 'streaming-tool-preview';
+      kind: "streaming-tool-preview";
       toolCallId: string;
       toolName: string;
       argumentsJson: string;
     }
-  | { kind: 'assistant-chunk'; text: string }
+  | { kind: "assistant-chunk"; text: string }
   | {
-      kind: 'history-compacted';
+      kind: "history-compacted";
       newHistory: LlmMessage[];
       droppedMessages: number;
     }
-  | { kind: 'done' }
-  | { kind: 'error'; error: string };
+  | { kind: "done" }
+  | { kind: "error"; error: string };
 
 export interface StartedToolAgentRound<State = JsonValue> {
   eventStream: AsyncIterable<LlmStreamEvent>;
@@ -535,8 +552,8 @@ export interface AskQuestionsAnswer {
 }
 
 export type AskQuestionsResult =
-  | { status: 'skipped' }
-  | { status: 'answered'; answers: AskQuestionsAnswer[] };
+  | { status: "skipped" }
+  | { status: "answered"; answers: AskQuestionsAnswer[] };
 
 export interface SubagentRequest {
   task: string;
@@ -549,9 +566,9 @@ export interface SubagentRequest {
 }
 
 export type AuthorizationDecision<TrustTarget = string> =
-  | { kind: 'allowed' }
-  | { kind: 'need-approval'; prompt: string; trustTarget?: TrustTarget }
-  | { kind: 'need-questions'; questions: AskQuestionsRequest };
+  | { kind: "allowed" }
+  | { kind: "need-approval"; prompt: string; trustTarget?: TrustTarget }
+  | { kind: "need-questions"; questions: AskQuestionsRequest };
 
 export interface ToolRequestExecutionMetadata {
   toolCallId?: string;
@@ -584,7 +601,10 @@ export interface ToolExecutor<
   trust(target: TrustTarget): Promise<void>;
   execute(request: ToolRequest): Promise<ToolExecutionOutput>;
   attachRequestMetadata?(request: ToolRequest, metadata: ToolRequestExecutionMetadata): ToolRequest;
-  continueAfterQuestions?(request: ToolRequest, result: AskQuestionsResult): Promise<ToolRequest | undefined>;
+  continueAfterQuestions?(
+    request: ToolRequest,
+    result: AskQuestionsResult,
+  ): Promise<ToolRequest | undefined>;
   shouldExecuteInBackground?(request: ToolRequest): boolean;
   backgroundStatusText?(request: ToolRequest): string | undefined;
   abortRunningShell?(): void;

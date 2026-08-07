@@ -11,11 +11,7 @@ import {
   type RangeSelection,
 } from "lexical";
 
-import {
-  caretAtEnd,
-  type RichSegment,
-  type SegmentCaret,
-} from "@/lib/composer-segment-model";
+import { caretAtEnd, type RichSegment, type SegmentCaret } from "@/lib/composer-segment-model";
 import { $isSpiritChipNode } from "@/lib/composer-lexical/nodes/spirit-chip-node";
 import { $isSpiritParagraphNode } from "@/lib/composer-lexical/nodes/spirit-paragraph-node";
 
@@ -27,9 +23,7 @@ function getComposerParagraph(): ElementNode | null {
   return firstChild;
 }
 
-export function lexicalSelectionToSegmentCaret(
-  editor: LexicalEditor,
-): SegmentCaret | null {
+export function lexicalSelectionToSegmentCaret(editor: LexicalEditor): SegmentCaret | null {
   let caret: SegmentCaret | null = null;
   editor.getEditorState().read(() => {
     const selection = $getSelection();
@@ -87,24 +81,24 @@ function resolveCaretTarget(
   };
 }
 
-export function segmentCaretToLexicalSelection(
-  editor: LexicalEditor,
-  caret: SegmentCaret,
-): void {
-  editor.update(() => {
-    const paragraph = getComposerParagraph();
-    if (!paragraph) {
-      return;
-    }
-    const target = resolveCaretTarget(paragraph, caret);
-    if (!target) {
-      return;
-    }
-    const selection: RangeSelection = $createRangeSelection();
-    selection.anchor.set(target.nodeKey, target.offset, "text");
-    selection.focus.set(target.nodeKey, target.offset, "text");
-    $setSelection(selection);
-  }, { discrete: true });
+export function segmentCaretToLexicalSelection(editor: LexicalEditor, caret: SegmentCaret): void {
+  editor.update(
+    () => {
+      const paragraph = getComposerParagraph();
+      if (!paragraph) {
+        return;
+      }
+      const target = resolveCaretTarget(paragraph, caret);
+      if (!target) {
+        return;
+      }
+      const selection: RangeSelection = $createRangeSelection();
+      selection.anchor.set(target.nodeKey, target.offset, "text");
+      selection.focus.set(target.nodeKey, target.offset, "text");
+      $setSelection(selection);
+    },
+    { discrete: true },
+  );
 }
 
 export function focusComposerAtEnd(editor: LexicalEditor, segments: RichSegment[]): void {

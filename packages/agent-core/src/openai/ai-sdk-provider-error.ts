@@ -1,5 +1,5 @@
-import type { JsonValue } from '../ports.js';
-import { isJsonObject } from '../tool-agent.js';
+import type { JsonValue } from "../ports.js";
+import { isJsonObject } from "../tool-agent.js";
 
 type AiSdkApiCallError = Error & {
   statusCode?: number;
@@ -8,7 +8,7 @@ type AiSdkApiCallError = Error & {
 };
 
 function tryParseJsonValue(value: unknown): JsonValue | undefined {
-  if (typeof value !== 'string') {
+  if (typeof value !== "string") {
     return value as JsonValue | undefined;
   }
 
@@ -25,14 +25,14 @@ function readNestedApiErrorMessage(body: JsonValue | undefined): string | undefi
   }
 
   const nestedError = body.error;
-  if (isJsonObject(nestedError) && typeof nestedError.message === 'string') {
+  if (isJsonObject(nestedError) && typeof nestedError.message === "string") {
     const message = nestedError.message.trim();
     if (message) {
       return message;
     }
   }
 
-  if (typeof body.message === 'string') {
+  if (typeof body.message === "string") {
     const message = body.message.trim();
     if (message) {
       return message;
@@ -44,12 +44,12 @@ function readNestedApiErrorMessage(body: JsonValue | undefined): string | undefi
 
 function isUselessRenderedProviderError(text: string): boolean {
   const trimmed = text.trim();
-  return trimmed.length === 0 || trimmed === '[object Object]';
+  return trimmed.length === 0 || trimmed === "[object Object]";
 }
 
 function readProviderErrorMessageField(error: Record<string, unknown>): string | undefined {
   const errorMessage = error.error_message;
-  if (typeof errorMessage !== 'string') {
+  if (typeof errorMessage !== "string") {
     return undefined;
   }
   const trimmed = errorMessage.trim();
@@ -69,7 +69,7 @@ function extractPlainObjectProviderError(error: Record<string, unknown>): string
     return fromErrorMessageField;
   }
 
-  for (const key of ['value', 'cause'] as const) {
+  for (const key of ["value", "cause"] as const) {
     const nested = error[key];
     if (nested === undefined || nested === error) {
       continue;
@@ -87,9 +87,9 @@ function extractPlainObjectProviderError(error: Record<string, unknown>): string
 
   const asApiError = error as unknown as AiSdkApiCallError;
   if (
-    typeof error.responseBody !== 'undefined'
-    || typeof error.statusCode === 'number'
-    || typeof error.message === 'string'
+    typeof error.responseBody !== "undefined" ||
+    typeof error.statusCode === "number" ||
+    typeof error.message === "string"
   ) {
     const fromApi = extractAiSdkApiErrorMessage(asApiError);
     if (fromApi && !isUselessRenderedProviderError(fromApi)) {
@@ -97,15 +97,15 @@ function extractPlainObjectProviderError(error: Record<string, unknown>): string
     }
   }
 
-  if (typeof error.message === 'string') {
+  if (typeof error.message === "string") {
     const message = error.message.trim();
     if (message && !isUselessRenderedProviderError(message)) {
       return message;
     }
   }
 
-  if (typeof error.name === 'string' && typeof error.statusCode === 'number') {
-    const label = error.name.trim() || 'API request failed';
+  if (typeof error.name === "string" && typeof error.statusCode === "number") {
+    const label = error.name.trim() || "API request failed";
     return `${label} (HTTP ${error.statusCode})`;
   }
 
@@ -113,7 +113,7 @@ function extractPlainObjectProviderError(error: Record<string, unknown>): string
 }
 
 function extractAiSdkApiErrorMessage(error: AiSdkApiCallError): string | undefined {
-  const direct = typeof error.message === 'string' ? error.message.trim() : '';
+  const direct = typeof error.message === "string" ? error.message.trim() : "";
   if (direct && !isUselessRenderedProviderError(direct)) {
     return direct;
   }
@@ -128,8 +128,8 @@ function extractAiSdkApiErrorMessage(error: AiSdkApiCallError): string | undefin
     return fromData;
   }
 
-  if (typeof error.statusCode === 'number') {
-    const label = error.name?.trim() || 'API request failed';
+  if (typeof error.statusCode === "number") {
+    const label = error.name?.trim() || "API request failed";
     return `${label} (HTTP ${error.statusCode})`;
   }
 
@@ -143,13 +143,13 @@ export function renderAiSdkProviderError(error: unknown): string {
     if (rendered && !isUselessRenderedProviderError(rendered)) {
       return rendered;
     }
-    if ('cause' in error && error.cause !== undefined && error.cause !== error) {
+    if ("cause" in error && error.cause !== undefined && error.cause !== error) {
       const fromCause = renderAiSdkProviderError(error.cause);
       if (!isUselessRenderedProviderError(fromCause)) {
         return fromCause;
       }
     }
-    return rendered ?? (error.name.trim() || 'Unknown error');
+    return rendered ?? (error.name.trim() || "Unknown error");
   }
 
   if (isJsonObject(error as JsonValue)) {

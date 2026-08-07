@@ -1,9 +1,9 @@
-import type { JsonObject, JsonValue } from '../ports.js';
-import { isJsonObject } from '../tool-agent.js';
-import { buildResponsesBuiltInToolArgumentsJson } from '../open-responses/responses-built-in-tools.js';
+import type { JsonObject, JsonValue } from "../ports.js";
+import { isJsonObject } from "../tool-agent.js";
+import { buildResponsesBuiltInToolArgumentsJson } from "../open-responses/responses-built-in-tools.js";
 
 export type MinimaxWebSearchResult = {
-  type: 'web_search_result';
+  type: "web_search_result";
   title?: string | undefined;
   url?: string | undefined;
   content?: string | undefined;
@@ -11,7 +11,7 @@ export type MinimaxWebSearchResult = {
 };
 
 function readNonEmptyString(value: unknown): string | undefined {
-  if (typeof value !== 'string') {
+  if (typeof value !== "string") {
     return undefined;
   }
   const trimmed = value.trim();
@@ -24,18 +24,24 @@ export function parseMinimaxWebSearchResults(content: unknown): MinimaxWebSearch
   }
 
   return content.flatMap((entry) => {
-    if (!isJsonObject(entry as JsonValue) || (entry as JsonObject).type !== 'web_search_result') {
+    if (!isJsonObject(entry as JsonValue) || (entry as JsonObject).type !== "web_search_result") {
       return [];
     }
 
     const record = entry as JsonObject;
-    return [{
-      type: 'web_search_result' as const,
-      ...(readNonEmptyString(record.title) ? { title: readNonEmptyString(record.title) } : {}),
-      ...(readNonEmptyString(record.url) ? { url: readNonEmptyString(record.url) } : {}),
-      ...(readNonEmptyString(record.content) ? { content: readNonEmptyString(record.content) } : {}),
-      ...(readNonEmptyString(record.page_age) ? { page_age: readNonEmptyString(record.page_age) } : {}),
-    }];
+    return [
+      {
+        type: "web_search_result" as const,
+        ...(readNonEmptyString(record.title) ? { title: readNonEmptyString(record.title) } : {}),
+        ...(readNonEmptyString(record.url) ? { url: readNonEmptyString(record.url) } : {}),
+        ...(readNonEmptyString(record.content)
+          ? { content: readNonEmptyString(record.content) }
+          : {}),
+        ...(readNonEmptyString(record.page_age)
+          ? { page_age: readNonEmptyString(record.page_age) }
+          : {}),
+      },
+    ];
   });
 }
 
@@ -50,7 +56,7 @@ export function mapMinimaxWebSearchResultsToActionSources(
       continue;
     }
 
-    const source: JsonObject = { type: 'url', url };
+    const source: JsonObject = { type: "url", url };
     const title = readNonEmptyString(result.title);
     const snippet = readNonEmptyString(result.content);
     if (title) {
@@ -76,13 +82,13 @@ export function buildMinimaxWebSearchSucceededArgumentsJson(
 ): string {
   const sources = mapMinimaxWebSearchResultsToActionSources(results);
   const item: JsonObject = {
-    type: 'web_search_call',
-    status: 'completed',
+    type: "web_search_call",
+    status: "completed",
     action: {
-      type: 'search',
+      type: "search",
       query: query.trim(),
       sources,
     },
   };
-  return buildResponsesBuiltInToolArgumentsJson(item, 'web_search');
+  return buildResponsesBuiltInToolArgumentsJson(item, "web_search");
 }

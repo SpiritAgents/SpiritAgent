@@ -1,8 +1,7 @@
 import { viewportLengthToScaleRootLocal } from "@/lib/ui-layout-scale";
 
 export const CONVERSATION_SPLIT_SHELL_SELECTOR = "[data-conversation-split-shell]";
-export const CONVERSATION_SPLIT_SHELL_DIVIDER_ATTR =
-  "data-spirit-conversation-split-shell-divider";
+export const CONVERSATION_SPLIT_SHELL_DIVIDER_ATTR = "data-spirit-conversation-split-shell-divider";
 
 export function getConversationSplitShell(): HTMLElement | null {
   return document.querySelector<HTMLElement>(CONVERSATION_SPLIT_SHELL_SELECTOR);

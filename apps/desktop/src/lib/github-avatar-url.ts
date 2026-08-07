@@ -3,6 +3,6 @@ export function resolveGitHubAvatarUrl(login: string, avatarUrl?: string): strin
   if (trimmed) {
     return trimmed;
   }
-  const normalizedLogin = login.trim() || 'ghost';
+  const normalizedLogin = login.trim() || "ghost";
   return `https://github.com/${normalizedLogin}.png?size=40`;
 }

@@ -1,6 +1,6 @@
-import { resolveSpiritDataDir as resolveSharedSpiritDataDir } from '@spiritagent/host-internal';
+import { resolveSpiritDataDir as resolveSharedSpiritDataDir } from "@spiritagent/host-internal";
 
-import type { AcpServerConfig } from './types.js';
+import type { AcpServerConfig } from "./types.js";
 
 /**
  * Resolves the Spirit Agent data directory (shared with Desktop / CLI).
@@ -8,7 +8,7 @@ import type { AcpServerConfig } from './types.js';
  * (SPIRIT_AGENT_DATA_DIR → platform conventions).
  */
 export function resolveSpiritDataDir(): string {
-  return process.env['SPIRIT_ACP_DATA_DIR']?.trim() || resolveSharedSpiritDataDir();
+  return process.env["SPIRIT_ACP_DATA_DIR"]?.trim() || resolveSharedSpiritDataDir();
 }
 
 /**
@@ -16,7 +16,7 @@ export function resolveSpiritDataDir(): string {
  * Spirit config + keyring (Terminal Auth / `--setup`), not environment variables.
  */
 export function loadBaseConfig(): AcpServerConfig {
-  const workspaceRoot = process.env['SPIRIT_ACP_WORKSPACE']?.trim() || process.cwd();
+  const workspaceRoot = process.env["SPIRIT_ACP_WORKSPACE"]?.trim() || process.cwd();
   const spiritDataDir = resolveSpiritDataDir();
 
   return {

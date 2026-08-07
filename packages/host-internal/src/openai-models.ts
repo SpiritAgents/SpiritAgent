@@ -6,20 +6,17 @@ import {
   gatewayAnthropicClaudeSupportedEfforts,
   gatewayGoogleGeminiSupportedEfforts,
   routedAnthropicClaudeSupportedEfforts,
-} from '@spiritagent/agent-core';
+} from "@spiritagent/agent-core";
 
-import type { ModelProviderId, ProviderModelTransportKind } from './model-provider-presets.js';
-import { resolveProviderConnectApiBase } from './model-provider-presets.js';
-import {
-  assertGoogleGeminiApiBase,
-  googleNativeModelsListUrl,
-} from './google-gemini-endpoints.js';
-import { bedrockApiBaseFromRegion, extractAwsRegionFromBedrockApiBase } from './bedrock-region.js';
-import { extractVertexProjectAndLocationFromApiBase } from './google-vertex-endpoints.js';
-import { normalizeOpenAiApiBase } from './openai-api-base.js';
-import { formatModelDisplayNameFromId } from './model-display-name.js';
+import type { ModelProviderId, ProviderModelTransportKind } from "./model-provider-presets.js";
+import { resolveProviderConnectApiBase } from "./model-provider-presets.js";
+import { assertGoogleGeminiApiBase, googleNativeModelsListUrl } from "./google-gemini-endpoints.js";
+import { extractAwsRegionFromBedrockApiBase } from "./bedrock-region.js";
+import { extractVertexProjectAndLocationFromApiBase } from "./google-vertex-endpoints.js";
+import { normalizeOpenAiApiBase } from "./openai-api-base.js";
+import { formatModelDisplayNameFromId } from "./model-display-name.js";
 
-export { normalizeOpenAiApiBase } from './openai-api-base.js';
+export { normalizeOpenAiApiBase } from "./openai-api-base.js";
 
 export type { ProviderModelTransportKind };
 
@@ -48,7 +45,7 @@ export interface ProviderListedModelPricing {
   videoExamplePricing?: ProviderListedModelExamplePricing;
 }
 
-export type KimiCodeSupportsThinkingType = 'only';
+export type KimiCodeSupportsThinkingType = "only";
 
 export interface ProviderListedModelEntry {
   id: string;
@@ -72,9 +69,9 @@ export interface ProviderListedModelEntry {
   isPartner?: boolean;
 }
 
-export const OPENAI_MODELS_PATH = '/models';
-export const ANTHROPIC_MODELS_PATH = '/models';
-const ANTHROPIC_VERSION = '2023-06-01';
+export const OPENAI_MODELS_PATH = "/models";
+export const ANTHROPIC_MODELS_PATH = "/models";
+const ANTHROPIC_VERSION = "2023-06-01";
 
 /** Full URL for the models list request. */
 export function openAiCompatibleModelsListUrl(baseUrl: string): string {
@@ -93,17 +90,17 @@ export function anthropicModelsListUrl(baseUrl: string): string {
 
 /** MiniMax Messages transport lists models via OpenAI-compatible GET /v1/models on the same site origin. */
 export function minimaxOpenAiCompatibleListingBaseFromConnectBase(baseUrl: string): string {
-  const trimmed = baseUrl.trim().replace(/\/+$/, '');
+  const trimmed = baseUrl.trim().replace(/\/+$/, "");
   if (!trimmed) {
-    return resolveProviderConnectApiBase('minimax', 'openai-compatible');
+    return resolveProviderConnectApiBase("minimax", "openai-compatible");
   }
 
-  const withoutAnthropic = trimmed.replace(/\/anthropic\/v1$/i, '/v1');
+  const withoutAnthropic = trimmed.replace(/\/anthropic\/v1$/i, "/v1");
   if (withoutAnthropic !== trimmed) {
     return withoutAnthropic;
   }
 
-  return trimmed.endsWith('/v1') ? trimmed : `${trimmed}/v1`;
+  return trimmed.endsWith("/v1") ? trimmed : `${trimmed}/v1`;
 }
 
 /**
@@ -122,55 +119,55 @@ export function parseOpenAiCompatibleModelEntriesPayload(
   body: unknown,
   provider?: ModelProviderId,
 ): ProviderListedModelEntry[] {
-  if (provider === 'moonshot-ai') {
+  if (provider === "moonshot-ai") {
     return parseMoonshotModelEntriesPayload(body);
   }
 
-  if (provider === 'kimi-code') {
+  if (provider === "kimi-code") {
     return parseKimiCodeModelEntriesPayload(body);
   }
 
-  if (provider === 'vercel-ai-gateway') {
+  if (provider === "vercel-ai-gateway") {
     return parseVercelAiGatewayModelEntriesPayload(body);
   }
 
-  if (provider === 'openrouter') {
+  if (provider === "openrouter") {
     return parseOpenRouterModelEntriesPayload(body);
   }
 
-  if (provider === 'volcengine' || provider === 'byteplus') {
+  if (provider === "volcengine" || provider === "byteplus") {
     return parseArkModelEntriesPayload(body);
   }
 
-  if (provider === 'xiaomi') {
+  if (provider === "xiaomi") {
     return parseXiaomiModelEntriesPayload(body);
   }
 
-  if (provider === 'minimax') {
+  if (provider === "minimax") {
     return parseMinimaxModelEntriesPayload(body);
   }
 
-  if (provider === 'stepfun') {
+  if (provider === "stepfun") {
     return parseStepfunModelEntriesPayload(body);
   }
 
-  if (provider === 'siliconflow') {
-    return parseSiliconFlowModelEntriesPayload(body, 'chat');
+  if (provider === "siliconflow") {
+    return parseSiliconFlowModelEntriesPayload(body, "chat");
   }
 
-  if (provider === 'google') {
+  if (provider === "google") {
     return parseGoogleModelEntriesPayload(body);
   }
 
-  if (provider === 'tencent-tokenhub') {
+  if (provider === "tencent-tokenhub") {
     return parseTencentTokenHubModelEntriesPayload(body);
   }
 
-  if (provider === 'mistral') {
+  if (provider === "mistral") {
     return parseMistralModelEntriesPayload(body);
   }
 
-  if (typeof body !== 'object' || body === null || !('data' in body)) {
+  if (typeof body !== "object" || body === null || !("data" in body)) {
     return [];
   }
   const raw = (body as { data?: unknown }).data;
@@ -179,21 +176,21 @@ export function parseOpenAiCompatibleModelEntriesPayload(
   }
   const entries: ProviderListedModelEntry[] = [];
   for (const entry of raw) {
-    if (typeof entry !== 'object' || entry === null || !('id' in entry)) {
+    if (typeof entry !== "object" || entry === null || !("id" in entry)) {
       continue;
     }
     const id = (entry as { id?: unknown }).id;
-    if (typeof id === 'string' && id.trim().length > 0) {
+    if (typeof id === "string" && id.trim().length > 0) {
       entries.push({ id: id.trim() });
     }
   }
   return entries.map(attachGatewayModelReasoningEfforts);
 }
 
-const SKIPPED_TENCENT_TOKENHUB_MODEL_STATUSES = new Set(['pre-offline']);
+const SKIPPED_TENCENT_TOKENHUB_MODEL_STATUSES = new Set(["pre-offline"]);
 
 export function parseTencentTokenHubModelEntriesPayload(body: unknown): ProviderListedModelEntry[] {
-  if (typeof body !== 'object' || body === null || !('data' in body)) {
+  if (typeof body !== "object" || body === null || !("data" in body)) {
     return [];
   }
   const raw = (body as { data?: unknown }).data;
@@ -203,16 +200,16 @@ export function parseTencentTokenHubModelEntriesPayload(body: unknown): Provider
 
   const entries: ProviderListedModelEntry[] = [];
   for (const entry of raw) {
-    if (typeof entry !== 'object' || entry === null || !('id' in entry)) {
+    if (typeof entry !== "object" || entry === null || !("id" in entry)) {
       continue;
     }
     const record = entry as Record<string, unknown>;
     const id = record.id;
-    if (typeof id !== 'string' || id.trim().length === 0) {
+    if (typeof id !== "string" || id.trim().length === 0) {
       continue;
     }
 
-    const status = typeof record.status === 'string' ? record.status.trim().toLowerCase() : '';
+    const status = typeof record.status === "string" ? record.status.trim().toLowerCase() : "";
     if (status && SKIPPED_TENCENT_TOKENHUB_MODEL_STATUSES.has(status)) {
       continue;
     }
@@ -228,7 +225,7 @@ export function parseTencentTokenHubModelEntriesPayload(body: unknown): Provider
 }
 
 export function parseMistralModelEntriesPayload(body: unknown): ProviderListedModelEntry[] {
-  if (typeof body !== 'object' || body === null || !('data' in body)) {
+  if (typeof body !== "object" || body === null || !("data" in body)) {
     return [];
   }
   const raw = (body as { data?: unknown }).data;
@@ -238,17 +235,17 @@ export function parseMistralModelEntriesPayload(body: unknown): ProviderListedMo
 
   const entries: ProviderListedModelEntry[] = [];
   for (const entry of raw) {
-    if (typeof entry !== 'object' || entry === null || !('id' in entry)) {
+    if (typeof entry !== "object" || entry === null || !("id" in entry)) {
       continue;
     }
     const record = entry as Record<string, unknown>;
     const id = record.id;
-    if (typeof id !== 'string' || id.trim().length === 0) {
+    if (typeof id !== "string" || id.trim().length === 0) {
       continue;
     }
 
     const capabilities = record.capabilities;
-    if (typeof capabilities !== 'object' || capabilities === null) {
+    if (typeof capabilities !== "object" || capabilities === null) {
       continue;
     }
     const caps = capabilities as Record<string, unknown>;
@@ -265,7 +262,7 @@ export function parseMistralModelEntriesPayload(body: unknown): ProviderListedMo
     if (description) {
       modelEntry.description = description;
     }
-    const contextLength = readPositiveIntegerModelTrait(record, 'max_context_length');
+    const contextLength = readPositiveIntegerModelTrait(record, "max_context_length");
     if (contextLength !== undefined) {
       modelEntry.contextLength = contextLength;
     }
@@ -278,13 +275,13 @@ export function parseMistralModelEntriesPayload(body: unknown): ProviderListedMo
 }
 
 const STEPFUN_IMAGE_GENERATION_MODEL_IDS = new Set([
-  'step-image-edit-2',
-  'step-2x-large',
-  'step-1x-medium',
+  "step-image-edit-2",
+  "step-2x-large",
+  "step-1x-medium",
 ]);
 
 export function parseStepfunModelEntriesPayload(body: unknown): ProviderListedModelEntry[] {
-  if (typeof body !== 'object' || body === null || !('data' in body)) {
+  if (typeof body !== "object" || body === null || !("data" in body)) {
     return [];
   }
   const raw = (body as { data?: unknown }).data;
@@ -294,11 +291,11 @@ export function parseStepfunModelEntriesPayload(body: unknown): ProviderListedMo
 
   const entries: ProviderListedModelEntry[] = [];
   for (const entry of raw) {
-    if (typeof entry !== 'object' || entry === null || !('id' in entry)) {
+    if (typeof entry !== "object" || entry === null || !("id" in entry)) {
       continue;
     }
     const id = (entry as { id?: unknown }).id;
-    if (typeof id !== 'string' || id.trim().length === 0) {
+    if (typeof id !== "string" || id.trim().length === 0) {
       continue;
     }
     const trimmedId = id.trim();
@@ -313,7 +310,7 @@ export function parseStepfunModelEntriesPayload(body: unknown): ProviderListedMo
 }
 
 export function parseMoonshotModelEntriesPayload(body: unknown): ProviderListedModelEntry[] {
-  if (typeof body !== 'object' || body === null || !('data' in body)) {
+  if (typeof body !== "object" || body === null || !("data" in body)) {
     return [];
   }
   const raw = (body as { data?: unknown }).data;
@@ -323,30 +320,33 @@ export function parseMoonshotModelEntriesPayload(body: unknown): ProviderListedM
 
   const entries: ProviderListedModelEntry[] = [];
   for (const entry of raw) {
-    if (typeof entry !== 'object' || entry === null || !('id' in entry)) {
+    if (typeof entry !== "object" || entry === null || !("id" in entry)) {
       continue;
     }
     const record = entry as Record<string, unknown>;
     const id = record.id;
-    if (typeof id !== 'string' || id.trim().length === 0) {
+    if (typeof id !== "string" || id.trim().length === 0) {
       continue;
     }
 
     const modelEntry: ProviderListedModelEntry = { id: id.trim() };
-    const supportsImageInput = readBooleanModelTrait(record, 'supports_image_in');
+    const supportsImageInput = readBooleanModelTrait(record, "supports_image_in");
     if (supportsImageInput !== undefined) {
       modelEntry.supportsImageInput = supportsImageInput;
     }
-    const supportsVideoInput = readBooleanModelTrait(record, 'supports_video_in');
+    const supportsVideoInput = readBooleanModelTrait(record, "supports_video_in");
     if (supportsVideoInput !== undefined) {
       modelEntry.supportsVideoInput = supportsVideoInput;
     }
-    const supportsReasoning = readBooleanModelTrait(record, 'supports_reasoning');
+    const supportsReasoning = readBooleanModelTrait(record, "supports_reasoning");
     if (supportsReasoning !== undefined) {
       modelEntry.supportsReasoning = supportsReasoning;
-      modelEntry.supportedReasoningEfforts = moonshotSupportedReasoningEfforts(supportsReasoning, id.trim());
+      modelEntry.supportedReasoningEfforts = moonshotSupportedReasoningEfforts(
+        supportsReasoning,
+        id.trim(),
+      );
     }
-    const contextLength = readPositiveIntegerModelTrait(record, 'context_length');
+    const contextLength = readPositiveIntegerModelTrait(record, "context_length");
     if (contextLength !== undefined) {
       modelEntry.contextLength = contextLength;
     }
@@ -357,7 +357,7 @@ export function parseMoonshotModelEntriesPayload(body: unknown): ProviderListedM
 
 /** Kimi Code `GET /v1/models`：Moonshot 形态 trait + `display_name` + `supports_thinking_type`。 */
 export function parseKimiCodeModelEntriesPayload(body: unknown): ProviderListedModelEntry[] {
-  if (typeof body !== 'object' || body === null || !('data' in body)) {
+  if (typeof body !== "object" || body === null || !("data" in body)) {
     return [];
   }
   const raw = (body as { data?: unknown }).data;
@@ -367,12 +367,12 @@ export function parseKimiCodeModelEntriesPayload(body: unknown): ProviderListedM
 
   const entries: ProviderListedModelEntry[] = [];
   for (const entry of raw) {
-    if (typeof entry !== 'object' || entry === null || !('id' in entry)) {
+    if (typeof entry !== "object" || entry === null || !("id" in entry)) {
       continue;
     }
     const record = entry as Record<string, unknown>;
     const id = record.id;
-    if (typeof id !== 'string' || id.trim().length === 0) {
+    if (typeof id !== "string" || id.trim().length === 0) {
       continue;
     }
 
@@ -381,20 +381,23 @@ export function parseKimiCodeModelEntriesPayload(body: unknown): ProviderListedM
     if (displayName) {
       modelEntry.displayName = displayName;
     }
-    const supportsImageInput = readBooleanModelTrait(record, 'supports_image_in');
+    const supportsImageInput = readBooleanModelTrait(record, "supports_image_in");
     if (supportsImageInput !== undefined) {
       modelEntry.supportsImageInput = supportsImageInput;
     }
-    const supportsVideoInput = readBooleanModelTrait(record, 'supports_video_in');
+    const supportsVideoInput = readBooleanModelTrait(record, "supports_video_in");
     if (supportsVideoInput !== undefined) {
       modelEntry.supportsVideoInput = supportsVideoInput;
     }
-    const supportsReasoning = readBooleanModelTrait(record, 'supports_reasoning');
+    const supportsReasoning = readBooleanModelTrait(record, "supports_reasoning");
     if (supportsReasoning !== undefined) {
       modelEntry.supportsReasoning = supportsReasoning;
-      modelEntry.supportedReasoningEfforts = moonshotSupportedReasoningEfforts(supportsReasoning, id.trim());
+      modelEntry.supportedReasoningEfforts = moonshotSupportedReasoningEfforts(
+        supportsReasoning,
+        id.trim(),
+      );
     }
-    const contextLength = readPositiveIntegerModelTrait(record, 'context_length');
+    const contextLength = readPositiveIntegerModelTrait(record, "context_length");
     if (contextLength !== undefined) {
       modelEntry.contextLength = contextLength;
     }
@@ -411,20 +414,20 @@ function readKimiCodeSupportsThinkingType(
   record: Record<string, unknown>,
 ): KimiCodeSupportsThinkingType | undefined {
   const value = record.supports_thinking_type;
-  if (typeof value === 'string' && value.trim().toLowerCase() === 'only') {
-    return 'only';
+  if (typeof value === "string" && value.trim().toLowerCase() === "only") {
+    return "only";
   }
   return undefined;
 }
 
-export type SiliconFlowModelListKind = 'chat' | 'image' | 'video';
+export type SiliconFlowModelListKind = "chat" | "image" | "video";
 
 /** SiliconFlow `GET /v1/models`：OpenAI-shaped list；能力由请求 query 来源标注。 */
 export function parseSiliconFlowModelEntriesPayload(
   body: unknown,
   kind: SiliconFlowModelListKind,
 ): ProviderListedModelEntry[] {
-  if (typeof body !== 'object' || body === null || !('data' in body)) {
+  if (typeof body !== "object" || body === null || !("data" in body)) {
     return [];
   }
   const raw = (body as { data?: unknown }).data;
@@ -434,23 +437,23 @@ export function parseSiliconFlowModelEntriesPayload(
 
   const entries: ProviderListedModelEntry[] = [];
   for (const entry of raw) {
-    if (typeof entry !== 'object' || entry === null || !('id' in entry)) {
+    if (typeof entry !== "object" || entry === null || !("id" in entry)) {
       continue;
     }
     const id = (entry as { id?: unknown }).id;
-    if (typeof id !== 'string' || id.trim().length === 0) {
+    if (typeof id !== "string" || id.trim().length === 0) {
       continue;
     }
 
     const modelEntry: ProviderListedModelEntry = { id: id.trim() };
     switch (kind) {
-      case 'image':
+      case "image":
         modelEntry.supportsImageGeneration = true;
         break;
-      case 'video':
+      case "video":
         modelEntry.supportsVideoGeneration = true;
         break;
-      case 'chat':
+      case "chat":
         if (inferSiliconFlowVisionInputFromModelId(modelEntry.id)) {
           modelEntry.supportsImageInput = true;
         }
@@ -466,10 +469,10 @@ export function parseSiliconFlowModelEntriesPayload(
 function inferSiliconFlowVisionInputFromModelId(modelId: string): boolean {
   const normalized = modelId.trim().toLowerCase();
   return (
-    normalized.includes('vl')
-    || normalized.includes('vision')
-    || normalized.includes('omni')
-    || normalized.includes('multimodal')
+    normalized.includes("vl") ||
+    normalized.includes("vision") ||
+    normalized.includes("omni") ||
+    normalized.includes("multimodal")
   );
 }
 
@@ -498,13 +501,11 @@ function mergeSiliconFlowListedModelEntries(
       ...(existing.supportsVideoGeneration || entry.supportsVideoGeneration
         ? { supportsVideoGeneration: true }
         : {}),
-      ...(existing.supportsReasoning || entry.supportsReasoning
-        ? { supportsReasoning: true }
-        : {}),
-      ...(existing.contextLength ?? entry.contextLength
+      ...(existing.supportsReasoning || entry.supportsReasoning ? { supportsReasoning: true } : {}),
+      ...((existing.contextLength ?? entry.contextLength)
         ? { contextLength: existing.contextLength ?? entry.contextLength }
         : {}),
-      ...(existing.supportedReasoningEfforts ?? entry.supportedReasoningEfforts
+      ...((existing.supportedReasoningEfforts ?? entry.supportedReasoningEfforts)
         ? {
             supportedReasoningEfforts:
               existing.supportedReasoningEfforts ?? entry.supportedReasoningEfforts,
@@ -523,11 +524,11 @@ async function fetchSiliconFlowModelsPayload(
   const url = `${baseListUrl}?${query}`;
   const key = options.apiKey.trim();
   if (!key) {
-    throw new Error('API Key 不能为空。');
+    throw new Error("API Key 不能为空。");
   }
 
   const init: RequestInit = {
-    method: 'GET',
+    method: "GET",
     headers: {
       Authorization: `Bearer ${key}`,
     },
@@ -540,9 +541,9 @@ export async function listSiliconFlowModels(
   options: ListOpenAiCompatibleModelIdsOptions,
 ): Promise<ProviderListedModelEntry[]> {
   const queries: Array<{ kind: SiliconFlowModelListKind; query: string }> = [
-    { kind: 'chat', query: 'type=text&sub_type=chat' },
-    { kind: 'image', query: 'type=image' },
-    { kind: 'video', query: 'sub_type=text-to-video' },
+    { kind: "chat", query: "type=text&sub_type=chat" },
+    { kind: "image", query: "type=image" },
+    { kind: "video", query: "sub_type=text-to-video" },
   ];
 
   const allEntries: ProviderListedModelEntry[] = [];
@@ -555,48 +556,57 @@ export async function listSiliconFlowModels(
 }
 
 /** Fireworks Gateway API root（模型目录与 inference base 不同）。 */
-export const FIREWORKS_AI_GATEWAY_API_ROOT = 'https://api.fireworks.ai';
+export const FIREWORKS_AI_GATEWAY_API_ROOT = "https://api.fireworks.ai";
 
-const FIREWORKS_AI_SERVERLESS_MODELS_FILTER = 'supports_serverless=true';
+const FIREWORKS_AI_SERVERLESS_MODELS_FILTER = "supports_serverless=true";
 
-const FIREWORKS_AI_NON_CHAT_MODEL_KINDS = new Set(['EMBEDDING_MODEL']);
+const FIREWORKS_AI_NON_CHAT_MODEL_KINDS = new Set(["EMBEDDING_MODEL"]);
 
 export function fireworksAiGatewayModelsListUrl(pageToken?: string): string {
   const url = new URL(`${FIREWORKS_AI_GATEWAY_API_ROOT}/v1/accounts/fireworks/models`);
-  url.searchParams.set('filter', FIREWORKS_AI_SERVERLESS_MODELS_FILTER);
-  url.searchParams.set('pageSize', '200');
+  url.searchParams.set("filter", FIREWORKS_AI_SERVERLESS_MODELS_FILTER);
+  url.searchParams.set("pageSize", "200");
   if (pageToken?.trim()) {
-    url.searchParams.set('pageToken', pageToken.trim());
+    url.searchParams.set("pageToken", pageToken.trim());
   }
   return url.toString();
 }
 
-function readFireworksAiGatewayModelString(record: Record<string, unknown>, key: string): string | undefined {
+function readFireworksAiGatewayModelString(
+  record: Record<string, unknown>,
+  key: string,
+): string | undefined {
   const value = record[key];
-  if (typeof value !== 'string' || value.trim().length === 0) {
+  if (typeof value !== "string" || value.trim().length === 0) {
     return undefined;
   }
   return value.trim();
 }
 
-function readFireworksAiGatewayModelNumber(record: Record<string, unknown>, key: string): number | undefined {
+function readFireworksAiGatewayModelNumber(
+  record: Record<string, unknown>,
+  key: string,
+): number | undefined {
   const value = record[key];
-  if (typeof value === 'number' && Number.isFinite(value)) {
+  if (typeof value === "number" && Number.isFinite(value)) {
     return value;
   }
   return undefined;
 }
 
-function readFireworksAiGatewayModelBoolean(record: Record<string, unknown>, key: string): boolean | undefined {
+function readFireworksAiGatewayModelBoolean(
+  record: Record<string, unknown>,
+  key: string,
+): boolean | undefined {
   const value = record[key];
-  if (typeof value === 'boolean') {
+  if (typeof value === "boolean") {
     return value;
   }
   return undefined;
 }
 
 function isFireworksAiGatewayChatModel(record: Record<string, unknown>): boolean {
-  const kind = readFireworksAiGatewayModelString(record, 'kind');
+  const kind = readFireworksAiGatewayModelString(record, "kind");
   if (kind && FIREWORKS_AI_NON_CHAT_MODEL_KINDS.has(kind)) {
     return false;
   }
@@ -607,7 +617,7 @@ function isFireworksAiGatewayChatModel(record: Record<string, unknown>): boolean
 }
 
 function isJsonObject(value: unknown): value is Record<string, unknown> {
-  return typeof value === 'object' && value !== null && !Array.isArray(value);
+  return typeof value === "object" && value !== null && !Array.isArray(value);
 }
 
 export function parseFireworksAiGatewayModelsPayload(body: unknown): ProviderListedModelEntry[] {
@@ -625,25 +635,25 @@ export function parseFireworksAiGatewayModelsPayload(body: unknown): ProviderLis
       continue;
     }
 
-    const id = readFireworksAiGatewayModelString(item, 'name');
+    const id = readFireworksAiGatewayModelString(item, "name");
     if (!id) {
       continue;
     }
 
     const modelEntry: ProviderListedModelEntry = { id };
-    const displayName = readFireworksAiGatewayModelString(item, 'displayName');
+    const displayName = readFireworksAiGatewayModelString(item, "displayName");
     if (displayName) {
       modelEntry.displayName = displayName;
     }
-    const description = readFireworksAiGatewayModelString(item, 'description');
+    const description = readFireworksAiGatewayModelString(item, "description");
     if (description) {
       modelEntry.description = description;
     }
-    const contextLength = readFireworksAiGatewayModelNumber(item, 'contextLength');
+    const contextLength = readFireworksAiGatewayModelNumber(item, "contextLength");
     if (contextLength !== undefined) {
       modelEntry.contextLength = contextLength;
     }
-    const supportsImageInput = readFireworksAiGatewayModelBoolean(item, 'supportsImageInput');
+    const supportsImageInput = readFireworksAiGatewayModelBoolean(item, "supportsImageInput");
     if (supportsImageInput) {
       modelEntry.supportsImageInput = true;
     }
@@ -670,11 +680,11 @@ async function fetchFireworksAiGatewayModelsPage(
   const url = fireworksAiGatewayModelsListUrl(pageToken);
   const key = options.apiKey.trim();
   if (!key) {
-    throw new Error('API Key 不能为空。');
+    throw new Error("API Key 不能为空。");
   }
 
   const init: RequestInit = {
-    method: 'GET',
+    method: "GET",
     headers: {
       Authorization: `Bearer ${key}`,
     },
@@ -693,7 +703,9 @@ export async function listFireworksAiModels(
     const json = await fetchFireworksAiGatewayModelsPage(options, pageToken);
     pages.push(json);
     pageToken =
-      isJsonObject(json) && typeof json.nextPageToken === 'string' && json.nextPageToken.trim().length > 0
+      isJsonObject(json) &&
+      typeof json.nextPageToken === "string" &&
+      json.nextPageToken.trim().length > 0
         ? json.nextPageToken.trim()
         : undefined;
   } while (pageToken);
@@ -702,16 +714,16 @@ export async function listFireworksAiModels(
 }
 
 /** Cohere 模型目录 API root（v1/models；与 Chat v2 base 不同）。 */
-export const COHERE_CATALOG_API_ROOT = 'https://api.cohere.com';
+export const COHERE_CATALOG_API_ROOT = "https://api.cohere.com";
 
-const COHERE_MODELS_PAGE_SIZE = '1000';
+const COHERE_MODELS_PAGE_SIZE = "1000";
 
 export function cohereModelsListUrl(pageToken?: string): string {
   const url = new URL(`${COHERE_CATALOG_API_ROOT}/v1/models`);
-  url.searchParams.set('endpoint', 'chat');
-  url.searchParams.set('page_size', COHERE_MODELS_PAGE_SIZE);
+  url.searchParams.set("endpoint", "chat");
+  url.searchParams.set("page_size", COHERE_MODELS_PAGE_SIZE);
   if (pageToken?.trim()) {
-    url.searchParams.set('page_token', pageToken.trim());
+    url.searchParams.set("page_token", pageToken.trim());
   }
   return url.toString();
 }
@@ -721,7 +733,7 @@ function cohereModelHasChatEndpoint(endpoints: unknown): boolean {
     return false;
   }
   return endpoints.some(
-    (endpoint) => typeof endpoint === 'string' && endpoint.trim().toLowerCase() === 'chat',
+    (endpoint) => typeof endpoint === "string" && endpoint.trim().toLowerCase() === "chat",
   );
 }
 
@@ -730,7 +742,7 @@ function cohereModelFeaturesIncludeVision(features: unknown): boolean {
     return false;
   }
   return features.some(
-    (feature) => typeof feature === 'string' && feature.trim().toLowerCase() === 'vision',
+    (feature) => typeof feature === "string" && feature.trim().toLowerCase() === "vision",
   );
 }
 
@@ -760,7 +772,7 @@ export function parseCohereModelEntriesPayload(body: unknown): ProviderListedMod
       id: name,
       supportsImageInput: true,
     };
-    const contextLength = readPositiveIntegerModelTrait(item, 'context_length');
+    const contextLength = readPositiveIntegerModelTrait(item, "context_length");
     if (contextLength !== undefined) {
       modelEntry.contextLength = contextLength;
     }
@@ -787,11 +799,11 @@ async function fetchCohereModelsPage(
   const url = cohereModelsListUrl(pageToken);
   const key = options.apiKey.trim();
   if (!key) {
-    throw new Error('API Key 不能为空。');
+    throw new Error("API Key 不能为空。");
   }
 
   const init: RequestInit = {
-    method: 'GET',
+    method: "GET",
     headers: {
       Authorization: `Bearer ${key}`,
     },
@@ -810,9 +822,9 @@ export async function listCohereModels(
     const json = await fetchCohereModelsPage(options, pageToken);
     pages.push(json);
     pageToken =
-      isJsonObject(json)
-      && typeof json.next_page_token === 'string'
-      && json.next_page_token.trim().length > 0
+      isJsonObject(json) &&
+      typeof json.next_page_token === "string" &&
+      json.next_page_token.trim().length > 0
         ? json.next_page_token.trim()
         : undefined;
   } while (pageToken);
@@ -820,7 +832,7 @@ export async function listCohereModels(
   return mergeCohereModelPages(pages);
 }
 
-const TOGETHER_AI_LISTED_MODEL_TYPES = new Set(['chat', 'language', 'image', 'video']);
+const TOGETHER_AI_LISTED_MODEL_TYPES = new Set(["chat", "language", "image", "video"]);
 
 function readTogetherAiModelsArray(body: unknown): unknown[] {
   if (Array.isArray(body)) {
@@ -834,9 +846,9 @@ function readTogetherAiModelsArray(body: unknown): unknown[] {
 
 function readTogetherAiPositiveNumber(value: unknown): number | undefined {
   const amount =
-    typeof value === 'number'
+    typeof value === "number"
       ? value
-      : typeof value === 'string' && value.trim().length > 0
+      : typeof value === "string" && value.trim().length > 0
         ? Number(value)
         : Number.NaN;
   if (!Number.isFinite(amount) || amount <= 0) {
@@ -845,7 +857,9 @@ function readTogetherAiPositiveNumber(value: unknown): number | undefined {
   return amount;
 }
 
-function readTogetherAiExamplePricing(value: unknown): ProviderListedModelExamplePricing | undefined {
+function readTogetherAiExamplePricing(
+  value: unknown,
+): ProviderListedModelExamplePricing | undefined {
   const record = asRecord(value);
   if (!record) {
     return undefined;
@@ -861,7 +875,9 @@ function readTogetherAiExamplePricing(value: unknown): ProviderListedModelExampl
   };
 }
 
-function readTogetherAiPricing(record: Record<string, unknown>): ProviderListedModelPricing | undefined {
+function readTogetherAiPricing(
+  record: Record<string, unknown>,
+): ProviderListedModelPricing | undefined {
   const pricing = asRecord(record.pricing);
   if (!pricing) {
     return undefined;
@@ -918,16 +934,16 @@ export function parseTogetherAiModelEntriesPayload(body: unknown): ProviderListe
     if (displayName) {
       modelEntry.displayName = displayName;
     }
-    const contextLength = readPositiveIntegerModelTrait(item, 'context_length');
+    const contextLength = readPositiveIntegerModelTrait(item, "context_length");
     if (contextLength !== undefined) {
       modelEntry.contextLength = contextLength;
     }
 
-    if (type === 'chat' || type === 'language') {
+    if (type === "chat" || type === "language") {
       modelEntry.supportsImageInput = true;
-    } else if (type === 'image') {
+    } else if (type === "image") {
       modelEntry.supportsImageGeneration = true;
-    } else if (type === 'video') {
+    } else if (type === "video") {
       modelEntry.supportsVideoGeneration = true;
     }
 
@@ -948,11 +964,11 @@ export async function listTogetherAiModels(
   const url = openAiCompatibleModelsListUrl(options.baseUrl);
   const key = options.apiKey.trim();
   if (!key) {
-    throw new Error('API Key 不能为空。');
+    throw new Error("API Key 不能为空。");
   }
 
   const init: RequestInit = {
-    method: 'GET',
+    method: "GET",
     headers: {
       Authorization: `Bearer ${key}`,
     },
@@ -979,7 +995,7 @@ function readBasetenSupportedFeatures(value: unknown): Set<string> {
   }
   const features = new Set<string>();
   for (const item of value) {
-    if (typeof item === 'string' && item.trim().length > 0) {
+    if (typeof item === "string" && item.trim().length > 0) {
       features.add(item.trim().toLowerCase());
     }
   }
@@ -987,7 +1003,7 @@ function readBasetenSupportedFeatures(value: unknown): Set<string> {
 }
 
 function readBasetenPerTokenUsd(value: unknown): string | undefined {
-  if (typeof value === 'string') {
+  if (typeof value === "string") {
     const trimmed = value.trim();
     if (trimmed.length === 0) {
       return undefined;
@@ -1005,7 +1021,7 @@ function readBasetenPerTokenUsd(value: unknown): string | undefined {
     }
     return formatBasetenPerTokenUsdNumber(perToken);
   }
-  if (typeof value === 'number') {
+  if (typeof value === "number") {
     if (!Number.isFinite(value) || value < 0) {
       return undefined;
     }
@@ -1020,22 +1036,24 @@ function readBasetenPerTokenUsd(value: unknown): string | undefined {
 
 function formatBasetenPerTokenUsdNumber(value: number): string {
   const fixed = value.toFixed(12);
-  return fixed.replace(/\.?0+$/, '');
+  return fixed.replace(/\.?0+$/, "");
 }
 
 function isBasetenChatModel(record: Record<string, unknown>): boolean {
   const object = readOptionalTrimmedString(record.object)?.toLowerCase();
-  if (object && object !== 'model') {
+  if (object && object !== "model") {
     return false;
   }
   const type = readOptionalTrimmedString(record.type)?.toLowerCase();
-  if (type && type !== 'chat') {
+  if (type && type !== "chat") {
     return false;
   }
   return true;
 }
 
-function readBasetenPricing(record: Record<string, unknown>): ProviderListedModelPricing | undefined {
+function readBasetenPricing(
+  record: Record<string, unknown>,
+): ProviderListedModelPricing | undefined {
   const pricing = asRecord(record.pricing);
   if (!pricing) {
     return undefined;
@@ -1054,17 +1072,17 @@ function basetenSupportedReasoningEfforts(
   modelId: string,
   features: ReadonlySet<string>,
 ): string[] | undefined {
-  if (!features.has('reasoning') && !features.has('reasoning_effort')) {
+  if (!features.has("reasoning") && !features.has("reasoning_effort")) {
     return undefined;
   }
   const normalizedId = modelId.trim().toLowerCase();
-  const bareId = normalizedId.includes('/')
-    ? normalizedId.slice(normalizedId.lastIndexOf('/') + 1)
+  const bareId = normalizedId.includes("/")
+    ? normalizedId.slice(normalizedId.lastIndexOf("/") + 1)
     : normalizedId;
   if (/^kimi-k3(?:-|$)/.test(bareId)) {
     return moonshotK3SupportedReasoningEfforts();
   }
-  return ['low', 'medium', 'high'];
+  return ["low", "medium", "high"];
 }
 
 export function parseBasetenModelEntriesPayload(body: unknown): ProviderListedModelEntry[] {
@@ -1093,18 +1111,18 @@ export function parseBasetenModelEntriesPayload(body: unknown): ProviderListedMo
     if (description) {
       modelEntry.description = description;
     }
-    const contextLength = readPositiveIntegerModelTrait(item, 'context_length');
+    const contextLength = readPositiveIntegerModelTrait(item, "context_length");
     if (contextLength !== undefined) {
       modelEntry.contextLength = contextLength;
     }
-    const maxCompletionTokens = readPositiveIntegerModelTrait(item, 'max_completion_tokens');
+    const maxCompletionTokens = readPositiveIntegerModelTrait(item, "max_completion_tokens");
     if (maxCompletionTokens !== undefined) {
       modelEntry.maxCompletionTokens = maxCompletionTokens;
     }
 
     modelEntry.supportsImageInput = true;
     const features = readBasetenSupportedFeatures(item.supported_features);
-    if (features.has('vision')) {
+    if (features.has("vision")) {
       modelEntry.supportsImageInput = true;
     }
 
@@ -1131,11 +1149,11 @@ export async function listBasetenModels(
   const url = openAiCompatibleModelsListUrl(options.baseUrl);
   const key = options.apiKey.trim();
   if (!key) {
-    throw new Error('API Key 不能为空。');
+    throw new Error("API Key 不能为空。");
   }
 
   const init: RequestInit = {
-    method: 'GET',
+    method: "GET",
     headers: {
       Authorization: `Bearer ${key}`,
     },
@@ -1153,20 +1171,18 @@ const GROQ_NON_CHAT_MODEL_ID_PATTERNS = [
 ] as const;
 
 const GROQ_VISION_MODEL_IDS = new Set([
-  'qwen/qwen3.6-27b',
-  'meta-llama/llama-4-scout-17b-16e-instruct',
-  'meta-llama/llama-4-maverick-17b-128e-instruct',
+  "qwen/qwen3.6-27b",
+  "meta-llama/llama-4-scout-17b-16e-instruct",
+  "meta-llama/llama-4-maverick-17b-128e-instruct",
 ]);
 
 const GROQ_GPT_OSS_REASONING_MODEL_IDS = new Set([
-  'openai/gpt-oss-20b',
-  'openai/gpt-oss-120b',
-  'openai/gpt-oss-safeguard-20b',
+  "openai/gpt-oss-20b",
+  "openai/gpt-oss-120b",
+  "openai/gpt-oss-safeguard-20b",
 ]);
 
-const GROQ_QWEN_REASONING_MODEL_IDS = new Set([
-  'qwen/qwen3.6-27b',
-]);
+const GROQ_QWEN_REASONING_MODEL_IDS = new Set(["qwen/qwen3.6-27b"]);
 
 function isGroqNonChatModelId(id: string): boolean {
   const trimmed = id.trim();
@@ -1176,10 +1192,10 @@ function isGroqNonChatModelId(id: string): boolean {
 function groqSupportedReasoningEfforts(id: string): string[] | undefined {
   const normalized = id.trim();
   if (GROQ_GPT_OSS_REASONING_MODEL_IDS.has(normalized)) {
-    return ['low', 'medium', 'high'];
+    return ["low", "medium", "high"];
   }
   if (GROQ_QWEN_REASONING_MODEL_IDS.has(normalized)) {
-    return ['none', 'default'];
+    return ["none", "default"];
   }
   return undefined;
 }
@@ -1192,10 +1208,10 @@ export function resolveGroqDisplayNameFromId(modelId: string): string {
 
 function isGroqListedChatModel(record: Record<string, unknown>): boolean {
   const object = readOptionalTrimmedString(record.object)?.toLowerCase();
-  if (object !== 'model') {
+  if (object !== "model") {
     return false;
   }
-  return readBooleanModelTrait(record, 'active') === true;
+  return readBooleanModelTrait(record, "active") === true;
 }
 
 function readGroqModelsArray(body: unknown): unknown[] {
@@ -1231,12 +1247,12 @@ export function parseGroqModelEntriesPayload(body: unknown): ProviderListedModel
       displayName: resolveGroqDisplayNameFromId(id),
     };
 
-    const contextLength = readPositiveIntegerModelTrait(item, 'context_window');
+    const contextLength = readPositiveIntegerModelTrait(item, "context_window");
     if (contextLength !== undefined) {
       modelEntry.contextLength = contextLength;
     }
 
-    const maxCompletionTokens = readPositiveIntegerModelTrait(item, 'max_completion_tokens');
+    const maxCompletionTokens = readPositiveIntegerModelTrait(item, "max_completion_tokens");
     if (maxCompletionTokens !== undefined) {
       modelEntry.maxCompletionTokens = maxCompletionTokens;
     }
@@ -1263,11 +1279,11 @@ export async function listGroqModels(
   const url = openAiCompatibleModelsListUrl(options.baseUrl);
   const key = options.apiKey.trim();
   if (!key) {
-    throw new Error('API Key 不能为空。');
+    throw new Error("API Key 不能为空。");
   }
 
   const init: RequestInit = {
-    method: 'GET',
+    method: "GET",
     headers: {
       Authorization: `Bearer ${key}`,
     },
@@ -1279,17 +1295,17 @@ export async function listGroqModels(
 }
 
 /** DeepInfra 模型目录 `GET /models/list`（无鉴权）；不以其 `/v1/openai/models` 子集作主 catalog 源。 */
-export const DEEPINFRA_MODELS_LIST_URL = 'https://api.deepinfra.com/models/list';
+export const DEEPINFRA_MODELS_LIST_URL = "https://api.deepinfra.com/models/list";
 
-const DEEPINFRA_CHAT_MODEL_TYPE = 'text-generation';
-const DEEPINFRA_IMAGE_GENERATION_TYPES = new Set(['text-to-image']);
+const DEEPINFRA_CHAT_MODEL_TYPE = "text-generation";
+const DEEPINFRA_IMAGE_GENERATION_TYPES = new Set(["text-to-image"]);
 // `world-model` 仅 2 条，按 text-to-video 处理。
-const DEEPINFRA_VIDEO_GENERATION_TYPES = new Set(['text-to-video', 'world-model']);
+const DEEPINFRA_VIDEO_GENERATION_TYPES = new Set(["text-to-video", "world-model"]);
 
 function deepInfraModelsListUrl(baseUrl: string): string {
   // `/models/list` 挂在站点根而非 `/v1/openai` 下，按 origin 推导；baseUrl 异常时回退官方常量。
   try {
-    return new URL('/models/list', baseUrl).toString();
+    return new URL("/models/list", baseUrl).toString();
   } catch {
     return DEEPINFRA_MODELS_LIST_URL;
   }
@@ -1311,7 +1327,7 @@ function readDeepInfraTags(value: unknown): ReadonlySet<string> {
     return tags;
   }
   for (const item of value) {
-    if (typeof item === 'string' && item.trim().length > 0) {
+    if (typeof item === "string" && item.trim().length > 0) {
       tags.add(item.trim().toLowerCase());
     }
   }
@@ -1320,7 +1336,7 @@ function readDeepInfraTags(value: unknown): ReadonlySet<string> {
 
 /** DeepInfra pricing 数值单位为「小数 cents」（如 0.0003 cents/token = $3/M），÷100 转 USD。 */
 function readDeepInfraPositiveNumber(value: unknown): number | undefined {
-  if (typeof value !== 'number' || !Number.isFinite(value) || value <= 0) {
+  if (typeof value !== "number" || !Number.isFinite(value) || value <= 0) {
     return undefined;
   }
   return value;
@@ -1328,7 +1344,7 @@ function readDeepInfraPositiveNumber(value: unknown): number | undefined {
 
 /** USD 金额格式化为普通十进制字符串，避免浮点噪声与科学计数法（同 Baseten 格式化思路）。 */
 function formatDeepInfraUsdAmount(value: number): string {
-  return value.toFixed(12).replace(/\.?0+$/, '');
+  return value.toFixed(12).replace(/\.?0+$/, "");
 }
 
 function readDeepInfraCentsAsUsd(value: unknown): string | undefined {
@@ -1346,14 +1362,16 @@ function readDeepInfraCachedInputUsd(pricing: Record<string, unknown>): string |
   return formatDeepInfraUsdAmount((inputCents * rate) / 100);
 }
 
-function readDeepInfraPricing(record: Record<string, unknown>): ProviderListedModelPricing | undefined {
+function readDeepInfraPricing(
+  record: Record<string, unknown>,
+): ProviderListedModelPricing | undefined {
   const pricing = asRecord(record.pricing);
   if (!pricing) {
     return undefined;
   }
   const type = readOptionalTrimmedString(pricing.type)?.toLowerCase();
 
-  if (type === 'tokens') {
+  if (type === "tokens") {
     const inputPerTokenUsd = readDeepInfraCentsAsUsd(pricing.cents_per_input_token);
     const outputPerTokenUsd = readDeepInfraCentsAsUsd(pricing.cents_per_output_token);
     const cachedInputPerTokenUsd = readDeepInfraCachedInputUsd(pricing);
@@ -1364,20 +1382,18 @@ function readDeepInfraPricing(record: Record<string, unknown>): ProviderListedMo
     });
   }
 
-  if (type === 'image_units') {
+  if (type === "image_units") {
     const imagePerUnitUsd = readDeepInfraCentsAsUsd(pricing.cents_per_image_unit);
-    return buildProviderListedModelPricing({
-      ...(imagePerUnitUsd ? { imagePerUnitUsd } : {}),
-    });
+    return buildProviderListedModelPricing(imagePerUnitUsd ? { imagePerUnitUsd } : {});
   }
 
-  if (type === 'output_length') {
+  if (type === "output_length") {
     const costPerSecondUsd = readDeepInfraCentsAsUsd(pricing.cents_per_output_sec);
-    return buildProviderListedModelPricing({
-      ...(costPerSecondUsd
-        ? { videoDurationPricing: [{ resolution: 'default', costPerSecondUsd }] }
-        : {}),
-    });
+    return buildProviderListedModelPricing(
+      costPerSecondUsd
+        ? { videoDurationPricing: [{ resolution: "default", costPerSecondUsd }] }
+        : {},
+    );
   }
 
   // 未知 pricing.type：跳过 pricing，不阻塞 catalog。
@@ -1418,7 +1434,7 @@ export function parseDeepInfraModelEntriesPayload(body: unknown): ProviderListed
       modelEntry.description = description;
     }
 
-    const contextLength = readPositiveIntegerModelTrait(item, 'max_tokens');
+    const contextLength = readPositiveIntegerModelTrait(item, "max_tokens");
     if (contextLength !== undefined) {
       modelEntry.contextLength = contextLength;
     }
@@ -1433,15 +1449,15 @@ export function parseDeepInfraModelEntriesPayload(body: unknown): ProviderListed
     // Chat 能力仅认 tags，不从 tag 推断 reasoning（以运行时 reasoning API 为准）。
     if (isChat) {
       const tags = readDeepInfraTags(item.tags);
-      if (tags.has('multimodal')) {
+      if (tags.has("multimodal")) {
         modelEntry.supportsImageInput = true;
       }
-      if (tags.has('input-video')) {
+      if (tags.has("input-video")) {
         modelEntry.supportsVideoInput = true;
       }
     }
 
-    const isPartner = readBooleanModelTrait(item, 'is_partner');
+    const isPartner = readBooleanModelTrait(item, "is_partner");
     if (isPartner !== undefined) {
       modelEntry.isPartner = isPartner;
     }
@@ -1463,7 +1479,7 @@ export async function listDeepInfraModels(
   // `/models/list` 无需鉴权；有 key 时仍带 Bearer（`bearerAuthHeaders` 空 key 自动省略）。
   const url = deepInfraModelsListUrl(options.baseUrl);
   const init: RequestInit = {
-    method: 'GET',
+    method: "GET",
     headers: bearerAuthHeaders(options.apiKey),
     ...(options.signal !== undefined ? { signal: options.signal } : {}),
   };
@@ -1473,31 +1489,29 @@ export async function listDeepInfraModels(
 }
 
 /** Hugging Face Inference Providers router catalog root。 */
-export const HUGGING_FACE_ROUTER_API_ROOT = 'https://router.huggingface.co';
+export const HUGGING_FACE_ROUTER_API_ROOT = "https://router.huggingface.co";
 
 export const HUGGING_FACE_ROUTER_MODELS_URL = `${HUGGING_FACE_ROUTER_API_ROOT}/v1/models`;
 
-const HUGGING_FACE_HUB_API_ROOT = 'https://huggingface.co';
+const HUGGING_FACE_HUB_API_ROOT = "https://huggingface.co";
 
 const HUGGING_FACE_HUB_MEDIA_PIPELINE_TAGS = [
-  'text-to-image',
-  'text-to-video',
-  'image-to-video',
+  "text-to-image",
+  "text-to-video",
+  "image-to-video",
 ] as const;
 
-const HUGGING_FACE_IMAGE_PIPELINE_TAGS = new Set(['text-to-image']);
+const HUGGING_FACE_IMAGE_PIPELINE_TAGS = new Set(["text-to-image"]);
 
-const HUGGING_FACE_VIDEO_PIPELINE_TAGS = new Set(['text-to-video', 'image-to-video']);
+const HUGGING_FACE_VIDEO_PIPELINE_TAGS = new Set(["text-to-video", "image-to-video"]);
 
 export function resolveHuggingFaceDisplayNameFromId(modelId: string): string {
   const trimmed = modelId.trim();
-  const withoutRoutingSuffix = trimmed.includes(':')
-    ? trimmed.slice(0, trimmed.lastIndexOf(':'))
+  const withoutRoutingSuffix = trimmed.includes(":")
+    ? trimmed.slice(0, trimmed.lastIndexOf(":"))
     : trimmed;
-  const lastSlash = withoutRoutingSuffix.lastIndexOf('/');
-  const segment = lastSlash >= 0
-    ? withoutRoutingSuffix.slice(lastSlash + 1)
-    : withoutRoutingSuffix;
+  const lastSlash = withoutRoutingSuffix.lastIndexOf("/");
+  const segment = lastSlash >= 0 ? withoutRoutingSuffix.slice(lastSlash + 1) : withoutRoutingSuffix;
   return segment.trim();
 }
 
@@ -1506,7 +1520,7 @@ function readHuggingFaceModalities(value: unknown): string[] {
     return [];
   }
   return value
-    .filter((item): item is string => typeof item === 'string')
+    .filter((item): item is string => typeof item === "string")
     .map((item) => item.trim().toLowerCase())
     .filter((item) => item.length > 0);
 }
@@ -1542,28 +1556,27 @@ function pickHuggingFaceRouterProviderRecord(
   const liveProviders = providers
     .map((item) => asRecord(item))
     .filter((item): item is Record<string, unknown> => item !== undefined)
-    .filter((item) => readOptionalTrimmedString(item.status)?.toLowerCase() === 'live');
+    .filter((item) => readOptionalTrimmedString(item.status)?.toLowerCase() === "live");
 
-  const candidates = liveProviders.length > 0
-    ? liveProviders
-    : providers
-        .map((item) => asRecord(item))
-        .filter((item): item is Record<string, unknown> => item !== undefined);
+  const candidates =
+    liveProviders.length > 0
+      ? liveProviders
+      : providers
+          .map((item) => asRecord(item))
+          .filter((item): item is Record<string, unknown> => item !== undefined);
 
   if (candidates.length === 0) {
     return undefined;
   }
 
   return candidates.reduce((best, current) => {
-    const bestContext = readPositiveIntegerModelTrait(best, 'context_length') ?? 0;
-    const currentContext = readPositiveIntegerModelTrait(current, 'context_length') ?? 0;
+    const bestContext = readPositiveIntegerModelTrait(best, "context_length") ?? 0;
+    const currentContext = readPositiveIntegerModelTrait(current, "context_length") ?? 0;
     return currentContext > bestContext ? current : best;
   });
 }
 
-function readHuggingFaceHubInferenceProvider(
-  record: Record<string, unknown>,
-): string | undefined {
+function readHuggingFaceHubInferenceProvider(record: Record<string, unknown>): string | undefined {
   const mappings = record.inferenceProviderMapping;
   if (!Array.isArray(mappings)) {
     return undefined;
@@ -1575,7 +1588,7 @@ function readHuggingFaceHubInferenceProvider(
       continue;
     }
     const status = readOptionalTrimmedString(mapping.status)?.toLowerCase();
-    if (status && status !== 'live') {
+    if (status && status !== "live") {
       continue;
     }
     const provider = readOptionalTrimmedString(mapping.provider);
@@ -1612,17 +1625,17 @@ export function parseHuggingFaceRouterModelsPayload(body: unknown): ProviderList
     if (architecture) {
       const inputModalities = readHuggingFaceModalities(architecture.input_modalities);
       const outputModalities = readHuggingFaceModalities(architecture.output_modalities);
-      if (inputModalities.includes('image')) {
+      if (inputModalities.includes("image")) {
         modelEntry.supportsImageInput = true;
       }
-      if (outputModalities.includes('text') || outputModalities.length === 0) {
+      if (outputModalities.includes("text") || outputModalities.length === 0) {
         // Conversational models from router source 1.
       }
     }
 
     const providerRecord = pickHuggingFaceRouterProviderRecord(item.providers);
     if (providerRecord) {
-      const contextLength = readPositiveIntegerModelTrait(providerRecord, 'context_length');
+      const contextLength = readPositiveIntegerModelTrait(providerRecord, "context_length");
       if (contextLength !== undefined) {
         modelEntry.contextLength = contextLength;
       }
@@ -1633,7 +1646,7 @@ export function parseHuggingFaceRouterModelsPayload(body: unknown): ProviderList
     }
 
     const normalizedId = id.toLowerCase();
-    if (normalizedId.includes('deepseek-r1') || normalizedId.includes('/r1')) {
+    if (normalizedId.includes("deepseek-r1") || normalizedId.includes("/r1")) {
       modelEntry.supportsReasoning = true;
     }
 
@@ -1681,12 +1694,14 @@ export function parseHuggingFaceHubMediaModelsPayload(body: unknown): ProviderLi
   return entries;
 }
 
-export function parseHuggingFaceHubLinkHeaderNextUrl(linkHeader: string | null): string | undefined {
+export function parseHuggingFaceHubLinkHeaderNextUrl(
+  linkHeader: string | null,
+): string | undefined {
   if (!linkHeader) {
     return undefined;
   }
 
-  for (const part of linkHeader.split(',')) {
+  for (const part of linkHeader.split(",")) {
     const match = part.match(/<([^>]+)>\s*;\s*rel="next"/i);
     if (match?.[1]) {
       return match[1].trim();
@@ -1710,16 +1725,16 @@ export function mergeHuggingFaceListedModelEntries(
     byId.set(entry.id, {
       ...existing,
       ...entry,
-      ...(existing.displayName ?? entry.displayName
+      ...((existing.displayName ?? entry.displayName)
         ? { displayName: existing.displayName ?? entry.displayName }
         : {}),
-      ...(existing.pricing ?? entry.pricing
+      ...((existing.pricing ?? entry.pricing)
         ? { pricing: existing.pricing ?? entry.pricing }
         : {}),
-      ...(existing.contextLength ?? entry.contextLength
+      ...((existing.contextLength ?? entry.contextLength)
         ? { contextLength: existing.contextLength ?? entry.contextLength }
         : {}),
-      ...(existing.inferenceProvider ?? entry.inferenceProvider
+      ...((existing.inferenceProvider ?? entry.inferenceProvider)
         ? { inferenceProvider: existing.inferenceProvider ?? entry.inferenceProvider }
         : {}),
       ...(existing.supportsImageInput || entry.supportsImageInput
@@ -1734,9 +1749,7 @@ export function mergeHuggingFaceListedModelEntries(
       ...(existing.supportsVideoGeneration || entry.supportsVideoGeneration
         ? { supportsVideoGeneration: true }
         : {}),
-      ...(existing.supportsReasoning || entry.supportsReasoning
-        ? { supportsReasoning: true }
-        : {}),
+      ...(existing.supportsReasoning || entry.supportsReasoning ? { supportsReasoning: true } : {}),
     });
   }
 
@@ -1756,7 +1769,7 @@ async function fetchHuggingFaceRouterModels(
   options: ListOpenAiCompatibleModelIdsOptions,
 ): Promise<ProviderListedModelEntry[]> {
   const init: RequestInit = {
-    method: 'GET',
+    method: "GET",
     headers: huggingFaceCatalogRequestHeaders(options.apiKey),
     ...(options.signal !== undefined ? { signal: options.signal } : {}),
   };
@@ -1769,7 +1782,7 @@ async function fetchHuggingFaceHubMediaModelsPage(
   options: ListOpenAiCompatibleModelIdsOptions,
 ): Promise<{ entries: ProviderListedModelEntry[]; nextUrl?: string }> {
   const init: RequestInit = {
-    method: 'GET',
+    method: "GET",
     headers: huggingFaceCatalogRequestHeaders(options.apiKey),
     ...(options.signal !== undefined ? { signal: options.signal } : {}),
   };
@@ -1779,7 +1792,7 @@ async function fetchHuggingFaceHubMediaModelsPage(
     response = await fetch(url, init);
   } catch (cause) {
     const message = cause instanceof Error ? cause.message : String(cause);
-    throw new Error(`列模型请求失败：${message}`);
+    throw new Error(`列模型请求失败：${message}`, { cause: cause });
   }
 
   const text = await response.text();
@@ -1788,9 +1801,7 @@ async function fetchHuggingFaceHubMediaModelsPage(
     json = text.length > 0 ? (JSON.parse(text) as unknown) : [];
   } catch {
     throw new Error(
-      response.ok
-        ? '列模型响应不是合法 JSON。'
-        : `列模型失败（HTTP ${String(response.status)}）。`,
+      response.ok ? "列模型响应不是合法 JSON。" : `列模型失败（HTTP ${String(response.status)}）。`,
     );
   }
 
@@ -1798,7 +1809,7 @@ async function fetchHuggingFaceHubMediaModelsPage(
     throw new Error(`列模型失败（HTTP ${String(response.status)}）。`);
   }
 
-  const nextUrl = parseHuggingFaceHubLinkHeaderNextUrl(response.headers.get('link'));
+  const nextUrl = parseHuggingFaceHubLinkHeaderNextUrl(response.headers.get("link"));
   return {
     entries: parseHuggingFaceHubMediaModelsPayload(json),
     ...(nextUrl ? { nextUrl } : {}),
@@ -1835,22 +1846,21 @@ export async function listHuggingFaceModels(
   try {
     chatModels = await fetchHuggingFaceRouterModels(options);
   } catch (error) {
-    console.error('[host-internal][list-models] hugging-face.router.failed', {
+    console.error("[host-internal][list-models] hugging-face.router.failed", {
       error: error instanceof Error ? error.message : String(error),
     });
   }
 
-  return mergeHuggingFaceListedModelEntries([
-    ...chatModels,
-    ...mediaLists.flat(),
-  ]).sort((a, b) => a.id.localeCompare(b.id));
+  return mergeHuggingFaceListedModelEntries([...chatModels, ...mediaLists.flat()]).sort((a, b) =>
+    a.id.localeCompare(b.id),
+  );
 }
 
 /** Xiaomi Mimo：上游 /models 不返回能力字段，多模态模型需维护 allowlist。 */
-const XIAOMI_MULTIMODAL_MODEL_IDS = new Set(['mimo-v2.5', 'mimo-v2-omni']);
+const XIAOMI_MULTIMODAL_MODEL_IDS = new Set(["mimo-v2.5", "mimo-v2-omni"]);
 
 export function parseXiaomiModelEntriesPayload(body: unknown): ProviderListedModelEntry[] {
-  if (typeof body !== 'object' || body === null || !('data' in body)) {
+  if (typeof body !== "object" || body === null || !("data" in body)) {
     return [];
   }
   const raw = (body as { data?: unknown }).data;
@@ -1860,11 +1870,11 @@ export function parseXiaomiModelEntriesPayload(body: unknown): ProviderListedMod
 
   const entries: ProviderListedModelEntry[] = [];
   for (const entry of raw) {
-    if (typeof entry !== 'object' || entry === null || !('id' in entry)) {
+    if (typeof entry !== "object" || entry === null || !("id" in entry)) {
       continue;
     }
     const id = (entry as { id?: unknown }).id;
-    if (typeof id !== 'string' || id.trim().length === 0) {
+    if (typeof id !== "string" || id.trim().length === 0) {
       continue;
     }
 
@@ -1882,13 +1892,13 @@ export function parseXiaomiModelEntriesPayload(body: unknown): ProviderListedMod
 /** MiniMax：上游 /models 不返回多模态能力字段；仅 M3 支持图片与视频输入。 */
 function isMinimaxM3MultimodalModelId(modelId: string): boolean {
   const normalized = modelId.trim().toLowerCase();
-  const slashIndex = normalized.lastIndexOf('/');
+  const slashIndex = normalized.lastIndexOf("/");
   const id = slashIndex >= 0 ? normalized.slice(slashIndex + 1) : normalized;
-  return id.includes('m3') || id.includes('minimax-m3');
+  return id.includes("m3") || id.includes("minimax-m3");
 }
 
 export function parseMinimaxModelEntriesPayload(body: unknown): ProviderListedModelEntry[] {
-  if (typeof body !== 'object' || body === null || !('data' in body)) {
+  if (typeof body !== "object" || body === null || !("data" in body)) {
     return [];
   }
   const raw = (body as { data?: unknown }).data;
@@ -1898,11 +1908,11 @@ export function parseMinimaxModelEntriesPayload(body: unknown): ProviderListedMo
 
   const entries: ProviderListedModelEntry[] = [];
   for (const entry of raw) {
-    if (typeof entry !== 'object' || entry === null || !('id' in entry)) {
+    if (typeof entry !== "object" || entry === null || !("id" in entry)) {
       continue;
     }
     const id = (entry as { id?: unknown }).id;
-    if (typeof id !== 'string' || id.trim().length === 0) {
+    if (typeof id !== "string" || id.trim().length === 0) {
       continue;
     }
 
@@ -1917,7 +1927,7 @@ export function parseMinimaxModelEntriesPayload(body: unknown): ProviderListedMo
   return entries;
 }
 
-const SKIPPED_ARK_MODEL_STATUSES = new Set(['shutdown', 'retiring']);
+const SKIPPED_ARK_MODEL_STATUSES = new Set(["shutdown", "retiring"]);
 
 function readArkModalities(value: unknown): string[] {
   if (!Array.isArray(value)) {
@@ -1926,7 +1936,7 @@ function readArkModalities(value: unknown): string[] {
 
   const modalities: string[] = [];
   for (const item of value) {
-    if (typeof item === 'string' && item.trim().length > 0) {
+    if (typeof item === "string" && item.trim().length > 0) {
       modalities.push(item.trim().toLowerCase());
     }
   }
@@ -1942,7 +1952,7 @@ function readArkInputModalities(record: Record<string, unknown>): string[] {
  * Ark `GET /api/v3/models`: OpenAI-shaped list with `domain`, `modalities`, `status`.
  */
 export function parseArkModelEntriesPayload(body: unknown): ProviderListedModelEntry[] {
-  if (typeof body !== 'object' || body === null || !('data' in body)) {
+  if (typeof body !== "object" || body === null || !("data" in body)) {
     return [];
   }
   const raw = (body as { data?: unknown }).data;
@@ -1952,50 +1962,47 @@ export function parseArkModelEntriesPayload(body: unknown): ProviderListedModelE
 
   const entries: ProviderListedModelEntry[] = [];
   for (const entry of raw) {
-    if (typeof entry !== 'object' || entry === null || !('id' in entry)) {
+    if (typeof entry !== "object" || entry === null || !("id" in entry)) {
       continue;
     }
     const record = entry as Record<string, unknown>;
     const id = record.id;
-    if (typeof id !== 'string' || id.trim().length === 0) {
+    if (typeof id !== "string" || id.trim().length === 0) {
       continue;
     }
 
-    const status = typeof record.status === 'string' ? record.status.trim().toLowerCase() : '';
+    const status = typeof record.status === "string" ? record.status.trim().toLowerCase() : "";
     if (status && SKIPPED_ARK_MODEL_STATUSES.has(status)) {
       continue;
     }
 
-    const domain = typeof record.domain === 'string' ? record.domain.trim() : '';
+    const domain = typeof record.domain === "string" ? record.domain.trim() : "";
     const modelEntry: ProviderListedModelEntry = { id: id.trim() };
 
-    const displayName = typeof record.name === 'string' ? record.name.trim() : '';
+    const displayName = typeof record.name === "string" ? record.name.trim() : "";
     if (displayName.length > 0) {
       modelEntry.displayName = displayName;
     }
 
     const tokenLimits = asRecord(record.token_limits);
-    const contextWindow = readPositiveIntegerModelTrait(
-      tokenLimits ?? {},
-      'context_window',
-    );
+    const contextWindow = readPositiveIntegerModelTrait(tokenLimits ?? {}, "context_window");
     if (contextWindow !== undefined) {
       modelEntry.contextLength = contextWindow;
     }
 
     switch (domain) {
-      case 'VideoGeneration':
+      case "VideoGeneration":
         modelEntry.supportsVideoGeneration = true;
         break;
-      case 'ImageGeneration':
+      case "ImageGeneration":
         modelEntry.supportsImageGeneration = true;
         break;
-      case 'VLM': {
+      case "VLM": {
         const inputModalities = readArkInputModalities(record);
-        if (inputModalities.includes('image')) {
+        if (inputModalities.includes("image")) {
           modelEntry.supportsImageInput = true;
         }
-        if (inputModalities.includes('video')) {
+        if (inputModalities.includes("video")) {
           modelEntry.supportsVideoInput = true;
         }
         break;
@@ -2014,7 +2021,7 @@ export function parseArkModelEntriesPayload(body: unknown): ProviderListedModelE
  * 仅保留 `supportedGenerationMethods` 含 `generateContent` 的模型。
  */
 export function parseGoogleModelEntriesPayload(body: unknown): ProviderListedModelEntry[] {
-  if (typeof body !== 'object' || body === null || !('models' in body)) {
+  if (typeof body !== "object" || body === null || !("models" in body)) {
     return [];
   }
   const raw = (body as { models?: unknown }).models;
@@ -2024,13 +2031,13 @@ export function parseGoogleModelEntriesPayload(body: unknown): ProviderListedMod
 
   const entries: ProviderListedModelEntry[] = [];
   for (const entry of raw) {
-    if (typeof entry !== 'object' || entry === null) {
+    if (typeof entry !== "object" || entry === null) {
       continue;
     }
     const record = entry as Record<string, unknown>;
 
     const methods = record.supportedGenerationMethods;
-    if (!Array.isArray(methods) || !methods.includes('generateContent')) {
+    if (!Array.isArray(methods) || !methods.includes("generateContent")) {
       continue;
     }
 
@@ -2038,7 +2045,7 @@ export function parseGoogleModelEntriesPayload(body: unknown): ProviderListedMod
     const name = readOptionalTrimmedString(record.name);
     let id = baseModelId;
     if (!id && name) {
-      id = name.startsWith('models/') ? name.slice('models/'.length) : name;
+      id = name.startsWith("models/") ? name.slice("models/".length) : name;
     }
     if (!id) {
       continue;
@@ -2054,8 +2061,8 @@ export function parseGoogleModelEntriesPayload(body: unknown): ProviderListedMod
       modelEntry.description = description;
     }
 
-    const inputLimit = readPositiveIntegerModelTrait(record, 'inputTokenLimit');
-    const outputLimit = readPositiveIntegerModelTrait(record, 'outputTokenLimit');
+    const inputLimit = readPositiveIntegerModelTrait(record, "inputTokenLimit");
+    const outputLimit = readPositiveIntegerModelTrait(record, "outputTokenLimit");
     if (inputLimit !== undefined && outputLimit !== undefined) {
       modelEntry.contextLength = inputLimit + outputLimit;
     }
@@ -2065,7 +2072,7 @@ export function parseGoogleModelEntriesPayload(body: unknown): ProviderListedMod
   return entries;
 }
 
-const SKIPPED_VERCEL_GATEWAY_MODEL_TYPES = new Set(['embedding', 'reranking']);
+const SKIPPED_VERCEL_GATEWAY_MODEL_TYPES = new Set(["embedding", "reranking"]);
 
 function vercelGatewayModelSupportsImageInput(record: Record<string, unknown>): boolean {
   const tags = record.tags;
@@ -2073,9 +2080,7 @@ function vercelGatewayModelSupportsImageInput(record: Record<string, unknown>): 
     return false;
   }
 
-  return tags.some(
-    (tag) => typeof tag === 'string' && tag.trim().toLowerCase() === 'vision',
-  );
+  return tags.some((tag) => typeof tag === "string" && tag.trim().toLowerCase() === "vision");
 }
 
 function attachGatewayAnthropicReasoningEfforts(
@@ -2110,8 +2115,8 @@ function attachGatewayMoonshotReasoningEfforts(
   modelEntry: ProviderListedModelEntry,
 ): ProviderListedModelEntry {
   const normalizedId = modelEntry.id.trim().toLowerCase();
-  const bareId = normalizedId.includes('/')
-    ? normalizedId.slice(normalizedId.lastIndexOf('/') + 1)
+  const bareId = normalizedId.includes("/")
+    ? normalizedId.slice(normalizedId.lastIndexOf("/") + 1)
     : normalizedId;
   if (!/^kimi-k3(?:-|$)/.test(bareId)) {
     return modelEntry;
@@ -2123,16 +2128,16 @@ function attachGatewayMoonshotReasoningEfforts(
   };
 }
 
-const OPENAI_GPT56_REASONING_EFFORTS = ['none', 'low', 'medium', 'high', 'xhigh', 'max'] as const;
+const OPENAI_GPT56_REASONING_EFFORTS = ["none", "low", "medium", "high", "xhigh", "max"] as const;
 
 function normalizeListedOpenAiModelIdForVersionCheck(modelId: string): string {
   const trimmed = modelId.trim();
   const lower = trimmed.toLowerCase();
-  if (lower.startsWith('openai/')) {
-    return trimmed.slice('openai/'.length).trim();
+  if (lower.startsWith("openai/")) {
+    return trimmed.slice("openai/".length).trim();
   }
-  if (lower.startsWith('openai.')) {
-    return trimmed.slice('openai.'.length).trim();
+  if (lower.startsWith("openai.")) {
+    return trimmed.slice("openai.".length).trim();
   }
   return trimmed;
 }
@@ -2145,15 +2150,15 @@ function parseListedOpenAiGptModelVersion(
   const versioned = /^gpt-(\d+)\.(\d+)/.exec(normalized);
   if (versioned) {
     return {
-      major: Number.parseInt(versioned[1] ?? '', 10),
-      minor: Number.parseInt(versioned[2] ?? '', 10),
+      major: Number.parseInt(versioned[1] ?? "", 10),
+      minor: Number.parseInt(versioned[2] ?? "", 10),
     };
   }
 
   const majorOnly = /^gpt-(\d+)(?:$|[-_])/.exec(normalized);
   if (majorOnly) {
     return {
-      major: Number.parseInt(majorOnly[1] ?? '', 10),
+      major: Number.parseInt(majorOnly[1] ?? "", 10),
       minor: 0,
     };
   }
@@ -2178,8 +2183,8 @@ function attachGatewayOpenAiGpt56ReasoningEfforts(
   modelEntry: ProviderListedModelEntry,
 ): ProviderListedModelEntry {
   const normalizedId = modelEntry.id.trim().toLowerCase();
-  const isGatewayOpenAiRoute = normalizedId.startsWith('openai/');
-  const isDirectOpenAiGpt = !normalizedId.includes('/') && normalizedId.startsWith('gpt-');
+  const isGatewayOpenAiRoute = normalizedId.startsWith("openai/");
+  const isDirectOpenAiGpt = !normalizedId.includes("/") && normalizedId.startsWith("gpt-");
   if (!isGatewayOpenAiRoute && !isDirectOpenAiGpt) {
     return modelEntry;
   }
@@ -2198,9 +2203,7 @@ function attachGatewayModelReasoningEfforts(
 ): ProviderListedModelEntry {
   return attachGatewayOpenAiGpt56ReasoningEfforts(
     attachGatewayMoonshotReasoningEfforts(
-      attachGatewayGeminiReasoningEfforts(
-        attachGatewayAnthropicReasoningEfforts(modelEntry),
-      ),
+      attachGatewayGeminiReasoningEfforts(attachGatewayAnthropicReasoningEfforts(modelEntry)),
     ),
   );
 }
@@ -2209,7 +2212,7 @@ function readOpenRouterSupportedReasoningEfforts(
   record: Record<string, unknown>,
 ): string[] | undefined {
   const reasoning = record.reasoning;
-  if (typeof reasoning !== 'object' || reasoning === null) {
+  if (typeof reasoning !== "object" || reasoning === null) {
     return undefined;
   }
 
@@ -2220,7 +2223,7 @@ function readOpenRouterSupportedReasoningEfforts(
 
   const efforts: string[] = [];
   for (const item of supportedEfforts) {
-    if (typeof item === 'string' && item.trim().length > 0) {
+    if (typeof item === "string" && item.trim().length > 0) {
       efforts.push(item.trim().toLowerCase());
     }
   }
@@ -2248,7 +2251,7 @@ function attachOpenRouterAnthropicReasoningEfforts(
 }
 
 export function parseVercelAiGatewayModelEntriesPayload(body: unknown): ProviderListedModelEntry[] {
-  if (typeof body !== 'object' || body === null || !('data' in body)) {
+  if (typeof body !== "object" || body === null || !("data" in body)) {
     return [];
   }
   const raw = (body as { data?: unknown }).data;
@@ -2258,16 +2261,16 @@ export function parseVercelAiGatewayModelEntriesPayload(body: unknown): Provider
 
   const entries: ProviderListedModelEntry[] = [];
   for (const entry of raw) {
-    if (typeof entry !== 'object' || entry === null || !('id' in entry)) {
+    if (typeof entry !== "object" || entry === null || !("id" in entry)) {
       continue;
     }
     const record = entry as Record<string, unknown>;
     const id = record.id;
-    if (typeof id !== 'string' || id.trim().length === 0) {
+    if (typeof id !== "string" || id.trim().length === 0) {
       continue;
     }
 
-    const type = typeof record.type === 'string' ? record.type.trim().toLowerCase() : undefined;
+    const type = typeof record.type === "string" ? record.type.trim().toLowerCase() : undefined;
     if (type && SKIPPED_VERCEL_GATEWAY_MODEL_TYPES.has(type)) {
       continue;
     }
@@ -2279,7 +2282,7 @@ export function parseVercelAiGatewayModelEntriesPayload(body: unknown): Provider
       continue;
     }
 
-    if (type === 'image') {
+    if (type === "image") {
       entries.push(
         attachListedModelMetadata(
           { id: id.trim(), supportsImageGeneration: true },
@@ -2290,22 +2293,20 @@ export function parseVercelAiGatewayModelEntriesPayload(body: unknown): Provider
       continue;
     }
 
-    if (type === 'language') {
+    if (type === "language") {
       const modelEntry: ProviderListedModelEntry = { id: id.trim() };
-      const contextLength = readPositiveIntegerModelTrait(record, 'context_window');
+      const contextLength = readPositiveIntegerModelTrait(record, "context_window");
       if (contextLength !== undefined) {
         modelEntry.contextLength = contextLength;
       }
       if (vercelGatewayModelSupportsImageInput(record)) {
         modelEntry.supportsImageInput = true;
       }
-      entries.push(
-        attachListedModelMetadata(modelEntry, record, readVercelGatewayPricing(record)),
-      );
+      entries.push(attachListedModelMetadata(modelEntry, record, readVercelGatewayPricing(record)));
       continue;
     }
 
-    if (type === 'video') {
+    if (type === "video") {
       entries.push(
         attachListedModelMetadata(
           { id: id.trim(), supportsVideoGeneration: true },
@@ -2330,7 +2331,7 @@ function readOpenRouterModalities(value: unknown): string[] {
 
   const modalities: string[] = [];
   for (const item of value) {
-    if (typeof item === 'string' && item.trim().length > 0) {
+    if (typeof item === "string" && item.trim().length > 0) {
       modalities.push(item.trim().toLowerCase());
     }
   }
@@ -2352,7 +2353,7 @@ function readOpenRouterOutputModalities(record: Record<string, unknown>): string
  * 含 image 且不含 text → 生图；含 text → 对话；二者皆无 → 跳过；缺失 → 默认对话。
  */
 export function parseOpenRouterModelEntriesPayload(body: unknown): ProviderListedModelEntry[] {
-  if (typeof body !== 'object' || body === null || !('data' in body)) {
+  if (typeof body !== "object" || body === null || !("data" in body)) {
     return [];
   }
   const raw = (body as { data?: unknown }).data;
@@ -2362,19 +2363,19 @@ export function parseOpenRouterModelEntriesPayload(body: unknown): ProviderListe
 
   const entries: ProviderListedModelEntry[] = [];
   for (const entry of raw) {
-    if (typeof entry !== 'object' || entry === null || !('id' in entry)) {
+    if (typeof entry !== "object" || entry === null || !("id" in entry)) {
       continue;
     }
     const record = entry as Record<string, unknown>;
     const id = record.id;
-    if (typeof id !== 'string' || id.trim().length === 0) {
+    if (typeof id !== "string" || id.trim().length === 0) {
       continue;
     }
 
     const outputModalities = readOpenRouterOutputModalities(record);
     if (outputModalities.length > 0) {
-      const hasText = outputModalities.includes('text');
-      const hasImage = outputModalities.includes('image');
+      const hasText = outputModalities.includes("text");
+      const hasImage = outputModalities.includes("image");
       if (!hasText && !hasImage) {
         continue;
       }
@@ -2412,7 +2413,7 @@ export function parseAnthropicModelsPayload(body: unknown): string[] {
 }
 
 export function parseAnthropicModelEntriesPayload(body: unknown): ProviderListedModelEntry[] {
-  if (typeof body !== 'object' || body === null || !('data' in body)) {
+  if (typeof body !== "object" || body === null || !("data" in body)) {
     return [];
   }
   const raw = (body as { data?: unknown }).data;
@@ -2421,12 +2422,12 @@ export function parseAnthropicModelEntriesPayload(body: unknown): ProviderListed
   }
   const entries: ProviderListedModelEntry[] = [];
   for (const entry of raw) {
-    if (typeof entry !== 'object' || entry === null || !('id' in entry)) {
+    if (typeof entry !== "object" || entry === null || !("id" in entry)) {
       continue;
     }
     const record = entry as Record<string, unknown>;
     const id = record.id;
-    if (typeof id === 'string' && id.trim().length > 0) {
+    if (typeof id === "string" && id.trim().length > 0) {
       const modelEntry: ProviderListedModelEntry = { id: id.trim() };
       const supportsImageInput = anthropicModelSupportsImageInput(record.capabilities);
       if (supportsImageInput !== undefined) {
@@ -2472,8 +2473,8 @@ export interface ListProviderModelIdsOptions {
 }
 
 function requireApiKeyForModelListing(apiKey: string, provider?: ModelProviderId): void {
-  if (!apiKey.trim() && provider !== 'custom') {
-    throw new Error('API Key 不能为空。');
+  if (!apiKey.trim() && provider !== "custom") {
+    throw new Error("API Key 不能为空。");
   }
 }
 
@@ -2492,14 +2493,14 @@ export async function listOpenAiCompatibleModelIds(
   const url = openAiCompatibleModelsListUrl(options.baseUrl);
   const key = options.apiKey.trim();
   if (!key) {
-    throw new Error('API Key 不能为空。');
+    throw new Error("API Key 不能为空。");
   }
 
   const headers: Record<string, string> = {
     Authorization: `Bearer ${key}`,
   };
 
-  const init: RequestInit = { method: 'GET', headers };
+  const init: RequestInit = { method: "GET", headers };
   if (options.signal !== undefined) {
     init.signal = options.signal;
   }
@@ -2515,7 +2516,7 @@ async function fetchModelsListJson(url: string, init: RequestInit): Promise<unkn
     response = await fetch(url, init);
   } catch (cause) {
     const message = cause instanceof Error ? cause.message : String(cause);
-    throw new Error(`列模型请求失败：${message}`);
+    throw new Error(`列模型请求失败：${message}`, { cause: cause });
   }
 
   const text = await response.text();
@@ -2524,16 +2525,16 @@ async function fetchModelsListJson(url: string, init: RequestInit): Promise<unkn
     json = text.length > 0 ? (JSON.parse(text) as unknown) : {};
   } catch {
     throw new Error(
-      response.ok
-        ? '列模型响应不是合法 JSON。'
-        : `列模型失败（HTTP ${String(response.status)}）。`,
+      response.ok ? "列模型响应不是合法 JSON。" : `列模型失败（HTTP ${String(response.status)}）。`,
     );
   }
 
   if (!response.ok) {
-    const errObj = typeof json === 'object' && json !== null ? json : undefined;
+    const errObj = typeof json === "object" && json !== null ? json : undefined;
     const errMsg =
-      errObj && 'error' in errObj && typeof (errObj as { error?: { message?: unknown } }).error?.message === 'string'
+      errObj &&
+      "error" in errObj &&
+      typeof (errObj as { error?: { message?: unknown } }).error?.message === "string"
         ? (errObj as { error: { message: string } }).error.message
         : undefined;
     throw new Error(
@@ -2561,7 +2562,7 @@ async function listOpenAiCompatibleModelsForProvider(
 
   const headers: Record<string, string> = bearerAuthHeaders(options.apiKey);
 
-  const init: RequestInit = { method: 'GET', headers };
+  const init: RequestInit = { method: "GET", headers };
   if (options.signal !== undefined) {
     init.signal = options.signal;
   }
@@ -2585,11 +2586,11 @@ export async function listAnthropicModels(
   requireApiKeyForModelListing(options.apiKey, options.provider);
 
   const headers: Record<string, string> = {
-    'anthropic-version': ANTHROPIC_VERSION,
-    ...(options.apiKey.trim() ? { 'x-api-key': options.apiKey.trim() } : {}),
+    "anthropic-version": ANTHROPIC_VERSION,
+    ...(options.apiKey.trim() ? { "x-api-key": options.apiKey.trim() } : {}),
   };
 
-  const init: RequestInit = { method: 'GET', headers };
+  const init: RequestInit = { method: "GET", headers };
   if (options.signal !== undefined) {
     init.signal = options.signal;
   }
@@ -2599,7 +2600,7 @@ export async function listAnthropicModels(
     response = await fetch(url, init);
   } catch (cause) {
     const message = cause instanceof Error ? cause.message : String(cause);
-    throw new Error(`列模型请求失败：${message}`);
+    throw new Error(`列模型请求失败：${message}`, { cause: cause });
   }
 
   const text = await response.text();
@@ -2608,19 +2609,20 @@ export async function listAnthropicModels(
     json = text.length > 0 ? (JSON.parse(text) as unknown) : {};
   } catch {
     throw new Error(
-      response.ok
-        ? '列模型响应不是合法 JSON。'
-        : `列模型失败（HTTP ${String(response.status)}）。`,
+      response.ok ? "列模型响应不是合法 JSON。" : `列模型失败（HTTP ${String(response.status)}）。`,
     );
   }
 
   if (!response.ok) {
-    const errObj = typeof json === 'object' && json !== null ? json as Record<string, unknown> : undefined;
+    const errObj =
+      typeof json === "object" && json !== null ? (json as Record<string, unknown>) : undefined;
     const error = errObj?.error;
     const errMsg =
-      typeof error === 'string'
+      typeof error === "string"
         ? error
-        : typeof error === 'object' && error !== null && typeof (error as { message?: unknown }).message === 'string'
+        : typeof error === "object" &&
+            error !== null &&
+            typeof (error as { message?: unknown }).message === "string"
           ? (error as { message: string }).message
           : undefined;
     throw new Error(
@@ -2637,23 +2639,23 @@ export async function listAnthropicModels(
 export async function listProviderModels(
   options: ListProviderModelIdsOptions,
 ): Promise<ProviderListedModelEntry[]> {
-  if (options.provider === 'xiaomi' && options.transportKind === 'anthropic') {
+  if (options.provider === "xiaomi" && options.transportKind === "anthropic") {
     return listXiaomiModels({
-      baseUrl: resolveProviderConnectApiBase('xiaomi', 'openai-compatible'),
+      baseUrl: resolveProviderConnectApiBase("xiaomi", "openai-compatible"),
       apiKey: options.apiKey,
       ...(options.signal !== undefined ? { signal: options.signal } : {}),
     });
   }
 
-  if (options.provider === 'meituan' && options.transportKind === 'anthropic') {
+  if (options.provider === "meituan" && options.transportKind === "anthropic") {
     return listMeituanModels({
-      baseUrl: resolveProviderConnectApiBase('meituan', 'openai-compatible'),
+      baseUrl: resolveProviderConnectApiBase("meituan", "openai-compatible"),
       apiKey: options.apiKey,
       ...(options.signal !== undefined ? { signal: options.signal } : {}),
     });
   }
 
-  if (options.provider === 'minimax' && options.transportKind === 'anthropic') {
+  if (options.provider === "minimax" && options.transportKind === "anthropic") {
     return listMinimaxModels({
       baseUrl: minimaxOpenAiCompatibleListingBaseFromConnectBase(options.baseUrl),
       apiKey: options.apiKey,
@@ -2661,117 +2663,114 @@ export async function listProviderModels(
     });
   }
 
-  if (options.provider === 'siliconflow') {
+  if (options.provider === "siliconflow") {
     return listSiliconFlowModels(options);
   }
 
-  if (options.provider === 'fireworks-ai') {
+  if (options.provider === "fireworks-ai") {
     return listFireworksAiModels(options);
   }
 
-  if (options.provider === 'together-ai') {
+  if (options.provider === "together-ai") {
     return listTogetherAiModels(options);
   }
 
-  if (options.provider === 'groq') {
+  if (options.provider === "groq") {
     return listGroqModels(options);
   }
 
-  if (options.provider === 'deepinfra') {
+  if (options.provider === "deepinfra") {
     return listDeepInfraModels(options);
   }
 
-  if (options.provider === 'baseten') {
+  if (options.provider === "baseten") {
     return listBasetenModels(options);
   }
 
-  if (options.provider === 'hugging-face') {
+  if (options.provider === "hugging-face") {
     return listHuggingFaceModels(options);
   }
 
-  if (options.provider === 'cohere') {
+  if (options.provider === "cohere") {
     return listCohereModels(options);
   }
 
-  if (
-    options.transportKind === 'anthropic'
-    || options.provider === 'anthropic'
-  ) {
+  if (options.transportKind === "anthropic" || options.provider === "anthropic") {
     return listAnthropicModels(options);
   }
 
-  if (options.provider === 'moonshot-ai') {
+  if (options.provider === "moonshot-ai") {
     return listMoonshotModels(options);
   }
 
-  if (options.provider === 'stepfun') {
-    return listOpenAiCompatibleModelsForProvider(options, 'stepfun');
+  if (options.provider === "stepfun") {
+    return listOpenAiCompatibleModelsForProvider(options, "stepfun");
   }
 
-  if (options.provider === 'kimi-code') {
+  if (options.provider === "kimi-code") {
     return listKimiCodeModels(options);
   }
 
-  if (options.provider === 'minimax') {
+  if (options.provider === "minimax") {
     return listMinimaxModels(options);
   }
 
-  if (options.provider === 'xiaomi') {
+  if (options.provider === "xiaomi") {
     return listXiaomiModels(options);
   }
 
-  if (options.provider === 'xai') {
+  if (options.provider === "xai") {
     return listXaiModels(options);
   }
 
-  if (options.provider === 'vercel-ai-gateway') {
+  if (options.provider === "vercel-ai-gateway") {
     return listVercelAiGatewayModels(options);
   }
 
-  if (options.provider === 'openrouter') {
+  if (options.provider === "openrouter") {
     return listOpenRouterModels(options);
   }
 
-  if (options.provider === 'cloudflare-ai-gateway') {
+  if (options.provider === "cloudflare-ai-gateway") {
     throw new Error(
-      'Cloudflare AI Gateway 无模型目录 API，请手动填写模型 ID（如 openai/gpt-4.1-mini 或 @cf/meta/llama-3.1-8b-instruct）。',
+      "Cloudflare AI Gateway 无模型目录 API，请手动填写模型 ID（如 openai/gpt-4.1-mini 或 @cf/meta/llama-3.1-8b-instruct）。",
     );
   }
 
-  if (options.provider === 'volcengine') {
-    return listArkModels(options, 'volcengine');
+  if (options.provider === "volcengine") {
+    return listArkModels(options, "volcengine");
   }
 
-  if (options.provider === 'byteplus') {
-    return listArkModels(options, 'byteplus');
+  if (options.provider === "byteplus") {
+    return listArkModels(options, "byteplus");
   }
 
-  if (options.provider === 'meituan') {
+  if (options.provider === "meituan") {
     return listMeituanModels(options);
   }
 
-  if (options.provider === 'tencent-tokenhub') {
-    return listOpenAiCompatibleModelsForProvider(options, 'tencent-tokenhub');
+  if (options.provider === "tencent-tokenhub") {
+    return listOpenAiCompatibleModelsForProvider(options, "tencent-tokenhub");
   }
 
-  if (options.provider === 'mistral') {
-    return listOpenAiCompatibleModelsForProvider(options, 'mistral');
+  if (options.provider === "mistral") {
+    return listOpenAiCompatibleModelsForProvider(options, "mistral");
   }
 
-  if (options.provider === 'google') {
+  if (options.provider === "google") {
     return listGoogleModels(options);
   }
 
-  if (options.provider === 'google-vertex-ai') {
+  if (options.provider === "google-vertex-ai") {
     return listGoogleVertexProviderModels(options);
   }
 
-  if (options.provider === 'amazon-bedrock') {
+  if (options.provider === "amazon-bedrock") {
     return listBedrockProviderModels(options);
   }
 
-  if (options.provider === 'azure') {
-    throw new Error('Azure 无 /models 端点，请手动填写部署名。');
+  if (options.provider === "azure") {
+    throw new Error("Azure 无 /models 端点，请手动填写部署名。");
   }
 
   return listOpenAiCompatibleModels(options);
@@ -2784,11 +2783,11 @@ export async function listGoogleVertexProviderModels(
   const project = options.vertexProject?.trim() || extracted.project;
   const location = options.vertexLocation?.trim() || extracted.location;
   if (!project || !location) {
-    throw new Error('Google Vertex 列模型需要填写 GCP 项目 ID 与区域（location）。');
+    throw new Error("Google Vertex 列模型需要填写 GCP 项目 ID 与区域（location）。");
   }
 
   try {
-    const { listVertexModels } = await import('./google-vertex-models.js');
+    const { listVertexModels } = await import("./google-vertex-models.js");
     return await listVertexModels({
       project,
       location,
@@ -2803,7 +2802,7 @@ export async function listGoogleVertexProviderModels(
     });
   } catch (error) {
     const message = error instanceof Error ? error.message : String(error);
-    throw new Error(`列模型失败（Google Vertex AI）：${message}`);
+    throw new Error(`列模型失败（Google Vertex AI）：${message}`, { cause: error });
   }
 }
 
@@ -2812,76 +2811,78 @@ export async function listBedrockProviderModels(
 ): Promise<ProviderListedModelEntry[]> {
   const region = options.awsRegion?.trim() || extractAwsRegionFromBedrockApiBase(options.baseUrl);
   if (!region) {
-    throw new Error('Amazon Bedrock 列模型需要填写 AWS 区域。');
+    throw new Error("Amazon Bedrock 列模型需要填写 AWS 区域。");
   }
 
   try {
-    const { listBedrockModels } = await import('./bedrock-models.js');
+    const { listBedrockModels } = await import("./bedrock-models.js");
     return await listBedrockModels({
       region,
       ...(options.apiKey.trim() ? { apiKey: options.apiKey.trim() } : {}),
       ...(options.accessKeyId?.trim() ? { accessKeyId: options.accessKeyId.trim() } : {}),
-      ...(options.secretAccessKey?.trim() ? { secretAccessKey: options.secretAccessKey.trim() } : {}),
+      ...(options.secretAccessKey?.trim()
+        ? { secretAccessKey: options.secretAccessKey.trim() }
+        : {}),
       ...(options.sessionToken?.trim() ? { sessionToken: options.sessionToken.trim() } : {}),
       ...(options.signal ? { signal: options.signal } : {}),
     });
   } catch (error) {
     const message = error instanceof Error ? error.message : String(error);
-    throw new Error(`列模型失败（Amazon Bedrock）：${message}`);
+    throw new Error(`列模型失败（Amazon Bedrock）：${message}`, { cause: error });
   }
 }
 
-export { bedrockApiBaseFromRegion, extractAwsRegionFromBedrockApiBase } from './bedrock-region.js';
+export { bedrockApiBaseFromRegion, extractAwsRegionFromBedrockApiBase } from "./bedrock-region.js";
 export {
   vertexApiBaseFromProjectAndLocation,
   extractVertexProjectAndLocationFromApiBase,
-} from './google-vertex-endpoints.js';
+} from "./google-vertex-endpoints.js";
 
 export async function listMoonshotModels(
   options: ListOpenAiCompatibleModelIdsOptions,
 ): Promise<ProviderListedModelEntry[]> {
-  return listOpenAiCompatibleModelsForProvider(options, 'moonshot-ai');
+  return listOpenAiCompatibleModelsForProvider(options, "moonshot-ai");
 }
 
 export async function listKimiCodeModels(
   options: ListOpenAiCompatibleModelIdsOptions,
 ): Promise<ProviderListedModelEntry[]> {
-  return listOpenAiCompatibleModelsForProvider(options, 'kimi-code');
+  return listOpenAiCompatibleModelsForProvider(options, "kimi-code");
 }
 
 export async function listMinimaxModels(
   options: ListOpenAiCompatibleModelIdsOptions,
 ): Promise<ProviderListedModelEntry[]> {
-  return listOpenAiCompatibleModelsForProvider(options, 'minimax');
+  return listOpenAiCompatibleModelsForProvider(options, "minimax");
 }
 
 export async function listXiaomiModels(
   options: ListOpenAiCompatibleModelIdsOptions,
 ): Promise<ProviderListedModelEntry[]> {
-  return listOpenAiCompatibleModelsForProvider(options, 'xiaomi');
+  return listOpenAiCompatibleModelsForProvider(options, "xiaomi");
 }
 
 export async function listXaiModels(
   options: ListOpenAiCompatibleModelIdsOptions,
 ): Promise<ProviderListedModelEntry[]> {
-  return listOpenAiCompatibleModelsForProvider(options, 'xai');
+  return listOpenAiCompatibleModelsForProvider(options, "xai");
 }
 
 export async function listVercelAiGatewayModels(
   options: ListOpenAiCompatibleModelIdsOptions,
 ): Promise<ProviderListedModelEntry[]> {
-  return listOpenAiCompatibleModelsForProvider(options, 'vercel-ai-gateway');
+  return listOpenAiCompatibleModelsForProvider(options, "vercel-ai-gateway");
 }
 
 export async function listOpenRouterModels(
   options: ListOpenAiCompatibleModelIdsOptions,
 ): Promise<ProviderListedModelEntry[]> {
-  return listOpenAiCompatibleModelsForProvider(options, 'openrouter');
+  return listOpenAiCompatibleModelsForProvider(options, "openrouter");
 }
 
 export async function listArkModels(
   options: ListOpenAiCompatibleModelIdsOptions,
-  provider: 'volcengine' | 'byteplus',
+  provider: "volcengine" | "byteplus",
 ): Promise<ProviderListedModelEntry[]> {
   return listOpenAiCompatibleModelsForProvider(options, provider);
 }
@@ -2893,7 +2894,7 @@ export const parseVolcengineModelEntriesPayload = parseArkModelEntriesPayload;
 export async function listVolcengineModels(
   options: ListOpenAiCompatibleModelIdsOptions,
 ): Promise<ProviderListedModelEntry[]> {
-  return listArkModels(options, 'volcengine');
+  return listArkModels(options, "volcengine");
 }
 
 /**
@@ -2906,13 +2907,13 @@ export async function listMeituanModels(
   const url = openAiCompatibleModelsListUrl(options.baseUrl);
   const key = options.apiKey.trim();
   if (!key) {
-    throw new Error('API Key 不能为空。');
+    throw new Error("API Key 不能为空。");
   }
 
   const headers: Record<string, string> = {
     Authorization: `Bearer ${key}`,
   };
-  const init: RequestInit = { method: 'GET', headers };
+  const init: RequestInit = { method: "GET", headers };
   if (options.signal !== undefined) {
     init.signal = options.signal;
   }
@@ -2949,7 +2950,7 @@ export async function listGoogleModels(
   assertGoogleGeminiApiBase(options.baseUrl);
   const key = options.apiKey.trim();
   if (!key) {
-    throw new Error('API Key 不能为空。');
+    throw new Error("API Key 不能为空。");
   }
 
   const allEntries: ProviderListedModelEntry[] = [];
@@ -2958,9 +2959,9 @@ export async function listGoogleModels(
   do {
     const url = googleNativeModelsListUrl(options.baseUrl, pageToken);
     const headers: Record<string, string> = {
-      'x-goog-api-key': key,
+      "x-goog-api-key": key,
     };
-    const init: RequestInit = { method: 'GET', headers };
+    const init: RequestInit = { method: "GET", headers };
     if (options.signal !== undefined) {
       init.signal = options.signal;
     }
@@ -2969,7 +2970,7 @@ export async function listGoogleModels(
     allEntries.push(...parseGoogleModelEntriesPayload(json));
 
     pageToken =
-      typeof json === 'object' && json !== null && 'nextPageToken' in json
+      typeof json === "object" && json !== null && "nextPageToken" in json
         ? readOptionalTrimmedString((json as { nextPageToken?: unknown }).nextPageToken)
         : undefined;
   } while (pageToken);
@@ -3010,14 +3011,16 @@ function anthropicSupportedReasoningEfforts(value: unknown): string[] | undefine
 
 function capabilitySupported(value: unknown): boolean | undefined {
   const record = asRecord(value);
-  if (!record || typeof record.supported !== 'boolean') {
+  if (!record || typeof record.supported !== "boolean") {
     return undefined;
   }
   return record.supported;
 }
 
 function asRecord(value: unknown): Record<string, unknown> | undefined {
-  return typeof value === 'object' && value !== null ? value as Record<string, unknown> : undefined;
+  return typeof value === "object" && value !== null
+    ? (value as Record<string, unknown>)
+    : undefined;
 }
 
 function dedupeProviderListedModelEntries(
@@ -3047,7 +3050,9 @@ function dedupeProviderListedModelEntries(
       ...(entry.supportsImageGeneration !== undefined
         ? { supportsImageGeneration: entry.supportsImageGeneration }
         : {}),
-      ...(entry.supportsReasoning !== undefined ? { supportsReasoning: entry.supportsReasoning } : {}),
+      ...(entry.supportsReasoning !== undefined
+        ? { supportsReasoning: entry.supportsReasoning }
+        : {}),
       ...(entry.supportsThinkingType !== undefined
         ? { supportsThinkingType: entry.supportsThinkingType }
         : {}),
@@ -3064,19 +3069,22 @@ function dedupeProviderListedModelEntries(
 
 function readBooleanModelTrait(record: Record<string, unknown>, key: string): boolean | undefined {
   const value = record[key];
-  return typeof value === 'boolean' ? value : undefined;
+  return typeof value === "boolean" ? value : undefined;
 }
 
-function readPositiveIntegerModelTrait(record: Record<string, unknown>, key: string): number | undefined {
+function readPositiveIntegerModelTrait(
+  record: Record<string, unknown>,
+  key: string,
+): number | undefined {
   const value = record[key];
-  if (typeof value !== 'number' || !Number.isFinite(value) || value <= 0) {
+  if (typeof value !== "number" || !Number.isFinite(value) || value <= 0) {
     return undefined;
   }
   return Math.floor(value);
 }
 
 function readOptionalTrimmedString(value: unknown): string | undefined {
-  if (typeof value !== 'string') {
+  if (typeof value !== "string") {
     return undefined;
   }
   const trimmed = value.trim();
@@ -3087,14 +3095,16 @@ function readPricingField(pricing: Record<string, unknown>, key: string): string
   return readOptionalTrimmedString(pricing[key]);
 }
 
-function buildProviderListedModelPricing(fields: ProviderListedModelPricing): ProviderListedModelPricing | undefined {
+function buildProviderListedModelPricing(
+  fields: ProviderListedModelPricing,
+): ProviderListedModelPricing | undefined {
   const hasTokenPricing =
-    fields.inputPerTokenUsd
-    || fields.outputPerTokenUsd
-    || fields.cachedInputPerTokenUsd
-    || fields.imagePerUnitUsd
-    || fields.requestPerCallUsd
-    || fields.imagePerMegapixelUsd;
+    fields.inputPerTokenUsd ||
+    fields.outputPerTokenUsd ||
+    fields.cachedInputPerTokenUsd ||
+    fields.imagePerUnitUsd ||
+    fields.requestPerCallUsd ||
+    fields.imagePerMegapixelUsd;
   const hasVideoDurationPricing =
     fields.videoDurationPricing !== undefined && fields.videoDurationPricing.length > 0;
   const hasExamplePricing = fields.imageExamplePricing || fields.videoExamplePricing;
@@ -3104,7 +3114,9 @@ function buildProviderListedModelPricing(fields: ProviderListedModelPricing): Pr
   return {
     ...(fields.inputPerTokenUsd ? { inputPerTokenUsd: fields.inputPerTokenUsd } : {}),
     ...(fields.outputPerTokenUsd ? { outputPerTokenUsd: fields.outputPerTokenUsd } : {}),
-    ...(fields.cachedInputPerTokenUsd ? { cachedInputPerTokenUsd: fields.cachedInputPerTokenUsd } : {}),
+    ...(fields.cachedInputPerTokenUsd
+      ? { cachedInputPerTokenUsd: fields.cachedInputPerTokenUsd }
+      : {}),
     ...(fields.imagePerUnitUsd ? { imagePerUnitUsd: fields.imagePerUnitUsd } : {}),
     ...(fields.requestPerCallUsd ? { requestPerCallUsd: fields.requestPerCallUsd } : {}),
     ...(hasVideoDurationPricing ? { videoDurationPricing: fields.videoDurationPricing } : {}),
@@ -3123,13 +3135,13 @@ function readVercelGatewayVideoDurationPricing(
   }
   const entries: ProviderListedModelVideoDurationPricing[] = [];
   for (const item of raw) {
-    if (typeof item !== 'object' || item === null) {
+    if (typeof item !== "object" || item === null) {
       continue;
     }
     const record = item as Record<string, unknown>;
     const resolution = readOptionalTrimmedString(record.resolution);
     const costPerSecondUsd = readOptionalTrimmedString(record.cost_per_second);
-    const audio = readBooleanModelTrait(record, 'audio');
+    const audio = readBooleanModelTrait(record, "audio");
     if (!resolution || !costPerSecondUsd) {
       continue;
     }
@@ -3142,15 +3154,17 @@ function readVercelGatewayVideoDurationPricing(
   return entries.length > 0 ? entries : undefined;
 }
 
-function readVercelGatewayPricing(record: Record<string, unknown>): ProviderListedModelPricing | undefined {
+function readVercelGatewayPricing(
+  record: Record<string, unknown>,
+): ProviderListedModelPricing | undefined {
   const pricing = asRecord(record.pricing);
   if (!pricing) {
     return undefined;
   }
-  const inputPerTokenUsd = readPricingField(pricing, 'input');
-  const outputPerTokenUsd = readPricingField(pricing, 'output');
-  const imagePerUnitUsd = readPricingField(pricing, 'image');
-  const requestPerCallUsd = readPricingField(pricing, 'request');
+  const inputPerTokenUsd = readPricingField(pricing, "input");
+  const outputPerTokenUsd = readPricingField(pricing, "output");
+  const imagePerUnitUsd = readPricingField(pricing, "image");
+  const requestPerCallUsd = readPricingField(pricing, "request");
   const videoDurationPricing = readVercelGatewayVideoDurationPricing(pricing);
   return buildProviderListedModelPricing({
     ...(inputPerTokenUsd ? { inputPerTokenUsd } : {}),
@@ -3161,15 +3175,17 @@ function readVercelGatewayPricing(record: Record<string, unknown>): ProviderList
   });
 }
 
-function readOpenRouterPricing(record: Record<string, unknown>): ProviderListedModelPricing | undefined {
+function readOpenRouterPricing(
+  record: Record<string, unknown>,
+): ProviderListedModelPricing | undefined {
   const pricing = asRecord(record.pricing);
   if (!pricing) {
     return undefined;
   }
-  const inputPerTokenUsd = readPricingField(pricing, 'prompt');
-  const outputPerTokenUsd = readPricingField(pricing, 'completion');
-  const imagePerUnitUsd = readPricingField(pricing, 'image');
-  const requestPerCallUsd = readPricingField(pricing, 'request');
+  const inputPerTokenUsd = readPricingField(pricing, "prompt");
+  const outputPerTokenUsd = readPricingField(pricing, "completion");
+  const imagePerUnitUsd = readPricingField(pricing, "image");
+  const requestPerCallUsd = readPricingField(pricing, "request");
   return buildProviderListedModelPricing({
     ...(inputPerTokenUsd ? { inputPerTokenUsd } : {}),
     ...(outputPerTokenUsd ? { outputPerTokenUsd } : {}),
@@ -3186,7 +3202,7 @@ function attachListedModelMetadata(
   const displayName = readOptionalTrimmedString(record.name);
   const description = readOptionalTrimmedString(record.description);
   const contextLength =
-    modelEntry.contextLength ?? readPositiveIntegerModelTrait(record, 'context_length');
+    modelEntry.contextLength ?? readPositiveIntegerModelTrait(record, "context_length");
   return {
     ...modelEntry,
     ...(displayName ? { displayName } : {}),
@@ -3201,7 +3217,7 @@ function readMeituanModalities(value: unknown): string[] {
     return [];
   }
   return value
-    .filter((item): item is string => typeof item === 'string')
+    .filter((item): item is string => typeof item === "string")
     .map((item) => item.trim().toLowerCase())
     .filter((item) => item.length > 0);
 }
@@ -3212,7 +3228,7 @@ function readMeituanSupportedParameters(record: Record<string, unknown>): string
     return [];
   }
   return raw
-    .filter((item): item is string => typeof item === 'string')
+    .filter((item): item is string => typeof item === "string")
     .map((item) => item.trim())
     .filter((item) => item.length > 0);
 }
@@ -3229,13 +3245,19 @@ function convertMeituanPerMillionUsdToPerToken(value: string | undefined): strin
   return String(perMillion / 1_000_000);
 }
 
-function readMeituanPricing(record: Record<string, unknown>): ProviderListedModelPricing | undefined {
+function readMeituanPricing(
+  record: Record<string, unknown>,
+): ProviderListedModelPricing | undefined {
   const pricing = asRecord(record.pricing);
   if (!pricing) {
     return undefined;
   }
-  const inputPerTokenUsd = convertMeituanPerMillionUsdToPerToken(readPricingField(pricing, 'prompt'));
-  const outputPerTokenUsd = convertMeituanPerMillionUsdToPerToken(readPricingField(pricing, 'completion'));
+  const inputPerTokenUsd = convertMeituanPerMillionUsdToPerToken(
+    readPricingField(pricing, "prompt"),
+  );
+  const outputPerTokenUsd = convertMeituanPerMillionUsdToPerToken(
+    readPricingField(pricing, "completion"),
+  );
   // pricing.cached_tokens 暂无内部字段，不持久化
   return buildProviderListedModelPricing({
     ...(inputPerTokenUsd ? { inputPerTokenUsd } : {}),
@@ -3243,8 +3265,10 @@ function readMeituanPricing(record: Record<string, unknown>): ProviderListedMode
   });
 }
 
-export function parseMeituanModelDetailPayload(body: unknown): ProviderListedModelEntry | undefined {
-  if (typeof body !== 'object' || body === null) {
+export function parseMeituanModelDetailPayload(
+  body: unknown,
+): ProviderListedModelEntry | undefined {
+  if (typeof body !== "object" || body === null) {
     return undefined;
   }
   const record = body as Record<string, unknown>;
@@ -3259,27 +3283,27 @@ export function parseMeituanModelDetailPayload(body: unknown): ProviderListedMod
     modelEntry.displayName = displayName;
   }
 
-  const contextLength = readPositiveIntegerModelTrait(record, 'context_length');
+  const contextLength = readPositiveIntegerModelTrait(record, "context_length");
   if (contextLength !== undefined) {
     modelEntry.contextLength = contextLength;
   }
 
   const architecture = asRecord(record.architecture);
   const inputModalities = readMeituanModalities(architecture?.input_modalities);
-  if (inputModalities.includes('image')) {
+  if (inputModalities.includes("image")) {
     modelEntry.supportsImageInput = true;
   }
-  if (inputModalities.includes('video')) {
+  if (inputModalities.includes("video")) {
     modelEntry.supportsVideoInput = true;
   }
 
   const outputModalities = readMeituanModalities(architecture?.output_modalities);
-  if (outputModalities.includes('image') && !outputModalities.includes('text')) {
+  if (outputModalities.includes("image") && !outputModalities.includes("text")) {
     modelEntry.supportsImageGeneration = true;
   }
 
   const supportedParameters = readMeituanSupportedParameters(record);
-  if (supportedParameters.includes('thinking')) {
+  if (supportedParameters.includes("thinking")) {
     modelEntry.supportsThinkingSwitch = true;
   }
 
@@ -3298,18 +3322,18 @@ export function moonshotSupportedReasoningEfforts(
   if (!supportsReasoning) {
     return [];
   }
-  const normalizedId = modelId?.trim().toLowerCase() ?? '';
-  const bareId = normalizedId.includes('/')
-    ? normalizedId.slice(normalizedId.lastIndexOf('/') + 1)
+  const normalizedId = modelId?.trim().toLowerCase() ?? "";
+  const bareId = normalizedId.includes("/")
+    ? normalizedId.slice(normalizedId.lastIndexOf("/") + 1)
     : normalizedId;
   if (/^kimi-k3(?:-|$)/.test(bareId)) {
     return moonshotK3SupportedReasoningEfforts();
   }
-  return ['minimal', 'low', 'medium', 'high'];
+  return ["minimal", "low", "medium", "high"];
 }
 
 export function moonshotK3SupportedReasoningEfforts(): string[] {
-  return ['low', 'high', 'max'];
+  return ["low", "high", "max"];
 }
 
-const ANTHROPIC_REASONING_LEVELS = ['low', 'medium', 'high', 'xhigh', 'max'] as const;
+const ANTHROPIC_REASONING_LEVELS = ["low", "medium", "high", "xhigh", "max"] as const;

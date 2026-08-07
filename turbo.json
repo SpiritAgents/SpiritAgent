@@ -19,6 +19,14 @@
     },
     "test": {
       "dependsOn": ["build"]
+    },
+    "//#lint": {},
+    "//#lint:fix": {
+      "cache": false
+    },
+    "//#format": {},
+    "//#format:fix": {
+      "cache": false
     }
   }
 }

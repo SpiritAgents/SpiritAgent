@@ -1,1 +1,1 @@
-export { parseLspFileChangeNotification } from './paths.js';
+export { parseLspFileChangeNotification } from "./paths.js";

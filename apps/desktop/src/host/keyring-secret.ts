@@ -1,4 +1,4 @@
-import { Entry } from '@napi-rs/keyring';
+import { Entry } from "@napi-rs/keyring";
 
 /** Windows Credential Manager UTF-16 blob limit (bytes). */
 export const KEYRING_MAX_UTF16_BYTES = 2560;
@@ -6,10 +6,10 @@ export const KEYRING_MAX_UTF16_BYTES = 2560;
 /** Chunk size with margin below {@link KEYRING_MAX_UTF16_BYTES}. */
 export const KEYRING_MAX_CHUNK_UTF16_BYTES = 2500;
 
-export const KEYRING_SHARD_MARKER = '__spirit_keyring_sharded_v1__:';
+export const KEYRING_SHARD_MARKER = "__spirit_keyring_sharded_v1__:";
 
 function utf16LeByteLength(value: string): number {
-  return Buffer.byteLength(value, 'utf16le');
+  return Buffer.byteLength(value, "utf16le");
 }
 
 export function shardKeyringAccount(baseAccount: string, index: number): string {
@@ -29,18 +29,18 @@ export function splitKeyringPassword(
   while (offset < password.length) {
     let end = offset + 1;
     while (
-      end < password.length
-      && utf16LeByteLength(password.slice(offset, end + 1)) <= maxUtf16Bytes
+      end < password.length &&
+      utf16LeByteLength(password.slice(offset, end + 1)) <= maxUtf16Bytes
     ) {
       end += 1;
     }
     // 不在代理对中间切分：孤立代理写入 keyring 时会被替换成 U+FFFD，
     // 读回拼接后与原文不符。整个代理对留给下一分片。
     if (
-      end < password.length
-      && end - offset > 1
-      && isHighSurrogate(password.charCodeAt(end - 1))
-      && isLowSurrogate(password.charCodeAt(end))
+      end < password.length &&
+      end - offset > 1 &&
+      isHighSurrogate(password.charCodeAt(end - 1)) &&
+      isLowSurrogate(password.charCodeAt(end))
     ) {
       end -= 1;
     }
@@ -93,7 +93,7 @@ export function getKeyringPassword(service: string, account: string): string | u
     return primary;
   }
 
-  let joined = '';
+  let joined = "";
   for (let index = 0; index < shardCount; index += 1) {
     const shard = readKeyringEntry(service, shardKeyringAccount(account, index));
     if (shard === undefined) {

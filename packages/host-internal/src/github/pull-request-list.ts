@@ -1,8 +1,8 @@
-import { githubApiHeaders, githubFetch, githubHasNextPage, readGitHubJson } from './github-api.js';
-import { executeGitHubGraphQL } from './github-graphql.js';
-import { parsePullRequestBodyTaskListProgress } from './pull-request-body-task-list.js';
-import { mapPullRequestSummary } from './pull-request.js';
-import { GITHUB_API_BASE_URL } from './oauth-config.js';
+import { githubApiHeaders, githubFetch, githubHasNextPage, readGitHubJson } from "./github-api.js";
+import { executeGitHubGraphQL } from "./github-graphql.js";
+import { parsePullRequestBodyTaskListProgress } from "./pull-request-body-task-list.js";
+import { mapPullRequestSummary } from "./pull-request.js";
+import { GITHUB_API_BASE_URL } from "./oauth-config.js";
 import type {
   GitHubListPullRequestsRequest,
   GitHubPullRequestListItem,
@@ -10,14 +10,14 @@ import type {
   GitHubPullRequestListState,
   GitHubPullRequestTabCounts,
   GitHubRepositoryRef,
-} from './types.js';
+} from "./types.js";
 
 const DEFAULT_PER_PAGE = 30;
 
 interface GitHubPullRequestListApiItem {
   number: number;
   title: string;
-  state: 'open' | 'closed';
+  state: "open" | "closed";
   html_url: string;
   node_id?: string | null;
   draft?: boolean;
@@ -33,7 +33,7 @@ interface GitHubPullRequestListApiItem {
 interface GitHubSearchIssueApiItem {
   number: number;
   title: string;
-  state: 'open' | 'closed';
+  state: "open" | "closed";
   html_url: string;
   draft?: boolean;
   body?: string | null;
@@ -54,20 +54,22 @@ export function buildPullRequestSearchQuery(
   query: string,
 ): string {
   const trimmedQuery = query.trim();
-  const parts = [`repo:${repository.owner}/${repository.repo}`, 'is:pr'];
-  if (state === 'open') {
-    parts.push('is:open');
+  const parts = [`repo:${repository.owner}/${repository.repo}`, "is:pr"];
+  if (state === "open") {
+    parts.push("is:open");
   } else {
     // Non-open PRs: merged + closed-without-merge (GitHub search `state:closed` omits merged).
-    parts.push('-is:open');
+    parts.push("-is:open");
   }
   if (trimmedQuery) {
     parts.push(trimmedQuery);
   }
-  return parts.join(' ');
+  return parts.join(" ");
 }
 
-export function mapPullRequestListItem(item: GitHubPullRequestListApiItem): GitHubPullRequestListItem {
+export function mapPullRequestListItem(
+  item: GitHubPullRequestListApiItem,
+): GitHubPullRequestListItem {
   const summary = mapPullRequestSummary(item);
   const body = item.body ?? null;
   return {
@@ -75,14 +77,14 @@ export function mapPullRequestListItem(item: GitHubPullRequestListApiItem): GitH
     merged: Boolean(item.merged_at),
     createdAt: item.created_at?.trim() || new Date(0).toISOString(),
     updatedAt: item.updated_at?.trim() || item.created_at?.trim() || new Date(0).toISOString(),
-    ...(item.user?.avatar_url?.trim()
-      ? { authorAvatarUrl: item.user.avatar_url.trim() }
-      : {}),
+    ...(item.user?.avatar_url?.trim() ? { authorAvatarUrl: item.user.avatar_url.trim() } : {}),
     taskListProgress: parsePullRequestBodyTaskListProgress(body),
   };
 }
 
-export function mapSearchIssueToListItem(item: GitHubSearchIssueApiItem): GitHubPullRequestListItem | null {
+export function mapSearchIssueToListItem(
+  item: GitHubSearchIssueApiItem,
+): GitHubPullRequestListItem | null {
   if (!item.pull_request) {
     return null;
   }
@@ -98,8 +100,8 @@ export function mapSearchIssueToListItem(item: GitHubSearchIssueApiItem): GitHub
     user: item.user ?? null,
     merged_at: item.pull_request?.merged_at ?? null,
     draft: item.draft ?? item.pull_request?.draft ?? false,
-    head: { ref: '', sha: '' },
-    base: { ref: '' },
+    head: { ref: "", sha: "" },
+    base: { ref: "" },
   });
 }
 
@@ -114,8 +116,8 @@ async function listPullRequestsFromRest(
     state,
     page: String(page),
     per_page: String(perPage),
-    sort: 'updated',
-    direction: 'desc',
+    sort: "updated",
+    direction: "desc",
   });
   const url = `${GITHUB_API_BASE_URL}/repos/${repository.owner}/${repository.repo}/pulls?${params.toString()}`;
   const response = await githubFetch(url, { headers: githubApiHeaders(accessToken) });
@@ -142,8 +144,8 @@ async function searchPullRequests(
     q: buildPullRequestSearchQuery(repository, state, query),
     page: String(page),
     per_page: String(perPage),
-    sort: 'updated',
-    order: 'desc',
+    sort: "updated",
+    order: "desc",
   });
   const url = `${GITHUB_API_BASE_URL}/search/issues?${params.toString()}`;
   const response = await githubFetch(url, { headers: githubApiHeaders(accessToken) });
@@ -169,10 +171,17 @@ export async function listPullRequests(
     repo: request.repo.trim(),
   };
   const page = request.page && request.page > 0 ? request.page : 1;
-  const query = request.query?.trim() ?? '';
+  const query = request.query?.trim() ?? "";
 
   if (query) {
-    return searchPullRequests(accessToken, repository, request.state, query, page, DEFAULT_PER_PAGE);
+    return searchPullRequests(
+      accessToken,
+      repository,
+      request.state,
+      query,
+      page,
+      DEFAULT_PER_PAGE,
+    );
   }
 
   const snapshot = await listPullRequestsFromRest(

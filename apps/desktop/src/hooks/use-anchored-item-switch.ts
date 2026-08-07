@@ -79,17 +79,17 @@ export type AnchoredItemSwitchRelatedTargetRefs = {
 };
 
 function isDomNode(target: EventTarget | null): target is Node {
-  if (target === null || typeof target !== 'object') {
+  if (target === null || typeof target !== "object") {
     return false;
   }
-  return 'nodeType' in target && typeof (target as Node).contains === 'function';
+  return "nodeType" in target && typeof (target as Node).contains === "function";
 }
 
 function domTargetClosest(target: EventTarget, selector: string): Element | null {
   const element =
-    'closest' in target && typeof (target as Element).closest === 'function'
+    "closest" in target && typeof (target as Element).closest === "function"
       ? (target as Element)
-      : 'parentElement' in target
+      : "parentElement" in target
         ? (target as Node).parentElement
         : null;
   return element?.closest(selector) ?? null;
@@ -299,10 +299,7 @@ export function useAnchoredItemSwitch<TItem>({
       clearHoverOpenTimer();
       hoverOpenTimerRef.current = setTimeout(() => {
         hoverOpenTimerRef.current = undefined;
-        if (
-          !pointerItemRef.current ||
-          getItemId(pointerItemRef.current) !== getItemId(item)
-        ) {
+        if (!pointerItemRef.current || getItemId(pointerItemRef.current) !== getItemId(item)) {
           return;
         }
         setActiveItem(item);
@@ -372,8 +369,7 @@ export function useAnchoredItemSwitch<TItem>({
       }
     };
     document.addEventListener("pointermove", handleDocumentPointerMove, true);
-    return () =>
-      document.removeEventListener("pointermove", handleDocumentPointerMove, true);
+    return () => document.removeEventListener("pointermove", handleDocumentPointerMove, true);
   }, [open, clearHoverCloseTimer, scheduleHoverClose]);
 
   const getTriggerProps = useCallback(

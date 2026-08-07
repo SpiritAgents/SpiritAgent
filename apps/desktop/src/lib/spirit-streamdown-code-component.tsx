@@ -10,11 +10,11 @@ const FENCE_LANGUAGE_PATTERN = /language-([^\s]+)/;
 
 function extractFenceCode(children: ReactNode): string {
   if (
-    isValidElement(children)
-    && children.props
-    && typeof children.props === "object"
-    && "children" in children.props
-    && typeof children.props.children === "string"
+    isValidElement(children) &&
+    children.props &&
+    typeof children.props === "object" &&
+    "children" in children.props &&
+    typeof children.props.children === "string"
   ) {
     return children.props.children;
   }
@@ -45,6 +45,7 @@ export function createSpiritStreamdownCodeComponent(
   resolvedDark: boolean,
 ): ComponentType<StreamdownCodeProps> {
   return function SpiritStreamdownCode(props: StreamdownCodeProps) {
+    const isIncomplete = useIsCodeFenceIncomplete();
     const isInline = !("data-block" in props);
     if (isInline) {
       return createElement(inlineCode, props);
@@ -52,7 +53,6 @@ export function createSpiritStreamdownCodeComponent(
 
     const language = extractFenceLanguage(props.className);
     const code = extractFenceCode(props.children);
-    const isIncomplete = useIsCodeFenceIncomplete();
 
     if (language === "mermaid") {
       return (

@@ -1,31 +1,19 @@
-import { createLlmMessageContentFromTextAndImages, type LlmMessage } from '../ports.js';
-import {
-  appendHookAdditionalContexts,
-  runSubmitPromptHook,
-} from '../hooks/integration.js';
-import { SubmitPromptHookDeniedError } from '../hooks/errors.js';
+import { createLlmMessageContentFromTextAndImages, type LlmMessage } from "../ports.js";
+import { appendHookAdditionalContexts, runSubmitPromptHook } from "../hooks/integration.js";
+import { SubmitPromptHookDeniedError } from "../hooks/errors.js";
 
 import {
   formatPendingMcpResourceContext,
   formatPendingWorkspaceFileContext,
   repairMissingToolResultsInHistory,
-} from './helpers.js';
-import { formatUserMessageContentForLlm } from './user-turn-timestamp.js';
-import type { ToolAgentActiveSkill } from '../tool-agent.js';
-import type {
-  AgentRuntimeOptions,
-  PendingMcpResource,
-  PendingWorkspaceFile,
-} from './types.js';
+} from "./helpers.js";
+import { formatUserMessageContentForLlm } from "./user-turn-timestamp.js";
+import type { ToolAgentActiveSkill } from "../tool-agent.js";
+import type { AgentRuntimeOptions, PendingMcpResource, PendingWorkspaceFile } from "./types.js";
 
-type ContextMessageRole = 'system' | 'user' | 'assistant';
+type ContextMessageRole = "system" | "user" | "assistant";
 
-export interface ContextRuntime<
-  Config,
-  State,
-  ToolRequest,
-  TrustTarget = string,
-> {
+export interface ContextRuntime<Config, State, ToolRequest, TrustTarget = string> {
   options: AgentRuntimeOptions<Config, State, ToolRequest, TrustTarget>;
   historyStore: LlmMessage[];
   pendingUserTurnStore: string | undefined;
@@ -34,12 +22,7 @@ export interface ContextRuntime<
   recordContextMessage(role: ContextMessageRole, content: string): void;
 }
 
-export async function prepareSubmittedUserTurn<
-  Config,
-  State,
-  ToolRequest,
-  TrustTarget = string,
->(
+export async function prepareSubmittedUserTurn<Config, State, ToolRequest, TrustTarget = string>(
   runtime: ContextRuntime<Config, State, ToolRequest, TrustTarget>,
   userInput: string,
   explicitImages: string[],
@@ -58,35 +41,30 @@ export async function prepareSubmittedUserTurn<
   const videoPaths = new Set<string>();
 
   for (const file of workspaceFiles) {
-    if (file.kind === 'image') {
+    if (file.kind === "image") {
       imagePaths.add(file.path);
       continue;
     }
 
-    if (file.kind === 'video') {
+    if (file.kind === "video") {
       videoPaths.add(file.path);
       continue;
     }
 
-    runtime.recordContextMessage('system', formatPendingWorkspaceFileContext(file));
+    runtime.recordContextMessage("system", formatPendingWorkspaceFileContext(file));
   }
   for (const resource of resources) {
-    runtime.recordContextMessage('system', formatPendingMcpResourceContext(resource));
+    runtime.recordContextMessage("system", formatPendingMcpResourceContext(resource));
   }
 
-  const submitHookResult = await runSubmitPromptHook(
-    runtime.options,
-    userInput,
-  );
+  const submitHookResult = await runSubmitPromptHook(runtime.options, userInput);
   appendHookAdditionalContexts(
     (role, content) => runtime.recordContextMessage(role, content),
     submitHookResult.additionalContexts,
   );
   if (submitHookResult.denied) {
     throw new SubmitPromptHookDeniedError(
-      submitHookResult.userMessage
-        ?? submitHookResult.agentMessage
-        ?? 'Prompt denied by hook.',
+      submitHookResult.userMessage ?? submitHookResult.agentMessage ?? "Prompt denied by hook.",
       submitHookResult.followupMessage?.trim() || undefined,
     );
   }
@@ -94,8 +72,12 @@ export async function prepareSubmittedUserTurn<
   runtime.historyStore = repairMissingToolResultsInHistory(runtime.historyStore);
   const contentForLlm = formatUserMessageContentForLlm(userInput, activeSkillsForTurn);
   runtime.historyStore.push({
-    role: 'user',
-    content: createLlmMessageContentFromTextAndImages(contentForLlm, [...imagePaths], [...videoPaths]),
+    role: "user",
+    content: createLlmMessageContentFromTextAndImages(
+      contentForLlm,
+      [...imagePaths],
+      [...videoPaths],
+    ),
   });
   runtime.pendingUserTurnStore = userInput;
   return runtime.options.createToolAgentState(runtime.historyStore, userInput);

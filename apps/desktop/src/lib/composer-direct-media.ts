@@ -1,7 +1,7 @@
-import type { ModelRef } from '../types.js';
-import { isEmptyModelRef, modelRefsEqual } from '@spiritagent/host-internal/config-v2';
+import type { ModelRef } from "../types.js";
+import { isEmptyModelRef, modelRefsEqual } from "@spiritagent/host-internal/config-v2";
 
-export type DirectMediaTool = 'generate_image' | 'generate_video';
+export type DirectMediaTool = "generate_image" | "generate_video";
 
 type ModelWithCapabilities = {
   name: string;
@@ -15,15 +15,15 @@ type ComposerDirectMediaConfig = {
 };
 
 function supportsImageGeneration(model: ModelWithCapabilities): boolean {
-  return model.capabilities?.includes('imageGeneration') === true;
+  return model.capabilities?.includes("imageGeneration") === true;
 }
 
 function supportsVideoGeneration(model: ModelWithCapabilities): boolean {
-  return model.capabilities?.includes('videoGeneration') === true;
+  return model.capabilities?.includes("videoGeneration") === true;
 }
 
 function supportsChat(model: ModelWithCapabilities): boolean {
-  return model.capabilities?.includes('chat') === true;
+  return model.capabilities?.includes("chat") === true;
 }
 
 export function resolveComposerDirectMediaTool(
@@ -35,15 +35,15 @@ export function resolveComposerDirectMediaTool(
   }
 
   const matchesVideoSlot =
-    config.videoGenerationModel !== undefined
-    && modelRefsEqual(config.videoGenerationModel, activeModel);
+    config.videoGenerationModel !== undefined &&
+    modelRefsEqual(config.videoGenerationModel, activeModel);
   const matchesImageSlot =
-    config.imageGenerationModel !== undefined
-    && modelRefsEqual(config.imageGenerationModel, activeModel);
+    config.imageGenerationModel !== undefined &&
+    modelRefsEqual(config.imageGenerationModel, activeModel);
 
   if (matchesVideoSlot && matchesImageSlot) {
-    console.debug(
-      '[desktop][composer-direct-media] active model matches both image and video default slots; preferring generate_video',
+    console.warn(
+      "[desktop][composer-direct-media] active model matches both image and video default slots; preferring generate_video",
       { activeModel },
     );
   }
@@ -51,24 +51,24 @@ export function resolveComposerDirectMediaTool(
   if (matchesVideoSlot) {
     const profile = config.models.find((model) => model.name === activeModel.name);
     if (profile && supportsVideoGeneration(profile)) {
-      return 'generate_video';
+      return "generate_video";
     }
   }
 
   if (matchesImageSlot) {
     const profile = config.models.find((model) => model.name === activeModel.name);
     if (profile && supportsImageGeneration(profile)) {
-      return 'generate_image';
+      return "generate_image";
     }
   }
 
   const profile = config.models.find((model) => model.name === activeModel.name);
   if (profile && !supportsChat(profile)) {
     if (supportsVideoGeneration(profile)) {
-      return 'generate_video';
+      return "generate_video";
     }
     if (supportsImageGeneration(profile)) {
-      return 'generate_image';
+      return "generate_image";
     }
   }
 

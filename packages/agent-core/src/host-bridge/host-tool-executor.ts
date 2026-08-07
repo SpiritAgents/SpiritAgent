@@ -8,15 +8,15 @@ import type {
   ToolExecutionOutput,
   ToolRequestExecutionMetadata,
   ToolExecutor,
-} from '../ports.js';
-import { createToolExecutionTextOutput } from '../ports.js';
-import type { LlmTransportConfig } from '../provider-config.js';
+} from "../ports.js";
+import { createToolExecutionTextOutput } from "../ports.js";
+import type { LlmTransportConfig } from "../provider-config.js";
 import {
   filterLegacyHostFileToolDefinitions,
   shouldUseApplyPatchFileTools,
-} from '../open-responses/apply-patch-eligibility.js';
-import { isOpenResponsesTransportConfig } from '../provider-config.js';
-import type { SpiritAgentMode } from '../ports.js';
+} from "../open-responses/apply-patch-eligibility.js";
+import { isOpenResponsesTransportConfig } from "../provider-config.js";
+import type { SpiritAgentMode } from "../ports.js";
 import {
   assertAgentModeAllowsHostTool,
   assertFinishTaskToolAllowed,
@@ -26,24 +26,27 @@ import {
   filterHostToolDefinitionsForAgentMode,
   isPlanAgentMode,
   type BuiltinHostToolDefinitionEnvironment,
-} from '../host-tools.js';
-import { enrichUnknownToolError, toolNamesFromDefinitions } from '../unknown-tool-error.js';
-import { shouldUseStepfunWebSearch } from '../stepfun/stepfun-eligibility.js';
-import { buildStepfunWebSearchToolDefinition } from '../stepfun/stepfun-web-search-tool.js';
-import { shouldUseKimiCodeWebSearch } from '../kimi-code/kimi-code-eligibility.js';
-import { buildKimiCodeWebSearchToolDefinition } from '../kimi-code/kimi-code-web-search-tool.js';
-import { buildLspHostToolDefinitions } from '../lsp/tool-definitions.js';
-import { executeGetDiagnostics } from '../lsp/execute-diagnostics.js';
+} from "../host-tools.js";
+import { enrichUnknownToolError, toolNamesFromDefinitions } from "../unknown-tool-error.js";
+import { shouldUseStepfunWebSearch } from "../stepfun/stepfun-eligibility.js";
+import { buildStepfunWebSearchToolDefinition } from "../stepfun/stepfun-web-search-tool.js";
+import { shouldUseKimiCodeWebSearch } from "../kimi-code/kimi-code-eligibility.js";
+import { buildKimiCodeWebSearchToolDefinition } from "../kimi-code/kimi-code-web-search-tool.js";
+import { buildLspHostToolDefinitions } from "../lsp/tool-definitions.js";
+import { executeGetDiagnostics } from "../lsp/execute-diagnostics.js";
 import {
   isLspDiagnosticsToolRequest,
   requestFromGetDiagnosticsFunctionCall,
-} from '../lsp/tool-request.js';
-import type { LspDiagnosticsToolRequest } from '../lsp/types.js';
-import type { LspHostBindings, LspHostServiceInstance } from './lsp-host-bindings.js';
-import { McpService, type McpToolRequest } from '../mcp/service.js';
-import { TOOL_CALL_TOOL_NAME } from '../tool-gateway/definitions.js';
-import { authorizeLazyToolGatewayRequest, type LazyToolGatewayApprovalLevel } from '../tool-gateway/authorize.js';
-import { JsonRpcPeer } from './framing.js';
+} from "../lsp/tool-request.js";
+import type { LspDiagnosticsToolRequest } from "../lsp/types.js";
+import type { LspHostBindings, LspHostServiceInstance } from "./lsp-host-bindings.js";
+import { McpService, type McpToolRequest } from "../mcp/service.js";
+import { TOOL_CALL_TOOL_NAME } from "../tool-gateway/definitions.js";
+import {
+  authorizeLazyToolGatewayRequest,
+  type LazyToolGatewayApprovalLevel,
+} from "../tool-gateway/authorize.js";
+import { JsonRpcPeer } from "./framing.js";
 
 interface HostToolRequestMetadata {
   backgroundExecution?: boolean;
@@ -64,7 +67,9 @@ export interface LocalHostToolService {
   trust(target: string): Promise<void>;
   execute(request: JsonValue): Promise<ToolExecutionOutput | string>;
   saveGeneratedImage?(request: GeneratedImageSaveRequest): Promise<GeneratedImageFile>;
-  saveGeneratedVideo?(request: import('../ports.js').GeneratedVideoSaveRequest): Promise<import('../ports.js').GeneratedVideoFile>;
+  saveGeneratedVideo?(
+    request: import("../ports.js").GeneratedVideoSaveRequest,
+  ): Promise<import("../ports.js").GeneratedVideoFile>;
   attachRequestMetadata?(request: JsonValue, metadata: ToolRequestExecutionMetadata): JsonValue;
   abortRunningShell?(): void;
   setTodoScope?(scope: { sessionKey: string } | undefined): void;
@@ -79,7 +84,7 @@ export class HostToolExecutorProxy implements ToolExecutor<JsonValue, JsonValue>
   private loopToolDefinitionsCache: JsonValue[] = [];
   private loopToolExposureEnabled = false;
   private planToolDefinitionsCache: JsonValue[] = [];
-  private agentMode: SpiritAgentMode = 'agent';
+  private agentMode: SpiritAgentMode = "agent";
   private hostToolDefinitionsLoaded = false;
   private toolDefinitionsCache: JsonValue = [];
   private readonly requestMetadata = new WeakMap<object, HostToolRequestMetadata>();
@@ -89,7 +94,7 @@ export class HostToolExecutorProxy implements ToolExecutor<JsonValue, JsonValue>
   private localHostService: LocalHostToolService | undefined;
   private imageGenerationAvailable = false;
   private videoGenerationAvailable = false;
-  private approvalLevel: LazyToolGatewayApprovalLevel = 'default';
+  private approvalLevel: LazyToolGatewayApprovalLevel = "default";
   private transportConfigForToolDefinitions: LlmTransportConfig | undefined;
 
   constructor(
@@ -152,12 +157,14 @@ export class HostToolExecutorProxy implements ToolExecutor<JsonValue, JsonValue>
 
   setAgentModeToolExposure(agentMode: SpiritAgentMode): void {
     this.agentMode = agentMode;
-    this.planToolDefinitionsCache = isPlanAgentMode(agentMode) ? buildPlanModeHostToolDefinitions() : [];
+    this.planToolDefinitionsCache = isPlanAgentMode(agentMode)
+      ? buildPlanModeHostToolDefinitions()
+      : [];
     this.refreshMergedToolDefinitions();
   }
 
   setPlanModeToolExposure(planMode: boolean): void {
-    this.setAgentModeToolExposure(planMode ? 'plan' : 'agent');
+    this.setAgentModeToolExposure(planMode ? "plan" : "agent");
   }
 
   setApprovalLevel(level: LazyToolGatewayApprovalLevel): void {
@@ -201,7 +208,7 @@ export class HostToolExecutorProxy implements ToolExecutor<JsonValue, JsonValue>
         this.localHostService
           ? this.localHostService.toolDefinitionEnvironment()
           : parseBuiltinHostToolDefinitionEnvironment(
-              await this.peer.call<JsonValue>('host.builtinToolDefinitionEnvironment'),
+              await this.peer.call<JsonValue>("host.builtinToolDefinitionEnvironment"),
             ),
       );
       this.hostToolDefinitionsLoaded = true;
@@ -220,7 +227,9 @@ export class HostToolExecutorProxy implements ToolExecutor<JsonValue, JsonValue>
       return this.unwrapHostToolRequest(await this.localHostService.parseCommand(message));
     }
 
-    return this.unwrapHostToolRequest(await this.peer.call<JsonValue>('host.parseCommand', { message }));
+    return this.unwrapHostToolRequest(
+      await this.peer.call<JsonValue>("host.parseCommand", { message }),
+    );
   }
 
   async requestFromFunctionCall(name: string, argumentsJson: string): Promise<JsonValue> {
@@ -245,49 +254,45 @@ export class HostToolExecutorProxy implements ToolExecutor<JsonValue, JsonValue>
       }
 
       return this.unwrapHostToolRequest(
-        await this.peer.call<JsonValue>('host.requestFromFunctionCall', { name, argumentsJson }),
+        await this.peer.call<JsonValue>("host.requestFromFunctionCall", { name, argumentsJson }),
       );
     } catch (error) {
-      throw enrichUnknownToolError(
-        error,
-        name,
-        toolNamesFromDefinitions(availableDefinitions),
-      );
+      throw enrichUnknownToolError(error, name, toolNamesFromDefinitions(availableDefinitions));
     }
   }
 
   async authorize(request: JsonValue): Promise<AuthorizationDecision<JsonValue>> {
     if (this.mcp.isFetchMcpResourceToolRequest(request)) {
-      return { kind: 'allowed' };
+      return { kind: "allowed" };
     }
     if (this.mcp.isLazyToolGatewayToolRequest(request)) {
       return authorizeLazyToolGatewayRequest(request, this.approvalLevel);
     }
     if (this.mcp.isToolRequest(request)) {
       await this.mcp.authorizeToolRequest(request);
-      return { kind: 'allowed' };
+      return { kind: "allowed" };
     }
 
     if (isLspDiagnosticsToolRequest(request)) {
-      return { kind: 'allowed' };
+      return { kind: "allowed" };
     }
 
     if (this.localHostService) {
       return this.localHostService.authorize(request);
     }
 
-    return this.peer.call<AuthorizationDecision<JsonValue>>('host.authorize', {
+    return this.peer.call<AuthorizationDecision<JsonValue>>("host.authorize", {
       request: this.serializeRequest(request),
     });
   }
 
   async trust(target: JsonValue): Promise<void> {
-    if (this.localHostService && typeof target === 'string') {
+    if (this.localHostService && typeof target === "string") {
       await this.localHostService.trust(target);
       return;
     }
 
-    await this.peer.call('host.trust', { target });
+    await this.peer.call("host.trust", { target });
   }
 
   async execute(request: JsonValue): Promise<ToolExecutionOutput> {
@@ -315,7 +320,7 @@ export class HostToolExecutorProxy implements ToolExecutor<JsonValue, JsonValue>
     }
 
     const output = normalizeToolExecutionOutput(
-      await this.peer.call<ToolExecutionOutput | string>('host.execute', {
+      await this.peer.call<ToolExecutionOutput | string>("host.execute", {
         request: this.serializeRequest(request),
       }),
     );
@@ -351,15 +356,15 @@ export class HostToolExecutorProxy implements ToolExecutor<JsonValue, JsonValue>
     const existing = this.requestMetadata.get(target) ?? this.requestMetadata.get(request) ?? {};
     this.requestMetadata.set(target, {
       ...existing,
-      ...(typeof metadata.toolCallId === 'string' ? { toolCallId: metadata.toolCallId } : {}),
-      ...(typeof metadata.toolName === 'string' ? { toolName: metadata.toolName } : {}),
-      ...(typeof metadata.subagentSessionId === 'string'
+      ...(typeof metadata.toolCallId === "string" ? { toolCallId: metadata.toolCallId } : {}),
+      ...(typeof metadata.toolName === "string" ? { toolName: metadata.toolName } : {}),
+      ...(typeof metadata.subagentSessionId === "string"
         ? { subagentSessionId: metadata.subagentSessionId }
         : {}),
-      ...(typeof metadata.subagentTitle === 'string'
+      ...(typeof metadata.subagentTitle === "string"
         ? { subagentTitle: metadata.subagentTitle }
         : {}),
-      ...(typeof metadata.userInitiated === 'boolean'
+      ...(typeof metadata.userInitiated === "boolean"
         ? { userInitiated: metadata.userInitiated }
         : {}),
     });
@@ -390,7 +395,7 @@ export class HostToolExecutorProxy implements ToolExecutor<JsonValue, JsonValue>
     }
 
     if (isExtensionToolRequest(request)) {
-      return request.execution_mode === 'background';
+      return request.execution_mode === "background";
     }
 
     return this.resolveRequestMetadata(request)?.backgroundExecution ?? false;
@@ -407,7 +412,7 @@ export class HostToolExecutorProxy implements ToolExecutor<JsonValue, JsonValue>
       return this.mcp.backgroundStatusText(request);
     }
 
-    if (isExtensionToolRequest(request) && request.execution_mode === 'background') {
+    if (isExtensionToolRequest(request) && request.execution_mode === "background") {
       return `扩展工具执行中: ${request.tool_name}`;
     }
 
@@ -432,7 +437,7 @@ export class HostToolExecutorProxy implements ToolExecutor<JsonValue, JsonValue>
   }
 
   async addMcpServer(name: string, config: JsonValue): Promise<string> {
-    const result = await this.peer.call<string>('host.addMcpServer', { name, config });
+    const result = await this.peer.call<string>("host.addMcpServer", { name, config });
     this.mcp.startBackgroundRefreshInBackground(true);
     this.refreshMergedToolDefinitions();
     return result;
@@ -446,11 +451,7 @@ export class HostToolExecutorProxy implements ToolExecutor<JsonValue, JsonValue>
     return this.mcp.createToolRequest(server, toolName, argsJson);
   }
 
-  async callMcpTool(
-    server: string,
-    toolName: string,
-    argsJson?: string,
-  ): Promise<JsonValue> {
+  async callMcpTool(server: string, toolName: string, argsJson?: string): Promise<JsonValue> {
     return this.mcp.callTool(server, toolName, argsJson);
   }
 
@@ -487,7 +488,7 @@ export class HostToolExecutorProxy implements ToolExecutor<JsonValue, JsonValue>
   }
 
   private unwrapHostToolRequest(value: JsonValue): JsonValue {
-    if (!isJsonObject(value) || !('request' in value)) {
+    if (!isJsonObject(value) || !("request" in value)) {
       return value;
     }
 
@@ -508,21 +509,21 @@ export class HostToolExecutorProxy implements ToolExecutor<JsonValue, JsonValue>
     return {
       request,
       __hostMeta: {
-        ...(typeof metadata.backgroundExecution === 'boolean'
+        ...(typeof metadata.backgroundExecution === "boolean"
           ? { backgroundExecution: metadata.backgroundExecution }
           : {}),
-        ...(typeof metadata.backgroundStatusText === 'string'
+        ...(typeof metadata.backgroundStatusText === "string"
           ? { backgroundStatusText: metadata.backgroundStatusText }
           : {}),
-        ...(typeof metadata.toolCallId === 'string' ? { toolCallId: metadata.toolCallId } : {}),
-        ...(typeof metadata.toolName === 'string' ? { toolName: metadata.toolName } : {}),
-        ...(typeof metadata.subagentSessionId === 'string'
+        ...(typeof metadata.toolCallId === "string" ? { toolCallId: metadata.toolCallId } : {}),
+        ...(typeof metadata.toolName === "string" ? { toolName: metadata.toolName } : {}),
+        ...(typeof metadata.subagentSessionId === "string"
           ? { subagentSessionId: metadata.subagentSessionId }
           : {}),
-        ...(typeof metadata.subagentTitle === 'string'
+        ...(typeof metadata.subagentTitle === "string"
           ? { subagentTitle: metadata.subagentTitle }
           : {}),
-        ...(typeof metadata.userInitiated === 'boolean'
+        ...(typeof metadata.userInitiated === "boolean"
           ? { userInitiated: metadata.userInitiated }
           : {}),
       },
@@ -542,32 +543,28 @@ export class HostToolExecutorProxy implements ToolExecutor<JsonValue, JsonValue>
 
     try {
       const output = await this.mcp.executeToolRequest(request);
-      this.peer.notify('host.localToolExecuted', {
+      this.peer.notify("host.localToolExecuted", {
         request,
         output,
         ...(metadata?.toolCallId === undefined ? {} : { toolCallId: metadata.toolCallId }),
-        toolName: metadata?.toolName ?? 'mcp_tool',
+        toolName: metadata?.toolName ?? "mcp_tool",
         ...(metadata?.subagentSessionId === undefined
           ? {}
           : { subagentSessionId: metadata.subagentSessionId }),
-        ...(metadata?.subagentTitle === undefined
-          ? {}
-          : { subagentTitle: metadata.subagentTitle }),
+        ...(metadata?.subagentTitle === undefined ? {} : { subagentTitle: metadata.subagentTitle }),
       });
       return createToolExecutionTextOutput(output);
     } catch (error) {
       const message = renderError(error);
-      this.peer.notify('host.localToolFailed', {
+      this.peer.notify("host.localToolFailed", {
         request,
         error: message,
         ...(metadata?.toolCallId === undefined ? {} : { toolCallId: metadata.toolCallId }),
-        toolName: metadata?.toolName ?? 'mcp_tool',
+        toolName: metadata?.toolName ?? "mcp_tool",
         ...(metadata?.subagentSessionId === undefined
           ? {}
           : { subagentSessionId: metadata.subagentSessionId }),
-        ...(metadata?.subagentTitle === undefined
-          ? {}
-          : { subagentTitle: metadata.subagentTitle }),
+        ...(metadata?.subagentTitle === undefined ? {} : { subagentTitle: metadata.subagentTitle }),
       });
       throw error;
     }
@@ -580,15 +577,17 @@ export class HostToolExecutorProxy implements ToolExecutor<JsonValue, JsonValue>
     }
     let hostDefinitions = this.hostToolDefinitionsCache;
     if (!this.imageGenerationAvailable && Array.isArray(hostDefinitions)) {
-      hostDefinitions = filterToolDefinitionByName(hostDefinitions, 'generate_image');
+      hostDefinitions = filterToolDefinitionByName(hostDefinitions, "generate_image");
     }
     if (!this.videoGenerationAvailable && Array.isArray(hostDefinitions)) {
-      hostDefinitions = filterToolDefinitionByName(hostDefinitions, 'generate_video');
+      hostDefinitions = filterToolDefinitionByName(hostDefinitions, "generate_video");
     }
     if (
-      isOpenResponsesTransportConfig(this.transportConfigForToolDefinitions)
-      && shouldUseApplyPatchFileTools(this.transportConfigForToolDefinitions, { agentMode: this.agentMode })
-      && Array.isArray(hostDefinitions)
+      isOpenResponsesTransportConfig(this.transportConfigForToolDefinitions) &&
+      shouldUseApplyPatchFileTools(this.transportConfigForToolDefinitions, {
+        agentMode: this.agentMode,
+      }) &&
+      Array.isArray(hostDefinitions)
     ) {
       hostDefinitions = filterLegacyHostFileToolDefinitions(hostDefinitions);
     }
@@ -633,7 +632,9 @@ export class HostToolExecutorProxy implements ToolExecutor<JsonValue, JsonValue>
     request: LspDiagnosticsToolRequest,
   ): Promise<ToolExecutionOutput> {
     if (!this.lsp?.enabled) {
-      throw new Error('get_diagnostics is not available because no language server is installed for this workspace');
+      throw new Error(
+        "get_diagnostics is not available because no language server is installed for this workspace",
+      );
     }
     const result = await executeGetDiagnostics(this.lsp, request.paths);
     return createToolExecutionTextOutput(result);
@@ -641,42 +642,42 @@ export class HostToolExecutorProxy implements ToolExecutor<JsonValue, JsonValue>
 }
 
 function normalizeToolExecutionOutput(output: ToolExecutionOutput | string): ToolExecutionOutput {
-  return typeof output === 'string' ? createToolExecutionTextOutput(output) : output;
+  return typeof output === "string" ? createToolExecutionTextOutput(output) : output;
 }
 
 function hostToolRequestMetadata(request: JsonValue): HostToolRequestMetadata | undefined {
-  if (typeof request !== 'object' || request === null || Array.isArray(request)) {
+  if (typeof request !== "object" || request === null || Array.isArray(request)) {
     return undefined;
   }
 
   const candidate = request.__hostMeta;
-  if (typeof candidate !== 'object' || candidate === null || Array.isArray(candidate)) {
+  if (typeof candidate !== "object" || candidate === null || Array.isArray(candidate)) {
     return undefined;
   }
 
   return {
-    ...(typeof candidate.backgroundExecution === 'boolean'
+    ...(typeof candidate.backgroundExecution === "boolean"
       ? { backgroundExecution: candidate.backgroundExecution }
       : {}),
-    ...(typeof candidate.backgroundStatusText === 'string'
+    ...(typeof candidate.backgroundStatusText === "string"
       ? { backgroundStatusText: candidate.backgroundStatusText }
       : {}),
-    ...(typeof candidate.toolCallId === 'string' ? { toolCallId: candidate.toolCallId } : {}),
-    ...(typeof candidate.toolName === 'string' ? { toolName: candidate.toolName } : {}),
-    ...(typeof candidate.subagentSessionId === 'string'
+    ...(typeof candidate.toolCallId === "string" ? { toolCallId: candidate.toolCallId } : {}),
+    ...(typeof candidate.toolName === "string" ? { toolName: candidate.toolName } : {}),
+    ...(typeof candidate.subagentSessionId === "string"
       ? { subagentSessionId: candidate.subagentSessionId }
       : {}),
-    ...(typeof candidate.subagentTitle === 'string'
+    ...(typeof candidate.subagentTitle === "string"
       ? { subagentTitle: candidate.subagentTitle }
       : {}),
-    ...(typeof candidate.userInitiated === 'boolean'
+    ...(typeof candidate.userInitiated === "boolean"
       ? { userInitiated: candidate.userInitiated }
       : {}),
   };
 }
 
 function isJsonObject(value: JsonValue): value is Record<string, JsonValue> {
-  return typeof value === 'object' && value !== null && !Array.isArray(value);
+  return typeof value === "object" && value !== null && !Array.isArray(value);
 }
 
 function mergeToolDefinitions(
@@ -719,11 +720,11 @@ function toolDefinitionName(value: JsonValue): string | undefined {
     return undefined;
   }
 
-  return typeof candidateFunction.name === 'string' ? candidateFunction.name : undefined;
+  return typeof candidateFunction.name === "string" ? candidateFunction.name : undefined;
 }
 
 function isExtensionToolRequest(value: JsonValue): value is {
-  name: 'extension_tool';
+  name: "extension_tool";
   tool_name: string;
   execution_mode?: string;
   questions_result?: JsonValue;
@@ -732,7 +733,7 @@ function isExtensionToolRequest(value: JsonValue): value is {
     return false;
   }
 
-  return value.name === 'extension_tool' && typeof value.tool_name === 'string';
+  return value.name === "extension_tool" && typeof value.tool_name === "string";
 }
 
 function renderError(error: unknown): string {
@@ -747,18 +748,18 @@ function parseBuiltinHostToolDefinitionEnvironment(
   value: JsonValue,
 ): BuiltinHostToolDefinitionEnvironment {
   if (!isJsonObject(value)) {
-    throw new Error('host.builtinToolDefinitionEnvironment 必须返回 JSON object');
+    throw new Error("host.builtinToolDefinitionEnvironment 必须返回 JSON object");
   }
 
   const shellDisplayName =
-    typeof value.shellDisplayName === 'string' && value.shellDisplayName.trim().length > 0
+    typeof value.shellDisplayName === "string" && value.shellDisplayName.trim().length > 0
       ? value.shellDisplayName.trim()
-      : 'the current shell';
+      : "the current shell";
   const commandParameterDescription =
-    typeof value.commandParameterDescription === 'string' &&
+    typeof value.commandParameterDescription === "string" &&
     value.commandParameterDescription.trim().length > 0
       ? value.commandParameterDescription.trim()
-      : 'The command to execute in the current shell.';
+      : "The command to execute in the current shell.";
 
   return {
     shellDisplayName,

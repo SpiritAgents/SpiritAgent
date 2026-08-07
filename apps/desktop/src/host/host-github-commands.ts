@@ -1,5 +1,5 @@
-import { execFile } from 'node:child_process';
-import { promisify } from 'node:util';
+import { execFile } from "node:child_process";
+import { promisify } from "node:util";
 
 import {
   assertGitHubPullRequestMergeMethod,
@@ -29,7 +29,7 @@ import {
   type GitHubPullRequestMergeResult,
   type GitHubPullRequestTabCounts,
   type GitHubRepositoryRef,
-} from '@spiritagent/host-internal';
+} from "@spiritagent/host-internal";
 
 import type {
   DesktopGitSnapshot,
@@ -41,17 +41,17 @@ import type {
   MergeGitHubPullRequestRequest,
   SearchGitHubAutomationRepositoriesRequest,
   SearchGitHubAutomationRepositoriesSnapshot,
-} from '../types.js';
+} from "../types.js";
 import {
   clearGitHubOAuthCredentials,
   getGitHubAuthStatusFromStorage,
   loadGitHubAccessToken,
-} from './github-auth-storage.js';
+} from "./github-auth-storage.js";
 import {
   beginGitHubDeviceLogin,
   cancelGitHubDeviceLogin,
   completeGitHubDeviceLogin,
-} from './github-oauth-bridge.js';
+} from "./github-oauth-bridge.js";
 
 const execFileAsync = promisify(execFile);
 
@@ -88,7 +88,7 @@ export async function disconnectGitHubCommand(): Promise<GitHubAuthStatus> {
 
 async function readGitOriginRemoteUrl(workspaceRoot: string): Promise<string | null> {
   try {
-    const { stdout } = await execFileAsync('git', ['remote', 'get-url', 'origin'], {
+    const { stdout } = await execFileAsync("git", ["remote", "get-url", "origin"], {
       cwd: workspaceRoot,
       windowsHide: true,
     });
@@ -111,11 +111,11 @@ async function handleGitHubApiError(error: unknown): Promise<Error> {
 
   if (error.status === 401) {
     await clearGitHubOAuthCredentials();
-    return new Error('GitHub authentication expired or is invalid. Connect GitHub again.');
+    return new Error("GitHub authentication expired or is invalid. Connect GitHub again.");
   }
   if (error.status === 403) {
     return new Error(
-      'GitHub denied access. If this repository belongs to an organization with SSO, authorize the token for that organization on GitHub.',
+      "GitHub denied access. If this repository belongs to an organization with SSO, authorize the token for that organization on GitHub.",
     );
   }
   return error;
@@ -124,7 +124,7 @@ async function handleGitHubApiError(error: unknown): Promise<Error> {
 async function requireGitHubAccessToken(): Promise<string> {
   const accessToken = await loadGitHubAccessToken();
   if (!accessToken) {
-    throw new Error('Connect GitHub before querying pull requests.');
+    throw new Error("Connect GitHub before querying pull requests.");
   }
   return accessToken;
 }
@@ -136,7 +136,7 @@ function parsePullRequestRepositoryRequest(
   const repo = request.repo.trim();
   const number = request.number;
   if (!owner || !repo || !Number.isFinite(number) || number <= 0) {
-    throw new Error('Pull request owner, repository, and number are required.');
+    throw new Error("Pull request owner, repository, and number are required.");
   }
   return { owner, repo, number };
 }
@@ -183,7 +183,7 @@ export async function getGitHubPullRequestDetailCommand(
   const repo = request.repo.trim();
   const number = request.number;
   if (!owner || !repo || !Number.isFinite(number) || number <= 0) {
-    throw new Error('Pull request owner, repository, and number are required.');
+    throw new Error("Pull request owner, repository, and number are required.");
   }
 
   try {
@@ -201,25 +201,20 @@ export async function getGitHubPullRequestConversationCommand(
   const repo = request.repo.trim();
   const number = request.number;
   if (!owner || !repo || !Number.isFinite(number) || number <= 0) {
-    throw new Error('Pull request owner, repository, and number are required.');
+    throw new Error("Pull request owner, repository, and number are required.");
   }
 
   try {
     const accessToken = await requireGitHubAccessToken();
-    return await getPullRequestConversation(
-      accessToken,
-      { owner, repo },
-      number,
-      {
-        timelinePage: request.conversationTimelinePage,
-        reviewCommentsPage: request.conversationReviewCommentsPage,
-        commitsPage: request.conversationCommitsPage,
-        knownCommits: request.conversationKnownCommits,
-        previousNextTimelinePage: request.conversationPreviousNextTimelinePage,
-        previousNextReviewCommentsPage: request.conversationPreviousNextReviewCommentsPage,
-        previousNextCommitsPage: request.conversationPreviousNextCommitsPage,
-      },
-    );
+    return await getPullRequestConversation(accessToken, { owner, repo }, number, {
+      timelinePage: request.conversationTimelinePage,
+      reviewCommentsPage: request.conversationReviewCommentsPage,
+      commitsPage: request.conversationCommitsPage,
+      knownCommits: request.conversationKnownCommits,
+      previousNextTimelinePage: request.conversationPreviousNextTimelinePage,
+      previousNextReviewCommentsPage: request.conversationPreviousNextReviewCommentsPage,
+      previousNextCommitsPage: request.conversationPreviousNextCommitsPage,
+    });
   } catch (error) {
     throw await handleGitHubApiError(error);
   }
@@ -232,7 +227,7 @@ export async function getGitHubPullRequestFilesCommand(
   const repo = request.repo.trim();
   const number = request.number;
   if (!owner || !repo || !Number.isFinite(number) || number <= 0) {
-    throw new Error('Pull request owner, repository, and number are required.');
+    throw new Error("Pull request owner, repository, and number are required.");
   }
 
   try {
@@ -250,7 +245,7 @@ export async function getGitHubPullRequestCommitsCommand(
   const repo = request.repo.trim();
   const number = request.number;
   if (!owner || !repo || !Number.isFinite(number) || number <= 0) {
-    throw new Error('Pull request owner, repository, and number are required.');
+    throw new Error("Pull request owner, repository, and number are required.");
   }
 
   try {
@@ -305,7 +300,7 @@ export async function markGitHubPullRequestReadyCommand(
       request.nodeId?.trim() ||
       (await getPullRequestDetail(accessToken, { owner, repo }, number)).nodeId;
     if (!nodeId) {
-      throw new Error('Pull request node ID is unavailable.');
+      throw new Error("Pull request node ID is unavailable.");
     }
     await markPullRequestReadyForReview(accessToken, nodeId);
     return await getPullRequestDetail(accessToken, { owner, repo }, number);
@@ -320,7 +315,7 @@ function parseGitHubRepositoryRequest(
   const owner = request.owner.trim();
   const repo = request.repo.trim();
   if (!owner || !repo) {
-    throw new Error('Pull request owner and repository are required.');
+    throw new Error("Pull request owner and repository are required.");
   }
   return { owner, repo };
 }
@@ -329,8 +324,8 @@ export async function listGitHubPullRequestsCommand(
   request: ListGitHubPullRequestsRequest,
 ): Promise<GitHubPullRequestListSnapshot> {
   const repository = parseGitHubRepositoryRequest(request);
-  if (request.state !== 'open' && request.state !== 'closed') {
-    throw new Error('Pull request list state must be open or closed.');
+  if (request.state !== "open" && request.state !== "closed") {
+    throw new Error("Pull request list state must be open or closed.");
   }
 
   try {
@@ -383,10 +378,12 @@ export async function searchGitHubAutomationRepositoriesCommand(
     const status = await getGitHubAuthStatusFromStorage();
     const login = status.login?.trim();
     if (!login) {
-      throw new GitHubOAuthError('GitHub login is unavailable.', 401);
+      throw new GitHubOAuthError("GitHub login is unavailable.", 401);
     }
     const page = request.page && request.page > 0 ? request.page : 1;
-    const result = await searchGitHubRepositories(accessToken, request.query ?? '', login, { page });
+    const result = await searchGitHubRepositories(accessToken, request.query ?? "", login, {
+      page,
+    });
     return {
       items: result.items,
       totalCount: result.totalCount,

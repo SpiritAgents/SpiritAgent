@@ -1,4 +1,4 @@
-import { release as osRelease } from 'node:os';
+import { release as osRelease } from "node:os";
 
 import {
   AgentRuntime,
@@ -28,7 +28,7 @@ import {
   type LlmTransportConfig,
   type RuntimeEvent,
   type SpiritAgentMode,
-} from '@spiritagent/agent-core';
+} from "@spiritagent/agent-core";
 import {
   appendLlmToolResultMessage,
   appendLlmUserLlmMessage,
@@ -48,13 +48,13 @@ import {
   type LlmPlanMetadata,
   type LlmToolAgentBasicInfo,
   type LlmToolAgentState,
-} from '@spiritagent/agent-core';
+} from "@spiritagent/agent-core";
 import {
   HostToolExecutorProxy,
   createCliAutoApprovalReviewer,
   type LocalHostToolService,
   type LspHostBindings,
-} from '@spiritagent/agent-core/host-bridge';
+} from "@spiritagent/agent-core/host-bridge";
 import {
   LspService,
   NodeHostToolService,
@@ -77,15 +77,20 @@ import {
   type HostDreamScope,
   type HostDreamSourceSessionRef,
   type ModelRef,
-} from '@spiritagent/host-internal';
+} from "@spiritagent/host-internal";
 
-import { createNoopPeer } from './noop-peer.js';
+import { createNoopPeer } from "./noop-peer.js";
 
-export type ServerHostRuntime = AgentRuntime<LlmTransportConfig, LlmToolAgentState, JsonValue, JsonValue>;
+export type ServerHostRuntime = AgentRuntime<
+  LlmTransportConfig,
+  LlmToolAgentState,
+  JsonValue,
+  JsonValue
+>;
 
-export type ServerClientKind = 'cli' | 'desktop' | 'web';
+export type ServerClientKind = "cli" | "desktop" | "web";
 
-export type ServerSessionKind = 'default' | 'dream-collector';
+export type ServerSessionKind = "default" | "dream-collector";
 
 export interface ServerRuntimeOptions {
   workspaceRoot: string;
@@ -98,7 +103,7 @@ export interface ServerRuntimeOptions {
   /** Shared per-workspace MCP service (daemon registry); defaults to a fresh one. */
   mcpService?: McpService;
   /** Extensions/todo surfaces differ per host; a session inherits its creator's kind. */
-  hostKind: 'cli' | 'desktop';
+  hostKind: "cli" | "desktop";
   approvalLevel: ApprovalLevel;
   sessionKind?: ServerSessionKind;
   dreamScope?: HostDreamScope;
@@ -114,7 +119,7 @@ export interface ServerRuntimeOptions {
     contentHash: string;
     hashChanged: boolean;
     hooks: Array<{ event: string; command: string; resolvedPath: string }>;
-  }) => Promise<'allowOnce' | 'deny' | 'alwaysTrust'>;
+  }) => Promise<"allowOnce" | "deny" | "alwaysTrust">;
   /** Tool-written file changes — broadcast to clients for rewind bookkeeping. */
   onFileChange?: (change: unknown) => void;
   log?: (message: string) => void;
@@ -136,15 +141,17 @@ export interface ServerRuntimeResult {
   /** Re-read installed extensions and refresh tool defs + system prompts. */
   refreshExtensions: () => Promise<void>;
   /** sessionStart hook (startup/resume/open), applying context messages. */
-  runSessionStart: (source: 'startup' | 'resume' | 'open') => Promise<void>;
+  runSessionStart: (source: "startup" | "resume" | "open") => Promise<void>;
   /** sessionEnd hook (switch/close). */
-  runSessionEnd: (reason: 'abort' | 'switch' | 'close') => Promise<void>;
+  runSessionEnd: (reason: "abort" | "switch" | "close") => Promise<void>;
   /** Re-run rules/skills/plan discovery (mode switch or file changes). */
   reloadHostMetadata: (mode: SpiritAgentMode) => Promise<void>;
   /** Export api messages + request trace + assembled system prompts. */
   exportState: () => Promise<unknown>;
   /** Attribution toggles captured by state factory closures. */
-  setAttribution: (attribution: { commitEnabled?: boolean; prEnabled?: boolean } | undefined) => void;
+  setAttribution: (
+    attribution: { commitEnabled?: boolean; prEnabled?: boolean } | undefined,
+  ) => void;
   /** Re-scope the todo store (CLI keys todos by its own chat session id). */
   setTodoSessionKey: (sessionKey: string) => void;
   /** Abort a running shell process owned by this session. */
@@ -162,18 +169,12 @@ export interface ServerRuntimeResult {
 export async function createServerRuntime(
   options: ServerRuntimeOptions,
 ): Promise<ServerRuntimeResult> {
-  const {
-    workspaceRoot,
-    spiritDataDir,
-    sessionKey,
-    hostKind,
-    onEvent,
-  } = options;
+  const { workspaceRoot, spiritDataDir, sessionKey, hostKind, onEvent } = options;
   const log = options.log ?? (() => {});
   const approvalLevel = options.approvalLevel;
-  const isDreamCollector = options.sessionKind === 'dream-collector';
+  const isDreamCollector = options.sessionKind === "dream-collector";
   if (isDreamCollector && !options.dreamScope) {
-    throw new Error('dream-collector session requires dreamScope');
+    throw new Error("dream-collector session requires dreamScope");
   }
 
   const transportConfig = resolveTransportConfig({
@@ -252,11 +253,15 @@ export async function createServerRuntime(
     const installedExtensions = await extensionManager!.list();
     toolExecutor.setExtensionToolDefinitions(
       buildContributedHostToolDefinitions(
-        collectHostExtensionContributedTools(installedExtensions) as unknown as ContributedHostToolDefinition[],
+        collectHostExtensionContributedTools(
+          installedExtensions,
+        ) as unknown as ContributedHostToolDefinition[],
       ),
     );
     extensionSystemPrompts.push(
-      ...(await extensionManager!.collectSystemPromptContributions({ host: {}, logger: console })).map((entry) => ({
+      ...(
+        await extensionManager!.collectSystemPromptContributions({ host: {}, logger: console })
+      ).map((entry) => ({
         extensionId: entry.extensionId,
         extensionName: entry.extensionName,
         content: entry.content,
@@ -266,8 +271,8 @@ export async function createServerRuntime(
 
   if (isDreamCollector) {
     extensionSystemPrompts.push({
-      extensionId: 'dream-collector',
-      extensionName: 'Dream Collector',
+      extensionId: "dream-collector",
+      extensionName: "Dream Collector",
       content: buildDreamCollectorSystemMessage(),
     });
   }
@@ -280,21 +285,21 @@ export async function createServerRuntime(
   let currentPlanMetadata: LlmPlanMetadata | undefined;
   if (isDreamCollector) {
     currentPlanMetadata = {
-      path: '',
+      path: "",
       exists: false,
-      agentMode: 'agent',
+      agentMode: "agent",
       planMode: false,
     };
-    toolExecutor.setAgentModeToolExposure('agent');
+    toolExecutor.setAgentModeToolExposure("agent");
   } else {
     const metadata = await loadHostInstructionMetadata(
       { workspaceRoot, spiritDataDir },
-      { planMode: false, agentMode: 'agent' },
+      { planMode: false, agentMode: "agent" },
     );
     enabledRules.push(...metadata.rules.enabledRules);
     enabledSkillCatalog.push(...metadata.skills.enabledSkillCatalog);
     currentPlanMetadata = metadata.planMetadata;
-    toolExecutor.setAgentModeToolExposure('agent');
+    toolExecutor.setAgentModeToolExposure("agent");
   }
 
   // 4. Basic info block.
@@ -302,20 +307,29 @@ export async function createServerRuntime(
   const basicInfo: LlmToolAgentBasicInfo = {
     workspaceRoot,
     ...(shell?.shellDisplayName ? { terminal: shell.shellDisplayName } : {}),
-    gitBranch: isDreamCollector && options.dreamScope
-      ? options.dreamScope.gitBranch
-      : await readGitBranchLabelForBasicInfo(workspaceRoot),
+    gitBranch:
+      isDreamCollector && options.dreamScope
+        ? options.dreamScope.gitBranch
+        : await readGitBranchLabelForBasicInfo(workspaceRoot),
     sessionTranscript: resolveTranscriptSessionDir(spiritDataDir, sessionKey),
     system: service.operatingSystemInfo?.() ?? {
-      name: process.platform === 'win32' ? 'Windows' : process.platform === 'darwin' ? 'macOS' : process.platform === 'linux' ? 'Linux' : process.platform,
+      name:
+        process.platform === "win32"
+          ? "Windows"
+          : process.platform === "darwin"
+            ? "macOS"
+            : process.platform === "linux"
+              ? "Linux"
+              : process.platform,
       version: osRelease(),
     },
   };
 
   // 5. Prompt sections.
-  const applyPatchPromptSection = transportConfig.transportKind === 'open-responses'
-    ? buildApplyPatchFileToolsPromptSection()
-    : undefined;
+  const applyPatchPromptSection =
+    transportConfig.transportKind === "open-responses"
+      ? buildApplyPatchFileToolsPromptSection()
+      : undefined;
   const providerWebSearchPromptSection = buildProviderWebSearchPromptSection(transportConfig);
 
   const activeSkills: LlmActiveSkill[] = [];
@@ -371,7 +385,7 @@ export async function createServerRuntime(
       if (options.requestWorkspaceCapabilityTrust) {
         return options.requestWorkspaceCapabilityTrust(request);
       }
-      return 'deny';
+      return "deny";
     },
   });
 
@@ -385,7 +399,8 @@ export async function createServerRuntime(
     assistantToolCallMessageFromState: assistantToolCallMessageFromLlmState,
     finalAssistantHistoryMessageFromState: finalAssistantHistoryMessageFromLlmState,
     appendUserMessage: appendLlmUserMessage,
-    appendUserLlmMessage: (state, message) => appendLlmUserLlmMessage(state, message, workspaceRoot),
+    appendUserLlmMessage: (state, message) =>
+      appendLlmUserLlmMessage(state, message, workspaceRoot),
     extractAssistantText: extractLastLlmAssistantText,
     truncateStateForContextRetry: truncateLlmToolAgentStateForContextRetry,
     truncateHistoryForCompaction: truncateLlmHistoryForCompaction,
@@ -409,18 +424,22 @@ export async function createServerRuntime(
         attribution,
       ),
     generateImage: (request) =>
-      llmTransport.generateImage(transportConfig, request, async (saveRequest: GeneratedImageSaveRequest) => {
-        const saveGeneratedImage = service.saveGeneratedImage;
-        if (!saveGeneratedImage) {
-          throw new Error('server host: image generation not supported');
-        }
-        return saveGeneratedImage.call(service, saveRequest);
-      }),
+      llmTransport.generateImage(
+        transportConfig,
+        request,
+        async (saveRequest: GeneratedImageSaveRequest) => {
+          const saveGeneratedImage = service.saveGeneratedImage;
+          if (!saveGeneratedImage) {
+            throw new Error("server host: image generation not supported");
+          }
+          return saveGeneratedImage.call(service, saveRequest);
+        },
+      ),
     generateVideo: (request) =>
       llmTransport.generateVideo(transportConfig, request, async (saveRequest) => {
         const saveGeneratedVideo = service.saveGeneratedVideo;
         if (!saveGeneratedVideo) {
-          throw new Error('server host: video generation not supported');
+          throw new Error("server host: video generation not supported");
         }
         return saveGeneratedVideo.call(service, saveRequest);
       }),
@@ -457,7 +476,7 @@ export async function createServerRuntime(
     toolExecutor.setAgentModeToolExposure(mode);
     const refreshed = await loadHostInstructionMetadata(
       { workspaceRoot, spiritDataDir },
-      { planMode: mode === 'plan', agentMode: mode },
+      { planMode: mode === "plan", agentMode: mode },
     );
     currentPlanMetadata = refreshed.planMetadata;
   };
@@ -480,10 +499,15 @@ export async function createServerRuntime(
     const installed = await extensionManager.list();
     toolExecutor.setExtensionToolDefinitions(
       buildContributedHostToolDefinitions(
-        collectHostExtensionContributedTools(installed) as unknown as ContributedHostToolDefinition[],
+        collectHostExtensionContributedTools(
+          installed,
+        ) as unknown as ContributedHostToolDefinition[],
       ),
     );
-    const collected = await extensionManager.collectSystemPromptContributions({ host: {}, logger: console });
+    const collected = await extensionManager.collectSystemPromptContributions({
+      host: {},
+      logger: console,
+    });
     extensionSystemPrompts.length = 0;
     extensionSystemPrompts.push(
       ...collected.map((entry) => ({
@@ -521,12 +545,16 @@ export async function createServerRuntime(
       );
     },
     runSessionEnd: async (reason) => {
-      await runSessionEndHook(hookRunner, {
-        sessionId: sessionKey,
-        conversationPath: null,
-        workspaceRoot,
-        model: transportConfig.model,
-      }, reason);
+      await runSessionEndHook(
+        hookRunner,
+        {
+          sessionId: sessionKey,
+          conversationPath: null,
+          workspaceRoot,
+          model: transportConfig.model,
+        },
+        reason,
+      );
     },
     reloadHostMetadata: async (mode) => {
       if (isDreamCollector) {
@@ -534,7 +562,7 @@ export async function createServerRuntime(
       }
       const refreshed = await loadHostInstructionMetadata(
         { workspaceRoot, spiritDataDir },
-        { planMode: mode === 'plan', agentMode: mode },
+        { planMode: mode === "plan", agentMode: mode },
       );
       enabledRules.length = 0;
       enabledRules.push(...refreshed.rules.enabledRules);
@@ -544,10 +572,15 @@ export async function createServerRuntime(
     },
     exportState: async () => {
       const exportTransport = createLlmTransport(transportConfig);
-      const baseSystemPrompts = exportTransport.llmSystemPromptsForExport() as Record<string, JsonValue>;
+      const baseSystemPrompts = exportTransport.llmSystemPromptsForExport() as Record<
+        string,
+        JsonValue
+      >;
       const rulesSystemPrompt = buildRulesSystemMessage(enabledRules);
       const skillsCatalogSystemPrompt = buildSkillsCatalogSystemMessage(enabledSkillCatalog);
-      const mcpCatalogSystemPrompt = buildMcpCatalogSystemMessage(toolExecutor.mcpToolCatalogSnapshot());
+      const mcpCatalogSystemPrompt = buildMcpCatalogSystemMessage(
+        toolExecutor.mcpToolCatalogSnapshot(),
+      );
       const agentModeSystemPrompt = buildAgentModeSystemMessage(currentPlanMetadata);
       const loopModeSystemPrompt = buildLoopModeSystemMessage(runtime.loopEnabled());
       const extensionsSystemPrompt = buildExtensionsSystemMessage(extensionSystemPrompts);

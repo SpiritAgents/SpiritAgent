@@ -1,8 +1,4 @@
-import type {
-  AskQuestionsResult,
-  JsonValue,
-  LlmMessage,
-} from '../ports.js';
+import type { AskQuestionsResult, JsonValue, LlmMessage } from "../ports.js";
 import type {
   PendingAssistantAux,
   PendingMcpResource,
@@ -11,36 +7,36 @@ import type {
   RuntimePendingApproval,
   RuntimePendingQuestions,
   RuntimeSubagentSessionSummary,
-} from '../runtime.js';
+} from "../runtime.js";
 import type {
   LlmActiveSkill,
   LlmEnabledRule,
   LlmEnabledSkillCatalogEntry,
   LlmPlanMetadata,
-} from '../llm-tool-agent.js';
-import type { LlmTransportConfig } from '../provider-config.js';
+} from "../llm-tool-agent.js";
+import type { LlmTransportConfig } from "../provider-config.js";
 
 export interface JsonRpcRequest {
-  jsonrpc: '2.0';
+  jsonrpc: "2.0";
   id: number;
   method: string;
   params?: JsonValue;
 }
 
 export interface JsonRpcNotification {
-  jsonrpc: '2.0';
+  jsonrpc: "2.0";
   method: string;
   params?: JsonValue;
 }
 
 export interface JsonRpcSuccessResponse {
-  jsonrpc: '2.0';
+  jsonrpc: "2.0";
   id: number;
   result: JsonValue;
 }
 
 export interface JsonRpcErrorResponse {
-  jsonrpc: '2.0';
+  jsonrpc: "2.0";
   id: number;
   error: {
     code: number;
@@ -55,7 +51,7 @@ export type JsonRpcMessage =
   | JsonRpcSuccessResponse
   | JsonRpcErrorResponse;
 
-export type BridgeApprovalLevel = 'default' | 'auto-approval' | 'full-approval';
+export type BridgeApprovalLevel = "default" | "auto-approval" | "full-approval";
 
 export interface BridgeRuntimeSnapshot {
   pendingUserTurn?: string;
@@ -108,7 +104,7 @@ export interface RuntimeSetApprovalLevelParams {
 }
 
 export interface RuntimeSetLlmHttpVersionParams {
-  llmHttpVersion: 'http1.1' | 'http2';
+  llmHttpVersion: "http1.1" | "http2";
 }
 
 export interface RuntimeSetLlmClientVersionParams {
@@ -132,7 +128,7 @@ export interface RuntimeSubmitUserTurnParams {
 }
 
 export interface RuntimeExportArchiveParams {
-  messages: Array<{ role: 'user' | 'assistant'; content: string }>;
+  messages: Array<{ role: "user" | "assistant"; content: string }>;
   assistantAux: Array<{
     messageIndex: number;
     thinking?: string;

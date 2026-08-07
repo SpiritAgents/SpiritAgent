@@ -46,13 +46,7 @@ export function ChipShell({
   );
 }
 
-export function ChipIconSvg({
-  className,
-  children,
-}: {
-  className?: string;
-  children: ReactNode;
-}) {
+export function ChipIconSvg({ className, children }: { className?: string; children: ReactNode }) {
   return (
     <svg
       viewBox="0 0 24 24"

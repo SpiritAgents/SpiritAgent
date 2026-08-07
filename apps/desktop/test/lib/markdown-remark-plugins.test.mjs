@@ -29,10 +29,7 @@ function countHardBreaks(markdown, remarkPlugins) {
 
 test("spirit streamdown remark plugins turn single newline inside paragraph into hard break", () => {
   const markdown = "主题\n我正在处理";
-  const withSpiritPlugins = countHardBreaks(
-    markdown,
-    spiritRemarkPluginsForStreamdown,
-  );
+  const withSpiritPlugins = countHardBreaks(markdown, spiritRemarkPluginsForStreamdown);
   const gfmOnly = countHardBreaks(markdown, [remarkGfm]);
 
   assert.equal(withSpiritPlugins, 1);

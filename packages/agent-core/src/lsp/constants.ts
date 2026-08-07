@@ -1,48 +1,50 @@
-import { APPLY_PATCH_HOST_TOOL_NAME } from '../open-responses/apply-patch-eligibility.js';
+import { APPLY_PATCH_HOST_TOOL_NAME } from "../open-responses/apply-patch-eligibility.js";
 
-export const GET_DIAGNOSTICS_TOOL_NAME = 'get_diagnostics';
+export const GET_DIAGNOSTICS_TOOL_NAME = "get_diagnostics";
 
-export const TYPESCRIPT_LANGUAGE_SERVER_COMMAND = 'typescript-language-server';
+export const TYPESCRIPT_LANGUAGE_SERVER_COMMAND = "typescript-language-server";
 
 export const TYPESCRIPT_JS_EXTENSIONS = new Set([
-  '.ts',
-  '.tsx',
-  '.mts',
-  '.cts',
-  '.js',
-  '.jsx',
-  '.mjs',
-  '.cjs',
+  ".ts",
+  ".tsx",
+  ".mts",
+  ".cts",
+  ".js",
+  ".jsx",
+  ".mjs",
+  ".cjs",
 ]);
 
 /** File extensions routed to an in-scope language server (HTML/CSS excluded). */
 export const LSP_SUPPORTED_EXTENSIONS = new Set([
   ...TYPESCRIPT_JS_EXTENSIONS,
-  '.py',
-  '.pyi',
-  '.go',
-  '.rs',
-  '.c',
-  '.h',
-  '.cpp',
-  '.cc',
-  '.cxx',
-  '.hpp',
-  '.hh',
-  '.hxx',
-  '.java',
-  '.cs',
+  ".py",
+  ".pyi",
+  ".go",
+  ".rs",
+  ".c",
+  ".h",
+  ".cpp",
+  ".cc",
+  ".cxx",
+  ".hpp",
+  ".hh",
+  ".hxx",
+  ".java",
+  ".cs",
 ]);
 
 export function isLspSupportedExtension(extension: string): boolean {
-  const normalized = extension.startsWith('.') ? extension.toLowerCase() : `.${extension.toLowerCase()}`;
+  const normalized = extension.startsWith(".")
+    ? extension.toLowerCase()
+    : `.${extension.toLowerCase()}`;
   return LSP_SUPPORTED_EXTENSIONS.has(normalized);
 }
 
 export const HOST_WRITE_TOOL_NAMES = new Set<string>([
-  'create_file',
-  'edit_file',
-  'delete_file',
+  "create_file",
+  "edit_file",
+  "delete_file",
   APPLY_PATCH_HOST_TOOL_NAME,
 ]);
 

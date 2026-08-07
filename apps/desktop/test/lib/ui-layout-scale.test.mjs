@@ -106,15 +106,12 @@ test("viewportRectToScaleRootLocal converts viewport box under layout scale", ()
     width: 8 / 1.1,
     height: 20 / 1.1,
   });
-  assert.deepEqual(
-    viewportRectToScaleRootLocal(viewport, { left: 10, top: 20 }, 0.9, true),
-    {
-      left: (120 - 10) / 0.9,
-      top: (240 - 20) / 0.9,
-      width: 8 / 0.9,
-      height: 20 / 0.9,
-    },
-  );
+  assert.deepEqual(viewportRectToScaleRootLocal(viewport, { left: 10, top: 20 }, 0.9, true), {
+    left: (120 - 10) / 0.9,
+    top: (240 - 20) / 0.9,
+    width: 8 / 0.9,
+    height: 20 / 0.9,
+  });
 });
 
 test("viewportLengthToScaleRootLocal converts viewport delta under layout scale", () => {

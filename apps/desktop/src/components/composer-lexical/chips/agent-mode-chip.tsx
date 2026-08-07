@@ -64,11 +64,7 @@ export function AgentModeChip({ kind, label }: AgentModeChipProps) {
   const resolvedLabel = label ?? DEFAULT_LABEL[kind];
   const Icon = ICON_BY_KIND[kind];
   return (
-    <ChipShell
-      data-chip-kind={kind}
-      className={CLASS_BY_KIND[kind]}
-      aria-label={resolvedLabel}
-    >
+    <ChipShell data-chip-kind={kind} className={CLASS_BY_KIND[kind]} aria-label={resolvedLabel}>
       <Icon />
       {resolvedLabel}
     </ChipShell>

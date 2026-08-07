@@ -1,13 +1,13 @@
-import { shell } from 'electron';
+import { shell } from "electron";
 import {
   fetchGitHubUserLogin,
   GitHubOAuthError,
   pollGitHubDeviceToken,
   requestGitHubDeviceCode,
   type GitHubDeviceAuthChallenge,
-} from '@spiritagent/host-internal';
+} from "@spiritagent/host-internal";
 
-import { saveGitHubOAuthCredentials } from '../src/host/github-auth-storage.js';
+import { saveGitHubOAuthCredentials } from "../src/host/github-auth-storage.js";
 
 interface PendingDeviceAuth {
   deviceCode: string;
@@ -47,7 +47,7 @@ export async function beginGitHubDeviceLoginInElectron(): Promise<GitHubDeviceAu
 export async function completeGitHubDeviceLoginInElectron(): Promise<{ login: string }> {
   const pending = pendingDeviceAuth;
   if (!pending) {
-    throw new Error('GitHub device sign-in has not started. Call beginGitHubDeviceLogin first.');
+    throw new Error("GitHub device sign-in has not started. Call beginGitHubDeviceLogin first.");
   }
 
   const remainingSeconds = Math.max(1, Math.ceil((pending.expiresAtMs - Date.now()) / 1000));
@@ -66,7 +66,7 @@ export async function completeGitHubDeviceLoginInElectron(): Promise<{ login: st
     return { login };
   } catch (error) {
     if (pending.abortController.signal.aborted) {
-      throw new GitHubOAuthError('GitHub device authorization was cancelled.');
+      throw new GitHubOAuthError("GitHub device authorization was cancelled.");
     }
     throw error;
   } finally {

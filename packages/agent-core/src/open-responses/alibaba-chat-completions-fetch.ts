@@ -1,11 +1,11 @@
-import { getLlmFetch } from '../llm-fetch.js';
-import type { JsonObject, JsonValue } from '../ports.js';
-import { isJsonObject } from '../tool-agent.js';
-import type { OpenAiTransportConfig } from '../openai/openai-compat.js';
+import { getLlmFetch } from "../llm-fetch.js";
+import type { JsonObject, JsonValue } from "../ports.js";
+import { isJsonObject } from "../tool-agent.js";
+import type { OpenAiTransportConfig } from "../openai/openai-compat.js";
 import {
   buildAlibabaChatCompletionsExtraBodyForConfig,
   shouldPatchAlibabaChatCompletionsExtraBody,
-} from './alibaba-built-in-tools.js';
+} from "./alibaba-built-in-tools.js";
 
 type FetchFn = typeof fetch;
 
@@ -27,7 +27,7 @@ function patchAlibabaChatCompletionsRequestInit(
   config: OpenAiTransportConfig,
   init: RequestInit | undefined,
 ): RequestInit | undefined {
-  if (!init?.body || typeof init.body !== 'string') {
+  if (!init?.body || typeof init.body !== "string") {
     return init;
   }
 

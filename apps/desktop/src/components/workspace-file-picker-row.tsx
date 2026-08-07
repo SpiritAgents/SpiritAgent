@@ -1,40 +1,36 @@
 import {
   isWorkspaceReferenceDirectoryPath,
   normalizeWorkspaceReferenceDirectoryPath,
-} from '@spiritagent/host-internal/workspace-file-reference-query'
+} from "@spiritagent/host-internal/workspace-file-reference-query";
 import {
   DESKTOP_OVERLAY_LIST_ITEM_PRIMARY,
   DESKTOP_OVERLAY_LIST_ITEM_SECONDARY,
-} from '@/lib/desktop-chrome'
-import { workspaceFileBasename } from '@/lib/file-picker-path'
-import { WorkspaceFileIcon } from '@/components/workspace-file-icon'
+} from "@/lib/desktop-chrome";
+import { workspaceFileBasename } from "@/lib/file-picker-path";
+import { WorkspaceFileIcon } from "@/components/workspace-file-icon";
 import { DESKTOP_LIST_ITEM_PRIMARY_CLASS } from "@/lib/desktop-typography";
-import { cn } from '@/lib/utils'
+import { cn } from "@/lib/utils";
 
 type WorkspaceFilePickerRowProps = {
-  path: string
-  tone?: 'popover' | 'menu'
-  layout?: 'inline' | 'stacked'
-}
+  path: string;
+  tone?: "popover" | "menu";
+  layout?: "inline" | "stacked";
+};
 
 export function WorkspaceFilePickerRow({
   path,
-  tone = 'popover',
-  layout = 'inline',
+  tone = "popover",
+  layout = "inline",
 }: WorkspaceFilePickerRowProps) {
-  const isDirectory = isWorkspaceReferenceDirectoryPath(path)
-  const displayPath = isDirectory ? normalizeWorkspaceReferenceDirectoryPath(path) : path
-  const iconKind = isDirectory ? 'dir' : 'file'
-  const basename = workspaceFileBasename(displayPath)
+  const isDirectory = isWorkspaceReferenceDirectoryPath(path);
+  const displayPath = isDirectory ? normalizeWorkspaceReferenceDirectoryPath(path) : path;
+  const iconKind = isDirectory ? "dir" : "file";
+  const basename = workspaceFileBasename(displayPath);
 
-  if (layout === 'stacked') {
+  if (layout === "stacked") {
     return (
       <div className="flex min-w-0 flex-1 items-start gap-2">
-        <WorkspaceFileIcon
-          path={displayPath}
-          kind={iconKind}
-          className="mt-0.5 shrink-0"
-        />
+        <WorkspaceFileIcon path={displayPath} kind={iconKind} className="mt-0.5 shrink-0" />
         <div className="min-w-0 flex-1">
           <div className={DESKTOP_OVERLAY_LIST_ITEM_PRIMARY} title={basename}>
             {basename}
@@ -44,7 +40,7 @@ export function WorkspaceFilePickerRow({
           </div>
         </div>
       </div>
-    )
+    );
   }
 
   return (
@@ -53,7 +49,7 @@ export function WorkspaceFilePickerRow({
       <span
         className={cn(
           cn("shrink-0 whitespace-nowrap leading-6", DESKTOP_LIST_ITEM_PRIMARY_CLASS),
-          tone === 'menu' ? 'text-foreground' : 'text-popover-foreground',
+          tone === "menu" ? "text-foreground" : "text-popover-foreground",
         )}
       >
         {basename}
@@ -62,5 +58,5 @@ export function WorkspaceFilePickerRow({
         {displayPath}
       </span>
     </div>
-  )
+  );
 }

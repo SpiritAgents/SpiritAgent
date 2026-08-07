@@ -2,46 +2,36 @@ import type {
   AskQuestionsResult as RuntimeAskQuestionsResult,
   ChatArchive,
   RuntimePendingQuestions,
-} from '@spiritagent/agent-core';
-import {
-  cloneLlmMessageContent,
-  cloneLlmProviderState,
-} from '@spiritagent/agent-core';
+} from "@spiritagent/agent-core";
+import { cloneLlmMessageContent, cloneLlmProviderState } from "@spiritagent/agent-core";
 
-import i18n from '../lib/i18n-host.js';
+import i18n from "../lib/i18n-host.js";
 import type {
   AskQuestionsResult,
   DesktopDreamCollectorSnapshot,
   DesktopWebHostSnapshot,
   PendingQuestionsSnapshot,
-} from '../types.js';
-import type { DesktopToolRequest } from './contracts.js';
+} from "../types.js";
+import type { DesktopToolRequest } from "./contracts.js";
 import {
   normalizeGeneratedWorktreeNames as normalizeGeneratedWorktreeNamesInternal,
   parseGeneratedWorktreeNamingResponse as parseGeneratedWorktreeNamingResponseInternal,
   resolveWorkspaceGroupingRoot,
-} from '@spiritagent/host-internal';
-import type { GeneratedWorktreeNames } from './worktree-naming.js';
+} from "@spiritagent/host-internal";
+import type { GeneratedWorktreeNames } from "./worktree-naming.js";
 import {
   type DesktopConfigFile,
   type DesktopWebHostConfigFile,
   type DesktopWorkspaceBinding,
   mergeRecentWorkspaceRoots,
   resolveDesktopHomeDirectory,
-} from './storage.js';
-import type { DesktopModelReasoningEffort } from '../types.js';
-import { resolveProfileApiBase } from './model-config.js';
-import {
-  flattenProviderGroups,
-  resolveActiveModelProfile,
-} from './model-config-access.js';
-import {
-  DESKTOP_WEB_HOST_POLICY,
-  getDesktopWebHostRuntimeStatus,
-} from './web-host-state.js';
+} from "./storage.js";
+import { resolveProfileApiBase } from "./model-config.js";
+import { flattenProviderGroups, resolveActiveModelProfile } from "./model-config-access.js";
+import { DESKTOP_WEB_HOST_POLICY, getDesktopWebHostRuntimeStatus } from "./web-host-state.js";
 
 export function normalizeWorkspaceRootKey(workspaceRoot: string): string {
-  return workspaceRoot.replace(/\\/g, '/').replace(/\/+$/g, '').toLowerCase();
+  return workspaceRoot.replace(/\\/g, "/").replace(/\/+$/g, "").toLowerCase();
 }
 
 export function sameWorkspaceRoot(left: string, right: string): boolean {
@@ -59,35 +49,35 @@ export function resolveWorkspaceBindingForRequestedRoot(input: {
   previousBinding: DesktopWorkspaceBinding;
   persistedBinding: DesktopWorkspaceBinding;
 }): DesktopWorkspaceBinding {
-  if (input.explicitBinding === 'none') {
-    return 'none';
+  if (input.explicitBinding === "none") {
+    return "none";
   }
-  if (input.explicitBinding === 'project') {
-    return 'project';
+  if (input.explicitBinding === "project") {
+    return "project";
   }
   if (!input.requestedWorkspaceRoot?.trim()) {
     return input.previousBinding;
   }
   if (isNoWorkspaceSessionRoot(input.requestedWorkspaceRoot)) {
-    return 'none';
+    return "none";
   }
-  return 'project';
+  return "project";
 }
 
 export function deriveWorkspaceLabel(workspaceRoot: string): string {
-  const normalized = workspaceRoot.replace(/\\/g, '/').replace(/\/+$/g, '');
-  const lastSlash = normalized.lastIndexOf('/');
+  const normalized = workspaceRoot.replace(/\\/g, "/").replace(/\/+$/g, "");
+  const lastSlash = normalized.lastIndexOf("/");
   return lastSlash >= 0 ? normalized.slice(lastSlash + 1) || normalized : normalized;
 }
 
 export function buildAvailableWorkspaces(
   currentWorkspaceRoot: string,
   recentWorkspaces?: string[],
-  workspaceBinding: DesktopWorkspaceBinding = 'project',
+  workspaceBinding: DesktopWorkspaceBinding = "project",
 ) {
   const homeKey = normalizeWorkspaceRootKey(resolveDesktopHomeDirectory());
   const merged =
-    workspaceBinding === 'none'
+    workspaceBinding === "none"
       ? (recentWorkspaces ?? [])
       : mergeRecentWorkspaceRoots(
           recentWorkspaces,
@@ -138,32 +128,32 @@ export function parseGeneratedWorktreeNamingResponse(rawText: string): Generated
 
 function mapWorktreeNamingValidationError(error: unknown): Error {
   if (!(error instanceof Error)) {
-    return new Error(i18n.t('error.autoWorktreeNameFailedInvalidJson'));
+    return new Error(i18n.t("error.autoWorktreeNameFailedInvalidJson"));
   }
 
   const message = error.message;
-  if (message.includes('missing worktreeName or branchName')) {
-    return new Error(i18n.t('error.autoWorktreeNameFailedMissingFields'));
+  if (message.includes("missing worktreeName or branchName")) {
+    return new Error(i18n.t("error.autoWorktreeNameFailedMissingFields"));
   }
-  if (message.includes('empty worktreeName or branchName')) {
-    return new Error(i18n.t('error.autoWorktreeNameFailedEmpty'));
+  if (message.includes("empty worktreeName or branchName")) {
+    return new Error(i18n.t("error.autoWorktreeNameFailedEmpty"));
   }
-  if (message.includes('Invalid worktreeName format:')) {
-    const worktreeName = message.replace(/^Invalid worktreeName format:\s*/u, '').trim();
-    return new Error(i18n.t('error.autoWorktreeNameFailedInvalidWorktreeName', { worktreeName }));
+  if (message.includes("Invalid worktreeName format:")) {
+    const worktreeName = message.replace(/^Invalid worktreeName format:\s*/u, "").trim();
+    return new Error(i18n.t("error.autoWorktreeNameFailedInvalidWorktreeName", { worktreeName }));
   }
-  if (message.includes('Invalid branchName format:')) {
-    const branchName = message.replace(/^Invalid branchName format:\s*/u, '').trim();
-    return new Error(i18n.t('error.autoWorktreeNameFailedInvalidBranchName', { branchName }));
+  if (message.includes("Invalid branchName format:")) {
+    const branchName = message.replace(/^Invalid branchName format:\s*/u, "").trim();
+    return new Error(i18n.t("error.autoWorktreeNameFailedInvalidBranchName", { branchName }));
   }
-  if (message.includes('no assistant text')) {
-    return new Error(i18n.t('error.autoWorktreeNameFailedNoBody'));
+  if (message.includes("no assistant text")) {
+    return new Error(i18n.t("error.autoWorktreeNameFailedNoBody"));
   }
-  if (message.includes('not valid JSON')) {
-    return new Error(i18n.t('error.autoWorktreeNameFailedInvalidJson'));
+  if (message.includes("not valid JSON")) {
+    return new Error(i18n.t("error.autoWorktreeNameFailedInvalidJson"));
   }
-  if (message.includes('must be a JSON object')) {
-    return new Error(i18n.t('error.autoWorktreeNameFailedNotObject'));
+  if (message.includes("must be a JSON object")) {
+    return new Error(i18n.t("error.autoWorktreeNameFailedNotObject"));
   }
   return error;
 }
@@ -172,13 +162,15 @@ export function sameDreamCollectorSnapshot(
   left: DesktopDreamCollectorSnapshot,
   right: DesktopDreamCollectorSnapshot,
 ): boolean {
-  return left.state === right.state &&
+  return (
+    left.state === right.state &&
     left.lastRunAtUnixMs === right.lastRunAtUnixMs &&
     left.lastSuccessAtUnixMs === right.lastSuccessAtUnixMs &&
     left.lastError === right.lastError &&
     left.pendingCount === right.pendingCount &&
     left.processedCount === right.processedCount &&
-    left.backoffUntilUnixMs === right.backoffUntilUnixMs;
+    left.backoffUntilUnixMs === right.backoffUntilUnixMs
+  );
 }
 
 export function buildWebHostSnapshot(config: DesktopWebHostConfigFile): DesktopWebHostSnapshot {
@@ -191,7 +183,7 @@ export function buildWebHostSnapshot(config: DesktopWebHostConfigFile): DesktopW
         ...(config.authTokenHash ? { pairingCode: undefined } : {}),
       }
     : {
-        state: 'disabled' as const,
+        state: "disabled" as const,
         host: config.host,
         port: config.port,
       };
@@ -202,7 +194,7 @@ export function buildWebHostSnapshot(config: DesktopWebHostConfigFile): DesktopW
       host: config.host,
       port: config.port,
       paired: Boolean(config.authTokenHash),
-      authMode: 'pairing',
+      authMode: "pairing",
     },
     status,
     policy: DESKTOP_WEB_HOST_POLICY,
@@ -212,7 +204,7 @@ export function buildWebHostSnapshot(config: DesktopWebHostConfigFile): DesktopW
 export function currentApiBase(config: DesktopConfigFile): string {
   const profile = resolveActiveModelProfile(config) ?? flattenProviderGroups(config)[0];
   if (!profile) {
-    return '';
+    return "";
   }
   return resolveProfileApiBase(profile);
 }
@@ -226,16 +218,16 @@ export function cloneChatArchive(archive: ChatArchive): ChatArchive {
   };
 }
 
-export function cloneArchiveHistory(history: ChatArchive['llmHistory']): ChatArchive['llmHistory'] {
+export function cloneArchiveHistory(history: ChatArchive["llmHistory"]): ChatArchive["llmHistory"] {
   return history.map((message) => {
     if (Array.isArray(message.content)) {
       return {
         role: message.role,
         content: cloneLlmMessageContent(message.content),
-        ...('toolCallId' in message && typeof message.toolCallId === 'string'
+        ...("toolCallId" in message && typeof message.toolCallId === "string"
           ? { toolCallId: message.toolCallId }
           : {}),
-        ...('toolCalls' in message && Array.isArray(message.toolCalls)
+        ...("toolCalls" in message && Array.isArray(message.toolCalls)
           ? {
               toolCalls: message.toolCalls.map((toolCall) => ({
                 id: toolCall.id,
@@ -244,9 +236,9 @@ export function cloneArchiveHistory(history: ChatArchive['llmHistory']): ChatArc
               })),
             }
           : {}),
-        ...('providerState' in message
-          && typeof message.providerState === 'object'
-          && message.providerState !== null
+        ...("providerState" in message &&
+        typeof message.providerState === "object" &&
+        message.providerState !== null
           ? { providerState: cloneLlmProviderState(message.providerState) }
           : {}),
       };
@@ -255,16 +247,16 @@ export function cloneArchiveHistory(history: ChatArchive['llmHistory']): ChatArc
     return {
       role: message.role,
       content: message.content,
-      imagePaths: [...(('imagePaths' in message ? message.imagePaths : []) ?? [])],
+      imagePaths: [...(("imagePaths" in message ? message.imagePaths : []) ?? [])],
       videoPaths: [
-        ...((('videoPaths' in message && Array.isArray(message.videoPaths))
+        ...(("videoPaths" in message && Array.isArray(message.videoPaths)
           ? message.videoPaths
           : []) ?? []),
       ],
-      ...('toolCallId' in message && typeof message.toolCallId === 'string'
+      ...("toolCallId" in message && typeof message.toolCallId === "string"
         ? { toolCallId: message.toolCallId }
         : {}),
-      ...('toolCalls' in message && Array.isArray(message.toolCalls)
+      ...("toolCalls" in message && Array.isArray(message.toolCalls)
         ? {
             toolCalls: message.toolCalls.map((toolCall) => ({
               id: toolCall.id,
@@ -273,9 +265,9 @@ export function cloneArchiveHistory(history: ChatArchive['llmHistory']): ChatArc
             })),
           }
         : {}),
-      ...('providerState' in message
-        && typeof message.providerState === 'object'
-        && message.providerState !== null
+      ...("providerState" in message &&
+      typeof message.providerState === "object" &&
+      message.providerState !== null
         ? { providerState: cloneLlmProviderState(message.providerState) }
         : {}),
     };
@@ -283,8 +275,8 @@ export function cloneArchiveHistory(history: ChatArchive['llmHistory']): ChatArc
 }
 
 export function cloneArchiveSubagentSessions(
-  sessions: NonNullable<ChatArchive['subagentSessions']>,
-): NonNullable<ChatArchive['subagentSessions']> {
+  sessions: NonNullable<ChatArchive["subagentSessions"]>,
+): NonNullable<ChatArchive["subagentSessions"]> {
   return sessions.map((entry) => ({
     summary: { ...entry.summary },
     llmHistory: cloneArchiveHistory(entry.llmHistory),
@@ -293,8 +285,8 @@ export function cloneArchiveSubagentSessions(
 
 export function archiveBeforeLastUser(archive: ChatArchive): ChatArchive {
   const cloned = cloneChatArchive(archive);
-  const messageIndex = findLastIndex(cloned.messages, (message) => message.role === 'user');
-  const historyIndex = findLastIndex(cloned.llmHistory, (message) => message.role === 'user');
+  const messageIndex = findLastIndex(cloned.messages, (message) => message.role === "user");
+  const historyIndex = findLastIndex(cloned.llmHistory, (message) => message.role === "user");
   return {
     ...cloned,
     messages: messageIndex >= 0 ? cloned.messages.slice(0, messageIndex) : cloned.messages,
@@ -315,15 +307,13 @@ function findLastIndex<T>(items: readonly T[], predicate: (item: T) => boolean):
   return -1;
 }
 
-export function toRuntimeAskQuestionsResult(
-  result: AskQuestionsResult,
-): RuntimeAskQuestionsResult {
-  if (result.status === 'skipped') {
-    return { status: 'skipped' };
+export function toRuntimeAskQuestionsResult(result: AskQuestionsResult): RuntimeAskQuestionsResult {
+  if (result.status === "skipped") {
+    return { status: "skipped" };
   }
 
   return {
-    status: 'answered',
+    status: "answered",
     answers: result.answers ?? [],
   };
 }
@@ -351,7 +341,6 @@ export function mapPendingQuestions(
 }
 
 export function formatYamlScalarForSkillFrontmatter(value: string): string {
-  const flat = value.replace(/\r?\n/g, ' ').trim() || i18n.t('common.description');
-  return `"${flat.replace(/\\/gu, '\\\\').replace(/"/gu, '\\"')}"`;
+  const flat = value.replace(/\r?\n/g, " ").trim() || i18n.t("common.description");
+  return `"${flat.replace(/\\/gu, "\\\\").replace(/"/gu, '\\"')}"`;
 }
-

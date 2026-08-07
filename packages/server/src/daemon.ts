@@ -1,19 +1,19 @@
-import { randomUUID } from 'node:crypto';
-import { createServer, type Server as HttpServer } from 'node:http';
-import type { Socket } from 'node:net';
+import { randomUUID } from "node:crypto";
+import { createServer, type Server as HttpServer } from "node:http";
+import type { Socket } from "node:net";
 
 import {
   configureLlmClientVersion,
   configureLlmHttpVersion,
   normalizeLlmHttpVersion,
-} from '@spiritagent/agent-core';
+} from "@spiritagent/agent-core";
 
-import { loadOrCreateToken, readCurrentToken, tokenEquals } from './auth-token.js';
+import { loadOrCreateToken, readCurrentToken, tokenEquals } from "./auth-token.js";
 import {
   registerInstance,
   unregisterInstance,
   type ServerInstanceRecord,
-} from './instance-registry.js';
+} from "./instance-registry.js";
 import {
   JSON_RPC_INTERNAL_ERROR,
   JSON_RPC_INVALID_REQUEST,
@@ -83,9 +83,9 @@ import {
   type ClientKind,
   type ServerHealthResult,
   type ServerInitializeResult,
-} from './protocol/index.js';
-import { SessionManager } from './session-manager.js';
-import { HostService, HOST_METHODS } from './host-service.js';
+} from "./protocol/index.js";
+import { SessionManager } from "./session-manager.js";
+import { HostService, HOST_METHODS } from "./host-service.js";
 
 const SESSION_METHODS = new Set([
   SESSION_CREATE,
@@ -133,16 +133,13 @@ const SESSION_METHODS = new Set([
   SESSION_SET_TODO_SESSION_KEY,
 ]);
 
-const SERVER_METHODS = new Set([
-  SERVER_SET_LLM_HTTP_VERSION,
-  SERVER_SET_LLM_CLIENT_VERSION,
-]);
+const SERVER_METHODS = new Set([SERVER_SET_LLM_HTTP_VERSION, SERVER_SET_LLM_CLIENT_VERSION]);
 import {
   acceptUpgrade,
   isWebSocketUpgrade,
   rejectUpgrade,
   type WebSocketConnection,
-} from './ws/websocket-server.js';
+} from "./ws/websocket-server.js";
 
 /** After the last client disconnects, wait this long before exiting (multi-host handoff). */
 export const DEFAULT_IDLE_EXIT_GRACE_MS = 2_500;
@@ -192,7 +189,7 @@ interface ClientState {
 }
 
 function extractPresentedToken(headerValue: string | undefined, url: string | undefined): string {
-  if (typeof headerValue === 'string') {
+  if (typeof headerValue === "string") {
     const match = /^Bearer\s+(.+)$/i.exec(headerValue.trim());
     if (match?.[1]) {
       return match[1].trim();
@@ -200,24 +197,23 @@ function extractPresentedToken(headerValue: string | undefined, url: string | un
   }
   if (url) {
     try {
-      const parsed = new URL(url, 'http://localhost');
-      return parsed.searchParams.get('token')?.trim() ?? '';
+      const parsed = new URL(url, "http://localhost");
+      return parsed.searchParams.get("token")?.trim() ?? "";
     } catch {
-      return '';
+      return "";
     }
   }
-  return '';
+  return "";
 }
 
 export async function startDaemon(options: DaemonOptions): Promise<RunningDaemon> {
-  const host = options.host?.trim() || '127.0.0.1';
+  const host = options.host?.trim() || "127.0.0.1";
   const requestedPort = options.port ?? 0;
   const dataDir = options.dataDir;
   const version = options.version;
   const log = options.log ?? safeStderrLog;
-  const idleExitGraceMs = options.idleExitGraceMs === undefined
-    ? DEFAULT_IDLE_EXIT_GRACE_MS
-    : options.idleExitGraceMs;
+  const idleExitGraceMs =
+    options.idleExitGraceMs === undefined ? DEFAULT_IDLE_EXIT_GRACE_MS : options.idleExitGraceMs;
 
   // Ensure the home-level token exists before the first handshake arrives.
   await loadOrCreateToken(dataDir);
@@ -283,7 +279,7 @@ export async function startDaemon(options: DaemonOptions): Promise<RunningDaemon
     if (state?.clientId?.trim()) {
       return state.clientId.trim();
     }
-    const generated = `client_${randomUUID().replaceAll('-', '')}`;
+    const generated = `client_${randomUUID().replaceAll("-", "")}`;
     if (state) {
       state.clientId = generated;
     }
@@ -311,7 +307,7 @@ export async function startDaemon(options: DaemonOptions): Promise<RunningDaemon
     sessionId: string,
   ): void => {
     if (!clientState?.attachedSessionIds?.has(sessionId)) {
-      throw new Error('client is not attached to session');
+      throw new Error("client is not attached to session");
     }
   };
 
@@ -365,9 +361,9 @@ export async function startDaemon(options: DaemonOptions): Promise<RunningDaemon
 
   /** Params readers with strict-but-minimal validation at the RPC boundary. */
   const readSessionId = (params: Record<string, unknown>): string => {
-    const sessionId = params['sessionId'];
-    if (typeof sessionId !== 'string' || !sessionId.trim()) {
-      throw new Error('missing sessionId');
+    const sessionId = params["sessionId"];
+    if (typeof sessionId !== "string" || !sessionId.trim()) {
+      throw new Error("missing sessionId");
     }
     return sessionId;
   };
@@ -383,78 +379,88 @@ export async function startDaemon(options: DaemonOptions): Promise<RunningDaemon
     const clientId = resolveClientId(clientState);
     switch (method) {
       case SESSION_CREATE: {
-        const workspaceRoot = typeof params['workspaceRoot'] === 'string' && params['workspaceRoot'].trim()
-          ? params['workspaceRoot']
-          : undefined;
+        const workspaceRoot =
+          typeof params["workspaceRoot"] === "string" && params["workspaceRoot"].trim()
+            ? params["workspaceRoot"]
+            : undefined;
         if (!workspaceRoot) {
-          throw new Error('missing workspaceRoot');
+          throw new Error("missing workspaceRoot");
         }
-        const approvalLevel = params['approvalLevel'];
-        const todoSessionKey = params['todoSessionKey'];
-        const modelRef = params['modelRef'];
-        const agentMode = params['agentMode'];
-        const conversationKey = params['conversationKey'];
-        const sessionKind = params['sessionKind'];
-        const dreamScopeRaw = params['dreamScope'];
-        const dreamSourceSessionRaw = params['dreamSourceSession'];
-        const dreamScope = dreamScopeRaw
-          && typeof dreamScopeRaw === 'object'
-          && typeof (dreamScopeRaw as Record<string, unknown>)['workspaceRoot'] === 'string'
-          && typeof (dreamScopeRaw as Record<string, unknown>)['gitBranch'] === 'string'
-          ? {
-              workspaceRoot: String((dreamScopeRaw as Record<string, unknown>)['workspaceRoot']).trim(),
-              gitBranch: String((dreamScopeRaw as Record<string, unknown>)['gitBranch']).trim(),
-            }
-          : undefined;
-        let dreamSourceSession: { path: string; displayName?: string; savedAtUnixMs?: number } | undefined;
+        const approvalLevel = params["approvalLevel"];
+        const todoSessionKey = params["todoSessionKey"];
+        const modelRef = params["modelRef"];
+        const agentMode = params["agentMode"];
+        const conversationKey = params["conversationKey"];
+        const sessionKind = params["sessionKind"];
+        const dreamScopeRaw = params["dreamScope"];
+        const dreamSourceSessionRaw = params["dreamSourceSession"];
+        const dreamScope =
+          dreamScopeRaw &&
+          typeof dreamScopeRaw === "object" &&
+          typeof (dreamScopeRaw as Record<string, unknown>)["workspaceRoot"] === "string" &&
+          typeof (dreamScopeRaw as Record<string, unknown>)["gitBranch"] === "string"
+            ? {
+                workspaceRoot: String(
+                  (dreamScopeRaw as Record<string, unknown>)["workspaceRoot"],
+                ).trim(),
+                gitBranch: String((dreamScopeRaw as Record<string, unknown>)["gitBranch"]).trim(),
+              }
+            : undefined;
+        let dreamSourceSession:
+          | { path: string; displayName?: string; savedAtUnixMs?: number }
+          | undefined;
         if (
-          dreamSourceSessionRaw
-          && typeof dreamSourceSessionRaw === 'object'
-          && typeof (dreamSourceSessionRaw as Record<string, unknown>)['path'] === 'string'
+          dreamSourceSessionRaw &&
+          typeof dreamSourceSessionRaw === "object" &&
+          typeof (dreamSourceSessionRaw as Record<string, unknown>)["path"] === "string"
         ) {
           const raw = dreamSourceSessionRaw as Record<string, unknown>;
           dreamSourceSession = {
-            path: String(raw['path']).trim(),
+            path: String(raw["path"]).trim(),
           };
-          if (typeof raw['displayName'] === 'string' && raw['displayName'].trim()) {
-            dreamSourceSession.displayName = raw['displayName'].trim();
+          if (typeof raw["displayName"] === "string" && raw["displayName"].trim()) {
+            dreamSourceSession.displayName = raw["displayName"].trim();
           }
-          if (typeof raw['savedAtUnixMs'] === 'number') {
-            dreamSourceSession.savedAtUnixMs = raw['savedAtUnixMs'];
+          if (typeof raw["savedAtUnixMs"] === "number") {
+            dreamSourceSession.savedAtUnixMs = raw["savedAtUnixMs"];
           }
         }
         const info = await sessionManager.createSession({
           workspaceRoot,
-          hostKind: clientState?.clientKind ?? 'cli',
-          ...(typeof conversationKey === 'string' && conversationKey.trim()
+          hostKind: clientState?.clientKind ?? "cli",
+          ...(typeof conversationKey === "string" && conversationKey.trim()
             ? { conversationKey: conversationKey.trim() }
             : {}),
-          ...(approvalLevel === 'auto-approval' || approvalLevel === 'full-approval' || approvalLevel === 'default'
+          ...(approvalLevel === "auto-approval" ||
+          approvalLevel === "full-approval" ||
+          approvalLevel === "default"
             ? { approvalLevel }
             : {}),
-          ...(typeof todoSessionKey === 'string' && todoSessionKey.trim()
+          ...(typeof todoSessionKey === "string" && todoSessionKey.trim()
             ? { todoSessionKey: todoSessionKey.trim() }
             : {}),
-          ...(modelRef
-            && typeof modelRef === 'object'
-            && typeof (modelRef as Record<string, unknown>)['groupId'] === 'string'
-            && typeof (modelRef as Record<string, unknown>)['name'] === 'string'
+          ...(modelRef &&
+          typeof modelRef === "object" &&
+          typeof (modelRef as Record<string, unknown>)["groupId"] === "string" &&
+          typeof (modelRef as Record<string, unknown>)["name"] === "string"
             ? { modelRef: modelRef as never }
             : {}),
-          ...(agentMode === 'plan' || agentMode === 'ask' || agentMode === 'debug'
+          ...(agentMode === "plan" || agentMode === "ask" || agentMode === "debug"
             ? { agentMode }
             : {}),
-          ...(sessionKind === 'dream-collector' ? { sessionKind: 'dream-collector' as const } : {}),
+          ...(sessionKind === "dream-collector" ? { sessionKind: "dream-collector" as const } : {}),
           ...(dreamScope ? { dreamScope } : {}),
           ...(dreamSourceSession ? { dreamSourceSession } : {}),
         });
         return info;
       }
       case SESSION_ATTACH: {
-        const sessionId = typeof params['sessionId'] === 'string' ? params['sessionId'].trim() : undefined;
-        const conversationKey = typeof params['conversationKey'] === 'string'
-          ? params['conversationKey'].trim()
-          : undefined;
+        const sessionId =
+          typeof params["sessionId"] === "string" ? params["sessionId"].trim() : undefined;
+        const conversationKey =
+          typeof params["conversationKey"] === "string"
+            ? params["conversationKey"].trim()
+            : undefined;
         const result = sessionManager.attachSession(clientId, {
           ...(sessionId ? { sessionId } : {}),
           ...(conversationKey ? { conversationKey } : {}),
@@ -472,34 +478,35 @@ export async function startDaemon(options: DaemonOptions): Promise<RunningDaemon
       case SESSION_LIST:
         return { sessions: sessionManager.listSessions() };
       case SESSION_MIGRATE_CONVERSATION_KEY: {
-        const conversationKey = params['conversationKey'];
-        if (typeof conversationKey !== 'string' || !conversationKey.trim()) {
-          throw new Error('missing conversationKey');
+        const conversationKey = params["conversationKey"];
+        if (typeof conversationKey !== "string" || !conversationKey.trim()) {
+          throw new Error("missing conversationKey");
         }
-        sessionManager.migrateConversationKey(
-          readSessionId(params),
-          conversationKey.trim(),
-        );
+        sessionManager.migrateConversationKey(readSessionId(params), conversationKey.trim());
         return { ok: true };
       }
       case SESSION_SUBMIT_USER_TURN: {
-        const text = params['text'];
-        if (typeof text !== 'string') {
-          throw new Error('missing text');
+        const text = params["text"];
+        if (typeof text !== "string") {
+          throw new Error("missing text");
         }
         const outcome = await sessionManager.submitUserTurn(readSessionId(params), {
           text,
-          ...(typeof params['clientTurnId'] === 'string' && params['clientTurnId'].trim()
-            ? { clientTurnId: params['clientTurnId'].trim() }
+          ...(typeof params["clientTurnId"] === "string" && params["clientTurnId"].trim()
+            ? { clientTurnId: params["clientTurnId"].trim() }
             : {}),
-          ...(Array.isArray(params['explicitImages'])
-            ? { explicitImages: params['explicitImages'].filter((v): v is string => typeof v === 'string') }
+          ...(Array.isArray(params["explicitImages"])
+            ? {
+                explicitImages: params["explicitImages"].filter(
+                  (v): v is string => typeof v === "string",
+                ),
+              }
             : {}),
-          ...(Array.isArray(params['explicitWorkspaceFiles'])
-            ? { explicitWorkspaceFiles: params['explicitWorkspaceFiles'] as never }
+          ...(Array.isArray(params["explicitWorkspaceFiles"])
+            ? { explicitWorkspaceFiles: params["explicitWorkspaceFiles"] as never }
             : {}),
-          ...(Array.isArray(params['activeSkills'])
-            ? { activeSkills: params['activeSkills'] as never }
+          ...(Array.isArray(params["activeSkills"])
+            ? { activeSkills: params["activeSkills"] as never }
             : {}),
         });
         return outcome;
@@ -511,13 +518,13 @@ export async function startDaemon(options: DaemonOptions): Promise<RunningDaemon
         return {
           aborted: sessionManager.abortShell(
             readSessionId(params),
-            String(params['toolCallId'] ?? ''),
+            String(params["toolCallId"] ?? ""),
           ),
         };
       case SESSION_SET_APPROVAL_LEVEL: {
-        const level = params['approvalLevel'];
-        if (level !== 'default' && level !== 'auto-approval' && level !== 'full-approval') {
-          throw new Error('invalid approvalLevel');
+        const level = params["approvalLevel"];
+        if (level !== "default" && level !== "auto-approval" && level !== "full-approval") {
+          throw new Error("invalid approvalLevel");
         }
         await sessionManager.setApprovalLevel(readSessionId(params), level);
         return { ok: true };
@@ -525,33 +532,33 @@ export async function startDaemon(options: DaemonOptions): Promise<RunningDaemon
       case SESSION_REPLY_PENDING_APPROVAL: {
         const sessionId = readSessionId(params);
         requireAttachedToSession(clientState, sessionId);
-        await sessionManager.replyPendingApproval(sessionId, params['decision'] as never);
+        await sessionManager.replyPendingApproval(sessionId, params["decision"] as never);
         return { ok: true };
       }
       case SESSION_REPLY_PENDING_QUESTIONS: {
         const sessionId = readSessionId(params);
         requireAttachedToSession(clientState, sessionId);
-        await sessionManager.replyPendingQuestions(sessionId, params['result'] as never);
+        await sessionManager.replyPendingQuestions(sessionId, params["result"] as never);
         return { ok: true };
       }
       case SESSION_SET_MODE: {
-        const mode = params['mode'];
-        if (mode !== 'agent' && mode !== 'plan' && mode !== 'ask' && mode !== 'debug') {
-          throw new Error('invalid mode');
+        const mode = params["mode"];
+        if (mode !== "agent" && mode !== "plan" && mode !== "ask" && mode !== "debug") {
+          throw new Error("invalid mode");
         }
         await sessionManager.setAgentMode(readSessionId(params), mode);
         return { ok: true };
       }
       case SESSION_SET_LOOP_ENABLED:
-        sessionManager.setLoopEnabled(readSessionId(params), params['enabled'] === true);
+        sessionManager.setLoopEnabled(readSessionId(params), params["enabled"] === true);
         return { ok: true };
       case SESSION_RESET:
         sessionManager.reset(readSessionId(params));
         return { ok: true };
       case SESSION_RENAME: {
-        const title = params['title'];
-        if (typeof title !== 'string') {
-          throw new Error('missing title');
+        const title = params["title"];
+        if (typeof title !== "string") {
+          throw new Error("missing title");
         }
         sessionManager.rename(readSessionId(params), title);
         return { ok: true };
@@ -565,38 +572,42 @@ export async function startDaemon(options: DaemonOptions): Promise<RunningDaemon
       case SESSION_POLL:
         return { snapshot: sessionManager.snapshot(readSessionId(params)) };
       case SESSION_REPLY_TRUST: {
-        const requestId = params['requestId'];
-        const decision = params['decision'];
-        if (typeof requestId !== 'string' || !requestId) {
-          throw new Error('missing requestId');
+        const requestId = params["requestId"];
+        const decision = params["decision"];
+        if (typeof requestId !== "string" || !requestId) {
+          throw new Error("missing requestId");
         }
-        if (decision !== 'allowOnce' && decision !== 'deny' && decision !== 'alwaysTrust') {
-          throw new Error('invalid decision');
+        if (decision !== "allowOnce" && decision !== "deny" && decision !== "alwaysTrust") {
+          throw new Error("invalid decision");
         }
         const sessionId = sessionManager.pendingTrustSessionId(requestId);
         if (!sessionId) {
-          throw new Error('unknown trust requestId');
+          throw new Error("unknown trust requestId");
         }
         requireAttachedToSession(clientState, sessionId);
         sessionManager.replyWorkspaceCapabilityTrust(requestId, decision);
         return { ok: true };
       }
       case SESSION_REPLACE_FROM_ARCHIVE:
-        sessionManager.replaceFromArchive(readSessionId(params), params['archive']);
+        sessionManager.replaceFromArchive(readSessionId(params), params["archive"]);
         return { ok: true };
       case SESSION_EXPORT_ARCHIVE:
-        return sessionManager.exportArchive(readSessionId(params), params['messages'], params['assistantAux']);
+        return sessionManager.exportArchive(
+          readSessionId(params),
+          params["messages"],
+          params["assistantAux"],
+        );
       case SESSION_PUSH_DESKTOP_TIMELINE:
-        return sessionManager.pushDesktopTimeline(readSessionId(params), params['timeline']);
+        return sessionManager.pushDesktopTimeline(readSessionId(params), params["timeline"]);
       case SESSION_GET_DESKTOP_TIMELINE:
         return sessionManager.getDesktopTimeline(readSessionId(params));
       case SESSION_EXPORT_STATE:
         return sessionManager.exportState(readSessionId(params));
       case SESSION_ACTIVATE_SKILL:
-        sessionManager.activateSkill(readSessionId(params), params['skill'] as never);
+        sessionManager.activateSkill(readSessionId(params), params["skill"] as never);
         return { ok: true };
       case SESSION_ADD_PENDING_IMAGE:
-        sessionManager.addPendingImage(readSessionId(params), String(params['path'] ?? ''));
+        sessionManager.addPendingImage(readSessionId(params), String(params["path"] ?? ""));
         return { ok: true };
       case SESSION_CLEAR_PENDING_IMAGES:
         return { cleared: sessionManager.clearPendingImages(readSessionId(params)) };
@@ -604,8 +615,8 @@ export async function startDaemon(options: DaemonOptions): Promise<RunningDaemon
         return {
           label: await sessionManager.attachMcpResource(
             readSessionId(params),
-            String(params['server'] ?? ''),
-            String(params['uri'] ?? ''),
+            String(params["server"] ?? ""),
+            String(params["uri"] ?? ""),
           ),
         };
       case SESSION_CLEAR_PENDING_MCP_RESOURCES:
@@ -614,72 +625,87 @@ export async function startDaemon(options: DaemonOptions): Promise<RunningDaemon
         return {
           notice: await sessionManager.applyMcpPrompt(
             readSessionId(params),
-            String(params['server'] ?? ''),
-            String(params['prompt'] ?? ''),
-            typeof params['argsJson'] === 'string' ? params['argsJson'] : undefined,
-            typeof params['userMessage'] === 'string' ? params['userMessage'] : undefined,
+            String(params["server"] ?? ""),
+            String(params["prompt"] ?? ""),
+            typeof params["argsJson"] === "string" ? params["argsJson"] : undefined,
+            typeof params["userMessage"] === "string" ? params["userMessage"] : undefined,
           ),
         };
       case SESSION_MCP:
         return sessionManager.mcpCall(
           readSessionId(params),
-          String(params['action'] ?? ''),
-          (params['params'] ?? {}) as Record<string, unknown>,
+          String(params["action"] ?? ""),
+          (params["params"] ?? {}) as Record<string, unknown>,
         );
       case SESSION_START_MANUAL_TOOL_COMMAND:
-        return sessionManager.startManualToolCommand(readSessionId(params), String(params['message'] ?? ''));
+        return sessionManager.startManualToolCommand(
+          readSessionId(params),
+          String(params["message"] ?? ""),
+        );
       case SESSION_CONTINUE_MANUAL_APPROVAL:
-        return sessionManager.continuePendingManualToolApproval(readSessionId(params), params['decision']);
+        return sessionManager.continuePendingManualToolApproval(
+          readSessionId(params),
+          params["decision"],
+        );
       case SESSION_TAKE_MANUAL_RESULT:
         return sessionManager.takeCompletedManualToolCommandResult(readSessionId(params));
       case SESSION_SUBAGENT_ARCHIVE:
-        return sessionManager.subagentSessionArchive(readSessionId(params), String(params['subagentSessionId'] ?? ''));
+        return sessionManager.subagentSessionArchive(
+          readSessionId(params),
+          String(params["subagentSessionId"] ?? ""),
+        );
       case SESSION_SUBAGENT_AUX:
-        return sessionManager.subagentPendingAuxState(readSessionId(params), String(params['subagentSessionId'] ?? ''));
+        return sessionManager.subagentPendingAuxState(
+          readSessionId(params),
+          String(params["subagentSessionId"] ?? ""),
+        );
       case SESSION_REPLACE_CONFIG: {
-        const modelRef = params['modelRef'];
+        const modelRef = params["modelRef"];
         await sessionManager.replaceConfig(
           readSessionId(params),
-          modelRef
-            && typeof modelRef === 'object'
-            && typeof (modelRef as Record<string, unknown>)['groupId'] === 'string'
-            && typeof (modelRef as Record<string, unknown>)['name'] === 'string'
+          modelRef &&
+            typeof modelRef === "object" &&
+            typeof (modelRef as Record<string, unknown>)["groupId"] === "string" &&
+            typeof (modelRef as Record<string, unknown>)["name"] === "string"
             ? (modelRef as { groupId: string; name: string })
             : undefined,
         );
         return { ok: true };
       }
       case SESSION_RELOAD_METADATA: {
-        const mode = params['mode'];
+        const mode = params["mode"];
         await sessionManager.reloadHostMetadata(
           readSessionId(params),
-          mode === 'plan' || mode === 'ask' || mode === 'debug' ? mode : 'agent',
+          mode === "plan" || mode === "ask" || mode === "debug" ? mode : "agent",
         );
         return { ok: true };
       }
       case SESSION_RUN_SESSION_START: {
-        const source = params['source'];
-        if (source !== 'startup' && source !== 'resume' && source !== 'open') {
-          throw new Error('invalid source');
+        const source = params["source"];
+        if (source !== "startup" && source !== "resume" && source !== "open") {
+          throw new Error("invalid source");
         }
         await sessionManager.runSessionStart(readSessionId(params), source);
         return { ok: true };
       }
       case SESSION_RUN_SESSION_END: {
-        const reason = params['reason'];
-        if (reason !== 'abort' && reason !== 'close' && reason !== 'switch') {
-          throw new Error('invalid reason');
+        const reason = params["reason"];
+        if (reason !== "abort" && reason !== "close" && reason !== "switch") {
+          throw new Error("invalid reason");
         }
         await sessionManager.runSessionEnd(readSessionId(params), reason);
         return { ok: true };
       }
       case SESSION_SET_ATTRIBUTION:
-        sessionManager.setAttribution(readSessionId(params), (params['attribution'] ?? {}) as never);
+        sessionManager.setAttribution(
+          readSessionId(params),
+          (params["attribution"] ?? {}) as never,
+        );
         return { ok: true };
       case SESSION_SET_TODO_SESSION_KEY: {
-        const sessionKey = params['sessionKey'];
-        if (typeof sessionKey !== 'string' || !sessionKey.trim()) {
-          throw new Error('missing sessionKey');
+        const sessionKey = params["sessionKey"];
+        if (typeof sessionKey !== "string" || !sessionKey.trim()) {
+          throw new Error("missing sessionKey");
         }
         sessionManager.setTodoSessionKey(readSessionId(params), sessionKey.trim());
         return { ok: true };
@@ -690,19 +716,23 @@ export async function startDaemon(options: DaemonOptions): Promise<RunningDaemon
   };
 
   const handleRpc = async (conn: WebSocketConnection, raw: string | Buffer): Promise<void> => {
-    if (typeof raw !== 'string') {
-      conn.send(JSON.stringify(errorResponse(null, JSON_RPC_INVALID_REQUEST, 'binary frames are not JSON-RPC')));
+    if (typeof raw !== "string") {
+      conn.send(
+        JSON.stringify(
+          errorResponse(null, JSON_RPC_INVALID_REQUEST, "binary frames are not JSON-RPC"),
+        ),
+      );
       return;
     }
     let parsed: unknown;
     try {
       parsed = JSON.parse(raw);
     } catch {
-      conn.send(JSON.stringify(errorResponse(null, JSON_RPC_PARSE_ERROR, 'parse error')));
+      conn.send(JSON.stringify(errorResponse(null, JSON_RPC_PARSE_ERROR, "parse error")));
       return;
     }
     if (!isJsonRpcRequest(parsed)) {
-      conn.send(JSON.stringify(errorResponse(null, JSON_RPC_INVALID_REQUEST, 'invalid request')));
+      conn.send(JSON.stringify(errorResponse(null, JSON_RPC_INVALID_REQUEST, "invalid request")));
       return;
     }
     try {
@@ -723,14 +753,18 @@ export async function startDaemon(options: DaemonOptions): Promise<RunningDaemon
         case SERVER_INITIALIZE: {
           const params = (parsed.params ?? {}) as Record<string, unknown>;
           const state: ClientState = {};
-          if (params['clientKind'] === 'cli' || params['clientKind'] === 'desktop' || params['clientKind'] === 'web') {
-            state.clientKind = params['clientKind'];
+          if (
+            params["clientKind"] === "cli" ||
+            params["clientKind"] === "desktop" ||
+            params["clientKind"] === "web"
+          ) {
+            state.clientKind = params["clientKind"];
           }
-          if (typeof params['clientId'] === 'string') {
-            state.clientId = params['clientId'];
+          if (typeof params["clientId"] === "string") {
+            state.clientId = params["clientId"];
           }
-          if (typeof params['workspaceRoot'] === 'string') {
-            state.workspaceRoot = params['workspaceRoot'];
+          if (typeof params["workspaceRoot"] === "string") {
+            state.workspaceRoot = params["workspaceRoot"];
           }
           clientStates.set(conn, state);
           const result: ServerInitializeResult = {
@@ -747,11 +781,11 @@ export async function startDaemon(options: DaemonOptions): Promise<RunningDaemon
           if (SERVER_METHODS.has(parsed.method)) {
             if (parsed.method === SERVER_SET_LLM_HTTP_VERSION) {
               const params = (parsed.params ?? {}) as Record<string, unknown>;
-              configureLlmHttpVersion(normalizeLlmHttpVersion(params['llmHttpVersion']));
+              configureLlmHttpVersion(normalizeLlmHttpVersion(params["llmHttpVersion"]));
             } else if (parsed.method === SERVER_SET_LLM_CLIENT_VERSION) {
               const params = (parsed.params ?? {}) as Record<string, unknown>;
-              if (typeof params['clientVersion'] === 'string') {
-                configureLlmClientVersion(params['clientVersion']);
+              if (typeof params["clientVersion"] === "string") {
+                configureLlmClientVersion(params["clientVersion"]);
               }
             }
             conn.send(JSON.stringify(successResponse(parsed.id, null)));
@@ -767,36 +801,48 @@ export async function startDaemon(options: DaemonOptions): Promise<RunningDaemon
             conn.send(JSON.stringify(successResponse(parsed.id, result ?? null)));
             return;
           }
-          conn.send(JSON.stringify(errorResponse(parsed.id, JSON_RPC_METHOD_NOT_FOUND, `unknown method: ${parsed.method}`)));
+          conn.send(
+            JSON.stringify(
+              errorResponse(
+                parsed.id,
+                JSON_RPC_METHOD_NOT_FOUND,
+                `unknown method: ${parsed.method}`,
+              ),
+            ),
+          );
       }
     } catch (err) {
       conn.send(
         JSON.stringify(
-          errorResponse(parsed.id, JSON_RPC_INTERNAL_ERROR, err instanceof Error ? err.message : String(err)),
+          errorResponse(
+            parsed.id,
+            JSON_RPC_INTERNAL_ERROR,
+            err instanceof Error ? err.message : String(err),
+          ),
         ),
       );
     }
   };
 
   const httpServer: HttpServer = createServer((req, res) => {
-    res.writeHead(404, { 'content-type': 'application/json' });
-    res.end(JSON.stringify({ error: 'not found' }));
+    res.writeHead(404, { "content-type": "application/json" });
+    res.end(JSON.stringify({ error: "not found" }));
   });
 
-  httpServer.on('upgrade', (req, rawSocket, head) => {
+  httpServer.on("upgrade", (req, rawSocket, head) => {
     void head;
     // WS upgrades always ride on a net.Socket (or TLSSocket); @types/node
     // widens the event signature to Duplex.
     const socket = rawSocket as Socket;
     if (!isWebSocketUpgrade(req)) {
-      rejectUpgrade(socket, 400, 'Bad Request');
+      rejectUpgrade(socket, 400, "Bad Request");
       return;
     }
     void (async () => {
       const expected = await readCurrentToken(dataDir);
-      const presented = extractPresentedToken(req.headers['authorization'], req.url);
+      const presented = extractPresentedToken(req.headers["authorization"], req.url);
       if (!expected || !tokenEquals(presented, expected)) {
-        rejectUpgrade(socket, 401, 'Unauthorized');
+        rejectUpgrade(socket, 401, "Unauthorized");
         return;
       }
       const conn = acceptUpgrade(req, socket);
@@ -814,14 +860,14 @@ export async function startDaemon(options: DaemonOptions): Promise<RunningDaemon
           }),
         ),
       );
-      conn.on('message', (data: string | Buffer) => {
+      conn.on("message", (data: string | Buffer) => {
         void handleRpc(conn, data);
       });
-      conn.on('close', () => {
+      conn.on("close", () => {
         connections.delete(conn);
         onClientGone(conn);
       });
-      conn.on('error', () => {
+      conn.on("error", () => {
         connections.delete(conn);
         onClientGone(conn);
       });
@@ -829,13 +875,13 @@ export async function startDaemon(options: DaemonOptions): Promise<RunningDaemon
   });
 
   await new Promise<void>((resolve, reject) => {
-    httpServer.once('error', reject);
+    httpServer.once("error", reject);
     httpServer.listen(requestedPort, host, () => resolve());
   });
 
   const address = httpServer.address();
-  if (typeof address !== 'object' || address === null) {
-    throw new Error('failed to resolve listening address');
+  if (typeof address !== "object" || address === null) {
+    throw new Error("failed to resolve listening address");
   }
   const port = address.port;
 
@@ -857,7 +903,7 @@ export async function startDaemon(options: DaemonOptions): Promise<RunningDaemon
     cancelIdleExit();
     await sessionManager.shutdown();
     for (const conn of connections) {
-      conn.close(1001, 'server shutting down');
+      conn.close(1001, "server shutting down");
     }
     connections.clear();
     clientStates.clear();
@@ -868,7 +914,9 @@ export async function startDaemon(options: DaemonOptions): Promise<RunningDaemon
     await unregisterInstance(dataDir, instanceId);
   };
 
-  log(`[spirit-server] listening on ws://${host}:${port} (instance ${instanceId}, pid ${process.pid})`);
+  log(
+    `[spirit-server] listening on ws://${host}:${port} (instance ${instanceId}, pid ${process.pid})`,
+  );
 
   return {
     instanceId,

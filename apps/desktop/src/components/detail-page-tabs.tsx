@@ -1,8 +1,6 @@
 import { useRef, type ReactNode, type RefObject } from "react";
 
-import {
-  PR_SUBTAB_SHELL_DIVIDER_ATTR,
-} from "@/lib/workspace-tools-panel-edge";
+import { PR_SUBTAB_SHELL_DIVIDER_ATTR } from "@/lib/workspace-tools-panel-edge";
 import { useWorkspaceToolsShellHorizontalDivider } from "@/lib/use-workspace-tools-shell-horizontal-divider";
 import { cn } from "@/lib/utils";
 

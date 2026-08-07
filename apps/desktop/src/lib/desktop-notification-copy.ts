@@ -2,7 +2,7 @@ const NOTIFICATION_BODY_MAX = 240;
 const APPROVAL_BODY_MAX = 200;
 
 export function formatSessionPrefixedTitle(sessionName: string, body: string): string {
-  const trimmedSession = sessionName.trim() || 'Session';
+  const trimmedSession = sessionName.trim() || "Session";
   const trimmedBody = body.trim();
   if (!trimmedBody) {
     return `[${trimmedSession}]`;
@@ -23,12 +23,12 @@ export function stripShellReasonLine(prompt: string, reasonPrefix: string): stri
   if (!lines[0]?.trim().startsWith(reasonPrefix)) {
     return prompt;
   }
-  return lines.slice(1).join('\n').trim();
+  return lines.slice(1).join("\n").trim();
 }
 
 export function shellApprovalNotificationBody(prompt: string, reasonPrefix: string): string {
   const lines = prompt.split(/\r?\n/);
-  const reasonLine = lines[0]?.trim().startsWith(reasonPrefix) ? lines[0].trim() : '';
+  const reasonLine = lines[0]?.trim().startsWith(reasonPrefix) ? lines[0].trim() : "";
   const command = stripShellReasonLine(prompt, reasonPrefix).trim();
   if (reasonLine && command && reasonLine !== command) {
     return truncateNotificationBody(`${reasonLine}\n${command}`, APPROVAL_BODY_MAX);

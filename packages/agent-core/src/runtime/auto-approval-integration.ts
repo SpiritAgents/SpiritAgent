@@ -4,13 +4,14 @@ import {
   type SessionApprovalLevel,
   type ToolAutoReviewInput,
   type ToolAutoReviewer,
-} from '../auto-approval/index.js';
-import type { JsonValue } from '../ports.js';
-import type { PreToolUseGateResult } from '../hooks/tool-hooks.js';
-import type { ToolApprovalGate } from '../hooks/tool-hooks.js';
+} from "../auto-approval/index.js";
+import type { JsonValue } from "../ports.js";
+import type { PreToolUseGateResult } from "../hooks/tool-hooks.js";
+import type { ToolApprovalGate } from "../hooks/tool-hooks.js";
 
-export interface ResolvedToolApprovalGate<TrustTarget = string>
-  extends ToolApprovalGate<TrustTarget> {
+export interface ResolvedToolApprovalGate<
+  TrustTarget = string,
+> extends ToolApprovalGate<TrustTarget> {
   autoReviewBlockReason?: string;
 }
 
@@ -41,11 +42,11 @@ export async function applyAutoReviewToApprovalGate<TrustTarget, ToolRequest>(
   gate: ToolApprovalGate<TrustTarget>,
   preGate?: PreToolUseGateResult<ToolRequest>,
 ): Promise<ResolvedToolApprovalGate<TrustTarget> | null> {
-  if (!reviewToolApproval || approvalLevel !== 'auto-approval') {
+  if (!reviewToolApproval || approvalLevel !== "auto-approval") {
     return gate;
   }
   // Hook permission: ask must stay on manual approval; auto review must not bypass it.
-  if (preGate?.kind === 'needs-approval') {
+  if (preGate?.kind === "needs-approval") {
     return gate;
   }
 
@@ -60,10 +61,10 @@ export async function applyAutoReviewToApprovalGate<TrustTarget, ToolRequest>(
     }),
   );
 
-  if (outcome.kind === 'allowed') {
+  if (outcome.kind === "allowed") {
     return null;
   }
-  if (outcome.kind === 'blocked') {
+  if (outcome.kind === "blocked") {
     return {
       ...gate,
       autoReviewBlockReason: outcome.reason,

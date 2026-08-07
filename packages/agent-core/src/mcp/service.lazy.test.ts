@@ -1,19 +1,19 @@
-import assert from 'node:assert/strict';
-import test from 'node:test';
+import assert from "node:assert/strict";
+import test from "node:test";
 
-import { McpRegistry } from './registry.js';
-import type { McpToolIndexEntry, ResolvedMcpServerConfig } from './types.js';
+import { McpRegistry } from "./registry.js";
+import type { McpToolIndexEntry, ResolvedMcpServerConfig } from "./types.js";
 
-test('McpService catalog snapshot truncates tool metadata at 128 entries', async () => {
-  const { buildMcpToolCatalogSnapshotForTest } = await import('./service.lazy.test-helpers.js');
+test("McpService catalog snapshot truncates tool metadata at 128 entries", async () => {
+  const { buildMcpToolCatalogSnapshotForTest } = await import("./service.lazy.test-helpers.js");
   const indexEntries: McpToolIndexEntry[] = [];
   for (let index = 0; index < 130; index += 1) {
     indexEntries.push({
-      server: 'demo',
-      displayName: 'Demo',
+      server: "demo",
+      displayName: "Demo",
       toolName: `tool_${index}`,
       description: `Tool ${index}`,
-      inputSchema: { type: 'object' },
+      inputSchema: { type: "object" },
     });
   }
 
@@ -22,19 +22,19 @@ test('McpService catalog snapshot truncates tool metadata at 128 entries', async
     servers: {
       demo: {
         enabled: true,
-        transport: { type: 'stdio', command: 'echo' },
+        transport: { type: "stdio", command: "echo" },
       },
     },
   });
-  registry.setServerState('demo', 'ready', { cachedTools: 130 });
+  registry.setServerState("demo", "ready", { cachedTools: 130 });
 
   const resolved: Record<string, ResolvedMcpServerConfig> = {
     demo: {
-      name: 'demo',
-      displayName: 'Demo',
+      name: "demo",
+      displayName: "Demo",
       enabled: true,
       capabilities: { tools: true, resources: false, prompts: false },
-      transport: { type: 'stdio', command: 'echo', args: [], env: {}, stderr: 'pipe' },
+      transport: { type: "stdio", command: "echo", args: [], env: {}, stderr: "pipe" },
     },
   };
 
@@ -44,33 +44,40 @@ test('McpService catalog snapshot truncates tool metadata at 128 entries', async
   assert.equal(snapshot.servers[0]?.tools.length, 128);
 });
 
-test('McpService toolDefinitionsJson returns gateway tools only when index is non-empty', async () => {
-  const { McpService } = await import('./service.js');
+test("McpService toolDefinitionsJson returns gateway tools only when index is non-empty", async () => {
+  const { McpService } = await import("./service.js");
   const service = new McpService(process.cwd());
   assert.deepEqual(service.toolDefinitionsJson(), []);
 
   (service as unknown as { toolIndexStore: McpToolIndexEntry[] }).toolIndexStore = [
     {
-      server: 'demo',
-      displayName: 'Demo',
-      toolName: 'ping',
-      description: 'Ping',
-      inputSchema: { type: 'object' },
+      server: "demo",
+      displayName: "Demo",
+      toolName: "ping",
+      description: "Ping",
+      inputSchema: { type: "object" },
     },
   ];
 
   const withTools = service.toolDefinitionsJson();
   assert.equal(withTools.length, 2);
-  assert.ok(withTools.some((entry) => (entry as { function?: { name?: string } }).function?.name === 'tool_describe'));
+  assert.ok(
+    withTools.some(
+      (entry) => (entry as { function?: { name?: string } }).function?.name === "tool_describe",
+    ),
+  );
 });
 
-test('McpService toolDefinitionsJson returns fetch_mcp_resource when resource index is non-empty', async () => {
-  const { McpService } = await import('./service.js');
-  const { FETCH_MCP_RESOURCE_TOOL_NAME } = await import('../tool-gateway/fetch-mcp-resource.js');
+test("McpService toolDefinitionsJson returns fetch_mcp_resource when resource index is non-empty", async () => {
+  const { McpService } = await import("./service.js");
+  const { FETCH_MCP_RESOURCE_TOOL_NAME } = await import("../tool-gateway/fetch-mcp-resource.js");
   const service = new McpService(process.cwd());
 
-  (service as unknown as { resourceIndexStore: Array<{ server: string; uri: string; name: string }> })
-    .resourceIndexStore = [{ server: 'docs', uri: 'mcp://readme', name: 'readme' }];
+  (
+    service as unknown as {
+      resourceIndexStore: Array<{ server: string; uri: string; name: string }>;
+    }
+  ).resourceIndexStore = [{ server: "docs", uri: "mcp://readme", name: "readme" }];
 
   const definitions = service.toolDefinitionsJson();
   assert.equal(definitions.length, 1);

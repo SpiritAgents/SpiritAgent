@@ -1,7 +1,7 @@
-import { execFile } from 'node:child_process';
-import { promisify } from 'node:util';
+import { execFile } from "node:child_process";
+import { promisify } from "node:util";
 
-import i18n from '../lib/i18n-host.js';
+import i18n from "../lib/i18n-host.js";
 import {
   addGitWorktree as addGitWorktreeInternal,
   buildGitCommitHistorySnapshot,
@@ -20,7 +20,7 @@ import {
   resolveDefaultBranch,
   resolvePrimaryRepoRoot,
   type GitCheckoutOptions,
-} from '@spiritagent/host-internal';
+} from "@spiritagent/host-internal";
 
 import type {
   DesktopGitSnapshot,
@@ -29,8 +29,8 @@ import type {
   GitWorkingTreeSnapshot,
   ReadGitCommitMessageRequest,
   ReadGitHistoryRequest,
-} from '../types.js';
-import type { GeneratedWorktreeNames } from './worktree-naming.js';
+} from "../types.js";
+import type { GeneratedWorktreeNames } from "./worktree-naming.js";
 
 const execFileAsync = promisify(execFile);
 const GIT_MAX_BUFFER = 4 * 1024 * 1024;
@@ -40,7 +40,7 @@ async function runGit(
   args: string[],
 ): Promise<{ stdout: string; stderr: string }> {
   try {
-    const result = await execFileAsync('git', args, {
+    const result = await execFileAsync("git", args, {
       cwd: workspaceRoot,
       windowsHide: true,
       maxBuffer: GIT_MAX_BUFFER,
@@ -51,26 +51,30 @@ async function runGit(
     };
   } catch (error) {
     const message = renderGitError(error);
-    throw new Error(i18n.t('error.gitCommandFailed', { command: args.join(' '), message }));
+    throw new Error(i18n.t("error.gitCommandFailed", { command: args.join(" "), message }), {
+      cause: error,
+    });
   }
 }
 
 function renderGitError(error: unknown): string {
-  if (typeof error !== 'object' || error === null) {
+  if (typeof error !== "object" || error === null) {
     return String(error);
   }
 
-  const stdout = typeof (error as { stdout?: unknown }).stdout === 'string'
-    ? (error as { stdout: string }).stdout.trim()
-    : '';
-  const stderr = typeof (error as { stderr?: unknown }).stderr === 'string'
-    ? (error as { stderr: string }).stderr.trim()
-    : '';
+  const stdout =
+    typeof (error as { stdout?: unknown }).stdout === "string"
+      ? (error as { stdout: string }).stdout.trim()
+      : "";
+  const stderr =
+    typeof (error as { stderr?: unknown }).stderr === "string"
+      ? (error as { stderr: string }).stderr.trim()
+      : "";
   const message = error instanceof Error ? error.message.trim() : String(error);
   return stderr || stdout || message;
 }
 
-export type WorkspaceGitSnapshotRead = Omit<DesktopGitSnapshot, 'revision'>;
+export type WorkspaceGitSnapshotRead = Omit<DesktopGitSnapshot, "revision">;
 
 export function applyGitRevision(
   snapshot: WorkspaceGitSnapshotRead,
@@ -88,14 +92,17 @@ export async function readWorkspaceGitSnapshot(
 ): Promise<WorkspaceGitSnapshotRead> {
   const snapshot = await readGitWorkspaceSnapshot(workspaceRoot);
   const worktreeContext = await readWorktreeContext(workspaceRoot);
-  const defaultBranch = worktreeContext.isWorktree && worktreeContext.repoRoot
-    ? await resolveDefaultBranch(worktreeContext.repoRoot).catch(() => undefined)
-    : undefined;
+  const defaultBranch =
+    worktreeContext.isWorktree && worktreeContext.repoRoot
+      ? await resolveDefaultBranch(worktreeContext.repoRoot).catch(() => undefined)
+      : undefined;
 
   return {
     isRepository: snapshot.isRepository,
     hasChanges: snapshot.hasChanges,
-    ...(snapshot.workingTreeLineDelta ? { workingTreeLineDelta: snapshot.workingTreeLineDelta } : {}),
+    ...(snapshot.workingTreeLineDelta
+      ? { workingTreeLineDelta: snapshot.workingTreeLineDelta }
+      : {}),
     branches: snapshot.branches,
     aheadCount: snapshot.aheadCount,
     behindCount: snapshot.behindCount,
@@ -130,11 +137,7 @@ export async function readWorkspaceGitHistory(
     maxCount: request.maxCount,
     skip: request.skip,
   });
-  if (
-    request.existingLogCommits &&
-    request.existingLogCommits.length > 0 &&
-    page.isRepository
-  ) {
+  if (request.existingLogCommits && request.existingLogCommits.length > 0 && page.isRepository) {
     const logCommits = mergeGitLogCommitPages(request.existingLogCommits, page.logCommits);
     return buildGitCommitHistorySnapshot(logCommits, true, page.hasMore);
   }
@@ -177,7 +180,9 @@ export async function pushWorkspaceGitBranch(workspaceRoot: string): Promise<voi
     await pushGitBranchInternal(workspaceRoot);
   } catch (error) {
     const message = error instanceof Error ? error.message : String(error);
-    throw new Error(message.replace(/^git push .* failed: /u, i18n.t('error.gitPushFailed')));
+    throw new Error(message.replace(/^git push .* failed: /u, i18n.t("error.gitPushFailed")), {
+      cause: error,
+    });
   }
 }
 
@@ -189,7 +194,9 @@ export async function mergeWorktreeBranchToMain(
     await mergeSpiritBranchToMainInternal(primaryRepoRoot, branchName);
   } catch (error) {
     const message = error instanceof Error ? error.message : String(error);
-    throw new Error(message.replace(/^git merge .* failed: /u, i18n.t('error.gitMergeFailed')));
+    throw new Error(message.replace(/^git merge .* failed: /u, i18n.t("error.gitMergeFailed")), {
+      cause: error,
+    });
   }
 }
 
@@ -206,12 +213,17 @@ export async function checkoutWorkspaceGitBranch(
     await checkoutGitBranchInternal(workspaceRoot, branch, options);
   } catch (error) {
     if (isGitCheckoutBlockedError(error)) {
-      const blocked = new Error(i18n.t('error.uncommittedChangesBlockCheckout')) as Error & { code: string };
-      blocked.code = 'GIT_CHECKOUT_LOCAL_CHANGES';
+      const blocked = new Error(i18n.t("error.uncommittedChangesBlockCheckout")) as Error & {
+        code: string;
+      };
+      blocked.code = "GIT_CHECKOUT_LOCAL_CHANGES";
       throw blocked;
     }
     const message = error instanceof Error ? error.message : String(error);
-    throw new Error(message.replace(/^git checkout .* failed: /u, i18n.t('error.gitCheckoutFailed')));
+    throw new Error(
+      message.replace(/^git checkout .* failed: /u, i18n.t("error.gitCheckoutFailed")),
+      { cause: error },
+    );
   }
   return readWorkspaceGitSnapshot(workspaceRoot);
 }
@@ -222,11 +234,11 @@ export async function commitWorkspaceChanges(
 ): Promise<void> {
   // 单个 -m 传完整 message：逐行 -m 会让 git 在每段之间插空行，
   // 破坏多行 body（如 subject + 列表 body）的原始格式。
-  const normalized = message.replace(/\r\n/g, '\n').trim();
+  const normalized = message.replace(/\r\n/g, "\n").trim();
   if (!normalized) {
-    throw new Error(i18n.t('error.commitMessageRequired'));
+    throw new Error(i18n.t("error.commitMessageRequired"));
   }
 
-  await runGit(workspaceRoot, ['add', '-A']);
-  await runGit(workspaceRoot, ['commit', '-m', normalized]);
+  await runGit(workspaceRoot, ["add", "-A"]);
+  await runGit(workspaceRoot, ["commit", "-m", normalized]);
 }

@@ -25,7 +25,9 @@ export function TabSettingsPanel({
             <Checkbox
               id="settings-editor-tab-completion"
               checked={settings.codeCompletionEnabled}
-              onCheckedChange={(value) => void onSavePatch({ codeCompletionEnabled: value === true })}
+              onCheckedChange={(value) =>
+                void onSavePatch({ codeCompletionEnabled: value === true })
+              }
               className="size-5"
             />
           </div>

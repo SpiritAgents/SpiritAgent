@@ -1,4 +1,4 @@
-import type { LlmTokenUsage } from './ports.js';
+import type { LlmTokenUsage } from "./ports.js";
 
 type MaybePromise<T> = T | PromiseLike<T>;
 
@@ -9,7 +9,7 @@ export interface AiSdkUsageSource {
 }
 
 function readNonNegativeInt(value: unknown): number | undefined {
-  if (typeof value !== 'number' || !Number.isFinite(value) || value < 0) {
+  if (typeof value !== "number" || !Number.isFinite(value) || value < 0) {
     return undefined;
   }
   return Math.trunc(value);
@@ -17,36 +17,36 @@ function readNonNegativeInt(value: unknown): number | undefined {
 
 function readNestedTokenDetail(
   record: Record<string, unknown>,
-  detailsKey: 'inputTokenDetails' | 'outputTokenDetails',
+  detailsKey: "inputTokenDetails" | "outputTokenDetails",
   field: string,
 ): number | undefined {
   const details = record[detailsKey];
-  if (typeof details !== 'object' || details === null) {
+  if (typeof details !== "object" || details === null) {
     return undefined;
   }
   return readNonNegativeInt((details as Record<string, unknown>)[field]);
 }
 
 function normalizeLanguageModelUsage(value: unknown): LlmTokenUsage | undefined {
-  if (typeof value !== 'object' || value === null) {
+  if (typeof value !== "object" || value === null) {
     return undefined;
   }
 
   const record = value as Record<string, unknown>;
   const inputTokens =
-    readNonNegativeInt(record.inputTokens)
-    ?? readNonNegativeInt(record.input_tokens)
-    ?? readNonNegativeInt(record.promptTokens)
-    ?? readNonNegativeInt(record.prompt_tokens);
+    readNonNegativeInt(record.inputTokens) ??
+    readNonNegativeInt(record.input_tokens) ??
+    readNonNegativeInt(record.promptTokens) ??
+    readNonNegativeInt(record.prompt_tokens);
   const outputTokens =
-    readNonNegativeInt(record.outputTokens)
-    ?? readNonNegativeInt(record.output_tokens)
-    ?? readNonNegativeInt(record.completionTokens)
-    ?? readNonNegativeInt(record.completion_tokens);
+    readNonNegativeInt(record.outputTokens) ??
+    readNonNegativeInt(record.output_tokens) ??
+    readNonNegativeInt(record.completionTokens) ??
+    readNonNegativeInt(record.completion_tokens);
   const totalTokens =
-    readNonNegativeInt(record.totalTokens)
-    ?? readNonNegativeInt(record.total_tokens)
-    ?? (inputTokens !== undefined && outputTokens !== undefined
+    readNonNegativeInt(record.totalTokens) ??
+    readNonNegativeInt(record.total_tokens) ??
+    (inputTokens !== undefined && outputTokens !== undefined
       ? inputTokens + outputTokens
       : undefined);
 
@@ -61,17 +61,17 @@ function normalizeLanguageModelUsage(value: unknown): LlmTokenUsage | undefined 
   };
 
   const reasoningTokens =
-    readNestedTokenDetail(record, 'outputTokenDetails', 'reasoningTokens')
-    ?? readNonNegativeInt(record.reasoningTokens)
-    ?? readNonNegativeInt(record.reasoning_tokens);
+    readNestedTokenDetail(record, "outputTokenDetails", "reasoningTokens") ??
+    readNonNegativeInt(record.reasoningTokens) ??
+    readNonNegativeInt(record.reasoning_tokens);
   if (reasoningTokens !== undefined) {
     usage.reasoningTokens = reasoningTokens;
   }
 
   const cachedInputTokens =
-    readNestedTokenDetail(record, 'inputTokenDetails', 'cacheReadTokens')
-    ?? readNonNegativeInt(record.cachedInputTokens)
-    ?? readNonNegativeInt(record.cached_input_tokens);
+    readNestedTokenDetail(record, "inputTokenDetails", "cacheReadTokens") ??
+    readNonNegativeInt(record.cachedInputTokens) ??
+    readNonNegativeInt(record.cached_input_tokens);
   if (cachedInputTokens !== undefined) {
     usage.cachedInputTokens = cachedInputTokens;
   }

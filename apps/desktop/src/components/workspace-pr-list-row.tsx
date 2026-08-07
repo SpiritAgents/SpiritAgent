@@ -60,7 +60,9 @@ export function WorkspacePrListRow({ item, onSelect }: WorkspacePrListRowProps) 
               alt=""
               className="size-3 shrink-0 rounded-full bg-muted object-cover"
             />
-            <span className="truncate text-xs font-normal text-foreground/80">{item.authorLogin}</span>
+            <span className="truncate text-xs font-normal text-foreground/80">
+              {item.authorLogin}
+            </span>
           </span>
           <span className="shrink-0 text-[11px] text-muted-foreground/75 dark:text-muted-foreground/65">
             #{item.number}
@@ -71,9 +73,7 @@ export function WorkspacePrListRow({ item, onSelect }: WorkspacePrListRowProps) 
           >
             {formatRelativeTime(updatedAt, i18n.language)}
           </time>
-          {item.taskListProgress ? (
-            <PrTestPlanProgress progress={item.taskListProgress} />
-          ) : null}
+          {item.taskListProgress ? <PrTestPlanProgress progress={item.taskListProgress} /> : null}
         </div>
       </div>
     </div>

@@ -1,16 +1,16 @@
-import assert from 'node:assert/strict';
-import path from 'node:path';
-import { test } from 'node:test';
+import assert from "node:assert/strict";
+import path from "node:path";
+import { test } from "node:test";
 
-import { openSessionCommand } from '../../dist-electron/src/host/session-activation.js';
-import { splitPaneSessionPath } from '../../dist-electron/src/host/storage.js';
+import { openSessionCommand } from "../../dist-electron/src/host/session-activation.js";
+import { splitPaneSessionPath } from "../../dist-electron/src/host/storage.js";
 
 function createOpenSessionContext(overrides = {}) {
-  const splitPath = splitPaneSessionPath('pane-a');
+  const splitPath = splitPaneSessionPath("pane-a");
   const bundle = {
     id: splitPath,
-    workspaceRoot: 'D:\\SpiritAgent',
-    activeSession: { filePath: splitPath, displayName: 'New session', kind: 'provisional' },
+    workspaceRoot: "D:\\SpiritAgent",
+    activeSession: { filePath: splitPath, displayName: "New session", kind: "provisional" },
     messageTimeline: { toMessages: () => [] },
     messages: [],
   };
@@ -43,8 +43,8 @@ function createOpenSessionContext(overrides = {}) {
     flushDeferredRuntimeRefreshIfIdle: async () => {},
     syncActiveRuntimePointer: () => {},
     requireState: () => ({
-      config: { activeModel: 'test-model', models: [{ name: 'test-model' }] },
-      workspaceRoot: 'D:\\SpiritAgent',
+      config: { activeModel: "test-model", models: [{ name: "test-model" }] },
+      workspaceRoot: "D:\\SpiritAgent",
     }),
     ...overrides,
   };
@@ -57,14 +57,14 @@ function createOpenSessionContext(overrides = {}) {
   };
 }
 
-test('openSessionCommand creates split provisional bundle when path is not on disk', async () => {
+test("openSessionCommand creates split provisional bundle when path is not on disk", async () => {
   const { splitPath, ctx, registry } = createOpenSessionContext();
   registry.findBySessionPath = () => undefined;
-  registry.beginSplitPaneSession = (workspaceRoot, paneId) => {
+  registry.beginSplitPaneSession = (workspaceRoot, _paneId) => {
     const bundle = {
       id: splitPath,
       workspaceRoot,
-      activeSession: { filePath: splitPath, displayName: 'New session', kind: 'provisional' },
+      activeSession: { filePath: splitPath, displayName: "New session", kind: "provisional" },
       messageTimeline: { toMessages: () => [] },
       messages: [],
     };
@@ -79,7 +79,7 @@ test('openSessionCommand creates split provisional bundle when path is not on di
   assert.deepEqual(snapshot, { ok: true });
 });
 
-test('openSessionCommand activates in-memory split provisional sessions without reading disk', async () => {
+test("openSessionCommand activates in-memory split provisional sessions without reading disk", async () => {
   const { splitPath, bundle, ctx, registry } = createOpenSessionContext();
 
   const snapshot = await openSessionCommand(ctx, splitPath);

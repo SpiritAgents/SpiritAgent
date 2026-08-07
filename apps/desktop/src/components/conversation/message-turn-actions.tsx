@@ -46,8 +46,7 @@ export function MessageTurnActions({
 }) {
   const { t } = useTranslation();
 
-  const forkMenuHidden =
-    !forkMenuAlwaysVisible && !forkMenuHoverRevealed;
+  const forkMenuHidden = !forkMenuAlwaysVisible && !forkMenuHoverRevealed;
 
   if (!showContinueButton && !canShowActionsMenu) {
     return null;

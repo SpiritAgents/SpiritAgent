@@ -15,10 +15,7 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { useHostApi } from "@/hooks/useHostApi";
 import { clickableToolCardTriggerClass } from "@/lib/file-tool-lsp-diagnostics-display";
 import { cn } from "@/lib/utils";
-import type {
-  WorkspaceCapabilityTrustDecision,
-  WorkspaceCapabilityTrustRequest,
-} from "@/types";
+import type { WorkspaceCapabilityTrustDecision, WorkspaceCapabilityTrustRequest } from "@/types";
 
 export type WorkspaceCapabilityTrustDialogProps = {
   pending: WorkspaceCapabilityTrustRequest | undefined;
@@ -124,12 +121,7 @@ export function WorkspaceCapabilityTrustDialog({
               <ShieldCheck data-icon="inline-start" />
               {t("workspaceTrust.alwaysTrust")}
             </Button>
-            <Button
-              type="button"
-              size="sm"
-              disabled={busy}
-              onClick={() => onReply("allowOnce")}
-            >
+            <Button type="button" size="sm" disabled={busy} onClick={() => onReply("allowOnce")}>
               <Check data-icon="inline-start" />
               {t("workspaceTrust.allowOnce")}
             </Button>

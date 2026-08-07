@@ -1,7 +1,14 @@
 import type { BrowserElementAttachment } from "./browser-element-attachment.js";
-import { browserElementContextText, scanBrowserElementWireBlocks } from "./browser-element-wire-text.js";
+import {
+  browserElementContextText,
+  scanBrowserElementWireBlocks,
+} from "./browser-element-wire-text.js";
 import type { PrDiffAttachment } from "./pr-diff-attachment.js";
-import { parsePrDiffWireMeta, prDiffContextText, scanPrDiffWireBlocks } from "./pr-diff-wire-text.js";
+import {
+  parsePrDiffWireMeta,
+  prDiffContextText,
+  scanPrDiffWireBlocks,
+} from "./pr-diff-wire-text.js";
 import type { GitCommitAttachment } from "./git-commit-attachment.js";
 import {
   deriveGitCommitSubject,
@@ -21,7 +28,10 @@ import {
   terminalSnippetContextText,
 } from "./terminal-snippet-wire-text.js";
 import { scanSkillWireBlocks, skillContextText } from "./skill-wire-text.js";
-import { scanWorkspaceFileWireBlocks, workspaceFileContextText } from "./workspace-file-wire-text.js";
+import {
+  scanWorkspaceFileWireBlocks,
+  workspaceFileContextText,
+} from "./workspace-file-wire-text.js";
 
 export { browserElementContextText };
 export { fileSnippetContextText };
@@ -99,15 +109,17 @@ export function mergeAdjacentTextSegments(segs: RichSegment[]): RichSegment[] {
 }
 
 export function segmentsToPlainText(segs: RichSegment[]): string {
-  return segs.map((s) => {
-    if (s.kind === "text") {
-      return s.value;
-    }
-    if (s.kind === "workspaceFile") {
-      return workspaceFilePlainToken(s.path);
-    }
-    return "";
-  }).join("");
+  return segs
+    .map((s) => {
+      if (s.kind === "text") {
+        return s.value;
+      }
+      if (s.kind === "workspaceFile") {
+        return workspaceFilePlainToken(s.path);
+      }
+      return "";
+    })
+    .join("");
 }
 
 /** True when composer has no user-visible text (incl. lone `<br>` newlines, not intentional line breaks). */
@@ -139,12 +151,12 @@ export function hasSkillSegment(segs: RichSegment[]): boolean {
 export function hasInlineAttachmentChipSegments(segs: RichSegment[]): boolean {
   return segs.some(
     (segment) =>
-      segment.kind === "element"
-      || segment.kind === "prDiff"
-      || segment.kind === "gitCommit"
-      || segment.kind === "terminalSnippet"
-      || segment.kind === "fileSnippet"
-      || segment.kind === "workspaceFile",
+      segment.kind === "element" ||
+      segment.kind === "prDiff" ||
+      segment.kind === "gitCommit" ||
+      segment.kind === "terminalSnippet" ||
+      segment.kind === "fileSnippet" ||
+      segment.kind === "workspaceFile",
   );
 }
 
@@ -262,15 +274,39 @@ export function messageSegmentSeparator(prev: RichSegment, next: RichSegment): s
   }
 
   if (
-    (prev.kind === "terminalSnippet" && (next.kind === "element" || next.kind === "prDiff" || next.kind === "fileSnippet" || next.kind === "gitCommit"))
-    || (next.kind === "terminalSnippet" && (prev.kind === "element" || prev.kind === "prDiff" || prev.kind === "fileSnippet" || prev.kind === "gitCommit"))
-    || (prev.kind === "terminalSnippet" && next.kind === "terminalSnippet")
-    || (prev.kind === "fileSnippet" && (next.kind === "element" || next.kind === "prDiff" || next.kind === "terminalSnippet" || next.kind === "gitCommit"))
-    || (next.kind === "fileSnippet" && (prev.kind === "element" || prev.kind === "prDiff" || prev.kind === "terminalSnippet" || prev.kind === "gitCommit"))
-    || (prev.kind === "fileSnippet" && next.kind === "fileSnippet")
-    || (prev.kind === "gitCommit" && (next.kind === "element" || next.kind === "prDiff" || next.kind === "terminalSnippet" || next.kind === "fileSnippet"))
-    || (next.kind === "gitCommit" && (prev.kind === "element" || prev.kind === "prDiff" || prev.kind === "terminalSnippet" || prev.kind === "fileSnippet"))
-    || (prev.kind === "gitCommit" && next.kind === "gitCommit")
+    (prev.kind === "terminalSnippet" &&
+      (next.kind === "element" ||
+        next.kind === "prDiff" ||
+        next.kind === "fileSnippet" ||
+        next.kind === "gitCommit")) ||
+    (next.kind === "terminalSnippet" &&
+      (prev.kind === "element" ||
+        prev.kind === "prDiff" ||
+        prev.kind === "fileSnippet" ||
+        prev.kind === "gitCommit")) ||
+    (prev.kind === "terminalSnippet" && next.kind === "terminalSnippet") ||
+    (prev.kind === "fileSnippet" &&
+      (next.kind === "element" ||
+        next.kind === "prDiff" ||
+        next.kind === "terminalSnippet" ||
+        next.kind === "gitCommit")) ||
+    (next.kind === "fileSnippet" &&
+      (prev.kind === "element" ||
+        prev.kind === "prDiff" ||
+        prev.kind === "terminalSnippet" ||
+        prev.kind === "gitCommit")) ||
+    (prev.kind === "fileSnippet" && next.kind === "fileSnippet") ||
+    (prev.kind === "gitCommit" &&
+      (next.kind === "element" ||
+        next.kind === "prDiff" ||
+        next.kind === "terminalSnippet" ||
+        next.kind === "fileSnippet")) ||
+    (next.kind === "gitCommit" &&
+      (prev.kind === "element" ||
+        prev.kind === "prDiff" ||
+        prev.kind === "terminalSnippet" ||
+        prev.kind === "fileSnippet")) ||
+    (prev.kind === "gitCommit" && next.kind === "gitCommit")
   ) {
     return "\n";
   }
@@ -308,10 +344,38 @@ export function messageSegmentSeparator(prev: RichSegment, next: RichSegment): s
   }
 
   if (
-    (prev.kind === "workspaceFile" && (next.kind === "workspaceFile" || next.kind === "skill" || next.kind === "element" || next.kind === "prDiff" || next.kind === "terminalSnippet" || next.kind === "fileSnippet" || next.kind === "gitCommit"))
-    || (next.kind === "workspaceFile" && (prev.kind === "workspaceFile" || prev.kind === "skill" || prev.kind === "element" || prev.kind === "prDiff" || prev.kind === "terminalSnippet" || prev.kind === "fileSnippet" || prev.kind === "gitCommit"))
-    || (prev.kind === "skill" && (next.kind === "workspaceFile" || next.kind === "skill" || next.kind === "element" || next.kind === "prDiff" || next.kind === "terminalSnippet" || next.kind === "fileSnippet" || next.kind === "gitCommit"))
-    || (next.kind === "skill" && (prev.kind === "workspaceFile" || prev.kind === "skill" || prev.kind === "element" || prev.kind === "prDiff" || prev.kind === "terminalSnippet" || prev.kind === "fileSnippet" || prev.kind === "gitCommit"))
+    (prev.kind === "workspaceFile" &&
+      (next.kind === "workspaceFile" ||
+        next.kind === "skill" ||
+        next.kind === "element" ||
+        next.kind === "prDiff" ||
+        next.kind === "terminalSnippet" ||
+        next.kind === "fileSnippet" ||
+        next.kind === "gitCommit")) ||
+    (next.kind === "workspaceFile" &&
+      (prev.kind === "workspaceFile" ||
+        prev.kind === "skill" ||
+        prev.kind === "element" ||
+        prev.kind === "prDiff" ||
+        prev.kind === "terminalSnippet" ||
+        prev.kind === "fileSnippet" ||
+        prev.kind === "gitCommit")) ||
+    (prev.kind === "skill" &&
+      (next.kind === "workspaceFile" ||
+        next.kind === "skill" ||
+        next.kind === "element" ||
+        next.kind === "prDiff" ||
+        next.kind === "terminalSnippet" ||
+        next.kind === "fileSnippet" ||
+        next.kind === "gitCommit")) ||
+    (next.kind === "skill" &&
+      (prev.kind === "workspaceFile" ||
+        prev.kind === "skill" ||
+        prev.kind === "element" ||
+        prev.kind === "prDiff" ||
+        prev.kind === "terminalSnippet" ||
+        prev.kind === "fileSnippet" ||
+        prev.kind === "gitCommit"))
   ) {
     return "\n";
   }
@@ -338,10 +402,10 @@ export function segmentsToMessageText(segs: RichSegment[]): string {
               : seg.kind === "gitCommit"
                 ? gitCommitContextText(seg.attachment)
                 : seg.kind === "terminalSnippet"
-                ? terminalSnippetContextText(seg.attachment)
-                : seg.kind === "fileSnippet"
-                  ? fileSnippetContextText(seg.attachment)
-                  : browserElementContextText(seg.attachment);
+                  ? terminalSnippetContextText(seg.attachment)
+                  : seg.kind === "fileSnippet"
+                    ? fileSnippetContextText(seg.attachment)
+                    : browserElementContextText(seg.attachment);
     if (seg.kind === "text" && !piece) continue;
 
     if (!out) {
@@ -414,15 +478,14 @@ export function segmentsEqual(a: RichSegment[], b: RichSegment[]): boolean {
   });
 }
 
-function pinAgentModeChipFromSegments(
-  body: RichSegment[],
-  segs: RichSegment[],
-): RichSegment[] {
+function pinAgentModeChipFromSegments(body: RichSegment[], segs: RichSegment[]): RichSegment[] {
   const modeChip = segs.find((s) => s.kind === "plan" || s.kind === "ask" || s.kind === "debug");
   if (modeChip?.kind !== "plan" && modeChip?.kind !== "ask" && modeChip?.kind !== "debug") {
     return body;
   }
-  const withoutMode = body.filter((s) => s.kind !== "plan" && s.kind !== "ask" && s.kind !== "debug");
+  const withoutMode = body.filter(
+    (s) => s.kind !== "plan" && s.kind !== "ask" && s.kind !== "debug",
+  );
   const loopPart = withoutMode.filter((s) => s.kind === "loop");
   const rest = withoutMode.filter((s) => s.kind !== "loop");
   return mergeAdjacentTextSegments([...loopPart, { kind: modeChip.kind }, ...rest]);
@@ -431,17 +494,28 @@ function pinAgentModeChipFromSegments(
 export function syncSegmentsFromExternalValue(segs: RichSegment[], value: string): RichSegment[] {
   const loopPinned = segs.some((s) => s.kind === "loop");
   const inlineChips = segs.filter(
-    (s): s is Extract<
+    (
+      s,
+    ): s is Extract<
       RichSegment,
-      { kind: "element" | "prDiff" | "gitCommit" | "terminalSnippet" | "fileSnippet" | "workspaceFile" | "skill" }
+      {
+        kind:
+          | "element"
+          | "prDiff"
+          | "gitCommit"
+          | "terminalSnippet"
+          | "fileSnippet"
+          | "workspaceFile"
+          | "skill";
+      }
     > =>
-      s.kind === "element"
-      || s.kind === "prDiff"
-      || s.kind === "gitCommit"
-      || s.kind === "terminalSnippet"
-      || s.kind === "fileSnippet"
-      || s.kind === "workspaceFile"
-      || s.kind === "skill",
+      s.kind === "element" ||
+      s.kind === "prDiff" ||
+      s.kind === "gitCommit" ||
+      s.kind === "terminalSnippet" ||
+      s.kind === "fileSnippet" ||
+      s.kind === "workspaceFile" ||
+      s.kind === "skill",
   );
 
   let body: RichSegment[];
@@ -454,13 +528,13 @@ export function syncSegmentsFromExternalValue(segs: RichSegment[], value: string
     let textApplied = false;
     for (const seg of segs) {
       if (
-        seg.kind === "element"
-        || seg.kind === "prDiff"
-        || seg.kind === "gitCommit"
-        || seg.kind === "terminalSnippet"
-        || seg.kind === "fileSnippet"
-        || seg.kind === "workspaceFile"
-        || seg.kind === "skill"
+        seg.kind === "element" ||
+        seg.kind === "prDiff" ||
+        seg.kind === "gitCommit" ||
+        seg.kind === "terminalSnippet" ||
+        seg.kind === "fileSnippet" ||
+        seg.kind === "workspaceFile" ||
+        seg.kind === "skill"
       ) {
         out.push(seg);
       } else if (seg.kind === "text" && !textApplied) {
@@ -474,9 +548,7 @@ export function syncSegmentsFromExternalValue(segs: RichSegment[], value: string
     body = mergeAdjacentTextSegments(out);
   }
 
-  let result = loopPinned
-    ? mergeAdjacentTextSegments([{ kind: "loop" }, ...body])
-    : body;
+  let result = loopPinned ? mergeAdjacentTextSegments([{ kind: "loop" }, ...body]) : body;
   return pinAgentModeChipFromSegments(result, segs);
 }
 
@@ -490,21 +562,29 @@ function textFollowingChipInsert(after: string): string {
   return after === "" ? " " : after;
 }
 
-function isInlineChipSegment(
-  seg: RichSegment | undefined,
-): seg is Extract<
+function isInlineChipSegment(seg: RichSegment | undefined): seg is Extract<
   RichSegment,
-  { kind: "element" | "prDiff" | "gitCommit" | "terminalSnippet" | "fileSnippet" | "workspaceFile" | "loop" | "skill" }
+  {
+    kind:
+      | "element"
+      | "prDiff"
+      | "gitCommit"
+      | "terminalSnippet"
+      | "fileSnippet"
+      | "workspaceFile"
+      | "loop"
+      | "skill";
+  }
 > {
   return (
-    seg?.kind === "element"
-    || seg?.kind === "prDiff"
-    || seg?.kind === "gitCommit"
-    || seg?.kind === "terminalSnippet"
-    || seg?.kind === "fileSnippet"
-    || seg?.kind === "workspaceFile"
-    || seg?.kind === "loop"
-    || seg?.kind === "skill"
+    seg?.kind === "element" ||
+    seg?.kind === "prDiff" ||
+    seg?.kind === "gitCommit" ||
+    seg?.kind === "terminalSnippet" ||
+    seg?.kind === "fileSnippet" ||
+    seg?.kind === "workspaceFile" ||
+    seg?.kind === "loop" ||
+    seg?.kind === "skill"
   );
 }
 
@@ -528,8 +608,7 @@ export function insertSegmentAtCaret(
       newSegment,
       {
         kind: "text" as const,
-        value:
-          isInlineChipSegment(newSegment) ? textFollowingChipInsert(after) : after,
+        value: isInlineChipSegment(newSegment) ? textFollowingChipInsert(after) : after,
       },
       ...merged.slice(index + 1),
     ];
@@ -599,8 +678,7 @@ export function insertSegmentAtCaret(
     }
   } else if (newSegment.kind === "terminalSnippet") {
     const terminalIndex = normalized.findIndex(
-      (s) =>
-        s.kind === "terminalSnippet" && s.attachment.id === newSegment.attachment.id,
+      (s) => s.kind === "terminalSnippet" && s.attachment.id === newSegment.attachment.id,
     );
     if (terminalIndex >= 0) {
       afterIndex = terminalIndex + 1;
@@ -611,8 +689,7 @@ export function insertSegmentAtCaret(
     }
   } else if (newSegment.kind === "fileSnippet") {
     const fileSnippetIndex = normalized.findIndex(
-      (s) =>
-        s.kind === "fileSnippet" && s.attachment.id === newSegment.attachment.id,
+      (s) => s.kind === "fileSnippet" && s.attachment.id === newSegment.attachment.id,
     );
     if (fileSnippetIndex >= 0) {
       afterIndex = fileSnippetIndex + 1;
@@ -814,7 +891,7 @@ export function caretAtEnd(segs: RichSegment[]): SegmentCaret {
 export type MessageContentPart =
   | { kind: "text"; value: string }
   | { kind: "element"; tagName: string; url: string; outerHtml: string }
-    | {
+  | {
       kind: "prDiff";
       prUrl: string;
       filename: string;
@@ -991,10 +1068,7 @@ export function parseMessageContentParts(content: string): MessageContentPart[] 
 }
 
 /** Rebuild composer segments from stored message content (e.g. message rewind). */
-export function messageContentToRichSegments(
-  content: string,
-  idPrefix: string,
-): RichSegment[] {
+export function messageContentToRichSegments(content: string, idPrefix: string): RichSegment[] {
   const parts = parseMessageContentParts(content);
   if (parts.length === 0) {
     return content ? [{ kind: "text", value: content }] : emptySegments();
@@ -1087,21 +1161,21 @@ export function messageContentToRichSegments(
 
     const display = trimMessageTextAroundElements(part.value, {
       afterElement:
-        prev?.kind === "element"
-        || prev?.kind === "prDiff"
-        || prev?.kind === "gitCommit"
-        || prev?.kind === "terminalSnippet"
-        || prev?.kind === "fileSnippet"
-        || prev?.kind === "workspaceFile"
-        || prev?.kind === "skill",
+        prev?.kind === "element" ||
+        prev?.kind === "prDiff" ||
+        prev?.kind === "gitCommit" ||
+        prev?.kind === "terminalSnippet" ||
+        prev?.kind === "fileSnippet" ||
+        prev?.kind === "workspaceFile" ||
+        prev?.kind === "skill",
       beforeElement:
-        next?.kind === "element"
-        || next?.kind === "prDiff"
-        || next?.kind === "gitCommit"
-        || next?.kind === "terminalSnippet"
-        || next?.kind === "fileSnippet"
-        || next?.kind === "workspaceFile"
-        || next?.kind === "skill",
+        next?.kind === "element" ||
+        next?.kind === "prDiff" ||
+        next?.kind === "gitCommit" ||
+        next?.kind === "terminalSnippet" ||
+        next?.kind === "fileSnippet" ||
+        next?.kind === "workspaceFile" ||
+        next?.kind === "skill",
     });
     if (display || segments.length === 0) {
       segments.push({ kind: "text", value: display });

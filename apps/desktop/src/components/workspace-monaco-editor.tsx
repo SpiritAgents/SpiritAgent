@@ -1,11 +1,4 @@
-import {
-  forwardRef,
-  useCallback,
-  useEffect,
-  useImperativeHandle,
-  useRef,
-  useState,
-} from "react";
+import { forwardRef, useCallback, useEffect, useImperativeHandle, useRef, useState } from "react";
 
 import * as monaco from "monaco-editor";
 import "monaco-editor/min/vs/editor/editor.main.css";
@@ -15,10 +8,7 @@ import type { EditorFileRevealLocation } from "@/lib/workspace-editor-navigation
 import { ensureMonacoWorkers } from "@/lib/monaco-environment";
 import { ensureMonacoShikiReady, isMonacoShikiReady } from "@/lib/monaco-shiki";
 import { monacoLanguageId } from "@/lib/monaco-language";
-import {
-  applySpiritMonacoEditorTheme,
-  syncMonacoThemeFromDocument,
-} from "@/lib/monaco-theme";
+import { applySpiritMonacoEditorTheme, syncMonacoThemeFromDocument } from "@/lib/monaco-theme";
 import { useMonacoCodeCompletion } from "@/hooks/use-monaco-code-completion";
 
 export type WorkspaceMonacoEditorHandle = {
@@ -70,7 +60,9 @@ export const WorkspaceMonacoEditor = forwardRef<
 ) {
   const containerRef = useRef<HTMLDivElement>(null);
   const editorRef = useRef<monaco.editor.IStandaloneCodeEditor | null>(null);
-  const [activeEditor, setActiveEditor] = useState<monaco.editor.IStandaloneCodeEditor | null>(null);
+  const [activeEditor, setActiveEditor] = useState<monaco.editor.IStandaloneCodeEditor | null>(
+    null,
+  );
   const baselineRef = useRef(baselineText ?? initialText);
   const onSaveRef = useRef(onSave);
   const onDirtyChangeRef = useRef(onDirtyChange);

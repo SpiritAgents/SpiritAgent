@@ -1,4 +1,4 @@
-import { BrowserWindow } from 'electron';
+import { BrowserWindow } from "electron";
 
 export type SpiritProtocolActionDeps = {
   focusWindows: () => void;
@@ -21,7 +21,7 @@ function broadcastNewSessionToRenderers(): boolean {
     if (window.webContents.isLoading()) {
       continue;
     }
-    window.webContents.send('desktop:new-session');
+    window.webContents.send("desktop:new-session");
     sent = true;
   }
   return sent;
@@ -40,7 +40,7 @@ export async function handleSpiritOpenSessionRequest(sessionPath: string): Promi
   try {
     await deps?.openSession(sessionPath);
   } catch (error) {
-    console.error('[spirit-desktop] open-session protocol failed:', error);
+    console.error("[spirit-desktop] open-session protocol failed:", error);
   }
 }
 

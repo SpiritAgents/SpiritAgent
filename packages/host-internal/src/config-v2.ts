@@ -1,4 +1,4 @@
-import type { ModelProviderId } from './model-provider-presets.js';
+import type { ModelProviderId } from "./model-provider-presets.js";
 
 export const SPIRIT_CONFIG_SCHEMA_VERSION = 2 as const;
 
@@ -10,34 +10,34 @@ export interface ModelRef {
 }
 
 export type SpiritModelCapabilityV2 =
-  | 'chat'
-  | 'image'
-  | 'video'
-  | 'imageGeneration'
-  | 'videoGeneration';
+  | "chat"
+  | "image"
+  | "video"
+  | "imageGeneration"
+  | "videoGeneration";
 
-export type SpiritModelReasoningModeV2 = 'standard' | 'pro';
+export type SpiritModelReasoningModeV2 = "standard" | "pro";
 
 export type SpiritModelReasoningEffortV2 =
-  | 'none'
-  | 'minimal'
-  | 'low'
-  | 'medium'
-  | 'high'
-  | 'xhigh'
-  | 'max';
+  | "none"
+  | "minimal"
+  | "low"
+  | "medium"
+  | "high"
+  | "xhigh"
+  | "max";
 
 export type SpiritTransportKindV2 =
-  | 'openai-compatible'
-  | 'open-responses'
-  | 'anthropic'
-  | 'bedrock';
+  | "openai-compatible"
+  | "open-responses"
+  | "anthropic"
+  | "bedrock";
 
-export type SpiritAlibabaBillingModeV2 = 'token-plan';
+export type SpiritAlibabaBillingModeV2 = "token-plan";
 
-export type SpiritStepfunBillingModeV2 = 'step-plan';
+export type SpiritStepfunBillingModeV2 = "step-plan";
 
-export type SpiritGlmCodingPlanBillingModeV2 = 'glm-coding-plan';
+export type SpiritGlmCodingPlanBillingModeV2 = "glm-coding-plan";
 
 export interface ModelEntryV2 {
   name: string;
@@ -47,7 +47,7 @@ export interface ModelEntryV2 {
   supportedReasoningEfforts?: SpiritModelReasoningEffortV2[];
   capabilities?: SpiritModelCapabilityV2[];
   contextLength?: number;
-  supportsThinkingType?: 'only';
+  supportsThinkingType?: "only";
   supportsThinkingSwitch?: boolean;
 }
 
@@ -84,12 +84,12 @@ export interface SpiritConfigV2Core {
 export class SpiritConfigSchemaError extends Error {
   constructor(message: string) {
     super(message);
-    this.name = 'SpiritConfigSchemaError';
+    this.name = "SpiritConfigSchemaError";
   }
 }
 
 export function emptyModelRef(): ModelRef {
-  return { groupId: '', name: '' };
+  return { groupId: "", name: "" };
 }
 
 export function modelRefKey(ref: ModelRef): string {
@@ -109,7 +109,7 @@ export function isEmptyModelRef(ref: ModelRef | undefined): boolean {
 
 export function assertSpiritConfigSchemaVersion(raw: unknown): void {
   const version =
-    typeof raw === 'object' && raw !== null && 'schemaVersion' in raw
+    typeof raw === "object" && raw !== null && "schemaVersion" in raw
       ? (raw as { schemaVersion?: unknown }).schemaVersion
       : undefined;
   if (version !== SPIRIT_CONFIG_SCHEMA_VERSION) {
@@ -120,15 +120,12 @@ export function assertSpiritConfigSchemaVersion(raw: unknown): void {
 }
 
 export function parseModelRef(value: unknown): ModelRef | undefined {
-  if (typeof value !== 'object' || value === null) {
+  if (typeof value !== "object" || value === null) {
     return undefined;
   }
-  const groupId = typeof (value as ModelRef).groupId === 'string'
-    ? (value as ModelRef).groupId.trim()
-    : '';
-  const name = typeof (value as ModelRef).name === 'string'
-    ? (value as ModelRef).name.trim()
-    : '';
+  const groupId =
+    typeof (value as ModelRef).groupId === "string" ? (value as ModelRef).groupId.trim() : "";
+  const name = typeof (value as ModelRef).name === "string" ? (value as ModelRef).name.trim() : "";
   if (!groupId || !name) {
     return undefined;
   }
@@ -138,10 +135,10 @@ export function parseModelRef(value: unknown): ModelRef | undefined {
 export function slugifyProviderGroupLabel(label: string): string {
   const trimmed = label.trim().toLowerCase();
   const slug = trimmed
-    .replace(/[^a-z0-9]+/g, '-')
-    .replace(/^-+|-+$/g, '')
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-+|-+$/g, "")
     .slice(0, 64);
-  return slug || 'custom-group';
+  return slug || "custom-group";
 }
 
 export function findProviderGroup(

@@ -1,19 +1,17 @@
-import { createHash, randomBytes, randomInt, timingSafeEqual } from 'node:crypto';
-import { readFile, stat } from 'node:fs/promises';
+import { createHash, randomBytes, randomInt, timingSafeEqual } from "node:crypto";
+import { readFile, stat } from "node:fs/promises";
+import { createServer, type IncomingMessage, type Server, type ServerResponse } from "node:http";
+import { isIP } from "node:net";
+import path from "node:path";
+
 import {
-  createServer,
-  type IncomingMessage,
-  type Server,
-  type ServerResponse,
-} from 'node:http';
-import { isIP } from 'node:net';
-import path from 'node:path';
+  parseModelProviderId,
+  parsePresetModelProviderId,
+} from "@spiritagent/host-internal/model-provider-presets";
 
-import { parseModelProviderId, parsePresetModelProviderId } from '@spiritagent/host-internal/model-provider-presets';
+import type { HostCommandName } from "../src/host/contracts.js";
 
-import type { HostCommandName } from '../src/host/contracts.js';
-
-export const DEFAULT_DESKTOP_WEB_HOST = '127.0.0.1';
+export const DEFAULT_DESKTOP_WEB_HOST = "127.0.0.1";
 export const DEFAULT_DESKTOP_WEB_PORT = 7788;
 
 export type DesktopHostCommandInvoker = (
@@ -27,9 +25,7 @@ export type DesktopHostCommandResultHandler = (
   result: unknown,
 ) => void | Promise<void>;
 
-export type DesktopHostUpdateSubscriber = (
-  listener: (snapshot: unknown) => void,
-) => () => void;
+export type DesktopHostUpdateSubscriber = (listener: (snapshot: unknown) => void) => () => void;
 
 export interface DesktopHttpHostState {
   host: string;
@@ -60,7 +56,7 @@ export interface DesktopHttpHostOptions {
   subscribeHostUpdates?: DesktopHostUpdateSubscriber;
   auth?: DesktopHttpAuthOptions;
   static?: DesktopHttpStaticOptions;
-  logger?: Pick<Console, 'error' | 'log'>;
+  logger?: Pick<Console, "error" | "log">;
 }
 
 export interface DesktopHttpHost {
@@ -106,16 +102,16 @@ export function createDesktopHttpHost(options: DesktopHttpHostOptions): DesktopH
       try {
         await new Promise<void>((resolve, reject) => {
           const handleError = (error: Error) => {
-            nextServer.off('listening', handleListening);
+            nextServer.off("listening", handleListening);
             reject(error);
           };
           const handleListening = () => {
-            nextServer.off('error', handleError);
+            nextServer.off("error", handleError);
             resolve();
           };
 
-          nextServer.once('error', handleError);
-          nextServer.once('listening', handleListening);
+          nextServer.once("error", handleError);
+          nextServer.once("listening", handleListening);
           nextServer.listen(options.port, options.host);
         });
 
@@ -192,7 +188,7 @@ export function createDesktopHttpRequestHandler({
     const runHostCommand = async (command: HostCommandName, payload?: unknown) => {
       const result = await invokeHostCommand(command, payload);
       if (onHostCommandResult) {
-        response.once('finish', () => {
+        response.once("finish", () => {
           void onHostCommandResult(command, payload, result);
         });
       }
@@ -201,20 +197,20 @@ export function createDesktopHttpRequestHandler({
 
     try {
       if (!request.url) {
-        writeJson(request, response, 400, { error: '缺少请求路径' });
+        writeJson(request, response, 400, { error: "缺少请求路径" });
         return;
       }
 
-      const { pathname } = new URL(request.url, 'http://localhost');
+      const { pathname } = new URL(request.url, "http://localhost");
 
-      if (pathname.startsWith('/api/') && !isAllowedRequestHostHeader(request.headers.host, host)) {
-        writeJson(request, response, 403, { error: 'Host header is not allowed.' });
+      if (pathname.startsWith("/api/") && !isAllowedRequestHostHeader(request.headers.host, host)) {
+        writeJson(request, response, 403, { error: "Host header is not allowed." });
         return;
       }
 
-      if (request.method === 'OPTIONS') {
+      if (request.method === "OPTIONS") {
         if (!writeCors(request, response)) {
-          writeJson(request, response, 403, { error: 'CORS origin is not allowed.' });
+          writeJson(request, response, 403, { error: "CORS origin is not allowed." });
           return;
         }
         response.writeHead(204);
@@ -222,7 +218,7 @@ export function createDesktopHttpRequestHandler({
         return;
       }
 
-      if (pathname.startsWith('/api/')) {
+      if (pathname.startsWith("/api/")) {
         await handleApiRequest({
           request,
           response,
@@ -256,7 +252,7 @@ export function createDesktopHttpRequestHandler({
 
 export function resolveDesktopWebHostFromEnv(): { host: string; port: number } {
   const host = process.env.SPIRIT_WEB_HOST?.trim() || DEFAULT_DESKTOP_WEB_HOST;
-  const parsedPort = Number.parseInt(process.env.SPIRIT_WEB_PORT ?? '', 10);
+  const parsedPort = Number.parseInt(process.env.SPIRIT_WEB_PORT ?? "", 10);
   const port = Number.isFinite(parsedPort) ? parsedPort : DEFAULT_DESKTOP_WEB_PORT;
   return { host, port };
 }
@@ -266,11 +262,11 @@ export function createDesktopWebPairingCode(): string {
 }
 
 export function createDesktopWebAuthToken(): string {
-  return randomBytes(32).toString('base64url');
+  return randomBytes(32).toString("base64url");
 }
 
 export function hashDesktopWebAuthToken(token: string): string {
-  return createHash('sha256').update(token, 'utf8').digest('hex');
+  return createHash("sha256").update(token, "utf8").digest("hex");
 }
 
 async function handleApiRequest({
@@ -292,15 +288,15 @@ async function handleApiRequest({
   onPairingFailure: () => void;
   isPairingLocked: () => boolean;
 }): Promise<void> {
-  if (request.method === 'GET' && pathname === '/api/pairing/status') {
+  if (request.method === "GET" && pathname === "/api/pairing/status") {
     writeJson(request, response, 200, {
-      authMode: 'pairing',
+      authMode: "pairing",
       paired: Boolean(auth?.getTokenHash()),
     });
     return;
   }
 
-  if (request.method === 'POST' && pathname === '/api/pairing') {
+  if (request.method === "POST" && pathname === "/api/pairing") {
     if (!auth) {
       writeJson(request, response, 404, { error: `Unknown route: ${request.method} ${pathname}` });
       return;
@@ -308,21 +304,21 @@ async function handleApiRequest({
 
     if (isPairingLocked()) {
       writeJson(request, response, 429, {
-        code: 'PAIRING_LOCKED',
-        error: '配对失败次数过多，请重启 Web Host 生成新的配对码。',
+        code: "PAIRING_LOCKED",
+        error: "配对失败次数过多，请重启 Web Host 生成新的配对码。",
       });
       return;
     }
 
     const body = await readJsonBody(request);
     const jsonBody = isJsonObject(body) ? body : undefined;
-    const code = typeof jsonBody?.code === 'string' ? jsonBody.code.trim() : '';
+    const code = typeof jsonBody?.code === "string" ? jsonBody.code.trim() : "";
     const expectedCode = auth.getPairingCode();
     if (!code || !expectedCode || !safePairingCodeEquals(code, expectedCode)) {
       onPairingFailure();
       writeJson(request, response, 401, {
-        code: 'PAIRING_FAILED',
-        error: '配对码不正确。',
+        code: "PAIRING_FAILED",
+        error: "配对码不正确。",
       });
       return;
     }
@@ -335,23 +331,23 @@ async function handleApiRequest({
 
   if (auth && !isAuthorizedRequest(request, auth.getTokenHash())) {
     writeJson(request, response, 401, {
-      code: 'PAIRING_REQUIRED',
-      error: '需要完成首次配对。',
+      code: "PAIRING_REQUIRED",
+      error: "需要完成首次配对。",
     });
     return;
   }
 
-  if (request.method === 'GET' && pathname === '/api/events') {
+  if (request.method === "GET" && pathname === "/api/events") {
     if (!subscribeHostUpdates) {
-      writeJson(request, response, 404, { error: 'Host updates are unavailable.' });
+      writeJson(request, response, 404, { error: "Host updates are unavailable." });
       return;
     }
     response.writeHead(200, {
-      'Content-Type': 'application/x-ndjson; charset=utf-8',
-      'Cache-Control': 'no-cache, no-transform',
-      Connection: 'keep-alive',
+      "Content-Type": "application/x-ndjson; charset=utf-8",
+      "Cache-Control": "no-cache, no-transform",
+      Connection: "keep-alive",
     });
-    response.write('\n');
+    response.write("\n");
     const unsubscribe = subscribeHostUpdates((snapshot) => {
       if (!response.destroyed) {
         response.write(`${JSON.stringify(snapshot)}\n`);
@@ -367,49 +363,54 @@ async function handleApiRequest({
         unsubscribe();
         resolve();
       };
-      response.once('close', close);
-      request.once('aborted', close);
+      response.once("close", close);
+      request.once("aborted", close);
     });
     return;
   }
 
-  const body = request.method === 'GET' ? undefined : await readJsonBody(request);
+  const body = request.method === "GET" ? undefined : await readJsonBody(request);
   const jsonBody = isJsonObject(body) ? body : undefined;
 
-  if (request.method === 'GET' && pathname === '/api/health') {
+  if (request.method === "GET" && pathname === "/api/health") {
     writeJson(request, response, 200, { ok: true });
     return;
   }
 
-  if (request.method === 'GET' && pathname === '/api/sessions') {
-    writeJson(request, response, 200, await runHostCommand('listSessions'));
+  if (request.method === "GET" && pathname === "/api/sessions") {
+    writeJson(request, response, 200, await runHostCommand("listSessions"));
     return;
   }
 
-  if (request.method === 'GET' && pathname === '/api/dreams') {
-    writeJson(request, response, 200, await runHostCommand('listDreamsOverview'));
+  if (request.method === "GET" && pathname === "/api/dreams") {
+    writeJson(request, response, 200, await runHostCommand("listDreamsOverview"));
     return;
   }
 
-  if (request.method === 'POST' && pathname === '/api/bootstrap') {
-    writeJson(request, response, 200, await runHostCommand('bootstrap', { request: jsonBody ?? {} }));
-    return;
-  }
-
-  if (request.method === 'POST' && pathname === '/api/config') {
-    writeJson(request, response, 200, await runHostCommand('updateConfig', { request: jsonBody }));
-    return;
-  }
-
-  if (request.method === 'POST' && pathname === '/api/models/preview') {
+  if (request.method === "POST" && pathname === "/api/bootstrap") {
     writeJson(
       request,
       response,
       200,
-      await runHostCommand('previewModels', {
+      await runHostCommand("bootstrap", { request: jsonBody ?? {} }),
+    );
+    return;
+  }
+
+  if (request.method === "POST" && pathname === "/api/config") {
+    writeJson(request, response, 200, await runHostCommand("updateConfig", { request: jsonBody }));
+    return;
+  }
+
+  if (request.method === "POST" && pathname === "/api/models/preview") {
+    writeJson(
+      request,
+      response,
+      200,
+      await runHostCommand("previewModels", {
         request: {
-          apiBase: typeof jsonBody?.apiBase === 'string' ? jsonBody.apiBase : '',
-          apiKey: typeof jsonBody?.apiKey === 'string' ? jsonBody.apiKey : '',
+          apiBase: typeof jsonBody?.apiBase === "string" ? jsonBody.apiBase : "",
+          apiKey: typeof jsonBody?.apiKey === "string" ? jsonBody.apiKey : "",
           forceRefresh: jsonBody?.forceRefresh === true,
         },
       }),
@@ -417,19 +418,19 @@ async function handleApiRequest({
     return;
   }
 
-  if (request.method === 'POST' && pathname === '/api/models/add-provider') {
+  if (request.method === "POST" && pathname === "/api/models/add-provider") {
     const modelIds = Array.isArray(jsonBody?.modelIds)
-      ? jsonBody.modelIds.filter((id: unknown): id is string => typeof id === 'string')
+      ? jsonBody.modelIds.filter((id: unknown): id is string => typeof id === "string")
       : [];
     const provider = parseModelProviderId(jsonBody?.provider);
     writeJson(
       request,
       response,
       200,
-      await runHostCommand('addProviderModels', {
+      await runHostCommand("addProviderModels", {
         request: {
-          apiBase: typeof jsonBody?.apiBase === 'string' ? jsonBody.apiBase : '',
-          apiKey: typeof jsonBody?.apiKey === 'string' ? jsonBody.apiKey : '',
+          apiBase: typeof jsonBody?.apiBase === "string" ? jsonBody.apiBase : "",
+          apiKey: typeof jsonBody?.apiKey === "string" ? jsonBody.apiKey : "",
           modelIds,
           ...(provider ? { provider } : {}),
         },
@@ -438,46 +439,46 @@ async function handleApiRequest({
     return;
   }
 
-  if (request.method === 'POST' && pathname === '/api/models') {
-    writeJson(request, response, 200, await runHostCommand('addModel', { request: jsonBody }));
+  if (request.method === "POST" && pathname === "/api/models") {
+    writeJson(request, response, 200, await runHostCommand("addModel", { request: jsonBody }));
     return;
   }
 
-  if (request.method === 'POST' && pathname === '/api/models/remove') {
-    const name = typeof jsonBody?.name === 'string' ? jsonBody.name : '';
-    writeJson(request, response, 200, await runHostCommand('removeModel', { request: { name } }));
+  if (request.method === "POST" && pathname === "/api/models/remove") {
+    const name = typeof jsonBody?.name === "string" ? jsonBody.name : "";
+    writeJson(request, response, 200, await runHostCommand("removeModel", { request: { name } }));
     return;
   }
 
-  if (request.method === 'POST' && pathname === '/api/models/remove-provider') {
+  if (request.method === "POST" && pathname === "/api/models/remove-provider") {
     const provider = parsePresetModelProviderId(jsonBody?.provider);
     if (!provider) {
-      writeJson(request, response, 400, { error: '无效的提供商参数。' });
+      writeJson(request, response, 400, { error: "无效的提供商参数。" });
       return;
     }
     writeJson(
       request,
       response,
       200,
-      await runHostCommand('removeProviderModels', { request: { provider } }),
+      await runHostCommand("removeProviderModels", { request: { provider } }),
     );
     return;
   }
 
-  if (request.method === 'POST' && pathname === '/api/mcps') {
+  if (request.method === "POST" && pathname === "/api/mcps") {
     writeJson(
       request,
       response,
       200,
-      await runHostCommand('addMcpServer', {
+      await runHostCommand("addMcpServer", {
         request: {
-          name: typeof jsonBody?.name === 'string' ? jsonBody.name : '',
-          scope: jsonBody?.scope === 'workspace' ? 'workspace' : 'user',
-          transportType: jsonBody?.transportType === 'http' ? 'http' : 'stdio',
-          endpoint: typeof jsonBody?.endpoint === 'string' ? jsonBody.endpoint : '',
-          metadata: typeof jsonBody?.metadata === 'string' ? jsonBody.metadata : '',
+          name: typeof jsonBody?.name === "string" ? jsonBody.name : "",
+          scope: jsonBody?.scope === "workspace" ? "workspace" : "user",
+          transportType: jsonBody?.transportType === "http" ? "http" : "stdio",
+          endpoint: typeof jsonBody?.endpoint === "string" ? jsonBody.endpoint : "",
+          metadata: typeof jsonBody?.metadata === "string" ? jsonBody.metadata : "",
           capabilities:
-            typeof jsonBody?.capabilities === 'object' && jsonBody?.capabilities !== null
+            typeof jsonBody?.capabilities === "object" && jsonBody?.capabilities !== null
               ? jsonBody.capabilities
               : undefined,
         },
@@ -486,126 +487,125 @@ async function handleApiRequest({
     return;
   }
 
-  if (request.method === 'POST' && pathname === '/api/mcps/remove') {
+  if (request.method === "POST" && pathname === "/api/mcps/remove") {
     writeJson(
       request,
       response,
       200,
-      await runHostCommand('deleteMcpServer', {
+      await runHostCommand("deleteMcpServer", {
         request: {
-          name: typeof jsonBody?.name === 'string' ? jsonBody.name : '',
-          scope: jsonBody?.scope === 'workspace' ? 'workspace' : 'user',
+          name: typeof jsonBody?.name === "string" ? jsonBody.name : "",
+          scope: jsonBody?.scope === "workspace" ? "workspace" : "user",
         },
       }),
     );
     return;
   }
 
-  if (request.method === 'POST' && pathname === '/api/hooks') {
+  if (request.method === "POST" && pathname === "/api/hooks") {
     writeJson(
       request,
       response,
       200,
-      await runHostCommand('saveHookEntry', {
+      await runHostCommand("saveHookEntry", {
         request: jsonBody ?? {},
       }),
     );
     return;
   }
 
-  if (request.method === 'POST' && pathname === '/api/hooks/remove') {
+  if (request.method === "POST" && pathname === "/api/hooks/remove") {
     writeJson(
       request,
       response,
       200,
-      await runHostCommand('deleteHookEntry', {
+      await runHostCommand("deleteHookEntry", {
         request: jsonBody ?? {},
       }),
     );
     return;
   }
 
-  if (request.method === 'POST' && pathname === '/api/mcps/inspect') {
+  if (request.method === "POST" && pathname === "/api/mcps/inspect") {
     writeJson(
       request,
       response,
       200,
-      await runHostCommand('inspectMcpServer', {
-        name: typeof jsonBody?.name === 'string' ? jsonBody.name : '',
+      await runHostCommand("inspectMcpServer", {
+        name: typeof jsonBody?.name === "string" ? jsonBody.name : "",
       }),
     );
     return;
   }
 
-  if (request.method === 'POST' && pathname === '/api/extensions') {
+  if (request.method === "POST" && pathname === "/api/extensions") {
     writeJson(
       request,
       response,
       200,
-      await runHostCommand('importExtension', {
+      await runHostCommand("importExtension", {
         request: {
-          archiveBase64:
-            typeof jsonBody?.archiveBase64 === 'string' ? jsonBody.archiveBase64 : '',
-          fileName: typeof jsonBody?.fileName === 'string' ? jsonBody.fileName : undefined,
+          archiveBase64: typeof jsonBody?.archiveBase64 === "string" ? jsonBody.archiveBase64 : "",
+          fileName: typeof jsonBody?.fileName === "string" ? jsonBody.fileName : undefined,
         },
       }),
     );
     return;
   }
 
-  if (request.method === 'GET' && pathname === '/api/marketplace/extensions') {
-    writeJson(request, response, 200, await runHostCommand('listMarketplaceExtensions'));
+  if (request.method === "GET" && pathname === "/api/marketplace/extensions") {
+    writeJson(request, response, 200, await runHostCommand("listMarketplaceExtensions"));
     return;
   }
 
-  if (request.method === 'POST' && pathname === '/api/marketplace/extensions/detail') {
+  if (request.method === "POST" && pathname === "/api/marketplace/extensions/detail") {
     writeJson(
       request,
       response,
       200,
-      await runHostCommand('getMarketplaceExtensionDetail', {
-        extensionId: typeof jsonBody?.extensionId === 'string' ? jsonBody.extensionId : '',
+      await runHostCommand("getMarketplaceExtensionDetail", {
+        extensionId: typeof jsonBody?.extensionId === "string" ? jsonBody.extensionId : "",
       }),
     );
     return;
   }
 
-  if (request.method === 'POST' && pathname === '/api/marketplace/extensions/readme') {
+  if (request.method === "POST" && pathname === "/api/marketplace/extensions/readme") {
     writeJson(
       request,
       response,
       200,
-      await runHostCommand('getMarketplaceExtensionReadme', {
-        extensionId: typeof jsonBody?.extensionId === 'string' ? jsonBody.extensionId : '',
+      await runHostCommand("getMarketplaceExtensionReadme", {
+        extensionId: typeof jsonBody?.extensionId === "string" ? jsonBody.extensionId : "",
       }),
     );
     return;
   }
 
-  if (request.method === 'POST' && pathname === '/api/marketplace/extensions/prepare') {
+  if (request.method === "POST" && pathname === "/api/marketplace/extensions/prepare") {
     writeJson(
       request,
       response,
       200,
-      await runHostCommand('prepareMarketplaceExtensionInstall', {
+      await runHostCommand("prepareMarketplaceExtensionInstall", {
         request: {
-          extensionId: typeof jsonBody?.extensionId === 'string' ? jsonBody.extensionId : '',
-          version: typeof jsonBody?.version === 'string' ? jsonBody.version : undefined,
+          extensionId: typeof jsonBody?.extensionId === "string" ? jsonBody.extensionId : "",
+          version: typeof jsonBody?.version === "string" ? jsonBody.version : undefined,
         },
       }),
     );
     return;
   }
 
-  if (request.method === 'POST' && pathname === '/api/marketplace/extensions/install') {
+  if (request.method === "POST" && pathname === "/api/marketplace/extensions/install") {
     writeJson(
       request,
       response,
       200,
-      await runHostCommand('installMarketplaceExtension', {
+      await runHostCommand("installMarketplaceExtension", {
         request: {
-          extensionId: typeof jsonBody?.extensionId === 'string' ? jsonBody.extensionId : '',
-          version: typeof jsonBody?.version === 'string' ? jsonBody.version : undefined,
+          extensionId: typeof jsonBody?.extensionId === "string" ? jsonBody.extensionId : "",
+          version: typeof jsonBody?.version === "string" ? jsonBody.version : undefined,
           reviewAcknowledged: jsonBody?.reviewAcknowledged === true,
         },
       }),
@@ -613,125 +613,124 @@ async function handleApiRequest({
     return;
   }
 
-  if (request.method === 'POST' && pathname === '/api/extensions/remove') {
+  if (request.method === "POST" && pathname === "/api/extensions/remove") {
     writeJson(
       request,
       response,
       200,
-      await runHostCommand('deleteExtension', {
+      await runHostCommand("deleteExtension", {
         request: {
-          id: typeof jsonBody?.id === 'string' ? jsonBody.id : '',
+          id: typeof jsonBody?.id === "string" ? jsonBody.id : "",
         },
       }),
     );
     return;
   }
 
-  if (request.method === 'POST' && pathname === '/api/extensions/run') {
+  if (request.method === "POST" && pathname === "/api/extensions/run") {
     writeJson(
       request,
       response,
       200,
-      await runHostCommand('runExtension', {
+      await runHostCommand("runExtension", {
         request: {
-          id: typeof jsonBody?.id === 'string' ? jsonBody.id : '',
+          id: typeof jsonBody?.id === "string" ? jsonBody.id : "",
         },
       }),
     );
     return;
   }
 
-  if (request.method === 'POST' && pathname === '/api/skills') {
+  if (request.method === "POST" && pathname === "/api/skills") {
     const rootKind = parseSkillRootKind(jsonBody?.rootKind);
     writeJson(
       request,
       response,
       200,
-      await runHostCommand('createSkill', {
+      await runHostCommand("createSkill", {
         request: {
-          name: typeof jsonBody?.name === 'string' ? jsonBody.name : '',
+          name: typeof jsonBody?.name === "string" ? jsonBody.name : "",
           rootKind,
-          summary: typeof jsonBody?.summary === 'string' ? jsonBody.summary : '',
-          content: typeof jsonBody?.content === 'string' ? jsonBody.content : '',
+          summary: typeof jsonBody?.summary === "string" ? jsonBody.summary : "",
+          content: typeof jsonBody?.content === "string" ? jsonBody.content : "",
         },
       }),
     );
     return;
   }
 
-  if (request.method === 'POST' && pathname === '/api/skills/remove') {
-    const name = typeof jsonBody?.name === 'string' ? jsonBody.name : '';
+  if (request.method === "POST" && pathname === "/api/skills/remove") {
+    const name = typeof jsonBody?.name === "string" ? jsonBody.name : "";
     const rootKind = parseSkillRootKind(jsonBody?.rootKind);
     writeJson(
       request,
       response,
       200,
-      await runHostCommand('deleteSkill', { request: { name, rootKind } }),
+      await runHostCommand("deleteSkill", { request: { name, rootKind } }),
     );
     return;
   }
 
-  if (request.method === 'POST' && pathname === '/api/rules') {
+  if (request.method === "POST" && pathname === "/api/rules") {
     const rootKind = parseSkillRootKind(jsonBody?.rootKind);
     writeJson(
       request,
       response,
       200,
-      await runHostCommand('createRule', {
+      await runHostCommand("createRule", {
         request: {
           rootKind,
-          description:
-            typeof jsonBody?.description === 'string' ? jsonBody.description : '',
+          description: typeof jsonBody?.description === "string" ? jsonBody.description : "",
         },
       }),
     );
     return;
   }
 
-  if (request.method === 'POST' && pathname === '/api/rules/remove') {
+  if (request.method === "POST" && pathname === "/api/rules/remove") {
     writeJson(
       request,
       response,
       200,
-      await runHostCommand('deleteRule', {
+      await runHostCommand("deleteRule", {
         request: {
-          id: typeof jsonBody?.id === 'string' ? jsonBody.id : '',
+          id: typeof jsonBody?.id === "string" ? jsonBody.id : "",
         },
       }),
     );
     return;
   }
 
-  if (request.method === 'POST' && pathname === '/api/skills/submit') {
+  if (request.method === "POST" && pathname === "/api/skills/submit") {
     writeJson(
       request,
       response,
       200,
-      await runHostCommand('submitSkillSlash', {
+      await runHostCommand("submitSkillSlash", {
         request: {
-          skillName: typeof jsonBody?.skillName === 'string' ? jsonBody.skillName : '',
-          rawText: typeof jsonBody?.rawText === 'string' ? jsonBody.rawText : '',
-          extraNote: typeof jsonBody?.extraNote === 'string' ? jsonBody.extraNote : '',
+          skillName: typeof jsonBody?.skillName === "string" ? jsonBody.skillName : "",
+          rawText: typeof jsonBody?.rawText === "string" ? jsonBody.rawText : "",
+          extraNote: typeof jsonBody?.extraNote === "string" ? jsonBody.extraNote : "",
         },
       }),
     );
     return;
   }
 
-  if (request.method === 'POST' && pathname === '/api/git/chip') {
+  if (request.method === "POST" && pathname === "/api/git/chip") {
     const action = jsonBody?.action;
-    if (action !== 'commit' && action !== 'push' && action !== 'merge') {
-      writeJson(request, response, 400, { error: 'Invalid git chip action' });
+    if (action !== "commit" && action !== "push" && action !== "merge") {
+      writeJson(request, response, 400, { error: "Invalid git chip action" });
       return;
     }
     writeJson(
       request,
       response,
       200,
-      await runHostCommand('submitGitChip', {
+      await runHostCommand("submitGitChip", {
         request: {
           action,
-          ...(typeof jsonBody?.extraNote === 'string' && jsonBody.extraNote.trim()
+          ...(typeof jsonBody?.extraNote === "string" && jsonBody.extraNote.trim()
             ? { extraNote: jsonBody.extraNote }
             : {}),
         },
@@ -740,68 +739,62 @@ async function handleApiRequest({
     return;
   }
 
-  if (request.method === 'POST' && pathname === '/api/start-implementing') {
-    writeJson(
-      request,
-      response,
-      200,
-      await runHostCommand('submitStartImplementing'),
-    );
+  if (request.method === "POST" && pathname === "/api/start-implementing") {
+    writeJson(request, response, 200, await runHostCommand("submitStartImplementing"));
     return;
   }
 
-  if (request.method === 'POST' && pathname === '/api/compact') {
-    writeJson(
-      request,
-      response,
-      200,
-      await runHostCommand('compactHistory'),
-    );
+  if (request.method === "POST" && pathname === "/api/compact") {
+    writeJson(request, response, 200, await runHostCommand("compactHistory"));
     return;
   }
 
-  if (request.method === 'POST' && pathname === '/api/submit') {
+  if (request.method === "POST" && pathname === "/api/submit") {
     const submitSessionPath =
-      typeof jsonBody?.sessionPath === 'string' ? jsonBody.sessionPath.trim() : '';
+      typeof jsonBody?.sessionPath === "string" ? jsonBody.sessionPath.trim() : "";
     writeJson(
       request,
       response,
       200,
-      await runHostCommand('submitUserTurn', {
-        text: typeof jsonBody?.text === 'string' ? jsonBody.text : '',
+      await runHostCommand("submitUserTurn", {
+        text: typeof jsonBody?.text === "string" ? jsonBody.text : "",
         ...(submitSessionPath ? { sessionPath: submitSessionPath } : {}),
-        ...(Array.isArray(jsonBody?.localFilePaths) ? { localFilePaths: jsonBody.localFilePaths } : {}),
+        ...(Array.isArray(jsonBody?.localFilePaths)
+          ? { localFilePaths: jsonBody.localFilePaths }
+          : {}),
         ...(Array.isArray(jsonBody?.referencedWorkspaceFilePaths)
           ? { referencedWorkspaceFilePaths: jsonBody.referencedWorkspaceFilePaths }
           : {}),
-        ...(Array.isArray(jsonBody?.skillChipAliases) ? { skillChipAliases: jsonBody.skillChipAliases } : {}),
+        ...(Array.isArray(jsonBody?.skillChipAliases)
+          ? { skillChipAliases: jsonBody.skillChipAliases }
+          : {}),
       }),
     );
     return;
   }
 
-  if (request.method === 'POST' && pathname === '/api/loop') {
+  if (request.method === "POST" && pathname === "/api/loop") {
     writeJson(
       request,
       response,
       200,
-      await runHostCommand('setLoopEnabled', {
+      await runHostCommand("setLoopEnabled", {
         enabled: jsonBody?.enabled === true,
       }),
     );
     return;
   }
 
-  if (request.method === 'POST' && pathname === '/api/approval') {
+  if (request.method === "POST" && pathname === "/api/approval") {
     if (jsonBody?.decision !== undefined) {
       writeJson(
         request,
         response,
         200,
-        await runHostCommand('replyPendingApproval', {
+        await runHostCommand("replyPendingApproval", {
           request: {
             decision: normalizeApprovalDecisionPayload(jsonBody.decision),
-            ...(typeof jsonBody.sessionPath === 'string'
+            ...(typeof jsonBody.sessionPath === "string"
               ? { sessionPath: jsonBody.sessionPath }
               : {}),
           },
@@ -814,114 +807,108 @@ async function handleApiRequest({
       request,
       response,
       200,
-      await runHostCommand('setApprovalLevel', {
+      await runHostCommand("setApprovalLevel", {
         approvalLevel: jsonBody?.approvalLevel,
       }),
     );
     return;
   }
 
-  if (request.method === 'POST' && pathname === '/api/workspace-capability-trust') {
+  if (request.method === "POST" && pathname === "/api/workspace-capability-trust") {
     const decision = jsonBody?.decision;
-    if (
-      decision !== 'allowOnce'
-      && decision !== 'deny'
-      && decision !== 'alwaysTrust'
-    ) {
-      writeJson(request, response, 400, { error: 'invalid workspace capability trust decision' });
+    if (decision !== "allowOnce" && decision !== "deny" && decision !== "alwaysTrust") {
+      writeJson(request, response, 400, { error: "invalid workspace capability trust decision" });
       return;
     }
     writeJson(
       request,
       response,
       200,
-      await runHostCommand('replyWorkspaceCapabilityTrust', {
+      await runHostCommand("replyWorkspaceCapabilityTrust", {
         request: { decision },
       }),
     );
     return;
   }
 
-  if (request.method === 'POST' && pathname === '/api/git/pending-branch') {
+  if (request.method === "POST" && pathname === "/api/git/pending-branch") {
     writeJson(
       request,
       response,
       200,
-      await runHostCommand('setPendingGitBranch', {
-        branch: typeof jsonBody?.branch === 'string' ? jsonBody.branch : '',
+      await runHostCommand("setPendingGitBranch", {
+        branch: typeof jsonBody?.branch === "string" ? jsonBody.branch : "",
       }),
     );
     return;
   }
 
-  if (request.method === 'POST' && pathname === '/api/git/work-location') {
+  if (request.method === "POST" && pathname === "/api/git/work-location") {
     writeJson(
       request,
       response,
       200,
-      await runHostCommand('setWorkLocation', {
+      await runHostCommand("setWorkLocation", {
         workLocation: jsonBody?.workLocation,
       }),
     );
     return;
   }
 
-  if (request.method === 'POST' && pathname === '/api/git/checkout') {
+  if (request.method === "POST" && pathname === "/api/git/checkout") {
     writeJson(
       request,
       response,
       200,
-      await runHostCommand('checkoutGitBranch', {
-        branch: typeof jsonBody?.branch === 'string' ? jsonBody.branch : '',
+      await runHostCommand("checkoutGitBranch", {
+        branch: typeof jsonBody?.branch === "string" ? jsonBody.branch : "",
         discardLocalChanges: jsonBody?.discardLocalChanges === true,
       }),
     );
     return;
   }
 
-  if (request.method === 'POST' && pathname === '/api/git/merge-worktree') {
-    writeJson(request, response, 200, await runHostCommand('mergeWorktreeToMain'));
+  if (request.method === "POST" && pathname === "/api/git/merge-worktree") {
+    writeJson(request, response, 200, await runHostCommand("mergeWorktreeToMain"));
     return;
   }
 
-  if (request.method === 'POST' && pathname === '/api/git/push') {
-    writeJson(request, response, 200, await runHostCommand('pushGitBranch'));
+  if (request.method === "POST" && pathname === "/api/git/push") {
+    writeJson(request, response, 200, await runHostCommand("pushGitBranch"));
     return;
   }
 
-  if (request.method === 'POST' && pathname === '/api/git/refresh-snapshot') {
-    writeJson(request, response, 200, await runHostCommand('refreshGitSnapshot'));
+  if (request.method === "POST" && pathname === "/api/git/refresh-snapshot") {
+    writeJson(request, response, 200, await runHostCommand("refreshGitSnapshot"));
     return;
   }
 
-  if (request.method === 'POST' && pathname === '/api/git/commit') {
+  if (request.method === "POST" && pathname === "/api/git/commit") {
     writeJson(
       request,
       response,
       200,
-      await runHostCommand('commitChanges', {
-        request: {
-          ...(typeof jsonBody?.message === 'string' ? { message: jsonBody.message } : {}),
-        },
+      await runHostCommand("commitChanges", {
+        request: typeof jsonBody?.message === "string" ? { message: jsonBody.message } : {},
       }),
     );
     return;
   }
 
-  if (request.method === 'POST' && pathname === '/api/git/working-tree') {
-    writeJson(request, response, 200, await runHostCommand('readGitWorkingTree'));
+  if (request.method === "POST" && pathname === "/api/git/working-tree") {
+    writeJson(request, response, 200, await runHostCommand("readGitWorkingTree"));
     return;
   }
 
-  if (request.method === 'POST' && pathname === '/api/git/history') {
+  if (request.method === "POST" && pathname === "/api/git/history") {
     writeJson(
       request,
       response,
       200,
-      await runHostCommand('readGitHistory', {
+      await runHostCommand("readGitHistory", {
         request: {
-          ...(typeof jsonBody?.maxCount === 'number' ? { maxCount: jsonBody.maxCount } : {}),
-          ...(typeof jsonBody?.skip === 'number' ? { skip: jsonBody.skip } : {}),
+          ...(typeof jsonBody?.maxCount === "number" ? { maxCount: jsonBody.maxCount } : {}),
+          ...(typeof jsonBody?.skip === "number" ? { skip: jsonBody.skip } : {}),
           ...(Array.isArray(jsonBody?.existingLogCommits)
             ? { existingLogCommits: jsonBody.existingLogCommits }
             : {}),
@@ -931,31 +918,35 @@ async function handleApiRequest({
     return;
   }
 
-  if (request.method === 'POST' && pathname === '/api/git/commit-message') {
+  if (request.method === "POST" && pathname === "/api/git/commit-message") {
     writeJson(
       request,
       response,
       200,
-      await runHostCommand('readGitCommitMessage', {
+      await runHostCommand("readGitCommitMessage", {
         request: {
-          oid: typeof jsonBody?.oid === 'string' ? jsonBody.oid : '',
+          oid: typeof jsonBody?.oid === "string" ? jsonBody.oid : "",
         },
       }),
     );
     return;
   }
 
-  if (request.method === 'POST' && pathname === '/api/rewind-submit') {
+  if (request.method === "POST" && pathname === "/api/rewind-submit") {
     writeJson(
       request,
       response,
       200,
-      await runHostCommand('rewindAndSubmitMessage', {
+      await runHostCommand("rewindAndSubmitMessage", {
         request: {
-          messageId: typeof jsonBody?.messageId === 'number' ? jsonBody.messageId : NaN,
-          text: typeof jsonBody?.text === 'string' ? jsonBody.text : '',
+          messageId: typeof jsonBody?.messageId === "number" ? jsonBody.messageId : NaN,
+          text: typeof jsonBody?.text === "string" ? jsonBody.text : "",
           ...(Array.isArray(jsonBody?.localFilePaths)
-            ? { localFilePaths: jsonBody.localFilePaths.filter((item): item is string => typeof item === 'string') }
+            ? {
+                localFilePaths: jsonBody.localFilePaths.filter(
+                  (item): item is string => typeof item === "string",
+                ),
+              }
             : {}),
         },
       }),
@@ -963,18 +954,18 @@ async function handleApiRequest({
     return;
   }
 
-  if (request.method === 'POST' && pathname === '/api/fork-session') {
+  if (request.method === "POST" && pathname === "/api/fork-session") {
     const listIndex =
-      typeof jsonBody?.listIndex === 'number' && Number.isFinite(jsonBody.listIndex)
+      typeof jsonBody?.listIndex === "number" && Number.isFinite(jsonBody.listIndex)
         ? jsonBody.listIndex
         : undefined;
     writeJson(
       request,
       response,
       200,
-      await runHostCommand('forkSession', {
+      await runHostCommand("forkSession", {
         request: {
-          messageId: typeof jsonBody?.messageId === 'number' ? jsonBody.messageId : NaN,
+          messageId: typeof jsonBody?.messageId === "number" ? jsonBody.messageId : NaN,
           ...(listIndex !== undefined ? { listIndex } : {}),
         },
       }),
@@ -982,69 +973,71 @@ async function handleApiRequest({
     return;
   }
 
-  if (request.method === 'POST' && pathname === '/api/queue/reorder') {
+  if (request.method === "POST" && pathname === "/api/queue/reorder") {
     writeJson(
       request,
       response,
       200,
-      await runHostCommand('reorderQueuedUserTurn', {
+      await runHostCommand("reorderQueuedUserTurn", {
         request: {
-          queueId: typeof jsonBody?.queueId === 'string' ? jsonBody.queueId : '',
+          queueId: typeof jsonBody?.queueId === "string" ? jsonBody.queueId : "",
         },
       }),
     );
     return;
   }
 
-  if (request.method === 'POST' && pathname === '/api/queue/send-now') {
+  if (request.method === "POST" && pathname === "/api/queue/send-now") {
     writeJson(
       request,
       response,
       200,
-      await runHostCommand('sendQueuedUserTurnNow', {
+      await runHostCommand("sendQueuedUserTurnNow", {
         request: {
-          queueId: typeof jsonBody?.queueId === 'string' ? jsonBody.queueId : '',
+          queueId: typeof jsonBody?.queueId === "string" ? jsonBody.queueId : "",
         },
       }),
     );
     return;
   }
 
-  if (request.method === 'POST' && pathname === '/api/queue/remove') {
+  if (request.method === "POST" && pathname === "/api/queue/remove") {
     writeJson(
       request,
       response,
       200,
-      await runHostCommand('removeQueuedUserTurn', {
+      await runHostCommand("removeQueuedUserTurn", {
         request: {
-          queueId: typeof jsonBody?.queueId === 'string' ? jsonBody.queueId : '',
+          queueId: typeof jsonBody?.queueId === "string" ? jsonBody.queueId : "",
         },
       }),
     );
     return;
   }
 
-  if (request.method === 'POST' && pathname === '/api/poll') {
+  if (request.method === "POST" && pathname === "/api/poll") {
     writeJson(
       request,
       response,
       200,
       await runHostCommand(
-        'poll',
-        typeof jsonBody?.sessionPath === 'string' ? { sessionPath: jsonBody.sessionPath } : undefined,
+        "poll",
+        typeof jsonBody?.sessionPath === "string"
+          ? { sessionPath: jsonBody.sessionPath }
+          : undefined,
       ),
     );
     return;
   }
 
-  if (request.method === 'POST' && pathname === '/api/subagent-viewer-target') {
+  if (request.method === "POST" && pathname === "/api/subagent-viewer-target") {
     writeJson(
       request,
       response,
       200,
-      await runHostCommand('setSubagentViewerTarget', {
+      await runHostCommand("setSubagentViewerTarget", {
         parentToolCallId:
-          typeof jsonBody?.parentToolCallId === 'string' || jsonBody?.parentToolCallId === null
+          typeof jsonBody?.parentToolCallId === "string" || jsonBody?.parentToolCallId === null
             ? jsonBody.parentToolCallId
             : null,
       }),
@@ -1052,53 +1045,54 @@ async function handleApiRequest({
     return;
   }
 
-  if (request.method === 'POST' && pathname === '/api/abort') {
+  if (request.method === "POST" && pathname === "/api/abort") {
     writeJson(
       request,
       response,
       200,
-      await runHostCommand('abortConversation', {
-        ...(typeof jsonBody?.sessionPath === 'string' && jsonBody.sessionPath.trim()
+      await runHostCommand(
+        "abortConversation",
+        typeof jsonBody?.sessionPath === "string" && jsonBody.sessionPath.trim()
           ? { sessionPath: jsonBody.sessionPath.trim() }
-          : {}),
+          : {},
+      ),
+    );
+    return;
+  }
+
+  if (request.method === "POST" && pathname === "/api/abort-shell-command") {
+    writeJson(
+      request,
+      response,
+      200,
+      await runHostCommand("abortShell", {
+        toolCallId: typeof jsonBody?.toolCallId === "string" ? jsonBody.toolCallId : "",
       }),
     );
     return;
   }
 
-  if (request.method === 'POST' && pathname === '/api/abort-shell-command') {
+  if (request.method === "POST" && pathname === "/api/continue") {
     writeJson(
       request,
       response,
       200,
-      await runHostCommand('abortShell', {
-        toolCallId: typeof jsonBody?.toolCallId === 'string' ? jsonBody.toolCallId : '',
+      await runHostCommand("continueAssistantCompletion", {
+        messageId: typeof jsonBody?.messageId === "number" ? jsonBody.messageId : NaN,
       }),
     );
     return;
   }
 
-  if (request.method === 'POST' && pathname === '/api/continue') {
+  if (request.method === "POST" && pathname === "/api/questions") {
     writeJson(
       request,
       response,
       200,
-      await runHostCommand('continueAssistantCompletion', {
-        messageId: typeof jsonBody?.messageId === 'number' ? jsonBody.messageId : NaN,
-      }),
-    );
-    return;
-  }
-
-  if (request.method === 'POST' && pathname === '/api/questions') {
-    writeJson(
-      request,
-      response,
-      200,
-      await runHostCommand('replyPendingQuestions', {
+      await runHostCommand("replyPendingQuestions", {
         request: {
           result: jsonBody?.result,
-          ...(typeof jsonBody?.sessionPath === 'string'
+          ...(typeof jsonBody?.sessionPath === "string"
             ? { sessionPath: jsonBody.sessionPath }
             : {}),
         },
@@ -1107,23 +1101,18 @@ async function handleApiRequest({
     return;
   }
 
-  if (request.method === 'POST' && pathname === '/api/reset') {
-    writeJson(
-      request,
-      response,
-      200,
-      await runHostCommand('resetSession', { activate: false }),
-    );
+  if (request.method === "POST" && pathname === "/api/reset") {
+    writeJson(request, response, 200, await runHostCommand("resetSession", { activate: false }));
     return;
   }
 
-  if (request.method === 'POST' && pathname === '/api/sessions/open') {
+  if (request.method === "POST" && pathname === "/api/sessions/open") {
     writeJson(
       request,
       response,
       200,
-      await runHostCommand('openSession', {
-        path: typeof jsonBody?.path === 'string' ? jsonBody.path : '',
+      await runHostCommand("openSession", {
+        path: typeof jsonBody?.path === "string" ? jsonBody.path : "",
         // HTTP clients are remote viewers; never steal the desktop foreground session.
         activate: false,
       }),
@@ -1131,61 +1120,61 @@ async function handleApiRequest({
     return;
   }
 
-  if (request.method === 'POST' && pathname === '/api/sessions/split/begin') {
+  if (request.method === "POST" && pathname === "/api/sessions/split/begin") {
     writeJson(
       request,
       response,
       200,
-      await runHostCommand('beginSplitPaneSession', {
+      await runHostCommand("beginSplitPaneSession", {
         request: {
-          paneId: typeof jsonBody?.paneId === 'string' ? jsonBody.paneId : '',
+          paneId: typeof jsonBody?.paneId === "string" ? jsonBody.paneId : "",
         },
       }),
     );
     return;
   }
 
-  if (request.method === 'POST' && pathname === '/api/sessions/side-chat/begin') {
+  if (request.method === "POST" && pathname === "/api/sessions/side-chat/begin") {
     writeJson(
       request,
       response,
       200,
-      await runHostCommand('beginSideChatPaneSession', {
+      await runHostCommand("beginSideChatPaneSession", {
         request: {
-          paneId: typeof jsonBody?.paneId === 'string' ? jsonBody.paneId : '',
+          paneId: typeof jsonBody?.paneId === "string" ? jsonBody.paneId : "",
         },
       }),
     );
     return;
   }
 
-  if (request.method === 'POST' && pathname === '/api/sessions/side-chat/fork') {
+  if (request.method === "POST" && pathname === "/api/sessions/side-chat/fork") {
     writeJson(
       request,
       response,
       200,
-      await runHostCommand('forkSessionIntoSideChat', {
+      await runHostCommand("forkSessionIntoSideChat", {
         request: {
           sourceSessionPath:
-            typeof jsonBody?.sourceSessionPath === 'string' ? jsonBody.sourceSessionPath : '',
-          targetPaneId: typeof jsonBody?.targetPaneId === 'string' ? jsonBody.targetPaneId : '',
-          messageId: typeof jsonBody?.messageId === 'number' ? jsonBody.messageId : Number.NaN,
-          listIndex: typeof jsonBody?.listIndex === 'number' ? jsonBody.listIndex : undefined,
+            typeof jsonBody?.sourceSessionPath === "string" ? jsonBody.sourceSessionPath : "",
+          targetPaneId: typeof jsonBody?.targetPaneId === "string" ? jsonBody.targetPaneId : "",
+          messageId: typeof jsonBody?.messageId === "number" ? jsonBody.messageId : Number.NaN,
+          listIndex: typeof jsonBody?.listIndex === "number" ? jsonBody.listIndex : undefined,
         },
       }),
     );
     return;
   }
 
-  if (request.method === 'POST' && pathname === '/api/sessions/split/visible') {
+  if (request.method === "POST" && pathname === "/api/sessions/split/visible") {
     writeJson(
       request,
       response,
       200,
-      await runHostCommand('setVisiblePaneSessions', {
+      await runHostCommand("setVisiblePaneSessions", {
         request: {
           sessionPaths: Array.isArray(jsonBody?.sessionPaths)
-            ? jsonBody.sessionPaths.filter((entry): entry is string => typeof entry === 'string')
+            ? jsonBody.sessionPaths.filter((entry): entry is string => typeof entry === "string")
             : [],
         },
       }),
@@ -1193,141 +1182,141 @@ async function handleApiRequest({
     return;
   }
 
-  if (request.method === 'POST' && pathname === '/api/sessions/split/sync') {
+  if (request.method === "POST" && pathname === "/api/sessions/split/sync") {
     writeJson(
       request,
       response,
       200,
-      await runHostCommand('syncSplitPaneSessions', {
+      await runHostCommand("syncSplitPaneSessions", {
         request: {
           sessionPaths: Array.isArray(jsonBody?.sessionPaths)
-            ? jsonBody.sessionPaths.filter((entry): entry is string => typeof entry === 'string')
+            ? jsonBody.sessionPaths.filter((entry): entry is string => typeof entry === "string")
             : [],
           focusSessionPath:
-            typeof jsonBody?.focusSessionPath === 'string' ? jsonBody.focusSessionPath : undefined,
+            typeof jsonBody?.focusSessionPath === "string" ? jsonBody.focusSessionPath : undefined,
         },
       }),
     );
     return;
   }
 
-  if (request.method === 'POST' && pathname === '/api/sessions/split/focus') {
+  if (request.method === "POST" && pathname === "/api/sessions/split/focus") {
     writeJson(
       request,
       response,
       200,
-      await runHostCommand('focusPaneSession', {
+      await runHostCommand("focusPaneSession", {
         request: {
-          sessionPath: typeof jsonBody?.sessionPath === 'string' ? jsonBody.sessionPath : '',
+          sessionPath: typeof jsonBody?.sessionPath === "string" ? jsonBody.sessionPath : "",
         },
       }),
     );
     return;
   }
 
-  if (request.method === 'POST' && pathname === '/api/sessions/split/close') {
+  if (request.method === "POST" && pathname === "/api/sessions/split/close") {
     writeJson(
       request,
       response,
       200,
-      await runHostCommand('closeSplitPaneSession', {
+      await runHostCommand("closeSplitPaneSession", {
         request: {
-          sessionPath: typeof jsonBody?.sessionPath === 'string' ? jsonBody.sessionPath : '',
+          sessionPath: typeof jsonBody?.sessionPath === "string" ? jsonBody.sessionPath : "",
         },
       }),
     );
     return;
   }
 
-  if (request.method === 'POST' && pathname === '/api/sessions/split/workspace') {
+  if (request.method === "POST" && pathname === "/api/sessions/split/workspace") {
     writeJson(
       request,
       response,
       200,
-      await runHostCommand('switchPaneWorkspace', {
+      await runHostCommand("switchPaneWorkspace", {
         request: {
-          sessionPath: typeof jsonBody?.sessionPath === 'string' ? jsonBody.sessionPath : '',
+          sessionPath: typeof jsonBody?.sessionPath === "string" ? jsonBody.sessionPath : "",
           workspaceRoot:
-            typeof jsonBody?.workspaceRoot === 'string' ? jsonBody.workspaceRoot : undefined,
+            typeof jsonBody?.workspaceRoot === "string" ? jsonBody.workspaceRoot : undefined,
           workspaceBinding:
-            jsonBody?.workspaceBinding === 'none' || jsonBody?.workspaceBinding === 'project'
+            jsonBody?.workspaceBinding === "none" || jsonBody?.workspaceBinding === "project"
               ? jsonBody.workspaceBinding
-              : 'project',
+              : "project",
         },
       }),
     );
     return;
   }
 
-  if (request.method === 'POST' && pathname === '/api/sessions/split/model') {
+  if (request.method === "POST" && pathname === "/api/sessions/split/model") {
     writeJson(
       request,
       response,
       200,
-      await runHostCommand('switchPaneModel', {
+      await runHostCommand("switchPaneModel", {
         request: {
-          sessionPath: typeof jsonBody?.sessionPath === 'string' ? jsonBody.sessionPath : '',
+          sessionPath: typeof jsonBody?.sessionPath === "string" ? jsonBody.sessionPath : "",
           modelRef:
-            typeof jsonBody?.modelRef === 'object' && jsonBody.modelRef !== null
+            typeof jsonBody?.modelRef === "object" && jsonBody.modelRef !== null
               ? {
                   groupId:
-                    typeof (jsonBody.modelRef as { groupId?: unknown }).groupId === 'string'
+                    typeof (jsonBody.modelRef as { groupId?: unknown }).groupId === "string"
                       ? (jsonBody.modelRef as { groupId: string }).groupId
-                      : '',
+                      : "",
                   name:
-                    typeof (jsonBody.modelRef as { name?: unknown }).name === 'string'
+                    typeof (jsonBody.modelRef as { name?: unknown }).name === "string"
                       ? (jsonBody.modelRef as { name: string }).name
-                      : '',
+                      : "",
                 }
-              : { groupId: '', name: '' },
+              : { groupId: "", name: "" },
         },
       }),
     );
     return;
   }
 
-  if (request.method === 'POST' && pathname === '/api/sessions/split/pending-branch') {
+  if (request.method === "POST" && pathname === "/api/sessions/split/pending-branch") {
     writeJson(
       request,
       response,
       200,
-      await runHostCommand('setPanePendingGitBranch', {
+      await runHostCommand("setPanePendingGitBranch", {
         request: {
-          sessionPath: typeof jsonBody?.sessionPath === 'string' ? jsonBody.sessionPath : '',
-          branch: typeof jsonBody?.branch === 'string' ? jsonBody.branch : '',
+          sessionPath: typeof jsonBody?.sessionPath === "string" ? jsonBody.sessionPath : "",
+          branch: typeof jsonBody?.branch === "string" ? jsonBody.branch : "",
         },
       }),
     );
     return;
   }
 
-  if (request.method === 'POST' && pathname === '/api/sessions/split/work-location') {
+  if (request.method === "POST" && pathname === "/api/sessions/split/work-location") {
     writeJson(
       request,
       response,
       200,
-      await runHostCommand('setPaneWorkLocation', {
+      await runHostCommand("setPaneWorkLocation", {
         request: {
-          sessionPath: typeof jsonBody?.sessionPath === 'string' ? jsonBody.sessionPath : '',
+          sessionPath: typeof jsonBody?.sessionPath === "string" ? jsonBody.sessionPath : "",
           workLocation:
-            jsonBody?.workLocation === 'worktree' || jsonBody?.workLocation === 'local'
+            jsonBody?.workLocation === "worktree" || jsonBody?.workLocation === "local"
               ? jsonBody.workLocation
-              : 'local',
+              : "local",
         },
       }),
     );
     return;
   }
 
-  if (request.method === 'POST' && pathname === '/api/sessions/split/checkout-branch') {
+  if (request.method === "POST" && pathname === "/api/sessions/split/checkout-branch") {
     writeJson(
       request,
       response,
       200,
-      await runHostCommand('checkoutPaneGitBranch', {
+      await runHostCommand("checkoutPaneGitBranch", {
         request: {
-          sessionPath: typeof jsonBody?.sessionPath === 'string' ? jsonBody.sessionPath : '',
-          branch: typeof jsonBody?.branch === 'string' ? jsonBody.branch : '',
+          sessionPath: typeof jsonBody?.sessionPath === "string" ? jsonBody.sessionPath : "",
+          branch: typeof jsonBody?.branch === "string" ? jsonBody.branch : "",
           ...(jsonBody?.discardLocalChanges === true ? { discardLocalChanges: true } : {}),
         },
       }),
@@ -1335,119 +1324,122 @@ async function handleApiRequest({
     return;
   }
 
-  if (request.method === 'POST' && pathname === '/api/sessions/delete') {
+  if (request.method === "POST" && pathname === "/api/sessions/delete") {
     writeJson(
       request,
       response,
       200,
-      await runHostCommand('deleteSession', {
-        path: typeof jsonBody?.path === 'string' ? jsonBody.path : '',
+      await runHostCommand("deleteSession", {
+        path: typeof jsonBody?.path === "string" ? jsonBody.path : "",
       }),
     );
     return;
   }
 
-  if (request.method === 'POST' && pathname === '/api/sessions/rename') {
+  if (request.method === "POST" && pathname === "/api/sessions/rename") {
     writeJson(
       request,
       response,
       200,
-      await runHostCommand('renameSession', {
-        path: typeof jsonBody?.path === 'string' ? jsonBody.path : '',
-        displayName: typeof jsonBody?.displayName === 'string' ? jsonBody.displayName : '',
+      await runHostCommand("renameSession", {
+        path: typeof jsonBody?.path === "string" ? jsonBody.path : "",
+        displayName: typeof jsonBody?.displayName === "string" ? jsonBody.displayName : "",
       }),
     );
     return;
   }
 
-  if (request.method === 'POST' && pathname === '/api/workspace/explorer') {
+  if (request.method === "POST" && pathname === "/api/workspace/explorer") {
     writeJson(
       request,
       response,
       200,
-      await runHostCommand('listWorkspaceExplorerChildren', {
-        relativePath: typeof jsonBody?.relativePath === 'string' ? jsonBody.relativePath : '',
+      await runHostCommand("listWorkspaceExplorerChildren", {
+        relativePath: typeof jsonBody?.relativePath === "string" ? jsonBody.relativePath : "",
       }),
     );
     return;
   }
 
-  if (request.method === 'POST' && pathname === '/api/workspace/file-reference-suggestions') {
+  if (request.method === "POST" && pathname === "/api/workspace/file-reference-suggestions") {
     writeJson(
       request,
       response,
       200,
-      await runHostCommand('listWorkspaceFileReferenceSuggestions', {
+      await runHostCommand("listWorkspaceFileReferenceSuggestions", {
         request: {
-          input: typeof jsonBody?.input === 'string' ? jsonBody.input : '',
-          cursorChars: typeof jsonBody?.cursorChars === 'number' ? jsonBody.cursorChars : 0,
+          input: typeof jsonBody?.input === "string" ? jsonBody.input : "",
+          cursorChars: typeof jsonBody?.cursorChars === "number" ? jsonBody.cursorChars : 0,
         },
       }),
     );
     return;
   }
 
-  if (request.method === 'POST' && pathname === '/api/workspace/code-completion/request') {
+  if (request.method === "POST" && pathname === "/api/workspace/code-completion/request") {
     writeJson(
       request,
       response,
       200,
-      await runHostCommand('requestCodeCompletion', { request: jsonBody }),
+      await runHostCommand("requestCodeCompletion", { request: jsonBody }),
     );
     return;
   }
 
-  if (request.method === 'POST' && pathname === '/api/workspace/code-completion/abort') {
-    writeJson(request, response, 200, await runHostCommand('abortCodeCompletion'));
+  if (request.method === "POST" && pathname === "/api/workspace/code-completion/abort") {
+    writeJson(request, response, 200, await runHostCommand("abortCodeCompletion"));
     return;
   }
 
-  if (request.method === 'POST' && pathname === '/api/workspace/code-completion/record-file-state') {
+  if (
+    request.method === "POST" &&
+    pathname === "/api/workspace/code-completion/record-file-state"
+  ) {
     writeJson(
       request,
       response,
       200,
-      await runHostCommand('recordCodeCompletionFileState', { request: jsonBody }),
+      await runHostCommand("recordCodeCompletionFileState", { request: jsonBody }),
     );
     return;
   }
 
-  if (request.method === 'POST' && pathname === '/api/workspace/code-completion/reset-journal') {
-    writeJson(request, response, 200, await runHostCommand('resetCodeCompletionJournal'));
+  if (request.method === "POST" && pathname === "/api/workspace/code-completion/reset-journal") {
+    writeJson(request, response, 200, await runHostCommand("resetCodeCompletionJournal"));
     return;
   }
 
-  if (request.method === 'POST' && pathname === '/api/workspace/file-reference-index/prime') {
-    writeJson(request, response, 200, await runHostCommand('primeWorkspaceFileReferenceIndex'));
+  if (request.method === "POST" && pathname === "/api/workspace/file-reference-index/prime") {
+    writeJson(request, response, 200, await runHostCommand("primeWorkspaceFileReferenceIndex"));
     return;
   }
 
-  if (request.method === 'POST' && pathname === '/api/workspace/file-reference-index') {
-    writeJson(request, response, 200, await runHostCommand('getWorkspaceFileReferenceIndex'));
+  if (request.method === "POST" && pathname === "/api/workspace/file-reference-index") {
+    writeJson(request, response, 200, await runHostCommand("getWorkspaceFileReferenceIndex"));
     return;
   }
 
-  if (request.method === 'POST' && pathname === '/api/workspace/file') {
+  if (request.method === "POST" && pathname === "/api/workspace/file") {
     writeJson(
       request,
       response,
       200,
-      await runHostCommand('readWorkspaceTextFile', {
-        relativePath: typeof jsonBody?.relativePath === 'string' ? jsonBody.relativePath : '',
+      await runHostCommand("readWorkspaceTextFile", {
+        relativePath: typeof jsonBody?.relativePath === "string" ? jsonBody.relativePath : "",
         ...(jsonBody?.optional === true ? { optional: true } : {}),
       }),
     );
     return;
   }
 
-  if (request.method === 'POST' && pathname === '/api/workspace/search') {
+  if (request.method === "POST" && pathname === "/api/workspace/search") {
     writeJson(
       request,
       response,
       200,
-      await runHostCommand('searchWorkspaceContent', {
+      await runHostCommand("searchWorkspaceContent", {
         request: {
-          query: typeof jsonBody?.query === 'string' ? jsonBody.query : '',
+          query: typeof jsonBody?.query === "string" ? jsonBody.query : "",
           caseSensitive: jsonBody?.caseSensitive === true,
           wholeWord: jsonBody?.wholeWord === true,
           isRegexp: jsonBody?.isRegexp === true,
@@ -1457,69 +1449,67 @@ async function handleApiRequest({
     return;
   }
 
-  if (request.method === 'POST' && pathname === '/api/workspace/file/write') {
+  if (request.method === "POST" && pathname === "/api/workspace/file/write") {
     writeJson(
       request,
       response,
       200,
-      await runHostCommand('writeWorkspaceTextFile', {
+      await runHostCommand("writeWorkspaceTextFile", {
         request: {
-          relativePath:
-            typeof jsonBody?.relativePath === 'string' ? jsonBody.relativePath : '',
-          text: typeof jsonBody?.text === 'string' ? jsonBody.text : '',
+          relativePath: typeof jsonBody?.relativePath === "string" ? jsonBody.relativePath : "",
+          text: typeof jsonBody?.text === "string" ? jsonBody.text : "",
         },
       }),
     );
     return;
   }
 
-  if (request.method === 'POST' && pathname === '/api/host/file') {
+  if (request.method === "POST" && pathname === "/api/host/file") {
     writeJson(
       request,
       response,
       200,
-      await runHostCommand('readHostTextFile', {
-        absolutePath: typeof jsonBody?.absolutePath === 'string' ? jsonBody.absolutePath : '',
+      await runHostCommand("readHostTextFile", {
+        absolutePath: typeof jsonBody?.absolutePath === "string" ? jsonBody.absolutePath : "",
       }),
     );
     return;
   }
 
-  if (request.method === 'POST' && pathname === '/api/host/file/write') {
+  if (request.method === "POST" && pathname === "/api/host/file/write") {
     writeJson(
       request,
       response,
       200,
-      await runHostCommand('writeHostTextFile', {
+      await runHostCommand("writeHostTextFile", {
         request: {
-          absolutePath:
-            typeof jsonBody?.absolutePath === 'string' ? jsonBody.absolutePath : '',
-          text: typeof jsonBody?.text === 'string' ? jsonBody.text : '',
+          absolutePath: typeof jsonBody?.absolutePath === "string" ? jsonBody.absolutePath : "",
+          text: typeof jsonBody?.text === "string" ? jsonBody.text : "",
         },
       }),
     );
     return;
   }
 
-  if (request.method === 'POST' && pathname === '/api/host/file/stat') {
+  if (request.method === "POST" && pathname === "/api/host/file/stat") {
     writeJson(
       request,
       response,
       200,
-      await runHostCommand('statHostTextFile', {
-        absolutePath: typeof jsonBody?.absolutePath === 'string' ? jsonBody.absolutePath : '',
+      await runHostCommand("statHostTextFile", {
+        absolutePath: typeof jsonBody?.absolutePath === "string" ? jsonBody.absolutePath : "",
       }),
     );
     return;
   }
 
-  if (request.method === 'POST' && pathname === '/api/host/file/classify-composer-route') {
+  if (request.method === "POST" && pathname === "/api/host/file/classify-composer-route") {
     writeJson(
       request,
       response,
       200,
-      await runHostCommand('classifyLocalFileComposerRoute', {
-        absolutePath: typeof jsonBody?.absolutePath === 'string' ? jsonBody.absolutePath : '',
+      await runHostCommand("classifyLocalFileComposerRoute", {
+        absolutePath: typeof jsonBody?.absolutePath === "string" ? jsonBody.absolutePath : "",
       }),
     );
     return;
@@ -1536,11 +1526,12 @@ async function serveStaticRequest(
 ): Promise<void> {
   const root = path.resolve(options.root);
   const decodedPath = decodeURIComponent(pathname);
-  const requestedRelativePath = decodedPath === '/' ? 'index.html' : decodedPath.replace(/^\/+/, '');
+  const requestedRelativePath =
+    decodedPath === "/" ? "index.html" : decodedPath.replace(/^\/+/, "");
   const requestedPath = path.resolve(root, requestedRelativePath);
 
   if (!isPathUnderRoot(root, requestedPath)) {
-    writeJson(request, response, 403, { error: 'Forbidden path.' });
+    writeJson(request, response, 403, { error: "Forbidden path." });
     return;
   }
 
@@ -1549,7 +1540,7 @@ async function serveStaticRequest(
   }
 
   if (options.spaFallback !== false) {
-    const indexPath = path.join(root, 'index.html');
+    const indexPath = path.join(root, "index.html");
     if (await writeFileIfExists(response, indexPath)) {
       return;
     }
@@ -1566,7 +1557,7 @@ async function writeFileIfExists(response: ServerResponse, filePath: string): Pr
     }
     const body = await readFile(filePath);
     response.writeHead(200, {
-      'Content-Type': contentTypeForPath(filePath),
+      "Content-Type": contentTypeForPath(filePath),
     });
     response.end(body);
     return true;
@@ -1577,7 +1568,7 @@ async function writeFileIfExists(response: ServerResponse, filePath: string): Pr
 
 function isPathUnderRoot(root: string, filePath: string): boolean {
   const relative = path.relative(root, filePath);
-  return relative === '' || (!relative.startsWith('..') && !path.isAbsolute(relative));
+  return relative === "" || (!relative.startsWith("..") && !path.isAbsolute(relative));
 }
 
 function isAuthorizedRequest(request: IncomingMessage, tokenHash: string | undefined): boolean {
@@ -1602,15 +1593,15 @@ function authorizationBearerToken(request: IncomingMessage): string | undefined 
 }
 
 function safeTokenHashEquals(left: string, right: string): boolean {
-  const leftBuffer = Buffer.from(left, 'hex');
-  const rightBuffer = Buffer.from(right, 'hex');
+  const leftBuffer = Buffer.from(left, "hex");
+  const rightBuffer = Buffer.from(right, "hex");
   return leftBuffer.length === rightBuffer.length && timingSafeEqual(leftBuffer, rightBuffer);
 }
 
 /** 常数时间比较配对码；长度固定 6 位，长度差异不泄露有效信息。 */
 function safePairingCodeEquals(candidate: string, expected: string): boolean {
-  const candidateBuffer = Buffer.from(candidate, 'utf8');
-  const expectedBuffer = Buffer.from(expected, 'utf8');
+  const candidateBuffer = Buffer.from(candidate, "utf8");
+  const expectedBuffer = Buffer.from(expected, "utf8");
   return (
     candidateBuffer.length === expectedBuffer.length &&
     timingSafeEqual(candidateBuffer, expectedBuffer)
@@ -1637,16 +1628,16 @@ export function isAllowedRequestHostHeader(
   } catch {
     return false;
   }
-  const bareHostname = hostname.replace(/^\[|\]$/gu, '');
+  const bareHostname = hostname.replace(/^\[|\]$/gu, "");
 
   const configured = configuredHost.trim().toLowerCase();
   if (bareHostname === configured || hostname === configured) {
     return true;
   }
-  if (bareHostname === 'localhost' || bareHostname === '127.0.0.1' || bareHostname === '::1') {
+  if (bareHostname === "localhost" || bareHostname === "127.0.0.1" || bareHostname === "::1") {
     return true;
   }
-  if ((configured === '0.0.0.0' || configured === '::') && isIP(bareHostname) !== 0) {
+  if ((configured === "0.0.0.0" || configured === "::") && isIP(bareHostname) !== 0) {
     return true;
   }
   return false;
@@ -1662,7 +1653,7 @@ async function readJsonBody(request: IncomingMessage): Promise<unknown> {
     return undefined;
   }
 
-  const text = Buffer.concat(chunks).toString('utf8').trim();
+  const text = Buffer.concat(chunks).toString("utf8").trim();
   if (!text) {
     return undefined;
   }
@@ -1678,7 +1669,7 @@ function writeJson(
 ): void {
   writeCors(request, response);
   response.writeHead(statusCode, {
-    'Content-Type': 'application/json; charset=utf-8',
+    "Content-Type": "application/json; charset=utf-8",
   });
   response.end(JSON.stringify(payload));
 }
@@ -1699,38 +1690,38 @@ function writeCors(request: IncomingMessage, response: ServerResponse): boolean 
     return false;
   }
 
-  response.setHeader('Access-Control-Allow-Origin', origin);
-  response.setHeader('Vary', 'Origin');
-  response.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
-  response.setHeader('Access-Control-Allow-Methods', 'GET,POST,OPTIONS');
+  response.setHeader("Access-Control-Allow-Origin", origin);
+  response.setHeader("Vary", "Origin");
+  response.setHeader("Access-Control-Allow-Headers", "Content-Type, Authorization");
+  response.setHeader("Access-Control-Allow-Methods", "GET,POST,OPTIONS");
   return true;
 }
 
 function contentTypeForPath(filePath: string): string {
   switch (path.extname(filePath).toLowerCase()) {
-    case '.css':
-      return 'text/css; charset=utf-8';
-    case '.html':
-      return 'text/html; charset=utf-8';
-    case '.js':
-      return 'text/javascript; charset=utf-8';
-    case '.json':
-      return 'application/json; charset=utf-8';
-    case '.png':
-      return 'image/png';
-    case '.ico':
-      return 'image/x-icon';
-    case '.svg':
-      return 'image/svg+xml';
-    case '.woff2':
-      return 'font/woff2';
+    case ".css":
+      return "text/css; charset=utf-8";
+    case ".html":
+      return "text/html; charset=utf-8";
+    case ".js":
+      return "text/javascript; charset=utf-8";
+    case ".json":
+      return "application/json; charset=utf-8";
+    case ".png":
+      return "image/png";
+    case ".ico":
+      return "image/x-icon";
+    case ".svg":
+      return "image/svg+xml";
+    case ".woff2":
+      return "font/woff2";
     default:
-      return 'application/octet-stream';
+      return "application/octet-stream";
   }
 }
 
 function isJsonObject(value: unknown): value is Record<string, unknown> {
-  return typeof value === 'object' && value !== null && !Array.isArray(value);
+  return typeof value === "object" && value !== null && !Array.isArray(value);
 }
 
 function normalizeApprovalDecisionPayload(value: unknown): unknown {
@@ -1738,30 +1729,30 @@ function normalizeApprovalDecisionPayload(value: unknown): unknown {
     return undefined;
   }
   switch (value.kind) {
-    case 'allow':
+    case "allow":
       return {
-        kind: 'allow',
+        kind: "allow",
         ...(value.persistTrust === true ? { persistTrust: true } : {}),
       };
-    case 'deny':
+    case "deny":
       return {
-        kind: 'deny',
-        ...(typeof value.resultText === 'string' ? { resultText: value.resultText } : {}),
+        kind: "deny",
+        ...(typeof value.resultText === "string" ? { resultText: value.resultText } : {}),
       };
-    case 'guidance':
+    case "guidance":
       return {
-        kind: 'guidance',
-        userMessage: typeof value.userMessage === 'string' ? value.userMessage : '',
-        ...(typeof value.resultText === 'string' ? { resultText: value.resultText } : {}),
+        kind: "guidance",
+        userMessage: typeof value.userMessage === "string" ? value.userMessage : "",
+        ...(typeof value.resultText === "string" ? { resultText: value.resultText } : {}),
       };
     default:
       return undefined;
   }
 }
 
-function parseSkillRootKind(value: unknown): 'user' | 'workspaceSpirit' | 'workspaceAgents' {
-  if (value === 'workspaceSpirit' || value === 'workspaceAgents') {
+function parseSkillRootKind(value: unknown): "user" | "workspaceSpirit" | "workspaceAgents" {
+  if (value === "workspaceSpirit" || value === "workspaceAgents") {
     return value;
   }
-  return 'user';
+  return "user";
 }

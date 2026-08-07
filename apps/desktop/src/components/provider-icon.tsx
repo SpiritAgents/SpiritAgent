@@ -1,12 +1,12 @@
-import { Sparkles } from 'lucide-react';
-import { useEffect, useState, type CSSProperties } from 'react';
+import { Sparkles } from "lucide-react";
+import { useEffect, useState, type CSSProperties } from "react";
 
 import {
   modelsDevProviderLogoUrl,
   probeModelsDevReachability,
-} from '@/lib/models-dev-provider-logo';
-import { cn } from '@/lib/utils';
-import type { DesktopModelProvider } from '@/types';
+} from "@/lib/models-dev-provider-logo";
+import { cn } from "@/lib/utils";
+import type { DesktopModelProvider } from "@/types";
 
 type ProviderIconProps = {
   providerId: DesktopModelProvider;
@@ -15,10 +15,7 @@ type ProviderIconProps = {
 
 function ProviderFallbackIcon({ className }: { className?: string }) {
   return (
-    <Sparkles
-      aria-hidden
-      className={cn('size-4 shrink-0 text-muted-foreground', className)}
-    />
+    <Sparkles aria-hidden className={cn("size-4 shrink-0 text-muted-foreground", className)} />
   );
 }
 
@@ -27,12 +24,12 @@ function modelsDevLogoMaskStyle(providerId: DesktopModelProvider): CSSProperties
   return {
     WebkitMaskImage: `url("${url}")`,
     maskImage: `url("${url}")`,
-    WebkitMaskRepeat: 'no-repeat',
-    maskRepeat: 'no-repeat',
-    WebkitMaskPosition: 'center',
-    maskPosition: 'center',
-    WebkitMaskSize: 'contain',
-    maskSize: 'contain',
+    WebkitMaskRepeat: "no-repeat",
+    maskRepeat: "no-repeat",
+    WebkitMaskPosition: "center",
+    maskPosition: "center",
+    WebkitMaskSize: "contain",
+    maskSize: "contain",
   };
 }
 
@@ -44,7 +41,7 @@ export function ProviderIcon({ providerId, className }: ProviderIconProps) {
   const [modelsDevReachable, setModelsDevReachable] = useState(false);
 
   useEffect(() => {
-    if (providerId === 'custom') {
+    if (providerId === "custom") {
       return;
     }
 
@@ -60,14 +57,14 @@ export function ProviderIcon({ providerId, className }: ProviderIconProps) {
     };
   }, [providerId]);
 
-  if (providerId === 'custom' || !modelsDevReachable) {
+  if (providerId === "custom" || !modelsDevReachable) {
     return <ProviderFallbackIcon className={className} />;
   }
 
   return (
     <span
       aria-hidden
-      className={cn('inline-block size-4 shrink-0 bg-foreground', className)}
+      className={cn("inline-block size-4 shrink-0 bg-foreground", className)}
       style={modelsDevLogoMaskStyle(providerId)}
     />
   );

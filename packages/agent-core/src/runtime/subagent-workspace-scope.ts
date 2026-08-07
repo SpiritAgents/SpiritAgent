@@ -1,23 +1,20 @@
-import { appendLlmUserLlmMessage } from '../llm-tool-agent.js';
-import {
-  patchBasicInfoWorkspaceRootInToolAgentState,
-  type ToolAgentState,
-} from '../tool-agent.js';
-import type { AgentRuntimeOptions } from './types.js';
-import { pendingWorkspaceFilesFromInput } from './helpers.js';
+import { appendLlmUserLlmMessage } from "../llm-tool-agent.js";
+import { patchBasicInfoWorkspaceRootInToolAgentState, type ToolAgentState } from "../tool-agent.js";
+import type { AgentRuntimeOptions } from "./types.js";
+import { pendingWorkspaceFilesFromInput } from "./helpers.js";
 
 function isToolAgentLikeState(state: unknown): state is ToolAgentState {
   return (
-    typeof state === 'object'
-    && state !== null
-    && 'messages' in state
-    && Array.isArray((state as ToolAgentState).messages)
-    && typeof (state as ToolAgentState).steps === 'number'
+    typeof state === "object" &&
+    state !== null &&
+    "messages" in state &&
+    Array.isArray((state as ToolAgentState).messages) &&
+    typeof (state as ToolAgentState).steps === "number"
   );
 }
 
 function patchConfigWorkspaceRoot<Config>(config: Config, scopedRoot: string): Config {
-  if (typeof config !== 'object' || config === null || !('workspaceRoot' in config)) {
+  if (typeof config !== "object" || config === null || !("workspaceRoot" in config)) {
     return config;
   }
   return { ...(config as Record<string, unknown>), workspaceRoot: scopedRoot } as Config;
@@ -56,7 +53,10 @@ export function scopeAgentRuntimeOptionsForSubagentWorkspace<
     createToolAgentState: (history, userInput) =>
       scopeState(options.createToolAgentState(history, userInput)),
     ...(options.createContinuationState
-      ? { createContinuationState: (history) => scopeState(options.createContinuationState!(history)) }
+      ? {
+          createContinuationState: (history) =>
+            scopeState(options.createContinuationState!(history)),
+        }
       : {}),
     ...(options.rebuildRetryStateAfterCompaction
       ? {

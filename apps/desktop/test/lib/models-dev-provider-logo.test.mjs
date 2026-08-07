@@ -1,46 +1,40 @@
-import assert from 'node:assert/strict';
-import test from 'node:test';
+import assert from "node:assert/strict";
+import test from "node:test";
 
 import {
   modelsDevProviderLogoId,
   modelsDevProviderLogoUrl,
   probeModelsDevReachability,
   resetModelsDevReachabilityProbeForTests,
-} from '../../src/lib/models-dev-provider-logo.ts';
+} from "../../src/lib/models-dev-provider-logo.ts";
 
-test('modelsDevProviderLogoId maps Spirit ids to models.dev provider folders', () => {
-  assert.equal(modelsDevProviderLogoId('vercel-ai-gateway'), 'vercel');
-  assert.equal(modelsDevProviderLogoId('cloudflare-ai-gateway'), 'cloudflare-ai-gateway');
-  assert.equal(modelsDevProviderLogoId('moonshot-ai'), 'moonshotai');
-  assert.equal(modelsDevProviderLogoId('z-ai'), 'zai');
-  assert.equal(modelsDevProviderLogoId('zhipu-ai'), 'zhipuai');
-  assert.equal(modelsDevProviderLogoId('openai'), 'openai');
-  assert.equal(modelsDevProviderLogoId('google-vertex-ai'), 'google-vertex');
-  assert.equal(modelsDevProviderLogoId('fireworks-ai'), 'fireworks-ai');
-  assert.equal(modelsDevProviderLogoId('meituan'), 'meituan');
-  assert.equal(modelsDevProviderLogoId('mistral'), 'mistral');
+test("modelsDevProviderLogoId maps Spirit ids to models.dev provider folders", () => {
+  assert.equal(modelsDevProviderLogoId("vercel-ai-gateway"), "vercel");
+  assert.equal(modelsDevProviderLogoId("cloudflare-ai-gateway"), "cloudflare-ai-gateway");
+  assert.equal(modelsDevProviderLogoId("moonshot-ai"), "moonshotai");
+  assert.equal(modelsDevProviderLogoId("z-ai"), "zai");
+  assert.equal(modelsDevProviderLogoId("zhipu-ai"), "zhipuai");
+  assert.equal(modelsDevProviderLogoId("openai"), "openai");
+  assert.equal(modelsDevProviderLogoId("google-vertex-ai"), "google-vertex");
+  assert.equal(modelsDevProviderLogoId("fireworks-ai"), "fireworks-ai");
+  assert.equal(modelsDevProviderLogoId("meituan"), "meituan");
+  assert.equal(modelsDevProviderLogoId("mistral"), "mistral");
 });
 
-test('modelsDevProviderLogoUrl uses aliased provider id', () => {
+test("modelsDevProviderLogoUrl uses aliased provider id", () => {
   assert.equal(
-    modelsDevProviderLogoUrl('vercel-ai-gateway'),
-    'https://models.dev/logos/vercel.svg',
+    modelsDevProviderLogoUrl("vercel-ai-gateway"),
+    "https://models.dev/logos/vercel.svg",
   );
+  assert.equal(modelsDevProviderLogoUrl("z-ai"), "https://models.dev/logos/zai.svg");
+  assert.equal(modelsDevProviderLogoUrl("zhipu-ai"), "https://models.dev/logos/zhipuai.svg");
   assert.equal(
-    modelsDevProviderLogoUrl('z-ai'),
-    'https://models.dev/logos/zai.svg',
-  );
-  assert.equal(
-    modelsDevProviderLogoUrl('zhipu-ai'),
-    'https://models.dev/logos/zhipuai.svg',
-  );
-  assert.equal(
-    modelsDevProviderLogoUrl('fireworks-ai'),
-    'https://models.dev/logos/fireworks-ai.svg',
+    modelsDevProviderLogoUrl("fireworks-ai"),
+    "https://models.dev/logos/fireworks-ai.svg",
   );
 });
 
-test('probeModelsDevReachability caches success and failure', async () => {
+test("probeModelsDevReachability caches success and failure", async () => {
   const originalFetch = globalThis.fetch;
   let fetchCalls = 0;
 
@@ -60,7 +54,7 @@ test('probeModelsDevReachability caches success and failure', async () => {
 
     globalThis.fetch = async () => {
       fetchCalls += 1;
-      throw new Error('network blocked');
+      throw new Error("network blocked");
     };
 
     assert.equal(await probeModelsDevReachability(), false);
@@ -72,7 +66,7 @@ test('probeModelsDevReachability caches success and failure', async () => {
   }
 });
 
-test('probeModelsDevReachability treats non-ok response as unreachable', async () => {
+test("probeModelsDevReachability treats non-ok response as unreachable", async () => {
   const originalFetch = globalThis.fetch;
 
   try {

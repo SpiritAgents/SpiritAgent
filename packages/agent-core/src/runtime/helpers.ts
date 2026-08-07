@@ -1,26 +1,22 @@
-import { readFile, stat } from 'node:fs/promises';
-import { isAbsolute, relative, resolve } from 'node:path';
+import { readFile, stat } from "node:fs/promises";
+import { isAbsolute, relative, resolve } from "node:path";
 
 import {
   cloneLlmProviderState,
   cloneLlmMessageContent,
   createLlmMessageContentFromText,
   createLlmMessageContentFromTextAndImages,
-  llmMessageHasImages,
   llmMessageImagePaths,
-  llmMessageTextContent,
   llmMessageVideoPaths,
   normalizeStoredLlmMessage,
   type JsonValue,
   type LlmMessage,
   type LlmMessageContent,
   type ToolExecutionOutput,
-} from '../ports.js';
+} from "../ports.js";
 
-import {
-  PENDING_WORKSPACE_FILE_MAX_CHARS,
-} from './constants.js';
-import { formatUserMessageContentForLlm } from './user-turn-timestamp.js';
+import { PENDING_WORKSPACE_FILE_MAX_CHARS } from "./constants.js";
+import { formatUserMessageContentForLlm } from "./user-turn-timestamp.js";
 import type {
   AgentRuntimeOptions,
   PendingMcpResource,
@@ -28,7 +24,7 @@ import type {
   PendingWorkspaceTextFile,
   RuntimeToolArtifact,
   RuntimeTurnContext,
-} from './types.js';
+} from "./types.js";
 
 export function createTurnContext<ToolRequest>(): RuntimeTurnContext<ToolRequest> {
   return {
@@ -48,7 +44,7 @@ export function buildToolContinuationStateFromHistory<
 >(
   options: Pick<
     AgentRuntimeOptions<Config, State, ToolRequest, TrustTarget>,
-    'createContinuationState' | 'createToolAgentState'
+    "createContinuationState" | "createToolAgentState"
   >,
   historyStore: readonly LlmMessage[],
   pendingUserInput: string,
@@ -66,21 +62,23 @@ export function resolveFinalAssistantHistoryMessage<
 >(
   options: Pick<
     AgentRuntimeOptions<Config, State, ToolRequest, TrustTarget>,
-    'finalAssistantHistoryMessageFromState'
+    "finalAssistantHistoryMessageFromState"
   >,
   state: State,
   assistantText: string,
 ): LlmMessage {
-  return options.finalAssistantHistoryMessageFromState?.(state, assistantText) ?? {
-    role: 'assistant',
-    content: createLlmMessageContentFromText(assistantText),
-  };
+  return (
+    options.finalAssistantHistoryMessageFromState?.(state, assistantText) ?? {
+      role: "assistant",
+      content: createLlmMessageContentFromText(assistantText),
+    }
+  );
 }
 
 interface DeferredUserGuidanceRuntime<State, ToolRequest, TrustTarget = string> {
   options: Pick<
     AgentRuntimeOptions<unknown, State, ToolRequest, TrustTarget>,
-    'appendUserLlmMessage' | 'appendUserMessage' | 'createToolAgentState'
+    "appendUserLlmMessage" | "appendUserMessage" | "createToolAgentState"
   >;
   historyStore: LlmMessage[];
   pendingUserTurnStore: string | undefined;
@@ -89,7 +87,7 @@ interface DeferredUserGuidanceRuntime<State, ToolRequest, TrustTarget = string> 
 interface LoopContinuationGuidanceRuntime<State, ToolRequest, TrustTarget = string> {
   options: Pick<
     AgentRuntimeOptions<unknown, State, ToolRequest, TrustTarget>,
-    'appendUserMessage' | 'createToolAgentState'
+    "appendUserMessage" | "createToolAgentState"
   >;
   historyStore: LlmMessage[];
   pendingUserTurnStore: string | undefined;
@@ -124,8 +122,8 @@ export function enqueueDeferredToolOutputGuidance<ToolRequest>(
   }
 
   const guidanceMessage =
-    output.summaryText.trim()
-    || `[tool output] ${toolName} returned ${imagePaths.length > 0 && videoPaths.length > 0 ? 'media' : imagePaths.length > 0 ? 'images' : 'videos'}.`;
+    output.summaryText.trim() ||
+    `[tool output] ${toolName} returned ${imagePaths.length > 0 && videoPaths.length > 0 ? "media" : imagePaths.length > 0 ? "images" : "videos"}.`;
   enqueueDeferredUserGuidance(
     turn,
     guidanceMessage,
@@ -138,23 +136,23 @@ export function enqueueDeferredToolOutputGuidance<ToolRequest>(
 }
 
 export const MISSING_TOOL_RESULT_PLACEHOLDER =
-  '[tool result unavailable] missing tool result recovered in session history';
+  "[tool result unavailable] missing tool result recovered in session history";
 
 function assistantToolCallIdsMissingResults(history: readonly LlmMessage[]): string[] {
   const missing: string[] = [];
 
   for (let index = 0; index < history.length; index += 1) {
     const message = history[index]!;
-    if (message.role !== 'assistant' || !message.toolCalls?.length) {
+    if (message.role !== "assistant" || !message.toolCalls?.length) {
       continue;
     }
 
     for (const toolCall of message.toolCalls) {
       const hasResult = history.some(
         (candidate, candidateIndex) =>
-          candidateIndex > index
-          && candidate.role === 'tool'
-          && candidate.toolCallId === toolCall.id,
+          candidateIndex > index &&
+          candidate.role === "tool" &&
+          candidate.toolCallId === toolCall.id,
       );
       if (!hasResult) {
         missing.push(toolCall.id);
@@ -193,20 +191,20 @@ export function repairMissingToolResultsInHistory(history: readonly LlmMessage[]
         : {}),
     });
 
-    if (message.role !== 'assistant' || !message.toolCalls?.length) {
+    if (message.role !== "assistant" || !message.toolCalls?.length) {
       continue;
     }
 
     for (const toolCall of message.toolCalls) {
       const hasResult = history.some(
         (candidate, candidateIndex) =>
-          candidateIndex > index
-          && candidate.role === 'tool'
-          && candidate.toolCallId === toolCall.id,
+          candidateIndex > index &&
+          candidate.role === "tool" &&
+          candidate.toolCallId === toolCall.id,
       );
       if (!hasResult) {
         repaired.push({
-          role: 'tool',
+          role: "tool",
           toolCallId: toolCall.id,
           content: createLlmMessageContentFromText(MISSING_TOOL_RESULT_PLACEHOLDER),
         });
@@ -217,15 +215,17 @@ export function repairMissingToolResultsInHistory(history: readonly LlmMessage[]
   return repaired;
 }
 
-export function toolArtifactsFromOutput(output: ToolExecutionOutput): RuntimeToolArtifact[] | undefined {
+export function toolArtifactsFromOutput(
+  output: ToolExecutionOutput,
+): RuntimeToolArtifact[] | undefined {
   const artifacts: RuntimeToolArtifact[] = [];
   for (const part of output.content) {
-    if (part.type === 'image') {
-      artifacts.push({ kind: 'image', path: part.path });
+    if (part.type === "image") {
+      artifacts.push({ kind: "image", path: part.path });
       continue;
     }
-    if (part.type === 'video') {
-      artifacts.push({ kind: 'video', path: part.path });
+    if (part.type === "video") {
+      artifacts.push({ kind: "video", path: part.path });
     }
   }
 
@@ -253,7 +253,7 @@ export function applyDeferredUserGuidance<State, ToolRequest, TrustTarget = stri
       ? cloneLlmMessageContent(item.historyContent)
       : createLlmMessageContentFromText(item.contentForLlm);
     const historyMessage: LlmMessage = {
-      role: 'user',
+      role: "user",
       content: historyContent,
     };
 
@@ -299,7 +299,7 @@ export function appendLoopContinuationGuidance<State, ToolRequest, TrustTarget =
   const guidance = formatLoopContinuationGuidance(originalUserInput);
   const contentForLlm = formatUserMessageContentForLlm(guidance);
   runtime.historyStore.push({
-    role: 'user',
+    role: "user",
     content: createLlmMessageContentFromText(contentForLlm),
   });
   runtime.pendingUserTurnStore = originalUserInput;
@@ -312,18 +312,18 @@ export function appendLoopContinuationGuidance<State, ToolRequest, TrustTarget =
 }
 
 export function formatLoopContinuationGuidance(originalUserInput: string): string {
-  const original = originalUserInput.trim() || '(empty original user request)';
+  const original = originalUserInput.trim() || "(empty original user request)";
   return [
-    'Loop continuation check:',
-    'The assistant stopped without calling finish_task, but Loop is enabled.',
-    'Review the original user request and the work already completed in this conversation.',
-    'If the original task is fully complete, call the finish_task tool now.',
-    'If the original task is not complete, continue working on it according to the original user request.',
-    'Do not ask the user what to do next unless you are blocked or genuinely need missing information.',
-    '',
-    'Original user request:',
+    "Loop continuation check:",
+    "The assistant stopped without calling finish_task, but Loop is enabled.",
+    "Review the original user request and the work already completed in this conversation.",
+    "If the original task is fully complete, call the finish_task tool now.",
+    "If the original task is not complete, continue working on it according to the original user request.",
+    "Do not ask the user what to do next unless you are blocked or genuinely need missing information.",
+    "",
+    "Original user request:",
     original,
-  ].join('\n');
+  ].join("\n");
 }
 
 export function cloneHistory(history: LlmMessage[]): LlmMessage[] {
@@ -358,12 +358,12 @@ export function referencedPathsFromInput(input: string): string[] {
   const paths: string[] = [];
 
   for (const token of input.split(/\s+/u)) {
-    const path = token.startsWith('@') ? token.slice(1) : undefined;
+    const path = token.startsWith("@") ? token.slice(1) : undefined;
     if (!path) {
       continue;
     }
 
-    const normalized = path.replace(/\\/gu, '/');
+    const normalized = path.replace(/\\/gu, "/");
     if (seen.has(normalized)) {
       continue;
     }
@@ -394,14 +394,14 @@ export async function pendingWorkspaceFilesFromInput(
 
 export function formatPendingWorkspaceFileContext(file: PendingWorkspaceTextFile): string {
   return [
-    '[WORKSPACE_FILE]',
+    "[WORKSPACE_FILE]",
     `path: ${file.path}`,
     `attached_at_unix_ms: ${file.attachedAtUnixMs}`,
     `chars: ${file.totalChars}`,
     `truncated: ${file.truncated}`,
-    '',
+    "",
     file.content,
-  ].join('\n');
+  ].join("\n");
 }
 
 export function pendingMcpResourceFromReadResult(
@@ -410,7 +410,8 @@ export function pendingMcpResourceFromReadResult(
   requestedUri: string,
   value: JsonValue,
 ): PendingMcpResource {
-  const contents = isJsonObject(value) && Array.isArray(value.contents) ? value.contents : undefined;
+  const contents =
+    isJsonObject(value) && Array.isArray(value.contents) ? value.contents : undefined;
   if (!contents || contents.length === 0) {
     throw new Error(`MCP resource 返回为空: ${requestedUri}`);
   }
@@ -425,19 +426,19 @@ export function pendingMcpResourceFromReadResult(
       continue;
     }
 
-    if (typeof content.uri === 'string') {
+    if (typeof content.uri === "string") {
       finalUri = content.uri;
     }
-    if (mimeType === undefined && typeof content.mimeType === 'string') {
+    if (mimeType === undefined && typeof content.mimeType === "string") {
       mimeType = content.mimeType;
     }
 
-    if (typeof content.text === 'string') {
+    if (typeof content.text === "string") {
       renderedSections.push(content.text);
       continue;
     }
 
-    if (typeof content.blob === 'string') {
+    if (typeof content.blob === "string") {
       renderedSections.push(`[blob base64 omitted, ${Array.from(content.blob).length} chars]`);
       continue;
     }
@@ -451,7 +452,7 @@ export function pendingMcpResourceFromReadResult(
     uri: finalUri,
     ...(mimeType !== undefined ? { mimeType } : {}),
     readAtUnixMs: Date.now(),
-    content: renderedSections.join('\n\n---\n\n'),
+    content: renderedSections.join("\n\n---\n\n"),
   };
 }
 
@@ -461,65 +462,59 @@ export function shortLabelForPendingMcpResource(resource: PendingMcpResource): s
 
 export function formatPendingMcpResourceContext(resource: PendingMcpResource): string {
   return [
-    '[MCP_RESOURCE]',
+    "[MCP_RESOURCE]",
     `server: ${resource.server}`,
     `display_name: ${resource.displayName}`,
     `uri: ${resource.uri}`,
-    `mime_type: ${resource.mimeType ?? 'application/octet-stream'}`,
+    `mime_type: ${resource.mimeType ?? "application/octet-stream"}`,
     `read_at_unix_ms: ${resource.readAtUnixMs}`,
-    '',
+    "",
     resource.content,
-  ].join('\n');
+  ].join("\n");
 }
 
 export function promptMessagesFromValue(value: JsonValue): LlmMessage[] {
-  const messages = isJsonObject(value) && Array.isArray(value.messages) ? value.messages : undefined;
+  const messages =
+    isJsonObject(value) && Array.isArray(value.messages) ? value.messages : undefined;
   if (!messages) {
-    throw new Error('MCP prompt 返回格式异常：缺少 messages');
+    throw new Error("MCP prompt 返回格式异常：缺少 messages");
   }
 
   return messages.map((message) => {
     if (!isJsonObject(message)) {
-      throw new Error('MCP prompt message 格式异常');
+      throw new Error("MCP prompt message 格式异常");
     }
 
     return normalizeStoredLlmMessage({
-      role: normalizePromptRole(typeof message.role === 'string' ? message.role : 'user'),
+      role: normalizePromptRole(typeof message.role === "string" ? message.role : "user"),
       content: promptContentToText(message.content),
     });
   });
 }
 
 export function toolNameFromRequest(request: unknown): string {
-  if (typeof request === 'object' && request !== null && 'name' in request) {
+  if (typeof request === "object" && request !== null && "name" in request) {
     const name = (request as { name?: unknown }).name;
-    if (typeof name === 'string' && name.trim()) {
+    if (typeof name === "string" && name.trim()) {
       return name;
     }
   }
 
-  return 'manual';
+  return "manual";
 }
 
-export function isCompatibleContinuedToolRequest(
-  original: unknown,
-  continued: unknown,
-): boolean {
+export function isCompatibleContinuedToolRequest(original: unknown, continued: unknown): boolean {
   if (toolNameFromRequest(original) !== toolNameFromRequest(continued)) {
     return false;
   }
 
   return (
-    compareOptionalStringField(original, continued, 'extension_id') &&
-    compareOptionalStringField(original, continued, 'tool_name')
+    compareOptionalStringField(original, continued, "extension_id") &&
+    compareOptionalStringField(original, continued, "tool_name")
   );
 }
 
-function compareOptionalStringField(
-  left: unknown,
-  right: unknown,
-  field: string,
-): boolean {
+function compareOptionalStringField(left: unknown, right: unknown, field: string): boolean {
   const leftValue = readOptionalStringField(left, field);
   const rightValue = readOptionalStringField(right, field);
 
@@ -531,39 +526,23 @@ function compareOptionalStringField(
 }
 
 function readOptionalStringField(value: unknown, field: string): string | undefined {
-  if (typeof value !== 'object' || value === null || !(field in value)) {
+  if (typeof value !== "object" || value === null || !(field in value)) {
     return undefined;
   }
 
   const candidate = (value as Record<string, unknown>)[field];
-  return typeof candidate === 'string' ? candidate : undefined;
-}
-
-function safeStringify(value: unknown): string {
-  try {
-    return JSON.stringify(value);
-  } catch {
-    return String(value);
-  }
-}
-
-function truncateForPreview(text: string, maxChars: number): string {
-  const chars = Array.from(text);
-  if (chars.length <= maxChars) {
-    return text;
-  }
-  return `${chars.slice(0, maxChars).join('')}...<truncated>`;
+  return typeof candidate === "string" ? candidate : undefined;
 }
 
 async function pendingWorkspaceFileFromPath(
   workspaceRoot: string,
   referencePath: string,
 ): Promise<PendingWorkspaceFile> {
-  const normalizedReference = referencePath.replace(/\\/gu, '/');
+  const normalizedReference = referencePath.replace(/\\/gu, "/");
   if (
     isAbsolute(referencePath) ||
-    normalizedReference.startsWith('/') ||
-    normalizedReference.split('/').some((segment) => segment === '..')
+    normalizedReference.startsWith("/") ||
+    normalizedReference.split("/").some((segment) => segment === "..")
   ) {
     throw new Error(`不支持引用工作区外文件: ${referencePath}`);
   }
@@ -571,7 +550,7 @@ async function pendingWorkspaceFileFromPath(
   const workspaceRootResolved = resolve(workspaceRoot);
   const target = resolve(workspaceRootResolved, referencePath);
   const relativeTarget = relative(workspaceRootResolved, target);
-  if (relativeTarget.startsWith('..') || isAbsolute(relativeTarget)) {
+  if (relativeTarget.startsWith("..") || isAbsolute(relativeTarget)) {
     throw new Error(`不支持引用工作区外文件: ${referencePath}`);
   }
 
@@ -583,8 +562,8 @@ async function pendingWorkspaceFileFromPath(
   const bytes = await readFile(target);
   if (detectPendingWorkspaceImageFile(target, bytes)) {
     return {
-      kind: 'image',
-      path: relativeTarget.replace(/\\/gu, '/'),
+      kind: "image",
+      path: relativeTarget.replace(/\\/gu, "/"),
       attachedAtUnixMs: Date.now(),
     };
   }
@@ -595,8 +574,8 @@ async function pendingWorkspaceFileFromPath(
 
   if (detectPendingWorkspaceVideoFile(target, bytes)) {
     return {
-      kind: 'video',
-      path: relativeTarget.replace(/\\/gu, '/'),
+      kind: "video",
+      path: relativeTarget.replace(/\\/gu, "/"),
       attachedAtUnixMs: Date.now(),
     };
   }
@@ -609,16 +588,16 @@ async function pendingWorkspaceFileFromPath(
     throw new Error(`暂不支持引用二进制文件: ${referencePath}`);
   }
 
-  const text = bytes.toString('utf8');
+  const text = bytes.toString("utf8");
   const chars = Array.from(text);
   const truncated = chars.length > PENDING_WORKSPACE_FILE_MAX_CHARS;
   const content = truncated
-    ? `${chars.slice(0, PENDING_WORKSPACE_FILE_MAX_CHARS).join('')}\n\n...<文件内容已截断>`
+    ? `${chars.slice(0, PENDING_WORKSPACE_FILE_MAX_CHARS).join("")}\n\n...<文件内容已截断>`
     : text;
 
   return {
-    kind: 'text',
-    path: relativeTarget.replace(/\\/gu, '/'),
+    kind: "text",
+    path: relativeTarget.replace(/\\/gu, "/"),
     totalChars: chars.length,
     truncated,
     attachedAtUnixMs: Date.now(),
@@ -629,29 +608,29 @@ async function pendingWorkspaceFileFromPath(
 function hasPendingWorkspaceImageExtension(filePath: string): boolean {
   const extension = filePath.toLowerCase();
   return (
-    extension.endsWith('.bmp') ||
-    extension.endsWith('.png') ||
-    extension.endsWith('.jpg') ||
-    extension.endsWith('.jpeg') ||
-    extension.endsWith('.gif') ||
-    extension.endsWith('.webp') ||
-    extension.endsWith('.ico')
+    extension.endsWith(".bmp") ||
+    extension.endsWith(".png") ||
+    extension.endsWith(".jpg") ||
+    extension.endsWith(".jpeg") ||
+    extension.endsWith(".gif") ||
+    extension.endsWith(".webp") ||
+    extension.endsWith(".ico")
   );
 }
 
 function hasPendingWorkspaceVideoExtension(filePath: string): boolean {
   const lower = filePath.toLowerCase();
   return (
-    lower.endsWith('.3gp') ||
-    lower.endsWith('.3gpp') ||
-    lower.endsWith('.avi') ||
-    lower.endsWith('.flv') ||
-    lower.endsWith('.mov') ||
-    lower.endsWith('.mp4') ||
-    lower.endsWith('.mpeg') ||
-    lower.endsWith('.mpg') ||
-    lower.endsWith('.webm') ||
-    lower.endsWith('.wmv')
+    lower.endsWith(".3gp") ||
+    lower.endsWith(".3gpp") ||
+    lower.endsWith(".avi") ||
+    lower.endsWith(".flv") ||
+    lower.endsWith(".mov") ||
+    lower.endsWith(".mp4") ||
+    lower.endsWith(".mpeg") ||
+    lower.endsWith(".mpg") ||
+    lower.endsWith(".webm") ||
+    lower.endsWith(".wmv")
   );
 }
 
@@ -661,23 +640,31 @@ function detectPendingWorkspaceVideoFile(filePath: string, bytes: Uint8Array): b
   }
 
   const lower = filePath.toLowerCase();
-  if (lower.endsWith('.mp4') || lower.endsWith('.mov') || lower.endsWith('.3gp') || lower.endsWith('.3gpp')) {
-    return hasAsciiBytePrefix(bytes, 'ftyp', 4);
+  if (
+    lower.endsWith(".mp4") ||
+    lower.endsWith(".mov") ||
+    lower.endsWith(".3gp") ||
+    lower.endsWith(".3gpp")
+  ) {
+    return hasAsciiBytePrefix(bytes, "ftyp", 4);
   }
-  if (lower.endsWith('.webm')) {
+  if (lower.endsWith(".webm")) {
     return hasBytePrefix(bytes, [0x1a, 0x45, 0xdf, 0xa3]);
   }
-  if (lower.endsWith('.avi')) {
-    return hasAsciiBytePrefix(bytes, 'RIFF') && hasAsciiBytePrefix(bytes.slice(8), 'AVI ');
+  if (lower.endsWith(".avi")) {
+    return hasAsciiBytePrefix(bytes, "RIFF") && hasAsciiBytePrefix(bytes.slice(8), "AVI ");
   }
-  if (lower.endsWith('.wmv')) {
+  if (lower.endsWith(".wmv")) {
     return hasBytePrefix(bytes, [0x30, 0x26, 0xb2, 0x75]);
   }
-  if (lower.endsWith('.mpeg') || lower.endsWith('.mpg')) {
-    return hasBytePrefix(bytes, [0x00, 0x00, 0x01, 0xba]) || hasBytePrefix(bytes, [0x00, 0x00, 0x01, 0xb3]);
+  if (lower.endsWith(".mpeg") || lower.endsWith(".mpg")) {
+    return (
+      hasBytePrefix(bytes, [0x00, 0x00, 0x01, 0xba]) ||
+      hasBytePrefix(bytes, [0x00, 0x00, 0x01, 0xb3])
+    );
   }
-  if (lower.endsWith('.flv')) {
-    return hasAsciiBytePrefix(bytes, 'FLV');
+  if (lower.endsWith(".flv")) {
+    return hasAsciiBytePrefix(bytes, "FLV");
   }
 
   return true;
@@ -689,22 +676,22 @@ function detectPendingWorkspaceImageFile(filePath: string, bytes: Uint8Array): b
   }
 
   const lower = filePath.toLowerCase();
-  if (lower.endsWith('.bmp')) {
-    return hasAsciiBytePrefix(bytes, 'BM');
+  if (lower.endsWith(".bmp")) {
+    return hasAsciiBytePrefix(bytes, "BM");
   }
-  if (lower.endsWith('.png')) {
+  if (lower.endsWith(".png")) {
     return hasBytePrefix(bytes, [0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]);
   }
-  if (lower.endsWith('.jpg') || lower.endsWith('.jpeg')) {
+  if (lower.endsWith(".jpg") || lower.endsWith(".jpeg")) {
     return hasBytePrefix(bytes, [0xff, 0xd8, 0xff]);
   }
-  if (lower.endsWith('.gif')) {
-    return hasAsciiBytePrefix(bytes, 'GIF87a') || hasAsciiBytePrefix(bytes, 'GIF89a');
+  if (lower.endsWith(".gif")) {
+    return hasAsciiBytePrefix(bytes, "GIF87a") || hasAsciiBytePrefix(bytes, "GIF89a");
   }
-  if (lower.endsWith('.webp')) {
-    return hasAsciiBytePrefix(bytes, 'RIFF') && hasAsciiBytePrefix(bytes.slice(8), 'WEBP');
+  if (lower.endsWith(".webp")) {
+    return hasAsciiBytePrefix(bytes, "RIFF") && hasAsciiBytePrefix(bytes.slice(8), "WEBP");
   }
-  if (lower.endsWith('.ico')) {
+  if (lower.endsWith(".ico")) {
     return hasBytePrefix(bytes, [0x00, 0x00, 0x01, 0x00]);
   }
 
@@ -728,23 +715,23 @@ function hasAsciiBytePrefix(bytes: Uint8Array, prefix: string, offset = 0): bool
   return expected.every((value, index) => bytes[offset + index] === value);
 }
 
-function normalizePromptRole(role: string): 'system' | 'user' | 'assistant' {
-  if (role === 'assistant') {
-    return 'assistant';
+function normalizePromptRole(role: string): "system" | "user" | "assistant" {
+  if (role === "assistant") {
+    return "assistant";
   }
-  if (role === 'system') {
-    return 'system';
+  if (role === "system") {
+    return "system";
   }
-  return 'user';
+  return "user";
 }
 
 function promptContentToText(content: JsonValue | undefined): string {
-  if (typeof content === 'string') {
+  if (typeof content === "string") {
     return content;
   }
 
-  if (isJsonObject(content) && content.type === 'text') {
-    return typeof content.text === 'string' ? content.text : '';
+  if (isJsonObject(content) && content.type === "text") {
+    return typeof content.text === "string" ? content.text : "";
   }
 
   return safePrettyJson(content);
@@ -759,5 +746,5 @@ function safePrettyJson(value: unknown): string {
 }
 
 function isJsonObject(value: JsonValue | undefined): value is Record<string, JsonValue> {
-  return typeof value === 'object' && value !== null && !Array.isArray(value);
+  return typeof value === "object" && value !== null && !Array.isArray(value);
 }

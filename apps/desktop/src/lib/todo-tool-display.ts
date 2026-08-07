@@ -1,6 +1,6 @@
 export type TodoDisplayItem = {
   title: string;
-  status: 'pending' | 'in_progress' | 'completed';
+  status: "pending" | "in_progress" | "completed";
 };
 
 export type TodoWriteDelta = {
@@ -15,9 +15,9 @@ export function parseTodoItemsFromPayload(payload: unknown): TodoDisplayItem[] |
   }
 
   let parsed = payload;
-  if (typeof payload === 'string') {
+  if (typeof payload === "string") {
     const trimmed = payload.trim();
-    if (!trimmed || !trimmed.startsWith('{')) {
+    if (!trimmed || !trimmed.startsWith("{")) {
       return undefined;
     }
     try {
@@ -27,7 +27,7 @@ export function parseTodoItemsFromPayload(payload: unknown): TodoDisplayItem[] |
       return undefined;
     }
   }
-  if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed)) {
+  if (!parsed || typeof parsed !== "object" || Array.isArray(parsed)) {
     return undefined;
   }
   const todos = (parsed as Record<string, unknown>).todos;
@@ -37,22 +37,22 @@ export function parseTodoItemsFromPayload(payload: unknown): TodoDisplayItem[] |
 
   const items: TodoDisplayItem[] = [];
   for (const entry of todos) {
-    if (!entry || typeof entry !== 'object' || Array.isArray(entry)) {
+    if (!entry || typeof entry !== "object" || Array.isArray(entry)) {
       continue;
     }
     const record = entry as Record<string, unknown>;
-    const title = typeof record.title === 'string' ? record.title.trim() : '';
+    const title = typeof record.title === "string" ? record.title.trim() : "";
     if (!title) {
       continue;
     }
     items.push({
       title,
       status:
-        record.status === 'completed'
-          ? 'completed'
-          : record.status === 'in_progress'
-            ? 'in_progress'
-            : 'pending',
+        record.status === "completed"
+          ? "completed"
+          : record.status === "in_progress"
+            ? "in_progress"
+            : "pending",
     });
   }
   return items;
@@ -81,7 +81,7 @@ export function computeTodoWriteDelta(
       added += 1;
       continue;
     }
-    if (beforeItem.status !== 'completed' && afterItem.status === 'completed') {
+    if (beforeItem.status !== "completed" && afterItem.status === "completed") {
       completed += 1;
     }
   }
@@ -102,13 +102,13 @@ export function formatTodoWriteDeltaDetail(
 ): string | undefined {
   const parts: string[] = [];
   if (delta.added > 0) {
-    parts.push(t('tool.todoWriteAdded', { count: delta.added }));
+    parts.push(t("tool.todoWriteAdded", { count: delta.added }));
   }
   if (delta.completed > 0) {
-    parts.push(t('tool.todoWriteCompleted', { count: delta.completed }));
+    parts.push(t("tool.todoWriteCompleted", { count: delta.completed }));
   }
   if (delta.removed > 0) {
-    parts.push(t('tool.todoWriteRemoved', { count: delta.removed }));
+    parts.push(t("tool.todoWriteRemoved", { count: delta.removed }));
   }
   if (parts.length === 0) {
     return undefined;

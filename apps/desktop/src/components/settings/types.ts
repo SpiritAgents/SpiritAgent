@@ -1,7 +1,6 @@
 import type { SettingsSidebarTab } from "@/components/session-sidebar";
 import type { DesktopAgentMode } from "@/lib/agent-mode";
 import type { FontPreference } from "@/lib/font";
-import type { ThemePreference } from "@/lib/theme";
 import type {
   AddModelRequest,
   AddMcpServerRequest,

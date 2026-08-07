@@ -10,8 +10,6 @@ import {
 import { Block, parseMarkdownIntoBlocks, type BlockProps } from "streamdown";
 import type { Pluggable } from "unified";
 
-import type { ReadManagedImagePreviewDataUrl } from "@/components/markdown-image";
-import type { ReadManagedVideoPreviewUrl } from "@/components/markdown-video";
 import { usePrefersReducedMotion } from "@/hooks/use-prefers-reduced-motion";
 import type { MarkdownTone } from "@/lib/markdown-message-components";
 import {
@@ -30,7 +28,7 @@ const streamingAnimateOptions = {
 
 function isAnimateRehypePlugin(entry: Pluggable): boolean {
   const fn = Array.isArray(entry) ? entry[0] : entry;
-  return typeof fn === "function" && /^rehypeAnimate/.test(fn.name ?? "");
+  return typeof fn === "function" && (fn.name ?? "").startsWith("rehypeAnimate");
 }
 
 type StreamBlockAnimateContextValue = {
@@ -122,10 +120,7 @@ function StreamingAnimateBlock(props: BlockProps) {
 
   const blockPlugin = useMemo(() => {
     if (!isTailBlock || !animatePlugin) return null;
-    return wrapStreamingAnimatePlugin(
-      animatePlugin,
-      () => frozenCharCountRef.current,
-    );
+    return wrapStreamingAnimatePlugin(animatePlugin, () => frozenCharCountRef.current);
   }, [animatePlugin, frozenCharCountRef, isTailBlock]);
 
   return (
@@ -183,9 +178,7 @@ function AgentMarkdownMessageImpl({
   }, [content, motionActive]);
 
   const lastBlockIndex = Math.max(0, streamBlocks.length - 1);
-  const tailBlockLength = motionActive
-    ? streamBlocks[lastBlockIndex]?.length ?? 0
-    : 0;
+  const tailBlockLength = motionActive ? (streamBlocks[lastBlockIndex]?.length ?? 0) : 0;
 
   // Multi-block streaming: only the tail block animates new chars, so prev-length must
   // track the tail block (not the whole doc). Reset to 0 when a new tail block begins

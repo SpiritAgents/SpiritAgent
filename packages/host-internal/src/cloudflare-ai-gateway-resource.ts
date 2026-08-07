@@ -11,4 +11,4 @@ export {
   normalizeCloudflareGatewayId,
   validateCloudflareAccountId,
   validateCloudflareGatewayId,
-} from '@spiritagent/agent-core/cloudflare-ai-gateway-resource';
+} from "@spiritagent/agent-core/cloudflare-ai-gateway-resource";

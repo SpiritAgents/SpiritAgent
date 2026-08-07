@@ -1,5 +1,5 @@
-import { normalizeWorkspaceEntryRel } from '@/lib/workspace-entry-path-sync';
-import type { WorkspaceContentSearchMatch } from '@/types';
+import { normalizeWorkspaceEntryRel } from "@/lib/workspace-entry-path-sync";
+import type { WorkspaceContentSearchMatch } from "@/types";
 
 export type WorkspaceFileSearchGroup = {
   relativePath: string;
@@ -33,10 +33,7 @@ export type HighlightSegment = {
 };
 
 /** ripgrep JSON submatch start/end 为行内 UTF-8 字节偏移（非 JS code unit）。 */
-export function ripgrepUtf8ByteOffsetToCodeUnitIndex(
-  text: string,
-  byteOffset: number,
-): number {
+export function ripgrepUtf8ByteOffsetToCodeUnitIndex(text: string, byteOffset: number): number {
   let bytes = 0;
   let index = 0;
   for (const char of text) {
@@ -107,19 +104,19 @@ export function truncateSearchLinePreview(
   maxLength = 72,
 ): HighlightSegment[] {
   const segments = buildHighlightedLineSegments(lineText, submatches);
-  const full = segments.map((segment) => segment.text).join('');
+  const full = segments.map((segment) => segment.text).join("");
   if (full.length <= maxLength) {
     return segments;
   }
 
   const firstHighlight = segments.find((segment) => segment.highlighted);
-  const highlightText = firstHighlight?.text ?? '';
+  const highlightText = firstHighlight?.text ?? "";
   const highlightIndex = highlightText ? full.indexOf(highlightText) : 0;
   const windowStart = Math.max(0, highlightIndex - 20);
   const windowEnd = Math.min(full.length, windowStart + maxLength);
   const sliced = full.slice(windowStart, windowEnd);
-  const prefix = windowStart > 0 ? '…' : '';
-  const suffix = windowEnd < full.length ? '…' : '';
+  const prefix = windowStart > 0 ? "…" : "";
+  const suffix = windowEnd < full.length ? "…" : "";
 
   const localSubmatches =
     submatches.length > 0

@@ -1,23 +1,20 @@
 {
   "name": "@spiritagent/desktop",
-  "private": true,
   "version": "0.3.2",
+  "private": true,
   "description": "Desktop application for Spirit Agent",
   "homepage": "https://github.com/SpiritAgents/SpiritAgent",
+  "license": "MIT",
   "author": {
     "name": "Spirit Agent contributors",
     "email": "121384036+N123999@users.noreply.github.com"
   },
-  "license": "MIT",
   "repository": {
     "type": "git",
     "url": "git+https://github.com/SpiritAgents/SpiritAgent.git",
     "directory": "apps/desktop"
   },
   "type": "module",
-  "engines": {
-    "node": ">=24"
-  },
   "scripts": {
     "build:deps": "pnpm exec turbo run build --filter=@spiritagent/desktop^...",
     "ensure:dev-built": "pnpm exec turbo run build:electron --filter=@spiritagent/desktop && node scripts/ensure-pty-spawn-helper.mjs",
@@ -121,5 +118,8 @@
     "typescript": "5.9.3",
     "vite": "8.2.0",
     "wait-on": "9.1.0"
+  },
+  "engines": {
+    "node": ">=24"
   }
 }

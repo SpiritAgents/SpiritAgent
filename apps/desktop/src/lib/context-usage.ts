@@ -1,15 +1,15 @@
-import { normalizeOpenAiApiBase } from '@spiritagent/host-internal/openai-api-base';
+import { normalizeOpenAiApiBase } from "@spiritagent/host-internal/openai-api-base";
 
-import { parseModelContextLength } from './model-context-length.js';
+import { parseModelContextLength } from "./model-context-length.js";
 import type {
   ConversationContextUsageSnapshot,
   DesktopModelCatalogHint,
   DesktopModelProvider,
   DesktopTransportKind,
-} from '../types.js';
+} from "../types.js";
 
 /** 与 `apps/desktop/src/host/storage.ts` 中 `DEFAULT_API_BASE` 保持一致。 */
-const DEFAULT_API_BASE = 'https://api.openai.com/v1';
+const DEFAULT_API_BASE = "https://api.openai.com/v1";
 
 export interface ContextUsageModelProfile {
   name: string;
@@ -19,18 +19,16 @@ export interface ContextUsageModelProfile {
   contextLength?: number;
 }
 
-export {
-  parseModelContextLength,
-} from './model-context-length.js';
+export { parseModelContextLength } from "./model-context-length.js";
 
 const CONTEXT_USAGE_PROVIDERS = new Set<DesktopModelProvider>([
-  'openrouter',
-  'vercel-ai-gateway',
-  'cloudflare-ai-gateway',
-  'moonshot-ai',
-  'kimi-code',
-  'volcengine',
-  'byteplus',
+  "openrouter",
+  "vercel-ai-gateway",
+  "cloudflare-ai-gateway",
+  "moonshot-ai",
+  "kimi-code",
+  "volcengine",
+  "byteplus",
 ]);
 
 export function supportsContextUsageProvider(provider: DesktopModelProvider | undefined): boolean {
@@ -60,8 +58,9 @@ export function resolveModelContextLength(
   }
 
   const apiBase = activeModel.apiBase.trim() || DEFAULT_API_BASE;
-  const transportKind = activeModel.transportKind
-    ?? (activeModel.provider === 'anthropic' ? 'anthropic' : 'openai-compatible');
+  const transportKind =
+    activeModel.transportKind ??
+    (activeModel.provider === "anthropic" ? "anthropic" : "openai-compatible");
   const hint = catalogHints?.find((entry) => {
     if (entry.provider !== activeModel.provider) {
       return false;
@@ -74,7 +73,7 @@ export function resolveModelContextLength(
 
   const catalogEntry = hint?.modelCatalog?.find((entry) => entry.id === modelName);
   const contextLength = catalogEntry?.contextLength;
-  if (typeof contextLength !== 'number' || !Number.isFinite(contextLength) || contextLength <= 0) {
+  if (typeof contextLength !== "number" || !Number.isFinite(contextLength) || contextLength <= 0) {
     return undefined;
   }
 
@@ -92,30 +91,33 @@ export function buildContextUsagePercent(inputTokens: number, contextLength: num
 export function normalizeContextUsageSnapshot(
   value: unknown,
 ): ConversationContextUsageSnapshot | undefined {
-  if (!value || typeof value !== 'object') {
+  if (!value || typeof value !== "object") {
     return undefined;
   }
 
   const record = value as Record<string, unknown>;
-  const rawInputTokens = typeof record.inputTokens === 'number' && Number.isFinite(record.inputTokens)
-    ? Math.trunc(record.inputTokens)
-    : undefined;
-  const contextLength = typeof record.contextLength === 'number' && Number.isFinite(record.contextLength)
-    ? Math.max(0, Math.trunc(record.contextLength))
-    : undefined;
+  const rawInputTokens =
+    typeof record.inputTokens === "number" && Number.isFinite(record.inputTokens)
+      ? Math.trunc(record.inputTokens)
+      : undefined;
+  const contextLength =
+    typeof record.contextLength === "number" && Number.isFinite(record.contextLength)
+      ? Math.max(0, Math.trunc(record.contextLength))
+      : undefined;
   if (
-    rawInputTokens === undefined
-    || rawInputTokens < 0
-    || contextLength === undefined
-    || contextLength <= 0
+    rawInputTokens === undefined ||
+    rawInputTokens < 0 ||
+    contextLength === undefined ||
+    contextLength <= 0
   ) {
     return undefined;
   }
 
   const inputTokens = rawInputTokens;
 
-  const percent = typeof record.percent === 'number' && Number.isFinite(record.percent)
-    ? Math.max(0, Math.min(100, Math.round(record.percent)))
-    : buildContextUsagePercent(inputTokens, contextLength);
+  const percent =
+    typeof record.percent === "number" && Number.isFinite(record.percent)
+      ? Math.max(0, Math.min(100, Math.round(record.percent)))
+      : buildContextUsagePercent(inputTokens, contextLength);
   return { inputTokens, contextLength, percent };
 }

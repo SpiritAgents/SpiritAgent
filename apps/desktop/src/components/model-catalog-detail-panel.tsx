@@ -1,42 +1,48 @@
-import { type ReactNode, useMemo } from 'react';
-import { useTranslation } from 'react-i18next';
+import { type ReactNode, useMemo } from "react";
+import { useTranslation } from "react-i18next";
 
-import { Badge } from '@/components/ui/badge';
+import { Badge } from "@/components/ui/badge";
 import {
   DESKTOP_OVERLAY_LIST_DETAIL_LABEL,
   DESKTOP_OVERLAY_LIST_ITEM_PRIMARY,
   DESKTOP_OVERLAY_LIST_ITEM_SECONDARY,
-} from '@/lib/desktop-chrome';
-import { modelCapabilityLabel } from '@/lib/model-capability-label';
+} from "@/lib/desktop-chrome";
+import { modelCapabilityLabel } from "@/lib/model-capability-label";
 import {
   buildModelCatalogDetailFields,
   modelCatalogDisplayTitle,
-} from '@/lib/model-catalog-detail';
-import { parseModelContextLength } from '@/lib/model-context-length';
+} from "@/lib/model-catalog-detail";
+import { parseModelContextLength } from "@/lib/model-context-length";
 import { DESKTOP_LIST_ITEM_PRIMARY_CLASS } from "@/lib/desktop-typography";
-import { cn } from '@/lib/utils';
-import type { ModelProfileSnapshot, PreviewModelCatalogEntry } from '@/types';
+import { cn } from "@/lib/utils";
+import type { ModelProfileSnapshot, PreviewModelCatalogEntry } from "@/types";
 
 type ModelCatalogDetailPanelProps = {
   model: ModelProfileSnapshot;
   catalogEntry?: PreviewModelCatalogEntry;
   providerLabel: string;
-  density?: 'default' | 'list';
+  density?: "default" | "list";
   children?: ReactNode;
 };
 
 function ModelCatalogDetailFieldSection({
   label,
   value,
-  density = 'default',
+  density = "default",
 }: {
   label: string;
   value: string;
-  density?: 'default' | 'list';
+  density?: "default" | "list";
 }) {
   return (
     <section className="flex items-baseline justify-between gap-2">
-      <span className={density === 'list' ? DESKTOP_OVERLAY_LIST_DETAIL_LABEL : 'text-[11px] text-muted-foreground'}>
+      <span
+        className={
+          density === "list"
+            ? DESKTOP_OVERLAY_LIST_DETAIL_LABEL
+            : "text-[11px] text-muted-foreground"
+        }
+      >
         {label}
       </span>
       <span className="text-right leading-5 text-foreground/90">{value}</span>
@@ -48,18 +54,18 @@ export function ModelCatalogDetailPanel({
   model,
   catalogEntry,
   providerLabel,
-  density = 'default',
+  density = "default",
   children,
 }: ModelCatalogDetailPanelProps) {
   const { t } = useTranslation();
-  const isList = density === 'list';
+  const isList = density === "list";
   const title = modelCatalogDisplayTitle(model, catalogEntry);
   const capabilities = model.capabilities ?? catalogEntry?.capabilities;
   const contextLength =
-    parseModelContextLength(model.contextLength)
-    ?? parseModelContextLength(catalogEntry?.contextLength);
+    parseModelContextLength(model.contextLength) ??
+    parseModelContextLength(catalogEntry?.contextLength);
   const maxCompletionTokens = catalogEntry?.maxCompletionTokens;
-  const description = catalogEntry?.description?.trim() ?? '';
+  const description = catalogEntry?.description?.trim() ?? "";
   const detailFields = useMemo(
     () =>
       buildModelCatalogDetailFields({
@@ -74,16 +80,17 @@ export function ModelCatalogDetailPanel({
   const hasContentBelowHeader = Boolean(description || children || hasDetailFields);
   const hasFollowingSection = Boolean(children || hasDetailFields);
   const controlsIsLast = !hasDetailFields;
-  const sectionPadding = isList ? 'px-2 py-1.5' : 'px-3 py-2.5';
-  const sectionPaddingLast = isList ? 'px-2 pt-1.5' : 'px-3 pt-2.5';
-  const sectionDivider = 'border-b border-border/40';
+  const sectionPadding = isList ? "px-2 py-1.5" : "px-3 py-2.5";
+  const sectionPaddingLast = isList ? "px-2 pt-1.5" : "px-3 pt-2.5";
+  const sectionDivider = "border-b border-border/40";
 
   return (
-    <div className={cn(isList ? 'flex flex-col' : '-mx-3 flex flex-col')}>
+    <div className={cn(isList ? "flex flex-col" : "-mx-3 flex flex-col")}>
       <div
         className={cn(
-          hasContentBelowHeader && (isList ? 'border-b border-border/40' : 'border-b border-border/60'),
-          isList ? 'px-2 py-1.5' : hasContentBelowHeader ? 'px-3 pb-3' : 'px-3',
+          hasContentBelowHeader &&
+            (isList ? "border-b border-border/40" : "border-b border-border/60"),
+          isList ? "px-2 py-1.5" : hasContentBelowHeader ? "px-3 pb-3" : "px-3",
         )}
       >
         <p
@@ -95,11 +102,15 @@ export function ModelCatalogDetailPanel({
         >
           {title}
         </p>
-        <p className={cn(isList ? DESKTOP_OVERLAY_LIST_ITEM_SECONDARY : 'mt-1 text-[11px] text-muted-foreground')}>
+        <p
+          className={cn(
+            isList ? DESKTOP_OVERLAY_LIST_ITEM_SECONDARY : "mt-1 text-[11px] text-muted-foreground",
+          )}
+        >
           {providerLabel}
         </p>
         {capabilities && capabilities.length > 0 ? (
-          <div className={cn('flex flex-wrap gap-1.5', isList ? 'mt-1.5' : 'mt-2')}>
+          <div className={cn("flex flex-wrap gap-1.5", isList ? "mt-1.5" : "mt-2")}>
             {capabilities.map((capability) => (
               <Badge
                 key={capability}
@@ -117,7 +128,7 @@ export function ModelCatalogDetailPanel({
           className={cn(
             hasFollowingSection ? sectionPadding : sectionPaddingLast,
             hasFollowingSection && sectionDivider,
-            'text-xs',
+            "text-xs",
           )}
         >
           <p className="whitespace-pre-wrap leading-5 text-foreground/90">{description}</p>
@@ -134,7 +145,7 @@ export function ModelCatalogDetailPanel({
         </div>
       ) : null}
       {hasDetailFields ? (
-        <div className={cn(sectionPaddingLast, 'space-y-2 text-xs')}>
+        <div className={cn(sectionPaddingLast, "space-y-2 text-xs")}>
           {detailFields.map((field) => (
             <ModelCatalogDetailFieldSection
               key={field.id}

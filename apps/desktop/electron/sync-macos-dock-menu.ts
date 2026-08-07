@@ -1,9 +1,9 @@
-import { Menu, app } from 'electron';
+import { Menu, app } from "electron";
 
-import { invokeDesktopHostCommand } from '../src/host/service.js';
-import type { SessionListItem } from '../src/types.js';
+import { invokeDesktopHostCommand } from "../src/host/service.js";
+import type { SessionListItem } from "../src/types.js";
 
-import { buildRecentSessionMenuItems } from './session-menu-items.js';
+import { buildRecentSessionMenuItems } from "./session-menu-items.js";
 
 export type MacOSDockMenuDeps = {
   openSession: (sessionPath: string) => void | Promise<void>;
@@ -33,16 +33,16 @@ async function syncMacOSDockMenuUnlocked(
   if (isSyncStale(generation)) {
     return;
   }
-  if (process.platform !== 'darwin' || !app.dock) {
+  if (process.platform !== "darwin" || !app.dock) {
     return;
   }
 
   let sessions: SessionListItem[] = [];
   try {
-    const listed = await invokeDesktopHostCommand('listSessions');
+    const listed = await invokeDesktopHostCommand("listSessions");
     sessions = Array.isArray(listed) ? (listed as SessionListItem[]) : [];
   } catch (error) {
-    console.warn('[spirit-desktop] dock menu listSessions failed:', error);
+    console.warn("[spirit-desktop] dock menu listSessions failed:", error);
   }
 
   if (isSyncStale(generation)) {
@@ -85,7 +85,7 @@ export function disposeMacOSDockMenu(): void {
   disposed = true;
   syncGeneration += 1;
   depsStore = undefined;
-  if (process.platform === 'darwin' && app.dock) {
+  if (process.platform === "darwin" && app.dock) {
     app.dock.setMenu(Menu.buildFromTemplate([]));
   }
 }

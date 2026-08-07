@@ -1,6 +1,6 @@
-import type { CodeCompletionResult } from '@spiritagent/agent-core';
+import type { CodeCompletionResult } from "@spiritagent/agent-core";
 
-import type { FormattedRecentEdits } from './edit-journal.js';
+import type { FormattedRecentEdits } from "./edit-journal.js";
 
 export interface CodeCompletionRelatedSnippet {
   relativePath: string;

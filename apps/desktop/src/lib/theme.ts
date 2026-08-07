@@ -90,8 +90,7 @@ export function applyThemeToDocument(
       }
       setDocumentDark(realDark);
     },
-    onSystemDarkResolved:
-      pref === "system" ? options?.onSystemDarkResolved : undefined,
+    onSystemDarkResolved: pref === "system" ? options?.onSystemDarkResolved : undefined,
   });
 }
 

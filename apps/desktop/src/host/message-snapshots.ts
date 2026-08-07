@@ -1,10 +1,7 @@
-import type {
-  ConversationMessageSnapshot,
-  PendingAssistantAux,
-} from '../types.js';
-import { canRewindMessage, type StoredDesktopRewindMetadata } from './rewind.js';
-import { isGenericPendingThinkingStatusText } from '../lib/subagent-display.js';
-import { shouldStripThinkingAuxNearToolCard } from '../lib/conversation-thinking-ui.js';
+import type { ConversationMessageSnapshot, PendingAssistantAux } from "../types.js";
+import { canRewindMessage, type StoredDesktopRewindMetadata } from "./rewind.js";
+import { isGenericPendingThinkingStatusText } from "../lib/subagent-display.js";
+import { shouldStripThinkingAuxNearToolCard } from "../lib/conversation-thinking-ui.js";
 import {
   normalizeMessageAuxSnapshot,
   normalizeToolBlockSnapshot,
@@ -13,7 +10,7 @@ import {
   shouldHidePendingAssistantThinkingForLiveStandaloneSubagentStatus,
   stripRedundantThinkingFromMessageAux,
   stripThinkingFromAux,
-} from './message-ordering.js';
+} from "./message-ordering.js";
 
 function stripGenericPendingThinkingStatusFromAux(
   aux: ReturnType<typeof normalizeMessageAuxSnapshot>,
@@ -42,12 +39,13 @@ export function buildVisibleMessageSnapshots(input: {
       livePendingAux: input.livePendingAux,
       rewind: input.rewind,
     });
-    return snapshot && !shouldHideEmptyPendingAssistantSnapshot(
-      snapshot,
-      input.livePendingAux,
-      input.messages,
-      messageIndex,
-    )
+    return snapshot &&
+      !shouldHideEmptyPendingAssistantSnapshot(
+        snapshot,
+        input.livePendingAux,
+        input.messages,
+        messageIndex,
+      )
       ? [snapshot]
       : [];
   });
@@ -89,9 +87,7 @@ export function buildVisibleMessageSnapshot(input: {
   };
 }
 
-export function pruneEmptyAssistantMessages(
-  messages: ConversationMessageSnapshot[],
-): {
+export function pruneEmptyAssistantMessages(messages: ConversationMessageSnapshot[]): {
   messages: ConversationMessageSnapshot[];
   removed: PrunedAssistantMessage[];
 } {

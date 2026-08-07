@@ -1,4 +1,12 @@
-import { useCallback, useMemo, useRef, useState, type MouseEvent, type ReactNode, type RefObject } from "react";
+import {
+  useCallback,
+  useMemo,
+  useRef,
+  useState,
+  type MouseEvent,
+  type ReactNode,
+  type RefObject,
+} from "react";
 import { LoaderCircle, Sparkles, Trash2 } from "lucide-react";
 import { useTranslation } from "react-i18next";
 
@@ -51,7 +59,8 @@ export function AutomationsView({
   const generateBusy = busyAction === "reset";
   const canDeleteAutomation = Boolean(onDeleteAutomation) && apiReady && !automationBusy;
 
-  const [contextMenuAutomation, setContextMenuAutomation] = useState<DesktopAutomationListItem | null>(null);
+  const [contextMenuAutomation, setContextMenuAutomation] =
+    useState<DesktopAutomationListItem | null>(null);
   const contextMenuAutomationRef = useRef<DesktopAutomationListItem | null>(null);
   const [deleteTarget, setDeleteTarget] = useState<DesktopAutomationListItem | null>(null);
 
@@ -101,9 +110,7 @@ export function AutomationsView({
         <div className="space-y-4">
           <div className="flex flex-wrap items-center justify-between gap-3">
             <div className="min-w-0 flex-1 space-y-1">
-              <h1 className={DESKTOP_PAGE_TITLE_CLASS}>
-                {t("automations.title")}
-              </h1>
+              <h1 className={DESKTOP_PAGE_TITLE_CLASS}>{t("automations.title")}</h1>
               <p className="text-sm text-muted-foreground">{t("automations.subtitle")}</p>
             </div>
             <div className="flex shrink-0 items-center gap-2">
@@ -177,34 +184,36 @@ export function AutomationsView({
           </DialogHeader>
           <DialogFooter>
             <DialogFooterActions>
-            <Button
-              type="button"
-              variant="outline"
-              size="sm"
-              onClick={() => setDeleteTarget(null)}
-              disabled={automationBusy}
-            >
-              {t("common.cancel")}
-            </Button>
-            <Button
-              type="button"
-              variant="destructive"
-              size="sm"
-              disabled={automationBusy || !deleteTarget || !onDeleteAutomation}
-              onClick={() => {
-                const target = deleteTarget;
-                if (!target || !onDeleteAutomation) {
-                  return;
-                }
-                void (async () => {
-                  await onDeleteAutomation(target.id);
-                  setDeleteTarget(null);
-                })();
-              }}
-            >
-              {automationBusy ? <LoaderCircle className="size-4 animate-spin" aria-hidden /> : null}
-              {t("common.delete")}
-            </Button>
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={() => setDeleteTarget(null)}
+                disabled={automationBusy}
+              >
+                {t("common.cancel")}
+              </Button>
+              <Button
+                type="button"
+                variant="destructive"
+                size="sm"
+                disabled={automationBusy || !deleteTarget || !onDeleteAutomation}
+                onClick={() => {
+                  const target = deleteTarget;
+                  if (!target || !onDeleteAutomation) {
+                    return;
+                  }
+                  void (async () => {
+                    await onDeleteAutomation(target.id);
+                    setDeleteTarget(null);
+                  })();
+                }}
+              >
+                {automationBusy ? (
+                  <LoaderCircle className="size-4 animate-spin" aria-hidden />
+                ) : null}
+                {t("common.delete")}
+              </Button>
             </DialogFooterActions>
           </DialogFooter>
         </DialogContent>
@@ -237,9 +246,7 @@ function AutomationListNav({
   const { t } = useTranslation();
 
   const list = (
-    <div
-      onContextMenuCapture={canDeleteAutomation ? onAutomationContextMenuCapture : undefined}
-    >
+    <div onContextMenuCapture={canDeleteAutomation ? onAutomationContextMenuCapture : undefined}>
       {children}
     </div>
   );

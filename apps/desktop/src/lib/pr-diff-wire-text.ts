@@ -1,7 +1,9 @@
 import type { PrDiffAttachment } from "./pr-diff-attachment.js";
 import { formatChipWireBlock, formatLineRange, scanChipWireBlocks } from "./chip-wire-block.js";
 
-function formatPrDiffWireMeta(attachment: Pick<PrDiffAttachment, "filename" | "lineStart" | "lineEnd" | "status">): string {
+function formatPrDiffWireMeta(
+  attachment: Pick<PrDiffAttachment, "filename" | "lineStart" | "lineEnd" | "status">,
+): string {
   const normalized = attachment.filename.replace(/\\/gu, "/").trim() || "file";
   const hasLines = attachment.lineStart > 0 && attachment.lineEnd > 0;
   const linePart = hasLines
@@ -21,7 +23,12 @@ function formatPrDiffInfoLine(
 }
 
 /** Wire-format PR diff block (shared by attachment + composer segment model). */
-export function prDiffContextText(attachment: Pick<PrDiffAttachment, "prUrl" | "filename" | "lineStart" | "lineEnd" | "status" | "diffText">): string {
+export function prDiffContextText(
+  attachment: Pick<
+    PrDiffAttachment,
+    "prUrl" | "filename" | "lineStart" | "lineEnd" | "status" | "diffText"
+  >,
+): string {
   return formatChipWireBlock(formatPrDiffInfoLine(attachment), attachment.diffText);
 }
 
@@ -52,9 +59,12 @@ function parsePrDiffInfoLine(infoLine: string): {
   const linePart = parts[2]?.trim() ?? "";
   const statusRaw = parts[3]?.trim() ?? "";
   if (
-    !prUrl
-    || !filename
-    || (statusRaw !== "open" && statusRaw !== "merged" && statusRaw !== "closed" && statusRaw !== "draft")
+    !prUrl ||
+    !filename ||
+    (statusRaw !== "open" &&
+      statusRaw !== "merged" &&
+      statusRaw !== "closed" &&
+      statusRaw !== "draft")
   ) {
     return null;
   }
@@ -113,8 +123,11 @@ export function parsePrDiffWireMeta(meta: string): {
   const linePart = tabParts[1]?.trim() ?? "";
   const statusRaw = tabParts[2]?.trim() ?? "";
   if (
-    !filename
-    || (statusRaw !== "open" && statusRaw !== "merged" && statusRaw !== "closed" && statusRaw !== "draft")
+    !filename ||
+    (statusRaw !== "open" &&
+      statusRaw !== "merged" &&
+      statusRaw !== "closed" &&
+      statusRaw !== "draft")
   ) {
     return null;
   }

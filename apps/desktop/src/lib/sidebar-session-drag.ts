@@ -20,9 +20,9 @@ export function parseSidebarSessionDragData(
   try {
     const parsed = JSON.parse(raw) as SidebarSessionDragPayload;
     if (
-      parsed.kind === "stored"
-      && typeof parsed.sessionPath === "string"
-      && parsed.sessionPath.trim()
+      parsed.kind === "stored" &&
+      typeof parsed.sessionPath === "string" &&
+      parsed.sessionPath.trim()
     ) {
       return { kind: "stored", sessionPath: parsed.sessionPath.trim() };
     }
@@ -30,9 +30,9 @@ export function parseSidebarSessionDragData(
       return { kind: "new" };
     }
     if (
-      parsed.kind === "new-in-workspace"
-      && typeof parsed.workspaceRoot === "string"
-      && parsed.workspaceRoot.trim()
+      parsed.kind === "new-in-workspace" &&
+      typeof parsed.workspaceRoot === "string" &&
+      parsed.workspaceRoot.trim()
     ) {
       return { kind: "new-in-workspace", workspaceRoot: parsed.workspaceRoot.trim() };
     }
@@ -44,11 +44,7 @@ export function parseSidebarSessionDragData(
 
 export function isSidebarSessionDragBlockedTarget(target: EventTarget | null): boolean {
   return (
-    target instanceof Element
-    && Boolean(
-      target.closest(
-        'input, textarea, select, [role="menuitem"], [data-no-session-drag]',
-      ),
-    )
+    target instanceof Element &&
+    Boolean(target.closest('input, textarea, select, [role="menuitem"], [data-no-session-drag]'))
   );
 }

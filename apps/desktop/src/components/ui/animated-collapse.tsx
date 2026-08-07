@@ -73,11 +73,7 @@ function AnimatedCollapse({
   );
 }
 
-function AnimatedCollapseTrigger({
-  className,
-  children,
-  ...props
-}: ComponentProps<"button">) {
+function AnimatedCollapseTrigger({ className, children, ...props }: ComponentProps<"button">) {
   const { open, onOpenChange, contentId } = useAnimatedCollapseContext("AnimatedCollapseTrigger");
 
   return (

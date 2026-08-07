@@ -7,12 +7,12 @@ import {
   BedrockClient,
   ListFoundationModelsCommand,
   type FoundationModelSummary,
-} from '@aws-sdk/client-bedrock';
+} from "@aws-sdk/client-bedrock";
 
-import type { ProviderListedModelEntry } from './openai-models.js';
-import { normalizeAwsRegion } from './bedrock-region.js';
+import type { ProviderListedModelEntry } from "./openai-models.js";
+import { normalizeAwsRegion } from "./bedrock-region.js";
 
-export { bedrockApiBaseFromRegion, normalizeAwsRegion } from './bedrock-region.js';
+export { bedrockApiBaseFromRegion, normalizeAwsRegion } from "./bedrock-region.js";
 
 export interface ListBedrockModelsOptions {
   region: string;
@@ -26,28 +26,28 @@ export interface ListBedrockModelsOptions {
 function bedrockSupportsReasoning(modelId: string): boolean {
   const normalized = modelId.trim().toLowerCase();
   return (
-    normalized.includes('anthropic.claude')
-    || normalized.includes('.anthropic.claude')
-    || normalized.includes('deepseek.r1')
-    || normalized.includes('amazon.nova')
-    || normalized.includes('us.amazon.nova')
+    normalized.includes("anthropic.claude") ||
+    normalized.includes(".anthropic.claude") ||
+    normalized.includes("deepseek.r1") ||
+    normalized.includes("amazon.nova") ||
+    normalized.includes("us.amazon.nova")
   );
 }
 
 function isDeprecatedBedrockModel(summary: FoundationModelSummary): boolean {
   const status = summary.modelLifecycle?.status?.trim().toLowerCase();
-  return status === 'deprecated' || status === 'legacy';
+  return status === "deprecated" || status === "legacy";
 }
 
 function isConversationalTextModel(summary: FoundationModelSummary): boolean {
   const outputModalities = summary.outputModalities ?? [];
-  if (!outputModalities.includes('TEXT')) {
+  if (!outputModalities.includes("TEXT")) {
     return false;
   }
   if (isDeprecatedBedrockModel(summary)) {
     return false;
   }
-  return typeof summary.modelId === 'string' && summary.modelId.trim().length > 0;
+  return typeof summary.modelId === "string" && summary.modelId.trim().length > 0;
 }
 
 export function parseBedrockFoundationModelSummaries(
@@ -62,7 +62,7 @@ export function parseBedrockFoundationModelSummaries(
 
     const id = summary.modelId!.trim();
     const displayName =
-      typeof summary.modelName === 'string' && summary.modelName.trim().length > 0
+      typeof summary.modelName === "string" && summary.modelName.trim().length > 0
         ? summary.modelName.trim()
         : id;
     const inputModalities = summary.inputModalities ?? [];
@@ -70,10 +70,10 @@ export function parseBedrockFoundationModelSummaries(
     entries.push({
       id,
       displayName,
-      ...(typeof summary.providerName === 'string' && summary.providerName.trim().length > 0
+      ...(typeof summary.providerName === "string" && summary.providerName.trim().length > 0
         ? { description: summary.providerName.trim() }
         : {}),
-      supportsImageInput: inputModalities.includes('IMAGE'),
+      supportsImageInput: inputModalities.includes("IMAGE"),
       supportsReasoning: bedrockSupportsReasoning(id),
     });
   }
@@ -81,10 +81,13 @@ export function parseBedrockFoundationModelSummaries(
   return entries.sort((a, b) => a.id.localeCompare(b.id));
 }
 
-function resolveBedrockClientConfig(options: ListBedrockModelsOptions): { region: string; credentials?: { accessKeyId: string; secretAccessKey: string; sessionToken?: string } } {
+function resolveBedrockClientConfig(options: ListBedrockModelsOptions): {
+  region: string;
+  credentials?: { accessKeyId: string; secretAccessKey: string; sessionToken?: string };
+} {
   const region = normalizeAwsRegion(options.region);
   if (!region) {
-    throw new Error('AWS 区域不能为空。');
+    throw new Error("AWS 区域不能为空。");
   }
 
   const accessKeyId = options.accessKeyId?.trim();
@@ -103,13 +106,11 @@ function resolveBedrockClientConfig(options: ListBedrockModelsOptions): { region
   // Bearer API Key 仅用于 inference（@ai-sdk/amazon-bedrock）；ListFoundationModels 不支持 Bearer。
   if (options.apiKey?.trim()) {
     throw new Error(
-      'Bearer API Key cannot list Bedrock models. Provide IAM Access Key ID and Secret Access Key.',
+      "Bearer API Key cannot list Bedrock models. Provide IAM Access Key ID and Secret Access Key.",
     );
   }
 
-  throw new Error(
-    'ListFoundationModels requires IAM Access Key ID and Secret Access Key.',
-  );
+  throw new Error("ListFoundationModels requires IAM Access Key ID and Secret Access Key.");
 }
 
 export async function listBedrockModels(
@@ -117,13 +118,13 @@ export async function listBedrockModels(
 ): Promise<ProviderListedModelEntry[]> {
   const region = normalizeAwsRegion(options.region);
   if (!region) {
-    throw new Error('AWS 区域不能为空。');
+    throw new Error("AWS 区域不能为空。");
   }
 
   const client = new BedrockClient(resolveBedrockClientConfig(options));
   const response = await client.send(
     new ListFoundationModelsCommand({
-      byOutputModality: 'TEXT',
+      byOutputModality: "TEXT",
     }),
     options.signal ? { abortSignal: options.signal } : undefined,
   );

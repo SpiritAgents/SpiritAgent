@@ -8,9 +8,11 @@
     "url": "git+https://github.com/SpiritAgents/SpiritAgent.git",
     "directory": "packages/host-internal"
   },
-  "publishConfig": {
-    "access": "public"
-  },
+  "files": [
+    "dist",
+    "built-in-skills",
+    "README.md"
+  ],
   "type": "module",
   "main": "./dist/index.js",
   "types": "./dist/index.d.ts",
@@ -144,13 +146,8 @@
       "default": "./dist/lsp/index.js"
     }
   },
-  "files": [
-    "dist",
-    "built-in-skills",
-    "README.md"
-  ],
-  "engines": {
-    "node": ">=24"
+  "publishConfig": {
+    "access": "public"
   },
   "scripts": {
     "build": "tsc -p tsconfig.json",
@@ -163,13 +160,6 @@
     "notice": "node scripts/gen-notice.mjs",
     "notice:production": "node scripts/gen-notice.mjs --production",
     "prepublishOnly": "pnpm run build && node ../../scripts/publish/assert-no-workspace-deps.mjs"
-  },
-  "devDependencies": {
-    "@types/jsdom": "28.0.3",
-    "@types/node": "25.9.5",
-    "@types/turndown": "5.0.6",
-    "license-checker-rseidelsohn": "5.0.1",
-    "typescript": "5.9.3"
   },
   "dependencies": {
     "@aws-sdk/client-bedrock": "3.1103.0",
@@ -188,5 +178,15 @@
     "turndown-plugin-gfm": "1.0.2",
     "vscode-jsonrpc": "8.2.1",
     "vscode-languageserver-protocol": "3.18.2"
+  },
+  "devDependencies": {
+    "@types/jsdom": "28.0.3",
+    "@types/node": "25.9.5",
+    "@types/turndown": "5.0.6",
+    "license-checker-rseidelsohn": "5.0.1",
+    "typescript": "5.9.3"
+  },
+  "engines": {
+    "node": ">=24"
   }
 }

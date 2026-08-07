@@ -1,8 +1,8 @@
-import assert from 'node:assert/strict';
-import test from 'node:test';
-import { mkdtemp, mkdir, readdir, readFile, rm, writeFile } from 'node:fs/promises';
-import { tmpdir } from 'node:os';
-import { join } from 'node:path';
+import assert from "node:assert/strict";
+import test from "node:test";
+import { mkdtemp, mkdir, readdir, readFile, rm, writeFile } from "node:fs/promises";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
 
 import {
   computeNextRunAt,
@@ -13,36 +13,36 @@ import {
   normalizeAutomationTrigger,
   reconcileGitHubTriggerPollState,
   shouldFireNow,
-} from './automations.js';
+} from "./automations.js";
 
-test('automation store create list get update delete', async () => {
-  const spiritDataDir = await mkdtemp(join(tmpdir(), 'spirit-host-automations-'));
+test("automation store create list get update delete", async () => {
+  const spiritDataDir = await mkdtemp(join(tmpdir(), "spirit-host-automations-"));
 
   try {
     const store = createHostAutomationStore(spiritDataDir);
     const created = await store.create({
-      title: 'GitHub 日报',
-      overview: '收集 GitHub 新闻',
-      trigger: { kind: 'time', schedule: { kind: 'daily', hour: 20, minute: 0 } },
+      title: "GitHub 日报",
+      overview: "收集 GitHub 新闻",
+      trigger: { kind: "time", schedule: { kind: "daily", hour: 20, minute: 0 } },
       workspaceRoot: spiritDataDir,
-      modelRef: { groupId: 'openai', name: 'gpt-test' },
-      approvalLevel: 'default',
+      modelRef: { groupId: "openai", name: "gpt-test" },
+      approvalLevel: "default",
     });
     assert.equal(created.enabled, true);
-    assert.equal(created.trigger.kind, 'time');
+    assert.equal(created.trigger.kind, "time");
 
     const summaries = await store.listSummaries();
     assert.equal(summaries.length, 1);
-    assert.equal(summaries[0]?.title, 'GitHub 日报');
-    assert.equal(summaries[0]?.scheduleLabel, 'Daily 20:00');
+    assert.equal(summaries[0]?.title, "GitHub 日报");
+    assert.equal(summaries[0]?.scheduleLabel, "Daily 20:00");
 
     const loaded = await store.get(created.id);
     assert.ok(loaded);
     assert.equal(loaded!.runs.length, 0);
 
-    const updated = await store.update(created.id, { enabled: false, title: 'Renamed' });
+    const updated = await store.update(created.id, { enabled: false, title: "Renamed" });
     assert.equal(updated.enabled, false);
-    assert.equal(updated.title, 'Renamed');
+    assert.equal(updated.title, "Renamed");
 
     await store.delete(created.id);
     assert.equal((await store.listSummaries()).length, 0);
@@ -51,138 +51,145 @@ test('automation store create list get update delete', async () => {
   }
 });
 
-test('automation store tracks runs and active run', async () => {
-  const spiritDataDir = await mkdtemp(join(tmpdir(), 'spirit-host-automations-runs-'));
+test("automation store tracks runs and active run", async () => {
+  const spiritDataDir = await mkdtemp(join(tmpdir(), "spirit-host-automations-runs-"));
 
   try {
     const store = createHostAutomationStore(spiritDataDir);
     const created = await store.create({
-      title: 'Hourly task',
-      overview: 'Do work',
-      trigger: { kind: 'time', schedule: { kind: 'hourly' } },
+      title: "Hourly task",
+      overview: "Do work",
+      trigger: { kind: "time", schedule: { kind: "hourly" } },
       workspaceRoot: spiritDataDir,
-      modelRef: { groupId: 'openai', name: 'gpt-test' },
-      approvalLevel: 'full-approval',
+      modelRef: { groupId: "openai", name: "gpt-test" },
+      approvalLevel: "full-approval",
     });
 
     const run = await store.addRun(created.id, {
-      id: 'run-1',
+      id: "run-1",
       automationId: created.id,
-      sessionPath: '/tmp/session.json',
-      status: 'running',
+      sessionPath: "/tmp/session.json",
+      status: "running",
       startedAtUnixMs: Date.now(),
     });
-    assert.equal(run.status, 'running');
+    assert.equal(run.status, "running");
     assert.ok(await store.getActiveRun(created.id));
 
     await store.updateRun(created.id, run.id, {
-      status: 'completed',
+      status: "completed",
       completedAtUnixMs: Date.now(),
     });
-    assert.equal((await store.getActiveRun(created.id)), undefined);
+    assert.equal(await store.getActiveRun(created.id), undefined);
 
     const blockedRun = await store.addRun(created.id, {
-      id: 'run-2',
+      id: "run-2",
       automationId: created.id,
-      sessionPath: '/tmp/session-2.json',
-      status: 'blocked',
+      sessionPath: "/tmp/session-2.json",
+      status: "blocked",
       startedAtUnixMs: Date.now(),
     });
-    assert.equal(blockedRun.status, 'blocked');
-    assert.equal((await store.getActiveRun(created.id)), undefined);
+    assert.equal(blockedRun.status, "blocked");
+    assert.equal(await store.getActiveRun(created.id), undefined);
 
     const loaded = await store.get(created.id);
-    assert.equal(loaded?.runs[0]?.status, 'completed');
-    assert.equal(loaded?.runs[1]?.status, 'blocked');
+    assert.equal(loaded?.runs[0]?.status, "completed");
+    assert.equal(loaded?.runs[1]?.status, "blocked");
   } finally {
     await rm(spiritDataDir, { recursive: true, force: true });
   }
 });
 
-test('shouldFireNow respects schedule and last fired bucket', () => {
-  const dailyAtEight = { kind: 'daily' as const, hour: 8, minute: 30 };
-  const eightThirty = Date.parse('2026-06-08T08:30:00');
+test("shouldFireNow respects schedule and last fired bucket", () => {
+  const dailyAtEight = { kind: "daily" as const, hour: 8, minute: 30 };
+  const eightThirty = Date.parse("2026-06-08T08:30:00");
   assert.equal(shouldFireNow(dailyAtEight, undefined, eightThirty), true);
   assert.equal(shouldFireNow(dailyAtEight, eightThirty, eightThirty), false);
   // 已在应触发分钟内触发过：即便 now 已过 1 分钟也不重复触发
   assert.equal(shouldFireNow(dailyAtEight, eightThirty + 20_000, eightThirty + 60_000), false);
 
-  const hourly = { kind: 'hourly' as const };
-  const topOfHour = Date.parse('2026-06-08T09:00:00');
+  const hourly = { kind: "hourly" as const };
+  const topOfHour = Date.parse("2026-06-08T09:00:00");
   assert.equal(shouldFireNow(hourly, undefined, topOfHour), true);
   assert.equal(shouldFireNow(hourly, topOfHour, topOfHour + 5 * 60_000), false);
 });
 
-test('shouldFireNow catches up missed slots after sleep or clock jump', () => {
-  const dailyAtEight = { kind: 'daily' as const, hour: 8, minute: 30 };
-  const eightThirty = Date.parse('2026-06-08T08:30:00');
-  const yesterdayFired = Date.parse('2026-06-07T08:30:10');
+test("shouldFireNow catches up missed slots after sleep or clock jump", () => {
+  const dailyAtEight = { kind: "daily" as const, hour: 8, minute: 30 };
+  const eightThirty = Date.parse("2026-06-08T08:30:00");
+  const yesterdayFired = Date.parse("2026-06-07T08:30:10");
   // 08:30 时机器休眠，09:12 醒来：上次应触发时间(08:30) > lastFired，补跑
-  assert.equal(shouldFireNow(dailyAtEight, yesterdayFired, Date.parse('2026-06-08T09:12:00')), true);
+  assert.equal(
+    shouldFireNow(dailyAtEight, yesterdayFired, Date.parse("2026-06-08T09:12:00")),
+    true,
+  );
   // 补跑后 lastFired=09:12，同日不再重复
   assert.equal(
-    shouldFireNow(dailyAtEight, Date.parse('2026-06-08T09:12:00'), Date.parse('2026-06-08T18:00:00')),
+    shouldFireNow(
+      dailyAtEight,
+      Date.parse("2026-06-08T09:12:00"),
+      Date.parse("2026-06-08T18:00:00"),
+    ),
     false,
   );
   // 尚未到达当日应触发时间：不触发
   assert.equal(shouldFireNow(dailyAtEight, yesterdayFired, eightThirty - 60_000), false);
 
-  const hourly = { kind: 'hourly' as const };
+  const hourly = { kind: "hourly" as const };
   assert.equal(
-    shouldFireNow(hourly, Date.parse('2026-06-08T09:00:20'), Date.parse('2026-06-08T10:07:00')),
+    shouldFireNow(hourly, Date.parse("2026-06-08T09:00:20"), Date.parse("2026-06-08T10:07:00")),
     true,
   );
 
-  const weekly = { kind: 'weekly' as const, weekday: 1 as const, hour: 9, minute: 0 };
+  const weekly = { kind: "weekly" as const, weekday: 1 as const, hour: 9, minute: 0 };
   // 周一 09:00 漏触发，周一 11:00 补跑；上周一触发过
   assert.equal(
-    shouldFireNow(weekly, Date.parse('2026-06-01T09:00:30'), Date.parse('2026-06-08T11:00:00')),
+    shouldFireNow(weekly, Date.parse("2026-06-01T09:00:30"), Date.parse("2026-06-08T11:00:00")),
     true,
   );
   // 周二不再重复
   assert.equal(
-    shouldFireNow(weekly, Date.parse('2026-06-08T11:00:00'), Date.parse('2026-06-09T09:00:00')),
+    shouldFireNow(weekly, Date.parse("2026-06-08T11:00:00"), Date.parse("2026-06-09T09:00:00")),
     false,
   );
 });
 
-test('mostRecentDueAt returns latest due time at or before now', () => {
-  const dailyAtEight = { kind: 'daily' as const, hour: 8, minute: 30 };
+test("mostRecentDueAt returns latest due time at or before now", () => {
+  const dailyAtEight = { kind: "daily" as const, hour: 8, minute: 30 };
   assert.equal(
-    mostRecentDueAt(dailyAtEight, Date.parse('2026-06-08T09:12:00')),
-    Date.parse('2026-06-08T08:30:00'),
+    mostRecentDueAt(dailyAtEight, Date.parse("2026-06-08T09:12:00")),
+    Date.parse("2026-06-08T08:30:00"),
   );
   assert.equal(
-    mostRecentDueAt(dailyAtEight, Date.parse('2026-06-08T08:00:00')),
-    Date.parse('2026-06-07T08:30:00'),
+    mostRecentDueAt(dailyAtEight, Date.parse("2026-06-08T08:00:00")),
+    Date.parse("2026-06-07T08:30:00"),
   );
   assert.equal(
-    mostRecentDueAt({ kind: 'hourly' }, Date.parse('2026-06-08T10:07:00')),
-    Date.parse('2026-06-08T10:00:00'),
+    mostRecentDueAt({ kind: "hourly" }, Date.parse("2026-06-08T10:07:00")),
+    Date.parse("2026-06-08T10:00:00"),
   );
-  const weekly = { kind: 'weekly' as const, weekday: 1 as const, hour: 9, minute: 0 };
+  const weekly = { kind: "weekly" as const, weekday: 1 as const, hour: 9, minute: 0 };
   assert.equal(
-    mostRecentDueAt(weekly, Date.parse('2026-06-10T12:00:00')),
-    Date.parse('2026-06-08T09:00:00'),
+    mostRecentDueAt(weekly, Date.parse("2026-06-10T12:00:00")),
+    Date.parse("2026-06-08T09:00:00"),
   );
   assert.equal(
-    mostRecentDueAt(weekly, Date.parse('2026-06-08T08:00:00')),
-    Date.parse('2026-06-01T09:00:00'),
+    mostRecentDueAt(weekly, Date.parse("2026-06-08T08:00:00")),
+    Date.parse("2026-06-01T09:00:00"),
   );
 });
 
-test('automation store serializes concurrent mutations and writes atomically', async () => {
-  const spiritDataDir = await mkdtemp(join(tmpdir(), 'spirit-host-automations-atomic-'));
+test("automation store serializes concurrent mutations and writes atomically", async () => {
+  const spiritDataDir = await mkdtemp(join(tmpdir(), "spirit-host-automations-atomic-"));
 
   try {
     const store = createHostAutomationStore(spiritDataDir);
     const created = await store.create({
-      title: 'Concurrent',
-      overview: 'Concurrent writes',
-      trigger: { kind: 'time', schedule: { kind: 'hourly' } },
+      title: "Concurrent",
+      overview: "Concurrent writes",
+      trigger: { kind: "time", schedule: { kind: "hourly" } },
       workspaceRoot: spiritDataDir,
-      modelRef: { groupId: 'openai', name: 'gpt-test' },
-      approvalLevel: 'default',
+      modelRef: { groupId: "openai", name: "gpt-test" },
+      approvalLevel: "default",
     });
 
     // 并发 load-modify-save：串行化后 10 个 run 一个不丢
@@ -192,7 +199,7 @@ test('automation store serializes concurrent mutations and writes atomically', a
           id: `run-${index}`,
           automationId: created.id,
           sessionPath: `/tmp/session-${index}.json`,
-          status: 'completed',
+          status: "completed",
           startedAtUnixMs: Date.now(),
         }),
       ),
@@ -201,119 +208,125 @@ test('automation store serializes concurrent mutations and writes atomically', a
     assert.equal(loaded?.runs.length, 10);
 
     // 原子写：目录内不残留 tmp 文件，正式文件为完整 JSON
-    const entries = await readdir(join(spiritDataDir, 'automations'));
+    const entries = await readdir(join(spiritDataDir, "automations"));
     assert.deepEqual(entries, [`${created.id}.json`]);
-    const raw = await readFile(join(spiritDataDir, 'automations', `${created.id}.json`), 'utf8');
+    const raw = await readFile(join(spiritDataDir, "automations", `${created.id}.json`), "utf8");
     assert.equal(JSON.parse(raw).runs.length, 10);
   } finally {
     await rm(spiritDataDir, { recursive: true, force: true });
   }
 });
 
-test('computeNextRunAt advances schedule', () => {
-  const after = Date.parse('2026-06-08T08:31:00');
-  const daily = { kind: 'daily' as const, hour: 8, minute: 30 };
-  assert.equal(
-    computeNextRunAt(daily, after),
-    Date.parse('2026-06-09T08:30:00'),
-  );
+test("computeNextRunAt advances schedule", () => {
+  const after = Date.parse("2026-06-08T08:31:00");
+  const daily = { kind: "daily" as const, hour: 8, minute: 30 };
+  assert.equal(computeNextRunAt(daily, after), Date.parse("2026-06-09T08:30:00"));
 
-  const weekly = { kind: 'weekly' as const, weekday: 1 as const, hour: 9, minute: 0 };
-  const mondayNine = Date.parse('2026-06-08T09:00:00');
-  assert.equal(computeNextRunAt(weekly, mondayNine), Date.parse('2026-06-15T09:00:00'));
+  const weekly = { kind: "weekly" as const, weekday: 1 as const, hour: 9, minute: 0 };
+  const mondayNine = Date.parse("2026-06-08T09:00:00");
+  assert.equal(computeNextRunAt(weekly, mondayNine), Date.parse("2026-06-15T09:00:00"));
 });
 
-test('formatScheduleLabel renders weekly label', () => {
+test("formatScheduleLabel renders weekly label", () => {
   assert.equal(
-    formatScheduleLabel({ kind: 'weekly', weekday: 1, hour: 9, minute: 0 }),
-    'Weekly Mon 09:00',
+    formatScheduleLabel({ kind: "weekly", weekday: 1, hour: 9, minute: 0 }),
+    "Weekly Mon 09:00",
   );
-  assert.equal(formatScheduleLabel({ kind: 'hourly' }), 'Hourly');
+  assert.equal(formatScheduleLabel({ kind: "hourly" }), "Hourly");
 });
 
-test('formatTriggerLabel renders GitHub trigger', () => {
+test("formatTriggerLabel renders GitHub trigger", () => {
   assert.equal(
     formatTriggerLabel({
-      kind: 'github',
-      owner: 'spirit',
-      repo: 'agent',
-      event: 'pull_request_created',
+      kind: "github",
+      owner: "spirit",
+      repo: "agent",
+      event: "pull_request_created",
     }),
-    'GitHub · spirit/agent · PR created',
+    "GitHub · spirit/agent · PR created",
   );
 });
 
-test('normalizeAutomationTrigger accepts time and github triggers', () => {
-  assert.deepEqual(normalizeAutomationTrigger({ kind: 'time', schedule: { kind: 'daily', hour: 9, minute: 0 } }), {
-    kind: 'time',
-    schedule: { kind: 'daily', hour: 9, minute: 0 },
-  });
+test("normalizeAutomationTrigger accepts time and github triggers", () => {
+  assert.deepEqual(
+    normalizeAutomationTrigger({ kind: "time", schedule: { kind: "daily", hour: 9, minute: 0 } }),
+    {
+      kind: "time",
+      schedule: { kind: "daily", hour: 9, minute: 0 },
+    },
+  );
 });
 
-test('reconcileGitHubTriggerPollState clears poll when repo identity changes', () => {
+test("reconcileGitHubTriggerPollState clears poll when repo identity changes", () => {
   const previous = {
-    kind: 'github' as const,
-    owner: 'a',
-    repo: 'b',
-    event: 'issue_created' as const,
+    kind: "github" as const,
+    owner: "a",
+    repo: "b",
+    event: "issue_created" as const,
     poll: { lastSeenNumber: 42 },
   };
   const next = {
-    kind: 'github' as const,
-    owner: 'c',
-    repo: 'd',
-    event: 'issue_created' as const,
+    kind: "github" as const,
+    owner: "c",
+    repo: "d",
+    event: "issue_created" as const,
     poll: { lastSeenNumber: 99 },
   };
   assert.deepEqual(reconcileGitHubTriggerPollState(previous, next), {
-    kind: 'github',
-    owner: 'c',
-    repo: 'd',
-    event: 'issue_created',
+    kind: "github",
+    owner: "c",
+    repo: "d",
+    event: "issue_created",
   });
 });
 
-test('automation store persists modelRef and rejects legacy modelName-only files', async () => {
-  const spiritDataDir = await mkdtemp(join(tmpdir(), 'spirit-host-automations-modelref-'));
+test("automation store persists modelRef and rejects legacy modelName-only files", async () => {
+  const spiritDataDir = await mkdtemp(join(tmpdir(), "spirit-host-automations-modelref-"));
 
   try {
     const store = createHostAutomationStore(spiritDataDir);
     const created = await store.create({
-      title: 'Model ref task',
-      overview: 'Uses group-scoped model',
-      trigger: { kind: 'time', schedule: { kind: 'hourly' } },
+      title: "Model ref task",
+      overview: "Uses group-scoped model",
+      trigger: { kind: "time", schedule: { kind: "hourly" } },
       workspaceRoot: spiritDataDir,
-      modelRef: { groupId: 'custom-openai', name: 'gpt-test' },
-      approvalLevel: 'default',
+      modelRef: { groupId: "custom-openai", name: "gpt-test" },
+      approvalLevel: "default",
     });
-    assert.deepEqual(created.modelRef, { groupId: 'custom-openai', name: 'gpt-test' });
+    assert.deepEqual(created.modelRef, { groupId: "custom-openai", name: "gpt-test" });
 
-    const raw = await readFile(join(spiritDataDir, 'automations', `${created.id}.json`), 'utf8');
-    const parsed = JSON.parse(raw) as { definition: { modelRef?: { groupId: string; name: string }; modelName?: string } };
-    assert.deepEqual(parsed.definition.modelRef, { groupId: 'custom-openai', name: 'gpt-test' });
+    const raw = await readFile(join(spiritDataDir, "automations", `${created.id}.json`), "utf8");
+    const parsed = JSON.parse(raw) as {
+      definition: { modelRef?: { groupId: string; name: string }; modelName?: string };
+    };
+    assert.deepEqual(parsed.definition.modelRef, { groupId: "custom-openai", name: "gpt-test" });
     assert.equal(parsed.definition.modelName, undefined);
 
-    const legacyId = 'legacy-automation-id';
-    await mkdir(join(spiritDataDir, 'automations'), { recursive: true });
+    const legacyId = "legacy-automation-id";
+    await mkdir(join(spiritDataDir, "automations"), { recursive: true });
     await writeFile(
-      join(spiritDataDir, 'automations', `${legacyId}.json`),
-      `${JSON.stringify({
-        version: 1,
-        definition: {
-          id: legacyId,
-          title: 'Legacy',
-          overview: 'Old format',
-          trigger: { kind: 'time', schedule: { kind: 'hourly' } },
-          workspaceRoot: spiritDataDir,
-          modelName: 'gpt-test',
-          approvalLevel: 'default',
-          enabled: true,
-          createdAtUnixMs: 1,
-          updatedAtUnixMs: 1,
+      join(spiritDataDir, "automations", `${legacyId}.json`),
+      `${JSON.stringify(
+        {
+          version: 1,
+          definition: {
+            id: legacyId,
+            title: "Legacy",
+            overview: "Old format",
+            trigger: { kind: "time", schedule: { kind: "hourly" } },
+            workspaceRoot: spiritDataDir,
+            modelName: "gpt-test",
+            approvalLevel: "default",
+            enabled: true,
+            createdAtUnixMs: 1,
+            updatedAtUnixMs: 1,
+          },
+          runs: [],
         },
-        runs: [],
-      }, null, 2)}\n`,
-      'utf8',
+        null,
+        2,
+      )}\n`,
+      "utf8",
     );
     assert.equal(await store.get(legacyId), undefined);
   } finally {

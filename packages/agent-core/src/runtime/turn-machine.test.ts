@@ -1,12 +1,16 @@
-import assert from 'node:assert/strict';
-import test from 'node:test';
+import assert from "node:assert/strict";
+import test from "node:test";
 
-import { AgentRuntime } from '../runtime.js';
-import { llmMessageTextContent } from '../ports.js';
-import { assistantToolCallMessageFromState } from '../tool-agent.js';
-import { createTurnContext, hasUnansweredAssistantToolCalls, repairMissingToolResultsInHistory } from './helpers.js';
-import type { HookRunner } from '../hooks/types.js';
-import type { RuntimeEvent } from './types.js';
+import { AgentRuntime } from "../runtime.js";
+import { llmMessageTextContent } from "../ports.js";
+import { assistantToolCallMessageFromState } from "../tool-agent.js";
+import {
+  createTurnContext,
+  hasUnansweredAssistantToolCalls,
+  repairMissingToolResultsInHistory,
+} from "./helpers.js";
+import type { HookRunner } from "../hooks/types.js";
+import type { RuntimeEvent } from "./types.js";
 import {
   executeAuthorizedToolCall,
   processToolCalls,
@@ -18,49 +22,55 @@ import {
   persistProviderBuiltinToolRoundToHistoryStore,
   startEarlyToolExecution,
   type TurnMachineRuntime,
-} from './turn-machine.js';
+} from "./turn-machine.js";
 
-test('shouldSkipPersistAssistantToolCalls skips subset re-persist after partial completion', () => {
-  const history = [{
-    role: 'assistant' as const,
-    content: [],
-    toolCalls: [
-      { id: 'call_00', name: 'glob', argumentsJson: '{}' },
-      { id: 'call_01', name: 'grep', argumentsJson: '{}' },
-    ],
-  }];
-  const remaining = [{ id: 'call_01', name: 'grep', argumentsJson: '{}' }];
+test("shouldSkipPersistAssistantToolCalls skips subset re-persist after partial completion", () => {
+  const history = [
+    {
+      role: "assistant" as const,
+      content: [],
+      toolCalls: [
+        { id: "call_00", name: "glob", argumentsJson: "{}" },
+        { id: "call_01", name: "grep", argumentsJson: "{}" },
+      ],
+    },
+  ];
+  const remaining = [{ id: "call_01", name: "grep", argumentsJson: "{}" }];
 
   assert.equal(shouldSkipPersistAssistantToolCalls(history, remaining), true);
   assert.equal(
-    shouldSkipPersistAssistantToolCalls(history, [{ id: 'call_02', name: 'read_file', argumentsJson: '{}' }]),
+    shouldSkipPersistAssistantToolCalls(history, [
+      { id: "call_02", name: "read_file", argumentsJson: "{}" },
+    ]),
     false,
   );
 });
 
-test('persistProviderBuiltinToolRoundToHistoryStore writes assistant tool_calls and tool results', () => {
+test("persistProviderBuiltinToolRoundToHistoryStore writes assistant tool_calls and tool results", () => {
   const historyStore: Array<{
-    role: 'user' | 'assistant' | 'tool';
+    role: "user" | "assistant" | "tool";
     content: string | [];
     toolCalls?: Array<{ id: string; name: string; argumentsJson: string }>;
     toolCallId?: string;
-  }> = [{ role: 'user', content: 'search' }];
+  }> = [{ role: "user", content: "search" }];
   const state = {
     messages: [
-      { role: 'user', content: 'search' },
+      { role: "user", content: "search" },
       {
-        role: 'assistant',
-        content: 'Searching now.',
-        tool_calls: [{
-          id: 'call_search',
-          type: 'function',
-          function: { name: 'web_search', arguments: '{"query":"latest models"}' },
-        }],
+        role: "assistant",
+        content: "Searching now.",
+        tool_calls: [
+          {
+            id: "call_search",
+            type: "function",
+            function: { name: "web_search", arguments: '{"query":"latest models"}' },
+          },
+        ],
       },
       {
-        role: 'tool',
-        tool_call_id: 'call_search',
-        content: '[web_search]\n1. Example',
+        role: "tool",
+        tool_call_id: "call_search",
+        content: "[web_search]\n1. Example",
       },
     ],
     steps: 1,
@@ -75,53 +85,63 @@ test('persistProviderBuiltinToolRoundToHistoryStore writes assistant tool_calls 
     },
     state,
     {
-      calls: [{ id: 'call_search', name: 'web_search', argumentsJson: '{"query":"latest models"}' }],
-      toolResults: [{ toolCallId: 'call_search', content: '[web_search]\n1. Example' }],
+      calls: [
+        { id: "call_search", name: "web_search", argumentsJson: '{"query":"latest models"}' },
+      ],
+      toolResults: [{ toolCallId: "call_search", content: "[web_search]\n1. Example" }],
     },
   );
 
   assert.equal(historyStore.length, 3);
-  assert.equal(historyStore[1]?.role, 'assistant');
-  assert.equal(historyStore[1]?.toolCalls?.[0]?.name, 'web_search');
-  assert.equal(historyStore[2]?.role, 'tool');
-  assert.equal(historyStore[2]?.toolCallId, 'call_search');
+  assert.equal(historyStore[1]?.role, "assistant");
+  assert.equal(historyStore[1]?.toolCalls?.[0]?.name, "web_search");
+  assert.equal(historyStore[2]?.role, "tool");
+  assert.equal(historyStore[2]?.toolCallId, "call_search");
 });
 
-test('resumePendingApproval deny persists tool result into historyStore', async () => {
+test("resumePendingApproval deny persists tool result into historyStore", async () => {
   const state = {
-    messages: [{
-      role: 'assistant',
-      content: 'run shell',
-      tool_calls: [{
-        id: 'call_shell',
-        type: 'function',
-        function: { name: 'shell', arguments: '{}' },
-      }],
-    }],
+    messages: [
+      {
+        role: "assistant",
+        content: "run shell",
+        tool_calls: [
+          {
+            id: "call_shell",
+            type: "function",
+            function: { name: "shell", arguments: "{}" },
+          },
+        ],
+      },
+    ],
     steps: 0,
   };
-  const request = { name: 'shell', argumentsJson: '{}' };
+  const request = { name: "shell", argumentsJson: "{}" };
   const turn = createTurnContext<{ name: string; argumentsJson: string }>();
-  const historyStore = [{
-    role: 'assistant' as const,
-    content: [{ type: 'text' as const, text: 'run shell' }],
-    toolCalls: [{
-      id: 'call_shell',
-      name: 'shell',
-      argumentsJson: '{}',
-    }],
-  }];
+  const historyStore = [
+    {
+      role: "assistant" as const,
+      content: [{ type: "text" as const, text: "run shell" }],
+      toolCalls: [
+        {
+          id: "call_shell",
+          name: "shell",
+          argumentsJson: "{}",
+        },
+      ],
+    },
+  ];
   const runtime = {
-    options: buildAgentRuntimeOptions([{ kind: 'final', text: 'summary after deny' }]),
+    options: buildAgentRuntimeOptions([{ kind: "final", text: "summary after deny" }]),
     historyStore,
     requestTraceStore: [],
-    pendingUserTurnStore: 'check types',
+    pendingUserTurnStore: "check types",
     pendingApproval: {
-      pendingUserInput: 'check types',
+      pendingUserInput: "check types",
       state,
       request,
-      toolCallId: 'call_shell',
-      toolName: 'shell',
+      toolCallId: "call_shell",
+      toolName: "shell",
       remainingCalls: [],
       turn,
     },
@@ -132,29 +152,29 @@ test('resumePendingApproval deny persists tool result into historyStore', async 
     completeTurn: () => {},
     emitEvent: () => {},
     performToolExecution: async () => {
-      throw new Error('unused');
+      throw new Error("unused");
     },
     startBackgroundToolExecutionAsync: () => {
-      throw new Error('unused');
+      throw new Error("unused");
     },
     startHistoryCompactionAsync: () => {},
     loopEnabled: () => false,
   } as unknown as TurnMachineRuntime<{}, typeof state, typeof request>;
 
-  const result = await resumePendingApproval(runtime, { kind: 'deny' });
+  const result = await resumePendingApproval(runtime, { kind: "deny" });
 
-  assert.equal(result.kind, 'completed');
+  assert.equal(result.kind, "completed");
   const toolMessage = runtime.historyStore.find(
-    (message) => message.role === 'tool' && message.toolCallId === 'call_shell',
+    (message) => message.role === "tool" && message.toolCallId === "call_shell",
   );
   assert.ok(toolMessage);
   assert.equal(
-    toolMessage?.content[0]?.type === 'text' ? toolMessage.content[0].text : '',
-    '[denied by user] tool call rejected by user approval policy',
+    toolMessage?.content[0]?.type === "text" ? toolMessage.content[0].text : "",
+    "[denied by user] tool call rejected by user approval policy",
   );
 });
 
-test('executeAuthorizedToolCall forwards toolArgumentsJson to postToolUse hook', async () => {
+test("executeAuthorizedToolCall forwards toolArgumentsJson to postToolUse hook", async () => {
   const state = { messages: [] as Array<{ role: string; content: string }>, steps: 0 };
   let capturedToolInput: unknown;
   const hookRunner = createStubHookRunner(async () => ({
@@ -186,17 +206,17 @@ test('executeAuthorizedToolCall forwards toolArgumentsJson to postToolUse hook',
       config: {},
       hookRunner,
       hookSessionContext: {
-        sessionId: 's1',
+        sessionId: "s1",
         conversationPath: null,
-        workspaceRoot: '/w',
-        model: 'm',
+        workspaceRoot: "/w",
+        model: "m",
       },
       llmTransport: {
         startToolAgentRound: async () => ({
-          kind: 'success',
+          kind: "success",
           result: {
             state,
-            step: { kind: 'final-response-ready' },
+            step: { kind: "final-response-ready" },
             requestTrace: [],
           },
         }),
@@ -207,16 +227,16 @@ test('executeAuthorizedToolCall forwards toolArgumentsJson to postToolUse hook',
           name,
           ...(JSON.parse(argumentsJson) as Record<string, unknown>),
         }),
-        authorize: async () => ({ kind: 'allowed' as const }),
+        authorize: async () => ({ kind: "allowed" as const }),
         execute: async () => ({
-          output: { content: [], summaryText: 'ok' },
+          output: { content: [], summaryText: "ok" },
           failed: false,
           backgroundExecution: false,
         }),
       },
       appendToolResultMessage: (currentState: typeof state) => currentState,
       createContinuationState: (messages: unknown[]) => ({ messages, steps: 0 }),
-      extractAssistantText: () => 'done',
+      extractAssistantText: () => "done",
     },
     historyStore: [],
     requestTraceStore: [],
@@ -229,7 +249,7 @@ test('executeAuthorizedToolCall forwards toolArgumentsJson to postToolUse hook',
     completeTurn: () => {},
     emitEvent: () => {},
     performToolExecution: async () => ({
-      output: { content: [], summaryText: 'ok' },
+      output: { content: [], summaryText: "ok" },
       failed: false,
       backgroundExecution: false,
     }),
@@ -245,20 +265,20 @@ test('executeAuthorizedToolCall forwards toolArgumentsJson to postToolUse hook',
 
   await executeAuthorizedToolCall(
     runtime,
-    'read file',
+    "read file",
     state,
-    { name: 'read_file', path: 'README.md' },
-    'call_read',
-    'read_file',
+    { name: "read_file", path: "README.md" },
+    "call_read",
+    "read_file",
     [],
     createTurnContext(),
     '{"path":"README.md"}',
   );
 
-  assert.deepEqual(capturedToolInput, { path: 'README.md' });
+  assert.deepEqual(capturedToolInput, { path: "README.md" });
 });
 
-test('resumePendingQuestions forwards argumentsJson to postToolUse hook', async () => {
+test("resumePendingQuestions forwards argumentsJson to postToolUse hook", async () => {
   const state = { messages: [] as Array<{ role: string; content: string }>, steps: 0 };
   let capturedToolInput: unknown;
   const hookRunner = createStubHookRunner(async () => ({
@@ -285,23 +305,23 @@ test('resumePendingQuestions forwards argumentsJson to postToolUse hook', async 
     };
   };
   const turn = createTurnContext<{ name: string; command?: string }>();
-  const request = { name: 'shell', command: 'echo hi' };
+  const request = { name: "shell", command: "echo hi" };
   const runtime = {
     options: {
       config: {},
       hookRunner,
       hookSessionContext: {
-        sessionId: 's1',
+        sessionId: "s1",
         conversationPath: null,
-        workspaceRoot: '/w',
-        model: 'm',
+        workspaceRoot: "/w",
+        model: "m",
       },
       llmTransport: {
         startToolAgentRound: async () => ({
-          kind: 'success',
+          kind: "success",
           result: {
             state,
-            step: { kind: 'final-response-ready' },
+            step: { kind: "final-response-ready" },
             requestTrace: [],
           },
         }),
@@ -313,28 +333,28 @@ test('resumePendingQuestions forwards argumentsJson to postToolUse hook', async 
           name,
           ...(JSON.parse(argumentsJson) as Record<string, unknown>),
         }),
-        authorize: async () => ({ kind: 'allowed' as const }),
+        authorize: async () => ({ kind: "allowed" as const }),
         execute: async () => ({
-          output: { content: [], summaryText: 'ok' },
+          output: { content: [], summaryText: "ok" },
           failed: false,
           backgroundExecution: false,
         }),
       },
       appendToolResultMessage: (currentState: typeof state) => currentState,
       createContinuationState: (messages: unknown[]) => ({ messages, steps: 0 }),
-      extractAssistantText: () => 'done',
+      extractAssistantText: () => "done",
     },
     historyStore: [],
     requestTraceStore: [],
     pendingUserTurnStore: undefined,
     pendingApproval: undefined,
     pendingQuestions: {
-      pendingUserInput: 'run shell',
+      pendingUserInput: "run shell",
       state,
       request,
       questions: [],
-      toolCallId: 'call_shell',
-      toolName: 'shell',
+      toolCallId: "call_shell",
+      toolName: "shell",
       argumentsJson: '{"command":"echo hi"}',
       remainingCalls: [],
       turn,
@@ -345,7 +365,7 @@ test('resumePendingQuestions forwards argumentsJson to postToolUse hook', async 
     completeTurn: () => {},
     emitEvent: () => {},
     performToolExecution: async () => ({
-      output: { content: [], summaryText: 'ok' },
+      output: { content: [], summaryText: "ok" },
       failed: false,
       backgroundExecution: false,
     }),
@@ -359,24 +379,24 @@ test('resumePendingQuestions forwards argumentsJson to postToolUse hook', async 
     poll: async () => {},
   } as unknown as TurnMachineRuntime<{}, typeof state, typeof request>;
 
-  await resumePendingQuestions(runtime, { status: 'answered', answers: [] });
+  await resumePendingQuestions(runtime, { status: "answered", answers: [] });
 
-  assert.deepEqual(capturedToolInput, { command: 'echo hi' });
+  assert.deepEqual(capturedToolInput, { command: "echo hi" });
 });
 
-test('resumePendingQuestions syncs native ask_questions answers into historyStore', async () => {
+test("resumePendingQuestions syncs native ask_questions answers into historyStore", async () => {
   const state = { messages: [] as Array<{ role: string; content: string }>, steps: 0 };
   const turn = createTurnContext<{ name: string }>();
-  const request = { name: 'ask_questions' };
+  const request = { name: "ask_questions" };
   const answersResult = {
-    status: 'answered' as const,
-    answers: [{ questionId: 'q1', selectedOptionIds: [], customText: 'alpha' }],
+    status: "answered" as const,
+    answers: [{ questionId: "q1", selectedOptionIds: [], customText: "alpha" }],
   };
   const historyStore = [
     {
-      role: 'assistant' as const,
+      role: "assistant" as const,
       content: [],
-      toolCalls: [{ id: 'call_q', name: 'ask_questions', argumentsJson: '{}' }],
+      toolCalls: [{ id: "call_q", name: "ask_questions", argumentsJson: "{}" }],
     },
   ];
   const runtime = {
@@ -384,10 +404,10 @@ test('resumePendingQuestions syncs native ask_questions answers into historyStor
       config: {},
       llmTransport: {
         startToolAgentRound: async () => ({
-          kind: 'success',
+          kind: "success",
           result: {
             state,
-            step: { kind: 'final-response-ready' },
+            step: { kind: "final-response-ready" },
             requestTrace: [],
           },
         }),
@@ -401,24 +421,24 @@ test('resumePendingQuestions syncs native ask_questions answers into historyStor
         toolCallId: string,
         content: string,
       ) => ({
-        messages: [...currentState.messages, { role: 'tool', content, toolCallId }],
+        messages: [...currentState.messages, { role: "tool", content, toolCallId }],
         steps: currentState.steps,
       }),
       createContinuationState: (messages: unknown[]) => ({ messages, steps: 0 }),
-      extractAssistantText: () => 'done',
+      extractAssistantText: () => "done",
     },
     historyStore,
     requestTraceStore: [],
     pendingUserTurnStore: undefined,
     pendingApproval: undefined,
     pendingQuestions: {
-      pendingUserInput: 'ask me',
+      pendingUserInput: "ask me",
       state,
       request,
       questions: [],
-      toolCallId: 'call_q',
-      toolName: 'ask_questions',
-      argumentsJson: '{}',
+      toolCallId: "call_q",
+      toolName: "ask_questions",
+      argumentsJson: "{}",
       remainingCalls: [],
       turn,
       resumeAsStreaming: false,
@@ -430,7 +450,7 @@ test('resumePendingQuestions syncs native ask_questions answers into historyStor
     completeTurn: () => {},
     emitEvent: () => {},
     performToolExecution: async () => {
-      throw new Error('native ask_questions should not execute');
+      throw new Error("native ask_questions should not execute");
     },
     startBackgroundToolExecutionAsync: () => {},
     startHistoryCompactionAsync: () => {},
@@ -445,13 +465,13 @@ test('resumePendingQuestions syncs native ask_questions answers into historyStor
   await resumePendingQuestions(runtime, answersResult);
 
   const toolMessage = runtime.historyStore.find(
-    (message) => message.role === 'tool' && message.toolCallId === 'call_q',
+    (message) => message.role === "tool" && message.toolCallId === "call_q",
   );
   assert.ok(toolMessage);
   assert.equal(llmMessageTextContent(toolMessage.content), JSON.stringify(answersResult));
 });
 
-test('executeAuthorizedToolCall runs postToolUse after internal tool completion', async () => {
+test("executeAuthorizedToolCall runs postToolUse after internal tool completion", async () => {
   const state = { messages: [] as Array<{ role: string; content: string }>, steps: 0 };
   let postToolUseCount = 0;
   const hookRunner = createStubHookRunner(async () => ({
@@ -483,17 +503,17 @@ test('executeAuthorizedToolCall runs postToolUse after internal tool completion'
       config: {},
       hookRunner,
       hookSessionContext: {
-        sessionId: 's1',
+        sessionId: "s1",
         conversationPath: null,
-        workspaceRoot: '/w',
-        model: 'm',
+        workspaceRoot: "/w",
+        model: "m",
       },
       llmTransport: {
         startToolAgentRound: async () => ({
-          kind: 'success',
+          kind: "success",
           result: {
             state,
-            step: { kind: 'final-response-ready' },
+            step: { kind: "final-response-ready" },
             requestTrace: [],
           },
         }),
@@ -501,16 +521,16 @@ test('executeAuthorizedToolCall runs postToolUse after internal tool completion'
       toolExecutor: {
         toolDefinitionsJson: () => [],
         requestFromFunctionCall: async (name: string) => ({ name }),
-        authorize: async () => ({ kind: 'allowed' as const }),
+        authorize: async () => ({ kind: "allowed" as const }),
         execute: async () => ({
-          output: { content: [], summaryText: 'ok' },
+          output: { content: [], summaryText: "ok" },
           failed: false,
           backgroundExecution: false,
         }),
       },
       appendToolResultMessage: (currentState: typeof state) => currentState,
       createContinuationState: (messages: unknown[]) => ({ messages, steps: 0 }),
-      extractAssistantText: () => 'done',
+      extractAssistantText: () => "done",
     },
     historyStore: [],
     requestTraceStore: [],
@@ -523,7 +543,7 @@ test('executeAuthorizedToolCall runs postToolUse after internal tool completion'
     completeTurn: () => {},
     emitEvent: () => {},
     performToolExecution: async () => {
-      throw new Error('external execution should not run');
+      throw new Error("external execution should not run");
     },
     maybeExecuteInternalToolCall: async (
       _pendingUserInput: string,
@@ -535,12 +555,12 @@ test('executeAuthorizedToolCall runs postToolUse after internal tool completion'
         toolCallId,
         toolName: toolRequest.name,
         request: toolRequest,
-        output: 'internal done',
+        output: "internal done",
         failed: false,
       });
       return {
-        kind: 'completed',
-        assistantText: 'internal done',
+        kind: "completed",
+        assistantText: "internal done",
         state: currentState,
         requestTrace: [],
         toolExecutions: [...turn.toolExecutions],
@@ -559,11 +579,11 @@ test('executeAuthorizedToolCall runs postToolUse after internal tool completion'
 
   await executeAuthorizedToolCall(
     runtime,
-    'finish',
+    "finish",
     state,
-    { name: 'finish_task' },
-    'call_finish',
-    'finish_task',
+    { name: "finish_task" },
+    "call_finish",
+    "finish_task",
     [],
     turn,
     '{"summary":"done"}',
@@ -572,7 +592,7 @@ test('executeAuthorizedToolCall runs postToolUse after internal tool completion'
   assert.equal(postToolUseCount, 1);
 });
 
-test('processToolCalls passes hook updatedInput to postToolUse', async () => {
+test("processToolCalls passes hook updatedInput to postToolUse", async () => {
   const state = { messages: [] as Array<{ role: string; content: string }>, steps: 0 };
   let capturedToolInput: unknown;
   const hookRunner = createStubHookRunner(async () => ({
@@ -581,7 +601,7 @@ test('processToolCalls passes hook updatedInput to postToolUse', async () => {
     permission: undefined,
     userMessage: undefined,
     agentMessage: undefined,
-    updatedInput: { path: 'hooked.md' },
+    updatedInput: { path: "hooked.md" },
     additionalContexts: [],
     followupMessage: undefined,
   }));
@@ -603,17 +623,17 @@ test('processToolCalls passes hook updatedInput to postToolUse', async () => {
       config: {},
       hookRunner,
       hookSessionContext: {
-        sessionId: 's1',
+        sessionId: "s1",
         conversationPath: null,
-        workspaceRoot: '/w',
-        model: 'm',
+        workspaceRoot: "/w",
+        model: "m",
       },
       llmTransport: {
         startToolAgentRound: async () => ({
-          kind: 'success',
+          kind: "success",
           result: {
             state,
-            step: { kind: 'final-response-ready' },
+            step: { kind: "final-response-ready" },
             requestTrace: [],
           },
         }),
@@ -624,19 +644,23 @@ test('processToolCalls passes hook updatedInput to postToolUse', async () => {
           name,
           ...(JSON.parse(argumentsJson) as Record<string, unknown>),
         }),
-        authorize: async () => ({ kind: 'allowed' as const }),
+        authorize: async () => ({ kind: "allowed" as const }),
         execute: async () => ({
-          output: { content: [], summaryText: 'ok' },
+          output: { content: [], summaryText: "ok" },
           failed: false,
           backgroundExecution: false,
         }),
       },
-      appendToolResultMessage: (currentState: typeof state, _toolCallId: string, content: string) => ({
+      appendToolResultMessage: (
+        currentState: typeof state,
+        _toolCallId: string,
+        content: string,
+      ) => ({
         ...currentState,
-        messages: [...currentState.messages, { role: 'tool', content }],
+        messages: [...currentState.messages, { role: "tool", content }],
       }),
       createContinuationState: (messages: unknown[]) => ({ messages, steps: 0 }),
-      extractAssistantText: () => 'done',
+      extractAssistantText: () => "done",
     },
     historyStore: [],
     requestTraceStore: [],
@@ -649,7 +673,7 @@ test('processToolCalls passes hook updatedInput to postToolUse', async () => {
     completeTurn: () => {},
     emitEvent: () => {},
     performToolExecution: async () => ({
-      output: { content: [], summaryText: 'ok' },
+      output: { content: [], summaryText: "ok" },
       failed: false,
       backgroundExecution: false,
     }),
@@ -666,69 +690,72 @@ test('processToolCalls passes hook updatedInput to postToolUse', async () => {
   await processToolCalls(
     runtime,
     state,
-    'read',
-    [{ id: 'call_read', name: 'read_file', argumentsJson: '{"path":"original.md"}' }],
+    "read",
+    [{ id: "call_read", name: "read_file", argumentsJson: '{"path":"original.md"}' }],
     createTurnContext(),
   );
 
-  assert.deepEqual(capturedToolInput, { path: 'hooked.md' });
+  assert.deepEqual(capturedToolInput, { path: "hooked.md" });
 });
 
-test('hasUnansweredAssistantToolCalls detects parallel tool calls with partial results', () => {
+test("hasUnansweredAssistantToolCalls detects parallel tool calls with partial results", () => {
   const history = [
     {
-      role: 'assistant' as const,
-      content: [{ type: 'text' as const, text: '' }],
+      role: "assistant" as const,
+      content: [{ type: "text" as const, text: "" }],
       toolCalls: [
-        { id: 'call_shell', name: 'shell', argumentsJson: '{}' },
-        { id: 'call_glob', name: 'glob', argumentsJson: '{}' },
+        { id: "call_shell", name: "shell", argumentsJson: "{}" },
+        { id: "call_glob", name: "glob", argumentsJson: "{}" },
       ],
     },
     {
-      role: 'tool' as const,
-      toolCallId: 'call_glob',
-      content: [{ type: 'text' as const, text: 'glob ok' }],
+      role: "tool" as const,
+      toolCallId: "call_glob",
+      content: [{ type: "text" as const, text: "glob ok" }],
     },
   ];
 
   assert.equal(hasUnansweredAssistantToolCalls(history), true);
 
   history.push({
-    role: 'tool' as const,
-    toolCallId: 'call_shell',
-    content: [{ type: 'text' as const, text: 'shell ok' }],
+    role: "tool" as const,
+    toolCallId: "call_shell",
+    content: [{ type: "text" as const, text: "shell ok" }],
   });
 
   assert.equal(hasUnansweredAssistantToolCalls(history), false);
 });
 
-test('repairMissingToolResultsInHistory inserts placeholders for orphaned tool calls', () => {
+test("repairMissingToolResultsInHistory inserts placeholders for orphaned tool calls", () => {
   const history = [
     {
-      role: 'assistant' as const,
-      content: [{ type: 'text' as const, text: 'run shell' }],
-      toolCalls: [{
-        id: 'call_00_zbxFvpiBoJJIy2ca3n8b4482',
-        name: 'shell',
-        argumentsJson: '{}',
-      }],
+      role: "assistant" as const,
+      content: [{ type: "text" as const, text: "run shell" }],
+      toolCalls: [
+        {
+          id: "call_00_zbxFvpiBoJJIy2ca3n8b4482",
+          name: "shell",
+          argumentsJson: "{}",
+        },
+      ],
     },
     {
-      role: 'assistant' as const,
-      content: [{ type: 'text' as const, text: 'The tool was rejected but continuing.' }],
+      role: "assistant" as const,
+      content: [{ type: "text" as const, text: "The tool was rejected but continuing." }],
     },
   ];
 
   const repaired = repairMissingToolResultsInHistory(history);
   const toolMessage = repaired.find(
-    (message) => message.role === 'tool' && message.toolCallId === 'call_00_zbxFvpiBoJJIy2ca3n8b4482',
+    (message) =>
+      message.role === "tool" && message.toolCallId === "call_00_zbxFvpiBoJJIy2ca3n8b4482",
   );
 
   assert.ok(toolMessage);
   assert.equal(repaired.indexOf(toolMessage!), 1);
 });
 
-test('processToolCalls emits tool-execution-finished when requestFromFunctionCall schema fails', async () => {
+test("processToolCalls emits tool-execution-finished when requestFromFunctionCall schema fails", async () => {
   const events: RuntimeEvent<{ name: string; summary?: string }>[] = [];
   const state = { messages: [] as Array<{ role: string; content: string }>, steps: 0 };
   const turn = createTurnContext<{ name: string; summary?: string }>();
@@ -737,10 +764,10 @@ test('processToolCalls emits tool-execution-finished when requestFromFunctionCal
       config: {},
       llmTransport: {
         startToolAgentRound: async () => ({
-          kind: 'success',
+          kind: "success",
           result: {
             state,
-            step: { kind: 'final-response-ready' },
+            step: { kind: "final-response-ready" },
             requestTrace: [],
           },
         }),
@@ -748,17 +775,21 @@ test('processToolCalls emits tool-execution-finished when requestFromFunctionCal
       toolExecutor: {
         toolDefinitionsJson: () => [],
         requestFromFunctionCall: async () => {
-          throw new Error('未知工具: finish_task');
+          throw new Error("未知工具: finish_task");
         },
         authorize: async () => {
-          throw new Error('unused');
+          throw new Error("unused");
         },
       },
       createToolAgentState: () => state,
       appendToolResultMessage: (currentState: typeof state) => currentState,
-      extractAssistantText: () => 'tool failed',
+      extractAssistantText: () => "tool failed",
     },
-    historyStore: [] as Array<{ role: string; toolCallId?: string; content: Array<{ type: string; text: string }> }>,
+    historyStore: [] as Array<{
+      role: string;
+      toolCallId?: string;
+      content: Array<{ type: string; text: string }>;
+    }>,
     requestTraceStore: [],
     pendingUserTurnStore: undefined,
     pendingApproval: undefined,
@@ -771,7 +802,7 @@ test('processToolCalls emits tool-execution-finished when requestFromFunctionCal
       events.push(event);
     },
     performToolExecution: async () => {
-      throw new Error('unused');
+      throw new Error("unused");
     },
     startBackgroundToolExecutionAsync: () => {},
     startHistoryCompactionAsync: () => {},
@@ -781,23 +812,23 @@ test('processToolCalls emits tool-execution-finished when requestFromFunctionCal
   await processToolCalls(
     runtime,
     state,
-    'call finish_task',
-    [{ id: 'call_finish', name: 'finish_task', argumentsJson: '{"summary":"再次确认"}' }],
+    "call finish_task",
+    [{ id: "call_finish", name: "finish_task", argumentsJson: '{"summary":"再次确认"}' }],
     turn,
   );
 
-  const finished = events.find((event) => event.kind === 'tool-execution-finished');
+  const finished = events.find((event) => event.kind === "tool-execution-finished");
   assert.ok(finished);
-  assert.equal(finished.execution.toolName, 'finish_task');
+  assert.equal(finished.execution.toolName, "finish_task");
   assert.equal(finished.execution.failed, true);
   assert.match(finished.execution.output, /schema error/);
 });
 
-test('processToolCalls does not re-persist assistant tool calls when continuing remaining calls', async () => {
+test("processToolCalls does not re-persist assistant tool calls when continuing remaining calls", async () => {
   const state = { messages: [] as Array<{ role: string; content: string }>, steps: 0 };
   const calls = [
-    { id: 'call_00', name: 'glob', argumentsJson: '{}' },
-    { id: 'call_01', name: 'grep', argumentsJson: '{}' },
+    { id: "call_00", name: "glob", argumentsJson: "{}" },
+    { id: "call_01", name: "grep", argumentsJson: "{}" },
   ];
   let performExecutionCount = 0;
   const runtime = {
@@ -805,10 +836,10 @@ test('processToolCalls does not re-persist assistant tool calls when continuing 
       config: {},
       llmTransport: {
         startToolAgentRound: async () => ({
-          kind: 'success',
+          kind: "success",
           result: {
             state,
-            step: { kind: 'final-response-ready' },
+            step: { kind: "final-response-ready" },
             requestTrace: [],
           },
         }),
@@ -816,7 +847,7 @@ test('processToolCalls does not re-persist assistant tool calls when continuing 
       toolExecutor: {
         toolDefinitionsJson: () => [],
         requestFromFunctionCall: async (name: string) => ({ name }),
-        authorize: async () => ({ kind: 'allowed' }),
+        authorize: async () => ({ kind: "allowed" }),
         execute: async (request: { name: string }) => ({
           content: [],
           summaryText: `ok:${request.name}`,
@@ -828,10 +859,10 @@ test('processToolCalls does not re-persist assistant tool calls when continuing 
         toolCallId: string,
         content: string,
       ) => ({
-        messages: [...currentState.messages, { role: 'tool', content, toolCallId }],
+        messages: [...currentState.messages, { role: "tool", content, toolCallId }],
         steps: currentState.steps,
       }),
-      extractAssistantText: () => 'done',
+      extractAssistantText: () => "done",
     },
     historyStore: [],
     requestTraceStore: [],
@@ -852,33 +883,33 @@ test('processToolCalls does not re-persist assistant tool calls when continuing 
       };
     },
     startBackgroundToolExecutionAsync: () => {
-      throw new Error('unused');
+      throw new Error("unused");
     },
     startHistoryCompactionAsync: () => {},
     loopEnabled: () => false,
   } as unknown as TurnMachineRuntime<{}, typeof state, { name: string }>;
 
-  const result = await processToolCalls(runtime, state, 'run tools', calls, createTurnContext());
+  const result = await processToolCalls(runtime, state, "run tools", calls, createTurnContext());
 
-  assert.equal(result.kind, 'completed');
+  assert.equal(result.kind, "completed");
   assert.equal(performExecutionCount, 2);
   assert.equal(
-    runtime.historyStore.filter((message) => message.role === 'assistant' && message.toolCalls?.length).length,
+    runtime.historyStore.filter(
+      (message) => message.role === "assistant" && message.toolCalls?.length,
+    ).length,
     1,
   );
   assert.deepEqual(
     runtime.historyStore
-      .filter((message) => message.role === 'assistant' && message.toolCalls?.length)
+      .filter((message) => message.role === "assistant" && message.toolCalls?.length)
       .flatMap((message) => message.toolCalls?.map((toolCall) => toolCall.id) ?? []),
-    ['call_00', 'call_01'],
+    ["call_00", "call_01"],
   );
 });
 
-function createStubHookRunner(
-  preToolUse: HookRunner['runPreToolUse'],
-): HookRunner {
+function createStubHookRunner(preToolUse: HookRunner["runPreToolUse"]): HookRunner {
   const unused = async () => {
-    throw new Error('unused');
+    throw new Error("unused");
   };
   const emptyHookResult = async () => ({
     records: [],
@@ -901,7 +932,7 @@ function createStubHookRunner(
   };
 }
 
-test('processToolCalls hook allow bypasses host need-approval', async () => {
+test("processToolCalls hook allow bypasses host need-approval", async () => {
   const state = { messages: [] as Array<{ role: string; content: string }>, steps: 0 };
   let performExecutionCount = 0;
   const runtime = {
@@ -910,7 +941,7 @@ test('processToolCalls hook allow bypasses host need-approval', async () => {
       hookRunner: createStubHookRunner(async () => ({
         records: [],
         denied: false,
-        permission: 'allow',
+        permission: "allow",
         userMessage: undefined,
         agentMessage: undefined,
         updatedInput: undefined,
@@ -918,17 +949,17 @@ test('processToolCalls hook allow bypasses host need-approval', async () => {
         followupMessage: undefined,
       })),
       hookSessionContext: {
-        sessionId: 's1',
+        sessionId: "s1",
         conversationPath: null,
-        workspaceRoot: '/w',
-        model: 'm',
+        workspaceRoot: "/w",
+        model: "m",
       },
       llmTransport: {
         startToolAgentRound: async () => ({
-          kind: 'success',
+          kind: "success",
           result: {
             state,
-            step: { kind: 'final-response-ready' },
+            step: { kind: "final-response-ready" },
             requestTrace: [],
           },
         }),
@@ -936,8 +967,8 @@ test('processToolCalls hook allow bypasses host need-approval', async () => {
       toolExecutor: {
         toolDefinitionsJson: () => [],
         requestFromFunctionCall: async (name: string) => ({ name }),
-        authorize: async () => ({ kind: 'need-approval', prompt: 'host approval required' }),
-        execute: async () => ({ content: [], summaryText: 'ok' }),
+        authorize: async () => ({ kind: "need-approval", prompt: "host approval required" }),
+        execute: async () => ({ content: [], summaryText: "ok" }),
       },
       createToolAgentState: () => state,
       appendToolResultMessage: (
@@ -945,10 +976,10 @@ test('processToolCalls hook allow bypasses host need-approval', async () => {
         toolCallId: string,
         content: string,
       ) => ({
-        messages: [...currentState.messages, { role: 'tool', content, toolCallId }],
+        messages: [...currentState.messages, { role: "tool", content, toolCallId }],
         steps: currentState.steps,
       }),
-      extractAssistantText: () => 'done',
+      extractAssistantText: () => "done",
     },
     historyStore: [],
     requestTraceStore: [],
@@ -963,13 +994,13 @@ test('processToolCalls hook allow bypasses host need-approval', async () => {
     performToolExecution: async () => {
       performExecutionCount += 1;
       return {
-        output: { content: [], summaryText: 'ok' },
+        output: { content: [], summaryText: "ok" },
         failed: false,
         backgroundExecution: false,
       };
     },
     startBackgroundToolExecutionAsync: () => {
-      throw new Error('unused');
+      throw new Error("unused");
     },
     startHistoryCompactionAsync: () => {},
     loopEnabled: () => false,
@@ -978,16 +1009,16 @@ test('processToolCalls hook allow bypasses host need-approval', async () => {
   const result = await processToolCalls(
     runtime,
     state,
-    'run shell',
-    [{ id: 'call_shell', name: 'shell', argumentsJson: '{"command":"echo hi"}' }],
+    "run shell",
+    [{ id: "call_shell", name: "shell", argumentsJson: '{"command":"echo hi"}' }],
     createTurnContext(),
   );
 
-  assert.equal(result.kind, 'completed');
+  assert.equal(result.kind, "completed");
   assert.equal(performExecutionCount, 1);
 });
 
-test('processToolCalls auto-approval reviewer allow skips manual approval', async () => {
+test("processToolCalls auto-approval reviewer allow skips manual approval", async () => {
   const state = { messages: [] as Array<{ role: string; content: string }>, steps: 0 };
   let performExecutionCount = 0;
   const runtime = {
@@ -995,26 +1026,30 @@ test('processToolCalls auto-approval reviewer allow skips manual approval', asyn
       config: {},
       llmTransport: {
         startToolAgentRound: async () => ({
-          kind: 'failure',
-          error: 'unused',
+          kind: "failure",
+          error: "unused",
           requestTrace: [],
         }),
         isContextOverflowError: () => false,
       },
       toolExecutor: {
         toolDefinitionsJson: () => [],
-        requestFromFunctionCall: async () => ({ name: 'shell', command: 'echo hi', reason: 'test' }),
-        authorize: async () => ({
-          kind: 'need-approval',
-          prompt: '高风险工具调用: shell\n命令: echo hi',
+        requestFromFunctionCall: async () => ({
+          name: "shell",
+          command: "echo hi",
+          reason: "test",
         }),
-        execute: async () => ({ content: [], summaryText: 'ok' }),
+        authorize: async () => ({
+          kind: "need-approval",
+          prompt: "高风险工具调用: shell\n命令: echo hi",
+        }),
+        execute: async () => ({ content: [], summaryText: "ok" }),
       },
-      getApprovalLevel: () => 'auto-approval' as const,
-      reviewToolApproval: async () => ({ allow: true, reason: 'benign echo' }),
+      getApprovalLevel: () => "auto-approval" as const,
+      reviewToolApproval: async () => ({ allow: true, reason: "benign echo" }),
       createToolAgentState: () => state,
       appendToolResultMessage: (currentState: typeof state) => currentState,
-      extractAssistantText: () => 'done',
+      extractAssistantText: () => "done",
     },
     historyStore: [],
     requestTraceStore: [],
@@ -1029,54 +1064,62 @@ test('processToolCalls auto-approval reviewer allow skips manual approval', asyn
     performToolExecution: async () => {
       performExecutionCount += 1;
       return {
-        output: { content: [], summaryText: 'ok' },
+        output: { content: [], summaryText: "ok" },
         failed: false,
         backgroundExecution: false,
       };
     },
     startBackgroundToolExecutionAsync: () => {
-      throw new Error('unused');
+      throw new Error("unused");
     },
     startHistoryCompactionAsync: () => {},
     loopEnabled: () => false,
-  } as unknown as TurnMachineRuntime<{}, typeof state, { name: string; command: string; reason: string }>;
+  } as unknown as TurnMachineRuntime<
+    {},
+    typeof state,
+    { name: string; command: string; reason: string }
+  >;
 
   const result = await processToolCalls(
     runtime,
     state,
-    'run shell',
-    [{ id: 'call_shell', name: 'shell', argumentsJson: '{"command":"echo hi","reason":"test"}' }],
+    "run shell",
+    [{ id: "call_shell", name: "shell", argumentsJson: '{"command":"echo hi","reason":"test"}' }],
     createTurnContext(),
   );
 
-  assert.notEqual(result.kind, 'requires-approval');
+  assert.notEqual(result.kind, "requires-approval");
   assert.equal(performExecutionCount, 1);
 });
 
-test('processToolCalls auto-approval reviewer block requires manual approval with reason', async () => {
+test("processToolCalls auto-approval reviewer block requires manual approval with reason", async () => {
   const state = { messages: [] as Array<{ role: string; content: string }>, steps: 0 };
   const runtime = {
     options: {
       config: {},
       llmTransport: {
         startToolAgentRound: async () => ({
-          kind: 'failure',
-          error: 'unused',
+          kind: "failure",
+          error: "unused",
           requestTrace: [],
         }),
         isContextOverflowError: () => false,
       },
       toolExecutor: {
         toolDefinitionsJson: () => [],
-        requestFromFunctionCall: async () => ({ name: 'shell', command: 'rm -rf /', reason: 'test' }),
-        authorize: async () => ({
-          kind: 'need-approval',
-          prompt: '高风险工具调用: shell\n命令: rm -rf /',
+        requestFromFunctionCall: async () => ({
+          name: "shell",
+          command: "rm -rf /",
+          reason: "test",
         }),
-        execute: async () => ({ content: [], summaryText: 'ok' }),
+        authorize: async () => ({
+          kind: "need-approval",
+          prompt: "高风险工具调用: shell\n命令: rm -rf /",
+        }),
+        execute: async () => ({ content: [], summaryText: "ok" }),
       },
-      getApprovalLevel: () => 'auto-approval' as const,
-      reviewToolApproval: async () => ({ allow: false, reason: 'destructive command' }),
+      getApprovalLevel: () => "auto-approval" as const,
+      reviewToolApproval: async () => ({ allow: false, reason: "destructive command" }),
       createToolAgentState: () => state,
       appendToolResultMessage: (currentState: typeof state) => currentState,
       extractAssistantText: () => undefined,
@@ -1092,30 +1135,34 @@ test('processToolCalls auto-approval reviewer block requires manual approval wit
     completeTurn: () => {},
     emitEvent: () => {},
     performToolExecution: async () => {
-      throw new Error('should not execute');
+      throw new Error("should not execute");
     },
     startBackgroundToolExecutionAsync: () => {
-      throw new Error('unused');
+      throw new Error("unused");
     },
     startHistoryCompactionAsync: () => {},
     loopEnabled: () => false,
-  } as unknown as TurnMachineRuntime<{}, typeof state, { name: string; command: string; reason: string }>;
+  } as unknown as TurnMachineRuntime<
+    {},
+    typeof state,
+    { name: string; command: string; reason: string }
+  >;
 
   const result = await processToolCalls(
     runtime,
     state,
-    'run shell',
-    [{ id: 'call_shell', name: 'shell', argumentsJson: '{"command":"rm -rf /","reason":"test"}' }],
+    "run shell",
+    [{ id: "call_shell", name: "shell", argumentsJson: '{"command":"rm -rf /","reason":"test"}' }],
     createTurnContext(),
   );
 
-  assert.equal(result.kind, 'requires-approval');
-  if (result.kind === 'requires-approval') {
-    assert.equal(result.approval.autoReviewBlockReason, 'destructive command');
+  assert.equal(result.kind, "requires-approval");
+  if (result.kind === "requires-approval") {
+    assert.equal(result.approval.autoReviewBlockReason, "destructive command");
   }
 });
 
-test('processToolCalls hook ask triggers approval when host allows', async () => {
+test("processToolCalls hook ask triggers approval when host allows", async () => {
   const state = { messages: [] as Array<{ role: string; content: string }>, steps: 0 };
   const runtime = {
     options: {
@@ -1123,23 +1170,23 @@ test('processToolCalls hook ask triggers approval when host allows', async () =>
       hookRunner: createStubHookRunner(async () => ({
         records: [],
         denied: false,
-        permission: 'ask',
-        userMessage: 'hook confirmation required',
+        permission: "ask",
+        userMessage: "hook confirmation required",
         agentMessage: undefined,
         updatedInput: undefined,
         additionalContexts: [],
         followupMessage: undefined,
       })),
       hookSessionContext: {
-        sessionId: 's1',
+        sessionId: "s1",
         conversationPath: null,
-        workspaceRoot: '/w',
-        model: 'm',
+        workspaceRoot: "/w",
+        model: "m",
       },
       llmTransport: {
         startToolAgentRound: async () => ({
-          kind: 'failure',
-          error: 'unused',
+          kind: "failure",
+          error: "unused",
           requestTrace: [],
         }),
         isContextOverflowError: () => false,
@@ -1147,8 +1194,8 @@ test('processToolCalls hook ask triggers approval when host allows', async () =>
       toolExecutor: {
         toolDefinitionsJson: () => [],
         requestFromFunctionCall: async (name: string) => ({ name }),
-        authorize: async () => ({ kind: 'allowed' }),
-        execute: async () => ({ content: [], summaryText: 'ok' }),
+        authorize: async () => ({ kind: "allowed" }),
+        execute: async () => ({ content: [], summaryText: "ok" }),
       },
       createToolAgentState: () => state,
       appendToolResultMessage: (currentState: typeof state) => currentState,
@@ -1165,10 +1212,10 @@ test('processToolCalls hook ask triggers approval when host allows', async () =>
     completeTurn: () => {},
     emitEvent: () => {},
     performToolExecution: async () => {
-      throw new Error('unused');
+      throw new Error("unused");
     },
     startBackgroundToolExecutionAsync: () => {
-      throw new Error('unused');
+      throw new Error("unused");
     },
     startHistoryCompactionAsync: () => {},
     loopEnabled: () => false,
@@ -1177,19 +1224,19 @@ test('processToolCalls hook ask triggers approval when host allows', async () =>
   const result = await processToolCalls(
     runtime,
     state,
-    'run grep',
-    [{ id: 'call_grep', name: 'grep', argumentsJson: '{"pattern":"hook"}' }],
+    "run grep",
+    [{ id: "call_grep", name: "grep", argumentsJson: '{"pattern":"hook"}' }],
     createTurnContext(),
   );
 
-  assert.equal(result.kind, 'requires-approval');
-  if (result.kind === 'requires-approval') {
-    assert.equal(result.approval.prompt, 'hook confirmation required');
-    assert.equal(result.approval.toolName, 'grep');
+  assert.equal(result.kind, "requires-approval");
+  if (result.kind === "requires-approval") {
+    assert.equal(result.approval.prompt, "hook confirmation required");
+    assert.equal(result.approval.toolName, "grep");
   }
 });
 
-test('processToolCalls auto-approval does not bypass hook ask permission', async () => {
+test("processToolCalls auto-approval does not bypass hook ask permission", async () => {
   let performExecutionCount = 0;
   const state = { messages: [] as Array<{ role: string; content: string }>, steps: 0 };
   const runtime = {
@@ -1198,23 +1245,23 @@ test('processToolCalls auto-approval does not bypass hook ask permission', async
       hookRunner: createStubHookRunner(async () => ({
         records: [],
         denied: false,
-        permission: 'ask',
-        userMessage: 'hook confirmation required',
+        permission: "ask",
+        userMessage: "hook confirmation required",
         agentMessage: undefined,
         updatedInput: undefined,
         additionalContexts: [],
         followupMessage: undefined,
       })),
       hookSessionContext: {
-        sessionId: 's1',
+        sessionId: "s1",
         conversationPath: null,
-        workspaceRoot: '/w',
-        model: 'm',
+        workspaceRoot: "/w",
+        model: "m",
       },
       llmTransport: {
         startToolAgentRound: async () => ({
-          kind: 'failure',
-          error: 'unused',
+          kind: "failure",
+          error: "unused",
           requestTrace: [],
         }),
         isContextOverflowError: () => false,
@@ -1222,11 +1269,11 @@ test('processToolCalls auto-approval does not bypass hook ask permission', async
       toolExecutor: {
         toolDefinitionsJson: () => [],
         requestFromFunctionCall: async (name: string) => ({ name }),
-        authorize: async () => ({ kind: 'allowed' }),
-        execute: async () => ({ content: [], summaryText: 'ok' }),
+        authorize: async () => ({ kind: "allowed" }),
+        execute: async () => ({ content: [], summaryText: "ok" }),
       },
-      getApprovalLevel: () => 'auto-approval' as const,
-      reviewToolApproval: async () => ({ allow: true, reason: 'would allow' }),
+      getApprovalLevel: () => "auto-approval" as const,
+      reviewToolApproval: async () => ({ allow: true, reason: "would allow" }),
       createToolAgentState: () => state,
       appendToolResultMessage: (currentState: typeof state) => currentState,
       extractAssistantText: () => undefined,
@@ -1243,10 +1290,10 @@ test('processToolCalls auto-approval does not bypass hook ask permission', async
     emitEvent: () => {},
     performToolExecution: async () => {
       performExecutionCount += 1;
-      return { content: [], summaryText: 'ok' };
+      return { content: [], summaryText: "ok" };
     },
     startBackgroundToolExecutionAsync: () => {
-      throw new Error('unused');
+      throw new Error("unused");
     },
     startHistoryCompactionAsync: () => {},
     loopEnabled: () => false,
@@ -1255,61 +1302,71 @@ test('processToolCalls auto-approval does not bypass hook ask permission', async
   const result = await processToolCalls(
     runtime,
     state,
-    'run grep',
-    [{ id: 'call_grep', name: 'grep', argumentsJson: '{"pattern":"hook"}' }],
+    "run grep",
+    [{ id: "call_grep", name: "grep", argumentsJson: '{"pattern":"hook"}' }],
     createTurnContext(),
   );
 
-  assert.equal(result.kind, 'requires-approval');
+  assert.equal(result.kind, "requires-approval");
   assert.equal(performExecutionCount, 0);
-  if (result.kind === 'requires-approval') {
-    assert.equal(result.approval.prompt, 'hook confirmation required');
+  if (result.kind === "requires-approval") {
+    assert.equal(result.approval.prompt, "hook confirmation required");
     assert.equal(result.approval.autoReviewBlockReason, undefined);
   }
 });
 
-test('processToolCalls persists the full assistant tool-call message from state', async () => {
+test("processToolCalls persists the full assistant tool-call message from state", async () => {
   const state = {
-    messages: [{
-      role: 'assistant',
-      content: 'calling weather',
-      reasoning_parts: [{
-        type: 'reasoning',
-        text: 'Need weather first.',
-        providerOptions: {
-          anthropic: {
-            signature: 'sig_turn_machine',
+    messages: [
+      {
+        role: "assistant",
+        content: "calling weather",
+        reasoning_parts: [
+          {
+            type: "reasoning",
+            text: "Need weather first.",
+            providerOptions: {
+              anthropic: {
+                signature: "sig_turn_machine",
+              },
+            },
           },
-        },
-      }],
-      tool_calls: [{
-        id: 'call_weather',
-        type: 'function',
-        function: {
-          name: 'get_weather',
-          arguments: '{"city":"Paris"}',
-        },
-      }],
-    }],
+        ],
+        tool_calls: [
+          {
+            id: "call_weather",
+            type: "function",
+            function: {
+              name: "get_weather",
+              arguments: '{"city":"Paris"}',
+            },
+          },
+        ],
+      },
+    ],
     steps: 1,
   };
-  const calls = [{
-    id: 'call_weather',
-    name: 'get_weather',
-    argumentsJson: '{"city":"Paris"}',
-  }];
+  const calls = [
+    {
+      id: "call_weather",
+      name: "get_weather",
+      argumentsJson: '{"city":"Paris"}',
+    },
+  ];
 
   const runtime = {
     options: {
       config: {},
       llmTransport: {
-        startToolAgentRound: async () => ({ kind: 'failure', error: 'unused', requestTrace: [] }),
+        startToolAgentRound: async () => ({ kind: "failure", error: "unused", requestTrace: [] }),
       },
       toolExecutor: {
         toolDefinitionsJson: () => [],
-        requestFromFunctionCall: async (_name: string, argumentsJson: string) => ({ argumentsJson }),
-        authorize: async () => ({ kind: 'need-approval', prompt: 'approve?' }),
-        execute: async () => ({ content: [], summaryText: '' }),
+        requestFromFunctionCall: async (_name: string, argumentsJson: string) => ({
+          argumentsJson,
+        }),
+        authorize: async () => ({ kind: "need-approval", prompt: "approve?" }),
+        execute: async () => ({ content: [], summaryText: "" }),
       },
       createToolAgentState: () => state,
       appendToolResultMessage: (currentState: typeof state) => currentState,
@@ -1327,141 +1384,192 @@ test('processToolCalls persists the full assistant tool-call message from state'
     completeTurn: () => {},
     emitEvent: () => {},
     performToolExecution: async () => {
-      throw new Error('unused');
+      throw new Error("unused");
     },
     startBackgroundToolExecutionAsync: () => {
-      throw new Error('unused');
+      throw new Error("unused");
     },
     startHistoryCompactionAsync: () => {},
   } as unknown as TurnMachineRuntime<{}, typeof state, { argumentsJson: string }>;
 
-  const result = await processToolCalls(runtime, state, 'weather?', calls, createTurnContext());
+  const result = await processToolCalls(runtime, state, "weather?", calls, createTurnContext());
 
-  assert.equal(result.kind, 'requires-approval');
+  assert.equal(result.kind, "requires-approval");
   assert.equal(runtime.historyStore.length, 1);
   assert.deepEqual(runtime.historyStore[0], {
-    role: 'assistant',
-    content: [{
-      type: 'text',
-      text: 'calling weather',
-    }],
-    toolCalls: [{
-      id: 'call_weather',
-      name: 'get_weather',
-      argumentsJson: '{"city":"Paris"}',
-    }],
+    role: "assistant",
+    content: [
+      {
+        type: "text",
+        text: "calling weather",
+      },
+    ],
+    toolCalls: [
+      {
+        id: "call_weather",
+        name: "get_weather",
+        argumentsJson: '{"city":"Paris"}',
+      },
+    ],
     providerState: {
-      reasoning_parts: [{
-        type: 'reasoning',
-        text: 'Need weather first.',
-        providerOptions: {
-          anthropic: {
-            signature: 'sig_turn_machine',
+      reasoning_parts: [
+        {
+          type: "reasoning",
+          text: "Need weather first.",
+          providerOptions: {
+            anthropic: {
+              signature: "sig_turn_machine",
+            },
           },
         },
-      }],
+      ],
     },
   });
 });
 
-test('runTurnLoop completes ordinary final response when Loop is disabled', async () => {
+test("runTurnLoop completes ordinary final response when Loop is disabled", async () => {
   const state = { messages: [] as Array<{ role: string; content: string }>, steps: 0 };
   const runtime = buildLoopTestRuntime({
     loopEnabled: false,
-    rounds: [{ kind: 'final', text: 'done' }],
+    rounds: [{ kind: "final", text: "done" }],
   });
 
-  const result = await runTurnLoop(runtime, state, 'work', createTurnContext());
+  const result = await runTurnLoop(runtime, state, "work", createTurnContext());
 
-  assert.equal(result.kind, 'completed');
-  assert.equal(result.kind === 'completed' ? result.assistantText : '', 'done');
-  assert.deepEqual(runtime.historyStore.map((message) => message.role), ['assistant']);
+  assert.equal(result.kind, "completed");
+  assert.equal(result.kind === "completed" ? result.assistantText : "", "done");
+  assert.deepEqual(
+    runtime.historyStore.map((message) => message.role),
+    ["assistant"],
+  );
 });
 
-test('runTurnLoop continues ordinary final response when Loop is enabled', async () => {
+test("runTurnLoop continues ordinary final response when Loop is enabled", async () => {
   const state = { messages: [] as Array<{ role: string; content: string }>, steps: 0 };
   const runtime = buildLoopTestRuntime({
     loopEnabled: true,
     rounds: [
-      { kind: 'final', text: 'step one' },
-      { kind: 'failure', error: 'stop after loop continuation' },
+      { kind: "final", text: "step one" },
+      { kind: "failure", error: "stop after loop continuation" },
     ],
   });
 
-  const result = await runTurnLoop(runtime, state, 'work', createTurnContext());
+  const result = await runTurnLoop(runtime, state, "work", createTurnContext());
 
-  assert.equal(result.kind, 'failed');
+  assert.equal(result.kind, "failed");
   assert.equal(runtime.roundsStarted, 2);
-  assert.deepEqual(runtime.historyStore.map((message) => message.role), ['assistant', 'user']);
-  assert.match(runtime.historyStore[1]?.content[0]?.type === 'text' ? runtime.historyStore[1].content[0].text : '', /finish_task/);
-  assert.match(runtime.historyStore[1]?.content[0]?.type === 'text' ? runtime.historyStore[1].content[0].text : '', /Original user request:\nwork/);
-  assert.equal(runtime.pendingUserTurnStore, 'work');
+  assert.deepEqual(
+    runtime.historyStore.map((message) => message.role),
+    ["assistant", "user"],
+  );
+  assert.match(
+    runtime.historyStore[1]?.content[0]?.type === "text"
+      ? runtime.historyStore[1].content[0].text
+      : "",
+    /finish_task/,
+  );
+  assert.match(
+    runtime.historyStore[1]?.content[0]?.type === "text"
+      ? runtime.historyStore[1].content[0].text
+      : "",
+    /Original user request:\nwork/,
+  );
+  assert.equal(runtime.pendingUserTurnStore, "work");
 });
 
-test('AgentRuntime completes Loop when finish_task is called', async () => {
+test("AgentRuntime completes Loop when finish_task is called", async () => {
   const runtime = new AgentRuntime(
     buildAgentRuntimeOptions([
-      { kind: 'final', text: 'step one' },
-      { kind: 'tool', id: 'call_finish', name: 'finish_task', argumentsJson: '{"summary":"all done"}' },
+      { kind: "final", text: "step one" },
+      {
+        kind: "tool",
+        id: "call_finish",
+        name: "finish_task",
+        argumentsJson: '{"summary":"all done"}',
+      },
     ]),
   );
   runtime.setLoopEnabled(true);
 
-  const result = await runtime.submitUserTurn('work');
+  const result = await runtime.submitUserTurn("work");
 
-  assert.equal(result.kind, 'completed');
-  assert.equal(result.kind === 'completed' ? result.assistantText : '', 'all done');
+  assert.equal(result.kind, "completed");
+  assert.equal(result.kind === "completed" ? result.assistantText : "", "all done");
   assert.equal(runtime.loopEnabled(), true);
-  assert.deepEqual(runtime.history().map((message) => message.role), ['user', 'assistant', 'user', 'assistant', 'tool']);
+  assert.deepEqual(
+    runtime.history().map((message) => message.role),
+    ["user", "assistant", "user", "assistant", "tool"],
+  );
 });
 
-test('AgentRuntime omits sync assistant UI events when finish_task completes', async () => {
+test("AgentRuntime omits sync assistant UI events when finish_task completes", async () => {
   const runtime = new AgentRuntime(
     buildAgentRuntimeOptions([
-      { kind: 'tool', id: 'call_finish', name: 'finish_task', argumentsJson: '{"summary":"all done"}' },
+      {
+        kind: "tool",
+        id: "call_finish",
+        name: "finish_task",
+        argumentsJson: '{"summary":"all done"}',
+      },
     ]),
   );
   runtime.setLoopEnabled(true);
 
-  await runtime.submitUserTurn('work');
+  await runtime.submitUserTurn("work");
   const events = runtime.drainEvents();
 
-  assert.equal(events.some((event) => event.kind === 'begin-assistant-response'), false);
-  assert.equal(events.some((event) => event.kind === 'assistant-chunk'), false);
-  assert.equal(events.some((event) => event.kind === 'assistant-response-completed'), false);
+  assert.equal(
+    events.some((event) => event.kind === "begin-assistant-response"),
+    false,
+  );
+  assert.equal(
+    events.some((event) => event.kind === "assistant-chunk"),
+    false,
+  );
+  assert.equal(
+    events.some((event) => event.kind === "assistant-response-completed"),
+    false,
+  );
 });
 
-test('AgentRuntime rejects finish_task when Loop is disabled', async () => {
+test("AgentRuntime rejects finish_task when Loop is disabled", async () => {
   const runtime = new AgentRuntime(
-    buildAgentRuntimeOptions([
-      { kind: 'tool', id: 'call_finish', name: 'finish_task', argumentsJson: '{}' },
-      { kind: 'final', text: 'done without finish_task' },
-    ], {
-      requestFromFunctionCall: async (name: string) => {
-        if (name === 'finish_task') {
-          throw new Error(`未知工具: ${name}`);
-        }
-        return { name };
+    buildAgentRuntimeOptions(
+      [
+        { kind: "tool", id: "call_finish", name: "finish_task", argumentsJson: "{}" },
+        { kind: "final", text: "done without finish_task" },
+      ],
+      {
+        requestFromFunctionCall: async (name: string) => {
+          if (name === "finish_task") {
+            throw new Error(`未知工具: ${name}`);
+          }
+          return { name };
+        },
       },
-    }),
+    ),
   );
 
-  const result = await runtime.submitUserTurn('work');
+  const result = await runtime.submitUserTurn("work");
 
-  assert.equal(result.kind, 'completed');
-  assert.equal(result.kind === 'completed' ? result.assistantText : '', 'done without finish_task');
+  assert.equal(result.kind, "completed");
+  assert.equal(result.kind === "completed" ? result.assistantText : "", "done without finish_task");
   assert.equal(runtime.loopEnabled(), false);
 });
 
 type LoopTestRound =
-  | { kind: 'final'; text: string }
-  | { kind: 'tool'; id: string; name: string; argumentsJson: string }
-  | { kind: 'failure'; error: string };
+  | { kind: "final"; text: string }
+  | { kind: "tool"; id: string; name: string; argumentsJson: string }
+  | { kind: "failure"; error: string };
 
 function buildLoopTestRuntime(options: {
   loopEnabled: boolean;
   rounds: LoopTestRound[];
-}): TurnMachineRuntime<{}, { messages: Array<{ role: string; content?: string }>; steps: number }, { name: string; summary?: string }> & {
+}): TurnMachineRuntime<
+  {},
+  { messages: Array<{ role: string; content?: string }>; steps: number },
+  { name: string; summary?: string }
+> & {
   roundsStarted: number;
 } {
   let index = 0;
@@ -1473,20 +1581,20 @@ function buildLoopTestRuntime(options: {
         startToolAgentRound: async () => {
           runtime.roundsStarted += 1;
           const round = options.rounds[index++];
-          if (!round || round.kind === 'failure') {
+          if (!round || round.kind === "failure") {
             return {
-              kind: 'failure' as const,
-              error: round?.kind === 'failure' ? round.error : 'missing round',
+              kind: "failure" as const,
+              error: round?.kind === "failure" ? round.error : "missing round",
               requestTrace: [],
             };
           }
-          if (round.kind === 'tool') {
+          if (round.kind === "tool") {
             return {
-              kind: 'success' as const,
+              kind: "success" as const,
               result: {
                 state: { messages: [], steps: 0 },
                 step: {
-                  kind: 'tool-calls' as const,
+                  kind: "tool-calls" as const,
                   calls: [{ id: round.id, name: round.name, argumentsJson: round.argumentsJson }],
                 },
                 requestTrace: [],
@@ -1494,10 +1602,10 @@ function buildLoopTestRuntime(options: {
             };
           }
           return {
-            kind: 'success' as const,
+            kind: "success" as const,
             result: {
-              state: { messages: [{ role: 'assistant', content: round.text }], steps: 0 },
-              step: { kind: 'final-response-ready' as const },
+              state: { messages: [{ role: "assistant", content: round.text }], steps: 0 },
+              step: { kind: "final-response-ready" as const },
               requestTrace: [],
             },
           };
@@ -1510,17 +1618,24 @@ function buildLoopTestRuntime(options: {
           name,
           ...(JSON.parse(argumentsJson) as { summary?: string }),
         }),
-        authorize: async () => ({ kind: 'allowed' as const }),
-        execute: async () => ({ content: [], summaryText: '' }),
+        authorize: async () => ({ kind: "allowed" as const }),
+        execute: async () => ({ content: [], summaryText: "" }),
       },
       createToolAgentState: () => ({ messages: [], steps: 0 }),
-      appendUserMessage: (currentState: { messages: Array<{ role: string; content?: string }>; steps: number }, content: string) => ({
-        messages: [...currentState.messages, { role: 'user', content }],
+      appendUserMessage: (
+        currentState: { messages: Array<{ role: string; content?: string }>; steps: number },
+        content: string,
+      ) => ({
+        messages: [...currentState.messages, { role: "user", content }],
         steps: currentState.steps,
       }),
-      appendToolResultMessage: (currentState: { messages: Array<{ role: string; content?: string }>; steps: number }) => currentState,
-      extractAssistantText: (currentState: { messages: Array<{ role: string; content?: string }> }) =>
-        latestAssistantContent(currentState.messages),
+      appendToolResultMessage: (currentState: {
+        messages: Array<{ role: string; content?: string }>;
+        steps: number;
+      }) => currentState,
+      extractAssistantText: (currentState: {
+        messages: Array<{ role: string; content?: string }>;
+      }) => latestAssistantContent(currentState.messages),
     },
     historyStore: [],
     requestTraceStore: [],
@@ -1532,7 +1647,11 @@ function buildLoopTestRuntime(options: {
     clearStreamingUiState: () => {},
     completeTurn: () => {},
     emitEvent: () => {},
-    performToolExecution: async () => ({ output: { content: [], summaryText: '' }, failed: false, backgroundExecution: false }),
+    performToolExecution: async () => ({
+      output: { content: [], summaryText: "" },
+      failed: false,
+      backgroundExecution: false,
+    }),
     startBackgroundToolExecutionAsync: () => {},
     startHistoryCompactionAsync: () => {},
     startStreamingRound: async () => {},
@@ -1542,7 +1661,11 @@ function buildLoopTestRuntime(options: {
     loopEnabled: () => options.loopEnabled,
     isBusy: () => false,
     poll: async () => {},
-  } as unknown as TurnMachineRuntime<{}, { messages: Array<{ role: string; content?: string }>; steps: number }, { name: string; summary?: string }> & {
+  } as unknown as TurnMachineRuntime<
+    {},
+    { messages: Array<{ role: string; content?: string }>; steps: number },
+    { name: string; summary?: string }
+  > & {
     roundsStarted: number;
   };
   return runtime;
@@ -1555,23 +1678,23 @@ function buildAgentRuntimeOptions(
   let index = 0;
   const baseToolExecutor = {
     toolDefinitionsJson: () => [],
-    parseCommand: async () => ({ name: 'finish_task' }),
+    parseCommand: async () => ({ name: "finish_task" }),
     requestFromFunctionCall: async (name: string, argumentsJson: string) => ({
       name,
-      ...(JSON.parse(argumentsJson || '{}') as { summary?: string }),
+      ...(JSON.parse(argumentsJson || "{}") as { summary?: string }),
     }),
-    authorize: async () => ({ kind: 'allowed' as const }),
+    authorize: async () => ({ kind: "allowed" as const }),
     trust: async () => {},
-    execute: async () => ({ content: [], summaryText: '' }),
+    execute: async () => ({ content: [], summaryText: "" }),
     startMcpBackgroundRefresh: () => {},
     mcpStatusSnapshot: () => ({
       revision: 0,
-      state: 'idle' as const,
+      state: "idle" as const,
       configuredServers: 0,
       loadedServers: 0,
       cachedTools: 0,
     }),
-    addMcpServer: async () => '',
+    addMcpServer: async () => "",
     listMcpServers: async () => [],
     inspectMcpServer: async () => ({}),
     listMcpTools: async () => [],
@@ -1586,34 +1709,38 @@ function buildAgentRuntimeOptions(
     llmTransport: {
       startToolAgentRound: async () => {
         const round = rounds[index++];
-        if (!round || round.kind === 'failure') {
+        if (!round || round.kind === "failure") {
           return {
-            kind: 'failure' as const,
-            error: round?.kind === 'failure' ? round.error : 'missing round',
+            kind: "failure" as const,
+            error: round?.kind === "failure" ? round.error : "missing round",
             requestTrace: [],
           };
         }
-        if (round.kind === 'tool') {
+        if (round.kind === "tool") {
           return {
-            kind: 'success' as const,
+            kind: "success" as const,
             result: {
               state: {
-                messages: [{
-                  role: 'assistant',
-                  content: '',
-                  tool_calls: [{
-                    id: round.id,
-                    type: 'function',
-                    function: {
-                      name: round.name,
-                      arguments: round.argumentsJson,
-                    },
-                  }],
-                }],
+                messages: [
+                  {
+                    role: "assistant",
+                    content: "",
+                    tool_calls: [
+                      {
+                        id: round.id,
+                        type: "function",
+                        function: {
+                          name: round.name,
+                          arguments: round.argumentsJson,
+                        },
+                      },
+                    ],
+                  },
+                ],
                 steps: 0,
               },
               step: {
-                kind: 'tool-calls' as const,
+                kind: "tool-calls" as const,
                 calls: [{ id: round.id, name: round.name, argumentsJson: round.argumentsJson }],
               },
               requestTrace: [],
@@ -1621,10 +1748,10 @@ function buildAgentRuntimeOptions(
           };
         }
         return {
-          kind: 'success' as const,
+          kind: "success" as const,
           result: {
-            state: { messages: [{ role: 'assistant', content: round.text }], steps: 0 },
-            step: { kind: 'final-response-ready' as const },
+            state: { messages: [{ role: "assistant", content: round.text }], steps: 0 },
+            step: { kind: "final-response-ready" as const },
             requestTrace: [],
           },
         };
@@ -1640,44 +1767,56 @@ function buildAgentRuntimeOptions(
       ...toolExecutorOverrides,
     },
     createToolAgentState: (_history: unknown[], userInput: string) => ({
-      messages: [{ role: 'user', content: userInput }],
+      messages: [{ role: "user", content: userInput }],
       steps: 0,
     }),
     appendUserMessage: (state: { messages: unknown[]; steps: number }, content: string) => ({
-      messages: [...state.messages, { role: 'user', content }],
+      messages: [...state.messages, { role: "user", content }],
       steps: state.steps,
     }),
     createContinuationState: () => ({ messages: [], steps: 0 }),
-    appendToolResultMessage: (state: { messages: unknown[]; steps: number }, toolCallId: string, content: string) => ({
-      messages: [...state.messages, { role: 'tool', tool_call_id: toolCallId, content }],
+    appendToolResultMessage: (
+      state: { messages: unknown[]; steps: number },
+      toolCallId: string,
+      content: string,
+    ) => ({
+      messages: [...state.messages, { role: "tool", tool_call_id: toolCallId, content }],
       steps: state.steps,
     }),
-    assistantToolCallMessageFromState: (state: unknown, calls: Parameters<typeof assistantToolCallMessageFromState>[1]) =>
-      assistantToolCallMessageFromState(state as Parameters<typeof assistantToolCallMessageFromState>[0], calls),
+    assistantToolCallMessageFromState: (
+      state: unknown,
+      calls: Parameters<typeof assistantToolCallMessageFromState>[1],
+    ) =>
+      assistantToolCallMessageFromState(
+        state as Parameters<typeof assistantToolCallMessageFromState>[0],
+        calls,
+      ),
     extractAssistantText: (state: { messages: Array<{ role: string; content?: string }> }) =>
       latestAssistantContent(state.messages),
   };
 }
 
-function latestAssistantContent(messages: Array<{ role: string; content?: string }>): string | undefined {
+function latestAssistantContent(
+  messages: Array<{ role: string; content?: string }>,
+): string | undefined {
   for (let index = messages.length - 1; index >= 0; index -= 1) {
     const message = messages[index];
-    if (message?.role === 'assistant') {
+    if (message?.role === "assistant") {
       return message.content;
     }
   }
   return undefined;
 }
 
-test('resolveEarlyToolCallArguments canonicalizes partial read_file path JSON', () => {
-  const resolved = resolveEarlyToolCallArguments('read_file', '{"path":"Cargo.toml"');
+test("resolveEarlyToolCallArguments canonicalizes partial read_file path JSON", () => {
+  const resolved = resolveEarlyToolCallArguments("read_file", '{"path":"Cargo.toml"');
   assert.deepEqual(resolved, {
     argumentsJson: '{"path":"Cargo.toml"}',
     canonicalArgumentsJson: '{"path":"Cargo.toml"}',
   });
 });
 
-test('startEarlyToolExecution executes read_file once path is streamed', async () => {
+test("startEarlyToolExecution executes read_file once path is streamed", async () => {
   const executed: string[] = [];
   const events: RuntimeEvent<{ name: string; path: string }>[] = [];
   const runtime = {
@@ -1685,7 +1824,7 @@ test('startEarlyToolExecution executes read_file once path is streamed', async (
       toolExecutor: {
         requestFromFunctionCall: async (_name: string, argumentsJson: string) =>
           JSON.parse(argumentsJson) as { name: string; path: string },
-        authorize: async () => ({ kind: 'allowed' as const }),
+        authorize: async () => ({ kind: "allowed" as const }),
         execute: async (request: { path: string }) => {
           executed.push(request.path);
           return { content: [], summaryText: `read ${request.path}` };
@@ -1701,13 +1840,13 @@ test('startEarlyToolExecution executes read_file once path is streamed', async (
   const early = new Map();
   const record = startEarlyToolExecution(
     runtime,
-    { id: 'call-preview-read', name: 'read_file', argumentsJson: '{"path":"preview.txt"' },
+    { id: "call-preview-read", name: "read_file", argumentsJson: '{"path":"preview.txt"' },
     early,
   );
   assert.ok(record);
   const outcome = await record?.outcome;
-  assert.equal(outcome?.kind, 'completed');
-  assert.deepEqual(executed, ['preview.txt']);
-  assert.ok(events.some((event) => event.kind === 'tool-call-started'));
-  assert.ok(events.some((event) => event.kind === 'tool-execution-finished'));
+  assert.equal(outcome?.kind, "completed");
+  assert.deepEqual(executed, ["preview.txt"]);
+  assert.ok(events.some((event) => event.kind === "tool-call-started"));
+  assert.ok(events.some((event) => event.kind === "tool-execution-finished"));
 });

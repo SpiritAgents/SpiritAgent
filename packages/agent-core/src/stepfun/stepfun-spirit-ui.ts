@@ -1,5 +1,5 @@
-import type { JsonObject } from '../ports.js';
-import { RESPONSES_BUILT_IN_SPIRIT_UI_KEY } from '../open-responses/responses-built-in-tools.js';
+import type { JsonObject } from "../ports.js";
+import { RESPONSES_BUILT_IN_SPIRIT_UI_KEY } from "../open-responses/responses-built-in-tools.js";
 
 const SPIRIT_UI_OUTPUT_EXCERPT_MAX = 4_000;
 
@@ -23,7 +23,7 @@ export function buildStepfunWebSearchSpiritUi(
 ): StepfunWebSearchSpiritUi {
   const trimmedQuery = query.trim();
   const spiritUi: StepfunWebSearchSpiritUi = {
-    inputExcerpt: trimmedQuery.length > 0 ? trimmedQuery : 'Web search',
+    inputExcerpt: trimmedQuery.length > 0 ? trimmedQuery : "Web search",
     ...(trimmedQuery.length > 0 ? { headlineDetail: trimmedQuery } : {}),
   };
   const outputExcerpt = options?.outputExcerpt?.trim();
@@ -39,12 +39,13 @@ export function buildStepfunWebSearchToolPreviewArgumentsJson(input: {
   failed?: boolean;
   outputExcerpt?: string;
 }): string {
-  const query = typeof input.query === 'string' ? input.query.trim() : '';
-  const spiritUi = buildStepfunWebSearchSpiritUi(query, {
-    ...(input.outputExcerpt ? { outputExcerpt: input.outputExcerpt } : {}),
-  });
+  const query = typeof input.query === "string" ? input.query.trim() : "";
+  const spiritUi = buildStepfunWebSearchSpiritUi(
+    query,
+    input.outputExcerpt ? { outputExcerpt: input.outputExcerpt } : {},
+  );
   const payload: JsonObject = {
-    status: input.failed ? 'failed' : (input.status ?? 'completed'),
+    status: input.failed ? "failed" : (input.status ?? "completed"),
     [RESPONSES_BUILT_IN_SPIRIT_UI_KEY]: spiritUi as JsonObject,
   };
   return JSON.stringify(payload);

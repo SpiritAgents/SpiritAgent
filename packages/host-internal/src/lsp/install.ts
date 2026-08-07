@@ -1,43 +1,40 @@
-import { spawn } from 'node:child_process';
+import { spawn } from "node:child_process";
 
-import { findLspProvider, type LspProviderId } from './providers.js';
-import { jdtlsInstallHint } from './resolve-server-jdtls.js';
+import { findLspProvider, type LspProviderId } from "./providers.js";
+import { jdtlsInstallHint } from "./resolve-server-jdtls.js";
 
 export class LspInstallError extends Error {
   constructor(message: string) {
     super(message);
-    this.name = 'LspInstallError';
+    this.name = "LspInstallError";
   }
 }
 
-function runCommand(
-  command: string,
-  args: string[],
-  options?: { shell?: boolean },
-): Promise<void> {
+function runCommand(command: string, args: string[], options?: { shell?: boolean }): Promise<void> {
   return new Promise((resolve, reject) => {
     const child = spawn(command, args, {
-      shell: options?.shell ?? process.platform === 'win32',
-      stdio: ['ignore', 'pipe', 'pipe'],
+      shell: options?.shell ?? process.platform === "win32",
+      stdio: ["ignore", "pipe", "pipe"],
     });
 
-    let stderr = '';
-    child.stderr?.on('data', (chunk: Buffer | string) => {
+    let stderr = "";
+    child.stderr?.on("data", (chunk: Buffer | string) => {
       stderr += String(chunk);
     });
 
-    child.on('error', (error) => {
+    child.on("error", (error) => {
       reject(error);
     });
 
-    child.on('close', (code) => {
+    child.on("close", (code) => {
       if (code === 0) {
         resolve();
         return;
       }
       reject(
         new LspInstallError(
-          stderr.trim() || `${command} ${args.join(' ')} failed with exit code ${code ?? 'unknown'}`,
+          stderr.trim() ||
+            `${command} ${args.join(" ")} failed with exit code ${code ?? "unknown"}`,
         ),
       );
     });
@@ -51,32 +48,32 @@ export async function installLspProvider(providerId: LspProviderId): Promise<voi
   }
 
   switch (provider.installKind) {
-    case 'npm': {
+    case "npm": {
       if (!provider.npmPackage) {
         throw new LspInstallError(`npm package not configured for ${providerId}`);
       }
-      await runCommand('npm', ['install', '-g', provider.npmPackage]);
+      await runCommand("npm", ["install", "-g", provider.npmPackage]);
       return;
     }
-    case 'go': {
-      await runCommand('go', ['install', 'golang.org/x/tools/gopls@latest']);
+    case "go": {
+      await runCommand("go", ["install", "golang.org/x/tools/gopls@latest"]);
       return;
     }
-    case 'rustup': {
-      await runCommand('rustup', ['component', 'add', 'rust-analyzer']);
+    case "rustup": {
+      await runCommand("rustup", ["component", "add", "rust-analyzer"]);
       return;
     }
-    case 'platform': {
+    case "platform": {
       throw new LspInstallError(
-        'clangd must be installed via your platform package manager (e.g. winget install LLVM.LLVM on Windows, brew install llvm on macOS).',
+        "clangd must be installed via your platform package manager (e.g. winget install LLVM.LLVM on Windows, brew install llvm on macOS).",
       );
     }
-    case 'manual': {
+    case "manual": {
       throw new LspInstallError(jdtlsInstallHint());
     }
-    case 'dotnet': {
+    case "dotnet": {
       throw new LspInstallError(
-        'OmniSharp requires the .NET SDK and the official OmniSharp release. Install dotnet, then download OmniSharp from the official releases page.',
+        "OmniSharp requires the .NET SDK and the official OmniSharp release. Install dotnet, then download OmniSharp from the official releases page.",
       );
     }
     default: {

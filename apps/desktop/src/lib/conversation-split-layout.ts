@@ -191,22 +191,26 @@ function mergeAxisAlignedJunctions(junctions: SplitJunctionSpec[]): SplitJunctio
   }
   const [first, second] = junctions;
   if (Math.abs(first.xRatio - second.xRatio) < JUNCTION_MERGE_EPSILON) {
-    return [{
-      id: `${first.id}:merged`,
-      xRatio: first.xRatio,
-      yRatio: first.yRatio,
-      xSplitIds: first.xSplitIds,
-      ySplitIds: [...new Set([...first.ySplitIds, ...second.ySplitIds])],
-    }];
+    return [
+      {
+        id: `${first.id}:merged`,
+        xRatio: first.xRatio,
+        yRatio: first.yRatio,
+        xSplitIds: first.xSplitIds,
+        ySplitIds: [...new Set([...first.ySplitIds, ...second.ySplitIds])],
+      },
+    ];
   }
   if (Math.abs(first.yRatio - second.yRatio) < JUNCTION_MERGE_EPSILON) {
-    return [{
-      id: `${first.id}:merged`,
-      xRatio: first.xRatio,
-      yRatio: first.yRatio,
-      xSplitIds: [...new Set([...first.xSplitIds, ...second.xSplitIds])],
-      ySplitIds: first.ySplitIds,
-    }];
+    return [
+      {
+        id: `${first.id}:merged`,
+        xRatio: first.xRatio,
+        yRatio: first.yRatio,
+        xSplitIds: [...new Set([...first.xSplitIds, ...second.xSplitIds])],
+        ySplitIds: first.ySplitIds,
+      },
+    ];
   }
   return junctions;
 }

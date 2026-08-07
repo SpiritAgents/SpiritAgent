@@ -31,10 +31,8 @@ export function syncAllConversationSplitShellDividers(): void {
   }
 }
 
-const SHELL_LINE_BASE_CLASS =
-  "pointer-events-none absolute z-20 bg-border/40 transition-colors";
-const SHELL_LINE_ACTIVE_CLASS =
-  "pointer-events-none absolute z-20 bg-border/55 transition-colors";
+const SHELL_LINE_BASE_CLASS = "pointer-events-none absolute z-20 bg-border/40 transition-colors";
+const SHELL_LINE_ACTIVE_CLASS = "pointer-events-none absolute z-20 bg-border/55 transition-colors";
 
 export function useConversationSplitShellDivider(
   anchorRef: RefObject<HTMLElement | null>,

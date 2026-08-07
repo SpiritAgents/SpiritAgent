@@ -105,7 +105,11 @@ export function PrDiffChip({ attachment }: { attachment: PrDiffAttachment }) {
       data-chip-kind="prDiff"
       className={prDiffChipClassForStatus(attachment.status)}
       title={formatPrDiffChipTitle(attachment)}
-      aria-label={formatPrDiffChipLabel(attachment.filename, attachment.lineStart, attachment.lineEnd)}
+      aria-label={formatPrDiffChipLabel(
+        attachment.filename,
+        attachment.lineStart,
+        attachment.lineEnd,
+      )}
     >
       <ChipIconSvg className={PR_DIFF_CHIP_ICON_CLASS}>
         {prDiffIconPaths(attachment.status)}

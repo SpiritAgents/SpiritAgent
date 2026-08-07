@@ -1,4 +1,4 @@
-import { GitHubOAuthError } from './oauth.js';
+import { GitHubOAuthError } from "./oauth.js";
 
 export const GITHUB_OAUTH_DEVICE_CODE_REQUEST_TIMEOUT_MS = 60_000;
 export const GITHUB_OAUTH_DEVICE_CODE_REQUEST_INTERVAL_MS = 2_000;
@@ -6,19 +6,26 @@ export const GITHUB_OAUTH_USER_LOOKUP_TIMEOUT_MS = 60_000;
 export const GITHUB_OAUTH_USER_LOOKUP_INTERVAL_MS = 2_000;
 
 export function isRetriableGitHubHttpStatus(status: number): boolean {
-  return status === 408 || status === 429 || status === 500 || status === 502 || status === 503 || status === 504;
+  return (
+    status === 408 ||
+    status === 429 ||
+    status === 500 ||
+    status === 502 ||
+    status === 503 ||
+    status === 504
+  );
 }
 
 export function isGitHubFetchAbortError(error: unknown, signal?: AbortSignal): boolean {
   if (signal?.aborted) {
     return true;
   }
-  return error instanceof DOMException && error.name === 'AbortError';
+  return error instanceof DOMException && error.name === "AbortError";
 }
 
 export function throwIfGitHubFetchAborted(
   signal: AbortSignal | undefined,
-  message = 'GitHub device authorization was cancelled.',
+  message = "GitHub device authorization was cancelled.",
 ): void {
   if (signal?.aborted) {
     throw new GitHubOAuthError(message);
@@ -45,9 +52,7 @@ export async function sleepUntilGitHubOAuthRetryDeadline(input: {
   await sleepMs(Math.min(input.intervalMs, remainingMs));
 }
 
-export type GitHubOAuthRetryAttempt<T> =
-  | { outcome: 'success'; value: T }
-  | { outcome: 'retry' };
+export type GitHubOAuthRetryAttempt<T> = { outcome: "success"; value: T } | { outcome: "retry" };
 
 export async function retryGitHubOAuthUntil<T>(input: {
   expiresAtMs: number;
@@ -61,7 +66,7 @@ export async function retryGitHubOAuthUntil<T>(input: {
     throwIfGitHubFetchAborted(input.signal, input.cancelledMessage);
     try {
       const result = await input.attempt();
-      if (result.outcome === 'success') {
+      if (result.outcome === "success") {
         return result.value;
       }
     } catch (error) {
@@ -70,7 +75,7 @@ export async function retryGitHubOAuthUntil<T>(input: {
       }
       if (isGitHubFetchAbortError(error, input.signal)) {
         throw new GitHubOAuthError(
-          input.cancelledMessage ?? 'GitHub device authorization was cancelled.',
+          input.cancelledMessage ?? "GitHub device authorization was cancelled.",
         );
       }
     }

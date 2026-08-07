@@ -1,83 +1,83 @@
-import { createGateway } from '@ai-sdk/gateway';
-import { createAzure } from '@ai-sdk/azure';
-import { createOpenAI, type OpenAIProvider } from '@ai-sdk/openai';
-import { createOpenResponses } from '@ai-sdk/open-responses';
-import {
-  createXai,
-  type XaiLanguageModelResponsesOptions,
-} from '@ai-sdk/xai';
-import { createHuggingFace } from '@ai-sdk/huggingface';
+import { createGateway } from "@ai-sdk/gateway";
+import { createAzure } from "@ai-sdk/azure";
+import { createOpenAI, type OpenAIProvider } from "@ai-sdk/openai";
+import { createOpenResponses } from "@ai-sdk/open-responses";
+import { createXai } from "@ai-sdk/xai";
+import { createHuggingFace } from "@ai-sdk/huggingface";
 
-import { getLlmFetch } from '../llm-fetch.js';
-import { isArkLlmVendor } from '../ark/ark-provider.js';
-import { wrapFetchForCloudflareAiGateway } from '../cloudflare-ai-gateway-fetch.js';
-import type { JsonObject } from '../ports.js';
-import { createAlibabaResponsesAwareFetch } from './alibaba-responses-fetch.js';
-import { createResponsesStoredStateAwareFetch, shouldUseResponsesStoredStateFetch } from './responses-stored-state-fetch.js';
-import { createApplyPatchAwareFetch } from './apply-patch-responses-fetch.js';
-import { createOpenRouterReasoningAwareFetch } from './openrouter-reasoning-responses-fetch.js';
+import { getLlmFetch } from "../llm-fetch.js";
+import { isArkLlmVendor } from "../ark/ark-provider.js";
+import { wrapFetchForCloudflareAiGateway } from "../cloudflare-ai-gateway-fetch.js";
+import type { JsonObject } from "../ports.js";
+import { createAlibabaResponsesAwareFetch } from "./alibaba-responses-fetch.js";
+import {
+  createResponsesStoredStateAwareFetch,
+  shouldUseResponsesStoredStateFetch,
+} from "./responses-stored-state-fetch.js";
+import { createApplyPatchAwareFetch } from "./apply-patch-responses-fetch.js";
+import { createOpenRouterReasoningAwareFetch } from "./openrouter-reasoning-responses-fetch.js";
 import {
   resolveBedrockMantleOpenResponsesApiKey,
   wrapFetchForBedrockMantleIamAuth,
-} from './bedrock-mantle-auth-fetch.js';
-import { shouldUseAlibabaResponsesBuiltInTools } from './alibaba-built-in-tools.js';
-import { isCodeCompletionTransportProfile } from '../code-completion/transport-profile.js';
+} from "./bedrock-mantle-auth-fetch.js";
+import { shouldUseAlibabaResponsesBuiltInTools } from "./alibaba-built-in-tools.js";
+import { isCodeCompletionTransportProfile } from "../code-completion/transport-profile.js";
 import {
   buildResponsesAiSdkTools,
   type OpenAiFunctionToolDefinition,
-} from './ai-sdk-message-bridge.js';
+} from "./ai-sdk-message-bridge.js";
 import {
   buildApplyPatchFunctionToolDefinition,
   shouldUseApplyPatchFileTools,
   shouldUseApplyPatchFunctionTool,
   shouldUseOpenAiSdkApplyPatchTool,
-} from './apply-patch-eligibility.js';
+} from "./apply-patch-eligibility.js";
 import {
   buildGatewayMinimaxProviderOptions,
   isGatewayMinimaxModel,
-} from '../openai/gateway-minimax-thinking.js';
+} from "../openai/gateway-minimax-thinking.js";
 import {
   buildGatewayAlibabaProviderOptions,
   isGatewayAlibabaModel,
-} from '../openai/gateway-alibaba-thinking.js';
+} from "../openai/gateway-alibaba-thinking.js";
 import {
   buildGatewayAnthropicProviderOptions,
   isGatewayAnthropicClaudeModel,
-} from '../openai/gateway-anthropic-thinking.js';
+} from "../openai/gateway-anthropic-thinking.js";
 import {
   buildGatewayCodeCompletionProviderOptions,
   shouldUseGatewayCodeCompletionProviderOptions,
-} from '../openai/gateway-code-completion-thinking.js';
+} from "../openai/gateway-code-completion-thinking.js";
 import {
   buildGatewayDeepSeekProviderOptions,
   isGatewayDeepSeekModel,
-} from '../openai/gateway-deepseek-thinking.js';
+} from "../openai/gateway-deepseek-thinking.js";
 import {
   buildGatewayMoonshotProviderOptions,
   isGatewayMoonshotModel,
-} from '../openai/moonshot-thinking-switch.js';
+} from "../openai/moonshot-thinking-switch.js";
 import {
   buildDirectXiaomiResponsesProviderOptions,
   buildGatewayXiaomiResponsesProviderOptions,
   isGatewayXiaomiModel,
-} from '../openai/gateway-xiaomi-thinking.js';
+} from "../openai/gateway-xiaomi-thinking.js";
 import {
   buildGatewayZaiProviderOptions,
   isGatewayZaiModel,
-} from '../openai/gateway-zai-thinking.js';
+} from "../openai/gateway-zai-thinking.js";
 import {
   buildGatewayXaiProviderOptions,
   isGatewayXaiModel,
   resolveXaiProviderReasoningEffort,
-} from '../openai/gateway-xai-reasoning.js';
+} from "../openai/gateway-xai-reasoning.js";
 import {
   buildGatewayGoogleProviderOptions,
   isGatewayGoogleGeminiModel,
-} from '../openai/gateway-google-thinking.js';
-import { isOpenRouterAnthropicClaudeModel } from '../openai/openrouter-anthropic-reasoning.js';
-import { buildGatewayWebSearchTool, shouldUseGatewayWebSearch } from './gateway-web-search.js';
-import { resolveProviderWebSearchMode } from './web-search-eligibility.js';
-import { responsesUsesStoredState } from './responses-incremental-input.js';
+} from "../openai/gateway-google-thinking.js";
+import { isOpenRouterAnthropicClaudeModel } from "../openai/openrouter-anthropic-reasoning.js";
+import { buildGatewayWebSearchTool, shouldUseGatewayWebSearch } from "./gateway-web-search.js";
+import { resolveProviderWebSearchMode } from "./web-search-eligibility.js";
+import { responsesUsesStoredState } from "./responses-incremental-input.js";
 import {
   openResponsesPostUrl,
   openResponsesReasoningEffort,
@@ -87,9 +87,9 @@ import {
   resolveOpenResponsesSdkProvider,
   resolveAzureResourceName,
   type OpenResponsesTransportConfig,
-} from './responses-compat.js';
+} from "./responses-compat.js";
 
-const DEFAULT_XAI_BASE_URL = 'https://api.x.ai/v1';
+const DEFAULT_XAI_BASE_URL = "https://api.x.ai/v1";
 
 /** 本地 contract smoke 将 …/v1 mock 映射到 Gateway SDK 的 …/v3/ai。 */
 function resolveGatewaySdkBaseUrl(config: OpenResponsesTransportConfig): string | undefined {
@@ -100,11 +100,11 @@ function resolveGatewaySdkBaseUrl(config: OpenResponsesTransportConfig): string 
 
   try {
     const url = new URL(baseUrl);
-    if (url.hostname !== '127.0.0.1' && url.hostname !== 'localhost') {
+    if (url.hostname !== "127.0.0.1" && url.hostname !== "localhost") {
       return undefined;
     }
-    url.pathname = '/v3/ai';
-    return url.toString().replace(/\/$/u, '');
+    url.pathname = "/v3/ai";
+    return url.toString().replace(/\/$/u, "");
   } catch {
     return undefined;
   }
@@ -129,7 +129,7 @@ function responsesFetchForConfig(config: OpenResponsesTransportConfig): typeof f
 export function createOpenAIResponsesProvider(
   config: OpenResponsesTransportConfig,
 ): OpenAIProvider | undefined {
-  if (resolveOpenResponsesSdkProvider(config) !== 'openai') {
+  if (resolveOpenResponsesSdkProvider(config) !== "openai") {
     return undefined;
   }
 
@@ -145,28 +145,28 @@ export function createOpenAIResponsesProvider(
 export function createResponsesLanguageModel(config: OpenResponsesTransportConfig): unknown {
   const languageModelId = resolveOpenResponsesLanguageModelId(config);
 
-  if (config.llmVendor === 'hugging-face') {
+  if (config.llmVendor === "hugging-face") {
     return createHuggingFace({
       apiKey: config.apiKey,
-      baseURL: config.baseUrl ?? 'https://router.huggingface.co/v1',
+      baseURL: config.baseUrl ?? "https://router.huggingface.co/v1",
       fetch: getLlmFetch(),
     }).responses(languageModelId);
   }
 
   const provider = resolveOpenResponsesSdkProvider(config);
-  if (provider === 'openai') {
+  if (provider === "openai") {
     const openai = createOpenAIResponsesProvider(config);
     if (!openai) {
-      throw new Error('OpenAI Responses provider 未配置。');
+      throw new Error("OpenAI Responses provider 未配置。");
     }
     return openai.responses(languageModelId);
   }
 
-  if (provider === 'xai') {
+  if (provider === "xai") {
     return createXaiResponsesProvider(config).responses(languageModelId);
   }
 
-  if (provider === 'azure') {
+  if (provider === "azure") {
     return createAzureResponsesProvider(config)(languageModelId);
   }
 
@@ -181,7 +181,7 @@ export function createResponsesLanguageModel(config: OpenResponsesTransportConfi
   }
 
   const openResponses = createOpenResponses({
-    name: config.llmVendor ?? 'spirit-agent',
+    name: config.llmVendor ?? "spirit-agent",
     url: openResponsesPostUrl(config.baseUrl),
     apiKey: config.apiKey,
     fetch: responsesFetchForConfig(config),
@@ -222,14 +222,14 @@ export function buildResponsesGenerateTools(
   const webSearchMode = resolveProviderWebSearchMode(config);
   const provider = resolveOpenResponsesSdkProvider(config);
 
-  if (provider === 'openai') {
+  if (provider === "openai") {
     const openai = createOpenAIResponsesProvider(config);
     if (openai) {
       const sdkTools: Record<string, unknown> = {};
       if (shouldUseOpenAiSdkApplyPatchTool(config)) {
         sdkTools.apply_patch = openai.tools.applyPatch({});
       }
-      if (webSearchMode === 'openai-sdk-web-search') {
+      if (webSearchMode === "openai-sdk-web-search") {
         sdkTools.web_search = openai.tools.webSearch({});
       }
       if (Object.keys(sdkTools).length > 0) {
@@ -238,7 +238,7 @@ export function buildResponsesGenerateTools(
     }
   }
 
-  if (provider === 'xai' && webSearchMode === 'xai-sdk-web-search') {
+  if (provider === "xai" && webSearchMode === "xai-sdk-web-search") {
     const xai = createXaiResponsesProvider(config);
     return {
       ...merged,
@@ -246,7 +246,7 @@ export function buildResponsesGenerateTools(
     };
   }
 
-  if (webSearchMode === 'gateway-sdk-web-search') {
+  if (webSearchMode === "gateway-sdk-web-search") {
     return {
       ...merged,
       web_search: buildGatewayWebSearchTool(config),
@@ -343,7 +343,7 @@ export function buildResponsesProviderOptions(
   }
 
   const provider = resolveOpenResponsesSdkProvider(config);
-  if (provider === 'xai') {
+  if (provider === "xai") {
     const xaiReasoningEffort = resolveXaiProviderReasoningEffort(reasoningEffort);
     if (xaiReasoningEffort === undefined) {
       return {};
@@ -356,10 +356,10 @@ export function buildResponsesProviderOptions(
     };
   }
 
-  if (provider === 'azure') {
+  if (provider === "azure") {
     const azureOptions: JsonObject = {
       store: config.store ?? true,
-      ...(config.truncation === 'auto' ? { truncation: 'auto' } : { truncation: 'disabled' }),
+      ...(config.truncation === "auto" ? { truncation: "auto" } : { truncation: "disabled" }),
     };
 
     if (reasoningEffort !== undefined) {
@@ -377,12 +377,12 @@ export function buildResponsesProviderOptions(
     return { azure: azureOptions };
   }
 
-  if (provider !== 'openai') {
+  if (provider !== "openai") {
     if (isOpenRouterAnthropicClaudeModel(config.llmVendor, config.model)) {
       return {};
     }
 
-    if (config.llmVendor === 'xiaomi') {
+    if (config.llmVendor === "xiaomi") {
       const xiaomiOptions = buildDirectXiaomiResponsesProviderOptions(
         config,
         reasoningEffort,
@@ -393,7 +393,7 @@ export function buildResponsesProviderOptions(
       }
     }
 
-    if (config.llmVendor === 'hugging-face') {
+    if (config.llmVendor === "hugging-face") {
       const huggingfaceOptions: JsonObject = {};
       if (reasoningEffort !== undefined) {
         huggingfaceOptions.reasoningEffort = reasoningEffort;
@@ -406,13 +406,13 @@ export function buildResponsesProviderOptions(
       ...(reasoningSummary !== undefined ? { reasoningSummary } : {}),
     };
 
-    if (config.llmVendor === 'alibaba') {
+    if (config.llmVendor === "alibaba") {
       providerOptions.enable_thinking = !isCodeCompletionTransportProfile(config);
     }
 
     if (
-      (config.llmVendor === 'alibaba' || isArkLlmVendor(config.llmVendor))
-      && responsesUsesStoredState(config)
+      (config.llmVendor === "alibaba" || isArkLlmVendor(config.llmVendor)) &&
+      responsesUsesStoredState(config)
     ) {
       providerOptions.store = config.store ?? true;
       if (previousResponseId) {
@@ -425,13 +425,13 @@ export function buildResponsesProviderOptions(
     }
 
     return {
-      [config.llmVendor ?? 'open-responses']: providerOptions,
+      [config.llmVendor ?? "open-responses"]: providerOptions,
     };
   }
 
   const openaiOptions: JsonObject = {
     store: config.store ?? responsesUsesStoredState(config),
-    ...(config.truncation === 'auto' ? { truncation: 'auto' } : { truncation: 'disabled' }),
+    ...(config.truncation === "auto" ? { truncation: "auto" } : { truncation: "disabled" }),
   };
 
   if (reasoningEffort !== undefined) {

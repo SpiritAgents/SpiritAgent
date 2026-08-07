@@ -1,10 +1,10 @@
-import assert from 'node:assert/strict';
-import { mkdtemp, rm } from 'node:fs/promises';
-import { tmpdir } from 'node:os';
-import path from 'node:path';
-import { test } from 'node:test';
+import assert from "node:assert/strict";
+import { mkdtemp, rm } from "node:fs/promises";
+import { tmpdir } from "node:os";
+import path from "node:path";
+import { test } from "node:test";
 
-import { createHostTodoStore } from '@spiritagent/host-internal';
+import { createHostTodoStore } from "@spiritagent/host-internal";
 
 import {
   createTodoSessionScopeKey,
@@ -12,30 +12,28 @@ import {
   replaceSessionTodos,
   resolveTodoSessionKey,
   normalizeTodoSessionStorageKey,
-} from '../../dist-electron/src/host/todos.js';
+} from "../../dist-electron/src/host/todos.js";
 import {
   isProvisionalSessionPath,
   provisionalNewSessionPath,
   spiritAgentDataDir,
-} from '../../dist-electron/src/host/storage.js';
-import { DesktopToolExecutor } from '../../dist-electron/src/host/tool-executor.js';
+} from "../../dist-electron/src/host/storage.js";
+import { DesktopToolExecutor } from "../../dist-electron/src/host/tool-executor.js";
 
 function functionToolNames(definitions) {
   return Array.isArray(definitions)
     ? definitions.flatMap((entry) => {
-        if (!entry || typeof entry !== 'object') {
+        if (!entry || typeof entry !== "object") {
           return [];
         }
         const tool = entry.function;
-        return tool && typeof tool === 'object' && typeof tool.name === 'string'
-          ? [tool.name]
-          : [];
+        return tool && typeof tool === "object" && typeof tool.name === "string" ? [tool.name] : [];
       })
     : [];
 }
 
-test('provisional chat paths do not alias todo storage', () => {
-  const workspaceRoot = path.join(process.cwd(), 'workspace-a');
+test("provisional chat paths do not alias todo storage", () => {
+  const workspaceRoot = path.join(process.cwd(), "workspace-a");
   const provisionalPath = provisionalNewSessionPath(workspaceRoot);
   const scopeKey = createTodoSessionScopeKey();
   assert.ok(isProvisionalSessionPath(provisionalPath));
@@ -56,11 +54,8 @@ test('provisional chat paths do not alias todo storage', () => {
     scopeKey,
   );
   assert.equal(normalizeTodoSessionStorageKey(scopeKey), scopeKey);
-  assert.notEqual(
-    normalizeTodoSessionStorageKey(scopeKey),
-    path.resolve(scopeKey),
-  );
-  const savedPath = path.join(process.cwd(), 'chats', 'session-1.json');
+  assert.notEqual(normalizeTodoSessionStorageKey(scopeKey), path.resolve(scopeKey));
+  const savedPath = path.join(process.cwd(), "chats", "session-1.json");
   assert.equal(
     resolveTodoSessionKey({
       sessionFilePath: savedPath,
@@ -71,20 +66,20 @@ test('provisional chat paths do not alias todo storage', () => {
   );
 });
 
-test('desktop todo tools are exposed on the main agent executor', () => {
+test("desktop todo tools are exposed on the main agent executor", () => {
   const executor = new DesktopToolExecutor(process.cwd(), {
-    todoScope: { sessionKey: path.join(process.cwd(), 'session-a.json') },
+    todoScope: { sessionKey: path.join(process.cwd(), "session-a.json") },
   });
   const names = functionToolNames(executor.toolDefinitionsJson());
-  assert.ok(names.includes('todo_write'));
-  assert.ok(names.includes('todo_list'));
-  assert.equal(names.filter((name) => name.startsWith('todo_')).length, 2);
+  assert.ok(names.includes("todo_write"));
+  assert.ok(names.includes("todo_list"));
+  assert.equal(names.filter((name) => name.startsWith("todo_")).length, 2);
 });
 
-test('replaceAll restores rewind todo snapshot per session', async () => {
-  const tempRoot = await mkdtemp(path.join(tmpdir(), 'spirit-agent-todos-rewind-'));
+test("replaceAll restores rewind todo snapshot per session", async () => {
+  const tempRoot = await mkdtemp(path.join(tmpdir(), "spirit-agent-todos-rewind-"));
   const previousAppData = process.env.APPDATA;
-  const sessionKey = path.join(tempRoot, 'session-rewind.json');
+  const sessionKey = path.join(tempRoot, "session-rewind.json");
 
   try {
     process.env.APPDATA = tempRoot;
@@ -92,18 +87,18 @@ test('replaceAll restores rewind todo snapshot per session', async () => {
       spiritDataDir: spiritAgentDataDir(),
       scope: { sessionKey },
     });
-    await store.write([{ title: 'Before rewind', status: 'pending' }]);
+    await store.write([{ title: "Before rewind", status: "pending" }]);
     const snapshot = await listSessionTodos(sessionKey);
     await store.write([
-      { title: 'Before rewind', status: 'pending' },
-      { title: 'After more work', status: 'pending' },
+      { title: "Before rewind", status: "pending" },
+      { title: "After more work", status: "pending" },
     ]);
     assert.equal((await listSessionTodos(sessionKey)).length, 2);
 
     await replaceSessionTodos(sessionKey, snapshot);
     const restored = await listSessionTodos(sessionKey);
     assert.equal(restored.length, 1);
-    assert.equal(restored[0]?.title, 'Before rewind');
+    assert.equal(restored[0]?.title, "Before rewind");
   } finally {
     if (previousAppData === undefined) {
       delete process.env.APPDATA;

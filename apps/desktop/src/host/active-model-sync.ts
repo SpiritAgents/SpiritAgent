@@ -1,16 +1,16 @@
-import { modelRefsEqual } from '@spiritagent/host-internal';
+import { modelRefsEqual } from "@spiritagent/host-internal";
 
-import type { ModelRef } from '../types.js';
-import type { DesktopConfigFile } from './storage.js';
-import { resolvePaneModelRef } from './model-config-access.js';
-import type { SessionBundle } from './session-bundle.js';
+import type { ModelRef } from "../types.js";
+import type { DesktopConfigFile } from "./storage.js";
+import { resolvePaneModelRef } from "./model-config-access.js";
+import type { SessionBundle } from "./session-bundle.js";
 
 export interface HostActiveModelState {
-  config: Pick<DesktopConfigFile, 'activeModel' | 'providerGroups'>;
+  config: Pick<DesktopConfigFile, "activeModel" | "providerGroups">;
 }
 
 export function resolveEffectivePaneActiveModel(
-  bundle: Pick<SessionBundle, 'activeModel'>,
+  bundle: Pick<SessionBundle, "activeModel">,
   state: HostActiveModelState,
 ): ModelRef {
   const fromBundle = resolvePaneModelRef(state.config, bundle.activeModel);
@@ -21,7 +21,7 @@ export function resolveEffectivePaneActiveModel(
 }
 
 export function needsHostActiveModelSync(
-  bundle: Pick<SessionBundle, 'activeModel'>,
+  bundle: Pick<SessionBundle, "activeModel">,
   state: HostActiveModelState,
 ): boolean {
   const effective = resolveEffectivePaneActiveModel(bundle, state);

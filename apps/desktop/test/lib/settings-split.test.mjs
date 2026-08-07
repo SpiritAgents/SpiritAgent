@@ -42,7 +42,10 @@ for (const [exportName, relativePath] of PANEL_FILES) {
 test("settings barrel re-exports SettingsView and settings types", async () => {
   const barrel = await readFile(join(__dirname, "../../src/components/settings-view.tsx"), "utf8");
   assert.match(barrel, /export \{ SettingsView \} from "@\/components\/settings\/settings-view"/);
-  assert.match(barrel, /export type \{ SettingsFormState, SettingsViewProps \} from "@\/components\/settings\/types"/);
+  assert.match(
+    barrel,
+    /export type \{ SettingsFormState, SettingsViewProps \} from "@\/components\/settings\/types"/,
+  );
 });
 
 test("AgentsSettingsRow uses grid layout without shared SettingsRow border", () => {
@@ -65,10 +68,7 @@ test("AgentsSettingsRow uses grid layout without shared SettingsRow border", () 
 });
 
 test("AgentsSettingsPanel includes LSP section label and Attribution rows", async () => {
-  const source = await readFile(
-    join(srcRoot, "panels/agents-settings-panel.tsx"),
-    "utf8",
-  );
+  const source = await readFile(join(srcRoot, "panels/agents-settings-panel.tsx"), "utf8");
   assert.match(source, /settings\.lspSection/);
   assert.match(source, /settings\.attributionSection/);
   assert.match(source, /settings\.commitAttribution/);

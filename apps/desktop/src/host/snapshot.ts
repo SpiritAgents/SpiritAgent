@@ -11,29 +11,26 @@ import type {
   DesktopModelCatalogHint,
   DesktopSnapshot,
   McpStatusSnapshot,
-} from '../types.js';
-import { readModelCatalogCacheSync } from './model-catalog-cache.js';
-import { flattenProviderGroups } from './model-config-access.js';
+} from "../types.js";
+import { readModelCatalogCacheSync } from "./model-catalog-cache.js";
+import { flattenProviderGroups } from "./model-config-access.js";
 import {
   DEFAULT_API_BASE,
   normalizeAgentsConfig,
   normalizeWorkspaceBinding,
   type DesktopConfigFile,
   type HostMetadataSummary,
-} from './storage.js';
-import {
-  buildAvailableWorkspaces,
-  buildWebHostSnapshot,
-} from './service-utils.js';
-import { resolveDesktopHomeDirectory } from './storage.js';
-import type { DesktopLspSnapshot } from '../types.js';
+} from "./storage.js";
+import { buildAvailableWorkspaces, buildWebHostSnapshot } from "./service-utils.js";
+import { resolveDesktopHomeDirectory } from "./storage.js";
+import type { DesktopLspSnapshot } from "../types.js";
 
 export interface BuildDesktopSnapshotInput {
   workspaceRoot: string;
   config: DesktopConfigFile;
   git: DesktopGitSnapshot;
   metadata: HostMetadataSummary;
-  plan: DesktopSnapshot['plan'];
+  plan: DesktopSnapshot["plan"];
   extensionsList: DesktopExtensionListItem[];
   extensionCss: DesktopExtensionCssLayer[];
   extensionsLoading?: boolean;
@@ -49,13 +46,13 @@ export interface BuildDesktopSnapshotInput {
   conversation: ConversationSnapshot;
   activeSession?: ActiveSessionSnapshot;
   composerSessionKey: string;
-  subagentViewer?: DesktopSnapshot['subagentViewer'];
+  subagentViewer?: DesktopSnapshot["subagentViewer"];
   automationsList: DesktopAutomationListItem[];
-  paneSessions?: DesktopSnapshot['paneSessions'];
-  pendingWorkspaceCapabilityTrust?: DesktopSnapshot['pendingWorkspaceCapabilityTrust'];
+  paneSessions?: DesktopSnapshot["paneSessions"];
+  pendingWorkspaceCapabilityTrust?: DesktopSnapshot["pendingWorkspaceCapabilityTrust"];
 }
 
-function snapshotProviderGroups(config: DesktopConfigFile): DesktopConfigFile['providerGroups'] {
+function snapshotProviderGroups(config: DesktopConfigFile): DesktopConfigFile["providerGroups"] {
   return config.providerGroups.map((group) => ({
     ...group,
     models: group.models.map((model) => ({ ...model })),
@@ -92,16 +89,22 @@ export function buildDesktopSnapshot(input: BuildDesktopSnapshotInput): DesktopS
         keyConfigured: input.modelKeyPresence[model.name] ?? false,
       })),
       activeModel: input.config.activeModel,
-      ...(input.config.imageGenerationModel ? { imageGenerationModel: input.config.imageGenerationModel } : {}),
-      ...(input.config.videoGenerationModel ? { videoGenerationModel: input.config.videoGenerationModel } : {}),
-      ...(input.config.lightweightChatModel ? { lightweightChatModel: input.config.lightweightChatModel } : {}),
+      ...(input.config.imageGenerationModel
+        ? { imageGenerationModel: input.config.imageGenerationModel }
+        : {}),
+      ...(input.config.videoGenerationModel
+        ? { videoGenerationModel: input.config.videoGenerationModel }
+        : {}),
+      ...(input.config.lightweightChatModel
+        ? { lightweightChatModel: input.config.lightweightChatModel }
+        : {}),
       ...(input.config.uiLocale ? { uiLocale: input.config.uiLocale } : {}),
       activeApiKeyConfigured: input.activeApiKeyConfigured,
       windowsMica: input.config.windowsMica !== false,
       systemNotifications: input.config.systemNotifications !== false,
       trayIcon: input.config.trayIcon !== false,
       onboardingCompleted: input.config.onboardingCompleted === true,
-      agentMode: input.config.agentMode ?? 'agent',
+      agentMode: input.config.agentMode ?? "agent",
       modelCatalogHints: buildModelCatalogHints(input.config),
       networks: {
         llmHttpVersion: input.config.networks.llmHttpVersion,
@@ -178,18 +181,20 @@ export function buildModelCatalogHints(config: DesktopConfigFile): DesktopModelC
   const seen = new Set<string>();
   for (const group of config.providerGroups) {
     const base = group.apiBase.trim() || DEFAULT_API_BASE;
-    const transportKind = group.transportKind ?? (group.provider === 'anthropic' ? 'anthropic' : 'openai-compatible');
-    seen.add(`${group.provider ?? 'custom'}::${transportKind}::${base}`);
+    const transportKind =
+      group.transportKind ?? (group.provider === "anthropic" ? "anthropic" : "openai-compatible");
+    seen.add(`${group.provider ?? "custom"}::${transportKind}::${base}`);
   }
-  const memoKey = [...seen].join('\n');
+  const memoKey = [...seen].join("\n");
   if (modelCatalogHintsMemo?.key === memoKey) {
     return modelCatalogHintsMemo.hints;
   }
   const hints: DesktopModelCatalogHint[] = [];
   for (const group of config.providerGroups) {
     const base = group.apiBase.trim() || DEFAULT_API_BASE;
-    const transportKind = group.transportKind ?? (group.provider === 'anthropic' ? 'anthropic' : 'openai-compatible');
-    const cacheKey = `${group.provider ?? 'custom'}::${transportKind}::${base}`;
+    const transportKind =
+      group.transportKind ?? (group.provider === "anthropic" ? "anthropic" : "openai-compatible");
+    const cacheKey = `${group.provider ?? "custom"}::${transportKind}::${base}`;
     if (!seen.delete(cacheKey)) {
       continue;
     }

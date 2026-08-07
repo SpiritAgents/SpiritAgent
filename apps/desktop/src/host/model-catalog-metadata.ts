@@ -1,10 +1,10 @@
-import { formatModelDisplayNameFromId } from '@spiritagent/host-internal/model-display-name';
+import { formatModelDisplayNameFromId } from "@spiritagent/host-internal/model-display-name";
 import {
   gatewayGoogleGeminiSupportedEfforts,
   routedAnthropicClaudeSupportedEfforts,
-} from '@spiritagent/agent-core';
-import type { ProviderListedModelEntry } from '@spiritagent/host-internal';
-import { moonshotK3SupportedReasoningEfforts } from '@spiritagent/host-internal/openai-models';
+} from "@spiritagent/agent-core";
+import type { ProviderListedModelEntry } from "@spiritagent/host-internal";
+import { moonshotK3SupportedReasoningEfforts } from "@spiritagent/host-internal/openai-models";
 
 import type {
   DesktopModelCapability,
@@ -12,17 +12,17 @@ import type {
   DesktopModelReasoningEffort,
   DesktopTransportKind,
   PreviewModelCatalogEntry,
-} from '../types.js';
+} from "../types.js";
 
 export function usesAnthropicModelCatalogMetadata(input: {
   provider?: DesktopModelProvider;
   transportKind?: DesktopTransportKind;
 }): boolean {
-  return input.transportKind === 'anthropic' || input.provider === 'anthropic';
+  return input.transportKind === "anthropic" || input.provider === "anthropic";
 }
 
 function providerUsesUpstreamModelDisplayName(provider: DesktopModelProvider | undefined): boolean {
-  return provider === 'vercel-ai-gateway' || provider === 'openrouter';
+  return provider === "vercel-ai-gateway" || provider === "openrouter";
 }
 
 /** 是否可调用上游 `GET /models`（或等价）列模型；Azure 无目录端点，custom 视 transport 而定。 */
@@ -33,14 +33,16 @@ export function providerSupportsModelCatalogListing(input: {
   if (!input.provider) {
     return false;
   }
-  if (input.provider === 'azure' || input.provider === 'cloudflare-ai-gateway') {
+  if (input.provider === "azure" || input.provider === "cloudflare-ai-gateway") {
     return false;
   }
-  if (input.provider === 'custom') {
-    const transportKind = input.transportKind ?? 'openai-compatible';
-    return transportKind === 'openai-compatible'
-      || transportKind === 'anthropic'
-      || transportKind === 'open-responses';
+  if (input.provider === "custom") {
+    const transportKind = input.transportKind ?? "openai-compatible";
+    return (
+      transportKind === "openai-compatible" ||
+      transportKind === "anthropic" ||
+      transportKind === "open-responses"
+    );
   }
   return true;
 }
@@ -52,50 +54,50 @@ export function usesProviderListedModelCatalogMetadata(input: {
   if (!providerSupportsModelCatalogListing(input)) {
     return false;
   }
-  if (input.provider === 'moonshot-ai') {
+  if (input.provider === "moonshot-ai") {
     return true;
   }
-  if (input.provider === 'meituan') {
+  if (input.provider === "meituan") {
     return true;
   }
-  if (input.provider === 'tencent-tokenhub') {
+  if (input.provider === "tencent-tokenhub") {
     return true;
   }
-  if (input.provider === 'mistral') {
+  if (input.provider === "mistral") {
     return true;
   }
-  if (input.provider === 'cohere') {
+  if (input.provider === "cohere") {
     return true;
   }
-  if (input.provider === 'xiaomi') {
+  if (input.provider === "xiaomi") {
     return true;
   }
-  if (input.provider === 'siliconflow') {
+  if (input.provider === "siliconflow") {
     return true;
   }
   if (
-    input.provider === 'openai'
-    || input.provider === 'deepseek'
-    || input.provider === 'kimi-code'
-    || input.provider === 'xai'
-    || input.provider === 'z-ai'
-    || input.provider === 'zhipu-ai'
-    || input.provider === 'alibaba'
-    || input.provider === 'minimax'
-    || input.provider === 'vercel-ai-gateway'
-    || input.provider === 'openrouter'
-    || input.provider === 'fireworks-ai'
-    || input.provider === 'together-ai'
-    || input.provider === 'groq'
-    || input.provider === 'deepinfra'
-    || input.provider === 'hugging-face'
-    || input.provider === 'baseten'
-    || input.provider === 'volcengine'
-    || input.provider === 'byteplus'
-    || input.provider === 'stepfun'
-    || input.provider === 'google'
-    || input.provider === 'google-vertex-ai'
-    || input.provider === 'amazon-bedrock'
+    input.provider === "openai" ||
+    input.provider === "deepseek" ||
+    input.provider === "kimi-code" ||
+    input.provider === "xai" ||
+    input.provider === "z-ai" ||
+    input.provider === "zhipu-ai" ||
+    input.provider === "alibaba" ||
+    input.provider === "minimax" ||
+    input.provider === "vercel-ai-gateway" ||
+    input.provider === "openrouter" ||
+    input.provider === "fireworks-ai" ||
+    input.provider === "together-ai" ||
+    input.provider === "groq" ||
+    input.provider === "deepinfra" ||
+    input.provider === "hugging-face" ||
+    input.provider === "baseten" ||
+    input.provider === "volcengine" ||
+    input.provider === "byteplus" ||
+    input.provider === "stepfun" ||
+    input.provider === "google" ||
+    input.provider === "google-vertex-ai" ||
+    input.provider === "amazon-bedrock"
   ) {
     return true;
   }
@@ -126,7 +128,9 @@ export function previewModelCatalogForTransport(input: {
       ? { supportsThinkingType: entry.supportsThinkingType }
       : {}),
     ...(entry.supportsThinkingSwitch === true ? { supportsThinkingSwitch: true } : {}),
-    ...(entry.inferenceProvider !== undefined ? { inferenceProvider: entry.inferenceProvider } : {}),
+    ...(entry.inferenceProvider !== undefined
+      ? { inferenceProvider: entry.inferenceProvider }
+      : {}),
     ...(entry.isPartner !== undefined ? { isPartner: entry.isPartner } : {}),
   }));
 }
@@ -158,7 +162,11 @@ export function previewCatalogMapForTransport(input: {
         ...(entry.pricing !== undefined ? { pricing: { ...entry.pricing } } : {}),
         ...(entry.capabilities ? { capabilities: entry.capabilities } : {}),
         ...(entry.supportedReasoningEfforts !== undefined
-          ? { supportedReasoningEfforts: normalizePreviewSupportedReasoningEfforts(entry.supportedReasoningEfforts) }
+          ? {
+              supportedReasoningEfforts: normalizePreviewSupportedReasoningEfforts(
+                entry.supportedReasoningEfforts,
+              ),
+            }
           : {}),
         ...(entry.contextLength !== undefined ? { contextLength: entry.contextLength } : {}),
         ...(entry.maxCompletionTokens !== undefined
@@ -168,7 +176,9 @@ export function previewCatalogMapForTransport(input: {
           ? { supportsThinkingType: entry.supportsThinkingType }
           : {}),
         ...(entry.supportsThinkingSwitch === true ? { supportsThinkingSwitch: true } : {}),
-        ...(entry.inferenceProvider !== undefined ? { inferenceProvider: entry.inferenceProvider } : {}),
+        ...(entry.inferenceProvider !== undefined
+          ? { inferenceProvider: entry.inferenceProvider }
+          : {}),
         ...(entry.isPartner !== undefined ? { isPartner: entry.isPartner } : {}),
       },
     ]);
@@ -179,7 +189,7 @@ export function previewCatalogMapForTransport(input: {
 
 function resolvePreviewCatalogDisplayName(
   provider: DesktopModelProvider | undefined,
-  entry: Pick<ProviderListedModelEntry, 'id' | 'displayName'>,
+  entry: Pick<ProviderListedModelEntry, "id" | "displayName">,
 ): { displayName?: string } {
   const upstreamDisplayName = entry.displayName?.trim();
   if (upstreamDisplayName) {
@@ -195,27 +205,27 @@ function previewCapabilitiesFromListedEntry(
   entry: ProviderListedModelEntry,
 ): DesktopModelCapability[] {
   if (entry.supportsImageGeneration === true) {
-    return ['imageGeneration'];
+    return ["imageGeneration"];
   }
 
   if (entry.supportsVideoGeneration === true) {
-    return ['videoGeneration'];
+    return ["videoGeneration"];
   }
 
-  const capabilities: DesktopModelCapability[] = ['chat'];
+  const capabilities: DesktopModelCapability[] = ["chat"];
   if (entry.supportsImageInput === true) {
-    capabilities.push('image');
+    capabilities.push("image");
   }
   if (entry.supportsVideoInput === true) {
-    capabilities.push('video');
+    capabilities.push("video");
   }
   return capabilities;
 }
 
 function isMoonshotKimiK3CatalogModelId(modelId: string): boolean {
   const normalized = modelId.trim().toLowerCase();
-  const bareId = normalized.includes('/')
-    ? normalized.slice(normalized.lastIndexOf('/') + 1)
+  const bareId = normalized.includes("/")
+    ? normalized.slice(normalized.lastIndexOf("/") + 1)
     : normalized;
   return /^kimi-k3(?:-|$)/.test(bareId);
 }
@@ -235,11 +245,13 @@ function resolvePreviewSupportedReasoningEffortsForEntry(
 
   if (entry.supportedReasoningEfforts !== undefined) {
     return {
-      supportedReasoningEfforts: normalizePreviewSupportedReasoningEfforts(entry.supportedReasoningEfforts),
+      supportedReasoningEfforts: normalizePreviewSupportedReasoningEfforts(
+        entry.supportedReasoningEfforts,
+      ),
     };
   }
 
-  if (provider !== 'vercel-ai-gateway' && provider !== 'openrouter') {
+  if (provider !== "vercel-ai-gateway" && provider !== "openrouter") {
     return {};
   }
 
@@ -267,7 +279,7 @@ function normalizePreviewSupportedReasoningEfforts(
   const normalized: DesktopModelReasoningEffort[] = [];
   for (const value of values) {
     const effort = value.trim().toLowerCase();
-    if (!effort || effort === 'default' || seen.has(effort)) {
+    if (!effort || effort === "default" || seen.has(effort)) {
       continue;
     }
     seen.add(effort);

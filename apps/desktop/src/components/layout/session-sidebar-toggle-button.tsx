@@ -13,8 +13,7 @@ import { cn } from "@/lib/utils";
 export function SessionSidebarToggleButton({ className }: { className?: string }) {
   const { t } = useTranslation();
   const { open: sessionSidebarOpen, toggle: onToggleSessionSidebar } = useSessionSidebarChrome();
-  const tooltipAlign =
-    sessionSidebarOpen || isMacDesktopPlatform() ? "center" : "start";
+  const tooltipAlign = sessionSidebarOpen || isMacDesktopPlatform() ? "center" : "start";
 
   return (
     <Tooltip delayDuration={300} disableHoverableContent>

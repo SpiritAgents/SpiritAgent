@@ -1,8 +1,8 @@
-import type { JsonValue, LspDiagnostic, LspReadyProviderSummary } from '@spiritagent/agent-core';
+import type { JsonValue, LspDiagnostic, LspReadyProviderSummary } from "@spiritagent/agent-core";
 
-import { DEFAULT_LSP_TIMING, type LspTimingConfig } from './config.js';
-import { LspOrchestrator } from './orchestrator.js';
-import { readyProvidersForToolDefinitions } from './ready-providers.js';
+import { DEFAULT_LSP_TIMING, type LspTimingConfig } from "./config.js";
+import { LspOrchestrator } from "./orchestrator.js";
+import { readyProvidersForToolDefinitions } from "./ready-providers.js";
 
 export interface LspUserConfig {
   enabled: boolean;
@@ -64,7 +64,9 @@ export class LspService {
     return this.orchestrator.syncFromRecordedChange(change);
   }
 
-  async syncFileChange(notification: Parameters<LspOrchestrator['syncFileChange']>[0]): Promise<void> {
+  async syncFileChange(
+    notification: Parameters<LspOrchestrator["syncFileChange"]>[0],
+  ): Promise<void> {
     return this.orchestrator.syncFileChange(notification);
   }
 

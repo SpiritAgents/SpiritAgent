@@ -8,9 +8,11 @@
     "url": "git+https://github.com/SpiritAgents/SpiritAgent.git",
     "directory": "packages/agent-core"
   },
-  "publishConfig": {
-    "access": "public"
-  },
+  "files": [
+    "dist",
+    "LICENSE",
+    "README.md"
+  ],
   "type": "module",
   "main": "./dist/index.js",
   "types": "./dist/index.d.ts",
@@ -52,13 +54,8 @@
       "default": "./dist/host-bridge-public.js"
     }
   },
-  "files": [
-    "dist",
-    "LICENSE",
-    "README.md"
-  ],
-  "engines": {
-    "node": ">=24"
+  "publishConfig": {
+    "access": "public"
   },
   "scripts": {
     "build": "tsc -p tsconfig.json",
@@ -95,12 +92,6 @@
     "notice": "node scripts/gen-notice.mjs",
     "notice:production": "node scripts/gen-notice.mjs --production"
   },
-  "devDependencies": {
-    "@types/node": "25.9.5",
-    "license-checker-rseidelsohn": "5.0.1",
-    "tsx": "4.23.7",
-    "typescript": "5.9.3"
-  },
   "dependencies": {
     "@ai-sdk/alibaba": "2.0.25",
     "@ai-sdk/amazon-bedrock": "5.0.43",
@@ -128,5 +119,14 @@
     "@modelcontextprotocol/sdk": "1.30.0",
     "ai": "7.0.52",
     "undici": "7.29.0"
+  },
+  "devDependencies": {
+    "@types/node": "25.9.5",
+    "license-checker-rseidelsohn": "5.0.1",
+    "tsx": "4.23.7",
+    "typescript": "5.9.3"
+  },
+  "engines": {
+    "node": ">=24"
   }
 }

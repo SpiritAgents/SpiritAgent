@@ -1,9 +1,9 @@
-import './load-env.js';
+import "./load-env.js";
 
-import { existsSync, readFileSync, statSync } from 'node:fs';
-import { copyFile, lstat, mkdir, readFile, realpath, stat, writeFile } from 'node:fs/promises';
-import path from 'node:path';
-import { fileURLToPath } from 'node:url';
+import { existsSync, readFileSync, statSync } from "node:fs";
+import { copyFile, lstat, mkdir, readFile, realpath, stat, writeFile } from "node:fs/promises";
+import path from "node:path";
+import { fileURLToPath } from "node:url";
 
 import {
   BrowserWindow,
@@ -16,68 +16,67 @@ import {
   nativeTheme,
   net,
   shell,
-  webContents,
-  type WebContents,
-} from 'electron';
+} from "electron";
 
-import { detectSupportedImageFile } from '@spiritagent/host-internal/image-file-support';
+import { detectSupportedImageFile } from "@spiritagent/host-internal/image-file-support";
 
 import {
   registerDesktopNotifications,
   registerWindowsToastActivationHandler,
   showDesktopNotification,
   type DesktopNotificationPayload,
-} from './desktop-notifications.js';
+} from "./desktop-notifications.js";
 import {
   registerDesktopAttention,
   setDesktopAttentionPending,
   refreshDesktopAttention,
-} from './desktop-attention.js';
+} from "./desktop-attention.js";
 import {
   installSpiritGeneratedAssetProtocolHandler,
   registerSpiritGeneratedAssetPrivilegedScheme,
-} from './generated-asset-protocol.js';
+} from "./generated-asset-protocol.js";
 import {
   bindSpiritNotificationProtocolHandlers,
   handleSpiritNotificationProtocolArgv,
   installSpiritNotificationProtocolRouting,
   registerSpiritNotificationProtocolClient,
-} from './notification-protocol.js';
-import { syncWindowsJumpList } from './sync-windows-jump-list.js';
+} from "./notification-protocol.js";
+import { syncWindowsJumpList } from "./sync-windows-jump-list.js";
 import {
   bindMacOSDockMenuDeps,
   disposeMacOSDockMenu,
   syncMacOSDockMenu,
-} from './sync-macos-dock-menu.js';
-import {
-  bindStatusTrayDeps,
-  disposeStatusTray,
-  syncStatusTray,
-} from './status-tray.js';
+} from "./sync-macos-dock-menu.js";
+import { bindStatusTrayDeps, disposeStatusTray, syncStatusTray } from "./status-tray.js";
 import {
   bindSpiritProtocolActionHandlers,
   flushPendingSpiritProtocolActions,
   handleSpiritNewSessionRequest,
   handleSpiritOpenSessionRequest,
-} from './spirit-protocol-actions.js';
+} from "./spirit-protocol-actions.js";
 import {
   getAppAwayFromUser,
   registerWindowPresence,
   setRendererVisibility,
-} from './window-presence.js';
-import { openSystemTerminalInDirectory } from './open-system-terminal.js';
-import { WorkspacePtyManager } from './workspace-pty.js';
-import { isAllowedExternalUrl, getCachedLocalListeningEndpoints, getScanningPromise, startLocalListenersScan } from './local-listeners.js';
+} from "./window-presence.js";
+import { openSystemTerminalInDirectory } from "./open-system-terminal.js";
+import { WorkspacePtyManager } from "./workspace-pty.js";
+import {
+  isAllowedExternalUrl,
+  getCachedLocalListeningEndpoints,
+  getScanningPromise,
+  startLocalListenersScan,
+} from "./local-listeners.js";
 import {
   bindBrowserGuestDevtools,
   closeBrowserGuestDevtools,
   openBrowserGuestDevtools,
   registerBrowserGuestF12,
   unregisterBrowserGuestF12,
-} from './workspace-browser-guest.js';
-import { toggleBrowserWindowFullScreen } from './window-fullscreen.js';
+} from "./workspace-browser-guest.js";
+import { toggleBrowserWindowFullScreen } from "./window-fullscreen.js";
 
-import type { DesktopSnapshot } from '../src/types.js';
+import type { DesktopSnapshot } from "../src/types.js";
 
 registerSpiritGeneratedAssetPrivilegedScheme();
 registerSpiritNotificationProtocolClient();
@@ -88,10 +87,10 @@ if (!gotSpiritSingleInstanceLock) {
   app.quit();
 } else {
   const spiritDataDir = resolveConfiguredSpiritAgentDataDir();
-  app.setPath('userData', spiritDataDir);
+  app.setPath("userData", spiritDataDir);
   setSpiritAgentDataDirOverride(spiritDataDir);
 
-  app.on('second-instance', (_event, argv) => {
+  app.on("second-instance", (_event, argv) => {
     const hadProtocol = handleSpiritNotificationProtocolArgv(argv);
     if (!hadProtocol) {
       focusSpiritDesktopWindows();
@@ -130,7 +129,7 @@ import {
   subscribeDesktopAutomationsUpdates,
   subscribeDesktopDreamUpdates,
   subscribeDesktopSessionListUpdates,
-} from '../src/host/service.js';
+} from "../src/host/service.js";
 import {
   configFilePath,
   loadConfig,
@@ -138,33 +137,37 @@ import {
   setSpiritAgentDataDirOverride,
   spiritAgentDataDir,
   type DesktopWebHostConfigFile,
-} from '../src/host/storage.js';
-import { setDesktopWebHostRuntimeStatus } from '../src/host/web-host-state.js';
-import { type ApplicationMenuSection, popupApplicationMenuSection, setMacOSApplicationMenu } from './application-menu.js';
+} from "../src/host/storage.js";
+import { setDesktopWebHostRuntimeStatus } from "../src/host/web-host-state.js";
+import {
+  type ApplicationMenuSection,
+  popupApplicationMenuSection,
+  setMacOSApplicationMenu,
+} from "./application-menu.js";
 import {
   createDesktopHttpHost,
   createDesktopWebPairingCode,
   resolveDesktopWebHostFromEnv,
   type DesktopHttpHost,
-} from './http-host.js';
+} from "./http-host.js";
 import {
   beginGitHubDeviceLoginInElectron,
   clearPendingGitHubDeviceAuth,
   completeGitHubDeviceLoginInElectron,
-} from './github-oauth-flow.js';
-import { resolveRendererDistPath } from './renderer-dist.js';
-import { registerGitHubDeviceLoginRunners } from '../src/host/github-oauth-bridge.js';
-import { listSystemFonts } from './system-fonts.js';
-import { syncWindowsImmersiveDarkMode } from './win-dwm.js';
-import i18nHost from '../src/lib/i18n-host.js';
+} from "./github-oauth-flow.js";
+import { resolveRendererDistPath } from "./renderer-dist.js";
+import { registerGitHubDeviceLoginRunners } from "../src/host/github-oauth-bridge.js";
+import { listSystemFonts } from "./system-fonts.js";
+import { syncWindowsImmersiveDarkMode } from "./win-dwm.js";
+import i18nHost from "../src/lib/i18n-host.js";
 
 /** 与 `titleBarOverlay.height` 及自绘标题栏 CSS 高度一致（px） */
 const TITLE_BAR_OVERLAY_HEIGHT = 32;
 const LOCAL_IMAGE_PREVIEW_MAX_BYTES = 8 * 1024 * 1024;
-const MANAGED_ASSET_PROTOCOL = 'spirit:';
-const MANAGED_ASSET_HOST = 'generated';
-const MANAGED_GENERATED_IMAGES_DIR = 'generated-images';
-const MANAGED_GENERATED_VIDEOS_DIR = 'generated-videos';
+const MANAGED_ASSET_PROTOCOL = "spirit:";
+const MANAGED_ASSET_HOST = "generated";
+const MANAGED_GENERATED_IMAGES_DIR = "generated-images";
+const MANAGED_GENERATED_VIDEOS_DIR = "generated-videos";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -209,7 +212,7 @@ setDesktopExtensionHostAdapter({
 });
 
 function shouldStartDesktopWebHostFromEnv(): boolean {
-  return process.env.SPIRIT_DESKTOP_WEB_HOST === '1';
+  return process.env.SPIRIT_DESKTOP_WEB_HOST === "1";
 }
 
 function getDesktopWebHost(config: DesktopWebHostConfigFile): DesktopHttpHost {
@@ -271,26 +274,26 @@ async function stopDesktopWebHostIfRunning(): Promise<void> {
 
 async function handleSpiritOpenSessionFromProtocol(sessionPath: string): Promise<void> {
   try {
-    const next = await invokeMainDesktopHostCommand('openSession', { path: sessionPath });
+    const next = await invokeMainDesktopHostCommand("openSession", { path: sessionPath });
     if (isDesktopSnapshot(next)) {
       for (const window of BrowserWindow.getAllWindows()) {
         if (!window.isDestroyed()) {
-          window.webContents.send('desktop:notify-refresh');
+          window.webContents.send("desktop:notify-refresh");
         }
       }
     }
   } catch (error) {
-    console.error('[spirit-desktop] open-session protocol failed:', error);
+    console.error("[spirit-desktop] open-session protocol failed:", error);
   }
 }
 
-async function handleApprovalNotificationAction(decision: 'allow' | 'deny'): Promise<void> {
+async function handleApprovalNotificationAction(decision: "allow" | "deny"): Promise<void> {
   let deliveredToRenderer = false;
   for (const window of BrowserWindow.getAllWindows()) {
     if (window.isDestroyed() || window.webContents.isDestroyed()) {
       continue;
     }
-    window.webContents.send('desktop:approval-from-notification', { decision });
+    window.webContents.send("desktop:approval-from-notification", { decision });
     deliveredToRenderer = true;
   }
   if (deliveredToRenderer) {
@@ -298,18 +301,18 @@ async function handleApprovalNotificationAction(decision: 'allow' | 'deny'): Pro
   }
 
   try {
-    const next = await invokeMainDesktopHostCommand('replyPendingApproval', {
+    const next = await invokeMainDesktopHostCommand("replyPendingApproval", {
       request: { decision: { kind: decision } },
     });
     if (isDesktopSnapshot(next)) {
       for (const window of BrowserWindow.getAllWindows()) {
         if (!window.isDestroyed()) {
-          window.webContents.send('desktop:notify-refresh');
+          window.webContents.send("desktop:notify-refresh");
         }
       }
     }
   } catch (error) {
-    console.error('[spirit-desktop] approval notification action failed:', error);
+    console.error("[spirit-desktop] approval notification action failed:", error);
   }
 }
 
@@ -318,7 +321,7 @@ async function invokeMainDesktopHostCommand(
   payload?: unknown,
 ) {
   const result = await invokeDesktopHostCommand(command, payload);
-  if (isDesktopSnapshot(result) && (command === 'bootstrap' || command === 'updateConfig')) {
+  if (isDesktopSnapshot(result) && (command === "bootstrap" || command === "updateConfig")) {
     const config = await loadConfig();
     await syncDesktopWebHostWithConfig(config.webHost);
     // 开关托盘需立即生效，不走会话列表那条尾沿合并。
@@ -332,22 +335,20 @@ async function handleDesktopWebHostCommandResult(
   _payload: unknown,
   result: unknown,
 ): Promise<void> {
-  if (command !== 'updateConfig' || !isDesktopSnapshot(result)) {
+  if (command !== "updateConfig" || !isDesktopSnapshot(result)) {
     return;
   }
   const config = await loadConfig();
   await syncDesktopWebHostWithConfig(config.webHost);
 }
 
-async function syncDesktopWebHostWithConfig(
-  config: DesktopWebHostConfigFile,
-): Promise<void> {
+async function syncDesktopWebHostWithConfig(config: DesktopWebHostConfigFile): Promise<void> {
   const previousConfig = desktopWebHostConfig;
   const changedEndpoint =
     previousConfig?.host !== config.host || previousConfig?.port !== config.port;
   desktopWebHostConfig = config;
   if (config.authTokenHash) {
-    desktopWebHostPairingCode = '';
+    desktopWebHostPairingCode = "";
   } else if (!desktopWebHostPairingCode && !desktopWebHostPairingLocked) {
     desktopWebHostPairingCode = createDesktopWebPairingCode();
   }
@@ -355,7 +356,7 @@ async function syncDesktopWebHostWithConfig(
   if (!config.enabled) {
     await stopDesktopWebHostIfRunning();
     setDesktopWebHostRuntimeStatus({
-      state: 'disabled',
+      state: "disabled",
       host: config.host,
       port: config.port,
     });
@@ -364,19 +365,21 @@ async function syncDesktopWebHostWithConfig(
 
   if (desktopWebHost?.isRunning() && !changedEndpoint) {
     const state = desktopWebHost.getState();
-    setDesktopWebHostRuntimeStatus(state.running
-      ? {
-          state: 'running',
-          host: config.host,
-          port: config.port,
-          url: state.url,
-          ...(config.authTokenHash ? {} : { pairingCode: desktopWebHostPairingCode }),
-        }
-      : {
-          state: 'stopped',
-          host: config.host,
-          port: config.port,
-        });
+    setDesktopWebHostRuntimeStatus(
+      state.running
+        ? {
+            state: "running",
+            host: config.host,
+            port: config.port,
+            url: state.url,
+            ...(config.authTokenHash ? {} : { pairingCode: desktopWebHostPairingCode }),
+          }
+        : {
+            state: "stopped",
+            host: config.host,
+            port: config.port,
+          },
+    );
     return;
   }
 
@@ -396,7 +399,7 @@ async function syncDesktopWebHostWithConfig(
   }
 
   setDesktopWebHostRuntimeStatus({
-    state: 'starting',
+    state: "starting",
     host: config.host,
     port: config.port,
   });
@@ -404,7 +407,7 @@ async function syncDesktopWebHostWithConfig(
   try {
     const state = await getDesktopWebHost(config).start();
     setDesktopWebHostRuntimeStatus({
-      state: 'running',
+      state: "running",
       host: state.host,
       port: state.port,
       ...(state.url ? { url: state.url } : {}),
@@ -412,9 +415,9 @@ async function syncDesktopWebHostWithConfig(
     });
   } catch (error) {
     const message = error instanceof Error ? error.message : String(error);
-    console.error('[spirit-desktop] start desktop web host failed', error);
+    console.error("[spirit-desktop] start desktop web host failed", error);
     setDesktopWebHostRuntimeStatus({
-      state: 'error',
+      state: "error",
       host: config.host,
       port: config.port,
       error: message,
@@ -424,13 +427,13 @@ async function syncDesktopWebHostWithConfig(
 
 /** 配对失败达上限：作废当前配对码并停止对外展示；重启 Web Host 时重新生成。 */
 function handleDesktopWebHostPairingLockout(): void {
-  console.warn('[spirit-desktop] web host pairing locked after too many failures');
+  console.warn("[spirit-desktop] web host pairing locked after too many failures");
   desktopWebHostPairingLocked = true;
-  desktopWebHostPairingCode = '';
+  desktopWebHostPairingCode = "";
   if (desktopWebHost?.isRunning() && desktopWebHostConfig) {
     const state = desktopWebHost.getState();
     setDesktopWebHostRuntimeStatus({
-      state: 'running',
+      state: "running",
       host: desktopWebHostConfig.host,
       port: desktopWebHostConfig.port,
       ...(state.url ? { url: state.url } : {}),
@@ -439,14 +442,14 @@ function handleDesktopWebHostPairingLockout(): void {
 }
 
 async function completeDesktopWebHostPairing(authTokenHash: string): Promise<void> {
-  await invokeDesktopHostCommand('setWebHostAuthTokenHash', { authTokenHash });
+  await invokeDesktopHostCommand("setWebHostAuthTokenHash", { authTokenHash });
   const config = await loadConfig();
   desktopWebHostConfig = config.webHost;
-  desktopWebHostPairingCode = '';
+  desktopWebHostPairingCode = "";
   if (desktopWebHost?.isRunning()) {
     const state = desktopWebHost.getState();
     setDesktopWebHostRuntimeStatus({
-      state: 'running',
+      state: "running",
       host: config.webHost.host,
       port: config.webHost.port,
       ...(state.url ? { url: state.url } : {}),
@@ -456,25 +459,25 @@ async function completeDesktopWebHostPairing(authTokenHash: string): Promise<voi
 
 function isDesktopSnapshot(value: unknown): value is DesktopSnapshot {
   return (
-    typeof value === 'object' &&
+    typeof value === "object" &&
     value !== null &&
-    'webHost' in value &&
-    'config' in value &&
-    'conversation' in value
+    "webHost" in value &&
+    "config" in value &&
+    "conversation" in value
   );
 }
 
 /** Windows 任务栏 / 窗口角标：与 Vite 页 `public/favicon.ico` 同源（main 位于 dist-electron/electron）。 */
 function resolveWindowIconPath(): string | undefined {
-  const fromDist = path.join(__dirname, '..', '..', 'dist', 'favicon.ico');
+  const fromDist = path.join(__dirname, "..", "..", "dist", "favicon.ico");
   if (existsSync(fromDist)) {
     return fromDist;
   }
-  const fromPublic = path.join(__dirname, '..', '..', 'public', 'favicon.ico');
+  const fromPublic = path.join(__dirname, "..", "..", "public", "favicon.ico");
   if (existsSync(fromPublic)) {
     return fromPublic;
   }
-  const fromCwd = path.join(process.cwd(), 'public', 'favicon.ico');
+  const fromCwd = path.join(process.cwd(), "public", "favicon.ico");
   if (existsSync(fromCwd)) {
     return fromCwd;
   }
@@ -493,7 +496,7 @@ let macOSDockMenuRefreshTimer: ReturnType<typeof setTimeout> | undefined;
  * 仅需最终一致，这里尾沿合并为一次刷新。此处为 jump list 唯一节流点。
  */
 function refreshWindowsJumpList(): void {
-  if (process.platform !== 'win32') {
+  if (process.platform !== "win32") {
     return;
   }
   if (windowsJumpListRefreshTimer !== undefined) {
@@ -507,7 +510,7 @@ function refreshWindowsJumpList(): void {
 
 /** 托盘菜单随会话 / 配置 / 语言变化刷新；尾沿合并避免高频 listSessions。 */
 function refreshStatusTray(): void {
-  if (process.platform !== 'darwin' && process.platform !== 'win32') {
+  if (process.platform !== "darwin" && process.platform !== "win32") {
     return;
   }
   if (statusTrayRefreshTimer !== undefined) {
@@ -521,7 +524,7 @@ function refreshStatusTray(): void {
 
 /** macOS Dock 右键会话列表；不跟随 trayIcon，尾沿合并避免高频 listSessions。 */
 function refreshMacOSDockMenu(): void {
-  if (process.platform !== 'darwin') {
+  if (process.platform !== "darwin") {
     return;
   }
   if (macOSDockMenuRefreshTimer !== undefined) {
@@ -534,13 +537,13 @@ function refreshMacOSDockMenu(): void {
 }
 
 /** 与 `src/styles.css` Void 暗色 `--background`（#000000）一致；关 Mica 时窗口底色用此值，避免 WebView 透底呈 Chromium #121212 */
-const WIN32_APP_BACKGROUND_DARK = '#000000';
-const WIN32_APP_BACKGROUND_LIGHT = '#fafafa';
+const WIN32_APP_BACKGROUND_DARK = "#000000";
+const WIN32_APP_BACKGROUND_LIGHT = "#fafafa";
 
 /** 与 Tauri `frame_chrome` 一致：开原生模糊时用透明背景，把绘制交给系统合成层。 */
 function electronRootBackgroundForBackdrop(blurEnabled: boolean, darkContent: boolean): string {
-  if (blurEnabled && (process.platform === 'win32' || process.platform === 'darwin')) {
-    return '#00000000';
+  if (blurEnabled && (process.platform === "win32" || process.platform === "darwin")) {
+    return "#00000000";
   }
   return darkContent ? WIN32_APP_BACKGROUND_DARK : WIN32_APP_BACKGROUND_LIGHT;
 }
@@ -564,13 +567,17 @@ function readBackdropBlurFromDisk(): boolean {
   } catch {
     return true;
   }
-  if (cachedBackdropBlur && cachedBackdropBlur.mtimeMs === mtimeMs && cachedBackdropBlur.size === size) {
+  if (
+    cachedBackdropBlur &&
+    cachedBackdropBlur.mtimeMs === mtimeMs &&
+    cachedBackdropBlur.size === size
+  ) {
     return cachedBackdropBlur.value;
   }
 
   let value = true;
   try {
-    const parsed = JSON.parse(readFileSync(filePath, 'utf8')) as {
+    const parsed = JSON.parse(readFileSync(filePath, "utf8")) as {
       windowsMica?: boolean;
     };
     value = parsed.windowsMica !== false;
@@ -581,7 +588,7 @@ function readBackdropBlurFromDisk(): boolean {
   return value;
 }
 
-const MACOS_WINDOW_VIBRANCY = 'under-window' as const;
+const MACOS_WINDOW_VIBRANCY = "under-window" as const;
 
 /**
  * macOS 红绿灯位置缓存：UI 缩放存于渲染器 localStorage，窗口构造时主进程读不到，
@@ -589,18 +596,19 @@ const MACOS_WINDOW_VIBRANCY = 'under-window' as const;
  * 故渲染器每次同步位置时落盘，下次启动直接作为 BrowserWindow 构造参数生效。
  */
 function trafficLightPositionCachePath(): string {
-  return path.join(app.getPath('userData'), 'traffic-light-position.json');
+  return path.join(app.getPath("userData"), "traffic-light-position.json");
 }
 
 function readTrafficLightPositionFromDisk(): { x: number; y: number } | undefined {
   try {
-    const parsed = JSON.parse(
-      readFileSync(trafficLightPositionCachePath(), 'utf8'),
-    ) as { x?: unknown; y?: unknown };
+    const parsed = JSON.parse(readFileSync(trafficLightPositionCachePath(), "utf8")) as {
+      x?: unknown;
+      y?: unknown;
+    };
     if (
-      typeof parsed.x === 'number' &&
+      typeof parsed.x === "number" &&
       Number.isFinite(parsed.x) &&
-      typeof parsed.y === 'number' &&
+      typeof parsed.y === "number" &&
       Number.isFinite(parsed.y)
     ) {
       return { x: parsed.x, y: parsed.y };
@@ -612,15 +620,15 @@ function readTrafficLightPositionFromDisk(): { x: number; y: number } | undefine
 }
 
 function nativeBackdropBlurActive(blurEnabled: boolean): boolean {
-  return blurEnabled && (process.platform === 'win32' || process.platform === 'darwin');
+  return blurEnabled && (process.platform === "win32" || process.platform === "darwin");
 }
 
 /** 与 `src/lib/theme.ts` 中 `THEME_STORAGE_KEY` 保持一致 */
-const RENDERER_THEME_STORAGE_KEY = 'spirit-agent-desktop-theme';
+const RENDERER_THEME_STORAGE_KEY = "spirit-agent-desktop-theme";
 
 type RendererThemePrefs = {
   dark: boolean;
-  nativeTheme: 'system' | 'light' | 'dark';
+  nativeTheme: "system" | "light" | "dark";
   pref: string;
 };
 
@@ -638,15 +646,13 @@ const READ_RENDERER_THEME_PREFS_JS = `(() => {
   return { dark: resolveDark(pref), nativeTheme: nativeFor(pref), pref };
 })()`;
 
-async function readRendererThemePrefs(
-  window: BrowserWindow,
-): Promise<RendererThemePrefs | null> {
+async function readRendererThemePrefs(window: BrowserWindow): Promise<RendererThemePrefs | null> {
   try {
     return (await window.webContents.executeJavaScript(
       READ_RENDERER_THEME_PREFS_JS,
     )) as RendererThemePrefs;
   } catch (err) {
-    console.error('[spirit-desktop] readRendererThemePrefs failed', err);
+    console.error("[spirit-desktop] readRendererThemePrefs failed", err);
     return null;
   }
 }
@@ -677,17 +683,17 @@ function applyNativeWindowBackdrop(
 ): void {
   const blurEnabled = blurOverride ?? readBackdropBlurFromDisk();
 
-  if (process.platform === 'win32') {
+  if (process.platform === "win32") {
     try {
-      window.setBackgroundMaterial(blurEnabled ? 'mica' : 'none');
+      window.setBackgroundMaterial(blurEnabled ? "mica" : "none");
     } catch (err) {
-      console.error('[spirit-desktop] setBackgroundMaterial failed', err);
+      console.error("[spirit-desktop] setBackgroundMaterial failed", err);
     }
-  } else if (process.platform === 'darwin') {
+  } else if (process.platform === "darwin") {
     try {
       window.setVibrancy(blurEnabled ? MACOS_WINDOW_VIBRANCY : null);
     } catch (err) {
-      console.error('[spirit-desktop] setVibrancy failed', err);
+      console.error("[spirit-desktop] setVibrancy failed", err);
     }
   }
 
@@ -695,11 +701,11 @@ function applyNativeWindowBackdrop(
     electronRootBackgroundForBackdrop(nativeBackdropBlurActive(blurEnabled), darkContent),
   );
 
-  if (process.platform === 'win32') {
+  if (process.platform === "win32") {
     syncWindowsImmersiveDarkMode(window, darkContent);
   }
 
-  if (process.platform !== 'win32') {
+  if (process.platform !== "win32") {
     return;
   }
 
@@ -708,8 +714,8 @@ function applyNativeWindowBackdrop(
     // 透明叠加：底色与底边由页面自绘透出，系统只画三个按钮图标（与开 Mica 时一致）。
     window.setTitleBarOverlay({
       height: TITLE_BAR_OVERLAY_HEIGHT,
-      color: '#00000000',
-      symbolColor: darkContent ? '#f5f5f5' : '#1f1f1f',
+      color: "#00000000",
+      symbolColor: darkContent ? "#f5f5f5" : "#1f1f1f",
     });
   } catch {
     // 未启用 overlay 或平台限制时忽略
@@ -723,17 +729,17 @@ async function createMainWindow(): Promise<BrowserWindow> {
     nativeBackdropBlurActive(blurOnDisk),
     initialDark,
   );
-  const preloadPath = path.join(__dirname, 'preload.cjs');
+  const preloadPath = path.join(__dirname, "preload.cjs");
   if (!existsSync(preloadPath)) {
     console.error(
-      '[spirit-desktop] preload 缺失（需 build:electron 生成 preload.cjs）:',
+      "[spirit-desktop] preload 缺失（需 build:electron 生成 preload.cjs）:",
       preloadPath,
     );
   }
 
   const windowIcon = resolveWindowIconPath();
   const storedTrafficLightPosition =
-    process.platform === 'darwin' ? readTrafficLightPositionFromDisk() : undefined;
+    process.platform === "darwin" ? readTrafficLightPositionFromDisk() : undefined;
 
   const window = new BrowserWindow({
     width: 1440,
@@ -744,21 +750,25 @@ async function createMainWindow(): Promise<BrowserWindow> {
     backgroundColor: initialBg,
     // macOS：构造时始终挂载 vibrancy 层，使运行时 setVibrancy 与透明背景切换走同一合成路径；
     // 关 Blur 时在 load 前立即 setVibrancy(null)，避免首帧误显模糊。
-    ...(process.platform === 'darwin'
+    ...(process.platform === "darwin"
       ? {
           vibrancy: MACOS_WINDOW_VIBRANCY,
-          visualEffectState: 'followWindow',
+          visualEffectState: "followWindow",
         }
       : {}),
     ...(storedTrafficLightPosition ? { trafficLightPosition: storedTrafficLightPosition } : {}),
     titleBarStyle:
-      process.platform === 'darwin' ? 'hiddenInset' : process.platform === 'win32' ? 'hidden' : undefined,
+      process.platform === "darwin"
+        ? "hiddenInset"
+        : process.platform === "win32"
+          ? "hidden"
+          : undefined,
     titleBarOverlay:
-      process.platform === 'win32'
+      process.platform === "win32"
         ? {
             height: TITLE_BAR_OVERLAY_HEIGHT,
-            color: '#00000000',
-            symbolColor: initialDark ? '#f5f5f5' : '#1f1f1f',
+            color: "#00000000",
+            symbolColor: initialDark ? "#f5f5f5" : "#1f1f1f",
           }
         : undefined,
     webPreferences: {
@@ -771,45 +781,45 @@ async function createMainWindow(): Promise<BrowserWindow> {
     },
   });
 
-  if (process.platform === 'darwin' && !blurOnDisk) {
+  if (process.platform === "darwin" && !blurOnDisk) {
     try {
       window.setVibrancy(null);
     } catch (err) {
-      console.error('[spirit-desktop] setVibrancy(null) during create failed', err);
+      console.error("[spirit-desktop] setVibrancy(null) during create failed", err);
     }
   }
 
   if (DEV_SERVER_URL) {
     await window.loadURL(DEV_SERVER_URL);
   } else {
-    await window.loadFile(path.join(rendererDistPath(), 'index.html'));
+    await window.loadFile(path.join(rendererDistPath(), "index.html"));
   }
 
   await syncBrowserWindowFrameFromRendererStorage(window);
   flushPendingSpiritProtocolActions();
 
-  if (process.platform === 'darwin') {
+  if (process.platform === "darwin") {
     const broadcastWindowFullscreen = () => {
       if (window.isDestroyed()) {
         return;
       }
-      window.webContents.send('desktop:window-fullscreen-changed', window.isFullScreen());
+      window.webContents.send("desktop:window-fullscreen-changed", window.isFullScreen());
     };
-    window.on('enter-full-screen', broadcastWindowFullscreen);
-    window.on('leave-full-screen', broadcastWindowFullscreen);
+    window.on("enter-full-screen", broadcastWindowFullscreen);
+    window.on("leave-full-screen", broadcastWindowFullscreen);
     broadcastWindowFullscreen();
   }
 
   const webContentsId = window.webContents.id;
-  window.once('closed', () => {
+  window.once("closed", () => {
     workspacePtyManager.disposeAllForWebContents(webContentsId);
   });
   // 渲染进程崩溃或主 frame 重新导航（reload / 加载新页面）后，旧渲染侧的 PTY 会话与
   // 500ms 轮询定时器无人接管，须在此回收；同文档内导航（SPA 路由）不触发。
-  window.webContents.on('render-process-gone', () => {
+  window.webContents.on("render-process-gone", () => {
     workspacePtyManager.disposeAllForWebContents(webContentsId);
   });
-  window.webContents.on('did-start-navigation', (details) => {
+  window.webContents.on("did-start-navigation", (details) => {
     if (details.isMainFrame && !details.isSameDocument) {
       workspacePtyManager.disposeAllForWebContents(webContentsId);
     }
@@ -819,7 +829,7 @@ async function createMainWindow(): Promise<BrowserWindow> {
     onApprovalAction: handleApprovalNotificationAction,
     onNotificationReply: (payload) => {
       if (!window.webContents.isDestroyed()) {
-        window.webContents.send('desktop:notification-reply', payload);
+        window.webContents.send("desktop:notification-reply", payload);
       }
     },
   });
@@ -827,27 +837,27 @@ async function createMainWindow(): Promise<BrowserWindow> {
   registerWindowPresence(window);
 
   window.webContents.setWindowOpenHandler((details) => {
-    const url = typeof details.url === 'string' ? details.url.trim() : '';
+    const url = typeof details.url === "string" ? details.url.trim() : "";
     if (url && isAllowedExternalUrl(url) && !window.webContents.isDestroyed()) {
-      window.webContents.send('desktop:browser-open-url', { url });
+      window.webContents.send("desktop:browser-open-url", { url });
     }
-    return { action: 'deny' };
+    return { action: "deny" };
   });
 
   // Windows 无系统菜单且顶栏 MenubarShortcut 不绑定快捷键；F11/F12 由主进程绑定（macOS 全屏仍走系统菜单 role）。
   const isDevChrome = Boolean(DEV_SERVER_URL) || !app.isPackaged;
-  window.webContents.on('before-input-event', (event, input) => {
-    if (input.type !== 'keyDown') {
+  window.webContents.on("before-input-event", (event, input) => {
+    if (input.type !== "keyDown") {
       return;
     }
 
-    if (process.platform === 'win32' && input.key === 'F11') {
+    if (process.platform === "win32" && input.key === "F11") {
       event.preventDefault();
       toggleBrowserWindowFullScreen(window.webContents);
       return;
     }
 
-    if (isDevChrome && input.key === 'F12') {
+    if (isDevChrome && input.key === "F12") {
       event.preventDefault();
       window.webContents.toggleDevTools();
     }
@@ -858,189 +868,204 @@ async function createMainWindow(): Promise<BrowserWindow> {
 
 if (gotSpiritSingleInstanceLock) {
   app.whenReady().then(async () => {
-  installSpiritGeneratedAssetProtocolHandler({
-    resolveManagedGeneratedAssetPath,
-    videoPreviewMimeType,
-    imagePreviewMimeType,
-  });
-  bindSpiritProtocolActionHandlers({
-    focusWindows: focusSpiritDesktopWindows,
-    openSession: handleSpiritOpenSessionFromProtocol,
-  });
-  bindSpiritNotificationProtocolHandlers({
-    onApproval: handleApprovalNotificationAction,
-    onFocus: focusSpiritDesktopWindows,
-    onNewSession: handleSpiritNewSessionRequest,
-    onOpenSession: handleSpiritOpenSessionRequest,
-  });
-  handleSpiritNotificationProtocolArgv(process.argv);
-  registerWindowsToastActivationHandler();
-  if (process.platform === 'win32') {
-    Menu.setApplicationMenu(null);
-  } else if (process.platform === 'darwin') {
-    setMacOSApplicationMenu();
-  }
+    installSpiritGeneratedAssetProtocolHandler({
+      resolveManagedGeneratedAssetPath,
+      videoPreviewMimeType,
+      imagePreviewMimeType,
+    });
+    bindSpiritProtocolActionHandlers({
+      focusWindows: focusSpiritDesktopWindows,
+      openSession: handleSpiritOpenSessionFromProtocol,
+    });
+    bindSpiritNotificationProtocolHandlers({
+      onApproval: handleApprovalNotificationAction,
+      onFocus: focusSpiritDesktopWindows,
+      onNewSession: handleSpiritNewSessionRequest,
+      onOpenSession: handleSpiritOpenSessionRequest,
+    });
+    handleSpiritNotificationProtocolArgv(process.argv);
+    registerWindowsToastActivationHandler();
+    if (process.platform === "win32") {
+      Menu.setApplicationMenu(null);
+    } else if (process.platform === "darwin") {
+      setMacOSApplicationMenu();
+    }
 
-  registerGitHubDeviceLoginRunners({
-    begin: () => beginGitHubDeviceLoginInElectron(),
-    complete: () => completeGitHubDeviceLoginInElectron(),
-    cancel: () => clearPendingGitHubDeviceAuth(),
-  });
+    registerGitHubDeviceLoginRunners({
+      begin: () => beginGitHubDeviceLoginInElectron(),
+      complete: () => completeGitHubDeviceLoginInElectron(),
+      cancel: () => clearPendingGitHubDeviceAuth(),
+    });
 
-  const electronNetFetch: typeof fetch = (input, init) =>
-    net.fetch(input instanceof URL ? input.toString() : input, init);
+    const electronNetFetch: typeof fetch = (input, init) =>
+      net.fetch(input instanceof URL ? input.toString() : input, init);
 
-  setDesktopMarketplaceFetchImplementation(electronNetFetch);
-  setDesktopGitHubFetchImplementation(electronNetFetch);
+    setDesktopMarketplaceFetchImplementation(electronNetFetch);
+    setDesktopGitHubFetchImplementation(electronNetFetch);
 
-  unsubscribeDesktopDreamUpdates = subscribeDesktopDreamUpdates((snapshot) => {
-    for (const window of BrowserWindow.getAllWindows()) {
-      if (!window.isDestroyed()) {
-        window.webContents.send('desktop:dream-updated', snapshot);
+    unsubscribeDesktopDreamUpdates = subscribeDesktopDreamUpdates((snapshot) => {
+      for (const window of BrowserWindow.getAllWindows()) {
+        if (!window.isDestroyed()) {
+          window.webContents.send("desktop:dream-updated", snapshot);
+        }
       }
-    }
-  });
+    });
 
-  unsubscribeDesktopAutomationsUpdates = subscribeDesktopAutomationsUpdates((snapshot) => {
-    for (const window of BrowserWindow.getAllWindows()) {
-      if (!window.isDestroyed()) {
-        window.webContents.send('desktop:automations-updated', snapshot);
+    unsubscribeDesktopAutomationsUpdates = subscribeDesktopAutomationsUpdates((snapshot) => {
+      for (const window of BrowserWindow.getAllWindows()) {
+        if (!window.isDestroyed()) {
+          window.webContents.send("desktop:automations-updated", snapshot);
+        }
       }
-    }
-  });
+    });
 
-  unsubscribeDesktopSessionListUpdates = subscribeDesktopSessionListUpdates(() => {
-    for (const window of BrowserWindow.getAllWindows()) {
-      if (!window.isDestroyed()) {
-        window.webContents.send('desktop:session-list-updated');
+    unsubscribeDesktopSessionListUpdates = subscribeDesktopSessionListUpdates(() => {
+      for (const window of BrowserWindow.getAllWindows()) {
+        if (!window.isDestroyed()) {
+          window.webContents.send("desktop:session-list-updated");
+        }
       }
-    }
-    refreshWindowsJumpList();
-    refreshStatusTray();
-    refreshMacOSDockMenu();
-  });
+      refreshWindowsJumpList();
+      refreshStatusTray();
+      refreshMacOSDockMenu();
+    });
 
-  ipcMain.handle('desktop:invoke', (_event, command: Parameters<typeof invokeDesktopHostCommand>[0], payload?: unknown) =>
-    invokeMainDesktopHostCommand(command, payload),
-  );
+    ipcMain.handle(
+      "desktop:invoke",
+      (_event, command: Parameters<typeof invokeDesktopHostCommand>[0], payload?: unknown) =>
+        invokeMainDesktopHostCommand(command, payload),
+    );
 
-  ipcMain.handle('desktop:export-session-log', async () => {
-    const result = await invokeMainDesktopHostCommand('exportSessionLog') as {
-      snapshot: DesktopSnapshot;
-      path: string;
-    };
-    const openError = await shell.openPath(result.path);
-    if (openError) {
-      throw new Error(`自动打开导出文件失败: ${openError}`);
-    }
-    return result.snapshot;
-  });
+    ipcMain.handle("desktop:export-session-log", async () => {
+      const result = (await invokeMainDesktopHostCommand("exportSessionLog")) as {
+        snapshot: DesktopSnapshot;
+        path: string;
+      };
+      const openError = await shell.openPath(result.path);
+      if (openError) {
+        throw new Error(`自动打开导出文件失败: ${openError}`);
+      }
+      return result.snapshot;
+    });
 
-  ipcMain.handle('desktop:pick-workspace-directory', async (event) => {
-    const targetWindow = BrowserWindow.fromWebContents(event.sender);
-    const result = targetWindow
-      ? await dialog.showOpenDialog(targetWindow, {
-          properties: ['openDirectory'],
-        })
-      : await dialog.showOpenDialog({
-          properties: ['openDirectory'],
-        });
-    if (result.canceled) {
-      return null;
-    }
-    return result.filePaths[0] ?? null;
-  });
+    ipcMain.handle("desktop:pick-workspace-directory", async (event) => {
+      const targetWindow = BrowserWindow.fromWebContents(event.sender);
+      const result = targetWindow
+        ? await dialog.showOpenDialog(targetWindow, {
+            properties: ["openDirectory"],
+          })
+        : await dialog.showOpenDialog({
+            properties: ["openDirectory"],
+          });
+      if (result.canceled) {
+        return null;
+      }
+      return result.filePaths[0] ?? null;
+    });
 
-  ipcMain.handle('desktop:pick-local-file', async (event) => {
-    const targetWindow = BrowserWindow.fromWebContents(event.sender);
-    const result = targetWindow
-      ? await dialog.showOpenDialog(targetWindow, {
-          properties: ['openFile'],
-        })
-      : await dialog.showOpenDialog({
-          properties: ['openFile'],
-        });
-    if (result.canceled) {
-      return null;
-    }
-    return result.filePaths[0] ?? null;
-  });
+    ipcMain.handle("desktop:pick-local-file", async (event) => {
+      const targetWindow = BrowserWindow.fromWebContents(event.sender);
+      const result = targetWindow
+        ? await dialog.showOpenDialog(targetWindow, {
+            properties: ["openFile"],
+          })
+        : await dialog.showOpenDialog({
+            properties: ["openFile"],
+          });
+      if (result.canceled) {
+        return null;
+      }
+      return result.filePaths[0] ?? null;
+    });
 
-  ipcMain.handle('desktop:ingest-browser-element-screenshot', async (_event: IpcMainInvokeEvent, payload: { base64: string }) => {
-    const base64 = typeof payload?.base64 === 'string' ? payload.base64 : '';
-    if (!base64) return null;
-    const dir = path.join(spiritAgentDataDir(), 'clipboard-paste');
-    await mkdir(dir, { recursive: true });
-    const filePath = path.join(dir, `element-${Date.now()}.png`);
-    await writeFile(filePath, Buffer.from(base64, 'base64'));
-    return filePath;
-  });
+    ipcMain.handle(
+      "desktop:ingest-browser-element-screenshot",
+      async (_event: IpcMainInvokeEvent, payload: { base64: string }) => {
+        const base64 = typeof payload?.base64 === "string" ? payload.base64 : "";
+        if (!base64) return null;
+        const dir = path.join(spiritAgentDataDir(), "clipboard-paste");
+        await mkdir(dir, { recursive: true });
+        const filePath = path.join(dir, `element-${Date.now()}.png`);
+        await writeFile(filePath, Buffer.from(base64, "base64"));
+        return filePath;
+      },
+    );
 
-  ipcMain.handle('desktop:ingest-clipboard-image', async () => {
-    const image = clipboard.readImage();
-    if (image.isEmpty()) {
-      return null;
-    }
+    ipcMain.handle("desktop:ingest-clipboard-image", async () => {
+      const image = clipboard.readImage();
+      if (image.isEmpty()) {
+        return null;
+      }
 
-    const dir = path.join(spiritAgentDataDir(), 'clipboard-paste');
-    await mkdir(dir, { recursive: true });
-    const filePath = path.join(dir, `paste-${Date.now()}.png`);
-    await writeFile(filePath, image.toPNG());
-    return filePath;
-  });
+      const dir = path.join(spiritAgentDataDir(), "clipboard-paste");
+      await mkdir(dir, { recursive: true });
+      const filePath = path.join(dir, `paste-${Date.now()}.png`);
+      await writeFile(filePath, image.toPNG());
+      return filePath;
+    });
 
-  ipcMain.handle('desktop:list-system-fonts', () => listSystemFonts());
+    ipcMain.handle("desktop:list-system-fonts", () => listSystemFonts());
 
-  ipcMain.handle('desktop:read-local-image-preview', async (_event, payload: { filePath?: string }) => {
-    const filePath = typeof payload?.filePath === 'string' ? payload.filePath.trim() : '';
-    if (!filePath) {
-      return null;
-    }
+    ipcMain.handle(
+      "desktop:read-local-image-preview",
+      async (_event, payload: { filePath?: string }) => {
+        const filePath = typeof payload?.filePath === "string" ? payload.filePath.trim() : "";
+        if (!filePath) {
+          return null;
+        }
 
-    return readImagePreviewDataUrlFromPath(filePath);
-  });
+        return readImagePreviewDataUrlFromPath(filePath);
+      },
+    );
 
-  ipcMain.handle('desktop:read-managed-image-preview', async (_event, payload: { reference?: string }) => {
-    const reference = typeof payload?.reference === 'string' ? payload.reference.trim() : '';
-    if (!reference) {
-      return null;
-    }
+    ipcMain.handle(
+      "desktop:read-managed-image-preview",
+      async (_event, payload: { reference?: string }) => {
+        const reference = typeof payload?.reference === "string" ? payload.reference.trim() : "";
+        if (!reference) {
+          return null;
+        }
 
-    const filePath = await resolveManagedGeneratedAssetPath(reference);
-    if (!filePath) {
-      return null;
-    }
+        const filePath = await resolveManagedGeneratedAssetPath(reference);
+        if (!filePath) {
+          return null;
+        }
 
-    return readImagePreviewDataUrlFromPath(filePath);
-  });
+        return readImagePreviewDataUrlFromPath(filePath);
+      },
+    );
 
-  ipcMain.handle('desktop:read-managed-video-preview', async (_event, payload: { reference?: string }) => {
-    const reference = typeof payload?.reference === 'string' ? payload.reference.trim() : '';
-    if (!reference) {
-      return null;
-    }
+    ipcMain.handle(
+      "desktop:read-managed-video-preview",
+      async (_event, payload: { reference?: string }) => {
+        const reference = typeof payload?.reference === "string" ? payload.reference.trim() : "";
+        if (!reference) {
+          return null;
+        }
 
-    const filePath = await resolveManagedGeneratedAssetPath(reference);
-    if (!filePath) {
-      return null;
-    }
+        const filePath = await resolveManagedGeneratedAssetPath(reference);
+        if (!filePath) {
+          return null;
+        }
 
-    return managedGeneratedVideoRefFromPath(filePath);
-  });
+        return managedGeneratedVideoRefFromPath(filePath);
+      },
+    );
 
-  ipcMain.handle('desktop:read-local-video-preview', async (_event, payload: { filePath?: string }) => {
-    const filePath = typeof payload?.filePath === 'string' ? payload.filePath.trim() : '';
-    if (!filePath) {
-      return null;
-    }
+    ipcMain.handle(
+      "desktop:read-local-video-preview",
+      async (_event, payload: { filePath?: string }) => {
+        const filePath = typeof payload?.filePath === "string" ? payload.filePath.trim() : "";
+        if (!filePath) {
+          return null;
+        }
 
-    return readLocalVideoPreviewUrlFromPath(filePath);
-  });
+        return readLocalVideoPreviewUrlFromPath(filePath);
+      },
+    );
 
-  ipcMain.handle(
-    'desktop:save-local-image-as',
-    async (event, payload: { filePath?: string }) => {
-      const sourcePath = typeof payload?.filePath === 'string' ? payload.filePath.trim() : '';
+    ipcMain.handle("desktop:save-local-image-as", async (event, payload: { filePath?: string }) => {
+      const sourcePath = typeof payload?.filePath === "string" ? payload.filePath.trim() : "";
       if (!sourcePath) {
         return false;
       }
@@ -1048,17 +1073,20 @@ if (gotSpiritSingleInstanceLock) {
       const extension = path.extname(sourcePath).toLowerCase();
       const mimeType = imagePreviewMimeType(extension);
       if (!mimeType) {
-        throw new Error('当前仅支持另存常见图片格式。');
+        throw new Error("当前仅支持另存常见图片格式。");
       }
 
       const sourceStat = await stat(sourcePath);
       if (!sourceStat.isFile()) {
-        throw new Error('要另存的图片文件不存在。');
+        throw new Error("要另存的图片文件不存在。");
       }
 
       const targetWindow = BrowserWindow.fromWebContents(event.sender);
       const saveResult = targetWindow
-        ? await dialog.showSaveDialog(targetWindow, buildSaveImageDialogOptions(sourcePath, extension))
+        ? await dialog.showSaveDialog(
+            targetWindow,
+            buildSaveImageDialogOptions(sourcePath, extension),
+          )
         : await dialog.showSaveDialog(buildSaveImageDialogOptions(sourcePath, extension));
 
       if (saveResult.canceled || !saveResult.filePath) {
@@ -1071,36 +1099,30 @@ if (gotSpiritSingleInstanceLock) {
 
       await copyFile(sourcePath, saveResult.filePath);
       return true;
-    },
-  );
+    });
 
-  ipcMain.handle(
-    'desktop:application-menu-popup',
-    (
-      event,
-      payload: { section: ApplicationMenuSection; clientX: number; clientY: number },
-    ) => {
-      const win = BrowserWindow.fromWebContents(event.sender);
-      if (!win) {
-        return;
-      }
+    ipcMain.handle(
+      "desktop:application-menu-popup",
+      (event, payload: { section: ApplicationMenuSection; clientX: number; clientY: number }) => {
+        const win = BrowserWindow.fromWebContents(event.sender);
+        if (!win) {
+          return;
+        }
 
-      popupApplicationMenuSection(win, payload.section, payload.clientX, payload.clientY);
-    },
-  );
+        popupApplicationMenuSection(win, payload.section, payload.clientX, payload.clientY);
+      },
+    );
 
-  ipcMain.handle(
-    'desktop:execute-window-action',
-    (event, action: string) => {
+    ipcMain.handle("desktop:execute-window-action", (event, action: string) => {
       const win = BrowserWindow.fromWebContents(event.sender);
       switch (action) {
-        case 'quit':
+        case "quit":
           app.quit();
           break;
-        case 'minimize':
+        case "minimize":
           (win ?? BrowserWindow.getFocusedWindow())?.minimize();
           break;
-        case 'maximize': {
+        case "maximize": {
           const w = win ?? BrowserWindow.getFocusedWindow();
           if (w) {
             if (w.isMaximized()) {
@@ -1111,324 +1133,335 @@ if (gotSpiritSingleInstanceLock) {
           }
           break;
         }
-        case 'close':
+        case "close":
           (win ?? BrowserWindow.getFocusedWindow())?.close();
           break;
-        case 'toggleFullscreen': {
+        case "toggleFullscreen": {
           const w = win ?? BrowserWindow.getFocusedWindow();
           if (w && !w.isDestroyed()) {
             toggleBrowserWindowFullScreen(w.webContents);
           }
           break;
         }
-        case 'toggleDevTools':
+        case "toggleDevTools":
           event.sender.toggleDevTools();
           break;
-        case 'reload':
+        case "reload":
           event.sender.reload();
           break;
-        case 'forceReload':
+        case "forceReload":
           event.sender.reloadIgnoringCache();
           break;
-        case 'showAbout':
+        case "showAbout":
           void dialog.showMessageBox(win ?? BrowserWindow.getFocusedWindow()!, {
-            type: 'info',
-            title: 'Spirit Agent',
-            message: 'Spirit Agent',
+            type: "info",
+            title: "Spirit Agent",
+            message: "Spirit Agent",
             detail: `版本 ${app.getVersion()}`,
           });
           break;
         default:
           break;
       }
-    },
-  );
+    });
 
-  ipcMain.on('desktop:read-native-backdrop-blur', (event) => {
-    event.returnValue = readBackdropBlurFromDisk();
-  });
+    ipcMain.on("desktop:read-native-backdrop-blur", (event) => {
+      event.returnValue = readBackdropBlurFromDisk();
+    });
 
-  // OS 层深色偏好的追踪值。themeSource 被覆盖为 light/dark 期间，主/渲染两侧的
-  // shouldUseDarkColors / prefers-color-scheme 均跟随覆盖值而非 OS，读不到真值；
-  // 此处在覆盖发生前（themeSource 尚为 'system'）取初值，之后仅在未覆盖期间随
-  // updated 事件更新。覆盖期间 OS 变化不保证触发 updated，该场景由
-  // desktop:sync-window-frame 切回 system 后的回传校正兜底（唯一防线）。
-  let osPrefersDark = nativeTheme.shouldUseDarkColors;
-  nativeTheme.on('updated', () => {
-    if (nativeTheme.themeSource === 'system') {
-      osPrefersDark = nativeTheme.shouldUseDarkColors;
-    }
-  });
-
-  ipcMain.on('desktop:read-os-prefers-dark', (event) => {
-    event.returnValue = osPrefersDark;
-  });
-
-  ipcMain.handle('desktop:get-window-fullscreen', (event) => {
-    const window = BrowserWindow.fromWebContents(event.sender);
-    return window?.isFullScreen() ?? false;
-  });
-
-  ipcMain.handle(
-    'desktop:sync-window-frame',
-    (event, request: {
-      dark: boolean;
-      nativeTheme: 'system' | 'light' | 'dark';
-      nativeBackdropBlur?: boolean;
-    }) => {
-      nativeTheme.themeSource = request.nativeTheme;
-      // themeSource 被覆盖为 light/dark 期间，渲染进程的 prefers-color-scheme 跟随覆盖值而非 OS；
-      // 切回 system 时渲染端算出的 dark 是旧值。此处在 themeSource 生效后以主进程为准，并回传给渲染端校正。
-      const dark =
-        request.nativeTheme === 'system' ? nativeTheme.shouldUseDarkColors : request.dark;
-      if (request.nativeTheme === 'system') {
-        // 覆盖期间 osPrefersDark 可能滞后；切回 system 当帧刷新，供 readOsPrefersDark 与 IPC 回传一致。
-        osPrefersDark = dark;
+    // OS 层深色偏好的追踪值。themeSource 被覆盖为 light/dark 期间，主/渲染两侧的
+    // shouldUseDarkColors / prefers-color-scheme 均跟随覆盖值而非 OS，读不到真值；
+    // 此处在覆盖发生前（themeSource 尚为 'system'）取初值，之后仅在未覆盖期间随
+    // updated 事件更新。覆盖期间 OS 变化不保证触发 updated，该场景由
+    // desktop:sync-window-frame 切回 system 后的回传校正兜底（唯一防线）。
+    let osPrefersDark = nativeTheme.shouldUseDarkColors;
+    nativeTheme.on("updated", () => {
+      if (nativeTheme.themeSource === "system") {
+        osPrefersDark = nativeTheme.shouldUseDarkColors;
       }
+    });
+
+    ipcMain.on("desktop:read-os-prefers-dark", (event) => {
+      event.returnValue = osPrefersDark;
+    });
+
+    ipcMain.handle("desktop:get-window-fullscreen", (event) => {
       const window = BrowserWindow.fromWebContents(event.sender);
-      if (!window) {
-        console.warn('[spirit-desktop] desktop:sync-window-frame: no BrowserWindow for sender');
+      return window?.isFullScreen() ?? false;
+    });
+
+    ipcMain.handle(
+      "desktop:sync-window-frame",
+      (
+        event,
+        request: {
+          dark: boolean;
+          nativeTheme: "system" | "light" | "dark";
+          nativeBackdropBlur?: boolean;
+        },
+      ) => {
+        nativeTheme.themeSource = request.nativeTheme;
+        // themeSource 被覆盖为 light/dark 期间，渲染进程的 prefers-color-scheme 跟随覆盖值而非 OS；
+        // 切回 system 时渲染端算出的 dark 是旧值。此处在 themeSource 生效后以主进程为准，并回传给渲染端校正。
+        const dark =
+          request.nativeTheme === "system" ? nativeTheme.shouldUseDarkColors : request.dark;
+        if (request.nativeTheme === "system") {
+          // 覆盖期间 osPrefersDark 可能滞后；切回 system 当帧刷新，供 readOsPrefersDark 与 IPC 回传一致。
+          osPrefersDark = dark;
+        }
+        const window = BrowserWindow.fromWebContents(event.sender);
+        if (!window) {
+          console.warn("[spirit-desktop] desktop:sync-window-frame: no BrowserWindow for sender");
+          return dark;
+        }
+        applyNativeWindowBackdrop(window, dark, request.nativeBackdropBlur);
         return dark;
-      }
-      applyNativeWindowBackdrop(window, dark, request.nativeBackdropBlur);
-      return dark;
-    },
-  );
+      },
+    );
 
-  ipcMain.handle(
-    'desktop:sync-traffic-light-position',
-    (event, position: { x: number; y: number }) => {
-      if (process.platform !== 'darwin') {
+    ipcMain.handle(
+      "desktop:sync-traffic-light-position",
+      (event, position: { x: number; y: number }) => {
+        if (process.platform !== "darwin") {
+          return;
+        }
+        if (!Number.isFinite(position?.x) || !Number.isFinite(position?.y)) {
+          return;
+        }
+        const window = BrowserWindow.fromWebContents(event.sender);
+        const rounded = { x: Math.round(position.x), y: Math.round(position.y) };
+        window?.setWindowButtonPosition(rounded);
+        writeFile(trafficLightPositionCachePath(), JSON.stringify(rounded)).catch((err) => {
+          console.error("[spirit-desktop] persist traffic light position failed", err);
+        });
+      },
+    );
+
+    ipcMain.handle("desktop:sync-language", async (_event, lang: string) => {
+      console.warn("[spirit-desktop] language synced:", lang);
+      try {
+        await i18nHost.changeLanguage(lang);
+      } catch {
+        // ignore i18n errors
+      }
+      if (process.platform === "darwin") {
+        setMacOSApplicationMenu();
+      }
+      refreshWindowsJumpList();
+      refreshStatusTray();
+      refreshMacOSDockMenu();
+    });
+
+    ipcMain.handle(
+      "desktop:pty-create",
+      (
+        event,
+        request: { cwd: string; cols: number; rows: number },
+      ): { ok: true; id: string; shellDisplayName: string } | { ok: false; error: string } => {
+        return workspacePtyManager.createSession(event.sender, request);
+      },
+    );
+
+    ipcMain.on("desktop:pty-write", (event, payload: { id: string; data: string }) => {
+      workspacePtyManager.write(event.sender, payload.id, payload.data);
+    });
+
+    ipcMain.on(
+      "desktop:pty-resize",
+      (event, payload: { id: string; cols: number; rows: number }) => {
+        workspacePtyManager.resize(event.sender, payload.id, payload.cols, payload.rows);
+      },
+    );
+
+    ipcMain.handle("desktop:pty-kill", (event, id: string) => {
+      workspacePtyManager.kill(event.sender, id);
+    });
+
+    ipcMain.handle("desktop:open-system-terminal", (_event, cwd: string) => {
+      openSystemTerminalInDirectory(cwd);
+    });
+
+    ipcMain.handle("desktop:open-external-url", async (event, payload: { url?: string }) => {
+      const url = typeof payload?.url === "string" ? payload.url.trim() : "";
+      if (!url || !isAllowedExternalUrl(url)) {
+        throw new Error("Invalid external URL");
+      }
+      if (event.sender.isDestroyed()) {
         return;
       }
-      if (!Number.isFinite(position?.x) || !Number.isFinite(position?.y)) {
-        return;
-      }
-      const window = BrowserWindow.fromWebContents(event.sender);
-      const rounded = { x: Math.round(position.x), y: Math.round(position.y) };
-      window?.setWindowButtonPosition(rounded);
-      writeFile(trafficLightPositionCachePath(), JSON.stringify(rounded)).catch((err) => {
-        console.error('[spirit-desktop] persist traffic light position failed', err);
+      event.sender.send("desktop:browser-open-url", { url });
+    });
+
+    ipcMain.handle(
+      "desktop:browser-guest-register-f12",
+      (event: IpcMainInvokeEvent, payload: { tabId?: string; guestWebContentsId?: number }) => {
+        const tabId = payload?.tabId;
+        const guestWebContentsId = payload?.guestWebContentsId;
+        if (typeof tabId !== "string" || !tabId) {
+          throw new Error("Invalid browser tab id");
+        }
+        if (typeof guestWebContentsId !== "number" || !Number.isFinite(guestWebContentsId)) {
+          throw new Error("Invalid browser guest webContents id");
+        }
+        registerBrowserGuestF12(event.sender, tabId, guestWebContentsId);
+      },
+    );
+
+    ipcMain.handle(
+      "desktop:browser-guest-unregister-f12",
+      (event: IpcMainInvokeEvent, payload: { guestWebContentsId?: number }) => {
+        const guestWebContentsId = payload?.guestWebContentsId;
+        if (typeof guestWebContentsId !== "number" || !Number.isFinite(guestWebContentsId)) {
+          throw new Error("Invalid browser guest webContents id");
+        }
+        unregisterBrowserGuestF12(event.sender, guestWebContentsId);
+      },
+    );
+
+    ipcMain.handle(
+      "desktop:browser-guest-bind-devtools",
+      (
+        event: IpcMainInvokeEvent,
+        payload: { pageWebContentsId?: number; devtoolsWebContentsId?: number },
+      ) => {
+        const pageWebContentsId = payload?.pageWebContentsId;
+        const devtoolsWebContentsId = payload?.devtoolsWebContentsId;
+        if (
+          typeof pageWebContentsId !== "number" ||
+          !Number.isFinite(pageWebContentsId) ||
+          typeof devtoolsWebContentsId !== "number" ||
+          !Number.isFinite(devtoolsWebContentsId)
+        ) {
+          throw new Error("Invalid browser devtools bind payload");
+        }
+        bindBrowserGuestDevtools(event.sender, pageWebContentsId, devtoolsWebContentsId);
+      },
+    );
+
+    ipcMain.handle(
+      "desktop:browser-guest-open-devtools",
+      (event: IpcMainInvokeEvent, payload: { pageWebContentsId?: number }) => {
+        const pageWebContentsId = payload?.pageWebContentsId;
+        if (typeof pageWebContentsId !== "number" || !Number.isFinite(pageWebContentsId)) {
+          throw new Error("Invalid browser page webContents id");
+        }
+        return openBrowserGuestDevtools(event.sender, pageWebContentsId);
+      },
+    );
+
+    ipcMain.handle(
+      "desktop:browser-guest-close-devtools",
+      (event: IpcMainInvokeEvent, payload: { pageWebContentsId?: number }) => {
+        const pageWebContentsId = payload?.pageWebContentsId;
+        if (typeof pageWebContentsId !== "number" || !Number.isFinite(pageWebContentsId)) {
+          throw new Error("Invalid browser page webContents id");
+        }
+        closeBrowserGuestDevtools(event.sender, pageWebContentsId);
+      },
+    );
+
+    ipcMain.handle("desktop:list-local-listeners", () => {
+      const cached = getCachedLocalListeningEndpoints();
+      if (cached !== null) return cached;
+      return getScanningPromise() ?? [];
+    });
+
+    ipcMain.on("desktop:scan-local-listeners", (event) => {
+      const { sender } = event;
+      void startLocalListenersScan((item) => {
+        if (!sender.isDestroyed()) {
+          sender.send("desktop:local-listener-found", item);
+        }
+      }).then(() => {
+        if (!sender.isDestroyed()) {
+          sender.send("desktop:local-listeners-done");
+        }
       });
-    },
-  );
+    });
 
-  ipcMain.handle('desktop:sync-language', async (_event, lang: string) => {
-    console.log('[spirit-desktop] language synced:', lang);
-    try {
-      await i18nHost.changeLanguage(lang);
-    } catch {
-      // ignore i18n errors
-    }
-    if (process.platform === 'darwin') {
-      setMacOSApplicationMenu();
-    }
+    ipcMain.handle(
+      "desktop:show-notification",
+      async (_event, payload: DesktopNotificationPayload) => {
+        if (!getAppAwayFromUser()) {
+          return false;
+        }
+        if (!payload || typeof payload.title !== "string" || !payload.title.trim()) {
+          return false;
+        }
+        return showDesktopNotification(payload);
+      },
+    );
+
+    ipcMain.handle("desktop:get-app-away", () => getAppAwayFromUser());
+
+    ipcMain.handle(
+      "desktop:report-renderer-visibility",
+      (_event, payload: { hidden?: boolean }) => {
+        setRendererVisibility(payload?.hidden === true);
+        return getAppAwayFromUser();
+      },
+    );
+
+    ipcMain.handle(
+      "desktop:sync-attention-pending",
+      (
+        _event,
+        payload: {
+          needsApproval?: boolean;
+          needsQuestions?: boolean;
+          needsTaskComplete?: boolean;
+          attentionBlockKey?: string;
+        },
+      ) => {
+        setDesktopAttentionPending({
+          needsApproval: payload?.needsApproval === true,
+          needsQuestions: payload?.needsQuestions === true,
+          needsTaskComplete: payload?.needsTaskComplete === true,
+          attentionBlockKey:
+            typeof payload?.attentionBlockKey === "string" ? payload.attentionBlockKey : undefined,
+        });
+        refreshDesktopAttention(getAppAwayFromUser());
+      },
+    );
+
+    await syncInitialDesktopWebHost();
+    await createMainWindow();
     refreshWindowsJumpList();
-    refreshStatusTray();
-    refreshMacOSDockMenu();
-  });
-
-  ipcMain.handle(
-    'desktop:pty-create',
-    (
-      event,
-      request: { cwd: string; cols: number; rows: number },
-    ): { ok: true; id: string; shellDisplayName: string } | { ok: false; error: string } => {
-      return workspacePtyManager.createSession(event.sender, request);
-    },
-  );
-
-  ipcMain.on('desktop:pty-write', (event, payload: { id: string; data: string }) => {
-    workspacePtyManager.write(event.sender, payload.id, payload.data);
-  });
-
-  ipcMain.on('desktop:pty-resize', (event, payload: { id: string; cols: number; rows: number }) => {
-    workspacePtyManager.resize(event.sender, payload.id, payload.cols, payload.rows);
-  });
-
-  ipcMain.handle('desktop:pty-kill', (event, id: string) => {
-    workspacePtyManager.kill(event.sender, id);
-  });
-
-  ipcMain.handle('desktop:open-system-terminal', (_event, cwd: string) => {
-    openSystemTerminalInDirectory(cwd);
-  });
-
-  ipcMain.handle('desktop:open-external-url', async (event, payload: { url?: string }) => {
-    const url = typeof payload?.url === 'string' ? payload.url.trim() : '';
-    if (!url || !isAllowedExternalUrl(url)) {
-      throw new Error('Invalid external URL');
+    const openSessionFromQuickMenu = async (sessionPath: string) => {
+      await focusOrCreateSpiritDesktopWindows();
+      await handleSpiritOpenSessionFromProtocol(sessionPath);
+    };
+    bindStatusTrayDeps({
+      focusOrCreateMainWindow: focusOrCreateSpiritDesktopWindows,
+      openSession: openSessionFromQuickMenu,
+      newSession: async () => {
+        await focusOrCreateSpiritDesktopWindows();
+        handleSpiritNewSessionRequest();
+      },
+    });
+    bindMacOSDockMenuDeps({
+      openSession: openSessionFromQuickMenu,
+    });
+    try {
+      const config = await loadConfig();
+      if (typeof config.uiLocale === "string" && config.uiLocale.trim()) {
+        await i18nHost.changeLanguage(config.uiLocale.trim());
+      }
+    } catch {
+      // ignore locale bootstrap errors
     }
-    if (event.sender.isDestroyed()) {
-      return;
-    }
-    event.sender.send('desktop:browser-open-url', { url });
-  });
+    void syncStatusTray();
+    void syncMacOSDockMenu();
 
-  ipcMain.handle(
-    'desktop:browser-guest-register-f12',
-    (event: IpcMainInvokeEvent, payload: { tabId?: string; guestWebContentsId?: number }) => {
-      const tabId = payload?.tabId;
-      const guestWebContentsId = payload?.guestWebContentsId;
-      if (typeof tabId !== 'string' || !tabId) {
-        throw new Error('Invalid browser tab id');
-      }
-      if (typeof guestWebContentsId !== 'number' || !Number.isFinite(guestWebContentsId)) {
-        throw new Error('Invalid browser guest webContents id');
-      }
-      registerBrowserGuestF12(event.sender, tabId, guestWebContentsId);
-    },
-  );
-
-  ipcMain.handle(
-    'desktop:browser-guest-unregister-f12',
-    (event: IpcMainInvokeEvent, payload: { guestWebContentsId?: number }) => {
-      const guestWebContentsId = payload?.guestWebContentsId;
-      if (typeof guestWebContentsId !== 'number' || !Number.isFinite(guestWebContentsId)) {
-        throw new Error('Invalid browser guest webContents id');
-      }
-      unregisterBrowserGuestF12(event.sender, guestWebContentsId);
-    },
-  );
-
-  ipcMain.handle(
-    'desktop:browser-guest-bind-devtools',
-    (
-      event: IpcMainInvokeEvent,
-      payload: { pageWebContentsId?: number; devtoolsWebContentsId?: number },
-    ) => {
-      const pageWebContentsId = payload?.pageWebContentsId;
-      const devtoolsWebContentsId = payload?.devtoolsWebContentsId;
-      if (
-        typeof pageWebContentsId !== 'number' ||
-        !Number.isFinite(pageWebContentsId) ||
-        typeof devtoolsWebContentsId !== 'number' ||
-        !Number.isFinite(devtoolsWebContentsId)
-      ) {
-        throw new Error('Invalid browser devtools bind payload');
-      }
-      bindBrowserGuestDevtools(event.sender, pageWebContentsId, devtoolsWebContentsId);
-    },
-  );
-
-  ipcMain.handle(
-    'desktop:browser-guest-open-devtools',
-    (event: IpcMainInvokeEvent, payload: { pageWebContentsId?: number }) => {
-      const pageWebContentsId = payload?.pageWebContentsId;
-      if (typeof pageWebContentsId !== 'number' || !Number.isFinite(pageWebContentsId)) {
-        throw new Error('Invalid browser page webContents id');
-      }
-      return openBrowserGuestDevtools(event.sender, pageWebContentsId);
-    },
-  );
-
-  ipcMain.handle(
-    'desktop:browser-guest-close-devtools',
-    (event: IpcMainInvokeEvent, payload: { pageWebContentsId?: number }) => {
-      const pageWebContentsId = payload?.pageWebContentsId;
-      if (typeof pageWebContentsId !== 'number' || !Number.isFinite(pageWebContentsId)) {
-        throw new Error('Invalid browser page webContents id');
-      }
-      closeBrowserGuestDevtools(event.sender, pageWebContentsId);
-    },
-  );
-
-  ipcMain.handle('desktop:list-local-listeners', () => {
-    const cached = getCachedLocalListeningEndpoints();
-    if (cached !== null) return cached;
-    return getScanningPromise() ?? [];
-  });
-
-  ipcMain.on('desktop:scan-local-listeners', (event) => {
-    const { sender } = event;
-    void startLocalListenersScan((item) => {
-      if (!sender.isDestroyed()) {
-        sender.send('desktop:local-listener-found', item);
-      }
-    }).then(() => {
-      if (!sender.isDestroyed()) {
-        sender.send('desktop:local-listeners-done');
+    app.on("activate", async () => {
+      if (BrowserWindow.getAllWindows().length === 0) {
+        await createMainWindow();
       }
     });
   });
-
-  ipcMain.handle('desktop:show-notification', async (_event, payload: DesktopNotificationPayload) => {
-    if (!getAppAwayFromUser()) {
-      return false;
-    }
-    if (!payload || typeof payload.title !== 'string' || !payload.title.trim()) {
-      return false;
-    }
-    return showDesktopNotification(payload);
-  });
-
-  ipcMain.handle('desktop:get-app-away', () => getAppAwayFromUser());
-
-  ipcMain.handle('desktop:report-renderer-visibility', (_event, payload: { hidden?: boolean }) => {
-    setRendererVisibility(payload?.hidden === true);
-    return getAppAwayFromUser();
-  });
-
-  ipcMain.handle(
-    'desktop:sync-attention-pending',
-    (
-      _event,
-      payload: {
-        needsApproval?: boolean;
-        needsQuestions?: boolean;
-        needsTaskComplete?: boolean;
-        attentionBlockKey?: string;
-      },
-    ) => {
-      setDesktopAttentionPending({
-        needsApproval: payload?.needsApproval === true,
-        needsQuestions: payload?.needsQuestions === true,
-        needsTaskComplete: payload?.needsTaskComplete === true,
-        attentionBlockKey:
-          typeof payload?.attentionBlockKey === 'string' ? payload.attentionBlockKey : undefined,
-      });
-      refreshDesktopAttention(getAppAwayFromUser());
-    },
-  );
-
-  await syncInitialDesktopWebHost();
-  await createMainWindow();
-  refreshWindowsJumpList();
-  const openSessionFromQuickMenu = async (sessionPath: string) => {
-    await focusOrCreateSpiritDesktopWindows();
-    await handleSpiritOpenSessionFromProtocol(sessionPath);
-  };
-  bindStatusTrayDeps({
-    focusOrCreateMainWindow: focusOrCreateSpiritDesktopWindows,
-    openSession: openSessionFromQuickMenu,
-    newSession: async () => {
-      await focusOrCreateSpiritDesktopWindows();
-      handleSpiritNewSessionRequest();
-    },
-  });
-  bindMacOSDockMenuDeps({
-    openSession: openSessionFromQuickMenu,
-  });
-  try {
-    const config = await loadConfig();
-    if (typeof config.uiLocale === 'string' && config.uiLocale.trim()) {
-      await i18nHost.changeLanguage(config.uiLocale.trim());
-    }
-  } catch {
-    // ignore locale bootstrap errors
-  }
-  void syncStatusTray();
-  void syncMacOSDockMenu();
-
-  app.on('activate', async () => {
-    if (BrowserWindow.getAllWindows().length === 0) {
-      await createMainWindow();
-    }
-  });
-  });
 }
 
-app.on('before-quit', (event) => {
+app.on("before-quit", (event) => {
   if (statusTrayRefreshTimer !== undefined) {
     clearTimeout(statusTrayRefreshTimer);
     statusTrayRefreshTimer = undefined;
@@ -1454,29 +1487,26 @@ app.on('before-quit', (event) => {
   desktopHostShutdownPromise ??= shutdownDesktopHostService().finally(() => {
     desktopHostShutdownComplete = true;
   });
-  void Promise.all([
-    stopDesktopWebHostIfRunning(),
-    desktopHostShutdownPromise,
-  ]).finally(() => {
+  void Promise.all([stopDesktopWebHostIfRunning(), desktopHostShutdownPromise]).finally(() => {
     app.quit();
   });
 });
 
 function imagePreviewMimeType(extension: string): string | undefined {
   switch (extension) {
-    case '.bmp':
-      return 'image/bmp';
-    case '.gif':
-      return 'image/gif';
-    case '.jpg':
-    case '.jpeg':
-      return 'image/jpeg';
-    case '.png':
-      return 'image/png';
-    case '.webp':
-      return 'image/webp';
-    case '.ico':
-      return 'image/x-icon';
+    case ".bmp":
+      return "image/bmp";
+    case ".gif":
+      return "image/gif";
+    case ".jpg":
+    case ".jpeg":
+      return "image/jpeg";
+    case ".png":
+      return "image/png";
+    case ".webp":
+      return "image/webp";
+    case ".ico":
+      return "image/x-icon";
     default:
       return undefined;
   }
@@ -1484,15 +1514,15 @@ function imagePreviewMimeType(extension: string): string | undefined {
 
 function videoPreviewMimeType(extension: string): string | null {
   switch (extension) {
-    case '.mp4':
-      return 'video/mp4';
-    case '.webm':
-      return 'video/webm';
-    case '.mov':
-      return 'video/quicktime';
-    case '.mpeg':
-    case '.mpg':
-      return 'video/mpeg';
+    case ".mp4":
+      return "video/mp4";
+    case ".webm":
+      return "video/webm";
+    case ".mov":
+      return "video/quicktime";
+    case ".mpeg":
+    case ".mpg":
+      return "video/mpeg";
     default:
       return null;
   }
@@ -1514,7 +1544,10 @@ async function readLocalVideoPreviewUrlFromPath(filePath: string): Promise<strin
       return null;
     }
 
-    const [canonicalRoot, canonicalPath] = await Promise.all([realpath(managedRoot), realpath(filePath)]);
+    const [canonicalRoot, canonicalPath] = await Promise.all([
+      realpath(managedRoot),
+      realpath(filePath),
+    ]);
     if (!pathIsWithinRoot(canonicalPath, canonicalRoot)) {
       return null;
     }
@@ -1532,7 +1565,7 @@ function managedGeneratedVideoRefFromPath(filePath: string): string | null {
   }
 
   const assetId = path.basename(filePath);
-  if (!assetId || assetId === '.' || assetId === '..') {
+  if (!assetId || assetId === "." || assetId === "..") {
     return null;
   }
 
@@ -1551,7 +1584,7 @@ async function readImagePreviewDataUrlFromPath(filePath: string): Promise<string
     if (!detected) {
       return null;
     }
-    return `data:${detected.mimeType};base64,${bytes.toString('base64')}`;
+    return `data:${detected.mimeType};base64,${bytes.toString("base64")}`;
   } catch {
     return null;
   }
@@ -1572,32 +1605,35 @@ async function resolveManagedGeneratedAssetPath(reference: string): Promise<stri
     return null;
   }
 
-  const segments = url.pathname.replace(/^\/+/, '').split('/').filter(Boolean);
+  const segments = url.pathname.replace(/^\/+/, "").split("/").filter(Boolean);
   if (segments.length !== 2) {
     return null;
   }
 
   const kind = segments[0]?.toLowerCase();
-  if (kind !== 'image' && kind !== 'video') {
+  if (kind !== "image" && kind !== "video") {
     return null;
   }
 
   let assetId: string;
   try {
-    assetId = decodeURIComponent(segments[1] ?? '').trim();
+    assetId = decodeURIComponent(segments[1] ?? "").trim();
   } catch {
     return null;
   }
-  if (!assetId || assetId !== path.basename(assetId) || assetId === '.' || assetId === '..') {
+  if (!assetId || assetId !== path.basename(assetId) || assetId === "." || assetId === "..") {
     return null;
   }
 
-  const managedDir = kind === 'image' ? MANAGED_GENERATED_IMAGES_DIR : MANAGED_GENERATED_VIDEOS_DIR;
+  const managedDir = kind === "image" ? MANAGED_GENERATED_IMAGES_DIR : MANAGED_GENERATED_VIDEOS_DIR;
   const managedRoot = path.join(spiritAgentDataDir(), managedDir);
   const candidatePath = path.join(managedRoot, assetId);
 
   try {
-    const [rootStats, candidateStats] = await Promise.all([lstat(managedRoot), lstat(candidatePath)]);
+    const [rootStats, candidateStats] = await Promise.all([
+      lstat(managedRoot),
+      lstat(candidatePath),
+    ]);
     if (!rootStats.isDirectory() || rootStats.isSymbolicLink()) {
       return null;
     }
@@ -1605,7 +1641,10 @@ async function resolveManagedGeneratedAssetPath(reference: string): Promise<stri
       return null;
     }
 
-    const [canonicalRoot, canonicalPath] = await Promise.all([realpath(managedRoot), realpath(candidatePath)]);
+    const [canonicalRoot, canonicalPath] = await Promise.all([
+      realpath(managedRoot),
+      realpath(candidatePath),
+    ]);
     if (!pathIsWithinRoot(canonicalPath, canonicalRoot)) {
       return null;
     }
@@ -1618,28 +1657,31 @@ async function resolveManagedGeneratedAssetPath(reference: string): Promise<stri
 
 function pathIsWithinRoot(candidatePath: string, rootPath: string): boolean {
   const relative = path.relative(rootPath, candidatePath);
-  return relative === '' || (!relative.startsWith('..') && !path.isAbsolute(relative));
+  return relative === "" || (!relative.startsWith("..") && !path.isAbsolute(relative));
 }
 
-function buildSaveImageDialogOptions(sourcePath: string, extension: string): Electron.SaveDialogOptions {
-  const normalizedExtension = extension.startsWith('.') ? extension.slice(1) : extension;
+function buildSaveImageDialogOptions(
+  sourcePath: string,
+  extension: string,
+): Electron.SaveDialogOptions {
+  const normalizedExtension = extension.startsWith(".") ? extension.slice(1) : extension;
   return {
     defaultPath: path.basename(sourcePath),
     filters: [
       {
-        name: 'Image',
-        extensions: normalizedExtension ? [normalizedExtension] : ['png'],
+        name: "Image",
+        extensions: normalizedExtension ? [normalizedExtension] : ["png"],
       },
       {
-        name: 'All Files',
-        extensions: ['*'],
+        name: "All Files",
+        extensions: ["*"],
       },
     ],
   };
 }
 
-app.on('window-all-closed', () => {
-  if (process.platform !== 'darwin') {
+app.on("window-all-closed", () => {
+  if (process.platform !== "darwin") {
     app.quit();
   }
 });

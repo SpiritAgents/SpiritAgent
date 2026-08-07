@@ -1,4 +1,4 @@
-import { BrowserWindow, type WebContents } from 'electron';
+import { BrowserWindow, type WebContents } from "electron";
 
 export function toggleBrowserWindowFullScreen(host: WebContents): void {
   const window = BrowserWindow.fromWebContents(host);

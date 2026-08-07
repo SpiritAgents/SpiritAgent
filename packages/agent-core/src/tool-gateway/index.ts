@@ -3,7 +3,7 @@ export {
   TOOL_DESCRIBE_TOOL_NAME,
   buildLazyToolGatewayDefinitions,
   isLazyToolGatewayToolName,
-} from './definitions.js';
+} from "./definitions.js";
 export {
   FETCH_MCP_RESOURCE_TOOL_NAME,
   buildFetchMcpResourceDefinition,
@@ -13,28 +13,25 @@ export {
   isFetchMcpResourceToolRequest,
   parseFetchMcpResourceArguments,
   type FetchMcpResourceToolRequest,
-} from './fetch-mcp-resource.js';
+} from "./fetch-mcp-resource.js";
 export {
   createMcpLazyToolGatewayBackend,
   executeLazyToolGatewayCall,
   isLazyToolGatewayToolRequest,
-} from './mcp-backend.js';
+} from "./mcp-backend.js";
 export {
   buildBuiltInLazyToolCatalogSnapshot,
   findBuiltInLazyToolIndexEntry,
   mergeLazyToolCatalogSnapshots,
-} from './built-in-catalog.js';
+} from "./built-in-catalog.js";
 export {
   createBuiltInLazyToolGatewayBackend,
   createBuiltInLazyToolGatewayBackendWithCall,
   parseBuiltInLazyToolCallArguments,
-} from './built-in-backend.js';
-export { createCompositeLazyToolGatewayBackend } from './composite-backend.js';
-export { parseLazyToolGatewayArguments } from './parse.js';
-export {
-  authorizeLazyToolGatewayRequest,
-  type LazyToolGatewayApprovalLevel,
-} from './authorize.js';
+} from "./built-in-backend.js";
+export { createCompositeLazyToolGatewayBackend } from "./composite-backend.js";
+export { parseLazyToolGatewayArguments } from "./parse.js";
+export { authorizeLazyToolGatewayRequest, type LazyToolGatewayApprovalLevel } from "./authorize.js";
 export {
   LAZY_BUILT_IN_SERVER_DESKTOP,
   LAZY_TOOL_PROVIDER_BUILT_IN,
@@ -46,4 +43,4 @@ export {
   type LazyToolDescribeResult,
   type LazyToolGatewayBackend,
   type LazyToolGatewayToolRequest,
-} from './types.js';
+} from "./types.js";

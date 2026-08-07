@@ -1,8 +1,8 @@
-import { resolveModelDisplayTitle } from '@spiritagent/host-internal/model-display-name';
-import { normalizeOpenAiApiBase } from '@spiritagent/host-internal/openai-api-base';
+import { resolveModelDisplayTitle } from "@spiritagent/host-internal/model-display-name";
+import { normalizeOpenAiApiBase } from "@spiritagent/host-internal/openai-api-base";
 
-import { formatCompactTokenCount } from './format-compact-token-count.js';
-import { parseModelContextLength } from './model-context-length.js';
+import { formatCompactTokenCount } from "./format-compact-token-count.js";
+import { parseModelContextLength } from "./model-context-length.js";
 
 import type {
   DesktopModelCatalogHint,
@@ -11,20 +11,20 @@ import type {
   PreviewModelCatalogEntry,
   PreviewModelCatalogPricing,
   PreviewModelCatalogVideoDurationPricing,
-} from '../types.js';
+} from "../types.js";
 
 const PROVIDERS_PRESERVE_RAW_MODEL_ID_WITHOUT_CATALOG = new Set<DesktopModelProvider>([
-  'vercel-ai-gateway',
-  'openrouter',
-  'fireworks-ai',
-  'together-ai',
-  'groq',
-  'deepinfra',
-  'hugging-face',
-  'baseten',
-  'cohere',
-  'moonshot-ai',
-  'kimi-code',
+  "vercel-ai-gateway",
+  "openrouter",
+  "fireworks-ai",
+  "together-ai",
+  "groq",
+  "deepinfra",
+  "hugging-face",
+  "baseten",
+  "cohere",
+  "moonshot-ai",
+  "kimi-code",
 ]);
 
 /** 无 catalog displayName 时是否保留原始 model id（如 openai/gpt-5），而非格式化。 */
@@ -36,11 +36,11 @@ export function providerSupportsModelCatalogDetail(
 
 export function modelCatalogHintKey(input: {
   provider?: DesktopModelProvider;
-  transportKind?: ModelProfileSnapshot['transportKind'];
+  transportKind?: ModelProfileSnapshot["transportKind"];
   apiBase: string;
 }): string {
-  const base = normalizeOpenAiApiBase(input.apiBase.trim() || '');
-  return `${input.provider ?? 'custom'}::${input.transportKind ?? 'openai-compatible'}::${base}`;
+  const base = normalizeOpenAiApiBase(input.apiBase.trim() || "");
+  return `${input.provider ?? "custom"}::${input.transportKind ?? "openai-compatible"}::${base}`;
 }
 
 function catalogEntryIndexKey(hintKey: string, modelId: string): string {
@@ -49,7 +49,7 @@ function catalogEntryIndexKey(hintKey: string, modelId: string): string {
 
 /** 展示名 / catalog 详情映射键：同一 model id 在不同 provider 下可各自独立。 */
 export function modelCatalogScopeEntryKey(
-  model: Pick<ModelProfileSnapshot, 'provider' | 'transportKind' | 'apiBase' | 'name'>,
+  model: Pick<ModelProfileSnapshot, "provider" | "transportKind" | "apiBase" | "name">,
 ): string {
   const hintKey = modelCatalogHintKey({
     provider: model.provider,
@@ -112,13 +112,13 @@ export function modelHasCatalogDetail(entry: PreviewModelCatalogEntry | undefine
     return true;
   }
   return Boolean(
-    pricing.inputPerTokenUsd?.trim()
-      || pricing.outputPerTokenUsd?.trim()
-      || pricing.imagePerUnitUsd?.trim()
-      || pricing.requestPerCallUsd?.trim()
-      || pricing.imagePerMegapixelUsd?.trim()
-      || pricing.imageExamplePricing?.priceUsd?.trim()
-      || pricing.videoExamplePricing?.priceUsd?.trim(),
+    pricing.inputPerTokenUsd?.trim() ||
+    pricing.outputPerTokenUsd?.trim() ||
+    pricing.imagePerUnitUsd?.trim() ||
+    pricing.requestPerCallUsd?.trim() ||
+    pricing.imagePerMegapixelUsd?.trim() ||
+    pricing.imageExamplePricing?.priceUsd?.trim() ||
+    pricing.videoExamplePricing?.priceUsd?.trim(),
   );
 }
 
@@ -131,7 +131,10 @@ export function buildModelCatalogDetailMap(
   for (const model of models) {
     const catalogEntry = findModelCatalogEntry(model, hints, entryIndex);
     if (modelHasCatalogDetail(catalogEntry)) {
-      detailByModelName.set(modelCatalogScopeEntryKey(model), catalogEntry as PreviewModelCatalogEntry);
+      detailByModelName.set(
+        modelCatalogScopeEntryKey(model),
+        catalogEntry as PreviewModelCatalogEntry,
+      );
     }
   }
 
@@ -153,7 +156,7 @@ export function buildModelCatalogDisplayTitleMap(
 }
 
 export function modelDisplayTitleFromMap(
-  model: Pick<ModelProfileSnapshot, 'provider' | 'transportKind' | 'apiBase' | 'name'>,
+  model: Pick<ModelProfileSnapshot, "provider" | "transportKind" | "apiBase" | "name">,
   displayTitleByModelName: Map<string, string>,
 ): string {
   return displayTitleByModelName.get(modelCatalogScopeEntryKey(model)) ?? model.name;
@@ -182,30 +185,30 @@ export function modelSettingsRowAriaLabel(
 }
 
 type PricingLabelKey =
-  | 'settings.modelDetailPricingInput'
-  | 'settings.modelDetailPricingOutput'
-  | 'settings.modelDetailPricingImage'
-  | 'settings.modelDetailPricingRequest'
-  | 'settings.modelDetailPricingVideoPerSecond'
-  | 'settings.modelDetailPricingVideoResolutionWithAudio'
-  | 'settings.modelDetailPricingImageMegapixel'
-  | 'settings.modelDetailPricingExample';
+  | "settings.modelDetailPricingInput"
+  | "settings.modelDetailPricingOutput"
+  | "settings.modelDetailPricingImage"
+  | "settings.modelDetailPricingRequest"
+  | "settings.modelDetailPricingVideoPerSecond"
+  | "settings.modelDetailPricingVideoResolutionWithAudio"
+  | "settings.modelDetailPricingImageMegapixel"
+  | "settings.modelDetailPricingExample";
 
 type ModelCatalogDetailFieldLabelKey =
-  | 'settings.modelDetailLabelContext'
-  | 'settings.modelDetailLabelMaxOutput'
-  | 'settings.modelDetailLabelInput'
-  | 'settings.modelDetailLabelOutput'
-  | 'settings.modelDetailLabelCachedInput'
-  | 'settings.modelDetailLabelImage'
-  | 'settings.modelDetailLabelRequest'
-  | 'settings.modelDetailLabelVideo';
+  | "settings.modelDetailLabelContext"
+  | "settings.modelDetailLabelMaxOutput"
+  | "settings.modelDetailLabelInput"
+  | "settings.modelDetailLabelOutput"
+  | "settings.modelDetailLabelCachedInput"
+  | "settings.modelDetailLabelImage"
+  | "settings.modelDetailLabelRequest"
+  | "settings.modelDetailLabelVideo";
 
 type ModelCatalogDetailFieldValueKey =
-  | 'settings.modelDetailPricingVideoPerSecond'
-  | 'settings.modelDetailPricingVideoResolutionWithAudio'
-  | 'settings.modelDetailPricingImageMegapixel'
-  | 'settings.modelDetailPricingExample';
+  | "settings.modelDetailPricingVideoPerSecond"
+  | "settings.modelDetailPricingVideoResolutionWithAudio"
+  | "settings.modelDetailPricingImageMegapixel"
+  | "settings.modelDetailPricingExample";
 
 export type ModelCatalogDetailField = {
   id: string;
@@ -221,16 +224,17 @@ export function modelCatalogHasDetailBody(input: {
     return true;
   }
   const contextLength =
-    parseModelContextLength(input.model.contextLength)
-    ?? parseModelContextLength(input.catalogEntry?.contextLength);
-  const maxCompletionTokens =
-    input.catalogEntry?.maxCompletionTokens;
-  return buildModelCatalogDetailFields({
-    ...(contextLength !== undefined ? { contextLength } : {}),
-    ...(maxCompletionTokens !== undefined ? { maxCompletionTokens } : {}),
-    pricing: input.catalogEntry?.pricing,
-    t: (key) => key,
-  }).length > 0;
+    parseModelContextLength(input.model.contextLength) ??
+    parseModelContextLength(input.catalogEntry?.contextLength);
+  const maxCompletionTokens = input.catalogEntry?.maxCompletionTokens;
+  return (
+    buildModelCatalogDetailFields({
+      ...(contextLength !== undefined ? { contextLength } : {}),
+      ...(maxCompletionTokens !== undefined ? { maxCompletionTokens } : {}),
+      pricing: input.catalogEntry?.pricing,
+      t: (key) => key,
+    }).length > 0
+  );
 }
 
 export function buildModelCatalogDetailFields(input: {
@@ -245,15 +249,15 @@ export function buildModelCatalogDetailFields(input: {
   const fields: ModelCatalogDetailField[] = [];
   if (input.contextLength !== undefined) {
     fields.push({
-      id: 'context',
-      label: input.t('settings.modelDetailLabelContext'),
+      id: "context",
+      label: input.t("settings.modelDetailLabelContext"),
       value: `${formatCompactTokenCount(input.contextLength)} tokens`,
     });
   }
   if (input.maxCompletionTokens !== undefined) {
     fields.push({
-      id: 'max-output',
-      label: input.t('settings.modelDetailLabelMaxOutput'),
+      id: "max-output",
+      label: input.t("settings.modelDetailLabelMaxOutput"),
       value: `${formatCompactTokenCount(input.maxCompletionTokens)} tokens`,
     });
   }
@@ -262,56 +266,56 @@ export function buildModelCatalogDetailFields(input: {
     const inputPrice = formatUsdPerMillionTokens(pricing.inputPerTokenUsd);
     if (inputPrice) {
       fields.push({
-        id: 'input',
-        label: input.t('settings.modelDetailLabelInput'),
+        id: "input",
+        label: input.t("settings.modelDetailLabelInput"),
         value: `${inputPrice} / M tokens`,
       });
     }
     const outputPrice = formatUsdPerMillionTokens(pricing.outputPerTokenUsd);
     if (outputPrice) {
       fields.push({
-        id: 'output',
-        label: input.t('settings.modelDetailLabelOutput'),
+        id: "output",
+        label: input.t("settings.modelDetailLabelOutput"),
         value: `${outputPrice} / M tokens`,
       });
     }
     const cachedInputPrice = formatUsdPerMillionTokens(pricing.cachedInputPerTokenUsd);
     if (cachedInputPrice) {
       fields.push({
-        id: 'cached-input',
-        label: input.t('settings.modelDetailLabelCachedInput'),
+        id: "cached-input",
+        label: input.t("settings.modelDetailLabelCachedInput"),
         value: `${cachedInputPrice} / M tokens`,
       });
     }
     const imagePrice = formatUsdFlatRate(pricing.imagePerUnitUsd);
     if (imagePrice) {
       fields.push({
-        id: 'image',
-        label: input.t('settings.modelDetailLabelImage'),
+        id: "image",
+        label: input.t("settings.modelDetailLabelImage"),
         value: imagePrice,
       });
     }
     const imageMegapixelPrice = formatUsdFlatRate(pricing.imagePerMegapixelUsd);
     if (imageMegapixelPrice) {
       fields.push({
-        id: 'image-megapixel',
-        label: input.t('settings.modelDetailLabelImage'),
-        value: input.t('settings.modelDetailPricingImageMegapixel', { value: imageMegapixelPrice }),
+        id: "image-megapixel",
+        label: input.t("settings.modelDetailLabelImage"),
+        value: input.t("settings.modelDetailPricingImageMegapixel", { value: imageMegapixelPrice }),
       });
     }
     const imageExample = formatExamplePricing(pricing.imageExamplePricing, input.t);
     if (imageExample) {
       fields.push({
-        id: 'image-example',
-        label: input.t('settings.modelDetailLabelImage'),
+        id: "image-example",
+        label: input.t("settings.modelDetailLabelImage"),
         value: imageExample,
       });
     }
     const requestPrice = formatUsdFlatRate(pricing.requestPerCallUsd);
     if (requestPrice) {
       fields.push({
-        id: 'request',
-        label: input.t('settings.modelDetailLabelRequest'),
+        id: "request",
+        label: input.t("settings.modelDetailLabelRequest"),
         value: requestPrice,
       });
     }
@@ -323,14 +327,14 @@ export function buildModelCatalogDetailFields(input: {
       fields.push({
         id: videoDurationPricingFieldId(index, tier),
         label: videoDurationPricingRowLabel(tier, input.t),
-        value: input.t('settings.modelDetailPricingVideoPerSecond', { value: costPerSecond }),
+        value: input.t("settings.modelDetailPricingVideoPerSecond", { value: costPerSecond }),
       });
     }
     const videoExample = formatExamplePricing(pricing.videoExamplePricing, input.t);
     if (videoExample) {
       fields.push({
-        id: 'video-example',
-        label: input.t('settings.modelDetailLabelVideo'),
+        id: "video-example",
+        label: input.t("settings.modelDetailLabelVideo"),
         value: videoExample,
       });
     }
@@ -349,29 +353,31 @@ export function formatModelCatalogPricingLines(
   const lines: string[] = [];
   const input = formatUsdPerMillionTokens(pricing.inputPerTokenUsd);
   if (input) {
-    lines.push(t('settings.modelDetailPricingInput', { value: input }));
+    lines.push(t("settings.modelDetailPricingInput", { value: input }));
   }
   const output = formatUsdPerMillionTokens(pricing.outputPerTokenUsd);
   if (output) {
-    lines.push(t('settings.modelDetailPricingOutput', { value: output }));
+    lines.push(t("settings.modelDetailPricingOutput", { value: output }));
   }
   const image = formatUsdFlatRate(pricing.imagePerUnitUsd);
   if (image) {
-    lines.push(t('settings.modelDetailPricingImage', { value: image }));
+    lines.push(t("settings.modelDetailPricingImage", { value: image }));
   }
   const imageMegapixel = formatUsdFlatRate(pricing.imagePerMegapixelUsd);
   if (imageMegapixel) {
-    lines.push(t('settings.modelDetailPricingImage', {
-      value: t('settings.modelDetailPricingImageMegapixel', { value: imageMegapixel }),
-    }));
+    lines.push(
+      t("settings.modelDetailPricingImage", {
+        value: t("settings.modelDetailPricingImageMegapixel", { value: imageMegapixel }),
+      }),
+    );
   }
   const imageExample = formatExamplePricing(pricing.imageExamplePricing, t);
   if (imageExample) {
-    lines.push(t('settings.modelDetailPricingImage', { value: imageExample }));
+    lines.push(t("settings.modelDetailPricingImage", { value: imageExample }));
   }
   const request = formatUsdFlatRate(pricing.requestPerCallUsd);
   if (request) {
-    lines.push(t('settings.modelDetailPricingRequest', { value: request }));
+    lines.push(t("settings.modelDetailPricingRequest", { value: request }));
   }
   for (const tier of pricing.videoDurationPricing ?? []) {
     const costPerSecond = formatUsdFlatRate(tier.costPerSecondUsd);
@@ -379,7 +385,9 @@ export function formatModelCatalogPricingLines(
       continue;
     }
     const label = videoDurationPricingRowLabel(tier, t);
-    lines.push(`${label}: ${t('settings.modelDetailPricingVideoPerSecond', { value: costPerSecond })}`);
+    lines.push(
+      `${label}: ${t("settings.modelDetailPricingVideoPerSecond", { value: costPerSecond })}`,
+    );
   }
   const videoExample = formatExamplePricing(pricing.videoExamplePricing, t);
   if (videoExample) {
@@ -389,8 +397,13 @@ export function formatModelCatalogPricingLines(
 }
 
 function formatExamplePricing(
-  example: PreviewModelCatalogPricing['imageExamplePricing'] | PreviewModelCatalogPricing['videoExamplePricing'],
-  t: (key: 'settings.modelDetailPricingExample', options?: { value?: string; description?: string }) => string,
+  example:
+    | PreviewModelCatalogPricing["imageExamplePricing"]
+    | PreviewModelCatalogPricing["videoExamplePricing"],
+  t: (
+    key: "settings.modelDetailPricingExample",
+    options?: { value?: string; description?: string },
+  ) => string,
 ): string | undefined {
   if (!example) {
     return undefined;
@@ -400,21 +413,29 @@ function formatExamplePricing(
   if (!price || !description) {
     return undefined;
   }
-  return t('settings.modelDetailPricingExample', { value: price, description });
+  return t("settings.modelDetailPricingExample", { value: price, description });
 }
 
 function videoDurationPricingRowLabel(
   tier: PreviewModelCatalogVideoDurationPricing,
-  t: (key: 'settings.modelDetailPricingVideoResolutionWithAudio', options?: { resolution?: string }) => string,
+  t: (
+    key: "settings.modelDetailPricingVideoResolutionWithAudio",
+    options?: { resolution?: string },
+  ) => string,
 ): string {
   if (tier.audio === true) {
-    return t('settings.modelDetailPricingVideoResolutionWithAudio', { resolution: tier.resolution });
+    return t("settings.modelDetailPricingVideoResolutionWithAudio", {
+      resolution: tier.resolution,
+    });
   }
   return tier.resolution;
 }
 
-function videoDurationPricingFieldId(index: number, tier: PreviewModelCatalogVideoDurationPricing): string {
-  return `video-duration-${index}-${tier.resolution}${tier.audio === true ? '-audio' : ''}`;
+function videoDurationPricingFieldId(
+  index: number,
+  tier: PreviewModelCatalogVideoDurationPricing,
+): string {
+  return `video-duration-${index}-${tier.resolution}${tier.audio === true ? "-audio" : ""}`;
 }
 
 function formatUsdPerMillionTokens(value: string | undefined): string | undefined {
@@ -447,7 +468,7 @@ function parseUsdAmount(value: string | undefined): number | undefined {
 
 function formatUsd(amount: number): string {
   if (amount === 0) {
-    return '$0';
+    return "$0";
   }
   const abs = Math.abs(amount);
   if (abs >= 1) {

@@ -1,8 +1,8 @@
-import { runAutoApprovalReview } from '../auto-approval/run-review.js';
-import type { ToolAutoReviewInput, ToolAutoReviewResult } from '../auto-approval/types.js';
-import type { LlmTransportConfig } from '../provider-config.js';
-import { buildSpiritAgentCoreHostPrompt } from '../tool-agent.js';
-import { createJsonSchemaTransport } from '../transport-factory.js';
+import { runAutoApprovalReview } from "../auto-approval/run-review.js";
+import type { ToolAutoReviewInput, ToolAutoReviewResult } from "../auto-approval/types.js";
+import type { LlmTransportConfig } from "../provider-config.js";
+import { buildSpiritAgentCoreHostPrompt } from "../tool-agent.js";
+import { createJsonSchemaTransport } from "../transport-factory.js";
 
 /** CLI 无独立 lightweight 配置时复用当前 transport 的 active model。 */
 export function createCliAutoApprovalReviewer(

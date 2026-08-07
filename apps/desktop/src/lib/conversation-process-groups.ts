@@ -1,25 +1,25 @@
 import {
   aggregateProcessToolCounts,
   isProcessGroupExcludedToolName,
-} from '@/lib/process-tool-category';
-import type { ProcessToolCounts } from '@/lib/process-tool-category';
-import type { ConversationMessageSnapshot } from '@/types';
+} from "@/lib/process-tool-category";
+import type { ProcessToolCounts } from "@/lib/process-tool-category";
+import type { ConversationMessageSnapshot } from "@/types";
 
 export type ConversationRenderItem =
-  | { kind: 'message'; messageIndex: number }
+  | { kind: "message"; messageIndex: number }
   | {
-      kind: 'process-group';
+      kind: "process-group";
       groupId: string;
       messageIndices: number[];
       toolCounts: ProcessToolCounts;
     };
 
 function isAssistantBodyTextMessage(message: ConversationMessageSnapshot | undefined): boolean {
-  return Boolean(message?.role === 'assistant' && !message.tool && message.content.trim());
+  return Boolean(message?.role === "assistant" && !message.tool && message.content.trim());
 }
 
 function isProcessEligibleMetaMessage(message: ConversationMessageSnapshot | undefined): boolean {
-  if (!message || message.role !== 'assistant') {
+  if (!message || message.role !== "assistant") {
     return false;
   }
   if (message.content.trim()) {
@@ -33,7 +33,7 @@ function isProcessEligibleMetaMessage(message: ConversationMessageSnapshot | und
 
 function lastUserMessageIndex(messages: readonly ConversationMessageSnapshot[]): number {
   for (let index = messages.length - 1; index >= 0; index -= 1) {
-    if (messages[index]?.role === 'user') {
+    if (messages[index]?.role === "user") {
       return index;
     }
   }
@@ -62,7 +62,7 @@ function hasAssistantBodyTextLaterInTurn(
     if (!candidate) {
       continue;
     }
-    if (candidate.role === 'user') {
+    if (candidate.role === "user") {
       break;
     }
     if (isAssistantBodyTextMessage(candidate)) {
@@ -108,7 +108,7 @@ function nextAssistantBodyIndexInTurn(
 ): number | undefined {
   for (let index = messageIndex + 1; index < messages.length; index += 1) {
     const candidate = messages[index];
-    if (!candidate || candidate.role === 'user') {
+    if (!candidate || candidate.role === "user") {
       break;
     }
     if (isAssistantBodyTextMessage(candidate)) {
@@ -166,7 +166,7 @@ export function buildConversationRenderItems(
       return;
     }
     items.push({
-      kind: 'process-group',
+      kind: "process-group",
       groupId: buildProcessGroupId(scopeKey, runStart),
       messageIndices: [...messageIndices],
       toolCounts: collectToolCountsForIndices(messages, messageIndices),
@@ -180,7 +180,7 @@ export function buildConversationRenderItems(
         pushProcessGroup(pendingAuxIndices, pendingAuxIndices[0]!);
         pendingAuxIndices = [];
       }
-      items.push({ kind: 'message', messageIndex: index });
+      items.push({ kind: "message", messageIndex: index });
       index += 1;
       continue;
     }
@@ -198,7 +198,7 @@ export function buildConversationRenderItems(
     if (!sealed) {
       pendingAuxIndices = [];
       for (const messageIndex of messageIndices) {
-        items.push({ kind: 'message', messageIndex });
+        items.push({ kind: "message", messageIndex });
       }
       continue;
     }
@@ -207,10 +207,10 @@ export function buildConversationRenderItems(
 
     if (auxOnly) {
       if (
-        shouldExposeLoneThinkingAsMessage(messages, messageIndices, runStart)
-        || shouldExposeSandwichedThinkingAsMessage(messages, messageIndices, runStart)
+        shouldExposeLoneThinkingAsMessage(messages, messageIndices, runStart) ||
+        shouldExposeSandwichedThinkingAsMessage(messages, messageIndices, runStart)
       ) {
-        items.push({ kind: 'message', messageIndex: messageIndices[0]! });
+        items.push({ kind: "message", messageIndex: messageIndices[0]! });
       } else {
         pendingAuxIndices.push(...messageIndices);
       }
@@ -222,8 +222,11 @@ export function buildConversationRenderItems(
     pushProcessGroup(combinedIndices, runStart);
   }
 
-  if (pendingAuxIndices.length === 1 && shouldExposeLoneThinkingAsMessage(messages, pendingAuxIndices, pendingAuxIndices[0]!)) {
-    items.push({ kind: 'message', messageIndex: pendingAuxIndices[0]! });
+  if (
+    pendingAuxIndices.length === 1 &&
+    shouldExposeLoneThinkingAsMessage(messages, pendingAuxIndices, pendingAuxIndices[0]!)
+  ) {
+    items.push({ kind: "message", messageIndex: pendingAuxIndices[0]! });
   } else if (pendingAuxIndices.length > 0) {
     pushProcessGroup(pendingAuxIndices, pendingAuxIndices[0]!);
   }
@@ -236,9 +239,7 @@ export function messageIndexInSealedProcessGroup(
   messageIndex: number,
 ): ConversationRenderItem | undefined {
   return renderItems.find(
-    (item) =>
-      item.kind === 'process-group' &&
-      item.messageIndices.includes(messageIndex),
+    (item) => item.kind === "process-group" && item.messageIndices.includes(messageIndex),
   );
 }
 
@@ -258,7 +259,7 @@ export function resolveMessageForRenderSpacing(
   if (!item) {
     return undefined;
   }
-  if (item.kind === 'message') {
+  if (item.kind === "message") {
     return messages[item.messageIndex];
   }
   const lastIndex = item.messageIndices[item.messageIndices.length - 1];

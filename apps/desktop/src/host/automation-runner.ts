@@ -1,5 +1,5 @@
-import { randomUUID } from 'node:crypto';
-import path from 'node:path';
+import { randomUUID } from "node:crypto";
+import path from "node:path";
 
 import {
   buildAutomationTriggerMessage,
@@ -9,31 +9,31 @@ import {
   type AutomationRunTriggerContext,
   type HostAutomationDefinition,
   type HostAutomationRun,
-} from '@spiritagent/host-internal';
+} from "@spiritagent/host-internal";
 import {
   AutomationConversationProjection,
   runAutomationStreamingTurn,
-} from './automation-conversation-projection.js';
+} from "./automation-conversation-projection.js";
 
 import {
   createAutomationRuntime,
   disposeAutomationRuntime,
   type AutomationRuntimeHandle,
-} from './automation-runtime.js';
-import { createDesktopRewindMetadata } from './rewind.js';
-import { buildStoredDesktopSession } from './sessions.js';
-import { modelExistsInGroup } from './model-config-access.js';
-import { modelRefKey } from '@spiritagent/host-internal/config-v2';
+} from "./automation-runtime.js";
+import { createDesktopRewindMetadata } from "./rewind.js";
+import { buildStoredDesktopSession } from "./sessions.js";
+import { modelExistsInGroup } from "./model-config-access.js";
+import { modelRefKey } from "@spiritagent/host-internal/config-v2";
 import {
   chatsDirPath,
   resolveApiKeyForConfigModel,
   saveStoredSession,
   spiritAgentDataDir,
   type DesktopConfigFile,
-} from './storage.js';
-import type { DesktopHostRuntime } from './runtime.js';
+} from "./storage.js";
+import type { DesktopHostRuntime } from "./runtime.js";
 
-export const AUTOMATION_SESSION_FILE_PREFIX = 'chat-automation-';
+export const AUTOMATION_SESSION_FILE_PREFIX = "chat-automation-";
 export const AUTOMATION_RUN_MAX_GUARD_ROUNDS = 200;
 
 export interface RunDesktopAutomationOnceInput {
@@ -69,7 +69,7 @@ export async function runDesktopAutomationOnce(
     id: runId,
     automationId: input.definition.id,
     sessionPath,
-    status: 'running',
+    status: "running",
     startedAtUnixMs,
   });
   deps.onRunUpdated?.(input.definition.id);
@@ -99,7 +99,8 @@ export async function runDesktopAutomationOnce(
 
     runtimeHandle = await createAutomationRuntime(runtimeInput);
     const runtime = runtimeHandle.runtime;
-    const triggerContext = input.triggerContext ?? defaultAutomationRunTriggerContext(input.definition);
+    const triggerContext =
+      input.triggerContext ?? defaultAutomationRunTriggerContext(input.definition);
     const llmUserMessage = buildAutomationTriggerMessage({
       overview: input.definition.overview,
       trigger: input.definition.trigger,
@@ -123,17 +124,13 @@ export async function runDesktopAutomationOnce(
     });
     deps.notifySessionListUpdated?.();
 
-    let result = await runAutomationStreamingTurn(
-      runtime,
-      projection,
-      async () => {
-        await runtime.startUserTurnStreaming(llmUserMessage);
-      },
-    );
+    let result = await runAutomationStreamingTurn(runtime, projection, async () => {
+      await runtime.startUserTurnStreaming(llmUserMessage);
+    });
 
     for (let guard = 0; guard < AUTOMATION_RUN_MAX_GUARD_ROUNDS; guard += 1) {
       if (runtimeHandle.consumeTrustBlocked()) {
-        run = await store.updateRun(input.definition.id, runId, { status: 'blocked' });
+        run = await store.updateRun(input.definition.id, runId, { status: "blocked" });
         await persistAutomationSession(deps, {
           sessionPath,
           definition: input.definition,
@@ -149,18 +146,14 @@ export async function runDesktopAutomationOnce(
         deps.notifySessionListUpdated?.();
         return run;
       }
-      if (result.kind === 'requires-approval') {
-        if (input.definition.approvalLevel === 'full-approval') {
-          result = await runAutomationStreamingTurn(
-            runtime,
-            projection,
-            async () => {
-              await runtime.continuePendingApproval({ kind: 'allow' });
-            },
-          );
+      if (result.kind === "requires-approval") {
+        if (input.definition.approvalLevel === "full-approval") {
+          result = await runAutomationStreamingTurn(runtime, projection, async () => {
+            await runtime.continuePendingApproval({ kind: "allow" });
+          });
           continue;
         }
-        run = await store.updateRun(input.definition.id, runId, { status: 'blocked' });
+        run = await store.updateRun(input.definition.id, runId, { status: "blocked" });
         await persistAutomationSession(deps, {
           sessionPath,
           definition: input.definition,
@@ -176,18 +169,14 @@ export async function runDesktopAutomationOnce(
         deps.notifySessionListUpdated?.();
         return run;
       }
-      if (result.kind === 'requires-questions') {
-        if (input.definition.approvalLevel === 'full-approval') {
-          result = await runAutomationStreamingTurn(
-            runtime,
-            projection,
-            async () => {
-              await runtime.continuePendingQuestions({ status: 'skipped' });
-            },
-          );
+      if (result.kind === "requires-questions") {
+        if (input.definition.approvalLevel === "full-approval") {
+          result = await runAutomationStreamingTurn(runtime, projection, async () => {
+            await runtime.continuePendingQuestions({ status: "skipped" });
+          });
           continue;
         }
-        run = await store.updateRun(input.definition.id, runId, { status: 'blocked' });
+        run = await store.updateRun(input.definition.id, runId, { status: "blocked" });
         await persistAutomationSession(deps, {
           sessionPath,
           definition: input.definition,
@@ -203,13 +192,13 @@ export async function runDesktopAutomationOnce(
         deps.notifySessionListUpdated?.();
         return run;
       }
-      if (result.kind === 'failed') {
+      if (result.kind === "failed") {
         throw new Error(result.error);
       }
       break;
     }
 
-    if (result.kind !== 'completed') {
+    if (result.kind !== "completed") {
       throw new Error(`Automation run did not complete: ${result.kind}`);
     }
 
@@ -226,7 +215,7 @@ export async function runDesktopAutomationOnce(
     });
 
     run = await store.updateRun(input.definition.id, runId, {
-      status: 'completed',
+      status: "completed",
       completedAtUnixMs: Date.now(),
     });
     deps.onRunUpdated?.(input.definition.id);
@@ -252,7 +241,7 @@ export async function runDesktopAutomationOnce(
       }
     }
     run = await store.updateRun(input.definition.id, runId, {
-      status: 'failed',
+      status: "failed",
       completedAtUnixMs: Date.now(),
       error: message,
     });
@@ -279,15 +268,15 @@ async function notifyAutomationSessionPersisted(
 async function persistAutomationSession(
   deps: RunDesktopAutomationOnceDeps,
   input: {
-  sessionPath: string;
-  definition: HostAutomationDefinition;
-  runId: string;
-  runtime: DesktopHostRuntime;
-  projection: AutomationConversationProjection;
-  workspaceRoot: string;
-  gitBranch?: string;
-  sessionDisplayName: string;
-  approvalLevel: HostAutomationDefinition['approvalLevel'];
+    sessionPath: string;
+    definition: HostAutomationDefinition;
+    runId: string;
+    runtime: DesktopHostRuntime;
+    projection: AutomationConversationProjection;
+    workspaceRoot: string;
+    gitBranch?: string;
+    sessionDisplayName: string;
+    approvalLevel: HostAutomationDefinition["approvalLevel"];
   },
 ): Promise<void> {
   const archivePayload = input.projection.buildArchivePayload();
@@ -301,7 +290,7 @@ async function persistAutomationSession(
       subagentSessions: archive.subagentSessions,
       savedAtUnixMs: Date.now(),
       sessionDisplayName: input.sessionDisplayName,
-      sessionTitleSource: 'seed',
+      sessionTitleSource: "seed",
       workspaceRoot: input.workspaceRoot,
       ...(input.gitBranch ? { gitBranch: input.gitBranch } : {}),
       desktopMessageTimeline: timelineSnapshot,
@@ -317,5 +306,5 @@ async function persistAutomationSession(
 
 function formatRunTimestamp(unixMs: number): string {
   const date = new Date(unixMs);
-  return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')} ${String(date.getHours()).padStart(2, '0')}:${String(date.getMinutes()).padStart(2, '0')}`;
+  return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}-${String(date.getDate()).padStart(2, "0")} ${String(date.getHours()).padStart(2, "0")}:${String(date.getMinutes()).padStart(2, "0")}`;
 }

@@ -78,6 +78,7 @@ Scope constraint: exclude workspace-local/internal dependencies resolved via `wo
 ### Apache-2.0
 
 **Used by:**
+
 - @ai-sdk/alibaba 2.0.1
 - @ai-sdk/amazon-bedrock 5.0.1
 - @ai-sdk/anthropic 4.0.0
@@ -120,6 +121,7 @@ limitations under the License.
 ### Apache-2.0
 
 **Used by:**
+
 - @aws/bedrock-token-generator 1.1.0
 
 ```
@@ -305,6 +307,7 @@ Copyright 2024 Amazon.com, Inc. or its affiliates. All Rights Reserved.
 ### Apache-2.0
 
 **Used by:**
+
 - typescript 5.9.3
 
 ```
@@ -312,7 +315,7 @@ Apache License
 
 Version 2.0, January 2004
 
-http://www.apache.org/licenses/ 
+http://www.apache.org/licenses/
 
 TERMS AND CONDITIONS FOR USE, REPRODUCTION, AND DISTRIBUTION
 
@@ -368,6 +371,7 @@ END OF TERMS AND CONDITIONS
 ### BSD-3-Clause
 
 **Used by:**
+
 - license-checker-rseidelsohn 5.0.1
 
 ```
@@ -399,6 +403,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 ### MIT
 
 **Used by:**
+
 - @huggingface/inference 4.13.23
 
 ```
@@ -428,6 +433,7 @@ SOFTWARE.
 ### MIT
 
 **Used by:**
+
 - @modelcontextprotocol/sdk 1.30.0
 
 ```
@@ -457,6 +463,7 @@ SOFTWARE.
 ### MIT
 
 **Used by:**
+
 - @types/node 25.9.3
 
 ```
@@ -486,6 +493,7 @@ SOFTWARE.
 ### MIT
 
 **Used by:**
+
 - tsx 4.23.1
 
 ```
@@ -515,6 +523,7 @@ SOFTWARE.
 ### MIT
 
 **Used by:**
+
 - undici 7.28.0
 
 ```

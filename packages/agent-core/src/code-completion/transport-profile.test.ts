@@ -1,305 +1,316 @@
-import assert from 'node:assert/strict';
-import test from 'node:test';
+import assert from "node:assert/strict";
+import test from "node:test";
 
 import {
   applyCodeCompletionTransportProfile,
   isCodeCompletionTransportProfile,
-} from './transport-profile.js';
-import type { AnthropicTransportConfig } from '../anthropic/anthropic-compat.js';
-import type { BedrockTransportConfig } from '../bedrock/bedrock-compat.js';
-import { buildBedrockProviderOptions } from '../bedrock/bedrock-compat.js';
-import type { OpenAiTransportConfig } from '../openai/openai-compat.js';
-import type { OpenResponsesTransportConfig } from '../open-responses/responses-compat.js';
-import { openAiVendorChatCompletionBodyExtras } from '../openai/openai-compat.js';
+} from "./transport-profile.js";
+import type { AnthropicTransportConfig } from "../anthropic/anthropic-compat.js";
+import type { BedrockTransportConfig } from "../bedrock/bedrock-compat.js";
+import { buildBedrockProviderOptions } from "../bedrock/bedrock-compat.js";
+import type { OpenAiTransportConfig } from "../openai/openai-compat.js";
+import type { OpenResponsesTransportConfig } from "../open-responses/responses-compat.js";
+import { openAiVendorChatCompletionBodyExtras } from "../openai/openai-compat.js";
 
-test('isCodeCompletionTransportProfile matches code-completion only', () => {
-  assert.equal(isCodeCompletionTransportProfile({ transportRequestProfile: 'code-completion' }), true);
-  assert.equal(isCodeCompletionTransportProfile({ transportRequestProfile: 'agent' }), false);
+test("isCodeCompletionTransportProfile matches code-completion only", () => {
+  assert.equal(
+    isCodeCompletionTransportProfile({ transportRequestProfile: "code-completion" }),
+    true,
+  );
+  assert.equal(isCodeCompletionTransportProfile({ transportRequestProfile: "agent" }), false);
   assert.equal(isCodeCompletionTransportProfile({}), false);
 });
 
-test('applyCodeCompletionTransportProfile disables DeepSeek thinking', () => {
+test("applyCodeCompletionTransportProfile disables DeepSeek thinking", () => {
   const input: OpenAiTransportConfig = {
-    apiKey: 'k',
-    model: 'deepseek-v4-flash',
-    llmVendor: 'deepseek',
-    reasoningEffort: 'high',
+    apiKey: "k",
+    model: "deepseek-v4-flash",
+    llmVendor: "deepseek",
+    reasoningEffort: "high",
   };
   const result = applyCodeCompletionTransportProfile(input);
-  assert.equal(result.transportRequestProfile, 'code-completion');
-  assert.equal((result as OpenAiTransportConfig).reasoningEffort, 'default');
+  assert.equal(result.transportRequestProfile, "code-completion");
+  assert.equal((result as OpenAiTransportConfig).reasoningEffort, "default");
   assert.equal((result as OpenAiTransportConfig).vendorExtendedThinking, false);
 });
 
-test('applyCodeCompletionTransportProfile disables Moonshot thinking', () => {
+test("applyCodeCompletionTransportProfile disables Moonshot thinking", () => {
   const input: OpenAiTransportConfig = {
-    apiKey: 'k',
-    model: 'kimi-k2.5',
-    llmVendor: 'moonshot-ai',
-    reasoningEffort: 'high',
+    apiKey: "k",
+    model: "kimi-k2.5",
+    llmVendor: "moonshot-ai",
+    reasoningEffort: "high",
   };
   const result = applyCodeCompletionTransportProfile(input);
-  assert.equal(result.transportRequestProfile, 'code-completion');
-  assert.equal((result as OpenAiTransportConfig).reasoningEffort, 'default');
+  assert.equal(result.transportRequestProfile, "code-completion");
+  assert.equal((result as OpenAiTransportConfig).reasoningEffort, "default");
   assert.equal((result as OpenAiTransportConfig).vendorExtendedThinking, false);
 });
 
-test('applyCodeCompletionTransportProfile disables Meituan thinking when supportsThinkingSwitch', () => {
+test("applyCodeCompletionTransportProfile disables Meituan thinking when supportsThinkingSwitch", () => {
   const input: OpenAiTransportConfig = {
-    apiKey: 'k',
-    model: 'LongCat-2.0',
-    llmVendor: 'meituan',
+    apiKey: "k",
+    model: "LongCat-2.0",
+    llmVendor: "meituan",
     supportsThinkingSwitch: true,
-    reasoningEffort: 'medium',
+    reasoningEffort: "medium",
   };
   const result = applyCodeCompletionTransportProfile(input);
-  assert.equal(result.transportRequestProfile, 'code-completion');
-  assert.equal((result as OpenAiTransportConfig).reasoningEffort, 'default');
+  assert.equal(result.transportRequestProfile, "code-completion");
+  assert.equal((result as OpenAiTransportConfig).reasoningEffort, "default");
   assert.equal((result as OpenAiTransportConfig).vendorExtendedThinking, false);
 });
 
-test('applyCodeCompletionTransportProfile leaves Meituan without supportsThinkingSwitch unchanged', () => {
+test("applyCodeCompletionTransportProfile leaves Meituan without supportsThinkingSwitch unchanged", () => {
   const input: OpenAiTransportConfig = {
-    apiKey: 'k',
-    model: 'LongCat-Vision',
-    llmVendor: 'meituan',
-    reasoningEffort: 'medium',
+    apiKey: "k",
+    model: "LongCat-Vision",
+    llmVendor: "meituan",
+    reasoningEffort: "medium",
   };
   const result = applyCodeCompletionTransportProfile(input);
-  assert.equal(result.transportRequestProfile, 'code-completion');
-  assert.equal((result as OpenAiTransportConfig).reasoningEffort, 'medium');
+  assert.equal(result.transportRequestProfile, "code-completion");
+  assert.equal((result as OpenAiTransportConfig).reasoningEffort, "medium");
   assert.equal((result as OpenAiTransportConfig).vendorExtendedThinking, undefined);
 });
 
-test('applyCodeCompletionTransportProfile disables OpenAI reasoning on openai-compatible transport', () => {
+test("applyCodeCompletionTransportProfile disables OpenAI reasoning on openai-compatible transport", () => {
   const input: OpenAiTransportConfig = {
-    apiKey: 'k',
-    model: 'gpt-5',
-    llmVendor: 'openai',
-    reasoningEffort: 'medium',
+    apiKey: "k",
+    model: "gpt-5",
+    llmVendor: "openai",
+    reasoningEffort: "medium",
   };
   const result = applyCodeCompletionTransportProfile(input);
-  assert.equal(result.transportRequestProfile, 'code-completion');
-  assert.equal((result as OpenAiTransportConfig).reasoningEffort, 'none');
+  assert.equal(result.transportRequestProfile, "code-completion");
+  assert.equal((result as OpenAiTransportConfig).reasoningEffort, "none");
 });
 
-test('applyCodeCompletionTransportProfile disables Google Gemini thinking on openai-compatible transport', () => {
+test("applyCodeCompletionTransportProfile disables Google Gemini thinking on openai-compatible transport", () => {
   const input: OpenAiTransportConfig = {
-    apiKey: 'k',
-    model: 'gemini-2.5-flash',
-    llmVendor: 'google',
-    reasoningEffort: 'high',
+    apiKey: "k",
+    model: "gemini-2.5-flash",
+    llmVendor: "google",
+    reasoningEffort: "high",
   };
   const result = applyCodeCompletionTransportProfile(input);
-  assert.equal(result.transportRequestProfile, 'code-completion');
-  assert.equal((result as OpenAiTransportConfig).reasoningEffort, 'none');
+  assert.equal(result.transportRequestProfile, "code-completion");
+  assert.equal((result as OpenAiTransportConfig).reasoningEffort, "none");
 });
 
-test('applyCodeCompletionTransportProfile disables Google Vertex Gemini thinking on openai-compatible transport', () => {
+test("applyCodeCompletionTransportProfile disables Google Vertex Gemini thinking on openai-compatible transport", () => {
   const input: OpenAiTransportConfig = {
-    apiKey: 'k',
-    model: 'gemini-2.5-flash',
-    llmVendor: 'google-vertex-ai',
-    reasoningEffort: 'high',
+    apiKey: "k",
+    model: "gemini-2.5-flash",
+    llmVendor: "google-vertex-ai",
+    reasoningEffort: "high",
   };
   const result = applyCodeCompletionTransportProfile(input);
-  assert.equal(result.transportRequestProfile, 'code-completion');
-  assert.equal((result as OpenAiTransportConfig).reasoningEffort, 'none');
+  assert.equal(result.transportRequestProfile, "code-completion");
+  assert.equal((result as OpenAiTransportConfig).reasoningEffort, "none");
 });
 
-test('applyCodeCompletionTransportProfile disables xAI reasoning on openai-compatible transport', () => {
+test("applyCodeCompletionTransportProfile disables xAI reasoning on openai-compatible transport", () => {
   const input: OpenAiTransportConfig = {
-    apiKey: 'k',
-    model: 'grok-4.3',
-    llmVendor: 'xai',
-    reasoningEffort: 'high',
+    apiKey: "k",
+    model: "grok-4.3",
+    llmVendor: "xai",
+    reasoningEffort: "high",
   };
   const result = applyCodeCompletionTransportProfile(input);
-  assert.equal(result.transportRequestProfile, 'code-completion');
-  assert.equal((result as OpenAiTransportConfig).reasoningEffort, 'none');
+  assert.equal(result.transportRequestProfile, "code-completion");
+  assert.equal((result as OpenAiTransportConfig).reasoningEffort, "none");
 });
 
-test('applyCodeCompletionTransportProfile leaves unrelated openai-compatible vendors unchanged except profile tag', () => {
+test("applyCodeCompletionTransportProfile leaves unrelated openai-compatible vendors unchanged except profile tag", () => {
   const input: OpenAiTransportConfig = {
-    apiKey: 'k',
-    model: 'Qwen/Qwen3-8B',
-    llmVendor: 'siliconflow',
-    reasoningEffort: 'medium',
+    apiKey: "k",
+    model: "Qwen/Qwen3-8B",
+    llmVendor: "siliconflow",
+    reasoningEffort: "medium",
   };
   const result = applyCodeCompletionTransportProfile(input);
-  assert.equal(result.transportRequestProfile, 'code-completion');
+  assert.equal(result.transportRequestProfile, "code-completion");
   assert.equal((result as OpenAiTransportConfig).vendorExtendedThinking, undefined);
-  assert.equal((result as OpenAiTransportConfig).reasoningEffort, 'medium');
+  assert.equal((result as OpenAiTransportConfig).reasoningEffort, "medium");
 });
 
-test('applyCodeCompletionTransportProfile disables custom vendor reasoning on openai-compatible transport', () => {
+test("applyCodeCompletionTransportProfile disables custom vendor reasoning on openai-compatible transport", () => {
   const input: OpenAiTransportConfig = {
-    apiKey: 'k',
-    model: 'local-model',
-    llmVendor: 'custom',
-    reasoningEffort: 'high',
+    apiKey: "k",
+    model: "local-model",
+    llmVendor: "custom",
+    reasoningEffort: "high",
   };
   const result = applyCodeCompletionTransportProfile(input);
-  assert.equal(result.transportRequestProfile, 'code-completion');
-  assert.equal((result as OpenAiTransportConfig).reasoningEffort, 'none');
+  assert.equal(result.transportRequestProfile, "code-completion");
+  assert.equal((result as OpenAiTransportConfig).reasoningEffort, "none");
 });
 
-test('applyCodeCompletionTransportProfile disables OpenAI reasoning on open-responses transport', () => {
+test("applyCodeCompletionTransportProfile disables OpenAI reasoning on open-responses transport", () => {
   const input: OpenResponsesTransportConfig = {
-    transportKind: 'open-responses',
-    apiKey: 'k',
-    model: 'gpt-5',
-    llmVendor: 'openai',
-    reasoningEffort: 'high',
-    reasoningSummary: 'detailed',
+    transportKind: "open-responses",
+    apiKey: "k",
+    model: "gpt-5",
+    llmVendor: "openai",
+    reasoningEffort: "high",
+    reasoningSummary: "detailed",
   };
   const result = applyCodeCompletionTransportProfile(input);
-  assert.equal(result.transportRequestProfile, 'code-completion');
-  assert.equal((result as OpenResponsesTransportConfig).reasoningEffort, 'none');
-  assert.equal((result as OpenResponsesTransportConfig).reasoningSummary, 'off');
+  assert.equal(result.transportRequestProfile, "code-completion");
+  assert.equal((result as OpenResponsesTransportConfig).reasoningEffort, "none");
+  assert.equal((result as OpenResponsesTransportConfig).reasoningSummary, "off");
 });
 
-test('applyCodeCompletionTransportProfile disables xAI reasoning on open-responses transport', () => {
+test("applyCodeCompletionTransportProfile disables xAI reasoning on open-responses transport", () => {
   const input: OpenResponsesTransportConfig = {
-    transportKind: 'open-responses',
-    apiKey: 'k',
-    model: 'grok-4',
-    llmVendor: 'xai',
-    reasoningEffort: 'high',
+    transportKind: "open-responses",
+    apiKey: "k",
+    model: "grok-4",
+    llmVendor: "xai",
+    reasoningEffort: "high",
   };
   const result = applyCodeCompletionTransportProfile(input);
-  assert.equal(result.transportRequestProfile, 'code-completion');
-  assert.equal((result as OpenResponsesTransportConfig).reasoningEffort, 'none');
-  assert.equal((result as OpenResponsesTransportConfig).reasoningSummary, 'off');
+  assert.equal(result.transportRequestProfile, "code-completion");
+  assert.equal((result as OpenResponsesTransportConfig).reasoningEffort, "none");
+  assert.equal((result as OpenResponsesTransportConfig).reasoningSummary, "off");
 });
 
-test('applyCodeCompletionTransportProfile disables OpenRouter Claude reasoning effort none', () => {
+test("applyCodeCompletionTransportProfile disables OpenRouter Claude reasoning effort none", () => {
   const input: OpenAiTransportConfig = {
-    apiKey: 'k',
-    model: 'anthropic/claude-sonnet-4.6',
-    llmVendor: 'openrouter',
-    reasoningEffort: 'high',
+    apiKey: "k",
+    model: "anthropic/claude-sonnet-4.6",
+    llmVendor: "openrouter",
+    reasoningEffort: "high",
   };
   const result = applyCodeCompletionTransportProfile(input);
-  assert.equal((result as OpenAiTransportConfig).reasoningEffort, 'none');
-  assert.deepEqual(
-    openAiVendorChatCompletionBodyExtras(result as OpenAiTransportConfig),
-    { reasoning: { effort: 'none' } },
-  );
+  assert.equal((result as OpenAiTransportConfig).reasoningEffort, "none");
+  assert.deepEqual(openAiVendorChatCompletionBodyExtras(result as OpenAiTransportConfig), {
+    reasoning: { effort: "none" },
+  });
 });
 
-test('applyCodeCompletionTransportProfile disables OpenRouter non-Claude reasoning', () => {
+test("applyCodeCompletionTransportProfile disables OpenRouter non-Claude reasoning", () => {
   const input: OpenAiTransportConfig = {
-    apiKey: 'k',
-    model: 'openai/gpt-4o',
-    llmVendor: 'openrouter',
-    reasoningEffort: 'medium',
+    apiKey: "k",
+    model: "openai/gpt-4o",
+    llmVendor: "openrouter",
+    reasoningEffort: "medium",
   };
   const result = applyCodeCompletionTransportProfile(input);
-  assert.equal((result as OpenAiTransportConfig).reasoningEffort, 'none');
+  assert.equal((result as OpenAiTransportConfig).reasoningEffort, "none");
   assert.deepEqual(openAiVendorChatCompletionBodyExtras(result as OpenAiTransportConfig), {});
 });
 
-test('applyCodeCompletionTransportProfile disables Azure OpenAI reasoning on open-responses transport', () => {
+test("applyCodeCompletionTransportProfile disables Azure OpenAI reasoning on open-responses transport", () => {
   const input: OpenResponsesTransportConfig = {
-    transportKind: 'open-responses',
-    apiKey: 'k',
-    model: 'gpt-5',
-    llmVendor: 'azure',
-    responsesProvider: 'azure',
-    reasoningEffort: 'high',
-    reasoningSummary: 'detailed',
+    transportKind: "open-responses",
+    apiKey: "k",
+    model: "gpt-5",
+    llmVendor: "azure",
+    responsesProvider: "azure",
+    reasoningEffort: "high",
+    reasoningSummary: "detailed",
   };
   const result = applyCodeCompletionTransportProfile(input);
-  assert.equal((result as OpenResponsesTransportConfig).reasoningEffort, 'none');
-  assert.equal((result as OpenResponsesTransportConfig).reasoningSummary, 'off');
+  assert.equal((result as OpenResponsesTransportConfig).reasoningEffort, "none");
+  assert.equal((result as OpenResponsesTransportConfig).reasoningSummary, "off");
 });
 
-test('applyCodeCompletionTransportProfile disables Gateway reasoning on open-responses transport', () => {
+test("applyCodeCompletionTransportProfile disables Gateway reasoning on open-responses transport", () => {
   const input: OpenResponsesTransportConfig = {
-    transportKind: 'open-responses',
-    apiKey: 'k',
-    model: 'openai/gpt-5',
-    llmVendor: 'vercel-ai-gateway',
-    reasoningEffort: 'high',
-    reasoningSummary: 'detailed',
+    transportKind: "open-responses",
+    apiKey: "k",
+    model: "openai/gpt-5",
+    llmVendor: "vercel-ai-gateway",
+    reasoningEffort: "high",
+    reasoningSummary: "detailed",
   };
   const result = applyCodeCompletionTransportProfile(input);
-  assert.equal((result as OpenResponsesTransportConfig).reasoningEffort, 'none');
-  assert.equal((result as OpenResponsesTransportConfig).reasoningSummary, 'off');
+  assert.equal((result as OpenResponsesTransportConfig).reasoningEffort, "none");
+  assert.equal((result as OpenResponsesTransportConfig).reasoningSummary, "off");
 });
 
-test('applyCodeCompletionTransportProfile disables Anthropic extended thinking', () => {
+test("applyCodeCompletionTransportProfile disables Anthropic extended thinking", () => {
   const input: AnthropicTransportConfig = {
-    transportKind: 'anthropic',
-    apiKey: 'k',
-    model: 'claude-sonnet-4-6',
-    effort: 'high',
+    transportKind: "anthropic",
+    apiKey: "k",
+    model: "claude-sonnet-4-6",
+    effort: "high",
   };
   const result = applyCodeCompletionTransportProfile(input);
-  assert.equal(result.transportRequestProfile, 'code-completion');
-  assert.deepEqual((result as AnthropicTransportConfig).thinking, { type: 'disabled' });
+  assert.equal(result.transportRequestProfile, "code-completion");
+  assert.deepEqual((result as AnthropicTransportConfig).thinking, { type: "disabled" });
 });
 
-test('applyCodeCompletionTransportProfile disables Meituan anthropic thinking via vendorExtendedThinking', () => {
+test("applyCodeCompletionTransportProfile disables Meituan anthropic thinking via vendorExtendedThinking", () => {
   const input: AnthropicTransportConfig = {
-    transportKind: 'anthropic',
-    apiKey: 'k',
-    model: 'LongCat-2.0',
-    llmVendor: 'meituan',
+    transportKind: "anthropic",
+    apiKey: "k",
+    model: "LongCat-2.0",
+    llmVendor: "meituan",
     supportsThinkingSwitch: true,
   };
   const result = applyCodeCompletionTransportProfile(input);
-  assert.equal(result.transportRequestProfile, 'code-completion');
+  assert.equal(result.transportRequestProfile, "code-completion");
   assert.equal((result as AnthropicTransportConfig).vendorExtendedThinking, false);
   assert.equal((result as AnthropicTransportConfig).thinking, undefined);
 });
 
-test('applyCodeCompletionTransportProfile disables MiniMax anthropic thinking via vendorExtendedThinking', () => {
+test("applyCodeCompletionTransportProfile disables MiniMax anthropic thinking via vendorExtendedThinking", () => {
   const input: AnthropicTransportConfig = {
-    transportKind: 'anthropic',
-    apiKey: 'k',
-    model: 'MiniMax-M3',
-    llmVendor: 'minimax',
+    transportKind: "anthropic",
+    apiKey: "k",
+    model: "MiniMax-M3",
+    llmVendor: "minimax",
   };
   const result = applyCodeCompletionTransportProfile(input);
-  assert.equal(result.transportRequestProfile, 'code-completion');
+  assert.equal(result.transportRequestProfile, "code-completion");
   assert.equal((result as AnthropicTransportConfig).vendorExtendedThinking, false);
   assert.equal((result as AnthropicTransportConfig).thinking, undefined);
 });
 
-test('applyCodeCompletionTransportProfile disables Bedrock reasoning on code completion', () => {
+test("applyCodeCompletionTransportProfile disables Bedrock reasoning on code completion", () => {
   const input: BedrockTransportConfig = {
-    transportKind: 'bedrock',
-    model: 'anthropic.claude-sonnet-4-6',
-    region: 'us-east-1',
-    reasoningEffort: 'high',
+    transportKind: "bedrock",
+    model: "anthropic.claude-sonnet-4-6",
+    region: "us-east-1",
+    reasoningEffort: "high",
   };
   const result = applyCodeCompletionTransportProfile(input) as BedrockTransportConfig;
-  assert.equal(result.transportRequestProfile, 'code-completion');
-  assert.equal(result.reasoningEffort, 'none');
+  assert.equal(result.transportRequestProfile, "code-completion");
+  assert.equal(result.reasoningEffort, "none");
   assert.deepEqual(buildBedrockProviderOptions(result), {});
 });
 
-test('applyCodeCompletionTransportProfile tags anthropic, open-responses, and bedrock transports', () => {
+test("applyCodeCompletionTransportProfile tags anthropic, open-responses, and bedrock transports", () => {
   const anthropic: AnthropicTransportConfig = {
-    transportKind: 'anthropic',
-    apiKey: 'k',
-    model: 'claude-sonnet-4-6',
+    transportKind: "anthropic",
+    apiKey: "k",
+    model: "claude-sonnet-4-6",
   };
   const openResponses: OpenResponsesTransportConfig = {
-    transportKind: 'open-responses',
-    apiKey: 'k',
-    model: 'gpt-5',
-    llmVendor: 'xai',
+    transportKind: "open-responses",
+    apiKey: "k",
+    model: "gpt-5",
+    llmVendor: "xai",
   };
   const bedrock: BedrockTransportConfig = {
-    transportKind: 'bedrock',
-    model: 'anthropic.claude-sonnet-4-6',
-    region: 'us-east-1',
+    transportKind: "bedrock",
+    model: "anthropic.claude-sonnet-4-6",
+    region: "us-east-1",
   };
 
-  assert.equal(applyCodeCompletionTransportProfile(anthropic).transportRequestProfile, 'code-completion');
-  assert.equal(applyCodeCompletionTransportProfile(openResponses).transportRequestProfile, 'code-completion');
-  assert.equal(applyCodeCompletionTransportProfile(bedrock).transportRequestProfile, 'code-completion');
+  assert.equal(
+    applyCodeCompletionTransportProfile(anthropic).transportRequestProfile,
+    "code-completion",
+  );
+  assert.equal(
+    applyCodeCompletionTransportProfile(openResponses).transportRequestProfile,
+    "code-completion",
+  );
+  assert.equal(
+    applyCodeCompletionTransportProfile(bedrock).transportRequestProfile,
+    "code-completion",
+  );
 });

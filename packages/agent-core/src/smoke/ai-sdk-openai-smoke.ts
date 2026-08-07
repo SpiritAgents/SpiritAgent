@@ -1,1 +1,1 @@
-import './contract/ai-sdk-openai-smoke.js';
+import "./contract/ai-sdk-openai-smoke.js";

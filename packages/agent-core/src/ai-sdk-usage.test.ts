@@ -1,9 +1,9 @@
-import assert from 'node:assert/strict';
-import test from 'node:test';
+import assert from "node:assert/strict";
+import test from "node:test";
 
-import { readAiSdkUsage } from './ai-sdk-usage.js';
+import { readAiSdkUsage } from "./ai-sdk-usage.js";
 
-test('readAiSdkUsage normalizes AI SDK camelCase usage', async () => {
+test("readAiSdkUsage normalizes AI SDK camelCase usage", async () => {
   const usage = await readAiSdkUsage({
     usage: {
       inputTokens: 1200,
@@ -23,7 +23,7 @@ test('readAiSdkUsage normalizes AI SDK camelCase usage', async () => {
   });
 });
 
-test('readAiSdkUsage normalizes AI SDK 7 nested token details', async () => {
+test("readAiSdkUsage normalizes AI SDK 7 nested token details", async () => {
   const usage = await readAiSdkUsage({
     usage: {
       inputTokens: 100,
@@ -43,7 +43,7 @@ test('readAiSdkUsage normalizes AI SDK 7 nested token details', async () => {
   });
 });
 
-test('readAiSdkUsage normalizes provider snake_case usage', async () => {
+test("readAiSdkUsage normalizes provider snake_case usage", async () => {
   const usage = await readAiSdkUsage({
     usage: Promise.resolve({
       prompt_tokens: 900,
@@ -59,7 +59,7 @@ test('readAiSdkUsage normalizes provider snake_case usage', async () => {
   });
 });
 
-test('readAiSdkUsage prefers usage over deprecated totalUsage', async () => {
+test("readAiSdkUsage prefers usage over deprecated totalUsage", async () => {
   const usage = await readAiSdkUsage({
     usage: { inputTokens: 42, outputTokens: 7, totalTokens: 49 },
     totalUsage: { inputTokens: 1, outputTokens: 1, totalTokens: 2 },
@@ -72,6 +72,6 @@ test('readAiSdkUsage prefers usage over deprecated totalUsage', async () => {
   });
 });
 
-test('readAiSdkUsage returns undefined when usage is missing', async () => {
+test("readAiSdkUsage returns undefined when usage is missing", async () => {
   assert.equal(await readAiSdkUsage({}), undefined);
 });

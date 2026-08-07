@@ -6,16 +6,14 @@ import {
 import i18n from "@/lib/i18n";
 import type { ToolBlockSnapshot } from "@/types";
 
-export function parseShellToolResult(
-  outputExcerpt: string | undefined,
-): ShellToolResult | null {
+export function parseShellToolResult(outputExcerpt: string | undefined): ShellToolResult | null {
   if (!outputExcerpt?.trim()) {
     return null;
   }
   return parseShellToolResultPayload(outputExcerpt);
 }
 
-const COMMAND_LINE_PREFIX = i18n.t('tool.commandPrefix');
+const COMMAND_LINE_PREFIX = i18n.t("tool.commandPrefix");
 
 /** 展开区优先用完整 command（argsExcerpt / detailLines），摘要 headlineDetail 仅作回退。 */
 export function resolveShellToolExpandedCommand(
@@ -84,7 +82,7 @@ export function shellHasExpandableContent(
   tool: Pick<ToolBlockSnapshot, "argsExcerpt" | "detailLines" | "outputExcerpt" | "phase">,
   command: string | undefined,
 ): boolean {
-  if (tool.phase === 'running' || tool.phase === 'preview') {
+  if (tool.phase === "running" || tool.phase === "preview") {
     return true;
   }
   if (tool.outputExcerpt?.trim()) {

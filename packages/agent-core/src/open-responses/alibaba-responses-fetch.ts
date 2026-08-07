@@ -1,11 +1,11 @@
-import { getLlmFetch } from '../llm-fetch.js';
-import type { JsonObject, JsonValue } from '../ports.js';
-import { isJsonObject } from '../tool-agent.js';
+import { getLlmFetch } from "../llm-fetch.js";
+import type { JsonObject, JsonValue } from "../ports.js";
+import { isJsonObject } from "../tool-agent.js";
 import {
   mergeAlibabaResponsesBuiltInTools,
   shouldUseAlibabaResponsesBuiltInTools,
-} from './alibaba-built-in-tools.js';
-import type { OpenResponsesTransportConfig } from './responses-compat.js';
+} from "./alibaba-built-in-tools.js";
+import type { OpenResponsesTransportConfig } from "./responses-compat.js";
 
 type FetchFn = typeof fetch;
 
@@ -23,10 +23,8 @@ export function createAlibabaResponsesAwareFetch(
   };
 }
 
-function patchAlibabaResponsesRequestInit(
-  init: RequestInit | undefined,
-): RequestInit | undefined {
-  if (!init?.body || typeof init.body !== 'string') {
+function patchAlibabaResponsesRequestInit(init: RequestInit | undefined): RequestInit | undefined {
+  if (!init?.body || typeof init.body !== "string") {
     return init;
   }
 

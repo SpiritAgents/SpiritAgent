@@ -1,5 +1,5 @@
-import assert from 'node:assert/strict';
-import test from 'node:test';
+import assert from "node:assert/strict";
+import test from "node:test";
 
 import {
   resolveEffectiveEmptySession,
@@ -7,18 +7,18 @@ import {
   shouldHideStaleConversationMessages,
   shouldMarkConversationSnapshotStale,
   shouldSuppressStaleConversation,
-} from '../../src/lib/conversation-surface-stale.ts';
+} from "../../src/lib/conversation-surface-stale.ts";
 
-test('shouldMarkConversationSnapshotStale marks non-conversation surfaces only', () => {
-  assert.equal(shouldMarkConversationSnapshotStale('conversation'), false);
-  assert.equal(shouldMarkConversationSnapshotStale('marketplace'), true);
-  assert.equal(shouldMarkConversationSnapshotStale('settings'), true);
+test("shouldMarkConversationSnapshotStale marks non-conversation surfaces only", () => {
+  assert.equal(shouldMarkConversationSnapshotStale("conversation"), false);
+  assert.equal(shouldMarkConversationSnapshotStale("marketplace"), true);
+  assert.equal(shouldMarkConversationSnapshotStale("settings"), true);
 });
 
-test('shouldClearConversationSnapshotStale clears on settled conversation surface', () => {
+test("shouldClearConversationSnapshotStale clears on settled conversation surface", () => {
   assert.equal(
     shouldClearConversationSnapshotStale({
-      activeSurface: 'marketplace',
+      activeSurface: "marketplace",
       sessionNavigationBusy: false,
       newSessionBusy: false,
     }),
@@ -26,7 +26,7 @@ test('shouldClearConversationSnapshotStale clears on settled conversation surfac
   );
   assert.equal(
     shouldClearConversationSnapshotStale({
-      activeSurface: 'conversation',
+      activeSurface: "conversation",
       sessionNavigationBusy: true,
       newSessionBusy: false,
     }),
@@ -34,7 +34,7 @@ test('shouldClearConversationSnapshotStale clears on settled conversation surfac
   );
   assert.equal(
     shouldClearConversationSnapshotStale({
-      activeSurface: 'conversation',
+      activeSurface: "conversation",
       sessionNavigationBusy: false,
       newSessionBusy: false,
     }),
@@ -42,10 +42,10 @@ test('shouldClearConversationSnapshotStale clears on settled conversation surfac
   );
 });
 
-test('shouldSuppressStaleConversation suppresses only stale in-flight conversation nav', () => {
+test("shouldSuppressStaleConversation suppresses only stale in-flight conversation nav", () => {
   const base = {
     conversationSnapshotStale: true,
-    activeSurface: 'conversation',
+    activeSurface: "conversation",
     sessionNavigationBusy: false,
     newSessionBusy: true,
   };
@@ -54,10 +54,7 @@ test('shouldSuppressStaleConversation suppresses only stale in-flight conversati
     shouldSuppressStaleConversation({ ...base, conversationSnapshotStale: false }),
     false,
   );
-  assert.equal(
-    shouldSuppressStaleConversation({ ...base, activeSurface: 'marketplace' }),
-    false,
-  );
+  assert.equal(shouldSuppressStaleConversation({ ...base, activeSurface: "marketplace" }), false);
   assert.equal(
     shouldSuppressStaleConversation({
       ...base,
@@ -68,7 +65,7 @@ test('shouldSuppressStaleConversation suppresses only stale in-flight conversati
   );
 });
 
-test('resolveEffectiveEmptySession treats pending reset as empty even with stale messages', () => {
+test("resolveEffectiveEmptySession treats pending reset as empty even with stale messages", () => {
   assert.equal(
     resolveEffectiveEmptySession({
       sessionMessageCount: 4,
@@ -111,7 +108,7 @@ test('resolveEffectiveEmptySession treats pending reset as empty even with stale
   );
 });
 
-test('shouldHideStaleConversationMessages hides list while opening another session', () => {
+test("shouldHideStaleConversationMessages hides list while opening another session", () => {
   assert.equal(
     shouldHideStaleConversationMessages({
       suppressStaleConversation: true,

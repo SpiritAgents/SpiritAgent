@@ -52,31 +52,25 @@ export function WorkLocationMenu({
           <DropdownMenuTrigger asChild>
             <button
               type="button"
-              aria-label={t('composer.selectWorkLocation')}
+              aria-label={t("composer.selectWorkLocation")}
               disabled={disabled}
               className={cn(
                 "inline-flex h-7 max-w-full items-center gap-1.5 rounded-md border-0 bg-transparent px-1 text-left outline-none hover:bg-muted/50 focus-visible:ring-2 focus-visible:ring-ring/50 disabled:pointer-events-none disabled:opacity-50",
-                    DESKTOP_MENU_TRIGGER_TEXT_CLASS,
+                DESKTOP_MENU_TRIGGER_TEXT_CLASS,
                 "text-muted-foreground",
               )}
             >
               <TriggerIcon className="size-3.5 shrink-0 text-muted-foreground/80" aria-hidden />
-              <span className="min-w-0 truncate">
-                {label}
-              </span>
+              <span className="min-w-0 truncate">{label}</span>
               <ChevronDown className="size-3 shrink-0 text-muted-foreground/80" aria-hidden />
             </button>
           </DropdownMenuTrigger>
         </TooltipTrigger>
         <TooltipContent side="top" sideOffset={4}>
-          {t('composer.selectWorkLocation')}
+          {t("composer.selectWorkLocation")}
         </TooltipContent>
       </Tooltip>
-      <DropdownMenuContent
-        align="start"
-        side="top"
-        className="min-w-[9.5rem] p-0"
-      >
+      <DropdownMenuContent align="start" side="top" className="min-w-[9.5rem] p-0">
         <div className={DESKTOP_OVERLAY_SHORT_LIST_PADDING}>
           {WORK_LOCATION_OPTIONS.map((option) => {
             const Icon = WORK_LOCATION_ICONS[option];
@@ -84,10 +78,7 @@ export function WorkLocationMenu({
               <DropdownMenuItem
                 key={option}
                 onSelect={() => onWorkLocationChange(option)}
-                className={cn(
-                  "flex items-center gap-2",
-                  workLocation === option && "bg-accent/40",
-                )}
+                className={cn("flex items-center gap-2", workLocation === option && "bg-accent/40")}
               >
                 <Icon className="size-3.5 shrink-0 text-muted-foreground" aria-hidden />
                 <span className="min-w-0 truncate">{workLocationLabel(option)}</span>

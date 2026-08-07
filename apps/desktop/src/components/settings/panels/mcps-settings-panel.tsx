@@ -16,13 +16,6 @@ import {
 } from "@/components/ui/dialog";
 import { DesktopFormInput, DesktopFormTextarea } from "@/components/ui/desktop-form-field";
 import { Label } from "@/components/ui/label";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
 import { cn } from "@/lib/utils";
 import i18n from "@/lib/i18n";
 import {
@@ -30,29 +23,22 @@ import {
   DESKTOP_LIST_ITEM_PRIMARY_CLASS,
   DESKTOP_PAGE_TITLE_CLASS,
 } from "@/lib/desktop-typography";
-import type {
-  DeleteMcpServerRequest,
-  DesktopMcpScope,
-  DesktopMcpServerListItem,
-  DesktopMcpTransportType,
-} from "@/types";
+import type { DeleteMcpServerRequest, DesktopMcpScope, DesktopMcpTransportType } from "@/types";
 
 function mcpTransportTypeLabel(type: DesktopMcpTransportType): string {
   return type === "http" ? "HTTP" : "Stdio";
 }
 
 function mcpMetadataLabel(type: DesktopMcpTransportType): string {
-  return type === "http" ? "Headers" : i18n.t('settings.envVars');
+  return type === "http" ? "Headers" : i18n.t("settings.envVars");
 }
 
 function mcpEndpointLabel(type: DesktopMcpTransportType): string {
-  return type === "http" ? "URL" : i18n.t('settings.command');
+  return type === "http" ? "URL" : i18n.t("settings.command");
 }
 
 function mcpEndpointPlaceholder(type: DesktopMcpTransportType): string {
-  return type === "http"
-    ? i18n.t('settings.mcpUrlExample')
-    : i18n.t('settings.mcpCommandExample');
+  return type === "http" ? i18n.t("settings.mcpUrlExample") : i18n.t("settings.mcpCommandExample");
 }
 
 function mcpMetadataPlaceholder(type: DesktopMcpTransportType): string {
@@ -61,7 +47,10 @@ function mcpMetadataPlaceholder(type: DesktopMcpTransportType): string {
     : "PATH=C:/Tools; NODE_ENV=production";
 }
 
-function formatMcpMetadata(metadata: Record<string, string>, type: DesktopMcpTransportType): string {
+function formatMcpMetadata(
+  metadata: Record<string, string>,
+  type: DesktopMcpTransportType,
+): string {
   const entries = Object.entries(metadata);
   if (entries.length === 0) {
     return "";
@@ -86,31 +75,29 @@ function mcpCountsSummary(runtime?: McpServerRuntimeInfo): string {
   const tools = runtime?.state === "ready" ? String(runtime.counts?.tools ?? 0) : "-";
   const resources = runtime?.state === "ready" ? String(runtime.counts?.resources ?? 0) : "-";
   const prompts = runtime?.state === "ready" ? String(runtime.counts?.prompts ?? 0) : "-";
-  return i18n.t('settings.mcpCountsSummary', { tools, resources, prompts });
+  return i18n.t("settings.mcpCountsSummary", { tools, resources, prompts });
 }
 
 function McpRuntimeBadge({ state }: { state: McpServerRuntimeBadgeState }) {
   if (state === "ready") {
-    return <Badge>{i18n.t('settings.active')}</Badge>;
+    return <Badge>{i18n.t("settings.active")}</Badge>;
   }
 
   if (state === "error") {
-    return <Badge variant="destructive">{i18n.t('settings.failed')}</Badge>;
+    return <Badge variant="destructive">{i18n.t("settings.failed")}</Badge>;
   }
 
   if (state === "disabled") {
-    return <Badge variant="outline">{i18n.t('settings.disabled')}</Badge>;
+    return <Badge variant="outline">{i18n.t("settings.disabled")}</Badge>;
   }
 
   return (
     <Badge variant="outline" className="gap-1.5">
       <LoaderCircle className="size-3 animate-spin" aria-hidden />
-      {i18n.t('common.loading')}
+      {i18n.t("common.loading")}
     </Badge>
   );
 }
-
-
 
 const mcpCreateScopeOptions: Array<{
   scope: DesktopMcpScope;
@@ -118,7 +105,11 @@ const mcpCreateScopeOptions: Array<{
   hintKey: string;
 }> = [
   { scope: "user", labelKey: "settings.skillUserDirShort", hintKey: "settings.mcpUserDirHint" },
-  { scope: "workspace", labelKey: "settings.mcpScopeWorkspace", hintKey: "settings.mcpWorkspaceSpiritHint" },
+  {
+    scope: "workspace",
+    labelKey: "settings.mcpScopeWorkspace",
+    hintKey: "settings.mcpWorkspaceSpiritHint",
+  },
 ];
 
 export function McpsSettingsPanel({
@@ -252,7 +243,7 @@ export function McpsSettingsPanel({
         <div className="min-w-0 flex-1 space-y-1">
           <h1 className={DESKTOP_PAGE_TITLE_CLASS}>MCPs</h1>
           {workspaceBindingDisabled ? (
-            <p className="text-xs text-muted-foreground">{t('app.noWorkspaceBindingHint')}</p>
+            <p className="text-xs text-muted-foreground">{t("app.noWorkspaceBindingHint")}</p>
           ) : null}
         </div>
         <Button
@@ -265,59 +256,69 @@ export function McpsSettingsPanel({
           }}
           disabled={mcpsBusy}
         >
-          {t('settings.addMcp')}
+          {t("settings.addMcp")}
         </Button>
       </div>
 
       <div className="divide-y divide-border/35 rounded-lg border border-border/40 bg-background/80">
         {items.length === 0 ? (
-          <p className="px-4 py-10 text-center text-sm text-muted-foreground">{t('settings.noMcpsConfigured')}</p>
+          <p className="px-4 py-10 text-center text-sm text-muted-foreground">
+            {t("settings.noMcpsConfigured")}
+          </p>
         ) : (
           items.map((item) => {
             const runtimeKey = `${item.scope}:${item.name}`;
             return (
-            <div
-              key={runtimeKey}
-              className="flex flex-col gap-3 px-4 py-4 sm:flex-row sm:items-start sm:justify-between sm:gap-4"
-            >
-              <div className="min-w-0 flex-1 space-y-1.5">
-                <div className="flex flex-wrap items-center gap-2">
-                  <span className={DESKTOP_LIST_ITEM_PRIMARY_CLASS}>{item.displayName}</span>
-                  <McpRuntimeBadge state={runtimeInfo[runtimeKey]?.state ?? (item.enabled ? "loading" : "disabled")} />
-                  <Badge variant="outline" className="text-muted-foreground">
-                    {item.scope === "user" ? t('settings.skillUserDirShort') : t('settings.mcpScopeWorkspace')}
-                  </Badge>
-                  <Badge variant="secondary" className="text-muted-foreground">
-                    {mcpTransportTypeLabel(item.transport.type)}
-                  </Badge>
-                  {!item.enabled ? (
-                    <Badge variant="secondary" className="text-muted-foreground">
-                      {t('settings.mcpDisabled')}
+              <div
+                key={runtimeKey}
+                className="flex flex-col gap-3 px-4 py-4 sm:flex-row sm:items-start sm:justify-between sm:gap-4"
+              >
+                <div className="min-w-0 flex-1 space-y-1.5">
+                  <div className="flex flex-wrap items-center gap-2">
+                    <span className={DESKTOP_LIST_ITEM_PRIMARY_CLASS}>{item.displayName}</span>
+                    <McpRuntimeBadge
+                      state={
+                        runtimeInfo[runtimeKey]?.state ?? (item.enabled ? "loading" : "disabled")
+                      }
+                    />
+                    <Badge variant="outline" className="text-muted-foreground">
+                      {item.scope === "user"
+                        ? t("settings.skillUserDirShort")
+                        : t("settings.mcpScopeWorkspace")}
                     </Badge>
+                    <Badge variant="secondary" className="text-muted-foreground">
+                      {mcpTransportTypeLabel(item.transport.type)}
+                    </Badge>
+                    {!item.enabled ? (
+                      <Badge variant="secondary" className="text-muted-foreground">
+                        {t("settings.mcpDisabled")}
+                      </Badge>
+                    ) : null}
+                  </div>
+                  <p className="text-xs text-muted-foreground">{item.transport.summary}</p>
+                  <p className="text-xs text-muted-foreground">
+                    {mcpCountsSummary(runtimeInfo[runtimeKey])}
+                  </p>
+                  {Object.keys(item.transport.metadata).length > 0 ? (
+                    <p
+                      className="truncate font-mono text-[0.65rem] text-muted-foreground/90"
+                      title={formatMcpMetadata(item.transport.metadata, item.transport.type)}
+                    >
+                      {formatMcpMetadata(item.transport.metadata, item.transport.type)}
+                    </p>
                   ) : null}
                 </div>
-                <p className="text-xs text-muted-foreground">{item.transport.summary}</p>
-                <p className="text-xs text-muted-foreground">{mcpCountsSummary(runtimeInfo[runtimeKey])}</p>
-                {Object.keys(item.transport.metadata).length > 0 ? (
-                  <p
-                    className="truncate font-mono text-[0.65rem] text-muted-foreground/90"
-                    title={formatMcpMetadata(item.transport.metadata, item.transport.type)}
-                  >
-                    {formatMcpMetadata(item.transport.metadata, item.transport.type)}
-                  </p>
-                ) : null}
+                <Button
+                  type="button"
+                  variant="destructive"
+                  size="sm"
+                  className="shrink-0 self-start sm:self-center"
+                  disabled={mcpsBusy}
+                  onClick={() => setDeleteTarget({ name: item.name, scope: item.scope })}
+                >
+                  {t("common.delete")}
+                </Button>
               </div>
-              <Button
-                type="button"
-                variant="destructive"
-                size="sm"
-                className="shrink-0 self-start sm:self-center"
-                disabled={mcpsBusy}
-                onClick={() => setDeleteTarget({ name: item.name, scope: item.scope })}
-              >
-                {t('common.delete')}
-              </Button>
-            </div>
             );
           })
         )}
@@ -333,45 +334,45 @@ export function McpsSettingsPanel({
       >
         <DialogContent className="sm:max-w-md" showCloseButton>
           <DialogHeader>
-            <DialogTitle>{t('settings.deleteMcp')}</DialogTitle>
+            <DialogTitle>{t("settings.deleteMcp")}</DialogTitle>
             <DialogDescription>
-              {t('settings.deleteMcpConfirm', { name: deleteTarget?.name ?? '' })}
+              {t("settings.deleteMcpConfirm", { name: deleteTarget?.name ?? "" })}
             </DialogDescription>
           </DialogHeader>
           <DialogFooter>
             <DialogFooterActions>
-            <Button
-              type="button"
-              variant="outline"
-              size="sm"
-              onClick={() => setDeleteTarget(null)}
-              disabled={mcpsBusy}
-            >
-              {t('common.cancel')}
-            </Button>
-            <Button
-              type="button"
-              variant="destructive"
-              size="sm"
-              disabled={mcpsBusy || !deleteTarget}
-              onClick={() => {
-                const target = deleteTarget;
-                if (!target) {
-                  return;
-                }
-                void (async () => {
-                  try {
-                    await onDeleteMcpServer(target);
-                    setDeleteTarget(null);
-                  } catch {
-                    /* runtimeError */
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={() => setDeleteTarget(null)}
+                disabled={mcpsBusy}
+              >
+                {t("common.cancel")}
+              </Button>
+              <Button
+                type="button"
+                variant="destructive"
+                size="sm"
+                disabled={mcpsBusy || !deleteTarget}
+                onClick={() => {
+                  const target = deleteTarget;
+                  if (!target) {
+                    return;
                   }
-                })();
-              }}
-            >
-              {mcpsBusy ? <LoaderCircle className="size-4 animate-spin" /> : null}
-              {t('common.delete')}
-            </Button>
+                  void (async () => {
+                    try {
+                      await onDeleteMcpServer(target);
+                      setDeleteTarget(null);
+                    } catch {
+                      /* runtimeError */
+                    }
+                  })();
+                }}
+              >
+                {mcpsBusy ? <LoaderCircle className="size-4 animate-spin" /> : null}
+                {t("common.delete")}
+              </Button>
             </DialogFooterActions>
           </DialogFooter>
         </DialogContent>
@@ -388,14 +389,14 @@ export function McpsSettingsPanel({
       >
         <DialogContent className="sm:max-w-lg" showCloseButton>
           <DialogHeader>
-            <DialogTitle>{t('settings.addMcp')}</DialogTitle>
+            <DialogTitle>{t("settings.addMcp")}</DialogTitle>
           </DialogHeader>
           <div className="grid gap-3 py-1">
             <div className="grid gap-2">
-              <Label>{t('settings.saveLocation')}</Label>
+              <Label>{t("settings.saveLocation")}</Label>
               <div
                 role="tablist"
-                aria-label={t('settings.saveLocation')}
+                aria-label={t("settings.saveLocation")}
                 className="inline-flex h-9 shrink-0 rounded-lg border border-border/40 bg-muted/30 p-0.5"
               >
                 {localizedMcpCreateScopeOptions.map((opt) => (
@@ -423,10 +424,10 @@ export function McpsSettingsPanel({
               </p>
             </div>
             <div className="grid gap-2">
-              <Label>{t('settings.transportType')}</Label>
+              <Label>{t("settings.transportType")}</Label>
               <div
                 role="tablist"
-                aria-label={t('settings.transportType')}
+                aria-label={t("settings.transportType")}
                 className="inline-flex h-9 shrink-0 rounded-lg border border-border/40 bg-muted/30 p-0.5"
               >
                 {(["stdio", "http"] as const).map((value) => (
@@ -451,12 +452,12 @@ export function McpsSettingsPanel({
             </div>
 
             <div className="grid gap-2">
-              <Label htmlFor="new-mcp-name">{t('settings.name')}</Label>
+              <Label htmlFor="new-mcp-name">{t("settings.name")}</Label>
               <DesktopFormInput
                 id="new-mcp-name"
                 value={newName}
                 onChange={(event) => setNewName(event.target.value)}
-                placeholder={t('settings.mcpNamePlaceholder')}
+                placeholder={t("settings.mcpNamePlaceholder")}
                 autoComplete="off"
               />
             </div>
@@ -486,40 +487,40 @@ export function McpsSettingsPanel({
 
           <DialogFooter>
             <DialogFooterActions>
-            <Button
-              type="button"
-              variant="outline"
-              size="sm"
-              onClick={() => setAddDialogOpen(false)}
-              disabled={mcpsBusy}
-            >
-              {t('common.cancel')}
-            </Button>
-            <Button
-              type="button"
-              size="sm"
-              disabled={mcpsBusy || !newName.trim() || !newEndpoint.trim()}
-              onClick={() => {
-                void (async () => {
-                  try {
-                    await onAddMcpServer({
-                      name: newName,
-                      scope: createScope,
-                      transportType,
-                      endpoint: newEndpoint,
-                      metadata: newMetadata,
-                    });
-                    setAddDialogOpen(false);
-                    resetForm();
-                  } catch {
-                    /* runtimeError */
-                  }
-                })();
-              }}
-            >
-              {mcpsBusy ? <LoaderCircle className="size-4 animate-spin" /> : null}
-              {t('common.create')}
-            </Button>
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={() => setAddDialogOpen(false)}
+                disabled={mcpsBusy}
+              >
+                {t("common.cancel")}
+              </Button>
+              <Button
+                type="button"
+                size="sm"
+                disabled={mcpsBusy || !newName.trim() || !newEndpoint.trim()}
+                onClick={() => {
+                  void (async () => {
+                    try {
+                      await onAddMcpServer({
+                        name: newName,
+                        scope: createScope,
+                        transportType,
+                        endpoint: newEndpoint,
+                        metadata: newMetadata,
+                      });
+                      setAddDialogOpen(false);
+                      resetForm();
+                    } catch {
+                      /* runtimeError */
+                    }
+                  })();
+                }}
+              >
+                {mcpsBusy ? <LoaderCircle className="size-4 animate-spin" /> : null}
+                {t("common.create")}
+              </Button>
             </DialogFooterActions>
           </DialogFooter>
         </DialogContent>

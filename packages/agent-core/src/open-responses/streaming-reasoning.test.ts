@@ -1,73 +1,69 @@
-import assert from 'node:assert/strict';
-import test from 'node:test';
+import assert from "node:assert/strict";
+import test from "node:test";
 
-import {
-  extractOpenResponsesReasoningTextFromRawChunk,
-} from './streaming.js';
-import {
-  resolveOpenResponsesReasoningSummary,
-} from './responses-compat.js';
+import { extractOpenResponsesReasoningTextFromRawChunk } from "./streaming.js";
+import { resolveOpenResponsesReasoningSummary } from "./responses-compat.js";
 
-test('resolveOpenResponsesReasoningSummary defaults to auto', () => {
+test("resolveOpenResponsesReasoningSummary defaults to auto", () => {
   assert.equal(
     resolveOpenResponsesReasoningSummary({
-      model: 'gpt-5',
-      reasoningEffort: 'medium',
+      model: "gpt-5",
+      reasoningEffort: "medium",
     }),
-    'auto',
+    "auto",
   );
 });
 
-test('resolveOpenResponsesReasoningSummary respects none effort', () => {
+test("resolveOpenResponsesReasoningSummary respects none effort", () => {
   assert.equal(
     resolveOpenResponsesReasoningSummary({
-      model: 'gpt-5',
-      reasoningEffort: 'none',
-      reasoningSummary: 'auto',
+      model: "gpt-5",
+      reasoningEffort: "none",
+      reasoningSummary: "auto",
     }),
     undefined,
   );
 });
 
-test('resolveOpenResponsesReasoningSummary disables summary for Bedrock Mantle', () => {
+test("resolveOpenResponsesReasoningSummary disables summary for Bedrock Mantle", () => {
   assert.equal(
     resolveOpenResponsesReasoningSummary({
-      model: 'openai.gpt-5.5',
-      baseUrl: 'https://bedrock-mantle.us-east-2.api.aws/openai/v1',
-      reasoningEffort: 'medium',
+      model: "openai.gpt-5.5",
+      baseUrl: "https://bedrock-mantle.us-east-2.api.aws/openai/v1",
+      reasoningEffort: "medium",
     }),
     undefined,
   );
 });
 
-test('resolveOpenResponsesReasoningSummary disables summary for volcengine', () => {
+test("resolveOpenResponsesReasoningSummary disables summary for volcengine", () => {
   assert.equal(
     resolveOpenResponsesReasoningSummary({
-      model: 'doubao-seed-1-8-251228',
-      llmVendor: 'volcengine',
-      reasoningEffort: 'medium',
-      reasoningSummary: 'auto',
+      model: "doubao-seed-1-8-251228",
+      llmVendor: "volcengine",
+      reasoningEffort: "medium",
+      reasoningSummary: "auto",
     }),
     undefined,
   );
 });
 
-test('extractOpenResponsesReasoningTextFromRawChunk reads summary delta', () => {
+test("extractOpenResponsesReasoningTextFromRawChunk reads summary delta", () => {
   assert.equal(
     extractOpenResponsesReasoningTextFromRawChunk({
-      type: 'response.reasoning_summary_text.delta',
-      delta: 'Planning next step.',
+      type: "response.reasoning_summary_text.delta",
+      delta: "Planning next step.",
     }),
-    'Planning next step.',
+    "Planning next step.",
   );
 });
 
-test('extractOpenResponsesReasoningTextFromRawChunk reads reasoning_text delta', () => {
+test("extractOpenResponsesReasoningTextFromRawChunk reads reasoning_text delta", () => {
   assert.equal(
     extractOpenResponsesReasoningTextFromRawChunk({
-      type: 'response.reasoning_text.delta',
-      delta: 'Inspecting files first.',
+      type: "response.reasoning_text.delta",
+      delta: "Inspecting files first.",
     }),
-    'Inspecting files first.',
+    "Inspecting files first.",
   );
 });

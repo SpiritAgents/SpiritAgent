@@ -1,11 +1,11 @@
-import path from 'node:path';
+import path from "node:path";
 
-import { app } from 'electron';
+import { app } from "electron";
 
-import { invokeDesktopHostCommand } from '../src/host/service.js';
-import i18nHost from '../src/lib/i18n-host.js';
-import { buildWindowsJumpListCategories } from '../src/lib/windows-jump-list-build.js';
-import type { SessionListItem } from '../src/types.js';
+import { invokeDesktopHostCommand } from "../src/host/service.js";
+import i18nHost from "../src/lib/i18n-host.js";
+import { buildWindowsJumpListCategories } from "../src/lib/windows-jump-list-build.js";
+import type { SessionListItem } from "../src/types.js";
 
 function resolveDevMainScript(): string | undefined {
   if (app.isPackaged || process.defaultApp !== true) {
@@ -19,22 +19,22 @@ function resolveDevMainScript(): string | undefined {
 }
 
 export async function syncWindowsJumpList(iconPath?: string): Promise<void> {
-  if (process.platform !== 'win32') {
+  if (process.platform !== "win32") {
     return;
   }
 
   const resolvedIcon = iconPath?.trim() || process.execPath;
   let sessions: SessionListItem[] = [];
   try {
-    const listed = await invokeDesktopHostCommand('listSessions');
+    const listed = await invokeDesktopHostCommand("listSessions");
     sessions = Array.isArray(listed) ? (listed as SessionListItem[]) : [];
   } catch (error) {
-    console.warn('[spirit-desktop] jump list listSessions failed:', error);
+    console.warn("[spirit-desktop] jump list listSessions failed:", error);
   }
 
   const categories = buildWindowsJumpListCategories({
-    recentLabel: i18nHost.t('jumpList.recent'),
-    newAgentLabel: i18nHost.t('jumpList.newSession'),
+    recentLabel: i18nHost.t("jumpList.recent"),
+    newAgentLabel: i18nHost.t("jumpList.newSession"),
     sessions,
     execPath: process.execPath,
     iconPath: resolvedIcon,
@@ -42,7 +42,7 @@ export async function syncWindowsJumpList(iconPath?: string): Promise<void> {
   });
 
   const result = app.setJumpList(categories);
-  if (result !== 'ok') {
-    console.warn('[spirit-desktop] setJumpList returned', result);
+  if (result !== "ok") {
+    console.warn("[spirit-desktop] setJumpList returned", result);
   }
 }

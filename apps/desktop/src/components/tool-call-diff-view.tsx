@@ -1,15 +1,15 @@
-import { useEffect, useMemo, useRef, useState, type ComponentRef } from 'react';
+import { useEffect, useMemo, useRef, useState, type ComponentRef } from "react";
 
-import { UnifiedDiffCodeView } from '@/components/unified-diff-code-view';
-import { ScrollArea } from '@/components/ui/scroll-area';
-import { buildToolCallDiffLines } from '@/lib/diff-display-lines';
-import { useDiffLineHighlight } from '@/lib/diff-line-highlight';
-import { resolveToolCallDisplayLines } from '@/lib/tool-call-diff-display-lines';
+import { UnifiedDiffCodeView } from "@/components/unified-diff-code-view";
+import { ScrollArea } from "@/components/ui/scroll-area";
+import { buildToolCallDiffLines } from "@/lib/diff-display-lines";
+import { useDiffLineHighlight } from "@/lib/diff-line-highlight";
+import { resolveToolCallDisplayLines } from "@/lib/tool-call-diff-display-lines";
 
-import '@/styles/tool-call-diff-view.css';
+import "@/styles/tool-call-diff-view.css";
 
 function scrollAreaViewport(root: ComponentRef<typeof ScrollArea> | null): HTMLElement | null {
-  return root?.querySelector('[data-radix-scroll-area-viewport]') ?? null;
+  return root?.querySelector("[data-radix-scroll-area-viewport]") ?? null;
 }
 
 const HIGHLIGHT_DEBOUNCE_MS = 32;
@@ -32,10 +32,7 @@ export function ToolCallDiffView({
 }: ToolCallDiffViewProps) {
   const scrollAreaRef = useRef<ComponentRef<typeof ScrollArea>>(null);
 
-  const lines = useMemo(
-    () => buildToolCallDiffLines(original, modified),
-    [original, modified],
-  );
+  const lines = useMemo(() => buildToolCallDiffLines(original, modified), [original, modified]);
 
   const [debouncedLines, setDebouncedLines] = useState(lines);
 
@@ -87,11 +84,7 @@ export function ToolCallDiffView({
         event.stopPropagation();
       }}
     >
-      <UnifiedDiffCodeView
-        lines={displayLines}
-        highlightedLines={highlightedLines}
-        gutter="none"
-      />
+      <UnifiedDiffCodeView lines={displayLines} highlightedLines={highlightedLines} gutter="none" />
     </ScrollArea>
   );
 }

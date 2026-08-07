@@ -5,7 +5,10 @@ import {
   TextSelectionActionMenu,
   TextSelectionActionMenuItem,
 } from "@/components/text-selection-action-menu";
-import { useTerminalSelectionActionMenu, readTerminalSelectionLineRange } from "@/hooks/use-terminal-selection-action-menu";
+import {
+  useTerminalSelectionActionMenu,
+  readTerminalSelectionLineRange,
+} from "@/hooks/use-terminal-selection-action-menu";
 import type { TerminalSnippetAttachment } from "@/lib/terminal-snippet-attachment";
 import type { Terminal } from "@xterm/xterm";
 
@@ -22,11 +25,12 @@ function TerminalSelectionMenu({
 }) {
   const { t } = useTranslation();
   const enabled = Boolean(onTerminalAddToSession);
-  const { open, setOpen, anchor, selectionText, lineRange, dismiss } = useTerminalSelectionActionMenu({
-    enabled,
-    containerRef,
-    terminal,
-  });
+  const { open, setOpen, anchor, selectionText, lineRange, dismiss } =
+    useTerminalSelectionActionMenu({
+      enabled,
+      containerRef,
+      terminal,
+    });
 
   const handleAddToSession = useCallback(() => {
     const term = terminal;
@@ -59,7 +63,11 @@ function TerminalSelectionMenu({
   }
 
   return (
-    <TextSelectionActionMenu open={open && Boolean(selectionText.trim())} anchor={anchor} onOpenChange={setOpen}>
+    <TextSelectionActionMenu
+      open={open && Boolean(selectionText.trim())}
+      anchor={anchor}
+      onOpenChange={setOpen}
+    >
       <TextSelectionActionMenuItem
         label={t("workspace.addSelectionToSession")}
         onSelect={handleAddToSession}

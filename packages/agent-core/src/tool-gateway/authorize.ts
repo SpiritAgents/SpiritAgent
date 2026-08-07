@@ -1,30 +1,33 @@
-import type { AuthorizationDecision } from '../ports.js';
-import { TOOL_CALL_TOOL_NAME, TOOL_DESCRIBE_TOOL_NAME } from './definitions.js';
-import { parseLazyToolGatewayArguments } from './parse.js';
-import { LAZY_TOOL_PROVIDER_BUILT_IN, LAZY_TOOL_PROVIDER_MCP } from './types.js';
-import type { LazyToolCallRequest, LazyToolGatewayToolRequest } from './types.js';
+import type { AuthorizationDecision } from "../ports.js";
+import { TOOL_CALL_TOOL_NAME, TOOL_DESCRIBE_TOOL_NAME } from "./definitions.js";
+import { parseLazyToolGatewayArguments } from "./parse.js";
+import { LAZY_TOOL_PROVIDER_BUILT_IN, LAZY_TOOL_PROVIDER_MCP } from "./types.js";
+import type { LazyToolCallRequest, LazyToolGatewayToolRequest } from "./types.js";
 
-export type LazyToolGatewayApprovalLevel = 'default' | 'auto-approval' | 'full-approval';
+export type LazyToolGatewayApprovalLevel = "default" | "auto-approval" | "full-approval";
 
 export function authorizeLazyToolGatewayRequest(
   request: LazyToolGatewayToolRequest,
   approvalLevel: LazyToolGatewayApprovalLevel,
 ): AuthorizationDecision<string> {
   if (request.name === TOOL_DESCRIBE_TOOL_NAME) {
-    return { kind: 'allowed' };
+    return { kind: "allowed" };
   }
 
   if (request.name !== TOOL_CALL_TOOL_NAME) {
-    return { kind: 'allowed' };
+    return { kind: "allowed" };
   }
 
-  if (approvalLevel === 'full-approval') {
-    return { kind: 'allowed' };
+  if (approvalLevel === "full-approval") {
+    return { kind: "allowed" };
   }
 
-  const parsed = parseLazyToolGatewayArguments(request.name, request.argumentsJson) as LazyToolCallRequest;
+  const parsed = parseLazyToolGatewayArguments(
+    request.name,
+    request.argumentsJson,
+  ) as LazyToolCallRequest;
   return {
-    kind: 'need-approval',
+    kind: "need-approval",
     prompt: buildLazyToolCallApprovalPrompt(parsed),
     trustTarget: lazyToolCallTrustTarget(parsed),
   };
@@ -39,9 +42,7 @@ function lazyToolCallTrustTarget(request: LazyToolCallRequest): string {
 
 function buildLazyToolCallApprovalPrompt(request: LazyToolCallRequest): string {
   const argsText =
-    request.arguments === undefined
-      ? '(none)'
-      : JSON.stringify(request.arguments, null, 2);
+    request.arguments === undefined ? "(none)" : JSON.stringify(request.arguments, null, 2);
   if (request.provider === LAZY_TOOL_PROVIDER_BUILT_IN) {
     return (
       `高风险工具调用: built-in tool_call\n` +

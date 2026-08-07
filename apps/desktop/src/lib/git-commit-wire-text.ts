@@ -35,7 +35,10 @@ function parseGitCommitInfoLine(infoLine: string): {
 
 /** Wire-format git commit block (shared by attachment + composer segment model). */
 export function gitCommitContextText(
-  attachment: Pick<GitCommitAttachment, "oid" | "subject" | "author" | "authoredAt" | "fullMessage">,
+  attachment: Pick<
+    GitCommitAttachment,
+    "oid" | "subject" | "author" | "authoredAt" | "fullMessage"
+  >,
 ): string {
   return formatChipWireBlock(formatGitCommitInfoLine(attachment), attachment.fullMessage);
 }

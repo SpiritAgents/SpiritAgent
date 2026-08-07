@@ -2,11 +2,7 @@ import type { ReactNode } from "react";
 import { GitBranch } from "lucide-react";
 import { useTranslation } from "react-i18next";
 
-import {
-  Tooltip,
-  TooltipContent,
-  useOptionalTooltipContext,
-} from "@/components/ui/tooltip";
+import { Tooltip, TooltipContent, useOptionalTooltipContext } from "@/components/ui/tooltip";
 import { resolveSessionWorkLocation } from "@/lib/workspace-grouping";
 import { WORK_LOCATION_ICONS } from "@/components/work-location-menu";
 import type { SessionListItem } from "@/types";
@@ -69,11 +65,7 @@ function SessionListGitTooltipRoot({
       disableHoverableContent
     >
       {children}
-      <TooltipContent
-        side="right"
-        sideOffset={8}
-        className="flex flex-col items-start gap-1 py-2"
-      >
+      <TooltipContent side="right" sideOffset={8} className="flex flex-col items-start gap-1 py-2">
         {(item) =>
           item ? <SessionListGitTooltipPanel item={item as SessionGitTooltipItem} /> : null
         }
@@ -88,9 +80,7 @@ type SessionListGitTooltipRowProps = {
 };
 
 function SessionListGitTooltipRow({ session, children }: SessionListGitTooltipRowProps) {
-  return (
-    <Tooltip.Item item={sessionGitTooltipItemFromSession(session)}>{children}</Tooltip.Item>
-  );
+  return <Tooltip.Item item={sessionGitTooltipItemFromSession(session)}>{children}</Tooltip.Item>;
 }
 
 function SessionListGitTooltipPanel({ item }: { item: SessionGitTooltipItem }) {

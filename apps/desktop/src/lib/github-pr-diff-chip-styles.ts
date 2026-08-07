@@ -88,7 +88,9 @@ export function makePrDiffChipNode(attachment: PrDiffAttachment, doc: Document):
   icon.innerHTML = prDiffIconPaths(attachment.status);
   span.appendChild(icon);
   span.appendChild(
-    doc.createTextNode(formatPrDiffChipLabel(attachment.filename, attachment.lineStart, attachment.lineEnd)),
+    doc.createTextNode(
+      formatPrDiffChipLabel(attachment.filename, attachment.lineStart, attachment.lineEnd),
+    ),
   );
   return span;
 }

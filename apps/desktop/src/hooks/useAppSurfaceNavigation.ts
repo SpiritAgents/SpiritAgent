@@ -1,11 +1,4 @@
-import {
-  useCallback,
-  useEffect,
-  useMemo,
-  useRef,
-  useState,
-  type MutableRefObject,
-} from "react";
+import { useCallback, useEffect, useMemo, useRef, useState, type MutableRefObject } from "react";
 import type { TFunction } from "i18next";
 
 import type { SessionSidebarChromeApi } from "@/contexts/session-sidebar-chrome-context";
@@ -94,8 +87,7 @@ export function useAppSurfaceNavigation({
   const automationsMode = activeSurface === "automations" || activeSurface === "automation-detail";
   const automationDetailMode = activeSurface === "automation-detail";
   const preserveConversationSurface =
-    activeSurface === "conversation"
-    || (settingsMode && lastNonSettingsSurface === "conversation");
+    activeSurface === "conversation" || (settingsMode && lastNonSettingsSurface === "conversation");
 
   const suppressStaleConversation = shouldSuppressStaleConversation({
     conversationSnapshotStale,
@@ -137,9 +129,9 @@ export function useAppSurfaceNavigation({
 
       const currentRoot = snapshot?.workspaceRoot?.trim() ?? "";
       const needsSwitch =
-        snapshot?.workspaceBinding !== "project"
-        || !currentRoot
-        || !sameWorkspacePath(currentRoot, trimmed);
+        snapshot?.workspaceBinding !== "project" ||
+        !currentRoot ||
+        !sameWorkspacePath(currentRoot, trimmed);
 
       if (needsSwitch) {
         const switched = await runtime.switchWorkspaceRoot(trimmed);

@@ -1,35 +1,37 @@
-import path from 'node:path';
+import path from "node:path";
 
-import type { ActiveSessionSnapshot, ConversationMessageSnapshot } from '../types.js';
-import type { DesktopTimelineTurnSnapshot, DesktopMessageTimeline } from './message-timeline.js';
+import type { ActiveSessionSnapshot, ConversationMessageSnapshot } from "../types.js";
+import type { DesktopTimelineTurnSnapshot, DesktopMessageTimeline } from "./message-timeline.js";
 import {
   createEmptySessionBundle,
   resetSessionBundleInPlace,
   sessionBundleFromRestored,
   type SessionBundle,
-} from './session-bundle.js';
-import { rehydrateFinishTaskNoticesForRestoredSession } from './finish-task-notice-rehydrate.js';
-import type { RestoredSessionState } from './sessions.js';
-import { normalizeSessionPathKey } from './session-path.js';
+} from "./session-bundle.js";
+import { rehydrateFinishTaskNoticesForRestoredSession } from "./finish-task-notice-rehydrate.js";
+import type { RestoredSessionState } from "./sessions.js";
+import { normalizeSessionPathKey } from "./session-path.js";
 import {
   defaultNewSessionPath,
   provisionalNewSessionPath,
   sideChatPaneSessionPath,
   splitPaneSessionPath,
-} from './storage.js';
+} from "./storage.js";
 
 const MAX_LOADED_BUNDLES = 8;
 
 export function buildProvisionalActiveSession(filePath: string): ActiveSessionSnapshot {
   return {
     filePath: path.resolve(filePath),
-    displayName: 'New conversation',
-    kind: 'stored',
+    displayName: "New conversation",
+    kind: "stored",
   };
 }
 
 export function assignProvisionalActiveSession(bundle: SessionBundle, filePath?: string): string {
-  const resolved = path.resolve(filePath ?? bundle.activeSession?.filePath ?? defaultNewSessionPath());
+  const resolved = path.resolve(
+    filePath ?? bundle.activeSession?.filePath ?? defaultNewSessionPath(),
+  );
   bundle.activeSession = buildProvisionalActiveSession(resolved);
   return resolved;
 }
@@ -56,7 +58,7 @@ export class SessionRegistry {
   requireActive(): SessionBundle {
     const bundle = this.getActive();
     if (!bundle) {
-      throw new Error('当前没有活跃会话。');
+      throw new Error("当前没有活跃会话。");
     }
     return bundle;
   }
@@ -78,8 +80,8 @@ export class SessionRegistry {
         return bundle;
       }
       if (
-        bundle.activeSession
-        && normalizeSessionPathKey(bundle.activeSession.filePath) === normalized
+        bundle.activeSession &&
+        normalizeSessionPathKey(bundle.activeSession.filePath) === normalized
       ) {
         return bundle;
       }
@@ -115,18 +117,16 @@ export class SessionRegistry {
   }
 
   setProtectedSessionPaths(paths: Iterable<string>): void {
-    this.protectedSessionPaths = new Set(
-      [...paths].map((entry) => normalizeSessionPathKey(entry)),
-    );
+    this.protectedSessionPaths = new Set([...paths].map((entry) => normalizeSessionPathKey(entry)));
   }
 
   private isProtectedBundle(bundle: SessionBundle, mapKey?: string): boolean {
-    const candidates = [
-      mapKey,
-      bundle.id,
-      bundle.activeSession?.filePath,
-    ].filter((entry): entry is string => Boolean(entry?.trim()));
-    return candidates.some((entry) => this.protectedSessionPaths.has(normalizeSessionPathKey(entry)));
+    const candidates = [mapKey, bundle.id, bundle.activeSession?.filePath].filter(
+      (entry): entry is string => Boolean(entry?.trim()),
+    );
+    return candidates.some((entry) =>
+      this.protectedSessionPaths.has(normalizeSessionPathKey(entry)),
+    );
   }
 
   all(): Iterable<SessionBundle> {
@@ -175,7 +175,7 @@ export class SessionRegistry {
   setActive(id: string): SessionBundle {
     const bundle = this.findBySessionPath(id) ?? this.bundles.get(id);
     if (!bundle) {
-      throw new Error('会话不存在或已卸载。');
+      throw new Error("会话不存在或已卸载。");
     }
     return this.activateExisting(bundle);
   }
@@ -299,8 +299,8 @@ export class SessionRegistry {
       this.bundles.delete(mapKey);
     }
     if (
-      this.activeId !== undefined
-      && (this.activeId === mapKey || normalizeSessionPathKey(this.activeId) === normalizedPath)
+      this.activeId !== undefined &&
+      (this.activeId === mapKey || normalizeSessionPathKey(this.activeId) === normalizedPath)
     ) {
       this.activeId = undefined;
     }
@@ -351,10 +351,7 @@ export class SessionRegistry {
     bundle.workspaceRoot = workspaceRoot;
     bundle.activeSession = restored.activeSession;
     bundle.messages = restored.messages;
-    bundle.messageTimeline = createTimeline(
-      restored.messages,
-      restored.desktopMessageTimeline,
-    );
+    bundle.messageTimeline = createTimeline(restored.messages, restored.desktopMessageTimeline);
     bundle.messages = rehydrateFinishTaskNoticesForRestoredSession({
       messages: bundle.messages,
       messageTimeline: bundle.messageTimeline,
@@ -368,12 +365,13 @@ export class SessionRegistry {
     bundle.sessionTitleSource = restored.sessionTitleSource;
     bundle.rewind = restored.rewind;
     bundle.rewindWarnings = [];
-    bundle.messageIdCounter = restored.messages.length > 0
-      ? Math.max(0, ...restored.messages.map((message) => message.id)) + 1
-      : 1;
+    bundle.messageIdCounter =
+      restored.messages.length > 0
+        ? Math.max(0, ...restored.messages.map((message) => message.id)) + 1
+        : 1;
     bundle.currentTurnSkills = [];
     bundle.pendingUnboundFileChangeIds = [];
-    bundle.nextTimelineAssistantSegmentKind = 'initial';
+    bundle.nextTimelineAssistantSegmentKind = "initial";
     bundle.deferredRuntimeRefreshWhileBusy = false;
   }
 

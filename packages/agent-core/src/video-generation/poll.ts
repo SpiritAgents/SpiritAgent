@@ -20,7 +20,7 @@ export async function pollUntil<T>(
 
   while (true) {
     if (options.signal?.aborted) {
-      throw new Error('Video generation polling was aborted.');
+      throw new Error("Video generation polling was aborted.");
     }
 
     const result = await poll();
@@ -29,7 +29,7 @@ export async function pollUntil<T>(
     }
 
     if (Date.now() - startedAt >= timeoutMs) {
-      throw new Error('Video generation timed out while waiting for provider completion.');
+      throw new Error("Video generation timed out while waiting for provider completion.");
     }
 
     await sleep(delayMs, options.signal);
@@ -46,21 +46,21 @@ function sleep(ms: number, signal?: AbortSignal): Promise<void> {
 
     const onAbort = () => {
       cleanup();
-      reject(new Error('Video generation polling was aborted.'));
+      reject(new Error("Video generation polling was aborted."));
     };
 
     const cleanup = () => {
       clearTimeout(timer);
-      signal?.removeEventListener('abort', onAbort);
+      signal?.removeEventListener("abort", onAbort);
     };
 
     if (signal) {
       if (signal.aborted) {
         cleanup();
-        reject(new Error('Video generation polling was aborted.'));
+        reject(new Error("Video generation polling was aborted."));
         return;
       }
-      signal.addEventListener('abort', onAbort, { once: true });
+      signal.addEventListener("abort", onAbort, { once: true });
     }
   });
 }

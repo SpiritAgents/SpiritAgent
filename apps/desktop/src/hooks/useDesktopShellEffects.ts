@@ -114,7 +114,9 @@ export function useDesktopShellEffects({
     }
 
     return () => {
-      for (const node of document.head.querySelectorAll<HTMLStyleElement>('style[data-spirit-extension-css="true"]')) {
+      for (const node of document.head.querySelectorAll<HTMLStyleElement>(
+        'style[data-spirit-extension-css="true"]',
+      )) {
         node.remove();
       }
     };

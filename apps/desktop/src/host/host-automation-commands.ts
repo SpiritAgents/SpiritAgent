@@ -5,17 +5,19 @@ import {
   type HostAutomationDefinition,
   type HostAutomationRun,
   type HostAutomationUpdateInput,
-} from '@spiritagent/host-internal';
+} from "@spiritagent/host-internal";
 
-import type { DesktopAutomationDetail, DesktopAutomationListItem } from '../types.js';
-import { spiritAgentDataDir } from './storage.js';
+import type { DesktopAutomationDetail, DesktopAutomationListItem } from "../types.js";
+import { spiritAgentDataDir } from "./storage.js";
 
 export async function listAutomationsCommand(): Promise<DesktopAutomationListItem[]> {
   const store = createHostAutomationStore(spiritAgentDataDir());
   return store.listSummaries();
 }
 
-export async function getAutomationCommand(automationId: string): Promise<DesktopAutomationDetail | undefined> {
+export async function getAutomationCommand(
+  automationId: string,
+): Promise<DesktopAutomationDetail | undefined> {
   const store = createHostAutomationStore(spiritAgentDataDir());
   const record = await store.get(automationId);
   if (!record) {

@@ -1,5 +1,5 @@
-import type { JsonValue } from '@spiritagent/agent-core';
-import type { SpiritAgentMode } from '@spiritagent/agent-core';
+import type { JsonValue } from "@spiritagent/agent-core";
+import type { SpiritAgentMode } from "@spiritagent/agent-core";
 import {
   createHostExtensionManager,
   createHostExtensionMarketplace,
@@ -15,15 +15,15 @@ import {
   saveHookEntry,
   saveToggleState,
   validateHooksConfig,
-} from '@spiritagent/host-internal';
+} from "@spiritagent/host-internal";
 
 import {
   serializeHostExtension,
   serializeMarketplaceCatalogItem,
   serializeMarketplaceDetail,
   serializeMarketplacePreparedInstall,
-} from './host-serializers.js';
-import type { SessionManager } from './session-manager.js';
+} from "./host-serializers.js";
+import type { SessionManager } from "./session-manager.js";
 
 /**
  * Workspace/config management RPC surface (`host.*`) — the daemon-side home
@@ -37,24 +37,24 @@ export class HostService {
     private readonly sessions: SessionManager,
   ) {}
 
-  private extensionManager(hostKind: 'cli' | 'desktop') {
+  private extensionManager(hostKind: "cli" | "desktop") {
     return createHostExtensionManager({ spiritDataDir: this.spiritDataDir, hostKind });
   }
 
-  private marketplace(hostKind: 'cli' | 'desktop') {
+  private marketplace(hostKind: "cli" | "desktop") {
     return createHostExtensionMarketplace({ spiritDataDir: this.spiritDataDir, hostKind });
   }
 
   private static readWorkspaceRoot(params: Record<string, unknown>): string {
-    const workspaceRoot = params['workspaceRoot'];
-    if (typeof workspaceRoot !== 'string' || !workspaceRoot.trim()) {
-      throw new Error('missing workspaceRoot');
+    const workspaceRoot = params["workspaceRoot"];
+    if (typeof workspaceRoot !== "string" || !workspaceRoot.trim()) {
+      throw new Error("missing workspaceRoot");
     }
     return workspaceRoot;
   }
 
-  private static readHostKind(params: Record<string, unknown>): 'cli' | 'desktop' {
-    return params['hostKind'] === 'desktop' ? 'desktop' : 'cli';
+  private static readHostKind(params: Record<string, unknown>): "cli" | "desktop" {
+    return params["hostKind"] === "desktop" ? "desktop" : "cli";
   }
 
   private context(params: Record<string, unknown>) {
@@ -68,10 +68,13 @@ export class HostService {
     const params = (rawParams ?? {}) as Record<string, unknown>;
     switch (method) {
       // ------------------------------------------------ instructions (rules/skills/plan)
-      case 'host.loadCliMetadata': {
+      case "host.loadCliMetadata": {
         const context = this.context(params);
-        const agentMode = (typeof params['agentMode'] === 'string' ? params['agentMode'] : 'agent') as SpiritAgentMode;
-        const activePlanPath = typeof params['activePlanPath'] === 'string' ? params['activePlanPath'] : undefined;
+        const agentMode = (
+          typeof params["agentMode"] === "string" ? params["agentMode"] : "agent"
+        ) as SpiritAgentMode;
+        const activePlanPath =
+          typeof params["activePlanPath"] === "string" ? params["activePlanPath"] : undefined;
         return {
           ruleEntries: await discoverRuleEntries(context),
           skillEntries: await discoverSkillEntries(context),
@@ -86,144 +89,162 @@ export class HostService {
           }).summary,
         };
       }
-      case 'host.loadPlanMetadata': {
+      case "host.loadPlanMetadata": {
         const context = this.context(params);
-        const agentMode = (typeof params['agentMode'] === 'string' ? params['agentMode'] : 'agent') as SpiritAgentMode;
-        const activePlanPath = typeof params['activePlanPath'] === 'string' ? params['activePlanPath'] : undefined;
-        return planMetadataSnapshot(context, agentMode, activePlanPath ? { activePlanPath } : undefined);
+        const agentMode = (
+          typeof params["agentMode"] === "string" ? params["agentMode"] : "agent"
+        ) as SpiritAgentMode;
+        const activePlanPath =
+          typeof params["activePlanPath"] === "string" ? params["activePlanPath"] : undefined;
+        return planMetadataSnapshot(
+          context,
+          agentMode,
+          activePlanPath ? { activePlanPath } : undefined,
+        );
       }
-      case 'host.writeRuleState':
-      case 'host.writeSkillState': {
+      case "host.writeRuleState":
+      case "host.writeSkillState": {
         const context = this.context(params);
         const paths = resolveInstructionPaths(context);
-        const filePath = method === 'host.writeRuleState' ? paths.rulesStateFile : paths.skillsStateFile;
-        const enabledOverrides = (params['enabledOverrides'] ?? {}) as Record<string, boolean>;
+        const filePath =
+          method === "host.writeRuleState" ? paths.rulesStateFile : paths.skillsStateFile;
+        const enabledOverrides = (params["enabledOverrides"] ?? {}) as Record<string, boolean>;
         await saveToggleState(filePath, { enabledOverrides });
         return filePath;
       }
 
       // ------------------------------------------------ workspace file references
-      case 'host.listWorkspaceFileReferenceSuggestions': {
+      case "host.listWorkspaceFileReferenceSuggestions": {
         const workspaceRoot = HostService.readWorkspaceRoot(params);
-        const input = typeof params['input'] === 'string' ? params['input'] : '';
-        const cursorChars = typeof params['cursorChars'] === 'number' ? params['cursorChars'] : 0;
-        return (await listCachedWorkspaceFileReferenceSuggestions(workspaceRoot, input, cursorChars)) ?? null;
+        const input = typeof params["input"] === "string" ? params["input"] : "";
+        const cursorChars = typeof params["cursorChars"] === "number" ? params["cursorChars"] : 0;
+        return (
+          (await listCachedWorkspaceFileReferenceSuggestions(workspaceRoot, input, cursorChars)) ??
+          null
+        );
       }
-      case 'host.primeWorkspaceFileReferenceIndex': {
+      case "host.primeWorkspaceFileReferenceIndex": {
         await primeWorkspaceFileReferenceIndexCache(HostService.readWorkspaceRoot(params));
         return null;
       }
 
       // ------------------------------------------------------------- hooks
-      case 'host.validateHooks': {
+      case "host.validateHooks": {
         const context = this.context(params);
         return validateHooksConfig(context);
       }
-      case 'host.listHookEntries': {
+      case "host.listHookEntries": {
         const context = this.context(params);
-        const workspaceBinding = params['workspaceBinding'] === 'none' ? 'none' : 'project';
+        const workspaceBinding = params["workspaceBinding"] === "none" ? "none" : "project";
         return listHookListItems({ ...context, workspaceBinding });
       }
-      case 'host.saveHookEntry': {
+      case "host.saveHookEntry": {
         const context = this.context(params);
-        const workspaceBinding = params['workspaceBinding'] === 'none' ? 'none' : 'project';
-        const request = params['request'] as Parameters<typeof saveHookEntry>[1];
+        const workspaceBinding = params["workspaceBinding"] === "none" ? "none" : "project";
+        const request = params["request"] as Parameters<typeof saveHookEntry>[1];
         if (!request) {
-          throw new Error('missing request');
+          throw new Error("missing request");
         }
         await saveHookEntry({ ...context, workspaceBinding }, request);
         return { ok: true };
       }
-      case 'host.deleteHookEntry': {
+      case "host.deleteHookEntry": {
         const context = this.context(params);
-        const workspaceBinding = params['workspaceBinding'] === 'none' ? 'none' : 'project';
-        const request = params['request'] as Parameters<typeof deleteHookEntry>[1];
+        const workspaceBinding = params["workspaceBinding"] === "none" ? "none" : "project";
+        const request = params["request"] as Parameters<typeof deleteHookEntry>[1];
         if (!request) {
-          throw new Error('missing request');
+          throw new Error("missing request");
         }
         await deleteHookEntry({ ...context, workspaceBinding }, request);
         return { ok: true };
       }
 
       // --------------------------------------------------------- extensions
-      case 'host.listExtensions': {
+      case "host.listExtensions": {
         const items = await this.extensionManager(HostService.readHostKind(params)).list();
         return items.map((item) => serializeHostExtension(item));
       }
-      case 'host.importExtension': {
-        const archiveBase64 = typeof params['archiveBase64'] === 'string' ? params['archiveBase64'].trim() : '';
+      case "host.importExtension": {
+        const archiveBase64 =
+          typeof params["archiveBase64"] === "string" ? params["archiveBase64"].trim() : "";
         if (!archiveBase64) {
-          throw new Error('extension archive is empty');
+          throw new Error("extension archive is empty");
         }
         const manager = this.extensionManager(HostService.readHostKind(params));
         const item = await manager.importArchive({
           archiveBase64,
-          ...(typeof params['fileName'] === 'string' && params['fileName'].trim()
-            ? { fileName: params['fileName'].trim() }
+          ...(typeof params["fileName"] === "string" && params["fileName"].trim()
+            ? { fileName: params["fileName"].trim() }
             : {}),
         });
         await this.sessions.refreshExtensions();
         return serializeHostExtension(item);
       }
-      case 'host.deleteExtension': {
-        const id = typeof params['id'] === 'string' ? params['id'].trim() : '';
+      case "host.deleteExtension": {
+        const id = typeof params["id"] === "string" ? params["id"].trim() : "";
         if (!id) {
-          throw new Error('missing extension id');
+          throw new Error("missing extension id");
         }
         await this.extensionManager(HostService.readHostKind(params)).remove(id);
         await this.sessions.refreshExtensions();
         return { id };
       }
-      case 'host.listMarketplaceExtensions': {
+      case "host.listMarketplaceExtensions": {
         const items = await this.marketplace(HostService.readHostKind(params)).listCatalog();
         return items.map((item) => serializeMarketplaceCatalogItem(item));
       }
-      case 'host.getMarketplaceExtensionDetail': {
-        const extensionId = typeof params['extensionId'] === 'string' ? params['extensionId'].trim() : '';
+      case "host.getMarketplaceExtensionDetail": {
+        const extensionId =
+          typeof params["extensionId"] === "string" ? params["extensionId"].trim() : "";
         if (!extensionId) {
-          throw new Error('missing extensionId');
+          throw new Error("missing extensionId");
         }
-        const detail = await this.marketplace(HostService.readHostKind(params)).getDetail(extensionId);
+        const detail = await this.marketplace(HostService.readHostKind(params)).getDetail(
+          extensionId,
+        );
         return serializeMarketplaceDetail(detail);
       }
-      case 'host.getMarketplaceExtensionReadme': {
-        const extensionId = typeof params['extensionId'] === 'string' ? params['extensionId'].trim() : '';
+      case "host.getMarketplaceExtensionReadme": {
+        const extensionId =
+          typeof params["extensionId"] === "string" ? params["extensionId"].trim() : "";
         if (!extensionId) {
-          throw new Error('missing extensionId');
+          throw new Error("missing extensionId");
         }
         return this.marketplace(HostService.readHostKind(params)).getReadme(extensionId);
       }
-      case 'host.prepareMarketplaceExtensionInstall': {
-        const extensionId = typeof params['extensionId'] === 'string' ? params['extensionId'].trim() : '';
+      case "host.prepareMarketplaceExtensionInstall": {
+        const extensionId =
+          typeof params["extensionId"] === "string" ? params["extensionId"].trim() : "";
         if (!extensionId) {
-          throw new Error('missing extensionId');
+          throw new Error("missing extensionId");
         }
         const prepared = await this.marketplace(HostService.readHostKind(params)).prepareInstall({
           extensionId,
-          ...(typeof params['version'] === 'string' && params['version'].trim()
-            ? { version: params['version'].trim() }
+          ...(typeof params["version"] === "string" && params["version"].trim()
+            ? { version: params["version"].trim() }
             : {}),
         });
         return serializeMarketplacePreparedInstall(prepared);
       }
-      case 'host.installMarketplaceExtension': {
-        const extensionId = typeof params['extensionId'] === 'string' ? params['extensionId'].trim() : '';
+      case "host.installMarketplaceExtension": {
+        const extensionId =
+          typeof params["extensionId"] === "string" ? params["extensionId"].trim() : "";
         if (!extensionId) {
-          throw new Error('missing extensionId');
+          throw new Error("missing extensionId");
         }
         const item = await this.marketplace(HostService.readHostKind(params)).install({
           extensionId,
-          ...(typeof params['version'] === 'string' && params['version'].trim()
-            ? { version: params['version'].trim() }
+          ...(typeof params["version"] === "string" && params["version"].trim()
+            ? { version: params["version"].trim() }
             : {}),
-          ...(params['reviewAcknowledged'] === true ? { reviewAcknowledged: true } : {}),
+          ...(params["reviewAcknowledged"] === true ? { reviewAcknowledged: true } : {}),
         });
         await this.sessions.refreshExtensions();
         return serializeHostExtension(item);
       }
 
       // -------------------------------------------------------------- todos
-      case 'host.listSessionTodos': {
+      case "host.listSessionTodos": {
         const sessionId = HostService.readSessionId(params);
         const store = createHostTodoStore({
           spiritDataDir: this.spiritDataDir,
@@ -231,55 +252,52 @@ export class HostService {
         });
         return { todos: await store.list({ includeCompleted: true }) };
       }
-      case 'host.replaceSessionTodos': {
+      case "host.replaceSessionTodos": {
         const sessionId = HostService.readSessionId(params);
         const store = createHostTodoStore({
           spiritDataDir: this.spiritDataDir,
           scope: { sessionKey: sessionId },
         });
-        const records = Array.isArray(params['records']) ? params['records'] : [];
+        const records = Array.isArray(params["records"]) ? params["records"] : [];
         return { todos: await store.replaceAll(records as never[]) };
       }
 
       // ---------------------------------------------------------------- MCP
-      case 'host.mcp': {
+      case "host.mcp": {
         const workspaceRoot = HostService.readWorkspaceRoot(params);
         const service = this.sessions.mcpRegistry.forWorkspace(workspaceRoot);
-        const action = String(params['action'] ?? '');
-        const inner = (params['params'] ?? {}) as Record<string, unknown>;
+        const action = String(params["action"] ?? "");
+        const inner = (params["params"] ?? {}) as Record<string, unknown>;
         switch (action) {
-          case 'listMcpServers':
+          case "listMcpServers":
             return service.listServers();
-          case 'inspectMcpServer':
-            return service.inspectServer(String(inner['name'] ?? ''));
-          case 'listMcpTools':
-            return service.listTools(String(inner['name'] ?? ''));
-          case 'listMcpResources':
-            return service.listResources(String(inner['name'] ?? ''));
-          case 'listMcpPrompts':
-            return service.listPrompts(String(inner['name'] ?? ''));
-          case 'listCachedMcpPrompts':
-            return service.listCachedPrompts(String(inner['name'] ?? ''));
-          case 'getMcpPrompt':
+          case "inspectMcpServer":
+            return service.inspectServer(String(inner["name"] ?? ""));
+          case "listMcpTools":
+            return service.listTools(String(inner["name"] ?? ""));
+          case "listMcpResources":
+            return service.listResources(String(inner["name"] ?? ""));
+          case "listMcpPrompts":
+            return service.listPrompts(String(inner["name"] ?? ""));
+          case "listCachedMcpPrompts":
+            return service.listCachedPrompts(String(inner["name"] ?? ""));
+          case "getMcpPrompt":
             return service.getPrompt(
-              String(inner['server'] ?? ''),
-              String(inner['prompt'] ?? ''),
-              typeof inner['argsJson'] === 'string' ? inner['argsJson'] : undefined,
+              String(inner["server"] ?? ""),
+              String(inner["prompt"] ?? ""),
+              typeof inner["argsJson"] === "string" ? inner["argsJson"] : undefined,
             );
-          case 'callMcpTool':
+          case "callMcpTool":
             return service.callTool(
-              String(inner['server'] ?? ''),
-              String(inner['tool'] ?? ''),
-              typeof inner['argsJson'] === 'string' ? inner['argsJson'] : undefined,
+              String(inner["server"] ?? ""),
+              String(inner["tool"] ?? ""),
+              typeof inner["argsJson"] === "string" ? inner["argsJson"] : undefined,
             );
-          case 'readMcpResource':
-            return service.readResource(
-              String(inner['server'] ?? ''),
-              String(inner['uri'] ?? ''),
-            );
-          case 'mcpStatusSnapshot':
+          case "readMcpResource":
+            return service.readResource(String(inner["server"] ?? ""), String(inner["uri"] ?? ""));
+          case "mcpStatusSnapshot":
             return service.statusSnapshot();
-          case 'startMcpBackgroundRefresh':
+          case "startMcpBackgroundRefresh":
             service.startBackgroundRefreshInBackground(true);
             return service.statusSnapshot();
           default:
@@ -293,36 +311,36 @@ export class HostService {
   }
 
   private static readSessionId(params: Record<string, unknown>): string {
-    const sessionId = params['sessionId'];
-    if (typeof sessionId !== 'string' || !sessionId.trim()) {
-      throw new Error('missing sessionId');
+    const sessionId = params["sessionId"];
+    if (typeof sessionId !== "string" || !sessionId.trim()) {
+      throw new Error("missing sessionId");
     }
     return sessionId;
   }
 }
 
 export const HOST_METHODS = new Set([
-  'host.loadCliMetadata',
-  'host.loadPlanMetadata',
-  'host.writeRuleState',
-  'host.writeSkillState',
-  'host.listWorkspaceFileReferenceSuggestions',
-  'host.primeWorkspaceFileReferenceIndex',
-  'host.validateHooks',
-  'host.listHookEntries',
-  'host.saveHookEntry',
-  'host.deleteHookEntry',
-  'host.listExtensions',
-  'host.importExtension',
-  'host.deleteExtension',
-  'host.listMarketplaceExtensions',
-  'host.getMarketplaceExtensionDetail',
-  'host.getMarketplaceExtensionReadme',
-  'host.prepareMarketplaceExtensionInstall',
-  'host.installMarketplaceExtension',
-  'host.listSessionTodos',
-  'host.replaceSessionTodos',
-  'host.mcp',
+  "host.loadCliMetadata",
+  "host.loadPlanMetadata",
+  "host.writeRuleState",
+  "host.writeSkillState",
+  "host.listWorkspaceFileReferenceSuggestions",
+  "host.primeWorkspaceFileReferenceIndex",
+  "host.validateHooks",
+  "host.listHookEntries",
+  "host.saveHookEntry",
+  "host.deleteHookEntry",
+  "host.listExtensions",
+  "host.importExtension",
+  "host.deleteExtension",
+  "host.listMarketplaceExtensions",
+  "host.getMarketplaceExtensionDetail",
+  "host.getMarketplaceExtensionReadme",
+  "host.prepareMarketplaceExtensionInstall",
+  "host.installMarketplaceExtension",
+  "host.listSessionTodos",
+  "host.replaceSessionTodos",
+  "host.mcp",
 ]);
 
 export type { JsonValue };

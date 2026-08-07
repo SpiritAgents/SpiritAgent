@@ -8,7 +8,12 @@ import {
   resolveComposerDropEffect,
 } from "../../src/lib/composer-file-drop.ts";
 
-function mockDataTransfer({ types = [], files = [], data = {}, effectAllowed = "uninitialized" } = {}) {
+function mockDataTransfer({
+  types = [],
+  files = [],
+  data = {},
+  effectAllowed = "uninitialized",
+} = {}) {
   return {
     types,
     files,

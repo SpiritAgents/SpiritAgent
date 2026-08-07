@@ -14,9 +14,9 @@ export function parseGrepRequestFromArgsExcerpt(
   try {
     const parsed = JSON.parse(excerpt) as Record<string, unknown>;
     return {
-      query: typeof parsed.query === 'string' ? parsed.query : undefined,
+      query: typeof parsed.query === "string" ? parsed.query : undefined,
       is_regexp: parsed.is_regexp === true,
-      glob: typeof parsed.glob === 'string' ? parsed.glob : undefined,
+      glob: typeof parsed.glob === "string" ? parsed.glob : undefined,
     };
   } catch {
     return undefined;
@@ -27,10 +27,10 @@ export function grepToolHeadlineDetail(
   request: GrepRequestFields,
   t: (key: string, opts?: Record<string, unknown>) => string,
 ): string | undefined {
-  const query = request.query?.trim() ?? '';
-  const glob = request.glob?.trim() ?? '';
+  const query = request.query?.trim() ?? "";
+  const glob = request.glob?.trim() ?? "";
   if (query && glob) {
-    return t('tool.searchQueryInGlob', { query, glob });
+    return t("tool.searchQueryInGlob", { query, glob });
   }
   return query || glob || undefined;
 }

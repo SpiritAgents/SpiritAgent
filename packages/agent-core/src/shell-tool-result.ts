@@ -11,7 +11,7 @@ export function combineShellToolOutput(stdout: string, stderr: string): string {
   const hasStdout = stdout.length > 0;
   const hasStderr = stderr.length > 0;
   if (!hasStdout && !hasStderr) {
-    return '';
+    return "";
   }
   if (!hasStdout) {
     return stderr;
@@ -19,7 +19,7 @@ export function combineShellToolOutput(stdout: string, stderr: string): string {
   if (!hasStderr) {
     return stdout;
   }
-  const separator = stdout.endsWith('\n') || stderr.startsWith('\n') ? '' : '\n';
+  const separator = stdout.endsWith("\n") || stderr.startsWith("\n") ? "" : "\n";
   return `${stdout}${separator}${stderr}`;
 }
 
@@ -53,7 +53,7 @@ export function serializeShellToolResult(result: ShellToolResult): string {
 
 export function parseShellToolResult(text: string): ShellToolResult | null {
   const trimmed = text.trim();
-  if (!trimmed.startsWith('{')) {
+  if (!trimmed.startsWith("{")) {
     return null;
   }
   try {
@@ -68,17 +68,17 @@ export function parseShellToolResult(text: string): ShellToolResult | null {
 }
 
 function isShellToolResult(value: unknown): value is ShellToolResult {
-  if (!value || typeof value !== 'object') {
+  if (!value || typeof value !== "object") {
     return false;
   }
   const record = value as Record<string, unknown>;
   return (
-    typeof record.terminal === 'string' &&
-    typeof record.workspace === 'string' &&
-    typeof record.command === 'string' &&
-    typeof record.exitCode === 'number' &&
+    typeof record.terminal === "string" &&
+    typeof record.workspace === "string" &&
+    typeof record.command === "string" &&
+    typeof record.exitCode === "number" &&
     Number.isFinite(record.exitCode) &&
-    typeof record.output === 'string' &&
-    (record.truncated === undefined || typeof record.truncated === 'boolean')
+    typeof record.output === "string" &&
+    (record.truncated === undefined || typeof record.truncated === "boolean")
   );
 }

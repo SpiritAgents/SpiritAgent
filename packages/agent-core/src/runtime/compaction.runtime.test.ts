@@ -1,21 +1,17 @@
-import assert from 'node:assert/strict';
-import test from 'node:test';
+import assert from "node:assert/strict";
+import test from "node:test";
 
-import {
-  includesCompactSummaryBlock,
-  unwrapCompactSummaryBlock,
-  wrapCompactSummaryBlock,
-} from '../llm-context-block.js';
-import { truncateLlmHistoryForCompaction } from '../llm-tool-agent.js';
+import { unwrapCompactSummaryBlock, wrapCompactSummaryBlock } from "../llm-context-block.js";
+import { truncateLlmHistoryForCompaction } from "../llm-tool-agent.js";
 import {
   createLlmMessageContentFromText,
   llmMessageTextContent,
   type LlmMessage,
   type LlmTransport,
-} from '../ports.js';
-import { compactHistoryImmediate, type CompactionRuntime } from './compaction.js';
-import type { AgentRuntimeOptions } from './types.js';
-import { buildSessionTranscript } from '../transcript.js';
+} from "../ports.js";
+import { compactHistoryImmediate, type CompactionRuntime } from "./compaction.js";
+import type { AgentRuntimeOptions } from "./types.js";
+import { buildSessionTranscript } from "../transcript.js";
 
 type TestState = { messages: LlmMessage[] };
 
@@ -32,37 +28,37 @@ async function syncSessionTranscriptFromHistoryForTest(
     return await sync({ transcript: buildSessionTranscript(history) });
   } catch (error: unknown) {
     emitEvent({
-      kind: 'session-transcript-sync-failed',
+      kind: "session-transcript-sync-failed",
       error: error instanceof Error ? error.message : String(error),
     });
     return undefined;
   }
 }
 
-test('compactHistoryImmediate syncs transcript without post-processing compact summary', async () => {
-  const archivePath = '/tmp/spirit/transcripts/s1';
+test("compactHistoryImmediate syncs transcript without post-processing compact summary", async () => {
+  const archivePath = "/tmp/spirit/transcripts/s1";
   const history: LlmMessage[] = [
-    { role: 'user', content: createLlmMessageContentFromText('hello') },
+    { role: "user", content: createLlmMessageContentFromText("hello") },
     {
-      role: 'assistant',
+      role: "assistant",
       content: [],
-      toolCalls: [{ id: 'call-1', name: 'read_file', argumentsJson: '{}' }],
+      toolCalls: [{ id: "call-1", name: "read_file", argumentsJson: "{}" }],
     },
     {
-      role: 'tool',
-      toolCallId: 'call-1',
-      content: createLlmMessageContentFromText('noise'),
+      role: "tool",
+      toolCallId: "call-1",
+      content: createLlmMessageContentFromText("noise"),
     },
   ];
 
   const llmTransport: LlmTransport<undefined, TestState> = {
     startToolAgentRound: async () => {
-      throw new Error('not used');
+      throw new Error("not used");
     },
     async compactHistoryManual(_config, targetHistory) {
       targetHistory.splice(0, targetHistory.length, {
-        role: 'system',
-        content: createLlmMessageContentFromText(wrapCompactSummaryBlock('compact summary')),
+        role: "system",
+        content: createLlmMessageContentFromText(wrapCompactSummaryBlock("compact summary")),
       });
       return {
         droppedMessages: targetHistory.length > 0 ? 2 : 0,
@@ -71,14 +67,14 @@ test('compactHistoryImmediate syncs transcript without post-processing compact s
       };
     },
     compactSummaryText(targetHistory) {
-      const message = targetHistory.find((entry) => entry.role === 'system');
+      const message = targetHistory.find((entry) => entry.role === "system");
       if (!message) {
         return undefined;
       }
       const text = message.content
-        .filter((part) => part.type === 'text')
+        .filter((part) => part.type === "text")
         .map((part) => part.text)
-        .join('');
+        .join("");
       return unwrapCompactSummaryBlock(text);
     },
     isContextOverflowError: () => false,
@@ -92,17 +88,17 @@ test('compactHistoryImmediate syncs transcript without post-processing compact s
     llmTransport,
     toolExecutor: {
       execute: async () => {
-        throw new Error('not used');
+        throw new Error("not used");
       },
-    } as unknown as AgentRuntimeOptions<undefined, TestState, never>['toolExecutor'],
+    } as unknown as AgentRuntimeOptions<undefined, TestState, never>["toolExecutor"],
     createToolAgentState: () => ({ messages: [] }),
     appendToolResultMessage: (state) => state,
     extractAssistantText: () => undefined,
     syncSessionTranscript: async ({ transcript }) => {
       persisted = true;
-      assert.equal(transcript.kind, 'session_transcript');
+      assert.equal(transcript.kind, "session_transcript");
       assert.equal(transcript.message_count, 2);
-      assert.equal(transcript.messages[1]?.toolCalls?.[0]?.name, 'read_file');
+      assert.equal(transcript.messages[1]?.toolCalls?.[0]?.name, "read_file");
       return archivePath;
     },
   };
@@ -110,7 +106,7 @@ test('compactHistoryImmediate syncs transcript without post-processing compact s
   const runtime: CompactionRuntime<undefined, TestState, never> = {
     options,
     historyStore: history,
-    compactionTextStore: '',
+    compactionTextStore: "",
     pendingHistoryCompaction: undefined,
     completedManualHistoryCompactionResultStore: undefined,
     emitEvent: () => {},
@@ -121,10 +117,8 @@ test('compactHistoryImmediate syncs transcript without post-processing compact s
     isBusy: () => false,
     poll: async () => {},
     syncSessionTranscriptFromHistory: async (history) =>
-      syncSessionTranscriptFromHistoryForTest(
-        options,
-        history ?? runtime.historyStore,
-        (event) => runtime.emitEvent(event as never),
+      syncSessionTranscriptFromHistoryForTest(options, history ?? runtime.historyStore, (event) =>
+        runtime.emitEvent(event as never),
       ),
   };
 
@@ -134,29 +128,29 @@ test('compactHistoryImmediate syncs transcript without post-processing compact s
   assert.equal(result.transcriptDirPath, archivePath);
   assert.equal(runtime.historyStore.length, 1);
   const compactText = runtime.historyStore[0]?.content
-    .filter((part) => part.type === 'text')
+    .filter((part) => part.type === "text")
     .map((part) => part.text)
-    .join('');
-  assert.equal(compactText, wrapCompactSummaryBlock('compact summary'));
+    .join("");
+  assert.equal(compactText, wrapCompactSummaryBlock("compact summary"));
 });
 
-test('compactHistoryImmediate emits event when session transcript sync fails', async () => {
+test("compactHistoryImmediate emits event when session transcript sync fails", async () => {
   const history: LlmMessage[] = [
-    { role: 'user', content: createLlmMessageContentFromText('hello') },
+    { role: "user", content: createLlmMessageContentFromText("hello") },
   ];
 
   const llmTransport: LlmTransport<undefined, TestState> = {
     startToolAgentRound: async () => {
-      throw new Error('not used');
+      throw new Error("not used");
     },
     async compactHistoryManual(_config, targetHistory) {
       targetHistory.splice(0, targetHistory.length, {
-        role: 'system',
-        content: createLlmMessageContentFromText(wrapCompactSummaryBlock('summary')),
+        role: "system",
+        content: createLlmMessageContentFromText(wrapCompactSummaryBlock("summary")),
       });
       return { droppedMessages: 0, beforeLength: 1, afterLength: 1 };
     },
-    compactSummaryText: () => 'summary',
+    compactSummaryText: () => "summary",
     isContextOverflowError: () => false,
     llmHistoryAsApiMessages: () => [],
     llmSystemPromptsForExport: () => ({}),
@@ -168,21 +162,21 @@ test('compactHistoryImmediate emits event when session transcript sync fails', a
     llmTransport,
     toolExecutor: {
       execute: async () => {
-        throw new Error('not used');
+        throw new Error("not used");
       },
-    } as unknown as AgentRuntimeOptions<undefined, TestState, never>['toolExecutor'],
+    } as unknown as AgentRuntimeOptions<undefined, TestState, never>["toolExecutor"],
     createToolAgentState: () => ({ messages: [] }),
     appendToolResultMessage: (state) => state,
     extractAssistantText: () => undefined,
     syncSessionTranscript: async () => {
-      throw new Error('disk full');
+      throw new Error("disk full");
     },
   };
 
   const runtime: CompactionRuntime<undefined, TestState, never> = {
     options,
     historyStore: history,
-    compactionTextStore: '',
+    compactionTextStore: "",
     pendingHistoryCompaction: undefined,
     completedManualHistoryCompactionResultStore: undefined,
     emitEvent: (event) => {
@@ -195,10 +189,8 @@ test('compactHistoryImmediate emits event when session transcript sync fails', a
     isBusy: () => false,
     poll: async () => {},
     syncSessionTranscriptFromHistory: async (history) =>
-      syncSessionTranscriptFromHistoryForTest(
-        options,
-        history ?? runtime.historyStore,
-        (event) => runtime.emitEvent(event as never),
+      syncSessionTranscriptFromHistoryForTest(options, history ?? runtime.historyStore, (event) =>
+        runtime.emitEvent(event as never),
       ),
   };
 
@@ -206,42 +198,42 @@ test('compactHistoryImmediate emits event when session transcript sync fails', a
 
   assert.equal(result.transcriptDirPath, undefined);
   assert.equal(events.length, 1);
-  assert.equal(events[0]?.kind, 'session-transcript-sync-failed');
-  assert.match(events[0]?.error ?? '', /disk full/);
+  assert.equal(events[0]?.kind, "session-transcript-sync-failed");
+  assert.match(events[0]?.error ?? "", /disk full/);
 });
 
-test('compactHistoryImmediate syncs pre-truncation history and compacts post-truncation history', async () => {
-  const longToolOutput = 'x'.repeat(20_000);
+test("compactHistoryImmediate syncs pre-truncation history and compacts post-truncation history", async () => {
+  const longToolOutput = "x".repeat(20_000);
   const history: LlmMessage[] = [
-    { role: 'user', content: createLlmMessageContentFromText('investigate') },
+    { role: "user", content: createLlmMessageContentFromText("investigate") },
     {
-      role: 'assistant',
+      role: "assistant",
       content: [],
-      toolCalls: [{ id: 'call-1', name: 'read_file', argumentsJson: '{}' }],
+      toolCalls: [{ id: "call-1", name: "read_file", argumentsJson: "{}" }],
     },
     {
-      role: 'tool',
-      toolCallId: 'call-1',
+      role: "tool",
+      toolCallId: "call-1",
       content: createLlmMessageContentFromText(longToolOutput),
     },
   ];
 
-  let compactionToolText = '';
+  let compactionToolText = "";
 
   const llmTransport: LlmTransport<undefined, TestState> = {
     startToolAgentRound: async () => {
-      throw new Error('not used');
+      throw new Error("not used");
     },
     async compactHistoryManual(_config, targetHistory) {
-      const toolMessage = targetHistory.find((entry) => entry.role === 'tool');
+      const toolMessage = targetHistory.find((entry) => entry.role === "tool");
       compactionToolText = llmMessageTextContent(toolMessage?.content ?? []);
       targetHistory.splice(0, targetHistory.length, {
-        role: 'system',
-        content: createLlmMessageContentFromText(wrapCompactSummaryBlock('summary')),
+        role: "system",
+        content: createLlmMessageContentFromText(wrapCompactSummaryBlock("summary")),
       });
       return { droppedMessages: 2, beforeLength: 3, afterLength: 1 };
     },
-    compactSummaryText: () => 'summary',
+    compactSummaryText: () => "summary",
     isContextOverflowError: () => false,
     llmHistoryAsApiMessages: () => [],
     llmSystemPromptsForExport: () => ({}),
@@ -253,25 +245,25 @@ test('compactHistoryImmediate syncs pre-truncation history and compacts post-tru
     truncateHistoryForCompaction: truncateLlmHistoryForCompaction,
     toolExecutor: {
       execute: async () => {
-        throw new Error('not used');
+        throw new Error("not used");
       },
-    } as unknown as AgentRuntimeOptions<undefined, TestState, never>['toolExecutor'],
+    } as unknown as AgentRuntimeOptions<undefined, TestState, never>["toolExecutor"],
     createToolAgentState: () => ({ messages: [] }),
     appendToolResultMessage: (state) => state,
     extractAssistantText: () => undefined,
     syncSessionTranscript: async ({ transcript }) => {
-      assert.equal(transcript.kind, 'session_transcript');
+      assert.equal(transcript.kind, "session_transcript");
       assert.equal(transcript.message_count, 2);
-      assert.equal(transcript.messages[0]?.role, 'user');
-      assert.equal(transcript.messages[1]?.toolCalls?.[0]?.name, 'read_file');
-      return '/tmp/spirit/transcripts/s1';
+      assert.equal(transcript.messages[0]?.role, "user");
+      assert.equal(transcript.messages[1]?.toolCalls?.[0]?.name, "read_file");
+      return "/tmp/spirit/transcripts/s1";
     },
   };
 
   const runtime: CompactionRuntime<undefined, TestState, never> = {
     options,
     historyStore: history,
-    compactionTextStore: '',
+    compactionTextStore: "",
     pendingHistoryCompaction: undefined,
     completedManualHistoryCompactionResultStore: undefined,
     emitEvent: () => {},
@@ -282,10 +274,8 @@ test('compactHistoryImmediate syncs pre-truncation history and compacts post-tru
     isBusy: () => false,
     poll: async () => {},
     syncSessionTranscriptFromHistory: async (history) =>
-      syncSessionTranscriptFromHistoryForTest(
-        options,
-        history ?? runtime.historyStore,
-        (event) => runtime.emitEvent(event as never),
+      syncSessionTranscriptFromHistoryForTest(options, history ?? runtime.historyStore, (event) =>
+        runtime.emitEvent(event as never),
       ),
   };
 
@@ -295,35 +285,35 @@ test('compactHistoryImmediate syncs pre-truncation history and compacts post-tru
   assert.ok(compactionToolText.length < longToolOutput.length);
 });
 
-test('compactHistoryImmediate persists tool output archive path in truncated excerpt', async () => {
-  const longToolOutput = 'y'.repeat(20_000);
-  const archivePath = '/SpiritAgent/tool-output-archives/smoke-sess/call-1.txt';
+test("compactHistoryImmediate persists tool output archive path in truncated excerpt", async () => {
+  const longToolOutput = "y".repeat(20_000);
+  const archivePath = "/SpiritAgent/tool-output-archives/smoke-sess/call-1.txt";
   const history: LlmMessage[] = [
-    { role: 'user', content: createLlmMessageContentFromText('investigate') },
+    { role: "user", content: createLlmMessageContentFromText("investigate") },
     {
-      role: 'tool',
-      toolCallId: 'call-1',
+      role: "tool",
+      toolCallId: "call-1",
       content: createLlmMessageContentFromText(longToolOutput),
     },
   ];
 
-  let persistedContent = '';
-  let compactionToolText = '';
+  let persistedContent = "";
+  let compactionToolText = "";
 
   const llmTransport: LlmTransport<undefined, TestState> = {
     startToolAgentRound: async () => {
-      throw new Error('not used');
+      throw new Error("not used");
     },
     async compactHistoryManual(_config, targetHistory) {
-      const toolMessage = targetHistory.find((entry) => entry.role === 'tool');
+      const toolMessage = targetHistory.find((entry) => entry.role === "tool");
       compactionToolText = llmMessageTextContent(toolMessage?.content ?? []);
       targetHistory.splice(0, targetHistory.length, {
-        role: 'system',
-        content: createLlmMessageContentFromText(wrapCompactSummaryBlock('summary')),
+        role: "system",
+        content: createLlmMessageContentFromText(wrapCompactSummaryBlock("summary")),
       });
       return { droppedMessages: 1, beforeLength: 2, afterLength: 1 };
     },
-    compactSummaryText: () => 'summary',
+    compactSummaryText: () => "summary",
     isContextOverflowError: () => false,
     llmHistoryAsApiMessages: () => [],
     llmSystemPromptsForExport: () => ({}),
@@ -335,9 +325,9 @@ test('compactHistoryImmediate persists tool output archive path in truncated exc
     truncateHistoryForCompaction: truncateLlmHistoryForCompaction,
     toolExecutor: {
       execute: async () => {
-        throw new Error('not used');
+        throw new Error("not used");
       },
-    } as unknown as AgentRuntimeOptions<undefined, TestState, never>['toolExecutor'],
+    } as unknown as AgentRuntimeOptions<undefined, TestState, never>["toolExecutor"],
     createToolAgentState: () => ({ messages: [] }),
     appendToolResultMessage: (state) => state,
     extractAssistantText: () => undefined,
@@ -350,7 +340,7 @@ test('compactHistoryImmediate persists tool output archive path in truncated exc
   const runtime: CompactionRuntime<undefined, TestState, never> = {
     options,
     historyStore: history,
-    compactionTextStore: '',
+    compactionTextStore: "",
     pendingHistoryCompaction: undefined,
     completedManualHistoryCompactionResultStore: undefined,
     emitEvent: () => {},
@@ -361,32 +351,36 @@ test('compactHistoryImmediate persists tool output archive path in truncated exc
     isBusy: () => false,
     poll: async () => {},
     syncSessionTranscriptFromHistory: async (history) =>
-      syncSessionTranscriptFromHistoryForTest(
-        options,
-        history ?? runtime.historyStore,
-        (event) => runtime.emitEvent(event as never),
+      syncSessionTranscriptFromHistoryForTest(options, history ?? runtime.historyStore, (event) =>
+        runtime.emitEvent(event as never),
       ),
   };
 
   await compactHistoryImmediate(runtime);
 
   assert.equal(persistedContent, longToolOutput);
-  assert.match(compactionToolText, /Full output archived at: \/SpiritAgent\/tool-output-archives\/smoke-sess\/call-1\.txt/u);
-  assert.match(compactionToolText, /Use read_file on that path only when you need omitted details\./u);
+  assert.match(
+    compactionToolText,
+    /Full output archived at: \/SpiritAgent\/tool-output-archives\/smoke-sess\/call-1\.txt/u,
+  );
+  assert.match(
+    compactionToolText,
+    /Use read_file on that path only when you need omitted details\./u,
+  );
 });
 
-test('compactHistoryImmediate keeps transcript when compaction fails after sync', async () => {
-  const transcriptDirPath = '/tmp/spirit/transcripts/orphan-session';
+test("compactHistoryImmediate keeps transcript when compaction fails after sync", async () => {
+  const transcriptDirPath = "/tmp/spirit/transcripts/orphan-session";
   const history: LlmMessage[] = [
-    { role: 'user', content: createLlmMessageContentFromText('hello') },
+    { role: "user", content: createLlmMessageContentFromText("hello") },
   ];
 
   const llmTransport: LlmTransport<undefined, TestState> = {
     startToolAgentRound: async () => {
-      throw new Error('not used');
+      throw new Error("not used");
     },
     compactHistoryManual: async () => {
-      throw new Error('llm unavailable');
+      throw new Error("llm unavailable");
     },
     compactSummaryText: () => undefined,
     isContextOverflowError: () => false,
@@ -400,9 +394,9 @@ test('compactHistoryImmediate keeps transcript when compaction fails after sync'
     llmTransport,
     toolExecutor: {
       execute: async () => {
-        throw new Error('not used');
+        throw new Error("not used");
       },
-    } as unknown as AgentRuntimeOptions<undefined, TestState, never>['toolExecutor'],
+    } as unknown as AgentRuntimeOptions<undefined, TestState, never>["toolExecutor"],
     createToolAgentState: () => ({ messages: [] }),
     appendToolResultMessage: (state) => state,
     extractAssistantText: () => undefined,
@@ -415,7 +409,7 @@ test('compactHistoryImmediate keeps transcript when compaction fails after sync'
   const runtime: CompactionRuntime<undefined, TestState, never> = {
     options,
     historyStore: history,
-    compactionTextStore: '',
+    compactionTextStore: "",
     pendingHistoryCompaction: undefined,
     completedManualHistoryCompactionResultStore: undefined,
     emitEvent: () => {},
@@ -426,10 +420,8 @@ test('compactHistoryImmediate keeps transcript when compaction fails after sync'
     isBusy: () => false,
     poll: async () => {},
     syncSessionTranscriptFromHistory: async (history) =>
-      syncSessionTranscriptFromHistoryForTest(
-        options,
-        history ?? runtime.historyStore,
-        (event) => runtime.emitEvent(event as never),
+      syncSessionTranscriptFromHistoryForTest(options, history ?? runtime.historyStore, (event) =>
+        runtime.emitEvent(event as never),
       ),
   };
 

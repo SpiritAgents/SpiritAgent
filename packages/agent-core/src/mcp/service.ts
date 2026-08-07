@@ -1,10 +1,10 @@
-import { createHash } from 'node:crypto';
-import { execFile } from 'node:child_process';
-import { readFileSync } from 'node:fs';
-import { access, readFile } from 'node:fs/promises';
-import { isAbsolute, join } from 'node:path';
+import { createHash } from "node:crypto";
+import { execFile } from "node:child_process";
+import { readFileSync } from "node:fs";
+import { access, readFile } from "node:fs/promises";
+import { isAbsolute, join } from "node:path";
 
-import type { JsonValue } from '../ports.js';
+import type { JsonValue } from "../ports.js";
 import {
   buildLazyToolGatewayDefinitions,
   buildFetchMcpResourceDefinition,
@@ -16,7 +16,7 @@ import {
   isLazyToolGatewayToolName,
   isLazyToolGatewayToolRequest as isLazyToolGatewayToolRequestValue,
   parseFetchMcpResourceArguments,
-} from '../tool-gateway/index.js';
+} from "../tool-gateway/index.js";
 import {
   parseMcpConfigFile,
   resolveEnvRecord,
@@ -27,15 +27,15 @@ import {
   spiritAgentDataDir,
   type McpConfigScope,
   normalizeMcpServerConfig,
-} from './config.js';
-import { SdkMcpConnection } from './client.js';
+} from "./config.js";
+import { SdkMcpConnection } from "./client.js";
 import {
   aggregateListedResourcesForServer,
   buildMcpToolCatalogSnapshot,
   findResourceIndexEntry,
-} from './catalog-snapshot.js';
-import { McpConfigError } from './errors.js';
-import { McpRegistry } from './registry.js';
+} from "./catalog-snapshot.js";
+import { McpConfigError } from "./errors.js";
+import { McpRegistry } from "./registry.js";
 import type {
   McpCapabilityToggles,
   McpConfigFile,
@@ -43,22 +43,20 @@ import type {
   McpServerRuntimeState,
   McpResourceIndexEntry,
   McpToolIndexEntry,
-  ResolvedMcpHttpTransportConfig,
   ResolvedMcpServerConfig,
-  ResolvedMcpStdioTransportConfig,
   ResolvedMcpTransportConfig,
   ToolAgentMcpToolCatalogSnapshot,
-} from './types.js';
+} from "./types.js";
 import {
   buildWindowsCommandCandidates,
   isWindowsPlatform,
   splitWindowsPathEntries,
   splitWindowsPathExtEntries,
-} from './windows.js';
+} from "./windows.js";
 
-const WINDOWS_USER_ENV_REGISTRY_PATH = 'HKCU\\Environment';
+const WINDOWS_USER_ENV_REGISTRY_PATH = "HKCU\\Environment";
 const WINDOWS_MACHINE_ENV_REGISTRY_PATH =
-  'HKLM\\SYSTEM\\CurrentControlSet\\Control\\Session Manager\\Environment';
+  "HKLM\\SYSTEM\\CurrentControlSet\\Control\\Session Manager\\Environment";
 
 interface McpPromptCatalogEntry {
   name: string;
@@ -73,7 +71,7 @@ interface McpPromptCatalogEntry {
 
 export interface McpToolRequest {
   [key: string]: JsonValue;
-  kind: 'mcpTool';
+  kind: "mcpTool";
   name: string;
   server: string;
   displayName: string;
@@ -94,7 +92,10 @@ interface UserMcpToolingCacheEntry {
   indexEntries: McpToolIndexEntry[];
   resourceEntries: McpResourceIndexEntry[];
   prompts: Map<string, McpPromptCatalogEntry[]>;
-  serverStates: Map<string, { state: McpServerRuntimeState; cachedTools: number; lastError?: string }>;
+  serverStates: Map<
+    string,
+    { state: McpServerRuntimeState; cachedTools: number; lastError?: string }
+  >;
 }
 
 /** User-scope MCP tooling is shared across workspace McpService instances (desktop session switches). */
@@ -168,12 +169,14 @@ export class McpService {
     };
   }
 
-  isLazyToolGatewayToolRequest(value: JsonValue): value is import('../tool-gateway/types.js').LazyToolGatewayToolRequest {
+  isLazyToolGatewayToolRequest(
+    value: JsonValue,
+  ): value is import("../tool-gateway/types.js").LazyToolGatewayToolRequest {
     return isLazyToolGatewayToolRequestValue(value);
   }
 
   async executeLazyToolGatewayToolRequest(
-    request: import('../tool-gateway/types.js').LazyToolGatewayToolRequest,
+    request: import("../tool-gateway/types.js").LazyToolGatewayToolRequest,
   ): Promise<string> {
     const backend = createMcpLazyToolGatewayBackend(this);
     return executeLazyToolGatewayCall(request.name, request.argumentsJson, backend);
@@ -197,7 +200,7 @@ export class McpService {
 
   statusSnapshot(): {
     revision: number;
-    state: 'idle' | 'loading' | 'ready' | 'error';
+    state: "idle" | "loading" | "ready" | "error";
     configuredServers: number;
     loadedServers: number;
     cachedTools: number;
@@ -210,7 +213,7 @@ export class McpService {
 
     return {
       ...snapshot,
-      state: 'error',
+      state: "error",
       lastError: this.loadErrorStore,
     };
   }
@@ -289,14 +292,17 @@ export class McpService {
     this.launchBackgroundRefresh(force);
   }
 
-  async requestFromFunctionCall(name: string, argumentsJson: string): Promise<
+  async requestFromFunctionCall(
+    name: string,
+    argumentsJson: string,
+  ): Promise<
     | {
-        kind: 'lazyToolGateway';
+        kind: "lazyToolGateway";
         name: string;
         argumentsJson: string;
       }
     | {
-        kind: 'fetchMcpResource';
+        kind: "fetchMcpResource";
         server: string;
         uri: string;
       }
@@ -305,7 +311,7 @@ export class McpService {
     if (isFetchMcpResourceToolName(name)) {
       const parsed = parseFetchMcpResourceArguments(argumentsJson);
       return {
-        kind: 'fetchMcpResource',
+        kind: "fetchMcpResource",
         server: parsed.server,
         uri: parsed.uri,
       };
@@ -316,7 +322,7 @@ export class McpService {
     }
 
     return {
-      kind: 'lazyToolGateway',
+      kind: "lazyToolGateway",
       name,
       argumentsJson,
     };
@@ -324,22 +330,17 @@ export class McpService {
 
   isFetchMcpResourceToolRequest(
     value: JsonValue,
-  ): value is import('../tool-gateway/fetch-mcp-resource.js').FetchMcpResourceToolRequest {
+  ): value is import("../tool-gateway/fetch-mcp-resource.js").FetchMcpResourceToolRequest {
     return isFetchMcpResourceToolRequestValue(value);
   }
 
   async executeFetchMcpResourceToolRequest(
-    request: import('../tool-gateway/fetch-mcp-resource.js').FetchMcpResourceToolRequest,
+    request: import("../tool-gateway/fetch-mcp-resource.js").FetchMcpResourceToolRequest,
   ): Promise<string> {
-    return executeFetchMcpResourceCall(
-      { server: request.server, uri: request.uri },
-      this,
-    );
+    return executeFetchMcpResourceCall({ server: request.server, uri: request.uri }, this);
   }
 
-  fetchMcpResourceBackgroundStatusText(
-    value: JsonValue,
-  ): string | undefined {
+  fetchMcpResourceBackgroundStatusText(value: JsonValue): string | undefined {
     // 状态由工具卡展示；勿写入 thinking aux。
     void value;
     return undefined;
@@ -370,7 +371,7 @@ export class McpService {
     }
 
     return {
-      kind: 'mcpTool',
+      kind: "mcpTool",
       name: `${server.name}/${toolName}`,
       server: server.name,
       displayName: server.displayName,
@@ -386,11 +387,7 @@ export class McpService {
     }
   }
 
-  async callTool(
-    serverName: string,
-    toolName: string,
-    argsJson?: string,
-  ): Promise<JsonValue> {
+  async callTool(serverName: string, toolName: string, argsJson?: string): Promise<JsonValue> {
     const request = await this.createToolRequest(serverName, toolName, argsJson);
     return this.callToolRequest(request);
   }
@@ -411,12 +408,12 @@ export class McpService {
       if (isJsonRecord(argumentsValue)) {
         args = argumentsValue;
       } else if (argumentsValue !== null) {
-        throw new McpConfigError('MCP 工具参数必须是 JSON object');
+        throw new McpConfigError("MCP 工具参数必须是 JSON object");
       }
 
       const result = await connection.callTool(request.toolName, args);
       this.registry.clearServerError(server.name);
-      this.registry.setServerState(server.name, 'ready', {
+      this.registry.setServerState(server.name, "ready", {
         cachedTools: this.registry.get(server.name)?.cachedTools ?? 0,
       });
       return result as JsonValue;
@@ -450,7 +447,7 @@ export class McpService {
     }
 
     const status = this.registry.get(name);
-    if (status?.state !== 'ready' || !this.toolingCacheInitialized) {
+    if (status?.state !== "ready" || !this.toolingCacheInitialized) {
       return null;
     }
 
@@ -491,7 +488,7 @@ export class McpService {
         : { resourceTemplates: [] };
       const promptsResult = supportsPrompts ? await connection.listPrompts() : { prompts: [] };
 
-      this.registry.setServerState(server.name, 'ready', {
+      this.registry.setServerState(server.name, "ready", {
         cachedTools: toolsResult.tools.length,
       });
 
@@ -501,7 +498,7 @@ export class McpService {
         protocolVersion: connection.protocolVersion,
         serverName: serverVersion?.name ?? server.name,
         ...(serverVersion?.title === undefined ? {} : { serverTitle: serverVersion.title }),
-        serverVersion: serverVersion?.version ?? 'unknown',
+        serverVersion: serverVersion?.version ?? "unknown",
         ...(serverVersion?.description === undefined
           ? {}
           : { serverDescription: serverVersion.description }),
@@ -528,7 +525,7 @@ export class McpService {
     return this.withConnection(server, async (connection) => {
       const capabilities = connection.serverCapabilities;
       if (!(server.capabilities.tools && capabilities?.tools !== undefined)) {
-        this.registry.setServerState(server.name, 'ready', { cachedTools: 0 });
+        this.registry.setServerState(server.name, "ready", { cachedTools: 0 });
         return [];
       }
 
@@ -539,7 +536,7 @@ export class McpService {
         ...(tool.description === undefined ? {} : { description: tool.description }),
         inputSchema: tool.inputSchema as unknown as JsonValue,
       }));
-      this.registry.setServerState(server.name, 'ready', { cachedTools: tools.length });
+      this.registry.setServerState(server.name, "ready", { cachedTools: tools.length });
       return tools;
     });
   }
@@ -550,12 +547,12 @@ export class McpService {
     return this.withConnection(server, async (connection) => {
       const capabilities = connection.serverCapabilities;
       if (!(server.capabilities.resources && capabilities?.resources !== undefined)) {
-        this.registry.setServerState(server.name, 'ready');
+        this.registry.setServerState(server.name, "ready");
         return [];
       }
 
       const result = await connection.listResources();
-      this.registry.setServerState(server.name, 'ready');
+      this.registry.setServerState(server.name, "ready");
       return result.resources.map((resource) => ({
         uri: resource.uri,
         name: resource.name,
@@ -574,7 +571,7 @@ export class McpService {
       const capabilities = connection.serverCapabilities;
       assertResourceCapability(server, capabilities);
       const result = await connection.readResource(uri);
-      this.registry.setServerState(server.name, 'ready');
+      this.registry.setServerState(server.name, "ready");
       return result as JsonValue;
     });
   }
@@ -585,12 +582,12 @@ export class McpService {
     return this.withConnection(server, async (connection) => {
       const capabilities = connection.serverCapabilities;
       if (!(server.capabilities.prompts && capabilities?.prompts !== undefined)) {
-        this.registry.setServerState(server.name, 'ready');
+        this.registry.setServerState(server.name, "ready");
         return [];
       }
 
       const result = await connection.listPrompts();
-      this.registry.setServerState(server.name, 'ready');
+      this.registry.setServerState(server.name, "ready");
       return result.prompts.map((prompt) => ({
         name: prompt.name,
         ...(prompt.title === undefined ? {} : { title: prompt.title }),
@@ -636,7 +633,7 @@ export class McpService {
       const capabilities = connection.serverCapabilities;
       assertPromptCapability(server, capabilities);
       const result = await connection.getPrompt(prompt, args);
-      this.registry.setServerState(server.name, 'ready');
+      this.registry.setServerState(server.name, "ready");
       return result as JsonValue;
     });
   }
@@ -657,14 +654,14 @@ export class McpService {
     server: ResolvedMcpServerConfig,
     operation: (connection: SdkMcpConnection) => Promise<T>,
   ): Promise<T> {
-    this.registry.setServerState(server.name, 'loading');
+    this.registry.setServerState(server.name, "loading");
     const connection = new SdkMcpConnection();
 
     try {
       await connection.connect(server);
       return await operation(connection);
     } catch (error) {
-      this.registry.setServerState(server.name, 'error', {
+      this.registry.setServerState(server.name, "error", {
         lastError: describeError(error),
       });
       throw error;
@@ -678,7 +675,7 @@ export class McpService {
     const processKeys = new Set<string>();
 
     for (const [key, value] of Object.entries(process.env)) {
-      if (typeof value !== 'string') {
+      if (typeof value !== "string") {
         continue;
       }
 
@@ -734,8 +731,8 @@ export class McpService {
       if (!server.enabled) {
         continue;
       }
-      const scope = this.loadedConfigStore.serverScopes[server.name] ?? 'workspace';
-      if (scope === 'user') {
+      const scope = this.loadedConfigStore.serverScopes[server.name] ?? "workspace";
+      if (scope === "user") {
         userServers.push(server);
       } else {
         workspaceServers.push(server);
@@ -754,9 +751,9 @@ export class McpService {
 
     let userCacheHit = false;
     if (
-      userServers.length > 0
-      && sharedUserMcpToolingCache
-      && sharedUserMcpToolingCache.digest === currentUserDigest
+      userServers.length > 0 &&
+      sharedUserMcpToolingCache &&
+      sharedUserMcpToolingCache.digest === currentUserDigest
     ) {
       const cached = sharedUserMcpToolingCache;
       if (!Array.isArray(cached.resourceEntries)) {
@@ -808,7 +805,7 @@ export class McpService {
       }
     }
 
-    console.error('[mcp-service] refreshToolingCaches.start', {
+    console.error("[mcp-service] refreshToolingCaches.start", {
       servers: userServers.length + workspaceServers.length,
       userCacheHit,
       userServers: userServers.length,
@@ -824,7 +821,7 @@ export class McpService {
     this.catalogRevisionStore += 1;
     this.promptCatalogStore = prompts;
     this.toolingCacheInitialized = true;
-    console.error('[mcp-service] refreshToolingCaches.done', {
+    console.error("[mcp-service] refreshToolingCaches.done", {
       indexedTools: indexEntries.length,
       indexedResources: resourceEntries.length,
       promptServers: prompts.size,
@@ -838,7 +835,7 @@ export class McpService {
     resourceEntries: McpResourceIndexEntry[],
     prompts: Map<string, McpPromptCatalogEntry[]>,
   ): Promise<{ state: McpServerRuntimeState; cachedTools: number; lastError?: string }> {
-    this.registry.setServerState(server.name, 'loading', { cachedTools: 0 });
+    this.registry.setServerState(server.name, "loading", { cachedTools: 0 });
     const connection = new SdkMcpConnection();
     try {
       await connection.connect(server);
@@ -857,11 +854,12 @@ export class McpService {
           : [];
 
       for (const tool of discoveredTools) {
-        const description = tool.description ?? `MCP tool ${tool.name} from server ${server.displayName}.`;
+        const description =
+          tool.description ?? `MCP tool ${tool.name} from server ${server.displayName}.`;
         const inputSchema = isJsonRecord(tool.inputSchema)
           ? (tool.inputSchema as JsonValue)
           : {
-              type: 'object',
+              type: "object",
               additionalProperties: true,
             };
 
@@ -901,17 +899,17 @@ export class McpService {
       );
 
       this.registry.clearServerError(server.name);
-      this.registry.setServerState(server.name, 'ready', {
+      this.registry.setServerState(server.name, "ready", {
         cachedTools: discoveredTools.length,
       });
-      return { state: 'ready', cachedTools: discoveredTools.length };
+      return { state: "ready", cachedTools: discoveredTools.length };
     } catch (error) {
       const lastError = describeError(error);
-      this.registry.setServerState(server.name, 'error', {
+      this.registry.setServerState(server.name, "error", {
         cachedTools: 0,
         lastError,
       });
-      return { state: 'error', cachedTools: 0, lastError };
+      return { state: "error", cachedTools: 0, lastError };
     } finally {
       await closeConnectionQuietly(connection, `refreshToolingCaches:${server.name}`);
     }
@@ -935,7 +933,7 @@ export class McpService {
       }
     });
     void settledPromise.catch((error) => {
-      console.error('[mcp-service] refreshToolingCaches.failed', {
+      console.error("[mcp-service] refreshToolingCaches.failed", {
         error: describeError(error),
       });
     });
@@ -974,7 +972,7 @@ export class McpService {
 }
 
 function mcpConfigDigest(config: McpConfigFile): string {
-  return createHash('sha1').update(JSON.stringify(config)).digest('hex');
+  return createHash("sha1").update(JSON.stringify(config)).digest("hex");
 }
 
 function resolveMcpConfigPaths(workspaceRoot: string): { userPath: string; workspacePath: string } {
@@ -999,9 +997,7 @@ async function loadMergedMcpConfigForWorkspace(
   const includeWorkspace = options.includeWorkspace !== false;
   const { userPath, workspacePath } = resolveMcpConfigPaths(workspaceRoot);
   const user = await loadMcpConfigFile(userPath);
-  const workspace = includeWorkspace
-    ? await loadMcpConfigFile(workspacePath)
-    : { servers: {} };
+  const workspace = includeWorkspace ? await loadMcpConfigFile(workspacePath) : { servers: {} };
   return {
     merged: mergeMcpConfigFiles(user, workspace),
     serverScopes: mcpServerScopesFromFiles(user, workspace),
@@ -1019,9 +1015,7 @@ function loadMergedMcpConfigForWorkspaceSync(
   const includeWorkspace = options.includeWorkspace !== false;
   const { userPath, workspacePath } = resolveMcpConfigPaths(workspaceRoot);
   const user = loadMcpConfigFileSync(userPath);
-  const workspace = includeWorkspace
-    ? loadMcpConfigFileSync(workspacePath)
-    : { servers: {} };
+  const workspace = includeWorkspace ? loadMcpConfigFileSync(workspacePath) : { servers: {} };
   return {
     merged: mergeMcpConfigFiles(user, workspace),
     serverScopes: mcpServerScopesFromFiles(user, workspace),
@@ -1030,10 +1024,10 @@ function loadMergedMcpConfigForWorkspaceSync(
 
 async function loadMcpConfigFile(path: string): Promise<McpConfigFile> {
   try {
-    const content = await readFile(path, 'utf8');
+    const content = await readFile(path, "utf8");
     return parseMcpConfigFile(JSON.parse(content) as unknown);
   } catch (error) {
-    if (isErrnoWithCode(error, 'ENOENT')) {
+    if (isErrnoWithCode(error, "ENOENT")) {
       return { servers: {} };
     }
 
@@ -1049,10 +1043,10 @@ async function loadMcpConfigFile(path: string): Promise<McpConfigFile> {
 
 function loadMcpConfigFileSync(path: string): McpConfigFile {
   try {
-    const content = readFileSync(path, 'utf8');
+    const content = readFileSync(path, "utf8");
     return parseMcpConfigFile(JSON.parse(content) as unknown);
   } catch (error) {
-    if (isErrnoWithCode(error, 'ENOENT')) {
+    if (isErrnoWithCode(error, "ENOENT")) {
       return { servers: {} };
     }
 
@@ -1086,9 +1080,11 @@ async function resolveRuntimeTransportConfig(
   lookup: EnvLookupStore,
 ): Promise<ResolvedMcpTransportConfig> {
   switch (transport.type) {
-    case 'stdio': {
+    case "stdio": {
       const inheritedEnv = inheritedProcessEnvironment(lookup);
-      const resolvedOverrides = resolveEnvRecord(transport.env, (name) => lookupEnvValue(lookup, name));
+      const resolvedOverrides = resolveEnvRecord(transport.env, (name) =>
+        lookupEnvValue(lookup, name),
+      );
       const env = {
         ...inheritedEnv,
         ...resolvedOverrides,
@@ -1098,10 +1094,12 @@ async function resolveRuntimeTransportConfig(
         ...transport,
         command: await resolveStdioCommand(transport.command, env),
         env,
-        ...(transport.cwd === undefined ? {} : { cwd: resolveStdioCwd(workspaceRoot, transport.cwd) }),
+        ...(transport.cwd === undefined
+          ? {}
+          : { cwd: resolveStdioCwd(workspaceRoot, transport.cwd) }),
       };
     }
-    case 'http':
+    case "http":
       return {
         ...transport,
         headers: resolveEnvRecord(transport.headers, (name) => lookupEnvValue(lookup, name)),
@@ -1111,7 +1109,7 @@ async function resolveRuntimeTransportConfig(
 
 async function resolveStdioCommand(command: string, env: Record<string, string>): Promise<string> {
   const trimmed = command.trim();
-  const hasDirectorySeparator = trimmed.includes('\\') || trimmed.includes('/');
+  const hasDirectorySeparator = trimmed.includes("\\") || trimmed.includes("/");
   if (isAbsolute(trimmed) || hasDirectorySeparator) {
     const resolved = await resolveCommandCandidate(trimmed);
     if (!resolved) {
@@ -1159,7 +1157,7 @@ function inheritedProcessEnvironment(lookup: EnvLookupStore): Record<string, str
   const processKeys = new Set<string>();
 
   for (const [key, value] of Object.entries(process.env)) {
-    if (typeof value !== 'string') {
+    if (typeof value !== "string") {
       continue;
     }
 
@@ -1193,7 +1191,7 @@ function buildManagedServerForRust(
     enabled,
     capabilities: capabilityTogglesFromConfig(server.capabilities),
     transport: transportConfigForRust(server.transport),
-    state: enabled ? 'ready' : 'disabled',
+    state: enabled ? "ready" : "disabled",
     ...(scope ? { scope } : {}),
   };
 }
@@ -1208,20 +1206,20 @@ function capabilityTogglesFromConfig(
   };
 }
 
-function transportConfigForRust(transport: McpServerConfig['transport']): JsonValue {
+function transportConfigForRust(transport: McpServerConfig["transport"]): JsonValue {
   switch (transport.type) {
-    case 'stdio':
+    case "stdio":
       return {
-        type: 'stdio',
+        type: "stdio",
         command: transport.command,
         ...(transport.args === undefined ? {} : { args: transport.args }),
         ...(transport.env === undefined ? {} : { env: transport.env }),
         ...(transport.cwd === undefined ? {} : { cwd: transport.cwd }),
         ...(transport.timeoutMs === undefined ? {} : { timeout_ms: transport.timeoutMs }),
       };
-    case 'http':
+    case "http":
       return {
-        type: 'http',
+        type: "http",
         url: transport.url,
         ...(transport.headers === undefined ? {} : { headers: transport.headers }),
         ...(transport.timeoutMs === undefined ? {} : { timeout_ms: transport.timeoutMs }),
@@ -1231,7 +1229,7 @@ function transportConfigForRust(transport: McpServerConfig['transport']): JsonVa
 
 function assertToolCapability(
   server: ResolvedMcpServerConfig,
-  capabilities: SdkMcpConnection['serverCapabilities'],
+  capabilities: SdkMcpConnection["serverCapabilities"],
 ): void {
   if (!server.capabilities.tools) {
     throw new McpConfigError(`MCP server ${server.name} 未启用 tools capability`);
@@ -1243,7 +1241,7 @@ function assertToolCapability(
 
 function assertResourceCapability(
   server: ResolvedMcpServerConfig,
-  capabilities: SdkMcpConnection['serverCapabilities'],
+  capabilities: SdkMcpConnection["serverCapabilities"],
 ): void {
   if (!server.capabilities.resources) {
     throw new McpConfigError(`MCP server ${server.name} 未启用 resources capability`);
@@ -1255,7 +1253,7 @@ function assertResourceCapability(
 
 function assertPromptCapability(
   server: ResolvedMcpServerConfig,
-  capabilities: SdkMcpConnection['serverCapabilities'],
+  capabilities: SdkMcpConnection["serverCapabilities"],
 ): void {
   if (!server.capabilities.prompts) {
     throw new McpConfigError(`MCP server ${server.name} 未启用 prompts capability`);
@@ -1274,13 +1272,13 @@ function parsePromptArguments(argsJson: string | undefined): Record<string, stri
   try {
     parsed = JSON.parse(argsJson);
   } catch (error) {
-    throw new McpConfigError('MCP prompt 参数必须是合法 JSON', {
+    throw new McpConfigError("MCP prompt 参数必须是合法 JSON", {
       cause: error instanceof Error ? error : undefined,
     });
   }
 
-  if (typeof parsed !== 'object' || parsed === null || Array.isArray(parsed)) {
-    throw new McpConfigError('MCP prompt 参数必须是 JSON object');
+  if (typeof parsed !== "object" || parsed === null || Array.isArray(parsed)) {
+    throw new McpConfigError("MCP prompt 参数必须是 JSON object");
   }
 
   const result: Record<string, string> = {};
@@ -1292,10 +1290,10 @@ function parsePromptArguments(argsJson: string | undefined): Record<string, stri
 }
 
 function stringifyPromptArgumentValue(value: unknown): string {
-  if (typeof value === 'string') {
+  if (typeof value === "string") {
     return value;
   }
-  if (typeof value === 'number' || typeof value === 'boolean' || value === null) {
+  if (typeof value === "number" || typeof value === "boolean" || value === null) {
     return String(value);
   }
 
@@ -1322,16 +1320,16 @@ async function queryWindowsRegistryEnvironment(path: string): Promise<Record<str
 function execRegistryQuery(path: string): Promise<string> {
   return new Promise((resolve) => {
     execFile(
-      'reg',
-      ['query', path],
+      "reg",
+      ["query", path],
       {
-        encoding: 'utf8',
+        encoding: "utf8",
         windowsHide: true,
         maxBuffer: 1024 * 1024,
       },
       (error, stdout) => {
         if (error) {
-          resolve('');
+          resolve("");
           return;
         }
 
@@ -1346,7 +1344,7 @@ function parseWindowsRegistryEnvironment(output: string): Record<string, string>
 
   for (const line of output.split(/\r?\n/u)) {
     const trimmed = line.trim();
-    if (!trimmed || trimmed.startsWith('HKEY_')) {
+    if (!trimmed || trimmed.startsWith("HKEY_")) {
       continue;
     }
 
@@ -1356,11 +1354,11 @@ function parseWindowsRegistryEnvironment(output: string): Record<string, string>
     }
 
     const [name, type, ...valueParts] = parts;
-    if (name === undefined || type === undefined || !type.startsWith('REG_')) {
+    if (name === undefined || type === undefined || !type.startsWith("REG_")) {
       continue;
     }
 
-    values[name] = valueParts.join('  ').trim();
+    values[name] = valueParts.join("  ").trim();
   }
 
   return values;
@@ -1382,7 +1380,7 @@ async function closeConnectionQuietly(
   try {
     await connection.close();
   } catch (error) {
-    console.error('[mcp-service] connection.close failed', {
+    console.error("[mcp-service] connection.close failed", {
       context,
       error: describeError(error),
     });
@@ -1398,7 +1396,12 @@ function describeError(error: unknown): string {
 }
 
 function isErrnoWithCode(error: unknown, code: string): boolean {
-  return typeof error === 'object' && error !== null && 'code' in error && (error as { code?: string }).code === code;
+  return (
+    typeof error === "object" &&
+    error !== null &&
+    "code" in error &&
+    (error as { code?: string }).code === code
+  );
 }
 
 function parseOptionalJsonValue(argsJson: string | undefined): JsonValue {
@@ -1409,24 +1412,26 @@ function parseOptionalJsonValue(argsJson: string | undefined): JsonValue {
   try {
     return JSON.parse(argsJson) as JsonValue;
   } catch (error) {
-    throw new McpConfigError('MCP 工具参数必须是合法 JSON', {
+    throw new McpConfigError("MCP 工具参数必须是合法 JSON", {
       cause: error instanceof Error ? error : undefined,
     });
   }
 }
 
 function isJsonRecord(value: unknown): value is Record<string, JsonValue> {
-  return typeof value === 'object' && value !== null && !Array.isArray(value);
+  return typeof value === "object" && value !== null && !Array.isArray(value);
 }
 
 function isMcpToolRequest(value: JsonValue): value is McpToolRequest {
-  return isJsonRecord(value)
-    && value.kind === 'mcpTool'
-    && typeof value.name === 'string'
-    && typeof value.server === 'string'
-    && typeof value.displayName === 'string'
-    && typeof value.toolName === 'string'
-    && 'arguments' in value;
+  return (
+    isJsonRecord(value) &&
+    value.kind === "mcpTool" &&
+    typeof value.name === "string" &&
+    typeof value.server === "string" &&
+    typeof value.displayName === "string" &&
+    typeof value.toolName === "string" &&
+    "arguments" in value
+  );
 }
 
 function findToolIndexEntry(

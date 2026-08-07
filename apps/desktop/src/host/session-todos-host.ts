@@ -1,9 +1,9 @@
-import path from 'node:path';
+import path from "node:path";
 
-import type { HostTodoRecord } from '@spiritagent/host-internal';
+import type { HostTodoRecord } from "@spiritagent/host-internal";
 
-import type { ConversationTodoSnapshot } from '../types.js';
-import type { SessionBundle } from './session-bundle.js';
+import type { ConversationTodoSnapshot } from "../types.js";
+import type { SessionBundle } from "./session-bundle.js";
 import {
   cloneHostTodoRecords,
   createTodoSessionScopeKey,
@@ -13,9 +13,9 @@ import {
   normalizeTodoSessionStorageKey,
   purgeSessionTodos,
   resolveTodoSessionKey,
-} from './todos.js';
-import { provisionalNewSessionPath } from './storage.js';
-import { ensureDesktopTranscriptSessionDir } from './transcript-session.js';
+} from "./todos.js";
+import { provisionalNewSessionPath } from "./storage.js";
+import { ensureDesktopTranscriptSessionDir } from "./transcript-session.js";
 
 export interface PendingTodoClearing {
   untilUnixMs: number;
@@ -49,8 +49,8 @@ export async function maybeRefreshRuntimeAfterTodoScopeChange(
 ): Promise<void> {
   const nextSessionKey = resolveTodoSessionKeyForBundle(bundle);
   if (
-    normalizeTodoSessionStorageKey(previousSessionKey)
-    === normalizeTodoSessionStorageKey(nextSessionKey)
+    normalizeTodoSessionStorageKey(previousSessionKey) ===
+    normalizeTodoSessionStorageKey(nextSessionKey)
   ) {
     return;
   }
@@ -87,8 +87,8 @@ export async function reconcileTodoScopeAfterSessionPathChange(
 ): Promise<void> {
   const nextSessionKey = resolveTodoSessionKeyForBundle(bundle);
   if (
-    normalizeTodoSessionStorageKey(previousSessionKey)
-    === normalizeTodoSessionStorageKey(nextSessionKey)
+    normalizeTodoSessionStorageKey(previousSessionKey) ===
+    normalizeTodoSessionStorageKey(nextSessionKey)
   ) {
     return;
   }
@@ -131,7 +131,9 @@ export function scheduleTodoClearing(
       ctx.emitLiveSnapshotUpdate();
     });
   }, 1000);
-  ctx.todoClearingBySession().set(sessionKey, { untilUnixMs, items: cloneHostTodoRecords(items), timer });
+  ctx
+    .todoClearingBySession()
+    .set(sessionKey, { untilUnixMs, items: cloneHostTodoRecords(items), timer });
 }
 
 export async function refreshTodoSnapshotForBundle(
@@ -159,7 +161,7 @@ export async function buildConversationTodoSnapshot(
     return undefined;
   }
 
-  const allCompleted = records.every((record) => record.status === 'completed');
+  const allCompleted = records.every((record) => record.status === "completed");
   if (allCompleted) {
     scheduleTodoClearing(ctx, sessionKey, records);
     return {

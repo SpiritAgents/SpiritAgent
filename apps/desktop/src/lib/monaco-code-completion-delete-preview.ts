@@ -9,10 +9,7 @@ export class DeleteDiffPreviewWidget implements monaco.editor.IContentWidget {
   private spec: InlineDeleteDiffPreviewSpec;
   private readonly editor: monaco.editor.IStandaloneCodeEditor;
 
-  constructor(
-    editor: monaco.editor.IStandaloneCodeEditor,
-    spec: InlineDeleteDiffPreviewSpec,
-  ) {
+  constructor(editor: monaco.editor.IStandaloneCodeEditor, spec: InlineDeleteDiffPreviewSpec) {
     this.editor = editor;
     this.spec = spec;
     this.domNode = document.createElement("pre");
@@ -43,7 +40,10 @@ export class DeleteDiffPreviewWidget implements monaco.editor.IContentWidget {
     const endLine = this.spec.endLineNumber;
     let anchorColumn = 1;
     for (let lineNumber = startLine; lineNumber <= endLine; lineNumber += 1) {
-      anchorColumn = Math.max(anchorColumn, this.editor.getModel()?.getLineMaxColumn(lineNumber) ?? 1);
+      anchorColumn = Math.max(
+        anchorColumn,
+        this.editor.getModel()?.getLineMaxColumn(lineNumber) ?? 1,
+      );
     }
 
     return {
