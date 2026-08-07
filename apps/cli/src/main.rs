@@ -507,7 +507,10 @@ fn run_tui(options: &GlobalCliOptions) -> Result<()> {
 fn run_app<B: Backend + io::Write + 'static>(
     terminal: &mut Terminal<B>,
     options: &GlobalCliOptions,
-) -> Result<()> {
+) -> Result<()>
+where
+    <B as Backend>::Error: Send + Sync,
+{
     let mut shell = TuiShell::new()?;
     if let Some(approval) = options.approval.as_deref() {
         shell.apply_cli_approval_level(approval)?;

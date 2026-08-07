@@ -34,5 +34,3 @@ workarounds = [
     "ring",
     "rustls",
 ]
-
-filter-noassertion = true
