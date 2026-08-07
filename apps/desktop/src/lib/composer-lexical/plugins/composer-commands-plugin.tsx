@@ -51,7 +51,7 @@ export function ComposerCommandsPlugin({
 
   useEffect(() => {
     const caretOrEnd = (): SegmentCaret => {
-      return lexicalSelectionToSegmentCaret(editor) ?? caretAtEnd(segmentsRef.current);
+      return lexicalSelectionToSegmentCaret(editor, segmentsRef.current) ?? caretAtEnd(segmentsRef.current);
     };
 
     const unregisterInsertAttachment = editor.registerCommand(
@@ -106,7 +106,7 @@ export function ComposerCommandsPlugin({
         const base = clearText ? emptySegments() : mergeAdjacentTextSegments(segmentsRef.current);
         const caret = clearText
           ? caretAtEnd(base)
-          : (lexicalSelectionToSegmentCaret(editor) ?? caretAtEnd(base));
+          : (lexicalSelectionToSegmentCaret(editor, base) ?? caretAtEnd(base));
         let { segments: next, caret: nextCaret } = insertSegmentAtCaret(base, caret, {
           kind: "skill",
           alias,
@@ -138,7 +138,7 @@ export function ComposerCommandsPlugin({
         }
         editor.focus();
         const current = mergeAdjacentTextSegments(segmentsRef.current);
-        const caret = lexicalSelectionToSegmentCaret(editor) ?? caretAtEnd(current);
+        const caret = lexicalSelectionToSegmentCaret(editor, current) ?? caretAtEnd(current);
         const seg = current[caret.segmentIndex];
         if (seg?.kind === "text") {
           const before = seg.value.slice(0, caret.offset);

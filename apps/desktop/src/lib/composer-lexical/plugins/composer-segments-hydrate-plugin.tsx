@@ -38,7 +38,7 @@ export function ComposerSegmentsHydratePlugin({
     const segments = segmentsRef.current;
     skipEditorSyncRef.current = true;
     richSegmentsToEditorState(segments, editor);
-    segmentCaretToLexicalSelection(editor, caretAtEnd(segments));
+    segmentCaretToLexicalSelection(editor, segments, caretAtEnd(segments));
     skipEditorSyncRef.current = false;
   }, [editor, editorRef, mountHydratedRef, segmentsRef, skipEditorSyncRef]);
 

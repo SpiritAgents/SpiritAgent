@@ -100,7 +100,9 @@ export function ComposerClipboardPlugin({
             const pasteSegs: RichSegment[] = [];
             appendPasteSegmentsFromHtml(parsed.body, chips, pasteSegs);
 
-            const caret = lexicalSelectionToSegmentCaret(editor) ?? { segmentIndex: 0, offset: 0 };
+            const caret =
+              lexicalSelectionToSegmentCaret(editor, segmentsRef.current) ??
+              { segmentIndex: 0, offset: 0 };
             let next = segmentsRef.current;
             let nextCaret: SegmentCaret = caret;
             for (const seg of pasteSegs) {
@@ -120,7 +122,9 @@ export function ComposerClipboardPlugin({
           return false;
         }
         clipboardEvent.preventDefault();
-        const caret = lexicalSelectionToSegmentCaret(editor) ?? caretAtEnd(segmentsRef.current);
+        const caret =
+          lexicalSelectionToSegmentCaret(editor, segmentsRef.current) ??
+          caretAtEnd(segmentsRef.current);
         const { segments: next, caret: nextCaret } = insertSegmentAtCaret(
           segmentsRef.current,
           caret,
