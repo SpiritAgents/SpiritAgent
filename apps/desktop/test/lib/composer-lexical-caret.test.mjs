@@ -53,6 +53,44 @@ test("lexical caret roundtrips multiline plain-text offset", () => {
   assert.equal(caretToPlainTextOffset(multilineSegments, caret), plainOffset);
 });
 
+test("zero-width chip caret disambiguates trailing text from preceding text end", () => {
+  const segments = [
+    { kind: "text", value: "hello" },
+    { kind: "skill", alias: "review-diff" },
+    { kind: "text", value: " world" },
+  ];
+  const editor = createComposerLexicalEditor();
+  richSegmentsToEditorState(segments, editor);
+
+  segmentCaretToLexicalSelection(editor, segments, { segmentIndex: 0, offset: 5 });
+  assert.deepEqual(lexicalSelectionToSegmentCaret(editor, segments), {
+    segmentIndex: 0,
+    offset: 5,
+  });
+
+  segmentCaretToLexicalSelection(editor, segments, { segmentIndex: 2, offset: 0 });
+  assert.deepEqual(lexicalSelectionToSegmentCaret(editor, segments), {
+    segmentIndex: 2,
+    offset: 0,
+  });
+});
+
+test("segment caret on chip segment maps to adjacent text without Lexical throw", () => {
+  const segments = [
+    { kind: "text", value: "hello " },
+    { kind: "skill", alias: "/review-diff" },
+    { kind: "text", value: " world" },
+  ];
+  const editor = createComposerLexicalEditor();
+  richSegmentsToEditorState(segments, editor);
+  assert.doesNotThrow(() => {
+    segmentCaretToLexicalSelection(editor, segments, { segmentIndex: 1, offset: 0 });
+  });
+  const caret = lexicalSelectionToSegmentCaret(editor, segments);
+  assert.equal(caret?.segmentIndex, 2);
+  assert.equal(caret?.offset, 1);
+});
+
 test("insertSegmentAtCaret uses segment-model caret after multiline end selection", () => {
   const editor = createComposerLexicalEditor();
   richSegmentsToEditorState(multilineSegments, editor);
