@@ -42,7 +42,7 @@
     "dev:cli": "cargo run -p spirit-agent",
     "dev:desktop": "pnpm --filter @spiritagent/desktop dev",
     "dev:desktop:web": "pnpm --filter @spiritagent/desktop dev:web",
-    "lint": "oxlint packages apps/desktop",
+    "lint": "oxlint --deny-warnings packages apps/desktop",
     "lint:fix": "oxlint --fix packages apps/desktop",
     "format": "oxfmt --check packages apps/desktop",
     "format:fix": "oxfmt packages apps/desktop"

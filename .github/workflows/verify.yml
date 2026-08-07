@@ -59,6 +59,12 @@ jobs:
       - name: Build TypeScript packages and Desktop
         run: pnpm turbo run build
 
+      - name: Lint TypeScript (Oxlint)
+        run: pnpm exec oxlint --deny-warnings packages apps/desktop
+
+      - name: Check TypeScript formatting (Oxfmt)
+        run: pnpm exec oxfmt --check packages apps/desktop
+
       - name: Build CLI
         run: cargo build -p spirit-agent
 
