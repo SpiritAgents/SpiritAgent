@@ -5,7 +5,7 @@
 
 # Spirit Agent
 
-**An open-source AI agent built to multiply your productivity** — grounded in your workspace, equipped with real tools, and ready to plan, execute, and ship alongside you.
+An open-source AI agent built to multiply your productivity.
 
 [Desktop app](#desktop) · [CLI](#cli) · [Server](#server) · [ACP Server](#acp-server) · [Agent Core](#agent-core) · [Development](#development)
 

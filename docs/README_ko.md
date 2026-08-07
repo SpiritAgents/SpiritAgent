@@ -5,7 +5,7 @@
 
 # Spirit Agent
 
-**생산성을 배가시키기 위해 설계된 오픈소스 AI 에이전트** — 워크스페이스에 뿌리를 두고, 실제 도구를 갖추며, 계획·실행·배포까지 함께합니다.
+생산성을 배가시키기 위해 만들어진 오픈소스 AI 에이전트.
 
 [Desktop 앱](#desktop) · [CLI](#cli) · [Server](#server) · [ACP Server](#acp-server) · [Agent Core](#agent-core) · [개발](#개발)
 
@@ -197,7 +197,7 @@ scripts/             릴리스, eval, 저장소 자동화
 
 ## 기여
 
-아키텍처 경계, 커밋 규약, agent-core 변경 가이드는 [AGENTS.md](../AGENTS.md)와 [`.github/copilot-instructions.md`](../.github/copilot-instructions.md) 참조.
+시작하려면 [CONTRIBUTING.md](../CONTRIBUTING.md)를 참조하세요. 아키텍처 경계, 커밋 규약, agent-core 가이드라인은 [AGENTS.md](../AGENTS.md)도 읽어 보세요. 보안 이슈는 [SECURITY.md](../SECURITY.md)를 참조하세요.
 
 ## 라이선스
 

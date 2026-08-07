@@ -5,7 +5,7 @@
 
 # Spirit Agent
 
-**Un agente de IA de código abierto diseñado para multiplicar tu productividad** — arraigado en tu espacio de trabajo, equipado con herramientas reales y listo para planificar, ejecutar y entregar contigo.
+Un agente de IA de código abierto diseñado para multiplicar tu productividad.
 
 [Aplicación Desktop](#desktop) · [CLI](#cli) · [Server](#server) · [ACP Server](#acp-server) · [Agent Core](#agent-core) · [Desarrollo](#desarrollo)
 
@@ -197,7 +197,7 @@ scripts/             Release, eval y automatización del repo
 
 ## Contribuir
 
-Límites de arquitectura, convenciones de commit y guía agent-core: [AGENTS.md](../AGENTS.md) y [`.github/copilot-instructions.md`](../.github/copilot-instructions.md).
+Consulta [CONTRIBUTING.md](../CONTRIBUTING.md) para empezar. Para límites de arquitectura, convenciones de commit y guía agent-core, lee también [AGENTS.md](../AGENTS.md). Para reportar problemas de seguridad, consulta [SECURITY.md](../SECURITY.md).
 
 ## Licencia
 
