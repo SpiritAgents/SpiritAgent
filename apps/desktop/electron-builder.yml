@@ -62,8 +62,6 @@ mac:
   notarize: false
 linux:
   executableName: spirit-agent
-  desktopName: Spirit Agent
-  syncDesktopName: true
   maintainer: Spirit Agent contributors <121384036+N123999@users.noreply.github.com>
   target:
     - AppImage
