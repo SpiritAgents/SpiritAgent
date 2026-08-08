@@ -32,7 +32,7 @@ import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip
 import type { DesktopAgentMode } from "@/lib/agent-mode";
 import { modelRefsEqual } from "@spiritagent/host-internal/config-v2";
 import type { BrowserElementAttachment } from "@/lib/browser-element-attachment";
-import { instantHoverMotionClass } from "@/lib/desktop-chrome";
+import { DESKTOP_ELEVATION_SHADOW_SM, instantHoverMotionClass } from "@/lib/desktop-chrome";
 import { desktopComposerSurfaceBackdropClass } from "@/lib/desktop-mica-surface";
 import { cn } from "@/lib/utils";
 import { segmentsToPlainText } from "@/lib/composer-segment-model";
@@ -195,7 +195,8 @@ export function ComposerSurface({
     <div
       data-spirit-surface="composer-surface"
       className={cn(
-        "relative overflow-hidden rounded-2xl border border-ring/30 shadow-[0_2px_20px_-4px_rgb(0_0_0/0.06)] focus-within:ring-0 hover:border-ring/60 focus-within:border-ring/60 dark:border-white/10 dark:shadow-sm dark:hover:border-white/12 dark:focus-within:border-white/12",
+        "relative overflow-hidden rounded-2xl border border-ring/30 focus-within:ring-0 hover:border-ring/60 focus-within:border-ring/60 dark:border-white/10 dark:hover:border-white/12 dark:focus-within:border-white/12",
+        DESKTOP_ELEVATION_SHADOW_SM,
         fileDragOver && "border-ring/60 dark:border-white/12",
         desktopComposerSurfaceBackdropClass(useMicaBackdrop),
       )}
