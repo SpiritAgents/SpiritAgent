@@ -1,6 +1,6 @@
 {
   "name": "@spiritagent/server",
-  "version": "0.3.2",
+  "version": "0.3.3",
   "description": "Spirit Server — shared daemon backend for Spirit Agent clients (CLI / Desktop / Web)",
   "license": "MIT",
   "repository": {

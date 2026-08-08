@@ -1,6 +1,6 @@
 {
   "name": "@spiritagent/acp-server",
-  "version": "0.3.2",
+  "version": "0.3.3",
   "description": "ACP (Agent Client Protocol) server adapter for Spirit Agent",
   "license": "MIT",
   "repository": {

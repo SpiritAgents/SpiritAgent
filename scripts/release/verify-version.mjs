@@ -43,7 +43,7 @@ async function readCargoVersion(relativePath) {
 async function readMcpClientVersion(relativePath) {
   const filePath = path.join(repoRoot, relativePath);
   const content = await readFile(filePath, 'utf8');
-  const match = content.match(/DEFAULT_MCP_CLIENT_INFO[\s\S]*?version:\s*'([^']+)'/);
+  const match = content.match(/DEFAULT_MCP_CLIENT_INFO[\s\S]*?version:\s*['"]([^'"]+)['"]/);
   if (!match) {
     throw new Error(`未在 ${relativePath} 中找到 DEFAULT_MCP_CLIENT_INFO.version`);
   }

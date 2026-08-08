@@ -38,7 +38,7 @@ Each daemon writes `{spiritDataDir}/server/instances/{instanceId}.json`:
   "host": "127.0.0.1",
   "port": 51234,
   "startedAt": "2026-08-03T09:00:00.000Z",
-  "version": "0.3.2"
+  "version": "0.3.3"
 }
 ```
 

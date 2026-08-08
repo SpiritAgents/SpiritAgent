@@ -1,6 +1,6 @@
 {
   "name": "@spiritagent/desktop",
-  "version": "0.3.2",
+  "version": "0.3.3",
   "private": true,
   "description": "Desktop application for Spirit Agent",
   "homepage": "https://github.com/SpiritAgents/SpiritAgent",
