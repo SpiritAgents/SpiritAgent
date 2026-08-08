@@ -36,6 +36,7 @@ npmRebuild: true
 buildDependenciesFromSource: false
 publish: null
 win:
+  executableName: Spirit Agent
   target:
     - nsis
     - zip
@@ -60,6 +61,9 @@ mac:
   # 35-minute Apple round trip to the build, so one network blip discards the signed output too.
   notarize: false
 linux:
+  executableName: spirit-agent
+  desktopName: Spirit Agent
+  syncDesktopName: true
   maintainer: Spirit Agent contributors <121384036+N123999@users.noreply.github.com>
   target:
     - AppImage

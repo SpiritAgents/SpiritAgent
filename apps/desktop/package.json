@@ -16,7 +16,7 @@
   },
   "type": "module",
   "scripts": {
-    "build:deps": "pnpm exec turbo run build --filter=@spiritagent/desktop^...",
+    "build:deps": "pnpm exec turbo run build --filter=\"@spiritagent/desktop^...\"",
     "ensure:dev-built": "pnpm exec turbo run build:electron --filter=@spiritagent/desktop && node scripts/ensure-pty-spawn-helper.mjs",
     "postinstall": "node scripts/ensure-pty-spawn-helper.mjs",
     "dev": "pnpm run ensure:dev-built && concurrently -k -n electron,renderer \"pnpm run dev:electron:run\" \"pnpm run dev:renderer\"",
