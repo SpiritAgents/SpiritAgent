@@ -12,6 +12,7 @@ import {
   llmMessageTextContent,
   previewRequestFromStreamingArguments,
   RESPONSES_BUILT_IN_SPIRIT_UI_KEY,
+  tryExtractPartialSubagentTask,
   tryExtractPartialWebSearchQuery,
 } from "@spiritagent/agent-core";
 
@@ -441,7 +442,10 @@ export function toolCallSummaryCopyForRequest(
       };
     }
     case "subagent": {
-      const task = typeof record.task === "string" ? record.task.trim() : "";
+      let task = typeof record.task === "string" ? record.task.trim() : "";
+      if (!task && options?.streamingArgumentsJson?.trim()) {
+        task = tryExtractPartialSubagentTask(options.streamingArgumentsJson)?.trim() ?? "";
+      }
       const contextSummary =
         typeof record.context_summary === "string" ? record.context_summary.trim() : "";
       const previewSource = task || contextSummary;
@@ -1226,6 +1230,11 @@ export function toolCallSummaryForStreamingPreview(
         ...(request as Record<string, unknown>),
       };
     } else if (fromStream !== undefined) {
+      effectiveRequest = fromStream;
+    }
+  } else if (streamingJson && toolName === "subagent") {
+    const fromStream = previewRequestFromStreamingArguments(toolName, streamingJson);
+    if (fromStream !== undefined) {
       effectiveRequest = fromStream;
     }
   }
