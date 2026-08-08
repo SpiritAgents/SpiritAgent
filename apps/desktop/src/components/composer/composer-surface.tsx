@@ -195,9 +195,9 @@ export function ComposerSurface({
     <div
       data-spirit-surface="composer-surface"
       className={cn(
-        "relative overflow-hidden rounded-2xl border border-ring/30 focus-within:ring-0 hover:border-ring/60 focus-within:border-ring/60 dark:border-white/10 dark:hover:border-white/12 dark:focus-within:border-white/12",
+        "relative overflow-hidden rounded-2xl border border-ring/30 focus-within:ring-0 hover:border-ring/40 focus-within:border-ring/40 dark:border-white/10 dark:hover:border-white/12 dark:focus-within:border-white/12",
         DESKTOP_ELEVATION_SHADOW_SM,
-        fileDragOver && "border-ring/60 dark:border-white/12",
+        fileDragOver && "border-ring/40 dark:border-white/12",
         desktopComposerSurfaceBackdropClass(useMicaBackdrop),
       )}
       onDragOver={handleSurfaceDragOver}

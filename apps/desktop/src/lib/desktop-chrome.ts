@@ -4,13 +4,18 @@ import {
   DESKTOP_SIDEBAR_TEXT_CLASS,
   FONT_WEIGHT_NORMAL,
 } from "@/lib/desktop-typography";
-import { desktopComposerChipSurfaceClass } from "@/lib/desktop-mica-surface";
+import {
+  DESKTOP_OVERLAY_LIGHT_SHADOW,
+  desktopComposerChipSurfaceClass,
+} from "@/lib/desktop-mica-surface";
 import { cn } from "@/lib/utils";
 
 export {
   DESKTOP_COMPOSER_SURFACE_BACKDROP,
   DESKTOP_COMPOSER_SURFACE_MICA_TINT,
   DESKTOP_COMPOSER_SURFACE_SOLID,
+  DESKTOP_ELEVATION_SHADOW_SM,
+  DESKTOP_OVERLAY_LIGHT_SHADOW,
   desktopComposerChipSurfaceClass,
   desktopComposerSurfaceBackdropClass,
 } from "@/lib/desktop-mica-surface";
@@ -102,18 +107,11 @@ export const DESKTOP_GIT_ACTION_MENU_TRIGGER = cn(
  * SHORT 系列仅保留给仍需要 text-sm 密度的局部场景。
  */
 
-/** 浅色模式浮层 / 抬起表面扩散阴影；深色勿放大，由调用方配 dark:shadow-* */
-export const DESKTOP_OVERLAY_LIGHT_SHADOW =
-  "shadow-[0_2px_20px_-4px_rgb(0_0_0/0.06)]";
-
 /** 浮层阴影：浅色扩散 + 深色沿用 md */
 export const DESKTOP_OVERLAY_SHADOW = cn(DESKTOP_OVERLAY_LIGHT_SHADOW, "dark:shadow-md");
 
 /** 浮层阴影：浅色扩散 + 深色沿用 lg（Tooltip / Popover / HoverCard 等） */
 export const DESKTOP_OVERLAY_SHADOW_LG = cn(DESKTOP_OVERLAY_LIGHT_SHADOW, "dark:shadow-lg");
-
-/** 抬起表面阴影：浅色扩散 + 深色沿用 sm（Composer / 消息气泡等） */
-export const DESKTOP_ELEVATION_SHADOW_SM = cn(DESKTOP_OVERLAY_LIGHT_SHADOW, "dark:shadow-sm");
 
 /** 短列表：轻外壳（仅局部场景使用） */
 export const DESKTOP_OVERLAY_SHORT_SHELL = cn("rounded-lg ring-0", DESKTOP_OVERLAY_SHADOW);

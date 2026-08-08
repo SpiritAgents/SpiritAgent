@@ -2,7 +2,10 @@ import { useEffect, useMemo, useState } from "react";
 import { Check, ChevronDown, Circle, LoaderCircle } from "lucide-react";
 
 import type { ConversationTodoSnapshot } from "@/types";
-import { desktopComposerSurfaceBackdropClass } from "@/lib/desktop-mica-surface";
+import {
+  DESKTOP_ELEVATION_SHADOW_SM,
+  desktopComposerSurfaceBackdropClass,
+} from "@/lib/desktop-mica-surface";
 import { cn } from "@/lib/utils";
 
 type ComposerTodoCardProps = {
@@ -77,7 +80,8 @@ export function ComposerTodoCard({
     <div
       data-spirit-surface="composer-todo-card"
       className={cn(
-        "overflow-hidden rounded-t-2xl rounded-b-none border border-border/50 shadow-sm transition-[max-height] duration-300 ease-out dark:border-white/12",
+        "overflow-hidden rounded-t-2xl rounded-b-none border border-ring/30 transition-[max-height] duration-300 ease-out dark:border-white/12",
+        DESKTOP_ELEVATION_SHADOW_SM,
         desktopComposerSurfaceBackdropClass(useMicaBackdrop),
       )}
     >
