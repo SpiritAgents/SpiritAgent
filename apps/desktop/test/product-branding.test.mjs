@@ -35,7 +35,7 @@ test("index.html title is Spirit Agent without Desktop/MVP", async () => {
 
 test("about dialog message is Spirit Agent without Desktop/MVP", async () => {
   const source = await readFile(join(desktopRoot, "electron/application-menu.ts"), "utf8");
-  assert.match(source, /message:\s*'Spirit Agent'/);
+  assert.match(source, /message:\s*PRODUCT_DISPLAY_NAME/);
   assert.doesNotMatch(source, /message:\s*'Spirit Agent Desktop/);
   assert.doesNotMatch(source, /Desktop MVP/);
 });

@@ -174,6 +174,7 @@ import { resolveRendererDistPath } from "./renderer-dist.js";
 import { registerGitHubDeviceLoginRunners } from "../src/host/github-oauth-bridge.js";
 import { listSystemFonts } from "./system-fonts.js";
 import { syncWindowsImmersiveDarkMode } from "./win-dwm.js";
+import { configureElectronProductDisplayName } from "./product-display-name.js";
 import i18nHost from "../src/lib/i18n-host.js";
 
 /** 与 `titleBarOverlay.height` 及自绘标题栏 CSS 高度一致（px） */
@@ -186,6 +187,8 @@ const MANAGED_GENERATED_VIDEOS_DIR = "generated-videos";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
+
+configureElectronProductDisplayName();
 
 const DEV_SERVER_URL = process.env.VITE_DEV_SERVER_URL;
 
