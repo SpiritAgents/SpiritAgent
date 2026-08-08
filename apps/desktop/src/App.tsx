@@ -50,6 +50,7 @@ import {
   isElectronChrome,
   isWin32ElectronShell,
   resolveUseMicaBackdrop,
+  syncLaunchSplashChromeToDocument,
   type ShellOverlayPhase,
 } from "@/lib/desktop-shell";
 import { isMarkdownPath } from "@/lib/file-picker-path";
@@ -222,12 +223,28 @@ export default function App() {
     runtime.webHostPairingRequired && runtime.hostKind === "web" && !snapshot;
   const launchSplashOverlayUp = launchSplashPhase === "running" || launchSplashPhase === "leaving";
   const onboardingOverlayUp = onboardingPhase === "running" || onboardingPhase === "leaving";
-  /** 全屏 overlay 挂载期间隐藏 app-body；Mica leaving 时改由 CSS opacity 交叉淡入。 */
+  /**
+   * 全屏 overlay（LaunchSplash / OOBE）挂载期间隐藏 app-body：视觉隐藏走 styles.css 的
+   * spirit-launch-splash-active opacity 规则（保持栅格化，退场时覆盖层整层淡出才能平滑衔接）；
+   * 此处只补 inert 阻隔焦点/指针/读屏——不用 visibility:hidden，它会抑制绘制，
+   * 把 app-body 首次栅格化拖进退场窗口，退场动画被吃成硬切。
+   */
   const shellUnderlayHidden =
     launchSplashActive || onboardingVisible || launchSplashOverlayUp || onboardingOverlayUp;
-  const appBodyMicaCrossfade =
-    useMicaBackdrop && (launchSplashPhase === "leaving" || onboardingPhase === "leaving");
-  const appBodyInvisible = shellUnderlayHidden && !appBodyMicaCrossfade;
+  /**
+   * 两个全屏 overlay 共享同一组 html class（styles.css 依此在 overlay 期间隐藏 app-body），
+   * 必须在此单点派生：若由各组件自行 sync，phase 为 "gone" 的一方挂载时会把仍在运行的
+   * 另一方的 class 清掉，app-body 在启动层期间漏出（Blur 下半透明 tint 会透出侧栏内容）。
+   */
+  const shellOverlayPhase: ShellOverlayPhase = launchSplashOverlayUp
+    ? launchSplashPhase
+    : onboardingOverlayUp
+      ? onboardingPhase
+      : "gone";
+
+  useLayoutEffect(() => {
+    syncLaunchSplashChromeToDocument(shellOverlayPhase);
+  }, [shellOverlayPhase]);
 
   const handleOnboardingDone = useCallback(() => {
     void (async () => {
@@ -320,10 +337,8 @@ export default function App() {
               />
               <div
                 data-spirit-surface="app-body"
-                className={cn(
-                  "flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden",
-                  appBodyInvisible && "invisible",
-                )}
+                inert={shellUnderlayHidden}
+                className="flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden"
               >
                 {!desktopTitleBarChrome ? (
                   <div

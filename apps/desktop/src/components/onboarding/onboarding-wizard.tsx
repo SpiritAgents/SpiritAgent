@@ -17,7 +17,7 @@ import { SpiritGlassLogo, spiritGlassLogoMaskStyle } from "@/components/spirit-g
 import { Button } from "@/components/ui/button";
 import { DESKTOP_PAGE_TITLE_CLASS } from "@/lib/desktop-typography";
 import { desktopFullscreenOverlayTintClass } from "@/lib/desktop-mica-surface";
-import { syncLaunchSplashChromeToDocument, type ShellOverlayPhase } from "@/lib/desktop-shell";
+import type { ShellOverlayPhase } from "@/lib/desktop-shell";
 import { useTheme } from "@/hooks/useTheme";
 import { cn } from "@/lib/utils";
 import type {
@@ -161,17 +161,6 @@ export function OnboardingWizard({
   }, [leavingStep]);
 
   useLayoutEffect(() => {
-    if (phase === "gone") {
-      syncLaunchSplashChromeToDocument("gone");
-      return;
-    }
-    syncLaunchSplashChromeToDocument(phase === "leaving" ? "leaving" : "running");
-    return () => {
-      syncLaunchSplashChromeToDocument("gone");
-    };
-  }, [phase]);
-
-  useLayoutEffect(() => {
     onPhaseChange?.(phase);
   }, [onPhaseChange, phase]);
 
@@ -247,7 +236,7 @@ export function OnboardingWizard({
         // z-40：低于 Radix 浮层（Dialog/Select 等 z-50），向导内弹窗才能置顶；
         // 仍高于主 UI，保证淡出期间盖住已恢复可见的 app-body。
         "fixed inset-0 z-40 flex flex-col",
-        desktopFullscreenOverlayTintClass(useMicaBackdrop, exiting),
+        desktopFullscreenOverlayTintClass(useMicaBackdrop),
         "transition-opacity duration-[360ms] ease-out motion-reduce:duration-150",
         exiting ? "pointer-events-none opacity-0" : "opacity-100",
       )}

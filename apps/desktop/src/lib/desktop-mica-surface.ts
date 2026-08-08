@@ -56,15 +56,9 @@ export function desktopMicaTintClass(useMicaBackdrop: boolean): string {
 
 /**
  * LaunchSplash / OOBE 全屏覆盖层 tint。
- * 退场时背景须透明：与 styles.css 中 app-body 交叉淡入同步，避免两层 `bg-background/70` 叠加深色。
+ * 退场时整层（含背景 tint）随 opacity 淡出，背景本身参与渐隐，故 tint 全程保持，不做透明切换。
  */
-export function desktopFullscreenOverlayTintClass(
-  useMicaBackdrop: boolean,
-  exiting: boolean,
-): string {
-  if (exiting) {
-    return TRANSPARENT_BACKGROUND_CLASS;
-  }
+export function desktopFullscreenOverlayTintClass(useMicaBackdrop: boolean): string {
   return desktopMicaTintClass(useMicaBackdrop);
 }
 

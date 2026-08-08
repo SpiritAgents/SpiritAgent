@@ -354,26 +354,30 @@ html.spirit-launch-splash-exiting [data-spirit-surface="desktop-title-bar"] {
 }
 
 /*
- * 启动层 + 原生模糊：须隐藏其下的应用布局，否则会合成进系统材质（macOS 尤甚）。
- * 退场时与启动层 opacity 同步交叉淡入，全程保持模糊材质不关。
+ * 启动层 / OOBE 挂载期间隐藏其下的应用布局；开启原生模糊时必须隐藏，否则会合成进系统材质（macOS 尤甚）。
+ * 必须用 opacity 而非 visibility：opacity:0 的子树仍正常绘制并驻留合成层，退场开始时可即刻上屏；
+ * visibility:hidden 会跳过绘制，首次栅格化被推迟到退场开始，500ms 退出窗口被栅格化耗时吃成硬切。
+ * 退场时覆盖层整层（含背景 tint）以 500ms ease-out 淡出；下层淡入曲线须与之补偿：
+ * 瞬时就位或短淡入会与覆盖层 tint 叠出加深阶跃（突兀变深）；等速 ease-out 长淡入则前段
+ * 到达太慢，有效遮盖率中段下凹透出窗口材质（深色下泛白）。cubic-bezier(0.16,1,0.3,1)
+ * 前载到达（20% 行程即到 75%），逐帧跟踪覆盖层衰减，有效遮盖率全程 ≈0.70 无起伏。
  */
-html.spirit-desktop-native.spirit-desktop-mica.spirit-launch-splash-active
+html.spirit-launch-splash-active
   [data-spirit-surface="app-shell"]
   > :not([data-spirit-surface="launch-splash"]):not([data-spirit-surface="onboarding-wizard"]) {
   opacity: 0;
   pointer-events: none;
 }
 
-html.spirit-desktop-native.spirit-desktop-mica.spirit-launch-splash-exiting
+html.spirit-launch-splash-exiting
   [data-spirit-surface="app-shell"]
   > :not([data-spirit-surface="launch-splash"]):not([data-spirit-surface="onboarding-wizard"]) {
   opacity: 1;
-  pointer-events: auto;
-  transition: opacity 500ms ease-out;
+  transition: opacity 500ms cubic-bezier(0.16, 1, 0.3, 1);
 }
 
 @media (prefers-reduced-motion: reduce) {
-  html.spirit-desktop-native.spirit-desktop-mica.spirit-launch-splash-exiting
+  html.spirit-launch-splash-exiting
     [data-spirit-surface="app-shell"]
     > :not([data-spirit-surface="launch-splash"]):not([data-spirit-surface="onboarding-wizard"]) {
     transition-duration: 200ms;
