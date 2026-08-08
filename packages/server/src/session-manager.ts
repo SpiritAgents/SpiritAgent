@@ -105,6 +105,8 @@ interface ServerSession {
         updatedAtUnixMs: number;
       }
     | undefined;
+  /** Fingerprint of childSessions summaries; used to push archives when membership/status changes. */
+  childSessionsFingerprint?: string;
 }
 
 export interface SessionManagerCallbacks {
@@ -117,6 +119,7 @@ export interface SessionManagerCallbacks {
       parentToolCallId: string;
       events: RuntimeEvent<JsonValue>[];
       pendingAux: unknown;
+      archive?: unknown;
     }>,
   ) => void;
   /** Broadcast before the runtime starts so every client opens the same turn boundary. */
@@ -455,12 +458,41 @@ export class SessionManager {
       const { runtime } = session.runtimeResult;
       await session.runtimeResult.toolExecutor.refreshCaches();
       await runtime.poll();
+      const childSessions = runtime.childSessions();
+      const childSessionsFingerprint = childSessions
+        .map((entry) => `${entry.sessionId}:${entry.status}:${entry.parentToolCallId}`)
+        .join("|");
+      const childSessionsChanged = session.childSessionsFingerprint !== childSessionsFingerprint;
+      if (childSessionsChanged) {
+        session.childSessionsFingerprint = childSessionsFingerprint;
+      }
+
       const childDrains = runtime.drainActiveChildSessionEvents().map((drain) => ({
         ...drain,
         pendingAux: runtime.childSessionPendingAuxState(drain.sessionId),
+        archive: runtime.childSessionArchive(drain.sessionId),
       }));
-      if (childDrains.some((drain) => drain.events.length > 0 || drain.pendingAux !== undefined)) {
-        this.callbacks.broadcastSubagentEvents?.(session.info.sessionId, childDrains);
+      const hasLiveChildPayload = childDrains.some(
+        (drain) => drain.events.length > 0 || drain.pendingAux !== undefined,
+      );
+      // Membership/status changes (incl. first create + mid-turn complete) must push
+      // archives even when the child produced no events this tick — Desktop remote
+      // runtime otherwise keeps empty childSessionArchives until turnFinished.
+      if (hasLiveChildPayload || childSessionsChanged) {
+        const drains =
+          hasLiveChildPayload
+            ? childDrains
+            : runtime.childSessionArchives().map((archive) => ({
+                sessionId: archive.summary.sessionId,
+                parentToolCallId: archive.summary.parentToolCallId,
+                events: [] as RuntimeEvent<JsonValue>[],
+                pendingAux: runtime.childSessionPendingAuxState(archive.summary.sessionId),
+                archive,
+              }));
+        this.callbacks.broadcastSubagentEvents?.(session.info.sessionId, drains);
+      }
+      if (childSessionsChanged) {
+        this.callbacks.broadcastSnapshot(session.info.sessionId, this.snapshotForSession(session));
       }
       // The bridge had clients drive this on a timer; the daemon pump owns it now.
       runtime.handleStreamStallTimeout();

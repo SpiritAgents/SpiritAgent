@@ -436,6 +436,7 @@ import {
   closeSharedDesktopServerClient,
   createRemoteDesktopRuntime,
   disposeRemoteDesktopRuntime,
+  ensureRemoteChildSessionArchivesFresh,
   exportRemoteDesktopState,
   migrateRemoteConversationKey,
   openRemoteDesktopRuntime,
@@ -2229,6 +2230,11 @@ class DesktopHostService {
   async setSubagentViewerTarget(parentToolCallId: string | null): Promise<DesktopSnapshot> {
     const trimmed = parentToolCallId?.trim();
     this.subagentViewerTargetToolCallId = trimmed && trimmed.length > 0 ? trimmed : null;
+    if (this.subagentViewerTargetToolCallId) {
+      const bundle = this.activeBundle();
+      await ensureRemoteChildSessionArchivesFresh(bundle.runtime);
+      this.refreshArchiveFromRuntime(bundle);
+    }
     const snapshot = await this.buildSnapshot();
     return snapshot;
   }
