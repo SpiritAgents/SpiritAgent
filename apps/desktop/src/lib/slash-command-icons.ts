@@ -1,10 +1,10 @@
 import type { LucideIcon } from "lucide-react";
 import {
   Bug,
-  CircleHelp,
   ClipboardList,
   FoldVertical,
   GitFork,
+  MessageCircleQuestionMark,
   MessageSquare,
   Repeat,
   ScrollText,
@@ -20,7 +20,7 @@ export const SLASH_SUGGESTION_ICONS: Record<SkillSlashSuggestionKind, LucideIcon
   "side-chat": MessageSquare,
   loop: Repeat,
   plan: ClipboardList,
-  ask: CircleHelp,
+  ask: MessageCircleQuestionMark,
   debug: Bug,
   skill: Sparkles,
 };
