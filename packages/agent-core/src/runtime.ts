@@ -3652,9 +3652,13 @@ export class AgentRuntime<Config, State, ToolRequest, TrustTarget = string> {
       ? scopeAgentRuntimeOptionsForSubagentWorkspace(this.options, childWorkspaceRoot)
       : this.options;
     // Parent owns transcript files; child must not overwrite the main session transcript.
+    // onEvent is the parent session's host channel (e.g. the server broadcasts it as
+    // `runtime.event`); child events must reach hosts only via drainActiveChildSessionEvents,
+    // otherwise child thinking/text leaks into the main session's event stream.
     const {
       syncSessionTranscript: _omitSyncSessionTranscript,
       syncSubagentTranscript: _omitSyncSubagentTranscript,
+      onEvent: _omitOnEvent,
       ...childRuntimeOptions
     } = scopedOptions;
     return new AgentRuntime<Config, State, ToolRequest, TrustTarget>(
