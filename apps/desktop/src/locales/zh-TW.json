@@ -1005,7 +1005,7 @@
     "noOpenTabs": "無開啟的分頁。",
     "filePickerTitle": "開啟檔案",
     "filePickerDescription": "搜尋工作區檔案或輸入絕對路徑以開啟任何檔案。",
-    "filePickerPlaceholder": "依檔案名稱或路徑搜尋…",
+    "filePickerPlaceholder": "依檔案名稱或路徑搜尋",
     "filePickerEmpty": "沒有相符的檔案",
     "filePickerIndexing": "正在索引工作區檔案…",
     "filePickerOpenAbsolutePath": "開啟路徑：{{path}}",
@@ -1015,7 +1015,7 @@
   "actionPalette": {
     "title": "命令面板",
     "description": "搜尋並執行工作區動作。",
-    "placeholder": "搜尋命令…",
+    "placeholder": "搜尋命令",
     "empty": "沒有相符的命令",
     "newSessionDescription": "開始新對話"
   },

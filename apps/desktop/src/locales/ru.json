@@ -1005,7 +1005,7 @@
     "noOpenTabs": "Нет открытых вкладок.",
     "filePickerTitle": "Открыть файл",
     "filePickerDescription": "Поиск файлов в рабочем пространстве или укажите абсолютный путь для открытия любого файла.",
-    "filePickerPlaceholder": "Поиск по имени файла или пути…",
+    "filePickerPlaceholder": "Поиск по имени файла или пути",
     "filePickerEmpty": "Нет подходящих файлов",
     "filePickerIndexing": "Индексация файлов рабочего пространства…",
     "filePickerOpenAbsolutePath": "Открыть путь: {{path}}",
@@ -1015,7 +1015,7 @@
   "actionPalette": {
     "title": "Палитра команд",
     "description": "Поиск и выполнение действий рабочего пространства.",
-    "placeholder": "Поиск команд…",
+    "placeholder": "Поиск команд",
     "empty": "Нет подходящих команд",
     "newSessionDescription": "Начать новый сеанс разговора"
   },

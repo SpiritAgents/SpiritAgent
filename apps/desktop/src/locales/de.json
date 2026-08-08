@@ -1005,7 +1005,7 @@
     "noOpenTabs": "Keine offenen Tabs.",
     "filePickerTitle": "Datei öffnen",
     "filePickerDescription": "Durchsuchen Sie Workspace-Dateien oder geben Sie einen absoluten Pfad ein, um eine beliebige Datei zu öffnen.",
-    "filePickerPlaceholder": "Nach Dateiname oder Pfad suchen…",
+    "filePickerPlaceholder": "Nach Dateiname oder Pfad suchen",
     "filePickerEmpty": "Keine übereinstimmenden Dateien",
     "filePickerIndexing": "Indiziere Workspace-Dateien…",
     "filePickerOpenAbsolutePath": "Pfad öffnen: {{path}}",
@@ -1015,7 +1015,7 @@
   "actionPalette": {
     "title": "Befehlspalette",
     "description": "Suchen und Ausführen von Workspace-Aktionen.",
-    "placeholder": "Befehle suchen…",
+    "placeholder": "Befehle suchen",
     "empty": "Keine passenden Befehle",
     "newSessionDescription": "Neue Konversationssitzung starten"
   },

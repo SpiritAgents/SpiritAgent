@@ -1005,7 +1005,7 @@
     "noOpenTabs": "No hay pestañas abiertas.",
     "filePickerTitle": "Abrir archivo",
     "filePickerDescription": "Busca archivos del espacio de trabajo o ingresa una ruta absoluta para abrir cualquier archivo.",
-    "filePickerPlaceholder": "Buscar por nombre o ruta…",
+    "filePickerPlaceholder": "Buscar por nombre o ruta",
     "filePickerEmpty": "No se encontraron archivos",
     "filePickerIndexing": "Indexando archivos del espacio de trabajo…",
     "filePickerOpenAbsolutePath": "Abrir ruta: {{path}}",
@@ -1015,7 +1015,7 @@
   "actionPalette": {
     "title": "Paleta de comandos",
     "description": "Busca y ejecuta acciones del espacio de trabajo.",
-    "placeholder": "Buscar comandos…",
+    "placeholder": "Buscar comandos",
     "empty": "No hay comandos que coincidan",
     "newSessionDescription": "Iniciar una nueva sesión de conversación"
   },

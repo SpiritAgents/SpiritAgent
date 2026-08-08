@@ -1005,7 +1005,7 @@
     "noOpenTabs": "Aucun onglet ouvert.",
     "filePickerTitle": "Ouvrir un fichier",
     "filePickerDescription": "Rechercher des fichiers de l'espace de travail ou entrer un chemin absolu pour ouvrir un fichier.",
-    "filePickerPlaceholder": "Rechercher par nom de fichier ou chemin…",
+    "filePickerPlaceholder": "Rechercher par nom de fichier ou chemin",
     "filePickerEmpty": "Aucun fichier correspondant",
     "filePickerIndexing": "Indexation des fichiers de l'espace de travail…",
     "filePickerOpenAbsolutePath": "Ouvrir le chemin : {{path}}",
@@ -1015,7 +1015,7 @@
   "actionPalette": {
     "title": "Palette de commandes",
     "description": "Rechercher et exécuter des actions de l'espace de travail.",
-    "placeholder": "Rechercher des commandes…",
+    "placeholder": "Rechercher des commandes",
     "empty": "Aucune commande correspondante",
     "newSessionDescription": "Démarrer une nouvelle session de conversation"
   },

@@ -1002,7 +1002,7 @@
     "noOpenTabs": "暂无打开的选项卡。",
     "filePickerTitle": "打开文件",
     "filePickerDescription": "在工作区中搜索文件，或输入绝对路径打开任意文件。",
-    "filePickerPlaceholder": "按文件名或路径搜索…",
+    "filePickerPlaceholder": "按文件名或路径搜索",
     "filePickerEmpty": "无匹配文件",
     "filePickerIndexing": "正在索引工作区文件…",
     "filePickerOpenAbsolutePath": "打开路径：{{path}}",
@@ -1012,7 +1012,7 @@
   "actionPalette": {
     "title": "命令面板",
     "description": "搜索并运行工作区操作。",
-    "placeholder": "搜索命令…",
+    "placeholder": "搜索命令",
     "empty": "无匹配命令",
     "newSessionDescription": "开始新的对话会话"
   },

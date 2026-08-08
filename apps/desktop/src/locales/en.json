@@ -1005,7 +1005,7 @@
     "noOpenTabs": "No open tabs.",
     "filePickerTitle": "Open File",
     "filePickerDescription": "Search workspace files or enter an absolute path to open any file.",
-    "filePickerPlaceholder": "Search by file name or path…",
+    "filePickerPlaceholder": "Search by file name or path",
     "filePickerEmpty": "No matching files",
     "filePickerIndexing": "Indexing workspace files…",
     "filePickerOpenAbsolutePath": "Open path: {{path}}",
@@ -1015,7 +1015,7 @@
   "actionPalette": {
     "title": "Command Palette",
     "description": "Search and run workspace actions.",
-    "placeholder": "Search commands…",
+    "placeholder": "Search commands",
     "empty": "No matching commands",
     "newSessionDescription": "Start a new conversation session"
   },

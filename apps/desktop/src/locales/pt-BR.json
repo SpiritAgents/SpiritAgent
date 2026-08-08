@@ -1005,7 +1005,7 @@
     "noOpenTabs": "Nenhuma aba aberta.",
     "filePickerTitle": "Abrir arquivo",
     "filePickerDescription": "Pesquise arquivos do workspace ou insira um caminho absoluto para abrir qualquer arquivo.",
-    "filePickerPlaceholder": "Pesquisar por nome ou caminho…",
+    "filePickerPlaceholder": "Pesquisar por nome ou caminho",
     "filePickerEmpty": "Nenhum arquivo correspondente",
     "filePickerIndexing": "Indexando arquivos do workspace…",
     "filePickerOpenAbsolutePath": "Abrir caminho: {{path}}",
@@ -1015,7 +1015,7 @@
   "actionPalette": {
     "title": "Paleta de comandos",
     "description": "Pesquise e execute ações do workspace.",
-    "placeholder": "Pesquisar comandos…",
+    "placeholder": "Pesquisar comandos",
     "empty": "Nenhum comando correspondente",
     "newSessionDescription": "Iniciar uma nova sessão de conversa"
   },

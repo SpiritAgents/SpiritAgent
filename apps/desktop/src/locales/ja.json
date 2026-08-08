@@ -1005,7 +1005,7 @@
     "noOpenTabs": "開いているタブはありません。",
     "filePickerTitle": "ファイルを開く",
     "filePickerDescription": "ワークスペースのファイルを検索するか、絶対パスを入力してファイルを開きます。",
-    "filePickerPlaceholder": "ファイル名またはパスで検索…",
+    "filePickerPlaceholder": "ファイル名またはパスで検索",
     "filePickerEmpty": "一致するファイルがありません",
     "filePickerIndexing": "ワークスペースファイルをインデックス中…",
     "filePickerOpenAbsolutePath": "パスを開く: {{path}}",
@@ -1015,7 +1015,7 @@
   "actionPalette": {
     "title": "コマンドパレット",
     "description": "ワークスペースのアクションを検索して実行します。",
-    "placeholder": "コマンドを検索…",
+    "placeholder": "コマンドを検索",
     "empty": "一致するコマンドがありません",
     "newSessionDescription": "新しい会話セッションを開始"
   },

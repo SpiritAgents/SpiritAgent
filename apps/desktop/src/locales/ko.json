@@ -1005,7 +1005,7 @@
     "noOpenTabs": "열린 탭이 없습니다.",
     "filePickerTitle": "파일 열기",
     "filePickerDescription": "워크스페이스 파일을 검색하거나 절대 경로를 입력하여 파일을 엽니다.",
-    "filePickerPlaceholder": "파일 이름 또는 경로로 검색…",
+    "filePickerPlaceholder": "파일 이름 또는 경로로 검색",
     "filePickerEmpty": "일치하는 파일 없음",
     "filePickerIndexing": "워크스페이스 파일 인덱싱 중…",
     "filePickerOpenAbsolutePath": "경로 열기: {{path}}",
@@ -1015,7 +1015,7 @@
   "actionPalette": {
     "title": "명령 팔레트",
     "description": "워크스페이스 액션을 검색하고 실행합니다.",
-    "placeholder": "명령 검색…",
+    "placeholder": "명령 검색",
     "empty": "일치하는 명령 없음",
     "newSessionDescription": "새 대화 세션 시작"
   },
