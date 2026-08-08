@@ -1,4 +1,4 @@
-import { Plus } from "lucide-react";
+import { SquarePen } from "lucide-react";
 import { useTranslation } from "react-i18next";
 
 import { DESKTOP_COMMAND_PALETTE_ITEM_TONE } from "@/lib/desktop-chrome";
@@ -30,7 +30,10 @@ export function ActionPickerRow({ item }: ActionPickerRowProps) {
   if (isNewSessionAction(item)) {
     return (
       <div className="flex min-w-0 items-center gap-2 overflow-hidden">
-        <Plus className={cn("size-3.5 shrink-0", DESKTOP_COMMAND_PALETTE_ITEM_TONE)} aria-hidden />
+        <SquarePen
+          className={cn("size-3.5 shrink-0", DESKTOP_COMMAND_PALETTE_ITEM_TONE)}
+          aria-hidden
+        />
         <span className={actionPickerPrimaryTitleClass}>{t(item.labelKey)}</span>
       </div>
     );
