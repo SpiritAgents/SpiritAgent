@@ -7,7 +7,6 @@ import {
   useMemo,
   useRef,
   useState,
-  type MutableRefObject,
   type ReactNode,
 } from "react";
 
@@ -151,13 +150,19 @@ type ConversationSplitContextValue = {
 
   layoutNavigationPending: boolean;
 
-  focusedPaneComposerInsertRef: MutableRefObject<FocusedPaneComposerInsertHandlers | null>;
+  registerPaneComposerInsert: (
+    paneId: string,
+    handlers: FocusedPaneComposerInsertHandlers | null,
+  ) => void;
 
-  setFocusedPaneComposerInsert: (handlers: FocusedPaneComposerInsertHandlers | null) => void;
+  registerPaneComposerControls: (
+    paneId: string,
+    controls: FocusedPaneComposerControls | null,
+  ) => void;
 
-  focusedPaneComposerControlsRef: MutableRefObject<FocusedPaneComposerControls | null>;
+  getFocusedPaneComposerInsert: () => FocusedPaneComposerInsertHandlers | null;
 
-  setFocusedPaneComposerControls: (controls: FocusedPaneComposerControls | null) => void;
+  getFocusedPaneComposerControls: () => FocusedPaneComposerControls | null;
 
   conversationAbortShortcutTargetRef: ConversationAbortShortcutTargetRef | null;
 };
@@ -396,20 +401,30 @@ export function ConversationSplitProvider({
 
   const sidebarSessionDragActive = sidebarSessionDragPayload !== null;
 
-  const focusedPaneComposerInsertRef = useRef<FocusedPaneComposerInsertHandlers | null>(null);
+  // 每个 Pane 无条件注册自己的 composer 能力，读取方按 focusedPaneId 取用；
+  // 不写共享单槽，避免兄弟 Pane 的 effect 执行顺序互相覆写（左 Pane 被清成 null 的存量 bug）
+  const paneComposerInsertRegistryRef = useRef(new Map<string, FocusedPaneComposerInsertHandlers>());
 
-  const focusedPaneComposerControlsRef = useRef<FocusedPaneComposerControls | null>(null);
+  const paneComposerControlsRegistryRef = useRef(new Map<string, FocusedPaneComposerControls>());
 
-  const setFocusedPaneComposerInsert = useCallback(
-    (handlers: FocusedPaneComposerInsertHandlers | null) => {
-      focusedPaneComposerInsertRef.current = handlers;
+  const registerPaneComposerInsert = useCallback(
+    (paneId: string, handlers: FocusedPaneComposerInsertHandlers | null) => {
+      if (handlers) {
+        paneComposerInsertRegistryRef.current.set(paneId, handlers);
+      } else {
+        paneComposerInsertRegistryRef.current.delete(paneId);
+      }
     },
     [],
   );
 
-  const setFocusedPaneComposerControls = useCallback(
-    (controls: FocusedPaneComposerControls | null) => {
-      focusedPaneComposerControlsRef.current = controls;
+  const registerPaneComposerControls = useCallback(
+    (paneId: string, controls: FocusedPaneComposerControls | null) => {
+      if (controls) {
+        paneComposerControlsRegistryRef.current.set(paneId, controls);
+      } else {
+        paneComposerControlsRegistryRef.current.delete(paneId);
+      }
     },
     [],
   );
@@ -460,6 +475,18 @@ export function ConversationSplitProvider({
   const focusedPaneIdRef = useRef<string | null>(null);
 
   focusedPaneIdRef.current = focusedPaneId;
+
+  const getFocusedPaneComposerInsert = useCallback(():
+    | FocusedPaneComposerInsertHandlers
+    | null => {
+    const focused = focusedPaneIdRef.current;
+    return focused ? (paneComposerInsertRegistryRef.current.get(focused) ?? null) : null;
+  }, []);
+
+  const getFocusedPaneComposerControls = useCallback((): FocusedPaneComposerControls | null => {
+    const focused = focusedPaneIdRef.current;
+    return focused ? (paneComposerControlsRegistryRef.current.get(focused) ?? null) : null;
+  }, []);
 
   const layoutResolveGenerationRef = useRef(0);
 
@@ -1347,13 +1374,13 @@ export function ConversationSplitProvider({
 
       layoutNavigationPending,
 
-      focusedPaneComposerInsertRef,
+      registerPaneComposerInsert,
 
-      setFocusedPaneComposerInsert,
+      registerPaneComposerControls,
 
-      focusedPaneComposerControlsRef,
+      getFocusedPaneComposerInsert,
 
-      setFocusedPaneComposerControls,
+      getFocusedPaneComposerControls,
 
       conversationAbortShortcutTargetRef,
     }),

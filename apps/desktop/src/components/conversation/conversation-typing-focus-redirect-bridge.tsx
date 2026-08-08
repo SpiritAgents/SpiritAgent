@@ -17,19 +17,19 @@ export function ConversationTypingFocusRedirectBridge({
     if (!enabled) {
       return;
     }
-    const controlsRef = split.focusedPaneComposerControlsRef;
+    const getControls = split.getFocusedPaneComposerControls;
     const onKeyDown = (event: KeyboardEvent) => {
       if (!shouldRedirectKeydownToComposer(event)) {
         return;
       }
       // 只同步聚焦、不 preventDefault、不手动注入字符：让原生按键管线把字符送进
-      // 刚聚焦的 contenteditable，后续按键才能被 IME 正常接管（首字符因 OS 已完成
-      // 分发只能落原始字母，IME 主路径是 conversation-view 的点击预聚焦）。
-      controlsRef.current?.focusComposer();
+      // 刚聚焦的 contenteditable；首字符因 OS 已完成分发只能落原始字母，
+      // 后续按键才能被 IME 正常接管。
+      getControls()?.focusComposer();
     };
     window.addEventListener("keydown", onKeyDown);
     return () => window.removeEventListener("keydown", onKeyDown);
-  }, [enabled, split.focusedPaneComposerControlsRef]);
+  }, [enabled, split.getFocusedPaneComposerControls]);
 
   return null;
 }

@@ -1,4 +1,4 @@
-import { useMemo, type MutableRefObject } from "react";
+import { useMemo } from "react";
 
 import type { BrowserElementAttachment } from "@/lib/browser-element-attachment";
 import type { FileSnippetAttachment } from "@/lib/file-snippet-attachment";
@@ -15,36 +15,36 @@ export type FocusedPaneComposerInsertHandlers = {
   handleWorkspaceFileAddToSession: (relativePath: string) => void;
 };
 
-/** Stable proxies: read focused pane handlers from ref at call time (no Provider re-render on register). */
+/** Stable proxies: read focused pane handlers via getter at call time (no Provider re-render on register). */
 export function useFocusedPaneComposerInsertCallbacks(
-  insertRef: MutableRefObject<FocusedPaneComposerInsertHandlers | null>,
+  getFocusedInsert: () => FocusedPaneComposerInsertHandlers | null,
   fallback: FocusedPaneComposerInsertHandlers,
 ): FocusedPaneComposerInsertHandlers {
   return useMemo(
     () => ({
       handleBrowserElementPicked: (attachment) =>
-        (insertRef.current?.handleBrowserElementPicked ?? fallback.handleBrowserElementPicked)(
+        (getFocusedInsert()?.handleBrowserElementPicked ?? fallback.handleBrowserElementPicked)(
           attachment,
         ),
       handlePrDiffAddToSession: (attachment) =>
-        (insertRef.current?.handlePrDiffAddToSession ?? fallback.handlePrDiffAddToSession)(
+        (getFocusedInsert()?.handlePrDiffAddToSession ?? fallback.handlePrDiffAddToSession)(
           attachment,
         ),
       handleGitCommitAddToSession: (attachment) =>
-        (insertRef.current?.handleGitCommitAddToSession ?? fallback.handleGitCommitAddToSession)(
+        (getFocusedInsert()?.handleGitCommitAddToSession ?? fallback.handleGitCommitAddToSession)(
           attachment,
         ),
       handleTerminalAddToSession: (attachment) =>
-        (insertRef.current?.handleTerminalAddToSession ?? fallback.handleTerminalAddToSession)(
+        (getFocusedInsert()?.handleTerminalAddToSession ?? fallback.handleTerminalAddToSession)(
           attachment,
         ),
       handleFileSnippetAddToSession: (attachment) =>
-        (
-          insertRef.current?.handleFileSnippetAddToSession ?? fallback.handleFileSnippetAddToSession
-        )(attachment),
+        (getFocusedInsert()?.handleFileSnippetAddToSession ?? fallback.handleFileSnippetAddToSession)(
+          attachment,
+        ),
       handleWorkspaceFileAddToSession: (relativePath) =>
         (
-          insertRef.current?.handleWorkspaceFileAddToSession ??
+          getFocusedInsert()?.handleWorkspaceFileAddToSession ??
           fallback.handleWorkspaceFileAddToSession
         )(relativePath),
     }),
@@ -55,7 +55,7 @@ export function useFocusedPaneComposerInsertCallbacks(
       fallback.handlePrDiffAddToSession,
       fallback.handleTerminalAddToSession,
       fallback.handleWorkspaceFileAddToSession,
-      insertRef,
+      getFocusedInsert,
     ],
   );
 }
