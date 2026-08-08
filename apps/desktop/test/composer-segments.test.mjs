@@ -569,12 +569,12 @@ test("replaceSkillSlashQueryInSegments replaces mid-text slash token with finali
   const { segments, caret } = replaceSkillSlashQueryInSegments(
     [{ kind: "text", value: "see /log" }],
     { start: 4, end: 8, raw: "/log" },
-    "/log-session",
+    "/export-session",
     true,
   );
-  assert.deepEqual(segments, [{ kind: "text", value: "see /log-session " }]);
+  assert.deepEqual(segments, [{ kind: "text", value: "see /export-session " }]);
   assert.equal(caret.segmentIndex, 0);
-  assert.equal(caret.offset, 17);
+  assert.equal(caret.offset, 20);
 });
 
 test("replaceSkillSlashQueryInSegments keeps inline file chip when replacing nearby slash token", () => {

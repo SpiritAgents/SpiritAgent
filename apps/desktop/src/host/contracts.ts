@@ -45,7 +45,7 @@ export type HostCommandName =
   | "submitSkillSlash"
   | "submitGitChip"
   | "submitStartImplementing"
-  | "exportSessionLog"
+  | "exportSession"
   | "compactHistory"
   | "submitUserTurn"
   | "setLoopEnabled"

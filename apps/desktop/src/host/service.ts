@@ -1711,7 +1711,7 @@ class DesktopHostService {
     });
   }
 
-  async exportSessionLog(): Promise<{ snapshot: DesktopSnapshot; path: string }> {
+  async exportSession(): Promise<{ snapshot: DesktopSnapshot; path: string }> {
     return this.runSerialized(async () => {
       await this.ensureInitialized(undefined, { fastPath: true });
 
@@ -1766,7 +1766,7 @@ class DesktopHostService {
           ...(dreamsSystemPrompt === undefined ? {} : { dreams: dreamsSystemPrompt }),
           ...(basicInfoSystemPrompt === undefined ? {} : { basicInfo: basicInfoSystemPrompt }),
         },
-        note: i18n.t("error.logSessionNote"),
+        note: i18n.t("error.exportSessionNote"),
         message_count: remoteState?.apiMessages.length ?? runtime.history().length,
         messages:
           remoteState?.apiMessages ??
@@ -1778,8 +1778,8 @@ class DesktopHostService {
       await writeFile(filePath, `${JSON.stringify(exportPayload, null, 2)}\n`, "utf8");
 
       const snapshot = await this.appendInlineAssistantReply(
-        "/log-session",
-        [i18n.t("error.logSessionExported"), filePath].join("\n"),
+        "/export-session",
+        [i18n.t("error.exportSessionExported"), filePath].join("\n"),
       );
 
       return {

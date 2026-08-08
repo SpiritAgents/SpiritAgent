@@ -7,7 +7,7 @@ import { STATIC_SLASH_COMMANDS } from "../../src/lib/skill-slash.ts";
 const EN_LABELS = {
   "sidebar.newSession": "New Session",
   "slash.createSkill": "Create or refine a SKILL.md with natural language",
-  "slash.logSession": "Export llm_history and API trace",
+  "slash.exportSession": "Export llm_history and API trace",
   "slash.compact": "Compact the current session context",
   "slash.loop": "Run autonomously until finish_task",
   "slash.plan": "Plan without editing code",

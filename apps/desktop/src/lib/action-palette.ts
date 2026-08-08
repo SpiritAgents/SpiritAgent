@@ -25,7 +25,9 @@ function actionPaletteSearchText(item: ActionPaletteItem, t: ActionPaletteTransl
     return t(item.labelKey);
   }
 
-  const parts = [item.name, item.alias.slice(1)];
+  const parts = [item.name, item.paletteName, item.alias.slice(1)].filter(
+    (part): part is string => typeof part === "string" && part.length > 0,
+  );
   if (item.descriptionKey) {
     parts.push(t(item.descriptionKey));
   }

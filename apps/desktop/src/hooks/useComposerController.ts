@@ -724,7 +724,7 @@ export function useComposerController({
         return true;
       }
       return (
-        item.kind === "log-session" ||
+        item.kind === "export-session" ||
         item.kind === "compact" ||
         item.kind === "fork" ||
         item.kind === "side-chat"
@@ -764,7 +764,7 @@ export function useComposerController({
         applySideChatSlash();
         return;
       }
-      if (item.kind === "log-session" || item.kind === "compact") {
+      if (item.kind === "export-session" || item.kind === "compact") {
         void runtime.sendMessage({ text: item.alias });
         return;
       }

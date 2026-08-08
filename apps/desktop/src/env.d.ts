@@ -98,7 +98,7 @@ declare global {
     submitSkillSlash(request: SubmitSkillSlashRequest): Promise<DesktopSnapshot>;
     submitGitChip(request: SubmitGitChipRequest): Promise<DesktopSnapshot>;
     submitStartImplementing(): Promise<DesktopSnapshot>;
-    exportSessionLog(): Promise<DesktopSnapshot>;
+    exportSession(): Promise<DesktopSnapshot>;
     compactHistory(): Promise<DesktopSnapshot>;
     submitUserTurn(request: SubmitUserTurnRequest): Promise<DesktopSnapshot>;
     setLoopEnabled(enabled: boolean): Promise<DesktopSnapshot>;

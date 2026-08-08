@@ -14,7 +14,7 @@ import {
 import type { SkillSlashSuggestionKind } from "@/lib/skill-slash";
 
 export const SLASH_SUGGESTION_ICONS: Record<SkillSlashSuggestionKind, LucideIcon> = {
-  "log-session": ScrollText,
+  "export-session": ScrollText,
   compact: FoldVertical,
   fork: GitFork,
   "side-chat": MessageSquare,

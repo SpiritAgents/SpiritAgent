@@ -127,8 +127,8 @@ contextBridge.exposeInMainWorld("spiritDesktop", {
   submitStartImplementing() {
     return ipcRenderer.invoke("desktop:invoke", "submitStartImplementing");
   },
-  exportSessionLog() {
-    return ipcRenderer.invoke("desktop:export-session-log");
+  exportSession() {
+    return ipcRenderer.invoke("desktop:export-session");
   },
   compactHistory() {
     return ipcRenderer.invoke("desktop:invoke", "compactHistory");

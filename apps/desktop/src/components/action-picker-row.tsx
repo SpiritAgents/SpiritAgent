@@ -42,7 +42,7 @@ export function ActionPickerRow({ item }: ActionPickerRowProps) {
   return (
     <div className="flex min-w-0 items-center gap-2 overflow-hidden">
       <SlashCommandIcon kind={item.kind} />
-      <span className={actionPickerPrimaryTitleClass}>{item.name}</span>
+      <span className={actionPickerPrimaryTitleClass}>{item.paletteName ?? item.name}</span>
       <span className="min-w-0 flex-1 truncate text-xs leading-6 text-muted-foreground">
         {description}
       </span>

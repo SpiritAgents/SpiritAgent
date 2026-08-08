@@ -20,7 +20,7 @@ import {
   composerAttachmentViewFromPath,
   type ComposerLocalFileAttachmentView,
 } from "@/lib/local-file-attachments";
-import { isCompactSlashComposerRequest, isLogSessionSlashInput } from "@/lib/skill-slash";
+import { isCompactSlashComposerRequest, isExportSessionSlashInput } from "@/lib/skill-slash";
 import type { DesktopAgentMode } from "@/lib/agent-mode";
 import type { RichSegment } from "@/lib/composer-segment-model";
 import { normalizeComposerPlain, segmentsToPlainText } from "@/lib/composer-segment-model";
@@ -2458,19 +2458,19 @@ export function useDesktopRuntime() {
       if (!text && !hasLocalFiles && !hasReferencedPaths) {
         return false;
       }
-      if (isLogSessionSlashInput(text)) {
+      if (isExportSessionSlashInput(text)) {
         if (hasLocalFiles) {
           setRuntimeError(i18n.t("error.attachmentsNotSupportedWithSlash"));
           return false;
         }
-        if (!api.exportSessionLog) {
-          setRuntimeError(i18n.t("error.hostNotSupportLogSession"));
+        if (!api.exportSession) {
+          setRuntimeError(i18n.t("error.hostNotSupportExportSession"));
           return false;
         }
 
         setBusyAction("send");
         try {
-          const next = await api.exportSessionLog();
+          const next = await api.exportSession();
           applySnapshot(next);
           resetComposerAfterSend(settingsRef.current.agentMode);
           setRuntimeError("");

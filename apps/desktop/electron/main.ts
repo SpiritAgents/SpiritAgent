@@ -955,8 +955,8 @@ if (gotSpiritSingleInstanceLock) {
         invokeMainDesktopHostCommand(command, payload),
     );
 
-    ipcMain.handle("desktop:export-session-log", async () => {
-      const result = (await invokeMainDesktopHostCommand("exportSessionLog")) as {
+    ipcMain.handle("desktop:export-session", async () => {
+      const result = (await invokeMainDesktopHostCommand("exportSession")) as {
         snapshot: DesktopSnapshot;
         path: string;
       };

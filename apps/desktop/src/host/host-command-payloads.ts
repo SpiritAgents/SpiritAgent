@@ -131,7 +131,7 @@ export type CommandPayloads = {
   submitSkillSlash: { request: SubmitSkillSlashRequest };
   submitGitChip: { request: SubmitGitChipRequest };
   submitStartImplementing: undefined;
-  exportSessionLog: undefined;
+  exportSession: undefined;
   compactHistory: undefined;
   submitUserTurn: SubmitUserTurnRequest;
   abortConversation: import("../types.js").AbortConversationRequest | undefined;
