@@ -28,6 +28,7 @@ import { useCompactionUiDemo } from "@/hooks/useCompactionUiDemo";
 import { useLongConversationListDemo } from "@/hooks/useLongConversationListDemo";
 import { useComposerController } from "@/hooks/useComposerController";
 import { ConversationSessionFocusComposerBridge } from "@/components/conversation/conversation-session-focus-composer-bridge";
+import { ConversationTypingFocusRedirectBridge } from "@/components/conversation/conversation-typing-focus-redirect-bridge";
 import type { FocusedPaneComposerControls } from "@/lib/focused-pane-composer-controls";
 import { useConversationViewState } from "@/hooks/useConversationViewState";
 import type { ConversationAbortShortcutTarget } from "@/lib/conversation-abort-shortcut";
@@ -381,6 +382,7 @@ export default function App() {
                       enabled={focusComposerEnabled}
                       composerAutomationApiRef={composerAutomationApiRef}
                     />
+                    <ConversationTypingFocusRedirectBridge enabled={focusComposerEnabled} />
                     <SessionSidebarShell useMicaBackdrop={useMicaBackdrop}>
                       <SessionSidebar
                         narrow={false}
