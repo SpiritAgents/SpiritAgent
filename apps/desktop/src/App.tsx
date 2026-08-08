@@ -218,6 +218,8 @@ export default function App() {
   });
   const launchSplashActive =
     snapshot === null && !runtime.hostConnectionError.trim() && !runtime.runtimeError.trim();
+  const pairingGateBlocksLaunchSplash =
+    runtime.webHostPairingRequired && runtime.hostKind === "web" && !snapshot;
   const launchSplashOverlayUp = launchSplashPhase === "running" || launchSplashPhase === "leaving";
   const onboardingOverlayUp = onboardingPhase === "running" || onboardingPhase === "leaving";
   /** 全屏 overlay 挂载期间隐藏 app-body；Mica leaving 时改由 CSS opacity 交叉淡入。 */
@@ -237,6 +239,13 @@ export default function App() {
   useLayoutEffect(() => {
     applyUiLayoutScaleToDocument(uiLayoutScale.scale);
   }, [uiLayoutScale.scale]);
+
+  useLayoutEffect(() => {
+    if (launchSplashActive && !pairingGateBlocksLaunchSplash) {
+      return;
+    }
+    window.spiritDesktop?.notifyLaunchSplashReady?.();
+  }, [launchSplashActive, pairingGateBlocksLaunchSplash]);
 
   const handleWorkspaceMarkdownLinkClick = useCallback(
     (href: string) =>

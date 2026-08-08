@@ -494,6 +494,9 @@ contextBridge.exposeInMainWorld("spiritDesktop", {
   }) {
     return ipcRenderer.invoke("desktop:sync-window-frame", request) as Promise<boolean>;
   },
+  notifyLaunchSplashReady() {
+    ipcRenderer.send("desktop:launch-splash-ready");
+  },
   syncLanguage(lang: string) {
     return ipcRenderer.invoke("desktop:sync-language", lang);
   },

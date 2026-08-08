@@ -298,6 +298,8 @@ declare global {
       nativeTheme: "system" | "light" | "dark";
       nativeBackdropBlur?: boolean;
     }): Promise<boolean>;
+    /** 首启 LaunchSplash 已绘制就绪，通知主进程 reveal 窗口。 */
+    notifyLaunchSplashReady(): void;
     syncLanguage(lang: string): Promise<void>;
     /** macOS：UI 缩放后同步原生红绿灯位置，与切换按钮保持对齐。 */
     syncTrafficLightPosition(position: { x: number; y: number }): Promise<void>;

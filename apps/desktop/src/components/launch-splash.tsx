@@ -71,6 +71,13 @@ export function LaunchSplash({
     onPhaseChange?.(phase);
   }, [onPhaseChange, phase]);
 
+  useLayoutEffect(() => {
+    if (!active || phase !== "running") {
+      return;
+    }
+    window.spiritDesktop?.notifyLaunchSplashReady?.();
+  }, [active, phase]);
+
   if (phase === "gone") {
     return null;
   }

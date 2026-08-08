@@ -111,6 +111,21 @@ function focusSpiritDesktopWindows(): void {
   }
 }
 
+/** 首启：渲染层 LaunchSplash 就绪后再 reveal，避免 React 挂载前的纯黑真空帧。 */
+function revealMainWindowWhenLaunchSplashReady(window: BrowserWindow): void {
+  if (window.isDestroyed()) {
+    return;
+  }
+  if (window.isVisible()) {
+    return;
+  }
+  window.show();
+  if (process.platform === "darwin") {
+    app.focus({ steal: true });
+  }
+  window.focus();
+}
+
 async function focusOrCreateSpiritDesktopWindows(): Promise<void> {
   const windows = BrowserWindow.getAllWindows().filter((window) => !window.isDestroyed());
   if (windows.length === 0) {
@@ -746,6 +761,7 @@ async function createMainWindow(): Promise<BrowserWindow> {
     height: 920,
     minWidth: 1100,
     minHeight: 720,
+    show: false,
     ...(windowIcon ? { icon: windowIcon } : {}),
     backgroundColor: initialBg,
     // macOS：构造时始终挂载 vibrancy 层，使运行时 setVibrancy 与透明背景切换走同一合成路径；
@@ -1163,6 +1179,14 @@ if (gotSpiritSingleInstanceLock) {
         default:
           break;
       }
+    });
+
+    ipcMain.on("desktop:launch-splash-ready", (event) => {
+      const window = BrowserWindow.fromWebContents(event.sender);
+      if (!window) {
+        return;
+      }
+      revealMainWindowWhenLaunchSplashReady(window);
     });
 
     ipcMain.on("desktop:read-native-backdrop-blur", (event) => {
