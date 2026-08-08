@@ -246,6 +246,15 @@ export default function App() {
     syncLaunchSplashChromeToDocument(shellOverlayPhase);
   }, [shellOverlayPhase]);
 
+  const focusComposerEnabled =
+    snapshot != null &&
+    surfaceNav.activeSurface === "conversation" &&
+    !surfaceNav.settingsMode &&
+    !sessionNavigationBusy &&
+    !runtime.layoutNavigationPending &&
+    !newSessionBusy &&
+    !shellUnderlayHidden;
+
   const handleOnboardingDone = useCallback(() => {
     void (async () => {
       await runtime.saveSettingsPatch({ onboardingCompleted: true });
@@ -369,14 +378,7 @@ export default function App() {
                   >
                     <ConversationSessionFocusComposerBridge
                       composerSessionKey={conversation.composerSessionKey}
-                      enabled={
-                        snapshot != null &&
-                        surfaceNav.activeSurface === "conversation" &&
-                        !surfaceNav.settingsMode &&
-                        !sessionNavigationBusy &&
-                        !runtime.layoutNavigationPending &&
-                        !newSessionBusy
-                      }
+                      enabled={focusComposerEnabled}
                       composerAutomationApiRef={composerAutomationApiRef}
                     />
                     <SessionSidebarShell useMicaBackdrop={useMicaBackdrop}>
