@@ -1,6 +1,6 @@
 import { useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { ChevronDown, FolderPlus, MessageSquareText } from "lucide-react";
+import { ChevronDown, FolderPlus, MessageCircle } from "lucide-react";
 
 import { DropdownMenuItem } from "@/components/ui/dropdown-menu";
 import {
@@ -196,7 +196,7 @@ export function WorkspaceSelectorMenu({
                   workspaceBinding === "none" && "bg-accent/40",
                 )}
               >
-                <MessageSquareText className="size-3 shrink-0 text-muted-foreground" aria-hidden />
+                <MessageCircle className="size-3 shrink-0 text-muted-foreground" aria-hidden />
                 <span>{t("app.noWorkspace")}</span>
               </DropdownMenuItem>
             ) : null}
