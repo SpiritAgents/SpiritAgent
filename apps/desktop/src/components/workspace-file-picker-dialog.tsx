@@ -15,7 +15,10 @@ import {
   normalizeAbsolutePathInput,
   toWorkspaceFileReferenceQueryInput,
 } from "@/lib/file-picker-path";
-import { instantHoverMotionClass } from "@/lib/desktop-chrome";
+import {
+  DESKTOP_COMMAND_PALETTE_ITEM_CLASS,
+  DESKTOP_COMMAND_PALETTE_ITEM_TONE,
+} from "@/lib/desktop-chrome";
 import { RADIX_OVERLAY_CLOSE_MS } from "@/lib/overlay-motion";
 import { WorkspaceFileIcon } from "@/components/workspace-file-icon";
 import { cn } from "@/lib/utils";
@@ -140,14 +143,19 @@ export function WorkspaceFilePickerDialog({
             <CommandItem
               key={`absolute:${absolutePathCandidate}`}
               value={`absolute:${absolutePathCandidate}`}
-              className={cn(
-                "min-w-0 cursor-pointer [&>svg:last-child]:hidden",
-                instantHoverMotionClass,
-              )}
+              className={DESKTOP_COMMAND_PALETTE_ITEM_CLASS}
               onSelect={() => closeAndOpenExternalFile(absolutePathCandidate)}
             >
-              <WorkspaceFileIcon path={absolutePathCandidate} />
-              <span className="min-w-0 truncate text-sm text-popover-foreground">
+              <WorkspaceFileIcon
+                path={absolutePathCandidate}
+                className={DESKTOP_COMMAND_PALETTE_ITEM_TONE}
+              />
+              <span
+                className={cn(
+                  "min-w-0 truncate text-sm text-popover-foreground",
+                  DESKTOP_COMMAND_PALETTE_ITEM_TONE,
+                )}
+              >
                 {t("workspace.filePickerOpenAbsolutePath", { path: absolutePathCandidate })}
               </span>
             </CommandItem>
@@ -156,10 +164,7 @@ export function WorkspaceFilePickerDialog({
             <CommandItem
               key={path}
               value={path}
-              className={cn(
-                "min-w-0 cursor-pointer [&>svg:last-child]:hidden",
-                instantHoverMotionClass,
-              )}
+              className={DESKTOP_COMMAND_PALETTE_ITEM_CLASS}
               onSelect={() => closeAndOpenWorkspaceFile(path)}
             >
               <WorkspaceFilePickerRow path={path} />

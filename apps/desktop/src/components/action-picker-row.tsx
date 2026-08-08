@@ -1,6 +1,7 @@
 import { Plus } from "lucide-react";
 import { useTranslation } from "react-i18next";
 
+import { DESKTOP_COMMAND_PALETTE_ITEM_TONE } from "@/lib/desktop-chrome";
 import { DESKTOP_LIST_ITEM_PRIMARY_CLASS } from "@/lib/desktop-typography";
 import { cn } from "@/lib/utils";
 import { isNewSessionAction, type ActionPaletteItem } from "@/lib/action-palette";
@@ -13,11 +14,12 @@ type ActionPickerRowProps = {
 
 function SlashCommandIcon({ kind }: { kind: SkillSlashSuggestionKind }) {
   const Icon = SLASH_SUGGESTION_ICONS[kind];
-  return <Icon className="size-3.5 shrink-0 opacity-70" aria-hidden />;
+  return <Icon className={cn("size-3.5 shrink-0", DESKTOP_COMMAND_PALETTE_ITEM_TONE)} aria-hidden />;
 }
 
 const actionPickerPrimaryTitleClass = cn(
   "shrink-0 whitespace-nowrap leading-6",
+  DESKTOP_COMMAND_PALETTE_ITEM_TONE,
   DESKTOP_LIST_ITEM_PRIMARY_CLASS,
   "text-popover-foreground",
 );
@@ -28,24 +30,16 @@ export function ActionPickerRow({ item }: ActionPickerRowProps) {
   if (isNewSessionAction(item)) {
     return (
       <div className="flex min-w-0 items-center gap-2 overflow-hidden">
-        <Plus className="size-3.5 shrink-0 opacity-70" aria-hidden />
+        <Plus className={cn("size-3.5 shrink-0", DESKTOP_COMMAND_PALETTE_ITEM_TONE)} aria-hidden />
         <span className={actionPickerPrimaryTitleClass}>{t(item.labelKey)}</span>
-        <span className="min-w-0 flex-1 truncate text-xs leading-6 text-muted-foreground">
-          {t("actionPalette.newSessionDescription")}
-        </span>
       </div>
     );
   }
-
-  const description = item.descriptionKey ? t(item.descriptionKey) : (item.description ?? "");
 
   return (
     <div className="flex min-w-0 items-center gap-2 overflow-hidden">
       <SlashCommandIcon kind={item.kind} />
       <span className={actionPickerPrimaryTitleClass}>{item.paletteName ?? item.name}</span>
-      <span className="min-w-0 flex-1 truncate text-xs leading-6 text-muted-foreground">
-        {description}
-      </span>
     </div>
   );
 }

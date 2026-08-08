@@ -15,7 +15,7 @@ import {
   isNewSessionAction,
   type ActionPaletteItem,
 } from "@/lib/action-palette";
-import { instantHoverMotionClass } from "@/lib/desktop-chrome";
+import { DESKTOP_COMMAND_PALETTE_ITEM_CLASS } from "@/lib/desktop-chrome";
 import { RADIX_OVERLAY_CLOSE_MS } from "@/lib/overlay-motion";
 import { cn } from "@/lib/utils";
 
@@ -87,8 +87,7 @@ export function ActionPickerDialog({
                 value={actionPaletteItemValue(item)}
                 disabled={disabled}
                 className={cn(
-                  "min-w-0 cursor-pointer [&>svg:last-child]:hidden",
-                  instantHoverMotionClass,
+                  DESKTOP_COMMAND_PALETTE_ITEM_CLASS,
                   disabled && "pointer-events-none opacity-50",
                 )}
                 onSelect={() => closeAndSelect(item)}

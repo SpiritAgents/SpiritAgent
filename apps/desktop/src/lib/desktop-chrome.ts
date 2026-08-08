@@ -113,6 +113,15 @@ export const DESKTOP_OVERLAY_SHADOW = cn(DESKTOP_OVERLAY_LIGHT_SHADOW, "dark:sha
 /** 浮层阴影：浅色扩散 + 深色沿用 lg（Tooltip / Popover / HoverCard 等） */
 export const DESKTOP_OVERLAY_SHADOW_LG = cn(DESKTOP_OVERLAY_LIGHT_SHADOW, "dark:shadow-lg");
 
+/** Ctrl+P / Ctrl+Shift+P 命令面板列表图标与标题：浅色略淡，深色提亮 */
+export const DESKTOP_COMMAND_PALETTE_ITEM_TONE = "opacity-70 dark:opacity-90";
+
+/** Ctrl+P / Ctrl+Shift+P 命令面板列表行：统一行高，避免单行标题显得挤 */
+export const DESKTOP_COMMAND_PALETTE_ITEM_CLASS = cn(
+  "min-h-9 min-w-0 cursor-pointer py-2 [&>svg:last-child]:hidden",
+  instantHoverMotionClass,
+);
+
 /** 短列表：轻外壳（仅局部场景使用） */
 export const DESKTOP_OVERLAY_SHORT_SHELL = cn("rounded-lg ring-0", DESKTOP_OVERLAY_SHADOW);
 

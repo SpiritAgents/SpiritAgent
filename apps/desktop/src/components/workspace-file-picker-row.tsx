@@ -3,6 +3,7 @@ import {
   normalizeWorkspaceReferenceDirectoryPath,
 } from "@spiritagent/host-internal/workspace-file-reference-query";
 import {
+  DESKTOP_COMMAND_PALETTE_ITEM_TONE,
   DESKTOP_OVERLAY_LIST_ITEM_PRIMARY,
   DESKTOP_OVERLAY_LIST_ITEM_SECONDARY,
 } from "@/lib/desktop-chrome";
@@ -45,10 +46,16 @@ export function WorkspaceFilePickerRow({
 
   return (
     <div className="flex min-w-0 flex-1 items-center gap-2 overflow-hidden">
-      <WorkspaceFileIcon path={displayPath} kind={iconKind} />
+      <WorkspaceFileIcon
+        path={displayPath}
+        kind={iconKind}
+        className={DESKTOP_COMMAND_PALETTE_ITEM_TONE}
+      />
       <span
         className={cn(
-          cn("shrink-0 whitespace-nowrap leading-6", DESKTOP_LIST_ITEM_PRIMARY_CLASS),
+          "shrink-0 whitespace-nowrap leading-6",
+          DESKTOP_COMMAND_PALETTE_ITEM_TONE,
+          DESKTOP_LIST_ITEM_PRIMARY_CLASS,
           tone === "menu" ? "text-foreground" : "text-popover-foreground",
         )}
       >
