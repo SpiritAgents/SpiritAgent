@@ -27,6 +27,8 @@ export function WorkspaceFilePickerRow({
   const displayPath = isDirectory ? normalizeWorkspaceReferenceDirectoryPath(path) : path;
   const iconKind = isDirectory ? "dir" : "file";
   const basename = workspaceFileBasename(displayPath);
+  // 工作区根下文件/目录相对路径等于 basename，灰字路径无额外信息
+  const showRelativePath = basename !== displayPath;
 
   if (layout === "stacked") {
     return (
@@ -36,9 +38,11 @@ export function WorkspaceFilePickerRow({
           <div className={DESKTOP_OVERLAY_LIST_ITEM_PRIMARY} title={basename}>
             {basename}
           </div>
-          <div className={DESKTOP_OVERLAY_LIST_ITEM_SECONDARY} title={displayPath}>
-            {displayPath}
-          </div>
+          {showRelativePath ? (
+            <div className={DESKTOP_OVERLAY_LIST_ITEM_SECONDARY} title={displayPath}>
+              {displayPath}
+            </div>
+          ) : null}
         </div>
       </div>
     );
@@ -61,9 +65,11 @@ export function WorkspaceFilePickerRow({
       >
         {basename}
       </span>
-      <span className="min-w-0 flex-1 truncate text-xs leading-6 text-muted-foreground">
-        {displayPath}
-      </span>
+      {showRelativePath ? (
+        <span className="min-w-0 flex-1 truncate text-xs leading-6 text-muted-foreground">
+          {displayPath}
+        </span>
+      ) : null}
     </div>
   );
 }
