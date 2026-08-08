@@ -35,9 +35,9 @@ const ROW_AVATAR_SIZE_PX = 20;
 /** Matches avatar (size-5) + gap-2 — aligns card with username start without ml + w-full overflow. */
 const COMMENT_CARD_INDENT_SPACER_CLASS = "w-7 shrink-0";
 const COMMENT_CARD_SURFACE_CLASS =
-  "rounded-lg border border-border/50 bg-muted px-3 py-2 shadow-sm";
+  "rounded-lg border border-ring/30 bg-background px-3 py-2 shadow-[0_2px_20px_-4px_rgb(0_0_0/0.06)] dark:border-border/50 dark:bg-muted dark:shadow-sm";
 const FILE_THREAD_CARD_CLASS =
-  "overflow-hidden rounded-lg border border-border/50 bg-muted shadow-sm";
+  "overflow-hidden rounded-lg border border-ring/30 bg-background shadow-[0_2px_20px_-4px_rgb(0_0_0/0.06)] dark:border-border/50 dark:bg-muted dark:shadow-sm";
 const FILE_THREAD_DIFF_CLASS =
   "max-h-48 w-full rounded-none border-x-0 border-t border-b-0 border-border/20";
 const FILE_THREAD_BODY_CLASS = "space-y-2 px-3 py-2";

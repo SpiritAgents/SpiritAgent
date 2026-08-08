@@ -198,7 +198,7 @@ function MessageCardImpl({
   const canStartRewind =
     isUser && message.canRewind === true && !message.pending && message.queued !== true;
   const userBubble =
-    "rounded-2xl rounded-br-md border border-border/50 bg-muted px-3 py-2.5 shadow-sm";
+    "rounded-2xl rounded-br-md border border-ring/30 bg-background px-3 py-2.5 shadow-[0_2px_20px_-4px_rgb(0_0_0/0.06)] dark:border-border/50 dark:bg-muted dark:shadow-sm";
   const subagentStatusSurface =
     !isUser && message.content.trim() ? isSubagentStatusSurfaceMessage(message) : false;
   const turnErrorSurface = !isUser && isTurnErrorAssistantMessage(message);
