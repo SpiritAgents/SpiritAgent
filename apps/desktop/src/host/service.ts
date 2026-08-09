@@ -430,6 +430,7 @@ import {
 } from "./storage.js";
 import { DesktopToolExecutor } from "./tool-executor.js";
 import { buildDesktopRuntimeBasicInfo, type DesktopHostRuntime } from "./runtime.js";
+import { hydrateSessionReferenceWiresInUserText } from "./hydrate-session-reference-wires.js";
 import {
   abortRemoteDesktopShell,
   closeRemoteDesktopRuntime,
@@ -1827,6 +1828,7 @@ class DesktopHostService {
           }
         }
 
+        const hydratedText = await hydrateSessionReferenceWiresInUserText(request.text);
         const bundle = this.activeBundle();
         const explicitWorkspaceFiles = await this.resolveMergedExplicitWorkspaceFiles(request);
         const turnSkills = await this.resolveTurnSkillsFromChipAliases(request.skillChipAliases);
@@ -1834,7 +1836,7 @@ class DesktopHostService {
         let snapshot: DesktopSnapshot;
         if (canEnqueueUserTurn(bundle)) {
           snapshot = await enqueueUserTurnCommand(this.sessionTurnContext(), {
-            text: request.text,
+            text: hydratedText,
             explicitWorkspaceFiles,
             turnSkills,
           });
@@ -1842,11 +1844,11 @@ class DesktopHostService {
           snapshot = await startWorktreeBootstrapTurnCommand(
             this.sessionTurnContext(),
             this.worktreeBootstrapHost(),
-            request.text,
+            hydratedText,
             { explicitWorkspaceFiles, turnSkills },
           );
         } else {
-          snapshot = await this.submitUserTurnAfterInitialized(request.text, {
+          snapshot = await this.submitUserTurnAfterInitialized(hydratedText, {
             explicitWorkspaceFiles,
             turnSkills,
           });
