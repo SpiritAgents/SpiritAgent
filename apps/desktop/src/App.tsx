@@ -315,6 +315,7 @@ export default function App() {
               onZoomIn={uiLayoutScale.zoomIn}
               onZoomOut={uiLayoutScale.zoomOut}
               onZoomReset={uiLayoutScale.resetScale}
+              onOpenSettings={surfaceNav.handleOpenSettings}
             />
           ) : null}
           <div id={UI_LAYOUT_SCALE_ROOT_ID} className="flex min-h-0 min-w-0 flex-1 flex-col">
