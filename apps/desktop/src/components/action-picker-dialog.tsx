@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useLayoutEffect, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 
 import { ActionPickerRow } from "@/components/action-picker-row";
@@ -51,6 +51,7 @@ export function ActionPickerDialog({
   const { theme, setTheme } = useTheme();
   const [query, setQuery] = useState("");
   const [view, setView] = useState<ActionPaletteView>("root");
+  const [commandValue, setCommandValue] = useState("");
   const currentLocale = isValidLanguage(i18n.language) ? i18n.language : getStoredLanguage();
 
   useEffect(() => {
@@ -60,6 +61,7 @@ export function ActionPickerDialog({
     const timeoutId = window.setTimeout(() => {
       setQuery("");
       setView("root");
+      setCommandValue("");
     }, RADIX_OVERLAY_CLOSE_MS);
     return () => window.clearTimeout(timeoutId);
   }, [open]);
@@ -74,6 +76,20 @@ export function ActionPickerDialog({
     () => (view === "root" ? groupActionPaletteRootItems(items) : []),
     [items, view],
   );
+
+  // cmdk keeps a stale value after view switches (old item id no longer in list),
+  // and skips its internal select-first path while value is truthy. Re-bind to first item.
+  useLayoutEffect(() => {
+    if (!open) {
+      return;
+    }
+    const visibleIds = new Set(items.map((item) => actionPaletteItemValue(item)));
+    if (commandValue && visibleIds.has(commandValue)) {
+      return;
+    }
+    const first = items[0];
+    setCommandValue(first ? actionPaletteItemValue(first) : "");
+  }, [open, view, items, commandValue]);
 
   const goBackToRoot = () => {
     setView("root");
@@ -175,7 +191,12 @@ export function ActionPickerDialog({
         goBackToRoot();
       }}
     >
-      <Command shouldFilter={false} aria-label={t("actionPalette.title")}>
+      <Command
+        shouldFilter={false}
+        aria-label={t("actionPalette.title")}
+        value={commandValue}
+        onValueChange={setCommandValue}
+      >
         <CommandInput
           value={query}
           onValueChange={setQuery}
