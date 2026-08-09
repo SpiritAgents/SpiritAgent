@@ -27,6 +27,7 @@ import { currentWorkspaceFileReferenceQueryFromSegments } from "@/lib/composer-f
 import {
   atReferenceNeedle,
   buildAtReferenceMenuItems,
+  sessionCandidatesFromListItems,
   type AtReferenceMenuItem,
   type AtReferenceMenuView,
 } from "@/lib/composer-at-reference-demo";
@@ -498,6 +499,15 @@ export function useComposerController({
     workspaceFileIndex.search,
   ]);
 
+  const atReferenceSessionCandidates = useMemo(
+    () =>
+      sessionCandidatesFromListItems(
+        runtime.sessions,
+        paneSessionPath?.trim() || snapshot?.activeSession?.filePath || null,
+      ),
+    [paneSessionPath, runtime.sessions, snapshot?.activeSession?.filePath],
+  );
+
   const atReferenceMenuItems = useMemo((): AtReferenceMenuItem[] => {
     if (!fileReferenceSuggestions?.query) {
       return [];
@@ -506,9 +516,9 @@ export function useComposerController({
       view: fileReferenceMenuView,
       rawQuery: fileReferenceSuggestions.query.raw,
       fileSuggestions: fileReferenceSuggestions.suggestions,
-      resolveTitle: (titleKey) => t(titleKey),
+      sessions: atReferenceSessionCandidates,
     });
-  }, [fileReferenceMenuView, fileReferenceSuggestions, t]);
+  }, [atReferenceSessionCandidates, fileReferenceMenuView, fileReferenceSuggestions]);
 
   useEffect(() => {
     if (slashSuggestions.length === 0) {

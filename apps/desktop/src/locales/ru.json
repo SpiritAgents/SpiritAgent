@@ -1010,7 +1010,7 @@
     "filePickerIndexing": "Индексация файлов рабочего пространства…",
     "filePickerOpenAbsolutePath": "Открыть путь: {{path}}",
     "filePickerAbsolutePathNotFound": "Файл по указанному пути не найден",
-    "fileReferenceCandidates": "Кандидаты на ссылки на файлы рабочего пространства"
+    "fileReferenceCandidates": "Кандидаты ссылок на контекст"
   },
   "actionPalette": {
     "title": "Палитра команд",
@@ -1047,7 +1047,7 @@
     "loopChipLabel": "Цикл",
     "planChipLabel": "План",
     "askChipLabel": "Спросить",
-    "placeholderEmptySession": "Начните с текста, @ файлов, / навыков",
+    "placeholderEmptySession": "Начните с текста, @ для контекста, / навыков",
     "placeholderWithPlanChip": "Опишите, что нужно спланировать",
     "placeholderWithAskChip": "Спросить что угодно",
     "placeholderWithDebugChip": "Опишите ошибку или способ воспроизведения",
@@ -1060,7 +1060,13 @@
     "enqueueWhileBusy": "Добавить в очередь сообщений",
     "sendEnterKey": "Enter",
     "changes": "Изменения",
-    "changesAria": "Открыть изменения Git"
+    "changesAria": "Открыть изменения Git",
+    "atReference": {
+      "sessions": "Sessions",
+      "back": "Назад",
+      "candidates": "Кандидаты ссылок на контекст",
+      "sessionCandidates": "Кандидаты ссылок на сессии"
+    }
   },
   "queue": {
     "moveUp": "Переместить вверх",

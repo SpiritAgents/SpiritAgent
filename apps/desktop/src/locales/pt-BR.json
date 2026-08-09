@@ -1010,7 +1010,7 @@
     "filePickerIndexing": "Indexando arquivos do workspace…",
     "filePickerOpenAbsolutePath": "Abrir caminho: {{path}}",
     "filePickerAbsolutePathNotFound": "Nenhum arquivo existe nesse caminho",
-    "fileReferenceCandidates": "Candidatos a referência de arquivo do workspace"
+    "fileReferenceCandidates": "Candidatos a referência de contexto"
   },
   "actionPalette": {
     "title": "Paleta de comandos",
@@ -1047,7 +1047,7 @@
     "loopChipLabel": "Loop",
     "planChipLabel": "Plano",
     "askChipLabel": "Perguntar",
-    "placeholderEmptySession": "Comece com uma linha, @ arquivos, / habilidades",
+    "placeholderEmptySession": "Comece com uma linha, @ para contexto, / habilidades",
     "placeholderWithPlanChip": "Descreva o que planejar",
     "placeholderWithAskChip": "Pergunte qualquer coisa",
     "placeholderWithDebugChip": "Descreva o bug ou como reproduzi-lo",
@@ -1060,7 +1060,13 @@
     "enqueueWhileBusy": "Adicionar à fila de mensagens",
     "sendEnterKey": "Enter",
     "changes": "Alterações",
-    "changesAria": "Abrir alterações do Git"
+    "changesAria": "Abrir alterações do Git",
+    "atReference": {
+      "sessions": "Sessions",
+      "back": "Voltar",
+      "candidates": "Candidatos a referência de contexto",
+      "sessionCandidates": "Candidatos a referência de sessão"
+    }
   },
   "queue": {
     "moveUp": "Mover para cima",

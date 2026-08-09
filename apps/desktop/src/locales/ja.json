@@ -1010,7 +1010,7 @@
     "filePickerIndexing": "ワークスペースファイルをインデックス中…",
     "filePickerOpenAbsolutePath": "パスを開く: {{path}}",
     "filePickerAbsolutePathNotFound": "そのパスにはファイルが存在しません",
-    "fileReferenceCandidates": "ワークスペースファイル参照候補"
+    "fileReferenceCandidates": "コンテキスト参照候補"
   },
   "actionPalette": {
     "title": "コマンドパレット",
@@ -1047,7 +1047,7 @@
     "loopChipLabel": "ループ",
     "planChipLabel": "計画",
     "askChipLabel": "質問する",
-    "placeholderEmptySession": "文章、@ファイル、/スキルで開始",
+    "placeholderEmptySession": "文章、@コンテキスト、/スキルで開始",
     "placeholderWithPlanChip": "計画内容を記述",
     "placeholderWithAskChip": "何でも質問",
     "placeholderWithDebugChip": "バグや再現手順を記述",
@@ -1060,7 +1060,13 @@
     "enqueueWhileBusy": "メッセージキューに追加",
     "sendEnterKey": "Enter",
     "changes": "変更",
-    "changesAria": "Gitの変更を開く"
+    "changesAria": "Gitの変更を開く",
+    "atReference": {
+      "sessions": "Sessions",
+      "back": "戻る",
+      "candidates": "コンテキスト参照候補",
+      "sessionCandidates": "セッション参照候補"
+    }
   },
   "queue": {
     "moveUp": "上に移動",

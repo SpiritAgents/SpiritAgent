@@ -1010,7 +1010,7 @@
     "filePickerIndexing": "워크스페이스 파일 인덱싱 중…",
     "filePickerOpenAbsolutePath": "경로 열기: {{path}}",
     "filePickerAbsolutePathNotFound": "해당 경로에 파일이 없습니다.",
-    "fileReferenceCandidates": "워크스페이스 파일 참조 후보"
+    "fileReferenceCandidates": "컨텍스트 참조 후보"
   },
   "actionPalette": {
     "title": "명령 팔레트",
@@ -1047,7 +1047,7 @@
     "loopChipLabel": "루프",
     "planChipLabel": "계획",
     "askChipLabel": "질문하기",
-    "placeholderEmptySession": "텍스트, @ 파일, / 스킬로 시작하세요",
+    "placeholderEmptySession": "텍스트, @ 컨텍스트, / 스킬로 시작하세요",
     "placeholderWithPlanChip": "계획할 내용을 설명하세요",
     "placeholderWithAskChip": "무엇이든 물어보세요",
     "placeholderWithDebugChip": "버그 또는 재현 방법을 설명하세요",
@@ -1060,7 +1060,13 @@
     "enqueueWhileBusy": "메시지 대기열에 추가",
     "sendEnterKey": "Enter",
     "changes": "변경사항",
-    "changesAria": "Git 변경사항 열기"
+    "changesAria": "Git 변경사항 열기",
+    "atReference": {
+      "sessions": "Sessions",
+      "back": "뒤로",
+      "candidates": "컨텍스트 참조 후보",
+      "sessionCandidates": "세션 참조 후보"
+    }
   },
   "queue": {
     "moveUp": "위로 이동",

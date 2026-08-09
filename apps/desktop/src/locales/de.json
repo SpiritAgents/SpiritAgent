@@ -1010,7 +1010,7 @@
     "filePickerIndexing": "Indiziere Workspace-Dateien…",
     "filePickerOpenAbsolutePath": "Pfad öffnen: {{path}}",
     "filePickerAbsolutePathNotFound": "Unter diesem Pfad existiert keine Datei",
-    "fileReferenceCandidates": "Workspace-Datei-Referenzkandidaten"
+    "fileReferenceCandidates": "Kontext-Referenzkandidaten"
   },
   "actionPalette": {
     "title": "Befehlspalette",
@@ -1047,7 +1047,7 @@
     "loopChipLabel": "Loop",
     "planChipLabel": "Plan",
     "askChipLabel": "Fragen",
-    "placeholderEmptySession": "Beginne mit einer Zeile, @ Dateien, / Fähigkeiten",
+    "placeholderEmptySession": "Beginne mit einer Zeile, @ für Kontext, / Fähigkeiten",
     "placeholderWithPlanChip": "Beschreibe, was geplant werden soll",
     "placeholderWithAskChip": "Stelle eine Frage",
     "placeholderWithDebugChip": "Beschreibe den Fehler oder die Reproduktion",
@@ -1060,7 +1060,13 @@
     "enqueueWhileBusy": "Zur Nachrichtenwarteschlange hinzufügen",
     "sendEnterKey": "Eingabe",
     "changes": "Änderungen",
-    "changesAria": "Git-Änderungen öffnen"
+    "changesAria": "Git-Änderungen öffnen",
+    "atReference": {
+      "sessions": "Sessions",
+      "back": "Zurück",
+      "candidates": "Kontext-Referenzkandidaten",
+      "sessionCandidates": "Sitzungs-Referenzkandidaten"
+    }
   },
   "queue": {
     "moveUp": "Nach oben",

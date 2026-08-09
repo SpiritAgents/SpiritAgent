@@ -1,19 +1,6 @@
-/** Demo-only fake sessions for @ Sessions drill-in (no Transport). */
+/** Builder for Composer @ reference menu (files + session drill-in). */
 
-export type DemoSessionReference = {
-  id: string;
-  /** i18n key under composer.atReference.* */
-  titleKey: string;
-};
-
-export const DEMO_SESSION_REFERENCES: readonly DemoSessionReference[] = [
-  { id: "demo-session-1", titleKey: "composer.atReference.demoSession1" },
-  { id: "demo-session-2", titleKey: "composer.atReference.demoSession2" },
-  { id: "demo-session-3", titleKey: "composer.atReference.demoSession3" },
-  { id: "demo-session-4", titleKey: "composer.atReference.demoSession4" },
-  { id: "demo-session-5", titleKey: "composer.atReference.demoSession5" },
-  { id: "demo-session-6", titleKey: "composer.atReference.demoSession6" },
-] as const;
+import type { SessionListItem } from "@/types";
 
 export const AT_REFERENCE_EMPTY_QUERY_FILE_LIMIT = 3;
 
@@ -25,44 +12,70 @@ export type AtReferenceMenuItem =
   | { kind: "back" }
   | { kind: "session"; path: string; title: string };
 
+export type AtReferenceSessionCandidate = {
+  /** Absolute transcript.json path used in the chip wire. */
+  path: string;
+  title: string;
+  /** Chat archive path; used to exclude the active session. */
+  chatPath: string;
+};
+
 export function atReferenceNeedle(rawQuery: string): string {
   return rawQuery.replace(/^@/u, "").trim().toLowerCase();
 }
 
-export function filterDemoSessionsByNeedle(
-  sessions: readonly DemoSessionReference[],
-  needle: string,
-  resolveTitle: (titleKey: string) => string,
-): Array<{ path: string; title: string }> {
-  const resolved = sessions.map((session) => ({
-    path: session.id,
-    title: resolveTitle(session.titleKey),
-  }));
-  if (!needle) {
-    return resolved;
+export function sessionCandidatesFromListItems(
+  sessions: readonly SessionListItem[],
+  excludeChatPath?: string | null,
+): AtReferenceSessionCandidate[] {
+  const excluded = excludeChatPath?.trim() ? excludeChatPath.replace(/\\/gu, "/") : "";
+  const out: AtReferenceSessionCandidate[] = [];
+  for (const session of sessions) {
+    const chatPath = session.path.replace(/\\/gu, "/");
+    if (excluded && chatPath === excluded) {
+      continue;
+    }
+    const transcriptPath = session.transcriptPath?.trim();
+    if (!transcriptPath) {
+      continue;
+    }
+    const title = session.displayName.trim() || chatPath;
+    out.push({
+      path: transcriptPath.replace(/\\/gu, "/"),
+      title,
+      chatPath,
+    });
   }
-  return resolved.filter((session) => session.title.toLowerCase().includes(needle));
+  return out;
+}
+
+export function filterSessionCandidatesByNeedle(
+  sessions: readonly AtReferenceSessionCandidate[],
+  needle: string,
+): AtReferenceSessionCandidate[] {
+  if (!needle) {
+    return [...sessions];
+  }
+  return sessions.filter((session) => session.title.toLowerCase().includes(needle));
 }
 
 export function buildAtReferenceMenuItems(input: {
   view: AtReferenceMenuView;
   rawQuery: string;
   fileSuggestions: readonly string[];
-  resolveTitle: (titleKey: string) => string;
+  sessions: readonly AtReferenceSessionCandidate[];
 }): AtReferenceMenuItem[] {
   const needle = atReferenceNeedle(input.rawQuery);
-
-  if (input.view === "sessions") {
-    const sessions = filterDemoSessionsByNeedle(
-      DEMO_SESSION_REFERENCES,
-      needle,
-      input.resolveTitle,
-    ).map((session) => ({
+  const matchedSessions = filterSessionCandidatesByNeedle(input.sessions, needle).map(
+    (session) => ({
       kind: "session" as const,
       path: session.path,
       title: session.title,
-    }));
-    return [{ kind: "back" }, ...sessions];
+    }),
+  );
+
+  if (input.view === "sessions") {
+    return [{ kind: "back" }, ...matchedSessions];
   }
 
   if (!needle) {
@@ -73,14 +86,5 @@ export function buildAtReferenceMenuItems(input: {
   }
 
   const files = input.fileSuggestions.map((path) => ({ kind: "file" as const, path }));
-  const sessions = filterDemoSessionsByNeedle(
-    DEMO_SESSION_REFERENCES,
-    needle,
-    input.resolveTitle,
-  ).map((session) => ({
-    kind: "session" as const,
-    path: session.path,
-    title: session.title,
-  }));
-  return [...files, ...sessions];
+  return [...files, ...matchedSessions];
 }

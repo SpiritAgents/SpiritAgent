@@ -1010,7 +1010,7 @@
     "filePickerIndexing": "Indexando archivos del espacio de trabajo…",
     "filePickerOpenAbsolutePath": "Abrir ruta: {{path}}",
     "filePickerAbsolutePathNotFound": "No existe ningún archivo en esa ruta",
-    "fileReferenceCandidates": "Candidatos de referencia de archivos del espacio de trabajo"
+    "fileReferenceCandidates": "Candidatos de referencia de contexto"
   },
   "actionPalette": {
     "title": "Paleta de comandos",
@@ -1047,7 +1047,7 @@
     "loopChipLabel": "Bucle",
     "planChipLabel": "Plan",
     "askChipLabel": "Preguntar",
-    "placeholderEmptySession": "Comienza con una línea, @ archivos, / habilidades",
+    "placeholderEmptySession": "Comienza con una línea, @ para contexto, / habilidades",
     "placeholderWithPlanChip": "Describe qué planificar",
     "placeholderWithAskChip": "Pregunta cualquier cosa",
     "placeholderWithDebugChip": "Describe el bug o cómo reproducirlo",
@@ -1060,7 +1060,13 @@
     "enqueueWhileBusy": "Añadir a la cola de mensajes",
     "sendEnterKey": "Enter",
     "changes": "Cambios",
-    "changesAria": "Abrir cambios de Git"
+    "changesAria": "Abrir cambios de Git",
+    "atReference": {
+      "sessions": "Sessions",
+      "back": "Atrás",
+      "candidates": "Candidatos de referencia de contexto",
+      "sessionCandidates": "Candidatos de referencia de sesión"
+    }
   },
   "queue": {
     "moveUp": "Subir",

@@ -1010,7 +1010,7 @@
     "filePickerIndexing": "正在索引工作區檔案…",
     "filePickerOpenAbsolutePath": "開啟路徑：{{path}}",
     "filePickerAbsolutePathNotFound": "該路徑無對應檔案",
-    "fileReferenceCandidates": "工作區檔案參照候選"
+    "fileReferenceCandidates": "上下文參照候選"
   },
   "actionPalette": {
     "title": "命令面板",
@@ -1047,7 +1047,7 @@
     "loopChipLabel": "迴圈",
     "planChipLabel": "規劃",
     "askChipLabel": "提問",
-    "placeholderEmptySession": "輸入內容，@ 檔案，/ 技能",
+    "placeholderEmptySession": "輸入內容，@ 上下文，/ 技能",
     "placeholderWithPlanChip": "描述需要規劃的內容",
     "placeholderWithAskChip": "詢問任何問題",
     "placeholderWithDebugChip": "描述錯誤或重現步驟",
@@ -1060,7 +1060,13 @@
     "enqueueWhileBusy": "加入訊息佇列",
     "sendEnterKey": "Enter",
     "changes": "變更",
-    "changesAria": "開啟 Git 變更"
+    "changesAria": "開啟 Git 變更",
+    "atReference": {
+      "sessions": "Sessions",
+      "back": "返回",
+      "candidates": "上下文參照候選",
+      "sessionCandidates": "會話參照候選"
+    }
   },
   "queue": {
     "moveUp": "上移",
