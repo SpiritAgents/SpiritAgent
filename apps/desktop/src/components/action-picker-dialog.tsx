@@ -72,7 +72,7 @@ export function ActionPickerDialog({
       description={t("actionPalette.description")}
       className="sm:max-w-xl"
     >
-      <Command shouldFilter={false} aria-label={t("actionPalette.title")} className="gap-2">
+      <Command shouldFilter={false} aria-label={t("actionPalette.title")}>
         <CommandInput
           value={query}
           onValueChange={setQuery}

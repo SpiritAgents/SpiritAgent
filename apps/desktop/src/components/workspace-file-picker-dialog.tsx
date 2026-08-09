@@ -132,7 +132,7 @@ export function WorkspaceFilePickerDialog({
       description={t("workspace.filePickerDescription")}
       className="sm:max-w-xl"
     >
-      <Command shouldFilter={false} aria-label={t("workspace.filePickerTitle")} className="gap-2">
+      <Command shouldFilter={false} aria-label={t("workspace.filePickerTitle")}>
         <CommandInput
           value={query}
           onValueChange={setQuery}
