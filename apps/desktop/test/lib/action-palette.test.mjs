@@ -38,6 +38,11 @@ const ZH_LABELS = {
   "sidebar.newSession": "新会话",
   "actionPalette.theme": "主题",
   "actionPalette.language": "语言",
+  "settings.themeSystem": "跟随系统",
+  "settings.themeLight": "浅色",
+  "settings.themeDark": "深色",
+  "settings.langZhCN": "简体中文",
+  "settings.langEn": "英语",
 };
 
 function tEn(key) {
@@ -141,4 +146,26 @@ test("buildActionPaletteItems root search matches appearance menu labels", () =>
     items.some((item) => item.kind === "theme-option"),
     false,
   );
+});
+
+test("buildActionPaletteItems matches English labels under Chinese UI", () => {
+  assert.ok(buildActionPaletteItems("theme", tZh).some((item) => item.kind === "theme-menu"));
+  assert.ok(
+    buildActionPaletteItems("new session", tZh).some((item) => item.kind === "new-session"),
+  );
+  assert.ok(buildActionPaletteItems("language", tZh).some((item) => item.kind === "locale-menu"));
+});
+
+test("buildActionPaletteItems theme view matches English under Chinese UI", () => {
+  const items = buildActionPaletteItems("light", tZh, "theme");
+  assert.equal(items.length, 1);
+  assert.equal(items[0]?.kind, "theme-option");
+  assert.equal(items[0]?.value, "light");
+});
+
+test("buildActionPaletteItems locale view matches English under Chinese UI", () => {
+  const byLabel = buildActionPaletteItems("english", tZh, "locale");
+  assert.ok(byLabel.some((item) => item.kind === "locale-option" && item.value === "en"));
+  const byCode = buildActionPaletteItems("en", tZh, "locale");
+  assert.ok(byCode.some((item) => item.kind === "locale-option" && item.value === "en"));
 });

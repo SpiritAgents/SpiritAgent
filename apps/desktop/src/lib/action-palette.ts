@@ -1,3 +1,4 @@
+import en from "../locales/en.json";
 import { LOCALE_LABEL_KEYS, VALID_LANGUAGES, type ValidLanguage } from "@/lib/i18n";
 import { STATIC_SLASH_COMMANDS, type SkillSlashSuggestion } from "@/lib/skill-slash";
 import type { ThemePreference } from "@/lib/theme";
@@ -130,20 +131,39 @@ function matchesQuery(haystack: string, query: string): boolean {
   return haystack.toLowerCase().includes(query.trim().toLowerCase());
 }
 
+function englishCopy(key: string): string {
+  let current: unknown = en;
+  for (const part of key.split(".")) {
+    if (current == null || typeof current !== "object" || !(part in current)) {
+      return "";
+    }
+    current = (current as Record<string, unknown>)[part];
+  }
+  return typeof current === "string" ? current : "";
+}
+
+function withEnglishSearchText(localized: string, englishKey: string): string {
+  const english = englishCopy(englishKey);
+  if (!english || english === localized) {
+    return localized;
+  }
+  return `${localized} ${english}`;
+}
+
 function actionPaletteSearchText(item: ActionPaletteItem, t: ActionPaletteTranslate): string {
   if (item.kind === "new-session" || item.kind === "theme-menu" || item.kind === "locale-menu") {
-    return t(item.labelKey);
+    return withEnglishSearchText(t(item.labelKey), item.labelKey);
   }
 
   if (item.kind === "theme-option" || item.kind === "locale-option") {
-    return t(item.labelKey);
+    return `${withEnglishSearchText(t(item.labelKey), item.labelKey)} ${item.value}`;
   }
 
   const parts = [item.name, item.paletteName, item.alias.slice(1)].filter(
     (part): part is string => typeof part === "string" && part.length > 0,
   );
   if (item.descriptionKey) {
-    parts.push(t(item.descriptionKey));
+    parts.push(withEnglishSearchText(t(item.descriptionKey), item.descriptionKey));
   }
   if (item.description) {
     parts.push(item.description);
