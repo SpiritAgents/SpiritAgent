@@ -1015,7 +1015,10 @@ export class DesktopRuntimeEventOrchestrator {
             headline: executionSummary.headline,
             detailLines: [],
             argsExcerpt,
-            outputExcerpt: truncateText(execution.output, 4_000),
+            outputExcerpt:
+              execution.toolName === "shell"
+                ? execution.output
+                : truncateText(execution.output, 4_000),
             ...(existingSnapshot?.suppressExpand ? { suppressExpand: true } : {}),
             ...(fileToolDiffArgumentsJson ? { fileToolDiffArgumentsJson } : {}),
             ...(imagePaths.length > 0 ? { imagePaths } : {}),

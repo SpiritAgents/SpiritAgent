@@ -1245,3 +1245,42 @@ test("sequential web_search clears Thinking placeholder during next preview and 
     "Thinking placeholder should show after the last search completes",
   );
 });
+
+test("shell tool-execution-finished keeps full outputExcerpt without 4k truncation", () => {
+  const harness = createHarness();
+  harness.pushUser("run build");
+
+  const longBody = `${"line\n".repeat(2_000)}TAIL_MARKER_OK`;
+  const shellOutput = JSON.stringify({
+    terminal: "POSIX shell (zsh)",
+    workspace: "/tmp/ws",
+    command: "pnpm run build:renderer",
+    exitCode: 0,
+    output: longBody,
+  });
+  assert.ok(shellOutput.length > 4_000);
+
+  harness.orchestrator.applyRuntimeHostEvents([
+    { kind: "begin-assistant-response" },
+    {
+      kind: "tool-execution-finished",
+      execution: {
+        toolCallId: "shell-1",
+        toolName: "shell",
+        request: { name: "shell", command: "pnpm run build:renderer" },
+        output: shellOutput,
+        failed: false,
+      },
+    },
+  ]);
+
+  const tool = harness.timeline
+    .toMessages()
+    .find((message) => message.tool?.toolCallId === "shell-1")?.tool;
+  assert.equal(tool?.outputExcerpt, shellOutput);
+  assert.equal(tool?.outputExcerpt?.includes("...<truncated>"), false);
+
+  const parsed = JSON.parse(tool?.outputExcerpt ?? "");
+  assert.equal(parsed.exitCode, 0);
+  assert.ok(String(parsed.output).endsWith("TAIL_MARKER_OK"));
+});
