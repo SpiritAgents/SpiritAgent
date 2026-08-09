@@ -10,6 +10,7 @@ import {
   FileToolLspDiagnosticsHoverTrigger,
 } from "@/components/file-tool-lsp-diagnostics-hover";
 import { ShellToolCommandHighlight } from "@/components/shell-tool-command-highlight";
+import { ShellToolXtermOutput } from "@/components/shell-tool-xterm-output";
 import { ToolCallDiffView } from "@/components/tool-call-diff-view";
 import { useToolCallDiffHost } from "@/components/tool-call-diff-host-context";
 import { useCollapsibleChildMount } from "@/hooks/use-collapsible-child-mount";
@@ -387,7 +388,6 @@ function ShellToolExpandedBody({
   onAbortShell?: (toolCallId: string) => void;
 }) {
   const { t } = useTranslation();
-  const outputPreRef = useRef<HTMLPreElement>(null);
   const followTail = tool.phase === "running";
   const shellOutput = useMemo(() => {
     const parsed = parseShellToolResult(tool.outputExcerpt);
@@ -405,17 +405,6 @@ function ShellToolExpandedBody({
   const showTerminateButton =
     tool.phase === "running" && toolCallId.length > 0 && Boolean(onAbortShell);
   const showShellPanel = Boolean(commandLine || shellOutput);
-
-  useEffect(() => {
-    if (!followTail) {
-      return;
-    }
-    const element = outputPreRef.current;
-    if (!element) {
-      return;
-    }
-    element.scrollTop = element.scrollHeight;
-  }, [followTail, shellOutput?.text]);
 
   return (
     <div className="space-y-2">
@@ -448,15 +437,7 @@ function ShellToolExpandedBody({
             {shellOutput ? (
               <div className={commandLine ? "mt-2" : undefined}>
                 {shellOutput.text.length > 0 ? (
-                  <pre
-                    ref={outputPreRef}
-                    className={cn(
-                      "overflow-x-auto whitespace-pre-wrap break-words font-mono",
-                      followTail && "max-h-96 overflow-y-auto overscroll-contain",
-                    )}
-                  >
-                    {shellOutput.text}
-                  </pre>
+                  <ShellToolXtermOutput text={shellOutput.text} followTail={followTail} />
                 ) : (
                   <p className="text-muted-foreground/70">{t("tool.shellOutputEmpty")}</p>
                 )}
