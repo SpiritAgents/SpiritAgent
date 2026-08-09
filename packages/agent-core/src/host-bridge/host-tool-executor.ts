@@ -71,6 +71,8 @@ export interface LocalHostToolService {
     request: import("../ports.js").GeneratedVideoSaveRequest,
   ): Promise<import("../ports.js").GeneratedVideoFile>;
   attachRequestMetadata?(request: JsonValue, metadata: ToolRequestExecutionMetadata): JsonValue;
+  shouldExecuteInBackground?(request: JsonValue): boolean;
+  backgroundStatusText?(request: JsonValue): string | undefined;
   abortRunningShell?(): void;
   setTodoScope?(scope: { sessionKey: string } | undefined): void;
 }
@@ -398,6 +400,16 @@ export class HostToolExecutorProxy implements ToolExecutor<JsonValue, JsonValue>
       return request.execution_mode === "background";
     }
 
+    // Prefer local host policy (shell / web_fetch / extension_tool) over WeakMap
+    // backgroundExecution, which is never set for in-process NodeHostToolService.
+    if (this.localHostService?.shouldExecuteInBackground) {
+      return this.localHostService.shouldExecuteInBackground(request);
+    }
+
+    if (isJsonObject(request) && (request.name === "shell" || request.name === "web_fetch")) {
+      return true;
+    }
+
     return this.resolveRequestMetadata(request)?.backgroundExecution ?? false;
   }
 
@@ -414,6 +426,10 @@ export class HostToolExecutorProxy implements ToolExecutor<JsonValue, JsonValue>
 
     if (isExtensionToolRequest(request) && request.execution_mode === "background") {
       return `扩展工具执行中: ${request.tool_name}`;
+    }
+
+    if (this.localHostService?.backgroundStatusText) {
+      return this.localHostService.backgroundStatusText(request);
     }
 
     return this.resolveRequestMetadata(request)?.backgroundStatusText;

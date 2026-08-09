@@ -1284,3 +1284,47 @@ test("shell tool-execution-finished keeps full outputExcerpt without 4k truncati
   assert.equal(parsed.exitCode, 0);
   assert.ok(String(parsed.output).endsWith("TAIL_MARKER_OK"));
 });
+
+test("shell tool-execution-output-chunk appends while phase stays running", () => {
+  const harness = createHarness();
+  harness.pushUser("stream lint");
+
+  harness.orchestrator.applyRuntimeHostEvents([
+    { kind: "begin-assistant-response" },
+    {
+      kind: "tool-call-started",
+      toolCallId: "shell-stream-1",
+      toolName: "shell",
+      request: { name: "shell", command: "pnpm run lint" },
+    },
+  ]);
+
+  let tool = harness.timeline
+    .toMessages()
+    .find((message) => message.tool?.toolCallId === "shell-stream-1")?.tool;
+  assert.equal(tool?.phase, "running");
+  assert.equal(tool?.outputExcerpt, undefined);
+
+  harness.orchestrator.applyRuntimeHostEvents([
+    {
+      kind: "tool-execution-output-chunk",
+      toolCallId: "shell-stream-1",
+      toolName: "shell",
+      request: { name: "shell", command: "pnpm run lint" },
+      chunk: "line1\n",
+    },
+    {
+      kind: "tool-execution-output-chunk",
+      toolCallId: "shell-stream-1",
+      toolName: "shell",
+      request: { name: "shell", command: "pnpm run lint" },
+      chunk: "line2\n",
+    },
+  ]);
+
+  tool = harness.timeline
+    .toMessages()
+    .find((message) => message.tool?.toolCallId === "shell-stream-1")?.tool;
+  assert.equal(tool?.phase, "running");
+  assert.equal(tool?.outputExcerpt, "line1\nline2\n");
+});

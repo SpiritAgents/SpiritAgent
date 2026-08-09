@@ -58,8 +58,15 @@ function measureContentHeightPx(term: Terminal): number {
   return clampHeightPx(rows * rowHeightPx(term));
 }
 
+function isXtermViewportAtBottom(term: Terminal): boolean {
+  const { viewportY, baseY } = term.buffer.active;
+  return viewportY >= baseY;
+}
+
 /**
  * Shell 工具卡只读输出：用 xterm 消费 ANSI / CR，主题强制单色以匹配卡片字色。
+ *
+ * followTail 为 sticky：仅在用户仍贴底时自动滚到最新；上滚后暂停，回到底部再恢复。
  */
 export function ShellToolXtermOutput({
   text,
@@ -71,10 +78,16 @@ export function ShellToolXtermOutput({
   const fitRef = useRef<FitAddon | null>(null);
   const writtenTextRef = useRef<string>("");
   const followTailRef = useRef(followTail);
+  const stickToBottomRef = useRef(true);
   const writeGenerationRef = useRef(0);
+  const prevFollowTailRef = useRef(followTail);
 
   useLayoutEffect(() => {
     followTailRef.current = followTail;
+    if (followTail && !prevFollowTailRef.current) {
+      stickToBottomRef.current = true;
+    }
+    prevFollowTailRef.current = followTail;
   });
 
   useEffect(() => {
@@ -104,6 +117,7 @@ export function ShellToolXtermOutput({
     termRef.current = term;
     fitRef.current = fitAddon;
     writtenTextRef.current = "";
+    stickToBottomRef.current = true;
 
     const applyTheme = (): void => {
       term.options.theme = readShellToolMonochromeTheme(host);
@@ -122,8 +136,24 @@ export function ShellToolXtermOutput({
     });
     resizeObserver.observe(host);
 
+    // 解除 stick 只认用户输入（与会话流式定底同思路）：内容增长触发的 scroll 不解除。
+    const onWheel = (event: WheelEvent): void => {
+      if (event.deltaY < 0) {
+        stickToBottomRef.current = false;
+      }
+    };
+    const scrollDisposable = term.onScroll(() => {
+      // 仅恢复，不解除：回到底部后继续跟尾
+      if (isXtermViewportAtBottom(term)) {
+        stickToBottomRef.current = true;
+      }
+    });
+    host.addEventListener("wheel", onWheel, { passive: true });
+
     return () => {
       writeGenerationRef.current += 1;
+      host.removeEventListener("wheel", onWheel);
+      scrollDisposable.dispose();
       themeObserver.disconnect();
       resizeObserver.disconnect();
       fitRef.current = null;
@@ -141,17 +171,21 @@ export function ShellToolXtermOutput({
       return;
     }
 
-    const previous = writtenTextRef.current;
-    if (text === previous) {
-      if (followTail) {
+    const maybeScrollToBottom = (): void => {
+      if (followTailRef.current && stickToBottomRef.current) {
         term.scrollToBottom();
       }
+    };
+
+    const previous = writtenTextRef.current;
+    if (text === previous) {
+      maybeScrollToBottom();
       return;
     }
 
     const generation = ++writeGenerationRef.current;
     const writeText = stripAnsiSgrSequences(text);
-    // write 异步：先按文本估算抬高，避免量高时 buffer 仍为空而卡在约 2 行。
+    // write 异步：先按文本估算抬高，避免量高时 buffer 仍为空而卡在约两行。
     host.style.height = `${estimateHeightFromTextPx(writeText, term.cols)}px`;
     fitAddon.fit();
 
@@ -161,9 +195,7 @@ export function ShellToolXtermOutput({
       }
       host.style.height = `${measureContentHeightPx(term)}px`;
       fitAddon.fit();
-      if (followTailRef.current) {
-        term.scrollToBottom();
-      }
+      maybeScrollToBottom();
     };
 
     const previousWrite = stripAnsiSgrSequences(previous);
