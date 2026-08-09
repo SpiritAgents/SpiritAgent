@@ -18,6 +18,13 @@ function sendNewSession(win?: BrowserWindow): void {
   }
 }
 
+function sendOpenSettings(win?: BrowserWindow): void {
+  const target = win ?? BrowserWindow.getFocusedWindow();
+  if (target && !target.isDestroyed()) {
+    target.webContents.send("desktop:open-settings");
+  }
+}
+
 function editMenuItems(): Electron.MenuItemConstructorOptions[] {
   return [
     { role: "undo", label: menuLabel("undo") },
@@ -48,6 +55,14 @@ function appMenuItems(): Electron.MenuItemConstructorOptions[] {
   const appName = PRODUCT_DISPLAY_NAME;
   return [
     { role: "about", label: menuLabel("about") },
+    { type: "separator" },
+    {
+      label: menuLabel("settings"),
+      accelerator: "CmdOrCtrl+,",
+      click: () => {
+        sendOpenSettings();
+      },
+    },
     { type: "separator" },
     { role: "services", label: menuLabel("services") },
     { type: "separator" },

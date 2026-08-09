@@ -17,6 +17,23 @@ ipcRenderer.on("desktop:new-session", () => {
   pendingNewSessionFromMain = true;
 });
 
+const openSettingsSubscribers = new Set<() => void>();
+let pendingOpenSettingsFromMain = false;
+
+function dispatchOpenSettingsToSubscribers(): void {
+  for (const callback of openSettingsSubscribers) {
+    callback();
+  }
+}
+
+ipcRenderer.on("desktop:open-settings", () => {
+  if (openSettingsSubscribers.size > 0) {
+    dispatchOpenSettingsToSubscribers();
+    return;
+  }
+  pendingOpenSettingsFromMain = true;
+});
+
 contextBridge.exposeInMainWorld("spiritDesktop", {
   platform: process.platform,
   readNativeBackdropBlur() {
@@ -765,6 +782,16 @@ contextBridge.exposeInMainWorld("spiritDesktop", {
     }
     return () => {
       newSessionSubscribers.delete(callback);
+    };
+  },
+  subscribeOpenSettings(callback: () => void) {
+    openSettingsSubscribers.add(callback);
+    if (pendingOpenSettingsFromMain) {
+      pendingOpenSettingsFromMain = false;
+      callback();
+    }
+    return () => {
+      openSettingsSubscribers.delete(callback);
     };
   },
 });

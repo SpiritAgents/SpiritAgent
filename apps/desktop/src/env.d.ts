@@ -377,6 +377,7 @@ declare global {
       }) => void,
     ): () => void;
     subscribeNewSession(callback: () => void): () => void;
+    subscribeOpenSettings(callback: () => void): () => void;
   }
 
   interface Window {

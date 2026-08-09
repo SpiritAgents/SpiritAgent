@@ -224,7 +224,11 @@ export function useDesktopKeyboardShortcuts({
     return bridge.subscribeNewSession(handleNewSession);
   }, [handleNewSession]);
 
+  // Cmd/Ctrl+, — open settings (macOS menu accelerator handles this; skip here).
   useEffect(() => {
+    if (desktopShellPlatform() === "darwin") {
+      return;
+    }
     const onKeyDown = (event: KeyboardEvent) => {
       const action = resolveModCommaSettingsShortcutAction(
         {
@@ -246,6 +250,14 @@ export function useDesktopKeyboardShortcuts({
     window.addEventListener("keydown", onKeyDown);
     return () => window.removeEventListener("keydown", onKeyDown);
   }, [activeSurfaceRef, handleOpenSettings]);
+
+  useEffect(() => {
+    const bridge = window.spiritDesktop;
+    if (!bridge?.subscribeOpenSettings) {
+      return;
+    }
+    return bridge.subscribeOpenSettings(handleOpenSettings);
+  }, [handleOpenSettings]);
 
   useEffect(() => {
     const onKeyDown = (event: KeyboardEvent) => {
