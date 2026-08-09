@@ -22,16 +22,16 @@ const EN_LABELS = {
   "settings.themeSystem": "System",
   "settings.themeLight": "Light",
   "settings.themeDark": "Dark",
-  "settings.langZhCN": "Simplified Chinese",
+  "settings.langZhCN": "简体中文",
   "settings.langEn": "English",
-  "settings.langZhTW": "Traditional Chinese",
-  "settings.langJa": "Japanese",
-  "settings.langKo": "Korean",
-  "settings.langDe": "German",
-  "settings.langFr": "French",
-  "settings.langEs": "Spanish",
-  "settings.langPtBR": "Brazilian Portuguese",
-  "settings.langRu": "Russian",
+  "settings.langZhTW": "繁體中文",
+  "settings.langJa": "日本語",
+  "settings.langKo": "한국어",
+  "settings.langDe": "Deutsch",
+  "settings.langFr": "Français",
+  "settings.langEs": "Español",
+  "settings.langPtBR": "Português do Brasil",
+  "settings.langRu": "Русский",
 };
 
 const ZH_LABELS = {
@@ -42,7 +42,15 @@ const ZH_LABELS = {
   "settings.themeLight": "浅色",
   "settings.themeDark": "深色",
   "settings.langZhCN": "简体中文",
-  "settings.langEn": "英语",
+  "settings.langEn": "English",
+  "settings.langZhTW": "繁體中文",
+  "settings.langJa": "日本語",
+  "settings.langKo": "한국어",
+  "settings.langDe": "Deutsch",
+  "settings.langFr": "Français",
+  "settings.langEs": "Español",
+  "settings.langPtBR": "Português do Brasil",
+  "settings.langRu": "Русский",
 };
 
 function tEn(key) {
@@ -131,10 +139,17 @@ test("buildActionPaletteItems locale view only returns locale options", () => {
 });
 
 test("buildActionPaletteItems locale view filters by language label", () => {
-  const items = buildActionPaletteItems("english", tEn, "locale");
-  assert.ok(items.some((item) => item.kind === "locale-option" && item.value === "en"));
+  const byEnglish = buildActionPaletteItems("english", tEn, "locale");
+  assert.ok(byEnglish.some((item) => item.kind === "locale-option" && item.value === "en"));
   assert.equal(
-    items.some((item) => item.kind === "locale-option" && item.value === "zh-CN"),
+    byEnglish.some((item) => item.kind === "locale-option" && item.value === "zh-CN"),
+    false,
+  );
+
+  const byEndonym = buildActionPaletteItems("日本語", tEn, "locale");
+  assert.ok(byEndonym.some((item) => item.kind === "locale-option" && item.value === "ja"));
+  assert.equal(
+    byEndonym.some((item) => item.kind === "locale-option" && item.value === "en"),
     false,
   );
 });
@@ -163,9 +178,11 @@ test("buildActionPaletteItems theme view matches English under Chinese UI", () =
   assert.equal(items[0]?.value, "light");
 });
 
-test("buildActionPaletteItems locale view matches English under Chinese UI", () => {
+test("buildActionPaletteItems locale view matches endonym and code under Chinese UI", () => {
   const byLabel = buildActionPaletteItems("english", tZh, "locale");
   assert.ok(byLabel.some((item) => item.kind === "locale-option" && item.value === "en"));
+  const byEndonym = buildActionPaletteItems("한국어", tZh, "locale");
+  assert.ok(byEndonym.some((item) => item.kind === "locale-option" && item.value === "ko"));
   const byCode = buildActionPaletteItems("en", tZh, "locale");
   assert.ok(byCode.some((item) => item.kind === "locale-option" && item.value === "en"));
 });
