@@ -120,29 +120,90 @@ export function prefetchAutoReviewsForToolCalls<ToolRequest, TrustTarget = strin
     if (reviewCache.has(call.id)) {
       continue;
     }
+    reviewCache.set(
+      call.id,
+      startAutoReviewPromise({
+        call,
+        approvalLevel,
+        reviewToolApproval,
+        toolDefinitions: input.toolDefinitions,
+        requestFromFunctionCall: input.requestFromFunctionCall,
+        authorize: input.authorize,
+      }),
+    );
+  }
+}
 
-    const reviewPromise = (async (): Promise<ToolAutoReviewGateOutcome> => {
-      try {
-        const request = await input.requestFromFunctionCall(call.name, call.argumentsJson);
-        const authorization = await input.authorize(request);
-        if (authorization.kind !== "need-approval") {
-          return { kind: "manual" };
-        }
-        return resolveToolAutoReviewGate(
-          approvalLevel,
-          reviewToolApproval,
-          buildToolAutoReviewInput({
-            toolName: call.name,
-            argumentsJson: call.argumentsJson,
-            hostApprovalContext: authorization.prompt,
-            toolDefinitions: input.toolDefinitions,
-          }),
-        );
-      } catch {
+/**
+ * Streaming preview path: start (or restart) auto-review for one tool when its
+ * arguments fingerprint changes. Uses the same AutoReviewCache as formal tool processing.
+ */
+export function prefetchAutoReviewForToolCallIfNeeded<ToolRequest, TrustTarget = string>(input: {
+  call: ToolCallRequest;
+  canonicalArgumentsJson: string;
+  argFingerprints: Map<string, string>;
+  approvalLevel: SessionApprovalLevel | undefined;
+  reviewToolApproval: ToolAutoReviewer | undefined;
+  toolDefinitions: JsonValue;
+  reviewCache: AutoReviewCache;
+  requestFromFunctionCall(name: string, argumentsJson: string): Promise<ToolRequest>;
+  authorize(request: ToolRequest): Promise<AuthorizationDecision<TrustTarget>>;
+}): void {
+  const { approvalLevel, reviewToolApproval, reviewCache, call, canonicalArgumentsJson } = input;
+  if (!reviewToolApproval || approvalLevel !== "auto-approval") {
+    return;
+  }
+
+  const previousFingerprint = input.argFingerprints.get(call.id);
+  if (previousFingerprint === canonicalArgumentsJson && reviewCache.has(call.id)) {
+    return;
+  }
+
+  if (previousFingerprint !== undefined && previousFingerprint !== canonicalArgumentsJson) {
+    reviewCache.delete(call.id);
+  }
+  input.argFingerprints.set(call.id, canonicalArgumentsJson);
+
+  reviewCache.set(
+    call.id,
+    startAutoReviewPromise({
+      call,
+      approvalLevel,
+      reviewToolApproval,
+      toolDefinitions: input.toolDefinitions,
+      requestFromFunctionCall: input.requestFromFunctionCall,
+      authorize: input.authorize,
+    }),
+  );
+}
+
+function startAutoReviewPromise<ToolRequest, TrustTarget>(input: {
+  call: ToolCallRequest;
+  approvalLevel: SessionApprovalLevel;
+  reviewToolApproval: ToolAutoReviewer;
+  toolDefinitions: JsonValue;
+  requestFromFunctionCall(name: string, argumentsJson: string): Promise<ToolRequest>;
+  authorize(request: ToolRequest): Promise<AuthorizationDecision<TrustTarget>>;
+}): Promise<ToolAutoReviewGateOutcome> {
+  return (async (): Promise<ToolAutoReviewGateOutcome> => {
+    try {
+      const request = await input.requestFromFunctionCall(input.call.name, input.call.argumentsJson);
+      const authorization = await input.authorize(request);
+      if (authorization.kind !== "need-approval") {
         return { kind: "manual" };
       }
-    })();
-
-    reviewCache.set(call.id, reviewPromise);
-  }
+      return resolveToolAutoReviewGate(
+        input.approvalLevel,
+        input.reviewToolApproval,
+        buildToolAutoReviewInput({
+          toolName: input.call.name,
+          argumentsJson: input.call.argumentsJson,
+          hostApprovalContext: authorization.prompt,
+          toolDefinitions: input.toolDefinitions,
+        }),
+      );
+    } catch {
+      return { kind: "manual" };
+    }
+  })();
 }

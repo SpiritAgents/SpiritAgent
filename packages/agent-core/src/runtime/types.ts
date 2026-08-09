@@ -537,6 +537,8 @@ export interface PendingStreamingRound<State, ToolRequest> {
   turn: RuntimeTurnContext<ToolRequest>;
   rawEvents: LlmStreamEvent[];
   earlyToolExecutions: Map<string, PendingEarlyToolExecution<ToolRequest>>;
+  /** toolCallId → canonical argumentsJson used for streaming auto-review invalidate. */
+  autoReviewArgFingerprints: Map<string, string>;
   completion: ToolAgentRoundCompletion<State> | undefined;
   completionHandled: boolean;
   streamEnded: boolean;
