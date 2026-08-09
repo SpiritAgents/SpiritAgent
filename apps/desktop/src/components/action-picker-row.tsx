@@ -1,4 +1,4 @@
-import { SquarePen } from "lucide-react";
+import { ChevronRight, Languages, Palette, SquarePen } from "lucide-react";
 import { useTranslation } from "react-i18next";
 
 import { DESKTOP_COMMAND_PALETTE_ITEM_TONE } from "@/lib/desktop-chrome";
@@ -17,6 +17,7 @@ import type { SkillSlashSuggestionKind } from "@/lib/skill-slash";
 
 type ActionPickerRowProps = {
   item: ActionPaletteItem;
+  currentValueLabel?: string;
 };
 
 function SlashCommandIcon({ kind }: { kind: SkillSlashSuggestionKind }) {
@@ -31,12 +32,17 @@ const actionPickerPrimaryTitleClass = cn(
   "text-popover-foreground",
 );
 
-export function ActionPickerRow({ item }: ActionPickerRowProps) {
+const actionPickerMetaClass = cn(
+  "ml-auto min-w-0 truncate text-xs text-muted-foreground",
+  DESKTOP_COMMAND_PALETTE_ITEM_TONE,
+);
+
+export function ActionPickerRow({ item, currentValueLabel }: ActionPickerRowProps) {
   const { t } = useTranslation();
 
   if (isNewSessionAction(item)) {
     return (
-      <div className="flex min-w-0 items-center gap-2 overflow-hidden">
+      <div className="flex min-w-0 flex-1 items-center gap-2 overflow-hidden">
         <SquarePen
           className={cn("size-3.5 shrink-0", DESKTOP_COMMAND_PALETTE_ITEM_TONE)}
           aria-hidden
@@ -46,13 +52,24 @@ export function ActionPickerRow({ item }: ActionPickerRowProps) {
     );
   }
 
-  if (
-    isAppearanceMenuAction(item) ||
-    isThemeOptionAction(item) ||
-    isLocaleOptionAction(item)
-  ) {
+  if (isAppearanceMenuAction(item)) {
+    const Icon = item.kind === "theme-menu" ? Palette : Languages;
     return (
-      <div className="flex min-w-0 items-center gap-2 overflow-hidden">
+      <div className="flex min-w-0 flex-1 items-center gap-2 overflow-hidden">
+        <Icon className={cn("size-3.5 shrink-0", DESKTOP_COMMAND_PALETTE_ITEM_TONE)} aria-hidden />
+        <span className={actionPickerPrimaryTitleClass}>{t(item.labelKey)}</span>
+        {currentValueLabel ? <span className={actionPickerMetaClass}>{currentValueLabel}</span> : null}
+        <ChevronRight
+          className={cn("size-3.5 shrink-0", DESKTOP_COMMAND_PALETTE_ITEM_TONE)}
+          aria-hidden
+        />
+      </div>
+    );
+  }
+
+  if (isThemeOptionAction(item) || isLocaleOptionAction(item)) {
+    return (
+      <div className="flex min-w-0 flex-1 items-center gap-2 overflow-hidden">
         <span className={actionPickerPrimaryTitleClass}>{t(item.labelKey)}</span>
       </div>
     );
@@ -63,7 +80,7 @@ export function ActionPickerRow({ item }: ActionPickerRowProps) {
   }
 
   return (
-    <div className="flex min-w-0 items-center gap-2 overflow-hidden">
+    <div className="flex min-w-0 flex-1 items-center gap-2 overflow-hidden">
       <SlashCommandIcon kind={item.kind} />
       <span className={actionPickerPrimaryTitleClass}>{item.paletteName ?? item.name}</span>
     </div>

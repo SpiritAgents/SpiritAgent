@@ -734,6 +734,7 @@ export default function App() {
                 open={composer.actionPickerOpen}
                 onOpenChange={composer.setActionPickerOpen}
                 onSelect={composer.runActionPaletteItem}
+                onSavePatch={runtime.saveSettingsPatch}
                 isItemDisabled={composer.isActionPaletteItemDisabled}
                 shouldIncludeItem={composer.filterActionPaletteItem}
               />

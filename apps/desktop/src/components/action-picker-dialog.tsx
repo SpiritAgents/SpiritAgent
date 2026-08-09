@@ -6,15 +6,22 @@ import {
   Command,
   CommandDialog,
   CommandEmpty,
+  CommandGroup,
   CommandInput,
   CommandItem,
   CommandList,
 } from "@/components/ui/command";
+import { useTheme } from "@/hooks/useTheme";
 import {
+  ACTION_PALETTE_GROUP_LABEL_KEYS,
   buildActionPaletteItems,
-  isNewSessionAction,
+  groupActionPaletteRootItems,
+  isLocaleOptionAction,
+  isThemeOptionAction,
   type ActionPaletteItem,
+  type ActionPaletteView,
 } from "@/lib/action-palette";
+import { changeLanguage, getStoredLanguage, LOCALE_LABEL_KEYS, isValidLanguage } from "@/lib/i18n";
 import { DESKTOP_COMMAND_PALETTE_ITEM_CLASS } from "@/lib/desktop-chrome";
 import { RADIX_OVERLAY_CLOSE_MS } from "@/lib/overlay-motion";
 import { cn } from "@/lib/utils";
@@ -23,23 +30,28 @@ type ActionPickerDialogProps = {
   open: boolean;
   onOpenChange(open: boolean): void;
   onSelect(item: ActionPaletteItem): void;
+  onSavePatch(patch: { uiLocale: string }): Promise<void>;
   isItemDisabled?(item: ActionPaletteItem): boolean;
   shouldIncludeItem?(item: ActionPaletteItem): boolean;
 };
 
 function actionPaletteItemValue(item: ActionPaletteItem): string {
-  return isNewSessionAction(item) ? item.id : item.id;
+  return item.id;
 }
 
 export function ActionPickerDialog({
   open,
   onOpenChange,
   onSelect,
+  onSavePatch,
   isItemDisabled,
   shouldIncludeItem,
 }: ActionPickerDialogProps) {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
+  const { theme, setTheme } = useTheme();
   const [query, setQuery] = useState("");
+  const [view, setView] = useState<ActionPaletteView>("root");
+  const currentLocale = isValidLanguage(i18n.language) ? i18n.language : getStoredLanguage();
 
   useEffect(() => {
     if (open) {
@@ -47,14 +59,26 @@ export function ActionPickerDialog({
     }
     const timeoutId = window.setTimeout(() => {
       setQuery("");
+      setView("root");
     }, RADIX_OVERLAY_CLOSE_MS);
     return () => window.clearTimeout(timeoutId);
   }, [open]);
 
   const items = useMemo(
-    () => buildActionPaletteItems(query, t).filter((item) => shouldIncludeItem?.(item) ?? true),
-    [query, shouldIncludeItem, t],
+    () =>
+      buildActionPaletteItems(query, t, view).filter((item) => shouldIncludeItem?.(item) ?? true),
+    [query, shouldIncludeItem, t, view],
   );
+
+  const groupedRootItems = useMemo(
+    () => (view === "root" ? groupActionPaletteRootItems(items) : []),
+    [items, view],
+  );
+
+  const goBackToRoot = () => {
+    setView("root");
+    setQuery("");
+  };
 
   const closeAndSelect = (item: ActionPaletteItem) => {
     if (isItemDisabled?.(item)) {
@@ -64,6 +88,78 @@ export function ActionPickerDialog({
     onSelect(item);
   };
 
+  const handleSelect = (item: ActionPaletteItem) => {
+    if (isItemDisabled?.(item)) {
+      return;
+    }
+    if (item.kind === "theme-menu") {
+      setView("theme");
+      setQuery("");
+      return;
+    }
+    if (item.kind === "locale-menu") {
+      setView("locale");
+      setQuery("");
+      return;
+    }
+    if (isThemeOptionAction(item)) {
+      setTheme(item.value);
+      return;
+    }
+    if (isLocaleOptionAction(item)) {
+      void changeLanguage(item.value);
+      void onSavePatch({ uiLocale: item.value });
+      return;
+    }
+    closeAndSelect(item);
+  };
+
+  const themeCurrentLabel = t(
+    theme === "system"
+      ? "settings.themeSystem"
+      : theme === "light"
+        ? "settings.themeLight"
+        : "settings.themeDark",
+  );
+  const localeCurrentLabel = isValidLanguage(currentLocale)
+    ? t(LOCALE_LABEL_KEYS[currentLocale])
+    : currentLocale;
+
+  const renderItem = (item: ActionPaletteItem) => {
+    const disabled = isItemDisabled?.(item) ?? false;
+    const selected =
+      (isThemeOptionAction(item) && item.value === theme) ||
+      (isLocaleOptionAction(item) && item.value === currentLocale);
+    const showCheck = isThemeOptionAction(item) || isLocaleOptionAction(item);
+
+    return (
+      <CommandItem
+        key={actionPaletteItemValue(item)}
+        value={actionPaletteItemValue(item)}
+        disabled={disabled}
+        data-checked={selected ? true : undefined}
+        className={cn(
+          DESKTOP_COMMAND_PALETTE_ITEM_CLASS,
+          disabled && "pointer-events-none opacity-50",
+          showCheck && "[&>svg:last-child]:block",
+          showCheck && !selected && "[&>svg:last-child]:opacity-0",
+        )}
+        onSelect={() => handleSelect(item)}
+      >
+        <ActionPickerRow
+          item={item}
+          currentValueLabel={
+            item.kind === "theme-menu"
+              ? themeCurrentLabel
+              : item.kind === "locale-menu"
+                ? localeCurrentLabel
+                : undefined
+          }
+        />
+      </CommandItem>
+    );
+  };
+
   return (
     <CommandDialog
       open={open}
@@ -71,31 +167,44 @@ export function ActionPickerDialog({
       title={t("actionPalette.title")}
       description={t("actionPalette.description")}
       className="sm:max-w-xl"
+      onEscapeKeyDown={(event) => {
+        if (view === "root") {
+          return;
+        }
+        event.preventDefault();
+        goBackToRoot();
+      }}
     >
       <Command shouldFilter={false} aria-label={t("actionPalette.title")}>
         <CommandInput
           value={query}
           onValueChange={setQuery}
           placeholder={t("actionPalette.placeholder")}
+          showBack={view !== "root"}
+          onBack={goBackToRoot}
+          backLabel={t("actionPalette.back")}
+          onKeyDown={(event) => {
+            if (view === "root") {
+              return;
+            }
+            if (event.key !== "Backspace") {
+              return;
+            }
+            if (query.length > 0) {
+              return;
+            }
+            event.preventDefault();
+            goBackToRoot();
+          }}
         />
         <CommandList className="max-h-96">
-          {items.map((item) => {
-            const disabled = isItemDisabled?.(item) ?? false;
-            return (
-              <CommandItem
-                key={actionPaletteItemValue(item)}
-                value={actionPaletteItemValue(item)}
-                disabled={disabled}
-                className={cn(
-                  DESKTOP_COMMAND_PALETTE_ITEM_CLASS,
-                  disabled && "pointer-events-none opacity-50",
-                )}
-                onSelect={() => closeAndSelect(item)}
-              >
-                <ActionPickerRow item={item} />
-              </CommandItem>
-            );
-          })}
+          {view === "root"
+            ? groupedRootItems.map(({ group, items: groupItems }) => (
+                <CommandGroup key={group} heading={t(ACTION_PALETTE_GROUP_LABEL_KEYS[group])}>
+                  {groupItems.map((item) => renderItem(item))}
+                </CommandGroup>
+              ))
+            : items.map((item) => renderItem(item))}
           {items.length === 0 ? <CommandEmpty>{t("actionPalette.empty")}</CommandEmpty> : null}
         </CommandList>
       </Command>
