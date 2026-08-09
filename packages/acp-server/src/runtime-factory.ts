@@ -3,6 +3,7 @@ import { release as osRelease } from "node:os";
 import {
   AgentRuntime,
   createLlmTransport,
+  isBedrockTransportConfig,
   pendingWorkspaceFilesFromInput,
   type LlmTransportConfig,
   type LlmMessage,
@@ -80,6 +81,13 @@ export interface AcpRuntimeResult {
  * - host-internal is loaded directly as a dependency (not via env-var dynamic import)
  * - No LSP, extensions, todos, or image/video generation for MVP
  */
+function hostPromptProviderId(config: LlmTransportConfig): string | undefined {
+  if (isBedrockTransportConfig(config)) {
+    return "bedrock";
+  }
+  return config.llmVendor;
+}
+
 export async function createAcpRuntime(
   config: AcpServerConfig,
   onEvent: (event: RuntimeEvent<JsonValue>) => void,
@@ -178,6 +186,7 @@ export async function createAcpRuntime(
       false, // loopEnabled
       undefined, // mcpToolCatalog
       attribution,
+      hostPromptProviderId(transportConfig),
     );
 
   const createContinuationState = (messages: LlmMessage[]) =>
@@ -196,6 +205,7 @@ export async function createAcpRuntime(
       false, // loopEnabled
       undefined, // mcpToolCatalog
       attribution,
+      hostPromptProviderId(transportConfig),
     );
 
   // 8. Create LLM transport
@@ -235,6 +245,7 @@ export async function createAcpRuntime(
         false, // loopEnabled
         undefined, // mcpToolCatalog
         attribution,
+        hostPromptProviderId(transportConfig),
       ),
     generateImage: (request) =>
       llmTransport.generateImage(

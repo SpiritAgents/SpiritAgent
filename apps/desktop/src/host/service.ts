@@ -1756,7 +1756,10 @@ class DesktopHostService {
         working_directory: state.workspaceRoot,
         system_prompts: remoteState?.systemPrompts ?? {
           ...(this.runtimeTransport.llmSystemPromptsForExport() as Record<string, unknown>),
-          tool_agent: buildToolAgentHostPrompt(state.config.activeModel.name),
+          tool_agent: buildToolAgentHostPrompt(
+            state.config.activeModel.name,
+            resolveModelProfile(state.config, state.config.activeModel)?.provider,
+          ),
           ...(rulesSystemPrompt === undefined ? {} : { rules: rulesSystemPrompt }),
           ...(skillsCatalogSystemPrompt === undefined
             ? {}

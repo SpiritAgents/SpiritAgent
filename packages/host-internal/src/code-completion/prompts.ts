@@ -26,8 +26,14 @@ export function buildCodeCompletionTaskPrompt(): string {
   ].join("\n");
 }
 
-export function buildCodeCompletionSystemSections(modelName: string): string[] {
-  return [buildCodeCompletionIdentityPrompt(modelName), buildCodeCompletionTaskPrompt()];
+export function buildCodeCompletionSystemSections(
+  modelName: string,
+  providerId?: string,
+): string[] {
+  return [
+    buildCodeCompletionIdentityPrompt(modelName, providerId),
+    buildCodeCompletionTaskPrompt(),
+  ];
 }
 
 export function buildCodeCompletionUserPrompt(input: {

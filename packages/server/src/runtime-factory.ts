@@ -28,6 +28,7 @@ import {
   type JsonValue,
   type LlmMessage,
   type LlmTransportConfig,
+  isBedrockTransportConfig,
   type RuntimeEvent,
   type SpiritAgentMode,
 } from "@spiritagent/agent-core";
@@ -173,6 +174,13 @@ export interface ServerRuntimeResult {
  * real per-session McpService, LSP bindings, extensions, todos, hooks, and
  * transcript persistence.
  */
+function hostPromptProviderId(config: LlmTransportConfig): string | undefined {
+  if (isBedrockTransportConfig(config)) {
+    return "bedrock";
+  }
+  return config.llmVendor;
+}
+
 export async function createServerRuntime(
   options: ServerRuntimeOptions,
 ): Promise<ServerRuntimeResult> {
@@ -369,6 +377,7 @@ export async function createServerRuntime(
       loopEnabled,
       toolExecutor.mcpToolCatalogSnapshot(),
       attribution,
+      hostPromptProviderId(transportConfig),
     );
 
   const createContinuationState = (messages: LlmMessage[]) =>
@@ -387,6 +396,7 @@ export async function createServerRuntime(
       loopEnabled,
       toolExecutor.mcpToolCatalogSnapshot(),
       attribution,
+      hostPromptProviderId(transportConfig),
     );
 
   const llmTransport = createLlmTransport(transportConfig);
@@ -437,6 +447,7 @@ export async function createServerRuntime(
         loopEnabled,
         toolExecutor.mcpToolCatalogSnapshot(),
         attribution,
+        hostPromptProviderId(transportConfig),
       ),
     generateImage: (request) =>
       llmTransport.generateImage(
@@ -586,7 +597,10 @@ export async function createServerRuntime(
         requestTrace: [...runtime.requestTrace()],
         systemPrompts: {
           ...baseSystemPrompts,
-          tool_agent: buildToolAgentHostPrompt(transportConfig.model),
+          tool_agent: buildToolAgentHostPrompt(
+            transportConfig.model,
+            hostPromptProviderId(transportConfig),
+          ),
           ...(rulesSystemPrompt === undefined ? {} : { rules: rulesSystemPrompt }),
           ...(skillsCatalogSystemPrompt === undefined
             ? {}
