@@ -175,6 +175,7 @@ export async function startStreamingRound<Config, State, ToolRequest, TrustTarge
 
   const pending: PendingStreamingRound<State, ToolRequest> = {
     pendingUserInput,
+    streamState: state,
     turn,
     rawEvents: [],
     earlyToolExecutions: new Map(),
@@ -504,12 +505,10 @@ export async function handlePendingStreamEvent<Config, State, ToolRequest, Trust
         authorize: (request) => runtime.options.toolExecutor.authorize(request),
       });
     }
-    const allowEarlyExecutionDuringStream =
-      event.toolName === "read_file" || event.toolName === "ls";
     if (
       !isResponsesBuiltInToolName(event.toolName) &&
       !shouldSkipEarlyExecutionForManagedProviderTool(event.toolName, runtime.options.config) &&
-      (allowEarlyExecutionDuringStream || pending.streamConsumerFinished)
+      canonicalArgumentsJson !== undefined
     ) {
       startEarlyToolExecution(
         runtime as unknown as TurnMachineRuntime<Config, State, ToolRequest, TrustTarget>,
@@ -519,6 +518,13 @@ export async function handlePendingStreamEvent<Config, State, ToolRequest, Trust
           argumentsJson: event.argumentsJson,
         },
         pending.earlyToolExecutions,
+        {
+          pendingUserInput: pending.pendingUserInput,
+          state: pending.streamState,
+          turn: pending.turn,
+          resumeAsStreaming: true,
+          streamingEmitBeginResponse: true,
+        },
       );
     }
     return false;

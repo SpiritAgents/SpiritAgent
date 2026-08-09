@@ -59,6 +59,7 @@ import { prepareAndSyncRuntimeToolResultToHistory } from "./tool-output-append.j
 import type { ToolExecutionResult } from "./tool-execution.js";
 import type {
   AgentRuntimeOptions,
+  EarlyStreamApprovalQueueItem,
   PendingEarlyToolExecution,
   PendingEarlyToolExecutionOutcome,
   PendingApprovalState,
@@ -125,6 +126,8 @@ export interface TurnMachineRuntime<
   requestTraceStore: JsonValue[];
   pendingUserTurnStore: string | undefined;
   pendingApproval: PendingApprovalState<State, ToolRequest, TrustTarget> | undefined;
+  /** Single-slot overflow for early-stream approvals while pendingApproval is busy. */
+  earlyApprovalQueue: EarlyStreamApprovalQueueItem<State, ToolRequest, TrustTarget>[];
   pendingQuestions: PendingQuestionsState<State, ToolRequest> | undefined;
   pendingToolAgentRound: PendingToolAgentRound<State, ToolRequest> | undefined;
   appendTrace(trace: JsonValue[], turn: RuntimeTurnContext<ToolRequest>): void;
@@ -195,6 +198,14 @@ export interface TurnMachineRuntime<
   loopEnabled(): boolean;
   isBusy(): boolean;
   poll(): Promise<void>;
+}
+
+export interface EarlyToolExecutionContext<State, ToolRequest> {
+  pendingUserInput: string;
+  state: State;
+  turn: RuntimeTurnContext<ToolRequest>;
+  resumeAsStreaming?: boolean;
+  streamingEmitBeginResponse?: boolean;
 }
 
 export async function resumePendingApproval<Config, State, ToolRequest, TrustTarget = string>(
@@ -1199,6 +1210,55 @@ export async function processToolCallsAsync<Config, State, ToolRequest, TrustTar
       continue;
     }
 
+    if (earlyOutcome?.kind === "background-scheduled") {
+      if (
+        queueRemainingToolCallsAsync(
+          runtime,
+          currentState,
+          pendingUserInput,
+          remaining,
+          turn,
+          resumeAsStreaming,
+          streamingEmitBeginResponse,
+          earlyToolExecutions,
+        )
+      ) {
+        return;
+      }
+      continue;
+    }
+
+    if (earlyOutcome?.kind === "rejected") {
+      commitSyntheticToolExecutionFailure(
+        runtime,
+        turn,
+        earlyOutcome.request,
+        call.id,
+        call.name,
+        earlyOutcome.resultText,
+      );
+      currentState = runtime.options.appendToolResultMessage(
+        currentState,
+        call.id,
+        earlyOutcome.resultText,
+      );
+      if (
+        queueRemainingToolCallsAsync(
+          runtime,
+          currentState,
+          pendingUserInput,
+          remaining,
+          turn,
+          resumeAsStreaming,
+          streamingEmitBeginResponse,
+          earlyToolExecutions,
+        )
+      ) {
+        return;
+      }
+      continue;
+    }
+
     let request: ToolRequest;
     let preGate: PreToolUseGateResult<ToolRequest>;
     try {
@@ -1815,6 +1875,7 @@ export function startEarlyToolExecution<Config, State, ToolRequest, TrustTarget 
   runtime: TurnMachineRuntime<Config, State, ToolRequest, TrustTarget>,
   call: ToolCallRequest,
   earlyToolExecutions: Map<string, PendingEarlyToolExecution<ToolRequest>>,
+  context?: EarlyToolExecutionContext<State, ToolRequest>,
 ): PendingEarlyToolExecution<ToolRequest> | undefined {
   const resolved = resolveEarlyToolCallArguments(call.name, call.argumentsJson);
   if (resolved === undefined) {
@@ -1826,7 +1887,9 @@ export function startEarlyToolExecution<Config, State, ToolRequest, TrustTarget 
     if (existing.canonicalArgumentsJson === resolved.canonicalArgumentsJson) {
       return existing;
     }
-    return existing;
+    if (!tryInvalidateUnapprovedEarlyToolExecution(runtime, call.id, earlyToolExecutions)) {
+      return existing;
+    }
   }
 
   const executionCall: ToolCallRequest = {
@@ -1838,7 +1901,7 @@ export function startEarlyToolExecution<Config, State, ToolRequest, TrustTarget 
     toolName: call.name,
     argumentsJson: resolved.argumentsJson,
     canonicalArgumentsJson: resolved.canonicalArgumentsJson,
-    outcome: runEarlyToolExecution(runtime, executionCall),
+    outcome: runEarlyToolExecution(runtime, executionCall, earlyToolExecutions, context),
   };
   earlyToolExecutions.set(call.id, record);
   return record;
@@ -1847,6 +1910,8 @@ export function startEarlyToolExecution<Config, State, ToolRequest, TrustTarget 
 async function runEarlyToolExecution<Config, State, ToolRequest, TrustTarget = string>(
   runtime: TurnMachineRuntime<Config, State, ToolRequest, TrustTarget>,
   call: ToolCallRequest,
+  earlyToolExecutions: Map<string, PendingEarlyToolExecution<ToolRequest>>,
+  context: EarlyToolExecutionContext<State, ToolRequest> | undefined,
 ): Promise<PendingEarlyToolExecutionOutcome<ToolRequest>> {
   let request: ToolRequest;
   try {
@@ -1876,17 +1941,111 @@ async function runEarlyToolExecution<Config, State, ToolRequest, TrustTarget = s
     return { kind: "deferred", reason: "authorization-error", preGate };
   }
 
-  const approvalGate = resolveApprovalGateAfterAuthorize(preGate, authorization);
+  const initialGate = resolveApprovalGateAfterAuthorize(preGate, authorization);
+  const approvalGate = initialGate
+    ? await applyAutoReviewToApprovalGate(
+        runtime.options.getApprovalLevel?.(),
+        runtime.options.reviewToolApproval,
+        runtime.options.toolExecutor.toolDefinitionsJson(),
+        call,
+        initialGate,
+        preGate,
+        call.id,
+        context?.turn.autoReviewCache,
+      )
+    : null;
+
   if (approvalGate) {
-    // TODO: preview 已拿到稳定 toolCallId 和参数时，应直接暴露待审批状态，避免正式 tool-calls 阶段前审批表单仍未打开。
-    return { kind: "deferred", reason: "approval-required", preGate };
+    if (!context) {
+      return { kind: "deferred", reason: "approval-required", preGate };
+    }
+
+    const decision = await waitForEarlyStreamApprovalDecision(runtime, {
+      pendingUserInput: context.pendingUserInput,
+      state: context.state,
+      request,
+      prompt: approvalGate.prompt,
+      ...(approvalGate.trustTarget !== undefined ? { trustTarget: approvalGate.trustTarget } : {}),
+      ...(approvalGate.autoReviewBlockReason !== undefined
+        ? { autoReviewBlockReason: approvalGate.autoReviewBlockReason }
+        : {}),
+      toolCallId: call.id,
+      toolName: call.name,
+      argumentsJson: call.argumentsJson,
+      canonicalArgumentsJson:
+        canonicalizeToolArguments(call.argumentsJson) ?? call.argumentsJson,
+      turn: context.turn,
+      earlyToolExecutions,
+      resumeAsStreaming: context.resumeAsStreaming ?? true,
+      streamingEmitBeginResponse: context.streamingEmitBeginResponse ?? true,
+    });
+
+    if (decision.kind === "allow") {
+      if (decision.persistTrust && approvalGate.trustTarget !== undefined) {
+        await runtime.options.toolExecutor.trust(approvalGate.trustTarget);
+      }
+    } else if (decision.kind === "guidance") {
+      const guidanceText = decision.resultText?.trim()
+        ? decision.resultText
+        : "[denied by user] tool call rejected by user guidance";
+      const guidanceMessage = decision.userMessage.trim();
+      if (guidanceMessage) {
+        enqueueDeferredUserGuidance(context.turn, guidanceMessage);
+      }
+      return {
+        kind: "rejected",
+        request,
+        resultText: guidanceText,
+        preGate,
+      };
+    } else {
+      const deniedText = decision.resultText?.trim()
+        ? decision.resultText
+        : "[denied by user] tool call rejected by user approval policy";
+      return {
+        kind: "rejected",
+        request,
+        resultText: deniedText,
+        preGate,
+      };
+    }
   }
+
   if (authorization.kind === "need-questions") {
     return { kind: "deferred", reason: "questions-required", preGate };
   }
 
   if (runtime.options.toolExecutor.shouldExecuteInBackground?.(request) ?? false) {
-    return { kind: "deferred", reason: "background-required", preGate };
+    if (!context) {
+      return { kind: "deferred", reason: "background-required", preGate };
+    }
+    const executionState =
+      runtime.resolveTurnToolState?.(context.turn, context.state) ?? context.state;
+    runtime.emitEvent({
+      kind: "tool-call-started",
+      toolCallId: call.id,
+      toolName: call.name,
+      request,
+    });
+    runtime.scheduleBackgroundToolExecutionAsync(
+      context.pendingUserInput,
+      executionState,
+      request,
+      call.id,
+      call.name,
+      call.argumentsJson,
+      context.turn,
+      context.resumeAsStreaming ?? true,
+      context.streamingEmitBeginResponse ?? true,
+      earlyToolExecutions,
+      postHookToolInputFromPreGate(preGate, call.argumentsJson),
+    );
+    return {
+      kind: "background-scheduled",
+      request,
+      postHookToolInput: postHookToolInputFromPreGate(preGate, call.argumentsJson),
+      preGate,
+    };
   }
 
   const internal = await runtime.tryPerformEarlyInternalToolCall?.(request, call.id, call.name);
@@ -1928,6 +2087,143 @@ async function runEarlyToolExecution<Config, State, ToolRequest, TrustTarget = s
     postHookToolInput: postHookToolInputFromPreGate(preGate, call.argumentsJson),
     ...(fatalError !== undefined ? { fatalError } : {}),
   };
+}
+
+export function pumpEarlyApprovalQueue<Config, State, ToolRequest, TrustTarget = string>(
+  runtime: TurnMachineRuntime<Config, State, ToolRequest, TrustTarget>,
+): void {
+  ensureEarlyApprovalQueue(runtime);
+  if (runtime.pendingApproval) {
+    return;
+  }
+  const next = runtime.earlyApprovalQueue.shift();
+  if (!next) {
+    return;
+  }
+  showEarlyStreamApproval(runtime, next);
+}
+
+export function clearEarlyApprovalWaiters<Config, State, ToolRequest, TrustTarget = string>(
+  runtime: TurnMachineRuntime<Config, State, ToolRequest, TrustTarget>,
+  resultText = "[aborted] tool approval cancelled",
+): void {
+  ensureEarlyApprovalQueue(runtime);
+  const deny: RuntimeApprovalDecision = { kind: "deny", resultText };
+  const pending = runtime.pendingApproval;
+  if (pending?.source === "early-stream") {
+    pending.resolveEarlyDecision?.(deny);
+    runtime.pendingApproval = undefined;
+  }
+  while (runtime.earlyApprovalQueue.length > 0) {
+    const item = runtime.earlyApprovalQueue.shift();
+    item?.resolveDecision(deny);
+  }
+}
+
+function ensureEarlyApprovalQueue<Config, State, ToolRequest, TrustTarget = string>(
+  runtime: TurnMachineRuntime<Config, State, ToolRequest, TrustTarget>,
+): void {
+  if (!Array.isArray(runtime.earlyApprovalQueue)) {
+    runtime.earlyApprovalQueue = [];
+  }
+}
+
+function waitForEarlyStreamApprovalDecision<Config, State, ToolRequest, TrustTarget = string>(
+  runtime: TurnMachineRuntime<Config, State, ToolRequest, TrustTarget>,
+  item: Omit<EarlyStreamApprovalQueueItem<State, ToolRequest, TrustTarget>, "resolveDecision">,
+): Promise<RuntimeApprovalDecision> {
+  ensureEarlyApprovalQueue(runtime);
+  return new Promise((resolve) => {
+    const queued: EarlyStreamApprovalQueueItem<State, ToolRequest, TrustTarget> = {
+      ...item,
+      resolveDecision: resolve,
+    };
+    if (runtime.pendingApproval) {
+      runtime.earlyApprovalQueue.push(queued);
+      return;
+    }
+    showEarlyStreamApproval(runtime, queued);
+  });
+}
+
+function showEarlyStreamApproval<Config, State, ToolRequest, TrustTarget = string>(
+  runtime: TurnMachineRuntime<Config, State, ToolRequest, TrustTarget>,
+  item: EarlyStreamApprovalQueueItem<State, ToolRequest, TrustTarget>,
+): void {
+  const state = runtime.resolveTurnToolState?.(item.turn, item.state) ?? item.state;
+  const approval = createApproval(
+    item.prompt,
+    item.request,
+    item.toolCallId,
+    item.toolName,
+    item.trustTarget,
+    item.autoReviewBlockReason,
+  );
+  runtime.pendingApproval = {
+    source: "early-stream",
+    pendingUserInput: item.pendingUserInput,
+    state,
+    request: item.request,
+    prompt: item.prompt,
+    ...(item.trustTarget !== undefined ? { trustTarget: item.trustTarget } : {}),
+    ...(item.autoReviewBlockReason !== undefined
+      ? { autoReviewBlockReason: item.autoReviewBlockReason }
+      : {}),
+    toolCallId: item.toolCallId,
+    toolName: item.toolName,
+    argumentsJson: item.argumentsJson,
+    remainingCalls: [],
+    turn: item.turn,
+    resumeAsStreaming: item.resumeAsStreaming,
+    streamingEmitBeginResponse: item.streamingEmitBeginResponse,
+    earlyToolExecutions: item.earlyToolExecutions,
+    resolveEarlyDecision: item.resolveDecision,
+  };
+  runtime.emitEvent({
+    kind: "approval-requested",
+    approval,
+  });
+}
+
+function tryInvalidateUnapprovedEarlyToolExecution<
+  Config,
+  State,
+  ToolRequest,
+  TrustTarget = string,
+>(
+  runtime: TurnMachineRuntime<Config, State, ToolRequest, TrustTarget>,
+  toolCallId: string,
+  earlyToolExecutions: Map<string, PendingEarlyToolExecution<ToolRequest>>,
+): boolean {
+  ensureEarlyApprovalQueue(runtime);
+  const queuedIndex = runtime.earlyApprovalQueue.findIndex((item) => item.toolCallId === toolCallId);
+  const isQueued = queuedIndex >= 0;
+  const isPending =
+    runtime.pendingApproval?.source === "early-stream" &&
+    runtime.pendingApproval.toolCallId === toolCallId;
+
+  if (!isQueued && !isPending) {
+    return false;
+  }
+
+  const deny: RuntimeApprovalDecision = {
+    kind: "deny",
+    resultText: "[cancelled] tool arguments changed before approval",
+  };
+
+  if (isQueued) {
+    const [removed] = runtime.earlyApprovalQueue.splice(queuedIndex, 1);
+    removed?.resolveDecision(deny);
+  }
+
+  if (isPending) {
+    runtime.pendingApproval?.resolveEarlyDecision?.(deny);
+    runtime.pendingApproval = undefined;
+    pumpEarlyApprovalQueue(runtime);
+  }
+
+  earlyToolExecutions.delete(toolCallId);
+  return true;
 }
 
 async function performEarlyExternalToolExecution<Config, State, ToolRequest, TrustTarget = string>(
@@ -2002,7 +2298,14 @@ async function matchingEarlyToolExecutionOutcome<ToolRequest>(
   }
 
   const outcome = await early.outcome;
-  return outcome.kind === "completed" ? outcome : undefined;
+  if (
+    outcome.kind === "completed" ||
+    outcome.kind === "background-scheduled" ||
+    outcome.kind === "rejected"
+  ) {
+    return outcome;
+  }
+  return undefined;
 }
 
 function earlyToolArgumentsMatchFormal(

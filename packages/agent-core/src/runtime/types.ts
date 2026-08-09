@@ -51,6 +51,20 @@ export type PendingEarlyToolExecutionOutcome<ToolRequest> =
       fatalError?: string;
     }
   | {
+      /** Early allow scheduled background execution; formal must not schedule again. */
+      kind: "background-scheduled";
+      request: ToolRequest;
+      postHookToolInput?: JsonObject;
+      preGate?: PreToolUseGateResult<ToolRequest>;
+    }
+  | {
+      /** User denied/guided during early-stream approval; formal commits the failure. */
+      kind: "rejected";
+      request: ToolRequest;
+      resultText: string;
+      preGate?: PreToolUseGateResult<ToolRequest>;
+    }
+  | {
       kind: "deferred";
       reason:
         | "schema-error"
@@ -69,6 +83,27 @@ export interface PendingEarlyToolExecution<ToolRequest> {
   canonicalArgumentsJson: string;
   outcome: Promise<PendingEarlyToolExecutionOutcome<ToolRequest>>;
 }
+
+/** Single-slot early approval: head shows as pendingApproval; rest wait here. */
+export interface EarlyStreamApprovalQueueItem<State, ToolRequest, TrustTarget = string> {
+  pendingUserInput: string;
+  state: State;
+  request: ToolRequest;
+  prompt: string;
+  trustTarget?: TrustTarget;
+  autoReviewBlockReason?: string;
+  toolCallId: string;
+  toolName: string;
+  argumentsJson: string;
+  canonicalArgumentsJson: string;
+  turn: RuntimeTurnContext<ToolRequest>;
+  earlyToolExecutions: Map<string, PendingEarlyToolExecution<ToolRequest>>;
+  resumeAsStreaming: boolean;
+  streamingEmitBeginResponse: boolean;
+  resolveDecision: (decision: RuntimeApprovalDecision) => void;
+}
+
+export type PendingApprovalSource = "early-stream" | "formal";
 
 export interface RuntimeCompactionRecord {
   droppedMessages: number;
@@ -497,6 +532,10 @@ export interface PendingApprovalState<State, ToolRequest, TrustTarget> {
   resumeAsStreaming: boolean;
   streamingEmitBeginResponse: boolean;
   earlyToolExecutions?: Map<string, PendingEarlyToolExecution<ToolRequest>>;
+  /** Defaults to formal when omitted (legacy / formal processToolCalls path). */
+  source?: PendingApprovalSource;
+  /** Set when source is early-stream; continuePendingApproval resolves the early waiter. */
+  resolveEarlyDecision?: (decision: RuntimeApprovalDecision) => void;
 }
 
 export interface PendingQuestionsState<State, ToolRequest> {
@@ -534,6 +573,8 @@ export interface PendingManualApprovalState<ToolRequest, TrustTarget> {
 
 export interface PendingStreamingRound<State, ToolRequest> {
   pendingUserInput: string;
+  /** Round state at stream start; early approval / execute uses resolveTurnToolState when available. */
+  streamState: State;
   turn: RuntimeTurnContext<ToolRequest>;
   rawEvents: LlmStreamEvent[];
   earlyToolExecutions: Map<string, PendingEarlyToolExecution<ToolRequest>>;
