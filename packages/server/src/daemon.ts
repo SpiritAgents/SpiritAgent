@@ -482,7 +482,7 @@ export async function startDaemon(options: DaemonOptions): Promise<RunningDaemon
         if (typeof conversationKey !== "string" || !conversationKey.trim()) {
           throw new Error("missing conversationKey");
         }
-        sessionManager.migrateConversationKey(readSessionId(params), conversationKey.trim());
+        await sessionManager.migrateConversationKey(readSessionId(params), conversationKey.trim());
         return { ok: true };
       }
       case SESSION_SUBMIT_USER_TURN: {

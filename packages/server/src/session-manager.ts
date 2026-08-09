@@ -352,7 +352,7 @@ export class SessionManager {
   }
 
   /** Move a live session to a new conversation key (e.g. provisional → stable chat path). */
-  migrateConversationKey(sessionId: string, nextKey: string): void {
+  async migrateConversationKey(sessionId: string, nextKey: string): Promise<void> {
     const trimmed = nextKey.trim();
     if (!trimmed) {
       throw new Error("missing conversationKey");
@@ -374,6 +374,7 @@ export class SessionManager {
     }
     session.info.conversationKey = trimmed;
     this.conversationIndex.set(trimmed, sessionId);
+    await session.runtimeResult.setTranscriptSessionKey(trimmed);
   }
 
   private resolveSessionId(params: AttachSessionParams): string {

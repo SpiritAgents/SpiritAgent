@@ -236,7 +236,7 @@ describe("SessionManager", () => {
         hostKind: "desktop",
         conversationKey: provisional,
       });
-      manager.migrateConversationKey(created.sessionId, stable);
+      await manager.migrateConversationKey(created.sessionId, stable);
 
       assert.throws(
         () => manager.attachSession("client-a", { conversationKey: provisional }),

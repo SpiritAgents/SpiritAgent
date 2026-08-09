@@ -1,4 +1,6 @@
+import { access, mkdir, rename } from "node:fs/promises";
 import { release as osRelease } from "node:os";
+import path from "node:path";
 
 import {
   AgentRuntime,
@@ -154,6 +156,11 @@ export interface ServerRuntimeResult {
   ) => void;
   /** Re-scope the todo store (CLI keys todos by its own chat session id). */
   setTodoSessionKey: (sessionKey: string) => void;
+  /**
+   * Re-key transcript persistence after provisional → stable chat promote.
+   * Moves the on-disk transcript dir when present and updates hook sessionId.
+   */
+  setTranscriptSessionKey: (nextSessionKey: string) => Promise<void>;
   /** Abort a running shell process owned by this session. */
   abortShell: (toolCallId: string) => boolean;
 }
@@ -169,7 +176,9 @@ export interface ServerRuntimeResult {
 export async function createServerRuntime(
   options: ServerRuntimeOptions,
 ): Promise<ServerRuntimeResult> {
-  const { workspaceRoot, spiritDataDir, sessionKey, hostKind, onEvent } = options;
+  const { workspaceRoot, spiritDataDir, hostKind, onEvent } = options;
+  // Mutable: provisional → stable promote re-keys transcript persistence in place.
+  let sessionKey = options.sessionKey;
   const log = options.log ?? (() => {});
   const approvalLevel = options.approvalLevel;
   const isDreamCollector = options.sessionKind === "dream-collector";
@@ -324,6 +333,12 @@ export async function createServerRuntime(
       version: osRelease(),
     },
   };
+  const hookSessionContext = {
+    sessionId: sessionKey,
+    conversationPath: null as string | null,
+    workspaceRoot,
+    model: transportConfig.model,
+  };
 
   // 5. Prompt sections.
   const applyPatchPromptSection =
@@ -445,12 +460,7 @@ export async function createServerRuntime(
       }),
     resolveWorkspaceFilesFromInput: (text) => pendingWorkspaceFilesFromInput(workspaceRoot, text),
     hookRunner,
-    hookSessionContext: {
-      sessionId: sessionKey,
-      conversationPath: null,
-      workspaceRoot,
-      model: transportConfig.model,
-    },
+    hookSessionContext,
     syncSessionTranscript: async ({ transcript, sessionKey: key }) =>
       persistSessionTranscript(spiritDataDir, transcript, {
         sessionKey: key ?? sessionKey,
@@ -535,26 +545,12 @@ export async function createServerRuntime(
       await runSessionStartHookAndApply(
         hookRunner,
         (role, content) => runtime.recordContextMessage(role, content),
-        {
-          sessionId: sessionKey,
-          conversationPath: null,
-          workspaceRoot,
-          model: transportConfig.model,
-        },
+        { ...hookSessionContext },
         source,
       );
     },
     runSessionEnd: async (reason) => {
-      await runSessionEndHook(
-        hookRunner,
-        {
-          sessionId: sessionKey,
-          conversationPath: null,
-          workspaceRoot,
-          model: transportConfig.model,
-        },
-        reason,
-      );
+      await runSessionEndHook(hookRunner, { ...hookSessionContext }, reason);
     },
     reloadHostMetadata: async (mode) => {
       if (isDreamCollector) {
@@ -608,6 +604,40 @@ export async function createServerRuntime(
     },
     setTodoSessionKey: (key) => {
       service.setTodoScope?.({ sessionKey: key });
+    },
+    setTranscriptSessionKey: async (nextSessionKey) => {
+      const trimmed = nextSessionKey.trim();
+      if (!trimmed || trimmed === sessionKey) {
+        return;
+      }
+      const previousKey = sessionKey;
+      const fromDir = resolveTranscriptSessionDir(spiritDataDir, previousKey);
+      const toDir = resolveTranscriptSessionDir(spiritDataDir, trimmed);
+      if (fromDir !== toDir) {
+        let sourceExists = false;
+        try {
+          await access(fromDir);
+          sourceExists = true;
+        } catch {
+          sourceExists = false;
+        }
+        let targetExists = false;
+        try {
+          await access(toDir);
+          targetExists = true;
+        } catch {
+          targetExists = false;
+        }
+        if (sourceExists && !targetExists) {
+          await mkdir(path.dirname(toDir), { recursive: true });
+          await rename(fromDir, toDir);
+        } else if (!targetExists) {
+          await ensureTranscriptSessionDir(spiritDataDir, trimmed);
+        }
+      }
+      sessionKey = trimmed;
+      hookSessionContext.sessionId = trimmed;
+      basicInfo.sessionTranscript = resolveTranscriptSessionDir(spiritDataDir, trimmed);
     },
     abortShell: (toolCallId) => service.abortShell(toolCallId),
   };

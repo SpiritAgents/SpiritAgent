@@ -47,8 +47,11 @@ export async function hydrateSessionReferenceWiresInUserText(text: string): Prom
     const content =
       block.content.trim().length > 0 ? block.content : await readTranscriptBody(block.path);
     const replacement = sessionReferenceContextText(block.path, block.title, content);
-    result =
-      result.slice(0, block.index) + replacement + result.slice(block.index + block.length);
+    const blockEnd = block.index + block.length;
+    const originalEndsWithNewline = block.length > 0 && result[blockEnd - 1] === "\n";
+    const replacementWithTrailing =
+      originalEndsWithNewline && !replacement.endsWith("\n") ? `${replacement}\n` : replacement;
+    result = result.slice(0, block.index) + replacementWithTrailing + result.slice(blockEnd);
   }
   return result;
 }
