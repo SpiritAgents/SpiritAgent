@@ -48,6 +48,9 @@ mac:
   # Prefer darwin over electron-builder's default ${os}=mac for release URL alignment.
   artifactName: SpiritAgent-Desktop-${version}-darwin-${arch}.${ext}
   icon: build/icon.png
+  # Info.plist LSApplicationCategoryType；Apps（Tahoe+）映射到「效率与财务」/Productivity & Finance。
+  # 勿依赖 Electron 默认的 developer-tools（新 Apps 已无该栏）。
+  category: public.app-category.productivity
   target:
     - dmg
     - zip
