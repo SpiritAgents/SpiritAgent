@@ -158,7 +158,13 @@ export class AiSdkAnthropicTransport
     config: AnthropicTransportConfig,
     request: OpenAiJsonSchemaCompletionRequest,
   ): Promise<OpenAiJsonSchemaCompletionResult<T>> {
-    const messages = buildJsonSchemaCompletionMessages({ model: config.model }, request);
+    const messages = buildJsonSchemaCompletionMessages(
+      {
+        model: config.model,
+        ...(config.llmVendor ? { llmVendor: config.llmVendor } : {}),
+      },
+      request,
+    );
     const normalizedMessages = prepareAnthropicToolStateMessages(config, messages);
     await resolveMinimaxVideoInAnthropicMessages(
       config,
@@ -469,7 +475,7 @@ export class AiSdkAnthropicTransport
 
   llmSystemPromptsForExport(): JsonValue {
     return {
-      tool_agent: buildToolAgentHostPrompt("—"),
+      tool_agent: buildToolAgentHostPrompt("—", undefined),
     };
   }
 }

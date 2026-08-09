@@ -11,9 +11,9 @@ import {
 } from "../../dist/code-completion/index.js";
 
 test("buildCodeCompletionIdentityPrompt includes model and CJK guidance", () => {
-  const prompt = buildCodeCompletionIdentityPrompt("gpt-test");
+  const prompt = buildCodeCompletionIdentityPrompt("gpt-test", "openai");
   assert.match(prompt, /You are Spirit Agent/);
-  assert.match(prompt, /gpt-test/);
+  assert.match(prompt, /The user's model is gpt-test from openai/);
   assert.match(prompt, /CJK/);
 });
 
