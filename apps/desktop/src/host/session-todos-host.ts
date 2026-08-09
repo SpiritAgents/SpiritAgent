@@ -15,7 +15,7 @@ import {
   resolveTodoSessionKey,
 } from "./todos.js";
 import { provisionalNewSessionPath } from "./storage.js";
-import { ensureDesktopTranscriptSessionDir } from "./transcript-session.js";
+import { ensureDesktopTranscriptSessionDirForChatPath } from "./transcript-session.js";
 
 export interface PendingTodoClearing {
   untilUnixMs: number;
@@ -75,7 +75,10 @@ export async function finalizeTodoScopeForNewActiveBundle(
   const legacyProvisionalKey = path.resolve(provisionalNewSessionPath(workspaceRoot));
   cancelTodoClearing(ctx, legacyProvisionalKey);
   await purgeSessionTodos(legacyProvisionalKey);
-  await ensureDesktopTranscriptSessionDir(bundle.rewind.sessionId);
+  const chatPath = bundle.activeSession?.filePath?.trim() || bundle.id.trim();
+  if (chatPath && chatPath !== "__draft__") {
+    await ensureDesktopTranscriptSessionDirForChatPath(chatPath);
+  }
   await ctx.ensureToolExecutor(bundle);
   await refreshTodoSnapshotForBundle(ctx, bundle);
 }

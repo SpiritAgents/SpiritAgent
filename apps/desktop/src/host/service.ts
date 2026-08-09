@@ -1739,7 +1739,7 @@ class DesktopHostService {
           state.workspaceRoot,
           this.requireToolExecutor(),
           gitBranchLabelForBasicInfo(state.git),
-          this.activeBundle().rewind.sessionId,
+          this.activeBundle().activeSession?.filePath ?? this.activeBundle().id,
         ),
       );
       const exportedAtUnixSecs = Math.floor(Date.now() / 1000);

@@ -263,10 +263,13 @@ export class SessionManager {
     }
 
     const sessionId = `sess_${randomUUID().replaceAll("-", "")}`;
+    // Transcript / basicInfo sessionKey: prefer conversationKey (chat path) so Desktop can
+    // resolve transcript.json from listSessions without a sess_* mapping.
+    const transcriptSessionKey = trimmedKey || sessionId;
     const runtimeResult = await createServerRuntime({
       workspaceRoot: params.workspaceRoot,
       spiritDataDir: this.spiritDataDir,
-      sessionKey: sessionId,
+      sessionKey: transcriptSessionKey,
       ...(params.modelRef ? { modelRef: params.modelRef } : {}),
       ...(params.todoSessionKey?.trim() ? { todoSessionKey: params.todoSessionKey.trim() } : {}),
       ...(params.sessionKind === "dream-collector"
