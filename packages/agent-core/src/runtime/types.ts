@@ -17,6 +17,7 @@ import type {
   ToolExecutor,
 } from "../ports.js";
 import type { HookRunner, HookSessionContext } from "../hooks/types.js";
+import type { AutoReviewCache } from "./auto-approval-integration.js";
 
 export interface RuntimeToolArtifact {
   kind: "image" | "video";
@@ -477,6 +478,8 @@ export interface RuntimeTurnContext<ToolRequest> {
   compactions: RuntimeCompactionRecord[];
   autoCompactAttempts: number;
   deferredUserGuidances: DeferredUserGuidance[];
+  /** Shared across recursive remaining-call batches within one turn. */
+  autoReviewCache: AutoReviewCache;
 }
 
 export interface PendingApprovalState<State, ToolRequest, TrustTarget> {

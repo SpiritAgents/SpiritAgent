@@ -1162,6 +1162,198 @@ test("processToolCalls auto-approval reviewer block requires manual approval wit
   }
 });
 
+test("processToolCalls auto-approval reviews multiple tools concurrently then executes in order", async () => {
+  const state = { messages: [] as Array<{ role: string; content: string }>, steps: 0 };
+  let started = 0;
+  let inFlight = 0;
+  let maxInFlight = 0;
+  const releaseGates: Array<() => void> = [];
+  const executionOrder: string[] = [];
+
+  const runtime = {
+    options: {
+      config: {},
+      llmTransport: {
+        startToolAgentRound: async () => ({
+          kind: "failure",
+          error: "unused",
+          requestTrace: [],
+        }),
+        isContextOverflowError: () => false,
+      },
+      toolExecutor: {
+        toolDefinitionsJson: () => [],
+        requestFromFunctionCall: async (name: string, argumentsJson: string) => ({
+          name,
+          argumentsJson,
+        }),
+        authorize: async () => ({
+          kind: "need-approval",
+          prompt: "needs review",
+        }),
+        execute: async () => ({ content: [], summaryText: "ok" }),
+      },
+      getApprovalLevel: () => "auto-approval" as const,
+      reviewToolApproval: async () => {
+        started += 1;
+        inFlight += 1;
+        maxInFlight = Math.max(maxInFlight, inFlight);
+        await new Promise<void>((resolve) => {
+          releaseGates.push(resolve);
+        });
+        inFlight -= 1;
+        return { allow: true, reason: "ok" };
+      },
+      createToolAgentState: () => state,
+      appendToolResultMessage: (currentState: typeof state) => currentState,
+      extractAssistantText: () => "done",
+    },
+    historyStore: [],
+    requestTraceStore: [],
+    pendingUserTurnStore: undefined,
+    pendingApproval: undefined,
+    pendingQuestions: undefined,
+    pendingToolAgentRound: undefined,
+    appendTrace: () => {},
+    clearStreamingUiState: () => {},
+    completeTurn: () => {},
+    emitEvent: () => {},
+    performToolExecution: async (
+      _request: unknown,
+      toolName: string,
+      toolCallId: string,
+    ) => {
+      executionOrder.push(toolCallId);
+      return {
+        output: { content: [], summaryText: `${toolName}-ok` },
+        failed: false,
+        backgroundExecution: false,
+      };
+    },
+    startBackgroundToolExecutionAsync: () => {
+      throw new Error("unused");
+    },
+    startHistoryCompactionAsync: () => {},
+    loopEnabled: () => false,
+  } as unknown as TurnMachineRuntime<{}, typeof state, { name: string; argumentsJson: string }>;
+
+  const resultPromise = processToolCalls(
+    runtime,
+    state,
+    "edit files",
+    [
+      { id: "call_a", name: "edit_file", argumentsJson: '{"path":"a.txt"}' },
+      { id: "call_b", name: "edit_file", argumentsJson: '{"path":"b.txt"}' },
+    ],
+    createTurnContext(),
+  );
+
+  const deadline = Date.now() + 2000;
+  while (started < 2 && Date.now() < deadline) {
+    await new Promise((resolve) => setTimeout(resolve, 0));
+  }
+  assert.equal(started, 2);
+  assert.equal(maxInFlight, 2);
+  assert.equal(releaseGates.length, 2);
+  for (const release of releaseGates) {
+    release();
+  }
+
+  const result = await resultPromise;
+  assert.notEqual(result.kind, "requires-approval");
+  assert.deepEqual(executionOrder, ["call_a", "call_b"]);
+});
+
+test("processToolCalls auto-approval block stops later tools after earlier allow", async () => {
+  const state = { messages: [] as Array<{ role: string; content: string }>, steps: 0 };
+  const executionOrder: string[] = [];
+  let reviewStarts = 0;
+
+  const runtime = {
+    options: {
+      config: {},
+      llmTransport: {
+        startToolAgentRound: async () => ({
+          kind: "failure",
+          error: "unused",
+          requestTrace: [],
+        }),
+        isContextOverflowError: () => false,
+      },
+      toolExecutor: {
+        toolDefinitionsJson: () => [],
+        requestFromFunctionCall: async (name: string, argumentsJson: string) => ({
+          name,
+          argumentsJson,
+        }),
+        authorize: async () => ({
+          kind: "need-approval",
+          prompt: "needs review",
+        }),
+        execute: async () => ({ content: [], summaryText: "ok" }),
+      },
+      getApprovalLevel: () => "auto-approval" as const,
+      reviewToolApproval: async (input: { argumentsJson: string }) => {
+        reviewStarts += 1;
+        if (input.argumentsJson.includes("b.txt")) {
+          return { allow: false, reason: "blocked b" };
+        }
+        return { allow: true, reason: "ok" };
+      },
+      createToolAgentState: () => state,
+      appendToolResultMessage: (currentState: typeof state) => currentState,
+      extractAssistantText: () => undefined,
+    },
+    historyStore: [],
+    requestTraceStore: [],
+    pendingUserTurnStore: undefined,
+    pendingApproval: undefined,
+    pendingQuestions: undefined,
+    pendingToolAgentRound: undefined,
+    appendTrace: () => {},
+    clearStreamingUiState: () => {},
+    completeTurn: () => {},
+    emitEvent: () => {},
+    performToolExecution: async (
+      _request: unknown,
+      _toolName: string,
+      toolCallId: string,
+    ) => {
+      executionOrder.push(toolCallId);
+      return {
+        output: { content: [], summaryText: "ok" },
+        failed: false,
+        backgroundExecution: false,
+      };
+    },
+    startBackgroundToolExecutionAsync: () => {
+      throw new Error("unused");
+    },
+    startHistoryCompactionAsync: () => {},
+    loopEnabled: () => false,
+  } as unknown as TurnMachineRuntime<{}, typeof state, { name: string; argumentsJson: string }>;
+
+  const result = await processToolCalls(
+    runtime,
+    state,
+    "edit files",
+    [
+      { id: "call_a", name: "edit_file", argumentsJson: '{"path":"a.txt"}' },
+      { id: "call_b", name: "edit_file", argumentsJson: '{"path":"b.txt"}' },
+      { id: "call_c", name: "edit_file", argumentsJson: '{"path":"c.txt"}' },
+    ],
+    createTurnContext(),
+  );
+
+  assert.equal(result.kind, "requires-approval");
+  if (result.kind === "requires-approval") {
+    assert.equal(result.approval.toolCallId, "call_b");
+    assert.equal(result.approval.autoReviewBlockReason, "blocked b");
+  }
+  assert.deepEqual(executionOrder, ["call_a"]);
+  assert.ok(reviewStarts >= 2);
+});
+
 test("processToolCalls hook ask triggers approval when host allows", async () => {
   const state = { messages: [] as Array<{ role: string; content: string }>, steps: 0 };
   const runtime = {

@@ -125,6 +125,7 @@ test("startBackgroundToolExecutionAsync emits tool-execution-output-chunk for sh
     compactions: [],
     autoCompactAttempts: 0,
     deferredUserGuidances: [],
+    autoReviewCache: new Map(),
   };
 
   type TestState = { messages: string[] };

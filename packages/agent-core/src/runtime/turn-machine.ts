@@ -26,7 +26,10 @@ import {
   registerPendingApplyPatchCallIds,
 } from "../open-responses/apply-patch-bridge.js";
 import { APPLY_PATCH_HOST_TOOL_NAME } from "../open-responses/apply-patch-eligibility.js";
-import { applyAutoReviewToApprovalGate } from "./auto-approval-integration.js";
+import {
+  applyAutoReviewToApprovalGate,
+  prefetchAutoReviewsForToolCalls,
+} from "./auto-approval-integration.js";
 import {
   hookDeniedToolOutput,
   postHookToolInputFromPreGate,
@@ -339,6 +342,9 @@ export async function resumePendingQuestions<Config, State, ToolRequest, TrustTa
           prompt: authorization.prompt,
           trustTarget: authorization.trustTarget,
         },
+        undefined,
+        pending.toolCallId,
+        pending.turn.autoReviewCache,
       );
       if (activeGate) {
         const approval = createApproval(
@@ -587,6 +593,16 @@ export async function processToolCalls<Config, State, ToolRequest, TrustTarget =
   const remaining = [...calls];
 
   persistAssistantToolCalls(runtime, state, calls);
+  prefetchAutoReviewsForToolCalls({
+    calls,
+    approvalLevel: runtime.options.getApprovalLevel?.(),
+    reviewToolApproval: runtime.options.reviewToolApproval,
+    toolDefinitions: runtime.options.toolExecutor.toolDefinitionsJson(),
+    reviewCache: turn.autoReviewCache,
+    requestFromFunctionCall: (name, argumentsJson) =>
+      runtime.options.toolExecutor.requestFromFunctionCall(name, argumentsJson),
+    authorize: (request) => runtime.options.toolExecutor.authorize(request),
+  });
 
   while (remaining.length > 0) {
     const call = remaining.shift();
@@ -667,6 +683,8 @@ export async function processToolCalls<Config, State, ToolRequest, TrustTarget =
           call,
           initialGate,
           preGate,
+          call.id,
+          turn.autoReviewCache,
         )
       : null;
     if (approvalGate) {
@@ -1091,6 +1109,16 @@ export async function processToolCallsAsync<Config, State, ToolRequest, TrustTar
   const remaining = [...calls];
 
   persistAssistantToolCalls(runtime, state, calls);
+  prefetchAutoReviewsForToolCalls({
+    calls,
+    approvalLevel: runtime.options.getApprovalLevel?.(),
+    reviewToolApproval: runtime.options.reviewToolApproval,
+    toolDefinitions: runtime.options.toolExecutor.toolDefinitionsJson(),
+    reviewCache: turn.autoReviewCache,
+    requestFromFunctionCall: (name, argumentsJson) =>
+      runtime.options.toolExecutor.requestFromFunctionCall(name, argumentsJson),
+    authorize: (request) => runtime.options.toolExecutor.authorize(request),
+  });
 
   while (remaining.length > 0) {
     const call = remaining.shift();
@@ -1337,6 +1365,8 @@ export async function processToolCallsAsync<Config, State, ToolRequest, TrustTar
           call,
           initialGate,
           preGate,
+          call.id,
+          turn.autoReviewCache,
         )
       : null;
     if (approvalGate) {
