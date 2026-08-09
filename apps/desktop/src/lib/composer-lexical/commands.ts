@@ -35,6 +35,14 @@ export type ReplaceWorkspaceFileReferenceCommandPayload = {
   finalize?: boolean;
 };
 
+export type ReplaceSessionReferenceCommandPayload = {
+  path: string;
+  title: string;
+  content?: string;
+  query: ActiveWorkspaceFileReferenceQuery;
+  finalize?: boolean;
+};
+
 export const INSERT_ATTACHMENT_CHIP_COMMAND: LexicalCommand<ComposerAttachmentChipPayload> =
   createCommand("SPIRIT_INSERT_ATTACHMENT_CHIP");
 
@@ -43,6 +51,9 @@ export const INSERT_WORKSPACE_FILE_AT_CARET_COMMAND: LexicalCommand<{ path: stri
 
 export const INSERT_WORKSPACE_FILE_REFERENCE_COMMAND: LexicalCommand<ReplaceWorkspaceFileReferenceCommandPayload> =
   createCommand("SPIRIT_INSERT_WORKSPACE_FILE_REFERENCE");
+
+export const INSERT_SESSION_REFERENCE_COMMAND: LexicalCommand<ReplaceSessionReferenceCommandPayload> =
+  createCommand("SPIRIT_INSERT_SESSION_REFERENCE");
 
 export const INSERT_SKILL_CHIP_COMMAND: LexicalCommand<InsertSkillChipCommandPayload> =
   createCommand("SPIRIT_INSERT_SKILL_CHIP");

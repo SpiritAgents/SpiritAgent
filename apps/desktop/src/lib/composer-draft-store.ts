@@ -58,6 +58,12 @@ function isPersistedRichSegment(value: unknown): value is RichSegment {
   if (kind === "workspaceFile") {
     return typeof (value as { path?: unknown }).path === "string";
   }
+  if (kind === "sessionReference") {
+    return (
+      typeof (value as { path?: unknown }).path === "string" &&
+      typeof (value as { title?: unknown }).title === "string"
+    );
+  }
   if (kind === "skill") {
     return typeof (value as { alias?: unknown }).alias === "string";
   }

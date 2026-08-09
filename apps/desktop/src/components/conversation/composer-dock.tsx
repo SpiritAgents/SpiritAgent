@@ -52,7 +52,7 @@ import type { ComposerLocalFileAttachmentView } from "@/lib/local-file-attachmen
 import { FONT_WEIGHT_MEDIUM } from "@/lib/desktop-typography";
 import { cn } from "@/lib/utils";
 import { useComposerSuggestionAnchor } from "@/hooks/use-composer-suggestion-anchor";
-import type { DesktopSnapshot, WorkspaceFileReferenceSuggestionsResponse } from "@/types";
+import type { DesktopSnapshot } from "@/types";
 import type { useDesktopRuntime } from "@/hooks/useDesktopRuntime";
 
 type DesktopRuntime = ReturnType<typeof useDesktopRuntime>;
@@ -85,10 +85,14 @@ export type ComposerDockProps = {
   ) => void;
   onSubmitQuestions?: () => void;
   onSkipQuestions?: () => void;
-  fileReferenceSuggestions: WorkspaceFileReferenceSuggestionsResponse;
   fileReferenceSelectedIndex: number;
   onFileReferenceSelectedIndexChange: (index: number) => void;
+  fileReferenceMenuView: import("@/lib/composer-at-reference-demo").AtReferenceMenuView;
+  atReferenceMenuItems: import("@/lib/composer-at-reference-demo").AtReferenceMenuItem[];
   onApplyFileReferenceSuggestion: (path: string) => void;
+  onApplySessionReferenceSuggestion: (session: { path: string; title: string }) => void;
+  onOpenAtReferenceSessions: () => void;
+  onBackAtReferenceMenu: () => void;
   onDismissFileReferenceSuggestions: () => void;
   activeFileReferenceQuery: ActiveWorkspaceFileReferenceQuery | undefined;
   slashQuery: ActiveSkillSlashQuery | undefined;
@@ -162,10 +166,14 @@ export const ComposerDock = forwardRef<HTMLDivElement, ComposerDockProps>(functi
     onUpdateQuestionDraft,
     onSubmitQuestions,
     onSkipQuestions,
-    fileReferenceSuggestions,
     fileReferenceSelectedIndex,
     onFileReferenceSelectedIndexChange: _onFileReferenceSelectedIndexChange,
+    fileReferenceMenuView,
+    atReferenceMenuItems,
     onApplyFileReferenceSuggestion,
+    onApplySessionReferenceSuggestion,
+    onOpenAtReferenceSessions,
+    onBackAtReferenceMenu,
     onDismissFileReferenceSuggestions,
     activeFileReferenceQuery,
     slashQuery,
@@ -613,14 +621,21 @@ export const ComposerDock = forwardRef<HTMLDivElement, ComposerDockProps>(functi
               active={Boolean(activeFileReferenceQuery)}
               anchor={fileReferenceAnchor}
               composerRootRef={composerRootRef}
-              ariaLabel={t("workspace.fileReferenceCandidates")}
+              ariaLabel={
+                fileReferenceMenuView === "sessions"
+                  ? t("composer.atReference.sessionCandidates")
+                  : t("composer.atReference.candidates")
+              }
               onDismiss={onDismissFileReferenceSuggestions}
             >
-              {fileReferenceSuggestions ? (
+              {activeFileReferenceQuery ? (
                 <WorkspaceFileReferenceMenu
-                  suggestions={fileReferenceSuggestions.suggestions}
+                  items={atReferenceMenuItems}
                   selectedIndex={fileReferenceSelectedIndex}
-                  onApplySuggestion={onApplyFileReferenceSuggestion}
+                  onApplyFile={onApplyFileReferenceSuggestion}
+                  onApplySession={onApplySessionReferenceSuggestion}
+                  onOpenSessions={onOpenAtReferenceSessions}
+                  onBack={onBackAtReferenceMenu}
                 />
               ) : null}
             </ComposerSuggestionDropdown>

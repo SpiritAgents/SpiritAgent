@@ -16,6 +16,7 @@ import {
   INSERT_SKILL_CHIP_COMMAND,
   INSERT_WORKSPACE_FILE_AT_CARET_COMMAND,
   INSERT_WORKSPACE_FILE_REFERENCE_COMMAND,
+  INSERT_SESSION_REFERENCE_COMMAND,
   REMOVE_SKILL_SLASH_COMMAND,
   REPLACE_SKILL_SLASH_COMMAND,
 } from "@/lib/composer-lexical/commands";
@@ -377,6 +378,11 @@ export type ComposerRichInputHandle = {
     query: ActiveWorkspaceFileReferenceQuery,
     finalize?: boolean,
   ): void;
+  insertSessionReference(
+    session: { path: string; title: string; content?: string },
+    query: ActiveWorkspaceFileReferenceQuery,
+    finalize?: boolean,
+  ): void;
   insertWorkspaceFileAtCaret(path: string): void;
   insertLoopChip(options?: InsertLoopChipOptions): void;
   removeLoopChip(): void;
@@ -718,6 +724,23 @@ const ComposerLexicalInputCore = forwardRef<ComposerRichInputHandle, ComposerLex
       [editor],
     );
 
+    const insertSessionReference = useCallback(
+      (
+        session: { path: string; title: string; content?: string },
+        query: ActiveWorkspaceFileReferenceQuery,
+        finalize = true,
+      ) => {
+        editor.dispatchCommand(INSERT_SESSION_REFERENCE_COMMAND, {
+          path: session.path,
+          title: session.title,
+          ...(session.content !== undefined ? { content: session.content } : {}),
+          query,
+          finalize,
+        });
+      },
+      [editor],
+    );
+
     const insertWorkspaceFileAtCaret = useCallback(
       (path: string) => {
         editor.dispatchCommand(INSERT_WORKSPACE_FILE_AT_CARET_COMMAND, { path });
@@ -900,6 +923,7 @@ const ComposerLexicalInputCore = forwardRef<ComposerRichInputHandle, ComposerLex
         insertTerminalSnippet,
         insertFileSnippet,
         insertWorkspaceFileReference,
+        insertSessionReference,
         insertWorkspaceFileAtCaret,
         insertLoopChip,
         removeLoopChip,
@@ -924,6 +948,7 @@ const ComposerLexicalInputCore = forwardRef<ComposerRichInputHandle, ComposerLex
         insertTerminalSnippet,
         insertFileSnippet,
         insertWorkspaceFileReference,
+        insertSessionReference,
         insertWorkspaceFileAtCaret,
         replaceSkillSlashQuery,
         removeSkillSlashQuery,

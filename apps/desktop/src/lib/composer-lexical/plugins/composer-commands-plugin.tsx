@@ -9,6 +9,7 @@ import {
   INSERT_SKILL_CHIP_COMMAND,
   INSERT_WORKSPACE_FILE_AT_CARET_COMMAND,
   INSERT_WORKSPACE_FILE_REFERENCE_COMMAND,
+  INSERT_SESSION_REFERENCE_COMMAND,
   REMOVE_SKILL_SLASH_COMMAND,
   REPLACE_SKILL_SLASH_COMMAND,
 } from "@/lib/composer-lexical/commands";
@@ -19,6 +20,7 @@ import {
   isComposerPlainEmpty,
   mergeAdjacentTextSegments,
   normalizeWorkspaceFilePath,
+  replaceSessionReferenceInSegments,
   replaceSkillSlashQueryInSegments,
   replaceWorkspaceFileReferenceInSegments,
   type RichSegment,
@@ -91,6 +93,22 @@ export function ComposerCommandsPlugin({
           segmentsRef.current,
           query,
           path,
+          finalize,
+        );
+        commitSegments(next, caret);
+        return true;
+      },
+      COMMAND_PRIORITY_EDITOR,
+    );
+
+    const unregisterInsertSessionReference = editor.registerCommand(
+      INSERT_SESSION_REFERENCE_COMMAND,
+      ({ path, title, content, query, finalize = true }) => {
+        editor.focus();
+        const { segments: next, caret } = replaceSessionReferenceInSegments(
+          segmentsRef.current,
+          query,
+          { path, title, ...(content !== undefined ? { content } : {}) },
           finalize,
         );
         commitSegments(next, caret);
@@ -197,6 +215,7 @@ export function ComposerCommandsPlugin({
       unregisterInsertAttachment();
       unregisterInsertWorkspaceFileAtCaret();
       unregisterInsertWorkspaceFileReference();
+      unregisterInsertSessionReference();
       unregisterInsertSkillChip();
       unregisterInsertPlainText();
       unregisterReplaceSkillSlash();

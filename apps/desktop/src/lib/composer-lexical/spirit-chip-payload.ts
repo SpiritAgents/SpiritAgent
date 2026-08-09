@@ -24,6 +24,8 @@ export function spiritChipPlainText(payload: SpiritChipPayload): string {
   switch (payload.kind) {
     case "workspaceFile":
       return workspaceFilePlainToken(payload.path);
+    case "sessionReference":
+      return payload.title;
     case "skill":
       return payload.alias;
     case "element":

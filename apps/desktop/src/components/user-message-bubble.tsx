@@ -5,6 +5,7 @@ import {
   GitPullRequest,
   GitPullRequestClosed,
   GitPullRequestDraft,
+  MessageCircle,
   PenTool,
   Terminal,
   FileText,
@@ -54,7 +55,11 @@ import {
 } from "@/lib/terminal-chip-styles";
 import type { PullRequestChipStatus } from "@/lib/pr-diff-attachment";
 import { workspaceFileBasename } from "@/lib/file-picker-path";
-import { resolveWorkspaceFileChipPresentation } from "@/lib/workspace-file-chip-styles";
+import {
+  resolveWorkspaceFileChipPresentation,
+  WORKSPACE_FILE_CHIP_CLASS,
+  WORKSPACE_FILE_CHIP_ICON_CLASS,
+} from "@/lib/workspace-file-chip-styles";
 import { SKILL_CHIP_CLASS } from "@/lib/skill-chip-styles";
 import { WorkspaceFileIcon } from "@/components/workspace-file-icon";
 import { WORKSPACE_FILE_ICON_CHIP_SIZE_PX } from "@/lib/workspace-file-icon-sizes";
@@ -86,6 +91,19 @@ function WorkspaceFileCard({ path }: { path: string }) {
         className={cn("shrink-0", presentation.iconClass)}
       />
       {workspaceFileBasename(normalized)}
+    </span>
+  );
+}
+
+function SessionReferenceCard({ path, title }: { path: string; title: string }) {
+  const label = title.trim() || path;
+  return (
+    <span title={path} className={WORKSPACE_FILE_CHIP_CLASS} aria-label={label}>
+      <MessageCircle
+        className={cn("size-3.5 shrink-0", WORKSPACE_FILE_CHIP_ICON_CLASS)}
+        aria-hidden
+      />
+      {label}
     </span>
   );
 }
@@ -198,6 +216,7 @@ function isInlineChipPart(part: MessageContentPart | null | undefined): part is 
     kind:
       | "element"
       | "workspaceFile"
+      | "sessionReference"
       | "prDiff"
       | "gitCommit"
       | "terminalSnippet"
@@ -208,6 +227,7 @@ function isInlineChipPart(part: MessageContentPart | null | undefined): part is 
   return (
     part?.kind === "element" ||
     part?.kind === "workspaceFile" ||
+    part?.kind === "sessionReference" ||
     part?.kind === "skill" ||
     part?.kind === "prDiff" ||
     part?.kind === "gitCommit" ||
@@ -263,6 +283,7 @@ export function UserMessageBubble({
         (p) =>
           p.kind === "element" ||
           p.kind === "workspaceFile" ||
+          p.kind === "sessionReference" ||
           p.kind === "skill" ||
           p.kind === "prDiff" ||
           p.kind === "gitCommit" ||
@@ -330,6 +351,9 @@ export function UserMessageBubble({
               }
               if (part.kind === "workspaceFile") {
                 return <WorkspaceFileCard key={i} path={part.path} />;
+              }
+              if (part.kind === "sessionReference") {
+                return <SessionReferenceCard key={i} path={part.path} title={part.title} />;
               }
               if (part.kind === "skill") {
                 return <SkillCard key={i} alias={part.alias} />;

@@ -32,6 +32,10 @@ import {
   scanWorkspaceFileWireBlocks,
   workspaceFileContextText,
 } from "./workspace-file-wire-text.js";
+import {
+  scanSessionReferenceWireBlocks,
+  sessionReferenceContextText,
+} from "./session-reference-wire-text.js";
 
 export { browserElementContextText };
 export { fileSnippetContextText };
@@ -40,6 +44,7 @@ export { gitCommitContextText };
 export { terminalSnippetContextText };
 export { skillContextText };
 export { workspaceFileContextText };
+export { sessionReferenceContextText };
 
 export type RichSegment =
   | { kind: "text"; value: string }
@@ -49,6 +54,7 @@ export type RichSegment =
   | { kind: "terminalSnippet"; attachment: TerminalSnippetAttachment }
   | { kind: "fileSnippet"; attachment: FileSnippetAttachment }
   | { kind: "workspaceFile"; path: string }
+  | { kind: "sessionReference"; path: string; title: string; content?: string }
   | { kind: "loop" }
   | { kind: "plan" }
   | { kind: "ask" }
@@ -156,7 +162,8 @@ export function hasInlineAttachmentChipSegments(segs: RichSegment[]): boolean {
       segment.kind === "gitCommit" ||
       segment.kind === "terminalSnippet" ||
       segment.kind === "fileSnippet" ||
-      segment.kind === "workspaceFile",
+      segment.kind === "workspaceFile" ||
+      segment.kind === "sessionReference",
   );
 }
 
@@ -319,6 +326,14 @@ export function messageSegmentSeparator(prev: RichSegment, next: RichSegment): s
     return "\n";
   }
 
+  if (prev.kind === "text" && next.kind === "sessionReference") {
+    const v = prev.value;
+    if (!v) return "\n";
+    if (v.endsWith("\n\n")) return "";
+    if (v.endsWith("\n")) return "\n";
+    return "\n";
+  }
+
   if (prev.kind === "text" && next.kind === "skill") {
     const v = prev.value;
     if (!v) return "\n";
@@ -328,6 +343,14 @@ export function messageSegmentSeparator(prev: RichSegment, next: RichSegment): s
   }
 
   if (prev.kind === "workspaceFile" && next.kind === "text") {
+    const v = next.value;
+    if (!v) return "";
+    if (v.startsWith("\n\n")) return "\n";
+    if (v.startsWith("\n")) return "\n";
+    return "\n";
+  }
+
+  if (prev.kind === "sessionReference" && next.kind === "text") {
     const v = next.value;
     if (!v) return "";
     if (v.startsWith("\n\n")) return "\n";
@@ -346,6 +369,7 @@ export function messageSegmentSeparator(prev: RichSegment, next: RichSegment): s
   if (
     (prev.kind === "workspaceFile" &&
       (next.kind === "workspaceFile" ||
+        next.kind === "sessionReference" ||
         next.kind === "skill" ||
         next.kind === "element" ||
         next.kind === "prDiff" ||
@@ -354,6 +378,25 @@ export function messageSegmentSeparator(prev: RichSegment, next: RichSegment): s
         next.kind === "gitCommit")) ||
     (next.kind === "workspaceFile" &&
       (prev.kind === "workspaceFile" ||
+        prev.kind === "sessionReference" ||
+        prev.kind === "skill" ||
+        prev.kind === "element" ||
+        prev.kind === "prDiff" ||
+        prev.kind === "terminalSnippet" ||
+        prev.kind === "fileSnippet" ||
+        prev.kind === "gitCommit")) ||
+    (prev.kind === "sessionReference" &&
+      (next.kind === "workspaceFile" ||
+        next.kind === "sessionReference" ||
+        next.kind === "skill" ||
+        next.kind === "element" ||
+        next.kind === "prDiff" ||
+        next.kind === "terminalSnippet" ||
+        next.kind === "fileSnippet" ||
+        next.kind === "gitCommit")) ||
+    (next.kind === "sessionReference" &&
+      (prev.kind === "workspaceFile" ||
+        prev.kind === "sessionReference" ||
         prev.kind === "skill" ||
         prev.kind === "element" ||
         prev.kind === "prDiff" ||
@@ -362,6 +405,7 @@ export function messageSegmentSeparator(prev: RichSegment, next: RichSegment): s
         prev.kind === "gitCommit")) ||
     (prev.kind === "skill" &&
       (next.kind === "workspaceFile" ||
+        next.kind === "sessionReference" ||
         next.kind === "skill" ||
         next.kind === "element" ||
         next.kind === "prDiff" ||
@@ -370,6 +414,7 @@ export function messageSegmentSeparator(prev: RichSegment, next: RichSegment): s
         next.kind === "gitCommit")) ||
     (next.kind === "skill" &&
       (prev.kind === "workspaceFile" ||
+        prev.kind === "sessionReference" ||
         prev.kind === "skill" ||
         prev.kind === "element" ||
         prev.kind === "prDiff" ||
@@ -395,6 +440,8 @@ export function segmentsToMessageText(segs: RichSegment[]): string {
         ? seg.value
         : seg.kind === "workspaceFile"
           ? workspaceFileContextText(seg.path)
+          : seg.kind === "sessionReference"
+            ? sessionReferenceContextText(seg.path, seg.title, seg.content ?? "")
           : seg.kind === "skill"
             ? skillContextText(seg.alias)
             : seg.kind === "prDiff"
@@ -459,6 +506,9 @@ export function segmentsEqual(a: RichSegment[], b: RichSegment[]): boolean {
     if (seg.kind === "workspaceFile" && other.kind === "workspaceFile") {
       return seg.path === other.path;
     }
+    if (seg.kind === "sessionReference" && other.kind === "sessionReference") {
+      return seg.path === other.path && seg.title === other.title;
+    }
     if (seg.kind === "loop" && other.kind === "loop") {
       return true;
     }
@@ -506,6 +556,7 @@ export function syncSegmentsFromExternalValue(segs: RichSegment[], value: string
           | "terminalSnippet"
           | "fileSnippet"
           | "workspaceFile"
+          | "sessionReference"
           | "skill";
       }
     > =>
@@ -515,6 +566,7 @@ export function syncSegmentsFromExternalValue(segs: RichSegment[], value: string
       s.kind === "terminalSnippet" ||
       s.kind === "fileSnippet" ||
       s.kind === "workspaceFile" ||
+      s.kind === "sessionReference" ||
       s.kind === "skill",
   );
 
@@ -534,6 +586,7 @@ export function syncSegmentsFromExternalValue(segs: RichSegment[], value: string
         seg.kind === "terminalSnippet" ||
         seg.kind === "fileSnippet" ||
         seg.kind === "workspaceFile" ||
+        seg.kind === "sessionReference" ||
         seg.kind === "skill"
       ) {
         out.push(seg);
@@ -572,6 +625,7 @@ function isInlineChipSegment(seg: RichSegment | undefined): seg is Extract<
       | "terminalSnippet"
       | "fileSnippet"
       | "workspaceFile"
+      | "sessionReference"
       | "loop"
       | "skill";
   }
@@ -583,6 +637,7 @@ function isInlineChipSegment(seg: RichSegment | undefined): seg is Extract<
     seg?.kind === "terminalSnippet" ||
     seg?.kind === "fileSnippet" ||
     seg?.kind === "workspaceFile" ||
+    seg?.kind === "sessionReference" ||
     seg?.kind === "loop" ||
     seg?.kind === "skill"
   );
@@ -704,6 +759,20 @@ export function insertSegmentAtCaret(
     );
     if (fileIndex >= 0) {
       afterIndex = fileIndex + 1;
+      const trailing = normalized[afterIndex];
+      if (trailing?.kind === "text" && trailing.value.startsWith(" ")) {
+        caretOffset = 1;
+      }
+    }
+  } else if (newSegment.kind === "sessionReference") {
+    const sessionIndex = normalized.findIndex(
+      (s) =>
+        s.kind === "sessionReference" &&
+        s.path === newSegment.path &&
+        s.title === newSegment.title,
+    );
+    if (sessionIndex >= 0) {
+      afterIndex = sessionIndex + 1;
       const trailing = normalized[afterIndex];
       if (trailing?.kind === "text" && trailing.value.startsWith(" ")) {
         caretOffset = 1;
@@ -837,6 +906,66 @@ export function replaceWorkspaceFileReferenceInSegments(
   };
 }
 
+export function replaceSessionReferenceInSegments(
+  segs: RichSegment[],
+  query: ActiveWorkspaceFileReferenceQuery,
+  session: { path: string; title: string; content?: string },
+  finalize: boolean,
+): { segments: RichSegment[]; caret: SegmentCaret } {
+  const merged = mergeAdjacentTextSegments(segs);
+  const startCaret = plainTextOffsetToCaret(merged, query.start);
+  const endCaret = plainTextOffsetToCaret(merged, query.end);
+  const index = startCaret.segmentIndex;
+  const seg = merged[index];
+  const chip: RichSegment = {
+    kind: "sessionReference",
+    path: session.path,
+    title: session.title,
+    ...(session.content !== undefined ? { content: session.content } : {}),
+  };
+
+  if (seg?.kind !== "text" || endCaret.segmentIndex !== index) {
+    return insertSegmentAtCaret(merged, caretAtEnd(merged), chip);
+  }
+
+  const before = seg.value.slice(0, startCaret.offset);
+  const after = seg.value.slice(endCaret.offset);
+  let trailing = after;
+  if (finalize) {
+    const needsSpace = trailing.length === 0 || !/^\s/u.test(trailing.charAt(0));
+    if (needsSpace) {
+      trailing = ` ${trailing}`;
+    }
+  }
+
+  const next: RichSegment[] = [
+    ...merged.slice(0, index),
+    ...(before ? [{ kind: "text" as const, value: before }] : []),
+    chip,
+    { kind: "text" as const, value: trailing },
+    ...merged.slice(index + 1),
+  ];
+
+  const normalized = mergeAdjacentTextSegments(next);
+  const chipIndex = normalized.findIndex(
+    (s) =>
+      s.kind === "sessionReference" &&
+      s.path === session.path &&
+      s.title === session.title,
+  );
+  const afterIndex = chipIndex >= 0 ? chipIndex + 1 : normalized.length - 1;
+  let caretOffset = 0;
+  const trailingSeg = normalized[afterIndex];
+  if (trailingSeg?.kind === "text" && trailingSeg.value.startsWith(" ")) {
+    caretOffset = 1;
+  }
+
+  return {
+    segments: normalized,
+    caret: { segmentIndex: afterIndex, offset: caretOffset },
+  };
+}
+
 export function replaceSkillSlashQueryInSegments(
   segs: RichSegment[],
   query: ActiveSkillSlashQuery,
@@ -923,6 +1052,7 @@ export type MessageContentPart =
       selectedText: string;
     }
   | { kind: "workspaceFile"; path: string }
+  | { kind: "sessionReference"; path: string; title: string }
   | { kind: "skill"; alias: string };
 
 type ParsedWireBlock = {
@@ -1020,6 +1150,18 @@ function findWireBlocks(content: string): ParsedWireBlock[] {
       index: block.index,
       length: block.length,
       part: { kind: "workspaceFile", path: block.path },
+    });
+  }
+
+  for (const block of scanSessionReferenceWireBlocks(content)) {
+    blocks.push({
+      index: block.index,
+      length: block.length,
+      part: {
+        kind: "sessionReference",
+        path: block.path,
+        title: block.title || block.path,
+      },
     });
   }
 
@@ -1154,6 +1296,15 @@ export function messageContentToRichSegments(content: string, idPrefix: string):
       continue;
     }
 
+    if (part.kind === "sessionReference") {
+      segments.push({
+        kind: "sessionReference",
+        path: part.path,
+        title: part.title,
+      });
+      continue;
+    }
+
     if (part.kind === "skill") {
       segments.push({ kind: "skill", alias: part.alias });
       continue;
@@ -1167,6 +1318,7 @@ export function messageContentToRichSegments(content: string, idPrefix: string):
         prev?.kind === "terminalSnippet" ||
         prev?.kind === "fileSnippet" ||
         prev?.kind === "workspaceFile" ||
+        prev?.kind === "sessionReference" ||
         prev?.kind === "skill",
       beforeElement:
         next?.kind === "element" ||
@@ -1175,6 +1327,7 @@ export function messageContentToRichSegments(content: string, idPrefix: string):
         next?.kind === "terminalSnippet" ||
         next?.kind === "fileSnippet" ||
         next?.kind === "workspaceFile" ||
+        next?.kind === "sessionReference" ||
         next?.kind === "skill",
     });
     if (display || segments.length === 0) {
