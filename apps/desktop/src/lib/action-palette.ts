@@ -127,6 +127,20 @@ const LOCALE_OPTION_ITEMS: LocaleOptionActionPaletteItem[] = VALID_LANGUAGES.map
   labelKey: LOCALE_LABEL_KEYS[lang],
 }));
 
+/** English search aliases for endonym labels in the command palette. */
+const LOCALE_SEARCH_ALIASES: Record<ValidLanguage, string> = {
+  "zh-CN": "Simplified Chinese Chinese",
+  en: "English",
+  "zh-TW": "Traditional Chinese Chinese",
+  ja: "Japanese",
+  ko: "Korean",
+  de: "German",
+  fr: "French",
+  es: "Spanish",
+  "pt-BR": "Brazilian Portuguese Portuguese",
+  ru: "Russian",
+};
+
 function matchesQuery(haystack: string, query: string): boolean {
   return haystack.toLowerCase().includes(query.trim().toLowerCase());
 }
@@ -155,8 +169,12 @@ function actionPaletteSearchText(item: ActionPaletteItem, t: ActionPaletteTransl
     return withEnglishSearchText(t(item.labelKey), item.labelKey);
   }
 
-  if (item.kind === "theme-option" || item.kind === "locale-option") {
+  if (item.kind === "theme-option") {
     return `${withEnglishSearchText(t(item.labelKey), item.labelKey)} ${item.value}`;
+  }
+
+  if (item.kind === "locale-option") {
+    return `${t(item.labelKey)} ${LOCALE_SEARCH_ALIASES[item.value]} ${item.value}`;
   }
 
   const parts = [item.name, item.paletteName, item.alias.slice(1)].filter(

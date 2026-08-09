@@ -152,6 +152,17 @@ test("buildActionPaletteItems locale view filters by language label", () => {
     byEndonym.some((item) => item.kind === "locale-option" && item.value === "en"),
     false,
   );
+
+  const byAlias = buildActionPaletteItems("japanese", tEn, "locale");
+  assert.ok(byAlias.some((item) => item.kind === "locale-option" && item.value === "ja"));
+
+  const byChinese = buildActionPaletteItems("chinese", tEn, "locale");
+  assert.ok(byChinese.some((item) => item.kind === "locale-option" && item.value === "zh-CN"));
+  assert.ok(byChinese.some((item) => item.kind === "locale-option" && item.value === "zh-TW"));
+  assert.equal(
+    byChinese.some((item) => item.kind === "locale-option" && item.value === "en"),
+    false,
+  );
 });
 
 test("buildActionPaletteItems root search matches appearance menu labels", () => {
@@ -178,11 +189,16 @@ test("buildActionPaletteItems theme view matches English under Chinese UI", () =
   assert.equal(items[0]?.value, "light");
 });
 
-test("buildActionPaletteItems locale view matches endonym and code under Chinese UI", () => {
+test("buildActionPaletteItems locale view matches endonym alias and code under Chinese UI", () => {
   const byLabel = buildActionPaletteItems("english", tZh, "locale");
   assert.ok(byLabel.some((item) => item.kind === "locale-option" && item.value === "en"));
   const byEndonym = buildActionPaletteItems("한국어", tZh, "locale");
   assert.ok(byEndonym.some((item) => item.kind === "locale-option" && item.value === "ko"));
+  const byAlias = buildActionPaletteItems("korean", tZh, "locale");
+  assert.ok(byAlias.some((item) => item.kind === "locale-option" && item.value === "ko"));
+  const byChinese = buildActionPaletteItems("chinese", tZh, "locale");
+  assert.ok(byChinese.some((item) => item.kind === "locale-option" && item.value === "zh-CN"));
+  assert.ok(byChinese.some((item) => item.kind === "locale-option" && item.value === "zh-TW"));
   const byCode = buildActionPaletteItems("en", tZh, "locale");
   assert.ok(byCode.some((item) => item.kind === "locale-option" && item.value === "en"));
 });
