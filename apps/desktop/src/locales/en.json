@@ -1017,7 +1017,15 @@
     "description": "Search and run workspace actions.",
     "placeholder": "Search commands",
     "empty": "No matching commands",
-    "newSessionDescription": "Start a new conversation session"
+    "newSessionDescription": "Start a new conversation session",
+    "group": {
+      "session": "Session",
+      "mode": "Mode",
+      "appearance": "Appearance"
+    },
+    "theme": "Theme",
+    "language": "Language",
+    "back": "Back"
   },
   "composer": {
     "insertWorkspaceFile": "Reference Workspace File",

@@ -35,7 +35,13 @@ import {
   normalizeSlashPath,
   removeComposerLocalFileAttachment,
 } from "@/lib/local-file-attachments";
-import { isNewSessionAction, type ActionPaletteItem } from "@/lib/action-palette";
+import {
+  isAppearanceMenuAction,
+  isLocaleOptionAction,
+  isNewSessionAction,
+  isThemeOptionAction,
+  type ActionPaletteItem,
+} from "@/lib/action-palette";
 import {
   buildSkillSlashSuggestions,
   COMPACT_SLASH_ALIAS,
@@ -695,6 +701,13 @@ export function useComposerController({
 
   const filterActionPaletteItem = useCallback(
     (item: ActionPaletteItem) => {
+      if (
+        isAppearanceMenuAction(item) ||
+        isThemeOptionAction(item) ||
+        isLocaleOptionAction(item)
+      ) {
+        return true;
+      }
       if (item.kind !== "side-chat") {
         return true;
       }
@@ -717,6 +730,13 @@ export function useComposerController({
 
   const isActionPaletteItemDisabled = useCallback(
     (item: ActionPaletteItem) => {
+      if (
+        isAppearanceMenuAction(item) ||
+        isThemeOptionAction(item) ||
+        isLocaleOptionAction(item)
+      ) {
+        return false;
+      }
       if (!runtime.busyAction) {
         return false;
       }
@@ -735,6 +755,13 @@ export function useComposerController({
 
   const runActionPaletteItem = useCallback(
     (item: ActionPaletteItem) => {
+      if (
+        isAppearanceMenuAction(item) ||
+        isThemeOptionAction(item) ||
+        isLocaleOptionAction(item)
+      ) {
+        return;
+      }
       ensureConversationSurface();
       if (isNewSessionAction(item)) {
         handleNewSession();

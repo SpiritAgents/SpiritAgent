@@ -1017,7 +1017,15 @@
     "description": "Поиск и выполнение действий рабочего пространства.",
     "placeholder": "Поиск команд",
     "empty": "Нет подходящих команд",
-    "newSessionDescription": "Начать новый сеанс разговора"
+    "newSessionDescription": "Начать новый сеанс разговора",
+    "group": {
+      "session": "Сеанс",
+      "mode": "Режим",
+      "appearance": "Оформление"
+    },
+    "theme": "Тема",
+    "language": "Язык",
+    "back": "Назад"
   },
   "composer": {
     "insertWorkspaceFile": "Ссылка на файл рабочего пространства",

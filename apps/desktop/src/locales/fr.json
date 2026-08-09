@@ -1017,7 +1017,15 @@
     "description": "Rechercher et exécuter des actions de l'espace de travail.",
     "placeholder": "Rechercher des commandes",
     "empty": "Aucune commande correspondante",
-    "newSessionDescription": "Démarrer une nouvelle session de conversation"
+    "newSessionDescription": "Démarrer une nouvelle session de conversation",
+    "group": {
+      "session": "Session",
+      "mode": "Mode",
+      "appearance": "Apparence"
+    },
+    "theme": "Thème",
+    "language": "Langue",
+    "back": "Retour"
   },
   "composer": {
     "insertWorkspaceFile": "Référencer un fichier de l'espace de travail",

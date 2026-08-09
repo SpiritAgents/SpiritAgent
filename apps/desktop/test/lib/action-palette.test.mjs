@@ -1,7 +1,11 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
 
-import { buildActionPaletteItems } from "../../src/lib/action-palette.ts";
+import {
+  ACTION_PALETTE_GROUP_ORDER,
+  buildActionPaletteItems,
+  groupActionPaletteRootItems,
+} from "../../src/lib/action-palette.ts";
 import { STATIC_SLASH_COMMANDS } from "../../src/lib/skill-slash.ts";
 
 const EN_LABELS = {
@@ -13,10 +17,27 @@ const EN_LABELS = {
   "slash.plan": "Plan without editing code",
   "slash.ask": "Read-only help",
   "slash.fork": "Fork the session at the latest assistant message into a new chat",
+  "actionPalette.theme": "Theme",
+  "actionPalette.language": "Language",
+  "settings.themeSystem": "System",
+  "settings.themeLight": "Light",
+  "settings.themeDark": "Dark",
+  "settings.langZhCN": "Simplified Chinese",
+  "settings.langEn": "English",
+  "settings.langZhTW": "Traditional Chinese",
+  "settings.langJa": "Japanese",
+  "settings.langKo": "Korean",
+  "settings.langDe": "German",
+  "settings.langFr": "French",
+  "settings.langEs": "Spanish",
+  "settings.langPtBR": "Brazilian Portuguese",
+  "settings.langRu": "Russian",
 };
 
 const ZH_LABELS = {
   "sidebar.newSession": "新会话",
+  "actionPalette.theme": "主题",
+  "actionPalette.language": "语言",
 };
 
 function tEn(key) {
@@ -27,10 +48,16 @@ function tZh(key) {
   return ZH_LABELS[key] ?? key;
 }
 
-test("buildActionPaletteItems returns new session plus static slash commands", () => {
+test("buildActionPaletteItems returns grouped root items including appearance menus", () => {
   const items = buildActionPaletteItems("", tEn);
   assert.equal(items[0]?.kind, "new-session");
-  assert.equal(items.length, 1 + STATIC_SLASH_COMMANDS.length);
+  assert.equal(items[0]?.group, "session");
+  assert.equal(
+    items.length,
+    1 + STATIC_SLASH_COMMANDS.length + 2,
+  );
+  assert.ok(items.some((item) => item.kind === "theme-menu"));
+  assert.ok(items.some((item) => item.kind === "locale-menu"));
   assert.equal(
     items.some((item) => item.kind === "skill"),
     false,
@@ -39,6 +66,21 @@ test("buildActionPaletteItems returns new session plus static slash commands", (
     items.some((item) => "alias" in item && item.alias === "/start-implementing"),
     false,
   );
+
+  const modeItem = items.find((item) => item.kind === "plan");
+  assert.equal(modeItem?.group, "mode");
+  const sessionItem = items.find((item) => item.kind === "compact");
+  assert.equal(sessionItem?.group, "session");
+});
+
+test("groupActionPaletteRootItems preserves session mode appearance order", () => {
+  const items = buildActionPaletteItems("", tEn);
+  const grouped = groupActionPaletteRootItems(items);
+  assert.deepEqual(
+    grouped.map((entry) => entry.group),
+    [...ACTION_PALETTE_GROUP_ORDER],
+  );
+  assert.ok(grouped.find((entry) => entry.group === "appearance")?.items.length === 2);
 });
 
 test("buildActionPaletteItems filters compact by prefix", () => {
@@ -58,4 +100,45 @@ test("buildActionPaletteItems matches localized new session label", () => {
 test("buildActionPaletteItems matches slash description text", () => {
   const items = buildActionPaletteItems("plan without", tEn);
   assert.ok(items.some((item) => item.kind === "plan"));
+});
+
+test("buildActionPaletteItems theme view only returns theme options", () => {
+  const items = buildActionPaletteItems("", tEn, "theme");
+  assert.ok(items.length >= 3);
+  assert.ok(items.every((item) => item.kind === "theme-option"));
+  assert.equal(
+    items.some((item) => item.kind === "new-session"),
+    false,
+  );
+});
+
+test("buildActionPaletteItems theme view filters by option label", () => {
+  const items = buildActionPaletteItems("light", tEn, "theme");
+  assert.equal(items.length, 1);
+  assert.equal(items[0]?.kind, "theme-option");
+  assert.equal(items[0]?.value, "light");
+});
+
+test("buildActionPaletteItems locale view only returns locale options", () => {
+  const items = buildActionPaletteItems("", tEn, "locale");
+  assert.ok(items.every((item) => item.kind === "locale-option"));
+  assert.ok(items.some((item) => item.kind === "locale-option" && item.value === "en"));
+});
+
+test("buildActionPaletteItems locale view filters by language label", () => {
+  const items = buildActionPaletteItems("english", tEn, "locale");
+  assert.ok(items.some((item) => item.kind === "locale-option" && item.value === "en"));
+  assert.equal(
+    items.some((item) => item.kind === "locale-option" && item.value === "zh-CN"),
+    false,
+  );
+});
+
+test("buildActionPaletteItems root search matches appearance menu labels", () => {
+  const items = buildActionPaletteItems("theme", tEn);
+  assert.ok(items.some((item) => item.kind === "theme-menu"));
+  assert.equal(
+    items.some((item) => item.kind === "theme-option"),
+    false,
+  );
 });

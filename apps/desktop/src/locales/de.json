@@ -1017,7 +1017,15 @@
     "description": "Suchen und Ausführen von Workspace-Aktionen.",
     "placeholder": "Befehle suchen",
     "empty": "Keine passenden Befehle",
-    "newSessionDescription": "Neue Konversationssitzung starten"
+    "newSessionDescription": "Neue Konversationssitzung starten",
+    "group": {
+      "session": "Sitzung",
+      "mode": "Modus",
+      "appearance": "Erscheinungsbild"
+    },
+    "theme": "Design",
+    "language": "Sprache",
+    "back": "Zurück"
   },
   "composer": {
     "insertWorkspaceFile": "Workspace-Datei referenzieren",

@@ -1017,7 +1017,15 @@
     "description": "搜尋並執行工作區動作。",
     "placeholder": "搜尋命令",
     "empty": "沒有相符的命令",
-    "newSessionDescription": "開始新對話"
+    "newSessionDescription": "開始新對話",
+    "group": {
+      "session": "工作階段",
+      "mode": "模式",
+      "appearance": "外觀"
+    },
+    "theme": "主題",
+    "language": "語言",
+    "back": "返回"
   },
   "composer": {
     "insertWorkspaceFile": "參照工作區檔案",

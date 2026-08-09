@@ -1014,7 +1014,15 @@
     "description": "搜索并运行工作区操作。",
     "placeholder": "搜索命令",
     "empty": "无匹配命令",
-    "newSessionDescription": "开始新的对话会话"
+    "newSessionDescription": "开始新的对话会话",
+    "group": {
+      "session": "会话",
+      "mode": "模式",
+      "appearance": "外观"
+    },
+    "theme": "主题",
+    "language": "语言",
+    "back": "返回"
   },
   "composer": {
     "insertWorkspaceFile": "引用工作区文件",

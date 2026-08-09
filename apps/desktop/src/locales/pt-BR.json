@@ -1017,7 +1017,15 @@
     "description": "Pesquise e execute ações do workspace.",
     "placeholder": "Pesquisar comandos",
     "empty": "Nenhum comando correspondente",
-    "newSessionDescription": "Iniciar uma nova sessão de conversa"
+    "newSessionDescription": "Iniciar uma nova sessão de conversa",
+    "group": {
+      "session": "Sessão",
+      "mode": "Modo",
+      "appearance": "Aparência"
+    },
+    "theme": "Tema",
+    "language": "Idioma",
+    "back": "Voltar"
   },
   "composer": {
     "insertWorkspaceFile": "Referenciar arquivo do workspace",

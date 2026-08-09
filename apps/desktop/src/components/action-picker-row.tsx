@@ -4,7 +4,14 @@ import { useTranslation } from "react-i18next";
 import { DESKTOP_COMMAND_PALETTE_ITEM_TONE } from "@/lib/desktop-chrome";
 import { DESKTOP_LIST_ITEM_PRIMARY_CLASS } from "@/lib/desktop-typography";
 import { cn } from "@/lib/utils";
-import { isNewSessionAction, type ActionPaletteItem } from "@/lib/action-palette";
+import {
+  isAppearanceMenuAction,
+  isLocaleOptionAction,
+  isNewSessionAction,
+  isSlashActionPaletteItem,
+  isThemeOptionAction,
+  type ActionPaletteItem,
+} from "@/lib/action-palette";
 import { SLASH_SUGGESTION_ICONS } from "@/lib/slash-command-icons";
 import type { SkillSlashSuggestionKind } from "@/lib/skill-slash";
 
@@ -37,6 +44,22 @@ export function ActionPickerRow({ item }: ActionPickerRowProps) {
         <span className={actionPickerPrimaryTitleClass}>{t(item.labelKey)}</span>
       </div>
     );
+  }
+
+  if (
+    isAppearanceMenuAction(item) ||
+    isThemeOptionAction(item) ||
+    isLocaleOptionAction(item)
+  ) {
+    return (
+      <div className="flex min-w-0 items-center gap-2 overflow-hidden">
+        <span className={actionPickerPrimaryTitleClass}>{t(item.labelKey)}</span>
+      </div>
+    );
+  }
+
+  if (!isSlashActionPaletteItem(item)) {
+    return null;
   }
 
   return (

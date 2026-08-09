@@ -1017,7 +1017,15 @@
     "description": "ワークスペースのアクションを検索して実行します。",
     "placeholder": "コマンドを検索",
     "empty": "一致するコマンドがありません",
-    "newSessionDescription": "新しい会話セッションを開始"
+    "newSessionDescription": "新しい会話セッションを開始",
+    "group": {
+      "session": "セッション",
+      "mode": "モード",
+      "appearance": "外観"
+    },
+    "theme": "テーマ",
+    "language": "言語",
+    "back": "戻る"
   },
   "composer": {
     "insertWorkspaceFile": "ワークスペースファイルを参照",

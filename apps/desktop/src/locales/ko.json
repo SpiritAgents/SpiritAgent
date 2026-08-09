@@ -1017,7 +1017,15 @@
     "description": "워크스페이스 액션을 검색하고 실행합니다.",
     "placeholder": "명령 검색",
     "empty": "일치하는 명령 없음",
-    "newSessionDescription": "새 대화 세션 시작"
+    "newSessionDescription": "새 대화 세션 시작",
+    "group": {
+      "session": "세션",
+      "mode": "모드",
+      "appearance": "외관"
+    },
+    "theme": "테마",
+    "language": "언어",
+    "back": "뒤로"
   },
   "composer": {
     "insertWorkspaceFile": "워크스페이스 파일 참조",
