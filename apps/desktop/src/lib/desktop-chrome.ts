@@ -200,10 +200,10 @@ export const DESKTOP_OVERLAY_LIST_FILTER_INPUT_SHELL = cn(
 export const DESKTOP_OVERLAY_LIST_FILTER_INPUT =
   "h-7 min-h-7 w-full min-w-0 rounded-none border-0 bg-transparent px-2.5 py-1 text-xs shadow-none focus-visible:border-transparent focus-visible:ring-0";
 
-/** ghost：透明底与 popover 一致；覆盖 Input 基类 dark:bg-input/30 */
+/** ghost：透明底与 popover 一致；覆盖 Input 基类 hover/focus 的 bg-muted/30（浅色焦点尤其明显） */
 export const DESKTOP_OVERLAY_LIST_FILTER_INPUT_GHOST = cn(
   DESKTOP_OVERLAY_LIST_FILTER_INPUT,
-  "rounded-md dark:!bg-transparent",
+  "rounded-md hover:!bg-transparent focus:!bg-transparent focus-visible:!bg-transparent dark:!bg-transparent",
 );
 
 /** 标准表单输入：与 PendingApprovalCard 指引输入一致（h-8） */
