@@ -399,10 +399,9 @@ function WorkspaceToolsDockShell({
       id="workspace-tools-panel-shell"
       ref={shellRef}
       className={cn(
+        // 视口缩放会按比例改 widthPx：壳上勿挂常驻 width transition，否则拉窗口慢半拍。
+        // 展开/收起由 applyWorkspaceToolsShellWidthImmediate 临时写 transition 再改宽。
         "flex h-full min-h-0 shrink-0 flex-row self-stretch overflow-hidden",
-        isResizing
-          ? "transition-none"
-          : "transition-[width] duration-300 ease-[cubic-bezier(0.22,1,0.36,1)] motion-reduce:transition-none motion-reduce:duration-0",
         className,
       )}
       style={{ width: shellWidth }}
