@@ -316,7 +316,7 @@ export function DesktopLayoutChromeBar({
                   <Plus className="size-3.5" aria-hidden />
                 </Button>
               </TooltipTrigger>
-              <TooltipContent side="top" align="start" sideOffset={4}>
+              <TooltipContent side="top" align="center" sideOffset={4}>
                 {t("sidebar.newSession")} <NewSessionShortcutKbd />
               </TooltipContent>
             </Tooltip>
