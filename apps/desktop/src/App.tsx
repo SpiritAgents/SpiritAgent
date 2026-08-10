@@ -222,8 +222,20 @@ export default function App() {
     snapshot === null && !runtime.hostConnectionError.trim() && !runtime.runtimeError.trim();
   const pairingGateBlocksLaunchSplash =
     runtime.webHostPairingRequired && runtime.hostKind === "web" && !snapshot;
-  const launchSplashOverlayUp = launchSplashPhase === "running" || launchSplashPhase === "leaving";
-  const onboardingOverlayUp = onboardingPhase === "running" || onboardingPhase === "leaving";
+  /**
+   * 子组件 onPhaseChange 在 layout effect 里才回写；父 state 初值为 gone。
+   * 若只认子 phase，首帧 sync 会清掉 index.html / main 已写入的 spirit-launch-splash-active，
+   * 而同布局阶段内 notifyLaunchSplashReady 可能已 show 窗口 → Mica/Vibrancy 下透出 app-body。
+   * active/visible 为真且子尚未进入 leaving 时，视为 overlay 仍在（pending 当 running）。
+   */
+  const launchSplashOverlayUp =
+    launchSplashPhase === "running" ||
+    launchSplashPhase === "leaving" ||
+    (launchSplashActive && launchSplashPhase === "gone");
+  const onboardingOverlayUp =
+    onboardingPhase === "running" ||
+    onboardingPhase === "leaving" ||
+    (onboardingVisible && onboardingPhase === "gone");
   /**
    * 全屏 overlay（LaunchSplash / OOBE）挂载期间隐藏 app-body：视觉隐藏走 styles.css 的
    * spirit-launch-splash-active opacity 规则（保持栅格化，退场时覆盖层整层淡出才能平滑衔接）；
@@ -236,11 +248,16 @@ export default function App() {
    * 两个全屏 overlay 共享同一组 html class（styles.css 依此在 overlay 期间隐藏 app-body），
    * 必须在此单点派生：若由各组件自行 sync，phase 为 "gone" 的一方挂载时会把仍在运行的
    * 另一方的 class 清掉，app-body 在启动层期间漏出（Blur 下半透明 tint 会透出侧栏内容）。
+   * pending（子 phase 仍为 gone）映射为 running，避免清 class。
    */
   const shellOverlayPhase: ShellOverlayPhase = launchSplashOverlayUp
-    ? launchSplashPhase
+    ? launchSplashPhase === "leaving"
+      ? "leaving"
+      : "running"
     : onboardingOverlayUp
-      ? onboardingPhase
+      ? onboardingPhase === "leaving"
+        ? "leaving"
+        : "running"
       : "gone";
 
   useLayoutEffect(() => {
