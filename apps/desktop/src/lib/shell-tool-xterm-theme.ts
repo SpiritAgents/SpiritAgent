@@ -1,7 +1,7 @@
 import type { ITheme } from "@xterm/xterm";
 
 /** SGR（以 m 结尾）：含 16 色 / 256 色 / truecolor。 */
-const ANSI_SGR_RE = /\x1b\[[0-9;]*m/g;
+const ANSI_SGR_RE = new RegExp(`${String.fromCharCode(0x1b)}\\[[0-9;]*m`, "g");
 
 /** 去掉着色 SGR，保留清行/光标等非 m 的 CSI，避免 truecolor 绕过 ITheme。 */
 export function stripAnsiSgrSequences(text: string): string {

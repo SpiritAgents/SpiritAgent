@@ -11,7 +11,6 @@ import {
   type LexicalEditor,
   type LexicalNode,
   type RangeSelection,
-  type TextNode,
 } from "lexical";
 
 import type { SpiritChipPayload } from "@/lib/composer-lexical/spirit-chip-payload";

@@ -289,7 +289,7 @@ function WorkspaceToolsDockShell({
   onWidthPxChange,
   className,
   useMicaBackdrop = false,
-  isResizing,
+  isResizing: _isResizing,
   onResizingChange,
   contentProps,
 }: WorkspaceToolsDockShellProps & {

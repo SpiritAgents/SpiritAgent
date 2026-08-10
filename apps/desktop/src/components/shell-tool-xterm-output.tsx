@@ -17,7 +17,7 @@ const SHELL_TOOL_XTERM_LINE_HEIGHT = 1.625;
 const SHELL_TOOL_XTERM_MAX_HEIGHT_PX = 384;
 const SHELL_TOOL_XTERM_MIN_HEIGHT_PX = 96;
 const SHELL_TOOL_XTERM_SCROLLBACK = 50_000;
-const ANSI_CSI_RE = /\x1b\[[0-9;?]*[ -/]*[@-~]/g;
+const ANSI_CSI_RE = new RegExp(`${String.fromCharCode(0x1b)}\\[[0-9;?]*[ -/]*[@-~]`, "g");
 
 export type ShellToolXtermOutputProps = {
   text: string;

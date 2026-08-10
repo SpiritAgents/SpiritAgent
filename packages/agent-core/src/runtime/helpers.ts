@@ -17,7 +17,6 @@ import {
 
 import { PENDING_WORKSPACE_FILE_MAX_CHARS } from "./constants.js";
 import { formatUserMessageContentForLlm } from "./user-turn-timestamp.js";
-import type { AutoReviewCache } from "./auto-approval-integration.js";
 import type {
   AgentRuntimeOptions,
   PendingMcpResource,

@@ -1165,9 +1165,8 @@ test("processToolCalls auto-approval reviewer block requires manual approval wit
 
 test("processToolCalls auto-approval reviews multiple tools concurrently then executes in order", async () => {
   const state = { messages: [] as Array<{ role: string; content: string }>, steps: 0 };
-  let started = 0;
-  let inFlight = 0;
-  let maxInFlight = 0;
+  /** 异步回调里递增；用对象字段避免 oxlint 误报循环条件未修改。 */
+  const reviewProgress = { started: 0, inFlight: 0, maxInFlight: 0 };
   const releaseGates: Array<() => void> = [];
   const executionOrder: string[] = [];
 
@@ -1196,13 +1195,16 @@ test("processToolCalls auto-approval reviews multiple tools concurrently then ex
       },
       getApprovalLevel: () => "auto-approval" as const,
       reviewToolApproval: async () => {
-        started += 1;
-        inFlight += 1;
-        maxInFlight = Math.max(maxInFlight, inFlight);
+        reviewProgress.started += 1;
+        reviewProgress.inFlight += 1;
+        reviewProgress.maxInFlight = Math.max(
+          reviewProgress.maxInFlight,
+          reviewProgress.inFlight,
+        );
         await new Promise<void>((resolve) => {
           releaseGates.push(resolve);
         });
-        inFlight -= 1;
+        reviewProgress.inFlight -= 1;
         return { allow: true, reason: "ok" };
       },
       createToolAgentState: () => state,
@@ -1250,11 +1252,11 @@ test("processToolCalls auto-approval reviews multiple tools concurrently then ex
   );
 
   const deadline = Date.now() + 2000;
-  while (started < 2 && Date.now() < deadline) {
+  while (reviewProgress.started < 2 && Date.now() < deadline) {
     await new Promise((resolve) => setTimeout(resolve, 0));
   }
-  assert.equal(started, 2);
-  assert.equal(maxInFlight, 2);
+  assert.equal(reviewProgress.started, 2);
+  assert.equal(reviewProgress.maxInFlight, 2);
   assert.equal(releaseGates.length, 2);
   for (const release of releaseGates) {
     release();
