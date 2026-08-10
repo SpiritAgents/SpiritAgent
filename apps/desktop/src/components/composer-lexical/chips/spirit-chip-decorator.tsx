@@ -13,6 +13,7 @@ import {
 import { LoopChip } from "@/components/composer-lexical/chips/loop-chip";
 import { SkillChip } from "@/components/composer-lexical/chips/skill-chip";
 import { WorkspaceFileChip } from "@/components/composer-lexical/chips/workspace-file-chip";
+import { SessionReferenceChip } from "@/components/composer-lexical/chips/session-reference-chip";
 
 type SpiritChipDecoratorLabels = {
   planLabel?: string;
@@ -43,6 +44,8 @@ export function SpiritChipDecorator({
       return <SkillChip alias={payload.alias} />;
     case "workspaceFile":
       return <WorkspaceFileChip path={payload.path} />;
+    case "sessionReference":
+      return <SessionReferenceChip title={payload.title} />;
     case "element":
       return <ElementChip attachment={payload.attachment} />;
     case "prDiff":

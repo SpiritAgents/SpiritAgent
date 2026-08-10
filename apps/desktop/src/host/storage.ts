@@ -36,6 +36,7 @@ import {
   type ModelEntryV2,
   type ModelRef,
   type ProviderGroupV2,
+  resolveSessionTranscriptFilePath,
 } from "@spiritagent/host-internal";
 
 import { resolveDesktopAgentMode, type DesktopAgentMode } from "../lib/agent-mode.js";
@@ -792,6 +793,10 @@ export async function listStoredSessions(): Promise<SessionListItem[]> {
             resolveStoredWorkspaceRoot(parsed.workspaceRoot) ?? discoverWorkspaceRoot(),
           ...(gitBranch ? { gitBranch } : {}),
           modifiedAtUnixMs,
+          transcriptPath: resolveSessionTranscriptFilePath(
+            spiritAgentDataDir(),
+            path.resolve(filePath),
+          ),
         } satisfies SessionListItem;
       } catch (error) {
         console.warn(`[desktop-host] skip unreadable session file: ${filePath}`, error);

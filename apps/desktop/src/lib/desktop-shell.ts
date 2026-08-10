@@ -62,7 +62,7 @@ export function applyDesktopNativeChromeToDocument(): void {
 
 export type ShellOverlayPhase = "running" | "leaving" | "gone";
 
-/** LaunchSplash 挂载/卸载时同步 html 上的启动层 class（须与 styles.css 规则一致）。 */
+/** 同步全屏 overlay（LaunchSplash / OOBE）相位到 html class（由 App 依两 overlay 相位单点调用，组件不得自行调用，避免互相清理踩踏）。 */
 export function syncLaunchSplashChromeToDocument(phase: ShellOverlayPhase): void {
   if (typeof document === "undefined") {
     return;

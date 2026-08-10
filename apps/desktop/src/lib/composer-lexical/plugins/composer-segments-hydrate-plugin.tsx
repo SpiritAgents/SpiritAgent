@@ -3,6 +3,7 @@ import { useLayoutEffect, type RefObject } from "react";
 import type { LexicalEditor } from "lexical";
 
 import { caretAtEnd } from "@/lib/composer-segment-model";
+import { normalizeCaretForComposer } from "@/lib/composer-caret-normalize";
 import { richSegmentsToEditorState } from "@/lib/composer-lexical/bridge";
 import { segmentCaretToLexicalSelection } from "@/lib/composer-lexical/caret";
 import type { RichSegment } from "@/lib/composer-segment-model";
@@ -38,7 +39,11 @@ export function ComposerSegmentsHydratePlugin({
     const segments = segmentsRef.current;
     skipEditorSyncRef.current = true;
     richSegmentsToEditorState(segments, editor);
-    segmentCaretToLexicalSelection(editor, caretAtEnd(segments));
+    segmentCaretToLexicalSelection(
+      editor,
+      segments,
+      normalizeCaretForComposer(segments, caretAtEnd(segments)),
+    );
     skipEditorSyncRef.current = false;
   }, [editor, editorRef, mountHydratedRef, segmentsRef, skipEditorSyncRef]);
 

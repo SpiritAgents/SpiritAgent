@@ -5,15 +5,13 @@ import {
   GitPullRequest,
   GitPullRequestClosed,
   GitPullRequestDraft,
+  MessageCircle,
   PenTool,
   Terminal,
   FileText,
 } from "lucide-react";
 
-import {
-  BROWSER_ELEMENT_CHIP_CLASS,
-  BROWSER_ELEMENT_CHIP_ICON_CLASS,
-} from "@/lib/browser-element-chip-styles";
+import { BROWSER_ELEMENT_CHIP_ICON_CLASS } from "@/lib/browser-element-chip-styles";
 import { ComposerLocalFileStrip } from "@/components/composer-local-file-strip";
 import { useLocalFileAttachmentPreviews } from "@/hooks/useLocalFileAttachmentPreviews";
 import {
@@ -31,30 +29,30 @@ import {
 import {
   formatGitCommitChipLabel,
   formatGitCommitChipTitle,
-  GIT_COMMIT_CHIP_CLASS,
   GIT_COMMIT_CHIP_ICON_CLASS,
 } from "@/lib/git-commit-chip-styles";
 import {
   formatPrDiffChipLabel,
   formatPrDiffChipTitle,
-  prDiffChipClassForStatus,
   PR_DIFF_CHIP_ICON_CLASS,
 } from "@/lib/github-pr-diff-chip-styles";
 import {
   formatFileSnippetChipLabel,
   formatFileSnippetChipTitle,
-  FILE_SNIPPET_CHIP_CLASS,
   FILE_SNIPPET_CHIP_ICON_CLASS,
 } from "@/lib/file-snippet-chip-styles";
 import {
   formatTerminalChipLabel,
   formatTerminalChipTitle,
-  TERMINAL_CHIP_CLASS,
   TERMINAL_CHIP_ICON_CLASS,
 } from "@/lib/terminal-chip-styles";
 import type { PullRequestChipStatus } from "@/lib/pr-diff-attachment";
+import { MESSAGE_BUBBLE_CHIP_CLASS } from "@/lib/composer-inline-chip-styles";
 import { workspaceFileBasename } from "@/lib/file-picker-path";
-import { resolveWorkspaceFileChipPresentation } from "@/lib/workspace-file-chip-styles";
+import {
+  resolveWorkspaceFileChipPresentation,
+  WORKSPACE_FILE_CHIP_ICON_CLASS,
+} from "@/lib/workspace-file-chip-styles";
 import { SKILL_CHIP_CLASS } from "@/lib/skill-chip-styles";
 import { WorkspaceFileIcon } from "@/components/workspace-file-icon";
 import { WORKSPACE_FILE_ICON_CHIP_SIZE_PX } from "@/lib/workspace-file-icon-sizes";
@@ -63,7 +61,7 @@ import type { ConversationMessageSnapshot } from "@/types";
 
 function ElementCard({ tagName, url }: { tagName: string; url: string }) {
   return (
-    <span title={url} className={BROWSER_ELEMENT_CHIP_CLASS}>
+    <span title={url} className={MESSAGE_BUBBLE_CHIP_CLASS}>
       <PenTool
         className={cn("size-[10px] shrink-0", BROWSER_ELEMENT_CHIP_ICON_CLASS)}
         aria-hidden
@@ -77,7 +75,7 @@ function WorkspaceFileCard({ path }: { path: string }) {
   const normalized = path.replace(/\\/gu, "/");
   const presentation = resolveWorkspaceFileChipPresentation(normalized);
   return (
-    <span title={normalized} className={presentation.chipClass}>
+    <span title={normalized} className={MESSAGE_BUBBLE_CHIP_CLASS}>
       <WorkspaceFileIcon
         path={presentation.iconPath}
         kind={presentation.iconKind}
@@ -86,6 +84,19 @@ function WorkspaceFileCard({ path }: { path: string }) {
         className={cn("shrink-0", presentation.iconClass)}
       />
       {workspaceFileBasename(normalized)}
+    </span>
+  );
+}
+
+function SessionReferenceCard({ path, title }: { path: string; title: string }) {
+  const label = title.trim() || path;
+  return (
+    <span title={path} className={MESSAGE_BUBBLE_CHIP_CLASS} aria-label={label}>
+      <MessageCircle
+        className={cn("size-3.5 shrink-0", WORKSPACE_FILE_CHIP_ICON_CLASS)}
+        aria-hidden
+      />
+      {label}
     </span>
   );
 }
@@ -125,7 +136,7 @@ function PrDiffCard({ part }: { part: Extract<MessageContentPart, { kind: "prDif
         diffText: part.diffText,
         status: part.status,
       })}
-      className={prDiffChipClassForStatus(part.status)}
+      className={MESSAGE_BUBBLE_CHIP_CLASS}
     >
       <Icon className={cn("size-[10px] shrink-0", PR_DIFF_CHIP_ICON_CLASS)} aria-hidden />
       {formatPrDiffChipLabel(part.filename, part.lineStart, part.lineEnd)}
@@ -147,7 +158,7 @@ function TerminalCard({
         lineEnd: part.lineEnd,
         selectedText: part.selectedText,
       })}
-      className={TERMINAL_CHIP_CLASS}
+      className={MESSAGE_BUBBLE_CHIP_CLASS}
     >
       <Terminal className={cn("size-[10px] shrink-0", TERMINAL_CHIP_ICON_CLASS)} aria-hidden />
       {formatTerminalChipLabel(part.terminalName, part.lineStart, part.lineEnd)}
@@ -165,7 +176,7 @@ function FileSnippetCard({ part }: { part: Extract<MessageContentPart, { kind: "
         lineEnd: part.lineEnd,
         selectedText: part.selectedText,
       })}
-      className={FILE_SNIPPET_CHIP_CLASS}
+      className={MESSAGE_BUBBLE_CHIP_CLASS}
     >
       <FileText className={cn("size-[10px] shrink-0", FILE_SNIPPET_CHIP_ICON_CLASS)} aria-hidden />
       {formatFileSnippetChipLabel(part.filePath, part.lineStart, part.lineEnd)}
@@ -184,7 +195,7 @@ function GitCommitCard({ part }: { part: Extract<MessageContentPart, { kind: "gi
         authoredAt: part.authoredAt,
         fullMessage: part.fullMessage,
       })}
-      className={GIT_COMMIT_CHIP_CLASS}
+      className={MESSAGE_BUBBLE_CHIP_CLASS}
     >
       <GitCommit className={cn("size-[10px] shrink-0", GIT_COMMIT_CHIP_ICON_CLASS)} aria-hidden />
       {formatGitCommitChipLabel(part.subject)}
@@ -198,6 +209,7 @@ function isInlineChipPart(part: MessageContentPart | null | undefined): part is 
     kind:
       | "element"
       | "workspaceFile"
+      | "sessionReference"
       | "prDiff"
       | "gitCommit"
       | "terminalSnippet"
@@ -208,6 +220,7 @@ function isInlineChipPart(part: MessageContentPart | null | undefined): part is 
   return (
     part?.kind === "element" ||
     part?.kind === "workspaceFile" ||
+    part?.kind === "sessionReference" ||
     part?.kind === "skill" ||
     part?.kind === "prDiff" ||
     part?.kind === "gitCommit" ||
@@ -263,6 +276,7 @@ export function UserMessageBubble({
         (p) =>
           p.kind === "element" ||
           p.kind === "workspaceFile" ||
+          p.kind === "sessionReference" ||
           p.kind === "skill" ||
           p.kind === "prDiff" ||
           p.kind === "gitCommit" ||
@@ -317,19 +331,22 @@ export function UserMessageBubble({
       {showText ? (
         <div
           data-spirit-surface="message-bubble"
-          className={bubbleClassName}
+          className={cn(bubbleClassName, "max-w-full min-w-0")}
           role={canStartRewind ? "button" : undefined}
           tabIndex={canStartRewind ? 0 : undefined}
           onClick={canStartRewind ? onRewindStart : undefined}
           onKeyDown={canStartRewind ? handleRewindKeyDown : undefined}
         >
-          <pre className="m-0 whitespace-pre-wrap break-words font-sans text-sm leading-relaxed text-foreground">
+          <pre className="m-0 max-w-full min-w-0 whitespace-pre-wrap font-sans text-sm leading-relaxed text-foreground [overflow-wrap:anywhere]">
             {contentParts.map((part, i) => {
               if (part.kind === "element") {
                 return <ElementCard key={i} tagName={part.tagName} url={part.url} />;
               }
               if (part.kind === "workspaceFile") {
                 return <WorkspaceFileCard key={i} path={part.path} />;
+              }
+              if (part.kind === "sessionReference") {
+                return <SessionReferenceCard key={i} path={part.path} title={part.title} />;
               }
               if (part.kind === "skill") {
                 return <SkillCard key={i} alias={part.alias} />;

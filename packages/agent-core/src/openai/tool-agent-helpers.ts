@@ -81,6 +81,7 @@ export function startOpenAiToolAgentState(
   loopEnabled?: boolean,
   mcpToolCatalog?: ToolAgentMcpToolCatalogSnapshot,
   attribution?: OpenAiAttributionFlags,
+  providerId?: string,
 ): OpenAiToolAgentState {
   return startToolAgentState(
     buildOpenAiToolAgentMessages(
@@ -98,6 +99,7 @@ export function startOpenAiToolAgentState(
       loopEnabled,
       mcpToolCatalog,
       attribution,
+      providerId,
     ),
     userInput,
   );
@@ -118,6 +120,7 @@ export function continueOpenAiToolAgentState(
   loopEnabled?: boolean,
   mcpToolCatalog?: ToolAgentMcpToolCatalogSnapshot,
   attribution?: OpenAiAttributionFlags,
+  providerId?: string,
 ): OpenAiToolAgentState {
   return continueToolAgentState(
     buildOpenAiToolAgentMessages(
@@ -135,6 +138,7 @@ export function continueOpenAiToolAgentState(
       loopEnabled,
       mcpToolCatalog,
       attribution,
+      providerId,
     ),
   );
 }
@@ -154,6 +158,7 @@ function buildOpenAiToolAgentMessages(
   loopEnabled: boolean | undefined,
   mcpToolCatalog: ToolAgentMcpToolCatalogSnapshot | undefined,
   attribution: OpenAiAttributionFlags | undefined,
+  providerId: string | undefined,
 ): JsonValue[] {
   return buildToolAgentMessages({
     historyMessages: llmHistoryToOpenAiMessages(history, assetRoot),
@@ -161,6 +166,7 @@ function buildOpenAiToolAgentMessages(
     enabledSkillCatalog,
     ...(mcpToolCatalog === undefined ? {} : { mcpToolCatalog }),
     model,
+    ...(providerId === undefined ? {} : { providerId }),
     ...(planMetadata === undefined ? {} : { planMetadata }),
     extensionSystemPrompts,
     ...(dreamsContextText === undefined ? {} : { dreamsContextText }),
@@ -247,6 +253,7 @@ export function rebuildOpenAiToolAgentStateAfterCompaction(
   loopEnabled?: boolean,
   mcpToolCatalog?: ToolAgentMcpToolCatalogSnapshot,
   attribution?: OpenAiAttributionFlags,
+  providerId?: string,
 ): OpenAiToolAgentState {
   const preservedSpiritSystemMessage = findSpiritSystemMessageContent(retryState.messages);
   const rebuilt = startOpenAiToolAgentState(
@@ -265,6 +272,7 @@ export function rebuildOpenAiToolAgentStateAfterCompaction(
     loopEnabled,
     preservedSpiritSystemMessage === undefined ? mcpToolCatalog : undefined,
     attribution,
+    providerId,
   );
   if (preservedSpiritSystemMessage !== undefined) {
     const preservedDreams = hasDreamsSystemMessage(preservedSpiritSystemMessage);
@@ -275,6 +283,7 @@ export function rebuildOpenAiToolAgentStateAfterCompaction(
       role: "system",
       content: buildToolAgentSystemMessage(
         model,
+        providerId,
         preservedSpiritSystemMessage,
         preservedDreams ? undefined : buildDreamsSystemMessage(dreamsContextText),
         preservedLoop ? undefined : buildLoopModeSystemMessage(loopEnabled),

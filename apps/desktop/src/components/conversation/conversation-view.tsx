@@ -32,7 +32,6 @@ import type {
   ConversationMessageSnapshot,
   DesktopSnapshot,
   MessageRewindDraftState,
-  WorkspaceFileReferenceSuggestionsResponse,
 } from "@/types";
 import type { useDesktopRuntime } from "@/hooks/useDesktopRuntime";
 import { useConversationSessionScrollTail } from "@/hooks/useConversationSessionScrollTail";
@@ -116,10 +115,14 @@ export type ComposerDockSectionProps = {
   ) => void;
   onSubmitQuestions?: () => void;
   onSkipQuestions?: () => void;
-  fileReferenceSuggestions: WorkspaceFileReferenceSuggestionsResponse;
   fileReferenceSelectedIndex: number;
   onFileReferenceSelectedIndexChange: (index: number) => void;
+  fileReferenceMenuView: import("@/lib/composer-at-reference-demo").AtReferenceMenuView;
+  atReferenceMenuItems: import("@/lib/composer-at-reference-demo").AtReferenceMenuItem[];
   onApplyFileReferenceSuggestion: (path: string) => void;
+  onApplySessionReferenceSuggestion: (session: { path: string; title: string }) => void;
+  onOpenAtReferenceSessions: () => void;
+  onBackAtReferenceMenu: () => void;
   onDismissFileReferenceSuggestions: () => void;
   activeFileReferenceQuery: ActiveWorkspaceFileReferenceQuery | undefined;
   slashQuery: ActiveSkillSlashQuery | undefined;
@@ -319,7 +322,7 @@ export function ConversationView({
     streaming: snapshot?.conversation.isBusy === true,
   });
 
-  const { pinScrollToTail } = useConversationStreamScrollTail({
+  const { pinScrollToTail, followingTail } = useConversationStreamScrollTail({
     scrollAreaRef: conversationScrollAreaRef,
     messages: list.messages,
     pendingAuxState: list.conversationPendingAuxState,
@@ -666,10 +669,14 @@ export function ConversationView({
                 onUpdateQuestionDraft={composerDock.onUpdateQuestionDraft}
                 onSubmitQuestions={composerDock.onSubmitQuestions}
                 onSkipQuestions={composerDock.onSkipQuestions}
-                fileReferenceSuggestions={composerDock.fileReferenceSuggestions}
                 fileReferenceSelectedIndex={composerDock.fileReferenceSelectedIndex}
                 onFileReferenceSelectedIndexChange={composerDock.onFileReferenceSelectedIndexChange}
+                fileReferenceMenuView={composerDock.fileReferenceMenuView}
+                atReferenceMenuItems={composerDock.atReferenceMenuItems}
                 onApplyFileReferenceSuggestion={composerDock.onApplyFileReferenceSuggestion}
+                onApplySessionReferenceSuggestion={composerDock.onApplySessionReferenceSuggestion}
+                onOpenAtReferenceSessions={composerDock.onOpenAtReferenceSessions}
+                onBackAtReferenceMenu={composerDock.onBackAtReferenceMenu}
                 onDismissFileReferenceSuggestions={composerDock.onDismissFileReferenceSuggestions}
                 activeFileReferenceQuery={composerDock.activeFileReferenceQuery}
                 slashQuery={composerDock.slashQuery}
@@ -705,6 +712,8 @@ export function ConversationView({
                 models={composerDock.models}
                 useMicaBackdrop={useMicaBackdrop}
                 onOpenGitTab={composerDock.onOpenGitTab}
+                showScrollToBottom={!isEmptySession && !followingTail}
+                onScrollToBottom={() => pinScrollToTail(true, "smooth")}
                 getScrollViewport={getConversationScrollElement}
                 onScrollOccludeMaskStyleChange={composerDock.onScrollOccludeMaskStyleChange}
               />

@@ -18,21 +18,21 @@ export function ConversationSessionFocusComposerBridge({
 }: ConversationSessionFocusComposerBridgeProps) {
   const split = useConversationSplit();
   const focusComposer = useCallback(() => {
-    split.focusedPaneComposerControlsRef.current?.focusComposer();
-  }, [split.focusedPaneComposerControlsRef]);
+    split.getFocusedPaneComposerControls()?.focusComposer();
+  }, [split.getFocusedPaneComposerControls]);
 
   useEffect(() => {
     if (!composerAutomationApiRef) {
       return;
     }
-    const controlsRef = split.focusedPaneComposerControlsRef;
+    const getControls = split.getFocusedPaneComposerControls;
     composerAutomationApiRef.current = {
-      focusComposer: () => controlsRef.current?.focusComposer(),
-      setComposerText: (text) => controlsRef.current?.setComposerText(text),
-      setSlashSelectedIndex: (index) => controlsRef.current?.setSlashSelectedIndex(index),
-      prefillSkillChip: (skillName) => controlsRef.current?.prefillSkillChip(skillName),
+      focusComposer: () => getControls()?.focusComposer(),
+      setComposerText: (text) => getControls()?.setComposerText(text),
+      setSlashSelectedIndex: (index) => getControls()?.setSlashSelectedIndex(index),
+      prefillSkillChip: (skillName) => getControls()?.prefillSkillChip(skillName),
     };
-  }, [composerAutomationApiRef, split.focusedPaneComposerControlsRef]);
+  }, [composerAutomationApiRef, split.getFocusedPaneComposerControls]);
 
   useConversationSessionFocusComposer({
     composerSessionKey,

@@ -111,6 +111,21 @@ function focusSpiritDesktopWindows(): void {
   }
 }
 
+/** 首启：渲染层 LaunchSplash 就绪后再 reveal，避免 React 挂载前的纯黑真空帧。 */
+function revealMainWindowWhenLaunchSplashReady(window: BrowserWindow): void {
+  if (window.isDestroyed()) {
+    return;
+  }
+  if (window.isVisible()) {
+    return;
+  }
+  window.show();
+  if (process.platform === "darwin") {
+    app.focus({ steal: true });
+  }
+  window.focus();
+}
+
 async function focusOrCreateSpiritDesktopWindows(): Promise<void> {
   const windows = BrowserWindow.getAllWindows().filter((window) => !window.isDestroyed());
   if (windows.length === 0) {
@@ -159,6 +174,7 @@ import { resolveRendererDistPath } from "./renderer-dist.js";
 import { registerGitHubDeviceLoginRunners } from "../src/host/github-oauth-bridge.js";
 import { listSystemFonts } from "./system-fonts.js";
 import { syncWindowsImmersiveDarkMode } from "./win-dwm.js";
+import { configureElectronProductDisplayName } from "./product-display-name.js";
 import i18nHost from "../src/lib/i18n-host.js";
 
 /** 与 `titleBarOverlay.height` 及自绘标题栏 CSS 高度一致（px） */
@@ -171,6 +187,8 @@ const MANAGED_GENERATED_VIDEOS_DIR = "generated-videos";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
+
+configureElectronProductDisplayName();
 
 const DEV_SERVER_URL = process.env.VITE_DEV_SERVER_URL;
 
@@ -746,6 +764,7 @@ async function createMainWindow(): Promise<BrowserWindow> {
     height: 920,
     minWidth: 1100,
     minHeight: 720,
+    show: false,
     ...(windowIcon ? { icon: windowIcon } : {}),
     backgroundColor: initialBg,
     // macOS：构造时始终挂载 vibrancy 层，使运行时 setVibrancy 与透明背景切换走同一合成路径；
@@ -936,8 +955,8 @@ if (gotSpiritSingleInstanceLock) {
         invokeMainDesktopHostCommand(command, payload),
     );
 
-    ipcMain.handle("desktop:export-session-log", async () => {
-      const result = (await invokeMainDesktopHostCommand("exportSessionLog")) as {
+    ipcMain.handle("desktop:export-session", async () => {
+      const result = (await invokeMainDesktopHostCommand("exportSession")) as {
         snapshot: DesktopSnapshot;
         path: string;
       };
@@ -1163,6 +1182,14 @@ if (gotSpiritSingleInstanceLock) {
         default:
           break;
       }
+    });
+
+    ipcMain.on("desktop:launch-splash-ready", (event) => {
+      const window = BrowserWindow.fromWebContents(event.sender);
+      if (!window) {
+        return;
+      }
+      revealMainWindowWhenLaunchSplashReady(window);
     });
 
     ipcMain.on("desktop:read-native-backdrop-blur", (event) => {

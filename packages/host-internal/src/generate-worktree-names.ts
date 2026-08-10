@@ -2,6 +2,7 @@ import {
   appendLlmToolResultMessages,
   createLlmTransport,
   extractLastLlmAssistantText,
+  isBedrockTransportConfig,
   startLlmToolAgentState,
   type JsonValue,
   type LlmEnabledRule,
@@ -106,6 +107,12 @@ async function runWorktreeNamingToolAgentRounds(input: {
     [...input.extensionSystemPrompts],
     input.dreamContextText || undefined,
     input.runtimeBasicInfo,
+    undefined,
+    undefined,
+    undefined,
+    undefined,
+    undefined,
+    isBedrockTransportConfig(input.transport) ? "bedrock" : input.transport.llmVendor,
   );
 
   for (let round = 0; round < 6; round += 1) {

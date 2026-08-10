@@ -333,6 +333,12 @@ test("toolCallSummaryCopyForRequest: ask_questions and subagent", () => {
     headline: "子智能体",
     headlineDetail: "Review auth module",
   });
+  assert.deepEqual(
+    toolCallSummaryCopyForRequest("subagent", {}, "preview", {
+      streamingArgumentsJson: '{"task":"Review auth',
+    }),
+    { headline: "子智能体运行中", headlineDetail: "Review auth" },
+  );
 });
 
 test("toolCallSummaryCopyForRequest: todo_write shows incremental delta detail", () => {

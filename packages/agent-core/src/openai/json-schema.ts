@@ -36,7 +36,7 @@ export type StructuredOutputResponseFormat =
     };
 
 export function buildJsonSchemaCompletionMessages(
-  config: Pick<OpenAiTransportConfig, "model" | "llmVendor">,
+  config: { model: string; llmVendor?: string },
   request: OpenAiJsonSchemaCompletionRequest,
 ): JsonValue[] {
   const structuredOutputSystemSection = buildStructuredOutputSystemSection(config, request);
@@ -51,7 +51,7 @@ export function buildJsonSchemaCompletionMessages(
       content:
         request.includeToolAgentHostPrompt === false
           ? sections.join("\n\n")
-          : buildToolAgentSystemMessage(config.model, ...sections),
+          : buildToolAgentSystemMessage(config.model, config.llmVendor, ...sections),
     },
     {
       role: "user",
@@ -109,7 +109,7 @@ export function buildStructuredOutputResponseFormat(
 }
 
 export function buildStructuredOutputSystemSection(
-  config: Pick<OpenAiTransportConfig, "llmVendor">,
+  config: { llmVendor?: string },
   request: OpenAiJsonSchemaCompletionRequest,
 ): string | undefined {
   if (config.llmVendor !== "deepseek") {

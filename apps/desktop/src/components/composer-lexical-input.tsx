@@ -16,6 +16,7 @@ import {
   INSERT_SKILL_CHIP_COMMAND,
   INSERT_WORKSPACE_FILE_AT_CARET_COMMAND,
   INSERT_WORKSPACE_FILE_REFERENCE_COMMAND,
+  INSERT_SESSION_REFERENCE_COMMAND,
   REMOVE_SKILL_SLASH_COMMAND,
   REPLACE_SKILL_SLASH_COMMAND,
 } from "@/lib/composer-lexical/commands";
@@ -377,6 +378,11 @@ export type ComposerRichInputHandle = {
     query: ActiveWorkspaceFileReferenceQuery,
     finalize?: boolean,
   ): void;
+  insertSessionReference(
+    session: { path: string; title: string; content?: string },
+    query: ActiveWorkspaceFileReferenceQuery,
+    finalize?: boolean,
+  ): void;
   insertWorkspaceFileAtCaret(path: string): void;
   insertLoopChip(options?: InsertLoopChipOptions): void;
   removeLoopChip(): void;
@@ -553,7 +559,7 @@ const ComposerLexicalInputCore = forwardRef<ComposerRichInputHandle, ComposerLex
         skipEditorSyncRef.current = true;
         richSegmentsToEditorState(next, editor);
         if (caret) {
-          segmentCaretToLexicalSelection(editor, normalizeCaretForComposer(next, caret));
+          segmentCaretToLexicalSelection(editor, next, normalizeCaretForComposer(next, caret));
         }
         skipEditorSyncRef.current = false;
       },
@@ -565,7 +571,7 @@ const ComposerLexicalInputCore = forwardRef<ComposerRichInputHandle, ComposerLex
       if (!report) {
         return;
       }
-      const caret = lexicalSelectionToSegmentCaret(editor);
+      const caret = lexicalSelectionToSegmentCaret(editor, segmentsRef.current);
       if (!caret) {
         report(null);
         return;
@@ -642,7 +648,7 @@ const ComposerLexicalInputCore = forwardRef<ComposerRichInputHandle, ComposerLex
 
     const handleSegmentsNormalized = useCallback(
       (next: RichSegment[]) => {
-        commitSegments(next, lexicalSelectionToSegmentCaret(editor), {
+        commitSegments(next, lexicalSelectionToSegmentCaret(editor, segmentsRef.current), {
           pushEditor: false,
           syncLoop: false,
           syncAgentMode: false,
@@ -707,6 +713,23 @@ const ComposerLexicalInputCore = forwardRef<ComposerRichInputHandle, ComposerLex
       (path: string, query: ActiveWorkspaceFileReferenceQuery, finalize = true) => {
         editor.dispatchCommand(INSERT_WORKSPACE_FILE_REFERENCE_COMMAND, {
           path,
+          query,
+          finalize,
+        });
+      },
+      [editor],
+    );
+
+    const insertSessionReference = useCallback(
+      (
+        session: { path: string; title: string; content?: string },
+        query: ActiveWorkspaceFileReferenceQuery,
+        finalize = true,
+      ) => {
+        editor.dispatchCommand(INSERT_SESSION_REFERENCE_COMMAND, {
+          path: session.path,
+          title: session.title,
+          ...(session.content !== undefined ? { content: session.content } : {}),
           query,
           finalize,
         });
@@ -876,7 +899,7 @@ const ComposerLexicalInputCore = forwardRef<ComposerRichInputHandle, ComposerLex
           return null;
         }
 
-        const caret = lexicalSelectionToSegmentCaret(editor);
+        const caret = lexicalSelectionToSegmentCaret(editor, segmentsRef.current);
         if (!caret || caretToPlainTextOffset(segmentsRef.current, caret) !== plainTextOffset) {
           return null;
         }
@@ -896,6 +919,7 @@ const ComposerLexicalInputCore = forwardRef<ComposerRichInputHandle, ComposerLex
         insertTerminalSnippet,
         insertFileSnippet,
         insertWorkspaceFileReference,
+        insertSessionReference,
         insertWorkspaceFileAtCaret,
         insertLoopChip,
         removeLoopChip,
@@ -920,6 +944,7 @@ const ComposerLexicalInputCore = forwardRef<ComposerRichInputHandle, ComposerLex
         insertTerminalSnippet,
         insertFileSnippet,
         insertWorkspaceFileReference,
+        insertSessionReference,
         insertWorkspaceFileAtCaret,
         replaceSkillSlashQuery,
         removeSkillSlashQuery,
@@ -961,7 +986,7 @@ const ComposerLexicalInputCore = forwardRef<ComposerRichInputHandle, ComposerLex
           return;
         }
         const raw = editorStateToRichSegments(changedEditor);
-        const caret = lexicalSelectionToSegmentCaret(changedEditor);
+        const caret = lexicalSelectionToSegmentCaret(changedEditor, segmentsRef.current);
         const policyApplied = applyComposerPolicy(raw);
         const needsEditorPush = !segmentsEqual(policyApplied, raw);
         commitSegments(policyApplied, caret, { pushEditor: needsEditorPush });
@@ -970,7 +995,7 @@ const ComposerLexicalInputCore = forwardRef<ComposerRichInputHandle, ComposerLex
     );
 
     const restoreNormalizedCaret = useCallback(() => {
-      const raw = lexicalSelectionToSegmentCaret(editor);
+      const raw = lexicalSelectionToSegmentCaret(editor, segmentsRef.current);
       if (!raw) {
         return;
       }
@@ -978,7 +1003,7 @@ const ComposerLexicalInputCore = forwardRef<ComposerRichInputHandle, ComposerLex
       if (caret.segmentIndex === raw.segmentIndex && caret.offset === raw.offset) {
         return;
       }
-      segmentCaretToLexicalSelection(editor, caret);
+      segmentCaretToLexicalSelection(editor, segmentsRef.current, caret);
       reportSelectionChange();
     }, [editor, reportSelectionChange]);
 
@@ -1006,7 +1031,7 @@ const ComposerLexicalInputCore = forwardRef<ComposerRichInputHandle, ComposerLex
             return false;
           }
           const segs = segmentsRef.current;
-          const rawCaret = lexicalSelectionToSegmentCaret(editor);
+          const rawCaret = lexicalSelectionToSegmentCaret(editor, segs);
           if (!rawCaret) {
             return false;
           }
@@ -1225,7 +1250,6 @@ const ComposerLexicalInputCore = forwardRef<ComposerRichInputHandle, ComposerLex
         <ComposerClipboardPlugin
           segmentsRef={segmentsRef}
           commitSegments={commitSegments}
-          contentEditableRef={contentEditableRef}
           onPaste={onPaste}
         />
         <SlashSelectionPlugin

@@ -1,6 +1,7 @@
 import { BrowserWindow, Menu, app, dialog } from "electron";
 
 import i18nHost from "../src/lib/i18n-host.js";
+import { PRODUCT_DISPLAY_NAME } from "./product-display-name.js";
 
 const isDevChrome = Boolean(process.env.VITE_DEV_SERVER_URL) || !app.isPackaged;
 
@@ -14,6 +15,13 @@ function sendNewSession(win?: BrowserWindow): void {
   const target = win ?? BrowserWindow.getFocusedWindow();
   if (target && !target.isDestroyed()) {
     target.webContents.send("desktop:new-session");
+  }
+}
+
+function sendOpenSettings(win?: BrowserWindow): void {
+  const target = win ?? BrowserWindow.getFocusedWindow();
+  if (target && !target.isDestroyed()) {
+    target.webContents.send("desktop:open-settings");
   }
 }
 
@@ -44,9 +52,17 @@ function viewMenuItems(): Electron.MenuItemConstructorOptions[] {
 }
 
 function appMenuItems(): Electron.MenuItemConstructorOptions[] {
-  const appName = app.name;
+  const appName = PRODUCT_DISPLAY_NAME;
   return [
     { role: "about", label: menuLabel("about") },
+    { type: "separator" },
+    {
+      label: menuLabel("settings"),
+      accelerator: "CmdOrCtrl+,",
+      click: () => {
+        sendOpenSettings();
+      },
+    },
     { type: "separator" },
     { role: "services", label: menuLabel("services") },
     { type: "separator" },
@@ -101,8 +117,8 @@ function buildSectionTemplate(
           click: () => {
             void dialog.showMessageBox(win, {
               type: "info",
-              title: "Spirit Agent",
-              message: "Spirit Agent",
+              title: PRODUCT_DISPLAY_NAME,
+              message: PRODUCT_DISPLAY_NAME,
               detail: menuLabel("versionDetail", { version: app.getVersion() }),
             });
           },
@@ -116,7 +132,7 @@ function buildSectionTemplate(
 function buildMacOSApplicationMenuTemplate(): Electron.MenuItemConstructorOptions[] {
   return [
     {
-      label: app.name,
+      label: PRODUCT_DISPLAY_NAME,
       submenu: appMenuItems(),
     },
     {

@@ -64,8 +64,10 @@ import {
   handlePendingToolAgentRoundCompletion as handlePendingToolAgentRoundCompletionInternal,
   pollPendingToolAgentRound as pollPendingToolAgentRoundInternal,
   commitSyntheticToolExecutionFailure,
+  clearEarlyApprovalWaiters,
   processToolCalls as processToolCallsInternal,
   processToolCallsAsync as processToolCallsAsyncInternal,
+  pumpEarlyApprovalQueue,
   resumePendingApproval as resumePendingApprovalInternal,
   resumePendingQuestions as resumePendingQuestionsInternal,
   runTurnLoop as runTurnLoopInternal,
@@ -105,6 +107,7 @@ import { prepareAndSyncRuntimeToolResultToHistory } from "./runtime/tool-output-
 import type {
   AgentRuntimeOptions,
   AssistantAuxKind,
+  EarlyStreamApprovalQueueItem,
   PendingAssistantAux,
   PendingEarlyToolExecution,
   PendingApprovalState,
@@ -237,6 +240,7 @@ export class AgentRuntime<Config, State, ToolRequest, TrustTarget = string> {
   private compactionTextStore: string;
   private pendingUserTurnStore: string | undefined;
   private pendingApproval: PendingApprovalState<State, ToolRequest, TrustTarget> | undefined;
+  private earlyApprovalQueue: EarlyStreamApprovalQueueItem<State, ToolRequest, TrustTarget>[] = [];
   private pendingQuestions: PendingQuestionsState<State, ToolRequest> | undefined;
   private pendingManualApproval: PendingManualApprovalState<ToolRequest, TrustTarget> | undefined;
   private pendingStreamingRound: PendingStreamingRound<State, ToolRequest> | undefined;
@@ -728,7 +732,7 @@ export class AgentRuntime<Config, State, ToolRequest, TrustTarget = string> {
     deferredBgCount: number;
   } {
     return {
-      hasPendingApproval: this.hasPendingApproval(),
+      hasPendingApproval: this.hasPendingApproval() || this.earlyApprovalQueue.length > 0,
       hasPendingContinuation: this.pendingToolCallContinuation !== undefined,
       hasPendingQuestions: this.pendingQuestions !== undefined,
       deferredBgCount: this.deferredBackgroundToolExecutions.length,
@@ -785,6 +789,9 @@ export class AgentRuntime<Config, State, ToolRequest, TrustTarget = string> {
     }
 
     this.pendingUserTurnStore = undefined;
+    clearEarlyApprovalWaiters(
+      this as unknown as TurnMachineRuntime<Config, State, ToolRequest, TrustTarget>,
+    );
     this.pendingApproval = undefined;
     this.pendingManualApproval = undefined;
     this.pendingQuestions = undefined;
@@ -806,6 +813,9 @@ export class AgentRuntime<Config, State, ToolRequest, TrustTarget = string> {
   replaceHistory(history: LlmMessage[]): void {
     this.historyStore = repairMissingToolResultsInHistory(cloneHistory(history));
     // Keep sealedTranscriptMessagesStore: durable transcript must survive compaction reloads.
+    clearEarlyApprovalWaiters(
+      this as unknown as TurnMachineRuntime<Config, State, ToolRequest, TrustTarget>,
+    );
     this.clearPendingStreamingState();
     this.clearPendingNonStreamingState();
     this.pendingBackgroundToolStatusStore = undefined;
@@ -826,6 +836,9 @@ export class AgentRuntime<Config, State, ToolRequest, TrustTarget = string> {
     this.loopEnabledStore = archive.loopEnabled === true;
     this.options.toolExecutor.setLoopToolExposure?.(this.loopEnabledStore);
     this.requestTraceStore = [];
+    clearEarlyApprovalWaiters(
+      this as unknown as TurnMachineRuntime<Config, State, ToolRequest, TrustTarget>,
+    );
     this.clearPendingStreamingState();
     this.clearPendingNonStreamingState();
     this.pendingBackgroundToolStatusStore = undefined;
@@ -1253,6 +1266,14 @@ export class AgentRuntime<Config, State, ToolRequest, TrustTarget = string> {
       request: pending.request,
       decisionKind: decision.kind,
     });
+
+    if (pending.source === "early-stream") {
+      pending.resolveEarlyDecision?.(decision);
+      pumpEarlyApprovalQueue(
+        this as unknown as TurnMachineRuntime<Config, State, ToolRequest, TrustTarget>,
+      );
+      return;
+    }
 
     if (decision.kind === "allow") {
       if (decision.persistTrust && pending.trustTarget !== undefined) {
@@ -3652,9 +3673,13 @@ export class AgentRuntime<Config, State, ToolRequest, TrustTarget = string> {
       ? scopeAgentRuntimeOptionsForSubagentWorkspace(this.options, childWorkspaceRoot)
       : this.options;
     // Parent owns transcript files; child must not overwrite the main session transcript.
+    // onEvent is the parent session's host channel (e.g. the server broadcasts it as
+    // `runtime.event`); child events must reach hosts only via drainActiveChildSessionEvents,
+    // otherwise child thinking/text leaks into the main session's event stream.
     const {
       syncSessionTranscript: _omitSyncSessionTranscript,
       syncSubagentTranscript: _omitSyncSubagentTranscript,
+      onEvent: _omitOnEvent,
       ...childRuntimeOptions
     } = scopedOptions;
     return new AgentRuntime<Config, State, ToolRequest, TrustTarget>(

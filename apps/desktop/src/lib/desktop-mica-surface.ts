@@ -1,3 +1,5 @@
+import { cn } from "@/lib/utils";
+
 /** Mica 开启时主内容区背景不透明度（仅 tint，不叠加 CSS backdrop-blur）。 */
 export const DESKTOP_MICA_CONTENT_TINT_CLASS = "bg-background/70";
 
@@ -14,18 +16,25 @@ export const DESKTOP_COMPOSER_SURFACE_MICA_TINT = "bg-background/30";
 /** @deprecated 使用 {@link DESKTOP_COMPOSER_SURFACE_MICA_TINT} */
 export const DESKTOP_COMPOSER_SURFACE_SOLID = DESKTOP_COMPOSER_SURFACE_MICA_TINT;
 
+/** 浅色模式浮层 / 抬起表面扩散阴影；深色勿放大，由调用方配 dark:shadow-* */
+export const DESKTOP_OVERLAY_LIGHT_SHADOW = "shadow-[0_2px_20px_-4px_rgb(0_0_0/0.06)]";
+
+/** 抬起表面阴影：浅色扩散 + 深色沿用 sm（Composer / Changes / 消息气泡等） */
+export const DESKTOP_ELEVATION_SHADOW_SM = cn(DESKTOP_OVERLAY_LIGHT_SHADOW, "dark:shadow-sm");
+
 /** Mica 下半透明 tint；关闭时保持玻璃拟态 */
 export function desktopComposerSurfaceBackdropClass(useMicaBackdrop: boolean): string {
   return useMicaBackdrop ? DESKTOP_COMPOSER_SURFACE_MICA_TINT : DESKTOP_COMPOSER_SURFACE_BACKDROP;
 }
 
-/** Composer 胶囊（Changes 等）底/边框：与输入框同源，随 Mica 切换实色/玻璃 */
+/** Composer 胶囊（Changes 等）：边框 / hover / 阴影对齐输入框，随 Mica 切换底 */
 export function desktopComposerChipSurfaceClass(useMicaBackdrop: boolean): string {
-  return [
-    "border border-border/50 dark:border-white/10",
-    "hover:border-ring/60 dark:hover:border-white/12",
+  return cn(
+    "border border-ring/30 dark:border-white/10",
+    "hover:border-ring/40 dark:hover:border-white/12",
+    DESKTOP_ELEVATION_SHADOW_SM,
     desktopComposerSurfaceBackdropClass(useMicaBackdrop),
-  ].join(" ");
+  );
 }
 
 /** 侧边栏：Mica 下轻 tint，比内容区更浅，保留系统 blur 可读性。 */
@@ -56,15 +65,9 @@ export function desktopMicaTintClass(useMicaBackdrop: boolean): string {
 
 /**
  * LaunchSplash / OOBE 全屏覆盖层 tint。
- * 退场时背景须透明：与 styles.css 中 app-body 交叉淡入同步，避免两层 `bg-background/70` 叠加深色。
+ * 退场时整层（含背景 tint）随 opacity 淡出，背景本身参与渐隐，故 tint 全程保持，不做透明切换。
  */
-export function desktopFullscreenOverlayTintClass(
-  useMicaBackdrop: boolean,
-  exiting: boolean,
-): string {
-  if (exiting) {
-    return TRANSPARENT_BACKGROUND_CLASS;
-  }
+export function desktopFullscreenOverlayTintClass(useMicaBackdrop: boolean): string {
   return desktopMicaTintClass(useMicaBackdrop);
 }
 

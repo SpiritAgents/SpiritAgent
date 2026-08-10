@@ -17,12 +17,42 @@
           }
         } catch (_err) {}
         if (mica) root.classList.add("spirit-desktop-mica");
+        var themeRaw = null;
+        try {
+          themeRaw = localStorage.getItem("spirit-agent-desktop-theme");
+        } catch (_err2) {}
+        var pref =
+          themeRaw === "dark" || themeRaw === "light" || themeRaw === "system"
+            ? themeRaw
+            : "system";
+        var osDark = window.matchMedia("(prefers-color-scheme: dark)").matches;
+        try {
+          if (window.spiritDesktop) {
+            osDark = window.spiritDesktop.readOsPrefersDark();
+          }
+        } catch (_err3) {}
+        var storedDark = pref === "dark" || (pref === "system" && osDark);
+        if (storedDark) {
+          root.classList.add("dark");
+          root.dataset.spiritTheme = "dark";
+        } else {
+          root.dataset.spiritTheme = "light";
+        }
       })();
     </script>
     <style>
       html.spirit-desktop-native.spirit-desktop-mica,
       html.spirit-desktop-native.spirit-desktop-mica body {
         background: transparent !important;
+      }
+      /* 关 Blur 时首帧临界底色：与 electronRootBackgroundForBackdrop / styles.css Void 对齐，须早于 module CSS */
+      html.spirit-desktop-native:not(.spirit-desktop-mica),
+      html.spirit-desktop-native:not(.spirit-desktop-mica) body {
+        background-color: #fafafa;
+      }
+      html.spirit-desktop-native:not(.spirit-desktop-mica).dark,
+      html.spirit-desktop-native:not(.spirit-desktop-mica).dark body {
+        background-color: #000000;
       }
     </style>
   </head>

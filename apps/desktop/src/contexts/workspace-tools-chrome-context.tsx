@@ -15,6 +15,10 @@ import {
   workspaceToolsShellWidthWhenOpen,
 } from "@/lib/layout-prefs";
 
+/** 与 SessionSidebarShell / 历史右侧栏开合动画一致 */
+const WORKSPACE_TOOLS_SHELL_WIDTH_TRANSITION = "width 300ms cubic-bezier(0.22, 1, 0.36, 1)";
+const WORKSPACE_TOOLS_SHELL_WIDTH_TRANSITION_MS = 300;
+
 type WorkspaceToolsChromeActions = {
   setOpen: (updater: boolean | ((current: boolean) => boolean)) => void;
   toggle(): void;
@@ -35,6 +39,8 @@ export type WorkspaceToolsChromeProviderProps = {
   apiRef?: React.MutableRefObject<WorkspaceToolsChromeApi | null>;
 };
 
+let workspaceToolsShellWidthTransitionClearTimer = 0;
+
 function applyWorkspaceToolsShellWidthImmediate(nextOpen: boolean): void {
   const shell = document.getElementById("workspace-tools-panel-shell");
   const aside = document.getElementById("workspace-tools-panel");
@@ -47,11 +53,27 @@ function applyWorkspaceToolsShellWidthImmediate(nextOpen: boolean): void {
       ? Number.parseInt(widthRaw, 10)
       : readWorkspaceToolsWidthPx();
   const splitWidth = workspaceToolsShellWidthExpression(widthPx);
+
+  if (workspaceToolsShellWidthTransitionClearTimer !== 0) {
+    window.clearTimeout(workspaceToolsShellWidthTransitionClearTimer);
+    workspaceToolsShellWidthTransitionClearTimer = 0;
+  }
+
+  // 仅开合走 width 过渡；视口缩放改占比时 React 侧保持无 transition，避免拖窗口慢半拍。
+  const reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+  shell.style.transition = reduceMotion ? "none" : WORKSPACE_TOOLS_SHELL_WIDTH_TRANSITION;
   shell.style.width = workspaceToolsShellWidthWhenOpen(nextOpen, widthPx);
   const split = shell.querySelector("[data-workspace-tools-split]");
   if (split instanceof HTMLElement) {
     split.style.width = splitWidth;
   }
+
+  workspaceToolsShellWidthTransitionClearTimer = window.setTimeout(() => {
+    workspaceToolsShellWidthTransitionClearTimer = 0;
+    if (shell.isConnected) {
+      shell.style.removeProperty("transition");
+    }
+  }, WORKSPACE_TOOLS_SHELL_WIDTH_TRANSITION_MS + 20);
 }
 
 export function WorkspaceToolsChromeProvider({

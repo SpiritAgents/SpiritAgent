@@ -36,11 +36,9 @@ test("desktopMicaTintInnerClass is transparent under Mica", () => {
   assert.equal(desktopMicaTintInnerClass(true), "bg-transparent");
 });
 
-test("desktopFullscreenOverlayTintClass drops tint while exiting to avoid double stacking", () => {
-  assert.equal(desktopFullscreenOverlayTintClass(false, false), "bg-background");
-  assert.equal(desktopFullscreenOverlayTintClass(true, false), DESKTOP_MICA_CONTENT_TINT_CLASS);
-  assert.equal(desktopFullscreenOverlayTintClass(false, true), "bg-transparent");
-  assert.equal(desktopFullscreenOverlayTintClass(true, true), "bg-transparent");
+test("desktopFullscreenOverlayTintClass keeps tint through exit so the whole sheet fades", () => {
+  assert.equal(desktopFullscreenOverlayTintClass(false), "bg-background");
+  assert.equal(desktopFullscreenOverlayTintClass(true), DESKTOP_MICA_CONTENT_TINT_CLASS);
 });
 
 test("desktopMicaBrowserTintClass uses higher opacity than main content tint", () => {

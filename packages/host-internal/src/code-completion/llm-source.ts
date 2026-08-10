@@ -15,6 +15,7 @@ export interface LlmCodeCompletionDependencies {
   transport: JsonSchemaTransport;
   transportConfig: LlmTransportConfig;
   modelName: string;
+  providerId?: string;
 }
 
 export class LlmCodeCompletionSource implements CodeCompletionSource {
@@ -35,7 +36,10 @@ export class LlmCodeCompletionSource implements CodeCompletionSource {
         userPrompt,
         schemaName: CODE_COMPLETION_SCHEMA_NAME,
         schema: CODE_COMPLETION_JSON_SCHEMA,
-        systemSections: buildCodeCompletionSystemSections(this.dependencies.modelName),
+        systemSections: buildCodeCompletionSystemSections(
+          this.dependencies.modelName,
+          this.dependencies.providerId,
+        ),
         includeToolAgentHostPrompt: false,
       },
     );

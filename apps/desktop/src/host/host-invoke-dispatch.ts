@@ -49,7 +49,7 @@ export interface HostCommandDelegate {
   submitSkillSlash(request: CommandPayloads["submitSkillSlash"]["request"]): Promise<unknown>;
   submitGitChip(request: CommandPayloads["submitGitChip"]["request"]): Promise<unknown>;
   submitStartImplementing(): Promise<unknown>;
-  exportSessionLog(): Promise<unknown>;
+  exportSession(): Promise<unknown>;
   compactHistory(): Promise<unknown>;
   submitUserTurn(request: CommandPayloads["submitUserTurn"]): Promise<unknown>;
   setLoopEnabled(enabled: boolean): Promise<unknown>;
@@ -265,7 +265,7 @@ const hostCommandDispatch = {
   submitSkillSlash: (host, payload) => host.submitSkillSlash(payload.request),
   submitGitChip: (host, payload) => host.submitGitChip(payload.request),
   submitStartImplementing: (host) => host.submitStartImplementing(),
-  exportSessionLog: (host) => host.exportSessionLog(),
+  exportSession: (host) => host.exportSession(),
   compactHistory: (host) => host.compactHistory(),
   submitUserTurn: (host, payload) => host.submitUserTurn(payload),
   setLoopEnabled: (host, payload) => host.setLoopEnabled(payload.enabled === true),

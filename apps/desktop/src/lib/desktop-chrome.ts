@@ -4,13 +4,18 @@ import {
   DESKTOP_SIDEBAR_TEXT_CLASS,
   FONT_WEIGHT_NORMAL,
 } from "@/lib/desktop-typography";
-import { desktopComposerChipSurfaceClass } from "@/lib/desktop-mica-surface";
+import {
+  DESKTOP_OVERLAY_LIGHT_SHADOW,
+  desktopComposerChipSurfaceClass,
+} from "@/lib/desktop-mica-surface";
 import { cn } from "@/lib/utils";
 
 export {
   DESKTOP_COMPOSER_SURFACE_BACKDROP,
   DESKTOP_COMPOSER_SURFACE_MICA_TINT,
   DESKTOP_COMPOSER_SURFACE_SOLID,
+  DESKTOP_ELEVATION_SHADOW_SM,
+  DESKTOP_OVERLAY_LIGHT_SHADOW,
   desktopComposerChipSurfaceClass,
   desktopComposerSurfaceBackdropClass,
 } from "@/lib/desktop-mica-surface";
@@ -102,15 +107,30 @@ export const DESKTOP_GIT_ACTION_MENU_TRIGGER = cn(
  * SHORT 系列仅保留给仍需要 text-sm 密度的局部场景。
  */
 
+/** 浮层阴影：浅色扩散 + 深色沿用 md */
+export const DESKTOP_OVERLAY_SHADOW = cn(DESKTOP_OVERLAY_LIGHT_SHADOW, "dark:shadow-md");
+
+/** 浮层阴影：浅色扩散 + 深色沿用 lg（Tooltip / Popover / HoverCard 等） */
+export const DESKTOP_OVERLAY_SHADOW_LG = cn(DESKTOP_OVERLAY_LIGHT_SHADOW, "dark:shadow-lg");
+
+/** Ctrl+P / Ctrl+Shift+P 命令面板列表图标与标题：浅色略淡，深色提亮 */
+export const DESKTOP_COMMAND_PALETTE_ITEM_TONE = "opacity-70 dark:opacity-90";
+
+/** Ctrl+P / Ctrl+Shift+P 命令面板列表行：统一行高，避免单行标题显得挤 */
+export const DESKTOP_COMMAND_PALETTE_ITEM_CLASS = cn(
+  "min-h-9 min-w-0 cursor-pointer py-2 [&>svg:last-child]:hidden",
+  instantHoverMotionClass,
+);
+
 /** 短列表：轻外壳（仅局部场景使用） */
-export const DESKTOP_OVERLAY_SHORT_SHELL = "rounded-lg shadow-md ring-0";
+export const DESKTOP_OVERLAY_SHORT_SHELL = cn("rounded-lg ring-0", DESKTOP_OVERLAY_SHADOW);
 
 export const DESKTOP_OVERLAY_SHORT_CONTENT = cn(DESKTOP_OVERLAY_SHORT_SHELL, "p-1 text-sm");
 
 /** Dropdown 基元：短列表壳 + popover 面 */
 export const DESKTOP_OVERLAY_SHORT_DROPDOWN_SURFACE = cn(
   DESKTOP_OVERLAY_SHORT_SHELL,
-  "border border-border/80 bg-popover p-1 text-sm text-popover-foreground shadow-md",
+  "border border-border/80 bg-popover p-1 text-sm text-popover-foreground",
 );
 
 export const DESKTOP_OVERLAY_SHORT_SUBCONTENT = cn(
@@ -130,12 +150,12 @@ export const DESKTOP_OVERLAY_SHORT_MENU_MIN_WIDTH = "min-w-[8.5rem]";
 /** 长列表：关掉基类 overflow-y-auto，由内层 ScrollArea 独占滚动 */
 export const DESKTOP_OVERLAY_LIST_CONTENT = "max-h-none overflow-hidden p-0 text-xs";
 
-export const DESKTOP_OVERLAY_LIST_SHELL = "min-w-0 rounded-lg shadow-md ring-0";
+export const DESKTOP_OVERLAY_LIST_SHELL = cn("min-w-0 rounded-lg ring-0", DESKTOP_OVERLAY_SHADOW);
 
 /** Dropdown 基元：长列表壳 + popover 面（密度对齐模型 / 工作区选择器） */
 export const DESKTOP_OVERLAY_LIST_DROPDOWN_SURFACE = cn(
   DESKTOP_OVERLAY_LIST_SHELL,
-  "border border-border/80 bg-popover p-0 text-xs text-popover-foreground shadow-md backdrop-blur-sm",
+  "border border-border/80 bg-popover p-0 text-xs text-popover-foreground backdrop-blur-sm",
 );
 
 export const DESKTOP_OVERLAY_LIST_WIDTH =
@@ -180,10 +200,10 @@ export const DESKTOP_OVERLAY_LIST_FILTER_INPUT_SHELL = cn(
 export const DESKTOP_OVERLAY_LIST_FILTER_INPUT =
   "h-7 min-h-7 w-full min-w-0 rounded-none border-0 bg-transparent px-2.5 py-1 text-xs shadow-none focus-visible:border-transparent focus-visible:ring-0";
 
-/** ghost：透明底与 popover 一致；覆盖 Input 基类 dark:bg-input/30 */
+/** ghost：透明底与 popover 一致；覆盖 Input 基类 hover/focus 的 bg-muted/30（浅色焦点尤其明显） */
 export const DESKTOP_OVERLAY_LIST_FILTER_INPUT_GHOST = cn(
   DESKTOP_OVERLAY_LIST_FILTER_INPUT,
-  "rounded-md dark:!bg-transparent",
+  "rounded-md hover:!bg-transparent focus:!bg-transparent focus-visible:!bg-transparent dark:!bg-transparent",
 );
 
 /** 标准表单输入：与 PendingApprovalCard 指引输入一致（h-8） */
@@ -258,7 +278,7 @@ export const DESKTOP_OVERLAY_LIST_SUB_TRIGGER = "items-center gap-1.5 px-2.5 py-
 /** 长列表配套详情 Popover：密度与 DESKTOP_OVERLAY_LIST_* 对齐 */
 export const DESKTOP_OVERLAY_LIST_DETAIL_SURFACE = cn(
   DESKTOP_OVERLAY_LIST_SHELL,
-  "border border-border/80 bg-popover p-0 text-xs text-popover-foreground shadow-md backdrop-blur-sm",
+  "border border-border/80 bg-popover p-0 text-xs text-popover-foreground backdrop-blur-sm",
 );
 
 export const DESKTOP_OVERLAY_LIST_DETAIL_WIDTH =

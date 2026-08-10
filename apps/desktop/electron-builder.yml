@@ -49,6 +49,9 @@ mac:
   # Prefer darwin over electron-builder's default ${os}=mac for release URL alignment.
   artifactName: SpiritAgent-Desktop-${version}-darwin-${arch}.${ext}
   icon: build/icon.png
+  # Info.plist LSApplicationCategoryType；Apps（Tahoe+）映射到「效率与财务」/Productivity & Finance。
+  # 勿依赖 Electron 默认的 developer-tools（新 Apps 已无该栏）。
+  category: public.app-category.productivity
   target:
     - dmg
     - zip
@@ -60,6 +63,19 @@ mac:
   # Notarization runs as its own CI job against the finished dmg/zip: bundling it here ties a
   # 35-minute Apple round trip to the build, so one network blip discards the signed output too.
   notarize: false
+dmg:
+  # build/ 下的 background.png / background@2x.png 会被 dmg-builder 自动采用，窗口尺寸跟随图片（540x408）。
+  # 注意：DMG 窗口高度包含 Finder 标题栏（约 28pt），内容区只有 380pt，背景图底部 28pt 会被裁掉。
+  # 因此背景图底部特意留 28px 白边，使烤进背景的箭头与下方图标（y=190）落在内容区视觉中心；
+  # 后续改设计稿时必须保留这段底部留白，否则整体会视觉偏下。
+  contents:
+    - x: 130
+      y: 190
+      type: file
+    - x: 410
+      y: 190
+      type: link
+      path: /Applications
 linux:
   executableName: spirit-agent
   maintainer: Spirit Agent contributors <121384036+N123999@users.noreply.github.com>

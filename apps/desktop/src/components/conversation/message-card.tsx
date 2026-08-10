@@ -33,6 +33,7 @@ import { UserMessageBubble } from "@/components/user-message-bubble";
 import { shouldShowAssistantCompactionCollapsible } from "@/lib/conversation-compaction-ui";
 import { isTurnErrorAssistantMessage } from "@/lib/conversation-turn-error-ui";
 import { conversationMessageStableId } from "@/lib/conversation-list-scope";
+import { DESKTOP_ELEVATION_SHADOW_SM } from "@/lib/desktop-chrome";
 import { isSubagentStatusSurfaceMessage } from "@/lib/subagent-display";
 import { cn } from "@/lib/utils";
 import type { EditorFileTarget } from "@/lib/workspace-editor-navigation";
@@ -197,8 +198,10 @@ function MessageCardImpl({
   const isQueuedUser = isUser && message.queued === true && typeof message.queueId === "string";
   const canStartRewind =
     isUser && message.canRewind === true && !message.pending && message.queued !== true;
-  const userBubble =
-    "rounded-2xl rounded-br-md border border-border/50 bg-muted px-3 py-2.5 shadow-sm";
+  const userBubble = cn(
+    "rounded-2xl rounded-br-md border border-ring/30 bg-background px-3 py-2.5 dark:border-border/50 dark:bg-muted",
+    DESKTOP_ELEVATION_SHADOW_SM,
+  );
   const subagentStatusSurface =
     !isUser && message.content.trim() ? isSubagentStatusSurfaceMessage(message) : false;
   const turnErrorSurface = !isUser && isTurnErrorAssistantMessage(message);
@@ -260,7 +263,7 @@ function MessageCardImpl({
           isUser
             ? rewindSelected
               ? "ml-auto w-full max-w-[min(100%,36rem)]"
-              : "max-w-[min(72%,22rem)]"
+              : "max-w-[min(85%,32rem)]"
             : "w-full",
         )}
       >

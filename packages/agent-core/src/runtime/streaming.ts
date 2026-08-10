@@ -38,7 +38,9 @@ import {
 import { findLatestProviderBuiltinToolRoundInState } from "../open-responses/sdk-provider-web-search-loop.js";
 import { shouldSkipEarlyExecutionForManagedProviderTool } from "../moonshot/formula/moonshot-formula-turn-handler.js";
 import type { ToolAgentState } from "../tool-agent.js";
+import { prefetchAutoReviewForToolCallIfNeeded } from "./auto-approval-integration.js";
 import {
+  canonicalizeToolArguments,
   startEarlyToolExecution,
   persistProviderBuiltinToolRoundToHistoryStore,
 } from "./turn-machine.js";
@@ -173,9 +175,11 @@ export async function startStreamingRound<Config, State, ToolRequest, TrustTarge
 
   const pending: PendingStreamingRound<State, ToolRequest> = {
     pendingUserInput,
+    streamState: state,
     turn,
     rawEvents: [],
     earlyToolExecutions: new Map(),
+    autoReviewArgFingerprints: new Map(),
     completion: undefined,
     completionHandled: false,
     streamEnded: false,
@@ -482,12 +486,29 @@ export async function handlePendingStreamEvent<Config, State, ToolRequest, Trust
       toolName: event.toolName,
       argumentsJson: event.argumentsJson,
     });
-    const allowEarlyExecutionDuringStream =
-      event.toolName === "read_file" || event.toolName === "ls";
+    const canonicalArgumentsJson = canonicalizeToolArguments(event.argumentsJson);
+    if (canonicalArgumentsJson !== undefined) {
+      prefetchAutoReviewForToolCallIfNeeded({
+        call: {
+          id: event.toolCallId,
+          name: event.toolName,
+          argumentsJson: event.argumentsJson,
+        },
+        canonicalArgumentsJson,
+        argFingerprints: pending.autoReviewArgFingerprints,
+        approvalLevel: runtime.options.getApprovalLevel?.(),
+        reviewToolApproval: runtime.options.reviewToolApproval,
+        toolDefinitions: runtime.options.toolExecutor.toolDefinitionsJson(),
+        reviewCache: pending.turn.autoReviewCache,
+        requestFromFunctionCall: (name, argumentsJson) =>
+          runtime.options.toolExecutor.requestFromFunctionCall(name, argumentsJson),
+        authorize: (request) => runtime.options.toolExecutor.authorize(request),
+      });
+    }
     if (
       !isResponsesBuiltInToolName(event.toolName) &&
       !shouldSkipEarlyExecutionForManagedProviderTool(event.toolName, runtime.options.config) &&
-      (allowEarlyExecutionDuringStream || pending.streamConsumerFinished)
+      canonicalArgumentsJson !== undefined
     ) {
       startEarlyToolExecution(
         runtime as unknown as TurnMachineRuntime<Config, State, ToolRequest, TrustTarget>,
@@ -497,6 +518,13 @@ export async function handlePendingStreamEvent<Config, State, ToolRequest, Trust
           argumentsJson: event.argumentsJson,
         },
         pending.earlyToolExecutions,
+        {
+          pendingUserInput: pending.pendingUserInput,
+          state: pending.streamState,
+          turn: pending.turn,
+          resumeAsStreaming: true,
+          streamingEmitBeginResponse: true,
+        },
       );
     }
     return false;

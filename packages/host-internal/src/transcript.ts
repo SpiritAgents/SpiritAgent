@@ -1,3 +1,4 @@
+import { createHash } from "node:crypto";
 import { mkdir, readFile, rm, writeFile } from "node:fs/promises";
 import path from "node:path";
 
@@ -9,6 +10,17 @@ export const TRANSCRIPTS_DIR_NAME = "transcripts";
 export const SESSION_TRANSCRIPT_FILE_NAME = "transcript.json";
 export const SUBAGENT_TRANSCRIPTS_DIR_NAME = "subagents";
 
+/** Transcript 目录名：对 sessionKey 做稳定归一后取 sha256 前 32 hex，避免路径 flatten 碰撞与过长组件名。 */
+export function transcriptSessionDirName(sessionKey: string | undefined): string {
+  const trimmed = sessionKey?.trim();
+  if (!trimmed) {
+    return "unknown";
+  }
+  // 绝对路径先 resolve，保证 Desktop / server 对同一 chat 文件得到同一目录名；相对/opaque id 原样哈希。
+  const stableKey = path.isAbsolute(trimmed) ? path.resolve(trimmed) : trimmed;
+  return createHash("sha256").update(stableKey, "utf8").digest("hex").slice(0, 32);
+}
+
 export function resolveTranscriptsDir(spiritDataDir: string): string {
   return path.join(spiritDataDir, TRANSCRIPTS_DIR_NAME);
 }
@@ -17,7 +29,7 @@ export function resolveTranscriptSessionDir(
   spiritDataDir: string,
   sessionKey: string | undefined,
 ): string {
-  return path.join(resolveTranscriptsDir(spiritDataDir), sanitizeSessionIdForFilename(sessionKey));
+  return path.join(resolveTranscriptsDir(spiritDataDir), transcriptSessionDirName(sessionKey));
 }
 
 export function resolveSessionTranscriptFilePath(

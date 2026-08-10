@@ -1,11 +1,11 @@
 import type { LucideIcon } from "lucide-react";
 import {
   Bug,
-  CircleHelp,
   ClipboardList,
   FoldVertical,
   GitFork,
-  MessageSquare,
+  MessageCircle,
+  MessageCircleQuestionMark,
   Repeat,
   ScrollText,
   Sparkles,
@@ -14,13 +14,13 @@ import {
 import type { SkillSlashSuggestionKind } from "@/lib/skill-slash";
 
 export const SLASH_SUGGESTION_ICONS: Record<SkillSlashSuggestionKind, LucideIcon> = {
-  "log-session": ScrollText,
+  "export-session": ScrollText,
   compact: FoldVertical,
   fork: GitFork,
-  "side-chat": MessageSquare,
+  "side-chat": MessageCircle,
   loop: Repeat,
   plan: ClipboardList,
-  ask: CircleHelp,
+  ask: MessageCircleQuestionMark,
   debug: Bug,
   skill: Sparkles,
 };

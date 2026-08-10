@@ -33,6 +33,7 @@ export function createTurnContext<ToolRequest>(): RuntimeTurnContext<ToolRequest
     compactions: [],
     autoCompactAttempts: 0,
     deferredUserGuidances: [],
+    autoReviewCache: new Map(),
   };
 }
 

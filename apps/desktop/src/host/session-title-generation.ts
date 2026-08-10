@@ -51,7 +51,7 @@ export async function generateSessionTitleFromModelTask(
     schemaName: "session_title",
     schema: SESSION_TITLE_JSON_SCHEMA,
     includeToolAgentHostPrompt: false,
-    systemSections: [buildSpiritAgentCoreHostPrompt(resolved.name)],
+    systemSections: [buildSpiritAgentCoreHostPrompt(resolved.name, resolved.profile.provider)],
   });
 
   return {

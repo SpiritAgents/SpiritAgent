@@ -1,5 +1,6 @@
 import * as React from "react";
 import { Command as CommandPrimitive } from "cmdk";
+import { ChevronLeftIcon, SearchIcon, CheckIcon } from "lucide-react";
 
 import { cn } from "@/lib/utils";
 import {
@@ -9,8 +10,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { InputGroup, InputGroupAddon } from "@/components/ui/input-group";
-import { SearchIcon, CheckIcon } from "lucide-react";
+import { Button } from "@/components/ui/button";
 
 function Command({ className, ...props }: React.ComponentProps<typeof CommandPrimitive>) {
   return (
@@ -25,19 +25,23 @@ function Command({ className, ...props }: React.ComponentProps<typeof CommandPri
   );
 }
 
+type CommandDialogProps = React.ComponentProps<typeof Dialog> & {
+  title?: string;
+  description?: string;
+  className?: string;
+  showCloseButton?: boolean;
+  onEscapeKeyDown?: React.ComponentProps<typeof DialogContent>["onEscapeKeyDown"];
+};
+
 function CommandDialog({
   title = "Command Palette",
   description = "Search for a command to run...",
   children,
   className,
   showCloseButton = false,
+  onEscapeKeyDown,
   ...props
-}: React.ComponentProps<typeof Dialog> & {
-  title?: string;
-  description?: string;
-  className?: string;
-  showCloseButton?: boolean;
-}) {
+}: CommandDialogProps) {
   return (
     <Dialog {...props}>
       <DialogHeader className="sr-only">
@@ -47,6 +51,7 @@ function CommandDialog({
       <DialogContent
         className={cn("overflow-hidden rounded-xl! p-0", className)}
         showCloseButton={showCloseButton}
+        onEscapeKeyDown={onEscapeKeyDown}
       >
         {children}
       </DialogContent>
@@ -56,23 +61,42 @@ function CommandDialog({
 
 function CommandInput({
   className,
+  showBack = false,
+  onBack,
+  backLabel = "Back",
   ...props
-}: React.ComponentProps<typeof CommandPrimitive.Input>) {
+}: React.ComponentProps<typeof CommandPrimitive.Input> & {
+  showBack?: boolean;
+  onBack?: () => void;
+  backLabel?: string;
+}) {
   return (
-    <div data-slot="command-input-wrapper" className="p-1 pb-0">
-      <InputGroup className="h-8! rounded-lg! border-input/30 bg-input/30 shadow-none! *:data-[slot=input-group-addon]:pl-2!">
-        <CommandPrimitive.Input
-          data-slot="command-input"
-          className={cn(
-            "w-full cursor-text text-sm outline-hidden disabled:cursor-not-allowed disabled:opacity-50",
-            className,
-          )}
-          {...props}
-        />
-        <InputGroupAddon>
-          <SearchIcon className="size-4 shrink-0 opacity-50" />
-        </InputGroupAddon>
-      </InputGroup>
+    <div
+      data-slot="command-input-wrapper"
+      className="-mx-1 flex h-10 items-center gap-2 border-b border-border/60 px-3"
+    >
+      {showBack ? (
+        <Button
+          type="button"
+          variant="ghost"
+          size="icon-xs"
+          className="-ml-1 size-7 shrink-0 text-muted-foreground"
+          aria-label={backLabel}
+          onClick={onBack}
+        >
+          <ChevronLeftIcon className="size-4" aria-hidden />
+        </Button>
+      ) : (
+        <SearchIcon className="size-4 shrink-0 opacity-50" aria-hidden />
+      )}
+      <CommandPrimitive.Input
+        data-slot="command-input"
+        className={cn(
+          "h-10 w-full cursor-text bg-transparent text-sm outline-hidden placeholder:text-muted-foreground disabled:cursor-not-allowed disabled:opacity-50",
+          className,
+        )}
+        {...props}
+      />
     </div>
   );
 }
@@ -82,7 +106,7 @@ function CommandList({ className, ...props }: React.ComponentProps<typeof Comman
     <CommandPrimitive.List
       data-slot="command-list"
       className={cn(
-        "no-scrollbar max-h-72 scroll-py-1 overflow-x-hidden overflow-y-auto outline-none",
+        "no-scrollbar max-h-72 scroll-py-1 overflow-x-hidden overflow-y-auto pt-1 outline-none",
         className,
       )}
       {...props}

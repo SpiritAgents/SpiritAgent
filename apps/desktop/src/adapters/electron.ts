@@ -112,8 +112,8 @@ export async function createElectronHostApi(): Promise<HostApi> {
     submitStartImplementing() {
       return bridge.submitStartImplementing();
     },
-    exportSessionLog() {
-      return bridge.exportSessionLog();
+    exportSession() {
+      return bridge.exportSession();
     },
     compactHistory() {
       return bridge.compactHistory();

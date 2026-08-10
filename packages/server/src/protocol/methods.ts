@@ -164,6 +164,11 @@ export interface SessionCreateParams {
   sessionKind?: "default" | "dream-collector";
   dreamScope?: { workspaceRoot: string; gitBranch: string };
   dreamSourceSession?: { path: string; displayName?: string; savedAtUnixMs?: number };
+  /**
+   * Optional host UI Markdown / rendering hints (e.g. Desktop Mermaid).
+   * Plain English; appended to the tool-agent system message. CLI / ACP omit this.
+   */
+  hostUiPromptSection?: string;
 }
 
 export interface SessionAttachParams {

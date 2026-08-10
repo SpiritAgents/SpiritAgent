@@ -28,6 +28,7 @@ import { useCompactionUiDemo } from "@/hooks/useCompactionUiDemo";
 import { useLongConversationListDemo } from "@/hooks/useLongConversationListDemo";
 import { useComposerController } from "@/hooks/useComposerController";
 import { ConversationSessionFocusComposerBridge } from "@/components/conversation/conversation-session-focus-composer-bridge";
+import { ConversationTypingFocusRedirectBridge } from "@/components/conversation/conversation-typing-focus-redirect-bridge";
 import type { FocusedPaneComposerControls } from "@/lib/focused-pane-composer-controls";
 import { useConversationViewState } from "@/hooks/useConversationViewState";
 import type { ConversationAbortShortcutTarget } from "@/lib/conversation-abort-shortcut";
@@ -50,6 +51,7 @@ import {
   isElectronChrome,
   isWin32ElectronShell,
   resolveUseMicaBackdrop,
+  syncLaunchSplashChromeToDocument,
   type ShellOverlayPhase,
 } from "@/lib/desktop-shell";
 import { isMarkdownPath } from "@/lib/file-picker-path";
@@ -218,14 +220,58 @@ export default function App() {
   });
   const launchSplashActive =
     snapshot === null && !runtime.hostConnectionError.trim() && !runtime.runtimeError.trim();
-  const launchSplashOverlayUp = launchSplashPhase === "running" || launchSplashPhase === "leaving";
-  const onboardingOverlayUp = onboardingPhase === "running" || onboardingPhase === "leaving";
-  /** 全屏 overlay 挂载期间隐藏 app-body；Mica leaving 时改由 CSS opacity 交叉淡入。 */
+  const pairingGateBlocksLaunchSplash =
+    runtime.webHostPairingRequired && runtime.hostKind === "web" && !snapshot;
+  /**
+   * 子组件 onPhaseChange 在 layout effect 里才回写；父 state 初值为 gone。
+   * 若只认子 phase，首帧 sync 会清掉 index.html / main 已写入的 spirit-launch-splash-active，
+   * 而同布局阶段内 notifyLaunchSplashReady 可能已 show 窗口 → Mica/Vibrancy 下透出 app-body。
+   * active/visible 为真且子尚未进入 leaving 时，视为 overlay 仍在（pending 当 running）。
+   */
+  const launchSplashOverlayUp =
+    launchSplashPhase === "running" ||
+    launchSplashPhase === "leaving" ||
+    (launchSplashActive && launchSplashPhase === "gone");
+  const onboardingOverlayUp =
+    onboardingPhase === "running" ||
+    onboardingPhase === "leaving" ||
+    (onboardingVisible && onboardingPhase === "gone");
+  /**
+   * 全屏 overlay（LaunchSplash / OOBE）挂载期间隐藏 app-body：视觉隐藏走 styles.css 的
+   * spirit-launch-splash-active opacity 规则（保持栅格化，退场时覆盖层整层淡出才能平滑衔接）；
+   * 此处只补 inert 阻隔焦点/指针/读屏——不用 visibility:hidden，它会抑制绘制，
+   * 把 app-body 首次栅格化拖进退场窗口，退场动画被吃成硬切。
+   */
   const shellUnderlayHidden =
     launchSplashActive || onboardingVisible || launchSplashOverlayUp || onboardingOverlayUp;
-  const appBodyMicaCrossfade =
-    useMicaBackdrop && (launchSplashPhase === "leaving" || onboardingPhase === "leaving");
-  const appBodyInvisible = shellUnderlayHidden && !appBodyMicaCrossfade;
+  /**
+   * 两个全屏 overlay 共享同一组 html class（styles.css 依此在 overlay 期间隐藏 app-body），
+   * 必须在此单点派生：若由各组件自行 sync，phase 为 "gone" 的一方挂载时会把仍在运行的
+   * 另一方的 class 清掉，app-body 在启动层期间漏出（Blur 下半透明 tint 会透出侧栏内容）。
+   * pending（子 phase 仍为 gone）映射为 running，避免清 class。
+   */
+  const shellOverlayPhase: ShellOverlayPhase = launchSplashOverlayUp
+    ? launchSplashPhase === "leaving"
+      ? "leaving"
+      : "running"
+    : onboardingOverlayUp
+      ? onboardingPhase === "leaving"
+        ? "leaving"
+        : "running"
+      : "gone";
+
+  useLayoutEffect(() => {
+    syncLaunchSplashChromeToDocument(shellOverlayPhase);
+  }, [shellOverlayPhase]);
+
+  const focusComposerEnabled =
+    snapshot != null &&
+    surfaceNav.activeSurface === "conversation" &&
+    !surfaceNav.settingsMode &&
+    !sessionNavigationBusy &&
+    !runtime.layoutNavigationPending &&
+    !newSessionBusy &&
+    !shellUnderlayHidden;
 
   const handleOnboardingDone = useCallback(() => {
     void (async () => {
@@ -237,6 +283,13 @@ export default function App() {
   useLayoutEffect(() => {
     applyUiLayoutScaleToDocument(uiLayoutScale.scale);
   }, [uiLayoutScale.scale]);
+
+  useLayoutEffect(() => {
+    if (launchSplashActive && !pairingGateBlocksLaunchSplash) {
+      return;
+    }
+    window.spiritDesktop?.notifyLaunchSplashReady?.();
+  }, [launchSplashActive, pairingGateBlocksLaunchSplash]);
 
   const handleWorkspaceMarkdownLinkClick = useCallback(
     (href: string) =>
@@ -279,6 +332,7 @@ export default function App() {
               onZoomIn={uiLayoutScale.zoomIn}
               onZoomOut={uiLayoutScale.zoomOut}
               onZoomReset={uiLayoutScale.resetScale}
+              onOpenSettings={surfaceNav.handleOpenSettings}
             />
           ) : null}
           <div id={UI_LAYOUT_SCALE_ROOT_ID} className="flex min-h-0 min-w-0 flex-1 flex-col">
@@ -311,10 +365,8 @@ export default function App() {
               />
               <div
                 data-spirit-surface="app-body"
-                className={cn(
-                  "flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden",
-                  appBodyInvisible && "invisible",
-                )}
+                inert={shellUnderlayHidden}
+                className="flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden"
               >
                 {!desktopTitleBarChrome ? (
                   <div
@@ -345,16 +397,10 @@ export default function App() {
                   >
                     <ConversationSessionFocusComposerBridge
                       composerSessionKey={conversation.composerSessionKey}
-                      enabled={
-                        snapshot != null &&
-                        surfaceNav.activeSurface === "conversation" &&
-                        !surfaceNav.settingsMode &&
-                        !sessionNavigationBusy &&
-                        !runtime.layoutNavigationPending &&
-                        !newSessionBusy
-                      }
+                      enabled={focusComposerEnabled}
                       composerAutomationApiRef={composerAutomationApiRef}
                     />
+                    <ConversationTypingFocusRedirectBridge enabled={focusComposerEnabled} />
                     <SessionSidebarShell useMicaBackdrop={useMicaBackdrop}>
                       <SessionSidebar
                         narrow={false}
@@ -706,6 +752,7 @@ export default function App() {
                 open={composer.actionPickerOpen}
                 onOpenChange={composer.setActionPickerOpen}
                 onSelect={composer.runActionPaletteItem}
+                onSavePatch={runtime.saveSettingsPatch}
                 isItemDisabled={composer.isActionPaletteItemDisabled}
                 shouldIncludeItem={composer.filterActionPaletteItem}
               />

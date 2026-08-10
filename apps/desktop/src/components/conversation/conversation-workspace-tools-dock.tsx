@@ -33,7 +33,7 @@ export function ConversationWorkspaceToolsDock({
   onOpenIntegrationsSettings,
 }: ConversationWorkspaceToolsDockProps) {
   const split = useConversationSplit();
-  const composerInsert = useFocusedPaneComposerInsertCallbacks(split.focusedPaneComposerInsertRef, {
+  const composerInsert = useFocusedPaneComposerInsertCallbacks(split.getFocusedPaneComposerInsert, {
     handleBrowserElementPicked: composer.handleBrowserElementPicked,
     handlePrDiffAddToSession: composer.handlePrDiffAddToSession,
     handleGitCommitAddToSession: composer.handleGitCommitAddToSession,

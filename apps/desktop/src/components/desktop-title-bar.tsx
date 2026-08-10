@@ -24,6 +24,7 @@ type DesktopTitleBarProps = {
   onZoomIn: () => void;
   onZoomOut: () => void;
   onZoomReset: () => void;
+  onOpenSettings: () => void;
 };
 
 type TitleBarZoomMenuProps = {
@@ -82,8 +83,10 @@ function TitleBarMenuCluster({
   onZoomIn,
   onZoomOut,
   onZoomReset,
+  onOpenSettings,
 }: {
   useMicaBackdrop: boolean;
+  onOpenSettings: () => void;
 } & TitleBarZoomMenuProps) {
   const { t } = useTranslation();
   const isDevChrome = isViteDev;
@@ -102,6 +105,11 @@ function TitleBarMenuCluster({
             <MenubarItem onSelect={() => void window.spiritDesktop?.resetSession()}>
               {t("titleBar.newSession")}
               <MenubarShortcut>Ctrl+N</MenubarShortcut>
+            </MenubarItem>
+            <MenubarSeparator />
+            <MenubarItem onSelect={onOpenSettings}>
+              {t("titleBar.settings")}
+              <MenubarShortcut>Ctrl+,</MenubarShortcut>
             </MenubarItem>
             <MenubarSeparator />
             <MenubarItem onSelect={() => execWindowAction("quit")}>
@@ -229,6 +237,7 @@ export function DesktopTitleBar({
   onZoomIn,
   onZoomOut,
   onZoomReset,
+  onOpenSettings,
 }: DesktopTitleBarProps) {
   const headerRef = useRef<HTMLElement>(null);
   const { open: sessionSidebarOpen, widthPx: sessionSidebarWidthPx } = useSessionSidebarChrome();
@@ -266,6 +275,7 @@ export function DesktopTitleBar({
           onZoomIn={onZoomIn}
           onZoomOut={onZoomOut}
           onZoomReset={onZoomReset}
+          onOpenSettings={onOpenSettings}
         />
       </div>
       <div className="electron-drag relative h-full min-w-0 flex-1" aria-hidden />

@@ -17,6 +17,7 @@ import { BranchSelectMenu } from "@/components/branch-select-menu";
 import { ComposerSurface } from "@/components/composer/composer-surface";
 import { ComposerChangesCard } from "@/components/composer-changes-card";
 import { ComposerContextUsageRing } from "@/components/composer-context-usage-ring";
+import { ComposerScrollToBottomButton } from "@/components/composer-scroll-to-bottom-button";
 import { ComposerSuggestionDropdown } from "@/components/composer-suggestion-dropdown";
 import { ComposerTodoCard } from "@/components/composer-todo-card";
 import type { ComposerRichInputHandle } from "@/components/composer-rich-input";
@@ -52,7 +53,7 @@ import type { ComposerLocalFileAttachmentView } from "@/lib/local-file-attachmen
 import { FONT_WEIGHT_MEDIUM } from "@/lib/desktop-typography";
 import { cn } from "@/lib/utils";
 import { useComposerSuggestionAnchor } from "@/hooks/use-composer-suggestion-anchor";
-import type { DesktopSnapshot, WorkspaceFileReferenceSuggestionsResponse } from "@/types";
+import type { DesktopSnapshot } from "@/types";
 import type { useDesktopRuntime } from "@/hooks/useDesktopRuntime";
 
 type DesktopRuntime = ReturnType<typeof useDesktopRuntime>;
@@ -85,10 +86,14 @@ export type ComposerDockProps = {
   ) => void;
   onSubmitQuestions?: () => void;
   onSkipQuestions?: () => void;
-  fileReferenceSuggestions: WorkspaceFileReferenceSuggestionsResponse;
   fileReferenceSelectedIndex: number;
   onFileReferenceSelectedIndexChange: (index: number) => void;
+  fileReferenceMenuView: import("@/lib/composer-at-reference-demo").AtReferenceMenuView;
+  atReferenceMenuItems: import("@/lib/composer-at-reference-demo").AtReferenceMenuItem[];
   onApplyFileReferenceSuggestion: (path: string) => void;
+  onApplySessionReferenceSuggestion: (session: { path: string; title: string }) => void;
+  onOpenAtReferenceSessions: () => void;
+  onBackAtReferenceMenu: () => void;
   onDismissFileReferenceSuggestions: () => void;
   activeFileReferenceQuery: ActiveWorkspaceFileReferenceQuery | undefined;
   slashQuery: ActiveSkillSlashQuery | undefined;
@@ -122,6 +127,9 @@ export type ComposerDockProps = {
   models: DesktopSnapshot["config"]["models"];
   useMicaBackdrop: boolean;
   onOpenGitTab: () => void;
+  /** 用户已上滚离开底部时显示「回到底部」。 */
+  showScrollToBottom?: boolean;
+  onScrollToBottom?: () => void;
   /** 会话滚动视口（用于把 dock 形状换算到 viewport 坐标做形状 mask） */
   getScrollViewport?: () => HTMLElement | null;
   /** Mica：按输入框/Changes/TODO 轮廓裁切消息；顶圆角空隙不裁 */
@@ -162,10 +170,14 @@ export const ComposerDock = forwardRef<HTMLDivElement, ComposerDockProps>(functi
     onUpdateQuestionDraft,
     onSubmitQuestions,
     onSkipQuestions,
-    fileReferenceSuggestions,
     fileReferenceSelectedIndex,
     onFileReferenceSelectedIndexChange: _onFileReferenceSelectedIndexChange,
+    fileReferenceMenuView,
+    atReferenceMenuItems,
     onApplyFileReferenceSuggestion,
+    onApplySessionReferenceSuggestion,
+    onOpenAtReferenceSessions,
+    onBackAtReferenceMenu,
     onDismissFileReferenceSuggestions,
     activeFileReferenceQuery,
     slashQuery,
@@ -199,6 +211,8 @@ export const ComposerDock = forwardRef<HTMLDivElement, ComposerDockProps>(functi
     models,
     useMicaBackdrop,
     onOpenGitTab,
+    showScrollToBottom = false,
+    onScrollToBottom,
     getScrollViewport,
     onScrollOccludeMaskStyleChange,
   },
@@ -250,6 +264,21 @@ export const ComposerDock = forwardRef<HTMLDivElement, ComposerDockProps>(functi
           conversationScrollOccludeShapeFromRects(
             viewportRect,
             changes.getBoundingClientRect(),
+            radius,
+            radius,
+          ),
+        );
+      }
+
+      const scrollToBottom = showScrollToBottom
+        ? chrome.querySelector<HTMLElement>('[data-spirit-surface="composer-scroll-to-bottom"]')
+        : null;
+      if (scrollToBottom) {
+        const radius = readElementUniformBorderRadius(scrollToBottom);
+        shapes.push(
+          conversationScrollOccludeShapeFromRects(
+            viewportRect,
+            scrollToBottom.getBoundingClientRect(),
             radius,
             radius,
           ),
@@ -316,7 +345,13 @@ export const ComposerDock = forwardRef<HTMLDivElement, ComposerDockProps>(functi
       window.removeEventListener("resize", syncOcclude);
       onScrollOccludeMaskStyleChange(undefined);
     };
-  }, [getScrollViewport, isEmptySession, onScrollOccludeMaskStyleChange, useMicaBackdrop]);
+  }, [
+    getScrollViewport,
+    isEmptySession,
+    onScrollOccludeMaskStyleChange,
+    showScrollToBottom,
+    useMicaBackdrop,
+  ]);
   const fileReferenceAnchor = useComposerSuggestionAnchor(
     composerRichInputRef,
     activeFileReferenceQuery ? composerCursorCodeUnits : null,
@@ -524,10 +559,15 @@ export const ComposerDock = forwardRef<HTMLDivElement, ComposerDockProps>(functi
 
           <div className="relative" ref={composerRootRef}>
             <div className="relative z-10 flex flex-col" ref={composerChromeRef}>
+              {/*
+                Changes 行：按钮与 Changes 同排进文档流（行高由 Changes 撑住）。
+                无 Changes 时按钮绝对叠在 chrome 上方，不计入 dock 高度 → 不参与滚动床补偿
+                （随 followingTail 显隐时不会改 padding，避免滑到底「卡一下」）。
+              */}
               {!isEmptySession && showChangesCard && changesLineDelta ? (
                 <div
                   className={cn(
-                    "relative z-20 mb-2 shrink-0 self-start",
+                    "relative z-20 mb-2 flex shrink-0 items-center gap-2 self-start",
                     hasComposerTodos && "mx-4",
                   )}
                 >
@@ -536,6 +576,25 @@ export const ComposerDock = forwardRef<HTMLDivElement, ComposerDockProps>(functi
                     onOpenGitTab={onOpenGitTab}
                     useMicaBackdrop={useMicaBackdrop}
                   />
+                  <ComposerScrollToBottomButton
+                    visible={showScrollToBottom}
+                    onClick={() => onScrollToBottom?.()}
+                    useMicaBackdrop={useMicaBackdrop}
+                  />
+                </div>
+              ) : null}
+              {!isEmptySession && !(showChangesCard && changesLineDelta) ? (
+                <div
+                  className="pointer-events-none absolute inset-x-0 bottom-full z-20 mb-2 flex justify-center"
+                  data-spirit-layout="composer-scroll-to-bottom-overlay"
+                >
+                  <div className="pointer-events-auto">
+                    <ComposerScrollToBottomButton
+                      visible={showScrollToBottom}
+                      onClick={() => onScrollToBottom?.()}
+                      useMicaBackdrop={useMicaBackdrop}
+                    />
+                  </div>
                 </div>
               ) : null}
               {snapshot?.conversation.todos ? (
@@ -613,14 +672,21 @@ export const ComposerDock = forwardRef<HTMLDivElement, ComposerDockProps>(functi
               active={Boolean(activeFileReferenceQuery)}
               anchor={fileReferenceAnchor}
               composerRootRef={composerRootRef}
-              ariaLabel={t("workspace.fileReferenceCandidates")}
+              ariaLabel={
+                fileReferenceMenuView === "sessions"
+                  ? t("composer.atReference.sessionCandidates")
+                  : t("composer.atReference.candidates")
+              }
               onDismiss={onDismissFileReferenceSuggestions}
             >
-              {fileReferenceSuggestions ? (
+              {activeFileReferenceQuery ? (
                 <WorkspaceFileReferenceMenu
-                  suggestions={fileReferenceSuggestions.suggestions}
+                  items={atReferenceMenuItems}
                   selectedIndex={fileReferenceSelectedIndex}
-                  onApplySuggestion={onApplyFileReferenceSuggestion}
+                  onApplyFile={onApplyFileReferenceSuggestion}
+                  onApplySession={onApplySessionReferenceSuggestion}
+                  onOpenSessions={onOpenAtReferenceSessions}
+                  onBack={onBackAtReferenceMenu}
                 />
               ) : null}
             </ComposerSuggestionDropdown>

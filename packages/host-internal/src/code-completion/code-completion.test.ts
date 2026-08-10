@@ -41,9 +41,10 @@ test("buildCodeCompletionContextSlices extracts prefix and suffix around cursor"
 });
 
 test("buildCodeCompletionSystemSections excludes tool agent host sections", () => {
-  const sections = buildCodeCompletionSystemSections("mini-model");
+  const sections = buildCodeCompletionSystemSections("mini-model", "openai");
   assert.equal(sections.length, 2);
   assert.match(sections[0] ?? "", /Spirit Agent/);
+  assert.match(sections[0] ?? "", /The user's model is mini-model from openai/);
   assert.match(sections[1] ?? "", /code completion assistant/);
   assert.doesNotMatch(sections.join("\n"), /Available tools are defined/);
 });

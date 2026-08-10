@@ -696,7 +696,8 @@ export class DesktopRuntimeEventOrchestrator {
             ...(suppressExpand ? { suppressExpand: true } : {}),
             ...(FILE_DIFF_TOOL_NAMES.has(event.toolName) ||
             event.toolName === "tool_call" ||
-            event.toolName === "tool_describe"
+            event.toolName === "tool_describe" ||
+            event.toolName === "subagent"
               ? { streamingArgumentsJson: event.argumentsJson }
               : {}),
             ...(event.toolName === "todo_write"
@@ -1014,7 +1015,10 @@ export class DesktopRuntimeEventOrchestrator {
             headline: executionSummary.headline,
             detailLines: [],
             argsExcerpt,
-            outputExcerpt: truncateText(execution.output, 4_000),
+            outputExcerpt:
+              execution.toolName === "shell"
+                ? execution.output
+                : truncateText(execution.output, 4_000),
             ...(existingSnapshot?.suppressExpand ? { suppressExpand: true } : {}),
             ...(fileToolDiffArgumentsJson ? { fileToolDiffArgumentsJson } : {}),
             ...(imagePaths.length > 0 ? { imagePaths } : {}),

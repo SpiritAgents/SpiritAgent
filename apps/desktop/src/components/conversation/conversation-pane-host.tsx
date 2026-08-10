@@ -112,30 +112,24 @@ export function ConversationPaneHost({
     conversationAbortShortcutTargetRef: split.conversationAbortShortcutTargetRef ?? undefined,
   });
 
-  const setFocusedPaneComposerInsert = split.setFocusedPaneComposerInsert;
-  const setFocusedPaneComposerControls = split.setFocusedPaneComposerControls;
+  const registerPaneComposerInsert = split.registerPaneComposerInsert;
+  const registerPaneComposerControls = split.registerPaneComposerControls;
+
+  // 无条件按 paneId 注册本 Pane 的 composer 能力；读取方按 focusedPaneId 取用，
+  // 非焦点 Pane 不参与任何写入，兄弟 effect 的执行顺序不再影响结果
+  useEffect(() => {
+    registerPaneComposerInsert(paneId, pane.composerInsertHandlers);
+    return () => {
+      registerPaneComposerInsert(paneId, null);
+    };
+  }, [paneId, pane.composerInsertHandlers, registerPaneComposerInsert]);
 
   useEffect(() => {
-    if (!isFocused) {
-      setFocusedPaneComposerInsert(null);
-      return;
-    }
-    setFocusedPaneComposerInsert(pane.composerInsertHandlers);
+    registerPaneComposerControls(paneId, pane.composerControls);
     return () => {
-      setFocusedPaneComposerInsert(null);
+      registerPaneComposerControls(paneId, null);
     };
-  }, [isFocused, pane.composerInsertHandlers, setFocusedPaneComposerInsert]);
-
-  useEffect(() => {
-    if (!isFocused) {
-      setFocusedPaneComposerControls(null);
-      return;
-    }
-    setFocusedPaneComposerControls(pane.composerControls);
-    return () => {
-      setFocusedPaneComposerControls(null);
-    };
-  }, [isFocused, pane.composerControls, setFocusedPaneComposerControls]);
+  }, [paneId, pane.composerControls, registerPaneComposerControls]);
   const handleDeleteSession = useCallback(
     async (path: string) => {
       if (splitPaneCount > 1) {

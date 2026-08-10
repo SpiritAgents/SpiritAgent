@@ -14,12 +14,23 @@ import { codeUnitIndexToCharCount } from "@spiritagent/host-internal/workspace-f
 
 import type { ComposerRichInputHandle } from "@/components/composer-rich-input";
 import { segmentsToMessageText, segmentsToPlainText } from "@/components/composer-rich-input";
-import { extractComposerChipMetadata, normalizeComposerPlain } from "@/lib/composer-segment-model";
+import {
+  extractComposerChipMetadata,
+  hasInlineAttachmentChipSegments,
+  normalizeComposerPlain,
+} from "@/lib/composer-segment-model";
 import { emptySegments, syncSegmentsFromExternalValue } from "@/lib/composer-segments";
 import { buildPostSendComposerSegments } from "@/lib/composer-agent-mode-policy";
 import { currentAgentModeSegment, isAgentModeChipKind } from "@/lib/composer-agent-mode-segments";
 import { cycleAgentMode, type DesktopAgentMode } from "@/lib/agent-mode";
 import { currentWorkspaceFileReferenceQueryFromSegments } from "@/lib/composer-file-reference-query";
+import {
+  atReferenceNeedle,
+  buildAtReferenceMenuItems,
+  sessionCandidatesFromListItems,
+  type AtReferenceMenuItem,
+  type AtReferenceMenuView,
+} from "@/lib/composer-at-reference-demo";
 import { resolveComposerDirectMediaTool } from "@/lib/composer-direct-media";
 import type { BrowserElementAttachment } from "@/lib/browser-element-attachment";
 import type { PrDiffAttachment } from "@/lib/pr-diff-attachment";
@@ -35,7 +46,13 @@ import {
   normalizeSlashPath,
   removeComposerLocalFileAttachment,
 } from "@/lib/local-file-attachments";
-import { isNewSessionAction, type ActionPaletteItem } from "@/lib/action-palette";
+import {
+  isAppearanceMenuAction,
+  isLocaleOptionAction,
+  isNewSessionAction,
+  isThemeOptionAction,
+  type ActionPaletteItem,
+} from "@/lib/action-palette";
 import {
   buildSkillSlashSuggestions,
   COMPACT_SLASH_ALIAS,
@@ -208,6 +225,7 @@ export function useComposerController({
   const [fileReferenceSuggestions, setFileReferenceSuggestions] =
     useState<WorkspaceFileReferenceSuggestionsResponse>(null);
   const [fileReferenceSelectedIndex, setFileReferenceSelectedIndex] = useState(-1);
+  const [fileReferenceMenuView, setFileReferenceMenuView] = useState<AtReferenceMenuView>("root");
   const [dismissedFileReferenceKey, setDismissedFileReferenceKey] = useState<string | null>(null);
   const [dismissedSlashQueryKey, setDismissedSlashQueryKey] = useState<string | null>(null);
   const [filePickerOpen, setFilePickerOpen] = useState(false);
@@ -322,7 +340,8 @@ export function useComposerController({
     return (
       Boolean(composerText.trim()) ||
       composerLocalFileAttachments.length > 0 ||
-      isCompactSlashComposerSegments(composerSegments)
+      isCompactSlashComposerSegments(composerSegments) ||
+      hasInlineAttachmentChipSegments(composerSegments)
     );
   }, [composerSegments, composerText, composerLocalFileAttachments.length]);
 
@@ -410,6 +429,12 @@ export function useComposerController({
   }, [dismissedFileReferenceKey, fileReferenceQuery]);
 
   useEffect(() => {
+    if (!fileReferenceQuery) {
+      setFileReferenceMenuView("root");
+    }
+  }, [fileReferenceQuery]);
+
+  useEffect(() => {
     const query = currentSkillSlashQueryAtCursor(composerText, composerCursorChars);
     if (!query && dismissedSlashQueryKey !== null) {
       setDismissedSlashQueryKey(null);
@@ -442,7 +467,7 @@ export function useComposerController({
   });
 
   useEffect(() => {
-    setSlashSelectedIndex(-1);
+    setSlashSelectedIndex(0);
   }, [slashQuery?.raw, slashQuery?.start, slashQuery?.end]);
 
   useEffect(() => {
@@ -464,6 +489,7 @@ export function useComposerController({
       query: fileReferenceQuery,
       suggestions: workspaceFileIndex.search(fileReferenceQuery.raw),
     });
+    setFileReferenceSelectedIndex(0);
   }, [
     dismissedFileReferenceKey,
     fileReferenceQuery,
@@ -473,6 +499,27 @@ export function useComposerController({
     workspaceFileIndex.search,
   ]);
 
+  const atReferenceSessionCandidates = useMemo(
+    () =>
+      sessionCandidatesFromListItems(
+        runtime.sessions,
+        paneSessionPath?.trim() || snapshot?.activeSession?.filePath || null,
+      ),
+    [paneSessionPath, runtime.sessions, snapshot?.activeSession?.filePath],
+  );
+
+  const atReferenceMenuItems = useMemo((): AtReferenceMenuItem[] => {
+    if (!fileReferenceSuggestions?.query) {
+      return [];
+    }
+    return buildAtReferenceMenuItems({
+      view: fileReferenceMenuView,
+      rawQuery: fileReferenceSuggestions.query.raw,
+      fileSuggestions: fileReferenceSuggestions.suggestions,
+      sessions: atReferenceSessionCandidates,
+    });
+  }, [atReferenceSessionCandidates, fileReferenceMenuView, fileReferenceSuggestions]);
+
   useEffect(() => {
     if (slashSuggestions.length === 0) {
       if (slashSelectedIndex !== -1) {
@@ -480,24 +527,24 @@ export function useComposerController({
       }
       return;
     }
-    if (slashSelectedIndex >= slashSuggestions.length) {
-      setSlashSelectedIndex(-1);
+    if (slashSelectedIndex < 0 || slashSelectedIndex >= slashSuggestions.length) {
+      setSlashSelectedIndex(0);
     }
   }, [slashSelectedIndex, slashSuggestions.length]);
 
   useEffect(() => {
-    const suggestionCount = fileReferenceSuggestions?.suggestions.length ?? 0;
-    if (suggestionCount === 0) {
+    const itemCount = atReferenceMenuItems.length;
+    if (itemCount === 0) {
       if (fileReferenceSelectedIndex !== -1) {
         setFileReferenceSelectedIndex(-1);
       }
       return;
     }
 
-    if (fileReferenceSelectedIndex >= suggestionCount) {
-      setFileReferenceSelectedIndex(-1);
+    if (fileReferenceSelectedIndex < 0 || fileReferenceSelectedIndex >= itemCount) {
+      setFileReferenceSelectedIndex(0);
     }
-  }, [fileReferenceSelectedIndex, fileReferenceSuggestions?.suggestions.length]);
+  }, [atReferenceMenuItems.length, fileReferenceSelectedIndex]);
 
   const handleComposerAgentModeChange = useCallback(
     (agentMode: DesktopAgentMode) => {
@@ -695,6 +742,9 @@ export function useComposerController({
 
   const filterActionPaletteItem = useCallback(
     (item: ActionPaletteItem) => {
+      if (isAppearanceMenuAction(item) || isThemeOptionAction(item) || isLocaleOptionAction(item)) {
+        return true;
+      }
       if (item.kind !== "side-chat") {
         return true;
       }
@@ -717,6 +767,9 @@ export function useComposerController({
 
   const isActionPaletteItemDisabled = useCallback(
     (item: ActionPaletteItem) => {
+      if (isAppearanceMenuAction(item) || isThemeOptionAction(item) || isLocaleOptionAction(item)) {
+        return false;
+      }
       if (!runtime.busyAction) {
         return false;
       }
@@ -724,7 +777,7 @@ export function useComposerController({
         return true;
       }
       return (
-        item.kind === "log-session" ||
+        item.kind === "export-session" ||
         item.kind === "compact" ||
         item.kind === "fork" ||
         item.kind === "side-chat"
@@ -735,6 +788,9 @@ export function useComposerController({
 
   const runActionPaletteItem = useCallback(
     (item: ActionPaletteItem) => {
+      if (isAppearanceMenuAction(item) || isThemeOptionAction(item) || isLocaleOptionAction(item)) {
+        return;
+      }
       ensureConversationSurface();
       if (isNewSessionAction(item)) {
         handleNewSession();
@@ -764,7 +820,7 @@ export function useComposerController({
         applySideChatSlash();
         return;
       }
-      if (item.kind === "log-session" || item.kind === "compact") {
+      if (item.kind === "export-session" || item.kind === "compact") {
         void runtime.sendMessage({ text: item.alias });
         return;
       }
@@ -793,9 +849,66 @@ export function useComposerController({
 
       composerRichInputRef.current?.insertWorkspaceFileReference(path, query, true);
       setFileReferenceSelectedIndex(-1);
+      setFileReferenceMenuView("root");
       setDismissedFileReferenceKey(null);
     },
     [fileReferenceSuggestions?.query],
+  );
+
+  const applySessionReferenceSuggestion = useCallback(
+    (session: { path: string; title: string }) => {
+      const query = fileReferenceSuggestions?.query;
+      if (!query) {
+        return;
+      }
+
+      composerRichInputRef.current?.insertSessionReference(session, query, true);
+      setFileReferenceSelectedIndex(-1);
+      setFileReferenceMenuView("root");
+      setDismissedFileReferenceKey(null);
+    },
+    [fileReferenceSuggestions?.query],
+  );
+
+  const openAtReferenceSessions = useCallback(() => {
+    setFileReferenceMenuView("sessions");
+    // 钻入后默认落在第一条会话；index 0 是「返回」
+    setFileReferenceSelectedIndex(1);
+  }, []);
+
+  const backAtReferenceMenu = useCallback(() => {
+    setFileReferenceMenuView("root");
+    setFileReferenceSelectedIndex(0);
+  }, []);
+
+  const applyAtReferenceMenuItem = useCallback(
+    (item: AtReferenceMenuItem | undefined) => {
+      if (!item) {
+        return;
+      }
+      if (item.kind === "back") {
+        backAtReferenceMenu();
+        return;
+      }
+      if (item.kind === "file") {
+        applyFileReferenceSuggestion(item.path);
+        return;
+      }
+      if (item.kind === "sessions-entry") {
+        openAtReferenceSessions();
+        return;
+      }
+      applySessionReferenceSuggestion({
+        path: item.path,
+        title: item.title,
+      });
+    },
+    [
+      applyFileReferenceSuggestion,
+      applySessionReferenceSuggestion,
+      backAtReferenceMenu,
+      openAtReferenceSessions,
+    ],
   );
 
   const insertComposerText = useCallback(
@@ -812,6 +925,7 @@ export function useComposerController({
       }
       setSlashSelectedIndex(-1);
       setFileReferenceSelectedIndex(-1);
+      setFileReferenceMenuView("root");
       setFileReferenceSuggestions(null);
       setDismissedFileReferenceKey(null);
       setDismissedSlashQueryKey(null);
@@ -1125,8 +1239,6 @@ export function useComposerController({
 
   const handleComposerSuggestionKeyDown = useCallback(
     (event: ReactKeyboardEvent<HTMLTextAreaElement>) => {
-      const fileReferenceItems = fileReferenceSuggestions?.suggestions ?? [];
-
       if (slashQuery) {
         if (event.key === "Escape") {
           event.preventDefault();
@@ -1175,14 +1287,36 @@ export function useComposerController({
         }
       }
 
-      if (fileReferenceItems.length > 0) {
+      const atReferenceActive = Boolean(fileReferenceSuggestions?.query);
+      if (!atReferenceActive) {
+        return;
+      }
+
+      const rawQuery = fileReferenceSuggestions?.query.raw ?? "";
+      const needle = atReferenceNeedle(rawQuery);
+      const menuItems = atReferenceMenuItems;
+
+      if (fileReferenceMenuView === "sessions") {
+        if (event.key === "Escape") {
+          event.preventDefault();
+          backAtReferenceMenu();
+          return;
+        }
+        if (event.key === "Backspace" && needle.length === 0) {
+          event.preventDefault();
+          backAtReferenceMenu();
+          return;
+        }
+      }
+
+      if (menuItems.length > 0) {
         if (event.key === "ArrowDown") {
           event.preventDefault();
           setFileReferenceSelectedIndex((current) => {
             if (current < 0) {
               return 0;
             }
-            return (current + 1) % fileReferenceItems.length;
+            return (current + 1) % menuItems.length;
           });
           return;
         }
@@ -1190,7 +1324,7 @@ export function useComposerController({
         if (event.key === "ArrowUp") {
           event.preventDefault();
           setFileReferenceSelectedIndex((current) =>
-            current <= 0 ? fileReferenceItems.length - 1 : current - 1,
+            current <= 0 ? menuItems.length - 1 : current - 1,
           );
           return;
         }
@@ -1199,34 +1333,41 @@ export function useComposerController({
           event.preventDefault();
           setDismissedFileReferenceKey(fileReferenceQueryKey);
           setFileReferenceSelectedIndex(-1);
+          setFileReferenceMenuView("root");
           setFileReferenceSuggestions(null);
           return;
         }
 
         if (event.key === "Tab") {
           event.preventDefault();
-          const selected = fileReferenceItems[fileReferenceSelectedIndex] ?? fileReferenceItems[0];
-          if (selected) {
-            applyFileReferenceSuggestion(selected);
-          }
+          applyAtReferenceMenuItem(menuItems[fileReferenceSelectedIndex] ?? menuItems[0]);
           return;
         }
 
         if (event.key === "Enter" && !event.ctrlKey && !event.metaKey && !event.shiftKey) {
           event.preventDefault();
-          const selected = fileReferenceItems[fileReferenceSelectedIndex] ?? fileReferenceItems[0];
-          if (selected) {
-            applyFileReferenceSuggestion(selected);
-          }
+          applyAtReferenceMenuItem(menuItems[fileReferenceSelectedIndex] ?? menuItems[0]);
         }
+        return;
+      }
+
+      if (fileReferenceMenuView === "root" && event.key === "Escape") {
+        event.preventDefault();
+        setDismissedFileReferenceKey(fileReferenceQueryKey);
+        setFileReferenceSelectedIndex(-1);
+        setFileReferenceMenuView("root");
+        setFileReferenceSuggestions(null);
       }
     },
     [
-      applyFileReferenceSuggestion,
+      applyAtReferenceMenuItem,
       applySlashSuggestionItem,
+      atReferenceMenuItems,
+      backAtReferenceMenu,
+      fileReferenceMenuView,
       fileReferenceQueryKey,
       fileReferenceSelectedIndex,
-      fileReferenceSuggestions?.suggestions,
+      fileReferenceSuggestions?.query,
       slashQuery,
       slashSelectedIndex,
       slashSuggestions,
@@ -1284,6 +1425,7 @@ export function useComposerController({
   const dismissFileReferenceSuggestions = useCallback(() => {
     setDismissedFileReferenceKey(fileReferenceQueryKey);
     setFileReferenceSelectedIndex(-1);
+    setFileReferenceMenuView("root");
     setFileReferenceSuggestions(null);
   }, [fileReferenceQueryKey]);
 
@@ -1312,6 +1454,8 @@ export function useComposerController({
     fileReferenceSuggestions,
     fileReferenceSelectedIndex,
     setFileReferenceSelectedIndex,
+    fileReferenceMenuView,
+    atReferenceMenuItems,
     activeFileReferenceQuery,
     filePickerOpen,
     setFilePickerOpen,
@@ -1331,6 +1475,9 @@ export function useComposerController({
     isActionPaletteItemDisabled,
     filterActionPaletteItem,
     applyFileReferenceSuggestion,
+    applySessionReferenceSuggestion,
+    openAtReferenceSessions,
+    backAtReferenceMenu,
     insertComposerText,
     insertFileReferenceTrigger,
     insertSkillTriggerFromPalette,

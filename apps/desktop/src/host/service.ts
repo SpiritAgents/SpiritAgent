@@ -430,12 +430,14 @@ import {
 } from "./storage.js";
 import { DesktopToolExecutor } from "./tool-executor.js";
 import { buildDesktopRuntimeBasicInfo, type DesktopHostRuntime } from "./runtime.js";
+import { hydrateSessionReferenceWiresInUserText } from "./hydrate-session-reference-wires.js";
 import {
   abortRemoteDesktopShell,
   closeRemoteDesktopRuntime,
   closeSharedDesktopServerClient,
   createRemoteDesktopRuntime,
   disposeRemoteDesktopRuntime,
+  ensureRemoteChildSessionArchivesFresh,
   exportRemoteDesktopState,
   migrateRemoteConversationKey,
   openRemoteDesktopRuntime,
@@ -446,6 +448,7 @@ import {
   runRemoteDesktopSessionStart,
   setRemoteDesktopApprovalLevel,
 } from "./remote-runtime.js";
+import { buildDesktopUiMarkdownPromptSection } from "./desktop-ui-markdown-prompt.js";
 import { buildActiveSkillPayload } from "./skills.js";
 import { buildDreamContextText, emptyDreamCollectorSnapshot } from "./dreams.js";
 import { resolveLightweightChatModelProfile } from "./lightweight-chat-model.js";
@@ -1710,7 +1713,7 @@ class DesktopHostService {
     });
   }
 
-  async exportSessionLog(): Promise<{ snapshot: DesktopSnapshot; path: string }> {
+  async exportSession(): Promise<{ snapshot: DesktopSnapshot; path: string }> {
     return this.runSerialized(async () => {
       await this.ensureInitialized(undefined, { fastPath: true });
 
@@ -1738,7 +1741,7 @@ class DesktopHostService {
           state.workspaceRoot,
           this.requireToolExecutor(),
           gitBranchLabelForBasicInfo(state.git),
-          this.activeBundle().rewind.sessionId,
+          this.activeBundle().activeSession?.filePath ?? this.activeBundle().id,
         ),
       );
       const exportedAtUnixSecs = Math.floor(Date.now() / 1000);
@@ -1754,7 +1757,10 @@ class DesktopHostService {
         working_directory: state.workspaceRoot,
         system_prompts: remoteState?.systemPrompts ?? {
           ...(this.runtimeTransport.llmSystemPromptsForExport() as Record<string, unknown>),
-          tool_agent: buildToolAgentHostPrompt(state.config.activeModel.name),
+          tool_agent: buildToolAgentHostPrompt(
+            state.config.activeModel.name,
+            resolveModelProfile(state.config, state.config.activeModel)?.provider,
+          ),
           ...(rulesSystemPrompt === undefined ? {} : { rules: rulesSystemPrompt }),
           ...(skillsCatalogSystemPrompt === undefined
             ? {}
@@ -1764,8 +1770,9 @@ class DesktopHostService {
           ...(extensionsSystemPrompt === undefined ? {} : { extensions: extensionsSystemPrompt }),
           ...(dreamsSystemPrompt === undefined ? {} : { dreams: dreamsSystemPrompt }),
           ...(basicInfoSystemPrompt === undefined ? {} : { basicInfo: basicInfoSystemPrompt }),
+          hostUi: buildDesktopUiMarkdownPromptSection(),
         },
-        note: i18n.t("error.logSessionNote"),
+        note: i18n.t("error.exportSessionNote"),
         message_count: remoteState?.apiMessages.length ?? runtime.history().length,
         messages:
           remoteState?.apiMessages ??
@@ -1777,8 +1784,8 @@ class DesktopHostService {
       await writeFile(filePath, `${JSON.stringify(exportPayload, null, 2)}\n`, "utf8");
 
       const snapshot = await this.appendInlineAssistantReply(
-        "/log-session",
-        [i18n.t("error.logSessionExported"), filePath].join("\n"),
+        "/export-session",
+        [i18n.t("error.exportSessionExported"), filePath].join("\n"),
       );
 
       return {
@@ -1826,6 +1833,7 @@ class DesktopHostService {
           }
         }
 
+        const hydratedText = await hydrateSessionReferenceWiresInUserText(request.text);
         const bundle = this.activeBundle();
         const explicitWorkspaceFiles = await this.resolveMergedExplicitWorkspaceFiles(request);
         const turnSkills = await this.resolveTurnSkillsFromChipAliases(request.skillChipAliases);
@@ -1833,7 +1841,7 @@ class DesktopHostService {
         let snapshot: DesktopSnapshot;
         if (canEnqueueUserTurn(bundle)) {
           snapshot = await enqueueUserTurnCommand(this.sessionTurnContext(), {
-            text: request.text,
+            text: hydratedText,
             explicitWorkspaceFiles,
             turnSkills,
           });
@@ -1841,11 +1849,11 @@ class DesktopHostService {
           snapshot = await startWorktreeBootstrapTurnCommand(
             this.sessionTurnContext(),
             this.worktreeBootstrapHost(),
-            request.text,
+            hydratedText,
             { explicitWorkspaceFiles, turnSkills },
           );
         } else {
-          snapshot = await this.submitUserTurnAfterInitialized(request.text, {
+          snapshot = await this.submitUserTurnAfterInitialized(hydratedText, {
             explicitWorkspaceFiles,
             turnSkills,
           });
@@ -2229,6 +2237,11 @@ class DesktopHostService {
   async setSubagentViewerTarget(parentToolCallId: string | null): Promise<DesktopSnapshot> {
     const trimmed = parentToolCallId?.trim();
     this.subagentViewerTargetToolCallId = trimmed && trimmed.length > 0 ? trimmed : null;
+    if (this.subagentViewerTargetToolCallId) {
+      const bundle = this.activeBundle();
+      await ensureRemoteChildSessionArchivesFresh(bundle.runtime);
+      this.refreshArchiveFromRuntime(bundle);
+    }
     const snapshot = await this.buildSnapshot();
     return snapshot;
   }

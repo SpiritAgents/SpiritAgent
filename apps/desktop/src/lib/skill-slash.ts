@@ -15,7 +15,7 @@ import type { DesktopSkillListItem } from "@/types";
 const COMPACT_COMPOSER_STRUCTURAL_KINDS = new Set(["loop"]);
 
 export type SkillSlashSuggestionKind =
-  | "log-session"
+  | "export-session"
   | "compact"
   | "fork"
   | "side-chat"
@@ -29,6 +29,8 @@ export interface SkillSlashSuggestion {
   id: string;
   alias: string;
   name: string;
+  /** Ctrl+Shift+P 等命令面板标题；缺省回退 name（斜杠菜单始终用 name）。 */
+  paletteName?: string;
   description?: string;
   descriptionKey?: string;
   kind: SkillSlashSuggestionKind;
@@ -45,7 +47,7 @@ export function skillSlashAlias(skillName: string): string {
   return `/${skillName}`;
 }
 
-export const LOG_SESSION_SLASH_ALIAS = "/log-session";
+export const EXPORT_SESSION_SLASH_ALIAS = "/export-session";
 export const COMPACT_SLASH_ALIAS = "/compact";
 export const FORK_SLASH_ALIAS = "/fork";
 export const SIDE_CHAT_SLASH_ALIAS = "/side";
@@ -57,30 +59,31 @@ export const DEBUG_SLASH_ALIAS = "/debug";
 
 export const STATIC_SLASH_COMMANDS: readonly SkillSlashSuggestion[] = [
   {
-    id: "command:log-session",
-    alias: LOG_SESSION_SLASH_ALIAS,
-    name: "log-session",
-    descriptionKey: "slash.logSession",
-    kind: "log-session",
+    id: "command:export-session",
+    alias: EXPORT_SESSION_SLASH_ALIAS,
+    name: "export-session",
+    paletteName: "Export Session",
+    descriptionKey: "slash.exportSession",
+    kind: "export-session",
   },
   {
     id: "command:compact",
     alias: COMPACT_SLASH_ALIAS,
-    name: "compact",
+    name: "Compact",
     descriptionKey: "slash.compact",
     kind: "compact",
   },
   {
     id: "command:fork",
     alias: FORK_SLASH_ALIAS,
-    name: "fork",
+    name: "Fork",
     descriptionKey: "slash.fork",
     kind: "fork",
   },
   {
     id: "command:side-chat",
     alias: SIDE_CHAT_SLASH_ALIAS,
-    name: "side",
+    name: "Side",
     descriptionKey: "slash.sideChat",
     kind: "side-chat",
     searchAliases: SIDE_CHAT_SLASH_SEARCH_ALIASES,
@@ -88,28 +91,28 @@ export const STATIC_SLASH_COMMANDS: readonly SkillSlashSuggestion[] = [
   {
     id: "command:loop",
     alias: LOOP_SLASH_ALIAS,
-    name: "loop",
+    name: "Loop",
     descriptionKey: "slash.loop",
     kind: "loop",
   },
   {
     id: "command:plan",
     alias: PLAN_SLASH_ALIAS,
-    name: "plan",
+    name: "Plan",
     descriptionKey: "slash.plan",
     kind: "plan",
   },
   {
     id: "command:ask",
     alias: ASK_SLASH_ALIAS,
-    name: "ask",
+    name: "Ask",
     descriptionKey: "slash.ask",
     kind: "ask",
   },
   {
     id: "command:debug",
     alias: DEBUG_SLASH_ALIAS,
-    name: "debug",
+    name: "Debug",
     descriptionKey: "slash.debug",
     kind: "debug",
   },
@@ -177,7 +180,7 @@ export function currentSkillSlashQueryAtCursor(
   input: string,
   cursorChars: number,
 ): ActiveSkillSlashQuery | undefined {
-  if (!input || input.includes("\n")) {
+  if (!input) {
     return undefined;
   }
 
@@ -295,8 +298,8 @@ export function buildSkillSlashSuggestions(
   ];
 }
 
-export function isLogSessionSlashInput(input: string): boolean {
-  return input.trim() === LOG_SESSION_SLASH_ALIAS;
+export function isExportSessionSlashInput(input: string): boolean {
+  return input.trim() === EXPORT_SESSION_SLASH_ALIAS;
 }
 
 export function isCompactSlashInput(input: string): boolean {

@@ -874,6 +874,8 @@ export interface SessionListItem {
   gitBranch?: string;
   kind?: "stored" | "ephemeral";
   readOnly?: boolean;
+  /** Absolute path to transcripts/.../transcript.json for this chat (deterministic from chat path). */
+  transcriptPath: string;
   /** Agent turn in progress for this session (in-memory registry). */
   isBusy?: boolean;
   /** Waiting for approval or askQuestions; still counts as busy for host polling. */

@@ -105,6 +105,7 @@ export async function requestCodeCompletionCommand(
         transport,
         transportConfig,
         modelName: resolved.name,
+        ...(resolved.profile.provider ? { providerId: resolved.profile.provider } : {}),
       },
     );
 

@@ -19,6 +19,7 @@ import type {
   ConversationMessageSnapshot,
   SessionListItem,
 } from "../types.js";
+import { resolveDesktopSessionTranscriptPath } from "./transcript-session.js";
 import {
   extractActivePlanPathFromLlmHistory,
   modelRefKey,
@@ -140,6 +141,7 @@ export function ephemeralSessionsToListItems(
     workspaceRoot: session.workspaceRoot,
     kind: "ephemeral",
     readOnly: true,
+    transcriptPath: resolveDesktopSessionTranscriptPath(session.path),
   }));
 }
 

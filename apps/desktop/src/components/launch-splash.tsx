@@ -2,7 +2,7 @@ import { useEffect, useLayoutEffect, useState } from "react";
 
 import { SpiritGlassLogo, spiritGlassLogoMaskStyle } from "@/components/spirit-glass-logo";
 import { desktopFullscreenOverlayTintClass } from "@/lib/desktop-mica-surface";
-import { syncLaunchSplashChromeToDocument, type ShellOverlayPhase } from "@/lib/desktop-shell";
+import type { ShellOverlayPhase } from "@/lib/desktop-shell";
 import { cn } from "@/lib/utils";
 
 const LAUNCH_LOGO_WIDTH_PX = 72;
@@ -25,7 +25,9 @@ type LaunchSplashProps = {
 
 /**
  * 首屏启动：居中品牌图标 + 骨架屏式线性闪光，宿主就绪后淡出。
- * Blur 开启时使用与会话页相同的主区半透明 tint（`bg-background/70`）；退场时背景透明，由下方主 UI 单层 tint 与 styles.css 交叉淡入衔接。
+ * Blur 开启时使用与会话页相同的主区半透明 tint（`bg-background/70`）。
+ * 退场时整层（含背景 tint）随容器 opacity 淡出；下方 app-body 由 styles.css 规则提前以
+ * opacity 隐藏并保持栅格化，退场时以补偿曲线淡入就位——背景与主内容由此完成交叉衔接，而非硬切。
  */
 export function LaunchSplash({
   active,
@@ -61,15 +63,15 @@ export function LaunchSplash({
   }, [phase]);
 
   useLayoutEffect(() => {
-    syncLaunchSplashChromeToDocument(phase);
-    return () => {
-      syncLaunchSplashChromeToDocument("gone");
-    };
-  }, [phase]);
-
-  useLayoutEffect(() => {
     onPhaseChange?.(phase);
   }, [onPhaseChange, phase]);
+
+  useLayoutEffect(() => {
+    if (!active || phase !== "running") {
+      return;
+    }
+    window.spiritDesktop?.notifyLaunchSplashReady?.();
+  }, [active, phase]);
 
   if (phase === "gone") {
     return null;
@@ -83,7 +85,7 @@ export function LaunchSplash({
       aria-hidden={exiting}
       className={cn(
         "fixed inset-0 z-[200] flex items-center justify-center",
-        desktopFullscreenOverlayTintClass(useMicaBackdrop, exiting),
+        desktopFullscreenOverlayTintClass(useMicaBackdrop),
         "transition-opacity duration-500 ease-out motion-reduce:duration-200",
         exiting ? "pointer-events-none opacity-0" : "opacity-100",
       )}

@@ -255,12 +255,17 @@ export interface ToolAgentToolResult {
   providerState?: JsonObject;
 }
 
-export function buildSpiritAgentCoreHostPrompt(model: string): string {
-  const trimmed = model.trim();
-  const modelLabel = trimmed.length > 0 ? trimmed : "(not configured)";
+function hostModelIdentityLabel(value: string | undefined): string {
+  const trimmed = value?.trim() ?? "";
+  return trimmed.length > 0 ? trimmed : "(not configured)";
+}
+
+export function buildSpiritAgentCoreHostPrompt(model: string, providerId?: string): string {
+  const modelLabel = hostModelIdentityLabel(model);
+  const providerLabel = hostModelIdentityLabel(providerId);
   return [
     "You are Spirit Agent.",
-    `The user's model is: ${modelLabel}.`,
+    `The user's model is ${modelLabel} from ${providerLabel}.`,
     "Keep a neutral, matter-of-fact tone unless the user's enabled rules explicitly ask for a different style.",
     "",
     "When composing replies, follow conventional typography and editorial norms for each language you use (spacing, punctuation, and mixed-script text such as Latin alongside CJK or other scripts).",
@@ -269,9 +274,9 @@ export function buildSpiritAgentCoreHostPrompt(model: string): string {
   ].join("\n");
 }
 
-export function buildToolAgentHostPrompt(model: string): string {
+export function buildToolAgentHostPrompt(model: string, providerId?: string): string {
   return [
-    buildSpiritAgentCoreHostPrompt(model),
+    buildSpiritAgentCoreHostPrompt(model, providerId),
     "Available tools are defined only by the tools field in this request.",
     "Only call declared functions.",
     "Do not invent tools or capabilities that are not present in the request.",
@@ -287,9 +292,10 @@ export function buildToolAgentHostPrompt(model: string): string {
 
 export function buildToolAgentSystemMessage(
   model: string,
+  providerId?: string,
   ...sections: Array<string | undefined>
 ): string {
-  return [buildToolAgentHostPrompt(model), ...sections]
+  return [buildToolAgentHostPrompt(model, providerId), ...sections]
     .filter(
       (section): section is string => typeof section === "string" && section.trim().length > 0,
     )
@@ -303,6 +309,7 @@ export function buildToolAgentMessages(input: {
   enabledSkillCatalog?: ToolAgentEnabledSkillCatalogEntry[];
   mcpToolCatalog?: ToolAgentMcpToolCatalogSnapshot;
   model: string;
+  providerId?: string;
   planMetadata?: ToolAgentPlanMetadata;
   extensionSystemPrompts?: ToolAgentExtensionSystemPrompt[];
   dreamsContextText?: string;
@@ -329,6 +336,7 @@ export function buildToolAgentMessages(input: {
       role: "system",
       content: buildToolAgentSystemMessage(
         input.model,
+        input.providerId,
         rulesSystemMessage,
         skillsCatalogSystemMessage,
         mcpCatalogSystemMessage,

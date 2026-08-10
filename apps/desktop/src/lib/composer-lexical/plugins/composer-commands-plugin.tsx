@@ -9,6 +9,7 @@ import {
   INSERT_SKILL_CHIP_COMMAND,
   INSERT_WORKSPACE_FILE_AT_CARET_COMMAND,
   INSERT_WORKSPACE_FILE_REFERENCE_COMMAND,
+  INSERT_SESSION_REFERENCE_COMMAND,
   REMOVE_SKILL_SLASH_COMMAND,
   REPLACE_SKILL_SLASH_COMMAND,
 } from "@/lib/composer-lexical/commands";
@@ -19,6 +20,7 @@ import {
   isComposerPlainEmpty,
   mergeAdjacentTextSegments,
   normalizeWorkspaceFilePath,
+  replaceSessionReferenceInSegments,
   replaceSkillSlashQueryInSegments,
   replaceWorkspaceFileReferenceInSegments,
   type RichSegment,
@@ -51,7 +53,10 @@ export function ComposerCommandsPlugin({
 
   useEffect(() => {
     const caretOrEnd = (): SegmentCaret => {
-      return lexicalSelectionToSegmentCaret(editor) ?? caretAtEnd(segmentsRef.current);
+      return (
+        lexicalSelectionToSegmentCaret(editor, segmentsRef.current) ??
+        caretAtEnd(segmentsRef.current)
+      );
     };
 
     const unregisterInsertAttachment = editor.registerCommand(
@@ -99,6 +104,22 @@ export function ComposerCommandsPlugin({
       COMMAND_PRIORITY_EDITOR,
     );
 
+    const unregisterInsertSessionReference = editor.registerCommand(
+      INSERT_SESSION_REFERENCE_COMMAND,
+      ({ path, title, content, query, finalize = true }) => {
+        editor.focus();
+        const { segments: next, caret } = replaceSessionReferenceInSegments(
+          segmentsRef.current,
+          query,
+          { path, title, ...(content !== undefined ? { content } : {}) },
+          finalize,
+        );
+        commitSegments(next, caret);
+        return true;
+      },
+      COMMAND_PRIORITY_EDITOR,
+    );
+
     const unregisterInsertSkillChip = editor.registerCommand(
       INSERT_SKILL_CHIP_COMMAND,
       ({ alias, clearText, appendTrailingSpace }) => {
@@ -106,7 +127,7 @@ export function ComposerCommandsPlugin({
         const base = clearText ? emptySegments() : mergeAdjacentTextSegments(segmentsRef.current);
         const caret = clearText
           ? caretAtEnd(base)
-          : (lexicalSelectionToSegmentCaret(editor) ?? caretAtEnd(base));
+          : (lexicalSelectionToSegmentCaret(editor, base) ?? caretAtEnd(base));
         let { segments: next, caret: nextCaret } = insertSegmentAtCaret(base, caret, {
           kind: "skill",
           alias,
@@ -138,7 +159,7 @@ export function ComposerCommandsPlugin({
         }
         editor.focus();
         const current = mergeAdjacentTextSegments(segmentsRef.current);
-        const caret = lexicalSelectionToSegmentCaret(editor) ?? caretAtEnd(current);
+        const caret = lexicalSelectionToSegmentCaret(editor, current) ?? caretAtEnd(current);
         const seg = current[caret.segmentIndex];
         if (seg?.kind === "text") {
           const before = seg.value.slice(0, caret.offset);
@@ -197,6 +218,7 @@ export function ComposerCommandsPlugin({
       unregisterInsertAttachment();
       unregisterInsertWorkspaceFileAtCaret();
       unregisterInsertWorkspaceFileReference();
+      unregisterInsertSessionReference();
       unregisterInsertSkillChip();
       unregisterInsertPlainText();
       unregisterReplaceSkillSlash();

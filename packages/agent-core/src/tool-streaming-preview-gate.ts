@@ -5,6 +5,7 @@ import { isJsonObject } from "./tool-agent.js";
 const PARTIAL_PATH_PATTERN = /"path"\s*:\s*"((?:\\.|[^"\\])*)"/;
 const PARTIAL_PLAN_NAME_PATTERN = /"name"\s*:\s*"((?:\\.|[^"\\])*)"/;
 const PARTIAL_QUERY_PATTERN = /"query"\s*:\s*"((?:\\.|[^"\\])*)/;
+const PARTIAL_SUBAGENT_TASK_PATTERN = /"task"\s*:\s*"((?:\\.|[^"\\])*)/;
 const PARTIAL_APPLY_PATCH_OPERATION_TYPE_PATTERN =
   /"type"\s*:\s*"(create_file|update_file|delete_file)"/;
 const PARTIAL_POSITIVE_INT_FIELD_PATTERN = (key: string): RegExp =>
@@ -126,6 +127,35 @@ export function tryExtractPartialWebSearchQuery(argumentsJson: string): string |
 
 export function webSearchStreamingPreviewSignature(argumentsJson: string): string | undefined {
   return tryExtractPartialWebSearchQuery(argumentsJson);
+}
+
+/** Extract `task` from complete or in-flight subagent argument JSON. */
+export function tryExtractPartialSubagentTask(argumentsJson: string): string | undefined {
+  const trimmed = argumentsJson.trim();
+  if (!trimmed) {
+    return undefined;
+  }
+
+  try {
+    const parsed = JSON.parse(trimmed) as JsonValue;
+    if (isJsonObject(parsed) && typeof parsed.task === "string" && parsed.task.trim()) {
+      return parsed.task.trim();
+    }
+  } catch {
+    // Streaming JSON may be incomplete.
+  }
+
+  const match = trimmed.match(PARTIAL_SUBAGENT_TASK_PATTERN);
+  if (!match?.[1]) {
+    return undefined;
+  }
+
+  const decoded = decodePartialJsonString(match[1]);
+  return decoded?.trim() ? decoded.trim() : undefined;
+}
+
+export function subagentStreamingPreviewSignature(argumentsJson: string): string | undefined {
+  return tryExtractPartialSubagentTask(argumentsJson);
 }
 
 export function tryExtractPartialPlanName(argumentsJson: string): string | undefined {
@@ -264,8 +294,9 @@ export function hostToolArgumentsReadyForEarlyStreamingPreview(
     case "grep":
     case "shell":
     case "web_fetch":
-    case "subagent":
       return hostToolArgumentsReadyForPreview(name, argumentsJson);
+    case "subagent":
+      return tryExtractPartialSubagentTask(argumentsJson) !== undefined;
     case "web_search":
       return tryExtractPartialWebSearchQuery(argumentsJson) !== undefined;
     case "tool_call":
@@ -429,6 +460,15 @@ export function shouldRepeatStreamingToolPreview(
     }
     return options?.previousDetailSignature !== nextSignature;
   }
+  if (toolName === "subagent") {
+    const nextSignature = options?.nextArgumentsJson
+      ? subagentStreamingPreviewSignature(options.nextArgumentsJson)
+      : undefined;
+    if (!nextSignature) {
+      return false;
+    }
+    return options?.previousDetailSignature !== nextSignature;
+  }
   if (toolName === "tool_call" || toolName === "tool_describe") {
     const nextSignature = options?.nextArgumentsJson
       ? lazyToolGatewayStreamingPreviewSignature(options.nextArgumentsJson)
@@ -565,6 +605,10 @@ export function previewRequestFromStreamingArguments(
     if (toolName === "web_search") {
       const query = tryExtractPartialWebSearchQuery(argumentsJson);
       return query ? { query } : undefined;
+    }
+    if (toolName === "subagent") {
+      const task = tryExtractPartialSubagentTask(argumentsJson);
+      return task ? { task } : undefined;
     }
     return undefined;
   }
@@ -749,9 +793,11 @@ export function resolveStreamingToolPreviewEmit(
           ? createContentStreamingPreviewSignature(argumentsJson)
           : toolName === "web_search"
             ? webSearchStreamingPreviewSignature(argumentsJson)
-            : toolName === "tool_call" || toolName === "tool_describe"
-              ? lazyToolGatewayStreamingPreviewSignature(argumentsJson)
-              : undefined;
+            : toolName === "subagent"
+              ? subagentStreamingPreviewSignature(argumentsJson)
+              : toolName === "tool_call" || toolName === "tool_describe"
+                ? lazyToolGatewayStreamingPreviewSignature(argumentsJson)
+                : undefined;
 
   const emit =
     !state.readyPreviewEmitted ||

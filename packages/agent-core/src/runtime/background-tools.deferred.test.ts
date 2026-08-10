@@ -111,6 +111,7 @@ test("scheduleBackgroundToolExecutionAsync defers while background slot is busy"
     compactions: [],
     autoCompactAttempts: 0,
     deferredUserGuidances: [],
+    autoReviewCache: new Map(),
   };
   const state: TestState = { messages: [] };
   const runtime = {

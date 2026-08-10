@@ -1,7 +1,9 @@
+import { Bug, MessageCircleQuestionMark } from "lucide-react";
+
 import { ASK_CHIP_CLASS } from "@/lib/ask-chip-styles";
 import { DEBUG_CHIP_CLASS } from "@/lib/debug-chip-styles";
 import { PLAN_CHIP_CLASS } from "@/lib/plan-chip-styles";
-import { ChipIconSvg, ChipShell } from "@/components/composer-lexical/chips/chip-shell";
+import { ChipIcon, ChipIconSvg, ChipShell } from "@/components/composer-lexical/chips/chip-shell";
 
 type AgentModeChipProps = {
   kind: "plan" | "ask" | "debug";
@@ -34,23 +36,17 @@ function PlanIcon() {
 
 function AskIcon() {
   return (
-    <ChipIconSvg>
-      <path d="M7.9 20A9 9 0 1 0 4 16.1L2 22Z" />
-      <path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3" />
-      <path d="M12 17h.01" />
-    </ChipIconSvg>
+    <ChipIcon>
+      <MessageCircleQuestionMark size={10} aria-hidden />
+    </ChipIcon>
   );
 }
 
 function DebugIcon() {
   return (
-    <ChipIconSvg>
-      <path d="M12 12h.01" />
-      <path d="M8 21V5a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v16" />
-      <path d="M3 7h18" />
-      <path d="M3 11h18" />
-      <path d="M3 15h18" />
-    </ChipIconSvg>
+    <ChipIcon>
+      <Bug size={10} aria-hidden />
+    </ChipIcon>
   );
 }
 

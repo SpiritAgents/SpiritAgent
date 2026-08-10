@@ -660,7 +660,7 @@ export class AiSdkOpenAiCompatibleTransport
 
   llmSystemPromptsForExport(): JsonValue {
     return {
-      tool_agent: buildToolAgentHostPrompt("—"),
+      tool_agent: buildToolAgentHostPrompt("—", undefined),
     };
   }
 }

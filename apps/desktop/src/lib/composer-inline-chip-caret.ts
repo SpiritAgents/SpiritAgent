@@ -1,11 +1,18 @@
 import type { RichSegment, SegmentCaret } from "./composer-segment-model";
 import { emptySegments, mergeAdjacentTextSegments } from "./composer-segment-model";
 
-function isInlineAttachmentChip(
-  seg: RichSegment | undefined,
-): seg is Extract<
+function isInlineAttachmentChip(seg: RichSegment | undefined): seg is Extract<
   RichSegment,
-  { kind: "element" | "prDiff" | "terminalSnippet" | "fileSnippet" | "workspaceFile" | "skill" }
+  {
+    kind:
+      | "element"
+      | "prDiff"
+      | "terminalSnippet"
+      | "fileSnippet"
+      | "workspaceFile"
+      | "sessionReference"
+      | "skill";
+  }
 > {
   return (
     seg?.kind === "element" ||
@@ -13,6 +20,7 @@ function isInlineAttachmentChip(
     seg?.kind === "terminalSnippet" ||
     seg?.kind === "fileSnippet" ||
     seg?.kind === "workspaceFile" ||
+    seg?.kind === "sessionReference" ||
     seg?.kind === "skill"
   );
 }

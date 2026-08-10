@@ -37,6 +37,7 @@ import {
 import { parsePendingSubagentStatusText } from "../lib/subagent-display.js";
 import type { DesktopToolRequest } from "./contracts.js";
 import type { PersistedDesktopTimelineTurnSnapshot } from "./chat-schema.js";
+import { buildDesktopUiMarkdownPromptSection } from "./desktop-ui-markdown-prompt.js";
 import { sameWorkspaceRoot } from "./service-utils.js";
 
 interface RemoteDesktopRuntimeInput {
@@ -268,6 +269,9 @@ export async function createRemoteDesktopRuntime(
     ...(input.sessionKind === "dream-collector" ? { sessionKind: "dream-collector" } : {}),
     ...(input.dreamScope ? { dreamScope: input.dreamScope } : {}),
     ...(input.dreamSourceSession ? { dreamSourceSession: input.dreamSourceSession } : {}),
+    ...(input.sessionKind === "dream-collector"
+      ? {}
+      : { hostUiPromptSection: buildDesktopUiMarkdownPromptSection() }),
   });
   await client.call("session.attach", { sessionId: created.sessionId });
   const runtime = buildRemoteDesktopRuntime(client, created.sessionId, input);
@@ -749,6 +753,7 @@ export class RemoteDesktopRuntime {
       return;
     }
     if (method === "session.subagentEvents" && Array.isArray(params["drains"])) {
+      let archivesChanged = false;
       for (const rawDrain of params["drains"]) {
         if (!rawDrain || typeof rawDrain !== "object") {
           continue;
@@ -765,12 +770,21 @@ export class RemoteDesktopRuntime {
         } else {
           this.childPendingAux.delete(childSessionId);
         }
+        if (drain["archive"] && typeof drain["archive"] === "object") {
+          archivesChanged =
+            this.upsertChildSessionArchive(
+              drain["archive"] as RuntimeSubagentSessionArchiveEntry,
+            ) || archivesChanged;
+        }
         const events = Array.isArray(drain["events"])
           ? (drain["events"] as RuntimeEvent<DesktopToolRequest>[])
           : [];
         if (events.length > 0) {
           this.childEventDrains.push({ sessionId: childSessionId, parentToolCallId, events });
         }
+      }
+      if (archivesChanged) {
+        this.syncChildSessionSummariesFromArchives();
       }
       this.onActivity?.();
       return;
@@ -881,6 +895,53 @@ export class RemoteDesktopRuntime {
       messages: this.archiveMessages,
       assistantAux: this.archiveAssistantAux,
     });
+    this.syncChildSessionSummariesFromArchives();
+  }
+
+  /**
+   * Busy turns do not push full archives via session.snapshot; Desktop opens the
+   * SubAgent viewer from childSessionArchives(). Call before setSubagentViewerTarget
+   * so mid-turn clicks can resolve the child session.
+   */
+  async ensureChildSessionArchivesFresh(): Promise<void> {
+    await this.awaitMutations();
+    if (this.archiveRefreshPromise) {
+      await this.archiveRefreshPromise;
+      return;
+    }
+    this.archiveRefreshPromise = this.refreshArchive().finally(() => {
+      this.archiveRefreshPromise = undefined;
+    });
+    await this.archiveRefreshPromise;
+  }
+
+  private upsertChildSessionArchive(entry: RuntimeSubagentSessionArchiveEntry): boolean {
+    const sessionId = entry.summary?.sessionId?.trim();
+    if (!sessionId) {
+      return false;
+    }
+    const sessions = [
+      ...(this.archive.subagentSessions ?? []),
+    ] as RuntimeSubagentSessionArchiveEntry[];
+    const index = sessions.findIndex((session) => session.summary.sessionId === sessionId);
+    if (index >= 0) {
+      sessions[index] = structuredClone(entry);
+    } else {
+      sessions.push(structuredClone(entry));
+    }
+    this.archive = {
+      ...this.archive,
+      subagentSessions: sessions as ChatArchive["subagentSessions"],
+    };
+    return true;
+  }
+
+  private syncChildSessionSummariesFromArchives(): void {
+    const sessions = (this.archive.subagentSessions ?? []) as RuntimeSubagentSessionArchiveEntry[];
+    this.snapshot = {
+      ...this.snapshot,
+      childSessions: sessions.map((entry) => ({ ...entry.summary })),
+    };
   }
 
   private enqueueMutation(method: string, params: Record<string, unknown>): void {
@@ -936,6 +997,14 @@ export async function closeRemoteDesktopRuntime(runtime: unknown): Promise<void>
 
 export function remoteDesktopRuntimeNeedsProjection(runtime: unknown): boolean {
   return runtime instanceof RemoteDesktopRuntime && runtime.needsProjection();
+}
+
+export async function ensureRemoteChildSessionArchivesFresh(runtime: unknown): Promise<boolean> {
+  if (!(runtime instanceof RemoteDesktopRuntime)) {
+    return false;
+  }
+  await runtime.ensureChildSessionArchivesFresh();
+  return true;
 }
 
 export async function abortRemoteDesktopShell(

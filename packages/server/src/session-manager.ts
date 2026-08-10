@@ -105,6 +105,8 @@ interface ServerSession {
         updatedAtUnixMs: number;
       }
     | undefined;
+  /** Fingerprint of childSessions summaries; used to push archives when membership/status changes. */
+  childSessionsFingerprint?: string;
 }
 
 export interface SessionManagerCallbacks {
@@ -117,6 +119,7 @@ export interface SessionManagerCallbacks {
       parentToolCallId: string;
       events: RuntimeEvent<JsonValue>[];
       pendingAux: unknown;
+      archive?: unknown;
     }>,
   ) => void;
   /** Broadcast before the runtime starts so every client opens the same turn boundary. */
@@ -155,6 +158,8 @@ export interface CreateSessionParams {
   sessionKind?: ServerSessionKind;
   dreamScope?: HostDreamScope;
   dreamSourceSession?: HostDreamSourceSessionRef;
+  /** Host UI Markdown / rendering hints (Desktop Mermaid). CLI omits. */
+  hostUiPromptSection?: string;
 }
 
 export interface AttachSessionParams {
@@ -260,10 +265,13 @@ export class SessionManager {
     }
 
     const sessionId = `sess_${randomUUID().replaceAll("-", "")}`;
+    // Transcript / basicInfo sessionKey: prefer conversationKey (chat path) so Desktop can
+    // resolve transcript.json from listSessions without a sess_* mapping.
+    const transcriptSessionKey = trimmedKey || sessionId;
     const runtimeResult = await createServerRuntime({
       workspaceRoot: params.workspaceRoot,
       spiritDataDir: this.spiritDataDir,
-      sessionKey: sessionId,
+      sessionKey: transcriptSessionKey,
       ...(params.modelRef ? { modelRef: params.modelRef } : {}),
       ...(params.todoSessionKey?.trim() ? { todoSessionKey: params.todoSessionKey.trim() } : {}),
       ...(params.sessionKind === "dream-collector"
@@ -274,6 +282,7 @@ export class SessionManager {
       ...(params.sessionKind ? { sessionKind: params.sessionKind } : {}),
       ...(params.dreamScope ? { dreamScope: params.dreamScope } : {}),
       ...(params.dreamSourceSession ? { dreamSourceSession: params.dreamSourceSession } : {}),
+      ...(params.hostUiPromptSection ? { hostUiPromptSection: params.hostUiPromptSection } : {}),
       onEvent: (event) => this.handleRuntimeEvent(sessionId, event),
       onFileChange: (change) => this.callbacks.broadcastFileChange(sessionId, change),
       requestWorkspaceCapabilityTrust: (request) =>
@@ -346,7 +355,7 @@ export class SessionManager {
   }
 
   /** Move a live session to a new conversation key (e.g. provisional → stable chat path). */
-  migrateConversationKey(sessionId: string, nextKey: string): void {
+  async migrateConversationKey(sessionId: string, nextKey: string): Promise<void> {
     const trimmed = nextKey.trim();
     if (!trimmed) {
       throw new Error("missing conversationKey");
@@ -368,6 +377,7 @@ export class SessionManager {
     }
     session.info.conversationKey = trimmed;
     this.conversationIndex.set(trimmed, sessionId);
+    await session.runtimeResult.setTranscriptSessionKey(trimmed);
   }
 
   private resolveSessionId(params: AttachSessionParams): string {
@@ -455,12 +465,40 @@ export class SessionManager {
       const { runtime } = session.runtimeResult;
       await session.runtimeResult.toolExecutor.refreshCaches();
       await runtime.poll();
+      const childSessions = runtime.childSessions();
+      const childSessionsFingerprint = childSessions
+        .map((entry) => `${entry.sessionId}:${entry.status}:${entry.parentToolCallId}`)
+        .join("|");
+      const childSessionsChanged = session.childSessionsFingerprint !== childSessionsFingerprint;
+      if (childSessionsChanged) {
+        session.childSessionsFingerprint = childSessionsFingerprint;
+      }
+
       const childDrains = runtime.drainActiveChildSessionEvents().map((drain) => ({
         ...drain,
         pendingAux: runtime.childSessionPendingAuxState(drain.sessionId),
+        archive: runtime.childSessionArchive(drain.sessionId),
       }));
-      if (childDrains.some((drain) => drain.events.length > 0 || drain.pendingAux !== undefined)) {
-        this.callbacks.broadcastSubagentEvents?.(session.info.sessionId, childDrains);
+      const hasLiveChildPayload = childDrains.some(
+        (drain) => drain.events.length > 0 || drain.pendingAux !== undefined,
+      );
+      // Membership/status changes (incl. first create + mid-turn complete) must push
+      // archives even when the child produced no events this tick — Desktop remote
+      // runtime otherwise keeps empty childSessionArchives until turnFinished.
+      if (hasLiveChildPayload || childSessionsChanged) {
+        const drains = hasLiveChildPayload
+          ? childDrains
+          : runtime.childSessionArchives().map((archive) => ({
+              sessionId: archive.summary.sessionId,
+              parentToolCallId: archive.summary.parentToolCallId,
+              events: [] as RuntimeEvent<JsonValue>[],
+              pendingAux: runtime.childSessionPendingAuxState(archive.summary.sessionId),
+              archive,
+            }));
+        this.callbacks.broadcastSubagentEvents?.(session.info.sessionId, drains);
+      }
+      if (childSessionsChanged) {
+        this.callbacks.broadcastSnapshot(session.info.sessionId, this.snapshotForSession(session));
       }
       // The bridge had clients drive this on a timer; the daemon pump owns it now.
       runtime.handleStreamStallTimeout();
@@ -947,6 +985,9 @@ export class SessionManager {
       mcpService: this.mcpRegistry.forWorkspace(session.createParams.workspaceRoot),
       hostKind: session.createParams.hostKind === "web" ? "cli" : session.createParams.hostKind,
       approvalLevel: session.info.approvalLevel,
+      ...(session.createParams.hostUiPromptSection
+        ? { hostUiPromptSection: session.createParams.hostUiPromptSection }
+        : {}),
       onEvent: (event) => this.handleRuntimeEvent(sessionId, event),
       onFileChange: (change) => this.callbacks.broadcastFileChange(sessionId, change),
       requestWorkspaceCapabilityTrust: (request) =>

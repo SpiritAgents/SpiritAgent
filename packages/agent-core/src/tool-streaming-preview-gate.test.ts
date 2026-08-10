@@ -13,7 +13,9 @@ import {
   tryExtractPartialPlanName,
   tryExtractPartialReadFileFields,
   tryExtractPartialToolPath,
+  tryExtractPartialSubagentTask,
   tryExtractPartialWebSearchQuery,
+  subagentStreamingPreviewSignature,
   webSearchStreamingPreviewSignature,
 } from "./tool-streaming-preview-gate.js";
 
@@ -173,6 +175,32 @@ test("resolveStreamingToolPreviewEmit repeats web_search preview when query grow
   assert.equal(second.emit, true);
 
   const unchanged = resolveStreamingToolPreviewEmit("web_search", longer, second.nextState);
+  assert.equal(unchanged.emit, false);
+});
+
+test("subagent early preview extracts task from incomplete JSON", () => {
+  const partial = '{"task":"Explore the repo and summarize"';
+  assert.equal(tryExtractPartialSubagentTask(partial), "Explore the repo and summarize");
+  assert.equal(hostToolArgumentsReadyForEarlyStreamingPreview("subagent", partial), true);
+  assert.equal(hostToolArgumentsReadyForPreview("subagent", partial), false);
+  assert.deepEqual(previewRequestFromStreamingArguments("subagent", partial), {
+    task: "Explore the repo and summarize",
+  });
+});
+
+test("resolveStreamingToolPreviewEmit repeats subagent preview when task grows", () => {
+  const partial = '{"task":"Explore';
+  const first = resolveStreamingToolPreviewEmit("subagent", partial, {
+    readyPreviewEmitted: false,
+  });
+  assert.equal(first.emit, true);
+  assert.equal(subagentStreamingPreviewSignature(partial), "Explore");
+
+  const longer = '{"task":"Explore the repo"';
+  const second = resolveStreamingToolPreviewEmit("subagent", longer, first.nextState);
+  assert.equal(second.emit, true);
+
+  const unchanged = resolveStreamingToolPreviewEmit("subagent", longer, second.nextState);
   assert.equal(unchanged.emit, false);
 });
 

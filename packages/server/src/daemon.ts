@@ -86,6 +86,7 @@ import {
 } from "./protocol/index.js";
 import { SessionManager } from "./session-manager.js";
 import { HostService, HOST_METHODS } from "./host-service.js";
+import { normalizeHostUiPromptSection } from "./host-ui-prompt.js";
 
 const SESSION_METHODS = new Set([
   SESSION_CREATE,
@@ -394,6 +395,7 @@ export async function startDaemon(options: DaemonOptions): Promise<RunningDaemon
         const sessionKind = params["sessionKind"];
         const dreamScopeRaw = params["dreamScope"];
         const dreamSourceSessionRaw = params["dreamSourceSession"];
+        const hostUiPromptSection = normalizeHostUiPromptSection(params["hostUiPromptSection"]);
         const dreamScope =
           dreamScopeRaw &&
           typeof dreamScopeRaw === "object" &&
@@ -451,6 +453,7 @@ export async function startDaemon(options: DaemonOptions): Promise<RunningDaemon
           ...(sessionKind === "dream-collector" ? { sessionKind: "dream-collector" as const } : {}),
           ...(dreamScope ? { dreamScope } : {}),
           ...(dreamSourceSession ? { dreamSourceSession } : {}),
+          ...(hostUiPromptSection ? { hostUiPromptSection } : {}),
         });
         return info;
       }
@@ -482,7 +485,7 @@ export async function startDaemon(options: DaemonOptions): Promise<RunningDaemon
         if (typeof conversationKey !== "string" || !conversationKey.trim()) {
           throw new Error("missing conversationKey");
         }
-        sessionManager.migrateConversationKey(readSessionId(params), conversationKey.trim());
+        await sessionManager.migrateConversationKey(readSessionId(params), conversationKey.trim());
         return { ok: true };
       }
       case SESSION_SUBMIT_USER_TURN: {

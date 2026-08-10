@@ -3,6 +3,7 @@ import {
   useEffect,
   useLayoutEffect,
   useRef,
+  useState,
   type ComponentRef,
   type RefObject,
 } from "react";
@@ -10,6 +11,7 @@ import {
 import type { ScrollArea } from "@/components/ui/scroll-area";
 import {
   isScrollNearBottom,
+  scrollAreaAnimateToLiveBottom,
   scrollAreaToBottom,
   scrollAreaViewport,
 } from "@/lib/scroll-area-viewport";
@@ -24,6 +26,13 @@ export type UseConversationStreamScrollTailOptions = {
   isBusy: boolean;
   scrollBedPaddingPx: number;
   enabled: boolean;
+};
+
+export type UseConversationStreamScrollTailResult = {
+  /** forceStick 为 true 时重新贴底；behavior 默认 auto（流式钉底瞬时）；点「回到底部」传 smooth。 */
+  pinScrollToTail: (forceStick?: boolean, behavior?: ScrollBehavior) => void;
+  /** 用户仍贴底跟随；为 false 时表示已上滚，可显示「回到底部」。 */
+  followingTail: boolean;
 };
 
 function buildStreamContentSig(
@@ -52,15 +61,32 @@ export function useConversationStreamScrollTail({
   isBusy,
   scrollBedPaddingPx,
   enabled,
-}: UseConversationStreamScrollTailOptions): { pinScrollToTail: () => void } {
+}: UseConversationStreamScrollTailOptions): UseConversationStreamScrollTailResult {
   const stickToBottomRef = useRef(true);
+  /** 用户点「回到底部」活底缓动进行中：抑制流式/RO/虚拟列表的 auto 瞬时钉底。 */
+  const suppressInstantPinRef = useRef(false);
+  const cancelLiveSmoothRef = useRef<(() => void) | null>(null);
+  const [followingTail, setFollowingTail] = useState(true);
   const prevBusyRef = useRef(false);
   const prevContentSigRef = useRef("");
 
+  const setStickToBottom = useCallback((next: boolean) => {
+    if (stickToBottomRef.current === next) {
+      return;
+    }
+    stickToBottomRef.current = next;
+    if (!next) {
+      suppressInstantPinRef.current = false;
+      cancelLiveSmoothRef.current?.();
+      cancelLiveSmoothRef.current = null;
+    }
+    setFollowingTail(next);
+  }, []);
+
   const scrollToTail = useCallback(
-    (forceStick = false) => {
+    (forceStick = false, behavior: ScrollBehavior = "auto") => {
       if (forceStick) {
-        stickToBottomRef.current = true;
+        setStickToBottom(true);
       } else if (!stickToBottomRef.current) {
         return;
       }
@@ -68,13 +94,31 @@ export function useConversationStreamScrollTail({
       if (!viewport) {
         return;
       }
-      scrollAreaToBottom(viewport);
+      if (behavior === "smooth") {
+        suppressInstantPinRef.current = true;
+        cancelLiveSmoothRef.current?.();
+        cancelLiveSmoothRef.current = scrollAreaAnimateToLiveBottom(viewport, {
+          onDone: () => {
+            cancelLiveSmoothRef.current = null;
+            suppressInstantPinRef.current = false;
+            if (stickToBottomRef.current) {
+              scrollAreaToBottom(viewport, "auto");
+            }
+          },
+        });
+        return;
+      }
+      if (suppressInstantPinRef.current) {
+        return;
+      }
+      scrollAreaToBottom(viewport, behavior);
     },
-    [scrollAreaRef],
+    [scrollAreaRef, setStickToBottom],
   );
 
   useEffect(() => {
     if (!enabled) {
+      setStickToBottom(true);
       return;
     }
     const root = scrollAreaRef.current;
@@ -85,7 +129,7 @@ export function useConversationStreamScrollTail({
 
     // stick 语义 =「用户主动离开底部」，只能由用户输入解除，不能从 scroll 事件
     // 反推：流式期间内容频繁增删（收拢/终版渲染/clamp），scroll 事件送达时读到的
-    // scrollTop 与距底都是过期信号——曾两次实测被误判为用户上滚（距底阈值版、
+    // scrollTop 与距底都是过期信号——曾两次实测被误判为用户上滚（距底差值版、
     // scrollTop 上移版），把跟底误关后内容 RO 不再重钉底，即「流式结束后上跳」。
     // 现规则（解除均以用户输入为锚点）：
     // - wheel 上滚 → 解除；
@@ -111,16 +155,16 @@ export function useConversationStreamScrollTail({
     let touchDragStartY = 0;
     const onWheel = (event: WheelEvent) => {
       if (event.deltaY < 0) {
-        stickToBottomRef.current = false;
+        setStickToBottom(false);
       }
     };
     const onPointerDown = (event: PointerEvent) => {
       if (event.target instanceof Node && !viewport.contains(event.target)) {
-        stickToBottomRef.current = false;
+        setStickToBottom(false);
         return;
       }
       if (event.button === 1) {
-        stickToBottomRef.current = false;
+        setStickToBottom(false);
         return;
       }
       if (event.pointerType !== "touch") {
@@ -169,7 +213,7 @@ export function useConversationStreamScrollTail({
       const movedTowardTop = top < lastScrollTop;
       lastScrollTop = top;
       if ((pointerHeld || touchActive) && movedTowardTop) {
-        stickToBottomRef.current = false;
+        setStickToBottom(false);
         return;
       }
       if (
@@ -177,7 +221,7 @@ export function useConversationStreamScrollTail({
         movedTowardBottom &&
         isScrollNearBottom(viewport, STICK_TO_BOTTOM_THRESHOLD_PX)
       ) {
-        stickToBottomRef.current = true;
+        setStickToBottom(true);
       }
     };
 
@@ -204,7 +248,7 @@ export function useConversationStreamScrollTail({
       window.removeEventListener("touchcancel", onTouchEnd);
       viewport.removeEventListener("scroll", onScroll);
     };
-  }, [enabled, scrollAreaRef]);
+  }, [enabled, scrollAreaRef, setStickToBottom]);
 
   useLayoutEffect(() => {
     if (!enabled) {
@@ -257,11 +301,11 @@ export function useConversationStreamScrollTail({
       if (!stickToBottomRef.current) {
         return;
       }
-      scrollAreaToBottom(viewport);
+      scrollToTail();
     });
     observer.observe(content);
     return () => observer.disconnect();
-  }, [enabled, scrollAreaRef]);
+  }, [enabled, scrollAreaRef, scrollToTail]);
 
-  return { pinScrollToTail: scrollToTail };
+  return { pinScrollToTail: scrollToTail, followingTail };
 }

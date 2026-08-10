@@ -128,7 +128,10 @@ export class AiSdkBedrockTransport
     config: BedrockTransportConfig,
     request: OpenAiJsonSchemaCompletionRequest,
   ): Promise<OpenAiJsonSchemaCompletionResult<T>> {
-    const messages = buildJsonSchemaCompletionMessages({ model: config.model }, request);
+    const messages = buildJsonSchemaCompletionMessages(
+      { model: config.model, llmVendor: "bedrock" },
+      request,
+    );
     const normalizedMessages = normalizeMessagesForBedrockPrompt(messages);
     const requestTrace = buildBedrockRequestTrace(config, 1, normalizedMessages, []);
 
@@ -418,7 +421,7 @@ export class AiSdkBedrockTransport
 
   llmSystemPromptsForExport(): JsonValue {
     return {
-      tool_agent: buildToolAgentHostPrompt("—"),
+      tool_agent: buildToolAgentHostPrompt("—", undefined),
     };
   }
 }

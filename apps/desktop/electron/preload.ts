@@ -17,6 +17,23 @@ ipcRenderer.on("desktop:new-session", () => {
   pendingNewSessionFromMain = true;
 });
 
+const openSettingsSubscribers = new Set<() => void>();
+let pendingOpenSettingsFromMain = false;
+
+function dispatchOpenSettingsToSubscribers(): void {
+  for (const callback of openSettingsSubscribers) {
+    callback();
+  }
+}
+
+ipcRenderer.on("desktop:open-settings", () => {
+  if (openSettingsSubscribers.size > 0) {
+    dispatchOpenSettingsToSubscribers();
+    return;
+  }
+  pendingOpenSettingsFromMain = true;
+});
+
 contextBridge.exposeInMainWorld("spiritDesktop", {
   platform: process.platform,
   readNativeBackdropBlur() {
@@ -127,8 +144,8 @@ contextBridge.exposeInMainWorld("spiritDesktop", {
   submitStartImplementing() {
     return ipcRenderer.invoke("desktop:invoke", "submitStartImplementing");
   },
-  exportSessionLog() {
-    return ipcRenderer.invoke("desktop:export-session-log");
+  exportSession() {
+    return ipcRenderer.invoke("desktop:export-session");
   },
   compactHistory() {
     return ipcRenderer.invoke("desktop:invoke", "compactHistory");
@@ -494,6 +511,9 @@ contextBridge.exposeInMainWorld("spiritDesktop", {
   }) {
     return ipcRenderer.invoke("desktop:sync-window-frame", request) as Promise<boolean>;
   },
+  notifyLaunchSplashReady() {
+    ipcRenderer.send("desktop:launch-splash-ready");
+  },
   syncLanguage(lang: string) {
     return ipcRenderer.invoke("desktop:sync-language", lang);
   },
@@ -762,6 +782,16 @@ contextBridge.exposeInMainWorld("spiritDesktop", {
     }
     return () => {
       newSessionSubscribers.delete(callback);
+    };
+  },
+  subscribeOpenSettings(callback: () => void) {
+    openSettingsSubscribers.add(callback);
+    if (pendingOpenSettingsFromMain) {
+      pendingOpenSettingsFromMain = false;
+      callback();
+    }
+    return () => {
+      openSettingsSubscribers.delete(callback);
     };
   },
 });
