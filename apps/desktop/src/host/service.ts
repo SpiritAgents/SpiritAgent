@@ -448,6 +448,7 @@ import {
   runRemoteDesktopSessionStart,
   setRemoteDesktopApprovalLevel,
 } from "./remote-runtime.js";
+import { buildDesktopUiMarkdownPromptSection } from "./desktop-ui-markdown-prompt.js";
 import { buildActiveSkillPayload } from "./skills.js";
 import { buildDreamContextText, emptyDreamCollectorSnapshot } from "./dreams.js";
 import { resolveLightweightChatModelProfile } from "./lightweight-chat-model.js";
@@ -1769,6 +1770,7 @@ class DesktopHostService {
           ...(extensionsSystemPrompt === undefined ? {} : { extensions: extensionsSystemPrompt }),
           ...(dreamsSystemPrompt === undefined ? {} : { dreams: dreamsSystemPrompt }),
           ...(basicInfoSystemPrompt === undefined ? {} : { basicInfo: basicInfoSystemPrompt }),
+          hostUi: buildDesktopUiMarkdownPromptSection(),
         },
         note: i18n.t("error.exportSessionNote"),
         message_count: remoteState?.apiMessages.length ?? runtime.history().length,

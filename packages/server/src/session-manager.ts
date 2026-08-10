@@ -158,6 +158,8 @@ export interface CreateSessionParams {
   sessionKind?: ServerSessionKind;
   dreamScope?: HostDreamScope;
   dreamSourceSession?: HostDreamSourceSessionRef;
+  /** Host UI Markdown / rendering hints (Desktop Mermaid). CLI omits. */
+  hostUiPromptSection?: string;
 }
 
 export interface AttachSessionParams {
@@ -280,6 +282,9 @@ export class SessionManager {
       ...(params.sessionKind ? { sessionKind: params.sessionKind } : {}),
       ...(params.dreamScope ? { dreamScope: params.dreamScope } : {}),
       ...(params.dreamSourceSession ? { dreamSourceSession: params.dreamSourceSession } : {}),
+      ...(params.hostUiPromptSection
+        ? { hostUiPromptSection: params.hostUiPromptSection }
+        : {}),
       onEvent: (event) => this.handleRuntimeEvent(sessionId, event),
       onFileChange: (change) => this.callbacks.broadcastFileChange(sessionId, change),
       requestWorkspaceCapabilityTrust: (request) =>
@@ -983,6 +988,9 @@ export class SessionManager {
       mcpService: this.mcpRegistry.forWorkspace(session.createParams.workspaceRoot),
       hostKind: session.createParams.hostKind === "web" ? "cli" : session.createParams.hostKind,
       approvalLevel: session.info.approvalLevel,
+      ...(session.createParams.hostUiPromptSection
+        ? { hostUiPromptSection: session.createParams.hostUiPromptSection }
+        : {}),
       onEvent: (event) => this.handleRuntimeEvent(sessionId, event),
       onFileChange: (change) => this.callbacks.broadcastFileChange(sessionId, change),
       requestWorkspaceCapabilityTrust: (request) =>

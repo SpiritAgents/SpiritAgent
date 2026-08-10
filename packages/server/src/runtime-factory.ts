@@ -82,6 +82,7 @@ import {
   type ModelRef,
 } from "@spiritagent/host-internal";
 
+import { joinHostPromptSections, normalizeHostUiPromptSection } from "./host-ui-prompt.js";
 import { createNoopPeer } from "./noop-peer.js";
 
 export type ServerHostRuntime = AgentRuntime<
@@ -126,6 +127,11 @@ export interface ServerRuntimeOptions {
   /** Tool-written file changes — broadcast to clients for rewind bookkeeping. */
   onFileChange?: (change: unknown) => void;
   log?: (message: string) => void;
+  /**
+   * Host UI Markdown / rendering hints from the client (Desktop Mermaid).
+   * Appended as a plain system section; CLI / ACP omit this.
+   */
+  hostUiPromptSection?: string;
 }
 
 export interface ServerRuntimeResult {
@@ -354,6 +360,12 @@ export async function createServerRuntime(
       ? buildApplyPatchFileToolsPromptSection()
       : undefined;
   const providerWebSearchPromptSection = buildProviderWebSearchPromptSection(transportConfig);
+  const hostUiPromptSection = normalizeHostUiPromptSection(options.hostUiPromptSection);
+  // apply_patch + optional host UI Markdown (Desktop Mermaid) share the trailing plain slot.
+  const trailingHostPromptSection = joinHostPromptSections(
+    applyPatchPromptSection,
+    hostUiPromptSection,
+  );
 
   const activeSkills: LlmActiveSkill[] = [];
   // Mutable: state factory closures capture the binding; setLoopEnabled updates it.
@@ -372,7 +384,7 @@ export async function createServerRuntime(
       extensionSystemPrompts,
       undefined, // dreamsContextText — Desktop-only product surface, wired in a later phase
       basicInfo,
-      applyPatchPromptSection,
+      trailingHostPromptSection,
       providerWebSearchPromptSection,
       loopEnabled,
       toolExecutor.mcpToolCatalogSnapshot(),
@@ -391,7 +403,7 @@ export async function createServerRuntime(
       extensionSystemPrompts,
       undefined,
       basicInfo,
-      applyPatchPromptSection,
+      trailingHostPromptSection,
       providerWebSearchPromptSection,
       loopEnabled,
       toolExecutor.mcpToolCatalogSnapshot(),
@@ -442,7 +454,7 @@ export async function createServerRuntime(
         extensionSystemPrompts,
         undefined,
         basicInfo,
-        applyPatchPromptSection,
+        trailingHostPromptSection,
         providerWebSearchPromptSection,
         loopEnabled,
         toolExecutor.mcpToolCatalogSnapshot(),
@@ -610,6 +622,10 @@ export async function createServerRuntime(
           ...(loopModeSystemPrompt === undefined ? {} : { loopMode: loopModeSystemPrompt }),
           ...(extensionsSystemPrompt === undefined ? {} : { extensions: extensionsSystemPrompt }),
           ...(basicInfoSystemPrompt === undefined ? {} : { basicInfo: basicInfoSystemPrompt }),
+          ...(hostUiPromptSection === undefined ? {} : { hostUi: hostUiPromptSection }),
+          ...(applyPatchPromptSection === undefined
+            ? {}
+            : { applyPatchFileTools: applyPatchPromptSection }),
         },
       };
     },
