@@ -17,7 +17,11 @@ const SHELL_TOOL_XTERM_LINE_HEIGHT = 1.625;
 const SHELL_TOOL_XTERM_MAX_HEIGHT_PX = 384;
 const SHELL_TOOL_XTERM_MIN_HEIGHT_PX = 96;
 const SHELL_TOOL_XTERM_SCROLLBACK = 50_000;
-const ANSI_CSI_RE = new RegExp(`${String.fromCharCode(0x1b)}\\[[0-9;?]*[ -/]*[@-~]`, "g");
+/**
+ * 展示缓冲上限（字符）：约等于 scrollback×宽列的量级，避免流式全量重扫与无界字符串驻留。
+ * 宿主 stdout 收集另有 8MiB 封顶；流式 chunk 路径可能更长，UI 只保留尾部。
+ */
+const SHELL_TOOL_XTERM_DISPLAY_MAX_CHARS = 512 * 1024;
 
 export type ShellToolXtermOutputProps = {
   text: string;
@@ -41,16 +45,27 @@ function clampHeightPx(height: number): number {
   );
 }
 
-/** 按可见文本行数估算高度（write 完成前也能抬高容器，避免卡在 2 行）。 */
-function estimateHeightFromTextPx(text: string, cols: number): number {
-  const visible = text.replace(ANSI_CSI_RE, "");
-  const lines = visible.length > 0 ? visible.split(/\r\n|\n|\r/) : [""];
+/** 只保留尾部展示窗口，防止长输出在 React/xterm 路径上无界增长。 */
+function takeDisplayTail(text: string): string {
+  if (text.length <= SHELL_TOOL_XTERM_DISPLAY_MAX_CHARS) {
+    return text;
+  }
+  return text.slice(text.length - SHELL_TOOL_XTERM_DISPLAY_MAX_CHARS);
+}
+
+/** 按可见文本行数估算高度增量（只扫 delta，避免每次全量 split）。 */
+function estimateHeightDeltaPx(deltaText: string, cols: number): number {
+  if (deltaText.length === 0) {
+    return 0;
+  }
+  const lines = deltaText.split(/\r\n|\n|\r/);
   const safeCols = Math.max(cols, 20);
   let rows = 0;
   for (const line of lines) {
     rows += Math.max(1, Math.ceil(Math.max(line.length, 1) / safeCols));
   }
-  return clampHeightPx(rows * SHELL_TOOL_XTERM_FONT_SIZE * SHELL_TOOL_XTERM_LINE_HEIGHT);
+  // split 在无尾换行时多计一段空行起点；纯增量用行数即可
+  return rows * SHELL_TOOL_XTERM_FONT_SIZE * SHELL_TOOL_XTERM_LINE_HEIGHT;
 }
 
 function measureContentHeightPx(term: Terminal): number {
@@ -76,7 +91,8 @@ export function ShellToolXtermOutput({
   const hostRef = useRef<HTMLDivElement>(null);
   const termRef = useRef<Terminal | null>(null);
   const fitRef = useRef<FitAddon | null>(null);
-  const writtenTextRef = useRef<string>("");
+  /** 已写入终端的展示窗口（可能是全量 text 的尾部）。 */
+  const writtenDisplayRef = useRef<string>("");
   const followTailRef = useRef(followTail);
   const stickToBottomRef = useRef(true);
   const writeGenerationRef = useRef(0);
@@ -116,7 +132,7 @@ export function ShellToolXtermOutput({
 
     termRef.current = term;
     fitRef.current = fitAddon;
-    writtenTextRef.current = "";
+    writtenDisplayRef.current = "";
     stickToBottomRef.current = true;
 
     const applyTheme = (): void => {
@@ -158,7 +174,7 @@ export function ShellToolXtermOutput({
       resizeObserver.disconnect();
       fitRef.current = null;
       termRef.current = null;
-      writtenTextRef.current = "";
+      writtenDisplayRef.current = "";
       term.dispose();
     };
   }, []);
@@ -177,17 +193,16 @@ export function ShellToolXtermOutput({
       }
     };
 
-    const previous = writtenTextRef.current;
-    if (text === previous) {
+    const nextDisplay = takeDisplayTail(text);
+    const previousDisplay = writtenDisplayRef.current;
+    if (nextDisplay === previousDisplay) {
       maybeScrollToBottom();
       return;
     }
 
     const generation = ++writeGenerationRef.current;
-    const writeText = stripAnsiSgrSequences(text);
-    // write 异步：先按文本估算抬高，避免量高时 buffer 仍为空而卡在约两行。
-    host.style.height = `${estimateHeightFromTextPx(writeText, term.cols)}px`;
-    fitAddon.fit();
+    const atMaxHeight =
+      Number.parseFloat(host.style.height) >= SHELL_TOOL_XTERM_MAX_HEIGHT_PX - 0.5;
 
     const afterWrite = (): void => {
       if (generation !== writeGenerationRef.current || !host.isConnected) {
@@ -198,10 +213,28 @@ export function ShellToolXtermOutput({
       maybeScrollToBottom();
     };
 
-    const previousWrite = stripAnsiSgrSequences(previous);
-    if (writeText.startsWith(previousWrite) && previousWrite.length > 0) {
-      term.write(writeText.slice(previousWrite.length), afterWrite);
+    const appendDelta = nextDisplay.startsWith(previousDisplay) && previousDisplay.length > 0;
+    if (appendDelta) {
+      const deltaRaw = nextDisplay.slice(previousDisplay.length);
+      const deltaWrite = stripAnsiSgrSequences(deltaRaw);
+      // write 异步：未达上限时按 delta 抬高，避免全量重估。
+      if (!atMaxHeight && deltaWrite.length > 0) {
+        const currentHeight =
+          Number.parseFloat(host.style.height) || SHELL_TOOL_XTERM_MIN_HEIGHT_PX;
+        host.style.height = `${clampHeightPx(
+          currentHeight + estimateHeightDeltaPx(deltaWrite, term.cols),
+        )}px`;
+        fitAddon.fit();
+      }
+      term.write(deltaWrite, afterWrite);
     } else {
+      const writeText = stripAnsiSgrSequences(nextDisplay);
+      if (!atMaxHeight) {
+        host.style.height = `${clampHeightPx(
+          estimateHeightDeltaPx(writeText, term.cols) || SHELL_TOOL_XTERM_MIN_HEIGHT_PX,
+        )}px`;
+        fitAddon.fit();
+      }
       term.reset();
       if (writeText.length > 0) {
         term.write(writeText, afterWrite);
@@ -209,7 +242,7 @@ export function ShellToolXtermOutput({
         afterWrite();
       }
     }
-    writtenTextRef.current = text;
+    writtenDisplayRef.current = nextDisplay;
   }, [text, followTail]);
 
   return (
