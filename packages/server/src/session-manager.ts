@@ -282,9 +282,7 @@ export class SessionManager {
       ...(params.sessionKind ? { sessionKind: params.sessionKind } : {}),
       ...(params.dreamScope ? { dreamScope: params.dreamScope } : {}),
       ...(params.dreamSourceSession ? { dreamSourceSession: params.dreamSourceSession } : {}),
-      ...(params.hostUiPromptSection
-        ? { hostUiPromptSection: params.hostUiPromptSection }
-        : {}),
+      ...(params.hostUiPromptSection ? { hostUiPromptSection: params.hostUiPromptSection } : {}),
       onEvent: (event) => this.handleRuntimeEvent(sessionId, event),
       onFileChange: (change) => this.callbacks.broadcastFileChange(sessionId, change),
       requestWorkspaceCapabilityTrust: (request) =>
@@ -488,16 +486,15 @@ export class SessionManager {
       // archives even when the child produced no events this tick — Desktop remote
       // runtime otherwise keeps empty childSessionArchives until turnFinished.
       if (hasLiveChildPayload || childSessionsChanged) {
-        const drains =
-          hasLiveChildPayload
-            ? childDrains
-            : runtime.childSessionArchives().map((archive) => ({
-                sessionId: archive.summary.sessionId,
-                parentToolCallId: archive.summary.parentToolCallId,
-                events: [] as RuntimeEvent<JsonValue>[],
-                pendingAux: runtime.childSessionPendingAuxState(archive.summary.sessionId),
-                archive,
-              }));
+        const drains = hasLiveChildPayload
+          ? childDrains
+          : runtime.childSessionArchives().map((archive) => ({
+              sessionId: archive.summary.sessionId,
+              parentToolCallId: archive.summary.parentToolCallId,
+              events: [] as RuntimeEvent<JsonValue>[],
+              pendingAux: runtime.childSessionPendingAuxState(archive.summary.sessionId),
+              archive,
+            }));
         this.callbacks.broadcastSubagentEvents?.(session.info.sessionId, drains);
       }
       if (childSessionsChanged) {

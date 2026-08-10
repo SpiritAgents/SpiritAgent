@@ -742,11 +742,7 @@ export function useComposerController({
 
   const filterActionPaletteItem = useCallback(
     (item: ActionPaletteItem) => {
-      if (
-        isAppearanceMenuAction(item) ||
-        isThemeOptionAction(item) ||
-        isLocaleOptionAction(item)
-      ) {
+      if (isAppearanceMenuAction(item) || isThemeOptionAction(item) || isLocaleOptionAction(item)) {
         return true;
       }
       if (item.kind !== "side-chat") {
@@ -771,11 +767,7 @@ export function useComposerController({
 
   const isActionPaletteItemDisabled = useCallback(
     (item: ActionPaletteItem) => {
-      if (
-        isAppearanceMenuAction(item) ||
-        isThemeOptionAction(item) ||
-        isLocaleOptionAction(item)
-      ) {
+      if (isAppearanceMenuAction(item) || isThemeOptionAction(item) || isLocaleOptionAction(item)) {
         return false;
       }
       if (!runtime.busyAction) {
@@ -796,11 +788,7 @@ export function useComposerController({
 
   const runActionPaletteItem = useCallback(
     (item: ActionPaletteItem) => {
-      if (
-        isAppearanceMenuAction(item) ||
-        isThemeOptionAction(item) ||
-        isLocaleOptionAction(item)
-      ) {
+      if (isAppearanceMenuAction(item) || isThemeOptionAction(item) || isLocaleOptionAction(item)) {
         return;
       }
       ensureConversationSurface();

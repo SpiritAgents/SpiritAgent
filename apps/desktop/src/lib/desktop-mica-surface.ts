@@ -17,8 +17,7 @@ export const DESKTOP_COMPOSER_SURFACE_MICA_TINT = "bg-background/30";
 export const DESKTOP_COMPOSER_SURFACE_SOLID = DESKTOP_COMPOSER_SURFACE_MICA_TINT;
 
 /** 浅色模式浮层 / 抬起表面扩散阴影；深色勿放大，由调用方配 dark:shadow-* */
-export const DESKTOP_OVERLAY_LIGHT_SHADOW =
-  "shadow-[0_2px_20px_-4px_rgb(0_0_0/0.06)]";
+export const DESKTOP_OVERLAY_LIGHT_SHADOW = "shadow-[0_2px_20px_-4px_rgb(0_0_0/0.06)]";
 
 /** 抬起表面阴影：浅色扩散 + 深色沿用 sm（Composer / Changes / 消息气泡等） */
 export const DESKTOP_ELEVATION_SHADOW_SM = cn(DESKTOP_OVERLAY_LIGHT_SHADOW, "dark:shadow-sm");

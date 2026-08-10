@@ -270,12 +270,9 @@ export const ComposerDock = forwardRef<HTMLDivElement, ComposerDockProps>(functi
         );
       }
 
-      const scrollToBottom =
-        showScrollToBottom
-          ? chrome.querySelector<HTMLElement>(
-              '[data-spirit-surface="composer-scroll-to-bottom"]',
-            )
-          : null;
+      const scrollToBottom = showScrollToBottom
+        ? chrome.querySelector<HTMLElement>('[data-spirit-surface="composer-scroll-to-bottom"]')
+        : null;
       if (scrollToBottom) {
         const radius = readElementUniformBorderRadius(scrollToBottom);
         shapes.push(

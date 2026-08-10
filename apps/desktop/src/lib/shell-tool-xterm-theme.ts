@@ -49,9 +49,7 @@ export function buildShellToolMonochromeTheme(
 export function readShellToolMonochromeTheme(element?: Element | null): ITheme {
   const styles = getComputedStyle(element ?? document.documentElement);
   const foreground =
-    styles.getPropertyValue("--muted-foreground").trim() ||
-    styles.color.trim() ||
-    "#a1a1a1";
+    styles.getPropertyValue("--muted-foreground").trim() || styles.color.trim() || "#a1a1a1";
   const selectionBackground =
     styles.getPropertyValue("--terminal-selection-bg").trim() || undefined;
   return buildShellToolMonochromeTheme(foreground, selectionBackground);

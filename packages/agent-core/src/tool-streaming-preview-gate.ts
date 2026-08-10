@@ -796,8 +796,8 @@ export function resolveStreamingToolPreviewEmit(
             : toolName === "subagent"
               ? subagentStreamingPreviewSignature(argumentsJson)
               : toolName === "tool_call" || toolName === "tool_describe"
-              ? lazyToolGatewayStreamingPreviewSignature(argumentsJson)
-              : undefined;
+                ? lazyToolGatewayStreamingPreviewSignature(argumentsJson)
+                : undefined;
 
   const emit =
     !state.readyPreviewEmitted ||

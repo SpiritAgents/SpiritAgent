@@ -65,10 +65,7 @@ test("buildActionPaletteItems returns grouped root items including appearance me
   const items = buildActionPaletteItems("", tEn);
   assert.equal(items[0]?.kind, "new-session");
   assert.equal(items[0]?.group, "session");
-  assert.equal(
-    items.length,
-    1 + STATIC_SLASH_COMMANDS.length + 2,
-  );
+  assert.equal(items.length, 1 + STATIC_SLASH_COMMANDS.length + 2);
   assert.ok(items.some((item) => item.kind === "theme-menu"));
   assert.ok(items.some((item) => item.kind === "locale-menu"));
   assert.equal(

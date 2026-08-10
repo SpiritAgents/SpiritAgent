@@ -22,7 +22,9 @@ type ActionPickerRowProps = {
 
 function SlashCommandIcon({ kind }: { kind: SkillSlashSuggestionKind }) {
   const Icon = SLASH_SUGGESTION_ICONS[kind];
-  return <Icon className={cn("size-3.5 shrink-0", DESKTOP_COMMAND_PALETTE_ITEM_TONE)} aria-hidden />;
+  return (
+    <Icon className={cn("size-3.5 shrink-0", DESKTOP_COMMAND_PALETTE_ITEM_TONE)} aria-hidden />
+  );
 }
 
 const actionPickerPrimaryTitleClass = cn(
@@ -58,7 +60,9 @@ export function ActionPickerRow({ item, currentValueLabel }: ActionPickerRowProp
       <div className="flex min-w-0 flex-1 items-center gap-2 overflow-hidden">
         <Icon className={cn("size-3.5 shrink-0", DESKTOP_COMMAND_PALETTE_ITEM_TONE)} aria-hidden />
         <span className={actionPickerPrimaryTitleClass}>{t(item.labelKey)}</span>
-        {currentValueLabel ? <span className={actionPickerMetaClass}>{currentValueLabel}</span> : null}
+        {currentValueLabel ? (
+          <span className={actionPickerMetaClass}>{currentValueLabel}</span>
+        ) : null}
         <ChevronRight
           className={cn("size-3.5 shrink-0", DESKTOP_COMMAND_PALETTE_ITEM_TONE)}
           aria-hidden

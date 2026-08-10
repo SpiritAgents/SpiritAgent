@@ -11,9 +11,7 @@ import {
   FileText,
 } from "lucide-react";
 
-import {
-  BROWSER_ELEMENT_CHIP_ICON_CLASS,
-} from "@/lib/browser-element-chip-styles";
+import { BROWSER_ELEMENT_CHIP_ICON_CLASS } from "@/lib/browser-element-chip-styles";
 import { ComposerLocalFileStrip } from "@/components/composer-local-file-strip";
 import { useLocalFileAttachmentPreviews } from "@/hooks/useLocalFileAttachmentPreviews";
 import {

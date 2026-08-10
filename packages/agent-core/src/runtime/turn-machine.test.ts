@@ -1197,10 +1197,7 @@ test("processToolCalls auto-approval reviews multiple tools concurrently then ex
       reviewToolApproval: async () => {
         reviewProgress.started += 1;
         reviewProgress.inFlight += 1;
-        reviewProgress.maxInFlight = Math.max(
-          reviewProgress.maxInFlight,
-          reviewProgress.inFlight,
-        );
+        reviewProgress.maxInFlight = Math.max(reviewProgress.maxInFlight, reviewProgress.inFlight);
         await new Promise<void>((resolve) => {
           releaseGates.push(resolve);
         });
@@ -1221,11 +1218,7 @@ test("processToolCalls auto-approval reviews multiple tools concurrently then ex
     clearStreamingUiState: () => {},
     completeTurn: () => {},
     emitEvent: () => {},
-    performToolExecution: async (
-      _request: unknown,
-      toolName: string,
-      toolCallId: string,
-    ) => {
+    performToolExecution: async (_request: unknown, toolName: string, toolCallId: string) => {
       executionOrder.push(toolCallId);
       return {
         output: { content: [], summaryText: `${toolName}-ok` },
@@ -1317,11 +1310,7 @@ test("processToolCalls auto-approval block stops later tools after earlier allow
     clearStreamingUiState: () => {},
     completeTurn: () => {},
     emitEvent: () => {},
-    performToolExecution: async (
-      _request: unknown,
-      _toolName: string,
-      toolCallId: string,
-    ) => {
+    performToolExecution: async (_request: unknown, _toolName: string, toolCallId: string) => {
       executionOrder.push(toolCallId);
       return {
         output: { content: [], summaryText: "ok" },
@@ -2173,7 +2162,10 @@ test("startEarlyToolExecution queues second approval while first is pending", as
   await new Promise((resolve) => setImmediate(resolve));
   const secondPending = (
     runtime as unknown as {
-      pendingApproval?: { toolCallId: string; resolveEarlyDecision?: (d: { kind: "allow" }) => void };
+      pendingApproval?: {
+        toolCallId: string;
+        resolveEarlyDecision?: (d: { kind: "allow" }) => void;
+      };
     }
   ).pendingApproval;
   assert.equal(secondPending?.toolCallId, "call-2");

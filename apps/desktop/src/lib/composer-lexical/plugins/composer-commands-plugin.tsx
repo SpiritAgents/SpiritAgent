@@ -53,7 +53,10 @@ export function ComposerCommandsPlugin({
 
   useEffect(() => {
     const caretOrEnd = (): SegmentCaret => {
-      return lexicalSelectionToSegmentCaret(editor, segmentsRef.current) ?? caretAtEnd(segmentsRef.current);
+      return (
+        lexicalSelectionToSegmentCaret(editor, segmentsRef.current) ??
+        caretAtEnd(segmentsRef.current)
+      );
     };
 
     const unregisterInsertAttachment = editor.registerCommand(

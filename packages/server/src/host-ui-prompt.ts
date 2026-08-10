@@ -12,9 +12,7 @@ export function normalizeHostUiPromptSection(value: unknown): string | undefined
   return trimmed;
 }
 
-export function joinHostPromptSections(
-  ...sections: Array<string | undefined>
-): string | undefined {
+export function joinHostPromptSections(...sections: Array<string | undefined>): string | undefined {
   const parts = sections
     .map((section) => section?.trim())
     .filter((section): section is string => Boolean(section));

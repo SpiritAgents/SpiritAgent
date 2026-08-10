@@ -28,11 +28,7 @@ function parseSessionReferenceInfoLine(infoLine: string): { path: string; title:
 }
 
 /** Wire-format session reference (Git Commit / Terminal style fence in user text). */
-export function sessionReferenceContextText(
-  path: string,
-  title: string,
-  content = "",
-): string {
+export function sessionReferenceContextText(path: string, title: string, content = ""): string {
   return formatChipWireBlock(formatSessionReferenceInfoLine(path, title), content);
 }
 

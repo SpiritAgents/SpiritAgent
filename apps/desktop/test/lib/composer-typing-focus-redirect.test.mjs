@@ -43,10 +43,7 @@ test("shouldRedirectKeydownToComposer skips modified keys", () => {
 test("shouldRedirectKeydownToComposer skips non-printable and prevented keys", () => {
   assert.equal(shouldRedirectKeydownToComposer(keydownEvent({ key: "Enter" })), false);
   assert.equal(shouldRedirectKeydownToComposer(keydownEvent({ key: "Dead" })), false);
-  assert.equal(
-    shouldRedirectKeydownToComposer(keydownEvent({ defaultPrevented: true })),
-    false,
-  );
+  assert.equal(shouldRedirectKeydownToComposer(keydownEvent({ defaultPrevented: true })), false);
 });
 
 test("shouldRedirectKeydownToComposer skips editable targets", () => {
@@ -60,11 +57,12 @@ test("shouldRedirectKeydownToComposer skips editable targets", () => {
 
 test("shouldRedirectKeydownToComposer skips interactive targets", () => {
   // closest 包含元素自身，原生 BUTTON 会命中交互选择器
-  const button = { tagName: "BUTTON", isContentEditable: false, closest: (s) => (s.includes("button") ? {} : null) };
-  assert.equal(
-    shouldRedirectKeydownToComposer(keydownEvent({ target: button, key: " " })),
-    false,
-  );
+  const button = {
+    tagName: "BUTTON",
+    isContentEditable: false,
+    closest: (s) => (s.includes("button") ? {} : null),
+  };
+  assert.equal(shouldRedirectKeydownToComposer(keydownEvent({ target: button, key: " " })), false);
   // rewind 气泡等 role=button 元素要保留 Enter/空格语义
   assert.equal(
     shouldRedirectKeydownToComposer(keydownEvent({ target: targetInside('[role="button"]') })),
@@ -106,13 +104,7 @@ test("shouldPrefocusComposerOnPaneClick keeps focus away after drag selection", 
 test("shouldPrefocusComposerOnPaneClick skips editable, interactive and overlay targets", () => {
   const composer = { tagName: "DIV", isContentEditable: true, closest: () => null };
   assert.equal(shouldPrefocusComposerOnPaneClick(composer, true), false);
-  assert.equal(
-    shouldPrefocusComposerOnPaneClick(targetInside('[role="button"]'), true),
-    false,
-  );
-  assert.equal(
-    shouldPrefocusComposerOnPaneClick(targetInside('[role="dialog"]'), true),
-    false,
-  );
+  assert.equal(shouldPrefocusComposerOnPaneClick(targetInside('[role="button"]'), true), false);
+  assert.equal(shouldPrefocusComposerOnPaneClick(targetInside('[role="dialog"]'), true), false);
   assert.equal(shouldPrefocusComposerOnPaneClick(targetInside(".xterm"), true), false);
 });

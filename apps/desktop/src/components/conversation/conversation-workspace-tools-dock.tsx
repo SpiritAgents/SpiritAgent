@@ -33,17 +33,14 @@ export function ConversationWorkspaceToolsDock({
   onOpenIntegrationsSettings,
 }: ConversationWorkspaceToolsDockProps) {
   const split = useConversationSplit();
-  const composerInsert = useFocusedPaneComposerInsertCallbacks(
-    split.getFocusedPaneComposerInsert,
-    {
-      handleBrowserElementPicked: composer.handleBrowserElementPicked,
-      handlePrDiffAddToSession: composer.handlePrDiffAddToSession,
-      handleGitCommitAddToSession: composer.handleGitCommitAddToSession,
-      handleTerminalAddToSession: composer.handleTerminalAddToSession,
-      handleFileSnippetAddToSession: composer.handleFileSnippetAddToSession,
-      handleWorkspaceFileAddToSession: composer.handleWorkspaceFileAddToSession,
-    },
-  );
+  const composerInsert = useFocusedPaneComposerInsertCallbacks(split.getFocusedPaneComposerInsert, {
+    handleBrowserElementPicked: composer.handleBrowserElementPicked,
+    handlePrDiffAddToSession: composer.handlePrDiffAddToSession,
+    handleGitCommitAddToSession: composer.handleGitCommitAddToSession,
+    handleTerminalAddToSession: composer.handleTerminalAddToSession,
+    handleFileSnippetAddToSession: composer.handleFileSnippetAddToSession,
+    handleWorkspaceFileAddToSession: composer.handleWorkspaceFileAddToSession,
+  });
 
   return (
     <div data-spirit-surface="workspace-dock" className="flex min-h-0 shrink-0">

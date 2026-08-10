@@ -920,7 +920,9 @@ export class RemoteDesktopRuntime {
     if (!sessionId) {
       return false;
     }
-    const sessions = [...(this.archive.subagentSessions ?? [])] as RuntimeSubagentSessionArchiveEntry[];
+    const sessions = [
+      ...(this.archive.subagentSessions ?? []),
+    ] as RuntimeSubagentSessionArchiveEntry[];
     const index = sessions.findIndex((session) => session.summary.sessionId === sessionId);
     if (index >= 0) {
       sessions[index] = structuredClone(entry);

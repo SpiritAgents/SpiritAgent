@@ -103,12 +103,10 @@ function slashPaletteGroup(kind: SkillSlashSuggestion["kind"]): "session" | "mod
 
 const ROOT_ITEMS: ActionPaletteItem[] = [
   NEW_SESSION_ITEM,
-  ...STATIC_SLASH_COMMANDS.map(
-    (command): SlashActionPaletteItem => ({
-      ...command,
-      group: slashPaletteGroup(command.kind),
-    }),
-  ),
+  ...STATIC_SLASH_COMMANDS.map((command): SlashActionPaletteItem => ({
+    ...command,
+    group: slashPaletteGroup(command.kind),
+  })),
   THEME_MENU_ITEM,
   LOCALE_MENU_ITEM,
 ];

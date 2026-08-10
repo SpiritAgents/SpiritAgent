@@ -21,12 +21,8 @@ if (typeof globalThis.MutationObserver === "undefined") {
 
 const { createComposerLexicalEditor, richSegmentsToEditorState } =
   await import("../../src/lib/composer-lexical/bridge/index.ts");
-const {
-  caretAtEnd,
-  caretToPlainTextOffset,
-  insertSegmentAtCaret,
-  segmentsToPlainText,
-} = await import("../../src/lib/composer-segment-model.ts");
+const { caretAtEnd, caretToPlainTextOffset, insertSegmentAtCaret, segmentsToPlainText } =
+  await import("../../src/lib/composer-segment-model.ts");
 const {
   lexicalSelectionToPlainTextOffset,
   lexicalSelectionToSegmentCaret,

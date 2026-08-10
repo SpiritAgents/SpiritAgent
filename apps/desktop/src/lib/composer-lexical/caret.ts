@@ -197,11 +197,7 @@ function segmentCaretToLexicalTarget(
     return textSegmentOffsetToLexical(segment.value, children, childIndex, caretOffset);
   }
 
-  return segmentCaretToLexicalTarget(
-    paragraph,
-    merged,
-    caretAdjacentToChip(merged, segmentIndex),
-  );
+  return segmentCaretToLexicalTarget(paragraph, merged, caretAdjacentToChip(merged, segmentIndex));
 }
 
 function locateAnchorInTextSegment(
@@ -356,12 +352,7 @@ export function lexicalSelectionToSegmentCaret(
       return;
     }
     const anchorNode = selection.anchor.getNode();
-    result = lexicalAnchorToSegmentCaret(
-      paragraph,
-      segments,
-      anchorNode,
-      selection.anchor.offset,
-    );
+    result = lexicalAnchorToSegmentCaret(paragraph, segments, anchorNode, selection.anchor.offset);
   });
   return result;
 }

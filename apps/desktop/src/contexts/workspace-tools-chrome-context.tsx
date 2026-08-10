@@ -16,8 +16,7 @@ import {
 } from "@/lib/layout-prefs";
 
 /** 与 SessionSidebarShell / 历史右侧栏开合动画一致 */
-const WORKSPACE_TOOLS_SHELL_WIDTH_TRANSITION =
-  "width 300ms cubic-bezier(0.22, 1, 0.36, 1)";
+const WORKSPACE_TOOLS_SHELL_WIDTH_TRANSITION = "width 300ms cubic-bezier(0.22, 1, 0.36, 1)";
 const WORKSPACE_TOOLS_SHELL_WIDTH_TRANSITION_MS = 300;
 
 type WorkspaceToolsChromeActions = {

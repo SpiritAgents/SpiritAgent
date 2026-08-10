@@ -1972,8 +1972,7 @@ async function runEarlyToolExecution<Config, State, ToolRequest, TrustTarget = s
       toolCallId: call.id,
       toolName: call.name,
       argumentsJson: call.argumentsJson,
-      canonicalArgumentsJson:
-        canonicalizeToolArguments(call.argumentsJson) ?? call.argumentsJson,
+      canonicalArgumentsJson: canonicalizeToolArguments(call.argumentsJson) ?? call.argumentsJson,
       turn: context.turn,
       earlyToolExecutions,
       resumeAsStreaming: context.resumeAsStreaming ?? true,
@@ -2196,7 +2195,9 @@ function tryInvalidateUnapprovedEarlyToolExecution<
   earlyToolExecutions: Map<string, PendingEarlyToolExecution<ToolRequest>>,
 ): boolean {
   ensureEarlyApprovalQueue(runtime);
-  const queuedIndex = runtime.earlyApprovalQueue.findIndex((item) => item.toolCallId === toolCallId);
+  const queuedIndex = runtime.earlyApprovalQueue.findIndex(
+    (item) => item.toolCallId === toolCallId,
+  );
   const isQueued = queuedIndex >= 0;
   const isPending =
     runtime.pendingApproval?.source === "early-stream" &&

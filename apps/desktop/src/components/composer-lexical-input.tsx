@@ -559,11 +559,7 @@ const ComposerLexicalInputCore = forwardRef<ComposerRichInputHandle, ComposerLex
         skipEditorSyncRef.current = true;
         richSegmentsToEditorState(next, editor);
         if (caret) {
-          segmentCaretToLexicalSelection(
-            editor,
-            next,
-            normalizeCaretForComposer(next, caret),
-          );
+          segmentCaretToLexicalSelection(editor, next, normalizeCaretForComposer(next, caret));
         }
         skipEditorSyncRef.current = false;
       },

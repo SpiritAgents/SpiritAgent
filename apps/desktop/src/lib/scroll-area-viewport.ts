@@ -8,16 +8,12 @@ export function scrollAreaViewport(
   return root?.querySelector("[data-radix-scroll-area-viewport]") ?? null;
 }
 
-export function scrollAreaToBottom(
-  viewport: HTMLElement,
-  behavior: ScrollBehavior = "auto",
-): void {
+export function scrollAreaToBottom(viewport: HTMLElement, behavior: ScrollBehavior = "auto"): void {
   const top = Math.max(0, viewport.scrollHeight - viewport.clientHeight);
   const useSmooth =
     behavior === "smooth" &&
     !(
-      typeof window !== "undefined" &&
-      window.matchMedia("(prefers-reduced-motion: reduce)").matches
+      typeof window !== "undefined" && window.matchMedia("(prefers-reduced-motion: reduce)").matches
     );
   if (useSmooth) {
     viewport.scrollTo({ top, behavior: "smooth" });
@@ -35,8 +31,7 @@ export function scrollAreaAnimateToLiveBottom(
   options?: { onDone?: () => void },
 ): () => void {
   const reducedMotion =
-    typeof window !== "undefined" &&
-    window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    typeof window !== "undefined" && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
   if (reducedMotion) {
     const top = Math.max(0, viewport.scrollHeight - viewport.clientHeight);
     viewport.scrollTop = top;

@@ -39,9 +39,10 @@ export function useFocusedPaneComposerInsertCallbacks(
           attachment,
         ),
       handleFileSnippetAddToSession: (attachment) =>
-        (getFocusedInsert()?.handleFileSnippetAddToSession ?? fallback.handleFileSnippetAddToSession)(
-          attachment,
-        ),
+        (
+          getFocusedInsert()?.handleFileSnippetAddToSession ??
+          fallback.handleFileSnippetAddToSession
+        )(attachment),
       handleWorkspaceFileAddToSession: (relativePath) =>
         (
           getFocusedInsert()?.handleWorkspaceFileAddToSession ??

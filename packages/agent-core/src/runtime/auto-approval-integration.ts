@@ -187,7 +187,10 @@ function startAutoReviewPromise<ToolRequest, TrustTarget>(input: {
 }): Promise<ToolAutoReviewGateOutcome> {
   return (async (): Promise<ToolAutoReviewGateOutcome> => {
     try {
-      const request = await input.requestFromFunctionCall(input.call.name, input.call.argumentsJson);
+      const request = await input.requestFromFunctionCall(
+        input.call.name,
+        input.call.argumentsJson,
+      );
       const authorization = await input.authorize(request);
       if (authorization.kind !== "need-approval") {
         return { kind: "manual" };

@@ -9,8 +9,7 @@ import {
 } from "../lib/session-reference-wire-text.js";
 import { spiritAgentDataDir } from "./storage.js";
 
-const TRANSCRIPT_UNAVAILABLE_BODY =
-  "[session transcript unavailable: file missing or unreadable]";
+const TRANSCRIPT_UNAVAILABLE_BODY = "[session transcript unavailable: file missing or unreadable]";
 
 function isPathInsideTranscriptsRoot(candidatePath: string): boolean {
   const transcriptsRoot = path.resolve(resolveTranscriptsDir(spiritAgentDataDir()));

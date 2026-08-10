@@ -403,7 +403,9 @@ export function ConversationSplitProvider({
 
   // 每个 Pane 无条件注册自己的 composer 能力，读取方按 focusedPaneId 取用；
   // 不写共享单槽，避免兄弟 Pane 的 effect 执行顺序互相覆写（左 Pane 被清成 null 的存量 bug）
-  const paneComposerInsertRegistryRef = useRef(new Map<string, FocusedPaneComposerInsertHandlers>());
+  const paneComposerInsertRegistryRef = useRef(
+    new Map<string, FocusedPaneComposerInsertHandlers>(),
+  );
 
   const paneComposerControlsRegistryRef = useRef(new Map<string, FocusedPaneComposerControls>());
 
@@ -476,9 +478,7 @@ export function ConversationSplitProvider({
 
   focusedPaneIdRef.current = focusedPaneId;
 
-  const getFocusedPaneComposerInsert = useCallback(():
-    | FocusedPaneComposerInsertHandlers
-    | null => {
+  const getFocusedPaneComposerInsert = useCallback((): FocusedPaneComposerInsertHandlers | null => {
     const focused = focusedPaneIdRef.current;
     return focused ? (paneComposerInsertRegistryRef.current.get(focused) ?? null) : null;
   }, []);

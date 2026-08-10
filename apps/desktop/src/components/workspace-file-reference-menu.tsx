@@ -95,7 +95,10 @@ export function WorkspaceFileReferenceMenu({
                 <span className={cn("min-w-0 truncate", DESKTOP_OVERLAY_LIST_ITEM_PRIMARY)}>
                   {t("composer.atReference.sessions")}
                 </span>
-                <ChevronRight className="ml-auto size-3.5 shrink-0 text-muted-foreground" aria-hidden />
+                <ChevronRight
+                  className="ml-auto size-3.5 shrink-0 text-muted-foreground"
+                  aria-hidden
+                />
               </div>
             </ComposerSuggestionMenuItem>
           );

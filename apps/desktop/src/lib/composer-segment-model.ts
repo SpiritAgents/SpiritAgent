@@ -442,17 +442,17 @@ export function segmentsToMessageText(segs: RichSegment[]): string {
           ? workspaceFileContextText(seg.path)
           : seg.kind === "sessionReference"
             ? sessionReferenceContextText(seg.path, seg.title, seg.content ?? "")
-          : seg.kind === "skill"
-            ? skillContextText(seg.alias)
-            : seg.kind === "prDiff"
-              ? prDiffContextText(seg.attachment)
-              : seg.kind === "gitCommit"
-                ? gitCommitContextText(seg.attachment)
-                : seg.kind === "terminalSnippet"
-                  ? terminalSnippetContextText(seg.attachment)
-                  : seg.kind === "fileSnippet"
-                    ? fileSnippetContextText(seg.attachment)
-                    : browserElementContextText(seg.attachment);
+            : seg.kind === "skill"
+              ? skillContextText(seg.alias)
+              : seg.kind === "prDiff"
+                ? prDiffContextText(seg.attachment)
+                : seg.kind === "gitCommit"
+                  ? gitCommitContextText(seg.attachment)
+                  : seg.kind === "terminalSnippet"
+                    ? terminalSnippetContextText(seg.attachment)
+                    : seg.kind === "fileSnippet"
+                      ? fileSnippetContextText(seg.attachment)
+                      : browserElementContextText(seg.attachment);
     if (seg.kind === "text" && !piece) continue;
 
     if (!out) {
@@ -767,9 +767,7 @@ export function insertSegmentAtCaret(
   } else if (newSegment.kind === "sessionReference") {
     const sessionIndex = normalized.findIndex(
       (s) =>
-        s.kind === "sessionReference" &&
-        s.path === newSegment.path &&
-        s.title === newSegment.title,
+        s.kind === "sessionReference" && s.path === newSegment.path && s.title === newSegment.title,
     );
     if (sessionIndex >= 0) {
       afterIndex = sessionIndex + 1;
@@ -948,10 +946,7 @@ export function replaceSessionReferenceInSegments(
 
   const normalized = mergeAdjacentTextSegments(next);
   const chipIndex = normalized.findIndex(
-    (s) =>
-      s.kind === "sessionReference" &&
-      s.path === session.path &&
-      s.title === session.title,
+    (s) => s.kind === "sessionReference" && s.path === session.path && s.title === session.title,
   );
   const afterIndex = chipIndex >= 0 ? chipIndex + 1 : normalized.length - 1;
   let caretOffset = 0;

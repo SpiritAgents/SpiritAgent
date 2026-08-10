@@ -12,9 +12,7 @@ export function useComposerSuggestionMenuHighlight(selectedIndex: number, itemCo
     setPointerDismissedHighlight(false);
   }, [itemCount, selectedIndex]);
 
-  const highlightedIndex = pointerDismissedHighlight
-    ? -1
-    : (pointerHoveredIndex ?? selectedIndex);
+  const highlightedIndex = pointerDismissedHighlight ? -1 : (pointerHoveredIndex ?? selectedIndex);
 
   return {
     highlightedIndex,

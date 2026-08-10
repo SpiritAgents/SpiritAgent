@@ -334,12 +334,9 @@ test("toolCallSummaryCopyForRequest: ask_questions and subagent", () => {
     headlineDetail: "Review auth module",
   });
   assert.deepEqual(
-    toolCallSummaryCopyForRequest(
-      "subagent",
-      {},
-      "preview",
-      { streamingArgumentsJson: '{"task":"Review auth' },
-    ),
+    toolCallSummaryCopyForRequest("subagent", {}, "preview", {
+      streamingArgumentsJson: '{"task":"Review auth',
+    }),
     { headline: "子智能体运行中", headlineDetail: "Review auth" },
   );
 });
