@@ -1062,6 +1062,8 @@
     "sendEnterKey": "Enter",
     "changes": "變更",
     "changesAria": "開啟 Git 變更",
+    "scrollToBottom": "回到底部",
+    "scrollToBottomAria": "捲動到對話底部",
     "atReference": {
       "sessions": "Sessions",
       "back": "返回",

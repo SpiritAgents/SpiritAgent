@@ -1059,6 +1059,8 @@
     "sendEnterKey": "回车",
     "changes": "更改",
     "changesAria": "打开 Git 变更",
+    "scrollToBottom": "回到底部",
+    "scrollToBottomAria": "滚动到会话底部",
     "atReference": {
       "sessions": "Sessions",
       "back": "返回",

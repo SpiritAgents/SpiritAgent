@@ -1062,6 +1062,8 @@
     "sendEnterKey": "Enter",
     "changes": "変更",
     "changesAria": "Gitの変更を開く",
+    "scrollToBottom": "一番下へ",
+    "scrollToBottomAria": "一番下までスクロール",
     "atReference": {
       "sessions": "Sessions",
       "back": "戻る",

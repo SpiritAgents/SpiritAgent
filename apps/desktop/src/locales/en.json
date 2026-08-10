@@ -1062,6 +1062,8 @@
     "sendEnterKey": "Enter",
     "changes": "Changes",
     "changesAria": "Open Git changes",
+    "scrollToBottom": "Scroll to Bottom",
+    "scrollToBottomAria": "Scroll to the bottom",
     "atReference": {
       "sessions": "Sessions",
       "back": "Back",

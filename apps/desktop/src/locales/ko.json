@@ -1062,6 +1062,8 @@
     "sendEnterKey": "Enter",
     "changes": "변경사항",
     "changesAria": "Git 변경사항 열기",
+    "scrollToBottom": "맨 아래로",
+    "scrollToBottomAria": "맨 아래로 스크롤",
     "atReference": {
       "sessions": "Sessions",
       "back": "뒤로",

@@ -322,7 +322,7 @@ export function ConversationView({
     streaming: snapshot?.conversation.isBusy === true,
   });
 
-  const { pinScrollToTail } = useConversationStreamScrollTail({
+  const { pinScrollToTail, followingTail } = useConversationStreamScrollTail({
     scrollAreaRef: conversationScrollAreaRef,
     messages: list.messages,
     pendingAuxState: list.conversationPendingAuxState,
@@ -712,6 +712,8 @@ export function ConversationView({
                 models={composerDock.models}
                 useMicaBackdrop={useMicaBackdrop}
                 onOpenGitTab={composerDock.onOpenGitTab}
+                showScrollToBottom={!isEmptySession && !followingTail}
+                onScrollToBottom={() => pinScrollToTail(true)}
                 getScrollViewport={getConversationScrollElement}
                 onScrollOccludeMaskStyleChange={composerDock.onScrollOccludeMaskStyleChange}
               />
