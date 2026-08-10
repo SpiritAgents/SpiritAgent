@@ -58,7 +58,7 @@ export function MessageTurnActions({
   );
 
   return (
-    <div className="ml-auto flex max-w-[min(72%,22rem)] items-center justify-end gap-1 pt-1">
+    <div className="ml-auto flex max-w-[min(85%,32rem)] items-center justify-end gap-1 pt-1">
       {showContinueButton && continueTarget ? (
         <Button
           type="button"

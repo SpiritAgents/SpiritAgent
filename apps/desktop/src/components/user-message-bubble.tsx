@@ -333,13 +333,13 @@ export function UserMessageBubble({
       {showText ? (
         <div
           data-spirit-surface="message-bubble"
-          className={bubbleClassName}
+          className={cn(bubbleClassName, "max-w-full min-w-0")}
           role={canStartRewind ? "button" : undefined}
           tabIndex={canStartRewind ? 0 : undefined}
           onClick={canStartRewind ? onRewindStart : undefined}
           onKeyDown={canStartRewind ? handleRewindKeyDown : undefined}
         >
-          <pre className="m-0 whitespace-pre-wrap break-words font-sans text-sm leading-relaxed text-foreground">
+          <pre className="m-0 max-w-full min-w-0 whitespace-pre-wrap font-sans text-sm leading-relaxed text-foreground [overflow-wrap:anywhere]">
             {contentParts.map((part, i) => {
               if (part.kind === "element") {
                 return <ElementCard key={i} tagName={part.tagName} url={part.url} />;

@@ -263,7 +263,7 @@ function MessageCardImpl({
           isUser
             ? rewindSelected
               ? "ml-auto w-full max-w-[min(100%,36rem)]"
-              : "max-w-[min(72%,22rem)]"
+              : "max-w-[min(85%,32rem)]"
             : "w-full",
         )}
       >
