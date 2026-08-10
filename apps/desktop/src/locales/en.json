@@ -1048,7 +1048,7 @@
     "loopChipLabel": "Loop",
     "planChipLabel": "Plan",
     "askChipLabel": "Ask",
-    "placeholderEmptySession": "Start with a line, @ for context, / skills",
+    "placeholderEmptySession": "Start with a line, / for command, @ for context",
     "placeholderWithPlanChip": "Describe what to plan",
     "placeholderWithAskChip": "Ask anything",
     "placeholderWithDebugChip": "Describe the bug or repro",

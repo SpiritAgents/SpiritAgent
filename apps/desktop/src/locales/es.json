@@ -1048,7 +1048,7 @@
     "loopChipLabel": "Bucle",
     "planChipLabel": "Plan",
     "askChipLabel": "Preguntar",
-    "placeholderEmptySession": "Comienza con una línea, @ para contexto, / habilidades",
+    "placeholderEmptySession": "Comienza con una línea, / para comando, @ para contexto",
     "placeholderWithPlanChip": "Describe qué planificar",
     "placeholderWithAskChip": "Pregunta cualquier cosa",
     "placeholderWithDebugChip": "Describe el bug o cómo reproducirlo",

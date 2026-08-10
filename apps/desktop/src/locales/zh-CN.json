@@ -1045,7 +1045,7 @@
     "loopChipLabel": "Loop",
     "planChipLabel": "Plan",
     "askChipLabel": "Ask",
-    "placeholderEmptySession": "从一句话开始，@ 上下文，/ 技能",
+    "placeholderEmptySession": "从一句话开始，/ 命令，@ 上下文",
     "placeholderWithPlanChip": "描述要规划的内容",
     "placeholderWithAskChip": "随便问",
     "placeholderWithDebugChip": "描述问题或复现步骤",

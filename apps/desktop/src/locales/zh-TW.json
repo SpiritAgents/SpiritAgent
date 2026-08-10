@@ -1048,7 +1048,7 @@
     "loopChipLabel": "迴圈",
     "planChipLabel": "規劃",
     "askChipLabel": "提問",
-    "placeholderEmptySession": "輸入內容，@ 上下文，/ 技能",
+    "placeholderEmptySession": "輸入內容，/ 命令，@ 上下文",
     "placeholderWithPlanChip": "描述需要規劃的內容",
     "placeholderWithAskChip": "詢問任何問題",
     "placeholderWithDebugChip": "描述錯誤或重現步驟",

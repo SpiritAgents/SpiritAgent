@@ -1048,7 +1048,7 @@
     "loopChipLabel": "Цикл",
     "planChipLabel": "План",
     "askChipLabel": "Спросить",
-    "placeholderEmptySession": "Начните с текста, @ для контекста, / навыков",
+    "placeholderEmptySession": "Начните с текста, / для команды, @ для контекста",
     "placeholderWithPlanChip": "Опишите, что нужно спланировать",
     "placeholderWithAskChip": "Спросить что угодно",
     "placeholderWithDebugChip": "Опишите ошибку или способ воспроизведения",
