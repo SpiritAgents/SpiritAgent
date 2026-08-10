@@ -12,3 +12,9 @@ export const COMPOSER_INLINE_CHIP_TEXT_CLASS = "text-blue-500 dark:text-blue-400
 export const COMPOSER_INLINE_CHIP_ICON_CLASS = "text-blue-500 dark:text-blue-400";
 
 export const COMPOSER_INLINE_CHIP_CLASS = `${INLINE_CHIP_LAYOUT} ${COMPOSER_INLINE_CHIP_TEXT_CLASS}`;
+
+/**
+ * 消息气泡只读 Chip。Composer 必须用 {@link COMPOSER_INLINE_CHIP_CLASS}（inline + spacer）。
+ * 气泡无选区约束；若复用 inline，Tailwind Preflight 的 svg{display:block} 会让图标与文件名拆行。
+ */
+export const MESSAGE_BUBBLE_CHIP_CLASS = `inline-flex items-center gap-1 whitespace-nowrap px-0.5 py-0.5 text-xs ${FONT_WEIGHT_NORMAL} leading-none mx-0.5 ${COMPOSER_INLINE_CHIP_TEXT_CLASS}`;
