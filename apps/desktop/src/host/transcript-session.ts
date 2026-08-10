@@ -8,7 +8,7 @@ import {
 
 import { spiritAgentDataDir } from "./storage.js";
 
-/** Transcript sessionKey is the resolved chat file path (conversationKey). */
+/** Transcript sessionKey is the resolved chat file path (conversationKey); dir name is hashed in host-internal. */
 export function resolveTranscriptSessionKeyForChatPath(chatPath: string): string {
   return path.resolve(chatPath);
 }

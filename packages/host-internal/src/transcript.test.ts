@@ -12,7 +12,21 @@ import {
   resolveSubagentTranscriptFilePath,
   resolveTranscriptSessionDir,
   SESSION_TRANSCRIPT_FILE_NAME,
+  transcriptSessionDirName,
 } from "./transcript.js";
+
+test("transcriptSessionDirName hashes keys so path flatten collisions stay distinct and bounded", () => {
+  const left = transcriptSessionDirName("/a/b-c.json");
+  const right = transcriptSessionDirName("/a-b/c.json");
+  assert.notEqual(left, right);
+  assert.match(left, /^[0-9a-f]{32}$/);
+  assert.match(right, /^[0-9a-f]{32}$/);
+  assert.equal(transcriptSessionDirName(undefined), "unknown");
+  assert.equal(
+    transcriptSessionDirName("/tmp/chat.json"),
+    transcriptSessionDirName("/tmp/../tmp/chat.json"),
+  );
+});
 
 test("persistSessionTranscript writes transcript.json under transcripts/{sessionKey}/ and returns dir", async () => {
   const spiritDataDir = await mkdtemp(join(tmpdir(), "spirit-transcript-"));
