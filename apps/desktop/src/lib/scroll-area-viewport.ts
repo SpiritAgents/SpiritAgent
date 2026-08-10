@@ -8,8 +8,68 @@ export function scrollAreaViewport(
   return root?.querySelector("[data-radix-scroll-area-viewport]") ?? null;
 }
 
-export function scrollAreaToBottom(viewport: HTMLElement): void {
-  viewport.scrollTop = viewport.scrollHeight;
+export function scrollAreaToBottom(
+  viewport: HTMLElement,
+  behavior: ScrollBehavior = "auto",
+): void {
+  const top = Math.max(0, viewport.scrollHeight - viewport.clientHeight);
+  const useSmooth =
+    behavior === "smooth" &&
+    !(
+      typeof window !== "undefined" &&
+      window.matchMedia("(prefers-reduced-motion: reduce)").matches
+    );
+  if (useSmooth) {
+    viewport.scrollTo({ top, behavior: "smooth" });
+    return;
+  }
+  viewport.scrollTop = top;
+}
+
+/**
+ * 缓动滚向「当前」底部：每帧重读 scrollHeight，流式增高时终点跟着走，
+ * 避免原生 scrollTo(smooth) 锁死点击瞬间的高度、结束后再瞬跳。
+ */
+export function scrollAreaAnimateToLiveBottom(
+  viewport: HTMLElement,
+  options?: { onDone?: () => void },
+): () => void {
+  const reducedMotion =
+    typeof window !== "undefined" &&
+    window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+  if (reducedMotion) {
+    const top = Math.max(0, viewport.scrollHeight - viewport.clientHeight);
+    viewport.scrollTop = top;
+    options?.onDone?.();
+    return () => {};
+  }
+
+  let cancelled = false;
+  const startTop = viewport.scrollTop;
+  const startTime = performance.now();
+  const initialTarget = Math.max(0, viewport.scrollHeight - viewport.clientHeight);
+  const initialDistance = Math.max(0, initialTarget - startTop);
+  const durationMs = Math.min(520, Math.max(220, initialDistance * 0.45));
+  const easeOutCubic = (t: number) => 1 - (1 - t) ** 3;
+
+  const frame = (now: number) => {
+    if (cancelled) {
+      return;
+    }
+    const liveTarget = Math.max(0, viewport.scrollHeight - viewport.clientHeight);
+    const t = Math.min(1, (now - startTime) / durationMs);
+    viewport.scrollTop = startTop + (liveTarget - startTop) * easeOutCubic(t);
+    if (t < 1) {
+      requestAnimationFrame(frame);
+      return;
+    }
+    viewport.scrollTop = liveTarget;
+    options?.onDone?.();
+  };
+  requestAnimationFrame(frame);
+  return () => {
+    cancelled = true;
+  };
 }
 
 export function scrollDistanceFromBottom(viewport: HTMLElement): number {

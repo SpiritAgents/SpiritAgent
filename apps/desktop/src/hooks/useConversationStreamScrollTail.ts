@@ -11,6 +11,7 @@ import {
 import type { ScrollArea } from "@/components/ui/scroll-area";
 import {
   isScrollNearBottom,
+  scrollAreaAnimateToLiveBottom,
   scrollAreaToBottom,
   scrollAreaViewport,
 } from "@/lib/scroll-area-viewport";
@@ -28,7 +29,8 @@ export type UseConversationStreamScrollTailOptions = {
 };
 
 export type UseConversationStreamScrollTailResult = {
-  pinScrollToTail: (forceStick?: boolean) => void;
+  /** forceStick 为 true 时重新贴底；behavior 默认 auto（流式钉底瞬时）；点「回到底部」传 smooth。 */
+  pinScrollToTail: (forceStick?: boolean, behavior?: ScrollBehavior) => void;
   /** 用户仍贴底跟随；为 false 时表示已上滚，可显示「回到底部」。 */
   followingTail: boolean;
 };
@@ -61,6 +63,9 @@ export function useConversationStreamScrollTail({
   enabled,
 }: UseConversationStreamScrollTailOptions): UseConversationStreamScrollTailResult {
   const stickToBottomRef = useRef(true);
+  /** 用户点「回到底部」活底缓动进行中：抑制流式/RO/虚拟列表的 auto 瞬时钉底。 */
+  const suppressInstantPinRef = useRef(false);
+  const cancelLiveSmoothRef = useRef<(() => void) | null>(null);
   const [followingTail, setFollowingTail] = useState(true);
   const prevBusyRef = useRef(false);
   const prevContentSigRef = useRef("");
@@ -70,11 +75,16 @@ export function useConversationStreamScrollTail({
       return;
     }
     stickToBottomRef.current = next;
+    if (!next) {
+      suppressInstantPinRef.current = false;
+      cancelLiveSmoothRef.current?.();
+      cancelLiveSmoothRef.current = null;
+    }
     setFollowingTail(next);
   }, []);
 
   const scrollToTail = useCallback(
-    (forceStick = false) => {
+    (forceStick = false, behavior: ScrollBehavior = "auto") => {
       if (forceStick) {
         setStickToBottom(true);
       } else if (!stickToBottomRef.current) {
@@ -84,7 +94,24 @@ export function useConversationStreamScrollTail({
       if (!viewport) {
         return;
       }
-      scrollAreaToBottom(viewport);
+      if (behavior === "smooth") {
+        suppressInstantPinRef.current = true;
+        cancelLiveSmoothRef.current?.();
+        cancelLiveSmoothRef.current = scrollAreaAnimateToLiveBottom(viewport, {
+          onDone: () => {
+            cancelLiveSmoothRef.current = null;
+            suppressInstantPinRef.current = false;
+            if (stickToBottomRef.current) {
+              scrollAreaToBottom(viewport, "auto");
+            }
+          },
+        });
+        return;
+      }
+      if (suppressInstantPinRef.current) {
+        return;
+      }
+      scrollAreaToBottom(viewport, behavior);
     },
     [scrollAreaRef, setStickToBottom],
   );
@@ -274,11 +301,11 @@ export function useConversationStreamScrollTail({
       if (!stickToBottomRef.current) {
         return;
       }
-      scrollAreaToBottom(viewport);
+      scrollToTail();
     });
     observer.observe(content);
     return () => observer.disconnect();
-  }, [enabled, scrollAreaRef]);
+  }, [enabled, scrollAreaRef, scrollToTail]);
 
   return { pinScrollToTail: scrollToTail, followingTail };
 }

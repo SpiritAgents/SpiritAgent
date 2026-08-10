@@ -713,7 +713,7 @@ export function ConversationView({
                 useMicaBackdrop={useMicaBackdrop}
                 onOpenGitTab={composerDock.onOpenGitTab}
                 showScrollToBottom={!isEmptySession && !followingTail}
-                onScrollToBottom={() => pinScrollToTail(true)}
+                onScrollToBottom={() => pinScrollToTail(true, "smooth")}
                 getScrollViewport={getConversationScrollElement}
                 onScrollOccludeMaskStyleChange={composerDock.onScrollOccludeMaskStyleChange}
               />
