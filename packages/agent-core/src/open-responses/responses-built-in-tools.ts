@@ -15,7 +15,7 @@ const OUTPUT_ITEM_TYPE_TO_TOOL_NAME: Record<
 /** Embedded in streaming-tool-preview argumentsJson for Desktop UI mapping. */
 export const RESPONSES_BUILT_IN_SPIRIT_UI_KEY = "_spiritUi";
 
-export type DeepSeekInternalWebSearchActionType = 'search' | 'open_page' | 'find_in_page';
+export type DeepSeekInternalWebSearchActionType = "search" | "open_page" | "find_in_page";
 
 export type ResponsesBuiltInToolSpiritUi = {
   headlineDetail?: string;
@@ -173,12 +173,10 @@ function buildWebSearchCardData(
   const sources = formatWebSearchSources(action);
   const streamPhase = resolveResponsesBuiltInToolStreamPhase(item);
   const deepSeekCompactDetail =
-    action && sources.sourceCount === 0
-      ? formatDeepSeekInternalWebSearchDetail(action)
-      : undefined;
+    action && sources.sourceCount === 0 ? formatDeepSeekInternalWebSearchDetail(action) : undefined;
   if (deepSeekCompactDetail) {
     const actionType = readDeepSeekInternalWebSearchActionType(
-      readStringField(action ?? {}, 'type'),
+      readStringField(action ?? {}, "type"),
     );
     return {
       ...(status ? { status } : {}),
@@ -213,49 +211,49 @@ export function isGenericProviderWebSearchQuery(query: string): boolean {
 function isDeepSeekInternalWebSearchActionType(
   actionType: string | undefined,
 ): actionType is DeepSeekInternalWebSearchActionType {
-  return actionType === 'search' || actionType === 'open_page' || actionType === 'find_in_page';
+  return actionType === "search" || actionType === "open_page" || actionType === "find_in_page";
 }
 
 function readDeepSeekInternalWebSearchActionType(
   value: JsonValue | undefined,
 ): DeepSeekInternalWebSearchActionType | undefined {
-  return typeof value === 'string' && isDeepSeekInternalWebSearchActionType(value)
+  return typeof value === "string" && isDeepSeekInternalWebSearchActionType(value)
     ? value
     : undefined;
 }
 
 function stripDeepSeekWebSearchCallIdSuffix(value: string): string {
-  return value.replace(/#ws_call_id=[^#\s]+$/u, '').trim();
+  return value.replace(/#ws_call_id=[^#\s]+$/u, "").trim();
 }
 
 function isDeepSeekWebSearchCallIdQuery(value: string): boolean {
-  return value.trim().startsWith('ws_call_id=');
+  return value.trim().startsWith("ws_call_id=");
 }
 
 /** DeepSeek Responses internal actions omit client-visible sources; show compact headline detail like Moonshot. */
 export function formatDeepSeekInternalWebSearchDetail(action: JsonObject): string | undefined {
-  const actionType = readStringField(action, 'type');
+  const actionType = readStringField(action, "type");
   if (!isDeepSeekInternalWebSearchActionType(actionType)) {
     return undefined;
   }
 
-  if (actionType === 'open_page' || actionType === 'find_in_page') {
-    const url = readStringField(action, 'url');
+  if (actionType === "open_page" || actionType === "find_in_page") {
+    const url = readStringField(action, "url");
     return url ? stripDeepSeekWebSearchCallIdSuffix(url) : undefined;
   }
 
   const queries = action.queries;
   if (Array.isArray(queries)) {
     const parts = queries
-      .filter((entry): entry is string => typeof entry === 'string')
+      .filter((entry): entry is string => typeof entry === "string")
       .map((entry) => entry.trim())
       .filter((entry) => entry.length > 0 && !isDeepSeekWebSearchCallIdQuery(entry));
     if (parts.length > 0) {
-      return parts.join(' ');
+      return parts.join(" ");
     }
   }
 
-  const query = readStringField(action, 'query');
+  const query = readStringField(action, "query");
   if (query && !isGenericProviderWebSearchQuery(query)) {
     return query;
   }

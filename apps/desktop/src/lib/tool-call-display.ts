@@ -291,7 +291,7 @@ export function getToolCallSummaryParts(tool: ToolBlockSnapshot): ToolCallSummar
   }
 
   // Provider built-in web_search compact cards (DeepSeek/Moonshot): orchestrator sets headline.
-  if (tool.toolName === 'web_search' && tool.suppressExpand) {
+  if (tool.toolName === "web_search" && tool.suppressExpand) {
     return {
       headline,
       ...(snapshotDetail ? { detail: snapshotDetail } : {}),

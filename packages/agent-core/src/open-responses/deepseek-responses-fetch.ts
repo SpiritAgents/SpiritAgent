@@ -1,14 +1,14 @@
-import { getLlmFetch } from '../llm-fetch.js';
-import type { JsonObject, JsonValue } from '../ports.js';
-import { isJsonObject } from '../tool-agent.js';
+import { getLlmFetch } from "../llm-fetch.js";
+import type { JsonObject, JsonValue } from "../ports.js";
+import { isJsonObject } from "../tool-agent.js";
 import {
   mergeDeepSeekResponsesBuiltInTools,
   shouldUseDeepSeekResponsesBuiltInTools,
-} from './deepseek-built-in-tools.js';
+} from "./deepseek-built-in-tools.js";
 import {
   openResponsesReasoningEffort,
   type OpenResponsesTransportConfig,
-} from './responses-compat.js';
+} from "./responses-compat.js";
 
 type FetchFn = typeof fetch;
 
@@ -22,7 +22,7 @@ export function createDeepSeekResponsesAwareFetch(
 
   return async (input, init) => {
     const requestUrl = readRequestUrl(input);
-    if (!requestUrl.includes('/responses')) {
+    if (!requestUrl.includes("/responses")) {
       return baseFetch(input, init);
     }
 
@@ -32,7 +32,7 @@ export function createDeepSeekResponsesAwareFetch(
 }
 
 function readRequestUrl(input: RequestInfo | URL): string {
-  if (typeof input === 'string') {
+  if (typeof input === "string") {
     return input;
   }
   if (input instanceof URL) {
@@ -45,7 +45,7 @@ function patchDeepSeekResponsesRequestInit(
   config: OpenResponsesTransportConfig,
   init: RequestInit | undefined,
 ): RequestInit | undefined {
-  if (!init?.body || typeof init.body !== 'string') {
+  if (!init?.body || typeof init.body !== "string") {
     return init;
   }
 
@@ -79,10 +79,13 @@ function patchDeepSeekResponsesRequestInit(
 }
 
 export function resolveDeepSeekResponsesReasoningEffort(
-  config: Pick<OpenResponsesTransportConfig, 'reasoningEffort' | 'vendorExtendedThinking' | 'llmVendor' | 'model'>,
+  config: Pick<
+    OpenResponsesTransportConfig,
+    "reasoningEffort" | "vendorExtendedThinking" | "llmVendor" | "model"
+  >,
 ): string | undefined {
   if (config.vendorExtendedThinking === false) {
-    return 'none';
+    return "none";
   }
 
   return openResponsesReasoningEffort(config);

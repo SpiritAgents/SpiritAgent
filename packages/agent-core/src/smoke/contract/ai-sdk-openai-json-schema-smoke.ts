@@ -1,43 +1,43 @@
-import { once } from 'node:events';
-import { createServer } from 'node:http';
-import type { AddressInfo } from 'node:net';
+import { once } from "node:events";
+import { createServer } from "node:http";
+import type { AddressInfo } from "node:net";
 
-import type { JsonValue } from '../../ports.js';
-import { AiSdkOpenResponsesTransport } from '../../open-responses/ai-sdk-transport.js';
-import { AiSdkOpenAiCompatibleTransport } from '../../openai/ai-sdk-transport.js';
-import type { OpenAiJsonSchemaCompletionRequest } from '../../openai/json-schema.js';
+import type { JsonValue } from "../../ports.js";
+import { AiSdkOpenResponsesTransport } from "../../open-responses/ai-sdk-transport.js";
+import { AiSdkOpenAiCompatibleTransport } from "../../openai/ai-sdk-transport.js";
+import type { OpenAiJsonSchemaCompletionRequest } from "../../openai/json-schema.js";
 
-import { printSmokeSection } from '../shared/index.js';
+import { printSmokeSection } from "../shared/index.js";
 
 async function main(): Promise<void> {
   const chatRequestBodies: JsonValue[] = [];
   const responsesRequestBodies: JsonValue[] = [];
   const server = createServer(async (request, response) => {
-    if (request.method !== 'POST') {
+    if (request.method !== "POST") {
       response.statusCode = 404;
-      response.end('not found');
+      response.end("not found");
       return;
     }
 
-    if (request.url === '/v1/chat/completions') {
+    if (request.url === "/v1/chat/completions") {
       chatRequestBodies.push(await readJsonBody(request));
       response.writeHead(200, {
-        'content-type': 'application/json',
+        "content-type": "application/json",
       });
       response.end(
         JSON.stringify({
-          id: 'chatcmpl-json-openai',
-          object: 'chat.completion',
+          id: "chatcmpl-json-openai",
+          object: "chat.completion",
           created: 0,
-          model: 'test-openai-compatible',
+          model: "test-openai-compatible",
           choices: [
             {
               index: 0,
               message: {
-                role: 'assistant',
-                content: JSON.stringify({ message: 'AI_SDK_JSON_SCHEMA_OK' }),
+                role: "assistant",
+                content: JSON.stringify({ message: "AI_SDK_JSON_SCHEMA_OK" }),
               },
-              finish_reason: 'stop',
+              finish_reason: "stop",
             },
           ],
           usage: {
@@ -50,18 +50,18 @@ async function main(): Promise<void> {
       return;
     }
 
-    if (request.url?.includes('/responses')) {
+    if (request.url?.includes("/responses")) {
       responsesRequestBodies.push(await readJsonBody(request));
       response.writeHead(200, {
-        'content-type': 'application/json',
+        "content-type": "application/json",
       });
       response.end(
         JSON.stringify({
-          id: 'resp-deepseek-json',
-          object: 'response',
+          id: "resp-deepseek-json",
+          object: "response",
           created_at: 0,
-          model: 'deepseek-v4-flash',
-          status: 'completed',
+          model: "deepseek-v4-flash",
+          status: "completed",
           usage: {
             input_tokens: 1,
             output_tokens: 1,
@@ -71,14 +71,14 @@ async function main(): Promise<void> {
           },
           output: [
             {
-              type: 'message',
-              id: 'msg_json_1',
-              role: 'assistant',
-              status: 'completed',
+              type: "message",
+              id: "msg_json_1",
+              role: "assistant",
+              status: "completed",
               content: [
                 {
-                  type: 'output_text',
-                  text: JSON.stringify({ message: 'AI_SDK_DEEPSEEK_JSON_OK' }),
+                  type: "output_text",
+                  text: JSON.stringify({ message: "AI_SDK_DEEPSEEK_JSON_OK" }),
                 },
               ],
             },
@@ -89,93 +89,100 @@ async function main(): Promise<void> {
     }
 
     response.statusCode = 404;
-    response.end('not found');
+    response.end("not found");
   });
 
-  server.listen(0, '127.0.0.1');
-  await once(server, 'listening');
+  server.listen(0, "127.0.0.1");
+  await once(server, "listening");
 
   const address = server.address();
-  if (!address || typeof address === 'string') {
+  if (!address || typeof address === "string") {
     server.close();
-    throw new Error('无法获取本地 smoke server 端口。');
+    throw new Error("无法获取本地 smoke server 端口。");
   }
 
   const host = `http://127.0.0.1:${(address as AddressInfo).port}`;
   const compatibleTransport = new AiSdkOpenAiCompatibleTransport();
   const responsesTransport = new AiSdkOpenResponsesTransport();
   const request: OpenAiJsonSchemaCompletionRequest = {
-    userPrompt: 'Return a JSON object with a commit message.',
-    schemaName: 'structured_message',
+    userPrompt: "Return a JSON object with a commit message.",
+    schemaName: "structured_message",
     schema: {
-      type: 'object',
+      type: "object",
       additionalProperties: false,
       properties: {
         message: {
-          type: 'string',
+          type: "string",
         },
       },
-      required: ['message'],
+      required: ["message"],
     },
   };
 
   const openAiResult = await compatibleTransport.createJsonSchemaCompletion<{ message: string }>(
     {
-      apiKey: 'test-key',
-      model: 'test-openai-compatible',
+      apiKey: "test-key",
+      model: "test-openai-compatible",
       baseUrl: `${host}/v1`,
     },
     request,
   );
   const deepseekResult = await responsesTransport.createJsonSchemaCompletion<{ message: string }>(
     {
-      transportKind: 'open-responses',
-      apiKey: 'test-key',
-      model: 'deepseek-v4-flash',
+      transportKind: "open-responses",
+      apiKey: "test-key",
+      model: "deepseek-v4-flash",
       baseUrl: host,
-      llmVendor: 'deepseek',
+      llmVendor: "deepseek",
     },
     request,
   );
   server.close();
 
-  printSmokeSection('ai-sdk openai json-schema smoke', openAiResult);
-  printSmokeSection('ai-sdk deepseek json-schema smoke', deepseekResult);
+  printSmokeSection("ai-sdk openai json-schema smoke", openAiResult);
+  printSmokeSection("ai-sdk deepseek json-schema smoke", deepseekResult);
 
-  if (openAiResult.output.message !== 'AI_SDK_JSON_SCHEMA_OK') {
-    throw new Error('ai-sdk openai json-schema smoke 未拿到预期的 OpenAI-compatible 结构化输出。');
+  if (openAiResult.output.message !== "AI_SDK_JSON_SCHEMA_OK") {
+    throw new Error("ai-sdk openai json-schema smoke 未拿到预期的 OpenAI-compatible 结构化输出。");
   }
-  if (deepseekResult.output.message !== 'AI_SDK_DEEPSEEK_JSON_OK') {
-    throw new Error('ai-sdk deepseek json-schema smoke 未拿到预期的 DeepSeek 结构化输出。');
+  if (deepseekResult.output.message !== "AI_SDK_DEEPSEEK_JSON_OK") {
+    throw new Error("ai-sdk deepseek json-schema smoke 未拿到预期的 DeepSeek 结构化输出。");
   }
 
   const openAiRequest = chatRequestBodies[0];
   if (
     !isJsonObject(openAiRequest) ||
     !isJsonObject(openAiRequest.response_format) ||
-    openAiRequest.response_format.type !== 'json_schema'
+    openAiRequest.response_format.type !== "json_schema"
   ) {
-    throw new Error('ai-sdk openai json-schema smoke 未在 OpenAI-compatible 请求上发送 json_schema response_format。');
+    throw new Error(
+      "ai-sdk openai json-schema smoke 未在 OpenAI-compatible 请求上发送 json_schema response_format。",
+    );
   }
 
   const deepseekRequest = responsesRequestBodies[0];
   if (!isJsonObject(deepseekRequest)) {
-    throw new Error('ai-sdk deepseek json-schema smoke 未捕获 Responses 请求体。');
+    throw new Error("ai-sdk deepseek json-schema smoke 未捕获 Responses 请求体。");
   }
   const textConfig = isJsonObject(deepseekRequest.text as JsonValue)
     ? (deepseekRequest.text as Record<string, JsonValue>).format
     : undefined;
-  if (!isJsonObject(textConfig as JsonValue) || (textConfig as { type?: string }).type !== 'json_schema') {
-    throw new Error('ai-sdk deepseek json-schema smoke 未在 Responses 请求上发送 json_schema text.format。');
+  if (
+    !isJsonObject(textConfig as JsonValue) ||
+    (textConfig as { type?: string }).type !== "json_schema"
+  ) {
+    throw new Error(
+      "ai-sdk deepseek json-schema smoke 未在 Responses 请求上发送 json_schema text.format。",
+    );
   }
 
   const openAiTrace = openAiResult.requestTrace[0];
-  if (!isJsonObject(openAiTrace) || openAiTrace.kind !== 'openai_sdk_chat_completions') {
-    throw new Error('ai-sdk openai json-schema smoke 未写入 OpenAI-compatible request trace。');
+  if (!isJsonObject(openAiTrace) || openAiTrace.kind !== "openai_sdk_chat_completions") {
+    throw new Error("ai-sdk openai json-schema smoke 未写入 OpenAI-compatible request trace。");
   }
   const deepseekTrace = deepseekResult.requestTrace[0];
-  if (!isJsonObject(deepseekTrace) || deepseekTrace.kind !== 'deepseek_open_responses') {
-    throw new Error('ai-sdk deepseek json-schema smoke 未写入 deepseek_open_responses trace。');
+  if (!isJsonObject(deepseekTrace) || deepseekTrace.kind !== "deepseek_open_responses") {
+    throw new Error("ai-sdk deepseek json-schema smoke 未写入 deepseek_open_responses trace。");
   }
 }
 
@@ -185,11 +192,11 @@ async function readJsonBody(request: NodeJS.ReadableStream): Promise<JsonValue> 
     chunks.push(Buffer.isBuffer(chunk) ? chunk : Buffer.from(chunk));
   }
 
-  return JSON.parse(Buffer.concat(chunks).toString('utf8')) as JsonValue;
+  return JSON.parse(Buffer.concat(chunks).toString("utf8")) as JsonValue;
 }
 
 function isJsonObject(value: JsonValue | undefined): value is Record<string, JsonValue> {
-  return typeof value === 'object' && value !== null && !Array.isArray(value);
+  return typeof value === "object" && value !== null && !Array.isArray(value);
 }
 
 main().catch((error: unknown) => {

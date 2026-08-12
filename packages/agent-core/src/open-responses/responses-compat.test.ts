@@ -194,27 +194,27 @@ test("openResponsesReasoningTrace gpt-5.5 ignores mode and downgrades max", () =
   );
 });
 
-test('buildOpenResponsesRequestTrace uses deepseek_open_responses kind', () => {
+test("buildOpenResponsesRequestTrace uses deepseek_open_responses kind", () => {
   const trace = buildOpenResponsesRequestTrace(
     {
-      transportKind: 'open-responses',
-      apiKey: 'k',
-      model: 'deepseek-v4-flash',
-      llmVendor: 'deepseek',
+      transportKind: "open-responses",
+      apiKey: "k",
+      model: "deepseek-v4-flash",
+      llmVendor: "deepseek",
     },
     1,
     [],
     [],
   );
-  assert.equal((trace[0] as { kind?: string }).kind, 'deepseek_open_responses');
+  assert.equal((trace[0] as { kind?: string }).kind, "deepseek_open_responses");
 });
 
-test('resolveOpenResponsesReasoningSummary omits deepseek', () => {
+test("resolveOpenResponsesReasoningSummary omits deepseek", () => {
   assert.equal(
     resolveOpenResponsesReasoningSummary({
-      llmVendor: 'deepseek',
-      model: 'deepseek-v4-flash',
-      reasoningEffort: 'high',
+      llmVendor: "deepseek",
+      model: "deepseek-v4-flash",
+      reasoningEffort: "high",
     }),
     undefined,
   );

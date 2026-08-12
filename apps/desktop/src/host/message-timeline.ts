@@ -1428,14 +1428,10 @@ export class DesktopMessageTimeline {
     let lastAfterToolsTextIndex = -1;
     for (let index = 0; index < segment.rows.length; index += 1) {
       const row = segment.rows[index];
-      if (
-        row?.kind === "assistant-text" &&
-        row.section === "after-tools" &&
-        row.content.trim()
-      ) {
+      if (row?.kind === "assistant-text" && row.section === "after-tools" && row.content.trim()) {
         lastAfterToolsTextIndex = index;
       }
-      if (lastAfterToolsTextIndex >= 0 && row?.kind === 'tool' && index > lastAfterToolsTextIndex) {
+      if (lastAfterToolsTextIndex >= 0 && row?.kind === "tool" && index > lastAfterToolsTextIndex) {
         return true;
       }
     }
@@ -1471,7 +1467,6 @@ export class DesktopMessageTimeline {
         } else if (mode === "aux") {
           if (existing.content.trim() && segmentAllToolsTerminal(segment)) {
             // Gateway provider-search resume：工具前前缀已落在 before-tools 行，全部工具完成后合成思考须写到 after-tools。
-            const afterToolsRow =
             const afterToolsRow =
               this.findAfterToolsAssistantTextRow(segment, { afterLastTool: true }) ??
               this.createAssistantTextRow(segment, "after-tools", true);

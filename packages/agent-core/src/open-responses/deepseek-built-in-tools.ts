@@ -1,16 +1,13 @@
-import type { JsonObject, JsonValue } from '../ports.js';
-import {
-  isOpenResponsesTransportConfig,
-  type LlmTransportConfig,
-} from '../provider-config.js';
+import type { JsonObject, JsonValue } from "../ports.js";
+import { isOpenResponsesTransportConfig, type LlmTransportConfig } from "../provider-config.js";
 
-export const DEEPSEEK_RESPONSES_BUILT_IN_TOOL_TYPES = ['web_search'] as const;
+export const DEEPSEEK_RESPONSES_BUILT_IN_TOOL_TYPES = ["web_search"] as const;
 
 export type DeepSeekResponsesBuiltInToolType =
   (typeof DEEPSEEK_RESPONSES_BUILT_IN_TOOL_TYPES)[number];
 
 export function shouldUseDeepSeekResponsesBuiltInTools(config: LlmTransportConfig): boolean {
-  return isOpenResponsesTransportConfig(config) && config.llmVendor === 'deepseek';
+  return isOpenResponsesTransportConfig(config) && config.llmVendor === "deepseek";
 }
 
 export function buildDeepSeekResponsesBuiltInTools(): JsonObject[] {
@@ -41,10 +38,10 @@ export function mergeDeepSeekResponsesBuiltInTools(
 }
 
 function readResponsesBuiltInToolType(tool: JsonValue): string | undefined {
-  if (typeof tool !== 'object' || tool === null || Array.isArray(tool)) {
+  if (typeof tool !== "object" || tool === null || Array.isArray(tool)) {
     return undefined;
   }
 
   const record = tool as JsonObject;
-  return typeof record.type === 'string' ? record.type : undefined;
+  return typeof record.type === "string" ? record.type : undefined;
 }
