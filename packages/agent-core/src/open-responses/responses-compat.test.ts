@@ -2,11 +2,13 @@ import assert from "node:assert/strict";
 import test from "node:test";
 
 import {
+  buildOpenResponsesRequestTrace,
   isGatewayOpenAiRoutedModel,
   normalizeGatewayOpenAiModelId,
   openResponsesReasoningTrace,
   resolveAzureResourceName,
   resolveOpenResponsesLanguageModelId,
+  resolveOpenResponsesReasoningSummary,
   resolveOpenResponsesSdkProvider,
 } from "./responses-compat.js";
 import { extractAzureResourceNameFromApiBase } from "../azure-resource.js";
@@ -189,5 +191,31 @@ test("openResponsesReasoningTrace gpt-5.5 ignores mode and downgrades max", () =
       reasoningMode: "pro",
     }),
     { effort: "xhigh", summary: "auto" },
+  );
+});
+
+test("buildOpenResponsesRequestTrace uses deepseek_open_responses kind", () => {
+  const trace = buildOpenResponsesRequestTrace(
+    {
+      transportKind: "open-responses",
+      apiKey: "k",
+      model: "deepseek-v4-flash",
+      llmVendor: "deepseek",
+    },
+    1,
+    [],
+    [],
+  );
+  assert.equal((trace[0] as { kind?: string }).kind, "deepseek_open_responses");
+});
+
+test("resolveOpenResponsesReasoningSummary omits deepseek", () => {
+  assert.equal(
+    resolveOpenResponsesReasoningSummary({
+      llmVendor: "deepseek",
+      model: "deepseek-v4-flash",
+      reasoningEffort: "high",
+    }),
+    undefined,
   );
 });

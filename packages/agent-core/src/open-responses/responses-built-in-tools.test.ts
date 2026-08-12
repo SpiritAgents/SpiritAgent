@@ -6,6 +6,7 @@ import {
   buildGatewaySdkProviderBuiltinToolResultArgumentsJson,
   buildResponsesBuiltInToolArgumentsJson,
   buildResponsesBuiltInToolCardData,
+  formatDeepSeekInternalWebSearchDetail,
   isGenericProviderWebSearchQuery,
   isResponsesBuiltInToolName,
   parseResponsesBuiltInToolUiFromArgumentsJson,
@@ -41,12 +42,13 @@ test("buildResponsesBuiltInToolArgumentsJson extracts query and _spiritUi", () =
   const parsed = JSON.parse(json) as {
     query?: string;
     status?: string;
-    _spiritUi?: { headlineDetail?: string; inputExcerpt?: string };
+    _spiritUi?: { headlineDetail?: string; inputExcerpt?: string; suppressExpand?: boolean };
   };
   assert.equal(parsed.query, "DeepSeek latest generation");
   assert.equal(parsed.status, "completed");
-  assert.equal(parsed._spiritUi?.headlineDetail, undefined);
-  assert.match(parsed._spiritUi?.inputExcerpt ?? "", /DeepSeek latest generation/);
+  assert.equal(parsed._spiritUi?.headlineDetail, "DeepSeek latest generation");
+  assert.equal(parsed._spiritUi?.suppressExpand, true);
+  assert.equal(parsed._spiritUi?.inputExcerpt, "DeepSeek latest generation");
 });
 
 test("isGenericProviderWebSearchQuery detects Bailian placeholder query", () => {
@@ -101,8 +103,8 @@ test("parseResponsesBuiltInToolUiFromArgumentsJson reads embedded ui", () => {
     "web_search",
   );
   const ui = parseResponsesBuiltInToolUiFromArgumentsJson(json);
-  assert.equal(ui?.headlineDetail, undefined);
-  assert.match(ui?.inputExcerpt ?? "", /test query/);
+  assert.equal(ui?.headlineDetail, "test query");
+  assert.equal(ui?.suppressExpand, true);
 });
 
 test("resolveResponsesBuiltInToolStreamPhase maps terminal statuses", () => {
@@ -179,6 +181,77 @@ test("accumulateResponsesBuiltInToolPreviewsFromRawChunk marks completed on outp
     "succeeded",
   );
   const ui = parseResponsesBuiltInToolUiFromArgumentsJson(result.events[0].argumentsJson);
-  assert.equal(ui?.headlineDetail, undefined);
+  assert.equal(ui?.headlineDetail, "DeepSeek generation");
+  assert.equal(ui?.suppressExpand, true);
   assert.equal(ui?.sourceCount, undefined);
+});
+
+test("formatDeepSeekInternalWebSearchDetail joins search queries and strips call ids", () => {
+  assert.equal(
+    formatDeepSeekInternalWebSearchDetail({
+      type: "search",
+      queries: ["DeepSeek 是什么", "GPT 出到第几代了", "ws_call_id=call_00_abc"],
+    }),
+    "DeepSeek 是什么 GPT 出到第几代了",
+  );
+});
+
+test("formatDeepSeekInternalWebSearchDetail shows open_page url without ws_call_id suffix", () => {
+  assert.equal(
+    formatDeepSeekInternalWebSearchDetail({
+      type: "open_page",
+      url: "https://example.com/page#ws_call_id=call_01_xyz",
+    }),
+    "https://example.com/page",
+  );
+});
+
+test("buildResponsesBuiltInToolCardData sets internalActionType for open_page", () => {
+  const card = buildResponsesBuiltInToolCardData(
+    {
+      type: "web_search_call",
+      status: "completed",
+      action: {
+        type: "open_page",
+        url: "https://spirit.fast#ws_call_id=call_01",
+      },
+    },
+    "web_search",
+  );
+  assert.equal(card.internalActionType, "open_page");
+  assert.equal(card.headlineDetail, "https://spirit.fast");
+  assert.equal(card.suppressExpand, true);
+});
+
+test("buildResponsesBuiltInToolCardData sets internalActionType for find_in_page", () => {
+  const card = buildResponsesBuiltInToolCardData(
+    {
+      type: "web_search_call",
+      status: "completed",
+      action: {
+        type: "find_in_page",
+        url: "https://example.com/doc#ws_call_id=call_02",
+      },
+    },
+    "web_search",
+  );
+  assert.equal(card.internalActionType, "find_in_page");
+  assert.equal(card.headlineDetail, "https://example.com/doc");
+});
+
+test("buildResponsesBuiltInToolCardData keeps expandable sources for Bailian-style payloads", () => {
+  const card = buildResponsesBuiltInToolCardData(
+    {
+      type: "web_search_call",
+      status: "completed",
+      action: {
+        type: "search",
+        query: "Web search",
+        sources: [{ type: "url", url: "https://example.com/" }],
+      },
+    },
+    "web_search",
+  );
+  assert.equal(card.suppressExpand, undefined);
+  assert.match(card.outputExcerpt ?? "", /example\.com/);
 });

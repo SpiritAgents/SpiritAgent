@@ -20,7 +20,8 @@ export type ProviderWebSearchMode =
   | "xai-sdk-web-search"
   | "gateway-sdk-web-search"
   | "alibaba-responses-built-in-tools"
-  | "minimax-server-tools-web-search";
+  | "minimax-server-tools-web-search"
+  | "deepseek-responses-built-in-tools";
 
 export function shouldUseProviderWebSearch(config: LlmTransportConfig): boolean {
   return resolveProviderWebSearchMode(config) !== undefined || shouldUseAlibabaBuiltInTools(config);
@@ -58,6 +59,10 @@ function resolveOpenResponsesWebSearchMode(
 
   if (config.llmVendor === "alibaba") {
     return "alibaba-responses-built-in-tools";
+  }
+
+  if (config.llmVendor === "deepseek") {
+    return "deepseek-responses-built-in-tools";
   }
 
   if (shouldUseGatewayWebSearch(config)) {

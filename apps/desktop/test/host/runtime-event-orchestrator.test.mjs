@@ -1144,6 +1144,58 @@ test("context-usage-updated updates usage when context length is already known",
   });
 });
 
+test("interleaved built-in web_search shows Thinking placeholder after last terminal tool", () => {
+  const harness = createHarness();
+  harness.pushUser("find in page");
+
+  harness.orchestrator.applyRuntimeHostEvents([
+    { kind: "begin-assistant-response" },
+    { kind: "assistant-chunk", text: "好，试试就试试！" },
+    {
+      kind: "streaming-tool-preview",
+      toolCallId: "find-1",
+      toolName: "web_search",
+      argumentsJson: JSON.stringify({
+        status: "failed",
+        _spiritUi: { inputExcerpt: "spirit.fast", internalActionType: "find_in_page" },
+      }),
+    },
+    { kind: "assistant-chunk", text: "失败了，再试一次：" },
+    {
+      kind: "streaming-tool-preview",
+      toolCallId: "find-2",
+      toolName: "web_search",
+      argumentsJson: JSON.stringify({
+        status: "completed",
+        _spiritUi: { inputExcerpt: "https://spirit.fast", internalActionType: "find_in_page" },
+      }),
+    },
+  ]);
+
+  const timelineMessages = harness.timeline.toMessages();
+  const lastToolIndex = timelineMessages.findLastIndex((message) => message.tool);
+  const pendingAfterAllTools = timelineMessages.find(
+    (message, index) =>
+      index > lastToolIndex &&
+      message.role === "assistant" &&
+      message.pending &&
+      !message.tool &&
+      !message.content.trim(),
+  );
+  const showThinking = pendingAfterAllTools
+    ? shouldShowAssistantThinkingCollapsible(
+        pendingAfterAllTools,
+        { kind: "thinking", statusText: "| Thinking..." },
+        timelineMessages,
+        timelineMessages.indexOf(pendingAfterAllTools),
+      )
+    : false;
+
+  assert.ok(lastToolIndex >= 0);
+  assert.ok(pendingAfterAllTools, "expected empty pending row after last built-in tool");
+  assert.equal(showThinking, true);
+});
+
 test("sequential web_search clears Thinking placeholder during next preview and restores it after terminal", () => {
   const harness = createHarness();
   harness.pushUser("search twice");

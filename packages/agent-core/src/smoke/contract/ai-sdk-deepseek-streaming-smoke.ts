@@ -7,6 +7,7 @@ import { join } from "node:path";
 
 import type { JsonValue } from "../../ports.js";
 import { createLlmMessageContentFromTextAndImages } from "../../ports.js";
+import { AiSdkOpenResponsesTransport } from "../../open-responses/ai-sdk-transport.js";
 import { AiSdkOpenAiCompatibleTransport } from "../../openai/ai-sdk-transport.js";
 import { resolveOpenAiModelCompatibilityProfile } from "../../openai/openai-compat.js";
 import {
@@ -18,12 +19,16 @@ import {
 
 import { demoLookupToolDefinition, printSmokeSection } from "../shared/index.js";
 
+function sseEvent(payload: JsonValue): string {
+  return `data: ${JSON.stringify(payload)}\n\n`;
+}
+
 async function main(): Promise<void> {
   let requestCount = 0;
   const requestBodies: JsonValue[] = [];
 
   const server = createServer(async (request, response) => {
-    if (request.method !== "POST" || request.url !== "/v1/chat/completions") {
+    if (request.method !== "POST" || !request.url?.includes("/responses")) {
       response.statusCode = 404;
       response.end("not found");
       return;
@@ -41,104 +46,157 @@ async function main(): Promise<void> {
     const chunks =
       requestCount === 1
         ? [
-            {
-              id: "chatcmpl-deepseek-stream",
-              object: "chat.completion.chunk",
-              created: 0,
-              model: "deepseek-v4-pro",
-              choices: [
-                {
-                  index: 0,
-                  delta: {
-                    reasoning_content: "先想一下，",
-                    tool_calls: [
-                      {
-                        index: 0,
-                        id: "call_deepseek_stream_1",
-                        type: "function",
-                        function: {
-                          name: "demo_lookup",
-                          arguments: '{"query"',
-                        },
-                      },
-                    ],
-                  },
-                  finish_reason: null,
+            sseEvent({
+              type: "response.output_item.added",
+              output_index: 0,
+              item: {
+                type: "reasoning",
+                id: "rs_stream_1",
+                status: "in_progress",
+              },
+            }),
+            sseEvent({
+              type: "response.reasoning_text.delta",
+              item_id: "rs_stream_1",
+              output_index: 0,
+              delta: "先想一下，",
+            }),
+            sseEvent({
+              type: "response.reasoning_text.delta",
+              item_id: "rs_stream_1",
+              output_index: 0,
+              delta: "再查工具。",
+            }),
+            sseEvent({
+              type: "response.output_item.done",
+              output_index: 0,
+              item: {
+                type: "reasoning",
+                id: "rs_stream_1",
+                status: "completed",
+                content: [{ type: "reasoning_text", text: "先想一下，再查工具。" }],
+              },
+            }),
+            sseEvent({
+              type: "response.output_item.added",
+              output_index: 1,
+              item: {
+                type: "function_call",
+                id: "fc_stream_1",
+                call_id: "call_deepseek_stream_1",
+                name: "demo_lookup",
+                arguments: "",
+                status: "in_progress",
+              },
+            }),
+            sseEvent({
+              type: "response.function_call_arguments.delta",
+              item_id: "fc_stream_1",
+              output_index: 1,
+              delta: '{"query"',
+            }),
+            sseEvent({
+              type: "response.function_call_arguments.delta",
+              item_id: "fc_stream_1",
+              output_index: 1,
+              delta: ':"Spirit Agent deepseek"}',
+            }),
+            sseEvent({
+              type: "response.output_item.done",
+              output_index: 1,
+              item: {
+                type: "function_call",
+                id: "fc_stream_1",
+                call_id: "call_deepseek_stream_1",
+                name: "demo_lookup",
+                arguments: '{"query":"Spirit Agent deepseek"}',
+                status: "completed",
+              },
+            }),
+            sseEvent({
+              type: "response.completed",
+              response: {
+                id: "resp-stream-1",
+                status: "completed",
+                usage: {
+                  input_tokens: 1,
+                  output_tokens: 1,
+                  input_tokens_details: { cached_tokens: 0 },
+                  output_tokens_details: { reasoning_tokens: 2 },
                 },
-              ],
-            },
-            {
-              id: "chatcmpl-deepseek-stream",
-              object: "chat.completion.chunk",
-              created: 0,
-              model: "deepseek-v4-pro",
-              choices: [
-                {
-                  index: 0,
-                  delta: {
-                    reasoning_content: "再查工具。",
-                    tool_calls: [
-                      {
-                        index: 0,
-                        function: {
-                          arguments: ':"Spirit Agent deepseek"}',
-                        },
-                      },
-                    ],
-                  },
-                  finish_reason: null,
-                },
-              ],
-            },
-            {
-              id: "chatcmpl-deepseek-stream",
-              object: "chat.completion.chunk",
-              created: 0,
-              model: "deepseek-v4-pro",
-              choices: [
-                {
-                  index: 0,
-                  delta: {},
-                  finish_reason: "tool_calls",
-                },
-              ],
-            },
+              },
+            }),
           ]
         : [
-            {
-              id: "chatcmpl-deepseek-stream-final",
-              object: "chat.completion.chunk",
-              created: 0,
-              model: "deepseek-v4-pro",
-              choices: [
-                {
-                  index: 0,
-                  delta: {
-                    content: "AI_SDK_DEEPSEEK_OK",
+            sseEvent({
+              type: "response.output_item.added",
+              output_index: 0,
+              item: {
+                type: "message",
+                id: "msg_stream_2",
+                role: "assistant",
+                status: "in_progress",
+              },
+            }),
+            sseEvent({
+              type: "response.content_part.added",
+              item_id: "msg_stream_2",
+              output_index: 0,
+              content_index: 0,
+              part: { type: "output_text", text: "" },
+            }),
+            sseEvent({
+              type: "response.output_text.delta",
+              item_id: "msg_stream_2",
+              output_index: 0,
+              content_index: 0,
+              delta: "AI_SDK_DEEPSEEK_OK",
+            }),
+            sseEvent({
+              type: "response.output_text.done",
+              item_id: "msg_stream_2",
+              output_index: 0,
+              content_index: 0,
+              text: "AI_SDK_DEEPSEEK_OK",
+            }),
+            sseEvent({
+              type: "response.output_item.done",
+              output_index: 0,
+              item: {
+                type: "message",
+                id: "msg_stream_2",
+                role: "assistant",
+                status: "completed",
+                content: [{ type: "output_text", text: "AI_SDK_DEEPSEEK_OK" }],
+              },
+            }),
+            sseEvent({
+              type: "response.completed",
+              response: {
+                id: "resp-stream-2",
+                status: "completed",
+                usage: {
+                  input_tokens: 1,
+                  output_tokens: 1,
+                  input_tokens_details: { cached_tokens: 0 },
+                  output_tokens_details: { reasoning_tokens: 0 },
+                },
+                output: [
+                  {
+                    type: "message",
+                    id: "msg_stream_2",
+                    role: "assistant",
+                    status: "completed",
+                    content: [{ type: "output_text", text: "AI_SDK_DEEPSEEK_OK" }],
                   },
-                  finish_reason: null,
-                },
-              ],
-            },
-            {
-              id: "chatcmpl-deepseek-stream-final",
-              object: "chat.completion.chunk",
-              created: 0,
-              model: "deepseek-v4-pro",
-              choices: [
-                {
-                  index: 0,
-                  delta: {},
-                  finish_reason: "stop",
-                },
-              ],
-            },
+                ],
+              },
+            }),
           ];
 
     for (const chunk of chunks) {
-      response.write(`data: ${JSON.stringify(chunk)}\n\n`);
+      response.write(chunk);
     }
-    response.write("data: [DONE]\n\n");
     response.end();
   });
 
@@ -151,23 +209,25 @@ async function main(): Promise<void> {
     throw new Error("无法获取本地 smoke server 端口。");
   }
 
-  const baseUrl = `http://127.0.0.1:${(address as AddressInfo).port}/v1`;
-  const transport = new AiSdkOpenAiCompatibleTransport();
+  const baseUrl = `http://127.0.0.1:${(address as AddressInfo).port}`;
+  const transport = new AiSdkOpenResponsesTransport();
+  const config = {
+    transportKind: "open-responses" as const,
+    apiKey: "test-key",
+    model: "deepseek-v4-flash",
+    baseUrl,
+    llmVendor: "deepseek" as const,
+  };
   const state = startOpenAiToolAgentState(
     [],
     "Call demo_lookup exactly once.",
     process.cwd(),
     [],
     [],
-    "deepseek-v4-pro",
+    config.model,
   );
   const started = await transport.startToolAgentRoundStreaming(
-    {
-      apiKey: "test-key",
-      model: "deepseek-v4-pro",
-      baseUrl,
-      llmVendor: "deepseek",
-    },
+    config,
     state,
     demoLookupToolDefinition(),
   );
@@ -200,17 +260,6 @@ async function main(): Promise<void> {
     throw new Error("ai-sdk deepseek streaming smoke step 1 未进入预期的 tool-calls。");
   }
 
-  const firstAssistant = firstCompletion.result.state.messages.at(-1);
-  if (
-    !isJsonObject(firstAssistant) ||
-    firstAssistant.reasoning_content !== "先想一下，再查工具。"
-  ) {
-    server.close();
-    throw new Error(
-      "ai-sdk deepseek streaming smoke 未在 assistant tool_call message 上保留 reasoning_content。",
-    );
-  }
-
   const resumedState = appendOpenAiToolResultMessage(
     firstCompletion.result.state,
     "call_deepseek_stream_1",
@@ -218,12 +267,7 @@ async function main(): Promise<void> {
   );
 
   const secondStarted = await transport.startToolAgentRoundStreaming(
-    {
-      apiKey: "test-key",
-      model: "deepseek-v4-pro",
-      baseUrl,
-      llmVendor: "deepseek",
-    },
+    config,
     resumedState,
     demoLookupToolDefinition(),
   );
@@ -250,29 +294,22 @@ async function main(): Promise<void> {
   }
 
   const firstRequest = requestBodies[0];
-  if (
-    !isJsonObject(firstRequest) ||
-    !isJsonObject(firstRequest.thinking) ||
-    firstRequest.thinking.type !== "enabled"
-  ) {
-    throw new Error(
-      "ai-sdk deepseek streaming smoke 未在首轮请求上通过官方 DeepSeek provider 发送 thinking=enabled。",
-    );
+  if (!isJsonObject(firstRequest)) {
+    throw new Error("ai-sdk deepseek streaming smoke 未捕获首轮请求体。");
+  }
+  const firstTools = firstRequest.tools as Array<{ type?: string }> | undefined;
+  if (!firstTools?.some((tool) => tool.type === "web_search")) {
+    throw new Error("ai-sdk deepseek streaming smoke 首轮请求未注入 web_search。");
   }
 
-  const secondRequestAssistant = findLastAssistantWithToolCalls(requestBodies[1]);
-  if (
-    !isJsonObject(secondRequestAssistant) ||
-    secondRequestAssistant.reasoning_content !== "先想一下，再查工具。"
-  ) {
-    throw new Error(
-      "ai-sdk deepseek streaming smoke 未把 reasoning_content 回灌到第二轮 DeepSeek request body。",
-    );
+  const roundTwoBody = requestBodies[1];
+  if (!isJsonObject(roundTwoBody) || !Array.isArray(roundTwoBody.input)) {
+    throw new Error("ai-sdk deepseek streaming smoke 第二轮未发送 Responses input 历史。");
   }
 
   const traceEntry = secondCompletion.result.requestTrace[0];
-  if (!isJsonObject(traceEntry) || traceEntry.kind !== "deepseek_sdk_chat_completions") {
-    throw new Error("ai-sdk deepseek streaming smoke 未标记 DeepSeek 专用 request trace kind。");
+  if (!isJsonObject(traceEntry) || traceEntry.kind !== "deepseek_open_responses") {
+    throw new Error("ai-sdk deepseek streaming smoke 未标记 deepseek_open_responses trace kind。");
   }
 
   await runDeepSeekVisionCapabilitySmoke();
@@ -498,19 +535,6 @@ async function readJsonBody(request: NodeJS.ReadableStream): Promise<JsonValue> 
   }
 
   return JSON.parse(Buffer.concat(chunks).toString("utf8")) as JsonValue;
-}
-
-function findLastAssistantWithToolCalls(requestBody: JsonValue | undefined): JsonValue | undefined {
-  if (!isJsonObject(requestBody) || !Array.isArray(requestBody.messages)) {
-    return undefined;
-  }
-
-  return [...requestBody.messages]
-    .reverse()
-    .find(
-      (message) =>
-        isJsonObject(message) && message.role === "assistant" && Array.isArray(message.tool_calls),
-    );
 }
 
 function findLastUserMessage(requestBody: JsonValue | undefined): JsonValue | undefined {

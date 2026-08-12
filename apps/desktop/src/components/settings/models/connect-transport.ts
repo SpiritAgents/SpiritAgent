@@ -102,7 +102,7 @@ export function defaultConnectTransportKind(provider: DesktopModelProvider): Des
   if (provider === "amazon-bedrock") {
     return "bedrock";
   }
-  if (provider === "azure" || provider === "openai") {
+  if (provider === "azure" || provider === "openai" || provider === "deepseek") {
     return "open-responses";
   }
 

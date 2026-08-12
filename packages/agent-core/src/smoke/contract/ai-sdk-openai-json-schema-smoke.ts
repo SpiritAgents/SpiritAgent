@@ -3,53 +3,93 @@ import { createServer } from "node:http";
 import type { AddressInfo } from "node:net";
 
 import type { JsonValue } from "../../ports.js";
+import { AiSdkOpenResponsesTransport } from "../../open-responses/ai-sdk-transport.js";
 import { AiSdkOpenAiCompatibleTransport } from "../../openai/ai-sdk-transport.js";
 import type { OpenAiJsonSchemaCompletionRequest } from "../../openai/json-schema.js";
 
 import { printSmokeSection } from "../shared/index.js";
 
 async function main(): Promise<void> {
-  const requestBodies: JsonValue[] = [];
+  const chatRequestBodies: JsonValue[] = [];
+  const responsesRequestBodies: JsonValue[] = [];
   const server = createServer(async (request, response) => {
-    if (request.method !== "POST" || request.url !== "/v1/chat/completions") {
+    if (request.method !== "POST") {
       response.statusCode = 404;
       response.end("not found");
       return;
     }
 
-    requestBodies.push(await readJsonBody(request));
-    const body = requestBodies[requestBodies.length - 1];
-    const message =
-      isJsonObject(body) && body.model === "deepseek-chat"
-        ? "AI_SDK_DEEPSEEK_JSON_OK"
-        : "AI_SDK_JSON_SCHEMA_OK";
-
-    response.writeHead(200, {
-      "content-type": "application/json",
-    });
-    response.end(
-      JSON.stringify({
-        id: `chatcmpl-json-${requestBodies.length}`,
-        object: "chat.completion",
-        created: 0,
-        model: isJsonObject(body) && typeof body.model === "string" ? body.model : "unknown",
-        choices: [
-          {
-            index: 0,
-            message: {
-              role: "assistant",
-              content: JSON.stringify({ message }),
+    if (request.url === "/v1/chat/completions") {
+      chatRequestBodies.push(await readJsonBody(request));
+      response.writeHead(200, {
+        "content-type": "application/json",
+      });
+      response.end(
+        JSON.stringify({
+          id: "chatcmpl-json-openai",
+          object: "chat.completion",
+          created: 0,
+          model: "test-openai-compatible",
+          choices: [
+            {
+              index: 0,
+              message: {
+                role: "assistant",
+                content: JSON.stringify({ message: "AI_SDK_JSON_SCHEMA_OK" }),
+              },
+              finish_reason: "stop",
             },
-            finish_reason: "stop",
+          ],
+          usage: {
+            prompt_tokens: 1,
+            completion_tokens: 1,
+            total_tokens: 2,
           },
-        ],
-        usage: {
-          prompt_tokens: 1,
-          completion_tokens: 1,
-          total_tokens: 2,
-        },
-      }),
-    );
+        }),
+      );
+      return;
+    }
+
+    if (request.url?.includes("/responses")) {
+      responsesRequestBodies.push(await readJsonBody(request));
+      response.writeHead(200, {
+        "content-type": "application/json",
+      });
+      response.end(
+        JSON.stringify({
+          id: "resp-deepseek-json",
+          object: "response",
+          created_at: 0,
+          model: "deepseek-v4-flash",
+          status: "completed",
+          usage: {
+            input_tokens: 1,
+            output_tokens: 1,
+            input_tokens_details: { cached_tokens: 0 },
+            output_tokens_details: { reasoning_tokens: 0 },
+            total_tokens: 2,
+          },
+          output: [
+            {
+              type: "message",
+              id: "msg_json_1",
+              role: "assistant",
+              status: "completed",
+              content: [
+                {
+                  type: "output_text",
+                  text: JSON.stringify({ message: "AI_SDK_DEEPSEEK_JSON_OK" }),
+                },
+              ],
+            },
+          ],
+        }),
+      );
+      return;
+    }
+
+    response.statusCode = 404;
+    response.end("not found");
   });
 
   server.listen(0, "127.0.0.1");
@@ -61,8 +101,9 @@ async function main(): Promise<void> {
     throw new Error("无法获取本地 smoke server 端口。");
   }
 
-  const baseUrl = `http://127.0.0.1:${(address as AddressInfo).port}/v1`;
-  const transport = new AiSdkOpenAiCompatibleTransport();
+  const host = `http://127.0.0.1:${(address as AddressInfo).port}`;
+  const compatibleTransport = new AiSdkOpenAiCompatibleTransport();
+  const responsesTransport = new AiSdkOpenResponsesTransport();
   const request: OpenAiJsonSchemaCompletionRequest = {
     userPrompt: "Return a JSON object with a commit message.",
     schemaName: "structured_message",
@@ -78,19 +119,20 @@ async function main(): Promise<void> {
     },
   };
 
-  const openAiResult = await transport.createJsonSchemaCompletion<{ message: string }>(
+  const openAiResult = await compatibleTransport.createJsonSchemaCompletion<{ message: string }>(
     {
       apiKey: "test-key",
       model: "test-openai-compatible",
-      baseUrl,
+      baseUrl: `${host}/v1`,
     },
     request,
   );
-  const deepseekResult = await transport.createJsonSchemaCompletion<{ message: string }>(
+  const deepseekResult = await responsesTransport.createJsonSchemaCompletion<{ message: string }>(
     {
+      transportKind: "open-responses",
       apiKey: "test-key",
-      model: "deepseek-chat",
-      baseUrl,
+      model: "deepseek-v4-flash",
+      baseUrl: host,
       llmVendor: "deepseek",
     },
     request,
@@ -107,7 +149,7 @@ async function main(): Promise<void> {
     throw new Error("ai-sdk deepseek json-schema smoke 未拿到预期的 DeepSeek 结构化输出。");
   }
 
-  const openAiRequest = requestBodies[0];
+  const openAiRequest = chatRequestBodies[0];
   if (
     !isJsonObject(openAiRequest) ||
     !isJsonObject(openAiRequest.response_format) ||
@@ -118,19 +160,19 @@ async function main(): Promise<void> {
     );
   }
 
-  const deepseekRequest = requestBodies[1];
+  const deepseekRequest = responsesRequestBodies[0];
+  if (!isJsonObject(deepseekRequest)) {
+    throw new Error("ai-sdk deepseek json-schema smoke 未捕获 Responses 请求体。");
+  }
+  const textConfig = isJsonObject(deepseekRequest.text as JsonValue)
+    ? (deepseekRequest.text as Record<string, JsonValue>).format
+    : undefined;
   if (
-    !isJsonObject(deepseekRequest) ||
-    !isJsonObject(deepseekRequest.response_format) ||
-    deepseekRequest.response_format.type !== "json_object"
+    !isJsonObject(textConfig as JsonValue) ||
+    (textConfig as { type?: string }).type !== "json_schema"
   ) {
     throw new Error(
-      "ai-sdk deepseek json-schema smoke 未在 DeepSeek 请求上发送 json_object response_format。",
-    );
-  }
-  if (!isJsonObject(deepseekRequest.thinking) || deepseekRequest.thinking.type !== "enabled") {
-    throw new Error(
-      "ai-sdk deepseek json-schema smoke 未在 DeepSeek 请求上发送 thinking=enabled。",
+      "ai-sdk deepseek json-schema smoke 未在 Responses 请求上发送 json_schema text.format。",
     );
   }
 
@@ -139,26 +181,9 @@ async function main(): Promise<void> {
     throw new Error("ai-sdk openai json-schema smoke 未写入 OpenAI-compatible request trace。");
   }
   const deepseekTrace = deepseekResult.requestTrace[0];
-  if (!isJsonObject(deepseekTrace) || deepseekTrace.kind !== "deepseek_sdk_chat_completions") {
-    throw new Error("ai-sdk deepseek json-schema smoke 未写入 DeepSeek request trace。");
+  if (!isJsonObject(deepseekTrace) || deepseekTrace.kind !== "deepseek_open_responses") {
+    throw new Error("ai-sdk deepseek json-schema smoke 未写入 deepseek_open_responses trace。");
   }
-  const deepseekSystemMessage = extractFirstSystemMessage(deepseekTrace);
-  if (!deepseekSystemMessage.includes("[JSON_SCHEMA]")) {
-    throw new Error(
-      "ai-sdk deepseek json-schema smoke 未在 request trace 上保留额外 JSON schema system guidance。",
-    );
-  }
-}
-
-function extractFirstSystemMessage(requestBody: JsonValue | undefined): string {
-  if (!isJsonObject(requestBody) || !Array.isArray(requestBody.messages)) {
-    return "";
-  }
-
-  const message = requestBody.messages.find(
-    (entry) => isJsonObject(entry) && entry.role === "system" && typeof entry.content === "string",
-  );
-  return isJsonObject(message) && typeof message.content === "string" ? message.content : "";
 }
 
 async function readJsonBody(request: NodeJS.ReadableStream): Promise<JsonValue> {

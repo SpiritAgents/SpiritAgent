@@ -646,7 +646,8 @@ export class DesktopRuntimeEventOrchestrator {
       const providerUi = isResponsesBuiltIn
         ? parseResponsesBuiltInToolUiFromArgumentsJson(event.argumentsJson)
         : undefined;
-      const suppressExpand = formulaUi?.suppressExpand === true;
+      const suppressExpand =
+        formulaUi?.suppressExpand === true || providerUi?.suppressExpand === true;
       const previewRequest = previewRequestFromStreamingArguments(
         event.toolName,
         event.argumentsJson,

@@ -237,6 +237,7 @@ export class AgentRuntime<Config, State, ToolRequest, TrustTarget = string> {
   private thinkingTextStore: string;
   private toolPreviewSeenInStreamRoundStore = false;
   private providerBuiltinToolTerminalSeenInStreamRoundStore = false;
+  private awaitingPostBuiltInToolStreamDeltaStore = false;
   private compactionTextStore: string;
   private pendingUserTurnStore: string | undefined;
   private pendingApproval: PendingApprovalState<State, ToolRequest, TrustTarget> | undefined;
@@ -301,6 +302,7 @@ export class AgentRuntime<Config, State, ToolRequest, TrustTarget = string> {
     this.thinkingTextStore = "";
     this.toolPreviewSeenInStreamRoundStore = false;
     this.providerBuiltinToolTerminalSeenInStreamRoundStore = false;
+    this.awaitingPostBuiltInToolStreamDeltaStore = false;
     this.compactionTextStore = "";
     this.childSessionsStore = [];
     this.streamChunkCounterStore = 0;

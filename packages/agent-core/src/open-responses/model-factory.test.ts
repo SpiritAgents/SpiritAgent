@@ -453,3 +453,37 @@ test("buildResponsesProviderOptions maps hugging-face reasoningEffort to hugging
     },
   );
 });
+
+test("buildResponsesProviderOptions maps direct deepseek reasoning via deepseek namespace", () => {
+  assert.deepEqual(
+    buildResponsesProviderOptions({
+      transportKind: "open-responses",
+      apiKey: "ds_test",
+      model: "deepseek-v4-flash",
+      baseUrl: "https://api.deepseek.com",
+      llmVendor: "deepseek",
+      reasoningEffort: "max",
+    }),
+    {
+      deepseek: {
+        reasoningEffort: "max",
+      },
+    },
+  );
+  assert.deepEqual(
+    buildResponsesProviderOptions({
+      transportKind: "open-responses",
+      apiKey: "ds_test",
+      model: "deepseek-v4-flash",
+      baseUrl: "https://api.deepseek.com",
+      llmVendor: "deepseek",
+      reasoningEffort: "high",
+      vendorExtendedThinking: false,
+    }),
+    {
+      deepseek: {
+        reasoningEffort: "none",
+      },
+    },
+  );
+});

@@ -85,6 +85,10 @@ test("resolveProviderConnectApiBase uses transport-specific preset bases", () =>
     "https://api.longcat.chat/anthropic/v1",
   );
   assert.equal(
+    resolveProviderConnectApiBase("deepseek", "open-responses"),
+    "https://api.deepseek.com",
+  );
+  assert.equal(
     resolveProviderConnectApiBase("mistral", "openai-compatible"),
     "https://api.mistral.ai/v1",
   );

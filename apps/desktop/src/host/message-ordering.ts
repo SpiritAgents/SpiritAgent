@@ -1170,13 +1170,34 @@ function hasBlockingToolAheadOfSameTurnPreview(
   return false;
 }
 
+function internalWebSearchActionHeadlineKey(
+  internalActionType: "search" | "open_page" | "find_in_page" | undefined,
+): string {
+  switch (internalActionType) {
+    case "open_page":
+      return "tool.fetch";
+    case "find_in_page":
+      return "tool.findInPage";
+    default:
+      return "tool.webSearch";
+  }
+}
+
 export function toolCallSummaryCopyForResponsesBuiltInTool(
   toolName: string,
   phase: ToolBlockSnapshot["phase"],
   previewSummary: ToolCallSummaryCopy,
-  providerUi?: { headlineDetail?: string; sourceCount?: number },
+  providerUi?: {
+    headlineDetail?: string;
+    sourceCount?: number;
+    internalActionType?: "search" | "open_page" | "find_in_page";
+  },
 ): ToolCallSummaryCopy {
   if (toolName === "web_search") {
+    const ctx = phaseToVerbContext(phase);
+    const tOpts = ctx ? { context: ctx } : {};
+    const headlineKey = internalWebSearchActionHeadlineKey(providerUi?.internalActionType);
+    const headline = i18n.t(headlineKey, tOpts);
     const headlineDetail =
       previewSummary.headlineDetail?.trim() || providerUi?.headlineDetail?.trim();
     if (
@@ -1186,12 +1207,12 @@ export function toolCallSummaryCopyForResponsesBuiltInTool(
       providerUi.sourceCount > 0
     ) {
       return {
-        headline: previewSummary.headline,
+        headline,
         headlineDetail: i18n.t("tool.webSearchSourceCount", { count: providerUi.sourceCount }),
       };
     }
     return {
-      headline: previewSummary.headline,
+      headline,
       ...(headlineDetail ? { headlineDetail } : {}),
     };
   }
