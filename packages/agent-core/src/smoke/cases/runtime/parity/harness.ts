@@ -1793,7 +1793,8 @@ export class StreamingApprovalImageExecutor extends StreamingApprovalExecutor {
       return createToolExecutionTextOutput(`approved output for ${request.name}`);
     }
 
-    const summaryText = "[read image]\npath: approved-image.png\n\nImage file returned as image input.";
+    const summaryText =
+      "[read image]\npath: approved-image.png\n\nImage file returned as image input.";
     return {
       summaryText,
       content: createLlmMessageContentFromTextAndImages(summaryText, ["approved-image.png"]),

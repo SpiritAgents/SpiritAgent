@@ -1027,7 +1027,9 @@ export class NodeHostToolService<
       case "grep":
         return this.executeSearchFiles(request.query, request.is_regexp ?? false, request.glob);
       case "subagent":
-        throw new Error("subagent must be handled by the Agent runtime, not the host-internal tool executor");
+        throw new Error(
+          "subagent must be handled by the Agent runtime, not the host-internal tool executor",
+        );
       case "generate_image":
         throw new Error(
           "generate_image must be handled by the Agent runtime, not the host-internal tool executor",
@@ -1037,7 +1039,9 @@ export class NodeHostToolService<
           "generate_video must be handled by the Agent runtime, not the host-internal tool executor",
         );
       case "ask_questions":
-        throw new Error("ask_questions must be suspended by the runtime for user input, not executed directly");
+        throw new Error(
+          "ask_questions must be suspended by the runtime for user input, not executed directly",
+        );
       case "extension_tool":
         if (!this.extensions) {
           throw new Error("Extension tool execution is not enabled for this host.");
@@ -1681,13 +1685,18 @@ export class NodeHostToolService<
     const compatibilityProfile = this.getModelCompatibilityProfile?.();
     if (isImageInputBlocked(compatibilityProfile)) {
       return createHostToolTextOutput(
-        [...summaryLines, "", "This model does not support image input; the image file cannot be returned as image input."].join("\n"),
+        [
+          ...summaryLines,
+          "",
+          "This model does not support image input; the image file cannot be returned as image input.",
+        ].join("\n"),
       );
     }
 
-    return createHostToolOutput([...summaryLines, "", "Image file returned as image input."].join("\n"), [
-      { type: "image", path: imagePath },
-    ]);
+    return createHostToolOutput(
+      [...summaryLines, "", "Image file returned as image input."].join("\n"),
+      [{ type: "image", path: imagePath }],
+    );
   }
 
   private createVideoToolOutput(
@@ -1701,13 +1710,18 @@ export class NodeHostToolService<
     const compatibilityProfile = this.getModelCompatibilityProfile?.();
     if (isVideoInputBlocked(compatibilityProfile)) {
       return createHostToolTextOutput(
-        [...summaryLines, "", "This model does not support video input; the video file cannot be returned as video input."].join("\n"),
+        [
+          ...summaryLines,
+          "",
+          "This model does not support video input; the video file cannot be returned as video input.",
+        ].join("\n"),
       );
     }
 
-    return createHostToolOutput([...summaryLines, "", "Video file returned as video input."].join("\n"), [
-      { type: "video", path: videoPath },
-    ]);
+    return createHostToolOutput(
+      [...summaryLines, "", "Video file returned as video input."].join("\n"),
+      [{ type: "video", path: videoPath }],
+    );
   }
 
   private async persistWebFetchedImage(bytes: Uint8Array, extension: string): Promise<string> {
@@ -1988,7 +2002,9 @@ export class NodeHostToolService<
           path: operation.path,
         });
       default:
-        throw new Error(`Unsupported apply_patch operation: ${(operation as ApplyPatchOperation).type}`);
+        throw new Error(
+          `Unsupported apply_patch operation: ${(operation as ApplyPatchOperation).type}`,
+        );
     }
   }
 
@@ -2042,7 +2058,10 @@ export class NodeHostToolService<
       await this.fileChangeObserver.recordFileChange(change);
     } catch (error) {
       const message = error instanceof Error ? error.message : String(error);
-      throw new Error(`File change was written, but recording the rewind snapshot failed: ${message}`, { cause: error });
+      throw new Error(
+        `File change was written, but recording the rewind snapshot failed: ${message}`,
+        { cause: error },
+      );
     }
   }
 
