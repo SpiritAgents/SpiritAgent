@@ -55,7 +55,7 @@ test("read_file returns unsupported image text without image part when model blo
       path: imagePath,
     });
     assertHostToolExecutionOutput(output);
-    assert.match(output.summaryText, /该模型不支持 Image 输入/u);
+    assert.match(output.summaryText, /This model does not support image input/u);
     assert.equal(
       output.content.some((part) => part.type === "image"),
       false,
@@ -93,7 +93,7 @@ test("read_file returns unsupported video text without video part when model blo
       path: videoPath,
     });
     assertHostToolExecutionOutput(output);
-    assert.match(output.summaryText, /该模型不支持视频输入/u);
+    assert.match(output.summaryText, /This model does not support video input/u);
     assert.equal(
       output.content.some((part) => part.type === "video"),
       false,
@@ -127,7 +127,7 @@ test("read_file still returns video part when model explicitly supports video in
       path: videoPath,
     });
     assertHostToolExecutionOutput(output);
-    assert.match(output.summaryText, /视频文件已作为视频输入返回/u);
+    assert.match(output.summaryText, /Video file returned as video input/u);
     assert.equal(
       output.content.some((part) => part.type === "video"),
       true,
@@ -161,7 +161,7 @@ test("read_file still returns image part when model explicitly supports image in
       path: imagePath,
     });
     assertHostToolExecutionOutput(output);
-    assert.match(output.summaryText, /图像文件已作为图片输入返回/u);
+    assert.match(output.summaryText, /Image file returned as image input/u);
     assert.equal(
       output.content.some((part) => part.type === "image"),
       true,
@@ -282,7 +282,7 @@ test("web_fetch returns blocked-image text without image part for remote image r
       url: "https://example.com/source-image",
     });
     assertHostToolExecutionOutput(output);
-    assert.match(output.summaryText, /该模型不支持 Image 输入/u);
+    assert.match(output.summaryText, /This model does not support image input/u);
     assert.equal(
       output.content.some((part) => part.type === "image"),
       false,
@@ -546,7 +546,7 @@ test("grep rejects glob patterns that escape the workspace", async () => {
           query: "needle",
           glob: "../**/*.ts",
         }),
-      /glob pattern 不能跳出 workspace/u,
+      /glob pattern must not escape the workspace/u,
     );
   } finally {
     await rm(workspaceRoot, { recursive: true, force: true });
@@ -723,7 +723,7 @@ test("glob rejects patterns that escape the workspace", async () => {
           name: "glob",
           pattern: "../**/*.ts",
         }),
-      /glob pattern 不能跳出 workspace/u,
+      /glob pattern must not escape the workspace/u,
     );
   } finally {
     await rm(workspaceRoot, { recursive: true, force: true });
@@ -929,7 +929,7 @@ test("create_plan writes plans/{name}.md and rejects duplicate names", async () 
           plan_name: "demo-plan",
           content: "# Again",
         }),
-      /已存在/,
+      /Plan file already exists/u,
     );
   } finally {
     await rm(workspaceRoot, { recursive: true, force: true });

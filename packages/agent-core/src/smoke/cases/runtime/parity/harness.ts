@@ -1793,7 +1793,7 @@ export class StreamingApprovalImageExecutor extends StreamingApprovalExecutor {
       return createToolExecutionTextOutput(`approved output for ${request.name}`);
     }
 
-    const summaryText = "[read image]\npath: approved-image.png\n\n图像文件已作为图片输入返回。";
+    const summaryText = "[read image]\npath: approved-image.png\n\nImage file returned as image input.";
     return {
       summaryText,
       content: createLlmMessageContentFromTextAndImages(summaryText, ["approved-image.png"]),
@@ -2380,7 +2380,7 @@ export class ToolImageProjectionExecutor extends HostExecutor {
       return super.execute(request);
     }
 
-    const summaryText = "[read image]\npath: tool-image.png\n\n图像文件已作为图片输入返回。";
+    const summaryText = "[read image]\npath: tool-image.png\n\nImage file returned as image input.";
     return {
       summaryText,
       content: createLlmMessageContentFromTextAndImages(summaryText, ["tool-image.png"]),
