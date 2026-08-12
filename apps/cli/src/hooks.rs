@@ -11,12 +11,8 @@ use crate::{
 };
 
 pub enum HookCommand {
-    List {
-        workspace: Option<PathBuf>,
-    },
-    Validate {
-        workspace: Option<PathBuf>,
-    },
+    List { workspace: Option<PathBuf> },
+    Validate { workspace: Option<PathBuf> },
 }
 
 pub fn handle_hooks_cli(action: HookCommand) -> Result<()> {
@@ -25,14 +21,14 @@ pub fn handle_hooks_cli(action: HookCommand) -> Result<()> {
         HookCommand::List { workspace } => {
             let workspace_root = workspace.unwrap_or_else(|| app_paths.workspace_root());
             let mut runtime = DaemonRuntime::new_host_only(workspace_root.clone())?;
-            let items = runtime.list_hook_entries(Some(workspace_root.to_string_lossy().as_ref()))?;
+            let items =
+                runtime.list_hook_entries(Some(workspace_root.to_string_lossy().as_ref()))?;
             print_hooks_list(&items);
         }
         HookCommand::Validate { workspace } => {
             let workspace_root = workspace.unwrap_or_else(|| app_paths.workspace_root());
             let mut runtime = DaemonRuntime::new_host_only(workspace_root.clone())?;
-            let report =
-                runtime.validate_hooks(Some(workspace_root.to_string_lossy().as_ref()))?;
+            let report = runtime.validate_hooks(Some(workspace_root.to_string_lossy().as_ref()))?;
             print_hooks_validation_report(&report);
         }
     }

@@ -644,12 +644,9 @@ pub(in crate::ui) fn workspace_trust_block_height(form: &BottomFormView, panel_w
     for field in &form.fields {
         match &field.editor {
             BottomFormFieldEditorView::Section { text } => {
-                let section_lines = build_bottom_form_footer_lines(text, content_w).len().max(1) as u32;
-                let label_lines = if field.label.trim().is_empty() {
-                    0
-                } else {
-                    1
-                };
+                let section_lines =
+                    build_bottom_form_footer_lines(text, content_w).len().max(1) as u32;
+                let label_lines = if field.label.trim().is_empty() { 0 } else { 1 };
                 body_lines = body_lines.saturating_add(section_lines + label_lines);
             }
             _ => body_lines = body_lines.saturating_add(1),
@@ -692,9 +689,11 @@ pub(in crate::ui) fn draw_workspace_trust_form(
         build_bottom_form_footer_lines(&form.footer_hint, content_area.width as usize);
     let footer_height = footer_lines.len().max(1) as u16;
     let options_height = workspace_trust_form::OPTION_COUNT as u16;
-    let options_y = content_area
-        .y
-        .saturating_add(content_area.height.saturating_sub(footer_height + 1 + options_height));
+    let options_y = content_area.y.saturating_add(
+        content_area
+            .height
+            .saturating_sub(footer_height + 1 + options_height),
+    );
     let info_height = options_y.saturating_sub(content_area.y);
 
     let hash_changed = matches!(
@@ -786,10 +785,7 @@ pub(in crate::ui) fn draw_workspace_trust_form(
         };
         frame.render_widget(
             Paragraph::new(Line::from(Span::styled(
-                truncate_to_width(
-                    &format!("{marker} {label}"),
-                    content_area.width as usize,
-                ),
+                truncate_to_width(&format!("{marker} {label}"), content_area.width as usize),
                 row_style,
             ))),
             Rect {
@@ -848,11 +844,7 @@ pub(in crate::ui) fn draw_ask_questions_option_row(
     frame.render_widget(block, area);
 
     let marker = if question.allow_multiple {
-        if option.selected {
-            "[x]"
-        } else {
-            "[ ]"
-        }
+        if option.selected { "[x]" } else { "[ ]" }
     } else if option.selected {
         "(x)"
     } else {
@@ -1586,7 +1578,10 @@ pub(in crate::ui) fn draw_bottom_form_choice_field(
     if options.is_empty() {
         let label_prefix = format!("{}  ", label);
         frame.render_widget(
-            Paragraph::new(Line::from(Span::styled(label_prefix, subtle_aux_text_style()))),
+            Paragraph::new(Line::from(Span::styled(
+                label_prefix,
+                subtle_aux_text_style(),
+            ))),
             inner,
         );
         return None;

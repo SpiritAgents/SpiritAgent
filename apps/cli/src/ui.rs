@@ -39,7 +39,9 @@ use crate::{
     logging,
     ports::SubagentSessionStatus,
     session::PendingMcpResource,
-    shell::{ask_questions as ask_questions_form, manual_shell, workspace_trust as workspace_trust_form},
+    shell::{
+        ask_questions as ask_questions_form, manual_shell, workspace_trust as workspace_trust_form,
+    },
     view::{
         AskQuestionsOptionView, AskQuestionsQuestionView, AssistantAuxKind,
         BottomFormFieldEditorView, BottomFormFieldView, BottomFormKind, BottomFormView,
@@ -104,7 +106,9 @@ impl ImageRenderState {
     pub fn from_terminal_query() -> Self {
         match Picker::from_query_stdio() {
             Ok(picker) => {
-                logging::log_event("[ui:image] initialized ratatui-image picker from terminal query");
+                logging::log_event(
+                    "[ui:image] initialized ratatui-image picker from terminal query",
+                );
                 Self {
                     picker,
                     backend: ImageRenderBackend::QueriedProtocol,
@@ -140,12 +144,7 @@ impl ImageRenderState {
         &mut self.picker
     }
 
-    pub fn render_path_in_area(
-        &mut self,
-        frame: &mut ratatui::Frame<'_>,
-        path: &str,
-        area: Rect,
-    ) {
+    pub fn render_path_in_area(&mut self, frame: &mut ratatui::Frame<'_>, path: &str, area: Rect) {
         if area.width == 0 || area.height == 0 || path.trim().is_empty() {
             return;
         }
@@ -196,10 +195,7 @@ fn load_cached_rendered_image(path: &str, picker: &Picker) -> CachedRenderedImag
         },
         Err(err) => {
             let message = format!("open failed: {err:#}");
-            logging::log_event(&format!(
-                "[ui:image] failed to open {}: {}",
-                path, message
-            ));
+            logging::log_event(&format!("[ui:image] failed to open {}: {}", path, message));
             CachedRenderedImage::Failed
         }
     }
@@ -563,7 +559,9 @@ fn render_history_tool_images(
             x: history_area.x.saturating_add(x_offset),
             y: history_area.y.saturating_add(local_top),
             width: render_width,
-            height: block.reserved_rows.min(history_area.height.saturating_sub(local_top)),
+            height: block
+                .reserved_rows
+                .min(history_area.height.saturating_sub(local_top)),
         };
         runtime
             .image_render_mut()
@@ -571,16 +569,17 @@ fn render_history_tool_images(
     }
 }
 
-fn build_visual_row_offsets(
-    logical_lines: &[Line<'static>],
-    wrap_width: u16,
-) -> Vec<usize> {
+fn build_visual_row_offsets(logical_lines: &[Line<'static>], wrap_width: u16) -> Vec<usize> {
     let mut offsets = Vec::with_capacity(logical_lines.len() + 1);
     let mut total = 0usize;
 
     for line in logical_lines {
         offsets.push(total);
-        total = total.saturating_add(flatten_wrapped_history(vec![line.clone()], wrap_width, None).0.len());
+        total = total.saturating_add(
+            flatten_wrapped_history(vec![line.clone()], wrap_width, None)
+                .0
+                .len(),
+        );
     }
 
     offsets.push(total);

@@ -152,16 +152,13 @@ pub fn parse_pending_subagent_status_text(text: &str) -> Option<String> {
 
 pub fn has_active_subagent_tool_in_messages(messages: &[ChatMessage]) -> bool {
     messages.iter().any(|message| {
-        message
-            .tool_block
-            .as_ref()
-            .is_some_and(|tool| {
-                tool.tool_name == "subagent"
-                    && matches!(
-                        tool.phase,
-                        ToolUiPhase::Preview | ToolUiPhase::Running | ToolUiPhase::PendingApproval
-                    )
-            })
+        message.tool_block.as_ref().is_some_and(|tool| {
+            tool.tool_name == "subagent"
+                && matches!(
+                    tool.phase,
+                    ToolUiPhase::Preview | ToolUiPhase::Running | ToolUiPhase::PendingApproval
+                )
+        })
     })
 }
 

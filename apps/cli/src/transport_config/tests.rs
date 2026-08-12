@@ -5,14 +5,13 @@ use serde_json::Value;
 
 use crate::{
     model_registry::{
-        AppConfig, DEFAULT_API_BASE, ModelEntry, ModelProvider, ModelRef, ProviderGroupConnectDraft,
-        make_test_app_config_with_models,
+        AppConfig, DEFAULT_API_BASE, ModelEntry, ModelProvider, ModelRef,
+        ProviderGroupConnectDraft, make_test_app_config_with_models,
     },
     ports::SecretStore,
     transport_config::{
-        TransportHost,
-        constants::ENV_API_KEY,
-        resolve_transport_config_json_for, transport_config_will_change,
+        TransportHost, constants::ENV_API_KEY, resolve_transport_config_json_for,
+        transport_config_will_change,
     },
 };
 
@@ -90,7 +89,8 @@ fn resolve_transport_config_json_includes_model_knobs() {
         group.provider = ModelProvider::Custom;
     }
 
-    let transport = resolve_transport_config_json_for(&host, &next).expect("resolve transport config");
+    let transport =
+        resolve_transport_config_json_for(&host, &next).expect("resolve transport config");
 
     assert_eq!(
         transport.get("llmVendor").and_then(Value::as_str),
@@ -116,7 +116,8 @@ fn resolve_transport_config_json_uses_anthropic_union_shape() {
         entry.reasoning_effort = Some("max".to_string());
     }
 
-    let transport = resolve_transport_config_json_for(&host, &next).expect("resolve transport config");
+    let transport =
+        resolve_transport_config_json_for(&host, &next).expect("resolve transport config");
 
     assert_eq!(
         transport.get("transportKind").and_then(Value::as_str),
@@ -164,7 +165,8 @@ fn resolve_transport_config_json_uses_azure_official_responses_provider() {
         name: "my-gpt4o-deploy".to_string(),
     };
 
-    let transport = resolve_transport_config_json_for(&host, &next).expect("resolve transport config");
+    let transport =
+        resolve_transport_config_json_for(&host, &next).expect("resolve transport config");
 
     assert_eq!(
         transport.get("transportKind").and_then(Value::as_str),
@@ -235,7 +237,8 @@ fn resolve_transport_config_json_includes_image_generation_model() {
         name: "image-model".to_string(),
     });
 
-    let transport = resolve_transport_config_json_for(&host, &next).expect("resolve transport config");
+    let transport =
+        resolve_transport_config_json_for(&host, &next).expect("resolve transport config");
     let image_generation = transport
         .get("imageGeneration")
         .expect("image generation config");

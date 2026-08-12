@@ -23,10 +23,10 @@ use std::{
 
 use spirit_agent::view::MarketplaceFlowStep;
 use spirit_agent::{
-    bootstrap_config, print_skills_stub, run_headless_prompt, run_serve, ConfigCommand,
-    ExtensionCommand, GlobalCliOptions, HookCommand, KeyCommand, MarketplaceCommand, McpCommand,
-    ModelAddCommand, ModelCommand, TuiShell, handle_config_cli, handle_extension_cli,
-    handle_hooks_cli, handle_mcp_cli, handle_model_cli, logging, ui,
+    ConfigCommand, ExtensionCommand, GlobalCliOptions, HookCommand, KeyCommand, MarketplaceCommand,
+    McpCommand, ModelAddCommand, ModelCommand, TuiShell, bootstrap_config, handle_config_cli,
+    handle_extension_cli, handle_hooks_cli, handle_mcp_cli, handle_model_cli, logging,
+    print_skills_stub, run_headless_prompt, run_serve, ui,
 };
 
 const MAX_EVENT_BATCH_PER_TICK: usize = 2048;
@@ -1117,12 +1117,11 @@ fn process_key_event(
             shell.clamp_cursor();
             shell.refresh_suggestions();
         }
-        KeyCode::Char(ch)
-            if !key.modifiers.contains(KeyModifiers::CONTROL) => {
-                shell.insert_char_at_cursor(ch);
-                shell.clamp_cursor();
-                shell.refresh_suggestions();
-            }
+        KeyCode::Char(ch) if !key.modifiers.contains(KeyModifiers::CONTROL) => {
+            shell.insert_char_at_cursor(ch);
+            shell.clamp_cursor();
+            shell.refresh_suggestions();
+        }
         _ => {}
     }
 }
@@ -1423,7 +1422,9 @@ fn load_clipboard_image() -> Option<std::path::PathBuf> {
         Err(_) => return None,
     };
 
-    let temp_dir = std::env::temp_dir().join("spirit-agent").join("clipboard-images");
+    let temp_dir = std::env::temp_dir()
+        .join("spirit-agent")
+        .join("clipboard-images");
     if let Err(e) = fs::create_dir_all(&temp_dir) {
         logging::log_event(&format!("[clipboard] 无法创建临时目录: {}", e));
         return None;
@@ -1442,17 +1443,14 @@ fn load_clipboard_image() -> Option<std::path::PathBuf> {
         .flat_map(|bgra| [bgra[2], bgra[1], bgra[0], bgra[3]])
         .collect();
 
-    let img = match ImageBuffer::<Rgba<u8>, _>::from_vec(
-        image.width as u32,
-        image.height as u32,
-        rgba,
-    ) {
-        Some(i) => i,
-        None => {
-            logging::log_event("[clipboard] 图片格式转换失败");
-            return None;
-        }
-    };
+    let img =
+        match ImageBuffer::<Rgba<u8>, _>::from_vec(image.width as u32, image.height as u32, rgba) {
+            Some(i) => i,
+            None => {
+                logging::log_event("[clipboard] 图片格式转换失败");
+                return None;
+            }
+        };
 
     if let Err(e) = img.save_with_format(&path, image::ImageFormat::Png) {
         logging::log_event(&format!("[clipboard] 无法保存图片: {}", e));

@@ -27,8 +27,8 @@ use crate::{
     model_registry::AppConfig,
     plan::{self, PlanMetadata, bootstrap_plan_metadata},
     ports::{
-        AssistantAuxArchiveEntry, AttachChatSessionOutcome, ChatArchive, McpStatusSnapshot, SecretStore,
-        SubagentSessionArchiveEntry, SubagentSessionSummary, normalize_approval_level,
+        AssistantAuxArchiveEntry, AttachChatSessionOutcome, ChatArchive, McpStatusSnapshot,
+        SecretStore, SubagentSessionArchiveEntry, SubagentSessionSummary, normalize_approval_level,
         normalize_llm_http_version,
     },
     rewind::{self, DesktopRewindCheckpointSnapshot, RewindRestoreOutcome},
@@ -84,10 +84,9 @@ impl DaemonRuntime {
             .map(str::to_string)
             .ok_or_else(|| anyhow!("session.create 未返回 sessionId"))?;
         runtime.session_id = Some(session_id.clone());
-        runtime.client.call(
-            "session.attach",
-            json!({ "sessionId": session_id }),
-        )?;
+        runtime
+            .client
+            .call("session.attach", json!({ "sessionId": session_id }))?;
         runtime.rewind = rewind;
 
         logging::log_event(&format!(
@@ -172,7 +171,8 @@ impl DaemonRuntime {
     }
 
     fn is_attach_miss(err: &anyhow::Error) -> bool {
-        err.to_string().contains("no live session for conversationKey")
+        err.to_string()
+            .contains("no live session for conversationKey")
     }
 
     fn detach_current_session(&mut self) {
@@ -182,10 +182,10 @@ impl DaemonRuntime {
         let Some(session_id) = self.session_id.take() else {
             return;
         };
-        if let Err(err) = self.client.call(
-            "session.detach",
-            json!({ "sessionId": session_id }),
-        ) {
+        if let Err(err) = self
+            .client
+            .call("session.detach", json!({ "sessionId": session_id }))
+        {
             logging::log_event(&format!("[daemon-runtime] session.detach 失败: {err}"));
         }
     }
@@ -245,7 +245,10 @@ impl DaemonRuntime {
         }
     }
 
-    fn apply_live_session_plan_metadata(&mut self, llm_history: &[crate::ports::ArchivedLlmMessage]) {
+    fn apply_live_session_plan_metadata(
+        &mut self,
+        llm_history: &[crate::ports::ArchivedLlmMessage],
+    ) {
         self.active_plan_path =
             plan::extract_active_plan_path_from_archived_llm_history(llm_history);
         self.plan_metadata = plan::plan_metadata_snapshot(
@@ -384,7 +387,11 @@ impl DaemonRuntime {
         }
         logging::log_event(&format!(
             "[daemon-runtime] {}: {}",
-            if fatal { "fatal error" } else { "runtime error" },
+            if fatal {
+                "fatal error"
+            } else {
+                "runtime error"
+            },
             summary
         ));
         let had_inflight_response =
@@ -635,10 +642,8 @@ impl DaemonRuntime {
         let session_key = self.rewind.session_id.clone();
         self.set_todo_session_key(&session_key)?;
         self.active_plan_path = None;
-        self.plan_metadata = plan::plan_metadata_snapshot(
-            self.plan_metadata.spirit_agent_mode(),
-            None,
-        );
+        self.plan_metadata =
+            plan::plan_metadata_snapshot(self.plan_metadata.spirit_agent_mode(), None);
         self.sync_snapshot_remote()?;
         Ok(())
     }
@@ -665,11 +670,8 @@ impl DaemonRuntime {
         if !transport_config_will_change(&self.config, config) {
             return Ok(());
         }
-        crate::transport_config::resolve_transport_config_json_for(
-            &self.transport_host(),
-            config,
-        )
-        .map(|_| ())
+        crate::transport_config::resolve_transport_config_json_for(&self.transport_host(), config)
+            .map(|_| ())
     }
 
     pub fn replace_config(&mut self, config: AppConfig) {
@@ -840,9 +842,11 @@ impl DaemonRuntime {
         if value.is_null() {
             return Ok((Vec::new(), true));
         }
-        let suggestions: BridgeWorkspaceFileReferenceSuggestions =
-            serde_json::from_value(value)?;
-        Ok((suggestions.suggestions, suggestions.index_ready.unwrap_or(true)))
+        let suggestions: BridgeWorkspaceFileReferenceSuggestions = serde_json::from_value(value)?;
+        Ok((
+            suggestions.suggestions,
+            suggestions.index_ready.unwrap_or(true),
+        ))
     }
 
     pub fn prime_workspace_file_reference_index(&mut self) -> Result<()> {
@@ -947,10 +951,9 @@ impl DaemonRuntime {
     // --------------------------------------------------------- extensions
 
     pub fn list_extensions(&mut self) -> Result<Vec<CliExtensionEntry>> {
-        let value = self.client.call(
-            "host.listExtensions",
-            json!({ "hostKind": "cli" }),
-        )?;
+        let value = self
+            .client
+            .call("host.listExtensions", json!({ "hostKind": "cli" }))?;
         Ok(serde_json::from_value(value)?)
     }
 
@@ -1017,7 +1020,9 @@ impl DaemonRuntime {
         {
             params["version"] = Value::String(version.trim().to_string());
         }
-        let value = self.client.call("host.prepareMarketplaceExtensionInstall", params)?;
+        let value = self
+            .client
+            .call("host.prepareMarketplaceExtensionInstall", params)?;
         Ok(serde_json::from_value(value)?)
     }
 
@@ -1036,7 +1041,9 @@ impl DaemonRuntime {
         if review_acknowledged {
             params["reviewAcknowledged"] = Value::Bool(true);
         }
-        let value = self.client.call("host.installMarketplaceExtension", params)?;
+        let value = self
+            .client
+            .call("host.installMarketplaceExtension", params)?;
         Ok(serde_json::from_value(value)?)
     }
 
@@ -1164,10 +1171,9 @@ impl DaemonRuntime {
             .session_id
             .clone()
             .ok_or_else(|| anyhow!("当前连接没有会话（host-only）"))?;
-        let value = self.client.call(
-            "host.listSessionTodos",
-            json!({ "sessionId": session_id }),
-        )?;
+        let value = self
+            .client
+            .call("host.listSessionTodos", json!({ "sessionId": session_id }))?;
         let parsed: HostTodoListResponse = serde_json::from_value(value)?;
         Ok(parsed.todos)
     }
@@ -1304,7 +1310,10 @@ impl DaemonRuntime {
         if self.daemon_failed {
             return Err(anyhow!("daemon 已处于失败状态。"));
         }
-        self.call_daemon("session.setLoopEnabled", Some(json!({ "enabled": enabled })))?;
+        self.call_daemon(
+            "session.setLoopEnabled",
+            Some(json!({ "enabled": enabled })),
+        )?;
         self.sync_snapshot_remote()?;
         Ok(())
     }
@@ -1391,7 +1400,10 @@ impl DaemonRuntime {
         Ok(())
     }
 
-    pub(crate) fn handle_manual_tool_command_bridge_response(&mut self, value: &Value) -> Result<()> {
+    pub(crate) fn handle_manual_tool_command_bridge_response(
+        &mut self,
+        value: &Value,
+    ) -> Result<()> {
         let result_value = if value.get("kind").is_some() {
             value.clone()
         } else {
@@ -1460,12 +1472,18 @@ impl DaemonRuntime {
         Ok(serde_json::from_value(value)?)
     }
 
-    pub fn inspect_mcp_server(&mut self, name: &str) -> Result<crate::mcp_types::McpServerInspection> {
+    pub fn inspect_mcp_server(
+        &mut self,
+        name: &str,
+    ) -> Result<crate::mcp_types::McpServerInspection> {
         let value = self.mcp_call("inspectMcpServer", json!({ "name": name }))?;
         Ok(serde_json::from_value(value)?)
     }
 
-    pub fn list_mcp_tools(&mut self, name: &str) -> Result<Vec<crate::mcp_types::McpDiscoveredTool>> {
+    pub fn list_mcp_tools(
+        &mut self,
+        name: &str,
+    ) -> Result<Vec<crate::mcp_types::McpDiscoveredTool>> {
         let value = self.mcp_call("listMcpTools", json!({ "name": name }))?;
         Ok(serde_json::from_value(value)?)
     }
@@ -1478,7 +1496,10 @@ impl DaemonRuntime {
         Ok(serde_json::from_value(value)?)
     }
 
-    pub fn list_mcp_prompts(&mut self, name: &str) -> Result<Vec<crate::mcp_types::McpDiscoveredPrompt>> {
+    pub fn list_mcp_prompts(
+        &mut self,
+        name: &str,
+    ) -> Result<Vec<crate::mcp_types::McpDiscoveredPrompt>> {
         let value = self.mcp_call("listMcpPrompts", json!({ "name": name }))?;
         Ok(serde_json::from_value(value)?)
     }
@@ -1586,8 +1607,7 @@ impl DaemonRuntime {
 
     pub fn export_llm_state(&mut self) -> Result<crate::runtime_handle::RuntimeExportState> {
         let value = self.call_daemon("session.exportState", None)?;
-        let export: BridgeExportState =
-            serde_json::from_value(value)?;
+        let export: BridgeExportState = serde_json::from_value(value)?;
         Ok(crate::runtime_handle::RuntimeExportState {
             api_messages: export.api_messages,
             system_prompts: export.system_prompts,
@@ -1608,8 +1628,7 @@ impl DaemonRuntime {
             "session.exportArchive",
             Some(json!({ "messages": message_values, "assistantAux": assistant_aux })),
         )?;
-        let bridge_archive: BridgeChatArchive =
-            serde_json::from_value(value)?;
+        let bridge_archive: BridgeChatArchive = serde_json::from_value(value)?;
         // Live timeline pushed by the authoritative desktop host; hydrate it
         // into desktop messages exactly like a disk load would.
         let desktop_messages = bridge_archive
@@ -1678,8 +1697,7 @@ impl DaemonRuntime {
         if value.is_null() {
             return Ok(None);
         }
-        let archive: BridgeSubagentSessionArchiveEntry =
-            serde_json::from_value(value)?;
+        let archive: BridgeSubagentSessionArchiveEntry = serde_json::from_value(value)?;
         Ok(Some(SubagentSessionArchiveEntry {
             summary: SubagentSessionSummary {
                 session_id: archive.summary.session_id,
@@ -1752,7 +1770,8 @@ impl DaemonRuntime {
         if self.daemon_failed {
             return;
         }
-        if let Err(err) = self.call_daemon("session.addPendingImage", Some(json!({ "path": path }))) {
+        if let Err(err) = self.call_daemon("session.addPendingImage", Some(json!({ "path": path })))
+        {
             self.handle_daemon_error(err);
             return;
         }
@@ -1786,10 +1805,10 @@ impl DaemonRuntime {
         let Some(session_id) = self.session_id.clone() else {
             return;
         };
-        if let Err(err) = self.client.call(
-            "session.detach",
-            json!({ "sessionId": session_id }),
-        ) {
+        if let Err(err) = self
+            .client
+            .call("session.detach", json!({ "sessionId": session_id }))
+        {
             logging::log_event(&format!("[daemon-runtime] session.detach 失败: {err}"));
         }
         self.client.close();

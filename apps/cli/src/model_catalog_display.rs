@@ -2,8 +2,7 @@
 
 use std::{
     collections::{HashMap, HashSet},
-    env,
-    fs,
+    env, fs,
     path::PathBuf,
     process::Command,
 };
@@ -40,7 +39,9 @@ fn model_catalog_cache_file_path(hint_key: &str) -> PathBuf {
 fn provider_uses_catalog_display(provider: ModelProvider) -> bool {
     matches!(
         provider,
-        ModelProvider::VercelAiGateway | ModelProvider::Openrouter | ModelProvider::Google
+        ModelProvider::VercelAiGateway
+            | ModelProvider::Openrouter
+            | ModelProvider::Google
             | ModelProvider::GoogleVertexAi
     )
 }
@@ -96,8 +97,8 @@ fn format_model_display_names_via_host_internal(
         format!("file:///{module_url}")
     };
 
-    let payload = serde_json::to_string(model_ids)
-        .map_err(|err| format!("序列化模型 id 列表失败：{err}"))?;
+    let payload =
+        serde_json::to_string(model_ids).map_err(|err| format!("序列化模型 id 列表失败：{err}"))?;
 
     let script = format!(
         r#"

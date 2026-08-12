@@ -183,7 +183,9 @@ pub(in crate::ui) fn build_history_render_result(
         let pending_image_block = msg.tool_block.as_ref().and_then(|tool| {
             let mut image_block = pending_image_block_for_tool(tool, max_width)?;
             image_block.line_offset_in_block = rendered.len();
-            rendered.extend(render_tool_image_placeholder_lines(image_block.reserved_rows));
+            rendered.extend(render_tool_image_placeholder_lines(
+                image_block.reserved_rows,
+            ));
             Some(image_block)
         });
         if !rendered.is_empty() {
@@ -191,15 +193,16 @@ pub(in crate::ui) fn build_history_render_result(
         }
     }
 
-    if !inserted_standalone_block
-        && let Some(standalone_block) = standalone_block {
-            rendered_blocks.push((None, standalone_block, None));
-        }
+    if !inserted_standalone_block && let Some(standalone_block) = standalone_block {
+        rendered_blocks.push((None, standalone_block, None));
+    }
 
     let mut message_ranges = Vec::new();
     let mut image_blocks = Vec::new();
     let rendered_count = rendered_blocks.len();
-    for (idx, (message_id, block_lines, pending_image_block)) in rendered_blocks.into_iter().enumerate() {
+    for (idx, (message_id, block_lines, pending_image_block)) in
+        rendered_blocks.into_iter().enumerate()
+    {
         let start_line = lines.len();
         if let Some(image_block) = pending_image_block {
             image_blocks.push(HistoryImageRenderBlock {
@@ -212,13 +215,14 @@ pub(in crate::ui) fn build_history_render_result(
         lines.extend(block_lines);
         let end_line = lines.len().saturating_sub(1);
         if let Some(message_id) = message_id
-            && start_line <= end_line {
-                message_ranges.push(ConversationMessageRenderRange {
-                    message_id,
-                    start_line,
-                    end_line,
-                });
-            }
+            && start_line <= end_line
+        {
+            message_ranges.push(ConversationMessageRenderRange {
+                message_id,
+                start_line,
+                end_line,
+            });
+        }
         if idx + 1 < rendered_count {
             lines.push(Line::from(""));
         }
@@ -268,8 +272,9 @@ fn tool_image_reserved_rows(max_width: usize) -> Option<u16> {
 }
 
 fn tool_image_x_offset() -> u16 {
-    UnicodeWidthStr::width(format!("{}{}", message_gutter_padding(), TOOL_CARD_RAIL_SYMBOL).as_str())
-        as u16
+    UnicodeWidthStr::width(
+        format!("{}{}", message_gutter_padding(), TOOL_CARD_RAIL_SYMBOL).as_str(),
+    ) as u16
 }
 
 fn render_tool_image_placeholder_lines(rows: u16) -> Vec<Line<'static>> {
@@ -963,11 +968,7 @@ pub(in crate::ui) fn render_tool_card_lines(
         .filter(|value| !value.trim().is_empty())
     {
         let prefixed = format!("路径: {}", path);
-        if tool
-            .detail_lines
-            .iter()
-            .any(|line| line.trim() == prefixed)
-        {
+        if tool.detail_lines.iter().any(|line| line.trim() == prefixed) {
             continue;
         }
         out.push(Line::from(vec![
@@ -985,63 +986,65 @@ pub(in crate::ui) fn render_tool_card_lines(
 
     if expand_details
         && let Some(ref args) = tool.args_excerpt
-            && !args.trim().is_empty() {
-                out.push(Line::from(vec![
-                    Span::raw(indent),
-                    Span::styled(rail_sym, rail),
-                    Span::styled(
-                        t!("ui.tool.args_json").into_owned(),
-                        Style::default().fg(Color::DarkGray),
-                    ),
-                ]));
-                for seg in args.lines() {
-                    out.push(Line::from(vec![
-                        Span::raw(indent),
-                        Span::raw("  "),
-                        Span::styled(rail_sym, rail),
-                        Span::styled(seg.to_string(), Style::default().fg(Color::Cyan)),
-                    ]));
-                }
-            }
+        && !args.trim().is_empty()
+    {
+        out.push(Line::from(vec![
+            Span::raw(indent),
+            Span::styled(rail_sym, rail),
+            Span::styled(
+                t!("ui.tool.args_json").into_owned(),
+                Style::default().fg(Color::DarkGray),
+            ),
+        ]));
+        for seg in args.lines() {
+            out.push(Line::from(vec![
+                Span::raw(indent),
+                Span::raw("  "),
+                Span::styled(rail_sym, rail),
+                Span::styled(seg.to_string(), Style::default().fg(Color::Cyan)),
+            ]));
+        }
+    }
 
     if expand_details
         && let Some(ref output) = tool.output_excerpt
-            && !output.trim().is_empty() {
-                out.push(Line::from(vec![
-                    Span::raw(indent),
-                    Span::styled(rail_sym, rail),
-                    Span::styled(
-                        t!("ui.tool.output").into_owned(),
-                        Style::default().fg(Color::DarkGray),
-                    ),
-                ]));
-                let lines: Vec<&str> = output.lines().take(48).collect();
-                for seg in lines.iter() {
-                    out.push(Line::from(vec![
-                        Span::raw(indent),
-                        Span::raw("  "),
-                        Span::styled(rail_sym, rail),
-                        Span::styled((*seg).to_string(), conversation_body_text_style()),
-                    ]));
-                }
-                let total_ln = output.lines().count();
-                if total_ln > 48 {
-                    out.push(Line::from(vec![
-                        Span::raw(indent),
-                        Span::raw("  "),
-                        Span::styled(
-                            t!(
-                                "ui.tool.more_lines_hidden",
-                                count = total_ln.saturating_sub(48)
-                            )
-                            .into_owned(),
-                            Style::default()
-                                .fg(Color::DarkGray)
-                                .add_modifier(Modifier::ITALIC),
-                        ),
-                    ]));
-                }
-            }
+        && !output.trim().is_empty()
+    {
+        out.push(Line::from(vec![
+            Span::raw(indent),
+            Span::styled(rail_sym, rail),
+            Span::styled(
+                t!("ui.tool.output").into_owned(),
+                Style::default().fg(Color::DarkGray),
+            ),
+        ]));
+        let lines: Vec<&str> = output.lines().take(48).collect();
+        for seg in lines.iter() {
+            out.push(Line::from(vec![
+                Span::raw(indent),
+                Span::raw("  "),
+                Span::styled(rail_sym, rail),
+                Span::styled((*seg).to_string(), conversation_body_text_style()),
+            ]));
+        }
+        let total_ln = output.lines().count();
+        if total_ln > 48 {
+            out.push(Line::from(vec![
+                Span::raw(indent),
+                Span::raw("  "),
+                Span::styled(
+                    t!(
+                        "ui.tool.more_lines_hidden",
+                        count = total_ln.saturating_sub(48)
+                    )
+                    .into_owned(),
+                    Style::default()
+                        .fg(Color::DarkGray)
+                        .add_modifier(Modifier::ITALIC),
+                ),
+            ]));
+        }
+    }
 
     out
 }

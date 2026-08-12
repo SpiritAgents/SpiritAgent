@@ -1,15 +1,17 @@
 use anyhow::{Result, anyhow};
 use serde_json::{Map, Value, json};
 
-use crate::model_registry::ModelProvider;
 use crate::model_provider_presets::cloudflare_ai_gateway_api_base_from_account_id;
+use crate::model_registry::ModelProvider;
 
 pub(crate) fn open_responses_sdk_provider(provider: Option<ModelProvider>) -> Option<&'static str> {
     match provider {
         Some(ModelProvider::Openai) | Some(ModelProvider::FireworksAi) => Some("openai"),
         Some(ModelProvider::Xai) => Some("xai"),
         Some(ModelProvider::Azure) => Some("azure"),
-        Some(ModelProvider::VercelAiGateway) | Some(ModelProvider::CloudflareAiGateway) | Some(ModelProvider::Openrouter) => None,
+        Some(ModelProvider::VercelAiGateway)
+        | Some(ModelProvider::CloudflareAiGateway)
+        | Some(ModelProvider::Openrouter) => None,
         _ => Some("open-responses-compatible"),
     }
 }
@@ -140,7 +142,9 @@ pub(crate) fn anthropic_effort_value(value: Option<&str>) -> Option<&'static str
     }
 }
 
-pub(crate) fn model_capabilities_json(profile: &crate::model_registry::ModelProfile) -> Option<Value> {
+pub(crate) fn model_capabilities_json(
+    profile: &crate::model_registry::ModelProfile,
+) -> Option<Value> {
     let capabilities = profile.explicit_capabilities()?;
     let mut object = Map::new();
     for capability in capabilities {

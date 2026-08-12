@@ -30,7 +30,9 @@ mod tests {
     fn is_bedrock_mantle_openai_model_matches_frontier_and_oss_ids() {
         assert!(is_bedrock_mantle_openai_model("openai.gpt-5.5"));
         assert!(is_bedrock_mantle_openai_model("openai.gpt-oss-120b"));
-        assert!(!is_bedrock_mantle_openai_model("anthropic.claude-3-5-sonnet-20241022-v2:0"));
+        assert!(!is_bedrock_mantle_openai_model(
+            "anthropic.claude-3-5-sonnet-20241022-v2:0"
+        ));
     }
 
     #[test]

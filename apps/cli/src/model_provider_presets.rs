@@ -35,7 +35,9 @@ pub(crate) fn model_add_preset_api_base_by_choice_index(selected: usize) -> Opti
     p.preset_api_base_by_provider.get(id).cloned()
 }
 
-pub(crate) fn model_add_preset_api_base_by_provider(provider: crate::model_registry::ModelProvider) -> Option<String> {
+pub(crate) fn model_add_preset_api_base_by_provider(
+    provider: crate::model_registry::ModelProvider,
+) -> Option<String> {
     if provider == crate::model_registry::ModelProvider::Custom {
         return None;
     }
@@ -46,21 +48,15 @@ pub(crate) fn model_add_preset_api_base_by_provider(provider: crate::model_regis
 }
 
 /// 与 `model-provider-presets.json` 中 `presetApiBaseByTransport.kimi-code` 对齐。
-pub(crate) fn model_add_kimi_code_api_base(
-    transport_kind: ModelTransportKind,
-) -> Option<String> {
+pub(crate) fn model_add_kimi_code_api_base(transport_kind: ModelTransportKind) -> Option<String> {
     match transport_kind {
-        ModelTransportKind::OpenAiCompatible => {
-            Some("https://api.kimi.com/coding/v1".to_string())
-        }
+        ModelTransportKind::OpenAiCompatible => Some("https://api.kimi.com/coding/v1".to_string()),
         ModelTransportKind::Anthropic => Some("https://api.kimi.com/coding".to_string()),
         _ => None,
     }
 }
 
-pub(crate) fn model_add_default_custom_api_base(
-    transport_kind: ModelTransportKind,
-) -> String {
+pub(crate) fn model_add_default_custom_api_base(transport_kind: ModelTransportKind) -> String {
     let p = presets();
     match transport_kind {
         ModelTransportKind::OpenAiCompatible | ModelTransportKind::OpenResponses => {
@@ -168,9 +164,7 @@ pub(crate) fn cloudflare_ai_gateway_api_base_from_account_id(account_id: &str) -
             "YOUR_ACCOUNT_ID"
         );
     }
-    format!(
-        "https://api.cloudflare.com/client/v4/accounts/{trimmed}/ai/v1"
-    )
+    format!("https://api.cloudflare.com/client/v4/accounts/{trimmed}/ai/v1")
 }
 
 pub(crate) fn model_add_picker_order_ids() -> &'static [String] {
@@ -408,24 +402,23 @@ pub(crate) fn model_add_requires_manual_single_provider(
 
 /// 与 Desktop `resolveProfileApiBase` 对齐：托管提供商按 `providerSite` 等重算端点，而非盲读 `apiBase`。
 pub(crate) fn resolve_profile_api_base(profile: &crate::model_registry::ModelProfile) -> String {
-    use crate::model_registry::{ModelProvider, DEFAULT_API_BASE};
+    use crate::model_registry::{DEFAULT_API_BASE, ModelProvider};
 
     if profile.provider == Some(ModelProvider::AmazonBedrock)
-        && let Some(region) = profile.aws_region() {
-            if crate::bedrock_mantle::is_bedrock_mantle_openai_model(&profile.name) {
-                return crate::bedrock_mantle::bedrock_mantle_api_base_from_region(&region);
-            }
-            return bedrock_api_base_from_region(&region);
+        && let Some(region) = profile.aws_region()
+    {
+        if crate::bedrock_mantle::is_bedrock_mantle_openai_model(&profile.name) {
+            return crate::bedrock_mantle::bedrock_mantle_api_base_from_region(&region);
         }
+        return bedrock_api_base_from_region(&region);
+    }
 
     if profile.provider == Some(ModelProvider::GoogleVertexAi) {
-        if let (Some(project), Some(location)) = (
-            profile.vertex_project(),
-            profile.vertex_location(),
-        ) {
+        if let (Some(project), Some(location)) =
+            (profile.vertex_project(), profile.vertex_location())
+        {
             return crate::vertex_models_list::vertex_api_base_from_project_and_location(
-                &project,
-                &location,
+                &project, &location,
             );
         }
         let trimmed = profile.api_base.trim();
@@ -459,9 +452,10 @@ pub(crate) fn resolve_profile_api_base(profile: &crate::model_registry::ModelPro
 
     if profile.provider == Some(ModelProvider::Alibaba)
         && profile.alibaba_billing_mode().as_deref() == Some("token-plan")
-            && let Some(base) = model_add_alibaba_token_plan_api_base(profile.transport_kind()) {
-                return base;
-            }
+        && let Some(base) = model_add_alibaba_token_plan_api_base(profile.transport_kind())
+    {
+        return base;
+    }
 
     if profile.provider == Some(ModelProvider::Stepfun) {
         let step_plan = profile.stepfun_billing_mode().as_deref() == Some("step-plan");
@@ -485,14 +479,15 @@ pub(crate) fn resolve_profile_api_base(profile: &crate::model_registry::ModelPro
     }
 
     if let Some(provider) = profile.provider
-        && provider != ModelProvider::Custom {
-            return default_api_base_for_transport(
-                provider,
-                profile.transport_kind(),
-                profile.provider_site().as_deref(),
-                profile.alibaba_workspace_id().as_deref().unwrap_or(""),
-            );
-        }
+        && provider != ModelProvider::Custom
+    {
+        return default_api_base_for_transport(
+            provider,
+            profile.transport_kind(),
+            profile.provider_site().as_deref(),
+            profile.alibaba_workspace_id().as_deref().unwrap_or(""),
+        );
+    }
 
     let trimmed = profile.api_base.trim();
     if trimmed.is_empty() {
@@ -513,13 +508,15 @@ fn default_api_base_for_transport(
     workspace_id: &str,
 ) -> String {
     if provider == crate::model_registry::ModelProvider::KimiCode
-        && let Some(base) = model_add_kimi_code_api_base(transport_kind) {
-            return base;
-        }
+        && let Some(base) = model_add_kimi_code_api_base(transport_kind)
+    {
+        return base;
+    }
     if let Some(site) = site
-        && let Some(base) = resolve_site_api_base(provider, transport_kind, site, workspace_id) {
-            return base;
-        }
+        && let Some(base) = resolve_site_api_base(provider, transport_kind, site, workspace_id)
+    {
+        return base;
+    }
     model_add_preset_api_base_by_provider(provider)
         .unwrap_or_else(|| model_add_default_custom_api_base(transport_kind))
 }
@@ -538,11 +535,9 @@ fn resolve_site_api_base(
         crate::model_registry::ModelProvider::Minimax => {
             model_add_minimax_site_api_base(site, transport_kind)
         }
-        crate::model_registry::ModelProvider::Alibaba => model_add_alibaba_site_api_base(
-            site,
-            workspace_id,
-            transport_kind,
-        ),
+        crate::model_registry::ModelProvider::Alibaba => {
+            model_add_alibaba_site_api_base(site, workspace_id, transport_kind)
+        }
         crate::model_registry::ModelProvider::TencentTokenhub => {
             model_add_tencent_tokenhub_site_api_base(site)
         }
@@ -682,7 +677,9 @@ mod tests {
         );
         assert_eq!(
             model_add_preset_api_base_by_choice_index(31).as_deref(),
-            Some("https://us-central1-aiplatform.googleapis.com/v1/projects/YOUR_PROJECT_ID/locations/us-central1")
+            Some(
+                "https://us-central1-aiplatform.googleapis.com/v1/projects/YOUR_PROJECT_ID/locations/us-central1"
+            )
         );
         assert!(model_add_preset_api_base_by_choice_index(32).is_none());
     }
@@ -738,13 +735,14 @@ mod tests {
 
     #[test]
     fn resolve_profile_api_base_prefers_moonshot_cn_site_over_stored_api_base() {
-        let profile: crate::model_registry::ModelProfile = serde_json::from_value(serde_json::json!({
-            "name": "kimi-k2.7-code",
-            "apiBase": "https://api.moonshot.ai/v1",
-            "provider": "moonshot-ai",
-            "providerSite": "cn"
-        }))
-        .expect("parse model profile");
+        let profile: crate::model_registry::ModelProfile =
+            serde_json::from_value(serde_json::json!({
+                "name": "kimi-k2.7-code",
+                "apiBase": "https://api.moonshot.ai/v1",
+                "provider": "moonshot-ai",
+                "providerSite": "cn"
+            }))
+            .expect("parse model profile");
         assert_eq!(
             resolve_profile_api_base(&profile),
             "https://api.moonshot.cn/v1"
@@ -754,7 +752,8 @@ mod tests {
     #[test]
     fn minimax_site_api_base_resolves_cn_and_intl_with_transport() {
         assert_eq!(
-            super::model_add_minimax_site_api_base("cn", ModelTransportKind::OpenAiCompatible).as_deref(),
+            super::model_add_minimax_site_api_base("cn", ModelTransportKind::OpenAiCompatible)
+                .as_deref(),
             Some("https://api.minimaxi.com/v1")
         );
         assert_eq!(
@@ -762,11 +761,13 @@ mod tests {
             Some("https://api.minimaxi.com/anthropic/v1")
         );
         assert_eq!(
-            super::model_add_minimax_site_api_base("intl", ModelTransportKind::OpenAiCompatible).as_deref(),
+            super::model_add_minimax_site_api_base("intl", ModelTransportKind::OpenAiCompatible)
+                .as_deref(),
             Some("https://api.minimax.io/v1")
         );
         assert_eq!(
-            super::model_add_minimax_site_api_base("intl", ModelTransportKind::Anthropic).as_deref(),
+            super::model_add_minimax_site_api_base("intl", ModelTransportKind::Anthropic)
+                .as_deref(),
             Some("https://api.minimax.io/anthropic/v1")
         );
     }
@@ -839,14 +840,18 @@ mod tests {
     #[test]
     fn preset_api_base_by_provider_returns_google_api_base() {
         assert_eq!(
-            super::model_add_preset_api_base_by_provider(crate::model_registry::ModelProvider::Google)
-                .as_deref(),
+            super::model_add_preset_api_base_by_provider(
+                crate::model_registry::ModelProvider::Google
+            )
+            .as_deref(),
             Some("https://generativelanguage.googleapis.com/v1beta")
         );
-        assert!(super::model_add_preset_api_base_by_provider(
-            crate::model_registry::ModelProvider::Custom
-        )
-        .is_none());
+        assert!(
+            super::model_add_preset_api_base_by_provider(
+                crate::model_registry::ModelProvider::Custom
+            )
+            .is_none()
+        );
     }
 
     #[test]

@@ -37,8 +37,7 @@ pub fn vertex_api_base_from_project_and_location(project: &str, location: &str) 
 pub fn list_vertex_model_ids(options: VertexListOptions) -> Result<Vec<String>, String> {
     if !options.api_key.trim().is_empty() {
         return Err(
-            "Google Vertex Express API Key 模式无法自动列模型，请手动填写模型 ID。"
-                .to_string(),
+            "Google Vertex Express API Key 模式无法自动列模型，请手动填写模型 ID。".to_string(),
         );
     }
 
@@ -52,8 +51,7 @@ pub fn list_vertex_model_ids(options: VertexListOptions) -> Result<Vec<String>, 
         .is_some_and(|value| !value.trim().is_empty());
     if has_client_email ^ has_private_key {
         return Err(
-            "Google Vertex 服务账号列模型需要同时填写 client email 与 private key。"
-                .to_string(),
+            "Google Vertex 服务账号列模型需要同时填写 client email 与 private key。".to_string(),
         );
     }
 

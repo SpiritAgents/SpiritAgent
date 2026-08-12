@@ -99,9 +99,10 @@ pub(crate) fn default_commands() -> Vec<String> {
 pub(crate) fn slash_commands_for_shell(shell: &TuiShell) -> Vec<String> {
     let mut commands = default_commands();
     if shell.has_active_plan()
-        && let Some(index) = commands.iter().position(|command| command == "/compact") {
-            commands.insert(index, START_IMPLEMENTING_SLASH.to_string());
-        }
+        && let Some(index) = commands.iter().position(|command| command == "/compact")
+    {
+        commands.insert(index, START_IMPLEMENTING_SLASH.to_string());
+    }
     commands
 }
 
@@ -145,8 +146,8 @@ fn command_suggestion(command: &str) -> InputSuggestion {
 
 fn command_replacement(command: &str) -> String {
     match command {
-        "/model" | "/sessions" | "/rewind" | "/fork" | "/subagents" | "/image" | "/mcp" | "/hooks" | "/log"
-        | "/language" | "/approval" | "/networks" | "/extensions" => {
+        "/model" | "/sessions" | "/rewind" | "/fork" | "/subagents" | "/image" | "/mcp"
+        | "/hooks" | "/log" | "/language" | "/approval" | "/networks" | "/extensions" => {
             format!("{} ", command)
         }
         _ => command.to_string(),
@@ -181,7 +182,8 @@ fn contextual_suggestions(shell: &mut TuiShell, query: &str) -> Vec<InputSuggest
     }
 
     if shell.has_active_plan()
-        && (query == START_IMPLEMENTING_SLASH || query.starts_with(format!("{START_IMPLEMENTING_SLASH} ").as_str()))
+        && (query == START_IMPLEMENTING_SLASH
+            || query.starts_with(format!("{START_IMPLEMENTING_SLASH} ").as_str()))
     {
         return vec![primary_help_suggestion(START_IMPLEMENTING_SLASH, query)];
     }

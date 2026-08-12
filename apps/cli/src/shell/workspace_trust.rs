@@ -123,9 +123,7 @@ fn selected_row_mut(form: &mut BottomFormView) -> Option<&mut usize> {
 }
 
 fn format_hook_line(hook: &WorkspaceCapabilityTrustHookEntry) -> String {
-    if hook.resolved_path.trim().is_empty()
-        || hook.resolved_path == hook.command
-    {
+    if hook.resolved_path.trim().is_empty() || hook.resolved_path == hook.command {
         hook.command.clone()
     } else {
         format!("{}  ({})", hook.command, hook.resolved_path)

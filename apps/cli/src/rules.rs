@@ -554,5 +554,4 @@ mod tests {
         assert!(preview.excerpt.lines().count() <= RULE_PREVIEW_MAX_LINES);
         assert!(preview.excerpt.chars().count() <= RULE_PREVIEW_MAX_CHARS + 1);
     }
-
 }

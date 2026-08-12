@@ -1,11 +1,9 @@
 use super::*;
 use crossterm::event::{self, Event, KeyCode, KeyEventKind, KeyModifiers};
-use ratatui::{backend::Backend, widgets::Clear, Terminal};
+use ratatui::{Terminal, backend::Backend, widgets::Clear};
 use std::{io, time::Duration};
 
-use crate::host_protocol::{
-    WorkspaceCapabilityTrustDecision, WorkspaceCapabilityTrustRequest,
-};
+use crate::host_protocol::{WorkspaceCapabilityTrustDecision, WorkspaceCapabilityTrustRequest};
 
 impl TuiShell {
     /// Install the interactive trust prompter (if needed) and run deferred sessionStart.

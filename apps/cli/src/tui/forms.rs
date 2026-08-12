@@ -361,24 +361,25 @@ impl TuiShell {
             self.forms.active = None;
 
             if parsed.bulk {
-                let list_result = if parsed.provider == crate::model_registry::ModelProvider::GoogleVertexAi {
-                    crate::vertex_models_list::list_vertex_model_ids(
-                        crate::vertex_models_list::VertexListOptions {
-                            project: parsed.vertex_project.clone().unwrap_or_default(),
-                            location: parsed.vertex_location.clone().unwrap_or_default(),
-                            api_key: parsed.api_key.clone(),
-                            client_email: parsed.vertex_client_email.clone(),
-                            private_key: parsed.vertex_private_key.clone(),
-                        },
-                    )
-                } else {
-                    openai_models_list::list_model_ids(
-                        parsed.api_base.as_str(),
-                        parsed.api_key.as_str(),
-                        parsed.transport_kind,
-                        Some(parsed.provider),
-                    )
-                };
+                let list_result =
+                    if parsed.provider == crate::model_registry::ModelProvider::GoogleVertexAi {
+                        crate::vertex_models_list::list_vertex_model_ids(
+                            crate::vertex_models_list::VertexListOptions {
+                                project: parsed.vertex_project.clone().unwrap_or_default(),
+                                location: parsed.vertex_location.clone().unwrap_or_default(),
+                                api_key: parsed.api_key.clone(),
+                                client_email: parsed.vertex_client_email.clone(),
+                                private_key: parsed.vertex_private_key.clone(),
+                            },
+                        )
+                    } else {
+                        openai_models_list::list_model_ids(
+                            parsed.api_base.as_str(),
+                            parsed.api_key.as_str(),
+                            parsed.transport_kind,
+                            Some(parsed.provider),
+                        )
+                    };
                 match list_result {
                     Ok(ids) => match self.apply_model_add_bulk(&ids, &parsed) {
                         Ok(msg) => {
@@ -570,8 +571,7 @@ impl TuiShell {
             if config.has_model_name(id) {
                 continue;
             }
-            let group_id =
-                crate::model_registry::default_preset_provider_group_id(parsed.provider);
+            let group_id = crate::model_registry::default_preset_provider_group_id(parsed.provider);
             let connect = crate::model_registry::ProviderGroupConnectDraft {
                 transport_kind: (parsed.transport_kind
                     == crate::model_registry::ModelTransportKind::Anthropic
@@ -613,21 +613,29 @@ impl TuiShell {
                         &group_id,
                         parsed.api_key.as_str(),
                     ) {
-                        return Err(t!("tui.model_add.key_save_failed", err = err.to_string()).into_owned());
+                        return Err(
+                            t!("tui.model_add.key_save_failed", err = err.to_string()).into_owned()
+                        );
                     }
-                } else if parsed.vertex_client_email.is_some() && parsed.vertex_private_key.is_some()
+                } else if parsed.vertex_client_email.is_some()
+                    && parsed.vertex_private_key.is_some()
                     && let Err(err) = crate::model_registry::save_group_vertex_credentials(
                         &group_id,
                         parsed.vertex_client_email.as_deref().unwrap_or(""),
                         parsed.vertex_private_key.as_deref().unwrap_or(""),
-                    ) {
-                        return Err(t!("tui.model_add.key_save_failed", err = err.to_string()).into_owned());
-                    }
+                    )
+                {
+                    return Err(
+                        t!("tui.model_add.key_save_failed", err = err.to_string()).into_owned()
+                    );
+                }
             } else if !parsed.api_key.trim().is_empty() {
                 if let Err(err) =
                     crate::model_registry::save_group_api_key(&group_id, parsed.api_key.as_str())
                 {
-                    return Err(t!("tui.model_add.key_save_failed", err = err.to_string()).into_owned());
+                    return Err(
+                        t!("tui.model_add.key_save_failed", err = err.to_string()).into_owned()
+                    );
                 }
             }
             added += 1;
@@ -667,10 +675,8 @@ impl TuiShell {
 
     pub(super) fn open_hook_add_form(&mut self) {
         let workspace_root = self.app_paths.workspace_root();
-        let workspace_scope_available = workspace_hooks_scope_available(
-            &workspace_root,
-            self.workspace_binding.as_str(),
-        );
+        let workspace_scope_available =
+            workspace_hooks_scope_available(&workspace_root, self.workspace_binding.as_str());
         self.forms.active = Some(bottom_form::new_hook_add_form(workspace_scope_available));
         self.model_picker_active = false;
         self.language_picker_active = false;
@@ -870,10 +876,8 @@ mod hook_scope_tests {
 
     #[test]
     fn workspace_hooks_scope_respects_none_binding() {
-        let root = std::env::temp_dir().join(format!(
-            "spirit-hook-scope-none-{}",
-            std::process::id()
-        ));
+        let root =
+            std::env::temp_dir().join(format!("spirit-hook-scope-none-{}", std::process::id()));
         let _ = fs::remove_dir_all(&root);
         fs::create_dir_all(root.join(".git")).expect("create .git");
         assert!(!workspace_hooks_scope_available(&root, "none"));
@@ -882,10 +886,8 @@ mod hook_scope_tests {
 
     #[test]
     fn workspace_hooks_scope_allows_project_with_markers() {
-        let root = std::env::temp_dir().join(format!(
-            "spirit-hook-scope-project-{}",
-            std::process::id()
-        ));
+        let root =
+            std::env::temp_dir().join(format!("spirit-hook-scope-project-{}", std::process::id()));
         let _ = fs::remove_dir_all(&root);
         fs::create_dir_all(root.join(".spirit")).expect("create .spirit");
         assert!(workspace_hooks_scope_available(&root, "project"));

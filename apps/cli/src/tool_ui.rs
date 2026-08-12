@@ -40,7 +40,10 @@ pub(crate) fn extract_path_from_partial_tool_json(arguments_json: &str) -> Optio
     }
 }
 
-pub(crate) fn tool_request_from_streaming_preview(tool_name: &str, arguments_json: &str) -> ToolUiRequest {
+pub(crate) fn tool_request_from_streaming_preview(
+    tool_name: &str,
+    arguments_json: &str,
+) -> ToolUiRequest {
     match serde_json::from_str::<Value>(arguments_json) {
         Ok(arguments) => ToolUiRequest::new(tool_name, arguments),
         Err(_) => {

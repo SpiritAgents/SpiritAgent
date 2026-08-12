@@ -1,5 +1,5 @@
-use anyhow::{Context, Result};
 use crate::mcp::spirit_agent_data_dir;
+use anyhow::{Context, Result};
 use serde::{Deserialize, Serialize};
 use serde_json::{Map, Value};
 use std::{
@@ -366,7 +366,12 @@ pub struct ProviderGroup {
 /// Resolved model profile: provider group connect fields merged with a model entry.
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct ModelProfile {
-    #[serde(rename = "groupId", alias = "group_id", default, skip_serializing_if = "String::is_empty")]
+    #[serde(
+        rename = "groupId",
+        alias = "group_id",
+        default,
+        skip_serializing_if = "String::is_empty"
+    )]
     pub group_id: String,
     pub name: String,
     #[serde(rename = "apiBase", alias = "api_base")]
@@ -409,12 +414,8 @@ impl ModelProfile {
             Some(ModelProvider::Openai) => ModelTransportKind::OpenResponses,
             Some(ModelProvider::Azure) => ModelTransportKind::OpenResponses,
             Some(ModelProvider::HuggingFace) => ModelTransportKind::OpenResponses,
-            Some(ModelProvider::Anthropic) => {
-                parsed.unwrap_or(ModelTransportKind::Anthropic)
-            }
-            Some(ModelProvider::AmazonBedrock) => {
-                parsed.unwrap_or(ModelTransportKind::Bedrock)
-            }
+            Some(ModelProvider::Anthropic) => parsed.unwrap_or(ModelTransportKind::Anthropic),
+            Some(ModelProvider::AmazonBedrock) => parsed.unwrap_or(ModelTransportKind::Bedrock),
             Some(ModelProvider::Minimax) => parsed.unwrap_or(ModelTransportKind::Anthropic),
             _ => parsed.unwrap_or(ModelTransportKind::OpenAiCompatible),
         }
@@ -455,7 +456,7 @@ impl ModelProfile {
             | Some(ModelProvider::Volcengine)
             | Some(ModelProvider::Byteplus)
             | Some(ModelProvider::Stepfun)
-            |             Some(ModelProvider::AmazonBedrock)
+            | Some(ModelProvider::AmazonBedrock)
             | Some(ModelProvider::Azure)
             | Some(ModelProvider::Meituan)
             | Some(ModelProvider::TencentTokenhub)
@@ -659,7 +660,11 @@ pub struct AgentsAttributionConfig {
 pub struct AgentsConfig {
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub lsp: Option<Value>,
-    #[serde(rename = "codeCompletion", default, skip_serializing_if = "Option::is_none")]
+    #[serde(
+        rename = "codeCompletion",
+        default,
+        skip_serializing_if = "Option::is_none"
+    )]
     pub code_completion: Option<Value>,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub attribution: Option<AgentsAttributionConfig>,
@@ -680,7 +685,11 @@ pub fn resolve_cli_attribution(config: &AppConfig) -> (bool, bool) {
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct AppConfig {
-    #[serde(rename = "schemaVersion", alias = "schema_version", default = "default_schema_version")]
+    #[serde(
+        rename = "schemaVersion",
+        alias = "schema_version",
+        default = "default_schema_version"
+    )]
     pub schema_version: u64,
     #[serde(rename = "providerGroups", alias = "provider_groups", default)]
     pub provider_groups: Vec<ProviderGroup>,
@@ -756,13 +765,23 @@ pub fn resolve_model_profile_from_parts(
     }
 
     let mut extra = Map::new();
-    if let Some(transport_kind) = group.transport_kind.as_deref().map(str::trim).filter(|v| !v.is_empty()) {
+    if let Some(transport_kind) = group
+        .transport_kind
+        .as_deref()
+        .map(str::trim)
+        .filter(|v| !v.is_empty())
+    {
         extra.insert(
             "transportKind".to_string(),
             Value::String(transport_kind.to_string()),
         );
     }
-    if let Some(site) = group.provider_site.as_deref().map(str::trim).filter(|v| !v.is_empty()) {
+    if let Some(site) = group
+        .provider_site
+        .as_deref()
+        .map(str::trim)
+        .filter(|v| !v.is_empty())
+    {
         extra.insert("providerSite".to_string(), Value::String(site.to_string()));
     }
     if let Some(workspace_id) = group
@@ -820,7 +839,12 @@ pub fn resolve_model_profile_from_parts(
             Value::String(billing_mode.to_string()),
         );
     }
-    if let Some(region) = group.aws_region.as_deref().map(str::trim).filter(|v| !v.is_empty()) {
+    if let Some(region) = group
+        .aws_region
+        .as_deref()
+        .map(str::trim)
+        .filter(|v| !v.is_empty())
+    {
         extra.insert("awsRegion".to_string(), Value::String(region.to_string()));
     }
     if let Some(resource_name) = group
@@ -862,7 +886,10 @@ pub fn resolve_model_profile_from_parts(
         .map(str::trim)
         .filter(|v| !v.is_empty())
     {
-        extra.insert("vertexProject".to_string(), Value::String(project.to_string()));
+        extra.insert(
+            "vertexProject".to_string(),
+            Value::String(project.to_string()),
+        );
     }
     if let Some(location) = group
         .vertex_location
@@ -876,9 +903,15 @@ pub fn resolve_model_profile_from_parts(
         );
     }
     if let Some(capabilities) = model.capabilities.as_ref().filter(|caps| !caps.is_empty()) {
-        extra.insert("capabilities".to_string(), Value::Array(
-            capabilities.iter().map(|cap| Value::String(cap.clone())).collect(),
-        ));
+        extra.insert(
+            "capabilities".to_string(),
+            Value::Array(
+                capabilities
+                    .iter()
+                    .map(|cap| Value::String(cap.clone()))
+                    .collect(),
+            ),
+        );
     }
     if let Some(efforts) = model
         .supported_reasoning_efforts
@@ -935,7 +968,9 @@ impl AppConfig {
         if normalized.is_empty() {
             return None;
         }
-        self.provider_groups.iter().find(|group| group.id == normalized)
+        self.provider_groups
+            .iter()
+            .find(|group| group.id == normalized)
     }
 
     pub fn find_provider_group_mut(&mut self, group_id: &str) -> Option<&mut ProviderGroup> {
@@ -967,7 +1002,10 @@ impl AppConfig {
         if normalized.is_empty() {
             return None;
         }
-        group.models.iter_mut().find(|model| model.name == normalized)
+        group
+            .models
+            .iter_mut()
+            .find(|model| model.name == normalized)
     }
 
     pub fn resolve_model_profile(&self, model_ref: &ModelRef) -> Option<ModelProfile> {
@@ -1181,9 +1219,7 @@ impl AppConfig {
             return false;
         };
         let before = group.models.len();
-        group
-            .models
-            .retain(|model| model.name != model_ref.name);
+        group.models.retain(|model| model.name != model_ref.name);
         if group.models.len() == before {
             return false;
         }
@@ -1342,8 +1378,8 @@ fn deserialize_config(content: &str, path: &Path) -> Result<AppConfig> {
         ));
     }
 
-    let mut cfg: AppConfig = serde_json::from_value(raw)
-        .with_context(|| format!("解析配置失败: {}", path.display()))?;
+    let mut cfg: AppConfig =
+        serde_json::from_value(raw).with_context(|| format!("解析配置失败: {}", path.display()))?;
     normalize_config(&mut cfg);
     Ok(cfg)
 }
@@ -1397,10 +1433,8 @@ fn normalize_config(cfg: &mut AppConfig) {
         &flattened,
         ModelProfile::supports_video_generation,
     );
-    cfg.lightweight_chat_model = normalize_lightweight_chat_model_ref(
-        cfg.lightweight_chat_model.take(),
-        &flattened,
-    );
+    cfg.lightweight_chat_model =
+        normalize_lightweight_chat_model_ref(cfg.lightweight_chat_model.take(), &flattened);
 
     for group in &mut cfg.provider_groups {
         if group.api_base.trim().is_empty() {
@@ -1453,8 +1487,7 @@ fn normalize_group_transport_kind(
     ) {
         transport_kind = ModelTransportKind::OpenAiCompatible;
     }
-    if provider == ModelProvider::GoogleVertexAi && transport_kind == ModelTransportKind::Bedrock
-    {
+    if provider == ModelProvider::GoogleVertexAi && transport_kind == ModelTransportKind::Bedrock {
         transport_kind = ModelTransportKind::OpenAiCompatible;
     }
     transport_kind
@@ -1612,9 +1645,7 @@ pub(crate) fn parse_openai_gpt_model_version(model_id: &str) -> Option<(u32, u32
             }
         }
 
-        let major_end = rest
-            .find(['-', '_'])
-            .unwrap_or(rest.len());
+        let major_end = rest.find(['-', '_']).unwrap_or(rest.len());
         let major_part = &rest[..major_end];
         if let Ok(major) = major_part.parse::<u32>() {
             return Some((major, 0));
@@ -1718,16 +1749,16 @@ pub fn load_group_api_key_from_keyring(group_id: &str) -> Result<String> {
 
 pub fn load_group_access_key_id_from_keyring(group_id: &str) -> Result<String> {
     let entry = keyring_entry_for_account(&group_access_key_id_account(group_id))?;
-    entry.get_password().with_context(|| {
-        format!("读取 provider group {group_id} 的 IAM Access Key ID 失败")
-    })
+    entry
+        .get_password()
+        .with_context(|| format!("读取 provider group {group_id} 的 IAM Access Key ID 失败"))
 }
 
 pub fn load_group_secret_access_key_from_keyring(group_id: &str) -> Result<String> {
     let entry = keyring_entry_for_account(&group_secret_access_key_account(group_id))?;
-    entry.get_password().with_context(|| {
-        format!("读取 provider group {group_id} 的 IAM Secret Access Key 失败")
-    })
+    entry
+        .get_password()
+        .with_context(|| format!("读取 provider group {group_id} 的 IAM Secret Access Key 失败"))
 }
 
 pub fn has_bedrock_runtime_credentials_in_keyring(group_id: &str) -> Result<bool> {
@@ -1749,16 +1780,16 @@ pub fn has_bedrock_runtime_credentials_in_keyring(group_id: &str) -> Result<bool
 
 pub fn load_group_vertex_client_email_from_keyring(group_id: &str) -> Result<String> {
     let entry = keyring_entry_for_account(&group_vertex_client_email_account(group_id))?;
-    entry.get_password().with_context(|| {
-        format!("读取 provider group {group_id} 的 Vertex client email 失败")
-    })
+    entry
+        .get_password()
+        .with_context(|| format!("读取 provider group {group_id} 的 Vertex client email 失败"))
 }
 
 pub fn load_group_vertex_private_key_from_keyring(group_id: &str) -> Result<String> {
     let entry = keyring_entry_for_account(&group_vertex_private_key_account(group_id))?;
-    entry.get_password().with_context(|| {
-        format!("读取 provider group {group_id} 的 Vertex private key 失败")
-    })
+    entry
+        .get_password()
+        .with_context(|| format!("读取 provider group {group_id} 的 Vertex private key 失败"))
 }
 
 pub fn has_google_vertex_service_account_in_keyring(group_id: &str) -> Result<bool> {
@@ -1895,9 +1926,10 @@ fn load_model_api_key_from_keyring(model_name: &str) -> Result<String> {
 #[cfg(test)]
 mod tests {
     use super::{
-        deserialize_config, normalize_reasoning_effort_value, normalize_reasoning_mode_value,
-        resolve_cli_attribution, serialize_config, AppConfig, ModelEntry, ModelProvider, ModelRef,
-        ModelTransportKind, ProviderGroupConnectDraft, SPIRIT_CONFIG_SCHEMA_VERSION,
+        AppConfig, ModelEntry, ModelProvider, ModelRef, ModelTransportKind,
+        ProviderGroupConnectDraft, SPIRIT_CONFIG_SCHEMA_VERSION, deserialize_config,
+        normalize_reasoning_effort_value, normalize_reasoning_mode_value, resolve_cli_attribution,
+        serialize_config,
     };
     use serde_json::Value;
     use std::path::Path;
@@ -1924,9 +1956,10 @@ mod tests {
     fn rejects_non_v2_schema_version() {
         let config = r#"{"schemaVersion":1,"models":[],"activeModel":""}"#;
         let err = deserialize_config(config, Path::new("config.json")).unwrap_err();
-        assert!(err
-            .to_string()
-            .contains(&format!("schemaVersion {SPIRIT_CONFIG_SCHEMA_VERSION}")));
+        assert!(
+            err.to_string()
+                .contains(&format!("schemaVersion {SPIRIT_CONFIG_SCHEMA_VERSION}"))
+        );
     }
 
     #[test]
@@ -2108,8 +2141,12 @@ mod tests {
 
     #[test]
     fn model_profile_supports_image_input_uses_explicit_capabilities_for_moonshot() {
-        let kimi_without_capabilities =
-            test_profile("moonshot-ai", "kimi-k2.6", "https://api.moonshot.cn/v1", ModelProvider::Moonshot);
+        let kimi_without_capabilities = test_profile(
+            "moonshot-ai",
+            "kimi-k2.6",
+            "https://api.moonshot.cn/v1",
+            ModelProvider::Moonshot,
+        );
         let mut kimi_with_image = kimi_without_capabilities.clone();
         kimi_with_image.extra.insert(
             "capabilities".to_string(),
@@ -2544,7 +2581,10 @@ mod tests {
 "#;
         let parsed = deserialize_config(config, Path::new("config.json")).expect("parse config");
         let active = parsed.active_model_profile().expect("active model");
-        assert_eq!(active.transport_kind(), ModelTransportKind::OpenAiCompatible);
+        assert_eq!(
+            active.transport_kind(),
+            ModelTransportKind::OpenAiCompatible
+        );
     }
 
     #[test]

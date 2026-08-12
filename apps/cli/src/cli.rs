@@ -11,7 +11,14 @@ use crate::{
         example_github_mcp_config, load_mcp_config, save_mcp_config, set_server_enabled,
         user_mcp_config_path, workspace_mcp_config_path,
     },
-    model_provider_presets::{azure_api_base_from_resource_name, model_add_alibaba_site_api_base, model_add_alibaba_site_requires_workspace_id, model_add_default_custom_api_base, model_add_kimi_code_api_base, model_add_minimax_site_api_base, model_add_moonshot_site_api_base, model_add_preset_api_base_by_provider, model_add_siliconflow_site_api_base, model_add_tencent_tokenhub_site_api_base, validate_azure_resource_name},
+    model_provider_presets::{
+        azure_api_base_from_resource_name, model_add_alibaba_site_api_base,
+        model_add_alibaba_site_requires_workspace_id, model_add_default_custom_api_base,
+        model_add_kimi_code_api_base, model_add_minimax_site_api_base,
+        model_add_moonshot_site_api_base, model_add_preset_api_base_by_provider,
+        model_add_siliconflow_site_api_base, model_add_tencent_tokenhub_site_api_base,
+        validate_azure_resource_name,
+    },
     model_registry::{
         AppConfig, DEFAULT_API_BASE, ModelEntry, ModelProfile, ModelProvider, ModelRef,
         ModelTransportKind, ProviderGroupConnectDraft, default_preset_provider_group_id,
@@ -39,12 +46,8 @@ pub struct ModelAddCommand {
 pub enum ModelCommand {
     List,
     Add(Box<ModelAddCommand>),
-    Remove {
-        name: String,
-    },
-    Use {
-        name: String,
-    },
+    Remove { name: String },
+    Use { name: String },
     Current,
 }
 
@@ -147,11 +150,12 @@ pub fn handle_model_cli(action: ModelCommand) -> Result<()> {
             );
             println!("{}", t!("cli.model.list_header"));
             for model in cfg.flatten_models() {
-                let key_saved = crate::model_registry::load_group_api_key_from_keyring(&model.group_id)
-                    .map(|value| !value.trim().is_empty())
-                    .unwrap_or_else(|_| {
-                        secret_store.has_model_api_key(&model.name).unwrap_or(false)
-                    });
+                let key_saved =
+                    crate::model_registry::load_group_api_key_from_keyring(&model.group_id)
+                        .map(|value| !value.trim().is_empty())
+                        .unwrap_or_else(|_| {
+                            secret_store.has_model_api_key(&model.name).unwrap_or(false)
+                        });
                 println!(
                     "{}",
                     t!(
@@ -202,16 +206,14 @@ pub fn handle_model_cli(action: ModelCommand) -> Result<()> {
                     ));
                 }
                 if provider == Some(ModelProvider::Azure)
-                    && let Some(resource_name) = azure_resource_name.as_deref() {
-                        validate_azure_resource_name(resource_name).map_err(anyhow::Error::msg)?;
-                    }
+                    && let Some(resource_name) = azure_resource_name.as_deref()
+                {
+                    validate_azure_resource_name(resource_name).map_err(anyhow::Error::msg)?;
+                }
                 if provider == Some(ModelProvider::Azure)
                     && transport_kind != ModelTransportKind::OpenResponses
                 {
-                    return Err(anyhow!(
-                        "{}",
-                        t!("cli.model.error.azure_transport_only")
-                    ));
+                    return Err(anyhow!("{}", t!("cli.model.error.azure_transport_only")));
                 }
                 let reasoning_effort = parse_model_reasoning_effort(
                     &name,
@@ -225,15 +227,21 @@ pub fn handle_model_cli(action: ModelCommand) -> Result<()> {
                     return Err(anyhow!("{}", t!("cli.model.error.endpoint_empty")));
                 }
                 if provider == Some(ModelProvider::Alibaba)
-                    && let Some(site) = provider_site.as_deref().map(str::trim).filter(|value| !value.is_empty())
-                        && model_add_alibaba_site_requires_workspace_id(site)
-                            && alibaba_workspace_id.as_deref().map(str::trim).is_none_or(str::is_empty)
-                        {
-                            return Err(anyhow!(
-                                "{}",
-                                t!("cli.model.error.alibaba_workspace_id_required")
-                            ));
-                        }
+                    && let Some(site) = provider_site
+                        .as_deref()
+                        .map(str::trim)
+                        .filter(|value| !value.is_empty())
+                    && model_add_alibaba_site_requires_workspace_id(site)
+                    && alibaba_workspace_id
+                        .as_deref()
+                        .map(str::trim)
+                        .is_none_or(str::is_empty)
+                {
+                    return Err(anyhow!(
+                        "{}",
+                        t!("cli.model.error.alibaba_workspace_id_required")
+                    ));
+                }
                 let api_base = api_base.unwrap_or_else(|| {
                     if provider == Some(ModelProvider::Azure) {
                         return azure_api_base_from_resource_name(
@@ -245,67 +253,75 @@ pub fn handle_model_cli(action: ModelCommand) -> Result<()> {
                             .as_deref()
                             .map(str::trim)
                             .filter(|value| !value.is_empty())
-                            && let Some(base) = model_add_siliconflow_site_api_base(site) {
-                                return base;
-                            }
+                        && let Some(base) = model_add_siliconflow_site_api_base(site)
+                    {
+                        return base;
+                    }
                     if provider == Some(ModelProvider::Moonshot)
                         && let Some(site) = provider_site
                             .as_deref()
                             .map(str::trim)
                             .filter(|value| !value.is_empty())
-                            && let Some(base) = model_add_moonshot_site_api_base(site) {
-                                return base;
-                            }
+                        && let Some(base) = model_add_moonshot_site_api_base(site)
+                    {
+                        return base;
+                    }
                     if provider == Some(ModelProvider::TencentTokenhub)
                         && let Some(site) = provider_site
                             .as_deref()
                             .map(str::trim)
                             .filter(|value| !value.is_empty())
-                            && let Some(base) = model_add_tencent_tokenhub_site_api_base(site) {
-                                return base;
-                            }
+                        && let Some(base) = model_add_tencent_tokenhub_site_api_base(site)
+                    {
+                        return base;
+                    }
                     if provider == Some(ModelProvider::KimiCode)
-                        && let Some(base) = model_add_kimi_code_api_base(transport_kind) {
-                            return base;
-                        }
+                        && let Some(base) = model_add_kimi_code_api_base(transport_kind)
+                    {
+                        return base;
+                    }
                     if provider == Some(ModelProvider::Minimax)
                         && let Some(site) = provider_site
                             .as_deref()
                             .map(str::trim)
                             .filter(|value| !value.is_empty())
-                            && let Some(base) = model_add_minimax_site_api_base(site, transport_kind) {
-                                return base;
-                            }
+                        && let Some(base) = model_add_minimax_site_api_base(site, transport_kind)
+                    {
+                        return base;
+                    }
                     if provider == Some(ModelProvider::Alibaba)
                         && let Some(site) = provider_site
                             .as_deref()
                             .map(str::trim)
                             .filter(|value| !value.is_empty())
-                            && let Some(base) = model_add_alibaba_site_api_base(
-                                site,
-                                alibaba_workspace_id.as_deref().unwrap_or(""),
-                                transport_kind,
-                            ) {
-                                return base;
-                            }
+                        && let Some(base) = model_add_alibaba_site_api_base(
+                            site,
+                            alibaba_workspace_id.as_deref().unwrap_or(""),
+                            transport_kind,
+                        )
+                    {
+                        return base;
+                    }
                     if let Some(provider) = provider
-                        && let Some(preset) = model_add_preset_api_base_by_provider(provider) {
-                            return preset;
-                        }
+                        && let Some(preset) = model_add_preset_api_base_by_provider(provider)
+                    {
+                        return preset;
+                    }
                     match transport_kind {
                         ModelTransportKind::Anthropic => {
                             model_add_default_custom_api_base(ModelTransportKind::Anthropic)
                         }
                         ModelTransportKind::Bedrock => {
                             if let Some(provider) = provider
-                                && let Some(preset) = model_add_preset_api_base_by_provider(provider) {
-                                    return preset;
-                                }
+                                && let Some(preset) =
+                                    model_add_preset_api_base_by_provider(provider)
+                            {
+                                return preset;
+                            }
                             "https://bedrock.us-east-1.amazonaws.com".to_string()
                         }
-                        ModelTransportKind::OpenResponses | ModelTransportKind::OpenAiCompatible => {
-                            DEFAULT_API_BASE.to_string()
-                        }
+                        ModelTransportKind::OpenResponses
+                        | ModelTransportKind::OpenAiCompatible => DEFAULT_API_BASE.to_string(),
                     }
                 });
                 let capabilities = normalize_model_capabilities(capabilities);
@@ -321,10 +337,7 @@ pub fn handle_model_cli(action: ModelCommand) -> Result<()> {
                 let context_length = match context_length {
                     None => None,
                     Some(0) => {
-                        return Err(anyhow!(
-                            "{}",
-                            t!("cli.model.error.context_length_positive")
-                        ));
+                        return Err(anyhow!("{}", t!("cli.model.error.context_length_positive")));
                     }
                     Some(value) => Some(value),
                 };
@@ -395,7 +408,10 @@ pub fn handle_model_cli(action: ModelCommand) -> Result<()> {
                 config_store.save(&cfg)?;
                 println!("{}", t!("cli.model.added_and_active", name = name));
                 println!("api_base: {}", api_base);
-                println!("provider: {}", format_model_provider(Some(resolved_provider)));
+                println!(
+                    "provider: {}",
+                    format_model_provider(Some(resolved_provider))
+                );
                 println!(
                     "reasoning_effort: {}",
                     reasoning_effort
@@ -501,11 +517,12 @@ pub fn handle_config_cli(action: ConfigCommand) -> Result<()> {
             );
             println!("{}", t!("cli.config.models_header"));
             for model in cfg.flatten_models() {
-                let key_saved = crate::model_registry::load_group_api_key_from_keyring(&model.group_id)
-                    .map(|value| !value.trim().is_empty())
-                    .unwrap_or_else(|_| {
-                        secret_store.has_model_api_key(&model.name).unwrap_or(false)
-                    });
+                let key_saved =
+                    crate::model_registry::load_group_api_key_from_keyring(&model.group_id)
+                        .map(|value| !value.trim().is_empty())
+                        .unwrap_or_else(|_| {
+                            secret_store.has_model_api_key(&model.name).unwrap_or(false)
+                        });
                 println!(
                     "{}",
                     t!(
@@ -630,24 +647,25 @@ fn parse_model_transport_kind(
     provider: Option<ModelProvider>,
 ) -> Result<ModelTransportKind> {
     let parsed = match normalize_choice_arg(value) {
-        Some(transport_kind) => transport_kind
-            .parse()
-            .map_err(|err: String| anyhow!(err))?,
+        Some(transport_kind) => transport_kind.parse().map_err(|err: String| anyhow!(err))?,
         None => match provider {
             Some(ModelProvider::Anthropic) => ModelTransportKind::Anthropic,
             Some(ModelProvider::AmazonBedrock) => ModelTransportKind::Bedrock,
-            Some(ModelProvider::Azure | ModelProvider::Openai | ModelProvider::HuggingFace) => ModelTransportKind::OpenResponses,
+            Some(ModelProvider::Azure | ModelProvider::Openai | ModelProvider::HuggingFace) => {
+                ModelTransportKind::OpenResponses
+            }
             _ => ModelTransportKind::OpenAiCompatible,
         },
     };
 
     match (provider, parsed) {
-        (Some(ModelProvider::Anthropic), ModelTransportKind::OpenAiCompatible | ModelTransportKind::OpenResponses) => {
-            Err(anyhow!(
-                "{}",
-                t!("cli.model.error.transport.anthropic_invalid")
-            ))
-        }
+        (
+            Some(ModelProvider::Anthropic),
+            ModelTransportKind::OpenAiCompatible | ModelTransportKind::OpenResponses,
+        ) => Err(anyhow!(
+            "{}",
+            t!("cli.model.error.transport.anthropic_invalid")
+        )),
         (
             Some(
                 ModelProvider::Deepseek
@@ -667,48 +685,48 @@ fn parse_model_transport_kind(
                 | ModelProvider::ZAi
                 | ModelProvider::ZhipuAi,
             ),
-            ModelTransportKind::Anthropic | ModelTransportKind::OpenResponses | ModelTransportKind::Bedrock,
+            ModelTransportKind::Anthropic
+            | ModelTransportKind::OpenResponses
+            | ModelTransportKind::Bedrock,
         ) => Err(anyhow!(
             "{}",
             t!("cli.model.error.transport.provider_openai_compatible_only")
         )),
-        (Some(ModelProvider::Siliconflow), ModelTransportKind::OpenResponses | ModelTransportKind::Bedrock) => {
-            Err(anyhow!(
-                "{}",
-                t!("cli.model.error.transport.siliconflow_invalid")
-            ))
+        (
+            Some(ModelProvider::Siliconflow),
+            ModelTransportKind::OpenResponses | ModelTransportKind::Bedrock,
+        ) => Err(anyhow!(
+            "{}",
+            t!("cli.model.error.transport.siliconflow_invalid")
+        )),
+        (Some(ModelProvider::Openai), ModelTransportKind::Anthropic) => Err(anyhow!(
+            "{}",
+            t!("cli.model.error.transport.openai_no_anthropic")
+        )),
+        (Some(ModelProvider::Openai), ModelTransportKind::OpenAiCompatible) => Err(anyhow!(
+            "{}",
+            t!("cli.model.error.transport.openai_open_responses_only")
+        )),
+        (
+            Some(ModelProvider::Google),
+            ModelTransportKind::OpenResponses | ModelTransportKind::Anthropic,
+        ) => Err(anyhow!(
+            "{}",
+            t!("cli.model.error.transport.google_openai_compatible_only")
+        )),
+        (Some(ModelProvider::AmazonBedrock), transport_kind)
+            if transport_kind != ModelTransportKind::Bedrock =>
+        {
+            Err(anyhow!("{}", t!("cli.model.error.transport.bedrock_only")))
         }
-        (Some(ModelProvider::Openai), ModelTransportKind::Anthropic) => {
-            Err(anyhow!(
-                "{}",
-                t!("cli.model.error.transport.openai_no_anthropic")
-            ))
+        (Some(ModelProvider::Azure), transport_kind)
+            if transport_kind != ModelTransportKind::OpenResponses =>
+        {
+            Err(anyhow!("{}", t!("cli.model.error.azure_transport_only")))
         }
-        (Some(ModelProvider::Openai), ModelTransportKind::OpenAiCompatible) => {
-            Err(anyhow!(
-                "{}",
-                t!("cli.model.error.transport.openai_open_responses_only")
-            ))
-        }
-        (Some(ModelProvider::Google), ModelTransportKind::OpenResponses | ModelTransportKind::Anthropic) => {
-            Err(anyhow!(
-                "{}",
-                t!("cli.model.error.transport.google_openai_compatible_only")
-            ))
-        }
-        (Some(ModelProvider::AmazonBedrock), transport_kind) if transport_kind != ModelTransportKind::Bedrock => {
-            Err(anyhow!(
-                "{}",
-                t!("cli.model.error.transport.bedrock_only")
-            ))
-        }
-        (Some(ModelProvider::Azure), transport_kind) if transport_kind != ModelTransportKind::OpenResponses => {
-            Err(anyhow!(
-                "{}",
-                t!("cli.model.error.azure_transport_only")
-            ))
-        }
-        (Some(ModelProvider::HuggingFace), transport_kind) if transport_kind != ModelTransportKind::OpenResponses => {
+        (Some(ModelProvider::HuggingFace), transport_kind)
+            if transport_kind != ModelTransportKind::OpenResponses =>
+        {
             Err(anyhow!(
                 "{}",
                 t!("cli.model.error.transport.hugging_face_open_responses_only")
@@ -735,18 +753,14 @@ fn parse_model_transport_kind(
             "{}",
             t!("cli.model.error.transport.bedrock_exclusive")
         )),
-        (None, ModelTransportKind::Anthropic) => {
-            Err(anyhow!(
-                "{}",
-                t!("cli.model.error.transport.anthropic_requires_provider")
-            ))
-        }
-        (None, ModelTransportKind::OpenResponses) => {
-            Err(anyhow!(
-                "{}",
-                t!("cli.model.error.transport.open_responses_requires_provider")
-            ))
-        }
+        (None, ModelTransportKind::Anthropic) => Err(anyhow!(
+            "{}",
+            t!("cli.model.error.transport.anthropic_requires_provider")
+        )),
+        (None, ModelTransportKind::OpenResponses) => Err(anyhow!(
+            "{}",
+            t!("cli.model.error.transport.open_responses_requires_provider")
+        )),
         _ => Ok(parsed),
     }
 }
@@ -763,9 +777,7 @@ fn parse_model_reasoning_effort(
     };
 
     let allowed: &[&str] = match transport_kind {
-        ModelTransportKind::Anthropic => {
-            &["default", "low", "medium", "high", "xhigh", "max"][..]
-        }
+        ModelTransportKind::Anthropic => &["default", "low", "medium", "high", "xhigh", "max"][..],
         ModelTransportKind::Bedrock
         | ModelTransportKind::OpenResponses
         | ModelTransportKind::OpenAiCompatible => match provider {
@@ -853,7 +865,9 @@ pub fn handle_mcp_cli(action: McpCommand) -> Result<()> {
                 "{}",
                 t!(
                     "cli.mcp.workspace_config",
-                    path = workspace_mcp_config_path(&workspace_root).display().to_string()
+                    path = workspace_mcp_config_path(&workspace_root)
+                        .display()
+                        .to_string()
                 )
             );
 
@@ -910,10 +924,7 @@ pub fn handle_mcp_cli(action: McpCommand) -> Result<()> {
             save_mcp_config(&path, &example_github_mcp_config(), force)?;
             println!(
                 "{}",
-                t!(
-                    "cli.mcp.init_created",
-                    path = path.display().to_string()
-                )
+                t!("cli.mcp.init_created", path = path.display().to_string())
             );
             println!("{}", t!("cli.mcp.init_hint"));
         }
@@ -1208,7 +1219,9 @@ pub fn handle_marketplace_cli(action: MarketplaceCommand) -> Result<()> {
                 let installed_label = installed
                     .get(&item.package_name)
                     .or_else(|| installed.get(&item.extension_id))
-                    .map(|version| t!("cli.extensions.installed_version", version = version).into_owned())
+                    .map(|version| {
+                        t!("cli.extensions.installed_version", version = version).into_owned()
+                    })
                     .unwrap_or_else(|| t!("cli.extensions.not_installed").into_owned());
                 println!(
                     "  - {}\n    id: {}\n    package: {}\n    version: {}\n    status: {}\n    review: {}\n    installed: {}",
@@ -1344,10 +1357,7 @@ fn handle_key_cli(action: KeyCommand, secret_store: &KeyringSecretStore) -> Resu
             }
 
             secret_store.save_global_api_key(key.trim())?;
-            println!(
-                "{}",
-                t!("cli.key.saved", env_var = ENV_API_KEY)
-            );
+            println!("{}", t!("cli.key.saved", env_var = ENV_API_KEY));
         }
         KeyCommand::Remove => {
             secret_store.remove_global_api_key()?;
@@ -1378,15 +1388,9 @@ fn handle_key_cli(action: KeyCommand, secret_store: &KeyringSecretStore) -> Resu
             );
             println!(
                 "{}",
-                t!(
-                    "cli.key.keyring",
-                    status = common_key_status(keyring_set)
-                )
+                t!("cli.key.keyring", status = common_key_status(keyring_set))
             );
-            println!(
-                "{}",
-                t!("cli.key.priority", env_var = ENV_API_KEY)
-            );
+            println!("{}", t!("cli.key.priority", env_var = ENV_API_KEY));
         }
     }
 
@@ -1401,7 +1405,7 @@ pub fn load_or_default_config() -> AppConfig {
 
 #[cfg(test)]
 mod tests {
-    use super::{parse_model_reasoning_effort, ModelProvider, ModelTransportKind};
+    use super::{ModelProvider, ModelTransportKind, parse_model_reasoning_effort};
 
     #[test]
     fn parse_model_reasoning_effort_accepts_moonshot_style_for_kimi_code() {

@@ -94,9 +94,10 @@ pub(super) fn apply_runtime_events(shell: &mut TuiShell) {
             }
             RuntimeEvent::AssistantChunk(chunk) => {
                 if let Some(idx) = shell.pending_assistant_msg_index
-                    && let Some(msg) = shell.messages.get_mut(idx) {
-                        msg.content.push_str(&chunk);
-                    }
+                    && let Some(msg) = shell.messages.get_mut(idx)
+                {
+                    msg.content.push_str(&chunk);
+                }
             }
             RuntimeEvent::ReplacePendingAssistant(content) => {
                 if let Some(idx) = shell.pending_assistant_msg_index {
@@ -142,7 +143,12 @@ pub(super) fn apply_runtime_events(shell: &mut TuiShell) {
     shell.sync_subagent_approval_input_state();
 }
 
-fn upsert_tool_preview(shell: &mut TuiShell, tool_call_id: &str, tool_name: &str, request: &ToolUiRequest) {
+fn upsert_tool_preview(
+    shell: &mut TuiShell,
+    tool_call_id: &str,
+    tool_name: &str,
+    request: &ToolUiRequest,
+) {
     let block = build_tool_preview_block(tool_name, tool_call_id, request);
     for message in shell.messages.iter_mut().rev() {
         if message

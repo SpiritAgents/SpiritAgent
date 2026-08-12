@@ -1,12 +1,12 @@
-use crate::rewind::{
-    ConversationMessageRole, ConversationMessageSnapshot, MessageAuxSnapshot, ToolBlockSnapshot,
-};
-use crate::view::{AssistantAuxData, ChatMessage, MessageRole};
-use crate::ports::{ArchivedLlmMessage, ArchivedLlmToolCall};
 use crate::host_runtime::{
     build_tool_preview_block, build_tool_result_block, format_tool_ui_message,
 };
+use crate::ports::{ArchivedLlmMessage, ArchivedLlmToolCall};
+use crate::rewind::{
+    ConversationMessageRole, ConversationMessageSnapshot, MessageAuxSnapshot, ToolBlockSnapshot,
+};
 use crate::tool_ui::tool_request_from_streaming_preview;
+use crate::view::{AssistantAuxData, ChatMessage, MessageRole};
 use std::collections::HashMap;
 
 pub const CHAT_SCHEMA_VERSION: i32 = 2;
@@ -155,9 +155,13 @@ pub fn build_persisted_timeline(
 
         let turn = current_turn.as_mut().expect("assistant turn");
         let segment = current_segment.as_mut().expect("assistant segment");
-        if let Some(row) =
-            row_from_assistant_message(message, turn.turn_id, segment.segment_id, next_created_order, next_row_id)
-        {
+        if let Some(row) = row_from_assistant_message(
+            message,
+            turn.turn_id,
+            segment.segment_id,
+            next_created_order,
+            next_row_id,
+        ) {
             segment.rows.push(row);
             next_row_id += 1;
             next_created_order += 1;
@@ -241,9 +245,10 @@ pub fn hydrate_desktop_messages_from_timeline(
     let mut messages = Vec::new();
     for turn in timeline {
         if let Some(user_row) = turn.user_row.as_ref()
-            && let Some(message) = row_to_message(user_row) {
-                messages.push(message);
-            }
+            && let Some(message) = row_to_message(user_row)
+        {
+            messages.push(message);
+        }
         for segment in &turn.segments {
             for row in &segment.rows {
                 if let Some(message) = row_to_message(row) {
@@ -318,7 +323,10 @@ fn row_to_message(row: &PersistedTimelineRow) -> Option<ConversationMessageSnaps
 
 pub fn derive_archive_projection(
     messages: &[ConversationMessageSnapshot],
-) -> (Vec<(String, String)>, Vec<crate::ports::AssistantAuxArchiveEntry>) {
+) -> (
+    Vec<(String, String)>,
+    Vec<crate::ports::AssistantAuxArchiveEntry>,
+) {
     let mut archive_messages = Vec::new();
     let mut assistant_aux = Vec::new();
     for message in messages {
@@ -378,9 +386,7 @@ pub fn project_live_chat_from_llm_history(history: &[ArchivedLlmMessage]) -> Liv
 }
 
 /// Backward-compatible wrapper returning message rows only.
-pub fn project_chat_messages_from_llm_history(
-    history: &[ArchivedLlmMessage],
-) -> Vec<ChatMessage> {
+pub fn project_chat_messages_from_llm_history(history: &[ArchivedLlmMessage]) -> Vec<ChatMessage> {
     project_live_chat_from_llm_history(history).messages
 }
 
@@ -476,12 +482,7 @@ fn push_tool_call_message(
         let output_text = output.text_content();
         (
             format_tool_ui_message(&request, &tool_call.name, &output_text),
-            build_tool_result_block(
-                &request,
-                &tool_call.name,
-                Some(&tool_call.id),
-                &output_text,
-            ),
+            build_tool_result_block(&request, &tool_call.name, Some(&tool_call.id), &output_text),
         )
     } else {
         (
@@ -496,7 +497,9 @@ fn push_tool_call_message(
     });
 }
 
-fn assistant_aux_from_provider_state(provider_state: Option<&serde_json::Value>) -> Option<AssistantAuxData> {
+fn assistant_aux_from_provider_state(
+    provider_state: Option<&serde_json::Value>,
+) -> Option<AssistantAuxData> {
     let provider_state = provider_state?;
     let thinking = provider_state
         .get("thinking")
@@ -544,7 +547,7 @@ fn sanitize_aux(aux: Option<&MessageAuxSnapshot>) -> Option<MessageAuxSnapshot> 
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::rewind::{ToolBlockSnapshotPhase};
+    use crate::rewind::ToolBlockSnapshotPhase;
 
     #[test]
     fn build_persisted_timeline_omits_empty_assistant_content_for_tool_and_thinking() {
@@ -611,15 +614,27 @@ mod tests {
         use crate::ports::ArchivedLlmToolCall;
 
         let history = vec![
-            ArchivedLlmMessage::from_text_and_images("user".to_string(), "hi".to_string(), Vec::new()),
-            ArchivedLlmMessage::from_text_and_images("assistant".to_string(), String::new(), Vec::new())
-                .with_tool_calls(Some(vec![ArchivedLlmToolCall {
-                    id: "call-1".to_string(),
-                    name: "Shell".to_string(),
-                    arguments_json: r#"{"command":"echo hi"}"#.to_string(),
-                }])),
-            ArchivedLlmMessage::from_text_and_images("tool".to_string(), "hi\n".to_string(), Vec::new())
-                .with_tool_call_id(Some("call-1".to_string())),
+            ArchivedLlmMessage::from_text_and_images(
+                "user".to_string(),
+                "hi".to_string(),
+                Vec::new(),
+            ),
+            ArchivedLlmMessage::from_text_and_images(
+                "assistant".to_string(),
+                String::new(),
+                Vec::new(),
+            )
+            .with_tool_calls(Some(vec![ArchivedLlmToolCall {
+                id: "call-1".to_string(),
+                name: "Shell".to_string(),
+                arguments_json: r#"{"command":"echo hi"}"#.to_string(),
+            }])),
+            ArchivedLlmMessage::from_text_and_images(
+                "tool".to_string(),
+                "hi\n".to_string(),
+                Vec::new(),
+            )
+            .with_tool_call_id(Some("call-1".to_string())),
             ArchivedLlmMessage::from_text_and_images(
                 "assistant".to_string(),
                 "done".to_string(),
@@ -639,15 +654,27 @@ mod tests {
         use crate::ports::ArchivedLlmToolCall;
 
         let history = vec![
-            ArchivedLlmMessage::from_text_and_images("user".to_string(), "hi".to_string(), Vec::new()),
-            ArchivedLlmMessage::from_text_and_images("assistant".to_string(), String::new(), Vec::new())
-                .with_tool_calls(Some(vec![ArchivedLlmToolCall {
-                    id: "call-1".to_string(),
-                    name: "Shell".to_string(),
-                    arguments_json: "{}".to_string(),
-                }])),
-            ArchivedLlmMessage::from_text_and_images("tool".to_string(), "output".to_string(), Vec::new())
-                .with_tool_call_id(Some("call-1".to_string())),
+            ArchivedLlmMessage::from_text_and_images(
+                "user".to_string(),
+                "hi".to_string(),
+                Vec::new(),
+            ),
+            ArchivedLlmMessage::from_text_and_images(
+                "assistant".to_string(),
+                String::new(),
+                Vec::new(),
+            )
+            .with_tool_calls(Some(vec![ArchivedLlmToolCall {
+                id: "call-1".to_string(),
+                name: "Shell".to_string(),
+                arguments_json: "{}".to_string(),
+            }])),
+            ArchivedLlmMessage::from_text_and_images(
+                "tool".to_string(),
+                "output".to_string(),
+                Vec::new(),
+            )
+            .with_tool_call_id(Some("call-1".to_string())),
             ArchivedLlmMessage::from_text_and_images(
                 "assistant".to_string(),
                 "done".to_string(),
@@ -752,16 +779,17 @@ mod tests {
 
         let archive: crate::host_protocol::BridgeChatArchive =
             serde_json::from_value(payload).expect("bridge archive parses");
-        let timeline = archive
-            .desktop_message_timeline
-            .expect("timeline present");
+        let timeline = archive.desktop_message_timeline.expect("timeline present");
         let messages = hydrate_desktop_messages_from_timeline(&timeline);
 
         assert_eq!(messages.len(), 4);
         assert_eq!(messages[0].role, ConversationMessageRole::User);
         assert_eq!(messages[0].content, "读一下 Cargo.toml");
         assert_eq!(
-            messages[1].aux.as_ref().and_then(|aux| aux.thinking.as_deref()),
+            messages[1]
+                .aux
+                .as_ref()
+                .and_then(|aux| aux.thinking.as_deref()),
             Some("先看依赖")
         );
         let tool = messages[2].tool.as_ref().expect("tool snapshot");

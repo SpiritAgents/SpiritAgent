@@ -87,7 +87,8 @@ impl RuntimeSyncState {
                 }
                 BridgeRuntimeEvent::AssistantResponseCompleted => {
                     self.pending_assistant_has_output = false;
-                    self.events.push_back(RuntimeEvent::AssistantResponseCompleted);
+                    self.events
+                        .push_back(RuntimeEvent::AssistantResponseCompleted);
                 }
                 BridgeRuntimeEvent::RemovePendingAssistant => {
                     self.pending_assistant_has_output = false;
@@ -150,8 +151,7 @@ impl RuntimeSyncState {
                     tool_name,
                     arguments_json,
                 } => {
-                    let request =
-                        tool_request_from_streaming_preview(&tool_name, &arguments_json);
+                    let request = tool_request_from_streaming_preview(&tool_name, &arguments_json);
                     self.events.push_back(RuntimeEvent::UpsertToolPreview {
                         tool_call_id,
                         tool_name,
@@ -252,10 +252,11 @@ impl RuntimeSyncState {
     }
 
     pub(crate) fn push_remote_user_turn(&mut self, text: String) {
-        self.events.push_back(RuntimeEvent::PushMessage(ChatMessage::new(
-            MessageRole::User,
-            text,
-        )));
+        self.events
+            .push_back(RuntimeEvent::PushMessage(ChatMessage::new(
+                MessageRole::User,
+                text,
+            )));
     }
 
     pub(crate) fn apply_subagent_bridge_events(

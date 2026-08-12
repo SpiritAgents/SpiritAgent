@@ -36,27 +36,29 @@ impl DaemonClient {
 
         let (tx, rx) = mpsc::channel::<Result<Value>>();
         let writer_for_reader = Arc::clone(&writer);
-        thread::spawn(move || loop {
-            match reader.read_event() {
-                Ok(WsReadEvent::Text(text)) => {
-                    let parsed = serde_json::from_str::<Value>(&text)
-                        .with_context(|| "parse daemon JSON-RPC frame");
-                    if tx.send(parsed).is_err() {
+        thread::spawn(move || {
+            loop {
+                match reader.read_event() {
+                    Ok(WsReadEvent::Text(text)) => {
+                        let parsed = serde_json::from_str::<Value>(&text)
+                            .with_context(|| "parse daemon JSON-RPC frame");
+                        if tx.send(parsed).is_err() {
+                            break;
+                        }
+                    }
+                    Ok(WsReadEvent::Binary) => {}
+                    Ok(WsReadEvent::Closed) => {
+                        let _ = writer_for_reader
+                            .lock()
+                            .ok()
+                            .map(|mut locked| locked.send_close());
+                        let _ = tx.send(Err(anyhow!("daemon closed the connection")));
                         break;
                     }
-                }
-                Ok(WsReadEvent::Binary) => {}
-                Ok(WsReadEvent::Closed) => {
-                    let _ = writer_for_reader
-                        .lock()
-                        .ok()
-                        .map(|mut locked| locked.send_close());
-                    let _ = tx.send(Err(anyhow!("daemon closed the connection")));
-                    break;
-                }
-                Err(err) => {
-                    let _ = tx.send(Err(err));
-                    break;
+                    Err(err) => {
+                        let _ = tx.send(Err(err));
+                        break;
+                    }
                 }
             }
         });
@@ -119,9 +121,7 @@ impl DaemonClient {
                 Ok(None)
             }
             Err(mpsc::RecvTimeoutError::Timeout) => Ok(None),
-            Err(mpsc::RecvTimeoutError::Disconnected) => {
-                Err(anyhow!("daemon reader thread ended"))
-            }
+            Err(mpsc::RecvTimeoutError::Disconnected) => Err(anyhow!("daemon reader thread ended")),
         }
     }
 

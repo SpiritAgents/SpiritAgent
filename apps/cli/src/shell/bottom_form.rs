@@ -6,31 +6,28 @@ use rust_i18n::t;
 use serde_json::{Map, Value};
 
 use crate::{
+    host_protocol::CliExtensionEntry,
     mcp::{McpCapabilityToggles, McpScope, McpServerConfig, McpTransportConfig},
     mcp_types::McpDiscoveredPrompt,
     model_provider_presets::{
-        model_add_preset_api_base_by_choice_index,
-        model_add_picker_order_ids, model_add_provider_at_choice_index,
-        model_add_provider_id_at_choice_index,         model_add_requires_manual_single_provider,
+        azure_api_base_from_resource_name, cloudflare_ai_gateway_api_base_from_account_id,
+        is_valid_azure_resource_name, is_valid_cloudflare_account_id,
+        is_valid_cloudflare_gateway_id, model_add_alibaba_site_api_base,
+        model_add_alibaba_site_id_from_choice, model_add_alibaba_site_ids,
+        model_add_alibaba_site_requires_workspace_id, model_add_alibaba_token_plan_api_base,
+        model_add_kimi_code_api_base, model_add_minimax_site_api_base,
+        model_add_minimax_site_id_from_choice, model_add_moonshot_site_api_base,
+        model_add_moonshot_site_id_from_choice, model_add_picker_order_ids,
+        model_add_preset_api_base_by_choice_index, model_add_provider_at_choice_index,
+        model_add_provider_id_at_choice_index, model_add_requires_manual_single_provider,
         model_add_siliconflow_site_api_base, model_add_siliconflow_site_id_from_choice,
-        model_add_moonshot_site_api_base, model_add_moonshot_site_id_from_choice,
-        model_add_tencent_tokenhub_site_api_base, model_add_tencent_tokenhub_site_id_from_choice,
-        model_add_kimi_code_api_base,
-        model_add_minimax_site_api_base, model_add_minimax_site_id_from_choice,
-        model_add_alibaba_site_api_base, model_add_alibaba_site_id_from_choice,
-        model_add_alibaba_site_ids, model_add_alibaba_site_requires_workspace_id,
-        model_add_alibaba_token_plan_api_base, model_add_stepfun_api_base,
-        model_add_z_ai_api_base, model_add_zhipu_ai_api_base,
-        azure_api_base_from_resource_name,
-        cloudflare_ai_gateway_api_base_from_account_id,
-        is_valid_azure_resource_name,
-        is_valid_cloudflare_account_id,
-        is_valid_cloudflare_gateway_id,
+        model_add_stepfun_api_base, model_add_tencent_tokenhub_site_api_base,
+        model_add_tencent_tokenhub_site_id_from_choice, model_add_z_ai_api_base,
+        model_add_zhipu_ai_api_base,
     },
     model_registry::{ModelProvider, ModelTransportKind},
     rules::{RuleEntry, RuleScope},
     skills::{SkillEntry, SkillScope},
-    host_protocol::CliExtensionEntry,
     vertex_models_list::vertex_api_base_from_project_and_location,
     view::{
         BottomFormFieldEditorView, BottomFormFieldView, BottomFormKind, BottomFormView,
@@ -342,7 +339,7 @@ fn model_add_provider_label(id: &str) -> String {
         "xai" => t!("form.model.provider.xai"),
         "anthropic" => t!("form.model.provider.anthropic"),
         "deepseek" => t!("form.model.provider.deepseek"),
-    "vercel-ai-gateway" => t!("form.model.provider.vercel_ai_gateway"),
+        "vercel-ai-gateway" => t!("form.model.provider.vercel_ai_gateway"),
         "cloudflare-ai-gateway" => t!("form.model.provider.cloudflare_ai_gateway"),
         "openrouter" => t!("form.model.provider.openrouter"),
         "fireworks-ai" => t!("form.model.provider.fireworks-ai"),
@@ -393,9 +390,10 @@ fn model_add_provider_selected(form: &BottomFormView) -> Option<usize> {
 
 fn model_add_mode_bulk(form: &BottomFormView, provider_idx: usize) -> bool {
     if let Some(provider) = model_add_provider_at_choice_index(provider_idx)
-        && model_add_requires_manual_single_provider(provider) {
-            return false;
-        }
+        && model_add_requires_manual_single_provider(provider)
+    {
+        return false;
+    }
     if model_add_is_preset_provider(provider_idx) {
         return true;
     }
@@ -633,16 +631,20 @@ fn model_add_cloudflare_api_token_field(value: &str) -> BottomFormFieldView {
 fn model_add_transport_kind(form: &BottomFormView, provider: ModelProvider) -> ModelTransportKind {
     match provider {
         ModelProvider::Anthropic => ModelTransportKind::Anthropic,
-        ModelProvider::Volcengine | ModelProvider::Byteplus => match form.fields.get(2).map(|f| &f.editor) {
-            Some(BottomFormFieldEditorView::Choice { selected, options }) if options.len() == 2 => {
-                if *selected == 1 {
-                    ModelTransportKind::OpenResponses
-                } else {
-                    ModelTransportKind::OpenAiCompatible
+        ModelProvider::Volcengine | ModelProvider::Byteplus => {
+            match form.fields.get(2).map(|f| &f.editor) {
+                Some(BottomFormFieldEditorView::Choice { selected, options })
+                    if options.len() == 2 =>
+                {
+                    if *selected == 1 {
+                        ModelTransportKind::OpenResponses
+                    } else {
+                        ModelTransportKind::OpenAiCompatible
+                    }
                 }
+                _ => ModelTransportKind::OpenAiCompatible,
             }
-            _ => ModelTransportKind::OpenAiCompatible,
-        },
+        }
         ModelProvider::CloudflareAiGateway => match form.fields.get(3).map(|f| &f.editor) {
             Some(BottomFormFieldEditorView::Choice { selected, options }) if options.len() > 2 => {
                 match *selected {
@@ -965,34 +967,28 @@ fn sync_model_add_form_fields(form: &mut BottomFormView) {
         }
         _ => 0,
     };
-    let stepfun_billing_selected =
-        if provider_idx == model_add_stepfun_provider_index() {
-            match form.fields.get(2).map(|f| &f.editor) {
-                Some(BottomFormFieldEditorView::Choice { selected, options })
-                    if options.len() == 2 =>
-                {
-                    (*selected).min(1)
-                }
-                _ => 0,
+    let stepfun_billing_selected = if provider_idx == model_add_stepfun_provider_index() {
+        match form.fields.get(2).map(|f| &f.editor) {
+            Some(BottomFormFieldEditorView::Choice { selected, options }) if options.len() == 2 => {
+                (*selected).min(1)
             }
-        } else {
-            0
-        };
-    let glm_coding_plan_billing_selected =
-        if provider_idx == model_add_z_ai_provider_index()
-            || provider_idx == model_add_zhipu_ai_provider_index()
-        {
-            match form.fields.get(2).map(|f| &f.editor) {
-                Some(BottomFormFieldEditorView::Choice { selected, options })
-                    if options.len() == 2 =>
-                {
-                    (*selected).min(1)
-                }
-                _ => 0,
+            _ => 0,
+        }
+    } else {
+        0
+    };
+    let glm_coding_plan_billing_selected = if provider_idx == model_add_z_ai_provider_index()
+        || provider_idx == model_add_zhipu_ai_provider_index()
+    {
+        match form.fields.get(2).map(|f| &f.editor) {
+            Some(BottomFormFieldEditorView::Choice { selected, options }) if options.len() == 2 => {
+                (*selected).min(1)
             }
-        } else {
-            0
-        };
+            _ => 0,
+        }
+    } else {
+        0
+    };
     let alibaba_is_token_plan =
         provider_idx == model_add_alibaba_provider_index() && alibaba_billing_selected == 1;
     let alibaba_site_selected = if alibaba_is_token_plan {
@@ -1083,154 +1079,153 @@ fn sync_model_add_form_fields(form: &mut BottomFormView) {
         } else {
             ""
         };
-    let alibaba_workspace_raw =
-        if provider_idx == model_add_alibaba_provider_index() {
-            if old_len == 6 {
-                bottom_form_text_value(form, 4)
-            } else if old_len == 7 {
-                // 兼容旧布局（含 api_kind 字段时 workspace 在 index 5）
-                bottom_form_text_value(form, 5)
-            } else {
-                ""
-            }
+    let alibaba_workspace_raw = if provider_idx == model_add_alibaba_provider_index() {
+        if old_len == 6 {
+            bottom_form_text_value(form, 4)
+        } else if old_len == 7 {
+            // 兼容旧布局（含 api_kind 字段时 workspace 在 index 5）
+            bottom_form_text_value(form, 5)
         } else {
             ""
-        };
+        }
+    } else {
+        ""
+    };
 
     let bulk_custom = !model_add_is_preset_provider(provider_idx) && mode_custom == 1;
 
     let new_fields: Vec<BottomFormFieldView> =
         if provider_idx == model_add_siliconflow_provider_index() {
-        vec![
-            model_add_provider_field(provider_idx),
-            model_add_mode_field_preset(),
-            model_add_siliconflow_site_field(siliconflow_site_selected),
-            model_add_siliconflow_transport_field(siliconflow_transport_selected),
-            model_add_api_key_field(api_key_raw),
-        ]
-    } else if provider_idx == model_add_moonshot_provider_index() {
-        vec![
-            model_add_provider_field(provider_idx),
-            model_add_mode_field_preset(),
-            model_add_moonshot_site_field(moonshot_site_selected),
-            model_add_api_key_field(api_key_raw),
-        ]
-    } else if provider_idx == model_add_tencent_tokenhub_provider_index() {
-        vec![
-            model_add_provider_field(provider_idx),
-            model_add_mode_field_preset(),
-            model_add_tencent_tokenhub_site_field(tencent_tokenhub_site_selected),
-            model_add_api_key_field(api_key_raw),
-        ]
-    } else if provider_idx == model_add_kimi_code_provider_index() {
-        vec![
-            model_add_provider_field(provider_idx),
-            model_add_mode_field_preset(),
-            model_add_api_key_field(api_key_raw),
-        ]
-    } else if provider_idx == model_add_minimax_provider_index() {
-        vec![
-            model_add_provider_field(provider_idx),
-            model_add_mode_field_preset(),
-            model_add_minimax_site_field(minimax_site_selected),
-            model_add_api_key_field(api_key_raw),
-        ]
-    } else if provider_idx == model_add_alibaba_provider_index() {
-        if alibaba_is_token_plan {
             vec![
                 model_add_provider_field(provider_idx),
                 model_add_mode_field_preset(),
-                model_add_alibaba_billing_mode_field(alibaba_billing_selected),
+                model_add_siliconflow_site_field(siliconflow_site_selected),
+                model_add_siliconflow_transport_field(siliconflow_transport_selected),
+                model_add_api_key_field(api_key_raw),
+            ]
+        } else if provider_idx == model_add_moonshot_provider_index() {
+            vec![
+                model_add_provider_field(provider_idx),
+                model_add_mode_field_preset(),
+                model_add_moonshot_site_field(moonshot_site_selected),
+                model_add_api_key_field(api_key_raw),
+            ]
+        } else if provider_idx == model_add_tencent_tokenhub_provider_index() {
+            vec![
+                model_add_provider_field(provider_idx),
+                model_add_mode_field_preset(),
+                model_add_tencent_tokenhub_site_field(tencent_tokenhub_site_selected),
+                model_add_api_key_field(api_key_raw),
+            ]
+        } else if provider_idx == model_add_kimi_code_provider_index() {
+            vec![
+                model_add_provider_field(provider_idx),
+                model_add_mode_field_preset(),
+                model_add_api_key_field(api_key_raw),
+            ]
+        } else if provider_idx == model_add_minimax_provider_index() {
+            vec![
+                model_add_provider_field(provider_idx),
+                model_add_mode_field_preset(),
+                model_add_minimax_site_field(minimax_site_selected),
+                model_add_api_key_field(api_key_raw),
+            ]
+        } else if provider_idx == model_add_alibaba_provider_index() {
+            if alibaba_is_token_plan {
+                vec![
+                    model_add_provider_field(provider_idx),
+                    model_add_mode_field_preset(),
+                    model_add_alibaba_billing_mode_field(alibaba_billing_selected),
+                    model_add_api_key_field(api_key_raw),
+                ]
+            } else {
+                vec![
+                    model_add_provider_field(provider_idx),
+                    model_add_mode_field_preset(),
+                    model_add_alibaba_billing_mode_field(alibaba_billing_selected),
+                    model_add_alibaba_site_field(alibaba_site_selected),
+                    model_add_alibaba_workspace_id_field(alibaba_workspace_raw),
+                    model_add_api_key_field(api_key_raw),
+                ]
+            }
+        } else if provider_idx == model_add_stepfun_provider_index() {
+            vec![
+                model_add_provider_field(provider_idx),
+                model_add_mode_field_preset(),
+                model_add_stepfun_billing_mode_field(stepfun_billing_selected),
+                model_add_api_key_field(api_key_raw),
+            ]
+        } else if provider_idx == model_add_z_ai_provider_index()
+            || provider_idx == model_add_zhipu_ai_provider_index()
+        {
+            vec![
+                model_add_provider_field(provider_idx),
+                model_add_mode_field_preset(),
+                model_add_glm_coding_plan_billing_mode_field(glm_coding_plan_billing_selected),
+                model_add_api_key_field(api_key_raw),
+            ]
+        } else if provider_idx == model_add_volcengine_provider_index()
+            || provider_idx == model_add_byteplus_provider_index()
+        {
+            vec![
+                model_add_provider_field(provider_idx),
+                model_add_mode_field_preset(),
+                model_add_ark_transport_field(ark_transport_selected),
+                model_add_api_key_field(api_key_raw),
+            ]
+        } else if provider_idx == model_add_cloudflare_provider_index() {
+            vec![
+                model_add_provider_field(provider_idx),
+                model_add_cloudflare_account_id_field(cloudflare_account_raw),
+                model_add_cloudflare_gateway_id_field(cloudflare_gateway_raw),
+                model_add_cloudflare_transport_field(cloudflare_transport_selected),
+                model_add_cloudflare_model_name_field(cloudflare_name_raw),
+                model_add_context_length_field(cloudflare_context_length_raw),
+                model_add_cloudflare_api_token_field(api_key_raw),
+            ]
+        } else if model_add_provider_id_at_choice_index(provider_idx) == Some("azure") {
+            vec![
+                model_add_provider_field(provider_idx),
+                model_add_azure_resource_name_field(azure_resource_raw),
+                model_add_deployment_name_field(name_raw),
+                model_add_context_length_field(context_length_raw),
+                model_add_api_key_field(api_key_raw),
+            ]
+        } else if provider_idx == model_add_vertex_provider_index() {
+            vec![
+                model_add_provider_field(provider_idx),
+                model_add_mode_field_preset(),
+                model_add_vertex_project_field(vertex_project_raw),
+                model_add_vertex_location_field(vertex_location_raw),
+                model_add_vertex_client_email_field(vertex_client_email_raw),
+                model_add_vertex_private_key_field(vertex_private_key_raw),
+                model_add_api_key_field(api_key_raw),
+            ]
+        } else if model_add_is_preset_provider(provider_idx) {
+            vec![
+                model_add_provider_field(provider_idx),
+                model_add_mode_field_preset(),
+                model_add_api_key_field(api_key_raw),
+            ]
+        } else if bulk_custom {
+            vec![
+                model_add_provider_field(provider_idx),
+                model_add_mode_field_custom(mode_custom),
+                model_add_transport_field(transport_selected),
+                model_add_api_base_field(base_raw),
                 model_add_api_key_field(api_key_raw),
             ]
         } else {
             vec![
                 model_add_provider_field(provider_idx),
-                model_add_mode_field_preset(),
-                model_add_alibaba_billing_mode_field(alibaba_billing_selected),
-                model_add_alibaba_site_field(alibaba_site_selected),
-                model_add_alibaba_workspace_id_field(alibaba_workspace_raw),
+                model_add_mode_field_custom(mode_custom),
+                model_add_transport_field(transport_selected),
+                model_add_model_name_field(name_raw),
+                model_add_api_base_field(base_raw),
+                model_add_context_length_field(context_length_raw),
                 model_add_api_key_field(api_key_raw),
             ]
-        }
-    } else if provider_idx == model_add_stepfun_provider_index() {
-        vec![
-            model_add_provider_field(provider_idx),
-            model_add_mode_field_preset(),
-            model_add_stepfun_billing_mode_field(stepfun_billing_selected),
-            model_add_api_key_field(api_key_raw),
-        ]
-    } else if provider_idx == model_add_z_ai_provider_index()
-        || provider_idx == model_add_zhipu_ai_provider_index()
-    {
-        vec![
-            model_add_provider_field(provider_idx),
-            model_add_mode_field_preset(),
-            model_add_glm_coding_plan_billing_mode_field(glm_coding_plan_billing_selected),
-            model_add_api_key_field(api_key_raw),
-        ]
-    } else if provider_idx == model_add_volcengine_provider_index()
-        || provider_idx == model_add_byteplus_provider_index()
-    {
-        vec![
-            model_add_provider_field(provider_idx),
-            model_add_mode_field_preset(),
-            model_add_ark_transport_field(ark_transport_selected),
-            model_add_api_key_field(api_key_raw),
-        ]
-    } else if provider_idx == model_add_cloudflare_provider_index() {
-        vec![
-            model_add_provider_field(provider_idx),
-            model_add_cloudflare_account_id_field(cloudflare_account_raw),
-            model_add_cloudflare_gateway_id_field(cloudflare_gateway_raw),
-            model_add_cloudflare_transport_field(cloudflare_transport_selected),
-            model_add_cloudflare_model_name_field(cloudflare_name_raw),
-            model_add_context_length_field(cloudflare_context_length_raw),
-            model_add_cloudflare_api_token_field(api_key_raw),
-        ]
-    } else if model_add_provider_id_at_choice_index(provider_idx) == Some("azure") {
-        vec![
-            model_add_provider_field(provider_idx),
-            model_add_azure_resource_name_field(azure_resource_raw),
-            model_add_deployment_name_field(name_raw),
-            model_add_context_length_field(context_length_raw),
-            model_add_api_key_field(api_key_raw),
-        ]
-    } else if provider_idx == model_add_vertex_provider_index() {
-        vec![
-            model_add_provider_field(provider_idx),
-            model_add_mode_field_preset(),
-            model_add_vertex_project_field(vertex_project_raw),
-            model_add_vertex_location_field(vertex_location_raw),
-            model_add_vertex_client_email_field(vertex_client_email_raw),
-            model_add_vertex_private_key_field(vertex_private_key_raw),
-            model_add_api_key_field(api_key_raw),
-        ]
-    } else if model_add_is_preset_provider(provider_idx) {
-        vec![
-            model_add_provider_field(provider_idx),
-            model_add_mode_field_preset(),
-            model_add_api_key_field(api_key_raw),
-        ]
-    } else if bulk_custom {
-        vec![
-            model_add_provider_field(provider_idx),
-            model_add_mode_field_custom(mode_custom),
-            model_add_transport_field(transport_selected),
-            model_add_api_base_field(base_raw),
-            model_add_api_key_field(api_key_raw),
-        ]
-    } else {
-        vec![
-            model_add_provider_field(provider_idx),
-            model_add_mode_field_custom(mode_custom),
-            model_add_transport_field(transport_selected),
-            model_add_model_name_field(name_raw),
-            model_add_api_base_field(base_raw),
-            model_add_context_length_field(context_length_raw),
-            model_add_api_key_field(api_key_raw),
-        ]
-    };
+        };
 
     form.fields = new_fields;
     form.selected_field = form.selected_field.min(form.fields.len().saturating_sub(1));
@@ -1507,7 +1502,9 @@ pub(crate) fn move_left(form: &mut BottomFormView) {
             sync_mcp_add_form_fields(form);
             sync_model_add_form_fields(form);
         }
-        BottomFormFieldEditorView::Checkbox { checked, disabled, .. } => {
+        BottomFormFieldEditorView::Checkbox {
+            checked, disabled, ..
+        } => {
             if !*disabled && matches!(form.kind, BottomFormKind::HookAdd) {
                 *checked = !*checked;
             }
@@ -1543,7 +1540,9 @@ pub(crate) fn move_right(form: &mut BottomFormView) {
             sync_mcp_add_form_fields(form);
             sync_model_add_form_fields(form);
         }
-        BottomFormFieldEditorView::Checkbox { checked, disabled, .. } => {
+        BottomFormFieldEditorView::Checkbox {
+            checked, disabled, ..
+        } => {
             if !*disabled && matches!(form.kind, BottomFormKind::HookAdd) {
                 *checked = !*checked;
             }
@@ -1565,9 +1564,10 @@ pub(crate) fn activate(form: &mut BottomFormView) {
     if let BottomFormFieldEditorView::Checkbox {
         checked, disabled, ..
     } = &mut field.editor
-        && !*disabled {
-            *checked = !*checked;
-        }
+        && !*disabled
+    {
+        *checked = !*checked;
+    }
 }
 
 pub(crate) fn hook_add_form_enter_toggles_checkbox(form: &BottomFormView) -> bool {
@@ -1856,9 +1856,9 @@ fn parse_model_context_length_field(raw: &str) -> std::result::Result<Option<u64
     if raw.is_empty() {
         return Ok(None);
     }
-    let parsed = raw.parse::<u64>().map_err(|_| {
-        t!("form.model.validation.context_length_invalid").into_owned()
-    })?;
+    let parsed = raw
+        .parse::<u64>()
+        .map_err(|_| t!("form.model.validation.context_length_invalid").into_owned())?;
     if parsed == 0 {
         return Err(t!("form.model.validation.context_length_invalid").into_owned());
     }
@@ -2513,7 +2513,11 @@ fn bottom_form_text_value(form: &BottomFormView, index: usize) -> &str {
 }
 
 fn selected_mcp_scope(form: &BottomFormView) -> Option<McpScope> {
-    match form.fields.get(MCP_ADD_FIELD_SCOPE).map(|field| &field.editor) {
+    match form
+        .fields
+        .get(MCP_ADD_FIELD_SCOPE)
+        .map(|field| &field.editor)
+    {
         Some(BottomFormFieldEditorView::Choice { options, selected }) => options
             .get((*selected).min(options.len().saturating_sub(1)))
             .map(|value| {
@@ -2655,26 +2659,25 @@ enum McpAddTransportKind {
 #[cfg(test)]
 mod tests {
     use super::{
-        MetadataFieldKind, activate, insert_text, move_right, new_extensions_form,
-        new_hook_add_form, new_mcp_add_form, new_mcp_prompt_form, new_model_add_form,
-        new_rules_form, new_skills_form, parse_metadata_map, parse_model_add_connection,
-        prompt_user_message, rules_form_overrides, select_next_field, skills_form_overrides,
-        sync_model_add_form_fields, to_hook_save_request, to_prompt_args_json,
-        hook_add_form_enter_toggles_checkbox,
-        model_add_stepfun_provider_index, model_add_volcengine_provider_index,
-        model_add_byteplus_provider_index,
-        model_add_z_ai_provider_index, model_add_zhipu_ai_provider_index,
         HOOK_ADD_FIELD_COMMAND, HOOK_ADD_FIELD_FAIL_CLOSED, HOOK_ADD_FIELD_TIMEOUT,
+        MetadataFieldKind, activate, hook_add_form_enter_toggles_checkbox, insert_text,
+        model_add_byteplus_provider_index, model_add_stepfun_provider_index,
+        model_add_volcengine_provider_index, model_add_z_ai_provider_index,
+        model_add_zhipu_ai_provider_index, move_right, new_extensions_form, new_hook_add_form,
+        new_mcp_add_form, new_mcp_prompt_form, new_model_add_form, new_rules_form, new_skills_form,
+        parse_metadata_map, parse_model_add_connection, prompt_user_message, rules_form_overrides,
+        select_next_field, skills_form_overrides, sync_model_add_form_fields, to_hook_save_request,
+        to_prompt_args_json,
     };
     use crate::model_registry::{ModelProvider, ModelTransportKind};
     use rust_i18n::t;
     use std::path::PathBuf;
 
     use crate::{
+        host_protocol::CliExtensionEntry,
         mcp_types::{McpDiscoveredPrompt, McpDiscoveredPromptArgument},
         rules::{RuleEntry, RulePreview, RuleScope, RuleSource},
         skills::{SkillEntry, SkillPreview, SkillRootKind, SkillScope, SkillSource},
-        host_protocol::CliExtensionEntry,
         view::BottomFormFieldEditorView,
     };
 
@@ -2901,9 +2904,10 @@ mod tests {
         let mut form = new_model_add_form();
         assert!(matches!(form.kind, crate::view::BottomFormKind::ModelAdd));
         if let Some(f) = form.fields.get_mut(0)
-            && let BottomFormFieldEditorView::Choice { selected, .. } = &mut f.editor {
-                *selected = super::model_add_deepseek_provider_index();
-            }
+            && let BottomFormFieldEditorView::Choice { selected, .. } = &mut f.editor
+        {
+            *selected = super::model_add_deepseek_provider_index();
+        }
         sync_model_add_form_fields(&mut form);
         const API_KEY_FIELD: usize = 2;
         form.selected_field = API_KEY_FIELD;
@@ -2928,9 +2932,10 @@ mod tests {
     fn model_add_form_parses_custom_connection() {
         let mut form = new_model_add_form();
         if let Some(f) = form.fields.get_mut(0)
-            && let BottomFormFieldEditorView::Choice { selected, .. } = &mut f.editor {
-                *selected = model_add_custom_provider_index();
-            }
+            && let BottomFormFieldEditorView::Choice { selected, .. } = &mut f.editor
+        {
+            *selected = model_add_custom_provider_index();
+        }
         sync_model_add_form_fields(&mut form);
         form.selected_field = 3;
         insert_text(&mut form, "my-model");
@@ -2952,9 +2957,10 @@ mod tests {
     fn model_add_form_parses_custom_connection_context_length() {
         let mut form = new_model_add_form();
         if let Some(f) = form.fields.get_mut(0)
-            && let BottomFormFieldEditorView::Choice { selected, .. } = &mut f.editor {
-                *selected = model_add_custom_provider_index();
-            }
+            && let BottomFormFieldEditorView::Choice { selected, .. } = &mut f.editor
+        {
+            *selected = model_add_custom_provider_index();
+        }
         sync_model_add_form_fields(&mut form);
         form.selected_field = 3;
         insert_text(&mut form, "my-model");
@@ -2972,9 +2978,10 @@ mod tests {
     fn model_add_custom_bulk_hides_model_name_field() {
         let mut form = new_model_add_form();
         if let Some(f) = form.fields.get_mut(0)
-            && let BottomFormFieldEditorView::Choice { selected, .. } = &mut f.editor {
-                *selected = model_add_custom_provider_index();
-            }
+            && let BottomFormFieldEditorView::Choice { selected, .. } = &mut f.editor
+        {
+            *selected = model_add_custom_provider_index();
+        }
         sync_model_add_form_fields(&mut form);
         assert_eq!(form.fields.len(), 7);
         form.selected_field = 1;
@@ -3003,14 +3010,16 @@ mod tests {
     fn model_add_form_parses_custom_anthropic_connection() {
         let mut form = new_model_add_form();
         if let Some(f) = form.fields.get_mut(0)
-            && let BottomFormFieldEditorView::Choice { selected, .. } = &mut f.editor {
-                *selected = model_add_custom_provider_index();
-            }
+            && let BottomFormFieldEditorView::Choice { selected, .. } = &mut f.editor
+        {
+            *selected = model_add_custom_provider_index();
+        }
         sync_model_add_form_fields(&mut form);
         if let Some(f) = form.fields.get_mut(2)
-            && let BottomFormFieldEditorView::Choice { selected, .. } = &mut f.editor {
-                *selected = 2;
-            }
+            && let BottomFormFieldEditorView::Choice { selected, .. } = &mut f.editor
+        {
+            *selected = 2;
+        }
         sync_model_add_form_fields(&mut form);
         form.selected_field = 3;
         insert_text(&mut form, "claude-custom");
@@ -3029,9 +3038,10 @@ mod tests {
     fn model_add_form_parses_alibaba_preset_connection() {
         let mut form = new_model_add_form();
         if let Some(f) = form.fields.get_mut(0)
-            && let BottomFormFieldEditorView::Choice { selected, .. } = &mut f.editor {
-                *selected = super::model_add_alibaba_provider_index();
-            }
+            && let BottomFormFieldEditorView::Choice { selected, .. } = &mut f.editor
+        {
+            *selected = super::model_add_alibaba_provider_index();
+        }
         sync_model_add_form_fields(&mut form);
         assert_eq!(form.fields.len(), 6);
         form.selected_field = 4;
@@ -3058,14 +3068,16 @@ mod tests {
     fn model_add_form_parses_alibaba_token_plan_connection() {
         let mut form = new_model_add_form();
         if let Some(f) = form.fields.get_mut(0)
-            && let BottomFormFieldEditorView::Choice { selected, .. } = &mut f.editor {
-                *selected = super::model_add_alibaba_provider_index();
-            }
+            && let BottomFormFieldEditorView::Choice { selected, .. } = &mut f.editor
+        {
+            *selected = super::model_add_alibaba_provider_index();
+        }
         sync_model_add_form_fields(&mut form);
         if let Some(f) = form.fields.get_mut(2)
-            && let BottomFormFieldEditorView::Choice { selected, .. } = &mut f.editor {
-                *selected = 1;
-            }
+            && let BottomFormFieldEditorView::Choice { selected, .. } = &mut f.editor
+        {
+            *selected = 1;
+        }
         sync_model_add_form_fields(&mut form);
         assert_eq!(form.fields.len(), 4);
         form.selected_field = 3;
@@ -3089,9 +3101,10 @@ mod tests {
     fn model_add_form_parses_anthropic_preset_connection() {
         let mut form = new_model_add_form();
         if let Some(f) = form.fields.get_mut(0)
-            && let BottomFormFieldEditorView::Choice { selected, .. } = &mut f.editor {
-                *selected = 1;
-            }
+            && let BottomFormFieldEditorView::Choice { selected, .. } = &mut f.editor
+        {
+            *selected = 1;
+        }
         sync_model_add_form_fields(&mut form);
         assert_eq!(form.fields.len(), 3);
         form.selected_field = 2;
@@ -3110,15 +3123,17 @@ mod tests {
         let mut form = new_model_add_form();
         let stepfun_idx = model_add_stepfun_provider_index();
         if let Some(f) = form.fields.get_mut(0)
-            && let BottomFormFieldEditorView::Choice { selected, .. } = &mut f.editor {
-                *selected = stepfun_idx;
-            }
+            && let BottomFormFieldEditorView::Choice { selected, .. } = &mut f.editor
+        {
+            *selected = stepfun_idx;
+        }
         sync_model_add_form_fields(&mut form);
         assert_eq!(form.fields.len(), 4);
         if let Some(f) = form.fields.get_mut(2)
-            && let BottomFormFieldEditorView::Choice { selected, .. } = &mut f.editor {
-                *selected = 1;
-            }
+            && let BottomFormFieldEditorView::Choice { selected, .. } = &mut f.editor
+        {
+            *selected = 1;
+        }
         sync_model_add_form_fields(&mut form);
         form.selected_field = 3;
         insert_text(&mut form, "sk-stepfun");
@@ -3137,15 +3152,17 @@ mod tests {
         let mut form = new_model_add_form();
         let z_ai_idx = model_add_z_ai_provider_index();
         if let Some(f) = form.fields.get_mut(0)
-            && let BottomFormFieldEditorView::Choice { selected, .. } = &mut f.editor {
-                *selected = z_ai_idx;
-            }
+            && let BottomFormFieldEditorView::Choice { selected, .. } = &mut f.editor
+        {
+            *selected = z_ai_idx;
+        }
         sync_model_add_form_fields(&mut form);
         assert_eq!(form.fields.len(), 4);
         if let Some(f) = form.fields.get_mut(2)
-            && let BottomFormFieldEditorView::Choice { selected, .. } = &mut f.editor {
-                *selected = 1;
-            }
+            && let BottomFormFieldEditorView::Choice { selected, .. } = &mut f.editor
+        {
+            *selected = 1;
+        }
         sync_model_add_form_fields(&mut form);
         form.selected_field = 3;
         insert_text(&mut form, "sk-zai");
@@ -3164,15 +3181,17 @@ mod tests {
         let mut form = new_model_add_form();
         let zhipu_idx = model_add_zhipu_ai_provider_index();
         if let Some(f) = form.fields.get_mut(0)
-            && let BottomFormFieldEditorView::Choice { selected, .. } = &mut f.editor {
-                *selected = zhipu_idx;
-            }
+            && let BottomFormFieldEditorView::Choice { selected, .. } = &mut f.editor
+        {
+            *selected = zhipu_idx;
+        }
         sync_model_add_form_fields(&mut form);
         assert_eq!(form.fields.len(), 4);
         if let Some(f) = form.fields.get_mut(2)
-            && let BottomFormFieldEditorView::Choice { selected, .. } = &mut f.editor {
-                *selected = 1;
-            }
+            && let BottomFormFieldEditorView::Choice { selected, .. } = &mut f.editor
+        {
+            *selected = 1;
+        }
         sync_model_add_form_fields(&mut form);
         form.selected_field = 3;
         insert_text(&mut form, "sk-zhipu");
@@ -3185,7 +3204,10 @@ mod tests {
             "https://open.bigmodel.cn/api/coding/paas/v4"
         );
         assert_eq!(parsed.api_key, "sk-zhipu");
-        assert_eq!(parsed.zhipu_billing_mode.as_deref(), Some("glm-coding-plan"));
+        assert_eq!(
+            parsed.zhipu_billing_mode.as_deref(),
+            Some("glm-coding-plan")
+        );
         assert!(parsed.z_ai_billing_mode.is_none());
     }
 
@@ -3193,15 +3215,17 @@ mod tests {
     fn model_add_form_parses_volcengine_preset_connection() {
         let mut form = new_model_add_form();
         if let Some(f) = form.fields.get_mut(0)
-            && let BottomFormFieldEditorView::Choice { selected, .. } = &mut f.editor {
-                *selected = model_add_volcengine_provider_index();
-            }
+            && let BottomFormFieldEditorView::Choice { selected, .. } = &mut f.editor
+        {
+            *selected = model_add_volcengine_provider_index();
+        }
         sync_model_add_form_fields(&mut form);
         assert_eq!(form.fields.len(), 4);
         if let Some(f) = form.fields.get_mut(2)
-            && let BottomFormFieldEditorView::Choice { selected, .. } = &mut f.editor {
-                *selected = 1;
-            }
+            && let BottomFormFieldEditorView::Choice { selected, .. } = &mut f.editor
+        {
+            *selected = 1;
+        }
         sync_model_add_form_fields(&mut form);
         form.selected_field = 3;
         insert_text(&mut form, "sk-volc");
@@ -3211,10 +3235,7 @@ mod tests {
         assert_eq!(parsed.transport_kind, ModelTransportKind::OpenResponses);
         assert!(parsed.bulk);
         assert!(parsed.model_name.is_none());
-        assert_eq!(
-            parsed.api_base,
-            "https://ark.cn-beijing.volces.com/api/v3"
-        );
+        assert_eq!(parsed.api_base, "https://ark.cn-beijing.volces.com/api/v3");
         assert_eq!(parsed.api_key, "sk-volc");
     }
 
@@ -3222,15 +3243,17 @@ mod tests {
     fn model_add_form_parses_byteplus_preset_connection() {
         let mut form = new_model_add_form();
         if let Some(f) = form.fields.get_mut(0)
-            && let BottomFormFieldEditorView::Choice { selected, .. } = &mut f.editor {
-                *selected = model_add_byteplus_provider_index();
-            }
+            && let BottomFormFieldEditorView::Choice { selected, .. } = &mut f.editor
+        {
+            *selected = model_add_byteplus_provider_index();
+        }
         sync_model_add_form_fields(&mut form);
         assert_eq!(form.fields.len(), 4);
         if let Some(f) = form.fields.get_mut(2)
-            && let BottomFormFieldEditorView::Choice { selected, .. } = &mut f.editor {
-                *selected = 1;
-            }
+            && let BottomFormFieldEditorView::Choice { selected, .. } = &mut f.editor
+        {
+            *selected = 1;
+        }
         sync_model_add_form_fields(&mut form);
         form.selected_field = 3;
         insert_text(&mut form, "sk-byteplus");
@@ -3251,15 +3274,17 @@ mod tests {
     fn model_add_form_parses_siliconflow_preset_connection() {
         let mut form = new_model_add_form();
         if let Some(f) = form.fields.get_mut(0)
-            && let BottomFormFieldEditorView::Choice { selected, .. } = &mut f.editor {
-                *selected = super::model_add_siliconflow_provider_index();
-            }
+            && let BottomFormFieldEditorView::Choice { selected, .. } = &mut f.editor
+        {
+            *selected = super::model_add_siliconflow_provider_index();
+        }
         sync_model_add_form_fields(&mut form);
         assert_eq!(form.fields.len(), 5);
         if let Some(f) = form.fields.get_mut(3)
-            && let BottomFormFieldEditorView::Choice { selected, .. } = &mut f.editor {
-                *selected = 1;
-            }
+            && let BottomFormFieldEditorView::Choice { selected, .. } = &mut f.editor
+        {
+            *selected = 1;
+        }
         sync_model_add_form_fields(&mut form);
         form.selected_field = 4;
         insert_text(&mut form, "sk-sf");
@@ -3278,15 +3303,17 @@ mod tests {
     fn model_add_form_parses_moonshot_preset_connection() {
         let mut form = new_model_add_form();
         if let Some(f) = form.fields.get_mut(0)
-            && let BottomFormFieldEditorView::Choice { selected, .. } = &mut f.editor {
-                *selected = super::model_add_moonshot_provider_index();
-            }
+            && let BottomFormFieldEditorView::Choice { selected, .. } = &mut f.editor
+        {
+            *selected = super::model_add_moonshot_provider_index();
+        }
         sync_model_add_form_fields(&mut form);
         assert_eq!(form.fields.len(), 4);
         if let Some(f) = form.fields.get_mut(2)
-            && let BottomFormFieldEditorView::Choice { selected, .. } = &mut f.editor {
-                *selected = 0;
-            }
+            && let BottomFormFieldEditorView::Choice { selected, .. } = &mut f.editor
+        {
+            *selected = 0;
+        }
         sync_model_add_form_fields(&mut form);
         form.selected_field = 3;
         insert_text(&mut form, "sk-moon");
@@ -3305,9 +3332,10 @@ mod tests {
     fn model_add_form_parses_kimi_code_preset_connection() {
         let mut form = new_model_add_form();
         if let Some(f) = form.fields.get_mut(0)
-            && let BottomFormFieldEditorView::Choice { selected, .. } = &mut f.editor {
-                *selected = super::model_add_kimi_code_provider_index();
-            }
+            && let BottomFormFieldEditorView::Choice { selected, .. } = &mut f.editor
+        {
+            *selected = super::model_add_kimi_code_provider_index();
+        }
         sync_model_add_form_fields(&mut form);
         assert_eq!(form.fields.len(), 3);
         form.selected_field = 2;
@@ -3326,15 +3354,17 @@ mod tests {
     fn model_add_form_parses_minimax_preset_connection() {
         let mut form = new_model_add_form();
         if let Some(f) = form.fields.get_mut(0)
-            && let BottomFormFieldEditorView::Choice { selected, .. } = &mut f.editor {
-                *selected = super::model_add_minimax_provider_index();
-            }
+            && let BottomFormFieldEditorView::Choice { selected, .. } = &mut f.editor
+        {
+            *selected = super::model_add_minimax_provider_index();
+        }
         sync_model_add_form_fields(&mut form);
         assert_eq!(form.fields.len(), 4);
         if let Some(f) = form.fields.get_mut(2)
-            && let BottomFormFieldEditorView::Choice { selected, .. } = &mut f.editor {
-                *selected = 1;
-            }
+            && let BottomFormFieldEditorView::Choice { selected, .. } = &mut f.editor
+        {
+            *selected = 1;
+        }
         sync_model_add_form_fields(&mut form);
         form.selected_field = 3;
         insert_text(&mut form, "sk-mm");
@@ -3353,9 +3383,10 @@ mod tests {
     fn model_add_form_parses_azure_connection() {
         let mut form = new_model_add_form();
         if let Some(f) = form.fields.get_mut(0)
-            && let BottomFormFieldEditorView::Choice { selected, .. } = &mut f.editor {
-                *selected = super::model_add_azure_provider_index();
-            }
+            && let BottomFormFieldEditorView::Choice { selected, .. } = &mut f.editor
+        {
+            *selected = super::model_add_azure_provider_index();
+        }
         sync_model_add_form_fields(&mut form);
         assert_eq!(form.fields.len(), 5);
         form.selected_field = 1;
@@ -3384,9 +3415,10 @@ mod tests {
     fn model_add_form_parses_cloudflare_ai_gateway_connection() {
         let mut form = new_model_add_form();
         if let Some(f) = form.fields.get_mut(0)
-            && let BottomFormFieldEditorView::Choice { selected, .. } = &mut f.editor {
-                *selected = super::model_add_cloudflare_provider_index();
-            }
+            && let BottomFormFieldEditorView::Choice { selected, .. } = &mut f.editor
+        {
+            *selected = super::model_add_cloudflare_provider_index();
+        }
         sync_model_add_form_fields(&mut form);
         assert_eq!(form.fields.len(), 7);
         form.selected_field = 1;
@@ -3394,9 +3426,10 @@ mod tests {
         form.selected_field = 2;
         insert_text(&mut form, "my-gateway");
         if let Some(f) = form.fields.get_mut(3)
-            && let BottomFormFieldEditorView::Choice { selected, .. } = &mut f.editor {
-                *selected = 2;
-            }
+            && let BottomFormFieldEditorView::Choice { selected, .. } = &mut f.editor
+        {
+            *selected = 2;
+        }
         sync_model_add_form_fields(&mut form);
         form.selected_field = 4;
         insert_text(&mut form, "openai/gpt-4.1-mini");

@@ -74,9 +74,7 @@ pub fn list_openai_compatible_model_ids(
     if !key.is_empty() {
         request = request.header("Authorization", format!("Bearer {key}"));
     }
-    let response = request
-        .send()
-        .map_err(|e| format!("列模型请求失败：{e}"))?;
+    let response = request.send().map_err(|e| format!("列模型请求失败：{e}"))?;
 
     let status = response.status();
     let text = response
@@ -126,9 +124,7 @@ pub fn list_anthropic_model_ids(api_base: &str, api_key: &str) -> Result<Vec<Str
     if !key.is_empty() {
         request = request.header("x-api-key", key);
     }
-    let response = request
-        .send()
-        .map_err(|e| format!("列模型请求失败：{e}"))?;
+    let response = request.send().map_err(|e| format!("列模型请求失败：{e}"))?;
 
     let status = response.status();
     let text = response
@@ -148,12 +144,16 @@ pub fn list_anthropic_model_ids(api_base: &str, api_key: &str) -> Result<Vec<Str
     };
 
     if !status.is_success() {
-        let err_msg = json.get("error").and_then(|error| {
-            error
-                .get("message")
-                .and_then(Value::as_str)
-                .or_else(|| error.as_str())
-        }).map(str::trim).filter(|s| !s.is_empty());
+        let err_msg = json
+            .get("error")
+            .and_then(|error| {
+                error
+                    .get("message")
+                    .and_then(Value::as_str)
+                    .or_else(|| error.as_str())
+            })
+            .map(str::trim)
+            .filter(|s| !s.is_empty());
         return Err(match err_msg {
             Some(m) => format!("列模型失败（HTTP {}）：{}", status.as_u16(), m),
             None => format!("列模型失败（HTTP {}）。", status.as_u16()),

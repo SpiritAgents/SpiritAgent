@@ -1,13 +1,11 @@
-use anyhow::{anyhow, Result};
+use anyhow::{Result, anyhow};
 use rust_i18n::t;
 
 use crate::{
     adapters::JsonConfigStore,
     locale::{self, available_ui_locales_csv, parse_ui_locale},
     model_registry::AppConfig,
-    ports::{
-        available_approval_levels_csv, parse_approval_level_strict, ConfigStore,
-    },
+    ports::{ConfigStore, available_approval_levels_csv, parse_approval_level_strict},
     runtime_handle::RuntimeHandle,
 };
 

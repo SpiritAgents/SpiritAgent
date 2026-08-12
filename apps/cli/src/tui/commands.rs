@@ -219,10 +219,7 @@ impl TuiShell {
 
     pub(crate) fn handle_rewind_slash(&mut self, message: &str) {
         self.discard_last_matching_user_command(message);
-        let tail = message
-            .strip_prefix("/rewind")
-            .map(str::trim)
-            .unwrap_or("");
+        let tail = message.strip_prefix("/rewind").map(str::trim).unwrap_or("");
         if tail.is_empty() {
             self.open_rewind_picker();
             return;
@@ -665,9 +662,9 @@ impl TuiShell {
                         )
                         .into_owned(),
                     ),
-                    Err(err) => self.push_agent_message(
-                        t!("tui.approval.failed", err = err).into_owned(),
-                    ),
+                    Err(err) => {
+                        self.push_agent_message(t!("tui.approval.failed", err = err).into_owned())
+                    }
                 }
             }
             _ => self.push_agent_message(t!("tui.approval.usage").into_owned()),

@@ -202,7 +202,9 @@ pub fn user_mcp_config_path() -> PathBuf {
 }
 
 pub fn workspace_mcp_config_path(workspace_root: &Path) -> PathBuf {
-    workspace_root.join(SPIRIT_DIR_NAME).join(MCP_CONFIG_FILE_NAME)
+    workspace_root
+        .join(SPIRIT_DIR_NAME)
+        .join(MCP_CONFIG_FILE_NAME)
 }
 
 pub fn mcp_config_path_for_scope(scope: McpScope, workspace_root: &Path) -> PathBuf {
@@ -251,13 +253,15 @@ fn resolve_mcp_server_scope(workspace_root: &Path, name: &str) -> Result<(McpSco
     let user_path = user_mcp_config_path();
     let workspace_path = workspace_mcp_config_path(workspace_root);
     if let Some(config) = load_mcp_config_file(&user_path)?
-        && config.servers.contains_key(name) {
-            return Ok((McpScope::User, user_path));
-        }
+        && config.servers.contains_key(name)
+    {
+        return Ok((McpScope::User, user_path));
+    }
     if let Some(config) = load_mcp_config_file(&workspace_path)?
-        && config.servers.contains_key(name) {
-            return Ok((McpScope::Workspace, workspace_path));
-        }
+        && config.servers.contains_key(name)
+    {
+        return Ok((McpScope::Workspace, workspace_path));
+    }
     Err(anyhow!("未找到 MCP server: {}", name))
 }
 
@@ -393,8 +397,8 @@ fn mutate_existing_server(
     mutator: impl FnOnce(&mut McpServerConfig),
 ) -> Result<PathBuf> {
     let (_scope, path) = resolve_mcp_server_scope(workspace_root, name)?;
-    let mut config = load_mcp_config_file(&path)?
-        .ok_or_else(|| anyhow!("未找到 MCP server: {}", name))?;
+    let mut config =
+        load_mcp_config_file(&path)?.ok_or_else(|| anyhow!("未找到 MCP server: {}", name))?;
     let server = config
         .servers
         .get_mut(name)
@@ -598,16 +602,21 @@ mod tests {
 
         assert_eq!(
             path,
-            workspace_root.join(SPIRIT_DIR_NAME).join(MCP_CONFIG_FILE_NAME)
+            workspace_root
+                .join(SPIRIT_DIR_NAME)
+                .join(MCP_CONFIG_FILE_NAME)
         );
     }
 
     #[test]
     fn merge_mcp_config_combines_user_and_workspace_servers() {
         let mut user = McpConfigFile::default();
-        user.servers.insert("user-server".to_string(), github_preset_config());
+        user.servers
+            .insert("user-server".to_string(), github_preset_config());
         let mut workspace = McpConfigFile::default();
-        workspace.servers.insert("workspace-server".to_string(), github_preset_config());
+        workspace
+            .servers
+            .insert("workspace-server".to_string(), github_preset_config());
 
         let merged = merge_mcp_config_files(&user, &workspace);
         assert!(merged.servers.contains_key("user-server"));

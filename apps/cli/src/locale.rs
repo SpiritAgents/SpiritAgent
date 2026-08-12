@@ -19,10 +19,7 @@ pub fn resolve_ui_locale(config: &AppConfig) -> String {
 }
 
 /// Priority: `cli_override` > `SPIRIT_UI_LANG` > `config.ui_locale` > default `en`.
-pub fn resolve_ui_locale_with_override(
-    config: &AppConfig,
-    cli_override: Option<&str>,
-) -> String {
+pub fn resolve_ui_locale_with_override(config: &AppConfig, cli_override: Option<&str>) -> String {
     cli_override
         .and_then(parse_ui_locale)
         .or_else(|| {

@@ -1,5 +1,5 @@
 use crate::{
-    ports::{AssistantAuxArchiveEntry, ArchivedLlmMessage, ChatArchive},
+    ports::{ArchivedLlmMessage, AssistantAuxArchiveEntry, ChatArchive},
     rewind::{self, ConversationMessageRole, ConversationMessageSnapshot},
 };
 
@@ -7,13 +7,14 @@ use crate::{
 pub fn derive_forked_session_display_name(source_display_name: &str) -> String {
     let trimmed = source_display_name.trim();
     if let Some(rest) = trimmed.strip_prefix('(')
-        && let Some(close_paren) = rest.find(')') {
-            let number_text = rest[..close_paren].trim();
-            if let Ok(current) = number_text.parse::<u32>() {
-                let base = rest[close_paren + 1..].trim_start();
-                return format!("({}) {}", current + 1, base);
-            }
+        && let Some(close_paren) = rest.find(')')
+    {
+        let number_text = rest[..close_paren].trim();
+        if let Ok(current) = number_text.parse::<u32>() {
+            let base = rest[close_paren + 1..].trim_start();
+            return format!("({}) {}", current + 1, base);
         }
+    }
     format!("(1) {}", source_display_name)
 }
 
@@ -118,9 +119,7 @@ fn filter_subagent_sessions_for_truncated_messages(
     let visible_parent_ids = collect_subagent_parent_tool_call_ids(truncated);
     sessions
         .iter()
-        .filter(|entry| {
-            visible_parent_ids.contains(entry.summary.parent_tool_call_id.trim())
-        })
+        .filter(|entry| visible_parent_ids.contains(entry.summary.parent_tool_call_id.trim()))
         .cloned()
         .collect()
 }
@@ -177,7 +176,7 @@ mod tests {
     };
     use crate::{
         ports::{
-            AssistantAuxArchiveEntry, ArchivedLlmMessage, ChatArchive, SubagentSessionArchiveEntry,
+            ArchivedLlmMessage, AssistantAuxArchiveEntry, ChatArchive, SubagentSessionArchiveEntry,
             SubagentSessionStatus, SubagentSessionSummary,
         },
         rewind::{
@@ -186,7 +185,12 @@ mod tests {
         },
     };
 
-    fn snapshot(id: usize, role: ConversationMessageRole, content: &str, pending: bool) -> ConversationMessageSnapshot {
+    fn snapshot(
+        id: usize,
+        role: ConversationMessageRole,
+        content: &str,
+        pending: bool,
+    ) -> ConversationMessageSnapshot {
         ConversationMessageSnapshot {
             id,
             role,
@@ -256,10 +260,26 @@ mod tests {
                 finish_task_notice: None,
             }],
             llm_history: vec![
-                ArchivedLlmMessage::from_text_and_images("user".to_string(), "one".to_string(), Vec::new()),
-                ArchivedLlmMessage::from_text_and_images("assistant".to_string(), "a1".to_string(), Vec::new()),
-                ArchivedLlmMessage::from_text_and_images("user".to_string(), "two".to_string(), Vec::new()),
-                ArchivedLlmMessage::from_text_and_images("assistant".to_string(), "a2".to_string(), Vec::new()),
+                ArchivedLlmMessage::from_text_and_images(
+                    "user".to_string(),
+                    "one".to_string(),
+                    Vec::new(),
+                ),
+                ArchivedLlmMessage::from_text_and_images(
+                    "assistant".to_string(),
+                    "a1".to_string(),
+                    Vec::new(),
+                ),
+                ArchivedLlmMessage::from_text_and_images(
+                    "user".to_string(),
+                    "two".to_string(),
+                    Vec::new(),
+                ),
+                ArchivedLlmMessage::from_text_and_images(
+                    "assistant".to_string(),
+                    "a2".to_string(),
+                    Vec::new(),
+                ),
             ],
             loop_enabled: true,
             approval_level: "default".to_string(),
@@ -329,8 +349,7 @@ mod tests {
             },
         ];
 
-        let filtered =
-            filter_subagent_sessions_for_truncated_messages(&sessions, &truncated);
+        let filtered = filter_subagent_sessions_for_truncated_messages(&sessions, &truncated);
         assert_eq!(filtered.len(), 1);
         assert_eq!(filtered[0].summary.parent_tool_call_id, "tool-1");
     }

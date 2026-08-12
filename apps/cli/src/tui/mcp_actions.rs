@@ -218,17 +218,17 @@ impl TuiShell {
             && let Some(prompt) = prompts
                 .into_iter()
                 .find(|prompt| prompt.name == prompt_name)
-            {
-                return Ok(prompt);
-            }
+        {
+            return Ok(prompt);
+        }
 
         if let Ok(prompts) = self.runtime.list_cached_mcp_prompts(server)
             && let Some(prompt) = prompts
                 .into_iter()
                 .find(|prompt| prompt.name == prompt_name)
-            {
-                return Ok(prompt);
-            }
+        {
+            return Ok(prompt);
+        }
 
         Err(anyhow!(
             "MCP server {} 中不存在 prompt {}",

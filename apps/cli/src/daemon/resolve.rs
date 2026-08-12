@@ -13,8 +13,8 @@ use std::{
     time::{Duration, Instant},
 };
 
-use crate::mcp::spirit_agent_data_dir;
 use crate::daemon::entry::{resolve_node_path, resolve_server_entry};
+use crate::mcp::spirit_agent_data_dir;
 
 const SPAWN_TIMEOUT: Duration = Duration::from_secs(15);
 const SPAWN_POLL_INTERVAL: Duration = Duration::from_millis(100);
@@ -89,7 +89,10 @@ fn read_instances(data_dir: &Path) -> Vec<DaemonInstance> {
 fn probe(instance: &DaemonInstance) -> bool {
     TcpStream::connect_timeout(
         &std::net::SocketAddr::new(
-            instance.host.parse().unwrap_or(std::net::IpAddr::from([127, 0, 0, 1])),
+            instance
+                .host
+                .parse()
+                .unwrap_or(std::net::IpAddr::from([127, 0, 0, 1])),
             instance.port,
         ),
         CONNECT_PROBE_TIMEOUT,

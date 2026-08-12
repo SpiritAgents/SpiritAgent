@@ -1,10 +1,17 @@
 use anyhow::Result;
 use serde_json::Value;
-use std::{path::{Path, PathBuf}, sync::Arc};
+use std::{
+    path::{Path, PathBuf},
+    sync::Arc,
+};
 
 use crate::{
     ask_questions::AskQuestionsResult,
     daemon::DaemonRuntime,
+    host_protocol::{
+        CliExtensionEntry, CliHostMetadataSnapshot, CliMarketplaceCatalogItem,
+        CliMarketplaceDetail, CliMarketplacePreparedInstall, WorkspaceCapabilityTrustPrompter,
+    },
     host_runtime::RuntimeEvent,
     mcp::{McpScope, McpServerConfig},
     mcp_types::{
@@ -20,11 +27,6 @@ use crate::{
     rewind::{DesktopRewindCheckpointSnapshot, RewindRestoreOutcome},
     session::SessionModel,
     skills::ActiveSkillPayload,
-    host_protocol::{
-        CliExtensionEntry, CliHostMetadataSnapshot, CliMarketplaceCatalogItem,
-        CliMarketplaceDetail, CliMarketplacePreparedInstall,
-        WorkspaceCapabilityTrustPrompter,
-    },
     view::{ChatMessage, PendingAssistantAux, PendingSubagentApprovalView},
 };
 
@@ -100,7 +102,8 @@ impl RuntimeHandle {
         input: &str,
         cursor_chars: usize,
     ) -> Result<(Vec<String>, bool)> {
-        self.backend.list_workspace_file_reference_suggestions(input, cursor_chars)
+        self.backend
+            .list_workspace_file_reference_suggestions(input, cursor_chars)
     }
 
     pub fn prime_workspace_file_reference_index(&mut self) -> Result<()> {
@@ -134,7 +137,8 @@ impl RuntimeHandle {
         archive_bytes: &[u8],
         file_name: Option<&str>,
     ) -> Result<CliExtensionEntry> {
-        self.backend.import_extension_archive(archive_bytes, file_name)
+        self.backend
+            .import_extension_archive(archive_bytes, file_name)
     }
 
     pub fn delete_extension(&mut self, id: &str) -> Result<()> {
@@ -161,7 +165,8 @@ impl RuntimeHandle {
         extension_id: &str,
         version: Option<&str>,
     ) -> Result<CliMarketplacePreparedInstall> {
-        self.backend.prepare_marketplace_extension_install(extension_id, version)
+        self.backend
+            .prepare_marketplace_extension_install(extension_id, version)
     }
 
     pub fn install_marketplace_extension(
@@ -170,7 +175,8 @@ impl RuntimeHandle {
         version: Option<&str>,
         review_acknowledged: bool,
     ) -> Result<CliExtensionEntry> {
-        self.backend.install_marketplace_extension(extension_id, version, review_acknowledged)
+        self.backend
+            .install_marketplace_extension(extension_id, version, review_acknowledged)
     }
 
     pub fn session(&self) -> &SessionModel {
@@ -277,7 +283,8 @@ impl RuntimeHandle {
         message_index: usize,
         snapshot: DesktopRewindCheckpointSnapshot,
     ) -> Result<()> {
-        self.backend.record_rewind_checkpoint(message_id, message_index, snapshot)
+        self.backend
+            .record_rewind_checkpoint(message_id, message_index, snapshot)
     }
 
     pub fn rewind_message(&mut self, message_id: usize) -> Result<RewindRestoreOutcome> {
@@ -351,10 +358,16 @@ impl RuntimeHandle {
         args_json: Option<&str>,
         user_message: Option<&str>,
     ) -> Result<String> {
-        self.backend.apply_mcp_prompt(server, prompt, args_json, user_message)
+        self.backend
+            .apply_mcp_prompt(server, prompt, args_json, user_message)
     }
 
-    pub fn add_mcp_server(&mut self, scope: McpScope, name: &str, config: McpServerConfig) -> Result<PathBuf> {
+    pub fn add_mcp_server(
+        &mut self,
+        scope: McpScope,
+        name: &str,
+        config: McpServerConfig,
+    ) -> Result<PathBuf> {
         self.backend.add_mcp_server(scope, name, config)
     }
 
@@ -437,7 +450,8 @@ impl RuntimeHandle {
         &mut self,
         prompter: Option<WorkspaceCapabilityTrustPrompter>,
     ) {
-        self.backend.set_workspace_capability_trust_prompter(prompter)
+        self.backend
+            .set_workspace_capability_trust_prompter(prompter)
     }
 
     pub fn has_workspace_capability_trust_prompter(&self) -> bool {

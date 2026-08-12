@@ -343,8 +343,7 @@ pub(in crate::ui) fn maybe_log_input_cursor_diagnostics(
     input_cursor_col: u16,
 ) {
     let input_chars = app.input.chars().count();
-    let should_log =
-        app.input.contains('\n') || input_chars >= 48 || !app.input.is_ascii();
+    let should_log = app.input.contains('\n') || input_chars >= 48 || !app.input.is_ascii();
     if !should_log {
         return;
     }

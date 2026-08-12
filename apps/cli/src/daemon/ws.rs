@@ -105,9 +105,14 @@ impl WsStream {
 
     /// Performs the HTTP upgrade handshake. `auth_token`, when set, is sent
     /// as `Authorization: Bearer` instead of a query parameter.
-    pub(crate) fn connect(host: &str, port: u16, path: &str, auth_token: Option<&str>) -> Result<Self> {
-        let mut stream = TcpStream::connect((host, port))
-            .with_context(|| format!("connect {host}:{port}"))?;
+    pub(crate) fn connect(
+        host: &str,
+        port: u16,
+        path: &str,
+        auth_token: Option<&str>,
+    ) -> Result<Self> {
+        let mut stream =
+            TcpStream::connect((host, port)).with_context(|| format!("connect {host}:{port}"))?;
         stream.set_nodelay(true).ok();
 
         let sec_key = BASE64.encode(uuid::Uuid::new_v4().as_bytes());

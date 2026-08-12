@@ -35,16 +35,18 @@ pub(crate) fn resolve_key_from_store(
                 profile.vertex_project().as_deref(),
                 profile.vertex_location().as_deref(),
                 group_id,
-            ) {
-                return Ok(String::new());
-            }
-    } else if !group_id.trim().is_empty()
-        && let Ok(value) = crate::model_registry::load_group_api_key_from_keyring(group_id) {
-            let trimmed = value.trim();
-            if !trimmed.is_empty() {
-                return Ok(trimmed.to_string());
-            }
+            )
+        {
+            return Ok(String::new());
         }
+    } else if !group_id.trim().is_empty()
+        && let Ok(value) = crate::model_registry::load_group_api_key_from_keyring(group_id)
+    {
+        let trimmed = value.trim();
+        if !trimmed.is_empty() {
+            return Ok(trimmed.to_string());
+        }
+    }
     if let Some(value) = host.secret_store.load_model_api_key(model_name)? {
         return Ok(value);
     }
@@ -87,12 +89,13 @@ pub(crate) fn resolve_optional_key_from_store(
         }
     }
     if !group_id.trim().is_empty()
-        && let Ok(value) = crate::model_registry::load_group_api_key_from_keyring(group_id) {
-            let trimmed = value.trim();
-            if !trimmed.is_empty() {
-                return Ok(Some(trimmed.to_string()));
-            }
+        && let Ok(value) = crate::model_registry::load_group_api_key_from_keyring(group_id)
+    {
+        let trimmed = value.trim();
+        if !trimmed.is_empty() {
+            return Ok(Some(trimmed.to_string()));
         }
+    }
     if let Some(value) = host.secret_store.load_model_api_key(model_name)? {
         return Ok(Some(value));
     }

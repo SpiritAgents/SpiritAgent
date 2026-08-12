@@ -46,8 +46,7 @@ pub(crate) fn new_form(
                     selected_row: 0,
                     custom_input: AskQuestionsInputFieldView {
                         label: t!("form.ask_questions.custom_input.label").into_owned(),
-                        placeholder: t!("form.ask_questions.custom_input.placeholder")
-                            .into_owned(),
+                        placeholder: t!("form.ask_questions.custom_input.placeholder").into_owned(),
                         value: String::new(),
                         cursor: 0,
                     },
@@ -338,11 +337,7 @@ fn build_answered_result(form: &mut BottomFormView) -> Result<AskQuestionsResult
                     .collect(),
                 custom_text: {
                     let value = question.custom_input.value.trim().to_string();
-                    if value.is_empty() {
-                        None
-                    } else {
-                        Some(value)
-                    }
+                    if value.is_empty() { None } else { Some(value) }
                 },
             }),
             _ => None,
@@ -372,8 +367,7 @@ fn clear_option_selections(question: &mut AskQuestionsQuestionView) {
 }
 
 fn is_custom_input_row(form: &BottomFormView) -> bool {
-    current_question(form)
-        .is_some_and(|question| question.selected_row >= question.options.len())
+    current_question(form).is_some_and(|question| question.selected_row >= question.options.len())
 }
 
 fn question_mut(form: &mut BottomFormView) -> &mut AskQuestionsQuestionView {
@@ -446,7 +440,9 @@ fn char_cursor_to_byte_index(text: &str, cursor_chars: usize) -> usize {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::ask_questions::{AskQuestionsOptionSpec, AskQuestionsQuestionSpec, AskQuestionsStatus};
+    use crate::ask_questions::{
+        AskQuestionsOptionSpec, AskQuestionsQuestionSpec, AskQuestionsStatus,
+    };
 
     fn build_form(questions: Vec<AskQuestionsQuestionSpec>) -> BottomFormView {
         new_form(

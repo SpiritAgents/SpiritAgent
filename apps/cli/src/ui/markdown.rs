@@ -244,16 +244,14 @@ fn render_markdown_node<'a>(
 fn collect_table_rows<'a>(table_node: &'a AstNode<'a>) -> Vec<Vec<String>> {
     table_node
         .children()
-        .filter_map(|row_node| {
-            match &row_node.data.borrow().value {
-                NodeValue::TableRow(_) => Some(
-                    row_node
-                        .children()
-                        .map(|cell| extract_inline_plain_text(cell))
-                        .collect(),
-                ),
-                _ => None,
-            }
+        .filter_map(|row_node| match &row_node.data.borrow().value {
+            NodeValue::TableRow(_) => Some(
+                row_node
+                    .children()
+                    .map(|cell| extract_inline_plain_text(cell))
+                    .collect(),
+            ),
+            _ => None,
         })
         .collect()
 }
@@ -332,11 +330,7 @@ fn horizontal_border(left: char, middle: char, right: char, column_widths: &[usi
     line
 }
 
-fn render_bordered_table<'a>(
-    table_node: &'a AstNode<'a>,
-    builder: &mut MdBuilder,
-    style: Style,
-) {
+fn render_bordered_table<'a>(table_node: &'a AstNode<'a>, builder: &mut MdBuilder, style: Style) {
     let rows = collect_table_rows(table_node);
     if rows.is_empty() {
         return;
@@ -438,7 +432,9 @@ mod markdown_table_tests {
             .map(|span| span.style.fg)
             .collect();
         assert!(
-            pipe_colors.iter().all(|color| *color == Some(Color::DarkGray)),
+            pipe_colors
+                .iter()
+                .all(|color| *color == Some(Color::DarkGray)),
             "expected dark gray pipes, got {pipe_colors:?}"
         );
     }
@@ -474,19 +470,27 @@ mod markdown_table_tests {
             .collect::<Vec<_>>();
 
         assert!(
-            rendered.iter().any(|line| line.contains('┌') && line.contains('┬')),
+            rendered
+                .iter()
+                .any(|line| line.contains('┌') && line.contains('┬')),
             "expected top border: {rendered:?}"
         );
         assert!(
-            rendered.iter().any(|line| line.contains('├') && line.contains('┼')),
+            rendered
+                .iter()
+                .any(|line| line.contains('├') && line.contains('┼')),
             "expected header separator: {rendered:?}"
         );
         assert!(
-            rendered.iter().any(|line| line.starts_with('│') && line.ends_with('│')),
+            rendered
+                .iter()
+                .any(|line| line.starts_with('│') && line.ends_with('│')),
             "expected vertical borders on rows: {rendered:?}"
         );
         assert!(
-            rendered.iter().any(|line| line.contains("列 A") && line.contains("列 B")),
+            rendered
+                .iter()
+                .any(|line| line.contains("列 A") && line.contains("列 B")),
             "expected header cells: {rendered:?}"
         );
     }

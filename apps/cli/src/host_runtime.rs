@@ -236,15 +236,17 @@ fn preview_summary_for_tool(tool_name: &str, request: &ToolUiRequest) -> (String
             if let Some(old) = string_arg(request, "old_text") {
                 lines.push(format!("旧文本: {} 字符", old.chars().count()));
             } else if let Some(chars) = u64_arg(request, "old_text_chars")
-                && chars > 0 {
-                    lines.push(format!("旧文本: 流式生成中… {} 字符", chars));
-                }
+                && chars > 0
+            {
+                lines.push(format!("旧文本: 流式生成中… {} 字符", chars));
+            }
             if let Some(new) = string_arg(request, "new_text") {
                 lines.push(format!("新文本: {} 字符", new.chars().count()));
             } else if let Some(chars) = u64_arg(request, "new_text_chars")
-                && chars > 0 {
-                    lines.push(format!("新文本: 流式生成中… {} 字符", chars));
-                }
+                && chars > 0
+            {
+                lines.push(format!("新文本: 流式生成中… {} 字符", chars));
+            }
             ("编辑".to_string(), lines)
         }
         "create_file" => {
@@ -253,9 +255,10 @@ fn preview_summary_for_tool(tool_name: &str, request: &ToolUiRequest) -> (String
             if let Some(content) = string_arg(request, "content") {
                 lines.push(format!("内容: {} 字符", content.chars().count()));
             } else if let Some(chars) = u64_arg(request, "content_chars")
-                && chars > 0 {
-                    lines.push(format!("内容: 流式生成中… {} 字符", chars));
-                }
+                && chars > 0
+            {
+                lines.push(format!("内容: 流式生成中… {} 字符", chars));
+            }
             ("创建".to_string(), lines)
         }
         "apply_patch" => {
@@ -278,10 +281,7 @@ fn preview_summary_for_tool(tool_name: &str, request: &ToolUiRequest) -> (String
             }
             ("联网搜索".to_string(), Vec::new())
         }
-        _ => (
-            format!("调用 {}", tool_name),
-            Vec::new(),
-        ),
+        _ => (format!("调用 {}", tool_name), Vec::new()),
     }
 }
 
@@ -303,7 +303,10 @@ pub(crate) fn tool_approval_block(
                 .collect::<Vec<_>>(),
         )
     };
-    if let Some(reason) = auto_review_block_reason.map(str::trim).filter(|r| !r.is_empty()) {
+    if let Some(reason) = auto_review_block_reason
+        .map(str::trim)
+        .filter(|r| !r.is_empty())
+    {
         detail_lines.push(format!("阻挡原因：{reason}"));
     }
     detail_lines.push(if supports_trust {
@@ -435,10 +438,10 @@ pub(crate) fn build_tool_result_block(
                     format!("行范围: {} - {}", offset, end),
                 ],
                 image_paths: Vec::new(),
-            video_paths: Vec::new(),
+                video_paths: Vec::new(),
                 args_excerpt: Some(args_excerpt),
                 output_excerpt: None,
-            suppress_expand: None,
+                suppress_expand: None,
             }
         }
         "grep" => ToolUiBlock {
@@ -532,7 +535,7 @@ pub(crate) fn build_tool_result_block(
             video_paths: Vec::new(),
             args_excerpt: Some(args_excerpt),
             output_excerpt: None,
-        suppress_expand: None,
+            suppress_expand: None,
         },
         "edit_file" => ToolUiBlock {
             tool_call_id: tool_call_id.map(String::from),
@@ -547,7 +550,7 @@ pub(crate) fn build_tool_result_block(
             video_paths: Vec::new(),
             args_excerpt: Some(args_excerpt),
             output_excerpt: None,
-        suppress_expand: None,
+            suppress_expand: None,
         },
         "delete_file" => ToolUiBlock {
             tool_call_id: tool_call_id.map(String::from),
@@ -562,7 +565,7 @@ pub(crate) fn build_tool_result_block(
             video_paths: Vec::new(),
             args_excerpt: Some(args_excerpt),
             output_excerpt: None,
-        suppress_expand: None,
+            suppress_expand: None,
         },
         "apply_patch" => {
             let path = apply_patch_path(request).unwrap_or("<unknown>");
@@ -579,10 +582,10 @@ pub(crate) fn build_tool_result_block(
                 headline: headline.to_string(),
                 detail_lines: vec![format!("路径: {}", path)],
                 image_paths: Vec::new(),
-            video_paths: Vec::new(),
+                video_paths: Vec::new(),
                 args_excerpt: Some(args_excerpt),
                 output_excerpt: None,
-            suppress_expand: None,
+                suppress_expand: None,
             }
         }
         "shell" => ToolUiBlock {
@@ -706,10 +709,11 @@ fn generated_media_paths_from_output(output: &str, prefixes: &[&str]) -> Vec<Str
     let mut paths = Vec::new();
     for line in output.lines() {
         let trimmed = line.trim();
-        let Some((_, path)) = prefixes
-            .iter()
-            .find_map(|prefix| trimmed.strip_prefix(prefix).map(|value| (*prefix, value.trim())))
-        else {
+        let Some((_, path)) = prefixes.iter().find_map(|prefix| {
+            trimmed
+                .strip_prefix(prefix)
+                .map(|value| (*prefix, value.trim()))
+        }) else {
             continue;
         };
         if path.is_empty() {

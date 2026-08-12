@@ -1,11 +1,7 @@
 use serde::{Deserialize, Serialize};
 use std::path::{Path, PathBuf};
 
-use crate::{
-    llm_types::LlmMessage,
-    mcp::spirit_agent_data_dir,
-    ports::ArchivedLlmMessage,
-};
+use crate::{llm_types::LlmMessage, mcp::spirit_agent_data_dir, ports::ArchivedLlmMessage};
 
 pub const PLANS_DIR_NAME: &str = "plans";
 

@@ -16,7 +16,7 @@ use crate::{
 
 use super::{
     TransportHost,
-    keys::{resolve_optional_key_from_store},
+    keys::resolve_optional_key_from_store,
     provider::{
         anthropic_effort_value, attach_cloudflare_ai_gateway_transport_fields,
         attach_google_vertex_transport_fields, model_capabilities_json, model_provider_vendor,
@@ -33,7 +33,15 @@ pub(crate) fn build_mcp_only_transport_config(workspace_root: &Path) -> Value {
     })
 }
 
-fn profile_transport_signature(profile: &crate::model_registry::ModelProfile) -> (String, Option<ModelProvider>, crate::model_registry::ModelTransportKind, Option<String>, Option<String>) {
+fn profile_transport_signature(
+    profile: &crate::model_registry::ModelProfile,
+) -> (
+    String,
+    Option<ModelProvider>,
+    crate::model_registry::ModelTransportKind,
+    Option<String>,
+    Option<String>,
+) {
     (
         profile.api_base.clone(),
         profile.provider,
@@ -145,16 +153,18 @@ pub(crate) fn attach_image_generation_config(
         "baseUrl": resolve_profile_api_base(&image_profile),
     });
     if let Some(provider) = image_profile.provider
-        && let Some(obj) = image_generation.as_object_mut() {
-            obj.insert(
-                "llmVendor".to_string(),
-                json!(model_provider_vendor(provider)),
-            );
-        }
+        && let Some(obj) = image_generation.as_object_mut()
+    {
+        obj.insert(
+            "llmVendor".to_string(),
+            json!(model_provider_vendor(provider)),
+        );
+    }
     if let Some(model_capabilities) = model_capabilities_json(&image_profile)
-        && let Some(obj) = image_generation.as_object_mut() {
-            obj.insert("modelCapabilities".to_string(), model_capabilities);
-        }
+        && let Some(obj) = image_generation.as_object_mut()
+    {
+        obj.insert("modelCapabilities".to_string(), model_capabilities);
+    }
     if let Some(obj) = transport.as_object_mut() {
         obj.insert("imageGeneration".to_string(), image_generation);
     }
@@ -188,23 +198,28 @@ pub(crate) fn attach_video_generation_config(
         "baseUrl": resolve_profile_api_base(&video_profile),
     });
     if let Some(provider) = video_profile.provider
-        && let Some(obj) = video_generation.as_object_mut() {
-            obj.insert(
-                "llmVendor".to_string(),
-                json!(model_provider_vendor(provider)),
-            );
-        }
+        && let Some(obj) = video_generation.as_object_mut()
+    {
+        obj.insert(
+            "llmVendor".to_string(),
+            json!(model_provider_vendor(provider)),
+        );
+    }
     if let Some(model_capabilities) = model_capabilities_json(&video_profile)
-        && let Some(obj) = video_generation.as_object_mut() {
-            obj.insert("modelCapabilities".to_string(), model_capabilities);
-        }
+        && let Some(obj) = video_generation.as_object_mut()
+    {
+        obj.insert("modelCapabilities".to_string(), model_capabilities);
+    }
     if let Some(obj) = transport.as_object_mut() {
         obj.insert("videoGeneration".to_string(), video_generation);
     }
     Ok(())
 }
 
-pub(crate) fn resolve_transport_config_json_for(host: &TransportHost<'_>, config: &AppConfig) -> Result<Value> {
+pub(crate) fn resolve_transport_config_json_for(
+    host: &TransportHost<'_>,
+    config: &AppConfig,
+) -> Result<Value> {
     let Some(active) = config
         .active_model_profile()
         .filter(|profile| !profile.name.trim().is_empty())
@@ -225,12 +240,7 @@ pub(crate) fn resolve_transport_config_json_for(host: &TransportHost<'_>, config
             trimmed.to_string()
         }
     } else {
-        super::keys::resolve_key_from_store(
-            host,
-            &active.group_id,
-            &active.name,
-            active.provider,
-        )?
+        super::keys::resolve_key_from_store(host, &active.group_id, &active.name, active.provider)?
     };
 
     let api_base = env::var(ENV_API_BASE).unwrap_or_else(|_| resolve_profile_api_base(&active));
@@ -247,88 +257,88 @@ pub(crate) fn resolve_transport_config_json_for(host: &TransportHost<'_>, config
         &active.name,
     );
 
-    let mut transport =
-        if active.transport_kind() == crate::model_registry::ModelTransportKind::Anthropic {
-            serde_json::json!({
-                "transportKind": "anthropic",
-                "apiKey": api_key,
-                "model": active.name,
-                "baseUrl": api_base,
-                "workspaceRoot": host.workspace_root,
-            })
-        } else if active.transport_kind() == crate::model_registry::ModelTransportKind::OpenResponses {
-            let mut transport = serde_json::json!({
-                "transportKind": "open-responses",
-                "apiKey": api_key,
-                "model": active.name,
-                "baseUrl": api_base,
-                "workspaceRoot": host.workspace_root,
-            });
-            if let Some(responses_provider) = open_responses_sdk_provider(active.provider)
-                && let Some(obj) = transport.as_object_mut() {
-                    obj.insert(
-                        "responsesProvider".to_string(),
-                        json!(responses_provider),
-                    );
-                }
-            if active.provider == Some(ModelProvider::Azure) {
-                let resource_name = resolve_azure_resource_name(
+    let mut transport = if active.transport_kind()
+        == crate::model_registry::ModelTransportKind::Anthropic
+    {
+        serde_json::json!({
+            "transportKind": "anthropic",
+            "apiKey": api_key,
+            "model": active.name,
+            "baseUrl": api_base,
+            "workspaceRoot": host.workspace_root,
+        })
+    } else if active.transport_kind() == crate::model_registry::ModelTransportKind::OpenResponses {
+        let mut transport = serde_json::json!({
+            "transportKind": "open-responses",
+            "apiKey": api_key,
+            "model": active.name,
+            "baseUrl": api_base,
+            "workspaceRoot": host.workspace_root,
+        });
+        if let Some(responses_provider) = open_responses_sdk_provider(active.provider)
+            && let Some(obj) = transport.as_object_mut()
+        {
+            obj.insert("responsesProvider".to_string(), json!(responses_provider));
+        }
+        if active.provider == Some(ModelProvider::Azure) {
+            let resource_name = resolve_azure_resource_name(
                     active.azure_resource_name(),
                     &api_base,
                 )
                 .ok_or_else(|| {
                     anyhow!("Azure 模型缺少 azureResourceName 配置，请使用 Desktop 连接向导导入或 spirit model add --azure-resource-name")
                 })?;
-                let azure_base = azure_api_base_from_resource_name(&resource_name);
+            let azure_base = azure_api_base_from_resource_name(&resource_name);
+            if let Some(obj) = transport.as_object_mut() {
+                obj.insert("baseUrl".to_string(), json!(azure_base));
+                obj.insert("azureResourceName".to_string(), json!(resource_name));
+                obj.insert("llmVendor".to_string(), json!("azure"));
+            }
+        }
+        transport
+    } else if active.transport_kind() == crate::model_registry::ModelTransportKind::Bedrock {
+        if active.provider == Some(ModelProvider::AmazonBedrock)
+            && crate::bedrock_mantle::is_bedrock_mantle_openai_model(&active.name)
+        {
+            let region = active.aws_region().ok_or_else(|| {
+                    anyhow!("Amazon Bedrock 模型缺少 awsRegion 配置，请使用 Desktop 连接向导导入或手动写入 config.json")
+                })?;
+            let mantle_base = crate::bedrock_mantle::bedrock_mantle_api_base_from_region(&region);
+            let mut transport = serde_json::json!({
+                "transportKind": "open-responses",
+                "model": active.name,
+                "baseUrl": mantle_base,
+                "workspaceRoot": host.workspace_root,
+                "responsesProvider": "openai",
+                "llmVendor": "openai",
+            });
+            if !api_key.trim().is_empty() {
                 if let Some(obj) = transport.as_object_mut() {
-                    obj.insert("baseUrl".to_string(), json!(azure_base));
-                    obj.insert("azureResourceName".to_string(), json!(resource_name));
-                    obj.insert("llmVendor".to_string(), json!("azure"));
+                    obj.insert("apiKey".to_string(), json!(api_key));
+                }
+            } else if let Ok(access_key_id) =
+                load_group_access_key_id_from_keyring(&active.group_id)
+                && let Ok(secret_access_key) =
+                    load_group_secret_access_key_from_keyring(&active.group_id)
+            {
+                let access_key_id = access_key_id.trim();
+                let secret_access_key = secret_access_key.trim();
+                if !access_key_id.is_empty()
+                    && !secret_access_key.is_empty()
+                    && let Some(obj) = transport.as_object_mut()
+                {
+                    obj.insert(
+                        "bedrockMantleIam".to_string(),
+                        json!({
+                            "region": region,
+                            "accessKeyId": access_key_id,
+                            "secretAccessKey": secret_access_key,
+                        }),
+                    );
                 }
             }
             transport
-        } else if active.transport_kind() == crate::model_registry::ModelTransportKind::Bedrock {
-            if active.provider == Some(ModelProvider::AmazonBedrock)
-                && crate::bedrock_mantle::is_bedrock_mantle_openai_model(&active.name)
-            {
-                let region = active.aws_region().ok_or_else(|| {
-                    anyhow!("Amazon Bedrock 模型缺少 awsRegion 配置，请使用 Desktop 连接向导导入或手动写入 config.json")
-                })?;
-                let mantle_base =
-                    crate::bedrock_mantle::bedrock_mantle_api_base_from_region(&region);
-                let mut transport = serde_json::json!({
-                    "transportKind": "open-responses",
-                    "model": active.name,
-                    "baseUrl": mantle_base,
-                    "workspaceRoot": host.workspace_root,
-                    "responsesProvider": "openai",
-                    "llmVendor": "openai",
-                });
-                if !api_key.trim().is_empty() {
-                    if let Some(obj) = transport.as_object_mut() {
-                        obj.insert("apiKey".to_string(), json!(api_key));
-                    }
-                } else                 if let Ok(access_key_id) =
-                    load_group_access_key_id_from_keyring(&active.group_id)
-                    && let Ok(secret_access_key) = load_group_secret_access_key_from_keyring(
-                        &active.group_id,
-                    ) {
-                        let access_key_id = access_key_id.trim();
-                        let secret_access_key = secret_access_key.trim();
-                        if !access_key_id.is_empty() && !secret_access_key.is_empty()
-                            && let Some(obj) = transport.as_object_mut() {
-                                obj.insert(
-                                    "bedrockMantleIam".to_string(),
-                                    json!({
-                                        "region": region,
-                                        "accessKeyId": access_key_id,
-                                        "secretAccessKey": secret_access_key,
-                                    }),
-                                );
-                            }
-                    }
-                transport
-            } else {
+        } else {
             let region = active.aws_region().ok_or_else(|| {
                 anyhow!("Amazon Bedrock 模型缺少 awsRegion 配置，请使用 Desktop 连接向导导入或手动写入 config.json")
             })?;
@@ -340,55 +350,57 @@ pub(crate) fn resolve_transport_config_json_for(host: &TransportHost<'_>, config
                 "workspaceRoot": host.workspace_root,
             });
             if !api_key.trim().is_empty()
-                && let Some(obj) = transport.as_object_mut() {
-                    obj.insert("apiKey".to_string(), json!(api_key));
-                }
-                if let Ok(access_key_id) =
-                    load_group_access_key_id_from_keyring(&active.group_id)
-                    && let Ok(secret_access_key) = load_group_secret_access_key_from_keyring(
-                        &active.group_id,
-                    ) {
-                    let access_key_id = access_key_id.trim();
-                    let secret_access_key = secret_access_key.trim();
-                    if !access_key_id.is_empty() && !secret_access_key.is_empty()
-                        && let Some(obj) = transport.as_object_mut() {
-                            obj.insert("accessKeyId".to_string(), json!(access_key_id));
-                            obj.insert(
-                                "secretAccessKey".to_string(),
-                                json!(secret_access_key),
-                            );
-                        }
-                }
-            transport
+                && let Some(obj) = transport.as_object_mut()
+            {
+                obj.insert("apiKey".to_string(), json!(api_key));
             }
-        } else {
-            serde_json::json!({
-                "apiKey": api_key,
-                "model": active.name,
-                "baseUrl": api_base,
-                "workspaceRoot": host.workspace_root,
-            })
-        };
+            if let Ok(access_key_id) = load_group_access_key_id_from_keyring(&active.group_id)
+                && let Ok(secret_access_key) =
+                    load_group_secret_access_key_from_keyring(&active.group_id)
+            {
+                let access_key_id = access_key_id.trim();
+                let secret_access_key = secret_access_key.trim();
+                if !access_key_id.is_empty()
+                    && !secret_access_key.is_empty()
+                    && let Some(obj) = transport.as_object_mut()
+                {
+                    obj.insert("accessKeyId".to_string(), json!(access_key_id));
+                    obj.insert("secretAccessKey".to_string(), json!(secret_access_key));
+                }
+            }
+            transport
+        }
+    } else {
+        serde_json::json!({
+            "apiKey": api_key,
+            "model": active.name,
+            "baseUrl": api_base,
+            "workspaceRoot": host.workspace_root,
+        })
+    };
 
     if let Some(model_capabilities) = model_capabilities_json(&active)
-        && let Some(obj) = transport.as_object_mut() {
-            obj.insert("modelCapabilities".to_string(), model_capabilities);
-        }
+        && let Some(obj) = transport.as_object_mut()
+    {
+        obj.insert("modelCapabilities".to_string(), model_capabilities);
+    }
 
     if active.transport_kind() == crate::model_registry::ModelTransportKind::Anthropic {
         if let Some(effort) = anthropic_effort_value(normalized_reasoning_effort.as_deref())
-            && let Some(obj) = transport.as_object_mut() {
-                obj.insert("effort".to_string(), json!(effort));
-            }
+            && let Some(obj) = transport.as_object_mut()
+        {
+            obj.insert("effort".to_string(), json!(effort));
+        }
         if let Some(provider) = active.provider
             && provider != ModelProvider::Anthropic
             && provider != ModelProvider::AmazonBedrock
-            && let Some(obj) = transport.as_object_mut() {
-                obj.insert(
-                    "llmVendor".to_string(),
-                    json!(model_provider_vendor(provider)),
-                );
-            }
+            && let Some(obj) = transport.as_object_mut()
+        {
+            obj.insert(
+                "llmVendor".to_string(),
+                json!(model_provider_vendor(provider)),
+            );
+        }
     } else if active.transport_kind() == crate::model_registry::ModelTransportKind::OpenResponses
         || (active.provider == Some(ModelProvider::AmazonBedrock)
             && crate::bedrock_mantle::is_bedrock_mantle_openai_model(&active.name))
@@ -397,44 +409,51 @@ pub(crate) fn resolve_transport_config_json_for(host: &TransportHost<'_>, config
             && crate::bedrock_mantle::is_bedrock_mantle_openai_model(&active.name);
         if !is_mantle_openai
             && let Some(provider) = active.provider
-                && let Some(obj) = transport.as_object_mut() {
-                    obj.insert(
-                        "llmVendor".to_string(),
-                        json!(model_provider_vendor(provider)),
-                    );
-                }
+            && let Some(obj) = transport.as_object_mut()
+        {
+            obj.insert(
+                "llmVendor".to_string(),
+                json!(model_provider_vendor(provider)),
+            );
+        }
         if let Some(reasoning_effort) = normalized_reasoning_effort.as_deref()
-            && let Some(obj) = transport.as_object_mut() {
-                obj.insert("reasoningEffort".to_string(), json!(reasoning_effort));
-            }
+            && let Some(obj) = transport.as_object_mut()
+        {
+            obj.insert("reasoningEffort".to_string(), json!(reasoning_effort));
+        }
         if let Some(reasoning_mode) = normalized_reasoning_mode.as_deref()
-            && let Some(obj) = transport.as_object_mut() {
-                obj.insert("reasoningMode".to_string(), json!(reasoning_mode));
-            }
+            && let Some(obj) = transport.as_object_mut()
+        {
+            obj.insert("reasoningMode".to_string(), json!(reasoning_mode));
+        }
     } else if active.transport_kind() == crate::model_registry::ModelTransportKind::Bedrock
         && !(active.provider == Some(ModelProvider::AmazonBedrock)
             && crate::bedrock_mantle::is_bedrock_mantle_openai_model(&active.name))
     {
         if let Some(reasoning_effort) = normalized_reasoning_effort.as_deref()
-            && let Some(obj) = transport.as_object_mut() {
-                obj.insert("reasoningEffort".to_string(), json!(reasoning_effort));
-            }
+            && let Some(obj) = transport.as_object_mut()
+        {
+            obj.insert("reasoningEffort".to_string(), json!(reasoning_effort));
+        }
     } else {
         if let Some(provider) = active.provider
-            && let Some(obj) = transport.as_object_mut() {
-                obj.insert(
-                    "llmVendor".to_string(),
-                    json!(model_provider_vendor(provider)),
-                );
-            }
+            && let Some(obj) = transport.as_object_mut()
+        {
+            obj.insert(
+                "llmVendor".to_string(),
+                json!(model_provider_vendor(provider)),
+            );
+        }
         if let Some(reasoning_effort) = normalized_reasoning_effort.as_deref()
-            && let Some(obj) = transport.as_object_mut() {
-                obj.insert("reasoningEffort".to_string(), json!(reasoning_effort));
-            }
+            && let Some(obj) = transport.as_object_mut()
+        {
+            obj.insert("reasoningEffort".to_string(), json!(reasoning_effort));
+        }
         if let Some(reasoning_mode) = normalized_reasoning_mode.as_deref()
-            && let Some(obj) = transport.as_object_mut() {
-                obj.insert("reasoningMode".to_string(), json!(reasoning_mode));
-            }
+            && let Some(obj) = transport.as_object_mut()
+        {
+            obj.insert("reasoningMode".to_string(), json!(reasoning_mode));
+        }
     }
     attach_image_generation_config(host, &mut transport, config)?;
     attach_google_vertex_transport_fields(&mut transport, &active)?;

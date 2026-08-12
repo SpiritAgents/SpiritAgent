@@ -1,4 +1,4 @@
-use anyhow::{anyhow, Result};
+use anyhow::{Result, anyhow};
 use rust_i18n::t;
 use std::{
     sync::Arc,
