@@ -1354,6 +1354,8 @@
     "fetch_succeeded": "已抓取",
     "webSearch_running": "联网搜索中",
     "webSearch_succeeded": "已联网搜索",
+    "findInPage_running": "页内查找中",
+    "findInPage_succeeded": "已页内查找",
     "codeInterpreter_running": "代码解释中",
     "codeInterpreter_succeeded": "已解释代码",
     "ls_running": "列出中",
