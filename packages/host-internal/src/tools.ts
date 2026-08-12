@@ -1274,14 +1274,14 @@ export class NodeHostToolService<
 
   private requireDreamStore(): HostDreamStore {
     if (!this.dreamStore) {
-      throw new Error("当前宿主未配置梦境 scope，无法执行梦境工具。");
+      throw new Error("Dream scope is not configured for this host.");
     }
     return this.dreamStore;
   }
 
   private requireTodoStore(): HostTodoStore {
     if (!this.todoStore) {
-      throw new Error("当前宿主未配置会话 TODO scope，无法执行 todo 工具。");
+      throw new Error("Todo scope is not configured for this host.");
     }
     return this.todoStore;
   }
