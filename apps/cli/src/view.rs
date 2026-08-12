@@ -412,7 +412,7 @@ pub struct TuiViewModel {
     pub network_picker_index: usize,
     pub chat_picker_active: bool,
     pub chat_picker_index: usize,
-    pub chat_picker_files: Vec<String>,
+    pub chat_picker_sessions: Vec<crate::ports::ChatSessionListItem>,
     pub subagent_picker_active: bool,
     pub subagent_picker_index: usize,
     pub subagent_sessions: Vec<SubagentSessionSummaryView>,

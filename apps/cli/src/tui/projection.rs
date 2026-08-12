@@ -78,7 +78,7 @@ impl TuiShell {
             network_picker_index: self.network_picker_index,
             chat_picker_active: self.chat_picker_active,
             chat_picker_index: self.chat_picker_index,
-            chat_picker_files: self.chat_picker_files.clone(),
+            chat_picker_sessions: self.chat_picker_sessions.clone(),
             subagent_picker_active: self.subagent.picker_active,
             subagent_picker_index: self.subagent.picker_index,
             subagent_sessions,

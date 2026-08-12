@@ -15,6 +15,10 @@ use crate::{
     ask_questions::AskQuestionsResult,
     chat_store,
     chat_timeline::project_live_chat_from_llm_history,
+    host_protocol::{
+        CliExtensionCliUiHookEntry, CliExtensionEntry, CliMarketplaceCatalogItem,
+        CliMarketplaceDetail, CliMarketplaceDetailVersion, CliMarketplacePreparedInstall,
+    },
     host_runtime::{RuntimeEvent, ToolUiRequest, build_tool_result_block, format_tool_ui_message},
     locale, logging,
     mcp_types::{ManagedMcpServer, McpDiscoveredPrompt},
@@ -23,22 +27,18 @@ use crate::{
     plan::{self, PlanMetadata},
     ports::{
         AppPaths, AssistantAuxArchiveEntry, AttachChatSessionOutcome, ChatArchive, ChatRepository,
-        ConfigStore, McpStatusSnapshot, McpStatusState, SecretStore, SubagentSessionArchiveEntry,
-        SubagentSessionSummary,
+        ChatSessionListItem, ConfigStore, McpStatusSnapshot, McpStatusState, SecretStore,
+        SubagentSessionArchiveEntry, SubagentSessionSummary,
     },
     rewind::{self, ConversationMessageSnapshot, DesktopRewindCheckpointSnapshot},
     rules::RuleEntry,
     runtime_handle::RuntimeHandle,
-    subagent_display::parse_pending_subagent_status_text,
     shell::{
         ask_questions, bottom_form, file_reference, manual_shell, slash,
         workspace_trust as workspace_trust_form,
     },
     skills::{self, SkillEntry},
-    host_protocol::{
-        CliExtensionCliUiHookEntry, CliExtensionEntry, CliMarketplaceCatalogItem,
-        CliMarketplaceDetail, CliMarketplaceDetailVersion, CliMarketplacePreparedInstall,
-    },
+    subagent_display::parse_pending_subagent_status_text,
     ui::UiRuntimeState,
     view::{
         AssistantAuxData, BottomFormKind, ChatMessage, CliUiHookSlot, CliUiHookTokenRole,
@@ -103,7 +103,7 @@ pub struct TuiShell {
     network_picker_index: usize,
     chat_picker_active: bool,
     chat_picker_index: usize,
-    chat_picker_files: Vec<String>,
+    chat_picker_sessions: Vec<ChatSessionListItem>,
     subagent: SubagentUiState,
     image_picker_active: bool,
     image_picker_index: usize,
@@ -221,7 +221,7 @@ impl TuiShell {
             network_picker_index: 0,
             chat_picker_active: false,
             chat_picker_index: 0,
-            chat_picker_files: vec![],
+            chat_picker_sessions: vec![],
             subagent: SubagentUiState::default(),
             image_picker_active: false,
             image_picker_index: 0,
@@ -567,7 +567,8 @@ impl TuiShell {
         let provider = provider.unwrap_or(ModelProvider::Custom);
         let group_id = crate::model_registry::default_preset_provider_group_id(provider);
         let connect = crate::model_registry::ProviderGroupConnectDraft {
-            transport_kind: (transport_kind == crate::model_registry::ModelTransportKind::Anthropic
+            transport_kind: (transport_kind
+                == crate::model_registry::ModelTransportKind::Anthropic
                 || transport_kind == crate::model_registry::ModelTransportKind::OpenResponses)
                 .then(|| transport_kind.as_str().to_string()),
             provider_site: provider_site
@@ -1010,7 +1011,9 @@ impl TuiShell {
     ) -> Result<crate::ports::ChatArchive> {
         let messages = self.archive_messages_for_message_count(message_count);
         let assistant_aux = self.assistant_aux_for_message_count(message_count);
-        let mut archive = self.runtime.export_chat_archive(&messages, &assistant_aux)?;
+        let mut archive = self
+            .runtime
+            .export_chat_archive(&messages, &assistant_aux)?;
         let desktop_messages = self.conversation_snapshots_for_message_count(message_count);
         archive.desktop_messages = (!desktop_messages.is_empty()).then_some(desktop_messages);
         Ok(archive)
@@ -1105,8 +1108,11 @@ impl TuiShell {
             crate::fork::derive_forked_session_display_name(&source_display_name);
 
         let full_archive = self.export_chat_archive_for_message_count(self.messages.len())?;
-        let mut fork_archive =
-            crate::fork::build_truncated_chat_archive_for_fork(&full_archive, &snapshots, anchor_index);
+        let mut fork_archive = crate::fork::build_truncated_chat_archive_for_fork(
+            &full_archive,
+            &snapshots,
+            anchor_index,
+        );
         fork_archive.session_display_name = Some(fork_display_name.clone());
 
         let todos = self.runtime.list_session_todos()?;

@@ -204,8 +204,7 @@ pub fn available_approval_levels_csv() -> String {
 
 /// Soft normalize used by archives / internal paths: unknown values become `default`.
 pub fn normalize_approval_level(value: &str) -> String {
-    parse_approval_level_strict(value)
-        .unwrap_or_else(|| "default".to_string())
+    parse_approval_level_strict(value).unwrap_or_else(|| "default".to_string())
 }
 
 /// Strict parse for CLI flags: unknown values return `None` (do not fall back to default).
@@ -375,8 +374,15 @@ pub trait SecretStore: Send + Sync {
     fn has_model_api_key(&self, model_name: &str) -> Result<bool>;
 }
 
+#[derive(Clone, Debug)]
+pub struct ChatSessionListItem {
+    pub path: String,
+    pub display_name: String,
+    pub modified_at_unix_ms: u128,
+}
+
 pub trait ChatRepository: Send + Sync {
-    fn list(&self) -> Result<Vec<String>>;
+    fn list(&self) -> Result<Vec<ChatSessionListItem>>;
     fn save(&self, path: Option<&str>, archive: &ChatArchive) -> Result<PathBuf>;
     fn load(&self, path: &str) -> Result<ChatArchive>;
 }

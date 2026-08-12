@@ -8,12 +8,22 @@ const TIME_UNITS: ReadonlyArray<{ unit: Intl.RelativeTimeFormatUnit; seconds: nu
   { unit: "second", seconds: 1 },
 ];
 
-function resolveRelativeTimeLocale(locale: string): string {
-  const normalized = locale.trim().toLowerCase();
-  if (normalized.startsWith("zh")) {
-    return "zh-CN";
+function createRelativeTimeFormatter(locale: string): {
+  formatter: Intl.RelativeTimeFormat;
+  locale: string;
+} {
+  const trimmed = locale.trim() || "en";
+  try {
+    return {
+      formatter: new Intl.RelativeTimeFormat(trimmed, { numeric: "auto" }),
+      locale: trimmed,
+    };
+  } catch {
+    return {
+      formatter: new Intl.RelativeTimeFormat("en", { numeric: "auto" }),
+      locale: "en",
+    };
   }
-  return "en";
 }
 
 /** Intl zh-CN 相对时间默认无空格（如 3分钟前）；与 PR 时间线等 UI 文案统一为「3 分钟前」。 */
@@ -27,17 +37,16 @@ export function formatRelativeTime(isoTimestamp: string, locale: string): string
     return isoTimestamp;
   }
 
-  const resolvedLocale = resolveRelativeTimeLocale(locale);
+  const { formatter, locale: resolvedLocale } = createRelativeTimeFormatter(locale);
   const deltaSeconds = Math.round((parsed - Date.now()) / 1000);
-  const formatter = new Intl.RelativeTimeFormat(resolvedLocale, {
-    numeric: "auto",
-  });
 
   for (const { unit, seconds } of TIME_UNITS) {
     if (Math.abs(deltaSeconds) >= seconds || unit === "second") {
       const value = Math.round(deltaSeconds / seconds);
       const formatted = formatter.format(value, unit);
-      return resolvedLocale.startsWith("zh") ? addZhRelativeTimeSpaces(formatted) : formatted;
+      return resolvedLocale.toLowerCase().startsWith("zh")
+        ? addZhRelativeTimeSpaces(formatted)
+        : formatted;
     }
   }
 

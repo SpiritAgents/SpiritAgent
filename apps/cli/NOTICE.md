@@ -4,7 +4,7 @@
 
 - Apache License 2.0 (`Apache-2.0`): 307 crate(s)
 - MIT License (`MIT`): 112 crate(s)
-- Unicode License v3 (`Unicode-3.0`): 19 crate(s)
+- Unicode License v3 (`Unicode-3.0`): 33 crate(s)
 - BSD 3-Clause "New" or "Revised" License (`BSD-3-Clause`): 6 crate(s)
 - BSD 2-Clause "Simplified" License (`BSD-2-Clause`): 4 crate(s)
 - ISC License (`ISC`): 3 crate(s)
@@ -248,6 +248,8 @@
   - https://github.com/image-rs/fdeflate
 - **find-msvc-tools** 0.1.9 — MIT OR Apache-2.0
   - https://github.com/rust-lang/cc-rs
+- **fixed_decimal** 0.7.2 — Unicode-3.0
+  - https://github.com/unicode-org/icu4x
 - **flate2** 1.1.9 — MIT OR Apache-2.0
   - https://github.com/rust-lang/flate2-rs
 - **fnv** 1.0.7 — Apache-2.0  OR  MIT
@@ -320,13 +322,39 @@
   - https://github.com/rustls/hyper-rustls
 - **hyper-util** 0.1.20 — MIT
   - https://github.com/hyperium/hyper-util
+- **icu_casemap** 2.2.0 — Unicode-3.0
+  - https://github.com/unicode-org/icu4x
+- **icu_casemap_data** 2.2.0 — Unicode-3.0
+  - https://github.com/unicode-org/icu4x
 - **icu_collections** 2.2.0 — Unicode-3.0
   - https://github.com/unicode-org/icu4x
+- **icu_decimal** 2.2.0 — Unicode-3.0
+  - https://github.com/unicode-org/icu4x
+- **icu_decimal_data** 2.2.0 — Unicode-3.0
+  - https://github.com/unicode-org/icu4x
+- **icu_experimental** 0.5.0 — Unicode-3.0
+  - https://github.com/unicode-org/icu4x
+- **icu_experimental_data** 0.5.0 — Unicode-3.0
+  - https://github.com/unicode-org/icu4x
+- **icu_list** 2.2.0 — Unicode-3.0
+  - https://github.com/unicode-org/icu4x
+- **icu_list_data** 2.2.0 — Unicode-3.0
+  - https://github.com/unicode-org/icu4x
+- **icu_locale** 2.2.0 — Unicode-3.0
+  - https://github.com/unicode-org/icu4x
 - **icu_locale_core** 2.2.0 — Unicode-3.0
+  - https://github.com/unicode-org/icu4x
+- **icu_locale_data** 2.2.0 — Unicode-3.0
   - https://github.com/unicode-org/icu4x
 - **icu_normalizer** 2.2.0 — Unicode-3.0
   - https://github.com/unicode-org/icu4x
 - **icu_normalizer_data** 2.2.0 — Unicode-3.0
+  - https://github.com/unicode-org/icu4x
+- **icu_pattern** 0.4.2 — Unicode-3.0
+  - https://github.com/unicode-org/icu4x
+- **icu_plurals** 2.2.0 — Unicode-3.0
+  - https://github.com/unicode-org/icu4x
+- **icu_plurals_data** 2.2.0 — Unicode-3.0
   - https://github.com/unicode-org/icu4x
 - **icu_properties** 2.2.0 — Unicode-3.0
   - https://github.com/unicode-org/icu4x
@@ -674,7 +702,7 @@
   - https://github.com/rust-lang/socket2
 - **socket2** 0.6.3 — MIT OR Apache-2.0
   - https://github.com/rust-lang/socket2
-- **spirit-agent** 0.3.2 — MIT
+- **spirit-agent** 0.3.3 — MIT
   - https://crates.io/crates/spirit-agent
 - **stable_deref_trait** 1.2.1 — MIT OR Apache-2.0
   - https://github.com/storyyeller/stable_deref_trait
@@ -10633,7 +10661,7 @@ SOFTWARE.
 ### MIT License (MIT)
 
 **Used by:**
-- spirit-agent 0.3.2
+- spirit-agent 0.3.3
 - base64-simd 0.8.0
 - fax 0.2.6
 - fax_derive 0.2.0
@@ -11242,10 +11270,24 @@ authorization of the copyright holder.
 ### Unicode License v3 (Unicode-3.0)
 
 **Used by:**
+- fixed_decimal 0.7.2
+- icu_casemap 2.2.0
+- icu_casemap_data 2.2.0
 - icu_collections 2.2.0
+- icu_decimal 2.2.0
+- icu_decimal_data 2.2.0
+- icu_experimental 0.5.0
+- icu_experimental_data 0.5.0
+- icu_list 2.2.0
+- icu_list_data 2.2.0
+- icu_locale 2.2.0
 - icu_locale_core 2.2.0
+- icu_locale_data 2.2.0
 - icu_normalizer 2.2.0
 - icu_normalizer_data 2.2.0
+- icu_pattern 0.4.2
+- icu_plurals 2.2.0
+- icu_plurals_data 2.2.0
 - icu_properties 2.2.0
 - icu_properties_data 2.2.0
 - icu_provider 2.2.0

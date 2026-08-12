@@ -1,7 +1,7 @@
 use super::*;
 use crate::{
     model_registry::AppConfig,
-    ports::SubagentSessionStatus,
+    ports::{ChatSessionListItem, SubagentSessionStatus},
     view::{
         AssistantAuxData, BottomFormFieldEditorView, BottomFormFieldView, BottomFormView,
         MainInputMode, MarketplaceFlowStep, MarketplaceViewModel, PendingAssistantAux,
@@ -96,7 +96,7 @@ fn build_view_model(message: ChatMessage) -> TuiViewModel {
         network_picker_index: 0,
         chat_picker_active: false,
         chat_picker_index: 0,
-        chat_picker_files: vec![],
+        chat_picker_sessions: vec![],
         subagent_picker_active: false,
         subagent_picker_index: 0,
         subagent_sessions: vec![],
@@ -182,6 +182,26 @@ fn build_bottom_form_view(value: &str, footer_hint: &str) -> BottomFormView {
         selected_field: 2,
         scroll_offset: 0,
         footer_hint: footer_hint.to_string(),
+    }
+}
+
+fn chat_picker_item(path: &str, display_name: &str) -> ChatSessionListItem {
+    ChatSessionListItem {
+        path: path.to_string(),
+        display_name: display_name.to_string(),
+        modified_at_unix_ms: 0,
+    }
+}
+
+fn chat_picker_item_at(
+    path: &str,
+    display_name: &str,
+    modified_at_unix_ms: u128,
+) -> ChatSessionListItem {
+    ChatSessionListItem {
+        path: path.to_string(),
+        display_name: display_name.to_string(),
+        modified_at_unix_ms,
     }
 }
 
@@ -307,9 +327,11 @@ fn footer_auto_approval_uses_blue_style() {
     let mut app = build_view_model(ChatMessage::new(MessageRole::Agent, "welcome"));
     app.approval_level = "auto-approval".to_string();
     let line = build_footer_line(&app, 80);
-    assert!(line.spans.iter().any(|span| {
-        span.style.fg == Some(Color::Rgb(96, 165, 250))
-    }));
+    assert!(
+        line.spans
+            .iter()
+            .any(|span| { span.style.fg == Some(Color::Rgb(96, 165, 250)) })
+    );
 }
 
 #[test]
@@ -317,10 +339,11 @@ fn footer_full_approval_uses_yellow_style() {
     let mut app = build_view_model(ChatMessage::new(MessageRole::Agent, "welcome"));
     app.approval_level = "full-approval".to_string();
     let line = build_footer_line(&app, 80);
-    assert!(line
-        .spans
-        .iter()
-        .any(|span| span.style.fg == Some(Color::Yellow)));
+    assert!(
+        line.spans
+            .iter()
+            .any(|span| span.style.fg == Some(Color::Yellow))
+    );
 }
 
 #[test]
@@ -354,24 +377,23 @@ fn slice_styled_runs_from_display_column_skips_and_limits_width() {
         ("def".to_string(), Style::default()),
     ];
     let spans = slice_styled_runs_from_display_column(&runs, 2, 4);
-    let text: String = spans
-        .iter()
-        .map(|span| span.content.as_ref())
-        .collect();
+    let text: String = spans.iter().map(|span| span.content.as_ref()).collect();
     assert_eq!(text, "c   ");
 }
 
 #[test]
 fn sessions_picker_reuses_inline_picker_styles_and_scroll_window() {
     let mut app = build_view_model(ChatMessage::new(MessageRole::User, "/sessions"));
-    app.chat_picker_files = (0..7).map(|idx| format!("session-{idx}.json")).collect();
+    app.chat_picker_sessions = (0..7)
+        .map(|idx| chat_picker_item(&format!("session-{idx}.json"), &format!("session-{idx}")))
+        .collect();
     app.chat_picker_index = 3;
 
     let lines = build_chat_picker_lines(&app, 5);
     let text = render_text_lines(lines.clone());
 
-    assert_eq!(text[0], "  session-1.json");
-    assert_eq!(text[2], "> session-3.json");
+    assert!(text[0].starts_with("  session-1 "));
+    assert!(text[2].starts_with("> session-3 "));
     assert_eq!(lines[0].spans[0].style.fg, subtle_aux_text_style().fg);
     assert_eq!(lines[2].spans[0].style.fg, Some(Color::White));
 }
@@ -431,16 +453,16 @@ fn subagent_picker_uses_inline_layout_without_border_or_title() {
 fn sessions_picker_uses_inline_layout_without_footer_or_title() {
     let mut app = build_view_model(ChatMessage::new(MessageRole::User, "/sessions"));
     app.chat_picker_active = true;
-    app.chat_picker_files = vec![
-        "session-0.json".to_string(),
-        "session-1.json".to_string(),
-        "session-2.json".to_string(),
+    app.chat_picker_sessions = vec![
+        chat_picker_item("session-0.json", "session-0"),
+        chat_picker_item("session-1.json", "session-1"),
+        chat_picker_item("session-2.json", "session-2"),
     ];
     app.chat_picker_index = 1;
 
     let lines = render_ui_lines(&app, 80, 20);
 
-    assert!(lines.iter().any(|line| line.contains("> session-1.json")));
+    assert!(lines.iter().any(|line| line.contains("> session-1")));
     assert!(
         !lines
             .iter()
@@ -450,6 +472,40 @@ fn sessions_picker_uses_inline_layout_without_footer_or_title() {
         !lines
             .iter()
             .any(|line| line.contains(t!("ui.footer.preview").as_ref()))
+    );
+}
+
+#[test]
+fn sessions_picker_shows_relative_time_without_parentheses() {
+    let mut app = build_view_model(ChatMessage::new(MessageRole::User, "/sessions"));
+    app.config.ui_locale = Some("en".to_string());
+    let now_ms = std::time::SystemTime::now()
+        .duration_since(std::time::UNIX_EPOCH)
+        .map(|duration| duration.as_millis())
+        .unwrap_or(0);
+    app.chat_picker_sessions = vec![
+        chat_picker_item_at(
+            "session.json",
+            "My session",
+            now_ms.saturating_sub(3 * 60 * 1000),
+        ),
+        chat_picker_item("other.json", "Other"),
+    ];
+    app.chat_picker_index = 1;
+
+    let lines = build_chat_picker_lines(&app, 5);
+    let text = render_text_lines(lines.clone());
+
+    assert!(
+        text[0] == "  My session 3 minutes ago" || text[0] == "  My session 3 分钟前",
+        "unexpected picker line: {}",
+        text[0]
+    );
+    assert!(!text[0].contains('(') && !text[0].contains(')'));
+    assert_eq!(lines[0].spans.len(), 3);
+    assert_eq!(
+        lines[0].spans[2].style.fg,
+        inline_picker_meta_style(false).fg
     );
 }
 
@@ -722,11 +778,11 @@ fn rewind_picker_deemphasizes_tool_messages() {
             headline: "读取了一个文件".to_string(),
             detail_lines: vec!["/tmp/demo.txt".to_string()],
             image_paths: Vec::new(),
-        video_paths: Vec::new(),
+            video_paths: Vec::new(),
             args_excerpt: None,
-        output_excerpt: None,
-        suppress_expand: None,
-    },
+            output_excerpt: None,
+            suppress_expand: None,
+        },
     ));
     app.rewind_picker = Some(RewindPickerView {
         selected_message_id: 2,
@@ -778,11 +834,11 @@ fn streaming_tool_preview_renders_tool_card_on_separate_message_row() {
             headline: "执行命令".to_string(),
             detail_lines: vec!["echo hello".to_string()],
             image_paths: Vec::new(),
-        video_paths: Vec::new(),
+            video_paths: Vec::new(),
             args_excerpt: None,
-        output_excerpt: None,
-        suppress_expand: None,
-    },
+            output_excerpt: None,
+            suppress_expand: None,
+        },
     ));
 
     let body_lines = render_text_lines(render_message_lines(&app, &app.messages[0], 0));
@@ -793,11 +849,7 @@ fn streaming_tool_preview_renders_tool_card_on_separate_message_row() {
             .iter()
             .any(|line| line.contains("我来帮您执行这个命令。"))
     );
-    assert!(
-        preview_lines
-            .iter()
-            .any(|line| line.contains("执行命令"))
-    );
+    assert!(preview_lines.iter().any(|line| line.contains("执行命令")));
 }
 
 #[test]
@@ -1294,11 +1346,11 @@ fn shell_pending_approval_title_line_shows_reason_instead_of_call_id() {
                 "命令: cargo test -p spirit-agent".to_string(),
             ],
             image_paths: Vec::new(),
-        video_paths: Vec::new(),
+            video_paths: Vec::new(),
             args_excerpt: None,
-        output_excerpt: None,
-        suppress_expand: None,
-    },
+            output_excerpt: None,
+            suppress_expand: None,
+        },
     ));
 
     let lines = render_text_lines(render_message_lines(&app, &app.messages[0], 0));
@@ -1362,8 +1414,7 @@ fn generate_video_tool_card_shows_managed_uri_when_aux_details_collapsed() {
             video_paths: vec!["spirit://generated/video/example.mp4".to_string()],
             args_excerpt: Some("{\n  \"prompt\": \"生成一段视频\"\n}".to_string()),
             output_excerpt: Some(
-                "[generated video]\nvideo_ref: spirit://generated/video/example.mp4"
-                    .to_string(),
+                "[generated video]\nvideo_ref: spirit://generated/video/example.mp4".to_string(),
             ),
             suppress_expand: None,
         },
@@ -1373,9 +1424,11 @@ fn generate_video_tool_card_shows_managed_uri_when_aux_details_collapsed() {
     let lines = render_text_lines(render_message_lines(&app, &app.messages[0], 0));
 
     assert!(lines.iter().any(|line| line.contains("视频生成完成")));
-    assert!(lines.iter().any(|line| {
-        line.contains("路径: spirit://generated/video/example.mp4")
-    }));
+    assert!(
+        lines
+            .iter()
+            .any(|line| { line.contains("路径: spirit://generated/video/example.mp4") })
+    );
 }
 
 #[test]
@@ -1502,9 +1555,9 @@ fn generate_image_history_render_reserves_image_block() {
             image_paths: vec!["demo.png".to_string()],
             video_paths: Vec::new(),
             args_excerpt: None,
-        output_excerpt: None,
-        suppress_expand: None,
-    },
+            output_excerpt: None,
+            suppress_expand: None,
+        },
     ));
 
     let render = build_history_render_result(&app, 80);
@@ -1535,9 +1588,9 @@ fn generate_image_ui_renders_halfblock_preview_from_local_file() {
             image_paths: vec![file_path.to_string_lossy().to_string()],
             video_paths: Vec::new(),
             args_excerpt: None,
-        output_excerpt: None,
-        suppress_expand: None,
-    },
+            output_excerpt: None,
+            suppress_expand: None,
+        },
     ));
 
     let (lines, buffer) = render_ui_snapshot(&app, 80, 36);

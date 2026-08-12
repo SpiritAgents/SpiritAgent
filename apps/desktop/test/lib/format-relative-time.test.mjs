@@ -27,3 +27,14 @@ test("formatRelativeTime leaves Chinese auto labels without numeric units unchan
     assert.equal(formatRelativeTime(yesterday, "zh-CN"), "昨天");
   });
 });
+
+test("formatRelativeTime follows the UI locale instead of English fallback", () => {
+  withMockedNow(Date.parse("2026-06-28T12:00:00.000Z"), () => {
+    const threeMinutesAgo = "2026-06-28T11:57:00.000Z";
+    const yesterday = "2026-06-27T12:00:00.000Z";
+    assert.equal(formatRelativeTime(threeMinutesAgo, "ja"), "3 分前");
+    assert.equal(formatRelativeTime(yesterday, "ja"), "昨日");
+    assert.equal(formatRelativeTime(threeMinutesAgo, "de"), "vor 3 Minuten");
+    assert.equal(formatRelativeTime(yesterday, "de"), "gestern");
+  });
+});

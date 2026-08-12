@@ -161,14 +161,21 @@ impl TuiShell {
     }
 
     pub fn confirm_approval_picker(&mut self) {
-        let Some(selected) = APPROVAL_LEVEL_OPTIONS.get(self.approval_picker_index).copied() else {
+        let Some(selected) = APPROVAL_LEVEL_OPTIONS
+            .get(self.approval_picker_index)
+            .copied()
+        else {
             self.approval_picker_active = false;
             return;
         };
 
         match self.runtime.set_approval_level(selected) {
             Ok(()) => self.push_agent_message(
-                t!("tui.approval.changed", level = crate::ui::approval_level_label(selected)).into_owned(),
+                t!(
+                    "tui.approval.changed",
+                    level = crate::ui::approval_level_label(selected)
+                )
+                .into_owned(),
             ),
             Err(err) => self.push_agent_message(t!("tui.approval.failed", err = err).into_owned()),
         }
@@ -176,7 +183,10 @@ impl TuiShell {
     }
 
     pub fn confirm_network_picker(&mut self) {
-        let Some(selected) = LLM_HTTP_VERSION_OPTIONS.get(self.network_picker_index).copied() else {
+        let Some(selected) = LLM_HTTP_VERSION_OPTIONS
+            .get(self.network_picker_index)
+            .copied()
+        else {
             self.network_picker_active = false;
             return;
         };
@@ -234,30 +244,34 @@ impl TuiShell {
     }
 
     pub fn select_next_chat(&mut self) {
-        if self.chat_picker_files.is_empty() {
+        if self.chat_picker_sessions.is_empty() {
             return;
         }
-        self.chat_picker_index = (self.chat_picker_index + 1) % self.chat_picker_files.len();
+        self.chat_picker_index = (self.chat_picker_index + 1) % self.chat_picker_sessions.len();
     }
 
     pub fn select_prev_chat(&mut self) {
-        if self.chat_picker_files.is_empty() {
+        if self.chat_picker_sessions.is_empty() {
             return;
         }
         if self.chat_picker_index == 0 {
-            self.chat_picker_index = self.chat_picker_files.len() - 1;
+            self.chat_picker_index = self.chat_picker_sessions.len() - 1;
         } else {
             self.chat_picker_index -= 1;
         }
     }
 
     pub fn confirm_chat_picker(&mut self) {
-        let Some(selected) = self.chat_picker_files.get(self.chat_picker_index).cloned() else {
+        let Some(selected) = self
+            .chat_picker_sessions
+            .get(self.chat_picker_index)
+            .cloned()
+        else {
             self.chat_picker_active = false;
             return;
         };
         self.chat_picker_active = false;
-        self.load_chat_by_path(&selected);
+        self.load_chat_by_path(&selected.path);
     }
 
     pub fn cancel_image_picker(&mut self) {
@@ -395,9 +409,7 @@ impl TuiShell {
         let mut config = self.runtime.config().clone();
         config.networks.llm_http_version = normalized.clone();
         if let Err(err) = self.config_store.save(&config) {
-            self.push_agent_message(
-                t!("tui.networks.save_failed", err = err).into_owned(),
-            );
+            self.push_agent_message(t!("tui.networks.save_failed", err = err).into_owned());
             return;
         }
         self.runtime.store_config(config);
@@ -409,9 +421,7 @@ impl TuiShell {
                 )
                 .into_owned(),
             ),
-            Err(err) => {
-                self.push_agent_message(t!("tui.networks.failed", err = err).into_owned())
-            }
+            Err(err) => self.push_agent_message(t!("tui.networks.failed", err = err).into_owned()),
         }
     }
 
@@ -427,7 +437,7 @@ impl TuiShell {
                     });
                     return;
                 }
-                self.chat_picker_files = files;
+                self.chat_picker_sessions = files;
                 self.chat_picker_index = 0;
                 self.reset_primary_picker_overlay();
                 self.chat_picker_active = true;

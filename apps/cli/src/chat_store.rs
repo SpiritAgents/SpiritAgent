@@ -85,22 +85,113 @@ pub fn chat_dir_path() -> PathBuf {
     spirit_agent_data_dir().join(CHAT_DIR_NAME)
 }
 
-pub fn list_chat_files() -> Result<Vec<PathBuf>> {
-    let dir = chat_dir_path();
+pub fn list_chat_sessions() -> Result<Vec<crate::ports::ChatSessionListItem>> {
+    list_chat_sessions_in(&chat_dir_path())
+}
+
+fn list_chat_sessions_in(dir: &Path) -> Result<Vec<crate::ports::ChatSessionListItem>> {
     if !dir.exists() {
         return Ok(Vec::new());
     }
 
-    let mut files = fs::read_dir(&dir)
+    let files = fs::read_dir(dir)
         .with_context(|| format!("读取对话目录失败: {}", dir.display()))?
         .flatten()
-        .map(|e| e.path())
-        .filter(|p| p.is_file())
-        .filter(|p| p.extension().and_then(|s| s.to_str()) == Some("json"))
-        .collect::<Vec<_>>();
+        .map(|entry| entry.path())
+        .filter(|path| path.is_file())
+        .filter(|path| path.extension().and_then(|ext| ext.to_str()) == Some("json"));
 
-    files.sort_by(|a, b| b.cmp(a));
-    Ok(files)
+    let mut items = Vec::new();
+    for path in files {
+        if let Some(item) = read_chat_session_list_entry(&path) {
+            items.push(item);
+        }
+    }
+    items.sort_by_key(|item| std::cmp::Reverse(item.modified_at_unix_ms));
+    Ok(items
+        .into_iter()
+        .map(|entry| crate::ports::ChatSessionListItem {
+            path: entry.path,
+            display_name: entry.display_name,
+            modified_at_unix_ms: entry.modified_at_unix_ms,
+        })
+        .collect())
+}
+
+struct ChatSessionListEntry {
+    path: String,
+    display_name: String,
+    modified_at_unix_ms: u128,
+}
+
+#[derive(Deserialize)]
+#[serde(rename_all = "camelCase")]
+struct ChatListMeta {
+    #[serde(default)]
+    chat_schema_version: Option<i32>,
+    #[serde(default)]
+    saved_at_unix_ms: Option<u128>,
+    #[serde(default)]
+    session_display_name: Option<String>,
+    #[serde(default)]
+    desktop_message_timeline: Vec<PersistedTimelineTurn>,
+}
+
+fn read_chat_session_list_entry(path: &Path) -> Option<ChatSessionListEntry> {
+    let raw = fs::read_to_string(path).ok()?;
+    let parsed: ChatListMeta = serde_json::from_str(&raw).ok()?;
+    if parsed.chat_schema_version != Some(CHAT_SCHEMA_VERSION) {
+        return None;
+    }
+
+    let display_name = parsed
+        .session_display_name
+        .as_deref()
+        .map(str::trim)
+        .filter(|name| !name.is_empty())
+        .map(ToOwned::to_owned)
+        .unwrap_or_else(|| derive_display_name_from_timeline(&parsed.desktop_message_timeline));
+    let modified_at_unix_ms = parsed
+        .saved_at_unix_ms
+        .unwrap_or_else(|| file_mtime_unix_ms(path));
+
+    Some(ChatSessionListEntry {
+        path: path.to_string_lossy().into_owned(),
+        display_name,
+        modified_at_unix_ms,
+    })
+}
+
+fn derive_display_name_from_timeline(timeline: &[PersistedTimelineTurn]) -> String {
+    let seed = timeline
+        .iter()
+        .filter_map(|turn| turn.user_row.as_ref())
+        .filter_map(|row| row.content.as_deref())
+        .map(str::trim)
+        .find(|content| !content.is_empty())
+        .unwrap_or("New conversation");
+    truncate_session_display_name(seed)
+}
+
+fn truncate_session_display_name(seed: &str) -> String {
+    let trimmed = seed.trim();
+    if trimmed.is_empty() {
+        return "New conversation".to_string();
+    }
+    if trimmed.chars().count() > 28 {
+        format!("{}…", trimmed.chars().take(28).collect::<String>())
+    } else {
+        trimmed.to_string()
+    }
+}
+
+fn file_mtime_unix_ms(path: &Path) -> u128 {
+    fs::metadata(path)
+        .and_then(|meta| meta.modified())
+        .ok()
+        .and_then(|modified| modified.duration_since(UNIX_EPOCH).ok())
+        .map(|duration| duration.as_millis())
+        .unwrap_or(0)
 }
 
 pub struct SaveChatParams<'a> {
@@ -438,13 +529,6 @@ fn with_json_extension(path: PathBuf) -> PathBuf {
     p
 }
 
-pub fn display_name(path: &Path) -> String {
-    if let Some(name) = path.file_name().and_then(|s| s.to_str()) {
-        return name.to_string();
-    }
-    path.to_string_lossy().to_string()
-}
-
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -635,6 +719,94 @@ mod tests {
         );
 
         let _ = fs::remove_file(file_path);
+    }
+
+    #[test]
+    fn list_chat_sessions_uses_display_name_and_sorts_by_saved_at() {
+        let dir = env::temp_dir().join(format!(
+            "spirit-agent-chat-list-{}-{}",
+            std::process::id(),
+            current_unix_millis()
+        ));
+        fs::create_dir_all(&dir).expect("create list dir");
+
+        write_list_chat_file(
+            &dir.join("older.json"),
+            100,
+            Some("Older title"),
+            Some("older user"),
+        );
+        write_list_chat_file(
+            &dir.join("newer.json"),
+            300,
+            Some("Newer title"),
+            Some("newer user"),
+        );
+        write_list_chat_file(
+            &dir.join("from-user.json"),
+            200,
+            None,
+            Some("First user prompt"),
+        );
+        write_list_chat_file(
+            &dir.join("long.json"),
+            250,
+            None,
+            Some("abcdefghijklmnopqrstuvwxyz0123456789"),
+        );
+
+        let listed = list_chat_sessions_in(&dir).expect("list sessions");
+        let titles: Vec<&str> = listed
+            .iter()
+            .map(|item| item.display_name.as_str())
+            .collect();
+        assert_eq!(
+            titles,
+            vec![
+                "Newer title",
+                "abcdefghijklmnopqrstuvwxyz01…",
+                "First user prompt",
+                "Older title"
+            ]
+        );
+
+        let _ = fs::remove_dir_all(&dir);
+    }
+
+    fn write_list_chat_file(
+        path: &Path,
+        saved_at_unix_ms: u128,
+        session_display_name: Option<&str>,
+        user_content: Option<&str>,
+    ) {
+        let user_row = user_content.map(|content| {
+            json!({
+                "rowId": "user-1",
+                "messageId": 1,
+                "turnId": 1,
+                "kind": "user",
+                "createdOrder": 1,
+                "pending": false,
+                "content": content,
+            })
+        });
+        let raw = json!({
+            "chatSchemaVersion": 2,
+            "savedAtUnixMs": saved_at_unix_ms,
+            "sessionDisplayName": session_display_name,
+            "desktopMessageTimeline": [{
+                "turnId": 1,
+                "createdOrder": 1,
+                "userRow": user_row,
+                "segments": []
+            }],
+            "llmHistory": [],
+        });
+        fs::write(
+            path,
+            serde_json::to_string_pretty(&raw).expect("serialize list chat"),
+        )
+        .expect("write list chat");
     }
 
     fn test_file_path(label: &str) -> PathBuf {

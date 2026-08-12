@@ -427,9 +427,7 @@ pub(in crate::ui) fn build_model_picker_lines(
         return vec![Line::from(t!("ui.picker.models.empty").into_owned())];
     }
 
-    let selected = app
-        .model_picker_index
-        .min(models.len().saturating_sub(1));
+    let selected = app.model_picker_index.min(models.len().saturating_sub(1));
     let total = models.len();
     let (start, end) = inline_picker_bounds(total, selected, max_items);
 
@@ -438,8 +436,10 @@ pub(in crate::ui) fn build_model_picker_lines(
         let is_selected = idx == selected;
         let is_active = model.group_id == app.config.active_model.group_id
             && model.name == app.config.active_model.name;
-        let display_title =
-            crate::model_catalog_display::model_display_title(&model.name, &app.model_display_titles);
+        let display_title = crate::model_catalog_display::model_display_title(
+            &model.name,
+            &app.model_display_titles,
+        );
 
         let active_suffix = if is_active {
             t!("ui.picker.models.current_suffix").into_owned()
@@ -469,25 +469,34 @@ pub(in crate::ui) fn build_chat_picker_lines(
     app: &TuiViewModel,
     max_items: usize,
 ) -> Vec<Line<'static>> {
-    if app.chat_picker_files.is_empty() {
+    if app.chat_picker_sessions.is_empty() {
         return vec![Line::from(t!("ui.picker.sessions.empty").into_owned())];
     }
 
     let selected = app
         .chat_picker_index
-        .min(app.chat_picker_files.len().saturating_sub(1));
-    let total = app.chat_picker_files.len();
+        .min(app.chat_picker_sessions.len().saturating_sub(1));
+    let total = app.chat_picker_sessions.len();
     let (start, end) = inline_picker_bounds(total, selected, max_items);
 
     let mut lines = Vec::new();
+    let now_ms = std::time::SystemTime::now()
+        .duration_since(std::time::UNIX_EPOCH)
+        .map(|duration| duration.as_millis())
+        .unwrap_or(0);
+    let locale = crate::locale::resolve_ui_locale(&app.config);
+    let relative_time = crate::relative_time::RelativeTimeEngine::new(&locale);
     for idx in start..end {
-        let name = &app.chat_picker_files[idx];
+        let session = &app.chat_picker_sessions[idx];
         let is_selected = idx == selected;
-        let style = inline_picker_text_style(is_selected);
-        lines.push(Line::from(Span::styled(
-            format!("{}{}", picker_selection_prefix(is_selected), name),
-            style,
-        )));
+        let row_style = inline_picker_text_style(is_selected);
+        let meta_style = inline_picker_meta_style(is_selected);
+        let relative = relative_time.format(session.modified_at_unix_ms, now_ms);
+        lines.push(Line::from(vec![
+            Span::styled(picker_selection_prefix(is_selected), row_style),
+            Span::styled(session.display_name.clone(), row_style),
+            Span::styled(format!(" {relative}"), meta_style),
+        ]));
     }
 
     lines

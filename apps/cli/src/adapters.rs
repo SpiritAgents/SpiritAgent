@@ -133,12 +133,8 @@ impl SecretStore for KeyringSecretStore {
 pub struct JsonChatRepository;
 
 impl ChatRepository for JsonChatRepository {
-    fn list(&self) -> Result<Vec<String>> {
-        let files = chat_store::list_chat_files()?;
-        Ok(files
-            .iter()
-            .map(|path| chat_store::display_name(path))
-            .collect())
+    fn list(&self) -> Result<Vec<crate::ports::ChatSessionListItem>> {
+        chat_store::list_chat_sessions()
     }
 
     fn save(&self, path: Option<&str>, archive: &ChatArchive) -> Result<PathBuf> {
