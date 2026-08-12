@@ -441,13 +441,13 @@ export function createNoopMcpAdapter(): HostMcpAdapter {
       };
     },
     async addServer() {
-      throw new Error("当前桌面宿主尚未实现 MCP server 管理。");
+      throw new Error("MCP server management is not implemented for this host.");
     },
     async listServers() {
       return [];
     },
     async inspectServer() {
-      throw new Error("当前桌面宿主尚未实现 MCP server 检查。");
+      throw new Error("MCP server inspection is not implemented for this host.");
     },
     async listTools() {
       return [];
@@ -456,7 +456,7 @@ export function createNoopMcpAdapter(): HostMcpAdapter {
       return [];
     },
     async readResource() {
-      throw new Error("当前桌面宿主尚未实现 MCP resource 读取。");
+      throw new Error("MCP resource reading is not implemented for this host.");
     },
     async listCachedPrompts() {
       return [];
@@ -465,7 +465,7 @@ export function createNoopMcpAdapter(): HostMcpAdapter {
       return [];
     },
     async getPrompt() {
-      throw new Error("当前桌面宿主尚未实现 MCP prompt 获取。");
+      throw new Error("MCP prompt retrieval is not implemented for this host.");
     },
   };
 }
@@ -1027,20 +1027,24 @@ export class NodeHostToolService<
       case "grep":
         return this.executeSearchFiles(request.query, request.is_regexp ?? false, request.glob);
       case "subagent":
-        throw new Error("subagent 应由 Agent runtime 接管，不应落到 host-internal 工具执行器");
+        throw new Error(
+          "subagent must be handled by the Agent runtime, not the host-internal tool executor",
+        );
       case "generate_image":
         throw new Error(
-          "generate_image 应由 Agent runtime 接管，不应落到 host-internal 工具执行器",
+          "generate_image must be handled by the Agent runtime, not the host-internal tool executor",
         );
       case "generate_video":
         throw new Error(
-          "generate_video 应由 Agent runtime 接管，不应落到 host-internal 工具执行器",
+          "generate_video must be handled by the Agent runtime, not the host-internal tool executor",
         );
       case "ask_questions":
-        throw new Error("ask_questions 应由运行时挂起并等待用户填写，不应直接执行");
+        throw new Error(
+          "ask_questions must be suspended by the runtime for user input, not executed directly",
+        );
       case "extension_tool":
         if (!this.extensions) {
-          throw new Error("当前宿主未启用扩展工具执行。");
+          throw new Error("Extension tool execution is not enabled for this host.");
         }
         return this.extensions.manager.invokeTool({
           extensionId: request.extension_id,
@@ -1078,7 +1082,7 @@ export class NodeHostToolService<
       case "dream_read": {
         const dream = await this.requireDreamStore().read(request.id);
         if (!dream) {
-          throw new Error(`梦境不存在: ${request.id}`);
+          throw new Error(`Dream not found: ${request.id}`);
         }
         return JSON.stringify({ dream });
       }
@@ -1274,14 +1278,14 @@ export class NodeHostToolService<
 
   private requireDreamStore(): HostDreamStore {
     if (!this.dreamStore) {
-      throw new Error("当前宿主未配置梦境 scope，无法执行梦境工具。");
+      throw new Error("Dream scope is not configured for this host.");
     }
     return this.dreamStore;
   }
 
   private requireTodoStore(): HostTodoStore {
     if (!this.todoStore) {
-      throw new Error("当前宿主未配置会话 TODO scope，无法执行 todo 工具。");
+      throw new Error("Todo scope is not configured for this host.");
     }
     return this.todoStore;
   }
@@ -1327,15 +1331,15 @@ export class NodeHostToolService<
   private async resolveExistingAbsoluteDirectory(input: string): Promise<string> {
     const trimmed = input.trim();
     if (!trimmed) {
-      throw new Error("path 不能为空");
+      throw new Error("path must not be empty");
     }
     if (!path.isAbsolute(trimmed)) {
-      throw new Error(`ls 仅接受 absolute path: ${trimmed}`);
+      throw new Error(`ls only accepts absolute paths: ${trimmed}`);
     }
     const canonical = await realpath(trimmed);
     const st = await lstat(canonical);
     if (!st.isDirectory()) {
-      throw new Error(`目标不是目录: ${canonical}`);
+      throw new Error(`Not a directory: ${canonical}`);
     }
     return canonical;
   }
@@ -1343,7 +1347,7 @@ export class NodeHostToolService<
   private async resolveExistingFilePath(input: string): Promise<string> {
     const trimmed = input.trim();
     if (!trimmed) {
-      throw new Error("path 不能为空");
+      throw new Error("path must not be empty");
     }
     const raw = path.isAbsolute(trimmed) ? trimmed : path.resolve(this.workspaceRoot, trimmed);
     return realpath(raw);
@@ -1352,7 +1356,7 @@ export class NodeHostToolService<
   private async resolveReadFileTarget(input: string): Promise<ResolvedReadFileTarget> {
     const trimmed = input.trim();
     if (!trimmed) {
-      throw new Error("path 不能为空");
+      throw new Error("path must not be empty");
     }
 
     const managedCanonical = await this.tryResolveManagedGeneratedAssetPath(trimmed);
@@ -1381,22 +1385,22 @@ export class NodeHostToolService<
     }
 
     const { kind, basename, reference: trimmed } = parsed;
-    const assetLabel = kind === "image" ? "图片" : "视频";
+    const assetLabel = kind === "image" ? "image" : "video";
 
     const managedRoot = path.join(this.spiritDataDir, generatedDirForKind(kind));
     const candidatePath = path.join(managedRoot, basename);
     try {
       const managedRootStats = await lstat(managedRoot);
       if (!managedRootStats.isDirectory() || managedRootStats.isSymbolicLink()) {
-        throw new Error(`Spirit 托管${assetLabel}目录无效: ${trimmed}`);
+        throw new Error(`Invalid Spirit-managed ${assetLabel} directory: ${trimmed}`);
       }
 
       const candidate = await lstat(candidatePath);
       if (candidate.isSymbolicLink()) {
-        throw new Error(`Spirit 托管${assetLabel}引用不能指向符号链接: ${trimmed}`);
+        throw new Error(`Spirit-managed ${assetLabel} reference must not be a symlink: ${trimmed}`);
       }
       if (!candidate.isFile()) {
-        throw new Error(`Spirit 托管${assetLabel}不存在: ${trimmed}`);
+        throw new Error(`Spirit-managed ${assetLabel} not found: ${trimmed}`);
       }
 
       const [canonicalSpiritRoot, canonicalRoot, canonical] = await Promise.all([
@@ -1405,15 +1409,15 @@ export class NodeHostToolService<
         realpath(candidatePath),
       ]);
       if (!pathHasPrefix(canonicalRoot, canonicalSpiritRoot)) {
-        throw new Error(`Spirit 托管${assetLabel}目录越界: ${trimmed}`);
+        throw new Error(`Spirit-managed ${assetLabel} directory escapes allowed root: ${trimmed}`);
       }
       if (!pathHasPrefix(canonical, canonicalRoot)) {
-        throw new Error(`Spirit 托管${assetLabel}引用越界: ${trimmed}`);
+        throw new Error(`Spirit-managed ${assetLabel} reference escapes allowed root: ${trimmed}`);
       }
 
       const st = await lstat(canonical);
       if (st.isSymbolicLink() || !st.isFile()) {
-        throw new Error(`Spirit 托管${assetLabel}不存在: ${trimmed}`);
+        throw new Error(`Spirit-managed ${assetLabel} not found: ${trimmed}`);
       }
 
       return canonical;
@@ -1421,21 +1425,21 @@ export class NodeHostToolService<
       if (error instanceof Error && error.message.includes(trimmed)) {
         throw error;
       }
-      throw new Error(`Spirit 托管${assetLabel}不存在: ${trimmed}`, { cause: error });
+      throw new Error(`Spirit-managed ${assetLabel} not found: ${trimmed}`, { cause: error });
     }
   }
 
   private resolveWorkspaceWriteTarget(input: string): string {
     const trimmed = input.trim();
     if (!trimmed) {
-      throw new Error("path 不能为空");
+      throw new Error("path must not be empty");
     }
     const joined = path.isAbsolute(trimmed)
       ? path.resolve(trimmed)
       : path.resolve(this.workspaceRoot, trimmed);
     if (!isAllowedWritePath(joined, this.context)) {
       throw new Error(
-        `仅允许修改工作目录内文件，或 Spirit 托管的用户规则/plan/skills 路径: ${joined}`,
+        `Writes are only allowed inside the workspace or Spirit-managed user rules/plan/skills paths: ${joined}`,
       );
     }
     return joined;
@@ -1453,7 +1457,7 @@ export class NodeHostToolService<
       entries = await readdir(root, { withFileTypes: true });
     } catch {
       skippedDirs += 1;
-      return `[list]\npath: ${root}\nfiles: 0\nskipped_dirs: ${skippedDirs}\nskipped_symlinks: ${skippedSymlinks}\n\n（无法读取目录）`;
+      return `[list]\npath: ${root}\nfiles: 0\nskipped_dirs: ${skippedDirs}\nskipped_symlinks: ${skippedSymlinks}\n\n(unable to read directory)`;
     }
 
     for (const entry of entries) {
@@ -1479,7 +1483,7 @@ export class NodeHostToolService<
     let out = `[list]\npath: ${root}\ndirectories: ${directories.length}\nfiles: ${files.length}\nskipped_dirs: ${skippedDirs}\nskipped_symlinks: ${skippedSymlinks}\n\n`;
 
     if (directories.length === 0 && files.length === 0) {
-      out += "（目录为空）";
+      out += "(empty directory)";
     } else {
       if (directories.length > 0) {
         out += "directories\n";
@@ -1513,7 +1517,7 @@ export class NodeHostToolService<
     try {
       st = await lstat(canonical);
       if (!st.isFile()) {
-        throw new Error(`目标不是文件: ${errorPath}`);
+        throw new Error(`Not a file: ${errorPath}`);
       }
 
       bytes = await readFile(canonical);
@@ -1521,7 +1525,7 @@ export class NodeHostToolService<
       if (error instanceof Error && error.message.includes(errorPath)) {
         throw error;
       }
-      throw new Error(`读取文件失败: ${errorPath}`, { cause: error });
+      throw new Error(`Failed to read file: ${errorPath}`, { cause: error });
     }
 
     const image = detectSupportedImageFile(canonical, bytes);
@@ -1535,7 +1539,7 @@ export class NodeHostToolService<
     }
 
     if (hasSupportedImageExtension(canonical)) {
-      throw new Error(`图片文件校验失败: ${errorPath}`);
+      throw new Error(`Image file validation failed: ${errorPath}`);
     }
 
     const video = detectSupportedVideoFile(canonical, bytes);
@@ -1549,22 +1553,22 @@ export class NodeHostToolService<
     }
 
     if (hasSupportedVideoExtension(canonical)) {
-      throw new Error(`视频文件校验失败: ${errorPath}`);
+      throw new Error(`Video file validation failed: ${errorPath}`);
     }
 
     if (bytes.includes(0)) {
-      throw new Error(`暂不支持以文本方式读取二进制文件: ${errorPath}`);
+      throw new Error(`Reading binary files as text is not supported: ${errorPath}`);
     }
 
     const content = bytes.toString("utf8");
     const start = offset ?? 1;
     if (start === 0) {
-      throw new Error("offset 从 1 开始");
+      throw new Error("offset is 1-based");
     }
 
     const lineLimit = limit ?? MAX_READ_LINES_DEFAULT;
     if (lineLimit < 1) {
-      throw new Error("limit 必须 >= 1");
+      throw new Error("limit must be >= 1");
     }
 
     const end = start + lineLimit - 1;
@@ -1600,7 +1604,7 @@ export class NodeHostToolService<
 
     let out = `[glob]\npattern: ${pattern}\nmatches: ${matches.length}\n\n`;
     if (matches.length === 0) {
-      out += "未搜索到文件";
+      out += "No files matched";
       return out;
     }
 
@@ -1617,7 +1621,7 @@ export class NodeHostToolService<
   ): Promise<string> {
     const needle = query.trim();
     if (!needle) {
-      throw new Error("search query 不能为空");
+      throw new Error("search query must not be empty");
     }
 
     const globPattern =
@@ -1681,13 +1685,18 @@ export class NodeHostToolService<
     const compatibilityProfile = this.getModelCompatibilityProfile?.();
     if (isImageInputBlocked(compatibilityProfile)) {
       return createHostToolTextOutput(
-        [...summaryLines, "", "该模型不支持 Image 输入，图像文件无法作为图片输入返回。"].join("\n"),
+        [
+          ...summaryLines,
+          "",
+          "This model does not support image input; the image file cannot be returned as image input.",
+        ].join("\n"),
       );
     }
 
-    return createHostToolOutput([...summaryLines, "", "图像文件已作为图片输入返回。"].join("\n"), [
-      { type: "image", path: imagePath },
-    ]);
+    return createHostToolOutput(
+      [...summaryLines, "", "Image file returned as image input."].join("\n"),
+      [{ type: "image", path: imagePath }],
+    );
   }
 
   private createVideoToolOutput(
@@ -1701,13 +1710,18 @@ export class NodeHostToolService<
     const compatibilityProfile = this.getModelCompatibilityProfile?.();
     if (isVideoInputBlocked(compatibilityProfile)) {
       return createHostToolTextOutput(
-        [...summaryLines, "", "该模型不支持视频输入，视频文件无法作为视频输入返回。"].join("\n"),
+        [
+          ...summaryLines,
+          "",
+          "This model does not support video input; the video file cannot be returned as video input.",
+        ].join("\n"),
       );
     }
 
-    return createHostToolOutput([...summaryLines, "", "视频文件已作为视频输入返回。"].join("\n"), [
-      { type: "video", path: videoPath },
-    ]);
+    return createHostToolOutput(
+      [...summaryLines, "", "Video file returned as video input."].join("\n"),
+      [{ type: "video", path: videoPath }],
+    );
   }
 
   private async persistWebFetchedImage(bytes: Uint8Array, extension: string): Promise<string> {
@@ -1780,13 +1794,13 @@ export class NodeHostToolService<
 
       if (imageExtension || normalizedMimeType.startsWith("image/")) {
         if (!imageExtension) {
-          throw new Error(`暂不支持作为图片抓取该网页响应: ${contentType}`);
+          throw new Error(`Unsupported image response from web fetch: ${contentType}`);
         }
 
         const bytes = Buffer.from(await response.arrayBuffer());
         const image = detectSupportedImageFile(`web-fetch${imageExtension}`, bytes);
         if (!image) {
-          throw new Error(`网页图片校验失败: ${finalUrl}`);
+          throw new Error(`Web image validation failed: ${finalUrl}`);
         }
 
         const cachedImagePath = await this.persistWebFetchedImage(bytes, imageExtension);
@@ -1822,7 +1836,7 @@ export class NodeHostToolService<
   private assertCreateFileAllowed(resolvedPath: string): void {
     if (isPathUnderPlansDir(resolvedPath, this.context)) {
       throw new Error(
-        "plans/ 目录下新建文件请使用 create_plan；已存在的计划文件可用 edit_file 修改。",
+        "Use create_plan to create files under plans/; use edit_file to modify existing plan files.",
       );
     }
   }
@@ -1835,7 +1849,7 @@ export class NodeHostToolService<
     const target = this.resolveWorkspaceWriteTarget(inputPath);
     this.assertCreateFileAllowed(target);
     if (existsSync(target)) {
-      throw new Error(`文件已存在: ${target}`);
+      throw new Error(`File already exists: ${target}`);
     }
     const before = await readHostFileSnapshot(target);
     await mkdir(path.dirname(target), { recursive: true });
@@ -1850,7 +1864,7 @@ export class NodeHostToolService<
   ): Promise<string> {
     const defaults = this.getAutomationCreateDefaults?.();
     if (!defaults) {
-      throw new Error("create_automation 仅在 Desktop 宿主可用。");
+      throw new Error("create_automation is only available on the Desktop host.");
     }
     const store = createHostAutomationStore(this.spiritDataDir);
     const definition = await store.create({
@@ -1880,7 +1894,7 @@ export class NodeHostToolService<
     const content = request.content;
     const target = resolvePlanFilePath(this.context, request.plan_name);
     if (existsSync(target)) {
-      throw new Error(`计划文件已存在: ${target}`);
+      throw new Error(`Plan file already exists: ${target}`);
     }
     const before = await readHostFileSnapshot(target);
     await mkdir(path.dirname(target), { recursive: true });
@@ -1897,15 +1911,15 @@ export class NodeHostToolService<
     const oldText = request.old_text;
     const newText = request.new_text;
     if (!oldText.length) {
-      throw new Error("edit_file 的 old_text 不能为空");
+      throw new Error("edit_file old_text must not be empty");
     }
     const target = this.resolveWorkspaceWriteTarget(inputPath);
     if (!existsSync(target)) {
-      throw new Error(`路径不存在或无法访问: ${target}`);
+      throw new Error(`Path does not exist or is inaccessible: ${target}`);
     }
     const st = await lstat(target);
     if (!st.isFile()) {
-      throw new Error(`目标不是文件: ${target}`);
+      throw new Error(`Not a file: ${target}`);
     }
 
     const source = await readFile(target, "utf8");
@@ -1925,12 +1939,12 @@ export class NodeHostToolService<
         }
       }
       throw new Error(
-        "edit_file 失败：old_text 未匹配到目标文件内容（详情已写入 CLI 日志，可用 /log 查看）",
+        "edit_file failed: old_text did not match the target file (details written to CLI logs; use /log)",
       );
     }
     if (occurrences > 1) {
       throw new Error(
-        `edit_file 失败：old_text 命中 ${occurrences} 处，请提供更精确片段（详情已写入 CLI 日志，可用 /log 查看）`,
+        `edit_file failed: old_text matched ${occurrences} times; provide a more specific snippet (details written to CLI logs; use /log)`,
       );
     }
 
@@ -1947,7 +1961,7 @@ export class NodeHostToolService<
     switch (operation.type) {
       case "create_file": {
         if (operation.diff === undefined || operation.diff.trim().length === 0) {
-          throw new Error("apply_patch create_file 需要非空 diff");
+          throw new Error("apply_patch create_file requires a non-empty diff");
         }
         const content = applyDiff("", operation.diff, "create");
         return this.executeCreateFile({
@@ -1958,16 +1972,16 @@ export class NodeHostToolService<
       }
       case "update_file": {
         if (operation.diff === undefined || operation.diff.trim().length === 0) {
-          throw new Error("apply_patch update_file 需要非空 diff");
+          throw new Error("apply_patch update_file requires a non-empty diff");
         }
         const inputPath = operation.path;
         const target = this.resolveWorkspaceWriteTarget(inputPath);
         if (!existsSync(target)) {
-          throw new Error(`路径不存在或无法访问: ${target}`);
+          throw new Error(`Path does not exist or is inaccessible: ${target}`);
         }
         const st = await lstat(target);
         if (!st.isFile()) {
-          throw new Error(`目标不是文件: ${target}`);
+          throw new Error(`Not a file: ${target}`);
         }
         const source = await readFile(target, "utf8");
         const before = await readHostFileSnapshot(target);
@@ -1988,7 +2002,9 @@ export class NodeHostToolService<
           path: operation.path,
         });
       default:
-        throw new Error(`不支持的 apply_patch 操作: ${(operation as ApplyPatchOperation).type}`);
+        throw new Error(
+          `Unsupported apply_patch operation: ${(operation as ApplyPatchOperation).type}`,
+        );
     }
   }
 
@@ -1998,11 +2014,11 @@ export class NodeHostToolService<
     const inputPath = request.path;
     const target = this.resolveWorkspaceWriteTarget(inputPath);
     if (!existsSync(target)) {
-      throw new Error(`路径不存在或无法访问: ${target}`);
+      throw new Error(`Path does not exist or is inaccessible: ${target}`);
     }
     const st = await lstat(target);
     if (!st.isFile()) {
-      throw new Error(`目标不是文件: ${target}`);
+      throw new Error(`Not a file: ${target}`);
     }
     const before = await readHostFileSnapshot(target);
     await unlink(target);
@@ -2042,7 +2058,10 @@ export class NodeHostToolService<
       await this.fileChangeObserver.recordFileChange(change);
     } catch (error) {
       const message = error instanceof Error ? error.message : String(error);
-      throw new Error(`文件变更已写入，但记录回溯快照失败: ${message}`, { cause: error });
+      throw new Error(
+        `File change was written, but recording the rewind snapshot failed: ${message}`,
+        { cause: error },
+      );
     }
   }
 
@@ -2133,7 +2152,7 @@ function parseJsonObject(argumentsJson: string): HostJsonObject {
   }
   const parsed = JSON.parse(argumentsJson) as HostJsonValue;
   if (!isJsonObject(parsed)) {
-    throw new Error("工具参数必须为对象。");
+    throw new Error("Tool arguments must be an object.");
   }
   return parsed;
 }
@@ -2141,15 +2160,15 @@ function parseJsonObject(argumentsJson: string): HostJsonObject {
 function parseTodoWriteItems(parsed: HostJsonObject): HostTodoItem[] {
   const rawItems = parsed.todos;
   if (!Array.isArray(rawItems)) {
-    throw new Error("todos 必须是数组。");
+    throw new Error("todos must be an array.");
   }
   return rawItems.map((entry, index) => {
     if (!isJsonObject(entry)) {
-      throw new Error(`todos[${index}] 必须是对象。`);
+      throw new Error(`todos[${index}] must be an object.`);
     }
     const statusRaw = requiredString(entry, "status");
     if (statusRaw !== "pending" && statusRaw !== "in_progress" && statusRaw !== "completed") {
-      throw new Error(`todos[${index}].status 无效: ${statusRaw}`);
+      throw new Error(`todos[${index}].status is invalid: ${statusRaw}`);
     }
     const idRaw = entry.id;
     const id = typeof idRaw === "string" && idRaw.trim().length > 0 ? idRaw.trim() : undefined;
@@ -2164,13 +2183,13 @@ function parseTodoWriteItems(parsed: HostJsonObject): HostTodoItem[] {
 function parseApplyPatchOperation(parsed: HostJsonObject): ApplyPatchOperation {
   const operationRaw = parsed.operation;
   if (typeof operationRaw !== "object" || operationRaw === null || Array.isArray(operationRaw)) {
-    throw new Error("apply_patch 需要 operation 对象");
+    throw new Error("apply_patch requires an operation object");
   }
 
   const operation = operationRaw as HostJsonObject;
   const type = requiredString(operation, "type");
   if (type !== "create_file" && type !== "update_file" && type !== "delete_file") {
-    throw new Error(`apply_patch operation.type 无效: ${type}`);
+    throw new Error(`apply_patch operation.type is invalid: ${type}`);
   }
 
   const path = requiredString(operation, "path");
@@ -2185,7 +2204,7 @@ function parseApplyPatchOperation(parsed: HostJsonObject): ApplyPatchOperation {
 function requiredString(obj: HostJsonObject, key: string): string {
   const value = obj[key];
   if (typeof value !== "string" || value.trim().length === 0) {
-    throw new Error(`字段 ${key} 必须是非空字符串。`);
+    throw new Error(`Field ${key} must be a non-empty string.`);
   }
   return value.trim();
 }
@@ -2201,7 +2220,7 @@ function optionalStringStrict(obj: HostJsonObject, key: string): string | undefi
   }
   const value = obj[key];
   if (typeof value !== "string" || value.trim().length === 0) {
-    throw new Error(`${key} 必须是非空字符串`);
+    throw new Error(`${key} must be a non-empty string`);
   }
   return value.trim();
 }
@@ -2212,11 +2231,11 @@ function optionalPositiveInt(obj: HostJsonObject, key: string): number | undefin
     return undefined;
   }
   if (typeof value !== "number" || !Number.isFinite(value)) {
-    throw new Error(`字段 ${key} 必须是整数`);
+    throw new Error(`Field ${key} must be an integer`);
   }
   const n = Math.trunc(value);
   if (n < 1) {
-    throw new Error(`字段 ${key} 必须 >= 1`);
+    throw new Error(`Field ${key} must be >= 1`);
   }
   return n;
 }
@@ -2229,18 +2248,18 @@ function optionalBoolean(obj: HostJsonObject, key: string): boolean | undefined 
 function normalizeWorkspaceGlobPattern(input: string): string {
   const trimmed = input.trim();
   if (!trimmed) {
-    throw new Error("pattern 不能为空");
+    throw new Error("pattern must not be empty");
   }
 
   const normalized = trimmed.replace(/\\/gu, "/").replace(/^(?:\.\/)+/u, "");
   if (!normalized) {
-    throw new Error("pattern 不能为空");
+    throw new Error("pattern must not be empty");
   }
   if (path.win32.isAbsolute(trimmed) || path.posix.isAbsolute(normalized)) {
-    throw new Error(`glob 仅接受 workspace-relative pattern: ${trimmed}`);
+    throw new Error(`glob only accepts workspace-relative patterns: ${trimmed}`);
   }
   if (normalized.split("/").some((segment) => segment === "..")) {
-    throw new Error(`glob pattern 不能跳出 workspace: ${trimmed}`);
+    throw new Error(`glob pattern must not escape the workspace: ${trimmed}`);
   }
   return normalized;
 }
@@ -2259,11 +2278,11 @@ function optionalStringArrayStrict(obj: HostJsonObject, key: string): string[] {
   }
   const value = obj[key];
   if (!Array.isArray(value)) {
-    throw new Error(`${key} 必须是字符串数组`);
+    throw new Error(`${key} must be an array of strings`);
   }
   return value.map((item, index) => {
     if (typeof item !== "string" || item.trim().length === 0) {
-      throw new Error(`${key}[${index}] 必须是非空字符串`);
+      throw new Error(`${key}[${index}] must be a non-empty string`);
     }
     return item.trim();
   });
@@ -2281,7 +2300,7 @@ function parseAskQuestionsRequest(
 ): HostToolRequest<HostAskQuestionsQuestionSpec> {
   const questionsValue = obj.questions;
   if (!Array.isArray(questionsValue) || questionsValue.length === 0) {
-    throw new Error("ask_questions 至少需要一个问题");
+    throw new Error("ask_questions requires at least one question");
   }
 
   const questions = questionsValue.map((item, index) => parseQuestion(item, index));
@@ -2297,14 +2316,14 @@ function parseAskQuestionsRequest(
 
 function parseQuestion(value: HostJsonValue, index: number): HostAskQuestionsQuestionSpec {
   if (!isJsonObject(value)) {
-    throw new Error(`questions[${index}] 必须是对象。`);
+    throw new Error(`questions[${index}] must be an object.`);
   }
 
   const optionsValue = value.options;
   const options = Array.isArray(optionsValue)
     ? optionsValue.map((option, optionIndex) => {
         if (!isJsonObject(option)) {
-          throw new Error(`questions[${index}].options[${optionIndex}] 必须是对象。`);
+          throw new Error(`questions[${index}].options[${optionIndex}] must be an object.`);
         }
         const summary = optionalString(option, "summary");
         const parsedOption: HostAskQuestionsOptionSpec = {
@@ -2331,28 +2350,28 @@ function validateQuestions(questions: HostAskQuestionsQuestionSpec[]): void {
   for (const question of questions) {
     const id = question.id.trim();
     if (!id) {
-      throw new Error("ask_questions 问题 id 不能为空");
+      throw new Error("ask_questions question id must not be empty");
     }
     if (seenIds.has(id)) {
-      throw new Error(`ask_questions 问题 id 不能重复: ${id}`);
+      throw new Error(`ask_questions question id must be unique: ${id}`);
     }
     seenIds.add(id);
     if (!question.title.trim()) {
-      throw new Error(`ask_questions 问题标题不能为空: ${id}`);
+      throw new Error(`ask_questions question title must not be empty: ${id}`);
     }
 
     const seenOptionIds = new Set<string>();
     for (const option of question.options) {
       const optionId = option.id.trim();
       if (!optionId) {
-        throw new Error(`ask_questions 选项 id 不能为空: ${id}`);
+        throw new Error(`ask_questions option id must not be empty: ${id}`);
       }
       if (seenOptionIds.has(optionId)) {
-        throw new Error(`ask_questions 选项 id 不能重复: ${id}/${optionId}`);
+        throw new Error(`ask_questions option id must be unique: ${id}/${optionId}`);
       }
       seenOptionIds.add(optionId);
       if (!option.label.trim()) {
-        throw new Error(`ask_questions 选项文本不能为空: ${id}`);
+        throw new Error(`ask_questions option label must not be empty: ${id}`);
       }
     }
   }
@@ -2380,11 +2399,11 @@ function parseWebFetchUrl(url: string): string {
   try {
     parsed = new URL(url.trim());
   } catch {
-    throw new Error(`非法 URL: ${url}`);
+    throw new Error(`Invalid URL: ${url}`);
   }
   if (parsed.protocol !== "http:" && parsed.protocol !== "https:") {
     throw new Error(
-      `web_fetch 仅支持 http/https，当前 scheme: ${parsed.protocol.replace(":", "")}`,
+      `web_fetch only supports http/https; got scheme: ${parsed.protocol.replace(":", "")}`,
     );
   }
   return parsed.toString();
