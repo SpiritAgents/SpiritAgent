@@ -259,10 +259,6 @@ impl RuntimeHandle {
         self.backend.pending_aux_state()
     }
 
-    pub fn tick_thinking_spinner(&mut self) {
-        self.backend.tick_thinking_spinner()
-    }
-
     pub fn poll(&mut self) {
         self.backend.poll()
     }

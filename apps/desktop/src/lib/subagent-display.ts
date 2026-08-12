@@ -5,7 +5,7 @@ function isParentSubagentCompletionSurfaceText(text: string): boolean {
   return /子智能体已完成|输出如下/u.test(text);
 }
 
-/** Spinner frame prefix from runtime `pendingAuxState()` during subagent execution. */
+/** Host-drawn spinner frame prefix on live pending aux status lines. */
 const SUBAGENT_SPINNER_PREFIX = /^[|/\\-]\s+/;
 
 /** Progress tail after `title:` on the subagent status line (streaming English fragments included). */

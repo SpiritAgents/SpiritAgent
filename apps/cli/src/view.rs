@@ -428,6 +428,7 @@ pub struct TuiViewModel {
     pub pending_response_active: bool,
     pub pending_assistant_msg_index: Option<usize>,
     pub pending_aux: Option<PendingAssistantAux>,
+    pub thinking_spinner_index: u8,
     pub persisted_standalone_pending_aux: Option<PendingAssistantAux>,
     pub persisted_standalone_pending_aux_anchor: Option<usize>,
     pub cli_ui_hooks: Vec<CliUiHookView>,

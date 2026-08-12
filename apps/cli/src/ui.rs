@@ -524,6 +524,7 @@ pub fn draw_ui(
             app.show_aux_details,
             app.pending_subagent_approval.as_ref(),
             app.subagent_approval_input.as_ref(),
+            app.thinking_spinner_index,
         );
     }
 

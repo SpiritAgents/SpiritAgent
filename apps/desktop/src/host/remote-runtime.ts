@@ -34,7 +34,10 @@ import {
   type ServerRpcClient,
 } from "@spiritagent/server/client";
 
-import { parsePendingSubagentStatusText } from "../lib/subagent-display.js";
+import {
+  parsePendingSubagentStatusText,
+  stripSubagentSpinnerPrefix,
+} from "../lib/subagent-display.js";
 import type { DesktopToolRequest } from "./contracts.js";
 import type { PersistedDesktopTimelineTurnSnapshot } from "./chat-schema.js";
 import { buildDesktopUiMarkdownPromptSection } from "./desktop-ui-markdown-prompt.js";
@@ -608,7 +611,11 @@ export class RemoteDesktopRuntime {
   pendingAuxState(): PendingAssistantAux | undefined {
     const snapshotAux = this.snapshot.pendingAuxState;
     if (snapshotAux && parsePendingSubagentStatusText(snapshotAux.statusText)) {
-      return snapshotAux;
+      const status = stripSubagentSpinnerPrefix(snapshotAux.statusText);
+      return {
+        ...snapshotAux,
+        statusText: `${this.thinkingSpinnerFrame()} ${status}`,
+      };
     }
     return this.synthesizeLocalPendingAux(snapshotAux) ?? snapshotAux;
   }

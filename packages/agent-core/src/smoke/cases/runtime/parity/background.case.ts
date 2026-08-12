@@ -86,10 +86,8 @@ export async function runBackgroundCase(): Promise<RuntimeParityCaseResult> {
   ) {
     throw new Error("polling background smoke 未暴露 thinking aux 状态。");
   }
-  pollingBackgroundRuntime.tickThinkingSpinner();
-  const backgroundAuxAfterTick = pollingBackgroundRuntime.pendingAuxState();
-  if (!backgroundAuxAfterTick || backgroundAuxAfterTick.statusText === backgroundAux.statusText) {
-    throw new Error("polling background smoke spinner 未前进。");
+  if (backgroundAux.statusText !== "") {
+    throw new Error("polling background smoke 不应把 UI spinner 文案放进 statusText。");
   }
   if (pollingBackgroundRuntime.takeCompletedTurnResult()) {
     throw new Error("polling background smoke 在后台工具完成前不应产出结果。");

@@ -280,7 +280,6 @@ export class AgentRuntime<Config, State, ToolRequest, TrustTarget = string> {
   private pendingStartedAtStore: number | undefined;
   private pendingLastEventAtStore: number | undefined;
   private streamChunkCounterStore: number;
-  private thinkingSpinnerIndexStore: number;
   private loopEnabledStore: boolean;
   private readonly runtimeDepthStore: number;
   private childSessionCounterStore: number;
@@ -306,7 +305,6 @@ export class AgentRuntime<Config, State, ToolRequest, TrustTarget = string> {
     this.compactionTextStore = "";
     this.childSessionsStore = [];
     this.streamChunkCounterStore = 0;
-    this.thinkingSpinnerIndexStore = 0;
     this.loopEnabledStore = false;
     this.runtimeDepthStore = runtimeDepth;
     this.childSessionCounterStore = 0;
@@ -510,10 +508,9 @@ export class AgentRuntime<Config, State, ToolRequest, TrustTarget = string> {
 
   pendingAuxState(): PendingAssistantAux | undefined {
     if (this.pendingSubagentExecutions.size > 0) {
-      const frame = ["|", "/", "-", "\\"][this.thinkingSpinnerIndexStore % 4] ?? "|";
       return {
         kind: "thinking",
-        statusText: `${frame} ${this.currentSubagentStatusText()}`,
+        statusText: this.currentSubagentStatusText(),
       };
     }
 
@@ -522,22 +519,16 @@ export class AgentRuntime<Config, State, ToolRequest, TrustTarget = string> {
       return undefined;
     }
 
-    const frame = ["|", "/", "-", "\\"][this.thinkingSpinnerIndexStore % 4] ?? "|";
     const detailText = this.currentAuxText();
     return {
       kind,
-      statusText: kind === "thinking" ? `${frame} Thinking...` : `${frame} Compressing...`,
+      statusText: "",
       ...(detailText !== undefined ? { detailText } : {}),
     };
   }
 
   tickThinkingSpinner(): void {
-    if (this.isBusy()) {
-      this.thinkingSpinnerIndexStore = (this.thinkingSpinnerIndexStore + 1) % 4;
-      return;
-    }
-
-    this.thinkingSpinnerIndexStore = 0;
+    // Spinner chrome is owned by hosts.
   }
 
   hasPendingApproval(): boolean {
@@ -1100,7 +1091,6 @@ export class AgentRuntime<Config, State, ToolRequest, TrustTarget = string> {
     }
 
     this.completedManualHistoryCompactionResultStore = undefined;
-    this.thinkingSpinnerIndexStore = 0;
     this.emitEvent({ kind: "begin-assistant-response" });
     this.startManualHistoryCompactionAsync();
   }
@@ -2579,7 +2569,6 @@ export class AgentRuntime<Config, State, ToolRequest, TrustTarget = string> {
     this.completedTurnResultStore = undefined;
     this.completedManualToolCommandResultStore = undefined;
     this.completedManualHistoryCompactionResultStore = undefined;
-    this.thinkingSpinnerIndexStore = 0;
   }
 
   private currentAuxKind(): AssistantAuxKind | undefined {

@@ -2,6 +2,7 @@ use super::*;
 use crate::subagent_display::{
     has_active_subagent_tool_in_messages,
     parse_pending_subagent_status_text as parse_subagent_status_text,
+    strip_subagent_spinner_prefix,
 };
 
 const SPIRIT_LOGO_LINES: [&str; 6] = [
@@ -129,7 +130,16 @@ pub(in crate::ui) fn build_history_render_result(
     );
     let standalone_block = if render_standalone_pending_aux {
         effective_standalone_pending_aux.map(|pending_aux| {
-            render_standalone_pending_aux_lines(pending_aux, app.show_aux_details)
+            let animate = app
+                .pending_aux
+                .as_ref()
+                .is_some_and(|live| std::ptr::eq(live, pending_aux));
+            render_standalone_pending_aux_lines(
+                pending_aux,
+                app.show_aux_details,
+                app.thinking_spinner_index,
+                animate,
+            )
         })
     } else {
         None
@@ -397,6 +407,33 @@ pub(in crate::ui) fn assistant_message_prefix_style() -> Style {
     )
 }
 
+const THINKING_SPINNER_FRAMES: [&str; 4] = ["|", "/", "-", "\\"];
+
+pub(in crate::ui) fn thinking_spinner_frame(index: u8) -> &'static str {
+    THINKING_SPINNER_FRAMES[index as usize % 4]
+}
+
+pub(in crate::ui) fn pending_aux_status_label(
+    pending_aux: &PendingAssistantAux,
+    spinner_index: u8,
+    animate: bool,
+) -> String {
+    let stripped = strip_subagent_spinner_prefix(&pending_aux.status_text);
+    let body = if stripped.is_empty() || stripped == "Thinking..." || stripped == "Compressing..." {
+        match pending_aux.kind {
+            AssistantAuxKind::Compressing => "Compressing...".to_string(),
+            AssistantAuxKind::Thinking => "Thinking...".to_string(),
+        }
+    } else {
+        stripped
+    };
+    if animate {
+        format!("{} {body}", thinking_spinner_frame(spinner_index))
+    } else {
+        body
+    }
+}
+
 pub(in crate::ui) fn pending_aux_status_style(kind: AssistantAuxKind) -> Style {
     let base = match kind {
         AssistantAuxKind::Thinking => Style::default()
@@ -461,9 +498,11 @@ pub(in crate::ui) fn render_pending_aux_lines(
     push_message_line: &mut impl FnMut(Vec<Span<'static>>),
     pending_aux: &PendingAssistantAux,
     detail_text: Option<&str>,
+    spinner_index: u8,
+    animate: bool,
 ) {
     push_message_line(vec![Span::styled(
-        pending_aux.status_text.clone(),
+        pending_aux_status_label(pending_aux, spinner_index, animate),
         pending_aux_status_style(pending_aux.kind),
     )]);
 
@@ -475,6 +514,8 @@ pub(in crate::ui) fn render_pending_aux_lines(
 pub(in crate::ui) fn render_standalone_pending_aux_lines(
     pending_aux: &PendingAssistantAux,
     show_aux_details: bool,
+    spinner_index: u8,
+    animate: bool,
 ) -> Vec<Line<'static>> {
     let synthetic_subagent_status_text =
         parse_pending_subagent_status_text(&pending_aux.status_text);
@@ -508,7 +549,13 @@ pub(in crate::ui) fn render_standalone_pending_aux_lines(
             push_message_line(line);
         }
     } else {
-        render_pending_aux_lines(&mut push_message_line, pending_aux, detail_text);
+        render_pending_aux_lines(
+            &mut push_message_line,
+            pending_aux,
+            detail_text,
+            spinner_index,
+            animate,
+        );
     }
 
     out
@@ -682,7 +729,13 @@ pub(in crate::ui) fn render_message_lines(
     }
 
     if let Some(pending_aux) = pending_aux {
-        render_pending_aux_lines(&mut push_message_line, pending_aux, pending_aux_detail_text);
+        render_pending_aux_lines(
+            &mut push_message_line,
+            pending_aux,
+            pending_aux_detail_text,
+            app.thinking_spinner_index,
+            true,
+        );
     }
 
     let mut iter = content_lines.into_iter();

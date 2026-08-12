@@ -94,6 +94,7 @@ impl TuiShell {
             pending_response_active: self.runtime.is_busy(),
             pending_assistant_msg_index: self.pending_assistant_msg_index,
             pending_aux: self.runtime.pending_aux_state(),
+            thinking_spinner_index: self.thinking_spinner_index,
             persisted_standalone_pending_aux: self.persisted_standalone_pending_aux.clone(),
             persisted_standalone_pending_aux_anchor: self.persisted_standalone_pending_aux_anchor,
             cli_ui_hooks: self.cli_ui_hooks.clone(),

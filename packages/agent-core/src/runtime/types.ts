@@ -311,6 +311,7 @@ export type AssistantAuxKind = "thinking" | "compressing";
 
 export interface PendingAssistantAux {
   kind: AssistantAuxKind;
+  /** Subagent/runtime status. Empty for generic thinking/compressing; hosts draw chrome. */
   statusText: string;
   detailText?: string;
 }

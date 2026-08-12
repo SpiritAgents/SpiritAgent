@@ -9,6 +9,7 @@ pub(in crate::ui) fn draw_subagent_viewer(
     show_aux_details: bool,
     pending_subagent_approval: Option<&PendingSubagentApprovalView>,
     approval_input: Option<&SubagentApprovalInputView>,
+    spinner_index: u8,
 ) -> Option<usize> {
     let popup = area;
     frame.render_widget(Clear, popup);
@@ -124,7 +125,7 @@ pub(in crate::ui) fn draw_subagent_viewer(
         chunks[0],
     );
 
-    let history_lines = build_subagent_history_lines(view, show_aux_details);
+    let history_lines = build_subagent_history_lines(view, show_aux_details, spinner_index);
     let (flat, _) = flatten_wrapped_history(history_lines, history_chunk.width.max(1), None);
     let history_view_height = history_chunk.height.max(1) as usize;
     let max_scroll = flat.len().saturating_sub(history_view_height);
@@ -204,11 +205,18 @@ pub(in crate::ui) fn draw_subagent_viewer(
 pub(in crate::ui) fn build_subagent_history_lines(
     view: &SubagentSessionDetailView,
     show_aux_details: bool,
+    spinner_index: u8,
 ) -> Vec<Line<'static>> {
     let messages = &view.messages;
+    let animate = view.summary.status == SubagentSessionStatus::Running;
     if messages.is_empty() {
         if let Some(pending_aux) = view.pending_aux.as_ref() {
-            return render_subagent_pending_aux_lines(pending_aux, show_aux_details);
+            return render_subagent_pending_aux_lines(
+                pending_aux,
+                show_aux_details,
+                spinner_index,
+                animate,
+            );
         }
 
         return vec![Line::from(Span::styled(
@@ -234,6 +242,8 @@ pub(in crate::ui) fn build_subagent_history_lines(
         lines.extend(render_subagent_pending_aux_lines(
             pending_aux,
             show_aux_details,
+            spinner_index,
+            animate,
         ));
     }
 
@@ -243,6 +253,8 @@ pub(in crate::ui) fn build_subagent_history_lines(
 pub(in crate::ui) fn render_subagent_pending_aux_lines(
     pending_aux: &PendingAssistantAux,
     show_aux_details: bool,
+    spinner_index: u8,
+    animate: bool,
 ) -> Vec<Line<'static>> {
     let detail_text = if show_aux_details {
         pending_aux.detail_text.as_deref()
@@ -265,7 +277,13 @@ pub(in crate::ui) fn render_subagent_pending_aux_lines(
         out.push(Line::from(spans));
     };
 
-    render_pending_aux_lines(&mut push_message_line, pending_aux, detail_text);
+    render_pending_aux_lines(
+        &mut push_message_line,
+        pending_aux,
+        detail_text,
+        spinner_index,
+        animate,
+    );
     out
 }
 

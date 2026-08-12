@@ -113,6 +113,7 @@ fn build_view_model(message: ChatMessage) -> TuiViewModel {
         pending_response_active: false,
         pending_assistant_msg_index: None,
         pending_aux: None,
+        thinking_spinner_index: 0,
         persisted_standalone_pending_aux: None,
         persisted_standalone_pending_aux_anchor: None,
         cli_ui_hooks: vec![],
@@ -929,6 +930,30 @@ fn pending_thinking_detail_is_visible_when_aux_details_expanded() {
 }
 
 #[test]
+fn pending_thinking_spinner_is_drawn_by_cli_ui() {
+    let mut app = build_view_model(ChatMessage::new(MessageRole::Agent, ""));
+    app.pending_response_active = true;
+    app.pending_assistant_msg_index = Some(0);
+    app.pending_aux = Some(PendingAssistantAux {
+        kind: AssistantAuxKind::Thinking,
+        status_text: String::new(),
+        detail_text: None,
+    });
+
+    app.thinking_spinner_index = 0;
+    let lines_pipe = render_text_lines(render_message_lines(&app, &app.messages[0], 0));
+    assert!(lines_pipe.iter().any(|line| line.contains("| Thinking...")));
+
+    app.thinking_spinner_index = 1;
+    let lines_slash = render_text_lines(render_message_lines(&app, &app.messages[0], 0));
+    assert!(
+        lines_slash
+            .iter()
+            .any(|line| line.contains("/ Thinking..."))
+    );
+}
+
+#[test]
 fn standalone_subagent_pending_aux_renders_in_history() {
     let mut app = build_view_model(ChatMessage::new(MessageRole::Agent, "已开始处理。"));
     app.pending_response_active = true;
@@ -1180,7 +1205,7 @@ fn subagent_pending_aux_detail_is_hidden_when_aux_details_collapsed() {
         detail_text: Some("先检查子会话当前进展。".to_string()),
     }));
 
-    let lines = render_text_lines(build_subagent_history_lines(&view, false));
+    let lines = render_text_lines(build_subagent_history_lines(&view, false, 0));
 
     assert!(lines.iter().any(|line| line.contains("Thinking...")));
     assert!(
@@ -1198,7 +1223,7 @@ fn subagent_pending_aux_detail_is_visible_when_aux_details_expanded() {
         detail_text: Some("先检查子会话当前进展。".to_string()),
     }));
 
-    let lines = render_text_lines(build_subagent_history_lines(&view, true));
+    let lines = render_text_lines(build_subagent_history_lines(&view, true, 0));
 
     assert!(lines.iter().any(|line| line.contains("Thinking...")));
     assert!(

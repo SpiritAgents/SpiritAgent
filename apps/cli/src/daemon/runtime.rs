@@ -592,11 +592,6 @@ impl DaemonRuntime {
         self.sync.events.drain(..).collect()
     }
 
-    pub fn tick_thinking_spinner(&mut self) {
-        // The daemon owns the runtime clock; thinking text streams via events.
-        self.pump_notifications();
-    }
-
     pub fn handle_stream_stall_timeout(&mut self) {
         // Stream stall detection runs inside the daemon's session pump.
         self.pump_notifications();

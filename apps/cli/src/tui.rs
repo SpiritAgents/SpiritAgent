@@ -82,6 +82,7 @@ pub struct TuiShell {
     persisted_standalone_pending_aux_anchor: Option<usize>,
     show_aux_details: bool,
     pending_assistant_msg_index: Option<usize>,
+    thinking_spinner_index: u8,
     last_completed_assistant_msg_index: Option<usize>,
     last_mcp_status_revision: u64,
     slash: slash::SlashState,
@@ -199,6 +200,7 @@ impl TuiShell {
             persisted_standalone_pending_aux_anchor: None,
             show_aux_details: true,
             pending_assistant_msg_index: None,
+            thinking_spinner_index: 0,
             last_completed_assistant_msg_index: None,
             last_mcp_status_revision: initial_mcp_status.revision,
             slash: slash::SlashState::new(),
@@ -394,7 +396,11 @@ impl TuiShell {
     }
 
     pub fn tick(&mut self) {
-        self.runtime.tick_thinking_spinner();
+        if self.runtime.is_busy() {
+            self.thinking_spinner_index = (self.thinking_spinner_index + 1) % 4;
+        } else {
+            self.thinking_spinner_index = 0;
+        }
     }
 
     pub fn should_quit(&self) -> bool {
