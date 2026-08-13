@@ -274,7 +274,8 @@ impl InlineScrollback {
             return None;
         }
         if total < self.committed {
-            return Some(0..total);
+            // 主屏 scrollback 无法撤回已插入行；缩短时不能从 0 再插一遍。
+            return None;
         }
         if total > self.committed {
             Some(self.committed..total)
@@ -334,11 +335,16 @@ impl TuiShell {
             .max(1);
         let lines = crate::ui::inline_history_visual_lines(&app, width);
         let busy = app.pending_response_active;
-        let Some(range) = self.inline_scrollback.uncommitted_range(lines.len(), busy) else {
+        let total = lines.len();
+        if total < self.inline_scrollback.committed_count() {
+            self.inline_scrollback.mark_committed(total);
+            return Ok(());
+        }
+        let Some(range) = self.inline_scrollback.uncommitted_range(total, busy) else {
             return Ok(());
         };
         insert_scrollback_lines(terminal, lines[range].to_vec())?;
-        self.inline_scrollback.mark_committed(lines.len());
+        self.inline_scrollback.mark_committed(total);
         Ok(())
     }
 }
@@ -409,10 +415,14 @@ mod tests {
     }
 
     #[test]
-    fn history_shrink_recommits_from_start() {
+    fn history_shrink_does_not_reinsert() {
         let mut scrollback = InlineScrollback::new();
         scrollback.mark_committed(10);
-        assert_eq!(scrollback.uncommitted_range(3, false), Some(0..3));
+        assert_eq!(scrollback.uncommitted_range(3, false), None);
+        scrollback.mark_committed(3);
+        assert_eq!(scrollback.committed_count(), 3);
+        assert_eq!(scrollback.uncommitted_range(3, false), None);
+        assert_eq!(scrollback.uncommitted_range(5, false), Some(3..5));
         scrollback.reset();
         assert_eq!(scrollback.committed_count(), 0);
         assert_eq!(scrollback.uncommitted_range(3, false), Some(0..3));
