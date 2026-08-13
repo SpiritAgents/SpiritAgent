@@ -60,6 +60,7 @@ const DEFAULT_SLASH_COMMANDS: &[&str] = &[
     "/language",
     "/approval",
     "/networks",
+    "/tui",
 ];
 
 const RESERVED_SLASH_COMMANDS: &[&str] = &[
@@ -87,6 +88,7 @@ const RESERVED_SLASH_COMMANDS: &[&str] = &[
     "/language",
     "/approval",
     "/networks",
+    "/tui",
 ];
 
 pub(crate) fn default_commands() -> Vec<String> {
@@ -147,7 +149,7 @@ fn command_suggestion(command: &str) -> InputSuggestion {
 fn command_replacement(command: &str) -> String {
     match command {
         "/model" | "/sessions" | "/rewind" | "/fork" | "/subagents" | "/image" | "/mcp"
-        | "/hooks" | "/log" | "/language" | "/approval" | "/networks" | "/extensions" => {
+        | "/hooks" | "/log" | "/language" | "/approval" | "/networks" | "/tui" | "/extensions" => {
             format!("{} ", command)
         }
         _ => command.to_string(),
@@ -239,6 +241,9 @@ fn contextual_suggestions(shell: &mut TuiShell, query: &str) -> Vec<InputSuggest
     }
     if query == "/networks" || query.starts_with("/networks ") {
         return vec![primary_help_suggestion("/networks", query)];
+    }
+    if query == "/tui" || query.starts_with("/tui ") {
+        return vec![primary_help_suggestion("/tui", query)];
     }
 
     Vec::new()
@@ -438,6 +443,7 @@ pub(crate) fn help_text(has_active_plan: bool, can_continue_last_turn: bool) -> 
         "- /language 不带参数时打开语言选择菜单。".to_string(),
         "- /approval 不带参数时打开审批级别选择菜单。".to_string(),
         "- /networks 不带参数时打开 LLM HTTP 版本选择菜单。".to_string(),
+        t!("tui.tui.help").into_owned(),
         "- 鼠标默认开启：滚轮浏览历史；在 Conversation 内拖拽选区，Ctrl+Shift+C 或右键复制后会清除反色选区。".to_string(),
         "- Ctrl+O 切换辅助细节的显示/隐藏：包括思考内容、压缩摘要以及工具结果细节；已完成回复的辅助细节也会保留，失败与待确认工具保持展开。".to_string(),
         "".to_string(),
@@ -486,6 +492,7 @@ pub(crate) fn handle_command(shell: &mut TuiShell, message: &str) {
         "/language" => shell.handle_language_slash(&parts[1..]),
         "/approval" => shell.handle_approval_slash(&parts[1..]),
         "/networks" => shell.handle_networks_slash(&parts[1..]),
+        "/tui" => shell.handle_tui_slash(&parts[1..]),
         _ => {
             if !shell.handle_skill_alias_slash(message) {
                 shell.push_agent_message(t!("tui.slash.unknown_command").into_owned());
@@ -534,6 +541,7 @@ mod tests {
         assert!(help.contains("/rules"));
         assert!(help.contains("/skills"));
         assert!(help.contains("/extensions"));
+        assert!(help.contains("/tui"));
         assert!(help.contains("概述 + README + 底部动作 slash"));
         assert!(help.contains("/<skill-name> [补充说明]"));
         assert!(help.contains("Enter 保存"));

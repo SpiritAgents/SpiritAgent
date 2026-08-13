@@ -1,6 +1,4 @@
 use anyhow::Result;
-#[cfg(feature = "tui")]
-use rust_i18n::t;
 use serde::{Deserialize, Deserializer, Serialize};
 use serde_json::Value;
 use std::path::PathBuf;
@@ -228,6 +226,28 @@ pub fn normalize_llm_http_version(value: &str) -> String {
     }
 }
 
+pub const TUI_MODE_INLINE: &str = "inline";
+pub const TUI_MODE_FULLSCREEN: &str = "fullscreen";
+pub const TUI_MODES: [&str; 2] = [TUI_MODE_INLINE, TUI_MODE_FULLSCREEN];
+
+pub fn available_tui_modes_csv() -> String {
+    TUI_MODES.join(", ")
+}
+
+/// Strict parse for CLI flags and `/tui`: unknown values return `None`.
+pub fn parse_tui_mode_strict(value: &str) -> Option<String> {
+    match value.trim().to_ascii_lowercase().as_str() {
+        TUI_MODE_INLINE => Some(TUI_MODE_INLINE.to_string()),
+        TUI_MODE_FULLSCREEN => Some(TUI_MODE_FULLSCREEN.to_string()),
+        _ => None,
+    }
+}
+
+/// Soft normalize used by config: unknown values become `inline`.
+pub fn normalize_tui_mode(value: &str) -> String {
+    parse_tui_mode_strict(value).unwrap_or_else(|| TUI_MODE_INLINE.to_string())
+}
+
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum AttachChatSessionOutcome {
     /// `session.attach` missed; created a session and hydrated from disk archive.
@@ -275,80 +295,6 @@ pub struct McpStatusSnapshot {
     pub loaded_servers: usize,
     pub cached_tools: usize,
     pub last_error: Option<String>,
-}
-
-impl McpStatusSnapshot {
-    pub fn welcome_line(&self) -> String {
-        #[cfg(feature = "tui")]
-        {
-            match self.state {
-                McpStatusState::Idle => t!("mcp.status.idle").into_owned(),
-                McpStatusState::Loading => {
-                    if self.configured_servers == 0 {
-                        t!("mcp.status.unconfigured").into_owned()
-                    } else {
-                        t!("mcp.status.loading", count = self.configured_servers).into_owned()
-                    }
-                }
-                McpStatusState::Ready => {
-                    if self.configured_servers == 0 {
-                        t!("mcp.status.unconfigured").into_owned()
-                    } else {
-                        t!(
-                            "mcp.status.ready",
-                            loaded = self.loaded_servers,
-                            tools = self.cached_tools
-                        )
-                        .into_owned()
-                    }
-                }
-                McpStatusState::Error => {
-                    if self.configured_servers == 0 {
-                        t!("mcp.status.unconfigured").into_owned()
-                    } else {
-                        t!(
-                            "mcp.status.error",
-                            loaded = self.loaded_servers,
-                            configured = self.configured_servers
-                        )
-                        .into_owned()
-                    }
-                }
-            }
-        }
-
-        #[cfg(not(feature = "tui"))]
-        match self.state {
-            McpStatusState::Idle => "MCP: 尚未开始加载。".to_string(),
-            McpStatusState::Loading => {
-                if self.configured_servers == 0 {
-                    "MCP: 未配置服务器。".to_string()
-                } else {
-                    format!("MCP: 正在后台加载 {} 个服务器...", self.configured_servers)
-                }
-            }
-            McpStatusState::Ready => {
-                if self.configured_servers == 0 {
-                    "MCP: 未配置服务器。".to_string()
-                } else {
-                    format!(
-                        "MCP: 已加载 {} 个 MCP 服务器（缓存 {} 个工具）。",
-                        self.loaded_servers, self.cached_tools
-                    )
-                }
-            }
-            McpStatusState::Error => {
-                if self.configured_servers == 0 {
-                    "MCP: 未配置服务器。".to_string()
-                } else {
-                    format!(
-                        "MCP: 已加载 {}/{} 个 MCP 服务器。",
-                        self.loaded_servers, self.configured_servers
-                    )
-                }
-            }
-        }
-    }
 }
 
 pub trait AppPaths: Send + Sync {
@@ -428,5 +374,32 @@ mod tests {
     #[test]
     fn normalize_approval_level_falls_back_unknown_to_default() {
         assert_eq!(normalize_approval_level("nope"), "default");
+    }
+
+    #[test]
+    fn parse_tui_mode_strict_accepts_canonical() {
+        assert_eq!(parse_tui_mode_strict("inline").as_deref(), Some("inline"));
+        assert_eq!(
+            parse_tui_mode_strict("FULLSCREEN").as_deref(),
+            Some("fullscreen")
+        );
+    }
+
+    #[test]
+    fn parse_tui_mode_strict_rejects_unknown() {
+        assert_eq!(parse_tui_mode_strict("mini"), None);
+        assert_eq!(parse_tui_mode_strict(""), None);
+        assert_eq!(parse_tui_mode_strict("window"), None);
+    }
+
+    #[test]
+    fn available_tui_modes_csv_uses_comma_space() {
+        assert_eq!(available_tui_modes_csv(), "inline, fullscreen");
+    }
+
+    #[test]
+    fn normalize_tui_mode_falls_back_unknown_to_inline() {
+        assert_eq!(normalize_tui_mode("nope"), "inline");
+        assert_eq!(normalize_tui_mode("fullscreen"), "fullscreen");
     }
 }

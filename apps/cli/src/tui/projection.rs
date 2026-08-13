@@ -76,6 +76,8 @@ impl TuiShell {
             approval_picker_index: self.approval_picker_index,
             network_picker_active: self.network_picker_active,
             network_picker_index: self.network_picker_index,
+            tui_picker_active: self.tui_picker_active,
+            tui_picker_index: self.tui_picker_index,
             chat_picker_active: self.chat_picker_active,
             chat_picker_index: self.chat_picker_index,
             chat_picker_sessions: self.chat_picker_sessions.clone(),
@@ -102,6 +104,8 @@ impl TuiShell {
             todo_strip,
             conversation_sel_anchor: self.conversation.sel_anchor,
             conversation_sel_head: self.conversation.sel_head,
+            inline_mode: self.inline_mode,
+            committed_history_lines: self.inline_scrollback.committed_count(),
         }
     }
 

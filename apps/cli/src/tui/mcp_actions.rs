@@ -1,4 +1,5 @@
 use super::*;
+use crate::ports::{McpStatusSnapshot, McpStatusState};
 
 impl TuiShell {
     pub(super) fn push_mcp_usage(&mut self) {
@@ -98,7 +99,7 @@ impl TuiShell {
             .unwrap_or(false)
     }
 
-    pub(super) fn sync_welcome_mcp_status(&mut self) {
+    pub(super) fn sync_mcp_status(&mut self) {
         let snapshot = self.runtime.mcp_status_snapshot();
         if snapshot.revision == self.last_mcp_status_revision {
             return;
@@ -115,7 +116,6 @@ impl TuiShell {
         ));
         self.last_mcp_status_revision = snapshot.revision;
         self.refresh_prompt_slash_commands(&snapshot);
-        self.refresh_welcome_message_with_snapshot(&snapshot);
     }
 
     pub(super) fn refresh_prompt_slash_commands(&mut self, snapshot: &McpStatusSnapshot) {

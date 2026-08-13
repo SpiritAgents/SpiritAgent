@@ -723,6 +723,8 @@ pub struct AppConfig {
         skip_serializing_if = "Option::is_none"
     )]
     pub ui_locale: Option<String>,
+    #[serde(default = "default_tui_mode")]
+    pub tui: String,
     #[serde(default)]
     pub networks: NetworksConfig,
     #[serde(default)]
@@ -735,6 +737,10 @@ fn default_schema_version() -> u64 {
     SPIRIT_CONFIG_SCHEMA_VERSION
 }
 
+fn default_tui_mode() -> String {
+    crate::ports::TUI_MODE_INLINE.to_string()
+}
+
 impl Default for AppConfig {
     fn default() -> Self {
         Self {
@@ -745,6 +751,7 @@ impl Default for AppConfig {
             video_generation_model: None,
             lightweight_chat_model: None,
             ui_locale: None,
+            tui: default_tui_mode(),
             networks: NetworksConfig::default(),
             agents: AgentsConfig::default(),
             extra: Map::new(),
@@ -1404,6 +1411,7 @@ fn normalize_config(cfg: &mut AppConfig) {
     cfg.schema_version = SPIRIT_CONFIG_SCHEMA_VERSION;
     cfg.networks.llm_http_version =
         crate::ports::normalize_llm_http_version(&cfg.networks.llm_http_version);
+    cfg.tui = crate::ports::normalize_tui_mode(&cfg.tui);
 
     if cfg.provider_groups.is_empty()
         || cfg
@@ -2585,6 +2593,50 @@ mod tests {
             active.transport_kind(),
             ModelTransportKind::OpenAiCompatible
         );
+    }
+
+    #[test]
+    fn tui_mode_defaults_to_inline_when_omitted() {
+        let config = r#"
+{
+  "schemaVersion": 2,
+  "providerGroups": [],
+  "activeModel": { "groupId": "", "name": "" }
+}
+"#;
+        let parsed = deserialize_config(config, Path::new("config.json")).expect("parse config");
+        assert_eq!(parsed.tui, "inline");
+    }
+
+    #[test]
+    fn tui_mode_normalizes_unknown_to_inline() {
+        let config = r#"
+{
+  "schemaVersion": 2,
+  "providerGroups": [],
+  "activeModel": { "groupId": "", "name": "" },
+  "tui": "mini"
+}
+"#;
+        let parsed = deserialize_config(config, Path::new("config.json")).expect("parse config");
+        assert_eq!(parsed.tui, "inline");
+    }
+
+    #[test]
+    fn tui_mode_preserves_fullscreen() {
+        let config = r#"
+{
+  "schemaVersion": 2,
+  "providerGroups": [],
+  "activeModel": { "groupId": "", "name": "" },
+  "tui": "fullscreen"
+}
+"#;
+        let parsed = deserialize_config(config, Path::new("config.json")).expect("parse config");
+        assert_eq!(parsed.tui, "fullscreen");
+        let json: Value =
+            serde_json::from_str(&serialize_config(&parsed).expect("serialize")).expect("json");
+        assert_eq!(json.get("tui").and_then(Value::as_str), Some("fullscreen"));
     }
 
     #[test]

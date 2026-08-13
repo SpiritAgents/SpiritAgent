@@ -1,6 +1,7 @@
-use anyhow::Result;
+use anyhow::{Result, anyhow};
 use clap::{ArgAction, CommandFactory, Parser, Subcommand};
 use crossterm::{
+    cursor::MoveTo,
     event::{
         self, DisableBracketedPaste, DisableMouseCapture, EnableBracketedPaste, EnableMouseCapture,
         Event, KeyCode, KeyEventKind, KeyModifiers, KeyboardEnhancementFlags, MouseButton,
@@ -8,25 +9,23 @@ use crossterm::{
     },
     execute,
     terminal::{
-        EnterAlternateScreen, LeaveAlternateScreen, disable_raw_mode, enable_raw_mode,
-        supports_keyboard_enhancement,
+        Clear, ClearType, DisableLineWrap, EnableLineWrap, EnterAlternateScreen,
+        LeaveAlternateScreen, disable_raw_mode, enable_raw_mode, supports_keyboard_enhancement,
     },
 };
-use ratatui::{
-    Terminal,
-    backend::{Backend, CrosstermBackend},
-};
+use ratatui::{Terminal, TerminalOptions, Viewport};
 use std::{
     io,
     time::{Duration, Instant},
 };
 
+use spirit_agent::tui::InlineRecreate;
 use spirit_agent::view::MarketplaceFlowStep;
 use spirit_agent::{
     ConfigCommand, ExtensionCommand, GlobalCliOptions, HookCommand, KeyCommand, MarketplaceCommand,
     McpCommand, ModelAddCommand, ModelCommand, TuiShell, bootstrap_config, handle_config_cli,
     handle_extension_cli, handle_hooks_cli, handle_mcp_cli, handle_model_cli, logging,
-    print_skills_stub, run_headless_prompt, run_serve, ui,
+    print_skills_stub, resolve_session_tui_mode, run_headless_prompt, run_serve, tui, ui,
 };
 
 const MAX_EVENT_BATCH_PER_TICK: usize = 2048;
@@ -59,6 +58,10 @@ struct Cli {
     /// UI language locale code (persisted).
     #[arg(long = "language", short = 'l', value_name = "language")]
     language: Option<String>,
+
+    /// TUI layout for this process only: inline or fullscreen (not persisted).
+    #[arg(short = 't', long = "tui", value_name = "tui", global = true)]
+    tui: Option<String>,
 
     #[command(subcommand)]
     command: Option<Commands>,
@@ -303,6 +306,7 @@ fn main() -> Result<()> {
         model: cli.model.clone(),
         approval: cli.approval.clone(),
         language: cli.language.clone(),
+        tui: cli.tui.clone(),
     };
 
     let config = bootstrap_config(&options)?;
@@ -315,7 +319,7 @@ fn main() -> Result<()> {
     match cli.command {
         Some(Commands::Skills) => print_skills_stub(),
         Some(Commands::Serve) => run_serve()?,
-        Some(Commands::Interactive) | None => run_tui(&options)?,
+        Some(Commands::Interactive) | None => run_interactive(&options, &config)?,
         Some(Commands::Model { action }) => handle_model_cli(into_model_command(action))?,
         Some(Commands::Config { action }) => handle_config_cli(into_config_command(action))?,
         Some(Commands::Mcp { action }) => handle_mcp_cli(into_mcp_command(action))?,
@@ -454,17 +458,98 @@ fn into_hook_command(action: HookAction) -> HookCommand {
     }
 }
 
-fn run_tui(options: &GlobalCliOptions) -> Result<()> {
-    enable_raw_mode()?;
-    let mut stdout = io::stdout();
-    execute!(stdout, EnterAlternateScreen)?;
+fn is_inline_tui(mode: &str) -> bool {
+    mode == spirit_agent::ports::TUI_MODE_INLINE
+}
 
-    let backend = CrosstermBackend::new(stdout);
-    let mut terminal = Terminal::new(backend)?;
+fn create_tui_terminal(inline: bool) -> Result<Terminal<tui::InlineBackend>> {
+    if inline {
+        execute!(io::stdout(), DisableLineWrap)?;
+        // Inline(1) → append_lines(0)。加载期不预留布局高度；第一帧再按实际内容长高。
+        Terminal::with_options(
+            tui::InlineBackend::new(),
+            TerminalOptions {
+                viewport: Viewport::Inline(tui::INLINE_BOOTSTRAP_HEIGHT),
+            },
+        )
+        .map_err(|err| anyhow!("{err}"))
+    } else {
+        execute!(io::stdout(), EnterAlternateScreen)?;
+        Terminal::new(tui::InlineBackend::new()).map_err(|err| anyhow!("{err}"))
+    }
+}
+
+fn teardown_tui_viewport(
+    terminal: &mut Terminal<tui::InlineBackend>,
+    inline: bool,
+    last_inline_viewport: ratatui::layout::Rect,
+) -> Result<()> {
+    if inline {
+        // 切走全屏不能 leave_inline_prompt：那只把光标挪到框下，live chrome 仍留在主屏。
+        // EnterAlternateScreen 会保存这块主屏；回来时输入框和选择器就会和新建的内嵌 UI 叠在一起。
+        let origin_y = if last_inline_viewport.height > 0 {
+            last_inline_viewport.y
+        } else {
+            crossterm::cursor::position().map(|(_, y)| y).unwrap_or(0)
+        };
+        execute!(
+            io::stdout(),
+            MoveTo(0, origin_y),
+            Clear(ClearType::FromCursorDown),
+            EnableLineWrap
+        )?;
+    } else {
+        execute!(
+            terminal.backend_mut(),
+            DisableMouseCapture,
+            LeaveAlternateScreen
+        )?;
+    }
+    Ok(())
+}
+
+fn apply_session_tui_switch(
+    terminal: &mut Terminal<tui::InlineBackend>,
+    shell: &mut TuiShell,
+    inline: &mut bool,
+    last_inline_viewport: &mut ratatui::layout::Rect,
+    last_inline_content_bottom: &mut u16,
+    inline_h: &mut u16,
+    next: &str,
+) -> Result<()> {
+    let next_inline = is_inline_tui(next);
+    if next_inline == *inline {
+        return Ok(());
+    }
+    if *inline {
+        // 先把未提交的 live 行推进系统 scrollback，再擦 chrome，避免对话只活在即将清掉的视口里。
+        shell.sync_inline_scrollback(terminal)?;
+    }
+    teardown_tui_viewport(terminal, *inline, *last_inline_viewport)?;
+    *terminal = create_tui_terminal(next_inline)?;
+    if !next_inline {
+        execute!(terminal.backend_mut(), EnableMouseCapture)?;
+    }
+    let _ = terminal.hide_cursor();
+    shell.apply_tui_mode(next_inline);
+    *inline = next_inline;
+    *last_inline_viewport = ratatui::layout::Rect::default();
+    *last_inline_content_bottom = 0;
+    *inline_h = tui::INLINE_BOOTSTRAP_HEIGHT;
+    Ok(())
+}
+
+fn run_interactive(
+    options: &GlobalCliOptions,
+    config: &spirit_agent::model_registry::AppConfig,
+) -> Result<()> {
+    let mut inline = is_inline_tui(&resolve_session_tui_mode(options, config));
+    enable_raw_mode()?;
+    let mut terminal = create_tui_terminal(inline)?;
     let supports_keyboard_enhancement = matches!(supports_keyboard_enhancement(), Ok(true));
     logging::log_event(&format!(
-        "[keyboard] supports_keyboard_enhancement={} platform=windows",
-        supports_keyboard_enhancement
+        "[tui] mode={} supports_keyboard_enhancement={supports_keyboard_enhancement}",
+        if inline { "inline" } else { "fullscreen" }
     ));
 
     if supports_keyboard_enhancement {
@@ -481,21 +566,23 @@ fn run_tui(options: &GlobalCliOptions) -> Result<()> {
 
     execute!(terminal.backend_mut(), EnableBracketedPaste)?;
 
-    let run_result = run_app(&mut terminal, options);
+    let run_result = run_app(&mut terminal, options, &mut inline);
 
     let _ = disable_raw_mode();
     if supports_keyboard_enhancement {
         let _ = execute!(
             terminal.backend_mut(),
             PopKeyboardEnhancementFlags,
-            DisableBracketedPaste,
-            LeaveAlternateScreen,
-            DisableMouseCapture
+            DisableBracketedPaste
         );
+    } else {
+        let _ = execute!(terminal.backend_mut(), DisableBracketedPaste);
+    }
+    if inline {
+        let _ = execute!(io::stdout(), EnableLineWrap);
     } else {
         let _ = execute!(
             terminal.backend_mut(),
-            DisableBracketedPaste,
             LeaveAlternateScreen,
             DisableMouseCapture
         );
@@ -504,31 +591,71 @@ fn run_tui(options: &GlobalCliOptions) -> Result<()> {
     run_result
 }
 
-fn run_app<B: Backend + io::Write + 'static>(
-    terminal: &mut Terminal<B>,
+fn run_app(
+    terminal: &mut Terminal<tui::InlineBackend>,
     options: &GlobalCliOptions,
-) -> Result<()>
-where
-    <B as Backend>::Error: Send + Sync,
-{
-    let mut shell = TuiShell::new()?;
+    inline: &mut bool,
+) -> Result<()> {
+    let mut shell = TuiShell::new_with_mode(*inline)?;
     if let Some(approval) = options.approval.as_deref() {
         shell.apply_cli_approval_level(approval)?;
     }
     shell.run_deferred_session_start(terminal)?;
     let mut paste_tracker = PasteReplayTracker::default();
     shell.refresh_suggestions();
-    execute!(terminal.backend_mut(), EnableMouseCapture)?;
+    if !*inline {
+        execute!(terminal.backend_mut(), EnableMouseCapture)?;
+    }
+    let mut last_inline_viewport = ratatui::layout::Rect::default();
+    let mut last_inline_content_bottom = 0u16;
+    let mut inline_h = tui::INLINE_BOOTSTRAP_HEIGHT;
 
     while !shell.should_quit() {
+        if let Some(next) = shell.take_pending_tui_mode() {
+            apply_session_tui_switch(
+                terminal,
+                &mut shell,
+                inline,
+                &mut last_inline_viewport,
+                &mut last_inline_content_bottom,
+                &mut inline_h,
+                &next,
+            )?;
+        }
         shell.poll_runtime();
         shell.handle_stream_stall_timeout();
         shell.tick();
-        terminal.draw(|frame| {
+        if *inline {
+            if let Ok(size) = terminal.size() {
+                let needed = shell.inline_needed_viewport_height(size.width, size.height);
+                let origin_y = if last_inline_viewport.height > 0 {
+                    last_inline_viewport.y
+                } else {
+                    crossterm::cursor::position().map(|(_, y)| y).unwrap_or(0)
+                };
+                let width_shrunk =
+                    last_inline_viewport.width > 0 && size.width < last_inline_viewport.width;
+                if width_shrunk {
+                    terminal.recreate_inline_at_row(origin_y, needed)?;
+                    inline_h = needed;
+                } else if needed != inline_h {
+                    terminal.set_inline_height(origin_y, inline_h, needed)?;
+                    inline_h = needed;
+                }
+            }
+        }
+        shell.sync_inline_scrollback(terminal)?;
+        let completed = terminal.draw(|frame| {
             let app = shell.view_model();
             let feedback = ui::draw_ui(frame, &app, shell.ui_runtime_state_mut());
+            if let Some(bottom) = feedback.inline_content_bottom {
+                last_inline_content_bottom = bottom;
+            }
             shell.apply_render_feedback(feedback);
         })?;
+        if *inline {
+            last_inline_viewport = completed.buffer.area;
+        }
 
         if !event::poll(Duration::from_millis(100))? {
             continue;
@@ -540,6 +667,10 @@ where
         }
 
         process_event_batch(&mut shell, events, &mut paste_tracker);
+    }
+
+    if *inline {
+        tui::leave_inline_prompt(terminal, last_inline_content_bottom)?;
     }
 
     Ok(())
@@ -562,6 +693,9 @@ fn process_event_batch(
         match evt {
             Event::Resize(_, _) => continue,
             Event::Mouse(mouse) => {
+                if shell.is_inline_mode() {
+                    continue;
+                }
                 flush_pending_text(shell, &mut pending_text);
                 match mouse.kind {
                     MouseEventKind::ScrollUp => {
@@ -608,6 +742,7 @@ fn process_event_batch(
                     || shell.is_language_picker_active()
                     || shell.is_approval_picker_active()
                     || shell.is_network_picker_active()
+                    || shell.is_tui_picker_active()
                     || shell.is_chat_picker_active()
                     || shell.is_rewind_picker_active()
                     || shell.is_fork_picker_active()
@@ -644,6 +779,7 @@ fn process_event_batch(
                     && !shell.is_language_picker_active()
                     && !shell.is_approval_picker_active()
                     && !shell.is_network_picker_active()
+                    && !shell.is_tui_picker_active()
                     && !shell.is_chat_picker_active()
                     && !shell.is_rewind_picker_active()
                     && !shell.is_fork_picker_active()
@@ -666,6 +802,7 @@ fn process_event_batch(
                     && !shell.is_language_picker_active()
                     && !shell.is_approval_picker_active()
                     && !shell.is_network_picker_active()
+                    && !shell.is_tui_picker_active()
                     && !shell.is_chat_picker_active()
                     && !shell.is_rewind_picker_active()
                     && !shell.is_fork_picker_active()
@@ -774,6 +911,20 @@ fn process_key_event(
             KeyCode::Up => shell.select_prev_network_version(),
             KeyCode::Down => shell.select_next_network_version(),
             KeyCode::Enter => shell.confirm_network_picker(),
+            KeyCode::Char('c') if key.modifiers.contains(KeyModifiers::CONTROL) => {
+                shell.request_quit();
+            }
+            _ => {}
+        }
+        return;
+    }
+
+    if shell.is_tui_picker_active() {
+        match key.code {
+            KeyCode::Esc => shell.cancel_tui_picker(),
+            KeyCode::Up => shell.select_prev_tui_mode(),
+            KeyCode::Down => shell.select_next_tui_mode(),
+            KeyCode::Enter => shell.confirm_tui_picker(),
             KeyCode::Char('c') if key.modifiers.contains(KeyModifiers::CONTROL) => {
                 shell.request_quit();
             }
@@ -1046,7 +1197,8 @@ fn process_key_event(
         KeyCode::Char(ch)
             if ch.eq_ignore_ascii_case(&'c')
                 && key.modifiers.contains(KeyModifiers::CONTROL)
-                && key.modifiers.contains(KeyModifiers::SHIFT) =>
+                && key.modifiers.contains(KeyModifiers::SHIFT)
+                && !shell.is_inline_mode() =>
         {
             if let Err(e) = shell.copy_conversation_selection() {
                 logging::log_event(&format!("clipboard copy failed: {}", e));
@@ -1078,12 +1230,12 @@ fn process_key_event(
         }
         KeyCode::Tab if suggestion_mode => shell.apply_selected_suggestion(),
         KeyCode::Tab if !shell.is_shell_mode_active() => shell.toggle_input_mode(),
-        KeyCode::PageUp => shell.scroll_history_up(8),
-        KeyCode::PageDown => shell.scroll_history_down(8),
-        KeyCode::Home if key.modifiers.contains(KeyModifiers::CONTROL) => {
+        KeyCode::PageUp if !shell.is_inline_mode() => shell.scroll_history_up(8),
+        KeyCode::PageDown if !shell.is_inline_mode() => shell.scroll_history_down(8),
+        KeyCode::Home if key.modifiers.contains(KeyModifiers::CONTROL) && !shell.is_inline_mode() => {
             shell.scroll_history_to_top()
         }
-        KeyCode::End if key.modifiers.contains(KeyModifiers::CONTROL) => {
+        KeyCode::End if key.modifiers.contains(KeyModifiers::CONTROL) && !shell.is_inline_mode() => {
             shell.scroll_history_to_bottom()
         }
         KeyCode::Left => shell.move_cursor_left(),
@@ -1375,6 +1527,7 @@ fn paste_target(shell: &TuiShell) -> Option<PasteTarget> {
         || shell.is_language_picker_active()
         || shell.is_approval_picker_active()
         || shell.is_network_picker_active()
+        || shell.is_tui_picker_active()
         || shell.is_chat_picker_active()
         || shell.is_rewind_picker_active()
         || shell.is_fork_picker_active()

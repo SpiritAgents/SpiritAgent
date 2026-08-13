@@ -457,7 +457,7 @@ impl TuiShell {
                             tool_block: None,
                         });
                         self.forms.active = None;
-                        self.sync_welcome_mcp_status();
+                        self.sync_mcp_status();
                     }
                     Err(err) => {
                         self.messages.push(ChatMessage {
@@ -682,6 +682,7 @@ impl TuiShell {
         self.language_picker_active = false;
         self.approval_picker_active = false;
         self.network_picker_active = false;
+        self.tui_picker_active = false;
         self.chat_picker_active = false;
         self.image_picker_active = false;
         self.set_input(String::new());
@@ -699,6 +700,7 @@ impl TuiShell {
         self.language_picker_active = false;
         self.approval_picker_active = false;
         self.network_picker_active = false;
+        self.tui_picker_active = false;
         self.chat_picker_active = false;
         self.image_picker_active = false;
         self.set_input(String::new());
@@ -711,6 +713,7 @@ impl TuiShell {
         self.language_picker_active = false;
         self.approval_picker_active = false;
         self.network_picker_active = false;
+        self.tui_picker_active = false;
         self.chat_picker_active = false;
         self.image_picker_active = false;
         self.set_input(String::new());
@@ -728,6 +731,7 @@ impl TuiShell {
         self.language_picker_active = false;
         self.approval_picker_active = false;
         self.network_picker_active = false;
+        self.tui_picker_active = false;
         self.chat_picker_active = false;
         self.image_picker_active = false;
         self.set_input(String::new());
@@ -789,6 +793,7 @@ impl TuiShell {
         self.language_picker_active = false;
         self.approval_picker_active = false;
         self.network_picker_active = false;
+        self.tui_picker_active = false;
         self.chat_picker_active = false;
         self.image_picker_active = false;
         self.set_input(String::new());
@@ -802,6 +807,7 @@ impl TuiShell {
         self.language_picker_active = false;
         self.approval_picker_active = false;
         self.network_picker_active = false;
+        self.tui_picker_active = false;
         self.chat_picker_active = false;
         self.image_picker_active = false;
         self.set_input(String::new());
@@ -815,6 +821,7 @@ impl TuiShell {
         self.language_picker_active = false;
         self.approval_picker_active = false;
         self.network_picker_active = false;
+        self.tui_picker_active = false;
         self.chat_picker_active = false;
         self.image_picker_active = false;
         self.set_input(String::new());
@@ -828,6 +835,7 @@ impl TuiShell {
         self.language_picker_active = false;
         self.approval_picker_active = false;
         self.network_picker_active = false;
+        self.tui_picker_active = false;
         self.chat_picker_active = false;
         self.image_picker_active = false;
         self.set_input(String::new());

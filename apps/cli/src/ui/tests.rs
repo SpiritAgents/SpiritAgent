@@ -94,6 +94,8 @@ fn build_view_model(message: ChatMessage) -> TuiViewModel {
         approval_picker_index: 0,
         network_picker_active: false,
         network_picker_index: 0,
+        tui_picker_active: false,
+        tui_picker_index: 0,
         chat_picker_active: false,
         chat_picker_index: 0,
         chat_picker_sessions: vec![],
@@ -120,6 +122,8 @@ fn build_view_model(message: ChatMessage) -> TuiViewModel {
         todo_strip: None,
         conversation_sel_anchor: None,
         conversation_sel_head: None,
+        inline_mode: false,
+        committed_history_lines: 0,
     }
 }
 
@@ -1651,4 +1655,178 @@ fn assistant_soft_wrap_continuation_aligns_with_text_column() {
     assert!(lines.first().is_some_and(|line| line.starts_with("> ")));
     assert!(lines.get(1).is_some_and(|line| line.starts_with("  ")));
     assert!(lines.get(1).is_some_and(|line| !line.starts_with("> ")));
+}
+
+#[test]
+fn inline_mode_pins_input_below_live_content_not_window_bottom() {
+    let mut app = build_view_model(ChatMessage::new(MessageRole::User, "hello"));
+    app.inline_mode = true;
+    app.committed_history_lines = usize::MAX;
+    app.input = "typed".to_string();
+
+    let lines = render_ui_lines(&app, 80, 20);
+    let snapshot = lines.join("\n");
+    assert!(
+        lines.iter().take(5).any(|line| line.contains("Agent")),
+        "idle inline viewport should keep the input near the top, got:\n{snapshot}"
+    );
+    assert!(
+        !lines[lines.len().saturating_sub(3)..]
+            .iter()
+            .any(|line| line.contains("Agent")),
+        "inline input should not be pinned to the window bottom, got:\n{snapshot}"
+    );
+}
+
+#[test]
+fn inline_mode_skips_tool_image_blocks() {
+    let mut app = build_view_model(ChatMessage::with_tool_block(
+        MessageRole::Agent,
+        String::new(),
+        ToolUiBlock {
+            tool_call_id: Some("call-image-inline".to_string()),
+            tool_name: "generate_image".to_string(),
+            phase: ToolUiPhase::Succeeded,
+            headline: "图片生成完成".to_string(),
+            detail_lines: vec!["路径: demo.png".to_string()],
+            image_paths: vec!["demo.png".to_string()],
+            video_paths: Vec::new(),
+            args_excerpt: None,
+            output_excerpt: None,
+            suppress_expand: None,
+        },
+    ));
+    app.inline_mode = true;
+
+    let render = build_history_render_result(&app, 80);
+    assert!(render.image_blocks.is_empty());
+}
+
+#[test]
+fn inline_mode_keeps_input_below_uncommitted_live_tail() {
+    let mut app = build_view_model(ChatMessage::new(
+        MessageRole::Agent,
+        "streaming reply that should sit above the composer",
+    ));
+    app.inline_mode = true;
+    app.pending_response_active = true;
+    app.committed_history_lines = 0;
+    app.input = "next".to_string();
+
+    let lines = render_ui_lines(&app, 80, 20);
+    let snapshot = lines.join("\n");
+    let input_row = lines.iter().position(|line| line.contains("┌Agent"));
+    let live_row = lines
+        .iter()
+        .position(|line| line.contains("streaming reply"));
+    assert!(
+        input_row.is_some() && live_row.is_some() && live_row.unwrap() + 1 < input_row.unwrap(),
+        "live stream should sit above the input box with a one-row gap, got:\n{snapshot}"
+    );
+}
+
+#[test]
+fn inline_mode_keeps_footer_directly_below_input() {
+    let mut app = build_view_model(ChatMessage::new(MessageRole::User, "hello"));
+    app.inline_mode = true;
+    app.committed_history_lines = usize::MAX;
+
+    let lines = render_ui_lines(&app, 80, 20);
+    let snapshot = lines.join("\n");
+    let input_bottom = lines.iter().position(|line| line.contains("└"));
+    let footer_row = lines.iter().position(|line| {
+        line.contains(t!("ui.footer.approval.default").as_ref())
+            && line.contains(t!("ui.footer.loop.off").as_ref())
+    });
+    assert!(
+        input_bottom.is_some() && footer_row == Some(input_bottom.unwrap() + 1),
+        "inline footer should sit directly below the input box, got:\n{snapshot}"
+    );
+    let input_top = lines.iter().position(|line| line.contains("┌Agent"));
+    assert_eq!(
+        input_top,
+        Some(1),
+        "idle inline viewport should keep a one-row gap above the input box, got:\n{snapshot}"
+    );
+    assert!(
+        lines
+            .iter()
+            .any(|line| line.contains(&app.config.active_model_name())),
+        "inline footer should include the active model name, got:\n{snapshot}"
+    );
+}
+
+#[test]
+fn inline_viewport_uses_reserved_height_not_fullscreen() {
+    use ratatui::{TerminalOptions, Viewport};
+
+    let backend = TestBackend::new(80, 24);
+    let mut terminal = Terminal::with_options(
+        backend,
+        TerminalOptions {
+            viewport: Viewport::Inline(8),
+        },
+    )
+    .expect("inline viewport initializes on TestBackend");
+    let mut app = build_view_model(ChatMessage::new(MessageRole::User, "hello"));
+    app.inline_mode = true;
+    app.committed_history_lines = usize::MAX;
+    let mut runtime = UiRuntimeState::default();
+    let mut content_bottom = None;
+    terminal
+        .draw(|frame| {
+            assert!(
+                frame.area().height <= 8,
+                "inline live viewport should stay within Inline height, got {}",
+                frame.area().height
+            );
+            let feedback = draw_ui(frame, &app, &mut runtime);
+            content_bottom = feedback.inline_content_bottom;
+        })
+        .expect("inline ui renders in inline viewport");
+    assert_eq!(
+        content_bottom,
+        Some(5),
+        "idle inline content should end after gap + input + footer (rows 0..5)"
+    );
+}
+
+#[test]
+fn idle_inline_needed_viewport_height_is_content_not_reserved_24() {
+    let mut app = build_view_model(ChatMessage::new(MessageRole::User, "hello"));
+    app.inline_mode = true;
+    app.committed_history_lines = usize::MAX;
+    assert_eq!(
+        inline_needed_viewport_height(&app, 80, 24),
+        5,
+        "idle inline should request gap + input + footer, not a fixed 24-row viewport"
+    );
+    app.input_suggestion_kind = Some(crate::view::InputSuggestionKind::Slash);
+    assert_eq!(
+        inline_needed_viewport_height(&app, 80, 24),
+        16,
+        "slash suggestions should grow the viewport to gap + input + suggestion block"
+    );
+}
+
+#[test]
+fn history_omits_brand_header() {
+    let mut inline_app = build_view_model(ChatMessage::new(MessageRole::Agent, "hello"));
+    inline_app.inline_mode = true;
+    let fullscreen = build_view_model(ChatMessage::new(MessageRole::Agent, "hello"));
+
+    for (label, app) in [("inline", &inline_app), ("fullscreen", &fullscreen)] {
+        let snapshot = render_text_lines(build_history_lines(app, 80)).join("\n");
+        assert!(
+            !snapshot.contains("Spirit Agent")
+                && !snapshot.contains('█')
+                && !snapshot.contains('┌')
+                && !snapshot.contains("/help"),
+            "{label} history should not render a brand header, got:\n{snapshot}"
+        );
+        assert!(
+            snapshot.contains("hello"),
+            "{label} history should still render messages, got:\n{snapshot}"
+        );
+    }
 }

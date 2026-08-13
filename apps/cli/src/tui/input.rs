@@ -354,7 +354,7 @@ impl TuiShell {
 
         self.runtime.abort();
         self.apply_runtime_events();
-        self.sync_welcome_mcp_status();
+        self.sync_mcp_status();
         self.scroll_history_to_bottom();
         self.clear_interrupt_escape_arm();
         self.last_turn_can_continue = true;
