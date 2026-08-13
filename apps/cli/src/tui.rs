@@ -27,8 +27,8 @@ use crate::{
     plan::{self, PlanMetadata},
     ports::{
         AppPaths, AssistantAuxArchiveEntry, AttachChatSessionOutcome, ChatArchive, ChatRepository,
-        ChatSessionListItem, ConfigStore, McpStatusSnapshot, McpStatusState, SecretStore,
-        SubagentSessionArchiveEntry, SubagentSessionSummary,
+        ChatSessionListItem, ConfigStore, SecretStore, SubagentSessionArchiveEntry,
+        SubagentSessionSummary,
     },
     rewind::{self, ConversationMessageSnapshot, DesktopRewindCheckpointSnapshot},
     rules::RuleEntry,
@@ -57,6 +57,7 @@ mod forms;
 mod hooks_actions;
 mod host_actions;
 mod image_paths;
+mod inline;
 mod input;
 mod marketplace;
 mod mcp_actions;
@@ -65,6 +66,10 @@ mod projection;
 mod runtime_events;
 mod subagent;
 mod workspace_trust;
+
+pub use inline::{
+    INLINE_BOOTSTRAP_HEIGHT, InlineBackend, InlineRecreate, leave_inline_prompt,
+};
 
 use conversation::ConversationUiState;
 use forms::BottomFormUiState;
@@ -101,6 +106,8 @@ pub struct TuiShell {
     approval_picker_index: usize,
     network_picker_active: bool,
     network_picker_index: usize,
+    tui_picker_active: bool,
+    tui_picker_index: usize,
     chat_picker_active: bool,
     chat_picker_index: usize,
     chat_picker_sessions: Vec<ChatSessionListItem>,
@@ -133,6 +140,9 @@ pub struct TuiShell {
     /// Session lifecycle notices (save/load/fork confirmations); re-appended
     /// after a live desktop timeline resync rebuilds the conversation.
     session_notices: Vec<ChatMessage>,
+    inline_mode: bool,
+    inline_scrollback: inline::InlineScrollback,
+    pending_tui_mode: Option<String>,
 }
 
 pub(crate) struct ApplyModelAddParams<'a> {
@@ -154,7 +164,11 @@ impl TuiShell {
         crate::cli_bootstrap::apply_approval_level(&mut self.runtime, raw)
     }
 
-    pub fn new() -> Result<Self> {
+    pub fn new_with_mode(inline: bool) -> Result<Self> {
+        Self::create(inline)
+    }
+
+    fn create(inline_mode: bool) -> Result<Self> {
         let app_paths: Arc<dyn AppPaths> = Arc::new(DefaultAppPaths::new());
         let secret_store: Arc<dyn SecretStore> = Arc::new(KeyringSecretStore);
         let config_store: Box<dyn ConfigStore> = Box::new(JsonConfigStore);
@@ -187,14 +201,9 @@ impl TuiShell {
         let cli_ui_hooks = compile_cli_ui_hooks(&extension_entries);
         let initial_mcp_status = runtime.mcp_status_snapshot();
 
-        let messages = vec![welcome_message(
-            config.active_model_name(),
-            &initial_mcp_status.welcome_line(),
-        )];
-
         let mut shell = Self {
             input: InputState::new(),
-            messages,
+            messages: Vec::new(),
             assistant_aux_by_message: HashMap::new(),
             persisted_standalone_pending_aux: None,
             persisted_standalone_pending_aux_anchor: None,
@@ -219,6 +228,8 @@ impl TuiShell {
             approval_picker_index: 0,
             network_picker_active: false,
             network_picker_index: 0,
+            tui_picker_active: false,
+            tui_picker_index: 0,
             chat_picker_active: false,
             chat_picker_index: 0,
             chat_picker_sessions: vec![],
@@ -244,10 +255,18 @@ impl TuiShell {
             extension_entries,
             marketplace: MarketplaceState::default(),
             cli_ui_hooks,
-            ui_runtime_state: UiRuntimeState::from_terminal_query(),
+            // 内嵌 TUI 画在主屏，不能探测图片协议（会往 stdout 打 kitty/sixel 查询）。
+            ui_runtime_state: if inline_mode {
+                UiRuntimeState::default()
+            } else {
+                UiRuntimeState::from_terminal_query()
+            },
             workspace_binding: "project".to_string(),
             file_reference_index_loading: false,
             session_notices: Vec::new(),
+            inline_mode,
+            inline_scrollback: inline::InlineScrollback::new(),
+            pending_tui_mode: None,
         };
 
         if let Err(err) = shell.runtime.prime_workspace_file_reference_index() {
@@ -375,7 +394,7 @@ impl TuiShell {
     pub fn poll_runtime(&mut self) {
         self.runtime.poll();
         self.apply_runtime_events();
-        self.sync_welcome_mcp_status();
+        self.sync_mcp_status();
         self.refresh_active_subagent_view();
         self.refresh_plan_metadata_from_disk();
         if self.file_reference_index_loading && self.current_file_reference_query().is_some() {
@@ -389,7 +408,7 @@ impl TuiShell {
     pub fn handle_stream_stall_timeout(&mut self) {
         self.runtime.handle_stream_stall_timeout();
         self.apply_runtime_events();
-        self.sync_welcome_mcp_status();
+        self.sync_mcp_status();
         if !self.can_interrupt_current_turn() {
             self.clear_interrupt_escape_arm();
         }
@@ -449,12 +468,10 @@ impl TuiShell {
         self.pending_assistant_msg_index = None;
         self.last_completed_assistant_msg_index = None;
         self.last_turn_can_continue = false;
-        let mcp_status = self.runtime.mcp_status_snapshot();
-        self.messages.push(welcome_message(
-            self.runtime.config().active_model_name(),
-            &mcp_status.welcome_line(),
-        ));
-        self.last_mcp_status_revision = mcp_status.revision;
+        if self.inline_mode {
+            self.inline_scrollback.reset();
+        }
+        self.last_mcp_status_revision = self.runtime.mcp_status_snapshot().revision;
         self.scroll_history_to_bottom();
     }
 
@@ -527,6 +544,10 @@ impl TuiShell {
 
     pub fn is_network_picker_active(&self) -> bool {
         self.network_picker_active
+    }
+
+    pub fn is_tui_picker_active(&self) -> bool {
+        self.tui_picker_active
     }
 
     pub fn is_chat_picker_active(&self) -> bool {
@@ -660,43 +681,6 @@ impl TuiShell {
                 tool_block: None,
             });
         }
-
-        self.refresh_welcome_message();
-    }
-
-    fn refresh_welcome_message(&mut self) {
-        let snapshot = self.runtime.mcp_status_snapshot();
-        self.refresh_welcome_message_with_snapshot(&snapshot);
-    }
-
-    fn refresh_welcome_message_with_snapshot(&mut self, snapshot: &McpStatusSnapshot) {
-        let Some(first_message) = self.messages.first_mut() else {
-            logging::log_event("[mcp] welcome refresh skipped: no first message");
-            return;
-        };
-        let is_welcome = locale::is_welcome_message(&first_message.content);
-        if first_message.role != MessageRole::Agent || !is_welcome {
-            logging::log_event(&format!(
-                "[mcp] welcome refresh skipped: role={:?} is_welcome={} first_line={}",
-                first_message.role,
-                is_welcome,
-                first_message.content.lines().next().unwrap_or("<empty>"),
-            ));
-            return;
-        }
-        let active_model = self.runtime.config().active_model_name().to_string();
-        let mcp_welcome_line = snapshot.welcome_line();
-        let previous_status_line = first_message
-            .content
-            .lines()
-            .last()
-            .unwrap_or("<empty>")
-            .to_string();
-        first_message.content = welcome_message_text(&active_model, &mcp_welcome_line);
-        logging::log_event(&format!(
-            "[mcp] welcome refreshed revision={} state={:?} previous_status={} next_status={}",
-            snapshot.revision, snapshot.state, previous_status_line, mcp_welcome_line,
-        ));
     }
 
     fn save_current_chat(&mut self, path: Option<&str>) {
@@ -1268,23 +1252,6 @@ fn should_toggle_aux_details_on_exit_rewind_picker(
     previous_show_aux_details: Option<bool>,
 ) -> bool {
     previous_show_aux_details.is_some_and(|previous| previous != show_aux_details)
-}
-
-fn welcome_message(active_model: &str, mcp_status_line: &str) -> ChatMessage {
-    ChatMessage {
-        role: MessageRole::Agent,
-        content: welcome_message_text(active_model, mcp_status_line),
-        tool_block: None,
-    }
-}
-
-fn welcome_message_text(active_model: &str, mcp_status_line: &str) -> String {
-    t!(
-        "tui.welcome.body",
-        model = active_model,
-        mcp_status = mcp_status_line
-    )
-    .into_owned()
 }
 
 fn is_subagents_command(message: &str) -> bool {

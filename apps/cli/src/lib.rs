@@ -61,7 +61,9 @@ pub use cli::{
     ModelAddCommand, ModelCommand, handle_config_cli, handle_extension_cli, handle_hooks_cli,
     handle_mcp_cli, handle_model_cli,
 };
-pub use cli_bootstrap::{GlobalCliOptions, bootstrap_config, print_skills_stub};
+pub use cli_bootstrap::{
+    GlobalCliOptions, bootstrap_config, print_skills_stub, resolve_session_tui_mode,
+};
 #[cfg(feature = "tui")]
 pub use headless::run_headless_prompt;
 pub use serve::run_serve;

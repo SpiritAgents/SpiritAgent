@@ -4,12 +4,24 @@ use crate::model_registry::ModelRef;
 
 pub(crate) const APPROVAL_LEVEL_OPTIONS: [&str; 3] = ["default", "auto-approval", "full-approval"];
 pub(crate) const LLM_HTTP_VERSION_OPTIONS: [&str; 2] = ["http1.1", "http2"];
+pub(crate) const TUI_MODE_OPTIONS: [&str; 2] = [
+    crate::ports::TUI_MODE_INLINE,
+    crate::ports::TUI_MODE_FULLSCREEN,
+];
 
 pub(crate) fn llm_http_version_picker_index(current: &str) -> usize {
     if crate::ports::normalize_llm_http_version(current) == "http1.1" {
         0
     } else {
         1
+    }
+}
+
+pub(crate) fn tui_mode_picker_index(current: &str) -> usize {
+    if crate::ports::normalize_tui_mode(current) == crate::ports::TUI_MODE_FULLSCREEN {
+        1
+    } else {
+        0
     }
 }
 
@@ -38,6 +50,10 @@ impl TuiShell {
         self.network_picker_active = false;
     }
 
+    pub fn cancel_tui_picker(&mut self) {
+        self.tui_picker_active = false;
+    }
+
     pub fn select_next_model(&mut self) {
         let total = self.runtime.config().flatten_models().len();
         if total == 0 {
@@ -62,6 +78,10 @@ impl TuiShell {
     pub fn select_next_network_version(&mut self) {
         self.network_picker_index =
             (self.network_picker_index + 1) % LLM_HTTP_VERSION_OPTIONS.len();
+    }
+
+    pub fn select_next_tui_mode(&mut self) {
+        self.tui_picker_index = (self.tui_picker_index + 1) % TUI_MODE_OPTIONS.len();
     }
 
     pub fn select_prev_model(&mut self) {
@@ -101,6 +121,14 @@ impl TuiShell {
             self.network_picker_index = LLM_HTTP_VERSION_OPTIONS.len() - 1;
         } else {
             self.network_picker_index -= 1;
+        }
+    }
+
+    pub fn select_prev_tui_mode(&mut self) {
+        if self.tui_picker_index == 0 {
+            self.tui_picker_index = TUI_MODE_OPTIONS.len() - 1;
+        } else {
+            self.tui_picker_index -= 1;
         }
     }
 
@@ -193,6 +221,16 @@ impl TuiShell {
 
         self.persist_llm_http_version(selected);
         self.network_picker_active = false;
+    }
+
+    pub fn confirm_tui_picker(&mut self) {
+        let Some(selected) = TUI_MODE_OPTIONS.get(self.tui_picker_index).copied() else {
+            self.tui_picker_active = false;
+            return;
+        };
+
+        self.persist_tui_mode(selected);
+        self.tui_picker_active = false;
     }
 
     pub fn cancel_chat_picker(&mut self) {
@@ -346,6 +384,7 @@ impl TuiShell {
         self.language_picker_active = false;
         self.approval_picker_active = false;
         self.network_picker_active = false;
+        self.tui_picker_active = false;
         self.chat_picker_active = false;
         self.image_picker_active = false;
         self.forms.active = None;
@@ -423,6 +462,36 @@ impl TuiShell {
             ),
             Err(err) => self.push_agent_message(t!("tui.networks.failed", err = err).into_owned()),
         }
+    }
+
+    pub(super) fn open_tui_picker(&mut self) {
+        self.tui_picker_index = tui_mode_picker_index(self.current_tui_mode());
+        self.reset_primary_picker_overlay();
+        self.tui_picker_active = true;
+    }
+
+    pub(super) fn persist_tui_mode(&mut self, mode: &str) {
+        let Some(normalized) = crate::ports::parse_tui_mode_strict(mode) else {
+            self.push_agent_message(t!("tui.tui.usage").into_owned());
+            return;
+        };
+        let mut config = self.runtime.config().clone();
+        config.tui = normalized.clone();
+        if let Err(err) = self.config_store.save(&config) {
+            self.push_agent_message(t!("tui.tui.save_failed", err = err).into_owned());
+            return;
+        }
+        self.runtime.store_config(config);
+        if self.current_tui_mode() != normalized {
+            self.pending_tui_mode = Some(normalized.clone());
+        }
+        self.push_agent_message(
+            t!(
+                "tui.tui.changed",
+                mode = crate::ui::tui_mode_label(&normalized)
+            )
+            .into_owned(),
+        );
     }
 
     pub(super) fn open_chat_picker(&mut self) {

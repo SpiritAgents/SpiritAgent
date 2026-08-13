@@ -410,6 +410,8 @@ pub struct TuiViewModel {
     pub approval_picker_index: usize,
     pub network_picker_active: bool,
     pub network_picker_index: usize,
+    pub tui_picker_active: bool,
+    pub tui_picker_index: usize,
     pub chat_picker_active: bool,
     pub chat_picker_index: usize,
     pub chat_picker_sessions: Vec<crate::ports::ChatSessionListItem>,
@@ -437,6 +439,9 @@ pub struct TuiViewModel {
     /// 对话区选区：折行后的全局行号 + 显示列（与 WordWrapper 一致）。
     pub conversation_sel_anchor: Option<(usize, usize)>,
     pub conversation_sel_head: Option<(usize, usize)>,
+    /// 内嵌 TUI：已完成行进系统 scrollback，ratatui 只画未提交的 live 尾巴。
+    pub inline_mode: bool,
+    pub committed_history_lines: usize,
 }
 
 impl TuiViewModel {

@@ -5,14 +5,6 @@ use crate::subagent_display::{
     strip_subagent_spinner_prefix,
 };
 
-const SPIRIT_LOGO_LINES: [&str; 6] = [
-    " ███████╗██████╗ ██╗██████╗ ██╗████████╗ █████╗  ██████╗ ███████╗███╗   ██╗████████╗",
-    " ██╔════╝██╔══██╗██║██╔══██╗██║╚══██╔══╝██╔══██╗██╔════╝ ██╔════╝████╗  ██║╚══██╔══╝",
-    " ███████╗██████╔╝██║██████╔╝██║   ██║   ███████║██║  ███╗█████╗  ██╔██╗ ██║   ██║   ",
-    " ╚════██║██╔═══╝ ██║██╔══██╗██║   ██║   ██╔══██║██║   ██║██╔══╝  ██║╚██╗██║   ██║   ",
-    " ███████║██║     ██║██║  ██║██║   ██║   ██║  ██║╚██████╔╝███████╗██║ ╚████║   ██║   ",
-    " ╚══════╝╚═╝     ╚═╝╚═╝  ╚═╝╚═╝   ╚═╝   ╚═╝  ╚═╝ ╚═════╝ ╚══════╝╚═╝  ╚═══╝   ╚═╝   ",
-];
 const TOOL_CARD_RAIL_SYMBOL: &str = "▌ ";
 const TOOL_IMAGE_MAX_ROWS: u16 = 12;
 const TOOL_IMAGE_MEDIUM_ROWS: u16 = 8;
@@ -40,17 +32,6 @@ struct PendingHistoryImageRenderBlock {
     x_offset: u16,
 }
 
-pub(in crate::ui) fn conversation_logo_width(available_width: u16) -> u16 {
-    let logo_text_width = SPIRIT_LOGO_LINES
-        .iter()
-        .map(|line| UnicodeWidthStr::width(*line))
-        .max()
-        .unwrap_or(0);
-    let title_width = UnicodeWidthStr::width(format!(" {} ", t!("ui.brand.title")).as_str());
-    let desired_width = logo_text_width.max(title_width).saturating_add(2) as u16;
-    desired_width.min(available_width.max(1))
-}
-
 pub(in crate::ui) fn conversation_norm_for_paint(
     app: &TuiViewModel,
     total_lines: usize,
@@ -70,41 +51,6 @@ pub(in crate::ui) fn conversation_norm_for_paint(
     Some(normalize_selection(a, b))
 }
 
-pub(in crate::ui) fn build_history_logo_lines(max_width: usize) -> Vec<Line<'static>> {
-    if max_width < 4 {
-        return Vec::new();
-    }
-
-    let banner_width = conversation_logo_width(max_width as u16) as usize;
-    if banner_width < 4 {
-        return Vec::new();
-    }
-
-    let inner_width = banner_width.saturating_sub(2);
-    let logo_style = Style::default().fg(Color::Cyan);
-    let mut lines = Vec::with_capacity(SPIRIT_LOGO_LINES.len() + 2);
-
-    lines.push(Line::from(Span::styled(
-        build_logo_top_border(inner_width, t!("ui.brand.title").as_ref()),
-        logo_style,
-    )));
-
-    for logo_line in SPIRIT_LOGO_LINES {
-        let clipped = clip_to_width(logo_line, inner_width);
-        let padded = pad_right_to_width(&clipped, inner_width);
-        lines.push(Line::from(Span::styled(
-            format!("│{}│", padded),
-            logo_style,
-        )));
-    }
-
-    lines.push(Line::from(Span::styled(
-        format!("└{}┘", "─".repeat(inner_width)),
-        logo_style,
-    )));
-    lines
-}
-
 #[cfg(test)]
 pub(in crate::ui) fn build_history_lines(
     app: &TuiViewModel,
@@ -117,10 +63,8 @@ pub(in crate::ui) fn build_history_render_result(
     app: &TuiViewModel,
     max_width: usize,
 ) -> HistoryRenderResult {
-    let mut lines = build_history_logo_lines(max_width);
     let (visible_messages, skipped, start_index) = visible_messages(app);
     let effective_standalone_pending_aux = effective_standalone_pending_aux(app);
-    let has_pending_aux = effective_standalone_pending_aux.is_some();
     let render_standalone_pending_aux =
         should_render_standalone_pending_aux(app, start_index, visible_messages.len());
     let standalone_insert_before = standalone_pending_aux_insert_before_message_index(
@@ -151,9 +95,7 @@ pub(in crate::ui) fn build_history_render_result(
     )> = Vec::new();
     let mut inserted_standalone_block = false;
 
-    if !lines.is_empty() && (!visible_messages.is_empty() || has_pending_aux) {
-        lines.push(Line::from(""));
-    }
+    let mut lines = Vec::new();
 
     if skipped > 0 {
         lines.push(Line::from(vec![
@@ -180,14 +122,18 @@ pub(in crate::ui) fn build_history_render_result(
             inserted_standalone_block = true;
         }
         let mut rendered = render_message_lines(app, msg, global_idx);
-        let pending_image_block = msg.tool_block.as_ref().and_then(|tool| {
-            let mut image_block = pending_image_block_for_tool(tool, max_width)?;
-            image_block.line_offset_in_block = rendered.len();
-            rendered.extend(render_tool_image_placeholder_lines(
-                image_block.reserved_rows,
-            ));
-            Some(image_block)
-        });
+        let pending_image_block = if app.inline_mode {
+            None
+        } else {
+            msg.tool_block.as_ref().and_then(|tool| {
+                let mut image_block = pending_image_block_for_tool(tool, max_width)?;
+                image_block.line_offset_in_block = rendered.len();
+                rendered.extend(render_tool_image_placeholder_lines(
+                    image_block.reserved_rows,
+                ));
+                Some(image_block)
+            })
+        };
         if !rendered.is_empty() {
             rendered_blocks.push((Some(global_idx + 1), rendered, pending_image_block));
         }

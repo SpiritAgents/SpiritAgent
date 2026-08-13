@@ -272,6 +272,7 @@ pub(in crate::ui) fn suggestion_summary(suggestion: &InputSuggestion) -> String 
         "/language" => t!("ui.suggestion.summary.language").into_owned(),
         "/approval" => t!("ui.suggestion.summary.approval").into_owned(),
         "/networks" => t!("ui.suggestion.summary.networks").into_owned(),
+        "/tui" => t!("ui.suggestion.summary.tui").into_owned(),
         "/start-implementing" => t!("ui.suggestion.summary.start_implementing").into_owned(),
         _ => String::new(),
     }
@@ -408,6 +409,12 @@ pub(in crate::ui) fn suggestion_usage_lines(suggestion: &InputSuggestion) -> Vec
             "    /networks".to_string(),
             "    /networks http1.1".to_string(),
             "    /networks http2".to_string(),
+        ],
+        "/tui" => vec![
+            t!("ui.suggestion.usage.heading").into_owned(),
+            "    /tui".to_string(),
+            "    /tui inline".to_string(),
+            "    /tui fullscreen".to_string(),
         ],
         "/start-implementing" => vec![
             t!("ui.suggestion.usage.heading").into_owned(),
@@ -558,6 +565,14 @@ pub(crate) fn llm_http_version_label(version: &str) -> String {
     }
 }
 
+pub(crate) fn tui_mode_label(mode: &str) -> String {
+    if crate::ports::normalize_tui_mode(mode) == crate::ports::TUI_MODE_FULLSCREEN {
+        t!("ui.picker.tui.fullscreen").into_owned()
+    } else {
+        t!("ui.picker.tui.inline").into_owned()
+    }
+}
+
 pub(in crate::ui) fn build_approval_picker_lines(
     app: &TuiViewModel,
     max_items: usize,
@@ -600,6 +615,31 @@ pub(in crate::ui) fn build_network_picker_lines(
         lines.push(Line::from(vec![
             Span::styled(picker_selection_prefix(is_selected), row_style),
             Span::styled(llm_http_version_label(version), row_style),
+        ]));
+    }
+
+    lines
+}
+
+pub(in crate::ui) fn build_tui_picker_lines(
+    app: &TuiViewModel,
+    max_items: usize,
+) -> Vec<Line<'static>> {
+    const OPTIONS: [&str; 2] = [
+        crate::ports::TUI_MODE_INLINE,
+        crate::ports::TUI_MODE_FULLSCREEN,
+    ];
+    let selected = app.tui_picker_index.min(OPTIONS.len().saturating_sub(1));
+    let total = OPTIONS.len();
+    let (start, end) = inline_picker_bounds(total, selected, max_items);
+
+    let mut lines = Vec::new();
+    for (idx, mode) in OPTIONS.iter().enumerate().take(end).skip(start) {
+        let is_selected = idx == selected;
+        let row_style = inline_picker_text_style(is_selected);
+        lines.push(Line::from(vec![
+            Span::styled(picker_selection_prefix(is_selected), row_style),
+            Span::styled(tui_mode_label(mode), row_style),
         ]));
     }
 

@@ -162,6 +162,8 @@ export interface DesktopConfigFile {
   dreams: DesktopDreamConfigFile;
   agents: DesktopAgentsConfigFile;
   networks: DesktopNetworksConfigFile;
+  /** CLI TUI layout; omitted means inline. Desktop round-trips this so saves do not drop it. */
+  tui?: "inline" | "fullscreen";
 }
 
 export function normalizeWorkspaceBinding(value: unknown): DesktopWorkspaceBinding {
@@ -1207,6 +1209,7 @@ function normalizeConfig(raw: Partial<DesktopConfigFile>): DesktopConfigFile {
     dreams,
     agents: normalizeAgentsConfig(raw.agents),
     networks: normalizeNetworksConfig(raw.networks),
+    ...(raw.tui === "inline" || raw.tui === "fullscreen" ? { tui: raw.tui } : {}),
   };
 }
 

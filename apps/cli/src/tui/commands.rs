@@ -679,6 +679,14 @@ impl TuiShell {
         }
     }
 
+    pub(crate) fn handle_tui_slash(&mut self, args: &[&str]) {
+        match args {
+            [] => self.open_tui_picker(),
+            [mode] => self.persist_tui_mode(mode),
+            _ => self.push_agent_message(t!("tui.tui.usage").into_owned()),
+        }
+    }
+
     pub(crate) fn handle_language_slash(&mut self, args: &[&str]) {
         match args {
             [] => self.open_language_picker(),

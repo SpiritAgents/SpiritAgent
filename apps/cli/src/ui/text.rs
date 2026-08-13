@@ -79,45 +79,6 @@ pub(in crate::ui) fn truncate_to_width(text: &str, max_width: usize) -> String {
     out
 }
 
-pub(in crate::ui) fn clip_to_width(text: &str, max_width: usize) -> String {
-    if max_width == 0 {
-        return String::new();
-    }
-
-    let mut out = String::new();
-    let mut used = 0usize;
-    for ch in text.chars() {
-        let ch_width = UnicodeWidthChar::width(ch).unwrap_or(0);
-        if used + ch_width > max_width {
-            break;
-        }
-        used += ch_width;
-        out.push(ch);
-    }
-    out
-}
-
-pub(in crate::ui) fn pad_right_to_width(text: &str, width: usize) -> String {
-    let used = UnicodeWidthStr::width(text);
-    if used >= width {
-        return text.to_string();
-    }
-    format!("{}{}", text, " ".repeat(width - used))
-}
-
-pub(in crate::ui) fn build_logo_top_border(inner_width: usize, title: &str) -> String {
-    if inner_width == 0 {
-        return String::new();
-    }
-
-    let title_width = UnicodeWidthStr::width(title);
-    if title_width >= inner_width {
-        return format!("┌{}┐", "─".repeat(inner_width));
-    }
-
-    format!("┌{}{}┐", title, "─".repeat(inner_width - title_width))
-}
-
 pub(in crate::ui) fn truncate_from_left_to_width(text: &str, max_width: usize) -> String {
     if max_width == 0 {
         return String::new();

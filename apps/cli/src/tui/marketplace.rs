@@ -907,6 +907,7 @@ impl TuiShell {
         self.language_picker_active = false;
         self.approval_picker_active = false;
         self.network_picker_active = false;
+        self.tui_picker_active = false;
         self.chat_picker_active = false;
         self.subagent.picker_active = false;
         self.close_subagent_view();

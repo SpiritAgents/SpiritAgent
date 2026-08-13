@@ -5,7 +5,10 @@ use crate::{
     adapters::JsonConfigStore,
     locale::{self, available_ui_locales_csv, parse_ui_locale},
     model_registry::AppConfig,
-    ports::{ConfigStore, available_approval_levels_csv, parse_approval_level_strict},
+    ports::{
+        ConfigStore, available_approval_levels_csv, available_tui_modes_csv,
+        parse_approval_level_strict, parse_tui_mode_strict,
+    },
     runtime_handle::RuntimeHandle,
 };
 
@@ -15,6 +18,8 @@ pub struct GlobalCliOptions {
     pub model: Option<String>,
     pub approval: Option<String>,
     pub language: Option<String>,
+    /// Process-only TUI layout override (`inline` / `fullscreen`); not written to config.
+    pub tui: Option<String>,
 }
 
 pub fn list_model_ids(config: &AppConfig) -> Vec<String> {
@@ -70,6 +75,11 @@ pub fn bootstrap_config(options: &GlobalCliOptions) -> Result<AppConfig> {
     // Validate early so unknown --approval fails before TUI/headless init.
     if let Some(raw) = options.approval.as_deref() {
         let _ = parse_cli_approval_level(raw)?;
+    }
+
+    // Validate `--tui` early; do not persist (session override only).
+    if let Some(raw) = options.tui.as_deref() {
+        let _ = parse_cli_tui_mode(raw)?;
     }
 
     Ok(config)
@@ -143,6 +153,27 @@ pub fn parse_cli_approval_level(raw: &str) -> Result<String> {
 pub fn apply_approval_level(runtime: &mut RuntimeHandle, raw: &str) -> Result<()> {
     let level = parse_cli_approval_level(raw)?;
     runtime.set_approval_level(&level)
+}
+
+pub fn parse_cli_tui_mode(raw: &str) -> Result<String> {
+    parse_tui_mode_strict(raw).ok_or_else(|| {
+        anyhow!(
+            "{}",
+            t!(
+                "cli.tui.unsupported",
+                mode = raw,
+                available = available_tui_modes_csv()
+            )
+        )
+    })
+}
+
+pub fn resolve_session_tui_mode(options: &GlobalCliOptions, config: &AppConfig) -> String {
+    options
+        .tui
+        .as_deref()
+        .and_then(parse_tui_mode_strict)
+        .unwrap_or_else(|| crate::ports::normalize_tui_mode(&config.tui))
 }
 
 pub fn print_skills_stub() {
@@ -221,6 +252,27 @@ mod tests {
         let err = parse_cli_approval_level("nope").unwrap_err().to_string();
         assert!(err.contains("nope"));
         assert!(err.contains("default, auto-approval, full-approval"));
+    }
+
+    #[test]
+    fn parse_cli_tui_mode_errors_list_available() {
+        rust_i18n::set_locale("en");
+        let err = parse_cli_tui_mode("mini").unwrap_err().to_string();
+        assert!(err.contains("mini"));
+        assert!(err.contains("inline, fullscreen"));
+    }
+
+    #[test]
+    fn resolve_session_tui_mode_prefers_cli_override() {
+        let config = AppConfig {
+            tui: "inline".to_string(),
+            ..AppConfig::default()
+        };
+        let options = GlobalCliOptions {
+            tui: Some("fullscreen".to_string()),
+            ..GlobalCliOptions::default()
+        };
+        assert_eq!(resolve_session_tui_mode(&options, &config), "fullscreen");
     }
 
     struct NoopConfigStore;
