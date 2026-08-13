@@ -40,6 +40,12 @@ impl InlineBackend {
     }
 }
 
+impl Default for InlineBackend {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 /// 屏幕上原点下方已经留得下 `inline_height` 行时，重建视口不必再打换行。
 /// 靠近底部、行数不够时必须真的 `append_lines`，否则 ratatui 会按「已滚动」把 y 往上减。
 pub fn should_suppress_inline_append(cursor_y: u16, rows: u16, inline_height: u16) -> bool {

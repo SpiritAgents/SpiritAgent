@@ -264,8 +264,10 @@ mod tests {
 
     #[test]
     fn resolve_session_tui_mode_prefers_cli_override() {
-        let mut config = AppConfig::default();
-        config.tui = "inline".to_string();
+        let config = AppConfig {
+            tui: "inline".to_string(),
+            ..AppConfig::default()
+        };
         let options = GlobalCliOptions {
             tui: Some("fullscreen".to_string()),
             ..GlobalCliOptions::default()

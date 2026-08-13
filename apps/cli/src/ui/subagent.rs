@@ -1,6 +1,7 @@
 use super::conversation::*;
 use super::*;
 
+#[allow(clippy::too_many_arguments)]
 pub(in crate::ui) fn draw_subagent_viewer(
     frame: &mut ratatui::Frame<'_>,
     area: Rect,

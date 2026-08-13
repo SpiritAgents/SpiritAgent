@@ -1751,7 +1751,7 @@ fn inline_mode_keeps_footer_directly_below_input() {
     assert!(
         lines
             .iter()
-            .any(|line| line.contains(&app.config.active_model_name())),
+            .any(|line| line.contains(app.config.active_model_name())),
         "inline footer should include the active model name, got:\n{snapshot}"
     );
 }
