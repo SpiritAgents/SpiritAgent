@@ -4,9 +4,9 @@ use crate::{
     ports::{ChatSessionListItem, SubagentSessionStatus},
     view::{
         AssistantAuxData, BottomFormFieldEditorView, BottomFormFieldView, BottomFormView,
-        MainInputMode, MarketplaceFlowStep, MarketplaceViewModel, PendingAssistantAux,
-        RewindPickerView, SlashFlowItemView, SlashFlowSearchView, SlashFlowView,
-        ForkPickerView, SubagentSessionDetailView, SubagentSessionSummaryView,
+        ForkPickerView, MainInputMode, MarketplaceFlowStep, MarketplaceViewModel,
+        PendingAssistantAux, PendingSubagentApprovalView, RewindPickerView, SlashFlowItemView,
+        SlashFlowSearchView, SlashFlowView, SubagentSessionDetailView, SubagentSessionSummaryView,
     },
 };
 use ratatui::{Terminal, backend::TestBackend};
@@ -1797,6 +1797,43 @@ fn inline_fork_picker_shows_committed_history() {
     assert!(
         collapsed.contains("我先看一下上下文"),
         "inline fork picker should surface committed history, got:\n{snapshot}"
+    );
+}
+
+#[test]
+fn inline_mode_renders_subagent_viewer_and_approval() {
+    let mut app = build_view_model(ChatMessage::new(MessageRole::User, "hello"));
+    app.inline_mode = true;
+    app.committed_history_lines = usize::MAX;
+    app.subagent_view = Some(SubagentSessionDetailView {
+        summary: SubagentSessionSummaryView {
+            session_id: "sub-1".to_string(),
+            title: "demo-subagent".to_string(),
+            status: SubagentSessionStatus::Blocked,
+            updated_at_unix_ms: 1,
+            latest_message: None,
+        },
+        messages: vec![ChatMessage::new(MessageRole::Agent, "subagent working")],
+        pending_aux: None,
+        final_output: None,
+        error: None,
+    });
+    app.pending_subagent_approval = Some(PendingSubagentApprovalView {
+        session_id: "sub-1".to_string(),
+        session_title: "demo-subagent".to_string(),
+        tool_name: "shell".to_string(),
+        prompt: "run ls".to_string(),
+    });
+
+    let snapshot = render_ui_lines(&app, 80, 20).join("\n");
+    let collapsed = snapshot.replace([' ', '\u{00a0}'], "");
+    assert!(
+        collapsed.contains("SubAgent:demo-subagent"),
+        "inline mode should draw the SubAgent viewer, got:\n{snapshot}"
+    );
+    assert!(
+        collapsed.contains("Y允许") && collapsed.contains("N拒绝"),
+        "inline SubAgent viewer should show the approval shortcuts, got:\n{snapshot}"
     );
 }
 

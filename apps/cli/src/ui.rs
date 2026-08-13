@@ -620,6 +620,9 @@ pub(crate) fn inline_needed_viewport_height(
     term_width: u16,
     term_rows: u16,
 ) -> u16 {
+    if app.subagent_view.is_some() {
+        return term_rows.max(1);
+    }
     let flags = inline_surface_flags(app);
     let live_count = inline_uncommitted_live_count(app, term_width);
     measure_inline_chrome(app, term_width, term_rows, live_count, &flags)
@@ -771,6 +774,19 @@ fn draw_inline_ui(
         content_bottom = content_bottom.max(overlay.bottom());
     }
     feedback.inline_content_bottom = Some(content_bottom);
+
+    if let Some(view) = &app.subagent_view {
+        feedback.subagent_history_offset_from_bottom = draw_subagent_viewer(
+            frame,
+            frame.area(),
+            view,
+            app.subagent_history_offset_from_bottom,
+            app.show_aux_details,
+            app.pending_subagent_approval.as_ref(),
+            app.subagent_approval_input.as_ref(),
+            app.thinking_spinner_index,
+        );
+    }
 
     clear_active_cli_ui_hooks();
     feedback
