@@ -6,7 +6,7 @@ use crate::{
         AssistantAuxData, BottomFormFieldEditorView, BottomFormFieldView, BottomFormView,
         MainInputMode, MarketplaceFlowStep, MarketplaceViewModel, PendingAssistantAux,
         RewindPickerView, SlashFlowItemView, SlashFlowSearchView, SlashFlowView,
-        SubagentSessionDetailView, SubagentSessionSummaryView,
+        ForkPickerView, SubagentSessionDetailView, SubagentSessionSummaryView,
     },
 };
 use ratatui::{Terminal, backend::TestBackend};
@@ -1753,6 +1753,50 @@ fn inline_mode_keeps_footer_directly_below_input() {
             .iter()
             .any(|line| line.contains(&app.config.active_model_name())),
         "inline footer should include the active model name, got:\n{snapshot}"
+    );
+}
+
+#[test]
+fn inline_rewind_picker_shows_committed_history() {
+    let mut app = build_view_model(ChatMessage::new(MessageRole::User, "先确认需求"));
+    app.messages
+        .push(ChatMessage::new(MessageRole::Agent, "我先看一下上下文。"));
+    app.messages
+        .push(ChatMessage::new(MessageRole::User, "再整理一下实现方案"));
+    app.inline_mode = true;
+    app.committed_history_lines = usize::MAX;
+    app.rewind_picker = Some(RewindPickerView {
+        selected_message_id: 3,
+        selectable_message_ids: vec![1, 3],
+    });
+
+    let lines = render_ui_lines(&app, 80, 20);
+    let snapshot = lines.join("\n");
+    let collapsed = snapshot.replace([' ', '\u{00a0}'], "");
+    assert!(
+        collapsed.contains("再整理一下实现方案"),
+        "inline rewind picker should surface committed history, got:\n{snapshot}"
+    );
+}
+
+#[test]
+fn inline_fork_picker_shows_committed_history() {
+    let mut app = build_view_model(ChatMessage::new(MessageRole::User, "先确认需求"));
+    app.messages
+        .push(ChatMessage::new(MessageRole::Agent, "我先看一下上下文。"));
+    app.inline_mode = true;
+    app.committed_history_lines = usize::MAX;
+    app.fork_picker = Some(ForkPickerView {
+        selected_message_id: 2,
+        selectable_message_ids: vec![2],
+    });
+
+    let lines = render_ui_lines(&app, 80, 20);
+    let snapshot = lines.join("\n");
+    let collapsed = snapshot.replace([' ', '\u{00a0}'], "");
+    assert!(
+        collapsed.contains("我先看一下上下文"),
+        "inline fork picker should surface committed history, got:\n{snapshot}"
     );
 }
 

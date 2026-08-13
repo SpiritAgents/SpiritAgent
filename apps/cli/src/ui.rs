@@ -499,6 +499,7 @@ fn inline_surface_flags(app: &TuiViewModel) -> InlineSurfaceFlags {
     let show_subagent_picker = app.subagent_picker_active;
     let show_image_picker = app.image_picker_active;
     let show_rewind_picker = app.rewind_picker.is_some();
+    let show_fork_picker = app.fork_picker.is_some();
     let show_bottom_form = app.bottom_form.is_some();
     let show_marketplace = app.marketplace_view.is_some();
     let show_inline_picker = show_model_picker
@@ -517,6 +518,7 @@ fn inline_surface_flags(app: &TuiViewModel) -> InlineSurfaceFlags {
     let show_suggestions = app.input_suggestion_kind.is_some()
         && !show_picker
         && !show_rewind_picker
+        && !show_fork_picker
         && !show_bottom_form
         && !show_marketplace;
     InlineSurfaceFlags {
@@ -536,8 +538,15 @@ fn inline_surface_flags(app: &TuiViewModel) -> InlineSurfaceFlags {
     }
 }
 
+fn inline_history_picker_active(app: &TuiViewModel) -> bool {
+    app.rewind_picker.is_some() || app.fork_picker.is_some()
+}
+
 fn inline_uncommitted_live_count(app: &TuiViewModel, width: u16) -> u16 {
     let live_lines = inline_history_visual_lines(app, width.max(1));
+    if inline_history_picker_active(app) {
+        return live_lines.len() as u16;
+    }
     let committed = app.committed_history_lines.min(live_lines.len());
     live_lines.len().saturating_sub(committed) as u16
 }
@@ -628,9 +637,22 @@ fn draw_inline_ui(
     set_active_cli_ui_hooks(app.cli_ui_hooks.clone());
     let flags = inline_surface_flags(app);
     let area = frame.area();
-    let live_lines = inline_history_visual_lines(app, area.width.max(1));
-    let committed = app.committed_history_lines.min(live_lines.len());
-    let live: Vec<Line<'static>> = live_lines.into_iter().skip(committed).collect();
+    let history_picker = inline_history_picker_active(app);
+    let (live, picker_meta) = if history_picker {
+        let history_render =
+            build_history_render_result(app, area.width.saturating_sub(1) as usize);
+        let ranges = history_render.message_ranges.clone();
+        let (flat, plain) =
+            flatten_wrapped_history(history_render.lines, area.width.max(1), None);
+        (flat, Some((plain, ranges)))
+    } else {
+        let live_lines = inline_history_visual_lines(app, area.width.max(1));
+        let committed = app.committed_history_lines.min(live_lines.len());
+        (
+            live_lines.into_iter().skip(committed).collect(),
+            None,
+        )
+    };
     let layout = measure_inline_chrome(app, area.width, area.height, live.len() as u16, &flags);
     let InlineChromeLayout {
         input_height,
@@ -639,13 +661,6 @@ fn draw_inline_ui(
         gap_h,
         live_h,
     } = layout;
-    let live_visible = if live_h == 0 {
-        Vec::new()
-    } else if live.len() as u16 > live_h {
-        live[live.len().saturating_sub(live_h as usize)..].to_vec()
-    } else {
-        live
-    };
 
     let mut constraints = Vec::new();
     if live_h > 0 {
@@ -668,7 +683,39 @@ fn draw_inline_ui(
 
     let mut idx = 0;
     if live_h > 0 {
-        frame.render_widget(Paragraph::new(live_visible), chunks[idx]);
+        let live_area = chunks[idx];
+        let live_visible = if history_picker {
+            let max_scroll = live.len().saturating_sub(live_h as usize);
+            let offset_bottom = app.history_offset_from_bottom.min(max_scroll);
+            let history_scroll = max_scroll.saturating_sub(offset_bottom);
+            let visible: Vec<Line<'static>> = live
+                .iter()
+                .skip(history_scroll)
+                .take(live_h as usize)
+                .cloned()
+                .collect();
+            if let Some((plain, message_ranges)) = picker_meta {
+                feedback.conversation_panel = Some(ConversationPanelRenderFeedback {
+                    hit: ConversationPanelHit {
+                        x: live_area.x,
+                        y: live_area.y,
+                        w: live_area.width.max(1),
+                        h: live_area.height.max(1),
+                        scroll: history_scroll,
+                        total_lines: live.len(),
+                    },
+                    plain_rows: plain,
+                    message_ranges,
+                    history_offset_from_bottom: offset_bottom,
+                });
+            }
+            visible
+        } else if live.len() as u16 > live_h {
+            live[live.len().saturating_sub(live_h as usize)..].to_vec()
+        } else {
+            live
+        };
+        frame.render_widget(Paragraph::new(live_visible), live_area);
         idx += 1;
     }
     if gap_h > 0 {
