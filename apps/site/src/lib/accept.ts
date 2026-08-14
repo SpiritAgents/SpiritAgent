@@ -2,7 +2,6 @@ import {
   DEFAULT_LOCALE,
   isSupportedLocale,
   matchLocaleFromLanguageTag,
-  SUPPORTED_LOCALES,
   type AppLocale,
 } from "@/i18n/config";
 
@@ -179,15 +178,6 @@ export function detectLocaleFromAcceptLanguage(acceptLanguage: string | null): A
   }
 
   return matchLocaleFromLanguageTag(tags[0].tag);
-}
-
-export function markdownProxyMatchers(): string[] {
-  return SUPPORTED_LOCALES.flatMap((locale) => [
-    `/${locale}`,
-    `/${locale}/`,
-    `/${locale}/download`,
-    `/${locale}/download/`,
-  ]);
 }
 
 export { HTML, MARKDOWN };
