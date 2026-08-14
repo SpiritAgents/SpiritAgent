@@ -30,3 +30,5 @@ declare global {
     spiritDesktop?: SpiritDesktopApi;
   }
 }
+
+export {}

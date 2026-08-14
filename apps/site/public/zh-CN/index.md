@@ -39,7 +39,7 @@ Spirit 不会把你锁进托管栈。你可以接入任意提供商的密钥，�
 
 ### 资源
 
-- [文档](/zh-CN#docs)
+- [文档](/zh-CN/docs)
 - [更新日志](https://github.com/SpiritAgents/SpiritAgent/releases)
 - [开源许可](/notice.md)
 

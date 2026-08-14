@@ -39,7 +39,7 @@ Placeholder for now.
 
 ### Resources
 
-- [Docs](/en-US#docs)
+- [Docs](/en-US/docs)
 - [Changelog](https://github.com/SpiritAgents/SpiritAgent/releases)
 - [Open source licenses](/notice.md)
 
