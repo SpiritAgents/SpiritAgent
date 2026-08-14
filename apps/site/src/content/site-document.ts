@@ -208,7 +208,7 @@ export function renderDownloadBodyHtml(locale: AppLocale): string {
     </article>
     <article>
       <h2>${escapeHtml(download.acp)}</h2>
-      <p>${escapeHtml(download.comingSoon)}</p>
+      <p>${escapeHtml(download.comingSoonJoke)}</p>
     </article>
   </section>
   <footer>
@@ -242,7 +242,7 @@ export function renderDownloadMarkdown(locale: AppLocale): string {
     "",
     `## ${download.acp}`,
     "",
-    download.comingSoon,
+    download.comingSoonJoke,
     "",
     `[${messages.common.brand}](${localePath(locale)}) · [${messages.common.download}](${downloadPath})`,
     "",

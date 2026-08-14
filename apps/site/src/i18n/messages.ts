@@ -295,7 +295,7 @@ export type Messages = {
     acp: string;
     copyInstall: string;
     copied: string;
-    comingSoon: string;
+    comingSoonJoke: string;
     listingInProgress: string;
     cliLogoTitle: string;
     cliUserMessage: string;
@@ -330,6 +330,11 @@ export type Messages = {
     previews: DesktopPreviewCopy;
   };
   docs: {
+    title: string;
+    metaTitle: string;
+    metaDescription: string;
+    comingSoon: string;
+    sectionAria: string;
     search: string;
     searchPlaceholder: string;
     searchNoResults: string;
@@ -383,7 +388,7 @@ const enUS: Messages = {
     acp: "ACP",
     copyInstall: "Copy install command",
     copied: "Copied",
-    comingSoon: "Coming soon™",
+    comingSoonJoke: "Coming soon™",
     listingInProgress: "Listing…",
     cliLogoTitle: "Spirit Agent",
     cliUserMessage: "Review auth.ts and fix the session refresh bug.",
@@ -686,6 +691,11 @@ Preparing a stronger headline update in messages.`,
     },
   },
   docs: {
+    title: "Documentation",
+    metaTitle: "Spirit Agent Docs",
+    metaDescription: "Product documentation for Spirit Agent is coming soon.",
+    comingSoon: "Coming soon.",
+    sectionAria: "Documentation",
     search: "Search",
     searchPlaceholder: "Search docs",
     searchNoResults: "No results",
@@ -738,7 +748,7 @@ const zhCN: Messages = {
     acp: "ACP",
     copyInstall: "复制安装命令",
     copied: "已复制",
-    comingSoon: "即将推出",
+    comingSoonJoke: "即将推出",
     listingInProgress: "上架中…",
     cliLogoTitle: "Spirit Agent",
     cliUserMessage: "检查 auth.ts，修好会话刷新的问题。",
@@ -1030,6 +1040,11 @@ const zhCN: Messages = {
     },
   },
   docs: {
+    title: "文档",
+    metaTitle: "Spirit Agent 文档",
+    metaDescription: "Spirit Agent 产品文档即将推出。",
+    comingSoon: "即将推出。",
+    sectionAria: "文档",
     search: "搜索",
     searchPlaceholder: "搜索文档",
     searchNoResults: "没有结果",

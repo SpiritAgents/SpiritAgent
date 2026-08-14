@@ -11,6 +11,7 @@ import { NoTranslate, protectBrandTokens } from "@/components/no-translate";
 import { useI18n } from "@/i18n/provider";
 import {
   DOCS_FRAME_CLASS,
+  HAS_PUBLISHED_DOCS,
   DOCS_MOBILE_MEGA_ROOT_ID,
   DOCS_MOBILE_MEGA_OPEN_EVENT,
   DOCS_MOBILE_MEGA_CLOSE_EVENT,
@@ -65,7 +66,7 @@ function GitHubMark(props: SVGProps<SVGSVGElement>) {
 export function SiteNav() {
   const { messages, localizedPath } = useI18n();
   const pathname = usePathname();
-  const isDocs = /\/docs(?:\/|$)/.test(pathname);
+  const isDocs = HAS_PUBLISHED_DOCS && /\/docs(?:\/|$)/.test(pathname);
   const nav = messages.hero.nav;
   const frameClass = isDocs ? DOCS_FRAME_CLASS : `${SITE_FRAME_CLASS} mx-auto`;
 

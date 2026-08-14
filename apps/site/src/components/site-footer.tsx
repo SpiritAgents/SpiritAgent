@@ -6,7 +6,7 @@ import { FONT_WEIGHT_NORMAL } from "@/lib/typography";
 import { protectBrandTokens } from "@/components/no-translate";
 import { usePathname } from "next/navigation";
 import { useI18n } from "@/i18n/provider";
-import { DOCS_FRAME_CLASS, SITE_FRAME_CLASS } from "@/lib/site-layout";
+import { DOCS_FRAME_CLASS, HAS_PUBLISHED_DOCS, SITE_FRAME_CLASS } from "@/lib/site-layout";
 import { SPIRIT_GITHUB_REPO_URL, SPIRIT_RELEASES_URL } from "@/lib/github-links";
 import { cn } from "@/lib/utils";
 
@@ -42,7 +42,7 @@ const externalIconLinkClassName =
 export function SiteFooter() {
   const year = new Date().getFullYear();
   const pathname = usePathname();
-  const isDocs = /\/docs(?:\/|$)/.test(pathname);
+  const isDocs = HAS_PUBLISHED_DOCS && /\/docs(?:\/|$)/.test(pathname);
   const { messages, localizedPath } = useI18n();
   const fm = messages.footer;
   const nav = messages.hero.nav;

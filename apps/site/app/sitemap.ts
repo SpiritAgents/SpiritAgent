@@ -24,6 +24,11 @@ export default function sitemap(): MetadataRoute.Sitemap {
         changeFrequency: "weekly" as const,
         priority: 0.8,
       },
+      {
+        url: `${origin}${getLocalePath(locale, "docs")}`,
+        changeFrequency: "weekly" as const,
+        priority: 0.6,
+      },
     ]),
     ...source.getPages().map((page) => ({
       url: `${origin}${page.url}`,

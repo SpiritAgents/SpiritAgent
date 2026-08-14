@@ -7,18 +7,45 @@ import {
   SUPPORTED_LOCALES,
   type AppLocale,
 } from "@/i18n/config";
-import { messagesByLocale } from "@/i18n/messages";
+import { messagesByLocale, type Messages } from "@/i18n/messages";
 import { getSiteOrigin } from "@/content/site-document";
 
-export function buildPageMetadata(localeParam: string, page: "home" | "download"): Metadata {
+export type SitePage = "home" | "download" | "docs";
+
+function pageCopy(
+  messages: Messages,
+  page: SitePage,
+): { title: string; description: string; pathSuffix: string; markdown: boolean } {
+  if (page === "download") {
+    return {
+      title: messages.download.metaTitle,
+      description: messages.download.metaDescription,
+      pathSuffix: "download",
+      markdown: true,
+    };
+  }
+  if (page === "docs") {
+    return {
+      title: messages.docs.metaTitle,
+      description: messages.docs.metaDescription,
+      pathSuffix: "docs",
+      markdown: false,
+    };
+  }
+  return {
+    title: messages.meta.title,
+    description: messages.meta.description,
+    pathSuffix: "",
+    markdown: true,
+  };
+}
+
+export function buildPageMetadata(localeParam: string, page: SitePage): Metadata {
   const locale: AppLocale = isSupportedLocale(localeParam) ? localeParam : DEFAULT_LOCALE;
   const messages = messagesByLocale[locale];
   const siteOrigin = getSiteOrigin();
-  const title = page === "download" ? messages.download.metaTitle : messages.meta.title;
-  const description =
-    page === "download" ? messages.download.metaDescription : messages.meta.description;
-  const canonicalPath =
-    page === "download" ? getLocalePath(locale, "download") : getLocalePath(locale);
+  const { title, description, pathSuffix, markdown } = pageCopy(messages, page);
+  const canonicalPath = getLocalePath(locale, pathSuffix);
   const canonicalUrl = `${siteOrigin}${canonicalPath}`;
   const markdownUrl = `${siteOrigin}${canonicalPath}/index.md`;
 
@@ -27,10 +54,7 @@ export function buildPageMetadata(localeParam: string, page: "home" | "download"
     languages["x-default"] = `${siteOrigin}/`;
   }
   for (const supportedLocale of SUPPORTED_LOCALES) {
-    languages[supportedLocale] =
-      page === "download"
-        ? `${siteOrigin}${getLocalePath(supportedLocale, "download")}`
-        : `${siteOrigin}${getLocalePath(supportedLocale)}`;
+    languages[supportedLocale] = `${siteOrigin}${getLocalePath(supportedLocale, pathSuffix)}`;
   }
 
   return {
@@ -39,9 +63,13 @@ export function buildPageMetadata(localeParam: string, page: "home" | "download"
     alternates: {
       canonical: canonicalUrl,
       languages,
-      types: {
-        "text/markdown": markdownUrl,
-      },
+      ...(markdown
+        ? {
+            types: {
+              "text/markdown": markdownUrl,
+            },
+          }
+        : {}),
     },
     openGraph: {
       type: "website",

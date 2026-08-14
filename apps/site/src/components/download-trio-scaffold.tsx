@@ -105,7 +105,7 @@ export function DownloadTrioScaffold() {
                       "disabled:opacity-60",
                     )}
                   >
-                    {copy.comingSoon}
+                    {copy.comingSoonJoke}
                   </Button>
                 )}
               </div>
