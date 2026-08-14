@@ -1,0 +1,12 @@
+{
+  "title": "工具",
+  "pages": [
+    "workspace",
+    "terminal",
+    "git",
+    "browser",
+    "lsp",
+    "tab-completion",
+    "generate-media"
+  ]
+}

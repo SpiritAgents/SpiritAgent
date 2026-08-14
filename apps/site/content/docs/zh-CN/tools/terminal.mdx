@@ -1,0 +1,16 @@
+---
+title: 终端
+description: Agent 用 shell 工具跑命令。Desktop 另有 Electron PTY 面板。
+---
+
+Agent 用 `shell` 跑命令，带上 `reason` 和 `command`。默认[审批](../agent/approvals.mdx)下，命令会先给你看再执行。
+
+Ask 模式不能调用 `shell`。
+
+## Desktop 面板
+
+Desktop（仅 Electron）有 **Shell** 工作区标签和嵌入式 PTY。那是给你用的。Agent 仍然走 `shell` 和审批，不会往你的 PTY 里打字。
+
+CLI 没有嵌入式 PTY 面板。命令仍通过共用守护进程上的同一个 `shell` 工具执行。
+
+需要指定 Desktop PTY 的 shell 时，用 `SPIRIT_TERMINAL_SHELL`。

@@ -1,0 +1,10 @@
+---
+title: Git
+description: 侧栏 chip 负责 commit、push、merge，不是内置 Skill。
+---
+
+Spirit 里的 Git 是**工作区面板和输入框 chip**，不是 Skill 包。**Git** 标签显示变更和历史。输入框上的 chip 可以发起 **commit**、**push** 或 **merge**。
+
+这些 chip 会注入固定提示（包括从 `AGENTS.md` 等文件推断的提交说明风格）。随后 Agent 在你的[审批](../agent/approvals.mdx)档位下使用工作区和 shell 工具。
+
+不要去找内置的 `git` Skill。额外的 git 流程以后再写进自己的 Skill——chip 仍是宿主 UI 的一部分。

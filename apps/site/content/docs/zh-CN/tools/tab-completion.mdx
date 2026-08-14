@@ -1,0 +1,22 @@
+---
+title: Tab 补全
+description: Monaco 内联代码补全。到设置 → Tab 配置，不要和 Agent 对话混在一起。
+---
+
+Tab Tab Tab 是**编辑器内联补全**。它不是 Agent 对话，也不是用来循环 [Agent / Plan / Ask / Debug](../agent/modes.mdx) 的那个 Tab。
+
+## 打开
+
+1. 打开 **设置 → Tab**。
+2. 打开代码补全（`codeCompletionEnabled`）。
+3. 在 **设置 → 模型** 指定 **轻量对话模型**。这个槽位也给其他轻量后台任务用。
+
+建议以幽灵文字出现在 Monaco 编辑器里。按 Tab 接受。
+
+## 它不是什么
+
+- 不会通过 `edit_file` 改文件，也不会等审批。
+- 不会跑 shell、Git chip 或 Browser。
+- 把 Agent 切到 Ask 或 Plan，不会改变 Tab 补全。
+
+如果没有建议，检查轻量对话模型是否已连接，以及开关是否打开。

@@ -1,0 +1,20 @@
+---
+title: LSP
+description: 在设置 → 智能体里启用语言服务器。
+---
+
+Spirit 可以连语言服务器，用来做诊断和相关的编辑器辅助。到 **设置 → 智能体** 打开，缺哪个提供商就装哪个。
+
+| Id | 语言 | 安装方式 |
+| --- | --- | --- |
+| `typescript-language-server` | TypeScript、JavaScript | npm（`typescript-language-server`） |
+| `pyright` | Python | npm（`pyright`） |
+| `gopls` | Go | Go 工具链 |
+| `rust-analyzer` | Rust | rustup |
+| `clangd` | C、C++ | 平台包（例如 Homebrew 或 winget） |
+| `jdtls` | Java | 手动 |
+| `omnisharp` | C# | .NET |
+
+clangd 和 jdtls 不随包装。自己装好，再回到 **设置 → 智能体**。
+
+LSP 不能代替测试。Agent 仍需要你（或 CI）跑项目的测试命令。
