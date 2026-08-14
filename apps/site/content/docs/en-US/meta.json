@@ -12,6 +12,15 @@
     "---Tools---",
     "tools",
     "---Customize---",
-    "customize"
+    "customize",
+    "---Hosts---",
+    "desktop",
+    "cli",
+    "acp",
+    "---Reference---",
+    "config",
+    "security",
+    "appearance",
+    "troubleshooting"
   ]
 }

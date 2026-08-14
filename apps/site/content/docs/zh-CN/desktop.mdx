@@ -1,0 +1,55 @@
+---
+title: Desktop
+description: 设置地图、Files / Git / Browser、市场、自动化，以及本机 Web Host 配对。
+---
+
+Desktop 是图形宿主。它与 [CLI](./cli.mdx) 共用本机守护进程。安装见 [安装 Desktop](./install/desktop.mdx)。
+
+## 设置地图
+
+| 分组 | 标签 | 内容 |
+| --- | --- | --- |
+| 基础 | 通用 | 通知、托盘 / 菜单栏图标 |
+| | 外观 | 主题、字体、界面语言、云母 / 模糊、指针 |
+| 能力 | 模型 | 提供商连接、模型列表、Key |
+| | 智能体 | LSP、Commit / PR 署名 |
+| | Tab | 编辑器 [Tab 补全](./tools/tab-completion.mdx) |
+| | Skills | 发现和生成 [Skills](./customize/skills.mdx) |
+| | 规则 | [Rules](./customize/rules.mdx) 槽位 |
+| | MCPs | [MCP](./customize/mcp.mdx) 服务器 |
+| | Hooks | [Hooks](./customize/hooks.mdx) |
+| | 梦境 | [Dreams](./customize/dreams.mdx)（Beta） |
+| 连接 | 网络 | LLM HTTP 版本、**Web 远程访问** |
+| | 集成 | [GitHub Device Login](./customize/integrations.mdx) |
+| | 扩展 | 已装扩展、ZIP 导入 |
+
+Developer 标签只在 Vite 开发构建里出现。
+
+## 工作区面板
+
+| 标签 | 作用 |
+| --- | --- |
+| Files | 文件树、Monaco、Markdown 预览、`plans/` |
+| Git | 变更、历史、[commit / push / merge chip](./tools/git.mdx) |
+| Browser | 嵌入浏览器 + 元素选取（**仅 Electron**） |
+| Shell | 嵌入 PTY（**仅 Electron**） |
+
+## 市场与自动化
+
+侧栏打开[市场](./customize/marketplace.mdx)。自动化有独立视图——[仅 Desktop](./customize/automations.mdx)。
+
+## Web Host 配对
+
+Desktop 可以在本机给 Web 客户端提供服务。
+
+- 默认监听：`127.0.0.1:7788`
+- 设置 → **网络** → Web 远程访问
+- 首次访问要输入该设置页上的 **6 位配对码**
+- 失败 5 次会锁定，直到你重启 Web Host
+- Token 存在浏览器的 `spirit-agent-web-host-token`
+
+Agent 仍在共用守护进程里跑。Web 客户端拿到的是已鉴权快照，不是第二套 Agent。
+
+**把 `0.0.0.0` 绑出去做远程局域网访问，不是已开放的产品路径。** 守护进程和 Web Host 默认留在 loopback。网络设置里的局域网 IPv4 是给你控制的那台机器，不是公网服务器。
+
+开发覆盖：`SPIRIT_DESKTOP_WEB_HOST=1`、`SPIRIT_WEB_HOST`、`SPIRIT_WEB_PORT`。

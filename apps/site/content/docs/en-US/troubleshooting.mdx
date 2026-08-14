@@ -1,0 +1,42 @@
+---
+title: Troubleshooting
+description: Old config, headless blocks, pairing locks, missing keys, and install-path mixups.
+---
+
+## config.json is rejected
+
+The file must be `schemaVersion: 2`. Delete the old file and [reconnect a provider](./providers/index.mdx). Keys were never in that file — they are in the [keyring](./security.mdx).
+
+## CLI installed, settings empty
+
+You installed binaries into `SPIRIT_HOME` (`~/.spirit`). Sessions and `config.json` live in the [data directory](./config.mdx). Check `SPIRIT_AGENT_DATA_DIR` if you overrode it.
+
+## `spirit -p` failed
+
+- Needed approval → use `-a auto-approval` / `-a full-approval`, or the TUI
+- Needed [ask_questions](./agent/ask-questions.mdx) → use the TUI, or make the prompt decisive
+- Timed out → headless stops after 30 minutes
+
+## Models did not import
+
+Open the [provider page](./providers/index.mdx) for that house. Check site, plan endpoint, Azure resource, Cloudflare account, Bedrock region / IAM, or Vertex project / location. TokenHub stays on Chat Completions. Bedrock Bearer cannot list models.
+
+## Key not in the keyring
+
+Reconnect in **Settings → Models** or `spirit model add`. The wizard writes the keyring **before** `config.json`. Do not paste keys into the repo.
+
+## Web Host pairing failed
+
+Wrong code → try again. Five failures lock pairing (`PAIRING_LOCKED`) until you restart Web Host in **Settings → Networks**. The host must support pairing; a generic web preview may show that it does not.
+
+## LSP missing
+
+Install the server yourself (clangd via Homebrew / winget, jdtls manually), then enable it in **Settings → Agents**. See [LSP](./tools/lsp.mdx).
+
+## Tab completion is empty
+
+Enable **Settings → Tab** and assign a lightweight chat model. See [Tab completion](./tools/tab-completion.mdx).
+
+## ACP not on the download page
+
+That is expected. ACP is implemented but the download column is still a placeholder. See [ACP](./acp.mdx).

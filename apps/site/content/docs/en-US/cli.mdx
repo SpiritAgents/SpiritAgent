@@ -1,0 +1,53 @@
+---
+title: CLI
+description: TUI, non-interactive -p, SPIRIT_API_KEY / SPIRIT_API_BASE, and the shared daemon.
+---
+
+The CLI is a terminal host. Install it with the [install script](./install/cli.mdx). It talks to the same daemon as [Desktop](./desktop.mdx).
+
+## TUI
+
+```bash
+cd /path/to/your/project
+spirit
+```
+
+Layout is `inline` or `fullscreen` (`-t` / `--tui`, or `/tui`). Modes, approvals, and Loop match Desktop.
+
+Useful slash commands: `/help`, `/quit`, `/new`, `/continue`, `/loop`, `/model`, `/sessions`, `/rewind`, `/fork`, `/subagents`, `/approval`, `/mcp`, `/hooks`, `/rules`, `/skills`, `/extensions`.
+
+## Non-interactive
+
+```bash
+spirit -p "your prompt here"
+```
+
+Only the final assistant text goes to stdout. Put `-m`, `-a`, and `-l` **before** `-p`. The process fails if a call needs approval or [ask_questions](./agent/ask-questions.mdx). Headless times out after 30 minutes.
+
+## Environment
+
+| Variable | Role |
+| --- | --- |
+| `SPIRIT_API_KEY` | API key for this process. Order: env → model keyring → global keyring |
+| `SPIRIT_API_BASE` | API base URL override |
+| `SPIRIT_AGENT_DATA_DIR` | Data directory (same store as Desktop) |
+| `SPIRIT_HOME` | CLI **binary** install root — not the data directory |
+
+## Shared daemon
+
+`spirit` connects over WebSocket to the Spirit Server daemon. Sessions, streaming, tools, and the approval queue live there. The bearer token is `{spiritDataDir}/server.token` (mode `0600`). The daemon binds `127.0.0.1` on a random port by default.
+
+`spirit serve` runs the daemon in the foreground. Remote `0.0.0.0` is not an open product path. See [Security](./security.mdx).
+
+## Commands
+
+```
+spirit [-v] [-m model] [-a approval] [-l language] [-t inline|fullscreen] [-p prompt]
+spirit interactive
+spirit serve
+spirit model list|add|remove|use|current
+spirit config show|set-base|set-image-model|clear-image-model|set-video-model|clear-video-model|key set|remove|status
+spirit mcp …
+spirit hooks list|validate
+spirit extension list|import|remove|marketplace …
+```

@@ -12,6 +12,15 @@
     "---工具---",
     "tools",
     "---自定义---",
-    "customize"
+    "customize",
+    "---宿主---",
+    "desktop",
+    "cli",
+    "acp",
+    "---参考---",
+    "config",
+    "security",
+    "appearance",
+    "troubleshooting"
   ]
 }

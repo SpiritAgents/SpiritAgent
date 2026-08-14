@@ -1,0 +1,74 @@
+---
+title: Config
+description: Data directories, config.json v2, .spirit/, and environment variables.
+---
+
+Spirit keeps binaries and data in different places. Mixing them up is the usual reason “I installed the CLI but settings are empty”.
+
+## Data directory
+
+Override with `SPIRIT_AGENT_DATA_DIR`. The server can also use `SPIRIT_SERVER_DATA_DIR` (wins over the former).
+
+| OS | Default |
+| --- | --- |
+| macOS | `~/Library/Application Support/SpiritAgent` |
+| Windows | `%APPDATA%\SpiritAgent` |
+| Linux | `$XDG_DATA_HOME/SpiritAgent` or `~/.local/share/SpiritAgent` |
+| Fallback | `~/.spirit-agent` |
+
+Typical files:
+
+```
+{spiritDataDir}/
+  config.json
+  mcp.json
+  hooks.json
+  rule.md
+  skills/
+  chats/
+  plans/
+  extensions/
+  automations/
+  dreams/
+  server.token
+  server/instances/
+```
+
+CLI binaries live under `SPIRIT_HOME` (`~/.spirit` or `%LOCALAPPDATA%\Spirit`). That is not this directory. See [Install CLI](./install/cli.mdx).
+
+## config.json v2
+
+`schemaVersion` must be `2`. Version 1 is rejected — delete the old file and [reconnect a provider](./providers/index.mdx).
+
+Core fields:
+
+- `providerGroups` — connected houses, API base, transport, models
+- `activeModel`
+- `imageGenerationModel` / `videoGenerationModel` / `lightweightChatModel`
+
+Keys are **not** in this file. They live in the [keyring](./security.mdx).
+
+## Workspace `.spirit/`
+
+| Path | Role |
+| --- | --- |
+| `.spirit/rule.md` | Workspace [rule](./customize/rules.mdx) |
+| `.spirit/skills/` | Workspace [skills](./customize/skills.mdx) |
+| `.spirit/mcp.json` | Workspace [MCP](./customize/mcp.mdx) |
+| `.spirit/hooks.json` | Workspace [hooks](./customize/hooks.mdx) |
+
+Also used: `{workspace}/AGENTS.md`, `{workspace}/.agents/skills/`, `{workspace}/plans/`.
+
+## Environment variables
+
+| Variable | Role |
+| --- | --- |
+| `SPIRIT_AGENT_DATA_DIR` | Data directory |
+| `SPIRIT_SERVER_DATA_DIR` | Server data directory (wins) |
+| `SPIRIT_ACP_DATA_DIR` / `SPIRIT_ACP_WORKSPACE` | [ACP](./acp.mdx) |
+| `SPIRIT_HOME` / `SPIRIT_VERSION` / `SPIRIT_DOWNLOAD_HOST` | CLI installer |
+| `SPIRIT_API_KEY` / `SPIRIT_API_BASE` | [CLI](./cli.mdx) process overrides |
+| `SPIRIT_WEB_HOST` / `SPIRIT_WEB_PORT` / `SPIRIT_DESKTOP_WEB_HOST` | Desktop Web Host |
+| `SPIRIT_TERMINAL_SHELL` | Desktop PTY shell |
+
+There is no Spirit billing page and no Spirit account plan in this file.

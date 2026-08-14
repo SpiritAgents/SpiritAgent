@@ -12,6 +12,6 @@ Spirit can generate an image or a short video when you have assigned those defau
 
 Ask mode cannot call these tools. The composer can also take a direct generate-image / generate-video shortcut when those slots are set.
 
-Results are stored as generated assets. The agent can read them later with `read_file` on a `spirit://generated/image|video/<name>` URI.
+Results are stored as generated assets. The agent can read them later with `read_file` on a `spirit://generated/image/…` or `spirit://generated/video/…` URI.
 
 If the tools are missing, the active provider catalog did not mark image or video generation, or the slots are empty. Connect a provider that exposes those capabilities, then assign the slots. See [Providers](../providers/index.mdx).

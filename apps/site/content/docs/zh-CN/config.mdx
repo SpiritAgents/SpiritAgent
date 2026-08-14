@@ -1,0 +1,74 @@
+---
+title: 配置
+description: 数据目录、config.json v2、.spirit/ 和环境变量。
+---
+
+Spirit 把二进制和数据放在不同地方。混在一起，通常就是「CLI 装上了但设置是空的」。
+
+## 数据目录
+
+用 `SPIRIT_AGENT_DATA_DIR` 覆盖。Server 还可以用 `SPIRIT_SERVER_DATA_DIR`（优先于前者）。
+
+| 系统 | 默认 |
+| --- | --- |
+| macOS | `~/Library/Application Support/SpiritAgent` |
+| Windows | `%APPDATA%\SpiritAgent` |
+| Linux | `$XDG_DATA_HOME/SpiritAgent` 或 `~/.local/share/SpiritAgent` |
+| 回退 | `~/.spirit-agent` |
+
+常见文件：
+
+```
+{spiritDataDir}/
+  config.json
+  mcp.json
+  hooks.json
+  rule.md
+  skills/
+  chats/
+  plans/
+  extensions/
+  automations/
+  dreams/
+  server.token
+  server/instances/
+```
+
+CLI 二进制在 `SPIRIT_HOME`（`~/.spirit` 或 `%LOCALAPPDATA%\Spirit`）。那不是这个目录。见 [安装 CLI](./install/cli.mdx)。
+
+## config.json v2
+
+`schemaVersion` 必须是 `2`。版本 1 会被拒绝——删掉旧文件，再[重连提供商](./providers/index.mdx)。
+
+核心字段：
+
+- `providerGroups` — 已接的提供商、API Base、传输、模型
+- `activeModel`
+- `imageGenerationModel` / `videoGenerationModel` / `lightweightChatModel`
+
+Key **不在**这个文件里。它们在[钥匙串](./security.mdx)。
+
+## 工作区 `.spirit/`
+
+| 路径 | 作用 |
+| --- | --- |
+| `.spirit/rule.md` | 工作区 [rule](./customize/rules.mdx) |
+| `.spirit/skills/` | 工作区 [skills](./customize/skills.mdx) |
+| `.spirit/mcp.json` | 工作区 [MCP](./customize/mcp.mdx) |
+| `.spirit/hooks.json` | 工作区 [hooks](./customize/hooks.mdx) |
+
+另外还会用：`{workspace}/AGENTS.md`、`{workspace}/.agents/skills/`、`{workspace}/plans/`。
+
+## 环境变量
+
+| 变量 | 作用 |
+| --- | --- |
+| `SPIRIT_AGENT_DATA_DIR` | 数据目录 |
+| `SPIRIT_SERVER_DATA_DIR` | Server 数据目录（优先） |
+| `SPIRIT_ACP_DATA_DIR` / `SPIRIT_ACP_WORKSPACE` | [ACP](./acp.mdx) |
+| `SPIRIT_HOME` / `SPIRIT_VERSION` / `SPIRIT_DOWNLOAD_HOST` | CLI 安装脚本 |
+| `SPIRIT_API_KEY` / `SPIRIT_API_BASE` | [CLI](./cli.mdx) 进程覆盖 |
+| `SPIRIT_WEB_HOST` / `SPIRIT_WEB_PORT` / `SPIRIT_DESKTOP_WEB_HOST` | Desktop Web Host |
+| `SPIRIT_TERMINAL_SHELL` | Desktop PTY shell |
+
+这里没有 Spirit 计费页，也没有 Spirit 账号套餐字段。

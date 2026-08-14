@@ -1,0 +1,30 @@
+---
+title: Security
+description: Keyring, approvals, and the loopback daemon. No telemetry, no billing page.
+---
+
+## Keyring
+
+API keys, Bedrock / Vertex secrets, extension secrets, and the GitHub integration token are stored in the operating system keyring. The service name is `SpiritAgent`.
+
+`config.json` holds provider groups and model refs, not the secret itself. Large secrets may be sharded in the keyring.
+
+## Approvals
+
+See [Approvals](./agent/approvals.mdx). Default is the safe starting point. Bypass still stops for `ask_questions` and hook `ask`.
+
+## Local daemon
+
+Desktop and the CLI share a daemon that binds **`127.0.0.1`** on a random port. Clients send `Authorization: Bearer` using `{spiritDataDir}/server.token` (mode `0600`).
+
+`0.0.0.0` remote access is **not** an open product path. Do not treat a LAN bind as a hosted cloud agent.
+
+Web Host pairing is a separate 6-digit code on Desktop. Five failures lock the code until you restart Web Host. See [Desktop](./desktop.mdx).
+
+## Privacy
+
+Spirit does not ship developer telemetry. Data stays in the data directory and the keyring. See [PRIVACY.md](https://github.com/SpiritAgents/SpiritAgent/blob/main/PRIVACY.md) in the repo.
+
+Report vulnerabilities privately (GitHub Private Advisory), not in a public issue. See [SECURITY.md](https://github.com/SpiritAgents/SpiritAgent/blob/main/SECURITY.md).
+
+There is no Spirit billing or account page. Usage is whatever your [provider](./providers/index.mdx) charges.

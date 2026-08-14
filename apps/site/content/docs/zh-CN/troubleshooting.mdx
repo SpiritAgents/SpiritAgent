@@ -1,0 +1,42 @@
+---
+title: 排障
+description: 旧配置、非交互卡住、配对锁定、找不到 Key，以及装错目录。
+---
+
+## config.json 被拒绝
+
+文件必须是 `schemaVersion: 2`。删掉旧文件，再[重连提供商](./providers/index.mdx)。Key 从来不在这个文件里——在[钥匙串](./security.mdx)。
+
+## CLI 装上了，设置是空的
+
+二进制装进了 `SPIRIT_HOME`（`~/.spirit`）。会话和 `config.json` 在[数据目录](./config.mdx)。若你覆盖过，检查 `SPIRIT_AGENT_DATA_DIR`。
+
+## `spirit -p` 失败
+
+- 需要审批 → 加 `-a auto-approval` / `-a full-approval`，或改用 TUI
+- 需要 [ask_questions](./agent/ask-questions.mdx) → 用 TUI，或把提示写到不必再问
+- 超时 → 非交互 30 分钟结束
+
+## 模型没导入
+
+打开那家的[提供商页](./providers/index.mdx)。检查站点、套餐端点、Azure 资源、Cloudflare 账户、Bedrock 区域 / IAM，或 Vertex 项目 / 位置。TokenHub 只走 Chat Completions。Bedrock Bearer 不能列模型。
+
+## Key 不在钥匙串
+
+到 **设置 → 模型** 或 `spirit model add` 重新连接。向导先写钥匙串，再写 `config.json`。不要把 Key 贴进仓库。
+
+## Web Host 配对失败
+
+码不对就再试。失败 5 次会锁定（`PAIRING_LOCKED`），直到你在 **设置 → 网络** 重启 Web Host。宿主必须支持配对；普通网页预览可能会提示不支持。
+
+## 找不到 LSP
+
+自己装语言服务器（clangd 用 Homebrew / winget，jdtls 手动），再到 **设置 → 智能体** 打开。见 [LSP](./tools/lsp.mdx)。
+
+## Tab 补全是空的
+
+打开 **设置 → Tab**，并指定轻量对话模型。见 [Tab 补全](./tools/tab-completion.mdx)。
+
+## 下载页没有 ACP
+
+这是预期。ACP 已实现，但下载列仍是占位。见 [ACP](./acp.mdx)。

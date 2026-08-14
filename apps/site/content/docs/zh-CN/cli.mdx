@@ -1,0 +1,53 @@
+---
+title: CLI
+description: TUI、非交互 -p、SPIRIT_API_KEY / SPIRIT_API_BASE，以及共用守护进程。
+---
+
+CLI 是终端宿主。用[安装脚本](./install/cli.mdx)安装。它与 [Desktop](./desktop.mdx) 连同一套守护进程。
+
+## TUI
+
+```bash
+cd /path/to/your/project
+spirit
+```
+
+布局为 `inline` 或 `fullscreen`（`-t` / `--tui`，或 `/tui`）。模式、审批和 Loop 与 Desktop 一致。
+
+常用 slash：`/help`、`/quit`、`/new`、`/continue`、`/loop`、`/model`、`/sessions`、`/rewind`、`/fork`、`/subagents`、`/approval`、`/mcp`、`/hooks`、`/rules`、`/skills`、`/extensions`。
+
+## 非交互
+
+```bash
+spirit -p "your prompt here"
+```
+
+只有最终助手文本进 stdout。`-m`、`-a`、`-l` 要写在 `-p` **前面**。若调用需要审批或 [ask_questions](./agent/ask-questions.mdx)，进程会失败。非交互 30 分钟超时。
+
+## 环境变量
+
+| 变量 | 作用 |
+| --- | --- |
+| `SPIRIT_API_KEY` | 本进程的 API Key。优先级：环境变量 → 模型钥匙串 → 全局钥匙串 |
+| `SPIRIT_API_BASE` | 覆盖 API Base URL |
+| `SPIRIT_AGENT_DATA_DIR` | 数据目录（与 Desktop 同一份） |
+| `SPIRIT_HOME` | CLI **二进制**安装根，不是数据目录 |
+
+## 共用守护进程
+
+`spirit` 经 WebSocket 连 Spirit Server 守护进程。会话、流式、工具和审批队列都在那里。Bearer token 是 `{spiritDataDir}/server.token`（权限 `0600`）。守护进程默认绑 `127.0.0.1` 随机端口。
+
+`spirit serve` 在前台跑守护进程。远程 `0.0.0.0` 不是已开放的产品路径。见[安全](./security.mdx)。
+
+## 命令
+
+```
+spirit [-v] [-m model] [-a approval] [-l language] [-t inline|fullscreen] [-p prompt]
+spirit interactive
+spirit serve
+spirit model list|add|remove|use|current
+spirit config show|set-base|set-image-model|clear-image-model|set-video-model|clear-video-model|key set|remove|status
+spirit mcp …
+spirit hooks list|validate
+spirit extension list|import|remove|marketplace …
+```
