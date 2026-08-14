@@ -15,8 +15,8 @@ description: 聊天记录、rewind、fork 与 git worktree。
 
 ## Worktree
 
-输入框的**工作地点**可以是 `local`（你打开的工作区）或 `worktree`（隔离的 git worktree）。子 Agent 也可以设 `worktree: true` 做同样的隔离。
+输入框的**工作地点**可以是 `local`（你打开的工作区）或 `worktree`（隔离的 git worktree）。子智能体 也可以设 `worktree: true` 做同样的隔离。
 
-Worktree 路径形如 `{repoRoot}.worktrees/spirit-*`。已经在 worktree 里跑的子 Agent 不能再从那里开一层 worktree。
+Worktree 路径形如 `{repoRoot}.worktrees/spirit-*`。已经在 worktree 里跑的子智能体 不能再从那里开一层 worktree。
 
 Worktree 用来避免并行编辑互相踩。它不是会话备份——对话历史靠 rewind 和 fork。
