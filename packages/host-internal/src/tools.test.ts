@@ -211,7 +211,7 @@ test("read_file returns image part for validated ico files", async () => {
 test("web_fetch executes in background like shell", () => {
   const service = new NodeHostToolService(
     { workspaceRoot: "/tmp", spiritDataDir: "/tmp/.spirit-data" },
-    { getApprovalLevel: () => "full-approval" },
+    { getApprovalLevel: () => "bypass-approval" },
   );
   assert.equal(
     service.shouldExecuteInBackground?.({ name: "web_fetch", url: "https://example.com/" }),
@@ -830,7 +830,7 @@ test("authorize returns need-approval for shell commands under default approval 
   }
 });
 
-test("authorize allows shell commands under full-approval approval level", async () => {
+test("authorize allows shell commands under bypass-approval approval level", async () => {
   const workspaceRoot = await mkdtemp(join(tmpdir(), "spirit-host-tools-auth-full-"));
   const spiritDataDir = join(workspaceRoot, ".spirit-data");
 
@@ -839,7 +839,7 @@ test("authorize allows shell commands under full-approval approval level", async
 
     const service = new NodeHostToolService(
       { workspaceRoot, spiritDataDir },
-      { getApprovalLevel: () => "full-approval" },
+      { getApprovalLevel: () => "bypass-approval" },
     );
     const decision = await service.authorize({
       name: "shell",
@@ -853,7 +853,7 @@ test("authorize allows shell commands under full-approval approval level", async
   }
 });
 
-test("authorize still requires ask_questions under full-approval approval level", async () => {
+test("authorize still requires ask_questions under bypass-approval approval level", async () => {
   const workspaceRoot = await mkdtemp(join(tmpdir(), "spirit-host-tools-auth-questions-"));
   const spiritDataDir = join(workspaceRoot, ".spirit-data");
 
@@ -862,7 +862,7 @@ test("authorize still requires ask_questions under full-approval approval level"
 
     const service = new NodeHostToolService(
       { workspaceRoot, spiritDataDir },
-      { getApprovalLevel: () => "full-approval" },
+      { getApprovalLevel: () => "bypass-approval" },
     );
     const decision = await service.authorize({
       name: "ask_questions",

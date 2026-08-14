@@ -49,7 +49,7 @@ interface RemoteDesktopRuntimeInput {
   modelRef: ModelRef;
   agentMode: "agent" | "plan" | "ask" | "debug";
   archive: ChatArchive;
-  approvalLevel: "default" | "auto-approval" | "full-approval";
+  approvalLevel: "default" | "auto-approval" | "bypass-approval";
   todoSessionKey?: string;
   /** Resolved chat file path for multi-host session identity. */
   conversationKey?: string;
@@ -1047,7 +1047,7 @@ export async function exportRemoteDesktopState(runtime: unknown): Promise<
 
 export async function setRemoteDesktopApprovalLevel(
   runtime: unknown,
-  approvalLevel: "default" | "auto-approval" | "full-approval",
+  approvalLevel: "default" | "auto-approval" | "bypass-approval",
 ): Promise<boolean> {
   if (!(runtime instanceof RemoteDesktopRuntime)) {
     return false;

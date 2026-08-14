@@ -108,7 +108,7 @@ async function handleAutomationWorkspaceCapabilityTrust(
   if (!runtime) {
     return;
   }
-  if (approvalLevel === "full-approval" || approvalLevel === "auto-approval") {
+  if (approvalLevel === "bypass-approval" || approvalLevel === "auto-approval") {
     await replyRemoteWorkspaceCapabilityTrust(runtime, requestId, "allowOnce");
     return;
   }

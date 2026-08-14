@@ -1,6 +1,6 @@
 ---
 title: Approvals
-description: Default, auto-approval, and full-approval (Bypass). What each level still stops.
+description: Default, auto-approval, and bypass-approval. What each level still stops.
 ---
 
 Every risky tool call can wait for you. Spirit has three approval levels. Desktop shows them as **Default Approval**, **Auto Approval**, and **Bypass Approval**. The CLI uses `/approval` or `-a`.
@@ -9,11 +9,11 @@ Every risky tool call can wait for you. Spirit has three approval levels. Deskto
 | --- | --- | --- |
 | Default Approval | `default` | You approve file edits, shell, and other high-risk tools yourself. |
 | Auto Approval | `auto-approval` | A lightweight model reviews high-risk calls. You are not prompted unless that review (or a hook) asks. |
-| Bypass Approval | `full-approval` | High-risk tools run without the approval prompt. |
+| Bypass Approval | `bypass-approval` | High-risk tools run without the approval prompt. |
 
 ## What bypass does not skip
 
-`full-approval` still stops for:
+`bypass-approval` still stops for:
 
 - [ask_questions](./ask-questions.mdx)
 - Extension flows that need questions
@@ -25,4 +25,4 @@ Auto-approval also cannot override a hook `ask`.
 
 Stay on **default** until you have seen the agent make a few good edits. Use **auto-approval** when you want speed but still want a second check. Use **bypass** only on a throwaway branch or a task you are watching.
 
-Headless `spirit -p` fails if a call needs approval. Pass `-a auto-approval` or `-a full-approval`, or use the TUI.
+Headless `spirit -p` fails if a call needs approval. Pass `-a auto-approval` or `-a bypass-approval`, or use the TUI.

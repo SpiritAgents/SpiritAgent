@@ -10,7 +10,7 @@ import {
 import type { HostAutomationTrigger } from "./automations.js";
 import { formatTriggerLabel, normalizeAutomationTrigger } from "./automations.js";
 
-export type CreateAutomationApprovalLevel = "default" | "auto-approval" | "full-approval";
+export type CreateAutomationApprovalLevel = "default" | "auto-approval" | "bypass-approval";
 
 export const CREATE_AUTOMATION_TOOL_NAME = "create_automation";
 
@@ -41,14 +41,14 @@ export function parseCreateAutomationApprovalLevel(value: unknown): CreateAutoma
   if (trimmed === "auto-approval") {
     return "auto-approval";
   }
-  if (trimmed === "full-approval" || trimmed === "full-access") {
-    return "full-approval";
+  if (trimmed === "bypass-approval") {
+    return "bypass-approval";
   }
   return "default";
 }
 
 export function formatCreateAutomationApprovalLabel(level: CreateAutomationApprovalLevel): string {
-  if (level === "full-approval") {
+  if (level === "bypass-approval") {
     return "绕过审批";
   }
   if (level === "auto-approval") {
@@ -144,9 +144,9 @@ export const CREATE_AUTOMATION_CONTRIBUTED_TOOL: ContributedHostToolDefinition =
       },
       approval_level: {
         type: "string",
-        enum: ["default", "auto-approval", "full-approval"],
+        enum: ["default", "auto-approval", "bypass-approval"],
         description:
-          "Approval policy when the automation runs. default: normal tool approval prompts; auto-approval: AI reviewer auto-approves safe tool calls, uncertain ones still prompt; full-approval: skip high-risk approval prompts for that automation run. Omit to use default.",
+          "Approval policy when the automation runs. default: normal tool approval prompts; auto-approval: AI reviewer auto-approves safe tool calls, uncertain ones still prompt; bypass-approval: skip high-risk approval prompts for that automation run. Omit to use default.",
       },
       trigger: {
         type: "object",

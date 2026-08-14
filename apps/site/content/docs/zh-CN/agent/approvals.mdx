@@ -1,6 +1,6 @@
 ---
 title: 审批
-description: 默认、自动审批与完全审批（绕过）。每一档仍会拦住什么。
+description: 默认、自动审批与绕过审批。每一档仍会拦住什么。
 ---
 
 高风险工具调用都可以等你点头。Spirit 有三档审批。Desktop 显示为 **默认审批**、**自动审批**、**绕过审批**。CLI 用 `/approval` 或 `-a`。
@@ -9,11 +9,11 @@ description: 默认、自动审批与完全审批（绕过）。每一档仍会�
 | --- | --- | --- |
 | 默认审批 | `default` | 文件编辑、shell 和其他高风险工具由你亲自批。 |
 | 自动审批 | `auto-approval` | 轻量模型审查高风险调用。除非这次审查（或 hook）要求询问，否则不再弹你。 |
-| 绕过审批 | `full-approval` | 高风险工具不再弹审批。 |
+| 绕过审批 | `bypass-approval` | 高风险工具不再弹审批。 |
 
 ## 绕过也不会跳过的
 
-`full-approval` 仍会为这些停下：
+`bypass-approval` 仍会为这些停下：
 
 - [ask_questions](./ask-questions.mdx)
 - 需要提问的扩展流程
@@ -25,4 +25,4 @@ description: 默认、自动审批与完全审批（绕过）。每一档仍会�
 
 先留在 **默认**，看 Agent 做几次靠谱的编辑。要速度又想留一层检查时用 **自动审批**。只在一次性分支或你盯着的任务上用 **绕过**。
 
-非交互的 `spirit -p` 若遇到需要审批的调用会失败。加上 `-a auto-approval` 或 `-a full-approval`，或改用 TUI。
+非交互的 `spirit -p` 若遇到需要审批的调用会失败。加上 `-a auto-approval` 或 `-a bypass-approval`，或改用 TUI。

@@ -2,7 +2,7 @@ use super::image_paths::list_local_image_files;
 use super::*;
 use crate::model_registry::ModelRef;
 
-pub(crate) const APPROVAL_LEVEL_OPTIONS: [&str; 3] = ["default", "auto-approval", "full-approval"];
+pub(crate) const APPROVAL_LEVEL_OPTIONS: [&str; 3] = ["default", "auto-approval", "bypass-approval"];
 pub(crate) const LLM_HTTP_VERSION_OPTIONS: [&str; 2] = ["http1.1", "http2"];
 pub(crate) const TUI_MODE_OPTIONS: [&str; 2] = [
     crate::ports::TUI_MODE_INLINE,
@@ -27,7 +27,7 @@ pub(crate) fn tui_mode_picker_index(current: &str) -> usize {
 
 pub(crate) fn approval_level_picker_index(current: &str) -> usize {
     match crate::ports::normalize_approval_level(current).as_str() {
-        "full-approval" => 2,
+        "bypass-approval" => 2,
         "auto-approval" => 1,
         _ => 0,
     }

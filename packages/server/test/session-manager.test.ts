@@ -99,10 +99,10 @@ describe("SessionManager", () => {
       const created = await manager.createSession({
         workspaceRoot: tmpdir(),
         hostKind: "desktop",
-        approvalLevel: "full-approval",
+        approvalLevel: "bypass-approval",
         modelRef: { groupId: "openai", name: "gpt-4o-mini-pane" },
       });
-      assert.equal(created.approvalLevel, "full-approval");
+      assert.equal(created.approvalLevel, "bypass-approval");
       assert.equal(created.model, "gpt-4o-mini-pane");
       const info = manager.getSession(created.sessionId);
       assert.equal(info?.hostKind, "desktop");

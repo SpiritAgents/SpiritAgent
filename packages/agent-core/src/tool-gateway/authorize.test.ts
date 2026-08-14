@@ -69,14 +69,14 @@ test("authorizeLazyToolGatewayRequest requires approval for built-in tool_call u
   }
 });
 
-test("authorizeLazyToolGatewayRequest allows tool_call under full-approval", () => {
+test("authorizeLazyToolGatewayRequest allows tool_call under bypass-approval", () => {
   const decision = authorizeLazyToolGatewayRequest(
     lazyRequest(TOOL_CALL_TOOL_NAME, {
       provider: "mcp",
       server: "msftlearn",
       tool: "microsoft_docs_search",
     }),
-    "full-approval",
+    "bypass-approval",
   );
   assert.equal(decision.kind, "allowed");
 });

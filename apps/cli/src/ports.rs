@@ -194,7 +194,7 @@ fn default_approval_level() -> String {
 }
 
 /// Canonical approval levels shown in CLI help / unknown-value errors.
-pub const APPROVAL_LEVELS: [&str; 3] = ["default", "auto-approval", "full-approval"];
+pub const APPROVAL_LEVELS: [&str; 3] = ["default", "auto-approval", "bypass-approval"];
 
 pub fn available_approval_levels_csv() -> String {
     APPROVAL_LEVELS.join(", ")
@@ -207,12 +207,10 @@ pub fn normalize_approval_level(value: &str) -> String {
 
 /// Strict parse for CLI flags: unknown values return `None` (do not fall back to default).
 pub fn parse_approval_level_strict(value: &str) -> Option<String> {
-    match value.trim().to_ascii_lowercase().as_str() {
+    match value.trim() {
         "default" => Some("default".to_string()),
-        "auto-approval" | "auto_approval" | "auto" => Some("auto-approval".to_string()),
-        "full-approval" | "full_approval" | "full-access" | "full_access" | "full" => {
-            Some("full-approval".to_string())
-        }
+        "auto-approval" => Some("auto-approval".to_string()),
+        "bypass-approval" => Some("bypass-approval".to_string()),
         _ => None,
     }
 }
@@ -338,7 +336,7 @@ mod tests {
     use super::*;
 
     #[test]
-    fn parse_approval_level_strict_accepts_canonical_and_aliases() {
+    fn parse_approval_level_strict_accepts_canonical_values() {
         assert_eq!(
             parse_approval_level_strict("default").as_deref(),
             Some("default")
@@ -348,12 +346,8 @@ mod tests {
             Some("auto-approval")
         );
         assert_eq!(
-            parse_approval_level_strict("full-access").as_deref(),
-            Some("full-approval")
-        );
-        assert_eq!(
-            parse_approval_level_strict("FULL").as_deref(),
-            Some("full-approval")
+            parse_approval_level_strict("bypass-approval").as_deref(),
+            Some("bypass-approval")
         );
     }
 
@@ -361,13 +355,15 @@ mod tests {
     fn parse_approval_level_strict_rejects_unknown() {
         assert_eq!(parse_approval_level_strict("bogus"), None);
         assert_eq!(parse_approval_level_strict(""), None);
+        assert_eq!(parse_approval_level_strict("full-approval"), None);
+        assert_eq!(parse_approval_level_strict("auto"), None);
     }
 
     #[test]
     fn available_approval_levels_csv_uses_comma_space() {
         assert_eq!(
             available_approval_levels_csv(),
-            "default, auto-approval, full-approval"
+            "default, auto-approval, bypass-approval"
         );
     }
 

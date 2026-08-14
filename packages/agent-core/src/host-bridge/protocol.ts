@@ -51,7 +51,7 @@ export type JsonRpcMessage =
   | JsonRpcSuccessResponse
   | JsonRpcErrorResponse;
 
-export type BridgeApprovalLevel = "default" | "auto-approval" | "full-approval";
+export type BridgeApprovalLevel = "default" | "auto-approval" | "bypass-approval";
 
 export interface BridgeRuntimeSnapshot {
   pendingUserTurn?: string;

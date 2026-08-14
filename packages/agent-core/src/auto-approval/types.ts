@@ -1,6 +1,6 @@
 import type { JsonValue } from "../ports.js";
 
-export type SessionApprovalLevel = "default" | "auto-approval" | "full-approval";
+export type SessionApprovalLevel = "default" | "auto-approval" | "bypass-approval";
 
 export interface ToolAutoReviewInput {
   toolName: string;

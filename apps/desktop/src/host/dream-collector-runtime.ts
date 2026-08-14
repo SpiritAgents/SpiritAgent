@@ -18,7 +18,7 @@ export interface CreateDreamCollectorRuntimeInput {
   gitBranch: string;
   modelRef: ModelRef;
   dreamSourceSession: HostDreamSourceSessionRef;
-  approvalLevel?: "default" | "auto-approval" | "full-approval";
+  approvalLevel?: "default" | "auto-approval" | "bypass-approval";
 }
 
 export interface DreamCollectorRuntimeHandle {
@@ -32,7 +32,7 @@ export function buildDreamCollectorRemoteCreateInput(input: CreateDreamCollector
   modelRef: ModelRef;
   agentMode: "agent";
   archive: ReturnType<typeof buildEmptyAutomationArchive>;
-  approvalLevel: "default" | "auto-approval" | "full-approval";
+  approvalLevel: "default" | "auto-approval" | "bypass-approval";
   sessionKind: "dream-collector";
   dreamScope: { workspaceRoot: string; gitBranch: string };
   dreamSourceSession: HostDreamSourceSessionRef;
