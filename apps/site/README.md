@@ -1,0 +1,32 @@
+# @spiritagent/site
+
+Marketing and docs site for Spirit Agent (Next.js + Fumadocs).
+
+Preview: https://next.spirit.fast
+
+## Development
+
+Run from the **repository root** (this package is a pnpm workspace member):
+
+```bash
+corepack enable
+pnpm install
+pnpm run dev:site
+```
+
+Equivalent: `pnpm --filter @spiritagent/site dev`.
+
+**Requirements:** Node.js 24+ (see repo-root `.nvmrc`), pnpm 10+.
+
+## Vercel
+
+Build settings live in [`vercel.json`](./vercel.json). After this package lands on `SpiritAgents/SpiritAgent`, switch the existing Vercel project (keep `spirit.fast` / `next.spirit.fast` on the same project):
+
+1. **Settings → Git**: disconnect `spirit.fast`, connect `SpiritAgents/SpiritAgent`.
+2. **Root Directory**: `apps/site`.
+3. Enable **Include source files outside of the Root Directory**.
+4. Leave Install / Build / Output empty so `vercel.json` applies.
+5. Node.js **24**. Suggested env: `ENABLE_EXPERIMENTAL_COREPACK=1`. Optional: `SITE_URL=https://spirit.fast`.
+6. Redeploy and confirm the install log scopes `@spiritagent/site` (no Electron).
+
+Do not commit `.vercel/` (`vercel link` output is gitignored).

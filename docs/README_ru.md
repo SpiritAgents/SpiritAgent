@@ -7,7 +7,7 @@
 
 Открытый AI-агент, созданный умножать вашу продуктивность.
 
-[Desktop-приложение](#desktop) · [CLI](#cli) · [Server](#server) · [ACP Server](#acp-server) · [Agent Core](#agent-core) · [Разработка](#разработка)
+[Desktop-приложение](#desktop) · [Site](#site) · [CLI](#cli) · [Server](#server) · [ACP Server](#acp-server) · [Agent Core](#agent-core) · [Разработка](#разработка)
 
 > Проект активно развивается. Поведение и API могут меняться между релизами.
 
@@ -107,6 +107,16 @@ Agent Core определяет, как модель видит контекст
 
 См. [apps/desktop/README.md](../apps/desktop/README.md) для разработки Desktop.
 
+## Site
+
+[Маркетинговый и документационный сайт](../apps/site) — приложение Next.js + Fumadocs (`@spiritagent/site`), деплой на Vercel.
+
+```bash
+pnpm run dev:site
+```
+
+Локальная разработка и переключение Git в Vercel — в [apps/site/README.md](../apps/site/README.md).
+
 ## CLI
 
 <img width="1014" height="744" alt="Spirit Agent CLI" src="https://github.com/user-attachments/assets/ecf4fcec-6a9b-4562-b0da-cc14816f36d3" />
@@ -177,8 +187,9 @@ node path/to/packages/acp-server/dist/src/stdio-entry.js --setup
 | `pnpm install` | Установить зависимости workspace (один раз в корне репозитория) |
 | `pnpm run dev:desktop` | Сборка shared packages и запуск Desktop (Vite + Electron) |
 | `pnpm run dev:desktop:web` | Desktop renderer с browser web host |
+| `pnpm run dev:site` | Запуск маркетингового/документационного сайта (Next.js) |
 | `pnpm run dev:cli` | CLI с TUI |
-| `pnpm run build` | Production build agent-core, host-internal, server, acp-server и Desktop |
+| `pnpm run build` | Production build agent-core, host-internal, server, acp-server, Desktop и site |
 | `pnpm run eval:compare` | Eval-сравнение после изменений agent-core |
 
 ### Структура репозитория
@@ -186,6 +197,7 @@ node path/to/packages/acp-server/dist/src/stdio-entry.js --setup
 ```
 apps/
   desktop/           Electron + React host
+  site/              Маркетинговый и документационный сайт (Next.js, Vercel)
   cli/               Rust CLI и TUI
 packages/
   agent-core/        Agent runtime, prompts, tool definitions, transports, MCP, eval

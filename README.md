@@ -7,7 +7,7 @@
 
 An open-source AI agent built to multiply your productivity.
 
-[Desktop app](#desktop) · [CLI](#cli) · [Server](#server) · [ACP Server](#acp-server) · [Agent Core](#agent-core) · [Development](#development)
+[Desktop app](#desktop) · [Site](#site) · [CLI](#cli) · [Server](#server) · [ACP Server](#acp-server) · [Agent Core](#agent-core) · [Development](#development)
 
 > This project is under active development. Behavior and APIs may change between releases.
 
@@ -107,6 +107,16 @@ The [Desktop app](apps/desktop) is the primary graphical host: a workspace-bound
 
 See [apps/desktop/README.md](apps/desktop/README.md) for Desktop-specific development and layout.
 
+## Site
+
+The [marketing and docs site](apps/site) is a Next.js + Fumadocs app (`@spiritagent/site`), deployed on Vercel.
+
+```bash
+pnpm run dev:site
+```
+
+See [apps/site/README.md](apps/site/README.md) for local development and the Vercel Git switch checklist.
+
 ## CLI
 
 <img width="1014" height="744" alt="Spirit Agent CLI" src="https://github.com/user-attachments/assets/ecf4fcec-6a9b-4562-b0da-cc14816f36d3" />
@@ -177,8 +187,9 @@ node path/to/packages/acp-server/dist/src/stdio-entry.js --setup
 | `pnpm install` | Install workspace dependencies (run once at repo root) |
 | `pnpm run dev:desktop` | Build shared packages and start Desktop (Vite + Electron) |
 | `pnpm run dev:desktop:web` | Desktop renderer with browser web host |
+| `pnpm run dev:site` | Start the marketing/docs site (Next.js) |
 | `pnpm run dev:cli` | CLI with TUI |
-| `pnpm run build` | Production build of agent-core, host-internal, server, acp-server, and Desktop |
+| `pnpm run build` | Production build of agent-core, host-internal, server, acp-server, Desktop, and site |
 | `pnpm run eval:compare` | Run eval comparison after agent-core changes |
 
 ### Repository layout
@@ -186,6 +197,7 @@ node path/to/packages/acp-server/dist/src/stdio-entry.js --setup
 ```
 apps/
   desktop/           Electron + React host
+  site/              Marketing and docs site (Next.js, Vercel)
   cli/               Rust CLI and TUI
 packages/
   agent-core/        Agent runtime, prompts, tool definitions, transports, MCP, eval

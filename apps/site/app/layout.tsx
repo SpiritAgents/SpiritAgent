@@ -1,0 +1,14 @@
+import type { Metadata } from "next";
+import type { ReactNode } from "react";
+
+export const metadata: Metadata = {
+  title: "Spirit Agent",
+  icons: {
+    icon: [{ url: "/favicon.ico", sizes: "any" }],
+  },
+};
+
+/** Root layout passes through; locale layout owns `<html lang>`. */
+export default function RootLayout({ children }: { children: ReactNode }) {
+  return children;
+}

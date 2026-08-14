@@ -25,6 +25,7 @@
     "build:agent-core": "turbo run build --filter=@spiritagent/agent-core",
     "build:host-internal": "turbo run build --filter=@spiritagent/host-internal",
     "build:desktop": "turbo run build --filter=@spiritagent/desktop",
+    "build:site": "turbo run build --filter=@spiritagent/site",
     "build:acp-server": "turbo run build --filter=@spiritagent/acp-server",
     "build:server": "turbo run build --filter=@spiritagent/server",
     "build:cli": "cargo build -p spirit-agent --release",
@@ -42,10 +43,11 @@
     "dev:cli": "cargo run -p spirit-agent",
     "dev:desktop": "pnpm --filter @spiritagent/desktop dev",
     "dev:desktop:web": "pnpm --filter @spiritagent/desktop dev:web",
-    "lint": "oxlint --deny-warnings packages apps/desktop",
-    "lint:fix": "oxlint --fix packages apps/desktop",
-    "format": "oxfmt --check packages apps/desktop",
-    "format:fix": "oxfmt packages apps/desktop"
+    "dev:site": "pnpm --filter @spiritagent/site dev",
+    "lint": "oxlint --deny-warnings packages apps/desktop apps/site",
+    "lint:fix": "oxlint --fix packages apps/desktop apps/site",
+    "format": "oxfmt --check packages apps/desktop apps/site",
+    "format:fix": "oxfmt packages apps/desktop apps/site"
   },
   "devDependencies": {
     "oxfmt": "^0.62.0",

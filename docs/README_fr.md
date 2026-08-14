@@ -7,7 +7,7 @@
 
 Un agent IA open source conçu pour multiplier votre productivité.
 
-[Application Desktop](#desktop) · [CLI](#cli) · [Server](#server) · [ACP Server](#acp-server) · [Agent Core](#agent-core) · [Développement](#développement)
+[Application Desktop](#desktop) · [Site](#site) · [CLI](#cli) · [Server](#server) · [ACP Server](#acp-server) · [Agent Core](#agent-core) · [Développement](#développement)
 
 > Ce projet est en développement actif. Le comportement et les API peuvent changer entre les versions.
 
@@ -107,6 +107,16 @@ L’[application Desktop](../apps/desktop) est l’hôte graphique principal : s
 
 Voir [apps/desktop/README.md](../apps/desktop/README.md) pour le développement Desktop.
 
+## Site
+
+Le [site marketing et documentation](../apps/site) est une app Next.js + Fumadocs (`@spiritagent/site`), déployée sur Vercel.
+
+```bash
+pnpm run dev:site
+```
+
+Voir [apps/site/README.md](../apps/site/README.md) pour le développement local et le basculement Git Vercel.
+
 ## CLI
 
 <img width="1014" height="744" alt="Spirit Agent CLI" src="https://github.com/user-attachments/assets/ecf4fcec-6a9b-4562-b0da-cc14816f36d3" />
@@ -177,8 +187,9 @@ node path/to/packages/acp-server/dist/src/stdio-entry.js --setup
 | `pnpm install` | Installer les dépendances du workspace (une fois à la racine) |
 | `pnpm run dev:desktop` | Build des packages partagés et démarrage Desktop (Vite + Electron) |
 | `pnpm run dev:desktop:web` | Renderer Desktop avec hôte web navigateur |
+| `pnpm run dev:site` | Démarrer le site marketing/docs (Next.js) |
 | `pnpm run dev:cli` | CLI avec TUI |
-| `pnpm run build` | Build production agent-core, host-internal, server, acp-server et Desktop |
+| `pnpm run build` | Build production agent-core, host-internal, server, acp-server, Desktop et site |
 | `pnpm run eval:compare` | Comparaison eval après changements agent-core |
 
 ### Structure du dépôt
@@ -186,6 +197,7 @@ node path/to/packages/acp-server/dist/src/stdio-entry.js --setup
 ```
 apps/
   desktop/           Hôte Electron + React
+  site/              Site marketing et docs (Next.js, Vercel)
   cli/               CLI Rust et TUI
 packages/
   agent-core/        Runtime agent, prompts, définitions d’outils, transports, MCP, eval

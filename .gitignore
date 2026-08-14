@@ -6,6 +6,10 @@
 **/.tsbuildinfo*
 **/*.tsbuildinfo
 /apps/desktop/release/
+**/.next/
+**/.source/
+**/.vercel/
+**/out/
 **/.spirit-agent/
 **/.env
 !**/.env.example
