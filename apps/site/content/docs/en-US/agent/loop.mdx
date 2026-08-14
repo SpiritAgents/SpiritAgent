@@ -1,0 +1,18 @@
+---
+title: Loop
+description: Keep the agent working until it calls finish_task.
+---
+
+Loop is a session switch. When it is on, an ordinary assistant message does **not** end the turn. The agent is expected to keep using tools until the task is done, then call `finish_task`.
+
+## Turn it on
+
+On Desktop, enable Loop in the composer (the `/loop` chip). In the CLI TUI, run `/loop`.
+
+`finish_task` is only exposed while Loop is on. If Loop is off and the model still calls it, Spirit rejects the call as an unknown tool.
+
+## When to use it
+
+Use Loop for a multi-step job you do not want to babysit: implement, test, fix, repeat. Leave it off for a single question or a one-file edit.
+
+Loop does not change [approval](./approvals.mdx). Default approval still pauses on edits and shell.

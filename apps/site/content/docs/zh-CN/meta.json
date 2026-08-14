@@ -6,6 +6,8 @@
     "quickstart",
     "install",
     "---提供商---",
-    "providers"
+    "providers",
+    "---Agent---",
+    "agent"
   ]
 }

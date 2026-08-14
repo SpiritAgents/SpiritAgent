@@ -1,0 +1,34 @@
+---
+title: 怎么下任务
+description: 怎样给 Spirit 一个能在工作区里做完的任务。
+---
+
+像给能读仓库、会等审批的同事交代工作那样说话。
+
+## 说具体
+
+点名文件、结果，以及不要动什么。紧的提示会得到一小段可审的 diff；含糊的提示会先浪费一轮在摸索上。
+
+```txt
+Read src/auth/session.ts and fix the expired-token refresh path.
+Do not change the login form. Add a focused test next to the existing session tests.
+```
+
+## 附上上下文
+
+在 Desktop 上，任务就对着某个位置时，附上打开的文件、选区或 Browser 里选中的元素。Agent 仍要再读文件才能看到当前内容——附件是指针，不能代替再读一遍。
+
+## 先选模式
+
+- **Agent** — 你已经知道要改什么
+- **Plan** — 先要书面计划和[问卷](./ask-questions.mdx)，再改
+- **Ask** — 只要解释
+- **Debug** — 能复现，想打日志
+
+见[模式](./modes.mdx)。
+
+## 让审批发挥作用
+
+**默认**审批下，Agent 在改文件或跑命令前会停住。看 diff，再批准或拒绝。信任这条回路之前不要开绕过。见[审批](./approvals.mdx)。
+
+编辑器内联补全（Tab Tab Tab）不属于这场对话。到 **设置 → Tab** 配置。

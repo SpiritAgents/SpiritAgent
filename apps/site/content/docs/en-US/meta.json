@@ -6,6 +6,8 @@
     "quickstart",
     "install",
     "---Providers---",
-    "providers"
+    "providers",
+    "---Agent---",
+    "agent"
   ]
 }

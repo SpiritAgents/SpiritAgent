@@ -1,0 +1,22 @@
+---
+title: Sessions
+description: Chat history, rewind, fork, and git worktrees.
+---
+
+Each conversation is a session. Sessions are stored under the Spirit data directory (`chats/`) and grouped by workspace in the sidebar.
+
+## Rewind
+
+Rewind a user message to restore the conversation to that point, edit the prompt if you want, and send again. Use it when the last turn went the wrong way and you would rather retry than pile on a correction.
+
+## Fork
+
+Fork from an assistant message to branch the conversation. Desktop can also fork into a side chat so the original thread stays put.
+
+## Worktree
+
+Composer **working location** can be `local` (the workspace you opened) or `worktree` (an isolated git worktree). Subagents can set `worktree: true` for the same isolation.
+
+Worktree paths look like `{repoRoot}.worktrees/spirit-*`. A subagent already running inside a worktree cannot start another worktree from there.
+
+Worktrees are for parallel edits that would otherwise collide. They are not a backup of the session — rewind and fork handle conversation history.
