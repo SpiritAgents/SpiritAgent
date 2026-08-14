@@ -103,8 +103,8 @@ async function detectSpiritDownloadArch(
 
   switch (platform) {
     case "macOS":
-      // Prefer Intel-compatible when architecture is unknown (e.g. Intel Safari).
-      return "x64";
+      // Safari on Apple Silicon reports MacIntel and omits arm64 from UA.
+      return "arm64";
     case "Windows":
     case "Linux":
       return "x64";
