@@ -7,21 +7,33 @@ Desktop is the graphical host. It shares the local daemon with the [CLI](./cli.m
 
 ## Settings map
 
-| Group | Tab | What it holds |
-| --- | --- | --- |
-| Basics | General | Notifications, tray / menu bar icon |
-| | Appearance | Theme, font, UI language, mica / blur, pointer |
-| Capabilities | Models | Provider connect, model list, keys |
-| | Agents | LSP, commit / PR attribution |
-| | Tab | Editor [Tab completion](./tools/tab-completion.mdx) |
-| | Skills | Discover and generate [Skills](./customize/skills.mdx) |
-| | Rules | [Rules](./customize/rules.mdx) slots |
-| | MCPs | [MCP](./customize/mcp.mdx) servers |
-| | Hooks | [Hooks](./customize/hooks.mdx) |
-| | Dreams | [Dreams](./customize/dreams.mdx) (Beta) |
-| Connect | Networks | LLM HTTP version, **Web Remote Access** |
-| | Integrations | [GitHub Device Login](./customize/integrations.mdx) |
-| | Extensions | Installed extensions, ZIP import |
+### Basics
+
+| Tab | What it holds |
+| --- | --- |
+| General | Notifications, tray / menu bar icon |
+| Appearance | Theme, font, UI language, mica / blur, pointer |
+
+### Capabilities
+
+| Tab | What it holds |
+| --- | --- |
+| Models | Provider connect, model list, keys |
+| Agents | LSP, commit / PR attribution |
+| Tab | Editor Tab completion |
+| Skills | Discover and generate [Skills](./customize/skills.mdx) |
+| Rules | [Rules](./customize/rules.mdx) slots |
+| MCPs | [MCP](./customize/mcp.mdx) servers |
+| Hooks | [Hooks](./customize/hooks.mdx) |
+| Dreams | [Dreams](./customize/dreams.mdx) (Beta) |
+
+### Connect
+
+| Tab | What it holds |
+| --- | --- |
+| Networks | LLM HTTP version, **Web Remote Access** |
+| Integrations | [GitHub Device Login](./customize/integrations.mdx) |
+| Extensions | Installed extensions, ZIP import |
 
 A Developer tab appears only in Vite dev builds.
 
@@ -30,9 +42,45 @@ A Developer tab appears only in Vite dev builds.
 | Tab | Role |
 | --- | --- |
 | Files | Tree, Monaco, Markdown preview, `plans/` |
-| Git | Changes, history, [commit / push / merge chips](./tools/git.mdx) |
+| Git | Changes, history, commit / push / merge chips |
 | Browser | Embedded browser + element picker (**Electron only**) |
 | Shell | Embedded PTY (**Electron only**) |
+
+### Shell
+
+Desktop (Electron only) has a **Shell** tab with an embedded PTY. That panel is for you. The agent still goes through [`shell`](./agent/tools.mdx) and approval; it does not type into your PTY.
+
+CLI has no embedded PTY panel. Commands still run through the same `shell` tool on the shared daemon.
+
+Override the Desktop PTY shell with `SPIRIT_TERMINAL_SHELL` if you need a specific binary.
+
+### Git
+
+The **Git** tab shows changes and history. Chips on the composer can start **commit**, **push**, or **merge**. This is host UI, not a Skill package.
+
+Those chips inject a fixed prompt. The agent then uses [workspace and `shell` tools](./agent/tools.mdx).
+
+### LSP
+
+Turn language servers on in **Settings → Agents**, then install a provider if it is missing. Once a server is ready, the agent can call [`get_diagnostics`](./agent/tools.mdx).
+
+| Id | Languages | How it is installed |
+| --- | --- | --- |
+| `typescript-language-server` | TypeScript, JavaScript | npm (`typescript-language-server`) |
+| `pyright` | Python | npm (`pyright`) |
+| `gopls` | Go | Go toolchain |
+| `rust-analyzer` | Rust | rustup |
+| `clangd` | C, C++ | Platform package (for example Homebrew or winget) |
+| `jdtls` | Java | Manual |
+| `omnisharp` | C# | .NET |
+
+clangd and jdtls are not bundled. Install them yourself, then come back to Settings → Agents.
+
+### Tab
+
+Tab is Monaco inline completion. Accept ghost text with one Tab. Open **Settings → Tab**, enable code completion (`codeCompletionEnabled`), and assign a lightweight chat model in **Settings → Models**. That slot also serves other lightweight background tasks.
+
+If completion is empty, check that a lightweight chat model is connected and that the setting is on. This is not the agent conversation.
 
 ## Marketplace and automations
 

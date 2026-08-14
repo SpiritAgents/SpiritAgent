@@ -7,21 +7,33 @@ Desktop 是图形宿主。它与 [CLI](./cli.mdx) 共用本机守护进程。安
 
 ## 设置地图
 
-| 分组 | 标签 | 内容 |
-| --- | --- | --- |
-| 基础 | 通用 | 通知、托盘 / 菜单栏图标 |
-| | 外观 | 主题、字体、界面语言、云母 / 模糊、指针 |
-| 能力 | 模型 | 提供商连接、模型列表、Key |
-| | 智能体 | LSP、Commit / PR 署名 |
-| | Tab | 编辑器 [Tab 补全](./tools/tab-completion.mdx) |
-| | Skills | 发现和生成 [Skills](./customize/skills.mdx) |
-| | 规则 | [Rules](./customize/rules.mdx) 槽位 |
-| | MCPs | [MCP](./customize/mcp.mdx) 服务器 |
-| | Hooks | [Hooks](./customize/hooks.mdx) |
-| | 梦境 | [Dreams](./customize/dreams.mdx)（Beta） |
-| 连接 | 网络 | LLM HTTP 版本、**Web 远程访问** |
-| | 集成 | [GitHub Device Login](./customize/integrations.mdx) |
-| | 扩展 | 已装扩展、ZIP 导入 |
+### 基础
+
+| 标签 | 内容 |
+| --- | --- |
+| 通用 | 通知、托盘 / 菜单栏图标 |
+| 外观 | 主题、字体、界面语言、云母 / 模糊、指针 |
+
+### 能力
+
+| 标签 | 内容 |
+| --- | --- |
+| 模型 | 提供商连接、模型列表、Key |
+| 智能体 | LSP、Commit / PR 署名 |
+| Tab | 编辑器 Tab 补全 |
+| Skills | 发现和生成 [Skills](./customize/skills.mdx) |
+| 规则 | [Rules](./customize/rules.mdx) 槽位 |
+| MCPs | [MCP](./customize/mcp.mdx) 服务器 |
+| Hooks | [Hooks](./customize/hooks.mdx) |
+| 梦境 | [梦境](./customize/dreams.mdx)（Beta） |
+
+### 连接
+
+| 标签 | 内容 |
+| --- | --- |
+| 网络 | LLM HTTP 版本、**Web 远程访问** |
+| 集成 | [GitHub Device Login](./customize/integrations.mdx) |
+| 扩展 | 已装扩展、ZIP 导入 |
 
 Developer 标签只在 Vite 开发构建里出现。
 
@@ -30,9 +42,45 @@ Developer 标签只在 Vite 开发构建里出现。
 | 标签 | 作用 |
 | --- | --- |
 | Files | 文件树、Monaco、Markdown 预览、`plans/` |
-| Git | 变更、历史、[commit / push / merge chip](./tools/git.mdx) |
+| Git | 变更、历史、commit / push / merge chip |
 | Browser | 嵌入浏览器 + 元素选取（**仅 Electron**） |
 | Shell | 嵌入 PTY（**仅 Electron**） |
+
+### Shell
+
+Desktop（仅 Electron）有 **Shell** 标签和嵌入式 PTY。那是给你用的。Agent 仍然走 [`shell`](./agent/tools.mdx) 和审批，不会往你的 PTY 里打字。
+
+CLI 没有嵌入式 PTY 面板。命令仍通过共用守护进程上的同一个 `shell` 工具执行。
+
+需要指定 Desktop PTY 的 shell 时，用 `SPIRIT_TERMINAL_SHELL`。
+
+### Git
+
+**Git** 标签显示变更和历史。输入框上的 chip 可以发起 **commit**、**push** 或 **merge**。这是宿主 UI，不是 Skill 包。
+
+Chip 会注入固定提示。随后 Agent 用[工作区和 `shell` 工具](./agent/tools.mdx)。
+
+### LSP
+
+到 **设置 → 智能体** 打开语言服务器，缺哪个提供商就装哪个。装好后 Agent 可用 [`get_diagnostics`](./agent/tools.mdx)。
+
+| Id | 语言 | 安装方式 |
+| --- | --- | --- |
+| `typescript-language-server` | TypeScript、JavaScript | npm（`typescript-language-server`） |
+| `pyright` | Python | npm（`pyright`） |
+| `gopls` | Go | Go 工具链 |
+| `rust-analyzer` | Rust | rustup |
+| `clangd` | C、C++ | 平台包（例如 Homebrew 或 winget） |
+| `jdtls` | Java | 手动 |
+| `omnisharp` | C# | .NET |
+
+clangd 和 jdtls 不随包装。自己装好，再回到 **设置 → 智能体**。
+
+### Tab
+
+Tab 是 Monaco 内联补全，按一次 Tab 接受幽灵文字。到 **设置 → Tab** 打开代码补全（`codeCompletionEnabled`），并在 **设置 → 模型** 指定轻量对话模型。这个槽位也给其他轻量后台任务用。
+
+没有建议时，检查轻量对话模型是否已连接，以及开关是否打开。这不是 Agent 对话。
 
 ## 市场与自动化
 

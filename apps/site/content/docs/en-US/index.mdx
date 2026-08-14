@@ -1,13 +1,11 @@
 ---
 title: Introduction
-description: An open-source AI agent you run with your models, your keys, and one shared daemon.
+description: An open-source AI agent with multi-provider access.
 ---
 
-Spirit Agent is an open-source coding agent. You bring a key from a provider you already use, store it in the operating system keyring, and run the same agent on [Desktop](./install/desktop.mdx) or the [CLI](./install/cli.mdx).
+## Model providers
 
-## Bring your own key
-
-Spirit does not sell model access. Connect OpenAI, Anthropic, SpaceXAI, a gateway, or a regional provider, then keep the same workspace workflow when you switch houses.
+Spirit Agent does not provide model services directly. You can connect OpenAI, Anthropic, SpaceXAI, a gateway, or a regional provider. Every provider runs on the same harness: tools, approvals, sessions, and workspace behavior stay consistent.
 
 Keys are written to the system keyring under the `SpiritAgent` service. They are not stored in `config.json`.
 
@@ -26,6 +24,6 @@ See the [quickstart](./quickstart.mdx) for the full path.
 
 - Install: [Desktop](./install/desktop.mdx), [CLI](./install/cli.mdx)
 - Connect: [Providers](./providers.mdx)
-- Work: [Modes](./agent/modes.mdx), [Tools](./tools/workspace.mdx), [Customize](./customize/rules.mdx)
+- Work: [Modes](./agent/modes.mdx), [Tools](./agent/tools.mdx), [Customize](./customize/rules.mdx)
 - Hosts: [Desktop](./desktop.mdx), [CLI](./cli.mdx) — [ACP](./acp.mdx) is implemented but not on the download page
 - Reference: [Config](./config.mdx), [Security](./security.mdx), [Appearance](./appearance.mdx), [Troubleshooting](./troubleshooting.mdx)

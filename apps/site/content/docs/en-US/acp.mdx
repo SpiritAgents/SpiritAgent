@@ -5,9 +5,11 @@ description: Implemented for ACP clients. The download page does not list a chan
 
 ACP (Agent Client Protocol) is implemented as `spirit-agent-acp` (`@spiritagent/acp-server`). It speaks stdio ndJSON, shares the same data directory and keyring as Desktop and the CLI, and can run `--setup` to connect a provider.
 
-**The public download page does not list ACP yet.** The third column there is a listing placeholder, not an install path. Do not start from the [quickstart](./quickstart.mdx) expecting an ACP installer.
+**The public download page does not list ACP yet.** Spirit Agent is still preparing to list it on the ACP registry.
 
-## If you already have a build
+## Temporary setup before listing
+
+Until it is listed, install and finish setup with `npx`:
 
 ```bash
 npx @spiritagent/acp-server --setup
@@ -30,5 +32,3 @@ Authenticate with **Run in terminal**, finish `--setup`, then `authenticate` and
 | --- | --- |
 | `SPIRIT_ACP_WORKSPACE` | Workspace root (defaults to the client cwd) |
 | `SPIRIT_ACP_DATA_DIR` | Data directory; otherwise `SPIRIT_AGENT_DATA_DIR` then the platform default |
-
-ACP permissions use `request_permission` (allow once / always allow / reject). That is the ACP mapping of Spirit [approvals](./agent/approvals.mdx), not a fourth product host on the download page.

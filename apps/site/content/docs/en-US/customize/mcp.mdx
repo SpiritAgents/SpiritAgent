@@ -15,3 +15,75 @@ When both files define the same server name, the **workspace** entry wins.
 Manage servers in **Settings → MCPs**, or with `spirit mcp` in the CLI (`list`, `show`, `init`, `enable`, `disable`, `inspect`, `tools`, `call-tool`, …).
 
 MCP tools merge into the same tool list the agent already has. They still go through [approval](../agent/approvals.mdx) when they are high-risk.
+
+## File fields
+
+The root object has only `servers`. Each server must include `transport`, with `type` set to `stdio` or `http`.
+
+| Field | Description |
+| --- | --- |
+| `servers` | Object. Keys are server names |
+| `displayName` | Optional. UI label; defaults to the server name. `display_name` is also accepted |
+| `enabled` | Optional. Defaults to `true` |
+| `capabilities.tools` | Optional. Defaults to `true` |
+| `capabilities.resources` | Optional. Defaults to `true` |
+| `capabilities.prompts` | Optional. Defaults to `true` |
+| `transport.type` | Required. `stdio` or `http` |
+
+### `stdio`
+
+| Field | Description |
+| --- | --- |
+| `command` | Required. Launch command |
+| `args` | Optional. Command arguments |
+| `env` | Optional. Environment variables. Values may use `${env:NAME}` |
+| `cwd` | Optional. Working directory |
+| `timeoutMs` | Optional. Timeout in milliseconds. `timeout_ms` is also accepted |
+| `stderr` | Optional. `inherit` (default) or `pipe` |
+
+### `http`
+
+| Field | Description |
+| --- | --- |
+| `url` | Required. Server URL |
+| `headers` | Optional. Request headers. Values may use `${env:NAME}` |
+| `timeoutMs` | Optional. Timeout in milliseconds. `timeout_ms` is also accepted |
+
+## Example
+
+```json
+{
+  "servers": {
+    "local-docs": {
+      "displayName": "Local docs",
+      "enabled": true,
+      "capabilities": {
+        "tools": true,
+        "resources": true,
+        "prompts": false
+      },
+      "transport": {
+        "type": "stdio",
+        "command": "npx",
+        "args": ["-y", "example-mcp-server"],
+        "env": {
+          "API_TOKEN": "${env:EXAMPLE_API_TOKEN}"
+        },
+        "cwd": "/path/to/workspace",
+        "timeoutMs": 15000,
+        "stderr": "pipe"
+      }
+    },
+    "remote-tools": {
+      "transport": {
+        "type": "http",
+        "url": "https://mcp.example.com/mcp",
+        "headers": {
+          "Authorization": "Bearer ${env:EXAMPLE_MCP_TOKEN}"
+        },
+        "timeoutMs": 20000
+      }
+    }
+  }
+}
+```

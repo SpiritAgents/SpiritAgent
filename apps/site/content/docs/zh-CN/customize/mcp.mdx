@@ -15,3 +15,75 @@ MCP 服务器从 Spirit 外部提供工具、资源和提示。
 在 **设置 → MCPs** 管理，或在 CLI 用 `spirit mcp`（`list`、`show`、`init`、`enable`、`disable`、`inspect`、`tools`、`call-tool` 等）。
 
 MCP 工具并进 Agent 已有的工具列表。高风险时仍走[审批](../agent/approvals.mdx)。
+
+## 文件字段
+
+根对象只有 `servers`。每台 server 必须带 `transport`，`type` 为 `stdio` 或 `http`。
+
+| 参数 | 说明 |
+| --- | --- |
+| `servers` | 对象。键是 server 名称 |
+| `displayName` | 可选。界面显示名，默认用 server 名称。也接受 `display_name` |
+| `enabled` | 可选。默认 `true` |
+| `capabilities.tools` | 可选。默认 `true` |
+| `capabilities.resources` | 可选。默认 `true` |
+| `capabilities.prompts` | 可选。默认 `true` |
+| `transport.type` | 必填。`stdio` 或 `http` |
+
+### `stdio`
+
+| 参数 | 说明 |
+| --- | --- |
+| `command` | 必填。启动命令 |
+| `args` | 可选。命令参数 |
+| `env` | 可选。环境变量。值可用 `${env:NAME}` |
+| `cwd` | 可选。工作目录 |
+| `timeoutMs` | 可选。超时（毫秒）。也接受 `timeout_ms` |
+| `stderr` | 可选。`inherit`（默认）或 `pipe` |
+
+### `http`
+
+| 参数 | 说明 |
+| --- | --- |
+| `url` | 必填。服务地址 |
+| `headers` | 可选。请求头。值可用 `${env:NAME}` |
+| `timeoutMs` | 可选。超时（毫秒）。也接受 `timeout_ms` |
+
+## 示例
+
+```json
+{
+  "servers": {
+    "local-docs": {
+      "displayName": "Local docs",
+      "enabled": true,
+      "capabilities": {
+        "tools": true,
+        "resources": true,
+        "prompts": false
+      },
+      "transport": {
+        "type": "stdio",
+        "command": "npx",
+        "args": ["-y", "example-mcp-server"],
+        "env": {
+          "API_TOKEN": "${env:EXAMPLE_API_TOKEN}"
+        },
+        "cwd": "/path/to/workspace",
+        "timeoutMs": 15000,
+        "stderr": "pipe"
+      }
+    },
+    "remote-tools": {
+      "transport": {
+        "type": "http",
+        "url": "https://mcp.example.com/mcp",
+        "headers": {
+          "Authorization": "Bearer ${env:EXAMPLE_MCP_TOKEN}"
+        },
+        "timeoutMs": 20000
+      }
+    }
+  }
+}
+```

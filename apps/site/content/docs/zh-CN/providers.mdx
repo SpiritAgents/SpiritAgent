@@ -20,8 +20,8 @@ Google Gemini 与 Vertex AI 始终走 Chat Completions。若配置里要了 Resp
 
 有的提供商在 Key 之外还有第二维：
 
-- **区域站点** — Moonshot AI、SiliconFlow、MiniMax（中国 / 国际）；阿里（区域 + `workspaceId`）；腾讯 TokenHub（广州 / 新加坡）
-- **套餐端点** — 阿里 Token Plan、StepFun Step Plan、Z.ai / 智谱 AI GLM Coding Plan
+- **区域站点** — Moonshot AI、SiliconFlow、MiniMax（中国 / 国际）；Alibaba（区域 + `workspaceId`）；腾讯 TokenHub（广州 / 新加坡）
+- **套餐端点** — Alibaba Token Plan、StepFun Step Plan、Z.ai / 智谱 AI GLM Coding Plan
 - **云厂商字段** — Bedrock 区域、Azure 资源名、Cloudflare 账户（及可选 gateway）、Vertex 项目 / 位置
 
 没有这些维的提供商，向导就是：Key → 导入模型 → 选当前对话模型。
@@ -158,7 +158,7 @@ Spirit 会导入模型目录，并让你指定当前对话模型；目录标了�
 - **国际**（默认）— `https://api.moonshot.ai/v1`
 - **中国** — `https://api.moonshot.cn/v1`
 
-这是月之暗面开放平台，不是 [Kimi Code](#kimi-code)。moonshot-ai 的内置搜索不走 Kimi Code 托管搜索路径。Kimi Code 的 Key 和月之暗面开放平台的 Key 是两条连接，不要混用。
+这是 Moonshot AI，不是 [Kimi Code](#kimi-code)。moonshot-ai 的内置搜索不走 Kimi Code 托管搜索路径。Kimi Code 的 Key 和 Moonshot AI 的 Key 是两条连接，不要混用。
 
 ### Kimi Code
 
@@ -188,7 +188,7 @@ Spirit 会导入模型目录，并让你指定当前对话模型；目录标了�
 
 导入后即可对话。推理跟模型走。
 
-### 阿里
+### Alibaba
 
 在[阿里云百炼 / 模型服务](https://bailian.console.aliyun.com) 创建 API Key。
 
@@ -214,9 +214,9 @@ Spirit 会导入模型目录，并让你指定当前对话模型；目录标了�
 
 导入后即可对话。上游 `/models` 没有多模态字段；只有 M3 被当作支持图 / 视频输入。经 Vercel AI Gateway 的 Open Responses，MiniMax M3 不会返回可展示的思考流。
 
-### 小米
+### Xiaomi
 
-在 [小米 MiMo 控制台](https://platform.xiaomimimo.com/console/api-keys) 创建 API Key。
+在 [Xiaomi MiMo 控制台](https://platform.xiaomimimo.com/console/api-keys) 创建 API Key。
 
 固定 **Chat Completions API**。默认 Base：`https://api.xiaomimimo.com/v1`。
 
@@ -233,9 +233,9 @@ Spirit 会导入模型目录，并让你指定当前对话模型；目录标了�
 
 导入后即可对话。其他能力跟目录走。
 
-### 阶跃星辰
+### StepFun
 
-在[阶跃星辰平台](https://platform.stepfun.com) 创建 API Key。套餐说明见 [Step Plan](https://platform.stepfun.com/docs/zh/step-plan/integrations/reasoning-api)。
+在 [StepFun 平台](https://platform.stepfun.com) 创建 API Key。套餐说明见 [Step Plan](https://platform.stepfun.com/docs/zh/step-plan/integrations/reasoning-api)。
 
 固定 **Chat Completions API**。默认 Base：`https://api.stepfun.com/v1`。
 

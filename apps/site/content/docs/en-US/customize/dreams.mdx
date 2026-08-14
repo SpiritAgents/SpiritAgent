@@ -1,12 +1,21 @@
 ---
 title: Dreams
-description: Beta session memories. They expire after five days.
+description: Short-lived memories scoped to the workspace and Git branch. The agent reads them with dream_list and dream_read.
 ---
 
-Dreams is a **Beta** settings page. Spirit can record short memories from sessions and expose them to the agent with `dream_list`, `dream_read`, `dream_record`, `dream_update`, and `dream_delete`.
+<Callout type="warn" title="Beta">
+Dreams is still an experiment. Do not treat it as a permanent project wiki — that belongs in [Rules](./rules.mdx) or the repo.
+</Callout>
 
-Records live under `{spiritDataDir}/dreams/` and expire after **five days**.
+Dreams are short memories scoped to the **current workspace and Git branch**: what recently moved, why it matters, and what is still open. Records live under `{spiritDataDir}/dreams/` and expire after **five days**.
 
-Turn collection on or off in **Settings → Dreams**. A lightweight chat model is used for background collection, same slot as [Tab completion](../tools/tab-completion.mdx).
+The conversation agent gets a summary catalog in the system message (id, title, summary, tags). Full details are not preloaded; pull them with tools when needed.
 
-Treat Dreams as an experiment. Do not rely on them as a permanent project wiki — that belongs in [Rules](./rules.mdx) or the repo.
+| Tool | Role |
+| --- | --- |
+| `dream_list` | List non-expired summaries in the current scope |
+| `dream_read` | Read one full record by id |
+
+`dream_record`, `dream_update`, and `dream_delete` belong to the background collector, not the conversation agent. The collector scans sessions and decides whether to create, update, or drop a stale entry. It prefers updating an existing dream over duplicating one.
+
+Turn collection on or off on Desktop under **Settings → Dreams**. Background collection uses the lightweight chat model, same slot as **Settings → Tab**. CLI and ACP do not wire Dreams yet.
