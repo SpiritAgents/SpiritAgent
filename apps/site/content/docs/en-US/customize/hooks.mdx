@@ -1,0 +1,70 @@
+---
+title: Hooks
+description: Run scripts on session, tool, and subagent events. They can allow, deny, or ask.
+---
+
+Hooks are scripts Spirit runs at fixed points. They can allow a tool, deny it, or force an approval prompt (`ask`).
+
+## Events
+
+- `sessionStart`
+- `sessionEnd`
+- `submitPrompt`
+- `preToolUse`
+- `postToolUse`
+- `subagentStart`
+- `subagentEnd`
+
+`preToolUse` returning `ask` still prompts you even on [auto-approval or bypass](../agent/approvals.mdx).
+
+## Where they live
+
+| Scope | Config | Scripts |
+| --- | --- | --- |
+| User | `{spiritDataDir}/hooks.json` | `{spiritDataDir}/hooks/` |
+| Workspace | `{workspace}/.spirit/hooks.json` | `{workspace}/.spirit/hooks/` |
+
+On the same event, user entries and workspace entries are concatenated in that order. They do not overwrite each other.
+
+Manage them in **Settings → Hooks**. Validate from the CLI with `spirit hooks list` and `spirit hooks validate`. The built-in Skill `create-hook` drafts a hook.
+
+## File fields
+
+The root object must include `version` and `hooks`. `version` currently accepts only `1`.
+
+| Field | Description |
+| --- | --- |
+| `version` | Required. Must be `1` |
+| `hooks` | Required. Object. Keys are event names; values are arrays of hooks for that event |
+
+### Each hook
+
+| Field | Description |
+| --- | --- |
+| `command` | Required. Script path. A relative path is resolved against the config directory and must stay inside it |
+| `timeout` | Optional. Timeout in seconds. Must be a positive number. Defaults to `30` |
+| `failClosed` | Optional. Whether to block when the script crashes, times out, or writes invalid JSON to stdout. Defaults to not blocking |
+| `matcher` | Optional. Non-empty regular expression. Matches the tool name on `preToolUse` / `postToolUse`, or the subagent type on `subagentStart` / `subagentEnd` |
+
+## Example
+
+```json
+{
+  "version": 1,
+  "hooks": {
+    "preToolUse": [
+      {
+        "command": "hooks/guard.sh",
+        "timeout": 10,
+        "failClosed": true,
+        "matcher": "^shell$"
+      }
+    ],
+    "sessionEnd": [
+      {
+        "command": "hooks/log.sh"
+      }
+    ]
+  }
+}
+```

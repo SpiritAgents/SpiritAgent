@@ -1,0 +1,28 @@
+---
+title: 安全性
+description: 鑰匙圈、核准與迴圈精靈。無遙測。
+---
+
+## 鑰匙圈
+
+API 金鑰、Bedrock / Vertex 機密、擴充功能機密，以及 GitHub 整合權杖都儲存在作業系統的鑰匙圈中。服務名稱為 `SpiritAgent`。
+
+`config.json` 存放提供者群組與模型參照，而非機密本身。大型機密可能會在鑰匙圈中分片儲存。
+
+## 核准
+
+請參閱 [核准](./agent/approvals.mdx)。預設值是安全的起點。即使略過核准，仍會針對 `ask_questions` 與鉤子 `ask` 暫停。
+
+## 本機精靈
+
+Desktop 與 CLI 共用一個精靈，該精靈綁定**`127.0.0.1`** 的隨機連接埠。用戶端使用 `{spiritDataDir}/server.token`（權限 `0600`）傳送 `Authorization: Bearer`。
+
+`0.0.0.0` 遠端存取**不是**開放的產品途徑。請勿將 LAN 綁定視為代管的雲端智慧體。
+
+Web Host 配對使用 Desktop 上獨立的 6 位數代碼。五次失敗會鎖定該代碼，直到您重新啟動 Web Host。請參閱 [Desktop](./desktop.mdx)。
+
+## 隱私
+
+Spirit 不搭載開發者遙測。資料保留在資料目錄與鑰匙圈中。請參閱存放庫中的 [PRIVACY.md](https://github.com/SpiritAgents/SpiritAgent/blob/main/PRIVACY.md)。
+
+請私下回報漏洞（GitHub 私人安全公告），不要公開在問題中。請參閱 [SECURITY.md](https://github.com/SpiritAgents/SpiritAgent/blob/main/SECURITY.md)。

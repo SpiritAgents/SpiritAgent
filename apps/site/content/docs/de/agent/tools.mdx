@@ -1,0 +1,35 @@
+---
+title: Werkzeuge
+description: Werkzeuge, die der Agent aufrufen kann. Einige erscheinen nur, wenn das Modell, der Slot oder der Modus qualifiziert ist.
+---
+
+Diese Werkzeuge arbeiten auf dem von Ihnen geöffneten Arbeitsbereich. Der Fragemodus kann lesen und suchen; er kann nicht erstellen, bearbeiten, löschen, Patches anwenden, `shell` ausführen oder Bilder oder Videos erzeugen.
+
+| Werkzeug | Rolle |
+| --- | --- |
+| `read_file` | Eine Datei lesen oder Bilder und Videos lesen |
+| `create_file` | Eine Datei erstellen |
+| `edit_file` | Eine vorhandene Datei bearbeiten |
+| `delete_file` | Eine Datei löschen |
+| `apply_patch` | Verfügbar, wenn das Modell und der Transport berechtigt sind (z. B. ein GPT-Modell von OpenAI); ersetzt `create_file` / `edit_file` / `delete_file` auf diesem Pfad |
+| `glob` | Pfade per Glob finden (berücksichtigt `.gitignore`) |
+| `grep` | Dateiinhalte durchsuchen (berücksichtigt `.gitignore`) |
+| `ls` | Ein Verzeichnis auflisten, nicht rekursiv. Der Pfad muss absolut sein |
+| `shell` | Mit `reason` und `command` einen Befehl ausführen. Der Fragemodus kann ihn nicht aufrufen |
+| `web_fetch` | Eine `http`- oder `https`-URL abrufen und Markdown zurückgeben. Ein Host-Werkzeug, keine Provider-Suche |
+| `web_search` | Verfügbar, wenn der aktuelle Modellanbieter Websuche unterstützt. Gibt Titel, URLs und Textausschnitte zurück |
+| `generate_image` | Verfügbar, nachdem Sie in **Einstellungen → Modelle** ein Bildmodell zugewiesen haben. Erzeugt ein Bild. Der Fragemodus kann es nicht aufrufen |
+| `generate_video` | Verfügbar, nachdem Sie in **Einstellungen → Modelle** ein Videomodell zugewiesen haben. Erzeugt ein kurzes Video. Der Fragemodus kann es nicht aufrufen |
+| `get_diagnostics` | Verfügbar, wenn ein Sprachserver bereit ist. Übergibt Pfade; gibt Fehler und Warnungen zurück. Der Fragemodus kann es verwenden |
+| `ask_questions` | Strukturierte Fragen; die Runde wartet, bis Sie antworten. Siehe [Fragen stellen](./ask-questions.mdx) |
+| `subagent` | Eine abgegrenzte Aufgabe an eine untergeordnete Sitzung delegieren. Siehe [Unteragenten](./subagents.mdx) |
+| `create_plan` | Nur Plan-Modus. Schreibt `plans/{name}.md`. Siehe [Modi](./modes.mdx) |
+| `todo_list` | Listet Aufgaben für die aktuelle Sitzung auf |
+| `todo_write` | Ersetzt die gesamte Aufgabenliste für die aktuelle Sitzung |
+| `finish_task` | Nur verfügbar, wenn [Loop](./loop.mdx) aktiviert ist. Markiert die aktuelle Aufgabe als abgeschlossen |
+| `dream_list` | Wenn [Dreams](../customize/dreams.mdx) auf dem Desktop verfügbar ist, listet nicht abgelaufene Zusammenfassungen für den aktuellen Arbeitsbereich und Zweig auf |
+| `dream_read` | Einen vollständigen Dream anhand der ID lesen. Schreibwerkzeuge gehören zum Hintergrundsammler, nicht zur Konversation |
+
+Bearbeitungen und Löschungen warten auf [Genehmigung](./approvals.mdx) auf der Standardebene. `shell` wartet ebenfalls.
+
+Konfigurierte [MCP](../customize/mcp.mdx)-Server und Erweiterungen fügen weitere Werkzeuge zur selben Liste hinzu.

@@ -1,0 +1,34 @@
+---
+title: 提示
+description: 如何給 Spirit 一個它能在你的工作區中完成的任務。
+---
+
+以你向能讀取儲存庫並等待批准的團隊成員簡報的方式，與 agent 交談。
+
+## 具體明確
+
+指出檔案名稱、預期結果，以及不要動的部分。明確的提示能產生小而可審查的差異。模糊的提示會浪費一輪在探索上。
+
+```txt
+Read src/auth/session.ts and fix the expired-token refresh path.
+Do not change the login form. Add a focused test next to the existing session tests.
+```
+
+## 附加上下文
+
+在 Desktop 上，當任務與特定位置相關時，附加開啟的檔案、選取範圍或 Browser 元素。agent 仍需讀取檔案以查看目前內容——附件是指標，而非 [tools](./tools.mdx) 的替代品。
+
+## 先選擇模式
+
+- **Agent** — 你已經知道變更內容
+- **Plan** — 你希望在編輯前獲得書面計畫和 [questions](./ask-questions.mdx)
+- **Ask** — 你只需要解釋
+- **Debug** — 你可以重現 bug，並希望取得日誌
+
+請參閱 [Modes](./modes.mdx)。
+
+## 讓批准發揮作用
+
+在**預設**批准下，agent 會在編輯或執行命令前停止。閱讀差異，然後批准或拒絕。在你信任循環之前，不要開啟繞過。請參閱 [Approvals](./approvals.mdx)。
+
+編輯器內嵌完成（Tab）不屬於此對話的一部分。請在 **設定 → Tab** 下設定。

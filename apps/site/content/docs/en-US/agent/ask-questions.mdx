@@ -1,0 +1,18 @@
+---
+title: Ask questions
+description: Structured questionnaires that pause the agent until you answer.
+---
+
+`ask_questions` is how the agent asks you to decide something before it continues. The host shows a questionnaire: each item can have preset options plus a custom text field.
+
+The run **suspends**. The tool does not execute in the background. After you submit answers, the agent resumes with those answers in context.
+
+## Where you will see it
+
+Plan mode is the usual place — the agent is told to clarify before drafting a plan. Agent mode can still ask when a choice would change the work.
+
+[Bypass approval](./approvals.mdx) does **not** skip `ask_questions`.
+
+## Headless CLI
+
+`spirit -p` cannot show a questionnaire. If the model calls `ask_questions`, the process fails. Use the TUI, or make the prompt specific enough that no decision is needed.

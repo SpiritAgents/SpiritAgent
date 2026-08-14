@@ -1,0 +1,42 @@
+---
+title: Solução de problemas
+description: Config antiga, bloqueios headless, bloqueios de pareamento, chaves ausentes e confusões no caminho de instalação.
+---
+
+## config.json é rejeitado
+
+O arquivo deve ser `schemaVersion: 2`. Exclua o arquivo antigo e [reconecte um provedor](./providers.mdx). As chaves nunca estiveram nesse arquivo — elas estão no [chaveiro](./security.mdx).
+
+## CLI instalado, configurações vazias
+
+Você instalou os binários em `SPIRIT_HOME` (`~/.spirit`). As sessões e o `config.json` ficam no [diretório de dados](./config.mdx). Verifique `SPIRIT_AGENT_DATA_DIR` se você o substituiu.
+
+## `spirit -p` falhou
+
+- Precisava de aprovação → use `-a auto-approval` / `-a bypass-approval`, ou o TUI
+- Precisava de [ask_questions](./agent/ask-questions.mdx) → use o TUI, ou torne o prompt decisivo
+- Tempo esgotado → o headless para após 30 minutos
+
+## Modelos não importados
+
+Abra a [página do provedor](./providers.mdx) para essa casa. Verifique o site, o endpoint do plano, o recurso Azure, a conta Cloudflare, a região / IAM do Bedrock ou o projeto / local do Vertex. O TokenHub permanece no Chat Completions. O Bedrock Bearer não consegue listar modelos.
+
+## Chave não está no chaveiro
+
+Reconecte em **Configurações → Modelos** ou `spirit model add`. O assistente grava o chaveiro **antes** do `config.json`. Não cole chaves no repositório.
+
+## Falha no pareamento do Web Host
+
+Código errado → tente novamente. Cinco falhas bloqueiam o pareamento (`PAIRING_LOCKED`) até você reiniciar o Web Host em **Configurações → Redes**. O host deve suportar pareamento; uma pré-visualização web genérica pode mostrar que não suporta.
+
+## LSP ausente
+
+Instale o servidor você mesmo (clangd via Homebrew / winget, jdtls manualmente) e ative-o em **Configurações → Agentes**. Veja [Desktop](./desktop.mdx).
+
+## A conclusão de Tab está vazia
+
+Ative **Configurações → Tab** e atribua um modelo de chat leve. Veja [Desktop](./desktop.mdx).
+
+## ACP não está na página de download
+
+Isso é esperado. ACP é implementado, mas a coluna de download ainda é um espaço reservado. Veja [ACP](./acp.mdx).

@@ -393,8 +393,8 @@ import type { ApprovalLevel } from "./approval-level.js";
 export type { ApprovalLevel } from "./approval-level.js";
 
 export function normalizeApprovalLevel(value: unknown): ApprovalLevel {
-  if (value === "full-approval" || value === "full-access") {
-    return "full-approval";
+  if (value === "bypass-approval") {
+    return "bypass-approval";
   }
   if (value === "auto-approval") {
     return "auto-approval";
@@ -855,7 +855,7 @@ export class NodeHostToolService<
     const isExtensionQuestions =
       request.name === "extension_tool" && request.approval_mode === "need-questions";
     const bypassHighRiskApproval =
-      this.getApprovalLevel?.() === "full-approval" &&
+      this.getApprovalLevel?.() === "bypass-approval" &&
       request.name !== "ask_questions" &&
       !isExtensionQuestions;
     if (bypassHighRiskApproval) {

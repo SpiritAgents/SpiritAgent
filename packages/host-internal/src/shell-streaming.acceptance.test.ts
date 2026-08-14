@@ -18,7 +18,7 @@ test("NodeHostToolService streams incremental shell output via attachRequestMeta
 
     const service = new NodeHostToolService(
       { workspaceRoot, spiritDataDir },
-      { getApprovalLevel: () => "full-approval" },
+      { getApprovalLevel: () => "bypass-approval" },
     );
 
     assert.equal(
@@ -65,7 +65,7 @@ test("NodeHostToolService.abortRunningShell kills in-flight shell", async () => 
 
     const service = new NodeHostToolService(
       { workspaceRoot, spiritDataDir },
-      { getApprovalLevel: () => "full-approval" },
+      { getApprovalLevel: () => "bypass-approval" },
     );
 
     const request = {

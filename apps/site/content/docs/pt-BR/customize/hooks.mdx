@@ -1,0 +1,70 @@
+---
+title: Hooks
+description: Execute scripts em eventos de sessão, ferramenta e subagente. Eles podem permitir, negar ou perguntar.
+---
+
+Hooks são scripts que o Spirit executa em pontos fixos. Eles podem permitir uma ferramenta, negá-la ou forçar um prompt de aprovação (`ask`).
+
+## Eventos
+
+- `sessionStart`
+- `sessionEnd`
+- `submitPrompt`
+- `preToolUse`
+- `postToolUse`
+- `subagentStart`
+- `subagentEnd`
+
+`preToolUse` retornando `ask` ainda solicita a você mesmo em [auto-aprovação ou bypass](../agent/approvals.mdx).
+
+## Onde eles vivem
+
+| Escopo | Config | Scripts |
+| --- | --- | --- |
+| Usuário | `{spiritDataDir}/hooks.json` | `{spiritDataDir}/hooks/` |
+| Espaço de trabalho | `{workspace}/.spirit/hooks.json` | `{workspace}/.spirit/hooks/` |
+
+No mesmo evento, as entradas do usuário e as entradas do espaço de trabalho são concatenadas nessa ordem. Elas não se sobrescrevem.
+
+Gerencie-os em **Configurações → Hooks**. Valide a partir do CLI com `spirit hooks list` e `spirit hooks validate`. A Skill integrada `create-hook` elabora um hook.
+
+## Campos do arquivo
+
+O objeto raiz deve incluir `version` e `hooks`. `version` atualmente aceita apenas `1`.
+
+| Campo | Descrição |
+| --- | --- |
+| `version` | Obrigatório. Deve ser `1` |
+| `hooks` | Obrigatório. Objeto. As chaves são nomes de eventos; os valores são matrizes de hooks para esse evento |
+
+### Cada hook
+
+| Campo | Descrição |
+| --- | --- |
+| `command` | Obrigatório. Caminho do script. Um caminho relativo é resolvido em relação ao diretório de configuração e deve permanecer dentro dele |
+| `timeout` | Opcional. Tempo limite em segundos. Deve ser um número positivo. Padrão é `30` |
+| `failClosed` | Opcional. Se deve bloquear quando o script falhar, expirar ou escrever JSON inválido na saída padrão. Padrão é não bloquear |
+| `matcher` | Opcional. Expressão regular não vazia. Corresponde ao nome da ferramenta em `preToolUse` / `postToolUse`, ou ao tipo de subagente em `subagentStart` / `subagentEnd` |
+
+## Exemplo
+
+```json
+{
+  "version": 1,
+  "hooks": {
+    "preToolUse": [
+      {
+        "command": "hooks/guard.sh",
+        "timeout": 10,
+        "failClosed": true,
+        "matcher": "^shell$"
+      }
+    ],
+    "sessionEnd": [
+      {
+        "command": "hooks/log.sh"
+      }
+    ]
+  }
+}
+```

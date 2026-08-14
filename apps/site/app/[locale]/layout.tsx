@@ -2,7 +2,7 @@ import type { ReactNode } from "react";
 import { redirect } from "next/navigation";
 
 import { AppProviders } from "@/components/app-providers";
-import { ZhCnFonts } from "@/components/zh-cn-fonts";
+import { LocaleFonts } from "@/components/locale-fonts";
 import {
   DEFAULT_LOCALE,
   isSupportedLocale,
@@ -41,7 +41,7 @@ export default async function LocaleLayout({
       </head>
       <body>
         <AppProviders locale={locale}>
-          {locale === "zh-CN" ? <ZhCnFonts /> : null}
+          <LocaleFonts locale={locale} />
           {children}
         </AppProviders>
       </body>

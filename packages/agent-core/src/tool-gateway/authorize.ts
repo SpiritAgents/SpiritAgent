@@ -4,7 +4,7 @@ import { parseLazyToolGatewayArguments } from "./parse.js";
 import { LAZY_TOOL_PROVIDER_BUILT_IN, LAZY_TOOL_PROVIDER_MCP } from "./types.js";
 import type { LazyToolCallRequest, LazyToolGatewayToolRequest } from "./types.js";
 
-export type LazyToolGatewayApprovalLevel = "default" | "auto-approval" | "full-approval";
+export type LazyToolGatewayApprovalLevel = "default" | "auto-approval" | "bypass-approval";
 
 export function authorizeLazyToolGatewayRequest(
   request: LazyToolGatewayToolRequest,
@@ -18,7 +18,7 @@ export function authorizeLazyToolGatewayRequest(
     return { kind: "allowed" };
   }
 
-  if (approvalLevel === "full-approval") {
+  if (approvalLevel === "bypass-approval") {
     return { kind: "allowed" };
   }
 

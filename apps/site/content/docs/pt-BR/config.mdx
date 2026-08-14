@@ -1,0 +1,72 @@
+---
+title: Configuração
+description: Diretórios de dados, config.json v2, .spirit/ e variáveis de ambiente.
+---
+
+O Spirit mantém binários e dados em lugares diferentes. Misturá-los é o motivo usual de "instalei o CLI, mas as configurações estão vazias".
+
+## Diretório de dados
+
+Substitua com `SPIRIT_AGENT_DATA_DIR`. O servidor também pode usar `SPIRIT_SERVER_DATA_DIR` (tem precedência sobre o primeiro).
+
+| SO | Padrão |
+| --- | --- |
+| macOS | `~/Library/Application Support/SpiritAgent` |
+| Windows | `%APPDATA%\SpiritAgent` |
+| Linux | `$XDG_DATA_HOME/SpiritAgent` ou `~/.local/share/SpiritAgent` |
+| Fallback | `~/.spirit-agent` |
+
+Arquivos típicos:
+
+```
+{spiritDataDir}/
+  config.json
+  mcp.json
+  hooks.json
+  rule.md
+  skills/
+  chats/
+  plans/
+  extensions/
+  automations/
+  dreams/
+  server.token
+  server/instances/
+```
+
+Os binários do CLI ficam em `SPIRIT_HOME` (`~/.spirit` ou `%LOCALAPPDATA%\Spirit`). Esse não é este diretório. Veja [Instalar CLI](./install/cli.mdx).
+
+## config.json v2
+
+`schemaVersion` deve ser `2`. A versão 1 é rejeitada — exclua o arquivo antigo e [reconecte um provedor](./providers.mdx).
+
+Campos principais:
+
+- `providerGroups` — casas conectadas, base da API, transporte, modelos
+- `activeModel`
+- `imageGenerationModel` / `videoGenerationModel` / `lightweightChatModel`
+
+As chaves **não** estão neste arquivo. Elas ficam no [keyring](./security.mdx).
+
+## `.spirit/` do workspace
+
+| Caminho | Função |
+| --- | --- |
+| `.spirit/rule.md` | [Regra](./customize/rules.mdx) do workspace |
+| `.spirit/skills/` | [Skills](./customize/skills.mdx) do workspace |
+| `.spirit/mcp.json` | [MCP](./customize/mcp.mdx) do workspace |
+| `.spirit/hooks.json` | [Hooks](./customize/hooks.mdx) do workspace |
+
+Também usado: `{workspace}/AGENTS.md`, `{workspace}/.agents/skills/`, `{workspace}/plans/`.
+
+## Variáveis de ambiente
+
+| Variável | Função |
+| --- | --- |
+| `SPIRIT_AGENT_DATA_DIR` | Diretório de dados |
+| `SPIRIT_SERVER_DATA_DIR` | Diretório de dados do servidor (tem precedência) |
+| `SPIRIT_ACP_DATA_DIR` / `SPIRIT_ACP_WORKSPACE` | [ACP](./acp.mdx) |
+| `SPIRIT_HOME` / `SPIRIT_VERSION` / `SPIRIT_DOWNLOAD_HOST` | Instalador do CLI |
+| `SPIRIT_API_KEY` / `SPIRIT_API_BASE` | Substituições de processo do [CLI](./cli.mdx) |
+| `SPIRIT_WEB_HOST` / `SPIRIT_WEB_PORT` / `SPIRIT_DESKTOP_WEB_HOST` | Host Web do Desktop |
+| `SPIRIT_TERMINAL_SHELL` | Shell PTY do Desktop |

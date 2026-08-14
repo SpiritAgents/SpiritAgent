@@ -105,11 +105,11 @@ test("parseCreateAutomationTriggerInput requires trigger", () => {
   );
 });
 
-test("parseCreateAutomationApprovalLevel defaults to default and accepts auto-approval and full-approval", () => {
+test("parseCreateAutomationApprovalLevel defaults to default and accepts auto-approval and bypass-approval", () => {
   assert.equal(parseCreateAutomationApprovalLevel(undefined), "default");
   assert.equal(parseCreateAutomationApprovalLevel("auto-approval"), "auto-approval");
-  assert.equal(parseCreateAutomationApprovalLevel("full-approval"), "full-approval");
-  assert.equal(parseCreateAutomationApprovalLevel("full-access"), "full-approval");
+  assert.equal(parseCreateAutomationApprovalLevel("bypass-approval"), "bypass-approval");
+  assert.equal(parseCreateAutomationApprovalLevel("full-approval"), "default");
 });
 
 test("CREATE_AUTOMATION_CONTRIBUTED_TOOL approval_level enum includes auto-approval", () => {
@@ -118,7 +118,7 @@ test("CREATE_AUTOMATION_CONTRIBUTED_TOOL approval_level enum includes auto-appro
   assert.ok(properties && typeof properties === "object" && !Array.isArray(properties));
   const approvalLevel = properties.approval_level;
   assert.ok(approvalLevel && typeof approvalLevel === "object" && !Array.isArray(approvalLevel));
-  assert.deepEqual(approvalLevel.enum, ["default", "auto-approval", "full-approval"]);
+  assert.deepEqual(approvalLevel.enum, ["default", "auto-approval", "bypass-approval"]);
 });
 
 test("previewCreateAutomationFromArguments derives title and trigger", () => {

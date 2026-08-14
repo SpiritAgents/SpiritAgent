@@ -51,7 +51,7 @@ struct Cli {
     #[arg(short = 'm', long, value_name = "model")]
     model: Option<String>,
 
-    /// Set approval level: default, auto-approval, full-approval (persisted for the session).
+    /// Set approval level: default, auto-approval, bypass-approval (persisted for the session).
     #[arg(short = 'a', long, value_name = "approval")]
     approval: Option<String>,
 
@@ -1690,17 +1690,17 @@ mod tests {
 
     #[test]
     fn prompt_trailing_absorbs_lookalike_flags() {
-        let cli = Cli::try_parse_from(["spirit", "-p", "x", "-a", "full-approval"])
+        let cli = Cli::try_parse_from(["spirit", "-p", "x", "-a", "bypass-approval"])
             .expect("trailing tokens after -p should parse as prompt");
-        assert_eq!(cli.prompt, vec!["x", "-a", "full-approval"]);
+        assert_eq!(cli.prompt, vec!["x", "-a", "bypass-approval"]);
         assert!(cli.approval.is_none());
     }
 
     #[test]
     fn approval_before_prompt_still_applies() {
-        let cli = Cli::try_parse_from(["spirit", "-a", "full-approval", "-p", "hello"])
+        let cli = Cli::try_parse_from(["spirit", "-a", "bypass-approval", "-p", "hello"])
             .expect("options before -p should parse normally");
-        assert_eq!(cli.approval.as_deref(), Some("full-approval"));
+        assert_eq!(cli.approval.as_deref(), Some("bypass-approval"));
         assert_eq!(cli.prompt, vec!["hello"]);
     }
 

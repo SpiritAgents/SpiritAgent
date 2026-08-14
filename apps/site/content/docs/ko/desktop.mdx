@@ -1,0 +1,103 @@
+---
+title: 데스크톱
+description: 설정 맵, 파일 / Git / 브라우저, 마켓플레이스, 자동화, 로컬 웹 호스트 페어링.
+---
+
+데스크톱은 그래픽 호스트입니다. [CLI](./cli.mdx)와 로컬 데몬을 공유합니다. [데스크톱 설치](./install/desktop.mdx)에서 설치하세요.
+
+## 설정 맵
+
+### 기본
+
+| 탭 | 내용 |
+| --- | --- |
+| 일반 | 알림, 트레이 / 메뉴 바 아이콘 |
+| 모양 | 테마, 글꼴, UI 언어, mica / 흐림, 포인터 |
+
+### 기능
+
+| 탭 | 내용 |
+| --- | --- |
+| 모델 | 공급자 연결, 모델 목록, 키 |
+| 에이전트 | LSP, 커밋 / PR 속성 |
+| 탭 | 편집기 탭 완성 |
+| Skills | [Skills](./customize/skills.mdx) 발견 및 생성 |
+| 규칙 | [규칙](./customize/rules.mdx) 슬롯 |
+| MCP | [MCP](./customize/mcp.mdx) 서버 |
+| 훅 | [훅](./customize/hooks.mdx) |
+| Dreams | [Dreams](./customize/dreams.mdx) (베타) |
+
+### 연결
+
+| 탭 | 내용 |
+| --- | --- |
+| 네트워크 | LLM HTTP 버전, **웹 원격 액세스** |
+| 통합 | [GitHub 기기 로그인](./customize/integrations.mdx) |
+| 확장 프로그램 | 설치된 확장 프로그램, ZIP 가져오기 |
+
+개발자 탭은 Vite 개발 빌드에서만 나타납니다.
+
+## 작업공간 패널
+
+| 탭 | 역할 |
+| --- | --- |
+| 파일 | 트리, Monaco, Markdown 미리보기, `plans/` |
+| Git | 변경 사항, 기록, 커밋 / 푸시 / 병합 칩 |
+| 브라우저 | 임베디드 브라우저 + 요소 선택기 (**Electron 전용**)​ |
+| 셸 | 임베디드 PTY (**Electron 전용**)​ |
+
+### 셸
+
+Desktop (Electron 전용)에는 임베디드 PTY가 있는 **셸** 탭이 있습니다. 그 패널은 사용자를 위한 것입니다. 에이전트는 여전히 [`shell`](./agent/tools.mdx) 및 승인을 거치며, 사용자의 PTY에 입력하지 않습니다.
+
+CLI에는 임베디드 PTY 패널이 없습니다. 명령은 여전히 공유 데몬에서 동일한 `shell` 도구를 통해 실행됩니다.
+
+특정 바이너리가 필요하면 `SPIRIT_TERMINAL_SHELL`로 Desktop PTY 셸을 재정의하세요.
+
+### Git
+
+**Git** 탭은 변경 사항과 기록을 표시합니다. Composer의 칩은 **커밋**, **푸시** 또는 **병합**을 시작할 수 있습니다. 이것은 호스트 UI이며 Skill 패키지가 아닙니다.
+
+해당 칩은 고정 프롬프트를 주입합니다. 그런 다음 에이전트는 [workspace 및 `shell` 도구](./agent/tools.mdx)를 사용합니다.
+
+### LSP
+
+**설정 → 에이전트**에서 언어 서버를 켜고, 누락된 경우 공급자를 설치하세요. 서버가 준비되면 에이전트는 [`get_diagnostics`](./agent/tools.mdx)를 호출할 수 있습니다.
+
+| ID | 언어 | 설치 방법 |
+| --- | --- | --- |
+| `typescript-language-server` | TypeScript, JavaScript | npm (`typescript-language-server`)​ |
+| `pyright` | Python | npm (`pyright`) |
+| `gopls` | Go | Go 도구 체인 |
+| `rust-analyzer` | Rust | rustup |
+| `clangd` | C, C++ | 플랫폼 패키지 (예: Homebrew 또는 winget) |
+| `jdtls` | Java | 수동 |
+| `omnisharp` | C# | .NET |
+
+clangd 및 jdtls는 번들로 제공되지 않습니다. 직접 설치한 후 설정 → 에이전트로 돌아오세요.
+
+### 탭
+
+Tab은 Monaco 인라인 완성입니다. Tab 키 한 번으로 고스트 텍스트를 수락하세요. **설정 → 탭**을 열고 코드 완성(`codeCompletionEnabled`)을 활성화하고 **설정 → 모델**에서 경량 채팅 모델을 지정하세요. 이 슬롯은 다른 경량 백그라운드 작업에도 사용됩니다.
+
+완성이 비어 있으면 가벼운 채팅 모델이 연결되어 있고 설정이 켜져 있는지 확인하세요. 에이전트 대화가 아닙니다.
+
+## 마켓플레이스 및 자동화
+
+사이드바는 [마켓플레이스](./customize/marketplace.mdx)를 엽니다. 자동화에는 자체 보기가 있습니다 — [데스크톱 전용](./customize/automations.mdx).
+
+## 웹 호스트 페어링
+
+데스크톱은 로컬 머신에서 웹 클라이언트를 제공할 수 있습니다.
+
+- 기본 리슨: `127.0.0.1:7788`
+- 설정 → **네트워크** → 웹 원격 액세스
+- 첫 방문 시 해당 설정 페이지에서 **6자리 페어링 코드**를 요청합니다.
+- 5회 실패 시 웹 호스트를 다시 시작할 때까지 페어링이 잠깁니다.
+- 토큰은 브라우저에 `spirit-agent-web-host-token`으로 저장됩니다.
+
+에이전트는 여전히 공유 데몬 내에서 실행됩니다. 웹 클라이언트는 인증된 스냅샷을 받습니다. 두 번째 에이전트가 아닙니다.
+
+**원격 LAN 액세스를 위해 `0.0.0.0`을 바인딩하는 것은 공개된 제품 경로가 아닙니다.** 데몬과 웹 호스트는 기본적으로 루프백에 유지됩니다. 네트워크의 LAN IPv4 리슨 주소는 공개 서버가 아닌 사용자가 제어하는 머신용입니다.
+
+개발 오버라이드: `SPIRIT_DESKTOP_WEB_HOST=1`, `SPIRIT_WEB_HOST`, `SPIRIT_WEB_PORT`.

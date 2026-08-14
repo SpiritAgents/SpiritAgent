@@ -1,4 +1,5 @@
 import { NextResponse, type NextRequest } from "next/server";
+import { isMarkdownPreferred, rewritePath } from "fumadocs-core/negotiation";
 
 import { renderDownloadMarkdown, renderSiteMarkdown } from "@/content/site-document";
 import {
@@ -9,6 +10,11 @@ import {
   prefersMarkdown,
   resolveMarkdownCompanionPath,
 } from "@/lib/accept";
+
+const { rewrite: rewriteDocsMarkdown } = rewritePath(
+  "/:locale/docs{/*path}",
+  "/llms.mdx/:locale/docs{/*path}",
+);
 
 export function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl;
@@ -21,6 +27,15 @@ export function proxy(request: NextRequest) {
     const response = NextResponse.redirect(url, 302);
     response.headers.set("Vary", "Accept, Accept-Language");
     return response;
+  }
+
+  if (isMarkdownPreferred(request)) {
+    const docsMarkdownPath = rewriteDocsMarkdown(pathname);
+    if (docsMarkdownPath) {
+      return NextResponse.rewrite(new URL(docsMarkdownPath, request.nextUrl), {
+        headers: { Vary: "Accept" },
+      });
+    }
   }
 
   const markdownPath = resolveMarkdownCompanionPath(pathname);
@@ -62,11 +77,45 @@ export const config = {
     "/",
     "/en-US",
     "/en-US/",
-    "/zh-CN",
-    "/zh-CN/",
     "/en-US/download",
     "/en-US/download/",
+    "/zh-CN",
+    "/zh-CN/",
     "/zh-CN/download",
     "/zh-CN/download/",
+    "/zh-TW",
+    "/zh-TW/",
+    "/zh-TW/download",
+    "/zh-TW/download/",
+    "/ja",
+    "/ja/",
+    "/ja/download",
+    "/ja/download/",
+    "/ko",
+    "/ko/",
+    "/ko/download",
+    "/ko/download/",
+    "/de",
+    "/de/",
+    "/de/download",
+    "/de/download/",
+    "/fr",
+    "/fr/",
+    "/fr/download",
+    "/fr/download/",
+    "/es",
+    "/es/",
+    "/es/download",
+    "/es/download/",
+    "/pt-BR",
+    "/pt-BR/",
+    "/pt-BR/download",
+    "/pt-BR/download/",
+    "/ru",
+    "/ru/",
+    "/ru/download",
+    "/ru/download/",
+    "/:locale/docs",
+    "/:locale/docs/:path*",
   ],
 };

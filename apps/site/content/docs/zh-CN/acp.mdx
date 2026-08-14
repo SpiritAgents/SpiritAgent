@@ -1,0 +1,34 @@
+---
+title: ACP
+description: 已实现，可供 ACP 客户端使用。下载页尚未上架该通道。
+---
+
+ACP（Agent Client Protocol）已实现为 `spirit-agent-acp`（`@spiritagent/acp-server`）。它走 stdio ndJSON，与 Desktop、CLI 共用数据目录和钥匙串，并可用 `--setup` 连接提供商。
+
+**公开下载页还没有列出 ACP。** Spirit Agent 仍在筹备上架 ACP 注册处。
+
+## 上架前的临时配置
+
+上架完成前，可用 `npx` 安装并完成设置：
+
+```bash
+npx @spiritagent/acp-server --setup
+```
+
+或把 ACP 客户端（例如 Zed）指到 stdio 入口：
+
+```json
+"agent_servers": {
+  "Spirit Agent": {
+    "command": "node",
+    "args": ["path/to/packages/acp-server/dist/src/stdio-entry.js"]
+  }
+}
+```
+
+认证选 **Run in terminal**，做完 `--setup`，再 `authenticate` 和 `session/new`。
+
+| 变量 | 作用 |
+| --- | --- |
+| `SPIRIT_ACP_WORKSPACE` | 工作区根（默认客户端 cwd） |
+| `SPIRIT_ACP_DATA_DIR` | 数据目录；否则走 `SPIRIT_AGENT_DATA_DIR`，再走平台默认 |

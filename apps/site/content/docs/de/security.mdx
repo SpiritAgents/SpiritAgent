@@ -1,0 +1,28 @@
+---
+title: Sicherheit
+description: Schlüsselbund, Genehmigungen und der Loopback-Daemon. Keine Telemetrie.
+---
+
+## Schlüsselbund
+
+API-Schlüssel, Bedrock / Vertex-Geheimnisse, Erweiterungsgeheimnisse und das GitHub-Integrations-Token werden im Betriebssystem-Schlüsselbund gespeichert. Der Dienstname ist `SpiritAgent`.
+
+`config.json` enthält Anbietergruppen und Modellreferenzen, nicht das Geheimnis selbst. Große Geheimnisse können im Schlüsselbund aufgeteilt werden.
+
+## Genehmigungen
+
+Siehe [Genehmigungen](./agent/approvals.mdx). Standard ist der sichere Ausgangspunkt. Bypass stoppt weiterhin bei `ask_questions` und Hook `ask`.
+
+## Lokaler Daemon
+
+Desktop und CLI teilen sich einen Daemon, der an **`127.0.0.1`** auf einem zufälligen Port bindet. Clients senden `Authorization: Bearer` mit `{spiritDataDir}/server.token` (Modus `0600`).
+
+`0.0.0.0` Fernzugriff ist **kein** offener Produktpfad. Behandeln Sie eine LAN-Bindung nicht als gehosteten Cloud-Agent.
+
+Die Web Host-Kopplung ist ein separater 6-stelliger Code auf Desktop. Fünf Fehlversuche sperren den Code, bis Sie Web Host neu starten. Siehe [Desktop](./desktop.mdx).
+
+## Datenschutz
+
+Spirit enthält keine Entwickler-Telemetrie. Daten bleiben im Datenverzeichnis und im Schlüsselbund. Siehe [PRIVACY.md](https://github.com/SpiritAgents/SpiritAgent/blob/main/PRIVACY.md) im Repository.
+
+Melden Sie Schwachstellen privat (GitHub Private Advisory), nicht in einem öffentlichen Issue. Siehe [SECURITY.md](https://github.com/SpiritAgents/SpiritAgent/blob/main/SECURITY.md).

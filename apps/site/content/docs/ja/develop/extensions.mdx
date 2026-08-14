@@ -1,0 +1,434 @@
+---
+title: 拡張機能
+description: パッケージレイアウト、spiritExtensionフィールド、activate API、公式レジストリへの掲載。
+---
+
+拡張機能は、`spiritExtension` を含む `package.json` を持つフォルダです。Spirit はこれをワークスペースの `.spirit/` ディレクトリではなく、ユーザーごと、ホストごとにインストールします。
+
+| ホスト | パス |
+| --- | --- |
+| Desktop | `{spiritDataDir}/extensions/desktop/` |
+| CLI | `{spiritDataDir}/extensions/cli/` |
+
+これは [Skills](../customize/skills.mdx)（`SKILL.md` フォルダ）、[MCP](../customize/mcp.mdx)（外部サーバー）、[Hooks](../customize/hooks.mdx)（`hooks.json` スクリプト）とは異なります。`contributes.cli.hooks` は CLI TUI スロットをスタイルします。これは `hooks.json` ではありません。
+
+拡張機能ごとの有効化スイッチはありません。インストール後、拡張機能が貢献します。CLI パネルのトグルはプレースホルダーです。
+
+## パッケージレイアウト
+
+```text
+example-extension/
+  package.json
+  dist/index.js
+  assets/icon.svg
+  styles/desktop.css
+  cli-hooks.json
+```
+
+```json
+{
+  "name": "@example/spirit-extension",
+  "version": "0.1.0",
+  "description": "Example Spirit Agent extension.",
+  "author": { "name": "example" },
+  "homepage": "https://example.com/spirit-extension",
+  "main": "dist/index.js",
+  "spiritExtension": {
+    "schemaVersion": 1,
+    "displayName": "Example extension",
+    "icon": "assets/icon.svg",
+    "supportedHosts": ["cli", "desktop"],
+    "activationEvents": ["onStartup", "onUserMessage"],
+    "requestedCapabilities": [
+      "tool-definitions",
+      "tool-execution",
+      "system-prompt",
+      "settings",
+      "secret-storage",
+      "desktop-ui",
+      "cli-ui"
+    ],
+    "contributes": {
+      "tools": [
+        {
+          "name": "lookup_item",
+          "description": "Look up an item by id.",
+          "inputSchema": {
+            "type": "object",
+            "properties": {
+              "id": { "type": "string" }
+            },
+            "required": ["id"]
+          },
+          "approvalMode": "allowed",
+          "executionMode": "foreground"
+        }
+      ],
+      "desktop": {
+        "css": [{ "path": "styles/desktop.css" }],
+        "settingsPage": { "title": "Example extension" }
+      },
+      "cli": {
+        "hooks": { "path": "cli-hooks.json" }
+      }
+    },
+    "settingsSchema": [
+      {
+        "key": "region",
+        "type": "select",
+        "title": "Region",
+        "required": true,
+        "defaultValue": "us",
+        "options": [
+          { "value": "us", "label": "US" },
+          { "value": "eu", "label": "EU" }
+        ]
+      }
+    ],
+    "secretSlots": [
+      {
+        "key": "api_token",
+        "title": "API token",
+        "required": true
+      }
+    ]
+  }
+}
+```
+
+`package.json` の `name` は拡張機能 ID です。`^(?:@[a-z0-9][a-z0-9._-]*/)?[a-z0-9][a-z0-9._-]*$` に一致する必要があります。
+
+## `package.json` フィールド
+
+| フィールド | 説明 |
+| --- | --- |
+| `name` | 必須。npm パッケージ名。拡張機能 ID として使用されます |
+| `version` | 必須。バージョン文字列 |
+| `spiritExtension` | 必須。オブジェクト。以下を参照 |
+| `description` | 任意。文字列 |
+| `author` | 任意。文字列または `{ name }` |
+| `homepage` | 任意。文字列 |
+| `main` | 任意。`activate` エントリへの相対パス。`activationEvents`、ツール実行、またはシステムプロンプトを使用する場合に必要です |
+
+`main`、`spiritExtension.icon`、CSS パス、CLI フックパスは相対パスで、パッケージ内に収まる必要があります。
+
+## `spiritExtension`
+
+| フィールド | 説明 |
+| --- | --- |
+| `schemaVersion` | 任意。デフォルトは `1`。サポートされているのは `1` のみ |
+| `displayName` | 必須。ユーザーに表示される名前 |
+| `icon` | 任意。パッケージルートからの相対パス |
+| `supportedHosts` | 必須。`cli` または `desktop` の非空配列 |
+| `activationEvents` | 任意。[アクティベーションイベント](#activation-events) を参照 |
+| `requestedCapabilities` | 任意。[機能](#capabilities) を参照 |
+| `contributes` | 任意。`tools`、`desktop`、または `cli` |
+| `settingsSchema` | 任意。設定定義 |
+| `secretSlots` | 任意。シークレットスロット定義 |
+
+## 機能
+
+| 値 | ランタイム |
+| --- | --- |
+| `tool-definitions` | `contributes.tools` をモデルに公開するには `tool-execution` が必要 |
+| `tool-execution` | これらのツールを実行するには `tool-definitions` が必要 |
+| `system-prompt` | システムプロンプトフラグメントを提供するには `main` が必要 |
+| `desktop-ui` | `contributes.desktop` と対で指定する必要があります |
+| `cli-ui` | `contributes.cli` と対で指定する必要があります |
+| `approval-flow` | 宣言のみ。承認は各ツールの `approvalMode` によって行われます |
+| `questions-flow` | 宣言のみ。質問は `approvalMode: need-questions` によって行われます |
+| `settings` | 宣言のみ。設定は `settingsSchema` から取得されます |
+| `secret-storage` | `secretSlots` と一緒に使用されます |
+| `structured-results` | 宣言のみ |
+
+`desktop-ui` / `cli-ui` と対応する `contributes` ブロックは、両方存在するか、両方存在しないかのどちらかでなければなりません。
+
+## アクティベーションイベント
+
+| イベント | 発火タイミング |
+| --- | --- |
+| `onStartup` | ホストのウォームアップ |
+| `onExtensionInstalled` | ZIPまたはマーケットプレイスからのインストール後 |
+| `onSessionOpened` | セッションがアクティブになったとき |
+| `onSessionReset` | セッションのリセット |
+| `onUserMessage` | ユーザーがメッセージを送信したとき |
+| `onToolCall` | ツールが実行されようとしているとき |
+| `onToolResult` | ツールの結果が利用可能になったとき |
+| `onApprovalResolved` | 承認の決定が解決されたとき |
+
+ホストは、拡張機能がイベントをリストし、読み取り可能な `main` を持っている場合に `activate` を呼び出します。
+
+## `contributes.tools`
+
+| フィールド | 説明 |
+| --- | --- |
+| `name` | 必須。`[a-z0-9]+(?:[._-][a-z0-9]+)*` |
+| `description` | 必須。モデルに表示されます |
+| `inputSchema` | 必須。JSONスキーマオブジェクト |
+| `outputSchema` | 任意。JSONスキーマオブジェクト |
+| `approvalMode` | 任意。`allowed`、`need-approval`、または `need-questions` |
+| `executionMode` | 任意。`foreground` または `background` |
+
+モデルは `name` をそのまま認識しません。ホストは `extension__{id}__{tool}__{hash}` のような呼び出し名を構築します。
+
+## `contributes.desktop`
+
+`desktop-ui` が必要です。
+
+| フィールド | 説明 |
+| --- | --- |
+| `css[].path` | 必須。パッケージルートからの相対パスで指定するCSSファイル |
+| `css[].media` | 任意。CSSメディアクエリ |
+| `settingsPage` | 任意。`true`、`{}`、または `{ title }` — Desktopの設定エントリを追加します |
+
+## `contributes.cli`
+
+`cli-ui` が必要です。`hooks` はインライン配列ではなく、`path` を持つオブジェクトです:
+
+```json
+{
+  "hooks": { "path": "cli-hooks.json" }
+}
+```
+
+ファイルは `{ "hooks": [ ... ] }` の形式である必要があります。
+
+| フィールド | 説明 |
+| --- | --- |
+| `slot` | 必須。以下のスロットのいずれか |
+| `variant` | 任意。`default`, `accented`, `muted`, `warning`, `success`, `danger` |
+| `tokens` | 任意。`{ foreground?, border?, accent? }` |
+| `prefix` | 任意。文字列 |
+| `suffix` | 任意。文字列 |
+
+スロット: `message.user`, `message.assistant`, `message.tool`, `assistant.thinking`, `input.frame`, `bottom_form`, `bottom_form.section`, `slash_suggestions`, `approval.panel`, `questions.panel`。
+
+トークンの役割: `default`, `primary`, `secondary`, `muted`, `accent`, `success`, `warning`, `danger`。
+
+```json
+{
+  "hooks": [
+    {
+      "slot": "input.frame",
+      "variant": "accented",
+      "tokens": { "border": "accent" },
+      "prefix": "[",
+      "suffix": "]"
+    }
+  ]
+}
+```
+
+## `settingsSchema`
+
+| フィールド | 説明 |
+| --- | --- |
+| `key` | 必須。ツール名と同じパターン |
+| `type` | 必須。`string`, `boolean`, `number`, または `select` |
+| `title` | 必須。UIラベル |
+| `description` | 任意 |
+| `placeholder` | 任意 |
+| `required` | 任意。ブール値 |
+| `defaultValue` | 任意。`type` と一致する必要があります |
+| `options` | `select` には必須。`{ value, label, description? }` の配列 |
+
+値は `string`, `number`, `boolean`, または `null` です。`null` は必須でない設定をクリアします。
+
+## `secretSlots`
+
+| フィールド | 説明 |
+| --- | --- |
+| `key` | 必須 |
+| `title` | 必須 |
+| `description` | 任意 |
+| `required` | 任意。ブール値 |
+
+デスクトップはシークレットをOSキーリングに保存します。CLIデーモンパスでは、`secrets.set` / `secrets.delete` が利用できない場合があります。
+
+## `activate`
+
+`main` は動的な `import` で読み込まれます。次のいずれかをエクスポートします:
+
+- `export function activate(ctx) { ... }`
+- `export default function activate(ctx) { ... }`
+- `export default { activate }`
+
+### `ctx`
+
+| フィールド | 説明 |
+| --- | --- |
+| `extension` | `{ id, name, version, directoryPath, manifestPath, main }` |
+| `host` | ホストAPI。デスクトップは `showMessageBox` を実装します。CLIは `{}` |
+| `log` | `(message: string) => void` |
+| `settings` | `get(key)`, `getAll()`, `set(key, value)`, `setAll(values)` |
+| `secrets` | `get(key)`, `has(key)`, `set(key, value)`, `delete(key)` — キーは `secretSlots` で宣言されている必要があります |
+| `activationEvent` | 任意。`{ type, detail? }` |
+
+### 戻り値
+
+オブジェクトを返すか、モジュールから同じフィールドをエクスポートします。
+
+| フィールド | 説明 |
+| --- | --- |
+| `tools` | `Record<string, (ctx) => unknown>`。キーはマニフェストのツール名です |
+| `invokeTool` | `(ctx) => unknown`。存在する場合は `tools[name]` の代わりに使用されます |
+| `systemPrompt` | 静的システムフラグメント |
+| `getSystemPrompt` | `() => string \| Promise<string>`。存在する場合は `systemPrompt` の代わりに使用されます |
+| `onEvent` | `(event) => void` |
+| `dispose` | `() => void`。削除または再読み込み時に呼び出されます |
+
+### ツールハンドラー `ctx`
+
+| フィールド | 説明 |
+| --- | --- |
+| `extension` | `activate` と同じランタイム情報 |
+| `host` | 同じホスト API |
+| `toolName` | マニフェストのツール名 |
+| `arguments` | モデルからのオブジェクト |
+| `log` | 同じロガー |
+| `settings` | 同じ設定アクセサー |
+| `secrets` | 同じシークレットアクセサー |
+| `toolCallId` | 任意 |
+| `questionsResult` | 任意。`approvalMode` が `need-questions` の場合に設定されます |
+
+`string` の結果はそのまま渡されます。その他の値は `JSON.stringify(value, null, 2)` になります。`undefined` は `""` になります。
+
+### デスクトップ `host.showMessageBox`
+
+| フィールド | 説明 |
+| --- | --- |
+| `title` | 必須。文字列 |
+| `message` | 必須。文字列 |
+| `detail` | 任意。文字列 |
+| `buttons` | 任意。文字列配列 |
+| `cancelId` | 任意。数値 |
+| `defaultId` | 任意。数値 |
+| `noLink` | 任意。ブール値 |
+| `type` | 任意。`none`、`info`、`error`、`question`、`warning` |
+
+```js
+export function activate(ctx) {
+  return {
+    systemPrompt: "Use lookup_item when the user asks for an item by id.",
+    async invokeTool({ toolName, arguments: args, settings, secrets }) {
+      if (toolName !== "lookup_item") {
+        throw new Error(`Unknown tool: ${toolName}`);
+      }
+      const region = await settings.get("region");
+      const token = await secrets.get("api_token");
+      return { id: args.id, region, hasToken: Boolean(token) };
+    },
+    dispose() {
+      ctx.log("example-extension disposed");
+    },
+  };
+}
+```
+
+## インストール
+
+- **ZIP** — アーカイブには正確に 1 つの `package.json` が含まれている必要があります（サブディレクトリにある場合もあります）。`spirit extension import ./extension.zip` または **Settings → Extensions** でインポートします。
+- **マーケットプレイスの tarball** — アーカイブのルートに `package/` ディレクトリが含まれている必要があります。
+
+`supportedHosts` には現在のホストが含まれている必要があります。同じ ID の 2 回目のインストールは、デフォルトでは既存のコピーを置き換えません。チャンネルとインストール UI については [Marketplace](../customize/marketplace.mdx) を参照してください。
+
+## 公式レジストリに公開
+
+[SpiritAgents/registry](https://github.com/SpiritAgents/registry) リポジトリはマーケットプレイスのインデックスです。拡張機能のソース、`dist`、ZIP ファイル、または tarball はホストされません。
+
+次の手順をこの順序で実行してください：
+
+1. 公開のnpmパッケージを公開します。
+2. そのパッケージをリストする pull request を開きます。
+
+### 1. npmパッケージを公開する
+
+公開された `package.json` が信頼できる情報源であり、特に `spiritExtension` が重要です。レジストリビルダーには次のものが必要です：
+
+- `spiritExtension.schemaVersion`
+- `spiritExtension.displayName`
+- `spiritExtension.supportedHosts`
+- `spiritExtension.requestedCapabilities`
+
+また、`name`、`version`、`description`、`author`、`repository`、`homepage`、`keywords`、およびオプションの `spiritExtension.icon` も読み取ります。`icon` を設定する場合は、そのファイルを公開パッケージに含めてください。`spiritExtension` オブジェクトがないと、そのバージョンのレジストリビルドは失敗します。
+
+公式例：[`@spiritagent/extension-system-message-demo`](https://www.npmjs.com/package/@spiritagent/extension-system-message-demo)（`spiritagent.system-message-demo`）。
+
+### 2. パッケージをリストする
+
+`registry/extensions/<extension-id>/` を作成し、次のものを含めます：
+
+| ファイル | 説明 |
+| --- | --- |
+| `entry.json` | マーケットプレイスのガバナンス |
+| `README.md` | マーケットプレイスの詳細コピー |
+
+これらを手動で編集しないでください（再生成するものです）：
+
+- `registry/catalog.json`
+- `registry/extensions/<extension-id>/detail.json`
+
+`extensionId` は、少なくとも2つのドット区切りのセグメント、小文字の英数字、セグメント内にドットまたはハイフンを使用する必要があります。例：`spiritagent.system-message-demo`、`yourteam.some-extension`。`packageName` と `extensionId` はリポジトリ内で一意である必要があります。
+
+### `entry.json`
+
+| フィールド | 説明 |
+| --- | --- |
+| `schemaVersion` | 必須。`1` |
+| `extensionId` | 必須。上記のルールを参照 |
+| `packageName` | 必須。npmパッケージ名 |
+| `status` | 必須。`listed`、`hidden`、`deprecated`、または `blocked` |
+| `featured` | 必須。ブール値 |
+| `defaultVersion` | 必須。デフォルトのバージョン文字列 |
+| `defaultReviewStatus` | 必須。`unverified`、`verified`、または `revoked` |
+| `versions` | 必須。少なくとも1つの項目 |
+
+各 `versions[]` 項目：
+
+| フィールド | 説明 |
+| --- | --- |
+| `version` | 必須 |
+| `channel` | 必須。`stable`、`preview`、または `experimental` |
+| `reviewStatus` | 必須。`unverified`、`verified`、または `revoked` |
+| `changelog` | オプション。`{ summary, body }` — 存在する場合は両方必須 |
+
+```json
+{
+  "schemaVersion": 1,
+  "extensionId": "example.spirit-extension",
+  "packageName": "@example/spirit-extension",
+  "status": "listed",
+  "featured": false,
+  "defaultVersion": "0.1.0",
+  "defaultReviewStatus": "unverified",
+  "versions": [
+    {
+      "version": "0.1.0",
+      "channel": "stable",
+      "reviewStatus": "unverified",
+      "changelog": {
+        "summary": "Initial public release.",
+        "body": "- Initial public release."
+      }
+    }
+  ]
+}
+```
+
+マーケットプレイスのREADMEでは、拡張機能の機能、パッケージ名、デフォルトの承認バージョン、ホストと機能の互換性、マーケットプレイスの読者向けのメモをカバーする必要があります。
+
+派生ファイルをローカルで再生成します:
+
+```powershell
+./scripts/build-registry.ps1
+```
+
+スクリプトは、リストされたバージョンのnpmメタデータを取得し、`catalog.json`と各`detail.json`を再構築して、一貫性を検証します。
+
+### Pull request
+
+`entry.json`、マーケットプレイスの`README.md`、再生成された`catalog.json` / `detail.json`を含めてください。npmで公開されているバージョンのみをリストしてください。`reviewStatus`と`channel`を正確に設定してください。新しいバージョンは通常`unverified`から始まります。
+
+拡張機能のソースツリー、`dist`、ZIPファイル、tarball、その他のバイナリアーティファクトをコミットしないでください。
+
+pull request を開いてもリスト掲載が保証されるわけではありません。レビューでは、バージョンが承認または検証される前に変更が要求される場合があります。

@@ -1,0 +1,21 @@
+# Derselbe Agent, überall in Ihrer Arbeit.
+
+Laden Sie Spirit Agent für Desktop herunter, installieren Sie die CLI oder warten Sie auf ACP.
+
+## Desktop
+
+[Herunterladen](https://github.com/SpiritAgents/SpiritAgent/releases/latest)
+
+## CLI
+
+Installationsbefehl kopieren
+
+```bash
+curl -fsSL https://spirit.fast/install | bash
+```
+
+## ACP
+
+Demnächst™
+
+[Spirit Agent](/de) · [Herunterladen](/de/download)

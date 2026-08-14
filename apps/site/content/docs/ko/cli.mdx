@@ -1,0 +1,53 @@
+---
+title: CLI
+description: TUI, 비대화형 -p, SPIRIT_API_KEY / SPIRIT_API_BASE 및 공유 데몬.
+---
+
+CLI는 터미널 호스트입니다. [설치 스크립트](./install/cli.mdx)로 설치하세요. Desktop과 동일한 데몬과 통신합니다.
+
+## TUI
+
+```bash
+cd /path/to/your/project
+spirit
+```
+
+레이아웃은 `inline` 또는 `fullscreen` (`-t` / `--tui`, 또는 `/tui`)입니다. 모드, 승인 및 Loop은 Desktop과 동일합니다.
+
+유용한 슬래시 명령: `/help`, `/quit`, `/new`, `/continue`, `/loop`, `/model`, `/sessions`, `/rewind`, `/fork`, `/subagents`, `/approval`, `/mcp`, `/hooks`, `/rules`, `/skills`, `/extensions`.
+
+## 비대화형
+
+```bash
+spirit -p "your prompt here"
+```
+
+최종 어시스턴트 텍스트만 stdout으로 출력됩니다. `-m`, `-a`, `-l`은 `-p` **앞에** 두세요. 호출이 승인 또는 [ask_questions](./agent/ask-questions.mdx)를 필요로 하면 프로세스는 실패합니다. 헤드리스는 30분 후에 타임아웃됩니다.
+
+## 환경
+
+| 변수 | 역할 |
+| --- | --- |
+| `SPIRIT_API_KEY` | 이 프로세스의 API 키. 순서: 환경 변수 → 모델 키링 → 전역 키링 |
+| `SPIRIT_API_BASE` | API 기본 URL 재정의 |
+| `SPIRIT_AGENT_DATA_DIR` | 데이터 디렉터리 (Desktop과 동일한 저장소) |
+| `SPIRIT_HOME` | CLI **바이너리** 설치 루트 — 데이터 디렉터리가 아님 |
+
+## 공유 데몬
+
+`spirit`은 WebSocket을 통해 Spirit Server 데몬에 연결됩니다. 세션, 스트리밍, 도구 및 승인 큐가 거기에 있습니다. 베어러 토큰은 `{spiritDataDir}/server.token` (모드 `0600`)입니다. 데몬은 기본적으로 임의 포트의 `127.0.0.1`에 바인딩됩니다.
+
+`spirit serve`는 포그라운드에서 데몬을 실행합니다. 원격 `0.0.0.0`은 공개 제품 경로가 아닙니다. [보안](./security.mdx)을 참조하세요.
+
+## 명령
+
+```
+spirit [-v] [-m model] [-a approval] [-l language] [-t inline|fullscreen] [-p prompt]
+spirit interactive
+spirit serve
+spirit model list|add|remove|use|current
+spirit config show|set-base|set-image-model|clear-image-model|set-video-model|clear-video-model|key set|remove|status
+spirit mcp …
+spirit hooks list|validate
+spirit extension list|import|remove|marketplace …
+```

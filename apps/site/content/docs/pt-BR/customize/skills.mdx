@@ -1,0 +1,33 @@
+---
+title: Habilidades
+description: Habilidades do usuário, .spirit e .agents, além de create-rule, create-skill e create-hook integrados.
+---
+
+Uma Habilidade é uma pasta com um `SKILL.md`. O Spirit descobre habilidades de três lugares:
+
+| Escopo | Caminho |
+| --- | --- |
+| Usuário | `{spiritDataDir}/skills/{name}/SKILL.md` |
+| Spirit do Workspace | `{workspace}/.spirit/skills/{name}/SKILL.md` |
+| Agentes do Workspace | `{workspace}/.agents/skills/{name}/SKILL.md` |
+
+Quando você menciona uma Habilidade em um turno, o Spirit pode anexar seu texto completo à mensagem do usuário. Ele não despeja todas as Habilidades no prompt do sistema.
+
+## Frontmatter
+
+`SKILL.md` deve começar com Frontmatter. Um arquivo sem `name` ou `description` não é descoberto.
+
+| Campo | Descrição |
+| --- | --- |
+| `name` | Obrigatório. Nome da habilidade; deve corresponder ao nome da pasta. 1–64 caracteres, apenas letras minúsculas, dígitos e hífens |
+| `description` | Obrigatório. Descrição curta |
+
+## Habilidades Integradas
+
+Estas vêm com o Spirit (não são arquivos no seu diretório de dados):
+
+- `create-rule` — criar um rascunho de [regra](./rules.mdx)
+- `create-skill` — criar um rascunho de [Habilidade](./skills.mdx)
+- `create-hook` — criar um rascunho de [gancho](./hooks.mdx)
+
+Gerencie habilidades em **Configurações → Habilidades**. Os chips de git commit / push / merge são da interface do host, não Habilidades incluídas. Veja [Desktop](../desktop.mdx).

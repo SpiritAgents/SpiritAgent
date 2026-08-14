@@ -32,7 +32,7 @@ export const SESSION_SUBMIT_USER_TURN = "session.submitUserTurn";
 export const SESSION_ABORT = "session.abort";
 /** RPC: abort a running daemon shell by tool call id. */
 export const SESSION_ABORT_SHELL = "session.abortShell";
-/** RPC: set approval level (default | auto-approval | full-approval). */
+/** RPC: set approval level (default | auto-approval | bypass-approval). */
 export const SESSION_SET_APPROVAL_LEVEL = "session.setApprovalLevel";
 /** RPC: answer a pending tool approval. */
 export const SESSION_REPLY_PENDING_APPROVAL = "session.replyPendingApproval";
@@ -151,7 +151,7 @@ export interface ServerConnectedParams {
   version: string;
 }
 
-export type SessionApprovalLevel = "default" | "auto-approval" | "full-approval";
+export type SessionApprovalLevel = "default" | "auto-approval" | "bypass-approval";
 
 export interface SessionCreateParams {
   workspaceRoot: string;

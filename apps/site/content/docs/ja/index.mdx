@@ -1,0 +1,29 @@
+---
+title: はじめに
+description: マルチプロバイダーアクセスに対応したオープンソースAIエージェント。
+---
+
+## モデルプロバイダー
+
+Spirit Agentはモデルサービスを直接提供しません。OpenAI、Anthropic、SpaceXAI、ゲートウェイ、または地域プロバイダーに接続できます。すべてのプロバイダーは同じハーネス上で動作します。ツール、承認、セッション、ワークスペースの動作は一貫しています。
+
+キーはシステムキーリングの`SpiritAgent`サービスに書き込まれます。`config.json`には保存されません。
+
+## 1つのエージェント、2つのホスト
+
+DesktopとCLIはローカルデーモンを共有します。セッション、モデル、承認、資格情報は同じデータディレクトリに配置されるため、アプリでタスクを開始してターミナルで続行できます。
+
+## ここから始める
+
+1. [DesktopまたはCLIをインストール](./quickstart.mdx)
+2. ワークスペースを開く
+3. プロバイダーを1つ接続
+4. エージェントにリポジトリを読ませ、小さな編集を行い、変更を承認してもらう
+
+完全なパスについては[クイックスタート](./quickstart.mdx)を参照してください。
+
+- インストール: [Desktop](./install/desktop.mdx), [CLI](./install/cli.mdx)
+- 接続: [プロバイダー](./providers.mdx)
+- 作業: [モード](./agent/modes.mdx), [ツール](./agent/tools.mdx), [カスタマイズ](./customize/rules.mdx)
+- ホスト: [Desktop](./desktop.mdx), [CLI](./cli.mdx) — [ACP](./acp.mdx)は実装されていますが、ダウンロードページにはありません。
+- リファレンス: [設定](./config.mdx), [セキュリティ](./security.mdx), [外観](./appearance.mdx), [トラブルシューティング](./troubleshooting.mdx)

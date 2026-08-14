@@ -1,0 +1,21 @@
+---
+title: 자동화
+description: 시간 트리거와 GitHub 이벤트는 Integrations를 연결한 후 사용할 수 있습니다.
+---
+
+<Callout type="info">
+데스크톱 전용.
+</Callout>
+
+자동화는 컴포저에 앉아 있지 않아도 에이전트 작업을 실행합니다.
+
+## 트리거
+
+- **시간** — 매시간, 매일 또는 매주
+- **GitHub** — 지정한 저장소(`owner` + `repo`)에서 `pull_request_created` 또는 `issue_created`
+
+GitHub 트리거는 먼저 [Integrations](./integrations.mdx)를 연결해야 합니다. GitHub가 연결되지 않으면 트리거 메뉴에 해당 이벤트가 표시되지 않습니다.
+
+데이터는 `{spiritDataDir}/automations/` 아래에 저장됩니다. Desktop에서 Automations 보기를 열어 기록과 설정을 확인하세요.
+
+CLI에서는 이 UI를 만들거나 실행할 수 없습니다. [Desktop](../desktop.mdx)을 사용하세요.

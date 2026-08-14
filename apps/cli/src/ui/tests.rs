@@ -339,9 +339,9 @@ fn footer_auto_approval_uses_blue_style() {
 }
 
 #[test]
-fn footer_full_approval_uses_yellow_style() {
+fn footer_bypass_approval_uses_yellow_style() {
     let mut app = build_view_model(ChatMessage::new(MessageRole::Agent, "welcome"));
-    app.approval_level = "full-approval".to_string();
+    app.approval_level = "bypass-approval".to_string();
     let line = build_footer_line(&app, 80);
     assert!(
         line.spans

@@ -1,0 +1,28 @@
+---
+title: 安全
+description: 钥匙串、审批和本机 loopback 守护进程。无遥测。
+---
+
+## 钥匙串
+
+API Key、Bedrock / Vertex 密钥、扩展密钥和 GitHub 集成 token 存在操作系统钥匙串。服务名是 `SpiritAgent`。
+
+`config.json` 里是提供商分组和模型引用，不是密钥本身。过大的密钥可能在钥匙串里分片。
+
+## 审批
+
+见[审批](./agent/approvals.mdx)。默认是安全的起点。绕过仍会为 `ask_questions` 和 hook `ask` 停下。
+
+## 本机守护进程
+
+Desktop 与 CLI 共用的守护进程绑在 **`127.0.0.1`** 随机端口。客户端用 `{spiritDataDir}/server.token`（权限 `0600`）发 `Authorization: Bearer`。
+
+`0.0.0.0` 远程访问**不是**已开放的产品路径。不要把局域网绑定当成托管云 Agent。
+
+Web Host 配对是 Desktop 上另一套 6 位码。失败 5 次会锁定，直到重启 Web Host。见 [Desktop](./desktop.mdx)。
+
+## 隐私
+
+Spirit 不发送开发者遥测。数据留在数据目录和钥匙串。见仓库里的 [PRIVACY.md](https://github.com/SpiritAgents/SpiritAgent/blob/main/PRIVACY.md)。
+
+漏洞请走私下渠道（GitHub Private Advisory），不要开公开 issue。见 [SECURITY.md](https://github.com/SpiritAgents/SpiritAgent/blob/main/SECURITY.md)。

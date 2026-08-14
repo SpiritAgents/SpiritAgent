@@ -1,0 +1,18 @@
+---
+title: Loop
+description: Mantenha o agente trabalhando até que ele chame finish_task.
+---
+
+Loop é uma troca de sessão. Quando está ativado, uma mensagem comum de assistente **não** termina o turno. Espera-se que o agente continue usando ferramentas até que a tarefa seja concluída e então chame `finish_task`.
+
+## Ative-o
+
+No Desktop, ative o Loop no composer (o chip `/loop`). No TUI do CLI, execute `/loop`.
+
+`finish_task` só é exposto enquanto o Loop estiver ativado. Se o Loop estiver desativado e o modelo ainda chamá-lo, o Spirit rejeita a chamada como uma ferramenta desconhecida.
+
+## Quando usar
+
+Use o Loop para um trabalho de várias etapas que você não quer supervisionar: implementar, testar, corrigir, repetir. Deixe-o desativado para uma pergunta única ou uma edição de arquivo único.
+
+O Loop não altera [aprovações](./approvals.mdx). A aprovação padrão ainda pausa em edições e shell.

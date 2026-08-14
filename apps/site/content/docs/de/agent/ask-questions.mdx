@@ -1,0 +1,18 @@
+---
+title: Fragen stellen
+description: Strukturierte Fragebögen, die den Agenten anhalten, bis Sie antworten.
+---
+
+`ask_questions` ist die Art und Weise, wie der Agent Sie bittet, etwas zu entscheiden, bevor er fortfährt. Der Host zeigt einen Fragebogen: Jedes Element kann voreingestellte Optionen sowie ein benutzerdefiniertes Textfeld haben.
+
+Der Lauf **unterbricht**. Das Tool wird nicht im Hintergrund ausgeführt. Nachdem Sie Antworten übermittelt haben, setzt der Agent mit diesen Antworten im Kontext fort.
+
+## Wo Sie es sehen werden
+
+Der Plan-Modus ist der übliche Ort – dem Agenten wird gesagt, er solle klären, bevor er einen Plan entwirft. Der Agent-Modus kann dennoch fragen, wenn eine Wahl die Arbeit verändern würde.
+
+[Genehmigung umgehen](./approvals.mdx) überspringt **nicht** `ask_questions`.
+
+## Headless CLI
+
+`spirit -p` kann keinen Fragebogen anzeigen. Wenn das Modell `ask_questions` aufruft, schlägt der Prozess fehl. Verwenden Sie die TUI oder machen Sie die Eingabeaufforderung spezifisch genug, sodass keine Entscheidung erforderlich ist.

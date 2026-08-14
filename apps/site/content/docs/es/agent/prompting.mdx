@@ -1,0 +1,34 @@
+---
+title: Cómo dar instrucciones
+description: Cómo darle a Spirit una tarea que pueda completar en tu espacio de trabajo.
+---
+
+Habla con el agente como lo harías con un compañero de equipo que puede leer el repositorio y esperar tu aprobación.
+
+## Sé específico
+
+Nombra los archivos, el resultado y lo que no se debe tocar. Una instrucción precisa produce un diff pequeño y revisable. Una instrucción vaga desperdicia un turno en descubrimiento.
+
+```txt
+Read src/auth/session.ts and fix the expired-token refresh path.
+Do not change the login form. Add a focused test next to the existing session tests.
+```
+
+## Adjunta contexto
+
+En Desktop, adjunta archivos abiertos, selecciones o un elemento del Browser cuando la tarea se trate de ese lugar exacto. El agente aún tiene que leer el archivo para ver el contenido actual: los adjuntos son referencias, no un sustituto de [tools](./tools.mdx).
+
+## Elige primero un modo
+
+- **Agent** — ya sabes qué cambio hacer
+- **Plan** — quieres un plan escrito y [questions](./ask-questions.mdx) antes de cualquier edición
+- **Ask** — quieres solo una explicación
+- **Debug** — puedes reproducir un error y quieres registros (logs)
+
+Consulta [Modes](./modes.mdx).
+
+## Deja que la aprobación haga su trabajo
+
+Con la aprobación **predeterminada**, el agente se detiene antes de editar o ejecutar un comando. Lee el diff y luego aprueba o rechaza. No actives la omisión hasta que confíes en el ciclo. Consulta [Approvals](./approvals.mdx).
+
+La finalización en línea del editor (Tab) no es parte de esta conversación. Configúrala en Configuración → Tab.

@@ -1,0 +1,108 @@
+---
+title: 上手
+description: 安装 Spirit Agent，接上一家提供商，完成一次带审批的小改。
+---
+
+这一页带你从全新安装走到一次有用的改动。后面的提供商和宿主文档都挂在这条路径上；没有它，那些页面无处附着。
+
+## 1. 安装 Desktop 或 CLI
+
+先选一个宿主。它们共用本机守护进程，之后随时可以再装另一个。
+
+<Tabs items={["Desktop", "CLI"]}>
+  <Tab value="Desktop">
+
+到[下载页](/zh-CN/download)取对应平台的安装包并打开。
+
+- macOS：`.dmg`（Intel 或 Apple 芯片）
+- Windows：`.exe` 安装包（x64 或 ARM64）
+- Linux：`.AppImage`（x64 或 ARM64）
+
+细节见 [安装 Desktop](./install/desktop.mdx)。
+
+  </Tab>
+  <Tab value="CLI">
+
+```bash
+curl -fsSL https://spirit.fast/install | bash
+```
+
+```powershell
+irm https://spirit.fast/install.ps1 | iex
+```
+
+新开一个终端，运行 `spirit --version`。细节见 [安装 CLI](./install/cli.mdx)。
+
+  </Tab>
+</Tabs>
+
+## 2. 打开工作区
+
+Agent 在工作区根目录里读文件、改文件。打开你要改的那个项目。
+
+<Tabs items={["Desktop", "CLI"]}>
+  <Tab value="Desktop">
+
+在侧栏点 **打开工作区目录**，选一个文件夹。最近用过的工作区会留在列表里。
+
+  </Tab>
+  <Tab value="CLI">
+
+```bash
+cd /path/to/your/project
+spirit
+```
+
+TUI 把当前目录当作工作区。
+
+  </Tab>
+</Tabs>
+
+## 3. 接上第一家提供商
+
+你需要一把已有提供商的 API Key。Spirit 把它写入操作系统钥匙串（服务名 `SpiritAgent`），不会写进项目。
+
+<Tabs items={["Desktop", "CLI"]}>
+  <Tab value="Desktop">
+
+1. 打开 **设置 → 模型**。
+2. 选一家提供商，按连接向导走完。
+3. 粘贴 Key。区域、站点、套餐端点等字段只在该家需要时出现。
+4. 把一个对话模型设为当前模型。
+
+  </Tab>
+  <Tab value="CLI">
+
+在 TUI 里运行 `/model add` 并填完表单。也可以在 shell 里添加：
+
+```bash
+spirit model add
+```
+
+需要一次性覆盖时，用 `SPIRIT_API_KEY` 和 `SPIRIT_API_BASE` 覆盖该进程里已保存的 Key 与 Base URL。
+
+  </Tab>
+</Tabs>
+
+<Callout title="钥匙串">
+Key 会先写入系统钥匙串，再更新 `config.json`。后面如果有页面让你重新连接，是在恢复钥匙串条目，不是把 Key 贴进仓库。
+</Callout>
+
+## 4. 让 Agent 做一次小改，然后审批
+
+第一次请留在 **Agent** 模式和 **默认** 审批。让它读一个你熟悉的文件，再做一处一眼能看出来的修改。
+
+例如：
+
+```txt
+Read README.md and add a one-line project summary at the top. Do not change anything else.
+```
+
+Agent 会读文件、提出编辑，然后等待。在提示里批准文件改动（以及任何 shell 命令）。结束后打开文件确认。
+
+整条回路就是：安装 → 工作区 → 一家提供商 → 读 → 改 → 审批。文档里其余内容都挂在这条路径上。
+
+## 接下来
+
+- 需要另一个宿主或固定版本时，看 [安装 Desktop](./install/desktop.mdx) 和 [安装 CLI](./install/cli.mdx)
+- 换一家或导入不到模型时，看 [提供商](./providers.mdx) 核对该家的站点、套餐或云字段

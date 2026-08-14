@@ -1,0 +1,10 @@
+---
+title: Intégrations
+description: Connexion appareil GitHub. Le jeton est stocké dans le trousseau.
+---
+
+**Paramètres → Intégrations** connecte GitHub avec le flux de périphérique OAuth. Vous approuvez dans le navigateur ; Spirit stocke le jeton dans le trousseau système sous le service `SpiritAgent`.
+
+Le panneau complet est disponible dans l'application Electron. D'autres shells peuvent afficher un avis limité.
+
+GitHub est requis avant que les [Automatisations](./automations.mdx) puissent se déclencher sur les demandes de tirage ou les problèmes. La déconnexion de GitHub supprime ce chemin de déclenchement ; les automatisations de temps existantes continuent de fonctionner.

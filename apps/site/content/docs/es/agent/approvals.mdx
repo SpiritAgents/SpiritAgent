@@ -1,0 +1,28 @@
+---
+title: Aprobaciones
+description: Predeterminado, aprobación automática y aprobación omitida. Qué detiene cada nivel.
+---
+
+Cada llamada de herramienta de alto riesgo puede esperar por ti. Spirit tiene tres niveles de aprobación. Desktop los muestra como **Aprobación predeterminada**, **Aprobación automática** y **Aprobación omitida**. La CLI usa `/approval` o `-a`.
+
+| Nivel | Id | Comportamiento |
+| --- | --- | --- |
+| Aprobación predeterminada | `default` | Usted aprueba personalmente las ediciones de archivos, shell y otras herramientas de alto riesgo. |
+| Aprobación automática | `auto-approval` | Un modelo ligero revisa las llamadas de alto riesgo. No se le solicita confirmación a menos que esa revisión (o un hook) lo pida. |
+| Aprobación omitida | `bypass-approval` | Las herramientas de alto riesgo se ejecutan sin la solicitud de aprobación. |
+
+## Lo que la omisión no evita
+
+`bypass-approval` aún se detiene por:
+
+- [ask_questions](./ask-questions.mdx)
+- Flujos de extensiones que necesitan preguntas
+- Un hook que devuelve `ask` en `preToolUse`
+
+La aprobación automática tampoco puede anular un `ask` de un hook.
+
+## Cuándo usar cada uno
+
+Mantente en **predeterminado** hasta que veas que el agente hace algunas buenas ediciones. Usa **aprobación automática** cuando quieras velocidad pero aún quieras una segunda revisión. Usa **omisión** solo en una rama desechable o en una tarea que estés supervisando.
+
+Sin interfaz gráfica, `spirit -p` falla si una llamada necesita aprobación. Pasa `-a auto-approval` o `-a bypass-approval`, o usa la TUI.

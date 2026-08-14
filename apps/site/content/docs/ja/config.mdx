@@ -1,0 +1,72 @@
+---
+title: 設定
+description: データディレクトリ、config.json v2、.spirit/、環境変数。
+---
+
+Spirit はバイナリとデータを別の場所に保存します。これらを混同すると、「CLI をインストールしたのに設定が空である」というよくある問題が発生します。
+
+## データディレクトリ
+
+`SPIRIT_AGENT_DATA_DIR` で上書きできます。サーバーは `SPIRIT_SERVER_DATA_DIR` も使用でき（前者よりも優先されます）。
+
+| OS | デフォルト |
+| --- | --- |
+| macOS | `~/Library/Application Support/SpiritAgent` |
+| Windows | `%APPDATA%\SpiritAgent` |
+| Linux | `$XDG_DATA_HOME/SpiritAgent` または `~/.local/share/SpiritAgent` |
+| フォールバック | `~/.spirit-agent` |
+
+一般的なファイル:
+
+```
+{spiritDataDir}/
+  config.json
+  mcp.json
+  hooks.json
+  rule.md
+  skills/
+  chats/
+  plans/
+  extensions/
+  automations/
+  dreams/
+  server.token
+  server/instances/
+```
+
+CLI バイナリは `SPIRIT_HOME`（`~/.spirit` または `%LOCALAPPDATA%\Spirit`）に配置されます。これはこのディレクトリではありません。[CLI のインストール](./install/cli.mdx) を参照してください。
+
+## config.json v2
+
+`schemaVersion` は `2` である必要があります。バージョン 1 は拒否されます。古いファイルを削除して、[プロバイダーを再接続](./providers.mdx) してください。
+
+主要なフィールド:
+
+- `providerGroups` — 接続済みのハウス、API ベース、トランスポート、モデル
+- `activeModel`
+- `imageGenerationModel` / `videoGenerationModel` / `lightweightChatModel`
+
+キーはこのファイルには含まれません。キーは [キーリング](./security.mdx) に保存されます。
+
+## ワークスペースの `.spirit/`
+
+| パス | 役割 |
+| --- | --- |
+| `.spirit/rule.md` | ワークスペースの [ルール](./customize/rules.mdx) |
+| `.spirit/skills/` | ワークスペースの [スキル](./customize/skills.mdx) |
+| `.spirit/mcp.json` | ワークスペースの [MCP](./customize/mcp.mdx) |
+| `.spirit/hooks.json` | ワークスペースの [フック](./customize/hooks.mdx) |
+
+また、`{workspace}/AGENTS.md`、`{workspace}/.agents/skills/`、`{workspace}/plans/` も使用されます。
+
+## 環境変数
+
+| 変数 | 役割 |
+| --- | --- |
+| `SPIRIT_AGENT_DATA_DIR` | データディレクトリ |
+| `SPIRIT_SERVER_DATA_DIR` | サーバーデータディレクトリ（優先） |
+| `SPIRIT_ACP_DATA_DIR` / `SPIRIT_ACP_WORKSPACE` | [ACP](./acp.mdx) |
+| `SPIRIT_HOME` / `SPIRIT_VERSION` / `SPIRIT_DOWNLOAD_HOST` | CLI インストーラー |
+| `SPIRIT_API_KEY` / `SPIRIT_API_BASE` | [CLI](./cli.mdx) プロセスの上書き |
+| `SPIRIT_WEB_HOST` / `SPIRIT_WEB_PORT` / `SPIRIT_DESKTOP_WEB_HOST` | デスクトップWebホスト |
+| `SPIRIT_TERMINAL_SHELL` | デスクトップPTYシェル |

@@ -62,7 +62,7 @@ test("automation store tracks runs and active run", async () => {
       trigger: { kind: "time", schedule: { kind: "hourly" } },
       workspaceRoot: spiritDataDir,
       modelRef: { groupId: "openai", name: "gpt-test" },
-      approvalLevel: "full-approval",
+      approvalLevel: "bypass-approval",
     });
 
     const run = await store.addRun(created.id, {

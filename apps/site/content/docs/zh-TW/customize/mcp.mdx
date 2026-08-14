@@ -1,0 +1,89 @@
+---
+title: MCP
+description: 使用者的 mcp.json 加上工作區的 .spirit/mcp.json。相同伺服器名稱時，以工作區為準。
+---
+
+MCP 伺服器從 Spirit 外部加入工具、資源與提示詞。
+
+| 範圍 | 路徑 |
+| --- | --- |
+| 使用者 | `{spiritDataDir}/mcp.json` |
+| 工作區 | `{workspace}/.spirit/mcp.json` |
+
+當兩個檔案定義相同的伺服器名稱時，**工作區**的項目優先。
+
+在 **設定 → MCP** 中管理伺服器，或使用 CLI 的 `spirit mcp`（`list`、`show`、`init`、`enable`、`disable`、`inspect`、`tools`、`call-tool` 等）。
+
+MCP 工具會合併到 Agent 既有的工具清單中。高風險的工具仍會經過[核准](../agent/approvals.mdx)。
+
+## 檔案欄位
+
+根物件只有 `servers`。每個伺服器必須包含 `transport`，且 `type` 設為 `stdio` 或 `http`。
+
+| 欄位 | 說明 |
+| --- | --- |
+| `servers` | 物件。鍵為伺服器名稱 |
+| `displayName` | 選用。介面標籤；預設為伺服器名稱。也接受 `display_name` |
+| `enabled` | 選用。預設為 `true` |
+| `capabilities.tools` | 選用。預設為 `true` |
+| `capabilities.resources` | 選用。預設為 `true` |
+| `capabilities.prompts` | 選用。預設為 `true` |
+| `transport.type` | 必填。`stdio` 或 `http` |
+
+### `stdio`
+
+| 欄位 | 說明 |
+| --- | --- |
+| `command` | 必填。啟動指令 |
+| `args` | 選用。指令參數 |
+| `env` | 選用。環境變數。值可使用 `${env:NAME}` |
+| `cwd` | 選用。工作目錄 |
+| `timeoutMs` | 選用。逾時（毫秒）。也接受 `timeout_ms` |
+| `stderr` | 選用。`inherit`（預設）或 `pipe` |
+
+### `http`
+
+| 欄位 | 說明 |
+| --- | --- |
+| `url` | 必填。伺服器 URL |
+| `headers` | 選用。請求標頭。值可使用 `${env:NAME}` |
+| `timeoutMs` | 選用。逾時（毫秒）。也接受 `timeout_ms` |
+
+## 範例
+
+```json
+{
+  "servers": {
+    "local-docs": {
+      "displayName": "Local docs",
+      "enabled": true,
+      "capabilities": {
+        "tools": true,
+        "resources": true,
+        "prompts": false
+      },
+      "transport": {
+        "type": "stdio",
+        "command": "npx",
+        "args": ["-y", "example-mcp-server"],
+        "env": {
+          "API_TOKEN": "${env:EXAMPLE_API_TOKEN}"
+        },
+        "cwd": "/path/to/workspace",
+        "timeoutMs": 15000,
+        "stderr": "pipe"
+      }
+    },
+    "remote-tools": {
+      "transport": {
+        "type": "http",
+        "url": "https://mcp.example.com/mcp",
+        "headers": {
+          "Authorization": "Bearer ${env:EXAMPLE_MCP_TOKEN}"
+        },
+        "timeoutMs": 20000
+      }
+    }
+  }
+}
+```

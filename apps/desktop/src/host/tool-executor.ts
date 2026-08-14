@@ -564,7 +564,7 @@ export class DesktopToolExecutor implements ToolExecutor<DesktopToolRequest, str
   private authorizeLazyToolGateway(
     request: LazyToolGatewayToolRequest,
   ): AuthorizationDecision<string> {
-    if (request.name === TOOL_CALL_TOOL_NAME && this.approvalLevel !== "full-approval") {
+    if (request.name === TOOL_CALL_TOOL_NAME && this.approvalLevel !== "bypass-approval") {
       const parsed = parseLazyToolGatewayArguments(request.name, request.argumentsJson);
       if (
         parsed.provider === LAZY_TOOL_PROVIDER_BUILT_IN &&

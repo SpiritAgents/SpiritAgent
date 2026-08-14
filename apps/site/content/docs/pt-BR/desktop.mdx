@@ -1,0 +1,103 @@
+---
+title: Desktop
+description: Mapa de configurações, Arquivos / Git / Navegador, marketplace, automações e pareamento com Web Host local.
+---
+
+O Desktop é o host gráfico. Ele compartilha o daemon local com o [CLI](./cli.mdx). Instale-o em [Instalar Desktop](./install/desktop.mdx).
+
+## Mapa de configurações
+
+### Básico
+
+| Aba | O que contém |
+| --- | --- |
+| Geral | Notificações, ícone na bandeja / barra de menus |
+| Aparência | Tema, fonte, idioma da interface, mica / desfoque, ponteiro |
+
+### Recursos
+
+| Aba | O que contém |
+| --- | --- |
+| Modelos | Conexão do provedor, lista de modelos, chaves |
+| Agentes | LSP, atribuição de commit / PR |
+| Aba | Conclusão de aba do Editor |
+| Skills | Descubra e gere [Skills](./customize/skills.mdx) |
+| Regras | Espaços de [Regras](./customize/rules.mdx) |
+| MCPs | Servidores [MCP](./customize/mcp.mdx) |
+| Hooks | [Hooks](./customize/hooks.mdx) |
+| Dreams | [Dreams](./customize/dreams.mdx) (Beta) |
+
+### Conectar
+
+| Aba | O que contém |
+| --- | --- |
+| Redes | Versão HTTP do LLM, **Acesso Remoto Web** |
+| Integrações | [Login do dispositivo GitHub](./customize/integrations.mdx) |
+| Extensões | Extensões instaladas, importação de ZIP |
+
+Uma aba Desenvolvedor aparece apenas em builds de desenvolvimento Vite.
+
+## Painéis do workspace
+
+| Aba | Função |
+| --- | --- |
+| Arquivos | Árvore, Monaco, visualização de Markdown, `plans/` |
+| Git | Alterações, histórico, chips de commit / push / merge |
+| Navegador | Navegador incorporado + seletor de elementos (**somente Electron**) |
+| Terminal | PTY incorporado (**somente Electron**) |
+
+### Terminal
+
+O Desktop (somente Electron) tem uma aba **Terminal** com um PTY incorporado. Esse painel é para você. O agente ainda passa pelo [`shell`](./agent/tools.mdx) e aprovação; ele não digita no seu PTY.
+
+O CLI não tem painel PTY incorporado. Os comandos ainda são executados pela mesma ferramenta `shell` no daemon compartilhado.
+
+Substitua o shell do PTY do Desktop com `SPIRIT_TERMINAL_SHELL` se você precisar de um binário específico.
+
+### Git
+
+A aba **Git** mostra alterações e histórico. Os chips no composer podem iniciar **commit**, **push** ou **merge**. Isso é interface do host, não um pacote de Skills.
+
+Esses chips injetam um prompt fixo. O agente então usa as ferramentas [workspace e `shell`](./agent/tools.mdx).
+
+### LSP
+
+Ative os servidores de linguagem em **Configurações → Agentes** e instale um provedor se estiver faltando. Quando o servidor estiver pronto, o agente pode chamar [`get_diagnostics`](./agent/tools.mdx).
+
+| ID | Linguagens | Como é instalado |
+| --- | --- | --- |
+| `typescript-language-server` | TypeScript, JavaScript | npm (`typescript-language-server`) |
+| `pyright` | Python | npm (`pyright`) |
+| `gopls` | Go | Ferramentas Go |
+| `rust-analyzer` | Rust | rustup |
+| `clangd` | C, C++ | Pacote da plataforma (por exemplo, Homebrew ou winget) |
+| `jdtls` | Java | Manual |
+| `omnisharp` | C# | .NET |
+
+clangd e jdtls não estão incluídos. Instale-os você mesmo e depois volte para Configurações → Agentes.
+
+### Aba
+
+A aba é a conclusão inline do Monaco. Aceite o texto fantasma com a tecla Tab. Abra **Configurações → Aba**, ative a conclusão de código (`codeCompletionEnabled`) e atribua um modelo de chat leve em **Configurações → Modelos**. Esse slot também atende a outras tarefas leves em segundo plano.
+
+Se o preenchimento estiver vazio, verifique se um modelo de chat leve está conectado e se a configuração está ativada. Esta não é a conversa do agente.
+
+## Marketplace e automações
+
+A barra lateral abre o [marketplace](./customize/marketplace.mdx). As automações têm sua própria visualização — [somente Desktop](./customize/automations.mdx).
+
+## Emparelhamento do Web Host
+
+O Desktop pode servir um cliente web na máquina local.
+
+- Listen padrão: `127.0.0.1:7788`
+- Configurações → **Redes** → Acesso Remoto Web
+- Na primeira visita, é solicitado um **código de emparelhamento de 6 dígitos** na página de configurações
+- Cinco tentativas com falha bloqueiam o emparelhamento até você reiniciar o Web Host
+- O token é armazenado no navegador como `spirit-agent-web-host-token`
+
+O agente ainda é executado dentro do daemon compartilhado. O cliente web recebe um snapshot autenticado; não é um segundo agente.
+
+**O bind `0.0.0.0` para acesso remoto via LAN não é um caminho de produto aberto.** O daemon e o Web Host permanecem em loopback por padrão. Um endereço de escuta IPv4 de LAN em Redes é para uma máquina que você controla, não um servidor público.
+
+Sobrescrever em desenvolvimento: `SPIRIT_DESKTOP_WEB_HOST=1`, `SPIRIT_WEB_HOST`, `SPIRIT_WEB_PORT`.

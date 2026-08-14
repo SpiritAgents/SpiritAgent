@@ -1,0 +1,344 @@
+---
+title: 提供商
+description: 自带密钥，走连接向导，换一家不必换 Agent 工作流。
+---
+
+Spirit Agent 是 BYOK。你在提供商控制台创建 Key，粘进 Desktop 或 CLI，Spirit 写入操作系统钥匙串。换一家不会改变打开工作区、审批编辑或跑 Agent 的方式。
+
+连接向导在 Desktop 是 **设置 → 模型**，在 CLI 是 `/model add` 或 `spirit model add`。附加字段只在该家需要时出现。
+
+Spirit 用下面四种传输之一和提供商通信。向导会固定类型，或让你选。
+
+| 传输 | 向导标签 | 典型用途 |
+| --- | --- | --- |
+| `openai-compatible` | Chat Completions API | 大多数 OpenAI 兼容端点 |
+| `open-responses` | Responses API / Open Responses API | OpenAI、Azure、Vercel AI Gateway、Hugging Face，以及可选的网关路径 |
+| `anthropic` | Messages API | Anthropic、MiniMax，以及可选的 Messages 兼容端点 |
+| `bedrock` | Amazon Bedrock | 仅 Amazon Bedrock |
+
+Google Gemini 与 Vertex AI 始终走 Chat Completions。若配置里要了 Responses 或 Messages，Spirit 会回落到 `openai-compatible`。
+
+有的提供商在 Key 之外还有第二维：
+
+- **区域站点** — Moonshot AI、硅基流动、MiniMax（中国 / 国际）；阿里巴巴（区域 + `workspaceId`）；腾讯 TokenHub（广州 / 新加坡）
+- **套餐端点** — 阿里巴巴 Token Plan、阶跃星辰 Step Plan、Z.ai / 智谱 AI GLM Coding Plan
+- **云厂商字段** — Bedrock 区域、Azure 资源名、Cloudflare 账户（及可选 gateway）、Vertex 项目 / 位置
+
+没有这些维的提供商，向导就是：Key → 导入模型 → 选当前对话模型。
+
+Spirit 会导入模型目录，并让你指定当前对话模型；目录标了生图 / 生视频 / 轻量对话时再指定对应槽位。推理和提供商内置联网跟模型与传输走，不是 Spirit 上的单独开关。
+
+## 目录
+
+以下是连接选择器里的提供商，顺序一致。每家只写 Key、传输和附加字段。上面的 Desktop / CLI 向导对每家都一样。
+
+### OpenAI
+
+在 [OpenAI 平台](https://platform.openai.com/api-keys) 创建 API Key。Spirit 不出售 OpenAI 额度。
+
+向导固定 **Responses API**（`open-responses`），没有传输选择器。默认 Base：`https://api.openai.com/v1`。
+
+导入后即可对话。推理跟模型走。生图 / 生视频只在目录标了对应能力时出现，到生图 / 生视频槽位里指定。
+
+### Anthropic
+
+在 [Anthropic 控制台](https://console.anthropic.com/settings/keys) 创建 API Key。
+
+固定 **Messages API**（`anthropic`）。默认 Base：`https://api.anthropic.com/v1`。
+
+导入后即可对话。推理跟模型走。除非目录后来标了生图 / 生视频，否则没有对应槽位。
+
+### Google
+
+在 [Google AI Studio](https://aistudio.google.com/apikey) 创建 API Key。
+
+固定 **Chat Completions API**（`openai-compatible`）。若配置要了 Responses 或 Messages，会回落到 Chat Completions。默认 Base：`https://generativelanguage.googleapis.com/v1beta`。
+
+导入后即可对话。生图只在目录标了时再指定。要用 GCP 项目 / 位置，走 [Google Vertex AI](#google-vertex-ai)。
+
+### SpaceXAI
+
+在 [SpaceXAI 控制台](https://console.x.ai/team/default/api-keys) 创建 API Key。
+
+固定 **Chat Completions API**（`openai-compatible`）。默认 Base：`https://api.x.ai/v1`。
+
+导入后即可对话。推理、生图、生视频跟导入目录走，出现对应能力时再指定槽位。
+
+### Vercel AI Gateway
+
+在 [Vercel AI Gateway](https://vercel.com/docs/ai-gateway) 控制台创建 Key。
+
+固定 **Open Responses API**（`open-responses`）。默认 Base：`https://ai-gateway.vercel.sh/v1`。
+
+对话以及网关目录里标出的能力。生图以目录的 `type=image` 为准，不用 tags 推断。
+
+不要用 tags 推断视觉或生图。经此网关的 MiniMax M3 在 Open Responses 下不会返回可展示的思考流。
+
+### Cloudflare AI Gateway
+
+在 [Cloudflare 控制台](https://developers.cloudflare.com/ai-gateway/) 创建 API token，并准备好账户 ID。
+
+可选手： **Chat Completions**、**Open Responses** 或 **Messages**。Base 由账户拼出：`https://api.cloudflare.com/client/v4/accounts/{accountId}/ai/v1`。
+
+- **账户 ID**（必填）— 32 位十六进制
+- **Gateway ID**（可选）
+
+没有账户 ID，向导无法拼出 API Base。对话和其他能力跟网关暴露的模型走。
+
+### DeepSeek
+
+在 [DeepSeek 平台](https://platform.deepseek.com/api-keys) 创建 API Key。
+
+无选择器。连接默认是 **Open Responses**（`open-responses`）。兼容 Base 还有 `https://api.deepseek.com/v1`（Chat）和 `https://api.deepseek.com/anthropic`（Messages）。
+
+导入后即可对话。推理跟模型走。
+
+### OpenRouter
+
+在 [OpenRouter](https://openrouter.ai/keys) 创建 Key。
+
+可选手： **Chat Completions**、**Open Responses** 或 **Messages**。默认 Base：`https://openrouter.ai/api/v1`。
+
+对话，以及 OpenRouter 目录标了生图 / 生视频时的对应槽位。
+
+### Fireworks AI
+
+在 [Fireworks 控制台](https://app.fireworks.ai/settings/users/api-keys) 创建 API Key。
+
+可选手： **Chat Completions**、**Messages** 或 **Open Responses**。Chat / Responses Base：`https://api.fireworks.ai/inference/v1`。Messages Base：`https://api.fireworks.ai/inference`。
+
+导入后即可对话。其他能力跟 Fireworks 目录走。
+
+### Together AI
+
+在 [Together AI 控制台](https://api.together.ai/settings/api-keys) 创建 API Key。
+
+固定 **Chat Completions API**。默认 Base：`https://api.together.ai/v1`。
+
+导入后即可对话。只有目录标了生图 / 生视频时再指定槽位。
+
+### Groq
+
+在 [Groq 控制台](https://console.groq.com) 创建 API Key。
+
+固定 **Chat Completions API**。默认 Base：`https://api.groq.com/openai/v1`。
+
+导入后即可对话。Groq 暴露推理时跟模型走。
+
+### DeepInfra
+
+在 [DeepInfra Dashboard](https://deepinfra.com/dash/keys) 创建 API Key。
+
+固定 **Chat Completions API**。默认 Base：`https://api.deepinfra.com/v1/openai`。
+
+导入后即可对话。其他能力跟目录走。
+
+### Baseten
+
+在 [Baseten 控制台](https://app.baseten.co/settings/api_keys) 创建 API Key。
+
+固定 **Chat Completions API**。默认 Base：`https://inference.baseten.co/v1`。
+
+导入后即可对话。其他能力跟目录走。
+
+### Hugging Face
+
+在 [Hugging Face 设置](https://huggingface.co/settings/tokens) 创建 token。
+
+固定 **Open Responses API**。默认 Base：`https://router.huggingface.co/v1`。
+
+导入后即可对话。其他能力跟路由目录走。
+
+### Moonshot AI
+
+在对应站点的控制台创建 API Key：[中国站](https://platform.kimi.com/console/api-keys) 或 [国际站](https://platform.kimi.ai/console/api-keys)。
+
+固定 **Chat Completions API**。无传输选择器。
+
+- **国际**（默认）— `https://api.moonshot.ai/v1`
+- **中国** — `https://api.moonshot.cn/v1`
+
+这是 Moonshot AI，不是 [Kimi Code](#kimi-code)。moonshot-ai 的内置搜索不走 Kimi Code 托管搜索路径。Kimi Code 的 Key 和 Moonshot AI 的 Key 是两条连接，不要混用。
+
+### Kimi Code
+
+在 [Kimi Code 控制台](https://www.kimi.com/code/console) 创建 API Key。
+
+固定 **Chat Completions API**。默认 Base：`https://api.kimi.com/coding/v1`。Messages Base 为 `https://api.kimi.com/coding`，但向导不提供选择器。
+
+导入后即可对话。托管搜索（若有）只属于这家，不属于 moonshot-ai。
+
+### Z.ai
+
+在 [Z.ai 控制台](https://z.ai/manage-apikey/apikey-list) 创建 API Key。套餐说明见 [GLM Coding Plan](https://docs.z.ai/devpack/quick-start)。
+
+固定 **Chat Completions API**。默认 Base：`https://api.z.ai/api/paas/v4`。
+
+在向导里打开 **GLM Coding Plan**，改用 `https://api.z.ai/api/coding/paas/v4`，不再走默认 PaaS Base。
+
+导入后即可对话。推理跟模型走。
+
+### 智谱 AI
+
+在 [智谱 AI 控制台](https://bigmodel.cn/console) 创建 API Key。套餐说明见 [GLM Coding Plan](https://docs.bigmodel.cn/cn/coding-plan/quick-start)。
+
+固定 **Chat Completions API**。默认 Base：`https://open.bigmodel.cn/api/paas/v4`。
+
+打开 **GLM Coding Plan** 后改用 `https://open.bigmodel.cn/api/coding/paas/v4`。
+
+导入后即可对话。推理跟模型走。
+
+### 阿里巴巴
+
+在[阿里云百炼 / 模型服务](https://bailian.console.aliyun.com) 创建 API Key。
+
+固定 **Chat Completions API**。兼容默认：`https://dashscope.aliyuncs.com/compatible-mode/v1`。
+
+- **cn-beijing**（默认）— `https://{workspaceId}.cn-beijing.maas.aliyuncs.com/compatible-mode/v1`（需要 workspace id）
+- **ap-southeast-1** — 需要 workspace id
+- **us-virginia** — `https://dashscope-us.aliyuncs.com/compatible-mode/v1`（不需要 workspace id）
+- **eu-central-1** — 需要 workspace id
+
+**Token Plan** 会改到 `https://token-plan.cn-beijing.maas.aliyuncs.com/compatible-mode/v1`，并忽略站点 / workspace。说明见 [Token Plan](https://bailian.console.aliyun.com/cn-beijing?tab=doc#/doc/?type=model&url=3029020)。即使选了其他站点，Token Plan 也固定走 cn-beijing 套餐端点。
+
+导入后即可对话。其他能力跟目录走。
+
+### MiniMax
+
+在对应站点的控制台创建 API Key：[中国站](https://platform.minimaxi.com/console/) 或 [国际站](https://platform.minimax.io/console/)。
+
+固定 **Messages API**（`anthropic`）。国际 Messages Base：`https://api.minimax.io/anthropic/v1`。
+
+- **国际**（默认）— `https://api.minimax.io/v1`（Chat 形态）/ `https://api.minimax.io/anthropic/v1`（Messages）
+- **中国** — `https://api.minimaxi.com/v1`
+
+导入后即可对话。上游 `/models` 没有多模态字段；只有 M3 被当作支持图 / 视频输入。经 Vercel AI Gateway 的 Open Responses，MiniMax M3 不会返回可展示的思考流。
+
+### 小米
+
+在 [小米 MiMo 控制台](https://platform.xiaomimimo.com/console/api-keys) 创建 API Key。
+
+固定 **Chat Completions API**。默认 Base：`https://api.xiaomimimo.com/v1`。
+
+导入后即可对话。其他能力跟目录走。
+
+### 硅基流动
+
+在对应站点的控制台创建 API Key：[国际站](https://cloud.siliconflow.com/me/account/ak) 或 [中国站](https://cloud.siliconflow.cn/me/account/ak)。
+
+可选手： **Chat Completions** 或 **Messages**。
+
+- **国际**（默认）— `https://api.siliconflow.com/v1`
+- **中国** — `https://api.siliconflow.cn/v1`
+
+导入后即可对话。其他能力跟目录走。
+
+### 阶跃星辰
+
+在 [阶跃星辰平台](https://platform.stepfun.com) 创建 API Key。套餐说明见 [Step Plan](https://platform.stepfun.com/docs/zh/step-plan/integrations/reasoning-api)。
+
+固定 **Chat Completions API**。默认 Base：`https://api.stepfun.com/v1`。
+
+**Step Plan** 会改到 `https://api.stepfun.com/step_plan/v1`。
+
+导入后即可对话。推理跟模型走。
+
+### 火山引擎
+
+在 [火山引擎方舟控制台](https://console.volcengine.com/ark/apiKey) 创建 API Key。
+
+可选手： **Chat Completions** 或 **Responses API**。默认 Base：`https://ark.cn-beijing.volces.com/api/v3`。
+
+导入后即可对话。其他能力跟目录走。
+
+### BytePlus
+
+在 [BytePlus Ark 控制台](https://console.byteplus.com/ark/apiKey) 创建 API Key。
+
+可选手： **Chat Completions** 或 **Responses API**。默认 Base：`https://ark.ap-southeast.bytepluses.com/api/v3`。
+
+导入后即可对话。其他能力跟目录走。
+
+### 美团
+
+在 [LongCat 控制台](https://longcat.chat/platform/api_keys) 创建 API Key。
+
+固定 **Chat Completions API**。默认 Base：`https://api.longcat.chat/openai/v1`。
+
+导入后即可对话。其他能力跟目录走。
+
+### 腾讯 TokenHub
+
+在 [腾讯 TokenHub 控制台](https://console.cloud.tencent.com/tokenhub) 创建 API Key。
+
+固定 **Chat Completions API**。向导不提供 Responses 或 Messages。
+
+- **广州**（默认）— `https://tokenhub.tencentmaas.com/v1`
+- **新加坡** — `https://tokenhub-intl.tencentmaas.com/v1`
+
+导入后即可对话。不要依赖 Chat 注入的联网搜索。TokenHub 文档写了 Chat `web_search_options` 和 Responses `web_search`，但实测 Chat 注入无效，Responses 也只覆盖少数模型。因此 Spirit 只保留 Chat Completions。
+
+### Mistral
+
+在 [Mistral 控制台](https://console.mistral.ai) 创建 API Key。
+
+固定 **Chat Completions API**。默认 Base：`https://api.mistral.ai/v1`。
+
+导入后即可对话。其他能力跟目录走。
+
+### Cohere
+
+在 [Cohere 控制台](https://dashboard.cohere.com) 创建 API Key。
+
+固定 **Chat Completions API**。默认 Base：`https://api.cohere.com/v2`。
+
+导入后即可对话。其他能力跟目录走。
+
+### Azure
+
+在 [Azure 门户](https://portal.azure.com) 为 Azure OpenAI 资源创建 Key。
+
+固定 **Responses API**（`open-responses`）。无传输选择器。
+
+- **资源名**（必填）— 2–64 个字符，仅字母、数字和连字符；不能以连字符开头或结尾
+
+Spirit 会拼出 `https://{resource}.openai.azure.com/openai/v1`。导入后即可对话。生图在 Azure 目录标了时再指定。
+
+### Amazon Bedrock
+
+在 [AWS Bedrock 控制台](https://console.aws.amazon.com/bedrock) 创建 Bearer API Key，或能调用 Bedrock 的 IAM 用户。
+
+固定 **Amazon Bedrock**（`bedrock`）。默认主机形态：`https://bedrock.us-east-1.amazonaws.com`。
+
+- **AWS 区域**（必填），例如 `us-east-1`
+- **认证**：**Bearer** 或 **IAM**
+  - Bearer — 粘贴 Bedrock API Key 和模型 id。**不会**自动拉模型列表。
+  - IAM — Access Key ID + Secret Access Key。Spirit 从账户列出 foundation models。
+
+选定模型后即可对话。其他能力跟该模型走。Bearer 只能做推理。`ListFoundationModels` 不接受 Bearer，所以导入目录需要 IAM。
+
+### Google Vertex AI
+
+使用已开通 Vertex AI 的 GCP 项目。认证是 ADC、服务账号或 Express API Key，不是普通 OpenAI Key。
+
+固定 **Chat Completions API**。若配置要了 Responses 或 Messages，会回落到 Chat Completions。Base 为 `https://{location}-aiplatform.googleapis.com/v1/projects/{project}/locations/{location}`。
+
+- **GCP 项目 ID** 和 **位置**（必填），例如 `us-central1`
+- **认证**
+  - **ADC** — 本机 Application Default Credentials（`GOOGLE_APPLICATION_CREDENTIALS`）
+  - **服务账号** — client email + 私钥；用来拉模型列表
+  - **Express API Key** — 不能自动拉目录，需手填模型 id
+
+选定模型后即可对话。没有 GCP 项目、只用 AI Studio Key 时，走 [Google](#google)。Express 模式不能导入模型列表。服务账号模式要同时有 email 和私钥才能列模型。
+
+### 自定义
+
+使用该端点要求的 API Key。Spirit 不托管自定义提供商。
+
+可选手： **Chat Completions**、**Open Responses** 或 **Messages**。必须填写 **Base URL**。留空时占位默认是 `https://api.openai.com/v1`。
+
+填写厂商文档里的根地址，若对方要求版本后缀（`/v1`、`/v1/openai` 等）一并带上。自定义端点 Spirit 不会猜路径。
+
+还可以给提供商分组起显示名，方便区分多条自定义端点。
+
+连接后导入或手填模型 id。若端点没有 Spirit 能读的目录，在向导里自行标记对话 / 生图 / 生视频能力。

@@ -1,0 +1,23 @@
+---
+title: Subagentes
+description: Delegar una tarea acotada a una sesión hija, opcionalmente en un worktree de git.
+---
+
+El agente puede llamar a `subagent` para iniciar una sesión hija. El hijo trabaja en una tarea aislada y devuelve solo su resultado final al padre.
+
+## Argumentos
+
+| Campo | Requerido | Rol |
+| --- | --- | --- |
+| `task` | sí | Lo que debe hacer el hijo |
+| `success_criteria` | no | Cómo sabe el hijo que ha terminado |
+| `context_summary` | no | Breve contexto que el hijo no debería tener que redescubrir |
+| `files_to_inspect` | no | Rutas a leer primero |
+| `expected_output` | no | Forma del resultado que el padre quiere recibir |
+| `worktree` | no | `true` para editar en un worktree de git aislado |
+
+Usa `worktree: true` cuando el hijo vaya a editar archivos y otros hijos puedan editar al mismo tiempo. Omítelo para trabajo de solo lectura.
+
+## Límites
+
+Un hijo que ya se está ejecutando dentro de un worktree no puede iniciar otro worktree. El inicio y el fin de la sesión pueden ejecutar hooks (`subagentStart` / `subagentEnd`). Puedes inspeccionar las sesiones hijas desde el visor de subagentes en Desktop o `/subagents` en la TUI de CLI.

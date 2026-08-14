@@ -1,0 +1,103 @@
+---
+title: Desktop
+description: Einstellungsübersicht, Dateien / Git / Browser, Marketplace, Automatisierungen und lokales Web-Host-Pairing.
+---
+
+Desktop ist der grafische Host. Er teilt den lokalen Daemon mit der [CLI](./cli.mdx). Installiere ihn über [Desktop installieren](./install/desktop.mdx).
+
+## Einstellungsübersicht
+
+### Grundlagen
+
+| Tab | Was er enthält |
+| --- | --- |
+| Allgemein | Benachrichtigungen, Tray-/Menüleistensymbol |
+| Erscheinungsbild | Design, Schriftart, UI-Sprache, Mica-/Blur-Effekt, Zeiger |
+
+### Funktionen
+
+| Tab | Was er enthält |
+| --- | --- |
+| Modelle | Anbieterverbindung, Modellliste, Schlüssel |
+| Agenten | LSP, Commit-/PR-Zuordnung |
+| Tab | Editor-Tab-Vervollständigung |
+| Skills | Entdecken und generieren Sie [Skills](./customize/skills.mdx) |
+| Regeln | [Regeln](./customize/rules.mdx)-Slots |
+| MCPs | [MCP](./customize/mcp.mdx)-Server |
+| Hooks | [Hooks](./customize/hooks.mdx) |
+| Dreams | [Dreams](./customize/dreams.mdx) (Beta) |
+
+### Verbinden
+
+| Tab | Was er enthält |
+| --- | --- |
+| Netzwerke | LLM-HTTP-Version, **Web-Remotezugriff** |
+| Integrationen | [GitHub-Geräteanmeldung](./customize/integrations.mdx) |
+| Erweiterungen | Installierte Erweiterungen, ZIP-Import |
+
+Ein Entwickler-Tab erscheint nur in Vite-Entwicklungs-Builds.
+
+## Workspace-Bedienfelder
+
+| Tab | Rolle |
+| --- | --- |
+| Dateien | Baum, Monaco, Markdown-Vorschau, `plans/` |
+| Git | Änderungen, Verlauf, Commit-/Push-/Merge-Chips |
+| Browser | Eingebetteter Browser + Element-Picker (**nur Electron**) |
+| Shell | Eingebettetes PTY (**nur Electron**) |
+
+### Shell
+
+Desktop (nur Electron) hat einen **Shell**-Tab mit einem eingebetteten PTY. Dieses Bedienfeld ist für dich. Der Agent verwendet weiterhin [`shell`](./agent/tools.mdx) und Genehmigung; er tippt nicht in dein PTY.
+
+CLI hat kein eingebettetes PTY-Bedienfeld. Befehle laufen weiterhin über dasselbe `shell`-Tool auf dem gemeinsamen Daemon.
+
+Überschreibe die Desktop-PTY-Shell mit `SPIRIT_TERMINAL_SHELL`, falls du ein bestimmtes Binär benötigst.
+
+### Git
+
+Der **Git**-Tab zeigt Änderungen und Verlauf. Chips im Composer können **Commit**, **Push** oder **Merge** starten. Dies ist Host-UI, kein Skill-Paket.
+
+Diese Chips injizieren einen festen Prompt. Der Agent verwendet dann [Workspace- und `shell`-Tools](./agent/tools.mdx).
+
+### LSP
+
+Aktiviere Sprachserver in **Settings → Agents** und installiere dann einen Anbieter, falls er fehlt. Sobald ein Server bereit ist, kann der Agent [`get_diagnostics`](./agent/tools.mdx) aufrufen.
+
+| ID | Sprachen | Installationsmethode |
+| --- | --- | --- |
+| `typescript-language-server` | TypeScript, JavaScript | npm (`typescript-language-server`) |
+| `pyright` | Python | npm (`pyright`) |
+| `gopls` | Go | Go-Toolchain |
+| `rust-analyzer` | Rust | rustup |
+| `clangd` | C, C++ | Plattformpaket (z. B. Homebrew oder winget) |
+| `jdtls` | Java | Manuell |
+| `omnisharp` | C# | .NET |
+
+clangd und jdtls sind nicht gebündelt. Installiere sie selbst und kehre dann zu Settings → Agents zurück.
+
+### Tab
+
+Tab ist Monaco-Inline-Vervollständigung. Akzeptiere Geistertext mit einer Tab-Taste. Öffne **Settings → Tab**, aktiviere Code-Vervollständigung (`codeCompletionEnabled`) und weise ein leichtgewichtiges Chat-Modell in **Settings → Models** zu. Dieser Slot dient auch anderen leichtgewichtigen Hintergrundaufgaben.
+
+Wenn die Vervollständigung leer ist, überprüfen Sie, ob ein leichtgewichtiges Chat-Modell verbunden ist und die Einstellung aktiviert ist. Dies ist nicht die Agent-Konversation.
+
+## Marktplatz und Automatisierungen
+
+Die Seitenleiste öffnet den [Marktplatz](./customize/marketplace.mdx). Automatisierungen haben ihre eigene Ansicht – [nur Desktop](./customize/automations.mdx).
+
+## Web-Host-Kopplung
+
+Desktop kann einen Web-Client auf dem lokalen Rechner bereitstellen.
+
+- Standard-Listenadresse: `127.0.0.1:7788`
+- Einstellungen → **Netzwerk** → Web-Remotezugriff
+- Beim ersten Besuch wird ein **6-stelliger Kopplungscode** von dieser Einstellungsseite angefordert
+- Fünf fehlgeschlagene Versuche sperren die Kopplung, bis Sie den Web-Host neu starten.
+- Das Token wird im Browser als `spirit-agent-web-host-token` gespeichert
+
+Der Agent läuft weiterhin im gemeinsamen Daemon. Der Web-Client empfängt einen authentifizierten Snapshot; es ist kein zweiter Agent.
+
+**Das Binden von `0.0.0.0` für den Fernzugriff im LAN ist kein offizieller Produktpfad.** Daemon und Web-Host bleiben standardmäßig auf Loopback. Eine LAN-IPv4-Listenadresse im Netzwerk ist für einen Rechner, den Sie kontrollieren, nicht für einen öffentlichen Server gedacht.
+
+Entwicklungs-Overrides: `SPIRIT_DESKTOP_WEB_HOST=1`, `SPIRIT_WEB_HOST`, `SPIRIT_WEB_PORT`.

@@ -1,0 +1,72 @@
+---
+title: Konfiguration
+description: Datenverzeichnisse, config.json v2, .spirit/ und Umgebungsvariablen.
+---
+
+Spirit speichert Binärdateien und Daten an verschiedenen Orten. Sie zu verwechseln ist der übliche Grund für „Ich habe die CLI installiert, aber die Einstellungen sind leer“.
+
+## Datenverzeichnis
+
+Überschreiben mit `SPIRIT_AGENT_DATA_DIR`. Der Server kann auch `SPIRIT_SERVER_DATA_DIR` verwenden (gewinnt über ersteres).
+
+| Betriebssystem | Standard |
+| --- | --- |
+| macOS | `~/Library/Application Support/SpiritAgent` |
+| Windows | `%APPDATA%\SpiritAgent` |
+| Linux | `$XDG_DATA_HOME/SpiritAgent` oder `~/.local/share/SpiritAgent` |
+| Fallback | `~/.spirit-agent` |
+
+Typische Dateien:
+
+```
+{spiritDataDir}/
+  config.json
+  mcp.json
+  hooks.json
+  rule.md
+  skills/
+  chats/
+  plans/
+  extensions/
+  automations/
+  dreams/
+  server.token
+  server/instances/
+```
+
+CLI-Binärdateien liegen unter `SPIRIT_HOME` (`~/.spirit` oder `%LOCALAPPDATA%\Spirit`). Das ist nicht dieses Verzeichnis. Siehe [CLI installieren](./install/cli.mdx).
+
+## config.json v2
+
+`schemaVersion` muss `2` sein. Version 1 wird abgelehnt – löschen Sie die alte Datei und [verbinden Sie einen Anbieter neu](./providers.mdx).
+
+Kernfelder:
+
+- `providerGroups` – verbundene Häuser, API-Basis, Transport, Modelle
+- `activeModel`
+- `imageGenerationModel` / `videoGenerationModel` / `lightweightChatModel`
+
+Schlüssel sind **nicht** in dieser Datei. Sie befinden sich im [Schlüsselbund](./security.mdx).
+
+## Arbeitsbereich `.spirit/`
+
+| Pfad | Rolle |
+| --- | --- |
+| `.spirit/rule.md` | Arbeitsbereichs-[Regel](./customize/rules.mdx) |
+| `.spirit/skills/` | Arbeitsbereichs-[Fähigkeiten](./customize/skills.mdx) |
+| `.spirit/mcp.json` | Arbeitsbereichs-[MCP](./customize/mcp.mdx) |
+| `.spirit/hooks.json` | Arbeitsbereichs-[Hooks](./customize/hooks.mdx) |
+
+Ebenfalls verwendet: `{workspace}/AGENTS.md`, `{workspace}/.agents/skills/`, `{workspace}/plans/`.
+
+## Umgebungsvariablen
+
+| Variable | Rolle |
+| --- | --- |
+| `SPIRIT_AGENT_DATA_DIR` | Datenverzeichnis |
+| `SPIRIT_SERVER_DATA_DIR` | Server-Datenverzeichnis (gewinnt) |
+| `SPIRIT_ACP_DATA_DIR` / `SPIRIT_ACP_WORKSPACE` | [ACP](./acp.mdx) |
+| `SPIRIT_HOME` / `SPIRIT_VERSION` / `SPIRIT_DOWNLOAD_HOST` | CLI-Installationsprogramm |
+| `SPIRIT_API_KEY` / `SPIRIT_API_BASE` | [CLI](./cli.mdx)-Prozessüberschreibungen |
+| `SPIRIT_WEB_HOST` / `SPIRIT_WEB_PORT` / `SPIRIT_DESKTOP_WEB_HOST` | Desktop-Webhost |
+| `SPIRIT_TERMINAL_SHELL` | Desktop-PTY-Shell |

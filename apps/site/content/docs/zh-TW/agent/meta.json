@@ -1,0 +1,13 @@
+{
+  "title": "智慧體",
+  "pages": [
+    "tools",
+    "modes",
+    "prompting",
+    "approvals",
+    "loop",
+    "sessions",
+    "subagents",
+    "ask-questions"
+  ]
+}

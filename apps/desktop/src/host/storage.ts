@@ -714,7 +714,7 @@ function normalizeStoredSession(parsed: Partial<StoredDesktopSession>): StoredDe
     loopEnabled: parsed.loopEnabled === true,
     ...(parsed.approvalLevel === "default" ||
     parsed.approvalLevel === "auto-approval" ||
-    parsed.approvalLevel === "full-approval"
+    parsed.approvalLevel === "bypass-approval"
       ? { approvalLevel: parsed.approvalLevel }
       : {}),
     ...(typeof parsed.activeModel === "string" && parsed.activeModel.trim()

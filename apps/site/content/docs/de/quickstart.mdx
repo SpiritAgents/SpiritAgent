@@ -1,0 +1,108 @@
+---
+title: Schnellstart
+description: Installieren Sie Spirit Agent, verbinden Sie einen Anbieter und landen Sie eine kleine genehmigte Änderung.
+---
+
+Diese Seite führt Sie von einer frischen Installation zu einer nützlichen Änderung. Spätere Seiten behandeln jeden Anbieter und Host; ohne diesen Pfad haben diese Seiten nichts, woran sie anknüpfen können.
+
+## 1. Installieren Sie Desktop oder die CLI
+
+Wählen Sie einen Host. Sie teilen sich denselben lokalen Daemon, sodass Sie den anderen später hinzufügen können.
+
+<Tabs items={["Desktop", "CLI"]}>
+  <Tab value="Desktop">
+
+Laden Sie den Build für Ihre Plattform von der [Download-Seite](/en-US/download) herunter und öffnen Sie ihn.
+
+- macOS: `.dmg` (Intel oder Apple Silicon)
+- Windows: `.exe`-Installer (x64 oder ARM64)
+- Linux: `.AppImage` (x64 oder ARM64)
+
+Details: [Desktop installieren](./install/desktop.mdx).
+
+</Tab>
+  <Tab value="CLI">
+
+```bash
+curl -fsSL https://spirit.fast/install | bash
+```
+
+```powershell
+irm https://spirit.fast/install.ps1 | iex
+```
+
+Öffnen Sie ein neues Terminal und führen Sie `spirit --version` aus. Details: [CLI installieren](./install/cli.mdx).
+
+</Tab>
+</Tabs>
+
+## 2. Öffnen Sie einen Workspace
+
+Der Agent liest und bearbeitet Dateien in einem Workspace-Root. Öffnen Sie das Projekt, das Sie ändern möchten.
+
+<Tabs items={["Desktop", "CLI"]}>
+  <Tab value="Desktop">
+
+Verwenden Sie **Workspace-Ordner öffnen** in der Seitenleiste und wählen Sie einen Ordner. Zuletzt verwendete Workspaces bleiben in der Liste.
+
+</Tab>
+  <Tab value="CLI">
+
+```bash
+cd /path/to/your/project
+spirit
+```
+
+Das TUI verwendet das aktuelle Verzeichnis als Workspace.
+
+</Tab>
+</Tabs>
+
+## 3. Verbinden Sie einen Anbieter
+
+Sie benötigen einen API-Schlüssel von einem Anbieter, den Sie bereits verwenden. Spirit speichert diesen Schlüssel im Betriebssystem-Keyring (`SpiritAgent`), nicht im Projekt.
+
+<Tabs items={["Desktop", "CLI"]}>
+  <Tab value="Desktop">
+
+1. Öffnen Sie **Einstellungen → Modelle**.
+2. Wählen Sie einen Anbieter und folgen Sie dem Verbindungsassistenten.
+3. Fügen Sie den Schlüssel ein. Zusätzliche Felder (Region, Standort, Plan-Endpunkt) erscheinen nur, wenn der Anbieter sie benötigt.
+4. Wählen Sie ein Chat-Modell als aktives Modell.
+
+</Tab>
+  <Tab value="CLI">
+
+Im TUI führen Sie `/model add` aus und füllen das Formular aus. Sie können auch ein Modell aus der Shell hinzufügen:
+
+```bash
+spirit model add
+```
+
+`SPIRIT_API_KEY` und `SPIRIT_API_BASE` überschreiben den gespeicherten Schlüssel und die Basis-URL für diesen Prozess, wenn Sie eine einmalige Aktion benötigen.
+
+</Tab>
+</Tabs>
+
+<Callout title="Keyring">
+Der Schlüssel wird in den System-Keyring geschrieben, bevor Spirit `config.json` aktualisiert. Wenn eine spätere Seite Sie auffordert, die Verbindung wiederherzustellen, stellen Sie den Keyring-Eintrag wieder her, nicht indem Sie einen Schlüssel in das Repo einfügen.
+</Callout>
+
+## 4. Bitten Sie um eine kleine Änderung und genehmigen Sie sie
+
+Bleiben Sie im **Agent**-Modus und bei **Standard**-Genehmigung für den ersten Lauf. Bitten Sie den Agenten, eine Ihnen bekannte Datei zu lesen und dann eine kleine, offensichtliche Änderung vorzunehmen.
+
+Beispiel:
+
+```txt
+Read README.md and add a one-line project summary at the top. Do not change anything else.
+```
+
+Der Agent liest die Datei, schlägt eine Änderung vor und wartet. Genehmigen Sie die Dateiänderung (und jeden Shell-Befehl) in der Eingabeaufforderung. Nachdem er fertig ist, öffnen Sie die Datei und bestätigen Sie die Änderung.
+
+Das ist der gesamte Kreislauf: installieren → Workspace → ein Anbieter → lesen → bearbeiten → genehmigen. Alles andere in diesen Dokumenten hängt von diesem Pfad ab.
+
+## Weiter
+
+- [Desktop installieren](./install/desktop.mdx) und [CLI installieren](./install/cli.mdx), falls Sie einen anderen Host oder eine festgelegte Version benötigen
+- [Anbieter](./providers.mdx), um ein anderes Haus zu verbinden oder Site-/Plan-/Cloud-Felder zu überprüfen, wenn Modelle nicht importiert wurden

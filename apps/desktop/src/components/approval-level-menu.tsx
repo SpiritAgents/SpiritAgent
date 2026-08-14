@@ -30,11 +30,11 @@ type ApprovalLevelMenuProps = {
 const APPROVAL_LEVEL_ICONS: Record<ApprovalLevel, LucideIcon> = {
   default: ShieldCheck,
   "auto-approval": Brain,
-  "full-approval": ShieldBan,
+  "bypass-approval": ShieldBan,
 };
 
 function approvalLevelTriggerIconClass(level: ApprovalLevel): string {
-  if (level === "full-approval") {
+  if (level === "bypass-approval") {
     return "text-yellow-600 dark:text-yellow-500";
   }
   if (level === "auto-approval") {
@@ -44,7 +44,7 @@ function approvalLevelTriggerIconClass(level: ApprovalLevel): string {
 }
 
 function approvalLevelTriggerTextClass(level: ApprovalLevel): string {
-  if (level === "full-approval") {
+  if (level === "bypass-approval") {
     return "text-yellow-600 hover:text-yellow-600 dark:text-yellow-500 dark:hover:text-yellow-500";
   }
   if (level === "auto-approval") {
@@ -54,7 +54,7 @@ function approvalLevelTriggerTextClass(level: ApprovalLevel): string {
 }
 
 function approvalLevelChevronClass(level: ApprovalLevel): string {
-  if (level === "full-approval") {
+  if (level === "bypass-approval") {
     return "text-yellow-600/85 dark:text-yellow-500/80";
   }
   if (level === "auto-approval") {
@@ -73,7 +73,7 @@ export function ApprovalLevelMenu({
   const options = [
     { value: "default" as ApprovalLevel, label: t("composer.approvalDefault") },
     { value: "auto-approval" as ApprovalLevel, label: t("composer.approvalAuto") },
-    { value: "full-approval" as ApprovalLevel, label: t("composer.approvalBypass") },
+    { value: "bypass-approval" as ApprovalLevel, label: t("composer.approvalBypass") },
   ];
   const label =
     options.find((option) => option.value === approvalLevel)?.label ??

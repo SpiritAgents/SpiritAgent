@@ -1,0 +1,10 @@
+---
+title: Integrações
+description: Login de dispositivo GitHub. O token vai no chaveiro.
+---
+
+**Configurações → Integrações** conecta o GitHub com o fluxo de dispositivo OAuth. Você aprova no navegador; o Spirit armazena o token no chaveiro do sistema sob o serviço `SpiritAgent`.
+
+O painel completo está disponível no aplicativo Electron. Outros shells podem mostrar um aviso limitado.
+
+O GitHub é necessário antes que as [Automações](./automations.mdx) possam ser acionadas em pull requests ou issues. Desconectar o GitHub remove esse caminho de acionamento; automações de tempo existentes continuam em execução.

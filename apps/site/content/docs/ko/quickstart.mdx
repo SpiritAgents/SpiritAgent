@@ -1,0 +1,108 @@
+---
+title: 빠른 시작
+description: Spirit Agent를 설치하고, 공급자 하나를 연결하고, 작고 승인된 편집을 적용하세요.
+---
+
+이 페이지는 새 설치에서 유용한 변경 하나까지 안내합니다. 이후 페이지에서는 모든 공급자와 호스트를 다루지만, 이 경로가 없으면 해당 페이지들이 붙을 곳이 없습니다.
+
+## 1. Desktop 또는 CLI 설치
+
+호스트 하나를 선택하세요. 둘 다 동일한 로컬 데몬을 공유하므로, 나중에 다른 하나를 추가할 수 있습니다.
+
+<Tabs items={["Desktop", "CLI"]}>
+  <Tab value="Desktop">
+
+[다운로드 페이지](/en-US/download)에서 플랫폼에 맞는 빌드를 다운로드한 후 실행하세요.
+
+- macOS: `.dmg` (Intel 또는 Apple silicon)
+- Windows: `.exe` 설치 프로그램 (x64 또는 ARM64)
+- Linux: `.AppImage` (x64 또는 ARM64)
+
+자세한 내용: [Desktop 설치](./install/desktop.mdx).
+
+</Tab>
+  <Tab value="CLI">
+
+```bash
+curl -fsSL https://spirit.fast/install | bash
+```
+
+```powershell
+irm https://spirit.fast/install.ps1 | iex
+```
+
+새 터미널을 열고 `spirit --version`을 실행하세요. 자세한 내용: [CLI 설치](./install/cli.mdx).
+
+</Tab>
+</Tabs>
+
+## 2. 작업 공간 열기
+
+에이전트는 작업 공간 루트에서 파일을 읽고 편집합니다. 변경하려는 프로젝트를 여세요.
+
+<Tabs items={["Desktop", "CLI"]}>
+  <Tab value="Desktop">
+
+사이드바에서 **작업 공간 폴더 열기**를 사용하고 폴더를 선택하세요. 최근 작업 공간은 목록에 유지됩니다.
+
+</Tab>
+  <Tab value="CLI">
+
+```bash
+cd /path/to/your/project
+spirit
+```
+
+TUI는 현재 디렉터리를 작업 공간으로 사용합니다.
+
+</Tab>
+</Tabs>
+
+## 3. 공급자 하나 연결
+
+이미 사용 중인 공급자의 API 키가 필요합니다. Spirit은 해당 키를 프로젝트가 아닌 운영 체제 키링(`SpiritAgent`)에 저장합니다.
+
+<Tabs items={["Desktop", "CLI"]}>
+  <Tab value="Desktop">
+
+1. **설정 → 모델**을 여세요.
+2. 공급자를 선택하고 연결 마법사를 따라가세요.
+3. 키를 붙여넣으세요. 추가 필드(지역, 사이트, 계획 엔드포인트)는 해당 공급자가 필요로 할 때만 나타납니다.
+4. 활성 모델로 채팅 모델을 선택하세요.
+
+</Tab>
+  <Tab value="CLI">
+
+TUI에서 `/model add`를 실행하고 양식을 완료하세요. 셸에서 모델을 추가할 수도 있습니다:
+
+```bash
+spirit model add
+```
+
+`SPIRIT_API_KEY` 및 `SPIRIT_API_BASE`는 일회용이 필요할 때 해당 프로세스의 저장된 키와 기본 URL을 재정의합니다.
+
+</Tab>
+</Tabs>
+
+<Callout title="키링">
+Spirit이 `config.json`을 업데이트하기 전에 키가 시스템 키링에 기록됩니다. 이후 페이지에서 다시 연결하라고 요청하면, 저장소에 키를 붙여넣는 것이 아니라 키링 항목을 복원하는 것입니다.
+</Callout>
+
+## 4. 작은 변경을 요청한 후 승인하기
+
+첫 실행에서는 **Agent** 모드와 **기본** 승인 상태를 유지하세요. 에이전트에게 아는 파일을 읽고, 작고 명확한 편집을 하도록 요청하세요.
+
+예:
+
+```txt
+Read README.md and add a one-line project summary at the top. Do not change anything else.
+```
+
+에이전트는 파일을 읽고 편집을 제안한 후 대기합니다. 프롬프트에서 파일 변경(및 모든 셸 명령)을 승인하세요. 완료 후 파일을 열어 편집을 확인하세요.
+
+이것이 전체 루프입니다: 설치 → 작업 공간 → 공급자 하나 → 읽기 → 편집 → 승인. 이 문서의 다른 모든 내용은 이 경로에 기반합니다.
+
+## 다음
+
+- [Desktop 설치](./install/desktop.mdx) 및 [CLI 설치](./install/cli.mdx)가 필요하다면 다른 호스트 또는 고정 버전을 설치하세요.
+- [공급자](./providers.mdx)로 다른 하우스를 연결하거나, 모델이 가져오지 않은 사이트/플랜/클라우드 필드를 확인하세요.

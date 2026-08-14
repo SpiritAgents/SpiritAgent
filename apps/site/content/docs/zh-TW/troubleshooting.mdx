@@ -1,0 +1,42 @@
+---
+title: 疑難排解
+description: 舊版設定、無頭區塊、配對鎖定、遺失金鑰，以及安裝路徑混淆等問題。
+---
+
+## config.json 被拒絕
+
+檔案必須是 `schemaVersion: 2`。刪除舊檔案並[重新連接供應商](./providers.mdx)。金鑰從不在該檔案中——它們位於[鑰匙圈](./security.mdx)中。
+
+## CLI 已安裝，但設定是空的
+
+您已將二進位檔安裝到 `SPIRIT_HOME`（`~/.spirit`）。工作階段和 `config.json` 位於[資料目錄](./config.mdx)中。如果您覆寫了 `SPIRIT_AGENT_DATA_DIR`，請檢查它。
+
+## `spirit -p` 失敗
+
+- 需要核准 → 使用 `-a auto-approval` / `-a bypass-approval`，或使用 TUI
+- 需要 [ask_questions](./agent/ask-questions.mdx) → 使用 TUI，或讓提示詞更明確
+- 逾時 → 無頭模式會在 30 分鐘後停止
+
+## 模型未匯入
+
+開啟該供應商的[供應商頁面](./providers.mdx)。檢查網站、方案端點、Azure 資源、Cloudflare 帳戶、Bedrock 區域 / IAM，或 Vertex 專案 / 位置。TokenHub 維持在 Chat Completions。Bedrock Bearer 無法列出模型。
+
+## 金鑰不在鑰匙圈中
+
+在**設定 → 模型**中重新連線，或使用 `spirit model add`。精靈會在 `config.json` 之前寫入鑰匙圈。請勿將金鑰貼到儲存庫中。
+
+## Web Host 配對失敗
+
+代碼錯誤 → 再試一次。五次失敗會鎖定配對（`PAIRING_LOCKED`），直到您在**設定 → 網路**中重新啟動 Web Host。主機必須支援配對；通用的網頁預覽可能會顯示不支援。
+
+## 缺少 LSP
+
+自行安裝伺服器（透過 Homebrew / winget 安裝 clangd，手動安裝 jdtls），然後在**設定 → Agents** 中啟用它。請參閱 [Desktop](./desktop.mdx)。
+
+## Tab 補全是空的
+
+在**設定 → Tab** 中啟用，並指派一個輕量級的聊天模型。請參閱 [Desktop](./desktop.mdx)。
+
+## ACP 不在下載頁面上
+
+這是預期的。ACP 已實作，但下載欄位仍是佔位符。請參閱 [ACP](./acp.mdx)。

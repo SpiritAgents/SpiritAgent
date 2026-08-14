@@ -1,0 +1,13 @@
+{
+  "title": "エージェント",
+  "pages": [
+    "tools",
+    "modes",
+    "prompting",
+    "approvals",
+    "loop",
+    "sessions",
+    "subagents",
+    "ask-questions"
+  ]
+}

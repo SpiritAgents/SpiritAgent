@@ -1,0 +1,434 @@
+---
+title: 扩展
+description: 包结构、spiritExtension 字段、activate API，以及上架官方 registry。
+---
+
+扩展是带 `package.json` 且含 `spiritExtension` 的文件夹。Spirit 按用户、按宿主安装，不放在工作区 `.spirit/` 下。
+
+| 宿主 | 路径 |
+| --- | --- |
+| Desktop | `{spiritDataDir}/extensions/desktop/` |
+| CLI | `{spiritDataDir}/extensions/cli/` |
+
+这与 [Skills](../customize/skills.mdx)（`SKILL.md` 文件夹）、[MCP](../customize/mcp.mdx)（外部 server）、[Hooks](../customize/hooks.mdx)（`hooks.json` 脚本）不同。`contributes.cli.hooks` 用来给 CLI TUI 槽位加样式，不是 `hooks.json`。
+
+没有按扩展的启用开关。安装后即参与贡献。CLI 面板里的切换是占位。
+
+## 包结构
+
+```text
+example-extension/
+  package.json
+  dist/index.js
+  assets/icon.svg
+  styles/desktop.css
+  cli-hooks.json
+```
+
+```json
+{
+  "name": "@example/spirit-extension",
+  "version": "0.1.0",
+  "description": "Example Spirit Agent extension.",
+  "author": { "name": "example" },
+  "homepage": "https://example.com/spirit-extension",
+  "main": "dist/index.js",
+  "spiritExtension": {
+    "schemaVersion": 1,
+    "displayName": "Example extension",
+    "icon": "assets/icon.svg",
+    "supportedHosts": ["cli", "desktop"],
+    "activationEvents": ["onStartup", "onUserMessage"],
+    "requestedCapabilities": [
+      "tool-definitions",
+      "tool-execution",
+      "system-prompt",
+      "settings",
+      "secret-storage",
+      "desktop-ui",
+      "cli-ui"
+    ],
+    "contributes": {
+      "tools": [
+        {
+          "name": "lookup_item",
+          "description": "Look up an item by id.",
+          "inputSchema": {
+            "type": "object",
+            "properties": {
+              "id": { "type": "string" }
+            },
+            "required": ["id"]
+          },
+          "approvalMode": "allowed",
+          "executionMode": "foreground"
+        }
+      ],
+      "desktop": {
+        "css": [{ "path": "styles/desktop.css" }],
+        "settingsPage": { "title": "Example extension" }
+      },
+      "cli": {
+        "hooks": { "path": "cli-hooks.json" }
+      }
+    },
+    "settingsSchema": [
+      {
+        "key": "region",
+        "type": "select",
+        "title": "Region",
+        "required": true,
+        "defaultValue": "us",
+        "options": [
+          { "value": "us", "label": "US" },
+          { "value": "eu", "label": "EU" }
+        ]
+      }
+    ],
+    "secretSlots": [
+      {
+        "key": "api_token",
+        "title": "API token",
+        "required": true
+      }
+    ]
+  }
+}
+```
+
+`package.json` 的 `name` 就是扩展 id。须匹配 `^(?:@[a-z0-9][a-z0-9._-]*/)?[a-z0-9][a-z0-9._-]*$`。
+
+## `package.json` 字段
+
+| 参数 | 说明 |
+| --- | --- |
+| `name` | 必填。npm 包名；用作扩展 id |
+| `version` | 必填。版本字符串 |
+| `spiritExtension` | 必填。对象。见下方 |
+| `description` | 可选。字符串 |
+| `author` | 可选。字符串或 `{ name }` |
+| `homepage` | 可选。字符串 |
+| `main` | 可选。`activate` 入口的相对路径。使用 `activationEvents`、工具执行或 system prompt 时必填 |
+
+`main`、`spiritExtension.icon`、CSS 路径和 CLI hook 路径必须是相对路径，且须留在包内。
+
+## `spiritExtension`
+
+| 参数 | 说明 |
+| --- | --- |
+| `schemaVersion` | 可选。默认 `1`。仅支持 `1` |
+| `displayName` | 必填。用户可见名称 |
+| `icon` | 可选。相对包根的路径 |
+| `supportedHosts` | 必填。非空数组，值为 `cli` 和/或 `desktop` |
+| `activationEvents` | 可选。见[激活事件](#激活事件) |
+| `requestedCapabilities` | 可选。见[能力](#能力) |
+| `contributes` | 可选。`tools`、`desktop` 和/或 `cli` |
+| `settingsSchema` | 可选。设置项定义 |
+| `secretSlots` | 可选。密钥槽定义 |
+
+## 能力
+
+| 值 | 运行时 |
+| --- | --- |
+| `tool-definitions` | 须与 `tool-execution` 同时声明，才会把 `contributes.tools` 暴露给模型 |
+| `tool-execution` | 须与 `tool-definitions` 同时声明，才会执行这些工具 |
+| `system-prompt` | 须与 `main` 同时具备，才会贡献 system 片段 |
+| `desktop-ui` | 必须与 `contributes.desktop` 成对出现 |
+| `cli-ui` | 必须与 `contributes.cli` 成对出现 |
+| `approval-flow` | 仅声明。审批由各工具的 `approvalMode` 驱动 |
+| `questions-flow` | 仅声明。问卷由 `approvalMode: need-questions` 驱动 |
+| `settings` | 仅声明。设置来自 `settingsSchema` |
+| `secret-storage` | 与 `secretSlots` 一起使用 |
+| `structured-results` | 仅声明 |
+
+`desktop-ui` / `cli-ui` 与对应的 `contributes` 块必须同时有或同时没有。
+
+## 激活事件
+
+| 事件 | 何时触发 |
+| --- | --- |
+| `onStartup` | 宿主预热 |
+| `onExtensionInstalled` | ZIP 或市场安装之后 |
+| `onSessionOpened` | 会话变为活动 |
+| `onSessionReset` | 会话重置 |
+| `onUserMessage` | 用户提交消息 |
+| `onToolCall` | 工具即将运行 |
+| `onToolResult` | 工具结果可用 |
+| `onApprovalResolved` | 审批决定已解析 |
+
+扩展列出该事件且有可读的 `main` 时，宿主会调用 `activate`。
+
+## `contributes.tools`
+
+| 参数 | 说明 |
+| --- | --- |
+| `name` | 必填。`[a-z0-9]+(?:[._-][a-z0-9]+)*` |
+| `description` | 必填。展示给模型 |
+| `inputSchema` | 必填。JSON Schema 对象 |
+| `outputSchema` | 可选。JSON Schema 对象 |
+| `approvalMode` | 可选。`allowed`、`need-approval` 或 `need-questions` |
+| `executionMode` | 可选。`foreground` 或 `background` |
+
+模型看到的不是原始 `name`。宿主会生成形如 `extension__{id}__{tool}__{hash}` 的调用名。
+
+## `contributes.desktop`
+
+需要 `desktop-ui`。
+
+| 参数 | 说明 |
+| --- | --- |
+| `css[].path` | 必填。相对包根的 CSS 文件 |
+| `css[].media` | 可选。CSS media query |
+| `settingsPage` | 可选。`true`、`{}` 或 `{ title }` — 在 Desktop 设置中增加入口 |
+
+## `contributes.cli`
+
+需要 `cli-ui`。`hooks` 是带 `path` 的对象，不是内联数组：
+
+```json
+{
+  "hooks": { "path": "cli-hooks.json" }
+}
+```
+
+该文件必须是 `{ "hooks": [ ... ] }`。
+
+| 参数 | 说明 |
+| --- | --- |
+| `slot` | 必填。下列槽位之一 |
+| `variant` | 可选。`default`、`accented`、`muted`、`warning`、`success`、`danger` |
+| `tokens` | 可选。`{ foreground?, border?, accent? }` |
+| `prefix` | 可选。字符串 |
+| `suffix` | 可选。字符串 |
+
+槽位：`message.user`、`message.assistant`、`message.tool`、`assistant.thinking`、`input.frame`、`bottom_form`、`bottom_form.section`、`slash_suggestions`、`approval.panel`、`questions.panel`。
+
+Token 角色：`default`、`primary`、`secondary`、`muted`、`accent`、`success`、`warning`、`danger`。
+
+```json
+{
+  "hooks": [
+    {
+      "slot": "input.frame",
+      "variant": "accented",
+      "tokens": { "border": "accent" },
+      "prefix": "[",
+      "suffix": "]"
+    }
+  ]
+}
+```
+
+## `settingsSchema`
+
+| 参数 | 说明 |
+| --- | --- |
+| `key` | 必填。与工具名相同的模式 |
+| `type` | 必填。`string`、`boolean`、`number` 或 `select` |
+| `title` | 必填。UI 标签 |
+| `description` | 可选 |
+| `placeholder` | 可选 |
+| `required` | 可选。布尔值 |
+| `defaultValue` | 可选。须与 `type` 匹配 |
+| `options` | `select` 时必填。`{ value, label, description? }` 数组 |
+
+值为 `string`、`number`、`boolean` 或 `null`。`null` 会清空非必填项。
+
+## `secretSlots`
+
+| 参数 | 说明 |
+| --- | --- |
+| `key` | 必填 |
+| `title` | 必填 |
+| `description` | 可选 |
+| `required` | 可选。布尔值 |
+
+Desktop 把密钥存在操作系统钥匙串。在 CLI daemon 路径上，`secrets.set` / `secrets.delete` 可能不可用。
+
+## `activate`
+
+`main` 通过动态 `import` 加载。导出以下之一：
+
+- `export function activate(ctx) { ... }`
+- `export default function activate(ctx) { ... }`
+- `export default { activate }`
+
+### `ctx`
+
+| 参数 | 说明 |
+| --- | --- |
+| `extension` | `{ id, name, version, directoryPath, manifestPath, main }` |
+| `host` | 宿主 API。Desktop 实现 `showMessageBox`。CLI 为 `{}` |
+| `log` | `(message: string) => void` |
+| `settings` | `get(key)`、`getAll()`、`set(key, value)`、`setAll(values)` |
+| `secrets` | `get(key)`、`has(key)`、`set(key, value)`、`delete(key)` — 键必须在 `secretSlots` 中声明 |
+| `activationEvent` | 可选。`{ type, detail? }` |
+
+### 返回值
+
+返回一个对象，或从模块导出相同字段。
+
+| 参数 | 说明 |
+| --- | --- |
+| `tools` | `Record<string, (ctx) => unknown>`。键是清单里的工具名 |
+| `invokeTool` | `(ctx) => unknown`。存在时优先于 `tools[name]` |
+| `systemPrompt` | 静态 system 片段 |
+| `getSystemPrompt` | `() => string \| Promise<string>`。存在时优先于 `systemPrompt` |
+| `onEvent` | `(event) => void` |
+| `dispose` | `() => void`。卸载或重载时调用 |
+
+### 工具处理函数的 `ctx`
+
+| 参数 | 说明 |
+| --- | --- |
+| `extension` | 与 `activate` 相同的运行时信息 |
+| `host` | 同一宿主 API |
+| `toolName` | 清单中的工具名 |
+| `arguments` | 模型传入的对象 |
+| `log` | 同一日志函数 |
+| `settings` | 同一设置访问器 |
+| `secrets` | 同一密钥访问器 |
+| `toolCallId` | 可选 |
+| `questionsResult` | 可选。`approvalMode` 为 `need-questions` 时由宿主注入 |
+
+`string` 结果原样返回。其他值会 `JSON.stringify(value, null, 2)`。`undefined` 变成 `""`。
+
+### Desktop `host.showMessageBox`
+
+| 参数 | 说明 |
+| --- | --- |
+| `title` | 必填。字符串 |
+| `message` | 必填。字符串 |
+| `detail` | 可选。字符串 |
+| `buttons` | 可选。字符串数组 |
+| `cancelId` | 可选。数字 |
+| `defaultId` | 可选。数字 |
+| `noLink` | 可选。布尔值 |
+| `type` | 可选。`none`、`info`、`error`、`question`、`warning` |
+
+```js
+export function activate(ctx) {
+  return {
+    systemPrompt: "Use lookup_item when the user asks for an item by id.",
+    async invokeTool({ toolName, arguments: args, settings, secrets }) {
+      if (toolName !== "lookup_item") {
+        throw new Error(`Unknown tool: ${toolName}`);
+      }
+      const region = await settings.get("region");
+      const token = await secrets.get("api_token");
+      return { id: args.id, region, hasToken: Boolean(token) };
+    },
+    dispose() {
+      ctx.log("example-extension disposed");
+    },
+  };
+}
+```
+
+## 安装
+
+- **ZIP** — 压缩包里必须恰好有一个 `package.json`（可以在子目录中）。用 `spirit extension import ./extension.zip` 或 **设置 → 扩展** 导入。
+- **市场 tarball** — 压缩包根目录下必须有 `package/` 目录。
+
+`supportedHosts` 必须包含当前宿主。默认不会用同 id 的第二次安装覆盖已有副本。通道和安装界面见[市场](../customize/marketplace.mdx)。
+
+## 上架官方扩展注册处
+
+[SpiritAgents/registry](https://github.com/SpiritAgents/registry) 仓库是市场索引。它不托管扩展源码、`dist`、ZIP 或 tarball。
+
+按此顺序：
+
+1. 公开发布 npm 包。
+2. 提交将该包列入索引的 pull request。
+
+### 1. 发布 npm 包
+
+已发布的 `package.json` 是元数据来源，尤其是 `spiritExtension`。registry 构建会读取：
+
+- `spiritExtension.schemaVersion`
+- `spiritExtension.displayName`
+- `spiritExtension.supportedHosts`
+- `spiritExtension.requestedCapabilities`
+
+同时会读 `name`、`version`、`description`、`author`、`repository`、`homepage`、`keywords`，以及可选的 `spiritExtension.icon`。若设置了 `icon`，须把该文件打进发布包。缺少 `spiritExtension` 时，该版本的 registry 构建会失败。
+
+官方示例：[`@spiritagent/extension-system-message-demo`](https://www.npmjs.com/package/@spiritagent/extension-system-message-demo)（`spiritagent.system-message-demo`）。
+
+### 2. 列入索引
+
+在 `registry/extensions/<extension-id>/` 下创建：
+
+| 文件 | 说明 |
+| --- | --- |
+| `entry.json` | 市场治理数据 |
+| `README.md` | 市场详情文案 |
+
+不要手改这些文件（重新生成）：
+
+- `registry/catalog.json`
+- `registry/extensions/<extension-id>/detail.json`
+
+`extensionId` 至少两段、用点分隔，小写字母和数字，段内可用点或连字符。例如：`spiritagent.system-message-demo`、`yourteam.some-extension`。`packageName` 与 `extensionId` 在仓库内都必须唯一。
+
+### `entry.json`
+
+| 参数 | 说明 |
+| --- | --- |
+| `schemaVersion` | 必填。`1` |
+| `extensionId` | 必填。见上方规则 |
+| `packageName` | 必填。npm 包名 |
+| `status` | 必填。`listed`、`hidden`、`deprecated` 或 `blocked` |
+| `featured` | 必填。布尔值 |
+| `defaultVersion` | 必填。默认版本字符串 |
+| `defaultReviewStatus` | 必填。`unverified`、`verified` 或 `revoked` |
+| `versions` | 必填。至少一项 |
+
+每条 `versions[]`：
+
+| 参数 | 说明 |
+| --- | --- |
+| `version` | 必填 |
+| `channel` | 必填。`stable`、`preview` 或 `experimental` |
+| `reviewStatus` | 必填。`unverified`、`verified` 或 `revoked` |
+| `changelog` | 可选。`{ summary, body }` — 出现时两者都必填 |
+
+```json
+{
+  "schemaVersion": 1,
+  "extensionId": "example.spirit-extension",
+  "packageName": "@example/spirit-extension",
+  "status": "listed",
+  "featured": false,
+  "defaultVersion": "0.1.0",
+  "defaultReviewStatus": "unverified",
+  "versions": [
+    {
+      "version": "0.1.0",
+      "channel": "stable",
+      "reviewStatus": "unverified",
+      "changelog": {
+        "summary": "Initial public release.",
+        "body": "- Initial public release."
+      }
+    }
+  ]
+}
+```
+
+市场 README 应说明扩展做什么、包名、默认批准版本、宿主与能力兼容性，以及市场读者需要看到的备注。
+
+在本地重新生成派生文件：
+
+```powershell
+./scripts/build-registry.ps1
+```
+
+脚本会拉取所列版本的 npm 元数据，重建 `catalog.json` 和各 `detail.json`，然后校验一致性。
+
+### Pull request
+
+包含 `entry.json`、市场 `README.md`，以及重新生成的 `catalog.json` / `detail.json`。只列入已在 npm 上公开的版本。准确填写 `reviewStatus` 和 `channel`。新版本通常从 `unverified` 开始。
+
+不要提交扩展源码树、`dist`、ZIP、tarball 或其他二进制产物。
+
+提交 pull request 不保证上架。审核可能在批准或 verified 之前要求修改。

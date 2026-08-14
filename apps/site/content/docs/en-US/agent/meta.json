@@ -1,0 +1,4 @@
+{
+  "title": "Agent",
+  "pages": ["tools", "modes", "prompting", "approvals", "loop", "sessions", "subagents", "ask-questions"]
+}

@@ -1,0 +1,53 @@
+---
+title: CLI
+description: TUI、非互動式 -p、SPIRIT_API_KEY / SPIRIT_API_BASE，以及共享的守護程式。
+---
+
+CLI 是終端機主機。使用[安裝腳本](./install/cli.mdx)進行安裝。它與[Desktop](./desktop.mdx)連接到同一個守護程式。
+
+## TUI
+
+```bash
+cd /path/to/your/project
+spirit
+```
+
+版面配置可以是 `inline` 或 `fullscreen`（`-t` / `--tui`，或 `/tui`）。模式、核准和 Loop 與 Desktop 一致。
+
+實用的斜線指令：`/help`、`/quit`、`/new`、`/continue`、`/loop`、`/model`、`/sessions`、`/rewind`、`/fork`、`/subagents`、`/approval`、`/mcp`、`/hooks`、`/rules`、`/skills`、`/extensions`。
+
+## 非互動式
+
+```bash
+spirit -p "your prompt here"
+```
+
+只有最終的助手文字會輸出到 stdout。將 `-m`、`-a` 和 `-l` 放在 `-p` **之前**。如果某個呼叫需要核准或 [ask_questions](./agent/ask-questions.mdx)，程序會失敗。無頭模式會在 30 分鐘後逾時。
+
+## 環境
+
+| 變數 | 角色 |
+| --- | --- |
+| `SPIRIT_API_KEY` | 此程序的 API 金鑰。順序：環境變數 → 模型鑰匙圈 → 全域鑰匙圈 |
+| `SPIRIT_API_BASE` | API 基礎 URL 覆寫 |
+| `SPIRIT_AGENT_DATA_DIR` | 資料目錄（與 Desktop 相同的儲存位置） |
+| `SPIRIT_HOME` | CLI **二進位**安裝根目錄 — 不是資料目錄 |
+
+## 共享的守護程式
+
+`spirit` 透過 WebSocket 連接到 Spirit Server 守護程式。工作階段、串流、工具和核准佇列都存放在那裡。Bearer token 是 `{spiritDataDir}/server.token`（模式 `0600`）。守護程式預設綁定在 `127.0.0.1` 的隨機連接埠。
+
+`spirit serve` 在前景執行守護程式。遠端 `0.0.0.0` 不是開放的產品路徑。請參閱[安全](./security.mdx)。
+
+## 指令
+
+```
+spirit [-v] [-m model] [-a approval] [-l language] [-t inline|fullscreen] [-p prompt]
+spirit interactive
+spirit serve
+spirit model list|add|remove|use|current
+spirit config show|set-base|set-image-model|clear-image-model|set-video-model|clear-video-model|key set|remove|status
+spirit mcp …
+spirit hooks list|validate
+spirit extension list|import|remove|marketplace …
+```

@@ -1,0 +1,70 @@
+---
+title: Hooks
+description: Führen Sie Skripte bei Sitzungs-, Tool- und Subagent-Ereignissen aus. Sie können erlauben, verweigern oder nachfragen.
+---
+
+Hooks sind Skripte, die Spirit an festgelegten Punkten ausführt. Sie können ein Tool erlauben, es verweigern oder eine Genehmigungsabfrage (`ask`) erzwingen.
+
+## Ereignisse
+
+- `sessionStart`
+- `sessionEnd`
+- `submitPrompt`
+- `preToolUse`
+- `postToolUse`
+- `subagentStart`
+- `subagentEnd`
+
+Wenn `preToolUse` `ask` zurückgibt, werden Sie auch bei [Auto-Genehmigung oder Umgehung](../agent/approvals.mdx) zur Eingabe aufgefordert.
+
+## Wo sie sich befinden
+
+| Gültigkeitsbereich | Konfiguration | Skripte |
+| --- | --- | --- |
+| Benutzer | `{spiritDataDir}/hooks.json` | `{spiritDataDir}/hooks/` |
+| Arbeitsbereich | `{workspace}/.spirit/hooks.json` | `{workspace}/.spirit/hooks/` |
+
+Beim gleichen Ereignis werden Benutzereinträge und Arbeitsbereichseinträge in dieser Reihenfolge verkettet. Sie überschreiben sich nicht gegenseitig.
+
+Verwalten Sie sie unter **Einstellungen → Hooks**. Validieren Sie sie über die CLI mit `spirit hooks list` und `spirit hooks validate`. Die integrierte Skill `create-hook` erstellt einen Hook-Entwurf.
+
+## Dateifelder
+
+Das Root-Objekt muss `version` und `hooks` enthalten. `version` akzeptiert derzeit nur `1`.
+
+| Feld | Beschreibung |
+| --- | --- |
+| `version` | Erforderlich. Muss `1` sein |
+| `hooks` | Erforderlich. Objekt. Schlüssel sind Ereignisnamen; Werte sind Arrays von Hooks für dieses Ereignis |
+
+### Jeder Hook
+
+| Feld | Beschreibung |
+| --- | --- |
+| `command` | Erforderlich. Skriptpfad. Ein relativer Pfad wird relativ zum Konfigurationsverzeichnis aufgelöst und muss innerhalb desselben bleiben |
+| `timeout` | Optional. Timeout in Sekunden. Muss eine positive Zahl sein. Standardwert ist `30` |
+| `failClosed` | Optional. Ob blockiert werden soll, wenn das Skript abstürzt, eine Zeitüberschreitung auftritt oder ungültiges JSON auf stdout schreibt. Standardmäßig wird nicht blockiert |
+| `matcher` | Optional. Nicht-leerer regulärer Ausdruck. Entspricht dem Toolnamen bei `preToolUse` / `postToolUse` oder dem Subagent-Typ bei `subagentStart` / `subagentEnd` |
+
+## Beispiel
+
+```json
+{
+  "version": 1,
+  "hooks": {
+    "preToolUse": [
+      {
+        "command": "hooks/guard.sh",
+        "timeout": 10,
+        "failClosed": true,
+        "matcher": "^shell$"
+      }
+    ],
+    "sessionEnd": [
+      {
+        "command": "hooks/log.sh"
+      }
+    ]
+  }
+}
+```

@@ -1,0 +1,18 @@
+---
+title: 迴圈
+description: 讓 agent 持續工作，直到它呼叫 finish_task。
+---
+
+迴圈 (Loop) 是一種工作階段切換。當它開啟時，一般的 assistant 訊息**不會**結束回合。預期 agent 會持續使用工具，直到任務完成，然後呼叫 `finish_task`。
+
+## 開啟它
+
+在 Desktop 上，在 composer 中啟用迴圈 (`/loop` 晶片)。在 CLI TUI 中，執行 `/loop`。
+
+`finish_task` 只有在迴圈開啟時才可使用。如果迴圈關閉且模型仍呼叫它，Spirit 會將該呼叫拒絕為未知工具。
+
+## 何時使用
+
+針對你不想全程盯著的多人步驟工作，使用迴圈：實作、測試、修正、重複。對於單一問題或單一檔案編輯，請將其關閉。
+
+迴圈不會改變[核准](./approvals.mdx)。預設核准仍會在編輯和 shell 上暫停。

@@ -16,7 +16,7 @@ const sampleDefinition = {
   trigger: { kind: "time", schedule: { kind: "hourly" } },
   workspaceRoot: "/tmp/workspace",
   modelRef: { groupId: "openai", name: "gpt-test" },
-  approvalLevel: "full-approval",
+  approvalLevel: "bypass-approval",
   enabled: true,
   createdAtUnixMs: 1,
   updatedAtUnixMs: 1,
@@ -47,7 +47,7 @@ test("buildAutomationRemoteRuntimeCreateInput aligns conversationKey with resolv
     assert.equal(input.todoSessionKey, path.resolve(sessionPath));
     assert.equal(input.agentMode, "agent");
     assert.deepEqual(input.modelRef, sampleDefinition.modelRef);
-    assert.equal(input.approvalLevel, "full-approval");
+    assert.equal(input.approvalLevel, "bypass-approval");
     assert.deepEqual(input.archive.llmHistory, []);
   } finally {
     if (previousAppData === undefined) {

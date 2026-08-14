@@ -1,0 +1,29 @@
+---
+title: 簡介
+description: 一個開源 AI 智慧體，支援多個提供者。
+---
+
+## 模型提供者
+
+Spirit Agent 不直接提供模型服務。您可以連接 OpenAI、Anthropic、SpaceXAI、閘道或區域提供者。每個提供者都在相同的框架上執行：工具、核准、工作階段和工作區行為保持一致。
+
+金鑰寫入系統鑰匙圈，服務名稱為 `SpiritAgent`。它們不會儲存在 `config.json` 中。
+
+## 一個智慧體，兩個主機
+
+Desktop 和 CLI 共用一個本機 daemon。工作階段、模型、核准和憑證都位於相同的資料目錄中，因此您可以在應用程式中開始任務，並在終端機中繼續。
+
+## 從這裡開始
+
+1. [安裝 Desktop 或 CLI](./quickstart.mdx)
+2. 開啟工作區
+3. 連接一個提供者
+4. 要求智慧體閱讀儲存庫、進行小修改，並核准變更
+
+查看 [快速入門](./quickstart.mdx) 以獲得完整路徑。
+
+- 安裝：[Desktop](./install/desktop.mdx)、[CLI](./install/cli.mdx)
+- 連接：[提供者](./providers.mdx)
+- 工作：[模式](./agent/modes.mdx)、[工具](./agent/tools.mdx)、[自訂](./customize/rules.mdx)
+- 主機：[Desktop](./desktop.mdx)、[CLI](./cli.mdx) — [ACP](./acp.mdx) 已實作，但未在下載頁面上
+- 參考：[設定](./config.mdx)、[安全性](./security.mdx)、[外觀](./appearance.mdx)、[疑難排解](./troubleshooting.mdx)

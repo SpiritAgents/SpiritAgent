@@ -1,0 +1,33 @@
+---
+title: Skills
+description: User, .spirit, and .agents skills, plus built-in create-rule, create-skill, and create-hook.
+---
+
+A Skill is a folder with a `SKILL.md`. Spirit discovers skills from three places:
+
+| Scope | Path |
+| --- | --- |
+| User | `{spiritDataDir}/skills/{name}/SKILL.md` |
+| Workspace Spirit | `{workspace}/.spirit/skills/{name}/SKILL.md` |
+| Workspace agents | `{workspace}/.agents/skills/{name}/SKILL.md` |
+
+When you mention a Skill in a turn, Spirit can attach its full text to that user message. It does not dump every Skill into the system prompt.
+
+## Frontmatter
+
+`SKILL.md` must start with Frontmatter. A file missing `name` or `description` is not discovered.
+
+| Field | Description |
+| --- | --- |
+| `name` | Required. Skill name; must match the folder name. 1–64 characters, lowercase letters, digits, and hyphens only |
+| `description` | Required. Short description |
+
+## Built-in Skills
+
+These ship with Spirit (they are not files in your data directory):
+
+- `create-rule` — draft a [rule](./rules.mdx)
+- `create-skill` — draft a [Skill](./skills.mdx)
+- `create-hook` — draft a [hook](./hooks.mdx)
+
+Manage skills in **Settings → Skills**. Git commit / push / merge chips are host UI, not bundled Skills. See [Desktop](../desktop.mdx).

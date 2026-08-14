@@ -1,0 +1,89 @@
+---
+title: MCP
+description: ユーザーのmcp.jsonとワークスペースの.spirit/mcp.json。同じサーバー名の場合はワークスペースが優先されます。
+---
+
+MCPサーバーは、Spiritの外部からツール、リソース、プロンプトを追加します。
+
+| スコープ | パス |
+| --- | --- |
+| ユーザー | `{spiritDataDir}/mcp.json` |
+| ワークスペース | `{workspace}/.spirit/mcp.json` |
+
+両方のファイルが同じサーバー名を定義する場合、**ワークスペース**のエントリが優先されます。
+
+サーバーは**設定 → MCP**で管理するか、CLIで`spirit mcp`（`list`、`show`、`init`、`enable`、`disable`、`inspect`、`tools`、`call-tool`など）を使用して管理します。
+
+MCPツールは、エージェントがすでに持っている同じツールリストに統合されます。高リスクなものは、依然として[承認](../agent/approvals.mdx)を通過します。
+
+## ファイルフィールド
+
+ルートオブジェクトには`servers`のみが含まれます。各サーバーには`transport`を含め、`type`を`stdio`または`http`に設定する必要があります。
+
+| フィールド | 説明 |
+| --- | --- |
+| `servers` | オブジェクト。キーはサーバー名 |
+| `displayName` | 任意。UIラベル。デフォルトはサーバー名。`display_name`も受け入れられます |
+| `enabled` | 任意。デフォルトは`true` |
+| `capabilities.tools` | 任意。デフォルトは`true` |
+| `capabilities.resources` | 任意。デフォルトは`true` |
+| `capabilities.prompts` | 任意。デフォルトは`true` |
+| `transport.type` | 必須。`stdio`または`http` |
+
+### `stdio`
+
+| フィールド | 説明 |
+| --- | --- |
+| `command` | 必須。起動コマンド |
+| `args` | 任意。コマンド引数 |
+| `env` | 任意。環境変数。値は`${env:NAME}`を使用できます |
+| `cwd` | 任意。作業ディレクトリ |
+| `timeoutMs` | 任意。タイムアウト（ミリ秒）。`timeout_ms`も受け入れられます |
+| `stderr` | 任意。`inherit`（デフォルト）または`pipe` |
+
+### `http`
+
+| フィールド | 説明 |
+| --- | --- |
+| `url` | 必須。サーバーURL |
+| `headers` | 任意。リクエストヘッダー。値は`${env:NAME}`を使用できます |
+| `timeoutMs` | 任意。タイムアウト（ミリ秒）。`timeout_ms`も受け入れられます |
+
+## 例
+
+```json
+{
+  "servers": {
+    "local-docs": {
+      "displayName": "Local docs",
+      "enabled": true,
+      "capabilities": {
+        "tools": true,
+        "resources": true,
+        "prompts": false
+      },
+      "transport": {
+        "type": "stdio",
+        "command": "npx",
+        "args": ["-y", "example-mcp-server"],
+        "env": {
+          "API_TOKEN": "${env:EXAMPLE_API_TOKEN}"
+        },
+        "cwd": "/path/to/workspace",
+        "timeoutMs": 15000,
+        "stderr": "pipe"
+      }
+    },
+    "remote-tools": {
+      "transport": {
+        "type": "http",
+        "url": "https://mcp.example.com/mcp",
+        "headers": {
+          "Authorization": "Bearer ${env:EXAMPLE_MCP_TOKEN}"
+        },
+        "timeoutMs": 20000
+      }
+    }
+  }
+}
+```

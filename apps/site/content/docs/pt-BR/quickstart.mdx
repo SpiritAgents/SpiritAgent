@@ -1,0 +1,108 @@
+---
+title: Início Rápido
+description: Instale o Spirit Agent, conecte um provedor e faça uma pequena edição aprovada.
+---
+
+Esta página leva você de uma instalação nova até uma alteração útil. As páginas seguintes cobrem todos os provedores e hosts; sem este caminho, essas páginas não têm onde se ancorar.
+
+## 1. Instale o Desktop ou a CLI
+
+Escolha um host. Eles compartilham o mesmo daemon local, então você pode adicionar o outro depois.
+
+<Tabs items={["Desktop", "CLI"]}>
+  <Tab value="Desktop">
+
+Baixe a versão para sua plataforma na [página de download](/pt-BR/download) e abra-a.
+
+- macOS: `.dmg` (Intel ou Apple silicon)
+- Windows: instalador `.exe` (x64 ou ARM64)
+- Linux: `.AppImage` (x64 ou ARM64)
+
+Detalhes: [Instalar Desktop](./install/desktop.mdx).
+
+</Tab>
+  <Tab value="CLI">
+
+```bash
+curl -fsSL https://spirit.fast/install | bash
+```
+
+```powershell
+irm https://spirit.fast/install.ps1 | iex
+```
+
+Abra um novo terminal e execute `spirit --version`. Detalhes: [Instalar CLI](./install/cli.mdx).
+
+</Tab>
+</Tabs>
+
+## 2. Abra um workspace
+
+O agente lê e edita arquivos na raiz do workspace. Abra o projeto que você deseja alterar.
+
+<Tabs items={["Desktop", "CLI"]}>
+  <Tab value="Desktop">
+
+Use **Abrir pasta do workspace** na barra lateral e escolha uma pasta. Os workspaces recentes permanecem na lista.
+
+</Tab>
+  <Tab value="CLI">
+
+```bash
+cd /path/to/your/project
+spirit
+```
+
+A TUI usa o diretório atual como workspace.
+
+</Tab>
+</Tabs>
+
+## 3. Conecte um provedor
+
+Você precisa de uma chave de API de um provedor que já usa. O Spirit armazena essa chave no chaveiro do sistema operacional (`SpiritAgent`), não no projeto.
+
+<Tabs items={["Desktop", "CLI"]}>
+  <Tab value="Desktop">
+
+1. Abra **Configurações → Modelos**.
+2. Escolha um provedor e siga o assistente de conexão.
+3. Cole a chave. Campos extras (região, site, endpoint do plano) aparecem somente quando o provedor precisar deles.
+4. Escolha um modelo de chat como modelo ativo.
+
+</Tab>
+  <Tab value="CLI">
+
+Na TUI, execute `/model add` e preencha o formulário. Você também pode adicionar um modelo pelo shell:
+
+```bash
+spirit model add
+```
+
+`SPIRIT_API_KEY` e `SPIRIT_API_BASE` substituem a chave e a URL base armazenadas para esse processo quando você precisar de uma edição única.
+
+</Tab>
+</Tabs>
+
+<Callout title="Chaveiro">
+A chave é gravada no chaveiro do sistema antes de o Spirit atualizar o `config.json`. Se uma página posterior pedir para você reconectar, você estará restaurando a entrada do chaveiro, não colando uma chave no repositório.
+</Callout>
+
+## 4. Peça uma pequena alteração e aprove-a
+
+Permaneça no modo **Agent** e na aprovação **padrão** na primeira execução. Peça ao agente para ler um arquivo que você conhece e depois fazer uma pequena edição óbvia.
+
+Exemplo:
+
+```txt
+Read README.md and add a one-line project summary at the top. Do not change anything else.
+```
+
+O agente lerá o arquivo, proporá uma edição e aguardará. Aprove a alteração do arquivo (e qualquer comando de shell) no prompt. Ao terminar, abra o arquivo e confirme a edição.
+
+Esse é o ciclo completo: instalar → workspace → um provedor → ler → editar → aprovar. Todo o resto nesta documentação depende desse caminho.
+
+## Próximos passos
+
+- [Instalar Desktop](./install/desktop.mdx) e [Instalar CLI](./install/cli.mdx) se você precisar de outro host ou uma versão fixada
+- [Provedores](./providers.mdx) para conectar outra casa, ou para verificar campos de site / plano / nuvem quando os modelos não foram importados

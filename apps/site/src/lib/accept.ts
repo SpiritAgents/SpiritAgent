@@ -1,3 +1,10 @@
+import {
+  DEFAULT_LOCALE,
+  isSupportedLocale,
+  matchLocaleFromLanguageTag,
+  type AppLocale,
+} from "@/i18n/config";
+
 type MediaRange = {
   type: string;
   subtype: string;
@@ -97,12 +104,10 @@ function normalizePathname(pathname: string): string {
 
 export function resolveMarkdownCompanionPath(pathname: string): string | null {
   const normalized = normalizePathname(pathname);
+  const locale = localeFromLocalizedPath(normalized);
+  if (!locale) return null;
 
-  if (normalized === "/en-US" || normalized === "/zh-CN") {
-    return `${normalized}/index.md`;
-  }
-
-  if (normalized === "/en-US/download" || normalized === "/zh-CN/download") {
+  if (normalized === `/${locale}` || normalized === `/${locale}/download`) {
     return `${normalized}/index.md`;
   }
 
@@ -111,18 +116,16 @@ export function resolveMarkdownCompanionPath(pathname: string): string | null {
 
 export function markdownPageForPath(pathname: string): "home" | "download" | null {
   const normalized = normalizePathname(pathname);
-  if (normalized === "/en-US/download" || normalized === "/zh-CN/download") {
-    return "download";
-  }
-  if (normalized === "/en-US" || normalized === "/zh-CN") {
-    return "home";
-  }
+  const locale = localeFromLocalizedPath(normalized);
+  if (!locale) return null;
+  if (normalized === `/${locale}/download`) return "download";
+  if (normalized === `/${locale}`) return "home";
   return null;
 }
 
-export function localeFromLocalizedPath(pathname: string): "en-US" | "zh-CN" | null {
+export function localeFromLocalizedPath(pathname: string): AppLocale | null {
   const locale = normalizePathname(pathname).split("/").filter(Boolean)[0];
-  return locale === "en-US" || locale === "zh-CN" ? locale : null;
+  return isSupportedLocale(locale) ? locale : null;
 }
 
 type LanguageTag = {
@@ -161,17 +164,20 @@ function parseAcceptLanguage(acceptLanguage: string | null): LanguageTag[] {
     });
 }
 
-function localeFromLanguageTag(tag: string): "en-US" | "zh-CN" {
-  return tag.startsWith("zh") ? "zh-CN" : "en-US";
-}
-
-export function detectLocaleFromAcceptLanguage(acceptLanguage: string | null): "en-US" | "zh-CN" {
+export function detectLocaleFromAcceptLanguage(acceptLanguage: string | null): AppLocale {
   const tags = parseAcceptLanguage(acceptLanguage);
   if (tags.length === 0) {
-    return "en-US";
+    return DEFAULT_LOCALE;
   }
 
-  return localeFromLanguageTag(tags[0].tag);
+  for (const entry of tags) {
+    const matched = matchLocaleFromLanguageTag(entry.tag);
+    if (matched !== DEFAULT_LOCALE || entry.tag.toLowerCase().startsWith("en")) {
+      return matched;
+    }
+  }
+
+  return matchLocaleFromLanguageTag(tags[0].tag);
 }
 
 export { HTML, MARKDOWN };

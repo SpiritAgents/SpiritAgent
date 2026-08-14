@@ -434,7 +434,7 @@ export async function startDaemon(options: DaemonOptions): Promise<RunningDaemon
             ? { conversationKey: conversationKey.trim() }
             : {}),
           ...(approvalLevel === "auto-approval" ||
-          approvalLevel === "full-approval" ||
+          approvalLevel === "bypass-approval" ||
           approvalLevel === "default"
             ? { approvalLevel }
             : {}),
@@ -526,7 +526,7 @@ export async function startDaemon(options: DaemonOptions): Promise<RunningDaemon
         };
       case SESSION_SET_APPROVAL_LEVEL: {
         const level = params["approvalLevel"];
-        if (level !== "default" && level !== "auto-approval" && level !== "full-approval") {
+        if (level !== "default" && level !== "auto-approval" && level !== "bypass-approval") {
           throw new Error("invalid approvalLevel");
         }
         await sessionManager.setApprovalLevel(readSessionId(params), level);

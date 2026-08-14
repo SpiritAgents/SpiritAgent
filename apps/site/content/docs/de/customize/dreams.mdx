@@ -1,0 +1,21 @@
+---
+title: Dreams
+description: Kurzlebige Erinnerungen, die auf den Workspace und den Git-Branch begrenzt sind. Der Agent liest sie mit dream_list und dream_read.
+---
+
+<Callout type="warn" title="Beta">
+Dreams ist noch ein Experiment. Behandle es nicht als dauerhaftes Projekt-Wiki – das gehört in [Rules](./rules.mdx) oder ins Repo.
+</Callout>
+
+Dreams sind kurze Erinnerungen, die auf den **aktuellen Workspace und Git-Branch** begrenzt sind: was sich kürzlich bewegt hat, warum es wichtig ist und was noch offen ist. Datensätze liegen unter `{spiritDataDir}/dreams/` und verfallen nach **fünf Tagen**.
+
+Der Konversationsagent erhält einen zusammenfassenden Katalog in der Systemnachricht (ID, Titel, Zusammenfassung, Tags). Vollständige Details werden nicht vorab geladen; rufe sie bei Bedarf mit Tools ab.
+
+| Tool | Rolle |
+| --- | --- |
+| `dream_list` | Liste nicht abgelaufene Zusammenfassungen im aktuellen Geltungsbereich auf |
+| `dream_read` | Lies einen vollständigen Datensatz anhand der ID |
+
+`dream_record`, `dream_update` und `dream_delete` gehören zum Hintergrundsammler, nicht zum Konversationsagenten. Der Sammler scannt Sitzungen und entscheidet, ob er einen veralteten Eintrag erstellt, aktualisiert oder verwirft. Er bevorzugt es, einen bestehenden Dream zu aktualisieren, anstatt einen zu duplizieren.
+
+Aktiviere oder deaktiviere die Sammlung auf dem Desktop unter **Einstellungen → Dreams**. Die Hintergrundsammlung verwendet das leichte Chat-Modell, denselben Slot wie **Einstellungen → Tab**. CLI und ACP unterstützen Dreams noch nicht.

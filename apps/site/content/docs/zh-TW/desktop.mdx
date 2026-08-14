@@ -1,0 +1,103 @@
+---
+title: Desktop
+description: Settings map, Files / Git / Browser, marketplace, automations, and local Web Host pairing.
+---
+
+Desktop 是圖形化主機。它與 [CLI](./cli.mdx) 共享本地 daemon。請從 [Install Desktop](./install/desktop.mdx) 安裝。
+
+## 設定對應
+
+### 基本
+
+| 索引標籤 | 包含內容 |
+| --- | --- |
+| 一般 | 通知、系統匣 / 選單列圖示 |
+| 外觀 | 主題、字型、UI 語言、mica / 模糊、指標 |
+
+### 功能
+
+| 索引標籤 | 包含內容 |
+| --- | --- |
+| 模型 | 供應商連線、模型清單、金鑰 |
+| 智慧體 | LSP、commit / PR 歸因 |
+| Tab | 編輯器 Tab 補全 |
+| 技能 | 探索並產出 [Skills](./customize/skills.mdx) |
+| 規則 | [Rules](./customize/rules.mdx) 插槽 |
+| MCP | [MCP](./customize/mcp.mdx) 伺服器 |
+| 鉤子 | [Hooks](./customize/hooks.mdx) |
+| 夢境 | [夢境](./customize/dreams.mdx)（Beta） |
+
+### 連線
+
+| 索引標籤 | 包含內容 |
+| --- | --- |
+| 網路 | LLM HTTP 版本、**Web 遠端存取** |
+| 整合 | [GitHub Device Login](./customize/integrations.mdx) |
+| 擴充功能 | 已安裝的擴充功能、ZIP 匯入 |
+
+僅在 Vite 開發建置中會出現「開發人員」索引標籤。
+
+## 工作區面板
+
+| 標籤頁 | 角色 |
+| --- | --- |
+| 檔案 | 樹狀圖、Monaco、Markdown 預覽、`plans/` |
+| Git | 變更、歷史記錄、提交／推送／合併標籤 |
+| 瀏覽器 | 內嵌瀏覽器 + 元素選取器（**僅限 Electron**） |
+| Shell | 內嵌 PTY（**僅限 Electron**） |
+
+### Shell
+
+Desktop（僅限 Electron）有一個 **Shell** 標籤頁，內嵌 PTY。該面板是給你用的。Agent 仍會透過 [`shell`](./agent/tools.mdx) 並經過核准；它不會在你的 PTY 中輸入。
+
+CLI 沒有內嵌 PTY 面板。指令仍會透過共享 daemon 上的相同 `shell` 工具執行。
+
+如果你需要特定二進位檔，可以用 `SPIRIT_TERMINAL_SHELL` 覆寫 Desktop PTY shell。
+
+### Git
+
+**Git** 標籤頁顯示變更和歷史記錄。Composer 上的標籤可以啟動**提交**、**推送**或**合併**。這是主機 UI，不是 Skills 套件。
+
+這些標籤會注入固定提示。Agent 接著使用 [workspace 和 `shell` 工具](./agent/tools.mdx)。
+
+### LSP
+
+在**設定 → Agents**中開啟語言伺服器，如果缺少提供者則安裝。伺服器就緒後，Agent 可以呼叫 [`get_diagnostics`](./agent/tools.mdx)。
+
+| ID | 語言 | 安裝方式 |
+| --- | --- | --- |
+| `typescript-language-server` | TypeScript、JavaScript | npm（`typescript-language-server`） |
+| `pyright` | Python | npm（`pyright`） |
+| `gopls` | Go | Go 工具鏈 |
+| `rust-analyzer` | Rust | rustup |
+| `clangd` | C、C++ | 平台套件（例如 Homebrew 或 winget） |
+| `jdtls` | Java | 手動 |
+| `omnisharp` | C# | .NET |
+
+clangd 和 jdtls 未隨附。請自行安裝，然後回到設定 → Agents。
+
+### Tab
+
+Tab 是 Monaco 的內嵌完成功能。按一次 Tab 接受幽靈文字。開啟**設定 → Tab**，啟用程式碼完成（`codeCompletionEnabled`），並在**設定 → 模型**中指派輕量級聊天模型。該位置也服務其他輕量級背景任務。
+
+如果完成度為空，請檢查是否已連接輕量級聊天模型，且該設定已開啟。這不是智慧體對話。
+
+## Marketplace 與自動化
+
+側邊欄開啟 [marketplace](./customize/marketplace.mdx)。自動化有各自的檢視 — [僅限 Desktop](./customize/automations.mdx)。
+
+## Web Host 配對
+
+Desktop 可在本機提供 Web 用戶端服務。
+
+- 預設監聽：`127.0.0.1:7788`
+- 設定 → **網路** → Web 遠端存取
+- 首次造訪時會要求輸入該設定頁面提供的 **6 位數配對碼**
+- 連續五次失敗會鎖定配對，直到您重新啟動 Web Host
+- Token 儲存在瀏覽器中，名稱為 `spirit-agent-web-host-token`
+
+智慧體仍在共享的 daemon 中執行。Web 用戶端接收的是已驗證的快照；它不是第二個智慧體。
+
+**綁定 `0.0.0.0` 以進行遠端 LAN 存取並非開放的產品路徑。** daemon 和 Web Host 預設保持在 loopback。Networks 中的 LAN IPv4 監聽位址是供您控制的機器使用，而非公開伺服器。
+
+開發覆寫：`SPIRIT_DESKTOP_WEB_HOST=1`、`SPIRIT_WEB_HOST`、`SPIRIT_WEB_PORT`。

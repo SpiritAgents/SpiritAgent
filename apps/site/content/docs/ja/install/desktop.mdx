@@ -1,0 +1,34 @@
+---
+title: デスクトップをインストール
+description: macOS、Windows、Linux用のSpirit Agentをダウンロードします。
+---
+
+デスクトップはグラフィカルなホストです：チャット、ワークスペースファイル、Git、設定、マーケットプレイス、自動化。CLIとローカルデーモンを共有します。
+
+## ダウンロード
+
+ダウンロードページを使用します。OSとアーキテクチャに合ったビルドを `download.spirit.fast` から選択します。
+
+| プラットフォーム | ファイル | アーキテクチャ |
+| --- | --- | --- |
+| macOS | `.dmg` | x64、arm64 |
+| Windows | `.exe`（NSIS） | x64、arm64、ia32 |
+| Linux | `.AppImage` | x64、arm64 |
+
+最新のGitHubリリースから取得することもできます。LinuxリリースにはAppImageに加えて `.deb` が含まれる場合があります。
+
+Desktop向けの公式のHomebrew、winget、aptパッケージはありません。
+
+## インストール後
+
+1. Spirit Agentを開きます。
+2. ワークスペースを開きます。
+3. **設定 → モデル** でプロバイダーに接続します。キーはシステムのキーリングに保存されます。
+
+macOSでGatekeeperが初回起動をブロックする場合は、FinderからControlキーを押しながらクリックして「開く」を選択します。
+
+Linuxでは、AppImageを実行可能にしてから実行します（`chmod +x SpiritAgent-linux-*.AppImage`）。
+
+## アップデート
+
+ダウンロードページとCDNの `latest` パスは常に現在のDesktopビルドを指しています。GitHub Releasesにはバージョン付きのアセットが保持されているため、固定したい場合に便利です。

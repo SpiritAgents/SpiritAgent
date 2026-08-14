@@ -1,0 +1,21 @@
+---
+title: Automatizaciones
+description: Disparadores de tiempo más eventos de GitHub después de conectar Integraciones.
+---
+
+<Callout type="info">
+Solo Desktop.
+</Callout>
+
+Las automatizaciones ejecutan un trabajo de agente sin que estés sentado en el compositor.
+
+## Disparadores
+
+- **Tiempo** — cada hora, diariamente o semanalmente
+- **GitHub** — `pull_request_created` o `issue_created` en un repositorio que nombre ("owner" + "repo")
+
+Los disparadores de GitHub necesitan [Integraciones](./integrations.mdx) conectadas primero. Si GitHub no está conectado, el menú de disparadores no ofrecerá esos eventos.
+
+Los datos viven bajo `{spiritDataDir}/automations/`. Abre la vista de Automatizaciones en Desktop para ver el historial y la configuración.
+
+La CLI no puede crear ni ejecutar esta interfaz. Usa [Desktop](../desktop.mdx).

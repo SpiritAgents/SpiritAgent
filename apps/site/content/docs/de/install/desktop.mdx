@@ -1,0 +1,34 @@
+---
+title: Desktop installieren
+description: Laden Sie Spirit Agent für macOS, Windows oder Linux herunter.
+---
+
+Desktop ist der grafische Host: Chat, Workspace-Dateien, Git, Einstellungen, Marketplace und Automatisierungen. Er teilt sich den lokalen Daemon mit der [CLI](./cli.mdx).
+
+## Herunterladen
+
+Verwenden Sie die [Download-Seite](/en-US/download). Sie wählt einen Build für Ihr Betriebssystem und Ihre Architektur von `download.spirit.fast` aus.
+
+| Plattform | Datei | Architekturen |
+| --- | --- | --- |
+| macOS | `.dmg` | x64, arm64 |
+| Windows | `.exe` (NSIS) | x64, arm64, ia32 |
+| Linux | `.AppImage` | x64, arm64 |
+
+Sie können auch ein GitHub-Release von [latest](https://github.com/SpiritAgents/SpiritAgent/releases/latest) verwenden. Linux-Releases können zusätzlich zum AppImage eine `.deb` enthalten.
+
+Es gibt kein offizielles Homebrew-, winget- oder apt-Paket für Desktop.
+
+## Nach der Installation
+
+1. Öffnen Sie Spirit Agent.
+2. [Öffnen Sie einen Workspace](../quickstart.mdx#2-open-a-workspace).
+3. Verbinden Sie einen Anbieter in **Einstellungen → Modelle**. Der Schlüssel wird im System-Keyring gespeichert.
+
+Auf macOS, wenn Gatekeeper den ersten Start blockiert, öffnen Sie die App aus dem Finder mit Control-Klick → Öffnen.
+
+Auf Linux markieren Sie das AppImage als ausführbar (`chmod +x SpiritAgent-linux-*.AppImage`), bevor Sie es ausführen.
+
+## Updates
+
+Die Download-Seite und der CDN-`latest`-Pfad zeigen immer auf den aktuellen Desktop-Build. GitHub Releases behalten versionierte Assets, falls Sie eine bestimmte Version festlegen möchten.

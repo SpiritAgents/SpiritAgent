@@ -147,7 +147,7 @@ export async function runDesktopAutomationOnce(
         return run;
       }
       if (result.kind === "requires-approval") {
-        if (input.definition.approvalLevel === "full-approval") {
+        if (input.definition.approvalLevel === "bypass-approval") {
           result = await runAutomationStreamingTurn(runtime, projection, async () => {
             await runtime.continuePendingApproval({ kind: "allow" });
           });
@@ -170,7 +170,7 @@ export async function runDesktopAutomationOnce(
         return run;
       }
       if (result.kind === "requires-questions") {
-        if (input.definition.approvalLevel === "full-approval") {
+        if (input.definition.approvalLevel === "bypass-approval") {
           result = await runAutomationStreamingTurn(runtime, projection, async () => {
             await runtime.continuePendingQuestions({ status: "skipped" });
           });

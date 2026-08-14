@@ -1,0 +1,34 @@
+---
+title: Prompting
+description: How to give Spirit a task it can finish in your workspace.
+---
+
+Talk to the agent the way you would brief a teammate who can read the repo and wait for approval.
+
+## Be specific
+
+Name the files, the outcome, and what not to touch. A tight prompt lands a small, reviewable diff. A vague prompt burns a turn on discovery.
+
+```txt
+Read src/auth/session.ts and fix the expired-token refresh path.
+Do not change the login form. Add a focused test next to the existing session tests.
+```
+
+## Attach context
+
+On Desktop, attach open files, selections, or a Browser element when the task is about that exact spot. The agent still has to read the file to see the current contents — attachments are pointers, not a substitute for [tools](./tools.mdx).
+
+## Pick a mode first
+
+- **Agent** — you already know the change
+- **Plan** — you want a written plan and [questions](./ask-questions.mdx) before any edit
+- **Ask** — you want an explanation only
+- **Debug** — you can reproduce a bug and want logs
+
+See [Modes](./modes.mdx).
+
+## Let approval do its job
+
+On **default** approval the agent stops before editing or running a command. Read the diff, then approve or reject. Do not turn on bypass until you trust the loop. See [Approvals](./approvals.mdx).
+
+Editor inline completion (Tab) is not part of this conversation. Configure it under Settings → Tab.

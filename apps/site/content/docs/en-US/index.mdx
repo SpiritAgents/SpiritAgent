@@ -1,0 +1,29 @@
+---
+title: Introduction
+description: An open-source AI agent with multi-provider access.
+---
+
+## Model providers
+
+Spirit Agent does not provide model services directly. You can connect OpenAI, Anthropic, SpaceXAI, a gateway, or a regional provider. Every provider runs on the same harness: tools, approvals, sessions, and workspace behavior stay consistent.
+
+Keys are written to the system keyring under the `SpiritAgent` service. They are not stored in `config.json`.
+
+## One agent, two hosts
+
+Desktop and the CLI share a local daemon. Sessions, models, approvals, and credentials live in the same data directory, so you can start a task in the app and continue it in the terminal.
+
+## Start here
+
+1. [Install Desktop or the CLI](./quickstart.mdx)
+2. Open a workspace
+3. Connect one provider
+4. Ask the agent to read the repo, make a small edit, and approve the change
+
+See the [quickstart](./quickstart.mdx) for the full path.
+
+- Install: [Desktop](./install/desktop.mdx), [CLI](./install/cli.mdx)
+- Connect: [Providers](./providers.mdx)
+- Work: [Modes](./agent/modes.mdx), [Tools](./agent/tools.mdx), [Customize](./customize/rules.mdx)
+- Hosts: [Desktop](./desktop.mdx), [CLI](./cli.mdx) — [ACP](./acp.mdx) is implemented but not on the download page
+- Reference: [Config](./config.mdx), [Security](./security.mdx), [Appearance](./appearance.mdx), [Troubleshooting](./troubleshooting.mdx)

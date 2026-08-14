@@ -1,4 +1,11 @@
-import { getLocalePath, SUPPORTED_LOCALES, type AppLocale } from "@/i18n/config";
+import {
+  DEFAULT_LOCALE,
+  getLocaleLabel,
+  getLocalePath,
+  getOgLocale,
+  SUPPORTED_LOCALES,
+  type AppLocale,
+} from "@/i18n/config";
 import { messagesByLocale } from "@/i18n/messages";
 import { SPIRIT_GITHUB_REPO_URL, SPIRIT_RELEASES_URL } from "@/lib/github-links";
 
@@ -262,7 +269,7 @@ export function renderHeadMeta(
   const canonicalUrl = absoluteUrl(siteOrigin, canonicalPath);
   const markdownPath = `${canonicalPath}/index.md`;
   const markdownUrl = absoluteUrl(siteOrigin, markdownPath);
-  const ogLocale = locale === "zh-CN" ? "zh_CN" : "en_US";
+  const ogLocale = getOgLocale(locale);
 
   const alternateLinks = SUPPORTED_LOCALES.map((supportedLocale) => {
     const href = absoluteUrl(
@@ -289,8 +296,11 @@ export function renderHeadMeta(
 }
 
 export function renderRootRedirectHtml(siteOrigin: string): string {
-  const enUrl = absoluteUrl(siteOrigin, localePath("en-US"));
-  const zhUrl = absoluteUrl(siteOrigin, localePath("zh-CN"));
+  const defaultUrl = absoluteUrl(siteOrigin, localePath(DEFAULT_LOCALE));
+  const links = SUPPORTED_LOCALES.map((locale) => {
+    const href = absoluteUrl(siteOrigin, localePath(locale));
+    return `<li><a href="${escapeHtml(href)}">${escapeHtml(getLocaleLabel(locale))}</a></li>`;
+  }).join("\n      ");
 
   return `<!doctype html>
 <html lang="en-US">
@@ -298,14 +308,13 @@ export function renderRootRedirectHtml(siteOrigin: string): string {
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Spirit Agent</title>
-    <meta http-equiv="refresh" content="0; url=${escapeHtml(enUrl)}" />
-    <link rel="canonical" href="${escapeHtml(enUrl)}" />
+    <meta http-equiv="refresh" content="0; url=${escapeHtml(defaultUrl)}" />
+    <link rel="canonical" href="${escapeHtml(defaultUrl)}" />
   </head>
   <body>
     <p>Redirecting…</p>
     <ul>
-      <li><a href="${escapeHtml(enUrl)}">English (en-US)</a></li>
-      <li><a href="${escapeHtml(zhUrl)}">中文 (zh-CN)</a></li>
+      ${links}
     </ul>
   </body>
 </html>

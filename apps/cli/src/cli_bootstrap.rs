@@ -251,7 +251,7 @@ mod tests {
         rust_i18n::set_locale("en");
         let err = parse_cli_approval_level("nope").unwrap_err().to_string();
         assert!(err.contains("nope"));
-        assert!(err.contains("default, auto-approval, full-approval"));
+        assert!(err.contains("default, auto-approval, bypass-approval"));
     }
 
     #[test]

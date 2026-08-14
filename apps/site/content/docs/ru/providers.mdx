@@ -1,0 +1,344 @@
+---
+title: Провайдеры
+description: Используйте свой ключ, запустите мастер подключения и сохраните тот же рабочий процесс агента при смене домов.
+---
+
+Spirit Agent — это BYOK. Вы создаете ключ в консоли провайдера, вставляете его в Desktop или CLI, и Spirit хранит его в связке ключей операционной системы. Смена домов не меняет способ открытия рабочей области, одобрения правок или запуска агента.
+
+Мастер подключения находится в **Settings → Models** в Desktop или в `/model add` / `spirit model add` в CLI. Дополнительные поля появляются только тогда, когда они нужны данному провайдеру.
+
+Spirit общается с провайдерами через один из четырех транспортов. Мастер либо фиксирует тип, либо позволяет выбрать.
+
+| Транспорт | Метка в мастере | Типичное использование |
+| --- | --- | --- |
+| `openai-compatible` | Chat Completions API | Большинство OpenAI-совместимых конечных точек |
+| `open-responses` | Responses API / Open Responses API | OpenAI, Azure, Vercel AI Gateway, Hugging Face и необязательные пути шлюза |
+| `anthropic` | Messages API | Anthropic, MiniMax и необязательные Messages-совместимые конечные точки |
+| `bedrock` | Amazon Bedrock | Только Amazon Bedrock |
+
+Google Gemini и Vertex AI всегда используют Chat Completions. Если профиль запрашивает Responses или Messages, Spirit откатывается к `openai-compatible`.
+
+Некоторые дома добавляют второе измерение поверх ключа:
+
+- **Региональные сайты** — Moonshot AI, SiliconFlow, MiniMax (Китай / Международный); Alibaba (регион + `workspaceId`); Tencent TokenHub (Гуанчжоу / Сингапур)
+- **Тарифные конечные точки** — Alibaba Token Plan, StepFun Step Plan, Z.ai / Zhipu AI GLM Coding Plan
+- **Облачные поля** — регион Bedrock, имя ресурса Azure, аккаунт Cloudflare (и необязательный шлюз), проект / местоположение Vertex
+
+Если у провайдера нет ни одного из этих полей, мастер — это просто ключ → импорт моделей → выбор активной чат-модели.
+
+Spirit импортирует каталог моделей и позволяет назначить активную чат-модель, а также слоты для изображений, видео и облегченного чата, если каталог помечает эти возможности. Рассуждения и встроенный веб-поиск следуют за моделью и транспортом, а не за отдельным переключателем Spirit.
+
+## Каталог
+
+Это дома в списке подключения, в том же порядке. Каждый раздел — это ключ, транспорт и дополнительные поля дома. Мастер в Desktop и CLI одинаков для всех домов.
+
+### OpenAI
+
+Создайте API-ключ в [платформе OpenAI](https://platform.openai.com/api-keys). Spirit не продает использование OpenAI.
+
+Мастер фиксирует **Responses API** (`open-responses`). Выбора транспорта нет. Базовый URL по умолчанию: `https://api.openai.com/v1`.
+
+Чат после импорта. Рассуждения следуют за моделью. Генерация изображений и видео появляется только тогда, когда каталог отмечает эти возможности — назначьте их в слотах моделей изображений / видео.
+
+### Anthropic
+
+Создайте API-ключ в [консоли Anthropic](https://console.anthropic.com/settings/keys).
+
+Фиксированный **Messages API** (`anthropic`). Базовый URL по умолчанию: `https://api.anthropic.com/v1`.
+
+Чат после импорта. Рассуждения следуют за моделью. Нет слота генерации изображений или видео на стороне Spirit, если только более поздняя запись каталога не отметит это.
+
+### Google
+
+Создайте API-ключ в [Google AI Studio](https://aistudio.google.com/apikey).
+
+Фиксированный **Chat Completions API** (`openai-compatible`). Запрос Responses или Messages откатывается к Chat Completions. Базовый URL по умолчанию: `https://generativelanguage.googleapis.com/v1beta`.
+
+Чат после импорта. Генерация изображений назначается только тогда, когда это отмечено в каталоге. Для Vertex AI (проект / местоположение GCP) используйте [Google Vertex AI](#google-vertex-ai).
+
+### SpaceXAI
+
+Создайте API-ключ в [консоли SpaceXAI](https://console.x.ai/team/default/api-keys).
+
+Фиксированный **Chat Completions API** (`openai-compatible`). Базовый URL по умолчанию: `https://api.x.ai/v1`.
+
+Чат после импорта. Рассуждения, изображения и видео следуют импортированному каталогу — назначайте слоты, когда они появляются.
+
+### Vercel AI Gateway
+
+Создайте ключ в панели управления [Vercel AI Gateway](https://vercel.com/docs/ai-gateway).
+
+Фиксированный **Open Responses API** (`open-responses`). Базовый URL по умолчанию: `https://ai-gateway.vercel.sh/v1`.
+
+Чат плюс всё, что предоставляет каталог шлюза. Генерация изображений берётся из каталога `type=image`, а не из тегов.
+
+Не определяйте наличие зрения или генерации изображений по тегам. MiniMax M3 через этот шлюз не возвращает отображаемый поток рассуждений в Open Responses.
+
+### Cloudflare AI Gateway
+
+Создайте API-токен в [панели управления Cloudflare](https://developers.cloudflare.com/ai-gateway/). Также вам понадобится идентификатор аккаунта.
+
+Выбор: **Chat Completions**, **Open Responses** или **Messages**. Базовый URL строится из аккаунта: `https://api.cloudflare.com/client/v4/accounts/{accountId}/ai/v1`.
+
+- **ID аккаунта** (обязательно) — 32-символьный шестнадцатеричный
+- **ID шлюза** (необязательно)
+
+Без ID аккаунта мастер не сможет построить базовый URL API. Чат и другие возможности следуют моделям, которые предоставляет шлюз.
+
+### DeepSeek
+
+Создайте API-ключ на [платформе DeepSeek](https://platform.deepseek.com/api-keys).
+
+Выбора нет. Значение подключения по умолчанию — **Open Responses** (`open-responses`). Совместимые базовые URL также существуют по адресам `https://api.deepseek.com/v1` (Chat) и `https://api.deepseek.com/anthropic` (Messages).
+
+Чат после импорта. Рассуждения следуют модели.
+
+### OpenRouter
+
+Создайте ключ на [OpenRouter](https://openrouter.ai/keys).
+
+Выбор: **Chat Completions**, **Open Responses** или **Messages**. Базовый URL по умолчанию: `https://openrouter.ai/api/v1`.
+
+Чат плюс отмеченные в каталоге генерация изображений или видео, когда OpenRouter предоставляет такие модели.
+
+### Fireworks AI
+
+Создайте API-ключ в [консоли Fireworks](https://app.fireworks.ai/settings/users/api-keys).
+
+Выбор: **Chat Completions**, **Messages** или **Open Responses**. Базовый URL для Chat/Responses: `https://api.fireworks.ai/inference/v1`. Базовый URL для Messages: `https://api.fireworks.ai/inference`.
+
+Чат после импорта. Другие возможности следуют каталогу Fireworks.
+
+### Together AI
+
+Создайте API-ключ в [консоли Together AI](https://api.together.ai/settings/api-keys).
+
+Фиксированный **Chat Completions API**. Базовый URL по умолчанию: `https://api.together.ai/v1`.
+
+Чат после импорта. Назначайте слоты изображений или видео только если они отмечены в каталоге.
+
+### Groq
+
+Создайте API-ключ в [консоли Groq](https://console.groq.com).
+
+Фиксированный **Chat Completions API**. Базовый URL по умолчанию: `https://api.groq.com/openai/v1`.
+
+Чат после импорта. Рассуждения следуют модели, когда Groq их предоставляет.
+
+### DeepInfra
+
+Создайте API-ключ в [панели управления DeepInfra](https://deepinfra.com/dash/keys).
+
+Фиксированный **Chat Completions API**. Базовый URL по умолчанию: `https://api.deepinfra.com/v1/openai`.
+
+Чат после импорта. Другие возможности следуют каталогу.
+
+### Baseten
+
+Создайте API-ключ в [консоли Baseten](https://app.baseten.co/settings/api_keys).
+
+Фиксированный **Chat Completions API**. Базовый URL по умолчанию: `https://inference.baseten.co/v1`.
+
+Чат после импорта. Другие возможности следуют каталогу.
+
+### Hugging Face
+
+Создайте токен в [настройках Hugging Face](https://huggingface.co/settings/tokens).
+
+Фиксированный **Open Responses API**. Базовый URL по умолчанию: `https://router.huggingface.co/v1`.
+
+Чат после импорта. Остальные возможности следуют каталогу маршрутизатора.
+
+### Moonshot AI
+
+Создайте API-ключ в консоли Moonshot для сайта, который вы будете использовать: [Китай](https://platform.kimi.com/console/api-keys) или [Международный](https://platform.kimi.ai/console/api-keys).
+
+Фиксированный **Chat Completions API**. Без выбора транспорта.
+
+- **Международный** (по умолчанию) — `https://api.moonshot.ai/v1`
+- **Китай** — `https://api.moonshot.cn/v1`
+
+Это провайдер Moonshot Open Platform, а не [Kimi Code](#kimi-code). Встроенный поиск в moonshot-ai не использует размещенный поиск Kimi Code. Ключ Kimi Code и ключ Moonshot Open Platform — это разные подключения.
+
+### Kimi Code
+
+Создайте API-ключ Kimi Code в [консоли Kimi Code](https://www.kimi.com/code/console).
+
+Фиксированный **Chat Completions API**. Базовый URL по умолчанию: `https://api.kimi.com/coding/v1`. Базовый URL для Messages существует на `https://api.kimi.com/coding`, но мастер не предлагает выбор.
+
+Чат после импорта. Размещенный поиск, если доступен, специфичен для этого провайдера — не для moonshot-ai.
+
+### Z.ai
+
+Создайте API-ключ в [консоли Z.ai](https://z.ai/manage-apikey/apikey-list). Примечания по Coding Plan: [GLM Coding Plan](https://docs.z.ai/devpack/quick-start).
+
+Фиксированный **Chat Completions API**. Базовый URL по умолчанию: `https://api.z.ai/api/paas/v4`.
+
+Включите **GLM Coding Plan** в мастере, чтобы использовать `https://api.z.ai/api/coding/paas/v4` вместо базового URL PaaS по умолчанию.
+
+Чат после импорта. Рассуждения следуют за моделью.
+
+### Zhipu AI
+
+Создайте API-ключ в [консоли Zhipu AI](https://bigmodel.cn/console). Примечания по Coding Plan: [GLM Coding Plan](https://docs.bigmodel.cn/cn/coding-plan/quick-start).
+
+Фиксированный **Chat Completions API**. Базовый URL по умолчанию: `https://open.bigmodel.cn/api/paas/v4`.
+
+Включите **GLM Coding Plan**, чтобы использовать `https://open.bigmodel.cn/api/coding/paas/v4`.
+
+Чат после импорта. Рассуждения следуют за моделью.
+
+### Alibaba
+
+Создайте API-ключ в [Alibaba Cloud Model Studio / Bailian](https://bailian.console.aliyun.com).
+
+Фиксированный **Chat Completions API**. Совместимый URL по умолчанию: `https://dashscope.aliyuncs.com/compatible-mode/v1`.
+
+- **cn-beijing** (по умолчанию) — `https://{workspaceId}.cn-beijing.maas.aliyuncs.com/compatible-mode/v1` (требуется идентификатор рабочей области)
+- **ap-southeast-1** — требуется идентификатор рабочей области
+- **us-virginia** — `https://dashscope-us.aliyuncs.com/compatible-mode/v1` (без идентификатора рабочей области)
+- **eu-central-1** — требуется идентификатор рабочей области
+
+**Token Plan** переключается на `https://token-plan.cn-beijing.maas.aliyuncs.com/compatible-mode/v1` и игнорирует сайт / рабочую область. Примечания: [Token Plan](https://bailian.console.aliyun.com/cn-beijing?tab=doc#/doc/?type=model&url=3029020). Token Plan всегда использует конечную точку плана cn-beijing, даже если вы выбрали другой сайт.
+
+Чат после импорта. Остальные возможности следуют каталогу.
+
+### MiniMax
+
+Создайте API-ключ в консоли MiniMax для сайта, который вы будете использовать: [Китай](https://platform.minimaxi.com/console/) или [Международный](https://platform.minimax.io/console/).
+
+Фиксированный **Messages API** (`anthropic`). Международный базовый URL Messages: `https://api.minimax.io/anthropic/v1`.
+
+- **Международный** (по умолчанию) — `https://api.minimax.io/v1` (Chat-форма) / `https://api.minimax.io/anthropic/v1` (Messages)
+- **Китай** — `https://api.minimaxi.com/v1`
+
+Чат после импорта. В списке `/models` вышестоящей системы нет мультимодальных флагов; только M3 считается поддерживающим ввод изображений / видео. Через Vercel AI Gateway на Open Responses MiniMax M3 не возвращает отображаемый поток мышления.
+
+### Xiaomi
+
+Создайте API-ключ в [консоли Xiaomi MiMo](https://platform.xiaomimimo.com/console/api-keys).
+
+Исправлен **Chat Completions API**. Базовая ссылка по умолчанию: `https://api.xiaomimimo.com/v1`.
+
+Чат после импорта. Остальные возможности соответствуют каталогу.
+
+### SiliconFlow
+
+Создайте API-ключ в консоли SiliconFlow для используемого сайта: [Международный](https://cloud.siliconflow.com/me/account/ak) или [Китай](https://cloud.siliconflow.cn/me/account/ak).
+
+Выбор: **Chat Completions** или **Messages**.
+
+- **Международный** (по умолчанию) — `https://api.siliconflow.com/v1`
+- **Китай** — `https://api.siliconflow.cn/v1`
+
+Чат после импорта. Остальные возможности соответствуют каталогу.
+
+### StepFun
+
+Создайте API-ключ на [платформе StepFun](https://platform.stepfun.com). Примечания по Step Plan: [Step Plan](https://platform.stepfun.com/docs/zh/step-plan/integrations/reasoning-api).
+
+Исправлен **Chat Completions API**. Базовая ссылка по умолчанию: `https://api.stepfun.com/v1`.
+
+**Step Plan** переключается на `https://api.stepfun.com/step_plan/v1`.
+
+Чат после импорта. Рассуждения следуют модели.
+
+### Volcengine
+
+Создайте API-ключ в [консоли Volcengine Ark](https://console.volcengine.com/ark/apiKey).
+
+Выбор: **Chat Completions** или **Responses API**. Базовая ссылка по умолчанию: `https://ark.cn-beijing.volces.com/api/v3`.
+
+Чат после импорта. Остальные возможности соответствуют каталогу.
+
+### BytePlus
+
+Создайте API-ключ в [консоли BytePlus Ark](https://console.byteplus.com/ark/apiKey).
+
+Выбор: **Chat Completions** или **Responses API**. Базовая ссылка по умолчанию: `https://ark.ap-southeast.bytepluses.com/api/v3`.
+
+Чат после импорта. Остальные возможности соответствуют каталогу.
+
+### Meituan
+
+Создайте API-ключ в [консоли LongCat](https://longcat.chat/platform/api_keys).
+
+Исправлен **Chat Completions API**. Базовая ссылка по умолчанию: `https://api.longcat.chat/openai/v1`.
+
+Чат после импорта. Остальные возможности соответствуют каталогу.
+
+### Tencent TokenHub
+
+Создайте API-ключ в [консоли Tencent TokenHub](https://console.cloud.tencent.com/tokenhub).
+
+Исправлен **Chat Completions API**. Мастер не предлагает Responses или Messages.
+
+- **Гуанчжоу** (по умолчанию) — `https://tokenhub.tencentmaas.com/v1`
+- **Сингапур** — `https://tokenhub-intl.tencentmaas.com/v1`
+
+Чат после импорта. Не полагайтесь на веб-поиск, встроенный в Chat. В документации TokenHub указаны `web_search_options` для Chat и `web_search` для Responses, но встроенный в Chat поиск на практике не работает, а Responses поддерживается только на нескольких моделях. Поэтому Spirit поддерживает только Chat Completions.
+
+### Mistral
+
+Создайте API-ключ в [консоли Mistral](https://console.mistral.ai).
+
+Исправлен **Chat Completions API**. Базовая ссылка по умолчанию: `https://api.mistral.ai/v1`.
+
+Чат после импорта. Остальные возможности соответствуют каталогу.
+
+### Cohere
+
+Создайте API-ключ в [панели управления Cohere](https://dashboard.cohere.com).
+
+Исправлен **Chat Completions API**. Базовая ссылка по умолчанию: `https://api.cohere.com/v2`.
+
+Чат после импорта. Остальные возможности соответствуют каталогу.
+
+### Azure
+
+Создайте ключ для ресурса Azure OpenAI на [портале Azure](https://portal.azure.com).
+
+Исправлена **Ответы API** (`open-responses`). Без выбора транспорта.
+
+- **Имя ресурса** (обязательно) — 2–64 символа, буквы, цифры и дефисы; не может начинаться или заканчиваться дефисом
+
+Spirit формирует `https://{resource}.openai.azure.com/openai/v1`. Чат после импорта. Генерация изображений следует каталогу Azure, если отмечено.
+
+### Amazon Bedrock
+
+В [консоли AWS Bedrock](https://console.aws.amazon.com/bedrock) создайте Bearer API-ключ или пользователя IAM, который может вызывать Bedrock.
+
+Исправлен **Amazon Bedrock** (`bedrock`). Форма хоста по умолчанию: `https://bedrock.us-east-1.amazonaws.com`.
+
+- **Регион AWS** (обязательно), например `us-east-1`
+- **Аутентификация**: **Bearer** или **IAM**
+  - Bearer — вставьте API-ключ Bedrock и идентификатор модели. Модели **не** извлекаются автоматически.
+  - IAM — идентификатор ключа доступа + секретный ключ доступа. Spirit перечисляет базовые модели из аккаунта.
+
+Чат после выбора модели. Другие возможности следуют за моделью. Ключи Bearer работают только для вывода. `ListFoundationModels` не принимает Bearer, поэтому импорт каталога требует IAM.
+
+### Google Vertex AI
+
+Используйте проект GCP с включенным Vertex AI. Аутентификация — ADC, сервисный аккаунт или ключ Express API, а не универсальный ключ OpenAI.
+
+Исправлен **Chat Completions API**. Запросы Responses или Messages переходят на Chat Completions. Базовый URL становится `https://{location}-aiplatform.googleapis.com/v1/projects/{project}/locations/{location}`.
+
+- **Идентификатор проекта GCP** и **Расположение** (обязательно), например `us-central1`
+- **Аутентификация**
+  - **ADC** — Учетные данные приложения по умолчанию на этом компьютере (`GOOGLE_APPLICATION_CREDENTIALS`)
+  - **Сервисный аккаунт** — адрес электронной почты клиента + закрытый ключ; используется для получения списка моделей
+  - **Ключ Express API** — не может извлекать каталог; добавьте идентификатор модели вручную
+
+Чат после выбора модели. Для ключей AI Studio без проекта GCP используйте [Google](#google). Express-режим не может импортировать список моделей. Режим сервисного аккаунта требует и адрес электронной почты, и закрытый ключ для вывода списка моделей.
+
+### Пользовательский
+
+Используйте ключ API, ожидаемый вашей конечной точкой. У Spirit нет пользовательского провайдера, размещенного на его серверах.
+
+Выбор: **Chat Completions**, **Open Responses** или **Messages**. Вы должны указать **Базовый URL**. Если оставить поле пустым, по умолчанию используется `https://api.openai.com/v1`.
+
+Введите корень, документированный поставщиком, включая суффикс версии, если он требуется (`/v1`, `/v1/openai`, …). Spirit не угадывает путь для пользовательских конечных точек.
+
+Вы также можете задать отображаемое имя для группы провайдеров, чтобы несколько пользовательских конечных точек оставались различимыми.
+
+После подключения импортируйте или введите идентификаторы моделей. Отметьте возможности чата / изображений / видео в мастере, если конечная точка не публикует каталог, который понимает Spirit.
