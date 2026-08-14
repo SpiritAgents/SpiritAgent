@@ -1,4 +1,5 @@
 import type { AppLocale } from "@/i18n/config";
+import { getDesktopPack } from "@/i18n/desktop-packs";
 import type { Messages } from "@/i18n/messages";
 
 type TranslationParams = Record<string, string | number | boolean | null | undefined> & {
@@ -72,69 +73,36 @@ const MESSAGE_PATHS: Record<string, string> = {
   "workspace.gitTab": "desktop.tools.gitTab",
 };
 
-const STATIC_FALLBACK: Record<AppLocale, Record<string, string>> = {
-  "en-US": {
-    "sidebar.loadMoreSessions": "Load more sessions",
-    "sidebar.sessionBlocked": "Blocked",
-    "sidebar.sessionCompleted": "Completed",
-    "sidebar.sessionActions": "Session actions",
-    "sidebar.workspaceActions": "Workspace actions",
-    "sidebar.deleteSession": "Delete session",
-    "sidebar.deleteWorkspace": "Delete workspace",
-    "sidebar.cannotDeleteBusySession": "Cannot delete a running session",
-    "sidebar.deleteSessionConfirm": 'Delete session "{{name}}"?',
-    "sidebar.deleteWorkspaceConfirm": 'Delete workspace "{{name}}"?',
-    "sidebar.noWorkspaceSessions": "No workspace sessions",
-    "sidebar.automations": "Automations",
-    "sidebar.extensionSettings": "Extension settings",
-    "common.back": "Back",
-    "common.running": "Running",
-    "common.cancel": "Cancel",
-    "common.delete": "Delete",
-    "titleBar.quit": "Quit",
-    "titleBar.undo": "Undo",
-    "titleBar.redo": "Redo",
-    "titleBar.cut": "Cut",
-    "titleBar.copy": "Copy",
-    "titleBar.paste": "Paste",
-    "titleBar.selectAll": "Select all",
-    "titleBar.reload": "Reload",
-    "titleBar.forceReload": "Force reload",
-    "titleBar.devTools": "Developer tools",
-    "titleBar.toggleFullscreen": "Toggle fullscreen",
-    "titleBar.about": "About Spirit Agent",
-  },
-  "zh-CN": {
-    "sidebar.loadMoreSessions": "加载更多会话",
-    "sidebar.sessionBlocked": "已阻塞",
-    "sidebar.sessionCompleted": "已完成",
-    "sidebar.sessionActions": "会话操作",
-    "sidebar.workspaceActions": "工作区操作",
-    "sidebar.deleteSession": "删除会话",
-    "sidebar.deleteWorkspace": "删除工作区",
-    "sidebar.cannotDeleteBusySession": "无法删除运行中的会话",
-    "sidebar.deleteSessionConfirm": "删除会话「{{name}}」？",
-    "sidebar.deleteWorkspaceConfirm": "删除工作区「{{name}}」？",
-    "sidebar.noWorkspaceSessions": "暂无工作区会话",
-    "sidebar.automations": "自动化",
-    "sidebar.extensionSettings": "扩展设置",
-    "common.back": "返回",
-    "common.running": "运行中",
-    "common.cancel": "取消",
-    "common.delete": "删除",
-    "titleBar.quit": "退出",
-    "titleBar.undo": "撤销",
-    "titleBar.redo": "重做",
-    "titleBar.cut": "剪切",
-    "titleBar.copy": "复制",
-    "titleBar.paste": "粘贴",
-    "titleBar.selectAll": "全选",
-    "titleBar.reload": "重新加载",
-    "titleBar.forceReload": "强制重新加载",
-    "titleBar.devTools": "开发者工具",
-    "titleBar.toggleFullscreen": "切换全屏",
-    "titleBar.about": "关于 Spirit Agent",
-  },
+const DESKTOP_FALLBACK_KEYS: Record<string, string> = {
+  "sidebar.loadMoreSessions": "sidebar.loadMoreSessions",
+  "sidebar.sessionBlocked": "sidebar.sessionBlocked",
+  "sidebar.sessionCompleted": "sidebar.sessionCompleted",
+  "sidebar.sessionActions": "sidebar.sessionActions",
+  "sidebar.workspaceActions": "sidebar.workspaceActions",
+  "sidebar.deleteSession": "sidebar.deleteSession",
+  "sidebar.deleteWorkspace": "sidebar.deleteWorkspace",
+  "sidebar.cannotDeleteBusySession": "sidebar.cannotDeleteBusySession",
+  "sidebar.deleteSessionConfirm": "sidebar.deleteSessionConfirm",
+  "sidebar.deleteWorkspaceConfirm": "sidebar.deleteWorkspaceConfirm_one",
+  "sidebar.noWorkspaceSessions": "sidebar.noWorkspaceSessions",
+  "sidebar.automations": "sidebar.automations",
+  "sidebar.extensionSettings": "sidebar.extensionSettings",
+  "common.back": "common.back",
+  "common.running": "common.running",
+  "common.cancel": "common.cancel",
+  "common.delete": "common.delete",
+  "titleBar.quit": "titleBar.quit",
+  "titleBar.undo": "titleBar.undo",
+  "titleBar.redo": "titleBar.redo",
+  "titleBar.cut": "titleBar.cut",
+  "titleBar.copy": "titleBar.copy",
+  "titleBar.paste": "titleBar.paste",
+  "titleBar.selectAll": "titleBar.selectAll",
+  "titleBar.reload": "titleBar.reload",
+  "titleBar.forceReload": "titleBar.forceReload",
+  "titleBar.devTools": "titleBar.devTools",
+  "titleBar.toggleFullscreen": "titleBar.toggleFullscreen",
+  "titleBar.about": "titleBar.about",
 };
 
 function getByPath(object: unknown, path: string): string | undefined {
@@ -175,8 +143,11 @@ export function resolveDesktopTranslation(
 
   const messagePath = MESSAGE_PATHS[key];
   const fromMessages = messagePath ? getByPath(messages, messagePath) : undefined;
-  const fromStatic = STATIC_FALLBACK[locale][key] ?? STATIC_FALLBACK["en-US"][key];
-  const template = fromMessages ?? fromStatic ?? key.split(".").pop() ?? key;
+  const desktopPath = DESKTOP_FALLBACK_KEYS[key] ?? key;
+  const fromDesktop =
+    getByPath(getDesktopPack(locale), desktopPath) ??
+    getByPath(getDesktopPack("en-US"), desktopPath);
+  const template = fromMessages ?? fromDesktop ?? key.split(".").pop() ?? key;
   return formatTranslation(template, params);
 }
 
