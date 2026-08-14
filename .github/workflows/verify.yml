@@ -56,14 +56,14 @@ jobs:
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
-      - name: Build TypeScript packages and Desktop
+      - name: Build TypeScript packages, Desktop, and site
         run: pnpm turbo run build
 
       - name: Lint TypeScript (Oxlint)
-        run: pnpm exec oxlint --deny-warnings packages apps/desktop
+        run: pnpm exec oxlint --deny-warnings packages apps/desktop apps/site
 
       - name: Check TypeScript formatting (Oxfmt)
-        run: pnpm exec oxfmt --check packages apps/desktop
+        run: pnpm exec oxfmt --check packages apps/desktop apps/site
 
       - name: Build CLI
         run: cargo build -p spirit-agent

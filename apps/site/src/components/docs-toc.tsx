@@ -111,4 +111,3 @@ export function DocsTOC({ container }: TOCProps) {
 export function DocsTOCPopover() {
   return null;
 }
-

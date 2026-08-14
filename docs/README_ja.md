@@ -7,7 +7,7 @@
 
 生産性を何倍にも引き上げるオープンソース AI エージェント。
 
-[Desktop アプリ](#desktop) · [CLI](#cli) · [Server](#server) · [ACP Server](#acp-server) · [Agent Core](#agent-core) · [開発](#開発)
+[Desktop アプリ](#desktop) · [Site](#site) · [CLI](#cli) · [Server](#server) · [ACP Server](#acp-server) · [Agent Core](#agent-core) · [開発](#開発)
 
 > 本プロジェクトは活発に開発中です。リリース間で動作や API が変わる場合があります。
 
@@ -107,6 +107,16 @@ Agent Core がモデルから見えるプロジェクト文脈を決定します
 
 Desktop 固有の開発・レイアウトは [apps/desktop/README.md](../apps/desktop/README.md) を参照。
 
+## Site
+
+[マーケティング／ドキュメントサイト](../apps/site) は Next.js + Fumadocs アプリ（`@spiritagent/site`）で、Vercel にデプロイします。
+
+```bash
+pnpm run dev:site
+```
+
+ローカル開発と Vercel のリポジトリ切り替え手順は [apps/site/README.md](../apps/site/README.md) を参照。
+
 ## CLI
 
 <img width="1014" height="744" alt="Spirit Agent CLI" src="https://github.com/user-attachments/assets/ecf4fcec-6a9b-4562-b0da-cc14816f36d3" />
@@ -177,8 +187,9 @@ node path/to/packages/acp-server/dist/src/stdio-entry.js --setup
 | `pnpm install` | workspace 依存関係をインストール（リポジトリルートで一度） |
 | `pnpm run dev:desktop` | 共有パッケージをビルドして Desktop 起動（Vite + Electron） |
 | `pnpm run dev:desktop:web` | Desktop レンダラー + ブラウザ Web ホスト |
+| `pnpm run dev:site` | マーケティング／ドキュメントサイトを起動（Next.js） |
 | `pnpm run dev:cli` | TUI 付き CLI |
-| `pnpm run build` | agent-core、host-internal、server、acp-server、Desktop の本番ビルド |
+| `pnpm run build` | agent-core、host-internal、server、acp-server、Desktop、site の本番ビルド |
 | `pnpm run eval:compare` | agent-core 変更後の eval 比較 |
 
 ### リポジトリ構成
@@ -186,6 +197,7 @@ node path/to/packages/acp-server/dist/src/stdio-entry.js --setup
 ```
 apps/
   desktop/           Electron + React ホスト
+  site/              マーケティング／ドキュメントサイト（Next.js、Vercel）
   cli/               Rust CLI と TUI
 packages/
   agent-core/        エージェントランタイム、プロンプト、ツール定義、トランスポート、MCP、eval

@@ -45,6 +45,8 @@
     "**/node_modules/**",
     "**/target/**",
     "apps/desktop/release/**",
+    "**/.next/**",
+    "**/.source/**",
     "scripts/**"
   ],
   "overrides": [

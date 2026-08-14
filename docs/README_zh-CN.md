@@ -7,7 +7,7 @@
 
 一款开源 AI 智能体，旨在成倍提升你的生产力。
 
-[Desktop 应用](#desktop) · [CLI](#cli) · [Server](#server) · [ACP Server](#acp-server) · [Agent Core](#agent-core) · [开发](#开发)
+[Desktop 应用](#desktop) · [Site](#site) · [CLI](#cli) · [Server](#server) · [ACP Server](#acp-server) · [Agent Core](#agent-core) · [开发](#开发)
 
 > 本项目仍在积极开发中。各版本之间的行为与 API 可能发生变化。
 
@@ -107,6 +107,16 @@ Agent Core 决定模型如何「看见」项目上下文：
 
 Desktop 专属开发与目录说明见 [apps/desktop/README.md](../apps/desktop/README.md)。
 
+## Site
+
+[营销站与文档站](../apps/site) 是 Next.js + Fumadocs 应用（`@spiritagent/site`），部署在 Vercel。
+
+```bash
+pnpm run dev:site
+```
+
+本地开发与 Vercel 换仓步骤见 [apps/site/README.md](../apps/site/README.md)。
+
 ## CLI
 
 <img width="1014" height="744" alt="Spirit Agent CLI" src="https://github.com/user-attachments/assets/ecf4fcec-6a9b-4562-b0da-cc14816f36d3" />
@@ -177,8 +187,9 @@ node path/to/packages/acp-server/dist/src/stdio-entry.js --setup
 | `pnpm install` | 安装 workspace 依赖（在仓库根目录执行一次） |
 | `pnpm run dev:desktop` | 构建共享包并启动 Desktop（Vite + Electron） |
 | `pnpm run dev:desktop:web` | Desktop 渲染器 + 浏览器 Web 宿主 |
+| `pnpm run dev:site` | 启动营销/文档站（Next.js） |
 | `pnpm run dev:cli` | 带 TUI 的 CLI |
-| `pnpm run build` | 生产构建 agent-core、host-internal、server、acp-server 与 Desktop |
+| `pnpm run build` | 生产构建 agent-core、host-internal、server、acp-server、Desktop 与 site |
 | `pnpm run eval:compare` | 在 agent-core 变更后运行 eval 对比 |
 
 ### 仓库结构
@@ -186,6 +197,7 @@ node path/to/packages/acp-server/dist/src/stdio-entry.js --setup
 ```
 apps/
   desktop/           Electron + React 宿主
+  site/              营销与文档站（Next.js，Vercel）
   cli/               Rust CLI 与 TUI
 packages/
   agent-core/        智能体运行时、提示词、工具定义、传输层、MCP、eval

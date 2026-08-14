@@ -7,7 +7,7 @@
 
 생산성을 배가시키기 위해 만들어진 오픈소스 AI 에이전트.
 
-[Desktop 앱](#desktop) · [CLI](#cli) · [Server](#server) · [ACP Server](#acp-server) · [Agent Core](#agent-core) · [개발](#개발)
+[Desktop 앱](#desktop) · [Site](#site) · [CLI](#cli) · [Server](#server) · [ACP Server](#acp-server) · [Agent Core](#agent-core) · [개발](#개발)
 
 > 본 프로젝트는 활발히 개발 중입니다. 릴리스 간 동작과 API가 변경될 수 있습니다.
 
@@ -107,6 +107,16 @@ Agent Core가 모델이 보는 프로젝트 컨텍스트를 결정합니다:
 
 Desktop 전용 개발 및 레이아웃은 [apps/desktop/README.md](../apps/desktop/README.md) 참조.
 
+## Site
+
+[마케팅/문서 사이트](../apps/site)는 Next.js + Fumadocs 앱(`@spiritagent/site`)이며 Vercel에 배포합니다.
+
+```bash
+pnpm run dev:site
+```
+
+로컬 개발과 Vercel 저장소 전환 절차는 [apps/site/README.md](../apps/site/README.md)를 참조하세요.
+
 ## CLI
 
 <img width="1014" height="744" alt="Spirit Agent CLI" src="https://github.com/user-attachments/assets/ecf4fcec-6a9b-4562-b0da-cc14816f36d3" />
@@ -177,8 +187,9 @@ node path/to/packages/acp-server/dist/src/stdio-entry.js --setup
 | `pnpm install` | workspace 의존성 설치(저장소 루트에서 한 번) |
 | `pnpm run dev:desktop` | 공유 패키지 빌드 후 Desktop 시작(Vite + Electron) |
 | `pnpm run dev:desktop:web` | Desktop 렌더러 + 브라우저 Web 호스트 |
+| `pnpm run dev:site` | 마케팅/문서 사이트 시작(Next.js) |
 | `pnpm run dev:cli` | TUI 포함 CLI |
-| `pnpm run build` | agent-core, host-internal, server, acp-server, Desktop 프로덕션 빌드 |
+| `pnpm run build` | agent-core, host-internal, server, acp-server, Desktop, site 프로덕션 빌드 |
 | `pnpm run eval:compare` | agent-core 변경 후 eval 비교 실행 |
 
 ### 저장소 구조
@@ -186,6 +197,7 @@ node path/to/packages/acp-server/dist/src/stdio-entry.js --setup
 ```
 apps/
   desktop/           Electron + React 호스트
+  site/              마케팅/문서 사이트(Next.js, Vercel)
   cli/               Rust CLI 및 TUI
 packages/
   agent-core/        에이전트 런타임, 프롬프트, 도구 정의, 트랜스포트, MCP, eval

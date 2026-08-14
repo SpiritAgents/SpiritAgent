@@ -38,7 +38,7 @@ Spirit Agent has a clear layering model. Before touching multiple packages, read
 | --- | --- | --- |
 | Agent semantics | `packages/agent-core` | Runtime, prompts, tool contracts, MCP, transports |
 | Shared host logic | `packages/host-internal` | Discovery, extensions, workspace helpers, LSP orchestration |
-| Hosts / adapters | `apps/desktop`, `apps/cli`, `packages/server`, `packages/acp-server` | Thin platform-specific UI and execution |
+| Hosts / adapters | `apps/desktop`, `apps/cli`, `apps/site`, `packages/server`, `packages/acp-server` | Thin platform-specific UI and execution |
 
 Do not duplicate tool definitions or prompts across CLI and Desktop. New tool contracts belong in `agent-core`; execution belongs in the host.
 
@@ -49,13 +49,15 @@ Do not duplicate tool definitions or prompts across CLI and Desktop. New tool co
 ```bash
 pnpm install          # once, at the repo root
 pnpm run dev:desktop  # Desktop (Vite + Electron)
+pnpm run dev:site     # Marketing/docs site (Next.js)
 pnpm run dev:cli      # CLI with TUI
-pnpm run build        # production build of TS packages + Desktop + CLI
+pnpm run build        # production build of TS packages + Desktop + site + CLI
 ```
 
 | Command | Description |
 | --- | --- |
 | `pnpm run dev:desktop:web` | Desktop renderer with browser web host |
+| `pnpm run dev:site` | Marketing/docs site (Next.js) |
 | `pnpm run build:agent-core` | Build `@spiritagent/agent-core` only |
 | `pnpm run build:cli` | Release build of the Rust CLI |
 | `pnpm run eval:compare` | Eval comparison after agent-core changes |
@@ -92,16 +94,16 @@ Maintainer and agent-side commit conventions are documented in [AGENTS.md](AGENT
 
 Every push runs the [Verify workflow](.github/workflows/verify.yml):
 
-- `pnpm turbo run build` (TypeScript packages and Desktop)
-- `pnpm exec oxlint --deny-warnings packages apps/desktop` and `pnpm exec oxfmt --check packages apps/desktop`
+- `pnpm turbo run build` (TypeScript packages, Desktop, and site)
+- `pnpm exec oxlint --deny-warnings packages apps/desktop apps/site` and `pnpm exec oxfmt --check packages apps/desktop apps/site`
 - `cargo build`, `cargo clippy -D warnings`, and `cargo test` for the CLI
 
 Before opening a PR, run locally when relevant:
 
 ```bash
 pnpm run build
-pnpm run lint        # oxlint --deny-warnings packages apps/desktop
-pnpm run format      # oxfmt --check packages apps/desktop
+pnpm run lint        # oxlint --deny-warnings packages apps/desktop apps/site
+pnpm run format      # oxfmt --check packages apps/desktop apps/site
 pnpm run lint:fix && pnpm run format:fix  # before commit
 pnpm --filter @spiritagent/agent-core test   # if you changed agent-core
 cargo test -p spirit-agent                   # if you changed the CLI
@@ -130,6 +132,7 @@ Small wording fixes, spelling, or non-model-visible refactors usually do not nee
 
 - [AGENTS.md](AGENTS.md) — architecture notes, LLM conventions, and context push/pull strategy
 - [apps/desktop/README.md](apps/desktop/README.md)
+- [apps/site/README.md](apps/site/README.md)
 - [packages/agent-core/README.md](packages/agent-core/README.md)
 
 ## License
