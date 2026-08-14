@@ -7,7 +7,7 @@ import { getMDXComponents } from "@/components/mdx";
 import { DocsTOC, DocsTOCPopover, DocsTOCProvider } from "@/components/docs-toc";
 import { isSupportedLocale } from "@/i18n/config";
 import { FONT_WEIGHT_MEDIUM, FONT_WEIGHT_NORMAL } from "@/lib/typography";
-import { source } from "@/lib/source";
+import { source, toRelativeLinkPage } from "@/lib/source";
 
 type PageProps = {
   params: Promise<{ locale: string; slug?: string[] }>;
@@ -38,7 +38,7 @@ export default async function DocsPageRoute({ params }: PageProps) {
       <DocsBody>
         <MDX
           components={getMDXComponents({
-            a: createRelativeLink(source, page),
+            a: createRelativeLink(source, toRelativeLinkPage(page)),
           })}
         />
       </DocsBody>
