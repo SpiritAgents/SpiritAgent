@@ -39,27 +39,6 @@ export function DocsMobileSidebarHeader({ className, ...props }: ComponentProps<
   );
 }
 
-const DOCS_MOBILE_MEGA_OVERFLOW_NODES: Node[] = [
-  { type: "separator", name: "Overflow" },
-  { type: "page", name: "Installation", url: "#overflow-installation" },
-  { type: "page", name: "Quickstart", url: "#overflow-quickstart" },
-  { type: "page", name: "Configuration", url: "#overflow-configuration" },
-  { type: "page", name: "Theming", url: "#overflow-theming" },
-  { type: "separator", name: "Reference" },
-  { type: "page", name: "Internationalization", url: "#overflow-i18n" },
-  { type: "page", name: "Search", url: "#overflow-search" },
-  { type: "page", name: "Markdown", url: "#overflow-markdown" },
-  { type: "page", name: "Images", url: "#overflow-images" },
-  { type: "page", name: "Tables", url: "#overflow-tables" },
-  { type: "page", name: "Keyboard", url: "#overflow-keyboard" },
-  { type: "separator", name: "Project" },
-  { type: "page", name: "Troubleshooting", url: "#overflow-troubleshooting" },
-  { type: "page", name: "Changelog", url: "#overflow-changelog" },
-  { type: "page", name: "FAQ", url: "#overflow-faq" },
-  { type: "page", name: "Roadmap", url: "#overflow-roadmap" },
-  { type: "page", name: "Contributing", url: "#overflow-contributing" },
-];
-
 function DocsMobileMega() {
   const { open, setOpen } = useSidebar();
   const { root } = useTreeContext();
@@ -106,7 +85,7 @@ function DocsMobileMega() {
       collapseQuery={DOCS_SIDEBAR_DRAWER_COLLAPSE_QUERY}
       rootExtra={
         <DocsMobileMegaNodes
-          nodes={[...root.children, ...DOCS_MOBILE_MEGA_OVERFLOW_NODES]}
+          nodes={root.children}
           onNavigate={() => setOpen(false)}
         />
       }
