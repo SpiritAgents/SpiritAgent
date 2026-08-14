@@ -1,7 +1,15 @@
 import type { AppLocale } from "@/i18n/config";
 import { hydrateMessages } from "@/i18n/hydrate";
+import de from "@/i18n/locales/de.json";
 import enUS from "@/i18n/locales/en-US.json";
+import es from "@/i18n/locales/es.json";
+import fr from "@/i18n/locales/fr.json";
+import ja from "@/i18n/locales/ja.json";
+import ko from "@/i18n/locales/ko.json";
+import ptBR from "@/i18n/locales/pt-BR.json";
+import ru from "@/i18n/locales/ru.json";
 import zhCN from "@/i18n/locales/zh-CN.json";
+import zhTW from "@/i18n/locales/zh-TW.json";
 
 type DesktopConversationCopy = {
   manualAssistantResponse: string;
@@ -350,4 +358,12 @@ export type Messages = {
 export const messagesByLocale: Record<AppLocale, Messages> = {
   "en-US": hydrateMessages(enUS),
   "zh-CN": hydrateMessages(zhCN),
+  "zh-TW": hydrateMessages(zhTW),
+  ja: hydrateMessages(ja),
+  ko: hydrateMessages(ko),
+  de: hydrateMessages(de),
+  fr: hydrateMessages(fr),
+  es: hydrateMessages(es),
+  "pt-BR": hydrateMessages(ptBR),
+  ru: hydrateMessages(ru),
 };

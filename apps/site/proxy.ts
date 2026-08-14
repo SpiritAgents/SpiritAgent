@@ -6,6 +6,7 @@ import {
   detectLocaleFromAcceptLanguage,
   localeFromLocalizedPath,
   markdownPageForPath,
+  markdownProxyMatchers,
   prefersMarkdown,
   resolveMarkdownCompanionPath,
 } from "@/lib/accept";
@@ -58,15 +59,5 @@ export function proxy(request: NextRequest) {
 }
 
 export const config = {
-  matcher: [
-    "/",
-    "/en-US",
-    "/en-US/",
-    "/zh-CN",
-    "/zh-CN/",
-    "/en-US/download",
-    "/en-US/download/",
-    "/zh-CN/download",
-    "/zh-CN/download/",
-  ],
+  matcher: ["/", ...markdownProxyMatchers()],
 };

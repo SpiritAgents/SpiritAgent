@@ -4,6 +4,7 @@ import {
   DEFAULT_LOCALE,
   getLocalePath,
   isSupportedLocale,
+  getOgLocale,
   SUPPORTED_LOCALES,
   type AppLocale,
 } from "@/i18n/config";
@@ -76,7 +77,7 @@ export function buildPageMetadata(localeParam: string, page: SitePage): Metadata
       title,
       description,
       url: canonicalUrl,
-      locale: locale === "zh-CN" ? "zh_CN" : "en_US",
+      locale: getOgLocale(locale),
     },
     twitter: {
       card: "summary",

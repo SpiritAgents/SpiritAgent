@@ -285,6 +285,24 @@ body {
       "Segoe UI", sans-serif;
   }
 
+  html:lang(zh-TW) {
+    --font-sans:
+      -apple-system, BlinkMacSystemFont, "Geist Variable", "Noto Sans TC", "PingFang TC",
+      "Microsoft JhengHei", "Segoe UI", sans-serif;
+  }
+
+  html:lang(ja) {
+    --font-sans:
+      -apple-system, BlinkMacSystemFont, "Geist Variable", "Noto Sans JP", "Hiragino Sans",
+      "Yu Gothic", "Segoe UI", sans-serif;
+  }
+
+  html:lang(ko) {
+    --font-sans:
+      -apple-system, BlinkMacSystemFont, "Geist Variable", "Noto Sans KR", "Apple SD Gothic Neo",
+      "Malgun Gothic", "Segoe UI", sans-serif;
+  }
+
   pre {
     font-family: var(--font-sans);
   }
