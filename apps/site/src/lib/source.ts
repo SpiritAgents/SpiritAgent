@@ -5,6 +5,11 @@ import { docsI18n } from "@/lib/docs-i18n";
 
 const docs = defineDocs({
   dir: "content/docs",
+  docs: {
+    postprocess: {
+      includeProcessedMarkdown: true,
+    },
+  },
 });
 
 export const source = loader({

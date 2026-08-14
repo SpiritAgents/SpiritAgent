@@ -3,6 +3,18 @@ import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
   reactStrictMode: true,
+  async rewrites() {
+    return [
+      {
+        source: "/:locale/docs.md",
+        destination: "/llms.mdx/:locale/docs",
+      },
+      {
+        source: "/:locale/docs/:path*.md",
+        destination: "/llms.mdx/:locale/docs/:path*",
+      },
+    ];
+  },
   async headers() {
     return [
       {

@@ -61,6 +61,9 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
     alternates: isSupportedLocale(locale)
       ? {
           canonical: page.url,
+          types: {
+            "text/markdown": `${page.url}.md`,
+          },
         }
       : undefined,
   };
