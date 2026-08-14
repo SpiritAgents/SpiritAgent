@@ -13,7 +13,7 @@ const sidebarItemClass = cn(
   "transition-none hover:bg-white/5 data-[active=true]:text-white",
 );
 
-const folderTriggerClass = cn(sidebarItemClass, "w-full [&_[data-icon]]:size-3.5");
+const folderTriggerClass = cn(sidebarItemClass, "w-full cursor-pointer [&_[data-icon]]:size-3.5");
 
 function samePath(pathname: string, url: string): boolean {
   const left = pathname.replace(/\/+$/, "");

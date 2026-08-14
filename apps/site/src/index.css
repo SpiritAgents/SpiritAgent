@@ -623,6 +623,7 @@ body {
 }
 
 [data-docs-layout] [role="tablist"] :is([role="tab"], button) {
+  cursor: pointer;
   font-weight: 400;
 }
 
