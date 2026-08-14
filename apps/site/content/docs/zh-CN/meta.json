@@ -17,7 +17,6 @@
     "tools/workspace",
     "tools/terminal",
     "tools/git",
-    "tools/browser",
     "tools/lsp",
     "tools/tab-completion",
     "tools/generate-media",
