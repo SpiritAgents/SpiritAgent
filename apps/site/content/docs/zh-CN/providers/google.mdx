@@ -1,0 +1,35 @@
+---
+title: 连接 Google
+description: 用 Chat Completions 端点连接 Google AI Studio 上的 Gemini。
+---
+
+在 [Google AI Studio](https://aistudio.google.com/apikey) 创建 API Key。
+
+## 连接
+
+<Tabs items={["Desktop", "CLI"]}>
+  <Tab value="Desktop">
+
+1. 打开 **设置 → 模型**。
+2. 选这家提供商，走完连接向导。
+3. Spirit 把 Key 写入系统钥匙串（`SpiritAgent`），再导入模型。
+
+  </Tab>
+  <Tab value="CLI">
+
+在 TUI 里运行 `/model add`，或在 shell 里：
+
+```bash
+spirit model add
+```
+
+  </Tab>
+</Tabs>
+
+## 传输
+
+固定 **Chat Completions API**（`openai-compatible`）。若配置要了 Responses 或 Messages，会回落到 Chat Completions。默认 Base：`https://generativelanguage.googleapis.com/v1beta`。
+
+## 能力
+
+导入后即可对话。生图只在目录标了时再指定。要用 GCP 项目 / 位置，走 [Google Vertex AI](./google-vertex-ai.mdx)。

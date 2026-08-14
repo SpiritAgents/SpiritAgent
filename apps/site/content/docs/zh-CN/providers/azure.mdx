@@ -1,0 +1,41 @@
+---
+title: 连接 Azure
+description: 用资源名经 Responses API 连接 Azure OpenAI。
+---
+
+在 [Azure 门户](https://portal.azure.com) 为 Azure OpenAI 资源创建 Key。
+
+## 连接
+
+<Tabs items={["Desktop", "CLI"]}>
+  <Tab value="Desktop">
+
+1. 打开 **设置 → 模型**。
+2. 选这家提供商，走完连接向导。
+3. Spirit 把 Key 写入系统钥匙串（`SpiritAgent`），再导入模型。
+
+  </Tab>
+  <Tab value="CLI">
+
+在 TUI 里运行 `/model add`，或在 shell 里：
+
+```bash
+spirit model add
+```
+
+  </Tab>
+</Tabs>
+
+## 传输
+
+固定 **Responses API**（`open-responses`）。无传输选择器。
+
+## 云字段
+
+- **资源名**（必填）— 2–64 个字符，仅字母、数字和连字符；不能以连字符开头或结尾
+
+Spirit 会拼出 `https://{resource}.openai.azure.com/openai/v1`。
+
+## 能力
+
+导入后即可对话。生图在 Azure 目录标了时再指定。

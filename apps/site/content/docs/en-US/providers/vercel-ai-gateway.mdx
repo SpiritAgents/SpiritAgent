@@ -1,0 +1,39 @@
+---
+title: Connect Vercel AI Gateway
+description: Route many upstream models through Vercel AI Gateway with one key.
+---
+
+Create a key in the [Vercel AI Gateway](https://vercel.com/docs/ai-gateway) dashboard.
+
+## Connect
+
+<Tabs items={["Desktop", "CLI"]}>
+  <Tab value="Desktop">
+
+1. Open **Settings → Models**.
+2. Choose this provider and finish the connect wizard.
+3. Spirit writes the key to the system keyring (`SpiritAgent`), then imports models.
+
+  </Tab>
+  <Tab value="CLI">
+
+In the TUI run `/model add`, or from the shell:
+
+```bash
+spirit model add
+```
+
+  </Tab>
+</Tabs>
+
+## Transport
+
+Fixed **Open Responses API** (`open-responses`). Default base: `https://ai-gateway.vercel.sh/v1`.
+
+## Capabilities
+
+Chat plus whatever the gateway catalog exposes. Image generation is taken from catalog `type=image`, not from tags.
+
+## Known pitfalls
+
+Do not infer vision or image generation from tags. MiniMax M3 through this gateway does not return a displayable thinking stream on Open Responses.

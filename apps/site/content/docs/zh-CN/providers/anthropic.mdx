@@ -1,0 +1,35 @@
+---
+title: 连接 Anthropic
+description: 在 Anthropic 控制台创建 Key，通过 Messages API 连接。
+---
+
+在 [Anthropic 控制台](https://console.anthropic.com/settings/keys) 创建 API Key。
+
+## 连接
+
+<Tabs items={["Desktop", "CLI"]}>
+  <Tab value="Desktop">
+
+1. 打开 **设置 → 模型**。
+2. 选这家提供商，走完连接向导。
+3. Spirit 把 Key 写入系统钥匙串（`SpiritAgent`），再导入模型。
+
+  </Tab>
+  <Tab value="CLI">
+
+在 TUI 里运行 `/model add`，或在 shell 里：
+
+```bash
+spirit model add
+```
+
+  </Tab>
+</Tabs>
+
+## 传输
+
+固定 **Messages API**（`anthropic`）。默认 Base：`https://api.anthropic.com/v1`。
+
+## 能力
+
+导入后即可对话。推理跟模型走。除非目录后来标了生图 / 生视频，否则没有对应槽位。

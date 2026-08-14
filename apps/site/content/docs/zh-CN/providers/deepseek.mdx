@@ -1,0 +1,35 @@
+---
+title: 连接 DeepSeek
+description: 创建 DeepSeek Key 并连接。向导不显示传输选择器。
+---
+
+在 [DeepSeek 平台](https://platform.deepseek.com) 创建 API Key。
+
+## 连接
+
+<Tabs items={["Desktop", "CLI"]}>
+  <Tab value="Desktop">
+
+1. 打开 **设置 → 模型**。
+2. 选这家提供商，走完连接向导。
+3. Spirit 把 Key 写入系统钥匙串（`SpiritAgent`），再导入模型。
+
+  </Tab>
+  <Tab value="CLI">
+
+在 TUI 里运行 `/model add`，或在 shell 里：
+
+```bash
+spirit model add
+```
+
+  </Tab>
+</Tabs>
+
+## 传输
+
+无选择器。连接默认是 **Open Responses**（`open-responses`）。兼容 Base 还有 `https://api.deepseek.com/v1`（Chat）和 `https://api.deepseek.com/anthropic`（Messages）。
+
+## 能力
+
+导入后即可对话。推理跟模型走。

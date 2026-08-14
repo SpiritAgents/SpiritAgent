@@ -1,0 +1,35 @@
+---
+title: Connect Google
+description: Connect Gemini on Google AI Studio with a Chat Completions endpoint.
+---
+
+Create an API key in [Google AI Studio](https://aistudio.google.com/apikey).
+
+## Connect
+
+<Tabs items={["Desktop", "CLI"]}>
+  <Tab value="Desktop">
+
+1. Open **Settings → Models**.
+2. Choose this provider and finish the connect wizard.
+3. Spirit writes the key to the system keyring (`SpiritAgent`), then imports models.
+
+  </Tab>
+  <Tab value="CLI">
+
+In the TUI run `/model add`, or from the shell:
+
+```bash
+spirit model add
+```
+
+  </Tab>
+</Tabs>
+
+## Transport
+
+Fixed **Chat Completions API** (`openai-compatible`). Asking for Responses or Messages falls back to Chat Completions. Default base: `https://generativelanguage.googleapis.com/v1beta`.
+
+## Capabilities
+
+Chat after import. Image generation is assigned only when the catalog marks it. For Vertex AI (GCP project / location), use [Google Vertex AI](./google-vertex-ai.mdx).

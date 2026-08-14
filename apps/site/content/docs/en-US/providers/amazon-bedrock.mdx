@@ -1,0 +1,46 @@
+---
+title: Connect Amazon Bedrock
+description: Connect Bedrock with a region and either a Bearer key or IAM keys.
+---
+
+In the [AWS Bedrock console](https://console.aws.amazon.com/bedrock), create a Bearer API key or an IAM user that can call Bedrock.
+
+## Connect
+
+<Tabs items={["Desktop", "CLI"]}>
+  <Tab value="Desktop">
+
+1. Open **Settings → Models**.
+2. Choose this provider and finish the connect wizard.
+3. Spirit writes the key to the system keyring (`SpiritAgent`), then imports models.
+
+  </Tab>
+  <Tab value="CLI">
+
+In the TUI run `/model add`, or from the shell:
+
+```bash
+spirit model add
+```
+
+  </Tab>
+</Tabs>
+
+## Transport
+
+Fixed **Amazon Bedrock** (`bedrock`). Default host shape: `https://bedrock.us-east-1.amazonaws.com`.
+
+## Cloud fields
+
+- **AWS Region** (required), for example `us-east-1`
+- **Authentication**: **Bearer** or **IAM**
+  - Bearer — paste a Bedrock API key and a model id. Models are **not** fetched automatically.
+  - IAM — Access Key ID + Secret Access Key. Spirit lists foundation models from the account.
+
+## Capabilities
+
+Chat after you pick a model. Other capabilities follow that model.
+
+## Known pitfalls
+
+Bearer keys work for inference only. `ListFoundationModels` does not accept Bearer, so the catalog import needs IAM.

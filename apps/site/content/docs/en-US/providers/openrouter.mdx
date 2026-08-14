@@ -1,0 +1,35 @@
+---
+title: Connect OpenRouter
+description: One OpenRouter key can reach many upstream models. Pick a transport in the wizard.
+---
+
+Create a key at [OpenRouter](https://openrouter.ai/keys).
+
+## Connect
+
+<Tabs items={["Desktop", "CLI"]}>
+  <Tab value="Desktop">
+
+1. Open **Settings → Models**.
+2. Choose this provider and finish the connect wizard.
+3. Spirit writes the key to the system keyring (`SpiritAgent`), then imports models.
+
+  </Tab>
+  <Tab value="CLI">
+
+In the TUI run `/model add`, or from the shell:
+
+```bash
+spirit model add
+```
+
+  </Tab>
+</Tabs>
+
+## Transport
+
+Picker: **Chat Completions**, **Open Responses**, or **Messages**. Default base: `https://openrouter.ai/api/v1`.
+
+## Capabilities
+
+Chat plus catalog-marked image or video generation when OpenRouter exposes those models.

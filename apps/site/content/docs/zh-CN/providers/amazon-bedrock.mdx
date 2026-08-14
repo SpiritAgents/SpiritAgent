@@ -1,0 +1,46 @@
+---
+title: 连接 Amazon Bedrock
+description: 用区域，以及 Bearer Key 或 IAM 密钥连接 Bedrock。
+---
+
+在 [AWS Bedrock 控制台](https://console.aws.amazon.com/bedrock) 创建 Bearer API Key，或能调用 Bedrock 的 IAM 用户。
+
+## 连接
+
+<Tabs items={["Desktop", "CLI"]}>
+  <Tab value="Desktop">
+
+1. 打开 **设置 → 模型**。
+2. 选这家提供商，走完连接向导。
+3. Spirit 把 Key 写入系统钥匙串（`SpiritAgent`），再导入模型。
+
+  </Tab>
+  <Tab value="CLI">
+
+在 TUI 里运行 `/model add`，或在 shell 里：
+
+```bash
+spirit model add
+```
+
+  </Tab>
+</Tabs>
+
+## 传输
+
+固定 **Amazon Bedrock**（`bedrock`）。默认主机形态：`https://bedrock.us-east-1.amazonaws.com`。
+
+## 云字段
+
+- **AWS 区域**（必填），例如 `us-east-1`
+- **认证**：**Bearer** 或 **IAM**
+  - Bearer — 粘贴 Bedrock API Key 和模型 id。**不会**自动拉模型列表。
+  - IAM — Access Key ID + Secret Access Key。Spirit 从账户列出 foundation models。
+
+## 能力
+
+选定模型后即可对话。其他能力跟该模型走。
+
+## 已知坑
+
+Bearer 只能做推理。`ListFoundationModels` 不接受 Bearer，所以导入目录需要 IAM。

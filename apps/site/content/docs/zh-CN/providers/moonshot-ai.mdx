@@ -1,0 +1,46 @@
+---
+title: 连接 Moonshot AI
+description: 连接 Moonshot AI，并选择中国或国际站点。
+---
+
+在你要使用的站点对应的 Moonshot 控制台创建 API Key。
+
+## 连接
+
+<Tabs items={["Desktop", "CLI"]}>
+  <Tab value="Desktop">
+
+1. 打开 **设置 → 模型**。
+2. 选这家提供商，走完连接向导。
+3. Spirit 把 Key 写入系统钥匙串（`SpiritAgent`），再导入模型。
+
+  </Tab>
+  <Tab value="CLI">
+
+在 TUI 里运行 `/model add`，或在 shell 里：
+
+```bash
+spirit model add
+```
+
+  </Tab>
+</Tabs>
+
+## 传输
+
+固定 **Chat Completions API**。无传输选择器。
+
+## 站点
+
+- **国际**（默认）— `https://api.moonshot.ai/v1`
+- **中国** — `https://api.moonshot.cn/v1`
+
+这是月之暗面开放平台，不是 [Kimi Code](./kimi-code.mdx)。
+
+## 能力
+
+导入后即可对话。moonshot-ai 的内置搜索不走 Kimi Code 托管搜索路径。
+
+## 已知坑
+
+Kimi Code 的 Key 和月之暗面开放平台的 Key 是两条连接，不要混用。

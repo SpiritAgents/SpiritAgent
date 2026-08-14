@@ -1,0 +1,50 @@
+---
+title: Connect Alibaba
+description: Connect Alibaba Model Studio with a region, optional workspace id, or Token Plan.
+---
+
+Create an API key in [Alibaba Cloud Model Studio / Bailian](https://bailian.console.aliyun.com).
+
+## Connect
+
+<Tabs items={["Desktop", "CLI"]}>
+  <Tab value="Desktop">
+
+1. Open **Settings → Models**.
+2. Choose this provider and finish the connect wizard.
+3. Spirit writes the key to the system keyring (`SpiritAgent`), then imports models.
+
+  </Tab>
+  <Tab value="CLI">
+
+In the TUI run `/model add`, or from the shell:
+
+```bash
+spirit model add
+```
+
+  </Tab>
+</Tabs>
+
+## Transport
+
+Fixed **Chat Completions API**. Compatible default: `https://dashscope.aliyuncs.com/compatible-mode/v1`.
+
+## Site and workspace
+
+- **cn-beijing** (default) — `https://{workspaceId}.cn-beijing.maas.aliyuncs.com/compatible-mode/v1` (workspace id required)
+- **ap-southeast-1** — workspace id required
+- **us-virginia** — `https://dashscope-us.aliyuncs.com/compatible-mode/v1` (no workspace id)
+- **eu-central-1** — workspace id required
+
+## Plan endpoint
+
+**Token Plan** switches to `https://token-plan.cn-beijing.maas.aliyuncs.com/compatible-mode/v1` and ignores site / workspace. Notes: [Token Plan](https://bailian.console.aliyun.com/cn-beijing?tab=doc#/doc/?type=model&url=3029020).
+
+## Capabilities
+
+Chat after import. Other capabilities follow the catalog.
+
+## Known pitfalls
+
+Token Plan always uses the cn-beijing plan endpoint, even if you picked another site.

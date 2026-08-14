@@ -1,0 +1,35 @@
+---
+title: 连接 Baseten
+description: 用 Chat Completions 连接 Baseten Inference。
+---
+
+在 Baseten 控制台创建 API Key。
+
+## 连接
+
+<Tabs items={["Desktop", "CLI"]}>
+  <Tab value="Desktop">
+
+1. 打开 **设置 → 模型**。
+2. 选这家提供商，走完连接向导。
+3. Spirit 把 Key 写入系统钥匙串（`SpiritAgent`），再导入模型。
+
+  </Tab>
+  <Tab value="CLI">
+
+在 TUI 里运行 `/model add`，或在 shell 里：
+
+```bash
+spirit model add
+```
+
+  </Tab>
+</Tabs>
+
+## 传输
+
+固定 **Chat Completions API**。默认 Base：`https://inference.baseten.co/v1`。
+
+## 能力
+
+导入后即可对话。其他能力跟目录走。

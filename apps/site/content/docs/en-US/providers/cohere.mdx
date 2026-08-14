@@ -1,0 +1,35 @@
+---
+title: Connect Cohere
+description: Connect Cohere over Chat Completions.
+---
+
+Create an API key in the [Cohere dashboard](https://dashboard.cohere.com).
+
+## Connect
+
+<Tabs items={["Desktop", "CLI"]}>
+  <Tab value="Desktop">
+
+1. Open **Settings → Models**.
+2. Choose this provider and finish the connect wizard.
+3. Spirit writes the key to the system keyring (`SpiritAgent`), then imports models.
+
+  </Tab>
+  <Tab value="CLI">
+
+In the TUI run `/model add`, or from the shell:
+
+```bash
+spirit model add
+```
+
+  </Tab>
+</Tabs>
+
+## Transport
+
+Fixed **Chat Completions API**. Default base: `https://api.cohere.com/v2`.
+
+## Capabilities
+
+Chat after import. Other capabilities follow the catalog.

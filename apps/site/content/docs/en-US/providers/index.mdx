@@ -1,0 +1,80 @@
+---
+title: Providers
+description: Bring your own key, run the connect wizard, and keep the same agent workflow when you switch houses.
+---
+
+Spirit Agent is BYOK. You create a key in a provider console, paste it into Desktop or the CLI, and Spirit stores it in the operating system keyring. Switching houses does not change how you open a workspace, approve edits, or run the agent.
+
+The connect wizard is **Settings → Models** on Desktop, or `/model add` / `spirit model add` in the CLI. Extra fields appear only when that provider needs them.
+
+## Four transports
+
+Spirit talks to providers over one of four transports. The wizard either fixes the type or lets you pick.
+
+| Transport | Wizard label | Typical use |
+| --- | --- | --- |
+| `openai-compatible` | Chat Completions API | Most OpenAI-compatible endpoints |
+| `open-responses` | Responses API / Open Responses API | OpenAI, Azure, Vercel AI Gateway, Hugging Face, and optional gateway paths |
+| `anthropic` | Messages API | Anthropic, MiniMax, and optional Messages-compatible endpoints |
+| `bedrock` | Amazon Bedrock | Amazon Bedrock only |
+
+Google Gemini and Vertex AI always use Chat Completions. If a profile asks for Responses or Messages, Spirit falls back to `openai-compatible`.
+
+## Wizard extras
+
+Some houses add a second dimension on top of the key:
+
+- **Regional sites** — Moonshot AI, SiliconFlow, MiniMax (China / International); Alibaba (region + `workspaceId`); Tencent TokenHub (Guangzhou / Singapore)
+- **Plan endpoints** — Alibaba Token Plan, StepFun Step Plan, Z.ai / Zhipu AI GLM Coding Plan
+- **Cloud fields** — Bedrock region, Azure resource name, Cloudflare account (and optional gateway), Vertex project / location
+
+If a provider has none of these, the wizard is just key → import models → pick an active chat model.
+
+## After you connect
+
+Spirit imports the model catalog and lets you assign:
+
+- Active chat model
+- Image generation model (when the catalog marks image generation)
+- Video generation model (when the catalog marks video generation)
+- Lightweight chat model (Tab completion and similar)
+
+Reasoning and built-in web search follow the model and transport, not a separate Spirit toggle.
+
+## All providers
+
+Listed in the same order as the in-app picker.
+
+1. [OpenAI](./openai.mdx)
+2. [Anthropic](./anthropic.mdx)
+3. [Google](./google.mdx)
+4. [SpaceXAI](./xai.mdx)
+5. [Vercel AI Gateway](./vercel-ai-gateway.mdx)
+6. [Cloudflare AI Gateway](./cloudflare-ai-gateway.mdx)
+7. [DeepSeek](./deepseek.mdx)
+8. [OpenRouter](./openrouter.mdx)
+9. [Fireworks AI](./fireworks-ai.mdx)
+10. [Together AI](./together-ai.mdx)
+11. [Groq](./groq.mdx)
+12. [DeepInfra](./deepinfra.mdx)
+13. [Baseten](./baseten.mdx)
+14. [Hugging Face](./hugging-face.mdx)
+15. [Moonshot AI](./moonshot-ai.mdx)
+16. [Kimi Code](./kimi-code.mdx)
+17. [Z.ai](./z-ai.mdx)
+18. [Zhipu AI](./zhipu-ai.mdx)
+19. [Alibaba](./alibaba.mdx)
+20. [MiniMax](./minimax.mdx)
+21. [Xiaomi](./xiaomi.mdx)
+22. [SiliconFlow](./siliconflow.mdx)
+23. [StepFun](./stepfun.mdx)
+24. [Volcengine](./volcengine.mdx)
+25. [BytePlus](./byteplus.mdx)
+26. [Meituan](./meituan.mdx)
+27. [Tencent TokenHub](./tencent-tokenhub.mdx)
+28. [Mistral](./mistral.mdx)
+29. [Cohere](./cohere.mdx)
+30. [Azure](./azure.mdx)
+31. [Amazon Bedrock](./amazon-bedrock.mdx)
+32. [Google Vertex AI](./google-vertex-ai.mdx)
+33. [Custom](./custom.mdx)
