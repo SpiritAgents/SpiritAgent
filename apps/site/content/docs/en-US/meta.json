@@ -31,6 +31,8 @@
     "config",
     "security",
     "appearance",
-    "troubleshooting"
+    "troubleshooting",
+    "---Develop---",
+    "develop/extensions"
   ]
 }

@@ -1,0 +1,434 @@
+---
+title: Extensions
+description: Package layout, spiritExtension fields, activate API, and listing on the official registry.
+---
+
+An extension is a folder with a `package.json` that contains `spiritExtension`. Spirit installs it per user and per host, not under the workspace `.spirit/` directory.
+
+| Host | Path |
+| --- | --- |
+| Desktop | `{spiritDataDir}/extensions/desktop/` |
+| CLI | `{spiritDataDir}/extensions/cli/` |
+
+That is different from [Skills](../customize/skills.mdx) (`SKILL.md` folders), [MCP](../customize/mcp.mdx) (external servers), and [Hooks](../customize/hooks.mdx) (`hooks.json` scripts). `contributes.cli.hooks` styles CLI TUI slots. It is not `hooks.json`.
+
+There is no per-extension enable switch. After install, the extension contributes. The CLI panel toggle is a placeholder.
+
+## Package layout
+
+```text
+example-extension/
+  package.json
+  dist/index.js
+  assets/icon.svg
+  styles/desktop.css
+  cli-hooks.json
+```
+
+```json
+{
+  "name": "@example/spirit-extension",
+  "version": "0.1.0",
+  "description": "Example Spirit Agent extension.",
+  "author": { "name": "example" },
+  "homepage": "https://example.com/spirit-extension",
+  "main": "dist/index.js",
+  "spiritExtension": {
+    "schemaVersion": 1,
+    "displayName": "Example extension",
+    "icon": "assets/icon.svg",
+    "supportedHosts": ["cli", "desktop"],
+    "activationEvents": ["onStartup", "onUserMessage"],
+    "requestedCapabilities": [
+      "tool-definitions",
+      "tool-execution",
+      "system-prompt",
+      "settings",
+      "secret-storage",
+      "desktop-ui",
+      "cli-ui"
+    ],
+    "contributes": {
+      "tools": [
+        {
+          "name": "lookup_item",
+          "description": "Look up an item by id.",
+          "inputSchema": {
+            "type": "object",
+            "properties": {
+              "id": { "type": "string" }
+            },
+            "required": ["id"]
+          },
+          "approvalMode": "allowed",
+          "executionMode": "foreground"
+        }
+      ],
+      "desktop": {
+        "css": [{ "path": "styles/desktop.css" }],
+        "settingsPage": { "title": "Example extension" }
+      },
+      "cli": {
+        "hooks": { "path": "cli-hooks.json" }
+      }
+    },
+    "settingsSchema": [
+      {
+        "key": "region",
+        "type": "select",
+        "title": "Region",
+        "required": true,
+        "defaultValue": "us",
+        "options": [
+          { "value": "us", "label": "US" },
+          { "value": "eu", "label": "EU" }
+        ]
+      }
+    ],
+    "secretSlots": [
+      {
+        "key": "api_token",
+        "title": "API token",
+        "required": true
+      }
+    ]
+  }
+}
+```
+
+`package.json` `name` is the extension id. It must match `^(?:@[a-z0-9][a-z0-9._-]*/)?[a-z0-9][a-z0-9._-]*$`.
+
+## `package.json` fields
+
+| Field | Description |
+| --- | --- |
+| `name` | Required. npm package name; used as the extension id |
+| `version` | Required. Version string |
+| `spiritExtension` | Required. Object. See below |
+| `description` | Optional. String |
+| `author` | Optional. String or `{ name }` |
+| `homepage` | Optional. String |
+| `main` | Optional. Relative path to the `activate` entry. Required when the extension uses `activationEvents`, tool execution, or a system prompt |
+
+`main`, `spiritExtension.icon`, CSS paths, and CLI hook paths must be relative and must stay inside the package.
+
+## `spiritExtension`
+
+| Field | Description |
+| --- | --- |
+| `schemaVersion` | Optional. Defaults to `1`. Only `1` is supported |
+| `displayName` | Required. User-visible name |
+| `icon` | Optional. Path relative to the package root |
+| `supportedHosts` | Required. Non-empty array of `cli` and/or `desktop` |
+| `activationEvents` | Optional. See [Activation events](#activation-events) |
+| `requestedCapabilities` | Optional. See [Capabilities](#capabilities) |
+| `contributes` | Optional. `tools`, `desktop`, and/or `cli` |
+| `settingsSchema` | Optional. Setting definitions |
+| `secretSlots` | Optional. Secret slot definitions |
+
+## Capabilities
+
+| Value | Runtime |
+| --- | --- |
+| `tool-definitions` | Required with `tool-execution` to expose `contributes.tools` to the model |
+| `tool-execution` | Required with `tool-definitions` to run those tools |
+| `system-prompt` | Required with `main` to contribute a system prompt fragment |
+| `desktop-ui` | Must be paired with `contributes.desktop` |
+| `cli-ui` | Must be paired with `contributes.cli` |
+| `approval-flow` | Declared only. Approval is driven by each tool's `approvalMode` |
+| `questions-flow` | Declared only. Questions are driven by `approvalMode: need-questions` |
+| `settings` | Declared only. Settings come from `settingsSchema` |
+| `secret-storage` | Used with `secretSlots` |
+| `structured-results` | Declared only |
+
+`desktop-ui` / `cli-ui` and the matching `contributes` block must both be present or both be absent.
+
+## Activation events
+
+| Event | When it fires |
+| --- | --- |
+| `onStartup` | Host warmup |
+| `onExtensionInstalled` | After ZIP or marketplace install |
+| `onSessionOpened` | Session becomes active |
+| `onSessionReset` | Session reset |
+| `onUserMessage` | User submits a message |
+| `onToolCall` | A tool is about to run |
+| `onToolResult` | A tool result is available |
+| `onApprovalResolved` | An approval decision is resolved |
+
+The host calls `activate` when the extension lists the event and has a readable `main`.
+
+## `contributes.tools`
+
+| Field | Description |
+| --- | --- |
+| `name` | Required. `[a-z0-9]+(?:[._-][a-z0-9]+)*` |
+| `description` | Required. Shown to the model |
+| `inputSchema` | Required. JSON Schema object |
+| `outputSchema` | Optional. JSON Schema object |
+| `approvalMode` | Optional. `allowed`, `need-approval`, or `need-questions` |
+| `executionMode` | Optional. `foreground` or `background` |
+
+The model does not see `name` as-is. The host builds an invocation name such as `extension__{id}__{tool}__{hash}`.
+
+## `contributes.desktop`
+
+Requires `desktop-ui`.
+
+| Field | Description |
+| --- | --- |
+| `css[].path` | Required. CSS file relative to the package root |
+| `css[].media` | Optional. CSS media query |
+| `settingsPage` | Optional. `true`, `{}`, or `{ title }` — adds a Desktop settings entry |
+
+## `contributes.cli`
+
+Requires `cli-ui`. `hooks` is an object with `path`, not an inline array:
+
+```json
+{
+  "hooks": { "path": "cli-hooks.json" }
+}
+```
+
+The file must be `{ "hooks": [ ... ] }`.
+
+| Field | Description |
+| --- | --- |
+| `slot` | Required. One of the slots below |
+| `variant` | Optional. `default`, `accented`, `muted`, `warning`, `success`, `danger` |
+| `tokens` | Optional. `{ foreground?, border?, accent? }` |
+| `prefix` | Optional. String |
+| `suffix` | Optional. String |
+
+Slots: `message.user`, `message.assistant`, `message.tool`, `assistant.thinking`, `input.frame`, `bottom_form`, `bottom_form.section`, `slash_suggestions`, `approval.panel`, `questions.panel`.
+
+Token roles: `default`, `primary`, `secondary`, `muted`, `accent`, `success`, `warning`, `danger`.
+
+```json
+{
+  "hooks": [
+    {
+      "slot": "input.frame",
+      "variant": "accented",
+      "tokens": { "border": "accent" },
+      "prefix": "[",
+      "suffix": "]"
+    }
+  ]
+}
+```
+
+## `settingsSchema`
+
+| Field | Description |
+| --- | --- |
+| `key` | Required. Same pattern as tool names |
+| `type` | Required. `string`, `boolean`, `number`, or `select` |
+| `title` | Required. UI label |
+| `description` | Optional |
+| `placeholder` | Optional |
+| `required` | Optional. Boolean |
+| `defaultValue` | Optional. Must match `type` |
+| `options` | Required for `select`. Array of `{ value, label, description? }` |
+
+Values are `string`, `number`, `boolean`, or `null`. `null` clears a non-required setting.
+
+## `secretSlots`
+
+| Field | Description |
+| --- | --- |
+| `key` | Required |
+| `title` | Required |
+| `description` | Optional |
+| `required` | Optional. Boolean |
+
+Desktop stores secrets in the OS keyring. On the CLI daemon path, `secrets.set` / `secrets.delete` may be unavailable.
+
+## `activate`
+
+`main` is loaded with dynamic `import`. Export one of:
+
+- `export function activate(ctx) { ... }`
+- `export default function activate(ctx) { ... }`
+- `export default { activate }`
+
+### `ctx`
+
+| Field | Description |
+| --- | --- |
+| `extension` | `{ id, name, version, directoryPath, manifestPath, main }` |
+| `host` | Host API. Desktop implements `showMessageBox`. CLI is `{}` |
+| `log` | `(message: string) => void` |
+| `settings` | `get(key)`, `getAll()`, `set(key, value)`, `setAll(values)` |
+| `secrets` | `get(key)`, `has(key)`, `set(key, value)`, `delete(key)` — keys must be declared in `secretSlots` |
+| `activationEvent` | Optional. `{ type, detail? }` |
+
+### Return value
+
+Return an object, or export the same fields from the module.
+
+| Field | Description |
+| --- | --- |
+| `tools` | `Record<string, (ctx) => unknown>`. Keys are manifest tool names |
+| `invokeTool` | `(ctx) => unknown`. Used instead of `tools[name]` when present |
+| `systemPrompt` | Static system fragment |
+| `getSystemPrompt` | `() => string \| Promise<string>`. Used instead of `systemPrompt` when present |
+| `onEvent` | `(event) => void` |
+| `dispose` | `() => void`. Called on remove or reload |
+
+### Tool handler `ctx`
+
+| Field | Description |
+| --- | --- |
+| `extension` | Same runtime info as `activate` |
+| `host` | Same host API |
+| `toolName` | Manifest tool name |
+| `arguments` | Object from the model |
+| `log` | Same logger |
+| `settings` | Same settings accessor |
+| `secrets` | Same secrets accessor |
+| `toolCallId` | Optional |
+| `questionsResult` | Optional. Set when `approvalMode` is `need-questions` |
+
+A `string` result is passed through. Other values are `JSON.stringify(value, null, 2)`. `undefined` becomes `""`.
+
+### Desktop `host.showMessageBox`
+
+| Field | Description |
+| --- | --- |
+| `title` | Required. String |
+| `message` | Required. String |
+| `detail` | Optional. String |
+| `buttons` | Optional. String array |
+| `cancelId` | Optional. Number |
+| `defaultId` | Optional. Number |
+| `noLink` | Optional. Boolean |
+| `type` | Optional. `none`, `info`, `error`, `question`, `warning` |
+
+```js
+export function activate(ctx) {
+  return {
+    systemPrompt: "Use lookup_item when the user asks for an item by id.",
+    async invokeTool({ toolName, arguments: args, settings, secrets }) {
+      if (toolName !== "lookup_item") {
+        throw new Error(`Unknown tool: ${toolName}`);
+      }
+      const region = await settings.get("region");
+      const token = await secrets.get("api_token");
+      return { id: args.id, region, hasToken: Boolean(token) };
+    },
+    dispose() {
+      ctx.log("example-extension disposed");
+    },
+  };
+}
+```
+
+## Install
+
+- **ZIP** — the archive must contain exactly one `package.json` (it may sit in a subdirectory). Import with `spirit extension import ./extension.zip` or **Settings → Extensions**.
+- **Marketplace tarball** — the archive root must contain a `package/` directory.
+
+`supportedHosts` must include the current host. A second install of the same id does not replace the existing copy by default. See [Marketplace](../customize/marketplace.mdx) for channels and the install UI.
+
+## Publish to the official registry
+
+The [SpiritAgents/registry](https://github.com/SpiritAgents/registry) repository is a marketplace index. It does not host extension source, `dist`, ZIP files, or tarballs.
+
+Do these steps in order:
+
+1. Publish a public npm package.
+2. Open a pull request that lists that package.
+
+### 1. Publish the npm package
+
+The published `package.json` is the source of truth, especially `spiritExtension`. The registry builder requires:
+
+- `spiritExtension.schemaVersion`
+- `spiritExtension.displayName`
+- `spiritExtension.supportedHosts`
+- `spiritExtension.requestedCapabilities`
+
+It also reads `name`, `version`, `description`, `author`, `repository`, `homepage`, `keywords`, and optional `spiritExtension.icon`. If you set `icon`, include that file in the published package. A missing `spiritExtension` object fails the registry build for that version.
+
+Official example: [`@spiritagent/extension-system-message-demo`](https://www.npmjs.com/package/@spiritagent/extension-system-message-demo) (`spiritagent.system-message-demo`).
+
+### 2. List the package
+
+Create `registry/extensions/<extension-id>/` with:
+
+| File | Description |
+| --- | --- |
+| `entry.json` | Marketplace governance |
+| `README.md` | Marketplace detail copy |
+
+Do not edit these by hand (regenerate them):
+
+- `registry/catalog.json`
+- `registry/extensions/<extension-id>/detail.json`
+
+`extensionId` needs at least two dot-separated segments, lowercase letters and digits, with dots or hyphens inside a segment. Examples: `spiritagent.system-message-demo`, `yourteam.some-extension`. `packageName` and `extensionId` must be unique in the repository.
+
+### `entry.json`
+
+| Field | Description |
+| --- | --- |
+| `schemaVersion` | Required. `1` |
+| `extensionId` | Required. See the rules above |
+| `packageName` | Required. npm package name |
+| `status` | Required. `listed`, `hidden`, `deprecated`, or `blocked` |
+| `featured` | Required. Boolean |
+| `defaultVersion` | Required. Default version string |
+| `defaultReviewStatus` | Required. `unverified`, `verified`, or `revoked` |
+| `versions` | Required. At least one item |
+
+Each `versions[]` item:
+
+| Field | Description |
+| --- | --- |
+| `version` | Required |
+| `channel` | Required. `stable`, `preview`, or `experimental` |
+| `reviewStatus` | Required. `unverified`, `verified`, or `revoked` |
+| `changelog` | Optional. `{ summary, body }` — both required when present |
+
+```json
+{
+  "schemaVersion": 1,
+  "extensionId": "example.spirit-extension",
+  "packageName": "@example/spirit-extension",
+  "status": "listed",
+  "featured": false,
+  "defaultVersion": "0.1.0",
+  "defaultReviewStatus": "unverified",
+  "versions": [
+    {
+      "version": "0.1.0",
+      "channel": "stable",
+      "reviewStatus": "unverified",
+      "changelog": {
+        "summary": "Initial public release.",
+        "body": "- Initial public release."
+      }
+    }
+  ]
+}
+```
+
+The marketplace README should cover what the extension does, the package name, the default approved version, host and capability compatibility, and notes for marketplace readers.
+
+Regenerate derived files locally:
+
+```powershell
+./scripts/build-registry.ps1
+```
+
+The script fetches npm metadata for the listed versions, rebuilds `catalog.json` and each `detail.json`, then validates consistency.
+
+### Pull request
+
+Include `entry.json`, the marketplace `README.md`, and the regenerated `catalog.json` / `detail.json`. List only versions that are already public on npm. Set `reviewStatus` and `channel` accurately. New versions typically start as `unverified`.
+
+Do not commit extension source trees, `dist`, ZIP files, tarballs, or other binary artifacts.
+
+Opening a pull request does not guarantee listing. Review may request changes before a version is approved or verified.
