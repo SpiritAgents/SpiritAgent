@@ -1,0 +1,640 @@
+@import "tailwindcss";
+@import "tw-animate-css";
+@import "./styles/shadcn-variants.css";
+@import "fumadocs-ui/css/shadcn.css";
+@import "fumadocs-ui/css/preset.css";
+@import "@fontsource-variable/geist";
+
+@custom-variant dark (&:is(.dark *));
+
+@property --sidebar-mask-top-alpha {
+  syntax: "<number>";
+  inherits: false;
+  initial-value: 1;
+}
+
+@property --sidebar-mask-bottom-alpha {
+  syntax: "<number>";
+  inherits: false;
+  initial-value: 1;
+}
+
+@property --mask-fade-left-alpha {
+  syntax: "<number>";
+  inherits: false;
+  initial-value: 1;
+}
+
+@property --mask-fade-right-alpha {
+  syntax: "<number>";
+  inherits: false;
+  initial-value: 1;
+}
+
+:root {
+  --background: oklch(1 0 0);
+  --foreground: oklch(0.145 0 0);
+  --card: oklch(1 0 0);
+  --card-foreground: oklch(0.145 0 0);
+  --popover: oklch(1 0 0);
+  --popover-foreground: oklch(0.145 0 0);
+  --primary: oklch(0.205 0 0);
+  --primary-foreground: oklch(0.985 0 0);
+  --secondary: oklch(0.97 0 0);
+  --secondary-foreground: oklch(0.205 0 0);
+  --muted: oklch(0.97 0 0);
+  --muted-foreground: oklch(0.556 0 0);
+  --accent: oklch(0.97 0 0);
+  --accent-foreground: oklch(0.205 0 0);
+  --destructive: oklch(0.577 0.245 27.325);
+  --border: oklch(0.922 0 0);
+  --input: oklch(0.922 0 0);
+  --ring: oklch(0.708 0 0);
+  --chart-1: oklch(0.87 0 0);
+  --chart-2: oklch(0.556 0 0);
+  --chart-3: oklch(0.439 0 0);
+  --chart-4: oklch(0.371 0 0);
+  --chart-5: oklch(0.269 0 0);
+  --radius: 0.625rem;
+  --sidebar: oklch(0.985 0 0);
+  --sidebar-foreground: oklch(0.145 0 0);
+  --sidebar-primary: oklch(0.205 0 0);
+  --sidebar-primary-foreground: oklch(0.985 0 0);
+  --sidebar-accent: oklch(0.97 0 0);
+  --sidebar-accent-foreground: oklch(0.205 0 0);
+  --sidebar-border: oklch(0.922 0 0);
+  --sidebar-ring: oklch(0.708 0 0);
+  --sidebar-action-foreground: #2b2b2b;
+  --sidebar-item-foreground: oklch(0.42 0 0);
+  --sidebar-faint-foreground: oklch(0.5 0 0);
+  --site-muted: rgb(0 0 0 / 50%);
+  --dialog-panel-border: color-mix(in oklab, var(--border) 40%, transparent);
+  --git-action-split: oklch(0.58 0 0);
+  --terminal-bg: #ffffff;
+  --terminal-fg: #0a0a0a;
+  --terminal-cursor: #0a0a0a;
+  --terminal-cursor-accent: #ffffff;
+  --terminal-selection-bg: rgba(0, 0, 0, 0.15);
+  --terminal-ansi-black: #000000;
+  --terminal-ansi-red: #cd3131;
+  --terminal-ansi-green: #107c10;
+  --terminal-ansi-yellow: #949800;
+  --terminal-ansi-blue: #0451a5;
+  --terminal-ansi-magenta: #bc05bc;
+  --terminal-ansi-cyan: #0598bc;
+  --terminal-ansi-white: #555555;
+  --terminal-ansi-bright-black: #666666;
+  --terminal-ansi-bright-red: #cd3131;
+  --terminal-ansi-bright-green: #14ce14;
+  --terminal-ansi-bright-yellow: #b5ba00;
+  --terminal-ansi-bright-blue: #0451a5;
+  --terminal-ansi-bright-magenta: #bc05bc;
+  --terminal-ansi-bright-cyan: #0598bc;
+  --terminal-ansi-bright-white: #a5a5a5;
+}
+
+html,
+body {
+  min-height: 100%;
+}
+
+#root {
+  min-height: 100dvh;
+}
+
+html,
+body,
+#root {
+  background: #0a0a0a;
+}
+
+body {
+  margin: 0;
+}
+
+.electron-drag {
+  -webkit-app-region: drag;
+}
+
+.electron-no-drag {
+  -webkit-app-region: no-drag;
+}
+
+@theme inline {
+  --font-heading: var(--font-sans);
+  --font-sans:
+    "Geist Variable", "PingFang SC", -apple-system, BlinkMacSystemFont, "SF Pro Text",
+    "SF Pro Display", system-ui, sans-serif;
+  --color-sidebar-ring: var(--sidebar-ring);
+  --color-sidebar-border: var(--sidebar-border);
+  --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
+  --color-sidebar-accent: var(--sidebar-accent);
+  --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
+  --color-sidebar-primary: var(--sidebar-primary);
+  --color-sidebar-foreground: var(--sidebar-foreground);
+  --color-sidebar-action-foreground: var(--sidebar-action-foreground);
+  --color-sidebar-item-foreground: var(--sidebar-item-foreground);
+  --color-sidebar-faint-foreground: var(--sidebar-faint-foreground);
+  --color-site-muted: var(--site-muted);
+  --color-sidebar: var(--sidebar);
+  --color-dialog-panel-border: var(--dialog-panel-border);
+  --color-git-action-split: var(--git-action-split);
+  --color-chart-5: var(--chart-5);
+  --color-chart-4: var(--chart-4);
+  --color-chart-3: var(--chart-3);
+  --color-chart-2: var(--chart-2);
+  --color-chart-1: var(--chart-1);
+  --color-ring: var(--ring);
+  --color-input: var(--input);
+  --color-border: var(--border);
+  --color-destructive: var(--destructive);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-accent: var(--accent);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-muted: var(--muted);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-secondary: var(--secondary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-primary: var(--primary);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-popover: var(--popover);
+  --color-card-foreground: var(--card-foreground);
+  --color-card: var(--card);
+  --color-foreground: var(--foreground);
+  --color-background: var(--background);
+  --radius-sm: calc(var(--radius) * 0.6);
+  --radius-md: calc(var(--radius) * 0.8);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) * 1.4);
+  --radius-2xl: calc(var(--radius) * 1.8);
+  --radius-3xl: calc(var(--radius) * 2.2);
+  --radius-4xl: calc(var(--radius) * 2.6);
+  --ease-collapsible-expand: cubic-bezier(0.22, 1, 0.36, 1);
+  --ease-collapsible-collapse: cubic-bezier(0.4, 0, 0.2, 1);
+  --animate-spirit-collapsible-down: spirit-collapsible-down 280ms var(--ease-collapsible-expand);
+  --animate-spirit-collapsible-up: spirit-collapsible-up 220ms var(--ease-collapsible-collapse);
+}
+
+@keyframes spirit-collapsible-down {
+  from {
+    height: 0;
+    opacity: 0;
+  }
+  to {
+    height: var(--spirit-collapsible-content-height);
+    opacity: 1;
+  }
+}
+
+@keyframes spirit-collapsible-up {
+  from {
+    height: var(--spirit-collapsible-content-height);
+    opacity: 1;
+  }
+  to {
+    height: 0;
+    opacity: 0;
+  }
+}
+
+[data-slot="animated-collapse-content"][data-state="closed"] {
+  --spirit-collapsible-content-height: 0px;
+}
+
+.dark,
+[data-spirit-theme="dark"] {
+  --background: #000000;
+  --foreground: #ffffff;
+  --card: #090909;
+  --card-foreground: #d4d4d4;
+  --popover: #090909;
+  --popover-foreground: #d4d4d4;
+  --primary: #ffffff;
+  --primary-foreground: #000000;
+  --secondary: #181818;
+  --secondary-foreground: #d4d4d4;
+  --muted: #181818;
+  --muted-foreground: #a1a1a1;
+  --accent: #181818;
+  --accent-foreground: #d4d4d4;
+  --destructive: oklch(0.704 0.191 22.216);
+  --border: #272727;
+  --input: #272727;
+  --ring: #3f3f3f;
+  --chart-1: #e4e4e4;
+  --chart-2: #a1a1a1;
+  --chart-3: #717171;
+  --chart-4: #525252;
+  --chart-5: #3f3f3f;
+  --radius: 0.5rem;
+  --sidebar: #000000;
+  --sidebar-foreground: #ffffff;
+  --sidebar-primary: #ffffff;
+  --sidebar-primary-foreground: #000000;
+  --sidebar-accent: #181818;
+  --sidebar-accent-foreground: #d4d4d4;
+  --sidebar-border: #272727;
+  --sidebar-ring: #3f3f3f;
+  --sidebar-action-foreground: #d4d4d4;
+  --sidebar-item-foreground: #a3a3a3;
+  --sidebar-faint-foreground: #525252;
+  --site-muted: rgb(255 255 255 / 50%);
+  --dialog-panel-border: #272727;
+  --git-action-split: #3f3f3f;
+  --terminal-bg: #000000;
+  --terminal-fg: #d4d4d4;
+  --terminal-cursor: #ffffff;
+  --terminal-cursor-accent: #000000;
+  --terminal-selection-bg: rgba(255, 255, 255, 0.12);
+  --terminal-ansi-black: #000000;
+  --terminal-ansi-red: #cd3131;
+  --terminal-ansi-green: #0dbc79;
+  --terminal-ansi-yellow: #e5e510;
+  --terminal-ansi-blue: #2472c8;
+  --terminal-ansi-magenta: #bc3fbc;
+  --terminal-ansi-cyan: #11a8cd;
+  --terminal-ansi-white: #e5e5e5;
+  --terminal-ansi-bright-black: #666666;
+  --terminal-ansi-bright-red: #f14c4c;
+  --terminal-ansi-bright-green: #23d18b;
+  --terminal-ansi-bright-yellow: #f5f543;
+  --terminal-ansi-bright-blue: #3b8eea;
+  --terminal-ansi-bright-magenta: #d670d6;
+  --terminal-ansi-bright-cyan: #29b8db;
+  --terminal-ansi-bright-white: #e5e5e5;
+}
+
+@layer base {
+  * {
+    @apply border-border outline-ring/50;
+  }
+
+  body {
+    @apply bg-background text-foreground;
+  }
+
+  html {
+    font-family: var(--font-sans);
+    color-scheme: dark;
+  }
+
+  html:lang(zh-CN) {
+    --font-sans:
+      "Geist Variable", "PingFang SC", "Noto Sans SC Variable", "Noto Sans SC", -apple-system,
+      BlinkMacSystemFont, "Segoe UI", sans-serif;
+  }
+
+  pre {
+    font-family: var(--font-sans);
+  }
+}
+
+@layer components {
+  .spirit-scroll {
+    scrollbar-width: thin;
+    scrollbar-color: color-mix(in srgb, var(--foreground) 20%, transparent) transparent;
+  }
+
+  .spirit-scroll::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+  }
+
+  .spirit-scroll::-webkit-scrollbar-button:vertical:decrement,
+  .spirit-scroll::-webkit-scrollbar-button:vertical:increment,
+  .spirit-scroll::-webkit-scrollbar-button:horizontal:decrement,
+  .spirit-scroll::-webkit-scrollbar-button:horizontal:increment,
+  .spirit-scroll::-webkit-scrollbar-button {
+    display: none;
+    block-size: 0;
+  }
+
+  .spirit-scroll::-webkit-scrollbar-track,
+  .spirit-scroll::-webkit-scrollbar-track-piece,
+  .spirit-scroll::-webkit-scrollbar-corner {
+    background: transparent;
+  }
+
+  .spirit-scroll::-webkit-scrollbar-thumb {
+    border-radius: 100px;
+    background: color-mix(in srgb, var(--foreground) 18%, transparent);
+  }
+
+  .spirit-scroll:hover::-webkit-scrollbar-thumb {
+    background: color-mix(in srgb, var(--foreground) 28%, transparent);
+  }
+
+  /* Thinking: `background-clip: text`; two layers (muted base + moving highlight)
+     to match Desktop and avoid transparent holes at extreme background positions. */
+  @keyframes spirit-thinking-text-shimmer-pos {
+    0% {
+      background-position:
+        125% 50%,
+        0 0;
+    }
+    100% {
+      background-position:
+        -125% 50%,
+        0 0;
+    }
+  }
+
+  .spirit-thinking-shimmer-text {
+    background-image:
+      linear-gradient(
+        118deg,
+        transparent 0%,
+        transparent 24%,
+        color-mix(in srgb, var(--foreground) 28%, transparent) 41%,
+        color-mix(in srgb, var(--foreground) 48%, transparent) 50%,
+        color-mix(in srgb, var(--foreground) 28%, transparent) 59%,
+        transparent 76%,
+        transparent 100%
+      ),
+      linear-gradient(var(--muted-foreground), var(--muted-foreground));
+    background-size:
+      240% 100%,
+      100% 100%;
+    background-position:
+      125% 50%,
+      0 0;
+    background-repeat: no-repeat, no-repeat;
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+    -webkit-text-fill-color: transparent;
+    /* Matches Desktop: linear motion reads better than ease for a live thinking label. */
+    animation: spirit-thinking-text-shimmer-pos 1s linear infinite;
+    will-change: background-position;
+    transform: translateZ(0);
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .spirit-thinking-shimmer-text {
+      animation: none;
+      background: none;
+      -webkit-background-clip: unset;
+      background-clip: unset;
+      color: var(--muted-foreground);
+      -webkit-text-fill-color: unset;
+      transform: none;
+    }
+  }
+
+  @keyframes spirit-edit-delta-enter-up {
+    from {
+      transform: translateY(100%);
+      opacity: 0.35;
+    }
+    to {
+      transform: translateY(0);
+      opacity: 1;
+    }
+  }
+
+  @keyframes spirit-edit-delta-enter-down {
+    from {
+      transform: translateY(-100%);
+      opacity: 0.35;
+    }
+    to {
+      transform: translateY(0);
+      opacity: 1;
+    }
+  }
+
+  .spirit-edit-delta-slide-up {
+    animation: spirit-edit-delta-enter-up 180ms cubic-bezier(0.22, 1, 0.36, 1);
+  }
+
+  .spirit-edit-delta-slide-down {
+    animation: spirit-edit-delta-enter-down 180ms cubic-bezier(0.22, 1, 0.36, 1);
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .spirit-edit-delta-slide-up,
+    .spirit-edit-delta-slide-down {
+      animation: none;
+    }
+  }
+
+  /* Glass Logo Shimmer: skeleton-style wide soft sweep */
+  @keyframes spirit-glass-shimmer-sweep {
+    0% {
+      transform: translateX(-350px) skewX(-18deg);
+      animation-timing-function: cubic-bezier(0.45, 0.05, 0.55, 0.95);
+    }
+    30% {
+      transform: translateX(350px) skewX(-18deg);
+    }
+    70% {
+      transform: translateX(350px) skewX(-18deg);
+      animation-timing-function: linear;
+    }
+    70.01% {
+      transform: translateX(-350px) skewX(-18deg);
+    }
+    100% {
+      transform: translateX(-350px) skewX(-18deg);
+    }
+  }
+
+  .spirit-glass-shimmer {
+    animation: spirit-glass-shimmer-sweep 4s linear infinite;
+    will-change: transform;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .spirit-glass-shimmer {
+      animation: none;
+    }
+  }
+}
+
+.workspace-shell-xterm .xterm-viewport {
+  scrollbar-width: thin;
+  scrollbar-color: color-mix(in oklab, var(--foreground) 16%, transparent) transparent;
+}
+
+.workspace-shell-xterm .xterm-viewport::-webkit-scrollbar {
+  width: 6px;
+}
+
+.workspace-shell-xterm .xterm-viewport::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.workspace-shell-xterm .xterm-viewport::-webkit-scrollbar-thumb {
+  border-radius: 9999px;
+  background: color-mix(in oklab, var(--foreground) 14%, transparent);
+}
+
+.workspace-shell-xterm .xterm-viewport::-webkit-scrollbar-thumb:hover {
+  background: color-mix(in oklab, var(--foreground) 24%, transparent);
+}
+
+/* Nested browser preview: typography only (not transform scale). */
+[data-nested-preview] .text-sm {
+  font-size: 0.6875rem;
+  line-height: 1.35;
+}
+
+[data-nested-preview] .text-xs {
+  font-size: 0.625rem;
+  line-height: 1.35;
+}
+
+/* Landing 预览：macOS hiddenInset 顶栏安全区（对齐 Desktop `spirit-desktop-darwin`） */
+[data-spirit-preview-shell="darwin"] {
+  /* Void 暗色正文：仅 Agent Window 内生效，窗口外 Landing 保持 text-white */
+  --foreground: #e4e4e4;
+  --spirit-macos-titlebar-inset: 2rem;
+  --spirit-macos-traffic-lights-inset-left: 4.875rem;
+}
+
+[data-spirit-preview-shell="darwin"] #session-sidebar-panel {
+  position: relative;
+  padding-top: var(--spirit-macos-titlebar-inset);
+}
+
+[data-spirit-preview-shell="darwin"] #session-sidebar-panel::before {
+  content: "";
+  position: absolute;
+  z-index: 0;
+  top: 0;
+  right: 0;
+  left: 0;
+  height: var(--spirit-macos-titlebar-inset);
+}
+
+[data-spirit-preview-shell="darwin"] [data-spirit-surface="layout-chrome"] {
+  transition: padding-left 300ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+[data-spirit-preview-shell="darwin"]
+  [data-spirit-surface="layout-chrome"][data-session-sidebar-open="false"] {
+  padding-left: var(--spirit-macos-traffic-lights-inset-left);
+}
+
+@layer utilities {
+  .font-sans {
+    font-family: var(--font-sans);
+  }
+}
+
+/* Docs: SiteNav is fixed; offset Fumadocs sticky chrome by the bar height. */
+:root {
+  --site-nav-height: 3.75rem;
+  --site-frame-width: min(84rem, calc(100% - 2rem));
+}
+
+@media (min-width: 640px) {
+  :root {
+    --site-nav-height: 4rem;
+    --site-frame-width: min(84rem, calc(100% - 4rem));
+  }
+}
+
+@media (min-width: 1024px) {
+  :root {
+    --site-frame-width: min(84rem, calc(100% - 6rem));
+  }
+}
+
+[data-docs-layout] {
+  --fd-banner-height: var(--site-nav-height);
+  --fd-layout-width: var(--site-frame-width);
+  --background: #000000;
+  --card: #000000;
+  --color-fd-background: #000000;
+  --color-fd-card: #000000;
+  padding-top: var(--site-nav-height);
+  background: #000000;
+}
+
+[data-docs-layout] #nd-docs-layout,
+[data-docs-layout] #nd-page,
+[data-docs-layout] #nd-toc {
+  background: #000000;
+}
+
+[data-docs-layout] #nd-sidebar,
+[data-docs-layout] #nd-toc {
+  font-family: var(--font-sans);
+}
+
+[data-docs-layout] #nd-toc {
+  font-size: 0.875rem;
+}
+
+[data-docs-layout] #nd-sidebar {
+  background: #000000;
+  border-inline-end: none;
+  transition: none;
+  font-size: 0.875rem;
+}
+
+/* px-2 hover inset: widen the items-end pane leftward so labels still match the nav. */
+[data-docs-layout] #nd-sidebar > * {
+  width: calc(var(--fd-sidebar-width) + 0.5rem);
+}
+
+[data-docs-layout] #nd-sidebar [data-radix-scroll-area-viewport] {
+  padding-inline: 0;
+}
+
+[data-docs-layout] #nd-sidebar a,
+[data-docs-layout] #nd-sidebar button {
+  transition: none !important;
+}
+
+[data-docs-layout] #nd-sidebar > .flex.flex-col.gap-3 {
+  display: none;
+}
+
+[data-docs-layout] .prose {
+  font-family: var(--font-sans);
+}
+
+[data-docs-layout] #nd-page > h1,
+[data-docs-layout] .prose :is(h1, h2, h3, h4, h5, h6) {
+  font-family: var(--font-sans);
+  font-weight: 500;
+  letter-spacing: -0.025em;
+  scroll-margin-top: calc(var(--site-nav-height) + 2rem);
+}
+
+[data-docs-layout] .prose :is(h1, h2, h3, h4, h5, h6) :is(a, strong) {
+  font-weight: 500;
+}
+
+[data-docs-layout] .prose strong {
+  font-weight: 500;
+}
+
+[data-docs-layout] [data-sidebar-panel],
+[data-docs-layout] [aria-label="Collapse Sidebar"] {
+  display: none;
+}
+
+/* Fumadocs shows the page-tree sidebar from `md` (768px). Keep it drawer-only
+   until `lg` so iPad 11 portrait does not split the frame. */
+@media (width < 1024px) {
+  [data-docs-layout] [data-sidebar-placeholder] {
+    display: none !important;
+  }
+
+  [data-docs-layout] #nd-docs-layout {
+    --fd-sidebar-width: 0px !important;
+  }
+
+  /* Nav/Footer already use --site-frame-width gutters; drop article px-4/px-6. */
+  [data-docs-layout] #nd-page {
+    padding-inline: 0;
+  }
+}
+
+[data-docs-layout] #nd-sidebar-mobile,
+[data-docs-layout] :has(+ #nd-sidebar-mobile) {
+  display: none !important;
+}

@@ -1,0 +1,158 @@
+#!/usr/bin/env bash
+# Spirit Agent CLI installer for macOS and Linux.
+# Usage: curl -fsSL https://spirit.fast/install | bash
+#
+# Optional environment variables:
+#   SPIRIT_HOME     Install root (default: ~/.spirit)
+#   SPIRIT_VERSION  Version segment (default: latest)
+
+set -euo pipefail
+
+SPIRIT_DOWNLOAD_HOST="${SPIRIT_DOWNLOAD_HOST:-__SPIRIT_DOWNLOAD_HOST__}"
+SPIRIT_HOME="${SPIRIT_HOME:-$HOME/.spirit}"
+SPIRIT_VERSION="${SPIRIT_VERSION:-latest}"
+
+info() { printf '+ %s\n' "$*"; }
+warn() { printf '! %s\n' "$*" >&2; }
+die()  { printf 'error: %s\n' "$*" >&2; exit 1; }
+
+require_cmd() {
+  command -v "$1" >/dev/null 2>&1 || die "required command not found: $1"
+}
+
+detect_os() {
+  local uname_s
+  uname_s="$(uname -s)"
+  case "$uname_s" in
+    Darwin) echo darwin ;;
+    Linux)  echo linux ;;
+    *)      die "unsupported OS: $uname_s (supported: macOS, Linux)" ;;
+  esac
+}
+
+detect_arch() {
+  local uname_m
+  uname_m="$(uname -m)"
+  case "$uname_m" in
+    x86_64|amd64) echo x64 ;;
+    arm64|aarch64) echo arm64 ;;
+    *) die "unsupported architecture: $uname_m (supported: x64, arm64)" ;;
+  esac
+}
+
+cli_archive_name() {
+  local os="$1" arch="$2"
+  printf 'SpiritAgent-CLI-%s-%s.tar.gz' "$os" "$arch"
+}
+
+cli_download_url() {
+  local os="$1" arch="$2" version="$3"
+  printf 'https://%s/cli/%s/%s/%s/%s' \
+    "$SPIRIT_DOWNLOAD_HOST" "$os" "$arch" "$version" "$(cli_archive_name "$os" "$arch")"
+}
+
+ensure_path_line() {
+  local file="$1" line="$2" marker="$3"
+  if [ ! -f "$file" ]; then
+    printf '%s\n%s\n' "$marker" "$line" >>"$file"
+    info "Created $file and added PATH entry"
+    return
+  fi
+  if grep -Fqs "$marker" "$file" || grep -Fqs "$SPIRIT_HOME/bin" "$file"; then
+    info "PATH already configured in $file"
+    return
+  fi
+  printf '\n%s\n%s\n' "$marker" "$line" >>"$file"
+  info "Added PATH entry to $file"
+}
+
+main() {
+  require_cmd curl
+  require_cmd tar
+  require_cmd uname
+  require_cmd mktemp
+
+  local os arch url archive tmp extract_root bundle_root bin_dir current_dir
+  os="$(detect_os)"
+  arch="$(detect_arch)"
+  url="$(cli_download_url "$os" "$arch" "$SPIRIT_VERSION")"
+
+  info "Installing Spirit Agent CLI"
+  info "Platform: $os/$arch"
+  info "SPIRIT_HOME: $SPIRIT_HOME"
+  info "Version: $SPIRIT_VERSION"
+  info "Download: $url"
+
+  tmp="$(mktemp -d "${TMPDIR:-/tmp}/spirit-install.XXXXXX")"
+  # Expand path at registration time: `tmp` is function-local and unbound after main returns under `set -u`.
+  # shellcheck disable=SC2064
+  trap "rm -rf -- $(printf '%q' "$tmp")" EXIT
+
+  archive="$tmp/cli.tar.gz"
+  extract_root="$tmp/extract"
+  mkdir -p "$extract_root"
+
+  info "Downloading..."
+  curl -fsSL --proto '=https' --tlsv1.2 -o "$archive" "$url"
+
+  info "Extracting..."
+  tar -xzf "$archive" -C "$extract_root"
+
+  bundle_root=""
+  for candidate in "$extract_root"/*; do
+    if [ -d "$candidate" ]; then
+      bundle_root="$candidate"
+      break
+    fi
+  done
+  [ -n "$bundle_root" ] || die "archive did not contain a top-level directory"
+  [ -x "$bundle_root/bin/spirit" ] || die "archive missing executable bin/spirit"
+
+  bin_dir="$SPIRIT_HOME/bin"
+  current_dir="$SPIRIT_HOME/cli/current"
+  mkdir -p "$bin_dir" "$SPIRIT_HOME/cli"
+
+  # Atomic replace: stage then rename.
+  rm -rf "$SPIRIT_HOME/cli/current.next"
+  mv "$bundle_root" "$SPIRIT_HOME/cli/current.next"
+  rm -rf "$current_dir"
+  mv "$SPIRIT_HOME/cli/current.next" "$current_dir"
+
+  ln -sfn "$current_dir/bin/spirit" "$bin_dir/spirit"
+  chmod +x "$current_dir/bin/spirit" "$bin_dir/spirit" 2>/dev/null || true
+
+  if [ "$os" = darwin ] && command -v xattr >/dev/null 2>&1; then
+    xattr -dr com.apple.quarantine "$current_dir" 2>/dev/null || true
+  fi
+
+  local path_line marker
+  path_line="export PATH=\"$SPIRIT_HOME/bin:\$PATH\""
+  marker="# spirit-agent cli"
+  ensure_path_line "$HOME/.profile" "$path_line" "$marker"
+  ensure_path_line "$HOME/.bashrc" "$path_line" "$marker"
+  ensure_path_line "$HOME/.zshrc" "$path_line" "$marker"
+
+  # Make available in the current (piped) shell session when possible.
+  export PATH="$SPIRIT_HOME/bin:$PATH"
+
+  info "Installed to $current_dir"
+  info "Binary linked at $bin_dir/spirit"
+
+  if command -v spirit >/dev/null 2>&1; then
+    info "Verifying: $(command -v spirit)"
+    if spirit --version >/dev/null 2>&1; then
+      info "spirit --version: $(spirit --version 2>/dev/null || true)"
+    else
+      warn "spirit is on PATH but --version failed; try opening a new terminal"
+    fi
+  else
+    warn "spirit is not on PATH in this shell yet"
+  fi
+
+  printf '\n'
+  info "Done. Open a new terminal, or run:"
+  printf '  export PATH="%s/bin:$PATH"\n' "$SPIRIT_HOME"
+  printf '  spirit --version\n'
+}
+
+main "$@"

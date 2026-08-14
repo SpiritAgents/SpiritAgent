@@ -1,0 +1,98 @@
+---
+title: 组件
+description: 文档设计评审用的 Callout、代码块、Tabs 与卡片。
+---
+
+正式文档会复用这些 Fumadocs MDX 组件。
+
+## Callout
+
+<Callout title="说明">默认 Callout，用来放平静的提示。</Callout>
+
+<Callout type="warn" title="警告">
+  继续之前需要留意的事项。
+</Callout>
+
+<Callout type="error" title="错误">
+  阻塞问题。先修好再往下走。
+</Callout>
+
+<Callout type="success" title="成功">
+  这一步按预期完成。
+</Callout>
+
+占位段落，把这一节拉长，方便观察目录高亮。只要阅读线还停在本节标题上，On this page 就应保持 Callout。后面几段没有实际含义，只用来占高度。文档目录、侧栏、正文和页脚会一起滚动，所以需要足够长的章节才能看出切换时机。
+
+继续占位。标题越过顶栏下方的阅读线之后，高亮才应交给下一节。如果下一节标题只是从视口底部露出来，目录不应立刻跳走。这一段同样没有信息量，只是把 Callout 内容撑高。
+
+再补一段。左右对照英文页时，中文页的章节标题不同，但滚动行为应当一致：同一时刻只高亮一项，并且是最近越过阅读线的那一项。
+
+最后一段 Callout 占位。滚过这些文字后才会进入代码一节。
+
+## 代码
+
+```ts
+export function greet(name: string) {
+  return `你好，${name}`;
+}
+```
+
+```bash
+npx next dev
+```
+
+代码节占位。目录应在本节标题越过阅读线后才切到「代码」，而不是标题刚出现在视口底部时就切换。下面继续用无意义文字把这一节拉长，避免一屏里挤进好几个标题。
+
+继续占位。观察时可以在这一节中间停住，确认 On this page 仍停在「代码」，而不是提前跳到 Tabs 或卡片。
+
+再补一段。滚动速度可以慢一点，方便看高亮何时从 Callout 换成代码，再换成 Tabs。
+
+代码节收尾占位。接下来才是 Tabs。
+
+## Tabs
+
+<Tabs items={['TypeScript', 'Shell']}>
+  <Tab value="TypeScript">
+
+```ts
+import { source } from "@/lib/source";
+
+const page = source.getPage(["components"], "zh-CN");
+```
+
+  </Tab>
+  <Tab value="Shell">
+
+```bash
+curl -I http://localhost:3000/zh-CN/docs/components
+```
+
+  </Tab>
+</Tabs>
+
+Tabs 节占位。同样只应在本节标题越过阅读线后高亮。中间停住时目录不要同时点亮多项，也不要从底部露头的「卡片」抢高亮。
+
+继续占位。这一节的组件本身不占太多高度，所以必须靠文字把滚动区间拉开。
+
+再补一段。从页顶滚到页底再滚回去，高亮顺序应是 Callout、代码、Tabs、卡片，来回都应能经过中间两项。
+
+Tabs 节收尾占位。
+
+## 卡片
+
+<Cards>
+  <Card title="排版" href="./typography.mdx">
+    标题、列表与行内样式。
+  </Card>
+  <Card title="概览" href="./index.mdx">
+    返回脚手架首页。
+  </Card>
+</Cards>
+
+卡片节占位，避免只有一个标题从底部探进来就被当成当前节。高亮应等到本节标题真正越过阅读线。下面几段把页面撑出足够的底部滚动空间。
+
+继续占位。滚到页底时目录应停在「卡片」；往回滚时再依次回到 Tabs、代码、Callout。
+
+再补一段无意义文字，只为了占高度。
+
+卡片节收尾占位。
