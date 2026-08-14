@@ -1,0 +1,25 @@
+---
+title: Spirit Agent
+description: An open-source AI agent you run with your models, your keys, and one shared daemon.
+---
+
+Spirit Agent is an open-source coding agent. You bring a key from a provider you already use, store it in the operating system keyring, and run the same agent on [Desktop](./install/desktop.mdx) or the [CLI](./install/cli.mdx).
+
+## Bring your own key
+
+Spirit does not sell model access. Connect OpenAI, Anthropic, SpaceXAI, a gateway, or a regional provider, then keep the same workspace workflow when you switch houses.
+
+Keys are written to the system keyring under the `SpiritAgent` service. They are not stored in `config.json`.
+
+## One agent, two hosts
+
+Desktop and the CLI share a local daemon. Sessions, models, approvals, and credentials live in the same data directory, so you can start a task in the app and continue it in the terminal.
+
+## Start here
+
+1. [Install Desktop or the CLI](./quickstart.mdx)
+2. Open a workspace
+3. Connect one provider
+4. Ask the agent to read the repo, make a small edit, and approve the change
+
+See the [quickstart](./quickstart.mdx) for the full path, or jump to [Desktop](./install/desktop.mdx) and [CLI](./install/cli.mdx) install details.

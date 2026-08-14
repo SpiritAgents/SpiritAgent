@@ -6,8 +6,7 @@ export const SITE_FRAME_CLASS = "w-full max-w-(--site-frame-width)";
  * site chrome (no Fumadocs search or sidebar mega). Flip when `content/docs`
  * has published MDX again.
  */
-export const HAS_PUBLISHED_DOCS = false;
-
+export const HAS_PUBLISHED_DOCS = true;
 
 /** Docs shell: same max width as the landing frame. */
 export const DOCS_FRAME_CLASS = `${SITE_FRAME_CLASS} mx-auto`;

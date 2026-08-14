@@ -1,0 +1,108 @@
+---
+title: Quickstart
+description: Install Spirit Agent, connect one provider, and land a small approved edit.
+---
+
+This page takes you from a fresh install to one useful change. Later pages cover every provider and host; without this path, those pages have nothing to attach to.
+
+## 1. Install Desktop or the CLI
+
+Pick one host. They share the same local daemon, so you can add the other later.
+
+<Tabs items={["Desktop", "CLI"]}>
+  <Tab value="Desktop">
+
+Download the build for your platform from the [download page](/en-US/download), then open it.
+
+- macOS: `.dmg` (Intel or Apple silicon)
+- Windows: `.exe` installer (x64 or ARM64)
+- Linux: `.AppImage` (x64 or ARM64)
+
+Details: [Install Desktop](./install/desktop.mdx).
+
+  </Tab>
+  <Tab value="CLI">
+
+```bash
+curl -fsSL https://spirit.fast/install | bash
+```
+
+```powershell
+irm https://spirit.fast/install.ps1 | iex
+```
+
+Open a new terminal and run `spirit --version`. Details: [Install CLI](./install/cli.mdx).
+
+  </Tab>
+</Tabs>
+
+## 2. Open a workspace
+
+The agent reads and edits files in a workspace root. Open the project you want to change.
+
+<Tabs items={["Desktop", "CLI"]}>
+  <Tab value="Desktop">
+
+Use **Open workspace folder** in the sidebar and pick a folder. Recent workspaces stay in the list.
+
+  </Tab>
+  <Tab value="CLI">
+
+```bash
+cd /path/to/your/project
+spirit
+```
+
+The TUI uses the current directory as the workspace.
+
+  </Tab>
+</Tabs>
+
+## 3. Connect one provider
+
+You need an API key from a provider you already use. Spirit stores that key in the operating system keyring (`SpiritAgent`), not in the project.
+
+<Tabs items={["Desktop", "CLI"]}>
+  <Tab value="Desktop">
+
+1. Open **Settings → Models**.
+2. Choose a provider and follow the connect wizard.
+3. Paste the key. Extra fields (region, site, plan endpoint) appear only when that provider needs them.
+4. Pick a chat model as the active model.
+
+  </Tab>
+  <Tab value="CLI">
+
+In the TUI, run `/model add` and complete the form. You can also add a model from the shell:
+
+```bash
+spirit model add
+```
+
+`SPIRIT_API_KEY` and `SPIRIT_API_BASE` override the stored key and base URL for that process when you need a one-off.
+
+  </Tab>
+</Tabs>
+
+<Callout title="Keyring">
+The key is written to the system keyring before Spirit updates `config.json`. If a later page asks you to reconnect, you are restoring the keyring entry, not pasting a key into the repo.
+</Callout>
+
+## 4. Ask for a small change, then approve it
+
+Stay on **Agent** mode and **default** approval for the first run. Ask the agent to read a file you know, then make a small, obvious edit.
+
+Example:
+
+```txt
+Read README.md and add a one-line project summary at the top. Do not change anything else.
+```
+
+The agent will read the file, propose an edit, and wait. Approve the file change (and any shell command) in the prompt. After it finishes, open the file and confirm the edit.
+
+That is the whole loop: install → workspace → one provider → read → edit → approve. Everything else in these docs hangs off this path.
+
+## Next
+
+- [Install Desktop](./install/desktop.mdx) and [Install CLI](./install/cli.mdx) if you need another host or a pinned version
+- Settings → Models if the first provider did not list models — check the site, plan, or cloud fields for that house

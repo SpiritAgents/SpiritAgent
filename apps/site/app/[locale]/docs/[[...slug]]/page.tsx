@@ -1,31 +1,67 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
+import { createRelativeLink } from "fumadocs-ui/mdx";
+import { DocsBody, DocsDescription, DocsPage, DocsTitle } from "fumadocs-ui/layouts/docs/page";
 
-import { DocsPage } from "@/components/docs-page";
-import { SUPPORTED_LOCALES } from "@/i18n/config";
-import { buildPageMetadata } from "@/lib/page-metadata";
+import { getMDXComponents } from "@/components/mdx";
+import { DocsTOC, DocsTOCPopover, DocsTOCProvider } from "@/components/docs-toc";
+import { isSupportedLocale } from "@/i18n/config";
+import { FONT_WEIGHT_MEDIUM, FONT_WEIGHT_NORMAL } from "@/lib/typography";
+import { source } from "@/lib/source";
 
 type PageProps = {
   params: Promise<{ locale: string; slug?: string[] }>;
 };
 
+export default async function DocsPageRoute({ params }: PageProps) {
+  const { locale, slug } = await params;
+  const page = source.getPage(slug, locale);
+  if (!page) notFound();
+
+  const MDX = page.data.body;
+
+  return (
+    <DocsPage
+      toc={page.data.toc}
+      className="max-w-none"
+      tableOfContentPopover={{ enabled: false }}
+      slots={{
+        toc: {
+          provider: DocsTOCProvider,
+          main: DocsTOC,
+          popover: DocsTOCPopover,
+        },
+      }}
+    >
+      <DocsTitle className={`${FONT_WEIGHT_MEDIUM} tracking-tight`}>{page.data.title}</DocsTitle>
+      <DocsDescription className={FONT_WEIGHT_NORMAL}>{page.data.description}</DocsDescription>
+      <DocsBody>
+        <MDX
+          components={getMDXComponents({
+            a: createRelativeLink(source, page),
+          })}
+        />
+      </DocsBody>
+    </DocsPage>
+  );
+}
+
 export function generateStaticParams() {
-  return SUPPORTED_LOCALES.map((locale) => ({ locale, slug: [] }));
+  return source.generateParams("slug", "locale");
 }
 
 export async function generateMetadata({ params }: PageProps): Promise<Metadata> {
   const { locale, slug } = await params;
-  if (slug && slug.length > 0) {
-    notFound();
-  }
-  return buildPageMetadata(locale, "docs");
-}
+  const page = source.getPage(slug, locale);
+  if (!page) notFound();
 
-export default async function DocsPageRoute({ params }: PageProps) {
-  const { slug } = await params;
-  if (slug && slug.length > 0) {
-    notFound();
-  }
-
-  return <DocsPage />;
+  return {
+    title: page.data.title,
+    description: page.data.description,
+    alternates: isSupportedLocale(locale)
+      ? {
+          canonical: page.url,
+        }
+      : undefined,
+  };
 }

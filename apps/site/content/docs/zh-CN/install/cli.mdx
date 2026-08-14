@@ -1,0 +1,62 @@
+---
+title: 安装 CLI
+description: 用安装脚本、SPIRIT_HOME 与 SPIRIT_VERSION 安装 Spirit Agent 命令行。
+---
+
+CLI 是终端宿主，带 TUI 和非交互 `-p` 模式。它与 [Desktop](./desktop.mdx) 连同一套本机守护进程。
+
+## 安装脚本
+
+macOS 与 Linux：
+
+```bash
+curl -fsSL https://spirit.fast/install | bash
+```
+
+Windows（PowerShell）：
+
+```powershell
+irm https://spirit.fast/install.ps1 | iex
+```
+
+脚本从 `download.spirit.fast` 下载构建、解包，并把 `spirit` 加进 `PATH`。
+
+新开一个终端，然后：
+
+```bash
+spirit --version
+```
+
+## 装到哪里
+
+安装根目录 **不是** Spirit Agent 的数据目录。
+
+| | 默认 | 覆盖 |
+| --- | --- | --- |
+| CLI 二进制 | Unix：`~/.spirit` · Windows：`%LOCALAPPDATA%\Spirit` | `SPIRIT_HOME` |
+| 会话、配置、钥匙串指针 | macOS：`~/Library/Application Support/SpiritAgent` · Windows：`%APPDATA%\SpiritAgent` · Linux：`~/.local/share/SpiritAgent` | `SPIRIT_AGENT_DATA_DIR` |
+
+在 Unix 上，脚本把 `$SPIRIT_HOME/bin/spirit` 链到 `$SPIRIT_HOME/cli/current/bin/spirit`，并在 `~/.profile`、`~/.bashrc`、`~/.zshrc` 追加 `export PATH="$SPIRIT_HOME/bin:$PATH"`（标记 `# spirit-agent cli`）。
+
+## 钉版本或换镜像
+
+| 变量 | 默认 | 作用 |
+| --- | --- | --- |
+| `SPIRIT_HOME` | `~/.spirit` 或 `%LOCALAPPDATA%\Spirit` | CLI 二进制安装根 |
+| `SPIRIT_VERSION` | `latest` | 下载 URL 里的版本段 |
+| `SPIRIT_DOWNLOAD_HOST` | `download.spirit.fast` | CDN 主机 |
+
+```bash
+SPIRIT_VERSION=0.1.0 curl -fsSL https://spirit.fast/install | bash
+```
+
+也可以从[下载页](/zh-CN/download)或 [GitHub Releases](https://github.com/SpiritAgents/SpiritAgent/releases/latest) 自行下载 CLI 压缩包再解压。
+
+## 第一次运行
+
+```bash
+cd /path/to/your/project
+spirit
+```
+
+这会打开 TUI。用 `/model add` 接提供商，或在 shell 里运行 `spirit model add`。见[上手](../quickstart.mdx)。

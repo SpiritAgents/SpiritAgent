@@ -1,0 +1,25 @@
+---
+title: Spirit Agent
+description: 开源 AI Agent。你自带模型与密钥，Desktop 与 CLI 共用同一套守护进程。
+---
+
+Spirit Agent 是开源的编程 Agent。你从已有提供商拿一把 Key，写入操作系统钥匙串，然后在 [Desktop](./install/desktop.mdx) 或 [CLI](./install/cli.mdx) 上跑同一套 Agent。
+
+## 自带密钥（BYOK）
+
+Spirit 不出售模型额度。接入 OpenAI、Anthropic、SpaceXAI、网关或区域提供商后，换一家不必换工作流。
+
+密钥写入系统钥匙串，服务名为 `SpiritAgent`，不会写进 `config.json`。
+
+## 一个 Agent，两个宿主
+
+Desktop 与 CLI 共用本机守护进程。会话、模型、审批和凭证在同一数据目录，你可以在应用里开工，再在终端里接着做。
+
+## 从这里开始
+
+1. [安装 Desktop 或 CLI](./quickstart.mdx)
+2. 打开一个工作区
+3. 接上第一家提供商
+4. 让 Agent 读仓库、做一次小改，并走审批
+
+完整路径见 [上手](./quickstart.mdx)，安装细节见 [Desktop](./install/desktop.mdx) 与 [CLI](./install/cli.mdx)。

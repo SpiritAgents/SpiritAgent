@@ -693,7 +693,8 @@ Preparing a stronger headline update in messages.`,
   docs: {
     title: "Documentation",
     metaTitle: "Spirit Agent Docs",
-    metaDescription: "Product documentation for Spirit Agent is coming soon.",
+    metaDescription:
+      "Install Spirit Agent, connect a provider with your own key, and run the same agent on Desktop and CLI.",
     comingSoon: "Coming soon.",
     sectionAria: "Documentation",
     search: "Search",
@@ -1042,7 +1043,8 @@ const zhCN: Messages = {
   docs: {
     title: "文档",
     metaTitle: "Spirit Agent 文档",
-    metaDescription: "Spirit Agent 产品文档即将推出。",
+    metaDescription:
+      "安装 Spirit Agent，用自己的密钥接入提供商，并在 Desktop 与 CLI 上使用同一套 Agent。",
     comingSoon: "即将推出。",
     sectionAria: "文档",
     search: "搜索",
