@@ -1,0 +1,17 @@
+---
+title: Automations
+description: Desktop only. Time triggers plus GitHub events after you connect Integrations.
+---
+
+Automations run an agent job without you sitting in the composer. They exist on **Desktop only**. The `create_automation` tool throws on other hosts.
+
+## Triggers
+
+- **Time** — hourly, daily, or weekly
+- **GitHub** — `pull_request_created` or `issue_created` on a repo you name (`owner` + `repo`)
+
+GitHub triggers need [Integrations](./integrations.mdx) connected first. If GitHub is not connected, the trigger menu will not offer those events.
+
+Data lives under `{spiritDataDir}/automations/`. Open the Automations view on Desktop to see history and settings.
+
+The CLI cannot create or run this UI. Use Desktop.

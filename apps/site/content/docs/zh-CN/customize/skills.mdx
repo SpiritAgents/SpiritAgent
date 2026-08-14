@@ -1,0 +1,24 @@
+---
+title: Skills
+description: 用户、.spirit、.agents 下的 Skill，以及内置的 create-rule、create-skill、create-hook。
+---
+
+Skill 是带 `SKILL.md` 的文件夹。Spirit 从三处发现：
+
+| 范围 | 路径 |
+| --- | --- |
+| 用户 | `{spiritDataDir}/skills/{name}/SKILL.md` |
+| 工作区 Spirit | `{workspace}/.spirit/skills/{name}/SKILL.md` |
+| 工作区 agents | `{workspace}/.agents/skills/{name}/SKILL.md` |
+
+你在某一回合点名某个 Skill 时，Spirit 可以把全文附到那条用户消息上。它不会把所有 Skill 塞进 system。
+
+## 内置生成器
+
+这些随 Spirit 提供（不在你的数据目录里）：
+
+- `create-rule` — 起草一条 [rule](./rules.mdx)
+- `create-skill` — 起草一个 Skill
+- `create-hook` — 起草一个 [hook](./hooks.mdx)
+
+在 **设置 → Skills** 管理。Git 的 commit / push / merge chip 是宿主 UI，不是内置 Skill。见 [Git](../tools/git.mdx)。

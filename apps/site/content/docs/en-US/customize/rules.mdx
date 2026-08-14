@@ -1,0 +1,18 @@
+---
+title: Rules
+description: AGENTS.md, .spirit/rule.md, and your user rule.md.
+---
+
+Rules are Markdown the agent always considers. There are three slots:
+
+| Scope | Path |
+| --- | --- |
+| Workspace agents file | `{workspace}/AGENTS.md` |
+| Workspace Spirit rule | `{workspace}/.spirit/rule.md` |
+| User rule | `{spiritDataDir}/rule.md` |
+
+Write project conventions in `AGENTS.md` so anyone who opens the repo sees them. Use `.spirit/rule.md` for Spirit-specific notes you do not want in the generic agents file. Use the user rule for preferences that follow you across workspaces.
+
+Manage slots in **Settings → Rules**. A built-in Skill, `create-rule`, can draft a rule file for you.
+
+Keep rules short. The agent already has tools; repeating the tool list in a rule wastes attention.

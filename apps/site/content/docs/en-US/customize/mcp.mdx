@@ -1,0 +1,17 @@
+---
+title: MCP
+description: User mcp.json plus workspace .spirit/mcp.json. Workspace wins on the same server name.
+---
+
+MCP servers add tools, resources, and prompts from outside Spirit.
+
+| Scope | Path |
+| --- | --- |
+| User | `{spiritDataDir}/mcp.json` |
+| Workspace | `{workspace}/.spirit/mcp.json` |
+
+When both files define the same server name, the **workspace** entry wins.
+
+Manage servers in **Settings → MCPs**, or with `spirit mcp` in the CLI (`list`, `show`, `init`, `enable`, `disable`, `inspect`, `tools`, `call-tool`, …).
+
+MCP tools merge into the same tool list the agent already has. They still go through [approval](../agent/approvals.mdx) when they are high-risk.

@@ -1,0 +1,29 @@
+---
+title: Hooks
+description: Run scripts on session, tool, and subagent events. They can allow, deny, or ask.
+---
+
+Hooks are scripts Spirit runs at fixed points. They can allow a tool, deny it, or force an approval prompt (`ask`).
+
+## Events
+
+- `sessionStart`
+- `sessionEnd`
+- `submitPrompt`
+- `preToolUse`
+- `postToolUse`
+- `subagentStart`
+- `subagentEnd`
+
+`preToolUse` returning `ask` still prompts you even on [auto-approval or bypass](../agent/approvals.mdx).
+
+## Where they live
+
+| Scope | Config | Scripts |
+| --- | --- | --- |
+| User | `{spiritDataDir}/hooks.json` | `{spiritDataDir}/hooks/` |
+| Workspace | `{workspace}/.spirit/hooks.json` | `{workspace}/.spirit/hooks/` |
+
+Manage them in **Settings → Hooks**. Validate from the CLI with `spirit hooks list` and `spirit hooks validate`. The built-in Skill `create-hook` drafts a hook.
+
+Do not stack the same check in a hook, a rule, and an extension “just in case”. One clear `preToolUse` boundary is enough.

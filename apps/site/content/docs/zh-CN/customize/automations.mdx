@@ -1,0 +1,17 @@
+---
+title: 自动化
+description: 仅 Desktop。定时触发，以及接好集成后的 GitHub 事件。
+---
+
+自动化在你不坐在输入框前时跑一轮 Agent 任务。**仅 Desktop** 有。其他宿主上调用 `create_automation` 会报错。
+
+## 触发器
+
+- **时间** — 每小时、每天或每周
+- **GitHub** — 指定仓库（`owner` + `repo`）上的 `pull_request_created` 或 `issue_created`
+
+GitHub 触发要先接好[集成](./integrations.mdx)。没接 GitHub 时，触发菜单不会给出这些事件。
+
+数据在 `{spiritDataDir}/automations/`。到 Desktop 的自动化视图看历史和设置。
+
+CLI 没有这套 UI，也不能创建。请用 Desktop。

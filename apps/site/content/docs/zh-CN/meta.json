@@ -10,6 +10,8 @@
     "---Agent---",
     "agent",
     "---工具---",
-    "tools"
+    "tools",
+    "---自定义---",
+    "customize"
   ]
 }

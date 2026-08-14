@@ -1,0 +1,29 @@
+---
+title: Hooks
+description: 在会话、工具和子 Agent 事件上跑脚本。可以允许、拒绝或询问。
+---
+
+Hooks 是 Spirit 在固定节点跑的脚本。它们可以允许工具、拒绝工具，或强制弹出审批（`ask`）。
+
+## 事件
+
+- `sessionStart`
+- `sessionEnd`
+- `submitPrompt`
+- `preToolUse`
+- `postToolUse`
+- `subagentStart`
+- `subagentEnd`
+
+`preToolUse` 返回 `ask` 时，即使开了[自动审批或绕过](../agent/approvals.mdx)也会问你。
+
+## 放在哪里
+
+| 范围 | 配置 | 脚本 |
+| --- | --- | --- |
+| 用户 | `{spiritDataDir}/hooks.json` | `{spiritDataDir}/hooks/` |
+| 工作区 | `{workspace}/.spirit/hooks.json` | `{workspace}/.spirit/hooks/` |
+
+在 **设置 → Hooks** 管理。CLI 用 `spirit hooks list` 和 `spirit hooks validate` 校验。内置 Skill `create-hook` 可以起草。
+
+不要把同一条检查同时堆在 hook、rule 和扩展里「以防万一」。一处清楚的 `preToolUse` 边界就够。
