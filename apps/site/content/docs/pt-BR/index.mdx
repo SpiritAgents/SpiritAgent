@@ -1,0 +1,29 @@
+---
+title: Introdução
+description: Um agente de IA de código aberto com acesso a múltiplos provedores.
+---
+
+## Provedores de modelo
+
+O Spirit Agent não fornece serviços de modelo diretamente. Você pode conectar OpenAI, Anthropic, SpaceXAI, um gateway ou um provedor regional. Cada provedor roda no mesmo harness: ferramentas, aprovações, sessões e comportamento do workspace permanecem consistentes.
+
+As chaves são gravadas no chaveiro do sistema sob o serviço `SpiritAgent`. Elas não são armazenadas no `config.json`.
+
+## Um agente, dois hosts
+
+O Desktop e a CLI compartilham um daemon local. Sessões, modelos, aprovações e credenciais ficam no mesmo diretório de dados, para que você possa iniciar uma tarefa no aplicativo e continuá-la no terminal.
+
+## Comece por aqui
+
+1. [Instale o Desktop ou a CLI](./quickstart.mdx)
+2. Abra um workspace
+3. Conecte um provedor
+4. Peça ao agente para ler o repositório, fazer uma pequena edição e aprovar a alteração
+
+Veja o [quickstart](./quickstart.mdx) para o caminho completo.
+
+- Instalação: [Desktop](./install/desktop.mdx), [CLI](./install/cli.mdx)
+- Conectar: [Providers](./providers.mdx)
+- Trabalho: [Modes](./agent/modes.mdx), [Tools](./agent/tools.mdx), [Customize](./customize/rules.mdx)
+- Hosts: [Desktop](./desktop.mdx), [CLI](./cli.mdx) — [ACP](./acp.mdx) está implementado, mas não está na página de download
+- Referência: [Config](./config.mdx), [Security](./security.mdx), [Appearance](./appearance.mdx), [Troubleshooting](./troubleshooting.mdx)

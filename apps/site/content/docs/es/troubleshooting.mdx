@@ -1,0 +1,42 @@
+---
+title: Solución de problemas
+description: Configuración antigua, bloques sin interfaz, bloqueos de emparejamiento, claves faltantes y confusiones de ruta de instalación.
+---
+
+## config.json es rechazado
+
+El archivo debe ser `schemaVersion: 2`. Elimina el archivo antiguo y [vuelve a conectar un proveedor](./providers.mdx). Las claves nunca estuvieron en ese archivo — están en el [llavero](./security.mdx).
+
+## CLI instalada, ajustes vacíos
+
+Instalaste los binarios en `SPIRIT_HOME` (`~/.spirit`). Las sesiones y `config.json` viven en el [directorio de datos](./config.mdx). Verifica `SPIRIT_AGENT_DATA_DIR` si lo has sobrescrito.
+
+## `spirit -p` falló
+
+- Necesitaba aprobación → usa `-a auto-approval` / `-a bypass-approval`, o la TUI
+- Necesitaba [ask_questions](./agent/ask-questions.mdx) → usa la TUI, o haz que el prompt sea decisivo
+- Se agotó el tiempo → el modo sin interfaz se detiene después de 30 minutos
+
+## Los modelos no se importaron
+
+Abre la [página del proveedor](./providers.mdx) para esa casa. Verifica el sitio, el plan del endpoint, el recurso de Azure, la cuenta de Cloudflare, la región / IAM de Bedrock, o el proyecto / ubicación de Vertex. TokenHub permanece en Chat Completions. Bedrock Bearer no puede listar modelos.
+
+## Clave no está en el llavero
+
+Vuelve a conectar en **Configuración → Modelos** o `spirit model add`. El asistente escribe el llavero **antes** de `config.json`. No pegues claves en el repositorio.
+
+## El emparejamiento de Web Host falló
+
+Código incorrecto → inténtalo de nuevo. Cinco fallos bloquean el emparejamiento (`PAIRING_LOCKED`) hasta que reinicies Web Host en **Configuración → Redes**. El host debe soportar el emparejamiento; una vista previa web genérica puede mostrar que no lo soporta.
+
+## LSP no encontrado
+
+Instala el servidor tú mismo (clangd mediante Homebrew / winget, jdtls manualmente), luego actívalo en **Configuración → Agents**. Consulta [Desktop](./desktop.mdx).
+
+## El completado con Tab está vacío
+
+Habilita **Configuración → Tab** y asigna un modelo de chat ligero. Consulta [Desktop](./desktop.mdx).
+
+## ACP no está en la página de descargas
+
+Eso es esperado. ACP está implementado, pero la columna de descargas sigue siendo un marcador de posición. Consulta [ACP](./acp.mdx).

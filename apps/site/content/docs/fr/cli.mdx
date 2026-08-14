@@ -1,0 +1,53 @@
+---
+title: CLI
+description: TUI, non-interactif -p, SPIRIT_API_KEY / SPIRIT_API_BASE, et le démon partagé.
+---
+
+Le CLI est un hôte de terminal. Installez-le avec le [script d'installation](./install/cli.mdx). Il parle au même démon que [Desktop](./desktop.mdx).
+
+## TUI
+
+```bash
+cd /path/to/your/project
+spirit
+```
+
+La disposition est `inline` ou `fullscreen` (`-t` / `--tui`, ou `/tui`). Les modes, approbations et Loop correspondent à Desktop.
+
+Commandes slash utiles : `/help`, `/quit`, `/new`, `/continue`, `/loop`, `/model`, `/sessions`, `/rewind`, `/fork`, `/subagents`, `/approval`, `/mcp`, `/hooks`, `/rules`, `/skills`, `/extensions`.
+
+## Non-interactif
+
+```bash
+spirit -p "your prompt here"
+```
+
+Seul le texte final de l'assistant va sur stdout. Mettez `-m`, `-a`, et `-l` **avant** `-p`. Le processus échoue si un appel nécessite une approbation ou [ask_questions](./agent/ask-questions.mdx). Le mode sans tête expire après 30 minutes.
+
+## Environnement
+
+| Variable | Rôle |
+| --- | --- |
+| `SPIRIT_API_KEY` | Clé API pour ce processus. Ordre : env → keyring du modèle → keyring global |
+| `SPIRIT_API_BASE` | Remplacement de l'URL de base de l'API |
+| `SPIRIT_AGENT_DATA_DIR` | Répertoire de données (même stockage que Desktop) |
+| `SPIRIT_HOME` | Racine d'installation du **binaire** CLI — pas le répertoire de données |
+
+## Démon partagé
+
+`spirit` se connecte via WebSocket au démon Spirit Server. Les sessions, la diffusion en continu, les outils et la file d'approbation y résident. Le jeton porteur est `{spiritDataDir}/server.token` (mode `0600`). Le démon se lie à `127.0.0.1` sur un port aléatoire par défaut.
+
+`spirit serve` exécute le démon au premier plan. Le `0.0.0.0` distant n'est pas un chemin de produit ouvert. Voir [Sécurité](./security.mdx).
+
+## Commandes
+
+```
+spirit [-v] [-m model] [-a approval] [-l language] [-t inline|fullscreen] [-p prompt]
+spirit interactive
+spirit serve
+spirit model list|add|remove|use|current
+spirit config show|set-base|set-image-model|clear-image-model|set-video-model|clear-video-model|key set|remove|status
+spirit mcp …
+spirit hooks list|validate
+spirit extension list|import|remove|marketplace …
+```

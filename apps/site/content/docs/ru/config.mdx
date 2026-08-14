@@ -1,0 +1,72 @@
+---
+title: Конфигурация
+description: Каталоги данных, config.json v2, .spirit/ и переменные окружения.
+---
+
+Spirit хранит исполняемые файлы и данные в разных местах. Их смешение — обычная причина того, что «я установил CLI, но настройки пусты».
+
+## Каталог данных
+
+Переопределяется с помощью `SPIRIT_AGENT_DATA_DIR`. Сервер также может использовать `SPIRIT_SERVER_DATA_DIR` (имеет приоритет над первым).
+
+| ОС | По умолчанию |
+| --- | --- |
+| macOS | `~/Library/Application Support/SpiritAgent` |
+| Windows | `%APPDATA%\SpiritAgent` |
+| Linux | `$XDG_DATA_HOME/SpiritAgent` или `~/.local/share/SpiritAgent` |
+| Запасной вариант | `~/.spirit-agent` |
+
+Типичные файлы:
+
+```
+{spiritDataDir}/
+  config.json
+  mcp.json
+  hooks.json
+  rule.md
+  skills/
+  chats/
+  plans/
+  extensions/
+  automations/
+  dreams/
+  server.token
+  server/instances/
+```
+
+Исполняемые файлы CLI находятся в `SPIRIT_HOME` (`~/.spirit` или `%LOCALAPPDATA%\Spirit`). Это не тот каталог. См. [Установка CLI](./install/cli.mdx).
+
+## config.json v2
+
+`schemaVersion` должен быть `2`. Версия 1 отклоняется — удалите старый файл и [подключите провайдера](./providers.mdx).
+
+Основные поля:
+
+- `providerGroups` — подключенные дома, базовый API, транспорт, модели
+- `activeModel`
+- `imageGenerationModel` / `videoGenerationModel` / `lightweightChatModel`
+
+Ключи **не** хранятся в этом файле. Они находятся в [связке ключей](./security.mdx).
+
+## Workspace `.spirit/`
+
+| Путь | Роль |
+| --- | --- |
+| `.spirit/rule.md` | Правила workspace [правила](./customize/rules.mdx) |
+| `.spirit/skills/` | Навыки workspace [навыки](./customize/skills.mdx) |
+| `.spirit/mcp.json` | MCP workspace [MCP](./customize/mcp.mdx) |
+| `.spirit/hooks.json` | Хуки workspace [хуки](./customize/hooks.mdx) |
+
+Также используются: `{workspace}/AGENTS.md`, `{workspace}/.agents/skills/`, `{workspace}/plans/`.
+
+## Переменные окружения
+
+| Переменная | Роль |
+| --- | --- |
+| `SPIRIT_AGENT_DATA_DIR` | Каталог данных |
+| `SPIRIT_SERVER_DATA_DIR` | Каталог данных сервера (приоритет) |
+| `SPIRIT_ACP_DATA_DIR` / `SPIRIT_ACP_WORKSPACE` | [ACP](./acp.mdx) |
+| `SPIRIT_HOME` / `SPIRIT_VERSION` / `SPIRIT_DOWNLOAD_HOST` | Установщик CLI |
+| `SPIRIT_API_KEY` / `SPIRIT_API_BASE` | Переопределения для процессов [CLI](./cli.mdx) |
+| `SPIRIT_WEB_HOST` / `SPIRIT_WEB_PORT` / `SPIRIT_DESKTOP_WEB_HOST` | Хост веб-интерфейса Desktop |
+| `SPIRIT_TERMINAL_SHELL` | PTY-оболочка Desktop |

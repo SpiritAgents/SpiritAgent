@@ -1,0 +1,22 @@
+---
+title: Sitzungen
+description: Chatverlauf, Zurückspulen, Verzweigen und Git-Worktrees.
+---
+
+Jedes Gespräch ist eine Sitzung. Sitzungen werden im Spirit-Datenverzeichnis (`chats/`) gespeichert und in der Seitenleiste nach Arbeitsbereich gruppiert.
+
+## Zurückspulen
+
+Spulen Sie eine Benutzernachricht zurück, um das Gespräch an diesem Punkt wiederherzustellen. Bearbeiten Sie bei Bedarf die Eingabeaufforderung und senden Sie erneut. Verwenden Sie dies, wenn die letzte Runde in die falsche Richtung ging und Sie lieber erneut versuchen möchten, als eine Korrektur hinzuzufügen.
+
+## Verzweigen
+
+Verzweigen Sie von einer Assistentennachricht, um das Gespräch zu verzweigen. Desktop kann auch in einen Seitenchat verzweigen, sodass der ursprüngliche Thread an Ort und Stelle bleibt.
+
+## Worktree
+
+Der **Arbeitsort** von Composer kann `local` (der geöffnete Arbeitsbereich) oder `worktree` (ein isolierter Git-Worktree) sein. Subagents können für dieselbe Isolierung `worktree: true` festlegen.
+
+Worktree-Pfade sehen wie `{repoRoot}.worktrees/spirit-*` aus. Ein Subagent, der bereits in einem Worktree läuft, kann von dort aus keinen weiteren Worktree starten.
+
+Worktrees dienen für parallele Änderungen, die sonst kollidieren würden. Sie sind kein Backup der Sitzung – Zurückspulen und Verzweigen verwalten den Gesprächsverlauf.

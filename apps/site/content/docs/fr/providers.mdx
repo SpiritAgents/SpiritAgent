@@ -1,0 +1,344 @@
+---
+title: Fournisseurs
+description: Apportez votre propre clé, exécutez l'assistant de connexion et conservez le même flux de travail d'agent lorsque vous changez de maison.
+---
+
+Spirit Agent est BYOK. Vous créez une clé dans la console d'un fournisseur, vous la collez dans Desktop ou la CLI, et Spirit la stocke dans le trousseau du système d'exploitation. Changer de maison ne modifie pas la façon dont vous ouvrez un espace de travail, approuvez des modifications ou exécutez l'agent.
+
+L'assistant de connexion se trouve dans **Paramètres → Modèles** sur Desktop, ou `/model add` / `spirit model add` dans la CLI. Des champs supplémentaires n'apparaissent que lorsque ce fournisseur en a besoin.
+
+Spirit communique avec les fournisseurs via l'un des quatre transports. L'assistant fixe le type ou vous permet de choisir.
+
+| Transport | Libellé de l'assistant | Utilisation typique |
+| --- | --- | --- |
+| `openai-compatible` | API Chat Completions | La plupart des points de terminaison compatibles OpenAI |
+| `open-responses` | API Responses / API Open Responses | OpenAI, Azure, Vercel AI Gateway, Hugging Face et chemins de passerelle facultatifs |
+| `anthropic` | API Messages | Anthropic, MiniMax et points de terminaison compatibles Messages facultatifs |
+| `bedrock` | Amazon Bedrock | Uniquement pour Amazon Bedrock |
+
+Google Gemini et Vertex AI utilisent toujours Chat Completions. Si un profil demande Responses ou Messages, Spirit revient à `openai-compatible`.
+
+Certaines maisons ajoutent une seconde dimension au-dessus de la clé :
+
+- **Sites régionaux** — Moonshot AI, SiliconFlow, MiniMax (Chine / International) ; Alibaba (région + `workspaceId`) ; Tencent TokenHub (Guangzhou / Singapour)
+- **Points de terminaison de plan** — Alibaba Token Plan, StepFun Step Plan, Z.ai / Zhipu AI GLM Coding Plan
+- **Champs cloud** — région Bedrock, nom de ressource Azure, compte Cloudflare (et passerelle facultative), projet / emplacement Vertex
+
+Si un fournisseur n'a aucune de ces options, l'assistant est simplement : clé → importer les modèles → choisir un modèle de chat actif.
+
+Spirit importe le catalogue de modèles et vous permet d'attribuer le modèle de chat actif, ainsi que les emplacements d'image / vidéo / chat léger lorsque le catalogue marque ces capacités. Le raisonnement et la recherche Web intégrée suivent le modèle et le transport, et non un bouton Spirit séparé.
+
+## Catalogue
+
+Voici les maisons dans le sélecteur de connexion, dans le même ordre. Chaque section contient la clé, le transport et les champs supplémentaires de cette maison. L'assistant Desktop et CLI ci-dessus est le même pour chaque maison.
+
+### OpenAI
+
+Créez une clé API dans la [plateforme OpenAI](https://platform.openai.com/api-keys). Spirit ne vend pas l'utilisation d'OpenAI.
+
+L'assistant fixe **API Responses** (`open-responses`). Il n'y a pas de sélecteur de transport. Base par défaut : `https://api.openai.com/v1`.
+
+Chat après import. Le raisonnement suit le modèle. La génération d'images et de vidéos n'apparaît que lorsque le catalogue marque ces capacités — attribuez-les dans les emplacements de modèles d'image / vidéo.
+
+### Anthropic
+
+Créez une clé API dans la [console Anthropic](https://console.anthropic.com/settings/keys).
+
+**API Messages** fixée (`anthropic`). Base par défaut : `https://api.anthropic.com/v1`.
+
+Chat après import. Le raisonnement suit le modèle. Aucun emplacement de génération d'image ou de vidéo côté Spirit, sauf si une entrée de catalogue ultérieure le marque.
+
+### Google
+
+Créez une clé API dans [Google AI Studio](https://aistudio.google.com/apikey).
+
+**API Chat Completions** fixée (`openai-compatible`). Demander Responses ou Messages revient à Chat Completions. Base par défaut : `https://generativelanguage.googleapis.com/v1beta`.
+
+Chat après import. La génération d'images est attribuée uniquement lorsque le catalogue la marque. Pour Vertex AI (projet / emplacement GCP), utilisez [Google Vertex AI](#google-vertex-ai).
+
+### SpaceXAI
+
+Créez une clé API dans la [console SpaceXAI](https://console.x.ai/team/default/api-keys).
+
+**API Chat Completions** fixée (`openai-compatible`). Base par défaut : `https://api.x.ai/v1`.
+
+Discussion après importation. Le raisonnement, l'image et la vidéo suivent le catalogue importé — assignez les emplacements lorsqu'ils apparaissent.
+
+### Vercel AI Gateway
+
+Créez une clé dans le tableau de bord [Vercel AI Gateway](https://vercel.com/docs/ai-gateway).
+
+**API Open Responses** fixe (`open-responses`). Base par défaut : `https://ai-gateway.vercel.sh/v1`.
+
+Discussion plus ce que le catalogue de la passerelle expose. La génération d'images est tirée du catalogue `type=image`, pas des tags.
+
+N'inférez pas la vision ou la génération d'images à partir des tags. MiniMax M3 via cette passerelle ne renvoie pas de flux de raisonnement affichable sur Open Responses.
+
+### Cloudflare AI Gateway
+
+Créez un jeton API dans le [tableau de bord Cloudflare](https://developers.cloudflare.com/ai-gateway/). Vous avez également besoin de l'ID de compte.
+
+Sélecteur : **Chat Completions**, **Open Responses** ou **Messages**. La base est construite à partir du compte : `https://api.cloudflare.com/client/v4/accounts/{accountId}/ai/v1`.
+
+- **ID de compte** (requis) — hexadécimal de 32 caractères
+- **ID de passerelle** (facultatif)
+
+Sans ID de compte, l'assistant ne peut pas construire la base API. La discussion et les autres capacités suivent les modèles que la passerelle expose.
+
+### DeepSeek
+
+Créez une clé API sur la [plateforme DeepSeek](https://platform.deepseek.com/api-keys).
+
+Pas de sélecteur. La valeur par défaut de connexion est **Open Responses** (`open-responses`). Des bases compatibles existent également à `https://api.deepseek.com/v1` (Chat) et `https://api.deepseek.com/anthropic` (Messages).
+
+Discussion après importation. Le raisonnement suit le modèle.
+
+### OpenRouter
+
+Créez une clé chez [OpenRouter](https://openrouter.ai/keys).
+
+Sélecteur : **Chat Completions**, **Open Responses** ou **Messages**. Base par défaut : `https://openrouter.ai/api/v1`.
+
+Discussion plus génération d'images ou de vidéos marquée au catalogue lorsque OpenRouter expose ces modèles.
+
+### Fireworks AI
+
+Créez une clé API dans la [console Fireworks](https://app.fireworks.ai/settings/users/api-keys).
+
+Sélecteur : **Chat Completions**, **Messages** ou **Open Responses**. Base Chat / Responses : `https://api.fireworks.ai/inference/v1`. Base Messages : `https://api.fireworks.ai/inference`.
+
+Discussion après importation. Les autres capacités suivent le catalogue Fireworks.
+
+### Together AI
+
+Créez une clé API dans la [console Together AI](https://api.together.ai/settings/api-keys).
+
+**API Chat Completions** fixée. Base par défaut : `https://api.together.ai/v1`.
+
+Discussion après importation. Assignez les emplacements d'image ou de vidéo uniquement lorsque le catalogue les marque.
+
+### Groq
+
+Créez une clé API dans la [console Groq](https://console.groq.com).
+
+**API Chat Completions** fixée. Base par défaut : `https://api.groq.com/openai/v1`.
+
+Discussion après importation. Le raisonnement suit le modèle lorsque Groq l'expose.
+
+### DeepInfra
+
+Créez une clé API dans le [tableau de bord DeepInfra](https://deepinfra.com/dash/keys).
+
+**API Chat Completions** fixée. Base par défaut : `https://api.deepinfra.com/v1/openai`.
+
+Discussion après importation. Les autres capacités suivent le catalogue.
+
+### Baseten
+
+Créez une clé API dans la [console Baseten](https://app.baseten.co/settings/api_keys).
+
+**API Chat Completions** fixée. Base par défaut : `https://inference.baseten.co/v1`.
+
+Discussion après importation. Les autres capacités suivent le catalogue.
+
+### Hugging Face
+
+Créez un jeton dans les [paramètres Hugging Face](https://huggingface.co/settings/tokens).
+
+**Open Responses API** fixe. Base par défaut : `https://router.huggingface.co/v1`.
+
+Discussion après importation. Les autres capacités suivent le catalogue du routeur.
+
+### Moonshot AI
+
+Créez une clé API dans la console Moonshot pour le site que vous utiliserez : [Chine](https://platform.kimi.com/console/api-keys) ou [International](https://platform.kimi.ai/console/api-keys).
+
+**Chat Completions API** fixe. Pas de sélecteur de transport.
+
+- **International** (par défaut) — `https://api.moonshot.ai/v1`
+- **Chine** — `https://api.moonshot.cn/v1`
+
+Il s'agit du fournisseur Moonshot Open Platform, pas de [Kimi Code](#kimi-code). La recherche intégrée sur moonshot-ai n'utilise pas le chemin de recherche hébergé de Kimi Code. Une clé Kimi Code et une clé Moonshot Open Platform sont des connexions différentes.
+
+### Kimi Code
+
+Créez une clé API Kimi Code dans la [console Kimi Code](https://www.kimi.com/code/console).
+
+**Chat Completions API** fixe. Base par défaut : `https://api.kimi.com/coding/v1`. Une base Messages existe à `https://api.kimi.com/coding` mais l'assistant ne propose pas de sélecteur.
+
+Discussion après importation. La recherche hébergée, lorsqu'elle est disponible, est spécifique à ce fournisseur — pas moonshot-ai.
+
+### Z.ai
+
+Créez une clé API dans la [console Z.ai](https://z.ai/manage-apikey/apikey-list). Notes sur le plan de codage : [GLM Coding Plan](https://docs.z.ai/devpack/quick-start).
+
+**Chat Completions API** fixe. Base par défaut : `https://api.z.ai/api/paas/v4`.
+
+Activez **GLM Coding Plan** dans l'assistant pour utiliser `https://api.z.ai/api/coding/paas/v4` au lieu de la base PaaS par défaut.
+
+Discussion après importation. Le raisonnement suit le modèle.
+
+### Zhipu AI
+
+Créez une clé API dans la [console Zhipu AI](https://bigmodel.cn/console). Notes sur le plan de codage : [GLM Coding Plan](https://docs.bigmodel.cn/cn/coding-plan/quick-start).
+
+**Chat Completions API** fixe. Base par défaut : `https://open.bigmodel.cn/api/paas/v4`.
+
+Activez **GLM Coding Plan** pour utiliser `https://open.bigmodel.cn/api/coding/paas/v4`.
+
+Discussion après importation. Le raisonnement suit le modèle.
+
+### Alibaba
+
+Créez une clé API dans [Alibaba Cloud Model Studio / Bailian](https://bailian.console.aliyun.com).
+
+**Chat Completions API** fixe. Défaut compatible : `https://dashscope.aliyuncs.com/compatible-mode/v1`.
+
+- **cn-beijing** (par défaut) — `https://{workspaceId}.cn-beijing.maas.aliyuncs.com/compatible-mode/v1` (identifiant d'espace de travail requis)
+- **ap-southeast-1** — identifiant d'espace de travail requis
+- **us-virginia** — `https://dashscope-us.aliyuncs.com/compatible-mode/v1` (pas d'identifiant d'espace de travail)
+- **eu-central-1** — identifiant d'espace de travail requis
+
+**Token Plan** bascule vers `https://token-plan.cn-beijing.maas.aliyuncs.com/compatible-mode/v1` et ignore le site / l'espace de travail. Notes : [Token Plan](https://bailian.console.aliyun.com/cn-beijing?tab=doc#/doc/?type=model&url=3029020). Token Plan utilise toujours le point de terminaison du plan cn-beijing, même si vous choisissez un autre site.
+
+Discussion après importation. Les autres capacités suivent le catalogue.
+
+### MiniMax
+
+Créez une clé API dans la console MiniMax pour le site que vous utiliserez : [Chine](https://platform.minimaxi.com/console/) ou [International](https://platform.minimax.io/console/).
+
+**Messages API** fixe (`anthropic`). Base Messages Internationale : `https://api.minimax.io/anthropic/v1`.
+
+- **International** (par défaut) — `https://api.minimax.io/v1` (format Chat) / `https://api.minimax.io/anthropic/v1` (Messages)
+- **Chine** — `https://api.minimaxi.com/v1`
+
+Discussion après importation. La liste `/models` en amont ne comporte pas de drapeaux multimodaux ; seul M3 est considéré comme prenant en charge l'entrée d'images / vidéos. Via Vercel AI Gateway sur Open Responses, MiniMax M3 ne renvoie pas de flux de pensée affichable.
+
+### Xiaomi
+
+Créez une clé API dans la [console Xiaomi MiMo](https://platform.xiaomimimo.com/console/api-keys).
+
+**API Chat Completions** fixe. Base par défaut : `https://api.xiaomimimo.com/v1`.
+
+Discutez après l'importation. Les autres capacités suivent le catalogue.
+
+### SiliconFlow
+
+Créez une clé API dans la console SiliconFlow pour le site que vous utiliserez : [International](https://cloud.siliconflow.com/me/account/ak) ou [Chine](https://cloud.siliconflow.cn/me/account/ak).
+
+Sélecteur : **Chat Completions** ou **Messages**.
+
+- **International** (par défaut) — `https://api.siliconflow.com/v1`
+- **Chine** — `https://api.siliconflow.cn/v1`
+
+Discutez après l'importation. Les autres capacités suivent le catalogue.
+
+### StepFun
+
+Créez une clé API sur la [plateforme StepFun](https://platform.stepfun.com). Notes sur le plan Step : [Step Plan](https://platform.stepfun.com/docs/zh/step-plan/integrations/reasoning-api).
+
+**API Chat Completions** fixe. Base par défaut : `https://api.stepfun.com/v1`.
+
+**Step Plan** bascule sur `https://api.stepfun.com/step_plan/v1`.
+
+Discutez après l'importation. Le raisonnement suit le modèle.
+
+### Volcengine
+
+Créez une clé API dans la [console Volcengine Ark](https://console.volcengine.com/ark/apiKey).
+
+Sélecteur : **Chat Completions** ou **Responses API**. Base par défaut : `https://ark.cn-beijing.volces.com/api/v3`.
+
+Discutez après l'importation. Les autres capacités suivent le catalogue.
+
+### BytePlus
+
+Créez une clé API dans la [console BytePlus Ark](https://console.byteplus.com/ark/apiKey).
+
+Sélecteur : **Chat Completions** ou **Responses API**. Base par défaut : `https://ark.ap-southeast.bytepluses.com/api/v3`.
+
+Discutez après l'importation. Les autres capacités suivent le catalogue.
+
+### Meituan
+
+Créez une clé API dans la [console LongCat](https://longcat.chat/platform/api_keys).
+
+**API Chat Completions** fixe. Base par défaut : `https://api.longcat.chat/openai/v1`.
+
+Discutez après l'importation. Les autres capacités suivent le catalogue.
+
+### Tencent TokenHub
+
+Créez une clé API dans la [console Tencent TokenHub](https://console.cloud.tencent.com/tokenhub).
+
+**API Chat Completions** fixe. L'assistant ne propose pas Responses ni Messages.
+
+- **Guangzhou** (par défaut) — `https://tokenhub.tencentmaas.com/v1`
+- **Singapour** — `https://tokenhub-intl.tencentmaas.com/v1`
+
+Discutez après l'importation. Ne comptez pas sur la recherche web injectée dans Chat. TokenHub documente `web_search_options` pour Chat et `web_search` pour Responses, mais l'injection dans Chat ne fonctionne pas en pratique, et Responses n'est disponible que sur quelques modèles. Spirit conserve donc uniquement Chat Completions.
+
+### Mistral
+
+Créez une clé API dans la [console Mistral](https://console.mistral.ai).
+
+**API Chat Completions** fixe. Base par défaut : `https://api.mistral.ai/v1`.
+
+Discutez après l'importation. Les autres capacités suivent le catalogue.
+
+### Cohere
+
+Créez une clé API dans le [tableau de bord Cohere](https://dashboard.cohere.com).
+
+**API Chat Completions** fixe. Base par défaut : `https://api.cohere.com/v2`.
+
+Discutez après l'importation. Les autres capacités suivent le catalogue.
+
+### Azure
+
+Créez une clé pour votre ressource Azure OpenAI dans le [portail Azure](https://portal.azure.com).
+
+Corrigé **API Responses** (`open-responses`). Pas de sélecteur de transport.
+
+- **Nom de ressource** (obligatoire) — 2 à 64 caractères, lettres, chiffres et traits d'union ; ne peut pas commencer ni se terminer par un trait d'union
+
+Spirit construit `https://{resource}.openai.azure.com/openai/v1`. Chat après importation. La génération d'images suit le catalogue Azure lorsqu'il est marqué.
+
+### Amazon Bedrock
+
+Dans la [console AWS Bedrock](https://console.aws.amazon.com/bedrock), créez une clé API Bearer ou un utilisateur IAM pouvant appeler Bedrock.
+
+Corrigé **Amazon Bedrock** (`bedrock`). Format d'hôte par défaut : `https://bedrock.us-east-1.amazonaws.com`.
+
+- **Région AWS** (obligatoire), par exemple `us-east-1`
+- **Authentification** : **Bearer** ou **IAM**
+  - Bearer — collez une clé API Bedrock et un identifiant de modèle. Les modèles ne sont **pas** récupérés automatiquement.
+  - IAM — ID de clé d'accès + clé d'accès secrète. Spirit répertorie les modèles de base du compte.
+
+Chat après avoir choisi un modèle. Les autres capacités suivent ce modèle. Les clés Bearer ne fonctionnent que pour l'inférence. `ListFoundationModels` n'accepte pas Bearer, donc l'importation du catalogue nécessite IAM.
+
+### Google Vertex AI
+
+Utilisez un projet GCP avec Vertex AI activé. L'authentification se fait par ADC, un compte de service ou une clé API Express — pas une clé OpenAI générique.
+
+Corrigé **API Chat Completions**. Les requêtes Responses ou Messages reviennent à Chat Completions. La base devient `https://{location}-aiplatform.googleapis.com/v1/projects/{project}/locations/{location}`.
+
+- **ID du projet GCP** et **Emplacement** (obligatoires), par exemple `us-central1`
+- **Authentification**
+  - **ADC** — Informations d'identification par défaut de l'application sur cette machine (`GOOGLE_APPLICATION_CREDENTIALS`)
+  - **Compte de service** — e-mail du client + clé privée ; utilisé pour récupérer la liste des modèles
+  - **Clé API Express** — ne peut pas récupérer le catalogue ; ajoutez un identifiant de modèle manuellement
+
+Chat après la sélection d'un modèle. Pour les clés AI Studio sans projet GCP, utilisez [Google](#google). Le mode Express ne peut pas importer la liste des modèles. Le mode compte de service nécessite à la fois l'e-mail et la clé privée pour lister les modèles.
+
+### Personnalisé
+
+Utilisez la clé API attendue par votre point de terminaison. Il n'y a pas de fournisseur personnalisé hébergé par Spirit.
+
+Sélecteur : **Chat Completions**, **Open Responses** ou **Messages**. Vous devez fournir l'**URL de base**. La valeur par défaut indicative est `https://api.openai.com/v1` si vous la laissez vide.
+
+Saisissez la racine documentée par le fournisseur, y compris le suffixe de version lorsqu'il l'exige (`/v1`, `/v1/openai`, …). Spirit ne devine pas le chemin pour les points de terminaison personnalisés.
+
+Vous pouvez également définir un nom d'affichage pour le groupe de fournisseurs afin que plusieurs points de terminaison personnalisés restent distinguables.
+
+Après la connexion, importez ou saisissez les identifiants de modèles. Marquez les capacités chat / image / vidéo dans l'assistant lorsque le point de terminaison ne publie pas de catalogue que Spirit comprend.

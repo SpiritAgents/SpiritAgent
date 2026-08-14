@@ -1,0 +1,21 @@
+---
+title: Dreams
+description: Memórias de curta duração restritas ao workspace e ao branch do Git. O agente as lê com dream_list e dream_read.
+---
+
+<Callout type="warn" title="Beta">
+Dreams ainda é um experimento. Não trate como uma wiki permanente do projeto — isso pertence ao [Rules](./rules.mdx) ou ao repositório.
+</Callout>
+
+Dreams são memórias curtas restritas ao **workspace e branch do Git atuais**: o que mudou recentemente, por que isso importa e o que ainda está aberto. Os registros ficam em `{spiritDataDir}/dreams/` e expiram após **cinco dias**.
+
+O agente de conversa recebe um catálogo resumido na mensagem do sistema (id, título, resumo, tags). Detalhes completos não são pré-carregados; puxe-os com ferramentas quando necessário.
+
+| Ferramenta | Função |
+| --- | --- |
+| `dream_list` | Listar resumos não expirados no escopo atual |
+| `dream_read` | Ler um registro completo por id |
+
+`dream_record`, `dream_update` e `dream_delete` pertencem ao coletor de fundo, não ao agente de conversa. O coletor analisa as sessões e decide se deve criar, atualizar ou descartar uma entrada antiga. Ele prefere atualizar um dream existente a duplicar um.
+
+Ative ou desative a coleta no Desktop em **Configurações → Dreams**. A coleta de fundo usa o modelo de chat leve, mesmo slot que **Configurações → Tab**. CLI e ACP ainda não conectam Dreams.

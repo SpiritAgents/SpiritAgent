@@ -1,0 +1,70 @@
+---
+title: Hooks
+description: 在工作階段、工具和子代理事件上執行指令碼。它們可以允許、拒絕或詢問。
+---
+
+Hooks 是 Spirit 在固定點執行的指令碼。它們可以允許工具、拒絕工具，或強制顯示核准提示（`ask`）。
+
+## 事件
+
+- `sessionStart`
+- `sessionEnd`
+- `submitPrompt`
+- `preToolUse`
+- `postToolUse`
+- `subagentStart`
+- `subagentEnd`
+
+`preToolUse` 回傳 `ask` 時，即使在[自動核准或略過](../agent/approvals.mdx)的情況下，仍會提示您。
+
+## 存放位置
+
+| 範圍 | 設定檔 | 指令碼 |
+| --- | --- | --- |
+| 使用者 | `{spiritDataDir}/hooks.json` | `{spiritDataDir}/hooks/` |
+| 工作區 | `{workspace}/.spirit/hooks.json` | `{workspace}/.spirit/hooks/` |
+
+在相同事件上，使用者條目和工作區條目會依該順序串接。它們不會互相覆寫。
+
+在 **設定 → Hooks** 中管理它們。使用 CLI 的 `spirit hooks list` 和 `spirit hooks validate` 進行驗證。內建的 Skill `create-hook` 會草擬一個 hook。
+
+## 檔案欄位
+
+根物件必須包含 `version` 和 `hooks`。`version` 目前僅接受 `1`。
+
+| 欄位 | 說明 |
+| --- | --- |
+| `version` | 必填。必須為 `1` |
+| `hooks` | 必填。物件。鍵為事件名稱；值為該事件的 hooks 陣列 |
+
+### 每個 hook
+
+| 欄位 | 說明 |
+| --- | --- |
+| `command` | 必填。指令碼路徑。相對路徑會相對於設定目錄解析，且必須保持在該目錄內 |
+| `timeout` | 選填。逾時秒數。必須為正數。預設為 `30` |
+| `failClosed` | 選填。當指令碼當機、逾時或向 stdout 寫入無效 JSON 時，是否要封鎖。預設為不封鎖 |
+| `matcher` | 選填。非空白的正規表示式。在 `preToolUse` / `postToolUse` 時比對工具名稱，或在 `subagentStart` / `subagentEnd` 時比對子代理類型 |
+
+## 範例
+
+```json
+{
+  "version": 1,
+  "hooks": {
+    "preToolUse": [
+      {
+        "command": "hooks/guard.sh",
+        "timeout": 10,
+        "failClosed": true,
+        "matcher": "^shell$"
+      }
+    ],
+    "sessionEnd": [
+      {
+        "command": "hooks/log.sh"
+      }
+    ]
+  }
+}
+```

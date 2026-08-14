@@ -1,0 +1,42 @@
+---
+title: Dépannage
+description: Ancienne configuration, blocs headless, verrouillage d'appairage, clés manquantes et confusions de chemins d'installation.
+---
+
+## config.json est rejeté
+
+Le fichier doit être `schemaVersion: 2`. Supprimez l'ancien fichier et [reconnectez un fournisseur](./providers.mdx). Les clés n'ont jamais été dans ce fichier — elles se trouvent dans le [trousseau](./security.mdx).
+
+## CLI installé, paramètres vides
+
+Vous avez installé les binaires dans `SPIRIT_HOME` (`~/.spirit`). Les sessions et `config.json` se trouvent dans le [répertoire de données](./config.mdx). Vérifiez `SPIRIT_AGENT_DATA_DIR` si vous l'avez remplacé.
+
+## `spirit -p` a échoué
+
+- Approbation nécessaire → utilisez `-a auto-approval` / `-a bypass-approval`, ou le TUI
+- [ask_questions](./agent/ask-questions.mdx) nécessaire → utilisez le TUI, ou rendez l'invite décisive
+- Expiration → le mode headless s'arrête après 30 minutes
+
+## Les modèles n'ont pas été importés
+
+Ouvrez la [page du fournisseur](./providers.mdx) pour cette maison. Vérifiez le site, le point de terminaison de plan, la ressource Azure, le compte Cloudflare, la région / IAM Bedrock, ou le projet / l'emplacement Vertex. TokenHub reste sur Chat Completions. Bedrock Bearer ne peut pas lister les modèles.
+
+## Clé absente du trousseau
+
+Reconnectez-vous dans **Paramètres → Modèles** ou `spirit model add`. L'assistant écrit le trousseau **avant** `config.json`. Ne collez pas les clés dans le dépôt.
+
+## Échec de l'appairage du Web Host
+
+Mauvais code → réessayez. Cinq échecs verrouillent l'appairage (`PAIRING_LOCKED`) jusqu'à ce que vous redémarriez Web Host dans **Paramètres → Réseaux**. L'hôte doit prendre en charge l'appairage ; un aperçu web générique peut indiquer qu'il ne le fait pas.
+
+## LSP manquant
+
+Installez le serveur vous-même (clangd via Homebrew / winget, jdtls manuellement), puis activez-le dans **Paramètres → Agents**. Voir [Desktop](./desktop.mdx).
+
+## La complétion Tab est vide
+
+Activez **Paramètres → Tab** et assignez un modèle de chat léger. Voir [Desktop](./desktop.mdx).
+
+## ACP absent de la page de téléchargement
+
+C'est normal. ACP est implémenté mais la colonne de téléchargement est encore un espace réservé. Voir [ACP](./acp.mdx).

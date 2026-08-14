@@ -1,0 +1,18 @@
+---
+title: Bucle
+description: Mantén al agente trabajando hasta que llame a finish_task.
+---
+
+Bucle es un interruptor de sesión. Cuando está activado, un mensaje ordinario del asistente **no** finaliza el turno. Se espera que el agente siga usando herramientas hasta que la tarea esté completa, y luego llame a `finish_task`.
+
+## Actívalo
+
+En Desktop, activa Bucle en el compositor (el chip `/loop`). En la TUI de CLI, ejecuta `/loop`.
+
+`finish_task` solo se expone mientras Bucle está activado. Si Bucle está desactivado y el modelo aún lo llama, Spirit rechaza la llamada como una herramienta desconocida.
+
+## Cuándo usarlo
+
+Usa Bucle para un trabajo de múltiples pasos que no quieras supervisar: implementar, probar, corregir, repetir. Déjalo desactivado para una pregunta única o una edición de un solo archivo.
+
+Bucle no cambia la [aprobación](./approvals.mdx). La aprobación predeterminada aún se pausa en ediciones y shell.

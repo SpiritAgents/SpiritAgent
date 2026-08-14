@@ -1,0 +1,34 @@
+---
+title: Invites
+description: Comment donner à Spirit une tâche qu'il peut terminer dans votre espace de travail.
+---
+
+Parlez à l'agent comme vous le feriez pour briefer un coéquipier qui peut lire le dépôt et attendre l'approbation.
+
+## Soyez précis
+
+Nommez les fichiers, le résultat attendu et ce qu'il ne faut pas toucher. Une invite précise aboutit à un petit diff révisable. Une invite vague gaspille un tour en découverte.
+
+```txt
+Read src/auth/session.ts and fix the expired-token refresh path.
+Do not change the login form. Add a focused test next to the existing session tests.
+```
+
+## Ajoutez du contexte
+
+Sur Desktop, joignez les fichiers ouverts, les sélections ou un élément Browser lorsque la tâche concerne cet endroit précis. L'agent doit toujours lire le fichier pour voir le contenu actuel — les pièces jointes sont des pointeurs, pas un substitut aux [outils](./tools.mdx).
+
+## Choisissez d'abord un mode
+
+- **Agent** — vous connaissez déjà le changement
+- **Plan** — vous voulez un plan écrit et [des questions](./ask-questions.mdx) avant toute modification
+- **Ask** — vous voulez une explication uniquement
+- **Debug** — vous pouvez reproduire un bug et voulez des journaux
+
+Voir [Modes](./modes.mdx).
+
+## Laissez l'approbation faire son travail
+
+En mode d'approbation **par défaut**, l'agent s'arrête avant de modifier ou d'exécuter une commande. Lisez le diff, puis approuvez ou rejetez. N'activez pas le contournement tant que vous ne faites pas confiance à la boucle. Voir [Approbations](./approvals.mdx).
+
+La complétion en ligne de l'éditeur (Tab) ne fait pas partie de cette conversation. Configurez-la sous Paramètres → Tab.

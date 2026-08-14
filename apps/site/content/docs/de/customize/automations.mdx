@@ -1,0 +1,21 @@
+---
+title: Automatisierungen
+description: Zeitauslöser plus GitHub-Ereignisse, nachdem Sie Integrationen verbunden haben.
+---
+
+<Callout type="info">
+Nur Desktop.
+</Callout>
+
+Automatisierungen führen einen Agent-Job aus, ohne dass Sie im Composer sitzen.
+
+## Auslöser
+
+- **Zeit** – stündlich, täglich oder wöchentlich
+- **GitHub** – `pull_request_created` oder `issue_created` in einem von Ihnen benannten Repository (`owner` + `repo`)
+
+Für GitHub-Auslöser müssen zuerst [Integrationen](./integrations.mdx) verbunden werden. Wenn GitHub nicht verbunden ist, bietet das Auslöser-Menü diese Ereignisse nicht an.
+
+Daten liegen unter `{spiritDataDir}/automations/`. Öffnen Sie auf dem Desktop die Automatisierungsansicht, um Verlauf und Einstellungen zu sehen.
+
+Die CLI kann diese UI nicht erstellen oder ausführen. Verwenden Sie [Desktop](../desktop.mdx).

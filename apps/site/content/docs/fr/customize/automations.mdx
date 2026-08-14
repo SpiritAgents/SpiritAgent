@@ -1,0 +1,21 @@
+---
+title: Automatisations
+description: Déclencheurs temporels plus événements GitHub après avoir connecté les intégrations.
+---
+
+<Callout type="info">
+Desktop uniquement.
+</Callout>
+
+Les automatisations exécutent une tâche d'agent sans que vous soyez dans le compositeur.
+
+## Déclencheurs
+
+- **Temps** — horaire, quotidien ou hebdomadaire
+- **GitHub** — `pull_request_created` ou `issue_created` sur un dépôt que vous nommez (`owner` + `repo`)
+
+Les déclencheurs GitHub nécessitent que les [Intégrations](./integrations.mdx) soient connectées d'abord. Si GitHub n'est pas connecté, le menu de déclencheur n'offrira pas ces événements.
+
+Les données se trouvent sous `{spiritDataDir}/automations/`. Ouvrez la vue Automatisations sur Desktop pour voir l'historique et les paramètres.
+
+Le CLI ne peut pas créer ou exécuter cette interface. Utilisez [Desktop](../desktop.mdx).

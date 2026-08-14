@@ -1,0 +1,21 @@
+---
+title: Rêves
+description: Mémoires de courte durée limitées à l'espace de travail et à la branche Git. L'agent les lit avec dream_list et dream_read.
+---
+
+<Callout type="warn" title="Bêta">
+Les Rêves sont encore une expérience. Ne les traitez pas comme un wiki de projet permanent — cela appartient aux [Règles](./rules.mdx) ou au dépôt.
+</Callout>
+
+Les Rêves sont des mémoires courtes limitées à l'**espace de travail et à la branche Git actuels** : ce qui a récemment bougé, pourquoi cela compte, et ce qui reste ouvert. Les enregistrements vivent sous `{spiritDataDir}/dreams/` et expirent après **cinq jours**.
+
+L'agent de conversation reçoit un catalogue de résumés dans le message système (identifiant, titre, résumé, étiquettes). Les détails complets ne sont pas préchargés ; tirez-les avec des outils si nécessaire.
+
+| Outil | Rôle |
+| --- | --- |
+| `dream_list` | Lister les résumés non expirés dans la portée actuelle |
+| `dream_read` | Lire un enregistrement complet par identifiant |
+
+`dream_record`, `dream_update` et `dream_delete` appartiennent au collecteur en arrière-plan, pas à l'agent de conversation. Le collecteur analyse les sessions et décide de créer, mettre à jour ou supprimer une entrée périmée. Il préfère mettre à jour un rêve existant plutôt que d'en dupliquer un.
+
+Activez ou désactivez la collecte sur le bureau sous **Paramètres → Rêves**. La collecte en arrière-plan utilise le modèle de chat léger, même emplacement que **Paramètres → Tab**. CLI et ACP ne relient pas encore les Rêves.

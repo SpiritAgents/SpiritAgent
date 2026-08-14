@@ -1,0 +1,62 @@
+---
+title: Installer le CLI
+description: Installez le CLI Spirit Agent avec le script d'installation, SPIRIT_HOME et SPIRIT_VERSION.
+---
+
+Le CLI est un hôte de terminal avec une IUT et un mode non interactif `-p`. Il communique avec le même démon local que [Desktop](./desktop.mdx).
+
+## Script d'installation
+
+macOS et Linux :
+
+```bash
+curl -fsSL https://spirit.fast/install | bash
+```
+
+Windows (PowerShell) :
+
+```powershell
+irm https://spirit.fast/install.ps1 | iex
+```
+
+Le script télécharge une version depuis `download.spirit.fast`, la décompresse et place `spirit` dans votre `PATH`.
+
+Ouvrez un nouveau terminal, puis :
+
+```bash
+spirit --version
+```
+
+## Où il atterrit
+
+La racine d'installation n'est **pas** le répertoire de données de Spirit Agent.
+
+| | Défaut | Remplacement |
+| --- | --- | --- |
+| Binaires CLI | Unix : `~/.spirit` · Windows : `%LOCALAPPDATA%\Spirit` | `SPIRIT_HOME` |
+| Sessions, configuration, pointeurs de trousseau | macOS : `~/Library/Application Support/SpiritAgent` · Windows : `%APPDATA%\SpiritAgent` · Linux : `~/.local/share/SpiritAgent` | `SPIRIT_AGENT_DATA_DIR` |
+
+Sur Unix, le script crée un lien `$SPIRIT_HOME/bin/spirit` → `$SPIRIT_HOME/cli/current/bin/spirit` et ajoute `export PATH="$SPIRIT_HOME/bin:$PATH"` à `~/.profile`, `~/.bashrc` et `~/.zshrc` (marqueur `# spirit-agent cli`).
+
+## Épingler une version ou un miroir
+
+| Variable | Défaut | Rôle |
+| --- | --- | --- |
+| `SPIRIT_HOME` | `~/.spirit` ou `%LOCALAPPDATA%\Spirit` | Racine d'installation pour les binaires CLI |
+| `SPIRIT_VERSION` | `latest` | Segment de version dans l'URL de téléchargement |
+| `SPIRIT_DOWNLOAD_HOST` | `download.spirit.fast` | Hôte CDN |
+
+```bash
+SPIRIT_VERSION=0.1.0 curl -fsSL https://spirit.fast/install | bash
+```
+
+Vous pouvez également télécharger une archive CLI depuis la [page de téléchargement](/en-US/download) ou les [versions GitHub](https://github.com/SpiritAgents/SpiritAgent/releases/latest) et la décompresser vous-même.
+
+## Première exécution
+
+```bash
+cd /path/to/your/project
+spirit
+```
+
+Cela ouvre l'IUT. Ajoutez un fournisseur avec `/model add`, ou depuis le shell avec `spirit model add`. Consultez le [guide de démarrage rapide](../quickstart.mdx).

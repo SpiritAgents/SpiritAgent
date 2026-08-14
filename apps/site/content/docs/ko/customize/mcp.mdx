@@ -1,0 +1,89 @@
+---
+title: MCP
+description: 사용자 mcp.json 및 작업공간 .spirit/mcp.json입니다. 동일한 서버 이름이면 작업공간이 우선합니다.
+---
+
+MCP 서버는 Spirit 외부에서 도구, 리소스, 프롬프트를 추가합니다.
+
+| 범위 | 경로 |
+| --- | --- |
+| 사용자 | `{spiritDataDir}/mcp.json` |
+| 작업공간 | `{workspace}/.spirit/mcp.json` |
+
+두 파일 모두 동일한 서버 이름을 정의하는 경우 **작업공간** 항목이 우선합니다.
+
+**설정 → MCPs**에서 서버를 관리하거나 CLI에서 `spirit mcp` 명령을 사용합니다(`list`, `show`, `init`, `enable`, `disable`, `inspect`, `tools`, `call-tool`, ...).
+
+MCP 도구는 에이전트가 이미 가지고 있는 도구 목록에 병합됩니다. 높은 위험도인 경우 [승인](../agent/approvals.mdx)을 거칩니다.
+
+## 파일 필드
+
+루트 객체에는 `servers`만 있습니다. 각 서버는 `transport`를 포함해야 하며, `type`은 `stdio` 또는 `http`로 설정합니다.
+
+| 필드 | 설명 |
+| --- | --- |
+| `servers` | 객체. 키는 서버 이름입니다 |
+| `displayName` | 선택 사항. UI 레이블; 기본값은 서버 이름입니다. `display_name`도 허용됩니다 |
+| `enabled` | 선택 사항. 기본값은 `true`입니다 |
+| `capabilities.tools` | 선택 사항. 기본값은 `true`입니다 |
+| `capabilities.resources` | 선택 사항. 기본값은 `true`입니다 |
+| `capabilities.prompts` | 선택 사항. 기본값은 `true`입니다 |
+| `transport.type` | 필수 사항. `stdio` 또는 `http` |
+
+### `stdio`
+
+| 필드 | 설명 |
+| --- | --- |
+| `command` | 필수 사항. 실행 명령 |
+| `args` | 선택 사항. 명령 인수 |
+| `env` | 선택 사항. 환경 변수. 값은 `${env:NAME}`을 사용할 수 있습니다 |
+| `cwd` | 선택 사항. 작업 디렉터리 |
+| `timeoutMs` | 선택 사항. 밀리초 단위의 제한 시간. `timeout_ms`도 허용됩니다 |
+| `stderr` | 선택 사항. `inherit`(기본값) 또는 `pipe` |
+
+### `http`
+
+| 필드 | 설명 |
+| --- | --- |
+| `url` | 필수 사항. 서버 URL |
+| `headers` | 선택 사항. 요청 헤더. 값은 `${env:NAME}`을 사용할 수 있습니다 |
+| `timeoutMs` | 선택 사항. 밀리초 단위의 제한 시간. `timeout_ms`도 허용됩니다 |
+
+## 예시
+
+```json
+{
+  "servers": {
+    "local-docs": {
+      "displayName": "Local docs",
+      "enabled": true,
+      "capabilities": {
+        "tools": true,
+        "resources": true,
+        "prompts": false
+      },
+      "transport": {
+        "type": "stdio",
+        "command": "npx",
+        "args": ["-y", "example-mcp-server"],
+        "env": {
+          "API_TOKEN": "${env:EXAMPLE_API_TOKEN}"
+        },
+        "cwd": "/path/to/workspace",
+        "timeoutMs": 15000,
+        "stderr": "pipe"
+      }
+    },
+    "remote-tools": {
+      "transport": {
+        "type": "http",
+        "url": "https://mcp.example.com/mcp",
+        "headers": {
+          "Authorization": "Bearer ${env:EXAMPLE_MCP_TOKEN}"
+        },
+        "timeoutMs": 20000
+      }
+    }
+  }
+}
+```

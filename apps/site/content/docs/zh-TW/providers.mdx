@@ -1,0 +1,344 @@
+---
+title: 供應商
+description: 自備金鑰、執行連線精靈，切換供應商時也保持相同的代理工作流程。
+---
+
+Spirit Agent 是 BYOK。你在供應商控制台建立金鑰，將其貼到 Desktop 或 CLI，Spirit 會將它存放在作業系統的金鑰環中。切換供應商不會改變你開啟工作區、批准編輯或執行代理的方式。
+
+連線精靈在 Desktop 是 **Settings → Models**，在 CLI 是 `/model add` 或 `spirit model add`。只有當供應商需要時才會出現額外欄位。
+
+Spirit 透過四種傳輸方式之一與供應商通訊。精靈不是固定類型，就是讓你選擇。
+
+| 傳輸 | 精靈標籤 | 典型用途 |
+| --- | --- | --- |
+| `openai-compatible` | Chat Completions API | 大多數與 OpenAI 相容的端點 |
+| `open-responses` | Responses API / Open Responses API | OpenAI、Azure、Vercel AI Gateway、Hugging Face 以及可選的閘道路徑 |
+| `anthropic` | Messages API | Anthropic、MiniMax 以及可選的 Messages 相容端點 |
+| `bedrock` | Amazon Bedrock | 僅限 Amazon Bedrock |
+
+Google Gemini 和 Vertex AI 始終使用 Chat Completions。如果設定檔要求 Responses 或 Messages，Spirit 會回退到 `openai-compatible`。
+
+有些供應商在金鑰之上新增了第二個維度：
+
+- **區域站點** — Moonshot AI、SiliconFlow、MiniMax（中國 / 國際）；阿里雲（區域 + `workspaceId`）；騰訊 TokenHub（廣州 / 新加坡）
+- **方案端點** — 阿里雲 Token 方案、StepFun Step 方案、Z.ai / 智譜 AI GLM 編碼方案
+- **雲端欄位** — Bedrock 區域、Azure 資源名稱、Cloudflare 帳戶（以及可選閘道）、Vertex 專案 / 位置
+
+如果供應商沒有這些選項，精靈就只是金鑰 → 匯入模型 → 選擇使用中的聊天模型。
+
+Spirit 會匯入模型目錄，並讓你在目錄標記出對應功能時，指定使用中的聊天模型，以及影像 / 影片 / 輕量聊天位置。推理和內建網路搜尋跟隨模型和傳輸方式，而非單獨的 Spirit 開關。
+
+## 目錄
+
+這些是連線選擇器中的供應商，順序相同。每個區塊就是該供應商的金鑰、傳輸方式和額外欄位。上述的 Desktop 和 CLI 精靈對每家供應商都相同。
+
+### OpenAI
+
+在 [OpenAI 平台](https://platform.openai.com/api-keys) 建立 API 金鑰。Spirit 不轉售 OpenAI 用量。
+
+精靈固定使用 **Responses API** (`open-responses`)。沒有傳輸選擇器。預設基礎：`https://api.openai.com/v1`。
+
+匯入後進行聊天。推理跟隨模型。只有當目錄標記出對應功能時，影像和影片生成才會出現——在影像 / 影片模型位置中指定它們。
+
+### Anthropic
+
+在 [Anthropic 控制台](https://console.anthropic.com/settings/keys) 建立 API 金鑰。
+
+固定使用 **Messages API** (`anthropic`)。預設基礎：`https://api.anthropic.com/v1`。
+
+匯入後進行聊天。推理跟隨模型。除非之後的目錄條目標記出對應功能，否則沒有 Spirit 端的影像或影片生成位置。
+
+### Google
+
+在 [Google AI Studio](https://aistudio.google.com/apikey) 建立 API 金鑰。
+
+固定使用 **Chat Completions API** (`openai-compatible`)。要求 Responses 或 Messages 會回退到 Chat Completions。預設基礎：`https://generativelanguage.googleapis.com/v1beta`。
+
+匯入後進行聊天。只有當目錄標記時，才會指定影像生成。若使用 Vertex AI（GCP 專案 / 位置），請參閱 [Google Vertex AI](#google-vertex-ai)。
+
+### SpaceXAI
+
+在 [SpaceXAI 控制台](https://console.x.ai/team/default/api-keys) 建立 API 金鑰。
+
+固定使用 **Chat Completions API** (`openai-compatible`)。預設基礎：`https://api.x.ai/v1`。
+
+匯入後的聊天。推理、圖片和影片遵循匯入的目錄 — 當它們出現時指派插槽。
+
+### Vercel AI Gateway
+
+在 [Vercel AI Gateway](https://vercel.com/docs/ai-gateway) 儀表板中建立金鑰。
+
+固定 **Open Responses API** (`open-responses`)。預設基礎 URL：`https://ai-gateway.vercel.sh/v1`。
+
+聊天加上閘道目錄所暴露的任何功能。圖片生成取自目錄的 `type=image`，而非標籤。
+
+不要從標籤推斷視覺或圖片生成。透過此閘道的 MiniMax M3 在 Open Responses 上不會回傳可顯示的思考串流。
+
+### Cloudflare AI Gateway
+
+在 [Cloudflare 儀表板](https://developers.cloudflare.com/ai-gateway/) 中建立 API 權杖。您還需要帳戶 ID。
+
+挑選器：**Chat Completions**、**Open Responses** 或 **Messages**。基礎 URL 由帳戶建構：`https://api.cloudflare.com/client/v4/accounts/{accountId}/ai/v1`。
+
+- **帳戶 ID**（必填）— 32 字元十六進位
+- **閘道 ID**（選填）
+
+沒有帳戶 ID，精靈就無法建構 API 基礎 URL。聊天和其他功能遵循閘道暴露的模型。
+
+### DeepSeek
+
+在 [DeepSeek 平台](https://platform.deepseek.com/api-keys) 上建立 API 金鑰。
+
+無挑選器。連線預設為 **Open Responses** (`open-responses`)。相容的基礎 URL 也存在於 `https://api.deepseek.com/v1`（Chat）和 `https://api.deepseek.com/anthropic`（Messages）。
+
+匯入後的聊天。推理遵循模型。
+
+### OpenRouter
+
+在 [OpenRouter](https://openrouter.ai/keys) 建立金鑰。
+
+挑選器：**Chat Completions**、**Open Responses** 或 **Messages**。預設基礎 URL：`https://openrouter.ai/api/v1`。
+
+聊天加上目錄標記的圖片或影片生成（當 OpenRouter 暴露這些模型時）。
+
+### Fireworks AI
+
+在 [Fireworks 主控台](https://app.fireworks.ai/settings/users/api-keys) 中建立 API 金鑰。
+
+挑選器：**Chat Completions**、**Messages** 或 **Open Responses**。Chat / Responses 基礎 URL：`https://api.fireworks.ai/inference/v1`。Messages 基礎 URL：`https://api.fireworks.ai/inference`。
+
+匯入後的聊天。其他功能遵循 Fireworks 目錄。
+
+### Together AI
+
+在 [Together AI 主控台](https://api.together.ai/settings/api-keys) 中建立 API 金鑰。
+
+固定 **Chat Completions API**。預設基礎 URL：`https://api.together.ai/v1`。
+
+匯入後的聊天。僅在目錄標記時指派圖片或影片插槽。
+
+### Groq
+
+在 [Groq 主控台](https://console.groq.com) 中建立 API 金鑰。
+
+固定 **Chat Completions API**。預設基礎 URL：`https://api.groq.com/openai/v1`。
+
+匯入後的聊天。推理遵循模型（當 Groq 暴露它時）。
+
+### DeepInfra
+
+在 [DeepInfra 儀表板](https://deepinfra.com/dash/keys) 中建立 API 金鑰。
+
+固定 **Chat Completions API**。預設基礎 URL：`https://api.deepinfra.com/v1/openai`。
+
+匯入後的聊天。其他功能遵循目錄。
+
+### Baseten
+
+在 [Baseten 主控台](https://app.baseten.co/settings/api_keys) 中建立 API 金鑰。
+
+固定 **Chat Completions API**。預設基礎 URL：`https://inference.baseten.co/v1`。
+
+匯入後的聊天。其他功能遵循目錄。
+
+### Hugging Face
+
+在 [Hugging Face 設定](https://huggingface.co/settings/tokens) 中建立一個 token。
+
+固定使用 **Open Responses API**。預設 base：`https://router.huggingface.co/v1`。
+
+匯入後即可開始聊天。其他功能遵循路由器目錄。
+
+### Moonshot AI
+
+在您要使用的站點的 Moonshot 控制台中建立 API 金鑰：[中國](https://platform.kimi.com/console/api-keys) 或 [國際](https://platform.kimi.ai/console/api-keys)。
+
+固定使用 **Chat Completions API**。無傳輸選擇器。
+
+- **國際**（預設）— `https://api.moonshot.ai/v1`
+- **中國** — `https://api.moonshot.cn/v1`
+
+這是 Moonshot 開放平台提供者，不是 [Kimi Code](#kimi-code)。moonshot-ai 上的內建搜尋不使用 Kimi Code 託管搜尋路徑。Kimi Code 金鑰和 Moonshot 開放平台金鑰是不同的連線。
+
+### Kimi Code
+
+在 [Kimi Code 控制台](https://www.kimi.com/code/console) 中建立 Kimi Code API 金鑰。
+
+固定使用 **Chat Completions API**。預設 base：`https://api.kimi.com/coding/v1`。Messages base 存在於 `https://api.kimi.com/coding`，但精靈不提供選擇器。
+
+匯入後即可開始聊天。託管搜尋（如果可用）是此提供者特有的，而非 moonshot-ai。
+
+### Z.ai
+
+在 [Z.ai 控制台](https://z.ai/manage-apikey/apikey-list) 中建立 API 金鑰。Coding Plan 說明：[GLM Coding Plan](https://docs.z.ai/devpack/quick-start)。
+
+固定使用 **Chat Completions API**。預設 base：`https://api.z.ai/api/paas/v4`。
+
+在精靈中開啟 **GLM Coding Plan**，以使用 `https://api.z.ai/api/coding/paas/v4` 而不是預設的 PaaS base。
+
+匯入後即可開始聊天。推理遵循模型。
+
+### 智譜 AI
+
+在 [智譜 AI 控制台](https://bigmodel.cn/console) 中建立 API 金鑰。Coding Plan 說明：[GLM Coding Plan](https://docs.bigmodel.cn/cn/coding-plan/quick-start)。
+
+固定使用 **Chat Completions API**。預設 base：`https://open.bigmodel.cn/api/paas/v4`。
+
+開啟 **GLM Coding Plan** 以使用 `https://open.bigmodel.cn/api/coding/paas/v4`。
+
+匯入後即可開始聊天。推理遵循模型。
+
+### 阿里雲
+
+在 [阿里雲百煉 / 大模型服務平台](https://bailian.console.aliyun.com) 中建立 API 金鑰。
+
+固定使用 **Chat Completions API**。相容預設：`https://dashscope.aliyuncs.com/compatible-mode/v1`。
+
+- **cn-beijing**（預設）— `https://{workspaceId}.cn-beijing.maas.aliyuncs.com/compatible-mode/v1`（需要 workspace id）
+- **ap-southeast-1** — 需要 workspace id
+- **us-virginia** — `https://dashscope-us.aliyuncs.com/compatible-mode/v1`（不需要 workspace id）
+- **eu-central-1** — 需要 workspace id
+
+**Token Plan** 切換至 `https://token-plan.cn-beijing.maas.aliyuncs.com/compatible-mode/v1`，並忽略站點 / workspace。說明：[Token Plan](https://bailian.console.aliyun.com/cn-beijing?tab=doc#/doc/?type=model&url=3029020)。Token Plan 一律使用 cn-beijing 方案端點，即使您選擇了其他站點。
+
+匯入後即可開始聊天。其他功能遵循目錄。
+
+### MiniMax
+
+在您要使用的站點的 MiniMax 控制台中建立 API 金鑰：[中國](https://platform.minimaxi.com/console/) 或 [國際](https://platform.minimax.io/console/)。
+
+固定使用 **Messages API**（`anthropic`）。國際 Messages base：`https://api.minimax.io/anthropic/v1`。
+
+- **國際**（預設）— `https://api.minimax.io/v1`（Chat 形狀） / `https://api.minimax.io/anthropic/v1`（Messages）
+- **中國** — `https://api.minimaxi.com/v1`
+
+匯入後即可開始聊天。上游 `/models` 清單沒有多模態標記；只有 M3 被視為支援圖片 / 影片輸入。透過 Vercel AI Gateway 的 Open Responses，MiniMax M3 不會回傳可顯示的思考串流。
+
+### 小米
+
+在 [小米 MiMo 控制台](https://platform.xiaomimimo.com/console/api-keys) 建立 API 金鑰。
+
+固定為 **Chat Completions API**。預設基礎位址：`https://api.xiaomimimo.com/v1`。
+
+匯入後即可聊天。其他功能依目錄而定。
+
+### SiliconFlow
+
+在 SiliconFlow 控制台為您將使用的站點建立 API 金鑰：[國際站](https://cloud.siliconflow.com/me/account/ak) 或 [中國站](https://cloud.siliconflow.cn/me/account/ak)。
+
+選擇器：**Chat Completions** 或 **Messages**。
+
+- **國際站**（預設）— `https://api.siliconflow.com/v1`
+- **中國站** — `https://api.siliconflow.cn/v1`
+
+匯入後即可聊天。其他功能依目錄而定。
+
+### StepFun
+
+在 [StepFun 平台](https://platform.stepfun.com) 建立 API 金鑰。Step Plan 注意事項：[Step Plan](https://platform.stepfun.com/docs/zh/step-plan/integrations/reasoning-api)。
+
+固定為 **Chat Completions API**。預設基礎位址：`https://api.stepfun.com/v1`。
+
+**Step Plan** 切換至 `https://api.stepfun.com/step_plan/v1`。
+
+匯入後即可聊天。推理能力依模型而定。
+
+### Volcengine
+
+在 [Volcengine Ark 控制台](https://console.volcengine.com/ark/apiKey) 建立 API 金鑰。
+
+選擇器：**Chat Completions** 或 **Responses API**。預設基礎位址：`https://ark.cn-beijing.volces.com/api/v3`。
+
+匯入後即可聊天。其他功能依目錄而定。
+
+### BytePlus
+
+在 [BytePlus Ark 控制台](https://console.byteplus.com/ark/apiKey) 建立 API 金鑰。
+
+選擇器：**Chat Completions** 或 **Responses API**。預設基礎位址：`https://ark.ap-southeast.bytepluses.com/api/v3`。
+
+匯入後即可聊天。其他功能依目錄而定。
+
+### Meituan
+
+在 [LongCat 控制台](https://longcat.chat/platform/api_keys) 建立 API 金鑰。
+
+固定為 **Chat Completions API**。預設基礎位址：`https://api.longcat.chat/openai/v1`。
+
+匯入後即可聊天。其他功能依目錄而定。
+
+### Tencent TokenHub
+
+在 [Tencent TokenHub 控制台](https://console.cloud.tencent.com/tokenhub) 建立 API 金鑰。
+
+固定為 **Chat Completions API**。精靈不提供 Responses 或 Messages。
+
+- **廣州**（預設）— `https://tokenhub.tencentmaas.com/v1`
+- **新加坡** — `https://tokenhub-intl.tencentmaas.com/v1`
+
+匯入後即可聊天。請勿依賴 Chat 注入的網路搜尋。TokenHub 文件提到 Chat 的 `web_search_options` 和 Responses 的 `web_search`，但實際使用時 Chat 注入無法運作，且 Responses 僅限少數模型。因此 Spirit 僅保留 Chat Completions。
+
+### Mistral
+
+在 [Mistral 控制台](https://console.mistral.ai) 建立 API 金鑰。
+
+固定為 **Chat Completions API**。預設基礎位址：`https://api.mistral.ai/v1`。
+
+匯入後即可聊天。其他功能依目錄而定。
+
+### Cohere
+
+在 [Cohere 儀表板](https://dashboard.cohere.com) 建立 API 金鑰。
+
+固定為 **Chat Completions API**。預設基礎位址：`https://api.cohere.com/v2`。
+
+匯入後即可聊天。其他功能依目錄而定。
+
+### Azure
+
+在 [Azure 入口網站](https://portal.azure.com) 中為您的 Azure OpenAI 資源建立金鑰。
+
+固定使用 **Responses API** (`open-responses`)。沒有傳輸方式選擇器。
+
+- **資源名稱**（必填）— 2–64 個字元，可包含字母、數字和連字號；不能以連字號開頭或結尾
+
+Spirit 會建構 `https://{resource}.openai.azure.com/openai/v1`。匯入後即可聊天。若已標記，影像生成將遵循 Azure 目錄。
+
+### Amazon Bedrock
+
+在 [AWS Bedrock 主控台](https://console.aws.amazon.com/bedrock) 中，建立 Bearer API 金鑰或可呼叫 Bedrock 的 IAM 使用者。
+
+固定使用 **Amazon Bedrock** (`bedrock`)。預設主機格式：`https://bedrock.us-east-1.amazonaws.com`。
+
+- **AWS 區域**（必填），例如 `us-east-1`
+- **驗證方式**：**Bearer** 或 **IAM**
+  - Bearer — 貼上 Bedrock API 金鑰和模型 ID。模型**不會**自動擷取。
+  - IAM — Access Key ID + Secret Access Key。Spirit 會從帳戶列出基礎模型。
+
+選擇模型後即可聊天。其他功能取決於該模型。Bearer 金鑰僅適用於推論。`ListFoundationModels` 不接受 Bearer，因此目錄匯入需要 IAM。
+
+### Google Vertex AI
+
+使用已啟用 Vertex AI 的 GCP 專案。驗證方式為 ADC、服務帳戶或 Express API 金鑰 — 而非一般的 OpenAI 金鑰。
+
+固定使用 **Chat Completions API**。Responses 或 Messages 要求會退回使用 Chat Completions。Base 會變成 `https://{location}-aiplatform.googleapis.com/v1/projects/{project}/locations/{location}`。
+
+- **GCP 專案 ID** 和 **位置**（必填），例如 `us-central1`
+- **驗證方式**
+  - **ADC** — 此機器上的應用程式預設憑證 (`GOOGLE_APPLICATION_CREDENTIALS`)
+  - **服務帳戶** — 用戶端電子郵件 + 私密金鑰；用於擷取模型清單
+  - **Express API 金鑰** — 無法擷取目錄；請手動新增模型 ID
+
+選擇模型後即可聊天。對於沒有 GCP 專案的 AI Studio 金鑰，請使用 [Google](#google)。Express 模式無法匯入模型清單。服務帳戶模式需要電子郵件和私密金鑰才能列出模型。
+
+### 自訂
+
+使用您的端點預期的 API 金鑰。Spirit 沒有代管的自訂提供者。
+
+選擇器：**Chat Completions**、**Open Responses** 或 **Messages**。您必須提供 **Base URL**。如果留空，預設值為 `https://api.openai.com/v1`。
+
+輸入供應商文件記載的根路徑，包括他們要求的版本後綴（`/v1`、`/v1/openai` 等）。Spirit 不會為自訂端點猜測路徑。
+
+您也可以為提供者群組設定顯示名稱，以便區分多個自訂端點。
+
+連線後，匯入或輸入模型 ID。當端點沒有發布 Spirit 能理解的目錄時，請在精靈中標記聊天／影像／影片功能。

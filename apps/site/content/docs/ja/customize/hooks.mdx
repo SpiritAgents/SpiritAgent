@@ -1,0 +1,70 @@
+---
+title: フック
+description: セッション、ツール、サブエージェントのイベントでスクリプトを実行します。許可、拒否、または確認を求めることができます。
+---
+
+フックは、Spirit が特定の時点で実行するスクリプトです。ツールを許可、拒否、または承認プロンプト（`ask`）を強制することができます。
+
+## イベント
+
+- `sessionStart`
+- `sessionEnd`
+- `submitPrompt`
+- `preToolUse`
+- `postToolUse`
+- `subagentStart`
+- `subagentEnd`
+
+`preToolUse` が `ask` を返すと、[自動承認またはバイパス](../agent/approvals.mdx) の場合でもプロンプトが表示されます。
+
+## 配置場所
+
+| スコープ | 設定 | スクリプト |
+| --- | --- | --- |
+| ユーザー | `{spiritDataDir}/hooks.json` | `{spiritDataDir}/hooks/` |
+| ワークスペース | `{workspace}/.spirit/hooks.json` | `{workspace}/.spirit/hooks/` |
+
+同じイベントでは、ユーザーエントリとワークスペースエントリがその順序で連結されます。互いに上書きされることはありません。
+
+これらは **設定 → フック** で管理します。CLI で `spirit hooks list` と `spirit hooks validate` を使用して検証します。組み込み Skill の `create-hook` でフックのドラフトを作成できます。
+
+## ファイルのフィールド
+
+ルートオブジェクトには `version` と `hooks` を含める必要があります。`version` は現在 `1` のみを受け付けます。
+
+| フィールド | 説明 |
+| --- | --- |
+| `version` | 必須。`1` である必要があります。 |
+| `hooks` | 必須。オブジェクト。キーはイベント名、値はそのイベントのフックの配列です。 |
+
+### 各フック
+
+| フィールド | 説明 |
+| --- | --- |
+| `command` | 必須。スクリプトのパス。相対パスは設定ディレクトリに対して解決され、その中に留まる必要があります。 |
+| `timeout` | オプション。タイムアウト（秒）。正の数である必要があります。デフォルトは `30` です。 |
+| `failClosed` | オプション。スクリプトがクラッシュしたり、タイムアウトしたり、標準出力に無効な JSON を書き込んだ場合にブロックするかどうか。デフォルトはブロックしません。 |
+| `matcher` | オプション。空でない正規表現。`preToolUse` / `postToolUse` ではツール名、`subagentStart` / `subagentEnd` ではサブエージェントタイプに一致します。 |
+
+## 例
+
+```json
+{
+  "version": 1,
+  "hooks": {
+    "preToolUse": [
+      {
+        "command": "hooks/guard.sh",
+        "timeout": 10,
+        "failClosed": true,
+        "matcher": "^shell$"
+      }
+    ],
+    "sessionEnd": [
+      {
+        "command": "hooks/log.sh"
+      }
+    ]
+  }
+}
+```

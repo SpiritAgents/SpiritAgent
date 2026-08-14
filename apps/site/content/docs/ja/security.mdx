@@ -1,0 +1,28 @@
+---
+title: セキュリティ
+description: キーリング、承認、およびループバックデーモン。テレメトリはありません。
+---
+
+## キーリング
+
+APIキー、Bedrock / Vertex のシークレット、拡張機能のシークレット、および GitHub 統合トークンは、オペレーティングシステムのキーリングに保存されます。サービス名は `SpiritAgent` です。
+
+`config.json` にはプロバイダーグループとモデル参照が含まれており、シークレット自体は含まれません。大きなシークレットはキーリングでシャーディングされる場合があります。
+
+## 承認
+
+[承認](./agent/approvals.mdx) を参照してください。デフォルトは安全な開始点です。バイパスしても `ask_questions` とフック `ask` では停止します。
+
+## ローカルデーモン
+
+Desktop と CLI は、ランダムなポートで **`127.0.0.1`** にバインドするデーモンを共有します。クライアントは `{spiritDataDir}/server.token`（モード `0600`）を使用して `Authorization: Bearer` を送信します。
+
+`0.0.0.0` リモートアクセスは **オープンな製品パスではありません**。LAN バインドをホスト型クラウドエージェントとして扱わないでください。
+
+Web Host のペアリングは、Desktop 上の別の6桁のコードです。5回失敗すると、Web Host を再起動するまでコードはロックされます。[Desktop](./desktop.mdx) を参照してください。
+
+## プライバシー
+
+Spirit は開発者テレメトリを提供しません。データはデータディレクトリとキーリングに残ります。リポジトリ内の [PRIVACY.md](https://github.com/SpiritAgents/SpiritAgent/blob/main/PRIVACY.md) を参照してください。
+
+脆弱性は公開イシューではなく、非公開で（GitHub Private Advisory）報告してください。[SECURITY.md](https://github.com/SpiritAgents/SpiritAgent/blob/main/SECURITY.md) を参照してください。

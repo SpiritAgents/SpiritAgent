@@ -1,0 +1,29 @@
+---
+title: Einführung
+description: Ein Open-Source-KI-Agent mit Zugriff auf mehrere Anbieter.
+---
+
+## Modellanbieter
+
+Spirit Agent bietet keine Modelldienste direkt an. Sie können OpenAI, Anthropic, SpaceXAI, ein Gateway oder einen regionalen Anbieter verbinden. Jeder Anbieter läuft auf derselben Plattform: Tools, Genehmigungen, Sitzungen und Workspace-Verhalten bleiben konsistent.
+
+Schlüssel werden im System-Schlüsselbund unter dem Dienst `SpiritAgent` gespeichert. Sie werden nicht in `config.json` abgelegt.
+
+## Ein Agent, zwei Hosts
+
+Desktop und CLI teilen sich einen lokalen Daemon. Sitzungen, Modelle, Genehmigungen und Anmeldeinformationen befinden sich im selben Datenverzeichnis, sodass Sie eine Aufgabe in der App starten und im Terminal fortsetzen können.
+
+## Hier starten
+
+1. [Desktop oder CLI installieren](./quickstart.mdx)
+2. Einen Workspace öffnen
+3. Einen Anbieter verbinden
+4. Den Agenten bitten, das Repository zu lesen, eine kleine Änderung vorzunehmen und die Änderung zu genehmigen
+
+Siehe [Schnellstart](./quickstart.mdx) für den vollständigen Weg.
+
+- Installation: [Desktop](./install/desktop.mdx), [CLI](./install/cli.mdx)
+- Verbinden: [Anbieter](./providers.mdx)
+- Arbeiten: [Modi](./agent/modes.mdx), [Tools](./agent/tools.mdx), [Anpassen](./customize/rules.mdx)
+- Hosts: [Desktop](./desktop.mdx), [CLI](./cli.mdx) — [ACP](./acp.mdx) ist implementiert, aber nicht auf der Download-Seite
+- Referenz: [Konfiguration](./config.mdx), [Sicherheit](./security.mdx), [Erscheinungsbild](./appearance.mdx), [Fehlerbehebung](./troubleshooting.mdx)

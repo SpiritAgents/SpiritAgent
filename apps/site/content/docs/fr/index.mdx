@@ -1,0 +1,29 @@
+---
+title: Introduction
+description: Un agent IA open source avec accès multi-fournisseurs.
+---
+
+## Fournisseurs de modèles
+
+Spirit Agent ne fournit pas directement de services de modèles. Vous pouvez vous connecter à OpenAI, Anthropic, SpaceXAI, une passerelle ou un fournisseur régional. Chaque fournisseur fonctionne sur le même environnement : outils, approbations, sessions et comportement de l'espace de travail restent cohérents.
+
+Les clés sont écrites dans le trousseau système sous le service `SpiritAgent`. Elles ne sont pas stockées dans `config.json`.
+
+## Un agent, deux hôtes
+
+Desktop et le CLI partagent un daemon local. Sessions, modèles, approbations et identifiants vivent dans le même répertoire de données, vous pouvez donc commencer une tâche dans l'application et la continuer dans le terminal.
+
+## Commencer ici
+
+1. [Installer Desktop ou le CLI](./quickstart.mdx)
+2. Ouvrir un espace de travail
+3. Connecter un fournisseur
+4. Demander à l'agent de lire le dépôt, de faire une petite modification, et d'approuver le changement
+
+Voir [quickstart](./quickstart.mdx) pour le chemin complet.
+
+- Installer : [Desktop](./install/desktop.mdx), [CLI](./install/cli.mdx)
+- Connecter : [Fournisseurs](./providers.mdx)
+- Travailler : [Modes](./agent/modes.mdx), [Outils](./agent/tools.mdx), [Personnaliser](./customize/rules.mdx)
+- Hôtes : [Desktop](./desktop.mdx), [CLI](./cli.mdx) — [ACP](./acp.mdx) est implémenté mais pas sur la page de téléchargement
+- Référence : [Config](./config.mdx), [Sécurité](./security.mdx), [Apparence](./appearance.mdx), [Dépannage](./troubleshooting.mdx)

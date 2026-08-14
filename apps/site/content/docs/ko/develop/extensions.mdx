@@ -1,0 +1,434 @@
+---
+title: 확장 프로그램
+description: 패키지 구조, spiritExtension 필드, 활성화 API, 공식 레지스트리 등록.
+---
+
+확장 프로그램은 `spiritExtension`을 포함하는 `package.json`이 있는 폴더입니다. Spirit은 워크스페이스 `.spirit/` 디렉터리가 아닌 사용자 및 호스트별로 설치합니다.
+
+| 호스트 | 경로 |
+| --- | --- |
+| 데스크톱 | `{spiritDataDir}/extensions/desktop/` |
+| CLI | `{spiritDataDir}/extensions/cli/` |
+
+이는 [Skills](../customize/skills.mdx)(`SKILL.md` 폴더), [MCP](../customize/mcp.mdx)(외부 서버), [Hooks](../customize/hooks.mdx)(`hooks.json` 스크립트)와 다릅니다. `contributes.cli.hooks`는 CLI TUI 슬롯을 스타일링합니다. `hooks.json`이 아닙니다.
+
+확장 프로그램별 활성화 스위치는 없습니다. 설치 후 확장 프로그램이 기여합니다. CLI 패널 토글은 자리 표시자입니다.
+
+## 패키지 구조
+
+```text
+example-extension/
+  package.json
+  dist/index.js
+  assets/icon.svg
+  styles/desktop.css
+  cli-hooks.json
+```
+
+```json
+{
+  "name": "@example/spirit-extension",
+  "version": "0.1.0",
+  "description": "Example Spirit Agent extension.",
+  "author": { "name": "example" },
+  "homepage": "https://example.com/spirit-extension",
+  "main": "dist/index.js",
+  "spiritExtension": {
+    "schemaVersion": 1,
+    "displayName": "Example extension",
+    "icon": "assets/icon.svg",
+    "supportedHosts": ["cli", "desktop"],
+    "activationEvents": ["onStartup", "onUserMessage"],
+    "requestedCapabilities": [
+      "tool-definitions",
+      "tool-execution",
+      "system-prompt",
+      "settings",
+      "secret-storage",
+      "desktop-ui",
+      "cli-ui"
+    ],
+    "contributes": {
+      "tools": [
+        {
+          "name": "lookup_item",
+          "description": "Look up an item by id.",
+          "inputSchema": {
+            "type": "object",
+            "properties": {
+              "id": { "type": "string" }
+            },
+            "required": ["id"]
+          },
+          "approvalMode": "allowed",
+          "executionMode": "foreground"
+        }
+      ],
+      "desktop": {
+        "css": [{ "path": "styles/desktop.css" }],
+        "settingsPage": { "title": "Example extension" }
+      },
+      "cli": {
+        "hooks": { "path": "cli-hooks.json" }
+      }
+    },
+    "settingsSchema": [
+      {
+        "key": "region",
+        "type": "select",
+        "title": "Region",
+        "required": true,
+        "defaultValue": "us",
+        "options": [
+          { "value": "us", "label": "US" },
+          { "value": "eu", "label": "EU" }
+        ]
+      }
+    ],
+    "secretSlots": [
+      {
+        "key": "api_token",
+        "title": "API token",
+        "required": true
+      }
+    ]
+  }
+}
+```
+
+`package.json`의 `name`은 확장 프로그램 ID입니다. `^(?:@[a-z0-9][a-z0-9._-]*/)?[a-z0-9][a-z0-9._-]*$`와 일치해야 합니다.
+
+## `package.json` 필드
+
+| 필드 | 설명 |
+| --- | --- |
+| `name` | 필수. npm 패키지 이름; 확장 프로그램 ID로 사용 |
+| `version` | 필수. 버전 문자열 |
+| `spiritExtension` | 필수. 객체. 아래 참조 |
+| `description` | 선택. 문자열 |
+| `author` | 선택. 문자열 또는 `{ name }` |
+| `homepage` | 선택. 문자열 |
+| `main` | 선택. `activate` 항목에 대한 상대 경로. `activationEvents`, 도구 실행 또는 시스템 프롬프트를 사용할 때 필수 |
+
+`main`, `spiritExtension.icon`, CSS 경로 및 CLI 훅 경로는 상대 경로여야 하며 패키지 내부에 있어야 합니다.
+
+## `spiritExtension`
+
+| 필드 | 설명 |
+| --- | --- |
+| `schemaVersion` | 선택. 기본값은 `1`입니다. `1`만 지원됨 |
+| `displayName` | 필수. 사용자에게 표시되는 이름 |
+| `icon` | 선택. 패키지 루트 기준 상대 경로 |
+| `supportedHosts` | 필수. `cli` 및/또는 `desktop`의 비어 있지 않은 배열 |
+| `activationEvents` | 선택. [활성화 이벤트](#activation-events) 참조 |
+| `requestedCapabilities` | 선택. [역량](#capabilities) 참조 |
+| `contributes` | 선택. `tools`, `desktop` 및/또는 `cli` |
+| `settingsSchema` | 선택. 설정 정의 |
+| `secretSlots` | 선택. 비밀 슬롯 정의 |
+
+## 역량
+
+| 값 | 런타임 |
+| --- | --- |
+| `tool-definitions` | `contributes.tools`를 모델에 노출하려면 `tool-execution`과 함께 필요 |
+| `tool-execution` | 해당 도구를 실행하려면 `tool-definitions`와 함께 필요 |
+| `system-prompt` | 시스템 프롬프트 조각을 기여하려면 `main`과 함께 필요 |
+| `desktop-ui` | `contributes.desktop`와 함께 사용해야 합니다. |
+| `cli-ui` | `contributes.cli`와 함께 사용해야 합니다. |
+| `approval-flow` | 선언만 가능합니다. 승인은 각 도구의 `approvalMode`에 따라 결정됩니다. |
+| `questions-flow` | 선언만 가능합니다. 질문은 `approvalMode: need-questions`에 따라 결정됩니다. |
+| `settings` | 선언만 가능합니다. 설정은 `settingsSchema`에서 가져옵니다. |
+| `secret-storage` | `secretSlots`와 함께 사용됩니다. |
+| `structured-results` | 선언만 가능합니다. |
+
+`desktop-ui` / `cli-ui`와 해당 `contributes` 블록은 모두 있거나 모두 없어야 합니다.
+
+## 활성화 이벤트
+
+| 이벤트 | 발생 시점 |
+| --- | --- |
+| `onStartup` | 호스트 준비 |
+| `onExtensionInstalled` | ZIP 또는 마켓플레이스 설치 후 |
+| `onSessionOpened` | 세션이 활성 상태가 됨 |
+| `onSessionReset` | 세션 재설정 |
+| `onUserMessage` | 사용자가 메시지를 제출함 |
+| `onToolCall` | 도구가 실행되기 직전 |
+| `onToolResult` | 도구 결과를 사용할 수 있게 됨 |
+| `onApprovalResolved` | 승인 결정이 해결됨 |
+
+호스트는 확장 프로그램이 이벤트를 나열하고 읽을 수 있는 `main`이 있을 때 `activate`를 호출합니다.
+
+## `contributes.tools`
+
+| 필드 | 설명 |
+| --- | --- |
+| `name` | 필수. `[a-z0-9]+(?:[._-][a-z0-9]+)*` |
+| `description` | 필수. 모델에 표시됩니다. |
+| `inputSchema` | 필수. JSON Schema 객체 |
+| `outputSchema` | 선택 사항. JSON Schema 객체 |
+| `approvalMode` | 선택 사항. `allowed`, `need-approval` 또는 `need-questions` |
+| `executionMode` | 선택 사항. `foreground` 또는 `background` |
+
+모델은 `name`을 그대로 보지 않습니다. 호스트는 `extension__{id}__{tool}__{hash}`와 같은 호출 이름을 구성합니다.
+
+## `contributes.desktop`
+
+`desktop-ui`가 필요합니다.
+
+| 필드 | 설명 |
+| --- | --- |
+| `css[].path` | 필수. 패키지 루트 기준 CSS 파일 |
+| `css[].media` | 선택 사항. CSS 미디어 쿼리 |
+| `settingsPage` | 선택 사항. `true`, `{}` 또는 `{ title }` — Desktop 설정 항목을 추가합니다. |
+
+## `contributes.cli`
+
+`cli-ui`가 필요합니다. `hooks`는 인라인 배열이 아닌 `path`를 포함한 객체입니다:
+
+```json
+{
+  "hooks": { "path": "cli-hooks.json" }
+}
+```
+
+파일은 `{ "hooks": [ ... ] }` 형식이어야 합니다.
+
+| 필드 | 설명 |
+| --- | --- |
+| `slot` | 필수. 아래 슬롯 중 하나 |
+| `variant` | 선택 사항. `default`, `accented`, `muted`, `warning`, `success`, `danger` |
+| `tokens` | 선택 사항. `{ foreground?, border?, accent? }` |
+| `prefix` | 선택 사항. 문자열 |
+| `suffix` | 선택 사항. 문자열 |
+
+슬롯: `message.user`, `message.assistant`, `message.tool`, `assistant.thinking`, `input.frame`, `bottom_form`, `bottom_form.section`, `slash_suggestions`, `approval.panel`, `questions.panel`.
+
+토큰 역할: `default`, `primary`, `secondary`, `muted`, `accent`, `success`, `warning`, `danger`.
+
+```json
+{
+  "hooks": [
+    {
+      "slot": "input.frame",
+      "variant": "accented",
+      "tokens": { "border": "accent" },
+      "prefix": "[",
+      "suffix": "]"
+    }
+  ]
+}
+```
+
+## `settingsSchema`
+
+| 필드 | 설명 |
+| --- | --- |
+| `key` | 필수. 도구 이름과 동일한 패턴 |
+| `type` | 필수. `string`, `boolean`, `number` 또는 `select` |
+| `title` | 필수. UI 레이블 |
+| `description` | 선택 사항 |
+| `placeholder` | 선택 사항 |
+| `required` | 선택 사항. 부울 |
+| `defaultValue` | 선택 사항. `type`과 일치해야 함 |
+| `options` | `select`에 필수. `{ value, label, description? }` 배열 |
+
+값은 `string`, `number`, `boolean` 또는 `null`입니다. `null`은 필수가 아닌 설정을 지웁니다.
+
+## `secretSlots`
+
+| 필드 | 설명 |
+| --- | --- |
+| `key` | 필수 |
+| `title` | 필수 |
+| `description` | 선택 사항 |
+| `required` | 선택 사항. 부울 |
+
+Desktop은 OS 키링에 비밀을 저장합니다. CLI 데몬 경로에서는 `secrets.set` / `secrets.delete`를 사용하지 못할 수 있습니다.
+
+## `activate`
+
+`main`은 동적 `import`로 로드됩니다. 다음 중 하나를 내보내세요:
+
+- `export function activate(ctx) { ... }`
+- `export default function activate(ctx) { ... }`
+- `export default { activate }`
+
+### `ctx`
+
+| 필드 | 설명 |
+| --- | --- |
+| `extension` | `{ id, name, version, directoryPath, manifestPath, main }` |
+| `host` | 호스트 API. Desktop은 `showMessageBox`를 구현합니다. CLI는 `{}`입니다. |
+| `log` | `(message: string) => void` |
+| `settings` | `get(key)`, `getAll()`, `set(key, value)`, `setAll(values)` |
+| `secrets` | `get(key)`, `has(key)`, `set(key, value)`, `delete(key)` — 키는 `secretSlots`에서 선언해야 합니다. |
+| `activationEvent` | 선택 사항. `{ type, detail? }` |
+
+### 반환 값
+
+객체를 반환하거나, 모듈에서 동일한 필드를 내보냅니다.
+
+| 필드 | 설명 |
+| --- | --- |
+| `tools` | `Record<string, (ctx) => unknown>`. 키는 매니페스트 도구 이름입니다. |
+| `invokeTool` | `(ctx) => unknown`. `tools[name]` 대신 사용됩니다. |
+| `systemPrompt` | 정적 시스템 조각 |
+| `getSystemPrompt` | `() => string \| Promise<string>`. `systemPrompt` 대신 사용됩니다. |
+| `onEvent` | `(event) => void` |
+| `dispose` | `() => void`. 제거 또는 재로드 시 호출됩니다. |
+
+### 도구 핸들러 `ctx`
+
+| 필드 | 설명 |
+| --- | --- |
+| `extension` | `activate`와 동일한 런타임 정보 |
+| `host` | 동일한 호스트 API |
+| `toolName` | 매니페스트 도구 이름 |
+| `arguments` | 모델에서 온 객체 |
+| `log` | 동일한 로거 |
+| `settings` | 동일한 설정 접근자 |
+| `secrets` | 동일한 비밀 접근자 |
+| `toolCallId` | 선택 사항 |
+| `questionsResult` | 선택 사항. `approvalMode`가 `need-questions`일 때 설정됩니다. |
+
+`string` 결과는 그대로 전달됩니다. 다른 값은 `JSON.stringify(value, null, 2)`로 변환됩니다. `undefined`는 `""`가 됩니다.
+
+### 데스크톱 `host.showMessageBox`
+
+| 필드 | 설명 |
+| --- | --- |
+| `title` | 필수. 문자열 |
+| `message` | 필수. 문자열 |
+| `detail` | 선택 사항. 문자열 |
+| `buttons` | 선택 사항. 문자열 배열 |
+| `cancelId` | 선택 사항. 숫자 |
+| `defaultId` | 선택 사항. 숫자 |
+| `noLink` | 선택 사항. 불리언 |
+| `type` | 선택 사항. `none`, `info`, `error`, `question`, `warning` |
+
+```js
+export function activate(ctx) {
+  return {
+    systemPrompt: "Use lookup_item when the user asks for an item by id.",
+    async invokeTool({ toolName, arguments: args, settings, secrets }) {
+      if (toolName !== "lookup_item") {
+        throw new Error(`Unknown tool: ${toolName}`);
+      }
+      const region = await settings.get("region");
+      const token = await secrets.get("api_token");
+      return { id: args.id, region, hasToken: Boolean(token) };
+    },
+    dispose() {
+      ctx.log("example-extension disposed");
+    },
+  };
+}
+```
+
+## 설치
+
+- **ZIP** — 아카이브에는 정확히 하나의 `package.json`이 포함되어야 합니다 (하위 디렉터리에 있어도 됩니다). `spirit extension import ./extension.zip` 또는 **설정 → 확장 프로그램**으로 가져옵니다.
+- **마켓플레이스 tarball** — 아카이브 루트에는 `package/` 디렉터리가 포함되어야 합니다.
+
+`supportedHosts`에는 현재 호스트가 포함되어야 합니다. 동일한 ID의 두 번째 설치는 기본적으로 기존 복사본을 대체하지 않습니다. 채널 및 설치 UI는 [마켓플레이스](../customize/marketplace.mdx)를 참조하세요.
+
+## 공식 레지스트리에 게시
+
+[SpiritAgents/registry](https://github.com/SpiritAgents/registry) 저장소는 마켓플레이스 인덱스입니다. 확장 프로그램 소스, `dist`, ZIP 파일 또는 tarball을 호스팅하지 않습니다.
+
+다음 단계를 순서대로 수행하세요:
+
+1. 공개 npm 패키지를 게시합니다.
+2. 해당 패키지를 나열하는 풀 리퀘스트를 엽니다.
+
+### 1. npm 패키지 게시
+
+게시된 `package.json`이 진실의 원천이며, 특히 `spiritExtension`이 중요합니다. 레지스트리 빌더에는 다음이 필요합니다:
+
+- `spiritExtension.schemaVersion`
+- `spiritExtension.displayName`
+- `spiritExtension.supportedHosts`
+- `spiritExtension.requestedCapabilities`
+
+또한 `name`, `version`, `description`, `author`, `repository`, `homepage`, `keywords`, 그리고 선택적으로 `spiritExtension.icon`을 읽습니다. `icon`을 설정한 경우 해당 파일을 게시된 패키지에 포함하세요. `spiritExtension` 객체가 없으면 해당 버전의 레지스트리 빌드가 실패합니다.
+
+공식 예시: [`@spiritagent/extension-system-message-demo`](https://www.npmjs.com/package/@spiritagent/extension-system-message-demo) (`spiritagent.system-message-demo`).
+
+### 2. 패키지 나열
+
+`registry/extensions/<extension-id>/`를 생성하고 다음을 포함하세요:
+
+| 파일 | 설명 |
+| --- | --- |
+| `entry.json` | 마켓플레이스 거버넌스 |
+| `README.md` | 마켓플레이스 세부 정보 사본 |
+
+이러한 항목을 수동으로 편집하지 마세요(재생성하세요):
+
+- `registry/catalog.json`
+- `registry/extensions/<extension-id>/detail.json`
+
+`extensionId`에는 최소한 두 개의 점으로 구분된 세그먼트가 필요하며, 소문자와 숫자만 사용하고 각 세그먼트 내부에는 점이나 하이픈을 사용할 수 있습니다. 예: `spiritagent.system-message-demo`, `yourteam.some-extension`. `packageName`과 `extensionId`는 저장소 내에서 고유해야 합니다.
+
+### `entry.json`
+
+| 필드 | 설명 |
+| --- | --- |
+| `schemaVersion` | 필수. `1` |
+| `extensionId` | 필수. 위의 규칙 참조 |
+| `packageName` | 필수. npm 패키지 이름 |
+| `status` | 필수. `listed`, `hidden`, `deprecated` 또는 `blocked` |
+| `featured` | 필수. 부울 값 |
+| `defaultVersion` | 필수. 기본 버전 문자열 |
+| `defaultReviewStatus` | 필수. `unverified`, `verified` 또는 `revoked` |
+| `versions` | 필수. 최소한 하나의 항목 |
+
+각 `versions[]` 항목:
+
+| 필드 | 설명 |
+| --- | --- |
+| `version` | 필수 |
+| `channel` | 필수. `stable`, `preview` 또는 `experimental` |
+| `reviewStatus` | 필수. `unverified`, `verified` 또는 `revoked` |
+| `changelog` | 선택 사항. `{ summary, body }` — 둘 다 있을 때 모두 필수 |
+
+```json
+{
+  "schemaVersion": 1,
+  "extensionId": "example.spirit-extension",
+  "packageName": "@example/spirit-extension",
+  "status": "listed",
+  "featured": false,
+  "defaultVersion": "0.1.0",
+  "defaultReviewStatus": "unverified",
+  "versions": [
+    {
+      "version": "0.1.0",
+      "channel": "stable",
+      "reviewStatus": "unverified",
+      "changelog": {
+        "summary": "Initial public release.",
+        "body": "- Initial public release."
+      }
+    }
+  ]
+}
+```
+
+마켓플레이스 README에는 확장 프로그램이 수행하는 작업, 패키지 이름, 기본 승인 버전, 호스트 및 기능 호환성, 그리고 마켓플레이스 독자를 위한 참고 사항이 포함되어야 합니다.
+
+파생 파일을 로컬에서 재생성합니다:
+
+```powershell
+./scripts/build-registry.ps1
+```
+
+스크립트는 나열된 버전에 대한 npm 메타데이터를 가져와 `catalog.json`과 각 `detail.json`을 다시 빌드한 다음 일관성을 검증합니다.
+
+### Pull request
+
+`entry.json`, 마켓플레이스 `README.md`, 재생성된 `catalog.json` / `detail.json`을 포함하세요. 이미 npm에 공개된 버전만 나열하세요. `reviewStatus`와 `channel`을 정확하게 설정하세요. 새 버전은 일반적으로 `unverified`로 시작합니다.
+
+확장 프로그램 소스 트리, `dist`, ZIP 파일, tarball 또는 기타 바이너리 아티팩트를 커밋하지 마세요.
+
+Pull request를 여는 것이 목록 등록을 보장하지는 않습니다. 검토 과정에서 버전이 승인되거나 검증되기 전에 변경을 요청할 수 있습니다.

@@ -1,0 +1,53 @@
+---
+title: CLI
+description: TUI, nicht-interaktiv -p, SPIRIT_API_KEY / SPIRIT_API_BASE und der gemeinsame Daemon.
+---
+
+Die CLI ist ein Terminal-Host. Installieren Sie sie mit dem [Installationsskript](./install/cli.mdx). Sie kommuniziert mit demselben Daemon wie [Desktop](./desktop.mdx).
+
+## TUI
+
+```bash
+cd /path/to/your/project
+spirit
+```
+
+Das Layout ist `inline` oder `fullscreen` (`-t` / `--tui`, oder `/tui`). Modi, Genehmigungen und Loop entsprechen Desktop.
+
+Nützliche Slash-Befehle: `/help`, `/quit`, `/new`, `/continue`, `/loop`, `/model`, `/sessions`, `/rewind`, `/fork`, `/subagents`, `/approval`, `/mcp`, `/hooks`, `/rules`, `/skills`, `/extensions`.
+
+## Nicht-interaktiv
+
+```bash
+spirit -p "your prompt here"
+```
+
+Nur der endgültige Assistententext gelangt nach stdout. Setzen Sie `-m`, `-a` und `-l` **vor** `-p`. Der Prozess schlägt fehl, wenn ein Aufruf eine Genehmigung oder [ask_questions](./agent/ask-questions.mdx) benötigt. Headless läuft nach 30 Minuten in einen Timeout.
+
+## Umgebung
+
+| Variable | Rolle |
+| --- | --- |
+| `SPIRIT_API_KEY` | API-Schlüssel für diesen Prozess. Reihenfolge: env → Modell-Keyring → globaler Keyring |
+| `SPIRIT_API_BASE` | API-Basis-URL-Überschreibung |
+| `SPIRIT_AGENT_DATA_DIR` | Datenverzeichnis (gleicher Speicher wie Desktop) |
+| `SPIRIT_HOME` | Installationswurzel der CLI-**Binärdatei** – nicht das Datenverzeichnis |
+
+## Gemeinsamer Daemon
+
+`spirit` verbindet sich über WebSocket mit dem Spirit Server-Daemon. Sitzungen, Streaming, Tools und die Genehmigungswarteschlange befinden sich dort. Das Bearer-Token ist `{spiritDataDir}/server.token` (Modus `0600`). Der Daemon bindet standardmäßig an `127.0.0.1` auf einem zufälligen Port.
+
+`spirit serve` führt den Daemon im Vordergrund aus. Remote `0.0.0.0` ist kein offener Produktpfad. Siehe [Sicherheit](./security.mdx).
+
+## Befehle
+
+```
+spirit [-v] [-m model] [-a approval] [-l language] [-t inline|fullscreen] [-p prompt]
+spirit interactive
+spirit serve
+spirit model list|add|remove|use|current
+spirit config show|set-base|set-image-model|clear-image-model|set-video-model|clear-video-model|key set|remove|status
+spirit mcp …
+spirit hooks list|validate
+spirit extension list|import|remove|marketplace …
+```

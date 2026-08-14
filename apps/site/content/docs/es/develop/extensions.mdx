@@ -1,0 +1,434 @@
+---
+title: Extensiones
+description: Estructura del paquete, campos de spiritExtension, API de activación y listado en el registro oficial.
+---
+
+Una extensión es una carpeta con un `package.json` que contiene `spiritExtension`. Spirit la instala por usuario y por host, no bajo el directorio `.spirit/` del espacio de trabajo.
+
+| Host | Ruta |
+| --- | --- |
+| Desktop | `{spiritDataDir}/extensions/desktop/` |
+| CLI | `{spiritDataDir}/extensions/cli/` |
+
+Esto es diferente de [Skills](../customize/skills.mdx) (carpetas `SKILL.md`), [MCP](../customize/mcp.mdx) (servidores externos) y [Hooks](../customize/hooks.mdx) (scripts de `hooks.json`). `contributes.cli.hooks` estiliza los slots de la TUI de CLI. No es `hooks.json`.
+
+No hay un interruptor de habilitación por extensión. Después de la instalación, la extensión contribuye. El interruptor del panel de CLI es un marcador de posición.
+
+## Estructura del paquete
+
+```text
+example-extension/
+  package.json
+  dist/index.js
+  assets/icon.svg
+  styles/desktop.css
+  cli-hooks.json
+```
+
+```json
+{
+  "name": "@example/spirit-extension",
+  "version": "0.1.0",
+  "description": "Example Spirit Agent extension.",
+  "author": { "name": "example" },
+  "homepage": "https://example.com/spirit-extension",
+  "main": "dist/index.js",
+  "spiritExtension": {
+    "schemaVersion": 1,
+    "displayName": "Example extension",
+    "icon": "assets/icon.svg",
+    "supportedHosts": ["cli", "desktop"],
+    "activationEvents": ["onStartup", "onUserMessage"],
+    "requestedCapabilities": [
+      "tool-definitions",
+      "tool-execution",
+      "system-prompt",
+      "settings",
+      "secret-storage",
+      "desktop-ui",
+      "cli-ui"
+    ],
+    "contributes": {
+      "tools": [
+        {
+          "name": "lookup_item",
+          "description": "Look up an item by id.",
+          "inputSchema": {
+            "type": "object",
+            "properties": {
+              "id": { "type": "string" }
+            },
+            "required": ["id"]
+          },
+          "approvalMode": "allowed",
+          "executionMode": "foreground"
+        }
+      ],
+      "desktop": {
+        "css": [{ "path": "styles/desktop.css" }],
+        "settingsPage": { "title": "Example extension" }
+      },
+      "cli": {
+        "hooks": { "path": "cli-hooks.json" }
+      }
+    },
+    "settingsSchema": [
+      {
+        "key": "region",
+        "type": "select",
+        "title": "Region",
+        "required": true,
+        "defaultValue": "us",
+        "options": [
+          { "value": "us", "label": "US" },
+          { "value": "eu", "label": "EU" }
+        ]
+      }
+    ],
+    "secretSlots": [
+      {
+        "key": "api_token",
+        "title": "API token",
+        "required": true
+      }
+    ]
+  }
+}
+```
+
+El `name` en `package.json` es el id de la extensión. Debe coincidir con `^(?:@[a-z0-9][a-z0-9._-]*/)?[a-z0-9][a-z0-9._-]*$`.
+
+## Campos de `package.json`
+
+| Campo | Descripción |
+| --- | --- |
+| `name` | Requerido. Nombre del paquete npm; se usa como id de la extensión |
+| `version` | Requerido. Cadena de versión |
+| `spiritExtension` | Requerido. Objeto. Ver abajo |
+| `description` | Opcional. Cadena |
+| `author` | Opcional. Cadena o `{ name }` |
+| `homepage` | Opcional. Cadena |
+| `main` | Opcional. Ruta relativa al punto de entrada de `activate`. Se requiere cuando la extensión usa `activationEvents`, ejecución de herramientas o un prompt del sistema |
+
+`main`, `spiritExtension.icon`, las rutas CSS y las rutas de hooks CLI deben ser relativas y deben permanecer dentro del paquete.
+
+## `spiritExtension`
+
+| Campo | Descripción |
+| --- | --- |
+| `schemaVersion` | Opcional. Por defecto es `1`. Solo se soporta `1` |
+| `displayName` | Requerido. Nombre visible para el usuario |
+| `icon` | Opcional. Ruta relativa a la raíz del paquete |
+| `supportedHosts` | Requerido. Arreglo no vacío de `cli` y/o `desktop` |
+| `activationEvents` | Opcional. Ver [Eventos de activación](#activation-events) |
+| `requestedCapabilities` | Opcional. Ver [Capacidades](#capacities) |
+| `contributes` | Opcional. `tools`, `desktop`, y/o `cli` |
+| `settingsSchema` | Opcional. Definiciones de ajustes |
+| `secretSlots` | Opcional. Definiciones de ranuras de secretos |
+
+## Capacidades
+
+| Valor | Tiempo de ejecución |
+| --- | --- |
+| `tool-definitions` | Requerido con `tool-execution` para exponer `contributes.tools` al modelo |
+| `tool-execution` | Requerido con `tool-definitions` para ejecutar esas herramientas |
+| `system-prompt` | Requerido con `main` para contribuir con un fragmento de prompt del sistema |
+| `desktop-ui` | Debe estar emparejado con `contributes.desktop` |
+| `cli-ui` | Debe estar emparejado con `contributes.cli` |
+| `approval-flow` | Solo declarado. La aprobación se rige por el `approvalMode` de cada herramienta |
+| `questions-flow` | Solo declarado. Las preguntas se rigen por `approvalMode: need-questions` |
+| `settings` | Solo declarado. La configuración proviene de `settingsSchema` |
+| `secret-storage` | Se usa con `secretSlots` |
+| `structured-results` | Solo declarado |
+
+`desktop-ui` / `cli-ui` y el bloque `contributes` correspondiente deben estar ambos presentes o ambos ausentes.
+
+## Eventos de activación
+
+| Evento | Cuándo se dispara |
+| --- | --- |
+| `onStartup` | Calentamiento del host |
+| `onExtensionInstalled` | Después de instalar desde ZIP o marketplace |
+| `onSessionOpened` | La sesión se vuelve activa |
+| `onSessionReset` | Reinicio de sesión |
+| `onUserMessage` | El usuario envía un mensaje |
+| `onToolCall` | Una herramienta está a punto de ejecutarse |
+| `onToolResult` | Un resultado de herramienta está disponible |
+| `onApprovalResolved` | Una decisión de aprobación se resuelve |
+
+El host llama a `activate` cuando la extensión lista el evento y tiene un `main` legible.
+
+## `contributes.tools`
+
+| Campo | Descripción |
+| --- | --- |
+| `name` | Requerido. `[a-z0-9]+(?:[._-][a-z0-9]+)*` |
+| `description` | Requerido. Se muestra al modelo |
+| `inputSchema` | Requerido. Objeto JSON Schema |
+| `outputSchema` | Opcional. Objeto JSON Schema |
+| `approvalMode` | Opcional. `allowed`, `need-approval` o `need-questions` |
+| `executionMode` | Opcional. `foreground` o `background` |
+
+El modelo no ve `name` tal cual. El host construye un nombre de invocación como `extension__{id}__{tool}__{hash}`.
+
+## `contributes.desktop`
+
+Requiere `desktop-ui`.
+
+| Campo | Descripción |
+| --- | --- |
+| `css[].path` | Requerido. Archivo CSS relativo a la raíz del paquete |
+| `css[].media` | Opcional. Media query CSS |
+| `settingsPage` | Opcional. `true`, `{}` o `{ title }` — agrega una entrada de configuración de Desktop |
+
+## `contributes.cli`
+
+Requiere `cli-ui`. `hooks` es un objeto con `path`, no un array en línea:
+
+```json
+{
+  "hooks": { "path": "cli-hooks.json" }
+}
+```
+
+El archivo debe ser `{ "hooks": [ ... ] }`.
+
+| Campo | Descripción |
+| --- | --- |
+| `slot` | Requerido. Uno de los slots a continuación |
+| `variant` | Opcional. `default`, `accented`, `muted`, `warning`, `success`, `danger` |
+| `tokens` | Opcional. `{ foreground?, border?, accent? }` |
+| `prefix` | Opcional. Cadena |
+| `suffix` | Opcional. Cadena |
+
+Slots: `message.user`, `message.assistant`, `message.tool`, `assistant.thinking`, `input.frame`, `bottom_form`, `bottom_form.section`, `slash_suggestions`, `approval.panel`, `questions.panel`.
+
+Roles de token: `default`, `primary`, `secondary`, `muted`, `accent`, `success`, `warning`, `danger`.
+
+```json
+{
+  "hooks": [
+    {
+      "slot": "input.frame",
+      "variant": "accented",
+      "tokens": { "border": "accent" },
+      "prefix": "[",
+      "suffix": "]"
+    }
+  ]
+}
+```
+
+## `settingsSchema`
+
+| Campo | Descripción |
+| --- | --- |
+| `key` | Requerido. Mismo patrón que los nombres de herramientas |
+| `type` | Requerido. `string`, `boolean`, `number`, o `select` |
+| `title` | Requerido. Etiqueta de interfaz |
+| `description` | Opcional |
+| `placeholder` | Opcional |
+| `required` | Opcional. Booleano |
+| `defaultValue` | Opcional. Debe coincidir con `type` |
+| `options` | Requerido para `select`. Arreglo de `{ value, label, description? }` |
+
+Los valores son `string`, `number`, `boolean`, o `null`. `null` limpia un ajuste no requerido.
+
+## `secretSlots`
+
+| Campo | Descripción |
+| --- | --- |
+| `key` | Requerido |
+| `title` | Requerido |
+| `description` | Opcional |
+| `required` | Opcional. Booleano |
+
+Desktop almacena secretos en el llavero del sistema. En la ruta del daemon de CLI, `secrets.set` / `secrets.delete` pueden no estar disponibles.
+
+## `activate`
+
+`main` se carga con `import` dinámico. Exporta uno de:
+
+- `export function activate(ctx) { ... }`
+- `export default function activate(ctx) { ... }`
+- `export default { activate }`
+
+### `ctx`
+
+| Campo | Descripción |
+| --- | --- |
+| `extension` | `{ id, name, version, directoryPath, manifestPath, main }` |
+| `host` | API del host. Desktop implementa `showMessageBox`. CLI es `{}` |
+| `log` | `(message: string) => void` |
+| `settings` | `get(key)`, `getAll()`, `set(key, value)`, `setAll(values)` |
+| `secrets` | `get(key)`, `has(key)`, `set(key, value)`, `delete(key)` — las claves deben declararse en `secretSlots` |
+| `activationEvent` | Opcional. `{ type, detail? }` |
+
+### Valor de retorno
+
+Retorna un objeto, o exporta los mismos campos desde el módulo.
+
+| Campo | Descripción |
+| --- | --- |
+| `tools` | `Record<string, (ctx) => unknown>`. Las claves son los nombres de las herramientas del manifiesto |
+| `invokeTool` | `(ctx) => unknown`. Se usa en lugar de `tools[name]` cuando está presente |
+| `systemPrompt` | Fragmento estático del sistema |
+| `getSystemPrompt` | `() => string \| Promise<string>`. Se usa en lugar de `systemPrompt` cuando está presente |
+| `onEvent` | `(event) => void` |
+| `dispose` | `() => void`. Se llama al eliminar o recargar |
+
+### `ctx` del manejador de herramientas
+
+| Campo | Descripción |
+| --- | --- |
+| `extension` | La misma información de ejecución que `activate` |
+| `host` | La misma API de host |
+| `toolName` | Nombre de la herramienta del manifiesto |
+| `arguments` | Objeto del modelo |
+| `log` | El mismo registrador |
+| `settings` | El mismo acceso a configuración |
+| `secrets` | El mismo acceso a secretos |
+| `toolCallId` | Opcional |
+| `questionsResult` | Opcional. Se establece cuando `approvalMode` es `need-questions` |
+
+Un resultado `string` se pasa directamente. Otros valores se convierten con `JSON.stringify(value, null, 2)`. `undefined` se convierte en `""`.
+
+### Escritorio `host.showMessageBox`
+
+| Campo | Descripción |
+| --- | --- |
+| `title` | Requerido. Cadena |
+| `message` | Requerido. Cadena |
+| `detail` | Opcional. Cadena |
+| `buttons` | Opcional. Arreglo de cadenas |
+| `cancelId` | Opcional. Número |
+| `defaultId` | Opcional. Número |
+| `noLink` | Opcional. Booleano |
+| `type` | Opcional. `none`, `info`, `error`, `question`, `warning` |
+
+```js
+export function activate(ctx) {
+  return {
+    systemPrompt: "Use lookup_item when the user asks for an item by id.",
+    async invokeTool({ toolName, arguments: args, settings, secrets }) {
+      if (toolName !== "lookup_item") {
+        throw new Error(`Unknown tool: ${toolName}`);
+      }
+      const region = await settings.get("region");
+      const token = await secrets.get("api_token");
+      return { id: args.id, region, hasToken: Boolean(token) };
+    },
+    dispose() {
+      ctx.log("example-extension disposed");
+    },
+  };
+}
+```
+
+## Instalación
+
+- **ZIP** — el archivo debe contener exactamente un `package.json` (puede estar en un subdirectorio). Importa con `spirit extension import ./extension.zip` o **Configuración → Extensiones**.
+- **Paquete de marketplace** — la raíz del archivo debe contener un directorio `package/`.
+
+`supportedHosts` debe incluir el host actual. Una segunda instalación del mismo id no reemplaza la copia existente por defecto. Consulta [Marketplace](../customize/marketplace.mdx) para los canales y la interfaz de instalación.
+
+## Publicar en el registro oficial
+
+El repositorio [SpiritAgents/registry](https://github.com/SpiritAgents/registry) es un índice de marketplace. No aloja el código fuente de extensiones, `dist`, archivos ZIP ni paquetes.
+
+Realiza estos pasos en orden:
+
+1. Publica un paquete npm público.
+2. Abre una solicitud de extracción que liste ese paquete.
+
+### 1. Publica el paquete npm
+
+El `package.json` publicado es la fuente de verdad, especialmente `spiritExtension`. El constructor del registro requiere:
+
+- `spiritExtension.schemaVersion`
+- `spiritExtension.displayName`
+- `spiritExtension.supportedHosts`
+- `spiritExtension.requestedCapabilities`
+
+También lee `name`, `version`, `description`, `author`, `repository`, `homepage`, `keywords` y el opcional `spiritExtension.icon`. Si estableces `icon`, incluye ese archivo en el paquete publicado. Un objeto `spiritExtension` faltante hace que la compilación del registro falle para esa versión.
+
+Ejemplo oficial: [`@spiritagent/extension-system-message-demo`](https://www.npmjs.com/package/@spiritagent/extension-system-message-demo) (`spiritagent.system-message-demo`).
+
+### 2. Lista el paquete
+
+Crea `registry/extensions/<extension-id>/` con:
+
+| Archivo | Descripción |
+| --- | --- |
+| `entry.json` | Gobernanza del marketplace |
+| `README.md` | Copia de detalle del marketplace |
+
+No edites estos archivos manualmente (regéralos):
+
+- `registry/catalog.json`
+- `registry/extensions/<extension-id>/detail.json`
+
+`extensionId` necesita al menos dos segmentos separados por puntos, letras minúsculas y dígitos, con puntos o guiones dentro de un segmento. Ejemplos: `spiritagent.system-message-demo`, `yourteam.some-extension`. `packageName` y `extensionId` deben ser únicos en el repositorio.
+
+### `entry.json`
+
+| Campo | Descripción |
+| --- | --- |
+| `schemaVersion` | Requerido. `1` |
+| `extensionId` | Requerido. Ver las reglas anteriores |
+| `packageName` | Requerido. Nombre del paquete npm |
+| `status` | Requerido. `listed`, `hidden`, `deprecated` o `blocked` |
+| `featured` | Requerido. Booleano |
+| `defaultVersion` | Requerido. Cadena de versión predeterminada |
+| `defaultReviewStatus` | Requerido. `unverified`, `verified` o `revoked` |
+| `versions` | Requerido. Al menos un elemento |
+
+Cada elemento de `versions[]`:
+
+| Campo | Descripción |
+| --- | --- |
+| `version` | Requerido |
+| `channel` | Requerido. `stable`, `preview` o `experimental` |
+| `reviewStatus` | Requerido. `unverified`, `verified` o `revoked` |
+| `changelog` | Opcional. `{ summary, body }` — ambos requeridos cuando esté presente |
+
+```json
+{
+  "schemaVersion": 1,
+  "extensionId": "example.spirit-extension",
+  "packageName": "@example/spirit-extension",
+  "status": "listed",
+  "featured": false,
+  "defaultVersion": "0.1.0",
+  "defaultReviewStatus": "unverified",
+  "versions": [
+    {
+      "version": "0.1.0",
+      "channel": "stable",
+      "reviewStatus": "unverified",
+      "changelog": {
+        "summary": "Initial public release.",
+        "body": "- Initial public release."
+      }
+    }
+  ]
+}
+```
+
+El README del marketplace debe cubrir qué hace la extensión, el nombre del paquete, la versión aprobada predeterminada, la compatibilidad de host y capacidades, y notas para los lectores del marketplace.
+
+Regenera los archivos derivados localmente:
+
+```powershell
+./scripts/build-registry.ps1
+```
+
+El script obtiene los metadatos de npm para las versiones enumeradas, reconstruye `catalog.json` y cada `detail.json`, y luego valida la consistencia.
+
+### Solicitud de extracción
+
+Incluye `entry.json`, el `README.md` del marketplace, y los `catalog.json` / `detail.json` regenerados. Enumera solo versiones que ya sean públicas en npm. Establece `reviewStatus` y `channel` con precisión. Las nuevas versiones típicamente comienzan como `unverified`.
+
+No confirmes árboles de código fuente de extensiones, `dist`, archivos ZIP, tarballs u otros artefactos binarios.
+
+Abrir una solicitud de extracción no garantiza la publicación. La revisión puede solicitar cambios antes de que una versión sea aprobada o verificada.

@@ -1,0 +1,22 @@
+---
+title: Sesiones
+description: Historial de chat, rebobinar, bifurcar y worktrees de git.
+---
+
+Cada conversación es una sesión. Las sesiones se almacenan en el directorio de datos de Spirit (`chats/`) y se agrupan por workspace en la barra lateral.
+
+## Rebobinar
+
+Rebobina un mensaje de usuario para restaurar la conversación a ese punto, edita el prompt si quieres y vuelve a enviar. Úsalo cuando el último turno fue por mal camino y prefieres reintentar en lugar de acumular una corrección.
+
+## Bifurcar
+
+Bifurca desde un mensaje de asistente para ramificar la conversación. Desktop también puede bifurcar en un chat lateral para que el hilo original permanezca en su lugar.
+
+## Worktree
+
+La **ubicación de trabajo** de Composer puede ser `local` (el workspace que abriste) o `worktree` (un worktree de git aislado). Los subagentes pueden establecer `worktree: true` para el mismo aislamiento.
+
+Las rutas de worktree se ven como `{repoRoot}.worktrees/spirit-*`. Un subagente que ya se está ejecutando dentro de un worktree no puede iniciar otro worktree desde allí.
+
+Los worktrees son para ediciones paralelas que de otro modo colisionarían. No son una copia de seguridad de la sesión: rebobinar y bifurcar manejan el historial de conversación.

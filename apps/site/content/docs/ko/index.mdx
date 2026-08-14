@@ -1,0 +1,29 @@
+---
+title: 소개
+description: 다중 제공업체 접근을 지원하는 오픈소스 AI 에이전트.
+---
+
+## 모델 제공업체
+
+Spirit Agent는 모델 서비스를 직접 제공하지 않습니다. OpenAI, Anthropic, SpaceXAI, 게이트웨이 또는 지역 제공업체를 연결할 수 있습니다. 모든 제공업체는 동일한 하네스에서 실행됩니다: 도구, 승인, 세션 및 작업공간 동작이 일관되게 유지됩니다.
+
+키는 `SpiritAgent` 서비스 아래 시스템 키링에 기록됩니다. `config.json`에 저장되지 않습니다.
+
+## 하나의 에이전트, 두 개의 호스트
+
+Desktop과 CLI는 로컬 데몬을 공유합니다. 세션, 모델, 승인 및 자격 증명이 동일한 데이터 디렉터리에 있으므로 앱에서 작업을 시작하고 터미널에서 계속할 수 있습니다.
+
+## 여기서 시작하세요
+
+1. [Desktop 또는 CLI 설치](./quickstart.mdx)
+2. 작업공간 열기
+3. 제공업체 하나 연결
+4. 에이전트에게 저장소를 읽고, 작은 수정을 하고, 변경을 승인하도록 요청
+
+전체 경로는 [빠른 시작](./quickstart.mdx)을 참조하세요.
+
+- 설치: [Desktop](./install/desktop.mdx), [CLI](./install/cli.mdx)
+- 연결: [제공업체](./providers.mdx)
+- 작업: [모드](./agent/modes.mdx), [도구](./agent/tools.mdx), [사용자 지정](./customize/rules.mdx)
+- 호스트: [Desktop](./desktop.mdx), [CLI](./cli.mdx) — [ACP](./acp.mdx)는 구현되었지만 다운로드 페이지에는 없습니다
+- 참조: [구성](./config.mdx), [보안](./security.mdx), [외관](./appearance.mdx), [문제 해결](./troubleshooting.mdx)

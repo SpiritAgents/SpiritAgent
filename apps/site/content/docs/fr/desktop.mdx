@@ -1,0 +1,103 @@
+---
+title: Desktop
+description: Carte des paramètres, Fichiers / Git / Navigateur, marketplace, automations et jumelage avec l'hôte Web local.
+---
+
+Desktop est l'hôte graphique. Il partage le démon local avec le [CLI](./cli.mdx). Installez-le depuis [Installer Desktop](./install/desktop.mdx).
+
+## Carte des paramètres
+
+### Bases
+
+| Onglet | Contenu |
+| --- | --- |
+| Général | Notifications, icône de la barre d'état / du menu |
+| Apparence | Thème, police, langue de l'interface, mica / flou, curseur |
+
+### Capacités
+
+| Onglet | Contenu |
+| --- | --- |
+| Modèles | Connexion du fournisseur, liste des modèles, clés |
+| Agents | LSP, attribution des commits / PR |
+| Onglet | Complétion de l'éditeur Tab |
+| Skills | Découvrir et générer des [Skills](./customize/skills.mdx) |
+| Règles | Emplacements des [Règles](./customize/rules.mdx) |
+| MCPs | Serveurs [MCP](./customize/mcp.mdx) |
+| Hooks | [Hooks](./customize/hooks.mdx) |
+| Dreams | [Dreams](./customize/dreams.mdx) (Bêta) |
+
+### Connecter
+
+| Onglet | Contenu |
+| --- | --- |
+| Réseaux | Version HTTP LLM, **Accès à distance Web** |
+| Intégrations | [Connexion GitHub Device](./customize/integrations.mdx) |
+| Extensions | Extensions installées, import ZIP |
+
+Un onglet Développeur n'apparaît que dans les builds de développement Vite.
+
+## Panneaux de l'espace de travail
+
+| Onglet | Rôle |
+| --- | --- |
+| Fichiers | Arborescence, Monaco, aperçu Markdown, `plans/` |
+| Git | Modifications, historique, puces commit / push / merge |
+| Navigateur | Navigateur intégré + sélecteur d'éléments (**Electron uniquement**) |
+| Shell | PTY intégré (**Electron uniquement**) |
+
+### Shell
+
+Desktop (Electron uniquement) dispose d'un onglet **Shell** avec un PTY intégré. Ce panneau est pour vous. L'agent passe toujours par [`shell`](./agent/tools.mdx) et l'approbation ; il ne tape pas dans votre PTY.
+
+CLI n'a pas de panneau PTY intégré. Les commandes passent toujours par le même outil `shell` sur le démon partagé.
+
+Remplacez le shell PTY de Desktop avec `SPIRIT_TERMINAL_SHELL` si vous avez besoin d'un binaire spécifique.
+
+### Git
+
+L'onglet **Git** affiche les modifications et l'historique. Les puces sur le composeur peuvent lancer **commit**, **push** ou **merge**. C'est l'interface hôte, pas un package Skill.
+
+Ces puces injectent une invite fixe. L'agent utilise ensuite les outils [workspace et `shell`](./agent/tools.mdx).
+
+### LSP
+
+Activez les serveurs de langage dans **Paramètres → Agents**, puis installez un fournisseur s'il manque. Une fois qu'un serveur est prêt, l'agent peut appeler [`get_diagnostics`](./agent/tools.mdx).
+
+| Id | Langages | Comment il est installé |
+| --- | --- | --- |
+| `typescript-language-server` | TypeScript, JavaScript | npm (`typescript-language-server`) |
+| `pyright` | Python | npm (`pyright`) |
+| `gopls` | Go | Chaîne d'outils Go |
+| `rust-analyzer` | Rust | rustup |
+| `clangd` | C, C++ | Paquet de la plateforme (par exemple Homebrew ou winget) |
+| `jdtls` | Java | Manuel |
+| `omnisharp` | C# | .NET |
+
+clangd et jdtls ne sont pas fournis. Installez-les vous-même, puis revenez à Paramètres → Agents.
+
+### Onglet
+
+Tab est la complétion en ligne de Monaco. Acceptez le texte fantôme avec une seule touche Tab. Ouvrez **Paramètres → Tab**, activez la complétion de code (`codeCompletionEnabled`) et attribuez un modèle de chat léger dans **Paramètres → Modèles**. Cet emplacement sert également à d'autres tâches de fond légères.
+
+Si la complétion est vide, vérifiez qu'un modèle de chat léger est connecté et que le paramètre est activé. Ce n'est pas la conversation de l'agent.
+
+## Marketplace et automatisations
+
+La barre latérale ouvre la [marketplace](./customize/marketplace.mdx). Les automatisations ont leur propre vue — [Desktop uniquement](./customize/automations.mdx).
+
+## Appairage Web Host
+
+Desktop peut servir un client web sur la machine locale.
+
+- Écoute par défaut : `127.0.0.1:7788`
+- Paramètres → **Réseaux** → Accès à distance Web
+- La première visite demande un **code d'appairage à 6 chiffres** à partir de cette page de paramètres
+- Cinq tentatives échouées verrouillent l'appairage jusqu'à ce que vous redémarriez Web Host
+- Le jeton est stocké dans le navigateur comme `spirit-agent-web-host-token`
+
+L'agent s'exécute toujours dans le démon partagé. Le client web reçoit un instantané authentifié ; ce n'est pas un second agent.
+
+**Lier `0.0.0.0` pour un accès LAN distant n'est pas un chemin de produit ouvert.** Le démon et Web Host restent sur loopback par défaut. Une adresse IPv4 LAN dans Networks est pour une machine que vous contrôlez, pas un serveur public.
+
+Remplacements de développement : `SPIRIT_DESKTOP_WEB_HOST=1`, `SPIRIT_WEB_HOST`, `SPIRIT_WEB_PORT`.

@@ -1,0 +1,22 @@
+---
+title: Sessions
+description: Historique des discussions, retour en arrière, bifurcation et worktrees git.
+---
+
+Chaque conversation est une session. Les sessions sont stockées dans le répertoire de données Spirit (`chats/`) et regroupées par workspace dans la barre latérale.
+
+## Retour en arrière
+
+Revenez en arrière sur un message utilisateur pour restaurer la conversation à ce point, modifiez le prompt si vous le souhaitez, puis renvoyez. Utilisez cette fonction lorsque le dernier tour a mal tourné et que vous préférez réessayer plutôt que d'empiler une correction.
+
+## Bifurcation
+
+Bifurquez à partir d'un message de l'assistant pour créer une branche dans la conversation. Desktop peut également bifurquer dans une discussion parallèle afin que le fil d'origine reste intact.
+
+## Worktree
+
+L'**emplacement de travail** de Composer peut être `local` (le workspace que vous avez ouvert) ou `worktree` (un worktree git isolé). Les sous-agents peuvent définir `worktree: true` pour la même isolation.
+
+Les chemins des worktrees ressemblent à `{repoRoot}.worktrees/spirit-*`. Un sous-agent déjà en cours d'exécution dans un worktree ne peut pas en démarrer un autre à partir de là.
+
+Les worktrees sont destinés aux modifications parallèles qui autrement entreraient en collision. Ils ne constituent pas une sauvegarde de la session — le retour en arrière et la bifurcation gèrent l'historique de la conversation.

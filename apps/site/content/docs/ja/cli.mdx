@@ -1,0 +1,53 @@
+---
+title: CLI
+description: TUI、非対話型 -p、SPIRIT_API_KEY / SPIRIT_API_BASE、共有デーモン。
+---
+
+CLI はターミナルホストです。[インストールスクリプト](./install/cli.mdx) でインストールします。[Desktop](./desktop.mdx) と同じデーモンと通信します。
+
+## TUI
+
+```bash
+cd /path/to/your/project
+spirit
+```
+
+レイアウトは `inline` または `fullscreen`（`-t` / `--tui`、または `/tui`）です。モード、承認、ループは Desktop と一致します。
+
+便利なスラッシュコマンド: `/help`、`/quit`、`/new`、`/continue`、`/loop`、`/model`、`/sessions`、`/rewind`、`/fork`、`/subagents`、`/approval`、`/mcp`、`/hooks`、`/rules`、`/skills`、`/extensions`。
+
+## 非対話型
+
+```bash
+spirit -p "your prompt here"
+```
+
+最終的なアシスタントテキストのみが標準出力に出力されます。`-m`、`-a`、`-l` は `-p` の**前**に置きます。呼び出しが承認または [ask_questions](./agent/ask-questions.mdx) を必要とする場合、プロセスは失敗します。ヘッドレスは30分でタイムアウトします。
+
+## 環境
+
+| 変数 | 役割 |
+| --- | --- |
+| `SPIRIT_API_KEY` | このプロセスの API キー。優先順位: env → モデルキーリング → グローバルキーリング |
+| `SPIRIT_API_BASE` | API ベース URL の上書き |
+| `SPIRIT_AGENT_DATA_DIR` | データディレクトリ（Desktop と同じストア） |
+| `SPIRIT_HOME` | CLI **バイナリ** インストールルート — データディレクトリではありません |
+
+## 共有デーモン
+
+`spirit` は WebSocket を介して Spirit Server デーモンに接続します。セッション、ストリーミング、ツール、承認キューはそこにあります。ベアラートークンは `{spiritDataDir}/server.token`（モード `0600`）です。デーモンはデフォルトでランダムなポートの `127.0.0.1` にバインドします。
+
+`spirit serve` はデーモンをフォアグラウンドで実行します。リモート `0.0.0.0` はオープンな製品パスではありません。[セキュリティ](./security.mdx) を参照してください。
+
+## コマンド
+
+```
+spirit [-v] [-m model] [-a approval] [-l language] [-t inline|fullscreen] [-p prompt]
+spirit interactive
+spirit serve
+spirit model list|add|remove|use|current
+spirit config show|set-base|set-image-model|clear-image-model|set-video-model|clear-video-model|key set|remove|status
+spirit mcp …
+spirit hooks list|validate
+spirit extension list|import|remove|marketplace …
+```

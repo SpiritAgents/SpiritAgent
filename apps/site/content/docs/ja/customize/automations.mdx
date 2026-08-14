@@ -1,0 +1,21 @@
+---
+title: オートメーション
+description: 時間トリガーと、Integrations 接続後の GitHub イベント。
+---
+
+<Callout type="info">
+デスクトップのみ。
+</Callout>
+
+オートメーションは、コンポーザーに座っていなくてもエージェントのジョブを実行します。
+
+## トリガー
+
+- **時間** — 毎時、毎日、または毎週
+- **GitHub** — 指定したリポジトリ（`owner` + `repo`）で `pull_request_created` または `issue_created`
+
+GitHub トリガーを使用するには、まず [Integrations](./integrations.mdx) を接続する必要があります。GitHub が接続されていない場合、トリガーメニューにはそれらのイベントは表示されません。
+
+データは `{spiritDataDir}/automations/` の下に保存されます。Desktop で Automations ビューを開くと、履歴と設定を確認できます。
+
+CLI ではこの UI を作成または実行できません。[Desktop](../desktop.mdx) を使用してください。

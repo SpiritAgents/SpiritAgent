@@ -1,0 +1,34 @@
+---
+title: Solicitações
+description: Como dar ao Spirit uma tarefa que ele possa concluir em seu workspace.
+---
+
+Fale com o agente como você falaria com um colega de equipe que pode ler o repositório e aguardar aprovação.
+
+## Seja específico
+
+Nomeie os arquivos, o resultado e o que não tocar. Uma solicitação concisa gera um diff pequeno e revisável. Uma solicitação vaga gasta uma rodada em descoberta.
+
+```txt
+Read src/auth/session.ts and fix the expired-token refresh path.
+Do not change the login form. Add a focused test next to the existing session tests.
+```
+
+## Anexe contexto
+
+No Desktop, anexe arquivos abertos, seleções ou um elemento do Navegador quando a tarefa for sobre esse ponto exato. O agente ainda precisa ler o arquivo para ver o conteúdo atual — os anexos são ponteiros, não um substituto para [tools](./tools.mdx).
+
+## Escolha um modo primeiro
+
+- **Agent** — você já sabe a mudança
+- **Plan** — você quer um plano escrito e [questions](./ask-questions.mdx) antes de qualquer edição
+- **Ask** — você quer apenas uma explicação
+- **Debug** — você pode reproduzir um bug e quer logs
+
+Veja [Modes](./modes.mdx).
+
+## Deixe a aprovação fazer seu trabalho
+
+No modo de aprovação **default**, o agente para antes de editar ou executar um comando. Leia o diff e então aprove ou rejeite. Não ative o bypass até confiar no loop. Veja [Approvals](./approvals.mdx).
+
+A conclusão inline do editor (Tab) não faz parte desta conversa. Configure-a em Configurações → Tab.

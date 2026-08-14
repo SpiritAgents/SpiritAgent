@@ -1,0 +1,28 @@
+---
+title: Segurança
+description: Keyring, aprovações e o daemon de loopback. Sem telemetria.
+---
+
+## Keyring
+
+Chaves de API, segredos do Bedrock / Vertex, segredos de extensões e o token de integração do GitHub são armazenados no keyring do sistema operacional. O nome do serviço é `SpiritAgent`.
+
+`config.json` contém grupos de provedores e referências de modelo, não o segredo em si. Segredos grandes podem ser fragmentados no keyring.
+
+## Aprovações
+
+Consulte [Aprovações](./agent/approvals.mdx). O padrão é o ponto de partida seguro. O bypass ainda é interrompido para `ask_questions` e o hook `ask`.
+
+## Daemon local
+
+O Desktop e a CLI compartilham um daemon que vincula **`127.0.0.1`** em uma porta aleatória. Os clientes enviam `Authorization: Bearer` usando `{spiritDataDir}/server.token` (modo `0600`).
+
+O acesso remoto `0.0.0.0` **não** é um caminho de produto aberto. Não trate um bind de LAN como um agente de nuvem hospedado.
+
+O pareamento do Web Host é um código separado de 6 dígitos no Desktop. Cinco falhas bloqueiam o código até que você reinicie o Web Host. Consulte [Desktop](./desktop.mdx).
+
+## Privacidade
+
+O Spirit não envia telemetria de desenvolvedor. Os dados permanecem no diretório de dados e no keyring. Consulte [PRIVACY.md](https://github.com/SpiritAgents/SpiritAgent/blob/main/PRIVACY.md) no repositório.
+
+Reporte vulnerabilidades de forma privada (GitHub Private Advisory), não em uma issue pública. Consulte [SECURITY.md](https://github.com/SpiritAgents/SpiritAgent/blob/main/SECURITY.md).

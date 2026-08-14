@@ -1,0 +1,62 @@
+---
+title: Instalar o CLI
+description: Instale o CLI do Spirit Agent com o script de instalação, SPIRIT_HOME e SPIRIT_VERSION.
+---
+
+O CLI é um host de terminal com um TUI e um modo não interativo `-p`. Ele fala com o mesmo daemon local que o [Desktop](./desktop.mdx).
+
+## Script de instalação
+
+macOS e Linux:
+
+```bash
+curl -fsSL https://spirit.fast/install | bash
+```
+
+Windows (PowerShell):
+
+```powershell
+irm https://spirit.fast/install.ps1 | iex
+```
+
+O script baixa um build de `download.spirit.fast`, descompacta e coloca `spirit` no seu `PATH`.
+
+Abra um novo terminal e então:
+
+```bash
+spirit --version
+```
+
+## Onde ele fica
+
+O diretório de instalação **não** é o mesmo do diretório de dados do Spirit Agent.
+
+| | Padrão | Substituição |
+| --- | --- | --- |
+| Binários do CLI | Unix: `~/.spirit` · Windows: `%LOCALAPPDATA%\Spirit` | `SPIRIT_HOME` |
+| Sessões, configuração, apontadores de chaveiro | macOS: `~/Library/Application Support/SpiritAgent` · Windows: `%APPDATA%\SpiritAgent` · Linux: `~/.local/share/SpiritAgent` | `SPIRIT_AGENT_DATA_DIR` |
+
+No Unix, o script cria um link `$SPIRIT_HOME/bin/spirit` → `$SPIRIT_HOME/cli/current/bin/spirit` e adiciona `export PATH="$SPIRIT_HOME/bin:$PATH"` ao final de `~/.profile`, `~/.bashrc` e `~/.zshrc` (marcador `# spirit-agent cli`).
+
+## Fixar uma versão ou espelho
+
+| Variável | Padrão | Função |
+| --- | --- | --- |
+| `SPIRIT_HOME` | `~/.spirit` ou `%LOCALAPPDATA%\Spirit` | Diretório de instalação dos binários do CLI |
+| `SPIRIT_VERSION` | `latest` | Segmento de versão na URL de download |
+| `SPIRIT_DOWNLOAD_HOST` | `download.spirit.fast` | Host de CDN |
+
+```bash
+SPIRIT_VERSION=0.1.0 curl -fsSL https://spirit.fast/install | bash
+```
+
+Você também pode baixar um arquivo do CLI da [página de download](/en-US/download) ou do [GitHub Releases](https://github.com/SpiritAgents/SpiritAgent/releases/latest) e descompactar você mesmo.
+
+## Primeira execução
+
+```bash
+cd /path/to/your/project
+spirit
+```
+
+Isso abre o TUI. Adicione um provedor com `/model add`, ou do shell com `spirit model add`. Veja o [quickstart](../quickstart.mdx).

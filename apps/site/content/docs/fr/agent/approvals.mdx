@@ -1,0 +1,28 @@
+---
+title: Approbations
+description: Par défaut, approbation automatique et contournement de l'approbation. Ce que chaque niveau arrête encore.
+---
+
+Chaque appel d'outil risqué peut attendre votre accord. Spirit dispose de trois niveaux d'approbation. Desktop les affiche comme **Default Approval**, **Auto Approval** et **Bypass Approval**. Le CLI utilise `/approval` ou `-a`.
+
+| Niveau | Id | Comportement |
+| --- | --- | --- |
+| Default Approval | `default` | Vous approuvez vous-même les modifications de fichiers, le shell et d'autres outils à haut risque. |
+| Auto Approval | `auto-approval` | Un modèle léger examine les appels à haut risque. Vous n'êtes pas invité à moins que cet examen (ou un hook) ne le demande. |
+| Bypass Approval | `bypass-approval` | Les outils à haut risque s'exécutent sans la demande d'approbation. |
+
+## Ce que le contournement ne saute pas
+
+`bypass-approval` s'arrête encore pour :
+
+- [ask_questions](./ask-questions.mdx)
+- Les flux d'extension qui nécessitent des questions
+- Un hook qui retourne `ask` sur `preToolUse`
+
+L'approbation automatique ne peut pas non plus outrepasser un `ask` de hook.
+
+## Quand utiliser quoi
+
+Restez sur **default** jusqu'à ce que vous ayez vu l'agent faire quelques bonnes modifications. Utilisez **auto-approval** lorsque vous voulez de la rapidité mais que vous souhaitez toujours une seconde vérification. Utilisez **bypass** uniquement sur une branche jetable ou une tâche que vous surveillez.
+
+`spirit -p` sans interface échoue si un appel nécessite une approbation. Passez `-a auto-approval` ou `-a bypass-approval`, ou utilisez le TUI.

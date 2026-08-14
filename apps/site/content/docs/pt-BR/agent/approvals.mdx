@@ -1,0 +1,28 @@
+---
+title: Aprovações
+description: Padrão, aprovação automática e bypass de aprovação. O que cada nível ainda bloqueia.
+---
+
+Toda chamada de ferramenta arriscada pode esperar por você. O Spirit tem três níveis de aprovação. O Desktop os mostra como **Aprovação Padrão**, **Aprovação Automática** e **Bypass de Aprovação**. O CLI usa `/approval` ou `-a`.
+
+| Nível | ID | Comportamento |
+| --- | --- | --- |
+| Aprovação Padrão | `default` | Você aprova edições de arquivos, shell e outras ferramentas de alto risco pessoalmente. |
+| Aprovação Automática | `auto-approval` | Um modelo leve revisa chamadas de alto risco. Você não é solicitado a menos que essa revisão (ou um hook) peça. |
+| Bypass de Aprovação | `bypass-approval` | Ferramentas de alto risco são executadas sem o prompt de aprovação. |
+
+## O que o bypass não pula
+
+`bypass-approval` ainda para para:
+
+- [ask_questions](./ask-questions.mdx)
+- Fluxos de extensão que precisam de perguntas
+- Um hook que retorna `ask` em `preToolUse`
+
+A aprovação automática também não pode substituir um hook `ask`.
+
+## Quando usar cada um
+
+Permaneça no **padrão** até ver o agente fazer algumas boas edições. Use **aprovação automática** quando quiser velocidade, mas ainda quiser uma segunda verificação. Use **bypass** apenas em um branch descartável ou em uma tarefa que você está monitorando.
+
+O `spirit -p` headless falha se uma chamada precisar de aprovação. Passe `-a auto-approval` ou `-a bypass-approval`, ou use o TUI.

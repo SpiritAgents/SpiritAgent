@@ -1,0 +1,28 @@
+---
+title: Seguridad
+description: Llavero, aprobaciones y el daemon de bucle local. Sin telemetría.
+---
+
+## Llavero
+
+Las claves de API, los secretos de Bedrock / Vertex, los secretos de extensiones y el token de integración de GitHub se almacenan en el llavero del sistema operativo. El nombre del servicio es `SpiritAgent`.
+
+`config.json` contiene grupos de proveedores y referencias de modelos, no el secreto en sí. Los secretos grandes pueden dividirse en el llavero.
+
+## Aprobaciones
+
+Ver [Aprobaciones](./agent/approvals.mdx). El valor predeterminado es el punto de partida seguro. La omisión aún se detiene para `ask_questions` y el hook `ask`.
+
+## Daemon local
+
+Desktop y CLI comparten un daemon que se vincula a **`127.0.0.1`** en un puerto aleatorio. Los clientes envían `Authorization: Bearer` usando `{spiritDataDir}/server.token` (modo `0600`).
+
+El acceso remoto `0.0.0.0` **no** es una ruta de producto abierta. No trates un enlace LAN como un agente en la nube alojado.
+
+El emparejamiento de Web Host es un código separado de 6 dígitos en Desktop. Cinco fallos bloquean el código hasta que reinicies Web Host. Ver [Desktop](./desktop.mdx).
+
+## Privacidad
+
+Spirit no incluye telemetría de desarrollador. Los datos permanecen en el directorio de datos y en el llavero. Ver [PRIVACY.md](https://github.com/SpiritAgents/SpiritAgent/blob/main/PRIVACY.md) en el repositorio.
+
+Reporta vulnerabilidades de forma privada (Aviso Privado de GitHub), no en un problema público. Ver [SECURITY.md](https://github.com/SpiritAgents/SpiritAgent/blob/main/SECURITY.md).

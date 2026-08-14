@@ -1,0 +1,18 @@
+---
+title: Poser des questions
+description: Questionnaires structurés qui suspendent l'agent jusqu'à ce que vous répondiez.
+---
+
+`ask_questions` est la façon dont l'agent vous demande de décider quelque chose avant de continuer. L'hôte affiche un questionnaire : chaque élément peut avoir des options prédéfinies plus un champ de texte personnalisé.
+
+L'exécution **est suspendue**. L'outil ne s'exécute pas en arrière-plan. Après que vous avez soumis vos réponses, l'agent reprend avec ces réponses en contexte.
+
+## Où vous le verrez
+
+Le mode Plan est l'endroit habituel — l'agent est invité à clarifier avant d'élaborer un plan. Le mode Agent peut encore poser des questions lorsqu'un choix modifierait le travail.
+
+[Contourner l'approbation](./approvals.mdx) ne **saute pas** `ask_questions`.
+
+## CLI headless
+
+`spirit -p` ne peut pas afficher de questionnaire. Si le modèle appelle `ask_questions`, le processus échoue. Utilisez la TUI, ou rendez la demande suffisamment précise pour qu'aucune décision ne soit nécessaire.

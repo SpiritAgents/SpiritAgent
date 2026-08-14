@@ -1,0 +1,13 @@
+{
+  "title": "Agente",
+  "pages": [
+    "tools",
+    "modes",
+    "prompting",
+    "approvals",
+    "loop",
+    "sessions",
+    "subagents",
+    "ask-questions"
+  ]
+}

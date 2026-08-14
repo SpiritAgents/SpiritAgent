@@ -1,0 +1,42 @@
+---
+title: Fehlerbehebung
+description: Alte Konfiguration, unbeaufsichtigte Blöcke, Pairing-Sperren, fehlende Schlüssel und Installationspfad-Verwechslungen.
+---
+
+## config.json wird abgelehnt
+
+Die Datei muss `schemaVersion: 2` sein. Löschen Sie die alte Datei und [verbinden Sie einen Anbieter neu](./providers.mdx). Schlüssel waren nie in dieser Datei – sie befinden sich im [Schlüsselbund](./security.mdx).
+
+## CLI installiert, Einstellungen leer
+
+Sie haben Binärdateien in `SPIRIT_HOME` (`~/.spirit`) installiert. Sitzungen und `config.json` befinden sich im [Datenverzeichnis](./config.mdx). Überprüfen Sie `SPIRIT_AGENT_DATA_DIR`, wenn Sie es überschrieben haben.
+
+## `spirit -p` fehlgeschlagen
+
+- Genehmigung erforderlich → verwenden Sie `-a auto-approval` / `-a bypass-approval` oder die TUI
+- [ask_questions](./agent/ask-questions.mdx) erforderlich → verwenden Sie die TUI oder machen Sie die Eingabeaufforderung entscheidungsfreudig
+- Zeitüberschreitung → unbeaufsichtigt stoppt nach 30 Minuten
+
+## Modelle wurden nicht importiert
+
+Öffnen Sie die [Anbieterseite](./providers.mdx) für diesen Anbieter. Überprüfen Sie Standort, Plan-Endpunkt, Azure-Ressource, Cloudflare-Konto, Bedrock-Region / IAM oder Vertex-Projekt / Standort. TokenHub bleibt bei Chat Completions. Bedrock Bearer kann Modelle nicht auflisten.
+
+## Schlüssel nicht im Schlüsselbund
+
+Verbinden Sie erneut unter **Einstellungen → Modelle** oder `spirit model add`. Der Assistent schreibt den Schlüsselbund **vor** `config.json`. Fügen Sie keine Schlüssel in das Repository ein.
+
+## Web-Host-Pairing fehlgeschlagen
+
+Falscher Code → versuchen Sie es erneut. Fünf Fehlversuche sperren das Pairing (`PAIRING_LOCKED`), bis Sie den Web-Host unter **Einstellungen → Netzwerke** neu starten. Der Host muss Pairing unterstützen; eine generische Web-Vorschau zeigt möglicherweise an, dass dies nicht der Fall ist.
+
+## LSP fehlt
+
+Installieren Sie den Server selbst (clangd über Homebrew / winget, jdtls manuell), und aktivieren Sie ihn dann unter **Einstellungen → Agents**. Siehe [Desktop](./desktop.mdx).
+
+## Tab-Vervollständigung ist leer
+
+Aktivieren Sie **Einstellungen → Tab** und weisen Sie ein leichtgewichtiges Chat-Modell zu. Siehe [Desktop](./desktop.mdx).
+
+## ACP nicht auf der Download-Seite
+
+Das ist zu erwarten. ACP ist implementiert, aber die Download-Spalte ist noch ein Platzhalter. Siehe [ACP](./acp.mdx).

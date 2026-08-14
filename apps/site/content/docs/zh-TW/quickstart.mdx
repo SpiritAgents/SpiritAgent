@@ -1,0 +1,108 @@
+---
+title: 快速入門
+description: 安裝 Spirit Agent，連接一個提供者，並完成一個小而經批准的文字編輯。
+---
+
+此頁面帶您從全新安裝到完成一個有用的變更。後續頁面涵蓋所有提供者和主機；沒有此路徑，這些頁面將無所依附。
+
+## 1. 安裝 Desktop 或 CLI
+
+選擇一個主機。它們共用同一個本地 daemon，因此您之後可以新增另一個。
+
+<Tabs items={["Desktop", "CLI"]}>
+  <Tab value="Desktop">
+
+從[下載頁面](/en-US/download)下載適用於您平台的版本，然後開啟它。
+
+- macOS：`.dmg`（Intel 或 Apple silicon）
+- Windows：`.exe` 安裝程式（x64 或 ARM64）
+- Linux：`.AppImage`（x64 或 ARM64）
+
+詳細資訊：[安裝 Desktop](./install/desktop.mdx)。
+
+</Tab>
+  <Tab value="CLI">
+
+```bash
+curl -fsSL https://spirit.fast/install | bash
+```
+
+```powershell
+irm https://spirit.fast/install.ps1 | iex
+```
+
+開啟新的終端機並執行 `spirit --version`。詳細資訊：[安裝 CLI](./install/cli.mdx)。
+
+</Tab>
+</Tabs>
+
+## 2. 開啟一個工作區
+
+Agent 會在工作區根目錄中讀取和編輯檔案。開啟您想要變更的專案。
+
+<Tabs items={["Desktop", "CLI"]}>
+  <Tab value="Desktop">
+
+在側邊欄中使用**開啟工作區資料夾**並選擇一個資料夾。最近的工作區會保留在清單中。
+
+</Tab>
+  <Tab value="CLI">
+
+```bash
+cd /path/to/your/project
+spirit
+```
+
+TUI 會將目前目錄作為工作區。
+
+</Tab>
+</Tabs>
+
+## 3. 連接一個提供者
+
+您需要一個來自您已在使用之提供者的 API 金鑰。Spirit 會將該金鑰儲存在作業系統的金鑰環（`SpiritAgent`）中，而非專案內。
+
+<Tabs items={["Desktop", "CLI"]}>
+  <Tab value="Desktop">
+
+1. 開啟**設定 → 模型**。
+2. 選擇一個提供者並遵循連接精靈。
+3. 貼上金鑰。額外欄位（區域、站點、計畫端點）僅在該提供者需要時才會出現。
+4. 選擇一個聊天模型作為作用中模型。
+
+</Tab>
+  <Tab value="CLI">
+
+在 TUI 中，執行 `/model add` 並完成表單。您也可以從 shell 新增模型：
+
+```bash
+spirit model add
+```
+
+當您需要一次性使用時，`SPIRIT_API_KEY` 和 `SPIRIT_API_BASE` 會覆寫該程序儲存的金鑰和基礎 URL。
+
+</Tab>
+</Tabs>
+
+<Callout title="金鑰環">
+在 Spirit 更新 `config.json` 之前，金鑰會寫入系統金鑰環。如果後續頁面要求您重新連接，您是在還原金鑰環條目，而不是將金鑰貼入儲存庫。
+</Callout>
+
+## 4. 要求一個小變更，然後批准它
+
+第一次執行時，請保持在 **Agent** 模式和**預設**批准。要求 Agent 讀取您熟悉的檔案，然後進行一個小而明顯的編輯。
+
+範例：
+
+```txt
+Read README.md and add a one-line project summary at the top. Do not change anything else.
+```
+
+Agent 會讀取檔案、提出編輯建議，然後等待。在提示中批准檔案變更（以及任何 shell 命令）。完成後，開啟檔案並確認編輯。
+
+這就是整個迴圈：安裝 → 工作區 → 一個提供者 → 讀取 → 編輯 → 批准。這些文件中的其他一切皆依附於此路徑。
+
+## 下一步
+
+- [安裝 Desktop](./install/desktop.mdx) 和 [安裝 CLI](./install/cli.mdx)（如果您需要其他主機或固定版本）
+- [Providers](./providers.mdx) 用於連接其他主機，或在模型未匯入時檢查站點 / 計畫 / 雲端欄位

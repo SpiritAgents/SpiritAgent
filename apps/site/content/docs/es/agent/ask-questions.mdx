@@ -1,0 +1,18 @@
+---
+title: Hacer preguntas
+description: Cuestionarios estructurados que pausan al agente hasta que respondas.
+---
+
+`ask_questions` es cómo el agente te pide que decidas algo antes de continuar. El host muestra un cuestionario: cada elemento puede tener opciones predefinidas además de un campo de texto personalizado.
+
+La ejecución se **suspende**. La herramienta no se ejecuta en segundo plano. Después de que envíes las respuestas, el agente se reanuda con esas respuestas en contexto.
+
+## Dónde lo verás
+
+El modo Plan es el lugar habitual: se le indica al agente que aclare antes de redactar un plan. El modo Agente aún puede preguntar cuando una elección cambiaría el trabajo.
+
+[Omitir aprobación](./approvals.mdx) **no** omite `ask_questions`.
+
+## CLI sin interfaz
+
+`spirit -p` no puede mostrar un cuestionario. Si el modelo llama a `ask_questions`, el proceso falla. Usa la TUI, o haz que el prompt sea lo suficientemente específico para que no se necesite ninguna decisión.

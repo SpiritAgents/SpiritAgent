@@ -1,0 +1,23 @@
+---
+title: Sous-agents
+description: Déléguer une tâche ciblée à une session enfant, éventuellement dans un worktree git.
+---
+
+L'agent peut appeler `subagent` pour démarrer une session enfant. L'enfant travaille sur une tâche isolée et ne renvoie que son résultat final au parent.
+
+## Arguments
+
+| Champ | Requis | Rôle |
+| --- | --- | --- |
+| `task` | oui | Ce que l'enfant doit faire |
+| `success_criteria` | non | Comment l'enfant sait qu'il a terminé |
+| `context_summary` | non | Contexte court que l'enfant ne devrait pas avoir à redécouvrir |
+| `files_to_inspect` | non | Chemins à lire en premier |
+| `expected_output` | non | Forme du résultat que le parent attend en retour |
+| `worktree` | non | `true` pour modifier dans un worktree git isolé |
+
+Utilisez `worktree: true` lorsque l'enfant modifiera des fichiers et que d'autres enfants peuvent modifier en même temps. Omettez-le pour un travail en lecture seule.
+
+## Limites
+
+Un enfant déjà en cours d'exécution dans un worktree ne peut pas démarrer un autre worktree. Le début et la fin de session peuvent exécuter des hooks (`subagentStart` / `subagentEnd`). Vous pouvez inspecter les sessions enfants depuis la visionneuse de sous-agents sur Desktop ou `/subagents` dans le TUI CLI.

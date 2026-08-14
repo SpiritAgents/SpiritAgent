@@ -1,0 +1,62 @@
+---
+title: CLI 설치
+description: 설치 스크립트, SPIRIT_HOME 및 SPIRIT_VERSION으로 Spirit Agent CLI를 설치합니다.
+---
+
+CLI는 TUI와 비대화형 `-p` 모드를 갖춘 터미널 호스트입니다. [Desktop](./desktop.mdx)과 동일한 로컬 데몬과 통신합니다.
+
+## 설치 스크립트
+
+macOS 및 Linux:
+
+```bash
+curl -fsSL https://spirit.fast/install | bash
+```
+
+Windows (PowerShell):
+
+```powershell
+irm https://spirit.fast/install.ps1 | iex
+```
+
+스크립트는 `download.spirit.fast`에서 빌드를 다운로드하고 압축을 풀어 `spirit`을 `PATH`에 추가합니다.
+
+새 터미널을 연 다음:
+
+```bash
+spirit --version
+```
+
+## 설치 위치
+
+설치 루트는 Spirit Agent 데이터 디렉터리가 **아닙니다**.
+
+| | 기본값 | 재정의 |
+| --- | --- | --- |
+| CLI 바이너리 | Unix: `~/.spirit` · Windows: `%LOCALAPPDATA%\Spirit` | `SPIRIT_HOME` |
+| 세션, 구성, 키링 포인터 | macOS: `~/Library/Application Support/SpiritAgent` · Windows: `%APPDATA%\SpiritAgent` · Linux: `~/.local/share/SpiritAgent` | `SPIRIT_AGENT_DATA_DIR` |
+
+Unix에서 스크립트는 `$SPIRIT_HOME/bin/spirit` → `$SPIRIT_HOME/cli/current/bin/spirit` 링크를 만들고 `~/.profile`, `~/.bashrc`, `~/.zshrc`에 `export PATH="$SPIRIT_HOME/bin:$PATH"`를 추가합니다 (마커 `# spirit-agent cli`).
+
+## 버전 또는 미러 고정
+
+| 변수 | 기본값 | 역할 |
+| --- | --- | --- |
+| `SPIRIT_HOME` | `~/.spirit` 또는 `%LOCALAPPDATA%\Spirit` | CLI 바이너리 설치 루트 |
+| `SPIRIT_VERSION` | `latest` | 다운로드 URL의 버전 세그먼트 |
+| `SPIRIT_DOWNLOAD_HOST` | `download.spirit.fast` | CDN 호스트 |
+
+```bash
+SPIRIT_VERSION=0.1.0 curl -fsSL https://spirit.fast/install | bash
+```
+
+[다운로드 페이지](/en-US/download)나 [GitHub Releases](https://github.com/SpiritAgents/SpiritAgent/releases/latest)에서 CLI 아카이브를 직접 다운로드하여 압축을 풀 수도 있습니다.
+
+## 첫 실행
+
+```bash
+cd /path/to/your/project
+spirit
+```
+
+그러면 TUI가 열립니다. `/model add`로 공급자를 추가하거나 셸에서 `spirit model add`로 추가할 수 있습니다. [퀵스타트](../quickstart.mdx)를 참조하세요.

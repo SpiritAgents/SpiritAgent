@@ -1,0 +1,21 @@
+---
+title: 夢想
+description: 短期記憶，作用範圍限定於工作區和 Git 分支。代理程式透過 dream_list 和 dream_read 讀取它們。
+---
+
+<Callout type="warn" title="Beta">
+Dreams 仍是一項實驗。請勿將其視為永久的專案維基 — 那應放在 [Rules](./rules.mdx) 或儲存庫中。
+</Callout>
+
+Dreams 是作用範圍限定於**目前工作區和 Git 分支**的短期記憶：最近有什麼變動、為何重要，以及還有哪些未完成的事項。記錄存放在 `{spiritDataDir}/dreams/` 下，並在**五天**後過期。
+
+對話代理程式會在系統訊息中取得摘要目錄（id、標題、摘要、標籤）。完整詳細資料不會預先載入；需要時再使用工具擷取。
+
+| 工具 | 角色 |
+| --- | --- |
+| `dream_list` | 列出目前範圍內未過期的摘要 |
+| `dream_read` | 依 id 讀取一筆完整記錄 |
+
+`dream_record`、`dream_update` 和 `dream_delete` 屬於背景收集器，而非對話代理程式。收集器會掃描工作階段，並決定要建立、更新或刪除過時的項目。它偏好更新現有的夢想，而非重複建立。
+
+在 Desktop 的**設定 → Dreams** 中開啟或關閉收集功能。背景收集使用輕量級聊天模型，與**設定 → Tab** 相同。CLI 和 ACP 尚未支援 Dreams。

@@ -1,0 +1,18 @@
+---
+title: Boucle
+description: Gardez l'agent actif jusqu'à ce qu'il appelle finish_task.
+---
+
+Boucle (Loop) est un interrupteur de session. Lorsqu'il est activé, un message ordinaire de l'assistant **ne** termine **pas** le tour. L'agent est censé continuer à utiliser les outils jusqu'à ce que la tâche soit terminée, puis appeler `finish_task`.
+
+## Activez-le
+
+Sur Desktop, activez Boucle dans le compositeur (le chip `/loop`). Dans le TUI CLI, exécutez `/loop`.
+
+`finish_task` n'est exposé que lorsque Boucle est actif. Si Boucle est désactivé et que le modèle l'appelle quand même, Spirit rejette l'appel comme un outil inconnu.
+
+## Quand l'utiliser
+
+Utilisez Boucle pour un travail en plusieurs étapes que vous ne voulez pas superviser : implémenter, tester, corriger, répéter. Laissez-le désactivé pour une question simple ou une modification d'un seul fichier.
+
+Boucle ne modifie pas [l'approbation](./approvals.mdx). L'approbation par défaut fait toujours une pause sur les modifications et le shell.

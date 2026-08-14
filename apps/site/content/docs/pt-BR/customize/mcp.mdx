@@ -1,0 +1,89 @@
+---
+title: MCP
+description: mcp.json do usuário mais .spirit/mcp.json do workspace. O workspace vence quando o nome do servidor é o mesmo.
+---
+
+Servidores MCP adicionam ferramentas, recursos e prompts de fora do Spirit.
+
+| Escopo | Caminho |
+| --- | --- |
+| Usuário | `{spiritDataDir}/mcp.json` |
+| Workspace | `{workspace}/.spirit/mcp.json` |
+
+Quando ambos os arquivos definem o mesmo nome de servidor, a entrada do **workspace** vence.
+
+Gerencie servidores em **Configurações → MCPs**, ou com `spirit mcp` no CLI (`list`, `show`, `init`, `enable`, `disable`, `inspect`, `tools`, `call-tool`, …).
+
+As ferramentas MCP são mescladas na mesma lista de ferramentas que o agente já possui. Elas ainda passam por [aprovação](../agent/approvals.mdx) quando são de alto risco.
+
+## Campos do arquivo
+
+O objeto raiz tem apenas `servers`. Cada servidor deve incluir `transport`, com `type` definido como `stdio` ou `http`.
+
+| Campo | Descrição |
+| --- | --- |
+| `servers` | Objeto. As chaves são nomes de servidores |
+| `displayName` | Opcional. Rótulo na interface; padrão é o nome do servidor. `display_name` também é aceito |
+| `enabled` | Opcional. Padrão é `true` |
+| `capabilities.tools` | Opcional. Padrão é `true` |
+| `capabilities.resources` | Opcional. Padrão é `true` |
+| `capabilities.prompts` | Opcional. Padrão é `true` |
+| `transport.type` | Obrigatório. `stdio` ou `http` |
+
+### `stdio`
+
+| Campo | Descrição |
+| --- | --- |
+| `command` | Obrigatório. Comando de inicialização |
+| `args` | Opcional. Argumentos do comando |
+| `env` | Opcional. Variáveis de ambiente. Valores podem usar `${env:NAME}` |
+| `cwd` | Opcional. Diretório de trabalho |
+| `timeoutMs` | Opcional. Tempo limite em milissegundos. `timeout_ms` também é aceito |
+| `stderr` | Opcional. `inherit` (padrão) ou `pipe` |
+
+### `http`
+
+| Campo | Descrição |
+| --- | --- |
+| `url` | Obrigatório. URL do servidor |
+| `headers` | Opcional. Cabeçalhos de requisição. Valores podem usar `${env:NAME}` |
+| `timeoutMs` | Opcional. Tempo limite em milissegundos. `timeout_ms` também é aceito |
+
+## Exemplo
+
+```json
+{
+  "servers": {
+    "local-docs": {
+      "displayName": "Local docs",
+      "enabled": true,
+      "capabilities": {
+        "tools": true,
+        "resources": true,
+        "prompts": false
+      },
+      "transport": {
+        "type": "stdio",
+        "command": "npx",
+        "args": ["-y", "example-mcp-server"],
+        "env": {
+          "API_TOKEN": "${env:EXAMPLE_API_TOKEN}"
+        },
+        "cwd": "/path/to/workspace",
+        "timeoutMs": 15000,
+        "stderr": "pipe"
+      }
+    },
+    "remote-tools": {
+      "transport": {
+        "type": "http",
+        "url": "https://mcp.example.com/mcp",
+        "headers": {
+          "Authorization": "Bearer ${env:EXAMPLE_MCP_TOKEN}"
+        },
+        "timeoutMs": 20000
+      }
+    }
+  }
+}
+```

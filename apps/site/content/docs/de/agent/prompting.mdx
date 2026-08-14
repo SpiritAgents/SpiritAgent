@@ -1,0 +1,34 @@
+---
+title: Prompting
+description: So geben Sie Spirit eine Aufgabe, die es in Ihrem Workspace erledigen kann.
+---
+
+Sprechen Sie mit dem Agenten so, wie Sie einen Teammitarbeiter einweisen würden, der das Repo lesen und auf Genehmigung warten kann.
+
+## Seien Sie präzise
+
+Nennen Sie die Dateien, das Ergebnis und was Sie nicht anfassen sollen. Ein präziser Prompt führt zu einem kleinen, überprüfbaren Diff. Ein vager Prompt verschwendet einen Turn für die Erkundung.
+
+```txt
+Read src/auth/session.ts and fix the expired-token refresh path.
+Do not change the login form. Add a focused test next to the existing session tests.
+```
+
+## Kontext anhängen
+
+Auf dem Desktop können Sie geöffnete Dateien, Auswahlen oder ein Browser-Element anhängen, wenn es um genau diese Stelle geht. Der Agent muss die Datei trotzdem lesen, um den aktuellen Inhalt zu sehen – Anhänge sind Verweise, kein Ersatz für [tools](./tools.mdx).
+
+## Wählen Sie zuerst einen Modus
+
+- **Agent** – Sie kennen die Änderung bereits
+- **Plan** – Sie möchten einen schriftlichen Plan und [Fragen](./ask-questions.mdx), bevor etwas bearbeitet wird
+- **Ask** – Sie möchten nur eine Erklärung
+- **Debug** – Sie können einen Fehler reproduzieren und möchten Protokolle
+
+Siehe [Modes](./modes.mdx).
+
+## Lassen Sie die Genehmigung ihre Aufgabe erfüllen
+
+Beim **Standard**-Genehmigungsmodus stoppt der Agent vor dem Bearbeiten oder Ausführen eines Befehls. Lesen Sie den Diff und genehmigen oder lehnen Sie ab. Aktivieren Sie den Umgehungsmodus erst, wenn Sie dem Kreislauf vertrauen. Siehe [Approvals](./approvals.mdx).
+
+Die Inline-Vervollständigung im Editor (Tab) ist nicht Teil dieser Konversation. Konfigurieren Sie sie unter Einstellungen → Tab.

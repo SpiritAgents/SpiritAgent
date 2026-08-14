@@ -1,0 +1,21 @@
+---
+title: Automações
+description: Gatilhos de tempo mais eventos do GitHub depois que você conectar as Integrações.
+---
+
+<Callout type="info">
+Somente no Desktop.
+</Callout>
+
+As Automações executam um trabalho de agente sem que você fique no Composer.
+
+## Gatilhos
+
+- **Tempo** — de hora em hora, diariamente ou semanalmente
+- **GitHub** — `pull_request_created` ou `issue_created` em um repositório que você nomear (`owner` + `repo`)
+
+Os gatilhos do GitHub precisam que as [Integrações](./integrations.mdx) estejam conectadas primeiro. Se o GitHub não estiver conectado, o menu de gatilhos não oferecerá esses eventos.
+
+Os dados ficam em `{spiritDataDir}/automations/`. Abra a visualização de Automações no Desktop para ver o histórico e as configurações.
+
+O CLI não pode criar ou executar esta UI. Use o [Desktop](../desktop.mdx).

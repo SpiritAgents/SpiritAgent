@@ -1,0 +1,89 @@
+---
+title: MCP
+description: Пользовательский mcp.json плюс workspace .spirit/mcp.json. Workspace имеет приоритет при совпадении имени сервера.
+---
+
+MCP-серверы добавляют инструменты, ресурсы и подсказки извне Spirit.
+
+| Область | Путь |
+| --- | --- |
+| Пользователь | `{spiritDataDir}/mcp.json` |
+| Workspace | `{workspace}/.spirit/mcp.json` |
+
+Когда оба файла определяют одно и то же имя сервера, запись из **workspace** имеет приоритет.
+
+Управляйте серверами в **Settings → MCPs** или с помощью `spirit mcp` в CLI (`list`, `show`, `init`, `enable`, `disable`, `inspect`, `tools`, `call-tool`, …).
+
+MCP-инструменты объединяются в тот же список инструментов, который уже есть у агента. Они по-прежнему проходят через [approval](../agent/approvals.mdx), когда они высокорисковые.
+
+## Поля файла
+
+Корневой объект имеет только `servers`. Каждый сервер должен включать `transport` с `type`, установленным в `stdio` или `http`.
+
+| Поле | Описание |
+| --- | --- |
+| `servers` | Объект. Ключи — имена серверов |
+| `displayName` | Необязательно. Метка в интерфейсе; по умолчанию — имя сервера. Также принимается `display_name` |
+| `enabled` | Необязательно. По умолчанию `true` |
+| `capabilities.tools` | Необязательно. По умолчанию `true` |
+| `capabilities.resources` | Необязательно. По умолчанию `true` |
+| `capabilities.prompts` | Необязательно. По умолчанию `true` |
+| `transport.type` | Обязательно. `stdio` или `http` |
+
+### `stdio`
+
+| Поле | Описание |
+| --- | --- |
+| `command` | Обязательно. Команда запуска |
+| `args` | Необязательно. Аргументы команды |
+| `env` | Необязательно. Переменные окружения. Значения могут использовать `${env:NAME}` |
+| `cwd` | Необязательно. Рабочая директория |
+| `timeoutMs` | Необязательно. Тайм-аут в миллисекундах. Также принимается `timeout_ms` |
+| `stderr` | Необязательно. `inherit` (по умолчанию) или `pipe` |
+
+### `http`
+
+| Поле | Описание |
+| --- | --- |
+| `url` | Обязательно. URL сервера |
+| `headers` | Необязательно. Заголовки запроса. Значения могут использовать `${env:NAME}` |
+| `timeoutMs` | Необязательно. Тайм-аут в миллисекундах. Также принимается `timeout_ms` |
+
+## Пример
+
+```json
+{
+  "servers": {
+    "local-docs": {
+      "displayName": "Local docs",
+      "enabled": true,
+      "capabilities": {
+        "tools": true,
+        "resources": true,
+        "prompts": false
+      },
+      "transport": {
+        "type": "stdio",
+        "command": "npx",
+        "args": ["-y", "example-mcp-server"],
+        "env": {
+          "API_TOKEN": "${env:EXAMPLE_API_TOKEN}"
+        },
+        "cwd": "/path/to/workspace",
+        "timeoutMs": 15000,
+        "stderr": "pipe"
+      }
+    },
+    "remote-tools": {
+      "transport": {
+        "type": "http",
+        "url": "https://mcp.example.com/mcp",
+        "headers": {
+          "Authorization": "Bearer ${env:EXAMPLE_MCP_TOKEN}"
+        },
+        "timeoutMs": 20000
+      }
+    }
+  }
+}
+```
