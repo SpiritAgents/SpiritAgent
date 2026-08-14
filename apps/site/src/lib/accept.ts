@@ -91,14 +91,38 @@ export function acceptsOnlyMarkdown(acceptHeader: string | null): boolean {
   return ranges.length > 0 && ranges.every((range) => matches(range, "text", "markdown"));
 }
 
+function normalizePathname(pathname: string): string {
+  return pathname.replace(/\/+$/, "") || "/";
+}
+
 export function resolveMarkdownCompanionPath(pathname: string): string | null {
-  const normalized = pathname.replace(/\/+$/, "") || "/";
+  const normalized = normalizePathname(pathname);
 
   if (normalized === "/en-US" || normalized === "/zh-CN") {
     return `${normalized}/index.md`;
   }
 
+  if (normalized === "/en-US/download" || normalized === "/zh-CN/download") {
+    return `${normalized}/index.md`;
+  }
+
   return null;
+}
+
+export function markdownPageForPath(pathname: string): "home" | "download" | null {
+  const normalized = normalizePathname(pathname);
+  if (normalized === "/en-US/download" || normalized === "/zh-CN/download") {
+    return "download";
+  }
+  if (normalized === "/en-US" || normalized === "/zh-CN") {
+    return "home";
+  }
+  return null;
+}
+
+export function localeFromLocalizedPath(pathname: string): "en-US" | "zh-CN" | null {
+  const locale = normalizePathname(pathname).split("/").filter(Boolean)[0];
+  return locale === "en-US" || locale === "zh-CN" ? locale : null;
 }
 
 type LanguageTag = {

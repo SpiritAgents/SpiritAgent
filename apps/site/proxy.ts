@@ -1,10 +1,11 @@
 import { NextResponse, type NextRequest } from "next/server";
 
-import { renderSiteMarkdown } from "@/content/site-document";
-import { isSupportedLocale } from "@/i18n/config";
+import { renderDownloadMarkdown, renderSiteMarkdown } from "@/content/site-document";
 import {
   acceptsOnlyMarkdown,
   detectLocaleFromAcceptLanguage,
+  localeFromLocalizedPath,
+  markdownPageForPath,
   prefersMarkdown,
   resolveMarkdownCompanionPath,
 } from "@/lib/accept";
@@ -25,9 +26,11 @@ export function proxy(request: NextRequest) {
   const markdownPath = resolveMarkdownCompanionPath(pathname);
 
   if (prefersMarkdown(accept) && markdownPath) {
-    const locale = pathname.replace(/\/+$/, "").slice(1);
-    if (isSupportedLocale(locale)) {
-      return new NextResponse(renderSiteMarkdown(locale), {
+    const locale = localeFromLocalizedPath(pathname);
+    const page = markdownPageForPath(pathname);
+    if (locale && page) {
+      const body = page === "download" ? renderDownloadMarkdown(locale) : renderSiteMarkdown(locale);
+      return new NextResponse(body, {
         headers: {
           "Content-Type": "text/markdown; charset=utf-8",
           Vary: "Accept",
@@ -55,5 +58,15 @@ export function proxy(request: NextRequest) {
 }
 
 export const config = {
-  matcher: ["/", "/en-US", "/en-US/", "/zh-CN", "/zh-CN/"],
+  matcher: [
+    "/",
+    "/en-US",
+    "/en-US/",
+    "/zh-CN",
+    "/zh-CN/",
+    "/en-US/download",
+    "/en-US/download/",
+    "/zh-CN/download",
+    "/zh-CN/download/",
+  ],
 };
