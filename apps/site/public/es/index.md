@@ -34,7 +34,7 @@ Marcador de posición por ahora.
 
 ### Características
 
-- [Agent](/es#agent)
+- [Agente](/es#agent)
 - [BYOK](/es#features)
 
 ### Recursos

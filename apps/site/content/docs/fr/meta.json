@@ -1,5 +1,5 @@
 {
-  "title": "Docs",
+  "title": "Documentation",
   "pages": [
     "index",
     "quickstart",
@@ -14,7 +14,7 @@
     "agent/sessions",
     "agent/subagents",
     "agent/ask-questions",
-    "---Customize---",
+    "---Personnaliser---",
     "customize/rules",
     "customize/skills",
     "customize/mcp",
@@ -23,16 +23,16 @@
     "customize/dreams",
     "customize/automations",
     "customize/integrations",
-    "---Hosts---",
+    "---Hôtes---",
     "desktop",
     "cli",
     "acp",
-    "---Reference---",
+    "---Référence---",
     "config",
     "security",
     "appearance",
     "troubleshooting",
-    "---Develop---",
+    "---Développer---",
     "develop/extensions"
   ]
 }

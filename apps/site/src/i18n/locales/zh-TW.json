@@ -84,7 +84,7 @@
         "editFileRunningDetail": "在 i18n 訊息中更新 hero 標題文案。",
         "editFilePath": "src/i18n/messages.ts",
         "demoAssistantResponse": "已更新 hero 標題。重新整理瀏覽器預覽以查看新文案。",
-        "improvedHeadline": "開源 AI agent\n成倍提升你的生產力。",
+        "improvedHeadline": "開源 AI 智慧體\n成倍提升你的生產力。",
         "selectedElementHtml": "<span class=\"block\">成倍提升你的生產力。</span>"
       }
     },
@@ -208,7 +208,7 @@
   },
   "meta": {
     "title": "Spirit Agent",
-    "description": "Spirit Agent 是一個開源 AI 代理，您可以使用自己的模型、金鑰和工作流程來執行。"
+    "description": "Spirit Agent 是一個開源 AI 智慧體，您可以使用自己的模型、金鑰和工作流程來執行。"
   },
   "common": {
     "brand": "Spirit Agent",
@@ -222,7 +222,7 @@
     "nav": {
       "features": "功能",
       "byok": "BYOK",
-      "agent": "Agent",
+      "agent": "智慧體",
       "resources": "資源",
       "docs": "文件",
       "changelog": "更新日誌",
@@ -235,13 +235,13 @@
       "closeMenu": "關閉選單"
     },
     "tagline": "根植於您的工作區，配備真實工具，隨時準備與您一起規劃、執行和交付。",
-    "headline": "一個開源 AI 代理\n旨在倍增您的生產力。"
+    "headline": "一個開源 AI 智慧體\n旨在倍增您的生產力。"
   },
   "download": {
     "metaTitle": "下載 Spirit Agent",
     "metaDescription": "下載 Spirit Agent Desktop、安裝 CLI，或留意 ACP。",
-    "title": "同一個代理，適用於您所有的工作。",
-    "sectionAria": "同一個代理，適用於您所有的工作。",
+    "title": "同一個智慧體，適用於您所有的工作。",
+    "sectionAria": "同一個智慧體，適用於您所有的工作。",
     "desktop": "Desktop",
     "cli": "CLI",
     "acp": "ACP",
@@ -263,7 +263,7 @@
       "你的金鑰。",
       "你的掌控。"
     ],
-    "featureBody": "Spirit 不會將你鎖定在託管堆疊中。從任何供應商取得金鑰，一次新增，並在所有供應商中使用相同的 Agent 工作流程。",
+    "featureBody": "Spirit 不會將你鎖定在託管堆疊中。從任何供應商取得金鑰，一次新增，並在所有供應商中使用相同的智慧體工作流程。",
     "agent": {
       "sectionAria": "Spirit Agent 生產力",
       "featureHeading": [
@@ -308,16 +308,16 @@
       "features": "功能",
       "resources": "資源"
     },
-    "agent": "Agent",
+    "agent": "智慧體",
     "linkHome": "首頁",
     "changelog": "變更日誌",
     "openSourceLicenses": "開放原始碼授權",
-    "copyrightLine": "© {{year}} Spirit Agent。開放原始碼 AI Agent。"
+    "copyrightLine": "© {{year}} Spirit Agent。開放原始碼 AI 智慧體。"
   },
   "docs": {
     "title": "文件",
     "metaTitle": "Spirit Agent 文件",
-    "metaDescription": "安裝 Spirit Agent，使用自己的金鑰連接提供者，並在 Desktop 和 CLI 上執行相同的 agent。",
+    "metaDescription": "安裝 Spirit Agent，使用自己的金鑰連接提供者，並在 Desktop 和 CLI 上執行相同的智慧體。",
     "comingSoon": "即將推出。",
     "sectionAria": "文件",
     "search": "搜尋",

@@ -1,11 +1,11 @@
 ---
 title: 供應商
-description: 自備金鑰、執行連線精靈，切換供應商時也保持相同的代理工作流程。
+description: 自備金鑰、執行連線精靈，切換供應商時也保持相同的智慧體工作流程。
 ---
 
-Spirit Agent 是 BYOK。你在供應商控制台建立金鑰，將其貼到 Desktop 或 CLI，Spirit 會將它存放在作業系統的金鑰環中。切換供應商不會改變你開啟工作區、批准編輯或執行代理的方式。
+Spirit Agent 是 BYOK。你在供應商控制台建立金鑰，將其貼到 Desktop 或 CLI，Spirit 會將它存放在作業系統的金鑰環中。切換供應商不會改變你開啟工作區、批准編輯或執行智慧體的方式。
 
-連線精靈在 Desktop 是 **Settings → Models**，在 CLI 是 `/model add` 或 `spirit model add`。只有當供應商需要時才會出現額外欄位。
+連線精靈在 Desktop 是 **設定 → 模型**，在 CLI 是 `/model add` 或 `spirit model add`。只有當供應商需要時才會出現額外欄位。
 
 Spirit 透過四種傳輸方式之一與供應商通訊。精靈不是固定類型，就是讓你選擇。
 
@@ -20,8 +20,8 @@ Google Gemini 和 Vertex AI 始終使用 Chat Completions。如果設定檔要�
 
 有些供應商在金鑰之上新增了第二個維度：
 
-- **區域站點** — Moonshot AI、SiliconFlow、MiniMax（中國 / 國際）；阿里雲（區域 + `workspaceId`）；騰訊 TokenHub（廣州 / 新加坡）
-- **方案端點** — 阿里雲 Token 方案、StepFun Step 方案、Z.ai / 智譜 AI GLM 編碼方案
+- **區域站點** — Moonshot AI、SiliconFlow、MiniMax（中國 / 國際）；阿里巴巴（區域 + `workspaceId`）；騰訊 TokenHub（廣州 / 新加坡）
+- **方案端點** — 阿里巴巴 Token Plan、StepFun Step Plan、Z.ai / 智譜 AI GLM Coding Plan
 - **雲端欄位** — Bedrock 區域、Azure 資源名稱、Cloudflare 帳戶（以及可選閘道）、Vertex 專案 / 位置
 
 如果供應商沒有這些選項，精靈就只是金鑰 → 匯入模型 → 選擇使用中的聊天模型。
@@ -188,7 +188,7 @@ Spirit 會匯入模型目錄，並讓你在目錄標記出對應功能時，指�
 
 匯入後即可開始聊天。推理遵循模型。
 
-### 阿里雲
+### 阿里巴巴
 
 在 [阿里雲百煉 / 大模型服務平台](https://bailian.console.aliyun.com) 中建立 API 金鑰。
 
@@ -259,7 +259,7 @@ Spirit 會匯入模型目錄，並讓你在目錄標記出對應功能時，指�
 
 匯入後即可聊天。其他功能依目錄而定。
 
-### Meituan
+### 美團
 
 在 [LongCat 控制台](https://longcat.chat/platform/api_keys) 建立 API 金鑰。
 
@@ -267,9 +267,9 @@ Spirit 會匯入模型目錄，並讓你在目錄標記出對應功能時，指�
 
 匯入後即可聊天。其他功能依目錄而定。
 
-### Tencent TokenHub
+### 騰訊 TokenHub
 
-在 [Tencent TokenHub 控制台](https://console.cloud.tencent.com/tokenhub) 建立 API 金鑰。
+在 [騰訊 TokenHub 控制台](https://console.cloud.tencent.com/tokenhub) 建立 API 金鑰。
 
 固定為 **Chat Completions API**。精靈不提供 Responses 或 Messages。
 

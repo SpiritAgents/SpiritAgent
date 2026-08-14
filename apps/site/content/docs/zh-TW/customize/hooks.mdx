@@ -1,6 +1,6 @@
 ---
 title: Hooks
-description: 在工作階段、工具和子代理事件上執行指令碼。它們可以允許、拒絕或詢問。
+description: 在工作階段、工具和子智慧體事件上執行指令碼。它們可以允許、拒絕或詢問。
 ---
 
 Hooks 是 Spirit 在固定點執行的指令碼。它們可以允許工具、拒絕工具，或強制顯示核准提示（`ask`）。
@@ -44,7 +44,7 @@ Hooks 是 Spirit 在固定點執行的指令碼。它們可以允許工具、拒
 | `command` | 必填。指令碼路徑。相對路徑會相對於設定目錄解析，且必須保持在該目錄內 |
 | `timeout` | 選填。逾時秒數。必須為正數。預設為 `30` |
 | `failClosed` | 選填。當指令碼當機、逾時或向 stdout 寫入無效 JSON 時，是否要封鎖。預設為不封鎖 |
-| `matcher` | 選填。非空白的正規表示式。在 `preToolUse` / `postToolUse` 時比對工具名稱，或在 `subagentStart` / `subagentEnd` 時比對子代理類型 |
+| `matcher` | 選填。非空白的正規表示式。在 `preToolUse` / `postToolUse` 時比對工具名稱，或在 `subagentStart` / `subagentEnd` 時比對子智慧體類型 |
 
 ## 範例
 

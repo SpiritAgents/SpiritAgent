@@ -1,4 +1,4 @@
-# 一個開源 AI 代理 旨在倍增您的生產力。
+# 一個開源 AI 智慧體 旨在倍增您的生產力。
 
 根植於您的工作區，配備真實工具，隨時準備與您一起規劃、執行和交付。
 
@@ -12,7 +12,7 @@ Spirit 在行動前先規劃：生成 mockups、撰寫結構化計劃，並在�
 
 ## 你的模型。 你的金鑰。 你的掌控。
 
-Spirit 不會將你鎖定在託管堆疊中。從任何供應商取得金鑰，一次新增，並在所有供應商中使用相同的 Agent 工作流程。
+Spirit 不會將你鎖定在託管堆疊中。從任何供應商取得金鑰，一次新增，並在所有供應商中使用相同的智慧體工作流程。
 
 ## Tab Tab Tab。
 
@@ -34,7 +34,7 @@ Spirit 不會將你鎖定在託管堆疊中。從任何供應商取得金鑰，�
 
 ### 功能
 
-- [Agent](/zh-TW#agent)
+- [智慧體](/zh-TW#agent)
 - [BYOK](/zh-TW#features)
 
 ### 資源
@@ -43,6 +43,6 @@ Spirit 不會將你鎖定在託管堆疊中。從任何供應商取得金鑰，�
 - [變更日誌](https://github.com/SpiritAgents/SpiritAgent/releases)
 - [開放原始碼授權](/notice.md)
 
-© 2026 Spirit Agent。開放原始碼 AI Agent。
+© 2026 Spirit Agent。開放原始碼 AI 智慧體。
 
 [GitHub](https://github.com/SpiritAgents/SpiritAgent)

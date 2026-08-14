@@ -5,7 +5,7 @@
     "quickstart",
     "install",
     "providers",
-    "---Agent---",
+    "---Agente---",
     "agent/tools",
     "agent/modes",
     "agent/prompting",
@@ -14,7 +14,7 @@
     "agent/sessions",
     "agent/subagents",
     "agent/ask-questions",
-    "---Customize---",
+    "---Personalizar---",
     "customize/rules",
     "customize/skills",
     "customize/mcp",
@@ -27,12 +27,12 @@
     "desktop",
     "cli",
     "acp",
-    "---Reference---",
+    "---Referência---",
     "config",
     "security",
     "appearance",
     "troubleshooting",
-    "---Develop---",
+    "---Desenvolver---",
     "develop/extensions"
   ]
 }

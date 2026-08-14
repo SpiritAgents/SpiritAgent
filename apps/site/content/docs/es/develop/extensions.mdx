@@ -339,7 +339,7 @@ El repositorio [SpiritAgents/registry](https://github.com/SpiritAgents/registry)
 Realiza estos pasos en orden:
 
 1. Publica un paquete npm público.
-2. Abre una solicitud de extracción que liste ese paquete.
+2. Abre una pull request que liste ese paquete.
 
 ### 1. Publica el paquete npm
 
@@ -425,10 +425,10 @@ Regenera los archivos derivados localmente:
 
 El script obtiene los metadatos de npm para las versiones enumeradas, reconstruye `catalog.json` y cada `detail.json`, y luego valida la consistencia.
 
-### Solicitud de extracción
+### Pull request
 
 Incluye `entry.json`, el `README.md` del marketplace, y los `catalog.json` / `detail.json` regenerados. Enumera solo versiones que ya sean públicas en npm. Establece `reviewStatus` y `channel` con precisión. Las nuevas versiones típicamente comienzan como `unverified`.
 
 No confirmes árboles de código fuente de extensiones, `dist`, archivos ZIP, tarballs u otros artefactos binarios.
 
-Abrir una solicitud de extracción no garantiza la publicación. La revisión puede solicitar cambios antes de que una versión sea aprobada o verificada.
+Abrir una pull request no garantiza la publicación. La revisión puede solicitar cambios antes de que una versión sea aprobada o verificada.

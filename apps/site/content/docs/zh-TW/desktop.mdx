@@ -19,13 +19,13 @@ Desktop 是圖形化主機。它與 [CLI](./cli.mdx) 共享本地 daemon。請�
 | 索引標籤 | 包含內容 |
 | --- | --- |
 | 模型 | 供應商連線、模型清單、金鑰 |
-| 代理 | LSP、commit / PR 歸因 |
-| 索引標籤 | 編輯器索引標籤補全 |
+| 智慧體 | LSP、commit / PR 歸因 |
+| Tab | 編輯器 Tab 補全 |
 | 技能 | 探索並產出 [Skills](./customize/skills.mdx) |
 | 規則 | [Rules](./customize/rules.mdx) 插槽 |
 | MCP | [MCP](./customize/mcp.mdx) 伺服器 |
 | 鉤子 | [Hooks](./customize/hooks.mdx) |
-| Dreams | [Dreams](./customize/dreams.mdx)（Beta） |
+| 夢境 | [夢境](./customize/dreams.mdx)（Beta） |
 
 ### 連線
 
@@ -80,7 +80,7 @@ clangd 和 jdtls 未隨附。請自行安裝，然後回到設定 → Agents。
 
 Tab 是 Monaco 的內嵌完成功能。按一次 Tab 接受幽靈文字。開啟**設定 → Tab**，啟用程式碼完成（`codeCompletionEnabled`），並在**設定 → 模型**中指派輕量級聊天模型。該位置也服務其他輕量級背景任務。
 
-如果完成度為空，請檢查是否已連接輕量級聊天模型，且該設定已開啟。這不是代理對話。
+如果完成度為空，請檢查是否已連接輕量級聊天模型，且該設定已開啟。這不是智慧體對話。
 
 ## Marketplace 與自動化
 
@@ -96,7 +96,7 @@ Desktop 可在本機提供 Web 用戶端服務。
 - 連續五次失敗會鎖定配對，直到您重新啟動 Web Host
 - Token 儲存在瀏覽器中，名稱為 `spirit-agent-web-host-token`
 
-代理程式仍在共享的 daemon 中執行。Web 用戶端接收的是已驗證的快照；它不是第二個代理程式。
+智慧體仍在共享的 daemon 中執行。Web 用戶端接收的是已驗證的快照；它不是第二個智慧體。
 
 **綁定 `0.0.0.0` 以進行遠端 LAN 存取並非開放的產品路徑。** daemon 和 Web Host 預設保持在 loopback。Networks 中的 LAN IPv4 監聽位址是供您控制的機器使用，而非公開伺服器。
 

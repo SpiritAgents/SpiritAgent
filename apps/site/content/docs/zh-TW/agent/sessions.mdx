@@ -15,8 +15,8 @@ description: 聊天記錄、倒帶、分支與 git worktree。
 
 ## Worktree
 
-Composer 的 **工作位置** 可以是 `local`（你開啟的工作區）或 `worktree`（隔離的 git worktree）。子代理可設定 `worktree: true` 以獲得相同的隔離效果。
+Composer 的 **工作位置** 可以是 `local`（你開啟的工作區）或 `worktree`（隔離的 git worktree）。子智慧體可設定 `worktree: true` 以獲得相同的隔離效果。
 
-Worktree 路徑看起來像 `{repoRoot}.worktrees/spirit-*`。已在 worktree 內運行的子代理無法再從該處啟動另一個 worktree。
+Worktree 路徑看起來像 `{repoRoot}.worktrees/spirit-*`。已在 worktree 內運行的子智慧體無法再從該處啟動另一個 worktree。
 
 Worktree 適用於平行編輯，避免互相衝突。它們並非工作階段的備份——倒帶與分支負責處理對話歷史。
