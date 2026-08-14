@@ -30,9 +30,9 @@ function Get-SpiritArch {
     return 'x64'
   }
   if ($arch -eq 'x86') {
-    return 'ia32'
+    throw '32-bit Windows (x86) is not supported. Spirit Agent CLI requires 64-bit Windows (x64 or ARM64).'
   }
-  throw "Unsupported architecture: $arch (supported: x64, arm64, ia32)"
+  throw "Unsupported architecture: $arch (supported: x64, arm64)"
 }
 
 function Get-CliArchiveName([string]$Arch) {
