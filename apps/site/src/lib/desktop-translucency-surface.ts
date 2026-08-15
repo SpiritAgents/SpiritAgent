@@ -1,5 +1,3 @@
-import { cn } from "@/lib/utils";
-
 /** translucency 开启时主内容区背景不透明度（仅 tint，不叠加 CSS backdrop-blur）。 */
 export const DESKTOP_TRANSLUCENCY_CONTENT_TINT_CLASS = "bg-background/70";
 
@@ -11,7 +9,7 @@ export const DESKTOP_COMPOSER_SURFACE_BACKDROP =
 export const DESKTOP_OVERLAY_LIGHT_SHADOW = "shadow-[0_2px_20px_-4px_rgb(0_0_0/0.06)]";
 
 /** 抬起表面阴影：浅色扩散 + 深色沿用 sm（Composer / 消息气泡等） */
-export const DESKTOP_ELEVATION_SHADOW_SM = cn(DESKTOP_OVERLAY_LIGHT_SHADOW, "dark:shadow-sm");
+export const DESKTOP_ELEVATION_SHADOW_SM = `${DESKTOP_OVERLAY_LIGHT_SHADOW} dark:shadow-sm`;
 
 /** 工作区浏览器页槽：略高于主区，减轻 WebView 透底闪烁。 */
 export const DESKTOP_TRANSLUCENCY_BROWSER_TINT_CLASS = "bg-background/80";
