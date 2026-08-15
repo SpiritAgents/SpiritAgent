@@ -1485,11 +1485,7 @@ export class DesktopMessageTimeline {
   ): DesktopTimelineRow | undefined {
     for (let index = segment.rows.length - 1; index >= 0; index -= 1) {
       const row = segment.rows[index];
-      if (
-        row?.kind === "assistant-text" &&
-        row.section === "before-tools" &&
-        row.content.trim()
-      ) {
+      if (row?.kind === "assistant-text" && row.section === "before-tools" && row.content.trim()) {
         return row;
       }
     }
