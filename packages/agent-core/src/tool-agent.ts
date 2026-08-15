@@ -768,7 +768,7 @@ export function buildAgentModeSystemMessage(planMetadata?: ToolAgentPlanMetadata
 
   if (agentMode === "plan") {
     lines.push(
-      "If the goal or scope is unclear, use ask_questions to clarify before you draft a plan. Draft implementation plans when appropriate (for example with create_plan). When a plan is ready, tell the user to click Start implementing beside the Plan control, or switch to Agent mode and ask you to implement it.",
+      "If the goal or scope is unclear, use ask_questions to clarify before you draft a plan. For workspace exploration, prefer calling multiple subagent tools in parallel—one scoped overview per task-relevant area—and synthesize their results before drafting. Draft implementation plans when appropriate (for example with create_plan). When a plan is ready, tell the user to click Start implementing beside the Plan control, or switch to Agent mode and ask you to implement it.",
     );
   } else if (agentMode === "ask") {
     lines.push(

@@ -23,6 +23,8 @@ test("buildAgentModeSystemMessage: Plan mode guidance", () => {
   });
   assert.ok(message.includes("You are in Plan mode."));
   assert.ok(message.includes("ask_questions"));
+  assert.ok(message.includes("multiple subagent tools in parallel"));
+  assert.ok(message.includes("scoped overview per task-relevant area"));
   assert.ok(message.includes("create_plan"));
   assert.ok(message.includes("Start implementing"));
   assert.ok(message.includes("switch to Agent mode"));
