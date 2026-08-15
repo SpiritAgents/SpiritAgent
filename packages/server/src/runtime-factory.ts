@@ -66,6 +66,7 @@ import {
   createHostExtensionManager,
   createHookRunner,
   createNoopMcpAdapter,
+  ensureBuiltInExtensions,
   ensureBuiltInSkills,
   ensureTranscriptSessionDir,
   loadHostInstructionMetadata,
@@ -232,6 +233,11 @@ export async function createServerRuntime(
   if (!isDreamCollector) {
     await ensureBuiltInSkills(spiritDataDir);
     extensionManager = createHostExtensionManager({ spiritDataDir, hostKind });
+    await ensureBuiltInExtensions({
+      spiritDataDir,
+      hostKind,
+      manager: extensionManager,
+    });
   }
   let currentApprovalLevel = approvalLevel;
   const service = new NodeHostToolService(
