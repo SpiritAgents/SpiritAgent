@@ -136,10 +136,11 @@ export async function deleteSkillDir(
     throw new Error(i18n.t("error.skillNotFound", { name }));
   }
 
-  await rm(skillDir, { recursive: true, force: true });
+  // 先写墓碑再删：避免 unlink 成功后状态未落盘导致内置 skill 回种。
   if (rootKind === "user" && isBuiltInSkillName(name)) {
     await noteBuiltInSkillRemoved(spiritAgentDataDir(), name);
   }
+  await rm(skillDir, { recursive: true, force: true });
 }
 
 export function buildActivateSkillUserTurn(skillName: string, extraNote: string): string {

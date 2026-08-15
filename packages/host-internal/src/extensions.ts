@@ -766,6 +766,11 @@ export async function removeInstalledExtension(
     throw new Error(`未找到扩展：${normalizedId}`);
   }
 
+  // 先写墓碑再删安装产物：避免删完后写状态失败导致下次启动回种。
+  if (target.installSource === "built-in" || isBuiltInExtensionId(normalizedId)) {
+    await noteBuiltInExtensionRemoved(context.spiritDataDir, normalizedId);
+  }
+
   await rm(target.directoryPath, { recursive: true, force: true });
   await writeExtensionRegistry(
     paths.extensionsIndexFile,
@@ -773,10 +778,6 @@ export async function removeInstalledExtension(
       .filter((item) => item.id !== normalizedId)
       .map((item) => toExtensionRegistryEntry(item)),
   );
-
-  if (target.installSource === "built-in" || isBuiltInExtensionId(normalizedId)) {
-    await noteBuiltInExtensionRemoved(context.spiritDataDir, normalizedId);
-  }
 }
 
 export async function runInstalledExtension<THostApi>(
