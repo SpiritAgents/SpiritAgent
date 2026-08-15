@@ -149,7 +149,7 @@ export interface DesktopConfigFile {
   /** Last project workspace root before switching to `none`; used when re-selecting a workspace. */
   lastProjectWorkspaceRoot?: string;
   uiLocale?: string;
-  windowsMica?: boolean;
+  translucency?: boolean;
   systemNotifications?: boolean;
   /** 是否显示菜单栏 / 托盘状态图标；缺省为 true。 */
   trayIcon?: boolean;
@@ -854,7 +854,7 @@ function defaultConfig(): DesktopConfigFile {
     providerGroups: [],
     activeModel: emptyModelRef(),
     recentWorkspaces: [],
-    windowsMica: true,
+    translucency: true,
     systemNotifications: true,
     trayIcon: true,
     onboardingCompleted: false,
@@ -1200,7 +1200,7 @@ function normalizeConfig(raw: Partial<DesktopConfigFile>): DesktopConfigFile {
     ...(typeof raw.uiLocale === "string" && raw.uiLocale.trim()
       ? { uiLocale: raw.uiLocale.trim() }
       : {}),
-    windowsMica: raw.windowsMica !== false,
+    translucency: raw.translucency !== false,
     systemNotifications: raw.systemNotifications !== false,
     trayIcon: raw.trayIcon !== false,
     onboardingCompleted: raw.onboardingCompleted === true,

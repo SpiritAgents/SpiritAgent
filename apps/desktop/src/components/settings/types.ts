@@ -34,7 +34,7 @@ export type SettingsFormState = {
   apiBase: string;
   uiLocale: string;
   apiKey: string;
-  windowsMica: boolean;
+  translucency: boolean;
   systemNotifications: boolean;
   trayIcon: boolean;
   /** 首启引导（OOBE）是否已完成。 */

@@ -100,7 +100,7 @@ export function buildDesktopSnapshot(input: BuildDesktopSnapshotInput): DesktopS
         : {}),
       ...(input.config.uiLocale ? { uiLocale: input.config.uiLocale } : {}),
       activeApiKeyConfigured: input.activeApiKeyConfigured,
-      windowsMica: input.config.windowsMica !== false,
+      translucency: input.config.translucency !== false,
       systemNotifications: input.config.systemNotifications !== false,
       trayIcon: input.config.trayIcon !== false,
       onboardingCompleted: input.config.onboardingCompleted === true,
