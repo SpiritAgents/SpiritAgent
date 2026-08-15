@@ -13,6 +13,7 @@ import {
 } from "@/components/ui/animated-collapse";
 import type { Messages } from "@/i18n/messages";
 import { useI18n } from "@/i18n/provider";
+import { DESKTOP_ELEVATION_SHADOW_SM } from "@/lib/desktop-mica-surface";
 import { cn } from "@/lib/utils";
 import type { ConversationMessageSnapshot, ToolBlockSnapshot } from "@/types/spirit-desktop";
 
@@ -299,8 +300,10 @@ export function PreviewMessageCard({
 }) {
   const { messages } = useI18n();
   const isUser = message.role === "user";
-  const userBubble =
-    "rounded-2xl rounded-br-md border border-border/50 bg-muted px-3 py-2.5 shadow-sm";
+  const userBubble = cn(
+    "rounded-2xl rounded-br-md border border-ring/30 bg-background px-3 py-2.5 dark:border-border/50 dark:bg-muted",
+    DESKTOP_ELEVATION_SHADOW_SM,
+  );
 
   return (
     <div

@@ -2,6 +2,7 @@ import * as React from "react";
 import { Check, ChevronDown, ChevronUp } from "lucide-react";
 import { Select as SelectPrimitive } from "radix-ui";
 
+import { DESKTOP_OVERLAY_SHADOW } from "@/lib/desktop-chrome";
 import { radixAnchoredOverlayMotion } from "@/lib/overlay-motion";
 import { cn } from "@/lib/utils";
 
@@ -58,7 +59,8 @@ function SelectContent({
         className={cn(
           radixAnchoredOverlayMotion("select"),
           "relative z-50 max-h-[min(24rem,var(--radix-select-content-available-height))] overflow-hidden",
-          "rounded-xl border border-border/80 bg-popover p-1 text-sm text-popover-foreground shadow-lg",
+          "rounded-xl border border-border/80 bg-popover p-1 text-sm text-popover-foreground",
+          DESKTOP_OVERLAY_SHADOW,
           "ring-1 ring-white/5 backdrop-blur-sm",
           position === "popper" &&
             "min-w-[var(--radix-select-trigger-width)] data-side=bottom:translate-y-1 data-side=top:-translate-y-1",
