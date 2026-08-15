@@ -8,6 +8,7 @@ import { cloneLlmMessageContent, cloneLlmProviderState } from "@spiritagent/agen
 import i18n from "../lib/i18n-host.js";
 import type {
   AskQuestionsResult,
+  DesktopClientHost,
   DesktopDreamCollectorSnapshot,
   DesktopWebHostSnapshot,
   PendingQuestionsSnapshot,
@@ -36,6 +37,34 @@ export function normalizeWorkspaceRootKey(workspaceRoot: string): string {
 
 export function sameWorkspaceRoot(left: string, right: string): boolean {
   return normalizeWorkspaceRootKey(left) === normalizeWorkspaceRootKey(right);
+}
+
+export function readDesktopClientHost(value: unknown): DesktopClientHost | undefined {
+  if (!value || typeof value !== "object") {
+    return undefined;
+  }
+  const raw = value as Record<string, unknown>;
+  if (raw.kind !== "web" || typeof raw.pageUrl !== "string") {
+    return undefined;
+  }
+  const pageUrl = raw.pageUrl.trim();
+  if (!pageUrl) {
+    return undefined;
+  }
+  return { kind: "web", pageUrl };
+}
+
+export function basicInfoHostFromClientHost(
+  clientHost: DesktopClientHost | undefined,
+): { kind: "Web"; url: string } | undefined {
+  if (!clientHost || clientHost.kind !== "web") {
+    return undefined;
+  }
+  const url = clientHost.pageUrl.trim();
+  if (!url) {
+    return undefined;
+  }
+  return { kind: "Web", url };
 }
 
 /** Sessions whose cwd is the user home directory are "unbound" (no project workspace). */

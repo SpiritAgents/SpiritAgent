@@ -89,7 +89,10 @@ export interface HostCommandDelegate {
   ): Promise<unknown>;
   resetSession(payload?: CommandPayloads["resetSession"]): Promise<unknown>;
   listSessions(): Promise<unknown>;
-  openSession(path: string, options?: { activate?: boolean }): Promise<unknown>;
+  openSession(
+    path: string,
+    options?: { activate?: boolean; clientHost?: import("../types.js").DesktopClientHost },
+  ): Promise<unknown>;
   beginSplitPaneSession(
     request: CommandPayloads["beginSplitPaneSession"]["request"],
   ): Promise<unknown>;
@@ -295,12 +298,21 @@ const hostCommandDispatch = {
     host.replyWorkspaceCapabilityTrust(payload.request),
   resetSession: (host, payload) =>
     host.resetSession(
-      payload && typeof payload === "object" && payload.activate === false
-        ? { activate: false }
+      payload && typeof payload === "object"
+        ? {
+            ...(payload.activate === false ? { activate: false as const } : {}),
+            ...(payload.clientHost ? { clientHost: payload.clientHost } : {}),
+          }
         : undefined,
     ),
   listSessions: (host) => host.listSessions(),
-  openSession: (host, payload) => host.openSession(payload.path, { activate: payload.activate }),
+  openSession: (host, payload) =>
+    host.openSession(payload.path, {
+      ...(payload.activate === false || payload.activate === true
+        ? { activate: payload.activate }
+        : {}),
+      ...(payload.clientHost ? { clientHost: payload.clientHost } : {}),
+    }),
   beginSplitPaneSession: (host, payload) => host.beginSplitPaneSession(payload.request),
   beginSideChatPaneSession: (host, payload) => host.beginSideChatPaneSession(payload.request),
   forkSessionIntoSideChat: (host, payload) => host.forkSessionIntoSideChat(payload.request),

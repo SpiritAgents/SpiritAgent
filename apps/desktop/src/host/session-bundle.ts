@@ -95,6 +95,11 @@ export interface SessionBundle {
   /** SubAgent 子会话 desktop 投影（与主 timeline 同构，含 Thought/Compaction/工具卡）。 */
   subagentDesktopMessagesBySessionId: Map<string, ConversationMessageSnapshot[]>;
   subagentConversationProjections: Map<string, SubagentConversationProjection>;
+  /**
+   * Optional `<basic_info>` host override for daemon session.create.
+   * Set when the Desktop Web client provides clientHost; Electron leaves undefined (server defaults to Desktop).
+   */
+  basicInfoHost?: { kind: "Web"; url: string };
 }
 
 export function createEmptySessionBundle(workspaceRoot: string, id = "__draft__"): SessionBundle {

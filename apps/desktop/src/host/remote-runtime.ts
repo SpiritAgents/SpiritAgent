@@ -56,6 +56,8 @@ interface RemoteDesktopRuntimeInput {
   sessionKind?: "default" | "dream-collector";
   dreamScope?: HostDreamScope;
   dreamSourceSession?: HostDreamSourceSessionRef;
+  /** Desktop Web: `<basic_info>` host override with page URL. */
+  basicInfoHost?: { kind: "Web"; url: string };
   onActivity?: () => void;
   onWorkspaceCapabilityTrustRequested?: (
     requestId: string,
@@ -275,6 +277,7 @@ export async function createRemoteDesktopRuntime(
     ...(input.sessionKind === "dream-collector"
       ? {}
       : { hostUiPromptSection: buildDesktopUiMarkdownPromptSection() }),
+    ...(input.basicInfoHost ? { basicInfoHost: input.basicInfoHost } : {}),
   });
   await client.call("session.attach", { sessionId: created.sessionId });
   const runtime = buildRemoteDesktopRuntime(client, created.sessionId, input);

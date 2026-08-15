@@ -148,9 +148,13 @@ export type CommandPayloads = {
   replyPendingApproval: { request: ReplyPendingApprovalRequest };
   replyPendingQuestions: { request: ReplyPendingQuestionsRequest };
   replyWorkspaceCapabilityTrust: { request: ReplyWorkspaceCapabilityTrustRequest };
-  resetSession: { activate?: boolean } | undefined;
+  resetSession: { activate?: boolean; clientHost?: import("../types.js").DesktopClientHost } | undefined;
   listSessions: undefined;
-  openSession: { path: string; activate?: boolean };
+  openSession: {
+    path: string;
+    activate?: boolean;
+    clientHost?: import("../types.js").DesktopClientHost;
+  };
   beginSplitPaneSession: { request: BeginSplitPaneSessionRequest };
   beginSideChatPaneSession: { request: BeginSideChatPaneSessionRequest };
   forkSessionIntoSideChat: { request: ForkSessionIntoSideChatRequest };
