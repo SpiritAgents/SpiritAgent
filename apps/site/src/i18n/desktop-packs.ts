@@ -28,4 +28,3 @@ export function getDesktopPack(locale: string): Record<string, unknown> {
   }
   return desktopEn as Record<string, unknown>;
 }
-

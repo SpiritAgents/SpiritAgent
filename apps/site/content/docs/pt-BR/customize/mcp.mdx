@@ -5,9 +5,9 @@ description: mcp.json do usuário mais .spirit/mcp.json do workspace. O workspac
 
 Servidores MCP adicionam ferramentas, recursos e prompts de fora do Spirit.
 
-| Escopo | Caminho |
-| --- | --- |
-| Usuário | `{spiritDataDir}/mcp.json` |
+| Escopo    | Caminho                        |
+| --------- | ------------------------------ |
+| Usuário   | `{spiritDataDir}/mcp.json`     |
 | Workspace | `{workspace}/.spirit/mcp.json` |
 
 Quando ambos os arquivos definem o mesmo nome de servidor, a entrada do **workspace** vence.
@@ -20,33 +20,33 @@ As ferramentas MCP são mescladas na mesma lista de ferramentas que o agente já
 
 O objeto raiz tem apenas `servers`. Cada servidor deve incluir `transport`, com `type` definido como `stdio` ou `http`.
 
-| Campo | Descrição |
-| --- | --- |
-| `servers` | Objeto. As chaves são nomes de servidores |
-| `displayName` | Opcional. Rótulo na interface; padrão é o nome do servidor. `display_name` também é aceito |
-| `enabled` | Opcional. Padrão é `true` |
-| `capabilities.tools` | Opcional. Padrão é `true` |
-| `capabilities.resources` | Opcional. Padrão é `true` |
-| `capabilities.prompts` | Opcional. Padrão é `true` |
-| `transport.type` | Obrigatório. `stdio` ou `http` |
+| Campo                    | Descrição                                                                                  |
+| ------------------------ | ------------------------------------------------------------------------------------------ |
+| `servers`                | Objeto. As chaves são nomes de servidores                                                  |
+| `displayName`            | Opcional. Rótulo na interface; padrão é o nome do servidor. `display_name` também é aceito |
+| `enabled`                | Opcional. Padrão é `true`                                                                  |
+| `capabilities.tools`     | Opcional. Padrão é `true`                                                                  |
+| `capabilities.resources` | Opcional. Padrão é `true`                                                                  |
+| `capabilities.prompts`   | Opcional. Padrão é `true`                                                                  |
+| `transport.type`         | Obrigatório. `stdio` ou `http`                                                             |
 
 ### `stdio`
 
-| Campo | Descrição |
-| --- | --- |
-| `command` | Obrigatório. Comando de inicialização |
-| `args` | Opcional. Argumentos do comando |
-| `env` | Opcional. Variáveis de ambiente. Valores podem usar `${env:NAME}` |
-| `cwd` | Opcional. Diretório de trabalho |
+| Campo       | Descrição                                                             |
+| ----------- | --------------------------------------------------------------------- |
+| `command`   | Obrigatório. Comando de inicialização                                 |
+| `args`      | Opcional. Argumentos do comando                                       |
+| `env`       | Opcional. Variáveis de ambiente. Valores podem usar `${env:NAME}`     |
+| `cwd`       | Opcional. Diretório de trabalho                                       |
 | `timeoutMs` | Opcional. Tempo limite em milissegundos. `timeout_ms` também é aceito |
-| `stderr` | Opcional. `inherit` (padrão) ou `pipe` |
+| `stderr`    | Opcional. `inherit` (padrão) ou `pipe`                                |
 
 ### `http`
 
-| Campo | Descrição |
-| --- | --- |
-| `url` | Obrigatório. URL do servidor |
-| `headers` | Opcional. Cabeçalhos de requisição. Valores podem usar `${env:NAME}` |
+| Campo       | Descrição                                                             |
+| ----------- | --------------------------------------------------------------------- |
+| `url`       | Obrigatório. URL do servidor                                          |
+| `headers`   | Opcional. Cabeçalhos de requisição. Valores podem usar `${env:NAME}`  |
 | `timeoutMs` | Opcional. Tempo limite em milissegundos. `timeout_ms` também é aceito |
 
 ## Exemplo

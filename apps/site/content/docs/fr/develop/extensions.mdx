@@ -5,10 +5,10 @@ description: Structure de package, champs spiritExtension, API activate et inscr
 
 Une extension est un dossier avec un `package.json` contenant `spiritExtension`. Spirit l'installe par utilisateur et par hôte, pas dans le répertoire `.spirit/` du workspace.
 
-| Hôte | Chemin |
-| --- | --- |
+| Hôte    | Chemin                                |
+| ------- | ------------------------------------- |
 | Desktop | `{spiritDataDir}/extensions/desktop/` |
-| CLI | `{spiritDataDir}/extensions/cli/` |
+| CLI     | `{spiritDataDir}/extensions/cli/`     |
 
 Cela diffère des [Skills](../customize/skills.mdx) (dossiers `SKILL.md`), des [MCP](../customize/mcp.mdx) (serveurs externes) et des [Hooks](../customize/hooks.mdx) (scripts `hooks.json`). `contributes.cli.hooks` stylise les emplacements CLI TUI. Ce n'est pas `hooks.json`.
 
@@ -100,74 +100,74 @@ Le `name` du `package.json` est l'identifiant de l'extension. Il doit correspond
 
 ## Champs de `package.json`
 
-| Champ | Description |
-| --- | --- |
-| `name` | Requis. Nom du package npm ; utilisé comme identifiant d'extension |
-| `version` | Requis. Chaîne de version |
-| `spiritExtension` | Requis. Objet. Voir ci-dessous |
-| `description` | Optionnel. Chaîne |
-| `author` | Optionnel. Chaîne ou `{ name }` |
-| `homepage` | Optionnel. Chaîne |
-| `main` | Optionnel. Chemin relatif vers le point d'entrée `activate`. Requis lorsque l'extension utilise `activationEvents`, l'exécution d'outils ou un prompt système |
+| Champ             | Description                                                                                                                                                   |
+| ----------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `name`            | Requis. Nom du package npm ; utilisé comme identifiant d'extension                                                                                            |
+| `version`         | Requis. Chaîne de version                                                                                                                                     |
+| `spiritExtension` | Requis. Objet. Voir ci-dessous                                                                                                                                |
+| `description`     | Optionnel. Chaîne                                                                                                                                             |
+| `author`          | Optionnel. Chaîne ou `{ name }`                                                                                                                               |
+| `homepage`        | Optionnel. Chaîne                                                                                                                                             |
+| `main`            | Optionnel. Chemin relatif vers le point d'entrée `activate`. Requis lorsque l'extension utilise `activationEvents`, l'exécution d'outils ou un prompt système |
 
 `main`, `spiritExtension.icon`, les chemins CSS et les chemins de hooks CLI doivent être relatifs et doivent rester dans le package.
 
 ## `spiritExtension`
 
-| Champ | Description |
-| --- | --- |
-| `schemaVersion` | Optionnel. Par défaut `1`. Seul `1` est pris en charge |
-| `displayName` | Requis. Nom visible par l'utilisateur |
-| `icon` | Optionnel. Chemin relatif à la racine du package |
-| `supportedHosts` | Requis. Tableau non vide de `cli` et/ou `desktop` |
-| `activationEvents` | Optionnel. Voir [Événements d'activation](#activation-events) |
-| `requestedCapabilities` | Optionnel. Voir [Capacités](#capabilities) |
-| `contributes` | Optionnel. `tools`, `desktop` et/ou `cli` |
-| `settingsSchema` | Optionnel. Définitions de paramètres |
-| `secretSlots` | Optionnel. Définitions d'emplacements de secrets |
+| Champ                   | Description                                                   |
+| ----------------------- | ------------------------------------------------------------- |
+| `schemaVersion`         | Optionnel. Par défaut `1`. Seul `1` est pris en charge        |
+| `displayName`           | Requis. Nom visible par l'utilisateur                         |
+| `icon`                  | Optionnel. Chemin relatif à la racine du package              |
+| `supportedHosts`        | Requis. Tableau non vide de `cli` et/ou `desktop`             |
+| `activationEvents`      | Optionnel. Voir [Événements d'activation](#activation-events) |
+| `requestedCapabilities` | Optionnel. Voir [Capacités](#capabilities)                    |
+| `contributes`           | Optionnel. `tools`, `desktop` et/ou `cli`                     |
+| `settingsSchema`        | Optionnel. Définitions de paramètres                          |
+| `secretSlots`           | Optionnel. Définitions d'emplacements de secrets              |
 
 ## Capacités
 
-| Valeur | Runtime |
-| --- | --- |
-| `tool-definitions` | Requis avec `tool-execution` pour exposer `contributes.tools` au modèle |
-| `tool-execution` | Requis avec `tool-definitions` pour exécuter ces outils |
-| `system-prompt` | Requis avec `main` pour contribuer un fragment de prompt système |
-| `desktop-ui` | Doit être associé à `contributes.desktop` |
-| `cli-ui` | Doit être associé à `contributes.cli` |
-| `approval-flow` | Déclaré uniquement. L'approbation est pilotée par `approvalMode` de chaque outil |
-| `questions-flow` | Déclaré uniquement. Les questions sont pilotées par `approvalMode: need-questions` |
-| `settings` | Déclaré uniquement. Les paramètres proviennent de `settingsSchema` |
-| `secret-storage` | Utilisé avec `secretSlots` |
-| `structured-results` | Déclaré uniquement |
+| Valeur               | Runtime                                                                            |
+| -------------------- | ---------------------------------------------------------------------------------- |
+| `tool-definitions`   | Requis avec `tool-execution` pour exposer `contributes.tools` au modèle            |
+| `tool-execution`     | Requis avec `tool-definitions` pour exécuter ces outils                            |
+| `system-prompt`      | Requis avec `main` pour contribuer un fragment de prompt système                   |
+| `desktop-ui`         | Doit être associé à `contributes.desktop`                                          |
+| `cli-ui`             | Doit être associé à `contributes.cli`                                              |
+| `approval-flow`      | Déclaré uniquement. L'approbation est pilotée par `approvalMode` de chaque outil   |
+| `questions-flow`     | Déclaré uniquement. Les questions sont pilotées par `approvalMode: need-questions` |
+| `settings`           | Déclaré uniquement. Les paramètres proviennent de `settingsSchema`                 |
+| `secret-storage`     | Utilisé avec `secretSlots`                                                         |
+| `structured-results` | Déclaré uniquement                                                                 |
 
 `desktop-ui` / `cli-ui` et le bloc `contributes` correspondant doivent être tous deux présents ou tous deux absents.
 
 ## Événements d'activation
 
-| Événement | Moment de déclenchement |
-| --- | --- |
-| `onStartup` | Échauffement de l'hôte |
+| Événement              | Moment de déclenchement                                 |
+| ---------------------- | ------------------------------------------------------- |
+| `onStartup`            | Échauffement de l'hôte                                  |
 | `onExtensionInstalled` | Après l'installation d'un ZIP ou via la place de marché |
-| `onSessionOpened` | La session devient active |
-| `onSessionReset` | Réinitialisation de la session |
-| `onUserMessage` | L'utilisateur soumet un message |
-| `onToolCall` | Un outil est sur le point de s'exécuter |
-| `onToolResult` | Un résultat d'outil est disponible |
-| `onApprovalResolved` | Une décision d'approbation est résolue |
+| `onSessionOpened`      | La session devient active                               |
+| `onSessionReset`       | Réinitialisation de la session                          |
+| `onUserMessage`        | L'utilisateur soumet un message                         |
+| `onToolCall`           | Un outil est sur le point de s'exécuter                 |
+| `onToolResult`         | Un résultat d'outil est disponible                      |
+| `onApprovalResolved`   | Une décision d'approbation est résolue                  |
 
 L'hôte appelle `activate` lorsque l'extension répertorie l'événement et possède un `main` lisible.
 
 ## `contributes.tools`
 
-| Champ | Description |
-| --- | --- |
-| `name` | Obligatoire. `[a-z0-9]+(?:[._-][a-z0-9]+)*` |
-| `description` | Obligatoire. Affiché au modèle |
-| `inputSchema` | Obligatoire. Objet JSON Schema |
-| `outputSchema` | Facultatif. Objet JSON Schema |
-| `approvalMode` | Facultatif. `allowed`, `need-approval` ou `need-questions` |
-| `executionMode` | Facultatif. `foreground` ou `background` |
+| Champ           | Description                                                |
+| --------------- | ---------------------------------------------------------- |
+| `name`          | Obligatoire. `[a-z0-9]+(?:[._-][a-z0-9]+)*`                |
+| `description`   | Obligatoire. Affiché au modèle                             |
+| `inputSchema`   | Obligatoire. Objet JSON Schema                             |
+| `outputSchema`  | Facultatif. Objet JSON Schema                              |
+| `approvalMode`  | Facultatif. `allowed`, `need-approval` ou `need-questions` |
+| `executionMode` | Facultatif. `foreground` ou `background`                   |
 
 Le modèle ne voit pas `name` tel quel. L'hôte construit un nom d'invocation comme `extension__{id}__{tool}__{hash}`.
 
@@ -175,10 +175,10 @@ Le modèle ne voit pas `name` tel quel. L'hôte construit un nom d'invocation co
 
 Requiert `desktop-ui`.
 
-| Champ | Description |
-| --- | --- |
-| `css[].path` | Obligatoire. Fichier CSS relatif à la racine du package |
-| `css[].media` | Facultatif. Requête média CSS |
+| Champ          | Description                                                                       |
+| -------------- | --------------------------------------------------------------------------------- |
+| `css[].path`   | Obligatoire. Fichier CSS relatif à la racine du package                           |
+| `css[].media`  | Facultatif. Requête média CSS                                                     |
 | `settingsPage` | Facultatif. `true`, `{}` ou `{ title }` — ajoute une entrée de paramètres Desktop |
 
 ## `contributes.cli`
@@ -193,13 +193,13 @@ Requiert `cli-ui`. `hooks` est un objet avec `path`, pas un tableau en ligne :
 
 Le fichier doit être `{ "hooks": [ ... ] }`.
 
-| Champ | Description |
-| --- | --- |
-| `slot` | Requis. L'un des emplacements ci-dessous |
+| Champ     | Description                                                               |
+| --------- | ------------------------------------------------------------------------- |
+| `slot`    | Requis. L'un des emplacements ci-dessous                                  |
 | `variant` | Optionnel. `default`, `accented`, `muted`, `warning`, `success`, `danger` |
-| `tokens` | Optionnel. `{ foreground?, border?, accent? }` |
-| `prefix` | Optionnel. Chaîne de caractères |
-| `suffix` | Optionnel. Chaîne de caractères |
+| `tokens`  | Optionnel. `{ foreground?, border?, accent? }`                            |
+| `prefix`  | Optionnel. Chaîne de caractères                                           |
+| `suffix`  | Optionnel. Chaîne de caractères                                           |
 
 Emplacements : `message.user`, `message.assistant`, `message.tool`, `assistant.thinking`, `input.frame`, `bottom_form`, `bottom_form.section`, `slash_suggestions`, `approval.panel`, `questions.panel`.
 
@@ -221,27 +221,27 @@ Rôles de jeton : `default`, `primary`, `secondary`, `muted`, `accent`, `success
 
 ## `settingsSchema`
 
-| Champ | Description |
-| --- | --- |
-| `key` | Requis. Même modèle que les noms d'outils |
-| `type` | Requis. `string`, `boolean`, `number` ou `select` |
-| `title` | Requis. Libellé de l'interface |
-| `description` | Optionnel |
-| `placeholder` | Optionnel |
-| `required` | Optionnel. Booléen |
-| `defaultValue` | Optionnel. Doit correspondre à `type` |
-| `options` | Requis pour `select`. Tableau de `{ value, label, description? }` |
+| Champ          | Description                                                       |
+| -------------- | ----------------------------------------------------------------- |
+| `key`          | Requis. Même modèle que les noms d'outils                         |
+| `type`         | Requis. `string`, `boolean`, `number` ou `select`                 |
+| `title`        | Requis. Libellé de l'interface                                    |
+| `description`  | Optionnel                                                         |
+| `placeholder`  | Optionnel                                                         |
+| `required`     | Optionnel. Booléen                                                |
+| `defaultValue` | Optionnel. Doit correspondre à `type`                             |
+| `options`      | Requis pour `select`. Tableau de `{ value, label, description? }` |
 
 Les valeurs sont `string`, `number`, `boolean` ou `null`. `null` efface un réglage non requis.
 
 ## `secretSlots`
 
-| Champ | Description |
-| --- | --- |
-| `key` | Requis |
-| `title` | Requis |
-| `description` | Optionnel |
-| `required` | Optionnel. Booléen |
+| Champ         | Description        |
+| ------------- | ------------------ |
+| `key`         | Requis             |
+| `title`       | Requis             |
+| `description` | Optionnel          |
+| `required`    | Optionnel. Booléen |
 
 Desktop stocke les secrets dans le trousseau du système d'exploitation. Sur le chemin du démon CLI, `secrets.set` / `secrets.delete` peuvent ne pas être disponibles.
 
@@ -255,56 +255,56 @@ Desktop stocke les secrets dans le trousseau du système d'exploitation. Sur le 
 
 ### `ctx`
 
-| Champ | Description |
-| --- | --- |
-| `extension` | `{ id, name, version, directoryPath, manifestPath, main }` |
-| `host` | API hôte. Desktop implémente `showMessageBox`. CLI est `{}` |
-| `log` | `(message: string) => void` |
-| `settings` | `get(key)`, `getAll()`, `set(key, value)`, `setAll(values)` |
-| `secrets` | `get(key)`, `has(key)`, `set(key, value)`, `delete(key)` — les clés doivent être déclarées dans `secretSlots` |
-| `activationEvent` | Facultatif. `{ type, detail? }` |
+| Champ             | Description                                                                                                   |
+| ----------------- | ------------------------------------------------------------------------------------------------------------- |
+| `extension`       | `{ id, name, version, directoryPath, manifestPath, main }`                                                    |
+| `host`            | API hôte. Desktop implémente `showMessageBox`. CLI est `{}`                                                   |
+| `log`             | `(message: string) => void`                                                                                   |
+| `settings`        | `get(key)`, `getAll()`, `set(key, value)`, `setAll(values)`                                                   |
+| `secrets`         | `get(key)`, `has(key)`, `set(key, value)`, `delete(key)` — les clés doivent être déclarées dans `secretSlots` |
+| `activationEvent` | Facultatif. `{ type, detail? }`                                                                               |
 
 ### Valeur de retour
 
 Renvoie un objet, ou exportez les mêmes champs depuis le module.
 
-| Champ | Description |
-| --- | --- |
-| `tools` | `Record<string, (ctx) => unknown>`. Les clés sont les noms d'outils du manifeste |
-| `invokeTool` | `(ctx) => unknown`. Utilisé à la place de `tools[name]` lorsque présent |
-| `systemPrompt` | Fragment système statique |
+| Champ             | Description                                                                             |
+| ----------------- | --------------------------------------------------------------------------------------- |
+| `tools`           | `Record<string, (ctx) => unknown>`. Les clés sont les noms d'outils du manifeste        |
+| `invokeTool`      | `(ctx) => unknown`. Utilisé à la place de `tools[name]` lorsque présent                 |
+| `systemPrompt`    | Fragment système statique                                                               |
 | `getSystemPrompt` | `() => string \| Promise<string>`. Utilisé à la place de `systemPrompt` lorsque présent |
-| `onEvent` | `(event) => void` |
-| `dispose` | `() => void`. Appelé lors de la suppression ou du rechargement |
+| `onEvent`         | `(event) => void`                                                                       |
+| `dispose`         | `() => void`. Appelé lors de la suppression ou du rechargement                          |
 
 ### Contexte `ctx` du gestionnaire d'outil
 
-| Champ | Description |
-| --- | --- |
-| `extension` | Mêmes informations d'exécution que `activate` |
-| `host` | Même API hôte |
-| `toolName` | Nom d'outil du manifeste |
-| `arguments` | Objet provenant du modèle |
-| `log` | Même journaliseur |
-| `settings` | Même accesseur de paramètres |
-| `secrets` | Même accesseur de secrets |
-| `toolCallId` | Facultatif |
+| Champ             | Description                                                    |
+| ----------------- | -------------------------------------------------------------- |
+| `extension`       | Mêmes informations d'exécution que `activate`                  |
+| `host`            | Même API hôte                                                  |
+| `toolName`        | Nom d'outil du manifeste                                       |
+| `arguments`       | Objet provenant du modèle                                      |
+| `log`             | Même journaliseur                                              |
+| `settings`        | Même accesseur de paramètres                                   |
+| `secrets`         | Même accesseur de secrets                                      |
+| `toolCallId`      | Facultatif                                                     |
 | `questionsResult` | Facultatif. Défini lorsque `approvalMode` est `need-questions` |
 
 Un résultat `string` est transmis tel quel. Les autres valeurs sont `JSON.stringify(value, null, 2)`. `undefined` devient `""`.
 
 ### Desktop `host.showMessageBox`
 
-| Champ | Description |
-| --- | --- |
-| `title` | Requis. Chaîne de caractères |
-| `message` | Requis. Chaîne de caractères |
-| `detail` | Facultatif. Chaîne de caractères |
-| `buttons` | Facultatif. Tableau de chaînes |
-| `cancelId` | Facultatif. Nombre |
-| `defaultId` | Facultatif. Nombre |
-| `noLink` | Facultatif. Booléen |
-| `type` | Facultatif. `none`, `info`, `error`, `question`, `warning` |
+| Champ       | Description                                                |
+| ----------- | ---------------------------------------------------------- |
+| `title`     | Requis. Chaîne de caractères                               |
+| `message`   | Requis. Chaîne de caractères                               |
+| `detail`    | Facultatif. Chaîne de caractères                           |
+| `buttons`   | Facultatif. Tableau de chaînes                             |
+| `cancelId`  | Facultatif. Nombre                                         |
+| `defaultId` | Facultatif. Nombre                                         |
+| `noLink`    | Facultatif. Booléen                                        |
+| `type`      | Facultatif. `none`, `info`, `error`, `question`, `warning` |
 
 ```js
 export function activate(ctx) {
@@ -358,10 +358,10 @@ Exemple officiel : [`@spiritagent/extension-system-message-demo`](https://www.np
 
 Créez `registry/extensions/<extension-id>/` avec :
 
-| Fichier | Description |
-| --- | --- |
-| `entry.json` | Gouvernance du marché |
-| `README.md` | Texte de détail du marché |
+| Fichier      | Description               |
+| ------------ | ------------------------- |
+| `entry.json` | Gouvernance du marché     |
+| `README.md`  | Texte de détail du marché |
 
 Ne modifiez pas ces fichiers à la main (régénérez-les) :
 
@@ -372,25 +372,25 @@ Ne modifiez pas ces fichiers à la main (régénérez-les) :
 
 ### `entry.json`
 
-| Champ | Description |
-| --- | --- |
-| `schemaVersion` | Requis. `1` |
-| `extensionId` | Requis. Voir les règles ci-dessus |
-| `packageName` | Requis. Nom du package npm |
-| `status` | Requis. `listed`, `hidden`, `deprecated`, ou `blocked` |
-| `featured` | Requis. Booléen |
-| `defaultVersion` | Requis. Chaîne de version par défaut |
-| `defaultReviewStatus` | Requis. `unverified`, `verified`, ou `revoked` |
-| `versions` | Requis. Au moins un élément |
+| Champ                 | Description                                            |
+| --------------------- | ------------------------------------------------------ |
+| `schemaVersion`       | Requis. `1`                                            |
+| `extensionId`         | Requis. Voir les règles ci-dessus                      |
+| `packageName`         | Requis. Nom du package npm                             |
+| `status`              | Requis. `listed`, `hidden`, `deprecated`, ou `blocked` |
+| `featured`            | Requis. Booléen                                        |
+| `defaultVersion`      | Requis. Chaîne de version par défaut                   |
+| `defaultReviewStatus` | Requis. `unverified`, `verified`, ou `revoked`         |
+| `versions`            | Requis. Au moins un élément                            |
 
 Chaque élément `versions[]` :
 
-| Champ | Description |
-| --- | --- |
-| `version` | Requis |
-| `channel` | Requis. `stable`, `preview`, ou `experimental` |
-| `reviewStatus` | Requis. `unverified`, `verified`, ou `revoked` |
-| `changelog` | Optionnel. `{ summary, body }` — les deux requis lorsqu'ils sont présents |
+| Champ          | Description                                                               |
+| -------------- | ------------------------------------------------------------------------- |
+| `version`      | Requis                                                                    |
+| `channel`      | Requis. `stable`, `preview`, ou `experimental`                            |
+| `reviewStatus` | Requis. `unverified`, `verified`, ou `revoked`                            |
+| `changelog`    | Optionnel. `{ summary, body }` — les deux requis lorsqu'ils sont présents |
 
 ```json
 {

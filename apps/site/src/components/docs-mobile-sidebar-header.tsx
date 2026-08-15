@@ -83,12 +83,7 @@ function DocsMobileMega() {
       backLabel={messages.hero.nav.back}
       frameClass={DOCS_FRAME_CLASS}
       collapseQuery={DOCS_SIDEBAR_DRAWER_COLLAPSE_QUERY}
-      rootExtra={
-        <DocsMobileMegaNodes
-          nodes={root.children}
-          onNavigate={() => setOpen(false)}
-        />
-      }
+      rootExtra={<DocsMobileMegaNodes nodes={root.children} onNavigate={() => setOpen(false)} />}
     />,
     megaRoot,
   );

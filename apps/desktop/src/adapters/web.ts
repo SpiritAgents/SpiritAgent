@@ -108,7 +108,9 @@ function webClientHost(): { kind: "web"; pageUrl: string } {
   return { kind: "web", pageUrl: window.location.href };
 }
 
-function withWebClientHost<T extends Record<string, unknown>>(request?: T): T & {
+function withWebClientHost<T extends Record<string, unknown>>(
+  request?: T,
+): T & {
   clientHost: { kind: "web"; pageUrl: string };
 } {
   return { ...(request ?? ({} as T)), clientHost: webClientHost() };

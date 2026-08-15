@@ -9,42 +9,42 @@ Desktop 是圖形化主機。它與 [CLI](./cli.mdx) 共享本地 daemon。請�
 
 ### 基本
 
-| 索引標籤 | 包含內容 |
-| --- | --- |
-| 一般 | 通知、系統匣 / 選單列圖示 |
-| 外觀 | 主題、字型、UI 語言、mica / 模糊、指標 |
+| 索引標籤 | 包含內容                               |
+| -------- | -------------------------------------- |
+| 一般     | 通知、系統匣 / 選單列圖示              |
+| 外觀     | 主題、字型、UI 語言、mica / 模糊、指標 |
 
 ### 功能
 
-| 索引標籤 | 包含內容 |
-| --- | --- |
-| 模型 | 供應商連線、模型清單、金鑰 |
-| 智慧體 | LSP、commit / PR 歸因 |
-| Tab | 編輯器 Tab 補全 |
-| 技能 | 探索並產出 [Skills](./customize/skills.mdx) |
-| 規則 | [Rules](./customize/rules.mdx) 插槽 |
-| MCP | [MCP](./customize/mcp.mdx) 伺服器 |
-| 鉤子 | [Hooks](./customize/hooks.mdx) |
-| 夢境 | [夢境](./customize/dreams.mdx)（Beta） |
+| 索引標籤 | 包含內容                                    |
+| -------- | ------------------------------------------- |
+| 模型     | 供應商連線、模型清單、金鑰                  |
+| 智慧體   | LSP、commit / PR 歸因                       |
+| Tab      | 編輯器 Tab 補全                             |
+| 技能     | 探索並產出 [Skills](./customize/skills.mdx) |
+| 規則     | [Rules](./customize/rules.mdx) 插槽         |
+| MCP      | [MCP](./customize/mcp.mdx) 伺服器           |
+| 鉤子     | [Hooks](./customize/hooks.mdx)              |
+| 夢境     | [夢境](./customize/dreams.mdx)（Beta）      |
 
 ### 連線
 
-| 索引標籤 | 包含內容 |
-| --- | --- |
-| 網路 | LLM HTTP 版本、**Web 遠端存取** |
-| 整合 | [GitHub Device Login](./customize/integrations.mdx) |
-| 擴充功能 | 已安裝的擴充功能、ZIP 匯入 |
+| 索引標籤 | 包含內容                                            |
+| -------- | --------------------------------------------------- |
+| 網路     | LLM HTTP 版本、**Web 遠端存取**                     |
+| 整合     | [GitHub Device Login](./customize/integrations.mdx) |
+| 擴充功能 | 已安裝的擴充功能、ZIP 匯入                          |
 
 僅在 Vite 開發建置中會出現「開發人員」索引標籤。
 
 ## 工作區面板
 
-| 標籤頁 | 角色 |
-| --- | --- |
-| 檔案 | 樹狀圖、Monaco、Markdown 預覽、`plans/` |
-| Git | 變更、歷史記錄、提交／推送／合併標籤 |
+| 標籤頁 | 角色                                         |
+| ------ | -------------------------------------------- |
+| 檔案   | 樹狀圖、Monaco、Markdown 預覽、`plans/`      |
+| Git    | 變更、歷史記錄、提交／推送／合併標籤         |
 | 瀏覽器 | 內嵌瀏覽器 + 元素選取器（**僅限 Electron**） |
-| Shell | 內嵌 PTY（**僅限 Electron**） |
+| Shell  | 內嵌 PTY（**僅限 Electron**）                |
 
 ### Shell
 
@@ -64,15 +64,15 @@ CLI 沒有內嵌 PTY 面板。指令仍會透過共享 daemon 上的相同 `shel
 
 在**設定 → Agents**中開啟語言伺服器，如果缺少提供者則安裝。伺服器就緒後，Agent 可以呼叫 [`get_diagnostics`](./agent/tools.mdx)。
 
-| ID | 語言 | 安裝方式 |
-| --- | --- | --- |
+| ID                           | 語言                   | 安裝方式                            |
+| ---------------------------- | ---------------------- | ----------------------------------- |
 | `typescript-language-server` | TypeScript、JavaScript | npm（`typescript-language-server`） |
-| `pyright` | Python | npm（`pyright`） |
-| `gopls` | Go | Go 工具鏈 |
-| `rust-analyzer` | Rust | rustup |
-| `clangd` | C、C++ | 平台套件（例如 Homebrew 或 winget） |
-| `jdtls` | Java | 手動 |
-| `omnisharp` | C# | .NET |
+| `pyright`                    | Python                 | npm（`pyright`）                    |
+| `gopls`                      | Go                     | Go 工具鏈                           |
+| `rust-analyzer`              | Rust                   | rustup                              |
+| `clangd`                     | C、C++                 | 平台套件（例如 Homebrew 或 winget） |
+| `jdtls`                      | Java                   | 手動                                |
+| `omnisharp`                  | C#                     | .NET                                |
 
 clangd 和 jdtls 未隨附。請自行安裝，然後回到設定 → Agents。
 

@@ -9,42 +9,42 @@ Desktop es el host gráfico. Comparte el daemon local con el [CLI](./cli.mdx). I
 
 ### Conceptos básicos
 
-| Pestaña | Qué contiene |
-| --- | --- |
-| General | Notificaciones, icono de bandeja / menú |
+| Pestaña    | Qué contiene                                                    |
+| ---------- | --------------------------------------------------------------- |
+| General    | Notificaciones, icono de bandeja / menú                         |
 | Apariencia | Tema, fuente, idioma de la interfaz, mica / desenfoque, puntero |
 
 ### Capacidades
 
-| Pestaña | Qué contiene |
-| --- | --- |
-| Modelos | Conexión de proveedores, lista de modelos, claves |
-| Agentes | LSP, atribución de commits / PR |
-| Pestaña | Editor Tab de finalización |
-| Skills | Descubre y genera [Skills](./customize/skills.mdx) |
-| Reglas | Espacios de [Reglas](./customize/rules.mdx) |
-| MCPs | Servidores [MCP](./customize/mcp.mdx) |
-| Hooks | [Hooks](./customize/hooks.mdx) |
-| Dreams | [Dreams](./customize/dreams.mdx) (Beta) |
+| Pestaña | Qué contiene                                       |
+| ------- | -------------------------------------------------- |
+| Modelos | Conexión de proveedores, lista de modelos, claves  |
+| Agentes | LSP, atribución de commits / PR                    |
+| Pestaña | Editor Tab de finalización                         |
+| Skills  | Descubre y genera [Skills](./customize/skills.mdx) |
+| Reglas  | Espacios de [Reglas](./customize/rules.mdx)        |
+| MCPs    | Servidores [MCP](./customize/mcp.mdx)              |
+| Hooks   | [Hooks](./customize/hooks.mdx)                     |
+| Dreams  | [Dreams](./customize/dreams.mdx) (Beta)            |
 
 ### Conectar
 
-| Pestaña | Qué contiene |
-| --- | --- |
-| Redes | Versión HTTP de LLM, **Acceso Web Remoto** |
+| Pestaña       | Qué contiene                                                           |
+| ------------- | ---------------------------------------------------------------------- |
+| Redes         | Versión HTTP de LLM, **Acceso Web Remoto**                             |
 | Integraciones | [Inicio de sesión de dispositivo GitHub](./customize/integrations.mdx) |
-| Extensiones | Extensiones instaladas, importación ZIP |
+| Extensiones   | Extensiones instaladas, importación ZIP                                |
 
 Una pestaña Desarrollador aparece solo en compilaciones de desarrollo de Vite.
 
 ## Paneles de Workspace
 
-| Tab | Rol |
-| --- | --- |
-| Archivos | Árbol, Monaco, vista previa de Markdown, `plans/` |
-| Git | Cambios, historial, chips de commit / push / merge |
-| Browser | Browser integrado + selector de elementos (**solo Electron**) |
-| Shell | PTY integrado (**solo Electron**) |
+| Tab      | Rol                                                           |
+| -------- | ------------------------------------------------------------- |
+| Archivos | Árbol, Monaco, vista previa de Markdown, `plans/`             |
+| Git      | Cambios, historial, chips de commit / push / merge            |
+| Browser  | Browser integrado + selector de elementos (**solo Electron**) |
+| Shell    | PTY integrado (**solo Electron**)                             |
 
 ### Shell
 
@@ -64,15 +64,15 @@ Esos chips inyectan un prompt fijo. Luego el agente usa las herramientas [worksp
 
 Activa los servidores de lenguaje en **Settings → Agents**, luego instala un proveedor si falta. Cuando un servidor esté listo, el agente puede llamar a [`get_diagnostics`](./agent/tools.mdx).
 
-| Id | Lenguajes | Cómo se instala |
-| --- | --- | --- |
-| `typescript-language-server` | TypeScript, JavaScript | npm (`typescript-language-server`) |
-| `pyright` | Python | npm (`pyright`) |
-| `gopls` | Go | Cadena de herramientas de Go |
-| `rust-analyzer` | Rust | rustup |
-| `clangd` | C, C++ | Paquete de la plataforma (por ejemplo, Homebrew o winget) |
-| `jdtls` | Java | Manual |
-| `omnisharp` | C# | .NET |
+| Id                           | Lenguajes              | Cómo se instala                                           |
+| ---------------------------- | ---------------------- | --------------------------------------------------------- |
+| `typescript-language-server` | TypeScript, JavaScript | npm (`typescript-language-server`)                        |
+| `pyright`                    | Python                 | npm (`pyright`)                                           |
+| `gopls`                      | Go                     | Cadena de herramientas de Go                              |
+| `rust-analyzer`              | Rust                   | rustup                                                    |
+| `clangd`                     | C, C++                 | Paquete de la plataforma (por ejemplo, Homebrew o winget) |
+| `jdtls`                      | Java                   | Manual                                                    |
+| `omnisharp`                  | C#                     | .NET                                                      |
 
 clangd y jdtls no están incluidos. Instálalos tú mismo y luego vuelve a Settings → Agents.
 

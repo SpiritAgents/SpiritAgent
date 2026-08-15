@@ -7,14 +7,14 @@ description: 將一個有範圍的任務委派給子會話，可選擇在 git wo
 
 ## 參數
 
-| 欄位 | 必填 | 角色 |
-| --- | --- | --- |
-| `task` | 是 | 子智慧體應該做什麼 |
-| `success_criteria` | 否 | 子智慧體如何知道任務已完成 |
-| `context_summary` | 否 | 簡短的背景資訊，子智慧體不必重新探索 |
-| `files_to_inspect` | 否 | 優先閱讀的路徑 |
-| `expected_output` | 否 | 父智慧體期望回傳的結果格式 |
-| `worktree` | 否 | `true` 表示在隔離的 git worktree 中編輯 |
+| 欄位               | 必填 | 角色                                    |
+| ------------------ | ---- | --------------------------------------- |
+| `task`             | 是   | 子智慧體應該做什麼                      |
+| `success_criteria` | 否   | 子智慧體如何知道任務已完成              |
+| `context_summary`  | 否   | 簡短的背景資訊，子智慧體不必重新探索    |
+| `files_to_inspect` | 否   | 優先閱讀的路徑                          |
+| `expected_output`  | 否   | 父智慧體期望回傳的結果格式              |
+| `worktree`         | 否   | `true` 表示在隔離的 git worktree 中編輯 |
 
 當子智慧體會編輯檔案，且其他子智慧體可能同時編輯時，請使用 `worktree: true`。若為唯讀工作，則省略該參數。
 

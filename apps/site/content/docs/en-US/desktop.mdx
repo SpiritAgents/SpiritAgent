@@ -9,42 +9,42 @@ Desktop is the graphical host. It shares the local daemon with the [CLI](./cli.m
 
 ### Basics
 
-| Tab | What it holds |
-| --- | --- |
-| General | Notifications, tray / menu bar icon |
+| Tab        | What it holds                                  |
+| ---------- | ---------------------------------------------- |
+| General    | Notifications, tray / menu bar icon            |
 | Appearance | Theme, font, UI language, mica / blur, pointer |
 
 ### Capabilities
 
-| Tab | What it holds |
-| --- | --- |
-| Models | Provider connect, model list, keys |
-| Agents | LSP, commit / PR attribution |
-| Tab | Editor Tab completion |
+| Tab    | What it holds                                          |
+| ------ | ------------------------------------------------------ |
+| Models | Provider connect, model list, keys                     |
+| Agents | LSP, commit / PR attribution                           |
+| Tab    | Editor Tab completion                                  |
 | Skills | Discover and generate [Skills](./customize/skills.mdx) |
-| Rules | [Rules](./customize/rules.mdx) slots |
-| MCPs | [MCP](./customize/mcp.mdx) servers |
-| Hooks | [Hooks](./customize/hooks.mdx) |
-| Dreams | [Dreams](./customize/dreams.mdx) (Beta) |
+| Rules  | [Rules](./customize/rules.mdx) slots                   |
+| MCPs   | [MCP](./customize/mcp.mdx) servers                     |
+| Hooks  | [Hooks](./customize/hooks.mdx)                         |
+| Dreams | [Dreams](./customize/dreams.mdx) (Beta)                |
 
 ### Connect
 
-| Tab | What it holds |
-| --- | --- |
-| Networks | LLM HTTP version, **Web Remote Access** |
+| Tab          | What it holds                                       |
+| ------------ | --------------------------------------------------- |
+| Networks     | LLM HTTP version, **Web Remote Access**             |
 | Integrations | [GitHub Device Login](./customize/integrations.mdx) |
-| Extensions | Installed extensions, ZIP import |
+| Extensions   | Installed extensions, ZIP import                    |
 
 A Developer tab appears only in Vite dev builds.
 
 ## Workspace panels
 
-| Tab | Role |
-| --- | --- |
-| Files | Tree, Monaco, Markdown preview, `plans/` |
-| Git | Changes, history, commit / push / merge chips |
+| Tab     | Role                                                  |
+| ------- | ----------------------------------------------------- |
+| Files   | Tree, Monaco, Markdown preview, `plans/`              |
+| Git     | Changes, history, commit / push / merge chips         |
 | Browser | Embedded browser + element picker (**Electron only**) |
-| Shell | Embedded PTY (**Electron only**) |
+| Shell   | Embedded PTY (**Electron only**)                      |
 
 ### Shell
 
@@ -64,15 +64,15 @@ Those chips inject a fixed prompt. The agent then uses [workspace and `shell` to
 
 Turn language servers on in **Settings → Agents**, then install a provider if it is missing. Once a server is ready, the agent can call [`get_diagnostics`](./agent/tools.mdx).
 
-| Id | Languages | How it is installed |
-| --- | --- | --- |
-| `typescript-language-server` | TypeScript, JavaScript | npm (`typescript-language-server`) |
-| `pyright` | Python | npm (`pyright`) |
-| `gopls` | Go | Go toolchain |
-| `rust-analyzer` | Rust | rustup |
-| `clangd` | C, C++ | Platform package (for example Homebrew or winget) |
-| `jdtls` | Java | Manual |
-| `omnisharp` | C# | .NET |
+| Id                           | Languages              | How it is installed                               |
+| ---------------------------- | ---------------------- | ------------------------------------------------- |
+| `typescript-language-server` | TypeScript, JavaScript | npm (`typescript-language-server`)                |
+| `pyright`                    | Python                 | npm (`pyright`)                                   |
+| `gopls`                      | Go                     | Go toolchain                                      |
+| `rust-analyzer`              | Rust                   | rustup                                            |
+| `clangd`                     | C, C++                 | Platform package (for example Homebrew or winget) |
+| `jdtls`                      | Java                   | Manual                                            |
+| `omnisharp`                  | C#                     | .NET                                              |
 
 clangd and jdtls are not bundled. Install them yourself, then come back to Settings → Agents.
 

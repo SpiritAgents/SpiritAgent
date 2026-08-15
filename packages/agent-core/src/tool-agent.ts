@@ -975,14 +975,7 @@ export function buildBasicInfoSystemMessage(basicInfo?: ToolAgentBasicInfo): str
   const hostUrl = basicInfo?.host?.url?.trim();
   const hasHost = Boolean(hostKind);
 
-  if (
-    !workspaceRoot &&
-    !terminal &&
-    !gitBranch &&
-    !hasSystem &&
-    !sessionTranscript &&
-    !hasHost
-  ) {
+  if (!workspaceRoot && !terminal && !gitBranch && !hasSystem && !sessionTranscript && !hasHost) {
     return undefined;
   }
 

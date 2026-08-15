@@ -9,12 +9,12 @@ Spirit Agent — это BYOK. Вы создаете ключ в консоли �
 
 Spirit общается с провайдерами через один из четырех транспортов. Мастер либо фиксирует тип, либо позволяет выбрать.
 
-| Транспорт | Метка в мастере | Типичное использование |
-| --- | --- | --- |
-| `openai-compatible` | Chat Completions API | Большинство OpenAI-совместимых конечных точек |
-| `open-responses` | Responses API / Open Responses API | OpenAI, Azure, Vercel AI Gateway, Hugging Face и необязательные пути шлюза |
-| `anthropic` | Messages API | Anthropic, MiniMax и необязательные Messages-совместимые конечные точки |
-| `bedrock` | Amazon Bedrock | Только Amazon Bedrock |
+| Транспорт           | Метка в мастере                    | Типичное использование                                                     |
+| ------------------- | ---------------------------------- | -------------------------------------------------------------------------- |
+| `openai-compatible` | Chat Completions API               | Большинство OpenAI-совместимых конечных точек                              |
+| `open-responses`    | Responses API / Open Responses API | OpenAI, Azure, Vercel AI Gateway, Hugging Face и необязательные пути шлюза |
+| `anthropic`         | Messages API                       | Anthropic, MiniMax и необязательные Messages-совместимые конечные точки    |
+| `bedrock`           | Amazon Bedrock                     | Только Amazon Bedrock                                                      |
 
 Google Gemini и Vertex AI всегда используют Chat Completions. Если профиль запрашивает Responses или Messages, Spirit откатывается к `openai-compatible`.
 

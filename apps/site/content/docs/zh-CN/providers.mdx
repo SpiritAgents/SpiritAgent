@@ -9,12 +9,12 @@ Spirit Agent 是 BYOK。你在提供商控制台创建 Key，粘进 Desktop 或 
 
 Spirit 用下面四种传输之一和提供商通信。向导会固定类型，或让你选。
 
-| 传输 | 向导标签 | 典型用途 |
-| --- | --- | --- |
-| `openai-compatible` | Chat Completions API | 大多数 OpenAI 兼容端点 |
-| `open-responses` | Responses API / Open Responses API | OpenAI、Azure、Vercel AI Gateway、Hugging Face，以及可选的网关路径 |
-| `anthropic` | Messages API | Anthropic、MiniMax，以及可选的 Messages 兼容端点 |
-| `bedrock` | Amazon Bedrock | 仅 Amazon Bedrock |
+| 传输                | 向导标签                           | 典型用途                                                           |
+| ------------------- | ---------------------------------- | ------------------------------------------------------------------ |
+| `openai-compatible` | Chat Completions API               | 大多数 OpenAI 兼容端点                                             |
+| `open-responses`    | Responses API / Open Responses API | OpenAI、Azure、Vercel AI Gateway、Hugging Face，以及可选的网关路径 |
+| `anthropic`         | Messages API                       | Anthropic、MiniMax，以及可选的 Messages 兼容端点                   |
+| `bedrock`           | Amazon Bedrock                     | 仅 Amazon Bedrock                                                  |
 
 Google Gemini 与 Vertex AI 始终走 Chat Completions。若配置里要了 Responses 或 Messages，Spirit 会回落到 `openai-compatible`。
 

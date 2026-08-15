@@ -258,11 +258,7 @@
   },
   "landing": {
     "sectionAria": "Contenido de Spirit Agent",
-    "featureHeading": [
-      "Tus modelos.",
-      "Tus claves.",
-      "Tu control."
-    ],
+    "featureHeading": ["Tus modelos.", "Tus claves.", "Tu control."],
     "featureBody": "Spirit no te encierra en una stack alojada. Trae una clave de cualquier proveedor, agrégala una vez, y usa el mismo flujo de trabajo del agente en todos ellos.",
     "agent": {
       "sectionAria": "Productividad de Spirit Agent",

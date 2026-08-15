@@ -258,11 +258,7 @@
   },
   "landing": {
     "sectionAria": "Spirit Agent Inhalt",
-    "featureHeading": [
-      "Deine Modelle.",
-      "Deine Schlüssel.",
-      "Deine Kontrolle."
-    ],
+    "featureHeading": ["Deine Modelle.", "Deine Schlüssel.", "Deine Kontrolle."],
     "featureBody": "Spirit sperrt dich nicht in einen gehosteten Stack ein. Bring einen Schlüssel von einem beliebigen Anbieter mit, füge ihn einmal hinzu und verwende denselben Agent-Workflow überall.",
     "agent": {
       "sectionAria": "Spirit Agent Produktivität",

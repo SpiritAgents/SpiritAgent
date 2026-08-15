@@ -5,10 +5,10 @@ description: Compétences utilisateur, .spirit et .agents, plus create-rule, cre
 
 Une compétence est un dossier avec un `SKILL.md`. Spirit découvre les compétences à partir de trois emplacements :
 
-| Portée | Chemin |
-| --- | --- |
-| Utilisateur | `{spiritDataDir}/skills/{name}/SKILL.md` |
-| Espace de travail Spirit | `{workspace}/.spirit/skills/{name}/SKILL.md` |
+| Portée                        | Chemin                                       |
+| ----------------------------- | -------------------------------------------- |
+| Utilisateur                   | `{spiritDataDir}/skills/{name}/SKILL.md`     |
+| Espace de travail Spirit      | `{workspace}/.spirit/skills/{name}/SKILL.md` |
 | Agents de l'espace de travail | `{workspace}/.agents/skills/{name}/SKILL.md` |
 
 Lorsque vous mentionnez une compétence dans un tour, Spirit peut joindre son texte complet à ce message utilisateur. Il ne déverse pas chaque compétence dans le prompt système.
@@ -17,10 +17,10 @@ Lorsque vous mentionnez une compétence dans un tour, Spirit peut joindre son te
 
 `SKILL.md` doit commencer par un frontmatter. Un fichier sans `name` ou `description` n'est pas découvert.
 
-| Champ | Description |
-| --- | --- |
-| `name` | Requis. Nom de la compétence ; doit correspondre au nom du dossier. 1 à 64 caractères, uniquement lettres minuscules, chiffres et tirets |
-| `description` | Requis. Description courte |
+| Champ         | Description                                                                                                                              |
+| ------------- | ---------------------------------------------------------------------------------------------------------------------------------------- |
+| `name`        | Requis. Nom de la compétence ; doit correspondre au nom du dossier. 1 à 64 caractères, uniquement lettres minuscules, chiffres et tirets |
+| `description` | Requis. Description courte                                                                                                               |
 
 ## Compétences intégrées
 

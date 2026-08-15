@@ -5,30 +5,30 @@ description: Agent 可以调用的工具。有的只在模型、槽位或模式�
 
 这些工具作用在你打开的工作区上。Ask 模式可以读和搜，不能创建、编辑、删除、打补丁、跑 `shell` 或生图 / 生视频。
 
-| 工具 | 作用 |
-| --- | --- |
-| `read_file` | 读文件，或读取图片与视频 |
-| `create_file` | 创建文件 |
-| `edit_file` | 编辑已有文件 |
-| `delete_file` | 删除文件 |
-| `apply_patch` | 在模型与传输符合条件时（例如 OpenAI 提供商的 GPT 模型）暴露此工具，并替代该路径上的 `create_file` / `edit_file` / `delete_file` |
-| `glob` | 按 glob 找路径（尊重 `.gitignore`） |
-| `grep` | 搜文件内容（尊重 `.gitignore`） |
-| `ls` | 列出一个目录，不递归。路径必须是绝对路径 |
-| `shell` | 跑命令。带上 `reason` 和 `command`。Ask 模式不能调用 |
-| `web_fetch` | 抓取 `http` 或 `https` URL，返回 Markdown。宿主工具，不是提供商搜索 |
-| `web_search` | 当前模型提供商支持联网搜索时才暴露。搜网页，返回标题、URL 和摘要 |
-| `generate_image` | 在 **设置 → 模型** 指定了生图模型后才暴露。生成一张图。Ask 模式不能调用 |
-| `generate_video` | 在 **设置 → 模型** 指定了生视频模型后才暴露。生成一小段视频。Ask 模式不能调用 |
-| `get_diagnostics` | 语言服务器就绪时才暴露。传入路径，返回错误和警告。Ask 模式也能用 |
-| `ask_questions` | 结构化问卷，挂起直到你答完。见[提问](./ask-questions.mdx) |
-| `subagent` | 把限定任务交给子会话。见[子智能体](./subagents.mdx) |
-| `create_plan` | 仅 Plan 模式。写成 `plans/{name}.md`。见[模式](./modes.mdx) |
-| `todo_list` | 列出当前会话的待办 |
-| `todo_write` | 替换当前会话的整份待办列表 |
-| `finish_task` | 仅 [Loop](./loop.mdx) 打开时暴露。标记当前任务已完成 |
-| `dream_list` | Desktop 上 [梦境](../customize/dreams.mdx) 可用时，列出当前工作区与分支下未过期的摘要 |
-| `dream_read` | 按 id 读一条完整梦境。写入工具给后台收集器，不进对话 |
+| 工具              | 作用                                                                                                                            |
+| ----------------- | ------------------------------------------------------------------------------------------------------------------------------- |
+| `read_file`       | 读文件，或读取图片与视频                                                                                                        |
+| `create_file`     | 创建文件                                                                                                                        |
+| `edit_file`       | 编辑已有文件                                                                                                                    |
+| `delete_file`     | 删除文件                                                                                                                        |
+| `apply_patch`     | 在模型与传输符合条件时（例如 OpenAI 提供商的 GPT 模型）暴露此工具，并替代该路径上的 `create_file` / `edit_file` / `delete_file` |
+| `glob`            | 按 glob 找路径（尊重 `.gitignore`）                                                                                             |
+| `grep`            | 搜文件内容（尊重 `.gitignore`）                                                                                                 |
+| `ls`              | 列出一个目录，不递归。路径必须是绝对路径                                                                                        |
+| `shell`           | 跑命令。带上 `reason` 和 `command`。Ask 模式不能调用                                                                            |
+| `web_fetch`       | 抓取 `http` 或 `https` URL，返回 Markdown。宿主工具，不是提供商搜索                                                             |
+| `web_search`      | 当前模型提供商支持联网搜索时才暴露。搜网页，返回标题、URL 和摘要                                                                |
+| `generate_image`  | 在 **设置 → 模型** 指定了生图模型后才暴露。生成一张图。Ask 模式不能调用                                                         |
+| `generate_video`  | 在 **设置 → 模型** 指定了生视频模型后才暴露。生成一小段视频。Ask 模式不能调用                                                   |
+| `get_diagnostics` | 语言服务器就绪时才暴露。传入路径，返回错误和警告。Ask 模式也能用                                                                |
+| `ask_questions`   | 结构化问卷，挂起直到你答完。见[提问](./ask-questions.mdx)                                                                       |
+| `subagent`        | 把限定任务交给子会话。见[子智能体](./subagents.mdx)                                                                             |
+| `create_plan`     | 仅 Plan 模式。写成 `plans/{name}.md`。见[模式](./modes.mdx)                                                                     |
+| `todo_list`       | 列出当前会话的待办                                                                                                              |
+| `todo_write`      | 替换当前会话的整份待办列表                                                                                                      |
+| `finish_task`     | 仅 [Loop](./loop.mdx) 打开时暴露。标记当前任务已完成                                                                            |
+| `dream_list`      | Desktop 上 [梦境](../customize/dreams.mdx) 可用时，列出当前工作区与分支下未过期的摘要                                           |
+| `dream_read`      | 按 id 读一条完整梦境。写入工具给后台收集器，不进对话                                                                            |
 
 默认审批下，编辑和删除会等你[批准](./approvals.mdx)。`shell` 同样先给你看再执行。
 

@@ -5,9 +5,9 @@ description: User mcp.json plus workspace .spirit/mcp.json. Workspace wins on th
 
 MCP servers add tools, resources, and prompts from outside Spirit.
 
-| Scope | Path |
-| --- | --- |
-| User | `{spiritDataDir}/mcp.json` |
+| Scope     | Path                           |
+| --------- | ------------------------------ |
+| User      | `{spiritDataDir}/mcp.json`     |
 | Workspace | `{workspace}/.spirit/mcp.json` |
 
 When both files define the same server name, the **workspace** entry wins.
@@ -20,33 +20,33 @@ MCP tools merge into the same tool list the agent already has. They still go thr
 
 The root object has only `servers`. Each server must include `transport`, with `type` set to `stdio` or `http`.
 
-| Field | Description |
-| --- | --- |
-| `servers` | Object. Keys are server names |
-| `displayName` | Optional. UI label; defaults to the server name. `display_name` is also accepted |
-| `enabled` | Optional. Defaults to `true` |
-| `capabilities.tools` | Optional. Defaults to `true` |
-| `capabilities.resources` | Optional. Defaults to `true` |
-| `capabilities.prompts` | Optional. Defaults to `true` |
-| `transport.type` | Required. `stdio` or `http` |
+| Field                    | Description                                                                      |
+| ------------------------ | -------------------------------------------------------------------------------- |
+| `servers`                | Object. Keys are server names                                                    |
+| `displayName`            | Optional. UI label; defaults to the server name. `display_name` is also accepted |
+| `enabled`                | Optional. Defaults to `true`                                                     |
+| `capabilities.tools`     | Optional. Defaults to `true`                                                     |
+| `capabilities.resources` | Optional. Defaults to `true`                                                     |
+| `capabilities.prompts`   | Optional. Defaults to `true`                                                     |
+| `transport.type`         | Required. `stdio` or `http`                                                      |
 
 ### `stdio`
 
-| Field | Description |
-| --- | --- |
-| `command` | Required. Launch command |
-| `args` | Optional. Command arguments |
-| `env` | Optional. Environment variables. Values may use `${env:NAME}` |
-| `cwd` | Optional. Working directory |
+| Field       | Description                                                      |
+| ----------- | ---------------------------------------------------------------- |
+| `command`   | Required. Launch command                                         |
+| `args`      | Optional. Command arguments                                      |
+| `env`       | Optional. Environment variables. Values may use `${env:NAME}`    |
+| `cwd`       | Optional. Working directory                                      |
 | `timeoutMs` | Optional. Timeout in milliseconds. `timeout_ms` is also accepted |
-| `stderr` | Optional. `inherit` (default) or `pipe` |
+| `stderr`    | Optional. `inherit` (default) or `pipe`                          |
 
 ### `http`
 
-| Field | Description |
-| --- | --- |
-| `url` | Required. Server URL |
-| `headers` | Optional. Request headers. Values may use `${env:NAME}` |
+| Field       | Description                                                      |
+| ----------- | ---------------------------------------------------------------- |
+| `url`       | Required. Server URL                                             |
+| `headers`   | Optional. Request headers. Values may use `${env:NAME}`          |
 | `timeoutMs` | Optional. Timeout in milliseconds. `timeout_ms` is also accepted |
 
 ## Example

@@ -5,9 +5,9 @@ description: Benutzer-mcp.json plus Arbeitsbereich .spirit/mcp.json. Der Arbeits
 
 MCP-Server fügen Tools, Ressourcen und Prompts von außerhalb von Spirit hinzu.
 
-| Bereich | Pfad |
-| --- | --- |
-| Benutzer | `{spiritDataDir}/mcp.json` |
+| Bereich        | Pfad                           |
+| -------------- | ------------------------------ |
+| Benutzer       | `{spiritDataDir}/mcp.json`     |
 | Arbeitsbereich | `{workspace}/.spirit/mcp.json` |
 
 Wenn beide Dateien denselben Servernamen definieren, gewinnt der **Arbeitsbereich**-Eintrag.
@@ -20,33 +20,33 @@ MCP-Tools werden in dieselbe Tool-Liste integriert, die der Agent bereits hat. S
 
 Das Root-Objekt hat nur `servers`. Jeder Server muss `transport` enthalten, mit `type` gesetzt auf `stdio` oder `http`.
 
-| Feld | Beschreibung |
-| --- | --- |
-| `servers` | Objekt. Schlüssel sind Servernamen |
-| `displayName` | Optional. UI-Label; standardmäßig der Servername. `display_name` wird ebenfalls akzeptiert |
-| `enabled` | Optional. Standardmäßig `true` |
-| `capabilities.tools` | Optional. Standardmäßig `true` |
-| `capabilities.resources` | Optional. Standardmäßig `true` |
-| `capabilities.prompts` | Optional. Standardmäßig `true` |
-| `transport.type` | Erforderlich. `stdio` oder `http` |
+| Feld                     | Beschreibung                                                                               |
+| ------------------------ | ------------------------------------------------------------------------------------------ |
+| `servers`                | Objekt. Schlüssel sind Servernamen                                                         |
+| `displayName`            | Optional. UI-Label; standardmäßig der Servername. `display_name` wird ebenfalls akzeptiert |
+| `enabled`                | Optional. Standardmäßig `true`                                                             |
+| `capabilities.tools`     | Optional. Standardmäßig `true`                                                             |
+| `capabilities.resources` | Optional. Standardmäßig `true`                                                             |
+| `capabilities.prompts`   | Optional. Standardmäßig `true`                                                             |
+| `transport.type`         | Erforderlich. `stdio` oder `http`                                                          |
 
 ### `stdio`
 
-| Feld | Beschreibung |
-| --- | --- |
-| `command` | Erforderlich. Startbefehl |
-| `args` | Optional. Befehlsargumente |
-| `env` | Optional. Umgebungsvariablen. Werte können `${env:NAME}` verwenden |
-| `cwd` | Optional. Arbeitsverzeichnis |
+| Feld        | Beschreibung                                                               |
+| ----------- | -------------------------------------------------------------------------- |
+| `command`   | Erforderlich. Startbefehl                                                  |
+| `args`      | Optional. Befehlsargumente                                                 |
+| `env`       | Optional. Umgebungsvariablen. Werte können `${env:NAME}` verwenden         |
+| `cwd`       | Optional. Arbeitsverzeichnis                                               |
 | `timeoutMs` | Optional. Timeout in Millisekunden. `timeout_ms` wird ebenfalls akzeptiert |
-| `stderr` | Optional. `inherit` (Standard) oder `pipe` |
+| `stderr`    | Optional. `inherit` (Standard) oder `pipe`                                 |
 
 ### `http`
 
-| Feld | Beschreibung |
-| --- | --- |
-| `url` | Erforderlich. Server-URL |
-| `headers` | Optional. Anfrage-Header. Werte können `${env:NAME}` verwenden |
+| Feld        | Beschreibung                                                               |
+| ----------- | -------------------------------------------------------------------------- |
+| `url`       | Erforderlich. Server-URL                                                   |
+| `headers`   | Optional. Anfrage-Header. Werte können `${env:NAME}` verwenden             |
 | `timeoutMs` | Optional. Timeout in Millisekunden. `timeout_ms` wird ebenfalls akzeptiert |
 
 ## Beispiel

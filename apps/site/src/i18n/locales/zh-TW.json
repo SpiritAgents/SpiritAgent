@@ -71,10 +71,7 @@
       "runningToolHeadline": "檢視中",
       "runningToolHeadlineSucceeded": "已讀",
       "runningToolHeadlineDetail": "工作區檔案",
-      "runningToolDetails": [
-        "開啟 Hero 實作。",
-        "檢查 Desktop 視窗外殼。"
-      ],
+      "runningToolDetails": ["開啟 Hero 實作。", "檢查 Desktop 視窗外殼。"],
       "runningToolOutput": "找到一個 Hero 區塊、一個重複使用的 Desktop 外殼，以及靜態的對話空狀態。",
       "designDemo": {
         "demoUserPrompt": "改進這個標題——讓它更銳利、更有說服力。",
@@ -258,19 +255,11 @@
   },
   "landing": {
     "sectionAria": "Spirit Agent 內容",
-    "featureHeading": [
-      "你的模型。",
-      "你的金鑰。",
-      "你的掌控。"
-    ],
+    "featureHeading": ["你的模型。", "你的金鑰。", "你的掌控。"],
     "featureBody": "Spirit 不會將你鎖定在託管堆疊中。從任何供應商取得金鑰，一次新增，並在所有供應商中使用相同的智慧體工作流程。",
     "agent": {
       "sectionAria": "Spirit Agent 生產力",
-      "featureHeading": [
-        "帶著上下文規劃。",
-        "使用工具執行。",
-        "在你的工作區中交付。"
-      ],
+      "featureHeading": ["帶著上下文規劃。", "使用工具執行。", "在你的工作區中交付。"],
       "featureBody": "Spirit 在行動前先規劃：生成 mockups、撰寫結構化計劃，並在你的儲存庫中執行，無需離開桌面外殼。"
     },
     "ctaSectionAria": "下載 Spirit Agent",

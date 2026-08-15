@@ -338,9 +338,7 @@ export async function createServerRuntime(
   const basicInfoHost = options.basicInfoHost
     ? {
         kind: options.basicInfoHost.kind,
-        ...(options.basicInfoHost.url?.trim()
-          ? { url: options.basicInfoHost.url.trim() }
-          : {}),
+        ...(options.basicInfoHost.url?.trim() ? { url: options.basicInfoHost.url.trim() } : {}),
       }
     : undefined;
   const basicInfo: LlmToolAgentBasicInfo = {

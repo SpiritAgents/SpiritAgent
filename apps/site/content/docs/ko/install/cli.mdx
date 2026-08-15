@@ -31,20 +31,20 @@ spirit --version
 
 설치 루트는 Spirit Agent 데이터 디렉터리가 **아닙니다**.
 
-| | 기본값 | 재정의 |
-| --- | --- | --- |
-| CLI 바이너리 | Unix: `~/.spirit` · Windows: `%LOCALAPPDATA%\Spirit` | `SPIRIT_HOME` |
+|                         | 기본값                                                                                                                      | 재정의                  |
+| ----------------------- | --------------------------------------------------------------------------------------------------------------------------- | ----------------------- |
+| CLI 바이너리            | Unix: `~/.spirit` · Windows: `%LOCALAPPDATA%\Spirit`                                                                        | `SPIRIT_HOME`           |
 | 세션, 구성, 키링 포인터 | macOS: `~/Library/Application Support/SpiritAgent` · Windows: `%APPDATA%\SpiritAgent` · Linux: `~/.local/share/SpiritAgent` | `SPIRIT_AGENT_DATA_DIR` |
 
 Unix에서 스크립트는 `$SPIRIT_HOME/bin/spirit` → `$SPIRIT_HOME/cli/current/bin/spirit` 링크를 만들고 `~/.profile`, `~/.bashrc`, `~/.zshrc`에 `export PATH="$SPIRIT_HOME/bin:$PATH"`를 추가합니다 (마커 `# spirit-agent cli`).
 
 ## 버전 또는 미러 고정
 
-| 변수 | 기본값 | 역할 |
-| --- | --- | --- |
-| `SPIRIT_HOME` | `~/.spirit` 또는 `%LOCALAPPDATA%\Spirit` | CLI 바이너리 설치 루트 |
-| `SPIRIT_VERSION` | `latest` | 다운로드 URL의 버전 세그먼트 |
-| `SPIRIT_DOWNLOAD_HOST` | `download.spirit.fast` | CDN 호스트 |
+| 변수                   | 기본값                                   | 역할                         |
+| ---------------------- | ---------------------------------------- | ---------------------------- |
+| `SPIRIT_HOME`          | `~/.spirit` 또는 `%LOCALAPPDATA%\Spirit` | CLI 바이너리 설치 루트       |
+| `SPIRIT_VERSION`       | `latest`                                 | 다운로드 URL의 버전 세그먼트 |
+| `SPIRIT_DOWNLOAD_HOST` | `download.spirit.fast`                   | CDN 호스트                   |
 
 ```bash
 SPIRIT_VERSION=0.1.0 curl -fsSL https://spirit.fast/install | bash

@@ -148,7 +148,9 @@ export type CommandPayloads = {
   replyPendingApproval: { request: ReplyPendingApprovalRequest };
   replyPendingQuestions: { request: ReplyPendingQuestionsRequest };
   replyWorkspaceCapabilityTrust: { request: ReplyWorkspaceCapabilityTrustRequest };
-  resetSession: { activate?: boolean; clientHost?: import("../types.js").DesktopClientHost } | undefined;
+  resetSession:
+    | { activate?: boolean; clientHost?: import("../types.js").DesktopClientHost }
+    | undefined;
   listSessions: undefined;
   openSession: {
     path: string;

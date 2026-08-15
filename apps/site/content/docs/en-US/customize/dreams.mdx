@@ -4,17 +4,18 @@ description: Short-lived memories scoped to the workspace and Git branch. The ag
 ---
 
 <Callout type="warn" title="Beta">
-Dreams is still an experiment. Do not treat it as a permanent project wiki — that belongs in [Rules](./rules.mdx) or the repo.
+  Dreams is still an experiment. Do not treat it as a permanent project wiki — that belongs in
+  [Rules](./rules.mdx) or the repo.
 </Callout>
 
 Dreams are short memories scoped to the **current workspace and Git branch**: what recently moved, why it matters, and what is still open. Records live under `{spiritDataDir}/dreams/` and expire after **five days**.
 
 The conversation agent gets a summary catalog in the system message (id, title, summary, tags). Full details are not preloaded; pull them with tools when needed.
 
-| Tool | Role |
-| --- | --- |
+| Tool         | Role                                            |
+| ------------ | ----------------------------------------------- |
 | `dream_list` | List non-expired summaries in the current scope |
-| `dream_read` | Read one full record by id |
+| `dream_read` | Read one full record by id                      |
 
 `dream_record`, `dream_update`, and `dream_delete` belong to the background collector, not the conversation agent. The collector scans sessions and decides whether to create, update, or drop a stale entry. It prefers updating an existing dream over duplicating one.
 

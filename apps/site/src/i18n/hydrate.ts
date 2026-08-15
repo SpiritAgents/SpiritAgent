@@ -1,11 +1,6 @@
 import type { Messages } from "@/i18n/messages";
 
-type JsonMessages = Omit<
-  Messages,
-  | "common"
-  | "footer"
-  | "desktop"
-> & {
+type JsonMessages = Omit<Messages, "common" | "footer" | "desktop"> & {
   common: Omit<Messages["common"], "downloadForPlatform"> & {
     downloadForPlatform: string;
   };
@@ -50,8 +45,7 @@ export function hydrateMessages(raw: unknown): Messages {
     ...json,
     common: {
       ...json.common,
-      downloadForPlatform: (platform) =>
-        fill(json.common.downloadForPlatform, { platform }),
+      downloadForPlatform: (platform) => fill(json.common.downloadForPlatform, { platform }),
     },
     footer: {
       ...json.footer,
@@ -73,8 +67,7 @@ export function hydrateMessages(raw: unknown): Messages {
         ...json.desktop.shell,
         currentWorkspace: (workspaceRoot) =>
           fill(json.desktop.shell.currentWorkspace, { workspaceRoot }),
-        unsupportedCommand: (command) =>
-          fill(json.desktop.shell.unsupportedCommand, { command }),
+        unsupportedCommand: (command) => fill(json.desktop.shell.unsupportedCommand, { command }),
         exited: (exitCode) => fill(json.desktop.shell.exited, { exitCode }),
       },
       previews: {

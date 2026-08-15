@@ -258,11 +258,7 @@
   },
   "landing": {
     "sectionAria": "Conteúdo do Spirit Agent",
-    "featureHeading": [
-      "Seus modelos.",
-      "Suas chaves.",
-      "Seu controle."
-    ],
+    "featureHeading": ["Seus modelos.", "Suas chaves.", "Seu controle."],
     "featureBody": "O Spirit não te prende a uma stack hospedada. Traga uma chave de qualquer provedor, adicione uma vez e use o mesmo fluxo de agente em todos eles.",
     "agent": {
       "sectionAria": "Produtividade do Spirit Agent",

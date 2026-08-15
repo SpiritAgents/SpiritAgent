@@ -51,19 +51,11 @@
   },
   "landing": {
     "sectionAria": "Spirit Agent content",
-    "featureHeading": [
-      "Your models.",
-      "Your keys.",
-      "Your control."
-    ],
+    "featureHeading": ["Your models.", "Your keys.", "Your control."],
     "featureBody": "Spirit does not lock you into a hosted stack. Bring a key from any provider, add it once, and use the same agent workflow across all of them.",
     "agent": {
       "sectionAria": "Spirit Agent productivity",
-      "featureHeading": [
-        "Plan with context.",
-        "Execute with tools.",
-        "Ship in your workspace."
-      ],
+      "featureHeading": ["Plan with context.", "Execute with tools.", "Ship in your workspace."],
       "featureBody": "Spirit plans before it acts: generate mockups, write structured plans, and execute against your repo without leaving the desktop shell."
     },
     "ctaSectionAria": "Download Spirit Agent",

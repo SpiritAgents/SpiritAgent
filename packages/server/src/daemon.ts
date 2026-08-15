@@ -397,9 +397,7 @@ export async function startDaemon(options: DaemonOptions): Promise<RunningDaemon
         const dreamSourceSessionRaw = params["dreamSourceSession"];
         const hostUiPromptSection = normalizeHostUiPromptSection(params["hostUiPromptSection"]);
         const basicInfoHostRaw = params["basicInfoHost"];
-        let basicInfoHost:
-          | { kind: "Desktop" | "CLI" | "Web"; url?: string }
-          | undefined;
+        let basicInfoHost: { kind: "Desktop" | "CLI" | "Web"; url?: string } | undefined;
         if (basicInfoHostRaw && typeof basicInfoHostRaw === "object") {
           const raw = basicInfoHostRaw as Record<string, unknown>;
           const kind = raw["kind"];

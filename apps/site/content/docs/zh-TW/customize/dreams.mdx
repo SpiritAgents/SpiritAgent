@@ -4,17 +4,17 @@ description: 依工作區和 Git 分支保存的短記憶。智慧體用 dream_l
 ---
 
 <Callout type="warn" title="Beta">
-夢境仍在試驗。不要當成永久專案百科——那屬於 [Rules](./rules.mdx) 或倉庫本身。
+  夢境仍在試驗。不要當成永久專案百科——那屬於 [Rules](./rules.mdx) 或倉庫本身。
 </Callout>
 
 夢境是按**目前工作區 + Git 分支**記下的短記憶：最近在做什麼、為什麼重要、還有哪些未決事項。記錄在 `{spiritDataDir}/dreams/`，**五天**後過期。
 
 對話裡的智慧體會在 system 裡看到一份摘要目錄（id、標題、summary、tags）。完整細節不預置，按需用工具拉。
 
-| 工具 | 作用 |
-| --- | --- |
+| 工具         | 作用                       |
+| ------------ | -------------------------- |
 | `dream_list` | 列出目前範圍內未過期的摘要 |
-| `dream_read` | 按 id 讀一條完整記錄 |
+| `dream_read` | 按 id 讀一條完整記錄       |
 
 `dream_record`、`dream_update`、`dream_delete` 給背景收集器用，不進對話智慧體。收集器掃會話，決定新建、更新還是刪掉過時條目；優先改已有條目，不複製一份。
 

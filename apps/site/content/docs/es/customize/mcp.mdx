@@ -5,9 +5,9 @@ description: mcp.json de usuario más .spirit/mcp.json del espacio de trabajo. E
 
 Los servidores MCP añaden herramientas, recursos y prompts de fuera de Spirit.
 
-| Alcance | Ruta |
-| --- | --- |
-| Usuario | `{spiritDataDir}/mcp.json` |
+| Alcance            | Ruta                           |
+| ------------------ | ------------------------------ |
+| Usuario            | `{spiritDataDir}/mcp.json`     |
 | Espacio de trabajo | `{workspace}/.spirit/mcp.json` |
 
 Cuando ambos archivos definen el mismo nombre de servidor, la entrada del **espacio de trabajo** gana.
@@ -20,33 +20,33 @@ Las herramientas MCP se fusionan en la misma lista de herramientas que ya tiene 
 
 El objeto raíz solo tiene `servers`. Cada servidor debe incluir `transport`, con `type` establecido a `stdio` o `http`.
 
-| Campo | Descripción |
-| --- | --- |
-| `servers` | Objeto. Las claves son nombres de servidor |
-| `displayName` | Opcional. Etiqueta en la interfaz; por defecto es el nombre del servidor. `display_name` también se acepta |
-| `enabled` | Opcional. Por defecto `true` |
-| `capabilities.tools` | Opcional. Por defecto `true` |
-| `capabilities.resources` | Opcional. Por defecto `true` |
-| `capabilities.prompts` | Opcional. Por defecto `true` |
-| `transport.type` | Requerido. `stdio` o `http` |
+| Campo                    | Descripción                                                                                                |
+| ------------------------ | ---------------------------------------------------------------------------------------------------------- |
+| `servers`                | Objeto. Las claves son nombres de servidor                                                                 |
+| `displayName`            | Opcional. Etiqueta en la interfaz; por defecto es el nombre del servidor. `display_name` también se acepta |
+| `enabled`                | Opcional. Por defecto `true`                                                                               |
+| `capabilities.tools`     | Opcional. Por defecto `true`                                                                               |
+| `capabilities.resources` | Opcional. Por defecto `true`                                                                               |
+| `capabilities.prompts`   | Opcional. Por defecto `true`                                                                               |
+| `transport.type`         | Requerido. `stdio` o `http`                                                                                |
 
 ### `stdio`
 
-| Campo | Descripción |
-| --- | --- |
-| `command` | Requerido. Comando de lanzamiento |
-| `args` | Opcional. Argumentos del comando |
-| `env` | Opcional. Variables de entorno. Los valores pueden usar `${env:NAME}` |
-| `cwd` | Opcional. Directorio de trabajo |
+| Campo       | Descripción                                                                |
+| ----------- | -------------------------------------------------------------------------- |
+| `command`   | Requerido. Comando de lanzamiento                                          |
+| `args`      | Opcional. Argumentos del comando                                           |
+| `env`       | Opcional. Variables de entorno. Los valores pueden usar `${env:NAME}`      |
+| `cwd`       | Opcional. Directorio de trabajo                                            |
 | `timeoutMs` | Opcional. Tiempo de espera en milisegundos. `timeout_ms` también se acepta |
-| `stderr` | Opcional. `inherit` (por defecto) o `pipe` |
+| `stderr`    | Opcional. `inherit` (por defecto) o `pipe`                                 |
 
 ### `http`
 
-| Campo | Descripción |
-| --- | --- |
-| `url` | Requerido. URL del servidor |
-| `headers` | Opcional. Cabeceras de solicitud. Los valores pueden usar `${env:NAME}` |
+| Campo       | Descripción                                                                |
+| ----------- | -------------------------------------------------------------------------- |
+| `url`       | Requerido. URL del servidor                                                |
+| `headers`   | Opcional. Cabeceras de solicitud. Los valores pueden usar `${env:NAME}`    |
 | `timeoutMs` | Opcional. Tiempo de espera en milisegundos. `timeout_ms` también se acepta |
 
 ## Ejemplo

@@ -5,9 +5,9 @@ description: 用户 mcp.json 加上工作区 .spirit/mcp.json。同名 server �
 
 MCP 服务器从 Spirit 外部提供工具、资源和提示。
 
-| 范围 | 路径 |
-| --- | --- |
-| 用户 | `{spiritDataDir}/mcp.json` |
+| 范围   | 路径                           |
+| ------ | ------------------------------ |
+| 用户   | `{spiritDataDir}/mcp.json`     |
 | 工作区 | `{workspace}/.spirit/mcp.json` |
 
 两份文件定义了同名 server 时，以**工作区**那条为准。
@@ -20,33 +20,33 @@ MCP 工具并进 Agent 已有的工具列表。高风险时仍走[审批](../age
 
 根对象只有 `servers`。每台 server 必须带 `transport`，`type` 为 `stdio` 或 `http`。
 
-| 参数 | 说明 |
-| --- | --- |
-| `servers` | 对象。键是 server 名称 |
-| `displayName` | 可选。界面显示名，默认用 server 名称。也接受 `display_name` |
-| `enabled` | 可选。默认 `true` |
-| `capabilities.tools` | 可选。默认 `true` |
-| `capabilities.resources` | 可选。默认 `true` |
-| `capabilities.prompts` | 可选。默认 `true` |
-| `transport.type` | 必填。`stdio` 或 `http` |
+| 参数                     | 说明                                                        |
+| ------------------------ | ----------------------------------------------------------- |
+| `servers`                | 对象。键是 server 名称                                      |
+| `displayName`            | 可选。界面显示名，默认用 server 名称。也接受 `display_name` |
+| `enabled`                | 可选。默认 `true`                                           |
+| `capabilities.tools`     | 可选。默认 `true`                                           |
+| `capabilities.resources` | 可选。默认 `true`                                           |
+| `capabilities.prompts`   | 可选。默认 `true`                                           |
+| `transport.type`         | 必填。`stdio` 或 `http`                                     |
 
 ### `stdio`
 
-| 参数 | 说明 |
-| --- | --- |
-| `command` | 必填。启动命令 |
-| `args` | 可选。命令参数 |
-| `env` | 可选。环境变量。值可用 `${env:NAME}` |
-| `cwd` | 可选。工作目录 |
+| 参数        | 说明                                    |
+| ----------- | --------------------------------------- |
+| `command`   | 必填。启动命令                          |
+| `args`      | 可选。命令参数                          |
+| `env`       | 可选。环境变量。值可用 `${env:NAME}`    |
+| `cwd`       | 可选。工作目录                          |
 | `timeoutMs` | 可选。超时（毫秒）。也接受 `timeout_ms` |
-| `stderr` | 可选。`inherit`（默认）或 `pipe` |
+| `stderr`    | 可选。`inherit`（默认）或 `pipe`        |
 
 ### `http`
 
-| 参数 | 说明 |
-| --- | --- |
-| `url` | 必填。服务地址 |
-| `headers` | 可选。请求头。值可用 `${env:NAME}` |
+| 参数        | 说明                                    |
+| ----------- | --------------------------------------- |
+| `url`       | 必填。服务地址                          |
+| `headers`   | 可选。请求头。值可用 `${env:NAME}`      |
 | `timeoutMs` | 可选。超时（毫秒）。也接受 `timeout_ms` |
 
 ## 示例

@@ -7,14 +7,14 @@ Der Agent kann `subagent` aufrufen, um eine untergeordnete Sitzung zu starten. D
 
 ## Argumente
 
-| Feld | Erforderlich | Rolle |
-| --- | --- | --- |
-| `task` | ja | Was das Kind tun soll |
-| `success_criteria` | nein | Woran das Kind erkennt, dass es fertig ist |
-| `context_summary` | nein | Kurzer Hintergrund, den das Kind nicht neu entdecken muss |
-| `files_to_inspect` | nein | Pfade, die zuerst gelesen werden sollen |
-| `expected_output` | nein | Form des Ergebnisses, das das Elternteil zurückhaben möchte |
-| `worktree` | nein | `true`, um in einem isolierten git Worktree zu bearbeiten |
+| Feld               | Erforderlich | Rolle                                                       |
+| ------------------ | ------------ | ----------------------------------------------------------- |
+| `task`             | ja           | Was das Kind tun soll                                       |
+| `success_criteria` | nein         | Woran das Kind erkennt, dass es fertig ist                  |
+| `context_summary`  | nein         | Kurzer Hintergrund, den das Kind nicht neu entdecken muss   |
+| `files_to_inspect` | nein         | Pfade, die zuerst gelesen werden sollen                     |
+| `expected_output`  | nein         | Form des Ergebnisses, das das Elternteil zurückhaben möchte |
+| `worktree`         | nein         | `true`, um in einem isolierten git Worktree zu bearbeiten   |
 
 Verwenden Sie `worktree: true`, wenn das Kind Dateien bearbeitet und andere Kinder gleichzeitig bearbeiten können. Lassen Sie es für reine Lesevorgänge weg.
 

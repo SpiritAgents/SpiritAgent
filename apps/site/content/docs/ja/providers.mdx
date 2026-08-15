@@ -9,12 +9,12 @@ Spirit AgentはBYOKです。プロバイダーのコンソールでキーを作�
 
 Spiritは4つのトランスポートのいずれかでプロバイダーと通信します。ウィザードはタイプを固定するか、選択させます。
 
-| トランスポート | ウィザードのラベル | 一般的な用途 |
-| --- | --- | --- |
-| `openai-compatible` | Chat Completions API | ほとんどのOpenAI互換エンドポイント |
-| `open-responses` | Responses API / Open Responses API | OpenAI、Azure、Vercel AI Gateway、Hugging Face、およびオプションのゲートウェイパス |
-| `anthropic` | Messages API | Anthropic、MiniMax、およびオプションのMessages互換エンドポイント |
-| `bedrock` | Amazon Bedrock | Amazon Bedrockのみ |
+| トランスポート      | ウィザードのラベル                 | 一般的な用途                                                                       |
+| ------------------- | ---------------------------------- | ---------------------------------------------------------------------------------- |
+| `openai-compatible` | Chat Completions API               | ほとんどのOpenAI互換エンドポイント                                                 |
+| `open-responses`    | Responses API / Open Responses API | OpenAI、Azure、Vercel AI Gateway、Hugging Face、およびオプションのゲートウェイパス |
+| `anthropic`         | Messages API                       | Anthropic、MiniMax、およびオプションのMessages互換エンドポイント                   |
+| `bedrock`           | Amazon Bedrock                     | Amazon Bedrockのみ                                                                 |
 
 Google GeminiとVertex AIは常にChat Completionsを使用します。プロファイルがResponsesまたはMessagesを要求する場合、Spiritは`openai-compatible`にフォールバックします。
 

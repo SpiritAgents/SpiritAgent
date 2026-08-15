@@ -9,42 +9,42 @@ description: 설정 맵, 파일 / Git / 브라우저, 마켓플레이스, 자동
 
 ### 기본
 
-| 탭 | 내용 |
-| --- | --- |
-| 일반 | 알림, 트레이 / 메뉴 바 아이콘 |
+| 탭   | 내용                                     |
+| ---- | ---------------------------------------- |
+| 일반 | 알림, 트레이 / 메뉴 바 아이콘            |
 | 모양 | 테마, 글꼴, UI 언어, mica / 흐림, 포인터 |
 
 ### 기능
 
-| 탭 | 내용 |
-| --- | --- |
-| 모델 | 공급자 연결, 모델 목록, 키 |
-| 에이전트 | LSP, 커밋 / PR 속성 |
-| 탭 | 편집기 탭 완성 |
-| Skills | [Skills](./customize/skills.mdx) 발견 및 생성 |
-| 규칙 | [규칙](./customize/rules.mdx) 슬롯 |
-| MCP | [MCP](./customize/mcp.mdx) 서버 |
-| 훅 | [훅](./customize/hooks.mdx) |
-| Dreams | [Dreams](./customize/dreams.mdx) (베타) |
+| 탭       | 내용                                          |
+| -------- | --------------------------------------------- |
+| 모델     | 공급자 연결, 모델 목록, 키                    |
+| 에이전트 | LSP, 커밋 / PR 속성                           |
+| 탭       | 편집기 탭 완성                                |
+| Skills   | [Skills](./customize/skills.mdx) 발견 및 생성 |
+| 규칙     | [규칙](./customize/rules.mdx) 슬롯            |
+| MCP      | [MCP](./customize/mcp.mdx) 서버               |
+| 훅       | [훅](./customize/hooks.mdx)                   |
+| Dreams   | [Dreams](./customize/dreams.mdx) (베타)       |
 
 ### 연결
 
-| 탭 | 내용 |
-| --- | --- |
-| 네트워크 | LLM HTTP 버전, **웹 원격 액세스** |
-| 통합 | [GitHub 기기 로그인](./customize/integrations.mdx) |
-| 확장 프로그램 | 설치된 확장 프로그램, ZIP 가져오기 |
+| 탭            | 내용                                               |
+| ------------- | -------------------------------------------------- |
+| 네트워크      | LLM HTTP 버전, **웹 원격 액세스**                  |
+| 통합          | [GitHub 기기 로그인](./customize/integrations.mdx) |
+| 확장 프로그램 | 설치된 확장 프로그램, ZIP 가져오기                 |
 
 개발자 탭은 Vite 개발 빌드에서만 나타납니다.
 
 ## 작업공간 패널
 
-| 탭 | 역할 |
-| --- | --- |
-| 파일 | 트리, Monaco, Markdown 미리보기, `plans/` |
-| Git | 변경 사항, 기록, 커밋 / 푸시 / 병합 칩 |
+| 탭       | 역할                                                 |
+| -------- | ---------------------------------------------------- |
+| 파일     | 트리, Monaco, Markdown 미리보기, `plans/`            |
+| Git      | 변경 사항, 기록, 커밋 / 푸시 / 병합 칩               |
 | 브라우저 | 임베디드 브라우저 + 요소 선택기 (**Electron 전용**)​ |
-| 셸 | 임베디드 PTY (**Electron 전용**)​ |
+| 셸       | 임베디드 PTY (**Electron 전용**)​                    |
 
 ### 셸
 
@@ -64,15 +64,15 @@ CLI에는 임베디드 PTY 패널이 없습니다. 명령은 여전히 공유 �
 
 **설정 → 에이전트**에서 언어 서버를 켜고, 누락된 경우 공급자를 설치하세요. 서버가 준비되면 에이전트는 [`get_diagnostics`](./agent/tools.mdx)를 호출할 수 있습니다.
 
-| ID | 언어 | 설치 방법 |
-| --- | --- | --- |
-| `typescript-language-server` | TypeScript, JavaScript | npm (`typescript-language-server`)​ |
-| `pyright` | Python | npm (`pyright`) |
-| `gopls` | Go | Go 도구 체인 |
-| `rust-analyzer` | Rust | rustup |
-| `clangd` | C, C++ | 플랫폼 패키지 (예: Homebrew 또는 winget) |
-| `jdtls` | Java | 수동 |
-| `omnisharp` | C# | .NET |
+| ID                           | 언어                   | 설치 방법                                |
+| ---------------------------- | ---------------------- | ---------------------------------------- |
+| `typescript-language-server` | TypeScript, JavaScript | npm (`typescript-language-server`)​      |
+| `pyright`                    | Python                 | npm (`pyright`)                          |
+| `gopls`                      | Go                     | Go 도구 체인                             |
+| `rust-analyzer`              | Rust                   | rustup                                   |
+| `clangd`                     | C, C++                 | 플랫폼 패키지 (예: Homebrew 또는 winget) |
+| `jdtls`                      | Java                   | 수동                                     |
+| `omnisharp`                  | C#                     | .NET                                     |
 
 clangd 및 jdtls는 번들로 제공되지 않습니다. 직접 설치한 후 설정 → 에이전트로 돌아오세요.
 

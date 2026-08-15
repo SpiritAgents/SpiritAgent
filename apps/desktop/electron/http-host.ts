@@ -1102,10 +1102,15 @@ async function handleApiRequest({
   }
 
   if (request.method === "POST" && pathname === "/api/reset") {
-    writeJson(request, response, 200, await runHostCommand("resetSession", {
-      activate: false,
-      ...(jsonBody?.clientHost ? { clientHost: jsonBody.clientHost } : {}),
-    }));
+    writeJson(
+      request,
+      response,
+      200,
+      await runHostCommand("resetSession", {
+        activate: false,
+        ...(jsonBody?.clientHost ? { clientHost: jsonBody.clientHost } : {}),
+      }),
+    );
     return;
   }
 

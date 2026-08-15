@@ -19,10 +19,10 @@ Wenn `preToolUse` `ask` zurückgibt, werden Sie auch bei [Auto-Genehmigung oder 
 
 ## Wo sie sich befinden
 
-| Gültigkeitsbereich | Konfiguration | Skripte |
-| --- | --- | --- |
-| Benutzer | `{spiritDataDir}/hooks.json` | `{spiritDataDir}/hooks/` |
-| Arbeitsbereich | `{workspace}/.spirit/hooks.json` | `{workspace}/.spirit/hooks/` |
+| Gültigkeitsbereich | Konfiguration                    | Skripte                      |
+| ------------------ | -------------------------------- | ---------------------------- |
+| Benutzer           | `{spiritDataDir}/hooks.json`     | `{spiritDataDir}/hooks/`     |
+| Arbeitsbereich     | `{workspace}/.spirit/hooks.json` | `{workspace}/.spirit/hooks/` |
 
 Beim gleichen Ereignis werden Benutzereinträge und Arbeitsbereichseinträge in dieser Reihenfolge verkettet. Sie überschreiben sich nicht gegenseitig.
 
@@ -32,19 +32,19 @@ Verwalten Sie sie unter **Einstellungen → Hooks**. Validieren Sie sie über di
 
 Das Root-Objekt muss `version` und `hooks` enthalten. `version` akzeptiert derzeit nur `1`.
 
-| Feld | Beschreibung |
-| --- | --- |
-| `version` | Erforderlich. Muss `1` sein |
-| `hooks` | Erforderlich. Objekt. Schlüssel sind Ereignisnamen; Werte sind Arrays von Hooks für dieses Ereignis |
+| Feld      | Beschreibung                                                                                        |
+| --------- | --------------------------------------------------------------------------------------------------- |
+| `version` | Erforderlich. Muss `1` sein                                                                         |
+| `hooks`   | Erforderlich. Objekt. Schlüssel sind Ereignisnamen; Werte sind Arrays von Hooks für dieses Ereignis |
 
 ### Jeder Hook
 
-| Feld | Beschreibung |
-| --- | --- |
-| `command` | Erforderlich. Skriptpfad. Ein relativer Pfad wird relativ zum Konfigurationsverzeichnis aufgelöst und muss innerhalb desselben bleiben |
-| `timeout` | Optional. Timeout in Sekunden. Muss eine positive Zahl sein. Standardwert ist `30` |
+| Feld         | Beschreibung                                                                                                                                                                |
+| ------------ | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `command`    | Erforderlich. Skriptpfad. Ein relativer Pfad wird relativ zum Konfigurationsverzeichnis aufgelöst und muss innerhalb desselben bleiben                                      |
+| `timeout`    | Optional. Timeout in Sekunden. Muss eine positive Zahl sein. Standardwert ist `30`                                                                                          |
 | `failClosed` | Optional. Ob blockiert werden soll, wenn das Skript abstürzt, eine Zeitüberschreitung auftritt oder ungültiges JSON auf stdout schreibt. Standardmäßig wird nicht blockiert |
-| `matcher` | Optional. Nicht-leerer regulärer Ausdruck. Entspricht dem Toolnamen bei `preToolUse` / `postToolUse` oder dem Subagent-Typ bei `subagentStart` / `subagentEnd` |
+| `matcher`    | Optional. Nicht-leerer regulärer Ausdruck. Entspricht dem Toolnamen bei `preToolUse` / `postToolUse` oder dem Subagent-Typ bei `subagentStart` / `subagentEnd`              |
 
 ## Beispiel
 

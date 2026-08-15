@@ -71,10 +71,7 @@
       "runningToolHeadline": "Просмотр",
       "runningToolHeadlineSucceeded": "Прочитано",
       "runningToolHeadlineDetail": "файлы рабочей области",
-      "runningToolDetails": [
-        "Открываю реализацию Hero.",
-        "Изучаю оболочку окна Desktop."
-      ],
+      "runningToolDetails": ["Открываю реализацию Hero.", "Изучаю оболочку окна Desktop."],
       "runningToolOutput": "Найдена одна секция Hero, переиспользуемая оболочка Desktop и статичное пустое состояние беседы.",
       "designDemo": {
         "demoUserPrompt": "Улучшите этот заголовок — сделайте его более точным и убедительным.",
@@ -258,11 +255,7 @@
   },
   "landing": {
     "sectionAria": "Содержимое Spirit Agent",
-    "featureHeading": [
-      "Ваши модели.",
-      "Ваши ключи.",
-      "Ваш контроль."
-    ],
+    "featureHeading": ["Ваши модели.", "Ваши ключи.", "Ваш контроль."],
     "featureBody": "Spirit не привязывает вас к облачному стеку. Принесите ключ от любого провайдера, добавьте его один раз и используйте один и тот же агентский процесс для всех.",
     "agent": {
       "sectionAria": "Продуктивность Spirit Agent",

@@ -44,7 +44,8 @@ export function proxy(request: NextRequest) {
     const locale = localeFromLocalizedPath(pathname);
     const page = markdownPageForPath(pathname);
     if (locale && page) {
-      const body = page === "download" ? renderDownloadMarkdown(locale) : renderSiteMarkdown(locale);
+      const body =
+        page === "download" ? renderDownloadMarkdown(locale) : renderSiteMarkdown(locale);
       return new NextResponse(body, {
         headers: {
           "Content-Type": "text/markdown; charset=utf-8",

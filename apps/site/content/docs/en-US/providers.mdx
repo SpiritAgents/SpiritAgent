@@ -9,12 +9,12 @@ The connect wizard is **Settings → Models** on Desktop, or `/model add` / `spi
 
 Spirit talks to providers over one of four transports. The wizard either fixes the type or lets you pick.
 
-| Transport | Wizard label | Typical use |
-| --- | --- | --- |
-| `openai-compatible` | Chat Completions API | Most OpenAI-compatible endpoints |
-| `open-responses` | Responses API / Open Responses API | OpenAI, Azure, Vercel AI Gateway, Hugging Face, and optional gateway paths |
-| `anthropic` | Messages API | Anthropic, MiniMax, and optional Messages-compatible endpoints |
-| `bedrock` | Amazon Bedrock | Amazon Bedrock only |
+| Transport           | Wizard label                       | Typical use                                                                |
+| ------------------- | ---------------------------------- | -------------------------------------------------------------------------- |
+| `openai-compatible` | Chat Completions API               | Most OpenAI-compatible endpoints                                           |
+| `open-responses`    | Responses API / Open Responses API | OpenAI, Azure, Vercel AI Gateway, Hugging Face, and optional gateway paths |
+| `anthropic`         | Messages API                       | Anthropic, MiniMax, and optional Messages-compatible endpoints             |
+| `bedrock`           | Amazon Bedrock                     | Amazon Bedrock only                                                        |
 
 Google Gemini and Vertex AI always use Chat Completions. If a profile asks for Responses or Messages, Spirit falls back to `openai-compatible`.
 

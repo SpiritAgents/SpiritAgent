@@ -5,30 +5,30 @@ description: Outils que l'agent peut appeler. Certains n'apparaissent que lorsqu
 
 Ces outils opèrent sur l'espace de travail que vous avez ouvert. Le mode Demander peut lire et rechercher ; il ne peut pas créer, éditer, supprimer, appliquer des correctifs, exécuter `shell`, ni générer des images ou des vidéos.
 
-| Outil | Rôle |
-| --- | --- |
-| `read_file` | Lire un fichier, ou lire des images et des vidéos |
-| `create_file` | Créer un fichier |
-| `edit_file` | Modifier un fichier existant |
-| `delete_file` | Supprimer un fichier |
-| `apply_patch` | Exposé lorsque le modèle et le transport sont éligibles (par exemple un modèle GPT fourni par OpenAI) ; remplace `create_file` / `edit_file` / `delete_file` sur ce chemin |
-| `glob` | Trouver des chemins par glob (respecte `.gitignore`) |
-| `grep` | Rechercher le contenu des fichiers (respecte `.gitignore`) |
-| `ls` | Lister un répertoire, non récursif. Le chemin doit être absolu |
-| `shell` | Exécuter une commande avec `reason` et `command`. Le mode Demander ne peut pas l'appeler |
-| `web_fetch` | Récupérer une URL `http` ou `https` et renvoyer du Markdown. Un outil hôte, pas une recherche de fournisseur |
-| `web_search` | Exposé lorsque le fournisseur du modèle actuel prend en charge la recherche Web. Renvoie les titres, les URL et des extraits |
-| `generate_image` | Exposé après avoir attribué un modèle d'image dans **Paramètres → Modèles**. Génère une image. Le mode Demander ne peut pas l'appeler |
-| `generate_video` | Exposé après avoir attribué un modèle vidéo dans **Paramètres → Modèles**. Génère une courte vidéo. Le mode Demander ne peut pas l'appeler |
-| `get_diagnostics` | Exposé lorsqu'un serveur de langage est prêt. Passez des chemins ; renvoie les erreurs et avertissements. Le mode Demander peut l'utiliser |
-| `ask_questions` | Questions structurées ; le tour attend jusqu'à ce que vous répondiez. Voir [Poser des questions](./ask-questions.mdx) |
-| `subagent` | Déléguer une tâche ciblée à une session enfant. Voir [Sous-agents](./subagents.mdx) |
-| `create_plan` | Mode Plan uniquement. Écrit `plans/{name}.md`. Voir [Modes](./modes.mdx) |
-| `todo_list` | Lister les tâches à faire pour la session en cours |
-| `todo_write` | Remplacer la liste complète des tâches à faire pour la session en cours |
-| `finish_task` | Exposé uniquement lorsque [Loop](./loop.mdx) est activé. Marque la tâche en cours comme terminée |
-| `dream_list` | Lorsque [Dreams](../customize/dreams.mdx) est disponible sur Desktop, lister les résumés non expirés pour l'espace de travail et la branche actuels |
-| `dream_read` | Lire un Dream complet par son identifiant. Les outils d'écriture appartiennent au collecteur en arrière-plan, pas à la conversation |
+| Outil             | Rôle                                                                                                                                                                       |
+| ----------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `read_file`       | Lire un fichier, ou lire des images et des vidéos                                                                                                                          |
+| `create_file`     | Créer un fichier                                                                                                                                                           |
+| `edit_file`       | Modifier un fichier existant                                                                                                                                               |
+| `delete_file`     | Supprimer un fichier                                                                                                                                                       |
+| `apply_patch`     | Exposé lorsque le modèle et le transport sont éligibles (par exemple un modèle GPT fourni par OpenAI) ; remplace `create_file` / `edit_file` / `delete_file` sur ce chemin |
+| `glob`            | Trouver des chemins par glob (respecte `.gitignore`)                                                                                                                       |
+| `grep`            | Rechercher le contenu des fichiers (respecte `.gitignore`)                                                                                                                 |
+| `ls`              | Lister un répertoire, non récursif. Le chemin doit être absolu                                                                                                             |
+| `shell`           | Exécuter une commande avec `reason` et `command`. Le mode Demander ne peut pas l'appeler                                                                                   |
+| `web_fetch`       | Récupérer une URL `http` ou `https` et renvoyer du Markdown. Un outil hôte, pas une recherche de fournisseur                                                               |
+| `web_search`      | Exposé lorsque le fournisseur du modèle actuel prend en charge la recherche Web. Renvoie les titres, les URL et des extraits                                               |
+| `generate_image`  | Exposé après avoir attribué un modèle d'image dans **Paramètres → Modèles**. Génère une image. Le mode Demander ne peut pas l'appeler                                      |
+| `generate_video`  | Exposé après avoir attribué un modèle vidéo dans **Paramètres → Modèles**. Génère une courte vidéo. Le mode Demander ne peut pas l'appeler                                 |
+| `get_diagnostics` | Exposé lorsqu'un serveur de langage est prêt. Passez des chemins ; renvoie les erreurs et avertissements. Le mode Demander peut l'utiliser                                 |
+| `ask_questions`   | Questions structurées ; le tour attend jusqu'à ce que vous répondiez. Voir [Poser des questions](./ask-questions.mdx)                                                      |
+| `subagent`        | Déléguer une tâche ciblée à une session enfant. Voir [Sous-agents](./subagents.mdx)                                                                                        |
+| `create_plan`     | Mode Plan uniquement. Écrit `plans/{name}.md`. Voir [Modes](./modes.mdx)                                                                                                   |
+| `todo_list`       | Lister les tâches à faire pour la session en cours                                                                                                                         |
+| `todo_write`      | Remplacer la liste complète des tâches à faire pour la session en cours                                                                                                    |
+| `finish_task`     | Exposé uniquement lorsque [Loop](./loop.mdx) est activé. Marque la tâche en cours comme terminée                                                                           |
+| `dream_list`      | Lorsque [Dreams](../customize/dreams.mdx) est disponible sur Desktop, lister les résumés non expirés pour l'espace de travail et la branche actuels                        |
+| `dream_read`      | Lire un Dream complet par son identifiant. Les outils d'écriture appartiennent au collecteur en arrière-plan, pas à la conversation                                        |
 
 Les modifications et suppressions attendent [approbation](./approvals.mdx) au niveau par défaut. `shell` attend aussi.
 

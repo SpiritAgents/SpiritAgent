@@ -5,9 +5,9 @@ description: 用户、.spirit、.agents 下的 Skill，以及内置的 create-ru
 
 Skill 是带 `SKILL.md` 的文件夹。Spirit 从三处发现：
 
-| 范围 | 路径 |
-| --- | --- |
-| 用户 | `{spiritDataDir}/skills/{name}/SKILL.md` |
+| 范围          | 路径                                         |
+| ------------- | -------------------------------------------- |
+| 用户          | `{spiritDataDir}/skills/{name}/SKILL.md`     |
 | 工作区 Spirit | `{workspace}/.spirit/skills/{name}/SKILL.md` |
 | 工作区 agents | `{workspace}/.agents/skills/{name}/SKILL.md` |
 
@@ -17,10 +17,10 @@ Skill 是带 `SKILL.md` 的文件夹。Spirit 从三处发现：
 
 `SKILL.md` 必须以 Frontmatter 开头。缺少 `name` 或 `description` 时不会被发现。
 
-| 参数 | 说明 |
-| --- | --- |
-| `name` | 必填。Skill 名称，须与文件夹名一致。1–64 个字符，仅小写字母、数字和连字符 |
-| `description` | 必填。简短说明 |
+| 参数          | 说明                                                                      |
+| ------------- | ------------------------------------------------------------------------- |
+| `name`        | 必填。Skill 名称，须与文件夹名一致。1–64 个字符，仅小写字母、数字和连字符 |
+| `description` | 必填。简短说明                                                            |
 
 ## 内置 Skills
 

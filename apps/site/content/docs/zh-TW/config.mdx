@@ -9,12 +9,12 @@ Spirit 將二進位檔和資料存放在不同的位置。把它們混淆是「�
 
 使用 `SPIRIT_AGENT_DATA_DIR` 覆寫。伺服器也可以使用 `SPIRIT_SERVER_DATA_DIR`（優先於前者）。
 
-| 作業系統 | 預設 |
-| --- | --- |
-| macOS | `~/Library/Application Support/SpiritAgent` |
-| Windows | `%APPDATA%\SpiritAgent` |
-| Linux | `$XDG_DATA_HOME/SpiritAgent` 或 `~/.local/share/SpiritAgent` |
-| 後備 | `~/.spirit-agent` |
+| 作業系統 | 預設                                                         |
+| -------- | ------------------------------------------------------------ |
+| macOS    | `~/Library/Application Support/SpiritAgent`                  |
+| Windows  | `%APPDATA%\SpiritAgent`                                      |
+| Linux    | `$XDG_DATA_HOME/SpiritAgent` 或 `~/.local/share/SpiritAgent` |
+| 後備     | `~/.spirit-agent`                                            |
 
 典型檔案：
 
@@ -50,23 +50,23 @@ CLI 二進位檔位於 `SPIRIT_HOME`（`~/.spirit` 或 `%LOCALAPPDATA%\Spirit`�
 
 ## 工作區 `.spirit/`
 
-| 路徑 | 角色 |
-| --- | --- |
-| `.spirit/rule.md` | 工作區[規則](./customize/rules.mdx) |
-| `.spirit/skills/` | 工作區[技能](./customize/skills.mdx) |
-| `.spirit/mcp.json` | 工作區 [MCP](./customize/mcp.mdx) |
-| `.spirit/hooks.json` | 工作區[鉤子](./customize/hooks.mdx) |
+| 路徑                 | 角色                                 |
+| -------------------- | ------------------------------------ |
+| `.spirit/rule.md`    | 工作區[規則](./customize/rules.mdx)  |
+| `.spirit/skills/`    | 工作區[技能](./customize/skills.mdx) |
+| `.spirit/mcp.json`   | 工作區 [MCP](./customize/mcp.mdx)    |
+| `.spirit/hooks.json` | 工作區[鉤子](./customize/hooks.mdx)  |
 
 也使用：`{workspace}/AGENTS.md`、`{workspace}/.agents/skills/`、`{workspace}/plans/`。
 
 ## 環境變數
 
-| 變數 | 角色 |
-| --- | --- |
-| `SPIRIT_AGENT_DATA_DIR` | 資料目錄 |
-| `SPIRIT_SERVER_DATA_DIR` | 伺服器資料目錄（優先） |
-| `SPIRIT_ACP_DATA_DIR` / `SPIRIT_ACP_WORKSPACE` | [ACP](./acp.mdx) |
-| `SPIRIT_HOME` / `SPIRIT_VERSION` / `SPIRIT_DOWNLOAD_HOST` | CLI 安裝程式 |
-| `SPIRIT_API_KEY` / `SPIRIT_API_BASE` | [CLI](./cli.mdx) 程序覆寫 |
-| `SPIRIT_WEB_HOST` / `SPIRIT_WEB_PORT` / `SPIRIT_DESKTOP_WEB_HOST` | 桌面網頁主機 |
-| `SPIRIT_TERMINAL_SHELL` | 桌面 PTY Shell |
+| 變數                                                              | 角色                      |
+| ----------------------------------------------------------------- | ------------------------- |
+| `SPIRIT_AGENT_DATA_DIR`                                           | 資料目錄                  |
+| `SPIRIT_SERVER_DATA_DIR`                                          | 伺服器資料目錄（優先）    |
+| `SPIRIT_ACP_DATA_DIR` / `SPIRIT_ACP_WORKSPACE`                    | [ACP](./acp.mdx)          |
+| `SPIRIT_HOME` / `SPIRIT_VERSION` / `SPIRIT_DOWNLOAD_HOST`         | CLI 安裝程式              |
+| `SPIRIT_API_KEY` / `SPIRIT_API_BASE`                              | [CLI](./cli.mdx) 程序覆寫 |
+| `SPIRIT_WEB_HOST` / `SPIRIT_WEB_PORT` / `SPIRIT_DESKTOP_WEB_HOST` | 桌面網頁主機              |
+| `SPIRIT_TERMINAL_SHELL`                                           | 桌面 PTY Shell            |

@@ -19,9 +19,9 @@ Los hooks son scripts que Spirit ejecuta en puntos fijos. Pueden permitir una he
 
 ## Dónde se encuentran
 
-| Alcance | Config | Scripts |
-| --- | --- | --- |
-| Usuario | `{spiritDataDir}/hooks.json` | `{spiritDataDir}/hooks/` |
+| Alcance            | Config                           | Scripts                      |
+| ------------------ | -------------------------------- | ---------------------------- |
+| Usuario            | `{spiritDataDir}/hooks.json`     | `{spiritDataDir}/hooks/`     |
 | Espacio de trabajo | `{workspace}/.spirit/hooks.json` | `{workspace}/.spirit/hooks/` |
 
 En el mismo evento, las entradas de usuario y las del espacio de trabajo se concatenan en ese orden. No se sobrescriben entre sí.
@@ -32,19 +32,19 @@ Gestionarlos en **Configuración → Hooks**. Valida desde la CLI con `spirit ho
 
 El objeto raíz debe incluir `version` y `hooks`. `version` actualmente solo acepta `1`.
 
-| Campo | Descripción |
-| --- | --- |
-| `version` | Requerido. Debe ser `1` |
-| `hooks` | Requerido. Objeto. Las claves son nombres de eventos; los valores son arreglos de hooks para ese evento |
+| Campo     | Descripción                                                                                             |
+| --------- | ------------------------------------------------------------------------------------------------------- |
+| `version` | Requerido. Debe ser `1`                                                                                 |
+| `hooks`   | Requerido. Objeto. Las claves son nombres de eventos; los valores son arreglos de hooks para ese evento |
 
 ### Cada hook
 
-| Campo | Descripción |
-| --- | --- |
-| `command` | Requerido. Ruta del script. Una ruta relativa se resuelve contra el directorio de configuración y debe permanecer dentro de él |
-| `timeout` | Opcional. Tiempo de espera en segundos. Debe ser un número positivo. Por defecto es `30` |
-| `failClosed` | Opcional. Si bloquear cuando el script se bloquea, expira o escribe JSON no válido en la salida estándar. Por defecto no bloquea |
-| `matcher` | Opcional. Expresión regular no vacía. Coincide con el nombre de la herramienta en `preToolUse` / `postToolUse`, o el tipo de subagente en `subagentStart` / `subagentEnd` |
+| Campo        | Descripción                                                                                                                                                               |
+| ------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `command`    | Requerido. Ruta del script. Una ruta relativa se resuelve contra el directorio de configuración y debe permanecer dentro de él                                            |
+| `timeout`    | Opcional. Tiempo de espera en segundos. Debe ser un número positivo. Por defecto es `30`                                                                                  |
+| `failClosed` | Opcional. Si bloquear cuando el script se bloquea, expira o escribe JSON no válido en la salida estándar. Por defecto no bloquea                                          |
+| `matcher`    | Opcional. Expresión regular no vacía. Coincide con el nombre de la herramienta en `preToolUse` / `postToolUse`, o el tipo de subagente en `subagentStart` / `subagentEnd` |
 
 ## Ejemplo
 

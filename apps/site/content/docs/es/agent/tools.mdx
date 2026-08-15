@@ -5,30 +5,30 @@ description: Herramientas que el agente puede llamar. Algunas aparecen solo cuan
 
 Estas herramientas operan en el espacio de trabajo que abriste. El modo Ask puede leer y buscar; no puede crear, editar, eliminar, aplicar parches, ejecutar `shell`, ni generar imágenes o videos.
 
-| Herramienta | Rol |
-| --- | --- |
-| `read_file` | Lee un archivo, o imágenes y videos |
-| `create_file` | Crea un archivo |
-| `edit_file` | Edita un archivo existente |
-| `delete_file` | Elimina un archivo |
-| `apply_patch` | Se expone cuando el modelo y el transporte son elegibles (por ejemplo, un modelo GPT de un proveedor OpenAI); reemplaza `create_file` / `edit_file` / `delete_file` en esa ruta |
-| `glob` | Encuentra rutas por glob (respeta `.gitignore`) |
-| `grep` | Busca contenido de archivos (respeta `.gitignore`) |
-| `ls` | Lista un directorio, no recursivo. La ruta debe ser absoluta |
-| `shell` | Ejecuta un comando con `reason` y `command`. El modo Ask no puede llamarlo |
-| `web_fetch` | Obtiene una URL `http` o `https` y devuelve Markdown. Es una herramienta del host, no una búsqueda del proveedor |
-| `web_search` | Se expone cuando el proveedor de modelos actual soporta búsqueda web. Devuelve títulos, URLs y fragmentos |
-| `generate_image` | Se expone después de que asignas un modelo de imagen en **Settings → Models**. Genera una imagen. El modo Ask no puede llamarlo |
-| `generate_video` | Se expone después de que asignas un modelo de video en **Settings → Models**. Genera un video corto. El modo Ask no puede llamarlo |
-| `get_diagnostics` | Se expone cuando un servidor de lenguaje está listo. Pasa rutas; devuelve errores y advertencias. El modo Ask puede usarlo |
-| `ask_questions` | Preguntas estructuradas; el turno espera hasta que respondas. Ver [Hacer preguntas](./ask-questions.mdx) |
-| `subagent` | Delega una tarea delimitada a una sesión hija. Ver [Subagentes](./subagents.mdx) |
-| `create_plan` | Solo modo Plan. Escribe `plans/{name}.md`. Ver [Modos](./modes.mdx) |
-| `todo_list` | Lista las tareas pendientes de la sesión actual |
-| `todo_write` | Reemplaza la lista completa de tareas pendientes de la sesión actual |
-| `finish_task` | Se expone solo cuando [Loop](./loop.mdx) está activado. Marca la tarea actual como completada |
-| `dream_list` | Cuando [Dreams](../customize/dreams.mdx) está disponible en Desktop, lista los resúmenes no expirados para el espacio de trabajo y la rama actuales |
-| `dream_read` | Lee un dream completo por id. Las herramientas de escritura pertenecen al recolector de fondo, no a la conversación |
+| Herramienta       | Rol                                                                                                                                                                             |
+| ----------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `read_file`       | Lee un archivo, o imágenes y videos                                                                                                                                             |
+| `create_file`     | Crea un archivo                                                                                                                                                                 |
+| `edit_file`       | Edita un archivo existente                                                                                                                                                      |
+| `delete_file`     | Elimina un archivo                                                                                                                                                              |
+| `apply_patch`     | Se expone cuando el modelo y el transporte son elegibles (por ejemplo, un modelo GPT de un proveedor OpenAI); reemplaza `create_file` / `edit_file` / `delete_file` en esa ruta |
+| `glob`            | Encuentra rutas por glob (respeta `.gitignore`)                                                                                                                                 |
+| `grep`            | Busca contenido de archivos (respeta `.gitignore`)                                                                                                                              |
+| `ls`              | Lista un directorio, no recursivo. La ruta debe ser absoluta                                                                                                                    |
+| `shell`           | Ejecuta un comando con `reason` y `command`. El modo Ask no puede llamarlo                                                                                                      |
+| `web_fetch`       | Obtiene una URL `http` o `https` y devuelve Markdown. Es una herramienta del host, no una búsqueda del proveedor                                                                |
+| `web_search`      | Se expone cuando el proveedor de modelos actual soporta búsqueda web. Devuelve títulos, URLs y fragmentos                                                                       |
+| `generate_image`  | Se expone después de que asignas un modelo de imagen en **Settings → Models**. Genera una imagen. El modo Ask no puede llamarlo                                                 |
+| `generate_video`  | Se expone después de que asignas un modelo de video en **Settings → Models**. Genera un video corto. El modo Ask no puede llamarlo                                              |
+| `get_diagnostics` | Se expone cuando un servidor de lenguaje está listo. Pasa rutas; devuelve errores y advertencias. El modo Ask puede usarlo                                                      |
+| `ask_questions`   | Preguntas estructuradas; el turno espera hasta que respondas. Ver [Hacer preguntas](./ask-questions.mdx)                                                                        |
+| `subagent`        | Delega una tarea delimitada a una sesión hija. Ver [Subagentes](./subagents.mdx)                                                                                                |
+| `create_plan`     | Solo modo Plan. Escribe `plans/{name}.md`. Ver [Modos](./modes.mdx)                                                                                                             |
+| `todo_list`       | Lista las tareas pendientes de la sesión actual                                                                                                                                 |
+| `todo_write`      | Reemplaza la lista completa de tareas pendientes de la sesión actual                                                                                                            |
+| `finish_task`     | Se expone solo cuando [Loop](./loop.mdx) está activado. Marca la tarea actual como completada                                                                                   |
+| `dream_list`      | Cuando [Dreams](../customize/dreams.mdx) está disponible en Desktop, lista los resúmenes no expirados para el espacio de trabajo y la rama actuales                             |
+| `dream_read`      | Lee un dream completo por id. Las herramientas de escritura pertenecen al recolector de fondo, no a la conversación                                                             |
 
 Las ediciones y eliminaciones esperan la [aprobación](./approvals.mdx) en el nivel predeterminado. `shell` también espera.
 

@@ -55,7 +55,11 @@ export function getLocaleLabel(locale: AppLocale): string {
 
 function matchLanguageTag(tag: string): AppLocale | null {
   const normalized = tag.toLowerCase();
-  if (normalized.startsWith("zh-hant") || normalized.startsWith("zh-tw") || normalized.startsWith("zh-hk")) {
+  if (
+    normalized.startsWith("zh-hant") ||
+    normalized.startsWith("zh-tw") ||
+    normalized.startsWith("zh-hk")
+  ) {
     return "zh-TW";
   }
   if (normalized.startsWith("zh")) {

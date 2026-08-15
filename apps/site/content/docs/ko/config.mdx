@@ -9,12 +9,12 @@ Spirit은 바이너리와 데이터를 서로 다른 위치에 저장합니다. 
 
 `SPIRIT_AGENT_DATA_DIR`로 재정의할 수 있습니다. 서버는 `SPIRIT_SERVER_DATA_DIR`도 사용할 수 있습니다(전자보다 우선).
 
-| OS | 기본값 |
-| --- | --- |
-| macOS | `~/Library/Application Support/SpiritAgent` |
-| Windows | `%APPDATA%\SpiritAgent` |
-| Linux | `$XDG_DATA_HOME/SpiritAgent` 또는 `~/.local/share/SpiritAgent` |
-| 폴백 | `~/.spirit-agent` |
+| OS      | 기본값                                                         |
+| ------- | -------------------------------------------------------------- |
+| macOS   | `~/Library/Application Support/SpiritAgent`                    |
+| Windows | `%APPDATA%\SpiritAgent`                                        |
+| Linux   | `$XDG_DATA_HOME/SpiritAgent` 또는 `~/.local/share/SpiritAgent` |
+| 폴백    | `~/.spirit-agent`                                              |
 
 일반적인 파일:
 
@@ -50,23 +50,23 @@ CLI 바이너리는 `SPIRIT_HOME` (`~/.spirit` 또는 `%LOCALAPPDATA%\Spirit`)�
 
 ## 작업공간 `.spirit/`
 
-| 경로 | 역할 |
-| --- | --- |
-| `.spirit/rule.md` | 작업공간 [규칙](./customize/rules.mdx) |
-| `.spirit/skills/` | 작업공간 [스킬](./customize/skills.mdx) |
-| `.spirit/mcp.json` | 작업공간 [MCP](./customize/mcp.mdx) |
-| `.spirit/hooks.json` | 작업공간 [훅](./customize/hooks.mdx) |
+| 경로                 | 역할                                    |
+| -------------------- | --------------------------------------- |
+| `.spirit/rule.md`    | 작업공간 [규칙](./customize/rules.mdx)  |
+| `.spirit/skills/`    | 작업공간 [스킬](./customize/skills.mdx) |
+| `.spirit/mcp.json`   | 작업공간 [MCP](./customize/mcp.mdx)     |
+| `.spirit/hooks.json` | 작업공간 [훅](./customize/hooks.mdx)    |
 
 또한 사용됨: `{workspace}/AGENTS.md`, `{workspace}/.agents/skills/`, `{workspace}/plans/`.
 
 ## 환경 변수
 
-| 변수 | 역할 |
-| --- | --- |
-| `SPIRIT_AGENT_DATA_DIR` | 데이터 디렉터리 |
-| `SPIRIT_SERVER_DATA_DIR` | 서버 데이터 디렉터리(우선) |
-| `SPIRIT_ACP_DATA_DIR` / `SPIRIT_ACP_WORKSPACE` | [ACP](./acp.mdx) |
-| `SPIRIT_HOME` / `SPIRIT_VERSION` / `SPIRIT_DOWNLOAD_HOST` | CLI 설치 프로그램 |
-| `SPIRIT_API_KEY` / `SPIRIT_API_BASE` | [CLI](./cli.mdx) 프로세스 재정의 |
-| `SPIRIT_WEB_HOST` / `SPIRIT_WEB_PORT` / `SPIRIT_DESKTOP_WEB_HOST` | 데스크톱 웹 호스트 |
-| `SPIRIT_TERMINAL_SHELL` | 데스크톱 PTY 셸 |
+| 변수                                                              | 역할                             |
+| ----------------------------------------------------------------- | -------------------------------- |
+| `SPIRIT_AGENT_DATA_DIR`                                           | 데이터 디렉터리                  |
+| `SPIRIT_SERVER_DATA_DIR`                                          | 서버 데이터 디렉터리(우선)       |
+| `SPIRIT_ACP_DATA_DIR` / `SPIRIT_ACP_WORKSPACE`                    | [ACP](./acp.mdx)                 |
+| `SPIRIT_HOME` / `SPIRIT_VERSION` / `SPIRIT_DOWNLOAD_HOST`         | CLI 설치 프로그램                |
+| `SPIRIT_API_KEY` / `SPIRIT_API_BASE`                              | [CLI](./cli.mdx) 프로세스 재정의 |
+| `SPIRIT_WEB_HOST` / `SPIRIT_WEB_PORT` / `SPIRIT_DESKTOP_WEB_HOST` | 데스크톱 웹 호스트               |
+| `SPIRIT_TERMINAL_SHELL`                                           | 데스크톱 PTY 셸                  |

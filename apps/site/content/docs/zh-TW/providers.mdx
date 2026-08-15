@@ -9,12 +9,12 @@ Spirit Agent 是 BYOK。你在供應商控制台建立金鑰，將其貼到 Desk
 
 Spirit 透過四種傳輸方式之一與供應商通訊。精靈不是固定類型，就是讓你選擇。
 
-| 傳輸 | 精靈標籤 | 典型用途 |
-| --- | --- | --- |
-| `openai-compatible` | Chat Completions API | 大多數與 OpenAI 相容的端點 |
-| `open-responses` | Responses API / Open Responses API | OpenAI、Azure、Vercel AI Gateway、Hugging Face 以及可選的閘道路徑 |
-| `anthropic` | Messages API | Anthropic、MiniMax 以及可選的 Messages 相容端點 |
-| `bedrock` | Amazon Bedrock | 僅限 Amazon Bedrock |
+| 傳輸                | 精靈標籤                           | 典型用途                                                          |
+| ------------------- | ---------------------------------- | ----------------------------------------------------------------- |
+| `openai-compatible` | Chat Completions API               | 大多數與 OpenAI 相容的端點                                        |
+| `open-responses`    | Responses API / Open Responses API | OpenAI、Azure、Vercel AI Gateway、Hugging Face 以及可選的閘道路徑 |
+| `anthropic`         | Messages API                       | Anthropic、MiniMax 以及可選的 Messages 相容端點                   |
+| `bedrock`           | Amazon Bedrock                     | 僅限 Amazon Bedrock                                               |
 
 Google Gemini 和 Vertex AI 始終使用 Chat Completions。如果設定檔要求 Responses 或 Messages，Spirit 會回退到 `openai-compatible`。
 

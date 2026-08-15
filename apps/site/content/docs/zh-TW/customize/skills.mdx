@@ -5,9 +5,9 @@ description: 使用者、.spirit 和 .agents 技能，以及內建的 create-rul
 
 技能是包含 `SKILL.md` 的資料夾。Spirit 從三個位置發現技能：
 
-| 範圍 | 路徑 |
-| --- | --- |
-| 使用者 | `{spiritDataDir}/skills/{name}/SKILL.md` |
+| 範圍          | 路徑                                         |
+| ------------- | -------------------------------------------- |
+| 使用者        | `{spiritDataDir}/skills/{name}/SKILL.md`     |
 | 工作區 Spirit | `{workspace}/.spirit/skills/{name}/SKILL.md` |
 | 工作區 agents | `{workspace}/.agents/skills/{name}/SKILL.md` |
 
@@ -17,10 +17,10 @@ description: 使用者、.spirit 和 .agents 技能，以及內建的 create-rul
 
 `SKILL.md` 必須以 Frontmatter 開頭。缺少 `name` 或 `description` 的檔案不會被發現。
 
-| 欄位 | 說明 |
-| --- | --- |
-| `name` | 必填。技能名稱；必須與資料夾名稱相符。僅限 1–64 個字元、小寫字母、數字和連字號 |
-| `description` | 必填。簡短說明 |
+| 欄位          | 說明                                                                           |
+| ------------- | ------------------------------------------------------------------------------ |
+| `name`        | 必填。技能名稱；必須與資料夾名稱相符。僅限 1–64 個字元、小寫字母、數字和連字號 |
+| `description` | 必填。簡短說明                                                                 |
 
 ## 內建技能
 

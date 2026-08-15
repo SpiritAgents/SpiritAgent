@@ -258,11 +258,7 @@
   },
   "landing": {
     "sectionAria": "Contenu de Spirit Agent",
-    "featureHeading": [
-      "Vos modèles.",
-      "Vos clés.",
-      "Votre contrôle."
-    ],
+    "featureHeading": ["Vos modèles.", "Vos clés.", "Votre contrôle."],
     "featureBody": "Spirit ne vous enferme pas dans une stack hébergée. Apportez une clé de n'importe quel fournisseur, ajoutez-la une fois, et utilisez le même workflow d'agent sur tous.",
     "agent": {
       "sectionAria": "Productivité de Spirit Agent",

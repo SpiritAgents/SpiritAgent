@@ -258,11 +258,7 @@
   },
   "landing": {
     "sectionAria": "Spirit Agent コンテンツ",
-    "featureHeading": [
-      "あなたのモデル。",
-      "あなたのキー。",
-      "あなたのコントロール。"
-    ],
+    "featureHeading": ["あなたのモデル。", "あなたのキー。", "あなたのコントロール。"],
     "featureBody": "Spirit はホスト型スタックに縛り付けません。任意のプロバイダのキーを一度追加すれば、すべてのプロバイダで同じエージェントワークフローを使用できます。",
     "agent": {
       "sectionAria": "Spirit Agent の生産性",

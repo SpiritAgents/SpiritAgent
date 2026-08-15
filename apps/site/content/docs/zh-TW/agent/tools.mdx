@@ -5,30 +5,30 @@ description: 智慧體可以呼叫的工具。有些僅在模型、插槽或模�
 
 這些工具在你開啟的工作區上運作。詢問模式可以讀取和搜尋；它不能建立、編輯、刪除、套用修補程式、執行 `shell`，或產生圖像或影片。
 
-| 工具 | 角色 |
-| --- | --- |
-| `read_file` | 讀取檔案，或讀取圖像和影片 |
-| `create_file` | 建立檔案 |
-| `edit_file` | 編輯現有檔案 |
-| `delete_file` | 刪除檔案 |
-| `apply_patch` | 當模型和傳輸方式符合資格時（例如 OpenAI 提供的 GPT 模型）顯示；取代該路徑上的 `create_file` / `edit_file` / `delete_file` |
-| `glob` | 透過 glob 尋找路徑（遵循 `.gitignore`） |
-| `grep` | 搜尋檔案內容（遵循 `.gitignore`） |
-| `ls` | 列出單一目錄，非遞迴。路徑必須是絕對路徑 |
-| `shell` | 使用 `reason` 和 `command` 執行命令。詢問模式無法呼叫它 |
-| `web_fetch` | 取得 `http` 或 `https` URL 並傳回 Markdown。這是主機工具，不是提供者搜尋 |
-| `web_search` | 當目前的模型提供者支援網路搜尋時顯示。傳回標題、URL 和摘要 |
-| `generate_image` | 在你在 **設定 → 模型** 指派圖像模型後顯示。產生一張圖像。詢問模式無法呼叫它 |
-| `generate_video` | 在你在 **設定 → 模型** 指派影片模型後顯示。產生短片。詢問模式無法呼叫它 |
-| `get_diagnostics` | 當語言伺服器就緒時顯示。傳入路徑；傳回錯誤和警告。詢問模式可以使用它 |
-| `ask_questions` | 結構化問題；回合會等你回答。請參閱 [詢問問題](./ask-questions.mdx) |
-| `subagent` | 將限定的任務委派給子工作階段。請參閱 [子智慧體](./subagents.mdx) |
-| `create_plan` | 僅限計畫模式。寫入 `plans/{name}.md`。請參閱 [模式](./modes.mdx) |
-| `todo_list` | 列出目前工作階段的待辦事項 |
-| `todo_write` | 取代目前工作階段的整個待辦事項清單 |
-| `finish_task` | 僅在 [迴圈](./loop.mdx) 開啟時顯示。將目前任務標記為完成 |
-| `dream_list` | 當 Desktop 上可使用 [夢境](../customize/dreams.mdx) 時，列出目前工作區和分支的未過期摘要 |
-| `dream_read` | 依 id 讀取完整的 dream。寫入工具屬於背景收集器，不屬於對話 |
+| 工具              | 角色                                                                                                                      |
+| ----------------- | ------------------------------------------------------------------------------------------------------------------------- |
+| `read_file`       | 讀取檔案，或讀取圖像和影片                                                                                                |
+| `create_file`     | 建立檔案                                                                                                                  |
+| `edit_file`       | 編輯現有檔案                                                                                                              |
+| `delete_file`     | 刪除檔案                                                                                                                  |
+| `apply_patch`     | 當模型和傳輸方式符合資格時（例如 OpenAI 提供的 GPT 模型）顯示；取代該路徑上的 `create_file` / `edit_file` / `delete_file` |
+| `glob`            | 透過 glob 尋找路徑（遵循 `.gitignore`）                                                                                   |
+| `grep`            | 搜尋檔案內容（遵循 `.gitignore`）                                                                                         |
+| `ls`              | 列出單一目錄，非遞迴。路徑必須是絕對路徑                                                                                  |
+| `shell`           | 使用 `reason` 和 `command` 執行命令。詢問模式無法呼叫它                                                                   |
+| `web_fetch`       | 取得 `http` 或 `https` URL 並傳回 Markdown。這是主機工具，不是提供者搜尋                                                  |
+| `web_search`      | 當目前的模型提供者支援網路搜尋時顯示。傳回標題、URL 和摘要                                                                |
+| `generate_image`  | 在你在 **設定 → 模型** 指派圖像模型後顯示。產生一張圖像。詢問模式無法呼叫它                                               |
+| `generate_video`  | 在你在 **設定 → 模型** 指派影片模型後顯示。產生短片。詢問模式無法呼叫它                                                   |
+| `get_diagnostics` | 當語言伺服器就緒時顯示。傳入路徑；傳回錯誤和警告。詢問模式可以使用它                                                      |
+| `ask_questions`   | 結構化問題；回合會等你回答。請參閱 [詢問問題](./ask-questions.mdx)                                                        |
+| `subagent`        | 將限定的任務委派給子工作階段。請參閱 [子智慧體](./subagents.mdx)                                                          |
+| `create_plan`     | 僅限計畫模式。寫入 `plans/{name}.md`。請參閱 [模式](./modes.mdx)                                                          |
+| `todo_list`       | 列出目前工作階段的待辦事項                                                                                                |
+| `todo_write`      | 取代目前工作階段的整個待辦事項清單                                                                                        |
+| `finish_task`     | 僅在 [迴圈](./loop.mdx) 開啟時顯示。將目前任務標記為完成                                                                  |
+| `dream_list`      | 當 Desktop 上可使用 [夢境](../customize/dreams.mdx) 時，列出目前工作區和分支的未過期摘要                                  |
+| `dream_read`      | 依 id 讀取完整的 dream。寫入工具屬於背景收集器，不屬於對話                                                                |
 
 在預設等級上，編輯和刪除會等待 [核准](./approvals.mdx)。`shell` 也會等待。
 

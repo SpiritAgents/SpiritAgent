@@ -7,14 +7,14 @@ The agent can call `subagent` to start a child session. The child works on an is
 
 ## Arguments
 
-| Field | Required | Role |
-| --- | --- | --- |
-| `task` | yes | What the child should do |
-| `success_criteria` | no | How the child knows it is done |
-| `context_summary` | no | Short background the child should not have to rediscover |
-| `files_to_inspect` | no | Paths to read first |
-| `expected_output` | no | Shape of the result the parent wants back |
-| `worktree` | no | `true` to edit in an isolated git worktree |
+| Field              | Required | Role                                                     |
+| ------------------ | -------- | -------------------------------------------------------- |
+| `task`             | yes      | What the child should do                                 |
+| `success_criteria` | no       | How the child knows it is done                           |
+| `context_summary`  | no       | Short background the child should not have to rediscover |
+| `files_to_inspect` | no       | Paths to read first                                      |
+| `expected_output`  | no       | Shape of the result the parent wants back                |
+| `worktree`         | no       | `true` to edit in an isolated git worktree               |
 
 Use `worktree: true` when the child will edit files and other children may edit at the same time. Omit it for read-only work.
 

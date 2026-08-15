@@ -31,20 +31,20 @@ spirit --version
 
 インストールルートは、Spirit Agentデータディレクトリ**ではありません**。
 
-| | デフォルト | 上書き |
-| --- | --- | --- |
-| CLIバイナリ | Unix: `~/.spirit` · Windows: `%LOCALAPPDATA%\Spirit` | `SPIRIT_HOME` |
+|                                      | デフォルト                                                                                                                  | 上書き                  |
+| ------------------------------------ | --------------------------------------------------------------------------------------------------------------------------- | ----------------------- |
+| CLIバイナリ                          | Unix: `~/.spirit` · Windows: `%LOCALAPPDATA%\Spirit`                                                                        | `SPIRIT_HOME`           |
 | セッション、設定、キーリングポインタ | macOS: `~/Library/Application Support/SpiritAgent` · Windows: `%APPDATA%\SpiritAgent` · Linux: `~/.local/share/SpiritAgent` | `SPIRIT_AGENT_DATA_DIR` |
 
 Unixでは、スクリプトは `$SPIRIT_HOME/bin/spirit` から `$SPIRIT_HOME/cli/current/bin/spirit` へのシンボリックリンクを作成し、`~/.profile`、`~/.bashrc`、`~/.zshrc` に `export PATH="$SPIRIT_HOME/bin:$PATH"` を追加します（マーカー `# spirit-agent cli`）。
 
 ## バージョンまたはミラーの固定
 
-| 変数 | デフォルト | 役割 |
-| --- | --- | --- |
-| `SPIRIT_HOME` | `~/.spirit` または `%LOCALAPPDATA%\Spirit` | CLIバイナリのインストールルート |
-| `SPIRIT_VERSION` | `latest` | ダウンロードURLのバージョンセグメント |
-| `SPIRIT_DOWNLOAD_HOST` | `download.spirit.fast` | CDNホスト |
+| 変数                   | デフォルト                                 | 役割                                  |
+| ---------------------- | ------------------------------------------ | ------------------------------------- |
+| `SPIRIT_HOME`          | `~/.spirit` または `%LOCALAPPDATA%\Spirit` | CLIバイナリのインストールルート       |
+| `SPIRIT_VERSION`       | `latest`                                   | ダウンロードURLのバージョンセグメント |
+| `SPIRIT_DOWNLOAD_HOST` | `download.spirit.fast`                     | CDNホスト                             |
 
 ```bash
 SPIRIT_VERSION=0.1.0 curl -fsSL https://spirit.fast/install | bash

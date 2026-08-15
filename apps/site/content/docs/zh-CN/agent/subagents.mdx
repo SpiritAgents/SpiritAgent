@@ -7,14 +7,14 @@ Agent 可以调用 `subagent` 开一个子会话。子会话做一件隔离的�
 
 ## 参数
 
-| 字段 | 必填 | 作用 |
-| --- | --- | --- |
-| `task` | 是 | 子智能体要做什么 |
-| `success_criteria` | 否 | 怎样算做完 |
-| `context_summary` | 否 | 子智能体不必自己再挖的背景 |
-| `files_to_inspect` | 否 | 先读哪些路径 |
-| `expected_output` | 否 | 父会话希望收回的结果形态 |
-| `worktree` | 否 | `true` 时在隔离的 git worktree 里改文件 |
+| 字段               | 必填 | 作用                                    |
+| ------------------ | ---- | --------------------------------------- |
+| `task`             | 是   | 子智能体要做什么                        |
+| `success_criteria` | 否   | 怎样算做完                              |
+| `context_summary`  | 否   | 子智能体不必自己再挖的背景              |
+| `files_to_inspect` | 否   | 先读哪些路径                            |
+| `expected_output`  | 否   | 父会话希望收回的结果形态                |
+| `worktree`         | 否   | `true` 时在隔离的 git worktree 里改文件 |
 
 子智能体会改文件、且可能和其他子智能体同时改时，设 `worktree: true`。只读任务不要开。
 

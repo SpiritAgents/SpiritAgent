@@ -36,10 +36,7 @@ test("buildBasicInfoSystemMessage includes Desktop host before workspace", () =>
     workspaceRoot: "/tmp/project",
     host: { kind: "Desktop" },
   });
-  assert.match(
-    message ?? "",
-    /Current host:\n- Desktop\n\nCurrent workspace:\n- \/tmp\/project/,
-  );
+  assert.match(message ?? "", /Current host:\n- Desktop\n\nCurrent workspace:\n- \/tmp\/project/);
 });
 
 test("buildBasicInfoSystemMessage includes Web host with page URL", () => {

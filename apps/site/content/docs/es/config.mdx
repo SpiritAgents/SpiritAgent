@@ -9,12 +9,12 @@ Spirit guarda los binarios y los datos en lugares diferentes. Mezclarlos es la r
 
 Se puede sobrescribir con `SPIRIT_AGENT_DATA_DIR`. El servidor también puede usar `SPIRIT_SERVER_DATA_DIR` (que tiene prioridad sobre el anterior).
 
-| SO | Default |
-| --- | --- |
-| macOS | `~/Library/Application Support/SpiritAgent` |
-| Windows | `%APPDATA%\SpiritAgent` |
-| Linux | `$XDG_DATA_HOME/SpiritAgent` o `~/.local/share/SpiritAgent` |
-| Fallback | `~/.spirit-agent` |
+| SO       | Default                                                     |
+| -------- | ----------------------------------------------------------- |
+| macOS    | `~/Library/Application Support/SpiritAgent`                 |
+| Windows  | `%APPDATA%\SpiritAgent`                                     |
+| Linux    | `$XDG_DATA_HOME/SpiritAgent` o `~/.local/share/SpiritAgent` |
+| Fallback | `~/.spirit-agent`                                           |
 
 Archivos típicos:
 
@@ -50,23 +50,23 @@ Las claves **no** están en este archivo. Viven en el [keyring](./security.mdx).
 
 ## Espacio de trabajo `.spirit/`
 
-| Ruta | Rol |
-| --- | --- |
-| `.spirit/rule.md` | Regla del [espacio de trabajo](./customize/rules.mdx) |
-| `.spirit/skills/` | Habilidades del [espacio de trabajo](./customize/skills.mdx) |
-| `.spirit/mcp.json` | MCP del [espacio de trabajo](./customize/mcp.mdx) |
-| `.spirit/hooks.json` | Hooks del [espacio de trabajo](./customize/hooks.mdx) |
+| Ruta                 | Rol                                                          |
+| -------------------- | ------------------------------------------------------------ |
+| `.spirit/rule.md`    | Regla del [espacio de trabajo](./customize/rules.mdx)        |
+| `.spirit/skills/`    | Habilidades del [espacio de trabajo](./customize/skills.mdx) |
+| `.spirit/mcp.json`   | MCP del [espacio de trabajo](./customize/mcp.mdx)            |
+| `.spirit/hooks.json` | Hooks del [espacio de trabajo](./customize/hooks.mdx)        |
 
 También se usan: `{workspace}/AGENTS.md`, `{workspace}/.agents/skills/`, `{workspace}/plans/`.
 
 ## Variables de entorno
 
-| Variable | Rol |
-| --- | --- |
-| `SPIRIT_AGENT_DATA_DIR` | Directorio de datos |
-| `SPIRIT_SERVER_DATA_DIR` | Directorio de datos del servidor (gana) |
-| `SPIRIT_ACP_DATA_DIR` / `SPIRIT_ACP_WORKSPACE` | [ACP](./acp.mdx) |
-| `SPIRIT_HOME` / `SPIRIT_VERSION` / `SPIRIT_DOWNLOAD_HOST` | Instalador de CLI |
-| `SPIRIT_API_KEY` / `SPIRIT_API_BASE` | Overrides de proceso [CLI](./cli.mdx) |
-| `SPIRIT_WEB_HOST` / `SPIRIT_WEB_PORT` / `SPIRIT_DESKTOP_WEB_HOST` | Host web de escritorio |
-| `SPIRIT_TERMINAL_SHELL` | Shell PTY de escritorio |
+| Variable                                                          | Rol                                     |
+| ----------------------------------------------------------------- | --------------------------------------- |
+| `SPIRIT_AGENT_DATA_DIR`                                           | Directorio de datos                     |
+| `SPIRIT_SERVER_DATA_DIR`                                          | Directorio de datos del servidor (gana) |
+| `SPIRIT_ACP_DATA_DIR` / `SPIRIT_ACP_WORKSPACE`                    | [ACP](./acp.mdx)                        |
+| `SPIRIT_HOME` / `SPIRIT_VERSION` / `SPIRIT_DOWNLOAD_HOST`         | Instalador de CLI                       |
+| `SPIRIT_API_KEY` / `SPIRIT_API_BASE`                              | Overrides de proceso [CLI](./cli.mdx)   |
+| `SPIRIT_WEB_HOST` / `SPIRIT_WEB_PORT` / `SPIRIT_DESKTOP_WEB_HOST` | Host web de escritorio                  |
+| `SPIRIT_TERMINAL_SHELL`                                           | Shell PTY de escritorio                 |

@@ -5,10 +5,10 @@ description: Paketstruktur, spiritExtension-Felder, Aktivierungs-API und Auflist
 
 Eine Erweiterung ist ein Ordner mit einer `package.json`, die das Feld `spiritExtension` enthält. Spirit installiert sie pro Benutzer und pro Host, nicht im `.spirit/`-Verzeichnis des Workspaces.
 
-| Host | Pfad |
-| --- | --- |
+| Host    | Pfad                                  |
+| ------- | ------------------------------------- |
 | Desktop | `{spiritDataDir}/extensions/desktop/` |
-| CLI | `{spiritDataDir}/extensions/cli/` |
+| CLI     | `{spiritDataDir}/extensions/cli/`     |
 
 Das unterscheidet sich von [Skills](../customize/skills.mdx) (`SKILL.md`-Ordner), [MCP](../customize/mcp.mdx) (externe Server) und [Hooks](../customize/hooks.mdx) (`hooks.json`-Skripte). `contributes.cli.hooks` gestaltet die CLI-TUI-Slots. Das ist nicht `hooks.json`.
 
@@ -100,74 +100,74 @@ Der `name` in der `package.json` ist die Erweiterungs-ID. Er muss dem Muster `^(
 
 ## Felder der `package.json`
 
-| Feld | Beschreibung |
-| --- | --- |
-| `name` | Erforderlich. npm-Paketname; wird als Erweiterungs-ID verwendet |
-| `version` | Erforderlich. Versionszeichenfolge |
-| `spiritExtension` | Erforderlich. Objekt. Siehe unten |
-| `description` | Optional. Zeichenfolge |
-| `author` | Optional. Zeichenfolge oder `{ name }` |
-| `homepage` | Optional. Zeichenfolge |
-| `main` | Optional. Relativer Pfad zum `activate`-Einstiegspunkt. Erforderlich, wenn die Erweiterung `activationEvents`, Werkzeugausführung oder einen Systemprompt verwendet |
+| Feld              | Beschreibung                                                                                                                                                        |
+| ----------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `name`            | Erforderlich. npm-Paketname; wird als Erweiterungs-ID verwendet                                                                                                     |
+| `version`         | Erforderlich. Versionszeichenfolge                                                                                                                                  |
+| `spiritExtension` | Erforderlich. Objekt. Siehe unten                                                                                                                                   |
+| `description`     | Optional. Zeichenfolge                                                                                                                                              |
+| `author`          | Optional. Zeichenfolge oder `{ name }`                                                                                                                              |
+| `homepage`        | Optional. Zeichenfolge                                                                                                                                              |
+| `main`            | Optional. Relativer Pfad zum `activate`-Einstiegspunkt. Erforderlich, wenn die Erweiterung `activationEvents`, Werkzeugausführung oder einen Systemprompt verwendet |
 
 `main`, `spiritExtension.icon`, CSS-Pfade und CLI-Hook-Pfade müssen relativ sein und innerhalb des Pakets bleiben.
 
 ## `spiritExtension`
 
-| Feld | Beschreibung |
-| --- | --- |
-| `schemaVersion` | Optional. Standardwert: `1`. Nur `1` wird unterstützt |
-| `displayName` | Erforderlich. Sichtbarer Name |
-| `icon` | Optional. Pfad relativ zum Paketstamm |
-| `supportedHosts` | Erforderlich. Nicht leeres Array mit `cli` und/oder `desktop` |
-| `activationEvents` | Optional. Siehe [Aktivierungsereignisse](#activation-events) |
-| `requestedCapabilities` | Optional. Siehe [Fähigkeiten](#capabilities) |
-| `contributes` | Optional. `tools`, `desktop` und/oder `cli` |
-| `settingsSchema` | Optional. Definitionen von Einstellungen |
-| `secretSlots` | Optional. Definitionen von Geheimnis-Slots |
+| Feld                    | Beschreibung                                                  |
+| ----------------------- | ------------------------------------------------------------- |
+| `schemaVersion`         | Optional. Standardwert: `1`. Nur `1` wird unterstützt         |
+| `displayName`           | Erforderlich. Sichtbarer Name                                 |
+| `icon`                  | Optional. Pfad relativ zum Paketstamm                         |
+| `supportedHosts`        | Erforderlich. Nicht leeres Array mit `cli` und/oder `desktop` |
+| `activationEvents`      | Optional. Siehe [Aktivierungsereignisse](#activation-events)  |
+| `requestedCapabilities` | Optional. Siehe [Fähigkeiten](#capabilities)                  |
+| `contributes`           | Optional. `tools`, `desktop` und/oder `cli`                   |
+| `settingsSchema`        | Optional. Definitionen von Einstellungen                      |
+| `secretSlots`           | Optional. Definitionen von Geheimnis-Slots                    |
 
 ## Fähigkeiten
 
-| Wert | Laufzeit |
-| --- | --- |
-| `tool-definitions` | Erforderlich mit `tool-execution`, um `contributes.tools` für das Modell bereitzustellen |
-| `tool-execution` | Erforderlich mit `tool-definitions`, um diese Werkzeuge auszuführen |
-| `system-prompt` | Erforderlich mit `main`, um einen Systemprompt-Fragment beizutragen |
-| `desktop-ui` | Muss mit `contributes.desktop` gepaart sein |
-| `cli-ui` | Muss mit `contributes.cli` gepaart sein |
-| `approval-flow` | Nur deklariert. Die Genehmigung wird durch den `approvalMode` jedes Tools gesteuert |
-| `questions-flow` | Nur deklariert. Fragen werden durch `approvalMode: need-questions` gesteuert |
-| `settings` | Nur deklariert. Einstellungen kommen aus `settingsSchema` |
-| `secret-storage` | Wird mit `secretSlots` verwendet |
-| `structured-results` | Nur deklariert |
+| Wert                 | Laufzeit                                                                                 |
+| -------------------- | ---------------------------------------------------------------------------------------- |
+| `tool-definitions`   | Erforderlich mit `tool-execution`, um `contributes.tools` für das Modell bereitzustellen |
+| `tool-execution`     | Erforderlich mit `tool-definitions`, um diese Werkzeuge auszuführen                      |
+| `system-prompt`      | Erforderlich mit `main`, um einen Systemprompt-Fragment beizutragen                      |
+| `desktop-ui`         | Muss mit `contributes.desktop` gepaart sein                                              |
+| `cli-ui`             | Muss mit `contributes.cli` gepaart sein                                                  |
+| `approval-flow`      | Nur deklariert. Die Genehmigung wird durch den `approvalMode` jedes Tools gesteuert      |
+| `questions-flow`     | Nur deklariert. Fragen werden durch `approvalMode: need-questions` gesteuert             |
+| `settings`           | Nur deklariert. Einstellungen kommen aus `settingsSchema`                                |
+| `secret-storage`     | Wird mit `secretSlots` verwendet                                                         |
+| `structured-results` | Nur deklariert                                                                           |
 
 `desktop-ui` / `cli-ui` und der passende `contributes`-Block müssen entweder beide vorhanden oder beide nicht vorhanden sein.
 
 ## Aktivierungsereignisse
 
-| Ereignis | Wann es ausgelöst wird |
-| --- | --- |
-| `onStartup` | Host-Aufwärmphase |
-| `onExtensionInstalled` | Nach ZIP- oder Marketplace-Installation |
-| `onSessionOpened` | Sitzung wird aktiv |
-| `onSessionReset` | Sitzung wird zurückgesetzt |
-| `onUserMessage` | Benutzer sendet eine Nachricht |
-| `onToolCall` | Ein Tool wird gleich ausgeführt |
-| `onToolResult` | Ein Tool-Ergebnis ist verfügbar |
-| `onApprovalResolved` | Eine Genehmigungsentscheidung ist aufgelöst |
+| Ereignis               | Wann es ausgelöst wird                      |
+| ---------------------- | ------------------------------------------- |
+| `onStartup`            | Host-Aufwärmphase                           |
+| `onExtensionInstalled` | Nach ZIP- oder Marketplace-Installation     |
+| `onSessionOpened`      | Sitzung wird aktiv                          |
+| `onSessionReset`       | Sitzung wird zurückgesetzt                  |
+| `onUserMessage`        | Benutzer sendet eine Nachricht              |
+| `onToolCall`           | Ein Tool wird gleich ausgeführt             |
+| `onToolResult`         | Ein Tool-Ergebnis ist verfügbar             |
+| `onApprovalResolved`   | Eine Genehmigungsentscheidung ist aufgelöst |
 
 Der Host ruft `activate` auf, wenn die Erweiterung das Ereignis auflistet und eine lesbare `main` hat.
 
 ## `contributes.tools`
 
-| Feld | Beschreibung |
-| --- | --- |
-| `name` | Erforderlich. `[a-z0-9]+(?:[._-][a-z0-9]+)*` |
-| `description` | Erforderlich. Wird dem Modell angezeigt |
-| `inputSchema` | Erforderlich. JSON-Schema-Objekt |
-| `outputSchema` | Optional. JSON-Schema-Objekt |
-| `approvalMode` | Optional. `allowed`, `need-approval` oder `need-questions` |
-| `executionMode` | Optional. `foreground` oder `background` |
+| Feld            | Beschreibung                                               |
+| --------------- | ---------------------------------------------------------- |
+| `name`          | Erforderlich. `[a-z0-9]+(?:[._-][a-z0-9]+)*`               |
+| `description`   | Erforderlich. Wird dem Modell angezeigt                    |
+| `inputSchema`   | Erforderlich. JSON-Schema-Objekt                           |
+| `outputSchema`  | Optional. JSON-Schema-Objekt                               |
+| `approvalMode`  | Optional. `allowed`, `need-approval` oder `need-questions` |
+| `executionMode` | Optional. `foreground` oder `background`                   |
 
 Das Modell sieht `name` nicht unverändert. Der Host erstellt einen Aufrufnamen wie `extension__{id}__{tool}__{hash}`.
 
@@ -175,10 +175,10 @@ Das Modell sieht `name` nicht unverändert. Der Host erstellt einen Aufrufnamen 
 
 Erfordert `desktop-ui`.
 
-| Feld | Beschreibung |
-| --- | --- |
-| `css[].path` | Erforderlich. CSS-Datei relativ zum Paketstamm |
-| `css[].media` | Optional. CSS-Medienabfrage |
+| Feld           | Beschreibung                                                                           |
+| -------------- | -------------------------------------------------------------------------------------- |
+| `css[].path`   | Erforderlich. CSS-Datei relativ zum Paketstamm                                         |
+| `css[].media`  | Optional. CSS-Medienabfrage                                                            |
 | `settingsPage` | Optional. `true`, `{}` oder `{ title }` – fügt einen Desktop-Einstellungseintrag hinzu |
 
 ## `contributes.cli`
@@ -193,13 +193,13 @@ Erfordert `cli-ui`. `hooks` ist ein Objekt mit `path`, kein Inline-Array:
 
 Die Datei muss `{ "hooks": [ ... ] }` sein.
 
-| Feld | Beschreibung |
-| --- | --- |
-| `slot` | Erforderlich. Einer der folgenden Slots |
+| Feld      | Beschreibung                                                             |
+| --------- | ------------------------------------------------------------------------ |
+| `slot`    | Erforderlich. Einer der folgenden Slots                                  |
 | `variant` | Optional. `default`, `accented`, `muted`, `warning`, `success`, `danger` |
-| `tokens` | Optional. `{ foreground?, border?, accent? }` |
-| `prefix` | Optional. String |
-| `suffix` | Optional. String |
+| `tokens`  | Optional. `{ foreground?, border?, accent? }`                            |
+| `prefix`  | Optional. String                                                         |
+| `suffix`  | Optional. String                                                         |
 
 Slots: `message.user`, `message.assistant`, `message.tool`, `assistant.thinking`, `input.frame`, `bottom_form`, `bottom_form.section`, `slash_suggestions`, `approval.panel`, `questions.panel`.
 
@@ -221,27 +221,27 @@ Token-Rollen: `default`, `primary`, `secondary`, `muted`, `accent`, `success`, `
 
 ## `settingsSchema`
 
-| Feld | Beschreibung |
-| --- | --- |
-| `key` | Erforderlich. Gleiches Muster wie Tool-Namen |
-| `type` | Erforderlich. `string`, `boolean`, `number` oder `select` |
-| `title` | Erforderlich. UI-Label |
-| `description` | Optional |
-| `placeholder` | Optional |
-| `required` | Optional. Boolean |
-| `defaultValue` | Optional. Muss mit `type` übereinstimmen |
-| `options` | Erforderlich für `select`. Array von `{ value, label, description? }` |
+| Feld           | Beschreibung                                                          |
+| -------------- | --------------------------------------------------------------------- |
+| `key`          | Erforderlich. Gleiches Muster wie Tool-Namen                          |
+| `type`         | Erforderlich. `string`, `boolean`, `number` oder `select`             |
+| `title`        | Erforderlich. UI-Label                                                |
+| `description`  | Optional                                                              |
+| `placeholder`  | Optional                                                              |
+| `required`     | Optional. Boolean                                                     |
+| `defaultValue` | Optional. Muss mit `type` übereinstimmen                              |
+| `options`      | Erforderlich für `select`. Array von `{ value, label, description? }` |
 
 Werte sind `string`, `number`, `boolean` oder `null`. `null` löscht eine nicht erforderliche Einstellung.
 
 ## `secretSlots`
 
-| Feld | Beschreibung |
-| --- | --- |
-| `key` | Erforderlich |
-| `title` | Erforderlich |
-| `description` | Optional |
-| `required` | Optional. Boolean |
+| Feld          | Beschreibung      |
+| ------------- | ----------------- |
+| `key`         | Erforderlich      |
+| `title`       | Erforderlich      |
+| `description` | Optional          |
+| `required`    | Optional. Boolean |
 
 Desktop speichert Geheimnisse im OS-Keyring. Beim CLI-Daemon-Pfad sind `secrets.set` / `secrets.delete` möglicherweise nicht verfügbar.
 
@@ -255,56 +255,56 @@ Desktop speichert Geheimnisse im OS-Keyring. Beim CLI-Daemon-Pfad sind `secrets.
 
 ### `ctx`
 
-| Feld | Beschreibung |
-| --- | --- |
-| `extension` | `{ id, name, version, directoryPath, manifestPath, main }` |
-| `host` | Host-API. Desktop implementiert `showMessageBox`. CLI ist `{}` |
-| `log` | `(message: string) => void` |
-| `settings` | `get(key)`, `getAll()`, `set(key, value)`, `setAll(values)` |
-| `secrets` | `get(key)`, `has(key)`, `set(key, value)`, `delete(key)` — Schlüssel müssen in `secretSlots` deklariert sein |
-| `activationEvent` | Optional. `{ type, detail? }` |
+| Feld              | Beschreibung                                                                                                 |
+| ----------------- | ------------------------------------------------------------------------------------------------------------ |
+| `extension`       | `{ id, name, version, directoryPath, manifestPath, main }`                                                   |
+| `host`            | Host-API. Desktop implementiert `showMessageBox`. CLI ist `{}`                                               |
+| `log`             | `(message: string) => void`                                                                                  |
+| `settings`        | `get(key)`, `getAll()`, `set(key, value)`, `setAll(values)`                                                  |
+| `secrets`         | `get(key)`, `has(key)`, `set(key, value)`, `delete(key)` — Schlüssel müssen in `secretSlots` deklariert sein |
+| `activationEvent` | Optional. `{ type, detail? }`                                                                                |
 
 ### Rückgabewert
 
 Geben Sie ein Objekt zurück oder exportieren Sie dieselben Felder aus dem Modul.
 
-| Feld | Beschreibung |
-| --- | --- |
-| `tools` | `Record<string, (ctx) => unknown>`. Schlüssel sind Manifest-Toolnamen |
-| `invokeTool` | `(ctx) => unknown`. Wird anstelle von `tools[name]` verwendet, wenn vorhanden |
-| `systemPrompt` | Statisches Systemfragment |
+| Feld              | Beschreibung                                                                                  |
+| ----------------- | --------------------------------------------------------------------------------------------- |
+| `tools`           | `Record<string, (ctx) => unknown>`. Schlüssel sind Manifest-Toolnamen                         |
+| `invokeTool`      | `(ctx) => unknown`. Wird anstelle von `tools[name]` verwendet, wenn vorhanden                 |
+| `systemPrompt`    | Statisches Systemfragment                                                                     |
 | `getSystemPrompt` | `() => string \| Promise<string>`. Wird anstelle von `systemPrompt` verwendet, wenn vorhanden |
-| `onEvent` | `(event) => void` |
-| `dispose` | `() => void`. Wird beim Entfernen oder Neuladen aufgerufen |
+| `onEvent`         | `(event) => void`                                                                             |
+| `dispose`         | `() => void`. Wird beim Entfernen oder Neuladen aufgerufen                                    |
 
 ### Tool-Handler `ctx`
 
-| Feld | Beschreibung |
-| --- | --- |
-| `extension` | Gleiche Laufzeitinformationen wie `activate` |
-| `host` | Gleiche Host-API |
-| `toolName` | Manifest-Toolname |
-| `arguments` | Objekt vom Modell |
-| `log` | Gleicher Logger |
-| `settings` | Gleicher Settings-Zugriff |
-| `secrets` | Gleicher Secrets-Zugriff |
-| `toolCallId` | Optional |
+| Feld              | Beschreibung                                                   |
+| ----------------- | -------------------------------------------------------------- |
+| `extension`       | Gleiche Laufzeitinformationen wie `activate`                   |
+| `host`            | Gleiche Host-API                                               |
+| `toolName`        | Manifest-Toolname                                              |
+| `arguments`       | Objekt vom Modell                                              |
+| `log`             | Gleicher Logger                                                |
+| `settings`        | Gleicher Settings-Zugriff                                      |
+| `secrets`         | Gleicher Secrets-Zugriff                                       |
+| `toolCallId`      | Optional                                                       |
 | `questionsResult` | Optional. Festgelegt, wenn `approvalMode` `need-questions` ist |
 
 Ein `string`-Ergebnis wird durchgereicht. Andere Werte werden `JSON.stringify(value, null, 2)`. `undefined` wird zu `""`.
 
 ### Desktop `host.showMessageBox`
 
-| Feld | Beschreibung |
-| --- | --- |
-| `title` | Erforderlich. Zeichenkette |
-| `message` | Erforderlich. Zeichenkette |
-| `detail` | Optional. Zeichenkette |
-| `buttons` | Optional. Zeichenkettenarray |
-| `cancelId` | Optional. Zahl |
-| `defaultId` | Optional. Zahl |
-| `noLink` | Optional. Boolesch |
-| `type` | Optional. `none`, `info`, `error`, `question`, `warning` |
+| Feld        | Beschreibung                                             |
+| ----------- | -------------------------------------------------------- |
+| `title`     | Erforderlich. Zeichenkette                               |
+| `message`   | Erforderlich. Zeichenkette                               |
+| `detail`    | Optional. Zeichenkette                                   |
+| `buttons`   | Optional. Zeichenkettenarray                             |
+| `cancelId`  | Optional. Zahl                                           |
+| `defaultId` | Optional. Zahl                                           |
+| `noLink`    | Optional. Boolesch                                       |
+| `type`      | Optional. `none`, `info`, `error`, `question`, `warning` |
 
 ```js
 export function activate(ctx) {
@@ -358,10 +358,10 @@ Offizielles Beispiel: [`@spiritagent/extension-system-message-demo`](https://www
 
 Erstellen Sie `registry/extensions/<extension-id>/` mit:
 
-| Datei | Beschreibung |
-| --- | --- |
-| `entry.json` | Marktplatz-Governance |
-| `README.md` | Marktplatz-Detailtexte |
+| Datei        | Beschreibung           |
+| ------------ | ---------------------- |
+| `entry.json` | Marktplatz-Governance  |
+| `README.md`  | Marktplatz-Detailtexte |
 
 Bearbeiten Sie diese nicht von Hand (generieren Sie sie neu):
 
@@ -372,25 +372,25 @@ Bearbeiten Sie diese nicht von Hand (generieren Sie sie neu):
 
 ### `entry.json`
 
-| Feld | Beschreibung |
-| --- | --- |
-| `schemaVersion` | Erforderlich. `1` |
-| `extensionId` | Erforderlich. Siehe die obigen Regeln |
-| `packageName` | Erforderlich. npm-Paketname |
-| `status` | Erforderlich. `listed`, `hidden`, `deprecated` oder `blocked` |
-| `featured` | Erforderlich. Boolescher Wert |
-| `defaultVersion` | Erforderlich. Standardversionszeichenfolge |
-| `defaultReviewStatus` | Erforderlich. `unverified`, `verified` oder `revoked` |
-| `versions` | Erforderlich. Mindestens ein Element |
+| Feld                  | Beschreibung                                                  |
+| --------------------- | ------------------------------------------------------------- |
+| `schemaVersion`       | Erforderlich. `1`                                             |
+| `extensionId`         | Erforderlich. Siehe die obigen Regeln                         |
+| `packageName`         | Erforderlich. npm-Paketname                                   |
+| `status`              | Erforderlich. `listed`, `hidden`, `deprecated` oder `blocked` |
+| `featured`            | Erforderlich. Boolescher Wert                                 |
+| `defaultVersion`      | Erforderlich. Standardversionszeichenfolge                    |
+| `defaultReviewStatus` | Erforderlich. `unverified`, `verified` oder `revoked`         |
+| `versions`            | Erforderlich. Mindestens ein Element                          |
 
 Jedes `versions[]`-Element:
 
-| Feld | Beschreibung |
-| --- | --- |
-| `version` | Erforderlich |
-| `channel` | Erforderlich. `stable`, `preview` oder `experimental` |
-| `reviewStatus` | Erforderlich. `unverified`, `verified` oder `revoked` |
-| `changelog` | Optional. `{ summary, body }` – beide erforderlich, wenn vorhanden |
+| Feld           | Beschreibung                                                       |
+| -------------- | ------------------------------------------------------------------ |
+| `version`      | Erforderlich                                                       |
+| `channel`      | Erforderlich. `stable`, `preview` oder `experimental`              |
+| `reviewStatus` | Erforderlich. `unverified`, `verified` oder `revoked`              |
+| `changelog`    | Optional. `{ summary, body }` – beide erforderlich, wenn vorhanden |
 
 ```json
 {

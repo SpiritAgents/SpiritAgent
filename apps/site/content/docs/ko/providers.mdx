@@ -9,12 +9,12 @@ Spirit Agent는 BYOK입니다. 프로바이더 콘솔에서 키를 생성하고,
 
 Spirit은 네 가지 전송 방식 중 하나로 프로바이더와 통신합니다. 마법사는 유형을 고정하거나 선택하게 합니다.
 
-| 전송 | 마법사 라벨 | 일반적인 사용 |
-| --- | --- | --- |
-| `openai-compatible` | Chat Completions API | 대부분의 OpenAI 호환 엔드포인트 |
-| `open-responses` | Responses API / Open Responses API | OpenAI, Azure, Vercel AI Gateway, Hugging Face 및 선택적 게이트웨이 경로 |
-| `anthropic` | Messages API | Anthropic, MiniMax 및 선택적 Messages 호환 엔드포인트 |
-| `bedrock` | Amazon Bedrock | Amazon Bedrock 전용 |
+| 전송                | 마법사 라벨                        | 일반적인 사용                                                            |
+| ------------------- | ---------------------------------- | ------------------------------------------------------------------------ |
+| `openai-compatible` | Chat Completions API               | 대부분의 OpenAI 호환 엔드포인트                                          |
+| `open-responses`    | Responses API / Open Responses API | OpenAI, Azure, Vercel AI Gateway, Hugging Face 및 선택적 게이트웨이 경로 |
+| `anthropic`         | Messages API                       | Anthropic, MiniMax 및 선택적 Messages 호환 엔드포인트                    |
+| `bedrock`           | Amazon Bedrock                     | Amazon Bedrock 전용                                                      |
 
 Google Gemini 및 Vertex AI는 항상 Chat Completions를 사용합니다. 프로필이 Responses 또는 Messages를 요청하면 Spirit은 `openai-compatible`로 대체합니다.
 

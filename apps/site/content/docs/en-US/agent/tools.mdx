@@ -5,30 +5,30 @@ description: Tools the agent can call. Some appear only when the model, slot, or
 
 These tools operate on the workspace you opened. Ask mode can read and search; it cannot create, edit, delete, apply patches, run `shell`, or generate images or videos.
 
-| Tool | Role |
-| --- | --- |
-| `read_file` | Read a file, or read images and videos |
-| `create_file` | Create a file |
-| `edit_file` | Edit an existing file |
-| `delete_file` | Delete a file |
-| `apply_patch` | Exposed when the model and transport are eligible (for example an OpenAI-provider GPT model); replaces `create_file` / `edit_file` / `delete_file` on that path |
-| `glob` | Find paths by glob (respects `.gitignore`) |
-| `grep` | Search file contents (respects `.gitignore`) |
-| `ls` | List one directory, not recursive. Path must be absolute |
-| `shell` | Run a command with `reason` and `command`. Ask mode cannot call it |
-| `web_fetch` | Fetch an `http` or `https` URL and return Markdown. A host tool, not provider search |
-| `web_search` | Exposed when the current model provider supports web search. Returns titles, URLs, and snippets |
-| `generate_image` | Exposed after you assign an image model in **Settings → Models**. Generates one image. Ask mode cannot call it |
-| `generate_video` | Exposed after you assign a video model in **Settings → Models**. Generates a short video. Ask mode cannot call it |
-| `get_diagnostics` | Exposed when a language server is ready. Pass paths; returns errors and warnings. Ask mode can use it |
-| `ask_questions` | Structured questions; the turn waits until you answer. See [Ask questions](./ask-questions.mdx) |
-| `subagent` | Delegate a scoped task to a child session. See [Subagents](./subagents.mdx) |
-| `create_plan` | Plan mode only. Writes `plans/{name}.md`. See [Modes](./modes.mdx) |
-| `todo_list` | List todos for the current session |
-| `todo_write` | Replace the full todo list for the current session |
-| `finish_task` | Exposed only when [Loop](./loop.mdx) is on. Marks the current task complete |
-| `dream_list` | When [Dreams](../customize/dreams.mdx) is available on Desktop, list non-expired summaries for the current workspace and branch |
-| `dream_read` | Read one full dream by id. Write tools belong to the background collector, not the conversation |
+| Tool              | Role                                                                                                                                                            |
+| ----------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `read_file`       | Read a file, or read images and videos                                                                                                                          |
+| `create_file`     | Create a file                                                                                                                                                   |
+| `edit_file`       | Edit an existing file                                                                                                                                           |
+| `delete_file`     | Delete a file                                                                                                                                                   |
+| `apply_patch`     | Exposed when the model and transport are eligible (for example an OpenAI-provider GPT model); replaces `create_file` / `edit_file` / `delete_file` on that path |
+| `glob`            | Find paths by glob (respects `.gitignore`)                                                                                                                      |
+| `grep`            | Search file contents (respects `.gitignore`)                                                                                                                    |
+| `ls`              | List one directory, not recursive. Path must be absolute                                                                                                        |
+| `shell`           | Run a command with `reason` and `command`. Ask mode cannot call it                                                                                              |
+| `web_fetch`       | Fetch an `http` or `https` URL and return Markdown. A host tool, not provider search                                                                            |
+| `web_search`      | Exposed when the current model provider supports web search. Returns titles, URLs, and snippets                                                                 |
+| `generate_image`  | Exposed after you assign an image model in **Settings → Models**. Generates one image. Ask mode cannot call it                                                  |
+| `generate_video`  | Exposed after you assign a video model in **Settings → Models**. Generates a short video. Ask mode cannot call it                                               |
+| `get_diagnostics` | Exposed when a language server is ready. Pass paths; returns errors and warnings. Ask mode can use it                                                           |
+| `ask_questions`   | Structured questions; the turn waits until you answer. See [Ask questions](./ask-questions.mdx)                                                                 |
+| `subagent`        | Delegate a scoped task to a child session. See [Subagents](./subagents.mdx)                                                                                     |
+| `create_plan`     | Plan mode only. Writes `plans/{name}.md`. See [Modes](./modes.mdx)                                                                                              |
+| `todo_list`       | List todos for the current session                                                                                                                              |
+| `todo_write`      | Replace the full todo list for the current session                                                                                                              |
+| `finish_task`     | Exposed only when [Loop](./loop.mdx) is on. Marks the current task complete                                                                                     |
+| `dream_list`      | When [Dreams](../customize/dreams.mdx) is available on Desktop, list non-expired summaries for the current workspace and branch                                 |
+| `dream_read`      | Read one full dream by id. Write tools belong to the background collector, not the conversation                                                                 |
 
 Edits and deletes wait for [approval](./approvals.mdx) on the default level. `shell` waits too.
 

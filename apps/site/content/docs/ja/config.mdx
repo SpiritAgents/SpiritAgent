@@ -9,12 +9,12 @@ Spirit はバイナリとデータを別の場所に保存します。これら�
 
 `SPIRIT_AGENT_DATA_DIR` で上書きできます。サーバーは `SPIRIT_SERVER_DATA_DIR` も使用でき（前者よりも優先されます）。
 
-| OS | デフォルト |
-| --- | --- |
-| macOS | `~/Library/Application Support/SpiritAgent` |
-| Windows | `%APPDATA%\SpiritAgent` |
-| Linux | `$XDG_DATA_HOME/SpiritAgent` または `~/.local/share/SpiritAgent` |
-| フォールバック | `~/.spirit-agent` |
+| OS             | デフォルト                                                       |
+| -------------- | ---------------------------------------------------------------- |
+| macOS          | `~/Library/Application Support/SpiritAgent`                      |
+| Windows        | `%APPDATA%\SpiritAgent`                                          |
+| Linux          | `$XDG_DATA_HOME/SpiritAgent` または `~/.local/share/SpiritAgent` |
+| フォールバック | `~/.spirit-agent`                                                |
 
 一般的なファイル:
 
@@ -50,23 +50,23 @@ CLI バイナリは `SPIRIT_HOME`（`~/.spirit` または `%LOCALAPPDATA%\Spirit
 
 ## ワークスペースの `.spirit/`
 
-| パス | 役割 |
-| --- | --- |
-| `.spirit/rule.md` | ワークスペースの [ルール](./customize/rules.mdx) |
-| `.spirit/skills/` | ワークスペースの [スキル](./customize/skills.mdx) |
-| `.spirit/mcp.json` | ワークスペースの [MCP](./customize/mcp.mdx) |
-| `.spirit/hooks.json` | ワークスペースの [フック](./customize/hooks.mdx) |
+| パス                 | 役割                                              |
+| -------------------- | ------------------------------------------------- |
+| `.spirit/rule.md`    | ワークスペースの [ルール](./customize/rules.mdx)  |
+| `.spirit/skills/`    | ワークスペースの [スキル](./customize/skills.mdx) |
+| `.spirit/mcp.json`   | ワークスペースの [MCP](./customize/mcp.mdx)       |
+| `.spirit/hooks.json` | ワークスペースの [フック](./customize/hooks.mdx)  |
 
 また、`{workspace}/AGENTS.md`、`{workspace}/.agents/skills/`、`{workspace}/plans/` も使用されます。
 
 ## 環境変数
 
-| 変数 | 役割 |
-| --- | --- |
-| `SPIRIT_AGENT_DATA_DIR` | データディレクトリ |
-| `SPIRIT_SERVER_DATA_DIR` | サーバーデータディレクトリ（優先） |
-| `SPIRIT_ACP_DATA_DIR` / `SPIRIT_ACP_WORKSPACE` | [ACP](./acp.mdx) |
-| `SPIRIT_HOME` / `SPIRIT_VERSION` / `SPIRIT_DOWNLOAD_HOST` | CLI インストーラー |
-| `SPIRIT_API_KEY` / `SPIRIT_API_BASE` | [CLI](./cli.mdx) プロセスの上書き |
-| `SPIRIT_WEB_HOST` / `SPIRIT_WEB_PORT` / `SPIRIT_DESKTOP_WEB_HOST` | デスクトップWebホスト |
-| `SPIRIT_TERMINAL_SHELL` | デスクトップPTYシェル |
+| 変数                                                              | 役割                               |
+| ----------------------------------------------------------------- | ---------------------------------- |
+| `SPIRIT_AGENT_DATA_DIR`                                           | データディレクトリ                 |
+| `SPIRIT_SERVER_DATA_DIR`                                          | サーバーデータディレクトリ（優先） |
+| `SPIRIT_ACP_DATA_DIR` / `SPIRIT_ACP_WORKSPACE`                    | [ACP](./acp.mdx)                   |
+| `SPIRIT_HOME` / `SPIRIT_VERSION` / `SPIRIT_DOWNLOAD_HOST`         | CLI インストーラー                 |
+| `SPIRIT_API_KEY` / `SPIRIT_API_BASE`                              | [CLI](./cli.mdx) プロセスの上書き  |
+| `SPIRIT_WEB_HOST` / `SPIRIT_WEB_PORT` / `SPIRIT_DESKTOP_WEB_HOST` | デスクトップWebホスト              |
+| `SPIRIT_TERMINAL_SHELL`                                           | デスクトップPTYシェル              |

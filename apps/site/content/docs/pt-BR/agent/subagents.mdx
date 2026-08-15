@@ -7,14 +7,14 @@ O agent pode chamar `subagent` para iniciar uma sessão filha. A filha trabalha 
 
 ## Argumentos
 
-| Campo | Obrigatório | Papel |
-| --- | --- | --- |
-| `task` | sim | O que a filha deve fazer |
-| `success_criteria` | não | Como a filha sabe que está pronto |
-| `context_summary` | não | Contexto curto que a filha não deve ter que redescobrir |
-| `files_to_inspect` | não | Caminhos para ler primeiro |
-| `expected_output` | não | Forma do resultado que a mãe quer de volta |
-| `worktree` | não | `true` para editar em um git worktree isolado |
+| Campo              | Obrigatório | Papel                                                   |
+| ------------------ | ----------- | ------------------------------------------------------- |
+| `task`             | sim         | O que a filha deve fazer                                |
+| `success_criteria` | não         | Como a filha sabe que está pronto                       |
+| `context_summary`  | não         | Contexto curto que a filha não deve ter que redescobrir |
+| `files_to_inspect` | não         | Caminhos para ler primeiro                              |
+| `expected_output`  | não         | Forma do resultado que a mãe quer de volta              |
+| `worktree`         | não         | `true` para editar em um git worktree isolado           |
 
 Use `worktree: true` quando a filha editar arquivos e outras filhas puderem editar ao mesmo tempo. Omita para trabalho somente leitura.
 

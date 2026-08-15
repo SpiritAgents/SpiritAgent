@@ -9,12 +9,12 @@ O assistente de conexão está em **Configurações → Modelos** no Desktop, ou
 
 Spirit fala com provedores por meio de um dos quatro transportes. O assistente ou fixa o tipo ou deixa você escolher.
 
-| Transporte | Rótulo no assistente | Uso típico |
-| --- | --- | --- |
-| `openai-compatible` | API de Chat Completions | A maioria dos endpoints compatíveis com OpenAI |
-| `open-responses` | API de Responses / Open Responses API | OpenAI, Azure, Vercel AI Gateway, Hugging Face e caminhos de gateway opcionais |
-| `anthropic` | API de Messages | Anthropic, MiniMax e endpoints compatíveis com Messages opcionais |
-| `bedrock` | Amazon Bedrock | Apenas Amazon Bedrock |
+| Transporte          | Rótulo no assistente                  | Uso típico                                                                     |
+| ------------------- | ------------------------------------- | ------------------------------------------------------------------------------ |
+| `openai-compatible` | API de Chat Completions               | A maioria dos endpoints compatíveis com OpenAI                                 |
+| `open-responses`    | API de Responses / Open Responses API | OpenAI, Azure, Vercel AI Gateway, Hugging Face e caminhos de gateway opcionais |
+| `anthropic`         | API de Messages                       | Anthropic, MiniMax e endpoints compatíveis com Messages opcionais              |
+| `bedrock`           | Amazon Bedrock                        | Apenas Amazon Bedrock                                                          |
 
 Google Gemini e Vertex AI sempre usam Chat Completions. Se um perfil pedir Responses ou Messages, a Spirit recorre a `openai-compatible`.
 

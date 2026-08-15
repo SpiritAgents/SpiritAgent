@@ -31,20 +31,20 @@ spirit --version
 
 Корень установки **не** является каталогом данных Spirit Agent.
 
-| | По умолчанию | Переопределение |
-| --- | --- | --- |
-| Бинарные файлы CLI | Unix: `~/.spirit` · Windows: `%LOCALAPPDATA%\Spirit` | `SPIRIT_HOME` |
+|                                                     | По умолчанию                                                                                                                | Переопределение         |
+| --------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------- | ----------------------- |
+| Бинарные файлы CLI                                  | Unix: `~/.spirit` · Windows: `%LOCALAPPDATA%\Spirit`                                                                        | `SPIRIT_HOME`           |
 | Сессии, конфигурация, указатели на хранилище ключей | macOS: `~/Library/Application Support/SpiritAgent` · Windows: `%APPDATA%\SpiritAgent` · Linux: `~/.local/share/SpiritAgent` | `SPIRIT_AGENT_DATA_DIR` |
 
 В Unix скрипт создаёт ссылку `$SPIRIT_HOME/bin/spirit` → `$SPIRIT_HOME/cli/current/bin/spirit` и добавляет `export PATH="$SPIRIT_HOME/bin:$PATH"` в `~/.profile`, `~/.bashrc` и `~/.zshrc` (маркер `# spirit-agent cli`).
 
 ## Зафиксировать версию или зеркало
 
-| Переменная | По умолчанию | Роль |
-| --- | --- | --- |
-| `SPIRIT_HOME` | `~/.spirit` или `%LOCALAPPDATA%\Spirit` | Корень установки для бинарных файлов CLI |
-| `SPIRIT_VERSION` | `latest` | Сегмент версии в URL загрузки |
-| `SPIRIT_DOWNLOAD_HOST` | `download.spirit.fast` | Хост CDN |
+| Переменная             | По умолчанию                            | Роль                                     |
+| ---------------------- | --------------------------------------- | ---------------------------------------- |
+| `SPIRIT_HOME`          | `~/.spirit` или `%LOCALAPPDATA%\Spirit` | Корень установки для бинарных файлов CLI |
+| `SPIRIT_VERSION`       | `latest`                                | Сегмент версии в URL загрузки            |
+| `SPIRIT_DOWNLOAD_HOST` | `download.spirit.fast`                  | Хост CDN                                 |
 
 ```bash
 SPIRIT_VERSION=0.1.0 curl -fsSL https://spirit.fast/install | bash

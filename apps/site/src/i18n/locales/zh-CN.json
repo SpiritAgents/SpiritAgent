@@ -51,19 +51,11 @@
   },
   "landing": {
     "sectionAria": "Spirit Agent 内容",
-    "featureHeading": [
-      "你的模型。",
-      "你的密钥。",
-      "你的控制权。"
-    ],
+    "featureHeading": ["你的模型。", "你的密钥。", "你的控制权。"],
     "featureBody": "Spirit 不会把你锁进托管栈。你可以接入任意提供商的密钥，只配置一次，再在同一套 Agent 工作流里复用。",
     "agent": {
       "sectionAria": "Spirit Agent 生产力",
-      "featureHeading": [
-        "结合上下文规划。",
-        "调用工具执行。",
-        "在工作区里交付。"
-      ],
+      "featureHeading": ["结合上下文规划。", "调用工具执行。", "在工作区里交付。"],
       "featureBody": "Spirit 先规划再行动：生成示意图、写出结构化计划，并在桌面壳层内直接对你的仓库执行，无需切换上下文。"
     },
     "ctaSectionAria": "下载 Spirit Agent",
@@ -162,10 +154,7 @@
       "runningToolHeadline": "查看",
       "runningToolHeadlineSucceeded": "读取",
       "runningToolHeadlineDetail": "工作区文件",
-      "runningToolDetails": [
-        "正在打开 Hero 实现。",
-        "正在检查桌面窗口外壳。"
-      ],
+      "runningToolDetails": ["正在打开 Hero 实现。", "正在检查桌面窗口外壳。"],
       "runningToolOutput": "发现了单一 Hero 区块、复用的桌面外壳，以及静态的对话空状态。",
       "emptyTitle": "开始点什么。",
       "composerPlaceholder": "输入消息…",

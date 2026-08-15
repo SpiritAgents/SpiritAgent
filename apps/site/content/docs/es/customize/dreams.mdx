@@ -4,17 +4,18 @@ description: Memorias de corta duración limitadas al espacio de trabajo y la ra
 ---
 
 <Callout type="warn" title="Beta">
-Dreams sigue siendo un experimento. No lo trates como una wiki de proyecto permanente; eso pertenece a [Rules](./rules.mdx) o al repositorio.
+  Dreams sigue siendo un experimento. No lo trates como una wiki de proyecto permanente; eso
+  pertenece a [Rules](./rules.mdx) o al repositorio.
 </Callout>
 
 Dreams son memorias cortas limitadas al **espacio de trabajo actual y a la rama de Git**: qué se movió recientemente, por qué importa y qué sigue abierto. Los registros viven bajo `{spiritDataDir}/dreams/` y expiran después de **cinco días**.
 
 El agente de conversación obtiene un catálogo resumido en el mensaje del sistema (id, título, resumen, etiquetas). Los detalles completos no se precargan; tira de las herramientas cuando sea necesario.
 
-| Herramienta | Rol |
-| --- | --- |
+| Herramienta  | Rol                                                  |
+| ------------ | ---------------------------------------------------- |
 | `dream_list` | Lista los resúmenes no expirados en el ámbito actual |
-| `dream_read` | Lee un registro completo por id |
+| `dream_read` | Lee un registro completo por id                      |
 
 `dream_record`, `dream_update` y `dream_delete` pertenecen al recolector de fondo, no al agente de conversación. El recolector escanea las sesiones y decide si crear, actualizar o eliminar una entrada obsoleta. Prefiere actualizar un Dream existente en lugar de duplicar uno.
 

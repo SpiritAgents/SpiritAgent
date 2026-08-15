@@ -1,7 +1,4 @@
 {
   "title": "インストール",
-  "pages": [
-    "desktop",
-    "cli"
-  ]
+  "pages": ["desktop", "cli"]
 }

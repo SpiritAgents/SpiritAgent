@@ -9,42 +9,42 @@ description: 設定マップ、ファイル / Git / ブラウザ、マーケッ�
 
 ### 基本
 
-| タブ | 内容 |
-| --- | --- |
-| 一般 | 通知、トレイ / メニューバーアイコン |
+| タブ | 内容                                                 |
+| ---- | ---------------------------------------------------- |
+| 一般 | 通知、トレイ / メニューバーアイコン                  |
 | 外観 | テーマ、フォント、UI 言語、mica / ぼかし、ポインター |
 
 ### 機能
 
-| タブ | 内容 |
-| --- | --- |
-| モデル | プロバイダー接続、モデルリスト、キー |
-| エージェント | LSP、コミット / PR の帰属 |
-| タブ | エディターのタブ補完 |
-| スキル | [スキル](./customize/skills.mdx) の検出と生成 |
-| ルール | [ルール](./customize/rules.mdx) スロット |
-| MCP | [MCP](./customize/mcp.mdx) サーバー |
-| フック | [フック](./customize/hooks.mdx) |
-| ドリーム | [ドリーム](./customize/dreams.mdx) (ベータ) |
+| タブ         | 内容                                          |
+| ------------ | --------------------------------------------- |
+| モデル       | プロバイダー接続、モデルリスト、キー          |
+| エージェント | LSP、コミット / PR の帰属                     |
+| タブ         | エディターのタブ補完                          |
+| スキル       | [スキル](./customize/skills.mdx) の検出と生成 |
+| ルール       | [ルール](./customize/rules.mdx) スロット      |
+| MCP          | [MCP](./customize/mcp.mdx) サーバー           |
+| フック       | [フック](./customize/hooks.mdx)               |
+| ドリーム     | [ドリーム](./customize/dreams.mdx) (ベータ)   |
 
 ### 接続
 
-| タブ | 内容 |
-| --- | --- |
-| ネットワーク | LLM HTTP バージョン、**Web リモートアクセス** |
-| 統合 | [GitHub デバイスログイン](./customize/integrations.mdx) |
-| 拡張機能 | インストール済み拡張機能、ZIP インポート |
+| タブ         | 内容                                                    |
+| ------------ | ------------------------------------------------------- |
+| ネットワーク | LLM HTTP バージョン、**Web リモートアクセス**           |
+| 統合         | [GitHub デバイスログイン](./customize/integrations.mdx) |
+| 拡張機能     | インストール済み拡張機能、ZIP インポート                |
 
 開発者タブは Vite 開発ビルドでのみ表示されます。
 
 ## ワークスペースパネル
 
-| タブ | ロール |
-| --- | --- |
-| ファイル | ツリー、Monaco、Markdownプレビュー、`plans/` |
-| Git | 変更、履歴、コミット/プッシュ/マージチップ |
+| タブ     | ロール                                             |
+| -------- | -------------------------------------------------- |
+| ファイル | ツリー、Monaco、Markdownプレビュー、`plans/`       |
+| Git      | 変更、履歴、コミット/プッシュ/マージチップ         |
 | ブラウザ | 組み込みブラウザ＋要素ピッカー（**Electronのみ**） |
-| シェル | 組み込みPTY（**Electronのみ**） |
+| シェル   | 組み込みPTY（**Electronのみ**）                    |
 
 ### シェル
 
@@ -64,15 +64,15 @@ CLIには組み込みPTYパネルはありません。コマンドは共有デ�
 
 **設定→エージェント**で言語サーバーを有効にし、不足しているプロバイダーをインストールします。サーバーが準備できると、エージェントは[`get_diagnostics`](./agent/tools.mdx)を呼び出せます。
 
-| ID | 言語 | インストール方法 |
-| --- | --- | --- |
-| `typescript-language-server` | TypeScript、JavaScript | npm（`typescript-language-server`） |
-| `pyright` | Python | npm（`pyright`） |
-| `gopls` | Go | Goツールチェーン |
-| `rust-analyzer` | Rust | rustup |
-| `clangd` | C、C++ | プラットフォームパッケージ（例：Homebrewやwinget） |
-| `jdtls` | Java | 手動 |
-| `omnisharp` | C# | .NET |
+| ID                           | 言語                   | インストール方法                                   |
+| ---------------------------- | ---------------------- | -------------------------------------------------- |
+| `typescript-language-server` | TypeScript、JavaScript | npm（`typescript-language-server`）                |
+| `pyright`                    | Python                 | npm（`pyright`）                                   |
+| `gopls`                      | Go                     | Goツールチェーン                                   |
+| `rust-analyzer`              | Rust                   | rustup                                             |
+| `clangd`                     | C、C++                 | プラットフォームパッケージ（例：Homebrewやwinget） |
+| `jdtls`                      | Java                   | 手動                                               |
+| `omnisharp`                  | C#                     | .NET                                               |
 
 clangdとjdtlsはバンドルされていません。自分でインストールしてから、設定→エージェントに戻ってください。
 

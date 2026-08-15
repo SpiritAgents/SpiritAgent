@@ -31,20 +31,20 @@ spirit --version
 
 安装根目录 **不是** Spirit Agent 的数据目录。
 
-| | 默认 | 覆盖 |
-| --- | --- | --- |
-| CLI 二进制 | Unix：`~/.spirit` · Windows：`%LOCALAPPDATA%\Spirit` | `SPIRIT_HOME` |
+|                        | 默认                                                                                                                        | 覆盖                    |
+| ---------------------- | --------------------------------------------------------------------------------------------------------------------------- | ----------------------- |
+| CLI 二进制             | Unix：`~/.spirit` · Windows：`%LOCALAPPDATA%\Spirit`                                                                        | `SPIRIT_HOME`           |
 | 会话、配置、钥匙串指针 | macOS：`~/Library/Application Support/SpiritAgent` · Windows：`%APPDATA%\SpiritAgent` · Linux：`~/.local/share/SpiritAgent` | `SPIRIT_AGENT_DATA_DIR` |
 
 在 Unix 上，脚本把 `$SPIRIT_HOME/bin/spirit` 链到 `$SPIRIT_HOME/cli/current/bin/spirit`，并在 `~/.profile`、`~/.bashrc`、`~/.zshrc` 追加 `export PATH="$SPIRIT_HOME/bin:$PATH"`（标记 `# spirit-agent cli`）。
 
 ## 钉版本或换镜像
 
-| 变量 | 默认 | 作用 |
-| --- | --- | --- |
-| `SPIRIT_HOME` | `~/.spirit` 或 `%LOCALAPPDATA%\Spirit` | CLI 二进制安装根 |
-| `SPIRIT_VERSION` | `latest` | 下载 URL 里的版本段 |
-| `SPIRIT_DOWNLOAD_HOST` | `download.spirit.fast` | CDN 主机 |
+| 变量                   | 默认                                   | 作用                |
+| ---------------------- | -------------------------------------- | ------------------- |
+| `SPIRIT_HOME`          | `~/.spirit` 或 `%LOCALAPPDATA%\Spirit` | CLI 二进制安装根    |
+| `SPIRIT_VERSION`       | `latest`                               | 下载 URL 里的版本段 |
+| `SPIRIT_DOWNLOAD_HOST` | `download.spirit.fast`                 | CDN 主机            |
 
 ```bash
 SPIRIT_VERSION=0.1.0 curl -fsSL https://spirit.fast/install | bash

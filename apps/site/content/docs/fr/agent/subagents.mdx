@@ -7,14 +7,14 @@ L'agent peut appeler `subagent` pour démarrer une session enfant. L'enfant trav
 
 ## Arguments
 
-| Champ | Requis | Rôle |
-| --- | --- | --- |
-| `task` | oui | Ce que l'enfant doit faire |
-| `success_criteria` | non | Comment l'enfant sait qu'il a terminé |
-| `context_summary` | non | Contexte court que l'enfant ne devrait pas avoir à redécouvrir |
-| `files_to_inspect` | non | Chemins à lire en premier |
-| `expected_output` | non | Forme du résultat que le parent attend en retour |
-| `worktree` | non | `true` pour modifier dans un worktree git isolé |
+| Champ              | Requis | Rôle                                                           |
+| ------------------ | ------ | -------------------------------------------------------------- |
+| `task`             | oui    | Ce que l'enfant doit faire                                     |
+| `success_criteria` | non    | Comment l'enfant sait qu'il a terminé                          |
+| `context_summary`  | non    | Contexte court que l'enfant ne devrait pas avoir à redécouvrir |
+| `files_to_inspect` | non    | Chemins à lire en premier                                      |
+| `expected_output`  | non    | Forme du résultat que le parent attend en retour               |
+| `worktree`         | non    | `true` pour modifier dans un worktree git isolé                |
 
 Utilisez `worktree: true` lorsque l'enfant modifiera des fichiers et que d'autres enfants peuvent modifier en même temps. Omettez-le pour un travail en lecture seule.
 

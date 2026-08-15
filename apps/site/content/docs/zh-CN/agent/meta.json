@@ -1,4 +1,13 @@
 {
   "title": "智能体",
-  "pages": ["tools", "modes", "prompting", "approvals", "loop", "sessions", "subagents", "ask-questions"]
+  "pages": [
+    "tools",
+    "modes",
+    "prompting",
+    "approvals",
+    "loop",
+    "sessions",
+    "subagents",
+    "ask-questions"
+  ]
 }
