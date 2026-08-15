@@ -26,7 +26,7 @@ import type {
   DesktopExtensionListItem,
 } from "../types.js";
 import type { EphemeralSessionRecord } from "./sessions.js";
-import { ensureBuiltInExtensions, ensureBuiltInSkills } from "@spiritagent/host-internal";
+import { ensureBuiltInSkills } from "@spiritagent/host-internal";
 import { resolveWorkspaceBindingForRequestedRoot, sameWorkspaceRoot } from "./service-utils.js";
 import { spiritAgentDataDir } from "./storage.js";
 import type { ExtensionWarmupTrigger } from "./extension-warmup.js";

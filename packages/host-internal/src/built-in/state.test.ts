@@ -92,10 +92,7 @@ test("installPreparedDirectory records installSource and remove notes built-in",
     // Direct note API is idempotent.
     await noteBuiltInExtensionRemoved(spiritDataDir, installed.id);
     const again = await loadBuiltInState(spiritDataDir);
-    assert.equal(
-      again.removedExtensionIds.filter((id) => id === installed.id).length,
-      1,
-    );
+    assert.equal(again.removedExtensionIds.filter((id) => id === installed.id).length, 1);
   } finally {
     await rm(spiritDataDir, { recursive: true, force: true });
     await rm(preparedRoot, { recursive: true, force: true });

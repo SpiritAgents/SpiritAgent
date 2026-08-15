@@ -4,11 +4,7 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import test from "node:test";
 
-import {
-  BUILT_IN_SKILL_NAMES,
-  ensureBuiltInSkills,
-  resolveBuiltInSkillsRoot,
-} from "./skills.js";
+import { BUILT_IN_SKILL_NAMES, ensureBuiltInSkills, resolveBuiltInSkillsRoot } from "./skills.js";
 
 test("resolveBuiltInSkillsRoot finds the shared template directory", async () => {
   const templateRoot = resolveBuiltInSkillsRoot();
