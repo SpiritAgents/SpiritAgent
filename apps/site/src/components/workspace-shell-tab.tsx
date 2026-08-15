@@ -13,17 +13,21 @@ export type WorkspaceShellTabProps = {
   workspaceRoot: string;
 };
 
-const TERMINAL_DARK_BG = "#0a0a0a";
 const TERMINAL_FONT_FAMILY =
   '"Cascadia Code", "Cascadia Mono", Consolas, "Lucida Console", "Courier New", monospace';
 
+function terminalCssVar(name: string): string {
+  return getComputedStyle(document.documentElement).getPropertyValue(name).trim();
+}
+
+/** 主题色取自 index.css 的 --terminal-* 变量（深浅双色），随 html.dark 切换。 */
 function terminalTheme(): ITheme {
   return {
-    background: TERMINAL_DARK_BG,
-    foreground: "#fafafa",
-    cursor: "#fafafa",
-    cursorAccent: TERMINAL_DARK_BG,
-    selectionBackground: "rgba(100, 100, 100, 0.35)",
+    background: terminalCssVar("--terminal-bg"),
+    foreground: terminalCssVar("--terminal-fg"),
+    cursor: terminalCssVar("--terminal-cursor"),
+    cursorAccent: terminalCssVar("--terminal-cursor-accent"),
+    selectionBackground: terminalCssVar("--terminal-selection-bg"),
   };
 }
 
@@ -179,6 +183,15 @@ export function WorkspaceShellTab({ workspaceRoot }: WorkspaceShellTabProps) {
     terminal.open(element);
     fitAddon.fit();
 
+    // 系统主题切换（html.dark 翻转）时重取 --terminal-* 变量
+    const themeObserver = new MutationObserver(() => {
+      terminal.options.theme = terminalTheme();
+    });
+    themeObserver.observe(document.documentElement, {
+      attributes: true,
+      attributeFilter: ["class"],
+    });
+
     const onContextMenu = (event: MouseEvent): void => {
       event.preventDefault();
       event.stopPropagation();
@@ -220,6 +233,7 @@ export function WorkspaceShellTab({ workspaceRoot }: WorkspaceShellTabProps) {
 
     const teardown = (): void => {
       element.removeEventListener("contextmenu", onContextMenu, true);
+      themeObserver.disconnect();
       unsubscribePty?.();
       unsubscribePty = undefined;
       resizeObserver?.disconnect();

@@ -239,11 +239,11 @@ body {
   --site-muted: rgb(255 255 255 / 50%);
   --dialog-panel-border: #272727;
   --git-action-split: #3f3f3f;
-  --terminal-bg: #000000;
-  --terminal-fg: #d4d4d4;
-  --terminal-cursor: #ffffff;
-  --terminal-cursor-accent: #000000;
-  --terminal-selection-bg: rgba(255, 255, 255, 0.12);
+  --terminal-bg: #0a0a0a;
+  --terminal-fg: #fafafa;
+  --terminal-cursor: #fafafa;
+  --terminal-cursor-accent: #0a0a0a;
+  --terminal-selection-bg: rgba(100, 100, 100, 0.35);
   --terminal-ansi-black: #000000;
   --terminal-ansi-red: #cd3131;
   --terminal-ansi-green: #0dbc79;
@@ -569,12 +569,15 @@ body {
 [data-docs-layout] {
   --fd-banner-height: var(--site-nav-height);
   --fd-layout-width: var(--site-frame-width);
-  --background: #000000;
-  --card: #000000;
-  --color-fd-background: #000000;
-  --color-fd-card: #000000;
+  --color-fd-background: var(--background);
+  --color-fd-card: var(--card);
   padding-top: var(--site-nav-height);
-  background: #000000;
+  background: var(--background);
+}
+
+/* Docs 区卡片深色沿用纯黑（全站 dark --card 为 #090909，Docs 历史上更暗一档） */
+.dark [data-docs-layout] {
+  --card: #000000;
 }
 
 [data-docs-layout] {
@@ -585,7 +588,7 @@ body {
 [data-docs-layout] #nd-docs-layout,
 [data-docs-layout] #nd-page,
 [data-docs-layout] #nd-toc {
-  background: #000000;
+  background: var(--background);
 }
 
 [data-docs-layout] #nd-sidebar,
@@ -598,7 +601,7 @@ body {
 }
 
 [data-docs-layout] #nd-sidebar {
-  background: #000000;
+  background: var(--background);
   border-inline-end: none;
   transition: none;
   font-size: 0.875rem;
