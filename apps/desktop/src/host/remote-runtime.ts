@@ -186,9 +186,12 @@ function buildRemoteDesktopRuntime(
 
 async function applyRemoteSessionPreferences(
   runtime: RemoteDesktopRuntime,
-  input: Pick<RemoteDesktopRuntimeInput, "approvalLevel" | "todoSessionKey" | "archive">,
+  input: Pick<RemoteDesktopRuntimeInput, "approvalLevel" | "todoSessionKey" | "archive" | "agentMode">,
 ): Promise<void> {
   await runtime.clientCall("session.setApprovalLevel", { approvalLevel: input.approvalLevel });
+  // Attach 复用既有 daemon session 时必须重同步 mode；否则 UI/host config 已切 Plan，
+  // daemon 仍保留创建时的 Agent（无 create_plan / system 仍写 You are in Agent mode）。
+  await runtime.clientCall("session.setMode", { mode: input.agentMode });
   if (input.todoSessionKey?.trim()) {
     await runtime.clientCall("session.setTodoSessionKey", {
       sessionKey: input.todoSessionKey.trim(),
