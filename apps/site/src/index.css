@@ -33,7 +33,7 @@
 
 :root {
   --background: oklch(1 0 0);
-  --foreground: oklch(0.145 0 0);
+  --foreground: #2b2b2b;
   --card: oklch(1 0 0);
   --card-foreground: oklch(0.145 0 0);
   --popover: oklch(1 0 0);
@@ -57,7 +57,7 @@
   --chart-5: oklch(0.269 0 0);
   --radius: 0.625rem;
   --sidebar: oklch(0.985 0 0);
-  --sidebar-foreground: oklch(0.145 0 0);
+  --sidebar-foreground: #2b2b2b;
   --sidebar-primary: oklch(0.205 0 0);
   --sidebar-primary-foreground: oklch(0.985 0 0);
   --sidebar-accent: oklch(0.97 0 0);
@@ -105,7 +105,7 @@ body {
 html,
 body,
 #root {
-  background: #0a0a0a;
+  background: var(--background);
 }
 
 body {
@@ -273,9 +273,13 @@ body {
 
   html {
     font-family: var(--font-sans);
-    color-scheme: dark;
+    color-scheme: light;
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
+  }
+
+  html.dark {
+    color-scheme: dark;
   }
 
   html:lang(zh-CN) {
@@ -504,10 +508,13 @@ body {
 
 /* Landing 预览：macOS hiddenInset 顶栏安全区（对齐 Desktop `spirit-desktop-darwin`） */
 [data-spirit-preview-shell="darwin"] {
-  /* Void 暗色正文：仅 Agent Window 内生效，窗口外 Landing 保持 text-white */
-  --foreground: #e4e4e4;
   --spirit-macos-titlebar-inset: 2rem;
   --spirit-macos-traffic-lights-inset-left: 4.875rem;
+}
+
+/* Void 暗色正文：仅深色下 Agent Window 内生效，浅色沿用 :root 的 #2b2b2b */
+.dark [data-spirit-preview-shell="darwin"] {
+  --foreground: #e4e4e4;
 }
 
 [data-spirit-preview-shell="darwin"] #session-sidebar-panel {
