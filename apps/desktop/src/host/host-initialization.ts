@@ -26,7 +26,7 @@ import type {
   DesktopExtensionListItem,
 } from "../types.js";
 import type { EphemeralSessionRecord } from "./sessions.js";
-import { ensureBuiltinAuthoringSkills } from "@spiritagent/host-internal";
+import { ensureBuiltInSkills } from "@spiritagent/host-internal";
 import { resolveWorkspaceBindingForRequestedRoot, sameWorkspaceRoot } from "./service-utils.js";
 import { spiritAgentDataDir } from "./storage.js";
 import type { ExtensionWarmupTrigger } from "./extension-warmup.js";
@@ -52,6 +52,7 @@ export interface HostInitializationContext {
   setToolExecutor(executor: DesktopToolExecutor | undefined): void;
   sessionRegistry(): SessionRegistry;
   resetStreamingPlacementState(full: boolean): void;
+  seedBuiltInExtensions(): Promise<void>;
   refreshExtensionsList(options?: { metadataOnly?: boolean }): Promise<void>;
   refreshRuntime(): Promise<void>;
   refreshLspSnapshot(): Promise<void>;
@@ -81,7 +82,8 @@ export async function ensureInitializedCommand(
   const loadedConfig = await loadConfig();
   applyLlmHttpVersionFromConfig(loadedConfig);
   applyLlmClientVersionFromApp();
-  await ensureBuiltinAuthoringSkills(spiritAgentDataDir());
+  await ensureBuiltInSkills(spiritAgentDataDir());
+  await ctx.seedBuiltInExtensions();
   const previousState = ctx.state();
   const previousBinding = normalizeWorkspaceBinding(
     previousState?.workspaceBinding ?? loadedConfig.workspaceBinding,

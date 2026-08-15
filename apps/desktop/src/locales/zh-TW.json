@@ -296,6 +296,7 @@
     "skillDescPlaceholder": "簡述何時使用及功能",
     "skillContentPlaceholder": "撰寫技能主體：步驟、範例、邊界情況與相對路徑參考",
     "extensionsTitle": "擴充功能",
+    "builtIn": "內建",
     "importZip": "匯入 ZIP",
     "noExtensionsInstalled": "未安裝任何擴充功能",
     "settingsPage": "設定頁面",

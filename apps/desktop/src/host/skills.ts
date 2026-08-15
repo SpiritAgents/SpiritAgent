@@ -5,6 +5,8 @@ import path from "node:path";
 import i18n from "../lib/i18n-host.js";
 import type { OpenAiActiveSkill, OpenAiActiveSkillResourceEntry } from "@spiritagent/agent-core";
 import {
+  isBuiltInSkillName,
+  noteBuiltInSkillRemoved,
   resolveInstructionPaths,
   SKILL_FILE_NAME,
   validateSkillName,
@@ -134,6 +136,10 @@ export async function deleteSkillDir(
     throw new Error(i18n.t("error.skillNotFound", { name }));
   }
 
+  // 先写墓碑再删：避免 unlink 成功后状态未落盘导致内置 skill 回种。
+  if (rootKind === "user" && isBuiltInSkillName(name)) {
+    await noteBuiltInSkillRemoved(spiritAgentDataDir(), name);
+  }
   await rm(skillDir, { recursive: true, force: true });
 }
 

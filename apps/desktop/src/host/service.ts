@@ -34,6 +34,7 @@ import {
   extractActivePlanPathFromLlmHistory,
   createHostExtensionMarketplace,
   createHostExtensionManager,
+  ensureBuiltInExtensions,
   localFileAttachmentFromPath,
   workspaceFileReferenceAttachmentFromPath,
   classifyLocalFileComposerRoute as resolveLocalFileComposerRoute,
@@ -1313,6 +1314,13 @@ class DesktopHostService {
       sessionRegistry: () => this.sessionRegistry,
       resetStreamingPlacementState: (full) => this.resetStreamingPlacementState(full),
       refreshExtensionsList: (options) => this.refreshExtensionsList(options),
+      seedBuiltInExtensions: async () => {
+        await ensureBuiltInExtensions({
+          spiritDataDir: spiritAgentDataDir(),
+          hostKind: "desktop",
+          manager: this.extensionManager(),
+        });
+      },
       refreshRuntime: () => this.refreshRuntime(),
       refreshLspSnapshot: () => this.refreshLspSnapshot(),
       deactivateExtensions: () => this.extensionManager().deactivateAll(),

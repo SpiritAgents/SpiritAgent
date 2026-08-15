@@ -261,6 +261,7 @@ export function createHostExtensionMarketplace(
           preparedDirectoryPath: extractedPackageDirectory,
           fileName: prepared.sourceFileName,
           replaceExisting: true,
+          installSource: "marketplace",
         });
         return installed;
       } finally {

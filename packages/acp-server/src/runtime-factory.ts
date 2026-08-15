@@ -39,7 +39,7 @@ import { HostToolExecutorProxy } from "@spiritagent/agent-core/host-bridge";
 import {
   NodeHostToolService,
   createNoopMcpAdapter,
-  ensureBuiltinAuthoringSkills,
+  ensureBuiltInSkills,
   loadHostInstructionMetadata,
   ensureTranscriptSessionDir,
   persistSessionTranscript,
@@ -107,7 +107,7 @@ export async function createAcpRuntime(
   const toolExecutor = new HostToolExecutorProxy(noopPeer);
 
   // 2. Create NodeHostToolService with noop MCP adapter
-  await ensureBuiltinAuthoringSkills(spiritDataDir);
+  await ensureBuiltInSkills(spiritDataDir);
   const service = new NodeHostToolService(
     { workspaceRoot, spiritDataDir },
     {

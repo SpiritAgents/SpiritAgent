@@ -66,7 +66,8 @@ import {
   createHostExtensionManager,
   createHookRunner,
   createNoopMcpAdapter,
-  ensureBuiltinAuthoringSkills,
+  ensureBuiltInExtensions,
+  ensureBuiltInSkills,
   ensureTranscriptSessionDir,
   loadHostInstructionMetadata,
   persistSessionTranscript,
@@ -230,8 +231,13 @@ export async function createServerRuntime(
   let extensionManager: ReturnType<typeof createHostExtensionManager> | undefined;
   const extensionSystemPrompts: LlmExtensionSystemPrompt[] = [];
   if (!isDreamCollector) {
-    await ensureBuiltinAuthoringSkills(spiritDataDir);
+    await ensureBuiltInSkills(spiritDataDir);
     extensionManager = createHostExtensionManager({ spiritDataDir, hostKind });
+    await ensureBuiltInExtensions({
+      spiritDataDir,
+      hostKind,
+      manager: extensionManager,
+    });
   }
   let currentApprovalLevel = approvalLevel;
   const service = new NodeHostToolService(
