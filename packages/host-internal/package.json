@@ -10,7 +10,7 @@
   },
   "files": [
     "dist",
-    "built-in-skills",
+    "built-in",
     "README.md"
   ],
   "type": "module",

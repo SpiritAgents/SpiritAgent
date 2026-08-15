@@ -3,35 +3,27 @@ import { cp, mkdir } from "node:fs/promises";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 
-import { SKILL_FILE_NAME, SKILLS_DIR_NAME } from "./storage.js";
+import { SKILL_FILE_NAME, SKILLS_DIR_NAME } from "../storage.js";
 
-export const BUILTIN_AUTHORING_SKILL_NAMES = [
-  "create-rule",
-  "create-skill",
-  "create-hook",
-] as const;
+export const BUILT_IN_SKILL_NAMES = ["create-rule", "create-skill", "create-hook"] as const;
 
-export type BuiltinAuthoringSkillName = (typeof BUILTIN_AUTHORING_SKILL_NAMES)[number];
+export type BuiltInSkillName = (typeof BUILT_IN_SKILL_NAMES)[number];
 
-export function resolveBuiltinSkillsTemplateRoot(): string {
+export function resolveBuiltInSkillsRoot(): string {
   const here = path.dirname(fileURLToPath(import.meta.url));
-  const candidates = [
-    path.join(here, "../built-in-skills"),
-    path.join(here, "../../built-in-skills"),
-  ];
-  for (const candidate of candidates) {
-    if (existsSync(path.join(candidate, "create-skill", SKILL_FILE_NAME))) {
-      return candidate;
-    }
+  // src/built-in and dist/built-in are the same depth relative to package root.
+  const candidate = path.join(here, "../../built-in/skills");
+  if (existsSync(path.join(candidate, "create-skill", SKILL_FILE_NAME))) {
+    return candidate;
   }
-  return candidates[0]!;
+  return candidate;
 }
 
-export async function ensureBuiltinAuthoringSkills(
+export async function ensureBuiltInSkills(
   spiritDataDir: string,
-  skillNames: readonly BuiltinAuthoringSkillName[] = BUILTIN_AUTHORING_SKILL_NAMES,
+  skillNames: readonly BuiltInSkillName[] = BUILT_IN_SKILL_NAMES,
 ): Promise<void> {
-  const templateRoot = resolveBuiltinSkillsTemplateRoot();
+  const templateRoot = resolveBuiltInSkillsRoot();
   const userSkillsRoot = path.join(spiritDataDir, SKILLS_DIR_NAME);
 
   await mkdir(userSkillsRoot, { recursive: true });

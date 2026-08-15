@@ -9,7 +9,7 @@ export * from "./dreams.js";
 export * from "./automations.js";
 export * from "./automation-trigger-message.js";
 export * from "./automation-host-tool.js";
-export * from "./built-in-skills.js";
+export * from "./built-in/skills.js";
 export * from "./transcript.js";
 export * from "./tool-output-archive.js";
 export * from "./spirit-filename-sanitize.js";
