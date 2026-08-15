@@ -554,27 +554,27 @@ function refreshMacOSDockMenu(): void {
   }, MACOS_DOCK_MENU_REFRESH_COALESCE_MS);
 }
 
-/** 与 `src/styles.css` Void 暗色 `--background`（#000000）一致；关 Mica 时窗口底色用此值，避免 WebView 透底呈 Chromium #121212 */
+/** 与 `src/styles.css` Void 暗色 `--background`（#000000）一致；关 translucency 时窗口底色用此值，避免 WebView 透底呈 Chromium #121212 */
 const WIN32_APP_BACKGROUND_DARK = "#000000";
 const WIN32_APP_BACKGROUND_LIGHT = "#fafafa";
 
-/** 与 Tauri `frame_chrome` 一致：开原生模糊时用透明背景，把绘制交给系统合成层。 */
-function electronRootBackgroundForBackdrop(blurEnabled: boolean, darkContent: boolean): string {
-  if (blurEnabled && (process.platform === "win32" || process.platform === "darwin")) {
+/** 与 Tauri `frame_chrome` 一致：开窗级半透明材质时用透明背景，把绘制交给系统合成层。 */
+function electronRootBackgroundForBackdrop(translucencyEnabled: boolean, darkContent: boolean): string {
+  if (translucencyEnabled && (process.platform === "win32" || process.platform === "darwin")) {
     return "#00000000";
   }
   return darkContent ? WIN32_APP_BACKGROUND_DARK : WIN32_APP_BACKGROUND_LIGHT;
 }
 
-/** 配置键仍为 `windowsMica`，表示各平台原生窗口模糊（Win Mica / macOS Vibrancy）。 */
-let cachedBackdropBlur: { mtimeMs: number; size: number; value: boolean } | undefined;
+/** 配置键 `translucency`：各平台原生窗口半透明材质（Win Mica / macOS Vibrancy）。 */
+let cachedTranslucency: { mtimeMs: number; size: number; value: boolean } | undefined;
 
 /**
- * 该值经 `desktop:read-native-backdrop-blur` 同步 IPC 暴露给渲染层：index.html 首帧
+ * 该值经 `desktop:read-translucency` 同步 IPC 暴露给渲染层：index.html 首帧
  * 内联脚本须在渲染前同步拿到，无法改为异步。为避免每次同步 IPC 都读盘解析整个
  * 配置文件，这里按 mtime/size 缓存，仅在配置文件变化时重新读取。
  */
-function readBackdropBlurFromDisk(): boolean {
+function readTranslucencyFromDisk(): boolean {
   const filePath = configFilePath();
   let mtimeMs: number;
   let size: number;
@@ -586,23 +586,23 @@ function readBackdropBlurFromDisk(): boolean {
     return true;
   }
   if (
-    cachedBackdropBlur &&
-    cachedBackdropBlur.mtimeMs === mtimeMs &&
-    cachedBackdropBlur.size === size
+    cachedTranslucency &&
+    cachedTranslucency.mtimeMs === mtimeMs &&
+    cachedTranslucency.size === size
   ) {
-    return cachedBackdropBlur.value;
+    return cachedTranslucency.value;
   }
 
   let value = true;
   try {
     const parsed = JSON.parse(readFileSync(filePath, "utf8")) as {
-      windowsMica?: boolean;
+      translucency?: boolean;
     };
-    value = parsed.windowsMica !== false;
+    value = parsed.translucency !== false;
   } catch {
     value = true;
   }
-  cachedBackdropBlur = { mtimeMs, size, value };
+  cachedTranslucency = { mtimeMs, size, value };
   return value;
 }
 
@@ -637,8 +637,8 @@ function readTrafficLightPositionFromDisk(): { x: number; y: number } | undefine
   return undefined;
 }
 
-function nativeBackdropBlurActive(blurEnabled: boolean): boolean {
-  return blurEnabled && (process.platform === "win32" || process.platform === "darwin");
+function nativeTranslucencyActive(translucencyEnabled: boolean): boolean {
+  return translucencyEnabled && (process.platform === "win32" || process.platform === "darwin");
 }
 
 /** 与 `src/lib/theme.ts` 中 `THEME_STORAGE_KEY` 保持一致 */
@@ -697,26 +697,30 @@ async function syncBrowserWindowFrameFromRendererStorage(
 function applyNativeWindowBackdrop(
   window: BrowserWindow,
   darkContent: boolean,
-  blurOverride?: boolean,
+  translucencyOverride?: boolean,
 ): void {
-  const blurEnabled = blurOverride ?? readBackdropBlurFromDisk();
+  const translucencyEnabled = translucencyOverride ?? readTranslucencyFromDisk();
 
   if (process.platform === "win32") {
     try {
-      window.setBackgroundMaterial(blurEnabled ? "mica" : "none");
+      // translucency 开启时使用系统 Mica 材质枚举值
+      window.setBackgroundMaterial(translucencyEnabled ? "mica" : "none");
     } catch (err) {
       console.error("[spirit-desktop] setBackgroundMaterial failed", err);
     }
   } else if (process.platform === "darwin") {
     try {
-      window.setVibrancy(blurEnabled ? MACOS_WINDOW_VIBRANCY : null);
+      window.setVibrancy(translucencyEnabled ? MACOS_WINDOW_VIBRANCY : null);
     } catch (err) {
       console.error("[spirit-desktop] setVibrancy failed", err);
     }
   }
 
   window.setBackgroundColor(
-    electronRootBackgroundForBackdrop(nativeBackdropBlurActive(blurEnabled), darkContent),
+    electronRootBackgroundForBackdrop(
+      nativeTranslucencyActive(translucencyEnabled),
+      darkContent,
+    ),
   );
 
   if (process.platform === "win32") {
@@ -728,8 +732,8 @@ function applyNativeWindowBackdrop(
   }
 
   try {
-    // 关 Mica 时若用实色 overlay，会盖住 WebView 标题栏最底一行（含 `border-b`），金刚键下缺一块线。
-    // 透明叠加：底色与底边由页面自绘透出，系统只画三个按钮图标（与开 Mica 时一致）。
+    // 关 translucency 时若用实色 overlay，会盖住 WebView 标题栏最底一行（含 `border-b`），金刚键下缺一块线。
+    // 透明叠加：底色与底边由页面自绘透出，系统只画三个按钮图标（与开启时一致）。
     window.setTitleBarOverlay({
       height: TITLE_BAR_OVERLAY_HEIGHT,
       color: "#00000000",
@@ -741,10 +745,10 @@ function applyNativeWindowBackdrop(
 }
 
 async function createMainWindow(): Promise<BrowserWindow> {
-  const blurOnDisk = readBackdropBlurFromDisk();
+  const translucencyOnDisk = readTranslucencyFromDisk();
   const initialDark = nativeTheme.shouldUseDarkColors;
   const initialBg = electronRootBackgroundForBackdrop(
-    nativeBackdropBlurActive(blurOnDisk),
+    nativeTranslucencyActive(translucencyOnDisk),
     initialDark,
   );
   const preloadPath = path.join(__dirname, "preload.cjs");
@@ -800,7 +804,7 @@ async function createMainWindow(): Promise<BrowserWindow> {
     },
   });
 
-  if (process.platform === "darwin" && !blurOnDisk) {
+  if (process.platform === "darwin" && !translucencyOnDisk) {
     try {
       window.setVibrancy(null);
     } catch (err) {
@@ -1192,8 +1196,8 @@ if (gotSpiritSingleInstanceLock) {
       revealMainWindowWhenLaunchSplashReady(window);
     });
 
-    ipcMain.on("desktop:read-native-backdrop-blur", (event) => {
-      event.returnValue = readBackdropBlurFromDisk();
+    ipcMain.on("desktop:read-translucency", (event) => {
+      event.returnValue = readTranslucencyFromDisk();
     });
 
     // OS 层深色偏好的追踪值。themeSource 被覆盖为 light/dark 期间，主/渲染两侧的
@@ -1224,7 +1228,7 @@ if (gotSpiritSingleInstanceLock) {
         request: {
           dark: boolean;
           nativeTheme: "system" | "light" | "dark";
-          nativeBackdropBlur?: boolean;
+          translucency?: boolean;
         },
       ) => {
         nativeTheme.themeSource = request.nativeTheme;
@@ -1241,7 +1245,7 @@ if (gotSpiritSingleInstanceLock) {
           console.warn("[spirit-desktop] desktop:sync-window-frame: no BrowserWindow for sender");
           return dark;
         }
-        applyNativeWindowBackdrop(window, dark, request.nativeBackdropBlur);
+        applyNativeWindowBackdrop(window, dark, request.translucency);
         return dark;
       },
     );
