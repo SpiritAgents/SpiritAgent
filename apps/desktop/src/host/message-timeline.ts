@@ -730,9 +730,37 @@ export class DesktopMessageTimeline {
     this.markMutated();
     const segment = this.ensureActiveSegment();
     let row = this.activeAssistantTextRow(segment);
-    const normalizedContent = content.trim();
+    let materializeContent = content;
+    let normalizedContent = content.trim();
+    // 流式已把工具前前言写到 before-tools；turn 完成的 assistantText 常是「前言+答案」。
+    // 若再整段 materialize 到 after-tools，会与 before-tools 叠成双重正文。
+    if (segmentHasToolRows(segment)) {
+      const beforeRow = this.findLastBeforeToolsAssistantTextRow(segment);
+      const beforeText = beforeRow?.content.trim() ?? "";
+      if (beforeRow && beforeText && normalizedContent.startsWith(beforeText)) {
+        const suffix = normalizedContent.slice(beforeText.length).replace(/^\s+/, "");
+        if (!suffix) {
+          beforeRow.pending = false;
+          const nextAux = normalizeMessageAuxSnapshot(aux);
+          if (nextAux) {
+            beforeRow.aux = nextAux;
+          }
+          segment.status = "completed";
+          segment.activeAssistantTextRowId = undefined;
+          this.logCompletedAssistantMaterialization(segment, beforeRow, true, beforeRow.content);
+          this.logSegmentRows("complete-text", segment);
+          return rowToMessage(beforeRow);
+        }
+        materializeContent = suffix;
+        normalizedContent = suffix;
+      }
+    }
     if (!row) {
       row = this.findReusableCompletedAssistantTextRow(segment, normalizedContent);
+    }
+    // completeActiveAssistantSegment 会清掉 active；优先复用已有 after-tools，避免再插一条合并全文。
+    if (!row && segmentHasToolRows(segment)) {
+      row = this.findAfterToolsAssistantTextRow(segment, { afterLastTool: true });
     }
     if (
       row &&
@@ -753,7 +781,7 @@ export class DesktopMessageTimeline {
       );
     }
 
-    row.content = content;
+    row.content = materializeContent;
     row.pending = false;
     const nextAux = normalizeMessageAuxSnapshot(aux);
     if (nextAux) {
@@ -763,7 +791,7 @@ export class DesktopMessageTimeline {
     }
     segment.status = "completed";
     segment.activeAssistantTextRowId = undefined;
-    this.logCompletedAssistantMaterialization(segment, row, reused, content);
+    this.logCompletedAssistantMaterialization(segment, row, reused, materializeContent);
     this.logSegmentRows("complete-text", segment);
     return rowToMessage(row);
   }
@@ -1446,6 +1474,22 @@ export class DesktopMessageTimeline {
     for (let index = segment.rows.length - 1; index > minIndex; index -= 1) {
       const row = segment.rows[index];
       if (row?.kind === "assistant-text" && row.section === "after-tools") {
+        return row;
+      }
+    }
+    return undefined;
+  }
+
+  private findLastBeforeToolsAssistantTextRow(
+    segment: DesktopTimelineSegment,
+  ): DesktopTimelineRow | undefined {
+    for (let index = segment.rows.length - 1; index >= 0; index -= 1) {
+      const row = segment.rows[index];
+      if (
+        row?.kind === "assistant-text" &&
+        row.section === "before-tools" &&
+        row.content.trim()
+      ) {
         return row;
       }
     }

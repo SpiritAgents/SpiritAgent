@@ -438,6 +438,36 @@ test("finalized thinking stays above completed assistant text in the same segmen
   ]);
 });
 
+test("materializeCompletedAssistantText does not duplicate before-tools preamble after web search", () => {
+  const timeline = createTimeline();
+  timeline.beginUserTurn("Anomaly 团队还写了 OpenNext？");
+  timeline.beginAssistantSegment("initial");
+  timeline.appendAssistantTextChunk("让我搜一下确认这几个项目的归属。");
+  timeline.upsertToolMessage(
+    "search-1",
+    {
+      toolCallId: "search-1",
+      toolName: "web_search",
+      phase: "succeeded",
+      headline: "已联网搜索",
+      detailLines: [],
+      argsExcerpt: "OpenNext Anomaly SST",
+    },
+  );
+  timeline.appendAssistantTextChunk("对，三样全是 Anomaly（SST 团队）的东西。");
+  timeline.completeActiveAssistantSegment();
+  timeline.materializeCompletedAssistantText(
+    "让我搜一下确认这几个项目的归属。对，三样全是 Anomaly（SST 团队）的东西。",
+  );
+
+  assert.deepEqual(timeline.toMessages().map(rowToken), [
+    "user:Anomaly 团队还写了 OpenNext？",
+    "assistant:让我搜一下确认这几个项目的归属。",
+    "tool:search-1:succeeded",
+    "assistant:对，三样全是 Anomaly（SST 团队）的东西。",
+  ]);
+});
+
 test("live thinking stays above tool rows while the tool is running", () => {
   const timeline = createTimeline();
   timeline.beginUserTurn("read README.md");
