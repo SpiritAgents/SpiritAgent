@@ -9,7 +9,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import type { DesignModeDemoState, BrowserTargetRects } from "@/lib/design-mode-demo-state";
 import { hitTestBrowserPickerTargetFromPoint } from "@/lib/design-mode-demo-state";
-import { desktopMicaBrowserTintClass } from "@/lib/desktop-mica-surface";
+import { desktopTranslucencyBrowserTintClass } from "@/lib/desktop-translucency-surface";
 import { DESIGN_MODE_BROWSER_URL } from "@/lib/workspace-tool-tabs";
 import { cn } from "@/lib/utils";
 
@@ -183,7 +183,7 @@ export function WorkspaceBrowserPreviewTab({
           ref={pageSlotRef}
           className={cn(
             "relative flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden",
-            desktopMicaBrowserTintClass(useMicaBackdrop),
+            desktopTranslucencyBrowserTintClass(useMicaBackdrop),
             pickerActive && "cursor-crosshair",
           )}
           onPointerDown={handlePagePointerDown}

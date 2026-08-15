@@ -13,7 +13,7 @@ import {
 } from "@/components/ui/animated-collapse";
 import type { Messages } from "@/i18n/messages";
 import { useI18n } from "@/i18n/provider";
-import { DESKTOP_ELEVATION_SHADOW_SM } from "@/lib/desktop-mica-surface";
+import { DESKTOP_ELEVATION_SHADOW_SM } from "@/lib/desktop-translucency-surface";
 import { cn } from "@/lib/utils";
 import type { ConversationMessageSnapshot, ToolBlockSnapshot } from "@/types/spirit-desktop";
 

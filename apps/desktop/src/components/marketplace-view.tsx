@@ -30,7 +30,7 @@ import {
   DESKTOP_OVERLAY_LIST_FILTER_INPUT_SHELL,
   instantHoverMotionClass,
 } from "@/lib/desktop-chrome";
-import { desktopMicaTintClass, desktopMicaTintInnerClass } from "@/lib/desktop-mica-surface";
+import { desktopTranslucencyTintClass, desktopTranslucencyTintInnerClass } from "@/lib/desktop-translucency-surface";
 import { showDesktopErrorToast } from "@/lib/desktop-error-toast";
 import { FONT_WEIGHT_MEDIUM } from "@/lib/desktop-typography";
 import { cn } from "@/lib/utils";
@@ -445,7 +445,7 @@ export function MarketplaceView({
       data-spirit-surface="marketplace-shell"
       className={cn(
         "flex min-h-0 min-w-0 flex-1 flex-col text-sm",
-        desktopMicaTintClass(useMicaBackdrop),
+        desktopTranslucencyTintClass(useMicaBackdrop),
       )}
     >
       {detailExtensionId === null ? (
@@ -557,7 +557,7 @@ export function MarketplaceView({
         </ScrollArea>
       ) : (
         <>
-          <div className={cn("shrink-0", desktopMicaTintInnerClass(useMicaBackdrop))}>
+          <div className={cn("shrink-0", desktopTranslucencyTintInnerClass(useMicaBackdrop))}>
             <div className={cn("mx-auto flex items-center px-3 py-2", MARKETPLACE_READING_W)}>
               <Button
                 type="button"

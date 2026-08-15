@@ -10,7 +10,7 @@ import { DESKTOP_FORM_INPUT_SHELL, DESKTOP_FORM_TEXTAREA_INNER } from "@/lib/des
 import {
   DESKTOP_ELEVATION_SHADOW_SM,
   desktopComposerSurfaceBackdropClass,
-} from "@/lib/desktop-mica-surface";
+} from "@/lib/desktop-translucency-surface";
 import { cn } from "@/lib/utils";
 import type { PendingToolApprovalSnapshot } from "@/types";
 

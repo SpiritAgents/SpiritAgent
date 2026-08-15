@@ -35,7 +35,7 @@ import {
   CONVERSATION_MAX_W,
   CONVERSATION_MESSAGE_LIST_MAX_W,
 } from "@/lib/conversation-layout-constants";
-import { desktopMicaTintInnerClass } from "@/lib/desktop-mica-surface";
+import { desktopTranslucencyTintInnerClass } from "@/lib/desktop-translucency-surface";
 import {
   buildConversationScrollOccludeMaskStyle,
   conversationScrollOccludeShapeFromRects,
@@ -731,7 +731,7 @@ export const ComposerDock = forwardRef<HTMLDivElement, ComposerDockProps>(functi
               <div
                 className={cn(
                   "pointer-events-none relative z-0 -mt-4 pt-[calc(1rem+0.375rem)] pb-[max(0.75rem,env(safe-area-inset-bottom,0px))]",
-                  desktopMicaTintInnerClass(useMicaBackdrop),
+                  desktopTranslucencyTintInnerClass(useMicaBackdrop),
                   CONVERSATION_GUTTER_NEG_X,
                   CONVERSATION_GUTTER_X,
                 )}

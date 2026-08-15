@@ -10,7 +10,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
-import { isNativeBackdropBlurSupported } from "@/lib/desktop-shell";
+import { isNativeTranslucencySupported } from "@/lib/desktop-shell";
 import { DESKTOP_SETTINGS_LABEL_CLASS } from "@/lib/desktop-typography";
 import { changeLanguage, LOCALE_LABEL_KEYS, VALID_LANGUAGES } from "@/lib/i18n";
 import type { ThemePreference } from "@/lib/theme";
@@ -49,7 +49,7 @@ export function OnboardingAppearanceControls({
         ))}
       </div>
 
-      {isNativeBackdropBlurSupported() ? (
+      {isNativeTranslucencySupported() ? (
         <div className="flex items-center justify-between gap-4">
           <label htmlFor="onboarding-blur-effect" className={DESKTOP_SETTINGS_LABEL_CLASS}>
             {t("settings.blurEffect")}

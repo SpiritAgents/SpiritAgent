@@ -14,7 +14,7 @@ import {
   PICKER_INJECT_CSS,
   type PickerMarqueeResult,
 } from "@/lib/browser-element-picker";
-import { desktopMicaBrowserTintClass } from "@/lib/desktop-mica-surface";
+import { desktopTranslucencyBrowserTintClass } from "@/lib/desktop-translucency-surface";
 import { useWorkspaceToolsShellHorizontalDivider } from "@/lib/use-workspace-tools-shell-horizontal-divider";
 import { BROWSER_NAV_SHELL_DIVIDER_ATTR } from "@/lib/workspace-tools-panel-edge";
 import {
@@ -732,7 +732,7 @@ export function WorkspaceBrowserTab({
             ref={pageSlotRef}
             className={cn(
               "relative min-h-0 min-w-0 flex-1",
-              desktopMicaBrowserTintClass(useMicaBackdrop),
+              desktopTranslucencyBrowserTintClass(useMicaBackdrop),
               isPickerActive && "cursor-crosshair",
             )}
           >

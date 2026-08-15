@@ -7,18 +7,18 @@ import {
 import {
   DESKTOP_OVERLAY_LIGHT_SHADOW,
   desktopComposerChipSurfaceClass,
-} from "@/lib/desktop-mica-surface";
+} from "@/lib/desktop-translucency-surface";
 import { cn } from "@/lib/utils";
 
 export {
   DESKTOP_COMPOSER_SURFACE_BACKDROP,
-  DESKTOP_COMPOSER_SURFACE_MICA_TINT,
+  DESKTOP_COMPOSER_SURFACE_TRANSLUCENCY_TINT,
   DESKTOP_COMPOSER_SURFACE_SOLID,
   DESKTOP_ELEVATION_SHADOW_SM,
   DESKTOP_OVERLAY_LIGHT_SHADOW,
   desktopComposerChipSurfaceClass,
   desktopComposerSurfaceBackdropClass,
-} from "@/lib/desktop-mica-surface";
+} from "@/lib/desktop-translucency-surface";
 
 /**
  * Instant hover fill — exclude background-color from transitions (session-sidebar precedent).

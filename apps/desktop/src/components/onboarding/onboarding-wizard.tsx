@@ -16,7 +16,7 @@ import type { SettingsFormState } from "@/components/settings/types";
 import { SpiritGlassLogo, spiritGlassLogoMaskStyle } from "@/components/spirit-glass-logo";
 import { Button } from "@/components/ui/button";
 import { DESKTOP_PAGE_TITLE_CLASS } from "@/lib/desktop-typography";
-import { desktopFullscreenOverlayTintClass } from "@/lib/desktop-mica-surface";
+import { desktopFullscreenOverlayTintClass } from "@/lib/desktop-translucency-surface";
 import type { ShellOverlayPhase } from "@/lib/desktop-shell";
 import { useTheme } from "@/hooks/useTheme";
 import { cn } from "@/lib/utils";

@@ -5,7 +5,7 @@ import type { ConversationTodoSnapshot } from "@/types";
 import {
   DESKTOP_ELEVATION_SHADOW_SM,
   desktopComposerSurfaceBackdropClass,
-} from "@/lib/desktop-mica-surface";
+} from "@/lib/desktop-translucency-surface";
 import { cn } from "@/lib/utils";
 
 type ComposerTodoCardProps = {

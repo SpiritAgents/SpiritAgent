@@ -3,15 +3,15 @@ export function desktopShellPlatform(): string | undefined {
   return typeof window !== "undefined" ? window.spiritDesktop?.platform : undefined;
 }
 
-export function isNativeBackdropBlurPlatform(
+export function isNativeTranslucencyPlatform(
   platform: string | undefined,
 ): platform is "win32" | "darwin" {
   return platform === "win32" || platform === "darwin";
 }
 
-/** Windows Mica / macOS Vibrancy 等原生模糊是否可用。 */
-export function isNativeBackdropBlurSupported(): boolean {
-  return isNativeBackdropBlurPlatform(desktopShellPlatform());
+/** Windows Mica / macOS Vibrancy 等原生窗级半透明材质是否可用。 */
+export function isNativeTranslucencySupported(): boolean {
+  return isNativeTranslucencyPlatform(desktopShellPlatform());
 }
 
 export function isElectronChrome(): boolean {
@@ -24,40 +24,40 @@ export function isElectronChrome(): boolean {
   return typeof navigator !== "undefined" && /\bElectron\//.test(navigator.userAgent);
 }
 
-/** 与 Electron `readBackdropBlurFromDisk` 对齐；首屏 snapshot 未就绪时用于避免误开 Mica 透明层。 */
-export function readStoredNativeBackdropBlur(): boolean {
-  if (!isNativeBackdropBlurSupported()) {
+/** 与 Electron `readTranslucencyFromDisk` 对齐；首屏 snapshot 未就绪时用于避免误开 translucency 透明层。 */
+export function readStoredTranslucency(): boolean {
+  if (!isNativeTranslucencySupported()) {
     return false;
   }
   try {
-    return window.spiritDesktop?.readNativeBackdropBlur?.() !== false;
+    return window.spiritDesktop?.readTranslucency?.() !== false;
   } catch {
     return true;
   }
 }
 
-export function resolveUseMicaBackdrop(windowsMica: boolean | undefined): boolean {
-  if (!isNativeBackdropBlurSupported()) {
+export function resolveUseTranslucency(translucency: boolean | undefined): boolean {
+  if (!isNativeTranslucencySupported()) {
     return false;
   }
-  if (windowsMica === undefined) {
-    return readStoredNativeBackdropBlur();
+  if (translucency === undefined) {
+    return readStoredTranslucency();
   }
-  return windowsMica !== false;
+  return translucency !== false;
 }
 
-/** 首屏前写入 Desktop 原生壳 class，避免启动层在 snapshot 就绪前误用 Mica 透明样式。 */
+/** 首屏前写入 Desktop 原生壳 class，避免启动层在 snapshot 就绪前误用 translucency 透明样式。 */
 export function applyDesktopNativeChromeToDocument(): void {
   if (typeof document === "undefined") {
     return;
   }
   const root = document.documentElement;
   const native = isElectronChrome();
-  const mica = native && readStoredNativeBackdropBlur();
+  const translucencyOn = native && readStoredTranslucency();
   root.classList.toggle("spirit-desktop-native", native);
-  root.classList.toggle("spirit-desktop-mica", mica);
-  // 与 LaunchSplash 同步：首帧即隐藏 Mica 下的主布局，避免 useEffect 前闪白。
-  root.classList.toggle("spirit-launch-splash-active", mica);
+  root.classList.toggle("spirit-desktop-translucency", translucencyOn);
+  // 与 LaunchSplash 同步：首帧即隐藏 translucency 下的主布局，避免 useEffect 前闪白。
+  root.classList.toggle("spirit-launch-splash-active", translucencyOn);
 }
 
 /** LaunchSplash 挂载/卸载时同步 html 上的启动层 class（须与 styles.css 规则一致）。 */

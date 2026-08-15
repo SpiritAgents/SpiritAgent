@@ -1,7 +1,7 @@
 import { useTranslation } from "react-i18next";
 
 import { EditFileLineDeltaBadge } from "@/components/edit-file-line-delta-badge";
-import { desktopComposerChipSurfaceClass } from "@/lib/desktop-mica-surface";
+import { desktopComposerChipSurfaceClass } from "@/lib/desktop-translucency-surface";
 import type { EditFileLineDelta } from "@/lib/edit-file-line-delta";
 import { cn } from "@/lib/utils";
 

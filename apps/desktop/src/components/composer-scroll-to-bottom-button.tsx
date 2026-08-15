@@ -2,7 +2,7 @@ import { ChevronDown } from "lucide-react";
 import { useEffect, useLayoutEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 
-import { desktopComposerChipSurfaceClass } from "@/lib/desktop-mica-surface";
+import { desktopComposerChipSurfaceClass } from "@/lib/desktop-translucency-surface";
 import { cn } from "@/lib/utils";
 
 const FADE_MS = 150;

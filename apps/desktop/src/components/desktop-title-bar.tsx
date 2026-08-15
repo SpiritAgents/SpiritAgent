@@ -5,7 +5,7 @@ import { useTheme } from "@/hooks/useTheme";
 import { useSessionSidebarShellRightInsetPx } from "@/hooks/useSessionSidebarShellRightInsetPx";
 import { spiritAgentTitleBarIconSrc } from "@/lib/brand-icon";
 import { sessionSidebarShellWidth } from "@/lib/desktop-chrome";
-import { desktopMicaTitleBarTintClass } from "@/lib/desktop-mica-surface";
+import { desktopTranslucencyTitleBarTintClass } from "@/lib/desktop-translucency-surface";
 import { cn } from "@/lib/utils";
 import { isViteDev } from "@/lib/vite-dev";
 import {
@@ -36,7 +36,7 @@ type TitleBarZoomMenuProps = {
 function titleBarSurfaceClass(useMicaBackdrop: boolean, withBorder: boolean) {
   return cn(
     withBorder && (useMicaBackdrop ? "border-black/5 dark:border-white/10" : "border-border/40"),
-    desktopMicaTitleBarTintClass(useMicaBackdrop),
+    desktopTranslucencyTitleBarTintClass(useMicaBackdrop),
   );
 }
 
@@ -44,7 +44,7 @@ function titleBarSurfaceClass(useMicaBackdrop: boolean, withBorder: boolean) {
 const TITLE_BAR_ICON_PX = 14;
 
 /** 云母顶栏黑底标（`build/icon.png` 内图案更小，恢复迁移透明标前的 20px） */
-const TITLE_BAR_ICON_MICA_PX = 20;
+const TITLE_BAR_ICON_TRANSLUCENCY_PX = 20;
 
 /** 与侧栏交互项默认字色一致（`text-sidebar-action-foreground`） */
 const TITLE_BAR_MENUBAR_TRIGGER_CLASS = "px-2 py-1 text-[13px] text-sidebar-action-foreground";
@@ -56,7 +56,7 @@ function execWindowAction(action: string): void {
 function TitleBarAppIcon({ useMicaBackdrop }: { useMicaBackdrop: boolean }) {
   const { resolvedDark } = useTheme();
   const iconSrc = spiritAgentTitleBarIconSrc(resolvedDark, useMicaBackdrop);
-  const iconPx = useMicaBackdrop ? TITLE_BAR_ICON_MICA_PX : TITLE_BAR_ICON_PX;
+  const iconPx = useMicaBackdrop ? TITLE_BAR_ICON_TRANSLUCENCY_PX : TITLE_BAR_ICON_PX;
   return (
     <span
       className="electron-no-drag ml-1 inline-flex shrink-0 items-center justify-center"

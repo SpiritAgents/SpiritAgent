@@ -39,7 +39,7 @@ import {
   DESKTOP_FILES_EXPLORER_TOOLBAR_ICON_BTN,
   DESKTOP_SHELL_LAYOUT_TRANSITION,
 } from "@/lib/desktop-chrome";
-import { desktopMicaFileDetailSurfaceClass } from "@/lib/desktop-mica-surface";
+import { desktopTranslucencyFileDetailSurfaceClass } from "@/lib/desktop-translucency-surface";
 import {
   WORKSPACE_FILES_TREE_MIN_WIDTH_PX,
   computeWorkspaceFilesTreeMaxWidthPx,
@@ -1161,7 +1161,7 @@ export function WorkspaceFilesTab({
                 </div>
               ) : doc?.status === "image" ? (
                 <WorkspaceImagePreviewPane
-                  className={desktopMicaFileDetailSurfaceClass(useMicaBackdrop)}
+                  className={desktopTranslucencyFileDetailSurfaceClass(useMicaBackdrop)}
                   previewState={imagePreviewState}
                   previewDataUrl={imagePreviewDataUrl}
                   fileLabel={doc.title}
@@ -1173,7 +1173,7 @@ export function WorkspaceFilesTab({
                       ref={previewScrollRef}
                       className={cn(
                         "h-full min-h-0 w-full",
-                        desktopMicaFileDetailSurfaceClass(useMicaBackdrop),
+                        desktopTranslucencyFileDetailSurfaceClass(useMicaBackdrop),
                       )}
                     >
                       <div className="mx-auto flex min-h-full w-full max-w-4xl flex-col px-4 py-4 sm:px-6">
@@ -1192,7 +1192,7 @@ export function WorkspaceFilesTab({
                           <div
                             className={cn(
                               "flex min-h-[8rem] items-center justify-center rounded-md border border-dashed border-border/50 px-4 text-center text-xs text-muted-foreground",
-                              desktopMicaFileDetailSurfaceClass(useMicaBackdrop),
+                              desktopTranslucencyFileDetailSurfaceClass(useMicaBackdrop),
                             )}
                           >
                             {t("workspace.emptyMarkdownDoc")}

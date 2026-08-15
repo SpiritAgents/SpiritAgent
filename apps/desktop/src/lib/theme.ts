@@ -81,7 +81,7 @@ export function applyThemeToDocument(
   setDocumentDark(dark);
   const nativeTheme = desktopNativeThemeForPreference(pref);
   syncDesktopWindowFrame(dark, nativeTheme, {
-    nativeBackdropBlur: document.documentElement.classList.contains("spirit-desktop-mica"),
+    translucency: document.documentElement.classList.contains("spirit-desktop-translucency"),
     // 切回 system 时渲染端 prefers-color-scheme 尚跟随旧覆盖值，resolveDark 可能算错；
     // 主进程在 themeSource 生效后回传真实 dark，在此一次性校正文档，避免等 mq change 二次翻转。
     onDarkCorrected: (realDark) => {
@@ -99,7 +99,7 @@ export function syncDesktopWindowFrame(
   dark: boolean,
   nativeTheme: "system" | "light" | "dark",
   options?: {
-    nativeBackdropBlur?: boolean;
+    translucency?: boolean;
     /** 主进程在 themeSource 生效后回传真实 dark；与本地推算不一致时调用。 */
     onDarkCorrected?: (realDark: boolean) => void;
     /** nativeTheme 为 system 时 IPC resolve 后调用，同步 resolvedDark 等。 */
@@ -119,7 +119,7 @@ export function syncDesktopWindowFrame(
     return;
   }
   void window.spiritDesktop
-    .syncWindowFrame({ dark, nativeTheme, nativeBackdropBlur: options?.nativeBackdropBlur })
+    .syncWindowFrame({ dark, nativeTheme, translucency: options?.translucency })
     .then((realDark) => {
       if (nativeTheme === "system") {
         options?.onSystemDarkResolved?.(realDark);

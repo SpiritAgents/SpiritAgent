@@ -45,12 +45,12 @@ import { useSubagentViewer } from "@/hooks/useSubagentViewer";
 import { useThemeSetter } from "@/hooks/useTheme";
 import { useGitHubAuthConnected } from "@/hooks/use-github-auth-connected";
 import { useWorkspaceToolsController } from "@/hooks/useWorkspaceToolsController";
-import { desktopMicaTintClass, desktopMicaTintInnerClass } from "@/lib/desktop-mica-surface";
+import { desktopTranslucencyTintClass, desktopTranslucencyTintInnerClass } from "@/lib/desktop-translucency-surface";
 import {
   isDarwinElectronShell,
   isElectronChrome,
   isWin32ElectronShell,
-  resolveUseMicaBackdrop,
+  resolveUseTranslucency,
   syncLaunchSplashChromeToDocument,
   type ShellOverlayPhase,
 } from "@/lib/desktop-shell";
@@ -81,7 +81,7 @@ export default function App() {
   const darwinElectronChrome = isDarwinElectronShell();
   const desktopTitleBarChrome = winElectronChrome || darwinElectronChrome;
   // snapshot 未就绪时读磁盘，避免 settings 默认 windowsMica:true 在启动层误开透明/材质
-  const useMicaBackdrop = resolveUseMicaBackdrop(
+  const useMicaBackdrop = resolveUseTranslucency(
     snapshot != null ? runtime.settings.windowsMica : undefined,
   );
 
@@ -462,7 +462,7 @@ export default function App() {
                         data-spirit-surface="settings-shell"
                         className={cn(
                           "flex min-h-0 min-w-0 flex-1 flex-col",
-                          desktopMicaTintInnerClass(useMicaBackdrop),
+                          desktopTranslucencyTintInnerClass(useMicaBackdrop),
                         )}
                       >
                         <DesktopLayoutChromeBar
@@ -543,7 +543,7 @@ export default function App() {
                         data-spirit-surface="automations-layout"
                         className={cn(
                           "flex min-h-0 min-w-0 flex-1 flex-col",
-                          desktopMicaTintInnerClass(useMicaBackdrop),
+                          desktopTranslucencyTintInnerClass(useMicaBackdrop),
                         )}
                       >
                         <DesktopLayoutChromeBar
@@ -553,7 +553,7 @@ export default function App() {
                         <div
                           className={cn(
                             "flex min-h-0 min-w-0 flex-1 flex-col",
-                            desktopMicaTintClass(useMicaBackdrop),
+                            desktopTranslucencyTintClass(useMicaBackdrop),
                           )}
                         >
                           {surfaceNav.automationDetailMode && surfaceNav.selectedAutomationId ? (
@@ -640,7 +640,7 @@ export default function App() {
                         data-spirit-surface="marketplace-layout"
                         className={cn(
                           "flex min-h-0 min-w-0 flex-1 flex-col",
-                          desktopMicaTintInnerClass(useMicaBackdrop),
+                          desktopTranslucencyTintInnerClass(useMicaBackdrop),
                         )}
                       >
                         <DesktopLayoutChromeBar
@@ -667,7 +667,7 @@ export default function App() {
                       <div
                         className={cn(
                           "flex min-h-0 min-w-0 flex-1 flex-row overflow-hidden",
-                          desktopMicaTintInnerClass(useMicaBackdrop),
+                          desktopTranslucencyTintInnerClass(useMicaBackdrop),
                           surfaceNav.settingsMode && "hidden",
                         )}
                         aria-hidden={surfaceNav.settingsMode}

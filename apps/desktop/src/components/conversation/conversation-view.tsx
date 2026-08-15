@@ -21,7 +21,7 @@ import type { ComposerRichInputHandle } from "@/components/composer-rich-input";
 import type { DesktopAgentMode } from "@/lib/agent-mode";
 import type { BrowserElementAttachment } from "@/lib/browser-element-attachment";
 import { CONVERSATION_GUTTER_X, CONVERSATION_MAX_W } from "@/lib/conversation-layout-constants";
-import { desktopMicaTintClass, desktopMicaTintInnerClass } from "@/lib/desktop-mica-surface";
+import { desktopTranslucencyTintClass, desktopTranslucencyTintInnerClass } from "@/lib/desktop-translucency-surface";
 import type { EditorFileTarget } from "@/lib/workspace-editor-navigation";
 import { scrollAreaViewport } from "@/lib/scroll-area-viewport";
 import type { ActiveWorkspaceFileReferenceQuery } from "@/lib/composer-segment-model";
@@ -400,7 +400,7 @@ export function ConversationView({
       data-spirit-surface="conversation-layout"
       className={cn(
         "flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden min-w-0",
-        desktopMicaTintInnerClass(useMicaBackdrop),
+        desktopTranslucencyTintInnerClass(useMicaBackdrop),
       )}
     >
       <div
@@ -409,7 +409,7 @@ export function ConversationView({
         {...(paneId ? { "data-pane-drop-host": paneId } : {})}
         className={cn(
           "relative flex min-h-0 min-w-0 flex-1 flex-col min-w-0",
-          desktopMicaTintInnerClass(useMicaBackdrop),
+          desktopTranslucencyTintInnerClass(useMicaBackdrop),
         )}
         onPointerDown={() => {
           onPaneFocus?.();
@@ -508,7 +508,7 @@ export function ConversationView({
             data-spirit-surface="conversation-stage"
             className={cn(
               "relative flex min-h-0 min-w-0 flex-1 flex-col text-sm",
-              desktopMicaTintClass(useMicaBackdrop),
+              desktopTranslucencyTintClass(useMicaBackdrop),
             )}
           >
             {compactionDemoActive || longConversationListDemoActive ? (
@@ -518,7 +518,7 @@ export function ConversationView({
                     ? "long-list-demo-banner"
                     : "compaction-ui-demo-banner"
                 }
-                className={cn("shrink-0", desktopMicaTintInnerClass(useMicaBackdrop))}
+                className={cn("shrink-0", desktopTranslucencyTintInnerClass(useMicaBackdrop))}
               >
                 <div
                   className={cn(
@@ -579,7 +579,7 @@ export function ConversationView({
             <ScrollArea
               ref={conversationScrollAreaRef}
               data-spirit-surface="conversation-scroll"
-              className={cn("min-h-0 flex-1", desktopMicaTintInnerClass(useMicaBackdrop))}
+              className={cn("min-h-0 flex-1", desktopTranslucencyTintInnerClass(useMicaBackdrop))}
               type="hover"
               scrollHideDelay={450}
               viewportStyle={conversationScrollViewportStyle}
@@ -587,7 +587,7 @@ export function ConversationView({
               {/* min-h-full：短内容仍铺满视口；pb ≥ dock 实测高度 + 留白，审批卡弹出时同步增高 */}
               <div
                 data-spirit-surface="conversation-scroll-body"
-                className={cn("min-h-full w-full", desktopMicaTintInnerClass(useMicaBackdrop))}
+                className={cn("min-h-full w-full", desktopTranslucencyTintInnerClass(useMicaBackdrop))}
                 style={{
                   ...((!isEmptySession || subagentViewActive) && !hideStaleConversationMessages
                     ? { paddingBottom: conversationScrollBedPaddingPx }

@@ -57,9 +57,9 @@ import {
   instantHoverMotionClass,
 } from "@/lib/desktop-chrome";
 import {
-  desktopMicaTintClass,
-  desktopMicaWorkspaceTabSelectedClass,
-} from "@/lib/desktop-mica-surface";
+  desktopTranslucencyTintClass,
+  desktopTranslucencyWorkspaceTabSelectedClass,
+} from "@/lib/desktop-translucency-surface";
 import { maskFadeHorizontalEnd } from "@/lib/mask-styles";
 import {
   WORKSPACE_TOOLS_MIN_WIDTH_PX,
@@ -424,7 +424,7 @@ function WorkspaceToolsDockShell({
           className={cn(
             "group relative z-10 w-px shrink-0 cursor-col-resize touch-none select-none",
             "before:absolute before:inset-y-0 before:-left-1 before:w-3 before:content-['']",
-            desktopMicaTintClass(useMicaBackdrop),
+            desktopTranslucencyTintClass(useMicaBackdrop),
           )}
           onPointerDown={onResizePointerDown}
           onPointerMove={onResizePointerMove}
@@ -443,7 +443,7 @@ function WorkspaceToolsDockShell({
           data-spirit-surface="workspace-panel"
           className={cn(
             "flex h-full min-h-0 min-w-0 shrink-0 flex-col overflow-hidden text-foreground",
-            desktopMicaTintClass(useMicaBackdrop),
+            desktopTranslucencyTintClass(useMicaBackdrop),
           )}
           style={{ width: widthPx }}
           aria-label={t("workspace.workspaceTools")}
@@ -760,7 +760,7 @@ const WorkspaceToolsDockContent = memo(function WorkspaceToolsDockContent({
                           useMicaBackdrop
                             ? cn(
                                 "border-b-transparent",
-                                desktopMicaWorkspaceTabSelectedClass(useMicaBackdrop),
+                                desktopTranslucencyWorkspaceTabSelectedClass(useMicaBackdrop),
                               )
                             : "border-b-background bg-background",
                         )

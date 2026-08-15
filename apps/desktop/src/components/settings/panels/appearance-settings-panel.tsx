@@ -13,7 +13,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { changeLanguage, LOCALE_LABEL_KEYS, VALID_LANGUAGES } from "@/lib/i18n";
-import { isNativeBackdropBlurSupported } from "@/lib/desktop-shell";
+import { isNativeTranslucencySupported } from "@/lib/desktop-shell";
 import type { ThemePreference } from "@/lib/theme";
 
 const appearanceSelectTriggerClassName = "w-full sm:w-fit sm:max-w-full";
@@ -102,13 +102,13 @@ export function AppearanceSettingsPanel({
       <SettingsRow
         label={t("settings.blurEffect")}
         description={
-          isNativeBackdropBlurSupported()
+          isNativeTranslucencySupported()
             ? t("settings.blurEffectDescription")
             : t("settings.blurEffectUnsupported")
         }
         htmlFor="settings-blur-effect"
       >
-        {isNativeBackdropBlurSupported() ? (
+        {isNativeTranslucencySupported() ? (
           <div className="flex justify-end">
             <Checkbox
               id="settings-blur-effect"

@@ -35,7 +35,7 @@ import { instantHoverMotionClass } from "@/lib/desktop-chrome";
 import {
   DESKTOP_COMPOSER_SURFACE_BACKDROP,
   DESKTOP_ELEVATION_SHADOW_SM,
-} from "@/lib/desktop-mica-surface";
+} from "@/lib/desktop-translucency-surface";
 import { cn } from "@/lib/utils";
 import type { DesktopModelCatalogHint, ModelProfileSnapshot } from "@/types/spirit-desktop";
 

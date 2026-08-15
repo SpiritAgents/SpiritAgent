@@ -10,7 +10,7 @@ import { DESKTOP_CHROME_TOGGLE_ICON_BTN, instantHoverMotionClass } from "@/lib/d
 import {
   DESKTOP_ELEVATION_SHADOW_SM,
   desktopComposerSurfaceBackdropClass,
-} from "@/lib/desktop-mica-surface";
+} from "@/lib/desktop-translucency-surface";
 import { cn } from "@/lib/utils";
 import type { PendingQuestionsSnapshot } from "@/types";
 

@@ -6,7 +6,7 @@ import "@xterm/xterm/css/xterm.css";
 import { Button } from "@/components/ui/button";
 import { TerminalSelectionMenu } from "@/components/workspace-terminal-selection-menu";
 import { createWorkspaceTerminalSession } from "@/lib/workspace-xterm";
-import { desktopMicaTerminalTintClass } from "@/lib/desktop-mica-surface";
+import { desktopTranslucencyTerminalTintClass } from "@/lib/desktop-translucency-surface";
 import { cn } from "@/lib/utils";
 import type { Terminal } from "@xterm/xterm";
 
@@ -135,7 +135,7 @@ export function WorkspaceShellTab({
         ref={containerRef}
         className={cn(
           "workspace-shell-xterm min-h-0 min-w-0 flex-1 overflow-hidden",
-          desktopMicaTerminalTintClass(useMicaBackdrop),
+          desktopTranslucencyTerminalTintClass(useMicaBackdrop),
           embedError ? "hidden" : "block",
         )}
       />

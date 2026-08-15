@@ -47,7 +47,7 @@ import {
   DESKTOP_CHROME_TOGGLE_ICON_BTN,
   DESKTOP_SHELL_LAYOUT_TRANSITION,
 } from "@/lib/desktop-chrome";
-import { desktopMicaTintClass } from "@/lib/desktop-mica-surface";
+import { desktopTranslucencyTintClass } from "@/lib/desktop-translucency-surface";
 import {
   isDarwinElectronShell,
   modBackslashShortcutLabel,
@@ -257,7 +257,7 @@ export function DesktopLayoutChromeBar({
       className={cn(
         "flex h-8 shrink-0 items-center gap-2 px-2",
         showTrailingActions ? "justify-between" : "justify-start",
-        desktopMicaTintClass(useMicaBackdrop),
+        desktopTranslucencyTintClass(useMicaBackdrop),
         paneDragEnabled && "cursor-grab active:cursor-grabbing",
       )}
       onDragOver={(event) => {

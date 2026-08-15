@@ -33,7 +33,7 @@ import type { DesktopAgentMode } from "@/lib/agent-mode";
 import { modelRefsEqual } from "@spiritagent/host-internal/config-v2";
 import type { BrowserElementAttachment } from "@/lib/browser-element-attachment";
 import { DESKTOP_ELEVATION_SHADOW_SM, instantHoverMotionClass } from "@/lib/desktop-chrome";
-import { desktopComposerSurfaceBackdropClass } from "@/lib/desktop-mica-surface";
+import { desktopComposerSurfaceBackdropClass } from "@/lib/desktop-translucency-surface";
 import { cn } from "@/lib/utils";
 import { segmentsToPlainText } from "@/lib/composer-segment-model";
 import type {
