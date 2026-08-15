@@ -235,6 +235,15 @@ export interface ToolAgentSystemInfo {
   version: string;
 }
 
+/** Host identity shown in `<basic_info>` (LLM-visible English labels). */
+export type ToolAgentHostKind = "Desktop" | "CLI" | "ACP Server" | "Web";
+
+export interface ToolAgentHostInfo {
+  kind: ToolAgentHostKind;
+  /** Browser page URL when kind is Web. */
+  url?: string;
+}
+
 export interface ToolAgentBasicInfo {
   workspaceRoot?: string;
   terminal?: string;
@@ -242,6 +251,7 @@ export interface ToolAgentBasicInfo {
   gitBranch?: string;
   /** Absolute path to this session's transcript directory under Spirit data. */
   sessionTranscript?: string;
+  host?: ToolAgentHostInfo;
 }
 
 export interface ToolAgentState {
@@ -961,12 +971,29 @@ export function buildBasicInfoSystemMessage(basicInfo?: ToolAgentBasicInfo): str
   const systemName = basicInfo?.system?.name.trim();
   const systemVersion = basicInfo?.system?.version.trim();
   const hasSystem = Boolean(systemName || systemVersion);
+  const hostKind = basicInfo?.host?.kind;
+  const hostUrl = basicInfo?.host?.url?.trim();
+  const hasHost = Boolean(hostKind);
 
-  if (!workspaceRoot && !terminal && !gitBranch && !hasSystem && !sessionTranscript) {
+  if (
+    !workspaceRoot &&
+    !terminal &&
+    !gitBranch &&
+    !hasSystem &&
+    !sessionTranscript &&
+    !hasHost
+  ) {
     return undefined;
   }
 
   const lines = ["Basic information", ""];
+  if (hostKind) {
+    lines.push("Current host:", `- ${hostKind}`);
+    if (hostUrl) {
+      lines.push(`- URL: ${hostUrl}`);
+    }
+    lines.push("");
+  }
   if (workspaceRoot) {
     lines.push("Current workspace:", `- ${workspaceRoot}`, "");
   }
