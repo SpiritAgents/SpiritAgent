@@ -22,7 +22,7 @@ export type WorkspaceShellTabProps = {
   /** 侧栏连续拖拽调整宽度时为 true，暂停终端 fit 直至松手。 */
   suspendTerminalResize?: boolean;
   /** Windows 云母 / macOS Vibrancy：终端保留较高不透明度以保证 ANSI 可读性。 */
-  useMicaBackdrop?: boolean;
+  useTranslucency?: boolean;
 };
 
 export function WorkspaceShellTab({
@@ -31,7 +31,7 @@ export function WorkspaceShellTab({
   terminalDisplayName = "Terminal",
   onTerminalAddToSession,
   suspendTerminalResize = false,
-  useMicaBackdrop = false,
+  useTranslucency = false,
 }: WorkspaceShellTabProps) {
   const { t } = useTranslation();
   const containerRef = useRef<HTMLDivElement>(null);
@@ -135,7 +135,7 @@ export function WorkspaceShellTab({
         ref={containerRef}
         className={cn(
           "workspace-shell-xterm min-h-0 min-w-0 flex-1 overflow-hidden",
-          desktopTranslucencyTerminalTintClass(useMicaBackdrop),
+          desktopTranslucencyTerminalTintClass(useTranslucency),
           embedError ? "hidden" : "block",
         )}
       />

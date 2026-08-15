@@ -48,7 +48,7 @@ export type WorkspaceBrowserTabProps = {
   /** 当前浏览器工具标签是否为右侧工作区激活页 */
   isActive?: boolean;
   /** Windows 云母 / macOS Vibrancy：页槽使用略高的半透明底色。 */
-  useMicaBackdrop?: boolean;
+  useTranslucency?: boolean;
 };
 
 type LocalListeningEndpoint = {
@@ -214,7 +214,7 @@ export function WorkspaceBrowserTab({
   onElementPicked,
   browserTabEnabled = false,
   isActive = false,
-  useMicaBackdrop = false,
+  useTranslucency = false,
 }: WorkspaceBrowserTabProps) {
   const { t } = useTranslation();
   const rootRef = useRef<HTMLDivElement | null>(null);
@@ -732,7 +732,7 @@ export function WorkspaceBrowserTab({
             ref={pageSlotRef}
             className={cn(
               "relative min-h-0 min-w-0 flex-1",
-              desktopTranslucencyBrowserTintClass(useMicaBackdrop),
+              desktopTranslucencyBrowserTintClass(useTranslucency),
               isPickerActive && "cursor-crosshair",
             )}
           >

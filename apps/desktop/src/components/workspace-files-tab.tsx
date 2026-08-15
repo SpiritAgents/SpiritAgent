@@ -365,7 +365,7 @@ export type WorkspaceFilesTabProps = {
   onFileSnippetAddToSession?: (attachment: FileSnippetAttachment) => void;
   onWorkspaceFileAddToSession?: (relativePath: string) => void;
   gitRevision?: number;
-  useMicaBackdrop?: boolean;
+  useTranslucency?: boolean;
   codeCompletionEnabled?: boolean;
 };
 
@@ -401,7 +401,7 @@ export function WorkspaceFilesTab({
   onFileSnippetAddToSession,
   onWorkspaceFileAddToSession,
   gitRevision,
-  useMicaBackdrop = false,
+  useTranslucency = false,
   codeCompletionEnabled = true,
 }: WorkspaceFilesTabProps) {
   const { t } = useTranslation();
@@ -1161,7 +1161,7 @@ export function WorkspaceFilesTab({
                 </div>
               ) : doc?.status === "image" ? (
                 <WorkspaceImagePreviewPane
-                  className={desktopTranslucencyFileDetailSurfaceClass(useMicaBackdrop)}
+                  className={desktopTranslucencyFileDetailSurfaceClass(useTranslucency)}
                   previewState={imagePreviewState}
                   previewDataUrl={imagePreviewDataUrl}
                   fileLabel={doc.title}
@@ -1173,7 +1173,7 @@ export function WorkspaceFilesTab({
                       ref={previewScrollRef}
                       className={cn(
                         "h-full min-h-0 w-full",
-                        desktopTranslucencyFileDetailSurfaceClass(useMicaBackdrop),
+                        desktopTranslucencyFileDetailSurfaceClass(useTranslucency),
                       )}
                     >
                       <div className="mx-auto flex min-h-full w-full max-w-4xl flex-col px-4 py-4 sm:px-6">
@@ -1192,7 +1192,7 @@ export function WorkspaceFilesTab({
                           <div
                             className={cn(
                               "flex min-h-[8rem] items-center justify-center rounded-md border border-dashed border-border/50 px-4 text-center text-xs text-muted-foreground",
-                              desktopTranslucencyFileDetailSurfaceClass(useMicaBackdrop),
+                              desktopTranslucencyFileDetailSurfaceClass(useTranslucency),
                             )}
                           >
                             {t("workspace.emptyMarkdownDoc")}

@@ -223,7 +223,7 @@ export type WorkspaceToolsDockProps = {
   submitGitChip: (request: SubmitGitChipRequest) => Promise<boolean>;
   className?: string;
   /** Windows 云母 / macOS Vibrancy：工作区面板使用半透明主题底色。 */
-  useMicaBackdrop?: boolean;
+  useTranslucency?: boolean;
   /** 工作区 Monaco 编辑器 AI 补全；缺省为 true。 */
   codeCompletionEnabled?: boolean;
 };
@@ -237,7 +237,7 @@ type WorkspaceToolsDockContentProps = Omit<
 
 type WorkspaceToolsDockShellProps = Pick<
   WorkspaceToolsDockProps,
-  "widthPx" | "minWidthPx" | "maxWidthPx" | "onWidthPxChange" | "className" | "useMicaBackdrop"
+  "widthPx" | "minWidthPx" | "maxWidthPx" | "onWidthPxChange" | "className" | "useTranslucency"
 > & {
   contentProps: WorkspaceToolsDockContentProps;
 };
@@ -262,7 +262,7 @@ function WorkspaceToolsDockInner(props: WorkspaceToolsDockProps) {
     maxWidthPx,
     onWidthPxChange,
     className,
-    useMicaBackdrop,
+    useTranslucency,
     ...contentProps
   } = props;
   const [isResizing, setIsResizing] = useState(false);
@@ -274,10 +274,10 @@ function WorkspaceToolsDockInner(props: WorkspaceToolsDockProps) {
       maxWidthPx={maxWidthPx}
       onWidthPxChange={onWidthPxChange}
       className={className}
-      useMicaBackdrop={useMicaBackdrop}
+      useTranslucency={useTranslucency}
       isResizing={isResizing}
       onResizingChange={setIsResizing}
-      contentProps={{ ...contentProps, isResizing, useMicaBackdrop }}
+      contentProps={{ ...contentProps, isResizing, useTranslucency }}
     />
   );
 }
@@ -288,7 +288,7 @@ function WorkspaceToolsDockShell({
   maxWidthPx: maxWidthPxProp,
   onWidthPxChange,
   className,
-  useMicaBackdrop = false,
+  useTranslucency = false,
   isResizing: _isResizing,
   onResizingChange,
   contentProps,
@@ -424,7 +424,7 @@ function WorkspaceToolsDockShell({
           className={cn(
             "group relative z-10 w-px shrink-0 cursor-col-resize touch-none select-none",
             "before:absolute before:inset-y-0 before:-left-1 before:w-3 before:content-['']",
-            desktopTranslucencyTintClass(useMicaBackdrop),
+            desktopTranslucencyTintClass(useTranslucency),
           )}
           onPointerDown={onResizePointerDown}
           onPointerMove={onResizePointerMove}
@@ -443,7 +443,7 @@ function WorkspaceToolsDockShell({
           data-spirit-surface="workspace-panel"
           className={cn(
             "flex h-full min-h-0 min-w-0 shrink-0 flex-col overflow-hidden text-foreground",
-            desktopTranslucencyTintClass(useMicaBackdrop),
+            desktopTranslucencyTintClass(useTranslucency),
           )}
           style={{ width: widthPx }}
           aria-label={t("workspace.workspaceTools")}
@@ -515,7 +515,7 @@ const WorkspaceToolsDockContent = memo(function WorkspaceToolsDockContent({
   readGitHistory,
   readGitCommitMessage,
   submitGitChip,
-  useMicaBackdrop = false,
+  useTranslucency = false,
   codeCompletionEnabled = true,
   isResizing,
 }: WorkspaceToolsDockContentProps) {
@@ -757,10 +757,10 @@ const WorkspaceToolsDockContent = memo(function WorkspaceToolsDockContent({
                     selected
                       ? cn(
                           "border-border/40 text-foreground shadow-sm",
-                          useMicaBackdrop
+                          useTranslucency
                             ? cn(
                                 "border-b-transparent",
-                                desktopTranslucencyWorkspaceTabSelectedClass(useMicaBackdrop),
+                                desktopTranslucencyWorkspaceTabSelectedClass(useTranslucency),
                               )
                             : "border-b-background bg-background",
                         )
@@ -964,7 +964,7 @@ const WorkspaceToolsDockContent = memo(function WorkspaceToolsDockContent({
                     }
                     onFileSnippetAddToSession={onFileSnippetAddToSession}
                     onWorkspaceFileAddToSession={onWorkspaceFileAddToSession}
-                    useMicaBackdrop={useMicaBackdrop}
+                    useTranslucency={useTranslucency}
                     codeCompletionEnabled={codeCompletionEnabled}
                   />
                 </div>
@@ -973,7 +973,7 @@ const WorkspaceToolsDockContent = memo(function WorkspaceToolsDockContent({
                   <div className="flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden">
                     <WorkspaceShellTab
                       workspaceRoot={workspaceRoot}
-                      useMicaBackdrop={useMicaBackdrop}
+                      useTranslucency={useTranslucency}
                       onTitleChange={(title) => handleTabTitleChange(item.id, title)}
                       terminalDisplayName={workspaceTerminalChipDisplayName(item, tabs, t)}
                       onTerminalAddToSession={onTerminalAddToSession}
@@ -988,7 +988,7 @@ const WorkspaceToolsDockContent = memo(function WorkspaceToolsDockContent({
                     browserUrl={item.browserUrl}
                     browserTabEnabled={browserTabEnabled}
                     isActive={selected}
-                    useMicaBackdrop={useMicaBackdrop}
+                    useTranslucency={useTranslucency}
                     onBrowserUrlChange={(url) => handleBrowserUrlChange(item.id, url)}
                     onOpenUrlInNewTab={onBrowserOpenInNewTab}
                     onTitleChange={(title) => handleTabTitleChange(item.id, title)}

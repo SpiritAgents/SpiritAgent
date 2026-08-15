@@ -125,14 +125,14 @@ export type ComposerDockProps = {
   onComposerDragOver: (event: ReactDragEvent<HTMLElement>) => void;
   onComposerDrop: (event: ReactDragEvent<HTMLElement>) => void;
   models: DesktopSnapshot["config"]["models"];
-  useMicaBackdrop: boolean;
+  useTranslucency: boolean;
   onOpenGitTab: () => void;
   /** 用户已上滚离开底部时显示「回到底部」。 */
   showScrollToBottom?: boolean;
   onScrollToBottom?: () => void;
   /** 会话滚动视口（用于把 dock 形状换算到 viewport 坐标做形状 mask） */
   getScrollViewport?: () => HTMLElement | null;
-  /** Mica：按输入框/Changes/TODO 轮廓裁切消息；顶圆角空隙不裁 */
+  /** translucency：按输入框/Changes/TODO 轮廓裁切消息；顶圆角空隙不裁 */
   onScrollOccludeMaskStyleChange?: (style: CSSProperties | undefined) => void;
 };
 
@@ -209,7 +209,7 @@ export const ComposerDock = forwardRef<HTMLDivElement, ComposerDockProps>(functi
     onComposerDragOver,
     onComposerDrop,
     models,
-    useMicaBackdrop,
+    useTranslucency,
     onOpenGitTab,
     showScrollToBottom = false,
     onScrollToBottom,
@@ -235,7 +235,7 @@ export const ComposerDock = forwardRef<HTMLDivElement, ComposerDockProps>(functi
     if (!onScrollOccludeMaskStyleChange) {
       return;
     }
-    if (isEmptySession || !useMicaBackdrop) {
+    if (isEmptySession || !useTranslucency) {
       onScrollOccludeMaskStyleChange(undefined);
       return;
     }
@@ -255,7 +255,7 @@ export const ComposerDock = forwardRef<HTMLDivElement, ComposerDockProps>(functi
       const viewportRect = viewport.getBoundingClientRect();
       const shapes: ConversationScrollOccludeShape[] = [];
 
-      // 审批 / 提问卡在 chrome 外、仍叠在滚动区上；Mica tint 下需一并裁掉消息透出
+      // 审批 / 提问卡在 chrome 外、仍叠在滚动区上；translucency tint 下需一并裁掉消息透出
       for (const selector of [
         '[data-spirit-surface="pending-approval-card"]',
         '[data-spirit-surface="pending-questions-card"]',
@@ -370,7 +370,7 @@ export const ComposerDock = forwardRef<HTMLDivElement, ComposerDockProps>(functi
     isEmptySession,
     onScrollOccludeMaskStyleChange,
     showScrollToBottom,
-    useMicaBackdrop,
+    useTranslucency,
   ]);
   const fileReferenceAnchor = useComposerSuggestionAnchor(
     composerRichInputRef,
@@ -527,7 +527,7 @@ export const ComposerDock = forwardRef<HTMLDivElement, ComposerDockProps>(functi
               pendingApproval={pendingApproval}
               approvalGuidance={runtime.approvalGuidance}
               approveBusy={runtime.busyAction === "approve"}
-              useMicaBackdrop={useMicaBackdrop}
+              useTranslucency={useTranslucency}
               onApprovalGuidanceChange={runtime.setApprovalGuidance}
               onSubmitApproval={(decision) => {
                 if (decision.kind === "allow") {
@@ -560,7 +560,7 @@ export const ComposerDock = forwardRef<HTMLDivElement, ComposerDockProps>(functi
               pendingQuestions={pendingQuestions}
               questionDrafts={questionDraftsOverride ?? runtime.questionDrafts}
               questionsBusy={runtime.busyAction === "questions"}
-              useMicaBackdrop={useMicaBackdrop}
+              useTranslucency={useTranslucency}
               onUpdateDraft={onUpdateQuestionDraft ?? runtime.updateQuestionDraft}
               onSubmitQuestions={() => {
                 if (onSubmitQuestions) {
@@ -596,12 +596,12 @@ export const ComposerDock = forwardRef<HTMLDivElement, ComposerDockProps>(functi
                   <ComposerChangesCard
                     delta={changesLineDelta}
                     onOpenGitTab={onOpenGitTab}
-                    useMicaBackdrop={useMicaBackdrop}
+                    useTranslucency={useTranslucency}
                   />
                   <ComposerScrollToBottomButton
                     visible={showScrollToBottom}
                     onClick={() => onScrollToBottom?.()}
-                    useMicaBackdrop={useMicaBackdrop}
+                    useTranslucency={useTranslucency}
                   />
                 </div>
               ) : null}
@@ -614,7 +614,7 @@ export const ComposerDock = forwardRef<HTMLDivElement, ComposerDockProps>(functi
                     <ComposerScrollToBottomButton
                       visible={showScrollToBottom}
                       onClick={() => onScrollToBottom?.()}
-                      useMicaBackdrop={useMicaBackdrop}
+                      useTranslucency={useTranslucency}
                     />
                   </div>
                 </div>
@@ -624,7 +624,7 @@ export const ComposerDock = forwardRef<HTMLDivElement, ComposerDockProps>(functi
                   <ComposerTodoCard
                     todos={snapshot.conversation.todos}
                     sessionKey={snapshot.composerSessionKey}
-                    useMicaBackdrop={useMicaBackdrop}
+                    useTranslucency={useTranslucency}
                   />
                 </div>
               ) : null}
@@ -687,7 +687,7 @@ export const ComposerDock = forwardRef<HTMLDivElement, ComposerDockProps>(functi
                 onDragOver={onComposerDragOver}
                 onDrop={onComposerDrop}
                 saveLocalImageAs={runtime.saveLocalImageAs}
-                useMicaBackdrop={useMicaBackdrop}
+                useTranslucency={useTranslucency}
               />
             </div>
             <ComposerSuggestionDropdown
@@ -731,7 +731,7 @@ export const ComposerDock = forwardRef<HTMLDivElement, ComposerDockProps>(functi
               <div
                 className={cn(
                   "pointer-events-none relative z-0 -mt-4 pt-[calc(1rem+0.375rem)] pb-[max(0.75rem,env(safe-area-inset-bottom,0px))]",
-                  desktopTranslucencyTintInnerClass(useMicaBackdrop),
+                  desktopTranslucencyTintInnerClass(useTranslucency),
                   CONVERSATION_GUTTER_NEG_X,
                   CONVERSATION_GUTTER_X,
                 )}

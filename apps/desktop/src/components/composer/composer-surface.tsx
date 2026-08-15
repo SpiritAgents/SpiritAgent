@@ -96,8 +96,8 @@ export type ComposerSurfaceProps = {
   agentModeChipDismissed?: boolean;
   onAgentModeChipDismissChange?(dismissed: boolean): void;
   saveLocalImageAs?: SaveLocalImageAs;
-  /** Mica 开启时输入框用实色底，避免 CSS blur 透出滚动消息 */
-  useMicaBackdrop?: boolean;
+  /** translucency 开启时输入框用实色底，避免 CSS blur 透出滚动消息 */
+  useTranslucency?: boolean;
 };
 
 export function ComposerSurface({
@@ -142,7 +142,7 @@ export function ComposerSurface({
   agentModeChipDismissed = false,
   onAgentModeChipDismissChange,
   saveLocalImageAs,
-  useMicaBackdrop = false,
+  useTranslucency = false,
 }: ComposerSurfaceProps) {
   const { t } = useTranslation();
   const [fileDragOver, setFileDragOver] = useState(false);
@@ -198,7 +198,7 @@ export function ComposerSurface({
         "relative overflow-hidden rounded-2xl border border-ring/30 focus-within:ring-0 hover:border-ring/40 focus-within:border-ring/40 dark:border-white/10 dark:hover:border-white/12 dark:focus-within:border-white/12",
         DESKTOP_ELEVATION_SHADOW_SM,
         fileDragOver && "border-ring/40 dark:border-white/12",
-        desktopComposerSurfaceBackdropClass(useMicaBackdrop),
+        desktopComposerSurfaceBackdropClass(useTranslucency),
       )}
       onDragOver={handleSurfaceDragOver}
       onDragLeave={handleSurfaceDragLeave}

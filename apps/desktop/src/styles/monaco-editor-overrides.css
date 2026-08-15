@@ -1,4 +1,4 @@
-/* Workspace Monaco：去掉默认 focusBorder 描边（Mica 透明底时尤为明显）。 */
+/* Workspace Monaco：去掉默认 focusBorder 描边（translucency 透明底时尤为明显）。 */
 .monaco-editor,
 .monaco-editor:focus-within,
 .monaco-editor .overflow-guard {

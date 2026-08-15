@@ -65,7 +65,7 @@ type MarketplaceViewProps = {
     reviewAcknowledged?: boolean;
   }) => Promise<void>;
   /** Windows 云母 / macOS Vibrancy：内层透明以避免与 marketplace-layout 双层 tint 叠深。 */
-  useMicaBackdrop?: boolean;
+  useTranslucency?: boolean;
 };
 
 type MarketplaceTab = "readme" | "changelog" | "versions";
@@ -128,7 +128,7 @@ export function MarketplaceView({
   onGetMarketplaceExtensionReadme,
   onPrepareMarketplaceExtensionInstall,
   onInstallMarketplaceExtension,
-  useMicaBackdrop = false,
+  useTranslucency = false,
 }: MarketplaceViewProps) {
   const { t } = useTranslation();
   const [catalog, setCatalog] = useState<DesktopMarketplaceCatalogItem[]>([]);
@@ -445,7 +445,7 @@ export function MarketplaceView({
       data-spirit-surface="marketplace-shell"
       className={cn(
         "flex min-h-0 min-w-0 flex-1 flex-col text-sm",
-        desktopTranslucencyTintClass(useMicaBackdrop),
+        desktopTranslucencyTintClass(useTranslucency),
       )}
     >
       {detailExtensionId === null ? (
@@ -557,7 +557,7 @@ export function MarketplaceView({
         </ScrollArea>
       ) : (
         <>
-          <div className={cn("shrink-0", desktopTranslucencyTintInnerClass(useMicaBackdrop))}>
+          <div className={cn("shrink-0", desktopTranslucencyTintInnerClass(useTranslucency))}>
             <div className={cn("mx-auto flex items-center px-3 py-2", MARKETPLACE_READING_W)}>
               <Button
                 type="button"

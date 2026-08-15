@@ -18,7 +18,7 @@ type PendingApprovalCardProps = {
   pendingApproval: PendingToolApprovalSnapshot;
   approvalGuidance: string;
   approveBusy: boolean;
-  useMicaBackdrop?: boolean;
+  useTranslucency?: boolean;
   onApprovalGuidanceChange(value: string): void;
   onSubmitApproval(decision: {
     kind: "allow" | "deny" | "guidance";
@@ -31,7 +31,7 @@ export function PendingApprovalCard({
   pendingApproval,
   approvalGuidance,
   approveBusy,
-  useMicaBackdrop = false,
+  useTranslucency = false,
   onApprovalGuidanceChange,
   onSubmitApproval,
 }: PendingApprovalCardProps) {
@@ -43,7 +43,7 @@ export function PendingApprovalCard({
       className={cn(
         "border border-ring/30 text-sm ring-0 dark:border-white/10",
         DESKTOP_ELEVATION_SHADOW_SM,
-        desktopComposerSurfaceBackdropClass(useMicaBackdrop),
+        desktopComposerSurfaceBackdropClass(useTranslucency),
       )}
     >
       <CardHeader className="space-y-1.5 px-3 py-2.5">

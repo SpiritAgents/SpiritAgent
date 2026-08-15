@@ -13,6 +13,6 @@ export function spiritAgentBrandIconSrc(dark: boolean): string {
   return dark ? SPIRIT_AGENT_ICON_DARK_SRC : SPIRIT_AGENT_ICON_LIGHT_SRC;
 }
 
-export function spiritAgentTitleBarIconSrc(dark: boolean, useMicaBackdrop: boolean): string {
-  return useMicaBackdrop ? SPIRIT_AGENT_ICON_TRANSLUCENCY_SRC : spiritAgentBrandIconSrc(dark);
+export function spiritAgentTitleBarIconSrc(dark: boolean, useTranslucency: boolean): string {
+  return useTranslucency ? SPIRIT_AGENT_ICON_TRANSLUCENCY_SRC : spiritAgentBrandIconSrc(dark);
 }

@@ -16,11 +16,11 @@ function prefersReducedMotion(): boolean {
 export function ComposerScrollToBottomButton({
   visible,
   onClick,
-  useMicaBackdrop = false,
+  useTranslucency = false,
 }: {
   visible: boolean;
   onClick: () => void;
-  useMicaBackdrop?: boolean;
+  useTranslucency?: boolean;
 }) {
   const { t } = useTranslation();
   const [rendered, setRendered] = useState(visible);
@@ -78,7 +78,7 @@ export function ComposerScrollToBottomButton({
         "inline-flex size-7 shrink-0 cursor-pointer items-center justify-center rounded-full leading-none",
         "transition-opacity duration-150 ease-out motion-reduce:transition-none",
         shown ? "opacity-100" : "pointer-events-none opacity-0",
-        desktopComposerChipSurfaceClass(useMicaBackdrop),
+        desktopComposerChipSurfaceClass(useTranslucency),
       )}
       onClick={onClick}
       aria-label={t("composer.scrollToBottomAria")}

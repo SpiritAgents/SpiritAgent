@@ -13,14 +13,14 @@ import type { DesktopExtensionCssLayer } from "@/types";
 export type UseDesktopShellEffectsOptions = {
   isElectronShell: boolean;
   darwinElectronChrome: boolean;
-  useMicaBackdrop: boolean;
+  useTranslucency: boolean;
   extensionCss: DesktopExtensionCssLayer[] | undefined;
 };
 
 export function useDesktopShellEffects({
   isElectronShell,
   darwinElectronChrome,
-  useMicaBackdrop,
+  useTranslucency,
   extensionCss,
 }: UseDesktopShellEffectsOptions) {
   useEffect(() => {
@@ -73,7 +73,7 @@ export function useDesktopShellEffects({
     if (typeof document === "undefined") {
       return;
     }
-    if (useMicaBackdrop) {
+    if (useTranslucency) {
       document.documentElement.classList.add("spirit-desktop-translucency");
     } else {
       document.documentElement.classList.remove("spirit-desktop-translucency");
@@ -83,10 +83,10 @@ export function useDesktopShellEffects({
       // 此处仅在 translucency 开关变化时按当前存储主题刷新窗口材质
       const theme = getStoredTheme();
       syncDesktopWindowFrame(resolveDark(theme), desktopNativeThemeForPreference(theme), {
-        translucency: useMicaBackdrop,
+        translucency: useTranslucency,
       });
     }
-  }, [useMicaBackdrop, isElectronShell]);
+  }, [useTranslucency, isElectronShell]);
 
   useEffect(() => {
     if (typeof document === "undefined") {

@@ -72,8 +72,8 @@ type LeavingStepState = {
 type OnboardingWizardProps = {
   /** 为 true 时显示向导；变为 false 时播放淡出后卸载。 */
   active: boolean;
-  /** Windows Mica / macOS Vibrancy：与 launch-splash / 会话主区一致，开启时用主区半透明 tint。 */
-  useMicaBackdrop?: boolean;
+  /** translucency（Win Mica / macOS Vibrancy）：与 launch-splash / 会话主区一致，开启时用主区半透明 tint。 */
+  useTranslucency?: boolean;
   settings: SettingsFormState;
   onSavePatch: (patch: Partial<SettingsFormState>) => Promise<void>;
   modelsBusy: boolean;
@@ -104,7 +104,7 @@ function oobeBlockProps(index: number): {
  */
 export function OnboardingWizard({
   active,
-  useMicaBackdrop = false,
+  useTranslucency = false,
   settings,
   onSavePatch,
   modelsBusy,
@@ -236,7 +236,7 @@ export function OnboardingWizard({
         // z-40：低于 Radix 浮层（Dialog/Select 等 z-50），向导内弹窗才能置顶；
         // 仍高于主 UI，保证淡出期间盖住已恢复可见的 app-body。
         "fixed inset-0 z-40 flex flex-col",
-        desktopFullscreenOverlayTintClass(useMicaBackdrop),
+        desktopFullscreenOverlayTintClass(useTranslucency),
         "transition-opacity duration-[360ms] ease-out motion-reduce:duration-150",
         exiting ? "pointer-events-none opacity-0" : "opacity-100",
       )}
@@ -416,7 +416,7 @@ function OnboardingWelcomeStep({ onContinue }: { onContinue: () => void }) {
   );
 }
 
-/** Step 2：外观（主题 / 模糊效果 / 语言）。theme 就地订阅，App 无需下传。 */
+/** Step 2：外观（主题 / 半透明 / 语言）。theme 就地订阅，App 无需下传。 */
 function OnboardingAppearanceStep({
   settings,
   onSavePatch,

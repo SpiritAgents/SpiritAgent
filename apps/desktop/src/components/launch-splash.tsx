@@ -17,8 +17,8 @@ type Phase = "running" | "leaving" | "gone";
 type LaunchSplashProps = {
   /** 为 true 时显示加载态；变为 false 时播放退场后卸载 */
   active: boolean;
-  /** Windows Mica / macOS Vibrancy：与 app-shell / 会话主区一致，开启时用主区半透明 tint。 */
-  useMicaBackdrop?: boolean;
+  /** translucency（Win Mica / macOS Vibrancy）：与 app-shell / 会话主区一致，开启时用主区半透明 tint。 */
+  useTranslucency?: boolean;
   /** 挂载周期内 phase 变化（供宿主在 leaving 前勿提前露出 app-body）。 */
   onPhaseChange?: (phase: ShellOverlayPhase) => void;
 };
@@ -31,7 +31,7 @@ type LaunchSplashProps = {
  */
 export function LaunchSplash({
   active,
-  useMicaBackdrop = false,
+  useTranslucency = false,
   onPhaseChange,
 }: LaunchSplashProps) {
   const [phase, setPhase] = useState<Phase>(() => (active ? "running" : "gone"));
@@ -85,7 +85,7 @@ export function LaunchSplash({
       aria-hidden={exiting}
       className={cn(
         "fixed inset-0 z-[200] flex items-center justify-center",
-        desktopFullscreenOverlayTintClass(useMicaBackdrop),
+        desktopFullscreenOverlayTintClass(useTranslucency),
         "transition-opacity duration-500 ease-out motion-reduce:duration-200",
         exiting ? "pointer-events-none opacity-0" : "opacity-100",
       )}

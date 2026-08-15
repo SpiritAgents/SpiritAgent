@@ -50,7 +50,7 @@ type PendingQuestionsCardProps = {
   pendingQuestions: PendingQuestionsSnapshot;
   questionDrafts: Record<string, QuestionDraft>;
   questionsBusy: boolean;
-  useMicaBackdrop?: boolean;
+  useTranslucency?: boolean;
   onUpdateDraft(questionId: string, updater: (draft: QuestionDraft) => QuestionDraft): void;
   onSubmitQuestions(): void;
   onSkipQuestions(): void;
@@ -67,7 +67,7 @@ export function PendingQuestionsCard({
   pendingQuestions,
   questionDrafts,
   questionsBusy,
-  useMicaBackdrop = false,
+  useTranslucency = false,
   onUpdateDraft,
   onSubmitQuestions,
   onSkipQuestions,
@@ -126,7 +126,7 @@ export function PendingQuestionsCard({
       className={cn(
         "gap-0 border border-ring/30 py-0 text-sm ring-0 dark:border-white/10",
         DESKTOP_ELEVATION_SHADOW_SM,
-        desktopComposerSurfaceBackdropClass(useMicaBackdrop),
+        desktopComposerSurfaceBackdropClass(useTranslucency),
       )}
     >
       <CardHeader className="px-3 py-2.5">

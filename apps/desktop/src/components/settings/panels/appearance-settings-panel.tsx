@@ -100,11 +100,11 @@ export function AppearanceSettingsPanel({
       </SettingsRow>
 
       <SettingsRow
-        label={t("settings.blurEffect")}
+        label={t("settings.translucency")}
         description={
           isNativeTranslucencySupported()
-            ? t("settings.blurEffectDescription")
-            : t("settings.blurEffectUnsupported")
+            ? t("settings.translucencyDescription")
+            : t("settings.translucencyUnsupported")
         }
         htmlFor="settings-blur-effect"
       >
@@ -112,8 +112,8 @@ export function AppearanceSettingsPanel({
           <div className="flex justify-end">
             <Checkbox
               id="settings-blur-effect"
-              checked={settings.windowsMica}
-              onCheckedChange={(value) => void onSavePatch({ windowsMica: value === true })}
+              checked={settings.translucency}
+              onCheckedChange={(value) => void onSavePatch({ translucency: value === true })}
               className="size-5"
             />
           </div>

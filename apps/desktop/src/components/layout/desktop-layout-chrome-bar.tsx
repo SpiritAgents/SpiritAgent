@@ -70,7 +70,7 @@ function isPaneDragBlockedTarget(target: EventTarget | null): boolean {
 }
 
 export function DesktopLayoutChromeBar({
-  useMicaBackdrop,
+  useTranslucency,
   showSessionSidebarToggle = true,
   showWorkspaceToggle,
   showSplitMenu = false,
@@ -105,7 +105,7 @@ export function DesktopLayoutChromeBar({
   renameSessionBusy = false,
   onRenameSession,
 }: {
-  useMicaBackdrop: boolean;
+  useTranslucency: boolean;
   showSessionSidebarToggle?: boolean;
   showWorkspaceToggle: boolean;
   showSplitMenu?: boolean;
@@ -257,7 +257,7 @@ export function DesktopLayoutChromeBar({
       className={cn(
         "flex h-8 shrink-0 items-center gap-2 px-2",
         showTrailingActions ? "justify-between" : "justify-start",
-        desktopTranslucencyTintClass(useMicaBackdrop),
+        desktopTranslucencyTintClass(useTranslucency),
         paneDragEnabled && "cursor-grab active:cursor-grabbing",
       )}
       onDragOver={(event) => {

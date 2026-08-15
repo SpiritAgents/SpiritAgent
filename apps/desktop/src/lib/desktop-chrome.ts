@@ -288,7 +288,7 @@ export const DESKTOP_OVERLAY_LIST_DETAIL_WIDTH =
 export const DESKTOP_OVERLAY_LIST_WORKSPACE_PANEL =
   "flex h-[min(24rem,var(--radix-dropdown-menu-content-available-height))] w-[min(24rem,calc(100vw-1.25rem))] max-w-[min(19rem,calc(100vw-1.25rem))] flex-col overflow-hidden p-0 text-xs";
 
-/** Composer 胶囊小卡片（Changes 等）：非 Mica 玻璃底；Mica 请用 {@link desktopComposerChipSurfaceClass} */
+/** Composer 胶囊小卡片（Changes 等）：非 translucency 玻璃底；translucency 请用 {@link desktopComposerChipSurfaceClass} */
 export const DESKTOP_COMPOSER_CHIP_SURFACE = desktopComposerChipSurfaceClass(false);
 
 /** 阻止滚轮穿透到背后会话/列表 */

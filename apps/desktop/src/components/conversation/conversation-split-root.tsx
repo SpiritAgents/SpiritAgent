@@ -24,7 +24,7 @@ import {
 import { cn } from "@/lib/utils";
 
 type ConversationSplitRootProps = {
-  useMicaBackdrop: boolean;
+  useTranslucency: boolean;
   renderPane: (input: {
     paneId: string;
     sessionPath: string;
@@ -269,11 +269,11 @@ function SplitJunctionHandle({
 
 function SplitLayoutRenderer({
   node,
-  useMicaBackdrop,
+  useTranslucency,
   renderPane,
 }: {
   node: SplitLayoutNode;
-  useMicaBackdrop: boolean;
+  useTranslucency: boolean;
   renderPane: ConversationSplitRootProps["renderPane"];
 }) {
   const split = useConversationSplit();
@@ -325,7 +325,7 @@ function SplitLayoutRenderer({
   return (
     <SplitLayoutSplitRenderer
       node={node}
-      useMicaBackdrop={useMicaBackdrop}
+      useTranslucency={useTranslucency}
       renderPane={renderPane}
     />
   );
@@ -333,11 +333,11 @@ function SplitLayoutRenderer({
 
 function SplitLayoutSplitRenderer({
   node,
-  useMicaBackdrop,
+  useTranslucency,
   renderPane,
 }: {
   node: SplitLayoutSplitNode;
-  useMicaBackdrop: boolean;
+  useTranslucency: boolean;
   renderPane: ConversationSplitRootProps["renderPane"];
 }) {
   const split = useConversationSplit();
@@ -417,7 +417,7 @@ function SplitLayoutSplitRenderer({
       >
         <SplitLayoutRenderer
           node={node.first}
-          useMicaBackdrop={useMicaBackdrop}
+          useTranslucency={useTranslucency}
           renderPane={renderPane}
         />
       </div>
@@ -438,7 +438,7 @@ function SplitLayoutSplitRenderer({
       >
         <SplitLayoutRenderer
           node={node.second}
-          useMicaBackdrop={useMicaBackdrop}
+          useTranslucency={useTranslucency}
           renderPane={renderPane}
         />
       </div>
@@ -455,7 +455,7 @@ function SplitLayoutSplitRenderer({
   );
 }
 
-export function ConversationSplitRoot({ useMicaBackdrop, renderPane }: ConversationSplitRootProps) {
+export function ConversationSplitRoot({ useTranslucency, renderPane }: ConversationSplitRootProps) {
   const { layout } = useConversationSplit();
 
   if (!layout) {
@@ -471,7 +471,7 @@ export function ConversationSplitRoot({ useMicaBackdrop, renderPane }: Conversat
       <ConversationPaneDropIndicator />
       <SplitLayoutRenderer
         node={layout}
-        useMicaBackdrop={useMicaBackdrop}
+        useTranslucency={useTranslucency}
         renderPane={renderPane}
       />
     </div>

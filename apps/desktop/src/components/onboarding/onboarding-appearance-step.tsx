@@ -24,7 +24,7 @@ type OnboardingAppearanceControlsProps = {
 };
 
 /**
- * OOBE 外观步骤内容：主题三选预览卡 + 模糊效果开关 + 语言选择。
+ * OOBE 外观步骤内容：主题三选预览卡 + 半透明开关 + 语言选择。
  * 所有选择即时生效，与设置页共用同一保存链路。
  */
 export function OnboardingAppearanceControls({
@@ -52,12 +52,12 @@ export function OnboardingAppearanceControls({
       {isNativeTranslucencySupported() ? (
         <div className="flex items-center justify-between gap-4">
           <label htmlFor="onboarding-blur-effect" className={DESKTOP_SETTINGS_LABEL_CLASS}>
-            {t("settings.blurEffect")}
+            {t("settings.translucency")}
           </label>
           <Switch
             id="onboarding-blur-effect"
-            checked={settings.windowsMica}
-            onCheckedChange={(value) => void onSavePatch({ windowsMica: value === true })}
+            checked={settings.translucency}
+            onCheckedChange={(value) => void onSavePatch({ translucency: value === true })}
           />
         </div>
       ) : null}
