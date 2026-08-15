@@ -7,6 +7,10 @@ import { Kbd } from "@/components/ui/kbd";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Textarea } from "@/components/ui/textarea";
 import { DESKTOP_FORM_INPUT_SHELL, DESKTOP_FORM_TEXTAREA_INNER } from "@/lib/desktop-chrome";
+import {
+  DESKTOP_ELEVATION_SHADOW_SM,
+  desktopComposerSurfaceBackdropClass,
+} from "@/lib/desktop-mica-surface";
 import { cn } from "@/lib/utils";
 import type { PendingToolApprovalSnapshot } from "@/types";
 
@@ -14,6 +18,7 @@ type PendingApprovalCardProps = {
   pendingApproval: PendingToolApprovalSnapshot;
   approvalGuidance: string;
   approveBusy: boolean;
+  useMicaBackdrop?: boolean;
   onApprovalGuidanceChange(value: string): void;
   onSubmitApproval(decision: {
     kind: "allow" | "deny" | "guidance";
@@ -26,13 +31,21 @@ export function PendingApprovalCard({
   pendingApproval,
   approvalGuidance,
   approveBusy,
+  useMicaBackdrop = false,
   onApprovalGuidanceChange,
   onSubmitApproval,
 }: PendingApprovalCardProps) {
   const { t } = useTranslation();
 
   return (
-    <Card className="border-border/50 bg-background/55 text-sm shadow-sm backdrop-blur-xl dark:border-white/12 supports-[backdrop-filter]:bg-background/40">
+    <Card
+      data-spirit-surface="pending-approval-card"
+      className={cn(
+        "border border-ring/30 text-sm ring-0 dark:border-white/10",
+        DESKTOP_ELEVATION_SHADOW_SM,
+        desktopComposerSurfaceBackdropClass(useMicaBackdrop),
+      )}
+    >
       <CardHeader className="space-y-1.5 px-3 py-2.5">
         <CardTitle className="min-w-0 truncate text-sm leading-tight">
           {pendingApproval.toolName}

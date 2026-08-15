@@ -255,6 +255,26 @@ export const ComposerDock = forwardRef<HTMLDivElement, ComposerDockProps>(functi
       const viewportRect = viewport.getBoundingClientRect();
       const shapes: ConversationScrollOccludeShape[] = [];
 
+      // 审批 / 提问卡在 chrome 外、仍叠在滚动区上；Mica tint 下需一并裁掉消息透出
+      for (const selector of [
+        '[data-spirit-surface="pending-approval-card"]',
+        '[data-spirit-surface="pending-questions-card"]',
+      ] as const) {
+        const card = dock.querySelector<HTMLElement>(selector);
+        if (!card) {
+          continue;
+        }
+        const radius = readElementUniformBorderRadius(card);
+        shapes.push(
+          conversationScrollOccludeShapeFromRects(
+            viewportRect,
+            card.getBoundingClientRect(),
+            radius,
+            radius,
+          ),
+        );
+      }
+
       const changes = chrome.querySelector<HTMLElement>(
         '[data-spirit-surface="composer-changes-card"]',
       );
@@ -507,6 +527,7 @@ export const ComposerDock = forwardRef<HTMLDivElement, ComposerDockProps>(functi
               pendingApproval={pendingApproval}
               approvalGuidance={runtime.approvalGuidance}
               approveBusy={runtime.busyAction === "approve"}
+              useMicaBackdrop={useMicaBackdrop}
               onApprovalGuidanceChange={runtime.setApprovalGuidance}
               onSubmitApproval={(decision) => {
                 if (decision.kind === "allow") {
@@ -539,6 +560,7 @@ export const ComposerDock = forwardRef<HTMLDivElement, ComposerDockProps>(functi
               pendingQuestions={pendingQuestions}
               questionDrafts={questionDraftsOverride ?? runtime.questionDrafts}
               questionsBusy={runtime.busyAction === "questions"}
+              useMicaBackdrop={useMicaBackdrop}
               onUpdateDraft={onUpdateQuestionDraft ?? runtime.updateQuestionDraft}
               onSubmitQuestions={() => {
                 if (onSubmitQuestions) {
