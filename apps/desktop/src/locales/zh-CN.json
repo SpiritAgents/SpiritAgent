@@ -296,6 +296,7 @@
     "skillDescPlaceholder": "简要说明何时用、做什么",
     "skillContentPlaceholder": "编写 Skill 正文：步骤、示例、边界条件与相对路径引用",
     "extensionsTitle": "扩展",
+    "builtIn": "内置",
     "importZip": "导入 ZIP",
     "noExtensionsInstalled": "未安装扩展",
     "settingsPage": "设置页",

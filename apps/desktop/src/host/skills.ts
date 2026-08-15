@@ -5,6 +5,8 @@ import path from "node:path";
 import i18n from "../lib/i18n-host.js";
 import type { OpenAiActiveSkill, OpenAiActiveSkillResourceEntry } from "@spiritagent/agent-core";
 import {
+  isBuiltInSkillName,
+  noteBuiltInSkillRemoved,
   resolveInstructionPaths,
   SKILL_FILE_NAME,
   validateSkillName,
@@ -135,6 +137,9 @@ export async function deleteSkillDir(
   }
 
   await rm(skillDir, { recursive: true, force: true });
+  if (rootKind === "user" && isBuiltInSkillName(name)) {
+    await noteBuiltInSkillRemoved(spiritAgentDataDir(), name);
+  }
 }
 
 export function buildActivateSkillUserTurn(skillName: string, extraNote: string): string {

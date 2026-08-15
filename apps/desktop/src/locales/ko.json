@@ -296,6 +296,7 @@
     "skillDescPlaceholder": "언제 사용하고 무엇을 하는지 간략히 설명하세요",
     "skillContentPlaceholder": "스킬 본문 작성: 단계, 예제, 엣지 케이스 및 상대 경로 참조",
     "extensionsTitle": "확장 프로그램",
+    "builtIn": "내장",
     "importZip": "ZIP 가져오기",
     "noExtensionsInstalled": "설치된 확장 프로그램이 없습니다",
     "settingsPage": "설정 페이지",

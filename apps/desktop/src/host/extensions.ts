@@ -144,6 +144,7 @@ export async function buildDesktopExtensionListItems(
           }
         : {}),
       ...(item.archiveFileName ? { archiveFileName: item.archiveFileName } : {}),
+      ...(item.installSource ? { installSource: item.installSource } : {}),
       installedAtUnixMs: item.installedAtUnixMs,
     })),
   );

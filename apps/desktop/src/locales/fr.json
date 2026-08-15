@@ -296,6 +296,7 @@
     "skillDescPlaceholder": "Décrivez brièvement quand l'utiliser et ce qu'il fait",
     "skillContentPlaceholder": "Rédigez le corps de la compétence : étapes, exemples, cas limites et références de chemin relatif",
     "extensionsTitle": "Extensions",
+    "builtIn": "Intégré",
     "importZip": "Importer un ZIP",
     "noExtensionsInstalled": "Aucune extension installée",
     "settingsPage": "Page de paramètres",

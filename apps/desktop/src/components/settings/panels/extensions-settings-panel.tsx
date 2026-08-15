@@ -104,6 +104,11 @@ export function ExtensionsSettingsPanel({
                   <Badge variant="secondary" className="text-muted-foreground">
                     {item.version}
                   </Badge>
+                  {item.installSource === "built-in" ? (
+                    <Badge variant="secondary" className="text-muted-foreground">
+                      {t("settings.builtIn")}
+                    </Badge>
+                  ) : null}
                   {item.author ? (
                     <Badge variant="secondary" className="text-muted-foreground">
                       {item.author}

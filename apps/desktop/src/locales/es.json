@@ -296,6 +296,7 @@
     "skillDescPlaceholder": "Describe brevemente cuándo usarlo y qué hace",
     "skillContentPlaceholder": "Escribe el cuerpo del skill: pasos, ejemplos, casos límite y referencias a rutas relativas",
     "extensionsTitle": "Extensiones",
+    "builtIn": "Integrado",
     "importZip": "Importar ZIP",
     "noExtensionsInstalled": "No hay extensiones instaladas",
     "settingsPage": "Página de configuración",

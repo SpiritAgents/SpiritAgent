@@ -18,6 +18,8 @@ import { pathToFileURL } from "node:url";
 
 import { unzipSync } from "fflate";
 
+import { isBuiltInExtensionId } from "./built-in/extension-ids.js";
+import { noteBuiltInExtensionRemoved } from "./built-in/state.js";
 import {
   createFileExtensionStateStore,
   EXTENSION_MANIFEST_FILE_NAME,
@@ -238,11 +240,14 @@ export interface HostExtensionManifest {
   secretSlots?: HostExtensionSecretSlot[];
 }
 
+export type HostExtensionInstallSource = "built-in" | "archive" | "marketplace";
+
 export interface HostExtensionRegistryEntry {
   id: string;
   directoryName: string;
   installedAtUnixMs: number;
   archiveFileName?: string;
+  installSource?: HostExtensionInstallSource;
 }
 
 export interface HostInstalledExtension {
@@ -253,6 +258,7 @@ export interface HostInstalledExtension {
   manifestPath: string;
   installedAtUnixMs: number;
   archiveFileName?: string;
+  installSource?: HostExtensionInstallSource;
 }
 
 export interface ImportExtensionArchiveRequest {
@@ -264,6 +270,7 @@ export interface InstallPreparedExtensionDirectoryRequest {
   preparedDirectoryPath: string;
   fileName?: string;
   replaceExisting?: boolean;
+  installSource?: HostExtensionInstallSource;
 }
 
 export interface RunExtensionRequest<THostApi> {
@@ -520,6 +527,7 @@ export async function listInstalledExtensions(
         ...(registryEntry?.archiveFileName
           ? { archiveFileName: registryEntry.archiveFileName }
           : {}),
+        ...(registryEntry?.installSource ? { installSource: registryEntry.installSource } : {}),
       });
     } catch {
       continue;
@@ -534,12 +542,7 @@ export async function listInstalledExtensions(
     return left.id.localeCompare(right.id, "en");
   });
 
-  const nextRegistryEntries = installed.map((item) => ({
-    id: item.id,
-    directoryName: item.directoryName,
-    installedAtUnixMs: item.installedAtUnixMs,
-    ...(item.archiveFileName ? { archiveFileName: item.archiveFileName } : {}),
-  }));
+  const nextRegistryEntries = installed.map((item) => toExtensionRegistryEntry(item));
 
   await saveExtensionRegistryIfChanged(
     paths.extensionsIndexFile,
@@ -632,6 +635,7 @@ export async function importExtensionArchive(
 
     const installed = await installPreparedExtensionDirectory(context, {
       preparedDirectoryPath: stagingDirectory,
+      installSource: "archive",
       ...(request.fileName?.trim() ? { fileName: request.fileName.trim() } : {}),
     });
     return installed;
@@ -720,6 +724,7 @@ export async function installPreparedExtensionDirectory(
   }
 
   const installedAtUnixMs = Date.now();
+  const installSource = request.installSource;
   const nextRegistryEntries = [
     ...Array.from(registryEntries.values()).filter((entry) => entry.id !== manifest.id),
     {
@@ -727,6 +732,7 @@ export async function installPreparedExtensionDirectory(
       directoryName,
       installedAtUnixMs,
       ...(request.fileName?.trim() ? { archiveFileName: request.fileName.trim() } : {}),
+      ...(installSource ? { installSource } : {}),
     },
   ];
   await writeExtensionRegistry(paths.extensionsIndexFile, nextRegistryEntries);
@@ -739,6 +745,7 @@ export async function installPreparedExtensionDirectory(
     manifestPath: path.join(targetDirectory, EXTENSION_MANIFEST_FILE_NAME),
     installedAtUnixMs,
     ...(request.fileName?.trim() ? { archiveFileName: request.fileName.trim() } : {}),
+    ...(installSource ? { installSource } : {}),
   };
 }
 
@@ -764,13 +771,12 @@ export async function removeInstalledExtension(
     paths.extensionsIndexFile,
     installed
       .filter((item) => item.id !== normalizedId)
-      .map((item) => ({
-        id: item.id,
-        directoryName: item.directoryName,
-        installedAtUnixMs: item.installedAtUnixMs,
-        ...(item.archiveFileName ? { archiveFileName: item.archiveFileName } : {}),
-      })),
+      .map((item) => toExtensionRegistryEntry(item)),
   );
+
+  if (target.installSource === "built-in" || isBuiltInExtensionId(normalizedId)) {
+    await noteBuiltInExtensionRemoved(context.spiritDataDir, normalizedId);
+  }
 }
 
 export async function runInstalledExtension<THostApi>(
@@ -1625,6 +1631,21 @@ async function writeExtensionRegistry(
 function serializeRegistry(entries: readonly HostExtensionRegistryEntry[]): string {
   const sorted = [...entries].sort((left, right) => left.id.localeCompare(right.id, "en"));
   return `${JSON.stringify({ entries: sorted }, null, 2)}\n`;
+}
+
+function toExtensionRegistryEntry(
+  item: Pick<
+    HostInstalledExtension,
+    "id" | "directoryName" | "installedAtUnixMs" | "archiveFileName" | "installSource"
+  >,
+): HostExtensionRegistryEntry {
+  return {
+    id: item.id,
+    directoryName: item.directoryName,
+    installedAtUnixMs: item.installedAtUnixMs,
+    ...(item.archiveFileName ? { archiveFileName: item.archiveFileName } : {}),
+    ...(item.installSource ? { installSource: item.installSource } : {}),
+  };
 }
 
 function resolveManifestArchivePath(entryNames: readonly string[]): string {

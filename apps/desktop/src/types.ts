@@ -548,6 +548,7 @@ export interface DesktopExtensionListItem {
   secretSlots?: DesktopExtensionSecretSlot[];
   secretStatuses?: DesktopExtensionSecretStatus[];
   archiveFileName?: string;
+  installSource?: "built-in" | "archive" | "marketplace";
   installedAtUnixMs: number;
 }
 

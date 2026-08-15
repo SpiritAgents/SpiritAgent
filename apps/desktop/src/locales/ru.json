@@ -296,6 +296,7 @@
     "skillDescPlaceholder": "Кратко укажите, когда использовать и что делает навык",
     "skillContentPlaceholder": "Напишите тело навыка: шаги, примеры, граничные случаи и относительные пути",
     "extensionsTitle": "Расширения",
+    "builtIn": "Встроенное",
     "importZip": "Импорт ZIP",
     "noExtensionsInstalled": "Расширения не установлены",
     "settingsPage": "Страница настроек",

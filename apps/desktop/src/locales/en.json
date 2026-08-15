@@ -296,6 +296,7 @@
     "skillDescPlaceholder": "Briefly describe when to use and what it does",
     "skillContentPlaceholder": "Write the skill body: steps, examples, edge cases, and relative path references",
     "extensionsTitle": "Extensions",
+    "builtIn": "Built-in",
     "importZip": "Import ZIP",
     "noExtensionsInstalled": "No extensions installed",
     "settingsPage": "Settings Page",

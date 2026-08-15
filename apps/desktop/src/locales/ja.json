@@ -296,6 +296,7 @@
     "skillDescPlaceholder": "使用タイミングと機能を簡単に説明",
     "skillContentPlaceholder": "スキルの本文を記述: 手順、例、エッジケース、相対パス参照",
     "extensionsTitle": "拡張機能",
+    "builtIn": "内蔵",
     "importZip": "ZIPをインポート",
     "noExtensionsInstalled": "インストールされている拡張機能はありません",
     "settingsPage": "設定ページ",
