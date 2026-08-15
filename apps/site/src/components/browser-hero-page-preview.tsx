@@ -72,7 +72,10 @@ export function BrowserHeroPagePreview({
   }, [headlineVariant, reportRects]);
 
   return (
-    <div ref={rootRef} className="relative flex h-full min-h-0 flex-col bg-black text-foreground">
+    <div
+      ref={rootRef}
+      className="relative flex h-full min-h-0 flex-col bg-background text-foreground"
+    >
       <header className="flex shrink-0 items-center justify-between border-b border-border/40 px-4 py-2.5">
         <span className={`text-xs ${FONT_WEIGHT_NORMAL} tracking-tight`}>
           <NoTranslate>{messages.common.brand}</NoTranslate>
@@ -94,7 +97,7 @@ export function BrowserHeroPagePreview({
             <GitHubMark className="size-4" />
           </a>
           <span
-            className={`rounded-full bg-white px-2.5 py-1 text-[10px] ${FONT_WEIGHT_NORMAL} text-black`}
+            className={`rounded-full bg-primary px-2.5 py-1 text-[10px] ${FONT_WEIGHT_NORMAL} text-primary-foreground`}
           >
             {messages.common.download}
           </span>
@@ -149,7 +152,7 @@ export function BrowserHeroPagePreview({
 
         <div ref={ctaRef} data-design-target="cta" className="mt-4">
           <span
-            className={`inline-flex h-7 items-center gap-1 rounded-full bg-white px-3 text-[11px] ${FONT_WEIGHT_NORMAL} text-black`}
+            className={`inline-flex h-7 items-center gap-1 rounded-full bg-primary px-3 text-[11px] ${FONT_WEIGHT_NORMAL} text-primary-foreground`}
           >
             <Download className="size-3" aria-hidden />
             {messages.common.download}

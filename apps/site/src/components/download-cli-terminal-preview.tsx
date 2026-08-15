@@ -3,8 +3,8 @@ import { useLayoutEffect, useMemo, useRef, useState, type ReactNode } from "reac
 import { useI18n } from "@/i18n/provider";
 import { cn } from "@/lib/utils";
 
-/** Softer than Tailwind cyan — closer to terminal ANSI cyan on dark backgrounds. */
-const CLI_ACCENT_CLASS = "text-[#7eb6c9]";
+/** Terminal ANSI cyan — follows the dual-theme --terminal-ansi-cyan CSS variable. */
+const CLI_ACCENT_CLASS = "text-(--terminal-ansi-cyan)";
 
 /**
  * Inline mono — site `pre { font-family: var(--font-sans) }` overrides Tailwind `font-mono`.
@@ -86,12 +86,12 @@ function CliMessage({ role, text }: { role: "user" | "assistant"; text: string }
               index === 0 ? "" : "pl-[1.2em]",
               role === "assistant" && index === 0
                 ? `font-bold ${CLI_ACCENT_CLASS}`
-                : "text-white/55",
+                : "text-foreground/55",
             )}
           >
             {index === 0 ? ">\u00a0" : "  "}
           </span>
-          <span translate="yes" className="text-white/55">
+          <span translate="yes" className="text-foreground/55">
             {line}
           </span>
         </div>
@@ -208,7 +208,7 @@ export function DownloadCliTerminalPreview({ className }: DownloadCliTerminalPre
     <div
       ref={shellRef}
       className={cn(
-        "notranslate flex h-full min-h-0 flex-col overflow-hidden rounded-md border border-white/12 bg-[#0a0a0a] shadow-[0_18px_48px_rgba(0,0,0,0.55)]",
+        "notranslate flex h-full min-h-0 flex-col overflow-hidden rounded-md border border-foreground/12 bg-background shadow-[0_18px_48px_-12px_rgba(0,0,0,0.18)] dark:border-white/12 dark:bg-[#0a0a0a] dark:shadow-[0_18px_48px_rgba(0,0,0,0.55)]",
         className,
       )}
       translate="no"
@@ -253,23 +253,23 @@ export function DownloadCliTerminalPreview({ className }: DownloadCliTerminalPre
         <ScaledCliColumn scale={scale}>
           <pre
             translate="no"
-            className="m-0 text-[10px] leading-none tracking-normal whitespace-pre text-white/55"
+            className="m-0 text-[10px] leading-none tracking-normal whitespace-pre text-foreground/55"
             style={CLI_MONO_STYLE}
           >
             {inputLines.top}
             {"\n"}
-            <span className="text-white">│</span>
-            <span translate="yes" className="text-white">
+            <span className="text-foreground">│</span>
+            <span translate="yes" className="text-foreground">
               {inputLines.body.slice(1, inputLines.body.indexOf("█"))}
             </span>
-            <span className="animate-pulse text-white">█</span>
-            <span className="text-white">
+            <span className="animate-pulse text-foreground">█</span>
+            <span className="text-foreground">
               {inputLines.body.slice(inputLines.body.indexOf("█") + 1)}
             </span>
             {"\n"}
             {inputLines.bottom}
           </pre>
-          <div translate="yes" className="mt-1 text-[8px] whitespace-pre text-white/35">
+          <div translate="yes" className="mt-1 text-[8px] whitespace-pre text-foreground/35">
             {copy.cliFooter}
           </div>
         </ScaledCliColumn>

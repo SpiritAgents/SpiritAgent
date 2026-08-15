@@ -7,9 +7,12 @@ import {
   type LandingToolCardsDemoItem,
 } from "@/lib/landing-tool-cards-demo-script";
 import { cn } from "@/lib/utils";
+import { DESKTOP_ELEVATION_SHADOW_SM } from "@/lib/desktop-mica-surface";
 
-const userBubbleClass =
-  "rounded-2xl rounded-br-md border border-border/50 bg-muted px-3 py-2.5 shadow-sm";
+const userBubbleClass = cn(
+  "rounded-2xl rounded-br-md border border-ring/30 bg-background px-3 py-2.5 dark:border-border/50 dark:bg-muted",
+  DESKTOP_ELEVATION_SHADOW_SM,
+);
 
 type LandingToolCardsConversationProps = {
   items: LandingToolCardsDemoItem[];

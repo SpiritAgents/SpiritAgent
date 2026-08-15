@@ -14,9 +14,9 @@ export function DesktopMacTrafficLights({ className }: DesktopMacTrafficLightsPr
       )}
       aria-hidden
     >
-      <span className="size-3 rounded-full bg-[#1a1a1a] shadow-[inset_0_0_0_1px_rgba(0,0,0,0.12)]" />
-      <span className="size-3 rounded-full bg-[#1a1a1a] shadow-[inset_0_0_0_1px_rgba(0,0,0,0.12)]" />
-      <span className="size-3 rounded-full bg-[#1a1a1a] shadow-[inset_0_0_0_1px_rgba(0,0,0,0.12)]" />
+      <span className="size-3 rounded-full bg-black/10 shadow-[inset_0_0_0_1px_rgba(0,0,0,0.08)] dark:bg-[#1a1a1a] dark:shadow-[inset_0_0_0_1px_rgba(0,0,0,0.12)]" />
+      <span className="size-3 rounded-full bg-black/10 shadow-[inset_0_0_0_1px_rgba(0,0,0,0.08)] dark:bg-[#1a1a1a] dark:shadow-[inset_0_0_0_1px_rgba(0,0,0,0.12)]" />
+      <span className="size-3 rounded-full bg-black/10 shadow-[inset_0_0_0_1px_rgba(0,0,0,0.08)] dark:bg-[#1a1a1a] dark:shadow-[inset_0_0_0_1px_rgba(0,0,0,0.12)]" />
     </div>
   );
 }

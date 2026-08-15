@@ -33,7 +33,7 @@
 
 :root {
   --background: oklch(1 0 0);
-  --foreground: oklch(0.145 0 0);
+  --foreground: #2b2b2b;
   --card: oklch(1 0 0);
   --card-foreground: oklch(0.145 0 0);
   --popover: oklch(1 0 0);
@@ -57,7 +57,7 @@
   --chart-5: oklch(0.269 0 0);
   --radius: 0.625rem;
   --sidebar: oklch(0.985 0 0);
-  --sidebar-foreground: oklch(0.145 0 0);
+  --sidebar-foreground: #2b2b2b;
   --sidebar-primary: oklch(0.205 0 0);
   --sidebar-primary-foreground: oklch(0.985 0 0);
   --sidebar-accent: oklch(0.97 0 0);
@@ -70,6 +70,20 @@
   --site-muted: rgb(0 0 0 / 50%);
   --dialog-panel-border: color-mix(in oklab, var(--border) 40%, transparent);
   --git-action-split: oklch(0.58 0 0);
+  /* 玻璃 Logo：浅色为黑色 alpha 玻璃（白底上白色 alpha 不可见） */
+  --spirit-glass-fill-0: rgba(0, 0, 0, 0.06);
+  --spirit-glass-fill-40: rgba(0, 0, 0, 0.018);
+  --spirit-glass-fill-100: rgba(15, 25, 50, 0.012);
+  --spirit-glass-inner-0: rgba(0, 0, 0, 0.03);
+  --spirit-glass-inner-100: rgba(15, 30, 60, 0.018);
+  --spirit-glass-fresnel-0: rgba(70, 110, 190, 0.24);
+  --spirit-glass-fresnel-25: rgba(200, 110, 110, 0.084);
+  --spirit-glass-fresnel-55: rgba(110, 190, 140, 0.084);
+  --spirit-glass-fresnel-100: rgba(140, 110, 200, 0.18);
+  --spirit-glass-stroke-crisp: rgba(0, 0, 0, 0.27);
+  --spirit-glass-stroke-soft: rgba(0, 0, 0, 0.09);
+  --spirit-glass-shimmer-mid: rgba(0, 0, 0, 0.021);
+  --spirit-glass-shimmer-peak: rgba(0, 0, 0, 0.039);
   --terminal-bg: #ffffff;
   --terminal-fg: #0a0a0a;
   --terminal-cursor: #0a0a0a;
@@ -105,7 +119,7 @@ body {
 html,
 body,
 #root {
-  background: #0a0a0a;
+  background: var(--background);
 }
 
 body {
@@ -239,11 +253,24 @@ body {
   --site-muted: rgb(255 255 255 / 50%);
   --dialog-panel-border: #272727;
   --git-action-split: #3f3f3f;
-  --terminal-bg: #000000;
-  --terminal-fg: #d4d4d4;
-  --terminal-cursor: #ffffff;
-  --terminal-cursor-accent: #000000;
-  --terminal-selection-bg: rgba(255, 255, 255, 0.12);
+  --spirit-glass-fill-0: rgba(255, 255, 255, 0.16);
+  --spirit-glass-fill-40: rgba(255, 255, 255, 0.04);
+  --spirit-glass-fill-100: rgba(220, 230, 255, 0.02);
+  --spirit-glass-inner-0: rgba(255, 255, 255, 0.06);
+  --spirit-glass-inner-100: rgba(200, 220, 255, 0.03);
+  --spirit-glass-fresnel-0: rgba(190, 215, 255, 0.35);
+  --spirit-glass-fresnel-25: rgba(255, 200, 200, 0.1);
+  --spirit-glass-fresnel-55: rgba(200, 255, 215, 0.1);
+  --spirit-glass-fresnel-100: rgba(215, 200, 255, 0.25);
+  --spirit-glass-stroke-crisp: rgba(255, 255, 255, 0.65);
+  --spirit-glass-stroke-soft: rgba(255, 255, 255, 0.2);
+  --spirit-glass-shimmer-mid: rgba(255, 255, 255, 0.035);
+  --spirit-glass-shimmer-peak: rgba(255, 255, 255, 0.065);
+  --terminal-bg: #0a0a0a;
+  --terminal-fg: #fafafa;
+  --terminal-cursor: #fafafa;
+  --terminal-cursor-accent: #0a0a0a;
+  --terminal-selection-bg: rgba(100, 100, 100, 0.35);
   --terminal-ansi-black: #000000;
   --terminal-ansi-red: #cd3131;
   --terminal-ansi-green: #0dbc79;
@@ -273,9 +300,13 @@ body {
 
   html {
     font-family: var(--font-sans);
-    color-scheme: dark;
+    color-scheme: light;
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
+  }
+
+  html.dark {
+    color-scheme: dark;
   }
 
   html:lang(zh-CN) {
@@ -502,12 +533,30 @@ body {
   line-height: 1.35;
 }
 
+/* Landing 代码演示：shiki 双主题 token（wrapper 已剥离，作用在 data-code-part 内的 span 上） */
+[data-code-part] span {
+  color: var(--shiki-light);
+  font-style: var(--shiki-light-font-style);
+  font-weight: var(--shiki-light-font-weight);
+  text-decoration: var(--shiki-light-text-decoration);
+}
+
+.dark [data-code-part] span {
+  color: var(--shiki-dark);
+  font-style: var(--shiki-dark-font-style);
+  font-weight: var(--shiki-dark-font-weight);
+  text-decoration: var(--shiki-dark-text-decoration);
+}
+
 /* Landing 预览：macOS hiddenInset 顶栏安全区（对齐 Desktop `spirit-desktop-darwin`） */
 [data-spirit-preview-shell="darwin"] {
-  /* Void 暗色正文：仅 Agent Window 内生效，窗口外 Landing 保持 text-white */
-  --foreground: #e4e4e4;
   --spirit-macos-titlebar-inset: 2rem;
   --spirit-macos-traffic-lights-inset-left: 4.875rem;
+}
+
+/* Void 暗色正文：仅深色下 Agent Window 内生效，浅色沿用 :root 的 #2b2b2b */
+.dark [data-spirit-preview-shell="darwin"] {
+  --foreground: #e4e4e4;
 }
 
 [data-spirit-preview-shell="darwin"] #session-sidebar-panel {
@@ -562,12 +611,15 @@ body {
 [data-docs-layout] {
   --fd-banner-height: var(--site-nav-height);
   --fd-layout-width: var(--site-frame-width);
-  --background: #000000;
-  --card: #000000;
-  --color-fd-background: #000000;
-  --color-fd-card: #000000;
+  --color-fd-background: var(--background);
+  --color-fd-card: var(--card);
   padding-top: var(--site-nav-height);
-  background: #000000;
+  background: var(--background);
+}
+
+/* Docs 区卡片深色沿用纯黑（全站 dark --card 为 #090909，Docs 历史上更暗一档） */
+.dark [data-docs-layout] {
+  --card: #000000;
 }
 
 [data-docs-layout] {
@@ -578,7 +630,7 @@ body {
 [data-docs-layout] #nd-docs-layout,
 [data-docs-layout] #nd-page,
 [data-docs-layout] #nd-toc {
-  background: #000000;
+  background: var(--background);
 }
 
 [data-docs-layout] #nd-sidebar,
@@ -591,7 +643,7 @@ body {
 }
 
 [data-docs-layout] #nd-sidebar {
-  background: #000000;
+  background: var(--background);
   border-inline-end: none;
   transition: none;
   font-size: 0.875rem;

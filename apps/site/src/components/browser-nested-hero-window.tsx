@@ -3,7 +3,7 @@ import { SpiritDesktopWindow } from "@/components/spirit-desktop-window";
 
 export function BrowserNestedHeroWindow() {
   return (
-    <div className="relative flex min-h-0 flex-1 flex-col overflow-hidden rounded-[3px] bg-black">
+    <div className="relative flex min-h-0 flex-1 flex-col overflow-hidden rounded-[3px] bg-background">
       <div className="pointer-events-none absolute inset-0 overflow-hidden" aria-hidden>
         <SiteGradientBackground className="absolute inset-0 block h-full w-full" />
       </div>

@@ -9,8 +9,8 @@ import { FONT_WEIGHT_NORMAL } from "@/lib/typography";
 import { cn } from "@/lib/utils";
 
 const sidebarItemClass = cn(
-  `flex items-center rounded-sm px-2 py-1.5 text-sm text-white ${FONT_WEIGHT_NORMAL}`,
-  "transition-none hover:bg-white/5 data-[active=true]:text-white",
+  `flex items-center rounded-sm px-2 py-1.5 text-sm text-foreground ${FONT_WEIGHT_NORMAL}`,
+  "transition-none hover:bg-foreground/5 data-[active=true]:text-foreground",
 );
 
 const folderTriggerClass = cn(sidebarItemClass, "w-full cursor-pointer [&_[data-icon]]:size-3.5");

@@ -678,7 +678,9 @@ export function SpiritDesktopWindow({
     [currentPreview],
   );
 
-  const contentBaseToneClassName = heroBaseTone ? "bg-[#000000]" : "bg-background";
+  const contentBaseToneClassName = heroBaseTone
+    ? "bg-background dark:bg-[#000000]"
+    : "bg-background";
   const activeSessionTitle =
     sessions.find((session) => session.path === activeSessionPath)?.displayName ?? null;
 
@@ -854,9 +856,13 @@ function SpiritDesktopWindowBody({
       data-spirit-preview-shell="darwin"
       {...(nestedPreview ? { "data-nested-preview": true } : {})}
       className={cn(
-        "relative isolate overflow-hidden rounded-[10px] border border-white/12 shadow-[0_34px_96px_rgba(0,0,0,0.54)] ring-1 ring-black/35",
+        "relative isolate overflow-hidden rounded-[10px] border border-border shadow-[0_24px_64px_-16px_rgba(0,0,0,0.18)] ring-0 dark:border-white/12 dark:shadow-[0_34px_96px_rgba(0,0,0,0.54)] dark:ring-1 dark:ring-black/35",
         heroBaseTone ? "h-full w-full" : "w-[min(94vw,70rem)]",
-        useMicaBackdrop ? "bg-transparent" : heroBaseTone ? "bg-[#000000]" : "bg-[#0a0a0a]",
+        useMicaBackdrop
+          ? "bg-transparent"
+          : heroBaseTone
+            ? "bg-sidebar dark:bg-[#000000]"
+            : "bg-sidebar dark:bg-[#0a0a0a]",
         className,
       )}
     >
@@ -872,7 +878,7 @@ function SpiritDesktopWindowBody({
         {useMicaBackdrop ? (
           <div
             aria-hidden
-            className="pointer-events-none absolute top-0 right-0 z-20 h-px bg-white/8"
+            className="pointer-events-none absolute top-0 right-0 z-20 h-px dark:bg-white/8"
             style={{
               left: sessionSidebarOpen ? sessionSidebarShellWidth(true, sessionSidebarWidthPx) : 0,
             }}

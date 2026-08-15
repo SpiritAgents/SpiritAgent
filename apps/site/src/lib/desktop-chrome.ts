@@ -1,4 +1,5 @@
 import { cn } from "@/lib/utils";
+import { DESKTOP_OVERLAY_LIGHT_SHADOW } from "@/lib/desktop-mica-surface";
 import { FONT_WEIGHT_NORMAL } from "@/lib/typography";
 
 /**
@@ -60,15 +61,21 @@ export const DESKTOP_GIT_ACTION_MENU_TRIGGER = cn(
  * SHORT 系列仅保留给仍需要 text-sm 密度的局部场景。
  */
 
+/** 浮层阴影：浅色扩散 + 深色沿用 md */
+export const DESKTOP_OVERLAY_SHADOW = cn(DESKTOP_OVERLAY_LIGHT_SHADOW, "dark:shadow-md");
+
+/** 浮层阴影：浅色扩散 + 深色沿用 lg（Tooltip / Popover / HoverCard 等） */
+export const DESKTOP_OVERLAY_SHADOW_LG = cn(DESKTOP_OVERLAY_LIGHT_SHADOW, "dark:shadow-lg");
+
 /** 短列表：轻外壳（仅局部场景使用） */
-export const DESKTOP_OVERLAY_SHORT_SHELL = "rounded-lg shadow-md ring-0";
+export const DESKTOP_OVERLAY_SHORT_SHELL = cn("rounded-lg ring-0", DESKTOP_OVERLAY_SHADOW);
 
 export const DESKTOP_OVERLAY_SHORT_CONTENT = cn(DESKTOP_OVERLAY_SHORT_SHELL, "p-1 text-sm");
 
 /** Dropdown 基元：短列表壳 + popover 面 */
 export const DESKTOP_OVERLAY_SHORT_DROPDOWN_SURFACE = cn(
   DESKTOP_OVERLAY_SHORT_SHELL,
-  "border border-border/80 bg-popover p-1 text-sm text-popover-foreground shadow-md",
+  "border border-border/80 bg-popover p-1 text-sm text-popover-foreground",
 );
 
 export const DESKTOP_OVERLAY_SHORT_SUBCONTENT = cn(
@@ -88,12 +95,12 @@ export const DESKTOP_OVERLAY_SHORT_MENU_MIN_WIDTH = "min-w-[8.5rem]";
 /** 长列表：关掉基类 overflow-y-auto，由内层 ScrollArea 独占滚动 */
 export const DESKTOP_OVERLAY_LIST_CONTENT = "max-h-none overflow-hidden p-0 text-xs";
 
-export const DESKTOP_OVERLAY_LIST_SHELL = "min-w-0 rounded-lg shadow-md ring-0";
+export const DESKTOP_OVERLAY_LIST_SHELL = cn("min-w-0 rounded-lg ring-0", DESKTOP_OVERLAY_SHADOW);
 
 /** Dropdown 基元：长列表壳 + popover 面（密度对齐模型 / 工作区选择器） */
 export const DESKTOP_OVERLAY_LIST_DROPDOWN_SURFACE = cn(
   DESKTOP_OVERLAY_LIST_SHELL,
-  "border border-border/80 bg-popover p-0 text-xs text-popover-foreground shadow-md backdrop-blur-sm",
+  "border border-border/80 bg-popover p-0 text-xs text-popover-foreground backdrop-blur-sm",
 );
 
 export const DESKTOP_OVERLAY_LIST_WIDTH =
@@ -157,7 +164,7 @@ export const DESKTOP_OVERLAY_LIST_SUB_TRIGGER = "items-center gap-1.5 px-2.5 py-
 /** 长列表配套详情 Popover：密度与 DESKTOP_OVERLAY_LIST_* 对齐 */
 export const DESKTOP_OVERLAY_LIST_DETAIL_SURFACE = cn(
   DESKTOP_OVERLAY_LIST_SHELL,
-  "border border-border/80 bg-popover p-0 text-xs text-popover-foreground shadow-md backdrop-blur-sm",
+  "border border-border/80 bg-popover p-0 text-xs text-popover-foreground backdrop-blur-sm",
 );
 
 export const DESKTOP_OVERLAY_LIST_DETAIL_WIDTH =

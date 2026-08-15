@@ -38,7 +38,7 @@ export function LandingTrioScaffold() {
   return (
     <section
       id="highlights"
-      className="relative overflow-hidden bg-[#000000]"
+      className="relative overflow-hidden bg-background"
       aria-label={messages.landing.trio.sectionAria}
     >
       <div
@@ -63,18 +63,18 @@ export function LandingTrioScaffold() {
                 </LandingFeatureDemoBox>
               ) : (
                 <LandingFeatureDemoBox frameClassName={LANDING_TRIO_DEMO_BOX_FRAME_CLASS}>
-                  <p className="flex h-full items-center justify-center text-2xl text-white/45 sm:text-3xl">
+                  <p className="flex h-full items-center justify-center text-2xl text-foreground/45 sm:text-3xl">
                     None.
                   </p>
                 </LandingFeatureDemoBox>
               )}
               <div className="space-y-2">
                 <h3
-                  className={`text-[1.35rem] leading-[1.06] ${FONT_WEIGHT_MEDIUM} tracking-[-0.04em] text-white sm:text-[1.5rem]`}
+                  className={`text-[1.35rem] leading-[1.06] ${FONT_WEIGHT_MEDIUM} tracking-[-0.04em] text-foreground sm:text-[1.5rem]`}
                 >
                   {item.id === "completion" ? <NoTranslate>{item.title}</NoTranslate> : item.title}
                 </h3>
-                <p className="text-[0.95rem] leading-relaxed text-white/66 sm:text-[1.05rem]">
+                <p className="text-[0.95rem] leading-relaxed text-foreground/66 sm:text-[1.05rem]">
                   {item.body}
                 </p>
               </div>

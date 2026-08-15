@@ -31,10 +31,10 @@ type FooterColumnDef = {
 };
 
 const itemClassName =
-  "inline-flex font-sans text-sm text-white outline-none transition-colors duration-200 hover:text-site-muted focus-visible:text-site-muted focus-visible:underline focus-visible:underline-offset-4";
+  "inline-flex font-sans text-sm text-foreground outline-none transition-colors duration-200 hover:text-site-muted focus-visible:text-site-muted focus-visible:underline focus-visible:underline-offset-4";
 
 const externalIconLinkClassName =
-  "inline-flex rounded-md p-0.5 text-white/50 outline-none transition-colors hover:text-white focus-visible:ring-2 focus-visible:ring-white/20 focus-visible:ring-offset-2 focus-visible:ring-offset-black";
+  "inline-flex rounded-md p-0.5 text-foreground/50 outline-none transition-colors hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring/50 focus-visible:ring-offset-2 focus-visible:ring-offset-background";
 
 /**
  * 全站底栏：分区制。区名句首大写、text-sm、muted；链默认正文色，Hover 到 muted。
@@ -73,7 +73,7 @@ export function SiteFooter() {
   }));
 
   return (
-    <footer className="relative z-10 shrink-0 bg-[#000000] pb-[max(1.5rem,env(safe-area-inset-bottom))] pt-16 sm:pt-20">
+    <footer className="relative z-10 shrink-0 bg-background pb-[max(1.5rem,env(safe-area-inset-bottom))] pt-16 sm:pt-20">
       <div
         className={cn(
           isDocs ? DOCS_FRAME_CLASS : `${SITE_FRAME_CLASS} mx-auto px-5 sm:px-10 md:px-12`,
@@ -115,7 +115,7 @@ export function SiteFooter() {
 
         <div className="mt-16 pt-2">
           <div className="relative flex flex-col gap-4 sm:min-h-7 sm:flex-row sm:items-center sm:justify-between">
-            <p className="order-2 text-left font-sans text-xs text-white/40 sm:order-1">
+            <p className="order-2 text-left font-sans text-xs text-foreground/40 sm:order-1">
               {protectBrandTokens(fm.copyrightLine(year))}
             </p>
             <ul

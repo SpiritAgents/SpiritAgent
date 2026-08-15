@@ -71,11 +71,12 @@ export const HERO_DESKTOP_WINDOW_FRAME_CLASS =
 export const LANDING_DESKTOP_WINDOW_VIEWPORT_CLASS = "h-full min-h-0";
 
 /** Shared surface for landing gray demo boxes. */
-const LANDING_FEATURE_DEMO_BOX_SURFACE_CLASS = "overflow-hidden rounded-[4px] bg-[#111111]";
+const LANDING_FEATURE_DEMO_BOX_SURFACE_CLASS =
+  "overflow-hidden rounded-[4px] bg-muted dark:bg-[#111111]";
 
-/** 1px inset ring on top of demo content — same tone as the frame so crop edges read on #000 page. */
+/** 1px inset ring on top of demo content — same tone as the frame so crop edges read against the page. */
 export const LANDING_FEATURE_DEMO_BOX_INSET_BORDER_CLASS =
-  "pointer-events-none absolute inset-0 z-10 rounded-[4px] shadow-[inset_0_0_0_1px_#111111]";
+  "pointer-events-none absolute inset-0 z-10 rounded-[4px] shadow-[inset_0_0_0_1px_var(--muted)] dark:shadow-[inset_0_0_0_1px_#111111]";
 
 /** Landing feature demo outer shell — same footprint as the bare window it replaces. */
 export const LANDING_FEATURE_DEMO_BOX_FRAME_CLASS = `relative h-[34rem] min-h-[34rem] ${LANDING_FEATURE_DEMO_BOX_SURFACE_CLASS}`;

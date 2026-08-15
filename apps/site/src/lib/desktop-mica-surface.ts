@@ -1,5 +1,17 @@
+import { cn } from "@/lib/utils";
+
 /** Mica 开启时主内容区背景不透明度（仅 tint，不叠加 CSS backdrop-blur）。 */
 export const DESKTOP_MICA_CONTENT_TINT_CLASS = "bg-background/70";
+
+/** Composer 输入框半透明底（暗色叠加 input 淡层）；非 Mica 浮层同源 */
+export const DESKTOP_COMPOSER_SURFACE_BACKDROP =
+  "bg-background/55 backdrop-blur-xl dark:bg-input/30 supports-[backdrop-filter]:bg-background/40 dark:supports-[backdrop-filter]:bg-input/25";
+
+/** 浅色模式浮层 / 抬起表面扩散阴影；深色勿放大，由调用方配 dark:shadow-* */
+export const DESKTOP_OVERLAY_LIGHT_SHADOW = "shadow-[0_2px_20px_-4px_rgb(0_0_0/0.06)]";
+
+/** 抬起表面阴影：浅色扩散 + 深色沿用 sm（Composer / 消息气泡等） */
+export const DESKTOP_ELEVATION_SHADOW_SM = cn(DESKTOP_OVERLAY_LIGHT_SHADOW, "dark:shadow-sm");
 
 /** 工作区浏览器页槽：略高于主区，减轻 WebView 透底闪烁。 */
 export const DESKTOP_MICA_BROWSER_TINT_CLASS = "bg-background/80";

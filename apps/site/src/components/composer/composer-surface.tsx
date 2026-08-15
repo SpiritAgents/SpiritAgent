@@ -32,6 +32,10 @@ import {
 import type { DesktopAgentMode } from "@/lib/agent-mode";
 import type { BrowserElementAttachment } from "@/lib/browser-element-attachment";
 import { instantHoverMotionClass } from "@/lib/desktop-chrome";
+import {
+  DESKTOP_COMPOSER_SURFACE_BACKDROP,
+  DESKTOP_ELEVATION_SHADOW_SM,
+} from "@/lib/desktop-mica-surface";
 import { cn } from "@/lib/utils";
 import type { DesktopModelCatalogHint, ModelProfileSnapshot } from "@/types/spirit-desktop";
 
@@ -120,7 +124,9 @@ export function ComposerSurface({
     <div
       data-spirit-surface="composer-surface"
       className={cn(
-        "relative overflow-hidden border border-border/50 bg-background/55 shadow-sm backdrop-blur-xl focus-within:ring-0 hover:border-ring/60 focus-within:border-ring/60 dark:border-white/10 dark:hover:border-white/12 dark:focus-within:border-white/12 dark:bg-input/30 supports-[backdrop-filter]:bg-background/40 dark:supports-[backdrop-filter]:bg-input/25",
+        "relative overflow-hidden border border-ring/30 focus-within:ring-0 hover:border-ring/40 focus-within:border-ring/40 dark:border-white/10 dark:hover:border-white/12 dark:focus-within:border-white/12",
+        DESKTOP_ELEVATION_SHADOW_SM,
+        DESKTOP_COMPOSER_SURFACE_BACKDROP,
         nestedPreview ? "rounded-xl" : "rounded-2xl",
       )}
     >

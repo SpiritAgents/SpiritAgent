@@ -22,9 +22,9 @@ const COMPACT_PANEL_KEYS: CompactPanelKey[] = ["root", ...SITE_NAV_MENU_KEYS];
 const ROOT_PANEL_KEYS: CompactPanelKey[] = ["root"];
 
 const MEGA_ITEM_CLASS = cn(
-  `block w-fit cursor-pointer rounded-sm text-[28px] ${FONT_WEIGHT_NORMAL} leading-[1.2] tracking-[-0.01em] text-white`,
-  "transition-colors duration-150 hover:text-white/60",
-  "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/30",
+  `block w-fit cursor-pointer rounded-sm text-[28px] ${FONT_WEIGHT_NORMAL} leading-[1.2] tracking-[-0.01em] text-foreground`,
+  "transition-colors duration-150 hover:text-foreground/60",
+  "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/50",
 );
 
 /**
@@ -273,9 +273,9 @@ function CompactNestedPanel({
         type="button"
         onClick={onBack}
         className={cn(
-          `inline-flex items-center gap-2 rounded-sm text-[20px] ${FONT_WEIGHT_NORMAL} leading-[1.2] tracking-[-0.01em] text-white`,
-          "cursor-pointer transition-colors duration-150 hover:text-white/60",
-          "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/30",
+          `inline-flex items-center gap-2 rounded-sm text-[20px] ${FONT_WEIGHT_NORMAL} leading-[1.2] tracking-[-0.01em] text-foreground`,
+          "cursor-pointer transition-colors duration-150 hover:text-foreground/60",
+          "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/50",
         )}
       >
         <ArrowLeft className="size-4" aria-hidden />
