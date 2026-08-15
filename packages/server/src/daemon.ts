@@ -396,6 +396,20 @@ export async function startDaemon(options: DaemonOptions): Promise<RunningDaemon
         const dreamScopeRaw = params["dreamScope"];
         const dreamSourceSessionRaw = params["dreamSourceSession"];
         const hostUiPromptSection = normalizeHostUiPromptSection(params["hostUiPromptSection"]);
+        const basicInfoHostRaw = params["basicInfoHost"];
+        let basicInfoHost:
+          | { kind: "Desktop" | "CLI" | "Web"; url?: string }
+          | undefined;
+        if (basicInfoHostRaw && typeof basicInfoHostRaw === "object") {
+          const raw = basicInfoHostRaw as Record<string, unknown>;
+          const kind = raw["kind"];
+          if (kind === "Desktop" || kind === "CLI" || kind === "Web") {
+            basicInfoHost = { kind };
+            if (typeof raw["url"] === "string" && raw["url"].trim()) {
+              basicInfoHost.url = raw["url"].trim();
+            }
+          }
+        }
         const dreamScope =
           dreamScopeRaw &&
           typeof dreamScopeRaw === "object" &&
@@ -454,6 +468,7 @@ export async function startDaemon(options: DaemonOptions): Promise<RunningDaemon
           ...(dreamScope ? { dreamScope } : {}),
           ...(dreamSourceSession ? { dreamSourceSession } : {}),
           ...(hostUiPromptSection ? { hostUiPromptSection } : {}),
+          ...(basicInfoHost ? { basicInfoHost } : {}),
         });
         return info;
       }

@@ -154,6 +154,7 @@ export async function createAcpRuntime(
               : process.platform,
       version: osRelease(),
     },
+    host: { kind: "ACP Server" },
   };
 
   // 6. Build prompt sections
