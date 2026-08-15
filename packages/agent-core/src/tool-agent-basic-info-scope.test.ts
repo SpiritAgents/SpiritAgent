@@ -31,6 +31,28 @@ test("buildBasicInfoSystemMessage includes current session transcript path", () 
   assert.match(message ?? "", /Current session transcript:\n- \/data\/transcripts\/session-1/);
 });
 
+test("buildBasicInfoSystemMessage includes Desktop host before workspace", () => {
+  const message = buildBasicInfoSystemMessage({
+    workspaceRoot: "/tmp/project",
+    host: { kind: "Desktop" },
+  });
+  assert.match(
+    message ?? "",
+    /Current host:\n- Desktop\n\nCurrent workspace:\n- \/tmp\/project/,
+  );
+});
+
+test("buildBasicInfoSystemMessage includes Web host with page URL", () => {
+  const message = buildBasicInfoSystemMessage({
+    workspaceRoot: "/tmp/project",
+    host: { kind: "Web", url: "https://example.com/app" },
+  });
+  assert.match(
+    message ?? "",
+    /Current host:\n- Web\n- URL: https:\/\/example\.com\/app\n\nCurrent workspace:/,
+  );
+});
+
 test("patchBasicInfoWorkspaceRootInMessages rewrites Current workspace line", () => {
   const messages = [
     {

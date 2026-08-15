@@ -62,6 +62,7 @@ import type {
   PreviewModelsRequest,
   PreviewModelsResponse,
   BootstrapRequest,
+  DesktopClientHost,
   CommitChangesRequest,
   CheckoutGitBranchRequest,
   ConversationMessageSnapshot,
@@ -480,6 +481,7 @@ import {
 import { buildDesktopLspSnapshot, defaultDesktopLspSnapshot } from "./lsp-snapshot.js";
 import { installLspProviderCommand } from "./lsp-commands.js";
 import {
+  basicInfoHostFromClientHost,
   currentApiBase,
   mapPendingQuestions,
   sameDreamCollectorSnapshot,
@@ -1418,9 +1420,18 @@ class DesktopHostService {
         this.clearSubagentViewerTarget();
         const state = this.requireState();
         const bundle = this.sessionRegistry.beginNewBackground(state.workspaceRoot);
+        const basicInfoHost = basicInfoHostFromClientHost(request.clientHost);
+        if (basicInfoHost) {
+          bundle.basicInfoHost = basicInfoHost;
+        }
         await this.finalizeTodoScopeForNewActiveBundle(bundle, state.workspaceRoot);
         this.lastRuntimeError = "";
         return this.buildSnapshotProjectedForBundle(bundle);
+      }
+      const active = this.activeBundle();
+      const basicInfoHost = basicInfoHostFromClientHost(request?.clientHost);
+      if (basicInfoHost) {
+        active.basicInfoHost = basicInfoHost;
       }
       return this.buildSnapshot();
     }, "bootstrap");
@@ -2333,11 +2344,21 @@ class DesktopHostService {
     return this.buildSnapshot();
   }
 
-  async resetSession(options?: { activate?: boolean }): Promise<DesktopSnapshot> {
+  async resetSession(options?: {
+    activate?: boolean;
+    clientHost?: DesktopClientHost;
+  }): Promise<DesktopSnapshot> {
     if (options?.activate === false) {
-      return resetSessionBackgroundCommand(this.sessionActivationContext());
+      return resetSessionBackgroundCommand(this.sessionActivationContext(), {
+        clientHost: options.clientHost,
+      });
     }
-    return resetSessionCommand(this.sessionActivationContext());
+    const snapshot = await resetSessionCommand(this.sessionActivationContext());
+    const basicInfoHost = basicInfoHostFromClientHost(options?.clientHost);
+    if (basicInfoHost) {
+      this.activeBundle().basicInfoHost = basicInfoHost;
+    }
+    return snapshot;
   }
 
   async listSessions(): Promise<SessionListItem[]> {
@@ -2606,11 +2627,21 @@ class DesktopHostService {
     return resolveLocalFileComposerRoute(absolutePath);
   }
 
-  async openSession(filePath: string, options?: { activate?: boolean }): Promise<DesktopSnapshot> {
+  async openSession(
+    filePath: string,
+    options?: { activate?: boolean; clientHost?: DesktopClientHost },
+  ): Promise<DesktopSnapshot> {
     if (options?.activate === false) {
-      return openSessionBackgroundCommand(this.sessionActivationContext(), filePath);
+      return openSessionBackgroundCommand(this.sessionActivationContext(), filePath, {
+        clientHost: options.clientHost,
+      });
     }
-    return openSessionCommand(this.sessionActivationContext(), filePath);
+    const snapshot = await openSessionCommand(this.sessionActivationContext(), filePath);
+    const basicInfoHost = basicInfoHostFromClientHost(options?.clientHost);
+    if (basicInfoHost) {
+      this.activeBundle().basicInfoHost = basicInfoHost;
+    }
+    return snapshot;
   }
 
   async beginSplitPaneSession(
@@ -2834,6 +2865,7 @@ class DesktopHostService {
       archive,
       approvalLevel: normalizeApprovalLevel(bundle.approvalLevel),
       todoSessionKey: this.resolveTodoSessionKeyForBundle(bundle),
+      ...(bundle.basicInfoHost ? { basicInfoHost: bundle.basicInfoHost } : {}),
       onActivity: () => {
         this.sessionPump.ensureRunning();
         this.requestThrottledLiveSnapshotEmit();

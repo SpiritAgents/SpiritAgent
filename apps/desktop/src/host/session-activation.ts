@@ -27,7 +27,7 @@ import {
   type EphemeralSessionRecord,
 } from "./sessions.js";
 import type { DesktopTimelineTurnSnapshot, DesktopMessageTimeline } from "./message-timeline.js";
-import { currentApiBase, sameWorkspaceRoot } from "./service-utils.js";
+import { basicInfoHostFromClientHost, currentApiBase, sameWorkspaceRoot } from "./service-utils.js";
 import type { HostExtensionEvent } from "@spiritagent/host-internal";
 import { cancelPendingWorktreeBootstrapOnBundle } from "./worktree-bootstrap-orchestrator.js";
 import { resolveStoredSessionWorkspaceRoot } from "./resolve-session-workspace-root.js";
@@ -422,9 +422,14 @@ async function registerSessionBundleForOpen(
 export async function openSessionBackgroundCommand(
   ctx: SessionActivationContext,
   filePath: string,
+  options?: { clientHost?: import("../types.js").DesktopClientHost },
 ): Promise<DesktopSnapshot> {
   return ctx.runSerialized(async () => {
     const bundle = await registerSessionBundleForOpen(ctx, filePath);
+    const basicInfoHost = basicInfoHostFromClientHost(options?.clientHost);
+    if (basicInfoHost) {
+      bundle.basicInfoHost = basicInfoHost;
+    }
     ctx.setLastRuntimeError("");
     return ctx.buildSnapshotProjectedForBundle(bundle);
   });
@@ -433,12 +438,17 @@ export async function openSessionBackgroundCommand(
 /** Create a new empty session for remote web without changing host foreground activation. */
 export async function resetSessionBackgroundCommand(
   ctx: SessionActivationContext,
+  options?: { clientHost?: import("../types.js").DesktopClientHost },
 ): Promise<DesktopSnapshot> {
   return ctx.runSerialized(async () => {
     await ctx.ensureInitialized(undefined, { fastPath: true });
     ctx.clearSubagentViewerTarget();
     const state = ctx.requireState();
     const bundle = ctx.sessionRegistry().beginNewBackground(state.workspaceRoot);
+    const basicInfoHost = basicInfoHostFromClientHost(options?.clientHost);
+    if (basicInfoHost) {
+      bundle.basicInfoHost = basicInfoHost;
+    }
     await ctx.finalizeTodoScopeForNewActiveBundle(bundle, state.workspaceRoot);
     ctx.setLastRuntimeError("");
     return ctx.buildSnapshotProjectedForBundle(bundle);

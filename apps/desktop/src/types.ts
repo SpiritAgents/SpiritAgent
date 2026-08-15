@@ -43,11 +43,19 @@ export type { ModelRef, ModelEntryV2, ProviderGroupV2, SpiritConfigSchemaVersion
 
 export type DesktopWorkspaceBinding = "project" | "none";
 
+/** Web shell identity for `<basic_info>` (page URL from the browser). */
+export interface DesktopClientHost {
+  kind: "web";
+  pageUrl: string;
+}
+
 export interface BootstrapRequest {
   workspaceRoot?: string;
   workspaceBinding?: DesktopWorkspaceBinding;
   /** HTTP web host: bind to a background provisional session without stealing desktop foreground. */
   isolateSession?: boolean;
+  /** Desktop Web: host identity + page URL for `<basic_info>`. */
+  clientHost?: DesktopClientHost;
 }
 
 export interface RememberWorkspaceRequest {

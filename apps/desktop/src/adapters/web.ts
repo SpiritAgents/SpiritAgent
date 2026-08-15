@@ -104,6 +104,16 @@ function withWebViewingSessionPath<T extends { sessionPath?: string }>(request: 
   return sessionPath ? { ...request, sessionPath } : request;
 }
 
+function webClientHost(): { kind: "web"; pageUrl: string } {
+  return { kind: "web", pageUrl: window.location.href };
+}
+
+function withWebClientHost<T extends Record<string, unknown>>(request?: T): T & {
+  clientHost: { kind: "web"; pageUrl: string };
+} {
+  return { ...(request ?? ({} as T)), clientHost: webClientHost() };
+}
+
 export function createWebHostApi(): HostApi {
   const baseUrl = DEFAULT_HOST_URL || "";
 
@@ -111,10 +121,14 @@ export function createWebHostApi(): HostApi {
     kind: "web",
     bootstrap(request?: BootstrapRequest) {
       const shouldIsolate = !request?.workspaceRoot;
-      return post<DesktopSnapshot>(baseUrl, "/api/bootstrap", {
-        ...request,
-        ...(shouldIsolate ? { isolateSession: true } : {}),
-      }).then((snapshot) => {
+      return post<DesktopSnapshot>(
+        baseUrl,
+        "/api/bootstrap",
+        withWebClientHost({
+          ...request,
+          ...(shouldIsolate ? { isolateSession: true } : {}),
+        }),
+      ).then((snapshot) => {
         rememberWebViewingSession(snapshot);
         return snapshot;
       });
@@ -432,7 +446,7 @@ export function createWebHostApi(): HostApi {
       return Promise.reject(new Error("openPathInDefaultApp is not available on web host"));
     },
     resetSession() {
-      return post<DesktopSnapshot>(baseUrl, "/api/reset").then((snapshot) => {
+      return post<DesktopSnapshot>(baseUrl, "/api/reset", withWebClientHost()).then((snapshot) => {
         rememberWebViewingSession(snapshot);
         return snapshot;
       });
@@ -441,7 +455,11 @@ export function createWebHostApi(): HostApi {
       return get<SessionListItem[]>(baseUrl, "/api/sessions");
     },
     openSession(path: string) {
-      return post<DesktopSnapshot>(baseUrl, "/api/sessions/open", { path, activate: false });
+      return post<DesktopSnapshot>(
+        baseUrl,
+        "/api/sessions/open",
+        withWebClientHost({ path, activate: false }),
+      );
     },
     beginSplitPaneSession(request: BeginSplitPaneSessionRequest) {
       return post<BeginSplitPaneSessionResponse>(baseUrl, "/api/sessions/split/begin", request);

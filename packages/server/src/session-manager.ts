@@ -160,6 +160,33 @@ export interface CreateSessionParams {
   dreamSourceSession?: HostDreamSourceSessionRef;
   /** Host UI Markdown / rendering hints (Desktop Mermaid). CLI omits. */
   hostUiPromptSection?: string;
+  /** Optional `<basic_info>` host override (e.g. Desktop Web + page URL). */
+  basicInfoHost?: {
+    kind: "Desktop" | "CLI" | "Web";
+    url?: string;
+  };
+}
+
+function resolveBasicInfoHost(params: CreateSessionParams): {
+  kind: "Desktop" | "CLI" | "Web";
+  url?: string;
+} {
+  if (params.basicInfoHost) {
+    const url = params.basicInfoHost.url?.trim();
+    return {
+      kind: params.basicInfoHost.kind,
+      ...(url ? { url } : {}),
+    };
+  }
+  switch (params.hostKind) {
+    case "desktop":
+      return { kind: "Desktop" };
+    case "web":
+      return { kind: "Web" };
+    case "cli":
+    default:
+      return { kind: "CLI" };
+  }
 }
 
 export interface AttachSessionParams {
@@ -283,6 +310,7 @@ export class SessionManager {
       ...(params.dreamScope ? { dreamScope: params.dreamScope } : {}),
       ...(params.dreamSourceSession ? { dreamSourceSession: params.dreamSourceSession } : {}),
       ...(params.hostUiPromptSection ? { hostUiPromptSection: params.hostUiPromptSection } : {}),
+      basicInfoHost: resolveBasicInfoHost(params),
       onEvent: (event) => this.handleRuntimeEvent(sessionId, event),
       onFileChange: (change) => this.callbacks.broadcastFileChange(sessionId, change),
       requestWorkspaceCapabilityTrust: (request) =>
@@ -988,6 +1016,7 @@ export class SessionManager {
       ...(session.createParams.hostUiPromptSection
         ? { hostUiPromptSection: session.createParams.hostUiPromptSection }
         : {}),
+      basicInfoHost: resolveBasicInfoHost(session.createParams),
       onEvent: (event) => this.handleRuntimeEvent(sessionId, event),
       onFileChange: (change) => this.callbacks.broadcastFileChange(sessionId, change),
       requestWorkspaceCapabilityTrust: (request) =>

@@ -24,6 +24,7 @@ export function buildDesktopRuntimeBasicInfo(
     ...(sessionTranscript ? { sessionTranscript } : {}),
     terminal: shell.shellDisplayName,
     system: toolExecutor.operatingSystemInfo(),
+    host: { kind: "Desktop" },
   };
 }
 

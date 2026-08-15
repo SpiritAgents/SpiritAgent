@@ -1102,7 +1102,10 @@ async function handleApiRequest({
   }
 
   if (request.method === "POST" && pathname === "/api/reset") {
-    writeJson(request, response, 200, await runHostCommand("resetSession", { activate: false }));
+    writeJson(request, response, 200, await runHostCommand("resetSession", {
+      activate: false,
+      ...(jsonBody?.clientHost ? { clientHost: jsonBody.clientHost } : {}),
+    }));
     return;
   }
 
@@ -1115,6 +1118,7 @@ async function handleApiRequest({
         path: typeof jsonBody?.path === "string" ? jsonBody.path : "",
         // HTTP clients are remote viewers; never steal the desktop foreground session.
         activate: false,
+        ...(jsonBody?.clientHost ? { clientHost: jsonBody.clientHost } : {}),
       }),
     );
     return;

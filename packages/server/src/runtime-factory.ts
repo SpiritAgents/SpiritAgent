@@ -132,6 +132,14 @@ export interface ServerRuntimeOptions {
    * Appended as a plain system section; CLI / ACP omit this.
    */
   hostUiPromptSection?: string;
+  /**
+   * Optional `<basic_info>` host override (e.g. Web + page URL).
+   * When omitted, derived from the session's ClientKind via the session manager.
+   */
+  basicInfoHost?: {
+    kind: "Desktop" | "CLI" | "Web";
+    url?: string;
+  };
 }
 
 export interface ServerRuntimeResult {
@@ -327,6 +335,14 @@ export async function createServerRuntime(
 
   // 4. Basic info block.
   const shell = service.toolDefinitionEnvironment();
+  const basicInfoHost = options.basicInfoHost
+    ? {
+        kind: options.basicInfoHost.kind,
+        ...(options.basicInfoHost.url?.trim()
+          ? { url: options.basicInfoHost.url.trim() }
+          : {}),
+      }
+    : undefined;
   const basicInfo: LlmToolAgentBasicInfo = {
     workspaceRoot,
     ...(shell?.shellDisplayName ? { terminal: shell.shellDisplayName } : {}),
@@ -346,6 +362,7 @@ export async function createServerRuntime(
               : process.platform,
       version: osRelease(),
     },
+    ...(basicInfoHost ? { host: basicInfoHost } : {}),
   };
   const hookSessionContext = {
     sessionId: sessionKey,

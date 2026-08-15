@@ -153,6 +153,15 @@ export interface ServerConnectedParams {
 
 export type SessionApprovalLevel = "default" | "auto-approval" | "bypass-approval";
 
+/** Host identity for `<basic_info>` (distinct from extension ClientKind mapping). */
+export type SessionBasicInfoHostKind = "Desktop" | "CLI" | "Web";
+
+export interface SessionBasicInfoHost {
+  kind: SessionBasicInfoHostKind;
+  /** Browser page URL when kind is Web. */
+  url?: string;
+}
+
 export interface SessionCreateParams {
   workspaceRoot: string;
   /** Stable chat file path; re-create returns the existing live session. */
@@ -169,6 +178,8 @@ export interface SessionCreateParams {
    * Plain English; appended to the tool-agent system message. CLI / ACP omit this.
    */
   hostUiPromptSection?: string;
+  /** Optional override for `<basic_info>` Current host (e.g. Desktop Web + page URL). */
+  basicInfoHost?: SessionBasicInfoHost;
 }
 
 export interface SessionAttachParams {
