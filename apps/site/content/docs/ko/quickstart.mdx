@@ -60,7 +60,7 @@ TUI는 현재 디렉터리를 작업 공간으로 사용합니다.
 
 ## 3. 공급자 하나 연결
 
-이미 사용 중인 공급자의 API 키가 필요합니다. Spirit은 해당 키를 프로젝트가 아닌 운영 체제 키링(`SpiritAgent`)에 저장합니다.
+이미 사용 중인 공급자의 API 키가 필요합니다. Spirit은 해당 키를 운영 체제 키링(`SpiritAgent`)에 저장합니다.
 
 <Tabs items={["Desktop", "CLI"]}>
   <Tab value="Desktop">
@@ -83,10 +83,6 @@ spirit model add
 
 </Tab>
 </Tabs>
-
-<Callout title="키링">
-Spirit이 `config.json`을 업데이트하기 전에 키가 시스템 키링에 기록됩니다. 이후 페이지에서 다시 연결하라고 요청하면, 저장소에 키를 붙여넣는 것이 아니라 키링 항목을 복원하는 것입니다.
-</Callout>
 
 ## 4. 작은 변경을 요청한 후 승인하기
 

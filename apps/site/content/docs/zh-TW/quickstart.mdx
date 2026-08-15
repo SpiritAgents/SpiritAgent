@@ -60,7 +60,7 @@ TUI 會將目前目錄作為工作區。
 
 ## 3. 連接一個提供者
 
-您需要一個來自您已在使用之提供者的 API 金鑰。Spirit 會將該金鑰儲存在作業系統的金鑰環（`SpiritAgent`）中，而非專案內。
+您需要一個來自您已在使用之提供者的 API 金鑰。Spirit 會將該金鑰儲存在作業系統的金鑰環（`SpiritAgent`）中。
 
 <Tabs items={["Desktop", "CLI"]}>
   <Tab value="Desktop">
@@ -83,10 +83,6 @@ spirit model add
 
 </Tab>
 </Tabs>
-
-<Callout title="金鑰環">
-在 Spirit 更新 `config.json` 之前，金鑰會寫入系統金鑰環。如果後續頁面要求您重新連接，您是在還原金鑰環條目，而不是將金鑰貼入儲存庫。
-</Callout>
 
 ## 4. 要求一個小變更，然後批准它
 

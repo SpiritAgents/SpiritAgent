@@ -60,7 +60,7 @@ TUI 把当前目录当作工作区。
 
 ## 3. 接上第一家提供商
 
-你需要一把已有提供商的 API Key。Spirit 把它写入操作系统钥匙串（服务名 `SpiritAgent`），不会写进项目。
+你需要一把已有提供商的 API Key。Spirit 把它写入操作系统钥匙串（服务名 `SpiritAgent`）。
 
 <Tabs items={["Desktop", "CLI"]}>
   <Tab value="Desktop">
@@ -84,10 +84,6 @@ spirit model add
   </Tab>
 </Tabs>
 
-<Callout title="钥匙串">
-Key 会先写入系统钥匙串，再更新 `config.json`。后面如果有页面让你重新连接，是在恢复钥匙串条目，不是把 Key 贴进仓库。
-</Callout>
-
 ## 4. 让 Agent 做一次小改，然后审批
 
 第一次请留在 **Agent** 模式和 **默认** 审批。让它读一个你熟悉的文件，再做一处一眼能看出来的修改。
@@ -95,7 +91,7 @@ Key 会先写入系统钥匙串，再更新 `config.json`。后面如果有页�
 例如：
 
 ```txt
-Read README.md and add a one-line project summary at the top. Do not change anything else.
+读取 README.md，并在文件顶部添加一行项目简介。不要改动其他内容。
 ```
 
 Agent 会读文件、提出编辑，然后等待。在提示里批准文件改动（以及任何 shell 命令）。结束后打开文件确认。

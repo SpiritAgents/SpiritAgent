@@ -60,7 +60,7 @@ Das TUI verwendet das aktuelle Verzeichnis als Workspace.
 
 ## 3. Verbinden Sie einen Anbieter
 
-Sie benötigen einen API-Schlüssel von einem Anbieter, den Sie bereits verwenden. Spirit speichert diesen Schlüssel im Betriebssystem-Keyring (`SpiritAgent`), nicht im Projekt.
+Sie benötigen einen API-Schlüssel von einem Anbieter, den Sie bereits verwenden. Spirit speichert diesen Schlüssel im Betriebssystem-Keyring (`SpiritAgent`).
 
 <Tabs items={["Desktop", "CLI"]}>
   <Tab value="Desktop">
@@ -83,10 +83,6 @@ spirit model add
 
 </Tab>
 </Tabs>
-
-<Callout title="Keyring">
-Der Schlüssel wird in den System-Keyring geschrieben, bevor Spirit `config.json` aktualisiert. Wenn eine spätere Seite Sie auffordert, die Verbindung wiederherzustellen, stellen Sie den Keyring-Eintrag wieder her, nicht indem Sie einen Schlüssel in das Repo einfügen.
-</Callout>
 
 ## 4. Bitten Sie um eine kleine Änderung und genehmigen Sie sie
 

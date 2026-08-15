@@ -60,7 +60,7 @@ La TUI utilise le répertoire courant comme espace de travail.
 
 ## 3. Connectez un fournisseur
 
-Vous avez besoin d'une clé API d'un fournisseur que vous utilisez déjà. Spirit stocke cette clé dans le trousseau du système d'exploitation (`SpiritAgent`), pas dans le projet.
+Vous avez besoin d'une clé API d'un fournisseur que vous utilisez déjà. Spirit stocke cette clé dans le trousseau du système d'exploitation (`SpiritAgent`).
 
 <Tabs items={["Desktop", "CLI"]}>
   <Tab value="Desktop">
@@ -83,10 +83,6 @@ spirit model add
 
 </Tab>
 </Tabs>
-
-<Callout title="Trousseau">
-La clé est écrite dans le trousseau système avant que Spirit ne mette à jour `config.json`. Si une page ultérieure vous demande de vous reconnecter, vous restaurez l'entrée du trousseau, pas une clé collée dans le dépôt.
-</Callout>
 
 ## 4. Demandez une petite modification, puis approuvez-la
 

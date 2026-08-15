@@ -60,7 +60,7 @@ The TUI uses the current directory as the workspace.
 
 ## 3. Connect one provider
 
-You need an API key from a provider you already use. Spirit stores that key in the operating system keyring (`SpiritAgent`), not in the project.
+You need an API key from a provider you already use. Spirit stores that key in the operating system keyring (`SpiritAgent`).
 
 <Tabs items={["Desktop", "CLI"]}>
   <Tab value="Desktop">
@@ -83,10 +83,6 @@ spirit model add
 
   </Tab>
 </Tabs>
-
-<Callout title="Keyring">
-The key is written to the system keyring before Spirit updates `config.json`. If a later page asks you to reconnect, you are restoring the keyring entry, not pasting a key into the repo.
-</Callout>
 
 ## 4. Ask for a small change, then approve it
 
