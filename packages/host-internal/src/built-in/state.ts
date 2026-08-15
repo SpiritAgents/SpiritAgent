@@ -24,7 +24,7 @@ function normalizeNameList(values: unknown): string[] {
   }
   const normalized = values
     .filter((entry): entry is string => typeof entry === "string")
-    .map((entry) => entry.trim())
+    .map((entry) => entry.trim().toLowerCase())
     .filter(Boolean);
   return [...new Set(normalized)].sort((left, right) => left.localeCompare(right, "en"));
 }
@@ -79,7 +79,7 @@ export async function noteBuiltInExtensionRemoved(
   spiritDataDir: string,
   extensionId: string,
 ): Promise<void> {
-  const normalized = extensionId.trim();
+  const normalized = extensionId.trim().toLowerCase();
   if (!normalized) {
     return;
   }

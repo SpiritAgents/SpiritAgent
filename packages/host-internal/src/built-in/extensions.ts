@@ -55,12 +55,14 @@ export async function ensureBuiltInExtensions(
     return [];
   }
 
-  const allowedIds = new Set<string>(BUILT_IN_EXTENSION_IDS);
+  const allowedIds = new Set<string>(
+    (BUILT_IN_EXTENSION_IDS as readonly string[]).map((id) => id.toLowerCase()),
+  );
   const { spiritDataDir, hostKind } = request;
   const state = await loadBuiltInState(spiritDataDir);
-  const removed = new Set(state.removedExtensionIds);
+  const removed = new Set(state.removedExtensionIds.map((id) => id.toLowerCase()));
   const installed = await request.manager.list();
-  const installedIds = new Set(installed.map((item) => item.id));
+  const installedIds = new Set(installed.map((item) => item.id.toLowerCase()));
   const seeded: HostInstalledExtension[] = [];
 
   for (const templateDir of await listBuiltInExtensionTemplateDirs()) {
@@ -71,13 +73,14 @@ export async function ensureBuiltInExtensions(
       continue;
     }
 
-    if (!allowedIds.has(manifest.id)) {
+    const extensionId = manifest.id.trim().toLowerCase();
+    if (!allowedIds.has(extensionId)) {
       continue;
     }
     if (!manifest.supportedHosts.includes(hostKind)) {
       continue;
     }
-    if (removed.has(manifest.id) || installedIds.has(manifest.id)) {
+    if (removed.has(extensionId) || installedIds.has(extensionId)) {
       continue;
     }
 
@@ -89,7 +92,7 @@ export async function ensureBuiltInExtensions(
         replaceExisting: false,
       },
     );
-    installedIds.add(next.id);
+    installedIds.add(next.id.trim().toLowerCase());
     seeded.push(next);
   }
 

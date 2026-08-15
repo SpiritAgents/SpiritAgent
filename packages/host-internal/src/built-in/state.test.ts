@@ -93,6 +93,13 @@ test("installPreparedDirectory records installSource and remove notes built-in",
     await noteBuiltInExtensionRemoved(spiritDataDir, installed.id);
     const again = await loadBuiltInState(spiritDataDir);
     assert.equal(again.removedExtensionIds.filter((id) => id === installed.id).length, 1);
+
+    await noteBuiltInExtensionRemoved(spiritDataDir, installed.id.toUpperCase());
+    const mixedCase = await loadBuiltInState(spiritDataDir);
+    assert.equal(
+      mixedCase.removedExtensionIds.filter((id) => id === installed.id.toLowerCase()).length,
+      1,
+    );
   } finally {
     await rm(spiritDataDir, { recursive: true, force: true });
     await rm(preparedRoot, { recursive: true, force: true });
