@@ -38,7 +38,7 @@ export function DownloadTrioScaffold() {
   return (
     <section
       id="download-channels"
-      className="relative overflow-hidden bg-[#000000]"
+      className="relative overflow-hidden bg-background"
       aria-label={copy.sectionAria}
     >
       <div
@@ -75,7 +75,7 @@ export function DownloadTrioScaffold() {
                 </LandingFeatureDemoBox>
               ) : (
                 <LandingFeatureDemoBox frameClassName={LANDING_TRIO_DEMO_BOX_FRAME_CLASS}>
-                  <p className="flex h-full items-center justify-center text-2xl text-white/45 sm:text-3xl">
+                  <p className="flex h-full items-center justify-center text-2xl text-foreground/45 sm:text-3xl">
                     {copy.listingInProgress}
                   </p>
                 </LandingFeatureDemoBox>
@@ -83,7 +83,7 @@ export function DownloadTrioScaffold() {
 
               <div className="flex flex-col items-start gap-3">
                 <h2
-                  className={`text-[1.35rem] leading-[1.06] ${FONT_WEIGHT_MEDIUM} tracking-[-0.04em] text-white sm:text-[1.5rem]`}
+                  className={`text-[1.35rem] leading-[1.06] ${FONT_WEIGHT_MEDIUM} tracking-[-0.04em] text-foreground sm:text-[1.5rem]`}
                 >
                   {item.title}
                 </h2>
@@ -101,7 +101,7 @@ export function DownloadTrioScaffold() {
                     size="sm"
                     disabled
                     className={cn(
-                      "h-9 rounded-full border border-white/12 bg-white/10 px-4 text-[13px] text-white/50",
+                      "h-9 rounded-full border border-foreground/12 bg-foreground/10 px-4 text-[13px] text-foreground/50",
                       "disabled:opacity-60",
                     )}
                   >

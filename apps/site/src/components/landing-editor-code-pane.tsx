@@ -229,7 +229,7 @@ export function LandingEditorCodePane({
   ]);
 
   return (
-    <div className={cn("min-h-0 min-w-0 flex-1 overflow-hidden bg-[#000000]", className)}>
+    <div className={cn("min-h-0 min-w-0 flex-1 overflow-hidden bg-background", className)}>
       <div className="spirit-scroll h-full overflow-auto px-3 py-2.5">
         <pre
           className={cn(
@@ -237,7 +237,7 @@ export function LandingEditorCodePane({
             "[&_.shiki]:!bg-transparent [&_.shiki]:!p-0",
           )}
         >
-          <code className="block text-[#e6edf3]">
+          <code className="block text-foreground dark:text-[#e6edf3]">
             {displayedBeforeHtml ? (
               <span ref={contentRef} className="inline">
                 <span
@@ -268,14 +268,14 @@ export function LandingEditorCodePane({
                 ) : null}
               </span>
             ) : (
-              <span className="text-white/40">{solidText || COMPLETION_DEMO_BASE}</span>
+              <span className="text-foreground/40">{solidText || COMPLETION_DEMO_BASE}</span>
             )}
           </code>
           {cursorPos ? (
             <span
               data-code-cursor
               className={cn(
-                "pointer-events-none absolute w-px bg-white/80",
+                "pointer-events-none absolute w-px bg-foreground/80",
                 FADE_CLASS,
                 ghostText && !resetFading && "animate-pulse",
               )}

@@ -56,7 +56,7 @@ export function DesktopLayoutChromeBar({
         showTrailingActions ? "justify-between" : "justify-start",
         useMicaBackdrop
           ? desktopMicaTintClass(useMicaBackdrop)
-          : (baseToneClassName ?? "bg-[#0a0a0a]"),
+          : (baseToneClassName ?? "bg-background dark:bg-[#0a0a0a]"),
       )}
     >
       <div className="flex min-w-0 items-center">

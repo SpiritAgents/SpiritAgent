@@ -14,7 +14,7 @@ export function LandingContentScaffold() {
   return (
     <section
       id="docs"
-      className="relative overflow-hidden bg-[#000000]"
+      className="relative overflow-hidden bg-background"
       aria-label={messages.landing.sectionAria}
     >
       <div
@@ -24,7 +24,7 @@ export function LandingContentScaffold() {
           <div className="flex h-full items-center lg:col-start-2 lg:row-start-1 lg:justify-end">
             <div className="max-w-xl space-y-4">
               <h2
-                className={`max-w-lg text-[2.2rem] leading-[1.02] ${FONT_WEIGHT_MEDIUM} tracking-[-0.05em] text-white sm:text-[2.9rem]`}
+                className={`max-w-lg text-[2.2rem] leading-[1.02] ${FONT_WEIGHT_MEDIUM} tracking-[-0.05em] text-foreground sm:text-[2.9rem]`}
               >
                 {messages.landing.featureHeading[0]}
                 <br />
@@ -32,7 +32,7 @@ export function LandingContentScaffold() {
                 <br />
                 {messages.landing.featureHeading[2]}
               </h2>
-              <p className="max-w-md text-[1.05rem] leading-relaxed text-white/66 sm:text-[1.15rem]">
+              <p className="max-w-md text-[1.05rem] leading-relaxed text-foreground/66 sm:text-[1.15rem]">
                 {protectBrandTokens(messages.landing.featureBody)}
               </p>
             </div>

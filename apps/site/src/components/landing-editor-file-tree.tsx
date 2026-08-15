@@ -19,16 +19,16 @@ function TreeNode({ node, depth }: { node: LandingEditorTreeNode; depth: number 
       <div
         className={cn(
           "flex min-w-0 items-center gap-1 py-0.5 pr-2 text-[10px] leading-tight",
-          node.selected ? "bg-white/10 text-white" : "text-white/72",
+          node.selected ? "bg-foreground/10 text-foreground" : "text-foreground/72",
         )}
         style={{ paddingLeft }}
       >
         {isDir ? (
-          <ChevronDown className="size-2.5 shrink-0 text-white/45" aria-hidden />
+          <ChevronDown className="size-2.5 shrink-0 text-foreground/45" aria-hidden />
         ) : (
           <span className="size-2.5 shrink-0" aria-hidden />
         )}
-        <Icon className="size-3 shrink-0 text-white/55" aria-hidden />
+        <Icon className="size-3 shrink-0 text-foreground/55" aria-hidden />
         <span className="truncate">{node.name}</span>
       </div>
       {node.children?.map((child) => (
@@ -42,7 +42,7 @@ export function LandingEditorFileTree({ root, className }: LandingEditorFileTree
   return (
     <div
       className={cn(
-        "h-full min-h-0 w-[7rem] shrink-0 overflow-hidden border-r border-white/8 bg-[#000000] py-1.5",
+        "h-full min-h-0 w-[7rem] shrink-0 overflow-hidden border-r border-foreground/8 bg-background py-1.5",
         className,
       )}
     >

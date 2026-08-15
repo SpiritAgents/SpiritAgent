@@ -15,19 +15,19 @@ export function DocsPage() {
       <SiteNav />
       <main className="relative z-10">
         <section
-          className="relative z-10 flex w-full flex-col items-center justify-center overflow-hidden bg-black px-5 pt-32 pb-28 sm:pt-36 sm:pb-32"
+          className="relative z-10 flex w-full flex-col items-center justify-center overflow-hidden bg-background px-5 pt-32 pb-28 sm:pt-36 sm:pb-32"
           aria-label={copy.sectionAria}
         >
           <div className="pointer-events-none absolute inset-0 overflow-hidden" aria-hidden>
             <SiteGradientBackground className="absolute inset-0 block h-full w-full" />
           </div>
           <h1
-            className={`relative z-10 text-center text-[clamp(1.5rem,3.5vw,2.5rem)] ${FONT_WEIGHT_MEDIUM} leading-none tracking-[-0.05em] text-white`}
+            className={`relative z-10 text-center text-[clamp(1.5rem,3.5vw,2.5rem)] ${FONT_WEIGHT_MEDIUM} leading-none tracking-[-0.05em] text-foreground`}
           >
             {copy.title}
           </h1>
           <p
-            className={`relative z-10 mt-6 text-center text-lg text-white/45 ${FONT_WEIGHT_NORMAL}`}
+            className={`relative z-10 mt-6 text-center text-lg text-foreground/45 ${FONT_WEIGHT_NORMAL}`}
           >
             {copy.comingSoon}
           </p>

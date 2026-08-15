@@ -17,7 +17,7 @@ export function Hero() {
   return (
     <section
       id="site-hero"
-      className="relative min-h-dvh w-full bg-black"
+      className="relative min-h-dvh w-full bg-background"
       aria-label={messages.hero.sectionAria}
     >
       <div className="relative z-10 flex justify-center pt-48">
@@ -25,7 +25,7 @@ export function Hero() {
           <div className="w-full space-y-5 text-left">
             <h1
               id="site-hero-title"
-              className={`text-[2.75rem] leading-[1.01] ${FONT_WEIGHT_MEDIUM} tracking-[-0.045em] text-white sm:text-[3.5rem]`}
+              className={`text-[2.75rem] leading-[1.01] ${FONT_WEIGHT_MEDIUM} tracking-[-0.045em] text-foreground sm:text-[3.5rem]`}
             >
               {messages.hero.headline.split("\n").map((line, index) => (
                 <span key={index} className="block">
@@ -33,7 +33,7 @@ export function Hero() {
                 </span>
               ))}
             </h1>
-            <p className="text-pretty text-[1.05rem] leading-snug text-white/74 sm:max-w-[50%] sm:text-[1.2rem]">
+            <p className="text-pretty text-[1.05rem] leading-snug text-foreground/74 sm:max-w-[50%] sm:text-[1.2rem]">
               {messages.hero.tagline}
             </p>
             <div>
@@ -45,7 +45,7 @@ export function Hero() {
             </div>
           </div>
           <div
-            className={`relative overflow-hidden rounded-[4px] bg-black ${HERO_DESKTOP_WINDOW_FRAME_CLASS}`}
+            className={`relative overflow-hidden rounded-[4px] bg-background ${HERO_DESKTOP_WINDOW_FRAME_CLASS}`}
           >
             <div className="pointer-events-none absolute inset-0 overflow-hidden" aria-hidden>
               <SiteGradientBackground className="absolute inset-0 block h-full w-full" />

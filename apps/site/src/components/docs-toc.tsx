@@ -72,7 +72,7 @@ function DocsTOCList() {
             href={item.url}
             data-active={activeId === id}
             className={cn(
-              `py-1.5 text-sm text-muted-foreground hover:text-white data-[active=true]:text-white ${FONT_WEIGHT_NORMAL}`,
+              `py-1.5 text-sm text-muted-foreground hover:text-foreground data-[active=true]:text-foreground ${FONT_WEIGHT_NORMAL}`,
               item.depth === 3 && "ps-3",
               item.depth >= 4 && "ps-5",
             )}

@@ -50,7 +50,8 @@ function CompactMenuIcon({ open }: { open: boolean }) {
 }
 
 /**
- * The bar itself extends downward into one continuous black surface; only its height animates.
+ * The bar itself extends downward into one continuous background-colored surface; only its
+ * height animates.
  * Content cross-fades while height interpolates between menu panels, and on close it is
  * clipped by the shrinking surface — the collapse duration doubles as the hide delay.
  */
@@ -80,7 +81,7 @@ export function SiteNav() {
   const [hoveredMenu, setHoveredMenu] = useState<SiteNavMenuKey | null>(null);
   // One trigger reads as current: the hovered one, falling back to the open one.
   // Every other trigger dims. Hovering the gap between triggers matches nothing,
-  // so a closed bar stays all-white and an open bar keeps its trigger white.
+  // so a closed bar stays all-foreground and an open bar keeps its trigger foreground.
   const currentMenu = hoveredMenu ?? openMenu;
   const [panelHeights, setPanelHeights] = useState<Record<SiteNavMenuKey, number>>({
     features: 0,
@@ -178,7 +179,7 @@ export function SiteNav() {
   return (
     <>
       <header
-        className="fixed inset-x-0 top-0 z-40 bg-black"
+        className="fixed inset-x-0 top-0 z-40 bg-background"
         onMouseLeave={() => setOpenMenu(null)}
       >
         <div>
@@ -187,10 +188,10 @@ export function SiteNav() {
               <a
                 href={localizedPath()}
                 aria-label={messages.hero.homeAria}
-                className="shrink-0 text-white"
+                className="shrink-0 text-foreground"
               >
                 <span
-                  className={`whitespace-nowrap text-[15px] ${FONT_WEIGHT_NORMAL} leading-none tracking-[-0.02em] text-white/96`}
+                  className={`whitespace-nowrap text-[15px] ${FONT_WEIGHT_NORMAL} leading-none tracking-[-0.02em] text-foreground/96`}
                 >
                   <NoTranslate>{messages.common.brand}</NoTranslate>
                 </span>
@@ -218,10 +219,10 @@ export function SiteNav() {
                           setOpenMenu((current) => (current === menu.key ? null : menu.key))
                         }
                         className={cn(
-                          `cursor-pointer rounded-sm text-[13px] ${FONT_WEIGHT_NORMAL} leading-none text-white`,
+                          `cursor-pointer rounded-sm text-[13px] ${FONT_WEIGHT_NORMAL} leading-none text-foreground`,
                           "transition-colors duration-150",
-                          "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/30",
-                          currentMenu !== null && currentMenu !== menu.key && "text-white/60",
+                          "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/50",
+                          currentMenu !== null && currentMenu !== menu.key && "text-foreground/60",
                         )}
                       >
                         {menu.trigger}
@@ -238,7 +239,7 @@ export function SiteNav() {
                 target="_blank"
                 rel="noopener noreferrer"
                 aria-label={nav.github}
-                className="inline-flex rounded-md p-0.5 text-white/50 outline-none transition-colors hover:text-white focus-visible:ring-2 focus-visible:ring-white/20 focus-visible:ring-offset-2 focus-visible:ring-offset-black"
+                className="inline-flex rounded-md p-0.5 text-foreground/50 outline-none transition-colors hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring/50 focus-visible:ring-offset-2 focus-visible:ring-offset-background"
               >
                 <GitHubMark className="size-4" />
               </a>
@@ -254,8 +255,8 @@ export function SiteNav() {
                     requestDocsMegaToggle();
                   }}
                   className={cn(
-                    "group hidden size-8 cursor-pointer items-center justify-center rounded-md text-white outline-none max-lg:inline-flex",
-                    "focus-visible:ring-2 focus-visible:ring-white/20 focus-visible:ring-offset-2 focus-visible:ring-offset-black",
+                    "group hidden size-8 cursor-pointer items-center justify-center rounded-md text-foreground outline-none max-lg:inline-flex",
+                    "focus-visible:ring-2 focus-visible:ring-ring/50 focus-visible:ring-offset-2 focus-visible:ring-offset-background",
                   )}
                 >
                   <CompactMenuIcon open={docsMegaOpen} />
@@ -271,8 +272,8 @@ export function SiteNav() {
                     setCompactOpen((current) => !current);
                   }}
                   className={cn(
-                    "group hidden size-8 cursor-pointer items-center justify-center rounded-md text-white outline-none max-md:inline-flex",
-                    "focus-visible:ring-2 focus-visible:ring-white/20 focus-visible:ring-offset-2 focus-visible:ring-offset-black",
+                    "group hidden size-8 cursor-pointer items-center justify-center rounded-md text-foreground outline-none max-md:inline-flex",
+                    "focus-visible:ring-2 focus-visible:ring-ring/50 focus-visible:ring-offset-2 focus-visible:ring-offset-background",
                   )}
                 >
                   <CompactMenuIcon open={compactOpen} />
@@ -333,9 +334,9 @@ export function SiteNav() {
                               ? { target: "_blank", rel: "noopener noreferrer" }
                               : {})}
                             className={cn(
-                              `block w-fit rounded-sm text-[28px] ${FONT_WEIGHT_NORMAL} leading-[1.2] tracking-[-0.01em] text-white`,
-                              "transition-colors duration-150 hover:text-white/60",
-                              "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/30",
+                              `block w-fit rounded-sm text-[28px] ${FONT_WEIGHT_NORMAL} leading-[1.2] tracking-[-0.01em] text-foreground`,
+                              "transition-colors duration-150 hover:text-foreground/60",
+                              "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/50",
                             )}
                           >
                             {/* BYOK: Safari mistranslates to nonsense like「比OK」; drop when quality improves. */}

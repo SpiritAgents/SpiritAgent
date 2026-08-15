@@ -11,7 +11,7 @@ export function LandingAgentScaffold() {
   return (
     <section
       id="agent"
-      className="relative overflow-hidden bg-[#000000]"
+      className="relative overflow-hidden bg-background"
       aria-label={messages.landing.agent.sectionAria}
     >
       <div
@@ -21,7 +21,7 @@ export function LandingAgentScaffold() {
           <div className="flex h-full items-center">
             <div className="max-w-xl space-y-4">
               <h2
-                className={`max-w-lg text-[2.2rem] leading-[1.02] ${FONT_WEIGHT_MEDIUM} tracking-[-0.05em] text-white sm:text-[2.9rem]`}
+                className={`max-w-lg text-[2.2rem] leading-[1.02] ${FONT_WEIGHT_MEDIUM} tracking-[-0.05em] text-foreground sm:text-[2.9rem]`}
               >
                 {messages.landing.agent.featureHeading[0]}
                 <br />
@@ -29,7 +29,7 @@ export function LandingAgentScaffold() {
                 <br />
                 {messages.landing.agent.featureHeading[2]}
               </h2>
-              <p className="max-w-md text-[1.05rem] leading-relaxed text-white/66 sm:text-[1.15rem]">
+              <p className="max-w-md text-[1.05rem] leading-relaxed text-foreground/66 sm:text-[1.15rem]">
                 {protectBrandTokens(messages.landing.agent.featureBody)}
               </p>
             </div>

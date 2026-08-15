@@ -7,7 +7,7 @@ export function DownloadHero() {
 
   return (
     <section
-      className="relative z-10 flex w-full flex-col items-center justify-center overflow-hidden bg-black px-5 pt-32 pb-12 sm:pt-36 sm:pb-14"
+      className="relative z-10 flex w-full flex-col items-center justify-center overflow-hidden bg-background px-5 pt-32 pb-12 sm:pt-36 sm:pb-14"
       aria-label={messages.download.sectionAria}
     >
       <div className="pointer-events-none absolute inset-0 overflow-hidden" aria-hidden>
@@ -15,7 +15,7 @@ export function DownloadHero() {
       </div>
 
       <h1
-        className={`relative z-10 text-center text-[clamp(1.5rem,3.5vw,2.5rem)] ${FONT_WEIGHT_MEDIUM} leading-none tracking-[-0.05em] text-white`}
+        className={`relative z-10 text-center text-[clamp(1.5rem,3.5vw,2.5rem)] ${FONT_WEIGHT_MEDIUM} leading-none tracking-[-0.05em] text-foreground`}
       >
         {messages.download.title}
       </h1>

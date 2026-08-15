@@ -96,9 +96,9 @@ function DocsMobileMegaLink({ item, onNavigate }: { item: Item; onNavigate: () =
       onClick={onNavigate}
       {...(item.external ? { target: "_blank", rel: "noopener noreferrer" } : {})}
       className={cn(
-        `block w-fit rounded-sm text-[28px] ${FONT_WEIGHT_NORMAL} leading-[1.2] tracking-[-0.01em] text-white`,
-        "transition-colors duration-150 hover:text-white/60",
-        "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/30",
+        `block w-fit rounded-sm text-[28px] ${FONT_WEIGHT_NORMAL} leading-[1.2] tracking-[-0.01em] text-foreground`,
+        "transition-colors duration-150 hover:text-foreground/60",
+        "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/50",
       )}
     >
       {item.name}
