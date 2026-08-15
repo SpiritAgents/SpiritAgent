@@ -17,14 +17,14 @@ export type WorkspaceBrowserPreviewTabProps = {
   designModeState: DesignModeDemoState;
   onDesignModeStateChange?: (patch: Partial<DesignModeDemoState>) => void;
   onDesignModeUserInteract?: () => void;
-  useMicaBackdrop?: boolean;
+  useTranslucency?: boolean;
 };
 
 export function WorkspaceBrowserPreviewTab({
   designModeState,
   onDesignModeStateChange,
   onDesignModeUserInteract,
-  useMicaBackdrop = false,
+  useTranslucency = false,
 }: WorkspaceBrowserPreviewTabProps) {
   const pageSlotRef = useRef<HTMLDivElement>(null);
   const userPausedDemoRef = useRef(false);
@@ -183,7 +183,7 @@ export function WorkspaceBrowserPreviewTab({
           ref={pageSlotRef}
           className={cn(
             "relative flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden",
-            desktopTranslucencyBrowserTintClass(useMicaBackdrop),
+            desktopTranslucencyBrowserTintClass(useTranslucency),
             pickerActive && "cursor-crosshair",
           )}
           onPointerDown={handlePagePointerDown}

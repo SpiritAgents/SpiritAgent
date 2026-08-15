@@ -12,7 +12,7 @@ export function BrowserNestedHeroWindow() {
           nestedPreview
           className="relative z-10 min-h-0 w-full max-w-none flex-1"
           viewportClassName="h-full min-h-0"
-          useMicaBackdrop
+          useTranslucency
           heroBaseTone
           demoPlaybackActive={false}
           initialWorkspaceToolsOpen={false}

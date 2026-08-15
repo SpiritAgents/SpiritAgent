@@ -13,7 +13,7 @@ import { cn } from "@/lib/utils";
 export type SessionSidebarShellProps = {
   minWidthPx?: number;
   maxWidthPx?: number;
-  useMicaBackdrop?: boolean;
+  useTranslucency?: boolean;
   children: ReactNode;
   className?: string;
 };
@@ -21,7 +21,7 @@ export type SessionSidebarShellProps = {
 export function SessionSidebarShell({
   minWidthPx = SESSION_SIDEBAR_MIN_WIDTH_PX,
   maxWidthPx: maxWidthPxProp,
-  useMicaBackdrop = false,
+  useTranslucency = false,
   children,
   className,
 }: SessionSidebarShellProps) {
@@ -108,7 +108,7 @@ export function SessionSidebarShell({
       data-spirit-surface="session-sidebar-shell"
       className={cn(
         "relative flex h-full min-h-0 shrink-0 flex-row self-stretch overflow-hidden",
-        !useMicaBackdrop && "bg-sidebar",
+        !useTranslucency && "bg-sidebar",
         isResizing
           ? "transition-none"
           : "transition-[width] duration-300 ease-[cubic-bezier(0.22,1,0.36,1)] motion-reduce:transition-none motion-reduce:duration-0",
@@ -134,7 +134,7 @@ export function SessionSidebarShell({
         <div
           className={cn(
             "pointer-events-none absolute inset-y-0 right-0 w-px transition-colors",
-            useMicaBackdrop
+            useTranslucency
               ? "bg-black/5 group-hover:bg-black/10 dark:bg-white/10 dark:group-hover:bg-white/14"
               : "bg-border/40 group-hover:bg-border/55",
           )}

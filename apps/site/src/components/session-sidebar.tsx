@@ -102,7 +102,7 @@ type SessionSidebarProps = {
   onSettingsTabChange?: (tab: SettingsSidebarTab) => void;
   onExtensionSettingsChange?: (extensionId: string) => void;
   /** Windows 云母：侧栏需半透明+blur，避免透出窗后内容发花 */
-  micaStyle?: boolean;
+  translucency?: boolean;
   newSessionBusy?: boolean;
   sessionNavigationBusy?: boolean;
   deleteSessionBusy?: boolean;
@@ -236,7 +236,7 @@ type WorkspaceSessionGroupCollapsibleProps = {
   group: SessionWorkspaceGroup;
   expanded: boolean;
   disabled?: boolean;
-  micaStyle?: boolean;
+  translucency?: boolean;
   visibleSessions: SessionListItem[];
   hiddenSessionCount: number;
   unseenCompletedSessionPaths?: ReadonlySet<string>;
@@ -301,7 +301,7 @@ const WorkspaceSessionGroupCollapsible = memo(function WorkspaceSessionGroupColl
   group,
   expanded,
   disabled,
-  micaStyle,
+  translucency,
   visibleSessions,
   hiddenSessionCount,
   unseenCompletedSessionPaths,
@@ -320,7 +320,7 @@ const WorkspaceSessionGroupCollapsible = memo(function WorkspaceSessionGroupColl
           sidebarInteractionMotionClass,
           "focus-visible:ring-2 focus-visible:ring-sidebar-ring/40",
           sidebarItemDefaultTextClass,
-          sessionRowHoverClass(micaStyle),
+          sessionRowHoverClass(translucency),
         )}
         title={group.rootPath ?? group.label}
         data-workspace-path={group.rootPath ?? group.id}
@@ -358,7 +358,7 @@ const WorkspaceSessionGroupCollapsible = memo(function WorkspaceSessionGroupColl
               nested
               selected={isSessionSelected(session.path)}
               disabled={disabled}
-              micaStyle={micaStyle}
+              translucency={translucency}
               onSelectPath={onSelectSession}
             />
           ))}
@@ -427,7 +427,7 @@ type SessionListRowProps = {
   nested: boolean;
   selected: boolean;
   disabled?: boolean;
-  micaStyle?: boolean;
+  translucency?: boolean;
   onSelectPath(path: string): void;
 };
 
@@ -440,7 +440,7 @@ const SessionListRow = memo(function SessionListRow({
   nested,
   selected,
   disabled,
-  micaStyle,
+  translucency,
   onSelectPath,
 }: SessionListRowProps) {
   const { t } = useTranslation();
@@ -463,8 +463,8 @@ const SessionListRow = memo(function SessionListRow({
             ? "h-8 pr-2.5 pl-2.5 gap-2"
             : "h-8 px-2.5",
         selected
-          ? sessionRowSelectedClass(micaStyle)
-          : cn(sidebarItemDefaultTextClass, sessionRowHoverClass(micaStyle)),
+          ? sessionRowSelectedClass(translucency)
+          : cn(sidebarItemDefaultTextClass, sessionRowHoverClass(translucency)),
       )}
     >
       {(nested || hasIndicator) && (
@@ -662,8 +662,8 @@ const sidebarSessionListHoverClass = sidebarMenuHoverClass;
 
 const sidebarSelectedHoverClass = cn("hover:!bg-secondary hover:!text-sidebar-foreground");
 
-/** Mica 透明壳：选中/悬停使用半透明铺底，避免实心 secondary 挡住云母 */
-const sidebarMicaMenuHoverClass = cn(
+/** translucency 透明壳：选中/悬停使用半透明铺底，避免实心 secondary 挡住系统材质 */
+const sidebarTranslucencyMenuHoverClass = cn(
   "hover:!bg-foreground/[0.06] focus-visible:!bg-foreground/[0.06] dark:hover:!bg-white/[0.06]",
   "hover:!text-sidebar-foreground focus-visible:!text-sidebar-foreground",
 );
@@ -696,28 +696,28 @@ function sidebarScrollAreaMaskStyle(top: boolean, bottom: boolean): React.CSSPro
   } as React.CSSProperties;
 }
 
-const sidebarMicaSelectedClass = cn(
+const sidebarTranslucencySelectedClass = cn(
   "!bg-foreground/[0.08] hover:!bg-foreground/[0.12] focus-visible:!bg-foreground/[0.12]",
   "dark:!bg-white/[0.08] dark:hover:!bg-white/[0.12]",
   sidebarItemActiveTextClass,
 );
 
-function sidebarItemHoverClass(micaStyle?: boolean) {
-  return micaStyle ? sidebarMicaMenuHoverClass : sidebarMenuHoverClass;
+function sidebarItemHoverClass(translucency?: boolean) {
+  return translucency ? sidebarTranslucencyMenuHoverClass : sidebarMenuHoverClass;
 }
 
-function sidebarItemSelectedClass(micaStyle?: boolean) {
-  return micaStyle
-    ? sidebarMicaSelectedClass
+function sidebarItemSelectedClass(translucency?: boolean) {
+  return translucency
+    ? sidebarTranslucencySelectedClass
     : cn(sidebarItemActiveTextClass, sidebarSelectedHoverClass);
 }
 
-function sidebarNavButtonVariant(micaStyle: boolean | undefined, selected: boolean) {
-  return micaStyle ? "ghost" : selected ? "secondary" : "ghost";
+function sidebarNavButtonVariant(translucency: boolean | undefined, selected: boolean) {
+  return translucency ? "ghost" : selected ? "secondary" : "ghost";
 }
 
-function sessionRowSelectedClass(micaStyle?: boolean) {
-  return micaStyle
+function sessionRowSelectedClass(translucency?: boolean) {
+  return translucency
     ? cn(
         "bg-foreground/[0.08] hover:!bg-foreground/[0.12] dark:bg-white/[0.08] dark:hover:!bg-white/[0.12]",
         sidebarItemActiveTextClass,
@@ -725,8 +725,8 @@ function sessionRowSelectedClass(micaStyle?: boolean) {
     : cn("bg-secondary hover:!bg-secondary", sidebarItemActiveTextClass);
 }
 
-function sessionRowHoverClass(micaStyle?: boolean) {
-  return micaStyle ? sidebarMicaMenuHoverClass : sidebarSessionListHoverClass;
+function sessionRowHoverClass(translucency?: boolean) {
+  return translucency ? sidebarTranslucencyMenuHoverClass : sidebarSessionListHoverClass;
 }
 
 function SessionSidebarInner({
@@ -749,7 +749,7 @@ function SessionSidebarInner({
   extensionSettingsItems = [],
   onSettingsTabChange,
   onExtensionSettingsChange: _onExtensionSettingsChange,
-  micaStyle,
+  translucency,
   newSessionBusy = false,
   sessionNavigationBusy = false,
   deleteSessionBusy = false,
@@ -1006,7 +1006,7 @@ function SessionSidebarInner({
       resizeObserver.disconnect();
     };
   }, [
-    micaStyle,
+    translucency,
     settingsMode,
     narrow,
     settingsTab,
@@ -1042,7 +1042,7 @@ function SessionSidebarInner({
     <aside
       className={cn(
         "flex h-full w-full min-w-0 flex-col overflow-hidden text-sidebar-item-foreground",
-        micaStyle ? "bg-transparent" : "bg-sidebar",
+        translucency ? "bg-transparent" : "bg-sidebar",
         className,
       )}
       data-narrow={narrow || undefined}
@@ -1059,7 +1059,7 @@ function SessionSidebarInner({
               "text-xs",
               sidebarItemDefaultTextClass,
               sidebarInteractionMotionClass,
-              sidebarItemHoverClass(micaStyle),
+              sidebarItemHoverClass(translucency),
               narrow ? "size-8" : "h-8 w-full justify-start gap-2",
             )}
             onClick={onBackToSessions}
@@ -1080,7 +1080,7 @@ function SessionSidebarInner({
               "text-xs",
               sidebarItemDefaultTextClass,
               sidebarInteractionMotionClass,
-              sidebarItemHoverClass(micaStyle),
+              sidebarItemHoverClass(translucency),
               narrow ? "size-8 shrink-0" : "h-8 w-full justify-start gap-2",
             )}
             disabled={disabled || newSessionBusy}
@@ -1096,7 +1096,7 @@ function SessionSidebarInner({
           </Button>
           <Button
             type="button"
-            variant={sidebarNavButtonVariant(micaStyle, marketplaceActive)}
+            variant={sidebarNavButtonVariant(translucency, marketplaceActive)}
             size={narrow ? "icon" : "sm"}
             title={narrow ? t("sidebar.extensions") : undefined}
             aria-current={marketplaceActive ? "page" : undefined}
@@ -1105,8 +1105,8 @@ function SessionSidebarInner({
               sidebarItemDefaultTextClass,
               sidebarInteractionMotionClass,
               marketplaceActive
-                ? sidebarItemSelectedClass(micaStyle)
-                : sidebarItemHoverClass(micaStyle),
+                ? sidebarItemSelectedClass(translucency)
+                : sidebarItemHoverClass(translucency),
               narrow ? "size-8 shrink-0" : "h-8 w-full justify-start gap-2",
             )}
             disabled={disabled}
@@ -1118,7 +1118,7 @@ function SessionSidebarInner({
           {onOpenAutomations ? (
             <Button
               type="button"
-              variant={sidebarNavButtonVariant(micaStyle, automationsActive)}
+              variant={sidebarNavButtonVariant(translucency, automationsActive)}
               size={narrow ? "icon" : "sm"}
               title={narrow ? t("sidebar.automations") : undefined}
               aria-current={automationsActive ? "page" : undefined}
@@ -1127,8 +1127,8 @@ function SessionSidebarInner({
                 sidebarItemDefaultTextClass,
                 sidebarInteractionMotionClass,
                 automationsActive
-                  ? sidebarItemSelectedClass(micaStyle)
-                  : sidebarItemHoverClass(micaStyle),
+                  ? sidebarItemSelectedClass(translucency)
+                  : sidebarItemHoverClass(translucency),
                 narrow ? "size-8 shrink-0" : "h-8 w-full justify-start gap-2",
               )}
               disabled={disabled}
@@ -1174,15 +1174,15 @@ function SessionSidebarInner({
                     title={narrow ? tab.label : undefined}
                     className={cn(
                       buttonVariants({
-                        variant: sidebarNavButtonVariant(micaStyle, selected),
+                        variant: sidebarNavButtonVariant(translucency, selected),
                         size: narrow ? "icon" : "sm",
                       }),
                       "text-xs",
                       sidebarItemDefaultTextClass,
                       sidebarInteractionMotionClass,
                       selected
-                        ? sidebarItemSelectedClass(micaStyle)
-                        : sidebarItemHoverClass(micaStyle),
+                        ? sidebarItemSelectedClass(translucency)
+                        : sidebarItemHoverClass(translucency),
                       narrow ? "size-8 shrink-0" : "h-8 w-full justify-start gap-2",
                     )}
                   >
@@ -1229,7 +1229,7 @@ function SessionSidebarInner({
                           group={group}
                           expanded={expanded}
                           disabled={disabled}
-                          micaStyle={micaStyle}
+                          translucency={translucency}
                           visibleSessions={visibleSessions}
                           hiddenSessionCount={hiddenSessionCount}
                           unseenCompletedSessionPaths={unseenCompletedSessionPaths}
@@ -1285,7 +1285,7 @@ function SessionSidebarInner({
                           nested={false}
                           selected={isSessionSelected(session.path)}
                           disabled={disabled}
-                          micaStyle={micaStyle}
+                          translucency={translucency}
                           onSelectPath={onSelectSession}
                         />
                       ))}
@@ -1312,7 +1312,7 @@ function SessionSidebarInner({
             className={cn(
               sidebarItemDefaultTextClass,
               sidebarInteractionMotionClass,
-              sidebarItemHoverClass(micaStyle),
+              sidebarItemHoverClass(translucency),
               narrow ? "size-8" : "h-8 w-full justify-start gap-2",
             )}
             onClick={onOpenSettings}
