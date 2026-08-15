@@ -70,6 +70,20 @@
   --site-muted: rgb(0 0 0 / 50%);
   --dialog-panel-border: color-mix(in oklab, var(--border) 40%, transparent);
   --git-action-split: oklch(0.58 0 0);
+  /* 玻璃 Logo：浅色为黑色 alpha 玻璃（白底上白色 alpha 不可见） */
+  --spirit-glass-fill-0: rgba(0, 0, 0, 0.06);
+  --spirit-glass-fill-40: rgba(0, 0, 0, 0.018);
+  --spirit-glass-fill-100: rgba(15, 25, 50, 0.012);
+  --spirit-glass-inner-0: rgba(0, 0, 0, 0.03);
+  --spirit-glass-inner-100: rgba(15, 30, 60, 0.018);
+  --spirit-glass-fresnel-0: rgba(70, 110, 190, 0.24);
+  --spirit-glass-fresnel-25: rgba(200, 110, 110, 0.084);
+  --spirit-glass-fresnel-55: rgba(110, 190, 140, 0.084);
+  --spirit-glass-fresnel-100: rgba(140, 110, 200, 0.18);
+  --spirit-glass-stroke-crisp: rgba(0, 0, 0, 0.27);
+  --spirit-glass-stroke-soft: rgba(0, 0, 0, 0.09);
+  --spirit-glass-shimmer-mid: rgba(0, 0, 0, 0.021);
+  --spirit-glass-shimmer-peak: rgba(0, 0, 0, 0.039);
   --terminal-bg: #ffffff;
   --terminal-fg: #0a0a0a;
   --terminal-cursor: #0a0a0a;
@@ -239,6 +253,19 @@ body {
   --site-muted: rgb(255 255 255 / 50%);
   --dialog-panel-border: #272727;
   --git-action-split: #3f3f3f;
+  --spirit-glass-fill-0: rgba(255, 255, 255, 0.16);
+  --spirit-glass-fill-40: rgba(255, 255, 255, 0.04);
+  --spirit-glass-fill-100: rgba(220, 230, 255, 0.02);
+  --spirit-glass-inner-0: rgba(255, 255, 255, 0.06);
+  --spirit-glass-inner-100: rgba(200, 220, 255, 0.03);
+  --spirit-glass-fresnel-0: rgba(190, 215, 255, 0.35);
+  --spirit-glass-fresnel-25: rgba(255, 200, 200, 0.1);
+  --spirit-glass-fresnel-55: rgba(200, 255, 215, 0.1);
+  --spirit-glass-fresnel-100: rgba(215, 200, 255, 0.25);
+  --spirit-glass-stroke-crisp: rgba(255, 255, 255, 0.65);
+  --spirit-glass-stroke-soft: rgba(255, 255, 255, 0.2);
+  --spirit-glass-shimmer-mid: rgba(255, 255, 255, 0.035);
+  --spirit-glass-shimmer-peak: rgba(255, 255, 255, 0.065);
   --terminal-bg: #0a0a0a;
   --terminal-fg: #fafafa;
   --terminal-cursor: #fafafa;
@@ -504,6 +531,21 @@ body {
 [data-nested-preview] .text-xs {
   font-size: 0.625rem;
   line-height: 1.35;
+}
+
+/* Landing 代码演示：shiki 双主题 token（wrapper 已剥离，作用在 data-code-part 内的 span 上） */
+[data-code-part] span {
+  color: var(--shiki-light);
+  font-style: var(--shiki-light-font-style);
+  font-weight: var(--shiki-light-font-weight);
+  text-decoration: var(--shiki-light-text-decoration);
+}
+
+.dark [data-code-part] span {
+  color: var(--shiki-dark);
+  font-style: var(--shiki-dark-font-style);
+  font-weight: var(--shiki-dark-font-weight);
+  text-decoration: var(--shiki-dark-text-decoration);
 }
 
 /* Landing 预览：macOS hiddenInset 顶栏安全区（对齐 Desktop `spirit-desktop-darwin`） */

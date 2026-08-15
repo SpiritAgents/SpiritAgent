@@ -10,6 +10,10 @@ type SpiritGlassLogoProps = {
   shimmer?: boolean;
 };
 
+/**
+ * Landing 预览用玻璃 Logo。配色走 --spirit-glass-* CSS 变量（index.css 深浅双色）：
+ * 深色为白色 alpha 玻璃，浅色反转为黑色 alpha 玻璃，否则白底上完全不可见。
+ */
 export function SpiritGlassLogo({ className, shimmer = false }: SpiritGlassLogoProps) {
   const uid = useId().replace(/:/g, "");
   const fillId = `spirit-glass-fill-${uid}`;
@@ -24,22 +28,22 @@ export function SpiritGlassLogo({ className, shimmer = false }: SpiritGlassLogoP
     <svg viewBox="0 0 142 157" aria-hidden className={cn("shrink-0 overflow-visible", className)}>
       <defs>
         <linearGradient id={fillId} x1="0%" y1="0%" x2="100%" y2="100%">
-          <stop offset="0%" stopColor="rgba(255,255,255,0.16)" />
-          <stop offset="40%" stopColor="rgba(255,255,255,0.04)" />
-          <stop offset="100%" stopColor="rgba(220,230,255,0.02)" />
+          <stop offset="0%" style={{ stopColor: "var(--spirit-glass-fill-0)" }} />
+          <stop offset="40%" style={{ stopColor: "var(--spirit-glass-fill-40)" }} />
+          <stop offset="100%" style={{ stopColor: "var(--spirit-glass-fill-100)" }} />
         </linearGradient>
 
         <linearGradient id={innerId} x1="100%" y1="0%" x2="0%" y2="100%">
-          <stop offset="0%" stopColor="rgba(255,255,255,0.06)" />
+          <stop offset="0%" style={{ stopColor: "var(--spirit-glass-inner-0)" }} />
           <stop offset="45%" stopColor="rgba(255,255,255,0)" />
-          <stop offset="100%" stopColor="rgba(200,220,255,0.03)" />
+          <stop offset="100%" style={{ stopColor: "var(--spirit-glass-inner-100)" }} />
         </linearGradient>
 
         <linearGradient id={fresnelId} x1="0%" y1="0%" x2="100%" y2="100%">
-          <stop offset="0%" stopColor="rgba(190,215,255,0.35)" />
-          <stop offset="25%" stopColor="rgba(255,200,200,0.1)" />
-          <stop offset="55%" stopColor="rgba(200,255,215,0.1)" />
-          <stop offset="100%" stopColor="rgba(215,200,255,0.25)" />
+          <stop offset="0%" style={{ stopColor: "var(--spirit-glass-fresnel-0)" }} />
+          <stop offset="25%" style={{ stopColor: "var(--spirit-glass-fresnel-25)" }} />
+          <stop offset="55%" style={{ stopColor: "var(--spirit-glass-fresnel-55)" }} />
+          <stop offset="100%" style={{ stopColor: "var(--spirit-glass-fresnel-100)" }} />
         </linearGradient>
 
         <filter id={blurSmId} x="-20%" y="-20%" width="140%" height="140%">
@@ -57,9 +61,9 @@ export function SpiritGlassLogo({ className, shimmer = false }: SpiritGlassLogoP
           <linearGradient id={shimmerId} x1="0%" y1="0%" x2="100%" y2="0%">
             <stop offset="0%" stopColor="rgba(255,255,255,0)" />
             <stop offset="28%" stopColor="rgba(255,255,255,0)" />
-            <stop offset="42%" stopColor="rgba(255,255,255,0.035)" />
-            <stop offset="50%" stopColor="rgba(255,255,255,0.065)" />
-            <stop offset="58%" stopColor="rgba(255,255,255,0.035)" />
+            <stop offset="42%" style={{ stopColor: "var(--spirit-glass-shimmer-mid)" }} />
+            <stop offset="50%" style={{ stopColor: "var(--spirit-glass-shimmer-peak)" }} />
+            <stop offset="58%" style={{ stopColor: "var(--spirit-glass-shimmer-mid)" }} />
             <stop offset="72%" stopColor="rgba(255,255,255,0)" />
             <stop offset="100%" stopColor="rgba(255,255,255,0)" />
           </linearGradient>
@@ -79,14 +83,14 @@ export function SpiritGlassLogo({ className, shimmer = false }: SpiritGlassLogoP
       <path
         d={LOGO_PATH}
         fill="none"
-        stroke="rgba(255,255,255,0.65)"
+        style={{ stroke: "var(--spirit-glass-stroke-crisp)" }}
         strokeWidth="0.5"
         strokeLinejoin="round"
       />
       <path
         d={LOGO_PATH}
         fill="none"
-        stroke="rgba(255,255,255,0.2)"
+        style={{ stroke: "var(--spirit-glass-stroke-soft)" }}
         strokeWidth="1.5"
         filter={`url(#${blurSmId})`}
         opacity="0.5"

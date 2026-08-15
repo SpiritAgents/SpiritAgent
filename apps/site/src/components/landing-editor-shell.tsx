@@ -22,7 +22,7 @@ export function LandingEditorShell({
   return (
     <div
       className={cn(
-        "relative isolate flex h-full min-h-0 w-full flex-col overflow-hidden rounded-[10px] border border-foreground/12 bg-background shadow-[0_24px_64px_-16px_rgba(0,0,0,0.18)] ring-1 ring-foreground/10 dark:shadow-[0_24px_64px_rgba(0,0,0,0.48)] dark:ring-black/35",
+        "relative isolate flex h-full min-h-0 w-full flex-col overflow-hidden rounded-[10px] border border-foreground/12 bg-background shadow-[0_24px_64px_-16px_rgba(0,0,0,0.18)] ring-0 dark:shadow-[0_24px_64px_rgba(0,0,0,0.48)] dark:ring-1 dark:ring-black/35",
         className,
       )}
     >

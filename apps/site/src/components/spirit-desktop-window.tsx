@@ -856,7 +856,7 @@ function SpiritDesktopWindowBody({
       data-spirit-preview-shell="darwin"
       {...(nestedPreview ? { "data-nested-preview": true } : {})}
       className={cn(
-        "relative isolate overflow-hidden rounded-[10px] border border-border shadow-[0_24px_64px_-16px_rgba(0,0,0,0.18)] ring-1 ring-black/5 dark:border-white/12 dark:shadow-[0_34px_96px_rgba(0,0,0,0.54)] dark:ring-black/35",
+        "relative isolate overflow-hidden rounded-[10px] border border-border shadow-[0_24px_64px_-16px_rgba(0,0,0,0.18)] ring-0 dark:border-white/12 dark:shadow-[0_34px_96px_rgba(0,0,0,0.54)] dark:ring-1 dark:ring-black/35",
         heroBaseTone ? "h-full w-full" : "w-[min(94vw,70rem)]",
         useMicaBackdrop
           ? "bg-transparent"
