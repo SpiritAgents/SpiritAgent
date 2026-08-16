@@ -464,6 +464,12 @@ importers:
         specifier: 5.9.3
         version: 5.9.3
 
+  packages/brand:
+    dependencies:
+      react:
+        specifier: '>=18'
+        version: 19.2.8
+
   packages/host-internal:
     dependencies:
       '@aws-sdk/client-bedrock':

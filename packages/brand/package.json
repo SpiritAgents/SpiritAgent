@@ -1,0 +1,12 @@
+{
+  "name": "@spiritagent/brand",
+  "version": "0.0.0",
+  "private": true,
+  "description": "Brand assets for Spirit Agent (SVG sources, glyph path constants, glass logo component)",
+  "type": "module",
+  "main": "src/index.js",
+  "types": "./index.d.ts",
+  "peerDependencies": {
+    "react": ">=18"
+  }
+}
