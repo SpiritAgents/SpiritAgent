@@ -145,11 +145,19 @@ export function useComposerController({
     isPaneIsolated && paneSessionPath?.trim()
       ? buildPaneComposerDraftKey(paneSessionPath)
       : composerSessionKey;
+  const paneComposerDraftKeyRef = useRef<string | null>(null);
   useEffect(() => {
     if (!isPaneIsolated || !paneComposerDraftKey) {
       return;
     }
     const stored = resolvePaneComposerDraft(paneComposerDraftKey, composerSessionKey);
+    const keyChanged = paneComposerDraftKeyRef.current !== paneComposerDraftKey;
+    paneComposerDraftKeyRef.current = paneComposerDraftKey;
+    // 同一 pane 会话 key 下 composerSessionKey 由空晚到（pane snapshot 异步同步）时不重置，
+    // 避免把挂载后已插入的内容（如 Add to Side Chat 的引用 Chip）清掉
+    if (!keyChanged && !stored) {
+      return;
+    }
     setPaneComposerSegments(stored?.segments ?? emptySegments());
     setPaneLocalFileAttachments(
       (stored?.localFilePaths ?? []).map((filePath) => composerAttachmentViewFromPath(filePath)),
