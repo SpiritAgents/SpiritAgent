@@ -57,6 +57,7 @@
     "@shikijs/monaco": "3.23.0",
     "@shikijs/themes": "3.23.0",
     "@spiritagent/agent-core": "workspace:*",
+    "@spiritagent/brand": "workspace:*",
     "@spiritagent/host-internal": "workspace:*",
     "@spiritagent/server": "workspace:*",
     "@streamdown/code": "1.1.1",

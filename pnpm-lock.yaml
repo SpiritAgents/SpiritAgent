@@ -63,6 +63,9 @@ importers:
       '@spiritagent/agent-core':
         specifier: workspace:*
         version: link:../../packages/agent-core
+      '@spiritagent/brand':
+        specifier: workspace:*
+        version: link:../../packages/brand
       '@spiritagent/host-internal':
         specifier: workspace:*
         version: link:../../packages/host-internal
