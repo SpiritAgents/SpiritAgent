@@ -1,8 +1,10 @@
 import type { BrowserElementAttachment } from "@/lib/browser-element-attachment";
 import type { FileSnippetAttachment } from "@/lib/file-snippet-attachment";
 import type { GitCommitAttachment } from "@/lib/git-commit-attachment";
+import type { MessageQuoteAttachment } from "@/lib/message-quote-attachment";
 import type { PrDiffAttachment } from "@/lib/pr-diff-attachment";
 import type { TerminalSnippetAttachment } from "@/lib/terminal-snippet-attachment";
+import { MessageCircleMore } from "lucide-react";
 import { WorkspaceFileIcon } from "@/components/workspace-file-icon";
 import { ChipIcon, ChipIconSvg, ChipShell } from "@/components/composer-lexical/chips/chip-shell";
 import {
@@ -21,6 +23,12 @@ import {
   GIT_COMMIT_CHIP_CLASS,
   GIT_COMMIT_CHIP_ICON_CLASS,
 } from "@/lib/git-commit-chip-styles";
+import {
+  formatMessageQuoteChipLabel,
+  formatMessageQuoteChipTitle,
+  MESSAGE_QUOTE_CHIP_CLASS,
+  MESSAGE_QUOTE_CHIP_ICON_CLASS,
+} from "@/lib/message-quote-chip-styles";
 import {
   formatPrDiffChipLabel,
   formatPrDiffChipTitle,
@@ -179,6 +187,22 @@ export function FileSnippetChip({ attachment }: { attachment: FileSnippetAttachm
         />
       </ChipIcon>
       {formatFileSnippetChipLabel(attachment.filePath, attachment.lineStart, attachment.lineEnd)}
+    </ChipShell>
+  );
+}
+
+export function MessageQuoteChip({ attachment }: { attachment: MessageQuoteAttachment }) {
+  return (
+    <ChipShell
+      data-chip-kind="messageQuote"
+      className={MESSAGE_QUOTE_CHIP_CLASS}
+      title={formatMessageQuoteChipTitle(attachment)}
+      aria-label={formatMessageQuoteChipLabel(attachment.selectedText)}
+    >
+      <ChipIcon className={MESSAGE_QUOTE_CHIP_ICON_CLASS}>
+        <MessageCircleMore className="size-3.5" aria-hidden />
+      </ChipIcon>
+      {formatMessageQuoteChipLabel(attachment.selectedText)}
     </ChipShell>
   );
 }

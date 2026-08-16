@@ -9,6 +9,7 @@ function isInlineAttachmentChip(seg: RichSegment | undefined): seg is Extract<
       | "prDiff"
       | "terminalSnippet"
       | "fileSnippet"
+      | "messageQuote"
       | "workspaceFile"
       | "sessionReference"
       | "skill";
@@ -19,6 +20,7 @@ function isInlineAttachmentChip(seg: RichSegment | undefined): seg is Extract<
     seg?.kind === "prDiff" ||
     seg?.kind === "terminalSnippet" ||
     seg?.kind === "fileSnippet" ||
+    seg?.kind === "messageQuote" ||
     seg?.kind === "workspaceFile" ||
     seg?.kind === "sessionReference" ||
     seg?.kind === "skill"

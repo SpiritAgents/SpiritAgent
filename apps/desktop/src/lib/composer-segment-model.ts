@@ -27,6 +27,11 @@ import {
   scanTerminalSnippetWireBlocks,
   terminalSnippetContextText,
 } from "./terminal-snippet-wire-text.js";
+import type { MessageQuoteAttachment } from "./message-quote-attachment.js";
+import {
+  messageQuoteContextText,
+  scanMessageQuoteWireBlocks,
+} from "./message-quote-wire-text.js";
 import { scanSkillWireBlocks, skillContextText } from "./skill-wire-text.js";
 import {
   scanWorkspaceFileWireBlocks,
@@ -42,6 +47,7 @@ export { fileSnippetContextText };
 export { prDiffContextText };
 export { gitCommitContextText };
 export { terminalSnippetContextText };
+export { messageQuoteContextText };
 export { skillContextText };
 export { workspaceFileContextText };
 export { sessionReferenceContextText };
@@ -53,6 +59,7 @@ export type RichSegment =
   | { kind: "gitCommit"; attachment: GitCommitAttachment }
   | { kind: "terminalSnippet"; attachment: TerminalSnippetAttachment }
   | { kind: "fileSnippet"; attachment: FileSnippetAttachment }
+  | { kind: "messageQuote"; attachment: MessageQuoteAttachment }
   | { kind: "workspaceFile"; path: string }
   | { kind: "sessionReference"; path: string; title: string; content?: string }
   | { kind: "loop" }
@@ -162,6 +169,7 @@ export function hasInlineAttachmentChipSegments(segs: RichSegment[]): boolean {
       segment.kind === "gitCommit" ||
       segment.kind === "terminalSnippet" ||
       segment.kind === "fileSnippet" ||
+      segment.kind === "messageQuote" ||
       segment.kind === "workspaceFile" ||
       segment.kind === "sessionReference",
   );
@@ -265,6 +273,22 @@ export function messageSegmentSeparator(prev: RichSegment, next: RichSegment): s
   }
 
   if (prev.kind === "fileSnippet" && next.kind === "text") {
+    const v = next.value;
+    if (!v) return "";
+    if (v.startsWith("\n\n")) return "\n";
+    if (v.startsWith("\n")) return "\n";
+    return "\n";
+  }
+
+  if (prev.kind === "text" && next.kind === "messageQuote") {
+    const v = prev.value;
+    if (!v) return "\n";
+    if (v.endsWith("\n\n")) return "";
+    if (v.endsWith("\n")) return "\n";
+    return "\n";
+  }
+
+  if (prev.kind === "messageQuote" && next.kind === "text") {
     const v = next.value;
     if (!v) return "";
     if (v.startsWith("\n\n")) return "\n";
@@ -425,6 +449,13 @@ export function messageSegmentSeparator(prev: RichSegment, next: RichSegment): s
     return "\n";
   }
 
+  if (
+    (prev.kind === "messageQuote" && next.kind !== "text") ||
+    (next.kind === "messageQuote" && prev.kind !== "text")
+  ) {
+    return "\n";
+  }
+
   return "\n\n";
 }
 
@@ -452,7 +483,9 @@ export function segmentsToMessageText(segs: RichSegment[]): string {
                     ? terminalSnippetContextText(seg.attachment)
                     : seg.kind === "fileSnippet"
                       ? fileSnippetContextText(seg.attachment)
-                      : browserElementContextText(seg.attachment);
+                      : seg.kind === "messageQuote"
+                        ? messageQuoteContextText(seg.attachment)
+                        : browserElementContextText(seg.attachment);
     if (seg.kind === "text" && !piece) continue;
 
     if (!out) {
@@ -501,6 +534,9 @@ export function segmentsEqual(a: RichSegment[], b: RichSegment[]): boolean {
       return seg.attachment.id === other.attachment.id;
     }
     if (seg.kind === "fileSnippet" && other.kind === "fileSnippet") {
+      return seg.attachment.id === other.attachment.id;
+    }
+    if (seg.kind === "messageQuote" && other.kind === "messageQuote") {
       return seg.attachment.id === other.attachment.id;
     }
     if (seg.kind === "workspaceFile" && other.kind === "workspaceFile") {
@@ -555,6 +591,7 @@ export function syncSegmentsFromExternalValue(segs: RichSegment[], value: string
           | "gitCommit"
           | "terminalSnippet"
           | "fileSnippet"
+          | "messageQuote"
           | "workspaceFile"
           | "sessionReference"
           | "skill";
@@ -565,6 +602,7 @@ export function syncSegmentsFromExternalValue(segs: RichSegment[], value: string
       s.kind === "gitCommit" ||
       s.kind === "terminalSnippet" ||
       s.kind === "fileSnippet" ||
+      s.kind === "messageQuote" ||
       s.kind === "workspaceFile" ||
       s.kind === "sessionReference" ||
       s.kind === "skill",
@@ -585,6 +623,7 @@ export function syncSegmentsFromExternalValue(segs: RichSegment[], value: string
         seg.kind === "gitCommit" ||
         seg.kind === "terminalSnippet" ||
         seg.kind === "fileSnippet" ||
+        seg.kind === "messageQuote" ||
         seg.kind === "workspaceFile" ||
         seg.kind === "sessionReference" ||
         seg.kind === "skill"
@@ -624,6 +663,7 @@ function isInlineChipSegment(seg: RichSegment | undefined): seg is Extract<
       | "gitCommit"
       | "terminalSnippet"
       | "fileSnippet"
+      | "messageQuote"
       | "workspaceFile"
       | "sessionReference"
       | "loop"
@@ -636,6 +676,7 @@ function isInlineChipSegment(seg: RichSegment | undefined): seg is Extract<
     seg?.kind === "gitCommit" ||
     seg?.kind === "terminalSnippet" ||
     seg?.kind === "fileSnippet" ||
+    seg?.kind === "messageQuote" ||
     seg?.kind === "workspaceFile" ||
     seg?.kind === "sessionReference" ||
     seg?.kind === "loop" ||
@@ -748,6 +789,17 @@ export function insertSegmentAtCaret(
     );
     if (fileSnippetIndex >= 0) {
       afterIndex = fileSnippetIndex + 1;
+      const trailing = normalized[afterIndex];
+      if (trailing?.kind === "text" && trailing.value === " ") {
+        caretOffset = 1;
+      }
+    }
+  } else if (newSegment.kind === "messageQuote") {
+    const messageQuoteIndex = normalized.findIndex(
+      (s) => s.kind === "messageQuote" && s.attachment.id === newSegment.attachment.id,
+    );
+    if (messageQuoteIndex >= 0) {
+      afterIndex = messageQuoteIndex + 1;
       const trailing = normalized[afterIndex];
       if (trailing?.kind === "text" && trailing.value === " ") {
         caretOffset = 1;
@@ -1046,6 +1098,7 @@ export type MessageContentPart =
       lineEnd: number;
       selectedText: string;
     }
+  | { kind: "messageQuote"; selectedText: string }
   | { kind: "workspaceFile"; path: string }
   | { kind: "sessionReference"; path: string; title: string }
   | { kind: "skill"; alias: string };
@@ -1140,6 +1193,14 @@ function findWireBlocks(content: string): ParsedWireBlock[] {
     });
   }
 
+  for (const block of scanMessageQuoteWireBlocks(content)) {
+    blocks.push({
+      index: block.index,
+      length: block.length,
+      part: { kind: "messageQuote", selectedText: block.selectedText },
+    });
+  }
+
   for (const block of scanWorkspaceFileWireBlocks(content)) {
     blocks.push({
       index: block.index,
@@ -1217,6 +1278,7 @@ export function messageContentToRichSegments(content: string, idPrefix: string):
   let gitCommitIndex = 0;
   let terminalSnippetIndex = 0;
   let fileSnippetIndex = 0;
+  let messageQuoteIndex = 0;
 
   for (let i = 0; i < parts.length; i++) {
     const part = parts[i]!;
@@ -1286,6 +1348,15 @@ export function messageContentToRichSegments(content: string, idPrefix: string):
       continue;
     }
 
+    if (part.kind === "messageQuote") {
+      const attachment: MessageQuoteAttachment = {
+        id: `${idPrefix}-quote-${messageQuoteIndex++}`,
+        selectedText: part.selectedText,
+      };
+      segments.push({ kind: "messageQuote", attachment });
+      continue;
+    }
+
     if (part.kind === "workspaceFile") {
       segments.push({ kind: "workspaceFile", path: part.path });
       continue;
@@ -1312,6 +1383,7 @@ export function messageContentToRichSegments(content: string, idPrefix: string):
         prev?.kind === "gitCommit" ||
         prev?.kind === "terminalSnippet" ||
         prev?.kind === "fileSnippet" ||
+        prev?.kind === "messageQuote" ||
         prev?.kind === "workspaceFile" ||
         prev?.kind === "sessionReference" ||
         prev?.kind === "skill",
@@ -1321,6 +1393,7 @@ export function messageContentToRichSegments(content: string, idPrefix: string):
         next?.kind === "gitCommit" ||
         next?.kind === "terminalSnippet" ||
         next?.kind === "fileSnippet" ||
+        next?.kind === "messageQuote" ||
         next?.kind === "workspaceFile" ||
         next?.kind === "sessionReference" ||
         next?.kind === "skill",
