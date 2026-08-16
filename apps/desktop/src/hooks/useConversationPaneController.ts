@@ -311,6 +311,7 @@ export function useConversationPaneController({
     onSubmitComposerMessage: composer.submitComposerMessage,
     onComposerAgentModeChange: composer.handleComposerAgentModeChange,
     composerRichInputRef: composer.composerRichInputRef,
+    onMessageQuoteAddToSession: composer.handleMessageQuoteAddToSession,
     onComposerKeyDown: composer.handleComposerKeyDown,
     onComposerCursorCodeUnitsChange: composer.setComposerCursorCodeUnits,
     onInsertFileReferenceTrigger: composer.insertFileReferenceTrigger,

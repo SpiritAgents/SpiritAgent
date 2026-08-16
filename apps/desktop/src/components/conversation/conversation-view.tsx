@@ -13,6 +13,7 @@ import { useTranslation } from "react-i18next";
 import { ComposerDock } from "@/components/conversation/composer-dock";
 import { BranchCheckoutDialog } from "@/components/branch-checkout-dialog";
 import { ConversationList } from "@/components/conversation/conversation-list";
+import { ConversationMessageSelectionMenu } from "@/components/conversation/conversation-message-selection-menu";
 import { DesktopLayoutChromeBar } from "@/components/layout/desktop-layout-chrome-bar";
 import { sessionGitTooltipItemFromChromeSession } from "@/components/session-list-git-tooltip";
 import { Button } from "@/components/ui/button";
@@ -25,6 +26,7 @@ import { desktopTranslucencyTintClass, desktopTranslucencyTintInnerClass } from 
 import type { EditorFileTarget } from "@/lib/workspace-editor-navigation";
 import { scrollAreaViewport } from "@/lib/scroll-area-viewport";
 import type { ActiveWorkspaceFileReferenceQuery } from "@/lib/composer-segment-model";
+import type { MessageQuoteAttachment } from "@/lib/message-quote-attachment";
 import type { ActiveSkillSlashQuery, SkillSlashSuggestion } from "@/lib/skill-slash";
 import type { ComposerLocalFileAttachmentView } from "@/lib/local-file-attachments";
 import { cn } from "@/lib/utils";
@@ -143,6 +145,7 @@ export type ComposerDockSectionProps = {
   onSubmitComposerMessage: () => void;
   onComposerAgentModeChange: (mode: DesktopAgentMode) => void;
   composerRichInputRef: RefObject<ComposerRichInputHandle | null>;
+  onMessageQuoteAddToSession: (attachment: MessageQuoteAttachment) => void;
   onComposerKeyDown: (event: ReactKeyboardEvent<HTMLTextAreaElement>) => void;
   onComposerCursorCodeUnitsChange: (selectionStart: number) => void;
   onInsertFileReferenceTrigger: () => void;
@@ -292,6 +295,7 @@ export function ConversationView({
   const { t } = useTranslation();
   const split = useConversationSplit();
   const conversationScrollAreaRef = useRef<ComponentRef<typeof ScrollArea>>(null);
+  const conversationScrollBodyRef = useRef<HTMLDivElement | null>(null);
   const getConversationScrollElement = useCallback(
     () => scrollAreaViewport(conversationScrollAreaRef.current),
     [],
@@ -586,6 +590,7 @@ export function ConversationView({
             >
               {/* min-h-full：短内容仍铺满视口；pb ≥ dock 实测高度 + 留白，审批卡弹出时同步增高 */}
               <div
+                ref={conversationScrollBodyRef}
                 data-spirit-surface="conversation-scroll-body"
                 className={cn("min-h-full w-full", desktopTranslucencyTintInnerClass(useTranslucency))}
                 style={{
@@ -642,6 +647,10 @@ export function ConversationView({
               </div>
             </ScrollArea>
 
+            <ConversationMessageSelectionMenu
+              rootRef={conversationScrollBodyRef}
+              onMessageQuoteAddToSession={composerDock.onMessageQuoteAddToSession}
+            />
             {showComposerDock ? (
               <ComposerDock
                 ref={composerDock.composerDockRef}
