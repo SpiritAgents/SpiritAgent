@@ -305,7 +305,7 @@ export function ConversationView({
       if (!paneId) {
         return;
       }
-      void split.beginSideChat(paneId, { messageQuote: attachment });
+      void split.addMessageQuoteToSideChat(paneId, attachment);
     },
     [paneId, split],
   );
