@@ -36,6 +36,7 @@ import type { BrowserElementAttachment } from "@/lib/browser-element-attachment"
 import type { PrDiffAttachment } from "@/lib/pr-diff-attachment";
 import type { GitCommitAttachment } from "@/lib/git-commit-attachment";
 import type { FileSnippetAttachment } from "@/lib/file-snippet-attachment";
+import type { MessageQuoteAttachment } from "@/lib/message-quote-attachment";
 import type { TerminalSnippetAttachment } from "@/lib/terminal-snippet-attachment";
 import { useLocalFileAttachmentPreviews } from "@/hooks/useLocalFileAttachmentPreviews";
 import { useWorkspaceFileIndex } from "@/hooks/use-workspace-file-index";
@@ -1009,6 +1010,11 @@ export function useComposerController({
     composerRichInputRef.current?.focus();
   }, []);
 
+  const handleMessageQuoteAddToSession = useCallback((attachment: MessageQuoteAttachment) => {
+    composerRichInputRef.current?.insertMessageQuote(attachment);
+    composerRichInputRef.current?.focus();
+  }, []);
+
   const handleWorkspaceFileAddToSession = useCallback(
     (relativePath: string) => {
       ensureConversationSurface();
@@ -1487,6 +1493,7 @@ export function useComposerController({
     handleGitCommitAddToSession,
     handleTerminalAddToSession,
     handleFileSnippetAddToSession,
+    handleMessageQuoteAddToSession,
     handleWorkspaceFileAddToSession,
     pickLocalFileFromPalette,
     handleComposerPaste,

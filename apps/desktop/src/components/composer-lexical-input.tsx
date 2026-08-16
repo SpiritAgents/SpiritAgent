@@ -35,6 +35,7 @@ import type { BrowserElementAttachment } from "@/lib/browser-element-attachment"
 import type { PrDiffAttachment } from "@/lib/pr-diff-attachment";
 import type { GitCommitAttachment } from "@/lib/git-commit-attachment";
 import type { FileSnippetAttachment } from "@/lib/file-snippet-attachment";
+import type { MessageQuoteAttachment } from "@/lib/message-quote-attachment";
 import type { TerminalSnippetAttachment } from "@/lib/terminal-snippet-attachment";
 import {
   caretAtEnd,
@@ -373,6 +374,7 @@ export type ComposerRichInputHandle = {
   insertGitCommitAttachment(attachment: GitCommitAttachment): void;
   insertTerminalSnippet(attachment: TerminalSnippetAttachment): void;
   insertFileSnippet(attachment: FileSnippetAttachment): void;
+  insertMessageQuote(attachment: MessageQuoteAttachment): void;
   insertWorkspaceFileReference(
     path: string,
     query: ActiveWorkspaceFileReferenceQuery,
@@ -709,6 +711,16 @@ const ComposerLexicalInputCore = forwardRef<ComposerRichInputHandle, ComposerLex
       [editor],
     );
 
+    const insertMessageQuote = useCallback(
+      (attachment: MessageQuoteAttachment) => {
+        editor.dispatchCommand(INSERT_ATTACHMENT_CHIP_COMMAND, {
+          kind: "messageQuote",
+          attachment,
+        });
+      },
+      [editor],
+    );
+
     const insertWorkspaceFileReference = useCallback(
       (path: string, query: ActiveWorkspaceFileReferenceQuery, finalize = true) => {
         editor.dispatchCommand(INSERT_WORKSPACE_FILE_REFERENCE_COMMAND, {
@@ -918,6 +930,7 @@ const ComposerLexicalInputCore = forwardRef<ComposerRichInputHandle, ComposerLex
         insertGitCommitAttachment,
         insertTerminalSnippet,
         insertFileSnippet,
+        insertMessageQuote,
         insertWorkspaceFileReference,
         insertSessionReference,
         insertWorkspaceFileAtCaret,
@@ -943,6 +956,7 @@ const ComposerLexicalInputCore = forwardRef<ComposerRichInputHandle, ComposerLex
         insertGitCommitAttachment,
         insertTerminalSnippet,
         insertFileSnippet,
+        insertMessageQuote,
         insertWorkspaceFileReference,
         insertSessionReference,
         insertWorkspaceFileAtCaret,
