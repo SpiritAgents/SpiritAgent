@@ -485,17 +485,13 @@ function isDesktopSnapshot(value: unknown): value is DesktopSnapshot {
   );
 }
 
-/** Windows 任务栏 / 窗口角标：与 Vite 页 `public/favicon.ico` 同源（main 位于 dist-electron/electron）。 */
+/** Windows 任务栏 / 窗口角标：build/icon.png（构建期由 brand SVG 生成，见 scripts/gen-brand-assets.mjs）。 */
 function resolveWindowIconPath(): string | undefined {
-  const fromDist = path.join(__dirname, "..", "..", "dist", "favicon.ico");
-  if (existsSync(fromDist)) {
-    return fromDist;
+  const fromBuild = path.join(__dirname, "..", "..", "build", "icon.png");
+  if (existsSync(fromBuild)) {
+    return fromBuild;
   }
-  const fromPublic = path.join(__dirname, "..", "..", "public", "favicon.ico");
-  if (existsSync(fromPublic)) {
-    return fromPublic;
-  }
-  const fromCwd = path.join(process.cwd(), "public", "favicon.ico");
+  const fromCwd = path.join(process.cwd(), "build", "icon.png");
   if (existsSync(fromCwd)) {
     return fromCwd;
   }
