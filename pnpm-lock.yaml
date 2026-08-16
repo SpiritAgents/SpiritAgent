@@ -63,6 +63,9 @@ importers:
       '@spiritagent/agent-core':
         specifier: workspace:*
         version: link:../../packages/agent-core
+      '@spiritagent/brand':
+        specifier: workspace:*
+        version: link:../../packages/brand
       '@spiritagent/host-internal':
         specifier: workspace:*
         version: link:../../packages/host-internal
@@ -463,6 +466,12 @@ importers:
       typescript:
         specifier: 5.9.3
         version: 5.9.3
+
+  packages/brand:
+    dependencies:
+      react:
+        specifier: '>=18'
+        version: 19.2.8
 
   packages/host-internal:
     dependencies:

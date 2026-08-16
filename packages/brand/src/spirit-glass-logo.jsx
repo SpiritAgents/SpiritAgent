@@ -1,17 +1,11 @@
-import { useId, type CSSProperties, type SVGProps } from "react";
+import { useId } from "react";
 
-import { cn } from "@/lib/utils";
-
-/** 与 spiritagent.app `glass-logo-showcase` 一致的品牌路径 */
-export const SPIRIT_GLASS_LOGO_PATH =
-  "M0 0L141.409 69.4512L70.7825 78.2408C61.5778 79.3863 53.5378 85.016 49.3132 93.2737L16.8979 156.635L0 0Z";
-
-export const SPIRIT_GLASS_LOGO_VIEWBOX = { width: 142, height: 157 } as const;
+import { SPIRIT_GLASS_LOGO_PATH, SPIRIT_GLASS_LOGO_VIEWBOX } from "./constants.js";
 
 const MASK_SVG = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${SPIRIT_GLASS_LOGO_VIEWBOX.width} ${SPIRIT_GLASS_LOGO_VIEWBOX.height}"><path d="${SPIRIT_GLASS_LOGO_PATH}" fill="white"/></svg>`;
 
 /** 供启动层 shimmer 蒙版：与玻璃标轮廓一致 */
-export function spiritGlassLogoMaskStyle(): CSSProperties {
+export function spiritGlassLogoMaskStyle() {
   const mask = `url("data:image/svg+xml,${encodeURIComponent(MASK_SVG)}")`;
   return {
     WebkitMaskImage: mask,
@@ -25,16 +19,11 @@ export function spiritGlassLogoMaskStyle(): CSSProperties {
   };
 }
 
-type SpiritGlassLogoProps = Omit<SVGProps<SVGSVGElement>, "width" | "height" | "viewBox"> & {
-  /** 渲染宽度（px）；高度按站点 CTA 比例推算 */
-  width?: number;
-};
-
 /**
  * spiritagent.app 页脚 CTA 玻璃品牌标（无 shimmer）。
- * 源自 `glass-logo-showcase.tsx` 的静态图层。
+ * 填充/描边颜色取自消费方提供的 --spirit-agent-* CSS 变量。
  */
-export function SpiritGlassLogo({ width = 72, className, ...props }: SpiritGlassLogoProps) {
+export function SpiritGlassLogo({ width = 72, className, ...props }) {
   const uid = useId().replace(/:/g, "");
   const height = (width * SPIRIT_GLASS_LOGO_VIEWBOX.height) / SPIRIT_GLASS_LOGO_VIEWBOX.width;
 
@@ -50,7 +39,9 @@ export function SpiritGlassLogo({ width = 72, className, ...props }: SpiritGlass
       width={width}
       height={height}
       aria-hidden
-      className={cn("spirit-glass-logo block overflow-visible select-none", className)}
+      className={["spirit-glass-logo block overflow-visible select-none", className]
+        .filter(Boolean)
+        .join(" ")}
       {...props}
     >
       <defs>

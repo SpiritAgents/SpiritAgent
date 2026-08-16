@@ -9,11 +9,12 @@ import {
 } from "react";
 import { useTranslation } from "react-i18next";
 
+import { SpiritGlassLogo, spiritGlassLogoMaskStyle } from "@spiritagent/brand";
+
 import { OnboardingAppearanceControls } from "@/components/onboarding/onboarding-appearance-step";
 import { OnboardingAttributionControls } from "@/components/onboarding/onboarding-attribution-step";
 import { OnboardingConnectControls } from "@/components/onboarding/onboarding-connect-step";
 import type { SettingsFormState } from "@/components/settings/types";
-import { SpiritGlassLogo, spiritGlassLogoMaskStyle } from "@/components/spirit-glass-logo";
 import { Button } from "@/components/ui/button";
 import { DESKTOP_PAGE_TITLE_CLASS } from "@/lib/desktop-typography";
 import { desktopFullscreenOverlayTintClass } from "@/lib/desktop-translucency-surface";

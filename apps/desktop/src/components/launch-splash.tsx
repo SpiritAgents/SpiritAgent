@@ -1,6 +1,7 @@
 import { useEffect, useLayoutEffect, useState } from "react";
 
-import { SpiritGlassLogo, spiritGlassLogoMaskStyle } from "@/components/spirit-glass-logo";
+import { SpiritGlassLogo, spiritGlassLogoMaskStyle } from "@spiritagent/brand";
+
 import { desktopFullscreenOverlayTintClass } from "@/lib/desktop-translucency-surface";
 import type { ShellOverlayPhase } from "@/lib/desktop-shell";
 import { cn } from "@/lib/utils";

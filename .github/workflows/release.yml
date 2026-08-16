@@ -273,9 +273,9 @@ jobs:
       - name: Build Desktop
         run: pnpm --filter @spiritagent/desktop run build
 
-      - name: Verify packager icons
+      - name: Generate brand assets
         working-directory: apps/desktop
-        run: pnpm run gen:icons
+        run: pnpm run gen:brand-assets
 
       # Signing env vars must stay off the Windows and Linux legs: electron-builder treats an empty
       # CSC_LINK as a real value, so the two package steps are mutually exclusive rather than merged.
