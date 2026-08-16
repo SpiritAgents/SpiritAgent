@@ -40,10 +40,10 @@ function titleBarSurfaceClass(useTranslucency: boolean, withBorder: boolean) {
   );
 }
 
-/** 透明底顶栏标（`spirit-agent-icon*.png` 画布大，14px 观感接近旧 20px favicon） */
+/** 透明底顶栏标（brand glyph SVG 画布大，14px 观感接近旧 20px favicon） */
 const TITLE_BAR_ICON_PX = 14;
 
-/** 云母顶栏黑底标（`build/icon.png` 内图案更小，恢复迁移透明标前的 20px） */
+/** 云母顶栏黑底标（`logo-dark.svg` 内图案更小，恢复迁移透明标前的 20px） */
 const TITLE_BAR_ICON_TRANSLUCENCY_PX = 20;
 
 /** 与侧栏交互项默认字色一致（`text-sidebar-action-foreground`） */

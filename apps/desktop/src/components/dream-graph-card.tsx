@@ -22,6 +22,7 @@ import { Badge } from "@/components/ui/badge";
 import { HoverCard, HoverCardContent, HoverCardTrigger } from "@/components/ui/hover-card";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import { spiritAgentBrandIconSrc } from "@/lib/brand-icon";
 import { cn } from "@/lib/utils";
 import type { ThemePreference } from "@/lib/theme";
 import type { DesktopDreamCollectorState, DesktopDreamOverviewItem } from "@/types";
@@ -450,7 +451,7 @@ function DreamGraphCanvas({
   const { i18n } = useTranslation();
   const [selectedDreamId, setSelectedDreamId] = useState<string | null>(null);
   const [pinnedNodeIds, setPinnedNodeIds] = useState<string[]>([]);
-  const iconSrc = theme === "light" ? "./spirit-agent-icon-light.png" : "./spirit-agent-icon.png";
+  const iconSrc = spiritAgentBrandIconSrc(theme !== "light");
   const itemIds = useMemo(() => new Set(items.map((item) => item.id)), [items]);
   const graphNodeIds = useMemo(
     () => new Set(["context", "logo", ...items.map((item) => item.id)]),
