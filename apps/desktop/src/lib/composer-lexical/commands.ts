@@ -5,6 +5,7 @@ import type { PrDiffAttachment } from "@/lib/pr-diff-attachment";
 import type { GitCommitAttachment } from "@/lib/git-commit-attachment";
 import type { FileSnippetAttachment } from "@/lib/file-snippet-attachment";
 import type { TerminalSnippetAttachment } from "@/lib/terminal-snippet-attachment";
+import type { MessageQuoteAttachment } from "@/lib/message-quote-attachment";
 import type {
   ActiveSkillSlashQuery,
   ActiveWorkspaceFileReferenceQuery,
@@ -15,7 +16,8 @@ export type ComposerAttachmentChipPayload =
   | { kind: "prDiff"; attachment: PrDiffAttachment }
   | { kind: "gitCommit"; attachment: GitCommitAttachment }
   | { kind: "terminalSnippet"; attachment: TerminalSnippetAttachment }
-  | { kind: "fileSnippet"; attachment: FileSnippetAttachment };
+  | { kind: "fileSnippet"; attachment: FileSnippetAttachment }
+  | { kind: "messageQuote"; attachment: MessageQuoteAttachment };
 
 export type InsertSkillChipCommandPayload = {
   alias: string;

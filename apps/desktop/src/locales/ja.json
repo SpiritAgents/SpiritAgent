@@ -917,6 +917,7 @@
     "prCheckStatePending": "未開始",
     "prChangesViewOnGitHub": "GitHub で表示",
     "addSelectionToSession": "セッションに追加",
+    "addSelectionToSideChat": "サイドチャットに追加",
     "addFileToSession": "セッションに追加",
     "addCommitToSession": "セッションに追加",
     "fileActions": "ファイルアクション",

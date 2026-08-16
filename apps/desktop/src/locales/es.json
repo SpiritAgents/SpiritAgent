@@ -917,6 +917,7 @@
     "prCheckStatePending": "Sin iniciar",
     "prChangesViewOnGitHub": "Ver en GitHub",
     "addSelectionToSession": "Agregar a la sesión",
+    "addSelectionToSideChat": "Agregar al chat lateral",
     "addFileToSession": "Agregar a la sesión",
     "addCommitToSession": "Agregar a la sesión",
     "fileActions": "Acciones de archivo",

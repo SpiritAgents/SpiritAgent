@@ -6,6 +6,7 @@ import {
   GitPullRequestClosed,
   GitPullRequestDraft,
   MessageCircle,
+  MessageCircleMore,
   PenTool,
   Terminal,
   FileText,
@@ -46,6 +47,11 @@ import {
   formatTerminalChipTitle,
   TERMINAL_CHIP_ICON_CLASS,
 } from "@/lib/terminal-chip-styles";
+import {
+  formatMessageQuoteChipLabel,
+  formatMessageQuoteChipTitle,
+  MESSAGE_QUOTE_CHIP_ICON_CLASS,
+} from "@/lib/message-quote-chip-styles";
 import type { PullRequestChipStatus } from "@/lib/pr-diff-attachment";
 import { MESSAGE_BUBBLE_CHIP_CLASS } from "@/lib/composer-inline-chip-styles";
 import { workspaceFileBasename } from "@/lib/file-picker-path";
@@ -184,6 +190,25 @@ function FileSnippetCard({ part }: { part: Extract<MessageContentPart, { kind: "
   );
 }
 
+function MessageQuoteCard({
+  part,
+}: {
+  part: Extract<MessageContentPart, { kind: "messageQuote" }>;
+}) {
+  return (
+    <span
+      title={formatMessageQuoteChipTitle({ selectedText: part.selectedText })}
+      className={MESSAGE_BUBBLE_CHIP_CLASS}
+    >
+      <MessageCircleMore
+        className={cn("size-[10px] shrink-0", MESSAGE_QUOTE_CHIP_ICON_CLASS)}
+        aria-hidden
+      />
+      {formatMessageQuoteChipLabel(part.selectedText)}
+    </span>
+  );
+}
+
 function GitCommitCard({ part }: { part: Extract<MessageContentPart, { kind: "gitCommit" }> }) {
   return (
     <span
@@ -214,6 +239,7 @@ function isInlineChipPart(part: MessageContentPart | null | undefined): part is 
       | "gitCommit"
       | "terminalSnippet"
       | "fileSnippet"
+      | "messageQuote"
       | "skill";
   }
 > {
@@ -225,7 +251,8 @@ function isInlineChipPart(part: MessageContentPart | null | undefined): part is 
     part?.kind === "prDiff" ||
     part?.kind === "gitCommit" ||
     part?.kind === "terminalSnippet" ||
-    part?.kind === "fileSnippet"
+    part?.kind === "fileSnippet" ||
+    part?.kind === "messageQuote"
   );
 }
 
@@ -281,7 +308,8 @@ export function UserMessageBubble({
           p.kind === "prDiff" ||
           p.kind === "gitCommit" ||
           p.kind === "terminalSnippet" ||
-          p.kind === "fileSnippet",
+          p.kind === "fileSnippet" ||
+          p.kind === "messageQuote",
       )) &&
     !isAttachmentOnlyDisplayText(message.content, message.localFileAttachments);
   const hasAttachments = attachmentViews.length > 0;
@@ -362,6 +390,9 @@ export function UserMessageBubble({
               }
               if (part.kind === "fileSnippet") {
                 return <FileSnippetCard key={i} part={part} />;
+              }
+              if (part.kind === "messageQuote") {
+                return <MessageQuoteCard key={i} part={part} />;
               }
               const prev = i > 0 ? contentParts[i - 1] : null;
               const next = i < contentParts.length - 1 ? contentParts[i + 1] : null;

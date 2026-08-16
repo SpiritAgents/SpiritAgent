@@ -917,6 +917,7 @@
     "prCheckStatePending": "Не запущено",
     "prChangesViewOnGitHub": "Открыть на GitHub",
     "addSelectionToSession": "Добавить в сессию",
+    "addSelectionToSideChat": "Добавить в боковой чат",
     "addFileToSession": "Добавить в сессию",
     "addCommitToSession": "Добавить в сессию",
     "fileActions": "Действия с файлом",

@@ -8,6 +8,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import type { SelectionAnchorRect } from "@/hooks/use-text-selection-action-menu";
 import { scaleRootFixedAnchorStyle } from "@/lib/scale-root-fixed-anchor-style";
+import { cn } from "@/lib/utils";
 
 type TextSelectionActionMenuProps = {
   open: boolean;
@@ -60,5 +61,32 @@ export function TextSelectionActionMenuItem({ label, onSelect }: TextSelectionAc
     <DropdownMenuItem onSelect={onSelect} onMouseDown={(event) => event.preventDefault()}>
       {label}
     </DropdownMenuItem>
+  );
+}
+
+export type TextSelectionActionMenuSegment = {
+  label: string;
+  onSelect(): void;
+};
+
+/** 相连分段按钮组：外层一个圆角整体，段间分隔线，形如单个 Button Group。 */
+export function TextSelectionActionMenuSegmentedItems({
+  segments,
+}: {
+  segments: readonly TextSelectionActionMenuSegment[];
+}) {
+  return (
+    <div className="flex items-stretch overflow-hidden rounded-sm">
+      {segments.map((segment, index) => (
+        <DropdownMenuItem
+          key={segment.label}
+          onSelect={segment.onSelect}
+          onMouseDown={(event) => event.preventDefault()}
+          className={cn("w-auto rounded-none", index > 0 && "border-border border-l")}
+        >
+          {segment.label}
+        </DropdownMenuItem>
+      ))}
+    </div>
   );
 }

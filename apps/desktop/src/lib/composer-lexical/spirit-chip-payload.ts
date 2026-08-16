@@ -2,6 +2,7 @@ import { workspaceFilePlainToken, type RichSegment } from "@/lib/composer-segmen
 import { formatFileSnippetChipLabel } from "@/lib/file-snippet-chip-styles";
 import { formatGitCommitChipLabel } from "@/lib/git-commit-chip-styles";
 import { formatPrDiffChipLabel } from "@/lib/github-pr-diff-chip-styles";
+import { formatMessageQuoteChipLabel } from "@/lib/message-quote-chip-styles";
 import { formatTerminalChipLabel } from "@/lib/terminal-chip-styles";
 
 /** Non-text composer segment stored inside a Lexical SpiritChipNode. */
@@ -50,6 +51,8 @@ export function spiritChipPlainText(payload: SpiritChipPayload): string {
         payload.attachment.lineStart,
         payload.attachment.lineEnd,
       );
+    case "messageQuote":
+      return formatMessageQuoteChipLabel(payload.attachment.selectedText);
     case "loop":
     case "plan":
     case "ask":

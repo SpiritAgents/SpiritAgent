@@ -7,6 +7,7 @@ import {
   ElementChip,
   FileSnippetChip,
   GitCommitChip,
+  MessageQuoteChip,
   PrDiffChip,
   TerminalSnippetChip,
 } from "@/components/composer-lexical/chips/attachment-chips";
@@ -56,6 +57,8 @@ export function SpiritChipDecorator({
       return <TerminalSnippetChip attachment={payload.attachment} />;
     case "fileSnippet":
       return <FileSnippetChip attachment={payload.attachment} />;
+    case "messageQuote":
+      return <MessageQuoteChip attachment={payload.attachment} />;
     default: {
       const _exhaustive: never = payload;
       return _exhaustive;

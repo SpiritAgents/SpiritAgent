@@ -36,6 +36,7 @@ import type { BrowserElementAttachment } from "@/lib/browser-element-attachment"
 import type { PrDiffAttachment } from "@/lib/pr-diff-attachment";
 import type { GitCommitAttachment } from "@/lib/git-commit-attachment";
 import type { FileSnippetAttachment } from "@/lib/file-snippet-attachment";
+import type { MessageQuoteAttachment } from "@/lib/message-quote-attachment";
 import type { TerminalSnippetAttachment } from "@/lib/terminal-snippet-attachment";
 import { useLocalFileAttachmentPreviews } from "@/hooks/useLocalFileAttachmentPreviews";
 import { useWorkspaceFileIndex } from "@/hooks/use-workspace-file-index";
@@ -144,11 +145,19 @@ export function useComposerController({
     isPaneIsolated && paneSessionPath?.trim()
       ? buildPaneComposerDraftKey(paneSessionPath)
       : composerSessionKey;
+  const paneComposerDraftKeyRef = useRef<string | null>(null);
   useEffect(() => {
     if (!isPaneIsolated || !paneComposerDraftKey) {
       return;
     }
     const stored = resolvePaneComposerDraft(paneComposerDraftKey, composerSessionKey);
+    const keyChanged = paneComposerDraftKeyRef.current !== paneComposerDraftKey;
+    paneComposerDraftKeyRef.current = paneComposerDraftKey;
+    // 同一 pane 会话 key 下 composerSessionKey 由空晚到（pane snapshot 异步同步）时不重置，
+    // 避免把挂载后已插入的内容（如 Add to Side Chat 的引用 Chip）清掉
+    if (!keyChanged && !stored) {
+      return;
+    }
     setPaneComposerSegments(stored?.segments ?? emptySegments());
     setPaneLocalFileAttachments(
       (stored?.localFilePaths ?? []).map((filePath) => composerAttachmentViewFromPath(filePath)),
@@ -1009,6 +1018,11 @@ export function useComposerController({
     composerRichInputRef.current?.focus();
   }, []);
 
+  const handleMessageQuoteAddToSession = useCallback((attachment: MessageQuoteAttachment) => {
+    composerRichInputRef.current?.insertMessageQuote(attachment);
+    composerRichInputRef.current?.focus();
+  }, []);
+
   const handleWorkspaceFileAddToSession = useCallback(
     (relativePath: string) => {
       ensureConversationSurface();
@@ -1487,6 +1501,7 @@ export function useComposerController({
     handleGitCommitAddToSession,
     handleTerminalAddToSession,
     handleFileSnippetAddToSession,
+    handleMessageQuoteAddToSession,
     handleWorkspaceFileAddToSession,
     pickLocalFileFromPalette,
     handleComposerPaste,

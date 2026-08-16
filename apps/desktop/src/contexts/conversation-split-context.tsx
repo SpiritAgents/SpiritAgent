@@ -54,6 +54,7 @@ import {
 
 import {
   isForegroundProvisionalSessionPath,
+  isSideChatPaneProvisionalSessionPath,
   isSplitPaneProvisionalSessionPath,
   isStableChatSessionPath,
   normalizeSessionPathKey,
@@ -61,6 +62,7 @@ import {
 
 import type { FocusedPaneComposerControls } from "@/lib/focused-pane-composer-controls";
 import type { FocusedPaneComposerInsertHandlers } from "@/lib/focused-pane-composer-insert";
+import type { MessageQuoteAttachment } from "@/lib/message-quote-attachment";
 import type { ConversationAbortShortcutTargetRef } from "@/lib/conversation-abort-shortcut";
 import {
   registerSplitPaneShortcut,
@@ -77,6 +79,11 @@ export type SidebarSessionDragPayload =
   | { kind: "new" }
   | { kind: "new-in-workspace"; workspaceRoot: string };
 
+/** 创建 Side Chat 时携带的可选内容；messageQuote 在新 pane 注册 composer 能力后插入其 Composer。 */
+export type BeginSideChatOptions = {
+  messageQuote?: MessageQuoteAttachment;
+};
+
 type ConversationSplitContextValue = {
   layout: SplitLayoutNode | null;
 
@@ -92,7 +99,10 @@ type ConversationSplitContextValue = {
 
   splitPane: (paneId: string, direction?: SplitDirection) => Promise<void>;
 
-  beginSideChat: (paneId: string) => Promise<void>;
+  beginSideChat: (paneId: string, options?: BeginSideChatOptions) => Promise<void>;
+
+  /** 向 Side Chat 插入消息引用：优先复用最后导航过、且已离开的 Side Chat pane，否则新建。 */
+  addMessageQuoteToSideChat: (paneId: string, attachment: MessageQuoteAttachment) => Promise<void>;
 
   closePaneById: (paneId: string, sessionPath: string) => Promise<void>;
 
@@ -409,12 +419,28 @@ export function ConversationSplitProvider({
 
   const paneComposerControlsRegistryRef = useRef(new Map<string, FocusedPaneComposerControls>());
 
+  // beginSideChat 携带的 messageQuote 在新 pane 注册 composer 能力前暂存于此，
+  // 注册时 flush 进该 pane 的 Composer（新 pane 挂载 effect 是最早已知就绪时机）
+  const pendingPaneMessageQuotesRef = useRef(new Map<string, MessageQuoteAttachment>());
+
+  // Side Chat pane 追踪：创建时登记 paneId（首条消息 promote 成稳定路径后仍能识别），
+  // 焦点进入 side chat pane 时记为最近一次导航目标
+  const sideChatPaneIdsRef = useRef(new Set<string>());
+
+  const lastNavigatedSideChatPaneIdRef = useRef<string | null>(null);
+
   const registerPaneComposerInsert = useCallback(
     (paneId: string, handlers: FocusedPaneComposerInsertHandlers | null) => {
       if (handlers) {
         paneComposerInsertRegistryRef.current.set(paneId, handlers);
+        const pendingQuote = pendingPaneMessageQuotesRef.current.get(paneId);
+        if (pendingQuote) {
+          pendingPaneMessageQuotesRef.current.delete(paneId);
+          handlers.handleMessageQuoteAddToSession(pendingQuote);
+        }
       } else {
         paneComposerInsertRegistryRef.current.delete(paneId);
+        pendingPaneMessageQuotesRef.current.delete(paneId);
       }
     },
     [],
@@ -847,6 +873,24 @@ export function ConversationSplitProvider({
     [layout, runtime, snapshot?.activeSession?.filePath],
   );
 
+  // 记录用户最近导航过的 Side Chat pane（布局恢复出的 provisional side-chat 路径也算）
+  useEffect(() => {
+    if (!focusedPaneId || !layout) {
+      return;
+    }
+    const leaf = findLeafByPaneId(layout, focusedPaneId);
+    if (!leaf) {
+      return;
+    }
+    if (
+      sideChatPaneIdsRef.current.has(focusedPaneId) ||
+      isSideChatPaneProvisionalSessionPath(leaf.sessionPath)
+    ) {
+      sideChatPaneIdsRef.current.add(focusedPaneId);
+      lastNavigatedSideChatPaneIdRef.current = focusedPaneId;
+    }
+  }, [focusedPaneId, layout]);
+
   const splitPane = useCallback(
     async (paneId: string, direction: SplitDirection = "horizontal") => {
       if (!layout || !runtime.apiReady) {
@@ -878,7 +922,7 @@ export function ConversationSplitProvider({
   );
 
   const beginSideChat = useCallback(
-    async (paneId: string) => {
+    async (paneId: string, options?: BeginSideChatOptions) => {
       if (!layout || !runtime.apiReady) {
         return;
       }
@@ -920,6 +964,12 @@ export function ConversationSplitProvider({
         return;
       }
 
+      if (options?.messageQuote) {
+        pendingPaneMessageQuotesRef.current.set(newPaneId, options.messageQuote);
+      }
+
+      sideChatPaneIdsRef.current.add(newPaneId);
+
       const newLeaf = createLeafNode(newPaneId, response.sessionPath);
       const nextLayout = splitPaneAt(layout, paneId, "horizontal", newLeaf);
       const paths = collectPaneSessionPaths(nextLayout);
@@ -930,6 +980,24 @@ export function ConversationSplitProvider({
       persistSessionSplitBinding(nextLayout);
     },
     [layout, runtime, snapshot],
+  );
+
+  const addMessageQuoteToSideChat = useCallback(
+    async (paneId: string, attachment: MessageQuoteAttachment) => {
+      // 复用最后导航过、且当前已离开的 Side Chat pane；当前就在该 pane 时按原逻辑新建
+      const candidateId = lastNavigatedSideChatPaneIdRef.current;
+      const candidateLeaf = candidateId && layout ? findLeafByPaneId(layout, candidateId) : null;
+      const candidateHandlers = candidateId
+        ? paneComposerInsertRegistryRef.current.get(candidateId)
+        : undefined;
+      if (candidateId && candidateId !== paneId && candidateLeaf && candidateHandlers) {
+        candidateHandlers.handleMessageQuoteAddToSession(attachment);
+        focusPane(candidateId, candidateLeaf.sessionPath);
+        return;
+      }
+      await beginSideChat(paneId, { messageQuote: attachment });
+    },
+    [beginSideChat, focusPane, layout],
   );
 
   useEffect(() => {
@@ -1328,6 +1396,8 @@ export function ConversationSplitProvider({
 
       beginSideChat,
 
+      addMessageQuoteToSideChat,
+
       closePaneById,
 
       collapsePaneLayoutById,
@@ -1423,6 +1493,8 @@ export function ConversationSplitProvider({
       splitPane,
 
       beginSideChat,
+
+      addMessageQuoteToSideChat,
 
       startPaneDrag,
 

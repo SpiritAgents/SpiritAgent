@@ -75,7 +75,8 @@ function isPersistedRichSegment(value: unknown): value is RichSegment {
     kind === "prDiff" ||
     kind === "gitCommit" ||
     kind === "terminalSnippet" ||
-    kind === "fileSnippet"
+    kind === "fileSnippet" ||
+    kind === "messageQuote"
   ) {
     return (
       typeof (value as { attachment?: unknown }).attachment === "object" &&

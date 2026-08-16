@@ -917,6 +917,7 @@
     "prCheckStatePending": "시작 전",
     "prChangesViewOnGitHub": "GitHub에서 보기",
     "addSelectionToSession": "세션에 추가",
+    "addSelectionToSideChat": "사이드 채팅에 추가",
     "addFileToSession": "세션에 추가",
     "addCommitToSession": "세션에 추가",
     "fileActions": "파일 작업",
