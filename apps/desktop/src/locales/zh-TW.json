@@ -917,6 +917,7 @@
     "prCheckStatePending": "尚未開始",
     "prChangesViewOnGitHub": "在 GitHub 上查看",
     "addSelectionToSession": "加入 Session",
+    "addSelectionToSideChat": "加入側邊對話",
     "addFileToSession": "加入 Session",
     "addCommitToSession": "加入 Session",
     "fileActions": "檔案操作",

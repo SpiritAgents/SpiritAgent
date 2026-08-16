@@ -300,6 +300,15 @@ export function ConversationView({
     () => scrollAreaViewport(conversationScrollAreaRef.current),
     [],
   );
+  const handleMessageQuoteAddToSideChat = useCallback(
+    (attachment: MessageQuoteAttachment) => {
+      if (!paneId) {
+        return;
+      }
+      void split.beginSideChat(paneId, { messageQuote: attachment });
+    },
+    [paneId, split],
+  );
   const conversationMessagesVisible =
     (!isEmptySession || subagentViewActive) && !hideStaleConversationMessages;
   // translucency：ScrollArea 仍全高；形状 mask 裁输入框/Changes/TODO 轮廓（顶圆角空隙保留）
@@ -650,6 +659,9 @@ export function ConversationView({
             <ConversationMessageSelectionMenu
               rootRef={conversationScrollBodyRef}
               onMessageQuoteAddToSession={composerDock.onMessageQuoteAddToSession}
+              onMessageQuoteAddToSideChat={
+                showSideChat && paneId ? handleMessageQuoteAddToSideChat : undefined
+              }
             />
             {showComposerDock ? (
               <ComposerDock

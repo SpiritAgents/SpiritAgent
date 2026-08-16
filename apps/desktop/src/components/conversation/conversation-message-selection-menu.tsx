@@ -4,6 +4,7 @@ import { useTranslation } from "react-i18next";
 import {
   TextSelectionActionMenu,
   TextSelectionActionMenuItem,
+  TextSelectionActionMenuSegmentedItems,
 } from "@/components/text-selection-action-menu";
 import { useTextSelectionActionMenu } from "@/hooks/use-text-selection-action-menu";
 import type { MessageQuoteAttachment } from "@/lib/message-quote-attachment";
@@ -29,9 +30,11 @@ function isSelectionOutsideEditable(selection: Selection): boolean {
 export function ConversationMessageSelectionMenu({
   rootRef,
   onMessageQuoteAddToSession,
+  onMessageQuoteAddToSideChat,
 }: {
   rootRef: RefObject<HTMLElement | null>;
   onMessageQuoteAddToSession?: (attachment: MessageQuoteAttachment) => void;
+  onMessageQuoteAddToSideChat?: (attachment: MessageQuoteAttachment) => void;
 }) {
   const { t } = useTranslation();
   const enabled = Boolean(onMessageQuoteAddToSession);
@@ -41,23 +44,29 @@ export function ConversationMessageSelectionMenu({
     isSelectionAllowed: isSelectionOutsideEditable,
   });
 
+  const confirmSelection = useCallback(
+    (onAdd: ((attachment: MessageQuoteAttachment) => void) | undefined) => {
+      const selection = typeof window !== "undefined" ? window.getSelection() : null;
+      const selectedText = (selectionText.trim() || selection?.toString() || "").trim();
+      if (!onAdd || !selectedText) {
+        dismiss();
+        return;
+      }
+
+      onAdd(makeMessageQuoteAttachment(selectedText));
+      dismiss();
+      selection?.removeAllRanges();
+    },
+    [dismiss, selectionText],
+  );
+
   const handleAddToSession = useCallback(() => {
-    const selection = typeof window !== "undefined" ? window.getSelection() : null;
-    if (!onMessageQuoteAddToSession) {
-      dismiss();
-      return;
-    }
+    confirmSelection(onMessageQuoteAddToSession);
+  }, [confirmSelection, onMessageQuoteAddToSession]);
 
-    const selectedText = (selectionText.trim() || selection?.toString() || "").trim();
-    if (!selectedText) {
-      dismiss();
-      return;
-    }
-
-    onMessageQuoteAddToSession(makeMessageQuoteAttachment(selectedText));
-    dismiss();
-    selection?.removeAllRanges();
-  }, [dismiss, onMessageQuoteAddToSession, selectionText]);
+  const handleAddToSideChat = useCallback(() => {
+    confirmSelection(onMessageQuoteAddToSideChat);
+  }, [confirmSelection, onMessageQuoteAddToSideChat]);
 
   if (!enabled) {
     return null;
@@ -69,10 +78,19 @@ export function ConversationMessageSelectionMenu({
       anchor={anchor}
       onOpenChange={setOpen}
     >
-      <TextSelectionActionMenuItem
-        label={t("workspace.addSelectionToSession")}
-        onSelect={handleAddToSession}
-      />
+      {onMessageQuoteAddToSideChat ? (
+        <TextSelectionActionMenuSegmentedItems
+          segments={[
+            { label: t("workspace.addSelectionToSession"), onSelect: handleAddToSession },
+            { label: t("workspace.addSelectionToSideChat"), onSelect: handleAddToSideChat },
+          ]}
+        />
+      ) : (
+        <TextSelectionActionMenuItem
+          label={t("workspace.addSelectionToSession")}
+          onSelect={handleAddToSession}
+        />
+      )}
     </TextSelectionActionMenu>
   );
 }
