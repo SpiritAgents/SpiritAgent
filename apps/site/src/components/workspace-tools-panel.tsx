@@ -16,9 +16,9 @@ import {
   writeWorkspaceToolsWidthPx,
 } from "@/lib/layout-prefs";
 import {
-  desktopMicaTintClass,
-  desktopMicaWorkspaceTabSelectedClass,
-} from "@/lib/desktop-mica-surface";
+  desktopTranslucencyTintClass,
+  desktopTranslucencyWorkspaceTabSelectedClass,
+} from "@/lib/desktop-translucency-surface";
 import { instantHoverMotionClass } from "@/lib/desktop-chrome";
 import {
   createInitialWorkspaceToolsState,
@@ -42,7 +42,7 @@ export type WorkspaceToolsDockProps = {
   open: boolean;
   className?: string;
   baseToneClassName?: string;
-  useMicaBackdrop?: boolean;
+  useTranslucency?: boolean;
   plan?: PlanSnapshot;
   planPreviewContent?: string;
   planRevealNonce?: number;
@@ -84,7 +84,7 @@ export function WorkspaceToolsDock({
   open,
   className,
   baseToneClassName,
-  useMicaBackdrop = false,
+  useTranslucency = false,
   plan,
   planPreviewContent = "",
   planRevealNonce = 0,
@@ -217,7 +217,7 @@ export function WorkspaceToolsDock({
           designModeState={designModeState}
           onDesignModeStateChange={onDesignModeStateChange}
           onDesignModeUserInteract={onDesignModeUserInteract}
-          useMicaBackdrop={useMicaBackdrop}
+          useTranslucency={useTranslucency}
         />
       );
     }
@@ -276,7 +276,7 @@ export function WorkspaceToolsDock({
         <div
           className={cn(
             "pointer-events-none absolute inset-y-0 left-0 w-px transition-colors",
-            useMicaBackdrop
+            useTranslucency
               ? "bg-black/5 group-hover:bg-black/10 dark:bg-white/10 dark:group-hover:bg-white/14"
               : "bg-border/40 group-hover:bg-border/55",
           )}
@@ -288,8 +288,8 @@ export function WorkspaceToolsDock({
         id="workspace-tools-panel"
         className={cn(
           "flex h-full min-h-0 min-w-0 flex-1 flex-col overflow-hidden text-foreground",
-          useMicaBackdrop
-            ? desktopMicaTintClass(useMicaBackdrop)
+          useTranslucency
+            ? desktopTranslucencyTintClass(useTranslucency)
             : (baseToneClassName ?? "bg-background"),
         )}
         aria-label={toolsCopy.panelAria}
@@ -315,7 +315,7 @@ export function WorkspaceToolsDock({
                       selected
                         ? cn(
                             "border-border/40 text-foreground shadow-sm",
-                            desktopMicaWorkspaceTabSelectedClass(useMicaBackdrop),
+                            desktopTranslucencyWorkspaceTabSelectedClass(useTranslucency),
                           )
                         : "text-muted-foreground hover:bg-accent hover:text-accent-foreground",
                     )}
@@ -361,7 +361,7 @@ export function WorkspaceToolsDock({
                     selected
                       ? cn(
                           "border-border/40 text-foreground shadow-sm",
-                          desktopMicaWorkspaceTabSelectedClass(useMicaBackdrop),
+                          desktopTranslucencyWorkspaceTabSelectedClass(useTranslucency),
                         )
                       : "text-muted-foreground hover:bg-foreground/[0.04] hover:text-foreground dark:hover:bg-foreground/10",
                   )}

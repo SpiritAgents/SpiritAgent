@@ -13,14 +13,14 @@ import type { DesktopExtensionCssLayer } from "@/types";
 export type UseDesktopShellEffectsOptions = {
   isElectronShell: boolean;
   darwinElectronChrome: boolean;
-  useMicaBackdrop: boolean;
+  useTranslucency: boolean;
   extensionCss: DesktopExtensionCssLayer[] | undefined;
 };
 
 export function useDesktopShellEffects({
   isElectronShell,
   darwinElectronChrome,
-  useMicaBackdrop,
+  useTranslucency,
   extensionCss,
 }: UseDesktopShellEffectsOptions) {
   useEffect(() => {
@@ -73,20 +73,20 @@ export function useDesktopShellEffects({
     if (typeof document === "undefined") {
       return;
     }
-    if (useMicaBackdrop) {
-      document.documentElement.classList.add("spirit-desktop-mica");
+    if (useTranslucency) {
+      document.documentElement.classList.add("spirit-desktop-translucency");
     } else {
-      document.documentElement.classList.remove("spirit-desktop-mica");
+      document.documentElement.classList.remove("spirit-desktop-translucency");
     }
     if (isElectronShell) {
       // theme 变化时的窗口同步由 applyThemeToDocument 负责（避免双 IPC）；
-      // 此处仅在 mica 开关变化时按当前存储主题刷新窗口材质
+      // 此处仅在 translucency 开关变化时按当前存储主题刷新窗口材质
       const theme = getStoredTheme();
       syncDesktopWindowFrame(resolveDark(theme), desktopNativeThemeForPreference(theme), {
-        nativeBackdropBlur: useMicaBackdrop,
+        translucency: useTranslucency,
       });
     }
-  }, [useMicaBackdrop, isElectronShell]);
+  }, [useTranslucency, isElectronShell]);
 
   useEffect(() => {
     if (typeof document === "undefined") {

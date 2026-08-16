@@ -54,8 +54,8 @@ import type {
 declare global {
   interface SpiritDesktopApi {
     platform: NodeJS.Platform;
-    /** 同步读取磁盘 `windowsMica`；首屏 snapshot 未就绪时与 Electron 窗口材质对齐。 */
-    readNativeBackdropBlur(): boolean;
+    /** 同步读取磁盘 `translucency`；首屏 snapshot 未就绪时与 Electron 窗口材质对齐。 */
+    readTranslucency(): boolean;
     /** 同步读取主进程追踪的 OS 深色偏好；themeSource 被覆盖期间 matchMedia 会谎报，须以此为准。 */
     readOsPrefersDark(): boolean;
     bootstrap(request?: BootstrapRequest): Promise<DesktopSnapshot>;
@@ -296,7 +296,7 @@ declare global {
     syncWindowFrame(request: {
       dark: boolean;
       nativeTheme: "system" | "light" | "dark";
-      nativeBackdropBlur?: boolean;
+      translucency?: boolean;
     }): Promise<boolean>;
     /** 首启 LaunchSplash 已绘制就绪，通知主进程 reveal 窗口。 */
     notifyLaunchSplashReady(): void;

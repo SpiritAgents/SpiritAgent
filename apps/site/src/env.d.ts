@@ -7,7 +7,7 @@ interface SpiritDesktopApi {
   ): Promise<void>;
   executeWindowAction?(action: string): void;
   resetSession?(): void;
-  readNativeBackdropBlur?(): boolean;
+  readTranslucency?(): boolean;
   ptyCreate(request: {
     cwd: string;
     cols: number;

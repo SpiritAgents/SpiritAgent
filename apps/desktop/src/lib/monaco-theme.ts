@@ -82,8 +82,8 @@ function resolveCssColor(expression: string, fallback: string): string {
   return normalizeColorForMonaco(resolved, fallback);
 }
 
-function isNativeMicaBackdropActive(): boolean {
-  return document.documentElement.classList.contains("spirit-desktop-mica");
+function isNativeTranslucencyActive(): boolean {
+  return document.documentElement.classList.contains("spirit-desktop-translucency");
 }
 
 function buildSpiritDarkChromeColors(editorSurface: string): Record<string, string> {
@@ -158,7 +158,7 @@ function buildSpiritLightChromeColors(editorSurface: string): Record<string, str
 
 /** Shiki dark-plus / light-plus 语法色 + Spirit 编辑区 chrome（背景、选区等）。 */
 export function registerSpiritShikiPlusMonacoThemes(): void {
-  const mica = isNativeMicaBackdropActive();
+  const mica = isNativeTranslucencyActive();
   const darkSurface = mica
     ? TRANSPARENT_MONACO_COLOR
     : resolveCssBackground("var(--background)", FALLBACK_DARK_BG);

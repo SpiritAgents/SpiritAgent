@@ -232,7 +232,7 @@ function updateConfigFromSettingsForm(
     videoGenerationModel: s.videoGenerationModel,
     lightweightChatModel: s.lightweightChatModel,
     apiBase: s.apiBase,
-    windowsMica: s.windowsMica,
+    translucency: s.translucency,
     systemNotifications: s.systemNotifications,
     trayIcon: s.trayIcon,
     onboardingCompleted: s.onboardingCompleted,
@@ -421,7 +421,7 @@ export function useDesktopRuntime() {
     apiBase: "",
     uiLocale: getStoredLanguage(),
     apiKey: "",
-    windowsMica: true,
+    translucency: true,
     systemNotifications: true,
     trayIcon: true,
     onboardingCompleted: false,
@@ -476,8 +476,8 @@ export function useDesktopRuntime() {
     setWebClientViewingSessionPath(trimmed);
     setWebViewingSessionPath(trimmed);
   }, []);
-  const micaSaveSeqRef = useRef(0);
-  const micaInFlightRef = useRef(0);
+  const translucencySaveSeqRef = useRef(0);
+  const translucencyInFlightRef = useRef(0);
   /** Host API 尚未就绪时累积的设置 patch，api 可用后一次性落盘。 */
   const pendingSettingsPatchRef = useRef<Partial<SettingsFormState>>({});
   const sessionUiCacheRef = useRef(new Map<string, SessionUiState>());
@@ -807,11 +807,11 @@ export function useDesktopRuntime() {
           agentMode = "agent";
         }
 
-        const snapshotWindowsMica = next.config.windowsMica !== false;
-        const windowsMica =
-          micaInFlightRef.current > 0 && current.windowsMica !== snapshotWindowsMica
-            ? current.windowsMica
-            : snapshotWindowsMica;
+        const snapshotTranslucency = next.config.translucency !== false;
+        const translucency =
+          translucencyInFlightRef.current > 0 && current.translucency !== snapshotTranslucency
+            ? current.translucency
+            : snapshotTranslucency;
 
         return {
           activeModel: effectiveNext.config.activeModel,
@@ -821,7 +821,7 @@ export function useDesktopRuntime() {
           apiBase: activeModelProfile?.apiBase ?? current.apiBase,
           uiLocale: next.config.uiLocale ?? getStoredLanguage(),
           apiKey: current.apiKey,
-          windowsMica,
+          translucency,
           systemNotifications: next.config.systemNotifications !== false,
           trayIcon: next.config.trayIcon !== false,
           onboardingCompleted: next.config.onboardingCompleted === true,
@@ -2208,12 +2208,12 @@ export function useDesktopRuntime() {
 
   const saveSettingsPatch = useCallback(
     async (patch: Partial<SettingsFormState>) => {
-      const micaPatch = patch.windowsMica !== undefined;
-      let micaSeq = 0;
-      if (micaPatch) {
-        micaSaveSeqRef.current += 1;
-        micaSeq = micaSaveSeqRef.current;
-        micaInFlightRef.current += 1;
+      const translucencyPatch = patch.translucency !== undefined;
+      let translucencySeq = 0;
+      if (translucencyPatch) {
+        translucencySaveSeqRef.current += 1;
+        translucencySeq = translucencySaveSeqRef.current;
+        translucencyInFlightRef.current += 1;
       }
 
       const prev = settingsRef.current;
@@ -2239,8 +2239,8 @@ export function useDesktopRuntime() {
 
       if (!api) {
         pendingSettingsPatchRef.current = { ...pendingSettingsPatchRef.current, ...patch };
-        if (micaPatch) {
-          micaInFlightRef.current -= 1;
+        if (translucencyPatch) {
+          translucencyInFlightRef.current -= 1;
         }
         return;
       }
@@ -2256,8 +2256,8 @@ export function useDesktopRuntime() {
             ...(webHostEndpointChanged ? { resetPairing: true } : {}),
           }),
         );
-        const staleWindowsMicaSave = micaPatch && micaSeq < micaSaveSeqRef.current;
-        if (!staleWindowsMicaSave) {
+        const staleTranslucencySave = translucencyPatch && translucencySeq < translucencySaveSeqRef.current;
+        if (!staleTranslucencySave) {
           applySnapshot(next);
         }
         setRuntimeError("");
@@ -2268,8 +2268,8 @@ export function useDesktopRuntime() {
       } catch (error) {
         setRuntimeError(describeError(error));
       } finally {
-        if (micaPatch) {
-          micaInFlightRef.current -= 1;
+        if (translucencyPatch) {
+          translucencyInFlightRef.current -= 1;
         }
       }
     },

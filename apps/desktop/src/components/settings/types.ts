@@ -34,7 +34,7 @@ export type SettingsFormState = {
   apiBase: string;
   uiLocale: string;
   apiKey: string;
-  windowsMica: boolean;
+  translucency: boolean;
   systemNotifications: boolean;
   trayIcon: boolean;
   /** 首启引导（OOBE）是否已完成。 */
@@ -105,7 +105,7 @@ export type SettingsViewProps = {
   /** 开发者页：在对话区加载极长消息列表性能演示（不调用模型）。 */
   onStartLongConversationListDemo?: () => void;
   /** Windows 云母 / macOS Vibrancy：内层透明以避免与 settings-shell 双层 tint 叠深。 */
-  useMicaBackdrop?: boolean;
+  useTranslucency?: boolean;
   getGitHubAuthStatus: () => Promise<GitHubAuthStatus>;
   beginGitHubDeviceLogin: () => Promise<GitHubDeviceAuthChallenge>;
   completeGitHubDeviceLogin: () => Promise<GitHubAuthStatus>;

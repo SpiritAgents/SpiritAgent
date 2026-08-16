@@ -73,7 +73,7 @@ export type SpiritDesktopWindowProps = {
   demoStaticSnapshot?: "defaultEnd";
   className?: string;
   viewportClassName?: string;
-  useMicaBackdrop?: boolean;
+  useTranslucency?: boolean;
   heroBaseTone?: boolean;
   /** Smaller typography for in-browser nested previews (fonts only, not layout scale). */
   nestedPreview?: boolean;
@@ -484,7 +484,7 @@ export function SpiritDesktopWindow({
   demoStaticSnapshot,
   className,
   viewportClassName,
-  useMicaBackdrop = false,
+  useTranslucency = false,
   heroBaseTone = false,
   nestedPreview = false,
 }: SpiritDesktopWindowProps) {
@@ -698,7 +698,7 @@ export function SpiritDesktopWindow({
             setWindowRootElement={setWindowRootElement}
             className={className}
             viewportClassName={viewportClassName}
-            useMicaBackdrop={useMicaBackdrop}
+            useTranslucency={useTranslucency}
             heroBaseTone={heroBaseTone}
             nestedPreview={nestedPreview}
             contentBaseToneClassName={contentBaseToneClassName}
@@ -752,7 +752,7 @@ type SpiritDesktopWindowBodyProps = {
   setWindowRootElement: (element: HTMLDivElement | null) => void;
   className?: string;
   viewportClassName?: string;
-  useMicaBackdrop: boolean;
+  useTranslucency: boolean;
   heroBaseTone: boolean;
   nestedPreview: boolean;
   contentBaseToneClassName: string;
@@ -801,7 +801,7 @@ function SpiritDesktopWindowBody({
   setWindowRootElement,
   className,
   viewportClassName,
-  useMicaBackdrop,
+  useTranslucency,
   heroBaseTone,
   nestedPreview,
   contentBaseToneClassName,
@@ -858,7 +858,7 @@ function SpiritDesktopWindowBody({
       className={cn(
         "relative isolate overflow-hidden rounded-[10px] border border-border shadow-[0_24px_64px_-16px_rgba(0,0,0,0.18)] ring-0 dark:border-white/12 dark:shadow-[0_34px_96px_rgba(0,0,0,0.54)] dark:ring-1 dark:ring-black/35",
         heroBaseTone ? "h-full w-full" : "w-[min(94vw,70rem)]",
-        useMicaBackdrop
+        useTranslucency
           ? "bg-transparent"
           : heroBaseTone
             ? "bg-sidebar dark:bg-[#000000]"
@@ -875,7 +875,7 @@ function SpiritDesktopWindowBody({
         )}
       >
         <DesktopMacTrafficLights />
-        {useMicaBackdrop ? (
+        {useTranslucency ? (
           <div
             aria-hidden
             className="pointer-events-none absolute top-0 right-0 z-20 h-px dark:bg-white/8"
@@ -893,7 +893,7 @@ function SpiritDesktopWindowBody({
             className="flex min-h-0 min-w-0 flex-1 overflow-hidden"
           >
             <SessionSidebarShell
-              useMicaBackdrop={useMicaBackdrop}
+              useTranslucency={useTranslucency}
               minWidthPx={nestedPreview ? NESTED_SESSION_SIDEBAR_MIN_WIDTH_PX : undefined}
               maxWidthPx={nestedPreview ? NESTED_SESSION_SIDEBAR_MAX_WIDTH_PX : undefined}
             >
@@ -926,7 +926,7 @@ function SpiritDesktopWindowBody({
                 marketplaceActive={activeSurface === "marketplace"}
                 settingsTab={settingsTab}
                 onSettingsTabChange={setSettingsTab}
-                micaStyle={useMicaBackdrop}
+                translucency={useTranslucency}
               />
             </SessionSidebarShell>
 
@@ -939,7 +939,7 @@ function SpiritDesktopWindowBody({
             >
               <div className={cn("flex min-h-0 min-w-0 flex-1 flex-col", contentBaseToneClassName)}>
                 <DesktopLayoutChromeBar
-                  useMicaBackdrop={useMicaBackdrop}
+                  useTranslucency={useTranslucency}
                   baseToneClassName={contentBaseToneClassName}
                   showWorkspaceToggle={activeSurface === "conversation"}
                   workspaceToolsOpen={workspaceToolsOpen}
@@ -1042,7 +1042,7 @@ function SpiritDesktopWindowBody({
                     branch={currentBranch}
                     listExplorerChildren={listExplorerChildren}
                     baseToneClassName={contentBaseToneClassName}
-                    useMicaBackdrop={useMicaBackdrop}
+                    useTranslucency={useTranslucency}
                     open={workspaceToolsOpen}
                     widthPx={workspaceToolsWidthPx}
                     onWidthPxChange={setWorkspaceToolsWidthPx}

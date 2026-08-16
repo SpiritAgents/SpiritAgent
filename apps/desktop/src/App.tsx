@@ -45,12 +45,12 @@ import { useSubagentViewer } from "@/hooks/useSubagentViewer";
 import { useThemeSetter } from "@/hooks/useTheme";
 import { useGitHubAuthConnected } from "@/hooks/use-github-auth-connected";
 import { useWorkspaceToolsController } from "@/hooks/useWorkspaceToolsController";
-import { desktopMicaTintClass, desktopMicaTintInnerClass } from "@/lib/desktop-mica-surface";
+import { desktopTranslucencyTintClass, desktopTranslucencyTintInnerClass } from "@/lib/desktop-translucency-surface";
 import {
   isDarwinElectronShell,
   isElectronChrome,
   isWin32ElectronShell,
-  resolveUseMicaBackdrop,
+  resolveUseTranslucency,
   syncLaunchSplashChromeToDocument,
   type ShellOverlayPhase,
 } from "@/lib/desktop-shell";
@@ -75,20 +75,20 @@ export default function App() {
   useDesktopRuntimeErrorToast(runtime.runtimeError);
   useDesktopQuestionErrorToast(runtime.questionError);
   const snapshot = runtime.snapshot;
-  /** 与 Host API 的 `kind` 解耦：壳可能是 Electron，但仍通过 Vite 代理走 Web Host（侧栏会显示 Localhost Web Host）。Mica 与 `spirit-desktop-native` 仍应对 Electron 窗口生效。 */
+  /** 与 Host API 的 `kind` 解耦：壳可能是 Electron，但仍通过 Vite 代理走 Web Host（侧栏会显示 Localhost Web Host）。translucency 与 `spirit-desktop-native` 仍应对 Electron 窗口生效。 */
   const isElectronShell = isElectronChrome();
   const winElectronChrome = isWin32ElectronShell();
   const darwinElectronChrome = isDarwinElectronShell();
   const desktopTitleBarChrome = winElectronChrome || darwinElectronChrome;
-  // snapshot 未就绪时读磁盘，避免 settings 默认 windowsMica:true 在启动层误开透明/材质
-  const useMicaBackdrop = resolveUseMicaBackdrop(
-    snapshot != null ? runtime.settings.windowsMica : undefined,
+  // snapshot 未就绪时读磁盘，避免 settings 默认 translucency:true 在启动层误开透明/材质
+  const useTranslucency = resolveUseTranslucency(
+    snapshot != null ? runtime.settings.translucency : undefined,
   );
 
   useDesktopShellEffects({
     isElectronShell,
     darwinElectronChrome,
-    useMicaBackdrop,
+    useTranslucency,
     extensionCss: snapshot?.extensionCss,
   });
 
@@ -225,7 +225,7 @@ export default function App() {
   /**
    * 子组件 onPhaseChange 在 layout effect 里才回写；父 state 初值为 gone。
    * 若只认子 phase，首帧 sync 会清掉 index.html / main 已写入的 spirit-launch-splash-active，
-   * 而同布局阶段内 notifyLaunchSplashReady 可能已 show 窗口 → Mica/Vibrancy 下透出 app-body。
+   * 而同布局阶段内 notifyLaunchSplashReady 可能已 show 窗口 → translucency 下透出 app-body。
    * active/visible 为真且子尚未进入 leaving 时，视为 overlay 仍在（pending 当 running）。
    */
   const launchSplashOverlayUp =
@@ -328,7 +328,7 @@ export default function App() {
         >
           {winElectronChrome ? (
             <DesktopTitleBar
-              useMicaBackdrop={useMicaBackdrop}
+              useTranslucency={useTranslucency}
               onZoomIn={uiLayoutScale.zoomIn}
               onZoomOut={uiLayoutScale.zoomOut}
               onZoomReset={uiLayoutScale.resetScale}
@@ -339,20 +339,20 @@ export default function App() {
             <div
               data-spirit-surface="app-shell"
               data-spirit-shell-kind={isElectronShell ? "electron" : "web"}
-              data-spirit-mica={useMicaBackdrop ? "true" : "false"}
+              data-spirit-mica={useTranslucency ? "true" : "false"}
               className={cn(
                 "flex h-full min-h-0 flex-col",
-                useMicaBackdrop ? "bg-transparent" : "bg-background",
+                useTranslucency ? "bg-transparent" : "bg-background",
               )}
             >
               <LaunchSplash
                 active={launchSplashActive}
-                useMicaBackdrop={useMicaBackdrop}
+                useTranslucency={useTranslucency}
                 onPhaseChange={setLaunchSplashPhase}
               />
               <OnboardingWizard
                 active={onboardingVisible}
-                useMicaBackdrop={useMicaBackdrop}
+                useTranslucency={useTranslucency}
                 settings={runtime.settings}
                 onSavePatch={runtime.saveSettingsPatch}
                 modelsBusy={runtime.busyAction === "models"}
@@ -373,7 +373,7 @@ export default function App() {
                     className={cn(
                       "h-px w-full shrink-0",
                       // 非 Electron：壳顶部分隔线
-                      useMicaBackdrop
+                      useTranslucency
                         ? "bg-black/5 dark:bg-white/10"
                         : "bg-border/30 dark:bg-white/12",
                     )}
@@ -401,7 +401,7 @@ export default function App() {
                       composerAutomationApiRef={composerAutomationApiRef}
                     />
                     <ConversationTypingFocusRedirectBridge enabled={focusComposerEnabled} />
-                    <SessionSidebarShell useMicaBackdrop={useMicaBackdrop}>
+                    <SessionSidebarShell useTranslucency={useTranslucency}>
                       <SessionSidebar
                         narrow={false}
                         mode={surfaceNav.settingsMode ? "settings" : "sessions"}
@@ -440,7 +440,7 @@ export default function App() {
                           surfaceNav.setSettingsTab(tab);
                         }}
                         onExtensionSettingsChange={(id) => surfaceNav.setExtensionSettingsId(id)}
-                        micaStyle={useMicaBackdrop}
+                        translucency={useTranslucency}
                         newSessionBusy={newSessionBusy}
                         sessionNavigationBusy={sessionNavigationBusy}
                         deleteSessionBusy={sessionNavigationBusy}
@@ -462,15 +462,15 @@ export default function App() {
                         data-spirit-surface="settings-shell"
                         className={cn(
                           "flex min-h-0 min-w-0 flex-1 flex-col",
-                          desktopMicaTintInnerClass(useMicaBackdrop),
+                          desktopTranslucencyTintInnerClass(useTranslucency),
                         )}
                       >
                         <DesktopLayoutChromeBar
-                          useMicaBackdrop={useMicaBackdrop}
+                          useTranslucency={useTranslucency}
                           showWorkspaceToggle={false}
                         />
                         <SettingsView
-                          useMicaBackdrop={useMicaBackdrop}
+                          useTranslucency={useTranslucency}
                           tab={surfaceNav.settingsTab}
                           extensionSettingsId={surfaceNav.extensionSettingsId}
                           font={font}
@@ -543,17 +543,17 @@ export default function App() {
                         data-spirit-surface="automations-layout"
                         className={cn(
                           "flex min-h-0 min-w-0 flex-1 flex-col",
-                          desktopMicaTintInnerClass(useMicaBackdrop),
+                          desktopTranslucencyTintInnerClass(useTranslucency),
                         )}
                       >
                         <DesktopLayoutChromeBar
-                          useMicaBackdrop={useMicaBackdrop}
+                          useTranslucency={useTranslucency}
                           showWorkspaceToggle={false}
                         />
                         <div
                           className={cn(
                             "flex min-h-0 min-w-0 flex-1 flex-col",
-                            desktopMicaTintClass(useMicaBackdrop),
+                            desktopTranslucencyTintClass(useTranslucency),
                           )}
                         >
                           {surfaceNav.automationDetailMode && surfaceNav.selectedAutomationId ? (
@@ -640,15 +640,15 @@ export default function App() {
                         data-spirit-surface="marketplace-layout"
                         className={cn(
                           "flex min-h-0 min-w-0 flex-1 flex-col",
-                          desktopMicaTintInnerClass(useMicaBackdrop),
+                          desktopTranslucencyTintInnerClass(useTranslucency),
                         )}
                       >
                         <DesktopLayoutChromeBar
-                          useMicaBackdrop={useMicaBackdrop}
+                          useTranslucency={useTranslucency}
                           showWorkspaceToggle={false}
                         />
                         <MarketplaceView
-                          useMicaBackdrop={useMicaBackdrop}
+                          useTranslucency={useTranslucency}
                           snapshot={snapshot}
                           apiReady={runtime.apiReady}
                           busyAction={runtime.busyAction}
@@ -667,7 +667,7 @@ export default function App() {
                       <div
                         className={cn(
                           "flex min-h-0 min-w-0 flex-1 flex-row overflow-hidden",
-                          desktopMicaTintInnerClass(useMicaBackdrop),
+                          desktopTranslucencyTintInnerClass(useTranslucency),
                           surfaceNav.settingsMode && "hidden",
                         )}
                         aria-hidden={surfaceNav.settingsMode}
@@ -675,7 +675,7 @@ export default function App() {
                         <div className="flex min-h-0 min-w-0 flex-1 flex-row overflow-hidden">
                           <div className="flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden">
                             <ConversationSplitRoot
-                              useMicaBackdrop={useMicaBackdrop}
+                              useTranslucency={useTranslucency}
                               renderPane={(pane) => (
                                 <ConversationPaneHost
                                   key={pane.paneId}
@@ -702,7 +702,7 @@ export default function App() {
                                   paneDropOverlayActive={pane.paneDropOverlayActive}
                                   paneDragSourcePaneId={pane.paneDragSourcePaneId}
                                   sidebarSessionDragActive={pane.sidebarSessionDragActive}
-                                  useMicaBackdrop={useMicaBackdrop}
+                                  useTranslucency={useTranslucency}
                                   subagentViewActive={subagentViewActive}
                                   subagentViewer={subagentViewer}
                                   compactionDemo={compactionDemo}
@@ -733,7 +733,7 @@ export default function App() {
                             />
                           </div>
                           <ConversationWorkspaceToolsDock
-                            useMicaBackdrop={useMicaBackdrop}
+                            useTranslucency={useTranslucency}
                             snapshot={snapshot}
                             runtime={runtime}
                             conversation={conversation}

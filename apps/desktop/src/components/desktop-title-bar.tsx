@@ -5,7 +5,7 @@ import { useTheme } from "@/hooks/useTheme";
 import { useSessionSidebarShellRightInsetPx } from "@/hooks/useSessionSidebarShellRightInsetPx";
 import { spiritAgentTitleBarIconSrc } from "@/lib/brand-icon";
 import { sessionSidebarShellWidth } from "@/lib/desktop-chrome";
-import { desktopMicaTitleBarTintClass } from "@/lib/desktop-mica-surface";
+import { desktopTranslucencyTitleBarTintClass } from "@/lib/desktop-translucency-surface";
 import { cn } from "@/lib/utils";
 import { isViteDev } from "@/lib/vite-dev";
 import {
@@ -20,7 +20,7 @@ import {
 
 type DesktopTitleBarProps = {
   /** 与根布局云母透明策略一致 */
-  useMicaBackdrop: boolean;
+  useTranslucency: boolean;
   onZoomIn: () => void;
   onZoomOut: () => void;
   onZoomReset: () => void;
@@ -33,10 +33,10 @@ type TitleBarZoomMenuProps = {
   onZoomReset: () => void;
 };
 
-function titleBarSurfaceClass(useMicaBackdrop: boolean, withBorder: boolean) {
+function titleBarSurfaceClass(useTranslucency: boolean, withBorder: boolean) {
   return cn(
-    withBorder && (useMicaBackdrop ? "border-black/5 dark:border-white/10" : "border-border/40"),
-    desktopMicaTitleBarTintClass(useMicaBackdrop),
+    withBorder && (useTranslucency ? "border-black/5 dark:border-white/10" : "border-border/40"),
+    desktopTranslucencyTitleBarTintClass(useTranslucency),
   );
 }
 
@@ -44,7 +44,7 @@ function titleBarSurfaceClass(useMicaBackdrop: boolean, withBorder: boolean) {
 const TITLE_BAR_ICON_PX = 14;
 
 /** 云母顶栏黑底标（`build/icon.png` 内图案更小，恢复迁移透明标前的 20px） */
-const TITLE_BAR_ICON_MICA_PX = 20;
+const TITLE_BAR_ICON_TRANSLUCENCY_PX = 20;
 
 /** 与侧栏交互项默认字色一致（`text-sidebar-action-foreground`） */
 const TITLE_BAR_MENUBAR_TRIGGER_CLASS = "px-2 py-1 text-[13px] text-sidebar-action-foreground";
@@ -53,10 +53,10 @@ function execWindowAction(action: string): void {
   void window.spiritDesktop?.executeWindowAction(action);
 }
 
-function TitleBarAppIcon({ useMicaBackdrop }: { useMicaBackdrop: boolean }) {
+function TitleBarAppIcon({ useTranslucency }: { useTranslucency: boolean }) {
   const { resolvedDark } = useTheme();
-  const iconSrc = spiritAgentTitleBarIconSrc(resolvedDark, useMicaBackdrop);
-  const iconPx = useMicaBackdrop ? TITLE_BAR_ICON_MICA_PX : TITLE_BAR_ICON_PX;
+  const iconSrc = spiritAgentTitleBarIconSrc(resolvedDark, useTranslucency);
+  const iconPx = useTranslucency ? TITLE_BAR_ICON_TRANSLUCENCY_PX : TITLE_BAR_ICON_PX;
   return (
     <span
       className="electron-no-drag ml-1 inline-flex shrink-0 items-center justify-center"
@@ -71,7 +71,7 @@ function TitleBarAppIcon({ useMicaBackdrop }: { useMicaBackdrop: boolean }) {
         draggable={false}
         className={cn(
           "max-h-full max-w-full object-contain select-none",
-          useMicaBackdrop && "rounded-sm",
+          useTranslucency && "rounded-sm",
         )}
       />
     </span>
@@ -79,20 +79,20 @@ function TitleBarAppIcon({ useMicaBackdrop }: { useMicaBackdrop: boolean }) {
 }
 
 function TitleBarMenuCluster({
-  useMicaBackdrop,
+  useTranslucency,
   onZoomIn,
   onZoomOut,
   onZoomReset,
   onOpenSettings,
 }: {
-  useMicaBackdrop: boolean;
+  useTranslucency: boolean;
   onOpenSettings: () => void;
 } & TitleBarZoomMenuProps) {
   const { t } = useTranslation();
   const isDevChrome = isViteDev;
   return (
     <div className="electron-no-drag flex shrink-0 items-center gap-1">
-      <TitleBarAppIcon useMicaBackdrop={useMicaBackdrop} />
+      <TitleBarAppIcon useTranslucency={useTranslucency} />
       <Menubar
         className="h-auto border-none bg-transparent p-0 shadow-none"
         aria-label={t("titleBar.appMenu")}
@@ -233,7 +233,7 @@ function TitleBarMenuCluster({
  * Windows：自绘顶栏（LOGO + 菜单文案），窗口控制键仍由 `titleBarOverlay` 绘制。
  */
 export function DesktopTitleBar({
-  useMicaBackdrop,
+  useTranslucency,
   onZoomIn,
   onZoomOut,
   onZoomReset,
@@ -242,7 +242,7 @@ export function DesktopTitleBar({
   const headerRef = useRef<HTMLElement>(null);
   const { open: sessionSidebarOpen, widthPx: sessionSidebarWidthPx } = useSessionSidebarChrome();
   /** Blur 下横向分割线锚定侧栏 shell 右缘；收起/展开时随 shell 实际宽度同步移动。 */
-  const partialBorder = useMicaBackdrop;
+  const partialBorder = useTranslucency;
   const sidebarShellRightInsetPx = useSessionSidebarShellRightInsetPx(headerRef, partialBorder);
 
   return (
@@ -252,7 +252,7 @@ export function DesktopTitleBar({
       className={cn(
         "relative electron-drag flex h-8 w-full shrink-0 overflow-hidden",
         partialBorder ? "border-b-0" : "border-b",
-        titleBarSurfaceClass(useMicaBackdrop, !partialBorder),
+        titleBarSurfaceClass(useTranslucency, !partialBorder),
       )}
     >
       {partialBorder ? (
@@ -271,7 +271,7 @@ export function DesktopTitleBar({
         }
       >
         <TitleBarMenuCluster
-          useMicaBackdrop={useMicaBackdrop}
+          useTranslucency={useTranslucency}
           onZoomIn={onZoomIn}
           onZoomOut={onZoomOut}
           onZoomReset={onZoomReset}

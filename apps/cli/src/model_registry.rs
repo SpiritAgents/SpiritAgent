@@ -2063,7 +2063,7 @@ mod tests {
   "activeModel": { "groupId": "custom", "name": "agent-test-model" },
   "imageGenerationModel": { "groupId": "custom", "name": "agent-test-model" },
   "uiLocale": "zh-CN",
-  "windowsMica": true,
+  "translucency": true,
   "recentWorkspaces": ["D:/SpiritAgent", "D:/Other"],
   "dreams": {
     "enabled": true,
@@ -2077,7 +2077,7 @@ mod tests {
         let serialized = serialize_config(&parsed).expect("serialize config");
         let json: Value = serde_json::from_str(&serialized).expect("json value");
 
-        assert_eq!(json.get("windowsMica").and_then(Value::as_bool), Some(true));
+        assert_eq!(json.get("translucency").and_then(Value::as_bool), Some(true));
         assert_eq!(
             json.get("recentWorkspaces")
                 .and_then(Value::as_array)
@@ -2111,7 +2111,7 @@ mod tests {
   "schemaVersion": 2,
   "providerGroups": [],
   "activeModel": { "groupId": "", "name": "" },
-  "windowsMica": false,
+  "translucency": false,
   "dreams": {
     "enabled": true,
     "debugMode": false
@@ -2124,7 +2124,7 @@ mod tests {
         let json: Value = serde_json::from_str(&serialized).expect("json value");
 
         assert_eq!(
-            json.get("windowsMica").and_then(Value::as_bool),
+            json.get("translucency").and_then(Value::as_bool),
             Some(false)
         );
         assert_eq!(

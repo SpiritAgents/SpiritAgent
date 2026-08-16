@@ -10,13 +10,13 @@
         if (!/\bElectron\//.test(navigator.userAgent)) return;
         var root = document.documentElement;
         root.classList.add("spirit-desktop-native", "spirit-launch-splash-active");
-        var mica = true;
+        var translucency = true;
         try {
-          if (window.spiritDesktop && window.spiritDesktop.readNativeBackdropBlur() === false) {
-            mica = false;
+          if (window.spiritDesktop && window.spiritDesktop.readTranslucency() === false) {
+            translucency = false;
           }
         } catch (_err) {}
-        if (mica) root.classList.add("spirit-desktop-mica");
+        if (translucency) root.classList.add("spirit-desktop-translucency");
         var themeRaw = null;
         try {
           themeRaw = localStorage.getItem("spirit-agent-desktop-theme");
@@ -41,17 +41,17 @@
       })();
     </script>
     <style>
-      html.spirit-desktop-native.spirit-desktop-mica,
-      html.spirit-desktop-native.spirit-desktop-mica body {
+      html.spirit-desktop-native.spirit-desktop-translucency,
+      html.spirit-desktop-native.spirit-desktop-translucency body {
         background: transparent !important;
       }
       /* 关 Blur 时首帧临界底色：与 electronRootBackgroundForBackdrop / styles.css Void 对齐，须早于 module CSS */
-      html.spirit-desktop-native:not(.spirit-desktop-mica),
-      html.spirit-desktop-native:not(.spirit-desktop-mica) body {
+      html.spirit-desktop-native:not(.spirit-desktop-translucency),
+      html.spirit-desktop-native:not(.spirit-desktop-translucency) body {
         background-color: #fafafa;
       }
-      html.spirit-desktop-native:not(.spirit-desktop-mica).dark,
-      html.spirit-desktop-native:not(.spirit-desktop-mica).dark body {
+      html.spirit-desktop-native:not(.spirit-desktop-translucency).dark,
+      html.spirit-desktop-native:not(.spirit-desktop-translucency).dark body {
         background-color: #000000;
       }
     </style>

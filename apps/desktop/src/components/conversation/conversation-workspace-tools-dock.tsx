@@ -13,7 +13,7 @@ type ComposerController = ReturnType<typeof useComposerController>;
 type WorkspaceToolsController = ReturnType<typeof useWorkspaceToolsController>;
 
 export type ConversationWorkspaceToolsDockProps = {
-  useMicaBackdrop: boolean;
+  useTranslucency: boolean;
   snapshot: DesktopSnapshot | null;
   runtime: DesktopRuntime;
   conversation: ConversationViewState;
@@ -24,7 +24,7 @@ export type ConversationWorkspaceToolsDockProps = {
 
 /** App-level workspace tools panel; spans the full conversation split area (not a single pane). */
 export function ConversationWorkspaceToolsDock({
-  useMicaBackdrop,
+  useTranslucency,
   snapshot,
   runtime,
   conversation,
@@ -45,7 +45,7 @@ export function ConversationWorkspaceToolsDock({
   return (
     <div data-spirit-surface="workspace-dock" className="flex min-h-0 shrink-0">
       <WorkspaceToolsDock
-        useMicaBackdrop={useMicaBackdrop}
+        useTranslucency={useTranslucency}
         workspaceRoot={snapshot?.workspaceRoot ?? ""}
         listExplorerChildren={runtime.listWorkspaceExplorerChildren}
         readWorkspaceTextFile={runtime.readWorkspaceTextFile}

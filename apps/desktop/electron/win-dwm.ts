@@ -1,7 +1,7 @@
 /**
  * Tauri `frame_chrome::apply_dwm_chrome_if_any` 在 Win32 上显式设置
  * `DWMWA_USE_IMMERSIVE_DARK_MODE`。Electron 的 `nativeTheme` + `setBackgroundMaterial`
- * 在「系统浅色 / 应用深色」组合下仍常把 Mica 合成成浅色块；必须对 HWND 写入 DWM 属性。
+ * 在「系统浅色 / 应用深色」组合下仍常把 translucency（Mica）合成成浅色块；必须对 HWND 写入 DWM 属性。
  */
 import type { BrowserWindow } from "electron";
 import koffi from "koffi";

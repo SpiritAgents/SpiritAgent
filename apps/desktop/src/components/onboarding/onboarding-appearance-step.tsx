@@ -10,7 +10,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
-import { isNativeBackdropBlurSupported } from "@/lib/desktop-shell";
+import { isNativeTranslucencySupported } from "@/lib/desktop-shell";
 import { DESKTOP_SETTINGS_LABEL_CLASS } from "@/lib/desktop-typography";
 import { changeLanguage, LOCALE_LABEL_KEYS, VALID_LANGUAGES } from "@/lib/i18n";
 import type { ThemePreference } from "@/lib/theme";
@@ -24,7 +24,7 @@ type OnboardingAppearanceControlsProps = {
 };
 
 /**
- * OOBE 外观步骤内容：主题三选预览卡 + 模糊效果开关 + 语言选择。
+ * OOBE 外观步骤内容：主题三选预览卡 + 半透明开关 + 语言选择。
  * 所有选择即时生效，与设置页共用同一保存链路。
  */
 export function OnboardingAppearanceControls({
@@ -49,15 +49,15 @@ export function OnboardingAppearanceControls({
         ))}
       </div>
 
-      {isNativeBackdropBlurSupported() ? (
+      {isNativeTranslucencySupported() ? (
         <div className="flex items-center justify-between gap-4">
           <label htmlFor="onboarding-blur-effect" className={DESKTOP_SETTINGS_LABEL_CLASS}>
-            {t("settings.blurEffect")}
+            {t("settings.translucency")}
           </label>
           <Switch
             id="onboarding-blur-effect"
-            checked={settings.windowsMica}
-            onCheckedChange={(value) => void onSavePatch({ windowsMica: value === true })}
+            checked={settings.translucency}
+            onCheckedChange={(value) => void onSavePatch({ translucency: value === true })}
           />
         </div>
       ) : null}

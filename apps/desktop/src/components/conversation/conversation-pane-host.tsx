@@ -37,7 +37,7 @@ export type ConversationPaneHostProps = {
   onSplitVertical: () => void;
   onClosePane: () => void;
   showClosePane: boolean;
-  useMicaBackdrop: boolean;
+  useTranslucency: boolean;
   subagentViewActive: boolean;
   subagentViewer: SubagentViewer;
   compactionDemo: CompactionDemo;
@@ -88,7 +88,7 @@ export function ConversationPaneHost({
   onSplitVertical,
   onClosePane,
   showClosePane,
-  useMicaBackdrop,
+  useTranslucency,
   paneReorderEnabled,
   onPaneDragStart,
   onPaneDragLeave,
@@ -173,7 +173,7 @@ export function ConversationPaneHost({
 
   return (
     <ConversationView
-      useMicaBackdrop={useMicaBackdrop}
+      useTranslucency={useTranslucency}
       snapshot={pane.paneSnapshot}
       isEmptySession={pane.paneIsEmptySession}
       hideStaleConversationMessages={pane.hideStaleConversationMessages}

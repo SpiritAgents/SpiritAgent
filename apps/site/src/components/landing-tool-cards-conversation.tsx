@@ -7,7 +7,7 @@ import {
   type LandingToolCardsDemoItem,
 } from "@/lib/landing-tool-cards-demo-script";
 import { cn } from "@/lib/utils";
-import { DESKTOP_ELEVATION_SHADOW_SM } from "@/lib/desktop-mica-surface";
+import { DESKTOP_ELEVATION_SHADOW_SM } from "@/lib/desktop-translucency-surface";
 
 const userBubbleClass = cn(
   "rounded-2xl rounded-br-md border border-ring/30 bg-background px-3 py-2.5 dark:border-border/50 dark:bg-muted",

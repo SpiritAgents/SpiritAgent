@@ -55,7 +55,7 @@ export function DownloadTrioScaffold() {
                   {/* Uniform scale: nestedPreview only shrinks type, leaving sidebar full-width. */}
                   <div className="pointer-events-none absolute top-5 left-5 h-[182%] w-[182%] origin-top-left scale-[0.55] select-none sm:top-6 sm:left-6">
                     <SpiritDesktopWindow
-                      useMicaBackdrop
+                      useTranslucency
                       heroBaseTone
                       demoStaticSnapshot="defaultEnd"
                       demoPlaybackActive={false}

@@ -1,5 +1,5 @@
 import { cn } from "@/lib/utils";
-import { DESKTOP_OVERLAY_LIGHT_SHADOW } from "@/lib/desktop-mica-surface";
+import { DESKTOP_OVERLAY_LIGHT_SHADOW } from "@/lib/desktop-translucency-surface";
 import { FONT_WEIGHT_NORMAL } from "@/lib/typography";
 
 /**

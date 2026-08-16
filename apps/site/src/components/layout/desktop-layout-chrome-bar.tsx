@@ -15,11 +15,11 @@ import {
   DESKTOP_CHROME_TOGGLE_ICON_BTN,
   DESKTOP_SHELL_LAYOUT_TRANSITION,
 } from "@/lib/desktop-chrome";
-import { desktopMicaTintClass } from "@/lib/desktop-mica-surface";
+import { desktopTranslucencyTintClass } from "@/lib/desktop-translucency-surface";
 import { cn } from "@/lib/utils";
 
 export function DesktopLayoutChromeBar({
-  useMicaBackdrop,
+  useTranslucency,
   baseToneClassName,
   showWorkspaceToggle,
   workspaceToolsOpen = false,
@@ -30,7 +30,7 @@ export function DesktopLayoutChromeBar({
   onNewSession,
   newSessionBusy = false,
 }: {
-  useMicaBackdrop: boolean;
+  useTranslucency: boolean;
   baseToneClassName?: string;
   showWorkspaceToggle: boolean;
   workspaceToolsOpen?: boolean;
@@ -54,8 +54,8 @@ export function DesktopLayoutChromeBar({
       className={cn(
         "flex h-8 shrink-0 items-center gap-2 px-1.5",
         showTrailingActions ? "justify-between" : "justify-start",
-        useMicaBackdrop
-          ? desktopMicaTintClass(useMicaBackdrop)
+        useTranslucency
+          ? desktopTranslucencyTintClass(useTranslucency)
           : (baseToneClassName ?? "bg-background dark:bg-[#0a0a0a]"),
       )}
     >

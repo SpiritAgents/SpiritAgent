@@ -36,8 +36,8 @@ ipcRenderer.on("desktop:open-settings", () => {
 
 contextBridge.exposeInMainWorld("spiritDesktop", {
   platform: process.platform,
-  readNativeBackdropBlur() {
-    return ipcRenderer.sendSync("desktop:read-native-backdrop-blur") as boolean;
+  readTranslucency() {
+    return ipcRenderer.sendSync("desktop:read-translucency") as boolean;
   },
   readOsPrefersDark() {
     return ipcRenderer.sendSync("desktop:read-os-prefers-dark") as boolean;
@@ -507,7 +507,7 @@ contextBridge.exposeInMainWorld("spiritDesktop", {
   syncWindowFrame(request: {
     dark: boolean;
     nativeTheme: "system" | "light" | "dark";
-    nativeBackdropBlur?: boolean;
+    translucency?: boolean;
   }) {
     return ipcRenderer.invoke("desktop:sync-window-frame", request) as Promise<boolean>;
   },

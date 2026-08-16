@@ -578,7 +578,7 @@ export async function updateConfigCommand(
         state.config.lightweightChatModel = chatRef;
       }
     }
-    state.config.windowsMica = request.windowsMica !== false;
+    state.config.translucency = request.translucency !== false;
     if (request.systemNotifications !== undefined) {
       state.config.systemNotifications = request.systemNotifications !== false;
     }

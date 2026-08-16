@@ -22,7 +22,7 @@ import type { SettingsViewProps } from "@/components/settings/types";
 import { useTheme } from "@/hooks/useTheme";
 import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { desktopMicaTintClass } from "@/lib/desktop-mica-surface";
+import { desktopTranslucencyTintClass } from "@/lib/desktop-translucency-surface";
 import { cn } from "@/lib/utils";
 import { DESKTOP_PAGE_TITLE_CLASS } from "@/lib/desktop-typography";
 
@@ -72,7 +72,7 @@ export function SettingsView({
   onGenerateHookNavigate,
   onStartCompactionUiDemo,
   onStartLongConversationListDemo,
-  useMicaBackdrop = false,
+  useTranslucency = false,
   getGitHubAuthStatus,
   beginGitHubDeviceLogin,
   completeGitHubDeviceLogin,
@@ -104,7 +104,7 @@ export function SettingsView({
     : undefined;
 
   return (
-    <div className={cn("flex min-h-0 flex-1 flex-col", desktopMicaTintClass(useMicaBackdrop))}>
+    <div className={cn("flex min-h-0 flex-1 flex-col", desktopTranslucencyTintClass(useTranslucency))}>
       <ScrollArea className="min-h-0 flex-1" type="hover" scrollHideDelay={450}>
         <div className="flex min-h-full flex-col justify-center">
           <div className="mx-auto w-full max-w-2xl px-4 py-8 sm:px-6">

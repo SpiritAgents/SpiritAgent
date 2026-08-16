@@ -21,7 +21,7 @@ import type { ComposerRichInputHandle } from "@/components/composer-rich-input";
 import type { DesktopAgentMode } from "@/lib/agent-mode";
 import type { BrowserElementAttachment } from "@/lib/browser-element-attachment";
 import { CONVERSATION_GUTTER_X, CONVERSATION_MAX_W } from "@/lib/conversation-layout-constants";
-import { desktopMicaTintClass, desktopMicaTintInnerClass } from "@/lib/desktop-mica-surface";
+import { desktopTranslucencyTintClass, desktopTranslucencyTintInnerClass } from "@/lib/desktop-translucency-surface";
 import type { EditorFileTarget } from "@/lib/workspace-editor-navigation";
 import { scrollAreaViewport } from "@/lib/scroll-area-viewport";
 import type { ActiveWorkspaceFileReferenceQuery } from "@/lib/composer-segment-model";
@@ -168,7 +168,7 @@ export type BranchCheckoutSectionProps = {
 };
 
 export type ConversationViewProps = {
-  useMicaBackdrop: boolean;
+  useTranslucency: boolean;
   isEmptySession: boolean;
   hideStaleConversationMessages: boolean;
   snapshot: DesktopSnapshot | null;
@@ -188,7 +188,7 @@ export type ConversationViewProps = {
   rewindDraft: MessageRewindDraftState | null;
   onRewindDraftClear: () => void;
   conversationScrollBedPaddingPx: number;
-  /** Mica：按 dock 轮廓的视口 mask（顶圆角空隙不裁）；ScrollArea 仍全高 */
+  /** translucency：按 dock 轮廓的视口 mask（顶圆角空隙不裁）；ScrollArea 仍全高 */
   conversationScrollOccludeMaskStyle?: CSSProperties;
   list: ConversationListSectionProps;
   composerDock: ComposerDockSectionProps;
@@ -235,7 +235,7 @@ export type ConversationViewProps = {
 };
 
 export function ConversationView({
-  useMicaBackdrop,
+  useTranslucency,
   isEmptySession,
   hideStaleConversationMessages,
   snapshot,
@@ -298,11 +298,11 @@ export function ConversationView({
   );
   const conversationMessagesVisible =
     (!isEmptySession || subagentViewActive) && !hideStaleConversationMessages;
-  // Mica：ScrollArea 仍全高；形状 mask 裁输入框/Changes/TODO 轮廓（顶圆角空隙保留）
+  // translucency：ScrollArea 仍全高；形状 mask 裁输入框/Changes/TODO 轮廓（顶圆角空隙保留）
   // Rewind 模式下禁用 mask：mask-image 会让 viewport 形成新的 stacking context，
   // 导致 viewport 内部的 rewind composer（z-40）无法跨出来与 fixed 的 rewind 遮罩（z-30）竞争。
   const conversationScrollViewportStyle =
-    useMicaBackdrop && conversationMessagesVisible && !rewindDraft
+    useTranslucency && conversationMessagesVisible && !rewindDraft
       ? conversationScrollOccludeMaskStyle
       : undefined;
   const sessionTitleVisible = !isEmptySession && !hideStaleConversationMessages;
@@ -400,7 +400,7 @@ export function ConversationView({
       data-spirit-surface="conversation-layout"
       className={cn(
         "flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden min-w-0",
-        desktopMicaTintInnerClass(useMicaBackdrop),
+        desktopTranslucencyTintInnerClass(useTranslucency),
       )}
     >
       <div
@@ -409,7 +409,7 @@ export function ConversationView({
         {...(paneId ? { "data-pane-drop-host": paneId } : {})}
         className={cn(
           "relative flex min-h-0 min-w-0 flex-1 flex-col min-w-0",
-          desktopMicaTintInnerClass(useMicaBackdrop),
+          desktopTranslucencyTintInnerClass(useTranslucency),
         )}
         onPointerDown={() => {
           onPaneFocus?.();
@@ -417,7 +417,7 @@ export function ConversationView({
         onDragLeave={clearDropTargetIfLeavingHost}
       >
         <DesktopLayoutChromeBar
-          useMicaBackdrop={useMicaBackdrop}
+          useTranslucency={useTranslucency}
           showSessionSidebarToggle={showSessionSidebarToggle}
           showWorkspaceToggle={showWorkspaceToggle}
           showSplitMenu={showSplitMenu}
@@ -508,7 +508,7 @@ export function ConversationView({
             data-spirit-surface="conversation-stage"
             className={cn(
               "relative flex min-h-0 min-w-0 flex-1 flex-col text-sm",
-              desktopMicaTintClass(useMicaBackdrop),
+              desktopTranslucencyTintClass(useTranslucency),
             )}
           >
             {compactionDemoActive || longConversationListDemoActive ? (
@@ -518,7 +518,7 @@ export function ConversationView({
                     ? "long-list-demo-banner"
                     : "compaction-ui-demo-banner"
                 }
-                className={cn("shrink-0", desktopMicaTintInnerClass(useMicaBackdrop))}
+                className={cn("shrink-0", desktopTranslucencyTintInnerClass(useTranslucency))}
               >
                 <div
                   className={cn(
@@ -579,7 +579,7 @@ export function ConversationView({
             <ScrollArea
               ref={conversationScrollAreaRef}
               data-spirit-surface="conversation-scroll"
-              className={cn("min-h-0 flex-1", desktopMicaTintInnerClass(useMicaBackdrop))}
+              className={cn("min-h-0 flex-1", desktopTranslucencyTintInnerClass(useTranslucency))}
               type="hover"
               scrollHideDelay={450}
               viewportStyle={conversationScrollViewportStyle}
@@ -587,7 +587,7 @@ export function ConversationView({
               {/* min-h-full：短内容仍铺满视口；pb ≥ dock 实测高度 + 留白，审批卡弹出时同步增高 */}
               <div
                 data-spirit-surface="conversation-scroll-body"
-                className={cn("min-h-full w-full", desktopMicaTintInnerClass(useMicaBackdrop))}
+                className={cn("min-h-full w-full", desktopTranslucencyTintInnerClass(useTranslucency))}
                 style={{
                   ...((!isEmptySession || subagentViewActive) && !hideStaleConversationMessages
                     ? { paddingBottom: conversationScrollBedPaddingPx }
@@ -710,7 +710,7 @@ export function ConversationView({
                 onComposerDragOver={composerDock.onComposerDragOver}
                 onComposerDrop={composerDock.onComposerDrop}
                 models={composerDock.models}
-                useMicaBackdrop={useMicaBackdrop}
+                useTranslucency={useTranslucency}
                 onOpenGitTab={composerDock.onOpenGitTab}
                 showScrollToBottom={!isEmptySession && !followingTail}
                 onScrollToBottom={() => pinScrollToTail(true, "smooth")}

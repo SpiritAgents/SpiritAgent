@@ -87,8 +87,8 @@ export interface UpdateConfigRequest {
   thinkingEnabled?: boolean;
   uiLocale?: string;
   apiKey?: string;
-  /** 与 Rust `UpdateConfigRequest.windows_mica` 一致；缺省不修改已保存的 Mica 开关。 */
-  windowsMica?: boolean;
+  /** 桌面窗级半透明材质（Win Mica / macOS Vibrancy）；缺省不修改已保存开关。 */
+  translucency?: boolean;
   /** 关闭时不发送桌面系统通知（含 Windows 任务栏需要关注）。缺省为 true。 */
   systemNotifications?: boolean;
   /** 关闭时不显示菜单栏 / 托盘状态图标。缺省为 true。 */
@@ -1085,8 +1085,8 @@ export interface DesktopConfigSnapshot {
   lightweightChatModel?: ModelRef;
   uiLocale?: string;
   activeApiKeyConfigured: boolean;
-  /** 桌面宿主在 Windows 上是否使用 Mica 风格；无字段时按 true 处理。 */
-  windowsMica?: boolean;
+  /** 桌面宿主是否开启窗级半透明材质；无字段时按 true 处理。 */
+  translucency?: boolean;
   /** 是否发送系统通知；无字段时按 true 处理。 */
   systemNotifications?: boolean;
   /** 是否显示菜单栏 / 托盘状态图标；无字段时按 true 处理。 */

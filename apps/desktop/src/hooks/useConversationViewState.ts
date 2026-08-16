@@ -271,7 +271,7 @@ export function useConversationViewState({
           composerDockHeightPx + CONVERSATION_SCROLL_BED_EXTRA_PX,
         )
       : CONVERSATION_COMPOSER_SCROLL_BED_FALLBACK_PX;
-  /** Mica 下会话滚动形状 mask；由 ComposerDock 按输入框/Changes/TODO 轮廓回写 */
+  /** translucency 下会话滚动形状 mask；由 ComposerDock 按输入框/Changes/TODO 轮廓回写 */
   const [conversationScrollOccludeMaskStyle, setConversationScrollOccludeMaskStyle] = useState<
     CSSProperties | undefined
   >(undefined);

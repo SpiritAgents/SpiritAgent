@@ -56,7 +56,7 @@ export function Hero() {
                   demoVariant="designMode"
                   initialWorkspaceToolsOpen
                   initialSessionKey="design"
-                  useMicaBackdrop
+                  useTranslucency
                   heroBaseTone
                   className="relative z-10 min-h-0 w-full max-w-none flex-1"
                   viewportClassName="flex h-full min-h-0 flex-1 flex-col"
@@ -65,7 +65,7 @@ export function Hero() {
                 <SpiritDesktopWindow
                   className="relative z-10 min-h-0 w-full max-w-none flex-1"
                   viewportClassName={LANDING_DESKTOP_WINDOW_VIEWPORT_CLASS}
-                  useMicaBackdrop
+                  useTranslucency
                   heroBaseTone
                 />
               )}

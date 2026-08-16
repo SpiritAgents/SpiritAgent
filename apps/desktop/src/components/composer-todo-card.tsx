@@ -5,13 +5,13 @@ import type { ConversationTodoSnapshot } from "@/types";
 import {
   DESKTOP_ELEVATION_SHADOW_SM,
   desktopComposerSurfaceBackdropClass,
-} from "@/lib/desktop-mica-surface";
+} from "@/lib/desktop-translucency-surface";
 import { cn } from "@/lib/utils";
 
 type ComposerTodoCardProps = {
   todos: ConversationTodoSnapshot;
   sessionKey: string;
-  useMicaBackdrop?: boolean;
+  useTranslucency?: boolean;
 };
 
 function storageKey(sessionKey: string): string {
@@ -21,7 +21,7 @@ function storageKey(sessionKey: string): string {
 export function ComposerTodoCard({
   todos,
   sessionKey,
-  useMicaBackdrop = false,
+  useTranslucency = false,
 }: ComposerTodoCardProps) {
   const [expanded, setExpanded] = useState(() => {
     if (typeof window === "undefined") {
@@ -82,7 +82,7 @@ export function ComposerTodoCard({
       className={cn(
         "overflow-hidden rounded-t-2xl rounded-b-none border border-ring/30 transition-[max-height] duration-300 ease-out dark:border-white/12",
         DESKTOP_ELEVATION_SHADOW_SM,
-        desktopComposerSurfaceBackdropClass(useMicaBackdrop),
+        desktopComposerSurfaceBackdropClass(useTranslucency),
       )}
     >
       <button

@@ -7,6 +7,10 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import type { QuestionDraft } from "@/hooks/useDesktopRuntime";
 import { DESKTOP_CHROME_TOGGLE_ICON_BTN, instantHoverMotionClass } from "@/lib/desktop-chrome";
+import {
+  DESKTOP_ELEVATION_SHADOW_SM,
+  desktopComposerSurfaceBackdropClass,
+} from "@/lib/desktop-translucency-surface";
 import { cn } from "@/lib/utils";
 import type { PendingQuestionsSnapshot } from "@/types";
 
@@ -46,6 +50,7 @@ type PendingQuestionsCardProps = {
   pendingQuestions: PendingQuestionsSnapshot;
   questionDrafts: Record<string, QuestionDraft>;
   questionsBusy: boolean;
+  useTranslucency?: boolean;
   onUpdateDraft(questionId: string, updater: (draft: QuestionDraft) => QuestionDraft): void;
   onSubmitQuestions(): void;
   onSkipQuestions(): void;
@@ -62,6 +67,7 @@ export function PendingQuestionsCard({
   pendingQuestions,
   questionDrafts,
   questionsBusy,
+  useTranslucency = false,
   onUpdateDraft,
   onSubmitQuestions,
   onSkipQuestions,
@@ -115,7 +121,14 @@ export function PendingQuestionsCard({
   };
 
   return (
-    <Card className="gap-0 border-border/50 bg-background/55 py-0 text-sm shadow-sm backdrop-blur-xl dark:border-white/12 supports-[backdrop-filter]:bg-background/40">
+    <Card
+      data-spirit-surface="pending-questions-card"
+      className={cn(
+        "gap-0 border border-ring/30 py-0 text-sm ring-0 dark:border-white/10",
+        DESKTOP_ELEVATION_SHADOW_SM,
+        desktopComposerSurfaceBackdropClass(useTranslucency),
+      )}
+    >
       <CardHeader className="px-3 py-2.5">
         <div className="flex items-center gap-2">
           <CardTitle className="min-w-0 flex-1 truncate text-sm leading-tight">
