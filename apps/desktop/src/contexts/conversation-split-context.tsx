@@ -61,6 +61,7 @@ import {
 
 import type { FocusedPaneComposerControls } from "@/lib/focused-pane-composer-controls";
 import type { FocusedPaneComposerInsertHandlers } from "@/lib/focused-pane-composer-insert";
+import type { MessageQuoteAttachment } from "@/lib/message-quote-attachment";
 import type { ConversationAbortShortcutTargetRef } from "@/lib/conversation-abort-shortcut";
 import {
   registerSplitPaneShortcut,
@@ -77,6 +78,11 @@ export type SidebarSessionDragPayload =
   | { kind: "new" }
   | { kind: "new-in-workspace"; workspaceRoot: string };
 
+/** 创建 Side Chat 时携带的可选内容；messageQuote 在新 pane 注册 composer 能力后插入其 Composer。 */
+export type BeginSideChatOptions = {
+  messageQuote?: MessageQuoteAttachment;
+};
+
 type ConversationSplitContextValue = {
   layout: SplitLayoutNode | null;
 
@@ -92,7 +98,7 @@ type ConversationSplitContextValue = {
 
   splitPane: (paneId: string, direction?: SplitDirection) => Promise<void>;
 
-  beginSideChat: (paneId: string) => Promise<void>;
+  beginSideChat: (paneId: string, options?: BeginSideChatOptions) => Promise<void>;
 
   closePaneById: (paneId: string, sessionPath: string) => Promise<void>;
 
@@ -409,12 +415,22 @@ export function ConversationSplitProvider({
 
   const paneComposerControlsRegistryRef = useRef(new Map<string, FocusedPaneComposerControls>());
 
+  // beginSideChat 携带的 messageQuote 在新 pane 注册 composer 能力前暂存于此，
+  // 注册时 flush 进该 pane 的 Composer（新 pane 挂载 effect 是最早已知就绪时机）
+  const pendingPaneMessageQuotesRef = useRef(new Map<string, MessageQuoteAttachment>());
+
   const registerPaneComposerInsert = useCallback(
     (paneId: string, handlers: FocusedPaneComposerInsertHandlers | null) => {
       if (handlers) {
         paneComposerInsertRegistryRef.current.set(paneId, handlers);
+        const pendingQuote = pendingPaneMessageQuotesRef.current.get(paneId);
+        if (pendingQuote) {
+          pendingPaneMessageQuotesRef.current.delete(paneId);
+          handlers.handleMessageQuoteAddToSession(pendingQuote);
+        }
       } else {
         paneComposerInsertRegistryRef.current.delete(paneId);
+        pendingPaneMessageQuotesRef.current.delete(paneId);
       }
     },
     [],
@@ -878,7 +894,7 @@ export function ConversationSplitProvider({
   );
 
   const beginSideChat = useCallback(
-    async (paneId: string) => {
+    async (paneId: string, options?: BeginSideChatOptions) => {
       if (!layout || !runtime.apiReady) {
         return;
       }
@@ -918,6 +934,10 @@ export function ConversationSplitProvider({
       if (!forked) {
         await runtime.deleteSession(response.sessionPath);
         return;
+      }
+
+      if (options?.messageQuote) {
+        pendingPaneMessageQuotesRef.current.set(newPaneId, options.messageQuote);
       }
 
       const newLeaf = createLeafNode(newPaneId, response.sessionPath);

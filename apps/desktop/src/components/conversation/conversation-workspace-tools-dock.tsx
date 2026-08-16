@@ -40,6 +40,7 @@ export function ConversationWorkspaceToolsDock({
     handleTerminalAddToSession: composer.handleTerminalAddToSession,
     handleFileSnippetAddToSession: composer.handleFileSnippetAddToSession,
     handleWorkspaceFileAddToSession: composer.handleWorkspaceFileAddToSession,
+    handleMessageQuoteAddToSession: composer.handleMessageQuoteAddToSession,
   });
 
   return (

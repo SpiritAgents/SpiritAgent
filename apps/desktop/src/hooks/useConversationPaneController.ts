@@ -334,11 +334,13 @@ export function useConversationPaneController({
       handleTerminalAddToSession: composer.handleTerminalAddToSession,
       handleFileSnippetAddToSession: composer.handleFileSnippetAddToSession,
       handleWorkspaceFileAddToSession: composer.handleWorkspaceFileAddToSession,
+      handleMessageQuoteAddToSession: composer.handleMessageQuoteAddToSession,
     }),
     [
       composer.handleBrowserElementPicked,
       composer.handleFileSnippetAddToSession,
       composer.handleGitCommitAddToSession,
+      composer.handleMessageQuoteAddToSession,
       composer.handlePrDiffAddToSession,
       composer.handleTerminalAddToSession,
       composer.handleWorkspaceFileAddToSession,

@@ -3,6 +3,7 @@ import { useMemo } from "react";
 import type { BrowserElementAttachment } from "@/lib/browser-element-attachment";
 import type { FileSnippetAttachment } from "@/lib/file-snippet-attachment";
 import type { GitCommitAttachment } from "@/lib/git-commit-attachment";
+import type { MessageQuoteAttachment } from "@/lib/message-quote-attachment";
 import type { PrDiffAttachment } from "@/lib/pr-diff-attachment";
 import type { TerminalSnippetAttachment } from "@/lib/terminal-snippet-attachment";
 
@@ -13,6 +14,7 @@ export type FocusedPaneComposerInsertHandlers = {
   handleTerminalAddToSession: (attachment: TerminalSnippetAttachment) => void;
   handleFileSnippetAddToSession: (attachment: FileSnippetAttachment) => void;
   handleWorkspaceFileAddToSession: (relativePath: string) => void;
+  handleMessageQuoteAddToSession: (attachment: MessageQuoteAttachment) => void;
 };
 
 /** Stable proxies: read focused pane handlers via getter at call time (no Provider re-render on register). */
@@ -48,11 +50,17 @@ export function useFocusedPaneComposerInsertCallbacks(
           getFocusedInsert()?.handleWorkspaceFileAddToSession ??
           fallback.handleWorkspaceFileAddToSession
         )(relativePath),
+      handleMessageQuoteAddToSession: (attachment) =>
+        (
+          getFocusedInsert()?.handleMessageQuoteAddToSession ??
+          fallback.handleMessageQuoteAddToSession
+        )(attachment),
     }),
     [
       fallback.handleBrowserElementPicked,
       fallback.handleFileSnippetAddToSession,
       fallback.handleGitCommitAddToSession,
+      fallback.handleMessageQuoteAddToSession,
       fallback.handlePrDiffAddToSession,
       fallback.handleTerminalAddToSession,
       fallback.handleWorkspaceFileAddToSession,
