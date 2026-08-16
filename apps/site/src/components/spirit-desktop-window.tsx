@@ -153,10 +153,7 @@ function createSitePreview(copy: Messages["desktop"]["previews"]): WorkspacePrev
         { name: "dropdown-menu.tsx", kind: "file" },
         { name: "scroll-area.tsx", kind: "file" },
       ],
-      public: [
-        { name: "favicon.svg", kind: "file" },
-        { name: "spirit-agent-icon.png", kind: "file" },
-      ],
+      public: [{ name: "favicon.svg", kind: "file" }],
     },
     texts: {
       "package.json": `{
@@ -225,7 +222,6 @@ export function Hero() {
 }
 `,
       "public/favicon.svg": `<svg viewBox="0 0 64 64" xmlns="http://www.w3.org/2000/svg"></svg>`,
-      "public/spirit-agent-icon.png": "Binary asset preview omitted.",
     },
   };
 }

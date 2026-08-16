@@ -96,9 +96,7 @@ function mockCommandOutput(
     return [
       ".\\",
       "|-- public",
-      "|   |-- favicon.ico",
-      "|   |-- spirit-agent-icon-light.png",
-      "|   `-- spirit-agent-icon.png",
+      "|   `-- favicon.svg",
       "|-- src",
       "|   |-- App.tsx",
       "|   |-- index.css",

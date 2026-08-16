@@ -4,7 +4,7 @@ import type { ReactNode } from "react";
 export const metadata: Metadata = {
   title: "Spirit Agent",
   icons: {
-    icon: [{ url: "/favicon.ico", sizes: "any" }],
+    icon: [{ url: "/favicon.svg", type: "image/svg+xml" }],
   },
 };
 
