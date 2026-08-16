@@ -190,7 +190,11 @@ function FileSnippetCard({ part }: { part: Extract<MessageContentPart, { kind: "
   );
 }
 
-function MessageQuoteCard({ part }: { part: Extract<MessageContentPart, { kind: "messageQuote" }> }) {
+function MessageQuoteCard({
+  part,
+}: {
+  part: Extract<MessageContentPart, { kind: "messageQuote" }>;
+}) {
   return (
     <span
       title={formatMessageQuoteChipTitle({ selectedText: part.selectedText })}

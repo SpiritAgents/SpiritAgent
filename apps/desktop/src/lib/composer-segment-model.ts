@@ -28,10 +28,7 @@ import {
   terminalSnippetContextText,
 } from "./terminal-snippet-wire-text.js";
 import type { MessageQuoteAttachment } from "./message-quote-attachment.js";
-import {
-  messageQuoteContextText,
-  scanMessageQuoteWireBlocks,
-} from "./message-quote-wire-text.js";
+import { messageQuoteContextText, scanMessageQuoteWireBlocks } from "./message-quote-wire-text.js";
 import { scanSkillWireBlocks, skillContextText } from "./skill-wire-text.js";
 import {
   scanWorkspaceFileWireBlocks,
