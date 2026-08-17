@@ -85,7 +85,7 @@ async function main(): Promise<void> {
   const address = server.address();
   if (!address || typeof address === "string") {
     server.close();
-    throw new Error("无法获取本地 smoke server 端口。");
+    throw new Error("Unable to get the local smoke server port.");
   }
 
   const baseUrl = `http://127.0.0.1:${(address as AddressInfo).port}`;
@@ -114,7 +114,7 @@ async function main(): Promise<void> {
 
   if (firstCompletion.kind !== "success" || firstCompletion.result.step.kind !== "tool-calls") {
     server.close();
-    throw new Error("ai-sdk bedrock smoke step 1 未进入预期的 tool-calls。");
+    throw new Error("ai-sdk bedrock smoke step 1 did not reach the expected tool-calls.");
   }
 
   const resumedState = appendToolResultMessage(
@@ -143,19 +143,19 @@ async function main(): Promise<void> {
     secondCompletion.kind !== "success" ||
     secondCompletion.result.step.kind !== "final-response-ready"
   ) {
-    throw new Error("ai-sdk bedrock smoke step 2 未进入预期的 final-response-ready。");
+    throw new Error("ai-sdk bedrock smoke step 2 did not reach the expected final-response-ready.");
   }
 
   const assistantText = extractLastAssistantText(secondCompletion.result.state)?.trim();
   if (assistantText !== "AI_SDK_BEDROCK_OK") {
     throw new Error(
-      `ai-sdk bedrock smoke step 2 未拿到预期最终 assistant 文本。实际: ${assistantText ?? "<empty>"}`,
+      `ai-sdk bedrock smoke step 2 did not get the expected final assistant text. Actual: ${assistantText ?? "<empty>"}`,
     );
   }
 
   const traceEntry = secondCompletion.result.requestTrace[0];
   if (!isJsonObject(traceEntry) || traceEntry.kind !== "bedrock_sdk_converse") {
-    throw new Error("ai-sdk bedrock smoke 未标记 Bedrock 专用 request trace kind。");
+    throw new Error("ai-sdk bedrock smoke did not mark the Bedrock-specific request trace kind.");
   }
 }
 

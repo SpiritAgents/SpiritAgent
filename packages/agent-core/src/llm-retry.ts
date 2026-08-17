@@ -1,6 +1,6 @@
 import { AsyncLocalStorage } from "node:async_hooks";
 
-/** AI SDK `maxRetries`：初始请求之外允许的重试次数。 */
+/** AI SDK `maxRetries`: number of retries allowed beyond the initial request. */
 export const LLM_MAX_RETRIES = 2;
 
 export type LlmRetryObserverEvent =

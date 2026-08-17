@@ -4,7 +4,7 @@ type MaybePromise<T> = T | PromiseLike<T>;
 
 export interface AiSdkUsageSource {
   usage?: MaybePromise<unknown>;
-  /** @deprecated AI SDK 7：与 `usage` 同义，优先读 `usage`。 */
+  /** @deprecated AI SDK 7: synonymous with `usage`; prefer reading `usage`. */
   totalUsage?: MaybePromise<unknown>;
 }
 

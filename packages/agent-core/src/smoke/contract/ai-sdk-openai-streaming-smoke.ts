@@ -122,7 +122,7 @@ async function main(): Promise<void> {
   const address = server.address();
   if (!address || typeof address === "string") {
     server.close();
-    throw new Error("无法获取本地 smoke server 端口。");
+    throw new Error("Unable to get the local smoke server port.");
   }
 
   const transport = new AiSdkOpenAiCompatibleTransport();
@@ -155,29 +155,29 @@ async function main(): Promise<void> {
     (event) => isJsonObject(event) && event.kind === "streaming-tool-preview",
   );
   if (previewEvents.length === 0) {
-    throw new Error("ai-sdk openai streaming smoke 未收到 streaming-tool-preview 事件。");
+    throw new Error("ai-sdk openai streaming smoke did not receive a streaming-tool-preview event.");
   }
   if (previewEvents.length !== 1) {
-    throw new Error("ai-sdk openai streaming smoke 不应为同一 tool call 重复发出 preview 事件。");
+    throw new Error("ai-sdk openai streaming smoke should not emit duplicate preview events for the same tool call.");
   }
 
   const previewEvent = previewEvents[0];
   if (!isJsonObject(previewEvent) || previewEvent.toolCallId !== "call_ai_sdk_stream_1") {
-    throw new Error("ai-sdk openai streaming smoke 未等待真实 toolCallId 后再发出 preview 事件。");
+    throw new Error("ai-sdk openai streaming smoke did not wait for the real toolCallId before emitting the preview event.");
   }
 
   if (events.some((event) => isJsonObject(event) && event.kind === "error")) {
-    throw new Error("ai-sdk openai streaming smoke 不应收到 error 事件。");
+    throw new Error("ai-sdk openai streaming smoke should not receive an error event.");
   }
 
   if (completion.kind !== "success" || completion.result.step.kind !== "tool-calls") {
-    throw new Error("ai-sdk openai streaming smoke 未进入预期的 tool-calls。");
+    throw new Error("ai-sdk openai streaming smoke did not reach the expected tool-calls.");
   }
 
   const assistantMessage = completion.result.state.messages.at(-1);
   if (!isJsonObject(assistantMessage) || assistantMessage.reasoning_content !== "") {
     throw new Error(
-      "ai-sdk openai streaming smoke 未在 assistant tool_call message 上保留空 reasoning_content。",
+      "ai-sdk openai streaming smoke did not preserve an empty reasoning_content on the assistant tool_call message.",
     );
   }
 
@@ -186,16 +186,16 @@ async function main(): Promise<void> {
     : [];
   const firstToolCall = streamedToolCalls[0];
   if (!isJsonObject(firstToolCall) || firstToolCall.index !== 0) {
-    throw new Error("ai-sdk openai streaming smoke 未在流式 tool_call 上保留 index 字段。");
+    throw new Error("ai-sdk openai streaming smoke did not preserve the index field on the streaming tool_call.");
   }
 
   if (firstToolCall.id !== "call_ai_sdk_stream_1") {
-    throw new Error("ai-sdk openai streaming smoke 未保留首个非空 toolCallId。");
+    throw new Error("ai-sdk openai streaming smoke did not preserve the first non-empty toolCallId.");
   }
 
   if (completion.result.step.calls[0]?.id !== "call_ai_sdk_stream_1") {
     throw new Error(
-      "ai-sdk openai streaming smoke 在 tool-calls 结果中丢失了首个非空 toolCallId。",
+      "ai-sdk openai streaming smoke lost the first non-empty toolCallId in the tool-calls result.",
     );
   }
 }

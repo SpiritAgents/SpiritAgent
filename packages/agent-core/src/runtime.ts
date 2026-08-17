@@ -270,7 +270,7 @@ export class AgentRuntime<Config, State, ToolRequest, TrustTarget = string> {
   private pendingSubagentBatchContinuation:
     | PendingSubagentBatchContinuation<State, ToolRequest>
     | undefined;
-  /** 同步 await performToolExecution 期间 pendingToolCallContinuation 已清空，需单独计数 */
+  /** pendingToolCallContinuation is already cleared during a synchronous await of performToolExecution, so these are counted separately */
   private inFlightSynchronousToolExecutionsStore = 0;
   private completedTurnResultStore: RuntimeTurnResult<State, ToolRequest, TrustTarget> | undefined;
   private completedManualToolCommandResultStore:
@@ -1089,7 +1089,7 @@ export class AgentRuntime<Config, State, ToolRequest, TrustTarget = string> {
 
   async startManualHistoryCompaction(): Promise<void> {
     if (this.isBusy()) {
-      throw new Error("当前已有压缩任务在后台进行，请稍候。");
+      throw new Error("A compaction task is already running in the background; please wait.");
     }
 
     this.completedManualHistoryCompactionResultStore = undefined;
@@ -1119,7 +1119,7 @@ export class AgentRuntime<Config, State, ToolRequest, TrustTarget = string> {
     activeSkillsForTurn: ToolAgentActiveSkill[] = [],
   ): Promise<void> {
     if (this.isBusy()) {
-      throw new Error("当前已有响应或审批在处理中，请稍候。");
+      throw new Error("A response or approval is already being processed; please wait.");
     }
 
     this.completedTurnResultStore = undefined;
@@ -1147,7 +1147,7 @@ export class AgentRuntime<Config, State, ToolRequest, TrustTarget = string> {
     activeSkillsForTurn: ToolAgentActiveSkill[] = [],
   ): Promise<void> {
     if (this.isBusy()) {
-      throw new Error("当前已有响应或审批在处理中，请稍候。");
+      throw new Error("A response or approval is already being processed; please wait.");
     }
 
     this.completedTurnResultStore = undefined;
@@ -1170,7 +1170,7 @@ export class AgentRuntime<Config, State, ToolRequest, TrustTarget = string> {
 
   async continueAssistantCompletionStreaming(): Promise<void> {
     if (this.isBusy()) {
-      throw new Error("当前已有响应或审批在处理中，请稍候。");
+      throw new Error("A response or approval is already being processed; please wait.");
     }
 
     const history = cloneHistory(this.historyStore);
@@ -1189,7 +1189,7 @@ export class AgentRuntime<Config, State, ToolRequest, TrustTarget = string> {
         lastHistoryMessage.role !== "user" &&
         lastHistoryMessage.role !== "tool")
     ) {
-      throw new Error("当前没有可继续补全的回复。");
+      throw new Error("There is no reply available to continue.");
     }
 
     this.completedTurnResultStore = undefined;
@@ -1248,7 +1248,7 @@ export class AgentRuntime<Config, State, ToolRequest, TrustTarget = string> {
         await this.continuePendingSubagentApproval(decision);
         return;
       }
-      throw new Error("当前没有待确认的工具调用。");
+      throw new Error("There is no pending tool call to confirm.");
     }
 
     this.pendingApproval = undefined;
@@ -1264,8 +1264,9 @@ export class AgentRuntime<Config, State, ToolRequest, TrustTarget = string> {
     if (pending.source === "early-stream") {
       pending.resolveEarlyDecision?.(decision);
     }
-    // 无论本次决议来自 early-stream 还是 formal 审批，槽位释放后都必须把排队的 early
-    // 审批顶上来：formal 分支若不 pump，排队 waiter 的 promise 永远无人 settle。
+    // Whether this decision came from early-stream or a formal approval, once the slot is
+    // released the queued early approval must be promoted: if the formal branch does not pump,
+    // the queued waiter's promise would never be settled.
     pumpEarlyApprovalQueue(
       this as unknown as TurnMachineRuntime<Config, State, ToolRequest, TrustTarget>,
     );
@@ -1465,7 +1466,7 @@ export class AgentRuntime<Config, State, ToolRequest, TrustTarget = string> {
     if (!this.pendingQuestions) {
       const pendingSubagent = this.findPendingSubagentWithQuestions();
       if (!pendingSubagent) {
-        throw new Error("当前没有待回答的问题表单。");
+        throw new Error("There is no pending question form to answer.");
       }
 
       this.completedTurnResultStore = undefined;
@@ -1878,7 +1879,7 @@ export class AgentRuntime<Config, State, ToolRequest, TrustTarget = string> {
     }
 
     if (outcome.kind === "started") {
-      throw new Error("subagent 非流式路径不应返回后台启动状态。");
+      throw new Error("The subagent non-streaming path must not return a background-start status.");
     }
 
     const parentToolResultText = buildParentSubagentToolResultTextFromRequest(
@@ -2431,17 +2432,17 @@ export class AgentRuntime<Config, State, ToolRequest, TrustTarget = string> {
     userTurn: string;
   }> {
     if (this.hasPendingApproval()) {
-      throw new Error("请先响应当前待确认的工具调用。");
+      throw new Error("Respond to the current pending tool call first.");
     }
 
     if (this.isBusy()) {
-      throw new Error("上一条回复仍在处理中，请稍候。");
+      throw new Error("The previous reply is still being processed; please wait.");
     }
 
     const value = await this.options.toolExecutor.getMcpPrompt(server, prompt, argsJson);
     const promptMessages = promptMessagesFromValue(value);
     if (promptMessages.length === 0) {
-      throw new Error("MCP prompt 未返回可用 messages");
+      throw new Error("The MCP prompt did not return usable messages");
     }
 
     this.historyStore.push(...promptMessages);
@@ -2460,14 +2461,14 @@ export class AgentRuntime<Config, State, ToolRequest, TrustTarget = string> {
         );
       userTurn = promptUserMessage
         ? llmMessageTextContent(promptUserMessage.content)
-        : `请根据已应用的 MCP prompt ${prompt} 继续。`;
+        : `Continue based on the applied MCP prompt ${prompt}.`;
       this.pendingUserTurnStore = userTurn;
       state = this.options.createToolAgentState(this.historyStore, userTurn);
     }
 
     this.completedTurnResultStore = undefined;
     return {
-      notice: `已应用 MCP prompt: ${server} / ${prompt}（${promptMessages.length} 条消息）`,
+      notice: `Applied MCP prompt: ${server} / ${prompt} (${promptMessages.length} messages)`,
       state,
       userTurn,
     };
@@ -3030,7 +3031,7 @@ export class AgentRuntime<Config, State, ToolRequest, TrustTarget = string> {
     if (this.runtimeDepthStore >= 1) {
       return this.completedSubagentToolOutcome(
         undefined,
-        "[subagent blocked] 当前版本仅支持主会话创建一层子会话，不支持继续嵌套。",
+        "[subagent blocked] This version supports only one level of child sessions from the main session; further nesting is not supported.",
         true,
       );
     }
@@ -3302,7 +3303,7 @@ export class AgentRuntime<Config, State, ToolRequest, TrustTarget = string> {
   private async continuePendingSubagentApproval(decision: RuntimeApprovalDecision): Promise<void> {
     const pending = this.findPendingSubagentWithApproval();
     if (!pending) {
-      throw new Error("当前没有待确认的工具调用。");
+      throw new Error("There is no pending tool call to confirm.");
     }
 
     this.completedTurnResultStore = undefined;
@@ -3500,7 +3501,7 @@ export class AgentRuntime<Config, State, ToolRequest, TrustTarget = string> {
 
     for (const pending of this.pendingSubagentExecutions.values()) {
       await pending.childRuntime.poll();
-      // 不在此处 drain：子会话事件由 desktop syncSubagentConversationProjections 消费。
+      // Do not drain here: child session events are consumed by desktop syncSubagentConversationProjections.
       this.refreshChildSessionRecord(pending.childRecord, pending.childRuntime);
 
       const childApproval = pending.childRuntime.currentPendingApproval();

@@ -37,26 +37,26 @@ export async function runManualToolsCase(): Promise<RuntimeParityCaseResult> {
     manualAllowed.kind !== "completed" ||
     manualAllowed.output !== "manual output for read_file"
   ) {
-    throw new Error("manual tool allowed smoke 未完成。");
+    throw new Error("manual tool allowed smoke did not complete.");
   }
 
   const manualApproval = await hostRuntime.executeManualToolCommand("/tool delete demo.txt");
   if (manualApproval.kind !== "requires-approval") {
-    throw new Error("manual tool approval smoke 未进入审批。");
+    throw new Error("manual tool approval smoke did not enter approval.");
   }
 
   const manualGuidance = await hostRuntime.resumePendingManualToolApproval({
     kind: "guidance",
-    userMessage: "别删文件，先给总结",
+    userMessage: "Don't delete the file, give a summary first",
   });
   if (manualGuidance.kind !== "submitted-user-turn") {
-    throw new Error("manual guidance smoke 未转交为 user turn。");
+    throw new Error("manual guidance smoke was not handed off as a user turn.");
   }
   if (
     manualGuidance.result.kind !== "completed" ||
     manualGuidance.result.assistantText !== "MANUAL_GUIDANCE_OK"
   ) {
-    throw new Error("manual guidance smoke 未跑通最终回复。");
+    throw new Error("manual guidance smoke did not complete the final reply.");
   }
 
   const manualBackgroundExecutor = new PollingManualBackgroundExecutor();
@@ -76,20 +76,20 @@ export async function runManualToolsCase(): Promise<RuntimeParityCaseResult> {
   );
   if (
     manualBackgroundStarted.kind !== "started-background" ||
-    manualBackgroundStarted.statusText !== "搜索中: runtime parity"
+    manualBackgroundStarted.statusText !== "Searching: runtime parity"
   ) {
-    throw new Error("manual background smoke 未进入 started-background。");
+    throw new Error("manual background smoke did not enter started-background.");
   }
   const manualBackgroundAux = manualBackgroundRuntime.pendingAuxState();
   if (
     !manualBackgroundAux ||
     manualBackgroundAux.kind !== "thinking" ||
-    manualBackgroundAux.detailText !== "搜索中: runtime parity"
+    manualBackgroundAux.detailText !== "Searching: runtime parity"
   ) {
-    throw new Error("manual background smoke 未暴露 thinking aux 状态。");
+    throw new Error("manual background smoke did not expose the thinking aux state.");
   }
   if (manualBackgroundRuntime.takeCompletedManualToolCommandResult()) {
-    throw new Error("manual background smoke 在后台工具完成前不应产出结果。");
+    throw new Error("manual background smoke should not produce a result before the background tool finishes.");
   }
 
   manualBackgroundExecutor.finish("manual output for grep");
@@ -108,7 +108,7 @@ export async function runManualToolsCase(): Promise<RuntimeParityCaseResult> {
     !manualBackgroundCompleted.backgroundExecution ||
     manualBackgroundCompleted.failed
   ) {
-    throw new Error("manual background smoke 未得到后台工具完成结果。");
+    throw new Error("manual background smoke did not get the background tool completion result.");
   }
   if (
     !manualBackgroundEvents.some(
@@ -118,7 +118,7 @@ export async function runManualToolsCase(): Promise<RuntimeParityCaseResult> {
       (event) => event.kind === "background-tool-status" && event.phase === "finished",
     )
   ) {
-    throw new Error("manual background smoke 缺少完整后台状态事件。");
+    throw new Error("manual background smoke is missing the complete background status events.");
   }
 
   const manualCompactionTransport = new ProgressManualCompactionTransport();
@@ -147,11 +147,11 @@ export async function runManualToolsCase(): Promise<RuntimeParityCaseResult> {
       },
       {
         role: "assistant",
-        content: createLlmMessageContentFromText("旧回答。"),
+        content: createLlmMessageContentFromText("Old answer."),
       },
       {
         role: "user",
-        content: createLlmMessageContentFromText("请帮我压缩上下文。"),
+        content: createLlmMessageContentFromText("Please compact the context for me."),
       },
     ],
   );
@@ -161,10 +161,10 @@ export async function runManualToolsCase(): Promise<RuntimeParityCaseResult> {
   await manualCompactionRuntime.poll();
   const manualCompactionAux = manualCompactionRuntime.pendingAuxState();
   if (!manualCompactionAux || manualCompactionAux.kind !== "compressing") {
-    throw new Error("manual compaction smoke 未暴露 compressing aux 状态。");
+    throw new Error("manual compaction smoke did not expose the compressing aux state.");
   }
   if (manualCompactionRuntime.takeCompletedManualHistoryCompactionResult()) {
-    throw new Error("manual compaction smoke 在压缩完成前不应产出结果。");
+    throw new Error("manual compaction smoke should not produce a result before compaction finishes.");
   }
 
   manualCompactionTransport.finishCompaction();
@@ -183,11 +183,11 @@ export async function runManualToolsCase(): Promise<RuntimeParityCaseResult> {
     manualCompactionCompleted.kind !== "completed" ||
     manualCompactionCompleted.result.droppedMessages <= 0
   ) {
-    throw new Error("manual compaction smoke 未得到有效压缩结果。");
+    throw new Error("manual compaction smoke did not get an effective compaction result.");
   }
   const drainedManualCompactionEvents = manualCompactionRuntime.drainEvents();
   if (!drainedManualCompactionEvents.some((event) => event.kind === "begin-assistant-response")) {
-    throw new Error("manual compaction smoke 缺少 begin event。");
+    throw new Error("manual compaction smoke is missing the begin event.");
   }
   if (
     !drainedManualCompactionEvents.some(
@@ -196,20 +196,20 @@ export async function runManualToolsCase(): Promise<RuntimeParityCaseResult> {
         event.text.includes(COMPACT_PROGRESS_TEXT),
     )
   ) {
-    throw new Error("manual compaction smoke 缺少 progress update 事件。");
+    throw new Error("manual compaction smoke is missing the progress update event.");
   }
   if (
     !drainedManualCompactionEvents.some(
       (event) =>
-        event.kind === "replace-pending-assistant" && event.text.includes("压缩完成：上下文消息"),
+        event.kind === "replace-pending-assistant" && event.text.includes("Compaction complete: context messages"),
     )
   ) {
-    throw new Error("manual compaction smoke 缺少完成提示事件。");
+    throw new Error("manual compaction smoke is missing the completion notice event.");
   }
   if (
     !drainedManualCompactionEvents.some((event) => event.kind === "assistant-response-completed")
   ) {
-    throw new Error("manual compaction smoke 缺少 completed event。");
+    throw new Error("manual compaction smoke is missing the completed event.");
   }
 
   return {

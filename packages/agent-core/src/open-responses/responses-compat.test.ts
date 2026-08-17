@@ -142,7 +142,7 @@ test("resolveAzureResourceName falls back to baseUrl host segment", () => {
 test("resolveAzureResourceName throws when neither field is usable", () => {
   assert.throws(
     () => resolveAzureResourceName({ baseUrl: "https://api.openai.com/v1" }),
-    /缺少 azureResourceName/,
+    /azureResourceName configuration is missing/,
   );
 });
 

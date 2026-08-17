@@ -484,7 +484,7 @@ export class AiSdkOpenResponsesTransport
 
     const normalizedSummary = summary.trim();
     if (!normalizedSummary) {
-      throw new Error("Open Responses 压缩返回为空，无法生成摘要。");
+      throw new Error("Open Responses compaction returned empty output; unable to generate a summary.");
     }
 
     history.splice(0, history.length, {
@@ -545,5 +545,5 @@ async function* emptyResponsesEventStream(): AsyncGenerator<
 > {}
 
 function xaiResponsesLocalToolsUnsupportedMessage(): string {
-  return "SpaceXAI Responses API 暂不支持本地 function tools，请改用 Chat Completions transport。";
+  return "SpaceXAI Responses API does not support local function tools yet; please use the Chat Completions transport instead.";
 }

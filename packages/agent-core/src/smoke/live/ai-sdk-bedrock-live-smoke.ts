@@ -36,7 +36,7 @@ async function main(): Promise<void> {
   });
 
   if (!result.output.message.trim()) {
-    throw new Error("live bedrock smoke 未拿到非空 JSON message。");
+    throw new Error("live bedrock smoke did not get a non-empty JSON message.");
   }
 }
 

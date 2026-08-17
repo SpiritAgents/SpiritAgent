@@ -36,13 +36,13 @@ const DIRECT_THINKING_SWITCH_PROVIDERS = new Set([
   "alibaba",
   "siliconflow",
   "tencent-tokenhub",
-  // DeepInfra 经扁平 reasoning_effort / reasoning.enabled 运行时字段关思考（OpenAPI 层保证）。
+  // DeepInfra disables thinking via the flat reasoning_effort / reasoning.enabled runtime fields (guaranteed at the OpenAPI layer).
   "deepinfra",
 ]);
 
 const GATEWAY_REASONING_EFFORT_SLUGS = new Set(["openai", "google", "anthropic", "xai"]);
 
-/** 聚合商：目录能力字段不全，推理强度 UI 与 OpenAI 兼容档位全开。 */
+/** Aggregators: catalog capability fields are incomplete, so the reasoning effort UI and OpenAI-compatible effort tiers are fully enabled. */
 const AGGREGATED_REASONING_EFFORT_PRIMARY_PROVIDERS = new Set<ModelReasoningProvider>([
   "fireworks-ai",
   "hugging-face",
@@ -78,12 +78,12 @@ function resolveAnthropicClaudeCapabilitiesForContext(
   return resolveRoutedAnthropicClaudeCapabilities(modelId);
 }
 
-/** Claude adaptive thinking（4.6+）：UI Effort 控件与 output_config.effort 语义。 */
+/** Claude adaptive thinking (4.6+): UI Effort control with output_config.effort semantics. */
 export function isAnthropicClaudeEffortModel(context?: ModelReasoningEffortContext): boolean {
   return isAnthropicClaudeAdaptiveThinkingModel(context);
 }
 
-/** Claude adaptive thinking（4.6+）：开启时 thinking.type=adaptive。 */
+/** Claude adaptive thinking (4.6+): thinking.type=adaptive when enabled. */
 export function isAnthropicClaudeAdaptiveThinkingModel(
   context?: ModelReasoningEffortContext,
 ): boolean {
@@ -91,7 +91,7 @@ export function isAnthropicClaudeAdaptiveThinkingModel(
   return capabilities?.thinkingMode === "adaptive";
 }
 
-/** Claude budget thinking（4.5 及更早支持 extended thinking 的型号）：开启时 thinking.type=enabled。 */
+/** Claude budget thinking (4.5 and earlier models supporting extended thinking): thinking.type=enabled when enabled. */
 export function isAnthropicClaudeBudgetThinkingModel(
   context?: ModelReasoningEffortContext,
 ): boolean {
@@ -99,7 +99,7 @@ export function isAnthropicClaudeBudgetThinkingModel(
   return capabilities?.thinkingMode === "budget";
 }
 
-/** Claude 可开关 thinking（adaptive 或 budget）；thinkingMode=none 与常开 adaptive 不在此列。 */
+/** Claude switchable thinking (adaptive or budget); thinkingMode=none and always-on adaptive are excluded. */
 export function isAnthropicClaudeSwitchableThinkingModel(
   context?: ModelReasoningEffortContext,
 ): boolean {
@@ -116,7 +116,7 @@ export function modelEffortControlLabelKind(
   return isAnthropicClaudeEffortModel(context) ? "effort" : "reasoningEffort";
 }
 
-/** DeepSeek R1 / reasoner：始终思考，无 thinking toggle。 */
+/** DeepSeek R1 / reasoner: always thinks; no thinking toggle. */
 export function isDeepSeekReasoningOnlyModel(context?: ModelReasoningEffortContext): boolean {
   if (context?.provider !== "deepseek") {
     return false;
@@ -148,7 +148,7 @@ function isGatewayThinkingSwitchModel(context?: ModelReasoningEffortContext): bo
   if (GATEWAY_REASONING_EFFORT_SLUGS.has(slug)) {
     return false;
   }
-  // DeepSeek V3 及以下靠模型名区分 thinking 变体，无 extended thinking 开关。
+  // DeepSeek V3 and below distinguish thinking variants by model name; no extended thinking switch.
   if (slug === "deepseek") {
     return isDeepSeekV4ReasoningEffortModel(context);
   }
@@ -186,7 +186,7 @@ function isGatewayReasoningEffortPrimaryControlModel(
   return GATEWAY_REASONING_EFFORT_SLUGS.has(slug);
 }
 
-/** OpenAI / Reasoning Effort 主控厂商：不显示 Thinking 开关（不含 DeepSeek V4 hybrid 与 Claude switchable）。 */
+/** OpenAI / Reasoning Effort primary-control vendors: no Thinking switch (excludes DeepSeek V4 hybrid and Claude switchable). */
 export function modelUsesReasoningEffortPrimaryControl(
   context?: ModelReasoningEffortContext,
 ): boolean {
@@ -281,7 +281,7 @@ export function modelSupportsThinkingSwitch(context?: ModelReasoningEffortContex
   return false;
 }
 
-/** DeepSeek V4：仅 thinking 开启时 API 接受 reasoning_effort（high/max）。 */
+/** DeepSeek V4: the API accepts reasoning_effort (high/max) only when thinking is enabled. */
 export function modelSupportsReasoningEffortWhileThinking(
   context?: ModelReasoningEffortContext,
 ): boolean {
@@ -289,9 +289,9 @@ export function modelSupportsReasoningEffortWhileThinking(
 }
 
 /**
- * Inspector：是否展示 Effort / Reasoning Effort 控件。
- * Claude adaptive（4.6+）始终展示 Effort；budget 型 Claude 仅 Thinking 开关；
- * Reasoning Effort 主控模型始终展示；其余 thinking 型模型仅在 thinking 开启时展示。
+ * Inspector: whether to show the Effort / Reasoning Effort control.
+ * Claude adaptive (4.6+) always shows Effort; budget-type Claude shows only the Thinking switch;
+ * Reasoning Effort primary-control models always show it; other thinking-type models show it only when thinking is enabled.
  */
 export function modelShowsReasoningEffortControl(
   context?: ModelReasoningEffortContext,
@@ -322,7 +322,7 @@ export function resolveVendorExtendedThinking(thinkingEnabled?: boolean): boolea
   return undefined;
 }
 
-/** thinking 关闭时剥离 reasoning effort；Claude adaptive Effort 与 Reasoning Effort 主控模型保留用户档位。 */
+/** Strips reasoning effort when thinking is off; Claude adaptive Effort and Reasoning Effort primary-control models keep the user's tier. */
 export function shouldPinReasoningEffortToDefault(
   thinkingEnabled: boolean | undefined,
   context?: ModelReasoningEffortContext,
@@ -340,7 +340,7 @@ export function resolveModelThinkingEnabled(thinkingEnabled?: boolean): boolean 
   return thinkingEnabled !== false;
 }
 
-/** Anthropic 直连 transport：显式 thinking 配置（adaptive / enabled / disabled）。 */
+/** Anthropic direct transport: explicit thinking config (adaptive / enabled / disabled). */
 export function resolveAnthropicExplicitThinkingConfig(
   thinkingEnabled: boolean | undefined,
   context?: ModelReasoningEffortContext,

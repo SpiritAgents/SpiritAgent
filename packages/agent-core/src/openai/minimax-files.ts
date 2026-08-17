@@ -8,15 +8,15 @@ import type { OpenAiTransportConfig } from "./openai-compat.js";
 import { normalizeOpenAiCompatibleApiBase } from "./moonshot-files.js";
 
 /**
- * MiniMax 视频理解：经 Files API 上传，purpose 必须为 video_understanding。
- * 文档：https://platform.minimaxi.com/docs/api-reference/file-management-upload
- * 图片上传留待后续统一，本次不走 Files API。
+ * MiniMax video understanding: uploaded via the Files API, purpose must be video_understanding.
+ * Docs: https://platform.minimaxi.com/docs/api-reference/file-management-upload
+ * Image upload is left for a later unification pass; it does not use the Files API here.
  */
 const DEFAULT_MINIMAX_FILES_API_BASE = "https://api.minimax.io/v1";
 
 const uploadCache = new Map<string, string>();
 
-/** 从 Chat / Anthropic baseUrl 推导 Files API 根（`.../v1`）。 */
+/** Derives the Files API root (`.../v1`) from the Chat / Anthropic baseUrl. */
 export function normalizeMinimaxFilesApiBase(baseUrl: string | undefined): string {
   const trimmed = normalizeOpenAiCompatibleApiBase(baseUrl ?? DEFAULT_MINIMAX_FILES_API_BASE);
   if (!trimmed) {
@@ -57,9 +57,10 @@ export async function uploadMinimaxVideoFile(
     headers: {
       Authorization: `Bearer ${config.apiKey}`,
     },
-    // 必须用 undici 的 FormData：getLlmFetch 走 undici 包 fetch，与全局 FormData 非同源，
-    // 全局 FormData 会被当普通对象字符串化、丢失 multipart 边界头（MiniMax 报 2013）。
-    // 全局 fetch 类型不认 undici FormData，故此处断言桥接。
+    // Must use undici's FormData: getLlmFetch uses the undici package's fetch, which is not the same
+    // implementation as the global FormData; the global FormData would be stringified as a plain object,
+    // losing the multipart boundary header (MiniMax reports 2013).
+    // The global fetch types do not accept undici FormData, so this assertion bridges the gap.
     body: form as unknown as BodyInit,
   });
 
@@ -80,9 +81,9 @@ export async function uploadMinimaxVideoFile(
 }
 
 /**
- * MiniMax Files API 实际返回 `{ file: { file_id: <number> } }`，file_id 为数字且嵌套在 file 下。
- * 文档：https://platform.minimaxi.com/docs/api-reference/file-management-upload
- * 兼容顶层 file_id/id 仅作兜底；同时接受 string 与 number。
+ * The MiniMax Files API actually returns `{ file: { file_id: <number> } }`, with file_id as a number nested under file.
+ * Docs: https://platform.minimaxi.com/docs/api-reference/file-management-upload
+ * Top-level file_id/id are accepted only as a fallback; both string and number are supported.
  */
 function readMinimaxUploadedFileId(payload: unknown): string | undefined {
   if (typeof payload !== "object" || payload === null) {

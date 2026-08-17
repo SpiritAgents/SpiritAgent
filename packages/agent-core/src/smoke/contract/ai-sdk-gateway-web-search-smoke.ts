@@ -39,7 +39,7 @@ async function runGatewayWebSearchInjectionSmoke(): Promise<void> {
   const address = server.address();
   if (!address || typeof address === "string") {
     server.close();
-    throw new Error("无法获取本地 smoke server 端口。");
+    throw new Error("Unable to get the local smoke server port.");
   }
 
   const transport = new AiSdkOpenResponsesTransport();
@@ -65,26 +65,26 @@ async function runGatewayWebSearchInjectionSmoke(): Promise<void> {
 
   printSmokeSection("ai-sdk gateway web_search injection smoke", round);
   if (round.kind !== "success" || round.result.step.kind !== "final-response-ready") {
-    throw new Error("gateway web_search injection smoke 未进入 final-response-ready。");
+    throw new Error("gateway web_search injection smoke did not reach final-response-ready.");
   }
 
   if (!requestIncludesGatewayWebSearchTool(capturedBody)) {
     throw new Error(
-      "gateway web_search injection smoke 请求体缺少 gateway.perplexity_search 工具。",
+      "gateway web_search injection smoke request body is missing the gateway.perplexity_search tool.",
     );
   }
 
   const assistantText = extractLastOpenAiAssistantText(round.result.state)?.trim();
   if (assistantText !== "GATEWAY_WEB_SEARCH_OK") {
     throw new Error(
-      `gateway web_search injection smoke 未拿到预期文本: ${assistantText ?? "<empty>"}`,
+      `gateway web_search injection smoke did not get the expected text: ${assistantText ?? "<empty>"}`,
     );
   }
 
   const trace = round.result.requestTrace[0];
   if (!isJsonObject(trace) || trace.kind !== "open_responses_sdk_responses") {
     throw new Error(
-      "gateway web_search injection smoke 未写入 open_responses_sdk_responses trace。",
+      "gateway web_search injection smoke did not write an open_responses_sdk_responses trace.",
     );
   }
 
@@ -95,7 +95,7 @@ async function runGatewayWebSearchInjectionSmoke(): Promise<void> {
         isJsonObject(tool) && tool.id === "gateway.perplexity_search" && tool.name === "web_search",
     )
   ) {
-    throw new Error("gateway web_search injection smoke trace 缺少 web_search provider tool。");
+    throw new Error("gateway web_search injection smoke trace is missing the web_search provider tool.");
   }
 }
 
@@ -131,7 +131,7 @@ async function runGatewayWebSearchInvocationSmoke(): Promise<void> {
   const address = server.address();
   if (!address || typeof address === "string") {
     server.close();
-    throw new Error("无法获取本地 smoke server 端口。");
+    throw new Error("Unable to get the local smoke server port.");
   }
 
   const transport = new AiSdkOpenResponsesTransport();
@@ -157,7 +157,7 @@ async function runGatewayWebSearchInvocationSmoke(): Promise<void> {
 
   printSmokeSection("ai-sdk gateway web_search invocation smoke", round);
   if (round.kind !== "success" || round.result.step.kind !== "final-response-ready") {
-    throw new Error("gateway web_search invocation smoke 未成功完成。");
+    throw new Error("gateway web_search invocation smoke did not complete successfully.");
   }
 }
 

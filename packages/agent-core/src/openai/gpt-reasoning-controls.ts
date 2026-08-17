@@ -14,7 +14,7 @@ const OPENAI_GPT56_ROUTED_PROVIDERS = new Set<ModelReasoningProvider>([
   "openrouter",
 ]);
 
-/** Renderer-safe：勿从 responses-compat 导入，避免 Desktop 前端拉入 AI SDK 依赖链。 */
+/** Renderer-safe: do not import from responses-compat, to avoid pulling the AI SDK dependency chain into the Desktop frontend. */
 function normalizeGatewayOpenAiModelId(model: string): string | undefined {
   const trimmed = model.trim();
   const lower = trimmed.toLowerCase();
@@ -26,7 +26,7 @@ function normalizeGatewayOpenAiModelId(model: string): string | undefined {
   return trimmed.slice(prefix.length).trim();
 }
 
-/** Renderer-safe：与 apply-patch-eligibility 逻辑对齐，独立副本避免 import 传递依赖。 */
+/** Renderer-safe: aligned with the apply-patch-eligibility logic; an independent copy avoids transitive import dependencies. */
 function parseOpenAiGptModelVersion(modelId: string): { major: number; minor: number } | undefined {
   const trimmed = modelId.trim().toLowerCase();
   const bedrockMantle = /^openai\.(gpt-\d+(?:\.\d+)?)/.exec(trimmed);

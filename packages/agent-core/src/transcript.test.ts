@@ -2,7 +2,7 @@ import assert from "node:assert/strict";
 import test from "node:test";
 
 import { buildSessionTranscript } from "./transcript.js";
-import { MANUAL_COMPACTION_SKIPPED_STATUS_ZH } from "./compaction-ui-status.js";
+import { MANUAL_COMPACTION_SKIPPED_STATUS } from "./compaction-ui-status.js";
 import { wrapCompactSummaryBlock } from "./llm-context-block.js";
 import {
   buildCompactHistorySystemPrompt,
@@ -59,7 +59,7 @@ test("buildSessionTranscript omits manual compaction UI status assistant message
     [
       {
         role: "assistant",
-        content: createLlmMessageContentFromText(MANUAL_COMPACTION_SKIPPED_STATUS_ZH),
+        content: createLlmMessageContentFromText(MANUAL_COMPACTION_SKIPPED_STATUS),
       },
       {
         role: "user",

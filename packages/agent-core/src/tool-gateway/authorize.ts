@@ -45,25 +45,25 @@ function buildLazyToolCallApprovalPrompt(request: LazyToolCallRequest): string {
     request.arguments === undefined ? "(none)" : JSON.stringify(request.arguments, null, 2);
   if (request.provider === LAZY_TOOL_PROVIDER_BUILT_IN) {
     return (
-      `高风险工具调用: built-in tool_call\n` +
-      `服务器: ${request.server}\n` +
-      `工具: ${request.tool}\n` +
-      `参数:\n${argsText}`
+      `High-risk tool call: built-in tool_call\n` +
+      `Server: ${request.server}\n` +
+      `Tool: ${request.tool}\n` +
+      `Arguments:\n${argsText}`
     );
   }
   if (request.provider !== LAZY_TOOL_PROVIDER_MCP) {
     return (
-      `高风险工具调用: tool_call\n` +
+      `High-risk tool call: tool_call\n` +
       `provider: ${request.provider}\n` +
-      `服务器: ${request.server}\n` +
-      `工具: ${request.tool}\n` +
-      `参数:\n${argsText}`
+      `Server: ${request.server}\n` +
+      `Tool: ${request.tool}\n` +
+      `Arguments:\n${argsText}`
     );
   }
   return (
-    `高风险工具调用: MCP tool_call\n` +
-    `服务器: ${request.server}\n` +
-    `工具: ${request.tool}\n` +
-    `参数:\n${argsText}`
+    `High-risk tool call: MCP tool_call\n` +
+    `Server: ${request.server}\n` +
+    `Tool: ${request.tool}\n` +
+    `Arguments:\n${argsText}`
   );
 }

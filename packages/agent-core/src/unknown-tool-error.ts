@@ -1,6 +1,6 @@
 import type { JsonValue } from "./ports.js";
 
-const UNKNOWN_TOOL_PREFIX = "未知工具:";
+const UNKNOWN_TOOL_PREFIX = "Unknown tool:";
 
 function isJsonObject(value: JsonValue): value is Record<string, JsonValue> {
   return typeof value === "object" && value !== null && !Array.isArray(value);
@@ -47,7 +47,7 @@ export function unknownToolErrorMessage(
     return `${UNKNOWN_TOOL_PREFIX} ${trimmed}`;
   }
 
-  return `${UNKNOWN_TOOL_PREFIX} ${trimmed}。可用工具: ${unique.join(", ")}`;
+  return `${UNKNOWN_TOOL_PREFIX} ${trimmed}. Available tools: ${unique.join(", ")}`;
 }
 
 export function throwUnknownToolError(

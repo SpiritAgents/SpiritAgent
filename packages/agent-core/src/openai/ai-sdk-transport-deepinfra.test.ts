@@ -93,8 +93,8 @@ test("DeepInfra transport omits reasoning_effort when effort is default", async 
 });
 
 test("DeepInfra transport injects reasoning.enabled=false when thinking is disabled", async () => {
-  // 宿主在 thinking 关闭时会把 effort 钉为 default（shouldPinReasoningEffortToDefault），
-  // 故此处不再注入 reasoning_effort，仅注入 reasoning.enabled=false。
+  // When thinking is disabled, the host pins effort to default (shouldPinReasoningEffortToDefault),
+  // so reasoning_effort is not injected here; only reasoning.enabled=false is injected.
   const captured = await runDeepInfraChatRound({
     baseUrl: "https://api.deepinfra.com/v1/openai",
     reasoningEffort: "default",

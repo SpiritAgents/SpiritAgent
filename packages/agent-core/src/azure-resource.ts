@@ -1,4 +1,4 @@
-/** Renderer-safe Azure resource / apiBase helpers（无 Node 或 SDK 依赖）。 */
+/** Renderer-safe Azure resource / apiBase helpers (no Node or SDK dependencies). */
 
 const AZURE_RESOURCE_NAME_PATTERN = /^[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,62}[a-zA-Z0-9])?$/;
 

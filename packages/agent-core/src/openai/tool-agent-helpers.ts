@@ -206,7 +206,7 @@ export function appendOpenAiUserLlmMessage(
   assetRoot = process.cwd(),
 ): OpenAiToolAgentState {
   if (message.role !== "user") {
-    throw new Error("appendOpenAiUserLlmMessage 仅支持 user message。");
+    throw new Error("appendOpenAiUserLlmMessage only supports user messages.");
   }
 
   return {

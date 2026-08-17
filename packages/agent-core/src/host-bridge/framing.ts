@@ -45,7 +45,7 @@ export class JsonRpcPeer {
 
     this.input.on("end", () => {
       for (const [id, pending] of this.pending) {
-        pending.reject(new Error(`JSON-RPC 连接已关闭，未收到请求 ${id} 的响应。`));
+        pending.reject(new Error(`JSON-RPC connection closed before a response to request ${id} was received.`));
       }
       this.pending.clear();
     });
@@ -99,7 +99,7 @@ export class JsonRpcPeer {
       const headerText = this.buffer.subarray(0, headerEnd).toString("utf8");
       const contentLength = this.parseContentLength(headerText);
       if (contentLength === undefined) {
-        throw new Error(`JSON-RPC framing 缺少 Content-Length: ${headerText}`);
+        throw new Error(`JSON-RPC framing missing Content-Length: ${headerText}`);
       }
 
       const totalLength = headerEnd + 4 + contentLength;
@@ -159,7 +159,7 @@ export class JsonRpcPeer {
           id: message.id,
           error: {
             code: -32601,
-            message: `未知 JSON-RPC 方法: ${message.method}`,
+            message: `Unknown JSON-RPC method: ${message.method}`,
           },
         } satisfies JsonRpcErrorResponse);
       }

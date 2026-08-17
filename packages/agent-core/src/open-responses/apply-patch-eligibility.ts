@@ -109,7 +109,7 @@ function isEligibleResponsesProvider(
     );
   }
 
-  // Gateway：function apply_patch；OpenRouter：built-in apply_patch（均走 open-responses-compatible）。
+  // Gateway: function apply_patch; OpenRouter: built-in apply_patch (both go through open-responses-compatible).
   return (
     config.llmVendor === "vercel-ai-gateway" ||
     config.llmVendor === "cloudflare-ai-gateway" ||
@@ -124,7 +124,7 @@ function isEligibleOpenRouterBuiltInApplyPatchModel(
   return routed !== undefined && isOpenAiGptModelAtLeast51(routed);
 }
 
-/** OpenAI / OpenRouter 官方形态：apply_patch_call/output；Vercel AI Gateway 用 function_call 对。 */
+/** Official OpenAI / OpenRouter shape: apply_patch_call/output; Vercel AI Gateway uses the function_call pair. */
 export function shouldUseBuiltInApplyPatchRequestItems(
   config: Pick<
     OpenResponsesTransportConfig,
@@ -147,8 +147,8 @@ export function shouldUseBuiltInApplyPatchRequestItems(
 }
 
 /**
- * Vercel AI Gateway 不支持 built-in `type: apply_patch`，须在 tools 中注册 flat function 工具。
- * OpenRouter 走 built-in，不得落入此路径。
+ * Vercel AI Gateway does not support built-in `type: apply_patch`; a flat function tool must be registered in tools.
+ * OpenRouter uses built-in and must not fall into this path.
  */
 export function shouldUseApplyPatchFunctionTool(
   config: Pick<
@@ -163,7 +163,7 @@ export function shouldUseApplyPatchFunctionTool(
   );
 }
 
-/** OpenAI 官方：`@ai-sdk/openai` 3.x `openai.tools.applyPatch`；Gateway 走 fetch function_call。 */
+/** Official OpenAI: `@ai-sdk/openai` 3.x `openai.tools.applyPatch`; Gateway goes through fetch function_call. */
 export function shouldUseOpenAiSdkApplyPatchTool(
   config: Pick<
     OpenResponsesTransportConfig,
@@ -178,7 +178,7 @@ export function shouldUseOpenAiSdkApplyPatchTool(
 }
 
 /**
- * Gateway v3 language-model 走 `prompt`；Open Responses fetch 才 omit 并经 body.input stash/reinject。
+ * Gateway v3 language-model uses `prompt`; only the Open Responses fetch omits and stash/reinjects via body.input.
  */
 export function shouldOmitApplyPatchFromAiSdkMessages(
   config: Pick<

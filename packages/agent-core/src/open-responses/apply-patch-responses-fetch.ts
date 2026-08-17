@@ -37,7 +37,7 @@ export function createApplyPatchAwareFetch(
 }
 
 function isGatewayLanguageModelRequestBody(body: JsonObject): boolean {
-  // Gateway v3/v4 language-model 请求体用 prompt；Open Responses 用 input。
+  // Gateway v3/v4 language-model request bodies use prompt; Open Responses uses input.
   return Array.isArray(body.prompt);
 }
 
@@ -55,8 +55,8 @@ function patchRequestInitBody(
       return init;
     }
 
-    // Gateway language-model 的 tools 须为 AI SDK 形态（inputSchema / provider tool）。
-    // 若在此注入 Responses flat apply_patch，压缩等无 tools 请求会变成 tools:[apply_patch] 并被 Gateway 400。
+    // Gateway language-model tools must be in AI SDK shape (inputSchema / provider tool).
+    // Injecting the Responses flat apply_patch here would turn tool-less requests such as compaction into tools:[apply_patch] and get a Gateway 400.
     if (isGatewayLanguageModelRequestBody(body)) {
       return init;
     }

@@ -141,13 +141,13 @@ export function normalizeCapabilityToggles(
 }
 
 export function parseMcpConfigFile(raw: unknown): McpConfigFile {
-  const root = asRecord(raw, "MCP 配置根对象必须是 JSON object");
+  const root = asRecord(raw, "MCP config root must be a JSON object");
   const rawServers = root.servers;
   if (rawServers === undefined) {
     return { servers: {} };
   }
 
-  const serversRecord = asRecord(rawServers, "MCP 配置的 servers 字段必须是 JSON object");
+  const serversRecord = asRecord(rawServers, "MCP config servers field must be a JSON object");
   const servers: Record<string, McpServerConfig> = {};
 
   for (const [name, server] of Object.entries(serversRecord)) {
@@ -175,7 +175,7 @@ export function normalizeMcpServerConfig(
 ): ResolvedMcpServerConfig {
   const trimmedName = name.trim();
   if (!trimmedName) {
-    throw new McpConfigError("MCP server 名称不能为空");
+    throw new McpConfigError("MCP server name must not be empty");
   }
 
   return {
@@ -194,7 +194,7 @@ export function normalizeTransportConfig(
     case "stdio": {
       const command = transport.command.trim();
       if (!command) {
-        throw new McpConfigError("stdio MCP transport command 不能为空");
+        throw new McpConfigError("stdio MCP transport command must not be empty");
       }
 
       const base: ResolvedMcpStdioTransportConfig = {
@@ -213,7 +213,7 @@ export function normalizeTransportConfig(
     case "http": {
       const url = transport.url.trim();
       if (!url) {
-        throw new McpConfigError("http MCP transport url 不能为空");
+        throw new McpConfigError("http MCP transport url must not be empty");
       }
 
       const base: ResolvedMcpHttpTransportConfig = {
@@ -245,17 +245,17 @@ export function resolveEnvTemplate(
     const placeholder = remaining.slice(start + ENV_PLACEHOLDER_PREFIX.length);
     const end = placeholder.indexOf("}");
     if (end < 0) {
-      throw new McpConfigError(`非法环境变量占位符: ${value}`);
+      throw new McpConfigError(`Invalid environment variable placeholder: ${value}`);
     }
 
     const envName = placeholder.slice(0, end).trim();
     if (!envName) {
-      throw new McpConfigError(`非法环境变量占位符: ${value}`);
+      throw new McpConfigError(`Invalid environment variable placeholder: ${value}`);
     }
 
     const resolved = lookup(envName);
     if (resolved === undefined) {
-      throw new McpConfigError(`缺少环境变量 ${envName}（来自 MCP 配置）`);
+      throw new McpConfigError(`Missing environment variable ${envName} (referenced from MCP config)`);
     }
 
     rendered += resolved;
@@ -308,7 +308,7 @@ export function summarizeCapabilities(capabilities: McpCapabilityToggles): strin
 }
 
 function parseMcpServerConfig(name: string, raw: unknown): McpServerConfig {
-  const record = asRecord(raw, `MCP server ${name} 配置必须是 JSON object`);
+  const record = asRecord(raw, `MCP server ${name} config must be a JSON object`);
   const nestedTransport = asRecordOrUndefined(record.transport);
   const displayName = readOptionalString(record, ["displayName", "display_name"]);
   const capabilities = parseCapabilityToggles(record.capabilities);
@@ -326,7 +326,7 @@ function parseCapabilityToggles(raw: unknown): Partial<McpCapabilityToggles> | u
     return undefined;
   }
 
-  const record = asRecord(raw, "MCP capabilities 配置必须是 JSON object");
+  const record = asRecord(raw, "MCP capabilities config must be a JSON object");
   const toggles: Partial<McpCapabilityToggles> = {};
 
   if (typeof record.tools === "boolean") {
@@ -359,7 +359,7 @@ function parseTransportConfigForConfig(
         command: readRequiredString(
           raw,
           ["command"],
-          `MCP server ${serverName} 的 stdio command 不能为空`,
+          `MCP server ${serverName} stdio command must not be empty`,
         ),
         ...(args === undefined ? {} : { args }),
         ...(env === undefined ? {} : { env }),
@@ -373,13 +373,13 @@ function parseTransportConfigForConfig(
       const timeoutMs = readOptionalNumber(raw, ["timeoutMs", "timeout_ms"]);
       return {
         type: "http",
-        url: readRequiredString(raw, ["url"], `MCP server ${serverName} 的 http url 不能为空`),
+        url: readRequiredString(raw, ["url"], `MCP server ${serverName} http url must not be empty`),
         ...(headers === undefined ? {} : { headers }),
         ...(timeoutMs === undefined ? {} : { timeoutMs }),
       };
     }
     default:
-      throw new McpConfigError(`MCP server ${serverName} 缺少有效的 transport.type`);
+      throw new McpConfigError(`MCP server ${serverName} is missing a valid transport.type`);
   }
 }
 

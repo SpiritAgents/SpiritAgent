@@ -1,6 +1,6 @@
 import { llmMessageTextContent, type LlmMessage } from "./ports.js";
 
-export const MANUAL_COMPACTION_SKIPPED_STATUS_ZH = "当前可压缩历史较少，已跳过压缩。";
+export const MANUAL_COMPACTION_SKIPPED_STATUS = "Not enough compressible history yet; compaction skipped.";
 
 /** UI-only manual compaction status lines; must not enter llmHistory or session transcripts. */
 export function isManualCompactionUiStatusText(text: string): boolean {
@@ -8,13 +8,13 @@ export function isManualCompactionUiStatusText(text: string): boolean {
   if (!normalized) {
     return false;
   }
-  if (normalized === MANUAL_COMPACTION_SKIPPED_STATUS_ZH) {
+  if (normalized === MANUAL_COMPACTION_SKIPPED_STATUS) {
     return true;
   }
-  if (normalized.startsWith("压缩完成：上下文消息")) {
+  if (normalized.startsWith("Compaction complete: context messages")) {
     return true;
   }
-  if (normalized.startsWith("压缩失败:")) {
+  if (normalized.startsWith("Compaction failed:")) {
     return true;
   }
   return false;

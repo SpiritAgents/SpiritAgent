@@ -59,13 +59,13 @@ async function main(): Promise<void> {
               type: "response.reasoning_text.delta",
               item_id: "rs_stream_1",
               output_index: 0,
-              delta: "先想一下，",
+              delta: "Think first, ",
             }),
             sseEvent({
               type: "response.reasoning_text.delta",
               item_id: "rs_stream_1",
               output_index: 0,
-              delta: "再查工具。",
+              delta: "then check the tool.",
             }),
             sseEvent({
               type: "response.output_item.done",
@@ -74,7 +74,7 @@ async function main(): Promise<void> {
                 type: "reasoning",
                 id: "rs_stream_1",
                 status: "completed",
-                content: [{ type: "reasoning_text", text: "先想一下，再查工具。" }],
+                content: [{ type: "reasoning_text", text: "Think first, then check the tool." }],
               },
             }),
             sseEvent({
@@ -206,7 +206,7 @@ async function main(): Promise<void> {
   const address = server.address();
   if (!address || typeof address === "string") {
     server.close();
-    throw new Error("无法获取本地 smoke server 端口。");
+    throw new Error("Unable to get the local smoke server port.");
   }
 
   const baseUrl = `http://127.0.0.1:${(address as AddressInfo).port}`;
@@ -242,7 +242,7 @@ async function main(): Promise<void> {
     !firstEvents.some((event) => isJsonObject(event) && event.kind === "streaming-tool-preview")
   ) {
     server.close();
-    throw new Error("ai-sdk deepseek streaming smoke 未收到 streaming-tool-preview 事件。");
+    throw new Error("ai-sdk deepseek streaming smoke did not receive a streaming-tool-preview event.");
   }
 
   if (
@@ -251,13 +251,13 @@ async function main(): Promise<void> {
   ) {
     server.close();
     throw new Error(
-      "ai-sdk deepseek streaming smoke 的 thinking-chunk 数量异常，疑似发生重复累计。",
+      "ai-sdk deepseek streaming smoke has an abnormal thinking-chunk count, suggesting duplicate accumulation.",
     );
   }
 
   if (firstCompletion.kind !== "success" || firstCompletion.result.step.kind !== "tool-calls") {
     server.close();
-    throw new Error("ai-sdk deepseek streaming smoke step 1 未进入预期的 tool-calls。");
+    throw new Error("ai-sdk deepseek streaming smoke step 1 did not reach the expected tool-calls.");
   }
 
   const resumedState = appendOpenAiToolResultMessage(
@@ -283,33 +283,33 @@ async function main(): Promise<void> {
     secondCompletion.kind !== "success" ||
     secondCompletion.result.step.kind !== "final-response-ready"
   ) {
-    throw new Error("ai-sdk deepseek streaming smoke step 2 未进入预期的 final-response-ready。");
+    throw new Error("ai-sdk deepseek streaming smoke step 2 did not reach the expected final-response-ready.");
   }
 
   const assistantText = extractLastOpenAiAssistantText(secondCompletion.result.state)?.trim();
   if (assistantText !== "AI_SDK_DEEPSEEK_OK") {
     throw new Error(
-      `ai-sdk deepseek streaming smoke step 2 未拿到预期最终 assistant 文本。实际: ${assistantText ?? "<empty>"}`,
+      `ai-sdk deepseek streaming smoke step 2 did not get the expected final assistant text. Actual: ${assistantText ?? "<empty>"}`,
     );
   }
 
   const firstRequest = requestBodies[0];
   if (!isJsonObject(firstRequest)) {
-    throw new Error("ai-sdk deepseek streaming smoke 未捕获首轮请求体。");
+    throw new Error("ai-sdk deepseek streaming smoke did not capture the first-round request body.");
   }
   const firstTools = firstRequest.tools as Array<{ type?: string }> | undefined;
   if (!firstTools?.some((tool) => tool.type === "web_search")) {
-    throw new Error("ai-sdk deepseek streaming smoke 首轮请求未注入 web_search。");
+    throw new Error("ai-sdk deepseek streaming smoke first-round request did not inject web_search.");
   }
 
   const roundTwoBody = requestBodies[1];
   if (!isJsonObject(roundTwoBody) || !Array.isArray(roundTwoBody.input)) {
-    throw new Error("ai-sdk deepseek streaming smoke 第二轮未发送 Responses input 历史。");
+    throw new Error("ai-sdk deepseek streaming smoke second round did not send the Responses input history.");
   }
 
   const traceEntry = secondCompletion.result.requestTrace[0];
   if (!isJsonObject(traceEntry) || traceEntry.kind !== "deepseek_open_responses") {
-    throw new Error("ai-sdk deepseek streaming smoke 未标记 deepseek_open_responses trace kind。");
+    throw new Error("ai-sdk deepseek streaming smoke did not mark the deepseek_open_responses trace kind.");
   }
 
   await runDeepSeekVisionCapabilitySmoke();
@@ -390,7 +390,7 @@ async function runDeepSeekVisionCapabilitySmoke(): Promise<void> {
 
     const address = server.address();
     if (!address || typeof address === "string") {
-      throw new Error("无法获取 DeepSeek vision capability smoke server 端口。");
+      throw new Error("Unable to get the DeepSeek vision capability smoke server port.");
     }
 
     const transport = new AiSdkOpenAiCompatibleTransport();
@@ -398,7 +398,7 @@ async function runDeepSeekVisionCapabilitySmoke(): Promise<void> {
       [
         {
           role: "user",
-          content: createLlmMessageContentFromTextAndImages("请看图。", [imagePath]),
+          content: createLlmMessageContentFromTextAndImages("Please look at the image.", [imagePath]),
         },
       ],
       process.cwd(),
@@ -426,26 +426,26 @@ async function runDeepSeekVisionCapabilitySmoke(): Promise<void> {
     printSmokeSection("ai-sdk deepseek vision capability smoke completion", completion);
 
     if (completion.kind !== "success" || completion.result.step.kind !== "final-response-ready") {
-      throw new Error("DeepSeek vision capability smoke 未进入预期 final-response-ready。");
+      throw new Error("DeepSeek vision capability smoke did not reach the expected final-response-ready.");
     }
 
     const assistantText = extractLastOpenAiAssistantText(completion.result.state)?.trim();
     if (assistantText !== "AI_SDK_DEEPSEEK_VISION_FILTER_OK") {
       throw new Error(
-        `DeepSeek vision capability smoke 最终 assistant 文本异常: ${assistantText ?? "<empty>"}`,
+        `DeepSeek vision capability smoke has an unexpected final assistant text: ${assistantText ?? "<empty>"}`,
       );
     }
 
     if (warnings.length > 0) {
       throw new Error(
-        "DeepSeek vision capability smoke 仍然收到了 AI SDK warning，说明前置裁剪未生效。",
+        "DeepSeek vision capability smoke still received an AI SDK warning, so the upfront trimming did not take effect.",
       );
     }
 
     const requestBody = requestBodies[0];
     const userMessage = findLastUserMessage(requestBody);
     if (!isJsonObject(userMessage)) {
-      throw new Error("DeepSeek vision capability smoke 未找到 user message。");
+      throw new Error("DeepSeek vision capability smoke did not find the user message.");
     }
 
     if (Array.isArray(userMessage.content)) {
@@ -453,7 +453,7 @@ async function runDeepSeekVisionCapabilitySmoke(): Promise<void> {
         (part) => isJsonObject(part) && part.type !== "text",
       );
       if (hasNonTextPart) {
-        throw new Error("DeepSeek vision capability smoke 仍向 provider 发送了非文本 user part。");
+        throw new Error("DeepSeek vision capability smoke still sent a non-text user part to the provider.");
       }
     }
   } finally {
@@ -477,7 +477,7 @@ function verifyKnownModelCapabilityTable(): void {
     model: "deepseek-v4-pro",
   });
   if (!deepSeek.hasExplicitCapabilities || deepSeek.capabilities.imageInput) {
-    throw new Error("DeepSeek capabilities 表异常：应显式声明且不支持 imageInput。");
+    throw new Error("DeepSeek capabilities table is abnormal: it should be explicitly declared and should not support imageInput.");
   }
 
   const moonshotWithoutCatalog = resolveOpenAiModelCompatibilityProfile({
@@ -494,10 +494,10 @@ function verifyKnownModelCapabilityTable(): void {
     !moonshotWithoutCatalog.hasExplicitCapabilities ||
     moonshotWithoutCatalog.capabilities.imageInput
   ) {
-    throw new Error("Moonshot capabilities 表异常：无 catalog 时不应推断 imageInput。");
+    throw new Error("Moonshot capabilities table is abnormal: imageInput should not be inferred without a catalog.");
   }
   if (!moonshotWithImageInput.capabilities.imageInput) {
-    throw new Error("Moonshot capabilities 表异常：显式 modelCapabilities 应保留 imageInput。");
+    throw new Error("Moonshot capabilities table is abnormal: explicit modelCapabilities should preserve imageInput.");
   }
 
   const explicitCustom = resolveOpenAiModelCompatibilityProfile({
@@ -510,7 +510,7 @@ function verifyKnownModelCapabilityTable(): void {
     !explicitCustom.capabilities.imageInput ||
     !explicitCustom.capabilities.imageGeneration
   ) {
-    throw new Error("显式 modelCapabilities 未覆盖 provider/model 推断。");
+    throw new Error("Explicit modelCapabilities did not override the provider/model inference.");
   }
 }
 

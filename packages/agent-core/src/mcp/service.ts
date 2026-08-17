@@ -183,7 +183,7 @@ export class McpService {
   }
 
   lazyToolGatewayBackgroundStatusText(value: JsonValue): string | undefined {
-    // 状态由工具卡展示；勿写入 thinking aux（与 host-internal shell/web_fetch 一致）。
+    // Status is shown on the tool card; do not write it into thinking aux (consistent with host-internal shell/web_fetch).
     void value;
     return undefined;
   }
@@ -193,7 +193,7 @@ export class McpService {
   }
 
   backgroundStatusText(value: JsonValue): string | undefined {
-    // 状态由工具卡展示；勿写入 thinking aux。
+    // Status is shown on the tool card; do not write it into thinking aux.
     void value;
     return undefined;
   }
@@ -341,7 +341,7 @@ export class McpService {
   }
 
   fetchMcpResourceBackgroundStatusText(value: JsonValue): string | undefined {
-    // 状态由工具卡展示；勿写入 thinking aux。
+    // Status is shown on the tool card; do not write it into thinking aux.
     void value;
     return undefined;
   }
@@ -367,7 +367,7 @@ export class McpService {
 
     const server = this.loadedConfigStore.resolved[serverName];
     if (!server) {
-      throw new McpConfigError(`未知 MCP server: ${serverName}`);
+      throw new McpConfigError(`Unknown MCP server: ${serverName}`);
     }
 
     return {
@@ -383,7 +383,7 @@ export class McpService {
   async authorizeToolRequest(request: McpToolRequest): Promise<void> {
     const server = await this.requireConnectableServer(request.server);
     if (!server.capabilities.tools) {
-      throw new McpConfigError(`MCP server ${server.name} 未启用 tools capability`);
+      throw new McpConfigError(`MCP server ${server.name} does not have tools capability enabled`);
     }
   }
 
@@ -408,7 +408,7 @@ export class McpService {
       if (isJsonRecord(argumentsValue)) {
         args = argumentsValue;
       } else if (argumentsValue !== null) {
-        throw new McpConfigError("MCP 工具参数必须是 JSON object");
+        throw new McpConfigError("MCP tool arguments must be a JSON object");
       }
 
       const result = await connection.callTool(request.toolName, args);
@@ -439,7 +439,7 @@ export class McpService {
     );
   }
 
-  /** 启动期 refreshToolingCaches 已写入 registry / promptCatalog 时，设置页无需重连 MCP。 */
+  /** When startup refreshToolingCaches already populated registry / promptCatalog, the settings page does not need to reconnect MCP. */
   private inspectFromCache(name: string): JsonValue | null {
     const server = this.loadedConfigStore.resolved[name];
     if (!server?.enabled) {
@@ -642,10 +642,10 @@ export class McpService {
     await this.refreshConfig();
     const server = this.loadedConfigStore.resolved[name];
     if (!server) {
-      throw new McpConfigError(`未知 MCP server: ${name}`);
+      throw new McpConfigError(`Unknown MCP server: ${name}`);
     }
     if (!server.enabled) {
-      throw new McpConfigError(`MCP server ${name} 已禁用，请先启用。`);
+      throw new McpConfigError(`MCP server ${name} is disabled; enable it first.`);
     }
     return server;
   }
@@ -757,7 +757,7 @@ export class McpService {
     ) {
       const cached = sharedUserMcpToolingCache;
       if (!Array.isArray(cached.resourceEntries)) {
-        // 同进程内热更新后旧缓存无 resourceEntries，丢弃并走下方重新发现
+        // After an in-process hot update the old cache has no resourceEntries; discard it and rediscover below
         sharedUserMcpToolingCache = undefined;
       } else {
         userCacheHit = true;
@@ -1032,10 +1032,10 @@ async function loadMcpConfigFile(path: string): Promise<McpConfigFile> {
     }
 
     if (error instanceof SyntaxError) {
-      throw new McpConfigError(`解析 MCP 配置失败: ${path}`, { cause: error });
+      throw new McpConfigError(`Failed to parse MCP config: ${path}`, { cause: error });
     }
 
-    throw new McpConfigError(`读取 MCP 配置失败: ${path}`, {
+    throw new McpConfigError(`Failed to read MCP config: ${path}`, {
       cause: error instanceof Error ? error : undefined,
     });
   }
@@ -1051,10 +1051,10 @@ function loadMcpConfigFileSync(path: string): McpConfigFile {
     }
 
     if (error instanceof SyntaxError) {
-      throw new McpConfigError(`解析 MCP 配置失败: ${path}`, { cause: error });
+      throw new McpConfigError(`Failed to parse MCP config: ${path}`, { cause: error });
     }
 
-    throw new McpConfigError(`读取 MCP 配置失败: ${path}`, {
+    throw new McpConfigError(`Failed to read MCP config: ${path}`, {
       cause: error instanceof Error ? error : undefined,
     });
   }
@@ -1113,7 +1113,7 @@ async function resolveStdioCommand(command: string, env: Record<string, string>)
   if (isAbsolute(trimmed) || hasDirectorySeparator) {
     const resolved = await resolveCommandCandidate(trimmed);
     if (!resolved) {
-      throw new McpConfigError(`找不到 MCP 可执行文件: ${trimmed}`);
+      throw new McpConfigError(`MCP executable not found: ${trimmed}`);
     }
 
     return resolved;
@@ -1232,10 +1232,10 @@ function assertToolCapability(
   capabilities: SdkMcpConnection["serverCapabilities"],
 ): void {
   if (!server.capabilities.tools) {
-    throw new McpConfigError(`MCP server ${server.name} 未启用 tools capability`);
+    throw new McpConfigError(`MCP server ${server.name} does not have tools capability enabled`);
   }
   if (capabilities?.tools === undefined) {
-    throw new McpConfigError(`MCP server ${server.name} 不支持 tools capability`);
+    throw new McpConfigError(`MCP server ${server.name} does not support tools capability`);
   }
 }
 
@@ -1244,10 +1244,10 @@ function assertResourceCapability(
   capabilities: SdkMcpConnection["serverCapabilities"],
 ): void {
   if (!server.capabilities.resources) {
-    throw new McpConfigError(`MCP server ${server.name} 未启用 resources capability`);
+    throw new McpConfigError(`MCP server ${server.name} does not have resources capability enabled`);
   }
   if (capabilities?.resources === undefined) {
-    throw new McpConfigError(`MCP server ${server.name} 不支持 resources capability`);
+    throw new McpConfigError(`MCP server ${server.name} does not support resources capability`);
   }
 }
 
@@ -1256,10 +1256,10 @@ function assertPromptCapability(
   capabilities: SdkMcpConnection["serverCapabilities"],
 ): void {
   if (!server.capabilities.prompts) {
-    throw new McpConfigError(`MCP server ${server.name} 未启用 prompts capability`);
+    throw new McpConfigError(`MCP server ${server.name} does not have prompts capability enabled`);
   }
   if (capabilities?.prompts === undefined) {
-    throw new McpConfigError(`MCP server ${server.name} 不支持 prompts capability`);
+    throw new McpConfigError(`MCP server ${server.name} does not support prompts capability`);
   }
 }
 
@@ -1272,13 +1272,13 @@ function parsePromptArguments(argsJson: string | undefined): Record<string, stri
   try {
     parsed = JSON.parse(argsJson);
   } catch (error) {
-    throw new McpConfigError("MCP prompt 参数必须是合法 JSON", {
+    throw new McpConfigError("MCP prompt arguments must be valid JSON", {
       cause: error instanceof Error ? error : undefined,
     });
   }
 
   if (typeof parsed !== "object" || parsed === null || Array.isArray(parsed)) {
-    throw new McpConfigError("MCP prompt 参数必须是 JSON object");
+    throw new McpConfigError("MCP prompt arguments must be a JSON object");
   }
 
   const result: Record<string, string> = {};
@@ -1412,7 +1412,7 @@ function parseOptionalJsonValue(argsJson: string | undefined): JsonValue {
   try {
     return JSON.parse(argsJson) as JsonValue;
   } catch (error) {
-    throw new McpConfigError("MCP 工具参数必须是合法 JSON", {
+    throw new McpConfigError("MCP tool arguments must be valid JSON", {
       cause: error instanceof Error ? error : undefined,
     });
   }

@@ -255,7 +255,7 @@ export function extractApplyPatchCallsFromResponsesBody(body: unknown): ToolCall
   return calls;
 }
 
-/** AI SDK Responses 校验 apply_patch 工具调用时需顶层 callId。 */
+/** AI SDK Responses validation of apply_patch tool calls requires a top-level callId. */
 export function buildApplyPatchToolCallArgumentsJson(
   callId: string,
   operation: ApplyPatchOperation | JsonObject,

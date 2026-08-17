@@ -68,7 +68,7 @@ async function main(): Promise<void> {
   const address = server.address();
   if (!address || typeof address === "string") {
     server.close();
-    throw new Error("无法获取本地 smoke server 端口。");
+    throw new Error("Unable to get the local smoke server port.");
   }
 
   const port = (address as AddressInfo).port;
@@ -114,23 +114,23 @@ async function main(): Promise<void> {
   printSmokeSection("ai-sdk google vertex streaming smoke request bodies", requestBodies);
 
   if (!capturedUrl.includes(":streamGenerateContent")) {
-    throw new Error("ai-sdk google vertex streaming smoke 未命中 streamGenerateContent 端点。");
+    throw new Error("ai-sdk google vertex streaming smoke did not hit the streamGenerateContent endpoint.");
   }
 
   if (completion.kind !== "success" || completion.result.step.kind !== "final-response-ready") {
-    throw new Error("ai-sdk google vertex streaming smoke 未进入预期的 final-response-ready。");
+    throw new Error("ai-sdk google vertex streaming smoke did not reach the expected final-response-ready.");
   }
 
   const assistantText = extractLastOpenAiAssistantText(completion.result.state)?.trim();
   if (assistantText !== "AI_SDK_GOOGLE_VERTEX_OK") {
     throw new Error(
-      `ai-sdk google vertex streaming smoke 未拿到预期最终 assistant 文本。实际: ${assistantText ?? "<empty>"}`,
+      `ai-sdk google vertex streaming smoke did not get the expected final assistant text. Actual: ${assistantText ?? "<empty>"}`,
     );
   }
 
   const traceEntry = completion.result.requestTrace[0];
   if (!isJsonObject(traceEntry) || traceEntry.kind !== "google_vertex_sdk_generate_content") {
-    throw new Error("ai-sdk google vertex streaming smoke 未标记 Vertex 专用 request trace kind。");
+    throw new Error("ai-sdk google vertex streaming smoke did not mark the Vertex-specific request trace kind.");
   }
 }
 

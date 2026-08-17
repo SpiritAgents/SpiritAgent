@@ -19,7 +19,7 @@ import { extractAzureResourceNameFromApiBase } from "../azure-resource.js";
 import { cloneJsonValue } from "../tool-agent.js";
 import { isArkLlmVendor } from "../ark/ark-provider.js";
 
-/** 底层 AI SDK provider：OpenAI 官方 Responses、Azure 官方 Responses 或 Open Responses 兼容 endpoint。 */
+/** Underlying AI SDK provider: official OpenAI Responses, official Azure Responses, or an Open Responses compatible endpoint. */
 export type OpenResponsesSdkProvider = "openai" | "xai" | "azure" | "open-responses-compatible";
 
 export type OpenResponsesPreviousResponseMode = "disabled" | "stored" | "stateless";
@@ -36,18 +36,18 @@ export interface OpenResponsesTransportConfig {
   compactModel?: string;
   workspaceRoot?: string;
   /**
-   * 与宿主 `ModelProfile.provider` 对齐；用于推断默认 `responsesProvider`。
+   * Aligned with the host `ModelProfile.provider`; used to infer the default `responsesProvider`.
    */
   llmVendor?: OpenAiLlmVendor;
   modelCapabilities?: LlmModelCapabilities;
   /**
-   * 显式指定底层 SDK。缺省时：`openai` → OpenAI 官方、`xai` → `@ai-sdk/xai` 官方、
-   * Gateway `openai/*` → `@ai-sdk/openai`、其余 Gateway 与其它厂商 → `open-responses-compatible`。
+   * Explicitly selects the underlying SDK. Default: `openai` → official OpenAI, `xai` → official `@ai-sdk/xai`,
+   * Gateway `openai/*` → `@ai-sdk/openai`, all other Gateway routes and vendors → `open-responses-compatible`.
    */
   responsesProvider?: OpenResponsesSdkProvider;
-  /** OpenAI 官方 Responses：是否由 OpenAI 服务端存储会话。未设置时默认 true。 */
+  /** Official OpenAI Responses: whether the conversation is stored server-side by OpenAI. Defaults to true when unset. */
   store?: boolean;
-  /** @deprecated 由 responsesUsesStoredState 决定；保留字段仅为兼容旧配置序列化。 */
+  /** @deprecated Determined by responsesUsesStoredState; field kept only for compatibility with serialized legacy configs. */
   previousResponseMode?: OpenResponsesPreviousResponseMode;
   reasoningEffort?: "default" | "minimal" | "none" | "low" | "medium" | "high" | "xhigh" | "max";
   reasoningMode?: ModelReasoningMode;
@@ -60,8 +60,8 @@ export interface OpenResponsesTransportConfig {
   /** Optional dedicated model role used by the `generate_video` tool. */
   videoGeneration?: OpenAiVideoGenerationConfig;
   /**
-   * Bedrock Mantle Open Responses：无静态 Bearer 时用 IAM 生成短期 token。
-   * 静态 `apiKey` 优先；二者皆无则请求会在 SDK 层失败。
+   * Bedrock Mantle Open Responses: generates a short-lived token via IAM when there is no static Bearer.
+   * A static `apiKey` takes precedence; with neither, the request fails at the SDK layer.
    */
   bedrockMantleIam?: {
     region: string;
@@ -69,13 +69,13 @@ export interface OpenResponsesTransportConfig {
     secretAccessKey: string;
     sessionToken?: string;
   };
-  /** Azure 资源名；与 `@ai-sdk/azure` 的 `resourceName` 对齐。 */
+  /** Azure resource name; aligned with `@ai-sdk/azure`'s `resourceName`. */
   azureResourceName?: string;
-  /** Cloudflare AI Gateway 名称；请求时注入 `cf-aig-gateway-id`。 */
+  /** Cloudflare AI Gateway name; injected as `cf-aig-gateway-id` on requests. */
   cloudflareGatewayId?: string;
-  /** 代码补全等非 Agent 轻量请求的策略画像；缺省为 agent 路径默认行为。 */
+  /** Request policy profile for non-agent lightweight requests such as code completion; defaults to the agent path behavior. */
   transportRequestProfile?: TransportRequestProfile;
-  /** 厂商 extended thinking；false 关闭 Claude / DeepSeek 等 thinking 开关。 */
+  /** Vendor extended thinking; false disables the Claude / DeepSeek style thinking toggle. */
   vendorExtendedThinking?: boolean;
 }
 
@@ -119,8 +119,8 @@ export function isGatewayOpenAiRoutedModel(model: string): boolean {
 }
 
 /**
- * 聚合商统一 `openai/*` 模型 id 剥离（`resolveOpenResponsesLanguageModelId` 等）。
- * 勿用于 apply_patch 形态决策：Gateway 用 function tool，OpenRouter 用 built-in（见 apply-patch-eligibility）。
+ * Aggregators uniformly strip the `openai/*` model id (`resolveOpenResponsesLanguageModelId` etc.).
+ * Do not use for apply_patch shape decisions: Gateway uses a function tool, OpenRouter uses built-in (see apply-patch-eligibility).
  */
 export function isAggregatedOpenAiRoutedVendor(
   llmVendor: OpenAiLlmVendor | undefined,
@@ -149,7 +149,7 @@ export function resolveOpenResponsesLanguageModelId(
   return config.model;
 }
 
-/** Bedrock Mantle Open Responses（如 openai.gpt-5.5 @ bedrock-mantle.*.api.aws/openai/v1）。 */
+/** Bedrock Mantle Open Responses (e.g. openai.gpt-5.5 @ bedrock-mantle.*.api.aws/openai/v1). */
 export function isBedrockMantleOpenResponsesConfig(
   config: Pick<OpenResponsesTransportConfig, "baseUrl" | "model">,
 ): boolean {
@@ -201,8 +201,8 @@ export function openResponsesReasoningEffort(
 }
 
 /**
- * 解析是否向 Responses 请求 reasoning summary。
- * 未显式配置时：reasoningEffort 为 none 则关闭，否则默认 auto（便于 UI 展示思考摘要）。
+ * Resolves whether to request a reasoning summary from Responses.
+ * When not explicitly configured: disabled when reasoningEffort is none, otherwise defaults to auto (so the UI can show the thinking summary).
  */
 export function resolveOpenResponsesReasoningSummary(
   config: Pick<
@@ -214,7 +214,7 @@ export function resolveOpenResponsesReasoningSummary(
     return undefined;
   }
 
-  // Ark Responses 仅支持 reasoning.effort，拒绝 OpenAI 式 reasoning.summary。
+  // Ark Responses only supports reasoning.effort and rejects OpenAI-style reasoning.summary.
   if (
     isArkLlmVendor(config.llmVendor) ||
     config.llmVendor === "stepfun" ||
@@ -350,5 +350,5 @@ export function resolveAzureResourceName(
     return fromBase;
   }
 
-  throw new Error("Azure 缺少 azureResourceName 配置。");
+  throw new Error("Azure azureResourceName configuration is missing.");
 }

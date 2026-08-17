@@ -61,7 +61,7 @@ async function main(): Promise<void> {
   const apiKey = resolveMinimaxApiKey();
   if (!apiKey) {
     console.log(
-      "未找到 MINIMAX_API_KEY 或 SpiritAgent Keychain 凭据，跳过 minimax web_search live smoke。",
+      "MINIMAX_API_KEY or SpiritAgent Keychain credentials not found, skipping minimax web_search live smoke.",
     );
     return;
   }
@@ -89,11 +89,11 @@ async function main(): Promise<void> {
   });
 
   if (completion.kind !== "success") {
-    throw new Error(`minimax web_search live smoke 失败: ${completion.error}`);
+    throw new Error(`minimax web_search live smoke failed: ${completion.error}`);
   }
 
   if (completion.result.step.kind === "tool-calls") {
-    throw new Error("minimax web_search live smoke 不应进入宿主 tool-calls。");
+    throw new Error("minimax web_search live smoke should not enter host tool-calls.");
   }
 
   const webSearchPreviews = events.filter(
@@ -101,7 +101,7 @@ async function main(): Promise<void> {
       event.kind === "streaming-tool-preview" && event.toolName === "web_search",
   );
   if (webSearchPreviews.length === 0) {
-    throw new Error("minimax web_search live smoke 未收到 web_search streaming-tool-preview。");
+    throw new Error("minimax web_search live smoke did not receive a web_search streaming-tool-preview.");
   }
 
   const succeededPreview = webSearchPreviews.find(
@@ -109,12 +109,12 @@ async function main(): Promise<void> {
       resolveResponsesBuiltInToolStreamPhaseFromArgumentsJson(event.argumentsJson) === "succeeded",
   );
   if (!succeededPreview) {
-    throw new Error("minimax web_search live smoke 未收到 succeeded 终态卡片。");
+    throw new Error("minimax web_search live smoke did not receive a succeeded terminal card.");
   }
 
   const ui = parseResponsesBuiltInToolUiFromArgumentsJson(succeededPreview.argumentsJson);
   if (!ui?.sourceCount || ui.sourceCount < 1) {
-    throw new Error("minimax web_search live smoke 终态卡片缺少来源数量。");
+    throw new Error("minimax web_search live smoke terminal card is missing the source count.");
   }
 }
 

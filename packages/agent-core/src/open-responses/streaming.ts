@@ -75,9 +75,9 @@ export async function* responsesEventStreamToRuntimeEvents(
   const executedProviderBuiltinToolCallIds = new Set<string>();
   const providerBuiltinToolResults = new Map<string, AccumulatedProviderBuiltinToolResult>();
   let responseId: string | undefined;
-  /** Open Responses SDK 已发 reasoning-delta；raw SSE 为同内容镜像，再 yield 会 TheThe / says says。 */
+  /** The Open Responses SDK already emits reasoning-delta; the raw SSE mirrors the same content, and yielding it again would duplicate text ("TheThe" / "says says"). */
   let activeReasoningDeltaId: string | undefined;
-  /** provider builtin tool-result 之后是否又收到过 text-delta（用于避免错误 resume 双答）。 */
+  /** Whether a text-delta was received after a provider builtin tool-result (used to avoid an erroneous resume double-answer). */
   let hasPostToolAssistantText = false;
 
   try {
@@ -177,7 +177,7 @@ export async function* responsesEventStreamToRuntimeEvents(
         }
         case "tool-call": {
           sawAnswerOrToolOutput = true;
-          // Open Responses SSE 仍只从 raw output_item 聚合；Vercel AI Gateway v3 language-model 无该形态。
+          // Open Responses SSE still only aggregates from raw output_item; Vercel AI Gateway v3 language-model has no such shape.
           if (!shouldAggregateGatewaySdkToolCalls(config)) {
             break;
           }
@@ -294,7 +294,7 @@ export async function* responsesEventStreamToRuntimeEvents(
     }
 
     if (!sawAnswerOrToolOutput && !reasoningContent.trim()) {
-      throw new Error("流式 Responses 响应无任何 text / tool 输出。");
+      throw new Error("Streaming Responses response contained no text / tool output.");
     }
 
     const resolvedAssistant = await resolveAiSdkStreamAssistantText(usageSource, assistantContent);
@@ -590,7 +590,7 @@ function accumulateOpenResponsesToolCallProgressFromRawChunk(
 }
 
 function shouldUseRawResponsesReasoningFallback(config: OpenResponsesTransportConfig): boolean {
-  // Ark Responses 流仅经 raw SSE 返回 reasoning_summary_text.delta，AI SDK 不发 reasoning-delta。
+  // Ark Responses streams return reasoning_summary_text.delta only via raw SSE; the AI SDK does not emit reasoning-delta.
   return isArkLlmVendor(config.llmVendor);
 }
 

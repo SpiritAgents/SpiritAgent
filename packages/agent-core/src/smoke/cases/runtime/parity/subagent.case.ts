@@ -25,12 +25,12 @@ export async function runSubagentCase(): Promise<RuntimeParityCaseResult> {
     onEvent: (event) => parentEvents.push(event),
   });
 
-  const subagentResult = await subagentRuntime.submitUserTurn("调用 SubAgent 输出一句话");
+  const subagentResult = await subagentRuntime.submitUserTurn("Call the SubAgent to output a sentence");
   if (subagentResult.kind !== "completed" || subagentResult.assistantText !== "SUBAGENT_OK") {
-    throw new Error("subagent smoke 未完成闭环。");
+    throw new Error("subagent smoke did not complete the turn loop.");
   }
   if (subagentExecutor.executedSubagentCalls !== 0) {
-    throw new Error("subagent smoke 错误落到了宿主 execute。");
+    throw new Error("subagent smoke incorrectly fell through to host execute.");
   }
   const subagentExecution = subagentResult.toolExecutions.find(
     (execution) => execution.toolName === "subagent",
@@ -38,23 +38,24 @@ export async function runSubagentCase(): Promise<RuntimeParityCaseResult> {
   if (
     !subagentExecution ||
     subagentExecution.failed ||
-    subagentExecution.output !== "好的，我是 SubAgent，哈哈哈"
+    subagentExecution.output !== "OK, I am the SubAgent, hahaha"
   ) {
-    throw new Error("subagent smoke 未记录正确的子代理工具结果。");
+    throw new Error("subagent smoke did not record the correct subagent tool result.");
   }
 
-  // 子会话事件只能经 drainActiveChildSessionEvents 抵达宿主，不得从父会话 onEvent 外溢
-  // （否则 server 会把子思考/正文广播成主会话 runtime.event，桌面主页面出现泄漏卡片）。
+  // Child session events may only reach the host via drainActiveChildSessionEvents; they must
+  // not leak through the parent session onEvent (otherwise the server broadcasts child
+  // thinking/content as the main session's runtime.event and leaked cards appear on the desktop main page).
   const leakedChildEvent = parentEvents.find(
     (event) =>
       (event.kind === "assistant-chunk" ||
         event.kind === "replace-pending-assistant" ||
         event.kind === "update-pending-assistant-thinking" ||
         event.kind === "assistant-thinking-segment-finalized") &&
-      event.text.includes("好的，我是 SubAgent"),
+      event.text.includes("OK, I am the SubAgent"),
   );
   if (leakedChildEvent) {
-    throw new Error("subagent smoke 子会话事件经父会话 onEvent 外溢。");
+    throw new Error("subagent smoke child session events leaked through the parent session onEvent.");
   }
 
   return { subagentResult };

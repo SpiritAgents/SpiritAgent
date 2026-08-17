@@ -2,7 +2,7 @@ import type { JsonObject, JsonValue } from "../ports.js";
 import { cloneJsonValue } from "../tool-agent.js";
 import type { LlmModelCapabilities, TransportRequestProfile } from "../llm-provider-shared.js";
 
-/** Bedrock 推理强度；`default` 表示不注入 `reasoningConfig`。 */
+/** Bedrock reasoning effort; `default` means no `reasoningConfig` is injected. */
 export type BedrockReasoningEffort =
   | "default"
   | "minimal"
@@ -16,22 +16,22 @@ export type BedrockReasoningEffort =
 export interface BedrockTransportConfig {
   transportKind: "bedrock";
   model: string;
-  /** AWS 区域（如 `us-east-1`）；来自宿主 `awsRegion`。 */
+  /** AWS region (e.g. `us-east-1`); from the host `awsRegion`. */
   region: string;
-  /** Bearer API Key；与 IAM 凭证二选一或 API Key 优先。 */
+  /** Bearer API Key; mutually exclusive with IAM credentials, API Key takes precedence. */
   apiKey?: string;
   accessKeyId?: string;
   secretAccessKey?: string;
-  /** 临时凭证；首版 UI 可不暴露，类型预留。 */
+  /** Temporary credentials; the first UI version may not expose this, type reserved. */
   sessionToken?: string;
-  /** 自定义 Bedrock endpoint / proxy。 */
+  /** Custom Bedrock endpoint / proxy. */
   baseUrl?: string;
   compactModel?: string;
   workspaceRoot?: string;
   modelCapabilities?: LlmModelCapabilities;
   reasoningEffort?: BedrockReasoningEffort;
   supportedReasoningEfforts?: readonly BedrockReasoningEffort[];
-  /** 代码补全等非 Agent 轻量请求的策略画像；缺省为 agent 路径默认行为。 */
+  /** Policy profile for lightweight non-Agent requests such as code completion; defaults to agent-path behavior. */
   transportRequestProfile?: TransportRequestProfile;
 }
 

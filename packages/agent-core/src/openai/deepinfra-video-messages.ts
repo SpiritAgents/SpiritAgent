@@ -9,11 +9,11 @@ import {
 import { resolveLocalMediaPath } from "./openai-multimodal-media-path.js";
 
 /**
- * DeepInfra 视频输入：无 Chat 专用 Files upload（`/v1/openai/files` 仅 Batch，purpose=batch|fine-tune），
- * 本地视频按 Xiaomi 同款方式内联为 `data:{MIME};base64,{...}` 写入 `video_url.url`。
- * 公网 https / 已有 data: URL 不改写。
+ * DeepInfra video input: no Chat-specific Files upload (`/v1/openai/files` is Batch-only, purpose=batch|fine-tune),
+ * so local videos are inlined as `data:{MIME};base64,{...}` into `video_url.url`, same as Xiaomi.
+ * Public https / existing data: URLs are left unchanged.
  *
- * 文档未写死上传上限，首版不设大小硬 cap；实测遇 413/400 再补阈值。
+ * The docs do not state a hard upload limit, so the first version sets no size cap; add a threshold once 413/400 is observed in practice.
  */
 export function resolveDeepInfraVideoUrlsInOpenAiMessages(
   config: OpenAiTransportConfig,

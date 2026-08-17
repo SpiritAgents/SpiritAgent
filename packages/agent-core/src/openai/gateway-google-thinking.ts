@@ -24,13 +24,13 @@ export function isGoogleGemini3Model(model: string): boolean {
   return normalizeGoogleGeminiModelId(model).includes("gemini-3");
 }
 
-/** Gemini 3+ 走 thinkingLevel；2.5 及更早走 thinkingBudget。 */
+/** Gemini 3+ uses thinkingLevel; 2.5 and earlier use thinkingBudget. */
 export function isGoogleGeminiThinkingLevelModel(model: string): boolean {
   const normalized = normalizeGoogleGeminiModelId(model);
   return normalized.includes("gemini-3");
 }
 
-/** Flash / Flash-Lite 系 Gemini 3+ 支持 API thinkingLevel=minimal（Pro 不支持）。 */
+/** Flash / Flash-Lite Gemini 3+ models support API thinkingLevel=minimal (Pro does not). */
 export function isGoogleGeminiMinimalThinkingLevelModel(model: string): boolean {
   if (!isGoogleGeminiThinkingLevelModel(model)) {
     return false;
@@ -71,7 +71,7 @@ export function buildGoogleThinkingConfigForEffort(
 
   if (effort === "none") {
     if (isGoogleGeminiThinkingLevelModel(model)) {
-      // 代码补全等内部路径仍写 none；Flash 系映射为 API minimal。
+      // Internal paths like code completion still write none; Flash models map to API minimal.
       if (isGoogleGeminiMinimalThinkingLevelModel(model)) {
         return { thinkingLevel: "minimal" };
       }

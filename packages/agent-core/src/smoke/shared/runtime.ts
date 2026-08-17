@@ -55,7 +55,7 @@ export function buildCompactSmokeHistory(): LlmMessage[] {
   return [
     {
       role: "assistant",
-      content: createLlmMessageContentFromText("我先列一下 packages/agent-core。"),
+      content: createLlmMessageContentFromText("Let me list packages/agent-core first."),
       toolCalls: [
         {
           id: "call-list-agent-core",
@@ -72,28 +72,28 @@ export function buildCompactSmokeHistory(): LlmMessage[] {
     {
       role: "user",
       content: createLlmMessageContentFromText(
-        "把这个 Rust agent 迁到 TypeScript，但先不要动 UI。",
+        "Migrate this Rust agent to TypeScript, but don't touch the UI yet.",
       ),
     },
     {
       role: "assistant",
       content: createLlmMessageContentFromText(
-        "可以，先把底层 provider 和 tool runtime 迁走，Rust TUI 先做 host。",
+        "OK, migrate the low-level provider and tool runtime first; the Rust TUI acts as host for now.",
       ),
     },
     {
       role: "user",
-      content: createLlmMessageContentFromText("第一步先接 OpenAI SDK，并补一个真实 smoke。"),
+      content: createLlmMessageContentFromText("First step: integrate the OpenAI SDK and add a real smoke."),
     },
     {
       role: "assistant",
       content: createLlmMessageContentFromText(
-        "已接入 OpenAI SDK，basic chat 与 tool call smoke 已跑通，接下来补 round-trip 和 compact smoke。",
+        "OpenAI SDK integrated; basic chat and tool call smokes pass; next add round-trip and compact smokes.",
       ),
     },
     {
       role: "assistant",
-      content: createLlmMessageContentFromText("我再读一下 openai transport 实现。"),
+      content: createLlmMessageContentFromText("Let me re-read the openai transport implementation."),
       toolCalls: [
         {
           id: "call-read-openai-transport",
@@ -112,13 +112,13 @@ export function buildCompactSmokeHistory(): LlmMessage[] {
     {
       role: "user",
       content: createLlmMessageContentFromText(
-        "压缩时要保留迁移目标、SDK 接入状态、以及后续还要做 host bridge 这几个点。",
+        "When compacting, keep the migration goal, the SDK integration status, and the remaining host bridge work.",
       ),
     },
     {
       role: "assistant",
       content: createLlmMessageContentFromText(
-        "收到，摘要里会保留目标、已验证链路、以及待做的 host/core bridge。",
+        "Got it; the summary will keep the goal, the verified pipeline, and the pending host/core bridge.",
       ),
     },
   ];

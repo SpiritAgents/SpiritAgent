@@ -9,7 +9,7 @@ import { buildGatewayAlibabaProviderOptions } from "./gateway-alibaba-thinking.j
 import { buildGatewayMinimaxProviderOptions } from "./gateway-minimax-thinking.js";
 import { isGatewayAnthropicClaudeModel } from "./gateway-anthropic-thinking.js";
 
-/** 解析 Gateway 模型 ID 的上游 slug，如 `deepseek/deepseek-v3` → `deepseek`。 */
+/** Parses the upstream slug from a Gateway model ID, e.g. `deepseek/deepseek-v3` → `deepseek`. */
 export function parseGatewayUpstreamSlug(model: string): string | undefined {
   const normalized = model.trim();
   const slashIndex = normalized.indexOf("/");
@@ -39,8 +39,8 @@ function thinkingTypeDisabledOptions(providerKey: string): Record<string, JsonOb
 }
 
 /**
- * Gateway 无统一关闭思考开关；按 model 上游 slug 注入与各直连厂商相同的 providerOptions。
- * 仅用于 `transportRequestProfile: 'code-completion'`。
+ * Gateway has no unified switch to disable thinking; inject the same providerOptions as each direct vendor based on the model's upstream slug.
+ * Only used for `transportRequestProfile: 'code-completion'`.
  */
 export function buildGatewayCodeCompletionProviderOptions(
   config: Pick<

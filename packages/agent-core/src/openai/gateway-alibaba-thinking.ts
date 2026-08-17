@@ -6,7 +6,7 @@ export function isGatewayAlibabaModel(llmVendor: string | undefined, model: stri
   return llmVendor === "vercel-ai-gateway" && parseGatewayUpstreamSlug(model) === "alibaba";
 }
 
-/** Gateway Alibaba/Qwen：经 alibaba 命名空间注入 enableThinking（AI SDK camelCase；非 HTTP enable_thinking）。 */
+/** Gateway Alibaba/Qwen: injects enableThinking via the alibaba namespace (AI SDK camelCase; not HTTP enable_thinking). */
 export function buildGatewayAlibabaProviderOptions(
   config: Pick<OpenAiTransportConfig, "llmVendor" | "model" | "vendorExtendedThinking">,
 ): Record<string, JsonObject> {

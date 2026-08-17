@@ -102,7 +102,7 @@ function llmDispatcherInstance(): Agent {
   return llmDispatcher;
 }
 
-/** LLM 出站请求：undici fetch；HTTP/2 由配置决定（TLS ALPN，对端不支持时回退 HTTP/1.1）。 */
+/** LLM outbound requests: undici fetch; HTTP/2 is config-driven (TLS ALPN, falls back to HTTP/1.1 when the peer does not support it). */
 export function getLlmFetch(): typeof fetch {
   const dispatcher = llmDispatcherInstance();
   const fetchWithDispatcher = async (input: RequestInfo | URL, init?: RequestInit) => {

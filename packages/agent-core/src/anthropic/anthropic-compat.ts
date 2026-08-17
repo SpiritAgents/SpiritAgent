@@ -30,18 +30,18 @@ export interface AnthropicTransportConfig {
   sendReasoning?: boolean;
   disableParallelToolUse?: boolean;
   structuredOutputMode?: AnthropicStructuredOutputMode;
-  /** 代码补全等非 Agent 轻量请求的策略画像；缺省为 agent 路径默认行为。 */
+  /** Policy profile for lightweight non-Agent requests such as code completion; defaults to agent-path behavior. */
   transportRequestProfile?: TransportRequestProfile;
-  /** Cloudflare AI Gateway 名称；请求时注入 `cf-aig-gateway-id`。 */
+  /** Cloudflare AI Gateway name; injected as `cf-aig-gateway-id` on requests. */
   cloudflareGatewayId?: string;
-  /** 与宿主 ModelProfile.provider 对齐，用于 Messages API 厂商扩展。 */
+  /** Aligned with the host ModelProfile.provider; used for Messages API vendor extensions. */
   llmVendor?: import("../openai/openai-compat.js").OpenAiLlmVendor;
   /**
-   * 目录标记：Meituan LongCat 等经 Messages API 发送 `thinking.type`。
-   * 仅在为 true 时对 `meituan` 注入 enabled/disabled。
+   * Catalog marker: vendors such as Meituan LongCat send `thinking.type` via the Messages API.
+   * Only injects enabled/disabled for `meituan` when true.
    */
   supportsThinkingSwitch?: boolean;
-  /** 缺省为 enabled；false 时发送 `thinking.type: disabled`。 */
+  /** Defaults to enabled; when false, sends `thinking.type: disabled`. */
   vendorExtendedThinking?: boolean;
 }
 

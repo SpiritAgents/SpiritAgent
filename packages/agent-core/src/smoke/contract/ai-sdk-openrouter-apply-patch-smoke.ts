@@ -45,7 +45,7 @@ async function main(): Promise<void> {
   const address = server.address();
   if (!address || typeof address === "string") {
     server.close();
-    throw new Error("无法获取本地 smoke server 端口。");
+    throw new Error("Unable to get the local smoke server port.");
   }
 
   const transport = new AiSdkOpenResponsesTransport();
@@ -73,12 +73,12 @@ async function main(): Promise<void> {
   server.close();
 
   if (firstRound.kind !== "success" || firstRound.result.step.kind !== "tool-calls") {
-    throw new Error("ai-sdk openrouter apply_patch smoke 未进入 tool-calls。");
+    throw new Error("ai-sdk openrouter apply_patch smoke did not reach tool-calls.");
   }
 
   const call = firstRound.result.step.calls[0];
   if (!call || call.name !== "apply_patch") {
-    throw new Error("ai-sdk openrouter apply_patch smoke 未收到 apply_patch 工具调用。");
+    throw new Error("ai-sdk openrouter apply_patch smoke did not receive an apply_patch tool call.");
   }
 }
 

@@ -190,9 +190,9 @@ test("formatDeepSeekInternalWebSearchDetail joins search queries and strips call
   assert.equal(
     formatDeepSeekInternalWebSearchDetail({
       type: "search",
-      queries: ["DeepSeek 是什么", "GPT 出到第几代了", "ws_call_id=call_00_abc"],
+      queries: ["What is DeepSeek", "Which generation is GPT up to", "ws_call_id=call_00_abc"],
     }),
-    "DeepSeek 是什么 GPT 出到第几代了",
+    "What is DeepSeek Which generation is GPT up to",
   );
 });
 

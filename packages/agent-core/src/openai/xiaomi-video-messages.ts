@@ -9,12 +9,12 @@ import {
 import { resolveLocalMediaPath } from "./openai-multimodal-media-path.js";
 
 /**
- * MiMo 视频理解不支持 Files API / 本地文件上传，仅接受公网 URL 或 data URL Base64。
- * 文档：https://mimo.mi.com/docs/zh-CN/quick-start/usage-guide/multimodal-understanding/video-understanding?target=%E8%A7%86%E9%A2%91%E4%BC%A0%E5%85%A5%E6%96%B9%E5%BC%8F
+ * MiMo video understanding does not support the Files API / local file upload; it only accepts public URLs or data URL Base64.
+ * Docs: https://mimo.mi.com/docs/zh-CN/quick-start/usage-guide/multimodal-understanding/video-understanding?target=%E8%A7%86%E9%A2%91%E4%BC%A0%E5%85%A5%E6%96%B9%E5%BC%8F
  */
 const MIMO_VIDEO_BASE64_MAX_ENCODED_BYTES = 50 * 1024 * 1024;
 
-/** 将本地 video_url 改写为 MiMo 要求的 `data:{MIME};base64,{纯 Base64}`。 */
+/** Rewrites a local video_url into the `data:{MIME};base64,{raw Base64}` form required by MiMo. */
 export function resolveXiaomiVideoUrlsInOpenAiMessages(
   config: OpenAiTransportConfig,
   messages: JsonValue[],
@@ -75,8 +75,8 @@ function pathToXiaomiEmbeddedVideoDataUrl(absolutePath: string): string {
   const base64 = Buffer.from(bytes).toString("base64");
   if (Buffer.byteLength(base64, "utf8") > MIMO_VIDEO_BASE64_MAX_ENCODED_BYTES) {
     throw new Error(
-      "MiMo 视频 Base64 编码后不得超过 50 MB，请改用公网 URL 或缩短视频。" +
-        " 见 https://mimo.mi.com/docs/zh-CN/quick-start/usage-guide/multimodal-understanding/video-understanding",
+      "MiMo video must not exceed 50 MB after Base64 encoding; use a public URL or shorten the video instead." +
+        " See https://mimo.mi.com/docs/zh-CN/quick-start/usage-guide/multimodal-understanding/video-understanding",
     );
   }
 

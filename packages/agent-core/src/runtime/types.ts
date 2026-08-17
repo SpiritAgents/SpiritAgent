@@ -138,12 +138,12 @@ export type RuntimeEvent<ToolRequest> =
       text: string;
     }
   | {
-      /** 清空 `thinkingTextStore` 前发出，宿主可固化为一条独立 UI 消息。 */
+      /** Emitted before clearing `thinkingTextStore`; the host may persist it as a standalone UI message. */
       kind: "assistant-thinking-segment-finalized";
       text: string;
       /**
-       * `before-next-tool`：固化在下一工具卡片之前（同段多工具之间）。
-       * `after-stream`：流结束前的收尾思考，排在所有工具之后。
+       * `before-next-tool`: finalize before the next tool card (between tools in the same segment).
+       * `after-stream`: trailing thinking before the stream ends, placed after all tools.
        */
       placement?: AssistantThinkingSegmentPlacement;
     }
@@ -617,7 +617,7 @@ export interface PendingToolCallBackgroundToolExecution<State, ToolRequest> {
   failed: boolean | undefined;
 }
 
-/** 后台槽位占用时暂存；真正启动时注入已完成前序工具后的 state。 */
+/** Held while the background slot is occupied; the state after prior tools complete is injected at actual start. */
 export interface DeferredBackgroundToolExecutionSpec<_State, ToolRequest> {
   pendingUserInput: string;
   request: ToolRequest;

@@ -3,7 +3,7 @@ import { parseGatewayUpstreamSlug } from "./gateway-code-completion-thinking.js"
 
 export type XaiProviderReasoningEffort = "none" | "low" | "medium" | "high";
 
-/** xAI Grok：经 xai 命名空间传 reasoningEffort（含 none 关闭思考）；见 https://docs.x.ai/developers/model-capabilities/text/reasoning */
+/** xAI Grok: passes reasoningEffort via the xai namespace (including none to disable thinking); see https://docs.x.ai/developers/model-capabilities/text/reasoning */
 export function resolveXaiProviderReasoningEffort(
   effort: string | undefined,
 ): XaiProviderReasoningEffort | undefined {

@@ -71,19 +71,19 @@ export async function runStreamingCase(): Promise<RuntimeParityCaseResult> {
     onEvent: (event) => streamingEvents.push(event),
   });
 
-  await streamingRuntime.startUserTurnStreaming("请流式输出");
+  await streamingRuntime.startUserTurnStreaming("Please stream the output");
   for (let index = 0; index < 24 && streamingRuntime.isBusy(); index += 1) {
     await flushMicrotasks(8);
     await streamingRuntime.poll();
   }
 
   if (streamingRuntime.isBusy()) {
-    throw new Error("streaming final smoke 未在预期轮次内完成。");
+    throw new Error("streaming final smoke did not finish within the expected rounds.");
   }
 
   const drainedStreamingEvents = streamingRuntime.drainEvents();
   if (!drainedStreamingEvents.some((event) => event.kind === "begin-assistant-response")) {
-    throw new Error("streaming final smoke 缺少 begin event。");
+    throw new Error("streaming final smoke is missing the begin event.");
   }
   if (
     !drainedStreamingEvents.some(
@@ -91,13 +91,13 @@ export async function runStreamingCase(): Promise<RuntimeParityCaseResult> {
         event.kind === "update-pending-assistant-thinking" && event.text.includes("thinking..."),
     )
   ) {
-    throw new Error("streaming final smoke 缺少 thinking 聚合事件。");
+    throw new Error("streaming final smoke is missing the thinking aggregation event.");
   }
   if (drainedStreamingEvents.filter((event) => event.kind === "assistant-chunk").length < 2) {
-    throw new Error("streaming final smoke 缺少 assistant chunk 事件。");
+    throw new Error("streaming final smoke is missing assistant chunk events.");
   }
   if (!drainedStreamingEvents.some((event) => event.kind === "assistant-response-completed")) {
-    throw new Error("streaming final smoke 缺少 completed event。");
+    throw new Error("streaming final smoke is missing the completed event.");
   }
 
   const previewEarlyExecutionTransport = new PreviewEarlyExecutionTransport();
@@ -113,17 +113,17 @@ export async function runStreamingCase(): Promise<RuntimeParityCaseResult> {
     onEvent: (event) => previewEarlyExecutionEvents.push(event),
   });
 
-  await previewEarlyExecutionRuntime.startUserTurnStreaming("请预览后读取文件");
+  await previewEarlyExecutionRuntime.startUserTurnStreaming("Preview, then read the file");
   for (let index = 0; index < 8 && previewEarlyExecutionExecutor.executedCalls === 0; index += 1) {
     await flushMicrotasks(4);
     await previewEarlyExecutionRuntime.poll();
   }
   if (previewEarlyExecutionExecutor.executedCalls !== 1) {
-    throw new Error("preview early execution smoke 未在正式 tool-calls completion 前执行工具。");
+    throw new Error("preview early execution smoke did not execute the tool before the formal tool-calls completion.");
   }
   if (previewEarlyExecutionTransport.toolCallRoundResolved) {
     throw new Error(
-      "preview early execution smoke 在正式 tool-calls completion 前不应已 resolve。",
+      "preview early execution smoke should not have resolved before the formal tool-calls completion.",
     );
   }
   if (
@@ -133,7 +133,7 @@ export async function runStreamingCase(): Promise<RuntimeParityCaseResult> {
         event.execution.toolCallId === "call-preview-read",
     )
   ) {
-    throw new Error("preview early execution smoke 未在 preview 后发出工具完成事件。");
+    throw new Error("preview early execution smoke did not emit the tool completion event after the preview.");
   }
 
   previewEarlyExecutionTransport.resolveToolCallRound();
@@ -142,7 +142,7 @@ export async function runStreamingCase(): Promise<RuntimeParityCaseResult> {
     await previewEarlyExecutionRuntime.poll();
   }
   if (previewEarlyExecutionRuntime.isBusy()) {
-    throw new Error("preview early execution smoke 未在预期轮次内完成。");
+    throw new Error("preview early execution smoke did not finish within the expected rounds.");
   }
   const previewEarlyExecutionResult = previewEarlyExecutionRuntime.takeCompletedTurnResult();
   if (
@@ -150,16 +150,16 @@ export async function runStreamingCase(): Promise<RuntimeParityCaseResult> {
     previewEarlyExecutionResult.kind !== "completed" ||
     previewEarlyExecutionResult.assistantText !== "PREVIEW_EARLY_OK"
   ) {
-    throw new Error("preview early execution smoke 未完成最终 assistant 轮次。");
+    throw new Error("preview early execution smoke did not complete the final assistant round.");
   }
   if (previewEarlyExecutionExecutor.executedCalls !== 1) {
-    throw new Error("preview early execution smoke 重复执行了工具。");
+    throw new Error("preview early execution smoke executed the tool more than once.");
   }
   const previewToolExecutions = previewEarlyExecutionResult.toolExecutions.filter(
     (execution) => execution.toolCallId === "call-preview-read",
   );
   if (previewToolExecutions.length !== 1) {
-    throw new Error("preview early execution smoke 未复用预览阶段工具结果。");
+    throw new Error("preview early execution smoke did not reuse the preview-phase tool result.");
   }
 
   const previewBackgroundTransport = new PreviewBackgroundDeferredTransport();
@@ -175,13 +175,13 @@ export async function runStreamingCase(): Promise<RuntimeParityCaseResult> {
     onEvent: (event) => previewBackgroundDeferredEvents.push(event),
   });
 
-  await previewBackgroundRuntime.startUserTurnStreaming("请预览后后台搜索");
+  await previewBackgroundRuntime.startUserTurnStreaming("Preview, then search in the background");
   for (let index = 0; index < 8; index += 1) {
     await flushMicrotasks(4);
     await previewBackgroundRuntime.poll();
   }
   if (previewBackgroundExecutor.executedCalls !== 0) {
-    throw new Error("preview background smoke 不应在正式 tool-calls completion 前启动后台工具。");
+    throw new Error("preview background smoke should not start the background tool before the formal tool-calls completion.");
   }
   if (
     previewBackgroundDeferredEvents.some(
@@ -189,14 +189,14 @@ export async function runStreamingCase(): Promise<RuntimeParityCaseResult> {
         event.kind === "tool-call-started" && event.toolCallId === "call-preview-background",
     )
   ) {
-    throw new Error("preview background smoke 不应在 formal path 前发出 tool-call-started。");
+    throw new Error("preview background smoke should not emit tool-call-started before the formal path.");
   }
   if (
     previewBackgroundDeferredEvents.some(
       (event) => event.kind === "background-tool-status" && event.toolName === "grep",
     )
   ) {
-    throw new Error("preview background smoke 不应在 formal path 前发出后台状态事件。");
+    throw new Error("preview background smoke should not emit background status events before the formal path.");
   }
 
   previewBackgroundTransport.resolveToolCallRound();
@@ -205,10 +205,10 @@ export async function runStreamingCase(): Promise<RuntimeParityCaseResult> {
     await previewBackgroundRuntime.poll();
   }
   if (previewBackgroundRuntime.isBusy()) {
-    throw new Error("preview background smoke 未在预期轮次内完成。");
+    throw new Error("preview background smoke did not finish within the expected rounds.");
   }
   if (Number(previewBackgroundExecutor.executedCalls) !== 1) {
-    throw new Error("preview background smoke 应只在 formal path 执行一次后台工具。");
+    throw new Error("preview background smoke should execute the background tool exactly once on the formal path.");
   }
   if (
     previewBackgroundDeferredEvents.filter(
@@ -216,7 +216,7 @@ export async function runStreamingCase(): Promise<RuntimeParityCaseResult> {
         event.kind === "tool-call-started" && event.toolCallId === "call-preview-background",
     ).length !== 1
   ) {
-    throw new Error("preview background smoke formal path 的 tool-call-started 次数不正确。");
+    throw new Error("preview background smoke formal path tool-call-started count is incorrect.");
   }
 
   const previewSubagentTransport = new PreviewSubagentDeferredTransport();
@@ -232,7 +232,7 @@ export async function runStreamingCase(): Promise<RuntimeParityCaseResult> {
     onEvent: (event) => previewSubagentDeferredEvents.push(event),
   });
 
-  await previewSubagentRuntime.startUserTurnStreaming("请预览后委托子代理");
+  await previewSubagentRuntime.startUserTurnStreaming("Preview, then delegate to the subagent");
   for (let index = 0; index < 8; index += 1) {
     await flushMicrotasks(4);
     await previewSubagentRuntime.poll();
@@ -242,7 +242,7 @@ export async function runStreamingCase(): Promise<RuntimeParityCaseResult> {
       (event) => event.kind === "tool-call-started" && event.toolCallId === "call-preview-subagent",
     )
   ) {
-    throw new Error("preview subagent smoke 不应在 defer-to-formal 前发出 tool-call-started。");
+    throw new Error("preview subagent smoke should not emit tool-call-started before defer-to-formal.");
   }
 
   previewSubagentTransport.resolveToolCallRound();
@@ -251,17 +251,17 @@ export async function runStreamingCase(): Promise<RuntimeParityCaseResult> {
     await previewSubagentRuntime.poll();
   }
   if (previewSubagentRuntime.isBusy()) {
-    throw new Error("preview subagent smoke 未在预期轮次内完成。");
+    throw new Error("preview subagent smoke did not finish within the expected rounds.");
   }
   if (previewSubagentExecutor.executedSubagentCalls !== 0) {
-    throw new Error("preview subagent smoke 错误落到了宿主 execute。");
+    throw new Error("preview subagent smoke incorrectly fell through to host execute.");
   }
   if (
     previewSubagentDeferredEvents.filter(
       (event) => event.kind === "tool-call-started" && event.toolCallId === "call-preview-subagent",
     ).length !== 1
   ) {
-    throw new Error("preview subagent smoke 的 tool-call-started 不应重复。");
+    throw new Error("preview subagent smoke tool-call-started should not be duplicated.");
   }
 
   const authorizationFailureRuntime = new AgentRuntime({
@@ -275,13 +275,13 @@ export async function runStreamingCase(): Promise<RuntimeParityCaseResult> {
     onEvent: (event) => authorizationFailureEvents.push(event),
   });
 
-  await authorizationFailureRuntime.startUserTurnStreaming("请读取不存在的文件");
+  await authorizationFailureRuntime.startUserTurnStreaming("Read a nonexistent file");
   for (let index = 0; index < 12 && authorizationFailureRuntime.isBusy(); index += 1) {
     await flushMicrotasks(4);
     await authorizationFailureRuntime.poll();
   }
   if (authorizationFailureRuntime.isBusy()) {
-    throw new Error("authorization failure smoke 未在预期轮次内完成。");
+    throw new Error("authorization failure smoke did not finish within the expected rounds.");
   }
 
   const drainedAuthorizationFailureEvents = authorizationFailureRuntime.drainEvents();
@@ -290,7 +290,7 @@ export async function runStreamingCase(): Promise<RuntimeParityCaseResult> {
       (event) => event.kind === "tool-call-started" && event.toolCallId === "call-stream-auth-fail",
     )
   ) {
-    throw new Error("authorization failure smoke 缺少 tool-call-started 事件。");
+    throw new Error("authorization failure smoke is missing the tool-call-started event.");
   }
   if (
     !drainedAuthorizationFailureEvents.some(
@@ -301,7 +301,7 @@ export async function runStreamingCase(): Promise<RuntimeParityCaseResult> {
         event.execution.output.includes("[authorization error]"),
     )
   ) {
-    throw new Error("authorization failure smoke 缺少 failed 工具完成事件。");
+    throw new Error("authorization failure smoke is missing the failed tool completion event.");
   }
 
   const authorizationFailureResult = authorizationFailureRuntime.takeCompletedTurnResult();
@@ -310,7 +310,7 @@ export async function runStreamingCase(): Promise<RuntimeParityCaseResult> {
     authorizationFailureResult.kind !== "completed" ||
     authorizationFailureResult.assistantText !== "AUTHORIZATION_FAILURE_OK"
   ) {
-    throw new Error("authorization failure smoke 未完成最终回复。");
+    throw new Error("authorization failure smoke did not complete the final reply.");
   }
   if (
     !authorizationFailureResult.toolExecutions.some(
@@ -320,7 +320,7 @@ export async function runStreamingCase(): Promise<RuntimeParityCaseResult> {
         execution.output.includes("[authorization error]"),
     )
   ) {
-    throw new Error("authorization failure smoke 未记录失败工具执行。");
+    throw new Error("authorization failure smoke did not record the failed tool execution.");
   }
   if (
     !authorizationFailureRuntime
@@ -337,7 +337,7 @@ export async function runStreamingCase(): Promise<RuntimeParityCaseResult> {
           ),
       )
   ) {
-    throw new Error("authorization failure smoke 未把 assistant tool call 父消息写入 llmHistory。");
+    throw new Error("authorization failure smoke did not write the assistant tool call parent message into llmHistory.");
   }
   if (
     !authorizationFailureRuntime
@@ -349,7 +349,7 @@ export async function runStreamingCase(): Promise<RuntimeParityCaseResult> {
           llmMessageTextContent(message.content).includes("[authorization error]"),
       )
   ) {
-    throw new Error("authorization failure smoke 未把失败工具结果写入 llmHistory。");
+    throw new Error("authorization failure smoke did not write the failed tool result into llmHistory.");
   }
 
   if (
@@ -369,7 +369,7 @@ export async function runStreamingCase(): Promise<RuntimeParityCaseResult> {
           ),
       )
   ) {
-    throw new Error("authorization failure smoke 未把 assistant tool call 父消息写入 archive。");
+    throw new Error("authorization failure smoke did not write the assistant tool call parent message into the archive.");
   }
 
   const timeoutRuntime = new AgentRuntime({
@@ -383,7 +383,7 @@ export async function runStreamingCase(): Promise<RuntimeParityCaseResult> {
     onEvent: (event) => timeoutEvents.push(event),
   });
 
-  await timeoutRuntime.startUserTurnStreaming("请等待超时");
+  await timeoutRuntime.startUserTurnStreaming("Please wait for the timeout");
   await flushMicrotasks();
   await timeoutRuntime.poll();
   timeoutRuntime.handleStreamStallTimeout(Date.now() + 25_000);
@@ -393,13 +393,13 @@ export async function runStreamingCase(): Promise<RuntimeParityCaseResult> {
       (event) => event.kind === "assistant-chunk" && event.text.includes("[stream timeout]"),
     )
   ) {
-    throw new Error("stream timeout smoke 未产生 timeout chunk。");
+    throw new Error("stream timeout smoke did not produce a timeout chunk.");
   }
   if (!drainedTimeoutEvents.some((event) => event.kind === "assistant-response-completed")) {
-    throw new Error("stream timeout smoke 未完成 pending response。");
+    throw new Error("stream timeout smoke did not complete the pending response.");
   }
   if (timeoutRuntime.pendingUserTurn() !== undefined) {
-    throw new Error("stream timeout smoke 结束后未清空 pending user turn。");
+    throw new Error("stream timeout smoke did not clear the pending user turn after finishing.");
   }
 
   const streamingFailureRuntime = new AgentRuntime({
@@ -413,16 +413,16 @@ export async function runStreamingCase(): Promise<RuntimeParityCaseResult> {
     onEvent: (event) => streamingFailureEvents.push(event),
   });
 
-  await streamingFailureRuntime.startUserTurnStreaming("请触发流式失败");
+  await streamingFailureRuntime.startUserTurnStreaming("Please trigger a streaming failure");
   for (let index = 0; index < 8 && streamingFailureRuntime.isBusy(); index += 1) {
     await flushMicrotasks(4);
     await streamingFailureRuntime.poll();
   }
   if (streamingFailureRuntime.isBusy()) {
-    throw new Error("streaming failure smoke 未在预期轮次内完成。");
+    throw new Error("streaming failure smoke did not finish within the expected rounds.");
   }
   if (streamingFailureRuntime.pendingUserTurn() !== undefined) {
-    throw new Error("streaming failure smoke 结束后未清空 pending user turn。");
+    throw new Error("streaming failure smoke did not clear the pending user turn after finishing.");
   }
   const drainedStreamingFailureEvents = streamingFailureRuntime.drainEvents();
   if (
@@ -432,12 +432,12 @@ export async function runStreamingCase(): Promise<RuntimeParityCaseResult> {
         event.text.includes("invalid chat setting (2013)"),
     )
   ) {
-    throw new Error("streaming failure smoke 未输出预期错误消息。");
+    throw new Error("streaming failure smoke did not output the expected error message.");
   }
   if (
     !drainedStreamingFailureEvents.some((event) => event.kind === "assistant-response-completed")
   ) {
-    throw new Error("streaming failure smoke 缺少 completed event。");
+    throw new Error("streaming failure smoke is missing the completed event.");
   }
 
   const streamingApprovalExecutor = new StreamingApprovalExecutor();
@@ -452,11 +452,11 @@ export async function runStreamingCase(): Promise<RuntimeParityCaseResult> {
     onEvent: (event) => streamingApprovalEvents.push(event),
   });
 
-  await streamingApprovalRuntime.startUserTurnStreaming("请流式审批后继续");
+  await streamingApprovalRuntime.startUserTurnStreaming("Approve in streaming mode, then continue");
   await flushMicrotasks(4);
   await streamingApprovalRuntime.poll();
   if (!streamingApprovalRuntime.hasPendingApproval()) {
-    throw new Error("streaming approval smoke 未进入待审批状态。");
+    throw new Error("streaming approval smoke did not enter the pending-approval state.");
   }
 
   await streamingApprovalRuntime.continuePendingApproval({ kind: "allow" });
@@ -465,7 +465,7 @@ export async function runStreamingCase(): Promise<RuntimeParityCaseResult> {
     await streamingApprovalRuntime.poll();
   }
   if (streamingApprovalRuntime.isBusy()) {
-    throw new Error("streaming approval smoke 未在预期轮次内完成。");
+    throw new Error("streaming approval smoke did not finish within the expected rounds.");
   }
 
   const drainedStreamingApprovalEvents = streamingApprovalRuntime.drainEvents();
@@ -473,24 +473,24 @@ export async function runStreamingCase(): Promise<RuntimeParityCaseResult> {
     drainedStreamingApprovalEvents.filter((event) => event.kind === "begin-assistant-response")
       .length < 2
   ) {
-    throw new Error("streaming approval smoke 应包含审批前后两次 begin event。");
+    throw new Error("streaming approval smoke should contain two begin events, before and after approval.");
   }
   if (
     !drainedStreamingApprovalEvents.some(
       (event) => event.kind === "approval-requested" && event.approval.toolName === "create_file",
     )
   ) {
-    throw new Error("streaming approval smoke 缺少 approval-requested 事件。");
+    throw new Error("streaming approval smoke is missing the approval-requested event.");
   }
   if (
     !drainedStreamingApprovalEvents.some(
       (event) => event.kind === "assistant-chunk" && event.text === "STREAM_APPROVAL_",
     )
   ) {
-    throw new Error("streaming approval smoke 缺少审批恢复后的流式 chunk。");
+    throw new Error("streaming approval smoke is missing the streaming chunk after approval resume.");
   }
   if (streamingApprovalExecutor.executedCalls !== 1) {
-    throw new Error("streaming approval smoke 工具执行次数不正确。");
+    throw new Error("streaming approval smoke tool execution count is incorrect.");
   }
   const streamingApprovalTrace = streamingApprovalRuntime.requestTrace();
   if (
@@ -498,14 +498,14 @@ export async function runStreamingCase(): Promise<RuntimeParityCaseResult> {
       (trace) => isJsonObject(trace) && trace.mode === "streaming-approval-round-2",
     )
   ) {
-    throw new Error("streaming approval smoke 缺少审批恢复后的 streaming trace。");
+    throw new Error("streaming approval smoke is missing the streaming trace after approval resume.");
   }
   if (
     streamingApprovalTrace.some(
       (trace) => isJsonObject(trace) && trace.mode === "streaming-approval-sync-fallback",
     )
   ) {
-    throw new Error("streaming approval smoke 错误退回到了非流式 round。");
+    throw new Error("streaming approval smoke incorrectly fell back to a non-streaming round.");
   }
 
   const streamingApprovalImageExecutor = new StreamingApprovalImageExecutor();
@@ -521,11 +521,11 @@ export async function runStreamingCase(): Promise<RuntimeParityCaseResult> {
     onEvent: (event) => streamingApprovalImageEvents.push(event),
   });
 
-  await streamingApprovalImageRuntime.startUserTurnStreaming("请审批后读取图片");
+  await streamingApprovalImageRuntime.startUserTurnStreaming("Approve, then read the image");
   await flushMicrotasks(4);
   await streamingApprovalImageRuntime.poll();
   if (!streamingApprovalImageRuntime.hasPendingApproval()) {
-    throw new Error("streaming approval image smoke 未进入待审批状态。");
+    throw new Error("streaming approval image smoke did not enter the pending-approval state.");
   }
 
   await streamingApprovalImageRuntime.continuePendingApproval({ kind: "allow" });
@@ -534,7 +534,7 @@ export async function runStreamingCase(): Promise<RuntimeParityCaseResult> {
     await streamingApprovalImageRuntime.poll();
   }
   if (streamingApprovalImageRuntime.isBusy()) {
-    throw new Error("streaming approval image smoke 未在预期轮次内完成。");
+    throw new Error("streaming approval image smoke did not finish within the expected rounds.");
   }
 
   const drainedStreamingApprovalImageEvents = streamingApprovalImageRuntime.drainEvents();
@@ -542,24 +542,24 @@ export async function runStreamingCase(): Promise<RuntimeParityCaseResult> {
     drainedStreamingApprovalImageEvents.filter((event) => event.kind === "begin-assistant-response")
       .length < 2
   ) {
-    throw new Error("streaming approval image smoke 应包含审批前后两次 begin event。");
+    throw new Error("streaming approval image smoke should contain two begin events, before and after approval.");
   }
   if (
     !drainedStreamingApprovalImageEvents.some(
       (event) => event.kind === "approval-requested" && event.approval.toolName === "read_file",
     )
   ) {
-    throw new Error("streaming approval image smoke 缺少 approval-requested 事件。");
+    throw new Error("streaming approval image smoke is missing the approval-requested event.");
   }
   if (
     !drainedStreamingApprovalImageEvents.some(
       (event) => event.kind === "assistant-chunk" && event.text === "STREAM_APPROVAL_IMAGE_",
     )
   ) {
-    throw new Error("streaming approval image smoke 缺少审批恢复后的流式 chunk。");
+    throw new Error("streaming approval image smoke is missing the streaming chunk after approval resume.");
   }
   if (streamingApprovalImageExecutor.executedCalls !== 1) {
-    throw new Error("streaming approval image smoke 工具执行次数不正确。");
+    throw new Error("streaming approval image smoke tool execution count is incorrect.");
   }
   const streamingApprovalImageTrace = streamingApprovalImageRuntime.requestTrace();
   if (
@@ -567,14 +567,14 @@ export async function runStreamingCase(): Promise<RuntimeParityCaseResult> {
       (trace) => isJsonObject(trace) && trace.mode === "streaming-approval-image-round-2",
     )
   ) {
-    throw new Error("streaming approval image smoke 缺少审批恢复后的 streaming trace。");
+    throw new Error("streaming approval image smoke is missing the streaming trace after approval resume.");
   }
   if (
     streamingApprovalImageTrace.some(
       (trace) => isJsonObject(trace) && trace.mode === "streaming-approval-image-sync-fallback",
     )
   ) {
-    throw new Error("streaming approval image smoke 错误退回到了非流式 round。");
+    throw new Error("streaming approval image smoke incorrectly fell back to a non-streaming round.");
   }
   if (
     !streamingApprovalImageRuntime
@@ -586,7 +586,7 @@ export async function runStreamingCase(): Promise<RuntimeParityCaseResult> {
           llmMessageImagePaths(message.content).includes("approved-image.png"),
       )
   ) {
-    throw new Error("streaming approval image smoke 未把图片投影写入历史。");
+    throw new Error("streaming approval image smoke did not write the image projection into the history.");
   }
 
   const streamingApprovalThenImageExecutor = new StreamingApprovalExecutor();
@@ -610,11 +610,11 @@ export async function runStreamingCase(): Promise<RuntimeParityCaseResult> {
     onEvent: (event) => streamingApprovalThenImageEvents.push(event),
   });
 
-  await streamingApprovalThenImageRuntime.startUserTurnStreaming("请审批后继续生成图片");
+  await streamingApprovalThenImageRuntime.startUserTurnStreaming("Approve, then continue generating the image");
   await flushMicrotasks(4);
   await streamingApprovalThenImageRuntime.poll();
   if (!streamingApprovalThenImageRuntime.hasPendingApproval()) {
-    throw new Error("streaming approval then image smoke 未进入待审批状态。");
+    throw new Error("streaming approval then image smoke did not enter the pending-approval state.");
   }
 
   let approvalReturned = false;
@@ -626,19 +626,19 @@ export async function runStreamingCase(): Promise<RuntimeParityCaseResult> {
   await flushMicrotasks(32);
   if (!approvalReturned) {
     throw new Error(
-      "streaming approval then image smoke 不应等待 generate_image 完成后才结束审批恢复。",
+      "streaming approval then image smoke should not wait for generate_image to finish before ending the approval resume.",
     );
   }
   await continueApprovalPromise;
   if (streamingApprovalThenImageRuntime.hasPendingApproval()) {
-    throw new Error("streaming approval then image smoke 审批恢复后应立即清空待审批状态。");
+    throw new Error("streaming approval then image smoke should clear the pending-approval state immediately after resume.");
   }
   if (!streamingApprovalThenImageRuntime.isBusy()) {
-    throw new Error("streaming approval then image smoke 审批恢复后应继续保持 busy。");
+    throw new Error("streaming approval then image smoke should stay busy after the approval resume.");
   }
   if (generateImageStarted !== 0) {
     throw new Error(
-      "streaming approval then image smoke 不应在 continuePendingApproval 内直接启动 generate_image。",
+      "streaming approval then image smoke should not start generate_image directly inside continuePendingApproval.",
     );
   }
 
@@ -648,7 +648,7 @@ export async function runStreamingCase(): Promise<RuntimeParityCaseResult> {
       (event) => event.kind === "approval-resolved" && event.toolName === "create_file",
     )
   ) {
-    throw new Error("streaming approval then image smoke 缺少 approval-resolved 事件。");
+    throw new Error("streaming approval then image smoke is missing the approval-resolved event.");
   }
   if (
     !drainedApprovalThenImageEvents.some(
@@ -658,7 +658,7 @@ export async function runStreamingCase(): Promise<RuntimeParityCaseResult> {
         event.execution.output.includes("approved output for create_file"),
     )
   ) {
-    throw new Error("streaming approval then image smoke 缺少已审批工具的完成事件。");
+    throw new Error("streaming approval then image smoke is missing the completion event for the approved tool.");
   }
   if (
     drainedApprovalThenImageEvents.some(
@@ -667,7 +667,7 @@ export async function runStreamingCase(): Promise<RuntimeParityCaseResult> {
     )
   ) {
     throw new Error(
-      "streaming approval then image smoke 不应在审批恢复事件批次里提前完成 generate_image。",
+      "streaming approval then image smoke should not finish generate_image early in the approval resume event batch.",
     );
   }
 
@@ -677,11 +677,11 @@ export async function runStreamingCase(): Promise<RuntimeParityCaseResult> {
   });
   await flushMicrotasks(32);
   if (Number(generateImageStarted) !== 1) {
-    throw new Error("streaming approval then image smoke 下一拍 poll 应启动 generate_image。");
+    throw new Error("streaming approval then image smoke next poll should start generate_image.");
   }
   if (continuationPollReturned) {
     throw new Error(
-      "streaming approval then image smoke generate_image 未完成前 continuation poll 不应提前返回。",
+      "streaming approval then image smoke continuation poll should not return early before generate_image finishes.",
     );
   }
 
@@ -696,7 +696,7 @@ export async function runStreamingCase(): Promise<RuntimeParityCaseResult> {
     await streamingApprovalThenImageRuntime.poll();
   }
   if (streamingApprovalThenImageRuntime.isBusy()) {
-    throw new Error("streaming approval then image smoke 未在预期轮次内完成。");
+    throw new Error("streaming approval then image smoke did not finish within the expected rounds.");
   }
 
   const streamingApprovalThenImageResult =
@@ -706,10 +706,10 @@ export async function runStreamingCase(): Promise<RuntimeParityCaseResult> {
     streamingApprovalThenImageResult.kind !== "completed" ||
     streamingApprovalThenImageResult.assistantText !== "STREAM_APPROVAL_THEN_IMAGE_OK"
   ) {
-    throw new Error("streaming approval then image smoke 未完成最终回复。");
+    throw new Error("streaming approval then image smoke did not complete the final reply.");
   }
   if (streamingApprovalThenImageExecutor.executedCalls !== 1) {
-    throw new Error("streaming approval then image smoke 宿主工具执行次数不正确。");
+    throw new Error("streaming approval then image smoke host tool execution count is incorrect.");
   }
   if (
     !streamingApprovalThenImageResult.toolExecutions.some(
@@ -718,7 +718,7 @@ export async function runStreamingCase(): Promise<RuntimeParityCaseResult> {
         execution.output.includes("[generated image] approval-follow-up ready"),
     )
   ) {
-    throw new Error("streaming approval then image smoke 未记录 generate_image 结果。");
+    throw new Error("streaming approval then image smoke did not record the generate_image result.");
   }
 
   const streamingGuidanceExecutor = new StreamingApprovalExecutor();
@@ -733,23 +733,23 @@ export async function runStreamingCase(): Promise<RuntimeParityCaseResult> {
     onEvent: (event) => streamingGuidanceEvents.push(event),
   });
 
-  await streamingGuidanceRuntime.startUserTurnStreaming("请流式审批后改成总结");
+  await streamingGuidanceRuntime.startUserTurnStreaming("Approve in streaming mode, then switch to summarizing");
   await flushMicrotasks(4);
   await streamingGuidanceRuntime.poll();
   if (!streamingGuidanceRuntime.hasPendingApproval()) {
-    throw new Error("streaming guidance smoke 未进入待审批状态。");
+    throw new Error("streaming guidance smoke did not enter the pending-approval state.");
   }
 
   await streamingGuidanceRuntime.continuePendingApproval({
     kind: "guidance",
-    userMessage: "不要写文件，直接总结",
+    userMessage: "Do not write the file, just summarize",
   });
   for (let index = 0; index < 12 && streamingGuidanceRuntime.isBusy(); index += 1) {
     await flushMicrotasks(4);
     await streamingGuidanceRuntime.poll();
   }
   if (streamingGuidanceRuntime.isBusy()) {
-    throw new Error("streaming guidance smoke 未在预期轮次内完成。");
+    throw new Error("streaming guidance smoke did not finish within the expected rounds.");
   }
 
   const drainedStreamingGuidanceEvents = streamingGuidanceRuntime.drainEvents();
@@ -757,24 +757,24 @@ export async function runStreamingCase(): Promise<RuntimeParityCaseResult> {
     drainedStreamingGuidanceEvents.filter((event) => event.kind === "begin-assistant-response")
       .length < 2
   ) {
-    throw new Error("streaming guidance smoke 应包含审批前后两次 begin event。");
+    throw new Error("streaming guidance smoke should contain two begin events, before and after approval.");
   }
   if (
     !drainedStreamingGuidanceEvents.some(
       (event) => event.kind === "approval-requested" && event.approval.toolName === "create_file",
     )
   ) {
-    throw new Error("streaming guidance smoke 缺少 approval-requested 事件。");
+    throw new Error("streaming guidance smoke is missing the approval-requested event.");
   }
   if (
     !drainedStreamingGuidanceEvents.some(
       (event) => event.kind === "assistant-chunk" && event.text === "STREAM_GUIDANCE_",
     )
   ) {
-    throw new Error("streaming guidance smoke 缺少审批恢复后的流式 chunk。");
+    throw new Error("streaming guidance smoke is missing the streaming chunk after approval resume.");
   }
   if (streamingGuidanceExecutor.executedCalls !== 1) {
-    throw new Error("streaming guidance smoke 应继续执行后续排队工具。");
+    throw new Error("streaming guidance smoke should continue executing the queued tools.");
   }
   const streamingGuidanceTrace = streamingGuidanceRuntime.requestTrace();
   if (
@@ -782,14 +782,14 @@ export async function runStreamingCase(): Promise<RuntimeParityCaseResult> {
       (trace) => isJsonObject(trace) && trace.mode === "streaming-guidance-round-2",
     )
   ) {
-    throw new Error("streaming guidance smoke 缺少审批恢复后的 streaming trace。");
+    throw new Error("streaming guidance smoke is missing the streaming trace after approval resume.");
   }
   if (
     streamingGuidanceTrace.some(
       (trace) => isJsonObject(trace) && trace.mode === "streaming-guidance-sync-fallback",
     )
   ) {
-    throw new Error("streaming guidance smoke 错误退回到了非流式 round。");
+    throw new Error("streaming guidance smoke incorrectly fell back to a non-streaming round.");
   }
 
   const streamingBackgroundExecutor = new PollingBackgroundExecutor();
@@ -804,19 +804,19 @@ export async function runStreamingCase(): Promise<RuntimeParityCaseResult> {
     onEvent: (event) => streamingBackgroundEvents.push(event),
   });
 
-  await streamingBackgroundRuntime.startUserTurnStreaming("请流式走后台工具");
+  await streamingBackgroundRuntime.startUserTurnStreaming("Use the background tool in streaming mode");
   await flushMicrotasks(4);
   await streamingBackgroundRuntime.poll();
   if (!streamingBackgroundRuntime.isBusy()) {
-    throw new Error("streaming background smoke 应在后台工具执行期间保持 busy。");
+    throw new Error("streaming background smoke should stay busy while the background tool runs.");
   }
   const streamingBackgroundAux = streamingBackgroundRuntime.pendingAuxState();
   if (
     !streamingBackgroundAux ||
     streamingBackgroundAux.kind !== "thinking" ||
-    streamingBackgroundAux.detailText !== "搜索中: runtime parity"
+    streamingBackgroundAux.detailText !== "Searching: runtime parity"
   ) {
-    throw new Error("streaming background smoke 未暴露 thinking aux 状态。");
+    throw new Error("streaming background smoke did not expose the thinking aux state.");
   }
 
   streamingBackgroundExecutor.finish('background result for {"query":"runtime parity"}');
@@ -825,28 +825,28 @@ export async function runStreamingCase(): Promise<RuntimeParityCaseResult> {
     await streamingBackgroundRuntime.poll();
   }
   if (streamingBackgroundRuntime.isBusy()) {
-    throw new Error("streaming background smoke 未在预期轮次内完成。");
+    throw new Error("streaming background smoke did not finish within the expected rounds.");
   }
   const drainedStreamingBackgroundEvents = streamingBackgroundRuntime.drainEvents();
   if (
     drainedStreamingBackgroundEvents.filter((event) => event.kind === "begin-assistant-response")
       .length < 2
   ) {
-    throw new Error("streaming background smoke 应包含两次 begin event。");
+    throw new Error("streaming background smoke should contain two begin events.");
   }
   if (
     !drainedStreamingBackgroundEvents.some(
       (event) => event.kind === "background-tool-status" && event.phase === "started",
     )
   ) {
-    throw new Error("streaming background smoke 缺少后台开始事件。");
+    throw new Error("streaming background smoke is missing the background started event.");
   }
   if (
     !drainedStreamingBackgroundEvents.some(
       (event) => event.kind === "assistant-chunk" && event.text === "STREAM_BG_",
     )
   ) {
-    throw new Error("streaming background smoke 缺少恢复后的流式 chunk。");
+    throw new Error("streaming background smoke is missing the streaming chunk after resume.");
   }
 
   const streamingCompactionTransport = new StreamingCompactionTransport();
@@ -878,17 +878,17 @@ export async function runStreamingCase(): Promise<RuntimeParityCaseResult> {
       },
       {
         role: "assistant",
-        content: createLlmMessageContentFromText("旧回答。"),
+        content: createLlmMessageContentFromText("Old answer."),
       },
     ],
   );
 
-  await streamingCompactionRuntime.startUserTurnStreaming("请流式处理超长上下文");
+  await streamingCompactionRuntime.startUserTurnStreaming("Handle the overlong context in streaming mode");
   await flushMicrotasks(4);
   await streamingCompactionRuntime.poll();
   const streamingCompactionAux = streamingCompactionRuntime.pendingAuxState();
   if (!streamingCompactionAux || streamingCompactionAux.kind !== "compressing") {
-    throw new Error("streaming compact smoke 未进入 compressing aux 状态。");
+    throw new Error("streaming compact smoke did not enter the compressing aux state.");
   }
 
   streamingCompactionTransport.finishCompaction();
@@ -897,14 +897,14 @@ export async function runStreamingCase(): Promise<RuntimeParityCaseResult> {
     await streamingCompactionRuntime.poll();
   }
   if (streamingCompactionRuntime.isBusy()) {
-    throw new Error("streaming compact smoke 未在预期轮次内完成。");
+    throw new Error("streaming compact smoke did not finish within the expected rounds.");
   }
   const drainedStreamingCompactionEvents = streamingCompactionRuntime.drainEvents();
   if (
     drainedStreamingCompactionEvents.filter((event) => event.kind === "begin-assistant-response")
       .length !== 1
   ) {
-    throw new Error("streaming compact smoke 在自动压缩重试后不应额外发出 begin event。");
+    throw new Error("streaming compact smoke should not emit an extra begin event after the auto-compaction retry.");
   }
   if (
     !drainedStreamingCompactionEvents.some(
@@ -913,14 +913,14 @@ export async function runStreamingCase(): Promise<RuntimeParityCaseResult> {
         event.text.includes("compacted history"),
     )
   ) {
-    throw new Error("streaming compact smoke 缺少 compaction update 事件。");
+    throw new Error("streaming compact smoke is missing the compaction update event.");
   }
   if (
     !drainedStreamingCompactionEvents.some(
       (event) => event.kind === "assistant-chunk" && event.text === "STREAM_COMPACT_",
     )
   ) {
-    throw new Error("streaming compact smoke 缺少压缩后恢复的流式 chunk。");
+    throw new Error("streaming compact smoke is missing the streaming chunk resumed after compaction.");
   }
 
   const toolRoundTransport = new StreamingToolRoundTransport();
@@ -934,13 +934,13 @@ export async function runStreamingCase(): Promise<RuntimeParityCaseResult> {
     extractAssistantText: extractScriptedAssistantText,
   });
 
-  await noTimeoutRuntime.startUserTurnStreaming("这是一个 tool round");
+  await noTimeoutRuntime.startUserTurnStreaming("This is a tool round");
   noTimeoutRuntime.handleStreamStallTimeout(Date.now() + 25_000);
   if (!noTimeoutRuntime.isBusy()) {
-    throw new Error("tool round timeout smoke 不应在 decision 未完成时超时退出。");
+    throw new Error("tool round timeout smoke should not time out before the decision completes.");
   }
   toolRoundTransport.finish(
-    createScriptedState(noTimeoutRuntime.history() as LlmMessage[], "这是一个 tool round"),
+    createScriptedState(noTimeoutRuntime.history() as LlmMessage[], "This is a tool round"),
   );
   await flushMicrotasks();
   await noTimeoutRuntime.poll();
@@ -1005,7 +1005,7 @@ class StreamingApprovalThenGenerateImageTransport implements LlmTransport<
                 ...state.messages,
                 {
                   role: "assistant",
-                  content: "先审批写文件，再继续生成图片。",
+                  content: "Approve the file write first, then continue generating the image.",
                   tool_calls: [
                     {
                       id: "call-stream-approval-then-image-file",
@@ -1062,7 +1062,7 @@ class StreamingApprovalThenGenerateImageTransport implements LlmTransport<
         eventStream: streamFromEvents([]),
         completion: Promise.resolve({
           kind: "failure",
-          error: "streaming approval then image resume 未写回审批工具结果。",
+          error: "streaming approval then image resume did not write back the approved tool result.",
           requestTrace: [{ mode: "streaming-approval-then-image-round-2-missing-approved-tool" }],
         }),
       };
@@ -1081,7 +1081,7 @@ class StreamingApprovalThenGenerateImageTransport implements LlmTransport<
         eventStream: streamFromEvents([]),
         completion: Promise.resolve({
           kind: "failure",
-          error: "streaming approval then image resume 未写回 generate_image 结果。",
+          error: "streaming approval then image resume did not write back the generate_image result.",
           requestTrace: [{ mode: "streaming-approval-then-image-round-2-missing-image-tool" }],
         }),
       };
@@ -1151,7 +1151,7 @@ class PreviewEarlyExecutionTransport implements LlmTransport<undefined, Scripted
     _state: ScriptedState,
     _tools: JsonValue,
   ): Promise<ToolAgentRoundCompletion<ScriptedState>> {
-    throw new Error("preview early execution smoke 应走 streaming transport。");
+    throw new Error("preview early execution smoke should use the streaming transport.");
   }
 
   async startToolAgentRoundStreaming(
@@ -1193,7 +1193,7 @@ class PreviewEarlyExecutionTransport implements LlmTransport<undefined, Scripted
       eventStream: streamFromEvents([]),
       completion: Promise.resolve({
         kind: "failure",
-        error: "preview early execution smoke 不应进入额外轮次。",
+        error: "preview early execution smoke should not enter an extra round.",
         requestTrace: [{ mode: "preview-early-extra-round" }],
       }),
     };
@@ -1201,7 +1201,7 @@ class PreviewEarlyExecutionTransport implements LlmTransport<undefined, Scripted
 
   resolveToolCallRound(): void {
     if (!this.firstRoundState || !this.resolveFirstRound) {
-      throw new Error("preview early execution smoke 未准备好正式 tool-calls completion。");
+      throw new Error("preview early execution smoke did not prepare the formal tool-calls completion.");
     }
     this.toolCallRoundResolved = true;
     this.resolveFirstRound(this.buildToolCallRound(this.firstRoundState));
@@ -1243,7 +1243,7 @@ class PreviewEarlyExecutionTransport implements LlmTransport<undefined, Scripted
             ...state.messages,
             {
               role: "assistant",
-              content: "准备读取文件。",
+              content: "Preparing to read the file.",
               tool_calls: [
                 {
                   id: "call-preview-read",
@@ -1316,7 +1316,7 @@ class AuthorizationFailureTransport implements LlmTransport<undefined, ScriptedS
               ...state.messages,
               {
                 role: "assistant",
-                content: "我先读一下这个文件。",
+                content: "Let me read this file first.",
                 tool_calls: [
                   {
                     id: "call-stream-auth-fail",
@@ -1357,7 +1357,7 @@ class AuthorizationFailureTransport implements LlmTransport<undefined, ScriptedS
     if (!hasAuthorizationFailure) {
       return {
         kind: "failure",
-        error: "authorization failure 状态未写回。",
+        error: "authorization failure state was not written back.",
         requestTrace: [{ mode: "authorization-failure-round-2-missing-tool" }],
       };
     }
@@ -1428,7 +1428,7 @@ class PreviewBackgroundDeferredTransport implements LlmTransport<undefined, Scri
     _state: ScriptedState,
     _tools: JsonValue,
   ): Promise<ToolAgentRoundCompletion<ScriptedState>> {
-    throw new Error("preview background smoke 应走 streaming transport。");
+    throw new Error("preview background smoke should use the streaming transport.");
   }
 
   async startToolAgentRoundStreaming(
@@ -1483,7 +1483,7 @@ class PreviewBackgroundDeferredTransport implements LlmTransport<undefined, Scri
       eventStream: streamFromEvents([]),
       completion: Promise.resolve({
         kind: "failure",
-        error: "preview background smoke 不应进入额外轮次。",
+        error: "preview background smoke should not enter an extra round.",
         requestTrace: [{ mode: "preview-background-extra-round" }],
       }),
     };
@@ -1491,7 +1491,7 @@ class PreviewBackgroundDeferredTransport implements LlmTransport<undefined, Scri
 
   resolveToolCallRound(): void {
     if (!this.firstRoundState || !this.resolveFirstRound) {
-      throw new Error("preview background smoke 未准备好正式 tool-calls completion。");
+      throw new Error("preview background smoke did not prepare the formal tool-calls completion.");
     }
     this.resolveFirstRound({
       kind: "success",
@@ -1501,7 +1501,7 @@ class PreviewBackgroundDeferredTransport implements LlmTransport<undefined, Scri
             ...this.firstRoundState.messages,
             {
               role: "assistant",
-              content: "准备后台搜索。",
+              content: "Preparing to search in the background.",
               tool_calls: [
                 {
                   id: "call-preview-background",
@@ -1580,7 +1580,7 @@ class PreviewSubagentDeferredTransport implements LlmTransport<undefined, Script
     _state: ScriptedState,
     _tools: JsonValue,
   ): Promise<ToolAgentRoundCompletion<ScriptedState>> {
-    throw new Error("preview subagent smoke 应走 streaming transport。");
+    throw new Error("preview subagent smoke should use the streaming transport.");
   }
 
   async startToolAgentRoundStreaming(
@@ -1598,7 +1598,7 @@ class PreviewSubagentDeferredTransport implements LlmTransport<undefined, Script
             kind: "streaming-tool-preview",
             toolCallId: "call-preview-subagent",
             toolName: "subagent",
-            argumentsJson: '{"task":"输出：好的，我是 SubAgent，哈哈哈"}',
+            argumentsJson: '{"task":"Output: OK, I am the SubAgent, hahaha"}',
           },
         ]),
         completion: new Promise((resolve) => {
@@ -1620,7 +1620,7 @@ class PreviewSubagentDeferredTransport implements LlmTransport<undefined, Script
           eventStream: streamFromEvents([]),
           completion: Promise.resolve({
             kind: "failure",
-            error: "preview subagent child round 未收到委托后的 user turn。",
+            error: "preview subagent child round did not receive the delegated user turn.",
             requestTrace: [{ mode: "preview-subagent-child-round-missing-user-turn" }],
           }),
         };
@@ -1634,7 +1634,7 @@ class PreviewSubagentDeferredTransport implements LlmTransport<undefined, Script
             state: {
               messages: [
                 ...state.messages,
-                { role: "assistant", content: "好的，我是 SubAgent，哈哈哈" },
+                { role: "assistant", content: "OK, I am the SubAgent, hahaha" },
               ],
               steps: state.steps + 1,
             },
@@ -1656,13 +1656,13 @@ class PreviewSubagentDeferredTransport implements LlmTransport<undefined, Script
       !toolResultMessage ||
       !isJsonObject(toolResultMessage) ||
       typeof toolResultMessage.content !== "string" ||
-      !toolResultMessage.content.includes("好的，我是 SubAgent，哈哈哈")
+      !toolResultMessage.content.includes("OK, I am the SubAgent, hahaha")
     ) {
       return {
         eventStream: streamFromEvents([]),
         completion: Promise.resolve({
           kind: "failure",
-          error: "preview subagent parent round 未收到子代理结果。",
+          error: "preview subagent parent round did not receive the subagent result.",
           requestTrace: [{ mode: "preview-subagent-parent-round-missing-tool-result" }],
         }),
       };
@@ -1693,7 +1693,7 @@ class PreviewSubagentDeferredTransport implements LlmTransport<undefined, Script
       eventStream: streamFromEvents([]),
       completion: Promise.resolve({
         kind: "failure",
-        error: "preview subagent smoke 不应进入额外轮次。",
+        error: "preview subagent smoke should not enter an extra round.",
         requestTrace: [{ mode: "preview-subagent-extra-round" }],
       }),
     };
@@ -1701,7 +1701,7 @@ class PreviewSubagentDeferredTransport implements LlmTransport<undefined, Script
 
   resolveToolCallRound(): void {
     if (!this.firstRoundState || !this.resolveFirstRound) {
-      throw new Error("preview subagent smoke 未准备好正式 tool-calls completion。");
+      throw new Error("preview subagent smoke did not prepare the formal tool-calls completion.");
     }
     this.resolveFirstRound({
       kind: "success",
@@ -1711,14 +1711,14 @@ class PreviewSubagentDeferredTransport implements LlmTransport<undefined, Script
             ...this.firstRoundState.messages,
             {
               role: "assistant",
-              content: "准备委托子代理。",
+              content: "Preparing to delegate to the subagent.",
               tool_calls: [
                 {
                   id: "call-preview-subagent",
                   type: "function",
                   function: {
                     name: "subagent",
-                    arguments: '{"task":"输出：好的，我是 SubAgent，哈哈哈"}',
+                    arguments: '{"task":"Output: OK, I am the SubAgent, hahaha"}',
                   },
                 },
               ],
@@ -1732,7 +1732,7 @@ class PreviewSubagentDeferredTransport implements LlmTransport<undefined, Script
             {
               id: "call-preview-subagent",
               name: "subagent",
-              argumentsJson: '{"task":"输出：好的，我是 SubAgent，哈哈哈"}',
+              argumentsJson: '{"task":"Output: OK, I am the SubAgent, hahaha"}',
             },
           ],
         },

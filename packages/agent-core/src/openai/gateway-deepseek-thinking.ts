@@ -8,7 +8,7 @@ export function isGatewayDeepSeekModel(llmVendor: string | undefined, model: str
   return llmVendor === "vercel-ai-gateway" && parseGatewayUpstreamSlug(model) === "deepseek";
 }
 
-/** Gateway DeepSeek：经 deepseek providerOptions 控制 thinking（非 openai 命名空间）。 */
+/** Gateway DeepSeek: controls thinking via deepseek providerOptions (not the openai namespace). */
 export function buildGatewayDeepSeekProviderOptions(
   config: Pick<
     OpenAiTransportConfig,

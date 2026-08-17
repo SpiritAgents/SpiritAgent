@@ -4,7 +4,7 @@ import type { OpenAiTransportConfig } from "./openai-compat.js";
 import { openAiReasoningEffort } from "./openai-compat.js";
 import { parseGatewayUpstreamSlug } from "./gateway-code-completion-thinking.js";
 
-/** 文档：https://platform.kimi.com/docs/api/chat — 仅 kimi-k2.5+ 支持 thinking.type 开关。 */
+/** Docs: https://platform.kimi.com/docs/api/chat — only kimi-k2.5+ supports the thinking.type switch. */
 function normalizeMoonshotModelId(model: string): string {
   const normalized = model.trim().toLowerCase();
   const slashIndex = normalized.lastIndexOf("/");
@@ -28,12 +28,12 @@ function parseKimiKModelVersion(model: string): { major: number; minor: number }
   return { major, minor };
 }
 
-/** 文档：https://platform.kimi.com/docs/guide/use-thinking-effort — K3 常开思考，仅用顶层 reasoning_effort。 */
+/** Docs: https://platform.kimi.com/docs/guide/use-thinking-effort — K3 always thinks, controlled only via the top-level reasoning_effort. */
 export function isMoonshotKimiK3Model(model: string): boolean {
   return /^kimi-k3(?:-|$)/.test(normalizeMoonshotModelId(model));
 }
 
-/** moonshot-v1-*、kimi-k2.7-code-*（含 highspeed）与 kimi-k3 不支持 thinking.type 开关。 */
+/** moonshot-v1-*, kimi-k2.7-code-* (including highspeed), and kimi-k3 do not support the thinking.type switch. */
 export function isMoonshotThinkingSwitchExcludedModel(model: string): boolean {
   const id = normalizeMoonshotModelId(model);
   if (id.startsWith("moonshot-v1-") || id === "moonshot-v1") {
@@ -48,7 +48,7 @@ export function isMoonshotThinkingSwitchExcludedModel(model: string): boolean {
   return false;
 }
 
-/** kimi-k2.5 及以上（含未来 k2.x / k3+），排除不支持 thinking 的型号。 */
+/** kimi-k2.5 and above (including future k2.x / k3+), excluding models that do not support thinking. */
 export function isMoonshotThinkingSwitchEligibleModel(model: string): boolean {
   if (isMoonshotThinkingSwitchExcludedModel(model)) {
     return false;
@@ -80,7 +80,7 @@ export function isGatewayMoonshotModel(llmVendor: string | undefined, model: str
   return llmVendor === "vercel-ai-gateway" && parseGatewayUpstreamSlug(model) === "moonshotai";
 }
 
-/** Gateway Moonshot：开关型型号经 moonshotai 命名空间控制 thinking；reasoning_effort 仍走 openai 命名空间。 */
+/** Gateway Moonshot: switch-capable models control thinking via the moonshotai namespace; reasoning_effort still goes through the openai namespace. */
 export function buildGatewayMoonshotProviderOptions(
   config: Pick<
     OpenAiTransportConfig,

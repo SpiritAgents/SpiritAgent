@@ -55,6 +55,6 @@ test("assertContributedHostToolAllowed rejects hidden contributed tools", () => 
   );
   assert.throws(
     () => assertContributedHostToolAllowed("create_automation", "ask", definitions, available),
-    /未知工具: create_automation/,
+    /Unknown tool: create_automation/,
   );
 });

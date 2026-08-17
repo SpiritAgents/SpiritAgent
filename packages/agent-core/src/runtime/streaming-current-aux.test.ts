@@ -44,7 +44,7 @@ test("currentAuxKind returns thinking after terminal built-in tool despite prior
   assert.equal(
     currentAuxKind(
       mockStreamingRuntime({
-        pendingAssistantTextStore: "好，试试就试试！失败了，再试一次：",
+        pendingAssistantTextStore: "Fine, let's give it a try! It failed, try again:",
         awaitingPostBuiltInToolStreamDeltaStore: true,
       }),
     ),

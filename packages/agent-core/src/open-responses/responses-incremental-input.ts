@@ -26,9 +26,9 @@ function responsesStoredStateRequestStore(previousResponseId: string | undefined
   return previousResponseId !== undefined ? { previousResponseId } : {};
 }
 
-/** 官方 OpenAI/Azure SDK，以及百炼/火山方舟 Responses（经 fetch 注入 store / previous_response_id）。 */
+/** Official OpenAI/Azure SDKs, plus Bailian/Volcengine Ark Responses (store / previous_response_id injected via fetch). */
 export function responsesUsesStoredState(config: OpenResponsesTransportConfig): boolean {
-  // Bedrock Mantle 虽走 responsesProvider: openai，但不支持 OpenAI 式远端 store 链。
+  // Bedrock Mantle uses responsesProvider: openai, but does not support the OpenAI-style remote store chain.
   if (isBedrockMantleOpenResponsesConfig(config)) {
     return false;
   }
@@ -41,7 +41,7 @@ export function responsesUsesStoredState(config: OpenResponsesTransportConfig): 
   return provider === "openai" || provider === "azure";
 }
 
-/** 供百炼/火山方舟等 compatible fetch 路径读取本轮 previous_response_id。 */
+/** Lets compatible fetch paths such as Bailian/Volcengine Ark read this round's previous_response_id. */
 export function readResponsesStoredStateRequestPreviousResponseId(): string | undefined {
   return storedStateRequestStore.getStore()?.previousResponseId;
 }
@@ -60,7 +60,7 @@ export function runInResponsesStoredStateRequestContextSync<T>(
   return storedStateRequestStore.run(responsesStoredStateRequestStore(previousResponseId), fn);
 }
 
-/** 流式 Responses 在迭代 chunk 时触发 fetch，须逐次进入 ALS 以免串链。 */
+/** Streaming Responses triggers fetch while iterating chunks; ALS must be entered per iteration to avoid cross-chain leakage. */
 export function bindResponsesStoredStateRequestContextAsyncIterable<T>(
   previousResponseId: string | undefined,
   iterable: AsyncIterable<T>,

@@ -49,14 +49,14 @@ export async function runCompactionCase(): Promise<RuntimeParityCaseResult> {
       },
       {
         role: "assistant",
-        content: createLlmMessageContentFromText("旧回答。"),
+        content: createLlmMessageContentFromText("Old answer."),
       },
     ],
   );
 
-  const compactResult = await compactRuntime.submitUserTurn("继续处理 runtime parity。");
+  const compactResult = await compactRuntime.submitUserTurn("Continue working on runtime parity.");
   if (compactResult.kind !== "completed" || compactResult.assistantText !== "COMPACT_OK") {
-    throw new Error("compact retry smoke 未完成闭环。");
+    throw new Error("compact retry smoke did not complete the turn loop.");
   }
 
   const firstCompaction = compactResult.compactions.at(0);
@@ -65,7 +65,7 @@ export async function runCompactionCase(): Promise<RuntimeParityCaseResult> {
     !firstCompaction ||
     firstCompaction.droppedMessages <= 0
   ) {
-    throw new Error("compact retry smoke 未记录有效压缩。");
+    throw new Error("compact retry smoke did not record an effective compaction.");
   }
 
   const pollingCompactTransport = new PollingCompactTransport();
@@ -97,25 +97,25 @@ export async function runCompactionCase(): Promise<RuntimeParityCaseResult> {
       },
       {
         role: "assistant",
-        content: createLlmMessageContentFromText("旧回答。"),
+        content: createLlmMessageContentFromText("Old answer."),
       },
     ],
   );
 
-  await pollingCompactRuntime.startUserTurn("继续处理 runtime parity。");
+  await pollingCompactRuntime.startUserTurn("Continue working on runtime parity.");
   await flushMicrotasks(4);
   await pollingCompactRuntime.poll();
   await flushMicrotasks(4);
   await pollingCompactRuntime.poll();
   if (!pollingCompactRuntime.isBusy()) {
-    throw new Error("polling compact smoke 应在自动压缩期间保持 busy。");
+    throw new Error("polling compact smoke should stay busy during auto compaction.");
   }
   const compactAux = pollingCompactRuntime.pendingAuxState();
   if (!compactAux || compactAux.kind !== "compressing") {
-    throw new Error("polling compact smoke 未暴露 compressing aux 状态。");
+    throw new Error("polling compact smoke did not expose the compressing aux state.");
   }
   if (pollingCompactRuntime.takeCompletedTurnResult()) {
-    throw new Error("polling compact smoke 在压缩完成前不应产出结果。");
+    throw new Error("polling compact smoke should not produce a result before compaction finishes.");
   }
 
   pollingCompactTransport.finishCompaction();
@@ -135,7 +135,7 @@ export async function runCompactionCase(): Promise<RuntimeParityCaseResult> {
     pollingCompactResult.kind !== "completed" ||
     pollingCompactResult.assistantText !== "COMPACT_OK"
   ) {
-    throw new Error("polling compact smoke 未得到自动压缩后的最终结果。");
+    throw new Error("polling compact smoke did not get the final result after auto compaction.");
   }
   if (
     !pollingCompactEvents.some(
@@ -144,7 +144,7 @@ export async function runCompactionCase(): Promise<RuntimeParityCaseResult> {
         event.text.includes("compacted history"),
     )
   ) {
-    throw new Error("polling compact smoke 缺少 compaction update 事件。");
+    throw new Error("polling compact smoke is missing the compaction update event.");
   }
 
   const transcriptDirPath = "/tmp/spirit-smoke/transcripts/smoke-compact-transcript";
@@ -170,7 +170,7 @@ export async function runCompactionCase(): Promise<RuntimeParityCaseResult> {
       syncSessionTranscript: async ({ transcript }) => {
         persistedMessageCount = transcript.message_count;
         if (transcript.messages.length === 0) {
-          throw new Error("transcript smoke 未写入任何消息。");
+          throw new Error("transcript smoke did not write any messages.");
         }
         return transcriptDirPath;
       },
@@ -199,10 +199,10 @@ export async function runCompactionCase(): Promise<RuntimeParityCaseResult> {
 
   const transcriptRecord = await transcriptRuntime.compactHistory();
   if (transcriptRecord.transcriptDirPath !== transcriptDirPath) {
-    throw new Error("transcript smoke 未记录转录目录路径。");
+    throw new Error("transcript smoke did not record the transcript directory path.");
   }
   if (persistedMessageCount !== 3) {
-    throw new Error(`transcript smoke 转录消息数异常: ${persistedMessageCount}`);
+    throw new Error(`transcript smoke has an unexpected persisted message count: ${persistedMessageCount}`);
   }
 
   const toolOutputArchivePath =
@@ -245,10 +245,10 @@ export async function runCompactionCase(): Promise<RuntimeParityCaseResult> {
 
   const toolOutputArchiveRecord = await toolOutputArchiveRuntime.compactHistory();
   if (!persistedToolOutput || persistedToolOutput.length !== 20_000) {
-    throw new Error("tool output archive smoke 未持久化完整 tool 输出。");
+    throw new Error("tool output archive smoke did not persist the full tool output.");
   }
   if (toolOutputArchiveRecord.beforeLength < 2) {
-    throw new Error("tool output archive smoke 压缩前后长度异常。");
+    throw new Error("tool output archive smoke has an abnormal length before/after compaction.");
   }
 
   return {

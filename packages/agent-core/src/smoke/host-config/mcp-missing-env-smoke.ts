@@ -59,16 +59,16 @@ async function runMcpMissingEnvSmoke(): Promise<void> {
 
     if (backgroundSnapshot.configuredServers !== 1) {
       throw new Error(
-        `background refresh 应保留 1 个配置服务器，实际为 ${backgroundSnapshot.configuredServers}`,
+        `background refresh should keep 1 configured server, got ${backgroundSnapshot.configuredServers}`,
       );
     }
     if (!backgroundSnapshot.lastError?.includes(`缺少环境变量 ${MISSING_ENV_NAME}`)) {
       throw new Error(
-        `background refresh 错误信息不正确: ${backgroundSnapshot.lastError ?? "<none>"}`,
+        `background refresh error message is incorrect: ${backgroundSnapshot.lastError ?? "<none>"}`,
       );
     }
     if (service.toolDefinitionsJson().length !== 0) {
-      throw new Error("background refresh 失败后不应保留任何 MCP 工具定义。");
+      throw new Error("background refresh should not keep any MCP tool definitions after failure.");
     }
 
     let explicitError: unknown;
@@ -79,12 +79,12 @@ async function runMcpMissingEnvSmoke(): Promise<void> {
     }
 
     if (!(explicitError instanceof Error) || !explicitError.message.includes(MISSING_ENV_NAME)) {
-      throw new Error("显式等待 ensureToolingCache() 时应继续暴露缺失环境变量错误。");
+      throw new Error("explicitly awaiting ensureToolingCache() should still surface the missing environment variable error.");
     }
 
     const explicitSnapshot = service.statusSnapshot();
     if (explicitSnapshot.state !== "error") {
-      throw new Error(`显式等待失败后 MCP 状态应保持 error，实际为 ${explicitSnapshot.state}`);
+      throw new Error(`MCP state should stay error after explicit await failure, got ${explicitSnapshot.state}`);
     }
 
     console.log("mcp missing env smoke OK", explicitSnapshot);

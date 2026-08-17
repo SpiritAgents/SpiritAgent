@@ -14,7 +14,7 @@ import {
 
 import { demoLookupToolDefinition, printSmokeSection } from "../shared/index.js";
 
-const ANTHROPIC_REASONING_TEXT = "先想一下，再查工具。";
+const ANTHROPIC_REASONING_TEXT = "Think first, then check the tool.";
 const ANTHROPIC_REASONING_SIGNATURE = "sig_anthropic_stream_1";
 const ANTHROPIC_TOOL_USE_ID = "toolu_anthropic_stream_1";
 const ANTHROPIC_PROJECTED_SYSTEM_CONTEXT_PREFIX = "[HOST_CONTEXT_FROM_SYSTEM]";
@@ -195,7 +195,7 @@ async function main(): Promise<void> {
   const address = server.address();
   if (!address || typeof address === "string") {
     server.close();
-    throw new Error("无法获取本地 Anthropic smoke server 端口。");
+    throw new Error("Unable to get the local Anthropic smoke server port.");
   }
 
   const transport = new AiSdkAnthropicTransport();
@@ -231,7 +231,7 @@ async function main(): Promise<void> {
     !firstEvents.some((event) => isJsonObject(event) && event.kind === "streaming-tool-preview")
   ) {
     server.close();
-    throw new Error("ai-sdk anthropic streaming smoke 未收到 streaming-tool-preview 事件。");
+    throw new Error("ai-sdk anthropic streaming smoke did not receive a streaming-tool-preview event.");
   }
 
   if (
@@ -244,12 +244,12 @@ async function main(): Promise<void> {
     )
   ) {
     server.close();
-    throw new Error("ai-sdk anthropic streaming smoke 未收到预期的 thinking-chunk。");
+    throw new Error("ai-sdk anthropic streaming smoke did not receive the expected thinking-chunk.");
   }
 
   if (firstCompletion.kind !== "success" || firstCompletion.result.step.kind !== "tool-calls") {
     server.close();
-    throw new Error("ai-sdk anthropic streaming smoke step 1 未进入预期的 tool-calls。");
+    throw new Error("ai-sdk anthropic streaming smoke step 1 did not reach the expected tool-calls.");
   }
 
   const firstAssistant = firstCompletion.result.state.messages.at(-1);
@@ -262,7 +262,7 @@ async function main(): Promise<void> {
   ) {
     server.close();
     throw new Error(
-      "ai-sdk anthropic streaming smoke 未在 assistant message 上保留 reasoning signature。",
+      "ai-sdk anthropic streaming smoke did not preserve the reasoning signature on the assistant message.",
     );
   }
 
@@ -289,13 +289,13 @@ async function main(): Promise<void> {
     secondCompletion.kind !== "success" ||
     secondCompletion.result.step.kind !== "final-response-ready"
   ) {
-    throw new Error("ai-sdk anthropic streaming smoke step 2 未进入预期的 final-response-ready。");
+    throw new Error("ai-sdk anthropic streaming smoke step 2 did not reach the expected final-response-ready.");
   }
 
   const assistantText = extractLastAssistantText(secondCompletion.result.state)?.trim();
   if (assistantText !== "AI_SDK_ANTHROPIC_STREAM_OK") {
     throw new Error(
-      `ai-sdk anthropic streaming smoke step 2 未拿到预期最终 assistant 文本。实际: ${assistantText ?? "<empty>"}`,
+      `ai-sdk anthropic streaming smoke step 2 did not get the expected final assistant text. Actual: ${assistantText ?? "<empty>"}`,
     );
   }
 
@@ -305,7 +305,7 @@ async function main(): Promise<void> {
     !isJsonObject(firstRequest.thinking) ||
     firstRequest.thinking.type !== "enabled"
   ) {
-    throw new Error("ai-sdk anthropic streaming smoke 未在首轮请求上发送 thinking=enabled。");
+    throw new Error("ai-sdk anthropic streaming smoke did not send thinking=enabled on the first-round request.");
   }
 
   if (
@@ -316,7 +316,7 @@ async function main(): Promise<void> {
     )
   ) {
     throw new Error(
-      "ai-sdk anthropic streaming smoke 未把带 signature 的 thinking block 回灌到第二轮请求。",
+      "ai-sdk anthropic streaming smoke did not replay the signed thinking block into the second-round request.",
     );
   }
 
@@ -397,7 +397,7 @@ async function runSeparatedSystemProjectionSmoke(): Promise<void> {
   const address = server.address();
   if (!address || typeof address === "string") {
     server.close();
-    throw new Error("无法获取 separated system projection smoke server 端口。");
+    throw new Error("Unable to get the separated system projection smoke server port.");
   }
 
   const transport = new AiSdkAnthropicTransport();
@@ -410,7 +410,7 @@ async function runSeparatedSystemProjectionSmoke(): Promise<void> {
         },
         {
           role: "assistant",
-          content: "你好！我是 Spirit Agent。",
+          content: "Hello! I am Spirit Agent.",
         },
         {
           role: "system",
@@ -418,7 +418,7 @@ async function runSeparatedSystemProjectionSmoke(): Promise<void> {
         },
         {
           role: "assistant",
-          content: "README 很短，目前没有安装说明。",
+          content: "The README is short and has no installation instructions yet.",
         },
       ],
       model: "deepseek-v4-pro",
@@ -446,25 +446,25 @@ async function runSeparatedSystemProjectionSmoke(): Promise<void> {
   printSmokeSection("ai-sdk anthropic separated-system smoke completion", completion);
 
   if (completion.kind !== "success" || completion.result.step.kind !== "final-response-ready") {
-    throw new Error("ai-sdk anthropic separated-system smoke 未进入预期的 final-response-ready。");
+    throw new Error("ai-sdk anthropic separated-system smoke did not reach the expected final-response-ready.");
   }
 
   const finalText = extractLastAssistantText(completion.result.state)?.trim();
   if (finalText !== "AI_SDK_ANTHROPIC_SYSTEM_CONTEXT_OK") {
     throw new Error(
-      `ai-sdk anthropic separated-system smoke 未拿到预期文本。实际: ${finalText ?? "<empty>"}`,
+      `ai-sdk anthropic separated-system smoke did not get the expected text. Actual: ${finalText ?? "<empty>"}`,
     );
   }
 
   if (requestBodies.length !== 1) {
     throw new Error(
-      "ai-sdk anthropic separated-system smoke 未成功发出 HTTP 请求，疑似仍在 Anthropic prompt 转换阶段失败。",
+      "ai-sdk anthropic separated-system smoke did not send the HTTP request successfully, suggesting it still fails during Anthropic prompt conversion.",
     );
   }
 
   if (!requestIncludesProjectedSystemContext(requestBodies[0])) {
     throw new Error(
-      "ai-sdk anthropic separated-system smoke 未把中途 system message 投影成 user host context。",
+      "ai-sdk anthropic separated-system smoke did not project the mid-conversation system message into user host context.",
     );
   }
 }

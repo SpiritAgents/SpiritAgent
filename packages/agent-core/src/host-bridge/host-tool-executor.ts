@@ -425,7 +425,7 @@ export class HostToolExecutorProxy implements ToolExecutor<JsonValue, JsonValue>
     }
 
     if (isExtensionToolRequest(request) && request.execution_mode === "background") {
-      return `扩展工具执行中: ${request.tool_name}`;
+      return `Running extension tool: ${request.tool_name}`;
     }
 
     if (this.localHostService?.backgroundStatusText) {
@@ -764,7 +764,7 @@ function parseBuiltinHostToolDefinitionEnvironment(
   value: JsonValue,
 ): BuiltinHostToolDefinitionEnvironment {
   if (!isJsonObject(value)) {
-    throw new Error("host.builtinToolDefinitionEnvironment 必须返回 JSON object");
+    throw new Error("host.builtinToolDefinitionEnvironment must return a JSON object");
   }
 
   const shellDisplayName =

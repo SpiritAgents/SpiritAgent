@@ -42,7 +42,7 @@ export class DemoToolExecutor implements ToolExecutor<DemoToolRequest> {
   }
 
   async parseCommand(_message: string): Promise<DemoToolRequest> {
-    throw new Error("DemoToolExecutor.parseCommand 未实现。");
+    throw new Error("DemoToolExecutor.parseCommand is not implemented.");
   }
 
   async requestFromFunctionCall(name: string, argumentsJson: string): Promise<DemoToolRequest> {
@@ -61,7 +61,7 @@ export class DemoToolExecutor implements ToolExecutor<DemoToolRequest> {
 
   async execute(request: DemoToolRequest): Promise<ToolExecutionOutput> {
     if (request.name !== "demo_lookup") {
-      throw new Error(`未知 demo 工具: ${request.name}`);
+      throw new Error(`Unknown demo tool: ${request.name}`);
     }
 
     const query =
@@ -90,7 +90,7 @@ export class DemoToolExecutor implements ToolExecutor<DemoToolRequest> {
   }
 
   async addMcpServer(_name: string, _config: JsonValue): Promise<string> {
-    throw new Error("DemoToolExecutor.addMcpServer 未实现。");
+    throw new Error("DemoToolExecutor.addMcpServer is not implemented.");
   }
 
   async listMcpServers(): Promise<never[]> {
@@ -98,7 +98,7 @@ export class DemoToolExecutor implements ToolExecutor<DemoToolRequest> {
   }
 
   async inspectMcpServer(_name: string): Promise<never> {
-    throw new Error("DemoToolExecutor.inspectMcpServer 未实现。");
+    throw new Error("DemoToolExecutor.inspectMcpServer is not implemented.");
   }
 
   async listMcpTools(_name: string): Promise<never[]> {
@@ -110,7 +110,7 @@ export class DemoToolExecutor implements ToolExecutor<DemoToolRequest> {
   }
 
   async readMcpResource(_name: string, _uri: string): Promise<JsonValue> {
-    throw new Error("DemoToolExecutor.readMcpResource 未实现。");
+    throw new Error("DemoToolExecutor.readMcpResource is not implemented.");
   }
 
   async listCachedMcpPrompts(_name: string): Promise<never[]> {
@@ -122,7 +122,7 @@ export class DemoToolExecutor implements ToolExecutor<DemoToolRequest> {
   }
 
   async getMcpPrompt(_name: string, _prompt: string, _argsJson?: string): Promise<JsonValue> {
-    throw new Error("DemoToolExecutor.getMcpPrompt 未实现。");
+    throw new Error("DemoToolExecutor.getMcpPrompt is not implemented.");
   }
 }
 

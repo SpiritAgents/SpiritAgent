@@ -75,7 +75,7 @@ export class ApprovalExecutor implements ToolExecutor<ScriptedToolRequest> {
   }
 
   async parseCommand(_message: string): Promise<ScriptedToolRequest> {
-    throw new Error("ApprovalExecutor.parseCommand 未实现。");
+    throw new Error("ApprovalExecutor.parseCommand is not implemented.");
   }
 
   async requestFromFunctionCall(name: string, argumentsJson: string): Promise<ScriptedToolRequest> {
@@ -86,7 +86,7 @@ export class ApprovalExecutor implements ToolExecutor<ScriptedToolRequest> {
     if (request.name === "create_file") {
       return {
         kind: "need-approval",
-        prompt: "写文件需要审批。",
+        prompt: "Writing files requires approval.",
       };
     }
 
@@ -113,7 +113,7 @@ export class ApprovalExecutor implements ToolExecutor<ScriptedToolRequest> {
   }
 
   async addMcpServer(): Promise<string> {
-    throw new Error("ApprovalExecutor.addMcpServer 未实现。");
+    throw new Error("ApprovalExecutor.addMcpServer is not implemented.");
   }
 
   async listMcpServers(): Promise<never[]> {
@@ -121,7 +121,7 @@ export class ApprovalExecutor implements ToolExecutor<ScriptedToolRequest> {
   }
 
   async inspectMcpServer(): Promise<never> {
-    throw new Error("ApprovalExecutor.inspectMcpServer 未实现。");
+    throw new Error("ApprovalExecutor.inspectMcpServer is not implemented.");
   }
 
   async listMcpTools(): Promise<never[]> {
@@ -133,7 +133,7 @@ export class ApprovalExecutor implements ToolExecutor<ScriptedToolRequest> {
   }
 
   async readMcpResource(): Promise<JsonValue> {
-    throw new Error("ApprovalExecutor.readMcpResource 未实现。");
+    throw new Error("ApprovalExecutor.readMcpResource is not implemented.");
   }
 
   async listCachedMcpPrompts(): Promise<never[]> {
@@ -145,7 +145,7 @@ export class ApprovalExecutor implements ToolExecutor<ScriptedToolRequest> {
   }
 
   async getMcpPrompt(): Promise<JsonValue> {
-    throw new Error("ApprovalExecutor.getMcpPrompt 未实现。");
+    throw new Error("ApprovalExecutor.getMcpPrompt is not implemented.");
   }
 }
 
@@ -168,7 +168,7 @@ export class ApprovalTransport implements LlmTransport<undefined, ScriptedState>
               ...state.messages,
               {
                 role: "assistant",
-                content: "准备写文件。",
+                content: "Preparing to write the file.",
                 tool_calls: [
                   {
                     id: "call-write",
@@ -216,7 +216,7 @@ export class ApprovalTransport implements LlmTransport<undefined, ScriptedState>
         isJsonObject(message) &&
         message.role === "user" &&
         typeof message.content === "string" &&
-        message.content.includes("不要写文件，直接总结"),
+        message.content.includes("Do not write the file, just summarize"),
     );
     const hasDeniedTool = state.messages.some(
       (message) =>
@@ -238,7 +238,7 @@ export class ApprovalTransport implements LlmTransport<undefined, ScriptedState>
     if (!hasGuidance || !hasDeniedTool || !hasQueuedToolResult) {
       return {
         kind: "failure",
-        error: "approval guidance 状态未正确写回。",
+        error: "approval guidance state was not written back correctly.",
         requestTrace: [{ round: this.rounds }],
       };
     }
@@ -290,7 +290,7 @@ export class CompactExecutor implements ToolExecutor<ScriptedToolRequest> {
   }
 
   async parseCommand(_message: string): Promise<ScriptedToolRequest> {
-    throw new Error("CompactExecutor.parseCommand 未实现。");
+    throw new Error("CompactExecutor.parseCommand is not implemented.");
   }
 
   async requestFromFunctionCall(name: string, argumentsJson: string): Promise<ScriptedToolRequest> {
@@ -320,7 +320,7 @@ export class CompactExecutor implements ToolExecutor<ScriptedToolRequest> {
   }
 
   async addMcpServer(): Promise<string> {
-    throw new Error("CompactExecutor.addMcpServer 未实现。");
+    throw new Error("CompactExecutor.addMcpServer is not implemented.");
   }
 
   async listMcpServers(): Promise<never[]> {
@@ -328,7 +328,7 @@ export class CompactExecutor implements ToolExecutor<ScriptedToolRequest> {
   }
 
   async inspectMcpServer(): Promise<never> {
-    throw new Error("CompactExecutor.inspectMcpServer 未实现。");
+    throw new Error("CompactExecutor.inspectMcpServer is not implemented.");
   }
 
   async listMcpTools(): Promise<never[]> {
@@ -340,7 +340,7 @@ export class CompactExecutor implements ToolExecutor<ScriptedToolRequest> {
   }
 
   async readMcpResource(): Promise<JsonValue> {
-    throw new Error("CompactExecutor.readMcpResource 未实现。");
+    throw new Error("CompactExecutor.readMcpResource is not implemented.");
   }
 
   async listCachedMcpPrompts(): Promise<never[]> {
@@ -352,7 +352,7 @@ export class CompactExecutor implements ToolExecutor<ScriptedToolRequest> {
   }
 
   async getMcpPrompt(): Promise<JsonValue> {
-    throw new Error("CompactExecutor.getMcpPrompt 未实现。");
+    throw new Error("CompactExecutor.getMcpPrompt is not implemented.");
   }
 }
 
@@ -385,7 +385,7 @@ export class CompactTransport implements LlmTransport<undefined, ScriptedState> 
               ...state.messages,
               {
                 role: "assistant",
-                content: "先搜索。",
+                content: "Search first.",
                 tool_calls: [
                   {
                     id: "call-search",
@@ -434,7 +434,7 @@ export class CompactTransport implements LlmTransport<undefined, ScriptedState> 
     if (!hasAssistantToolCall) {
       return {
         kind: "failure",
-        error: "compact retry 未保留 assistant tool-call state。",
+        error: "compact retry did not preserve the assistant tool-call state.",
         requestTrace: [{ round: this.rounds }],
       };
     }
@@ -590,7 +590,7 @@ export class BackgroundExecutor implements ToolExecutor<ScriptedToolRequest> {
   }
 
   async parseCommand(_message: string): Promise<ScriptedToolRequest> {
-    throw new Error("BackgroundExecutor.parseCommand 未实现。");
+    throw new Error("BackgroundExecutor.parseCommand is not implemented.");
   }
 
   async requestFromFunctionCall(name: string, argumentsJson: string): Promise<ScriptedToolRequest> {
@@ -613,7 +613,7 @@ export class BackgroundExecutor implements ToolExecutor<ScriptedToolRequest> {
   }
 
   backgroundStatusText(request: ScriptedToolRequest): string | undefined {
-    return request.name === "grep" ? "搜索中: runtime parity" : undefined;
+    return request.name === "grep" ? "Searching: runtime parity" : undefined;
   }
 
   startMcpBackgroundRefresh(): void {}
@@ -629,7 +629,7 @@ export class BackgroundExecutor implements ToolExecutor<ScriptedToolRequest> {
   }
 
   async addMcpServer(): Promise<string> {
-    throw new Error("BackgroundExecutor.addMcpServer 未实现。");
+    throw new Error("BackgroundExecutor.addMcpServer is not implemented.");
   }
 
   async listMcpServers(): Promise<never[]> {
@@ -637,7 +637,7 @@ export class BackgroundExecutor implements ToolExecutor<ScriptedToolRequest> {
   }
 
   async inspectMcpServer(): Promise<never> {
-    throw new Error("BackgroundExecutor.inspectMcpServer 未实现。");
+    throw new Error("BackgroundExecutor.inspectMcpServer is not implemented.");
   }
 
   async listMcpTools(): Promise<never[]> {
@@ -649,7 +649,7 @@ export class BackgroundExecutor implements ToolExecutor<ScriptedToolRequest> {
   }
 
   async readMcpResource(): Promise<JsonValue> {
-    throw new Error("BackgroundExecutor.readMcpResource 未实现。");
+    throw new Error("BackgroundExecutor.readMcpResource is not implemented.");
   }
 
   async listCachedMcpPrompts(): Promise<never[]> {
@@ -661,7 +661,7 @@ export class BackgroundExecutor implements ToolExecutor<ScriptedToolRequest> {
   }
 
   async getMcpPrompt(): Promise<JsonValue> {
-    throw new Error("BackgroundExecutor.getMcpPrompt 未实现。");
+    throw new Error("BackgroundExecutor.getMcpPrompt is not implemented.");
   }
 }
 
@@ -704,7 +704,7 @@ export class BackgroundTransport implements LlmTransport<undefined, ScriptedStat
               ...state.messages,
               {
                 role: "assistant",
-                content: "先后台搜索。",
+                content: "Search in the background first.",
                 tool_calls: [
                   {
                     id: "call-background-search",
@@ -861,7 +861,7 @@ export class ToolImageProjectionTransport implements LlmTransport<undefined, Scr
         kind: "success",
         result: {
           state: {
-            messages: [...state.messages, { role: "assistant", content: "先读取图片。" }],
+            messages: [...state.messages, { role: "assistant", content: "Read the image first." }],
             steps: state.steps + 1,
           },
           step: {
@@ -889,7 +889,7 @@ export class ToolImageProjectionTransport implements LlmTransport<undefined, Scr
         message.image_paths.includes("tool-image.png"),
     );
     if (!hasProjectedImageUserMessage) {
-      throw new Error("tool image projection smoke 未把工具图片输出投影到下一拍 user 消息。");
+      throw new Error("tool image projection smoke did not project the tool image output into the next user message.");
     }
 
     const hasToolSummary = state.messages.some(
@@ -900,7 +900,7 @@ export class ToolImageProjectionTransport implements LlmTransport<undefined, Scr
         message.content.includes("[read image]"),
     );
     if (!hasToolSummary) {
-      throw new Error("tool image projection smoke 未保留工具结果摘要。");
+      throw new Error("tool image projection smoke did not preserve the tool result summary.");
     }
 
     return {
@@ -963,14 +963,14 @@ export class SubagentTransport implements LlmTransport<undefined, ScriptedState>
               ...state.messages,
               {
                 role: "assistant",
-                content: "准备委托子代理。",
+                content: "Preparing to delegate to the subagent.",
                 tool_calls: [
                   {
                     id: "call-subagent",
                     type: "function",
                     function: {
                       name: "subagent",
-                      arguments: '{"task":"输出：好的，我是 SubAgent，哈哈哈"}',
+                      arguments: '{"task":"Output: OK, I am the SubAgent, hahaha"}',
                     },
                   },
                 ],
@@ -984,7 +984,7 @@ export class SubagentTransport implements LlmTransport<undefined, ScriptedState>
               {
                 id: "call-subagent",
                 name: "subagent",
-                argumentsJson: '{"task":"输出：好的，我是 SubAgent，哈哈哈"}',
+                argumentsJson: '{"task":"Output: OK, I am the SubAgent, hahaha"}',
               },
             ],
           },
@@ -1004,7 +1004,7 @@ export class SubagentTransport implements LlmTransport<undefined, ScriptedState>
       if (!delegatedPromptPresent) {
         return {
           kind: "failure",
-          error: "subagent child round 未收到委托后的 user turn。",
+          error: "subagent child round did not receive the delegated user turn.",
           requestTrace: [{ mode: "subagent-child-round-missing-user-turn" }],
         };
       }
@@ -1015,7 +1015,7 @@ export class SubagentTransport implements LlmTransport<undefined, ScriptedState>
           state: {
             messages: [
               ...state.messages,
-              { role: "assistant", content: "好的，我是 SubAgent，哈哈哈" },
+              { role: "assistant", content: "OK, I am the SubAgent, hahaha" },
             ],
             steps: state.steps + 1,
           },
@@ -1036,11 +1036,11 @@ export class SubagentTransport implements LlmTransport<undefined, ScriptedState>
       !toolResultMessage ||
       !isJsonObject(toolResultMessage) ||
       typeof toolResultMessage.content !== "string" ||
-      !toolResultMessage.content.includes("好的，我是 SubAgent，哈哈哈")
+      !toolResultMessage.content.includes("OK, I am the SubAgent, hahaha")
     ) {
       return {
         kind: "failure",
-        error: "subagent parent round 未收到子代理结果。",
+        error: "subagent parent round did not receive the subagent result.",
         requestTrace: [{ mode: "subagent-parent-round-2-missing-tool-result" }],
       };
     }
@@ -1095,7 +1095,7 @@ export class StreamingFinalTransport implements LlmTransport<undefined, Scripted
     _state: ScriptedState,
     _tools: JsonValue,
   ): Promise<ToolAgentRoundCompletion<ScriptedState>> {
-    throw new Error("StreamingFinalTransport 应走 streaming 路径。");
+    throw new Error("StreamingFinalTransport should use the streaming path.");
   }
 
   async startToolAgentRoundStreaming(
@@ -1185,7 +1185,7 @@ export class WorkspaceContextTransport implements LlmTransport<undefined, Script
     if (!hasRuntimeContext || !hasReadmeContext) {
       return {
         kind: "failure",
-        error: "workspace file context 未注入到 tool-agent state。",
+        error: "workspace file context was not injected into the tool-agent state.",
         requestTrace: [{ workspaceMessages }],
       };
     }
@@ -1237,7 +1237,7 @@ export class StreamingTimeoutTransport implements LlmTransport<undefined, Script
     _state: ScriptedState,
     _tools: JsonValue,
   ): Promise<ToolAgentRoundCompletion<ScriptedState>> {
-    throw new Error("StreamingTimeoutTransport 应走 streaming 路径。");
+    throw new Error("StreamingTimeoutTransport should use the streaming path.");
   }
 
   async startToolAgentRoundStreaming(
@@ -1295,7 +1295,7 @@ export class StreamingFailureTransport implements LlmTransport<undefined, Script
     _state: ScriptedState,
     _tools: JsonValue,
   ): Promise<ToolAgentRoundCompletion<ScriptedState>> {
-    throw new Error("StreamingFailureTransport 应走 streaming 路径。");
+    throw new Error("StreamingFailureTransport should use the streaming path.");
   }
 
   async startToolAgentRoundStreaming(
@@ -1474,7 +1474,7 @@ export class StreamingBackgroundRoundTransport implements LlmTransport<undefined
                 ...state.messages,
                 {
                   role: "assistant",
-                  content: "先触发后台搜索。",
+                  content: "Trigger the background search first.",
                   tool_calls: [
                     {
                       id: "call-stream-background",
@@ -1561,7 +1561,7 @@ export class StreamingApprovalExecutor implements ToolExecutor<ScriptedToolReque
   }
 
   async parseCommand(_message: string): Promise<ScriptedToolRequest> {
-    throw new Error("StreamingApprovalExecutor.parseCommand 未实现。");
+    throw new Error("StreamingApprovalExecutor.parseCommand is not implemented.");
   }
 
   async requestFromFunctionCall(name: string, argumentsJson: string): Promise<ScriptedToolRequest> {
@@ -1572,7 +1572,7 @@ export class StreamingApprovalExecutor implements ToolExecutor<ScriptedToolReque
     if (request.name === "create_file") {
       return {
         kind: "need-approval",
-        prompt: "写文件需要审批。",
+        prompt: "Writing files requires approval.",
       };
     }
 
@@ -1599,7 +1599,7 @@ export class StreamingApprovalExecutor implements ToolExecutor<ScriptedToolReque
   }
 
   async addMcpServer(): Promise<string> {
-    throw new Error("StreamingApprovalExecutor.addMcpServer 未实现。");
+    throw new Error("StreamingApprovalExecutor.addMcpServer is not implemented.");
   }
 
   async listMcpServers(): Promise<never[]> {
@@ -1607,7 +1607,7 @@ export class StreamingApprovalExecutor implements ToolExecutor<ScriptedToolReque
   }
 
   async inspectMcpServer(): Promise<never> {
-    throw new Error("StreamingApprovalExecutor.inspectMcpServer 未实现。");
+    throw new Error("StreamingApprovalExecutor.inspectMcpServer is not implemented.");
   }
 
   async listMcpTools(): Promise<never[]> {
@@ -1619,7 +1619,7 @@ export class StreamingApprovalExecutor implements ToolExecutor<ScriptedToolReque
   }
 
   async readMcpResource(): Promise<JsonValue> {
-    throw new Error("StreamingApprovalExecutor.readMcpResource 未实现。");
+    throw new Error("StreamingApprovalExecutor.readMcpResource is not implemented.");
   }
 
   async listCachedMcpPrompts(): Promise<never[]> {
@@ -1631,7 +1631,7 @@ export class StreamingApprovalExecutor implements ToolExecutor<ScriptedToolReque
   }
 
   async getMcpPrompt(): Promise<JsonValue> {
-    throw new Error("StreamingApprovalExecutor.getMcpPrompt 未实现。");
+    throw new Error("StreamingApprovalExecutor.getMcpPrompt is not implemented.");
   }
 }
 
@@ -1677,7 +1677,7 @@ export class StreamingApprovalTransport implements LlmTransport<undefined, Scrip
                 ...state.messages,
                 {
                   role: "assistant",
-                  content: "先申请写文件权限。",
+                  content: "Request file-write permission first.",
                   tool_calls: [
                     {
                       id: "call-stream-approval",
@@ -1721,7 +1721,7 @@ export class StreamingApprovalTransport implements LlmTransport<undefined, Scrip
         eventStream: streamFromEvents([]),
         completion: Promise.resolve({
           kind: "failure",
-          error: "streaming approval resume 未写回 tool result。",
+          error: "streaming approval resume did not write back the tool result.",
           requestTrace: [{ mode: "streaming-approval-round-2-missing-tool-result" }],
         }),
       };
@@ -1780,7 +1780,7 @@ export class StreamingApprovalImageExecutor extends StreamingApprovalExecutor {
     if (request.name === "read_file") {
       return {
         kind: "need-approval",
-        prompt: "读取图片需要审批。",
+        prompt: "Reading images requires approval.",
       };
     }
 
@@ -1844,7 +1844,7 @@ export class StreamingApprovalImageTransport implements LlmTransport<undefined, 
                 ...state.messages,
                 {
                   role: "assistant",
-                  content: "先申请读取图片权限。",
+                  content: "Request image-read permission first.",
                   tool_calls: [
                     {
                       id: "call-stream-approval-image",
@@ -1888,7 +1888,7 @@ export class StreamingApprovalImageTransport implements LlmTransport<undefined, 
         eventStream: streamFromEvents([]),
         completion: Promise.resolve({
           kind: "failure",
-          error: "streaming approval image resume 未写回图片 tool result。",
+          error: "streaming approval image resume did not write back the image tool result.",
           requestTrace: [{ mode: "streaming-approval-image-round-2-missing-tool-result" }],
         }),
       };
@@ -1908,7 +1908,7 @@ export class StreamingApprovalImageTransport implements LlmTransport<undefined, 
         eventStream: streamFromEvents([]),
         completion: Promise.resolve({
           kind: "failure",
-          error: "streaming approval image resume 未把图片工具输出投影到下一拍 user 消息。",
+          error: "streaming approval image resume did not project the image tool output into the next user message.",
           requestTrace: [{ mode: "streaming-approval-image-round-2-missing-projection" }],
         }),
       };
@@ -2007,7 +2007,7 @@ export class StreamingApprovalGuidanceTransport implements LlmTransport<undefine
                 ...state.messages,
                 {
                   role: "assistant",
-                  content: "先申请写文件权限。",
+                  content: "Request file-write permission first.",
                   tool_calls: [
                     {
                       id: "call-stream-guidance-write",
@@ -2056,7 +2056,7 @@ export class StreamingApprovalGuidanceTransport implements LlmTransport<undefine
         isJsonObject(message) &&
         message.role === "user" &&
         typeof message.content === "string" &&
-        message.content.includes("不要写文件，直接总结"),
+        message.content.includes("Do not write the file, just summarize"),
     );
     const hasDeniedToolResult = state.messages.some(
       (message) =>
@@ -2080,7 +2080,7 @@ export class StreamingApprovalGuidanceTransport implements LlmTransport<undefine
         eventStream: streamFromEvents([]),
         completion: Promise.resolve({
           kind: "failure",
-          error: "streaming guidance resume 未正确继续后续排队工具。",
+          error: "streaming guidance resume did not correctly continue the queued tools.",
           requestTrace: [{ mode: "streaming-guidance-round-2-missing-tool-results" }],
         }),
       };
@@ -2279,7 +2279,7 @@ export class HostExecutor implements ToolExecutor<ScriptedToolRequest> {
     if (request.name === "delete_file") {
       return {
         kind: "need-approval",
-        prompt: "删除文件需要审批。",
+        prompt: "Deleting files requires approval.",
       };
     }
 
@@ -2298,7 +2298,7 @@ export class HostExecutor implements ToolExecutor<ScriptedToolRequest> {
 
   backgroundStatusText(request: ScriptedToolRequest): string | undefined {
     if (request.name === "grep") {
-      return "搜索中: runtime parity";
+      return "Searching: runtime parity";
     }
 
     return undefined;
@@ -2325,7 +2325,7 @@ export class HostExecutor implements ToolExecutor<ScriptedToolRequest> {
   }
 
   async inspectMcpServer(): Promise<never> {
-    throw new Error("HostExecutor.inspectMcpServer 未实现。");
+    throw new Error("HostExecutor.inspectMcpServer is not implemented.");
   }
 
   async listMcpTools(): Promise<never[]> {
@@ -2395,7 +2395,7 @@ export class SubagentExecutor extends HostExecutor {
   override async execute(request: ScriptedToolRequest): Promise<ToolExecutionOutput> {
     if (request.name === "subagent") {
       this.executedSubagentCalls += 1;
-      throw new Error("subagent 不应落到宿主 execute");
+      throw new Error("subagent should not fall through to host execute");
     }
 
     return super.execute(request);

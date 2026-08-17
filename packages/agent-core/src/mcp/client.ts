@@ -86,7 +86,7 @@ export class SdkMcpConnection {
       );
     } catch (error) {
       await safeCloseTransport(transport);
-      throw new McpConnectionError(`MCP server 连接失败: ${server.name}`, { cause: error });
+      throw new McpConnectionError(`MCP server connection failed: ${server.name}`, { cause: error });
     }
 
     this.transportStore = transport;

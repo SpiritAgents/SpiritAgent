@@ -432,7 +432,7 @@ export class AiSdkAnthropicTransport
 
     const normalizedSummary = summary.trim();
     if (!normalizedSummary) {
-      throw new Error("AI SDK 压缩返回为空，无法生成摘要。");
+      throw new Error("AI SDK compaction returned empty; cannot generate summary.");
     }
 
     history.splice(0, history.length, {
@@ -1106,7 +1106,7 @@ async function* anthropicEventStreamToRuntimeEvents(
     }
 
     if (!sawAnswerOrToolOutput && !reasoningContent.trim()) {
-      throw new Error("流式响应无任何 delta（无文本 / thinking / tool calls）。");
+      throw new Error("Streaming response had no deltas (no text / thinking / tool calls).");
     }
 
     nextState.messages.push(

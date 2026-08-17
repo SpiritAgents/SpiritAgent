@@ -56,7 +56,7 @@ async function runAlibabaChatSmoke(): Promise<void> {
   const address = server.address();
   if (!address || typeof address === "string") {
     server.close();
-    throw new Error("无法获取本地 smoke server 端口。");
+    throw new Error("Unable to get the local smoke server port.");
   }
 
   const transport = new AiSdkOpenAiCompatibleTransport();
@@ -81,20 +81,20 @@ async function runAlibabaChatSmoke(): Promise<void> {
 
   printSmokeSection("alibaba chat smoke", round);
   if (round.kind !== "success" || round.result.step.kind !== "final-response-ready") {
-    throw new Error("alibaba chat smoke 未进入 final-response-ready。");
+    throw new Error("alibaba chat smoke did not reach final-response-ready.");
   }
 
   const extraBody = capturedBody?.extra_body as Record<string, unknown> | undefined;
   if (extraBody?.enable_search !== true) {
-    throw new Error("alibaba chat smoke 请求体未包含 enable_search。");
+    throw new Error("alibaba chat smoke request body does not include enable_search.");
   }
 
   const trace = round.result.requestTrace[0];
   if (!isJsonObject(trace) || trace.kind !== "alibaba_sdk_chat_completions") {
-    throw new Error("alibaba chat smoke 未写入 alibaba_sdk_chat_completions trace。");
+    throw new Error("alibaba chat smoke did not write an alibaba_sdk_chat_completions trace.");
   }
   if (!isJsonObject(trace.extra_body as JsonValue)) {
-    throw new Error("alibaba chat smoke trace 缺少 extra_body。");
+    throw new Error("alibaba chat smoke trace is missing extra_body.");
   }
 }
 
@@ -124,7 +124,7 @@ async function runAlibabaResponsesSmoke(): Promise<void> {
   const address = server.address();
   if (!address || typeof address === "string") {
     server.close();
-    throw new Error("无法获取本地 smoke server 端口。");
+    throw new Error("Unable to get the local smoke server port.");
   }
 
   const transport = new AiSdkOpenResponsesTransport();
@@ -149,24 +149,24 @@ async function runAlibabaResponsesSmoke(): Promise<void> {
 
   printSmokeSection("alibaba responses smoke", round);
   if (round.kind !== "success" || round.result.step.kind !== "final-response-ready") {
-    throw new Error("alibaba responses smoke 未进入 final-response-ready。");
+    throw new Error("alibaba responses smoke did not reach final-response-ready.");
   }
 
   const tools = capturedBody?.tools as Array<{ type?: string }> | undefined;
   for (const type of ["web_search", "code_interpreter"] as const) {
     if (!tools?.some((tool) => tool.type === type)) {
-      throw new Error(`alibaba responses smoke 请求体缺少 ${type}。`);
+      throw new Error(`alibaba responses smoke request body is missing ${type}.`);
     }
   }
 
   const assistantText = extractLastOpenAiAssistantText(round.result.state)?.trim();
   if (assistantText !== "ALIBABA_RESPONSES_OK") {
-    throw new Error(`alibaba responses smoke 未拿到预期文本: ${assistantText ?? "<empty>"}`);
+    throw new Error(`alibaba responses smoke did not get the expected text: ${assistantText ?? "<empty>"}`);
   }
 
   const trace = round.result.requestTrace[0];
   if (!isJsonObject(trace) || trace.kind !== "alibaba_open_responses") {
-    throw new Error("alibaba responses smoke 未写入 alibaba_open_responses trace。");
+    throw new Error("alibaba responses smoke did not write an alibaba_open_responses trace.");
   }
 }
 

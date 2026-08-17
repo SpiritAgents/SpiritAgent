@@ -83,7 +83,7 @@ function hasOutstandingToolTurnWork<Config, State, ToolRequest, TrustTarget = st
   );
 }
 
-/** persistAssistantToolCalls 只写 historyStore；续跑 LLM 须从 history 重建 state，避免 pending.state 缺 assistant tool_calls。 */
+/** persistAssistantToolCalls only writes historyStore; the resumed LLM run must rebuild state from history, avoiding pending.state missing assistant tool_calls. */
 function buildBackgroundToolContinuationState<Config, State, ToolRequest, TrustTarget = string>(
   runtime: BackgroundToolsRuntime<Config, State, ToolRequest, TrustTarget>,
   pendingUserInput: string,

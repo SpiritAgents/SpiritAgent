@@ -42,20 +42,20 @@ export async function runGenerateImageCase(): Promise<RuntimeParityCaseResult> {
     DEFAULT_IMAGE_GENERATION_SIZE,
   );
 
-  const nonStreamingResult = await nonStreamingRuntime.submitUserTurn("画一张正方形海报");
+  const nonStreamingResult = await nonStreamingRuntime.submitUserTurn("Draw a square poster");
   if (
     nonStreamingResult.kind !== "completed" ||
     nonStreamingResult.assistantText !== GENERATE_IMAGE_ASSISTANT_TEXT
   ) {
-    throw new Error("generate_image 非流式 smoke 未完成。");
+    throw new Error("generate_image non-streaming smoke did not complete.");
   }
   assertTerminalGenerateImageResult(
     nonStreamingResult.toolExecutions,
     nonStreamingTransport.rounds,
     nonStreamingExecutor.executedCalls,
-    "generate_image 非流式 smoke",
+    "generate_image non-streaming smoke",
   );
-  assertToolResultMessagePersisted(nonStreamingResult.state, "generate_image 非流式 smoke");
+  assertToolResultMessagePersisted(nonStreamingResult.state, "generate_image non-streaming smoke");
 
   const streamingTransport = new GenerateImageTerminalTransport(
     "streaming",
@@ -71,13 +71,13 @@ export async function runGenerateImageCase(): Promise<RuntimeParityCaseResult> {
     "1536x1024",
   );
 
-  await streamingRuntime.startUserTurnStreaming("画一张正方形海报");
+  await streamingRuntime.startUserTurnStreaming("Draw a square poster");
   for (let index = 0; index < 24 && streamingRuntime.isBusy(); index += 1) {
     await flushMicrotasks(8);
     await streamingRuntime.poll();
   }
   if (streamingRuntime.isBusy()) {
-    throw new Error("generate_image 流式 smoke 未在预期轮次内完成。");
+    throw new Error("generate_image streaming smoke did not finish within the expected rounds.");
   }
 
   const streamingResult = streamingRuntime.takeCompletedTurnResult();
@@ -86,15 +86,15 @@ export async function runGenerateImageCase(): Promise<RuntimeParityCaseResult> {
     streamingResult.kind !== "completed" ||
     streamingResult.assistantText !== GENERATE_IMAGE_ASSISTANT_TEXT
   ) {
-    throw new Error("generate_image 流式 smoke 未完成。");
+    throw new Error("generate_image streaming smoke did not complete.");
   }
   assertTerminalGenerateImageResult(
     streamingResult.toolExecutions,
     streamingTransport.rounds,
     streamingExecutor.executedCalls,
-    "generate_image 流式 smoke",
+    "generate_image streaming smoke",
   );
-  assertToolResultMessagePersisted(streamingResult.state, "generate_image 流式 smoke");
+  assertToolResultMessagePersisted(streamingResult.state, "generate_image streaming smoke");
   return {
     generateImageNonStreamingResult: nonStreamingResult,
     generateImageStreamingEvents: streamingEvents,
@@ -117,10 +117,10 @@ function createGenerateImageRuntime(
     extractAssistantText: extractScriptedAssistantText,
     generateImage: async (request): Promise<ToolExecutionOutput> => {
       if (!request.prompt.includes(expectedPromptSnippet)) {
-        throw new Error("generate_image smoke 未收到模型重写后的最终 prompt。");
+        throw new Error("generate_image smoke did not receive the final prompt rewritten by the model.");
       }
       if (request.size !== expectedSize) {
-        throw new Error(`generate_image smoke 未解析出预期 size：${request.size}`);
+        throw new Error(`generate_image smoke did not parse the expected size: ${request.size}`);
       }
 
       const markdownRef = "spirit://generated/image/square-poster.png";
@@ -154,10 +154,10 @@ function assertTerminalGenerateImageResult(
   label: string,
 ): void {
   if (rounds !== 2) {
-    throw new Error(`${label} 应在 generate_image 完成后继续到最终 assistant 轮次。`);
+    throw new Error(`${label} should continue to the final assistant round after generate_image completes.`);
   }
   if (executedCalls !== 0) {
-    throw new Error(`${label} 不应落到宿主 execute。`);
+    throw new Error(`${label} should not fall through to host execute.`);
   }
 
   const execution = toolExecutions.find((item) => item.toolName === "generate_image");
@@ -166,13 +166,13 @@ function assertTerminalGenerateImageResult(
     execution.failed ||
     !execution.output.includes("spirit://generated/image/square-poster.png")
   ) {
-    throw new Error(`${label} 未记录正确的 generate_image 工具结果。`);
+    throw new Error(`${label} did not record the correct generate_image tool result.`);
   }
   if (execution.output.includes("path: generated/square-poster.png")) {
-    throw new Error(`${label} 不应向模型暴露真实生成图片路径。`);
+    throw new Error(`${label} should not expose the real generated image path to the model.`);
   }
   if (!execution.artifacts?.some((artifact) => artifact.path === "generated/square-poster.png")) {
-    throw new Error(`${label} 未把生成图片路径放入 structured artifacts。`);
+    throw new Error(`${label} did not put the generated image path into structured artifacts.`);
   }
 }
 
@@ -189,10 +189,10 @@ function assertToolResultMessagePersisted(state: ScriptedState, label: string): 
     typeof toolMessage?.content !== "string" ||
     !toolMessage.content.includes("spirit://generated/image/square-poster.png")
   ) {
-    throw new Error(`${label} 未把 generate_image 结果写回 runtime state messages。`);
+    throw new Error(`${label} did not write the generate_image result back to runtime state messages.`);
   }
   if (toolMessage.content.includes("path: generated/square-poster.png")) {
-    throw new Error(`${label} 不应把真实生成图片路径写回 runtime state messages。`);
+    throw new Error(`${label} should not write the real generated image path back to runtime state messages.`);
   }
 }
 
@@ -210,7 +210,7 @@ class GenerateImageTerminalTransport implements LlmTransport<undefined, Scripted
     _tools: JsonValue,
   ): Promise<ToolAgentRoundCompletion<ScriptedState>> {
     if (this.mode !== "non-streaming") {
-      throw new Error("generate_image streaming smoke 应走 streaming transport。");
+      throw new Error("generate_image streaming smoke should use the streaming transport.");
     }
 
     return this.nextRound(state);
@@ -222,7 +222,7 @@ class GenerateImageTerminalTransport implements LlmTransport<undefined, Scripted
     _tools: JsonValue,
   ): Promise<StartedToolAgentRound<ScriptedState>> {
     if (this.mode !== "streaming") {
-      throw new Error("generate_image non-streaming smoke 不应走 streaming transport。");
+      throw new Error("generate_image non-streaming smoke should not use the streaming transport.");
     }
 
     this.rounds += 1;
@@ -314,7 +314,7 @@ class GenerateImageTerminalTransport implements LlmTransport<undefined, Scripted
             ...state.messages,
             {
               role: "assistant",
-              content: "准备生成图片。",
+              content: "Preparing to generate the image.",
               tool_calls: [
                 {
                   id: "call-generate-image",

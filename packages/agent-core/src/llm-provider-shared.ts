@@ -1,6 +1,6 @@
 export type LlmTransportKind = "openai-compatible" | "open-responses" | "anthropic" | "bedrock";
 
-/** 区分主 Agent 对话与代码补全等非 Agent 轻量 LLM 请求的策略画像。 */
+/** Policy profile distinguishing main Agent conversations from non-Agent lightweight LLM requests such as code completion. */
 export type TransportRequestProfile = "agent" | "code-completion";
 
 export interface LlmModelCapabilities {
