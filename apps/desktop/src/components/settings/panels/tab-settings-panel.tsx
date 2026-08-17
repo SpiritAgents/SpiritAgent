@@ -2,7 +2,7 @@ import { useTranslation } from "react-i18next";
 
 import { AgentsSettingsRow } from "@/components/settings/panels/agents-settings-panel";
 import type { SettingsViewProps } from "@/components/settings/types";
-import { Checkbox } from "@/components/ui/checkbox";
+import { Switch } from "@/components/ui/switch";
 import { DESKTOP_PAGE_TITLE_CLASS } from "@/lib/desktop-typography";
 
 export function TabSettingsPanel({
@@ -22,13 +22,12 @@ export function TabSettingsPanel({
           htmlFor="settings-editor-tab-completion"
         >
           <div className="flex justify-end">
-            <Checkbox
+            <Switch
               id="settings-editor-tab-completion"
               checked={settings.codeCompletionEnabled}
               onCheckedChange={(value) =>
                 void onSavePatch({ codeCompletionEnabled: value === true })
               }
-              className="size-5"
             />
           </div>
         </AgentsSettingsRow>

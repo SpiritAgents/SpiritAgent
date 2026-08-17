@@ -4,7 +4,6 @@ import { LoaderCircle, Sparkles } from "lucide-react";
 
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Checkbox } from "@/components/ui/checkbox";
 import {
   Dialog,
   DialogContent,
@@ -23,6 +22,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { Switch } from "@/components/ui/switch";
 import { cn } from "@/lib/utils";
 import {
   DESKTOP_EDITOR_TAB_CLASS,
@@ -400,16 +400,15 @@ export function HooksSettingsPanel({
                 autoComplete="off"
               />
             </div>
-            <Label htmlFor="hook-fail-closed">
-              <Checkbox
+            <div className="flex items-center justify-between gap-4">
+              <Label htmlFor="hook-fail-closed">{t("settings.hooksFailClosed")}</Label>
+              <Switch
                 id="hook-fail-closed"
                 checked={failClosed}
                 onCheckedChange={(checked) => setFailClosed(checked === true)}
                 disabled={hooksBusy}
-                className="size-5"
               />
-              {t("settings.hooksFailClosed")}
-            </Label>
+            </div>
           </div>
           <DialogFooter>
             <DialogFooterActions>

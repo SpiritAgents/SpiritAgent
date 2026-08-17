@@ -5,7 +5,7 @@ import { DreamGraphCard } from "@/components/dream-graph-card";
 import { formatSettingsTime } from "@/components/settings/formatters";
 import { SettingsRow } from "@/components/settings/settings-row";
 import type { SettingsViewProps } from "@/components/settings/types";
-import { Checkbox } from "@/components/ui/checkbox";
+import { Switch } from "@/components/ui/switch";
 import i18n from "@/lib/i18n";
 import type { ThemePreference } from "@/lib/theme";
 import { cn } from "@/lib/utils";
@@ -97,11 +97,10 @@ export function DreamSettingsPanel({
           htmlFor="settings-dream-enabled"
         >
           <div className="flex justify-end">
-            <Checkbox
+            <Switch
               id="settings-dream-enabled"
               checked={settings.dreamEnabled}
               onCheckedChange={(value) => void onSavePatch({ dreamEnabled: value === true })}
-              className="size-5"
             />
           </div>
         </SettingsRow>
@@ -112,12 +111,11 @@ export function DreamSettingsPanel({
           htmlFor="settings-dream-debug"
         >
           <div className="flex justify-end">
-            <Checkbox
+            <Switch
               id="settings-dream-debug"
               checked={settings.dreamDebugMode}
               disabled={disabled}
               onCheckedChange={(value) => void onSavePatch({ dreamDebugMode: value === true })}
-              className="size-5"
             />
           </div>
         </SettingsRow>

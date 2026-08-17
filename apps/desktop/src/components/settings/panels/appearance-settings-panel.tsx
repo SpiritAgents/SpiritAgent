@@ -4,7 +4,6 @@ import { FontSelect } from "@/components/font-select";
 import { themeSelectOptions } from "@/components/settings/constants";
 import { SettingsRow } from "@/components/settings/settings-row";
 import type { SettingsViewProps } from "@/components/settings/types";
-import { Checkbox } from "@/components/ui/checkbox";
 import {
   Select,
   SelectContent,
@@ -12,6 +11,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { Switch } from "@/components/ui/switch";
 import { changeLanguage, LOCALE_LABEL_KEYS, VALID_LANGUAGES } from "@/lib/i18n";
 import { isNativeTranslucencySupported } from "@/lib/desktop-shell";
 import type { ThemePreference } from "@/lib/theme";
@@ -110,11 +110,10 @@ export function AppearanceSettingsPanel({
       >
         {isNativeTranslucencySupported() ? (
           <div className="flex justify-end">
-            <Checkbox
+            <Switch
               id="settings-blur-effect"
               checked={settings.translucency}
               onCheckedChange={(value) => void onSavePatch({ translucency: value === true })}
-              className="size-5"
             />
           </div>
         ) : (
@@ -128,11 +127,10 @@ export function AppearanceSettingsPanel({
         htmlFor="settings-clickable-pointer-cursor"
       >
         <div className="flex justify-end">
-          <Checkbox
+          <Switch
             id="settings-clickable-pointer-cursor"
             checked={clickablePointerCursor}
             onCheckedChange={(value) => onClickablePointerCursorChange(value === true)}
-            className="size-5"
           />
         </div>
       </SettingsRow>
