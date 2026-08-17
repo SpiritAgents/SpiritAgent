@@ -31,7 +31,6 @@ import {
 import type { SettingsFormState, SettingsViewProps } from "@/components/settings/types";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Checkbox } from "@/components/ui/checkbox";
 import {
   Dialog,
   DialogContent,
@@ -45,6 +44,7 @@ import { DesktopFormInput } from "@/components/ui/desktop-form-field";
 import { Label } from "@/components/ui/label";
 import { Tooltip, TooltipContent } from "@/components/ui/tooltip";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import { Switch } from "@/components/ui/switch";
 import {
   buildModelCatalogDetailMap,
   buildModelCatalogDisplayTitleMap,
@@ -651,7 +651,7 @@ export function ModelsSettingsPanel({
                   modelsBusy || modelsPreviewBusy || isModelDefaultsDialogModelActive || undefined
                 }
               >
-                <Checkbox
+                <Switch
                   id="model-default-active"
                   checked={modelDefaultAssignments.activeModel}
                   disabled={modelsBusy || modelsPreviewBusy || isModelDefaultsDialogModelActive}
@@ -679,7 +679,7 @@ export function ModelsSettingsPanel({
                 className="group/field flex items-start gap-3 rounded-lg border border-dialog-panel-border px-3 py-3 transition-colors data-[disabled=true]:opacity-70"
                 data-disabled={modelsBusy || modelsPreviewBusy || undefined}
               >
-                <Checkbox
+                <Switch
                   id="model-default-image-generation"
                   checked={modelDefaultAssignments.imageGenerationModel}
                   disabled={modelsBusy || modelsPreviewBusy}
@@ -708,7 +708,7 @@ export function ModelsSettingsPanel({
                 className="group/field flex items-start gap-3 rounded-lg border border-dialog-panel-border px-3 py-3 transition-colors data-[disabled=true]:opacity-70"
                 data-disabled={modelsBusy || modelsPreviewBusy || undefined}
               >
-                <Checkbox
+                <Switch
                   id="model-default-video-generation"
                   checked={modelDefaultAssignments.videoGenerationModel}
                   disabled={modelsBusy || modelsPreviewBusy}
@@ -737,7 +737,7 @@ export function ModelsSettingsPanel({
                 className="group/field flex items-start gap-3 rounded-lg border border-dialog-panel-border px-3 py-3 transition-colors data-[disabled=true]:opacity-70"
                 data-disabled={modelsBusy || modelsPreviewBusy || undefined}
               >
-                <Checkbox
+                <Switch
                   id="model-default-lightweight-chat"
                   checked={modelDefaultAssignments.lightweightChatModel}
                   disabled={modelsBusy || modelsPreviewBusy}
