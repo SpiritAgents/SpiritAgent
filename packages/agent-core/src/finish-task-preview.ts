@@ -57,9 +57,9 @@ export function finishTaskStreamingPreviewReady(toolName: string, argumentsJson:
 export function finishTaskNoticeFromSummary(summary: string): string {
   const normalized = summary.trim();
   if (!normalized) {
-    return "任务已完成。";
+    return "Task completed.";
   }
-  return `任务以 ${normalized} 完成。`;
+  return `Task completed: ${normalized}.`;
 }
 
 export function finishTaskNoticePreviewFromArguments(argumentsJson: string): string | undefined {
@@ -68,10 +68,10 @@ export function finishTaskNoticePreviewFromArguments(argumentsJson: string): str
     return undefined;
   }
   if (!summary.trim()) {
-    return finishTaskArgumentsJsonComplete(argumentsJson) ? "任务已完成。" : undefined;
+    return finishTaskArgumentsJsonComplete(argumentsJson) ? "Task completed." : undefined;
   }
   if (finishTaskArgumentsJsonComplete(argumentsJson)) {
     return finishTaskNoticeFromSummary(summary);
   }
-  return `任务以 ${summary}`;
+  return `Task completed: ${summary}`;
 }

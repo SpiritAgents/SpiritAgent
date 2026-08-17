@@ -504,11 +504,11 @@ test("shouldHideEmptyPendingAssistantSnapshot keeps pending row between tool bat
 });
 
 test("finishTaskNoticePreviewFromArguments streams partial summary text", () => {
-  assert.equal(finishTaskSummaryFromStreamingArguments('{"summary":"确认每条'), "确认每条");
-  assert.equal(finishTaskNoticePreviewFromArguments('{"summary":"确认每条'), "任务以 确认每条");
+  assert.equal(finishTaskSummaryFromStreamingArguments('{"summary":"verified each'), "verified each");
+  assert.equal(finishTaskNoticePreviewFromArguments('{"summary":"verified each'), "Task completed: verified each");
   assert.equal(
-    finishTaskNoticePreviewFromArguments('{"summary":"确认每条消息输出完毕后调用 finish_task。"}'),
-    "任务以 确认每条消息输出完毕后调用 finish_task。 完成。",
+    finishTaskNoticePreviewFromArguments('{"summary":"called finish_task after verifying every message"}'),
+    "Task completed: called finish_task after verifying every message.",
   );
 });
 

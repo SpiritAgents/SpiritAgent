@@ -502,7 +502,7 @@ test("finish_task streaming preview updates finishTaskNotice on assistant text r
       kind: "streaming-tool-preview",
       toolCallId: "call-finish",
       toolName: "finish_task",
-      argumentsJson: '{"summary":"确认每条',
+      argumentsJson: '{"summary":"verified each',
     },
   ]);
 
@@ -510,7 +510,7 @@ test("finish_task streaming preview updates finishTaskNotice on assistant text r
     .toMessages()
     .find((message) => message.role === "assistant" && !message.tool);
   assert.equal(assistantRow?.content, "明白，我会在每条回复末尾调用 finish_task。");
-  assert.equal(assistantRow?.aux?.finishTaskNotice, "任务以 确认每条");
+  assert.equal(assistantRow?.aux?.finishTaskNotice, "Task completed: verified each");
   assert.equal(
     harness.timeline.toMessages().some((message) => message.tool?.toolName === "finish_task"),
     false,
@@ -521,7 +521,7 @@ test("finish_task streaming preview updates finishTaskNotice on assistant text r
       kind: "streaming-tool-preview",
       toolCallId: "call-finish",
       toolName: "finish_task",
-      argumentsJson: '{"summary":"确认每条消息输出完毕后调用 finish_task。"}',
+      argumentsJson: '{"summary":"called finish_task after verifying every message"}',
     },
   ]);
 
@@ -530,7 +530,7 @@ test("finish_task streaming preview updates finishTaskNotice on assistant text r
     .find((message) => message.role === "assistant" && !message.tool);
   assert.equal(
     updatedAssistantRow?.aux?.finishTaskNotice,
-    "任务以 确认每条消息输出完毕后调用 finish_task。 完成。",
+    "Task completed: called finish_task after verifying every message.",
   );
 });
 
@@ -579,14 +579,14 @@ test("failed finish_task clears notice when preview and tool-finished are split 
       kind: "streaming-tool-preview",
       toolCallId: "call-finish",
       toolName: "finish_task",
-      argumentsJson: '{"summary":"再次确认 finish_task 可用"}',
+      argumentsJson: '{"summary":"reconfirmed finish_task works"}',
     },
   ]);
 
   const afterPreview = harness.timeline
     .toMessages()
     .find((message) => message.role === "assistant" && !message.tool);
-  assert.equal(afterPreview?.aux?.finishTaskNotice, "任务以 再次确认 finish_task 可用 完成。");
+  assert.equal(afterPreview?.aux?.finishTaskNotice, "Task completed: reconfirmed finish_task works.");
 
   harness.orchestrator.applyRuntimeHostEvents([
     {
@@ -594,7 +594,7 @@ test("failed finish_task clears notice when preview and tool-finished are split 
       execution: {
         toolCallId: "call-finish",
         toolName: "finish_task",
-        request: { name: "finish_task", summary: "再次确认 finish_task 可用" },
+        request: { name: "finish_task", summary: "reconfirmed finish_task works" },
         output: "[tool schema error] 未知工具: finish_task",
         failed: true,
       },

@@ -20,14 +20,14 @@ test("buildArchiveAssistantAuxFromConversation persists finishTaskNotice", () =>
       role: "assistant",
       content: "hi there",
       pending: false,
-      aux: { finishTaskNotice: "任务以 已问候 完成。" },
+      aux: { finishTaskNotice: "Task completed: greeted." },
     },
   ];
 
   assert.deepEqual(buildArchiveAssistantAuxFromConversation(messages), [
     {
       messageIndex: 1,
-      finishTaskNotice: "任务以 已问候 完成。",
+      finishTaskNotice: "Task completed: greeted.",
     },
   ]);
 });
@@ -66,7 +66,7 @@ test("restoreMessagesFromArchive restores finishTaskNotice from v2 timeline", ()
                   createdOrder: 2,
                   content: "hi there",
                   pending: false,
-                  aux: { finishTaskNotice: "任务以 已问候 完成。" },
+                  aux: { finishTaskNotice: "Task completed: greeted." },
                 },
               ],
             },
@@ -76,7 +76,7 @@ test("restoreMessagesFromArchive restores finishTaskNotice from v2 timeline", ()
     }),
   );
 
-  assert.equal(restored[1]?.aux?.finishTaskNotice, "任务以 已问候 完成。");
+  assert.equal(restored[1]?.aux?.finishTaskNotice, "Task completed: greeted.");
 });
 
 test("rehydrateFinishTaskNoticesInConversation rebuilds notice from finish_task tool history", () => {
@@ -99,7 +99,7 @@ test("rehydrateFinishTaskNoticesInConversation rebuilds notice from finish_task 
         {
           id: "call-finish",
           name: "finish_task",
-          argumentsJson: '{"summary":"确认每条消息"}',
+          argumentsJson: '{"summary":"verified each message"}',
         },
       ],
     },
@@ -110,7 +110,7 @@ test("rehydrateFinishTaskNoticesInConversation rebuilds notice from finish_task 
     },
   ]);
 
-  assert.equal(messages[1]?.aux?.finishTaskNotice, "任务以 确认每条消息 完成。");
+  assert.equal(messages[1]?.aux?.finishTaskNotice, "Task completed: verified each message.");
 });
 
 test("rehydrateFinishTaskNoticesInTimeline applies notice to assistant text row by message id", () => {
@@ -132,7 +132,7 @@ test("rehydrateFinishTaskNoticesInTimeline applies notice to assistant text row 
         {
           id: "call-finish",
           name: "finish_task",
-          argumentsJson: '{"summary":"确认每条消息"}',
+          argumentsJson: '{"summary":"verified each message"}',
         },
       ],
     },
@@ -146,6 +146,6 @@ test("rehydrateFinishTaskNoticesInTimeline applies notice to assistant text row 
   assert.equal(
     timeline.toMessages().find((message) => message.role === "assistant" && !message.tool)?.aux
       ?.finishTaskNotice,
-    "任务以 确认每条消息 完成。",
+    "Task completed: verified each message.",
   );
 });
