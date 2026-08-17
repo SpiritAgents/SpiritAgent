@@ -1,145 +1,145 @@
-# Spirit Agent — 项目指引
+# Spirit Agent — Project Guidelines
 
-## 分层与专项说明
+## Layering and Specialized Guides
 
-- 能力与宿主边界：`.github/instructions/agent-core-host-boundary.instructions.md`
-- Rust CLI：`.github/instructions/cli-rust.instructions.md`
+- Capability and host boundary: `.github/instructions/agent-core-host-boundary.instructions.md`
+- Rust CLI: `.github/instructions/cli-rust.instructions.md`
 
-## 提交信息
+## Commit Messages
 
-- 约定式提交：`type`、可选 `scope` 使用英文；**Subject 与 Body 必须使用简体中文**（代码标识符、路径、API 名等除外）。
-- `subject`：一行概括变更，简体中文，句末不加句号。
-- `body`：可选；写**本次变更的内容与影响**（用户可见行为、对外语义、兼容性等），简体中文。
-- **`body` 格式**：若写 body，**必须**用 `-` 列表，**一条一行**；每条句末**不加句号**；**禁止**写成一整段 prose。
-- **只写相对父提交的 diff**：subject 与 body 均只描述本次入库相对上一版**实际改了什么、带来什么影响**；不要写会话内的迭代叙事
-- **禁止错位对照**：同一次提交里刚新增、父提交里尚不存在的代码，若在会话中又改了一版，**不得**在 subject 或 body 里写「避免与既有 X 重复」「改为读取 Y 以去重」等——父提交里没有 X，Git 上也看不出这层关系，属于错位说明
-- `scope`：英文，可选；表示模块、包或子系统，例如 `cli`、`agent-core`、`desktop`、`tui`、`site`。无合适范围时可省略括号段。
-- 多范围：仅在无法拆分为多个提交时使用。多个范围用逗号分隔，且逗号后必须有一个空格，例如 `(desktop, agent-core)`。
-- 禁止用多范围概括“改了很多文件”或代替拆分提交；只有确实同时修改了多个独立模块且无法拆开时，才允许使用多范围。
-- 如范围过多，要么改成一个最主要的范围，要么去除所有范围，不要堆叠很长的 scope 列表。
+- Conventional Commits: `type` and optional `scope` are in English; **subject and body must be in English** (except code identifiers, paths, API names, etc.).
+- `subject`: one-line summary in English, no trailing period.
+- `body`: optional; describe **the content and impact of this change** (user-visible behavior, external semantics, compatibility, etc.) in English.
+- **`body` format**: If a body is provided, it **must** use `-` bullet points, **one item per line**; no trailing period per item; **do not** write it as a continuous prose paragraph.
+- **Describe only the diff against the parent commit**: both subject and body should describe what this commit actually changed and what impact it brings relative to the previous version; do not include iterative narrative from the current session.
+- **Forbidden mismatched comparisons**: If code that was just added in the same commit and did not exist in the parent commit is later revised during the session, **do not** write in the subject or body things like "avoid duplication with existing X" or "switch to reading Y to remove duplication" — the parent commit has no X, and Git cannot see this relationship, so it is a mismatched description.
+- `scope`: English, optional; represents a module, package, or subsystem, e.g. `cli`, `agent-core`, `desktop`, `tui`, `site`. Omit the parenthesis segment if no suitable scope.
+- Multiple scopes: only use when the change cannot be split into multiple commits. Separate multiple scopes with a comma followed by a space, e.g. `(desktop, agent-core)`.
+- Do not use multiple scopes to summarize "changed a lot of files" or as a substitute for splitting commits; multiple scopes are allowed only when multiple independent modules are genuinely modified and cannot be separated.
+- If there are too many scopes, either reduce to the single most relevant scope or remove all scopes; do not stack a long list of scopes.
 
-示例（`body`）：
+Example (`body`):
 
 ```
-feat(desktop): macOS 侧栏切换按钮钉在红绿灯右侧
+feat(desktop): pin sidebar toggle button to the right of traffic lights
 
-- 非全屏时侧栏切换按钮 fixed 钉在 hiddenInset 红绿灯右缘
-- 全屏时回退顶栏内联布局，沿用 spirit-desktop-darwin-fullscreen 样式
+- Fixed-position the sidebar toggle button to the right edge of hiddenInset traffic lights in non-fullscreen mode
+- Fall back to inline top-bar layout in fullscreen mode, reusing spirit-desktop-darwin-fullscreen styles
 ```
 
-❌ 错位：`新增 useDarwinWindowFullscreen 读取 html class，不重复订阅 Electron IPC`——父提交里并无重复订阅，这是会话内对刚写代码的后续改写叙事，与本次 diff 无关
+❌ Mismatched: `add useDarwinWindowFullscreen to read html class and avoid duplicate Electron IPC subscriptions` — the parent commit had no duplicate subscriptions; this is a subsequent rewrite narrative from the session and is unrelated to the diff.
 
-### 命令行传递（多行 subject / body）
+### Passing Multi-line Subjects / Bodies via Command Line
 
-- **PowerShell**：用字面量 here-string `@' … '@` 传给 `git commit -m`
-- **bash**：用 `git commit -m "$(cat <<'EOF' … EOF)"`
+- **PowerShell**: use a literal here-string `@' … '@` passed to `git commit -m`
+- **bash**: use `git commit -m "$(cat <<'EOF' … EOF)"`
 
-PowerShell 示例：
+PowerShell example:
 
 ```powershell
 git commit -m @'
-feat(desktop): 示例 subject
+feat(desktop): example subject
 
-- 第一条 body
-- 第二条 body
+- first body item
+- second body item
 '@
 ```
 
-bash 示例：
+bash example:
 
 ```bash
 git commit -m "$(cat <<'EOF'
-feat(desktop): 示例 subject
+feat(desktop): example subject
 
-- 第一条 body
-- 第二条 body
+- first body item
+- second body item
 EOF
 )"
 ```
 
-## 通用约定
+## General Conventions
 
-- 优先保持跨平台兼容（含 Windows 分支与条件编译）。
-- 需要引用既有实现时，优先链到源码路径，不在此重复长说明。
-- 除非测试目标明确要求，否则不要在单测、快照、fixture、示例输入等场景中加入第三方产品、服务、模型或品牌字符串；优先使用项目内语义或中性描述。
-- 本项目处于极早期开发阶段；若变更涉及用户配置结构、持久化格式或迁移策略且需要较大调整，尽量避免叠加过多兼容兜底，优先保持实现直接可演进，并需明确告知开发者这样做的原因、代价与后续演进空间。注意「项目早期」只意味着可以少做兼容兜底，**不代表要避免做较大调整**——该改结构时就直接改，不必为了求稳而绕开必要的重构。
+- Prefer cross-platform compatibility (including Windows branches and conditional compilation).
+- When referencing existing implementations, prefer linking to source paths instead of repeating long explanations here.
+- Unless explicitly required by the test target, avoid adding third-party products, services, models, or brand strings in unit tests, snapshots, fixtures, example inputs, etc.; prefer in-project semantics or neutral descriptions.
+- This project is in very early development; if a change involves user configuration structure, persistence format, or migration strategy and requires significant adjustment, avoid stacking too many compatibility fallbacks. Prefer keeping the implementation directly evolvable, and clearly communicate to developers the reasons, costs, and future evolution space for doing so. Note that "early stage" only means fewer compatibility fallbacks are needed; **it does not mean avoiding significant changes** — restructure directly when necessary, rather than bypassing necessary refactoring for the sake of stability.
 
-## BUG 修复：Log、根因、禁止多重保险
+## Bug Fixes: Logs, Root Cause, No Multiple Safeguards
 
-### 流程
+### Process
 
-1. **先埋 Log**：复现路径上优先加可观测日志（级别、关键状态、时序），再改逻辑；勿无 Log 盲改。
-2. **追根因再修**：即使已定位症状触发点，仍须结合当前场景追问「为何会进入该状态」，修复**根因**而非仅打补丁。
-3. **修完验证**：用 Log 或测试确认根因已消除；临时 Log 若仅用于排查，合并前删除或降为 debug。
+1. **Add logs first**: prioritize observable logs (level, key state, timing) on the reproduction path before changing logic; do not change code blindly without logs.
+2. **Chase the root cause before fixing**: even if the symptom trigger point is located, still ask "why did it enter this state" in the current context, and fix the **root cause** rather than just patching the symptom.
+3. **Verify after fixing**: use logs or tests to confirm the root cause is eliminated; temporary logs used only for debugging should be removed or downgraded to debug before merging.
 
-### 禁止「多重保险」
+### No "Multiple Safeguards"
 
-不得为「以防万一」叠多层兜底，例如：
+Do not stack multiple fallback layers "just in case", for example:
 
-- 同一语义在多处重复校验 / 重试 / 回写
-- 症状处 `try/catch` 吞错 + 上游再包一层 fallback
-- 「删了 A 再在 B/C 补洞」而不解释为何 A 会丢
+- Repeated validation / retry / rewrite of the same semantics in multiple places
+- `try/catch` swallowing errors at the symptom point plus another fallback upstream
+- "Delete A and then patch B/C" without explaining why A would be missing
 
-**允许**：单一、可证明的必要边界（如对外 API 的参数校验）；须在 PR / 说明中写清为何此处是唯一防线。
+**Allowed**: a single, provably necessary boundary (e.g., external API parameter validation); you must explain in the PR / description why this is the only line of defense.
 
 ```typescript
-// ❌ 多重保险：DOM 删 chip 后 sync 重插，Backspace 再删，effect 又插
+// ❌ Multiple safeguards: DOM deletes chip, sync re-inserts, Backspace deletes, effect inserts again
 if (agentMode === 'plan' && !hasChip) reinsertChip();
 if (backspace) removeChip();
 useEffect(() => { if (agentMode === 'plan') insertChip(); }, [agentMode]);
 
-// ✅ 单一来源：config.agentMode 驱动 pin；Backspace 只改 config，由 effect 同步 UI
+// ✅ Single source: config.agentMode drives the pin; Backspace only changes config, effect syncs UI
 ```
 
-### 上游 / 无法解释的逻辑
+### Upstream / Unexplainable Logic
 
-若修复依赖第三方、历史债务或无法完全理解的行为：
+If a fix depends on third-party behavior, historical debt, or logic that cannot be fully understood:
 
-- 在 workaround **旁**加**简体中文**注释：现象、已知限制、为何不继续深挖
-- 禁止用注释替代根因分析；能修根因仍须修根因
+- Add an **English** comment next to the workaround describing the phenomenon, known limitations, and why further investigation is not pursued.
+- Do not use comments as a substitute for root-cause analysis; fix the root cause when possible.
 
 ```typescript
-// Vercel Gateway /models 仅 type=image 表示生图；tags 推断 vision 易误判，故不采用。
+// Vercel Gateway /models only uses type=image to indicate image generation; inferring vision from tags is error-prone, so it is not used.
 if (record.type === 'image') {
   modelEntry.supportsImageGeneration = true;
 }
 ```
 
-## Agent / LLM 约定
+## Agent / LLM Conventions
 
-- 发给 LLM 的模型可见文本默认统一使用英文，包括但不限于系统消息、工具定义概述、工具描述、评估文案等；除非某个机制明确要求其他语言，否则不要混入中文或中英混写，以尽量减少输出质量波动。
-- **模型可见文案细则**（何时写 system、何时只写 tool definition / API `tools`、坏/好示例）：见 [`.github/instructions/llm-visible-copy.instructions.md`](.github/instructions/llm-visible-copy.instructions.md)。
-- 修改 `packages/agent-core` 中与模型可见行为直接相关的内容时，如系统消息大段增删改、新增一个工具、工具概述或描述发生较大调整，应在实现完成后跑一次 eval，观察实际效果，再决定是否继续微调。
-- 仅在变更较大时补跑 eval；小范围措辞修正、拼写修复、非模型可见重构，或纯宿主实现调整，通常不需要额外跑 eval。
-- 不要过度设计 System Prompt、Tool Description 等文本，避免冗长。**尤其禁止在 system 里重复列举请求 `tools` 字段已声明的能力**（分散注意力、浪费上下文）。短小精悍、有助于 LLM 理解的内容输出效果通常更好。
+- Model-visible text sent to LLMs should default to English, including but not limited to system messages, tool definition summaries, tool descriptions, and evaluation copy; unless a mechanism explicitly requires another language, avoid mixing Chinese and English to minimize output quality fluctuations.
+- **Model-visible copy details** (when to write system prompts, when to use only tool definitions / API `tools`, bad/good examples): see [`.github/instructions/llm-visible-copy.instructions.md`](.github/instructions/llm-visible-copy.instructions.md).
+- When modifying model-visible behavior in `packages/agent-core`, such as large additions/deletions/changes to system messages, adding a new tool, or significant adjustments to tool summaries or descriptions, run an eval after implementation to observe the actual effect before deciding whether further tuning is needed.
+- Only run additional evals for large changes; small wording fixes, spelling fixes, non-model-visible refactoring, or pure host implementation adjustments usually do not require extra evals.
+- Do not over-design System Prompts, Tool Descriptions, or similar text; avoid verbosity. **Especially do not repeat capabilities already declared in the request `tools` field inside the system prompt** (it distracts and wastes context). Short, focused content that helps the LLM understand usually works better.
 
-## 上下文预置（push）vs 按需拉取（pull）
+## Context Pre-loading (push) vs On-demand Pulling (pull)
 
-宿主向模型上下文注入事实（cwd、git、打开的文件、目录树等）时，默认**少塞**；上下文越长，有效注意力越摊薄，无关 token 并非「放着不看就行」。目标是在模型实际会读到的位置，放**信号密度最高的最小集合**。
+When the host injects facts into the model context (cwd, git status, open files, directory tree, etc.), default to **pushing less**; longer context dilutes effective attention, and irrelevant tokens are not "harmless to leave there". The goal is to place the **smallest set with the highest signal density** where the model will actually read it.
 
-### 何时 push（预置）
+### When to push (pre-load)
 
-须**同时**满足：
+Must satisfy all of the following:
 
-- **高信号**：多数任务都会用到
-- **省 token**：通常几个到几十个 token
-- **pull 不划算**：模型常不会主动查，或一次工具往返成本远高于该事实本身
+- **High signal**: used by most tasks
+- **Low token cost**: usually a few to a few dozen tokens
+- **Pull is not worthwhile**: the model usually will not ask for it, or a single tool round-trip costs far more than the fact itself
 
-### 何时 pull（按需）
+### When to pull (on demand)
 
-- 体量大、随任务变化、多数回合用不到
-- 能用轻量标识符索引（路径、查询、URL）；路径/命名本身即相关性信号
-- 内容会变：pull 拿到最新；**预置快照 stale 比不预置更糟**
+- Large, task-variable, and unused in most turns
+- Can be indexed by lightweight identifiers (paths, queries, URLs); the path/name itself is a relevance signal
+- Content changes: pulling gets the latest; **a stale pre-loaded snapshot is worse than not pre-loading**
 
-### 本仓库常见项
+### Common Items in This Repo
 
-- ✅ push：git 分支、dirty 状态、项目类型、测试命令（经 `buildBasicInfoSystemMessage` 写入 system，包在 `<basic_info>` 块中）
-- ✅ push（仅当用户本回合显式引用 Skill）：Skill 全文写入该条 user 消息的 `<active_skill>` meta，不进 system
-- ❌ push：完整目录树；用 `glob` / `grep` 按需 pull
-- 打开的文件：只 push **引用**（路径 + 光标/选区），不 push 全文；相关再 `read_file`
+- ✅ push: git branch, dirty state, project type, test commands (written to system by `buildBasicInfoSystemMessage`, wrapped in `<basic_info>` block)
+- ✅ push (only when the user explicitly references a Skill this turn): full Skill text written to the `<active_skill>` meta of that user message, not into system
+- ❌ push: full directory tree; pull on demand with `glob` / `grep`
+- Open files: push only a **reference** (path + cursor/selection), not the full text; `read_file` when relevant
 
-### 验证与演进
+### Validation and Evolution
 
-- 平衡点随模型能力、延迟预算、内容静态/动态而移动；**不要凭直觉拍板**某段该不该 push
-- 变更模型可见上下文后，用 `pnpm run eval:compare` 对比 push vs 不 push，看是否转化为正确率
-- 把「预置什么」做成可调、可测的旋钮，而非写死的兜底
+- The right balance moves with model capability, latency budget, and whether content is static or dynamic; **do not decide intuitively** whether a piece of context should be pushed.
+- After changing model-visible context, use `pnpm run eval:compare` to compare push vs no-push and see if it translates into accuracy.
+- Make "what to push" a tunable, measurable knob rather than a hardcoded fallback.
