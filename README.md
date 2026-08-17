@@ -1,7 +1,5 @@
 <div align="center">
 
-<img width="128" height="128" alt="Spirit Agent" src="packages/brand/assets/logo-dark.svg" />
-
 
 # Spirit Agent
 
