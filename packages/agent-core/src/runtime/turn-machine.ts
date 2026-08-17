@@ -128,6 +128,10 @@ export interface TurnMachineRuntime<
   pendingApproval: PendingApprovalState<State, ToolRequest, TrustTarget> | undefined;
   /** Single-slot overflow for early-stream approvals while pendingApproval is busy. */
   earlyApprovalQueue: EarlyStreamApprovalQueueItem<State, ToolRequest, TrustTarget>[];
+  /** formal 审批闸门等待槽位时的挂起点；canProceed=false 表示本轮已终止（abort/历史替换）。 */
+  pendingApprovalSlotWaiters: Array<(canProceed: boolean) => void>;
+  /** early 执行按启动顺序串成的 FIFO 链尾：审批卡片按参数完成顺序展示，而非授权竞速顺序。 */
+  earlyApprovalOrderChain?: Promise<void>;
   pendingQuestions: PendingQuestionsState<State, ToolRequest> | undefined;
   pendingToolAgentRound: PendingToolAgentRound<State, ToolRequest> | undefined;
   appendTrace(trace: JsonValue[], turn: RuntimeTurnContext<ToolRequest>): void;
@@ -1430,6 +1434,16 @@ export async function processToolCallsAsync<Config, State, ToolRequest, TrustTar
         )
       : null;
     if (approvalGate) {
+      // 审批是单槽位：并行 tool call 中参数后完成的调用（典型如 shell）可能已通过
+      // early-stream 路径占着槽位。这里绝不能覆盖——被覆盖审批的 resolveEarlyDecision
+      // 永远不再被调用，其执行 promise 永不 settle，后续 continuation 会永远 await。
+      // 槽位被占时挂起等待，由 pump/clear 在槽位变化时唤醒重新检查。
+      while (runtime.pendingApproval !== undefined) {
+        const canProceed = await waitForPendingApprovalSlot(runtime);
+        if (!canProceed) {
+          return;
+        }
+      }
       const approval = createApproval(
         approvalGate.prompt,
         request,
@@ -1896,12 +1910,28 @@ export function startEarlyToolExecution<Config, State, ToolRequest, TrustTarget 
     ...call,
     argumentsJson: resolved.argumentsJson,
   };
+  // 审批卡片必须按参数完成（即 early 启动）顺序展示，而非授权竞速顺序：
+  // 每个 early 执行在启动时挂上 FIFO 链节点，授权判定完成、准备竞争审批单槽位前
+  // 先等先到者入队/占位；节点在入队/占位后立即放行（resolve 幂等，finally 兜底异常路径）。
+  runtime.earlyApprovalOrderChain ??= Promise.resolve();
+  const waitTurn = runtime.earlyApprovalOrderChain;
+  let releaseTurn: () => void = () => {};
+  runtime.earlyApprovalOrderChain = new Promise<void>((resolve) => {
+    releaseTurn = resolve;
+  });
+  const orderTurn = { waitTurn, releaseTurn };
   const record: PendingEarlyToolExecution<ToolRequest> = {
     toolCallId: call.id,
     toolName: call.name,
     argumentsJson: resolved.argumentsJson,
     canonicalArgumentsJson: resolved.canonicalArgumentsJson,
-    outcome: runEarlyToolExecution(runtime, executionCall, earlyToolExecutions, context),
+    outcome: runEarlyToolExecution(
+      runtime,
+      executionCall,
+      earlyToolExecutions,
+      context,
+      orderTurn,
+    ).finally(() => releaseTurn()),
   };
   earlyToolExecutions.set(call.id, record);
   return record;
@@ -1912,6 +1942,7 @@ async function runEarlyToolExecution<Config, State, ToolRequest, TrustTarget = s
   call: ToolCallRequest,
   earlyToolExecutions: Map<string, PendingEarlyToolExecution<ToolRequest>>,
   context: EarlyToolExecutionContext<State, ToolRequest> | undefined,
+  orderTurn?: { waitTurn: Promise<void>; releaseTurn: () => void },
 ): Promise<PendingEarlyToolExecutionOutcome<ToolRequest>> {
   let request: ToolRequest;
   try {
@@ -1960,7 +1991,12 @@ async function runEarlyToolExecution<Config, State, ToolRequest, TrustTarget = s
       return { kind: "deferred", reason: "approval-required", preGate };
     }
 
-    const decision = await waitForEarlyStreamApprovalDecision(runtime, {
+    // 先等更早启动的调用完成审批入队/占位，再竞争审批单槽位（顺序链）；
+    // 本调用完成入队/占位后立刻放行后续调用。
+    if (orderTurn) {
+      await orderTurn.waitTurn;
+    }
+    const decisionPromise = waitForEarlyStreamApprovalDecision(runtime, {
       pendingUserInput: context.pendingUserInput,
       state: context.state,
       request,
@@ -1978,6 +2014,8 @@ async function runEarlyToolExecution<Config, State, ToolRequest, TrustTarget = s
       resumeAsStreaming: context.resumeAsStreaming ?? true,
       streamingEmitBeginResponse: context.streamingEmitBeginResponse ?? true,
     });
+    orderTurn?.releaseTurn();
+    const decision = await decisionPromise;
 
     if (decision.kind === "allow") {
       if (decision.persistTrust && approvalGate.trustTarget !== undefined) {
@@ -2009,6 +2047,10 @@ async function runEarlyToolExecution<Config, State, ToolRequest, TrustTarget = s
       };
     }
   }
+
+  // 无需审批（或审批已放行）时立即放行后续调用的审批排队，不等本调用执行完；
+  // 审批路径已在入队/占位时放行过，promise resolve 幂等，这里是无需审批路径的放行点。
+  orderTurn?.releaseTurn();
 
   if (authorization.kind === "need-questions") {
     return { kind: "deferred", reason: "questions-required", preGate };
@@ -2088,18 +2130,56 @@ async function runEarlyToolExecution<Config, State, ToolRequest, TrustTarget = s
   };
 }
 
+/**
+ * formal 审批闸门挂起等待审批单槽位释放。
+ * 返回 false 表示本轮已被终止（abort / 历史替换），调用方应静默退出。
+ */
+function waitForPendingApprovalSlot<Config, State, ToolRequest, TrustTarget = string>(
+  runtime: TurnMachineRuntime<Config, State, ToolRequest, TrustTarget>,
+): Promise<boolean> {
+  if (!Array.isArray(runtime.pendingApprovalSlotWaiters)) {
+    runtime.pendingApprovalSlotWaiters = [];
+  }
+  return new Promise((resolve) => {
+    runtime.pendingApprovalSlotWaiters.push(resolve);
+  });
+}
+
+/** 槽位状态变化后唤醒所有 formal 闸门 waiter 重新检查；canProceed=false 表示本轮已终止。 */
+function notifyPendingApprovalSlotWaiters<Config, State, ToolRequest, TrustTarget = string>(
+  runtime: TurnMachineRuntime<Config, State, ToolRequest, TrustTarget>,
+  canProceed: boolean,
+): void {
+  if (
+    !Array.isArray(runtime.pendingApprovalSlotWaiters) ||
+    runtime.pendingApprovalSlotWaiters.length === 0
+  ) {
+    return;
+  }
+  const waiters = runtime.pendingApprovalSlotWaiters;
+  runtime.pendingApprovalSlotWaiters = [];
+  for (const resolve of waiters) {
+    resolve(canProceed);
+  }
+}
+
 export function pumpEarlyApprovalQueue<Config, State, ToolRequest, TrustTarget = string>(
   runtime: TurnMachineRuntime<Config, State, ToolRequest, TrustTarget>,
 ): void {
   ensureEarlyApprovalQueue(runtime);
-  if (runtime.pendingApproval) {
-    return;
+  // 无论本次 pump 结果如何，都唤醒 formal 闸门 waiter 重新检查槽位。
+  try {
+    if (runtime.pendingApproval) {
+      return;
+    }
+    const next = runtime.earlyApprovalQueue.shift();
+    if (!next) {
+      return;
+    }
+    showEarlyStreamApproval(runtime, next);
+  } finally {
+    notifyPendingApprovalSlotWaiters(runtime, true);
   }
-  const next = runtime.earlyApprovalQueue.shift();
-  if (!next) {
-    return;
-  }
-  showEarlyStreamApproval(runtime, next);
 }
 
 export function clearEarlyApprovalWaiters<Config, State, ToolRequest, TrustTarget = string>(
@@ -2117,6 +2197,8 @@ export function clearEarlyApprovalWaiters<Config, State, ToolRequest, TrustTarge
     const item = runtime.earlyApprovalQueue.shift();
     item?.resolveDecision(deny);
   }
+  // 本轮已终止：唤醒 formal 闸门 waiter 静默退出，避免 poll 协程永久挂起。
+  notifyPendingApprovalSlotWaiters(runtime, false);
 }
 
 function ensureEarlyApprovalQueue<Config, State, ToolRequest, TrustTarget = string>(

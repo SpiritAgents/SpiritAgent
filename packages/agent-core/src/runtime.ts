@@ -242,6 +242,8 @@ export class AgentRuntime<Config, State, ToolRequest, TrustTarget = string> {
   private pendingUserTurnStore: string | undefined;
   private pendingApproval: PendingApprovalState<State, ToolRequest, TrustTarget> | undefined;
   private earlyApprovalQueue: EarlyStreamApprovalQueueItem<State, ToolRequest, TrustTarget>[] = [];
+  private pendingApprovalSlotWaiters: Array<(canProceed: boolean) => void> = [];
+  private earlyApprovalOrderChain: Promise<void> | undefined;
   private pendingQuestions: PendingQuestionsState<State, ToolRequest> | undefined;
   private pendingManualApproval: PendingManualApprovalState<ToolRequest, TrustTarget> | undefined;
   private pendingStreamingRound: PendingStreamingRound<State, ToolRequest> | undefined;
@@ -1261,9 +1263,13 @@ export class AgentRuntime<Config, State, ToolRequest, TrustTarget = string> {
 
     if (pending.source === "early-stream") {
       pending.resolveEarlyDecision?.(decision);
-      pumpEarlyApprovalQueue(
-        this as unknown as TurnMachineRuntime<Config, State, ToolRequest, TrustTarget>,
-      );
+    }
+    // 无论本次决议来自 early-stream 还是 formal 审批，槽位释放后都必须把排队的 early
+    // 审批顶上来：formal 分支若不 pump，排队 waiter 的 promise 永远无人 settle。
+    pumpEarlyApprovalQueue(
+      this as unknown as TurnMachineRuntime<Config, State, ToolRequest, TrustTarget>,
+    );
+    if (pending.source === "early-stream") {
       return;
     }
 

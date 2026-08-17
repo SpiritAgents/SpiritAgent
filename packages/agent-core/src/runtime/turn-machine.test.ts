@@ -14,6 +14,7 @@ import type { PendingEarlyToolExecution, RuntimeEvent } from "./types.js";
 import {
   executeAuthorizedToolCall,
   processToolCalls,
+  processToolCallsAsync,
   pumpEarlyApprovalQueue,
   resolveEarlyToolCallArguments,
   resumePendingApproval,
@@ -2235,4 +2236,233 @@ test("startEarlyToolExecution invalidates queued approval when arguments change"
   runtime.pendingApproval?.resolveEarlyDecision?.({ kind: "deny" });
   const outcome = await rewritten!.outcome;
   assert.equal(outcome?.kind, "rejected");
+});
+
+// 回归：P0-5 并行审批卡死。并行 tool call 中，参数后完成的调用（典型如 shell）经
+// early-stream 路径先占了审批槽位；formal 闸门绝不能覆盖它——被覆盖审批的
+// resolveEarlyDecision 永远不再被调用，其执行 promise 永不 settle，后续 continuation
+// 会永远 await（Agent 整体卡死）。
+test("processToolCallsAsync parks the formal approval gate behind a pending early-stream approval", async () => {
+  type ShellRequest = { name: string; command?: string; path?: string };
+  const events: RuntimeEvent<ShellRequest>[] = [];
+  const turn = createTurnContext<ShellRequest>();
+  const runtime = {
+    options: {
+      config: {},
+      toolExecutor: {
+        toolDefinitionsJson: () => [],
+        requestFromFunctionCall: async (_name: string, argumentsJson: string) =>
+          JSON.parse(argumentsJson) as ShellRequest,
+        authorize: async () => ({ kind: "need-approval" as const, prompt: "approve ls" }),
+        execute: async () => ({ content: [], summaryText: "ok" }),
+      },
+      appendToolResultMessage: (state: { n: number }) => state,
+      createContinuationState: () => ({ n: 0 }),
+    },
+    historyStore: [],
+    requestTraceStore: [],
+    pendingUserTurnStore: "run",
+    pendingApproval: {
+      source: "early-stream" as const,
+      pendingUserInput: "run",
+      state: { n: 1 },
+      request: { name: "shell", command: "git stash list" },
+      prompt: "approve shell",
+      toolCallId: "call-shell",
+      toolName: "shell",
+      argumentsJson: '{"name":"shell","command":"git stash list"}',
+      remainingCalls: [],
+      turn,
+      resumeAsStreaming: true,
+      streamingEmitBeginResponse: true,
+      resolveEarlyDecision: () => {},
+    },
+    earlyApprovalQueue: [],
+    pendingApprovalSlotWaiters: [],
+    pendingQuestions: undefined,
+    pendingToolAgentRound: undefined,
+    appendTrace: () => {},
+    clearStreamingUiState: () => {},
+    completeTurn: () => {},
+    emitEvent: (event: RuntimeEvent<ShellRequest>) => {
+      events.push(event);
+    },
+    performToolExecution: async () => {
+      throw new Error("should not execute before approval");
+    },
+    startBackgroundToolExecutionAsync: () => {
+      throw new Error("unused");
+    },
+    startHistoryCompactionAsync: () => {},
+  } as unknown as TurnMachineRuntime<{}, { n: number }, ShellRequest>;
+
+  const gate = processToolCallsAsync(
+    runtime,
+    { n: 1 },
+    "run",
+    [{ id: "call-ls", name: "ls", argumentsJson: '{"name":"ls","path":"/tmp"}' }],
+    turn,
+    true,
+    true,
+    new Map(),
+  );
+
+  // 槽位被 early-stream 审批占用期间：formal 闸门挂起等待，不得覆盖、不得弹第二个框
+  await new Promise((resolve) => setImmediate(resolve));
+  await new Promise((resolve) => setImmediate(resolve));
+  assert.equal(runtime.pendingApproval?.toolCallId, "call-shell");
+  assert.equal(
+    events.some(
+      (event) => event.kind === "approval-requested" && event.approval.toolCallId === "call-ls",
+    ),
+    false,
+  );
+
+  // 用户批准了 early-stream 审批：槽位释放，pump 唤醒 formal 闸门
+  runtime.pendingApproval = undefined;
+  pumpEarlyApprovalQueue(runtime);
+  await gate;
+
+  const pendingAfter = (
+    runtime as unknown as { pendingApproval?: { toolCallId: string; source?: string } }
+  ).pendingApproval;
+  assert.equal(pendingAfter?.toolCallId, "call-ls");
+  assert.equal(pendingAfter?.source, undefined);
+  assert.ok(
+    events.some(
+      (event) => event.kind === "approval-requested" && event.approval.toolCallId === "call-ls",
+    ),
+  );
+});
+
+// 回归：P0-5 的镜像时序——formal 审批在位时第二个调用的 early 审批只能排队；
+// formal 决议释放槽位后必须把排队 waiter 泵出来，否则其 promise 永远无人 settle。
+test("continuePendingApproval pumps the queued early approval after resolving a formal approval", async () => {
+  const runtime = new AgentRuntime(
+    buildAgentRuntimeOptions(
+      [
+        { kind: "tool", id: "call_ls", name: "ls", argumentsJson: '{"path":"/tmp"}' },
+        { kind: "final", text: "done" },
+      ],
+      {
+        authorize: async () => ({ kind: "need-approval" as const, prompt: "approve ls" }),
+      },
+    ),
+  );
+
+  const result = await runtime.submitUserTurn("work");
+  assert.equal(result.kind, "requires-approval");
+  assert.equal(runtime.currentPendingApproval()?.toolCallId, "call_ls");
+
+  let queuedDecision: { kind: string } | undefined;
+  (
+    runtime as unknown as { earlyApprovalQueue: Array<Record<string, unknown>> }
+  ).earlyApprovalQueue.push({
+    pendingUserInput: "work",
+    state: { messages: [], steps: 0 },
+    request: { name: "shell", command: "echo hi" },
+    prompt: "approve shell",
+    toolCallId: "call_shell",
+    toolName: "shell",
+    argumentsJson: '{"command":"echo hi"}',
+    canonicalArgumentsJson: '{"command":"echo hi"}',
+    turn: createTurnContext(),
+    earlyToolExecutions: new Map(),
+    resumeAsStreaming: true,
+    streamingEmitBeginResponse: true,
+    resolveDecision: (decision: { kind: string }) => {
+      queuedDecision = decision;
+    },
+  });
+
+  await runtime.continuePendingApproval({ kind: "allow" });
+
+  assert.equal(runtime.currentPendingApproval()?.toolCallId, "call_shell");
+  // 提升不等于决议：仍等待用户下一次审批
+  assert.equal(queuedDecision, undefined);
+});
+
+// 回归：审批卡片必须按参数完成（early 启动）顺序展示，而非授权竞速顺序。
+// 先到者 authorize 更慢时（如外部路径 realpath 的 ls），后到者不得抢占审批槽位。
+test("startEarlyToolExecution shows approvals in start order even when a later authorize resolves first", async () => {
+  type ShellRequest = { name: string; command: string };
+  const turn = createTurnContext<ShellRequest>();
+  const events: RuntimeEvent<ShellRequest>[] = [];
+  let resolveSlowAuthorize: (() => void) | undefined;
+  const runtime = {
+    options: {
+      toolExecutor: {
+        toolDefinitionsJson: () => [],
+        requestFromFunctionCall: async (_name: string, argumentsJson: string) =>
+          JSON.parse(argumentsJson) as ShellRequest,
+        authorize: async (request: ShellRequest) => {
+          if (request.command === "echo slow") {
+            await new Promise<void>((resolve) => {
+              resolveSlowAuthorize = resolve;
+            });
+          }
+          return { kind: "need-approval" as const, prompt: "approve shell" };
+        },
+        execute: async () => ({ content: [], summaryText: "ok" }),
+      },
+    },
+    pendingApproval: undefined,
+    earlyApprovalQueue: [],
+    earlyApprovalOrderChain: undefined,
+    emitEvent: (event: RuntimeEvent<ShellRequest>) => {
+      events.push(event);
+    },
+  } as unknown as TurnMachineRuntime<{}, { n: number }, ShellRequest>;
+
+  const early = new Map<string, PendingEarlyToolExecution<ShellRequest>>();
+  const context = { pendingUserInput: "run", state: { n: 1 }, turn };
+  const first = startEarlyToolExecution<{}, { n: number }, ShellRequest>(
+    runtime,
+    { id: "call-1", name: "shell", argumentsJson: '{"name":"shell","command":"echo slow"}' },
+    early,
+    context,
+  );
+  const second = startEarlyToolExecution<{}, { n: number }, ShellRequest>(
+    runtime,
+    { id: "call-2", name: "shell", argumentsJson: '{"name":"shell","command":"echo fast"}' },
+    early,
+    context,
+  );
+  assert.ok(first);
+  assert.ok(second);
+
+  // 后到者授权先完成也不得上卡：顺序链要求等先到者完成审批判定
+  await new Promise((resolve) => setImmediate(resolve));
+  await new Promise((resolve) => setImmediate(resolve));
+  const pendingBeforeSlowAuthorize = (
+    runtime as unknown as { pendingApproval?: { toolCallId: string } }
+  ).pendingApproval;
+  assert.equal(pendingBeforeSlowAuthorize, undefined);
+  assert.equal(runtime.earlyApprovalQueue.length, 0);
+
+  resolveSlowAuthorize?.();
+  await new Promise((resolve) => setImmediate(resolve));
+  await new Promise((resolve) => setImmediate(resolve));
+  assert.equal(runtime.pendingApproval?.toolCallId, "call-1");
+  assert.equal(runtime.earlyApprovalQueue[0]?.toolCallId, "call-2");
+
+  // 决议第一个后第二个才弹出
+  runtime.pendingApproval?.resolveEarlyDecision?.({ kind: "allow" });
+  runtime.pendingApproval = undefined;
+  pumpEarlyApprovalQueue(runtime);
+  await new Promise((resolve) => setImmediate(resolve));
+  const secondPending = (
+    runtime as unknown as {
+      pendingApproval?: {
+        toolCallId: string;
+        resolveEarlyDecision?: (d: { kind: "allow" }) => void;
+      };
+    }
+  ).pendingApproval;
+  assert.equal(secondPending?.toolCallId, "call-2");
+
+  secondPending?.resolveEarlyDecision?.({ kind: "allow" });
+  runtime.pendingApproval = undefined;
+  assert.equal((await first!.outcome)?.kind, "completed");
+  assert.equal((await second!.outcome)?.kind, "completed");
 });

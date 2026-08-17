@@ -41,6 +41,7 @@ import type { ToolAgentState } from "../tool-agent.js";
 import { prefetchAutoReviewForToolCallIfNeeded } from "./auto-approval-integration.js";
 import {
   canonicalizeToolArguments,
+  resolveEarlyToolCallArguments,
   startEarlyToolExecution,
   persistProviderBuiltinToolRoundToHistoryStore,
 } from "./turn-machine.js";
@@ -516,10 +517,15 @@ export async function handlePendingStreamEvent<Config, State, ToolRequest, Trust
         authorize: (request) => runtime.options.toolExecutor.authorize(request),
       });
     }
+    // 提前执行准入须与 startEarlyToolExecution 内部的参数解析一致：
+    // ls/read_file/delete_file 允许在路径完整、JSON 未闭合时就提前启动；
+    // 若只认完整 JSON，它们的审批会落到流式结束后的 formal pass，展示顺序被后置工具反超。
+    const earlyExecutable =
+      resolveEarlyToolCallArguments(event.toolName, event.argumentsJson) !== undefined;
     if (
       !isResponsesBuiltInToolName(event.toolName) &&
       !shouldSkipEarlyExecutionForManagedProviderTool(event.toolName, runtime.options.config) &&
-      canonicalArgumentsJson !== undefined
+      earlyExecutable
     ) {
       startEarlyToolExecution(
         runtime as unknown as TurnMachineRuntime<Config, State, ToolRequest, TrustTarget>,
