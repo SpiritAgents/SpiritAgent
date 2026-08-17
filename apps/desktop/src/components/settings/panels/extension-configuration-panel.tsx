@@ -4,7 +4,6 @@ import { useTranslation } from "react-i18next";
 import { SettingsRow } from "@/components/settings/settings-row";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Checkbox } from "@/components/ui/checkbox";
 import { DesktopFormInput } from "@/components/ui/desktop-form-field";
 import {
   Select,
@@ -13,6 +12,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { Switch } from "@/components/ui/switch";
 import type {
   DesktopExtensionListItem,
   UpdateExtensionSecretRequest,
@@ -102,7 +102,7 @@ export function ExtensionConfigurationPanel({
                   htmlFor={fieldKey}
                 >
                   <div className="flex justify-end">
-                    <Checkbox
+                    <Switch
                       id={fieldKey}
                       checked={checked}
                       disabled={extensionsBusy}
@@ -112,7 +112,6 @@ export function ExtensionConfigurationPanel({
                           values: { [setting.key]: value === true },
                         });
                       }}
-                      className="size-5"
                     />
                   </div>
                 </SettingsRow>

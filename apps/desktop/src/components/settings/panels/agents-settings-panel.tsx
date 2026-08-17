@@ -15,7 +15,7 @@ import {
 } from "@/components/ui/dialog";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Checkbox } from "@/components/ui/checkbox";
+import { Switch } from "@/components/ui/switch";
 import { cn } from "@/lib/utils";
 import type { DesktopLspProviderSnapshot, DesktopSnapshot } from "@/types";
 import { isDesktopInstallableProvider } from "@/lib/lsp-provider-install";
@@ -91,11 +91,10 @@ export function AgentsSettingsPanel({
             htmlFor="settings-lsp-enabled"
           >
             <div className="flex justify-end">
-              <Checkbox
+              <Switch
                 id="settings-lsp-enabled"
                 checked={settings.lspEnabled}
                 onCheckedChange={(value) => void onSavePatch({ lspEnabled: value === true })}
-                className="size-5"
               />
             </div>
           </AgentsSettingsRow>
@@ -158,13 +157,12 @@ export function AgentsSettingsPanel({
             htmlFor="settings-commit-attribution"
           >
             <div className="flex justify-end">
-              <Checkbox
+              <Switch
                 id="settings-commit-attribution"
                 checked={settings.commitAttributionEnabled}
                 onCheckedChange={(value) =>
                   void onSavePatch({ commitAttributionEnabled: value === true })
                 }
-                className="size-5"
               />
             </div>
           </AgentsSettingsRow>
@@ -174,13 +172,12 @@ export function AgentsSettingsPanel({
             htmlFor="settings-pr-attribution"
           >
             <div className="flex justify-end">
-              <Checkbox
+              <Switch
                 id="settings-pr-attribution"
                 checked={settings.prAttributionEnabled}
                 onCheckedChange={(value) =>
                   void onSavePatch({ prAttributionEnabled: value === true })
                 }
-                className="size-5"
               />
             </div>
           </AgentsSettingsRow>

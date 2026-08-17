@@ -2,7 +2,7 @@ import { useTranslation } from "react-i18next";
 
 import { SettingsRow } from "@/components/settings/settings-row";
 import type { SettingsViewProps } from "@/components/settings/types";
-import { Checkbox } from "@/components/ui/checkbox";
+import { Switch } from "@/components/ui/switch";
 import { desktopShellPlatform } from "@/lib/desktop-shell";
 
 function platformKey(base: string): string {
@@ -26,11 +26,10 @@ export function GeneralSettingsPanel({
         htmlFor="settings-system-notifications"
       >
         <div className="flex justify-end">
-          <Checkbox
+          <Switch
             id="settings-system-notifications"
             checked={settings.systemNotifications}
             onCheckedChange={(value) => void onSavePatch({ systemNotifications: value === true })}
-            className="size-5"
           />
         </div>
       </SettingsRow>
@@ -40,11 +39,10 @@ export function GeneralSettingsPanel({
         htmlFor="settings-tray-icon"
       >
         <div className="flex justify-end">
-          <Checkbox
+          <Switch
             id="settings-tray-icon"
             checked={settings.trayIcon}
             onCheckedChange={(value) => void onSavePatch({ trayIcon: value === true })}
-            className="size-5"
           />
         </div>
       </SettingsRow>

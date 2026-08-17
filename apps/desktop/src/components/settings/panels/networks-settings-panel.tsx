@@ -6,7 +6,6 @@ import { llmHttpVersionSelectOptions } from "@/components/settings/constants";
 import { SettingsRow } from "@/components/settings/settings-row";
 import type { SettingsViewProps } from "@/components/settings/types";
 import { Button } from "@/components/ui/button";
-import { Checkbox } from "@/components/ui/checkbox";
 import { DesktopFormInput } from "@/components/ui/desktop-form-field";
 import {
   Select,
@@ -15,6 +14,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { Switch } from "@/components/ui/switch";
 import type { DesktopSnapshot } from "@/types";
 import { DESKTOP_LIST_ITEM_PRIMARY_CLASS } from "@/lib/desktop-typography";
 
@@ -99,11 +99,10 @@ export function NetworksSettingsPanel({
               <span className="truncate text-sm text-muted-foreground">
                 {settings.webHostEnabled ? webHostStatus : t("settings.webHostClosed")}
               </span>
-              <Checkbox
+              <Switch
                 id="settings-web-host-enabled"
                 checked={settings.webHostEnabled}
                 onCheckedChange={(value) => void onSavePatch({ webHostEnabled: value === true })}
-                className="size-5"
               />
             </div>
           </SettingsRow>
