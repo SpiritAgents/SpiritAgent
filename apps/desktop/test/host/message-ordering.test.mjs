@@ -287,7 +287,7 @@ test("displayTitleForTool: built-in create_automation approval uses automation h
 
 test("isSubagentStatusSurfaceText detects runtime status lines", () => {
   assert.equal(
-    isSubagentStatusSurfaceText('输出 "你好" 这两个字，不要做任何其他事情。: 运行中'),
+    isSubagentStatusSurfaceText('输出 "你好" 这两个字，不要做任何其他事情。: Running'),
     true,
   );
   assert.equal(isSubagentStatusSurfaceText('请输出"你好"这两个字。: The'), true);

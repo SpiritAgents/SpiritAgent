@@ -11,7 +11,7 @@ import {
 
 test("isSubagentStatusSurfaceText detects runtime status lines", () => {
   assert.equal(
-    isSubagentStatusSurfaceText('输出 "你好" 这两个字，不要做任何其他事情。: 运行中'),
+    isSubagentStatusSurfaceText('输出 "你好" 这两个字，不要做任何其他事情。: Running'),
     true,
   );
   assert.equal(isSubagentStatusSurfaceText('请输出"你好"这两个字。: The'), true);
@@ -56,7 +56,7 @@ test("isGenericPendingCompactionStatusText detects runtime spinner placeholders"
 });
 
 test("parsePendingSubagentStatusText only accepts subagent runtime status", () => {
-  assert.equal(parsePendingSubagentStatusText("| Review auth: 运行中"), "Review auth: 运行中");
+  assert.equal(parsePendingSubagentStatusText("| Review auth: Running"), "Review auth: Running");
   assert.equal(parsePendingSubagentStatusText("/ Thinking..."), undefined);
   assert.equal(parsePendingSubagentStatusText("| 用户想回退：删除未跟踪文件"), undefined);
 });

@@ -49,8 +49,8 @@ fn is_subagent_runtime_status_tail(after: &str) -> bool {
         || tail.starts_with("Sp")
         || tail.starts_with("Thinking")
         || tail.starts_with("Compressing")
-        || tail.starts_with("运行")
-        || tail.starts_with("等待")
+        || tail.starts_with("Running")
+        || tail.starts_with("Awaiting")
         || tail.starts_with("正在")
     {
         return true;
@@ -58,10 +58,10 @@ fn is_subagent_runtime_status_tail(after: &str) -> bool {
     if tail.starts_with("The user wants") || tail.starts_with("The user is") {
         return true;
     }
-    if matches!(tail, "运行中" | "已完成" | "成功" | "完成") {
+    if matches!(tail, "Running" | "Done" | "成功" | "完成") {
         return true;
     }
-    if tail.starts_with("等待") {
+    if tail.starts_with("Awaiting") {
         return true;
     }
     // Short CJK-only progress fragments (e.g. "成功", "正在执行") — not English reasoning.
@@ -92,10 +92,10 @@ pub fn is_subagent_status_surface_text(text: &str) -> bool {
     if without_spinner == "Thinking..." || without_spinner == "Compressing..." {
         return true;
     }
-    if without_spinner.ends_with(": 运行中") || without_spinner.ends_with("： 运行中") {
+    if without_spinner.ends_with(": Running") || without_spinner.ends_with("： Running") {
         return true;
     }
-    if without_spinner.contains(": 等待") || without_spinner.contains("： 等待") {
+    if without_spinner.contains(": Awaiting") || without_spinner.contains("： Awaiting") {
         return true;
     }
 
@@ -170,7 +170,7 @@ mod tests {
     #[test]
     fn detects_runtime_subagent_status_lines() {
         assert!(is_subagent_status_surface_text(
-            "输出 \"你好\" 这两个字，不要做任何其他事情。: 运行中"
+            "输出 \"你好\" 这两个字，不要做任何其他事情。: Running"
         ));
         assert!(is_subagent_status_surface_text(
             "请输出\"你好\"这两个字。: The"

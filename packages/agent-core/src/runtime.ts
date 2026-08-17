@@ -616,7 +616,7 @@ export class AgentRuntime<Config, State, ToolRequest, TrustTarget = string> {
   ): void {
     record.summary.status = "blocked";
     record.summary.updatedAtUnixMs = Date.now();
-    record.summary.latestMessage = `等待补充信息: ${questions.toolName}`;
+    record.summary.latestMessage = `Awaiting input: ${questions.toolName}`;
     delete record.summary.completedAtUnixMs;
     delete record.summary.finalOutput;
     delete record.summary.error;
@@ -2602,7 +2602,7 @@ export class AgentRuntime<Config, State, ToolRequest, TrustTarget = string> {
     const pendingCount = this.pendingSubagentExecutions.size;
     const pending = this.firstPendingSubagentExecution();
     if (!pending) {
-      return "SubAgent: 运行中";
+      return "SubAgent: Running";
     }
 
     if (pendingCount > 1) {
@@ -2612,7 +2612,7 @@ export class AgentRuntime<Config, State, ToolRequest, TrustTarget = string> {
     const title = pending.childRecord.summary.title.trim() || "SubAgent";
     const childApproval = pending.childRuntime.currentPendingApproval();
     if (childApproval) {
-      return `${title}: 等待确认 ${childApproval.toolName}`;
+      return `${title}: Awaiting approval ${childApproval.toolName}`;
     }
 
     const pendingAssistantProgress = normalizeSubagentStatusProgress(
@@ -2640,7 +2640,7 @@ export class AgentRuntime<Config, State, ToolRequest, TrustTarget = string> {
         return `${title}: ${truncateTextForSubagentSummary(completedProgress, 120)}`;
       }
 
-      return `${title}: 已完成`;
+      return `${title}: Done`;
     }
 
     const progress = normalizeSubagentStatusProgress(
@@ -2648,7 +2648,7 @@ export class AgentRuntime<Config, State, ToolRequest, TrustTarget = string> {
       title,
     );
     if (!progress) {
-      return `${title}: 运行中`;
+      return `${title}: Running`;
     }
 
     return `${title}: ${truncateTextForSubagentSummary(progress, 120)}`;
@@ -3202,7 +3202,7 @@ export class AgentRuntime<Config, State, ToolRequest, TrustTarget = string> {
       if (result.kind === "requires-approval") {
         record.summary.status = "blocked";
         record.summary.updatedAtUnixMs = Date.now();
-        record.summary.latestMessage = `等待前台确认: ${result.approval.toolName}`;
+        record.summary.latestMessage = `Awaiting foreground approval: ${result.approval.toolName}`;
         delete record.summary.completedAtUnixMs;
         delete record.summary.finalOutput;
         delete record.summary.error;
@@ -3313,7 +3313,7 @@ export class AgentRuntime<Config, State, ToolRequest, TrustTarget = string> {
       ? "blocked"
       : "running";
     if (pending.childRuntime.currentPendingApproval()) {
-      pending.childRecord.summary.latestMessage = `等待前台确认: ${pending.childRuntime.currentPendingApproval()?.toolName}`;
+      pending.childRecord.summary.latestMessage = `Awaiting foreground approval: ${pending.childRuntime.currentPendingApproval()?.toolName}`;
       return;
     }
 
@@ -3507,7 +3507,7 @@ export class AgentRuntime<Config, State, ToolRequest, TrustTarget = string> {
       const childApproval = pending.childRuntime.currentPendingApproval();
       if (childApproval) {
         pending.childRecord.summary.status = "blocked";
-        pending.childRecord.summary.latestMessage = `等待前台确认: ${childApproval.toolName}`;
+        pending.childRecord.summary.latestMessage = `Awaiting foreground approval: ${childApproval.toolName}`;
         delete pending.childRecord.summary.completedAtUnixMs;
         delete pending.childRecord.summary.finalOutput;
         delete pending.childRecord.summary.error;
@@ -3524,7 +3524,7 @@ export class AgentRuntime<Config, State, ToolRequest, TrustTarget = string> {
 
       if (result.kind === "requires-approval") {
         pending.childRecord.summary.status = "blocked";
-        pending.childRecord.summary.latestMessage = `等待前台确认: ${result.approval.toolName}`;
+        pending.childRecord.summary.latestMessage = `Awaiting foreground approval: ${result.approval.toolName}`;
         continue;
       }
 
