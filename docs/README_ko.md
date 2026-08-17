@@ -1,6 +1,6 @@
 <div align="center">
 
-<img width="128" height="128" alt="Spirit Agent Dark" src="https://github.com/user-attachments/assets/e424b9ab-4429-406a-8d6d-764bdc02759c" />
+<img width="128" height="128" alt="Spirit Agent" src="../packages/brand/assets/logo-dark.svg" />
 
 
 # Spirit Agent
