@@ -7,7 +7,7 @@ const desktopRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "
 const repoRoot = path.resolve(desktopRoot, "../..");
 const destVscode = path.join(desktopRoot, "node_modules", "@vscode");
 
-/** @vscode/ripgrep 通过 optionalDependency 平台包提供 rg 二进制；pnpm hoisted 布局下常只在仓库根 node_modules。 */
+/** @vscode/ripgrep ships the rg binary via optionalDependency platform packages; under the pnpm hoisted layout it often lives only in the repo root node_modules. */
 function resolveHoistedVscode() {
   const desktopVscode = path.join(desktopRoot, "node_modules", "@vscode");
   if (fs.existsSync(desktopVscode)) {

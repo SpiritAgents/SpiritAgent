@@ -24,8 +24,8 @@ function findWorkspaceRoot(startDir) {
  */
 
 /**
- * 根目录 node-linker=hoisted 时，license-checker 从 apps/site 起步看不到提升后的依赖。
- * 用 pnpm list 拿 site 生产闭包（含真实 path），再读各包 package.json 的 license。
+ * With node-linker=hoisted at the root, license-checker started from apps/site cannot see hoisted dependencies.
+ * Use pnpm list to get the site production closure (with real paths), then read each package's package.json license.
  * @param {string} workspaceRoot
  * @returns {PnpmListNode[]}
  */

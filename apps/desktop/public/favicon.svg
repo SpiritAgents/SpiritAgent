@@ -1,4 +1,4 @@
-<!-- 与 packages/brand/assets/glyph-black.svg 保持同步：修改图案先改 brand 包，再拷贝到此 -->
+<!-- Keep in sync with packages/brand/assets/glyph-black.svg: change the glyph in the brand package first, then copy it here -->
 <svg xmlns="http://www.w3.org/2000/svg" width="142" height="157" viewBox="0 0 142 157">
   <path d="M0 0L141.409 69.4512L70.7825 78.2408C61.5778 79.3863 53.5378 85.016 49.3132 93.2737L16.8979 156.635L0 0Z" fill="#000000"/>
 </svg>

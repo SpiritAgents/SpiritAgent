@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 /**
- * Desktop renderer 仅允许从 host-internal 的 renderer-safe 子路径 import。
- * 主入口 @spiritagent/host-internal 会拉入 extensions / node:fs 依赖链（含 import type）。
+ * The Desktop renderer may only import from host-internal's renderer-safe subpaths.
+ * The main entry @spiritagent/host-internal pulls in the extensions / node:fs dependency chain (including import type).
  */
 import { readFileSync, readdirSync, statSync } from "node:fs";
 import { join, relative } from "node:path";
@@ -10,7 +10,7 @@ import { fileURLToPath } from "node:url";
 const repoRoot = join(fileURLToPath(new URL(".", import.meta.url)), "..", "..", "..");
 const desktopSrc = join(repoRoot, "apps", "desktop", "src");
 
-/** value import 允许的 host-internal 子路径（不含 node 依赖）。 */
+/** host-internal subpaths allowed for value import (no node dependencies). */
 const RENDERER_SAFE_HOST_INTERNAL_SUBPATHS = new Set([
   "config-v2",
   "workspace-file-reference-query",
@@ -78,7 +78,7 @@ function scanHostStorageImports(filePath, content) {
     violations.push({
       file: relative(repoRoot, filePath),
       line,
-      reason: "renderer 禁止 import apps/desktop/src/host（会拉入 host-internal 主入口）",
+      reason: "renderer must not import apps/desktop/src/host (pulls in the host-internal main entry)",
     });
   }
   return violations;
@@ -99,7 +99,7 @@ function scanFile(filePath) {
       violations.push({
         file: relative(repoRoot, filePath),
         line,
-        reason: "禁止从 @spiritagent/host-internal 主入口 import（含 import type）",
+        reason: "importing from the @spiritagent/host-internal main entry is not allowed (including import type)",
       });
       continue;
     }
@@ -111,7 +111,7 @@ function scanFile(filePath) {
       violations.push({
         file: relative(repoRoot, filePath),
         line,
-        reason: `子路径 "${subpath}" 不在 renderer-safe allowlist`,
+        reason: `subpath "${subpath}" is not in the renderer-safe allowlist`,
       });
     }
   }
@@ -126,7 +126,7 @@ function scanFile(filePath) {
       violations.push({
         file: relative(repoRoot, filePath),
         line,
-        reason: '禁止 inline import("@spiritagent/host-internal") 主入口',
+        reason: 'inline import("@spiritagent/host-internal") of the main entry is not allowed',
       });
       continue;
     }
@@ -134,7 +134,7 @@ function scanFile(filePath) {
       violations.push({
         file: relative(repoRoot, filePath),
         line,
-        reason: `inline import 子路径 "${subpath}" 不在 renderer-safe allowlist`,
+        reason: `inline import subpath "${subpath}" is not in the renderer-safe allowlist`,
       });
     }
   }
@@ -149,11 +149,11 @@ const files = collectSourceFiles(desktopSrc);
 const violations = files.flatMap(scanFile);
 
 if (violations.length > 0) {
-  console.error("renderer host-internal import 检查失败:\n");
+  console.error("renderer host-internal import check failed:\n");
   for (const item of violations) {
     console.error(`  ${item.file}:${item.line} — ${item.reason}`);
   }
   process.exit(1);
 }
 
-console.log("renderer host-internal import 检查通过");
+console.log("renderer host-internal import check passed");

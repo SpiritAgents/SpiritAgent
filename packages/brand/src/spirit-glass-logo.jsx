@@ -4,7 +4,7 @@ import { SPIRIT_GLASS_LOGO_PATH, SPIRIT_GLASS_LOGO_VIEWBOX } from "./constants.j
 
 const MASK_SVG = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${SPIRIT_GLASS_LOGO_VIEWBOX.width} ${SPIRIT_GLASS_LOGO_VIEWBOX.height}"><path d="${SPIRIT_GLASS_LOGO_PATH}" fill="white"/></svg>`;
 
-/** 供启动层 shimmer 蒙版：与玻璃标轮廓一致 */
+/** For the splash shimmer mask: matches the glass glyph outline */
 export function spiritGlassLogoMaskStyle() {
   const mask = `url("data:image/svg+xml,${encodeURIComponent(MASK_SVG)}")`;
   return {
@@ -20,8 +20,8 @@ export function spiritGlassLogoMaskStyle() {
 }
 
 /**
- * spiritagent.app 页脚 CTA 玻璃品牌标（无 shimmer）。
- * 填充/描边颜色取自消费方提供的 --spirit-agent-* CSS 变量。
+ * spiritagent.app footer CTA glass brand logo (no shimmer).
+ * Fill/stroke colors come from consumer-provided --spirit-agent-* CSS variables.
  */
 export function SpiritGlassLogo({ width = 72, className, ...props }) {
   const uid = useId().replace(/:/g, "");
