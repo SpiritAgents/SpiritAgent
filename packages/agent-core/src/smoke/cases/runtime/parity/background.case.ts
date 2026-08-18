@@ -30,7 +30,9 @@ export async function runBackgroundCase(): Promise<RuntimeParityCaseResult> {
     onEvent: (event) => backgroundEvents.push(event),
   });
 
-  const backgroundResult = await backgroundRuntime.submitUserTurn("Please search for runtime parity in the background.");
+  const backgroundResult = await backgroundRuntime.submitUserTurn(
+    "Please search for runtime parity in the background.",
+  );
   if (backgroundResult.kind !== "completed" || backgroundResult.assistantText !== "BACKGROUND_OK") {
     throw new Error("background execution smoke did not complete the turn loop.");
   }
@@ -54,7 +56,9 @@ export async function runBackgroundCase(): Promise<RuntimeParityCaseResult> {
     throw new Error("background execution smoke status text is incorrect.");
   }
   if (backgroundRuntime.backgroundToolStatus() !== undefined) {
-    throw new Error("background execution smoke should clear the pending background status after finishing.");
+    throw new Error(
+      "background execution smoke should clear the pending background status after finishing.",
+    );
   }
 
   const pollingBackgroundExecutor = new PollingBackgroundExecutor();
@@ -69,7 +73,9 @@ export async function runBackgroundCase(): Promise<RuntimeParityCaseResult> {
     onEvent: (event) => pollingBackgroundEvents.push(event),
   });
 
-  await pollingBackgroundRuntime.startUserTurn("Please search for runtime parity in the background.");
+  await pollingBackgroundRuntime.startUserTurn(
+    "Please search for runtime parity in the background.",
+  );
   await flushMicrotasks(4);
   await pollingBackgroundRuntime.poll();
   if (!pollingBackgroundRuntime.isBusy()) {
@@ -90,7 +96,9 @@ export async function runBackgroundCase(): Promise<RuntimeParityCaseResult> {
     throw new Error("polling background smoke should not put UI spinner copy into statusText.");
   }
   if (pollingBackgroundRuntime.takeCompletedTurnResult()) {
-    throw new Error("polling background smoke should not produce a result before the background tool finishes.");
+    throw new Error(
+      "polling background smoke should not produce a result before the background tool finishes.",
+    );
   }
 
   pollingBackgroundExecutor.finish('background result for {"query":"runtime parity"}');
@@ -125,7 +133,9 @@ export async function runBackgroundCase(): Promise<RuntimeParityCaseResult> {
       event.kind === "background-tool-status" && event.phase === "finished",
   );
   if (!pollingStartedBackground || !pollingFinishedBackground) {
-    throw new Error("polling background smoke did not receive the complete background status events.");
+    throw new Error(
+      "polling background smoke did not receive the complete background status events.",
+    );
   }
   const pollingToolFinished = pollingBackgroundEvents.find(
     (
@@ -134,7 +144,9 @@ export async function runBackgroundCase(): Promise<RuntimeParityCaseResult> {
       event.kind === "tool-execution-finished",
   );
   if (!pollingToolFinished || pollingToolFinished.execution.toolName !== "grep") {
-    throw new Error("polling background smoke should emit tool-execution-finished when the background tool completes.");
+    throw new Error(
+      "polling background smoke should emit tool-execution-finished when the background tool completes.",
+    );
   }
 
   return { backgroundResult, pollingBackgroundResult };

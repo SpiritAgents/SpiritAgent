@@ -12,7 +12,10 @@ import fs from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 
-import { SPIRIT_GLASS_LOGO_PATH, SPIRIT_GLASS_LOGO_VIEWBOX } from "@spiritagent/brand/src/constants.js";
+import {
+  SPIRIT_GLASS_LOGO_PATH,
+  SPIRIT_GLASS_LOGO_VIEWBOX,
+} from "@spiritagent/brand/src/constants.js";
 import { imagesToIco } from "png-to-ico";
 import { readPNG, resize } from "png-to-ico/lib/png.js";
 import sharp from "sharp";
@@ -68,7 +71,9 @@ async function genTrayIcons() {
     ["iconTemplate-32.png", 32],
   ]) {
     const outPath = path.join(trayDir, fileName);
-    await sharp(Buffer.from(buildTraySquareSvg(size), "utf8")).png().toFile(outPath);
+    await sharp(Buffer.from(buildTraySquareSvg(size), "utf8"))
+      .png()
+      .toFile(outPath);
     console.log(`Wrote ${path.relative(desktopRoot, outPath)} (${size}x${size})`);
   }
 }
@@ -83,7 +88,9 @@ async function genDmgBackground() {
     const contentH = 380 * scale;
     const outPath = path.join(buildDir, fileName);
     // density 72 is the SVG native size; multiplying by scale renders sharply directly, avoiding rasterize-then-upscale
-    const content = await sharp(svg, { density: 72 * scale }).png().toBuffer();
+    const content = await sharp(svg, { density: 72 * scale })
+      .png()
+      .toBuffer();
     await sharp({
       create: {
         width: contentW,

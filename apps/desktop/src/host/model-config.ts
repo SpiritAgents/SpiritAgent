@@ -148,7 +148,9 @@ export function resolveProfileApiBase(
     if (trimmed) {
       return trimmed;
     }
-    throw new Error("Cloudflare AI Gateway model is missing the cloudflareAccountId configuration.");
+    throw new Error(
+      "Cloudflare AI Gateway model is missing the cloudflareAccountId configuration.",
+    );
   }
 
   if (profile.provider && profile.provider !== "custom") {

@@ -55,7 +55,7 @@ test("shouldShowAssistantThinkingCollapsible keeps finalized Thought when a tool
     {
       id: 3,
       role: "assistant",
-      content: "Let me check the files first.",,
+      content: "Let me check the files first.",
       pending: false,
     },
     {

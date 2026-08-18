@@ -120,16 +120,24 @@ function createGenerateVideoRuntime(
     extractAssistantText: extractScriptedAssistantText,
     generateVideo: async (request): Promise<ToolExecutionOutput> => {
       if (!request.prompt.includes(expectedPromptSnippet)) {
-        throw new Error("generate_video smoke did not receive the final prompt rewritten by the model.");
+        throw new Error(
+          "generate_video smoke did not receive the final prompt rewritten by the model.",
+        );
       }
       if (request.duration !== expectedDuration) {
-        throw new Error(`generate_video smoke did not parse the expected duration: ${request.duration}`);
+        throw new Error(
+          `generate_video smoke did not parse the expected duration: ${request.duration}`,
+        );
       }
       if (expectedAspectRatio && request.aspectRatio !== expectedAspectRatio) {
-        throw new Error(`generate_video smoke did not parse the expected aspect_ratio: ${request.aspectRatio}`);
+        throw new Error(
+          `generate_video smoke did not parse the expected aspect_ratio: ${request.aspectRatio}`,
+        );
       }
       if (expectedResolution && request.resolution !== expectedResolution) {
-        throw new Error(`generate_video smoke did not parse the expected resolution: ${request.resolution}`);
+        throw new Error(
+          `generate_video smoke did not parse the expected resolution: ${request.resolution}`,
+        );
       }
 
       const markdownRef = "spirit://generated/video/courtyard-clip.mp4";
@@ -165,7 +173,9 @@ function assertTerminalGenerateVideoResult(
   label: string,
 ): void {
   if (rounds !== 2) {
-    throw new Error(`${label} should continue to the final assistant round after generate_video completes.`);
+    throw new Error(
+      `${label} should continue to the final assistant round after generate_video completes.`,
+    );
   }
   if (executedCalls !== 0) {
     throw new Error(`${label} should not fall through to host execute.`);

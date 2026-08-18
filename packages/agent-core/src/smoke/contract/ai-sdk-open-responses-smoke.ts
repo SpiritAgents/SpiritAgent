@@ -104,7 +104,9 @@ async function main(): Promise<void> {
 
   const traceKind = secondRound.result.requestTrace[0];
   if (!isJsonObject(traceKind) || traceKind.kind !== "open_responses_sdk_responses") {
-    throw new Error("ai-sdk open-responses smoke did not write an open_responses_sdk_responses trace.");
+    throw new Error(
+      "ai-sdk open-responses smoke did not write an open_responses_sdk_responses trace.",
+    );
   }
 }
 

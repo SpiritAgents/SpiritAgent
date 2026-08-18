@@ -23,7 +23,7 @@ When in doubt, a quick Issue is usually faster than a large PR that needs rework
 
 Using Cursor, Copilot, or other agent tools to write code is welcome — but **you are still responsible for the diff you submit**:
 
-- Be able to explain *why* a change was made, not just that a model produced it
+- Be able to explain _why_ a change was made, not just that a model produced it
 - Review agent output: remove unrelated edits, duplicated logic, and unnecessary defensive layers
 - Treat **model-visible copy** (system prompts, tool names/descriptions, eval text) with extra care — keep it concise, in English, and avoid repeating capabilities already declared in the request `tools` field
 - In your PR description, state the motivation, impact, and how you verified the change
@@ -34,11 +34,11 @@ Agents can speed up implementation; they cannot replace your judgment.
 
 Spirit Agent has a clear layering model. Before touching multiple packages, read [`.github/instructions/agent-core-host-boundary.instructions.md`](.github/instructions/agent-core-host-boundary.instructions.md):
 
-| Layer | Path | Role |
-| --- | --- | --- |
-| Agent semantics | `packages/agent-core` | Runtime, prompts, tool contracts, MCP, transports |
-| Shared host logic | `packages/host-internal` | Discovery, extensions, workspace helpers, LSP orchestration |
-| Hosts / adapters | `apps/desktop`, `apps/cli`, `apps/site`, `packages/server`, `packages/acp-server` | Thin platform-specific UI and execution |
+| Layer             | Path                                                                              | Role                                                        |
+| ----------------- | --------------------------------------------------------------------------------- | ----------------------------------------------------------- |
+| Agent semantics   | `packages/agent-core`                                                             | Runtime, prompts, tool contracts, MCP, transports           |
+| Shared host logic | `packages/host-internal`                                                          | Discovery, extensions, workspace helpers, LSP orchestration |
+| Hosts / adapters  | `apps/desktop`, `apps/cli`, `apps/site`, `packages/server`, `packages/acp-server` | Thin platform-specific UI and execution                     |
 
 Do not duplicate tool definitions or prompts across CLI and Desktop. New tool contracts belong in `agent-core`; execution belongs in the host.
 
@@ -54,13 +54,13 @@ pnpm run dev:cli      # CLI with TUI
 pnpm run build        # production build of TS packages + Desktop + site + CLI
 ```
 
-| Command | Description |
-| --- | --- |
-| `pnpm run dev:desktop:web` | Desktop renderer with browser web host |
-| `pnpm run dev:site` | Marketing/docs site (Next.js) |
-| `pnpm run build:agent-core` | Build `@spiritagent/agent-core` only |
-| `pnpm run build:cli` | Release build of the Rust CLI |
-| `pnpm run eval:compare` | Eval comparison after agent-core changes |
+| Command                     | Description                              |
+| --------------------------- | ---------------------------------------- |
+| `pnpm run dev:desktop:web`  | Desktop renderer with browser web host   |
+| `pnpm run dev:site`         | Marketing/docs site (Next.js)            |
+| `pnpm run build:agent-core` | Build `@spiritagent/agent-core` only     |
+| `pnpm run build:cli`        | Release build of the Rust CLI            |
+| `pnpm run eval:compare`     | Eval comparison after agent-core changes |
 
 See [README.md — Development](README.md#development) and each app/package README for package-specific details.
 

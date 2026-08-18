@@ -83,7 +83,9 @@ export function buildCompactSmokeHistory(): LlmMessage[] {
     },
     {
       role: "user",
-      content: createLlmMessageContentFromText("First step: integrate the OpenAI SDK and add a real smoke."),
+      content: createLlmMessageContentFromText(
+        "First step: integrate the OpenAI SDK and add a real smoke.",
+      ),
     },
     {
       role: "assistant",
@@ -93,7 +95,9 @@ export function buildCompactSmokeHistory(): LlmMessage[] {
     },
     {
       role: "assistant",
-      content: createLlmMessageContentFromText("Let me re-read the openai transport implementation."),
+      content: createLlmMessageContentFromText(
+        "Let me re-read the openai transport implementation.",
+      ),
       toolCalls: [
         {
           id: "call-read-openai-transport",

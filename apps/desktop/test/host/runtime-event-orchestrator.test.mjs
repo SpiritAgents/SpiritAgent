@@ -450,7 +450,10 @@ test("tool previews do not clone the first thinking block when multiple tool pre
 
   harness.orchestrator.applyRuntimeHostEvents([
     { kind: "begin-assistant-response" },
-    { kind: "replace-pending-assistant", text: "OK, I'll call two tools concurrently, then run echo." },
+    {
+      kind: "replace-pending-assistant",
+      text: "OK, I'll call two tools concurrently, then run echo.",
+    },
     {
       kind: "update-pending-assistant-thinking",
       text: "The user is asking me to call a few tools.",
@@ -509,7 +512,10 @@ test("finish_task streaming preview updates finishTaskNotice on assistant text r
   const assistantRow = harness.timeline
     .toMessages()
     .find((message) => message.role === "assistant" && !message.tool);
-  assert.equal(assistantRow?.content, "Understood, I will call finish_task at the end of each reply.");
+  assert.equal(
+    assistantRow?.content,
+    "Understood, I will call finish_task at the end of each reply.",
+  );
   assert.equal(assistantRow?.aux?.finishTaskNotice, "Task completed: verified each");
   assert.equal(
     harness.timeline.toMessages().some((message) => message.tool?.toolName === "finish_task"),
@@ -586,7 +592,10 @@ test("failed finish_task clears notice when preview and tool-finished are split 
   const afterPreview = harness.timeline
     .toMessages()
     .find((message) => message.role === "assistant" && !message.tool);
-  assert.equal(afterPreview?.aux?.finishTaskNotice, "Task completed: reconfirmed finish_task works.");
+  assert.equal(
+    afterPreview?.aux?.finishTaskNotice,
+    "Task completed: reconfirmed finish_task works.",
+  );
 
   harness.orchestrator.applyRuntimeHostEvents([
     {
@@ -608,7 +617,10 @@ test("failed finish_task clears notice when preview and tool-finished are split 
   const assistantRow = harness.timeline
     .toMessages()
     .find((message) => message.role === "assistant" && !message.tool);
-  assert.equal(assistantRow?.content, "This call failed — it returned `Unknown tool: finish_task`.");
+  assert.equal(
+    assistantRow?.content,
+    "This call failed — it returned `Unknown tool: finish_task`.",
+  );
   assert.equal(assistantRow?.aux?.finishTaskNotice, undefined);
 });
 

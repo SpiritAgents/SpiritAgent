@@ -26,7 +26,17 @@
     "eslint/no-underscore-dangle": [
       "warn",
       {
-        "allow": ["__dirname", "__filename", "__payload", "_exhaustive", "_event", "__key", "__typename", "_spiritUi", "__hostMeta"]
+        "allow": [
+          "__dirname",
+          "__filename",
+          "__payload",
+          "_exhaustive",
+          "_event",
+          "__key",
+          "__typename",
+          "_spiritUi",
+          "__hostMeta"
+        ]
       }
     ],
     "import/no-named-as-default-member": "off",

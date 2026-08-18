@@ -111,7 +111,9 @@ async function resolveVertexAccessToken(options: ListVertexModelsOptions): Promi
   const tokenResponse = await client.getAccessToken();
   const token = tokenResponse?.token?.trim();
   if (!token) {
-    throw new Error("Could not obtain a Google Vertex access token. Check ADC or service account credentials.");
+    throw new Error(
+      "Could not obtain a Google Vertex access token. Check ADC or service account credentials.",
+    );
   }
   return token;
 }
@@ -135,7 +137,9 @@ async function fetchVertexModelsPage(
     try {
       json = JSON.parse(text) as unknown;
     } catch {
-      throw new Error(`Failed to list models (HTTP ${String(response.status)}): the response is not valid JSON.`);
+      throw new Error(
+        `Failed to list models (HTTP ${String(response.status)}): the response is not valid JSON.`,
+      );
     }
   }
 
@@ -165,7 +169,9 @@ export async function listVertexModels(
   options: ListVertexModelsOptions,
 ): Promise<ProviderListedModelEntry[]> {
   if (options.apiKey?.trim()) {
-    throw new Error("Google Vertex Express API Key mode cannot list models automatically; enter the model ID manually.");
+    throw new Error(
+      "Google Vertex Express API Key mode cannot list models automatically; enter the model ID manually.",
+    );
   }
 
   const project = normalizeVertexProject(options.project);

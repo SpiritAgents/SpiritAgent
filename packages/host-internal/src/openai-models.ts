@@ -1801,7 +1801,9 @@ async function fetchHuggingFaceHubMediaModelsPage(
     json = text.length > 0 ? (JSON.parse(text) as unknown) : [];
   } catch {
     throw new Error(
-      response.ok ? "Model list response is not valid JSON." : `Model listing failed (HTTP ${String(response.status)}).`,
+      response.ok
+        ? "Model list response is not valid JSON."
+        : `Model listing failed (HTTP ${String(response.status)}).`,
     );
   }
 
@@ -2525,7 +2527,9 @@ async function fetchModelsListJson(url: string, init: RequestInit): Promise<unkn
     json = text.length > 0 ? (JSON.parse(text) as unknown) : {};
   } catch {
     throw new Error(
-      response.ok ? "Model list response is not valid JSON." : `Model listing failed (HTTP ${String(response.status)}).`,
+      response.ok
+        ? "Model list response is not valid JSON."
+        : `Model listing failed (HTTP ${String(response.status)}).`,
     );
   }
 
@@ -2609,7 +2613,9 @@ export async function listAnthropicModels(
     json = text.length > 0 ? (JSON.parse(text) as unknown) : {};
   } catch {
     throw new Error(
-      response.ok ? "Model list response is not valid JSON." : `Model listing failed (HTTP ${String(response.status)}).`,
+      response.ok
+        ? "Model list response is not valid JSON."
+        : `Model listing failed (HTTP ${String(response.status)}).`,
     );
   }
 

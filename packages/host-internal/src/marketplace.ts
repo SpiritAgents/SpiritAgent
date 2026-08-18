@@ -450,7 +450,9 @@ async function readResponseBuffer(
   if (!reader) {
     const buffer = Buffer.from(await response.arrayBuffer());
     if (buffer.byteLength > maxBytes) {
-      throw new Error(`${label} response too large: ${buffer.byteLength} bytes, limit ${maxBytes} bytes`);
+      throw new Error(
+        `${label} response too large: ${buffer.byteLength} bytes, limit ${maxBytes} bytes`,
+      );
     }
     return buffer;
   }
@@ -653,7 +655,9 @@ function verifyDownloadedTarball(
   if (prepared.shasum) {
     const actual = createHash("sha1").update(buffer).digest("hex");
     if (actual.toLowerCase() !== prepared.shasum.toLowerCase()) {
-      throw new Error(`Extension tarball shasum verification failed: ${prepared.extensionId}@${prepared.version}`);
+      throw new Error(
+        `Extension tarball shasum verification failed: ${prepared.extensionId}@${prepared.version}`,
+      );
     }
   }
 }

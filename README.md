@@ -1,6 +1,5 @@
 <div align="center">
 
-
 # Spirit Agent
 
 An open-source AI agent built to multiply your productivity.
@@ -57,11 +56,11 @@ Spirit Agent is a **tool-using coding agent** that runs against a real project r
 
 Agent Core routes inference through multiple transports behind one runtime:
 
-| Transport | Typical providers |
-| --- | --- |
-| **OpenAI-compatible** | OpenAI, DeepSeek, Moonshot, MiniMax, Volcengine, custom endpoints |
-| **Open Responses** | OpenAI, SpaceXAI, Vercel AI Gateway, OpenRouter, Alibaba (Bailian) |
-| **Anthropic** | Claude via Messages API |
+| Transport             | Typical providers                                                  |
+| --------------------- | ------------------------------------------------------------------ |
+| **OpenAI-compatible** | OpenAI, DeepSeek, Moonshot, MiniMax, Volcengine, custom endpoints  |
+| **Open Responses**    | OpenAI, SpaceXAI, Vercel AI Gateway, OpenRouter, Alibaba (Bailian) |
+| **Anthropic**         | Claude via Messages API                                            |
 
 Provider-native capabilities (for example web search on Open Responses, Alibaba built-in search and code interpreter) are injected through the request `tools` field.
 
@@ -119,7 +118,6 @@ See [apps/site/README.md](apps/site/README.md) for local development and the Ver
 
 <img width="1014" height="744" alt="Spirit Agent CLI" src="https://github.com/user-attachments/assets/ecf4fcec-6a9b-4562-b0da-cc14816f36d3" />
 
-
 The [Rust CLI](apps/cli) (`spirit-agent`) provides a terminal-first host with an optional Ratatui UI. It connects to the shared Spirit Server daemon over WebSocket and suits scripting, SSH sessions, and minimal environments.
 
 ```bash
@@ -171,24 +169,24 @@ Manual setup (outside the editor):
 node path/to/packages/acp-server/dist/src/stdio-entry.js --setup
 ```
 
-| Environment variable | Required | Description |
-| --- | --- | --- |
-| `SPIRIT_ACP_WORKSPACE` | No | Workspace root (default: `cwd` from client) |
-| `SPIRIT_ACP_DATA_DIR` | No | Spirit data directory (default: `%APPDATA%/SpiritAgent` or `~/.spirit-agent`) |
+| Environment variable   | Required | Description                                                                   |
+| ---------------------- | -------- | ----------------------------------------------------------------------------- |
+| `SPIRIT_ACP_WORKSPACE` | No       | Workspace root (default: `cwd` from client)                                   |
+| `SPIRIT_ACP_DATA_DIR`  | No       | Spirit data directory (default: `%APPDATA%/SpiritAgent` or `~/.spirit-agent`) |
 
 ## Development
 
 **Requirements:** Node.js 24+, pnpm 10+ (enable via `corepack enable`). Rust toolchain required for CLI builds.
 
-| Command | Description |
-| --- | --- |
-| `pnpm install` | Install workspace dependencies (run once at repo root) |
-| `pnpm run dev:desktop` | Build shared packages and start Desktop (Vite + Electron) |
-| `pnpm run dev:desktop:web` | Desktop renderer with browser web host |
-| `pnpm run dev:site` | Start the marketing/docs site (Next.js) |
-| `pnpm run dev:cli` | CLI with TUI |
-| `pnpm run build` | Production build of agent-core, host-internal, server, acp-server, Desktop, and site |
-| `pnpm run eval:compare` | Run eval comparison after agent-core changes |
+| Command                    | Description                                                                          |
+| -------------------------- | ------------------------------------------------------------------------------------ |
+| `pnpm install`             | Install workspace dependencies (run once at repo root)                               |
+| `pnpm run dev:desktop`     | Build shared packages and start Desktop (Vite + Electron)                            |
+| `pnpm run dev:desktop:web` | Desktop renderer with browser web host                                               |
+| `pnpm run dev:site`        | Start the marketing/docs site (Next.js)                                              |
+| `pnpm run dev:cli`         | CLI with TUI                                                                         |
+| `pnpm run build`           | Production build of agent-core, host-internal, server, acp-server, Desktop, and site |
+| `pnpm run eval:compare`    | Run eval comparison after agent-core changes                                         |
 
 ### Repository layout
 

@@ -122,7 +122,9 @@ async function main(): Promise<void> {
     (event) => isJsonObject(event) && event.kind === "streaming-tool-preview",
   );
   if (previewEvents.length === 0) {
-    throw new Error("ai-sdk open-responses streaming smoke did not receive a streaming-tool-preview event.");
+    throw new Error(
+      "ai-sdk open-responses streaming smoke did not receive a streaming-tool-preview event.",
+    );
   }
 
   if (completion.kind !== "success" || completion.result.step.kind !== "tool-calls") {
@@ -130,7 +132,9 @@ async function main(): Promise<void> {
   }
 
   if (completion.result.step.calls[0]?.id !== "call_open_responses_stream_1") {
-    throw new Error("ai-sdk open-responses streaming smoke did not preserve the streaming toolCallId.");
+    throw new Error(
+      "ai-sdk open-responses streaming smoke did not preserve the streaming toolCallId.",
+    );
   }
 }
 

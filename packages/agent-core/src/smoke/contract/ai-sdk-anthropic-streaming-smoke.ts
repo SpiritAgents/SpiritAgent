@@ -231,7 +231,9 @@ async function main(): Promise<void> {
     !firstEvents.some((event) => isJsonObject(event) && event.kind === "streaming-tool-preview")
   ) {
     server.close();
-    throw new Error("ai-sdk anthropic streaming smoke did not receive a streaming-tool-preview event.");
+    throw new Error(
+      "ai-sdk anthropic streaming smoke did not receive a streaming-tool-preview event.",
+    );
   }
 
   if (
@@ -244,12 +246,16 @@ async function main(): Promise<void> {
     )
   ) {
     server.close();
-    throw new Error("ai-sdk anthropic streaming smoke did not receive the expected thinking-chunk.");
+    throw new Error(
+      "ai-sdk anthropic streaming smoke did not receive the expected thinking-chunk.",
+    );
   }
 
   if (firstCompletion.kind !== "success" || firstCompletion.result.step.kind !== "tool-calls") {
     server.close();
-    throw new Error("ai-sdk anthropic streaming smoke step 1 did not reach the expected tool-calls.");
+    throw new Error(
+      "ai-sdk anthropic streaming smoke step 1 did not reach the expected tool-calls.",
+    );
   }
 
   const firstAssistant = firstCompletion.result.state.messages.at(-1);
@@ -289,7 +295,9 @@ async function main(): Promise<void> {
     secondCompletion.kind !== "success" ||
     secondCompletion.result.step.kind !== "final-response-ready"
   ) {
-    throw new Error("ai-sdk anthropic streaming smoke step 2 did not reach the expected final-response-ready.");
+    throw new Error(
+      "ai-sdk anthropic streaming smoke step 2 did not reach the expected final-response-ready.",
+    );
   }
 
   const assistantText = extractLastAssistantText(secondCompletion.result.state)?.trim();
@@ -305,7 +313,9 @@ async function main(): Promise<void> {
     !isJsonObject(firstRequest.thinking) ||
     firstRequest.thinking.type !== "enabled"
   ) {
-    throw new Error("ai-sdk anthropic streaming smoke did not send thinking=enabled on the first-round request.");
+    throw new Error(
+      "ai-sdk anthropic streaming smoke did not send thinking=enabled on the first-round request.",
+    );
   }
 
   if (
@@ -446,7 +456,9 @@ async function runSeparatedSystemProjectionSmoke(): Promise<void> {
   printSmokeSection("ai-sdk anthropic separated-system smoke completion", completion);
 
   if (completion.kind !== "success" || completion.result.step.kind !== "final-response-ready") {
-    throw new Error("ai-sdk anthropic separated-system smoke did not reach the expected final-response-ready.");
+    throw new Error(
+      "ai-sdk anthropic separated-system smoke did not reach the expected final-response-ready.",
+    );
   }
 
   const finalText = extractLastAssistantText(completion.result.state)?.trim();

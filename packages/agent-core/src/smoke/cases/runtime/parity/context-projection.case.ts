@@ -36,7 +36,9 @@ export async function runContextProjectionCase(): Promise<RuntimeParityCaseResul
     );
     const referencedPaths = referencedFiles.map((file) => file.path);
     if (referencedPaths.join("|") !== "src/runtime.ts|README.md|large.txt") {
-      throw new Error("workspace file helper smoke did not extract existing references as expected.");
+      throw new Error(
+        "workspace file helper smoke did not extract existing references as expected.",
+      );
     }
 
     const largeFile = referencedFiles.find((file) => file.path === "large.txt");
@@ -46,7 +48,9 @@ export async function runContextProjectionCase(): Promise<RuntimeParityCaseResul
       !largeFile.truncated ||
       !largeFile.content.endsWith("...<file content truncated>")
     ) {
-      throw new Error("workspace file helper smoke did not truncate the oversized file as expected.");
+      throw new Error(
+        "workspace file helper smoke did not truncate the oversized file as expected.",
+      );
     }
 
     const workspaceRuntime = new AgentRuntime({
@@ -78,7 +82,9 @@ export async function runContextProjectionCase(): Promise<RuntimeParityCaseResul
           llmMessageTextContent(message.content).startsWith("[WORKSPACE_FILE]"),
       );
     if (injectedContexts.length !== 2) {
-      throw new Error("workspace file context smoke injected an incorrect number of system contexts.");
+      throw new Error(
+        "workspace file context smoke injected an incorrect number of system contexts.",
+      );
     }
 
     workspaceFileSmoke = {
@@ -102,8 +108,9 @@ export async function runContextProjectionCase(): Promise<RuntimeParityCaseResul
     extractAssistantText: extractScriptedAssistantText,
   });
 
-  const toolImageProjectionResult =
-    await toolImageProjectionRuntime.submitUserTurn("Please read the image, then continue the analysis.");
+  const toolImageProjectionResult = await toolImageProjectionRuntime.submitUserTurn(
+    "Please read the image, then continue the analysis.",
+  );
   if (
     toolImageProjectionResult.kind !== "completed" ||
     toolImageProjectionResult.assistantText !== "TOOL_IMAGE_PROJECTION_OK"

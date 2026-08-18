@@ -39,7 +39,8 @@ test("scanGitCommitWireBlocks parses subject containing parentheses", () => {
   const wire = gitCommitContextText({
     id: "git-2",
     oid: "f4d96fad0282ed8a134ac5af73e425cef17baede",
-    subject: "fix(desktop): tool-execution-finished inherits preview suppressExpand and argsExcerpt",
+    subject:
+      "fix(desktop): tool-execution-finished inherits preview suppressExpand and argsExcerpt",
     author: "XianYu",
     authoredAt: "2026-07-01 05:47:43 +0800",
     fullMessage:

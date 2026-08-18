@@ -115,7 +115,9 @@ export async function runCompactionCase(): Promise<RuntimeParityCaseResult> {
     throw new Error("polling compact smoke did not expose the compressing aux state.");
   }
   if (pollingCompactRuntime.takeCompletedTurnResult()) {
-    throw new Error("polling compact smoke should not produce a result before compaction finishes.");
+    throw new Error(
+      "polling compact smoke should not produce a result before compaction finishes.",
+    );
   }
 
   pollingCompactTransport.finishCompaction();
@@ -202,7 +204,9 @@ export async function runCompactionCase(): Promise<RuntimeParityCaseResult> {
     throw new Error("transcript smoke did not record the transcript directory path.");
   }
   if (persistedMessageCount !== 3) {
-    throw new Error(`transcript smoke has an unexpected persisted message count: ${persistedMessageCount}`);
+    throw new Error(
+      `transcript smoke has an unexpected persisted message count: ${persistedMessageCount}`,
+    );
   }
 
   const toolOutputArchivePath =

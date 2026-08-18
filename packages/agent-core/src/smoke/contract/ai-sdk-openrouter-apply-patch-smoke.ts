@@ -78,7 +78,9 @@ async function main(): Promise<void> {
 
   const call = firstRound.result.step.calls[0];
   if (!call || call.name !== "apply_patch") {
-    throw new Error("ai-sdk openrouter apply_patch smoke did not receive an apply_patch tool call.");
+    throw new Error(
+      "ai-sdk openrouter apply_patch smoke did not receive an apply_patch tool call.",
+    );
   }
 }
 

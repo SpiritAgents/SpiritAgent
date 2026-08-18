@@ -5,7 +5,7 @@ import { buildParentSubagentToolResultText } from "./subagent-parent-tool-result
 
 test("buildParentSubagentToolResultText includes sessionId and sessionTranscript", () => {
   const text = buildParentSubagentToolResultText(
-    "Output \"Hello\". Do not perform any other actions and do not modify any files.",
+    'Output "Hello". Do not perform any other actions and do not modify any files.',
     "Hello",
     false,
     "subagent-1785129948357-1",
@@ -15,7 +15,7 @@ test("buildParentSubagentToolResultText includes sessionId and sessionTranscript
     text,
     [
       "[subagent completed]",
-      "title=Output \"Hello\". Do not perform any other actions and do not modify any files.",
+      'title=Output "Hello". Do not perform any other actions and do not modify any files.',
       "sessionId=subagent-1785129948357-1",
       "sessionTranscript=/data/transcripts/session-1/subagents/subagent-1785129948357-1.json",
       "final_output:",

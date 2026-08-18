@@ -119,7 +119,9 @@ export async function runStreamingCase(): Promise<RuntimeParityCaseResult> {
     await previewEarlyExecutionRuntime.poll();
   }
   if (previewEarlyExecutionExecutor.executedCalls !== 1) {
-    throw new Error("preview early execution smoke did not execute the tool before the formal tool-calls completion.");
+    throw new Error(
+      "preview early execution smoke did not execute the tool before the formal tool-calls completion.",
+    );
   }
   if (previewEarlyExecutionTransport.toolCallRoundResolved) {
     throw new Error(
@@ -133,7 +135,9 @@ export async function runStreamingCase(): Promise<RuntimeParityCaseResult> {
         event.execution.toolCallId === "call-preview-read",
     )
   ) {
-    throw new Error("preview early execution smoke did not emit the tool completion event after the preview.");
+    throw new Error(
+      "preview early execution smoke did not emit the tool completion event after the preview.",
+    );
   }
 
   previewEarlyExecutionTransport.resolveToolCallRound();
@@ -181,7 +185,9 @@ export async function runStreamingCase(): Promise<RuntimeParityCaseResult> {
     await previewBackgroundRuntime.poll();
   }
   if (previewBackgroundExecutor.executedCalls !== 0) {
-    throw new Error("preview background smoke should not start the background tool before the formal tool-calls completion.");
+    throw new Error(
+      "preview background smoke should not start the background tool before the formal tool-calls completion.",
+    );
   }
   if (
     previewBackgroundDeferredEvents.some(
@@ -189,14 +195,18 @@ export async function runStreamingCase(): Promise<RuntimeParityCaseResult> {
         event.kind === "tool-call-started" && event.toolCallId === "call-preview-background",
     )
   ) {
-    throw new Error("preview background smoke should not emit tool-call-started before the formal path.");
+    throw new Error(
+      "preview background smoke should not emit tool-call-started before the formal path.",
+    );
   }
   if (
     previewBackgroundDeferredEvents.some(
       (event) => event.kind === "background-tool-status" && event.toolName === "grep",
     )
   ) {
-    throw new Error("preview background smoke should not emit background status events before the formal path.");
+    throw new Error(
+      "preview background smoke should not emit background status events before the formal path.",
+    );
   }
 
   previewBackgroundTransport.resolveToolCallRound();
@@ -208,7 +218,9 @@ export async function runStreamingCase(): Promise<RuntimeParityCaseResult> {
     throw new Error("preview background smoke did not finish within the expected rounds.");
   }
   if (Number(previewBackgroundExecutor.executedCalls) !== 1) {
-    throw new Error("preview background smoke should execute the background tool exactly once on the formal path.");
+    throw new Error(
+      "preview background smoke should execute the background tool exactly once on the formal path.",
+    );
   }
   if (
     previewBackgroundDeferredEvents.filter(
@@ -242,7 +254,9 @@ export async function runStreamingCase(): Promise<RuntimeParityCaseResult> {
       (event) => event.kind === "tool-call-started" && event.toolCallId === "call-preview-subagent",
     )
   ) {
-    throw new Error("preview subagent smoke should not emit tool-call-started before defer-to-formal.");
+    throw new Error(
+      "preview subagent smoke should not emit tool-call-started before defer-to-formal.",
+    );
   }
 
   previewSubagentTransport.resolveToolCallRound();
@@ -337,7 +351,9 @@ export async function runStreamingCase(): Promise<RuntimeParityCaseResult> {
           ),
       )
   ) {
-    throw new Error("authorization failure smoke did not write the assistant tool call parent message into llmHistory.");
+    throw new Error(
+      "authorization failure smoke did not write the assistant tool call parent message into llmHistory.",
+    );
   }
   if (
     !authorizationFailureRuntime
@@ -349,7 +365,9 @@ export async function runStreamingCase(): Promise<RuntimeParityCaseResult> {
           llmMessageTextContent(message.content).includes("[authorization error]"),
       )
   ) {
-    throw new Error("authorization failure smoke did not write the failed tool result into llmHistory.");
+    throw new Error(
+      "authorization failure smoke did not write the failed tool result into llmHistory.",
+    );
   }
 
   if (
@@ -369,7 +387,9 @@ export async function runStreamingCase(): Promise<RuntimeParityCaseResult> {
           ),
       )
   ) {
-    throw new Error("authorization failure smoke did not write the assistant tool call parent message into the archive.");
+    throw new Error(
+      "authorization failure smoke did not write the assistant tool call parent message into the archive.",
+    );
   }
 
   const timeoutRuntime = new AgentRuntime({
@@ -473,7 +493,9 @@ export async function runStreamingCase(): Promise<RuntimeParityCaseResult> {
     drainedStreamingApprovalEvents.filter((event) => event.kind === "begin-assistant-response")
       .length < 2
   ) {
-    throw new Error("streaming approval smoke should contain two begin events, before and after approval.");
+    throw new Error(
+      "streaming approval smoke should contain two begin events, before and after approval.",
+    );
   }
   if (
     !drainedStreamingApprovalEvents.some(
@@ -487,7 +509,9 @@ export async function runStreamingCase(): Promise<RuntimeParityCaseResult> {
       (event) => event.kind === "assistant-chunk" && event.text === "STREAM_APPROVAL_",
     )
   ) {
-    throw new Error("streaming approval smoke is missing the streaming chunk after approval resume.");
+    throw new Error(
+      "streaming approval smoke is missing the streaming chunk after approval resume.",
+    );
   }
   if (streamingApprovalExecutor.executedCalls !== 1) {
     throw new Error("streaming approval smoke tool execution count is incorrect.");
@@ -498,7 +522,9 @@ export async function runStreamingCase(): Promise<RuntimeParityCaseResult> {
       (trace) => isJsonObject(trace) && trace.mode === "streaming-approval-round-2",
     )
   ) {
-    throw new Error("streaming approval smoke is missing the streaming trace after approval resume.");
+    throw new Error(
+      "streaming approval smoke is missing the streaming trace after approval resume.",
+    );
   }
   if (
     streamingApprovalTrace.some(
@@ -542,7 +568,9 @@ export async function runStreamingCase(): Promise<RuntimeParityCaseResult> {
     drainedStreamingApprovalImageEvents.filter((event) => event.kind === "begin-assistant-response")
       .length < 2
   ) {
-    throw new Error("streaming approval image smoke should contain two begin events, before and after approval.");
+    throw new Error(
+      "streaming approval image smoke should contain two begin events, before and after approval.",
+    );
   }
   if (
     !drainedStreamingApprovalImageEvents.some(
@@ -556,7 +584,9 @@ export async function runStreamingCase(): Promise<RuntimeParityCaseResult> {
       (event) => event.kind === "assistant-chunk" && event.text === "STREAM_APPROVAL_IMAGE_",
     )
   ) {
-    throw new Error("streaming approval image smoke is missing the streaming chunk after approval resume.");
+    throw new Error(
+      "streaming approval image smoke is missing the streaming chunk after approval resume.",
+    );
   }
   if (streamingApprovalImageExecutor.executedCalls !== 1) {
     throw new Error("streaming approval image smoke tool execution count is incorrect.");
@@ -567,14 +597,18 @@ export async function runStreamingCase(): Promise<RuntimeParityCaseResult> {
       (trace) => isJsonObject(trace) && trace.mode === "streaming-approval-image-round-2",
     )
   ) {
-    throw new Error("streaming approval image smoke is missing the streaming trace after approval resume.");
+    throw new Error(
+      "streaming approval image smoke is missing the streaming trace after approval resume.",
+    );
   }
   if (
     streamingApprovalImageTrace.some(
       (trace) => isJsonObject(trace) && trace.mode === "streaming-approval-image-sync-fallback",
     )
   ) {
-    throw new Error("streaming approval image smoke incorrectly fell back to a non-streaming round.");
+    throw new Error(
+      "streaming approval image smoke incorrectly fell back to a non-streaming round.",
+    );
   }
   if (
     !streamingApprovalImageRuntime
@@ -586,7 +620,9 @@ export async function runStreamingCase(): Promise<RuntimeParityCaseResult> {
           llmMessageImagePaths(message.content).includes("approved-image.png"),
       )
   ) {
-    throw new Error("streaming approval image smoke did not write the image projection into the history.");
+    throw new Error(
+      "streaming approval image smoke did not write the image projection into the history.",
+    );
   }
 
   const streamingApprovalThenImageExecutor = new StreamingApprovalExecutor();
@@ -610,11 +646,15 @@ export async function runStreamingCase(): Promise<RuntimeParityCaseResult> {
     onEvent: (event) => streamingApprovalThenImageEvents.push(event),
   });
 
-  await streamingApprovalThenImageRuntime.startUserTurnStreaming("Approve, then continue generating the image");
+  await streamingApprovalThenImageRuntime.startUserTurnStreaming(
+    "Approve, then continue generating the image",
+  );
   await flushMicrotasks(4);
   await streamingApprovalThenImageRuntime.poll();
   if (!streamingApprovalThenImageRuntime.hasPendingApproval()) {
-    throw new Error("streaming approval then image smoke did not enter the pending-approval state.");
+    throw new Error(
+      "streaming approval then image smoke did not enter the pending-approval state.",
+    );
   }
 
   let approvalReturned = false;
@@ -631,10 +671,14 @@ export async function runStreamingCase(): Promise<RuntimeParityCaseResult> {
   }
   await continueApprovalPromise;
   if (streamingApprovalThenImageRuntime.hasPendingApproval()) {
-    throw new Error("streaming approval then image smoke should clear the pending-approval state immediately after resume.");
+    throw new Error(
+      "streaming approval then image smoke should clear the pending-approval state immediately after resume.",
+    );
   }
   if (!streamingApprovalThenImageRuntime.isBusy()) {
-    throw new Error("streaming approval then image smoke should stay busy after the approval resume.");
+    throw new Error(
+      "streaming approval then image smoke should stay busy after the approval resume.",
+    );
   }
   if (generateImageStarted !== 0) {
     throw new Error(
@@ -658,7 +702,9 @@ export async function runStreamingCase(): Promise<RuntimeParityCaseResult> {
         event.execution.output.includes("approved output for create_file"),
     )
   ) {
-    throw new Error("streaming approval then image smoke is missing the completion event for the approved tool.");
+    throw new Error(
+      "streaming approval then image smoke is missing the completion event for the approved tool.",
+    );
   }
   if (
     drainedApprovalThenImageEvents.some(
@@ -696,7 +742,9 @@ export async function runStreamingCase(): Promise<RuntimeParityCaseResult> {
     await streamingApprovalThenImageRuntime.poll();
   }
   if (streamingApprovalThenImageRuntime.isBusy()) {
-    throw new Error("streaming approval then image smoke did not finish within the expected rounds.");
+    throw new Error(
+      "streaming approval then image smoke did not finish within the expected rounds.",
+    );
   }
 
   const streamingApprovalThenImageResult =
@@ -718,7 +766,9 @@ export async function runStreamingCase(): Promise<RuntimeParityCaseResult> {
         execution.output.includes("[generated image] approval-follow-up ready"),
     )
   ) {
-    throw new Error("streaming approval then image smoke did not record the generate_image result.");
+    throw new Error(
+      "streaming approval then image smoke did not record the generate_image result.",
+    );
   }
 
   const streamingGuidanceExecutor = new StreamingApprovalExecutor();
@@ -733,7 +783,9 @@ export async function runStreamingCase(): Promise<RuntimeParityCaseResult> {
     onEvent: (event) => streamingGuidanceEvents.push(event),
   });
 
-  await streamingGuidanceRuntime.startUserTurnStreaming("Approve in streaming mode, then switch to summarizing");
+  await streamingGuidanceRuntime.startUserTurnStreaming(
+    "Approve in streaming mode, then switch to summarizing",
+  );
   await flushMicrotasks(4);
   await streamingGuidanceRuntime.poll();
   if (!streamingGuidanceRuntime.hasPendingApproval()) {
@@ -757,7 +809,9 @@ export async function runStreamingCase(): Promise<RuntimeParityCaseResult> {
     drainedStreamingGuidanceEvents.filter((event) => event.kind === "begin-assistant-response")
       .length < 2
   ) {
-    throw new Error("streaming guidance smoke should contain two begin events, before and after approval.");
+    throw new Error(
+      "streaming guidance smoke should contain two begin events, before and after approval.",
+    );
   }
   if (
     !drainedStreamingGuidanceEvents.some(
@@ -771,7 +825,9 @@ export async function runStreamingCase(): Promise<RuntimeParityCaseResult> {
       (event) => event.kind === "assistant-chunk" && event.text === "STREAM_GUIDANCE_",
     )
   ) {
-    throw new Error("streaming guidance smoke is missing the streaming chunk after approval resume.");
+    throw new Error(
+      "streaming guidance smoke is missing the streaming chunk after approval resume.",
+    );
   }
   if (streamingGuidanceExecutor.executedCalls !== 1) {
     throw new Error("streaming guidance smoke should continue executing the queued tools.");
@@ -782,7 +838,9 @@ export async function runStreamingCase(): Promise<RuntimeParityCaseResult> {
       (trace) => isJsonObject(trace) && trace.mode === "streaming-guidance-round-2",
     )
   ) {
-    throw new Error("streaming guidance smoke is missing the streaming trace after approval resume.");
+    throw new Error(
+      "streaming guidance smoke is missing the streaming trace after approval resume.",
+    );
   }
   if (
     streamingGuidanceTrace.some(
@@ -804,7 +862,9 @@ export async function runStreamingCase(): Promise<RuntimeParityCaseResult> {
     onEvent: (event) => streamingBackgroundEvents.push(event),
   });
 
-  await streamingBackgroundRuntime.startUserTurnStreaming("Use the background tool in streaming mode");
+  await streamingBackgroundRuntime.startUserTurnStreaming(
+    "Use the background tool in streaming mode",
+  );
   await flushMicrotasks(4);
   await streamingBackgroundRuntime.poll();
   if (!streamingBackgroundRuntime.isBusy()) {
@@ -883,7 +943,9 @@ export async function runStreamingCase(): Promise<RuntimeParityCaseResult> {
     ],
   );
 
-  await streamingCompactionRuntime.startUserTurnStreaming("Handle the overlong context in streaming mode");
+  await streamingCompactionRuntime.startUserTurnStreaming(
+    "Handle the overlong context in streaming mode",
+  );
   await flushMicrotasks(4);
   await streamingCompactionRuntime.poll();
   const streamingCompactionAux = streamingCompactionRuntime.pendingAuxState();
@@ -904,7 +966,9 @@ export async function runStreamingCase(): Promise<RuntimeParityCaseResult> {
     drainedStreamingCompactionEvents.filter((event) => event.kind === "begin-assistant-response")
       .length !== 1
   ) {
-    throw new Error("streaming compact smoke should not emit an extra begin event after the auto-compaction retry.");
+    throw new Error(
+      "streaming compact smoke should not emit an extra begin event after the auto-compaction retry.",
+    );
   }
   if (
     !drainedStreamingCompactionEvents.some(
@@ -920,7 +984,9 @@ export async function runStreamingCase(): Promise<RuntimeParityCaseResult> {
       (event) => event.kind === "assistant-chunk" && event.text === "STREAM_COMPACT_",
     )
   ) {
-    throw new Error("streaming compact smoke is missing the streaming chunk resumed after compaction.");
+    throw new Error(
+      "streaming compact smoke is missing the streaming chunk resumed after compaction.",
+    );
   }
 
   const toolRoundTransport = new StreamingToolRoundTransport();
@@ -1062,7 +1128,8 @@ class StreamingApprovalThenGenerateImageTransport implements LlmTransport<
         eventStream: streamFromEvents([]),
         completion: Promise.resolve({
           kind: "failure",
-          error: "streaming approval then image resume did not write back the approved tool result.",
+          error:
+            "streaming approval then image resume did not write back the approved tool result.",
           requestTrace: [{ mode: "streaming-approval-then-image-round-2-missing-approved-tool" }],
         }),
       };
@@ -1081,7 +1148,8 @@ class StreamingApprovalThenGenerateImageTransport implements LlmTransport<
         eventStream: streamFromEvents([]),
         completion: Promise.resolve({
           kind: "failure",
-          error: "streaming approval then image resume did not write back the generate_image result.",
+          error:
+            "streaming approval then image resume did not write back the generate_image result.",
           requestTrace: [{ mode: "streaming-approval-then-image-round-2-missing-image-tool" }],
         }),
       };
@@ -1201,7 +1269,9 @@ class PreviewEarlyExecutionTransport implements LlmTransport<undefined, Scripted
 
   resolveToolCallRound(): void {
     if (!this.firstRoundState || !this.resolveFirstRound) {
-      throw new Error("preview early execution smoke did not prepare the formal tool-calls completion.");
+      throw new Error(
+        "preview early execution smoke did not prepare the formal tool-calls completion.",
+      );
     }
     this.toolCallRoundResolved = true;
     this.resolveFirstRound(this.buildToolCallRound(this.firstRoundState));

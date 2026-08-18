@@ -14,29 +14,29 @@ LLM context sections use lowercase XML tags (e.g. `<rules>`, `<agent_mode>`, `<c
 
 ## Current Injection Points (summary)
 
-| Content | Injection point | Notes |
-| --- | --- | --- |
-| Host main policy + Rules / Skills catalog / MCP catalog / Agent mode / Loop / Extensions / Dreams / Basic info | A single `role: system` (`buildToolAgentMessages`) | Each section is wrapped in `<rules>`, `<skills_catalog>`, `<mcp_catalog>`, `<agent_mode>`, `<loop_mode>`, `<extensions>`, `<dreams>`, `<basic_info>` respectively; `<mcp_catalog>` contains thin `<tool>` and `<resource>` metadata |
-| MCP resource full text (model on demand) | `fetch_mcp_resource` in the request `tools` → tool result JSON | Catalog carries only uri/name/optional description and mimeTypes |
-| MCP resource full text (user CLI attach) | A `[MCP_RESOURCE]` block with `role: system` at submit time | Only when the user explicitly attaches via `/mcp resource attach`; same idea as the agent calling `fetch_mcp_resource`, different entry point |
-| Full text of a user-explicitly-activated Skill | `<active_skill>…</active_skill>` at the very front of that user message | Same user meta family as `<user_message_at>`, not system |
-| Plan mode guidance | The `<agent_mode>` section (Plan mode copy) | **No** separate plan system section; plan files are persisted by tools such as `create_plan` |
-| apply_patch transport | One plain English line inside system | `buildApplyPatchFileToolsPromptSection` |
-| History compaction summary | `role: system` inside history | `<compact_summary>` (compaction pipeline only) |
-| Compaction progress UI copy | The `text` of compaction events | `<compact_progress>` |
-| Dream Collector subagent | System of the standalone collector runtime | `<dream_collector>` |
+| Content                                                                                                        | Injection point                                                         | Notes                                                                                                                                                                                                                               |
+| -------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Host main policy + Rules / Skills catalog / MCP catalog / Agent mode / Loop / Extensions / Dreams / Basic info | A single `role: system` (`buildToolAgentMessages`)                      | Each section is wrapped in `<rules>`, `<skills_catalog>`, `<mcp_catalog>`, `<agent_mode>`, `<loop_mode>`, `<extensions>`, `<dreams>`, `<basic_info>` respectively; `<mcp_catalog>` contains thin `<tool>` and `<resource>` metadata |
+| MCP resource full text (model on demand)                                                                       | `fetch_mcp_resource` in the request `tools` → tool result JSON          | Catalog carries only uri/name/optional description and mimeTypes                                                                                                                                                                    |
+| MCP resource full text (user CLI attach)                                                                       | A `[MCP_RESOURCE]` block with `role: system` at submit time             | Only when the user explicitly attaches via `/mcp resource attach`; same idea as the agent calling `fetch_mcp_resource`, different entry point                                                                                       |
+| Full text of a user-explicitly-activated Skill                                                                 | `<active_skill>…</active_skill>` at the very front of that user message | Same user meta family as `<user_message_at>`, not system                                                                                                                                                                            |
+| Plan mode guidance                                                                                             | The `<agent_mode>` section (Plan mode copy)                             | **No** separate plan system section; plan files are persisted by tools such as `create_plan`                                                                                                                                        |
+| apply_patch transport                                                                                          | One plain English line inside system                                    | `buildApplyPatchFileToolsPromptSection`                                                                                                                                                                                             |
+| History compaction summary                                                                                     | `role: system` inside history                                           | `<compact_summary>` (compaction pipeline only)                                                                                                                                                                                      |
+| Compaction progress UI copy                                                                                    | The `text` of compaction events                                         | `<compact_progress>`                                                                                                                                                                                                                |
+| Dream Collector subagent                                                                                       | System of the standalone collector runtime                              | `<dream_collector>`                                                                                                                                                                                                                 |
 
 ## When to Write System / When Not To
 
-| Scenario | Where it goes | Repeat in system? |
-| --- | --- | --- |
-| Host function tool | Tool definitions such as `host-tools` | No (unless it is a transport-wide policy) |
-| OpenAI/xAI SDK `webSearch()` | Request `tools` | No |
-| Alibaba Responses `{ type: web_search }` | HTTP `tools` injection | No |
-| Alibaba Chat `extra_body` flags | Fetch layer / extra_body | No (no function name to declare) |
-| `apply_patch` replacing create/edit/delete | SDK built-in + **one line** of transport note when needed | Only where the definition does not cover it, e.g. V4A / unavailable tools |
-| Ask / Plan / Agent modes | The `<agent_mode>` section (no separate plan system section) | Yes, but **do not enumerate tools** |
-| User-explicitly-activated Skill | The `<active_skill>` meta of that user message | No (does not enter system) |
+| Scenario                                   | Where it goes                                                | Repeat in system?                                                         |
+| ------------------------------------------ | ------------------------------------------------------------ | ------------------------------------------------------------------------- |
+| Host function tool                         | Tool definitions such as `host-tools`                        | No (unless it is a transport-wide policy)                                 |
+| OpenAI/xAI SDK `webSearch()`               | Request `tools`                                              | No                                                                        |
+| Alibaba Responses `{ type: web_search }`   | HTTP `tools` injection                                       | No                                                                        |
+| Alibaba Chat `extra_body` flags            | Fetch layer / extra_body                                     | No (no function name to declare)                                          |
+| `apply_patch` replacing create/edit/delete | SDK built-in + **one line** of transport note when needed    | Only where the definition does not cover it, e.g. V4A / unavailable tools |
+| Ask / Plan / Agent modes                   | The `<agent_mode>` section (no separate plan system section) | Yes, but **do not enumerate tools**                                       |
+| User-explicitly-activated Skill            | The `<active_skill>` meta of that user message               | No (does not enter system)                                                |
 
 ## Bad / Good Examples (≥5)
 

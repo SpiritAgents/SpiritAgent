@@ -78,7 +78,8 @@ function scanHostStorageImports(filePath, content) {
     violations.push({
       file: relative(repoRoot, filePath),
       line,
-      reason: "renderer must not import apps/desktop/src/host (pulls in the host-internal main entry)",
+      reason:
+        "renderer must not import apps/desktop/src/host (pulls in the host-internal main entry)",
     });
   }
   return violations;
@@ -99,7 +100,8 @@ function scanFile(filePath) {
       violations.push({
         file: relative(repoRoot, filePath),
         line,
-        reason: "importing from the @spiritagent/host-internal main entry is not allowed (including import type)",
+        reason:
+          "importing from the @spiritagent/host-internal main entry is not allowed (including import type)",
       });
       continue;
     }

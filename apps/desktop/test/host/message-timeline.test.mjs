@@ -373,7 +373,9 @@ test("finish_task notice preview updates the active assistant text row", () => {
   const timeline = createTimeline();
   timeline.beginUserTurn("loop");
   timeline.beginAssistantSegment("initial");
-  timeline.appendAssistantTextChunk("Understood, I will call finish_task at the end of each reply.");
+  timeline.appendAssistantTextChunk(
+    "Understood, I will call finish_task at the end of each reply.",
+  );
 
   timeline.updateFinishTaskNoticePreview("Task completed: verified each");
   assert.equal(
@@ -382,7 +384,9 @@ test("finish_task notice preview updates the active assistant text row", () => {
     "Task completed: verified each",
   );
 
-  timeline.updateFinishTaskNoticePreview("Task completed: called finish_task after verifying every message.");
+  timeline.updateFinishTaskNoticePreview(
+    "Task completed: called finish_task after verifying every message.",
+  );
   assert.equal(
     timeline.toMessages().find((message) => message.role === "assistant" && !message.tool)?.aux
       ?.finishTaskNotice,

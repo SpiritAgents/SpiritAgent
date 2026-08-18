@@ -14,11 +14,17 @@ test("finishTaskStreamingPreviewReady accepts partial summary JSON", () => {
 });
 
 test("finishTaskSummaryFromStreamingArguments extracts partial summary", () => {
-  assert.equal(finishTaskSummaryFromStreamingArguments('{"summary":"verified each'), "verified each");
+  assert.equal(
+    finishTaskSummaryFromStreamingArguments('{"summary":"verified each'),
+    "verified each",
+  );
 });
 
 test("finishTaskNoticePreviewFromArguments builds streaming notice text", () => {
-  assert.equal(finishTaskNoticePreviewFromArguments('{"summary":"verified each'), "Task completed: verified each");
+  assert.equal(
+    finishTaskNoticePreviewFromArguments('{"summary":"verified each'),
+    "Task completed: verified each",
+  );
   assert.equal(
     finishTaskNoticePreviewFromArguments('{"summary":"verified each message."}'),
     "Task completed: verified each message..",

@@ -175,30 +175,30 @@ Server is where the runtime is hosted, not a fourth semantic layer; apps must st
 
 ## Ownership Table
 
-| Asset | Owner |
-| --- | --- |
-| Main system prompt | `agent-core` |
-| Semantics of system sections such as Rules / Skills catalog | `agent-core` |
-| User-turn `<active_skill>` meta (full text of explicitly activated Skill) | `agent-core` (assembled by `user-turn-timestamp`) |
-| Built-in tool names, descriptions, JSON Schemas | `agent-core` |
-| Dream tool names, descriptions, JSON Schemas, and collector system prompt | `agent-core` |
-| Session TODO tool name, description, JSON Schema (no separate todos system section) | `agent-core` |
-| LSP tool contract, `get_diagnostics` Schema (routed to per-language servers by extension), and diagnostic formatting | `agent-core` |
-| MCP protocol, MCP tool / resource / prompt runtime | `agent-core` |
-| Host interface definitions | `agent-core` |
-| Agent Hooks schema, runtime attachment points, and `HookRunner` port | `agent-core` |
-| Discovery and management of Rules / Skills / Plan | host-internal library |
-| Agent Hooks config merge, command execution, and `createHookRunner` | host-internal library |
-| Host tool request types, parsing, validation, approval, execution | host-internal library |
-| Dream file storage, expiry cleanup, and run logs | host-internal library |
-| Session TODO storage, `replaceAll`, and tool execution | host-internal library |
-| LSP multi-provider processes, PATH/install detection, document sync, post-write append, and workspace cache | host-internal library |
-| Platform adaptation for shell / search / file / web fetch | host-internal library |
-| CLI / Desktop UI and platform wiring | apps |
-| Desktop dreams settings page, background scheduling, and Commit consumption | apps |
-| Desktop / CLI Composer TODO cards and strip UI | apps |
-| Single source of truth for sessions/turns/approvals in the shared backend | `packages/server` |
-| Shared-backend instance registry, client auth, and WS transport | `packages/server` |
+| Asset                                                                                                                | Owner                                             |
+| -------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------- |
+| Main system prompt                                                                                                   | `agent-core`                                      |
+| Semantics of system sections such as Rules / Skills catalog                                                          | `agent-core`                                      |
+| User-turn `<active_skill>` meta (full text of explicitly activated Skill)                                            | `agent-core` (assembled by `user-turn-timestamp`) |
+| Built-in tool names, descriptions, JSON Schemas                                                                      | `agent-core`                                      |
+| Dream tool names, descriptions, JSON Schemas, and collector system prompt                                            | `agent-core`                                      |
+| Session TODO tool name, description, JSON Schema (no separate todos system section)                                  | `agent-core`                                      |
+| LSP tool contract, `get_diagnostics` Schema (routed to per-language servers by extension), and diagnostic formatting | `agent-core`                                      |
+| MCP protocol, MCP tool / resource / prompt runtime                                                                   | `agent-core`                                      |
+| Host interface definitions                                                                                           | `agent-core`                                      |
+| Agent Hooks schema, runtime attachment points, and `HookRunner` port                                                 | `agent-core`                                      |
+| Discovery and management of Rules / Skills / Plan                                                                    | host-internal library                             |
+| Agent Hooks config merge, command execution, and `createHookRunner`                                                  | host-internal library                             |
+| Host tool request types, parsing, validation, approval, execution                                                    | host-internal library                             |
+| Dream file storage, expiry cleanup, and run logs                                                                     | host-internal library                             |
+| Session TODO storage, `replaceAll`, and tool execution                                                               | host-internal library                             |
+| LSP multi-provider processes, PATH/install detection, document sync, post-write append, and workspace cache          | host-internal library                             |
+| Platform adaptation for shell / search / file / web fetch                                                            | host-internal library                             |
+| CLI / Desktop UI and platform wiring                                                                                 | apps                                              |
+| Desktop dreams settings page, background scheduling, and Commit consumption                                          | apps                                              |
+| Desktop / CLI Composer TODO cards and strip UI                                                                       | apps                                              |
+| Single source of truth for sessions/turns/approvals in the shared backend                                            | `packages/server`                                 |
+| Shared-backend instance registry, client auth, and WS transport                                                      | `packages/server`                                 |
 
 ## Hard Constraints
 
@@ -228,11 +228,11 @@ Under this boundary, the current repo should be understood as:
 
 The host selects the underlying protocol via `LlmTransportConfig`; **do not** conflate Chat Completions and Responses into the same config default:
 
-| `transportKind` | Protocol family | Typical SDK |
-| --- | --- | --- |
-| `openai-compatible` | OpenAI Chat Completions compatible | `@ai-sdk/openai-compatible`, etc. |
-| `open-responses` | Responses / Open Responses | OpenAI official: `responses` from `@ai-sdk/openai`; xAI: `responses` from `@ai-sdk/xai`; Azure: `@ai-sdk/azure` Responses callable by default (`provider=azure` is pinned to this transport, requires `azureResourceName` + deployment name, API Key only in this version); other compatible endpoints: `@ai-sdk/open-responses` |
-| `anthropic` | Anthropic Messages | `@ai-sdk/anthropic` |
+| `transportKind`     | Protocol family                    | Typical SDK                                                                                                                                                                                                                                                                                                                      |
+| ------------------- | ---------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `openai-compatible` | OpenAI Chat Completions compatible | `@ai-sdk/openai-compatible`, etc.                                                                                                                                                                                                                                                                                                |
+| `open-responses`    | Responses / Open Responses         | OpenAI official: `responses` from `@ai-sdk/openai`; xAI: `responses` from `@ai-sdk/xai`; Azure: `@ai-sdk/azure` Responses callable by default (`provider=azure` is pinned to this transport, requires `azureResourceName` + deployment name, API Key only in this version); other compatible endpoints: `@ai-sdk/open-responses` |
+| `anthropic`         | Anthropic Messages                 | `@ai-sdk/anthropic`                                                                                                                                                                                                                                                                                                              |
 
 - `provider=openai` is **pinned to** `open-responses` (existing defaults or explicit `openai-compatible` are silently upgraded); no Chat Completions transport choice is offered.
 - `provider=azure` is **pinned to** `open-responses`; no transport choice is offered. Azure has no `/models` endpoint; the deployment name is written to `ModelProfile.name`.

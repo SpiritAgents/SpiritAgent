@@ -242,7 +242,9 @@ async function main(): Promise<void> {
     !firstEvents.some((event) => isJsonObject(event) && event.kind === "streaming-tool-preview")
   ) {
     server.close();
-    throw new Error("ai-sdk deepseek streaming smoke did not receive a streaming-tool-preview event.");
+    throw new Error(
+      "ai-sdk deepseek streaming smoke did not receive a streaming-tool-preview event.",
+    );
   }
 
   if (
@@ -257,7 +259,9 @@ async function main(): Promise<void> {
 
   if (firstCompletion.kind !== "success" || firstCompletion.result.step.kind !== "tool-calls") {
     server.close();
-    throw new Error("ai-sdk deepseek streaming smoke step 1 did not reach the expected tool-calls.");
+    throw new Error(
+      "ai-sdk deepseek streaming smoke step 1 did not reach the expected tool-calls.",
+    );
   }
 
   const resumedState = appendOpenAiToolResultMessage(
@@ -283,7 +287,9 @@ async function main(): Promise<void> {
     secondCompletion.kind !== "success" ||
     secondCompletion.result.step.kind !== "final-response-ready"
   ) {
-    throw new Error("ai-sdk deepseek streaming smoke step 2 did not reach the expected final-response-ready.");
+    throw new Error(
+      "ai-sdk deepseek streaming smoke step 2 did not reach the expected final-response-ready.",
+    );
   }
 
   const assistantText = extractLastOpenAiAssistantText(secondCompletion.result.state)?.trim();
@@ -295,21 +301,29 @@ async function main(): Promise<void> {
 
   const firstRequest = requestBodies[0];
   if (!isJsonObject(firstRequest)) {
-    throw new Error("ai-sdk deepseek streaming smoke did not capture the first-round request body.");
+    throw new Error(
+      "ai-sdk deepseek streaming smoke did not capture the first-round request body.",
+    );
   }
   const firstTools = firstRequest.tools as Array<{ type?: string }> | undefined;
   if (!firstTools?.some((tool) => tool.type === "web_search")) {
-    throw new Error("ai-sdk deepseek streaming smoke first-round request did not inject web_search.");
+    throw new Error(
+      "ai-sdk deepseek streaming smoke first-round request did not inject web_search.",
+    );
   }
 
   const roundTwoBody = requestBodies[1];
   if (!isJsonObject(roundTwoBody) || !Array.isArray(roundTwoBody.input)) {
-    throw new Error("ai-sdk deepseek streaming smoke second round did not send the Responses input history.");
+    throw new Error(
+      "ai-sdk deepseek streaming smoke second round did not send the Responses input history.",
+    );
   }
 
   const traceEntry = secondCompletion.result.requestTrace[0];
   if (!isJsonObject(traceEntry) || traceEntry.kind !== "deepseek_open_responses") {
-    throw new Error("ai-sdk deepseek streaming smoke did not mark the deepseek_open_responses trace kind.");
+    throw new Error(
+      "ai-sdk deepseek streaming smoke did not mark the deepseek_open_responses trace kind.",
+    );
   }
 
   await runDeepSeekVisionCapabilitySmoke();
@@ -398,7 +412,9 @@ async function runDeepSeekVisionCapabilitySmoke(): Promise<void> {
       [
         {
           role: "user",
-          content: createLlmMessageContentFromTextAndImages("Please look at the image.", [imagePath]),
+          content: createLlmMessageContentFromTextAndImages("Please look at the image.", [
+            imagePath,
+          ]),
         },
       ],
       process.cwd(),
@@ -426,7 +442,9 @@ async function runDeepSeekVisionCapabilitySmoke(): Promise<void> {
     printSmokeSection("ai-sdk deepseek vision capability smoke completion", completion);
 
     if (completion.kind !== "success" || completion.result.step.kind !== "final-response-ready") {
-      throw new Error("DeepSeek vision capability smoke did not reach the expected final-response-ready.");
+      throw new Error(
+        "DeepSeek vision capability smoke did not reach the expected final-response-ready.",
+      );
     }
 
     const assistantText = extractLastOpenAiAssistantText(completion.result.state)?.trim();
@@ -453,7 +471,9 @@ async function runDeepSeekVisionCapabilitySmoke(): Promise<void> {
         (part) => isJsonObject(part) && part.type !== "text",
       );
       if (hasNonTextPart) {
-        throw new Error("DeepSeek vision capability smoke still sent a non-text user part to the provider.");
+        throw new Error(
+          "DeepSeek vision capability smoke still sent a non-text user part to the provider.",
+        );
       }
     }
   } finally {
@@ -477,7 +497,9 @@ function verifyKnownModelCapabilityTable(): void {
     model: "deepseek-v4-pro",
   });
   if (!deepSeek.hasExplicitCapabilities || deepSeek.capabilities.imageInput) {
-    throw new Error("DeepSeek capabilities table is abnormal: it should be explicitly declared and should not support imageInput.");
+    throw new Error(
+      "DeepSeek capabilities table is abnormal: it should be explicitly declared and should not support imageInput.",
+    );
   }
 
   const moonshotWithoutCatalog = resolveOpenAiModelCompatibilityProfile({
@@ -494,10 +516,14 @@ function verifyKnownModelCapabilityTable(): void {
     !moonshotWithoutCatalog.hasExplicitCapabilities ||
     moonshotWithoutCatalog.capabilities.imageInput
   ) {
-    throw new Error("Moonshot capabilities table is abnormal: imageInput should not be inferred without a catalog.");
+    throw new Error(
+      "Moonshot capabilities table is abnormal: imageInput should not be inferred without a catalog.",
+    );
   }
   if (!moonshotWithImageInput.capabilities.imageInput) {
-    throw new Error("Moonshot capabilities table is abnormal: explicit modelCapabilities should preserve imageInput.");
+    throw new Error(
+      "Moonshot capabilities table is abnormal: explicit modelCapabilities should preserve imageInput.",
+    );
   }
 
   const explicitCustom = resolveOpenAiModelCompatibilityProfile({

@@ -101,7 +101,9 @@ async function main(): Promise<void> {
       event.kind === "streaming-tool-preview" && event.toolName === "web_search",
   );
   if (webSearchPreviews.length === 0) {
-    throw new Error("minimax web_search live smoke did not receive a web_search streaming-tool-preview.");
+    throw new Error(
+      "minimax web_search live smoke did not receive a web_search streaming-tool-preview.",
+    );
   }
 
   const succeededPreview = webSearchPreviews.find(

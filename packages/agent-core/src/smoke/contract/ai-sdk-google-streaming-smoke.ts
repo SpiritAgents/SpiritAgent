@@ -104,7 +104,9 @@ async function main(): Promise<void> {
   printSmokeSection("ai-sdk google streaming smoke request bodies", requestBodies);
 
   if (!capturedUrl.includes(":streamGenerateContent")) {
-    throw new Error("ai-sdk google streaming smoke did not hit the streamGenerateContent endpoint.");
+    throw new Error(
+      "ai-sdk google streaming smoke did not hit the streamGenerateContent endpoint.",
+    );
   }
 
   if (capturedUrl.includes("/openai")) {
@@ -112,7 +114,9 @@ async function main(): Promise<void> {
   }
 
   if (completion.kind !== "success" || completion.result.step.kind !== "final-response-ready") {
-    throw new Error("ai-sdk google streaming smoke did not reach the expected final-response-ready.");
+    throw new Error(
+      "ai-sdk google streaming smoke did not reach the expected final-response-ready.",
+    );
   }
 
   const assistantText = extractLastOpenAiAssistantText(completion.result.state)?.trim();
@@ -124,7 +128,9 @@ async function main(): Promise<void> {
 
   const traceEntry = completion.result.requestTrace[0];
   if (!isJsonObject(traceEntry) || traceEntry.kind !== "google_sdk_generate_content") {
-    throw new Error("ai-sdk google streaming smoke did not mark the Google-specific request trace kind.");
+    throw new Error(
+      "ai-sdk google streaming smoke did not mark the Google-specific request trace kind.",
+    );
   }
 }
 

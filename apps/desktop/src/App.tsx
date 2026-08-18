@@ -45,7 +45,10 @@ import { useSubagentViewer } from "@/hooks/useSubagentViewer";
 import { useThemeSetter } from "@/hooks/useTheme";
 import { useGitHubAuthConnected } from "@/hooks/use-github-auth-connected";
 import { useWorkspaceToolsController } from "@/hooks/useWorkspaceToolsController";
-import { desktopTranslucencyTintClass, desktopTranslucencyTintInnerClass } from "@/lib/desktop-translucency-surface";
+import {
+  desktopTranslucencyTintClass,
+  desktopTranslucencyTintInnerClass,
+} from "@/lib/desktop-translucency-surface";
 import {
   isDarwinElectronShell,
   isElectronChrome,

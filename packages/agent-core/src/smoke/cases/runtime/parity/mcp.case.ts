@@ -81,7 +81,7 @@ export async function runMcpCase(): Promise<RuntimeParityCaseResult> {
     "demo",
     "analysis",
     undefined,
-            "Help me check what this tool does",
+    "Help me check what this tool does",
   );
   if (!startedPrompt.includes("Applied MCP prompt: demo / analysis")) {
     throw new Error("startApplyMcpPrompt smoke notice is incorrect.");
@@ -116,7 +116,7 @@ export async function runMcpCase(): Promise<RuntimeParityCaseResult> {
           message.role === "user" &&
           userMessageContentMatchesInput(
             llmMessageTextContent(message.content),
-    "Help me check what this tool does",
+            "Help me check what this tool does",
           ),
       )
   ) {

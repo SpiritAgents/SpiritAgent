@@ -4,7 +4,7 @@ name: Verify
 on:
   push:
     branches:
-      - '**'
+      - "**"
 
 permissions:
   contents: read
@@ -30,7 +30,7 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version-file: '.nvmrc'
+          node-version-file: ".nvmrc"
           cache: pnpm
 
       - name: Setup Rust

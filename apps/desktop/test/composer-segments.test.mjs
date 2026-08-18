@@ -97,7 +97,7 @@ test("segmentsToMessageText does not double-newline inline text after element", 
   const segs = [
     { kind: "element", attachment: sampleAttachment },
     { kind: "text", value: "hi there\nwhat is this" },
-  ]);
+  ];
   const message = segmentsToMessageText(segs);
   assert.ok(!message.includes("```\n\nhi"));
   assert.match(message, /```\nhi there/);

@@ -117,7 +117,9 @@ function createGenerateImageRuntime(
     extractAssistantText: extractScriptedAssistantText,
     generateImage: async (request): Promise<ToolExecutionOutput> => {
       if (!request.prompt.includes(expectedPromptSnippet)) {
-        throw new Error("generate_image smoke did not receive the final prompt rewritten by the model.");
+        throw new Error(
+          "generate_image smoke did not receive the final prompt rewritten by the model.",
+        );
       }
       if (request.size !== expectedSize) {
         throw new Error(`generate_image smoke did not parse the expected size: ${request.size}`);
@@ -154,7 +156,9 @@ function assertTerminalGenerateImageResult(
   label: string,
 ): void {
   if (rounds !== 2) {
-    throw new Error(`${label} should continue to the final assistant round after generate_image completes.`);
+    throw new Error(
+      `${label} should continue to the final assistant round after generate_image completes.`,
+    );
   }
   if (executedCalls !== 0) {
     throw new Error(`${label} should not fall through to host execute.`);
@@ -189,10 +193,14 @@ function assertToolResultMessagePersisted(state: ScriptedState, label: string): 
     typeof toolMessage?.content !== "string" ||
     !toolMessage.content.includes("spirit://generated/image/square-poster.png")
   ) {
-    throw new Error(`${label} did not write the generate_image result back to runtime state messages.`);
+    throw new Error(
+      `${label} did not write the generate_image result back to runtime state messages.`,
+    );
   }
   if (toolMessage.content.includes("path: generated/square-poster.png")) {
-    throw new Error(`${label} should not write the real generated image path back to runtime state messages.`);
+    throw new Error(
+      `${label} should not write the real generated image path back to runtime state messages.`,
+    );
   }
 }
 

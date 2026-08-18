@@ -107,7 +107,9 @@ async function main(): Promise<void> {
     printSmokeSection("ai-sdk openai runtime smoke result", result);
 
     if (result.kind !== "completed") {
-      throw new Error(`ai-sdk openai runtime smoke did not complete the turn loop, current result: ${result.kind}`);
+      throw new Error(
+        `ai-sdk openai runtime smoke did not complete the turn loop, current result: ${result.kind}`,
+      );
     }
 
     if (!result.assistantText.trim()) {

@@ -186,7 +186,10 @@ function buildRemoteDesktopRuntime(
 
 async function applyRemoteSessionPreferences(
   runtime: RemoteDesktopRuntime,
-  input: Pick<RemoteDesktopRuntimeInput, "approvalLevel" | "todoSessionKey" | "archive" | "agentMode">,
+  input: Pick<
+    RemoteDesktopRuntimeInput,
+    "approvalLevel" | "todoSessionKey" | "archive" | "agentMode"
+  >,
 ): Promise<void> {
   await runtime.clientCall("session.setApprovalLevel", { approvalLevel: input.approvalLevel });
   // When Attach reuses an existing daemon session, the mode must be re-synced; otherwise the UI/host config

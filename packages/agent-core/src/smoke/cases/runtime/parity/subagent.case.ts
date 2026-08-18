@@ -25,7 +25,9 @@ export async function runSubagentCase(): Promise<RuntimeParityCaseResult> {
     onEvent: (event) => parentEvents.push(event),
   });
 
-  const subagentResult = await subagentRuntime.submitUserTurn("Call the SubAgent to output a sentence");
+  const subagentResult = await subagentRuntime.submitUserTurn(
+    "Call the SubAgent to output a sentence",
+  );
   if (subagentResult.kind !== "completed" || subagentResult.assistantText !== "SUBAGENT_OK") {
     throw new Error("subagent smoke did not complete the turn loop.");
   }
@@ -55,7 +57,9 @@ export async function runSubagentCase(): Promise<RuntimeParityCaseResult> {
       event.text.includes("OK, I am the SubAgent"),
   );
   if (leakedChildEvent) {
-    throw new Error("subagent smoke child session events leaked through the parent session onEvent.");
+    throw new Error(
+      "subagent smoke child session events leaked through the parent session onEvent.",
+    );
   }
 
   return { subagentResult };

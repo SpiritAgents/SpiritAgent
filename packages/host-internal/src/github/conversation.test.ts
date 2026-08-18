@@ -46,7 +46,8 @@ test("mapTimelineEventToConversationItem maps committed event from issue timelin
       email: "121384036+N123999@users.noreply.github.com",
       date: "2026-06-10T03:40:34Z",
     },
-    message: "feat(desktop): open menu from slash token at cursor\n\nBased on composer cursor detection",
+    message:
+      "feat(desktop): open menu from slash token at cursor\n\nBased on composer cursor detection",
     event: "committed",
   });
 

@@ -1,6 +1,5 @@
 <div align="center">
 
-
 # Spirit Agent
 
 생산성을 배가시키기 위해 만들어진 오픈소스 AI 에이전트.
@@ -57,11 +56,11 @@ Spirit Agent는 실제 프로젝트 루트를 컨텍스트로 동작하는 **도
 
 Agent Core는 단일 런타임 뒤에서 여러 추론 트랜스포트를 라우팅합니다:
 
-| 트랜스포트 | 대표 프로바이더 |
-| --- | --- |
+| 트랜스포트            | 대표 프로바이더                                                         |
+| --------------------- | ----------------------------------------------------------------------- |
 | **OpenAI-compatible** | OpenAI, DeepSeek, Moonshot, MiniMax, Volcengine, 사용자 정의 엔드포인트 |
-| **Open Responses** | OpenAI, SpaceXAI, Vercel AI Gateway, OpenRouter, Alibaba(百炼) |
-| **Anthropic** | Messages API를 통한 Claude |
+| **Open Responses**    | OpenAI, SpaceXAI, Vercel AI Gateway, OpenRouter, Alibaba(百炼)          |
+| **Anthropic**         | Messages API를 통한 Claude                                              |
 
 프로바이더 네이티브 기능(예: Open Responses 웹 검색, Alibaba 내장 검색·코드 인터프리터)은 요청의 `tools` 필드로 주입됩니다.
 
@@ -119,7 +118,6 @@ pnpm run dev:site
 
 <img width="1014" height="744" alt="Spirit Agent CLI" src="https://github.com/user-attachments/assets/ecf4fcec-6a9b-4562-b0da-cc14816f36d3" />
 
-
 [Rust CLI](../apps/cli)(`spirit-agent`)는 터미널 우선 호스트로 선택적 Ratatui UI를 제공합니다. WebSocket으로 공유 Spirit Server 데몬에 연결하며, 스크립팅, SSH 세션, 최소 환경에 적합합니다.
 
 ```bash
@@ -171,24 +169,24 @@ pnpm run dev:cli    # cargo run -p spirit-agent
 node path/to/packages/acp-server/dist/src/stdio-entry.js --setup
 ```
 
-| 환경 변수 | 필수 | 설명 |
-| --- | --- | --- |
-| `SPIRIT_ACP_WORKSPACE` | 아니오 | 워크스페이스 루트(기본: 클라이언트 `cwd`) |
-| `SPIRIT_ACP_DATA_DIR` | 아니오 | Spirit 데이터 디렉터리(기본: `%APPDATA%/SpiritAgent` 또는 `~/.spirit-agent`) |
+| 환경 변수              | 필수   | 설명                                                                         |
+| ---------------------- | ------ | ---------------------------------------------------------------------------- |
+| `SPIRIT_ACP_WORKSPACE` | 아니오 | 워크스페이스 루트(기본: 클라이언트 `cwd`)                                    |
+| `SPIRIT_ACP_DATA_DIR`  | 아니오 | Spirit 데이터 디렉터리(기본: `%APPDATA%/SpiritAgent` 또는 `~/.spirit-agent`) |
 
 ## 개발
 
 **요구 사항:** Node.js 24+, pnpm 10+(`corepack enable`로 활성화). CLI 빌드에는 Rust 툴체인 필요.
 
-| 명령 | 설명 |
-| --- | --- |
-| `pnpm install` | workspace 의존성 설치(저장소 루트에서 한 번) |
-| `pnpm run dev:desktop` | 공유 패키지 빌드 후 Desktop 시작(Vite + Electron) |
-| `pnpm run dev:desktop:web` | Desktop 렌더러 + 브라우저 Web 호스트 |
-| `pnpm run dev:site` | 마케팅/문서 사이트 시작(Next.js) |
-| `pnpm run dev:cli` | TUI 포함 CLI |
-| `pnpm run build` | agent-core, host-internal, server, acp-server, Desktop, site 프로덕션 빌드 |
-| `pnpm run eval:compare` | agent-core 변경 후 eval 비교 실행 |
+| 명령                       | 설명                                                                       |
+| -------------------------- | -------------------------------------------------------------------------- |
+| `pnpm install`             | workspace 의존성 설치(저장소 루트에서 한 번)                               |
+| `pnpm run dev:desktop`     | 공유 패키지 빌드 후 Desktop 시작(Vite + Electron)                          |
+| `pnpm run dev:desktop:web` | Desktop 렌더러 + 브라우저 Web 호스트                                       |
+| `pnpm run dev:site`        | 마케팅/문서 사이트 시작(Next.js)                                           |
+| `pnpm run dev:cli`         | TUI 포함 CLI                                                               |
+| `pnpm run build`           | agent-core, host-internal, server, acp-server, Desktop, site 프로덕션 빌드 |
+| `pnpm run eval:compare`    | agent-core 변경 후 eval 비교 실행                                          |
 
 ### 저장소 구조
 

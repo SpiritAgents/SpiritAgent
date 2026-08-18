@@ -161,7 +161,9 @@ async function runAlibabaResponsesSmoke(): Promise<void> {
 
   const assistantText = extractLastOpenAiAssistantText(round.result.state)?.trim();
   if (assistantText !== "ALIBABA_RESPONSES_OK") {
-    throw new Error(`alibaba responses smoke did not get the expected text: ${assistantText ?? "<empty>"}`);
+    throw new Error(
+      `alibaba responses smoke did not get the expected text: ${assistantText ?? "<empty>"}`,
+    );
   }
 
   const trace = round.result.requestTrace[0];

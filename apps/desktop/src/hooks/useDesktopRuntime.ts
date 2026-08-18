@@ -2256,7 +2256,8 @@ export function useDesktopRuntime() {
             ...(webHostEndpointChanged ? { resetPairing: true } : {}),
           }),
         );
-        const staleTranslucencySave = translucencyPatch && translucencySeq < translucencySaveSeqRef.current;
+        const staleTranslucencySave =
+          translucencyPatch && translucencySeq < translucencySaveSeqRef.current;
         if (!staleTranslucencySave) {
           applySnapshot(next);
         }

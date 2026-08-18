@@ -255,7 +255,9 @@ export function resolveEnvTemplate(
 
     const resolved = lookup(envName);
     if (resolved === undefined) {
-      throw new McpConfigError(`Missing environment variable ${envName} (referenced from MCP config)`);
+      throw new McpConfigError(
+        `Missing environment variable ${envName} (referenced from MCP config)`,
+      );
     }
 
     rendered += resolved;
@@ -373,7 +375,11 @@ function parseTransportConfigForConfig(
       const timeoutMs = readOptionalNumber(raw, ["timeoutMs", "timeout_ms"]);
       return {
         type: "http",
-        url: readRequiredString(raw, ["url"], `MCP server ${serverName} http url must not be empty`),
+        url: readRequiredString(
+          raw,
+          ["url"],
+          `MCP server ${serverName} http url must not be empty`,
+        ),
         ...(headers === undefined ? {} : { headers }),
         ...(timeoutMs === undefined ? {} : { timeoutMs }),
       };

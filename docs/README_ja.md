@@ -1,6 +1,5 @@
 <div align="center">
 
-
 # Spirit Agent
 
 生産性を何倍にも引き上げるオープンソース AI エージェント。
@@ -57,11 +56,11 @@ Spirit Agent は、実プロジェクトのルートをコンテキストに動�
 
 Agent Core は単一ランタイムの背後で複数の推論トランスポートをルーティングします：
 
-| トランスポート | 代表的なプロバイダ |
-| --- | --- |
+| トランスポート        | 代表的なプロバイダ                                                      |
+| --------------------- | ----------------------------------------------------------------------- |
 | **OpenAI-compatible** | OpenAI、DeepSeek、Moonshot、MiniMax、Volcengine、カスタムエンドポイント |
-| **Open Responses** | OpenAI、SpaceXAI、Vercel AI Gateway、OpenRouter、Alibaba（百煉） |
-| **Anthropic** | Messages API 経由の Claude |
+| **Open Responses**    | OpenAI、SpaceXAI、Vercel AI Gateway、OpenRouter、Alibaba（百煉）        |
+| **Anthropic**         | Messages API 経由の Claude                                              |
 
 プロバイダー固有機能（Open Responses の Web 検索、Alibaba の組み込み検索・コードインタプリタなど）はリクエストの `tools` フィールド経由で注入されます。
 
@@ -119,7 +118,6 @@ pnpm run dev:site
 
 <img width="1014" height="744" alt="Spirit Agent CLI" src="https://github.com/user-attachments/assets/ecf4fcec-6a9b-4562-b0da-cc14816f36d3" />
 
-
 [Rust CLI](../apps/cli)（`spirit-agent`）はターミナル優先ホストで、オプションの Ratatui UI を提供。WebSocket 経由で共有 Spirit Server デーモンに接続し、スクリプト、SSH セッション、最小環境に適します。
 
 ```bash
@@ -171,24 +169,24 @@ pnpm run dev:cli    # cargo run -p spirit-agent
 node path/to/packages/acp-server/dist/src/stdio-entry.js --setup
 ```
 
-| 環境変数 | 必須 | 説明 |
-| --- | --- | --- |
-| `SPIRIT_ACP_WORKSPACE` | いいえ | ワークスペースルート（デフォルト：クライアント `cwd`） |
-| `SPIRIT_ACP_DATA_DIR` | いいえ | Spirit データディレクトリ（デフォルト：`%APPDATA%/SpiritAgent` または `~/.spirit-agent`） |
+| 環境変数               | 必須   | 説明                                                                                      |
+| ---------------------- | ------ | ----------------------------------------------------------------------------------------- |
+| `SPIRIT_ACP_WORKSPACE` | いいえ | ワークスペースルート（デフォルト：クライアント `cwd`）                                    |
+| `SPIRIT_ACP_DATA_DIR`  | いいえ | Spirit データディレクトリ（デフォルト：`%APPDATA%/SpiritAgent` または `~/.spirit-agent`） |
 
 ## 開発
 
 **要件：** Node.js 24+、pnpm 10+（`corepack enable` で有効化）。CLI ビルドには Rust ツールチェーン。
 
-| コマンド | 説明 |
-| --- | --- |
-| `pnpm install` | workspace 依存関係をインストール（リポジトリルートで一度） |
-| `pnpm run dev:desktop` | 共有パッケージをビルドして Desktop 起動（Vite + Electron） |
-| `pnpm run dev:desktop:web` | Desktop レンダラー + ブラウザ Web ホスト |
-| `pnpm run dev:site` | マーケティング／ドキュメントサイトを起動（Next.js） |
-| `pnpm run dev:cli` | TUI 付き CLI |
-| `pnpm run build` | agent-core、host-internal、server、acp-server、Desktop、site の本番ビルド |
-| `pnpm run eval:compare` | agent-core 変更後の eval 比較 |
+| コマンド                   | 説明                                                                      |
+| -------------------------- | ------------------------------------------------------------------------- |
+| `pnpm install`             | workspace 依存関係をインストール（リポジトリルートで一度）                |
+| `pnpm run dev:desktop`     | 共有パッケージをビルドして Desktop 起動（Vite + Electron）                |
+| `pnpm run dev:desktop:web` | Desktop レンダラー + ブラウザ Web ホスト                                  |
+| `pnpm run dev:site`        | マーケティング／ドキュメントサイトを起動（Next.js）                       |
+| `pnpm run dev:cli`         | TUI 付き CLI                                                              |
+| `pnpm run build`           | agent-core、host-internal、server、acp-server、Desktop、site の本番ビルド |
+| `pnpm run eval:compare`    | agent-core 変更後の eval 比較                                             |
 
 ### リポジトリ構成
 

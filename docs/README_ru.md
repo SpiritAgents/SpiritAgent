@@ -1,6 +1,5 @@
 <div align="center">
 
-
 # Spirit Agent
 
 Открытый AI-агент, созданный умножать вашу продуктивность.
@@ -57,11 +56,11 @@ Spirit Agent — **агент для кодирования с инструме�
 
 Agent Core маршрутизирует inference через несколько транспортов за единым runtime:
 
-| Транспорт | Типичные провайдеры |
-| --- | --- |
+| Транспорт             | Типичные провайдеры                                                         |
+| --------------------- | --------------------------------------------------------------------------- |
 | **OpenAI-compatible** | OpenAI, DeepSeek, Moonshot, MiniMax, Volcengine, пользовательские endpoints |
-| **Open Responses** | OpenAI, SpaceXAI, Vercel AI Gateway, OpenRouter, Alibaba (Bailian) |
-| **Anthropic** | Claude через Messages API |
+| **Open Responses**    | OpenAI, SpaceXAI, Vercel AI Gateway, OpenRouter, Alibaba (Bailian)          |
+| **Anthropic**         | Claude через Messages API                                                   |
 
 Нативные возможности провайдера (веб-поиск Open Responses, встроенный поиск и интерпретатор кода Alibaba и т. д.) инжектируются через поле `tools`.
 
@@ -119,7 +118,6 @@ pnpm run dev:site
 
 <img width="1014" height="744" alt="Spirit Agent CLI" src="https://github.com/user-attachments/assets/ecf4fcec-6a9b-4562-b0da-cc14816f36d3" />
 
-
 [Rust CLI](../apps/cli) (`spirit-agent`) — terminal-first хост с опциональным Ratatui UI. Подключается к общему daemon Spirit Server по WebSocket; подходит для скриптов, SSH-сессий и минимальных окружений.
 
 ```bash
@@ -171,24 +169,24 @@ pnpm run dev:cli    # cargo run -p spirit-agent
 node path/to/packages/acp-server/dist/src/stdio-entry.js --setup
 ```
 
-| Переменная окружения | Обязательна | Описание |
-| --- | --- | --- |
-| `SPIRIT_ACP_WORKSPACE` | Нет | Корень workspace (по умолчанию: `cwd` клиента) |
-| `SPIRIT_ACP_DATA_DIR` | Нет | Каталог данных Spirit (по умолчанию: `%APPDATA%/SpiritAgent` или `~/.spirit-agent`) |
+| Переменная окружения   | Обязательна | Описание                                                                            |
+| ---------------------- | ----------- | ----------------------------------------------------------------------------------- |
+| `SPIRIT_ACP_WORKSPACE` | Нет         | Корень workspace (по умолчанию: `cwd` клиента)                                      |
+| `SPIRIT_ACP_DATA_DIR`  | Нет         | Каталог данных Spirit (по умолчанию: `%APPDATA%/SpiritAgent` или `~/.spirit-agent`) |
 
 ## Разработка
 
 **Требования:** Node.js 24+, pnpm 10+ (включить через `corepack enable`). Для сборки CLI нужен Rust toolchain.
 
-| Команда | Описание |
-| --- | --- |
-| `pnpm install` | Установить зависимости workspace (один раз в корне репозитория) |
-| `pnpm run dev:desktop` | Сборка shared packages и запуск Desktop (Vite + Electron) |
-| `pnpm run dev:desktop:web` | Desktop renderer с browser web host |
-| `pnpm run dev:site` | Запуск маркетингового/документационного сайта (Next.js) |
-| `pnpm run dev:cli` | CLI с TUI |
-| `pnpm run build` | Production build agent-core, host-internal, server, acp-server, Desktop и site |
-| `pnpm run eval:compare` | Eval-сравнение после изменений agent-core |
+| Команда                    | Описание                                                                       |
+| -------------------------- | ------------------------------------------------------------------------------ |
+| `pnpm install`             | Установить зависимости workspace (один раз в корне репозитория)                |
+| `pnpm run dev:desktop`     | Сборка shared packages и запуск Desktop (Vite + Electron)                      |
+| `pnpm run dev:desktop:web` | Desktop renderer с browser web host                                            |
+| `pnpm run dev:site`        | Запуск маркетингового/документационного сайта (Next.js)                        |
+| `pnpm run dev:cli`         | CLI с TUI                                                                      |
+| `pnpm run build`           | Production build agent-core, host-internal, server, acp-server, Desktop и site |
+| `pnpm run eval:compare`    | Eval-сравнение после изменений agent-core                                      |
 
 ### Структура репозитория
 

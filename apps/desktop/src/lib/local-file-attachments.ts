@@ -84,7 +84,7 @@ export function rememberLocalFilePreviewDataUrl(path: string, previewDataUrl: st
   if (!previewDataUrl) {
     return;
   }
-    // Map iteration follows insertion order; delete+set moves the hit entry to the tail, implementing LRU
+  // Map iteration follows insertion order; delete+set moves the hit entry to the tail, implementing LRU
   localFilePreviewDataUrlCache.delete(normalizedPath);
   localFilePreviewDataUrlCache.set(normalizedPath, previewDataUrl);
   if (localFilePreviewDataUrlCache.size > LOCAL_FILE_PREVIEW_CACHE_MAX_ENTRIES) {

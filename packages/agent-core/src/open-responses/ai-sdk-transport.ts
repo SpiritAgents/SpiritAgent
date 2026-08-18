@@ -484,7 +484,9 @@ export class AiSdkOpenResponsesTransport
 
     const normalizedSummary = summary.trim();
     if (!normalizedSummary) {
-      throw new Error("Open Responses compaction returned empty output; unable to generate a summary.");
+      throw new Error(
+        "Open Responses compaction returned empty output; unable to generate a summary.",
+      );
     }
 
     history.splice(0, history.length, {

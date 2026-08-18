@@ -121,7 +121,9 @@ async function main(): Promise<void> {
 
   const traceKind = secondRound.result.requestTrace[0];
   if (!isJsonObject(traceKind) || traceKind.kind !== "deepseek_open_responses") {
-    throw new Error("ai-sdk deepseek responses smoke did not write a deepseek_open_responses trace.");
+    throw new Error(
+      "ai-sdk deepseek responses smoke did not write a deepseek_open_responses trace.",
+    );
   }
 }
 

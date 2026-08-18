@@ -1,6 +1,7 @@
 import { llmMessageTextContent, type LlmMessage } from "./ports.js";
 
-export const MANUAL_COMPACTION_SKIPPED_STATUS = "Not enough compressible history yet; compaction skipped.";
+export const MANUAL_COMPACTION_SKIPPED_STATUS =
+  "Not enough compressible history yet; compaction skipped.";
 
 /** UI-only manual compaction status lines; must not enter llmHistory or session transcripts. */
 export function isManualCompactionUiStatusText(text: string): boolean {

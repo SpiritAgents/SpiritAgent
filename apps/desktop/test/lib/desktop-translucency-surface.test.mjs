@@ -47,7 +47,10 @@ test("desktopTranslucencyBrowserTintClass uses higher opacity than main content 
 });
 
 test("desktopTranslucencyTerminalTintClass keeps high opacity for readability", () => {
-  assert.equal(desktopTranslucencyTerminalTintClass(true), DESKTOP_TRANSLUCENCY_TERMINAL_TINT_CLASS);
+  assert.equal(
+    desktopTranslucencyTerminalTintClass(true),
+    DESKTOP_TRANSLUCENCY_TERMINAL_TINT_CLASS,
+  );
   assert.match(DESKTOP_TRANSLUCENCY_TERMINAL_TINT_CLASS, /\/87$/);
 });
 
@@ -60,7 +63,10 @@ test("desktopTranslucencyWorkspaceTabSelectedClass uses light tint when transluc
 });
 
 test("desktopTranslucencyFileDetailSurfaceClass avoids stacking tint under translucency", () => {
-  assert.equal(desktopTranslucencyFileDetailSurfaceClass(false), DESKTOP_FILES_DETAIL_PREVIEW_TINT_CLASS);
+  assert.equal(
+    desktopTranslucencyFileDetailSurfaceClass(false),
+    DESKTOP_FILES_DETAIL_PREVIEW_TINT_CLASS,
+  );
   assert.equal(desktopTranslucencyFileDetailSurfaceClass(true), "bg-transparent");
 });
 
@@ -71,7 +77,10 @@ test("desktopComposerSurfaceBackdropClass keeps glass when translucency is off",
 });
 
 test("desktopComposerSurfaceBackdropClass uses translucent tint without blur when translucency is on", () => {
-  assert.equal(desktopComposerSurfaceBackdropClass(true), DESKTOP_COMPOSER_SURFACE_TRANSLUCENCY_TINT);
+  assert.equal(
+    desktopComposerSurfaceBackdropClass(true),
+    DESKTOP_COMPOSER_SURFACE_TRANSLUCENCY_TINT,
+  );
   assert.doesNotMatch(DESKTOP_COMPOSER_SURFACE_TRANSLUCENCY_TINT, /backdrop-blur/);
   assert.equal(DESKTOP_COMPOSER_SURFACE_TRANSLUCENCY_TINT, "bg-background/30");
 });

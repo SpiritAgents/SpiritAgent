@@ -85,7 +85,7 @@ test("locks out after failures reach the limit: even the correct code is rejecte
 
   for (let attempt = 1; attempt <= MAX_PAIRING_FAILURES; attempt += 1) {
     const response = await postPairing(handler, "000000");
-      assert.equal(response.statusCode, 401, `failure #${attempt} should be 401`);
+    assert.equal(response.statusCode, 401, `failure #${attempt} should be 401`);
     assert.equal(JSON.parse(response.body).code, "PAIRING_FAILED");
   }
   assert.equal(state.lockoutCalls, 1);

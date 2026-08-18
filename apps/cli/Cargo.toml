@@ -7,7 +7,17 @@ license = "MIT"
 
 [features]
 default = ["tui"]
-tui = ["dep:ratatui", "dep:crossterm", "dep:comrak", "dep:unicode-width", "dep:arboard", "dep:rust-i18n", "dep:icu_experimental", "dep:icu_locale", "dep:fixed_decimal"]
+tui = [
+  "dep:ratatui",
+  "dep:crossterm",
+  "dep:comrak",
+  "dep:unicode-width",
+  "dep:arboard",
+  "dep:rust-i18n",
+  "dep:icu_experimental",
+  "dep:icu_locale",
+  "dep:fixed_decimal",
+]
 
 [dependencies]
 clap = { version = "4", features = ["derive"] }
@@ -15,7 +25,11 @@ tokio = { version = "1", features = ["rt", "macros", "process", "io-util", "time
 anyhow = "1"
 ratatui = { version = "0.30", optional = true }
 crossterm = { version = "0.28", optional = true }
-reqwest = { version = "0.12", default-features = false, features = ["json", "blocking", "rustls-tls"] }
+reqwest = { version = "0.12", default-features = false, features = [
+  "json",
+  "blocking",
+  "rustls-tls",
+] }
 serde = { version = "1", features = ["derive"] }
 serde_json = "1"
 serde_yaml = "0.9"
@@ -33,11 +47,24 @@ fixed_decimal = { version = "0.7", optional = true }
 base64 = "0.22"
 ignore = "0.4"
 uuid = { version = "1", features = ["v4"] }
-ratatui-image = { version = "11", default-features = false, features = ["crossterm", "image-defaults"] }
-image = { version = "0.25.10", default-features = false, features = ["png", "jpeg", "webp", "gif", "bmp"] }
+ratatui-image = { version = "11", default-features = false, features = [
+  "crossterm",
+  "image-defaults",
+] }
+image = { version = "0.25.10", default-features = false, features = [
+  "png",
+  "jpeg",
+  "webp",
+  "gif",
+  "bmp",
+] }
 
 [target.'cfg(windows)'.dependencies]
-windows-sys = { version = "0.59", features = ["Win32_Foundation", "Win32_System_Diagnostics_ToolHelp", "Win32_UI_Input_KeyboardAndMouse"] }
+windows-sys = { version = "0.59", features = [
+  "Win32_Foundation",
+  "Win32_System_Diagnostics_ToolHelp",
+  "Win32_UI_Input_KeyboardAndMouse",
+] }
 winreg = "0.52"
 
 [[bin]]

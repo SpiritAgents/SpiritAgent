@@ -29,7 +29,9 @@ export function isGoogleGeminiGenerativeLanguageApiBase(baseUrl: string): boolea
 /** @throws Throws when the host is not the Gemini API. */
 export function assertGoogleGeminiApiBase(baseUrl: string): void {
   if (!isGoogleGeminiGenerativeLanguageApiBase(baseUrl)) {
-    throw new Error("The Google provider endpoint must be generativelanguage.googleapis.com (Gemini API).");
+    throw new Error(
+      "The Google provider endpoint must be generativelanguage.googleapis.com (Gemini API).",
+    );
   }
 }
 

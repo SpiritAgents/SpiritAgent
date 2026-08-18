@@ -1,6 +1,5 @@
 <div align="center">
 
-
 # Spirit Agent
 
 一款開源 AI 智能體，旨在成倍提升你的生產力。
@@ -57,11 +56,11 @@ Spirit Agent 是一款**工具型程式設計智能體**，以真實專案根目
 
 Agent Core 在統一執行時背後路由多種推理傳輸層：
 
-| 傳輸層 | 典型提供商 |
-| --- | --- |
-| **OpenAI-compatible** | OpenAI、DeepSeek、Moonshot、MiniMax、Volcengine、自訂端點 |
-| **Open Responses** | OpenAI、SpaceXAI、Vercel AI Gateway、OpenRouter、阿里巴巴（百煉） |
-| **Anthropic** | 透過 Messages API 的 Claude |
+| 傳輸層                | 典型提供商                                                        |
+| --------------------- | ----------------------------------------------------------------- |
+| **OpenAI-compatible** | OpenAI、DeepSeek、Moonshot、MiniMax、Volcengine、自訂端點         |
+| **Open Responses**    | OpenAI、SpaceXAI、Vercel AI Gateway、OpenRouter、阿里巴巴（百煉） |
+| **Anthropic**         | 透過 Messages API 的 Claude                                       |
 
 提供商原生能力（例如 Open Responses 上的網頁搜尋、阿里巴巴內建搜尋與程式碼解釋器）透過請求中的 `tools` 欄位注入。
 
@@ -119,7 +118,6 @@ pnpm run dev:site
 
 <img width="1014" height="744" alt="Spirit Agent CLI" src="https://github.com/user-attachments/assets/ecf4fcec-6a9b-4562-b0da-cc14816f36d3" />
 
-
 [Rust CLI](../apps/cli)（`spirit-agent`）提供終端優先的宿主，可選 Ratatui 介面。透過 WebSocket 連接共享 Spirit Server daemon，適合腳本化、SSH 工作階段與極簡環境。
 
 ```bash
@@ -171,24 +169,24 @@ pnpm run dev:cli    # cargo run -p spirit-agent
 node path/to/packages/acp-server/dist/src/stdio-entry.js --setup
 ```
 
-| 環境變數 | 必填 | 說明 |
-| --- | --- | --- |
-| `SPIRIT_ACP_WORKSPACE` | 否 | 工作區根路徑（預設：用戶端 `cwd`） |
-| `SPIRIT_ACP_DATA_DIR` | 否 | Spirit 資料目錄（預設：`%APPDATA%/SpiritAgent` 或 `~/.spirit-agent`） |
+| 環境變數               | 必填 | 說明                                                                  |
+| ---------------------- | ---- | --------------------------------------------------------------------- |
+| `SPIRIT_ACP_WORKSPACE` | 否   | 工作區根路徑（預設：用戶端 `cwd`）                                    |
+| `SPIRIT_ACP_DATA_DIR`  | 否   | Spirit 資料目錄（預設：`%APPDATA%/SpiritAgent` 或 `~/.spirit-agent`） |
 
 ## 開發
 
 **環境需求：** Node.js 24+、pnpm 10+（透過 `corepack enable` 啟用）。建置 CLI 需要 Rust 工具鏈。
 
-| 命令 | 說明 |
-| --- | --- |
-| `pnpm install` | 安裝 workspace 依賴（在儲存庫根目錄執行一次） |
-| `pnpm run dev:desktop` | 建置共享套件並啟動 Desktop（Vite + Electron） |
-| `pnpm run dev:desktop:web` | Desktop 渲染器 + 瀏覽器 Web 宿主 |
-| `pnpm run dev:site` | 啟動行銷/文件站（Next.js） |
-| `pnpm run dev:cli` | 含 TUI 的 CLI |
-| `pnpm run build` | 生產建置 agent-core、host-internal、server、acp-server、Desktop 與 site |
-| `pnpm run eval:compare` | 在 agent-core 變更後執行 eval 對比 |
+| 命令                       | 說明                                                                    |
+| -------------------------- | ----------------------------------------------------------------------- |
+| `pnpm install`             | 安裝 workspace 依賴（在儲存庫根目錄執行一次）                           |
+| `pnpm run dev:desktop`     | 建置共享套件並啟動 Desktop（Vite + Electron）                           |
+| `pnpm run dev:desktop:web` | Desktop 渲染器 + 瀏覽器 Web 宿主                                        |
+| `pnpm run dev:site`        | 啟動行銷/文件站（Next.js）                                              |
+| `pnpm run dev:cli`         | 含 TUI 的 CLI                                                           |
+| `pnpm run build`           | 生產建置 agent-core、host-internal、server、acp-server、Desktop 與 site |
+| `pnpm run eval:compare`    | 在 agent-core 變更後執行 eval 對比                                      |
 
 ### 儲存庫結構
 

@@ -119,7 +119,10 @@ test("toolCallSummaryCopyForResponsesBuiltInTool: web_search preserves query det
       "web_search",
       "succeeded",
       { headline: "联网搜索" },
-      { headlineDetail: "What is the Spirit Agent project", inputExcerpt: "What is the Spirit Agent project" },
+      {
+        headlineDetail: "What is the Spirit Agent project",
+        inputExcerpt: "What is the Spirit Agent project",
+      },
     ),
     {
       headline: "联网搜索",
@@ -317,9 +320,12 @@ test("stripRedundantThinkingFromMessageAux removes duplicate or leaked reasoning
     stripRedundantThinkingFromMessageAux("Body second half", { thinking: "Body" }),
     undefined,
   );
-  assert.deepEqual(stripRedundantThinkingFromMessageAux("Body", { thinking: "Independent reasoning" }), {
-    thinking: "Independent reasoning",
-  });
+  assert.deepEqual(
+    stripRedundantThinkingFromMessageAux("Body", { thinking: "Independent reasoning" }),
+    {
+      thinking: "Independent reasoning",
+    },
+  );
 });
 
 test("toolCallSummaryCopyForRequest: ask_questions and subagent", () => {
@@ -504,10 +510,18 @@ test("shouldHideEmptyPendingAssistantSnapshot keeps pending row between tool bat
 });
 
 test("finishTaskNoticePreviewFromArguments streams partial summary text", () => {
-  assert.equal(finishTaskSummaryFromStreamingArguments('{"summary":"verified each'), "verified each");
-  assert.equal(finishTaskNoticePreviewFromArguments('{"summary":"verified each'), "Task completed: verified each");
   assert.equal(
-    finishTaskNoticePreviewFromArguments('{"summary":"called finish_task after verifying every message"}'),
+    finishTaskSummaryFromStreamingArguments('{"summary":"verified each'),
+    "verified each",
+  );
+  assert.equal(
+    finishTaskNoticePreviewFromArguments('{"summary":"verified each'),
+    "Task completed: verified each",
+  );
+  assert.equal(
+    finishTaskNoticePreviewFromArguments(
+      '{"summary":"called finish_task after verifying every message"}',
+    ),
     "Task completed: called finish_task after verifying every message.",
   );
 });
@@ -748,7 +762,10 @@ test("assistantTurnHasPlainPrefixMessage treats trailing whitespace as the same 
 
   assert.equal(assistantTurnHasPlainPrefixMessage(messages, "OK."), true);
   assert.equal(
-    assistantTurnHasPlainPrefixMessage(messages, "Spirit Agent is an open-source AI coding agent monorepo."),
+    assistantTurnHasPlainPrefixMessage(
+      messages,
+      "Spirit Agent is an open-source AI coding agent monorepo.",
+    ),
     true,
   );
   assert.equal(

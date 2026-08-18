@@ -148,7 +148,10 @@ async function restoreCreateFileChange(
     await unlink(change.resolvedPath);
     return { restored: true };
   }
-  return skipped(change, "The file was modified after creation; deletion skipped to avoid overwriting user changes.");
+  return skipped(
+    change,
+    "The file was modified after creation; deletion skipped to avoid overwriting user changes.",
+  );
 }
 
 async function restoreEditFileChange(
@@ -166,7 +169,10 @@ async function restoreEditFileChange(
     return skipped(change, "The target file no longer exists; cannot apply the edit rewind.");
   }
   if (!current.file || current.content === undefined) {
-    return skipped(change, "The target path exists but is not a file; cannot apply the edit rewind.");
+    return skipped(
+      change,
+      "The target path exists but is not a file; cannot apply the edit rewind.",
+    );
   }
   if (current.content === change.before.content) {
     return { restored: true };
@@ -178,12 +184,18 @@ async function restoreEditFileChange(
 
   const hunk = buildSingleTextHunk(change.before.content, change.after.content);
   if (!hunk || !hunk.afterText) {
-    return skipped(change, "Could not locate a unique edit fragment; skipped to avoid overwriting user changes.");
+    return skipped(
+      change,
+      "Could not locate a unique edit fragment; skipped to avoid overwriting user changes.",
+    );
   }
 
   const hits = countSubstringOccurrences(current.content, hunk.afterText);
   if (hits !== 1) {
-    return skipped(change, `The edit fragment currently matches ${hits} locations; skipped to avoid overwriting user changes.`);
+    return skipped(
+      change,
+      `The edit fragment currently matches ${hits} locations; skipped to avoid overwriting user changes.`,
+    );
   }
 
   // Overlapping user edits are intentionally skipped; callers surface the warning instead of broad overwrites.
@@ -204,7 +216,10 @@ async function restoreDeleteFileChange(
 
   const current = await readHostFileSnapshot(change.resolvedPath);
   if (current.exists) {
-    return skipped(change, "The target path exists again; rebuild skipped to avoid overwriting user changes.");
+    return skipped(
+      change,
+      "The target path exists again; rebuild skipped to avoid overwriting user changes.",
+    );
   }
 
   await mkdir(path.dirname(change.resolvedPath), { recursive: true });

@@ -30,7 +30,10 @@ import {
   DESKTOP_OVERLAY_LIST_FILTER_INPUT_SHELL,
   instantHoverMotionClass,
 } from "@/lib/desktop-chrome";
-import { desktopTranslucencyTintClass, desktopTranslucencyTintInnerClass } from "@/lib/desktop-translucency-surface";
+import {
+  desktopTranslucencyTintClass,
+  desktopTranslucencyTintInnerClass,
+} from "@/lib/desktop-translucency-surface";
 import { showDesktopErrorToast } from "@/lib/desktop-error-toast";
 import { FONT_WEIGHT_MEDIUM } from "@/lib/desktop-typography";
 import { cn } from "@/lib/utils";

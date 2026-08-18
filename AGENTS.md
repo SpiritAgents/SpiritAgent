@@ -84,9 +84,11 @@ Do not stack multiple fallback layers "just in case", for example:
 
 ```typescript
 // ❌ Multiple safeguards: DOM deletes chip, sync re-inserts, Backspace deletes, effect inserts again
-if (agentMode === 'plan' && !hasChip) reinsertChip();
+if (agentMode === "plan" && !hasChip) reinsertChip();
 if (backspace) removeChip();
-useEffect(() => { if (agentMode === 'plan') insertChip(); }, [agentMode]);
+useEffect(() => {
+  if (agentMode === "plan") insertChip();
+}, [agentMode]);
 
 // ✅ Single source: config.agentMode drives the pin; Backspace only changes config, effect syncs UI
 ```
@@ -100,7 +102,7 @@ If a fix depends on third-party behavior, historical debt, or logic that cannot 
 
 ```typescript
 // Vercel Gateway /models only uses type=image to indicate image generation; inferring vision from tags is error-prone, so it is not used.
-if (record.type === 'image') {
+if (record.type === "image") {
   modelEntry.supportsImageGeneration = true;
 }
 ```

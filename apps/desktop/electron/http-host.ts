@@ -183,8 +183,8 @@ export function createDesktopHttpRequestHandler({
   auth?: DesktopHttpAuthOptions;
   static?: DesktopHttpStaticOptions;
 }) {
-    // The pairing failure count lives with the handler (i.e. a single Web Host run cycle);
-    // it only resets when the Web Host is restarted.
+  // The pairing failure count lives with the handler (i.e. a single Web Host run cycle);
+  // it only resets when the Web Host is restarted.
   let pairingFailureCount = 0;
 
   return async (request: IncomingMessage, response: ServerResponse) => {

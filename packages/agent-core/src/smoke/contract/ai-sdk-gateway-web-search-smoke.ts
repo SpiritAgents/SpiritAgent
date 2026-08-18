@@ -95,7 +95,9 @@ async function runGatewayWebSearchInjectionSmoke(): Promise<void> {
         isJsonObject(tool) && tool.id === "gateway.perplexity_search" && tool.name === "web_search",
     )
   ) {
-    throw new Error("gateway web_search injection smoke trace is missing the web_search provider tool.");
+    throw new Error(
+      "gateway web_search injection smoke trace is missing the web_search provider tool.",
+    );
   }
 }
 

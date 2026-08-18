@@ -105,7 +105,9 @@ export function SettingsView({
     : undefined;
 
   return (
-    <div className={cn("flex min-h-0 flex-1 flex-col", desktopTranslucencyTintClass(useTranslucency))}>
+    <div
+      className={cn("flex min-h-0 flex-1 flex-col", desktopTranslucencyTintClass(useTranslucency))}
+    >
       <ScrollArea className="min-h-0 flex-1" type="hover" scrollHideDelay={450}>
         <div className="flex min-h-full flex-col justify-center">
           <div className="mx-auto w-full max-w-2xl px-4 py-8 sm:px-6">

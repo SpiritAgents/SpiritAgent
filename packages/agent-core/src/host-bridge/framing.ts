@@ -45,7 +45,9 @@ export class JsonRpcPeer {
 
     this.input.on("end", () => {
       for (const [id, pending] of this.pending) {
-        pending.reject(new Error(`JSON-RPC connection closed before a response to request ${id} was received.`));
+        pending.reject(
+          new Error(`JSON-RPC connection closed before a response to request ${id} was received.`),
+        );
       }
       this.pending.clear();
     });

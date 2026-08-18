@@ -603,7 +603,9 @@ export async function importExtensionArchive(
       const archivePath = manifestRoot ? `${manifestRoot}/${normalized}` : normalized;
       const content = normalizedExtracted.get(archivePath);
       if (!content) {
-        throw new Error(`The file referenced by extension ${fieldName} does not exist: ${relativePath}`);
+        throw new Error(
+          `The file referenced by extension ${fieldName} does not exist: ${relativePath}`,
+        );
       }
       return Buffer.from(content).toString("utf8");
     },
@@ -898,7 +900,9 @@ export async function saveExtensionSecretValue(
   const nextValue = request.value?.trim();
   if (nextValue) {
     if (!stateStore.saveSecret) {
-      throw new Error(`The current host does not implement extension secret storage: ${extension.id}`);
+      throw new Error(
+        `The current host does not implement extension secret storage: ${extension.id}`,
+      );
     }
     await stateStore.saveSecret(extension.id, secretKey, nextValue);
   } else if (stateStore.deleteSecret) {
@@ -1179,7 +1183,9 @@ function createSecretsAccessor(
     async set(key, value) {
       assertSecretSlot(extension.manifest, key);
       if (!stateStore.saveSecret) {
-        throw new Error(`The current host does not implement extension secret storage: ${extension.id}`);
+        throw new Error(
+          `The current host does not implement extension secret storage: ${extension.id}`,
+        );
       }
       await stateStore.saveSecret(extension.id, key, value);
     },
@@ -1483,7 +1489,9 @@ async function readExtensionManifestFile(filePath: string): Promise<HostExtensio
       try {
         return await readFile(targetPath, "utf8");
       } catch {
-        throw new Error(`The file referenced by extension ${fieldName} does not exist: ${relativePath}`);
+        throw new Error(
+          `The file referenced by extension ${fieldName} does not exist: ${relativePath}`,
+        );
       }
     },
   });
@@ -1904,7 +1912,9 @@ function optionalPackageAuthorField(value: unknown): string | undefined {
   if (isRecord(value)) {
     return optionalPackageStringField(value.name, "author.name");
   }
-  throw new Error("The extension package.json author field must be a string or an object with a name field.");
+  throw new Error(
+    "The extension package.json author field must be a string or an object with a name field.",
+  );
 }
 
 function stringField(value: unknown, fieldName: string): string {
@@ -1924,13 +1934,17 @@ function optionalStringField(value: unknown): string | undefined {
 
 function requiredSupportedHostsField(value: unknown, fieldName: string): ExtensionHostKind[] {
   if (value === undefined || value === null) {
-    throw new Error(`Extension field ${fieldName} is missing; it must be a non-empty array with cli and/or desktop entries.`);
+    throw new Error(
+      `Extension field ${fieldName} is missing; it must be a non-empty array with cli and/or desktop entries.`,
+    );
   }
   if (!Array.isArray(value)) {
     throw new Error(`Extension field ${fieldName} must be an array of strings.`);
   }
   if (value.length === 0) {
-    throw new Error(`Extension field ${fieldName} must contain at least one entry (cli or desktop).`);
+    throw new Error(
+      `Extension field ${fieldName} must contain at least one entry (cli or desktop).`,
+    );
   }
 
   const result: ExtensionHostKind[] = [];
@@ -2099,7 +2113,9 @@ async function optionalCliUiHookDefinitionsField(
   }
 
   if (!isRecord(value)) {
-    throw new Error(`Extension field ${fieldPrefix} must be an object that references an external resource file via path.`);
+    throw new Error(
+      `Extension field ${fieldPrefix} must be an object that references an external resource file via path.`,
+    );
   }
 
   const hooksPath = stringField(value.path, `${fieldPrefix}.path`);
@@ -2125,7 +2141,9 @@ function parseCliUiHookDocument(
   }
 
   if (!isRecord(parsed) || !Array.isArray(parsed.hooks)) {
-    throw new Error(`The extension CLI hooks resource must be an object of the form { "hooks": [...] }: ${resourcePath}`);
+    throw new Error(
+      `The extension CLI hooks resource must be an object of the form { "hooks": [...] }: ${resourcePath}`,
+    );
   }
 
   return parsed.hooks.map((entry, index) =>

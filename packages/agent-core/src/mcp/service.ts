@@ -1244,7 +1244,9 @@ function assertResourceCapability(
   capabilities: SdkMcpConnection["serverCapabilities"],
 ): void {
   if (!server.capabilities.resources) {
-    throw new McpConfigError(`MCP server ${server.name} does not have resources capability enabled`);
+    throw new McpConfigError(
+      `MCP server ${server.name} does not have resources capability enabled`,
+    );
   }
   if (capabilities?.resources === undefined) {
     throw new McpConfigError(`MCP server ${server.name} does not support resources capability`);

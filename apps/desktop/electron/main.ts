@@ -556,7 +556,10 @@ const WIN32_APP_BACKGROUND_DARK = "#000000";
 const WIN32_APP_BACKGROUND_LIGHT = "#fafafa";
 
 /** Matches Tauri `frame_chrome`: use a transparent background with window-level translucent materials, leaving compositing to the system compositor. */
-function electronRootBackgroundForBackdrop(translucencyEnabled: boolean, darkContent: boolean): string {
+function electronRootBackgroundForBackdrop(
+  translucencyEnabled: boolean,
+  darkContent: boolean,
+): string {
   if (translucencyEnabled && (process.platform === "win32" || process.platform === "darwin")) {
     return "#00000000";
   }
@@ -718,10 +721,7 @@ function applyNativeWindowBackdrop(
   }
 
   window.setBackgroundColor(
-    electronRootBackgroundForBackdrop(
-      nativeTranslucencyActive(translucencyEnabled),
-      darkContent,
-    ),
+    electronRootBackgroundForBackdrop(nativeTranslucencyActive(translucencyEnabled), darkContent),
   );
 
   if (process.platform === "win32") {

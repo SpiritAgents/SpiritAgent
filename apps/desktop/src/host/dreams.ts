@@ -529,7 +529,10 @@ function buildDreamCollectorPrompt(input: {
           "This is the new content of the same session since the last dream collection. Prefer updating existing dreams; do not re-summarize old content.",
           "[source_session_incremental_context]",
         ]
-      : ["This is the complete summary context currently available for this session.", "[source_session_full_context]"];
+      : [
+          "This is the complete summary context currently available for this session.",
+          "[source_session_full_context]",
+        ];
   return [
     "Collect the dream summary for this source session.",
     "You must call dream_list first to inspect existing dreams in the current scope.",

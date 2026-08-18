@@ -10,7 +10,7 @@ on:
   workflow_dispatch:
     inputs:
       version:
-        description: 'Release version (pure X.Y.Z, for example 0.1.0)'
+        description: "Release version (pure X.Y.Z, for example 0.1.0)"
         required: true
         type: string
 permissions:
@@ -35,7 +35,7 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version-file: '.nvmrc'
+          node-version-file: ".nvmrc"
           registry-url: https://registry.npmjs.org/
 
       - name: Require Desktop GitHub OAuth Client ID secret
@@ -97,7 +97,7 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version-file: '.nvmrc'
+          node-version-file: ".nvmrc"
           registry-url: https://registry.npmjs.org/
           cache: pnpm
 
@@ -263,7 +263,7 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version-file: '.nvmrc'
+          node-version-file: ".nvmrc"
           registry-url: https://registry.npmjs.org/
           cache: pnpm
 
@@ -291,7 +291,7 @@ jobs:
         if: matrix.platform != 'mac'
         working-directory: apps/desktop
         env:
-          CSC_IDENTITY_AUTO_DISCOVERY: 'false'
+          CSC_IDENTITY_AUTO_DISCOVERY: "false"
         run: npx electron-builder --config electron-builder.yml --${{ matrix.platform }} --${{ matrix.arch }} --publish never
 
       # electron-builder only warns when it silently skips signing, so this is the gate that turns
@@ -510,7 +510,7 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version-file: '.nvmrc'
+          node-version-file: ".nvmrc"
 
       # Two scoped downloads rather than one bulk fetch: the unnotarized-* staging artifacts carry
       # the same filenames as their notarized replacements and must not reach the release.
@@ -578,7 +578,7 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version-file: '.nvmrc'
+          node-version-file: ".nvmrc"
           # No registry-url: Trusted Publishing uses OIDC. setup-node registry-url injects
           # _authToken=${NODE_AUTH_TOKEN} (often GitHub token), which skips OIDC and breaks publish.
           cache: pnpm

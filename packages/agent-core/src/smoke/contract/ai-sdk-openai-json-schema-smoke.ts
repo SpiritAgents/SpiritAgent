@@ -143,10 +143,14 @@ async function main(): Promise<void> {
   printSmokeSection("ai-sdk deepseek json-schema smoke", deepseekResult);
 
   if (openAiResult.output.message !== "AI_SDK_JSON_SCHEMA_OK") {
-    throw new Error("ai-sdk openai json-schema smoke did not get the expected OpenAI-compatible structured output.");
+    throw new Error(
+      "ai-sdk openai json-schema smoke did not get the expected OpenAI-compatible structured output.",
+    );
   }
   if (deepseekResult.output.message !== "AI_SDK_DEEPSEEK_JSON_OK") {
-    throw new Error("ai-sdk deepseek json-schema smoke did not get the expected DeepSeek structured output.");
+    throw new Error(
+      "ai-sdk deepseek json-schema smoke did not get the expected DeepSeek structured output.",
+    );
   }
 
   const openAiRequest = chatRequestBodies[0];
@@ -162,7 +166,9 @@ async function main(): Promise<void> {
 
   const deepseekRequest = responsesRequestBodies[0];
   if (!isJsonObject(deepseekRequest)) {
-    throw new Error("ai-sdk deepseek json-schema smoke did not capture the Responses request body.");
+    throw new Error(
+      "ai-sdk deepseek json-schema smoke did not capture the Responses request body.",
+    );
   }
   const textConfig = isJsonObject(deepseekRequest.text as JsonValue)
     ? (deepseekRequest.text as Record<string, JsonValue>).format
@@ -178,11 +184,15 @@ async function main(): Promise<void> {
 
   const openAiTrace = openAiResult.requestTrace[0];
   if (!isJsonObject(openAiTrace) || openAiTrace.kind !== "openai_sdk_chat_completions") {
-    throw new Error("ai-sdk openai json-schema smoke did not write an OpenAI-compatible request trace.");
+    throw new Error(
+      "ai-sdk openai json-schema smoke did not write an OpenAI-compatible request trace.",
+    );
   }
   const deepseekTrace = deepseekResult.requestTrace[0];
   if (!isJsonObject(deepseekTrace) || deepseekTrace.kind !== "deepseek_open_responses") {
-    throw new Error("ai-sdk deepseek json-schema smoke did not write a deepseek_open_responses trace.");
+    throw new Error(
+      "ai-sdk deepseek json-schema smoke did not write a deepseek_open_responses trace.",
+    );
   }
 }
 

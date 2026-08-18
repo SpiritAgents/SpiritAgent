@@ -889,7 +889,9 @@ export class ToolImageProjectionTransport implements LlmTransport<undefined, Scr
         message.image_paths.includes("tool-image.png"),
     );
     if (!hasProjectedImageUserMessage) {
-      throw new Error("tool image projection smoke did not project the tool image output into the next user message.");
+      throw new Error(
+        "tool image projection smoke did not project the tool image output into the next user message.",
+      );
     }
 
     const hasToolSummary = state.messages.some(
@@ -1908,7 +1910,8 @@ export class StreamingApprovalImageTransport implements LlmTransport<undefined, 
         eventStream: streamFromEvents([]),
         completion: Promise.resolve({
           kind: "failure",
-          error: "streaming approval image resume did not project the image tool output into the next user message.",
+          error:
+            "streaming approval image resume did not project the image tool output into the next user message.",
           requestTrace: [{ mode: "streaming-approval-image-round-2-missing-projection" }],
         }),
       };

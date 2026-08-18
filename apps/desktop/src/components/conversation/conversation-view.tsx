@@ -22,7 +22,10 @@ import type { ComposerRichInputHandle } from "@/components/composer-rich-input";
 import type { DesktopAgentMode } from "@/lib/agent-mode";
 import type { BrowserElementAttachment } from "@/lib/browser-element-attachment";
 import { CONVERSATION_GUTTER_X, CONVERSATION_MAX_W } from "@/lib/conversation-layout-constants";
-import { desktopTranslucencyTintClass, desktopTranslucencyTintInnerClass } from "@/lib/desktop-translucency-surface";
+import {
+  desktopTranslucencyTintClass,
+  desktopTranslucencyTintInnerClass,
+} from "@/lib/desktop-translucency-surface";
 import type { EditorFileTarget } from "@/lib/workspace-editor-navigation";
 import { scrollAreaViewport } from "@/lib/scroll-area-viewport";
 import type { ActiveWorkspaceFileReferenceQuery } from "@/lib/composer-segment-model";
@@ -603,7 +606,10 @@ export function ConversationView({
               <div
                 ref={conversationScrollBodyRef}
                 data-spirit-surface="conversation-scroll-body"
-                className={cn("min-h-full w-full", desktopTranslucencyTintInnerClass(useTranslucency))}
+                className={cn(
+                  "min-h-full w-full",
+                  desktopTranslucencyTintInnerClass(useTranslucency),
+                )}
                 style={{
                   ...((!isEmptySession || subagentViewActive) && !hideStaleConversationMessages
                     ? { paddingBottom: conversationScrollBedPaddingPx }

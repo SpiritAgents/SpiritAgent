@@ -155,15 +155,21 @@ async function main(): Promise<void> {
     (event) => isJsonObject(event) && event.kind === "streaming-tool-preview",
   );
   if (previewEvents.length === 0) {
-    throw new Error("ai-sdk openai streaming smoke did not receive a streaming-tool-preview event.");
+    throw new Error(
+      "ai-sdk openai streaming smoke did not receive a streaming-tool-preview event.",
+    );
   }
   if (previewEvents.length !== 1) {
-    throw new Error("ai-sdk openai streaming smoke should not emit duplicate preview events for the same tool call.");
+    throw new Error(
+      "ai-sdk openai streaming smoke should not emit duplicate preview events for the same tool call.",
+    );
   }
 
   const previewEvent = previewEvents[0];
   if (!isJsonObject(previewEvent) || previewEvent.toolCallId !== "call_ai_sdk_stream_1") {
-    throw new Error("ai-sdk openai streaming smoke did not wait for the real toolCallId before emitting the preview event.");
+    throw new Error(
+      "ai-sdk openai streaming smoke did not wait for the real toolCallId before emitting the preview event.",
+    );
   }
 
   if (events.some((event) => isJsonObject(event) && event.kind === "error")) {
@@ -186,11 +192,15 @@ async function main(): Promise<void> {
     : [];
   const firstToolCall = streamedToolCalls[0];
   if (!isJsonObject(firstToolCall) || firstToolCall.index !== 0) {
-    throw new Error("ai-sdk openai streaming smoke did not preserve the index field on the streaming tool_call.");
+    throw new Error(
+      "ai-sdk openai streaming smoke did not preserve the index field on the streaming tool_call.",
+    );
   }
 
   if (firstToolCall.id !== "call_ai_sdk_stream_1") {
-    throw new Error("ai-sdk openai streaming smoke did not preserve the first non-empty toolCallId.");
+    throw new Error(
+      "ai-sdk openai streaming smoke did not preserve the first non-empty toolCallId.",
+    );
   }
 
   if (completion.result.step.calls[0]?.id !== "call_ai_sdk_stream_1") {

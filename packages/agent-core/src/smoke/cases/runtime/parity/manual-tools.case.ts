@@ -89,7 +89,9 @@ export async function runManualToolsCase(): Promise<RuntimeParityCaseResult> {
     throw new Error("manual background smoke did not expose the thinking aux state.");
   }
   if (manualBackgroundRuntime.takeCompletedManualToolCommandResult()) {
-    throw new Error("manual background smoke should not produce a result before the background tool finishes.");
+    throw new Error(
+      "manual background smoke should not produce a result before the background tool finishes.",
+    );
   }
 
   manualBackgroundExecutor.finish("manual output for grep");
@@ -164,7 +166,9 @@ export async function runManualToolsCase(): Promise<RuntimeParityCaseResult> {
     throw new Error("manual compaction smoke did not expose the compressing aux state.");
   }
   if (manualCompactionRuntime.takeCompletedManualHistoryCompactionResult()) {
-    throw new Error("manual compaction smoke should not produce a result before compaction finishes.");
+    throw new Error(
+      "manual compaction smoke should not produce a result before compaction finishes.",
+    );
   }
 
   manualCompactionTransport.finishCompaction();
@@ -201,7 +205,8 @@ export async function runManualToolsCase(): Promise<RuntimeParityCaseResult> {
   if (
     !drainedManualCompactionEvents.some(
       (event) =>
-        event.kind === "replace-pending-assistant" && event.text.includes("Compaction complete: context messages"),
+        event.kind === "replace-pending-assistant" &&
+        event.text.includes("Compaction complete: context messages"),
     )
   ) {
     throw new Error("manual compaction smoke is missing the completion notice event.");
