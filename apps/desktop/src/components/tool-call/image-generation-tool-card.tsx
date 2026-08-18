@@ -1,13 +1,7 @@
 import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 
-import { Download, LoaderCircle, Maximize2 } from "lucide-react";
-
-import { Button } from "@/components/ui/button";
-import {
-  LOCAL_IMAGE_FLOATING_ACTION_BUTTON_CLASS,
-  LocalImagePreviewDialog,
-} from "@/components/local-image-preview-dialog";
+import { LocalImagePreviewDialog } from "@/components/local-image-preview-dialog";
 import type {
   ReadLocalImagePreview,
   SaveLocalImageAs,
@@ -86,8 +80,6 @@ export function ImageGenerationToolCard({
   const loading =
     tool.phase === "preview" || tool.phase === "running" || previewState === "loading";
   const canInteract = Boolean(previewDataUrl && previewableImagePath);
-  const floatingActionCardRevealClass =
-    "opacity-0 group-hover/image-card:opacity-100 group-focus-within/image-card:opacity-100";
 
   const handleSaveImage = async () => {
     if (!imagePath || saving) {
@@ -142,51 +134,6 @@ export function ImageGenerationToolCard({
             </span>
           </div>
         )}
-        {previewDataUrl ? (
-          <div className="pointer-events-none absolute inset-0 z-10">
-            <Button
-              type="button"
-              size="icon"
-              variant="ghost"
-              className={cn(
-                "pointer-events-auto absolute bottom-3 left-3",
-                LOCAL_IMAGE_FLOATING_ACTION_BUTTON_CLASS,
-                floatingActionCardRevealClass,
-              )}
-              onClick={(event) => {
-                event.stopPropagation();
-                void handleSaveImage();
-              }}
-              disabled={saving}
-              title={t("app.downloadImage")}
-              aria-label={t("app.downloadImage")}
-            >
-              {saving ? (
-                <LoaderCircle className="size-4 animate-spin" aria-hidden />
-              ) : (
-                <Download className="size-4" aria-hidden />
-              )}
-            </Button>
-            <Button
-              type="button"
-              size="icon"
-              variant="ghost"
-              className={cn(
-                "pointer-events-auto absolute right-3 bottom-3",
-                LOCAL_IMAGE_FLOATING_ACTION_BUTTON_CLASS,
-                floatingActionCardRevealClass,
-              )}
-              onClick={(event) => {
-                event.stopPropagation();
-                setViewerOpen(true);
-              }}
-              title={t("app.viewLargeImage")}
-              aria-label={t("app.viewLargeImage")}
-            >
-              <Maximize2 className="size-4" aria-hidden />
-            </Button>
-          </div>
-        ) : null}
       </div>
       {!previewDataUrl && imagePath ? (
         <p className="mt-2 truncate font-mono text-[11px] text-muted-foreground" title={imagePath}>
