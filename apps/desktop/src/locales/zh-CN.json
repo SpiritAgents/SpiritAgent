@@ -1048,6 +1048,7 @@
     "workLocationLocal": "本地",
     "workLocationWorktree": "Worktree",
     "removeAttachment": "移除 {{name}}",
+    "attach": "附加",
     "loopChipLabel": "Loop",
     "planChipLabel": "Plan",
     "askChipLabel": "Ask",

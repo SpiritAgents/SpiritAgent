@@ -1033,11 +1033,10 @@ export function useComposerController({
   );
 
   const pickLocalFileFromPalette = useCallback(() => {
-    void runtime.pickLocalFile().then((filePath) => {
-      if (!filePath) {
-        return;
+    void runtime.pickLocalFile().then(async (filePaths) => {
+      for (const filePath of filePaths ?? []) {
+        await attachLocalFilePath(filePath);
       }
-      attachLocalFilePath(filePath);
     });
   }, [attachLocalFilePath, runtime]);
 

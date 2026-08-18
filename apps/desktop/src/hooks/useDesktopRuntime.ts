@@ -1218,7 +1218,7 @@ export function useDesktopRuntime() {
     }
   }, [api]);
 
-  const pickLocalFile = useCallback(async (): Promise<string | null> => {
+  const pickLocalFile = useCallback(async (): Promise<string[] | null> => {
     if (!api?.pickLocalFile) {
       setRuntimeError(i18n.t("error.hostNotSupportPickFile"));
       return null;

@@ -994,17 +994,17 @@ if (gotSpiritSingleInstanceLock) {
 
     ipcMain.handle("desktop:pick-local-file", async (event) => {
       const targetWindow = BrowserWindow.fromWebContents(event.sender);
+      const options = {
+        properties: ["openFile", "multiSelections"] as ("openFile" | "multiSelections")[],
+        buttonLabel: i18nHost.t("composer.attach"),
+      };
       const result = targetWindow
-        ? await dialog.showOpenDialog(targetWindow, {
-            properties: ["openFile"],
-          })
-        : await dialog.showOpenDialog({
-            properties: ["openFile"],
-          });
+        ? await dialog.showOpenDialog(targetWindow, options)
+        : await dialog.showOpenDialog(options);
       if (result.canceled) {
         return null;
       }
-      return result.filePaths[0] ?? null;
+      return result.filePaths;
     });
 
     ipcMain.handle(

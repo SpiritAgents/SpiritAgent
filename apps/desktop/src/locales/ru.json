@@ -1051,6 +1051,7 @@
     "workLocationLocal": "Локально",
     "workLocationWorktree": "Worktree",
     "removeAttachment": "Удалить {{name}}",
+    "attach": "Прикрепить",
     "loopChipLabel": "Цикл",
     "planChipLabel": "План",
     "askChipLabel": "Спросить",

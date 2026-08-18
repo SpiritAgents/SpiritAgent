@@ -286,7 +286,7 @@ export interface HostApi {
   statHostTextFile(absolutePath: string): Promise<HostTextFileStatResult>;
   classifyLocalFileComposerRoute(absolutePath: string): Promise<LocalFileComposerRoute>;
   pickWorkspaceDirectory?(): Promise<string | null>;
-  pickLocalFile?(): Promise<string | null>;
+  pickLocalFile?(): Promise<string[] | null>;
   getPathForDroppedFile?(file: File): string;
   ingestClipboardImage?(): Promise<string | null>;
   readLocalImagePreviewDataUrl?(filePath: string): Promise<string | null>;

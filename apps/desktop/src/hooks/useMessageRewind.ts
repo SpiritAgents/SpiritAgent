@@ -174,11 +174,10 @@ export function useMessageRewind({
   );
 
   const pickRewindLocalFileFromPalette = useCallback(() => {
-    void runtime.pickLocalFile().then((filePath) => {
-      if (!filePath) {
-        return;
+    void runtime.pickLocalFile().then(async (filePaths) => {
+      for (const filePath of filePaths ?? []) {
+        await routeRewindLocalFilePath(filePath);
       }
-      void routeRewindLocalFilePath(filePath);
     });
   }, [routeRewindLocalFilePath, runtime]);
 

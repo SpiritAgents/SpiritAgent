@@ -1051,6 +1051,7 @@
     "workLocationLocal": "Local",
     "workLocationWorktree": "Worktree",
     "removeAttachment": "Supprimer {{name}}",
+    "attach": "Joindre",
     "loopChipLabel": "Boucle",
     "planChipLabel": "Plan",
     "askChipLabel": "Demander",

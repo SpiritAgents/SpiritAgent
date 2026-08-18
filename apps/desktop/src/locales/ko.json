@@ -1051,6 +1051,7 @@
     "workLocationLocal": "로컬",
     "workLocationWorktree": "워크트리",
     "removeAttachment": "{{name}} 제거",
+    "attach": "첨부",
     "loopChipLabel": "루프",
     "planChipLabel": "계획",
     "askChipLabel": "질문하기",

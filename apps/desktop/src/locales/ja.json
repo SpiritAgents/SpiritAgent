@@ -1051,6 +1051,7 @@
     "workLocationLocal": "ローカル",
     "workLocationWorktree": "ワークツリー",
     "removeAttachment": "{{name}}を削除",
+    "attach": "添付",
     "loopChipLabel": "ループ",
     "planChipLabel": "計画",
     "askChipLabel": "質問する",

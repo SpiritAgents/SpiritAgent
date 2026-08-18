@@ -1051,6 +1051,7 @@
     "workLocationLocal": "本機",
     "workLocationWorktree": "Worktree",
     "removeAttachment": "移除 {{name}}",
+    "attach": "附加",
     "loopChipLabel": "迴圈",
     "planChipLabel": "規劃",
     "askChipLabel": "提問",
