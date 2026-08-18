@@ -16,10 +16,10 @@ import type {
 
 import { spiritAgentDataDir } from "./storage.js";
 
-/** 模型目录缓存 TTL（24h）。 */
+/** Model catalog cache TTL (24h). */
 export const MODEL_CATALOG_CACHE_TTL_MS = 24 * 60 * 60 * 1000;
 
-/** Hugging Face catalog 波动较大，使用更短 TTL。 */
+/** The Hugging Face catalog fluctuates a lot, so it uses a shorter TTL. */
 export const HUGGING_FACE_MODEL_CATALOG_CACHE_TTL_MS = 15 * 60 * 1000;
 
 const PROVIDER_MODEL_CATALOG_CACHE_TTL_MS: Partial<Record<DesktopModelProvider, number>> = {
@@ -33,7 +33,7 @@ function modelCatalogCacheTtlMs(provider?: DesktopModelProvider): number {
   return MODEL_CATALOG_CACHE_TTL_MS;
 }
 
-/** 与 `writeModelCatalogCache` 写入的 `apiKeyFingerprint` 一致，供调用方比对。 */
+/** Matches the `apiKeyFingerprint` written by `writeModelCatalogCache`, for callers to compare against. */
 export function modelCatalogApiKeyFingerprint(apiKey: string): string {
   return createHash("sha256").update(apiKey.trim(), "utf8").digest("hex").slice(0, 24);
 }
@@ -72,7 +72,7 @@ export interface ModelCatalogCacheEntry {
   fetchedAtUnixMs: number;
   modelIds: string[];
   modelCatalog?: PreviewModelCatalogEntry[];
-  /** 写入时 API Key 的指纹；缺省为旧版缓存条目。 */
+  /** Fingerprint of the API Key at write time; absent for legacy cache entries. */
   apiKeyFingerprint?: string;
 }
 
@@ -131,7 +131,7 @@ function parseCacheEntry(raw: string): ModelCatalogCacheEntry | undefined {
   return entry;
 }
 
-/** TokenHub 旧缓存仅含 modelIds、缺 catalog displayName 时需重拉。 */
+/** Legacy TokenHub caches that only contain modelIds and lack the catalog displayName must be re-fetched. */
 function isTencentTokenHubCatalogCacheStale(entry: ModelCatalogCacheEntry): boolean {
   if (entry.provider !== "tencent-tokenhub") {
     return false;
@@ -141,7 +141,7 @@ function isTencentTokenHubCatalogCacheStale(entry: ModelCatalogCacheEntry): bool
   );
 }
 
-/** Meituan LongCat 旧缓存缺 supportsThinkingSwitch 时需重拉详情。 */
+/** Legacy Meituan LongCat caches missing supportsThinkingSwitch must have their details re-fetched. */
 function isMeituanThinkingCatalogCacheStale(entry: ModelCatalogCacheEntry): boolean {
   if (entry.provider !== "meituan" || !entry.modelCatalog?.length) {
     return false;
@@ -153,7 +153,7 @@ function isMeituanThinkingCatalogCacheStale(entry: ModelCatalogCacheEntry): bool
   return longCat.supportsThinkingSwitch !== true;
 }
 
-/** Gateway/OpenRouter 圆环依赖 contextLength；旧版写入漏字段时视为未命中以触发重拉。 */
+/** The Gateway/OpenRouter ring chart depends on contextLength; treat legacy entries missing the field as a miss to trigger a re-fetch. */
 function isContextUsageCatalogCacheStale(entry: ModelCatalogCacheEntry): boolean {
   if (entry.provider !== "vercel-ai-gateway" && entry.provider !== "openrouter") {
     return false;
@@ -167,7 +167,7 @@ function isContextUsageCatalogCacheStale(entry: ModelCatalogCacheEntry): boolean
 }
 
 /**
- * @param apiKey 若传入，则仅当缓存条目的 `apiKeyFingerprint` 与其一致时才命中（旧条目无指纹视为未命中）。
+ * @param apiKey If provided, a cache entry only hits when its `apiKeyFingerprint` matches (legacy entries without a fingerprint count as misses).
  */
 export async function readModelCatalogCache(
   apiBase: string,
@@ -194,7 +194,7 @@ export async function readModelCatalogCache(
   }
 }
 
-/** 同步读取（仅宿主线程用于快照拼装）。 */
+/** Synchronous read (only used by the host thread for snapshot assembly). */
 export function readModelCatalogCacheSync(
   apiBase: string,
   provider?: DesktopModelProvider,

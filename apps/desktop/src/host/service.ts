@@ -601,7 +601,7 @@ class DesktopHostService {
     }
   >();
   private serialized = Promise.resolve();
-  /** busy 会话的回合推进由主进程泵驱动，不依赖 renderer poll。 */
+  /** Turn advancement for busy sessions is driven by the main-process pump, not the renderer poll. */
   private readonly sessionPump = new SessionPump({
     hasPumpWork: () => this.hasSessionPumpWork(),
     runTick: () => this.runSessionPumpTick(),
@@ -648,7 +648,7 @@ class DesktopHostService {
     }
   >();
   private lastToolSnapshotLogSignature: string | undefined;
-  /** buildSnapshot 高频调用；MCP servers / hooks 列表按 workspace+binding 键缓存，配置增删命令处显式失效。 */
+  /** buildSnapshot is called at high frequency; the MCP servers / hooks lists are cached by workspace+binding key and explicitly invalidated where config add/remove commands run. */
   private mcpServersListCache:
     | { key: string; items: ReturnType<typeof listDesktopMcpServersFromDisk> }
     | undefined;
@@ -1245,7 +1245,7 @@ class DesktopHostService {
     };
   }
 
-  /** 传 bundle 时上下文作用于该 bundle（后台队列 drain），否则默认前台 active。 */
+  /** When a bundle is passed, the context applies to that bundle (background queue drain); otherwise it defaults to the foreground active one. */
   private conversationContinuationContext(bundle?: SessionBundle): ConversationContinuationContext {
     return {
       activeBundle: () => bundle ?? this.activeBundle(),
@@ -1271,7 +1271,7 @@ class DesktopHostService {
     };
   }
 
-  /** 传 bundle 时 rewind 记录作用于该 bundle（后台队列 drain），否则默认前台 active。 */
+  /** When a bundle is passed, the rewind record applies to that bundle (background queue drain); otherwise it defaults to the foreground active one. */
   private rewindHostContext(bundle?: SessionBundle): RewindHostContext {
     const target = () => bundle ?? this.activeBundle();
     return {
@@ -1494,7 +1494,7 @@ class DesktopHostService {
           }
         }, "model-catalog-startup-refresh-apply");
       } catch {
-        // best-effort：启动时目录刷新失败不阻断 Desktop
+        // best-effort: a catalog refresh failure at startup must not block Desktop
       } finally {
         this.modelCatalogStartupRefreshInFlight = null;
       }
@@ -2121,7 +2121,7 @@ class DesktopHostService {
       try {
         attachments.push(await localFileAttachmentFromPath(localFilePath));
       } catch {
-        // 与 @ 文件引用保持一致：不存在、不可读或不支持的文件静默忽略。
+        // Consistent with @ file references: silently ignore files that do not exist, are unreadable, or are unsupported.
       }
     }
     return attachments;
@@ -2142,7 +2142,7 @@ class DesktopHostService {
           await workspaceFileReferenceAttachmentFromPath(state.workspaceRoot, referencePath),
         );
       } catch {
-        // 仅 composer 显式插入的 workspaceFile chip 会进入此路径；解析失败静默忽略。
+        // Only workspaceFile chips explicitly inserted by the composer reach this path; silently ignore parse failures.
       }
     }
     return attachments;
@@ -2208,7 +2208,7 @@ class DesktopHostService {
         const skill = this.requireEnabledSkillEntry(skillName);
         turnSkills.push(await buildActiveSkillPayload(skill));
       } catch {
-        // 未启用或不存在的 skill chip 静默忽略。
+        // Silently ignore skill chips that are not enabled or do not exist.
       }
     }
     return turnSkills;
@@ -2841,7 +2841,7 @@ class DesktopHostService {
     if (!inferencePreferenceOnly) {
       await this.syncPlanStateForBundle(bundle);
     }
-    // 保留 bundle.currentTurnSkills：斜杠激活的 turn skill 须在 startUserTurnStreaming 时注入用户消息 meta
+    // Preserve bundle.currentTurnSkills: slash-activated turn skills must be injected into the user message meta at startUserTurnStreaming
     const effectiveActiveModel = resolveEffectivePaneActiveModel(bundle, state);
     if (inferencePreferenceOnly && bundle.runtime?.isBusy()) {
       bundle.deferredRuntimeRefreshWhileBusy = true;
@@ -3262,7 +3262,7 @@ class DesktopHostService {
     this.sessionTitleGenerationInFlight.delete(filePath);
   }
 
-  /** 会话删除后释放标题生成状态；在途生成时保留递增后的 epoch 条目使其完成后失效。 */
+  /** Release title-generation state after session deletion; keep the incremented epoch entry during in-flight generation so its completion is discarded. */
   private clearSessionTitleGenerationForSession(sessionPath: string): void {
     const filePath = path.resolve(sessionPath);
     if (this.sessionTitleGenerationInFlight.has(filePath)) {
@@ -3599,7 +3599,7 @@ class DesktopHostService {
     return this.hooksListCache.items;
   }
 
-  /** MCP / hooks 配置文件被命令写入后调用；workspace 切换靠键变化自然失效。 */
+  /** Called after a command writes the MCP / hooks config file; workspace switches invalidate naturally via key change. */
   private invalidateConfigListCaches(): void {
     this.mcpServersListCache = undefined;
     this.hooksListCache = undefined;
@@ -3787,7 +3787,7 @@ class DesktopHostService {
           : modelRefKey(resolveEffectivePaneActiveModel(bundle, this.requireState())),
       ].join("\0");
       const cached = this.paneSessionSliceCache.get(resolved);
-      // 流式回合中 messageTimeline 内容会变但 revision/msgCount 签名常不变；忙碌时禁用缓存（19a224c6 回归）。
+      // During a streaming turn the messageTimeline content changes while the revision/msgCount signature often stays the same; disable the cache while busy (19a224c6 regression).
       if (!isSessionBundleBusy(bundle) && cached?.signature === sliceSignature) {
         paneSessions[resolved] = cached.slice;
         continue;
@@ -4434,7 +4434,7 @@ class DesktopHostService {
       return;
     }
     await this.persistSessionBundle(target, {
-      // syncActiveRuntimePointer 维持 this.runtime ≡ active.runtime；显式 bundle 时取其自身 runtime
+      // syncActiveRuntimePointer keeps this.runtime ≡ active.runtime; for an explicit bundle use its own runtime
       fromRuntime: bundle ? bundle.runtime : this.runtime,
       bumpListSortAt: true,
     });
@@ -4515,7 +4515,7 @@ class DesktopHostService {
   }
 
   /**
-   * @param full `false`：仅清思考插入锚点（新用户轮次，避免误插旧工具链）。`true`：另清 finalize 去重与 apply 批次计数（重置会话 / 打开存档）。
+   * @param full `false`: only clear the thinking insertion anchor (new user turn, to avoid inserting into an old tool chain). `true`: also clear finalize dedupe and apply batch counters (session reset / opening an archive).
    */
   private resetStreamingPlacementState(
     full: boolean,
@@ -4542,8 +4542,8 @@ class DesktopHostService {
       return await work();
     } finally {
       release?.();
-      // 唯一 choke point：任何使会话变 busy 的命令（发消息、审批恢复、队列、automation…）
-      // 都经 runSerialized 收口，此处确保泵启动。
+      // Sole choke point: every command that makes a session busy (sending a message, approval resume, queue, automation...)
+      // funnels through runSerialized, so this is where the pump is ensured to start.
       this.sessionPump.ensureRunning();
     }
   }
@@ -4563,19 +4563,19 @@ class DesktopHostService {
   private async runSessionPumpTick(): Promise<void> {
     await pumpSessionsCommand(this.sessionTurnContext());
     if (this.hasSessionPumpWork()) {
-      // busy 但事件驱动的推送可能长时间不来（纯网络等待）；心跳保证 spinner 等宿主态动画刷新。
+      // Busy but event-driven pushes may not arrive for a long time (pure network wait); the heartbeat keeps host-state animations like the spinner refreshing.
       if (Date.now() - this.lastLiveSnapshotEmitAtMs >= LIVE_SNAPSHOT_BUSY_HEARTBEAT_MS) {
         this.requestThrottledLiveSnapshotEmit();
       }
       this.maybeNotifySessionListDuringBackgroundActivity();
       return;
     }
-    // busy → idle：推送终态快照并刷新会话列表（替代原 renderer poll 循环退出时的 listSessions）。
+    // busy → idle: push the final snapshot and refresh the session list (replacing the listSessions the renderer poll loop used to run on exit).
     this.requestThrottledLiveSnapshotEmit();
     this.notifySessionListUpdated();
   }
 
-  /** 前台空闲、其它 bundle busy 时，节流刷新侧边栏 isBusy 状态。 */
+  /** When the foreground is idle and other bundles are busy, throttled-refresh the sidebar isBusy state. */
   private maybeNotifySessionListDuringBackgroundActivity(): void {
     const activeId = this.sessionRegistry.activeSessionId();
     let backgroundBusy = false;
@@ -4596,7 +4596,7 @@ class DesktopHostService {
     this.notifySessionListUpdated();
   }
 
-  /** 流式期间 live snapshot 的唯一推送出口：leading+trailing 节流。 */
+  /** Sole push outlet for live snapshots during streaming: leading+trailing throttling. */
   private requestThrottledLiveSnapshotEmit(): void {
     if (this.liveSnapshotEmitTimer !== undefined) {
       return;

@@ -1,4 +1,4 @@
-/** 当前 Desktop Electron 宿主平台；Web 或未注入 preload 时为 `undefined`。 */
+/** Current Desktop Electron host platform; `undefined` on Web or when preload was not injected. */
 export function desktopShellPlatform(): NodeJS.Platform | undefined {
   return typeof window !== "undefined" ? window.spiritDesktop?.platform : undefined;
 }
@@ -9,7 +9,7 @@ export function isNativeTranslucencyPlatform(
   return platform === "win32" || platform === "darwin";
 }
 
-/** Windows Mica / macOS Vibrancy 等原生窗级半透明材质是否可用。 */
+/** Whether native window-level translucent materials such as Windows Mica / macOS Vibrancy are available. */
 export function isNativeTranslucencySupported(): boolean {
   return isNativeTranslucencyPlatform(desktopShellPlatform());
 }
@@ -24,7 +24,7 @@ export function isElectronChrome(): boolean {
   return typeof navigator !== "undefined" && /\bElectron\//.test(navigator.userAgent);
 }
 
-/** 与 Electron `readTranslucencyFromDisk` 对齐；首屏 snapshot 未就绪时用于避免误开 translucency 透明层。 */
+/** Aligned with Electron's `readTranslucencyFromDisk`; used to avoid wrongly enabling the translucency transparent layer before the first-paint snapshot is ready. */
 export function readStoredTranslucency(): boolean {
   if (!isNativeTranslucencySupported()) {
     return false;
@@ -46,7 +46,7 @@ export function resolveUseTranslucency(translucency: boolean | undefined): boole
   return translucency !== false;
 }
 
-/** 首屏前写入 Desktop 原生壳 class，避免启动层在 snapshot 就绪前误用 translucency 透明样式。 */
+/** Writes the Desktop native shell classes before first paint, so the launch layer never uses translucency transparent styles before the snapshot is ready. */
 export function applyDesktopNativeChromeToDocument(): void {
   if (typeof document === "undefined") {
     return;
@@ -56,13 +56,13 @@ export function applyDesktopNativeChromeToDocument(): void {
   const translucencyOn = native && readStoredTranslucency();
   root.classList.toggle("spirit-desktop-native", native);
   root.classList.toggle("spirit-desktop-translucency", translucencyOn);
-  // 与 LaunchSplash 同步：首帧即标记启动层（含自绘顶栏隐藏），避免 useEffect 前露出 Menubar。
+  // Synced with LaunchSplash: mark the launch layer (including hiding the custom title bar) on the very first frame, so the Menubar is never exposed before useEffect runs.
   root.classList.toggle("spirit-launch-splash-active", native);
 }
 
 export type ShellOverlayPhase = "running" | "leaving" | "gone";
 
-/** 同步全屏 overlay（LaunchSplash / OOBE）相位到 html class（由 App 依两 overlay 相位单点调用，组件不得自行调用，避免互相清理踩踏）。 */
+/** Syncs the fullscreen overlay (LaunchSplash / OOBE) phase to the html class (called from a single point in App based on both overlay phases; components must not call it themselves, to avoid cleanup races). */
 export function syncLaunchSplashChromeToDocument(phase: ShellOverlayPhase): void {
   if (typeof document === "undefined") {
     return;
@@ -76,15 +76,15 @@ export function syncLaunchSplashChromeToDocument(phase: ShellOverlayPhase): void
   root.classList.toggle("spirit-launch-splash-exiting", phase === "leaving");
 }
 
-/** 当前宿主是否为 macOS（Electron preload 注入的平台值）。 */
+/** Whether the current host is macOS (platform value injected by the Electron preload). */
 export function isMacDesktopPlatform(): boolean {
   return desktopShellPlatform() === "darwin";
 }
 
 /**
- * 根据当前平台格式化快捷键标签。
- * - macOS: `mod` → `⌘`，拼接无分隔符（如 `⌘N`）
- * - Windows / Linux: `mod` → `Ctrl`，用 `+` 拼接（如 `Ctrl+N`）
+ * Formats a shortcut label for the current platform.
+ * - macOS: `mod` → `⌘`, joined without a separator (e.g. `⌘N`)
+ * - Windows / Linux: `mod` → `Ctrl`, joined with `+` (e.g. `Ctrl+N`)
  */
 export function shortcutLabel(key: string): string {
   const letter = key.toUpperCase();
@@ -168,7 +168,7 @@ export function isModAltShortcutPressed(event: KeyboardModifierState): boolean {
   return isModShortcutPressed(event);
 }
 
-/** Windows Electron：使用 `titleBarOverlay` + 自绘顶栏；macOS 仍走系统菜单栏 */
+/** Windows Electron: uses `titleBarOverlay` + a custom-drawn title bar; macOS keeps the system menu bar */
 export function isWin32ElectronShell(): boolean {
   if (!isElectronChrome() || typeof navigator === "undefined") {
     return false;
@@ -176,7 +176,7 @@ export function isWin32ElectronShell(): boolean {
   return /Windows/i.test(navigator.userAgent);
 }
 
-/** macOS Electron：`titleBarStyle: hiddenInset`，需预留红绿灯安全区 */
+/** macOS Electron: `titleBarStyle: hiddenInset`, so a traffic-light safe area must be reserved */
 export function isDarwinElectronShell(): boolean {
   if (!isElectronChrome()) {
     return false;

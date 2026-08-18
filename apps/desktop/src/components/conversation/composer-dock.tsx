@@ -127,12 +127,12 @@ export type ComposerDockProps = {
   models: DesktopSnapshot["config"]["models"];
   useTranslucency: boolean;
   onOpenGitTab: () => void;
-  /** 用户已上滚离开底部时显示「回到底部」。 */
+  /** Shows "back to bottom" when the user has scrolled up away from the bottom. */
   showScrollToBottom?: boolean;
   onScrollToBottom?: () => void;
-  /** 会话滚动视口（用于把 dock 形状换算到 viewport 坐标做形状 mask） */
+  /** Conversation scroll viewport (used to convert the dock shape into viewport coordinates for the shape mask) */
   getScrollViewport?: () => HTMLElement | null;
-  /** translucency：按输入框/Changes/TODO 轮廓裁切消息；顶圆角空隙不裁 */
+  /** translucency: clips messages to the input/Changes/TODO outline; the top rounded-corner gap is not clipped */
   onScrollOccludeMaskStyleChange?: (style: CSSProperties | undefined) => void;
 };
 
@@ -221,7 +221,7 @@ export const ComposerDock = forwardRef<HTMLDivElement, ComposerDockProps>(functi
   const { t } = useTranslation();
   const composerRootRef = useRef<HTMLDivElement | null>(null);
   const dockElementRef = useRef<HTMLDivElement | null>(null);
-  /** 含 Changes/Todo + 输入框的列 */
+  /** Column containing Changes/Todo + the input box */
   const composerChromeRef = useRef<HTMLDivElement | null>(null);
   const setDockRef = useCallback(
     (node: HTMLDivElement | null) => {
@@ -255,7 +255,8 @@ export const ComposerDock = forwardRef<HTMLDivElement, ComposerDockProps>(functi
       const viewportRect = viewport.getBoundingClientRect();
       const shapes: ConversationScrollOccludeShape[] = [];
 
-      // 审批 / 提问卡在 chrome 外、仍叠在滚动区上；translucency tint 下需一并裁掉消息透出
+      // The approval / question cards sit outside the chrome but still overlap the scroll area;
+      // under the translucency tint, messages showing through them must be clipped as well
       for (const selector of [
         '[data-spirit-surface="pending-approval-card"]',
         '[data-spirit-surface="pending-questions-card"]',
@@ -327,7 +328,8 @@ export const ComposerDock = forwardRef<HTMLDivElement, ComposerDockProps>(functi
         shapes.push(
           conversationScrollOccludeShapeFromRects(viewportRect, surfaceRect, radius, radius),
         );
-        // 底带从「底圆角起点」起：封底圆角外侧空隙 + 审批栏；顶圆角空隙不进底带
+        // The bottom band starts at the "bottom corner-radius start": the gap outside the bottom
+        // rounded corner + the approval bar; the top rounded-corner gap is not part of the band
         bottomSlabFromY = surfaceRect.bottom - viewportRect.top - radius;
       }
 
@@ -582,9 +584,12 @@ export const ComposerDock = forwardRef<HTMLDivElement, ComposerDockProps>(functi
           <div className="relative" ref={composerRootRef}>
             <div className="relative z-10 flex flex-col" ref={composerChromeRef}>
               {/*
-                Changes 行：按钮与 Changes 同排进文档流（行高由 Changes 撑住）。
-                无 Changes 时按钮绝对叠在 chrome 上方，不计入 dock 高度 → 不参与滚动床补偿
-                （随 followingTail 显隐时不会改 padding，避免滑到底「卡一下」）。
+                Changes row: the button shares the row with Changes in document flow (row height
+                is held up by Changes).
+                Without Changes, the button is absolutely overlaid above the chrome and does not
+                count toward the dock height → it does not participate in scroll-bed compensation
+                (toggling with followingTail won't change padding, avoiding a "hitch" when sliding
+                to the bottom).
               */}
               {!isEmptySession && showChangesCard && changesLineDelta ? (
                 <div

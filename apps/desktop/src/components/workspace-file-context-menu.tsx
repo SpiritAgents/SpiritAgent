@@ -50,7 +50,7 @@ export type WorkspaceFileContextMenuContentProps = {
   onCloseAutoFocus?: (event: Event) => void;
 };
 
-/** 面板级单一 ContextMenu 的 Content（对齐 session-sidebar WorkspaceListNav 模式）。 */
+/** Content of the panel-level single ContextMenu (aligned with the session-sidebar WorkspaceListNav pattern). */
 export function WorkspaceFileContextMenuContent({
   target,
   targetRef,

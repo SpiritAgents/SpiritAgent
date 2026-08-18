@@ -1,4 +1,4 @@
-/* generate_image 等单钮浮动样式；blur 须写在按钮自身（祖先 opacity 会破坏 backdrop-filter） */
+/* Floating style for single buttons like generate_image; blur must be set on the button itself (ancestor opacity breaks backdrop-filter) */
 .spirit-floating-action-button {
   display: inline-flex;
   align-items: center;

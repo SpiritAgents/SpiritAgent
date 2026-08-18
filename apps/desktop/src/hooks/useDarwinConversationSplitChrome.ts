@@ -4,7 +4,7 @@ import { isDarwinElectronShell } from "@/lib/desktop-shell";
 
 const DARWIN_CONVERSATION_SPLIT_CLASS = "spirit-desktop-darwin-conversation-split";
 
-/** macOS Split 后顶栏用于 pane 拖拽，禁用窗口级标题栏拖拽以免与 HTML5 drag 冲突。 */
+/** After macOS Split, top bars are used for pane dragging; disable window-level title bar dragging to avoid conflicts with HTML5 drag. */
 export function useDarwinConversationSplitChrome(paneCount: number): void {
   useEffect(() => {
     if (!isDarwinElectronShell() || typeof document === "undefined") {

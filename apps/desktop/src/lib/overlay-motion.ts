@@ -10,7 +10,7 @@ const SIDE_SLIDE_IN =
 const OPEN_CLOSE =
   "duration-100 data-open:animate-in data-open:fade-in-0 data-open:zoom-in-95 data-closed:animate-out data-closed:fade-out-0 data-closed:zoom-out-95";
 
-/** Select Content 仍用 data-state，与 Dialog/Dropdown 的 data-open 不同 */
+/** Select Content still uses data-state, unlike the data-open of Dialog/Dropdown */
 const SELECT_OPEN_CLOSE =
   "duration-100 data-[state=open]:animate-in data-[state=open]:fade-in-0 data-[state=open]:zoom-in-95 data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=closed]:zoom-out-95";
 
@@ -46,10 +46,10 @@ export function radixAnchoredOverlayMotion(kind: RadixAnchoredOverlayKind): stri
   return MOTION_BY_KIND[kind];
 }
 
-/** 与 Dialog / ContextMenu 等 Radix 浮层 `duration-100` 退场动画一致。 */
+/** Matches the `duration-100` exit animation of Radix overlays such as Dialog / ContextMenu. */
 export const RADIX_OVERLAY_CLOSE_MS = 100;
 
-/** exit 动画结束后再执行；避免 onOpenChange(false) 同期清 state 导致退场末帧闪 UI。 */
+/** Runs after the exit animation finishes; avoids the last exit frame flashing UI when onOpenChange(false) clears state at the same time. */
 export function runAfterRadixOverlayClose(action: () => void): void {
   window.setTimeout(action, RADIX_OVERLAY_CLOSE_MS);
 }

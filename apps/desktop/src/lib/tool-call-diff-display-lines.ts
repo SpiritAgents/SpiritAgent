@@ -1,6 +1,6 @@
 import type { DiffDisplayLine } from "@/lib/diff-display-lines";
 
-/** 工具卡 diff 展示行：非 followTail 同步 lines；followTail 在空→有内容时同帧显示，其余走 debounced。 */
+/** Tool card diff display lines: non-followTail uses lines synchronously; followTail shows in the same frame when going empty → non-empty, otherwise uses debounced. */
 export function resolveToolCallDisplayLines(
   lines: DiffDisplayLine[],
   debouncedLines: DiffDisplayLine[],

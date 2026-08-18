@@ -13,7 +13,7 @@ const GIT_COMMIT_ICON_PATH =
 
 export function formatGitCommitChipLabel(subject: string): string {
   const trimmed = subject.trim();
-  // 按码点截断，避免把 emoji 等代理对从中间切开产生乱码。
+  // Truncate by code point to avoid splitting surrogate pairs (emoji, etc.) and producing mojibake.
   const points = [...trimmed];
   if (points.length <= 48) {
     return trimmed;

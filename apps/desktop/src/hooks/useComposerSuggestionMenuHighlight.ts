@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 
 /**
- * 键盘默认选中仅服务非鼠标用户；指针进入菜单后与之互斥，离开菜单后全部高亮消失（不恢复键盘项）。
+ * The keyboard default selection only serves non-mouse users; once the pointer enters the menu it is mutually exclusive with it, and after leaving the menu all highlight disappears (the keyboard item is not restored).
  */
 export function useComposerSuggestionMenuHighlight(selectedIndex: number, itemCount: number) {
   const [pointerHoveredIndex, setPointerHoveredIndex] = useState<number | null>(null);

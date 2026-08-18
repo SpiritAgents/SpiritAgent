@@ -1248,6 +1248,9 @@
     "autoWorktreeNameFailedInvalidBranchName": "Авто-генерация имени Worktree не удалась: неверный формат branchName ({{branchName}}).",
     "autoWorktreeNameFailedNotObject": "Авто-генерация имени Worktree не удалась: модель вернула JSON, не являющийся объектом."
   },
+  "rules": {
+    "templatePlaceholder": "Добавьте сюда короткие, чёткие и выполнимые ограничения для чтения агентами."
+  },
   "notification": {
     "defaultSessionName": "Сессия",
     "taskComplete": {

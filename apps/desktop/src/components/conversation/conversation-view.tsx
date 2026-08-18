@@ -191,7 +191,7 @@ export type ConversationViewProps = {
   rewindDraft: MessageRewindDraftState | null;
   onRewindDraftClear: () => void;
   conversationScrollBedPaddingPx: number;
-  /** translucency：按 dock 轮廓的视口 mask（顶圆角空隙不裁）；ScrollArea 仍全高 */
+  /** translucency: viewport mask following the dock outline (the top rounded-corner gap is not clipped); ScrollArea stays full height */
   conversationScrollOccludeMaskStyle?: CSSProperties;
   list: ConversationListSectionProps;
   composerDock: ComposerDockSectionProps;
@@ -311,9 +311,11 @@ export function ConversationView({
   );
   const conversationMessagesVisible =
     (!isEmptySession || subagentViewActive) && !hideStaleConversationMessages;
-  // translucency：ScrollArea 仍全高；形状 mask 裁输入框/Changes/TODO 轮廓（顶圆角空隙保留）
-  // Rewind 模式下禁用 mask：mask-image 会让 viewport 形成新的 stacking context，
-  // 导致 viewport 内部的 rewind composer（z-40）无法跨出来与 fixed 的 rewind 遮罩（z-30）竞争。
+  // translucency: ScrollArea stays full height; the shape mask clips to the input/Changes/TODO
+  // outline (the top rounded-corner gap is preserved).
+  // In Rewind mode the mask is disabled: mask-image would make the viewport form a new stacking
+  // context, so the rewind composer inside the viewport (z-40) could not escape to compete with
+  // the fixed rewind overlay (z-30).
   const conversationScrollViewportStyle =
     useTranslucency && conversationMessagesVisible && !rewindDraft
       ? conversationScrollOccludeMaskStyle
@@ -597,7 +599,7 @@ export function ConversationView({
               scrollHideDelay={450}
               viewportStyle={conversationScrollViewportStyle}
             >
-              {/* min-h-full：短内容仍铺满视口；pb ≥ dock 实测高度 + 留白，审批卡弹出时同步增高 */}
+              {/* min-h-full: short content still fills the viewport; pb ≥ measured dock height + breathing room, grows in sync when the approval card pops up */}
               <div
                 ref={conversationScrollBodyRef}
                 data-spirit-surface="conversation-scroll-body"
@@ -606,7 +608,8 @@ export function ConversationView({
                   ...((!isEmptySession || subagentViewActive) && !hideStaleConversationMessages
                     ? { paddingBottom: conversationScrollBedPaddingPx }
                     : undefined),
-                  // 定底 settled 前隐藏列表，避免「估高定底 → 实测修正」两次可见位移
+                  // Hide the list until bottom-anchoring settles, avoiding two visible shifts
+                  // ("estimated-height anchoring → measured correction")
                   ...(listSettling ? { visibility: "hidden" as const } : undefined),
                 }}
               >

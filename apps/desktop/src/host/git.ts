@@ -232,8 +232,8 @@ export async function commitWorkspaceChanges(
   workspaceRoot: string,
   message: string,
 ): Promise<void> {
-  // 单个 -m 传完整 message：逐行 -m 会让 git 在每段之间插空行，
-  // 破坏多行 body（如 subject + 列表 body）的原始格式。
+  // Pass the full message in a single -m: per-line -m makes git insert blank lines between
+  // segments, breaking the original formatting of multi-line bodies (e.g. subject + list body).
   const normalized = message.replace(/\r\n/g, "\n").trim();
   if (!normalized) {
     throw new Error(i18n.t("error.commitMessageRequired"));

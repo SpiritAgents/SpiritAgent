@@ -104,11 +104,13 @@ function AnimatedCollapseContent({
   const allowAnimationRef = useRef(!open);
   const hasOpenedRef = useRef(false);
   const prevOpenRef = useRef(open);
-  // 展开动画结束后移除动画类、高度交还布局（auto）。fill-mode:forwards 会把高度
-  // 永久钉在 var(--…-content-height) 上，此后嵌套折叠卡动画只能靠 RO 每帧回写
-  // 变量追赶，滞后且受 RO 循环上限限制，实测行高呈锯齿（17/85/11/47px），在
-  // 跟底的会话列表中即「过程卡片内展开收起上下震」。settled 后高度由内容驱动，
-  // 嵌套动画经纯布局同帧传导。
+  // After the expand animation ends, remove the animation class and hand the height back to layout
+  // (auto). fill-mode:forwards would pin the height permanently to var(--…-content-height); from
+  // then on, nested collapsing-card animations could only chase the variable via RO writes every
+  // frame — lagging and subject to the RO loop limit, with measured row heights showing jagged steps
+  // (17/85/11/47px), i.e. "nested expand/collapse shakes vertically" in a tail-following
+  // conversation list. Once settled, height is content-driven and nested animations propagate in the
+  // same frame through pure layout.
   const [expandSettled, setExpandSettled] = useState(false);
   const mounted = useCollapsibleChildMount(open);
 

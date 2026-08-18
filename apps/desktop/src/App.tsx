@@ -66,7 +66,7 @@ import { cn } from "@/lib/utils";
 
 export default function App() {
   const { t, i18n } = useTranslation();
-  // 只订阅恒定引用的 setter：App 不因 theme 值变化重渲染（隐形 app-body 全量重渲染实测 40–55ms）
+  // Subscribe only to the constant-reference setter: App does not re-render on theme value changes (a full re-render of the invisible app-body measured 40–55ms)
   useThemeSetter();
   const { font, setFont } = useFont();
   const { clickablePointerCursor, setClickablePointerCursor } = useClickablePointerCursor();
@@ -75,12 +75,12 @@ export default function App() {
   useDesktopRuntimeErrorToast(runtime.runtimeError);
   useDesktopQuestionErrorToast(runtime.questionError);
   const snapshot = runtime.snapshot;
-  /** 与 Host API 的 `kind` 解耦：壳可能是 Electron，但仍通过 Vite 代理走 Web Host（侧栏会显示 Localhost Web Host）。translucency 与 `spirit-desktop-native` 仍应对 Electron 窗口生效。 */
+  /** Decoupled from the Host API `kind`: the shell may be Electron while still going through the Web Host via a Vite proxy (the sidebar would show Localhost Web Host). translucency and `spirit-desktop-native` should still apply to the Electron window. */
   const isElectronShell = isElectronChrome();
   const winElectronChrome = isWin32ElectronShell();
   const darwinElectronChrome = isDarwinElectronShell();
   const desktopTitleBarChrome = winElectronChrome || darwinElectronChrome;
-  // snapshot 未就绪时读磁盘，避免 settings 默认 translucency:true 在启动层误开透明/材质
+  // Read from disk while the snapshot is not ready, so the settings default translucency:true does not wrongly enable transparency/material during the launch overlay
   const useTranslucency = resolveUseTranslucency(
     snapshot != null ? runtime.settings.translucency : undefined,
   );
@@ -212,7 +212,7 @@ export default function App() {
   const [onboardingDismissed, setOnboardingDismissed] = useState(false);
   const [launchSplashPhase, setLaunchSplashPhase] = useState<ShellOverlayPhase>("gone");
   const [onboardingPhase, setOnboardingPhase] = useState<ShellOverlayPhase>("gone");
-  // snapshot 未就绪时 settings.onboardingCompleted 仍是默认 false，不可据此跳过 LaunchSplash / 挂 OOBE。
+  // While the snapshot is not ready, settings.onboardingCompleted is still the default false; it must not be used to skip LaunchSplash / mount OOBE.
   const onboardingVisible = resolveOnboardingVisible({
     snapshotReady: snapshot != null,
     onboardingCompleted: runtime.settings.onboardingCompleted,
@@ -223,10 +223,11 @@ export default function App() {
   const pairingGateBlocksLaunchSplash =
     runtime.webHostPairingRequired && runtime.hostKind === "web" && !snapshot;
   /**
-   * 子组件 onPhaseChange 在 layout effect 里才回写；父 state 初值为 gone。
-   * 若只认子 phase，首帧 sync 会清掉 index.html / main 已写入的 spirit-launch-splash-active，
-   * 而同布局阶段内 notifyLaunchSplashReady 可能已 show 窗口 → translucency 下透出 app-body。
-   * active/visible 为真且子尚未进入 leaving 时，视为 overlay 仍在（pending 当 running）。
+   * The child's onPhaseChange writes back only in a layout effect; the parent state initial value is gone.
+   * If we only trusted the child phase, the first-frame sync would clear the spirit-launch-splash-active
+   * already written by index.html / main, while within the same layout pass notifyLaunchSplashReady may
+   * have already shown the window → app-body would show through under translucency.
+   * When active/visible is true and the child has not entered leaving yet, treat the overlay as still up (pending counts as running).
    */
   const launchSplashOverlayUp =
     launchSplashPhase === "running" ||
@@ -237,18 +238,20 @@ export default function App() {
     onboardingPhase === "leaving" ||
     (onboardingVisible && onboardingPhase === "gone");
   /**
-   * 全屏 overlay（LaunchSplash / OOBE）挂载期间隐藏 app-body：视觉隐藏走 styles.css 的
-   * spirit-launch-splash-active opacity 规则（保持栅格化，退场时覆盖层整层淡出才能平滑衔接）；
-   * 此处只补 inert 阻隔焦点/指针/读屏——不用 visibility:hidden，它会抑制绘制，
-   * 把 app-body 首次栅格化拖进退场窗口，退场动画被吃成硬切。
+   * Hide app-body while a fullscreen overlay (LaunchSplash / OOBE) is mounted: visual hiding uses the
+   * spirit-launch-splash-active opacity rule in styles.css (keeps rasterization so the whole overlay layer
+   * can fade out smoothly on exit); here we only add inert to block focus/pointer/screen readers —
+   * not visibility:hidden, which suppresses painting, pushes app-body's first rasterization into the
+   * exit window, and turns the exit animation into a hard cut.
    */
   const shellUnderlayHidden =
     launchSplashActive || onboardingVisible || launchSplashOverlayUp || onboardingOverlayUp;
   /**
-   * 两个全屏 overlay 共享同一组 html class（styles.css 依此在 overlay 期间隐藏 app-body），
-   * 必须在此单点派生：若由各组件自行 sync，phase 为 "gone" 的一方挂载时会把仍在运行的
-   * 另一方的 class 清掉，app-body 在启动层期间漏出（Blur 下半透明 tint 会透出侧栏内容）。
-   * pending（子 phase 仍为 gone）映射为 running，避免清 class。
+   * The two fullscreen overlays share the same set of html classes (styles.css hides app-body during an overlay based on them),
+   * so they must be derived at this single point: if each component synced on its own, the one whose phase is "gone"
+   * would clear the still-running other's class on mount, leaking app-body during the launch overlay
+   * (with Blur, the translucent tint would reveal the sidebar content).
+   * pending (child phase still gone) maps to running to avoid clearing the class.
    */
   const shellOverlayPhase: ShellOverlayPhase = launchSplashOverlayUp
     ? launchSplashPhase === "leaving"
@@ -372,7 +375,7 @@ export default function App() {
                   <div
                     className={cn(
                       "h-px w-full shrink-0",
-                      // 非 Electron：壳顶部分隔线
+                      // Non-Electron: shell top separator line
                       useTranslucency
                         ? "bg-black/5 dark:bg-white/10"
                         : "bg-border/30 dark:bg-white/12",

@@ -27,7 +27,7 @@ const ScrollArea = React.forwardRef<
   React.ComponentRef<typeof Root>,
   React.ComponentPropsWithoutRef<typeof Root> & {
     scrollbars?: "vertical" | "horizontal" | "both";
-    /** 仅作用于 Viewport（滚动条为兄弟节点，不受 mask 影响） */
+    /** Applies only to the Viewport (the scrollbar is a sibling node and is unaffected by the mask) */
     viewportClassName?: string;
     viewportStyle?: React.CSSProperties;
   }
@@ -61,8 +61,10 @@ const ScrollArea = React.forwardRef<
         {...props}
       >
         <Viewport
-          // Radix 内层默认 display:table + min-width:100% 会按「内容固有宽度」撑开，flex 内 truncate/ellipsis 失效（radix-ui/primitives#926）。
-          // 用 !block + min-w-0 + 宽度约束覆盖表格格式化上下文，与官方 issue 中推荐一致。
+          // Radix's inner default display:table + min-width:100% expands to the "intrinsic content
+          // width", breaking truncate/ellipsis inside flex (radix-ui/primitives#926).
+          // Override the table formatting context with !block + min-w-0 + width constraints, as
+          // recommended in the official issue.
           className={cn(
             "h-full w-full min-h-0 min-w-0 rounded-[inherit] [display:block]",
             viewportChildClass,

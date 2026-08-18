@@ -40,7 +40,7 @@ export function pickRecentSessionsForJumpList(
 
 export function truncateJumpListTitle(title: string, maxLength = JUMP_LIST_TITLE_MAX): string {
   const trimmed = title.trim();
-  // 按码点截断，避免把 emoji 等代理对从中间切开产生乱码。
+  // Truncate by code point to avoid splitting emoji and other surrogate pairs in the middle.
   const points = [...trimmed];
   if (points.length <= maxLength) {
     return trimmed;

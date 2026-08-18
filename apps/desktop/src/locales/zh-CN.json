@@ -1245,6 +1245,9 @@
     "autoWorktreeNameFailedInvalidBranchName": "自动生成 Worktree 名称失败：branchName 格式无效（{{branchName}}）。",
     "autoWorktreeNameFailedNotObject": "自动生成 Worktree 名称失败：模型返回的 JSON 不是对象。"
   },
+  "rules": {
+    "templatePlaceholder": "在此补充短、硬、可执行的约束，供后续 agent 读取。"
+  },
   "notification": {
     "defaultSessionName": "会话",
     "taskComplete": {

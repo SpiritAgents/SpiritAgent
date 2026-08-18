@@ -71,7 +71,7 @@ export function createDesktopSubagentWorkspaceBootstrap(
         try {
           await removeWorkspaceGitWorktree(repoRoot, createdWorktreePath);
         } catch {
-          // bootstrap 失败时的 best-effort 回滚；残留 worktree 由用户设置页清理兜底。
+          // Best-effort rollback when bootstrap fails; any leftover worktree is covered by cleanup on the user settings page.
         }
       }
       const message = error instanceof Error ? error.message : String(error);

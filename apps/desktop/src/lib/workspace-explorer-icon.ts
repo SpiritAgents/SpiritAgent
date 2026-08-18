@@ -16,7 +16,7 @@ import {
 import { workspaceFileBasename } from "@/lib/file-picker-path";
 import type { WorkspaceExplorerEntryKind } from "@/types";
 
-/** 按扩展名/常见文件名选图标（按名称启发式，非主题引擎映射）。 */
+/** Picks an icon by extension / common file name (name-based heuristics, not a theme engine mapping). */
 export function workspaceExplorerIcon(name: string, kind: WorkspaceExplorerEntryKind): LucideIcon {
   if (kind === "dir") {
     return Folder;
@@ -96,7 +96,7 @@ export function workspaceExplorerIconForPath(
   return workspaceExplorerIcon(workspaceFileBasename(path), kind);
 }
 
-/** 文件工具选项卡有 tabTitle 时解析图标；无标题时返回 undefined。 */
+/** Resolves the icon when the files tool tab has a tabTitle; returns undefined when there is no title. */
 export function resolveWorkspaceFilesTabIcon(tabTitle: string | undefined): LucideIcon | undefined {
   const title = tabTitle?.trim();
   if (!title) {

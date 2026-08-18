@@ -44,8 +44,9 @@ export function VideoGenerationToolCard({
       };
     }
 
-    // 视频预览解析结果是稳定的协议 URL（非 blob），与图片 data URL 共用模块级
-    // LRU 缓存；虚拟化滚动反复重挂载时命中缓存即跳过 IPC
+    // The video preview resolves to a stable protocol URL (not a blob), so it shares the
+    // module-level LRU cache with image data URLs; repeated remounts from virtualized scrolling
+    // skip the IPC on a cache hit
     const cached = readCachedLocalFilePreviewDataUrl(previewSourcePath);
     if (cached) {
       setPreviewUrl(cached);

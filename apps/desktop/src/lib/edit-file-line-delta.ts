@@ -26,8 +26,10 @@ export function lineChangeCounts(oldText: string, newText: string): EditFileLine
 }
 
 /**
- * preview（流式参数）阶段每个增量批次都会重算一次 LCS；大编辑下 O(n·m) 会拖垮事件循环。
- * 超过该单元格数（old 行数 × new 行数）时 preview 跳过统计，工具完成事件再全量计算。
+ * During the preview (streaming arguments) phase every incremental batch recomputes the LCS;
+ * on large edits O(n·m) would stall the event loop.
+ * Beyond this cell count (old lines × new lines) preview skips the stats; the tool-completed
+ * event computes them in full.
  */
 const PREVIEW_MAX_LCS_CELLS = 40_000;
 
@@ -253,7 +255,7 @@ function extractDeleteFilePath(
 export type AttachEditFileLineDeltaSource = {
   request?: unknown;
   argumentsJson?: string;
-  /** 流式参数预览阶段：大编辑跳过 LCS，完成时再算。 */
+  /** Streaming-argument preview phase: large edits skip the LCS; it is computed on completion. */
   preview?: boolean;
   resolveDeleteFileLines?: (inputPath: string) => EditFileLineDelta | undefined;
   resolveDeleteFileBaseline?: (inputPath: string) => string | undefined;
@@ -409,7 +411,7 @@ export function attachEditFileLineDelta(
   };
 }
 
-/** delete_file 完成后文件已不存在，须保留执行前算好的行数。 */
+/** After delete_file completes the file no longer exists, so the line counts computed before execution must be preserved. */
 export function preserveDeleteFileLineDelta(
   toolName: string,
   attached: ToolBlockSnapshot,
@@ -421,7 +423,7 @@ export function preserveDeleteFileLineDelta(
   return { ...attached, editLineDelta: priorDelta };
 }
 
-/** delete_file 完成后须保留执行前冻结的全文 baseline。 */
+/** After delete_file completes, the full-text baseline frozen before execution must be preserved. */
 export function preserveDeleteFileBaseline(
   toolName: string,
   attached: ToolBlockSnapshot,

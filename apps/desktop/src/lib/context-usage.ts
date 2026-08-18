@@ -8,7 +8,7 @@ import type {
   DesktopTransportKind,
 } from "../types.js";
 
-/** 与 `apps/desktop/src/host/storage.ts` 中 `DEFAULT_API_BASE` 保持一致。 */
+/** Keep in sync with `DEFAULT_API_BASE` in `apps/desktop/src/host/storage.ts`. */
 const DEFAULT_API_BASE = "https://api.openai.com/v1";
 
 export interface ContextUsageModelProfile {

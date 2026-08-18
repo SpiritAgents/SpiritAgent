@@ -74,7 +74,7 @@ export interface SubmitUserTurnAfterInitializedOptions {
   explicitWorkspaceFiles?: PendingWorkspaceFile[];
   /** Reuse message id from a queued turn when draining the queue. */
   preallocatedMessageId?: number;
-  /** 目标 bundle；默认前台 active。排队消息 drain 时必须传队列所属 bundle，防止串会话。 */
+  /** Target bundle; defaults to the foreground active one. Queue drains must pass the queue's owning bundle to prevent cross-session leakage. */
   bundle?: SessionBundle;
 }
 
@@ -94,7 +94,7 @@ export interface SessionTurnOrchestratorContext {
   getActiveBundle(): SessionBundle | undefined;
   activeSessionId(): string | undefined;
   emitLiveSnapshotUpdate(): void;
-  /** 节流版 live snapshot 推送（流式变更唯一出口；宿主侧 33ms leading+trailing）。 */
+  /** Throttled live snapshot push (sole outlet for streaming changes; host-side 33ms leading+trailing). */
   requestLiveSnapshotEmit(): void;
   notifySessionListUpdated(): void;
   refreshRuntimeForBundle(bundle: SessionBundle): Promise<void>;
@@ -340,7 +340,7 @@ export async function drainQueuedUserTurnIfIdle(
       preallocatedMessageId: next.messageId,
       explicitWorkspaceFiles: explicitWorkspaceFilesFromQueuedItem(next),
       turnSkills: turnSkillsFromQueuedItem(next),
-      // 后台 bundle busy→idle 时也会 drain：必须提交回队列所属 bundle，而非前台 active
+      // Draining also happens when a background bundle goes busy→idle: must commit to the queue's owning bundle, not the foreground active one
       bundle,
     });
   } catch (error) {
@@ -350,7 +350,7 @@ export async function drainQueuedUserTurnIfIdle(
   }
 }
 
-/** 单次泵 tick 主体（调用方须已持有 runSerialized 锁）：推进所有 busy 会话并同步宿主状态。 */
+/** Body of a single pump tick (caller must already hold the runSerialized lock): advances all busy sessions and syncs host state. */
 async function runSessionsPumpTick(ctx: SessionTurnOrchestratorContext): Promise<void> {
   await ctx.ensureInitialized(undefined, { fastPath: true });
   const fullyTicked = new Set<SessionBundle>();
@@ -372,7 +372,7 @@ async function runSessionsPumpTick(ctx: SessionTurnOrchestratorContext): Promise
   ctx.startDreamCollectorIfNeeded();
 }
 
-/** SessionPump 每 tick 调用：与 pollCommand 同体，但不构建快照。 */
+/** Called by SessionPump every tick: same body as pollCommand, but does not build a snapshot. */
 export async function pumpSessionsCommand(ctx: SessionTurnOrchestratorContext): Promise<void> {
   return ctx.runSerialized(() => runSessionsPumpTick(ctx), "pump-tick");
 }
@@ -384,7 +384,7 @@ export async function pollCommand(ctx: SessionTurnOrchestratorContext): Promise<
   }, "poll");
 }
 
-/** busy 期间 tick 落盘的最小间隔；回合终态与进入阻塞时不受此限制。 */
+/** Minimum interval for tick persistence while busy; turn end states and entering a block are exempt. */
 export const TICK_SESSION_PERSIST_INTERVAL_MS = 1_000;
 
 function isRuntimeBlocked(bundle: SessionBundle): boolean {
@@ -441,7 +441,7 @@ export async function tickSessionCommand(
   orchestration.runtimeEvents.syncPendingToolStates();
   ctx.syncSubagentToolStreamingOutput(bundle);
   orchestration.runtimeEvents.syncAssistantPrefixFromHistoryBeforeToolRow();
-  // busy 期间按时间片落盘；回合终态（busy→idle）与进入审批/提问阻塞时强制落盘，持久化语义不变。
+  // Persist on time slices while busy; force persistence on turn end (busy→idle) and when entering an approval/question block, keeping persistence semantics unchanged.
   const busyAfterTick = bundle.runtime?.isBusy() === true;
   const blockedAfterTick = isRuntimeBlocked(bundle);
   const forcePersist =
@@ -456,7 +456,7 @@ export async function tickSessionCommand(
     bundle.lastTickPersistAtMs = Date.now();
   }
   await ctx.flushDeferredRuntimeRefreshIfIdle(bundle);
-  // TODO 快照仅由 onTodoStoreMutated 回调驱动刷新（见 service.ts todoItemsWriter 挂钩），tick 内不再轮询
+  // The TODO snapshot is refreshed only by the onTodoStoreMutated callback (see the service.ts todoItemsWriter hook); ticks no longer poll it
   await drainQueuedUserTurnIfIdle(ctx, bundle);
 }
 
@@ -625,7 +625,7 @@ export async function replyPendingQuestionsCommand(
   });
 }
 
-/** @returns 是否应用了事件（供 tick 决定是否请求节流推送）。 */
+/** @returns Whether an event was applied (lets the tick decide whether to request a throttled push). */
 export function applyDrainedRuntimeHostEvents(
   ctx: SessionTurnOrchestratorContext,
   bundle: SessionBundle,

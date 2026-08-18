@@ -3,7 +3,7 @@ export const SPIRIT_UI_FONT_STACK_VAR = "--spirit-ui-font-stack" as const;
 export const DEFAULT_FONT_ID = "geist" as const;
 export const DEFAULT_FONT_LABEL = "Geist" as const;
 export const SYSTEM_FONT_ID = "system" as const;
-/** system-ui 是 CSS 关键字，不能加引号，否则会被当成具体字体族名查找而静默回退。 */
+/** system-ui is a CSS keyword and must not be quoted, otherwise it is looked up as a concrete font family name and silently falls back. */
 export const SYSTEM_FONT_STACK = "system-ui, sans-serif" as const;
 
 export type FontPreference = typeof DEFAULT_FONT_ID | string;

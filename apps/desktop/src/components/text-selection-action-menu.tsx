@@ -69,7 +69,7 @@ export type TextSelectionActionMenuSegment = {
   onSelect(): void;
 };
 
-/** 相连分段按钮组：外层一个圆角整体，段间分隔线，形如单个 Button Group。 */
+/** Connected segmented button group: one rounded outer shell with separators between segments, shaped like a single Button Group. */
 export function TextSelectionActionMenuSegmentedItems({
   segments,
 }: {

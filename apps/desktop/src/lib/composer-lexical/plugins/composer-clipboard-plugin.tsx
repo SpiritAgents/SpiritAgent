@@ -15,10 +15,12 @@ type ComposerClipboardPluginProps = {
 };
 
 /**
- * 复制不拦截：交给 Lexical 默认管线（text/plain 走 SpiritChipNode.getTextContent 的
- * canonical 文本、text/html 走 exportDOM、并附 application/x-lexical-editor JSON）。
- * 粘贴只在「带 Lexical JSON」时放行给 RichTextPlugin 原生恢复 chip 节点（payload 全量
- * 保留）；其余按纯文本走 segment 模型插入。
+ * Copy is not intercepted: left to the Lexical default pipeline (text/plain uses the
+ * canonical text from SpiritChipNode.getTextContent, text/html uses exportDOM, and an
+ * application/x-lexical-editor JSON is attached).
+ * Paste is only passed through to RichTextPlugin when it carries Lexical JSON, which natively
+ * restores chip nodes (payload fully preserved); everything else is inserted as plain text via
+ * the segment model.
  */
 export function ComposerClipboardPlugin({
   segmentsRef,
@@ -28,7 +30,7 @@ export function ComposerClipboardPlugin({
   const [editor] = useLexicalComposerContext();
 
   useEffect(() => {
-    // RichTextPlugin 同为 EDITOR 且先注册；同优先级先返回 true 会短路，宿主贴图 onPaste 永远进不去
+    // RichTextPlugin also registers at EDITOR priority and earlier; returning true at the same priority short-circuits it, so the host's image-paste onPaste would never run
     return editor.registerCommand(
       PASTE_COMMAND,
       (event) => {

@@ -10,8 +10,8 @@ type OnboardingAttributionControlsProps = {
 };
 
 /**
- * OOBE Attribution 步骤内容：Commit / PR 署名开关。
- * 默认开启；与设置页共用同一保存链路，无卡片包裹。
+ * OOBE Attribution step content: Commit / PR attribution toggle.
+ * On by default; shares the same save pipeline as the settings page, without a card wrapper.
  */
 export function OnboardingAttributionControls({
   settings,

@@ -331,10 +331,10 @@ export type WorkspaceFilesTabProps = {
   onStartImplementing?: () => void;
   startImplementingDisabled?: boolean;
   autoRevealPlanNonce?: number;
-  /** 为 false 时不响应 Plan 自动展开（多 files 选项卡时仅目标 tab 为 true） */
+  /** When false, does not respond to Plan auto-expansion (only the target tab is true when multiple files tabs exist) */
   planRevealEnabled?: boolean;
   autoRevealFileNonce?: number;
-  /** 为 false 时不响应外部打开文件请求（多 files 选项卡时仅目标 tab 为 true） */
+  /** When false, does not respond to external open-file requests (only the target tab is true when multiple files tabs exist) */
   fileRevealEnabled?: boolean;
   fileRevealPath?: string;
   fileRevealAbsolutePath?: string;
@@ -346,21 +346,21 @@ export type WorkspaceFilesTabProps = {
   searchWorkspaceContent?: (
     request: WorkspaceContentSearchRequest,
   ) => Promise<WorkspaceContentSearchResult>;
-  /** 当前打开文件名变化时通知父层，用于选项卡标题显示；无选中时传 undefined */
+  /** Notifies the parent when the currently open file name changes, for the tab title display; undefined when nothing is selected */
   onTitleChange?: (title: string | undefined) => void;
-  /** 当前打开文件脏状态变化时通知父层，用于选项卡未保存指示 */
+  /** Notifies the parent when the currently open file's dirty state changes, for the tab's unsaved indicator */
   onDirtyChange?: (dirty: boolean) => void;
-  /** 从文件树等工作区路径打开文件（正常态下可复用既有 files 选项卡） */
+  /** Opens a file from a workspace path such as the file tree (an existing files tab may be reused in the normal state) */
   onOpenWorkspaceFile?: (
     relativePath: string,
     options?: { viewMode?: WorkspaceEditorViewMode; reveal?: EditorFileRevealLocation },
   ) => void;
-  /** 当前选项卡已有未保存打开文件时，从文件树打开另一文件应新建 files 选项卡 */
+  /** When the current tab already has an unsaved open file, opening another file from the file tree should create a new files tab */
   onOpenWorkspaceFileInNewTab?: (
     relativePath: string,
     options?: { viewMode?: WorkspaceEditorViewMode; reveal?: EditorFileRevealLocation },
   ) => void;
-  /** 当前打开的工作区相对路径；无工作区文件选中时传 undefined */
+  /** Currently open workspace-relative path; undefined when no workspace file is selected */
   onFilesWorkspacePathChange?: (relativePath: string | undefined) => void;
   onFileSnippetAddToSession?: (attachment: FileSnippetAttachment) => void;
   onWorkspaceFileAddToSession?: (relativePath: string) => void;

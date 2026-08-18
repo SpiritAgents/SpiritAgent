@@ -2,7 +2,7 @@ import { ProviderIcon } from "@/components/provider-icon";
 import { PROVIDER_PICKER_ROWS } from "@spiritagent/host-internal/model-provider-presets";
 import type { DesktopModelProvider } from "@/types";
 
-/** 兼容 react-i18next `t` 的最小签名，避免直接依赖 TFunction 泛型。 */
+/** Minimal signature compatible with react-i18next `t`, avoiding a direct dependency on the TFunction generic. */
 export type ProviderLabelTranslate = (key: string, options?: { defaultValue?: string }) => string;
 
 export type LocalizedProviderRow = {
@@ -25,7 +25,7 @@ export function localizedProviderRows(t: ProviderLabelTranslate): LocalizedProvi
   }));
 }
 
-/** 按本地化显示名（大小写不敏感）实时过滤；空查询返回全量。 */
+/** Live-filters by localized display name (case-insensitive); an empty query returns everything. */
 export function filterProviderRows(
   rows: LocalizedProviderRow[],
   query: string,
@@ -37,7 +37,7 @@ export function filterProviderRows(
   return rows.filter((row) => row.label.toLowerCase().includes(normalized));
 }
 
-/** 设置页 picker 与 OOBE 列表共用的 provider 行按钮。 */
+/** Provider row button shared by the settings-page picker and the OOBE list. */
 export function ProviderPickerRowButton({
   row,
   onSelect,

@@ -1,9 +1,9 @@
 import path from "node:path";
 
 /**
- * 会话文件路径的比较键：Windows 文件系统不区分大小写，统一折叠为小写；
- * 其余平台保持大小写敏感。注册表查找与删除比较必须共用此归一化，
- * 避免 session-delete 与 session-registry 语义不一致。
+ * Comparison key for session file paths: Windows filesystems are case-insensitive, so fold to lowercase;
+ * other platforms stay case-sensitive. Registry lookups and deletion comparisons must share this
+ * normalization to keep session-delete and session-registry semantics consistent.
  */
 export function normalizeSessionPathKey(filePath: string): string {
   const resolved = path.resolve(filePath);

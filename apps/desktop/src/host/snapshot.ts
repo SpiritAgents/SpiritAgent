@@ -170,7 +170,7 @@ export function buildDesktopSnapshot(input: BuildDesktopSnapshotInput): DesktopS
   };
 }
 
-/** buildSnapshot / 上下文用量高频调用；目录缓存文件只在 writeModelCatalogCache 后变化，按模型键集合做内存缓存。 */
+/** buildSnapshot / context usage are called at high frequency; the catalog cache file only changes after writeModelCatalogCache, so memoize in memory by the model key set. */
 let modelCatalogHintsMemo: { key: string; hints: DesktopModelCatalogHint[] } | undefined;
 
 export function invalidateModelCatalogHintsMemo(): void {

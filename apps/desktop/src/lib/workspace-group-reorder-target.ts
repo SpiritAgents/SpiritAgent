@@ -3,7 +3,7 @@ export type WorkspaceGroupRectMeasurement = {
   height: number;
 };
 
-/** 与侧栏工作区标题行 h-8 一致，探测点取标题行中心 */
+/** Matches the sidebar workspace header row h-8; the probe point is the header row center */
 export const WORKSPACE_GROUP_ROW_PROBE_INSET_Y = 16;
 
 export function clampWorkspaceGroupPointerY(
@@ -80,7 +80,7 @@ export function clampWorkspaceGroupDragOffsetY(
   return Math.min(maxOffset, Math.max(minOffset, offsetY));
 }
 
-/** 排序探测点：被拖卡片标题行中心（layout + translateY + 标题行半高） */
+/** Reorder probe point: dragged card header row center (layout + translateY + header row half height) */
 export function computeWorkspaceGroupDragProbeY(
   draggedLayoutTop: number,
   dragOffsetY: number,
@@ -89,7 +89,7 @@ export function computeWorkspaceGroupDragProbeY(
   return draggedLayoutTop + dragOffsetY + probeInsetY;
 }
 
-/** 卡片已触达列表顶/底边界时，探测点可能仍跨不过邻居中点，需再推进一格槽位（须与拖拽方向一致） */
+/** When the card has reached the top/bottom list boundary, the probe point may still not cross the neighbor midpoint; advance one more slot (must match the drag direction) */
 export function applyWorkspaceGroupReorderBoundaryTargetIndex(
   targetIndex: number,
   activeIndex: number,

@@ -83,29 +83,29 @@ export interface UpdateConfigRequest {
   apiBase: string;
   reasoningEffort?: DesktopModelReasoningEffort;
   reasoningMode?: DesktopModelReasoningMode;
-  /** 厂商 extended thinking；false 关闭。缺省不修改。 */
+  /** Vendor extended thinking; false disables it. Absent means no change. */
   thinkingEnabled?: boolean;
   uiLocale?: string;
   apiKey?: string;
-  /** 桌面窗级半透明材质（Win Mica / macOS Vibrancy）；缺省不修改已保存开关。 */
+  /** Desktop window-level translucent material (Win Mica / macOS Vibrancy); absent means no change to the saved toggle. */
   translucency?: boolean;
-  /** 关闭时不发送桌面系统通知（含 Windows 任务栏需要关注）。缺省为 true。 */
+  /** When off, do not send desktop system notifications (including Windows taskbar attention). Defaults to true. */
   systemNotifications?: boolean;
-  /** 关闭时不显示菜单栏 / 托盘状态图标。缺省为 true。 */
+  /** When off, do not show the menu bar / tray status icon. Defaults to true. */
   trayIcon?: boolean;
-  /** 首启引导（OOBE）是否已完成；缺省不修改已保存的值。 */
+  /** Whether first-launch onboarding (OOBE) has completed; absent means no change to the saved value. */
   onboardingCompleted?: boolean;
-  /** 缺省时不修改运行方式（Agent / Plan / Ask）。 */
+  /** Absent means no change to the run mode (Agent / Plan / Ask). */
   agentMode?: DesktopAgentMode;
-  /** @deprecated 使用 agentMode。 */
+  /** @deprecated Use agentMode. */
   planMode?: boolean;
-  /** 缺省时不修改已保存的 Desktop Web 远程访问配置。 */
+  /** Absent means no change to the saved Desktop Web remote access config. */
   webHost?: DesktopWebHostConfigUpdate;
-  /** 缺省时不修改已保存的梦境配置。 */
+  /** Absent means no change to the saved dreams config. */
   dreams?: DesktopDreamConfigUpdate;
-  /** 缺省时不修改已保存的智能体配置。 */
+  /** Absent means no change to the saved agents config. */
   agents?: DesktopAgentsConfigUpdate;
-  /** 缺省时不修改已保存的网络配置。 */
+  /** Absent means no change to the saved networks config. */
   networks?: DesktopNetworksConfigUpdate;
 }
 
@@ -175,16 +175,16 @@ export interface DesktopDreamConfigUpdate {
   debugMode?: boolean;
 }
 
-/** 模型提供方（与 `packages/host-internal` 中 `ModelProviderId` 同源）。 */
+/** Model provider (same source as `ModelProviderId` in `packages/host-internal`). */
 export type DesktopModelProvider = ModelProviderId;
 export type DesktopProviderConnectSiteId = ProviderConnectSiteId;
 
 export type DesktopTransportKind = "openai-compatible" | "open-responses" | "anthropic" | "bedrock";
 
-/** 模型推理强度字符串；具体允许值由 provider / transportKind 在 agent-core 中约束。 */
+/** Model reasoning effort string; allowed values are constrained by provider / transportKind in agent-core. */
 export type DesktopModelReasoningEffort = ModelReasoningEffort;
 
-/** GPT-5.6+ OpenAI 路由模型的 reasoning.mode（standard / pro）。 */
+/** reasoning.mode (standard / pro) of GPT-5.6+ OpenAI-routed models. */
 export type DesktopModelReasoningMode = "standard" | "pro";
 
 export type DesktopModelCapability =
@@ -234,22 +234,22 @@ export interface PreviewModelCatalogEntry {
   maxCompletionTokens?: number;
   supportsThinkingType?: "only";
   supportsThinkingSwitch?: boolean;
-  /** Hugging Face Hub 媒体模型：Inference Providers 路由 hint。 */
+  /** Hugging Face Hub media models: Inference Providers routing hint. */
   inferenceProvider?: string;
-  /** DeepInfra `is_partner`：partner 模型（数据转发第三方）；首版仅作 catalog metadata，不过滤。 */
+  /** DeepInfra `is_partner`: partner model (data forwarded to a third party); first version keeps it as catalog metadata only, no filtering. */
   isPartner?: boolean;
 }
 
-/** 预览某端点下列出的模型 id（带本地 TTL 缓存）。 */
+/** Preview the model ids listed under an endpoint (with a local TTL cache). */
 export interface PreviewModelsRequest {
   apiBase: string;
   apiKey: string;
   provider?: DesktopModelProvider;
   transportKind?: DesktopTransportKind;
-  /** SiliconFlow 等站点型提供商：cn / intl。 */
+  /** Site-based providers such as SiliconFlow: cn / intl. */
   providerSite?: DesktopProviderConnectSiteId;
   alibabaWorkspaceId?: string;
-  /** Alibaba Token Plan；缺省为标准按量模式。 */
+  /** Alibaba Token Plan; absent means the standard pay-as-you-go mode. */
   alibabaBillingMode?: DesktopAlibabaBillingMode;
   stepfunBillingMode?: DesktopStepfunBillingMode;
   zAiBillingMode?: DesktopGlmCodingPlanBillingMode;
@@ -264,7 +264,7 @@ export interface PreviewModelsRequest {
   vertexLocation?: string;
   vertexClientEmail?: string;
   vertexPrivateKey?: string;
-  /** 为 true 时忽略 TTL，强制请求上游。 */
+  /** When true, ignore the TTL and force an upstream request. */
   forceRefresh?: boolean;
 }
 
@@ -274,7 +274,7 @@ export interface PreviewModelsResponse {
   fromCache: boolean;
 }
 
-/** 批量写入同一端点下的多个模型 id（共享 API Key），用于提供商连接批量导入。 */
+/** Batch-write multiple model ids under the same endpoint (sharing an API Key), for bulk import via provider connections. */
 export interface AddProviderModelsRequest {
   groupId: string;
   apiBase: string;
@@ -283,10 +283,10 @@ export interface AddProviderModelsRequest {
   modelCatalog?: PreviewModelCatalogEntry[];
   provider?: DesktopModelProvider;
   transportKind?: DesktopTransportKind;
-  /** SiliconFlow 等站点型提供商：cn / intl。 */
+  /** Site-based providers such as SiliconFlow: cn / intl. */
   providerSite?: DesktopProviderConnectSiteId;
   alibabaWorkspaceId?: string;
-  /** Alibaba Token Plan；缺省为标准按量模式。 */
+  /** Alibaba Token Plan; absent means the standard pay-as-you-go mode. */
   alibabaBillingMode?: DesktopAlibabaBillingMode;
   stepfunBillingMode?: DesktopStepfunBillingMode;
   zAiBillingMode?: DesktopGlmCodingPlanBillingMode;
@@ -301,11 +301,11 @@ export interface AddProviderModelsRequest {
   vertexLocation?: string;
   vertexClientEmail?: string;
   vertexPrivateKey?: string;
-  /** 自定义提供商连接显示名；`custom` 时用于生成 groupId 并写入 `ProviderGroupV2.label`。 */
+  /** Custom provider connection display name; for `custom`, used to generate the groupId and written to `ProviderGroupV2.label`. */
   customGroupLabel?: string;
 }
 
-/** 快照附带：某 apiBase 在本地 `model-catalog-cache` 中的最近一次列模型结果（供主界面分组与排序）。 */
+/** Attached to the snapshot: the most recent model-listing result for an apiBase in the local `model-catalog-cache` (for main-UI grouping and sorting). */
 export interface DesktopModelCatalogHint {
   provider?: DesktopModelProvider;
   transportKind?: DesktopTransportKind;
@@ -315,36 +315,36 @@ export interface DesktopModelCatalogHint {
   fetchedAtUnixMs: number;
 }
 
-/** 与 CLI `model add` 一致：新增模型、写入密钥，并将当前模型切到新模型。 */
+/** Same as CLI `model add`: add a model, write the key, and switch the current model to the new one. */
 export interface AddModelRequest {
   groupId: string;
   name: string;
   apiBase: string;
   apiKey: string;
-  /** 缺省时不写入配置（与旧版三字段一致）。 */
+  /** Absent means not written to config (same as the legacy three-field version). */
   provider?: DesktopModelProvider;
   transportKind?: DesktopTransportKind;
   capabilities?: DesktopModelCapability[];
-  /** 可选；正整数；用于上下文 usage 圆环分母等。 */
+  /** Optional; positive integer; used e.g. as the denominator of the context usage ring. */
   contextLength?: number;
-  /** Amazon Bedrock AWS 区域；`amazon-bedrock` 必填。 */
+  /** Amazon Bedrock AWS region; required for `amazon-bedrock`. */
   awsRegion?: string;
-  /** 站点型提供商区域（如 SiliconFlow cn / intl）。 */
+  /** Site-based provider region (e.g. SiliconFlow cn / intl). */
   providerSite?: DesktopProviderConnectSiteId;
   alibabaWorkspaceId?: string;
   alibabaBillingMode?: DesktopAlibabaBillingMode;
   stepfunBillingMode?: DesktopStepfunBillingMode;
   zAiBillingMode?: DesktopGlmCodingPlanBillingMode;
   zhipuBillingMode?: DesktopGlmCodingPlanBillingMode;
-  /** Azure 资源名；`azure` 必填。 */
+  /** Azure resource name; required for `azure`. */
   azureResourceName?: string;
   cloudflareAccountId?: string;
   cloudflareGatewayId?: string;
-  /** Google Vertex GCP 项目 ID。 */
+  /** Google Vertex GCP project ID. */
   vertexProject?: string;
-  /** Google Vertex 区域（如 `us-central1`）。 */
+  /** Google Vertex region (e.g. `us-central1`). */
   vertexLocation?: string;
-  /** 自定义提供商连接显示名；`custom` 时用于生成 groupId（`slugifyProviderGroupLabel`）。 */
+  /** Custom provider connection display name; for `custom`, used to generate the groupId (`slugifyProviderGroupLabel`). */
   customGroupLabel?: string;
 }
 
@@ -356,7 +356,7 @@ export interface RemoveProviderGroupRequest {
   groupId: string;
 }
 
-/** @deprecated 使用 RemoveProviderGroupRequest */
+/** @deprecated Use RemoveProviderGroupRequest */
 export interface RemoveProviderModelsRequest {
   provider: DesktopModelProvider;
 }
@@ -672,13 +672,13 @@ export interface DesktopMcpServerInspection {
 export type DesktopSkillScope = "workspace" | "user";
 export type DesktopSkillRootKind = "workspaceSpirit" | "workspaceAgents" | "user";
 
-/** 创建 `skills/<name>/SKILL.md`，根目录由 `rootKind` 决定（用户目录或工作区 `.spirit` / `.agents`）。 */
+/** Create `skills/<name>/SKILL.md`; the root directory is determined by `rootKind` (user directory or workspace `.spirit` / `.agents`). */
 export interface CreateSkillRequest {
   name: string;
   rootKind: DesktopSkillRootKind;
-  /** Frontmatter `description`：概述，供模型判断何时启用此 Skill。 */
+  /** Frontmatter `description`: an overview for the model to decide when to enable this Skill. */
   summary: string;
-  /** SKILL.md 正文（frontmatter 之后），必填。 */
+  /** SKILL.md body (after the frontmatter); required. */
   content: string;
 }
 
@@ -702,10 +702,10 @@ export interface SubmitGitChipRequest {
 
 export type DesktopRuleScope = "workspace" | "user";
 
-/** 在固定规则槽位创建 Markdown 规则文件，根目录由 `rootKind` 决定。 */
+/** Create a Markdown rule file in a fixed rule slot; the root directory is determined by `rootKind`. */
 export interface CreateRuleRequest {
   rootKind: DesktopSkillRootKind;
-  /** 写入正文种子，必填。 */
+  /** Body seed to write; required. */
   description: string;
 }
 
@@ -867,7 +867,7 @@ export interface DesktopRuleListItem {
   previewTruncated?: boolean;
 }
 
-/** 与 CLI `chat_store` 已保存的 `*.json` 文件一致。 */
+/** Same as the `*.json` files saved by CLI `chat_store`. */
 export interface ActiveSessionSnapshot {
   filePath: string;
   displayName: string;
@@ -898,13 +898,13 @@ export interface DesktopWorkspaceListItem {
   label: string;
 }
 
-/** 工作区文件树子节点（相对工作区根的路径由前端用 `name` 与父路径拼接）。 */
+/** Workspace file tree child node (the path relative to the workspace root is assembled by the frontend from `name` and the parent path). */
 export type WorkspaceExplorerEntryKind = "file" | "dir";
 
 export interface WorkspaceExplorerEntry {
   name: string;
   kind: WorkspaceExplorerEntryKind;
-  /** Git / exclude 规则忽略时为 true；缺省或 false 时按正常色展示。 */
+  /** True when ignored by Git / exclude rules; absent or false renders with normal color. */
   ignored?: boolean;
 }
 
@@ -926,16 +926,16 @@ export interface WorkspaceFileReferenceIndexSnapshot {
   files: string[];
 }
 
-/** 宿主按 UTF-8 读取的工作区文本文件内容（侧栏编辑器等）。 */
+/** Workspace text file content read by the host as UTF-8 (sidebar editor etc.). */
 export interface WorkspaceReadTextFileResult {
   text: string;
-  /** 二进制文件：不返回可编辑文本，由 UI 展示占位提示。 */
+  /** Binary file: no editable text is returned; the UI shows a placeholder hint. */
   binary?: true;
-  /** 经 magic bytes 校验的图片：由 UI 展示预览，不进入 Monaco。 */
+  /** Image verified by magic bytes: the UI shows a preview; it does not enter Monaco. */
   image?: { mimeType: string };
 }
 
-/** readWorkspaceTextFile 选项；optional 时文件不存在返回空文本而不抛错。 */
+/** readWorkspaceTextFile options; with optional, a missing file returns empty text instead of throwing. */
 export interface ReadWorkspaceTextFileOptions {
   optional?: boolean;
 }
@@ -1010,7 +1010,7 @@ export interface WriteHostTextFileRequest {
 
 export interface DesktopSnapshot {
   workspaceRoot: string;
-  /** 用户主目录；侧栏划分「无工作区」会话与项目工作区会话时使用。 */
+  /** User home directory; used by the sidebar to separate "no workspace" sessions from project workspace sessions. */
   userHomeDirectory: string;
   workspaceBinding: DesktopWorkspaceBinding;
   availableWorkspaces: DesktopWorkspaceListItem[];
@@ -1022,13 +1022,13 @@ export interface DesktopSnapshot {
   webHost: DesktopWebHostSnapshot;
   rules: DiscoverySummary;
   skills: DiscoverySummary;
-  /** 固定槽位的全部 Rules（含未创建），供设置页列表。 */
+  /** All Rules in the fixed slots (including ones not yet created), for the settings page list. */
   rulesList: DesktopRuleListItem[];
-  /** 当前工作区与用户目录下发现的全部 Skills，供设置页列表。 */
+  /** All Skills discovered under the current workspace and user directory, for the settings page list. */
   skillsList: DesktopSkillListItem[];
   extensionsList: DesktopExtensionListItem[];
   extensionCss: DesktopExtensionCssLayer[];
-  /** 扩展后台 warmup 进行中（不阻塞会话导航与发消息）。 */
+  /** Extension background warmup in progress (does not block session navigation or sending messages). */
   extensionsLoading?: boolean;
   plan: PlanSnapshot;
   mcpStatus: McpStatusSnapshot;
@@ -1040,7 +1040,7 @@ export interface DesktopSnapshot {
   conversation: ConversationSnapshot;
   /** Per split-pane session projection keyed by resolved session file path. */
   paneSessions?: Record<string, PaneSessionSlice>;
-  /** 从磁盘打开的会话；未从文件打开时为 `undefined`（新会话/未保存）。 */
+  /** Session opened from disk; `undefined` when not opened from a file (new session/unsaved). */
   activeSession?: ActiveSessionSnapshot;
   /** Stable key for per-session composer draft persistence (`filePath` or synthetic bundle id). */
   composerSessionKey: string;
@@ -1085,17 +1085,17 @@ export interface DesktopConfigSnapshot {
   lightweightChatModel?: ModelRef;
   uiLocale?: string;
   activeApiKeyConfigured: boolean;
-  /** 桌面宿主是否开启窗级半透明材质；无字段时按 true 处理。 */
+  /** Whether the desktop host enables the window-level translucent material; treated as true when the field is absent. */
   translucency?: boolean;
-  /** 是否发送系统通知；无字段时按 true 处理。 */
+  /** Whether to send system notifications; treated as true when the field is absent. */
   systemNotifications?: boolean;
-  /** 是否显示菜单栏 / 托盘状态图标；无字段时按 true 处理。 */
+  /** Whether to show the menu bar / tray status icon; treated as true when the field is absent. */
   trayIcon?: boolean;
-  /** 首启引导（OOBE）是否已完成；无字段时按 false 处理。 */
+  /** Whether first-launch onboarding (OOBE) has completed; treated as false when the field is absent. */
   onboardingCompleted?: boolean;
-  /** 运行方式：影响宿主指令元数据、工具暴露与 SPIRIT_AGENT_MODE。 */
+  /** Run mode: affects host instruction metadata, tool exposure, and SPIRIT_AGENT_MODE. */
   agentMode: DesktopAgentMode;
-  /** 与 `spiritAgentDataDir()/model-catalog-cache` 对齐；无缓存时为空数组。 */
+  /** Aligned with `spiritAgentDataDir()/model-catalog-cache`; an empty array when there is no cache. */
   modelCatalogHints?: DesktopModelCatalogHint[];
   networks: {
     llmHttpVersion: "http1.1" | "http2";
@@ -1407,43 +1407,43 @@ export interface ModelProfileSnapshot {
   apiBase: string;
   reasoningEffort: DesktopModelReasoningEffort;
   reasoningMode?: DesktopModelReasoningMode;
-  /** 厂商 extended thinking；缺省 true。仅 thinking 型模型持久化 false。 */
+  /** Vendor extended thinking; defaults to true. Only thinking-type models persist false. */
   thinkingEnabled?: boolean;
   supportedReasoningEfforts?: DesktopModelReasoningEffort[];
   capabilities?: DesktopModelCapability[];
-  /** 持久化来源；缺省表示历史自定义配置。 */
+  /** Persistence origin; absent means a legacy custom configuration. */
   provider?: DesktopModelProvider;
-  /** 传输族；当前主要用于区分 Anthropic 与 OpenAI-compatible。 */
+  /** Transport family; currently mainly used to distinguish Anthropic from OpenAI-compatible. */
   transportKind?: DesktopTransportKind;
-  /** 站点型提供商区域（如 SiliconFlow cn / intl）。 */
+  /** Site-based provider region (e.g. SiliconFlow cn / intl). */
   providerSite?: DesktopProviderConnectSiteId;
-  /** Alibaba 业务空间 ID；新加坡/法兰克福等区域必填。 */
+  /** Alibaba workspace ID; required for regions such as Singapore/Frankfurt. */
   alibabaWorkspaceId?: string;
-  /** Alibaba Token Plan；缺省为标准按量模式。 */
+  /** Alibaba Token Plan; absent means the standard pay-as-you-go mode. */
   alibabaBillingMode?: DesktopAlibabaBillingMode;
-  /** StepFun Step Plan；缺省为标准 API。 */
+  /** StepFun Step Plan; absent means the standard API. */
   stepfunBillingMode?: DesktopStepfunBillingMode;
-  /** Z.ai GLM Coding Plan；缺省为标准 API。 */
+  /** Z.ai GLM Coding Plan; absent means the standard API. */
   zAiBillingMode?: DesktopGlmCodingPlanBillingMode;
-  /** 智谱 AI GLM Coding Plan；缺省为标准 API。 */
+  /** Zhipu AI GLM Coding Plan; absent means the standard API. */
   zhipuBillingMode?: DesktopGlmCodingPlanBillingMode;
-  /** Amazon Bedrock AWS 区域（如 `us-east-1`）；仅 `amazon-bedrock` 使用。 */
+  /** Amazon Bedrock AWS region (e.g. `us-east-1`); used only by `amazon-bedrock`. */
   awsRegion?: string;
-  /** Azure 资源名；仅 `azure` 使用。 */
+  /** Azure resource name; used only by `azure`. */
   azureResourceName?: string;
   cloudflareAccountId?: string;
   cloudflareGatewayId?: string;
-  /** Google Vertex GCP 项目 ID；仅 `google-vertex-ai` 使用。 */
+  /** Google Vertex GCP project ID; used only by `google-vertex-ai`. */
   vertexProject?: string;
-  /** Google Vertex 区域；仅 `google-vertex-ai` 使用。 */
+  /** Google Vertex region; used only by `google-vertex-ai`. */
   vertexLocation?: string;
-  /** 用户配置的模型上下文长度（token）；优先于 catalog 解析。 */
+  /** User-configured model context length (tokens); takes precedence over catalog resolution. */
   contextLength?: number;
-  /** Kimi Code `supports_thinking_type`；`only` 表示思考常开。 */
+  /** Kimi Code `supports_thinking_type`; `only` means thinking is always on. */
   supportsThinkingType?: "only";
-  /** 目录标记：模型支持 `thinking.type` 开关（如 Meituan LongCat）。 */
+  /** Catalog flag: the model supports the `thinking.type` switch (e.g. Meituan LongCat). */
   supportsThinkingSwitch?: boolean;
-  /** 宿主快照：该模型是否在系统钥匙串中有专属 API Key 条目（与 CLI 一致；不含环境变量与全局回退）。 */
+  /** Host snapshot: whether this model has a dedicated API Key entry in the system keychain (same as CLI; excludes environment variables and the global fallback). */
   keyConfigured?: boolean;
 }
 
@@ -1559,33 +1559,33 @@ export interface ToolBlockSnapshot {
   headlineDetail?: string;
   /** create_file / create_plan / edit_file / delete_file: line +/- counts on tool card headline. */
   editLineDelta?: { added: number; removed: number };
-  /** delete_file：删除前冻结的全文，供展开 Diff（完成后磁盘已无文件）。 */
+  /** delete_file: the full text frozen before deletion, for the expanded Diff (the file no longer exists on disk after completion). */
   deleteFileBaselineText?: string;
-  /** preview 阶段完整参数 JSON，供展开区流式 Diff；完成后清除。 */
+  /** Full argument JSON during the preview phase, for the streaming Diff in the expanded area; cleared after completion. */
   streamingArgumentsJson?: string;
-  /** 已完成文件类工具：完整请求 JSON（供 Diff；与 UI 用 argsExcerpt 截断分离）。 */
+  /** Completed file-type tool: the full request JSON (for Diff; separate from the UI's argsExcerpt truncation). */
   fileToolDiffArgumentsJson?: string;
-  /** todo_write：执行前会话 TODO，供增量 detail 重算与语言切换。 */
+  /** todo_write: the session TODOs before execution, for incremental detail recomputation and language switching. */
   todoWriteBeforeTodos?: Array<{ title: string; status: DesktopTodoStatus }>;
   detailLines: string[];
   argsExcerpt?: string;
   outputExcerpt?: string;
   imagePaths?: string[];
   videoPaths?: string[];
-  /** 写文件类工具 LSP 自动检查后的 error/warning 摘要（供工具卡徽章与 hover）。 */
+  /** Error/warning summary from the LSP auto-check after a write-file tool (for the tool card badge and hover). */
   lspWriteDiagnostics?: LspWriteDiagnosticsUi;
-  /** Moonshot Formula 等 provider 工具：禁止展开以防展示 encrypted 乱码。 */
+  /** Provider tools like Moonshot Formula: forbid expanding to avoid showing encrypted gibberish. */
   suppressExpand?: boolean;
 }
 
 export interface MessageAuxSnapshot {
   thinking?: string;
   compaction?: string;
-  /** Loop finish_task：不展示工具卡，在助手正文下方显示一行灰色说明 */
+  /** Loop finish_task: no tool card; show a gray note line below the assistant body */
   finishTaskNotice?: string;
-  /** 回合级 LLM/transport 失败：以卡片展示错误文案，而非普通 Agent 正文 */
+  /** Turn-level LLM/transport failure: show the error copy as a card instead of normal Agent body text */
   turnError?: boolean;
-  /** 429 等可重试错误：展示 Loading 环与重试进度 (attempt/maxAttempts) */
+  /** Retryable errors such as 429: show a Loading ring and retry progress (attempt/maxAttempts) */
   turnErrorRetry?: {
     attempt: number;
     maxAttempts: number;

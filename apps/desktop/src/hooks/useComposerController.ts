@@ -88,7 +88,7 @@ import type { RichSegment } from "@/lib/composer-segment-model";
 
 type DesktopRuntime = ReturnType<typeof useDesktopRuntime>;
 
-/** 与非 pane 路径（useDesktopRuntime）一致的草稿落盘防抖间隔。 */
+/** Draft persistence debounce interval, matching the non-pane path (useDesktopRuntime). */
 const PANE_COMPOSER_DRAFT_PERSIST_DEBOUNCE_MS = 400;
 
 export type UseComposerControllerOptions = {
@@ -153,8 +153,8 @@ export function useComposerController({
     const stored = resolvePaneComposerDraft(paneComposerDraftKey, composerSessionKey);
     const keyChanged = paneComposerDraftKeyRef.current !== paneComposerDraftKey;
     paneComposerDraftKeyRef.current = paneComposerDraftKey;
-    // 同一 pane 会话 key 下 composerSessionKey 由空晚到（pane snapshot 异步同步）时不重置，
-    // 避免把挂载后已插入的内容（如 Add to Side Chat 的引用 Chip）清掉
+    // Under the same pane session key, composerSessionKey may arrive late as empty (async pane snapshot sync);
+    // do not reset then, to avoid clearing content inserted after mount (e.g. an Add to Side Chat quote Chip)
     if (!keyChanged && !stored) {
       return;
     }
@@ -603,7 +603,7 @@ export function useComposerController({
   const applyPlanSlash = useCallback(() => {
     setSlashSelectedIndex(-1);
     setDismissedSlashQueryKey(null);
-    // 先清 slash 文本再插 chip，避免 remove 用旧偏移改写已含 chip 的 segments
+    // Clear the slash text before inserting the chip, so remove does not rewrite chip-containing segments with stale offsets
     if (slashQuery) {
       composerRichInputRef.current?.removeSkillSlashQuery(slashQuery);
     }
@@ -881,7 +881,7 @@ export function useComposerController({
 
   const openAtReferenceSessions = useCallback(() => {
     setFileReferenceMenuView("sessions");
-    // 钻入后默认落在第一条会话；index 0 是「返回」
+    // After drilling in, default to the first session; index 0 is "back"
     setFileReferenceSelectedIndex(1);
   }, []);
 

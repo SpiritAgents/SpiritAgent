@@ -71,12 +71,12 @@ export class SpiritChipNode extends DecoratorNode<ReactElement> {
     return true;
   }
 
-  // 基类默认返回 slots 文本（chip 无 slots 即 ""），复制/全选会丢 chip；输出 canonical 文本
+  // The base class returns slot text by default (a chip has no slots, i.e. ""), so copy/select-all would lose the chip; emit canonical text instead
   getTextContent(): string {
     return spiritChipPlainText(this.__payload);
   }
 
-  // 基类 exportDOM 复用 createDOM（空 span），text/html 同样丢 chip；输出带 canonical 文本的语义化 span
+  // The base exportDOM reuses createDOM (an empty span), so text/html would lose the chip too; emit a semantic span carrying the canonical text
   exportDOM(): DOMExportOutput {
     const span = document.createElement("span");
     span.setAttribute("data-spirit-chip", "true");

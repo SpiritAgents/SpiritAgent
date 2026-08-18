@@ -30,20 +30,20 @@ import type {
 
 const ONBOARDING_LOGO_WIDTH_PX = 104;
 
-/** 与 styles.css `spirit-oobe-step-exit-*` 时长一致 */
+/** Matches the duration of `spirit-oobe-step-exit-*` in styles.css */
 const STEP_EXIT_MS = 200;
-/** 点击 Done 后整层淡出时长 */
+/** Duration of the full-layer fade-out after clicking Done */
 const WIZARD_EXIT_MS = 360;
-/** 欢迎步进入后多久淡入产品名（自 Step 1 进入起算，与 snapshot 无关） */
+/** How long after entering the welcome step the product name fades in (counted from entering Step 1, independent of the snapshot) */
 const WELCOME_TITLE_DELAY_MS = 500;
-/** 欢迎步进入后多久淡入 Continue（自 Step 1 进入起算，与 snapshot 无关） */
+/** How long after entering the welcome step Continue fades in (counted from entering Step 1, independent of the snapshot) */
 const WELCOME_CONTINUE_DELAY_MS = 1000;
-/** 与 styles.css `.spirit-launch-shimmer-sweep` 单次 sweep 时长一致 */
+/** Matches the single-sweep duration of `.spirit-launch-shimmer-sweep` in styles.css */
 const LAUNCH_SHIMMER_CYCLE_MS = 2900;
-/** 在 CSS iteration 跳回 125% 之前结束 shimmer，避免视觉上「新一轮刚起就被切」 */
+/** Ends the shimmer before the CSS iteration jumps back to 125%, avoiding the visual of "a new round just starting then being cut off" */
 const SHIMMER_FINISH_BEFORE_ITERATION_MS = 120;
 
-/** 读取 shimmer sweep 距当前轮次结束的剩余时长（Web Animations API，略提前于 iteration 边界）。 */
+/** Reads the remaining time until the current shimmer sweep round ends (Web Animations API, slightly ahead of the iteration boundary). */
 function readShimmerRemainingMs(el: HTMLElement): number {
   const anim = el.getAnimations()[0];
   if (anim != null && anim.currentTime != null) {
@@ -66,14 +66,14 @@ type StepDirection = "forward" | "backward";
 type LeavingStepState = {
   step: OnboardingStep;
   direction: StepDirection;
-  /** Step 3 离场动画期间冻结列表底缘渐隐，避免 remount 后遮罩闪没。 */
+  /** Freezes the list bottom-edge fade during the Step 3 exit animation, so the mask does not flash away after remount. */
   connectBottomFade?: boolean;
 };
 
 type OnboardingWizardProps = {
-  /** 为 true 时显示向导；变为 false 时播放淡出后卸载。 */
+  /** When true the wizard is shown; when it becomes false, it plays the fade-out and then unmounts. */
   active: boolean;
-  /** translucency（Win Mica / macOS Vibrancy）：与 launch-splash / 会话主区一致，开启时用主区半透明 tint。 */
+  /** translucency (Win Mica / macOS Vibrancy): consistent with launch-splash / the conversation main area; when enabled, uses the main-area semi-transparent tint. */
   useTranslucency?: boolean;
   settings: SettingsFormState;
   onSavePatch: (patch: Partial<SettingsFormState>) => Promise<void>;
@@ -82,13 +82,13 @@ type OnboardingWizardProps = {
   onAddModel: (request: AddModelRequest) => Promise<void>;
   onAddProviderModels: (request: AddProviderModelsRequest) => Promise<void>;
   onPreviewModels: (request: PreviewModelsRequest) => Promise<PreviewModelsResponse>;
-  /** 点击 Done：由宿主持久化 onboardingCompleted 并关闭向导。 */
+  /** Clicking Done: the host persists onboardingCompleted and closes the wizard. */
   onDone: () => void;
-  /** 挂载周期内 phase 变化（供宿主在 leaving 前勿提前露出 app-body）。 */
+  /** Phase changes during the mount lifetime (so the host does not reveal app-body early, before leaving). */
   onPhaseChange?: (phase: ShellOverlayPhase) => void;
 };
 
-/** 入场 stagger 用内容块标记：index 越大出场越晚（40ms 递进）。 */
+/** Content-block marker for entry stagger: the larger the index, the later it appears (40ms increments). */
 function oobeBlockProps(index: number): {
   "data-oobe-block": true;
   style: CSSProperties;
@@ -100,8 +100,8 @@ function oobeBlockProps(index: number): {
 }
 
 /**
- * 首启引导（OOBE）向导：全窗覆盖层，层级低于 LaunchSplash（z-200）与
- * Radix 浮层（z-50），高于主 UI。三步流程：欢迎 / 外观 / 连接提供商。
+ * First-run (OOBE) wizard: a full-window overlay layered below LaunchSplash (z-200) and Radix
+ * overlays (z-50), above the main UI. Three-step flow: welcome / appearance / connect providers.
  */
 export function OnboardingWizard({
   active,
@@ -119,15 +119,16 @@ export function OnboardingWizard({
   const [phase, setPhase] = useState<WizardPhase>(() => (active ? "running" : "gone"));
   const [step, setStep] = useState<OnboardingStep>(1);
   /**
-   * 最近一次导航方向。必须是独立 state 而非从 leavingStep 派生：
-   * 派生值会在出场节点清除后回落，导致入场节点 class 换名、CSS 动画从头重播。
+   * Most recent navigation direction. Must be independent state rather than derived from
+   * leavingStep: a derived value would fall back once the exiting node is cleared, renaming the
+   * entering node's class and restarting the CSS animation from the beginning.
    */
   const [direction, setDirection] = useState<StepDirection>("forward");
-  /** 首次进入 Step 1 不播放入场动画；用户手动继续/返回后才启用。 */
+  /** The first entry into Step 1 plays no entry animation; enabled only after the user manually continues/goes back. */
   const [hasManualNavigation, setHasManualNavigation] = useState(false);
-  /** 出场中的旧步骤；动画播完后清除。 */
+  /** The old step currently exiting; cleared after its animation finishes. */
   const [leavingStep, setLeavingStep] = useState<LeavingStepState | null>(null);
-  /** Step 3 列表底缘渐隐快照，供离场 remount 冻结遮罩。 */
+  /** Snapshot of the Step 3 list bottom-edge fade, used to freeze the mask on exit remount. */
   const connectBottomFadeRef = useRef(false);
   const handleConnectBottomFadeChange = useCallback((hasMoreBelow: boolean) => {
     connectBottomFadeRef.current = hasMoreBelow;
@@ -234,8 +235,9 @@ export function OnboardingWizard({
       data-spirit-surface="onboarding-wizard"
       aria-hidden={exiting}
       className={cn(
-        // z-40：低于 Radix 浮层（Dialog/Select 等 z-50），向导内弹窗才能置顶；
-        // 仍高于主 UI，保证淡出期间盖住已恢复可见的 app-body。
+        // z-40: below Radix overlays (Dialog/Select etc. at z-50) so dialogs inside the wizard can
+        // stay on top; still above the main UI so it covers the already-revealed app-body during
+        // the fade-out.
         "fixed inset-0 z-40 flex flex-col",
         desktopFullscreenOverlayTintClass(useTranslucency),
         "transition-opacity duration-[360ms] ease-out motion-reduce:duration-150",
@@ -277,7 +279,7 @@ export function OnboardingWizard({
   );
 }
 
-/** Step 2/3 通用布局 + 底部导航行。 */
+/** Shared layout + bottom navigation row for Step 2/3. */
 function OnboardingStepShell({
   title,
   children,
@@ -288,8 +290,8 @@ function OnboardingStepShell({
   children: ReactNode;
   footer: ReactNode;
   /**
-   * spread：标题顶对齐、内容区 flex-1（Step 3 长列表）。
-   * centered：标题与内容成组垂直居中，标题紧贴内容上方（Step 2）。
+   * spread: title top-aligned, content area flex-1 (Step 3's long list).
+   * centered: title and content vertically centered as a group, title directly above the content (Step 2).
    */
   contentLayout?: "spread" | "centered";
 }) {
@@ -326,7 +328,7 @@ function OnboardingStepShell({
   );
 }
 
-/** Step 1：居中品牌图标与产品名；自进入 0.5s / 1s 固定时序淡入标题与 Continue；Shimmer 独立播完当前轮。 */
+/** Step 1: centered brand icon and product name; the title and Continue fade in at a fixed timing of 0.5s / 1s after entry; the shimmer finishes its current round independently. */
 function OnboardingWelcomeStep({ onContinue }: { onContinue: () => void }) {
   const { t } = useTranslation();
   const [titleVisible, setTitleVisible] = useState(false);
@@ -334,7 +336,8 @@ function OnboardingWelcomeStep({ onContinue }: { onContinue: () => void }) {
   const [shimmerActive, setShimmerActive] = useState(true);
   const shimmerSweepRef = useRef<HTMLDivElement>(null);
 
-  // Shimmer 与 Continue 解耦：挂载时按当前 sweep 相位预约自然结束，不阻塞按钮
+  // The shimmer is decoupled from Continue: on mount it schedules a natural end based on the
+  // current sweep phase, without blocking the button
   useLayoutEffect(() => {
     const el = shimmerSweepRef.current;
     if (!el) {
@@ -351,7 +354,8 @@ function OnboardingWelcomeStep({ onContinue }: { onContinue: () => void }) {
     return () => window.clearTimeout(id);
   }, []);
 
-  // 自 Step 1 进入起固定计时，与 snapshot 就绪无关（首次进入与 Step 2 返回体感一致）
+  // Fixed timing counted from entering Step 1, independent of snapshot readiness (first entry and
+  // returning from Step 2 feel the same)
   useEffect(() => {
     setTitleVisible(false);
     setContinueVisible(false);
@@ -372,7 +376,7 @@ function OnboardingWelcomeStep({ onContinue }: { onContinue: () => void }) {
     <div {...oobeBlockProps(0)} className="flex h-full flex-col items-center justify-center">
       <div className="relative shrink-0" style={{ width: ONBOARDING_LOGO_WIDTH_PX }}>
         <SpiritGlassLogo width={ONBOARDING_LOGO_WIDTH_PX} className="relative z-0" />
-        {/* 保持 DOM 稳定挂载，避免重渲染 remount 导致 sweep 从 125% 重启 */}
+        {/* Keep the DOM stably mounted, avoiding re-render remounts that would restart the sweep from 125% */}
         <div
           className={cn(
             "pointer-events-none absolute inset-0 z-10 overflow-hidden",
@@ -417,7 +421,7 @@ function OnboardingWelcomeStep({ onContinue }: { onContinue: () => void }) {
   );
 }
 
-/** Step 2：外观（主题 / 半透明 / 语言）。theme 就地订阅，App 无需下传。 */
+/** Step 2: appearance (theme / translucency / language). The theme is subscribed in place; App does not need to pass it down. */
 function OnboardingAppearanceStep({
   settings,
   onSavePatch,
@@ -456,7 +460,7 @@ function OnboardingAppearanceStep({
   );
 }
 
-/** Step 3：连接提供商（可跳过）。 */
+/** Step 3: connect providers (skippable). */
 function OnboardingConnectStep({
   modelsBusy,
   modelsPreviewBusy,
@@ -477,9 +481,9 @@ function OnboardingConnectStep({
   onBack: () => void;
   onContinue: () => void;
   onBottomFadeChange?: (hasMoreBelow: boolean) => void;
-  /** 离场 remount 时恢复离开前的底缘渐隐可见性。 */
+  /** Restores the pre-exit bottom-edge fade visibility on exit remount. */
   pinnedBottomFade?: boolean;
-  /** 离场动画期间冻结底缘渐隐，禁止 scroll 监听改写。 */
+  /** Freezes the bottom-edge fade during the exit animation; scroll listeners must not rewrite it. */
   freezeBottomFade?: boolean;
 }) {
   const { t } = useTranslation();
@@ -511,7 +515,7 @@ function OnboardingConnectStep({
   );
 }
 
-/** Step 4：Attribution（可选，默认开启）。 */
+/** Step 4: Attribution (optional, on by default). */
 function OnboardingAttributionStep({
   settings,
   onSavePatch,

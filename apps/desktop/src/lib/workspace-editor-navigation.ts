@@ -81,7 +81,7 @@ export function buildOpenEditorFileNavigation(
   };
 }
 
-/** 新建 files 选项卡并聚焦；用于当前页有未保存文件时从文件树打开另一文件。 */
+/** Creates and focuses a new files tab; used when opening another file from the file tree while the current tab has unsaved files. */
 export function buildOpenEditorFileInNewTabNavigation(
   input: OpenEditorFileNavigationInput,
 ): OpenEditorFileNavigationResult {
@@ -94,7 +94,7 @@ export function buildOpenEditorFileInNewTabNavigation(
   };
 }
 
-/** 查找已打开指定工作区文件路径的 files 选项卡 id。 */
+/** Finds the id of the files tab that already has the given workspace file path open. */
 export function findFilesTabWithWorkspacePath(
   tabs: readonly WorkspaceToolTab[],
   relativePath: string,

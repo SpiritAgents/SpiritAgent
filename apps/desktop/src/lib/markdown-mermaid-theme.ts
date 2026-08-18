@@ -5,7 +5,7 @@ import { DEFAULT_FONT_ID } from "@/lib/font";
 
 const MERMAID_FONT_FAMILY = `'${DEFAULT_FONT_ID === "geist" ? "Geist Variable" : "Geist Variable"}', sans-serif`;
 
-/** Void 语义色：与 styles.css 暗色 token 对齐，避免 Mermaid 默认黄/紫 subgraph */
+/** Void semantic colors: aligned with the dark-mode tokens in styles.css, avoiding Mermaid's default yellow/purple subgraph */
 function buildVoidMermaidThemeVariables(resolvedDark: boolean): MermaidConfig["themeVariables"] {
   if (resolvedDark) {
     return {

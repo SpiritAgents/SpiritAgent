@@ -1248,6 +1248,9 @@
     "autoWorktreeNameFailedInvalidBranchName": "Worktree 이름 자동 생성 실패: branchName 형식이 잘못되었습니다 ({{branchName}}).",
     "autoWorktreeNameFailedNotObject": "Worktree 이름 자동 생성 실패: 모델이 객체가 아닌 JSON을 반환했습니다."
   },
+  "rules": {
+    "templatePlaceholder": "이후 에이전트가 읽을 수 있도록 짧고 명확하며 실행 가능한 제약을 여기에 작성하세요."
+  },
   "notification": {
     "defaultSessionName": "세션",
     "taskComplete": {

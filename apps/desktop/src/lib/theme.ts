@@ -27,8 +27,9 @@ export function systemPrefersDark(): boolean {
   if (typeof window === "undefined") {
     return true;
   }
-  // Electron 里 prefers-color-scheme 跟随 nativeTheme.themeSource：被覆盖为 light/dark
-  // 期间 matchMedia 谎报。优先同步读主进程追踪的 OS 真值，切到 system 当帧即可翻转正确的类。
+  // In Electron, prefers-color-scheme follows nativeTheme.themeSource: while it is overridden to
+  // light/dark, matchMedia misreports. Prefer synchronously reading the OS truth tracked by the main
+  // process, so switching to system flips the correct class in the same frame.
   if (window.spiritDesktop) {
     return window.spiritDesktop.readOsPrefersDark();
   }
@@ -59,17 +60,17 @@ export function desktopNativeThemeForPreference(
 
 function setDocumentDark(dark: boolean): void {
   document.documentElement.classList.toggle("dark", dark);
-  // data-spirit-theme 由文档级直接维护（原在 app-shell JSX 上）：
-  // 避免 App 为此订阅 theme context 导致整棵树随主题切换全量重渲染
+  // data-spirit-theme is maintained directly at the document level (previously on the app-shell JSX):
+  // avoids App subscribing to the theme context for this, which would re-render the whole tree on theme switches
   document.documentElement.dataset.spiritTheme = dark ? "dark" : "light";
 }
 
 export type ApplyThemeToDocumentOptions = {
-  /** system 主题下 IPC 回传 OS 真值后同步 resolvedDark 等 React 订阅方。 */
+  /** Under the system theme, syncs resolvedDark and other React subscribers after the IPC returns the OS truth. */
   onSystemDarkResolved?: (dark: boolean) => void;
 };
 
-/** 在 `document.documentElement` 上切换 `dark` 类，与 shadcn / tw-animate 的 `.dark` 变体一致。 */
+/** Toggles the `dark` class on `document.documentElement`, matching the `.dark` variant of shadcn / tw-animate. */
 export function applyThemeToDocument(
   pref: ThemePreference,
   options?: ApplyThemeToDocumentOptions,
@@ -82,8 +83,8 @@ export function applyThemeToDocument(
   const nativeTheme = desktopNativeThemeForPreference(pref);
   syncDesktopWindowFrame(dark, nativeTheme, {
     translucency: document.documentElement.classList.contains("spirit-desktop-translucency"),
-    // 切回 system 时渲染端 prefers-color-scheme 尚跟随旧覆盖值，resolveDark 可能算错；
-    // 主进程在 themeSource 生效后回传真实 dark，在此一次性校正文档，避免等 mq change 二次翻转。
+    // When switching back to system, the renderer's prefers-color-scheme still follows the old override, so resolveDark may compute wrongly;
+    // the main process returns the real dark after themeSource takes effect, correcting the document here in one shot instead of waiting for an mq change to flip twice.
     onDarkCorrected: (realDark) => {
       if (getStoredTheme() !== pref) {
         return;
@@ -94,15 +95,15 @@ export function applyThemeToDocument(
   });
 }
 
-/** 与 Tauri `sync_tauri_frame_styling` 对齐：同一 IPC 内先设 `nativeTheme.themeSource` 再刷背景，避免与系统主题错位。 */
+/** Aligned with Tauri `sync_tauri_frame_styling`: within the same IPC, set `nativeTheme.themeSource` first and then refresh the background, avoiding mismatch with the system theme. */
 export function syncDesktopWindowFrame(
   dark: boolean,
   nativeTheme: "system" | "light" | "dark",
   options?: {
     translucency?: boolean;
-    /** 主进程在 themeSource 生效后回传真实 dark；与本地推算不一致时调用。 */
+    /** The main process returns the real dark after themeSource takes effect; called when it differs from the local computation. */
     onDarkCorrected?: (realDark: boolean) => void;
-    /** nativeTheme 为 system 时 IPC resolve 后调用，同步 resolvedDark 等。 */
+    /** Called after the IPC resolves when nativeTheme is system; syncs resolvedDark etc. */
     onSystemDarkResolved?: (realDark: boolean) => void;
   },
 ): void {
@@ -113,7 +114,7 @@ export function syncDesktopWindowFrame(
       import.meta.env.DEV
     ) {
       console.warn(
-        "[spirit-desktop] 无 spiritDesktop 预加载桥，窗口材质 IPC 未发送（检查 preload 与 webPreferences）",
+        "[spirit-desktop] no spiritDesktop preload bridge; window material IPC not sent (check preload and webPreferences)",
       );
     }
     return;
@@ -129,6 +130,6 @@ export function syncDesktopWindowFrame(
       }
     })
     .catch((err) => {
-      console.error("[spirit-desktop] syncWindowFrame IPC 失败:", err);
+      console.error("[spirit-desktop] syncWindowFrame IPC failed:", err);
     });
 }

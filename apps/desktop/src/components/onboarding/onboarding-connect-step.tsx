@@ -36,8 +36,9 @@ type OnboardingConnectControlsProps = {
 };
 
 /**
- * OOBE 连接提供商步骤内容：置顶搜索 + 全量 provider 列表（整页 ScrollArea 滚动），
- * 点击行打开与设置页共用的 ProviderConnectDialog；连接与否均不影响完成向导。
+ * OOBE connect-providers step content: pinned search at the top + full provider list (the whole
+ * page scrolls in a ScrollArea); clicking a row opens the ProviderConnectDialog shared with the
+ * settings page; connecting or not does not affect completing the wizard.
  */
 export function OnboardingConnectControls({
   modelsBusy,
@@ -52,7 +53,7 @@ export function OnboardingConnectControls({
   const { t } = useTranslation();
   const [query, setQuery] = useState("");
   const [connectDialogOpen, setConnectDialogOpen] = useState(false);
-  /** session 每次发起连接自增，作为 ProviderConnectDialog 的 key 重挂载以重置表单。 */
+  /** Increments on each connection attempt in this session; used as ProviderConnectDialog's key to remount and reset the form. */
   const [connectTarget, setConnectTarget] = useState<{
     provider: DesktopModelProvider;
     session: number;

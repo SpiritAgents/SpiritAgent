@@ -1,15 +1,15 @@
 import type { CSSProperties } from "react";
 
-/** 视口坐标系下的遮挡形状（mask 中 black = 不绘制消息） */
+/** Occlusion shape in viewport coordinates (black in the mask = do not paint messages) */
 export type ConversationScrollOccludeShape = {
   x: number;
   y: number;
   width: number;
   height: number;
-  /** 统一圆角（胶囊 / 四角圆角矩形） */
+  /** Uniform corner radius (pill / four-corner rounded rect) */
   rx: number;
   ry: number;
-  /** 仅上圆角（TODO 贴输入框）；下沿直角，避免误裁底角或漏裁方角 */
+  /** Top corners only (TODO attach to the composer); the bottom edge stays square to avoid over-clipping the bottom corners or under-clipping the square ones */
   roundTopOnly?: boolean;
 };
 
@@ -18,8 +18,10 @@ export type ConversationScrollOccludeMaskInput = {
   viewportHeight: number;
   shapes: readonly ConversationScrollOccludeShape[];
   /**
-   * 自该 Y（视口坐标）起铺满视口宽的底带：封住输入框底圆角外侧空隙 + 审批栏。
-   * 输入框顶圆角外侧不在此带内，消息仍可从空隙露出。
+   * A viewport-wide bottom band starting at this Y (viewport coordinate): seals the gap outside
+   * the composer's bottom corners plus the approval bar.
+   * The area outside the composer's top corners is not in this band, so messages can still show
+   * through the gap there.
    */
   bottomSlabFromY?: number;
 };
@@ -38,8 +40,8 @@ function clampShape(
   if (width <= 0.5 || height <= 0.5) {
     return null;
   }
-  // 统一上限为 min(w,h)/2：rounded-full 的超大 radius 若分别按 w/2、h/2 clamp，
-  // 会变成椭圆（rx≠ry），胶囊四角落在 mask 外 → 内部透字。
+  // Uniform cap of min(w,h)/2: a rounded-full radius clamped separately to w/2 and h/2 would
+  // become an ellipse (rx≠ry), leaving the pill corners outside the mask → text bleeds through.
   const maxR = Math.min(width, height) / 2;
   return {
     x,
@@ -52,7 +54,7 @@ function clampShape(
   };
 }
 
-/** 从视口与元素矩形得到相对坐标形状 */
+/** Derive a shape in viewport-relative coordinates from the viewport and element rects */
 export function conversationScrollOccludeShapeFromRects(
   viewportRect: DOMRectReadOnly,
   elementRect: DOMRectReadOnly,
@@ -82,7 +84,7 @@ export function readElementUniformBorderRadius(element: HTMLElement): number {
   );
 }
 
-/** 仅取顶角半径（TODO：上圆下直） */
+/** Take only the top corner radii (TODO: rounded top, square bottom) */
 export function readElementTopBorderRadius(element: HTMLElement): number {
   const style = getComputedStyle(element);
   return Math.max(
@@ -108,15 +110,15 @@ function shapeToSvg(shape: ConversationScrollOccludeShape): string {
     const xR = (shape.x + r).toFixed(2);
     const xWR = (shape.x + shape.width - r).toFixed(2);
     const yR = (shape.y + r).toFixed(2);
-    // 上圆角、下直角
+    // Rounded top, square bottom
     return `<path d="M${x},${yR} A${rStr},${rStr} 0 0 1 ${xR},${y} H${xWR} A${rStr},${rStr} 0 0 1 ${x2},${yR} V${y2} H${x} Z" fill="black"/>`;
   }
   return `<rect x="${x}" y="${y}" width="${w}" height="${h}" rx="${shape.rx.toFixed(2)}" ry="${shape.ry.toFixed(2)}" fill="black"/>`;
 }
 
 /**
- * 构建会话滚动视口 mask：白=绘制消息，黑=不绘制。
- * 形状仅裁切自身轮廓（Changes/TODO/输入框顶圆角空隙不裁）；底带封底圆角外侧与审批栏。
+ * Build the conversation scroll viewport mask: white = paint messages, black = do not paint.
+ * Each shape clips only its own outline (the gaps outside the top corners of Changes/TODO/composer are not clipped); the bottom band seals the area outside the bottom corners and the approval bar.
  */
 export function buildConversationScrollOccludeMaskStyle(
   input: ConversationScrollOccludeMaskInput,
@@ -152,7 +154,7 @@ export function buildConversationScrollOccludeMaskStyle(
     `</svg>`;
 
   const maskImage = `url("data:image/svg+xml,${encodeURIComponent(svg)}")`;
-  // data-URL SVG 默认按 alpha 采样：黑/白 fill 都是不透明 → 裁切完全无效；须用 luminance（白=显、黑=隐）
+  // data-URL SVG masks sample alpha by default: black/white fills are both opaque → clipping is a no-op; luminance is required (white = visible, black = hidden)
   return {
     maskImage,
     WebkitMaskImage: maskImage,

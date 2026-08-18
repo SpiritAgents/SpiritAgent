@@ -156,7 +156,7 @@ function buildSpiritLightChromeColors(editorSurface: string): Record<string, str
   };
 }
 
-/** Shiki dark-plus / light-plus 语法色 + Spirit 编辑区 chrome（背景、选区等）。 */
+/** Shiki dark-plus / light-plus syntax colors + Spirit editor chrome (background, selection, etc.). */
 export function registerSpiritShikiPlusMonacoThemes(): void {
   const mica = isNativeTranslucencyActive();
   const darkSurface = mica

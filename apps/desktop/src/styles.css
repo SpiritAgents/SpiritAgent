@@ -25,7 +25,7 @@
 
 :root {
   --background: oklch(1 0 0);
-  /* 默认正文色（非强调态）；侧栏交互默认另见 --sidebar-action-foreground */
+  /* Default body text color (non-emphasis state); sidebar interaction default see --sidebar-action-foreground */
   --foreground: #2b2b2b;
   --card: oklch(1 0 0);
   --card-foreground: oklch(0.145 0 0);
@@ -42,7 +42,7 @@
   --destructive: oklch(0.577 0.245 27.325);
   --border: oklch(0.922 0 0);
   --input: oklch(0.922 0 0);
-  /* 表单控件默认边框：等价 border-border/60，与扩展卡片等低对比度块对齐 */
+  /* Default form control border: equivalent to border-border/60, aligned with low-contrast blocks such as extension cards */
   --control-border: color-mix(in oklab, var(--border) 60%, transparent);
   --ring: oklch(0.708 0 0);
   --chart-1: oklch(0.87 0 0);
@@ -52,7 +52,7 @@
   --chart-5: oklch(0.269 0 0);
   --radius: 0.625rem;
   --sidebar: oklch(0.985 0 0);
-  /* 与 --foreground 同级，避免主区 hover:text-sidebar-foreground 比选中 text-foreground 更暗 */
+  /* Same level as --foreground, so main-area hover:text-sidebar-foreground is not darker than the selected text-foreground */
   --sidebar-foreground: #2b2b2b;
   --sidebar-primary: oklch(0.205 0 0);
   --sidebar-primary-foreground: oklch(0.985 0 0);
@@ -60,18 +60,18 @@
   --sidebar-accent-foreground: oklch(0.205 0 0);
   --sidebar-border: oklch(0.922 0 0);
   --sidebar-ring: oklch(0.708 0 0);
-  /* 侧栏内分级：交互按钮默认 / 交互项默认 / 列表正文 / 极淡说明（分区小标题等） */
+  /* Sidebar hierarchy: interactive button default / interactive item default / list body text / very faint captions (section subtitles etc.) */
   --sidebar-action-foreground: #2b2b2b;
   --sidebar-item-foreground: oklch(0.42 0 0);
   --sidebar-list-foreground: oklch(0.4 0 0);
   --sidebar-faint-foreground: oklch(0.5 0 0);
-  /* Dialog 内部描边面板统一使用“连接提供商”选择框的边框色；后续仅 Dialog 内部块级边框复用，非 Dialog 场景不要使用。 */
+  /* Outlined panels inside Dialogs uniformly use the "connect provider" select border color; only reuse for block-level borders inside Dialogs, not for non-Dialog cases. */
   --dialog-panel-border: color-mix(in oklab, var(--border) 40%, transparent);
-  /* Git primary ButtonGroup 内部分割：固定中性灰，禁止混 primary-foreground（暗色下是近黑，再淡也像黑线） */
+  /* Divider inside the Git primary ButtonGroup: fixed neutral gray; never mix with primary-foreground (near-black in dark mode, still reads as a black line when faint) */
   --git-action-split: oklch(0.58 0 0);
-  /* UI 字体栈：运行时由 applyFontToDocument 覆盖；须用 var() 接入 @theme，避免 font-sans 被编译成字面量。 */
+  /* UI font stack: overridden at runtime by applyFontToDocument; must go through var() in @theme so font-sans is not compiled into a literal. */
   --spirit-ui-font-stack: "Geist Variable", sans-serif;
-  /* 集成终端（xterm）：浅色主题 ANSI 色板 */
+  /* Integrated terminal (xterm): light-theme ANSI palette */
   --terminal-bg: #ffffff;
   --terminal-fg: #0a0a0a;
   --terminal-cursor: #0a0a0a;
@@ -95,7 +95,7 @@
   --terminal-ansi-bright-white: #a5a5a5;
 }
 
-/* Void 暗色语义 token：必须写在 :root 之后，否则 Dialog/Select 等仍用 oklch(1 0 0) */
+/* Void dark semantic tokens: must come after :root, otherwise Dialog/Select etc. still use oklch(1 0 0) */
 html.dark,
 .dark,
 [data-spirit-theme="dark"] {
@@ -113,7 +113,7 @@ html.dark,
   --muted-foreground: #a1a1a1;
   --accent: #181818;
   --accent-foreground: #d4d4d4;
-  /* shadcn neutral 暗色默认 destructive（勿用 Void 灰或 :root 浅色红） */
+  /* shadcn neutral dark default destructive (do not use Void gray or the :root light red) */
   --destructive: oklch(0.704 0.191 22.216);
   --border: #272727;
   --input: #272727;
@@ -197,8 +197,8 @@ body {
 }
 
 /*
- * flex 子项上 height:100% 无法可靠做 zoom 补偿；改用 dvh 显式计算布局盒。
- * Windows 顶栏（2rem）在缩放根外，可用高度为 100dvh - 2rem。
+ * height:100% on a flex child cannot reliably compensate for zoom; use dvh to compute the layout box explicitly.
+ * The Windows title bar (2rem) sits outside the scale root, so the available height is 100dvh - 2rem.
  */
 #spirit-ui-scale-root.spirit-ui-layout-scaled {
   flex: none;
@@ -212,7 +212,7 @@ html.spirit-desktop-win32 #spirit-ui-scale-root.spirit-ui-layout-scaled {
   height: calc((100dvh - 2rem) / var(--spirit-ui-layout-scale));
 }
 
-/* Electron Windows 自绘标题栏：拖拽区与可点击菜单互斥 */
+/* Electron Windows custom-drawn title bar: drag regions and clickable menus are mutually exclusive */
 .electron-drag {
   -webkit-app-region: drag;
 }
@@ -221,25 +221,25 @@ html.spirit-desktop-win32 #spirit-ui-scale-root.spirit-ui-layout-scaled {
   -webkit-app-region: no-drag;
 }
 
-/* Windows 自绘顶栏在缩放根之外（desktop-chrome-root 内），原生 titleBarOverlay 不受影响 */
-/* macOS hiddenInset：顶缘透明拖拽区，分区背景延伸至窗口顶，内容以 padding 避让红绿灯 */
+/* The Windows custom-drawn title bar sits outside the scale root (inside desktop-chrome-root); the native titleBarOverlay is unaffected */
+/* macOS hiddenInset: transparent drag band along the top edge; section backgrounds extend to the window top, content uses padding to avoid the traffic lights */
 html.spirit-desktop-darwin {
   --spirit-macos-titlebar-inset: 2rem;
-  /* hiddenInset 红绿灯占用宽度（约 12px 边距 + 三键 + 间距） */
+  /* Width occupied by the hiddenInset traffic lights (about 12px margin + three buttons + spacing) */
   --spirit-macos-traffic-lights-inset-left: 4.875rem;
-  /* 侧栏切换：红绿灯右缘 + 小间距（fixed 钉位用，不改 drag 区域几何） */
+  /* Sidebar toggle: right edge of the traffic lights + small gap (used for fixed pinning; does not change the drag region geometry) */
   --spirit-macos-sidebar-toggle-inset-left: calc(
     var(--spirit-macos-traffic-lights-inset-left) + 0.125rem
   );
 }
 
-/* 仅侧栏下移避让左上红绿灯；主区顶栏与标题栏同高同排 */
+/* Only the sidebar shifts down to avoid the top-left traffic lights; the main-area top bar shares the title bar's height and row */
 html.spirit-desktop-darwin #session-sidebar-panel {
   position: relative;
   padding-top: var(--spirit-macos-titlebar-inset);
 }
 
-/* 侧栏列顶缘透明拖拽带（绝对定位，不占 flex 布局） */
+/* Transparent drag band along the sidebar column's top edge (absolutely positioned, not part of the flex layout) */
 html.spirit-desktop-darwin #session-sidebar-panel::before {
   content: "";
   position: absolute;
@@ -251,7 +251,7 @@ html.spirit-desktop-darwin #session-sidebar-panel::before {
   -webkit-app-region: drag;
 }
 
-/* macOS：切换按钮 fixed 钉在红绿灯右侧，仍留在 layout-chrome 树内以继承 no-drag */
+/* macOS: the toggle button is fixed-pinned to the right of the traffic lights, but stays inside the layout-chrome tree to inherit no-drag */
 html.spirit-desktop-darwin [data-darwin-pinned-sidebar-toggle] {
   position: fixed;
   top: 0;
@@ -262,7 +262,7 @@ html.spirit-desktop-darwin [data-darwin-pinned-sidebar-toggle] {
   align-items: flex-end;
 }
 
-/* 顶栏空白区可拖，仅按钮/链接 no-drag（与 Windows 自绘标题栏一致） */
+/* Top bar blank area is draggable; only buttons/links are no-drag (same as the Windows custom-drawn title bar) */
 html.spirit-desktop-darwin [data-spirit-surface="layout-chrome"] {
   -webkit-app-region: drag;
   transition: padding-left 300ms cubic-bezier(0.22, 1, 0.36, 1);
@@ -283,25 +283,25 @@ html.spirit-desktop-darwin [data-spirit-surface="workspace-panel"] > div:first-c
   -webkit-app-region: no-drag;
 }
 
-/* Split 后仅 Pane 顶栏禁用窗口拖拽，避免与 HTML5 pane 重排冲突；侧栏/右侧工具栏顶缘仍可拖窗口 */
+/* After Split, only pane top bars disable window dragging to avoid conflicts with HTML5 pane reordering; sidebar/right-tools top edges can still drag the window */
 html.spirit-desktop-darwin.spirit-desktop-darwin-conversation-split
   [data-spirit-surface="layout-chrome"] {
   -webkit-app-region: no-drag;
 }
 
-/* 侧栏收起时主区顶栏从窗口左缘开始，需右移避让红绿灯（仅最左 anchor pane） */
+/* With the sidebar collapsed, the main-area top bar starts at the window's left edge and must shift right to avoid the traffic lights (leftmost anchor pane only) */
 html.spirit-desktop-darwin
   [data-spirit-surface="layout-chrome"][data-session-sidebar-open="false"][data-macos-leading-inset="true"] {
   padding-left: var(--spirit-macos-traffic-lights-inset-left);
 }
 
-/* 侧栏展开时顶栏标题左缘留白与 flex-end 上缘留白对齐（titlebar 高度 − text-xs 行高 1rem；仅最左 anchor pane） */
+/* With the sidebar open, align the top bar title's left padding with the flex-end top padding (titlebar height − text-xs line height 1rem; leftmost anchor pane only) */
 html.spirit-desktop-darwin:not(.spirit-desktop-darwin-fullscreen)
   [data-spirit-surface="layout-chrome"][data-session-sidebar-open="true"][data-macos-leading-inset="true"] {
   padding-left: calc(var(--spirit-macos-titlebar-inset) - 1rem);
 }
 
-/* Split 非 anchor pane：不避让红绿灯，但与 anchor 侧栏展开时保持相同标题行左留白 */
+/* Split non-anchor pane: does not avoid the traffic lights, but keeps the same title-row left padding as the anchor with the sidebar open */
 html.spirit-desktop-darwin:not(
     .spirit-desktop-darwin-fullscreen
   ).spirit-desktop-darwin-conversation-split
@@ -309,7 +309,7 @@ html.spirit-desktop-darwin:not(
   padding-left: calc(var(--spirit-macos-titlebar-inset) - 1rem);
 }
 
-/* 全屏时红绿灯隐藏，取消顶栏/侧栏安全区内边距与拖拽带 */
+/* In fullscreen the traffic lights are hidden; drop the top-bar/sidebar safe-area padding and the drag band */
 html.spirit-desktop-darwin.spirit-desktop-darwin-fullscreen {
   --spirit-macos-titlebar-inset: 0px;
   --spirit-macos-traffic-lights-inset-left: 0px;
@@ -320,7 +320,7 @@ html.spirit-desktop-darwin.spirit-desktop-darwin-fullscreen #session-sidebar-pan
   content: none;
 }
 
-/* Desktop 且开启原生窗级半透明材质时：根层透明，便于宿主窗口绘制系统材质；Web 版保持实色。 */
+/* On Desktop with native window-level translucent material enabled: make the root layers transparent so the host window can draw the system material; the Web version stays opaque. */
 html.spirit-desktop-native.spirit-desktop-translucency,
 html.spirit-desktop-native.spirit-desktop-translucency body,
 html.spirit-desktop-native.spirit-desktop-translucency #spirit-ui-scale-root,
@@ -329,8 +329,8 @@ html.spirit-desktop-native.spirit-desktop-translucency #app {
 }
 
 /*
- * 510f5a00 后 Windows 自绘顶栏在 desktop-chrome-root，须单独在启动层期间隐藏。
- * 退场时与启动层 opacity 同步交叉淡入。
+ * Since 510f5a00 the Windows custom-drawn title bar lives in desktop-chrome-root and must be hidden separately during the launch overlay.
+ * On exit it cross-fades in sync with the launch overlay's opacity.
  */
 html.spirit-launch-splash-active [data-spirit-surface="desktop-title-bar"] {
   opacity: 0;
@@ -350,13 +350,13 @@ html.spirit-launch-splash-exiting [data-spirit-surface="desktop-title-bar"] {
 }
 
 /*
- * 启动层 / OOBE 挂载期间隐藏其下的应用布局；开启原生模糊时必须隐藏，否则会合成进系统材质（macOS 尤甚）。
- * 必须用 opacity 而非 visibility：opacity:0 的子树仍正常绘制并驻留合成层，退场开始时可即刻上屏；
- * visibility:hidden 会跳过绘制，首次栅格化被推迟到退场开始，500ms 退出窗口被栅格化耗时吃成硬切。
- * 退场时覆盖层整层（含背景 tint）以 500ms ease-out 淡出；下层淡入曲线须与之补偿：
- * 瞬时就位或短淡入会与覆盖层 tint 叠出加深阶跃（突兀变深）；等速 ease-out 长淡入则前段
- * 到达太慢，有效遮盖率中段下凹透出窗口材质（深色下泛白）。cubic-bezier(0.16,1,0.3,1)
- * 前载到达（20% 行程即到 75%），逐帧跟踪覆盖层衰减，有效遮盖率全程 ≈0.70 无起伏。
+ * Hide the app layout underneath while the launch overlay / OOBE is mounted; with native blur enabled it must be hidden, otherwise it gets composited into the system material (especially on macOS).
+ * Must use opacity, not visibility: an opacity:0 subtree still paints normally and stays on the compositor, so it can appear instantly when the exit starts;
+ * visibility:hidden skips painting, deferring the first rasterization to the exit start, and the 500ms exit window is eaten by rasterization time into a hard cut.
+ * On exit the whole overlay layer (including the background tint) fades out over 500ms ease-out; the underlay fade-in curve must compensate:
+ * an instant or short fade-in stacks with the overlay tint into a darkening step (abrupt darkening); a constant ease-out long fade-in
+ * arrives too slowly in its early part, so the effective coverage dips mid-way and shows the window material through (washed out in dark mode). cubic-bezier(0.16,1,0.3,1)
+ * front-loads arrival (75% at 20% of the travel), tracks the overlay decay frame by frame, and keeps the effective coverage ≈0.70 throughout.
  */
 html.spirit-launch-splash-active
   [data-spirit-surface="app-shell"]
@@ -428,7 +428,7 @@ html.spirit-launch-splash-exiting
   --radius-2xl: calc(var(--radius) * 1.8);
   --radius-3xl: calc(var(--radius) * 2.2);
   --radius-4xl: calc(var(--radius) * 2.6);
-  /* AnimatedCollapse：覆盖 tw-animate-css 默认 ease-out-only，展开/收起使用不同曲线 */
+  /* AnimatedCollapse: overrides tw-animate-css's default ease-out-only; expand/collapse use different curves */
   --ease-collapsible-expand: cubic-bezier(0.22, 1, 0.36, 1);
   --ease-collapsible-collapse: cubic-bezier(0.4, 0, 0.2, 1);
   --animate-spirit-collapsible-down: spirit-collapsible-down 280ms var(--ease-collapsible-expand);
@@ -477,12 +477,12 @@ html.spirit-launch-splash-exiting
   html.dark {
     color-scheme: dark;
   }
-  /* WebView2：`<pre>` 默认易触发中文衬线回退，与 UI 无衬线栈不一致 */
+  /* WebView2: `<pre>` by default easily triggers the Chinese serif fallback, inconsistent with the UI sans stack */
   pre {
     @apply font-sans;
   }
 
-  /* 可点击控件手型光标：仅在开启「悬停显示手型」时生效；disabled 保持 not-allowed */
+  /* Pointer cursor on clickable controls: only applies when "show pointer on hover" is enabled; disabled keeps not-allowed */
   html.spirit-clickable-pointer button:not(:disabled),
   html.spirit-clickable-pointer [role="button"]:not([aria-disabled="true"]),
   html.spirit-clickable-pointer [role="menuitem"]:not([data-disabled]),
@@ -498,7 +498,7 @@ html.spirit-launch-splash-exiting
     cursor: pointer;
   }
 
-  /* 工作区组拖拽排序：与「手型光标」设置无关，始终 grab/grabbing */
+  /* Workspace group drag reordering: independent of the "pointer cursor" setting, always grab/grabbing */
   .spirit-workspace-group-reorder-grab,
   .spirit-workspace-group-reorder-grab button:not(:disabled) {
     cursor: grab !important;
@@ -509,7 +509,7 @@ html.spirit-launch-splash-exiting
     cursor: grabbing !important;
   }
 
-  /* 指针离开卡片后仍保持 grab/grabbing（window 级 pointer 监听） */
+  /* Keep grab/grabbing after the pointer leaves the card (window-level pointer listeners) */
   html[data-workspace-group-reorder-pressing],
   html[data-workspace-group-reorder-pressing] * {
     cursor: grab !important;
@@ -520,12 +520,12 @@ html.spirit-launch-splash-exiting
     cursor: grabbing !important;
   }
 
-  /* 拖拽排序中：兄弟项禁用 hit-test，避免 FLIP 穿过指针时误触发 hover 铺底 */
+  /* During drag reordering: siblings disable hit-testing to avoid wrongly triggering the hover background when FLIP passes under the pointer */
   [data-workspace-group-id].pointer-events-none .group\/workspace-row {
     background-color: transparent !important;
   }
 
-  /* 拖拽展开组换位时：冻结 collapse 内容高度/透明度，避免 transform 重算导致会话闪灭 */
+  /* When swapping groups by dragging an expanded group: freeze the collapse content height/opacity so transform recomputation does not make sessions flicker */
   [data-workspace-reorder-dragging] [data-slot="animated-collapse-content"][data-state="open"] {
     height: var(--spirit-collapsible-content-height) !important;
     opacity: 1 !important;
@@ -545,7 +545,7 @@ html.spirit-launch-splash-exiting
   }
 }
 
-/* WebView2 / Chrome：用细轨道 + 无箭头，替代系统默认“经典”滚动条 */
+/* WebView2 / Chrome: use a thin track with no arrows, replacing the system default "classic" scrollbar */
 @layer components {
   .spirit-sidebar-reorder-flip {
     will-change: transform;
@@ -589,8 +589,8 @@ html.spirit-launch-splash-exiting
   }
 
   /*
-   * 玻璃品牌标主题色：与 n123999/me `project-spirit-agent-preview` 一致。
-   * 默认浅色 UI；`html.dark` 为暗色（原 spiritagent.app CTA 白描边方案）。
+   * Glass brand logo theme colors: matches n123999/me `project-spirit-agent-preview`.
+   * Light UI by default; `html.dark` is the dark variant (the original spiritagent.app CTA white-stroke scheme).
    */
   .spirit-glass-logo {
     --spirit-agent-fill-strong: rgba(31, 31, 31, 0.06);
@@ -620,7 +620,7 @@ html.spirit-launch-splash-exiting
     --spirit-agent-stroke-soft: rgba(255, 255, 255, 0.2);
   }
 
-  /* 骨架屏式：宽柔渐变 + 平移 background，避免窄条「镀铬高光」的复古感 */
+  /* Skeleton style: wide soft gradient + translating background, avoiding the retro feel of a narrow "chrome highlight" strip */
   @keyframes spirit-launch-shimmer-bg {
     0% {
       background-position: 125% 50%;
@@ -650,7 +650,7 @@ html.spirit-launch-splash-exiting
     will-change: background-position;
   }
 
-  /* Thinking：`background-clip: text`；双层（底层 muted + 顶层平移高光），避免单层在极端 `background-position` 下露透明洞。 */
+  /* Thinking: `background-clip: text`; two layers (bottom muted + top translating highlight) so a single layer cannot expose a transparent hole at extreme `background-position` values. */
   @keyframes spirit-thinking-text-shimmer-pos {
     0% {
       background-position:
@@ -688,7 +688,7 @@ html.spirit-launch-splash-exiting
     background-clip: text;
     color: transparent;
     -webkit-text-fill-color: transparent;
-    /* 与首屏图标不同：思考条用匀速更易读，避免 ease 前段像「拖着不走」 */
+    /* Unlike the launch icon: the thinking bar reads better at constant speed, avoiding the ease's slow start feeling "stuck" */
     animation: spirit-thinking-text-shimmer-pos 1s linear infinite;
     will-change: background-position;
     transform: translateZ(0);
@@ -724,7 +724,7 @@ html.spirit-launch-splash-exiting
     animation: spirit-edit-delta-enter-down 180ms cubic-bezier(0.22, 1, 0.36, 1);
   }
 
-  /* OOBE 步进：方向性非线性淡入淡出（出场快于入场），无模糊 */
+  /* OOBE step transitions: directional non-linear fade in/out (exit faster than enter), no blur */
   @keyframes spirit-oobe-step-exit-forward {
     from {
       opacity: 1;
@@ -795,7 +795,7 @@ html.spirit-launch-splash-exiting
     animation: spirit-oobe-step-exit-backward 200ms cubic-bezier(0.32, 0.72, 0, 1) both;
   }
 
-  /* 入场按内容块（标题 → 内容 → 导航）40ms 递进 stagger；容器本身不动画避免透明度叠乘 */
+  /* Enter animates per content block (title → content → navigation) with a 40ms stagger; the container itself does not animate to avoid opacity multiplication */
   .spirit-oobe-step-enter-forward [data-oobe-block] {
     animation: spirit-oobe-step-enter-forward 360ms cubic-bezier(0.32, 0.72, 0, 1) both;
     animation-delay: calc(var(--spirit-oobe-block, 0) * 40ms);
@@ -847,13 +847,13 @@ html.spirit-launch-splash-exiting
   }
 }
 
-/* Shell 内嵌 xterm：可点击链接在开启手型偏好时显示手型光标 */
+/* Shell-embedded xterm: clickable links show the pointer cursor when the pointer preference is enabled */
 html.spirit-clickable-pointer :is(.workspace-shell-xterm, .shell-tool-xterm) .xterm-link {
   cursor: pointer;
   text-decoration: underline;
 }
 
-/* Shell 内嵌 xterm（工作区页 + 工具卡）：细轨 + 半透明拇指，避免系统默认实心灰/白条 */
+/* Shell-embedded xterm (workspace page + tool card): thin track + translucent thumb, avoiding the system default solid gray/white bar */
 :is(.workspace-shell-xterm, .shell-tool-xterm) .xterm-viewport {
   scrollbar-width: thin;
   scrollbar-color: color-mix(in oklab, var(--foreground) 16%, transparent) transparent;
@@ -872,7 +872,7 @@ html.spirit-clickable-pointer :is(.workspace-shell-xterm, .shell-tool-xterm) .xt
   background: color-mix(in oklab, var(--foreground) 24%, transparent);
 }
 
-/* 关闭手型偏好时压过 @layer utilities 的 cursor-pointer（含 enabled:cursor-pointer 等变体） */
+/* When the pointer preference is off, override @layer utilities' cursor-pointer (including variants like enabled:cursor-pointer) */
 html:not(.spirit-clickable-pointer)
   :is(.cursor-pointer, [class*="cursor-pointer"]):not(:disabled):not([aria-disabled="true"]):not(
     [data-disabled]
@@ -880,7 +880,7 @@ html:not(.spirit-clickable-pointer)
   cursor: default;
 }
 
-/* Composer 建议菜单打开动画落位前：临时 text 光标，避免在指针下展开时闪手型；落位后恢复设置页规则 */
+/* Before the Composer suggestion menu open animation settles: temporary text cursor to avoid flashing the pointer when expanding under the cursor; the settings-page rules resume once settled */
 .spirit-composer-suggestion-open-settle,
 .spirit-composer-suggestion-open-settle * {
   cursor: text !important;

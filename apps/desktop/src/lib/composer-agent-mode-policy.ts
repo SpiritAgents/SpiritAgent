@@ -60,7 +60,7 @@ export function composerShowsPlaceholder(
   return segmentsToPlainText(segs) === "";
 }
 
-/** Chip 插入时尾部的 lone spacer；用户再输入空白或非空字符即视为已开始编辑。 */
+/** The lone spacer trailing a chip right after insertion; typing any whitespace or non-space character counts as having started editing. */
 function isAgentModeChipPlaceholderBaselinePlain(plain: string): boolean {
   return plain === "" || plain === " ";
 }

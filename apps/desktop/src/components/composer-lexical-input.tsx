@@ -113,7 +113,7 @@ const COMPOSER_PLACEHOLDER_CLASS =
 const AGENT_MODE_CHIP_SELECTOR =
   "[data-chip-kind='plan'],[data-chip-kind='ask'],[data-chip-kind='debug']";
 
-/** Shell 内 absolute `left`：getBoundingClientRect 差值为视口长度，须换为缩放根本地 px。 */
+/** Absolute `left` inside Shell: getBoundingClientRect differences are in viewport units and must be converted to local px at the zoom root. */
 function shellLocalLeftFromViewportDelta(delta: number): number {
   return viewportLengthToScaleRootLocal(delta);
 }
@@ -347,7 +347,7 @@ type Props = {
   onPaste?(e: ClipboardEvent<HTMLDivElement>): void;
   /** UTF-16 offset in plain composer text (`segmentsToPlainText`), for @-file suggestions. */
   onSelectionChange?(selectionStart: number | null): void;
-  /** Session 级：用户 Backspace 去掉 Plan/Ask chip 后，poll 不得再通过 DOM 钉回。 */
+  /** Session-level: after the user Backspace-removes the Plan/Ask chip, poll must not re-pin it via the DOM. */
   agentModeChipDismissed?: boolean;
   onAgentModeChipDismissChange?(dismissed: boolean): void;
 };
@@ -400,7 +400,7 @@ export type ComposerRichInputHandle = {
   ): void;
   removeSkillSlashQuery(query: ActiveSkillSlashQuery): void;
   insertPlainTextAtCaret(text: string): void;
-  /** 发送成功后由宿主调用：恢复 chip（若仍为 plan/ask）并将光标置于 chip 后。 */
+  /** Called by the host after a successful send: restores the chip (if still plan/ask) and places the cursor after the chip. */
   resetAfterSend(agentMode: DesktopAgentMode): void;
   getSegments(): RichSegment[];
   setSegments(segments: RichSegment[]): void;

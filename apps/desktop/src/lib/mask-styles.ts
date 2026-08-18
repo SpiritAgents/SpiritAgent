@@ -1,19 +1,19 @@
 import type { CSSProperties } from "react";
 
-/** 横向末端渐隐（workspace 选项卡关闭按钮等）：略强于默认 50%，实心区仅限 X 附近。 */
+/** Horizontal end fade-out (workspace tab close button, etc.): slightly stronger than the default 50%, with the solid zone limited to near the X. */
 export const maskFadeHorizontalEnd: CSSProperties = {
   maskImage: "linear-gradient(to right, transparent 0%, black 42%)",
   WebkitMaskImage: "linear-gradient(to right, transparent 0%, black 42%)",
 };
 
-/** 会话侧栏：顶栏按钮与下方滚动列表之间的固定间距（与渐隐遮罩 / translucency 无关）。 */
+/** Session sidebar: fixed gap between the top-bar buttons and the scroll list below (unrelated to the fade mask / translucency). */
 export const sidebarSessionsScrollTopGapClass = "pt-4";
 
-/** 列表底缘渐隐：与 session-sidebar 共用 `--sidebar-mask-bottom-alpha` 及 150ms 过渡。 */
+/** List bottom-edge fade-out: shares `--sidebar-mask-bottom-alpha` and the 150ms transition with session-sidebar. */
 const LIST_BOTTOM_SCROLL_FADE_MASK =
   "linear-gradient(to bottom, black calc(100% - 56px), rgb(0 0 0 / var(--sidebar-mask-bottom-alpha)) 100%)";
 
-/** `hasMoreBelow` 为 true 时底缘渐隐可见；滚到底时渐隐淡出。 */
+/** The bottom-edge fade-out is visible when `hasMoreBelow` is true; it fades away when scrolled to the bottom. */
 export function bottomScrollFadeMaskStyle(
   hasMoreBelow: boolean,
   options?: { animate?: boolean },

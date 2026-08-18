@@ -56,16 +56,16 @@ import type { useDesktopRuntime } from "@/hooks/useDesktopRuntime";
 
 type DesktopRuntime = ReturnType<typeof useDesktopRuntime>;
 
-// memo 行的 props 必须引用稳定；空数组用模块级常量而非行内字面量
+// Memoized row props must be reference-stable; use module-level constants for empty arrays instead of inline literals
 const EMPTY_MODELS: DesktopSnapshot["config"]["models"] = [];
 const EMPTY_REWIND_LOCAL_FILE_ATTACHMENTS: readonly ComposerLocalFileAttachmentView[] = [];
 
 export type ConversationListProps = {
   messages: readonly ConversationMessageSnapshot[];
   conversationRenderItems: readonly ConversationRenderItem[];
-  /** 虚拟化滚动容器（Radix ScrollArea viewport）；由 ConversationView 提供。 */
+  /** Virtualized scroll container (Radix ScrollArea viewport); provided by ConversationView. */
   getScrollElement: () => HTMLElement | null;
-  /** 跟底时同步钉底（stream tail 持有 stick 语义）；每次 totalSize 变化的 commit 中调用 */
+  /** Synchronously pins to the bottom while tail-following (stream tail owns the stick semantics); called on every commit where totalSize changes */
   pinScrollToTail: () => void;
   subagentViewActive: boolean;
   composerSessionKey: string;
@@ -172,8 +172,9 @@ export function ConversationList({
     setHoveredAssistantTurnStart(null);
   }, [conversationIsBusy]);
 
-  // 流式 delta 时 MessageCard 靠 memo 短路，传入的回调必须为稳定引用；
-  // runtime 对象每渲染都是新引用，须解构出 useCallback 化的方法再作依赖。
+  // During streaming deltas MessageCard short-circuits via memo, so the passed callbacks must be
+  // stable references; the runtime object is a new reference on every render, so destructure its
+  // useCallback-wrapped methods before using them as dependencies.
   const messagesRef = useRef(messages);
   messagesRef.current = messages;
 
@@ -229,7 +230,7 @@ export function ConversationList({
     void navigator.clipboard.writeText(text);
   }, []);
 
-  // queued 前缀计数一次算好，避免 renderRow 每行 O(index) 的 slice/filter
+  // Compute queued prefix counts once, avoiding O(index) slice/filter per row in renderRow
   const queuedBeforeCounts = useMemo(() => {
     const counts = Array.from<number>({ length: messages.length });
     let queued = 0;
@@ -252,16 +253,21 @@ export function ConversationList({
 
   const sizingRef = useRef<HTMLDivElement | null>(null);
   const [scrollMargin, setScrollMargin] = useState(0);
-  // viewport 是父组件 ScrollArea 的 DOM，冷启动首帧 getScrollElement() 为 null，
-  // 须转成 state 才能让 virtualizer 重新执行 _willUpdate 绑定 scroll 监听。
+  // The viewport is the parent ScrollArea's DOM; on cold start getScrollElement() is null on
+  // the first frame, so it must be converted to state to make the virtualizer re-run _willUpdate
+  // and bind the scroll listener.
   const [scrollElement, setScrollElement] = useState<HTMLElement | null>(null);
 
-  // 必须用 useLayoutEffect：useEffect 在 paint 后才绑定 scrollElement，导航切入会先
-  // 上屏一帧空列表（virtualItems 为空），可感知为空白闪烁。layout effect 中的 setState
-  // 在 paint 前同步 flush，virtual-core 注册 observeElementRect 时同步量取 rect，首帧即有行。
-  // 整页 reload（如 HMR）后快照首个 commit 即就绪，本组件与祖先 ScrollArea 同一次
-  // commit 挂载；子 layout effect 先于祖先 viewport ref 附加执行，此处会拿到 null。
-  // 一次性绑定会让 virtualizer 永无滚动元素（列表空白），故轮询至 viewport 可用。
+  // useLayoutEffect is required: useEffect binds scrollElement only after paint, so navigating
+  // into this view would first paint one frame of an empty list (virtualItems empty), perceived
+  // as a blank flash. setState in a layout effect flushes synchronously before paint, and
+  // virtual-core measures the rect synchronously when registering observeElementRect, so the
+  // first frame already has rows.
+  // After a full page reload (e.g. HMR) the snapshot is ready on the first commit, and this
+  // component mounts in the same commit as the ancestor ScrollArea; child layout effects run
+  // before the ancestor viewport ref is attached, so we get null here.
+  // A one-shot binding would leave the virtualizer without a scroll element forever (blank
+  // list), so poll until the viewport is available.
   useLayoutEffect(() => {
     const el = getScrollElement();
     if (el) {
@@ -305,20 +311,26 @@ export function ConversationList({
     [conversationRenderItems, messages],
   );
 
-  // 不覆盖 shouldAdjustScrollPositionOnItemSizeChange、不用 anchorTo:'end'：
-  // virtual-core 3.17.x 默认策略已内建「首测补偿 / backward 重测跳过」，上次实验中
-  // 覆盖它（isScrolling 一律 false）正是上滑下跳的根因；anchorTo:'end' 的 wasAtEnd
-  // 路径会绕过 shouldAdjust 直接改写 scrollTop（日志见 stash 实验），一并弃用。
+  // Do not override shouldAdjustScrollPositionOnItemSizeChange, and do not use anchorTo:'end':
+  // virtual-core 3.17.x's default policy already has "first-measure compensation / skip backward
+  // re-measurement" built in; overriding it (isScrolling always false) in the last experiment was
+  // exactly the root cause of the jump-on-scroll-up; anchorTo:'end''s wasAtEnd path bypasses
+  // shouldAdjust and rewrites scrollTop directly (logs in the stash experiment), so it is dropped too.
   //
-  // directDomUpdates：容器高度与行位移在 onChange（RO 回调内）同步直写 DOM。
-  // 行内折叠卡动画逐帧改行高时，React 异步重渲染会让 totalSize/translateY 晚一帧，
-  // 期间钉底是空操作（scrollHeight 未变），组行底边先下冲再回弹（实测 10px 起跳 +
-  // 每帧 ±1px），即「居底展开过程卡片内卡片、下方卡片上下震」。直写让行高变化、
-  // 容器长高与 onChange 里的钉底同帧完成。
+  // directDomUpdates: container height and row offsets are written to the DOM synchronously in
+  // onChange (inside the RO callback). When an inline collapsing card animation changes row height
+  // frame by frame, React's async re-render leaves totalSize/translateY one frame behind; during
+  // that window pinning to the bottom is a no-op (scrollHeight unchanged), so the group row's
+  // bottom edge dips then bounces back (measured 10px jump + ±1px per frame) — i.e. "while a
+  // card pinned at the bottom expands, nested cards and the cards below shake vertically".
+  // Direct writes make row-height changes, container growth, and the pin in onChange land in the
+  // same frame.
   //
-  // onChange 的钉底必须以 totalSize 变化为门槛：onChange 对纯滚动也会触发，
-  // 而用户向下滚进 48px 阈值时 stick 恰会恢复，若无门槛则下一次滚动通知立即
-  // 把视口按到底（实测距底 14~17px 被强拉），即「往下滚未到底突然跳底」。
+  // The pin in onChange must be gated on totalSize changes: onChange also fires for pure
+  // scrolling, and stick happens to re-engage when the user scrolls down into the 48px threshold;
+  // without the gate, the next scroll notification would immediately slam the viewport to the
+  // bottom (measured forced pulls from 14~17px above the bottom) — i.e. "scrolling down but not
+  // yet at the bottom suddenly jumps to the bottom".
   const lastPinnedTotalSizeRef = useRef(-1);
   const virtualizer = useVirtualizer({
     count: conversationRenderItems.length,
@@ -338,8 +350,8 @@ export function ConversationList({
     },
   });
 
-  // scrollMargin = 列表起点相对滚动 viewport 顶部的偏移（含 shell pt-6/7），
-  // 否则 translateY 与 scrollToIndex 会整体偏移。
+  // scrollMargin = offset of the list start relative to the scroll viewport top (including shell
+  // pt-6/7), otherwise translateY and scrollToIndex would be offset as a whole.
   useLayoutEffect(() => {
     const viewport = scrollElement;
     const listEl = sizingRef.current;
@@ -461,9 +473,10 @@ export function ConversationList({
     const queuedCanMoveUp = message.queued === true && (queuedBeforeCounts[index] ?? 0) > 0;
     const hiddenByProcessGroup = isMessageHiddenByProcessGroup(conversationRenderItems, index);
     const rewindSelected = rewindDraft?.listIndex === index;
-    // 派生布尔用完整 aux 计算（shouldShow… 会看相邻行的 live 状态）；MessageCard 的
-    // pendingAuxState prop 才按 message.pending 门控——live aux 只与 pending 行自身
-    // 相关，非 pending 行传 undefined 使 memo 在流式期间不被 aux 引用变化击穿。
+    // Derived booleans are computed with the full aux (shouldShow… inspects adjacent rows' live
+    // state); only MessageCard's pendingAuxState prop is gated by message.pending — live aux only
+    // concerns the pending row itself, so non-pending rows get undefined to keep memo from being
+    // broken by aux reference changes during streaming.
     const pendingAuxForRow = message.pending ? conversationPendingAuxState : undefined;
     return (
       <MessageCard
@@ -568,11 +581,13 @@ export function ConversationList({
   const virtualItems = virtualizer.getVirtualItems();
   const virtualTotalSize = virtualizer.getTotalSize();
 
-  // 跟底钉底须在每次 totalSize 变化的 commit 里同步补一次：卡片高度动画每帧
-  // 引发多轮布局反馈（行高变化 → 重测 → 重渲染 totalSize），浏览器 RO 有循环
-  // 上限、超限通知推迟到下一帧，仅靠 stream tail 的内容 RO 钉底会让部分帧带着
-  // 未钉底偏差上屏（实测 4~17px 振荡，即「居底展开过程卡片上下震」）。layout
-  // effect 与本次重排同处一个 JS 任务，不受 RO 循环上限影响；非跟底时为空操作。
+  // Tail-following must synchronously re-pin on every commit where totalSize changes: card height
+  // animations cause multiple layout feedback rounds per frame (row-height change → re-measure →
+  // re-rendered totalSize), and the browser RO has a loop limit beyond which notifications are
+  // deferred to the next frame; relying only on the stream tail's content RO to pin would let some
+  // frames paint with unpinned drift (measured 4~17px oscillation — i.e. "while a bottom-pinned
+  // card expands, cards shake vertically"). The layout effect runs in the same JS task as this
+  // reflow and is unaffected by the RO loop limit; it is a no-op when not tail-following.
   useLayoutEffect(() => {
     pinScrollToTail();
   }, [virtualTotalSize, pinScrollToTail]);
@@ -580,9 +595,10 @@ export function ConversationList({
   return (
     <div
       data-spirit-surface="conversation-list-shell"
-      // overflow-x 必须用 clip 而非 hidden：hidden 会把 overflow-y 计算为 auto，
-      // 流式时虚拟行实测先于 totalSize 提交、短暂溢出 sizing 容器，shell 即闪原生
-      // 滚动条并挤窄布局；clip 不构成滚动容器，x 轴裁剪行为不变。
+      // overflow-x must be clip, not hidden: hidden computes overflow-y as auto, and during
+      // streaming virtual rows measure before totalSize commits, briefly overflowing the sizing
+      // container, so the shell would flash a native scrollbar and squeeze the layout narrower;
+      // clip does not create a scroll container, and x-axis clipping behavior is unchanged.
       className={cn(
         "mx-auto w-full overflow-x-clip pt-6 sm:pt-7",
         CONVERSATION_GUTTER_X,
@@ -597,8 +613,8 @@ export function ConversationList({
         ) : null}
         <div
           key={`${composerSessionKey || "__no-session__"}:${conversationListScopeKey}:e${conversationListRemountEpoch}`}
-          // directDomUpdates：容器高度与行 transform 由 virtualizer 直写，
-          // JSX 不得再设 height / translateY（见上方 useVirtualizer 注释）。
+          // directDomUpdates: container height and row transforms are written directly by the
+          // virtualizer; JSX must not set height / translateY again (see the useVirtualizer comment above).
           ref={(el) => {
             sizingRef.current = el;
             virtualizer.containerRef(el);
@@ -611,9 +627,11 @@ export function ConversationList({
               key={virtualItem.key}
               ref={(el) => {
                 virtualizer.measureElement(el);
-                // 滚动中挂载的行 virtual-core 会跳过同步实测（isScrolling 且无
-                // scrollState 时仅注册 RO），实测与 scrollTop 补偿延迟到 paint 后。
-                // 非滚动时 measureElement 已同步 resizeItem，勿重复调用。
+                // For rows mounted mid-scroll, virtual-core skips synchronous measurement
+                // (when isScrolling and no scrollState it only registers RO); measurement and
+                // scrollTop compensation are deferred until after paint.
+                // When not scrolling, measureElement already resizeItem'ed synchronously; do not
+                // call it again.
                 if (el && virtualizer.isScrolling) {
                   virtualizer.resizeItem(virtualItem.index, el.offsetHeight);
                 }
@@ -626,9 +644,9 @@ export function ConversationList({
                   conversationRenderItems,
                   messages,
                 ),
-                // translateY（由 virtualizer 直写）使行 wrapper 自成 stacking
-                // context，卡片内 z-40 无法跨出与 z-30 的 rewind 遮罩竞争；
-                // rewind 行须在 wrapper 层提升 z。
+                // translateY (written directly by the virtualizer) makes the row wrapper its own
+                // stacking context, so the in-card z-40 cannot escape to compete with the z-30
+                // rewind overlay; rewind rows must be promoted in z at the wrapper level.
                 ...(rewindDraft &&
                 (() => {
                   const item = conversationRenderItems[virtualItem.index];

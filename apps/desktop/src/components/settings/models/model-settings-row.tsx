@@ -29,7 +29,7 @@ export function ModelSettingsRowButton({
   defaultActionLabel: string;
   disabled: boolean;
   isHighlighted?: boolean;
-  /** 有 Tooltip 详情时不显示浏览器 title，避免盖住详情浮层。 */
+  /** Suppresses the browser title when Tooltip details exist, so it does not cover the detail overlay. */
   showNativeTitle?: boolean;
   onPointerEnter?: () => void;
   onDefaultAction: () => void;

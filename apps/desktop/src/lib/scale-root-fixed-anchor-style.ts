@@ -2,7 +2,7 @@ import type { CSSProperties } from "react";
 
 import { viewportRectToScaleRootLocal, type ViewportBox } from "@/lib/ui-layout-scale";
 
-/** Radix 虚拟 trigger：getBoundingClientRect 为视口坐标，fixed 须在缩放根内用本地坐标。 */
+/** Radix virtual trigger: getBoundingClientRect is in viewport coordinates; fixed positioning must use local coordinates within the scale root. */
 export function scaleRootFixedAnchorStyle(rect: ViewportBox): CSSProperties {
   const local = viewportRectToScaleRootLocal(rect);
   return {

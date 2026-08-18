@@ -2,19 +2,20 @@ import type { LspWriteDiagnosticsUi } from "@spiritagent/agent-core";
 
 import type { ToolBlockSnapshot } from "@/types";
 
-/** 短工具卡次级文字（shell 原因、文件名、LSP 摘要等）。 */
+/** Secondary text of short tool cards (shell reason, file name, LSP summary, etc.). */
 export const toolCardSecondaryTextClass = "text-muted-foreground/75 dark:text-muted-foreground/65";
 
-/** shell `{命令}` 等更浅第三级；与原因色分开以免摘要行糊成一段。 */
+/** An even lighter third level for shell `{command}` etc.; separated from the reason color so the summary line does not blur into one block. */
 export const toolCardFileNameDetailClass = "text-muted-foreground/42 dark:text-muted-foreground/45";
 
 /**
- * 四段式 shell 卡第四段（失败状态）；为摘要行最浅一级，浅于命令段 {@link toolCardFileNameDetailClass}。
- * 灰阶（opacity）：动词 100% → 原因 75/65% → 命令 42/45% → 失败 30/32%。
+ * Fourth segment of the four-part shell card (failure status); the lightest level of the
+ * summary line, lighter than the command segment {@link toolCardFileNameDetailClass}.
+ * Grayscale (opacity): verb 100% → reason 75/65% → command 42/45% → failure 30/32%.
  */
 export const toolCardFailedStatusClass = "text-muted-foreground/30 dark:text-muted-foreground/32";
 
-/** 可点击短工具卡触发器：整卡摘要同比增亮，保留灰阶层次。 */
+/** Clickable short tool card trigger: the whole card summary brightens uniformly while keeping the grayscale hierarchy. */
 export const clickableToolCardTriggerClass =
   "transition-[filter] duration-150 hover:brightness-[1.12] focus-visible:brightness-[1.12] motion-reduce:transition-none";
 

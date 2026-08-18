@@ -172,7 +172,7 @@ export function isCaretAtLoopRemovalPoint(segs: RichSegment[], caret: SegmentCar
   return caret.segmentIndex === loopIndex + 1 && caret.offset === 0;
 }
 
-/** 无正文时保证 loop chip 后有可输入的空格段（与 insertLoopSegment 一致）。 */
+/** When there is no body text, guarantee a typeable space segment after the loop chip (consistent with insertLoopSegment). */
 export function ensureLoopChipTypingTail(segs: RichSegment[]): RichSegment[] {
   const merged = mergeAdjacentTextSegments(segs);
   const loopIndex = loopChipIndex(merged);

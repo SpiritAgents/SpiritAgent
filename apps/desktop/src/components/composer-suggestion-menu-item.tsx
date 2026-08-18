@@ -38,7 +38,8 @@ export function ComposerSuggestionMenuItem({
       }}
       onPointerMove={(event) => {
         onPointerMove?.(event);
-        // Radix MenuItem 在 pointermove 未 preventDefault 时会 item.focus()；建议菜单焦点须留在 Composer
+        // Radix MenuItem calls item.focus() on pointermove unless preventDefault'ed; the
+        // suggestion menu must keep focus in the Composer
         event.preventDefault();
       }}
       {...props}

@@ -79,8 +79,9 @@ export function useWorkspaceToolsController({
   const [workspaceToolsWidthPx, setWorkspaceToolsWidthPx] = useState(readWorkspaceToolsWidthPx);
 
   useEffect(() => {
-    // resize 拖动期间事件连发；rAF 合帧后再读 localStorage 中的宽度比例，
-    // 避免每次 resize 都同步读存储（存储值会随分隔条拖拽更新，不能只缓存首值）。
+    // Resize events fire continuously during dragging; read the width ratio from localStorage after rAF
+    // frame coalescing, avoiding a synchronous storage read on every resize (the stored value updates as
+    // the splitter is dragged, so caching only the first value is not enough).
     let frame = 0;
     const onResize = () => {
       if (frame !== 0) {

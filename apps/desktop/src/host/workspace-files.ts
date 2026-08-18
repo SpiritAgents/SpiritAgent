@@ -26,10 +26,10 @@ function isENOENT(error: unknown): boolean {
   );
 }
 
-/** 单文件上限，避免大文件拖垮渲染进程。 */
+/** Per-file size cap, to keep large files from overwhelming the renderer process. */
 export const WORKSPACE_TEXT_FILE_MAX_BYTES = 2 * 1024 * 1024;
 
-/** 侧栏图片预览上限，与 electron read-local-image-preview 一致。 */
+/** Sidebar image preview cap, consistent with electron read-local-image-preview. */
 export const WORKSPACE_IMAGE_FILE_MAX_BYTES = 8 * 1024 * 1024;
 
 const BINARY_SCAN_BYTES = 8192;
@@ -40,7 +40,7 @@ function maxReadableFileBytes(filePath: string): number {
     : WORKSPACE_TEXT_FILE_MAX_BYTES;
 }
 
-/** 扫描缓冲区前缀：NUL 或非法 UTF-8 视为二进制。 */
+/** Scanned buffer prefix: NUL or invalid UTF-8 counts as binary. */
 export function isBinaryTextFileBuffer(buffer: Buffer): boolean {
   if (buffer.length === 0) {
     return false;
@@ -50,8 +50,8 @@ export function isBinaryTextFileBuffer(buffer: Buffer): boolean {
     return true;
   }
   try {
-    // 截断前缀可能在多字节 UTF-8 序列中间切断；stream 模式允许末尾
-    // 不完整序列，只有取到整个文件时才要求解码完全终结。
+    // A truncated prefix may cut through a multi-byte UTF-8 sequence; stream mode tolerates
+    // an incomplete trailing sequence, only requiring fully terminated decoding when the whole file is read.
     new TextDecoder("utf-8", { fatal: true }).decode(sample, {
       stream: sample.length < buffer.length,
     });
@@ -79,7 +79,7 @@ export function workspaceTextFileResultFromBuffer(
 }
 
 /**
- * 将工作区相对路径解析为绝对路径；使用 `/` 分段，禁止 `..` 与绝对路径。
+ * Resolves a workspace-relative path to an absolute path; segments use `/`, and `..` and absolute paths are rejected.
  */
 export async function resolveWorkspaceRelativePath(
   workspaceRoot: string,

@@ -19,7 +19,7 @@ import {
 } from "@/components/ui/menubar";
 
 type DesktopTitleBarProps = {
-  /** 与根布局云母透明策略一致 */
+  /** Consistent with the root layout's Mica transparency strategy */
   useTranslucency: boolean;
   onZoomIn: () => void;
   onZoomOut: () => void;
@@ -40,13 +40,13 @@ function titleBarSurfaceClass(useTranslucency: boolean, withBorder: boolean) {
   );
 }
 
-/** 透明底顶栏标（brand glyph SVG 画布大，14px 观感接近旧 20px favicon） */
+/** Transparent-background title-bar mark (the brand glyph SVG canvas is large, so 14px looks close to the old 20px favicon) */
 const TITLE_BAR_ICON_PX = 14;
 
-/** 云母顶栏黑底标（`logo-dark.svg` 内图案更小，恢复迁移透明标前的 20px） */
+/** Mica title-bar dark-background mark (the artwork inside `logo-dark.svg` is smaller, restoring the 20px used before migrating to the transparent mark) */
 const TITLE_BAR_ICON_TRANSLUCENCY_PX = 20;
 
-/** 与侧栏交互项默认字色一致（`text-sidebar-action-foreground`） */
+/** Matches the sidebar interactive items' default text color (`text-sidebar-action-foreground`) */
 const TITLE_BAR_MENUBAR_TRIGGER_CLASS = "px-2 py-1 text-[13px] text-sidebar-action-foreground";
 
 function execWindowAction(action: string): void {
@@ -230,7 +230,8 @@ function TitleBarMenuCluster({
 }
 
 /**
- * Windows：自绘顶栏（LOGO + 菜单文案），窗口控制键仍由 `titleBarOverlay` 绘制。
+ * Windows: custom-drawn title bar (LOGO + menu text); window controls are still drawn by
+ * `titleBarOverlay`.
  */
 export function DesktopTitleBar({
   useTranslucency,
@@ -241,7 +242,7 @@ export function DesktopTitleBar({
 }: DesktopTitleBarProps) {
   const headerRef = useRef<HTMLElement>(null);
   const { open: sessionSidebarOpen, widthPx: sessionSidebarWidthPx } = useSessionSidebarChrome();
-  /** Blur 下横向分割线锚定侧栏 shell 右缘；收起/展开时随 shell 实际宽度同步移动。 */
+  /** Under Blur, the horizontal divider is anchored to the sidebar shell's right edge; it moves in sync with the shell's actual width on collapse/expand. */
   const partialBorder = useTranslucency;
   const sidebarShellRightInsetPx = useSessionSidebarShellRightInsetPx(headerRef, partialBorder);
 

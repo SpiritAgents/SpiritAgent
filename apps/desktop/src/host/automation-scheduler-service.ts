@@ -57,16 +57,16 @@ export function startAutomationSchedulerMonitorIfNeeded(
         ctx.onAutomationUpdated(automationId);
       }
     } catch {
-      /* 清理失败不阻塞首个 tick */
+      /* cleanup failure must not block the first tick */
     }
     await tickAutomationScheduler(ctx);
   })();
 }
 
 /**
- * 将磁盘上残留的 running run 标记为 failed。run 状态只由本进程推进，因此
- * 调度器启动时磁盘上的 running run 必然是上次崩溃残留；若不清理，
- * getActiveRun 会永久拦截该自动化的后续触发。返回受影响的 automation id。
+ * Marks leftover running runs on disk as failed. Run state is only advanced by this process, so a
+ * running run on disk at scheduler startup is necessarily a leftover from the last crash; without cleanup,
+ * getActiveRun would permanently block later triggers of that automation. Returns the affected automation ids.
  */
 export async function failDanglingAutomationRuns(
   store: ReturnType<typeof createHostAutomationStore>,
@@ -138,7 +138,7 @@ async function tickTimeAutomationTriggers(
       continue;
     }
     const schedule = automationTimeScheduleFromTrigger(definition.trigger);
-    // 以创建时间兜底基线：新建的自动化不补跑创建之前的时刻。
+    // Fall back to the creation time as the baseline: a newly created automation does not backfill times before its creation.
     const firedBaseline = definition.lastFiredAtUnixMs ?? definition.createdAtUnixMs;
     if (!schedule || !shouldFireNow(schedule, firedBaseline, now)) {
       continue;
@@ -273,12 +273,12 @@ async function tickGitHubAutomationTriggers(
 }
 
 /**
- * 依次为每个匹配事件启动 run，返回已「消费」的匹配（用于推进水位）。
- * 语义：只要为事件创建出了 run（completed / blocked / failed），该事件即
- * 视为已消费，不再重试——blocked 等待用户接管、failed 已留下失败记录，
- * 若不推进水位会每个 tick 无限重建 run 与会话文件。launch 返回 undefined
- * 表示根本没能创建 run（并发竞争或定义失效），此时停止且不消费。
- * run 非 completed 时也停止处理后续事件，避免在异常状态下堆积 run。
+ * Launches a run for each matched event in order, returning the "consumed" matches (used to advance the watermark).
+ * Semantics: once a run is created for an event (completed / blocked / failed), the event counts
+ * as consumed and is not retried — blocked waits for user takeover, failed leaves a failure record;
+ * without advancing the watermark, every tick would endlessly recreate runs and session files. launch returning
+ * undefined means no run could be created at all (concurrent race or stale definition); stop then without consuming.
+ * Also stop processing later events when a run is not completed, to avoid piling up runs in an abnormal state.
  */
 export async function runGitHubMatchesAndCollectConsumed(
   matches: GitHubAutomationPollMatch[],

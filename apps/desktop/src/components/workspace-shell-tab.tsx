@@ -12,16 +12,16 @@ import type { Terminal } from "@xterm/xterm";
 
 export type WorkspaceShellTabProps = {
   workspaceRoot: string;
-  /** 终端标题变化时通知父层（来自 OSC 0/2 序列）；无标题时传 undefined */
+  /** Notifies the parent when the terminal title changes (from OSC 0/2 sequences); undefined when there is no title */
   onTitleChange?: (title: string | undefined) => void;
-  /** Chip 与菜单展示用的终端名称（OSC 标题或默认 Terminal 标签）。 */
+  /** Terminal name used for the Chip and menu display (OSC title or the default Terminal label). */
   terminalDisplayName?: string;
   onTerminalAddToSession?: (
     attachment: import("@/lib/terminal-snippet-attachment").TerminalSnippetAttachment,
   ) => void;
-  /** 侧栏连续拖拽调整宽度时为 true，暂停终端 fit 直至松手。 */
+  /** True while the sidebar is being continuously drag-resized; pauses terminal fit until release. */
   suspendTerminalResize?: boolean;
-  /** Windows 云母 / macOS Vibrancy：终端保留较高不透明度以保证 ANSI 可读性。 */
+  /** Windows Mica / macOS Vibrancy: the terminal keeps higher opacity to ensure ANSI readability. */
   useTranslucency?: boolean;
 };
 

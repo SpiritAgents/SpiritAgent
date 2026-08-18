@@ -64,7 +64,8 @@ export type ModelPickerGroup = {
 };
 
 /**
- * 主界面模型下拉：按 provider group（groupId）分组；组内顺序优先对齐 `modelCatalogHints` 中的上游列表顺序。
+ * Main UI model dropdown: group by provider group (groupId); within a group, the order
+ * preferentially follows the upstream list order from `modelCatalogHints`.
  */
 export function groupModelsForPicker(
   models: ModelProfileSnapshot[],

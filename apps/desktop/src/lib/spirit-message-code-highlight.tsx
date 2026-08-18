@@ -6,7 +6,7 @@ import { cn } from "@/lib/utils";
 type HighlightResult = TokensResult;
 type HighlightToken = TokensResult["tokens"][number][number];
 
-/** 与 Streamdown 默认 CodeBlock 一致：去掉末尾换行，避免多出一行空白 token */
+/** Same as the Streamdown default CodeBlock: strips trailing newlines to avoid an extra blank token line */
 export function trimTrailingNewlines(code: string): string {
   let end = code.length;
   while (end > 0 && code[end - 1] === "\n") {

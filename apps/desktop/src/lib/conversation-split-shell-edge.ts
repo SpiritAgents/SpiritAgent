@@ -7,12 +7,12 @@ export function getConversationSplitShell(): HTMLElement | null {
   return document.querySelector<HTMLElement>(CONVERSATION_SPLIT_SHELL_SELECTOR);
 }
 
-/** Shell 内 absolute 定位须用本地长度，不可直接用 getBoundingClientRect 视口差值。 */
+/** Absolute positioning inside the shell must use local lengths, not raw getBoundingClientRect viewport deltas. */
 export function conversationSplitShellLocalLength(delta: number): number {
   return viewportLengthToScaleRootLocal(delta);
 }
 
-/** split 容器在 shell 内的 inset，横竖线均按此裁剪，避免嵌套时画出容器外。 */
+/** Inset of the split container within the shell; both horizontal and vertical lines are clipped to it so nesting never paints outside the container. */
 export function conversationSplitShellInsetBounds(
   shell: HTMLElement,
   bounds: HTMLElement,

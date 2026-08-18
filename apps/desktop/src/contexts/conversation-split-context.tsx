@@ -79,7 +79,7 @@ export type SidebarSessionDragPayload =
   | { kind: "new" }
   | { kind: "new-in-workspace"; workspaceRoot: string };
 
-/** 创建 Side Chat 时携带的可选内容；messageQuote 在新 pane 注册 composer 能力后插入其 Composer。 */
+/** Optional payload carried when creating a Side Chat; messageQuote is inserted into the new pane's Composer once it registers its composer capability. */
 export type BeginSideChatOptions = {
   messageQuote?: MessageQuoteAttachment;
 };
@@ -101,7 +101,7 @@ type ConversationSplitContextValue = {
 
   beginSideChat: (paneId: string, options?: BeginSideChatOptions) => Promise<void>;
 
-  /** 向 Side Chat 插入消息引用：优先复用最后导航过、且已离开的 Side Chat pane，否则新建。 */
+  /** Insert a message quote into a Side Chat: prefer reusing the last navigated Side Chat pane that has been left; otherwise create a new one. */
   addMessageQuoteToSideChat: (paneId: string, attachment: MessageQuoteAttachment) => Promise<void>;
 
   closePaneById: (paneId: string, sessionPath: string) => Promise<void>;
@@ -115,7 +115,7 @@ type ConversationSplitContextValue = {
     options?: { persist?: boolean },
   ) => void;
 
-  /** 将当前 layout 写入 session split binding（拖拽结束时调用，避免 pointermove 落盘）。 */
+  /** Write the current layout into the session split binding (call on drag end to avoid persisting on pointermove). */
   persistLayoutBinding: () => void;
 
   beginSplitLayoutResize: () => void;
@@ -284,7 +284,7 @@ function resolveLayoutForActiveSession(
   snapshot: DesktopSnapshot | null,
 ): SplitLayoutNode {
   if (current && countPanes(current) > 1) {
-    // 须先判断 path 是否已在当前 layout 中；否则点击空会话 anchor pane 会因 foreground provisional 被误折叠为单 pane
+    // Must first check whether the path is already in the current layout; otherwise clicking the empty-session anchor pane would wrongly collapse it to a single pane due to the foreground provisional path
     if (layoutIncludesSessionPath(current, activeSessionPath)) {
       return current;
     }
@@ -411,20 +411,21 @@ export function ConversationSplitProvider({
 
   const sidebarSessionDragActive = sidebarSessionDragPayload !== null;
 
-  // 每个 Pane 无条件注册自己的 composer 能力，读取方按 focusedPaneId 取用；
-  // 不写共享单槽，避免兄弟 Pane 的 effect 执行顺序互相覆写（左 Pane 被清成 null 的存量 bug）
+  // Each pane unconditionally registers its own composer capability; readers pick by focusedPaneId.
+  // No shared single slot, so sibling panes' effect execution order cannot overwrite each other
+  // (existing bug where the left pane got cleared to null)
   const paneComposerInsertRegistryRef = useRef(
     new Map<string, FocusedPaneComposerInsertHandlers>(),
   );
 
   const paneComposerControlsRegistryRef = useRef(new Map<string, FocusedPaneComposerControls>());
 
-  // beginSideChat 携带的 messageQuote 在新 pane 注册 composer 能力前暂存于此，
-  // 注册时 flush 进该 pane 的 Composer（新 pane 挂载 effect 是最早已知就绪时机）
+  // The messageQuote carried by beginSideChat is stashed here until the new pane registers its composer capability,
+  // then flushed into that pane's Composer on registration (the new pane's mount effect is the earliest known ready point)
   const pendingPaneMessageQuotesRef = useRef(new Map<string, MessageQuoteAttachment>());
 
-  // Side Chat pane 追踪：创建时登记 paneId（首条消息 promote 成稳定路径后仍能识别），
-  // 焦点进入 side chat pane 时记为最近一次导航目标
+  // Side Chat pane tracking: register the paneId on creation (still recognizable after the first message promotes it to a stable path);
+  // when focus enters a side chat pane, record it as the most recent navigation target
   const sideChatPaneIdsRef = useRef(new Set<string>());
 
   const lastNavigatedSideChatPaneIdRef = useRef<string | null>(null);
@@ -466,7 +467,7 @@ export function ConversationSplitProvider({
     });
   }, []);
 
-  // 指针不在有效 drop zone 上时同步清除 target（dragLeave 在快速滑过源面板时可能误判）
+  // Clear the target synchronously when the pointer is not over a valid drop zone (dragLeave may misfire when quickly sweeping across the source panel)
   useEffect(() => {
     if (!paneDragActive && !sidebarSessionDragActive) {
       return;
@@ -873,7 +874,7 @@ export function ConversationSplitProvider({
     [layout, runtime, snapshot?.activeSession?.filePath],
   );
 
-  // 记录用户最近导航过的 Side Chat pane（布局恢复出的 provisional side-chat 路径也算）
+  // Record the Side Chat pane the user most recently navigated to (including provisional side-chat paths restored from layout)
   useEffect(() => {
     if (!focusedPaneId || !layout) {
       return;
@@ -984,7 +985,7 @@ export function ConversationSplitProvider({
 
   const addMessageQuoteToSideChat = useCallback(
     async (paneId: string, attachment: MessageQuoteAttachment) => {
-      // 复用最后导航过、且当前已离开的 Side Chat pane；当前就在该 pane 时按原逻辑新建
+      // Reuse the last navigated Side Chat pane that has been left; when already on that pane, create a new one per the original logic
       const candidateId = lastNavigatedSideChatPaneIdRef.current;
       const candidateLeaf = candidateId && layout ? findLeafByPaneId(layout, candidateId) : null;
       const candidateHandlers = candidateId

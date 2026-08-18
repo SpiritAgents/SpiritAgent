@@ -36,7 +36,7 @@ export function connectTransportOptionsForProvider(
   switch (provider) {
     case "openai":
       return [];
-    // 直接提供商：连接向导固定 Chat Completions，不暴露 API 类型选择。
+    // Direct providers: the connection wizard fixes Chat Completions and does not expose an API type choice.
     case "xai":
     case "google":
     case "google-vertex-ai":
@@ -49,8 +49,10 @@ export function connectTransportOptionsForProvider(
       return [connectTransportOptionCatalog.chatCompletions];
     case "minimax":
       return [connectTransportOptionCatalog.messagesApi];
-    // TokenHub 文档有 Chat web_search_options / Responses web_search 两套联网能力，实测 Chat 注入无效；
-    // Responses 仅 hy3-preview 等少数模型支持，与 TokenHub 以 Chat Completions 为主的模型矩阵不匹配，故仅保留 Chat Completions。
+    // TokenHub documents two web-browsing capabilities: Chat web_search_options and Responses
+    // web_search; measured: Chat injection has no effect, and Responses is only supported by a few
+    // models such as hy3-preview, which does not match TokenHub's Chat Completions-dominated model
+    // matrix, so only Chat Completions is kept.
     case "tencent-tokenhub":
     case "mistral":
     case "cohere":

@@ -26,9 +26,9 @@ export type ThemeContextValue = {
 const ThemeContext = createContext<ThemeContextValue | null>(null);
 
 /**
- * setTheme 单独一个 context：引用恒定，订阅它的组件不会因 theme 值变化而重渲染。
- * App 顶层只需 setter；theme 值由真正消费它的小组件各自订阅，
- * 避免切主题时整棵 App 树（含 OOBE 期间隐形挂载的 app-body）同步全量重渲染。
+ * setTheme lives in its own context: a constant reference, so components subscribing to it do not re-render on theme value changes.
+ * The App top level only needs the setter; the theme value is subscribed by the small components that actually consume it,
+ * avoiding a synchronous full re-render of the whole App tree (including the invisibly mounted app-body during OOBE) on theme switch.
  */
 const ThemeSetterContext = createContext<((next: ThemePreference) => void) | null>(null);
 
@@ -66,7 +66,7 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
       setSystemDark(mq.matches);
       applySystemTheme();
     };
-    // 同步读可能仍滞后于 themeSource 切换；IPC resolve 会通过 onSystemDarkResolved 校正 resolvedDark。
+    // The synchronous read may still lag behind the themeSource switch; the IPC resolve corrects resolvedDark via onSystemDarkResolved.
     setSystemDark(systemPrefersDark());
     applySystemTheme();
     mq.addEventListener("change", onSystemChange);
@@ -94,7 +94,7 @@ export function useTheme(): ThemeContextValue {
   return value;
 }
 
-/** 仅订阅 setTheme（引用恒定）；组件不会因 theme 值变化而重渲染。 */
+/** Subscribe only to setTheme (constant reference); the component does not re-render on theme value changes. */
 export function useThemeSetter(): (next: ThemePreference) => void {
   const setter = useContext(ThemeSetterContext);
   if (!setter) {

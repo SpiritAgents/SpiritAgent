@@ -5,7 +5,7 @@ import type { ToolBlockSnapshot } from "@/types";
 
 const FILE_DIFF_OPEN_TOOL_NAMES = new Set(["create_file", "edit_file"]);
 
-/** 从 create_file / edit_file 工具快照解析编辑器打开目标。 */
+/** Resolve the editor open target from a create_file / edit_file tool snapshot. */
 export function resolveFileDiffToolEditorTarget(
   tool: Pick<
     ToolBlockSnapshot,

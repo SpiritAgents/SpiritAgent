@@ -27,7 +27,7 @@ export const PROCESS_TOOL_CATEGORY_ORDER: readonly ProcessToolCategory[] = [
   "other",
 ];
 
-/** 过程卡片摘要：读文件 / 搜索 / 匹配 / 列目录 / 抓取网页 / 联网搜索 / 梦境与 TODO 列表等探索类工具统一为「探索」。 */
+/** Process card summary: read/search/match/list-directory/fetch-page/web-search/dream and TODO-list style exploratory tools are all grouped as "explore". */
 const EXPLORE_TOOLS = new Set([
   "read_file",
   "ls",
@@ -46,7 +46,7 @@ const EDIT_TOOLS = new Set(["edit_file", "todo_write", "dream_update", "dream_re
 
 const DELETE_TOOLS = new Set(["delete_file", "dream_delete"]);
 
-/** 不参与过程卡片分组与摘要统计的工具（在过程卡片外单独展示）。 */
+/** Tools excluded from process card grouping and summary counts (rendered outside the process card). */
 export const PROCESS_GROUP_EXCLUDED_TOOL_NAMES = new Set(["finish_task", "todo_write"]);
 
 export function isProcessGroupExcludedToolName(toolName: string): boolean {

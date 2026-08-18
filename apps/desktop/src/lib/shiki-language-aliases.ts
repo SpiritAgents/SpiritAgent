@@ -14,7 +14,7 @@ const LANGUAGE_ALIASES: Record<string, string> = {
   plaintext: "",
 };
 
-/** monacoLanguageId → Shiki 语法别名（不含 supportsLanguage 校验）。 */
+/** monacoLanguageId → Shiki grammar alias (without supportsLanguage validation). */
 export function resolveShikiLanguageAlias(languageId: string): string | undefined {
   const normalized = languageId.trim().toLowerCase();
   if (!normalized || normalized === "plaintext") {

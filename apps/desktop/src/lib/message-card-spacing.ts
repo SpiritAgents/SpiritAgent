@@ -145,8 +145,11 @@ export function shouldCompactAfterPreviousRenderItem(
   );
 }
 
-// 行间距自包含：虚拟化后相邻兄弟 margin 折叠失效，行间 gap 折进下一行 paddingTop（由 measureElement 量到）。
-// 普通 = pb-3 + space-y-3 = 24px；compact（-mt-4）= 8px；tighten（-mt-3）= 12px；首行由 shell pt-6/7 承担。
+// Row spacing is self-contained: after virtualization, adjacent-sibling margin collapse no
+// longer applies, so the inter-row gap is folded into the next row's paddingTop (measured by
+// measureElement).
+// normal = pb-3 + space-y-3 = 24px; compact (-mt-4) = 8px; tighten (-mt-3) = 12px; the first
+// row is covered by the shell's pt-6/7.
 const CONVERSATION_ROW_GAP_NORMAL_PX = 24;
 const CONVERSATION_ROW_GAP_COMPACT_PX = 8;
 const CONVERSATION_ROW_GAP_TIGHTEN_PX = 12;

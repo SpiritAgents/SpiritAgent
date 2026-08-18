@@ -1,4 +1,4 @@
-/** 薄封装：预设提供商数据来自 `@spiritagent/host-internal`，避免 Desktop 与 CLI 分叉。 */
+/** Thin wrapper: preset provider data comes from `@spiritagent/host-internal`, avoiding Desktop/CLI divergence. */
 export {
   DEFAULT_CUSTOM_API_BASE,
   MODEL_PROVIDER_PICKER_ORDER,

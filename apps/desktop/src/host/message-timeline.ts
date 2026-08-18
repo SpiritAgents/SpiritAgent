@@ -110,7 +110,7 @@ export class DesktopMessageTimeline {
   private activeSegmentId: number | undefined;
   private lastSegmentRowsLogSignature: string | undefined;
   private pendingSegmentRowsLogMsByKey = new Map<string, number>();
-  /** 结构修订号：所有公开 mutator 起始处递增；toMessages 投影按修订号缓存。 */
+  /** Structural revision: incremented at the start of every public mutator; the toMessages projection is cached by revision. */
   private revisionCounter = 1;
   private toMessagesCache:
     | { revision: number; messages: ConversationMessageSnapshot[] }
@@ -161,14 +161,14 @@ export class DesktopMessageTimeline {
     return this.revisionCounter;
   }
 
-  /** 新增 mutator 时须在起始处调用，否则 toMessages 缓存会返回陈旧投影。 */
+  /** Must be called at the start of any new mutator, otherwise the toMessages cache returns a stale projection. */
   private markMutated(): void {
     this.revisionCounter += 1;
   }
 
   toMessages(): ConversationMessageSnapshot[] {
     if (this.toMessagesCache?.revision === this.revisionCounter) {
-      // 返回浅拷贝：调用方对数组做 push/pop 不得污染缓存；消息对象仍共享
+      // Return a shallow copy: callers push/pop on the array must not pollute the cache; message objects are still shared
       return [...this.toMessagesCache.messages];
     }
     const messages: ConversationMessageSnapshot[] = [];
@@ -286,8 +286,8 @@ export class DesktopMessageTimeline {
         this.settlePendingThinkingBeforeAssistantText(segment);
       }
     }
-    // 无工具时不把 after-stream 思考拆成独立行：让 thinking aux 与正文留在同一条
-    // assistant 行上，UI 才能在同一个 AnimatedCollapse 实例上由展开过渡到收起。
+    // Tool-less: do not split the after-stream thinking into its own row; keep the thinking aux and body
+    // on the same assistant row so the UI can transition from expanded to collapsed within one AnimatedCollapse instance.
     const row = hasTools
       ? this.ensureStreamingAssistantTextRowAfterTools(segment)
       : this.ensureActiveAssistantTextRow("text");
@@ -732,8 +732,8 @@ export class DesktopMessageTimeline {
     let row = this.activeAssistantTextRow(segment);
     let materializeContent = content;
     let normalizedContent = content.trim();
-    // 流式已把工具前前言写到 before-tools；turn 完成的 assistantText 常是「前言+答案」。
-    // 若再整段 materialize 到 after-tools，会与 before-tools 叠成双重正文。
+    // Streaming already wrote the pre-tool preamble to before-tools; the turn-completion assistantText is often "preamble + answer".
+    // Materializing the whole thing again into after-tools would stack a duplicated body on top of before-tools.
     if (segmentHasToolRows(segment)) {
       const beforeRow = this.findLastBeforeToolsAssistantTextRow(segment);
       const beforeText = beforeRow?.content.trim() ?? "";
@@ -758,7 +758,7 @@ export class DesktopMessageTimeline {
     if (!row) {
       row = this.findReusableCompletedAssistantTextRow(segment, normalizedContent);
     }
-    // completeActiveAssistantSegment 会清掉 active；优先复用已有 after-tools，避免再插一条合并全文。
+    // completeActiveAssistantSegment clears active; prefer reusing the existing after-tools row to avoid inserting another merged-full-text row.
     if (!row && segmentHasToolRows(segment)) {
       row = this.findAfterToolsAssistantTextRow(segment, { afterLastTool: true });
     }
@@ -968,8 +968,8 @@ export class DesktopMessageTimeline {
   }
 
   /**
-   * Gateway provider-search resume：remove-pending 后、下一段 thinking-chunk 到达前，
-   * 预置 after-tools pending 行供 Thinking 占位 UI 挂载。
+   * Gateway provider-search resume: between remove-pending and the next thinking-chunk,
+   * pre-seed an after-tools pending row for the Thinking placeholder UI to attach to.
    */
   ensureAfterToolsThinkingPlaceholderRow(): ConversationMessageSnapshot | undefined {
     this.markMutated();
@@ -1030,7 +1030,7 @@ export class DesktopMessageTimeline {
     input: { content?: string } = {},
   ): ConversationMessageSnapshot | undefined {
     this.clearContinuationMarkers();
-    // clearContinuationMarkers 已 markMutated；本方法仅追加 row.canContinue 标记
+    // clearContinuationMarkers already called markMutated; this method only appends the row.canContinue marker
     const normalized = input.content?.trim() ?? "";
     const candidates = rows.filter((row) => {
       if (!isRenderableAssistantRow(row)) {
@@ -1506,7 +1506,7 @@ export class DesktopMessageTimeline {
           existing.section = "after-tools";
         } else if (mode === "aux") {
           if (existing.content.trim() && segmentAllToolsTerminal(segment)) {
-            // Gateway provider-search resume：工具前前缀已落在 before-tools 行，全部工具完成后合成思考须写到 after-tools。
+            // Gateway provider-search resume: the pre-tool prefix already landed on the before-tools row, so the synthesized thinking after all tools complete must go to after-tools.
             const afterToolsRow =
               this.findAfterToolsAssistantTextRow(segment, { afterLastTool: true }) ??
               this.createAssistantTextRow(segment, "after-tools", true);
@@ -1937,7 +1937,7 @@ function resolveThinkingRowSection(
     if (segmentHasPendingBeforeToolsRowAfterFirstTool(segment)) {
       return "before-tools";
     }
-    // 工具回合中途的思考（尚无工具后正文）应落在 tools 段，而非 after-tools（会排到所有工具卡片之后）。
+    // Thinking mid-tool-turn (with no post-tool body yet) belongs in the tools segment, not after-tools (which would sort after all tool cards).
     return "tools";
   }
   return "before-tools";

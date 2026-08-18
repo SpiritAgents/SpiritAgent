@@ -18,8 +18,8 @@ export async function resolveStoredSessionWorkspaceRoot(input: {
   }
 
   const resolved = path.resolve(trimmed);
-  // 非 spirit 分支时无论 readWorktreeContext 结果如何都原样返回 resolved，
-  // 先判分支可省去每次 openSession 两次 git 子进程 spawn（Windows 上 100ms+）。
+  // On a non-spirit branch, return resolved as-is regardless of readWorktreeContext;
+  // checking the branch first saves two git subprocess spawns per openSession (100ms+ on Windows).
   const branch = input.gitBranch?.trim();
   if (!branch || !isSpiritBranchName(branch)) {
     return resolved;
@@ -38,7 +38,7 @@ export async function resolveStoredSessionWorkspaceRoot(input: {
       return path.resolve(match.path);
     }
   } catch {
-    // 无法解析时保留 stored root
+    // keep the stored root when resolution fails
   }
 
   return resolved;

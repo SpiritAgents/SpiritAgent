@@ -37,17 +37,17 @@ export type WorkspaceBrowserTabProps = {
   browserTabId: string;
   browserUrl: string | undefined;
   onBrowserUrlChange(url: string): void;
-  /** 站外 / 新窗口链接：在工作区新建浏览器标签并打开 */
+  /** Off-site / new-window links: opens in a new browser tab in the workspace */
   onOpenUrlInNewTab?: (url: string) => void;
-  /** 当前网页标题变化时通知父层；切到新标签页时传 undefined */
+  /** Notifies the parent when the current page title changes; undefined when switching to a new tab */
   onTitleChange?: (title: string | undefined) => void;
-  /** 用户选中元素后的回调 */
+  /** Callback after the user selects an element */
   onElementPicked?: (attachment: BrowserElementAttachment) => void;
-  /** Electron 桌面宿主为 true；Web Host 为 false */
+  /** True for the Electron desktop host; false for the Web Host */
   browserTabEnabled?: boolean;
-  /** 当前浏览器工具标签是否为右侧工作区激活页 */
+  /** Whether the current browser tool tab is the active page in the right workspace */
   isActive?: boolean;
-  /** Windows 云母 / macOS Vibrancy：页槽使用略高的半透明底色。 */
+  /** Windows Mica / macOS Vibrancy: the page slot uses a slightly more opaque semi-transparent base color. */
   useTranslucency?: boolean;
 };
 
@@ -59,7 +59,7 @@ type LocalListeningEndpoint = {
   title?: string;
 };
 
-/** DevTools 与页面之间的拖拽条宽度（px） */
+/** Width of the drag bar between DevTools and the page (px) */
 const DEVTOOLS_SPLITTER_WIDTH_PX = 4;
 const DEVTOOLS_MIN_WIDTH_PX = 200;
 const DEFAULT_DEVTOOLS_WIDTH_PX = 320;
@@ -380,7 +380,7 @@ export function WorkspaceBrowserTab({
         }
         await openEmbeddedDevtools(pageWv, devtoolsWv);
       } catch {
-        // bind/open 失败时由用户重试 F12
+        // On bind/open failure the user retries with F12
       }
     })();
 
@@ -599,7 +599,7 @@ export function WorkspaceBrowserTab({
     try {
       event.currentTarget.releasePointerCapture(event.pointerId);
     } catch {
-      // 已释放或无 capture
+      // Already released or no capture
     }
   }, []);
 
@@ -749,8 +749,8 @@ export function WorkspaceBrowserTab({
             />
             {devtoolsOpen ? (
               <>
-                {/* 无 src 的 webview 不会创建 guest，也不触发 did-attach/dom-ready；
-                    先挂 about:blank 建 guest，bind 后由 DevTools 前端接管 */}
+                {/* A webview without src creates no guest and fires neither did-attach nor dom-ready;
+                    mount about:blank first to create the guest; after bind, the DevTools frontend takes over */}
                 <webview
                   ref={devtoolsWebviewRef}
                   src="about:blank"

@@ -1,17 +1,17 @@
 /**
- * 首启引导（OOBE）门控：仅根据宿主快照与持久化标志决定是否显示向导。
+ * First-run onboarding (OOBE) gating: decides whether to show the wizard based only on the host snapshot and persisted flags.
  */
 
 export type OnboardingVisibilityInput = {
-  /** 宿主快照是否就绪；未就绪时向导仍可显示欢迎步，但 Done/Continue 等需等待快照。 */
+  /** Whether the host snapshot is ready; before it is ready the wizard may still show the welcome step, but Done/Continue must wait for the snapshot. */
   snapshotReady: boolean;
-  /** 持久化的「首启引导已完成」标志（config.json）。 */
+  /** Persisted "first-run onboarding completed" flag (config.json). */
   onboardingCompleted: boolean;
-  /** 本次会话内已点击 Done 关闭。 */
+  /** Done was clicked to close during this session. */
   dismissedThisSession: boolean;
 };
 
-/** 是否应进入 OOBE 流程（不依赖 snapshot 是否就绪）。 */
+/** Whether the OOBE flow should be entered (independent of whether the snapshot is ready). */
 export function resolveOnboardingExpected(
   input: Omit<OnboardingVisibilityInput, "snapshotReady">,
 ): boolean {

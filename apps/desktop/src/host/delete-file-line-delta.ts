@@ -11,7 +11,7 @@ import {
   type EditFileLineDelta,
 } from "../lib/edit-file-line-delta.js";
 
-/** 与 `readWorkspaceTextFile` 一致，避免删除前读取超大文件。 */
+/** Consistent with `readWorkspaceTextFile`, to avoid reading oversized files before deletion. */
 const DELETE_FILE_LINE_DELTA_MAX_BYTES = 2 * 1024 * 1024;
 
 function pathCompareKey(inputPath: string): string {
@@ -101,7 +101,7 @@ function readDeleteFileUtf8Content(
   }
 }
 
-/** 删除前从磁盘读取目标文件全文，供工具卡 Diff baseline（仅宿主进程调用）。 */
+/** Reads the full target file from disk before deletion, as the tool card Diff baseline (host process only). */
 export function deleteFileBaselineTextForPath(
   context: InstructionDiscoveryContext,
   inputPath: string,
@@ -109,7 +109,7 @@ export function deleteFileBaselineTextForPath(
   return readDeleteFileUtf8Content(context, inputPath);
 }
 
-/** 删除前从磁盘读取目标文件并统计将被移除的行数（仅宿主进程调用）。 */
+/** Reads the target file from disk before deletion and counts the lines to be removed (host process only). */
 export function lineDeltaForDeleteFilePath(
   context: InstructionDiscoveryContext,
   inputPath: string,

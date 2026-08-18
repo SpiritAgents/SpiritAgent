@@ -40,7 +40,7 @@ type SubagentViewer = ReturnType<typeof useSubagentViewer>;
 type CompactionDemo = ReturnType<typeof useCompactionUiDemo>;
 type LongConversationListDemo = ReturnType<typeof useLongConversationListDemo>;
 
-/** IPC 快照数据均为 JSON 派生（无 function / Date / 循环引用），undefined 字段视作缺省 */
+/** IPC snapshot data is all JSON-derived (no function / Date / circular references); undefined fields are treated as absent */
 export function jsonLikeEquals(a: unknown, b: unknown): boolean {
   if (a === b) {
     return true;
@@ -81,9 +81,10 @@ export function jsonLikeEquals(a: unknown, b: unknown): boolean {
 }
 
 /**
- * 快照经 IPC 到达时所有消息对象都是新引用；按位复用上一次深度相等的消息对象
- * （全部未变时复用整个数组），使下游按引用比较的 memo（MessageCard 等）在流式
- * delta 时只重渲实际变化的行。
+ * When a snapshot arrives over IPC, all message objects are new references; reuse the previous
+ * deeply-equal message objects positionally (reuse the whole array when nothing changed), so
+ * downstream reference-comparing memos (MessageCard etc.) only re-render the rows that actually
+ * changed on streaming deltas.
  */
 export function stabilizeConversationMessages(
   previous: readonly ConversationMessageSnapshot[],
@@ -171,7 +172,7 @@ export function useConversationViewState({
       : compactionDemo.active
         ? compactionDemo.messages
         : sessionMessages;
-  // 每次 poll 快照全量重建对象；结构共享让「未变消息 / 未变数组」保持引用稳定
+  // Every poll snapshot rebuilds all objects; structural sharing keeps "unchanged messages / unchanged array" reference-stable
   const stableMessagesRef = useRef<readonly ConversationMessageSnapshot[]>([]);
   const messages = useMemo(() => {
     const stabilized = stabilizeConversationMessages(stableMessagesRef.current, rawMessages);
@@ -254,7 +255,7 @@ export function useConversationViewState({
       pendingApproval.subagentSessionId === snapshot?.subagentViewer?.sessionId),
   );
 
-  // hero ↔ 底部 dock 布局切换时 pre-paint 重测；demo 注入消息但 session 仍为空时也算非 hero。
+  // Re-measure pre-paint on hero ↔ bottom dock layout switches; a demo injecting messages while the session is still empty also counts as non-hero.
   const composerLayoutHero = resolveEffectiveEmptySession({
     sessionMessageCount: sessionMessages.length,
     subagentViewActive,
@@ -271,7 +272,7 @@ export function useConversationViewState({
           composerDockHeightPx + CONVERSATION_SCROLL_BED_EXTRA_PX,
         )
       : CONVERSATION_COMPOSER_SCROLL_BED_FALLBACK_PX;
-  /** translucency 下会话滚动形状 mask；由 ComposerDock 按输入框/Changes/TODO 轮廓回写 */
+  /** Conversation scroll shape mask under translucency; written back by ComposerDock from the input/Changes/TODO outline */
   const [conversationScrollOccludeMaskStyle, setConversationScrollOccludeMaskStyle] = useState<
     CSSProperties | undefined
   >(undefined);

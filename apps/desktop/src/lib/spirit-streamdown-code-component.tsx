@@ -37,7 +37,7 @@ type StreamdownCodeProps = {
 };
 
 /**
- * 覆盖 Streamdown block code：仅传 inlineCode 时 block 仍走内置 handler，须传 components.code 统一拦截围栏。
+ * Overrides Streamdown block code: passing only inlineCode leaves block on the built-in handler, so components.code must be passed to intercept fenced blocks uniformly.
  */
 export function createSpiritStreamdownCodeComponent(
   codePlugin: CodeHighlighterPlugin,

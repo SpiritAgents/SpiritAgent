@@ -58,7 +58,7 @@ export class SessionRegistry {
   requireActive(): SessionBundle {
     const bundle = this.getActive();
     if (!bundle) {
-      throw new Error("当前没有活跃会话。");
+      throw new Error("No active session.");
     }
     return bundle;
   }
@@ -175,7 +175,7 @@ export class SessionRegistry {
   setActive(id: string): SessionBundle {
     const bundle = this.findBySessionPath(id) ?? this.bundles.get(id);
     if (!bundle) {
-      throw new Error("会话不存在或已卸载。");
+      throw new Error("Session does not exist or has been unloaded.");
     }
     return this.activateExisting(bundle);
   }

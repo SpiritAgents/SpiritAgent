@@ -41,9 +41,9 @@ import type {
   DesktopMarketplacePreparedInstall,
 } from "@/types";
 
-/** 与对话区正文一致，便于视觉连贯 */
+/** Matches the conversation body text for visual continuity */
 const MARKETPLACE_READING_W = "max-w-[min(86vw,44rem)]";
-/** 列表略宽，便于双列卡片 */
+/** Slightly wider list to accommodate two-column cards */
 const MARKETPLACE_LIST_W = "max-w-[min(92vw,52rem)]";
 
 type MarketplaceViewProps = {
@@ -64,7 +64,7 @@ type MarketplaceViewProps = {
     version?: string;
     reviewAcknowledged?: boolean;
   }) => Promise<void>;
-  /** Windows 云母 / macOS Vibrancy：内层透明以避免与 marketplace-layout 双层 tint 叠深。 */
+  /** Windows Mica / macOS Vibrancy: the inner layer is transparent to avoid double-tint darkening with marketplace-layout. */
   useTranslucency?: boolean;
 };
 
@@ -132,7 +132,7 @@ export function MarketplaceView({
 }: MarketplaceViewProps) {
   const { t } = useTranslation();
   const [catalog, setCatalog] = useState<DesktopMarketplaceCatalogItem[]>([]);
-  /** null = 列表；非 null = 该扩展的详情页 */
+  /** null = list; non-null = that extension's detail page */
   const [detailExtensionId, setDetailExtensionId] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState<MarketplaceTab>("readme");
   const [searchText, setSearchText] = useState("");
@@ -176,11 +176,11 @@ export function MarketplaceView({
       : undefined;
   const selectedDetail = selectedCatalog ? detailById[selectedCatalog.extensionId] : undefined;
   const installedItem = installedExtensionForCatalog(selectedCatalog, installedExtensions);
-  /** 目录推荐 / registry 最新默认版本（无「选中版本」状态，仅此一处作为顶栏安装目标） */
+  /** Catalog-recommended / registry-latest default version (no "selected version" state; this is the only top-bar install target) */
   const latestVersion = selectedCatalog
     ? (selectedDetail?.defaultVersion ?? selectedCatalog.defaultVersion)
     : "";
-  /** 顶栏主按钮：仅「目录默认最新版 vs 本地已装版本」比较，无单独选中版本状态 */
+  /** Top-bar primary button: only compares "catalog default latest vs locally installed version"; there is no separate selected-version state */
   const headerPrimaryDisabled =
     marketplaceBusy ||
     !latestVersion ||
@@ -584,7 +584,7 @@ export function MarketplaceView({
               <div
                 className={cn("mx-auto w-full space-y-4 px-3 pb-12 pt-5", MARKETPLACE_READING_W)}
               >
-                {/* 详情顶栏：图标与文本垂直居中；正文压缩为标题行 + 单行摘要（作者并入摘要前缀） */}
+                {/* Detail top bar: icon and text vertically centered; body compressed to a title row + single-line summary (author merged into the summary prefix) */}
                 <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between sm:gap-6">
                   <div className="flex min-w-0 flex-1 items-center gap-3">
                     {selectedCatalog.iconUrl ? (
@@ -651,7 +651,7 @@ export function MarketplaceView({
                   </div>
                 </div>
 
-                {/* Tabs：无整条顶部分割线，仅当前项底边 */}
+                {/* Tabs: no full-width top divider, only the current item's bottom edge */}
                 <div className="space-y-4">
                   <div className="flex flex-wrap gap-1 pt-0.5">
                     {(

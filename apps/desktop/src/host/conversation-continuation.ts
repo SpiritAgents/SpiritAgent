@@ -305,7 +305,7 @@ export function refreshArchiveFromRuntime(
     return;
   }
 
-  // busy 期间高频调用：timeline 未变时复用消息/aux 投影，只向 runtime 取最新 llmHistory/subagentSessions
+  // Called at high frequency while busy: reuse the message/aux projections while the timeline is unchanged, and only pull the latest llmHistory/subagentSessions from the runtime
   const revision = bundle.messageTimeline.revision();
   let projection = bundle.archiveProjectionCache;
   if (

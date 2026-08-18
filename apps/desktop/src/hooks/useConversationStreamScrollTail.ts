@@ -29,9 +29,9 @@ export type UseConversationStreamScrollTailOptions = {
 };
 
 export type UseConversationStreamScrollTailResult = {
-  /** forceStick 为 true 时重新贴底；behavior 默认 auto（流式钉底瞬时）；点「回到底部」传 smooth。 */
+  /** Re-stick to bottom when forceStick is true; behavior defaults to auto (instant pin during streaming); pass smooth for "back to bottom" clicks. */
   pinScrollToTail: (forceStick?: boolean, behavior?: ScrollBehavior) => void;
-  /** 用户仍贴底跟随；为 false 时表示已上滚，可显示「回到底部」。 */
+  /** The user is still following the tail; false means they scrolled up and "back to bottom" can be shown. */
   followingTail: boolean;
 };
 
@@ -47,12 +47,13 @@ function buildStreamContentSig(
 }
 
 /**
- * 流式输出时若用户仍在尾部附近，持续滚到对话底部；用户上滚后停止跟随。
+ * While streaming, keep scrolling to the conversation bottom if the user is still near the tail; stop following once the user scrolls up.
  *
- * 返回 pinScrollToTail 供虚拟列表在每次 commit 的 layout effect 里同步补钉：
- * 卡片高度动画每帧引发多轮布局反馈（行高变化 → 重测 → 重渲染 totalSize），
- * 浏览器 ResizeObserver 有循环上限，超限通知推迟到下一帧，仅靠内容 RO 钉底
- * 会让部分帧带着未钉底偏差上屏（实测 4~17px 振荡，即「居底展开过程卡片震动」）。
+ * Returns pinScrollToTail so the virtual list can re-pin synchronously in each commit's layout effect:
+ * card height animations trigger multiple layout feedback rounds per frame (row height change → re-measure
+ * → re-render totalSize); the browser ResizeObserver has a loop limit and defers over-limit notifications
+ * to the next frame, so pinning via the content RO alone lets some frames hit the screen with unpinned
+ * offsets (measured 4–17px oscillation, the "card shaking during bottom-anchored expansion").
  */
 export function useConversationStreamScrollTail({
   scrollAreaRef,
@@ -63,7 +64,7 @@ export function useConversationStreamScrollTail({
   enabled,
 }: UseConversationStreamScrollTailOptions): UseConversationStreamScrollTailResult {
   const stickToBottomRef = useRef(true);
-  /** 用户点「回到底部」活底缓动进行中：抑制流式/RO/虚拟列表的 auto 瞬时钉底。 */
+  /** A smooth "back to bottom" animation is in progress: suppress instant auto pinning from streaming/RO/virtual list. */
   const suppressInstantPinRef = useRef(false);
   const cancelLiveSmoothRef = useRef<(() => void) | null>(null);
   const [followingTail, setFollowingTail] = useState(true);
@@ -127,25 +128,31 @@ export function useConversationStreamScrollTail({
       return;
     }
 
-    // stick 语义 =「用户主动离开底部」，只能由用户输入解除，不能从 scroll 事件
-    // 反推：流式期间内容频繁增删（收拢/终版渲染/clamp），scroll 事件送达时读到的
-    // scrollTop 与距底都是过期信号——曾两次实测被误判为用户上滚（距底差值版、
-    // scrollTop 上移版），把跟底误关后内容 RO 不再重钉底，即「流式结束后上跳」。
-    // 现规则（解除均以用户输入为锚点）：
-    // - wheel 上滚 → 解除；
-    // - viewport 外按下指针（Radix 滚动条拖动）→ 解除；
-    // - viewport 内中键按下（Windows 自动滚动，后续滚动无 wheel 事件）→ 解除；
-    // - viewport 内 pointerdown / touchstart（触屏拖动、拖选文本）期间 scrollTop
-    //   减小 → 解除。触屏须单独用 touch 事件跟踪：Chromium 把触摸拖动判定为滚动
-    //   时会发 pointercancel 并停发 pointer 事件，scroll 事件全部落在其后；而
-    //   touchmove/touchend 在滚动期间持续存在。上滑在手指未离开时 scrollTop 即
-    //   减小，故 touchend 后的惯性滚动无需再判；非手势期间的 scrollTop 减小
-    //   （内容收拢/clamp）不解除，维持原设计意图。
-    // scroll 事件仅在「向底部方向滚动且贴近底部」时恢复，永不解除。恢复必须带
-    // 方向条件：从底部起步的上滑手势是渐进的，首个 scroll 事件送达时常仍在
-    // 48px 阈值内（实测 dist=1），无方向条件会把刚被 wheel 关掉的 stick 立即
-    // 误重开，之后侧栏开合等触发内容 RO 即钉底（「上滑一点点后开合侧栏跳底」）。
-    // 方向仅用于打开而非关闭：误判最坏只是漏开一次，用户继续向下滚会补上。
+    // stick semantics = "the user deliberately left the bottom"; it can only be released by user input,
+    // not inferred from scroll events: during streaming, content is frequently added/removed
+    // (collapse/final render/clamp), so the scrollTop and distance-from-bottom read when a scroll event
+    // arrives are stale signals — twice measured as misjudged user scroll-ups (the distance-delta version
+    // and the scrollTop-decrease version); after wrongly turning off follow, the content RO no longer
+    // re-pins, the "jump up after streaming ends".
+    // Current rules (release is always anchored to user input):
+    // - wheel up → release;
+    // - pointer down outside the viewport (Radix scrollbar drag) → release;
+    // - middle-button down inside the viewport (Windows auto-scroll, subsequent scrolling has no wheel events) → release;
+    // - scrollTop decreasing during pointerdown / touchstart inside the viewport (touch drag, text
+    //   selection drag) → release. Touch must be tracked via touch events separately: when Chromium
+    //   classifies a touch drag as scrolling, it fires pointercancel and stops pointer events, with all
+    //   scroll events landing after them, while touchmove/touchend persist during scrolling. On an
+    //   upward swipe, scrollTop decreases before the finger lifts, so inertial scrolling after touchend
+    //   needs no further check; scrollTop decreases outside a gesture (content collapse/clamp) do not
+    //   release, preserving the original design intent.
+    // scroll events only restore stick when "scrolling toward the bottom and near the bottom", never
+    // release. Restore must carry the direction condition: an upward swipe starting from the bottom is
+    // gradual, and the first scroll event often still arrives within the 48px threshold (measured dist=1);
+    // without the direction condition, stick just turned off by wheel would be wrongly re-enabled
+    // immediately, and a later sidebar open/close triggering the content RO would pin to the bottom
+    // ("swiping up a little, then toggling the sidebar jumps to the bottom").
+    // Direction is only used to enable, not to disable: the worst misjudgment is missing one enable,
+    // which the user's continued downward scroll will fix.
     const UNSTICK_DRAG_THRESHOLD_PX = 4;
     let pointerHeld = false;
     let touchActive = false;
@@ -230,7 +237,7 @@ export function useConversationStreamScrollTail({
     viewport.addEventListener("pointermove", onPointerMove, { passive: true });
     viewport.addEventListener("touchstart", onTouchStart, { passive: true });
     viewport.addEventListener("touchmove", onTouchMove, { passive: true });
-    // pointerup / touchend 可能发生在 viewport / 窗口之外（拖动后松手），须挂在 window 上
+    // pointerup / touchend may happen outside the viewport / window (release after dragging), so they must be attached to window
     window.addEventListener("pointerup", onPointerEnd, { passive: true });
     window.addEventListener("pointercancel", onPointerEnd, { passive: true });
     window.addEventListener("touchend", onTouchEnd, { passive: true });

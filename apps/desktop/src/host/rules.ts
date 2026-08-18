@@ -76,7 +76,7 @@ export async function createRuleFile(
 
 ${description}
 
-在此补充短、硬、可执行的约束，供后续 agent 读取。
+${i18n.t("rules.templatePlaceholder")}
 `;
 
   await writeFile(targetPath, fileContent, "utf8");

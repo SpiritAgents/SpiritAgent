@@ -246,7 +246,7 @@ function ContextMenuShortcut({ className, ...props }: React.ComponentProps<"span
 }
 
 export type ContextMenuSectionItem = {
-  /** 相同 section 的条目为一组；组与组之间自动插入分割线。 */
+  /** Items of the same section form one group; separators are inserted automatically between groups. */
   section: string;
   item: React.ReactNode;
 };

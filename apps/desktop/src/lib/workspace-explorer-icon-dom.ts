@@ -14,7 +14,7 @@ export type AppendWorkspaceFileIconOptions = {
   colorMode?: WorkspaceFileIconColorMode;
 };
 
-/** contenteditable chip / DOM：注入 Lucide 文件/目录图标，与 React WorkspaceFileIcon 同源。 */
+/** contenteditable chip / DOM: injects Lucide file/directory icons, same source as the React WorkspaceFileIcon. */
 export function appendWorkspaceFileIcon(
   parent: HTMLElement,
   doc: Document,

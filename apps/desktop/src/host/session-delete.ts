@@ -30,7 +30,7 @@ export interface SessionDeleteContext
   disposeSessionRuntime(bundle: SessionBundle): Promise<void>;
 }
 
-/** 会话文件删除前读取 rewind sessionId，用于联动清理 rewind sidecar 目录。 */
+/** Reads the rewind sessionId before deleting the session file, for linked cleanup of the rewind sidecar directory. */
 async function readRewindSessionIdFromDisk(filePath: string): Promise<string | undefined> {
   try {
     const raw = await readFile(filePath, "utf8");
@@ -77,9 +77,9 @@ export async function deleteSessionCommand(
       : visiblePaths;
     const needsSuccessor = wasActive || !registry.hasActive();
 
-    // 预加载继任者：在旧 bundle 移除前完成磁盘加载，
-    // 使后面「移除旧 bundle → 确立新 active」可同步原子完成，
-    // 避免 activeId 悬空跨 await（节流快照定时器在 await 间隙触发会 requireActive 崩溃）。
+    // Preload the successor: finish the disk load before removing the old bundle,
+    // so that "remove old bundle → establish new active" below completes atomically and synchronously,
+    // avoiding a dangling activeId across an await (the throttled snapshot timer firing in the await gap would crash in requireActive).
     let successor: SessionBundle | undefined;
     if (needsSuccessor && deletedFromMultiPane) {
       for (const sessionPath of nextVisible) {
@@ -88,7 +88,7 @@ export async function deleteSessionCommand(
           try {
             candidate = (await ensureStoredSessionBundleRegistered(ctx, sessionPath)) ?? undefined;
           } catch {
-            // 持久化布局可能引用已删除的会话文件
+            // the persisted layout may reference a deleted session file
           }
         }
         if (candidate) {
@@ -98,7 +98,7 @@ export async function deleteSessionCommand(
       }
     }
 
-    // —— 原子段开始：移除旧 bundle 并同步确立新 active，期间不得有 await ——
+    // —— atomic section start: remove the old bundle and synchronously establish the new active; no await allowed in between ——
     const removedBundle = registry.removeBySessionPath(resolvedPath);
     if (deletedFromMultiPane) {
       ctx.setVisiblePaneSessionPaths(nextVisible);
@@ -117,7 +117,7 @@ export async function deleteSessionCommand(
       }
       ctx.syncActiveRuntimePointer();
     }
-    // —— 原子段结束：activeId 已恢复有效，可安全跨 await ——
+    // —— atomic section end: activeId is valid again; safe to cross awaits ——
 
     if (newActive) {
       if (newActiveIsFreshDraft) {

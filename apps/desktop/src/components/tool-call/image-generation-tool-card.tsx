@@ -49,7 +49,7 @@ export function ImageGenerationToolCard({
       };
     }
 
-    // 虚拟化滚动会反复卸载/重挂载本卡片；命中模块级缓存则跳过 IPC
+    // Virtualized scrolling repeatedly unmounts/remounts this card; a module-level cache hit skips the IPC
     const cached = readCachedLocalFilePreviewDataUrl(previewableImagePath);
     if (cached) {
       setPreviewDataUrl(cached);

@@ -37,7 +37,7 @@ export type SettingsFormState = {
   translucency: boolean;
   systemNotifications: boolean;
   trayIcon: boolean;
-  /** 首启引导（OOBE）是否已完成。 */
+  /** Whether first-run onboarding (OOBE) has completed. */
   onboardingCompleted: boolean;
   agentMode: DesktopAgentMode;
   webHostEnabled: boolean;
@@ -94,17 +94,17 @@ export type SettingsViewProps = {
   onCreateRule: (request: CreateRuleRequest) => Promise<void>;
   onDeleteRule: (request: DeleteRuleRequest) => Promise<void>;
   onListDreamsOverview: () => Promise<DesktopDreamOverviewItem[]>;
-  /** Skills 页「生成 Skill」：回到主对话区并插入 create-skill Chip，后续直接写自然语言。 */
+  /** Skills page "Generate Skill": returns to the main conversation area and inserts a create-skill Chip; natural language follows directly. */
   onGenerateSkillNavigate?: () => void;
-  /** Rules 页「生成规则」：回到主对话区并插入 create-rule Chip。 */
+  /** Rules page "Generate Rule": returns to the main conversation area and inserts a create-rule Chip. */
   onGenerateRuleNavigate?: () => void;
-  /** Hooks 页「生成 Hooks」：回到主对话区并插入 create-hook Chip。 */
+  /** Hooks page "Generate Hooks": returns to the main conversation area and inserts a create-hook Chip. */
   onGenerateHookNavigate?: () => void;
-  /** 开发者页：在对话区播放上下文压缩 UI 演示（不调用模型）。 */
+  /** Developer page: plays the context-compression UI demo in the conversation area (no model call). */
   onStartCompactionUiDemo?: () => void;
-  /** 开发者页：在对话区加载极长消息列表性能演示（不调用模型）。 */
+  /** Developer page: loads an extremely long message list performance demo in the conversation area (no model call). */
   onStartLongConversationListDemo?: () => void;
-  /** Windows 云母 / macOS Vibrancy：内层透明以避免与 settings-shell 双层 tint 叠深。 */
+  /** Windows Mica / macOS Vibrancy: the inner layer is transparent to avoid double-tint darkening with settings-shell. */
   useTranslucency?: boolean;
   getGitHubAuthStatus: () => Promise<GitHubAuthStatus>;
   beginGitHubDeviceLogin: () => Promise<GitHubDeviceAuthChallenge>;

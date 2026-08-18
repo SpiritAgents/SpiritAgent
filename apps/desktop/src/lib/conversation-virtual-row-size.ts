@@ -6,10 +6,13 @@ import {
 } from "@/lib/message-card-spacing";
 import type { ConversationMessageSnapshot } from "@/types";
 
-// 估高误差 = virtual-core 首测补偿量 = 手动上滑时的可感知跳变幅度（补偿同步写
-// scrollTop，行位置经 React 异步更新，错帧暴露为跳动），故必须贴近实测：
-// process-group 按「折叠态」量取（展开由实测缓存接管），数值来自长会话 demo 实测。
-// 消息行 body 估高不含 pb-3：虚拟行间距由 paddingTop 承担，MessageCard 使用 externalRowGap。
+// Estimate error = virtual-core first-measure compensation = the perceptible jump when scrolling
+// up manually (the compensation writes scrollTop synchronously while row positions update
+// asynchronously through React, so a missed frame shows up as a jump), so estimates must stay
+// close to measured values: process-group is measured in the collapsed state (the expanded state
+// is covered by the measured-size cache); numbers come from long-session demo measurements.
+// The message-row body estimate excludes pb-3: virtual row spacing is carried by paddingTop, and
+// MessageCard uses externalRowGap.
 const PROCESS_GROUP_BODY_ESTIMATE_PX = 20;
 const USER_MESSAGE_BODY_ESTIMATE_PX = 56;
 const TOOL_MESSAGE_BODY_ESTIMATE_PX = 40;

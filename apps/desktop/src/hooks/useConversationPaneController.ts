@@ -194,7 +194,7 @@ export function useConversationPaneController({
     activeSessionReadOnly: conversation.activeSessionReadOnly,
   });
 
-  // 传入 MessageCard（memo 行）的回调必须引用稳定，不能用每渲染重建的行内闭包
+  // Callbacks passed into MessageCard (memoized row) must be reference-stable; no inline closures rebuilt every render
   const { setProcessGroupManualOpen, processGroupManualOpenKey } = conversation;
   const onProcessGroupManualOpenChange = useCallback(
     (groupId: string, open: boolean) => {

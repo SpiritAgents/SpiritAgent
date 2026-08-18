@@ -12,7 +12,7 @@ export function isSpiritChipPayload(value: RichSegment): value is SpiritChipPayl
   return value.kind !== "text";
 }
 
-// 节点层拿不到 ComposerChipLabelsContext（宿主可本地化 label），剪贴板文本统一用默认英文 label
+// The node layer cannot access ComposerChipLabelsContext (the host may localize labels), so clipboard text always uses the default English labels
 const CHIP_KIND_DEFAULT_LABEL = {
   plan: "Plan",
   ask: "Ask",

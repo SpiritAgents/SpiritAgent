@@ -10,24 +10,26 @@ import {
 
 export type UseConversationSessionScrollTailOptions = {
   scrollAreaRef: RefObject<ComponentRef<typeof ScrollArea> | null>;
-  /** 列表内容标识（session key + scope key + remount epoch）；变化即重新定底 */
+  /** List content identity (session key + scope key + remount epoch); any change re-pins to the bottom */
   contentKey: string;
-  /** 会话内容可见（非空、非导航占位隐藏）时才滚动 */
+  /** Scroll only when session content is visible (not empty, not hidden by a navigation placeholder) */
   enabled: boolean;
-  /** 会话正在流式输出：内容持续增长无法在 paint 前收敛，走跨帧 rAF 定底 */
+  /** Session is streaming: content keeps growing and cannot settle before paint, so pin to the bottom via cross-frame rAF */
   streaming: boolean;
 };
 
-// 定底收敛帧数上限：切入正在流式输出的会话时 scrollHeight 持续增长、永不 settled，
-// 到达上限后直接显示，交由 stream tail 继续跟随。
+// Upper bound on settle frames: when entering a session that is streaming, scrollHeight keeps growing
+// and never settles; once the bound is hit, show directly and let the stream tail keep following.
 const SETTLE_MAX_FRAMES = 12;
 
 /**
- * 切换 composer 会话（或列表 scope / remount epoch 变化）后定底到最新消息。
+ * Pin to the newest message after switching the composer session (or a list scope / remount epoch change).
  *
- * 虚拟化下首帧按估高布局滚底，随后实测修正 totalSize 需再次滚底，两次可见位移
- * 即「进入会话卡两下」。故 settled（滚底后下一帧仍贴底）前返回 listSettling=true，
- * 由调用方隐藏列表（visibility:hidden 不影响布局测量），settled 后一次性显示。
+ * Under virtualization the first frame scrolls to bottom with estimated heights, then the measured
+ * totalSize correction needs another scroll-to-bottom — two visible jumps, the "double jump on entering
+ * a session". So until settled (still at bottom the frame after pinning), return listSettling=true and
+ * let the caller hide the list (visibility:hidden does not affect layout measurement), then show it at
+ * once once settled.
  */
 export function useConversationSessionScrollTail({
   scrollAreaRef,
@@ -40,7 +42,7 @@ export function useConversationSessionScrollTail({
 
   useLayoutEffect(() => {
     if (!enabled) {
-      // 空会话等场景会卸载消息列表；下次重新可见时需再次定底
+      // Empty sessions and similar unmount the message list; the next time it becomes visible it must be pinned again
       previousContentKeyRef.current = null;
       setSettling(false);
       return;
@@ -96,7 +98,7 @@ export function useConversationSessionScrollTail({
       };
     }
 
-    // Radix viewport 可能晚于 contentKey 变化一帧挂载；勿标记 key 已处理，轮询至可用。
+    // The Radix viewport may mount one frame later than the contentKey change; do not mark the key as handled, poll until available.
     setSettling(true);
     const waitForViewport = () => {
       if (canceled) {

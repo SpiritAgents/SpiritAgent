@@ -121,12 +121,12 @@ export interface HostExtensionCommandContext {
   ): Promise<DesktopSnapshot>;
   appendInlineAssistantReply(displayText: string, assistantText: string): Promise<DesktopSnapshot>;
   setLastRuntimeError(error: string): void;
-  /** MCP / hooks 配置写盘后失效快照侧列表缓存。 */
+  /** Invalidates the snapshot-side list cache after the MCP / hooks config is written to disk. */
   invalidateConfigListCaches(): void;
   buildSnapshot(): DesktopSnapshot;
 }
 
-/** Marketplace catalog/detail/readme 为只读网络 I/O，不得占用 runSerialized 以免阻塞会话导航。 */
+/** Marketplace catalog/detail/readme are read-only network I/O and must not hold runSerialized, to avoid blocking session navigation. */
 async function ensureInitializedForReadOnlyMarketplace(
   ctx: HostExtensionCommandContext,
 ): Promise<void> {

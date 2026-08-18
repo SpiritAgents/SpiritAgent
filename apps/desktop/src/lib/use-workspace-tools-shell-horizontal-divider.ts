@@ -88,7 +88,7 @@ export function useWorkspaceToolsShellHorizontalDivider(
       }
 
       if (anchor.getClientRects().length === 0) {
-        // anchor 不可布局（hidden tabpanel、Tailwind hidden 等）时须隐藏，否则会保留上次 sync 的 display:block
+        // When the anchor is not laid out (hidden tabpanel, Tailwind hidden, etc.), it must be hidden, otherwise the previous sync's display:block is kept
         shellDivider!.style.display = "none";
         return;
       }

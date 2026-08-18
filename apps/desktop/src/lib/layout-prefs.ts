@@ -59,7 +59,7 @@ const WORKSPACE_TOOLS_WIDTH_RATIO_STORAGE_KEY = "spirit-desktop-workspace-tools-
 
 export const WORKSPACE_TOOLS_MIN_WIDTH_PX = 240;
 export const WORKSPACE_TOOLS_DEFAULT_WIDTH_PX = 420;
-/** 左侧拖拽分隔条在 flex 布局中占用的宽度（可见 1px 线；命中区由 ::before 向左扩展）。 */
+/** Width occupied by the left drag separator in the flex layout (a visible 1px line; the hit area extends left via ::before). */
 export const WORKSPACE_TOOLS_RESIZE_SEPARATOR_PX = 1;
 export const WORKSPACE_TOOLS_VIEWPORT_MAX_WIDTH_RATIO = 0.62;
 export const WORKSPACE_TOOLS_DEFAULT_WIDTH_RATIO = WORKSPACE_TOOLS_DEFAULT_WIDTH_PX / 1200;
@@ -216,7 +216,7 @@ export function writePrChangesTreeWidthPx(widthPx: number, containerWidthPx?: nu
 const WORKSPACE_FILES_TREE_WIDTH_STORAGE_KEY = "spirit-desktop-workspace-files-tree-width-px";
 
 export const WORKSPACE_FILES_TREE_MIN_WIDTH_PX = 120;
-/** 与原先 `min(40%, 13rem)` 上限一致 */
+/** Consistent with the previous `min(40%, 13rem)` cap */
 export const WORKSPACE_FILES_TREE_DEFAULT_WIDTH_PX = 208;
 const WORKSPACE_FILES_TREE_MAX_WIDTH_RATIO = 0.45;
 
@@ -391,7 +391,7 @@ const WORKSPACE_SIDEBAR_EXPANDED_STORAGE_KEY = "spirit-desktop-workspace-sidebar
 
 const WORKSPACE_SIDEBAR_EXPANDED_MAX_ENTRIES = 200;
 
-/** `false` = 收起；缺省或 `true` = 展开（与 SessionSidebar AnimatedCollapse 一致）。 */
+/** `false` = collapsed; missing or `true` = expanded (consistent with SessionSidebar AnimatedCollapse). */
 export type WorkspaceSidebarExpandedById = Record<string, boolean>;
 
 function sanitizeWorkspaceSidebarExpandedById(value: unknown): WorkspaceSidebarExpandedById {

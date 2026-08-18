@@ -1,4 +1,4 @@
-/* Workspace Monaco：去掉默认 focusBorder 描边（translucency 透明底时尤为明显）。 */
+/* Workspace Monaco: remove the default focusBorder outline (especially visible with a translucent transparent background). */
 .monaco-editor,
 .monaco-editor:focus-within,
 .monaco-editor .overflow-guard {
@@ -16,7 +16,7 @@
   border-radius: 2px;
 }
 
-/* Inline completion ghost text：略降不透明度以区分已输入文本。 */
+/* Inline completion ghost text: slightly lower opacity to distinguish it from typed text. */
 .monaco-editor .ghost-text,
 .monaco-editor .ghost-text-decoration,
 .monaco-editor .ghost-text-decoration-preview,

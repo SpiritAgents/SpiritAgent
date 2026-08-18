@@ -23,7 +23,7 @@ export function parseTodoItemsFromPayload(payload: unknown): TodoDisplayItem[] |
     try {
       parsed = JSON.parse(trimmed);
     } catch {
-      // 流式 argsExcerpt 常不完整；与明确的 todos:[] 区分，避免误算「移除 N 个」
+      // Streaming argsExcerpt is often incomplete; distinguish it from an explicit todos:[] to avoid miscounting "removed N"
       return undefined;
     }
   }
@@ -130,7 +130,7 @@ export function todoWriteSummaryDetail(input: {
   return formatTodoWriteDeltaDetail(delta, input.t, input.separator);
 }
 
-/** 执行前 TODO：优先用工具卡已固化的快照，避免 turn 收尾二次 integrate 读到变更后的 live cache。 */
+/** Pre-execution TODO: prefer the snapshot already frozen on the tool card, so the second integrate at turn end does not read a mutated live cache. */
 export function resolveTodoWriteBeforeSnapshot(
   existing: ReadonlyArray<TodoDisplayItem> | undefined,
   liveBefore: ReadonlyArray<TodoDisplayItem>,

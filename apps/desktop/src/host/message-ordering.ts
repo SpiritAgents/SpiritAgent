@@ -66,7 +66,7 @@ export {
   parsePendingSubagentStatusText,
 };
 
-/** 环境变量 `SPIRIT_DESKTOP_MESSAGE_ORDER_DEBUG`：不设为关；`1`/compact/on 紧凑；`2`/verbose 更详并节流纯 preview；`0`/off 显式关闭。 */
+/** Env var `SPIRIT_DESKTOP_MESSAGE_ORDER_DEBUG`: unset means off; `1`/compact/on compact; `2`/verbose more detail with throttled pure previews; `0`/off explicitly off. */
 export type MessageOrderDebugLevel = "off" | "compact" | "verbose";
 
 export function messageOrderDebugLevel(): MessageOrderDebugLevel {
@@ -605,7 +605,7 @@ export function applyToolCallSummaryCopy(
   };
 }
 
-/** 自 history 尾部向前找**最后一条**非空 `assistant` 正文（OpenAI 路径下 `historyStore` 常无 `role: tool`，需用此作待审批时的兜底）。 */
+/** Scans backward from the end of history for the **last** non-empty `assistant` body (the OpenAI path often has no `role: tool` in `historyStore`, so this is the fallback while awaiting approval). */
 export function lastAssistantPlainTextInHistory(
   hist: ReadonlyArray<{ role: string; content: string | LlmMessageContent }>,
 ): string | undefined {
@@ -620,9 +620,9 @@ export function lastAssistantPlainTextInHistory(
 }
 
 /**
- * 自「最后一条 user」起至首条 `tool` 前，取**第一个**非空 assistant 正文。
- * OpenAI 路径下 tool 结果通常不在 `history()` 的 LlmMessage 里，若仍用「最后一个」assistant
- * 会误取工具执行后的终稿，从而覆盖/错配流式阶段已显示的前缀（如「好的，我来查看…」）。
+ * From the "last user message" up to the first `tool`, take the **first** non-empty assistant body.
+ * On the OpenAI path, tool results are usually not in `history()`'s LlmMessages; using the "last" assistant
+ * would wrongly pick the post-tool final text, overwriting/mismatching the prefix already shown during streaming (e.g. "OK, let me check...").
  */
 export function assistantPrefixBeforeFirstToolInCurrentTurn(
   hist: ReadonlyArray<{ role: string; content: string | LlmMessageContent }>,
@@ -1112,8 +1112,8 @@ export function shouldHideEmptyPendingAssistantSnapshot(
   // Keep the pending row visible while runtime reports thinking/compressing so the
   // conversation UI can show the Thinking label before detailText is synced.
   if (isLivePendingReasoningAux(livePendingAux)) {
-    // 仅当后续已有工具、Thinking 占位 UI 会被 suppress 时隐藏空行，避免 pb-3 幽灵占位。
-    // 工具批次之间（pending 在末尾、后面尚无工具）仍保留 Thinking 加载指示。
+    // Hide the blank line only when a later tool exists and the Thinking placeholder UI would be suppressed, avoiding a pb-3 ghost placeholder.
+    // Between tool batches (pending at the end, no tool after it) keep the Thinking loading indicator.
     if (
       messages !== undefined &&
       messageIndex !== undefined &&
@@ -1144,7 +1144,7 @@ function defaultToolHeadline(phase: ToolBlockSnapshot["phase"], toolName: string
   }
 }
 
-/** 末条 user 之后是否已有其它工具卡为「待审批」或「执行中」（不含当前 toolCallId）。 */
+/** Whether any other tool card after the last user message is "awaiting approval" or "running" (excluding the current toolCallId). */
 function hasBlockingToolAheadOfSameTurnPreview(
   messages: ConversationMessageSnapshot[],
   thisToolCallId: string,

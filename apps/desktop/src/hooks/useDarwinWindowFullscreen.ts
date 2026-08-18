@@ -20,8 +20,8 @@ function getDarwinFullscreenFromDocument(): boolean {
 }
 
 /**
- * macOS 全屏态：与 `useDesktopShellEffects` 写入的 `spirit-desktop-darwin-fullscreen` 同步，
- * 不重复订阅 Electron IPC（红绿灯安全区 CSS 仍由 shell effects 维护）。
+ * macOS fullscreen state: synced with the `spirit-desktop-darwin-fullscreen` class written by `useDesktopShellEffects`,
+ * without re-subscribing to Electron IPC (the traffic-light safe-area CSS is still maintained by shell effects).
  */
 export function useDarwinWindowFullscreen(enabled: boolean): boolean {
   return useSyncExternalStore(

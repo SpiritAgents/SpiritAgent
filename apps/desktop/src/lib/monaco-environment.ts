@@ -2,7 +2,7 @@ import EditorWorker from "monaco-editor/esm/vs/editor/editor.worker?worker";
 
 let monacoWorkersConfigured = false;
 
-/** 须在首次 `monaco.editor.create` 之前调用一次。 */
+/** Must be called once before the first `monaco.editor.create`. */
 export function ensureMonacoWorkers(): void {
   if (monacoWorkersConfigured || typeof globalThis === "undefined") {
     return;

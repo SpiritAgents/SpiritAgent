@@ -282,9 +282,9 @@ function parseDesktopMcpMetadata(
   return result;
 }
 
-// 反斜杠不作通用转义符：Windows 路径（C:\tools\server.exe、\\server\share）
-// 是 stdio command 的常态输入，把 `\x` 吞成 `x` 会破坏路径。唯一保留的转义
-// 是引号内的 `\"` / `\'`（匹配当前引号），用于嵌入字面引号。
+// Backslash is not a general escape character: Windows paths (C:\tools\server.exe, \\server\share)
+// are normal input for stdio commands, and collapsing `\x` to `x` would corrupt them. The only escapes
+// kept are `\"` / `\'` inside quotes (matching the current quote), for embedding a literal quote.
 function splitDesktopCommandLine(input: string): string[] {
   const tokens: string[] = [];
   let current = "";

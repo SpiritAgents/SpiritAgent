@@ -2,7 +2,7 @@ export function normalizeWorkspaceEntryRel(relativePath: string): string {
   return relativePath.replace(/\\/g, "/");
 }
 
-/** 复制到剪贴板用的工作区相对路径；根目录为 `.`。 */
+/** Workspace-relative path for copying to the clipboard; the root directory is `.`. */
 export function formatWorkspaceRelativePathForCopy(relativePath: string): string {
   const normalized = normalizeWorkspaceEntryRel(relativePath).replace(/^\/+|\/+$/g, "");
   return normalized.length === 0 ? "." : normalized;
@@ -12,7 +12,7 @@ function workspacePathSeparator(workspaceRoot: string): "\\" | "/" {
   return /\\/.test(workspaceRoot) ? "\\" : "/";
 }
 
-/** 将工作区根与相对路径拼成绝对路径（browser-safe，不依赖 Node path）。 */
+/** Joins the workspace root and a relative path into an absolute path (browser-safe, no Node path dependency). */
 export function joinWorkspaceAbsolutePath(workspaceRoot: string, relativePath: string): string {
   const root = workspaceRoot.replace(/[/\\]+$/, "");
   const rel = formatWorkspaceRelativePathForCopy(relativePath);
@@ -23,7 +23,7 @@ export function joinWorkspaceAbsolutePath(workspaceRoot: string, relativePath: s
   return `${root}${sep}${rel.replace(/\//g, sep)}`;
 }
 
-/** 候选路径是否等于 prefix，或位于 prefix 目录之下。 */
+/** Whether the candidate path equals prefix or lies under the prefix directory. */
 export function isUnderWorkspaceEntryPath(prefixRel: string, candidateRel: string): boolean {
   const prefix = normalizeWorkspaceEntryRel(prefixRel);
   const candidate = normalizeWorkspaceEntryRel(candidateRel);
@@ -36,7 +36,7 @@ export function isUnderWorkspaceEntryPath(prefixRel: string, candidateRel: strin
   return candidate.startsWith(`${prefix}/`);
 }
 
-/** 将 currentPath 在 oldPrefix 下的相对位置映射到 newPrefix；无关联时返回 null。 */
+/** Maps the relative position of currentPath under oldPrefix to newPrefix; returns null when unrelated. */
 export function remapWorkspaceEntryPath(
   oldPrefix: string,
   newPrefix: string,
@@ -55,7 +55,7 @@ export function remapWorkspaceEntryPath(
   return `${newP}${suffix}`;
 }
 
-/** 从 keyed-by-relative-dir 的记录中移除 prefix 及其子路径键。 */
+/** Removes the prefix and its sub-path keys from a record keyed by relative directory. */
 export function evictRecordKeysUnderPrefix<T>(
   record: Record<string, T>,
   prefixRel: string,

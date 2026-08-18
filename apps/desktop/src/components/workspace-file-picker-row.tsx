@@ -27,7 +27,8 @@ export function WorkspaceFilePickerRow({
   const displayPath = isDirectory ? normalizeWorkspaceReferenceDirectoryPath(path) : path;
   const iconKind = isDirectory ? "dir" : "file";
   const basename = workspaceFileBasename(displayPath);
-  // 工作区根下文件/目录相对路径等于 basename，灰字路径无额外信息
+  // For files/directories directly under the workspace root, the relative path equals the
+  // basename, so the gray path text carries no extra information
   const showRelativePath = basename !== displayPath;
 
   if (layout === "stacked") {

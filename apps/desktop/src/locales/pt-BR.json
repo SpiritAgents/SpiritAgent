@@ -1248,6 +1248,9 @@
     "autoWorktreeNameFailedInvalidBranchName": "Falha ao gerar automaticamente nome do Worktree: formato de branchName inválido ({{branchName}}).",
     "autoWorktreeNameFailedNotObject": "Falha ao gerar automaticamente nome do Worktree: modelo retornou JSON que não é um objeto."
   },
+  "rules": {
+    "templatePlaceholder": "Adicione aqui restrições curtas, claras e acionáveis para os agentes lerem."
+  },
   "notification": {
     "defaultSessionName": "Sessão",
     "taskComplete": {

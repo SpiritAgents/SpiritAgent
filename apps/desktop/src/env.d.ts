@@ -54,9 +54,9 @@ import type {
 declare global {
   interface SpiritDesktopApi {
     platform: NodeJS.Platform;
-    /** 同步读取磁盘 `translucency`；首屏 snapshot 未就绪时与 Electron 窗口材质对齐。 */
+    /** Synchronously reads on-disk `translucency`; aligns with the Electron window material before the first snapshot is ready. */
     readTranslucency(): boolean;
-    /** 同步读取主进程追踪的 OS 深色偏好；themeSource 被覆盖期间 matchMedia 会谎报，须以此为准。 */
+    /** Synchronously reads the OS dark preference tracked by the main process; matchMedia misreports while themeSource is overridden, so this is authoritative. */
     readOsPrefersDark(): boolean;
     bootstrap(request?: BootstrapRequest): Promise<DesktopSnapshot>;
     rememberWorkspaceRoot(request: RememberWorkspaceRequest): Promise<DesktopSnapshot>;
@@ -292,16 +292,16 @@ declare global {
     readLocalVideoPreviewUrl(filePath: string): Promise<string | null>;
     readManagedVideoPreviewUrl(reference: string): Promise<string | null>;
     saveLocalImageAs(filePath: string): Promise<boolean>;
-    /** resolve 为 themeSource 生效后主进程视角的真实 dark（system 时可能与请求值不同）。 */
+    /** Resolves to the true dark value from the main process perspective after themeSource takes effect (may differ from the requested value for system). */
     syncWindowFrame(request: {
       dark: boolean;
       nativeTheme: "system" | "light" | "dark";
       translucency?: boolean;
     }): Promise<boolean>;
-    /** 首启 LaunchSplash 已绘制就绪，通知主进程 reveal 窗口。 */
+    /** First-launch LaunchSplash has painted and is ready; tells the main process to reveal the window. */
     notifyLaunchSplashReady(): void;
     syncLanguage(lang: string): Promise<void>;
-    /** macOS：UI 缩放后同步原生红绿灯位置，与切换按钮保持对齐。 */
+    /** macOS: syncs the native traffic-light position after UI scaling so it stays aligned with the toggle button. */
     syncTrafficLightPosition(position: { x: number; y: number }): Promise<void>;
     popupApplicationMenu(
       section: "file" | "edit" | "view" | "window" | "help",

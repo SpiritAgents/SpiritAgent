@@ -119,7 +119,7 @@ const TAB_KIND_META: Record<WorkspaceToolTabKind, { labelKey: string; icon: type
 };
 
 export type WorkspaceToolsDockProps = {
-  /** 已解析的工作区根路径；未就绪时传空字符串 */
+  /** Resolved workspace root path; empty string while not ready */
   workspaceRoot: string;
   listExplorerChildren: (relativePath: string) => Promise<WorkspaceExplorerListResult>;
   readWorkspaceTextFile: (relativePath: string) => Promise<WorkspaceReadTextFileResult>;
@@ -132,7 +132,7 @@ export type WorkspaceToolsDockProps = {
   onStartImplementing?: () => void;
   startImplementingDisabled?: boolean;
   autoRevealPlanNonce?: number;
-  /** 仅该 files 选项卡响应 Plan 自动展开 */
+  /** Only this files tab responds to Plan auto-expansion */
   planRevealTabId?: string | null;
   autoRevealFileNonce?: number;
   fileRevealTabId?: string | null;
@@ -174,9 +174,9 @@ export type WorkspaceToolsDockProps = {
     attachment: import("@/lib/git-commit-attachment").GitCommitAttachment,
   ) => void;
   onBrowserOpenInNewTab?: WorkspaceBrowserTabProps["onOpenUrlInNewTab"];
-  /** Electron 桌面版可新建/使用浏览器选项卡；Web 宿主菜单项可见但禁用。 */
+  /** The Electron desktop build can create/use browser tabs; on the Web host the menu item is visible but disabled. */
   browserTabEnabled?: boolean;
-  /** Electron 桌面版可新建 PR 选项卡；Web 宿主菜单项可见但禁用。 */
+  /** The Electron desktop build can create PR tabs; on the Web host the menu item is visible but disabled. */
   prTabEnabled?: boolean;
   onOpenIntegrationsSettings?: () => void;
   getGitHubAuthStatus: () => Promise<GitHubAuthStatus>;
@@ -208,7 +208,7 @@ export type WorkspaceToolsDockProps = {
   markGitHubPullRequestReady: (
     request: GetGitHubPullRequestDetailRequest,
   ) => Promise<GitHubPullRequestDetail>;
-  /** 右侧面板宽度（像素） */
+  /** Right panel width (pixels) */
   widthPx: number;
   minWidthPx?: number;
   maxWidthPx?: number;
@@ -222,9 +222,9 @@ export type WorkspaceToolsDockProps = {
   ) => Promise<import("@/types").GitCommitMessageSnapshot>;
   submitGitChip: (request: SubmitGitChipRequest) => Promise<boolean>;
   className?: string;
-  /** Windows 云母 / macOS Vibrancy：工作区面板使用半透明主题底色。 */
+  /** Windows Mica / macOS Vibrancy: the workspace panel uses a semi-transparent themed base color. */
   useTranslucency?: boolean;
-  /** 工作区 Monaco 编辑器 AI 补全；缺省为 true。 */
+  /** AI completion in the workspace Monaco editor; defaults to true. */
   codeCompletionEnabled?: boolean;
 };
 
@@ -386,7 +386,7 @@ function WorkspaceToolsDockShell({
       try {
         event.currentTarget.releasePointerCapture(event.pointerId);
       } catch {
-        // 已释放或无 capture
+        // Already released or no capture
       }
     },
     [onResizingChange, onWidthPxChange],
@@ -399,8 +399,10 @@ function WorkspaceToolsDockShell({
       id="workspace-tools-panel-shell"
       ref={shellRef}
       className={cn(
-        // 视口缩放会按比例改 widthPx：壳上勿挂常驻 width transition，否则拉窗口慢半拍。
-        // 展开/收起由 applyWorkspaceToolsShellWidthImmediate 临时写 transition 再改宽。
+        // Viewport zoom changes widthPx proportionally: do not attach a permanent width
+        // transition to the shell, otherwise resizing the window lags behind.
+        // Expand/collapse is handled by applyWorkspaceToolsShellWidthImmediate, which temporarily
+        // writes a transition before changing the width.
         "flex h-full min-h-0 shrink-0 flex-row self-stretch overflow-hidden",
         className,
       )}
@@ -527,7 +529,7 @@ const WorkspaceToolsDockContent = memo(function WorkspaceToolsDockContent({
   const gitHubAuthConnected = useGitHubAuthConnected(getGitHubAuthStatus, prTabEnabled);
   const prMenuBlocked =
     prTabEnabled && (gitHubAuthConnected === null || gitHubAuthConnected === false);
-  /** 仅用户首次切到 Shell 选项卡后才挂载终端（避免默认标签即触发 node-pty）；切走后保持挂载。 */
+  /** Mount the terminal only after the user first switches to the Shell tab (so the default tab does not trigger node-pty); keep it mounted after switching away. */
   const [mountedShellTabIds, setMountedShellTabIds] = useState<ReadonlySet<string>>(
     () => new Set(),
   );

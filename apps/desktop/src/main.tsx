@@ -23,7 +23,7 @@ import "katex/dist/katex.min.css";
 import "streamdown/styles.css";
 import "./styles.css";
 
-// 首屏前应用已存外观偏好，避免 portaled 浮层与根样式不一致
+// Apply stored appearance preferences before first paint, so portaled overlays match the root styles
 if (typeof document !== "undefined") {
   applyThemeToDocument(getStoredTheme());
   applyDesktopNativeChromeToDocument();

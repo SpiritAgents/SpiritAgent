@@ -27,7 +27,7 @@ const PROVIDERS_PRESERVE_RAW_MODEL_ID_WITHOUT_CATALOG = new Set<DesktopModelProv
   "kimi-code",
 ]);
 
-/** 无 catalog displayName 时是否保留原始 model id（如 openai/gpt-5），而非格式化。 */
+/** Whether to keep the raw model id (e.g. openai/gpt-5) instead of formatting it when the catalog has no displayName. */
 export function providerSupportsModelCatalogDetail(
   provider: DesktopModelProvider | undefined,
 ): boolean {
@@ -47,7 +47,7 @@ function catalogEntryIndexKey(hintKey: string, modelId: string): string {
   return `${hintKey}::${modelId}`;
 }
 
-/** 展示名 / catalog 详情映射键：同一 model id 在不同 provider 下可各自独立。 */
+/** Mapping key for display names / catalog details: the same model id can be independent under different providers. */
 export function modelCatalogScopeEntryKey(
   model: Pick<ModelProfileSnapshot, "provider" | "transportKind" | "apiBase" | "name">,
 ): string {
@@ -141,7 +141,7 @@ export function buildModelCatalogDetailMap(
   return detailByModelName;
 }
 
-/** Gateway/OpenRouter/Moonshot/Kimi Code：catalog 展示名与详情；其余或未命中时回退 model.name（id）或格式化 id。 */
+/** Gateway/OpenRouter/Moonshot/Kimi Code: catalog display names and details; anything else or a miss falls back to model.name (id) or a formatted id. */
 export function buildModelCatalogDisplayTitleMap(
   models: readonly ModelProfileSnapshot[],
   hints: readonly DesktopModelCatalogHint[] | undefined,

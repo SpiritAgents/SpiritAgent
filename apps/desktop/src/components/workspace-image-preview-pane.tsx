@@ -17,7 +17,7 @@ const DRAG_CLICK_THRESHOLD_PX = 4;
 const MIN_ZOOM = 0.25;
 const MAX_ZOOM = 4;
 const ZOOM_STEP = 0.1;
-/** 单击在当前预览区内相对放大 20%。 */
+/** A single click zooms in by a relative 20% within the current preview area. */
 const CLICK_ZOOM_FACTOR = 1.2;
 
 export type WorkspaceImagePreviewState = "loading" | "ready" | "unavailable";

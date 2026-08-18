@@ -15,7 +15,7 @@ import {
   workspaceToolsShellWidthWhenOpen,
 } from "@/lib/layout-prefs";
 
-/** 与 SessionSidebarShell / 历史右侧栏开合动画一致 */
+/** Matches the SessionSidebarShell / legacy right-panel open/close animation */
 const WORKSPACE_TOOLS_SHELL_WIDTH_TRANSITION = "width 300ms cubic-bezier(0.22, 1, 0.36, 1)";
 const WORKSPACE_TOOLS_SHELL_WIDTH_TRANSITION_MS = 300;
 
@@ -59,7 +59,7 @@ function applyWorkspaceToolsShellWidthImmediate(nextOpen: boolean): void {
     workspaceToolsShellWidthTransitionClearTimer = 0;
   }
 
-  // 仅开合走 width 过渡；视口缩放改占比时 React 侧保持无 transition，避免拖窗口慢半拍。
+  // Only open/close uses the width transition; when viewport scaling changes the ratio, the React side keeps no transition to avoid lagging behind window dragging.
   const reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
   shell.style.transition = reduceMotion ? "none" : WORKSPACE_TOOLS_SHELL_WIDTH_TRANSITION;
   shell.style.width = workspaceToolsShellWidthWhenOpen(nextOpen, widthPx);
@@ -143,7 +143,7 @@ export function useWorkspaceToolsChromeActions(): WorkspaceToolsChromeActions {
   return value;
 }
 
-/** 顶栏按钮：同时需要 open 与 toggle。 */
+/** Top-bar button: needs both open and toggle. */
 export function useWorkspaceToolsChrome(): {
   open: boolean;
   setOpen: WorkspaceToolsChromeActions["setOpen"];

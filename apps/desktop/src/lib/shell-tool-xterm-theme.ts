@@ -1,9 +1,9 @@
 import type { ITheme } from "@xterm/xterm";
 
-/** SGR（以 m 结尾）：含 16 色 / 256 色 / truecolor。 */
+/** SGR (sequences ending in m): covers 16-color / 256-color / truecolor. */
 const ANSI_SGR_RE = new RegExp(`${String.fromCharCode(0x1b)}\\[[0-9;]*m`, "g");
 
-/** 去掉着色 SGR，保留清行/光标等非 m 的 CSI，避免 truecolor 绕过 ITheme。 */
+/** Strips color-setting SGR while keeping non-m CSI (clear line/cursor etc.), so truecolor cannot bypass ITheme. */
 export function stripAnsiSgrSequences(text: string): string {
   return text.replace(ANSI_SGR_RE, "");
 }
@@ -27,7 +27,7 @@ const ANSI_COLOR_KEYS = [
   "brightWhite",
 ] as const;
 
-/** 由前景色构造单色主题（全部 ANSI 槽同色）。 */
+/** Builds a monochrome theme from a foreground color (all ANSI slots share the same color). */
 export function buildShellToolMonochromeTheme(
   foreground: string,
   selectionBackground?: string,
@@ -45,7 +45,7 @@ export function buildShellToolMonochromeTheme(
   return theme;
 }
 
-/** 与工具卡 `text-muted-foreground` 对齐的单色 xterm 主题：消费 ANSI，不染色。 */
+/** Monochrome xterm theme aligned with the tool card's `text-muted-foreground`: consumes ANSI without applying colors. */
 export function readShellToolMonochromeTheme(element?: Element | null): ITheme {
   const styles = getComputedStyle(element ?? document.documentElement);
   const foreground =

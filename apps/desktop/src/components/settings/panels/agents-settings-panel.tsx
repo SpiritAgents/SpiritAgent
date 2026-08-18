@@ -25,7 +25,7 @@ import {
   DESKTOP_PAGE_TITLE_CLASS,
 } from "@/lib/desktop-typography";
 
-/** Agents 面板专用行布局（grid）；与 appearance 等面板的 flex SettingsRow 不同。 */
+/** Row layout dedicated to the Agents panel (grid); unlike the flex SettingsRow of the appearance and other panels. */
 export function AgentsSettingsRow({
   label,
   description,
