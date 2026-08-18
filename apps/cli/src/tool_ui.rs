@@ -58,13 +58,13 @@ pub(crate) fn tool_request_from_streaming_preview(
 
 pub(crate) fn tool_request_from_host_value(value: Value) -> anyhow::Result<ToolUiRequest> {
     let Value::Object(mut object) = value else {
-        return Err(anyhow!("工具请求必须是 JSON object"));
+        return Err(anyhow!("tool request must be a JSON object"));
     };
 
     let name = object
         .remove("name")
         .and_then(|value| value.as_str().map(ToOwned::to_owned))
-        .ok_or_else(|| anyhow!("工具请求缺少 name"))?;
+        .ok_or_else(|| anyhow!("tool request is missing name"))?;
 
     Ok(ToolUiRequest::new(name, Value::Object(object)))
 }
@@ -82,7 +82,7 @@ mod tests {
             "phase": "finished",
             "toolName": "mcp_tool",
             "request": { "server": "github", "tool_name": "get_me" },
-            "statusText": "MCP 工具执行中: github / get_me",
+            "statusText": "MCP tool running: github / get_me",
             "failed": false,
         });
 
@@ -101,7 +101,7 @@ mod tests {
                 assert!(request.is_some());
                 assert_eq!(
                     status_text.as_deref(),
-                    Some("MCP 工具执行中: github / get_me")
+                    Some("MCP tool running: github / get_me")
                 );
                 assert_eq!(failed, Some(false));
             }
@@ -113,14 +113,14 @@ mod tests {
     fn bridge_runtime_event_accepts_assistant_thinking_segment_finalized() {
         let value = json!({
             "kind": "assistant-thinking-segment-finalized",
-            "text": "先分析一下用户意图",
+            "text": "Analyze the user intent first",
         });
 
         let event: BridgeRuntimeEvent =
             serde_json::from_value(value).expect("event should deserialize");
         match event {
             BridgeRuntimeEvent::AssistantThinkingSegmentFinalized { text } => {
-                assert_eq!(text, "先分析一下用户意图");
+                assert_eq!(text, "Analyze the user intent first");
             }
             other => panic!("unexpected event variant: {other:?}"),
         }
@@ -135,7 +135,7 @@ mod tests {
         }))
         .expect_err("legacy rust enum shape should be rejected");
 
-        assert!(err.to_string().contains("工具请求缺少 name"));
+        assert!(err.to_string().contains("tool request is missing name"));
     }
 
     #[test]

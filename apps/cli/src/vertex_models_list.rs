@@ -37,7 +37,7 @@ pub fn vertex_api_base_from_project_and_location(project: &str, location: &str) 
 pub fn list_vertex_model_ids(options: VertexListOptions) -> Result<Vec<String>, String> {
     if !options.api_key.trim().is_empty() {
         return Err(
-            "Google Vertex Express API Key 模式无法自动列模型，请手动填写模型 ID。".to_string(),
+            "Google Vertex Express API Key mode cannot list models automatically; enter the model ID manually.".to_string(),
         );
     }
 
@@ -51,18 +51,18 @@ pub fn list_vertex_model_ids(options: VertexListOptions) -> Result<Vec<String>, 
         .is_some_and(|value| !value.trim().is_empty());
     if has_client_email ^ has_private_key {
         return Err(
-            "Google Vertex 服务账号列模型需要同时填写 client email 与 private key。".to_string(),
+            "Listing Google Vertex models with a service account requires both client email and private key.".to_string(),
         );
     }
 
     if options.project.trim().is_empty() || options.location.trim().is_empty() {
-        return Err("Google Vertex 列模型需要填写 GCP 项目 ID 与区域（location）。".to_string());
+        return Err("Listing Google Vertex models requires the GCP project ID and location.".to_string());
     }
 
     let module_path = resolve_host_internal_openai_models_path()?;
     let module_url = module_path
         .to_str()
-        .ok_or_else(|| "host-internal 模块路径无效".to_string())?
+        .ok_or_else(|| "Invalid host-internal module path".to_string())?
         .replace('\\', "/");
     let module_url = if module_url.starts_with('/') {
         format!("file://{module_url}")
@@ -95,22 +95,22 @@ console.log(JSON.stringify({{ ids: models.map((entry) => entry.id) }}));
         .arg(script)
         .arg(payload.to_string())
         .output()
-        .map_err(|err| format!("启动 Node 列模型进程失败：{err}"))?;
+        .map_err(|err| format!("Failed to start the Node list models process: {err}"))?;
 
     if !output.status.success() {
         let stderr = String::from_utf8_lossy(&output.stderr).trim().to_string();
         let stdout = String::from_utf8_lossy(&output.stdout).trim().to_string();
         let detail = if !stderr.is_empty() { stderr } else { stdout };
         return Err(if detail.is_empty() {
-            "Google Vertex 列模型失败。".to_string()
+            "Failed to list Google Vertex models.".to_string()
         } else {
-            format!("Google Vertex 列模型失败：{detail}")
+            format!("Failed to list Google Vertex models: {detail}")
         });
     }
 
     let stdout = String::from_utf8_lossy(&output.stdout);
     let parsed: VertexListResponse = serde_json::from_str(stdout.trim())
-        .map_err(|err| format!("解析 Vertex 列模型响应失败：{err}"))?;
+        .map_err(|err| format!("Failed to parse the Vertex list models response: {err}"))?;
     Ok(parsed.ids)
 }
 
@@ -120,12 +120,12 @@ fn resolve_host_internal_openai_models_path() -> Result<PathBuf, String> {
         let openai_models = candidate
             .parent()
             .map(|parent| parent.join("openai-models.js"))
-            .ok_or_else(|| "host-internal 模块路径无效".to_string())?;
+            .ok_or_else(|| "Invalid host-internal module path".to_string())?;
         if openai_models.exists() {
             return Ok(openai_models);
         }
         return Err(format!(
-            "环境变量 SPIRIT_HOST_INTERNAL_MODULE_PATH 旁未找到 openai-models.js: {}",
+            "openai-models.js not found next to the SPIRIT_HOST_INTERNAL_MODULE_PATH environment variable: {}",
             openai_models.display()
         ));
     }
@@ -142,7 +142,7 @@ fn resolve_host_internal_openai_models_path() -> Result<PathBuf, String> {
     }
 
     Err(format!(
-        "未找到 host-internal openai-models.js。请先在 packages/host-internal 执行 pnpm run build。默认查找路径: {}",
+        "host-internal openai-models.js not found. Run pnpm run build in packages/host-internal first. Default lookup path: {}",
         from_crate.display()
     ))
 }

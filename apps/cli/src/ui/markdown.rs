@@ -54,7 +54,7 @@ fn markdown_cache_key(text: &str, body_style: Style) -> String {
     )
 }
 
-/// 扩展详情 README：复用 Markdown AST，但强制灰阶以匹配终端黑白灰审美。
+/// Extension detail README: reuses the Markdown AST but forces grayscale to match the terminal black-white-gray aesthetic.
 pub(in crate::ui) fn marketplace_markdown_lines(text: &str) -> Vec<Line<'static>> {
     markdown_lines(text)
         .into_iter()
@@ -419,7 +419,7 @@ mod markdown_table_tests {
 
     #[test]
     fn table_row_pipe_spans_use_dark_gray_border_color() {
-        let sample = "| 列 A | 列 B |\n|------|------|\n| 行 1 | 值 1 |";
+        let sample = "| Col A | Col B |\n|-------|-------|\n| Row 1 | Val 1 |";
         let lines = markdown_lines(sample);
         let row = lines
             .iter()
@@ -441,7 +441,7 @@ mod markdown_table_tests {
 
     #[test]
     fn table_border_color_is_independent_of_body_style() {
-        let sample = "| 列 A | 列 B |\n|------|------|\n| 行 1 | 值 1 |";
+        let sample = "| Col A | Col B |\n|-------|-------|\n| Row 1 | Val 1 |";
         let lines = markdown_lines_with_style(sample, Style::default().fg(Color::White));
         let row = lines
             .iter()
@@ -450,7 +450,7 @@ mod markdown_table_tests {
         for span in row {
             if span.content == "│" {
                 assert_eq!(span.style.fg, Some(Color::DarkGray));
-            } else if span.content.trim() == "行 1" {
+            } else if span.content.trim() == "Row 1" {
                 assert_eq!(span.style.fg, Some(Color::White));
             }
         }
@@ -458,7 +458,7 @@ mod markdown_table_tests {
 
     #[test]
     fn table_renders_bordered_grid_with_connected_lines() {
-        let sample = "| 列 A | 列 B | 列 C |\n|------|------|------|\n| 行 1 | 值 1 | 值 2 |\n| 行 2 | 值 3 | 值 4 |";
+        let sample = "| Col A | Col B | Col C |\n|-------|-------|-------|\n| Row 1 | Val 1 | Val 2 |\n| Row 2 | Val 3 | Val 4 |";
         let lines = markdown_lines(sample);
         let rendered = lines
             .iter()
@@ -490,14 +490,14 @@ mod markdown_table_tests {
         assert!(
             rendered
                 .iter()
-                .any(|line| line.contains("列 A") && line.contains("列 B")),
+                .any(|line| line.contains("Col A") && line.contains("Col B")),
             "expected header cells: {rendered:?}"
         );
     }
 
     #[test]
     fn pipe_rows_without_separator_stay_plain_text() {
-        let sample = "列 A | 列 B | 列 C\n行 1 | 值 1 | 值 2";
+        let sample = "Col A | Col B | Col C\nRow 1 | Val 1 | Val 2";
         let lines = markdown_lines(sample);
         let rendered = lines
             .iter()

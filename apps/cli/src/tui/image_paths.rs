@@ -1,4 +1,5 @@
 use anyhow::{Context, Result};
+use rust_i18n::t;
 use std::{env, fs, path::Path};
 
 pub(super) fn parse_image_path_and_prompt(input: &str) -> (&str, &str) {
@@ -55,11 +56,11 @@ pub(super) fn is_supported_image_path(path: &str) -> bool {
 }
 
 pub(super) fn list_local_image_files() -> Result<Vec<String>> {
-    let cwd = env::current_dir().context("读取当前目录失败")?;
+    let cwd = env::current_dir().context(t!("tui.image.read_cwd_failed").into_owned())?;
     let mut files = Vec::new();
 
-    for entry in fs::read_dir(&cwd).context("遍历当前目录失败")? {
-        let entry = entry.context("读取目录项失败")?;
+    for entry in fs::read_dir(&cwd).context(t!("tui.image.read_dir_failed").into_owned())? {
+        let entry = entry.context(t!("tui.image.read_dir_entry_failed").into_owned())?;
         let path = entry.path();
         if !path.is_file() {
             continue;

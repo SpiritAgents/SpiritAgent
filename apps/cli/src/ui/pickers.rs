@@ -15,7 +15,7 @@ pub(in crate::ui) fn inline_picker_bounds(
     (start, end)
 }
 
-/// 横向视口滚动起点：尽量让选中项居中，除非已滑到首尾（与 [`inline_picker_bounds`] 同语义）。
+/// Horizontal viewport scroll start: tries to keep the selected item centered unless already scrolled to either end (same semantics as [`inline_picker_bounds`]).
 pub(in crate::ui) fn horizontal_viewport_scroll_start(
     total_extent: usize,
     selected_start: usize,

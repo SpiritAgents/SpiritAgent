@@ -5,7 +5,7 @@ impl TuiShell {
     pub(super) fn push_mcp_usage(&mut self) {
         self.messages.push(ChatMessage {
             role: MessageRole::Agent,
-            content: "用法:\n- /mcp\n- /mcp list\n- /mcp add\n- /mcp inspect [server]\n- /mcp tools [server]\n- /mcp resources [server]\n- /mcp prompts [server]\n- /<server>_<prompt> [args_json | user_message]\n\n说明:\n- `/mcp add` 会打开底部表单，支持填写保存位置（用户 / 工作区 `.spirit`）、STDIO 或 HTTP server；Enter 保存，Esc 取消。\n- MCP prompt 会作为一级 slash 命令暴露，例如 `/github_issue_to_fix_workflow`。若尾部是合法 JSON object，会直接作为 prompt 参数；其他文本会作为附加用户消息发给 LLM。\n- 省略尾部且 prompt 定义了参数时，会自动打开参数表单；表单最后一栏可填写附加说明。\n- `/mcp tool call`、`/mcp resource attach`、`/mcp resource clear` 仍保留为调试入口，但不作为主交互路径。".to_string(),
+            content: t!("tui.mcp.usage").into_owned(),
             tool_block: None,
         });
     }
@@ -15,8 +15,7 @@ impl TuiShell {
             Ok(servers) if servers.is_empty() => {
                 self.messages.push(ChatMessage {
                     role: MessageRole::Agent,
-                    content: "当前未配置 MCP server。可用 `/mcp add` 打开表单进行添加。"
-                        .to_string(),
+                    content: t!("tui.mcp.no_servers").into_owned(),
                     tool_block: None,
                 });
             }
@@ -36,17 +35,14 @@ impl TuiShell {
                     .join("\n");
                 self.messages.push(ChatMessage {
                     role: MessageRole::Agent,
-                    content: format!(
-                        "MCP 概览:\n{}\n\n常用命令:\n- /mcp tools [server]\n- /mcp resources [server]\n- /mcp prompts [server]\n- /mcp add",
-                        summary
-                    ),
+                    content: t!("tui.mcp.overview", summary = summary).into_owned(),
                     tool_block: None,
                 });
             }
             Err(err) => {
                 self.messages.push(ChatMessage {
                     role: MessageRole::Agent,
-                    content: format!("读取 MCP 概览失败: {}", err),
+                    content: t!("tui.mcp.overview_read_failed", err = err).into_owned(),
                     tool_block: None,
                 });
             }
@@ -58,8 +54,7 @@ impl TuiShell {
             Ok(servers) if servers.is_empty() => {
                 self.messages.push(ChatMessage {
                     role: MessageRole::Agent,
-                    content: "当前未配置 MCP server。可用 `/mcp add` 打开表单进行添加。"
-                        .to_string(),
+                    content: t!("tui.mcp.no_servers").into_owned(),
                     tool_block: None,
                 });
                 None
@@ -73,10 +68,12 @@ impl TuiShell {
                     .join(", ");
                 self.messages.push(ChatMessage {
                     role: MessageRole::Agent,
-                    content: format!(
-                        "请为 `/mcp {}` 指定 server。可用 server: {}",
-                        purpose, names
-                    ),
+                    content: t!(
+                        "tui.mcp.server_required",
+                        purpose = purpose,
+                        servers = names
+                    )
+                    .into_owned(),
                     tool_block: None,
                 });
                 None
@@ -84,7 +81,7 @@ impl TuiShell {
             Err(err) => {
                 self.messages.push(ChatMessage {
                     role: MessageRole::Agent,
-                    content: format!("读取 MCP server 列表失败: {}", err),
+                    content: t!("tui.mcp.servers_read_failed", err = err).into_owned(),
                     tool_block: None,
                 });
                 None
@@ -191,7 +188,7 @@ impl TuiShell {
             Err(err) => {
                 self.messages.push(ChatMessage {
                     role: MessageRole::Agent,
-                    content: format!("应用 MCP prompt 失败: {}", err),
+                    content: t!("tui.mcp.prompt_apply_failed", err = err).into_owned(),
                     tool_block: None,
                 });
                 false
@@ -230,11 +227,12 @@ impl TuiShell {
             return Ok(prompt);
         }
 
-        Err(anyhow!(
-            "MCP server {} 中不存在 prompt {}",
-            server,
-            prompt_name
-        ))
+        Err(anyhow!(t!(
+            "tui.mcp.prompt_not_found",
+            server = server,
+            prompt = prompt_name
+        )
+        .into_owned()))
     }
 }
 

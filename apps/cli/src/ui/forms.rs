@@ -212,8 +212,8 @@ pub(in crate::ui) fn generic_bottom_form_effective_scroll(
     effective_scroll
 }
 
-/// 在 `fields_limit_y` 与页脚之间为每个可见字段分配 `Rect`；空间不足时**仍绘制**该字段的可见部分
-///（`height = min(自然高度, 剩余高度)`），避免像整表留空一样不渲染。
+/// Allocates a `Rect` for each visible field between `fields_limit_y` and the footer; when space is tight it **still draws** the visible part of the field
+/// (`height = min(natural height, remaining height)`), avoiding leaving the whole form blank.
 pub(in crate::ui) fn generic_bottom_form_visible_field_areas(
     form: &BottomFormView,
     content_area: Rect,
@@ -823,8 +823,8 @@ pub(in crate::ui) fn draw_ask_questions_option_row(
     option: &AskQuestionsOptionView,
     is_selected_row: bool,
 ) -> Option<(u16, u16)> {
-    // 与 Agent 主输入区一致：描边用 `input_block_border_style`（即正文灰），已填/已选文字用白字。
-    // 仅键盘焦点、未勾选时整行（含字）用正文灰，略淡于已选白字。
+    // Consistent with the Agent main input area: the border uses `input_block_border_style` (i.e. body gray), and filled/selected text uses white.
+    // Only with keyboard focus and unchecked is the whole row (including glyphs) body gray, slightly dimmer than selected white.
     let border_style = if option.selected || is_selected_row {
         input_block_border_style(false, MainInputMode::Agent, false)
     } else {
@@ -1443,7 +1443,7 @@ pub(in crate::ui) fn draw_bottom_form_text_field(
         is_selected,
         disabled,
     } = params;
-    // 自 `next_y` 到 `area` 下边的剩余行，须与底部 footer（快捷键提示）错开，不可画出区域外。
+    // Remaining rows from `next_y` to the bottom of `area` must stay clear of the bottom footer (shortcut hints) and must not draw outside the area.
     let bottom_exclusive = area.y.saturating_add(area.height);
     let mut next_y = area.y;
 

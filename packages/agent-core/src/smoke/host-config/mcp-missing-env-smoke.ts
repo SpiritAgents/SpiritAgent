@@ -62,7 +62,7 @@ async function runMcpMissingEnvSmoke(): Promise<void> {
         `background refresh should keep 1 configured server, got ${backgroundSnapshot.configuredServers}`,
       );
     }
-    if (!backgroundSnapshot.lastError?.includes(`缺少环境变量 ${MISSING_ENV_NAME}`)) {
+    if (!backgroundSnapshot.lastError?.includes(`Missing environment variable ${MISSING_ENV_NAME}`)) {
       throw new Error(
         `background refresh error message is incorrect: ${backgroundSnapshot.lastError ?? "<none>"}`,
       );

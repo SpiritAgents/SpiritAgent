@@ -681,7 +681,8 @@ fn model_add_transport_kind(form: &BottomFormView, provider: ModelProvider) -> M
     }
 }
 
-/// API Key 始终在「连接模型」表单最后一项（预设 3 项、火山 4 项、自定义单条 6 项、自定义批量 5 项）。
+/// The API Key is always the last field of the "connect model" form (3 fields for presets,
+/// 4 for Volcengine, 6 for custom single, 5 for custom bulk).
 fn model_add_api_key_field_index(form: &BottomFormView) -> usize {
     form.fields.len().saturating_sub(1)
 }
@@ -1083,7 +1084,7 @@ fn sync_model_add_form_fields(form: &mut BottomFormView) {
         if old_len == 6 {
             bottom_form_text_value(form, 4)
         } else if old_len == 7 {
-            // 兼容旧布局（含 api_kind 字段时 workspace 在 index 5）
+            // Legacy layout compatibility (when the api_kind field is present, workspace is at index 5)
             bottom_form_text_value(form, 5)
         } else {
             ""
@@ -1245,7 +1246,7 @@ pub(crate) fn new_model_add_form() -> BottomFormView {
     form
 }
 
-/// 解析「连接提供商」底部表单；与 Desktop 设置页语义对齐（单条 / 批量）。
+/// Parses the "connect provider" bottom form; semantics are aligned with the Desktop settings page (single / bulk).
 #[derive(Debug, Clone)]
 pub(crate) struct ParsedModelAddForm {
     pub provider: ModelProvider,
@@ -1764,7 +1765,9 @@ fn selected_hook_scope(form: &BottomFormView) -> Option<&'static str> {
     {
         Some(BottomFormFieldEditorView::Choice { options, selected }) => {
             let option = options.get((*selected).min(options.len().saturating_sub(1)))?;
-            if option.contains("用户") || option.eq_ignore_ascii_case("user") {
+            // Options are built from the localized scope labels, so compare against the
+            // current locale's "user" label instead of hardcoding any single language.
+            if option.as_str() == t!("form.hooks.field.scope.user").as_ref() {
                 Some("user")
             } else {
                 Some("workspace")
@@ -2521,7 +2524,9 @@ fn selected_mcp_scope(form: &BottomFormView) -> Option<McpScope> {
         Some(BottomFormFieldEditorView::Choice { options, selected }) => options
             .get((*selected).min(options.len().saturating_sub(1)))
             .map(|value| {
-                if value.contains("用户") || value.eq_ignore_ascii_case("user") {
+                // Options are built from the localized scope labels, so compare against the
+                // current locale's "user" label instead of hardcoding any single language.
+                if value.as_str() == t!("form.mcp.field.scope.user").as_ref() {
                     McpScope::User
                 } else {
                     McpScope::Workspace
@@ -2867,16 +2872,16 @@ mod tests {
 
     #[test]
     fn prompt_form_user_message_round_trips() {
-        let mut form = new_mcp_prompt_form("github", &sample_prompt(true), Some("帮我看看用途"));
+        let mut form = new_mcp_prompt_form("github", &sample_prompt(true), Some("check what this does"));
 
         form.selected_field = 2;
-        insert_text(&mut form, "\n并给出例子");
+        insert_text(&mut form, "\nand give examples");
 
         let user_message = prompt_user_message(&form)
             .expect("user message")
             .expect("non-empty user message");
 
-        assert_eq!(user_message, "帮我看看用途\n并给出例子");
+        assert_eq!(user_message, "check what this does\nand give examples");
     }
 
     #[test]
@@ -3456,13 +3461,13 @@ mod tests {
         let (id, title, short_label, path) = match scope {
             RuleScope::Workspace => (
                 "workspace-rule",
-                "工作区规则",
+                "Workspace Rule",
                 ".spirit/rule.md",
                 PathBuf::from("C:/workspace/.spirit/rule.md"),
             ),
             RuleScope::User => (
                 "user-rule",
-                "用户规则",
+                "User Rule",
                 "rule.md",
                 PathBuf::from("C:/users/demo/AppData/Roaming/SpiritAgent/rule.md"),
             ),

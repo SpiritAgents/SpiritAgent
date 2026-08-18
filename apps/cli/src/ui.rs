@@ -68,7 +68,7 @@ pub struct UiRenderFeedback {
     pub conversation_panel: Option<ConversationPanelRenderFeedback>,
     pub bottom_form_scroll_offset: Option<usize>,
     pub subagent_history_offset_from_bottom: Option<usize>,
-    /// 内嵌：最后一块已绘制内容的下一行（ratatui `Rect::bottom`，不含该行）。
+    /// Inline: the row after the last drawn content block (ratatui `Rect::bottom`, excluding that row).
     pub inline_content_bottom: Option<u16>,
 }
 
@@ -344,7 +344,7 @@ pub fn draw_ui(
     let history_image_blocks = history_render.image_blocks.clone();
     let history_message_ranges = history_render.message_ranges.clone();
     let history_lines = history_render.lines;
-    // 对话区无边框，内容与命中区域占满 chunks[0]。
+    // The conversation area has no border; content and hit area fill chunks[0].
     let inner_x = chunks[0].x;
     let inner_y = chunks[0].y;
     let inner_w = chunks[0].width.max(1);
@@ -353,7 +353,7 @@ pub fn draw_ui(
     let w = inner_w.max(1) as u16;
     let history_lines_for_images = history_lines.clone();
     let logical_line_visual_offsets = build_visual_row_offsets(&history_lines_for_images, w);
-    // 以 WordWrapper 折行为准，避免 Paragraph::line_count 与自定义折行在少数宽度/CJK 下不一致导致滚动错位。
+    // WordWrapper wrapping is authoritative, to avoid scroll misalignment when Paragraph::line_count and custom wrapping disagree at certain widths/CJK.
     let (flat_measure, _) = flatten_wrapped_history(history_lines.clone(), w, None);
     let total_visual_lines = flat_measure.len();
     let norm = conversation_norm_for_paint(app, total_visual_lines);
@@ -613,8 +613,8 @@ fn measure_inline_chrome(
     }
 }
 
-/// Inline 视口高度由当前内嵌布局决定（输入框 + 间隙 + footer + 可见 live/overlay），
-/// 封顶为终端行数。不要用固定 24 行去预先补偿。
+/// The inline viewport height is determined by the current inline layout (input box + gap + footer + visible live/overlay),
+/// capped at the terminal row count. Do not pre-compensate with a fixed 24 rows.
 pub(crate) fn inline_needed_viewport_height(
     app: &TuiViewModel,
     term_width: u16,

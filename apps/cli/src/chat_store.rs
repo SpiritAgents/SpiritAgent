@@ -95,7 +95,7 @@ fn list_chat_sessions_in(dir: &Path) -> Result<Vec<crate::ports::ChatSessionList
     }
 
     let files = fs::read_dir(dir)
-        .with_context(|| format!("读取对话目录失败: {}", dir.display()))?
+        .with_context(|| format!("Failed to read conversation directory: {}", dir.display()))?
         .flatten()
         .map(|entry| entry.path())
         .filter(|path| path.is_file())
@@ -223,7 +223,7 @@ pub fn save_chat(params: SaveChatParams<'_>) -> Result<PathBuf> {
     let path = resolve_save_path(path_arg)?;
     if let Some(parent) = path.parent() {
         fs::create_dir_all(parent)
-            .with_context(|| format!("创建对话目录失败: {}", parent.display()))?;
+            .with_context(|| format!("Failed to create conversation directory: {}", parent.display()))?;
     }
 
     let desktop_messages = desktop_messages
@@ -232,7 +232,7 @@ pub fn save_chat(params: SaveChatParams<'_>) -> Result<PathBuf> {
         .unwrap_or_else(|| build_fallback_desktop_messages(messages, assistant_aux));
     let desktop_message_timeline = build_persisted_timeline(&desktop_messages);
     if desktop_message_timeline.is_empty() {
-        return Err(anyhow!("chat schema v2 拒绝写入空会话 timeline"));
+        return Err(anyhow!("chat schema v2 refuses to write an empty session timeline"));
     }
     let workspace_root = current_workspace_root();
 
@@ -274,29 +274,29 @@ pub fn save_chat(params: SaveChatParams<'_>) -> Result<PathBuf> {
     };
 
     let content = serde_json::to_string_pretty(&file)?;
-    fs::write(&path, content).with_context(|| format!("写入对话失败: {}", path.display()))?;
+    fs::write(&path, content).with_context(|| format!("Failed to write conversation: {}", path.display()))?;
     Ok(path)
 }
 
 pub fn load_chat(path_arg: &str) -> Result<LoadedChat> {
     let path = resolve_load_path(path_arg)?;
     let text = fs::read_to_string(&path)
-        .with_context(|| format!("读取对话文件失败: {}", path.display()))?;
+        .with_context(|| format!("Failed to read conversation file: {}", path.display()))?;
     let parsed: Value = serde_json::from_str(&text)
-        .with_context(|| format!("解析对话文件失败: {}", path.display()))?;
+        .with_context(|| format!("Failed to parse conversation file: {}", path.display()))?;
 
     ensure_chat_schema_v2(&parsed)?;
     reject_legacy_conversation_fields(&parsed)?;
 
     let parsed: ChatFile = serde_json::from_value(parsed)
-        .with_context(|| format!("解析 chat schema v2 失败: {}", path.display()))?;
+        .with_context(|| format!("Failed to parse chat schema v2: {}", path.display()))?;
     if parsed.desktop_message_timeline.is_empty() {
-        return Err(anyhow!("chat schema v2 要求非空 desktopMessageTimeline"));
+        return Err(anyhow!("chat schema v2 requires a non-empty desktopMessageTimeline"));
     }
 
     let desktop_messages = hydrate_desktop_messages_from_timeline(&parsed.desktop_message_timeline);
     if desktop_messages.is_empty() {
-        return Err(anyhow!("chat schema v2 timeline 未还原出任何消息"));
+        return Err(anyhow!("chat schema v2 timeline did not restore any messages"));
     }
     let (messages, assistant_aux) = derive_archive_projection(&desktop_messages);
 
@@ -485,7 +485,7 @@ fn resolve_load_path(path_arg: &str) -> Result<PathBuf> {
 pub fn resolve_chat_file_path(path_arg: &str) -> Result<PathBuf> {
     let trimmed = path_arg.trim();
     if trimmed.is_empty() {
-        return Err(anyhow!("/sessions load 需要文件名或路径"));
+        return Err(anyhow!("/sessions load requires a file name or path"));
     }
 
     let raw = PathBuf::from(trimmed);
@@ -501,7 +501,7 @@ pub fn resolve_chat_file_path(path_arg: &str) -> Result<PathBuf> {
     };
 
     if !candidate.exists() {
-        return Err(anyhow!("对话文件不存在: {}", candidate.display()));
+        return Err(anyhow!("Conversation file does not exist: {}", candidate.display()));
     }
 
     Ok(candidate)

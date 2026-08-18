@@ -1,6 +1,6 @@
-//! Bedrock Mantle OpenAI frontier helpers（与 `host-internal/bedrock-mantle` 对齐）。
+//! Bedrock Mantle OpenAI frontier helpers (aligned with `host-internal/bedrock-mantle`).
 
-/// Bedrock Mantle OpenAI 模型 ID，如 `openai.gpt-5.5`、`openai.gpt-oss-120b`。
+/// Bedrock Mantle OpenAI model ID, e.g. `openai.gpt-5.5`, `openai.gpt-oss-120b`.
 pub fn is_bedrock_mantle_openai_model(model_id: &str) -> bool {
     let trimmed = model_id.trim();
     trimmed.len() > "openai.gpt-".len()

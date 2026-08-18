@@ -713,7 +713,7 @@ mod tests {
                     "turnId": 1,
                     "kind": "user",
                     "createdOrder": 0,
-                    "content": "读一下 Cargo.toml",
+                    "content": "Read Cargo.toml",
                     "pending": false,
                     "localFileAttachments": [{ "path": "Cargo.toml", "kind": "file" }]
                 },
@@ -732,7 +732,7 @@ mod tests {
                         "section": "before-tools",
                         "createdOrder": 2,
                         "pending": false,
-                        "aux": { "thinking": "先看依赖", "finishTaskNotice": "ignored" }
+                        "aux": { "thinking": "Check dependencies first", "finishTaskNotice": "ignored" }
                     }, {
                         "rowId": "row-3",
                         "messageId": 3,
@@ -759,7 +759,7 @@ mod tests {
                         "kind": "standalone-subagent-status",
                         "createdOrder": 4,
                         "pending": false,
-                        "content": "SubAgent 运行中"
+                        "content": "SubAgent running"
                     }, {
                         "rowId": "row-5",
                         "messageId": 5,
@@ -770,7 +770,7 @@ mod tests {
                         "createdOrder": 5,
                         "pending": false,
                         "canContinue": true,
-                        "content": "已读取"
+                        "content": "Read complete"
                     }]
                 }]
             }],
@@ -784,17 +784,17 @@ mod tests {
 
         assert_eq!(messages.len(), 4);
         assert_eq!(messages[0].role, ConversationMessageRole::User);
-        assert_eq!(messages[0].content, "读一下 Cargo.toml");
+        assert_eq!(messages[0].content, "Read Cargo.toml");
         assert_eq!(
             messages[1]
                 .aux
                 .as_ref()
                 .and_then(|aux| aux.thinking.as_deref()),
-            Some("先看依赖")
+            Some("Check dependencies first")
         );
         let tool = messages[2].tool.as_ref().expect("tool snapshot");
         assert_eq!(tool.tool_name, "read_file");
         assert_eq!(tool.tool_call_id.as_deref(), Some("call-1"));
-        assert_eq!(messages[3].content, "已读取");
+        assert_eq!(messages[3].content, "Read complete");
     }
 }

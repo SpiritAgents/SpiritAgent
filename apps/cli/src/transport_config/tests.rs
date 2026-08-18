@@ -133,7 +133,7 @@ fn resolve_transport_config_json_uses_azure_official_responses_provider() {
     let fixture = TestTransportFixture::new();
     let host = fixture.host();
     let previous_api_key = env::var(ENV_API_KEY).ok();
-    // SAFETY: 单测串行写入进程级环境变量，结束后恢复。
+    // SAFETY: the unit test writes process-level environment variables serially and restores them afterwards.
     unsafe {
         env::set_var(ENV_API_KEY, "test-azure-key");
     }

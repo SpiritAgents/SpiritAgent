@@ -26,7 +26,7 @@ pub(crate) fn attach_google_vertex_transport_fields(
 
     let obj = transport
         .as_object_mut()
-        .ok_or_else(|| anyhow!("transport config 不是 JSON 对象"))?;
+        .ok_or_else(|| anyhow!("transport config is not a JSON object"))?;
 
     if let Some(project) = profile.vertex_project() {
         obj.insert("vertexProject".to_string(), json!(project));
@@ -65,18 +65,18 @@ pub(crate) fn attach_cloudflare_ai_gateway_transport_fields(
 
     let account_id = profile.cloudflare_account_id().ok_or_else(|| {
         anyhow!(
-            "Cloudflare AI Gateway 模型缺少 cloudflareAccountId 配置，请使用 Desktop 连接向导导入或 spirit model add"
+            "Cloudflare AI Gateway model is missing cloudflareAccountId; import via the Desktop connect wizard or spirit model add"
         )
     })?;
     let gateway_id = profile.cloudflare_gateway_id().ok_or_else(|| {
         anyhow!(
-            "Cloudflare AI Gateway 模型缺少 cloudflareGatewayId 配置，请使用 Desktop 连接向导导入或 spirit model add"
+            "Cloudflare AI Gateway model is missing cloudflareGatewayId; import via the Desktop connect wizard or spirit model add"
         )
     })?;
 
     let obj = transport
         .as_object_mut()
-        .ok_or_else(|| anyhow!("transport config 不是 JSON 对象"))?;
+        .ok_or_else(|| anyhow!("transport config is not a JSON object"))?;
     obj.insert(
         "baseUrl".to_string(),
         json!(cloudflare_ai_gateway_api_base_from_account_id(&account_id)),
@@ -102,7 +102,7 @@ pub(crate) fn model_provider_vendor(provider: ModelProvider) -> &'static str {
         ModelProvider::Siliconflow => "siliconflow",
         ModelProvider::Alibaba => "alibaba",
         ModelProvider::Anthropic => {
-            unreachable!("Anthropic 不应映射到 openai-compatible llmVendor")
+            unreachable!("Anthropic should not map to an openai-compatible llmVendor")
         }
         ModelProvider::VercelAiGateway => "vercel-ai-gateway",
         ModelProvider::CloudflareAiGateway => "cloudflare-ai-gateway",
@@ -120,7 +120,7 @@ pub(crate) fn model_provider_vendor(provider: ModelProvider) -> &'static str {
         ModelProvider::Byteplus => "byteplus",
         ModelProvider::Azure => "azure",
         ModelProvider::AmazonBedrock => {
-            unreachable!("Amazon Bedrock 不应映射到 openai-compatible llmVendor")
+            unreachable!("Amazon Bedrock should not map to an openai-compatible llmVendor")
         }
         ModelProvider::Stepfun => "stepfun",
         ModelProvider::Meituan => "meituan",

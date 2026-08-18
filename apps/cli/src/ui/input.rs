@@ -15,7 +15,7 @@ pub(in crate::ui) fn input_mode_title(input_mode: MainInputMode) -> String {
     }
 }
 
-/// 输入框边框与标题（legend）；Agent 模式单独变淡，Shell / Plan 保持原有高对比描边。
+/// Input box border and title (legend); Agent mode is dimmed separately, Shell / Plan keep the original high-contrast outline.
 pub(in crate::ui) fn input_block_border_style(
     shell_mode_active: bool,
     input_mode: MainInputMode,
@@ -257,10 +257,12 @@ pub(in crate::ui) fn build_input_lines(
     }
 
     if let Some(approval) = &app.pending_subagent_approval {
-        let summary = format!(
-            "SubAgent 待确认: {} / {}",
-            approval.session_title, approval.tool_name
-        );
+        let summary = t!(
+            "ui.input.subagent_pending_approval",
+            session = approval.session_title,
+            tool = approval.tool_name
+        )
+        .into_owned();
         lines.push(Line::from(Span::styled(
             truncate_to_width(&summary, max_width),
             deemphasize_pending_style(

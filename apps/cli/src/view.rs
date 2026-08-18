@@ -7,7 +7,7 @@ use crate::model_registry::AppConfig;
 use crate::ports::SubagentSessionStatus;
 use crate::session::PendingMcpResource;
 
-/// 上一帧对话面板的可点击内缘（与 Block 内文字区域一致），用于鼠标命中。
+/// Clickable inner edge of the conversation panel from the previous frame (matches the text area inside the Block), used for mouse hit testing.
 #[derive(Clone, Copy, Debug, Default)]
 pub struct ConversationPanelHit {
     pub x: u16,
@@ -205,7 +205,7 @@ pub enum BottomFormFieldEditorView {
     },
 }
 
-/// 工具卡片在对话里的生命周期阶段（用于 TUI 着色与标签）。
+/// Lifecycle phase of a tool card in the conversation (used for TUI coloring and labels).
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum ToolUiPhase {
     Preview,
@@ -215,7 +215,7 @@ pub enum ToolUiPhase {
     Failed,
 }
 
-/// 结构化工具调用展示块；`content` 仍保留纯文本副本供存档与导出。
+/// Structured tool call display block; `content` still keeps a plain-text copy for archiving and export.
 #[derive(Clone, Debug)]
 pub struct ToolUiBlock {
     pub tool_call_id: Option<String>,
@@ -223,15 +223,15 @@ pub struct ToolUiBlock {
     pub phase: ToolUiPhase,
     pub headline: String,
     pub detail_lines: Vec<String>,
-    /// 工具结果关联的本地图片路径；用于折叠态稳定展示与后续图片渲染。
+    /// Local image paths associated with the tool result; used for stable collapsed display and later image rendering.
     pub image_paths: Vec<String>,
-    /// 工具结果关联的本地或托管视频路径/URI。
+    /// Local or hosted video paths/URIs associated with the tool result.
     pub video_paths: Vec<String>,
-    /// 可选：参数的紧凑 JSON（多行），TUI 内单独着色。
+    /// Optional: compact JSON of the arguments (multi-line), colored separately in the TUI.
     pub args_excerpt: Option<String>,
-    /// 可选：输出摘要（已截断）。
+    /// Optional: output excerpt (already truncated).
     pub output_excerpt: Option<String>,
-    /// Moonshot Formula 等 provider 工具：禁止展开详情（encrypted 乱码）。
+    /// Provider tools such as Moonshot Formula: expanding details is forbidden (encrypted garbage).
     pub suppress_expand: Option<bool>,
 }
 
@@ -436,10 +436,10 @@ pub struct TuiViewModel {
     pub cli_ui_hooks: Vec<CliUiHookView>,
     pub marketplace_view: Option<MarketplaceViewModel>,
     pub todo_strip: Option<TodoStripView>,
-    /// 对话区选区：折行后的全局行号 + 显示列（与 WordWrapper 一致）。
+    /// Conversation selection: global line number after wrapping + display column (consistent with WordWrapper).
     pub conversation_sel_anchor: Option<(usize, usize)>,
     pub conversation_sel_head: Option<(usize, usize)>,
-    /// 内嵌 TUI：已完成行进系统 scrollback，ratatui 只画未提交的 live 尾巴。
+    /// Inline TUI: completed lines go to the system scrollback; ratatui only draws the uncommitted live tail.
     pub inline_mode: bool,
     pub committed_history_lines: usize,
 }

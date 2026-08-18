@@ -133,26 +133,26 @@ fn build_bottom_form_view(value: &str, footer_hint: &str) -> BottomFormView {
         title: "Add MCP Server".to_string(),
         fields: vec![
             BottomFormFieldView {
-                label: "名称".to_string(),
+                label: "Name".to_string(),
                 help: String::new(),
                 editor: BottomFormFieldEditorView::Text {
                     value: "github".to_string(),
-                    placeholder: "名称，例如 github".to_string(),
+                    placeholder: "Name, for example github".to_string(),
                     cursor: 0,
                     mask: false,
                     disabled: false,
                 },
             },
             BottomFormFieldView {
-                label: "保存位置".to_string(),
+                label: "Save Location".to_string(),
                 help: String::new(),
                 editor: BottomFormFieldEditorView::Choice {
-                    options: vec!["用户".to_string(), "工作区 .spirit".to_string()],
+                    options: vec!["User".to_string(), "Workspace .spirit".to_string()],
                     selected: 1,
                 },
             },
             BottomFormFieldView {
-                label: "类型".to_string(),
+                label: "Type".to_string(),
                 help: String::new(),
                 editor: BottomFormFieldEditorView::Choice {
                     options: vec!["STDIO".to_string(), "HTTP".to_string()],
@@ -160,11 +160,11 @@ fn build_bottom_form_view(value: &str, footer_hint: &str) -> BottomFormView {
                 },
             },
             BottomFormFieldView {
-                label: "命令".to_string(),
+                label: "Command".to_string(),
                 help: String::new(),
                 editor: BottomFormFieldEditorView::Text {
                     value: value.to_string(),
-                    placeholder: "命令，例如 npx -y @modelcontextprotocol/server-github"
+                    placeholder: "Command, for example npx -y @modelcontextprotocol/server-github"
                         .to_string(),
                     cursor: 0,
                     mask: false,
@@ -172,11 +172,11 @@ fn build_bottom_form_view(value: &str, footer_hint: &str) -> BottomFormView {
                 },
             },
             BottomFormFieldView {
-                label: "环境变量".to_string(),
+                label: "Environment Variables".to_string(),
                 help: String::new(),
                 editor: BottomFormFieldEditorView::Text {
                     value: "GITHUB_TOKEN=demo".to_string(),
-                    placeholder: "环境变量，可选，例如 GITHUB_TOKEN=demo".to_string(),
+                    placeholder: "Environment variables, optional, for example GITHUB_TOKEN=demo".to_string(),
                     cursor: 0,
                     mask: false,
                     disabled: false,
@@ -215,7 +215,7 @@ fn build_subagent_detail_view(
     SubagentSessionDetailView {
         summary: SubagentSessionSummaryView {
             session_id: "subagent-1".to_string(),
-            title: "检查子会话状态".to_string(),
+            title: "Check sub-session status".to_string(),
             status: crate::ports::SubagentSessionStatus::Running,
             updated_at_unix_ms: 0,
             latest_message: None,
@@ -231,11 +231,11 @@ fn build_subagent_detail_view(
 fn bottom_form_block_height_grows_for_multiline_text() {
     let single = build_bottom_form_view(
         "npx -y @modelcontextprotocol/server-github",
-        "Enter 保存 Esc 取消",
+        "Enter Save Esc Cancel",
     );
     let multi = build_bottom_form_view(
         "npx -y @modelcontextprotocol/server-github\n--stdio\n--verbose",
-        "Enter 保存 Esc 取消",
+        "Enter Save Esc Cancel",
     );
 
     assert!(bottom_form_block_height(&multi, 80) > bottom_form_block_height(&single, 80));
@@ -245,7 +245,7 @@ fn bottom_form_block_height_grows_for_multiline_text() {
 fn bottom_form_block_height_grows_for_wrapped_footer_hint() {
     let form = build_bottom_form_view(
         "npx -y @modelcontextprotocol/server-github",
-        "↑/↓ 切换字段  ←/→ 移动光标或切换类型  Enter 保存  Shift+Enter 换行  Esc 取消",
+        "↑/↓ Switch field  ←/→ Move cursor or switch type  Enter Save  Shift+Enter New line  Esc Cancel",
     );
 
     assert!(bottom_form_block_height(&form, 28) > bottom_form_block_height(&form, 96));
@@ -360,7 +360,7 @@ fn inline_picker_window_keeps_selection_near_middle() {
 
 #[test]
 fn horizontal_viewport_scroll_keeps_selection_near_middle() {
-    // 等宽「项」映射：total=8、viewport=5 与 inline_picker_bounds 窗口一致
+    // Equal-width item mapping: total=8, viewport=5 matches the inline_picker_bounds window
     assert_eq!(horizontal_viewport_scroll_start(8, 0, 1, 5), 0);
     assert_eq!(horizontal_viewport_scroll_start(8, 2, 1, 5), 0);
     assert_eq!(horizontal_viewport_scroll_start(8, 3, 1, 5), 1);
@@ -450,7 +450,7 @@ fn subagent_picker_uses_inline_layout_without_border_or_title() {
     let lines = render_ui_lines(&app, 80, 20);
 
     assert!(lines.iter().any(|line| line.contains("> second-task")));
-    assert!(!lines.iter().any(|line| line.contains("SubAgent 会话")));
+    assert!(!lines.iter().any(|line| line.contains("SubAgent Sessions")));
 }
 
 #[test]
@@ -577,13 +577,13 @@ fn marketplace_catalog_reuses_minimal_picker_with_search() {
         selected_item: None,
         detail: None,
         slash: SlashFlowView {
-            title: "扩展".to_string(),
+            title: "Extensions".to_string(),
             subtitle: None,
             search: Some(SlashFlowSearchView {
                 value: "css".to_string(),
-                placeholder: "输入扩展名称、作者或关键词".to_string(),
+                placeholder: "Type an extension name, author, or keyword".to_string(),
             }),
-            empty_text: "没有匹配的扩展。".to_string(),
+            empty_text: "No matching extensions.".to_string(),
             selected_index: 1,
             items: vec![
                 SlashFlowItemView {
@@ -602,7 +602,7 @@ fn marketplace_catalog_reuses_minimal_picker_with_search() {
                 },
             ],
             compact_items: true,
-            footer_hint: "Enter 打开  Esc 关闭".to_string(),
+            footer_hint: "Enter Open  Esc Close".to_string(),
         },
         readme_scroll: 0,
     });
@@ -612,12 +612,13 @@ fn marketplace_catalog_reuses_minimal_picker_with_search() {
     assert!(
         lines
             .iter()
-            .any(|line| line.contains("搜") && line.contains(":") && line.contains("css"))
+            .any(|line| line.contains(t!("tui.marketplace.search_label").trim())
+                && line.contains("css"))
     );
     assert!(lines.iter().any(|line| line.contains("> Void Desktop CSS")));
-    assert!(!lines.iter().any(|line| line.contains("扩展市场")));
-    assert!(!lines.iter().any(|line| line.contains("共 2 项")));
-    assert!(!lines.iter().any(|line| line.contains("Enter 打开")));
+    assert!(!lines.iter().any(|line| line.contains("Extensions")));
+    assert!(!lines.iter().any(|line| line.contains("2 items")));
+    assert!(!lines.iter().any(|line| line.contains("Enter Open")));
 }
 
 #[test]
@@ -714,11 +715,11 @@ fn truncate_from_left_keeps_combining_marks_on_tail() {
 
 #[test]
 fn rewind_picker_renders_selected_message_in_history_panel() {
-    let mut app = build_view_model(ChatMessage::new(MessageRole::User, "先确认需求"));
+    let mut app = build_view_model(ChatMessage::new(MessageRole::User, "Confirm requirements first"));
     app.messages
-        .push(ChatMessage::new(MessageRole::Agent, "我先看一下上下文。"));
+        .push(ChatMessage::new(MessageRole::Agent, "Let me look at the context first."));
     app.messages
-        .push(ChatMessage::new(MessageRole::User, "再整理一下实现方案"));
+        .push(ChatMessage::new(MessageRole::User, "Then organize the implementation plan"));
     app.rewind_picker = Some(RewindPickerView {
         selected_message_id: 3,
         selectable_message_ids: vec![1, 3],
@@ -730,17 +731,17 @@ fn rewind_picker_renders_selected_message_in_history_panel() {
     assert!(
         history_lines
             .iter()
-            .any(|line| line.contains("我先看一下上下文。"))
+            .any(|line| line.contains("Let me look at the context first."))
     );
     assert!(
         history_lines
             .iter()
-            .any(|line| line.contains("再整理一下实现方案"))
+            .any(|line| line.contains("Then organize the implementation plan"))
     );
     assert!(
         history_lines
             .iter()
-            .all(|line| !line.contains("消息回溯") && !line.contains("Message Rewind"))
+            .all(|line| !line.contains(t!("ui.rewind.title").as_ref()))
     );
     assert_eq!(selected_lines[0].spans[0].style.fg, Some(Color::White));
     assert!(
@@ -754,7 +755,7 @@ fn rewind_picker_renders_selected_message_in_history_panel() {
 
 #[test]
 fn rewind_picker_deemphasizes_assistant_messages() {
-    let mut app = build_view_model(ChatMessage::new(MessageRole::Agent, "我先看一下上下文。"));
+    let mut app = build_view_model(ChatMessage::new(MessageRole::Agent, "Let me look at the context first."));
     app.rewind_picker = Some(RewindPickerView {
         selected_message_id: 2,
         selectable_message_ids: vec![2],
@@ -779,7 +780,7 @@ fn rewind_picker_deemphasizes_tool_messages() {
             tool_call_id: Some("tool-1".to_string()),
             tool_name: "read_file".to_string(),
             phase: ToolUiPhase::Succeeded,
-            headline: "读取了一个文件".to_string(),
+            headline: "Read a file".to_string(),
             detail_lines: vec!["/tmp/demo.txt".to_string()],
             image_paths: Vec::new(),
             video_paths: Vec::new(),
@@ -806,7 +807,7 @@ fn rewind_picker_deemphasizes_tool_messages() {
 fn rewind_picker_deemphasizes_non_selectable_user_messages() {
     let mut app = build_view_model(ChatMessage::new(MessageRole::User, "/sessions"));
     app.messages
-        .push(ChatMessage::new(MessageRole::User, "真正发给模型的消息"));
+        .push(ChatMessage::new(MessageRole::User, "The message actually sent to the model"));
     app.rewind_picker = Some(RewindPickerView {
         selected_message_id: 2,
         selectable_message_ids: vec![2],
@@ -826,7 +827,7 @@ fn rewind_picker_deemphasizes_non_selectable_user_messages() {
 fn streaming_tool_preview_renders_tool_card_on_separate_message_row() {
     let mut app = build_view_model(ChatMessage::new(
         MessageRole::Agent,
-        "我来帮您执行这个命令。",
+        "I'll run this command for you.",
     ));
     app.messages.push(ChatMessage::with_tool_block(
         MessageRole::Agent,
@@ -835,7 +836,7 @@ fn streaming_tool_preview_renders_tool_card_on_separate_message_row() {
             tool_call_id: Some("call-preview-shell".to_string()),
             tool_name: "shell".to_string(),
             phase: ToolUiPhase::Preview,
-            headline: "执行命令".to_string(),
+            headline: "Run command".to_string(),
             detail_lines: vec!["echo hello".to_string()],
             image_paths: Vec::new(),
             video_paths: Vec::new(),
@@ -851,21 +852,21 @@ fn streaming_tool_preview_renders_tool_card_on_separate_message_row() {
     assert!(
         body_lines
             .iter()
-            .any(|line| line.contains("我来帮您执行这个命令。"))
+            .any(|line| line.contains("I'll run this command for you."))
     );
-    assert!(preview_lines.iter().any(|line| line.contains("执行命令")));
+    assert!(preview_lines.iter().any(|line| line.contains("Run command")));
 }
 
 #[test]
 fn real_thinking_stays_before_agent_message_body() {
     let mut app = build_view_model(ChatMessage::new(
         MessageRole::Agent,
-        "我来帮您执行这个命令。",
+        "I'll run this command for you.",
     ));
     app.assistant_aux_by_message.insert(
         0,
         AssistantAuxData {
-            thinking: Some("先检查命令参数是否安全。".to_string()),
+            thinking: Some("Check the command arguments for safety first.".to_string()),
             compaction: None,
         },
     );
@@ -873,11 +874,11 @@ fn real_thinking_stays_before_agent_message_body() {
     let lines = render_text_lines(render_message_lines(&app, &app.messages[0], 0));
     let thinking_idx = lines
         .iter()
-        .position(|line| line.contains("先检查命令参数是否安全。"))
+        .position(|line| line.contains("Check the command arguments for safety first."))
         .expect("thinking line exists");
     let body_idx = lines
         .iter()
-        .position(|line| line.contains("我来帮您执行这个命令。"))
+        .position(|line| line.contains("I'll run this command for you."))
         .expect("body line exists");
 
     assert!(thinking_idx < body_idx);
@@ -887,17 +888,17 @@ fn real_thinking_stays_before_agent_message_body() {
 fn embedded_thinking_renders_in_aux_details_without_raw_tags() {
     let app = build_view_model(ChatMessage::new(
         MessageRole::Agent,
-        "<think>先看一下项目结构。</think>\n\n我已经梳理完主要模块。",
+        "<think>Let me review the project structure first.</think>\n\nI've finished reviewing the main modules.",
     ));
 
     let lines = render_text_lines(render_message_lines(&app, &app.messages[0], 0));
     let thinking_idx = lines
         .iter()
-        .position(|line| line.contains("先看一下项目结构。"))
+        .position(|line| line.contains("Let me review the project structure first."))
         .expect("embedded thinking line exists");
     let body_idx = lines
         .iter()
-        .position(|line| line.contains("我已经梳理完主要模块。"))
+        .position(|line| line.contains("I've finished reviewing the main modules."))
         .expect("body line exists");
 
     assert!(thinking_idx < body_idx);
@@ -909,7 +910,7 @@ fn embedded_thinking_renders_in_aux_details_without_raw_tags() {
 fn embedded_thinking_is_hidden_when_aux_details_collapsed() {
     let mut app = build_view_model(ChatMessage::new(
         MessageRole::Agent,
-        "<think>先看一下项目结构。</think>\n\n我已经梳理完主要模块。",
+        "<think>Let me review the project structure first.</think>\n\nI've finished reviewing the main modules.",
     ));
     app.show_aux_details = false;
 
@@ -918,12 +919,12 @@ fn embedded_thinking_is_hidden_when_aux_details_collapsed() {
     assert!(
         lines
             .iter()
-            .any(|line| line.contains("我已经梳理完主要模块。"))
+            .any(|line| line.contains("I've finished reviewing the main modules."))
     );
     assert!(
         lines
             .iter()
-            .all(|line| !line.contains("先看一下项目结构。"))
+            .all(|line| !line.contains("Let me review the project structure first."))
     );
     assert!(lines.iter().all(|line| !line.contains("<think>")));
 }
@@ -932,7 +933,7 @@ fn embedded_thinking_is_hidden_when_aux_details_collapsed() {
 fn thinking_only_message_stays_invisible_when_aux_details_collapsed() {
     let mut app = build_view_model(ChatMessage::new(
         MessageRole::Agent,
-        "<think>先看一下项目结构。</think>",
+        "<think>Let me review the project structure first.</think>",
     ));
     app.show_aux_details = false;
 
@@ -943,36 +944,36 @@ fn thinking_only_message_stays_invisible_when_aux_details_collapsed() {
 
 #[test]
 fn pending_thinking_detail_is_hidden_when_aux_details_collapsed() {
-    let mut app = build_view_model(ChatMessage::new(MessageRole::Agent, "我来处理这个问题。"));
+    let mut app = build_view_model(ChatMessage::new(MessageRole::Agent, "I'll handle this issue."));
     app.show_aux_details = false;
     app.pending_response_active = true;
     app.pending_assistant_msg_index = Some(0);
     app.pending_aux = Some(PendingAssistantAux {
         kind: AssistantAuxKind::Thinking,
         status_text: "Thinking...".to_string(),
-        detail_text: Some("先检查当前渲染分支。".to_string()),
+        detail_text: Some("Check the current render branch first.".to_string()),
     });
 
     let lines = render_text_lines(render_message_lines(&app, &app.messages[0], 0));
 
     assert!(lines.iter().any(|line| line.contains("Thinking...")));
-    assert!(lines.iter().any(|line| line.contains("我来处理这个问题。")));
+    assert!(lines.iter().any(|line| line.contains("I'll handle this issue.")));
     assert!(
         lines
             .iter()
-            .all(|line| !line.contains("先检查当前渲染分支。"))
+            .all(|line| !line.contains("Check the current render branch first."))
     );
 }
 
 #[test]
 fn pending_thinking_detail_is_visible_when_aux_details_expanded() {
-    let mut app = build_view_model(ChatMessage::new(MessageRole::Agent, "我来处理这个问题。"));
+    let mut app = build_view_model(ChatMessage::new(MessageRole::Agent, "I'll handle this issue."));
     app.pending_response_active = true;
     app.pending_assistant_msg_index = Some(0);
     app.pending_aux = Some(PendingAssistantAux {
         kind: AssistantAuxKind::Thinking,
         status_text: "Thinking...".to_string(),
-        detail_text: Some("先检查当前渲染分支。".to_string()),
+        detail_text: Some("Check the current render branch first.".to_string()),
     });
 
     let lines = render_text_lines(render_message_lines(&app, &app.messages[0], 0));
@@ -981,7 +982,7 @@ fn pending_thinking_detail_is_visible_when_aux_details_expanded() {
     assert!(
         lines
             .iter()
-            .any(|line| line.contains("先检查当前渲染分支。"))
+            .any(|line| line.contains("Check the current render branch first."))
     );
 }
 
@@ -1011,40 +1012,40 @@ fn pending_thinking_spinner_is_drawn_by_cli_ui() {
 
 #[test]
 fn standalone_subagent_pending_aux_renders_in_history() {
-    let mut app = build_view_model(ChatMessage::new(MessageRole::Agent, "已开始处理。"));
+    let mut app = build_view_model(ChatMessage::new(MessageRole::Agent, "Processing started."));
     app.pending_response_active = true;
     app.pending_assistant_msg_index = None;
     app.pending_aux = Some(PendingAssistantAux {
         kind: AssistantAuxKind::Thinking,
-        status_text: "| 官方新闻抓取: 正在执行".to_string(),
+        status_text: "| official news fetch: Running".to_string(),
         detail_text: None,
     });
 
     let lines = render_text_lines(build_history_lines(&app, 120));
 
-    assert!(lines.iter().any(|line| line.contains("已开始处理。")));
+    assert!(lines.iter().any(|line| line.contains("Processing started.")));
     assert!(
         lines
             .iter()
-            .any(|line| line.contains("官方新闻抓取: 正在执行"))
+            .any(|line| line.contains("official news fetch: Running"))
     );
     assert!(
         lines
             .iter()
-            .all(|line| !line.contains("| 官方新闻抓取: 正在执行"))
+            .all(|line| !line.contains("| official news fetch: Running"))
     );
 }
 
 #[test]
 fn standalone_pending_aux_hides_detail_when_collapsed() {
-    let mut app = build_view_model(ChatMessage::new(MessageRole::Agent, "已开始处理。"));
+    let mut app = build_view_model(ChatMessage::new(MessageRole::Agent, "Processing started."));
     app.show_aux_details = false;
     app.pending_response_active = true;
     app.pending_assistant_msg_index = None;
     app.pending_aux = Some(PendingAssistantAux {
         kind: AssistantAuxKind::Thinking,
         status_text: "| Thinking...".to_string(),
-        detail_text: Some("继续等待子会话返回。".to_string()),
+        detail_text: Some("Keep waiting for the sub-session to return.".to_string()),
     });
 
     let lines = render_text_lines(build_history_lines(&app, 120));
@@ -1053,36 +1054,36 @@ fn standalone_pending_aux_hides_detail_when_collapsed() {
     assert!(
         lines
             .iter()
-            .all(|line| !line.contains("继续等待子会话返回。"))
+            .all(|line| !line.contains("Keep waiting for the sub-session to return."))
     );
 }
 
 #[test]
 fn persisted_standalone_subagent_pending_aux_renders_after_completion() {
-    let mut app = build_view_model(ChatMessage::new(MessageRole::Agent, "子代理已完成任务。"));
+    let mut app = build_view_model(ChatMessage::new(MessageRole::Agent, "The subagent has finished the task."));
     app.pending_response_active = false;
     app.pending_assistant_msg_index = None;
     app.pending_aux = None;
     app.persisted_standalone_pending_aux = Some(PendingAssistantAux {
         kind: AssistantAuxKind::Thinking,
-        status_text: "| 官方新闻抓取: 已完成".to_string(),
+        status_text: "| official news fetch: Done".to_string(),
         detail_text: None,
     });
     app.persisted_standalone_pending_aux_anchor = Some(0);
 
     let lines = render_text_lines(build_history_lines(&app, 120));
 
-    assert!(lines.iter().any(|line| line.contains("子代理已完成任务。")));
+    assert!(lines.iter().any(|line| line.contains("The subagent has finished the task.")));
     assert!(
         lines
             .iter()
-            .any(|line| line.contains("官方新闻抓取: 已完成"))
+            .any(|line| line.contains("official news fetch: Done"))
     );
 }
 
 #[test]
 fn persisted_subagent_status_wins_over_generic_pending_thinking() {
-    let mut app = build_view_model(ChatMessage::new(MessageRole::Agent, "父会话准备整理结果。"));
+    let mut app = build_view_model(ChatMessage::new(MessageRole::Agent, "The parent session is about to summarize results."));
     app.messages
         .push(ChatMessage::new(MessageRole::Agent, String::new()));
     app.pending_response_active = true;
@@ -1090,11 +1091,11 @@ fn persisted_subagent_status_wins_over_generic_pending_thinking() {
     app.pending_aux = Some(PendingAssistantAux {
         kind: AssistantAuxKind::Thinking,
         status_text: "| Thinking...".to_string(),
-        detail_text: Some("继续等待父会话收尾。".to_string()),
+        detail_text: Some("Keep waiting for the parent session to wrap up.".to_string()),
     });
     app.persisted_standalone_pending_aux = Some(PendingAssistantAux {
         kind: AssistantAuxKind::Thinking,
-        status_text: "| 整理当前会话结果: 成功".to_string(),
+        status_text: "| summarize current session results: Done".to_string(),
         detail_text: None,
     });
     app.persisted_standalone_pending_aux_anchor = Some(1);
@@ -1102,7 +1103,7 @@ fn persisted_subagent_status_wins_over_generic_pending_thinking() {
     let lines = render_text_lines(build_history_lines(&app, 120));
     let status_idx = lines
         .iter()
-        .position(|line| line.contains("整理当前会话结果: 成功"))
+        .position(|line| line.contains("summarize current session results: Done"))
         .expect("status line exists");
     let thinking_idx = lines
         .iter()
@@ -1114,21 +1115,21 @@ fn persisted_subagent_status_wins_over_generic_pending_thinking() {
 
 #[test]
 fn persisted_subagent_status_renders_before_parent_streaming_reply() {
-    let mut app = build_view_model(ChatMessage::new(MessageRole::Agent, "子代理已完成任务。"));
+    let mut app = build_view_model(ChatMessage::new(MessageRole::Agent, "The subagent has finished the task."));
     app.messages.push(ChatMessage::new(
         MessageRole::Agent,
-        "工具调用成功！子代理已经返回了结构化结果。",
+        "Tool call succeeded! The subagent returned structured results.",
     ));
     app.pending_response_active = true;
     app.pending_assistant_msg_index = Some(1);
     app.pending_aux = Some(PendingAssistantAux {
         kind: AssistantAuxKind::Thinking,
         status_text: "| Thinking...".to_string(),
-        detail_text: Some("父会话还在组织总结。".to_string()),
+        detail_text: Some("The parent session is still organizing the summary.".to_string()),
     });
     app.persisted_standalone_pending_aux = Some(PendingAssistantAux {
         kind: AssistantAuxKind::Thinking,
-        status_text: "| 执行一次疯狂的压力测试: 成功".to_string(),
+        status_text: "| run a crazy stress test: Done".to_string(),
         detail_text: None,
     });
     app.persisted_standalone_pending_aux_anchor = Some(1);
@@ -1136,7 +1137,7 @@ fn persisted_subagent_status_renders_before_parent_streaming_reply() {
     let lines = render_text_lines(build_history_lines(&app, 120));
     let status_idx = lines
         .iter()
-        .position(|line| line.contains("执行一次疯狂的压力测试: 成功"))
+        .position(|line| line.contains("run a crazy stress test: Done"))
         .expect("status line exists");
     let thinking_idx = lines
         .iter()
@@ -1144,7 +1145,7 @@ fn persisted_subagent_status_renders_before_parent_streaming_reply() {
         .expect("thinking line exists");
     let parent_idx = lines
         .iter()
-        .position(|line| line.contains("工具调用成功！子代理已经返回了结构化结果。"))
+        .position(|line| line.contains("Tool call succeeded! The subagent returned structured results."))
         .expect("parent reply line exists");
 
     assert!(status_idx < parent_idx);
@@ -1153,17 +1154,17 @@ fn persisted_subagent_status_renders_before_parent_streaming_reply() {
 
 #[test]
 fn persisted_subagent_status_stays_above_parent_reply_after_completion() {
-    let mut app = build_view_model(ChatMessage::new(MessageRole::Agent, "子代理已完成任务。"));
+    let mut app = build_view_model(ChatMessage::new(MessageRole::Agent, "The subagent has finished the task."));
     app.messages.push(ChatMessage::new(
         MessageRole::Agent,
-        "开发者调试测试任务：子代理测试任务执行成功。",
+        "Developer debug test task: subagent test task executed successfully.",
     ));
     app.pending_response_active = false;
     app.pending_assistant_msg_index = None;
     app.pending_aux = None;
     app.persisted_standalone_pending_aux = Some(PendingAssistantAux {
         kind: AssistantAuxKind::Thinking,
-        status_text: "| 子代理调试任务: 成功".to_string(),
+        status_text: "| subagent debug task: Done".to_string(),
         detail_text: None,
     });
     app.persisted_standalone_pending_aux_anchor = Some(1);
@@ -1171,11 +1172,11 @@ fn persisted_subagent_status_stays_above_parent_reply_after_completion() {
     let lines = render_text_lines(build_history_lines(&app, 120));
     let status_idx = lines
         .iter()
-        .position(|line| line.contains("子代理调试任务: 成功"))
+        .position(|line| line.contains("subagent debug task: Done"))
         .expect("status line exists");
     let parent_idx = lines
         .iter()
-        .position(|line| line.contains("开发者调试测试任务：子代理测试任务执行成功。"))
+        .position(|line| line.contains("Developer debug test task: subagent test task executed successfully."))
         .expect("parent reply line exists");
 
     assert!(status_idx < parent_idx);
@@ -1183,10 +1184,10 @@ fn persisted_subagent_status_stays_above_parent_reply_after_completion() {
 
 #[test]
 fn persisted_subagent_status_stays_anchored_after_later_user_message() {
-    let mut app = build_view_model(ChatMessage::new(MessageRole::Agent, "子代理已完成任务。"));
+    let mut app = build_view_model(ChatMessage::new(MessageRole::Agent, "The subagent has finished the task."));
     app.messages.push(ChatMessage::new(
         MessageRole::Agent,
-        "开发者调试测试任务：子代理测试任务执行成功。",
+        "Developer debug test task: subagent test task executed successfully.",
     ));
     app.messages
         .push(ChatMessage::new(MessageRole::User, "/model"));
@@ -1195,7 +1196,7 @@ fn persisted_subagent_status_stays_anchored_after_later_user_message() {
     app.pending_aux = None;
     app.persisted_standalone_pending_aux = Some(PendingAssistantAux {
         kind: AssistantAuxKind::Thinking,
-        status_text: "| 子代理调试任务: 成功".to_string(),
+        status_text: "| subagent debug task: Done".to_string(),
         detail_text: None,
     });
     app.persisted_standalone_pending_aux_anchor = Some(1);
@@ -1203,11 +1204,11 @@ fn persisted_subagent_status_stays_anchored_after_later_user_message() {
     let lines = render_text_lines(build_history_lines(&app, 120));
     let status_idx = lines
         .iter()
-        .position(|line| line.contains("子代理调试任务: 成功"))
+        .position(|line| line.contains("subagent debug task: Done"))
         .expect("status line exists");
     let parent_idx = lines
         .iter()
-        .position(|line| line.contains("开发者调试测试任务：子代理测试任务执行成功。"))
+        .position(|line| line.contains("Developer debug test task: subagent test task executed successfully."))
         .expect("parent reply line exists");
     let later_user_idx = lines
         .iter()
@@ -1221,10 +1222,10 @@ fn persisted_subagent_status_stays_anchored_after_later_user_message() {
 #[test]
 fn persisted_subagent_status_renders_as_separate_message_before_parent_reply_after_later_user_message()
  {
-    let mut app = build_view_model(ChatMessage::new(MessageRole::Agent, "子代理已完成任务。"));
+    let mut app = build_view_model(ChatMessage::new(MessageRole::Agent, "The subagent has finished the task."));
     app.messages.push(ChatMessage::new(
         MessageRole::Agent,
-        "开发者调试测试任务：子代理测试任务执行成功。",
+        "Developer debug test task: subagent test task executed successfully.",
     ));
     app.messages
         .push(ChatMessage::new(MessageRole::User, "/model"));
@@ -1233,7 +1234,7 @@ fn persisted_subagent_status_renders_as_separate_message_before_parent_reply_aft
     app.pending_aux = None;
     app.persisted_standalone_pending_aux = Some(PendingAssistantAux {
         kind: AssistantAuxKind::Thinking,
-        status_text: "| 子代理调试任务: 成功".to_string(),
+        status_text: "| subagent debug task: Done".to_string(),
         detail_text: None,
     });
     app.persisted_standalone_pending_aux_anchor = Some(1);
@@ -1241,11 +1242,11 @@ fn persisted_subagent_status_renders_as_separate_message_before_parent_reply_aft
     let lines = render_text_lines(build_history_lines(&app, 120));
     let status_idx = lines
         .iter()
-        .position(|line| line.contains("子代理调试任务: 成功"))
+        .position(|line| line.contains("subagent debug task: Done"))
         .expect("status line exists");
     let parent_idx = lines
         .iter()
-        .position(|line| line.contains("开发者调试测试任务：子代理测试任务执行成功。"))
+        .position(|line| line.contains("Developer debug test task: subagent test task executed successfully."))
         .expect("parent reply line exists");
 
     assert!(lines[status_idx].starts_with("> "));
@@ -1258,7 +1259,7 @@ fn subagent_pending_aux_detail_is_hidden_when_aux_details_collapsed() {
     let view = build_subagent_detail_view(Some(PendingAssistantAux {
         kind: AssistantAuxKind::Thinking,
         status_text: "| Thinking...".to_string(),
-        detail_text: Some("先检查子会话当前进展。".to_string()),
+        detail_text: Some("Check the sub-session's current progress first.".to_string()),
     }));
 
     let lines = render_text_lines(build_subagent_history_lines(&view, false, 0));
@@ -1267,7 +1268,7 @@ fn subagent_pending_aux_detail_is_hidden_when_aux_details_collapsed() {
     assert!(
         lines
             .iter()
-            .all(|line| !line.contains("先检查子会话当前进展。"))
+            .all(|line| !line.contains("Check the sub-session's current progress first."))
     );
 }
 
@@ -1276,7 +1277,7 @@ fn subagent_pending_aux_detail_is_visible_when_aux_details_expanded() {
     let view = build_subagent_detail_view(Some(PendingAssistantAux {
         kind: AssistantAuxKind::Thinking,
         status_text: "| Thinking...".to_string(),
-        detail_text: Some("先检查子会话当前进展。".to_string()),
+        detail_text: Some("Check the sub-session's current progress first.".to_string()),
     }));
 
     let lines = render_text_lines(build_subagent_history_lines(&view, true, 0));
@@ -1285,7 +1286,7 @@ fn subagent_pending_aux_detail_is_visible_when_aux_details_expanded() {
     assert!(
         lines
             .iter()
-            .any(|line| line.contains("先检查子会话当前进展。"))
+            .any(|line| line.contains("Check the sub-session's current progress first."))
     );
 }
 
@@ -1295,20 +1296,20 @@ fn subagent_tool_card_hides_output_when_aux_details_collapsed() {
         tool_call_id: Some("call-1".to_string()),
         tool_name: "grep".to_string(),
         phase: ToolUiPhase::Succeeded,
-        headline: "搜索完成".to_string(),
-        detail_lines: vec!["查询: 最近变更".to_string()],
+        headline: "Search completed".to_string(),
+        detail_lines: vec!["Query: recent changes".to_string()],
         image_paths: Vec::new(),
         video_paths: Vec::new(),
         args_excerpt: Some("{\n  \"limit\": 3\n}".to_string()),
-        output_excerpt: Some("命中 3 个结果。".to_string()),
+        output_excerpt: Some("3 results found.".to_string()),
         suppress_expand: None,
     };
     let message = ChatMessage::with_tool_block(MessageRole::Agent, String::new(), tool);
 
     let lines = render_text_lines(render_subagent_message_lines(&message, false));
 
-    assert!(lines.iter().any(|line| line.contains("搜索完成")));
-    assert!(lines.iter().all(|line| !line.contains("命中 3 个结果。")));
+    assert!(lines.iter().any(|line| line.contains("Search completed")));
+    assert!(lines.iter().all(|line| !line.contains("3 results found.")));
     assert!(lines.iter().all(|line| !line.contains("\"limit\": 3")));
 }
 
@@ -1318,20 +1319,20 @@ fn subagent_tool_card_shows_output_when_aux_details_expanded() {
         tool_call_id: Some("call-1".to_string()),
         tool_name: "grep".to_string(),
         phase: ToolUiPhase::Succeeded,
-        headline: "搜索完成".to_string(),
-        detail_lines: vec!["查询: 最近变更".to_string()],
+        headline: "Search completed".to_string(),
+        detail_lines: vec!["Query: recent changes".to_string()],
         image_paths: Vec::new(),
         video_paths: Vec::new(),
         args_excerpt: Some("{\n  \"limit\": 3\n}".to_string()),
-        output_excerpt: Some("命中 3 个结果。".to_string()),
+        output_excerpt: Some("3 results found.".to_string()),
         suppress_expand: None,
     };
     let message = ChatMessage::with_tool_block(MessageRole::Agent, String::new(), tool);
 
     let lines = render_text_lines(render_subagent_message_lines(&message, true));
 
-    assert!(lines.iter().any(|line| line.contains("搜索完成")));
-    assert!(lines.iter().any(|line| line.contains("命中 3 个结果。")));
+    assert!(lines.iter().any(|line| line.contains("Search completed")));
+    assert!(lines.iter().any(|line| line.contains("3 results found.")));
     assert!(lines.iter().any(|line| line.contains("\"limit\": 3")));
 }
 
@@ -1375,14 +1376,14 @@ fn generate_image_tool_card_shows_structured_path_when_aux_details_collapsed() {
             tool_call_id: Some("call-image-1".to_string()),
             tool_name: "generate_image".to_string(),
             phase: ToolUiPhase::Succeeded,
-            headline: "图片生成完成".to_string(),
+            headline: "Image generated".to_string(),
             detail_lines: Vec::new(),
             image_paths: vec![
                 "C:/Users/pc/AppData/Roaming/SpiritAgent/generated-images/example.png"
                     .to_string(),
             ],
             video_paths: Vec::new(),
-            args_excerpt: Some("{\n  \"prompt\": \"画一张图\"\n}".to_string()),
+            args_excerpt: Some("{\n  \"prompt\": \"draw a picture\"\n}".to_string()),
             output_excerpt: Some("[generated image]\npath: C:/Users/pc/AppData/Roaming/SpiritAgent/generated-images/example.png".to_string()),
             suppress_expand: None,
         },
@@ -1391,14 +1392,20 @@ fn generate_image_tool_card_shows_structured_path_when_aux_details_collapsed() {
 
     let lines = render_text_lines(render_message_lines(&app, &app.messages[0], 0));
 
-    assert!(lines.iter().any(|line| line.contains("图片生成完成")));
+    assert!(lines.iter().any(|line| line.contains("Image generated")));
     assert!(lines.iter().any(|line| {
-        line.contains("路径: C:/Users/pc/AppData/Roaming/SpiritAgent/generated-images/example.png")
+        line.contains(
+            t!(
+                "tui.tool.detail.path",
+                path = "C:/Users/pc/AppData/Roaming/SpiritAgent/generated-images/example.png"
+            )
+            .as_ref()
+        )
     }));
     assert!(
         lines
             .iter()
-            .all(|line| !line.contains("\"prompt\": \"画一张图\""))
+            .all(|line| !line.contains("\"prompt\": \"draw a picture\""))
     );
     assert!(lines.iter().all(|line| !line.contains("[generated image]")));
 }
@@ -1412,11 +1419,11 @@ fn generate_video_tool_card_shows_managed_uri_when_aux_details_collapsed() {
             tool_call_id: Some("call-video-1".to_string()),
             tool_name: "generate_video".to_string(),
             phase: ToolUiPhase::Succeeded,
-            headline: "视频生成完成".to_string(),
+            headline: "Video generated".to_string(),
             detail_lines: Vec::new(),
             image_paths: Vec::new(),
             video_paths: vec!["spirit://generated/video/example.mp4".to_string()],
-            args_excerpt: Some("{\n  \"prompt\": \"生成一段视频\"\n}".to_string()),
+            args_excerpt: Some("{\n  \"prompt\": \"generate a video\"\n}".to_string()),
             output_excerpt: Some(
                 "[generated video]\nvideo_ref: spirit://generated/video/example.mp4".to_string(),
             ),
@@ -1427,12 +1434,16 @@ fn generate_video_tool_card_shows_managed_uri_when_aux_details_collapsed() {
 
     let lines = render_text_lines(render_message_lines(&app, &app.messages[0], 0));
 
-    assert!(lines.iter().any(|line| line.contains("视频生成完成")));
-    assert!(
-        lines
-            .iter()
-            .any(|line| { line.contains("路径: spirit://generated/video/example.mp4") })
-    );
+    assert!(lines.iter().any(|line| line.contains("Video generated")));
+    assert!(lines.iter().any(|line| {
+        line.contains(
+            t!(
+                "tui.tool.detail.path",
+                path = "spirit://generated/video/example.mp4"
+            )
+            .as_ref()
+        )
+    }));
 }
 
 #[test]
@@ -1444,10 +1455,10 @@ fn generate_image_tool_card_keeps_rail_on_wrapped_path_lines() {
             tool_call_id: Some("call-image-wrap".to_string()),
             tool_name: "generate_image".to_string(),
             phase: ToolUiPhase::Succeeded,
-            headline: "图片生成完成".to_string(),
+            headline: "Image generated".to_string(),
             detail_lines: vec![
-                "路径: C:/Users/pc/AppData/Roaming/SpiritAgent/generated-images/this-is-a-very-long-image-name-that-must-wrap/example-output.png"
-                    .to_string(),
+                t!("tui.tool.detail.path", path = "C:/Users/pc/AppData/Roaming/SpiritAgent/generated-images/this-is-a-very-long-image-name-that-must-wrap/example-output.png")
+                    .into_owned(),
             ],
             image_paths: Vec::new(),
         video_paths: Vec::new(),
@@ -1466,7 +1477,7 @@ fn generate_image_tool_card_keeps_rail_on_wrapped_path_lines() {
     let lines = render_text_lines(flat);
     let path_line_index = lines
         .iter()
-        .position(|line| line.contains("路径:"))
+        .position(|line| line.contains(t!("tui.tool.detail.path", path = "").trim_end()))
         .expect("path line exists");
 
     assert!(
@@ -1486,10 +1497,10 @@ fn generate_image_tool_card_selection_highlights_wrapped_rail_consistently() {
             tool_call_id: Some("call-image-select-wrap".to_string()),
             tool_name: "generate_image".to_string(),
             phase: ToolUiPhase::Succeeded,
-            headline: "图片生成完成".to_string(),
+            headline: "Image generated".to_string(),
             detail_lines: vec![
-                "路径: C:/Users/pc/AppData/Roaming/SpiritAgent/generated-images/this-is-a-very-long-image-name-that-must-wrap/example-output.png"
-                    .to_string(),
+                t!("tui.tool.detail.path", path = "C:/Users/pc/AppData/Roaming/SpiritAgent/generated-images/this-is-a-very-long-image-name-that-must-wrap/example-output.png")
+                    .into_owned(),
             ],
             image_paths: Vec::new(),
         video_paths: Vec::new(),
@@ -1554,8 +1565,8 @@ fn generate_image_history_render_reserves_image_block() {
             tool_call_id: Some("call-image-range".to_string()),
             tool_name: "generate_image".to_string(),
             phase: ToolUiPhase::Succeeded,
-            headline: "图片生成完成".to_string(),
-            detail_lines: vec!["路径: demo.png".to_string()],
+            headline: "Image generated".to_string(),
+            detail_lines: vec![t!("tui.tool.detail.path", path = "demo.png").into_owned()],
             image_paths: vec!["demo.png".to_string()],
             video_paths: Vec::new(),
             args_excerpt: None,
@@ -1587,8 +1598,12 @@ fn generate_image_ui_renders_halfblock_preview_from_local_file() {
             tool_call_id: Some("call-image-render".to_string()),
             tool_name: "generate_image".to_string(),
             phase: ToolUiPhase::Succeeded,
-            headline: "图片生成完成".to_string(),
-            detail_lines: vec![format!("路径: {}", file_path.display())],
+            headline: "Image generated".to_string(),
+            detail_lines: vec![t!(
+                "tui.tool.detail.path",
+                path = file_path.display().to_string()
+            )
+            .into_owned()],
             image_paths: vec![file_path.to_string_lossy().to_string()],
             video_paths: Vec::new(),
             args_excerpt: None,
@@ -1687,8 +1702,8 @@ fn inline_mode_skips_tool_image_blocks() {
             tool_call_id: Some("call-image-inline".to_string()),
             tool_name: "generate_image".to_string(),
             phase: ToolUiPhase::Succeeded,
-            headline: "图片生成完成".to_string(),
-            detail_lines: vec!["路径: demo.png".to_string()],
+            headline: "Image generated".to_string(),
+            detail_lines: vec![t!("tui.tool.detail.path", path = "demo.png").into_owned()],
             image_paths: vec!["demo.png".to_string()],
             video_paths: Vec::new(),
             args_excerpt: None,
@@ -1758,11 +1773,11 @@ fn inline_mode_keeps_footer_directly_below_input() {
 
 #[test]
 fn inline_rewind_picker_shows_committed_history() {
-    let mut app = build_view_model(ChatMessage::new(MessageRole::User, "先确认需求"));
+    let mut app = build_view_model(ChatMessage::new(MessageRole::User, "Confirm requirements first"));
     app.messages
-        .push(ChatMessage::new(MessageRole::Agent, "我先看一下上下文。"));
+        .push(ChatMessage::new(MessageRole::Agent, "Let me look at the context first."));
     app.messages
-        .push(ChatMessage::new(MessageRole::User, "再整理一下实现方案"));
+        .push(ChatMessage::new(MessageRole::User, "Then organize the implementation plan"));
     app.inline_mode = true;
     app.committed_history_lines = usize::MAX;
     app.rewind_picker = Some(RewindPickerView {
@@ -1774,16 +1789,16 @@ fn inline_rewind_picker_shows_committed_history() {
     let snapshot = lines.join("\n");
     let collapsed = snapshot.replace([' ', '\u{00a0}'], "");
     assert!(
-        collapsed.contains("再整理一下实现方案"),
+        collapsed.contains("Then organize the implementation plan".replace(' ', "").as_str()),
         "inline rewind picker should surface committed history, got:\n{snapshot}"
     );
 }
 
 #[test]
 fn inline_fork_picker_shows_committed_history() {
-    let mut app = build_view_model(ChatMessage::new(MessageRole::User, "先确认需求"));
+    let mut app = build_view_model(ChatMessage::new(MessageRole::User, "Confirm requirements first"));
     app.messages
-        .push(ChatMessage::new(MessageRole::Agent, "我先看一下上下文。"));
+        .push(ChatMessage::new(MessageRole::Agent, "Let me look at the context first."));
     app.inline_mode = true;
     app.committed_history_lines = usize::MAX;
     app.fork_picker = Some(ForkPickerView {
@@ -1795,7 +1810,7 @@ fn inline_fork_picker_shows_committed_history() {
     let snapshot = lines.join("\n");
     let collapsed = snapshot.replace([' ', '\u{00a0}'], "");
     assert!(
-        collapsed.contains("我先看一下上下文"),
+        collapsed.contains("Let me look at the context first".replace(' ', "").as_str()),
         "inline fork picker should surface committed history, got:\n{snapshot}"
     );
 }
@@ -1831,8 +1846,17 @@ fn inline_mode_renders_subagent_viewer_and_approval() {
         collapsed.contains("SubAgent:demo-subagent"),
         "inline mode should draw the SubAgent viewer, got:\n{snapshot}"
     );
+    let footer = t!("tui.subagents.view.footer_approval").into_owned();
+    let y_hint = footer
+        .split('|')
+        .find_map(|seg| seg.trim().strip_prefix('Y').map(|_| seg.replace(' ', "")))
+        .expect("footer has a Y shortcut segment");
+    let n_hint = footer
+        .split('|')
+        .find_map(|seg| seg.trim().strip_prefix('N').map(|_| seg.replace(' ', "")))
+        .expect("footer has an N shortcut segment");
     assert!(
-        collapsed.contains("Y允许") && collapsed.contains("N拒绝"),
+        collapsed.contains(&y_hint) && collapsed.contains(&n_hint),
         "inline SubAgent viewer should show the approval shortcuts, got:\n{snapshot}"
     );
 }

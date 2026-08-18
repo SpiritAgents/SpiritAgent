@@ -1,18 +1,18 @@
 use super::*;
 
-pub(in crate::ui) fn marketplace_review_label(status: &str) -> &'static str {
+pub(in crate::ui) fn marketplace_review_label(status: &str) -> String {
     match status.trim() {
-        "verified" => "已验证",
-        "revoked" => "已撤销",
-        _ => "未验证",
+        "verified" => t!("tui.marketplace.status_verified").into_owned(),
+        "revoked" => t!("tui.marketplace.status_revoked").into_owned(),
+        _ => t!("tui.marketplace.status_unverified").into_owned(),
     }
 }
 
 pub(in crate::ui) fn marketplace_channel_label(channel: &str) -> String {
     match channel.trim() {
-        "stable" => "稳定".to_string(),
-        "preview" => "预览".to_string(),
-        "experimental" => "实验".to_string(),
+        "stable" => t!("tui.marketplace.channel_stable").into_owned(),
+        "preview" => t!("tui.marketplace.channel_preview").into_owned(),
+        "experimental" => t!("tui.marketplace.channel_experimental").into_owned(),
         other => other.to_string(),
     }
 }
@@ -72,7 +72,10 @@ pub(in crate::ui) fn draw_marketplace_detail_page(
     let block = Block::default()
         .borders(Borders::ALL)
         .border_style(border_style)
-        .title(Line::from(Span::styled("扩展详情", border_style)));
+        .title(Line::from(Span::styled(
+            t!("tui.marketplace.detail_title").into_owned(),
+            border_style,
+        )));
     frame.render_widget(block.clone(), area);
     let inner = block.inner(area);
     let chunks = Layout::default()
@@ -104,7 +107,8 @@ pub(in crate::ui) fn render_marketplace_overview(
 ) {
     let Some(item) = view.selected_item.as_ref() else {
         frame.render_widget(
-            Paragraph::new("找不到该扩展，请按 Esc 返回列表。").wrap(Wrap { trim: true }),
+            Paragraph::new(t!("tui.marketplace.detail_not_found").into_owned())
+                .wrap(Wrap { trim: true }),
             area,
         );
         return;
@@ -123,8 +127,10 @@ pub(in crate::ui) fn render_marketplace_overview(
         Span::styled(
             item.installed_version
                 .as_ref()
-                .map(|installed| format!("已安装 {}", installed))
-                .unwrap_or_else(|| "未安装".to_string()),
+                .map(|installed| {
+                    t!("tui.marketplace.installed_version", version = installed).into_owned()
+                })
+                .unwrap_or_else(|| t!("tui.marketplace.not_installed").into_owned()),
             Style::default().fg(Color::Rgb(215, 215, 215)),
         ),
     ])];
@@ -155,13 +161,19 @@ pub(in crate::ui) fn render_marketplace_overview(
 
     if let Some(detail) = view.detail.as_ref() {
         lines.push(Line::from(vec![
-            Span::styled("状态 ", subtle_style),
+            Span::styled(
+                t!("tui.marketplace.detail_status_label").into_owned(),
+                subtle_style,
+            ),
             Span::styled(
                 detail.status.clone(),
                 Style::default().fg(Color::Rgb(185, 185, 185)),
             ),
             Span::raw("  "),
-            Span::styled("默认通道 ", subtle_style),
+            Span::styled(
+                t!("tui.marketplace.detail_default_channel_label").into_owned(),
+                subtle_style,
+            ),
             Span::styled(
                 marketplace_channel_label(&item.default_channel),
                 Style::default().fg(Color::Rgb(185, 185, 185)),
@@ -199,7 +211,7 @@ pub(in crate::ui) fn render_marketplace_readme(
         .map(marketplace_markdown_lines)
         .unwrap_or_else(|| {
             vec![Line::from(Span::styled(
-                "暂无 README 内容。",
+                t!("tui.marketplace.readme_empty").into_owned(),
                 subtle_aux_text_style(),
             ))]
         });
@@ -256,7 +268,7 @@ pub(in crate::ui) fn draw_slash_flow_body(
         let mut header_lines = Vec::new();
         if let Some(search) = flow.search.as_ref() {
             header_lines.push(Line::from(vec![
-                Span::styled("搜索: ", subtle_style),
+                Span::styled(t!("tui.marketplace.search_label").into_owned(), subtle_style),
                 Span::styled(
                     if search.value.trim().is_empty() {
                         search.placeholder.clone()

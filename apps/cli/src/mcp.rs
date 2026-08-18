@@ -1,4 +1,5 @@
 use anyhow::{Context, Result, anyhow};
+use rust_i18n::t;
 use serde::{Deserialize, Serialize};
 use std::{
     collections::BTreeMap,
@@ -236,7 +237,7 @@ pub fn load_mcp_config(workspace_root: &Path) -> Result<LoadedMcpConfig> {
 pub fn assert_mcp_server_name_available(workspace_root: &Path, name: &str) -> Result<()> {
     let server_name = name.trim();
     if server_name.is_empty() {
-        return Err(anyhow!("MCP server 名称不能为空"));
+        return Err(anyhow!(t!("tui.mcp.server_name_empty").into_owned()));
     }
 
     let user_path = user_mcp_config_path();
@@ -244,7 +245,7 @@ pub fn assert_mcp_server_name_available(workspace_root: &Path, name: &str) -> Re
     let user = load_mcp_config_file(&user_path)?.unwrap_or_default();
     let workspace = load_mcp_config_file(&workspace_path)?.unwrap_or_default();
     if user.servers.contains_key(server_name) || workspace.servers.contains_key(server_name) {
-        return Err(anyhow!("MCP server 已存在: {}", server_name));
+        return Err(anyhow!(t!("tui.mcp.server_exists", name = server_name).into_owned()));
     }
     Ok(())
 }
@@ -262,24 +263,22 @@ fn resolve_mcp_server_scope(workspace_root: &Path, name: &str) -> Result<(McpSco
     {
         return Ok((McpScope::Workspace, workspace_path));
     }
-    Err(anyhow!("未找到 MCP server: {}", name))
+    Err(anyhow!(t!("tui.mcp.server_not_found", name = name).into_owned()))
 }
 
 pub fn save_mcp_config(path: &Path, config: &McpConfigFile, overwrite: bool) -> Result<()> {
     if path.exists() && !overwrite {
-        return Err(anyhow!(
-            "配置文件已存在: {}。如需覆盖，请使用 force。",
-            path.display()
-        ));
+        return Err(anyhow!(t!("tui.mcp.config_exists", path = path.display()).into_owned()));
     }
 
     if let Some(parent) = path.parent() {
         fs::create_dir_all(parent)
-            .with_context(|| format!("创建 MCP 配置目录失败: {}", parent.display()))?;
+            .with_context(|| t!("tui.mcp.config_dir_create_failed", path = parent.display()).into_owned())?;
     }
 
     let content = serde_json::to_string_pretty(config)?;
-    fs::write(path, content).with_context(|| format!("写入 MCP 配置失败: {}", path.display()))
+    fs::write(path, content)
+        .with_context(|| t!("tui.mcp.config_write_failed", path = path.display()).into_owned())
 }
 
 pub fn example_github_mcp_config() -> McpConfigFile {
@@ -296,7 +295,7 @@ pub fn add_mcp_server(
 ) -> Result<PathBuf> {
     let server_name = name.trim();
     if server_name.is_empty() {
-        return Err(anyhow!("MCP server 名称不能为空"));
+        return Err(anyhow!(t!("tui.mcp.server_name_empty").into_owned()));
     }
 
     assert_mcp_server_name_available(workspace_root, server_name)?;
@@ -326,10 +325,10 @@ fn resolve_env_placeholders(
         let placeholder = &remaining[start + 6..];
         let end = placeholder
             .find('}')
-            .ok_or_else(|| anyhow!("非法环境变量占位符: {}", value))?;
+            .ok_or_else(|| anyhow!(t!("tui.mcp.env_placeholder_invalid", value = value).into_owned()))?;
         let var_name = &placeholder[..end];
         if var_name.trim().is_empty() {
-            return Err(anyhow!("非法环境变量占位符: {}", value));
+            return Err(anyhow!(t!("tui.mcp.env_placeholder_invalid", value = value).into_owned()));
         }
 
         rendered.push_str(&resolver(var_name)?);
@@ -354,7 +353,7 @@ fn resolve_single_env_value(var_name: &str) -> Result<String> {
         return Ok(resolved);
     }
 
-    Err(anyhow!("缺少环境变量 {}（来自 MCP 配置）", var_name))
+    Err(anyhow!(t!("tui.mcp.env_missing", name = var_name).into_owned()))
 }
 
 #[cfg(windows)]
@@ -397,12 +396,12 @@ fn mutate_existing_server(
     mutator: impl FnOnce(&mut McpServerConfig),
 ) -> Result<PathBuf> {
     let (_scope, path) = resolve_mcp_server_scope(workspace_root, name)?;
-    let mut config =
-        load_mcp_config_file(&path)?.ok_or_else(|| anyhow!("未找到 MCP server: {}", name))?;
+    let mut config = load_mcp_config_file(&path)?
+        .ok_or_else(|| anyhow!(t!("tui.mcp.server_not_found", name = name).into_owned()))?;
     let server = config
         .servers
         .get_mut(name)
-        .ok_or_else(|| anyhow!("未找到 MCP server: {}", name))?;
+        .ok_or_else(|| anyhow!(t!("tui.mcp.server_not_found", name = name).into_owned()))?;
     mutator(server);
     save_mcp_config(&path, &config, true)?;
     Ok(path)
@@ -414,9 +413,9 @@ fn load_mcp_config_file(path: &Path) -> Result<Option<McpConfigFile>> {
     }
 
     let content = fs::read_to_string(path)
-        .with_context(|| format!("读取 MCP 配置失败: {}", path.display()))?;
+        .with_context(|| t!("tui.mcp.config_read_failed", path = path.display()).into_owned())?;
     let config = serde_json::from_str::<McpConfigFile>(&content)
-        .with_context(|| format!("解析 MCP 配置失败: {}", path.display()))?;
+        .with_context(|| t!("tui.mcp.config_parse_failed", path = path.display()).into_owned())?;
     Ok(Some(config))
 }
 
@@ -572,7 +571,7 @@ mod tests {
             resolve_env_placeholders("Bearer ${env:GITHUB_TOKEN", |_| Ok("ignored".to_string()))
                 .expect_err("unclosed placeholder should fail");
 
-        assert!(err.to_string().contains("非法环境变量占位符"));
+        assert!(err.to_string().contains("Invalid environment variable placeholder"));
     }
 
     #[test]

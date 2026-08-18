@@ -797,7 +797,7 @@ pub(in crate::ui) fn render_tool_card_lines(
     let shell_pending_reason = if tool.tool_name == "shell"
         && tool.phase == ToolUiPhase::PendingApproval
         && !tool.headline.trim().is_empty()
-        && tool.headline != "待确认"
+        && tool.headline != t!("tui.tool.approval.headline").as_ref()
     {
         Some(tool.headline.clone())
     } else {
@@ -913,7 +913,7 @@ pub(in crate::ui) fn render_tool_card_lines(
         .chain(tool.video_paths.iter())
         .filter(|value| !value.trim().is_empty())
     {
-        let prefixed = format!("路径: {}", path);
+        let prefixed = t!("tui.tool.detail.path", path = path).into_owned();
         if tool.detail_lines.iter().any(|line| line.trim() == prefixed) {
             continue;
         }

@@ -96,10 +96,10 @@ pub fn extract_active_plan_path_from_archived_llm_history(
 pub fn build_start_implementing_user_turn(active_plan_path: Option<&Path>) -> String {
     match active_plan_path.filter(|path| !path.as_os_str().is_empty()) {
         Some(path) => format!(
-            "用户已确认方案并要求开始实现。开始实现前，先读取 Spirit 托管的计划文件 {}，理解其中执行方案后再开始编码与验证。若该文件不存在、无法读取，或内容与当前需求明显不一致，先明确说明并请求用户重新生成或确认计划，不要假设计划内容。",
+            "The user has approved the plan and asked to start implementing. Before implementing, first read the Spirit-managed plan file {} to understand the execution plan, then start coding and verification. If the file does not exist, cannot be read, or its content clearly diverges from the current requirements, state so explicitly and ask the user to regenerate or confirm the plan; do not assume the plan content.",
             path.display()
         ),
-        None => "用户已确认方案并要求开始实现。本会话尚未记录可用的实施计划路径；请先使用 create_plan 创建计划后再开始实现。".to_string(),
+        None => "The user has approved the plan and asked to start implementing. No usable implementation plan path has been recorded in this session; use create_plan to create a plan before starting implementation.".to_string(),
     }
 }
 

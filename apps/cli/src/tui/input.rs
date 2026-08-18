@@ -634,29 +634,29 @@ mod tests {
     fn set_value_moves_cursor_to_end() {
         let mut input = InputState::new();
 
-        input.set_value("计划".to_string());
+        input.set_value("plan".to_string());
 
-        assert_eq!(input.cursor, 2);
+        assert_eq!(input.cursor, 4);
     }
 
     #[test]
     fn recall_previous_history_walks_backward_and_restores_draft() {
         let mut input = InputState::new();
-        input.push_history_entry("这是什么".to_string());
-        input.push_history_entry("再解释一下".to_string());
-        input.set_value("临时草稿".to_string());
+        input.push_history_entry("what is this".to_string());
+        input.push_history_entry("explain again".to_string());
+        input.set_value("temporary draft".to_string());
 
         assert!(input.recall_previous_history());
-        assert_eq!(input.value, "再解释一下");
+        assert_eq!(input.value, "explain again");
 
         assert!(input.recall_previous_history());
-        assert_eq!(input.value, "这是什么");
+        assert_eq!(input.value, "what is this");
 
         assert!(input.recall_next_history());
-        assert_eq!(input.value, "再解释一下");
+        assert_eq!(input.value, "explain again");
 
         assert!(input.recall_next_history());
-        assert_eq!(input.value, "临时草稿");
+        assert_eq!(input.value, "temporary draft");
 
         assert!(!input.recall_next_history());
     }
@@ -664,30 +664,30 @@ mod tests {
     #[test]
     fn manual_edit_cancels_history_navigation() {
         let mut input = InputState::new();
-        input.push_history_entry("第一条".to_string());
-        input.push_history_entry("第二条".to_string());
+        input.push_history_entry("first entry".to_string());
+        input.push_history_entry("second entry".to_string());
 
         assert!(input.recall_previous_history());
-        assert_eq!(input.value, "第二条");
+        assert_eq!(input.value, "second entry");
 
         input.prepare_for_user_edit();
         input.value.push('!');
         input.cursor = input.len_chars();
 
         assert!(!input.recall_next_history());
-        assert_eq!(input.value, "第二条!");
+        assert_eq!(input.value, "second entry!");
     }
 
     #[test]
     fn clear_history_resets_entries_and_navigation() {
         let mut input = InputState::new();
-        input.push_history_entry("之前的问题".to_string());
-        input.set_value("草稿".to_string());
+        input.push_history_entry("previous question".to_string());
+        input.set_value("draft".to_string());
         assert!(input.recall_previous_history());
 
         input.clear_history();
 
-        assert_eq!(input.value, "之前的问题");
+        assert_eq!(input.value, "previous question");
         assert!(!input.recall_previous_history());
         assert!(!input.recall_next_history());
     }

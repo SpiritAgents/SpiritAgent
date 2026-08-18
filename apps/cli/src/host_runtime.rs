@@ -1,3 +1,4 @@
+use rust_i18n::t;
 use serde_json::{Map, Value, json};
 
 use crate::{
@@ -158,7 +159,7 @@ fn truncate_for_preview(text: &str, max_chars: usize) -> String {
     }
 
     let mut out = chars.into_iter().take(max_chars).collect::<String>();
-    out.push_str("...<预览已截断>");
+    out.push_str(t!("tui.tool.preview_truncated").as_ref());
     out
 }
 
@@ -213,75 +214,100 @@ fn preview_summary_for_tool(tool_name: &str, request: &ToolUiRequest) -> (String
         "read_file" => {
             let path = string_arg(request, "path")
                 .or_else(|| string_arg(request, "filePath"))
-                .unwrap_or("文件");
-            ("读取".to_string(), vec![path.to_string()])
+                .map(str::to_string)
+                .unwrap_or_else(|| t!("tui.tool.fallback_file").into_owned());
+            (t!("tui.tool.preview.read").into_owned(), vec![path])
         }
         "ls" => (
-            "列出目录".to_string(),
+            t!("tui.tool.preview.ls").into_owned(),
             vec![string_arg(request, "path").unwrap_or(".").to_string()],
         ),
         "glob" => (
-            "匹配".to_string(),
+            t!("tui.tool.preview.glob").into_owned(),
             vec![string_arg(request, "pattern").unwrap_or("**/*").to_string()],
         ),
         "shell" => (
-            "执行命令".to_string(),
+            t!("tui.tool.preview.shell").into_owned(),
             string_arg(request, "command")
                 .map(|value| vec![value.to_string()])
                 .unwrap_or_default(),
         ),
         "edit_file" => {
-            let path = string_arg(request, "path").unwrap_or("文件");
-            let mut lines = vec![path.to_string()];
+            let path = string_arg(request, "path")
+                .map(str::to_string)
+                .unwrap_or_else(|| t!("tui.tool.fallback_file").into_owned());
+            let mut lines = vec![path];
             if let Some(old) = string_arg(request, "old_text") {
-                lines.push(format!("旧文本: {} 字符", old.chars().count()));
+                lines.push(
+                    t!("tui.tool.preview.old_text_chars", count = old.chars().count())
+                        .into_owned(),
+                );
             } else if let Some(chars) = u64_arg(request, "old_text_chars")
                 && chars > 0
             {
-                lines.push(format!("旧文本: 流式生成中… {} 字符", chars));
+                lines.push(
+                    t!("tui.tool.preview.old_text_streaming", count = chars).into_owned(),
+                );
             }
             if let Some(new) = string_arg(request, "new_text") {
-                lines.push(format!("新文本: {} 字符", new.chars().count()));
+                lines.push(
+                    t!("tui.tool.preview.new_text_chars", count = new.chars().count())
+                        .into_owned(),
+                );
             } else if let Some(chars) = u64_arg(request, "new_text_chars")
                 && chars > 0
             {
-                lines.push(format!("新文本: 流式生成中… {} 字符", chars));
+                lines.push(
+                    t!("tui.tool.preview.new_text_streaming", count = chars).into_owned(),
+                );
             }
-            ("编辑".to_string(), lines)
+            (t!("tui.tool.preview.edit").into_owned(), lines)
         }
         "create_file" => {
-            let path = string_arg(request, "path").unwrap_or("文件");
-            let mut lines = vec![path.to_string()];
+            let path = string_arg(request, "path")
+                .map(str::to_string)
+                .unwrap_or_else(|| t!("tui.tool.fallback_file").into_owned());
+            let mut lines = vec![path];
             if let Some(content) = string_arg(request, "content") {
-                lines.push(format!("内容: {} 字符", content.chars().count()));
+                lines.push(
+                    t!("tui.tool.preview.content_chars", count = content.chars().count())
+                        .into_owned(),
+                );
             } else if let Some(chars) = u64_arg(request, "content_chars")
                 && chars > 0
             {
-                lines.push(format!("内容: 流式生成中… {} 字符", chars));
+                lines.push(
+                    t!("tui.tool.preview.content_streaming", count = chars).into_owned(),
+                );
             }
-            ("创建".to_string(), lines)
+            (t!("tui.tool.preview.create").into_owned(), lines)
         }
         "apply_patch" => {
-            let path = apply_patch_path(request).unwrap_or("文件");
-            let mut lines = vec![path.to_string()];
+            let path = apply_patch_path(request)
+                .map(str::to_string)
+                .unwrap_or_else(|| t!("tui.tool.fallback_file").into_owned());
+            let mut lines = vec![path];
             if let Some(chars) = apply_patch_diff_chars(request) {
-                lines.push(format!("diff: {} 字符", chars));
+                lines.push(t!("tui.tool.preview.diff_chars", count = chars).into_owned());
             }
             let headline = match apply_patch_operation_type(request) {
-                Some("create_file") => "创建".to_string(),
-                Some("update_file") => "编辑".to_string(),
-                Some("delete_file") => "删除".to_string(),
-                _ => "补丁".to_string(),
+                Some("create_file") => t!("tui.tool.preview.create").into_owned(),
+                Some("update_file") => t!("tui.tool.preview.edit").into_owned(),
+                Some("delete_file") => t!("tui.tool.preview.delete").into_owned(),
+                _ => t!("tui.tool.preview.patch").into_owned(),
             };
             (headline, lines)
         }
         "web_search" => {
             if let Some(query) = spirit_ui_input_excerpt(&request.arguments) {
-                return ("联网搜索".to_string(), vec![query]);
+                return (t!("tui.tool.preview.web_search").into_owned(), vec![query]);
             }
-            ("联网搜索".to_string(), Vec::new())
+            (t!("tui.tool.preview.web_search").into_owned(), Vec::new())
         }
-        _ => (format!("调用 {}", tool_name), Vec::new()),
+        _ => (
+            t!("tui.tool.preview.call_generic", tool = tool_name).into_owned(),
+            Vec::new(),
+        ),
     }
 }
 
@@ -307,18 +333,18 @@ pub(crate) fn tool_approval_block(
         .map(str::trim)
         .filter(|r| !r.is_empty())
     {
-        detail_lines.push(format!("阻挡原因：{reason}"));
+        detail_lines.push(t!("tui.tool.approval.block_reason", reason = reason).into_owned());
     }
     detail_lines.push(if supports_trust {
-        "快捷键: Y 允许一次 / N 拒绝 / T 信任并持久化".to_string()
+        t!("tui.tool.approval.shortcuts_trust").into_owned()
     } else {
-        "快捷键: Y 允许一次 / N 拒绝".to_string()
+        t!("tui.tool.approval.shortcuts").into_owned()
     });
     ToolUiBlock {
         tool_call_id: tool_call_id.map(String::from),
         tool_name: tool_name.to_string(),
         phase: ToolUiPhase::PendingApproval,
-        headline: shell_reason.unwrap_or_else(|| "待确认".to_string()),
+        headline: shell_reason.unwrap_or_else(|| t!("tui.tool.approval.headline").into_owned()),
         detail_lines,
         image_paths: Vec::new(),
         video_paths: Vec::new(),
@@ -360,7 +386,7 @@ pub(crate) fn build_tool_result_block(
             tool_call_id: tool_call_id.map(String::from),
             tool_name: tool_name.to_string(),
             phase: ToolUiPhase::Succeeded,
-            headline: "MCP 工具调用完成".to_string(),
+            headline: t!("tui.tool.result.mcp_done").into_owned(),
             detail_lines: vec![
                 format!(
                     "Server: {} ({})",
@@ -382,7 +408,7 @@ pub(crate) fn build_tool_result_block(
             tool_call_id: tool_call_id.map(String::from),
             tool_name: tool_name.to_string(),
             phase: ToolUiPhase::Succeeded,
-            headline: "网页内容已抓取".to_string(),
+            headline: t!("tui.tool.result.web_fetch_done").into_owned(),
             detail_lines: vec![format!(
                 "URL: {}",
                 string_arg(request, "url").unwrap_or("<unknown>")
@@ -397,11 +423,11 @@ pub(crate) fn build_tool_result_block(
             tool_call_id: tool_call_id.map(String::from),
             tool_name: tool_name.to_string(),
             phase: ToolUiPhase::Succeeded,
-            headline: "目录文件已列出".to_string(),
-            detail_lines: vec![format!(
-                "路径: {}",
-                string_arg(request, "path").unwrap_or("<unknown>")
-            )],
+            headline: t!("tui.tool.result.ls_done").into_owned(),
+            detail_lines: vec![
+                t!("tui.tool.detail.path", path = string_arg(request, "path").unwrap_or("<unknown>"))
+                    .into_owned(),
+            ],
             image_paths: Vec::new(),
             video_paths: Vec::new(),
             args_excerpt: Some(args_excerpt),
@@ -412,11 +438,11 @@ pub(crate) fn build_tool_result_block(
             tool_call_id: tool_call_id.map(String::from),
             tool_name: tool_name.to_string(),
             phase: ToolUiPhase::Succeeded,
-            headline: "文件匹配完成".to_string(),
-            detail_lines: vec![format!(
-                "模式: {}",
-                string_arg(request, "pattern").unwrap_or("<unknown>")
-            )],
+            headline: t!("tui.tool.result.glob_done").into_owned(),
+            detail_lines: vec![
+                t!("tui.tool.detail.pattern", pattern = string_arg(request, "pattern").unwrap_or("<unknown>"))
+                    .into_owned(),
+            ],
             image_paths: Vec::new(),
             video_paths: Vec::new(),
             args_excerpt: Some(args_excerpt),
@@ -429,13 +455,11 @@ pub(crate) fn build_tool_result_block(
                 tool_call_id: tool_call_id.map(String::from),
                 tool_name: tool_name.to_string(),
                 phase: ToolUiPhase::Succeeded,
-                headline: "已读取文件片段".to_string(),
+                headline: t!("tui.tool.result.read_done").into_owned(),
                 detail_lines: vec![
-                    format!(
-                        "路径: {}",
-                        string_arg(request, "path").unwrap_or("<unknown>")
-                    ),
-                    format!("行范围: {} - {}", offset, end),
+                    t!("tui.tool.detail.path", path = string_arg(request, "path").unwrap_or("<unknown>"))
+                        .into_owned(),
+                    t!("tui.tool.detail.line_range", start = offset, end = end).into_owned(),
                 ],
                 image_paths: Vec::new(),
                 video_paths: Vec::new(),
@@ -448,11 +472,11 @@ pub(crate) fn build_tool_result_block(
             tool_call_id: tool_call_id.map(String::from),
             tool_name: tool_name.to_string(),
             phase: ToolUiPhase::Succeeded,
-            headline: "搜索完成".to_string(),
-            detail_lines: vec![format!(
-                "查询: {}",
-                string_arg(request, "query").unwrap_or("<unknown>")
-            )],
+            headline: t!("tui.tool.result.grep_done").into_owned(),
+            detail_lines: vec![
+                t!("tui.tool.detail.query", query = string_arg(request, "query").unwrap_or("<unknown>"))
+                    .into_owned(),
+            ],
             image_paths: Vec::new(),
             video_paths: Vec::new(),
             args_excerpt: Some(args_excerpt),
@@ -463,11 +487,11 @@ pub(crate) fn build_tool_result_block(
             tool_call_id: tool_call_id.map(String::from),
             tool_name: tool_name.to_string(),
             phase: ToolUiPhase::Succeeded,
-            headline: "SubAgent 委托完成".to_string(),
-            detail_lines: vec![format!(
-                "任务: {}",
-                string_arg(request, "task").unwrap_or("<unknown>")
-            )],
+            headline: t!("tui.tool.result.subagent_done").into_owned(),
+            detail_lines: vec![
+                t!("tui.tool.detail.task", task = string_arg(request, "task").unwrap_or("<unknown>"))
+                    .into_owned(),
+            ],
             image_paths: Vec::new(),
             video_paths: Vec::new(),
             args_excerpt: Some(args_excerpt),
@@ -478,8 +502,10 @@ pub(crate) fn build_tool_result_block(
             tool_call_id: tool_call_id.map(String::from),
             tool_name: tool_name.to_string(),
             phase: ToolUiPhase::Succeeded,
-            headline: "问卷答案已返回".to_string(),
-            detail_lines: vec![format!("问题数: {}", question_count(request))],
+            headline: t!("tui.tool.result.ask_done").into_owned(),
+            detail_lines: vec![
+                t!("tui.tool.detail.question_count", count = question_count(request)).into_owned(),
+            ],
             image_paths: Vec::new(),
             video_paths: Vec::new(),
             args_excerpt: Some(args_excerpt),
@@ -492,10 +518,10 @@ pub(crate) fn build_tool_result_block(
                 tool_call_id: tool_call_id.map(String::from),
                 tool_name: tool_name.to_string(),
                 phase: ToolUiPhase::Succeeded,
-                headline: "图片生成完成".to_string(),
+                headline: t!("tui.tool.result.image_done").into_owned(),
                 detail_lines: image_paths
                     .iter()
-                    .map(|path| format!("路径: {}", path))
+                    .map(|path| t!("tui.tool.detail.path", path = path).into_owned())
                     .collect(),
                 image_paths,
                 video_paths: Vec::new(),
@@ -510,10 +536,10 @@ pub(crate) fn build_tool_result_block(
                 tool_call_id: tool_call_id.map(String::from),
                 tool_name: tool_name.to_string(),
                 phase: ToolUiPhase::Succeeded,
-                headline: "视频生成完成".to_string(),
+                headline: t!("tui.tool.result.video_done").into_owned(),
                 detail_lines: video_paths
                     .iter()
-                    .map(|path| format!("路径: {}", path))
+                    .map(|path| t!("tui.tool.detail.path", path = path).into_owned())
                     .collect(),
                 image_paths: Vec::new(),
                 video_paths,
@@ -526,11 +552,11 @@ pub(crate) fn build_tool_result_block(
             tool_call_id: tool_call_id.map(String::from),
             tool_name: tool_name.to_string(),
             phase: ToolUiPhase::Succeeded,
-            headline: "已创建文件".to_string(),
-            detail_lines: vec![format!(
-                "路径: {}",
-                string_arg(request, "path").unwrap_or("<unknown>")
-            )],
+            headline: t!("tui.tool.result.file_created").into_owned(),
+            detail_lines: vec![
+                t!("tui.tool.detail.path", path = string_arg(request, "path").unwrap_or("<unknown>"))
+                    .into_owned(),
+            ],
             image_paths: Vec::new(),
             video_paths: Vec::new(),
             args_excerpt: Some(args_excerpt),
@@ -541,11 +567,11 @@ pub(crate) fn build_tool_result_block(
             tool_call_id: tool_call_id.map(String::from),
             tool_name: tool_name.to_string(),
             phase: ToolUiPhase::Succeeded,
-            headline: "已编辑文件".to_string(),
-            detail_lines: vec![format!(
-                "路径: {}",
-                string_arg(request, "path").unwrap_or("<unknown>")
-            )],
+            headline: t!("tui.tool.result.file_edited").into_owned(),
+            detail_lines: vec![
+                t!("tui.tool.detail.path", path = string_arg(request, "path").unwrap_or("<unknown>"))
+                    .into_owned(),
+            ],
             image_paths: Vec::new(),
             video_paths: Vec::new(),
             args_excerpt: Some(args_excerpt),
@@ -556,11 +582,11 @@ pub(crate) fn build_tool_result_block(
             tool_call_id: tool_call_id.map(String::from),
             tool_name: tool_name.to_string(),
             phase: ToolUiPhase::Succeeded,
-            headline: "已删除文件".to_string(),
-            detail_lines: vec![format!(
-                "路径: {}",
-                string_arg(request, "path").unwrap_or("<unknown>")
-            )],
+            headline: t!("tui.tool.result.file_deleted").into_owned(),
+            detail_lines: vec![
+                t!("tui.tool.detail.path", path = string_arg(request, "path").unwrap_or("<unknown>"))
+                    .into_owned(),
+            ],
             image_paths: Vec::new(),
             video_paths: Vec::new(),
             args_excerpt: Some(args_excerpt),
@@ -570,17 +596,17 @@ pub(crate) fn build_tool_result_block(
         "apply_patch" => {
             let path = apply_patch_path(request).unwrap_or("<unknown>");
             let headline = match apply_patch_operation_type(request) {
-                Some("create_file") => "已创建文件",
-                Some("update_file") => "已编辑文件",
-                Some("delete_file") => "已删除文件",
-                _ => "已应用补丁",
+                Some("create_file") => t!("tui.tool.result.file_created").into_owned(),
+                Some("update_file") => t!("tui.tool.result.file_edited").into_owned(),
+                Some("delete_file") => t!("tui.tool.result.file_deleted").into_owned(),
+                _ => t!("tui.tool.result.patch_applied").into_owned(),
             };
             ToolUiBlock {
                 tool_call_id: tool_call_id.map(String::from),
                 tool_name: tool_name.to_string(),
                 phase: ToolUiPhase::Succeeded,
-                headline: headline.to_string(),
-                detail_lines: vec![format!("路径: {}", path)],
+                headline,
+                detail_lines: vec![t!("tui.tool.detail.path", path = path).into_owned()],
                 image_paths: Vec::new(),
                 video_paths: Vec::new(),
                 args_excerpt: Some(args_excerpt),
@@ -592,11 +618,11 @@ pub(crate) fn build_tool_result_block(
             tool_call_id: tool_call_id.map(String::from),
             tool_name: tool_name.to_string(),
             phase: ToolUiPhase::Succeeded,
-            headline: "命令已执行".to_string(),
-            detail_lines: vec![format!(
-                "命令: {}",
-                string_arg(request, "command").unwrap_or("<unknown>")
-            )],
+            headline: t!("tui.tool.result.shell_done").into_owned(),
+            detail_lines: vec![
+                t!("tui.tool.detail.command", command = string_arg(request, "command").unwrap_or("<unknown>"))
+                    .into_owned(),
+            ],
             image_paths: Vec::new(),
             video_paths: Vec::new(),
             args_excerpt: Some(args_excerpt),
@@ -607,7 +633,7 @@ pub(crate) fn build_tool_result_block(
             tool_call_id: tool_call_id.map(String::from),
             tool_name: tool_name.to_string(),
             phase: ToolUiPhase::Succeeded,
-            headline: "工具执行完成".to_string(),
+            headline: t!("tui.tool.result.generic_done").into_owned(),
             detail_lines: Vec::new(),
             image_paths: Vec::new(),
             video_paths: Vec::new(),
@@ -624,76 +650,90 @@ pub(crate) fn format_tool_ui_message(
     output: &str,
 ) -> String {
     match request.name.as_str() {
-        "mcp_tool" => format!(
-            "[tool] MCP {} ({}) / {} 执行完成。\n{}",
-            string_arg(request, "display_name").unwrap_or("<unknown>"),
-            string_arg(request, "server").unwrap_or("<unknown>"),
-            string_arg(request, "tool_name").unwrap_or("<unknown>"),
-            truncate_for_preview(output, 1200)
-        ),
-        "web_fetch" => format!(
-            "[tool] 已抓取网页 {}",
-            string_arg(request, "url").unwrap_or("<unknown>")
-        ),
-        "ls" => format!(
-            "[tool] 已列出目录下文件 {}",
-            string_arg(request, "path").unwrap_or("<unknown>")
-        ),
+        "mcp_tool" => t!(
+            "tui.tool.message.mcp_done",
+            display = string_arg(request, "display_name").unwrap_or("<unknown>"),
+            server = string_arg(request, "server").unwrap_or("<unknown>"),
+            tool = string_arg(request, "tool_name").unwrap_or("<unknown>"),
+            output = truncate_for_preview(output, 1200)
+        )
+        .into_owned(),
+        "web_fetch" => t!(
+            "tui.tool.message.web_fetch_done",
+            url = string_arg(request, "url").unwrap_or("<unknown>")
+        )
+        .into_owned(),
+        "ls" => t!(
+            "tui.tool.message.ls_done",
+            path = string_arg(request, "path").unwrap_or("<unknown>")
+        )
+        .into_owned(),
         "glob" => output.to_string(),
         "read_file" => {
             let (offset, end) = read_file_range_display(request);
-            format!(
-                "[tool] 读取文件 {} {} - {}",
-                string_arg(request, "path").unwrap_or("<unknown>"),
-                offset,
-                end
+            t!(
+                "tui.tool.message.read_done",
+                path = string_arg(request, "path").unwrap_or("<unknown>"),
+                start = offset,
+                end = end
             )
+            .into_owned()
         }
         "grep" => output.to_string(),
-        "subagent" => format!(
-            "[tool] SubAgent 已完成任务: {}\n{}",
-            string_arg(request, "task").unwrap_or("<unknown>"),
-            truncate_for_preview(output, 1200)
-        ),
-        "ask_questions" => format!(
-            "[tool] {} 已返回结构化答案。\n{}",
-            tool_name,
-            truncate_for_preview(output, 1200)
-        ),
-        "generate_image" => format!(
-            "[tool] 图片生成完成。\n{}",
-            truncate_for_preview(output, 1200)
-        ),
-        "generate_video" => format!(
-            "[tool] 视频生成完成。\n{}",
-            truncate_for_preview(output, 1200)
-        ),
-        "create_file" => format!(
-            "[tool] 已创建文件 {}",
-            string_arg(request, "path").unwrap_or("<unknown>")
-        ),
-        "edit_file" => format!(
-            "[tool] 已编辑文件 {}",
-            string_arg(request, "path").unwrap_or("<unknown>")
-        ),
-        "delete_file" => format!(
-            "[tool] 已删除文件 {}",
-            string_arg(request, "path").unwrap_or("<unknown>")
-        ),
-        "apply_patch" => format!(
-            "[tool] 已应用补丁 {}",
-            apply_patch_path(request).unwrap_or("<unknown>")
-        ),
-        "shell" => format!(
-            "[tool] {} 执行完成。\n{}",
-            tool_name,
-            truncate_for_preview(output, 1200)
-        ),
-        _ => format!(
-            "[tool] {} 执行完成。\n{}",
-            tool_name,
-            truncate_for_preview(output, 1200)
-        ),
+        "subagent" => t!(
+            "tui.tool.message.subagent_done",
+            task = string_arg(request, "task").unwrap_or("<unknown>"),
+            output = truncate_for_preview(output, 1200)
+        )
+        .into_owned(),
+        "ask_questions" => t!(
+            "tui.tool.message.ask_done",
+            tool = tool_name,
+            output = truncate_for_preview(output, 1200)
+        )
+        .into_owned(),
+        "generate_image" => t!(
+            "tui.tool.message.image_done",
+            output = truncate_for_preview(output, 1200)
+        )
+        .into_owned(),
+        "generate_video" => t!(
+            "tui.tool.message.video_done",
+            output = truncate_for_preview(output, 1200)
+        )
+        .into_owned(),
+        "create_file" => t!(
+            "tui.tool.message.file_created",
+            path = string_arg(request, "path").unwrap_or("<unknown>")
+        )
+        .into_owned(),
+        "edit_file" => t!(
+            "tui.tool.message.file_edited",
+            path = string_arg(request, "path").unwrap_or("<unknown>")
+        )
+        .into_owned(),
+        "delete_file" => t!(
+            "tui.tool.message.file_deleted",
+            path = string_arg(request, "path").unwrap_or("<unknown>")
+        )
+        .into_owned(),
+        "apply_patch" => t!(
+            "tui.tool.message.patch_applied",
+            path = apply_patch_path(request).unwrap_or("<unknown>")
+        )
+        .into_owned(),
+        "shell" => t!(
+            "tui.tool.message.generic_done",
+            tool = tool_name,
+            output = truncate_for_preview(output, 1200)
+        )
+        .into_owned(),
+        _ => t!(
+            "tui.tool.message.generic_done",
+            tool = tool_name,
+            output = truncate_for_preview(output, 1200)
+        )
+        .into_owned(),
     }
 }
 
@@ -732,6 +772,7 @@ mod tests {
         ToolUiPhase, ToolUiRequest, build_tool_preview_block, build_tool_result_block,
         format_tool_ui_message, tool_approval_block, tool_request_args_excerpt,
     };
+    use rust_i18n::t;
     use serde_json::{Value, json};
 
     #[test]
@@ -761,7 +802,7 @@ mod tests {
 
         assert_eq!(block.tool_call_id.as_deref(), Some("call_00_demo"));
         assert_eq!(block.tool_name, "shell");
-        assert_eq!(block.headline, "命令已执行");
+        assert_eq!(block.headline, t!("tui.tool.result.shell_done").into_owned());
         assert_eq!(
             block.args_excerpt.as_deref(),
             Some("{\n  \"command\": \"echo hello\",\n  \"reason\": \"smoke test\"\n}")
@@ -772,16 +813,22 @@ mod tests {
     fn generate_image_result_block_shows_generated_path() {
         let output = "[generated image]\npath: C:/Users/pc/AppData/Roaming/SpiritAgent/generated-images/example.png\nmime_type: image/png\nmodel: image-model";
         let block = build_tool_result_block(
-            &ToolUiRequest::new("generate_image", json!({ "prompt": "画一张图" })),
+            &ToolUiRequest::new("generate_image", json!({ "prompt": "draw a picture" })),
             "generate_image",
             Some("tool-call-image"),
             output,
         );
 
-        assert_eq!(block.headline, "图片生成完成");
+        assert_eq!(
+            block.headline,
+            t!("tui.tool.result.image_done").into_owned()
+        );
         assert_eq!(
             block.detail_lines,
-            vec!["路径: C:/Users/pc/AppData/Roaming/SpiritAgent/generated-images/example.png"]
+            vec![
+                t!("tui.tool.detail.path", path = "C:/Users/pc/AppData/Roaming/SpiritAgent/generated-images/example.png")
+                    .into_owned()
+            ]
         );
         assert_eq!(
             block.image_paths,
@@ -799,16 +846,22 @@ mod tests {
     fn generate_video_result_block_shows_managed_uri() {
         let output = "[generated video]\nvideo_ref: spirit://generated/video/example.mp4\nread_file_path: spirit://generated/video/example.mp4\nmime_type: video/mp4\nmodel: video-model";
         let block = build_tool_result_block(
-            &ToolUiRequest::new("generate_video", json!({ "prompt": "生成一段视频" })),
+            &ToolUiRequest::new("generate_video", json!({ "prompt": "generate a video" })),
             "generate_video",
             Some("tool-call-video"),
             output,
         );
 
-        assert_eq!(block.headline, "视频生成完成");
+        assert_eq!(
+            block.headline,
+            t!("tui.tool.result.video_done").into_owned()
+        );
         assert_eq!(
             block.detail_lines,
-            vec!["路径: spirit://generated/video/example.mp4"]
+            vec![
+                t!("tui.tool.detail.path", path = "spirit://generated/video/example.mp4")
+                    .into_owned()
+            ]
         );
         assert_eq!(
             block.video_paths,
@@ -828,13 +881,15 @@ mod tests {
 
         assert_eq!(
             block.detail_lines.last(),
-            Some(&"快捷键: Y 允许一次 / N 拒绝".to_string())
+            Some(&t!("tui.tool.approval.shortcuts").into_owned())
         );
         assert!(
             block
                 .detail_lines
                 .iter()
-                .any(|line| line == "阻挡原因：destructive command")
+                .any(|line| line.as_str()
+                    == t!("tui.tool.approval.block_reason", reason = "destructive command")
+                        .as_ref())
         );
     }
 
@@ -855,7 +910,7 @@ mod tests {
                 "High-risk tool call: shell".to_string(),
                 "Terminal: Command Prompt (cmd.exe)".to_string(),
                 "Command: echo hi".to_string(),
-                "快捷键: Y 允许一次 / N 拒绝 / T 信任并持久化".to_string(),
+                t!("tui.tool.approval.shortcuts_trust").into_owned(),
             ]
         );
     }
@@ -878,7 +933,7 @@ mod tests {
         assert_eq!(block.tool_call_id.as_deref(), Some("call_preview_read"));
         assert_eq!(block.tool_name, "read_file");
         assert_eq!(block.phase, ToolUiPhase::Preview);
-        assert_eq!(block.headline, "读取");
+        assert_eq!(block.headline, t!("tui.tool.preview.read").into_owned());
         assert_eq!(block.detail_lines, vec!["src/main.rs".to_string()]);
     }
 
@@ -897,7 +952,16 @@ mod tests {
             "line3\nline4\n",
         );
 
-        assert_eq!(message, "[tool] 读取文件 src/main.rs 3 - 9");
+        assert_eq!(
+            message,
+            t!(
+                "tui.tool.message.read_done",
+                path = "src/main.rs",
+                start = 3,
+                end = "9"
+            )
+            .into_owned()
+        );
     }
 
     #[test]
@@ -917,10 +981,16 @@ mod tests {
         );
 
         assert_eq!(block.tool_call_id.as_deref(), Some("call_01_read"));
-        assert_eq!(block.headline, "已读取文件片段");
+        assert_eq!(
+            block.headline,
+            t!("tui.tool.result.read_done").into_owned()
+        );
         assert_eq!(
             block.detail_lines,
-            vec!["路径: src/main.rs".to_string(), "行范围: 3 - 9".to_string()]
+            vec![
+                t!("tui.tool.detail.path", path = "src/main.rs").into_owned(),
+                t!("tui.tool.detail.line_range", start = 3, end = "9").into_owned()
+            ]
         );
         assert!(block.output_excerpt.is_none());
     }
@@ -936,8 +1006,14 @@ mod tests {
         );
 
         assert_eq!(block.tool_call_id.as_deref(), Some("call_02_glob"));
-        assert_eq!(block.headline, "文件匹配完成");
-        assert_eq!(block.detail_lines, vec!["模式: src/**/*.ts".to_string()]);
+        assert_eq!(
+            block.headline,
+            t!("tui.tool.result.glob_done").into_owned()
+        );
+        assert_eq!(
+            block.detail_lines,
+            vec![t!("tui.tool.detail.pattern", pattern = "src/**/*.ts").into_owned()]
+        );
         assert!(
             block
                 .output_excerpt
@@ -965,7 +1041,10 @@ mod tests {
 
         assert_eq!(block.suppress_expand, Some(true));
         assert_eq!(block.args_excerpt.as_deref(), Some("latest AI news"));
-        assert_eq!(block.headline, "联网搜索");
+        assert_eq!(
+            block.headline,
+            t!("tui.tool.preview.web_search").into_owned()
+        );
         assert_eq!(block.detail_lines, vec!["latest AI news".to_string()]);
     }
 }

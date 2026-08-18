@@ -33,37 +33,37 @@ pub struct AskQuestionsRequest {
 impl AskQuestionsRequest {
     pub fn validate(&self) -> Result<()> {
         if self.questions.is_empty() {
-            return Err(anyhow!("ask_questions 至少需要一个问题"));
+            return Err(anyhow!("ask_questions requires at least one question"));
         }
 
         let mut seen_ids = HashSet::new();
         for question in &self.questions {
             let id = question.id.trim();
             if id.is_empty() {
-                return Err(anyhow!("ask_questions 问题 id 不能为空"));
+                return Err(anyhow!("ask_questions question id cannot be empty"));
             }
             if !seen_ids.insert(id.to_string()) {
-                return Err(anyhow!("ask_questions 问题 id 不能重复: {}", id));
+                return Err(anyhow!("ask_questions question id cannot be duplicated: {}", id));
             }
             if question.title.trim().is_empty() {
-                return Err(anyhow!("ask_questions 问题标题不能为空: {}", id));
+                return Err(anyhow!("ask_questions question title cannot be empty: {}", id));
             }
 
             let mut seen_option_ids = HashSet::new();
             for option in &question.options {
                 let option_id = option.id.trim();
                 if option_id.is_empty() {
-                    return Err(anyhow!("ask_questions 选项 id 不能为空: {}", id));
+                    return Err(anyhow!("ask_questions option id cannot be empty: {}", id));
                 }
                 if !seen_option_ids.insert(option_id.to_string()) {
                     return Err(anyhow!(
-                        "ask_questions 选项 id 不能重复: {}/{}",
+                        "ask_questions option id cannot be duplicated: {}/{}",
                         id,
                         option_id
                     ));
                 }
                 if option.label.trim().is_empty() {
-                    return Err(anyhow!("ask_questions 选项文本不能为空: {}", id));
+                    return Err(anyhow!("ask_questions option label cannot be empty: {}", id));
                 }
             }
         }

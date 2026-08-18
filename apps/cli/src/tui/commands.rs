@@ -19,18 +19,19 @@ impl TuiShell {
                     .join(", ");
                 self.messages.push(ChatMessage {
                     role: MessageRole::Agent,
-                    content: format!(
-                        "当前模型: {}\n模型列表: {}",
-                        self.runtime.config().active_model_name(),
-                        list
-                    ),
+                    content: t!(
+                        "tui.model.list",
+                        current = self.runtime.config().active_model_name(),
+                        list = list
+                    )
+                    .into_owned(),
                     tool_block: None,
                 });
             }
             ["use"] => {
                 self.messages.push(ChatMessage {
                     role: MessageRole::Agent,
-                    content: "用法: `/model use <name>`".to_string(),
+                    content: t!("tui.model.use_usage").into_owned(),
                     tool_block: None,
                 });
             }
@@ -59,7 +60,7 @@ impl TuiShell {
                 if let Err(err) = self.config_store.save(&config) {
                     self.messages.push(ChatMessage {
                         role: MessageRole::Agent,
-                        content: format!("切换成功但保存失败: {}", err),
+                        content: t!("tui.model.switch_save_failed", err = err).into_owned(),
                         tool_block: None,
                     });
                 } else {
@@ -67,7 +68,7 @@ impl TuiShell {
                     self.apply_runtime_events();
                     self.messages.push(ChatMessage {
                         role: MessageRole::Agent,
-                        content: format!("已切换当前模型为: {}", model),
+                        content: t!("tui.model_picker.switch_success", model = model).into_owned(),
                         tool_block: None,
                     });
                 }
@@ -113,7 +114,7 @@ impl TuiShell {
             ["remove"] => {
                 self.messages.push(ChatMessage {
                     role: MessageRole::Agent,
-                    content: "用法: `/model remove <name>`".to_string(),
+                    content: t!("tui.model.remove_usage").into_owned(),
                     tool_block: None,
                 });
             }
@@ -133,7 +134,7 @@ impl TuiShell {
                 if !config.remove_model(&model_ref) {
                     self.messages.push(ChatMessage {
                         role: MessageRole::Agent,
-                        content: format!("模型不存在: {}", model),
+                        content: t!("tui.model.not_found", model = model).into_owned(),
                         tool_block: None,
                     });
                     return;
@@ -158,7 +159,7 @@ impl TuiShell {
                 if let Err(err) = self.config_store.save(&config) {
                     self.messages.push(ChatMessage {
                         role: MessageRole::Agent,
-                        content: format!("删除成功但保存失败: {}", err),
+                        content: t!("tui.model.remove_save_failed", err = err).into_owned(),
                         tool_block: None,
                     });
                 } else {
@@ -166,7 +167,7 @@ impl TuiShell {
                     self.runtime.replace_config(config);
                     self.messages.push(ChatMessage {
                         role: MessageRole::Agent,
-                        content: format!("已删除模型: {}", model),
+                        content: t!("tui.model.removed", model = model).into_owned(),
                         tool_block: None,
                     });
                 }
@@ -174,7 +175,7 @@ impl TuiShell {
             _ => {
                 self.messages.push(ChatMessage {
                     role: MessageRole::Agent,
-                    content: "用法:\n- `/model list`\n- `/model use <name>`\n- `/model add`（底部表单）或 `/model add <name> <api_base> <api_key>`\n- `/model remove <name>`".to_string(),
+                    content: t!("tui.model.usage").into_owned(),
                     tool_block: None,
                 });
             }
@@ -491,7 +492,7 @@ impl TuiShell {
 
         self.messages.push(ChatMessage {
             role: MessageRole::Agent,
-            content: "用法: /subagents [list|open <session_id>|close]".to_string(),
+            content: t!("tui.subagents.usage").into_owned(),
             tool_block: None,
         });
     }
@@ -503,7 +504,7 @@ impl TuiShell {
             let cleared = self.runtime.clear_pending_images();
             self.messages.push(ChatMessage {
                 role: MessageRole::Agent,
-                content: format!("已清空待发送图片队列（{} 张）。", cleared),
+                content: t!("tui.image_queue.cleared", count = cleared).into_owned(),
                 tool_block: None,
             });
             return;
@@ -512,9 +513,7 @@ impl TuiShell {
         if tail.is_empty() {
             self.messages.push(ChatMessage {
                 role: MessageRole::Agent,
-                content:
-                    "用法: /image <path> [prompt] | /image pick | /image clear。若不带 prompt，会把图片加入待发送队列。"
-                        .to_string(),
+                content: t!("tui.image.usage").into_owned(),
                 tool_block: None,
             });
             return;
@@ -529,7 +528,7 @@ impl TuiShell {
         if raw_path.is_empty() {
             self.messages.push(ChatMessage {
                 role: MessageRole::Agent,
-                content: "用法: /image <path> [prompt]".to_string(),
+                content: t!("tui.image.path_usage").into_owned(),
                 tool_block: None,
             });
             return;
@@ -537,7 +536,7 @@ impl TuiShell {
         if !is_supported_image_path(raw_path) {
             self.messages.push(ChatMessage {
                 role: MessageRole::Agent,
-                content: "仅支持图片文件: .png .jpg .jpeg .webp .gif .bmp".to_string(),
+                content: t!("tui.image.unsupported_type").into_owned(),
                 tool_block: None,
             });
             return;
@@ -545,7 +544,7 @@ impl TuiShell {
         if !Path::new(raw_path).exists() {
             self.messages.push(ChatMessage {
                 role: MessageRole::Agent,
-                content: format!("图片不存在: {}", raw_path),
+                content: t!("tui.image.not_found", path = raw_path).into_owned(),
                 tool_block: None,
             });
             return;
@@ -590,14 +589,14 @@ impl TuiShell {
                 Ok(path) => {
                     self.messages.push(ChatMessage {
                         role: MessageRole::Agent,
-                        content: format!("已打开当前 CLI 日志:\n{}", path.display()),
+                        content: t!("tui.log.opened", path = path.display()).into_owned(),
                         tool_block: None,
                     });
                 }
                 Err(err) => {
                     self.messages.push(ChatMessage {
                         role: MessageRole::Agent,
-                        content: format!("打开 CLI 日志失败: {}", err),
+                        content: t!("tui.log.open_failed", err = err).into_owned(),
                         tool_block: None,
                     });
                 }
@@ -606,14 +605,14 @@ impl TuiShell {
                 Ok(path) => {
                     self.messages.push(ChatMessage {
                         role: MessageRole::Agent,
-                        content: format!("已导出当前 CLI 日志快照:\n{}", path.display()),
+                        content: t!("tui.log.exported", path = path.display()).into_owned(),
                         tool_block: None,
                     });
                 }
                 Err(err) => {
                     self.messages.push(ChatMessage {
                         role: MessageRole::Agent,
-                        content: format!("导出 CLI 日志失败: {}", err),
+                        content: t!("tui.log.export_failed", err = err).into_owned(),
                         tool_block: None,
                     });
                 }
@@ -622,17 +621,14 @@ impl TuiShell {
                 Ok(path) => {
                     self.messages.push(ChatMessage {
                         role: MessageRole::Agent,
-                        content: format!(
-                            "已导出：llm_history、完整 API 请求轨迹（含 tools 与 system）、system 全文:\n{}",
-                            path.display()
-                        ),
+                        content: t!("tui.log.session_exported", path = path.display()).into_owned(),
                         tool_block: None,
                     });
                 }
                 Err(err) => {
                     self.messages.push(ChatMessage {
                         role: MessageRole::Agent,
-                        content: format!("导出会话日志失败: {}", err),
+                        content: t!("tui.log.session_export_failed", err = err).into_owned(),
                         tool_block: None,
                     });
                 }
@@ -640,9 +636,7 @@ impl TuiShell {
             _ => {
                 self.messages.push(ChatMessage {
                     role: MessageRole::Agent,
-                    content:
-                        "用法: /log 打开当前 CLI 日志；/log export 导出当前 CLI 日志快照；/log session export 导出当前会话 LLM 侧完整历史。"
-                            .to_string(),
+                    content: t!("tui.log.usage").into_owned(),
                     tool_block: None,
                 });
             }
@@ -706,10 +700,13 @@ impl TuiShell {
                 };
                 self.switch_ui_locale(&normalized);
             }
-            _ => self.push_agent_message(format!(
-                "用法: /language [{}]",
-                locale::available_ui_locales_csv()
-            )),
+            _ => self.push_agent_message(
+                t!(
+                    "tui.language.usage",
+                    available = locale::available_ui_locales_csv()
+                )
+                .into_owned(),
+            ),
         }
     }
 
@@ -1017,7 +1014,7 @@ impl TuiShell {
             self.open_mcp_add_form();
             self.messages.push(ChatMessage {
                 role: MessageRole::Agent,
-                content: "已打开 MCP 添加表单。填写完成后按 Enter 保存，Esc 取消。".to_string(),
+                content: t!("tui.mcp.add_form_opened").into_owned(),
                 tool_block: None,
             });
             return;
@@ -1059,7 +1056,7 @@ impl TuiShell {
                 }
                 Err(err) => self.messages.push(ChatMessage {
                     role: MessageRole::Agent,
-                    content: format!("MCP inspect 失败: {}", err),
+                    content: t!("tui.mcp.inspect_failed", err = err).into_owned(),
                     tool_block: None,
                 }),
             }
@@ -1082,14 +1079,16 @@ impl TuiShell {
             match self.runtime.list_mcp_tools(&server) {
                 Ok(tools) if tools.is_empty() => self.messages.push(ChatMessage {
                     role: MessageRole::Agent,
-                    content: format!("MCP server {} 当前没有可见 tools。", server),
+                    content: t!("tui.mcp.tools_empty", server = server).into_owned(),
                     tool_block: None,
                 }),
                 Ok(tools) => {
                     let lines = tools
                         .into_iter()
                         .map(|tool| {
-                            let desc = tool.description.unwrap_or_else(|| "<无描述>".to_string());
+                            let desc = tool
+                                .description
+                                .unwrap_or_else(|| t!("tui.mcp.no_description").into_owned());
                             format!("- {}: {}", tool.name, desc)
                         })
                         .collect::<Vec<_>>()
@@ -1102,7 +1101,7 @@ impl TuiShell {
                 }
                 Err(err) => self.messages.push(ChatMessage {
                     role: MessageRole::Agent,
-                    content: format!("读取 MCP tools 失败: {}", err),
+                    content: t!("tui.mcp.tools_read_failed", err = err).into_owned(),
                     tool_block: None,
                 }),
             }
@@ -1125,7 +1124,7 @@ impl TuiShell {
             match self.runtime.list_mcp_resources(&server) {
                 Ok(resources) if resources.is_empty() => self.messages.push(ChatMessage {
                     role: MessageRole::Agent,
-                    content: format!("MCP server {} 当前没有可见 resources。", server),
+                    content: t!("tui.mcp.resources_empty", server = server).into_owned(),
                     tool_block: None,
                 }),
                 Ok(resources) => {
@@ -1142,7 +1141,7 @@ impl TuiShell {
                 }
                 Err(err) => self.messages.push(ChatMessage {
                     role: MessageRole::Agent,
-                    content: format!("读取 MCP resources 失败: {}", err),
+                    content: t!("tui.mcp.resources_read_failed", err = err).into_owned(),
                     tool_block: None,
                 }),
             }
@@ -1165,14 +1164,16 @@ impl TuiShell {
             match self.runtime.list_mcp_prompts(&server) {
                 Ok(prompts) if prompts.is_empty() => self.messages.push(ChatMessage {
                     role: MessageRole::Agent,
-                    content: format!("MCP server {} 当前没有可见 prompts。", server),
+                    content: t!("tui.mcp.prompts_empty", server = server).into_owned(),
                     tool_block: None,
                 }),
                 Ok(prompts) => {
                     let lines = prompts
                         .into_iter()
                         .map(|prompt| {
-                            let desc = prompt.description.unwrap_or_else(|| "<无描述>".to_string());
+                            let desc = prompt
+                                .description
+                                .unwrap_or_else(|| t!("tui.mcp.no_description").into_owned());
                             format!("- {}: {}", prompt.name, desc)
                         })
                         .collect::<Vec<_>>()
@@ -1185,7 +1186,7 @@ impl TuiShell {
                 }
                 Err(err) => self.messages.push(ChatMessage {
                     role: MessageRole::Agent,
-                    content: format!("读取 MCP prompts 失败: {}", err),
+                    content: t!("tui.mcp.prompts_read_failed", err = err).into_owned(),
                     tool_block: None,
                 }),
             }
@@ -1271,7 +1272,7 @@ impl TuiShell {
                 }
                 Err(err) => self.messages.push(ChatMessage {
                     role: MessageRole::Agent,
-                    content: format!("读取 MCP prompt 参数失败: {}", err),
+                    content: t!("tui.mcp.prompt_args_read_failed", err = err).into_owned(),
                     tool_block: None,
                 }),
             }
@@ -1294,7 +1295,7 @@ impl TuiShell {
                 Ok(()) => self.apply_runtime_events(),
                 Err(err) => self.messages.push(ChatMessage {
                     role: MessageRole::Agent,
-                    content: format!("执行 MCP tool 失败: {}", err),
+                    content: t!("tui.mcp.tool_call_failed", err = err).into_owned(),
                     tool_block: None,
                 }),
             }
@@ -1314,16 +1315,17 @@ impl TuiShell {
             match self.runtime.attach_mcp_resource(server, uri) {
                 Ok(label) => self.messages.push(ChatMessage {
                     role: MessageRole::Agent,
-                    content: format!(
-                        "已添加 MCP resource 到待发送上下文（{} 项）: {}",
-                        self.runtime.session().pending_mcp_resources().len(),
-                        label
-                    ),
+                    content: t!(
+                        "tui.mcp.resource_attached",
+                        count = self.runtime.session().pending_mcp_resources().len(),
+                        label = label
+                    )
+                    .into_owned(),
                     tool_block: None,
                 }),
                 Err(err) => self.messages.push(ChatMessage {
                     role: MessageRole::Agent,
-                    content: format!("附加 MCP resource 失败: {}", err),
+                    content: t!("tui.mcp.resource_attach_failed", err = err).into_owned(),
                     tool_block: None,
                 }),
             }
@@ -1334,7 +1336,7 @@ impl TuiShell {
             let cleared = self.runtime.clear_pending_mcp_resources();
             self.messages.push(ChatMessage {
                 role: MessageRole::Agent,
-                content: format!("已清空待发送 MCP resource 队列（{} 项）。", cleared),
+                content: t!("tui.mcp.resource_queue_cleared", count = cleared).into_owned(),
                 tool_block: None,
             });
             return;
@@ -1446,7 +1448,7 @@ fn format_extension_list_message(entries: &[CliExtensionEntry]) -> String {
         return t!("tui.extensions.list_empty").into_owned();
     }
 
-    let mut lines = vec!["扩展列表:".to_string()];
+    let mut lines = vec![t!("tui.extensions.list_header").into_owned()];
     for entry in entries {
         lines.push(format!("- {}", entry.display_name));
         lines.push(format!("  id: {}", entry.id));

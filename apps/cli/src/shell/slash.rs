@@ -341,15 +341,15 @@ fn prompt_suggestion(command: PromptSlashCommand) -> InputSuggestion {
             if prompt.arguments.is_empty() {
                 "MCP prompt".to_string()
             } else {
-                format!("{} 个参数", prompt.arguments.len())
+                t!("tui.slash.prompt_args_count", count = prompt.arguments.len()).into_owned()
             }
         });
 
     let mut details = vec![format!("server: {}", server)];
     if !required_args.is_empty() {
-        details.push(format!("必填参数: {}", required_args.join(", ")));
+        details.push(t!("tui.slash.prompt_required_args", args = required_args.join(", ")).into_owned());
     } else if !prompt.arguments.is_empty() {
-        details.push(format!("可选参数: {} 个", prompt.arguments.len()));
+        details.push(t!("tui.slash.prompt_optional_args", count = prompt.arguments.len()).into_owned());
     }
 
     InputSuggestion {
@@ -374,7 +374,7 @@ fn command_visible(shell: &TuiShell, command: &str) -> bool {
 
 pub(crate) fn help_text(has_active_plan: bool, can_continue_last_turn: bool) -> String {
     let mut lines = vec![
-        "可用指令:".to_string(),
+        t!("tui.help.available_commands").into_owned(),
         "- /help".to_string(),
         "- /clear".to_string(),
         "- /new".to_string(),
@@ -409,15 +409,15 @@ pub(crate) fn help_text(has_active_plan: bool, can_continue_last_turn: bool) -> 
         "- /rules".to_string(),
         "- /skills".to_string(),
         "- /extensions [list|import <zip>|remove <id>|marketplace [query]]".to_string(),
-        "- /<skill-name> [补充说明]".to_string(),
-        "- /log（或 /log export、/log session export）".to_string(),
+        t!("tui.help.skill_usage").into_owned(),
+        t!("tui.help.log_variants").into_owned(),
         format!("- /language [{}]", locale::available_ui_locales_csv()),
         "".to_string(),
-        "说明:".to_string(),
+        t!("tui.help.notes_header").into_owned(),
     ]);
 
     if can_continue_last_turn {
-        lines.push("- /continue 会继续上一轮被显式中止的 assistant 回复。".to_string());
+        lines.push(t!("tui.help.continue").into_owned());
     }
 
     lines.extend([
@@ -425,29 +425,29 @@ pub(crate) fn help_text(has_active_plan: bool, can_continue_last_turn: bool) -> 
         t!("tui.session.help.rewind").into_owned(),
         t!("tui.session.help.fork").into_owned(),
         t!("tui.loop.help").into_owned(),
-        "- /subagents 打开当前会话里的 SubAgent 列表；回车可进入只读子会话视图，Esc 返回主会话。".to_string(),
-        "- /image pick 打开当前目录图片选择器。".to_string(),
-        "- /image 不带 prompt 时会把图片加入待发送队列。".to_string(),
-        "- 输入 @<文件名> 会打开工作区文件引用建议，回车后会把选中文件写回输入框，格式为 @路径 加一个空格。".to_string(),
-        "- /mcp add 打开底部表单，用于填写 server 名称、保存位置（用户 / 工作区 `.spirit`）、类型、命令或 URL（Enter 保存，Esc 取消）。".to_string(),
-        "- /hooks add 打开底部表单，用于添加 Agent Hook（Enter 保存，Esc 取消）。".to_string(),
-        "- /model add 打开底部表单：选提供商与添加方式、填写端点与 API Key；提交后将请求上游 /models（预设为批量导入全部 id，自定义可选单条）；也可一行 /model add <name> <api_base> <api_key>；成功后会切换当前模型。".to_string(),
-        "- MCP prompt 会以一级 slash 命令暴露，例如 /github_issue_to_fix_workflow；若尾部是合法 JSON object，会直接作为 prompt 参数，其他文本会作为附加用户消息发给 LLM。".to_string(),
-        "- 省略尾部且 prompt 定义了参数时，会自动打开参数表单；表单最后一栏可填写附加说明。".to_string(),
-        "- /rules 打开可滚动的规则启用清单；Enter 切换当前规则，Esc 保存并关闭，鼠标滚轮可浏览长内容。".to_string(),
-        "- /skills 打开可滚动的技能启用清单；Enter 切换当前技能，Esc 保存并关闭，鼠标滚轮可浏览长内容。".to_string(),
-        "- /extensions 不带参数时会打开已安装扩展面板；/extensions marketplace 会进入极简 marketplace flow：先用 slash 选择扩展，再进入“概述 + README + 底部动作 slash”页面，Enter 前进、Esc 返回；支持用 query 作为初始过滤。/extensions list 会输出当前已安装扩展，/extensions import <zip> 导入 ZIP，/extensions remove <id> 删除扩展；面板里的启用/禁用切换暂未实现。".to_string(),
-        "- 已启用的 skill 会直接作为一级 slash 命令暴露，例如 /llm-debug；尾部文本会作为本轮附加说明，skill 正文会作为独立 system prompt 状态注入，不会伪装成模型自行读文件。".to_string(),
-        "- /mcp tools、/mcp resources、/mcp prompts 在只有一个 server 时可省略 server。".to_string(),
-        "- /log 默认打开当前 CLI 日志；/log export 导出当前 CLI 日志快照；/log session export 导出 LLM 会话全文与请求轨迹。".to_string(),
-        "- /language 不带参数时打开语言选择菜单。".to_string(),
-        "- /approval 不带参数时打开审批级别选择菜单。".to_string(),
-        "- /networks 不带参数时打开 LLM HTTP 版本选择菜单。".to_string(),
+        t!("tui.help.subagents").into_owned(),
+        t!("tui.help.image_pick").into_owned(),
+        t!("tui.help.image_queue").into_owned(),
+        t!("tui.help.file_reference").into_owned(),
+        t!("tui.help.mcp_add").into_owned(),
+        t!("tui.help.hooks_add").into_owned(),
+        t!("tui.help.model_add").into_owned(),
+        t!("tui.help.mcp_prompt_alias").into_owned(),
+        t!("tui.help.mcp_prompt_form").into_owned(),
+        t!("tui.help.rules").into_owned(),
+        t!("tui.help.skills").into_owned(),
+        t!("tui.help.extensions").into_owned(),
+        t!("tui.help.skill_alias").into_owned(),
+        t!("tui.help.mcp_server_optional").into_owned(),
+        t!("tui.help.log").into_owned(),
+        t!("tui.help.language").into_owned(),
+        t!("tui.help.approval").into_owned(),
+        t!("tui.help.networks").into_owned(),
         t!("tui.tui.help").into_owned(),
-        "- 鼠标默认开启：滚轮浏览历史；在 Conversation 内拖拽选区，Ctrl+Shift+C 或右键复制后会清除反色选区。".to_string(),
-        "- Ctrl+O 切换辅助细节的显示/隐藏：包括思考内容、压缩摘要以及工具结果细节；已完成回复的辅助细节也会保留，失败与待确认工具保持展开。".to_string(),
+        t!("tui.help.mouse").into_owned(),
+        t!("tui.help.ctrl_o").into_owned(),
         "".to_string(),
-        "API Key 来源优先级: SPIRIT_API_KEY > 模型专属 keyring > 全局 keyring。".to_string(),
+        t!("tui.help.api_key_priority").into_owned(),
     ]);
 
     lines.join("\n")
@@ -465,7 +465,7 @@ pub(crate) fn handle_command(shell: &mut TuiShell, message: &str) {
 
     match cmd {
         "/quit" | "/exit" => {
-            shell.push_agent_message("收到，Spirit Agent 即将退出。");
+            shell.push_agent_message(t!("tui.quit.message").into_owned());
             shell.request_quit();
         }
         "/help" => shell.push_agent_message(help_text(
@@ -537,15 +537,15 @@ mod tests {
 
         assert!(help.contains("/mcp add"));
         assert!(help.contains("/model add"));
-        assert!(help.contains("底部表单"));
+        assert!(help.contains(t!("tui.help.mcp_add").as_ref()));
         assert!(help.contains("/rules"));
         assert!(help.contains("/skills"));
         assert!(help.contains("/extensions"));
         assert!(help.contains("/tui"));
-        assert!(help.contains("概述 + README + 底部动作 slash"));
-        assert!(help.contains("/<skill-name> [补充说明]"));
-        assert!(help.contains("Enter 保存"));
-        assert!(help.contains("@<文件名>"));
+        assert!(help.contains(t!("tui.help.extensions").as_ref()));
+        assert!(help.contains(t!("tui.help.skill_usage").as_ref()));
+        assert!(help.contains(t!("tui.help.hooks_add").as_ref()));
+        assert!(help.contains(t!("tui.help.file_reference").as_ref()));
     }
 
     #[test]

@@ -246,7 +246,7 @@ impl TuiShell {
                     Err(err) => {
                         self.messages.push(ChatMessage {
                             role: MessageRole::Agent,
-                            content: format!("读取子会话状态失败: {}", err),
+                            content: t!("tui.subagents.status_read_failed", err = err).into_owned(),
                             tool_block: None,
                         });
                         None
@@ -263,14 +263,14 @@ impl TuiShell {
             Ok(None) => {
                 self.messages.push(ChatMessage {
                     role: MessageRole::Agent,
-                    content: format!("未找到子会话: {}", session_id),
+                    content: t!("tui.subagents.not_found", session_id = session_id).into_owned(),
                     tool_block: None,
                 });
             }
             Err(err) => {
                 self.messages.push(ChatMessage {
                     role: MessageRole::Agent,
-                    content: format!("读取子会话失败: {}", err),
+                    content: t!("tui.subagents.read_failed", err = err).into_owned(),
                     tool_block: None,
                 });
             }
@@ -295,7 +295,8 @@ impl TuiShell {
                     Err(err) => {
                         self.messages.push(ChatMessage {
                             role: MessageRole::Agent,
-                            content: format!("刷新子会话状态失败: {}", err),
+                            content: t!("tui.subagents.status_refresh_failed", err = err)
+                                .into_owned(),
                             tool_block: None,
                         });
                         None
@@ -314,7 +315,7 @@ impl TuiShell {
             Err(err) => {
                 self.messages.push(ChatMessage {
                     role: MessageRole::Agent,
-                    content: format!("刷新子会话失败: {}", err),
+                    content: t!("tui.subagents.refresh_failed", err = err).into_owned(),
                     tool_block: None,
                 });
                 self.close_subagent_view();
