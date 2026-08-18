@@ -20,7 +20,7 @@ function terminalCssVar(name: string): string {
   return getComputedStyle(document.documentElement).getPropertyValue(name).trim();
 }
 
-/** 主题色取自 index.css 的 --terminal-* 变量（深浅双色），随 html.dark 切换。 */
+/** Theme colors come from the --terminal-* variables in index.css (light/dark variants), switched via html.dark. */
 function terminalTheme(): ITheme {
   return {
     background: terminalCssVar("--terminal-bg"),
@@ -181,7 +181,7 @@ export function WorkspaceShellTab({ workspaceRoot }: WorkspaceShellTabProps) {
     terminal.open(element);
     fitAddon.fit();
 
-    // 系统主题切换（html.dark 翻转）时重取 --terminal-* 变量
+    // Re-read the --terminal-* variables when the system theme flips (html.dark toggle)
     const themeObserver = new MutationObserver(() => {
       terminal.options.theme = terminalTheme();
     });

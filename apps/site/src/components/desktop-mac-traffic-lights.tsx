@@ -4,7 +4,7 @@ type DesktopMacTrafficLightsProps = {
   className?: string;
 };
 
-/** Landing 预览用 macOS 红绿灯装饰（对齐 Desktop hiddenInset 顶栏安全区）。 */
+/** macOS traffic-light decoration for the Landing preview (aligned with the Desktop hiddenInset top-bar safe area). */
 export function DesktopMacTrafficLights({ className }: DesktopMacTrafficLightsProps) {
   return (
     <div

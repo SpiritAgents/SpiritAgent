@@ -69,7 +69,7 @@ import { shortcutLabel } from "@/lib/desktop-shell";
 import i18n from "@/lib/desktop-preview-i18n";
 import type { SessionListItem } from "@/types/spirit-desktop";
 
-/** 平台快捷键提示，模块加载时计算（平台不会运行时变化）。 */
+/** Platform shortcut hint, computed at module load (the platform never changes at runtime). */
 const newSessionShortcutLabel = shortcutLabel("N");
 
 function samePath(a: string, b: string): boolean {
@@ -78,10 +78,10 @@ function samePath(a: string, b: string): boolean {
 
 type SessionSidebarProps = {
   className?: string;
-  /** 窄轨：只换样式/折叠列表，不切换整棵子树，避免与外层 width 动画错拍 */
+  /** Narrow rail: only restyle/collapse the list without swapping the whole subtree, to avoid desyncing from the outer width animation */
   narrow: boolean;
   mode?: "sessions" | "settings";
-  /** 用户主目录，用于将主目录会话划入「无工作区」区。 */
+  /** User home directory, used to group home-directory sessions into the "No workspace" section. */
   userHomeDirectory?: string | null;
   sessions: SessionListItem[];
   activeFilePath: string | null;
@@ -101,7 +101,7 @@ type SessionSidebarProps = {
   }>;
   onSettingsTabChange?: (tab: SettingsSidebarTab) => void;
   onExtensionSettingsChange?: (extensionId: string) => void;
-  /** Windows 云母：侧栏需半透明+blur，避免透出窗后内容发花 */
+  /** Windows Mica: the sidebar needs translucency + blur so content behind the window does not bleed through and smear */
   translucency?: boolean;
   newSessionBusy?: boolean;
   sessionNavigationBusy?: boolean;
@@ -110,7 +110,7 @@ type SessionSidebarProps = {
   deleteWorkspaceBusy?: boolean;
   onDeleteWorkspace?: (workspacePath: string) => void | Promise<void>;
   disabled?: boolean;
-  /** 后台会话完成后、用户尚未打开前显示蓝色圆点。 */
+  /** Blue dot shown when a background session has finished and the user has not opened it yet. */
   unseenCompletedSessionPaths?: ReadonlySet<string>;
 };
 
@@ -648,7 +648,7 @@ function WorkspaceListNav({
 const sidebarInteractionMotionClass =
   "!transition-[opacity,transform,box-shadow] duration-150 active:!translate-y-0";
 
-/** 侧栏交互项默认字色/图标色；hover 与选中回到 sidebar-foreground */
+/** Default text/icon color for sidebar interactive items; hover and selected states return to sidebar-foreground */
 const sidebarItemDefaultTextClass = "text-sidebar-action-foreground";
 
 const sidebarItemActiveTextClass = "!text-sidebar-foreground";
@@ -662,7 +662,7 @@ const sidebarSessionListHoverClass = sidebarMenuHoverClass;
 
 const sidebarSelectedHoverClass = cn("hover:!bg-secondary hover:!text-sidebar-foreground");
 
-/** translucency 透明壳：选中/悬停使用半透明铺底，避免实心 secondary 挡住系统材质 */
+/** Translucency transparent shell: selected/hover use a translucent fill so a solid secondary does not block the system material */
 const sidebarTranslucencyMenuHoverClass = cn(
   "hover:!bg-foreground/[0.06] focus-visible:!bg-foreground/[0.06] dark:hover:!bg-white/[0.06]",
   "hover:!text-sidebar-foreground focus-visible:!text-sidebar-foreground",

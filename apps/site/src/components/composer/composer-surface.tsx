@@ -162,7 +162,7 @@ export function ComposerSurface({
             !e.shiftKey &&
             !e.ctrlKey &&
             !e.metaKey &&
-            // React synthetic event 的 isComposing 不可靠，必须用 nativeEvent 检测 IME 组合态
+            // React synthetic event isComposing is unreliable; must check the IME composition state via nativeEvent
             !e.nativeEvent.isComposing
           ) {
             e.preventDefault();

@@ -12,7 +12,7 @@ import type {
 
 const METADATA_PROVIDERS = new Set<DesktopModelProvider>(["vercel-ai-gateway", "openrouter"]);
 
-/** 与 host-internal `normalizeOpenAiApiBase` 一致；勿从 host-internal 导入以免 renderer 拉入 node:fs。 */
+/** Matches host-internal `normalizeOpenAiApiBase`; do not import from host-internal or the renderer would pull in node:fs. */
 function normalizeOpenAiApiBase(baseUrl: string): string {
   return baseUrl.trim().replace(/\/+$/, "");
 }
@@ -112,7 +112,7 @@ export function buildModelCatalogDetailMap(
   return detailByModelName;
 }
 
-/** Gateway/OpenRouter：上游 `name` → catalog `displayName`；其余或未命中时回退 model.name（id）。 */
+/** Gateway/OpenRouter: upstream `name` → catalog `displayName`; falls back to model.name (id) otherwise or when there is no match. */
 export function buildModelCatalogDisplayTitleMap(
   models: readonly ModelProfileSnapshot[],
   hints: readonly DesktopModelCatalogHint[] | undefined,

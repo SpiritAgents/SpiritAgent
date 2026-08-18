@@ -11,8 +11,9 @@ type SpiritGlassLogoProps = {
 };
 
 /**
- * Landing 预览用玻璃 Logo。配色走 --spirit-glass-* CSS 变量（index.css 深浅双色）：
- * 深色为白色 alpha 玻璃，浅色反转为黑色 alpha 玻璃，否则白底上完全不可见。
+ * Glass Logo for the Landing preview. Colors come from the --spirit-glass-* CSS variables
+ * (index.css, light/dark variants): white-alpha glass in dark mode, inverted to
+ * black-alpha glass in light mode — otherwise it is invisible on a white background.
  */
 export function SpiritGlassLogo({ className, shimmer = false }: SpiritGlassLogoProps) {
   const uid = useId().replace(/:/g, "");

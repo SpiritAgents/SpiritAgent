@@ -32,7 +32,7 @@ async function getHighlighter(): Promise<HighlighterCore> {
 
 export async function highlightLandingTypeScript(code: string): Promise<string> {
   const highlighter = await getHighlighter();
-  // 双主题输出 --shiki-light/--shiki-dark 变量，由 index.css 按 html.dark 切换
+  // Dual-theme output emits --shiki-light/--shiki-dark variables, switched by html.dark in index.css
   return highlighter.codeToHtml(code, {
     lang: "typescript",
     themes: {

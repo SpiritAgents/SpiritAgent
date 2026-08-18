@@ -70,7 +70,7 @@
   --site-muted: rgb(0 0 0 / 50%);
   --dialog-panel-border: color-mix(in oklab, var(--border) 40%, transparent);
   --git-action-split: oklch(0.58 0 0);
-  /* 玻璃 Logo：浅色为黑色 alpha 玻璃（白底上白色 alpha 不可见） */
+  /* Glass Logo: black-alpha glass in light mode (white alpha is invisible on a white background) */
   --spirit-glass-fill-0: rgba(0, 0, 0, 0.06);
   --spirit-glass-fill-40: rgba(0, 0, 0, 0.018);
   --spirit-glass-fill-100: rgba(15, 25, 50, 0.012);
@@ -533,7 +533,7 @@ body {
   line-height: 1.35;
 }
 
-/* Landing 代码演示：shiki 双主题 token（wrapper 已剥离，作用在 data-code-part 内的 span 上） */
+/* Landing code demo: shiki dual-theme tokens (wrapper stripped; applies to spans inside data-code-part) */
 [data-code-part] span {
   color: var(--shiki-light);
   font-style: var(--shiki-light-font-style);
@@ -548,13 +548,13 @@ body {
   text-decoration: var(--shiki-dark-text-decoration);
 }
 
-/* Landing 预览：macOS hiddenInset 顶栏安全区（对齐 Desktop `spirit-desktop-darwin`） */
+/* Landing preview: macOS hiddenInset top-bar safe area (aligned with Desktop `spirit-desktop-darwin`) */
 [data-spirit-preview-shell="darwin"] {
   --spirit-macos-titlebar-inset: 2rem;
   --spirit-macos-traffic-lights-inset-left: 4.875rem;
 }
 
-/* Void 暗色正文：仅深色下 Agent Window 内生效，浅色沿用 :root 的 #2b2b2b */
+/* Void dark body text: applies inside the Agent Window in dark mode only; light mode keeps :root #2b2b2b */
 .dark [data-spirit-preview-shell="darwin"] {
   --foreground: #e4e4e4;
 }
@@ -617,7 +617,7 @@ body {
   background: var(--background);
 }
 
-/* Docs 区卡片深色沿用纯黑（全站 dark --card 为 #090909，Docs 历史上更暗一档） */
+/* Docs section cards keep pure black in dark mode (site-wide dark --card is #090909; Docs has historically been one step darker) */
 .dark [data-docs-layout] {
   --card: #000000;
 }

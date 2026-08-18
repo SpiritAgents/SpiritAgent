@@ -37,7 +37,8 @@ const externalIconLinkClassName =
   "inline-flex rounded-md p-0.5 text-foreground/50 outline-none transition-colors hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring/50 focus-visible:ring-offset-2 focus-visible:ring-offset-background";
 
 /**
- * 全站底栏：分区制。区名句首大写、text-sm、muted；链默认正文色，Hover 到 muted。
+ * Site-wide footer: sectioned layout. Section titles are sentence-case, text-sm, muted;
+ * links default to the body color and shift to muted on hover.
  */
 export function SiteFooter() {
   const year = new Date().getFullYear();
