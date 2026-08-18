@@ -173,7 +173,8 @@ export function truncateOneLineForDebug(s: string, max: number): string {
   return `${t.slice(0, max)}…`;
 }
 
-const SHELL_REASON_PREFIX = i18n.t("tool.reasonPrefix");
+// The shell approval prompt is emitted in English by host-internal; match the fixed label.
+const SHELL_REASON_PREFIX = "Reason:";
 
 export function reasonForShellTool(toolName: string, request: unknown): string | undefined {
   if (toolName !== "shell" || !request || typeof request !== "object") {

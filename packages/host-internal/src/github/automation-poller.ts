@@ -112,7 +112,8 @@ export function mergeGitHubPollWatermarkUpdates(
   const updates = new Map<string, number>();
   for (const match of matches) {
     const current = updates.get(match.automationId);
-    // 水位按已消费事件的 issue 编号推进；nextLastSeenNumber 是本批候选的最大号，不能用于部分消费。
+    // The watermark advances by the issue number of consumed events; nextLastSeenNumber is the
+    // highest number among this batch's candidates and must not be used for partial consumption.
     if (current === undefined || match.item.number > current) {
       updates.set(match.automationId, match.item.number);
     }

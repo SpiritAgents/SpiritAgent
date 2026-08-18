@@ -222,16 +222,16 @@ export interface HostExtensionSecretSlot {
 export interface HostExtensionManifest {
   schemaVersion: number;
   id: string;
-  /** 用户可见扩展名，来自 package.json 中的 spiritExtension.displayName。 */
+  /** User-visible extension name, from spiritExtension.displayName in package.json. */
   name: string;
-  /** 扩展图标，相对 package 根目录的文件路径，来自 package.json 中的 spiritExtension.icon。 */
+  /** Extension icon: file path relative to the package root, from spiritExtension.icon in package.json. */
   icon?: string;
   version: string;
   description?: string;
   author?: string;
   homepage?: string;
   main?: string;
-  /** 声明可安装的宿主（cli / desktop）。 */
+  /** Hosts the extension declares it can be installed on (cli / desktop). */
   supportedHosts: ExtensionHostKind[];
   activationEvents?: HostExtensionActivationEventName[];
   requestedCapabilities?: HostExtensionRequestedCapability[];
@@ -565,9 +565,9 @@ function assertExtensionImportAllowedForHost(
     cli: "CLI",
     desktop: "Desktop",
   };
-  const listed = allowed.map((entry) => hostLabel[entry] ?? entry).join("、");
+  const listed = allowed.map((entry) => hostLabel[entry] ?? entry).join(", ");
   throw new Error(
-    `此扩展不支持在当前宿主安装：当前为 ${hostLabel[hostKind]}，扩展仅支持 ${listed}。`,
+    `This extension cannot be installed on the current host: current host is ${hostLabel[hostKind]}, but the extension only supports ${listed}.`,
   );
 }
 
@@ -580,7 +580,7 @@ export async function importExtensionArchive(
 
   const archiveBuffer = Buffer.from(request.archiveBase64, "base64");
   if (archiveBuffer.length === 0) {
-    throw new Error("扩展 ZIP 内容为空。");
+    throw new Error("The extension ZIP is empty.");
   }
 
   const extracted = unzipSync(new Uint8Array(archiveBuffer));
@@ -603,7 +603,7 @@ export async function importExtensionArchive(
       const archivePath = manifestRoot ? `${manifestRoot}/${normalized}` : normalized;
       const content = normalizedExtracted.get(archivePath);
       if (!content) {
-        throw new Error(`扩展 ${fieldName} 指向的文件不存在：${relativePath}`);
+        throw new Error(`The file referenced by extension ${fieldName} does not exist: ${relativePath}`);
       }
       return Buffer.from(content).toString("utf8");
     },
@@ -629,7 +629,7 @@ export async function importExtensionArchive(
     if (manifest.main) {
       const mainFilePath = path.join(stagingDirectory, ...manifest.main.split("/"));
       if (!existsSync(mainFilePath)) {
-        throw new Error(`扩展 main 文件不存在：${manifest.main}`);
+        throw new Error(`The extension main file does not exist: ${manifest.main}`);
       }
     }
 
@@ -649,7 +649,7 @@ export async function readPreparedExtensionManifestDirectory(
 ): Promise<HostExtensionManifest> {
   const manifestPath = path.join(preparedDirectoryPath, EXTENSION_MANIFEST_FILE_NAME);
   if (!existsSync(manifestPath)) {
-    throw new Error(`预安装扩展目录缺少 ${EXTENSION_MANIFEST_FILE_NAME}。`);
+    throw new Error(`The prepared extension directory is missing ${EXTENSION_MANIFEST_FILE_NAME}.`);
   }
   return readExtensionManifestFile(manifestPath);
 }
@@ -660,7 +660,7 @@ export async function installPreparedExtensionDirectory(
 ): Promise<HostInstalledExtension> {
   const preparedDirectoryPath = request.preparedDirectoryPath.trim();
   if (!preparedDirectoryPath) {
-    throw new Error("预安装扩展目录不能为空。");
+    throw new Error("The prepared extension directory must not be empty.");
   }
 
   const paths = resolveExtensionPaths(context);
@@ -674,13 +674,13 @@ export async function installPreparedExtensionDirectory(
   const registryEntries = await loadExtensionRegistry(paths.extensionsIndexFile);
   const replaceExisting = request.replaceExisting === true;
   if (!replaceExisting && (existsSync(targetDirectory) || registryEntries.has(manifest.id))) {
-    throw new Error(`扩展已存在，请先删除后再导入：${manifest.id}`);
+    throw new Error(`The extension already exists; remove it before importing: ${manifest.id}`);
   }
 
   if (manifest.main) {
     const mainFilePath = path.join(preparedDirectoryPath, ...manifest.main.split("/"));
     if (!existsSync(mainFilePath)) {
-      throw new Error(`扩展 main 文件不存在：${manifest.main}`);
+      throw new Error(`The extension main file does not exist: ${manifest.main}`);
     }
   }
 
@@ -755,7 +755,7 @@ export async function removeInstalledExtension(
 ): Promise<void> {
   const normalizedId = id.trim();
   if (!normalizedId) {
-    throw new Error("扩展 id 不能为空。");
+    throw new Error("The extension id must not be empty.");
   }
 
   const paths = resolveExtensionPaths(context);
@@ -763,10 +763,10 @@ export async function removeInstalledExtension(
   const installed = await listInstalledExtensions(context);
   const target = installed.find((item) => item.id === normalizedId);
   if (!target) {
-    throw new Error(`未找到扩展：${normalizedId}`);
+    throw new Error(`Extension not found: ${normalizedId}`);
   }
 
-  // 先写墓碑再删安装产物：避免删完后写状态失败导致下次启动回种。
+  // Write the tombstone before deleting install artifacts, so a state-write failure after deletion cannot cause re-seeding on next launch.
   if (target.installSource === "built-in" || isBuiltInExtensionId(normalizedId)) {
     await noteBuiltInExtensionRemoved(context.spiritDataDir, normalizedId);
   }
@@ -788,7 +788,7 @@ export async function runInstalledExtension<THostApi>(
 ): Promise<void> {
   const normalizedId = request.id.trim();
   if (!normalizedId) {
-    throw new Error("扩展 id 不能为空。");
+    throw new Error("The extension id must not be empty.");
   }
 
   const target = await requireInstalledExtension(context, normalizedId);
@@ -826,10 +826,10 @@ export async function invokeExtensionTool<THostApi>(
   const target = await requireInstalledExtension(context, request.extensionId);
   const tool = target.manifest.contributes?.tools?.find((item) => item.name === request.toolName);
   if (!tool) {
-    throw new Error(`扩展未声明工具：${request.toolName}`);
+    throw new Error(`The extension does not declare the tool: ${request.toolName}`);
   }
   if (!target.manifest.requestedCapabilities?.includes("tool-execution")) {
-    throw new Error(`扩展未声明 tool-execution capability：${target.id}`);
+    throw new Error(`The extension does not declare the tool-execution capability: ${target.id}`);
   }
 
   const entry = await ensureActivatedExtension(target, activatedExtensions, stateStore, {
@@ -892,13 +892,13 @@ export async function saveExtensionSecretValue(
   const extension = await requireInstalledExtension(context, request.id);
   const secretKey = request.key.trim();
   if (!extension.manifest.secretSlots?.some((slot) => slot.key === secretKey)) {
-    throw new Error(`扩展未声明 secret slot：${secretKey}`);
+    throw new Error(`The extension does not declare the secret slot: ${secretKey}`);
   }
 
   const nextValue = request.value?.trim();
   if (nextValue) {
     if (!stateStore.saveSecret) {
-      throw new Error(`当前宿主未实现扩展 secret 存储：${extension.id}`);
+      throw new Error(`The current host does not implement extension secret storage: ${extension.id}`);
     }
     await stateStore.saveSecret(extension.id, secretKey, nextValue);
   } else if (stateStore.deleteSecret) {
@@ -947,7 +947,7 @@ export async function dispatchExtensionEvent<THostApi>(
     } catch (error) {
       request.logger?.error(`[extension:${extension.id}] event failed`, error);
       throw new Error(
-        `扩展事件执行失败：${extension.manifest.name} (${error instanceof Error ? error.message : String(error)})`,
+        `Extension event execution failed: ${extension.manifest.name} (${error instanceof Error ? error.message : String(error)})`,
         { cause: error },
       );
     }
@@ -1017,12 +1017,12 @@ async function ensureActivatedExtension<THostApi>(
 
   const mainEntry = target.manifest.main;
   if (!mainEntry) {
-    throw new Error(`扩展未声明 main，当前无法执行：${target.id}`);
+    throw new Error(`The extension does not declare main and cannot execute: ${target.id}`);
   }
 
   const mainFilePath = path.join(target.directoryPath, ...mainEntry.split("/"));
   if (!existsSync(mainFilePath)) {
-    throw new Error(`扩展 main 文件不存在：${mainEntry}`);
+    throw new Error(`The extension main file does not exist: ${mainEntry}`);
   }
 
   const runtimeInfo = createRuntimeInfo(target);
@@ -1074,7 +1074,7 @@ async function invokeActivatedExtensionTool<THostApi>(
 ): Promise<unknown> {
   const activated = entry.activatedExtension;
   if (!activated) {
-    throw new Error(`扩展未返回可调用实例：${entry.runtimeInfo.name}`);
+    throw new Error(`The extension did not return a callable instance: ${entry.runtimeInfo.name}`);
   }
 
   const toolContext: HostExtensionToolExecutionContext<THostApi> = {
@@ -1098,7 +1098,7 @@ async function invokeActivatedExtensionTool<THostApi>(
 
   const toolHandler = resolveToolHandler(activated.tools, request.toolName);
   if (!toolHandler) {
-    throw new Error(`扩展未导出工具处理器：${request.toolName}`);
+    throw new Error(`The extension does not export a tool handler: ${request.toolName}`);
   }
   return toolHandler(toolContext);
 }
@@ -1179,7 +1179,7 @@ function createSecretsAccessor(
     async set(key, value) {
       assertSecretSlot(extension.manifest, key);
       if (!stateStore.saveSecret) {
-        throw new Error(`当前宿主未实现扩展 secret 存储：${extension.id}`);
+        throw new Error(`The current host does not implement extension secret storage: ${extension.id}`);
       }
       await stateStore.saveSecret(extension.id, key, value);
     },
@@ -1206,7 +1206,7 @@ async function hasExtensionSecret(
 
 function assertSecretSlot(manifest: HostExtensionManifest, key: string): void {
   if (!manifest.secretSlots?.some((slot) => slot.key === key)) {
-    throw new Error(`扩展未声明 secret slot：${key}`);
+    throw new Error(`The extension does not declare the secret slot: ${key}`);
   }
 }
 
@@ -1216,13 +1216,13 @@ async function requireInstalledExtension(
 ): Promise<HostInstalledExtension> {
   const normalizedId = id.trim();
   if (!normalizedId) {
-    throw new Error("扩展 id 不能为空。");
+    throw new Error("The extension id must not be empty.");
   }
 
   const installed = await listInstalledExtensions(context);
   const target = installed.find((item) => item.id === normalizedId);
   if (!target) {
-    throw new Error(`未找到扩展：${normalizedId}`);
+    throw new Error(`Extension not found: ${normalizedId}`);
   }
   return target;
 }
@@ -1277,12 +1277,12 @@ function mergeSettingsValues(
   for (const [key, rawValue] of Object.entries(incomingValues)) {
     const definition = definitions.get(key);
     if (!definition) {
-      throw new Error(`扩展未声明设置项：${key}`);
+      throw new Error(`The extension does not declare the setting: ${key}`);
     }
 
     if (rawValue === null) {
       if (definition.required && definition.defaultValue === undefined) {
-        throw new Error(`扩展设置 ${key} 为必填，不能清空。`);
+        throw new Error(`Extension setting ${key} is required and cannot be cleared.`);
       }
       delete merged[key];
       continue;
@@ -1303,40 +1303,40 @@ function validateSettingValue(
     if (allowNull) {
       return value;
     }
-    throw new Error(`扩展设置 ${definition.key} 不能为空。`);
+    throw new Error(`Extension setting ${definition.key} must not be empty.`);
   }
 
   if (definition.type === "string") {
     if (typeof value !== "string") {
-      throw new Error(`扩展设置 ${definition.key} 必须是字符串。`);
+      throw new Error(`Extension setting ${definition.key} must be a string.`);
     }
     if (definition.required && value.trim().length === 0) {
-      throw new Error(`扩展设置 ${definition.key} 不能为空。`);
+      throw new Error(`Extension setting ${definition.key} must not be empty.`);
     }
     return value;
   }
 
   if (definition.type === "boolean") {
     if (typeof value !== "boolean") {
-      throw new Error(`扩展设置 ${definition.key} 必须是布尔值。`);
+      throw new Error(`Extension setting ${definition.key} must be a boolean.`);
     }
     return value;
   }
 
   if (definition.type === "number") {
     if (typeof value !== "number" || !Number.isFinite(value)) {
-      throw new Error(`扩展设置 ${definition.key} 必须是数字。`);
+      throw new Error(`Extension setting ${definition.key} must be a number.`);
     }
     return value;
   }
 
   if (typeof value !== "string") {
-    throw new Error(`扩展设置 ${definition.key} 必须是字符串。`);
+    throw new Error(`Extension setting ${definition.key} must be a string.`);
   }
 
   const options = definition.options?.map((option) => option.value) ?? [];
   if (options.length > 0 && !options.includes(value)) {
-    throw new Error(`扩展设置 ${definition.key} 取值非法：${value}`);
+    throw new Error(`Extension setting ${definition.key} has an invalid value: ${value}`);
   }
   return value;
 }
@@ -1483,7 +1483,7 @@ async function readExtensionManifestFile(filePath: string): Promise<HostExtensio
       try {
         return await readFile(targetPath, "utf8");
       } catch {
-        throw new Error(`扩展 ${fieldName} 指向的文件不存在：${relativePath}`);
+        throw new Error(`The file referenced by extension ${fieldName} does not exist: ${relativePath}`);
       }
     },
   });
@@ -1497,11 +1497,11 @@ async function parseExtensionManifest(
   try {
     parsed = JSON.parse(raw);
   } catch {
-    throw new Error("扩展 package.json 不是合法 JSON。");
+    throw new Error("The extension package.json is not valid JSON.");
   }
 
   if (!isRecord(parsed)) {
-    throw new Error("扩展 package.json 必须是 JSON object。");
+    throw new Error("The extension package.json must be a JSON object.");
   }
 
   const spiritExtension = requiredSpiritExtensionField(parsed[SPIRIT_EXTENSION_FIELD_NAME]);
@@ -1511,7 +1511,7 @@ async function parseExtensionManifest(
       : numberField(spiritExtension.schemaVersion, `${SPIRIT_EXTENSION_FIELD_NAME}.schemaVersion`);
   if (schemaVersion !== EXTENSION_SCHEMA_VERSION) {
     throw new Error(
-      `仅支持 ${SPIRIT_EXTENSION_FIELD_NAME}.schemaVersion=${EXTENSION_SCHEMA_VERSION} 的扩展 package.json。`,
+      `Only extension package.json with ${SPIRIT_EXTENSION_FIELD_NAME}.schemaVersion=${EXTENSION_SCHEMA_VERSION} is supported.`,
     );
   }
 
@@ -1659,16 +1659,16 @@ function resolveManifestArchivePath(entryNames: readonly string[]): string {
   });
 
   if (candidates.length === 0) {
-    throw new Error(`扩展 ZIP 中缺少 ${EXTENSION_MANIFEST_FILE_NAME}。`);
+    throw new Error(`The extension ZIP is missing ${EXTENSION_MANIFEST_FILE_NAME}.`);
   }
 
   if (candidates.length > 1) {
-    throw new Error(`扩展 ZIP 中包含多个 ${EXTENSION_MANIFEST_FILE_NAME}。`);
+    throw new Error(`The extension ZIP contains multiple ${EXTENSION_MANIFEST_FILE_NAME}.`);
   }
 
   const manifestPath = candidates[0];
   if (!manifestPath) {
-    throw new Error(`扩展 ZIP 中缺少 ${EXTENSION_MANIFEST_FILE_NAME}。`);
+    throw new Error(`The extension ZIP is missing ${EXTENSION_MANIFEST_FILE_NAME}.`);
   }
 
   return normalizeArchivePath(manifestPath);
@@ -1725,7 +1725,7 @@ async function activateExtension<THostApi>(
   const activate = resolveActivateHandler<THostApi>(loadedModule);
   if (!activate) {
     throw new Error(
-      `扩展 ${target.manifest.name} 未导出 activate；请导出 activate(context) 或默认导出该函数。`,
+      `Extension ${target.manifest.name} does not export activate; export activate(context) or a default export of that function.`,
     );
   }
 
@@ -1750,7 +1750,7 @@ async function activateExtension<THostApi>(
   } catch (error) {
     options.logger?.error(`[extension:${target.id}] activate failed`, error);
     throw new Error(
-      `执行扩展失败：${target.manifest.name} (${error instanceof Error ? error.message : String(error)})`,
+      `Failed to execute extension: ${target.manifest.name} (${error instanceof Error ? error.message : String(error)})`,
       { cause: error },
     );
   }
@@ -1768,7 +1768,7 @@ async function loadExtensionModule(
   } catch (error) {
     logger?.error(`[extension:${target.id}] load failed`, error);
     throw new Error(
-      `加载扩展失败：${target.manifest.name} (${error instanceof Error ? error.message : String(error)})`,
+      `Failed to load extension: ${target.manifest.name} (${error instanceof Error ? error.message : String(error)})`,
       { cause: error },
     );
   }
@@ -1854,19 +1854,19 @@ function resolveActivateHandler<THostApi>(
 function assertSafeRelativePath(filePath: string, label: string): void {
   const normalized = normalizeArchivePath(filePath);
   if (!normalized || normalized.startsWith("/") || /^[A-Za-z]:/u.test(normalized)) {
-    throw new Error(`扩展 ${label} 必须是相对路径。`);
+    throw new Error(`Extension ${label} must be a relative path.`);
   }
 
   const segments = normalized.split("/");
   if (segments.some((segment) => !segment || segment === "." || segment === "..")) {
-    throw new Error(`扩展 ${label} 包含非法路径段。`);
+    throw new Error(`Extension ${label} contains an illegal path segment.`);
   }
 }
 
 function requiredSpiritExtensionField(value: unknown): Record<string, unknown> {
   if (!isRecord(value)) {
     throw new Error(
-      `扩展 package.json 缺少 ${SPIRIT_EXTENSION_FIELD_NAME} 字段，且该字段必须是对象。`,
+      `The extension package.json is missing the ${SPIRIT_EXTENSION_FIELD_NAME} field, which must be an object.`,
     );
   }
   return value;
@@ -1876,7 +1876,7 @@ function packageNameField(value: unknown): string {
   const packageName = stringField(value, "name");
   if (!EXTENSION_PACKAGE_NAME_PATTERN.test(packageName)) {
     throw new Error(
-      "扩展 package.json 字段 name 非法；必须为合法 npm 包名，且本次仅支持小写包名与可选 scoped 包名。",
+      "The extension package.json name field is invalid; it must be a valid npm package name, and only lowercase names with an optional scope are supported.",
     );
   }
   return packageName;
@@ -1887,7 +1887,7 @@ function optionalPackageStringField(value: unknown, fieldName: string): string |
     return undefined;
   }
   if (typeof value !== "string") {
-    throw new Error(`扩展 package.json 字段 ${fieldName} 必须是字符串。`);
+    throw new Error(`The extension package.json field ${fieldName} must be a string.`);
   }
   const trimmed = value.trim();
   return trimmed.length > 0 ? trimmed : undefined;
@@ -1904,12 +1904,12 @@ function optionalPackageAuthorField(value: unknown): string | undefined {
   if (isRecord(value)) {
     return optionalPackageStringField(value.name, "author.name");
   }
-  throw new Error("扩展 package.json 字段 author 必须是字符串或包含 name 字段的对象。");
+  throw new Error("The extension package.json author field must be a string or an object with a name field.");
 }
 
 function stringField(value: unknown, fieldName: string): string {
   if (typeof value !== "string" || value.trim().length === 0) {
-    throw new Error(`扩展字段 ${fieldName} 不能为空。`);
+    throw new Error(`Extension field ${fieldName} must not be empty.`);
   }
   return value.trim();
 }
@@ -1924,23 +1924,23 @@ function optionalStringField(value: unknown): string | undefined {
 
 function requiredSupportedHostsField(value: unknown, fieldName: string): ExtensionHostKind[] {
   if (value === undefined || value === null) {
-    throw new Error(`扩展字段 ${fieldName} 缺失；须为非空数组，元素为 cli 与/或 desktop。`);
+    throw new Error(`Extension field ${fieldName} is missing; it must be a non-empty array with cli and/or desktop entries.`);
   }
   if (!Array.isArray(value)) {
-    throw new Error(`扩展字段 ${fieldName} 必须是字符串数组。`);
+    throw new Error(`Extension field ${fieldName} must be an array of strings.`);
   }
   if (value.length === 0) {
-    throw new Error(`扩展字段 ${fieldName} 须至少包含一项（cli 或 desktop）。`);
+    throw new Error(`Extension field ${fieldName} must contain at least one entry (cli or desktop).`);
   }
 
   const result: ExtensionHostKind[] = [];
   for (const entry of value) {
     if (typeof entry !== "string") {
-      throw new Error(`扩展字段 ${fieldName} 必须是字符串数组。`);
+      throw new Error(`Extension field ${fieldName} must be an array of strings.`);
     }
     const normalized = entry.trim() as ExtensionHostKind;
     if (!SUPPORTED_EXTENSION_HOST_KINDS.includes(normalized)) {
-      throw new Error(`扩展字段 ${fieldName} 取值非法：${entry}`);
+      throw new Error(`Extension field ${fieldName} has an invalid value: ${entry}`);
     }
     if (!result.includes(normalized)) {
       result.push(normalized);
@@ -1961,11 +1961,11 @@ function optionalActivationEventsField(
   const result: HostExtensionActivationEventName[] = [];
   for (const entry of value) {
     if (typeof entry !== "string") {
-      throw new Error(`扩展字段 ${fieldName} 必须是字符串数组。`);
+      throw new Error(`Extension field ${fieldName} must be an array of strings.`);
     }
     const normalized = entry.trim() as HostExtensionActivationEventName;
     if (!SUPPORTED_HOST_EXTENSION_ACTIVATION_EVENTS.includes(normalized)) {
-      throw new Error(`扩展字段 ${fieldName} 取值非法：${entry}`);
+      throw new Error(`Extension field ${fieldName} has an invalid value: ${entry}`);
     }
     if (!result.includes(normalized)) {
       result.push(normalized);
@@ -1986,11 +1986,11 @@ function optionalRequestedCapabilitiesField(
   const result: HostExtensionRequestedCapability[] = [];
   for (const entry of value) {
     if (typeof entry !== "string") {
-      throw new Error(`扩展字段 ${fieldName} 必须是字符串数组。`);
+      throw new Error(`Extension field ${fieldName} must be an array of strings.`);
     }
     const normalized = entry.trim() as HostExtensionRequestedCapability;
     if (!SUPPORTED_HOST_EXTENSION_REQUESTED_CAPABILITIES.includes(normalized)) {
-      throw new Error(`扩展字段 ${fieldName} 取值非法：${entry}`);
+      throw new Error(`Extension field ${fieldName} has an invalid value: ${entry}`);
     }
     if (!result.includes(normalized)) {
       result.push(normalized);
@@ -2099,14 +2099,14 @@ async function optionalCliUiHookDefinitionsField(
   }
 
   if (!isRecord(value)) {
-    throw new Error(`扩展字段 ${fieldPrefix} 必须是对象，且必须使用 path 引用外置资源文件。`);
+    throw new Error(`Extension field ${fieldPrefix} must be an object that references an external resource file via path.`);
   }
 
   const hooksPath = stringField(value.path, `${fieldPrefix}.path`);
   assertSafeRelativePath(hooksPath, `${fieldPrefix}.path`);
   const readRelativeTextFile = options.readRelativeTextFile;
   if (!readRelativeTextFile) {
-    throw new Error(`当前上下文不支持读取扩展 ${fieldPrefix}.path：${hooksPath}`);
+    throw new Error(`The current context cannot read extension ${fieldPrefix}.path: ${hooksPath}`);
   }
 
   const raw = await readRelativeTextFile(hooksPath, `${fieldPrefix}.path`);
@@ -2121,15 +2121,15 @@ function parseCliUiHookDocument(
   try {
     parsed = JSON.parse(raw);
   } catch {
-    throw new Error(`扩展 CLI hooks 资源不是合法 JSON：${resourcePath}`);
+    throw new Error(`The extension CLI hooks resource is not valid JSON: ${resourcePath}`);
   }
 
   if (!isRecord(parsed) || !Array.isArray(parsed.hooks)) {
-    throw new Error(`扩展 CLI hooks 资源必须是形如 { "hooks": [...] } 的对象：${resourcePath}`);
+    throw new Error(`The extension CLI hooks resource must be an object of the form { "hooks": [...] }: ${resourcePath}`);
   }
 
   return parsed.hooks.map((entry, index) =>
-    parseCliUiHookDefinition(entry, index, `CLI hooks 资源 ${resourcePath}.hooks`),
+    parseCliUiHookDefinition(entry, index, `CLI hooks resource ${resourcePath}.hooks`),
   );
 }
 
@@ -2139,7 +2139,7 @@ function parseCliUiHookDefinition(
   fieldPrefix = "contributes.cli.hooks",
 ): HostExtensionCliUiHookDefinition {
   if (!isRecord(value)) {
-    throw new Error(`扩展字段 ${fieldPrefix}[${index}] 必须是对象。`);
+    throw new Error(`Extension field ${fieldPrefix}[${index}] must be an object.`);
   }
 
   const slot = enumField(
@@ -2206,7 +2206,7 @@ function parseDesktopCssDefinition(
   fieldPrefix: string,
 ): HostExtensionDesktopCssDefinition {
   if (!isRecord(value)) {
-    throw new Error(`扩展字段 ${fieldPrefix}[${index}] 必须是对象。`);
+    throw new Error(`Extension field ${fieldPrefix}[${index}] must be an object.`);
   }
 
   const cssPath = stringField(value.path, `${fieldPrefix}[${index}].path`);
@@ -2230,7 +2230,7 @@ function optionalDesktopSettingsPageDefinitionField(
     return {};
   }
   if (!isRecord(value)) {
-    throw new Error(`扩展字段 ${fieldPrefix} 必须是布尔值或对象。`);
+    throw new Error(`Extension field ${fieldPrefix} must be a boolean or an object.`);
   }
 
   const title = optionalStringField(value.title);
@@ -2249,16 +2249,16 @@ function assertHostUiContributionCapabilities(
   if (hasDesktopContribution !== hasDesktopCapability) {
     throw new Error(
       hasDesktopContribution
-        ? `扩展声明了 ${SPIRIT_EXTENSION_FIELD_NAME}.contributes.desktop，但缺少 ${SPIRIT_EXTENSION_FIELD_NAME}.requestedCapabilities 中的 desktop-ui。`
-        : `扩展声明了 desktop-ui capability，但缺少 ${SPIRIT_EXTENSION_FIELD_NAME}.contributes.desktop。`,
+        ? `The extension declares ${SPIRIT_EXTENSION_FIELD_NAME}.contributes.desktop but is missing desktop-ui in ${SPIRIT_EXTENSION_FIELD_NAME}.requestedCapabilities.`
+        : `The extension declares the desktop-ui capability but is missing ${SPIRIT_EXTENSION_FIELD_NAME}.contributes.desktop.`,
     );
   }
 
   if (hasCliContribution !== hasCliCapability) {
     throw new Error(
       hasCliContribution
-        ? `扩展声明了 ${SPIRIT_EXTENSION_FIELD_NAME}.contributes.cli，但缺少 ${SPIRIT_EXTENSION_FIELD_NAME}.requestedCapabilities 中的 cli-ui。`
-        : `扩展声明了 cli-ui capability，但缺少 ${SPIRIT_EXTENSION_FIELD_NAME}.contributes.cli。`,
+        ? `The extension declares ${SPIRIT_EXTENSION_FIELD_NAME}.contributes.cli but is missing cli-ui in ${SPIRIT_EXTENSION_FIELD_NAME}.requestedCapabilities.`
+        : `The extension declares the cli-ui capability but is missing ${SPIRIT_EXTENSION_FIELD_NAME}.contributes.cli.`,
     );
   }
 }
@@ -2269,12 +2269,12 @@ function parseContributedToolDefinition(
   fieldPrefix: string,
 ): HostExtensionContributedToolDefinition {
   if (!isRecord(value)) {
-    throw new Error(`扩展字段 ${fieldPrefix}[${index}] 必须是对象。`);
+    throw new Error(`Extension field ${fieldPrefix}[${index}] must be an object.`);
   }
 
   const name = stringField(value.name, `${fieldPrefix}[${index}].name`);
   if (!EXTENSION_FIELD_KEY_PATTERN.test(name)) {
-    throw new Error(`扩展工具名非法：${name}`);
+    throw new Error(`Invalid extension tool name: ${name}`);
   }
 
   const description = stringField(value.description, `${fieldPrefix}[${index}].description`);
@@ -2321,12 +2321,12 @@ function parseSettingDefinition(
   fieldPrefix: string,
 ): HostExtensionSettingDefinition {
   if (!isRecord(value)) {
-    throw new Error(`扩展字段 ${fieldPrefix}[${index}] 必须是对象。`);
+    throw new Error(`Extension field ${fieldPrefix}[${index}] must be an object.`);
   }
 
   const key = stringField(value.key, `${fieldPrefix}[${index}].key`);
   if (!EXTENSION_FIELD_KEY_PATTERN.test(key)) {
-    throw new Error(`扩展设置键非法：${key}`);
+    throw new Error(`Invalid extension setting key: ${key}`);
   }
 
   const type = enumField(
@@ -2373,16 +2373,16 @@ function optionalSettingOptionsField(
   }
   if (type !== "select") {
     throw new Error(
-      `只有 select 类型的设置项允许声明 options：${fieldName.replace(/\.options$/u, "")}`,
+      `Only select-type settings may declare options: ${fieldName.replace(/\.options$/u, "")}`,
     );
   }
   if (!Array.isArray(value)) {
-    throw new Error(`扩展字段 ${fieldName} 必须是数组。`);
+    throw new Error(`Extension field ${fieldName} must be an array.`);
   }
 
   return value.map((entry, optionIndex) => {
     if (!isRecord(entry)) {
-      throw new Error(`扩展字段 ${fieldName}[${optionIndex}] 必须是对象。`);
+      throw new Error(`Extension field ${fieldName}[${optionIndex}] must be an object.`);
     }
     const optionValue = stringField(entry.value, `${fieldName}[${optionIndex}].value`);
     const label = stringField(entry.label, `${fieldName}[${optionIndex}].label`);
@@ -2408,17 +2408,17 @@ function optionalSettingDefaultValueField(
     case "string":
     case "select":
       if (typeof value !== "string") {
-        throw new Error(`扩展字段 ${fieldName} 必须是字符串。`);
+        throw new Error(`Extension field ${fieldName} must be a string.`);
       }
       return value;
     case "boolean":
       if (typeof value !== "boolean") {
-        throw new Error(`扩展字段 ${fieldName} 必须是布尔值。`);
+        throw new Error(`Extension field ${fieldName} must be a boolean.`);
       }
       return value;
     case "number":
       if (typeof value !== "number" || !Number.isFinite(value)) {
-        throw new Error(`扩展字段 ${fieldName} 必须是数字。`);
+        throw new Error(`Extension field ${fieldName} must be a number.`);
       }
       return value;
   }
@@ -2431,11 +2431,11 @@ function optionalSecretSlotsField(value: unknown, fieldPrefix: string): HostExte
 
   return value.map((entry, index) => {
     if (!isRecord(entry)) {
-      throw new Error(`扩展字段 ${fieldPrefix}[${index}] 必须是对象。`);
+      throw new Error(`Extension field ${fieldPrefix}[${index}] must be an object.`);
     }
     const key = stringField(entry.key, `${fieldPrefix}[${index}].key`);
     if (!EXTENSION_FIELD_KEY_PATTERN.test(key)) {
-      throw new Error(`扩展 secret slot 键非法：${key}`);
+      throw new Error(`Invalid extension secret slot key: ${key}`);
     }
     const title = stringField(entry.title, `${fieldPrefix}[${index}].title`);
     const description = optionalStringField(entry.description);
@@ -2455,7 +2455,7 @@ function optionalBooleanField(value: unknown): boolean | undefined {
 
 function schemaField(value: unknown, fieldName: string): HostExtensionJsonSchema {
   if (!isRecord(value)) {
-    throw new Error(`扩展字段 ${fieldName} 必须是对象。`);
+    throw new Error(`Extension field ${fieldName} must be an object.`);
   }
   return value;
 }
@@ -2476,11 +2476,11 @@ function enumField<T extends readonly string[]>(
   allowedValues: T,
 ): T[number] {
   if (typeof value !== "string") {
-    throw new Error(`扩展字段 ${fieldName} 必须是字符串。`);
+    throw new Error(`Extension field ${fieldName} must be a string.`);
   }
   const normalized = value.trim() as T[number];
   if (!allowedValues.includes(normalized)) {
-    throw new Error(`扩展字段 ${fieldName} 取值非法：${value}`);
+    throw new Error(`Extension field ${fieldName} has an invalid value: ${value}`);
   }
   return normalized;
 }
@@ -2498,7 +2498,7 @@ function optionalEnumField<T extends readonly string[]>(
 
 function numberField(value: unknown, fieldName: string): number {
   if (typeof value !== "number" || !Number.isFinite(value)) {
-    throw new Error(`扩展字段 ${fieldName} 必须是数字。`);
+    throw new Error(`Extension field ${fieldName} must be a number.`);
   }
   return value;
 }

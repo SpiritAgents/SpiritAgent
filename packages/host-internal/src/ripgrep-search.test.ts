@@ -198,7 +198,7 @@ test("runRipgrepSearch rejects invalid regular expressions", async () => {
           query: "(",
           isRegexp: true,
         }),
-      /无效正则/u,
+      /Invalid regex/u,
     );
   });
 });

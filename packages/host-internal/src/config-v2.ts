@@ -114,7 +114,7 @@ export function assertSpiritConfigSchemaVersion(raw: unknown): void {
       : undefined;
   if (version !== SPIRIT_CONFIG_SCHEMA_VERSION) {
     throw new SpiritConfigSchemaError(
-      `config.json 须为 schemaVersion ${SPIRIT_CONFIG_SCHEMA_VERSION}；请删除旧版配置后重新连接提供商。`,
+      `config.json must be schemaVersion ${SPIRIT_CONFIG_SCHEMA_VERSION}; delete the old config and reconnect a provider.`,
     );
   }
 }

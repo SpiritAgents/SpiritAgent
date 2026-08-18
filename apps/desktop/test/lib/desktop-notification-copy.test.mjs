@@ -21,14 +21,14 @@ test("truncateNotificationBody shortens long text", () => {
 });
 
 test("stripShellReasonLine removes reason header", () => {
-  const prompt = "理由: deploy\nnpm run build";
-  assert.equal(stripShellReasonLine(prompt, "理由:"), "npm run build");
+  const prompt = "Reason: deploy\nnpm run build";
+  assert.equal(stripShellReasonLine(prompt, "Reason:"), "npm run build");
 });
 
 test("shellApprovalNotificationBody includes reason and command", () => {
-  const prompt = "理由: deploy\nnpm run build";
-  assert.match(shellApprovalNotificationBody(prompt, "理由:"), /理由: deploy/);
-  assert.match(shellApprovalNotificationBody(prompt, "理由:"), /npm run build/);
+  const prompt = "Reason: deploy\nnpm run build";
+  assert.match(shellApprovalNotificationBody(prompt, "Reason:"), /Reason: deploy/);
+  assert.match(shellApprovalNotificationBody(prompt, "Reason:"), /npm run build/);
 });
 
 test("genericApprovalNotificationBody includes tool and prompt", () => {

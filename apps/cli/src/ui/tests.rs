@@ -1344,10 +1344,10 @@ fn shell_pending_approval_title_line_shows_reason_instead_of_call_id() {
             tool_call_id: Some("call_00_demo_reason".to_string()),
             tool_name: "shell".to_string(),
             phase: ToolUiPhase::PendingApproval,
-            headline: "查看构建输出".to_string(),
+            headline: "check build output".to_string(),
             detail_lines: vec![
-                "高风险工具调用: shell".to_string(),
-                "命令: cargo test -p spirit-agent".to_string(),
+                "High-risk tool call: shell".to_string(),
+                "Command: cargo test -p spirit-agent".to_string(),
             ],
             image_paths: Vec::new(),
             video_paths: Vec::new(),
@@ -1361,9 +1361,9 @@ fn shell_pending_approval_title_line_shows_reason_instead_of_call_id() {
 
     assert!(lines[0].contains("shell"));
     assert!(lines[0].contains(t!("ui.tool.phase.pending_approval").as_ref()));
-    assert!(lines[0].contains("查看构建输出"));
+    assert!(lines[0].contains("check build output"));
     assert!(!lines[0].contains("call_00_demo_reason"));
-    assert!(!lines.iter().any(|line| line == "  ▌ 查看构建输出"));
+    assert!(!lines.iter().any(|line| line == "  ▌ check build output"));
 }
 
 #[test]

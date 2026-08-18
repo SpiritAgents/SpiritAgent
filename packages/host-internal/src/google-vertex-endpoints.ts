@@ -1,4 +1,4 @@
-/** Google Vertex AI 端点派生（无 SDK 依赖）。 */
+/** Google Vertex AI endpoint derivation (no SDK dependencies). */
 
 function trimTrailingSlashes(value: string): string {
   return value.trim().replace(/\/+$/, "");
@@ -26,7 +26,7 @@ export function vertexApiBaseFromProjectAndLocation(project: string, location: s
   return `https://${baseHost}/v1/projects/${normalizedProject}/locations/${normalizedLocation}`;
 }
 
-/** Vertex publisher models 列表 URL（`.../publishers/google/models`）。 */
+/** Vertex publisher models list URL (`.../publishers/google/models`). */
 export function vertexPublisherModelsListUrl(
   project: string,
   location: string,

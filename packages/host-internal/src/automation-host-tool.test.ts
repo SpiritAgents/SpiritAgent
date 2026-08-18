@@ -101,7 +101,7 @@ test("parseCreateAutomationTriggerInput requires trigger", () => {
   );
   assert.throws(
     () => parseCreateAutomationTriggerInput({ schedule: { kind: "daily", hour: 8, minute: 15 } }),
-    /缺少 trigger/,
+    /missing trigger/,
   );
 });
 
@@ -128,7 +128,7 @@ test("previewCreateAutomationFromArguments derives title and trigger", () => {
     trigger: { kind: "time", schedule: { kind: "weekly", weekday: 1, hour: 9, minute: 0 } },
   });
   assert.equal(preview.title, "CI check");
-  assert.match(buildCreateAutomationApprovalPrompt(preview), /创建自动化/u);
+  assert.match(buildCreateAutomationApprovalPrompt(preview), /Create automation/u);
   assert.match(buildCreateAutomationApprovalPrompt(preview), /CI check/u);
 });
 

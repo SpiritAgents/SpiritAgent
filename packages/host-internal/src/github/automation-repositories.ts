@@ -43,7 +43,7 @@ function mapRepositoryItem(
   };
 }
 
-/** owner/repo（如 microsoft/vscode）走 repo: 限定；否则全局搜索。空串回退当前用户仓库。 */
+/** owner/repo (e.g. microsoft/vscode) uses a repo: qualifier; otherwise a global search. An empty string falls back to the current user's repositories. */
 export function buildAutomationRepositorySearchQuery(query: string, login: string): string {
   const trimmed = query.trim();
   if (!trimmed) {

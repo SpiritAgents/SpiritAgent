@@ -1,7 +1,7 @@
 const MODEL_DISPLAY_NAME_SEPARATOR_PATTERN = /[-:/]/g;
 const PURE_DIGIT_TOKEN_PATTERN = /^\d+$/;
 
-/** 相邻纯数字段视为主次版本号，合并为 `major.minor`（如 `4-8` → `4.8`）。 */
+/** Treat adjacent pure-numeric segments as major/minor version numbers and merge them into `major.minor` (e.g. `4-8` → `4.8`). */
 function mergeConsecutiveNumericVersionSegments(tokens: string[]): string[] {
   const merged: string[] = [];
   for (let index = 0; index < tokens.length; index += 1) {
@@ -25,7 +25,7 @@ function mergeConsecutiveNumericVersionSegments(tokens: string[]): string[] {
   return merged;
 }
 
-/** 将模型 id 格式化为展示名：`-`/`:`/` → 空格，相邻数字段合并为点分版本，各词首字母大写。 */
+/** Format a model id into a display name: `-`/`:`/`/` → space, adjacent numeric segments merged into a dotted version, each word capitalized. */
 export function formatModelDisplayNameFromId(modelId: string): string {
   const normalized = modelId
     .trim()
@@ -52,7 +52,7 @@ export function formatModelDisplayNameFromId(modelId: string): string {
 export function resolveModelDisplayTitle(input: {
   modelId: string;
   catalogDisplayName?: string | null;
-  /** 无 catalog displayName 时保留原始 model id，而非格式化 */
+  /** Keep the raw model id instead of formatting when there is no catalog displayName */
   preserveRawIdWithoutCatalogDisplayName?: boolean;
 }): string {
   const catalogDisplayName = input.catalogDisplayName?.trim();
@@ -65,7 +65,7 @@ export function resolveModelDisplayTitle(input: {
   return formatModelDisplayNameFromId(input.modelId);
 }
 
-/** 批量格式化模型 id；仅当结果与 id 不同时写入映射。 */
+/** Format model ids in batch; only write into the map when the result differs from the id. */
 export function buildFormattedDisplayTitlesFromIds(
   modelIds: readonly string[],
 ): Record<string, string> {

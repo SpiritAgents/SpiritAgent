@@ -46,7 +46,7 @@ test("mapTimelineEventToConversationItem maps committed event from issue timelin
       email: "121384036+N123999@users.noreply.github.com",
       date: "2026-06-10T03:40:34Z",
     },
-    message: "feat(desktop): 支持光标处斜杠 token 唤起菜单\n\n基于 composer 光标检测",
+    message: "feat(desktop): open menu from slash token at cursor\n\nBased on composer cursor detection",
     event: "committed",
   });
 
@@ -55,7 +55,7 @@ test("mapTimelineEventToConversationItem maps committed event from issue timelin
     return;
   }
   assert.equal(item.createdAt, "2026-06-10T03:40:34Z");
-  assert.equal(item.subject, "feat(desktop): 支持光标处斜杠 token 唤起菜单");
+  assert.equal(item.subject, "feat(desktop): open menu from slash token at cursor");
   assert.equal(item.sha, "3fc54ae2102e42ec0adc877fac601e6a517b117f");
   assert.equal(item.authorLogin, "N123999");
   assert.equal(item.avatarUrl, "https://github.com/N123999.png?size=40");
@@ -195,7 +195,7 @@ test("enrichConversationCommitAuthors replaces timeline fallback with pull commi
     html_url:
       "https://github.com/SpiritAgents/SpiritAgent/commit/b40b5d065d1dafe791397c7ed4538a1eb7527a34",
     author: { name: "Commit Bot", email: "bot@example.com", date: "2026-06-13T10:17:52Z" },
-    message: "fix(desktop): 修正接近 100 万 token 的紧凑计数显示",
+    message: "fix(desktop): fix compact count display near 1M tokens",
     event: "committed",
   });
 
@@ -211,7 +211,7 @@ test("enrichConversationCommitAuthors replaces timeline fallback with pull commi
     [
       {
         sha: "b40b5d065d1dafe791397c7ed4538a1eb7527a34",
-        subject: "fix(desktop): 修正接近 100 万 token 的紧凑计数显示",
+        subject: "fix(desktop): fix compact count display near 1M tokens",
         authorLogin: "commit-bot",
         avatarUrl: "https://avatars.githubusercontent.com/u/199161495?v=4",
         createdAt: "2026-06-13T10:17:52Z",

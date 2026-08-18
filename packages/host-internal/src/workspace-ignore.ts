@@ -41,7 +41,7 @@ function explorerEntryGitCheckIgnorePath(
 }
 
 export interface ResolveWorkspaceExplorerIgnoreFlagsOptions {
-  /** Explorer 热路径：优先走内存 ignore 匹配，避免每次 spawn git check-ignore。 */
+  /** Explorer hot path: prefer in-process ignore matching to avoid spawning git check-ignore every time. */
   preferInProcess?: boolean;
 }
 
@@ -59,7 +59,7 @@ export async function resolveWorkspaceExplorerIgnoreFlags(
     try {
       return await resolveViaIgnoreLibrary(workspaceRoot, parentRelPath, entries);
     } catch {
-      // 非阻塞：内存匹配失败时回退 git。
+      // Non-blocking: fall back to git when in-process matching fails.
     }
     try {
       const viaGit = await resolveViaGitCheckIgnore(workspaceRoot, parentRelPath, entries);
@@ -67,7 +67,7 @@ export async function resolveWorkspaceExplorerIgnoreFlags(
         return viaGit;
       }
     } catch {
-      // 非阻塞
+      // Non-blocking
     }
     return entries.map(() => false);
   }
@@ -78,7 +78,7 @@ export async function resolveWorkspaceExplorerIgnoreFlags(
       return viaGit;
     }
   } catch {
-    // 非阻塞：Git 判定失败时走 ignore 库 fallback。
+    // Non-blocking: fall back to the ignore library when git evaluation fails.
   }
 
   try {

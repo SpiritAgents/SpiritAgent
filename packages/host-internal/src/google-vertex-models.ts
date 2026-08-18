@@ -1,6 +1,6 @@
 /**
- * Google Vertex AI 模型目录：`publishers/google/models`（需 OAuth）。
- * Express API Key 模式无法列模型，请手动填写部署名。
+ * Google Vertex AI model catalog: `publishers/google/models` (requires OAuth).
+ * Express API Key mode cannot list models; enter the deployment name manually.
  */
 
 import { GoogleAuth } from "google-auth-library";
@@ -41,7 +41,7 @@ function vertexModelSupportsReasoning(modelId: string): boolean {
   return normalized.includes("gemini-2.5") || normalized.includes("gemini-3");
 }
 
-/** 解析 Vertex `publisherModels` 列表响应。 */
+/** Parses a Vertex `publisherModels` list response. */
 export function parseVertexModelEntriesPayload(body: unknown): ProviderListedModelEntry[] {
   if (typeof body !== "object" || body === null) {
     return [];
@@ -111,7 +111,7 @@ async function resolveVertexAccessToken(options: ListVertexModelsOptions): Promi
   const tokenResponse = await client.getAccessToken();
   const token = tokenResponse?.token?.trim();
   if (!token) {
-    throw new Error("无法获取 Google Vertex 访问令牌。请检查 ADC 或服务账号凭证。");
+    throw new Error("Could not obtain a Google Vertex access token. Check ADC or service account credentials.");
   }
   return token;
 }
@@ -135,7 +135,7 @@ async function fetchVertexModelsPage(
     try {
       json = JSON.parse(text) as unknown;
     } catch {
-      throw new Error(`列模型失败（HTTP ${String(response.status)}）：响应不是有效 JSON。`);
+      throw new Error(`Failed to list models (HTTP ${String(response.status)}): the response is not valid JSON.`);
     }
   }
 
@@ -153,8 +153,8 @@ async function fetchVertexModelsPage(
           : undefined;
     throw new Error(
       errMsg && errMsg.trim().length > 0
-        ? `列模型失败（HTTP ${String(response.status)}）：${errMsg.trim()}`
-        : `列模型失败（HTTP ${String(response.status)}）。`,
+        ? `Failed to list models (HTTP ${String(response.status)}): ${errMsg.trim()}`
+        : `Failed to list models (HTTP ${String(response.status)}).`,
     );
   }
 
@@ -165,16 +165,16 @@ export async function listVertexModels(
   options: ListVertexModelsOptions,
 ): Promise<ProviderListedModelEntry[]> {
   if (options.apiKey?.trim()) {
-    throw new Error("Google Vertex Express API Key 模式无法自动列模型，请手动填写模型 ID。");
+    throw new Error("Google Vertex Express API Key mode cannot list models automatically; enter the model ID manually.");
   }
 
   const project = normalizeVertexProject(options.project);
   const location = normalizeVertexLocation(options.location);
   if (!project) {
-    throw new Error("Google Vertex 列模型需要填写 GCP 项目 ID。");
+    throw new Error("Listing Google Vertex models requires a GCP project ID.");
   }
   if (!location) {
-    throw new Error("Google Vertex 列模型需要填写区域（location）。");
+    throw new Error("Listing Google Vertex models requires a location (region).");
   }
 
   const accessToken = await resolveVertexAccessToken(options);

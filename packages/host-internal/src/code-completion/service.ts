@@ -9,7 +9,7 @@ import type {
   CodeCompletionSource,
 } from "./types.js";
 
-// 未来 LSP textDocument/completion 作为另一 CompletionSource 接入，与 LLM 结果合并排序。
+// In the future, LSP textDocument/completion will plug in as another CompletionSource, merged and ranked with LLM results.
 export interface LspCodeCompletionSource extends CodeCompletionSource {
   readonly kind: "lsp";
 }

@@ -136,7 +136,7 @@ fn strip_shell_reason_from_prompt(prompt: &str) -> (Option<String>, Vec<String>)
     let mut lines = prompt.lines();
     let first = lines.next();
     let reason = first
-        .and_then(|line| line.trim().strip_prefix("理由:"))
+        .and_then(|line| line.trim().strip_prefix("Reason:"))
         .map(str::trim)
         .filter(|value| !value.is_empty())
         .map(ToString::to_string);
@@ -821,7 +821,7 @@ mod tests {
         let block = tool_approval_block(
             "shell",
             Some("call_00_block"),
-            "高风险工具调用: shell\n命令: rm -rf /",
+            "High-risk tool call: shell\nCommand: rm -rf /",
             false,
             Some("destructive command"),
         );
@@ -843,18 +843,18 @@ mod tests {
         let block = tool_approval_block(
             "shell",
             Some("call_00_demo"),
-            "理由: 查看构建输出\n高风险工具调用: shell\n终端: Command Prompt (cmd.exe)\n命令: echo hi",
+            "Reason: check build output\nHigh-risk tool call: shell\nTerminal: Command Prompt (cmd.exe)\nCommand: echo hi",
             true,
             None,
         );
 
-        assert_eq!(block.headline, "查看构建输出");
+        assert_eq!(block.headline, "check build output");
         assert_eq!(
             block.detail_lines,
             vec![
-                "高风险工具调用: shell".to_string(),
-                "终端: Command Prompt (cmd.exe)".to_string(),
-                "命令: echo hi".to_string(),
+                "High-risk tool call: shell".to_string(),
+                "Terminal: Command Prompt (cmd.exe)".to_string(),
+                "Command: echo hi".to_string(),
                 "快捷键: Y 允许一次 / N 拒绝 / T 信任并持久化".to_string(),
             ]
         );

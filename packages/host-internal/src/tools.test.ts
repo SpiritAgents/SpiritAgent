@@ -616,7 +616,7 @@ test("grep rejects invalid regular expressions with a clear error", async () => 
           query: "(",
           is_regexp: true,
         }),
-      /无效正则/u,
+      /Invalid regex/u,
     );
   } finally {
     await rm(workspaceRoot, { recursive: true, force: true });

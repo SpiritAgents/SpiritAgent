@@ -84,7 +84,7 @@ function normalizeWindowsDriveLetter(filePath: string): string {
   return filePath.replace(/^([a-zA-Z]):/, (_match, letter: string) => `${letter.toUpperCase()}:`);
 }
 
-/** 统一 file URI（Windows 上 TLS 可能返回 `file:///d%3A/...` 或盘符大小写不一致）。 */
+/** Normalize file URIs (on Windows, TLS may return `file:///d%3A/...` or inconsistent drive-letter casing). */
 export function normalizeLspFileUri(uri: string): string {
   if (!uri.startsWith("file:")) {
     return uri;

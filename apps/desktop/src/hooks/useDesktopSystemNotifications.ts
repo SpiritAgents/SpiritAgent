@@ -79,7 +79,7 @@ function approvalNotificationPayload(
 ): DesktopShowNotificationRequest {
   const body =
     approval.toolName === "shell"
-      ? shellApprovalNotificationBody(approval.prompt, i18n.t("tool.reasonPrefix"))
+      ? shellApprovalNotificationBody(approval.prompt, "Reason:")
       : genericApprovalNotificationBody(approval.toolName, approval.prompt);
 
   return {

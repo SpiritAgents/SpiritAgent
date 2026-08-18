@@ -1,6 +1,6 @@
 import rawImport from "./model-provider-presets.json" with { type: "json" };
 
-/** 与 `config.json` / CLI `ModelProvider` 小写字符串对齐（须与 `pickerOrder` 一致）。 */
+/** Aligned with `config.json` / CLI `ModelProvider` lowercase strings (must stay consistent with `pickerOrder`). */
 export type ModelProviderId =
   | "deepseek"
   | "xai"
@@ -37,7 +37,7 @@ export type ModelProviderId =
   | "custom";
 export type PresetModelProviderId = Exclude<ModelProviderId, "custom">;
 
-/** 与 Desktop `DesktopTransportKind` / openai-models `ProviderModelTransportKind` 对齐。 */
+/** Aligned with Desktop `DesktopTransportKind` / openai-models `ProviderModelTransportKind`. */
 export type ProviderModelTransportKind =
   | "openai-compatible"
   | "open-responses"
@@ -113,7 +113,7 @@ type PresetApiBaseByTransport = Partial<
   Record<PresetModelProviderId, Partial<Record<ProviderModelTransportKind, string>>>
 >;
 
-/** 连接向导站点 id（如 SiliconFlow 的 cn / intl）。 */
+/** Connect wizard site id (e.g. SiliconFlow's cn / intl). */
 export type ProviderConnectSiteId = string;
 
 export interface ProviderConnectSiteDefinition {
@@ -164,13 +164,13 @@ export interface ResolveProviderConnectApiBaseOptions {
   site?: ProviderConnectSiteId;
   workspaceId?: string;
   customApiBaseTrimmed?: string;
-  /** Alibaba Token Plan：固定 cn-beijing 端点，忽略 site/workspace。 */
+  /** Alibaba Token Plan: fixed cn-beijing endpoint; site/workspace are ignored. */
   billingMode?: AlibabaBillingMode;
-  /** StepFun Step Plan：固定 step_plan 端点。 */
+  /** StepFun Step Plan: fixed step_plan endpoint. */
   stepfunBillingMode?: StepfunBillingMode;
-  /** Z.ai GLM Coding Plan：固定 coding/paas 端点。 */
+  /** Z.ai GLM Coding Plan: fixed coding/paas endpoint. */
   zAiBillingMode?: GlmCodingPlanBillingMode;
-  /** 智谱 AI GLM Coding Plan：固定 coding/paas 端点。 */
+  /** Zhipu AI GLM Coding Plan: fixed coding/paas endpoint. */
   zhipuBillingMode?: GlmCodingPlanBillingMode;
 }
 
@@ -562,13 +562,13 @@ export const PROVIDER_PRESET_API_BASE = {
 
 const pickerLabels = raw.pickerLabels;
 
-/** 设置页等：按固定顺序展示提供商选项。 */
+/** Settings page etc.: show provider options in a fixed order. */
 export const PROVIDER_PICKER_ROWS: ProviderPickerRow[] = raw.pickerOrder.map((id) => ({
   id,
   ...pickerLabels[id],
 }));
 
-/** 分组排序等与 `pickerOrder` 一致。 */
+/** Grouping and ordering follow `pickerOrder`. */
 export const MODEL_PROVIDER_PICKER_ORDER: readonly ModelProviderId[] = CANONICAL_PICKER_ORDER;
 export const PRESET_MODEL_PROVIDER_PICKER_ORDER: readonly PresetModelProviderId[] =
   PRESET_PROVIDER_PICKER_ORDER;
@@ -750,7 +750,7 @@ function resolveTransportApiBaseForProviderSite(
   }
 }
 
-/** StepFun Step Plan：固定 step_plan compatible base，按 transport 推导 Anthropic / Open Responses。 */
+/** StepFun Step Plan: fixed step_plan compatible base; Anthropic / Open Responses derived by transport. */
 export function resolveStepfunStepPlanConnectApiBase(
   transportKind: ProviderModelTransportKind,
 ): string {
@@ -760,17 +760,17 @@ export function resolveStepfunStepPlanConnectApiBase(
   return STEPFUN_STEP_PLAN_COMPATIBLE_API_BASE;
 }
 
-/** Z.ai GLM Coding Plan：固定 coding/paas OpenAI 兼容端点。 */
+/** Z.ai GLM Coding Plan: fixed coding/paas OpenAI-compatible endpoint. */
 export function resolveZAiGlmCodingPlanConnectApiBase(): string {
   return Z_AI_GLM_CODING_PLAN_COMPATIBLE_API_BASE;
 }
 
-/** 智谱 AI GLM Coding Plan：固定 coding/paas OpenAI 兼容端点。 */
+/** Zhipu AI GLM Coding Plan: fixed coding/paas OpenAI-compatible endpoint. */
 export function resolveZhipuAiGlmCodingPlanConnectApiBase(): string {
   return ZHIPU_AI_GLM_CODING_PLAN_COMPATIBLE_API_BASE;
 }
 
-/** Alibaba Token Plan：固定 cn-beijing compatible base，按 transport 推导 Anthropic / Open Responses。 */
+/** Alibaba Token Plan: fixed cn-beijing compatible base; Anthropic / Open Responses derived by transport. */
 export function resolveAlibabaTokenPlanConnectApiBase(
   transportKind: ProviderModelTransportKind,
 ): string {
@@ -859,7 +859,7 @@ export function resolveConnectApiBase(
 }
 
 /**
- * 连接向导：按预设提供商与 API 类型解析默认端点（用户未填写端点覆盖时）。
+ * Connect wizard: resolve the default endpoint from the preset provider and API type (when the user has not provided an endpoint override).
  */
 export function resolveProviderConnectApiBase(
   provider: ModelProviderId,

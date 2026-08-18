@@ -20,15 +20,15 @@ function firstExistingFile(candidates: string[]): string | undefined {
 }
 
 /**
- * 宿主默认 Shell（集成终端、系统终端、shell 共用）。
- * Windows：优先 pwsh（PowerShell 7+），其次 Windows PowerShell，最后 cmd。
- * 可通过环境变量 SPIRIT_TERMINAL_SHELL 指定可执行文件完整路径。
+ * Host default shell (shared by the integrated terminal, system terminal, and shell tool).
+ * Windows: prefer pwsh (PowerShell 7+), then Windows PowerShell, finally cmd.
+ * The SPIRIT_TERMINAL_SHELL environment variable can specify a full executable path.
  */
 export function defaultShellForPty(): { file: string; args: string[] } {
   const override = process.env.SPIRIT_TERMINAL_SHELL?.trim();
   if (override) {
     if (!existsSync(override)) {
-      throw new Error(`SPIRIT_TERMINAL_SHELL 不存在: ${override}`);
+      throw new Error(`SPIRIT_TERMINAL_SHELL does not exist: ${override}`);
     }
     return { file: override, args: [] };
   }
@@ -81,8 +81,8 @@ export function isWindowsCmdExecutable(file: string): boolean {
 }
 
 /**
- * 非交互子进程（shell）在 Windows 上默认不走 ConPTY，需显式对齐 UTF-8 输出。
- * PowerShell：设置 OutputEncoding；cmd：保留 chcp 65001 前缀（输出解码见 {@link decodeShellHostOutput}）。
+ * Non-interactive subprocesses (shell tool) do not go through ConPTY on Windows by default, so UTF-8 output must be aligned explicitly.
+ * PowerShell: set OutputEncoding; cmd: keep the chcp 65001 prefix (output decoding: see {@link decodeShellHostOutput}).
  */
 export function prepareShellForHostExecution(shellFile: string, command: string): string {
   if (process.platform !== "win32") {
@@ -97,7 +97,7 @@ export function prepareShellForHostExecution(shellFile: string, command: string)
   return command;
 }
 
-/** cmd.exe 子进程在中文 Windows 上常输出 GBK；PowerShell 经 UTF-8 前缀后按 utf8 解码。 */
+/** cmd.exe subprocesses often output GBK on Chinese Windows; PowerShell is decoded as utf8 after the UTF-8 prefix. */
 export function decodeShellHostOutput(shellFile: string, chunk: Buffer): string {
   if (chunk.length === 0) {
     return "";

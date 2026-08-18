@@ -23,7 +23,7 @@ export function deriveAutomationTitle(overview: string, explicitTitle?: string):
   }
   const firstLine = overview.trim().split(/\r?\n/u)[0]?.trim() ?? "";
   if (!firstLine) {
-    throw new Error("create_automation 需要非空的 overview 或 title。");
+    throw new Error("create_automation requires a non-empty overview or title.");
   }
   return [...firstLine].length > AUTOMATION_TITLE_MAX_CHARS
     ? [...firstLine].slice(0, AUTOMATION_TITLE_MAX_CHARS).join("")
@@ -49,12 +49,12 @@ export function parseCreateAutomationApprovalLevel(value: unknown): CreateAutoma
 
 export function formatCreateAutomationApprovalLabel(level: CreateAutomationApprovalLevel): string {
   if (level === "bypass-approval") {
-    return "绕过审批";
+    return "Bypass approval";
   }
   if (level === "auto-approval") {
-    return "自动审批";
+    return "Auto-approval";
   }
-  return "默认审批";
+  return "Default approval";
 }
 
 export function parseCreateAutomationTrigger(value: unknown): HostAutomationTrigger {
@@ -69,7 +69,7 @@ export function parseCreateAutomationTriggerInput(
   parsed: Record<string, unknown>,
 ): HostAutomationTrigger {
   if (parsed.trigger === undefined) {
-    throw new Error("create_automation 缺少 trigger。");
+    throw new Error("create_automation is missing trigger.");
   }
   return parseCreateAutomationTrigger(parsed.trigger);
 }
@@ -86,7 +86,7 @@ export function previewCreateAutomationFromArguments(
 ): CreateAutomationPreviewInput {
   const overview = typeof args.overview === "string" ? args.overview : "";
   if (!overview.trim()) {
-    throw new Error("create_automation 需要非空的 overview 或 title。");
+    throw new Error("create_automation requires a non-empty overview or title.");
   }
   const explicitTitle = typeof args.title === "string" ? args.title : undefined;
   return {
@@ -99,11 +99,11 @@ export function previewCreateAutomationFromArguments(
 
 export function buildCreateAutomationApprovalPrompt(input: CreateAutomationPreviewInput): string {
   return (
-    `高风险工具调用: 创建自动化\n` +
-    `标题: ${input.title}\n` +
-    `调度: ${formatTriggerLabel(input.trigger)}\n` +
-    `运行审批: ${formatCreateAutomationApprovalLabel(input.approval_level)}\n` +
-    `概述长度: ${[...input.overview].length} 字符`
+    `High-risk tool call: Create automation\n` +
+    `Title: ${input.title}\n` +
+    `Schedule: ${formatTriggerLabel(input.trigger)}\n` +
+    `Run approval: ${formatCreateAutomationApprovalLabel(input.approval_level)}\n` +
+    `Overview length: ${[...input.overview].length} characters`
   );
 }
 

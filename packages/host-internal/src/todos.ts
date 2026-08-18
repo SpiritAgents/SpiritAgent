@@ -77,7 +77,7 @@ export class HostTodoStore {
 
   async write(items: HostTodoItem[]): Promise<HostTodoItem[]> {
     if (items.length > HOST_TODO_MAX_ITEMS) {
-      throw new Error(`会话 TODO 数量不能超过 ${HOST_TODO_MAX_ITEMS} 条。`);
+      throw new Error(`Session TODO count cannot exceed ${HOST_TODO_MAX_ITEMS} items.`);
     }
 
     const existingById = new Map(
@@ -94,7 +94,7 @@ export class HostTodoStore {
             : "pending";
       const id = item.id?.trim() || randomUUID().slice(0, 8);
       if (seenIds.has(id)) {
-        throw new Error(`会话 TODO id 重复: ${id}`);
+        throw new Error(`Duplicate session TODO id: ${id}`);
       }
       seenIds.add(id);
 

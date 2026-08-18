@@ -1,5 +1,5 @@
 /**
- * Skill 路径常量与纯路径工具（无 Node 内置依赖，可供 Desktop renderer 安全 import）。
+ * Skill path constants and pure path utilities (no Node built-in dependencies; safe to import from the Desktop renderer).
  */
 
 export const SKILLS_DIR_NAME = "skills";
@@ -174,7 +174,7 @@ function workspaceRelativeDirectoryPath(path: string, workspaceRoot: string): st
   return relative;
 }
 
-/** ls 工具卡路径：工作区内显示相对路径，区外显示绝对路径。 */
+/** Path shown on the ls tool card: relative path inside the workspace, absolute path outside it. */
 export function lsToolDisplayPath(
   path: string,
   workspaceRoot: string | undefined,
@@ -197,7 +197,7 @@ export function lsToolDisplayPath(
   return normalized;
 }
 
-/** read_file 工具卡右侧详情：SKILL.md 仅显示 frontmatter name。 */
+/** Right-side detail of the read_file tool card: SKILL.md shows only the frontmatter name. */
 export function readFileToolDisplayBase(
   path: string,
   emptyLabel: string,

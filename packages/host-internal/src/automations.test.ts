@@ -21,8 +21,8 @@ test("automation store create list get update delete", async () => {
   try {
     const store = createHostAutomationStore(spiritDataDir);
     const created = await store.create({
-      title: "GitHub 日报",
-      overview: "收集 GitHub 新闻",
+      title: "GitHub daily digest",
+      overview: "Collect GitHub news",
       trigger: { kind: "time", schedule: { kind: "daily", hour: 20, minute: 0 } },
       workspaceRoot: spiritDataDir,
       modelRef: { groupId: "openai", name: "gpt-test" },
@@ -33,7 +33,7 @@ test("automation store create list get update delete", async () => {
 
     const summaries = await store.listSummaries();
     assert.equal(summaries.length, 1);
-    assert.equal(summaries[0]?.title, "GitHub 日报");
+    assert.equal(summaries[0]?.title, "GitHub daily digest");
     assert.equal(summaries[0]?.scheduleLabel, "Daily 20:00");
 
     const loaded = await store.get(created.id);
@@ -104,7 +104,7 @@ test("shouldFireNow respects schedule and last fired bucket", () => {
   const eightThirty = Date.parse("2026-06-08T08:30:00");
   assert.equal(shouldFireNow(dailyAtEight, undefined, eightThirty), true);
   assert.equal(shouldFireNow(dailyAtEight, eightThirty, eightThirty), false);
-  // 已在应触发分钟内触发过：即便 now 已过 1 分钟也不重复触发
+  // Already fired within the due minute: do not fire again even if now is 1 minute past it
   assert.equal(shouldFireNow(dailyAtEight, eightThirty + 20_000, eightThirty + 60_000), false);
 
   const hourly = { kind: "hourly" as const };
@@ -117,12 +117,12 @@ test("shouldFireNow catches up missed slots after sleep or clock jump", () => {
   const dailyAtEight = { kind: "daily" as const, hour: 8, minute: 30 };
   const eightThirty = Date.parse("2026-06-08T08:30:00");
   const yesterdayFired = Date.parse("2026-06-07T08:30:10");
-  // 08:30 时机器休眠，09:12 醒来：上次应触发时间(08:30) > lastFired，补跑
+  // Machine asleep at 08:30, wakes at 09:12: last due time (08:30) > lastFired, so catch up
   assert.equal(
     shouldFireNow(dailyAtEight, yesterdayFired, Date.parse("2026-06-08T09:12:00")),
     true,
   );
-  // 补跑后 lastFired=09:12，同日不再重复
+  // After catch-up lastFired=09:12, no repeat on the same day
   assert.equal(
     shouldFireNow(
       dailyAtEight,
@@ -131,7 +131,7 @@ test("shouldFireNow catches up missed slots after sleep or clock jump", () => {
     ),
     false,
   );
-  // 尚未到达当日应触发时间：不触发
+  // Today's due time not reached yet: do not fire
   assert.equal(shouldFireNow(dailyAtEight, yesterdayFired, eightThirty - 60_000), false);
 
   const hourly = { kind: "hourly" as const };
@@ -141,12 +141,12 @@ test("shouldFireNow catches up missed slots after sleep or clock jump", () => {
   );
 
   const weekly = { kind: "weekly" as const, weekday: 1 as const, hour: 9, minute: 0 };
-  // 周一 09:00 漏触发，周一 11:00 补跑；上周一触发过
+  // Missed Monday 09:00, catch up Monday 11:00; last fired on the previous Monday
   assert.equal(
     shouldFireNow(weekly, Date.parse("2026-06-01T09:00:30"), Date.parse("2026-06-08T11:00:00")),
     true,
   );
-  // 周二不再重复
+  // No repeat on Tuesday
   assert.equal(
     shouldFireNow(weekly, Date.parse("2026-06-08T11:00:00"), Date.parse("2026-06-09T09:00:00")),
     false,
@@ -192,7 +192,7 @@ test("automation store serializes concurrent mutations and writes atomically", a
       approvalLevel: "default",
     });
 
-    // 并发 load-modify-save：串行化后 10 个 run 一个不丢
+    // Concurrent load-modify-save: after serialization none of the 10 runs is lost
     await Promise.all(
       Array.from({ length: 10 }, (_, index) =>
         store.addRun(created.id, {
@@ -207,7 +207,7 @@ test("automation store serializes concurrent mutations and writes atomically", a
     const loaded = await store.get(created.id);
     assert.equal(loaded?.runs.length, 10);
 
-    // 原子写：目录内不残留 tmp 文件，正式文件为完整 JSON
+    // Atomic write: no tmp files left in the directory, and the final file is complete JSON
     const entries = await readdir(join(spiritDataDir, "automations"));
     assert.deepEqual(entries, [`${created.id}.json`]);
     const raw = await readFile(join(spiritDataDir, "automations", `${created.id}.json`), "utf8");

@@ -291,7 +291,7 @@ export function computeNextRunAt(schedule: HostAutomationTimeSchedule, afterMs: 
   return nextDailyOrWeeklyRun(after, schedule.hour, schedule.minute, schedule.weekday);
 }
 
-/** 最近一次「应触发时间」（≤ nowMs）。基于本地时间计算，DST 由 Date 语义处理。 */
+/** The most recent due time (<= nowMs). Computed in local time; DST is handled by Date semantics. */
 export function mostRecentDueAt(schedule: HostAutomationTimeSchedule, nowMs: number): number {
   const candidate = new Date(nowMs);
   candidate.setSeconds(0, 0);
@@ -315,9 +315,9 @@ export function mostRecentDueAt(schedule: HostAutomationTimeSchedule, nowMs: num
 }
 
 /**
- * 上次应触发时间 ≤ now 且晚于 lastFiredMs 即触发（含休眠/时钟跳变后的补跑）。
- * lastFiredMs 为 undefined 时视为从未触发，直接补跑最近一个应触发时刻；
- * 调用方应传入创建时间作为基线以避免新建自动化立即补跑历史时刻。
+ * Fires when the last due time is <= now and later than lastFiredMs (including catch-up after sleep or clock jumps).
+ * When lastFiredMs is undefined it is treated as never fired and the most recent due time is caught up immediately;
+ * callers should pass the creation time as the baseline so a new automation does not catch up historical slots.
  */
 export function shouldFireNow(
   schedule: HostAutomationTimeSchedule,
@@ -331,8 +331,9 @@ export function shouldFireNow(
   return floorToMinute(lastFiredMs) < dueAt;
 }
 
-// 按文件路径串行化 load-modify-save，避免同进程并发写丢更新。store 实例
-// 在各调用点即建即弃，因此队列必须挂在模块级而非实例上。
+// Serialize load-modify-save per file path to avoid losing updates from concurrent
+// in-process writes. Store instances are created and discarded at each call site,
+// so the queue must live at module level rather than on the instance.
 const automationFileTaskQueues = new Map<string, Promise<unknown>>();
 
 function enqueueAutomationFileTask<T>(filePath: string, task: () => Promise<T>): Promise<T> {
@@ -661,8 +662,9 @@ export class HostAutomationStore {
   private async saveFile(automationId: string, file: HostAutomationFile): Promise<void> {
     const filePath = automationFilePath(this.spiritDataDir, automationId);
     await mkdir(path.dirname(filePath), { recursive: true });
-    // tmp+rename 原子落盘，避免崩溃时留下半截 JSON；写已按文件串行化，
-    // 固定 tmp 名不会被并发复用（后缀非 .json，不会被 listAutomationFiles 读到）。
+    // tmp+rename atomic write avoids leaving truncated JSON after a crash; writes are
+    // already serialized per file, so the fixed tmp name cannot be reused concurrently
+    // (its suffix is not .json, so listAutomationFiles will not pick it up).
     const tmpPath = `${filePath}.tmp`;
     await writeFile(tmpPath, `${JSON.stringify(file, null, 2)}\n`, "utf8");
     await rename(tmpPath, filePath);
