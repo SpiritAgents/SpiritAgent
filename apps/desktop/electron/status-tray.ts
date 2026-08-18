@@ -17,6 +17,7 @@ export type StatusTrayDeps = {
   focusOrCreateMainWindow: () => void | Promise<void>;
   openSession: (sessionPath: string) => void | Promise<void>;
   newSession: () => void | Promise<void>;
+  openSettings: () => void | Promise<void>;
 };
 
 let tray: Tray | undefined;
@@ -64,6 +65,12 @@ function buildTrayMenu(sessions: readonly SessionListItem[], deps: StatusTrayDep
       label: i18nHost.t("tray.openApp"),
       click: () => {
         void deps.focusOrCreateMainWindow();
+      },
+    },
+    {
+      label: i18nHost.t("tray.settings"),
+      click: () => {
+        void deps.openSettings();
       },
     },
     {

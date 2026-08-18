@@ -1481,6 +1481,14 @@ if (gotSpiritSingleInstanceLock) {
         await focusOrCreateSpiritDesktopWindows();
         handleSpiritNewSessionRequest();
       },
+      openSettings: async () => {
+        await focusOrCreateSpiritDesktopWindows();
+        for (const window of BrowserWindow.getAllWindows()) {
+          if (!window.isDestroyed()) {
+            window.webContents.send("desktop:open-settings");
+          }
+        }
+      },
     });
     bindMacOSDockMenuDeps({
       openSession: openSessionFromQuickMenu,
