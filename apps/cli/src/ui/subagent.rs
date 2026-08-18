@@ -111,7 +111,7 @@ pub(in crate::ui) fn draw_subagent_viewer(
     if let Some(latest) = view.summary.latest_message.as_deref() {
         header_lines.push(Line::from(Span::styled(
             truncate_to_width(
-                &t!("tui.subagents.view.latest_progress", text = latest).into_owned(),
+                &t!("tui.subagents.view.latest_progress", text = latest),
                 chunks[0].width.saturating_sub(1) as usize,
             ),
             patch_style_foreground(
