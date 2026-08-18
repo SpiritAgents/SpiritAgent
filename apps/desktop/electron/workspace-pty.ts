@@ -38,7 +38,7 @@ function formatPtyProcessTitle(raw: string): string {
 function resolveValidatedCwd(raw: string): string {
   const resolved = path.resolve(raw.trim());
   if (!existsSync(resolved) || !statSync(resolved).isDirectory()) {
-    throw new Error("cwd 不是有效目录");
+    throw new Error("cwd is not a valid directory");
   }
   return resolved;
 }
@@ -75,7 +75,7 @@ export class WorkspacePtyManager {
       try {
         pty = mod.spawn(file, args, {
           ...spawnOptions,
-          // ConPTY 在 Windows 上 resize/reflow 明显优于 WinPTY；失败时回退 WinPTY。
+          // ConPTY resize/reflow is clearly better than WinPTY on Windows; fall back to WinPTY on failure.
           useConpty: preferConpty,
         });
       } catch (firstErr) {

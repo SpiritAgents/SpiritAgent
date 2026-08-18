@@ -802,7 +802,10 @@
     "enterAnswer": "回答を入力してください",
     "customInput": "カスタム入力",
     "customAnswerPlaceholder": "詳細または未リストのオプションを追加",
-    "supplementOption": "未リストのオプションを補足"
+    "supplementOption": "未リストのオプションを補足",
+    "exportSessionOpenFailed": "エクスポートしたファイルを自動で開けませんでした: {{error}}",
+    "saveImageAsUnsupportedFormat": "保存できるのは一般的な画像形式のみです。",
+    "saveImageAsFileMissing": "保存する画像ファイルが存在しません。"
   },
   "workspace": {
     "planNotCreated": "計画はまだ作成されていません。",
@@ -1449,5 +1452,14 @@
     "alwaysTrust": "常に信頼",
     "hooksSection": "実行されるフック",
     "openHookScript": "スクリプトをデフォルトエディターで開く"
+  },
+  "webHost": {
+    "error": {
+      "missingPath": "リクエストパスがありません。",
+      "pairingLocked": "ペアリングの失敗が多すぎます。Web Host を再起動して新しいペアリングコードを生成してください。",
+      "pairingFailed": "ペアリングコードが正しくありません。",
+      "pairingRequired": "最初のペアリングを完了してください。",
+      "invalidProvider": "プロバイダーの引数が無効です。"
+    }
   }
 }

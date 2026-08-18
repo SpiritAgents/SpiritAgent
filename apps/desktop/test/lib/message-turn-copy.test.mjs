@@ -40,7 +40,7 @@ test("formatAssistantTurnCopyText preserves body and tool order without thinking
       tool: {
         toolName: "read_file",
         phase: "succeeded",
-        headline: "读取",
+        headline: "Read",
         headlineDetail: "foo.txt",
         detailLines: [],
       },
@@ -85,7 +85,7 @@ test("formatToolCallSummaryPlainText: read_file uses headline and detail", () =>
     formatToolCallSummaryPlainText({
       toolName: "read_file",
       phase: "succeeded",
-      headline: "读取",
+      headline: "Read",
       headlineDetail: "foo.txt",
       detailLines: [],
     }),
@@ -98,11 +98,11 @@ test("formatToolCallSummaryPlainText: shell with reason and command", () => {
     formatToolCallSummaryPlainText({
       toolName: "shell",
       phase: "running",
-      headline: "执行并发命令",
+      headline: "run concurrent commands",
       headlineDetail: "echo abc",
       detailLines: [],
     }),
-    "运行中 执行并发命令 echo abc",
+    "运行中 run concurrent commands echo abc",
   );
 });
 
@@ -111,11 +111,11 @@ test("formatToolCallSummaryPlainText: failed tools append settings.failed suffix
     formatToolCallSummaryPlainText({
       toolName: "grep",
       phase: "failed",
-      headline: "搜索",
+      headline: "Search",
       headlineDetail: "TODO",
       detailLines: [],
     }),
-    `搜索 TODO ${i18n.t("settings.failed")}`,
+    `Search TODO ${i18n.t("settings.failed")}`,
   );
 });
 

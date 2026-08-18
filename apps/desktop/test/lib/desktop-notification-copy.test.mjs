@@ -10,7 +10,7 @@ import {
 } from "../../src/lib/desktop-notification-copy.ts";
 
 test("formatSessionPrefixedTitle prefixes session name", () => {
-  assert.equal(formatSessionPrefixedTitle("My chat", "任务已完成"), "[My chat] 任务已完成");
+  assert.equal(formatSessionPrefixedTitle("My chat", "Task completed"), "[My chat] Task completed");
   assert.equal(formatSessionPrefixedTitle("  ", "Done"), "[Session] Done");
 });
 

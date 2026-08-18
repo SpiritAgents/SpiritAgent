@@ -799,7 +799,10 @@
     "enterAnswer": "请输入回答",
     "customInput": "自定义输入",
     "customAnswerPlaceholder": "补充说明或未列出的选项",
-    "supplementOption": "补充一个未列出的选项"
+    "supplementOption": "补充一个未列出的选项",
+    "exportSessionOpenFailed": "自动打开导出文件失败: {{error}}",
+    "saveImageAsUnsupportedFormat": "当前仅支持另存常见图片格式。",
+    "saveImageAsFileMissing": "要另存的图片文件不存在。"
   },
   "workspace": {
     "planNotCreated": "Plan 还没有创建。",
@@ -1446,5 +1449,14 @@
     "alwaysTrust": "始终信任",
     "hooksSection": "将运行的 Hooks",
     "openHookScript": "在默认编辑器中打开脚本"
+  },
+  "webHost": {
+    "error": {
+      "missingPath": "缺少请求路径",
+      "pairingLocked": "配对失败次数过多，请重启 Web Host 生成新的配对码。",
+      "pairingFailed": "配对码不正确。",
+      "pairingRequired": "需要完成首次配对。",
+      "invalidProvider": "无效的提供商参数。"
+    }
   }
 }

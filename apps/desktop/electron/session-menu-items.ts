@@ -26,8 +26,9 @@ export function buildSessionMenuItem(
   if (process.platform === "darwin") {
     const workspaceLabel = deriveWorkspaceLabel(session.workspaceRoot);
     if (workspaceLabel) {
-      // 已知限制：Tray 菜单会显示 sublabel（工作区名）；macOS Dock 右键菜单不支持
-      // sublabel，同一字段会被忽略。为与菜单栏会话项构造保持一致，仍写入该字段。
+      // Known limitation: Tray menus display the sublabel (workspace name); the macOS Dock
+      // context menu does not support sublabel and ignores the field. It is still written to
+      // stay consistent with how menu-bar session items are constructed.
       return {
         label: title,
         sublabel: workspaceLabel,
@@ -45,7 +46,7 @@ export function buildSessionMenuItem(
   };
 }
 
-/** 最近 5 条会话 +「更多」子菜单（最多 10 条），供 Tray / Dock 共用。 */
+/** The 5 most recent sessions plus a "More" submenu (up to 10), shared by Tray / Dock. */
 export function buildRecentSessionMenuItems(
   sessions: readonly SessionListItem[],
   onOpen: (sessionPath: string) => void,

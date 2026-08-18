@@ -111,7 +111,7 @@ function focusSpiritDesktopWindows(): void {
   }
 }
 
-/** 首启：渲染层 LaunchSplash 就绪后再 reveal，避免 React 挂载前的纯黑真空帧。 */
+/** First launch: reveal only after the renderer's LaunchSplash is ready, avoiding the pure-black empty frame before React mounts. */
 function revealMainWindowWhenLaunchSplashReady(window: BrowserWindow): void {
   if (window.isDestroyed()) {
     return;
@@ -177,7 +177,7 @@ import { syncWindowsImmersiveDarkMode } from "./win-dwm.js";
 import { configureElectronProductDisplayName } from "./product-display-name.js";
 import i18nHost from "../src/lib/i18n-host.js";
 
-/** 与 `titleBarOverlay.height` 及自绘标题栏 CSS 高度一致（px） */
+/** Must match `titleBarOverlay.height` and the custom title bar CSS height (px) */
 const TITLE_BAR_OVERLAY_HEIGHT = 32;
 const LOCAL_IMAGE_PREVIEW_MAX_BYTES = 8 * 1024 * 1024;
 const MANAGED_ASSET_PROTOCOL = "spirit:";
@@ -195,7 +195,7 @@ const DEV_SERVER_URL = process.env.VITE_DEV_SERVER_URL;
 let desktopWebHost: DesktopHttpHost | undefined;
 let desktopWebHostConfig: DesktopWebHostConfigFile | undefined;
 let desktopWebHostPairingCode = createDesktopWebPairingCode();
-/** 配对失败达上限后为 true；HTTP handler 内失败计数未重置前不得重新生成配对码。 */
+/** True after the pairing failure limit is reached; must not regenerate the pairing code until the failure count inside the HTTP handler is reset. */
 let desktopWebHostPairingLocked = false;
 let quittingAfterDesktopWebHostStop = false;
 let unsubscribeDesktopDreamUpdates: (() => void) | undefined;
@@ -342,7 +342,7 @@ async function invokeMainDesktopHostCommand(
   if (isDesktopSnapshot(result) && (command === "bootstrap" || command === "updateConfig")) {
     const config = await loadConfig();
     await syncDesktopWebHostWithConfig(config.webHost);
-    // 开关托盘需立即生效，不走会话列表那条尾沿合并。
+    // Toggling the tray must take effect immediately; it does not go through the session-list trailing-edge coalescing.
     void syncStatusTray();
   }
   return result;
@@ -408,7 +408,7 @@ async function syncDesktopWebHostWithConfig(config: DesktopWebHostConfigFile): P
     desktopWebHost = undefined;
   }
 
-  // 重启 HTTP handler 会重置 handler 内配对失败计数；此时才解除锁定并签发新码。
+  // Restarting the HTTP handler resets the pairing failure count inside it; only then unlock and issue a new code.
   if (!config.authTokenHash) {
     desktopWebHostPairingLocked = false;
     if (!desktopWebHostPairingCode) {
@@ -443,7 +443,7 @@ async function syncDesktopWebHostWithConfig(config: DesktopWebHostConfigFile): P
   }
 }
 
-/** 配对失败达上限：作废当前配对码并停止对外展示；重启 Web Host 时重新生成。 */
+/** Pairing failure limit reached: void the current pairing code and stop displaying it; regenerated when the Web Host restarts. */
 function handleDesktopWebHostPairingLockout(): void {
   console.warn("[spirit-desktop] web host pairing locked after too many failures");
   desktopWebHostPairingLocked = true;
@@ -485,7 +485,7 @@ function isDesktopSnapshot(value: unknown): value is DesktopSnapshot {
   );
 }
 
-/** Windows 任务栏 / 窗口角标：build/icon.png（构建期由 brand SVG 生成，见 scripts/gen-brand-assets.mjs）。 */
+/** Windows taskbar / window icon: build/icon.png (generated from the brand SVG at build time, see scripts/gen-brand-assets.mjs). */
 function resolveWindowIconPath(): string | undefined {
   const fromBuild = path.join(__dirname, "..", "..", "build", "icon.png");
   if (existsSync(fromBuild)) {
@@ -506,8 +506,9 @@ const MACOS_DOCK_MENU_REFRESH_COALESCE_MS = 1_000;
 let macOSDockMenuRefreshTimer: ReturnType<typeof setTimeout> | undefined;
 
 /**
- * 会话列表更新可能高频触发（每次都要 listSessions + app.setJumpList）；jump list
- * 仅需最终一致，这里尾沿合并为一次刷新。此处为 jump list 唯一节流点。
+ * Session list updates may fire at high frequency (each one does listSessions + app.setJumpList);
+ * the jump list only needs eventual consistency, so refresh is coalesced here on the trailing
+ * edge. This is the only throttle point for the jump list.
  */
 function refreshWindowsJumpList(): void {
   if (process.platform !== "win32") {
@@ -522,7 +523,7 @@ function refreshWindowsJumpList(): void {
   }, WINDOWS_JUMP_LIST_REFRESH_COALESCE_MS);
 }
 
-/** 托盘菜单随会话 / 配置 / 语言变化刷新；尾沿合并避免高频 listSessions。 */
+/** Tray menu refresh on session / config / language changes; trailing-edge coalescing avoids high-frequency listSessions. */
 function refreshStatusTray(): void {
   if (process.platform !== "darwin" && process.platform !== "win32") {
     return;
@@ -536,7 +537,7 @@ function refreshStatusTray(): void {
   }, STATUS_TRAY_REFRESH_COALESCE_MS);
 }
 
-/** macOS Dock 右键会话列表；不跟随 trayIcon，尾沿合并避免高频 listSessions。 */
+/** macOS Dock context session list; not tied to trayIcon, trailing-edge coalescing avoids high-frequency listSessions. */
 function refreshMacOSDockMenu(): void {
   if (process.platform !== "darwin") {
     return;
@@ -550,11 +551,11 @@ function refreshMacOSDockMenu(): void {
   }, MACOS_DOCK_MENU_REFRESH_COALESCE_MS);
 }
 
-/** 与 `src/styles.css` Void 暗色 `--background`（#000000）一致；关 translucency 时窗口底色用此值，避免 WebView 透底呈 Chromium #121212 */
+/** Matches the Void dark `--background` (#000000) in `src/styles.css`; used as the window background when translucency is off, so the WebView does not show through as Chromium #121212 */
 const WIN32_APP_BACKGROUND_DARK = "#000000";
 const WIN32_APP_BACKGROUND_LIGHT = "#fafafa";
 
-/** 与 Tauri `frame_chrome` 一致：开窗级半透明材质时用透明背景，把绘制交给系统合成层。 */
+/** Matches Tauri `frame_chrome`: use a transparent background with window-level translucent materials, leaving compositing to the system compositor. */
 function electronRootBackgroundForBackdrop(translucencyEnabled: boolean, darkContent: boolean): string {
   if (translucencyEnabled && (process.platform === "win32" || process.platform === "darwin")) {
     return "#00000000";
@@ -562,13 +563,14 @@ function electronRootBackgroundForBackdrop(translucencyEnabled: boolean, darkCon
   return darkContent ? WIN32_APP_BACKGROUND_DARK : WIN32_APP_BACKGROUND_LIGHT;
 }
 
-/** 配置键 `translucency`：各平台原生窗口半透明材质（Win Mica / macOS Vibrancy）。 */
+/** Config key `translucency`: native window translucent material per platform (Win Mica / macOS Vibrancy). */
 let cachedTranslucency: { mtimeMs: number; size: number; value: boolean } | undefined;
 
 /**
- * 该值经 `desktop:read-translucency` 同步 IPC 暴露给渲染层：index.html 首帧
- * 内联脚本须在渲染前同步拿到，无法改为异步。为避免每次同步 IPC 都读盘解析整个
- * 配置文件，这里按 mtime/size 缓存，仅在配置文件变化时重新读取。
+ * This value is exposed to the renderer via the `desktop:read-translucency` sync IPC: the
+ * inline first-frame script in index.html must get it synchronously before rendering and
+ * cannot be made async. To avoid reading and parsing the entire config file on every sync
+ * IPC, it is cached by mtime/size and only re-read when the config file changes.
  */
 function readTranslucencyFromDisk(): boolean {
   const filePath = configFilePath();
@@ -605,9 +607,12 @@ function readTranslucencyFromDisk(): boolean {
 const MACOS_WINDOW_VIBRANCY = "under-window" as const;
 
 /**
- * macOS 红绿灯位置缓存：UI 缩放存于渲染器 localStorage，窗口构造时主进程读不到，
- * 若等渲染器启动后回传（实测约 1s）红绿灯会先停在默认位置再跳走。
- * 故渲染器每次同步位置时落盘，下次启动直接作为 BrowserWindow 构造参数生效。
+ * macOS traffic light position cache: the UI scale lives in renderer localStorage, which the
+ * main process cannot read at window construction time; if we waited for the renderer to
+ * report it after startup (about 1s measured), the traffic lights would sit at the default
+ * position and then jump.
+ * So the renderer persists the position on every sync, and the next launch uses it directly
+ * as a BrowserWindow constructor parameter.
  */
 function trafficLightPositionCachePath(): string {
   return path.join(app.getPath("userData"), "traffic-light-position.json");
@@ -628,7 +633,7 @@ function readTrafficLightPositionFromDisk(): { x: number; y: number } | undefine
       return { x: parsed.x, y: parsed.y };
     }
   } catch {
-    // 首次启动或缓存缺失：沿用 hiddenInset 默认位置（等价 scale=1）
+    // First launch or missing cache: keep the hiddenInset default position (equivalent to scale=1)
   }
   return undefined;
 }
@@ -637,7 +642,7 @@ function nativeTranslucencyActive(translucencyEnabled: boolean): boolean {
   return translucencyEnabled && (process.platform === "win32" || process.platform === "darwin");
 }
 
-/** 与 `src/lib/theme.ts` 中 `THEME_STORAGE_KEY` 保持一致 */
+/** Keep in sync with `THEME_STORAGE_KEY` in `src/lib/theme.ts` */
 const RENDERER_THEME_STORAGE_KEY = "spirit-agent-desktop-theme";
 
 type RendererThemePrefs = {
@@ -677,7 +682,7 @@ function applyRendererThemePrefs(window: BrowserWindow, prefs: RendererThemePref
 }
 
 /**
- * 不依赖 preload IPC：从 localStorage 读主题并同步原生窗口材质。
+ * Does not depend on preload IPC: reads the theme from localStorage and syncs the native window material.
  */
 async function syncBrowserWindowFrameFromRendererStorage(
   window: BrowserWindow,
@@ -699,7 +704,7 @@ function applyNativeWindowBackdrop(
 
   if (process.platform === "win32") {
     try {
-      // translucency 开启时使用系统 Mica 材质枚举值
+      // Use the system Mica material enum value when translucency is enabled
       window.setBackgroundMaterial(translucencyEnabled ? "mica" : "none");
     } catch (err) {
       console.error("[spirit-desktop] setBackgroundMaterial failed", err);
@@ -728,15 +733,17 @@ function applyNativeWindowBackdrop(
   }
 
   try {
-    // 关 translucency 时若用实色 overlay，会盖住 WebView 标题栏最底一行（含 `border-b`），金刚键下缺一块线。
-    // 透明叠加：底色与底边由页面自绘透出，系统只画三个按钮图标（与开启时一致）。
+    // With translucency off, an opaque overlay would cover the bottom row of the WebView title
+    // bar (including its `border-b`), leaving a missing line segment next to the caption buttons.
+    // Transparent overlay: the background and bottom border are painted by the page showing
+    // through, and the system only draws the three button glyphs (same as when enabled).
     window.setTitleBarOverlay({
       height: TITLE_BAR_OVERLAY_HEIGHT,
       color: "#00000000",
       symbolColor: darkContent ? "#f5f5f5" : "#1f1f1f",
     });
   } catch {
-    // 未启用 overlay 或平台限制时忽略
+    // Ignore when the overlay is not enabled or the platform does not support it
   }
 }
 
@@ -750,7 +757,7 @@ async function createMainWindow(): Promise<BrowserWindow> {
   const preloadPath = path.join(__dirname, "preload.cjs");
   if (!existsSync(preloadPath)) {
     console.error(
-      "[spirit-desktop] preload 缺失（需 build:electron 生成 preload.cjs）:",
+      "[spirit-desktop] preload missing (run build:electron to generate preload.cjs):",
       preloadPath,
     );
   }
@@ -767,8 +774,9 @@ async function createMainWindow(): Promise<BrowserWindow> {
     show: false,
     ...(windowIcon ? { icon: windowIcon } : {}),
     backgroundColor: initialBg,
-    // macOS：构造时始终挂载 vibrancy 层，使运行时 setVibrancy 与透明背景切换走同一合成路径；
-    // 关 Blur 时在 load 前立即 setVibrancy(null)，避免首帧误显模糊。
+    // macOS: always attach the vibrancy layer at construction so runtime setVibrancy and
+    // transparent-background switching go through the same compositing path;
+    // when Blur is off, call setVibrancy(null) before load so the first frame is not blurred.
     ...(process.platform === "darwin"
       ? {
           vibrancy: MACOS_WINDOW_VIBRANCY,
@@ -833,8 +841,9 @@ async function createMainWindow(): Promise<BrowserWindow> {
   window.once("closed", () => {
     workspacePtyManager.disposeAllForWebContents(webContentsId);
   });
-  // 渲染进程崩溃或主 frame 重新导航（reload / 加载新页面）后，旧渲染侧的 PTY 会话与
-  // 500ms 轮询定时器无人接管，须在此回收；同文档内导航（SPA 路由）不触发。
+  // After a renderer crash or main-frame re-navigation (reload / loading a new page), the old
+  // renderer-side PTY sessions and their 500ms polling timers are orphaned and must be
+  // reclaimed here; same-document navigation (SPA routing) does not trigger this.
   window.webContents.on("render-process-gone", () => {
     workspacePtyManager.disposeAllForWebContents(webContentsId);
   });
@@ -863,7 +872,8 @@ async function createMainWindow(): Promise<BrowserWindow> {
     return { action: "deny" };
   });
 
-  // Windows 无系统菜单且顶栏 MenubarShortcut 不绑定快捷键；F11/F12 由主进程绑定（macOS 全屏仍走系统菜单 role）。
+  // Windows has no system menu and the top-bar MenubarShortcut does not bind accelerators;
+  // F11/F12 are bound by the main process (macOS fullscreen still goes through the system menu role).
   const isDevChrome = Boolean(DEV_SERVER_URL) || !app.isPackaged;
   window.webContents.on("before-input-event", (event, input) => {
     if (input.type !== "keyDown") {
@@ -962,7 +972,7 @@ if (gotSpiritSingleInstanceLock) {
       };
       const openError = await shell.openPath(result.path);
       if (openError) {
-        throw new Error(`自动打开导出文件失败: ${openError}`);
+        throw new Error(i18nHost.t("app.exportSessionOpenFailed", { error: openError }));
       }
       return result.snapshot;
     });
@@ -1092,12 +1102,12 @@ if (gotSpiritSingleInstanceLock) {
       const extension = path.extname(sourcePath).toLowerCase();
       const mimeType = imagePreviewMimeType(extension);
       if (!mimeType) {
-        throw new Error("当前仅支持另存常见图片格式。");
+        throw new Error(i18nHost.t("app.saveImageAsUnsupportedFormat"));
       }
 
       const sourceStat = await stat(sourcePath);
       if (!sourceStat.isFile()) {
-        throw new Error("要另存的图片文件不存在。");
+        throw new Error(i18nHost.t("app.saveImageAsFileMissing"));
       }
 
       const targetWindow = BrowserWindow.fromWebContents(event.sender);
@@ -1176,7 +1186,7 @@ if (gotSpiritSingleInstanceLock) {
             type: "info",
             title: "Spirit Agent",
             message: "Spirit Agent",
-            detail: `版本 ${app.getVersion()}`,
+            detail: i18nHost.t("titleBar.versionDetail", { version: app.getVersion() }),
           });
           break;
         default:
@@ -1196,11 +1206,14 @@ if (gotSpiritSingleInstanceLock) {
       event.returnValue = readTranslucencyFromDisk();
     });
 
-    // OS 层深色偏好的追踪值。themeSource 被覆盖为 light/dark 期间，主/渲染两侧的
-    // shouldUseDarkColors / prefers-color-scheme 均跟随覆盖值而非 OS，读不到真值；
-    // 此处在覆盖发生前（themeSource 尚为 'system'）取初值，之后仅在未覆盖期间随
-    // updated 事件更新。覆盖期间 OS 变化不保证触发 updated，该场景由
-    // desktop:sync-window-frame 切回 system 后的回传校正兜底（唯一防线）。
+    // Tracked value of the OS-level dark preference. While themeSource is overridden to
+    // light/dark, shouldUseDarkColors / prefers-color-scheme on both the main and renderer
+    // sides follow the override instead of the OS, so the true value cannot be read; take
+    // the initial value here before any override happens (themeSource still 'system'), then
+    // only update it from the `updated` event while not overridden. OS changes during an
+    // override are not guaranteed to fire `updated`; that case is covered by the correction
+    // report sent back after desktop:sync-window-frame switches back to system (the only
+    // line of defense).
     let osPrefersDark = nativeTheme.shouldUseDarkColors;
     nativeTheme.on("updated", () => {
       if (nativeTheme.themeSource === "system") {
@@ -1228,12 +1241,15 @@ if (gotSpiritSingleInstanceLock) {
         },
       ) => {
         nativeTheme.themeSource = request.nativeTheme;
-        // themeSource 被覆盖为 light/dark 期间，渲染进程的 prefers-color-scheme 跟随覆盖值而非 OS；
-        // 切回 system 时渲染端算出的 dark 是旧值。此处在 themeSource 生效后以主进程为准，并回传给渲染端校正。
+        // While themeSource is overridden to light/dark, the renderer's prefers-color-scheme
+        // follows the override instead of the OS, so the dark value computed by the renderer
+        // when switching back to system is stale. Here, after themeSource takes effect, trust
+        // the main process and report it back to the renderer for correction.
         const dark =
           request.nativeTheme === "system" ? nativeTheme.shouldUseDarkColors : request.dark;
         if (request.nativeTheme === "system") {
-          // 覆盖期间 osPrefersDark 可能滞后；切回 system 当帧刷新，供 readOsPrefersDark 与 IPC 回传一致。
+          // osPrefersDark may lag during an override; refresh it on the same frame as the
+          // switch back to system so readOsPrefersDark and the IPC report stay consistent.
           osPrefersDark = dark;
         }
         const window = BrowserWindow.fromWebContents(event.sender);

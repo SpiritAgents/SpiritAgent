@@ -11,6 +11,8 @@ import {
 
 import type { HostCommandName } from "../src/host/contracts.js";
 
+import i18nHost from "../src/lib/i18n-host.js";
+
 export const DEFAULT_DESKTOP_WEB_HOST = "127.0.0.1";
 export const DEFAULT_DESKTOP_WEB_PORT = 7788;
 
@@ -39,7 +41,7 @@ export interface DesktopHttpAuthOptions {
   getTokenHash(): string | undefined;
   getPairingCode(): string;
   completePairing(authTokenHash: string): Promise<void>;
-  /** 配对失败达到上限时回调；宿主应作废当前配对码，重启 Web Host 后重新生成。 */
+  /** Called when the pairing failure limit is reached; the host should void the current pairing code and regenerate it after restarting the Web Host. */
   onPairingLockout?(): void;
 }
 
@@ -173,7 +175,7 @@ export function createDesktopHttpRequestHandler({
   auth,
   static: staticOptions,
 }: {
-  /** 服务监听的 host；用于 Host 头校验（防 DNS rebinding）。 */
+  /** The host the service listens on; used for Host header validation (DNS rebinding protection). */
   host: string;
   invokeHostCommand: DesktopHostCommandInvoker;
   onHostCommandResult?: DesktopHostCommandResultHandler;
@@ -181,7 +183,8 @@ export function createDesktopHttpRequestHandler({
   auth?: DesktopHttpAuthOptions;
   static?: DesktopHttpStaticOptions;
 }) {
-  // 配对失败计数随 handler（即单次 Web Host 运行周期）存续；重启 Web Host 才重置。
+    // The pairing failure count lives with the handler (i.e. a single Web Host run cycle);
+    // it only resets when the Web Host is restarted.
   let pairingFailureCount = 0;
 
   return async (request: IncomingMessage, response: ServerResponse) => {
@@ -197,7 +200,7 @@ export function createDesktopHttpRequestHandler({
 
     try {
       if (!request.url) {
-        writeJson(request, response, 400, { error: "缺少请求路径" });
+        writeJson(request, response, 400, { error: i18nHost.t("webHost.error.missingPath") });
         return;
       }
 
@@ -305,7 +308,7 @@ async function handleApiRequest({
     if (isPairingLocked()) {
       writeJson(request, response, 429, {
         code: "PAIRING_LOCKED",
-        error: "配对失败次数过多，请重启 Web Host 生成新的配对码。",
+        error: i18nHost.t("webHost.error.pairingLocked"),
       });
       return;
     }
@@ -318,7 +321,7 @@ async function handleApiRequest({
       onPairingFailure();
       writeJson(request, response, 401, {
         code: "PAIRING_FAILED",
-        error: "配对码不正确。",
+        error: i18nHost.t("webHost.error.pairingFailed"),
       });
       return;
     }
@@ -332,7 +335,7 @@ async function handleApiRequest({
   if (auth && !isAuthorizedRequest(request, auth.getTokenHash())) {
     writeJson(request, response, 401, {
       code: "PAIRING_REQUIRED",
-      error: "需要完成首次配对。",
+      error: i18nHost.t("webHost.error.pairingRequired"),
     });
     return;
   }
@@ -453,7 +456,7 @@ async function handleApiRequest({
   if (request.method === "POST" && pathname === "/api/models/remove-provider") {
     const provider = parsePresetModelProviderId(jsonBody?.provider);
     if (!provider) {
-      writeJson(request, response, 400, { error: "无效的提供商参数。" });
+      writeJson(request, response, 400, { error: i18nHost.t("webHost.error.invalidProvider") });
       return;
     }
     writeJson(
@@ -1607,7 +1610,7 @@ function safeTokenHashEquals(left: string, right: string): boolean {
   return leftBuffer.length === rightBuffer.length && timingSafeEqual(leftBuffer, rightBuffer);
 }
 
-/** 常数时间比较配对码；长度固定 6 位，长度差异不泄露有效信息。 */
+/** Constant-time pairing code comparison; the length is fixed at 6 digits, so length differences leak no useful information. */
 function safePairingCodeEquals(candidate: string, expected: string): boolean {
   const candidateBuffer = Buffer.from(candidate, "utf8");
   const expectedBuffer = Buffer.from(expected, "utf8");
@@ -1618,9 +1621,11 @@ function safePairingCodeEquals(candidate: string, expected: string): boolean {
 }
 
 /**
- * 防 DNS rebinding：API 请求的 Host 头仅允许配置的监听 host 或回环形式。
- * 绑定 0.0.0.0 / :: 时客户端用本机任意 IP 访问，Host 为 IP 字面量；rebinding 攻击的
- * Host 必然是攻击者域名（非 IP），故此时放行 IP 字面量不削弱防护。
+ * DNS rebinding protection: API requests only allow a Host header matching the configured
+ * listen host or a loopback form.
+ * When bound to 0.0.0.0 / ::, clients reach the service via any local IP, so the Host header
+ * is an IP literal; a rebinding attack's Host must be an attacker domain (not an IP), so
+ * allowing IP literals in that case does not weaken the protection.
  */
 export function isAllowedRequestHostHeader(
   hostHeader: string | string[] | undefined,

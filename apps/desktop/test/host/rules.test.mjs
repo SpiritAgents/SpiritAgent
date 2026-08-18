@@ -15,34 +15,34 @@ import {
 import { desktopInstructionPaths } from "../../dist-electron/src/host/skills.js";
 
 test("parseCreateRuleRequest accepts user scope prefix", () => {
-  const parsed = parseCreateRuleRequest("user 跨仓库提交约定");
+  const parsed = parseCreateRuleRequest("user cross-repo commit conventions");
   assert.ok(!(parsed instanceof Error));
   assert.equal(parsed.scope, "user");
-  assert.equal(parsed.prompt, "跨仓库提交约定");
+  assert.equal(parsed.prompt, "cross-repo commit conventions");
 });
 
 test("parseCreateRuleRequest prefers compound scope prefixes over short ones", () => {
-  const userLevel = parseCreateRuleRequest("user-level 跨仓库约定");
+  const userLevel = parseCreateRuleRequest("user-level cross-repo conventions");
   assert.ok(!(userLevel instanceof Error));
   assert.equal(userLevel.scope, "user");
-  assert.equal(userLevel.prompt, "跨仓库约定");
+  assert.equal(userLevel.prompt, "cross-repo conventions");
 
-  const repoLevel = parseCreateRuleRequest("repo-level 仓库测试要求");
+  const repoLevel = parseCreateRuleRequest("repo-level repo test requirements");
   assert.ok(!(repoLevel instanceof Error));
   assert.equal(repoLevel.scope, "workspace");
-  assert.equal(repoLevel.prompt, "仓库测试要求");
+  assert.equal(repoLevel.prompt, "repo test requirements");
 
-  const workspaceLevel = parseCreateRuleRequest("workspace-level 工作区 lint");
+  const workspaceLevel = parseCreateRuleRequest("workspace-level workspace lint");
   assert.ok(!(workspaceLevel instanceof Error));
   assert.equal(workspaceLevel.scope, "workspace");
-  assert.equal(workspaceLevel.prompt, "工作区 lint");
+  assert.equal(workspaceLevel.prompt, "workspace lint");
 });
 
 test("parseCreateRuleSlashPrompt defaults to workspace scope", () => {
-  const parsed = parseCreateRuleSlashPrompt("/create-rule 使用简体中文写 commit");
+  const parsed = parseCreateRuleSlashPrompt("/create-rule write commits in concise English");
   assert.ok(!(parsed instanceof Error));
   assert.equal(parsed.scope, "workspace");
-  assert.equal(parsed.prompt, "使用简体中文写 commit");
+  assert.equal(parsed.prompt, "write commits in concise English");
 });
 
 test("buildCreateRuleUserTurn includes workspace root and target path", () => {
@@ -63,10 +63,10 @@ test("createRuleFile writes template and rejects duplicates", async () => {
     const targetPath = resolveRuleFilePath(instructionPaths, "workspaceSpirit");
     await createRuleFile(workspaceRoot, {
       rootKind: "workspaceSpirit",
-      description: "提交信息使用中文",
+      description: "Commit messages use English",
     });
     const content = await import("node:fs/promises").then((fs) => fs.readFile(targetPath, "utf8"));
-    assert.match(content, /提交信息使用中文/);
+    assert.match(content, /Commit messages use English/);
     await assert.rejects(
       () =>
         createRuleFile(workspaceRoot, {

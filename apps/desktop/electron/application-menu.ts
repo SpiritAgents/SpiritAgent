@@ -169,12 +169,12 @@ function buildMacOSApplicationMenuTemplate(): Electron.MenuItemConstructorOption
   ];
 }
 
-/** macOS 系统菜单栏：包含标准应用菜单与 File 内“新会话”条目。 */
+/** macOS system menu bar: the standard application menu plus a "New Session" item under File. */
 export function setMacOSApplicationMenu(): void {
   Menu.setApplicationMenu(Menu.buildFromTemplate(buildMacOSApplicationMenuTemplate()));
 }
 
-/** 自绘顶栏菜单项：原生子菜单；x/y 为相对内容区原点（勿加 getContentBounds）。 */
+/** Custom top-bar menu items as a native submenu; x/y are relative to the content-area origin (do not add getContentBounds). */
 export function popupApplicationMenuSection(
   win: BrowserWindow,
   section: ApplicationMenuSection,

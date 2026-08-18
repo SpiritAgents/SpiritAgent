@@ -22,7 +22,8 @@ function buildDockMenu(sessions: readonly SessionListItem[], deps: MacOSDockMenu
   const openSession = (sessionPath: string) => {
     void deps.openSession(sessionPath);
   };
-  // 插在系统「窗口」列表与「选项」之间；系统已在该区段上下加分割线，勿再包一层 separator。
+  // Inserted between the system "Window" list and "Options"; the system already adds
+  // separators around that section, so do not wrap it in another separator.
   return Menu.buildFromTemplate(buildRecentSessionMenuItems(sessions, openSession));
 }
 

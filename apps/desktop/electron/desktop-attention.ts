@@ -7,7 +7,7 @@ let pendingTaskComplete = false;
 let flashFrameActive = false;
 let dockBounceId: number | undefined;
 let attentionBlockKey: string | undefined;
-/** 用户在前台见过该阻挡后，同一 block 不再重复请求任务栏关注。 */
+/** Once the user has seen this block in the foreground, do not request taskbar attention again for the same block. */
 let attentionSuppressedForKey: string | undefined;
 
 function shouldRequestAttention(away: boolean): boolean {

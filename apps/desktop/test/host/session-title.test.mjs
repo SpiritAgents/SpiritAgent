@@ -14,9 +14,9 @@ import {
 import { createEmptySessionBundle } from "../../dist-electron/src/host/session-bundle.js";
 
 test("buildSessionTitlePrompt includes user message and language rule", () => {
-  const prompt = buildSessionTitlePrompt("帮我写一个 Desktop 会话标题功能");
+  const prompt = buildSessionTitlePrompt("Help me build a Desktop session title feature");
   assert.match(prompt, /same language as the user message/i);
-  assert.match(prompt, /帮我写一个 Desktop 会话标题功能/);
+  assert.match(prompt, /Help me build a Desktop session title feature/);
   assert.match(prompt, /"title"/);
 });
 

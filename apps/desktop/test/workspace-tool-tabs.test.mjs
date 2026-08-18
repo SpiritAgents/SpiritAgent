@@ -19,9 +19,9 @@ import {
 
 const t = (key) =>
   ({
-    "workspace.files": "文件",
+    "workspace.files": "Files",
     "workspace.shell": "Shell",
-    "workspace.browser": "浏览器",
+    "workspace.browser": "Browser",
     "workspace.prTab": "Pull Request",
     "workspace.terminalChipDefaultName": "Terminal",
   })[key] ?? key;
@@ -38,8 +38,8 @@ test("workspaceToolTabLabel numbers duplicate kinds", () => {
   const a = createWorkspaceToolTab("files");
   const b = createWorkspaceToolTab("files");
   const tabs = [a, b];
-  assert.equal(workspaceToolTabLabel("files", tabs, a.id, t), "文件");
-  assert.equal(workspaceToolTabLabel("files", tabs, b.id, t), "文件 2");
+  assert.equal(workspaceToolTabLabel("files", tabs, a.id, t), "Files");
+  assert.equal(workspaceToolTabLabel("files", tabs, b.id, t), "Files 2");
   assert.equal(
     workspaceToolTabLabel("shell", tabs, createWorkspaceToolTab("shell").id, t),
     "Shell",

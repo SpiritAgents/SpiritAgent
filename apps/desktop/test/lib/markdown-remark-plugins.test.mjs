@@ -28,7 +28,7 @@ function countHardBreaks(markdown, remarkPlugins) {
 }
 
 test("spirit streamdown remark plugins turn single newline inside paragraph into hard break", () => {
-  const markdown = "主题\n我正在处理";
+  const markdown = "Topic\nWorking on it";
   const withSpiritPlugins = countHardBreaks(markdown, spiritRemarkPluginsForStreamdown);
   const gfmOnly = countHardBreaks(markdown, [remarkGfm]);
 
@@ -37,13 +37,13 @@ test("spirit streamdown remark plugins turn single newline inside paragraph into
 });
 
 test("spirit streamdown remark plugins preserve two-line plain text breaks", () => {
-  const markdown = "第一行文本\n第二行文本";
+  const markdown = "First line text\nSecond line text";
   const breaks = countHardBreaks(markdown, spiritRemarkPluginsForStreamdown);
   assert.equal(breaks, 1);
 });
 
 test("spirit streamdown remark plugins skip hard breaks when singleLineBreaks is false", () => {
-  const markdown = "主题\n我正在处理";
+  const markdown = "Topic\nWorking on it";
   const withoutBreaks = countHardBreaks(
     markdown,
     createSpiritRemarkPluginsForStreamdown({ singleLineBreaks: false }),

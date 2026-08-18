@@ -802,7 +802,10 @@
     "enterAnswer": "Veuillez saisir votre réponse",
     "customInput": "Saisie personnalisée",
     "customAnswerPlaceholder": "Ajouter des détails ou une option non listée",
-    "supplementOption": "Ajouter une option non listée"
+    "supplementOption": "Ajouter une option non listée",
+    "exportSessionOpenFailed": "Échec de l'ouverture automatique du fichier exporté : {{error}}",
+    "saveImageAsUnsupportedFormat": "Seuls les formats d'image courants peuvent être enregistrés.",
+    "saveImageAsFileMissing": "Le fichier image à enregistrer n'existe pas."
   },
   "workspace": {
     "planNotCreated": "Le plan n'a pas encore été créé.",
@@ -1449,5 +1452,14 @@
     "alwaysTrust": "Toujours faire confiance",
     "hooksSection": "Hooks qui s'exécuteront",
     "openHookScript": "Ouvrir le script dans l'éditeur par défaut"
+  },
+  "webHost": {
+    "error": {
+      "missingPath": "Le chemin de la requête est manquant.",
+      "pairingLocked": "Trop d'échecs d'appairage. Redémarrez l'hôte Web pour générer un nouveau code d'appairage.",
+      "pairingFailed": "Code d'appairage incorrect.",
+      "pairingRequired": "Terminez d'abord l'appairage initial.",
+      "invalidProvider": "Argument de fournisseur invalide."
+    }
   }
 }

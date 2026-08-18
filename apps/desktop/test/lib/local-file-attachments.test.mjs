@@ -55,7 +55,7 @@ test("preview data url cache evicts least recently used entry beyond the cap", (
   }
   assert.equal(readCachedLocalFilePreviewDataUrl("/tmp/lru-0.png"), "data:image/png;base64,0");
 
-  // 读取 lru-0 后其变为最近使用；再插入一条应淘汰 lru-1 而非 lru-0
+  // After reading lru-0 it becomes most recently used; inserting one more should evict lru-1, not lru-0
   rememberLocalFilePreviewDataUrl("/tmp/lru-extra.png", "data:image/png;base64,extra");
   assert.equal(readCachedLocalFilePreviewDataUrl("/tmp/lru-0.png"), "data:image/png;base64,0");
   assert.equal(readCachedLocalFilePreviewDataUrl("/tmp/lru-1.png"), undefined);

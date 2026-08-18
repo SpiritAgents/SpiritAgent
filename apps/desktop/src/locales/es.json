@@ -802,7 +802,10 @@
     "enterAnswer": "Introduzca su respuesta",
     "customInput": "Entrada personalizada",
     "customAnswerPlaceholder": "Añadir detalles o una opción no listada",
-    "supplementOption": "Añadir una opción no listada"
+    "supplementOption": "Añadir una opción no listada",
+    "exportSessionOpenFailed": "No se pudo abrir automáticamente el archivo exportado: {{error}}",
+    "saveImageAsUnsupportedFormat": "Solo se pueden guardar los formatos de imagen comunes.",
+    "saveImageAsFileMissing": "El archivo de imagen que se va a guardar no existe."
   },
   "workspace": {
     "planNotCreated": "El plan aún no se ha creado.",
@@ -1449,5 +1452,14 @@
     "alwaysTrust": "Confiar siempre",
     "hooksSection": "Hooks que se ejecutarán",
     "openHookScript": "Abrir script en el editor predeterminado"
+  },
+  "webHost": {
+    "error": {
+      "missingPath": "Falta la ruta de la solicitud.",
+      "pairingLocked": "Demasiados intentos de emparejamiento fallidos. Reinicia el host web para generar un nuevo código de emparejamiento.",
+      "pairingFailed": "El código de emparejamiento es incorrecto.",
+      "pairingRequired": "Primero completa el emparejamiento inicial.",
+      "invalidProvider": "Argumento de proveedor no válido."
+    }
   }
 }

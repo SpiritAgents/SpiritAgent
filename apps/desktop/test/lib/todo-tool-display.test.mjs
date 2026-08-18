@@ -34,7 +34,7 @@ test("parseTodoItemsFromPayload ignores ids and timestamps", () => {
 
 test("parseTodoItemsFromPayload returns undefined for incomplete streaming json", () => {
   assert.equal(
-    parseTodoItemsFromPayload('{"todos":[{"title":"任务 01","status":"completed"'),
+    parseTodoItemsFromPayload('{"todos":[{"title":"Task 01","status":"completed"'),
     undefined,
   );
   assert.equal(parseTodoItemsFromPayload(""), undefined);
@@ -102,10 +102,10 @@ test("todoWriteSummaryDetail returns undefined when after payload is unreliable"
   assert.equal(
     todoWriteSummaryDetail({
       before: [
-        { title: "任务 01", status: "pending" },
-        { title: "任务 02", status: "pending" },
+        { title: "Task 01", status: "pending" },
+        { title: "Task 02", status: "pending" },
       ],
-      afterPayload: '{"todos":[{"title":"任务 01","status":"completed"',
+      afterPayload: '{"todos":[{"title":"Task 01","status":"completed"',
       t,
       separator: " / ",
     }),
@@ -117,13 +117,13 @@ test("todoWriteSummaryDetail counts completed items when after payload is reliab
   assert.equal(
     todoWriteSummaryDetail({
       before: [
-        { title: "任务 01", status: "pending" },
-        { title: "任务 02", status: "pending" },
+        { title: "Task 01", status: "pending" },
+        { title: "Task 02", status: "pending" },
       ],
       afterPayload: {
         todos: [
-          { title: "任务 01", status: "completed" },
-          { title: "任务 02", status: "completed" },
+          { title: "Task 01", status: "completed" },
+          { title: "Task 02", status: "completed" },
         ],
       },
       t,

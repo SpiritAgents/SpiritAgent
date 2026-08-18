@@ -802,7 +802,10 @@
     "enterAnswer": "Please enter your answer",
     "customInput": "Custom Input",
     "customAnswerPlaceholder": "Add details or an unlisted option",
-    "supplementOption": "Supplement an unlisted option"
+    "supplementOption": "Supplement an unlisted option",
+    "exportSessionOpenFailed": "Failed to open the exported file: {{error}}",
+    "saveImageAsUnsupportedFormat": "Only common image formats can be saved.",
+    "saveImageAsFileMissing": "The image file to save does not exist."
   },
   "workspace": {
     "planNotCreated": "Plan has not been created yet.",
@@ -1449,5 +1452,14 @@
     "alwaysTrust": "Always trust",
     "hooksSection": "Hooks that will run",
     "openHookScript": "Open script in default editor"
+  },
+  "webHost": {
+    "error": {
+      "missingPath": "Request path is missing.",
+      "pairingLocked": "Too many pairing attempts failed. Restart the Web Host to generate a new pairing code.",
+      "pairingFailed": "Incorrect pairing code.",
+      "pairingRequired": "Complete the initial pairing first.",
+      "invalidProvider": "Invalid provider argument."
+    }
   }
 }
