@@ -526,16 +526,16 @@ function buildDreamCollectorPrompt(input: {
   const modeBlock =
     input.sourceContext.mode === "incremental"
       ? [
-          "这是同一会话在上次梦境收集后的新增内容。优先更新已有梦境，不要重复总结旧内容。",
+          "This is the new content of the same session since the last dream collection. Prefer updating existing dreams; do not re-summarize old content.",
           "[source_session_incremental_context]",
         ]
-      : ["这是该会话当前可用的完整摘要上下文。", "[source_session_full_context]"];
+      : ["This is the complete summary context currently available for this session.", "[source_session_full_context]"];
   return [
-    "请收集这条源会话的梦境摘要。",
-    "你必须先调用 dream_list 查看当前 scope 的已有梦境。",
-    "如果源会话延续了已有动向，请调用 dream_update；如果是新动向，请调用 dream_record；如果已有梦境已经误导或过时，可调用 dream_delete。",
-    "如果写 tags，只保留最关键的 2 到 4 个短标签；优先使用简短 lowercase/kebab-case 词，不要把所有子话题都枚举进去。",
-    "如果源会话完全没有可沉淀的近期工作动向，可以不写入梦境，但不要执行任何非梦境维护操作。",
+    "Collect the dream summary for this source session.",
+    "You must call dream_list first to inspect existing dreams in the current scope.",
+    "If the source session continues an existing thread of work, call dream_update; if it is a new thread, call dream_record; if an existing dream is misleading or outdated, call dream_delete.",
+    "If you write tags, keep only the 2 to 4 most essential short tags; prefer short lowercase/kebab-case words and do not enumerate every subtopic.",
+    "If the source session has no recent work worth distilling, you may skip writing a dream, but do not perform any non-dream-maintenance operations.",
     "",
     `[scope] workspace=${input.scope.workspaceRoot}`,
     `[scope] branch=${input.scope.gitBranch}`,

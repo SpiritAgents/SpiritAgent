@@ -115,8 +115,8 @@ export function ConversationPaneHost({
   const registerPaneComposerInsert = split.registerPaneComposerInsert;
   const registerPaneComposerControls = split.registerPaneComposerControls;
 
-  // 无条件按 paneId 注册本 Pane 的 composer 能力；读取方按 focusedPaneId 取用，
-  // 非焦点 Pane 不参与任何写入，兄弟 effect 的执行顺序不再影响结果
+  // Register this Pane's composer capabilities by paneId unconditionally; readers pick by focusedPaneId,
+  // non-focused Panes never write, so sibling effect execution order no longer affects the result
   useEffect(() => {
     registerPaneComposerInsert(paneId, pane.composerInsertHandlers);
     return () => {

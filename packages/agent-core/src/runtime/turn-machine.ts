@@ -128,9 +128,9 @@ export interface TurnMachineRuntime<
   pendingApproval: PendingApprovalState<State, ToolRequest, TrustTarget> | undefined;
   /** Single-slot overflow for early-stream approvals while pendingApproval is busy. */
   earlyApprovalQueue: EarlyStreamApprovalQueueItem<State, ToolRequest, TrustTarget>[];
-  /** formal 审批闸门等待槽位时的挂起点；canProceed=false 表示本轮已终止（abort/历史替换）。 */
+  /** Suspension point while the formal approval gate waits for the slot; canProceed=false means this turn was terminated (abort/history replacement). */
   pendingApprovalSlotWaiters: Array<(canProceed: boolean) => void>;
-  /** early 执行按启动顺序串成的 FIFO 链尾：审批卡片按参数完成顺序展示，而非授权竞速顺序。 */
+  /** FIFO chain tail linking early executions in start order: approval cards are shown in argument-completion order, not authorization-race order. */
   earlyApprovalOrderChain?: Promise<void>;
   pendingQuestions: PendingQuestionsState<State, ToolRequest> | undefined;
   pendingToolAgentRound: PendingToolAgentRound<State, ToolRequest> | undefined;
@@ -218,7 +218,7 @@ export async function resumePendingApproval<Config, State, ToolRequest, TrustTar
 ): Promise<RuntimeTurnResult<State, ToolRequest, TrustTarget>> {
   const pending = runtime.pendingApproval;
   if (!pending) {
-    throw new Error("当前没有待确认的工具调用。");
+    throw new Error("There is no pending tool call to confirm.");
   }
 
   runtime.pendingApproval = undefined;
@@ -317,7 +317,7 @@ export async function resumePendingQuestions<Config, State, ToolRequest, TrustTa
 ): Promise<RuntimeTurnResult<State, ToolRequest, TrustTarget>> {
   const pending = runtime.pendingQuestions;
   if (!pending) {
-    throw new Error("当前没有待回答的问题表单。");
+    throw new Error("There is no pending question form to answer.");
   }
 
   runtime.pendingQuestions = undefined;
@@ -502,7 +502,7 @@ export async function runTurnLoop<Config, State, ToolRequest, TrustTarget = stri
           if (compaction.droppedMessages === 0 && !preparedRetry.changed) {
             return {
               kind: "failed",
-              error: `检测到上下文超限，但历史已无法继续压缩。原始错误: ${completion.error}`,
+              error: `Context limit detected, but history cannot be compacted further. Original error: ${completion.error}`,
               state: preparedRetry.state,
               requestTrace: [...turn.requestTrace],
               toolExecutions: [...turn.toolExecutions],
@@ -527,7 +527,7 @@ export async function runTurnLoop<Config, State, ToolRequest, TrustTarget = stri
         } catch (error) {
           return {
             kind: "failed",
-            error: `上下文压缩失败: ${renderError(error)} | 原始错误: ${completion.error}`,
+            error: `Context compaction failed: ${renderError(error)} | Original error: ${completion.error}`,
             state: currentState,
             requestTrace: [...turn.requestTrace],
             toolExecutions: [...turn.toolExecutions],
@@ -566,7 +566,7 @@ export async function runTurnLoop<Config, State, ToolRequest, TrustTarget = stri
       if (emptyAssistantRetries > 1) {
         return {
           kind: "failed",
-          error: "模型返回了 final-response-ready，但没有可用的 assistant 正文。",
+          error: "The model returned final-response-ready, but there is no usable assistant text.",
           state: currentState,
           requestTrace: [...turn.requestTrace],
           toolExecutions: [...turn.toolExecutions],
@@ -1068,7 +1068,7 @@ export async function handlePendingToolAgentRoundCompletion<
     if (pending.emptyAssistantRetries >= 1) {
       runtime.completeTurn({
         kind: "failed",
-        error: "模型返回了 final-response-ready，但没有可用的 assistant 正文。",
+        error: "The model returned final-response-ready, but there is no usable assistant text.",
         state: round.state,
         requestTrace: [...pending.turn.requestTrace],
         toolExecutions: [...pending.turn.toolExecutions],
@@ -1434,10 +1434,11 @@ export async function processToolCallsAsync<Config, State, ToolRequest, TrustTar
         )
       : null;
     if (approvalGate) {
-      // 审批是单槽位：并行 tool call 中参数后完成的调用（典型如 shell）可能已通过
-      // early-stream 路径占着槽位。这里绝不能覆盖——被覆盖审批的 resolveEarlyDecision
-      // 永远不再被调用，其执行 promise 永不 settle，后续 continuation 会永远 await。
-      // 槽位被占时挂起等待，由 pump/clear 在槽位变化时唤醒重新检查。
+      // Approval is single-slot: in parallel tool calls, a call whose arguments complete later
+      // (typically shell) may already occupy the slot via the early-stream path. Never overwrite
+      // it here — the overwritten approval's resolveEarlyDecision would never be called, its
+      // execution promise would never settle, and later continuations would await forever.
+      // When the slot is occupied, suspend and wait; pump/clear re-wakes us on slot changes.
       while (runtime.pendingApproval !== undefined) {
         const canProceed = await waitForPendingApprovalSlot(runtime);
         if (!canProceed) {
@@ -1910,9 +1911,11 @@ export function startEarlyToolExecution<Config, State, ToolRequest, TrustTarget 
     ...call,
     argumentsJson: resolved.argumentsJson,
   };
-  // 审批卡片必须按参数完成（即 early 启动）顺序展示，而非授权竞速顺序：
-  // 每个 early 执行在启动时挂上 FIFO 链节点，授权判定完成、准备竞争审批单槽位前
-  // 先等先到者入队/占位；节点在入队/占位后立即放行（resolve 幂等，finally 兜底异常路径）。
+  // Approval cards must be shown in argument-completion (i.e. early-start) order, not
+  // authorization-race order: each early execution attaches a FIFO chain node at start and,
+  // once authorization completes, waits for earlier calls to enqueue/occupy the slot before
+  // competing for the single approval slot; the node releases right after enqueue/occupying
+  // (resolve is idempotent, finally covers exception paths).
   runtime.earlyApprovalOrderChain ??= Promise.resolve();
   const waitTurn = runtime.earlyApprovalOrderChain;
   let releaseTurn: () => void = () => {};
@@ -1991,8 +1994,9 @@ async function runEarlyToolExecution<Config, State, ToolRequest, TrustTarget = s
       return { kind: "deferred", reason: "approval-required", preGate };
     }
 
-    // 先等更早启动的调用完成审批入队/占位，再竞争审批单槽位（顺序链）；
-    // 本调用完成入队/占位后立刻放行后续调用。
+    // Wait for earlier-started calls to finish approval enqueue/slot-occupying before competing
+    // for the single approval slot (order chain); once this call has enqueued/occupied the slot,
+    // release the following calls immediately.
     if (orderTurn) {
       await orderTurn.waitTurn;
     }
@@ -2048,8 +2052,10 @@ async function runEarlyToolExecution<Config, State, ToolRequest, TrustTarget = s
     }
   }
 
-  // 无需审批（或审批已放行）时立即放行后续调用的审批排队，不等本调用执行完；
-  // 审批路径已在入队/占位时放行过，promise resolve 幂等，这里是无需审批路径的放行点。
+  // When no approval is needed (or approval was already granted), release the approval queueing
+  // of subsequent calls immediately without waiting for this call to finish executing;
+  // the approval path already released at enqueue/occupying time, promise resolve is idempotent,
+  // and this is the release point for the no-approval path.
   orderTurn?.releaseTurn();
 
   if (authorization.kind === "need-questions") {
@@ -2131,8 +2137,8 @@ async function runEarlyToolExecution<Config, State, ToolRequest, TrustTarget = s
 }
 
 /**
- * formal 审批闸门挂起等待审批单槽位释放。
- * 返回 false 表示本轮已被终止（abort / 历史替换），调用方应静默退出。
+ * Suspends the formal approval gate until the single approval slot is released.
+ * Returns false when this turn was terminated (abort / history replacement); the caller should exit silently.
  */
 function waitForPendingApprovalSlot<Config, State, ToolRequest, TrustTarget = string>(
   runtime: TurnMachineRuntime<Config, State, ToolRequest, TrustTarget>,
@@ -2145,7 +2151,7 @@ function waitForPendingApprovalSlot<Config, State, ToolRequest, TrustTarget = st
   });
 }
 
-/** 槽位状态变化后唤醒所有 formal 闸门 waiter 重新检查；canProceed=false 表示本轮已终止。 */
+/** Wakes all formal gate waiters to re-check after a slot state change; canProceed=false means this turn was terminated. */
 function notifyPendingApprovalSlotWaiters<Config, State, ToolRequest, TrustTarget = string>(
   runtime: TurnMachineRuntime<Config, State, ToolRequest, TrustTarget>,
   canProceed: boolean,
@@ -2167,7 +2173,7 @@ export function pumpEarlyApprovalQueue<Config, State, ToolRequest, TrustTarget =
   runtime: TurnMachineRuntime<Config, State, ToolRequest, TrustTarget>,
 ): void {
   ensureEarlyApprovalQueue(runtime);
-  // 无论本次 pump 结果如何，都唤醒 formal 闸门 waiter 重新检查槽位。
+  // Regardless of this pump's outcome, wake formal gate waiters to re-check the slot.
   try {
     if (runtime.pendingApproval) {
       return;
@@ -2197,7 +2203,7 @@ export function clearEarlyApprovalWaiters<Config, State, ToolRequest, TrustTarge
     const item = runtime.earlyApprovalQueue.shift();
     item?.resolveDecision(deny);
   }
-  // 本轮已终止：唤醒 formal 闸门 waiter 静默退出，避免 poll 协程永久挂起。
+  // This turn was terminated: wake formal gate waiters so they exit silently, avoiding permanently suspended poll coroutines.
   notifyPendingApprovalSlotWaiters(runtime, false);
 }
 
@@ -2457,7 +2463,7 @@ export async function waitForCompletedTurnResult<Config, State, ToolRequest, Tru
     }
 
     if (!runtime.isBusy()) {
-      throw new Error("runtime 在未产出结果时提前进入空闲状态。");
+      throw new Error("runtime went idle before producing a result.");
     }
 
     await runtime.poll();
@@ -2468,7 +2474,7 @@ export async function waitForCompletedTurnResult<Config, State, ToolRequest, Tru
     }
 
     if (!runtime.isBusy()) {
-      throw new Error("runtime 在未产出结果时提前进入空闲状态。");
+      throw new Error("runtime went idle before producing a result.");
     }
 
     await waitForImmediate();

@@ -89,7 +89,7 @@ export function ModelsSettingsPanel({
   const providerSearchInputRef = useRef<HTMLInputElement>(null);
   const providerListRef = useRef<HTMLDivElement>(null);
   const [connectDialogOpen, setConnectDialogOpen] = useState(false);
-  /** session 每次发起连接自增，作为 ProviderConnectDialog 的 key 重挂载以重置表单。 */
+  /** Increments on each connection attempt in this session; used as ProviderConnectDialog's key to remount and reset the form. */
   const [connectTarget, setConnectTarget] = useState<{
     provider: DesktopModelProvider;
     session: number;

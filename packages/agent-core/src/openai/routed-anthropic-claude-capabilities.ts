@@ -7,13 +7,13 @@ export interface RoutedAnthropicClaudeCapabilities {
   thinkingMode: RoutedAnthropicThinkingMode;
   supportedEfforts: readonly AnthropicEffort[];
   adaptiveDisplay?: "summarized";
-  /** false 时 API 不接受 thinking: disabled（如 Claude Fable/Mythos 5 常开 adaptive thinking）。 */
+  /** When false, the API does not accept thinking: disabled (e.g. Claude Fable/Mythos 5 with always-on adaptive thinking). */
   thinkingSwitchable?: boolean;
 }
 
 const CLAUDE_5_FULL_EFFORTS: readonly AnthropicEffort[] = ["low", "medium", "high", "xhigh", "max"];
 
-/** Claude 5 代际中 thinking 常开的族（fable / mythos）。 */
+/** Claude 5-generation families with always-on thinking (fable / mythos). */
 const CLAUDE_5_ALWAYS_ON_ADAPTIVE_FAMILIES = new Set(["fable", "mythos"]);
 
 export const ROUTED_ANTHROPIC_BUDGET_TOKENS_BY_EFFORT: Record<"low" | "medium" | "high", number> = {
@@ -50,7 +50,7 @@ function parseClaudeModelFamilyAndGeneration(
   return { family, generation };
 }
 
-/** Claude 5 代际（claude-{family}-5）：按族区分 adaptive 是否可关与 effort 档位。 */
+/** Claude 5 generation (claude-{family}-5): whether adaptive thinking can be disabled and the supported effort levels vary by family. */
 function resolveClaude5GenerationCapabilities(
   modelId: string,
 ): RoutedAnthropicClaudeCapabilities | undefined {

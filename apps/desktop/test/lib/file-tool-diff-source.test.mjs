@@ -18,7 +18,7 @@ test("resolveFileToolDiffSource returns undefined when collapsed", () => {
   const tool = {
     toolName: "create_file",
     phase: "preview",
-    headline: "创建",
+    headline: "Create",
     detailLines: [],
     streamingArgumentsJson: '{"path":"a.ts","content":"hello"}',
   };
@@ -29,7 +29,7 @@ test("resolveFileToolDiffSource parses streaming create_file content", () => {
   const tool = {
     toolName: "create_file",
     phase: "preview",
-    headline: "创建",
+    headline: "Create",
     detailLines: [],
     streamingArgumentsJson: '{"path":"src/a.ts","content":"line1\\nline2',
   };
@@ -50,7 +50,7 @@ test("resolveFileToolDiffSource parses complete edit_file from argsExcerpt", () 
   const tool = {
     toolName: "edit_file",
     phase: "succeeded",
-    headline: "编辑",
+    headline: "Edit",
     detailLines: [],
     argsExcerpt: JSON.stringify(request, null, 2),
   };
@@ -67,7 +67,7 @@ test("resolveFileToolDiffSource uses delete baseline", () => {
   const tool = {
     toolName: "delete_file",
     phase: "succeeded",
-    headline: "删除",
+    headline: "Delete",
     detailLines: [],
     deleteFileBaselineText: "gone\nsoon",
     argsExcerpt: JSON.stringify({ path: "x.txt" }, null, 2),
@@ -81,7 +81,7 @@ test("resolveFileToolDiffSource maps create_plan name to plans path", () => {
   const tool = {
     toolName: "create_plan",
     phase: "preview",
-    headline: "计划",
+    headline: "Plan",
     detailLines: [],
     streamingArgumentsJson: '{"name":"my-plan","content":"# Plan"}',
   };
@@ -94,7 +94,7 @@ test("resolveFileToolDiffSource uses planBaselineText for create_plan overwrite"
   const tool = {
     toolName: "create_plan",
     phase: "preview",
-    headline: "计划",
+    headline: "Plan",
     detailLines: [],
     streamingArgumentsJson: '{"name":"my-plan","content":"# New"}',
   };
@@ -110,7 +110,7 @@ test("resolveFileToolDiffSource reports truncated argsExcerpt", () => {
   const tool = {
     toolName: "create_file",
     phase: "succeeded",
-    headline: "创建",
+    headline: "Create",
     detailLines: [],
     argsExcerpt: '{"path":"big.ts","content":"unclosed',
   };
@@ -123,7 +123,7 @@ test("resolveFileToolDiffSource uses fileToolDiffArgumentsJson when argsExcerpt 
   const tool = {
     toolName: "create_file",
     phase: "succeeded",
-    headline: "创建",
+    headline: "Create",
     detailLines: [],
     argsExcerpt: `${JSON.stringify(request).slice(0, 4000)}...<truncated>`,
     fileToolDiffArgumentsJson: JSON.stringify(request),
@@ -143,7 +143,7 @@ test("resolveFileToolDiffSource resolves create_plan from host request plan_name
   const tool = {
     toolName: "create_plan",
     phase: "pending-approval",
-    headline: "计划",
+    headline: "Plan",
     detailLines: [],
     argsExcerpt: '{"name":"create_plan","plan_name":"my-plan"...<truncated>',
     fileToolDiffArgumentsJson: JSON.stringify(request),
@@ -158,7 +158,7 @@ test("resolveFileToolDiffSource keeps diff during pending-approval via streaming
   const tool = {
     toolName: "create_plan",
     phase: "pending-approval",
-    headline: "计划",
+    headline: "Plan",
     detailLines: [],
     argsExcerpt: '{"name":"debug-diagnostics-subsystem","content":"# Plan"...<truncated>',
     streamingArgumentsJson: JSON.stringify({

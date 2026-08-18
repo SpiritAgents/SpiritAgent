@@ -89,7 +89,7 @@ async function main(): Promise<void> {
   try {
     const address = server.address();
     if (!address || typeof address === "string") {
-      throw new Error("无法获取本地 runtime smoke server 端口。");
+      throw new Error("Unable to get the local runtime smoke server port.");
     }
 
     const runtime = createAiSdkOpenAiDemoRuntime({
@@ -107,11 +107,11 @@ async function main(): Promise<void> {
     printSmokeSection("ai-sdk openai runtime smoke result", result);
 
     if (result.kind !== "completed") {
-      throw new Error(`ai-sdk openai runtime smoke 未完成闭环，当前结果: ${result.kind}`);
+      throw new Error(`ai-sdk openai runtime smoke did not complete the turn loop, current result: ${result.kind}`);
     }
 
     if (!result.assistantText.trim()) {
-      throw new Error("ai-sdk openai runtime smoke 未拿到最终 assistant 文本。");
+      throw new Error("ai-sdk openai runtime smoke did not get the final assistant text.");
     }
 
     printSmokeSection("ai-sdk openai runtime history snapshot", runtime.history());

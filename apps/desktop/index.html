@@ -45,7 +45,7 @@
       html.spirit-desktop-native.spirit-desktop-translucency body {
         background: transparent !important;
       }
-      /* 关 Blur 时首帧临界底色：与 electronRootBackgroundForBackdrop / styles.css Void 对齐，须早于 module CSS */
+      /* First-frame critical background when Blur is off: matches electronRootBackgroundForBackdrop / styles.css Void, must load before module CSS */
       html.spirit-desktop-native:not(.spirit-desktop-translucency),
       html.spirit-desktop-native:not(.spirit-desktop-translucency) body {
         background-color: #fafafa;

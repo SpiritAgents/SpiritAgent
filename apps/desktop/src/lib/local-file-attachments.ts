@@ -70,9 +70,11 @@ export function snapshotToComposerAttachmentView(
   };
 }
 
-// 预览值可能是 MB 级 data URL；LRU 封顶防止长会话/多附件下无限增长。
-// 生成图片/视频工具卡与 composer 附件共用此缓存（键为规范化路径或 managed 引用），
-// 虚拟化滚动反复挂载卡片时避免重复 IPC 拉取。
+// Preview values can be MB-sized data URLs; the LRU cap prevents unbounded growth in long
+// sessions / many attachments.
+// The generated-image/video tool cards and composer attachments share this cache (keyed by the
+// normalized path or managed reference), avoiding repeated IPC fetches when virtualized
+// scrolling remounts cards.
 export const LOCAL_FILE_PREVIEW_CACHE_MAX_ENTRIES = 20;
 
 const localFilePreviewDataUrlCache = new Map<string, string>();
@@ -82,7 +84,7 @@ export function rememberLocalFilePreviewDataUrl(path: string, previewDataUrl: st
   if (!previewDataUrl) {
     return;
   }
-  // Map 迭代按插入序；delete+set 把命中项挪到队尾实现 LRU
+    // Map iteration follows insertion order; delete+set moves the hit entry to the tail, implementing LRU
   localFilePreviewDataUrlCache.delete(normalizedPath);
   localFilePreviewDataUrlCache.set(normalizedPath, previewDataUrl);
   if (localFilePreviewDataUrlCache.size > LOCAL_FILE_PREVIEW_CACHE_MAX_ENTRIES) {

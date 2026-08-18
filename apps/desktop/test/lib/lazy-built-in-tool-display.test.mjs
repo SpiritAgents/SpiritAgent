@@ -9,7 +9,7 @@ import {
 
 test("parseLazyToolGatewayFieldsFromJson: partial gateway JSON exposes built-in create_automation", () => {
   const partial =
-    '{"provider":"built-in","server":"desktop","tool":"create_automation","arguments":{"title":"AI 新闻日报"';
+    '{"provider":"built-in","server":"desktop","tool":"create_automation","arguments":{"title":"AI news digest"';
   assert.deepEqual(parseLazyToolGatewayFieldsFromJson(partial), {
     provider: "built-in",
     server: "desktop",
@@ -19,23 +19,23 @@ test("parseLazyToolGatewayFieldsFromJson: partial gateway JSON exposes built-in 
 
 test("resolveCreateAutomationSummaryDetail: progressive title then trigger from streaming JSON", () => {
   const titleOnly =
-    '{"provider":"built-in","server":"desktop","tool":"create_automation","arguments":{"title":"AI 新闻日报","trigger":{"kind":"time","schedule":{"kind":"daily"';
+    '{"provider":"built-in","server":"desktop","tool":"create_automation","arguments":{"title":"AI news digest","trigger":{"kind":"time","schedule":{"kind":"daily"';
   assert.deepEqual(
     resolveCreateAutomationSummaryDetail({
       gatewayJson: titleOnly,
       formatTriggerLabel: () => "Daily 08:00",
     }),
-    { title: "AI 新闻日报" },
+    { title: "AI news digest" },
   );
 
   const withTrigger =
-    '{"provider":"built-in","server":"desktop","tool":"create_automation","arguments":{"title":"AI 新闻日报","trigger":{"kind":"time","schedule":{"kind":"daily","hour":8,"minute":0}}}}';
+    '{"provider":"built-in","server":"desktop","tool":"create_automation","arguments":{"title":"AI news digest","trigger":{"kind":"time","schedule":{"kind":"daily","hour":8,"minute":0}}}}';
   assert.deepEqual(
     resolveCreateAutomationSummaryDetail({
       gatewayJson: withTrigger,
       formatTriggerLabel: () => "Daily 08:00",
     }),
-    { title: "AI 新闻日报", triggerLabel: "Daily 08:00" },
+    { title: "AI news digest", triggerLabel: "Daily 08:00" },
   );
 });
 

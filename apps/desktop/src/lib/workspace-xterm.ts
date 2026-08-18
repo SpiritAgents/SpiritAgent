@@ -6,7 +6,7 @@ import { configureWorkspaceTerminalLinks } from "@/lib/workspace-terminal-links"
 import { attachWorkspaceTerminalResizeObserver } from "@/lib/workspace-terminal-resize";
 import { readTerminalThemeFromDocument, trackTerminalTheme } from "@/lib/workspace-terminal-theme";
 
-/** Windows 上优先系统 Cascadia / Consolas；不把 webfont 置于栈首，以免覆盖已安装的系统等宽字体。 */
+/** On Windows, prefer the system Cascadia / Consolas; do not put a webfont at the front of the stack, so installed system monospace fonts are not overridden. */
 export const WORKSPACE_TERMINAL_FONT_FAMILY =
   '"Cascadia Code", "Cascadia Mono", Consolas, "Lucida Console", "Courier New", monospace';
 
@@ -14,7 +14,7 @@ const WORKSPACE_TERMINAL_FONT_SIZE = 12;
 const WORKSPACE_TERMINAL_LINE_HEIGHT = 1;
 const WORKSPACE_TERMINAL_LETTER_SPACING = 0;
 
-/** 在 open + fit 之后加载 WebGL；失败或上下文丢失时回退默认渲染器。 */
+/** Loads WebGL after open + fit; falls back to the default renderer on failure or context loss. */
 export function loadWorkspaceTerminalWebgl(term: Terminal): WebglAddon | null {
   try {
     const webgl = new WebglAddon();
@@ -30,7 +30,7 @@ export function loadWorkspaceTerminalWebgl(term: Terminal): WebglAddon | null {
   }
 }
 
-/** 有选区：复制；无选区：粘贴（与常见集成终端一致，不弹出菜单）。 */
+/** With a selection: copy; without a selection: paste (consistent with common integrated terminals, no menu popup). */
 function writeClipboard(text: string): void {
   const b = window.spiritDesktop;
   if (b?.writeClipboardText) {
@@ -64,14 +64,14 @@ export type CreateWorkspaceTerminalOptions = {
   onTitleChange?: (title: string | undefined) => void;
   onEmbedError: (message: string) => void;
   shellExitedMessage: (exitCode: number) => string;
-  /** 侧栏拖拽等连续布局变化期间暂停 fit，避免 PTY 与渲染器尺寸不同步。 */
+  /** Pauses fit during continuous layout changes such as sidebar dragging, so PTY and renderer sizes stay in sync. */
   isResizeSuspended?: () => boolean;
 };
 
 export type WorkspaceTerminalSession = {
   terminal: Terminal;
   fitAddon: FitAddon;
-  /** 在布局稳定后手动触发 fit（例如侧栏拖拽结束）。 */
+  /** Manually triggers a fit once the layout is stable (e.g. after a sidebar drag ends). */
   scheduleFit: () => void;
   dispose: () => void;
 };

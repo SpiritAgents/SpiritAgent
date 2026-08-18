@@ -121,8 +121,8 @@ interface PreparedReferenceIndex {
 }
 
 /**
- * 按 files 数组引用缓存预计算候选（小写、basename、目录推导），
- * 避免每次按键对全量文件重复 toLowerCase / Array.from / 目录推导。
+ * Precompute candidates (lowercase, basename, directory derivation) cached per files-array reference,
+ * avoiding repeated toLowerCase / Array.from / directory derivation over all files on every keystroke.
  */
 const preparedReferenceIndexCache = new WeakMap<readonly string[], PreparedReferenceIndex>();
 
@@ -319,7 +319,7 @@ function scorePreparedReferenceCandidate(
   return undefined;
 }
 
-/** haystack 经 for..of 按码点迭代，避免每候选 Array.from 整串物化。 */
+/** Iterate the haystack by code point via for..of, avoiding materializing the whole string with Array.from per candidate. */
 function subsequenceScore(needleChars: readonly string[], haystack: string): number | undefined {
   let needleIndex = 0;
   let haystackIndex = 0;

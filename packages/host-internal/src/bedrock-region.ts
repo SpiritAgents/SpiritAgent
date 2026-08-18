@@ -1,4 +1,4 @@
-/** Renderer-safe Bedrock region / apiBase helpers（无 Node 或 AWS SDK 依赖）。 */
+/** Renderer-safe Bedrock region / apiBase helpers (no Node or AWS SDK dependencies). */
 
 export function normalizeAwsRegion(region: string): string {
   return region.trim().toLowerCase();

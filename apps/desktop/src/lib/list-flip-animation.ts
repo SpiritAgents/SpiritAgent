@@ -72,7 +72,7 @@ export function readWorkspaceGroupCollapseMetrics(groupNode: HTMLElement): {
   };
 }
 
-/** 拖拽结束：锁定已展开内容高度，避免移除 drag 冻结后 collapse 动画从 0 重播 */
+/** Drag ended: lock the expanded content height so removing the drag freeze does not replay the collapse animation from 0 */
 export function settleWorkspaceGroupCollapseAfterDrag(groupNode: HTMLElement): void {
   const content = groupNode.querySelector('[data-slot="animated-collapse-content"]');
   if (!(content instanceof HTMLElement) || content.getAttribute("data-state") !== "open") {

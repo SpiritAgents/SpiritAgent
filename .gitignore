@@ -6,7 +6,7 @@
 **/.tsbuildinfo*
 **/*.tsbuildinfo
 /apps/desktop/release/
-# 构建期由 packages/brand SVG 生成（apps/desktop/scripts/gen-brand-assets.mjs），不入库
+# Generated at build time from packages/brand SVGs (apps/desktop/scripts/gen-brand-assets.mjs); not checked in
 /apps/desktop/build/icon.png
 /apps/desktop/build/icon.ico
 /apps/desktop/build/background.png

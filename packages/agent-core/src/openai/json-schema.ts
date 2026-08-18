@@ -65,7 +65,7 @@ export function extractJsonSchemaCompletionContent(response: {
 }): string {
   const content = response.choices?.at(0)?.message?.content?.trim() ?? "";
   if (!content) {
-    throw new Error("结构化输出返回为空。");
+    throw new Error("Structured output returned empty.");
   }
 
   return content;
@@ -83,7 +83,7 @@ export function parseJsonSchemaCompletionOutput<T extends JsonValue = JsonValue>
     }
   }
 
-  throw new Error("结构化输出不是合法 JSON。");
+  throw new Error("Structured output is not valid JSON.");
 }
 
 export function stringifyJsonSchemaCompletionOutput(output: JsonValue): string {

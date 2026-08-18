@@ -19,11 +19,12 @@ impl TuiShell {
             std::process::id()
         ));
         fs::copy(&source, &target).with_context(|| {
-            format!(
-                "导出 CLI 日志失败: {} -> {}",
-                source.display(),
-                target.display()
+            t!(
+                "tui.log.export_copy_failed",
+                src = source.display(),
+                dst = target.display()
             )
+            .into_owned()
         })?;
         logging::log_event(&format!(
             "[cli-log] export source={} target={}",
@@ -39,7 +40,7 @@ impl TuiShell {
             .create(true)
             .append(true)
             .open(&path)
-            .with_context(|| format!("无法创建或访问 CLI 日志文件: {}", path.display()))?;
+            .with_context(|| t!("tui.log.file_access_failed", path = path.display()).into_owned())?;
         Ok(path)
     }
 
@@ -65,19 +66,21 @@ impl TuiShell {
             "api_base": api_base,
             "working_directory": working_directory,
             "system_prompts": export_state.system_prompts,
-            "note": "messages: 内存 llm_history 的 API 形态。api_request_trace: 每步模型推理均为一次 tool_agent_chat_completions，stream=true，含 tools；多轮工具时会有多条 trace（每轮一次 HTTP），失败轮次也会保留最后一次请求体。system_prompts 为 transport 导出的 system 文案（如 tool_agent），供调试与导出。",
+            "note": "messages: API shape of the in-memory llm_history. api_request_trace: each model inference step is one tool_agent_chat_completions call with stream=true, including tools; multi-round tool use yields multiple traces (one HTTP request per round), and failed rounds still keep the last request body. system_prompts holds the transport-exported system copy (e.g. tool_agent) for debugging and export.",
             "message_count": export_state.api_messages.len(),
             "messages": export_state.api_messages,
             "api_request_trace_count": export_state.api_request_trace.len(),
             "api_request_trace": export_state.api_request_trace,
         });
 
-        let json = serde_json::to_string_pretty(&export).context("序列化 JSON 失败")?;
+        let json = serde_json::to_string_pretty(&export)
+            .context(t!("tui.log.serialize_failed").into_owned())?;
         let path = env::temp_dir().join(format!(
             "spirit-agent-llm-export-{exported_at_unix_secs}-{}.json",
             std::process::id()
         ));
-        fs::write(&path, json).with_context(|| format!("写入文件失败: {}", path.display()))?;
+        fs::write(&path, json)
+            .with_context(|| t!("tui.log.write_failed", path = path.display()).into_owned())?;
         Ok(path)
     }
 }
@@ -88,7 +91,7 @@ fn open_path_in_os(path: &Path) -> Result<()> {
         Command::new("explorer.exe")
             .arg(path.as_os_str())
             .spawn()
-            .with_context(|| format!("调用系统打开日志失败: {}", path.display()))?;
+            .with_context(|| t!("tui.log.system_open_failed", path = path.display()).into_owned())?;
         return Ok(());
     }
 
@@ -97,7 +100,7 @@ fn open_path_in_os(path: &Path) -> Result<()> {
         Command::new("open")
             .arg(path)
             .spawn()
-            .with_context(|| format!("调用系统打开日志失败: {}", path.display()))?;
+            .with_context(|| t!("tui.log.system_open_failed", path = path.display()).into_owned())?;
         return Ok(());
     }
 
@@ -106,13 +109,12 @@ fn open_path_in_os(path: &Path) -> Result<()> {
         Command::new("xdg-open")
             .arg(path)
             .spawn()
-            .with_context(|| format!("调用系统打开日志失败: {}", path.display()))?;
+            .with_context(|| t!("tui.log.system_open_failed", path = path.display()).into_owned())?;
         return Ok(());
     }
 
     #[allow(unreachable_code)]
     Err(anyhow::anyhow!(
-        "当前平台暂不支持自动打开日志文件: {}",
-        path.display()
+        t!("tui.platform.open_log_unsupported", path = path.display()).into_owned()
     ))
 }

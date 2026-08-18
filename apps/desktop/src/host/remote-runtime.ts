@@ -189,8 +189,8 @@ async function applyRemoteSessionPreferences(
   input: Pick<RemoteDesktopRuntimeInput, "approvalLevel" | "todoSessionKey" | "archive" | "agentMode">,
 ): Promise<void> {
   await runtime.clientCall("session.setApprovalLevel", { approvalLevel: input.approvalLevel });
-  // Attach 复用既有 daemon session 时必须重同步 mode；否则 UI/host config 已切 Plan，
-  // daemon 仍保留创建时的 Agent（无 create_plan / system 仍写 You are in Agent mode）。
+  // When Attach reuses an existing daemon session, the mode must be re-synced; otherwise the UI/host config
+  // has switched to Plan while the daemon still keeps the Agent from creation (no create_plan / system still says You are in Agent mode).
   await runtime.clientCall("session.setMode", { mode: input.agentMode });
   if (input.todoSessionKey?.trim()) {
     await runtime.clientCall("session.setTodoSessionKey", {
@@ -836,8 +836,8 @@ export class RemoteDesktopRuntime {
         this.thinkingTextStore = event.text;
         break;
       case "assistant-thinking-segment-finalized":
-        // 对齐 embedded runtime（agent-core runtime/streaming.ts）：thinking 定稿即清空
-        // 暂存，否则 synthesizeLocalPendingAux 会把上一段思考当作下一段占位 detailText 复用。
+        // Align with the embedded runtime (agent-core runtime/streaming.ts): clear the staging buffer as
+        // soon as thinking finalizes, otherwise synthesizeLocalPendingAux reuses the previous thinking segment as the next placeholder detailText.
         this.thinkingTextStore = "";
         break;
       case "remove-pending-assistant":

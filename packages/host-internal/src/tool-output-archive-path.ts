@@ -1,5 +1,5 @@
 /**
- * 工具输出归档路径常量与纯路径判断（无 Node 内置依赖，可供 Desktop renderer 安全 import）。
+ * Tool output archive path constants and pure path checks (no Node built-in dependencies; safe to import from the Desktop renderer).
  */
 
 export const TOOL_OUTPUT_ARCHIVES_DIR_NAME = "tool-output-archives";

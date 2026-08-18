@@ -48,7 +48,7 @@ async function main(): Promise<void> {
   const address = server.address();
   if (!address || typeof address === "string") {
     server.close();
-    throw new Error("无法获取本地 smoke server 端口。");
+    throw new Error("Unable to get the local smoke server port.");
   }
 
   const transport = new AiSdkOpenResponsesTransport();
@@ -75,27 +75,27 @@ async function main(): Promise<void> {
 
   if (firstRound.kind !== "success" || firstRound.result.step.kind !== "tool-calls") {
     server.close();
-    throw new Error("ai-sdk deepseek responses smoke step 1 未进入 tool-calls。");
+    throw new Error("ai-sdk deepseek responses smoke step 1 did not reach tool-calls.");
   }
 
   const toolsOnRequest = capturedBody?.tools as Array<{ type?: string }> | undefined;
   if (!toolsOnRequest?.some((tool) => tool.type === "web_search")) {
     server.close();
-    throw new Error("ai-sdk deepseek responses smoke 请求体缺少 web_search。");
+    throw new Error("ai-sdk deepseek responses smoke request body is missing web_search.");
   }
   if (toolsOnRequest.some((tool) => tool.type === "web_search_2025_08_26")) {
     server.close();
-    throw new Error("ai-sdk deepseek responses smoke 不应注入 web_search_2025_08_26。");
+    throw new Error("ai-sdk deepseek responses smoke should not inject web_search_2025_08_26.");
   }
   if (toolsOnRequest.some((tool) => tool.type === "apply_patch")) {
     server.close();
-    throw new Error("ai-sdk deepseek responses smoke 不应注入 apply_patch。");
+    throw new Error("ai-sdk deepseek responses smoke should not inject apply_patch.");
   }
 
   const firstCall = firstRound.result.step.calls.at(0);
   if (!firstCall) {
     server.close();
-    throw new Error("ai-sdk deepseek responses smoke step 1 没有任何 tool call。");
+    throw new Error("ai-sdk deepseek responses smoke step 1 did not produce any tool call.");
   }
 
   const resumedState = appendOpenAiToolResultMessage(
@@ -109,19 +109,19 @@ async function main(): Promise<void> {
   server.close();
 
   if (secondRound.kind !== "success" || secondRound.result.step.kind !== "final-response-ready") {
-    throw new Error("ai-sdk deepseek responses smoke step 2 未进入 final-response-ready。");
+    throw new Error("ai-sdk deepseek responses smoke step 2 did not reach final-response-ready.");
   }
 
   const assistantText = extractLastOpenAiAssistantText(secondRound.result.state)?.trim();
   if (assistantText !== "DEEPSEEK_RESPONSES_OK") {
     throw new Error(
-      `ai-sdk deepseek responses smoke step 2 未拿到预期最终 assistant 文本。实际: ${assistantText ?? "<empty>"}`,
+      `ai-sdk deepseek responses smoke step 2 did not get the expected final assistant text. Actual: ${assistantText ?? "<empty>"}`,
     );
   }
 
   const traceKind = secondRound.result.requestTrace[0];
   if (!isJsonObject(traceKind) || traceKind.kind !== "deepseek_open_responses") {
-    throw new Error("ai-sdk deepseek responses smoke 未写入 deepseek_open_responses trace。");
+    throw new Error("ai-sdk deepseek responses smoke did not write a deepseek_open_responses trace.");
   }
 }
 

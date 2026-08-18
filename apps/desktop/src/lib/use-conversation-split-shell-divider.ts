@@ -12,7 +12,7 @@ type ConversationSplitShellLineOrientation = "horizontal" | "vertical";
 type UseConversationSplitShellDividerOptions = {
   splitId: string;
   lineOrientation: ConversationSplitShellLineOrientation;
-  /** 裁剪范围：所属 split 容器，横竖线均不画出容器外。 */
+  /** Clip range: the owning split container; neither horizontal nor vertical lines are drawn outside it. */
   boundsRef?: RefObject<HTMLElement | null>;
   enabled?: boolean;
   active?: boolean;

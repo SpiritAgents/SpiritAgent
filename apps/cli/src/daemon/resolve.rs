@@ -110,10 +110,10 @@ pub(crate) fn find_live_instance(data_dir: &Path) -> Option<DaemonInstance> {
 pub(crate) fn read_server_token(data_dir: &Path) -> Result<String> {
     let path = data_dir.join("server.token");
     let token = fs::read_to_string(&path)
-        .with_context(|| format!("读取 daemon token 失败: {}", path.display()))?;
+        .with_context(|| format!("Failed to read daemon token: {}", path.display()))?;
     let token = token.trim().to_string();
     if token.is_empty() {
-        return Err(anyhow!("daemon token 文件为空: {}", path.display()));
+        return Err(anyhow!("daemon token file is empty: {}", path.display()));
     }
     Ok(token)
 }
@@ -171,7 +171,7 @@ pub(crate) fn ensure_daemon(workspace_root: &Path) -> Result<(DaemonInstance, St
         }
         if Instant::now() > deadline {
             return Err(anyhow!(
-                "daemon 启动超时（{}s）。日志: {}",
+                "daemon startup timed out ({}s). Log: {}",
                 SPAWN_TIMEOUT.as_secs(),
                 log_dir.join("daemon.log").display()
             ));

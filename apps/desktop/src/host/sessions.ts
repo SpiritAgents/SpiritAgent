@@ -307,7 +307,7 @@ export function cloneQueuedUserTurns(queued: readonly QueuedUserTurn[]): QueuedU
   }));
 }
 
-/** 运行时消息投影清洗；chat schema v2 落盘边界见 chat-schema.ts。 */
+/** Runtime message projection sanitization; see chat-schema.ts for the chat schema v2 persistence boundary. */
 export function sanitizeConversationMessagesForPersistence(
   messages: ConversationMessageSnapshot[],
 ): ConversationMessageSnapshot[] {
@@ -330,7 +330,7 @@ export function sanitizeConversationMessagesForPersistence(
   });
 }
 
-/** 当磁盘 llmHistory 为空但 desktop 消息已有往返时，供 runtime 恢复的最小 llm 历史。 */
+/** Minimal llm history for runtime recovery when the on-disk llmHistory is empty but desktop messages already contain turns. */
 export function buildLlmHistoryFallbackFromDesktopMessages(
   messages: ConversationMessageSnapshot[],
 ): ChatArchive["llmHistory"] {

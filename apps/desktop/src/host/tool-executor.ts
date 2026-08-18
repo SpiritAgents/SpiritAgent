@@ -302,7 +302,7 @@ export class DesktopToolExecutor implements ToolExecutor<DesktopToolRequest, str
   }
 
   async parseCommand(_message: string): Promise<DesktopToolRequest> {
-    throw new Error("当前桌面宿主未实现手动工具命令解析。");
+    throw new Error("The current desktop host does not implement manual tool command parsing.");
   }
 
   async requestFromFunctionCall(name: string, argumentsJson: string): Promise<DesktopToolRequest> {

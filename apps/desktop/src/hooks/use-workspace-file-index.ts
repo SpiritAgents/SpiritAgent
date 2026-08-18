@@ -63,7 +63,7 @@ export function useWorkspaceFileIndex({
             return;
           }
         } catch {
-          // 索引构建中或宿主未就绪，继续轮询。
+          // Index still building or host not ready; keep polling.
         }
 
         pollsSincePrime += 1;

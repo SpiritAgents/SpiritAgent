@@ -249,7 +249,7 @@ test("todo_write rejects duplicate ids in one batch", async () => {
           { id: "same-id", title: "First", status: "pending" },
           { id: "same-id", title: "Second", status: "pending" },
         ]),
-      /会话 TODO id 重复/,
+      /Duplicate session TODO id/,
     );
   } finally {
     await rm(workspaceRoot, { recursive: true, force: true });

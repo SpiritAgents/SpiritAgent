@@ -1,6 +1,6 @@
 import type { ToolBlockSnapshot } from "../types.js";
 
-/** Minimal 工具卡在 preview / 待审批 / running 阶段显示与 Thinking 一致的 shimmer。 */
+/** Minimal tool cards show the same shimmer as Thinking during the preview / pending-approval / running phases. */
 export function toolCallPhaseShowsShimmer(phase: ToolBlockSnapshot["phase"]): boolean {
   return phase === "preview" || phase === "pending-approval" || phase === "running";
 }

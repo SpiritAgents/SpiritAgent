@@ -11,9 +11,11 @@ type GuestF12Registration = {
 const f12ByGuestId = new Map<number, GuestF12Registration>();
 
 /**
- * IPC 传入的 webContentsId 可为任意值；存活目标必须是 <webview> guest 且其宿主
- * （embedder）为发起 IPC 的 sender，防止渲染进程操纵其他窗口 / 主窗口的 webContents。
- * 目标已销毁（如 tab 关闭竞态）时返回 null，由调用方决定是否视为无效。
+ * The webContentsId passed over IPC can be any value; the live target must be a <webview> guest
+ * whose host (embedder) is the sender of the IPC, preventing the renderer from manipulating the
+ * webContents of other windows / the main window.
+ * Returns null when the target is already destroyed (e.g. a tab-close race); the caller decides
+ * whether to treat that as invalid.
  */
 function findOwnedWebviewGuest(host: WebContents, guestWebContentsId: number): WebContents | null {
   const guest = webContents.fromId(guestWebContentsId);

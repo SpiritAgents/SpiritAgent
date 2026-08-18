@@ -268,7 +268,7 @@ async function finishDirectMediaTurn(
   }
 }
 
-/** 同步执行整轮直连媒体（测试与旧调用路径）。 */
+/** Runs a full direct-media turn synchronously (tests and legacy call paths). */
 export async function executeDirectMediaTurn(
   ctx: SessionTurnOrchestratorContext,
   input: DirectMediaTurnInput,
@@ -279,8 +279,8 @@ export async function executeDirectMediaTurn(
 }
 
 /**
- * 与 LLM 流式回合一致：校验并展示工具卡后立刻返回 snapshot；
- * 长耗时的 generateImage/generateVideo 在后台完成，不占用 runSerialized。
+ * Consistent with LLM streaming turns: validate and show the tool card, then return the snapshot immediately;
+ * the long-running generateImage/generateVideo completes in the background without holding runSerialized.
  */
 export async function startComposerDirectMediaTurn(
   ctx: SessionTurnOrchestratorContext,

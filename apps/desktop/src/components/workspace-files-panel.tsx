@@ -75,7 +75,7 @@ function workspaceRelFromSelectedEntryKey(
   return selectedEntryKey.slice("workspace:".length);
 }
 
-/** 重命名聚焦时预选文件名主体，不含最后一个扩展名（如 App.tsx → App）。 */
+/** On rename focus, preselects the file name body without the last extension (e.g. App.tsx → App). */
 function focusRenameInput(input: HTMLInputElement, filename: string): void {
   input.focus({ preventScroll: true });
   const lastDot = filename.lastIndexOf(".");
@@ -101,7 +101,7 @@ function isExplorerFolderDropTarget(target: EventTarget | null): boolean {
   return target.closest("[data-explorer-folder-drop]") !== null;
 }
 
-/** UL/LI 间隙不应切换为父目录高亮，仅保持 drop 可用。 */
+/** UL/LI gaps must not switch the parent-directory highlight; they only keep drop usable. */
 function isExplorerListChromeDragTarget(target: EventTarget | null): boolean {
   if (!(target instanceof Element)) {
     return false;
@@ -110,7 +110,7 @@ function isExplorerListChromeDragTarget(target: EventTarget | null): boolean {
   return tag === "UL" || tag === "LI";
 }
 
-/** 文件树空白区域（容器 / 列表间隙），用于清除目录暂留。 */
+/** Blank area of the file tree (container / list gaps), used to clear directory lingering. */
 function isExplorerTreeBlankTarget(target: EventTarget | null): boolean {
   if (!(target instanceof Element)) {
     return false;
@@ -163,21 +163,21 @@ export type WorkspaceFilesPanelProps = {
   workspaceRoot: string;
   plan: PlanSnapshot;
   listExplorerChildren: (relativePath: string) => Promise<WorkspaceExplorerListResult>;
-  /** 当前选中的条目；`plan` 为托管计划文件，`workspace:*` 为工作区相对路径。 */
+  /** Currently selected entry; `plan` is the managed plan file, `workspace:*` is a workspace-relative path. */
   selectedEntryKey?: string | null;
-  /** 展开并滚动到该目录（不含末尾 `/`）。 */
+  /** Expands and scrolls to this directory (without trailing `/`). */
   expandDirectoryPath?: string;
   expandDirectoryNonce?: number;
   onOpenFile?: (relativePath: string) => void;
   onOpenPlan?: () => void;
-  /** 工作区条目重命名成功后通知父层更新编辑器路径。 */
+  /** Notifies the parent to update the editor path after a workspace entry is renamed. */
   onWorkspaceEntryRenamed?: (oldRelativePath: string, newRelativePath: string) => void;
-  /** 工作区条目移动成功后通知父层更新编辑器路径。 */
+  /** Notifies the parent to update the editor path after a workspace entry is moved. */
   onWorkspaceEntryMoved?: (oldRelativePath: string, newRelativePath: string) => void;
-  /** 工作区条目删除成功后通知父层关闭编辑器。 */
+  /** Notifies the parent to close the editor after a workspace entry is deleted. */
   onWorkspaceEntryDeleted?: (relativePath: string) => void;
   onWorkspaceFileAddToSession?: (relativePath: string) => void;
-  /** Git 状态 revision；变化时刷新文件树 ignore 着色缓存。 */
+  /** Git status revision; refreshes the file tree's ignore-tinting cache when it changes. */
   gitRevision?: number;
 };
 
@@ -203,7 +203,7 @@ type ExplorerRowProps = {
   onDrop?: (event: DragEvent<HTMLElement>) => void;
   children?: ReactNode;
   ignored?: boolean;
-  /** 合并目录链时的展示名；缺省为 `target.name`。 */
+  /** Display name when merging directory chains; defaults to `target.name`. */
   label?: string;
 };
 
@@ -470,7 +470,7 @@ export function WorkspaceFilesPanel({
   const [moveBusy, setMoveBusy] = useState(false);
   const [moveError, setMoveError] = useState("");
   const [revealError, setRevealError] = useState("");
-  /** 目录点击暂留；`""` 为工作区根。与文件 selected 高亮互斥。 */
+  /** Directory click lingering; `""` is the workspace root. Mutually exclusive with the file selected highlight. */
   const [focusedDirectoryRel, setFocusedDirectoryRel] = useState<string | null>(null);
   const [treeHovered, setTreeHovered] = useState(false);
   const [createTooltipAnchorLocked, setCreateTooltipAnchorLocked] = useState(false);
@@ -576,7 +576,8 @@ export function WorkspaceFilesPanel({
     void loadDirRef.current("");
   }, [workspaceRoot]);
 
-  // git revision 变化时后台重拉已缓存目录的 ignore 标志，不清空展开状态、不进入 loading。
+  // When the git revision changes, re-fetch the ignore flags of cached directories in the
+  // background without clearing expansion state or entering loading.
   useEffect(() => {
     if (gitRevision === undefined || !workspaceRoot.trim()) {
       prevGitRevisionRef.current = gitRevision;

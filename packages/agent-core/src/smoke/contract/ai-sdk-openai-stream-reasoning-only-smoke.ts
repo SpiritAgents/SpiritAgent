@@ -35,7 +35,7 @@ async function main(): Promise<void> {
           {
             index: 0,
             delta: {
-              reasoning_content: "先想一下，",
+              reasoning_content: "Think first, ",
             },
             finish_reason: null,
           },
@@ -50,7 +50,7 @@ async function main(): Promise<void> {
           {
             index: 0,
             delta: {
-              reasoning_content: "最后直接把这段当结果返回。",
+              reasoning_content: "Finally, return this directly as the result.",
             },
             finish_reason: "stop",
           },
@@ -71,13 +71,13 @@ async function main(): Promise<void> {
   const address = server.address();
   if (!address || typeof address === "string") {
     server.close();
-    throw new Error("无法获取本地 smoke server 端口。");
+    throw new Error("Unable to get the local smoke server port.");
   }
 
   const transport = new AiSdkOpenAiCompatibleTransport();
   const state = startOpenAiToolAgentState(
     [],
-    "请测试 reasoning-only 流式输出。",
+    "Please test reasoning-only streaming output.",
     process.cwd(),
     [],
     [],
@@ -101,23 +101,23 @@ async function main(): Promise<void> {
   printSmokeSection("ai-sdk openai stream-reasoning-only smoke completion", completion);
 
   if (!events.some((event) => isJsonObject(event) && event.kind === "thinking-chunk")) {
-    throw new Error("ai-sdk openai stream-reasoning-only smoke 未收到 thinking-chunk。");
+    throw new Error("ai-sdk openai stream-reasoning-only smoke did not receive a thinking-chunk.");
   }
 
   if (events.some((event) => isJsonObject(event) && event.kind === "error")) {
-    throw new Error("ai-sdk openai stream-reasoning-only smoke 不应收到 error 事件。");
+    throw new Error("ai-sdk openai stream-reasoning-only smoke should not receive an error event.");
   }
 
   if (completion.kind !== "success" || completion.result.step.kind !== "final-response-ready") {
     throw new Error(
-      "ai-sdk openai stream-reasoning-only smoke 未进入预期的 final-response-ready。",
+      "ai-sdk openai stream-reasoning-only smoke did not reach the expected final-response-ready.",
     );
   }
 
   const assistantText = extractLastOpenAiAssistantText(completion.result.state)?.trim();
-  if (assistantText !== "先想一下，最后直接把这段当结果返回。") {
+  if (assistantText !== "Think first, Finally, return this directly as the result.") {
     throw new Error(
-      `ai-sdk openai stream-reasoning-only smoke 未拿到 reasoning-only assistant 文本。实际: ${assistantText ?? "<empty>"}`,
+      `ai-sdk openai stream-reasoning-only smoke did not get the reasoning-only assistant text. Actual: ${assistantText ?? "<empty>"}`,
     );
   }
 }

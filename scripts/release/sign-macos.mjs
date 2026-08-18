@@ -7,13 +7,13 @@ import { fileURLToPath } from 'node:url';
 const scriptDir = path.dirname(fileURLToPath(import.meta.url));
 const nodeEntitlements = path.join(scriptDir, 'entitlements', 'macos-node.plist');
 
-// 大小端两种写法的魔数都各自唯一，因此统一按大端读一次即可，不必先判断字节序。
+// Both endian spellings of the magic numbers are each unique, so reading once as big-endian is enough; no need to detect byte order first.
 const THIN_MAGICS = new Set([0xfeedface, 0xcefaedfe, 0xfeedfacf, 0xcffaedfe]);
 const FAT_MAGIC_BE = 0xcafebabe;
 const FAT_MAGIC_LE = 0xbebafeca;
 
-// Java class 文件与 fat Mach-O 共用 0xcafebabe，但紧随其后的字段是 class 版本号（≥45），
-// 远超任何真实的架构数量，用它把两者区分开。
+// Java class files share 0xcafebabe with fat Mach-O, but the field right after it is the class version (≥45),
+// far beyond any real architecture count; use it to tell the two apart.
 const MAX_FAT_ARCH_COUNT = 32;
 
 /**
@@ -43,7 +43,7 @@ async function isMachO(filePath) {
 
 /**
  * @param {string} root
- * @param {string[]} skip 相对 root 的路径，命中后不再向下遍历
+ * @param {string[]} skip paths relative to root; matched entries are not traversed further
  */
 async function collectMachO(root, skip = []) {
   const skipSet = new Set(skip);
@@ -57,7 +57,7 @@ async function collectMachO(root, skip = []) {
       if (skipSet.has(path.relative(root, entryPath))) {
         continue;
       }
-      // node/bin 下有多个指向同一文件的符号链接，跟进去会把同一个二进制重复签几遍。
+      // node/bin contains multiple symlinks to the same file; following them would sign the same binary several times.
       if (entry.isSymbolicLink()) {
         continue;
       }
@@ -88,12 +88,12 @@ function signFile(filePath, { identity, keychain, entitlements }) {
   args.push(filePath);
   const result = spawnSync('codesign', args, { stdio: 'inherit' });
   if (result.status !== 0) {
-    throw new Error(`codesign 失败: ${filePath}`);
+    throw new Error(`codesign failed: ${filePath}`);
   }
 }
 
 /**
- * 读取签名身份；未配置时返回 null，调用方据此整体跳过签名。
+ * Reads the signing identity; returns null when not configured, and callers skip signing entirely based on that.
  */
 function resolveSigningIdentity() {
   const identity = process.env.SPIRIT_MACOS_SIGN_IDENTITY?.trim();
@@ -104,8 +104,8 @@ function resolveSigningIdentity() {
 }
 
 /**
- * 对 CLI 发布包内全部 Mach-O 做 Developer ID 签名。必须在打包成归档之前调用，
- * 否则归档里装的是未签名副本。
+ * Developer ID signs all Mach-O binaries in the CLI release bundle. Must be called before archiving,
+ * otherwise the archive contains unsigned copies.
  *
  * @param {string} bundleRoot
  */
@@ -121,7 +121,7 @@ export async function signCliBundle(bundleRoot) {
     return;
   }
 
-  // node/ 子树用上游 Node 的 entitlements，其余二进制只启用 hardened runtime。
+  // The node/ subtree uses upstream Node's entitlements; all other binaries only enable hardened runtime.
   const nodeRoot = path.join(bundleRoot, 'node');
   const groups = [
     { files: await collectMachO(nodeRoot), entitlements: nodeEntitlements },

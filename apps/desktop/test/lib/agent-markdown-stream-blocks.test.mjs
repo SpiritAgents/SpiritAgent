@@ -5,7 +5,7 @@ import { parseMarkdownIntoBlocks } from "streamdown";
 
 import { parseStreamBlocksIncrementally } from "../../src/components/agent-markdown-message.tsx";
 
-/** 按流式追加顺序逐段喂入，断言增量结果与全量解析一致 */
+/** Feed chunks in streaming append order; assert incremental results match a full parse */
 function assertIncrementalMatchesFull(chunks) {
   let cache = null;
   let content = "";
@@ -56,7 +56,7 @@ test("footnote syntax falls back to full parse (single block)", () => {
     "Alpha.\n\nBeta.",
     "\n\nSee note[^1].\n\n[^1]: the note",
   ]);
-  // streamdown 对含脚注文档整体返回单块
+  // streamdown returns a single block for documents containing footnotes
   assert.equal(cache.blocks.length, 1);
 });
 

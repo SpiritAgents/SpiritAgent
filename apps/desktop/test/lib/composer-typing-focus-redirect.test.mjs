@@ -8,7 +8,7 @@ import {
 
 const plainDivTarget = { tagName: "DIV", isContentEditable: false, closest: () => null };
 
-/** closest 命中指定选择器片段时返回非空，模拟目标处于对应子树内。 */
+/** Returns non-null when closest matches the given selector fragment, simulating a target inside that subtree. */
 const targetInside = (selectorFragment) => ({
   tagName: "DIV",
   isContentEditable: false,
@@ -56,14 +56,14 @@ test("shouldRedirectKeydownToComposer skips editable targets", () => {
 });
 
 test("shouldRedirectKeydownToComposer skips interactive targets", () => {
-  // closest 包含元素自身，原生 BUTTON 会命中交互选择器
+  // closest includes the element itself, so a native BUTTON hits the interactive selector
   const button = {
     tagName: "BUTTON",
     isContentEditable: false,
     closest: (s) => (s.includes("button") ? {} : null),
   };
   assert.equal(shouldRedirectKeydownToComposer(keydownEvent({ target: button, key: " " })), false);
-  // rewind 气泡等 role=button 元素要保留 Enter/空格语义
+  // role=button elements like the rewind bubble keep Enter/Space semantics
   assert.equal(
     shouldRedirectKeydownToComposer(keydownEvent({ target: targetInside('[role="button"]') })),
     false,

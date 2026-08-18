@@ -15,7 +15,7 @@ const sampleInput: ToolAutoReviewInput = {
   toolName: "shell",
   argumentsJson: '{"command":"echo hi","reason":"test"}',
   inputSchema: { type: "object", properties: { command: { type: "string" } } },
-  hostApprovalContext: "高风险工具调用: shell\n命令: echo hi",
+  hostApprovalContext: "High-risk tool call: shell\nCommand: echo hi",
 };
 
 test("buildAutoApprovalReviewPrompt includes schema, context, and examples", () => {

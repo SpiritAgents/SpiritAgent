@@ -92,7 +92,7 @@ export function setKeyringPassword(service: string, account: string, password: s
     return;
   }
 
-  // 先写分片再写 primary 标记，避免崩溃后 primary 指向缺失 shard。
+  // Write shards before the primary marker, so a crash cannot leave primary pointing at missing shards.
   for (let index = 0; index < chunks.length; index += 1) {
     new Entry(service, shardKeyringAccount(account, index)).setPassword(chunks[index]!);
   }
@@ -108,7 +108,7 @@ export function deleteKeyringPassword(service: string, account: string): void {
       try {
         new Entry(service, shardKeyringAccount(account, index)).deletePassword();
       } catch {
-        /* 无条目时忽略 */
+        /* ignore when the entry does not exist */
       }
     }
   }
@@ -116,7 +116,7 @@ export function deleteKeyringPassword(service: string, account: string): void {
   try {
     new Entry(service, account).deletePassword();
   } catch {
-    /* 无条目时忽略 */
+    /* ignore when the entry does not exist */
   }
 }
 

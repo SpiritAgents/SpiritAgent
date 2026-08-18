@@ -6,7 +6,7 @@ import { fileURLToPath } from "node:url";
 const desktopRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 const repoRoot = path.resolve(desktopRoot, "../..");
 
-/** node-pty prebuild 的 spawn-helper 有时无执行位，macOS posix_spawn 会失败。 */
+/** The spawn-helper from node-pty prebuilds sometimes lacks the execute bit, which makes macOS posix_spawn fail. */
 function ensureExecutable(filePath) {
   if (!fs.existsSync(filePath)) {
     return false;

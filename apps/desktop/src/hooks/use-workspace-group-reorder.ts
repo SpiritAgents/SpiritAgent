@@ -148,7 +148,7 @@ export function useWorkspaceGroupReorder({
 
   const windowDragListenersRef = useRef<WindowDragListeners | null>(null);
 
-  /** FLIP 期间 DOM 含 translateY，实时测量会把邻居读成旧槽位；仅在 drag 开始与换位后（FLIP 前）刷新 */
+  /** During FLIP the DOM contains translateY, so live measurement would read neighbors as their old slots; refresh only at drag start and after swaps (before FLIP) */
 
   const slotLayoutTopsRef = useRef<Map<string, number>>(new Map());
 

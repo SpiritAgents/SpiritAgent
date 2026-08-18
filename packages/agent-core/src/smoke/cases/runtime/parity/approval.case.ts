@@ -21,22 +21,22 @@ export async function runApprovalCase(): Promise<RuntimeParityCaseResult> {
     extractAssistantText: extractScriptedAssistantText,
   });
 
-  const approvalResult = await approvalRuntime.submitUserTurn("请直接写文件。");
+  const approvalResult = await approvalRuntime.submitUserTurn("Please write the file directly.");
   if (approvalResult.kind !== "requires-approval") {
-    throw new Error(`approval smoke 期望 requires-approval，实际为 ${approvalResult.kind}`);
+    throw new Error(`approval smoke expected requires-approval, got ${approvalResult.kind}`);
   }
 
   const approvalCompleted = await approvalRuntime.resumePendingApproval({
     kind: "guidance",
-    userMessage: "不要写文件，直接总结",
+    userMessage: "Do not write the file, just summarize",
   });
 
   if (approvalCompleted.kind !== "completed" || approvalCompleted.assistantText !== "GUIDANCE_OK") {
-    throw new Error("approval guidance smoke 未完成闭环。");
+    throw new Error("approval guidance smoke did not complete the turn loop.");
   }
 
   if (approvalExecutor.executedCalls !== 1) {
-    throw new Error("approval guidance smoke 应继续执行后续排队工具。");
+    throw new Error("approval guidance smoke should continue executing the queued tools.");
   }
 
   return { approvalCompleted };

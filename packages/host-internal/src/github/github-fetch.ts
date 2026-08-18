@@ -1,6 +1,6 @@
 let githubFetchImpl: typeof fetch | undefined;
 
-/** Desktop 等宿主可注入 electron.net.fetch，以使用系统证书库与代理。 */
+/** Hosts such as Desktop can inject electron.net.fetch to use the system certificate store and proxy. */
 export function setGitHubFetchImplementation(fetchImpl: typeof fetch | undefined): void {
   githubFetchImpl = fetchImpl;
 }

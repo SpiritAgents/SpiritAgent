@@ -94,11 +94,11 @@ test("toolCallSummaryCopyForRequest: web_search reads query from argumentsJson",
   assert.deepEqual(
     toolCallSummaryCopyForRequest("web_search", {
       name: "web_search",
-      argumentsJson: '{"query":"Spirit Agent 是什么项目"}',
+      argumentsJson: '{"query":"What is the Spirit Agent project"}',
     }),
     {
       headline: "联网搜索",
-      headlineDetail: "Spirit Agent 是什么项目",
+      headlineDetail: "What is the Spirit Agent project",
     },
   );
 });
@@ -107,11 +107,11 @@ test("toolCallSummaryCopyForResponsesBuiltInTool: web_search preserves query det
   assert.deepEqual(
     toolCallSummaryCopyForResponsesBuiltInTool("web_search", "preview", {
       headline: "联网搜索",
-      headlineDetail: "Spirit Agent 是什么项目",
+      headlineDetail: "What is the Spirit Agent project",
     }),
     {
       headline: "联网搜索",
-      headlineDetail: "Spirit Agent 是什么项目",
+      headlineDetail: "What is the Spirit Agent project",
     },
   );
   assert.deepEqual(
@@ -119,11 +119,11 @@ test("toolCallSummaryCopyForResponsesBuiltInTool: web_search preserves query det
       "web_search",
       "succeeded",
       { headline: "联网搜索" },
-      { headlineDetail: "Spirit Agent 是什么项目", inputExcerpt: "Spirit Agent 是什么项目" },
+      { headlineDetail: "What is the Spirit Agent project", inputExcerpt: "What is the Spirit Agent project" },
     ),
     {
       headline: "联网搜索",
-      headlineDetail: "Spirit Agent 是什么项目",
+      headlineDetail: "What is the Spirit Agent project",
     },
   );
 });
@@ -238,21 +238,21 @@ test("toolCallSummaryForPhase: built-in create_automation preserves automation c
 
 test("toolCallSummaryForStreamingPreview: built-in create_automation uses progressive streaming JSON", () => {
   const partialGateway =
-    '{"provider":"built-in","server":"desktop","tool":"create_automation","arguments":{"title":"AI 新闻日报","trigger":{"kind":"time","schedule":{"kind":"daily","hour":8,"minute":0}}}}';
+    '{"provider":"built-in","server":"desktop","tool":"create_automation","arguments":{"title":"AI news digest","trigger":{"kind":"time","schedule":{"kind":"daily","hour":8,"minute":0}}}}';
   assert.deepEqual(
     toolCallSummaryForStreamingPreview([], "tool-1", "tool_call", undefined, {
       streamingArgumentsJson: partialGateway,
     }),
-    { headline: "创建自动化", headlineDetail: "AI 新闻日报 · Daily 08:00" },
+    { headline: "创建自动化", headlineDetail: "AI news digest · Daily 08:00" },
   );
 
   const titleOnly =
-    '{"provider":"built-in","server":"desktop","tool":"create_automation","arguments":{"title":"AI 新闻日报"';
+    '{"provider":"built-in","server":"desktop","tool":"create_automation","arguments":{"title":"AI news digest"';
   assert.deepEqual(
     toolCallSummaryForStreamingPreview([], "tool-1", "tool_call", undefined, {
       streamingArgumentsJson: titleOnly,
     }),
-    { headline: "创建自动化", headlineDetail: "AI 新闻日报" },
+    { headline: "创建自动化", headlineDetail: "AI news digest" },
   );
 
   const gatewayIdentified =
@@ -287,7 +287,7 @@ test("displayTitleForTool: built-in create_automation approval uses automation h
 
 test("isSubagentStatusSurfaceText detects runtime status lines", () => {
   assert.equal(
-    isSubagentStatusSurfaceText('输出 "你好" 这两个字，不要做任何其他事情。: 运行中'),
+    isSubagentStatusSurfaceText('输出 "你好" 这两个字，不要做任何其他事情。: Running'),
     true,
   );
   assert.equal(isSubagentStatusSurfaceText('请输出"你好"这两个字。: The'), true);
@@ -312,13 +312,13 @@ test("isSubagentStatusSurfaceText detects runtime status lines", () => {
 });
 
 test("stripRedundantThinkingFromMessageAux removes duplicate or leaked reasoning", () => {
-  assert.deepEqual(stripRedundantThinkingFromMessageAux("正文", { thinking: "正文" }), undefined);
+  assert.deepEqual(stripRedundantThinkingFromMessageAux("Body", { thinking: "Body" }), undefined);
   assert.deepEqual(
-    stripRedundantThinkingFromMessageAux("正文后半", { thinking: "正文" }),
+    stripRedundantThinkingFromMessageAux("Body second half", { thinking: "Body" }),
     undefined,
   );
-  assert.deepEqual(stripRedundantThinkingFromMessageAux("正文", { thinking: "独立推理" }), {
-    thinking: "独立推理",
+  assert.deepEqual(stripRedundantThinkingFromMessageAux("Body", { thinking: "Independent reasoning" }), {
+    thinking: "Independent reasoning",
   });
 });
 
@@ -504,11 +504,11 @@ test("shouldHideEmptyPendingAssistantSnapshot keeps pending row between tool bat
 });
 
 test("finishTaskNoticePreviewFromArguments streams partial summary text", () => {
-  assert.equal(finishTaskSummaryFromStreamingArguments('{"summary":"确认每条'), "确认每条");
-  assert.equal(finishTaskNoticePreviewFromArguments('{"summary":"确认每条'), "任务以 确认每条");
+  assert.equal(finishTaskSummaryFromStreamingArguments('{"summary":"verified each'), "verified each");
+  assert.equal(finishTaskNoticePreviewFromArguments('{"summary":"verified each'), "Task completed: verified each");
   assert.equal(
-    finishTaskNoticePreviewFromArguments('{"summary":"确认每条消息输出完毕后调用 finish_task。"}'),
-    "任务以 确认每条消息输出完毕后调用 finish_task。 完成。",
+    finishTaskNoticePreviewFromArguments('{"summary":"called finish_task after verifying every message"}'),
+    "Task completed: called finish_task after verifying every message.",
   );
 });
 
@@ -728,7 +728,7 @@ test("assistantTurnHasPlainPrefixMessage treats trailing whitespace as the same 
     {
       id: 2,
       role: "assistant",
-      content: "好的。\n\n",
+      content: "OK.\n\n",
       pending: false,
     },
     {
@@ -741,18 +741,18 @@ test("assistantTurnHasPlainPrefixMessage treats trailing whitespace as the same 
     {
       id: 4,
       role: "assistant",
-      content: "Spirit Agent 是一个开源 AI 编码代理单体仓库。",
+      content: "Spirit Agent is an open-source AI coding agent monorepo.",
       pending: false,
     },
   ];
 
-  assert.equal(assistantTurnHasPlainPrefixMessage(messages, "好的。"), true);
+  assert.equal(assistantTurnHasPlainPrefixMessage(messages, "OK."), true);
   assert.equal(
-    assistantTurnHasPlainPrefixMessage(messages, "Spirit Agent 是一个开源 AI 编码代理单体仓库。"),
+    assistantTurnHasPlainPrefixMessage(messages, "Spirit Agent is an open-source AI coding agent monorepo."),
     true,
   );
   assert.equal(
-    assistantTurnHasPlainPrefixMessage(messages, "可以，同样的 prompt，我来生成视频："),
+    assistantTurnHasPlainPrefixMessage(messages, "Sure, same prompt, let me generate a video:"),
     false,
   );
 });

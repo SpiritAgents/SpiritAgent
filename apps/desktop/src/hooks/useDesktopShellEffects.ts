@@ -79,8 +79,8 @@ export function useDesktopShellEffects({
       document.documentElement.classList.remove("spirit-desktop-translucency");
     }
     if (isElectronShell) {
-      // theme 变化时的窗口同步由 applyThemeToDocument 负责（避免双 IPC）；
-      // 此处仅在 translucency 开关变化时按当前存储主题刷新窗口材质
+      // Window sync on theme change is handled by applyThemeToDocument (to avoid double IPC);
+      // here we only refresh the window material with the current stored theme when the translucency toggle changes
       const theme = getStoredTheme();
       syncDesktopWindowFrame(resolveDark(theme), desktopNativeThemeForPreference(theme), {
         translucency: useTranslucency,

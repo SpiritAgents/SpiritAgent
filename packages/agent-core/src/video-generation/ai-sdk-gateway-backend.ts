@@ -13,14 +13,14 @@ import {
 import { buildGeneratedVideoToolOutput } from "./output.js";
 import type { VideoGenerationBackend } from "./types.js";
 
-/** Gateway 视频走 v3 AI 协议（默认 `…/v3/ai/video-model`），不能用 chat 预设的 `/v1` baseUrl。 */
+/** Gateway video uses the v3 AI protocol (default `…/v3/ai/video-model`); the chat preset `/v1` baseUrl cannot be used. */
 export function resolveAiGatewayVideoProviderOptions(
   config: Pick<OpenAiVideoGenerationConfig, "apiKey" | "baseUrl">,
 ): { apiKey: string } {
   return { apiKey: config.apiKey };
 }
 
-/** MiniMax H3 文生视频经 Gateway 省略 ratio 时会回落为 adaptive，上游返回 2013。其它 Gateway 视频模型可正常省略 ratio。 */
+/** MiniMax H3 text-to-video via Gateway falls back to adaptive when ratio is omitted, and the upstream returns 2013. Other Gateway video models can omit ratio normally. */
 export const MINIMAX_H3_GATEWAY_DEFAULT_ASPECT_RATIO = "16:9" as const;
 
 export function isMinimaxH3GatewayVideoModel(model: string): boolean {
@@ -44,7 +44,7 @@ export function resolveAiGatewayVideoAspectRatio(
   return undefined;
 }
 
-/** Veo 文生视频经 Gateway 仅支持 4/6/8 秒；全局默认 5 秒会触发上游 duration 校验失败。 */
+/** Veo text-to-video via Gateway only supports 4/6/8 seconds; the global default of 5 seconds triggers an upstream duration validation failure. */
 export const VEO_GATEWAY_SUPPORTED_DURATIONS = [4, 6, 8] as const;
 
 export function isVeoGatewayVideoModel(model: string): boolean {
@@ -108,7 +108,7 @@ export class AiSdkGatewayVideoBackend implements VideoGenerationBackend {
       prompt: request.prompt,
       duration,
       ...(aspectRatio ? { aspectRatio } : {}),
-      // Gateway Seedance 使用 720p/1080p 等标签，SDK 类型仍写 WxH。
+      // Gateway Seedance uses labels like 720p/1080p, while the SDK type is still WxH.
       ...(request.resolution ? { resolution: request.resolution as never } : {}),
       maxRetries: 0,
     });

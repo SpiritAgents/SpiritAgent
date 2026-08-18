@@ -115,19 +115,19 @@ test("pump drives a busy streaming round to completion without external poll", a
 
   pump.ensureRunning();
   assert.equal(pump.isRunning(), true);
-  // 泵运行中重复 ensureRunning 应为幂等，不得叠加第二个循环。
+  // Repeated ensureRunning while the pump is running must be idempotent, never stacking a second loop.
   pump.ensureRunning();
 
   await waitUntil(() => !pump.isRunning());
   assert.equal(runtime.busy, false);
   assert.equal(runtime.pollCount, 3);
-  // 落盘节流：首 tick（超时间片）+ 回合终态强制，共 2 次；中途 tick 不落盘。
+  // Persist throttling: first tick (past the time slice) + forced at turn end = 2 total; intermediate ticks do not persist.
   assert.equal(calls.filter((entry) => entry === "persist").length, 2);
-  // 每次 tick 应用了 assistant-chunk 事件 → 应请求节流推送，且 revision 递增。
+  // Every tick applied an assistant-chunk event → a throttled push should be requested, and revision increments.
   assert.ok(calls.filter((entry) => entry === "request-emit").length >= 3);
   assert.equal(bundle.conversationRevision, 3);
 
-  // 全部空闲后 ensureRunning 不应重启泵。
+  // ensureRunning must not restart the pump once everything is idle.
   pump.ensureRunning();
   assert.equal(pump.isRunning(), false);
   assert.equal(runtime.pollCount, 3);
@@ -136,7 +136,7 @@ test("pump drives a busy streaming round to completion without external poll", a
 test("tick persist is throttled while busy and forced at turn end", async () => {
   const runtime = createFakeRuntime({ pollsUntilIdle: 4 });
   const bundle = createFakeBundle(runtime);
-  // 模拟回合开始前刚落过盘：1s 时间片内 busy tick 均不应再写盘。
+  // Simulate a persist right before the turn starts: busy ticks within the 1s time slice must not write again.
   bundle.lastTickPersistAtMs = Date.now();
   const calls = [];
   const ctx = createFakeOrchestratorContext(bundle, calls);
@@ -150,7 +150,7 @@ test("tick persist is throttled while busy and forced at turn end", async () => 
   pump.ensureRunning();
   await waitUntil(() => !pump.isRunning());
   assert.equal(runtime.pollCount, 4);
-  // 仅回合终态（busy→idle）那一 tick 强制落盘。
+  // Only the turn-final (busy→idle) tick forces a persist.
   assert.equal(calls.filter((entry) => entry === "persist").length, 1);
 });
 
@@ -179,7 +179,7 @@ test("entering pending approval forces persist", async () => {
   pump.ensureRunning();
   await waitUntil(() => runtime.pollCount >= 4);
   pump.stop();
-  // 进入 pending approval 的那一 tick 强制落盘；其后阻塞 tick 在时间片内不再写。
+  // The tick entering pending approval forces a persist; subsequent blocked ticks within the time slice do not write.
   assert.equal(calls.filter((entry) => entry === "persist").length, 1);
 });
 
@@ -202,9 +202,9 @@ test("long streaming round: pump completes with bounded persist and steady emits
 
   assert.equal(runtime.pollCount, totalPolls);
   assert.equal(bundle.conversationRevision, totalPolls);
-  // 每 tick 均有事件 → 每 tick 请求一次节流推送（实际 IPC 推送频率由宿主节流器另行约束）。
+  // Every tick has events → one throttled push requested per tick (actual IPC push rate is constrained separately by the host throttler).
   assert.equal(calls.filter((entry) => entry === "request-emit").length, totalPolls);
-  // 落盘按 1s 时间片 + 终态强制：远小于 tick 数。
+  // Persist follows the 1s time slice + forced at final state: far fewer than the tick count.
   const persistCount = calls.filter((entry) => entry === "persist").length;
   assert.ok(persistCount < 10, `persist ${persistCount} should be time-sliced`);
 });
@@ -225,7 +225,7 @@ test("pump stop cancels pending tick", async () => {
   pump.stop();
   const countAtStop = runtime.pollCount;
   await delay(50);
-  // stop 后不允许出现新的 tick（容忍 stop 时刻已在途的一次）。
+  // No new tick may appear after stop (tolerating one already in flight at stop time).
   assert.ok(runtime.pollCount <= countAtStop + 1);
   assert.equal(pump.isRunning(), false);
 });

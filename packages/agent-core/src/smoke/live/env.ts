@@ -20,7 +20,7 @@ export function shouldRunLiveSmoke(): boolean {
     return true;
   }
 
-  console.log(`${LIVE_SMOKE_GATE_ENV}=1 未设置，跳过 live smoke。`);
+  console.log(`${LIVE_SMOKE_GATE_ENV}=1 is not set, skipping live smoke.`);
   return false;
 }
 
@@ -61,7 +61,7 @@ export function createLiveBedrockSmokeConfig(): BedrockTransportConfig {
 
   if (!apiKey && !(accessKeyId && secretAccessKey)) {
     throw new Error(
-      "Bedrock live smoke 需要 AWS_BEDROCK_API_KEY/BEDROCK_API_KEY，或 AWS_ACCESS_KEY_ID + AWS_SECRET_ACCESS_KEY。",
+      "Bedrock live smoke requires AWS_BEDROCK_API_KEY/BEDROCK_API_KEY, or AWS_ACCESS_KEY_ID + AWS_SECRET_ACCESS_KEY.",
     );
   }
 
@@ -83,7 +83,7 @@ function parseLiveSmokeVendor(value: string | undefined): OpenAiLlmVendor | unde
   const normalized = value.trim().toLowerCase();
   if (!LIVE_SMOKE_VENDOR_VALUES.has(normalized as OpenAiLlmVendor)) {
     throw new Error(
-      `${OPENAI_LLM_VENDOR_ENV} 仅支持 ${Array.from(LIVE_SMOKE_VENDOR_VALUES).join(", ")}，实际为 ${value}`,
+      `${OPENAI_LLM_VENDOR_ENV} only supports ${Array.from(LIVE_SMOKE_VENDOR_VALUES).join(", ")}, got ${value}`,
     );
   }
 

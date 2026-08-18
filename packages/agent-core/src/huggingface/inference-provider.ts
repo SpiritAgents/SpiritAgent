@@ -1,6 +1,6 @@
 const HUGGING_FACE_ROUTING_POLICY_SUFFIXES = new Set(["fastest", "cheapest", "preferred"]);
 
-/** 从 model id routing suffix（`:groq` 等）解析 Inference Provider；策略 suffix 返回 undefined。 */
+/** Resolves the Inference Provider from a model id routing suffix (e.g. `:groq`); policy suffixes return undefined. */
 export function resolveHuggingFaceInferenceProviderFromModelId(
   modelId: string,
 ): string | undefined {

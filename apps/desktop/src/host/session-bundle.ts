@@ -72,27 +72,27 @@ export interface SessionBundle {
   cachedTodoSnapshot?: import("../types.js").ConversationTodoSnapshot;
   /** Bumped on rewind restore; exposed as `conversation.revision` in snapshots. */
   conversationRevision: number;
-  /** refreshArchiveFromRuntime 的投影缓存：timeline 实例 + 修订号未变时跳过重算。 */
+  /** Projection cache for refreshArchiveFromRuntime: skip recomputation while the timeline instance + revision are unchanged. */
   archiveProjectionCache?: {
     timeline: DesktopMessageTimeline;
     revision: number;
     archiveMessages: ChatArchive["messages"];
     archiveAssistantAux: ChatArchive["assistantAux"];
   };
-  /** busy tick 落盘节流：上次 tick 落盘时间（内存态，不持久化）。 */
+  /** Persistence throttling for busy ticks: last tick persistence time (in-memory only, not persisted). */
   lastTickPersistAtMs?: number;
   /** Last successful create_plan absolute path for this session. */
   activePlanPath?: string;
   /** Tracks whether the sidebar title is seed-truncated or LLM-generated. */
   sessionTitleSource?: SessionTitleSource;
   contextUsage?: ConversationContextUsageSnapshot;
-  /** Composer 直连生图/生视频后台执行中；与 runtime.isBusy 一并驱动 snapshot.isBusy。 */
+  /** Composer direct image/video generation running in the background; drives snapshot.isBusy together with runtime.isBusy. */
   directMediaTurnInFlight?: boolean;
-  /** 首条 Worktree 消息：后台 bootstrap 完成前 gate LLM turn。不持久化。 */
+  /** First Worktree message: gates the LLM turn until the background bootstrap completes. Not persisted. */
   pendingWorktreeBootstrap?: PendingWorktreeBootstrap;
   /** Per-session user message queue (projected in snapshot until sent). */
   queuedUserTurns: QueuedUserTurn[];
-  /** SubAgent 子会话 desktop 投影（与主 timeline 同构，含 Thought/Compaction/工具卡）。 */
+  /** Desktop projection of SubAgent sub-sessions (isomorphic to the main timeline, including Thought/Compaction/tool cards). */
   subagentDesktopMessagesBySessionId: Map<string, ConversationMessageSnapshot[]>;
   subagentConversationProjections: Map<string, SubagentConversationProjection>;
   /**

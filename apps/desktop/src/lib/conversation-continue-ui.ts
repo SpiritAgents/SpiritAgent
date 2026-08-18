@@ -57,7 +57,7 @@ function activeTurnHasAssistantBodyText(messages: readonly ConversationMessageSn
   return findLastAssistantBodyTextIndexInTurn(messages, messages.length - 1) !== null;
 }
 
-/** Continue / Fork 工具栏挂在当前轮最后一条 assistant 行（正文、tool、thinking 等）之后。 */
+/** The Continue / Fork toolbar is attached after the last assistant row of the current turn (body, tool, thinking, etc.). */
 export function resolveTurnContinuePresentation(
   messages: readonly ConversationMessageSnapshot[],
 ): TurnContinuePresentation | undefined {

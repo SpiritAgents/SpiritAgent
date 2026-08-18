@@ -19,7 +19,7 @@ impl TuiShell {
         };
         self.runtime
             .run_session_start(source)
-            .context("运行延迟 sessionStart 失败")?;
+            .context(t!("tui.workspace_trust.session_start_failed").into_owned())?;
         Ok(())
     }
 

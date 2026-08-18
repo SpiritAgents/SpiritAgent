@@ -151,12 +151,12 @@ export interface DesktopConfigFile {
   uiLocale?: string;
   translucency?: boolean;
   systemNotifications?: boolean;
-  /** 是否显示菜单栏 / 托盘状态图标；缺省为 true。 */
+  /** Whether to show the menu bar / tray status icon; defaults to true. */
   trayIcon?: boolean;
-  /** 首启引导（OOBE）是否已完成；缺省按未完成处理。 */
+  /** Whether first-run onboarding (OOBE) has completed; treated as incomplete by default. */
   onboardingCompleted?: boolean;
   agentMode?: DesktopAgentMode;
-  /** @deprecated 使用 agentMode。 */
+  /** @deprecated use agentMode. */
   planMode?: boolean;
   webHost: DesktopWebHostConfigFile;
   dreams: DesktopDreamConfigFile;
@@ -181,7 +181,7 @@ export interface DesktopWebHostConfigFile {
   authTokenHash?: string;
 }
 
-/** 与 `apps/cli/src/model_registry.rs` 中 keyring 命名一致。 */
+/** Matches the keyring naming in `apps/cli/src/model_registry.rs`. */
 const KEYRING_SERVICE = "SpiritAgent";
 const KEYRING_GLOBAL_ACCOUNT = "openai_api_key";
 
@@ -608,7 +608,7 @@ function legacyModelKeyPresent(refKey: string): boolean {
   return Boolean(readModelKeyFromKeyring(modelName));
 }
 
-/** 各模型是否在钥匙串中有提供商组级或遗留模型级条目（不含环境变量与全局回退）。 */
+/** Whether each model has a provider-group-level or legacy model-level entry in the keychain (excluding env vars and the global fallback). */
 export async function modelSecretKeyPresence(
   input:
     | Pick<DesktopConfigFile, "providerGroups">
@@ -630,12 +630,12 @@ export async function saveApiKeyForProvider(groupId: string, apiKey: string): Pr
   setKeyringPassword(KEYRING_SERVICE, groupKeyAccount(groupId), apiKey.trim());
 }
 
-/** 删除提供商组在钥匙串中的共享 API Key 条目。 */
+/** Deletes the provider group's shared API Key entry from the keychain. */
 export async function removeProviderApiKey(groupId: string): Promise<void> {
   deleteKeyringPassword(KEYRING_SERVICE, groupKeyAccount(groupId));
 }
 
-/** 与 CLI `remove_model_api_key` 一致：删除该模型在钥匙串中的专属条目。 */
+/** Consistent with CLI `remove_model_api_key`: deletes the model's dedicated keychain entry. */
 export async function removeModelApiKey(modelName: string): Promise<void> {
   deleteKeyringPassword(KEYRING_SERVICE, modelKeyAccount(modelName));
 }
@@ -774,8 +774,8 @@ export async function listStoredSessions(): Promise<SessionListItem[]> {
     files.map(async (filePath) => {
       try {
         const raw = await readFile(filePath, "utf8");
-        // 侧栏列表只需元数据：仅做 schema 版本检查并直取字段，
-        // 跳过 normalizeStoredSession 的全量 timeline 校验与 rewind 归一化
+        // The sidebar list only needs metadata: do just the schema version check and read fields directly,
+        // skipping normalizeStoredSession's full timeline validation and rewind normalization
         const parsed = JSON.parse(raw) as Partial<StoredDesktopSession>;
         assertChatSchemaVersionV2(parsed.chatSchemaVersion);
         const timeline = Array.isArray(parsed.desktopMessageTimeline)
@@ -824,7 +824,7 @@ export async function saveStoredSession(
 ): Promise<string> {
   const resolved = resolveSessionPath(filePath);
   await mkdir(path.dirname(resolved), { recursive: true });
-  // 原子写：先写同目录 tmp 再 rename，避免写入中途崩溃 / 断电留下截断的会话文件
+  // Atomic write: write a tmp file in the same directory, then rename, so a crash / power loss mid-write cannot leave a truncated session file
   const tmpPath = `${resolved}.${process.pid}.${Date.now()}.tmp`;
   try {
     await writeFile(tmpPath, `${JSON.stringify(session, null, 2)}\n`, "utf8");
@@ -926,7 +926,7 @@ function resolveDesktopPackageJsonPath(): string {
   ];
   const packageJsonPath = candidates.find((candidate) => existsSync(candidate));
   if (!packageJsonPath) {
-    throw new Error(`未找到 Desktop package.json（自 ${moduleDir} 向上查找）`);
+    throw new Error(`Desktop package.json not found (searched upward from ${moduleDir})`);
   }
   return packageJsonPath;
 }
@@ -978,7 +978,7 @@ export function normalizeAgentsConfig(raw: unknown): DesktopAgentsConfigFile {
     codeCompletion: {
       enabled: codeCompletionRaw.enabled !== false,
     },
-    // Desktop：缺省 / OOBE 默认开启（opt-out）；CLI 侧缺省字段另按 OFF 处理
+    // Desktop: default / OOBE enables it (opt-out); on the CLI side a missing field is treated as OFF
     attribution: {
       commit: {
         enabled: commitRaw.enabled !== false,

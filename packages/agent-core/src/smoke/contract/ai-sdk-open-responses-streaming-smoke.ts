@@ -86,7 +86,7 @@ async function main(): Promise<void> {
   const address = server.address();
   if (!address || typeof address === "string") {
     server.close();
-    throw new Error("无法获取本地 smoke server 端口。");
+    throw new Error("Unable to get the local smoke server port.");
   }
 
   const transport = new AiSdkOpenResponsesTransport();
@@ -122,15 +122,15 @@ async function main(): Promise<void> {
     (event) => isJsonObject(event) && event.kind === "streaming-tool-preview",
   );
   if (previewEvents.length === 0) {
-    throw new Error("ai-sdk open-responses streaming smoke 未收到 streaming-tool-preview 事件。");
+    throw new Error("ai-sdk open-responses streaming smoke did not receive a streaming-tool-preview event.");
   }
 
   if (completion.kind !== "success" || completion.result.step.kind !== "tool-calls") {
-    throw new Error("ai-sdk open-responses streaming smoke 未进入预期的 tool-calls。");
+    throw new Error("ai-sdk open-responses streaming smoke did not reach the expected tool-calls.");
   }
 
   if (completion.result.step.calls[0]?.id !== "call_open_responses_stream_1") {
-    throw new Error("ai-sdk open-responses streaming smoke 未保留流式 toolCallId。");
+    throw new Error("ai-sdk open-responses streaming smoke did not preserve the streaming toolCallId.");
   }
 }
 

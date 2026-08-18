@@ -27,8 +27,8 @@ interface DeepInfraVideoStatusResponse {
 const DEFAULT_DEEPINFRA_VIDEO_API_BASE = "https://api.deepinfra.com/v1";
 
 /**
- * DeepInfra 视频生成挂在站点根 `/v1/videos`（不在 OpenAI 兼容根 `/v1/openai` 下）。
- * 连接配置存的是 …/v1/openai，须剥掉尾部 /openai；与 Together 的 v1→v2 改写不同，不复用。
+ * DeepInfra video generation lives at the site root `/v1/videos` (not under the OpenAI-compatible root `/v1/openai`).
+ * Connection configs store …/v1/openai, so the trailing /openai must be stripped; unlike Together's v1→v2 rewrite, that logic is not reused.
  */
 export function resolveDeepInfraVideoApiBase(baseUrl: string | undefined): string {
   const trimmed = baseUrl?.trim().replace(/\/+$/, "");
@@ -92,8 +92,8 @@ export class DeepInfraVideosBackend implements VideoGenerationBackend {
       resolution: request.resolution,
     });
 
-    // 请求体字段以 DeepInfra OpenAPI 为准：seconds 为 integer（非 Together 的字符串）；
-    // image_url 是 I2V 首帧参数，与 generate_video 工具的 T2V 入参无关，首版不接（扩展点）。
+    // Request body fields follow the DeepInfra OpenAPI: seconds is an integer (unlike Together's string);
+    // image_url is the I2V first-frame parameter, unrelated to the generate_video tool's T2V inputs; not wired in the first version (extension point).
     const createResponse = await getLlmFetch()(createUrl, {
       method: "POST",
       headers: {

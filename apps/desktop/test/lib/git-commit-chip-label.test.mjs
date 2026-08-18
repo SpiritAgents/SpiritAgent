@@ -15,7 +15,7 @@ test("formatGitCommitChipLabel truncates by code points without splitting surrog
 });
 
 test("formatGitCommitChipLabel counts astral characters as single units", () => {
-  // 48 个 emoji = 96 个 code unit；按码点计数不应触发截断
+  // 48 emoji = 96 code units; counting by code points should not trigger truncation
   const subject = "🎉".repeat(48);
   assert.equal(formatGitCommitChipLabel(subject), subject);
 });

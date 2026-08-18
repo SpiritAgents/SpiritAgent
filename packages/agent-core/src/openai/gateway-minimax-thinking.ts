@@ -2,7 +2,7 @@ import type { JsonObject } from "../ports.js";
 import type { OpenAiTransportConfig } from "./openai-compat.js";
 import { parseGatewayUpstreamSlug } from "./gateway-code-completion-thinking.js";
 
-/** 文档：https://platform.minimax.io/docs/api-reference/text-openai-api — M3 用 adaptive/disabled。 */
+/** Docs: https://platform.minimax.io/docs/api-reference/text-openai-api — M3 uses adaptive/disabled. */
 function normalizeMinimaxModelId(model: string): string {
   const normalized = model.trim().toLowerCase();
   const slashIndex = normalized.lastIndexOf("/");
@@ -13,15 +13,15 @@ export function isGatewayMinimaxModel(llmVendor: string | undefined, model: stri
   return llmVendor === "vercel-ai-gateway" && parseGatewayUpstreamSlug(model) === "minimax";
 }
 
-/** M2.x 无法关闭 thinking；M3 支持 disabled。 */
+/** M2.x cannot disable thinking; M3 supports disabled. */
 export function isMinimaxM3ThinkingSwitchModel(model: string): boolean {
   const id = normalizeMinimaxModelId(model);
   return id.includes("m3") || id.includes("minimax-m3");
 }
 
 /**
- * Gateway MiniMax：经 minimax 命名空间注入 thinking.type。
- * M3 在 open-responses 下不返回可展示思考流；见 #170。
+ * Gateway MiniMax: injects thinking.type via the minimax namespace.
+ * M3 does not return a displayable thinking stream under open-responses; see #170.
  */
 export function buildGatewayMinimaxProviderOptions(
   config: Pick<OpenAiTransportConfig, "llmVendor" | "model" | "vendorExtendedThinking">,

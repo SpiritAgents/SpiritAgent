@@ -2,13 +2,13 @@ import glyphBlackUrl from "@spiritagent/brand/assets/glyph-black.svg?url";
 import glyphWhiteUrl from "@spiritagent/brand/assets/glyph-white.svg?url";
 import logoDarkUrl from "@spiritagent/brand/assets/logo-dark.svg?url";
 
-/** 深色 UI：透明底白色图案（`@spiritagent/brand/assets/glyph-white.svg`） */
+/** Dark UI: white glyph on transparent background (`@spiritagent/brand/assets/glyph-white.svg`) */
 export const SPIRIT_AGENT_ICON_DARK_SRC = glyphWhiteUrl;
 
-/** 浅色 UI：透明底黑色图案（`@spiritagent/brand/assets/glyph-black.svg`） */
+/** Light UI: black glyph on transparent background (`@spiritagent/brand/assets/glyph-black.svg`) */
 export const SPIRIT_AGENT_ICON_LIGHT_SRC = glyphBlackUrl;
 
-/** translucency 顶栏：黑底品牌标（`@spiritagent/brand/assets/logo-dark.svg`，图案占画布比例小于透明标） */
+/** Translucency title bar: brand logo on black background (`@spiritagent/brand/assets/logo-dark.svg`; the glyph occupies a smaller fraction of the canvas than the transparent variants) */
 export const SPIRIT_AGENT_ICON_TRANSLUCENCY_SRC = logoDarkUrl;
 
 export function spiritAgentBrandIconSrc(dark: boolean): string {

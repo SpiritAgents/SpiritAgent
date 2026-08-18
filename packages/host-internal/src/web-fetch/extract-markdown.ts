@@ -117,7 +117,7 @@ export function normalizeMarkdownWhitespace(text: string): string {
     out.push(trimmed.replace(/^\uFEFF/u, ""));
   }
   const result = out.join("\n").trim();
-  return result.length === 0 ? "（网页内容为空）" : result;
+  return result.length === 0 ? "(Web page content is empty)" : result;
 }
 
 export function extractWebContent(

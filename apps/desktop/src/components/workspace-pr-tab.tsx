@@ -135,9 +135,9 @@ export type WorkspacePrTabProps = {
   prRevealNonce?: number;
   prRevealRequest?: GitHubPullRequestRevealRequest | null;
   onPrDiffAddToSession?: (attachment: import("@/lib/pr-diff-attachment").PrDiffAttachment) => void;
-  /** 当前 PR 详情标题变化时回调（进入详情传 "PR #XXX"，返回列表/加载失败传 undefined） */
+  /** Called when the current PR detail title changes ("PR #XXX" in detail view, undefined when back to the list or on load failure) */
   onTitleChange?: (title: string | undefined) => void;
-  /** 当前 PR 详情状态变化时回调（返回列表/加载失败传 undefined） */
+  /** Called when the current PR detail state changes (undefined when back to the list or on load failure) */
   onPrStatusChange?: (status: PullRequestChipStatus | undefined) => void;
   className?: string;
 };
@@ -723,7 +723,7 @@ export function WorkspacePrTab({
       onTitleChangeRef.current?.(`PR #${detail.number}`);
       onPrStatusChangeRef.current?.(resolvePullRequestChipStatus(detail));
     } else if (viewMode === "detail") {
-      // 详情加载中保留占位标题，避免选项卡只剩图标
+      // Keep the placeholder title while the detail is loading, so the tab is not left with only an icon
       onTitleChangeRef.current?.(t("workspace.prTab"));
       onPrStatusChangeRef.current?.(undefined);
     } else {

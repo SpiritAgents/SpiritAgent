@@ -22,7 +22,7 @@ import {
 } from "@/lib/font";
 import { cn } from "@/lib/utils";
 
-/** 与 [`SelectTrigger`](./ui/select.tsx) / `DESKTOP_SELECT_TRIGGER` 保持一致，便于设置页视觉对齐。 */
+/** Kept consistent with [`SelectTrigger`](./ui/select.tsx) / `DESKTOP_SELECT_TRIGGER` for visual alignment on the settings page. */
 const fontSelectTriggerClassName = DESKTOP_SELECT_TRIGGER;
 
 type BrowserFontData = {

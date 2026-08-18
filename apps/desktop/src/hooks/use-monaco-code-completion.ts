@@ -104,9 +104,10 @@ export function useMonacoCodeCompletion(options: {
   relativePathRef.current = relativePath;
   baselineRef.current = baselineText;
 
-  // Context key 与 Tab 命令随 editor 实例创建一次：context key 属于该 editor 的
-  // contextKeyService，跨实例缓存会把状态写到已销毁的 editor 上，导致重建后
-  // Tab 接受静默失效；addCommand 不可注销，只能靠随 editor 一起销毁。
+  // The context key and Tab command are created once per editor instance: the context key belongs to
+  // that editor's contextKeyService; caching across instances would write state to a destroyed editor,
+  // silently breaking Tab accept after a rebuild. addCommand cannot be unregistered, so it can only be
+  // destroyed together with the editor.
   useEffect(() => {
     if (!editor) {
       deletePreviewActiveRef.current = null;

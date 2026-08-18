@@ -17,11 +17,13 @@ use ratatui::{
 use std::io;
 use unicode_width::UnicodeWidthStr;
 
-/// 启动时只用 1 行 inline 视口（`append_lines(0)`），加载期光标留在命令下一行。
-/// 第一帧按 `inline_needed_viewport_height` 长到实际布局高度。
+/// Start with a 1-line inline viewport (`append_lines(0)`); during load the cursor stays on the
+/// line below the command. The first frame grows to the real layout height via
+/// `inline_needed_viewport_height`.
 pub const INLINE_BOOTSTRAP_HEIGHT: u16 = 1;
 
-/// 包一层 Crossterm，按原 y 重建视口时关掉 `append_lines`，避免再插入空白行把 UI 推开。
+/// Wraps Crossterm so rebuilding the viewport at the original y can disable `append_lines`,
+/// avoiding extra blank lines that would push the UI away.
 pub struct InlineBackend {
     inner: CrosstermBackend<io::Stdout>,
     suppress_append_lines: bool,
@@ -46,8 +48,9 @@ impl Default for InlineBackend {
     }
 }
 
-/// 屏幕上原点下方已经留得下 `inline_height` 行时，重建视口不必再打换行。
-/// 靠近底部、行数不够时必须真的 `append_lines`，否则 ratatui 会按「已滚动」把 y 往上减。
+/// When `inline_height` rows already fit below the origin on screen, rebuilding the viewport
+/// does not need another newline. Near the bottom with too few rows, `append_lines` must really
+/// run, otherwise ratatui treats it as "scrolled" and shifts y upward.
 pub fn should_suppress_inline_append(cursor_y: u16, rows: u16, inline_height: u16) -> bool {
     let available = rows.saturating_sub(cursor_y).saturating_sub(1);
     let need = inline_height.saturating_sub(1);
@@ -119,9 +122,9 @@ impl Backend for InlineBackend {
 }
 
 pub trait InlineRecreate {
-    /// 仅用于水平缩窄：ratatui inline `resize` 会清屏并把 y 设为 0。
+    /// Only for horizontal shrink: ratatui inline `resize` clears the screen and sets y to 0.
     fn recreate_inline_at_row(&mut self, y: u16, height: u16) -> Result<()>;
-    /// 长高/缩短：换 Inline 高度，但不走缩窄那套整屏 clear。
+    /// Grow/shrink: swap the Inline height without the full-screen clear used for shrink.
     fn set_inline_height(&mut self, y: u16, old_height: u16, new_height: u16) -> Result<()>;
 }
 
@@ -145,9 +148,10 @@ impl InlineRecreate for Terminal<CrosstermBackend<io::Stdout>> {
     }
 }
 
-/// ratatui `resize` 在水平缩窄时会清屏并把 inline 原点设为 y=0（#2355）。
-/// 不能再用 `insert_before` 把视口推回去——那会插入空白行，残片和新框隔开。
-/// 只在宽度变窄时调用：按原 y 重建并 clear 折行残片。
+/// ratatui `resize` on horizontal shrink clears the screen and sets the inline origin to y=0 (#2355).
+/// We cannot push the viewport back with `insert_before` — that inserts blank lines and separates
+/// the fragments from the new frame. Only called when the width shrinks: rebuild at the original y
+/// and clear the wrapped-line fragments.
 fn recreate_inline_terminal_at(
     terminal: &mut Terminal<InlineBackend>,
     at_y: u16,
@@ -173,9 +177,11 @@ fn recreate_inline_terminal_at(
     Ok(())
 }
 
-/// ratatui `Viewport::Inline(n)` 的 n 只在构造时生效，长高只能换一个 Terminal。
-/// 够空间时抑制 append、不清屏（原地长高）。贴底必须换行时交给 with_options 从原点
-/// 列 0 去 scroll，并 clear——第一帧会假定区域是空的，滚动带上来的残片必须清掉。
+/// The `n` in ratatui `Viewport::Inline(n)` only takes effect at construction, so growing the
+/// height requires a fresh Terminal. When there is enough space, suppress append and skip the
+/// clear (grow in place). When growth at the bottom edge forces a newline, let `with_options`
+/// scroll from column 0 of the origin and then clear — the first frame assumes the area is empty,
+/// so fragments brought in by the scroll must be removed.
 fn set_inline_viewport_height(
     terminal: &mut Terminal<InlineBackend>,
     at_y: u16,
@@ -198,7 +204,8 @@ fn set_inline_viewport_height(
     .map_err(|err| anyhow!("{err}"))?;
     terminal.backend_mut().set_suppress_append_lines(false);
     if scrolled {
-        // 滚动把旧 UI / cargo 输出带进了新视口；ratatui 首帧假定区域为空，必须先清。
+        // Scrolling pulled old UI / cargo output into the new viewport; ratatui's first frame
+        // assumes the area is empty, so it must be cleared first.
         terminal.clear().map_err(|err| anyhow!("{err}"))?;
     } else if new_height < old_height {
         let erase_from = y.saturating_add(new_height);
@@ -219,7 +226,8 @@ fn set_inline_viewport_height(
 pub(super) enum InlineLeaveAction {
     None,
     MoveTo(u16),
-    /// 内容贴着最后一行：先到该行列 0，再换行滚出一行给 shell。
+    /// Content sits on the last row: first go to column 0 of that row, then scroll one line
+    /// out with a newline for the shell.
     ScrollLastRow,
 }
 
@@ -233,8 +241,10 @@ pub(super) fn inline_leave_action(content_bottom: u16, rows: u16) -> InlineLeave
     }
 }
 
-/// Ctrl+C / 退出时，光标还在输入框内。zsh 会把未换行的行标成 `%` 再打印提示符，盖住底边和 footer。
-/// 把光标移到最后一块内嵌内容的下一行（列 0），让 shell 提示符出现在完整 UI 下方。
+/// On Ctrl+C / exit the cursor is still inside the input box. zsh marks the unterminated line
+/// with `%` and prints the prompt over it, covering the bottom border and footer. Move the cursor
+/// to the next line (column 0) below the last inline block so the shell prompt appears under the
+/// complete UI.
 pub fn leave_inline_prompt<B: Backend + io::Write>(
     terminal: &mut Terminal<B>,
     content_bottom: u16,
@@ -246,7 +256,8 @@ pub fn leave_inline_prompt<B: Backend + io::Write>(
             execute!(terminal.backend_mut(), MoveTo(0, y)).map_err(|err| anyhow!("{err}"))?;
         }
         InlineLeaveAction::ScrollLastRow => {
-            // raw mode 下 `\n` 只是 LF，不会回到列 0，也不能从输入框内只打一个换行就越过 footer。
+            // In raw mode `\n` is only an LF: it does not return to column 0, and a single newline
+            // from inside the input box cannot get past the footer.
             execute!(
                 terminal.backend_mut(),
                 MoveTo(0, rows.saturating_sub(1)),
@@ -280,7 +291,8 @@ impl InlineScrollback {
             return None;
         }
         if total < self.committed {
-            // 主屏 scrollback 无法撤回已插入行；缩短时不能从 0 再插一遍。
+            // The main-screen scrollback cannot retract already-inserted lines; after a shrink we
+            // must not re-insert them from 0.
             return None;
         }
         if total > self.committed {
@@ -316,7 +328,8 @@ impl TuiShell {
         self.inline_mode = inline;
         if inline {
             self.ui_runtime_state = crate::ui::UiRuntimeState::default();
-            // 不 reset scrollback：切去全屏前已 insert_before 的行还在主屏，回来再插会重复。
+            // Do not reset the scrollback: lines inserted with insert_before before switching to
+            // fullscreen are still on the main screen; re-inserting them on return would duplicate.
         } else {
             self.ui_runtime_state = crate::ui::UiRuntimeState::from_terminal_query();
         }
@@ -378,9 +391,9 @@ fn insert_scrollback_lines<B: Backend>(
     Ok(())
 }
 
-/// `insert_before` 无 scrolling-regions 时会逐格 Print。
-/// Paragraph 把宽字符写在 x，x+1 仍是默认空格；打出去就变成「欢 迎」。
-/// 把宽字符后面的占位格清成空串，Print("") 不会占列。
+/// Without scrolling-regions, `insert_before` prints cell by cell. Paragraph writes a wide
+/// character at x while x+1 still holds the default space; printed as-is it becomes "欢 迎".
+/// Clear the placeholder cells after wide characters to an empty string; Print("") takes no columns.
 fn clear_wide_char_continuation_cells(buf: &mut Buffer) {
     let area = buf.area;
     for y in area.y..area.y.saturating_add(area.height) {

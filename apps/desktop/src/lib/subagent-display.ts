@@ -1,6 +1,8 @@
 import type { ConversationMessageSnapshot, PendingAssistantAux } from "../types.js";
 
-/** Parent wrap-up after subagent — normal assistant body, not runtime status. */
+/** Parent wrap-up after subagent — normal assistant body, not runtime status.
+ * The CJK patterns intentionally match model-generated Chinese wrap-up text; models may
+ * still answer in Chinese, so this detector stays CJK-aware by design. */
 function isParentSubagentCompletionSurfaceText(text: string): boolean {
   return /子智能体已完成|输出如下/u.test(text);
 }
@@ -9,7 +11,7 @@ function isParentSubagentCompletionSurfaceText(text: string): boolean {
 const SUBAGENT_SPINNER_PREFIX = /^[|/\\-]\s+/;
 
 /** Progress tail after `title:` on the subagent status line (streaming English fragments included). */
-const SUBAGENT_STATUS_TAIL_PREFIX = /^(The|Sub|Sp|Thinking|Compressing|运行|等待)\b/u;
+const SUBAGENT_STATUS_TAIL_PREFIX = /^(The|Sub|Sp|Thinking|Compressing|Running|Awaiting)\b/u;
 
 /** Colon is part of an emoticon (e.g. `:)`), not a `label: status` separator. */
 function isEmoticonColon(text: string, colonIdx: number): boolean {
@@ -75,20 +77,20 @@ function isSubagentRuntimeStatusTail(after: string): boolean {
   if (/^The user wants\b/u.test(tail)) {
     return true;
   }
-  if (/^运行中\s*$/u.test(tail)) {
+  if (/^Running\s*$/u.test(tail)) {
     return true;
   }
-  if (tail.startsWith("等待")) {
+  if (tail.startsWith("Awaiting")) {
     return true;
   }
-  if (/^已完成\s*$/u.test(tail)) {
+  if (/^Done\s*$/u.test(tail)) {
     return true;
   }
   return false;
 }
 
 /**
- * Runtime status like `task: 运行中` or `task: The user wants…` — not child final output
+ * Runtime status like `task: Running` or `task: The user wants…` — not child final output
  * or parent post-tool summary (Markdown), and not normal assistant prose that happens to
  * contain a colon.
  */
@@ -113,10 +115,10 @@ export function isSubagentStatusSurfaceText(text: string | undefined): boolean {
   if (withoutSpinner === "Thinking..." || withoutSpinner === "Compressing...") {
     return true;
   }
-  if (/:\s*运行中\s*$/u.test(withoutSpinner)) {
+  if (/:\s*Running\s*$/u.test(withoutSpinner)) {
     return true;
   }
-  if (/:\s*等待/u.test(withoutSpinner)) {
+  if (/:\s*Awaiting/u.test(withoutSpinner)) {
     return true;
   }
 
@@ -186,7 +188,7 @@ export function hasActiveSubagentToolInMessages(
   );
 }
 
-/** subagent 仍在当前回合执行/等待审批时，主 timeline 不应展示子会话工具卡。 */
+/** While a subagent is still executing or awaiting approval in the current turn, the main timeline must not show child-session tool cards. */
 export function hasInFlightSubagentDelegationInMessages(
   messages: ReadonlyArray<ConversationMessageSnapshot>,
 ): boolean {

@@ -11,7 +11,7 @@ import { appendWorkspaceFileIcon } from "@/lib/workspace-explorer-icon-dom";
 import { WORKSPACE_FILE_ICON_CHIP_SIZE_PX } from "@/lib/workspace-file-icon-sizes";
 import type { WorkspaceExplorerEntryKind } from "@/types";
 
-/** 工作区 @ 引用 chip（文件与目录路径） */
+/** Workspace @ reference chip (file and directory paths) */
 export const WORKSPACE_FILE_CHIP_CLASS = COMPOSER_INLINE_CHIP_CLASS;
 
 export const WORKSPACE_FILE_CHIP_ICON_CLASS = COMPOSER_INLINE_CHIP_ICON_CLASS;

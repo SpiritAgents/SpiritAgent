@@ -105,7 +105,7 @@ test("preserveDeleteFileLineDelta keeps prior removed count after file is gone",
   const attached = {
     toolName: "delete_file",
     phase: "succeeded",
-    headline: "删除 hello.txt",
+    headline: "Delete hello.txt",
     detailLines: [],
   };
   assert.deepEqual(
@@ -124,7 +124,7 @@ test("resolveToolLineDeltaForDisplay hides delta when tool phase is failed", () 
     resolveToolLineDeltaForDisplay({
       toolName: "create_file",
       phase: "failed",
-      headline: "创建",
+      headline: "Create",
       detailLines: [],
       argsExcerpt,
     }),
@@ -134,7 +134,7 @@ test("resolveToolLineDeltaForDisplay hides delta when tool phase is failed", () 
     resolveToolLineDeltaForDisplay({
       toolName: "create_file",
       phase: "succeeded",
-      headline: "创建",
+      headline: "Create",
       detailLines: [],
       argsExcerpt,
     }),
@@ -147,7 +147,7 @@ test("preserveDeleteFileBaseline keeps prior text after delete succeeds", () => 
   const attached = {
     toolName: "delete_file",
     phase: "succeeded",
-    headline: "删除 hello.txt",
+    headline: "Delete hello.txt",
     detailLines: [],
   };
   assert.equal(

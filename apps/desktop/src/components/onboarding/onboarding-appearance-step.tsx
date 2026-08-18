@@ -24,8 +24,9 @@ type OnboardingAppearanceControlsProps = {
 };
 
 /**
- * OOBE 外观步骤内容：主题三选预览卡 + 半透明开关 + 语言选择。
- * 所有选择即时生效，与设置页共用同一保存链路。
+ * OOBE appearance step content: three-way theme preview cards + translucency toggle + language
+ * selection. All selections take effect immediately, sharing the same save pipeline as the
+ * settings page.
  */
 export function OnboardingAppearanceControls({
   theme,
@@ -118,7 +119,7 @@ function ThemePreviewCard({
       >
         {value === "system" ? (
           <>
-            {/* 竖直分割：左右各裁半宽完整预览，避免整卡亮色层在圆角边缘透出 */}
+            {/* Vertical split: each side clips a half-width full preview, avoiding the whole card's light layer showing through at the rounded-corner edges */}
             <div className="absolute inset-y-0 left-0 w-1/2 overflow-hidden">
               <div className="absolute inset-y-0 left-0 w-[200%]">
                 <MiniAppPreview dark={false} />
@@ -147,9 +148,11 @@ function ThemePreviewCard({
 }
 
 /**
- * 主界面空会话视图的迷你 mock：侧栏 + 居中问候骨架条 + 底部输入框条。
- * 固定色板（不用 dark: 变体），避免受文档级 .dark 类影响预览效果；
- * 品牌色为纯白纯黑，骨架条统一用黑/白 alpha 叠加，避免中间灰阶带出色相。
+ * Mini mock of the main UI's empty-conversation view: sidebar + centered greeting skeleton bar +
+ * bottom input bar.
+ * Fixed palette (no dark: variants) so the preview is not affected by the document-level .dark
+ * class; the brand colors are pure white/black, and skeleton bars uniformly use black/white alpha
+ * overlays to avoid intermediate grays introducing a hue.
  */
 function MiniAppPreview({ dark }: { dark: boolean }) {
   const c = dark

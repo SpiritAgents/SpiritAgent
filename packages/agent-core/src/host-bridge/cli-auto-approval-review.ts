@@ -12,7 +12,7 @@ function providerIdForTransportConfig(config: LlmTransportConfig): string | unde
   return config.llmVendor;
 }
 
-/** CLI 无独立 lightweight 配置时复用当前 transport 的 active model。 */
+/** When the CLI has no separate lightweight config, reuse the current transport's active model. */
 export function createCliAutoApprovalReviewer(
   config: LlmTransportConfig,
 ): (input: ToolAutoReviewInput) => Promise<ToolAutoReviewResult | undefined> {

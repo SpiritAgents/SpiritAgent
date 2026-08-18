@@ -123,7 +123,7 @@ function countDiagnosticsIssues(outputExcerpt: string | undefined): number {
   if (!outputExcerpt) {
     return 0;
   }
-  // 优先从 header 解析真实总数，避免 maxItems 截断导致低估：
+  // Prefer parsing the real total from the header to avoid underestimation caused by maxItems truncation:
   // "Diagnostics for src/x.ts (8 shown, 7 more omitted):" → 15
   const headerPattern = /^Diagnostics for .+?\((\d+) shown(?:,\s*(\d+) more omitted)?\):/gm;
   let total = 0;
@@ -136,7 +136,7 @@ function countDiagnosticsIssues(outputExcerpt: string | undefined): number {
   if (headerCount > 0) {
     return total;
   }
-  // 兜底：按行统计（无 header 时）
+  // Fallback: count by line (when there is no header)
   return outputExcerpt.split("\n").filter((line) => /^(error|warning)\s/.test(line.trim())).length;
 }
 
@@ -329,7 +329,7 @@ export function getToolCallSummaryParts(tool: ToolBlockSnapshot): ToolCallSummar
     let detail: string | undefined;
     if (tool.toolName === "todo_write") {
       if (inFlightTodoWrite) {
-        // preview/running 时 headlineDetail 由 orchestrator 用完整 previewRequest 写入；argsExcerpt 流式重算不可靠
+        // During preview/running, headlineDetail is written by the orchestrator from the full previewRequest; recomputing from the streaming argsExcerpt is unreliable
         detail = snapshotDetail ?? todoWriteDetail;
       } else if (beforeItems.length === 0 && snapshotDetail) {
         detail = snapshotDetail;

@@ -260,7 +260,7 @@ export function useGlobalTooltipSwitch({
       setOpenKind("closed");
       setTooltipActiveHighlightSlot(null);
       setTooltipAnchorSlot(closingSlot);
-      // 锚点保留到 linger 结束，避免 Popper 在退出动画期间漂到 (0,0)
+      // Keep the anchor until linger ends, so Popper does not drift to (0,0) during the exit animation
       const anchorLingerMs = getAnchorLingerMs(closingRegistrationId);
       if (lingerClearTimerRef.current !== undefined) {
         clearTimeout(lingerClearTimerRef.current);

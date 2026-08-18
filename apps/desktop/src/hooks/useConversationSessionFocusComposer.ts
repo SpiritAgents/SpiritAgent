@@ -3,11 +3,11 @@ import { useLayoutEffect, useRef } from "react";
 export type UseConversationSessionFocusComposerOptions = {
   composerSessionKey: string;
   focusComposer: () => void;
-  /** 会话页可见且导航已完成时才聚焦 */
+  /** Focus only when the session page is visible and navigation has completed */
   enabled: boolean;
 };
 
-/** 进入会话页或切换 composer 会话后，将焦点移至输入框。 */
+/** Move focus to the input after entering the session page or switching the composer session. */
 export function useConversationSessionFocusComposer({
   composerSessionKey,
   focusComposer,

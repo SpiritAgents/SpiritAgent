@@ -30,9 +30,9 @@ export async function runBackgroundCase(): Promise<RuntimeParityCaseResult> {
     onEvent: (event) => backgroundEvents.push(event),
   });
 
-  const backgroundResult = await backgroundRuntime.submitUserTurn("请后台搜索 runtime parity。");
+  const backgroundResult = await backgroundRuntime.submitUserTurn("Please search for runtime parity in the background.");
   if (backgroundResult.kind !== "completed" || backgroundResult.assistantText !== "BACKGROUND_OK") {
-    throw new Error("background execution smoke 未完成闭环。");
+    throw new Error("background execution smoke did not complete the turn loop.");
   }
 
   const startedBackground = backgroundEvents.find(
@@ -48,13 +48,13 @@ export async function runBackgroundCase(): Promise<RuntimeParityCaseResult> {
       event.kind === "background-tool-status" && event.phase === "finished",
   );
   if (!startedBackground || !finishedBackground) {
-    throw new Error("background execution smoke 未收到开始/结束事件。");
+    throw new Error("background execution smoke did not receive the started/finished events.");
   }
-  if (startedBackground.statusText !== "搜索中: runtime parity") {
-    throw new Error("background execution smoke 状态文本不正确。");
+  if (startedBackground.statusText !== "Searching: runtime parity") {
+    throw new Error("background execution smoke status text is incorrect.");
   }
   if (backgroundRuntime.backgroundToolStatus() !== undefined) {
-    throw new Error("background execution smoke 结束后应清空 pending background status。");
+    throw new Error("background execution smoke should clear the pending background status after finishing.");
   }
 
   const pollingBackgroundExecutor = new PollingBackgroundExecutor();
@@ -69,28 +69,28 @@ export async function runBackgroundCase(): Promise<RuntimeParityCaseResult> {
     onEvent: (event) => pollingBackgroundEvents.push(event),
   });
 
-  await pollingBackgroundRuntime.startUserTurn("请后台搜索 runtime parity。");
+  await pollingBackgroundRuntime.startUserTurn("Please search for runtime parity in the background.");
   await flushMicrotasks(4);
   await pollingBackgroundRuntime.poll();
   if (!pollingBackgroundRuntime.isBusy()) {
-    throw new Error("polling background smoke 应在后台工具执行期间保持 busy。");
+    throw new Error("polling background smoke should stay busy while the background tool runs.");
   }
-  if (pollingBackgroundRuntime.backgroundToolStatus() !== "搜索中: runtime parity") {
-    throw new Error("polling background smoke 未暴露后台工具状态。");
+  if (pollingBackgroundRuntime.backgroundToolStatus() !== "Searching: runtime parity") {
+    throw new Error("polling background smoke did not expose the background tool status.");
   }
   const backgroundAux = pollingBackgroundRuntime.pendingAuxState();
   if (
     !backgroundAux ||
     backgroundAux.kind !== "thinking" ||
-    backgroundAux.detailText !== "搜索中: runtime parity"
+    backgroundAux.detailText !== "Searching: runtime parity"
   ) {
-    throw new Error("polling background smoke 未暴露 thinking aux 状态。");
+    throw new Error("polling background smoke did not expose the thinking aux state.");
   }
   if (backgroundAux.statusText !== "") {
-    throw new Error("polling background smoke 不应把 UI spinner 文案放进 statusText。");
+    throw new Error("polling background smoke should not put UI spinner copy into statusText.");
   }
   if (pollingBackgroundRuntime.takeCompletedTurnResult()) {
-    throw new Error("polling background smoke 在后台工具完成前不应产出结果。");
+    throw new Error("polling background smoke should not produce a result before the background tool finishes.");
   }
 
   pollingBackgroundExecutor.finish('background result for {"query":"runtime parity"}');
@@ -110,7 +110,7 @@ export async function runBackgroundCase(): Promise<RuntimeParityCaseResult> {
     pollingBackgroundResult.kind !== "completed" ||
     pollingBackgroundResult.assistantText !== "BACKGROUND_OK"
   ) {
-    throw new Error("polling background smoke 未得到最终完成结果。");
+    throw new Error("polling background smoke did not get the final completion result.");
   }
   const pollingStartedBackground = pollingBackgroundEvents.find(
     (
@@ -125,7 +125,7 @@ export async function runBackgroundCase(): Promise<RuntimeParityCaseResult> {
       event.kind === "background-tool-status" && event.phase === "finished",
   );
   if (!pollingStartedBackground || !pollingFinishedBackground) {
-    throw new Error("polling background smoke 未收到完整的后台状态事件。");
+    throw new Error("polling background smoke did not receive the complete background status events.");
   }
   const pollingToolFinished = pollingBackgroundEvents.find(
     (
@@ -134,7 +134,7 @@ export async function runBackgroundCase(): Promise<RuntimeParityCaseResult> {
       event.kind === "tool-execution-finished",
   );
   if (!pollingToolFinished || pollingToolFinished.execution.toolName !== "grep") {
-    throw new Error("polling background smoke 应在后台工具完成时发出 tool-execution-finished。");
+    throw new Error("polling background smoke should emit tool-execution-finished when the background tool completes.");
   }
 
   return { backgroundResult, pollingBackgroundResult };

@@ -1,4 +1,4 @@
-// 与 ratatui 0.29 `Paragraph` + `WordWrapper` 行为一致，便于应用内选区与折行对齐。
+// Matches ratatui 0.29 `Paragraph` + `WordWrapper` behavior so in-app selection stays aligned with line wrapping.
 
 use std::{collections::VecDeque, mem};
 

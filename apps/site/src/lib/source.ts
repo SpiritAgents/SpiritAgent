@@ -24,10 +24,11 @@ type RelativeLinkPage = {
 };
 
 /**
- * Fumadocs i18n `parser: "dir"` 会把语言目录从 storage key 里剥掉，
- * 但 `page.path` 仍是 `en-US/index.mdx`。`resolveHref` 用 `dirname(page.path)`
- * 去查 `en-US.en-US/quickstart.mdx`，相对链接全部 miss，href 原样落到
- * `/en-US/quickstart.mdx`。这里把 path 收成 storage key 再交给 createRelativeLink。
+ * Fumadocs i18n `parser: "dir"` strips the language directory from the storage key,
+ * but `page.path` is still `en-US/index.mdx`. `resolveHref` looks up
+ * `en-US.en-US/quickstart.mdx` via `dirname(page.path)`, so every relative link
+ * misses and the href lands as-is on `/en-US/quickstart.mdx`. Here the path is
+ * reduced to the storage key before handing it to createRelativeLink.
  */
 export function toRelativeLinkPage<T extends RelativeLinkPage>(page: T): T {
   const locale = page.locale;

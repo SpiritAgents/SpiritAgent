@@ -32,7 +32,7 @@ export type HighlightSegment = {
   highlighted: boolean;
 };
 
-/** ripgrep JSON submatch start/end 为行内 UTF-8 字节偏移（非 JS code unit）。 */
+/** ripgrep JSON submatch start/end are in-line UTF-8 byte offsets (not JS code units). */
 export function ripgrepUtf8ByteOffsetToCodeUnitIndex(text: string, byteOffset: number): number {
   let bytes = 0;
   let index = 0;
@@ -87,7 +87,7 @@ function buildHighlightedLineSegmentsFromCodeUnits(
   return segments.length > 0 ? segments : [{ text: lineText, highlighted: false }];
 }
 
-/** rg submatch start/end 为 UTF-8 字节偏移；展示用 lineText 按 code unit 切片。 */
+/** rg submatch start/end are UTF-8 byte offsets; the display lineText is sliced by code unit. */
 export function buildHighlightedLineSegments(
   lineText: string,
   submatches: readonly { start: number; end: number }[],

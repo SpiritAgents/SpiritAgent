@@ -9,17 +9,18 @@ import { defaultShellForPty } from "@spiritagent/host-internal/default-terminal-
 function assertDirectory(cwd: string): string {
   const resolved = path.resolve(cwd);
   if (!existsSync(resolved)) {
-    throw new Error("工作区目录不存在");
+    throw new Error("Workspace directory does not exist");
   }
   return resolved;
 }
 
 /**
- * 在系统终端中打开目录（独立窗口，不嵌入）。
- * Windows：优先 `wt -d`（常见安装路径或 PATH），Shell 与集成终端相同（pwsh → powershell → cmd）；
- * 失败则 `cmd /c start` 在新控制台打开同一 Shell。
- * macOS：`Terminal.app`，子进程工作目录为工作区。
- * Linux：gnome-terminal、konsole、`x-terminal-emulator`（cwd）；均不可用时退回打开文件夹。
+ * Open a directory in the system terminal (separate window, not embedded).
+ * Windows: prefer `wt -d` (common install paths or PATH), using the same shell as the
+ * integrated terminal (pwsh → powershell → cmd); on failure fall back to `cmd /c start`
+ * to open the same shell in a new console.
+ * macOS: `Terminal.app`, with the child process working directory set to the workspace.
+ * Linux: gnome-terminal, konsole, `x-terminal-emulator` (cwd); if none are available, open the folder instead.
  */
 export function openSystemTerminalInDirectory(cwd: string): void {
   const dir = assertDirectory(cwd);

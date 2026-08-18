@@ -3,7 +3,7 @@ import { useLayoutEffect, useState, type RefObject } from "react";
 const SESSION_SIDEBAR_SHELL_SELECTOR = '[data-spirit-surface="session-sidebar-shell"]';
 const SESSION_SIDEBAR_DIVIDER_SELECTOR = '[data-spirit-edge="session-sidebar-divider"]';
 
-/** 标题栏分割线左缘：与侧栏竖线 DOM 左缘对齐（含收起/展开 CSS 过渡帧）。 */
+/** Left edge of the title bar divider: aligned with the DOM left edge of the sidebar vertical line (including collapse/expand CSS transition frames). */
 export function useSessionSidebarShellRightInsetPx(
   anchorRef: RefObject<HTMLElement | null>,
   enabled: boolean,

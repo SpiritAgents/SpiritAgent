@@ -10,13 +10,13 @@ export const TRANSCRIPTS_DIR_NAME = "transcripts";
 export const SESSION_TRANSCRIPT_FILE_NAME = "transcript.json";
 export const SUBAGENT_TRANSCRIPTS_DIR_NAME = "subagents";
 
-/** Transcript 目录名：对 sessionKey 做稳定归一后取 sha256 前 32 hex，避免路径 flatten 碰撞与过长组件名。 */
+/** Transcript directory name: stably normalize the sessionKey, then take the first 32 hex chars of its sha256, avoiding path-flattening collisions and overly long component names. */
 export function transcriptSessionDirName(sessionKey: string | undefined): string {
   const trimmed = sessionKey?.trim();
   if (!trimmed) {
     return "unknown";
   }
-  // 绝对路径先 resolve，保证 Desktop / server 对同一 chat 文件得到同一目录名；相对/opaque id 原样哈希。
+  // Resolve absolute paths first so Desktop / server derive the same directory name for the same chat file; relative/opaque ids are hashed as-is.
   const stableKey = path.isAbsolute(trimmed) ? path.resolve(trimmed) : trimmed;
   return createHash("sha256").update(stableKey, "utf8").digest("hex").slice(0, 32);
 }

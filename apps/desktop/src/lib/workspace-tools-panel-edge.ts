@@ -22,7 +22,7 @@ export function getWorkspaceToolsShellSplit(): HTMLElement | null {
   return document.querySelector<HTMLElement>(WORKSPACE_TOOLS_SPLIT_SELECTOR);
 }
 
-/** shellSplit 内 absolute 定位须用本地长度，不可直接用 getBoundingClientRect 视口差值。 */
+/** Absolute positioning inside shellSplit must use local lengths, not getBoundingClientRect viewport deltas directly. */
 export function shellLocalLengthFromViewportDelta(delta: number): number {
   return viewportLengthToScaleRootLocal(delta);
 }

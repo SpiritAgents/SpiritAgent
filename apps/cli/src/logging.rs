@@ -9,8 +9,9 @@ use std::{
     time::{SystemTime, UNIX_EPOCH},
 };
 
-/// 设为 `1` 或 `true` 时，将发往 LLM 的 JSON 请求体全文（与 `reqwest::RequestBuilder::json` 序列化一致）
-/// 追加写入 spirit-agent.log，便于与抓包/C# 客户端逐字节对照。密钥不会写入此处，仅 body。
+/// When set to `1` or `true`, appends the full JSON request body sent to the LLM (matching
+/// `reqwest::RequestBuilder::json` serialization) to spirit-agent.log for byte-level comparison
+/// with packet captures / C# clients. Secrets are not written here, only the body.
 const ENV_LOG_HTTP_BODY: &str = "SPIRIT_LOG_HTTP_BODY";
 
 static LOG_FILE: OnceLock<Mutex<std::fs::File>> = OnceLock::new();

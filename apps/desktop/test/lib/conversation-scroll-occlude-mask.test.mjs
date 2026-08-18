@@ -86,13 +86,13 @@ test("rounded-full style radius clamps to stadium not ellipse", () => {
     viewportWidth: 400,
     viewportHeight: 800,
     shapes: [
-      // 模拟 Changes：rounded-full → computed radius 极大
+      // Simulates Changes: rounded-full → extremely large computed radius
       { x: 40, y: 600, width: 128.93, height: 28, rx: 16777200, ry: 16777200 },
     ],
   });
   assert.ok(style);
   const decoded = decodeURIComponent(style.maskImage.slice('url("data:image/svg+xml,'.length, -2));
-  // 胶囊应为 rx=ry=14，不能出现 rx≈64 的椭圆
+  // The pill should be rx=ry=14; an ellipse with rx≈64 must not appear
   assert.match(decoded, /rx="14\.00"/);
   assert.match(decoded, /ry="14\.00"/);
   assert.doesNotMatch(decoded, /rx="64/);

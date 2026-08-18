@@ -4,7 +4,7 @@ import { basename } from "node:path";
 import { getLlmFetch } from "../llm-fetch.js";
 import type { OpenAiTransportConfig } from "./openai-compat.js";
 
-/** Moonshot AI 视频理解：经 Files API 上传，purpose 必须为 video。 */
+/** Moonshot AI video understanding: uploaded via the Files API, purpose must be video. */
 const DEFAULT_MOONSHOT_BASE_URL = "https://api.moonshot.cn/v1";
 
 const uploadCache = new Map<string, string>();
@@ -17,7 +17,7 @@ export function normalizeMoonshotApiBase(baseUrl: string | undefined): string {
   return normalizeOpenAiCompatibleApiBase(baseUrl ?? DEFAULT_MOONSHOT_BASE_URL);
 }
 
-/** OpenAI 兼容 Files API（purpose=video）→ `ms://{fileId}`，供 Moonshot 等支持 Files 上传的厂商使用。 */
+/** OpenAI-compatible Files API (purpose=video) → `ms://{fileId}`, for Moonshot and other vendors supporting Files uploads. */
 export async function uploadOpenAiCompatibleVideoFile(
   config: Pick<OpenAiTransportConfig, "apiKey" | "baseUrl">,
   absolutePath: string,

@@ -35,7 +35,7 @@ const EXPLICIT_PASTE_REPLAY_MAX_GAP: Duration = Duration::from_millis(750);
 #[cfg(target_os = "windows")]
 use windows_sys::Win32::UI::Input::KeyboardAndMouse::{GetAsyncKeyState, VK_LSHIFT, VK_RSHIFT};
 
-// 俳句一枚，献给所有在 async 中追寻确定性的 Rustacean：
+// A haiku for every Rustacean chasing determinism in async:
 // Async futures wake  /  Borrow checker guards the stack  /  CLI whispers back
 #[derive(Parser)]
 #[command(name = "spirit")]
@@ -108,7 +108,7 @@ enum Commands {
 }
 
 #[derive(Subcommand)]
-// clap derive 无法对 Add 子命令字段做 Box 堆分配，否则无法保持 Subcommand 派生
+// clap derive cannot Box-allocate the Add subcommand fields without breaking the Subcommand derive
 #[allow(clippy::large_enum_variant)]
 enum ModelAction {
     List,
@@ -465,7 +465,7 @@ fn is_inline_tui(mode: &str) -> bool {
 fn create_tui_terminal(inline: bool) -> Result<Terminal<tui::InlineBackend>> {
     if inline {
         execute!(io::stdout(), DisableLineWrap)?;
-        // Inline(1) → append_lines(0)。加载期不预留布局高度；第一帧再按实际内容长高。
+        // Inline(1) → append_lines(0). No layout height is reserved at load time; the first frame grows to fit the actual content.
         Terminal::with_options(
             tui::InlineBackend::new(),
             TerminalOptions {
@@ -485,8 +485,8 @@ fn teardown_tui_viewport(
     last_inline_viewport: ratatui::layout::Rect,
 ) -> Result<()> {
     if inline {
-        // 切走全屏不能 leave_inline_prompt：那只把光标挪到框下，live chrome 仍留在主屏。
-        // EnterAlternateScreen 会保存这块主屏；回来时输入框和选择器就会和新建的内嵌 UI 叠在一起。
+        // When leaving fullscreen, we cannot leave_inline_prompt: that only moves the cursor below the box, while the live chrome stays on the main screen.
+        // EnterAlternateScreen saves that main screen; on return, the input box and picker would overlap the newly created inline UI.
         let origin_y = if last_inline_viewport.height > 0 {
             last_inline_viewport.y
         } else {
@@ -522,7 +522,7 @@ fn apply_session_tui_switch(
         return Ok(());
     }
     if *inline {
-        // 先把未提交的 live 行推进系统 scrollback，再擦 chrome，避免对话只活在即将清掉的视口里。
+        // Push uncommitted live lines into the system scrollback before erasing the chrome, so the conversation does not live only in the viewport about to be cleared.
         shell.sync_inline_scrollback(terminal)?;
     }
     teardown_tui_viewport(terminal, *inline, *last_inline_viewport)?;
@@ -1150,7 +1150,7 @@ fn process_key_event(
             }
             KeyCode::Char('r') if key.modifiers.contains(KeyModifiers::CONTROL) => {
                 if let Err(err) = shell.refresh_marketplace_catalog() {
-                    shell.push_agent_message(format!("刷新 marketplace 目录失败: {}", err));
+                    shell.push_agent_message(spirit_agent::locale::marketplace_refresh_failed_message(&err));
                 }
             }
             KeyCode::Char('l')
@@ -1565,7 +1565,7 @@ fn load_clipboard_image() -> Option<std::path::PathBuf> {
     let mut clipboard = match arboard::Clipboard::new() {
         Ok(c) => c,
         Err(e) => {
-            logging::log_event(&format!("[clipboard] 无法访问剪贴板: {}", e));
+            logging::log_event(&format!("[clipboard] cannot access clipboard: {}", e));
             return None;
         }
     };
@@ -1579,7 +1579,7 @@ fn load_clipboard_image() -> Option<std::path::PathBuf> {
         .join("spirit-agent")
         .join("clipboard-images");
     if let Err(e) = fs::create_dir_all(&temp_dir) {
-        logging::log_event(&format!("[clipboard] 无法创建临时目录: {}", e));
+        logging::log_event(&format!("[clipboard] cannot create temp directory: {}", e));
         return None;
     }
 
@@ -1600,13 +1600,13 @@ fn load_clipboard_image() -> Option<std::path::PathBuf> {
         match ImageBuffer::<Rgba<u8>, _>::from_vec(image.width as u32, image.height as u32, rgba) {
             Some(i) => i,
             None => {
-                logging::log_event("[clipboard] 图片格式转换失败");
+                logging::log_event("[clipboard] image format conversion failed");
                 return None;
             }
         };
 
     if let Err(e) = img.save_with_format(&path, image::ImageFormat::Png) {
-        logging::log_event(&format!("[clipboard] 无法保存图片: {}", e));
+        logging::log_event(&format!("[clipboard] cannot save image: {}", e));
         return None;
     }
 

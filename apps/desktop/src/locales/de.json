@@ -802,7 +802,10 @@
     "enterAnswer": "Bitte geben Sie Ihre Antwort ein",
     "customInput": "Benutzerdefinierte Eingabe",
     "customAnswerPlaceholder": "Details oder eine nicht aufgeführte Option hinzufügen",
-    "supplementOption": "Eine nicht aufgeführte Option ergänzen"
+    "supplementOption": "Eine nicht aufgeführte Option ergänzen",
+    "exportSessionOpenFailed": "Die exportierte Datei konnte nicht automatisch geöffnet werden: {{error}}",
+    "saveImageAsUnsupportedFormat": "Es können nur gängige Bildformate gespeichert werden.",
+    "saveImageAsFileMissing": "Die zu speichernde Bilddatei existiert nicht."
   },
   "workspace": {
     "planNotCreated": "Plan wurde noch nicht erstellt.",
@@ -1248,6 +1251,9 @@
     "autoWorktreeNameFailedInvalidBranchName": "Automatische Worktree-Namensgenerierung fehlgeschlagen: branchName-Format ungültig ({{branchName}}).",
     "autoWorktreeNameFailedNotObject": "Automatische Worktree-Namensgenerierung fehlgeschlagen: Modell hat kein JSON-Objekt zurückgegeben."
   },
+  "rules": {
+    "templatePlaceholder": "Fügen Sie hier kurze, klare und umsetzbare Regeln für künftige Agents ein."
+  },
   "notification": {
     "defaultSessionName": "Sitzung",
     "taskComplete": {
@@ -1446,5 +1452,14 @@
     "alwaysTrust": "Immer vertrauen",
     "hooksSection": "Hooks, die ausgeführt werden",
     "openHookScript": "Skript im Standard-Editor öffnen"
+  },
+  "webHost": {
+    "error": {
+      "missingPath": "Der Anfragepfad fehlt.",
+      "pairingLocked": "Zu viele fehlgeschlagene Kopplungsversuche. Starten Sie den Web-Host neu, um einen neuen Kopplungscode zu erzeugen.",
+      "pairingFailed": "Der Kopplungscode ist falsch.",
+      "pairingRequired": "Schließen Sie zuerst die Erstkoppelung ab.",
+      "invalidProvider": "Ungültiges Anbieterargument."
+    }
   }
 }

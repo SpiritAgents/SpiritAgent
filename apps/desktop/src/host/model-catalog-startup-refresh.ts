@@ -415,7 +415,7 @@ export function applyCatalogEntryToStoredModel(
   return changed;
 }
 
-/** 将目录 catalog 条目回写到同作用域内已入库模型（capabilities / supportedReasoningEfforts 等）。 */
+/** Writes catalog entries back to persisted models in the same scope (capabilities / supportedReasoningEfforts, etc.). */
 export function syncExistingModelsFromCatalog(
   config: DesktopConfigFile,
   profile: ModelProfileSnapshot,
@@ -477,7 +477,7 @@ export function syncExistingModelsFromCatalog(
   return updated;
 }
 
-/** 移除同作用域内已不在上游目录中的已入库模型。 */
+/** Removes persisted models in the same scope that are no longer in the upstream catalog. */
 export function removeDelistedModelsFromCatalog(
   config: DesktopConfigFile,
   profile: ModelProfileSnapshot,
@@ -537,7 +537,7 @@ export type ModelCatalogStartupApplySummary = {
   prunedModelNames: readonly string[];
 };
 
-/** 启动后台刷新：优先本地缓存，仅对过期/缺失 scope 发起网络请求；不修改 config。 */
+/** Starts the background refresh: prefer the local cache and only make network requests for expired/missing scopes; does not modify config. */
 export async function fetchConfiguredModelCatalogsOnStartup(
   config: DesktopConfigFile,
   options?: { forceRefresh?: boolean },

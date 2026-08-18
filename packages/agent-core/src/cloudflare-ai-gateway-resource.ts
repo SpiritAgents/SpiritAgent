@@ -1,4 +1,4 @@
-/** Cloudflare AI Gateway REST API base URL helpers（无 Node 或 SDK 依赖）。 */
+/** Cloudflare AI Gateway REST API base URL helpers (no Node or SDK dependencies). */
 
 export const CLOUDFLARE_AI_GATEWAY_ACCOUNT_ID_PLACEHOLDER = "YOUR_ACCOUNT_ID";
 
@@ -6,7 +6,7 @@ export const CLOUDFLARE_AI_GATEWAY_PRESET_API_BASE = `https://api.cloudflare.com
 
 const CLOUDFLARE_ACCOUNT_ID_PATTERN = /^[a-f0-9]{32}$/i;
 
-/** Gateway 名称：字母、数字、连字符与下划线，1–64 字符。 */
+/** Gateway name: letters, digits, hyphens, and underscores; 1–64 characters. */
 const CLOUDFLARE_GATEWAY_ID_PATTERN = /^[a-zA-Z0-9](?:[a-zA-Z0-9_-]{0,62}[a-zA-Z0-9])?$/;
 
 export function normalizeCloudflareAccountId(accountId: string): string {

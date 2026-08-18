@@ -19,7 +19,7 @@ export function shouldUseSdkProviderWebSearchMultiStep(
   return isSdkProviderWebSearchMode(mode);
 }
 
-/** Gateway v3 language-model 流式补丁：tool-result 追踪、续跑合成（非 OpenAI/xAI SDK 路径）。 */
+/** Gateway v3 language-model streaming patch: tool-result tracking and follow-up synthesis (non-OpenAI/xAI SDK path). */
 export function shouldUseGatewaySdkProviderWebSearchStreamPatch(
   config: OpenResponsesTransportConfig,
 ): boolean {
@@ -272,8 +272,9 @@ export function shouldResumeStreamingAfterProviderSearch(
   streamedText: string,
   resolved: { text: string; finalStepText: string; sdkStepCount: number },
   /**
-   * 本轮流里，provider builtin tool-result 之后是否又出现过 text-delta。
-   * 有则说明模型已在同流内合成答案，不得再开 follow-up（否则 UI 会把第二段拼进同一条 pending）。
+   * Whether another text-delta appeared after the provider builtin tool-result in this stream.
+   * If so, the model has already synthesized an answer within the same stream and no follow-up must be started
+   * (otherwise the UI appends the second segment into the same pending message).
    */
   hasPostToolAssistantText = false,
 ): boolean {
@@ -289,8 +290,8 @@ export function shouldResumeStreamingAfterProviderSearch(
     return false;
   }
 
-  // Gateway 有时把完整答案放在同一步的 tool 后 text-delta 里，但 steps 仍报 1；
-  // 此时若仍 resume，第二轮会再答一遍并 append 到同一条助手消息。
+  // Gateway sometimes places the full answer in a post-tool text-delta within the same step while steps still reports 1;
+  // resuming in that case would answer again in a second round and append it to the same assistant message.
   if (hasPostToolAssistantText) {
     return false;
   }
@@ -303,7 +304,7 @@ export function shouldResumeStreamingAfterProviderSearch(
     return true;
   }
 
-  // SDK 单步 metadata 已含完整合成答案，而流式 delta 只覆盖了前言。
+  // The SDK single-step metadata already contains the full synthesized answer, while the streamed deltas only covered the preamble.
   if (finalStep.length > streamed.length && finalStep.startsWith(streamed)) {
     return false;
   }

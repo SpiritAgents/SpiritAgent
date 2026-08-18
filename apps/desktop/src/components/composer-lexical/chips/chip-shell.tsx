@@ -15,7 +15,8 @@ type ChipShellProps = {
   children: ReactNode;
 };
 
-// chip 子树不得带 user-select: none——它会抑制整棵子树的原生选区绘制（文字与图标都无选区底色）
+// The chip subtree must not carry user-select: none — it suppresses native selection painting for
+// the entire subtree (neither text nor icons get a selection tint)
 export function ChipShell({
   className,
   title,
@@ -48,7 +49,7 @@ export function ChipShell({
   );
 }
 
-/** 无图标 chip（如 skill）专用：覆盖左 margin + 左 padding 的选区带。带图标的 chip 由 ChipIcon spacer 负责，不可叠加（会下移图标基线）。 */
+/** Dedicated to icon-less chips (e.g. skill): a selection band covering the left margin + left padding. Icon chips are handled by the ChipIcon spacer and must not stack with it (that would push the icon baseline down). */
 export function ChipLeadingSpacer() {
   return (
     <span
@@ -66,19 +67,23 @@ export function ChipLeadingSpacer() {
   );
 }
 
-// U+3000 表意空格：advance 恒为 1em 的空白字形，用作 chip 选区底色的「隐形文本」
+// U+3000 ideographic space: a blank glyph whose advance is always 1em, used as the "invisible
+// text" backing the chip selection tint
 const CHIP_ICON_SPACER_GLYPH = String.fromCodePoint(0x3000);
 
 /**
- * 尾部隐形文本 run：label 的选区底色不会右延覆盖 chip 的右 padding 与 margin
- * （实测 Chromium 只把行带画到文本 advance 末端，邻 run 也不会延伸覆盖 margin，
- * 见 verify-chip-selection.mjs 缝隙扫描），pill 型 chip（px-1.5）右端会露出
- * padding+margin 宽度的未选中缺口。用一个透明 U+3000 把选区底色恰好推满
- * 右 padding + 右 margin：advance = --chip-pad + --chip-mx（1em + 负 letter-spacing
- * 凑出），margin-right 负值收回自身宽度，chip 总宽不变。
- * 注意 advance 必须恰好止于 chipRight + --chip-mx（= 邻文本 advance 起点，两侧带缘
- * 重合无缝）；探过头会与邻带半透明叠涂出更深的接缝（实测叠涂区 (149,199,255) vs
- * 正常 (180,215,254)）
+ * Trailing invisible text run: the label's selection tint does not extend rightward over the
+ * chip's right padding and margin (measured in Chromium: the line band is only painted to the end
+ * of the text advance, and neighboring runs do not extend over the margin either; see the gap scan
+ * in verify-chip-selection.mjs), so a pill-shaped chip (px-1.5) would expose an unselected gap of
+ * padding+margin width on its right end. A transparent U+3000 pushes the selection tint to exactly
+ * fill right padding + right margin: advance = --chip-pad + --chip-mx (composed of 1em + negative
+ * letter-spacing), and a negative margin-right reclaims its own width, so the chip's total width
+ * is unchanged.
+ * Note the advance must stop exactly at chipRight + --chip-mx (= the neighboring text's advance
+ * start, where both band edges coincide seamlessly); overshooting would overlap the neighboring
+ * band's semi-transparency into a darker seam (measured overlap area (149,199,255) vs normal
+ * (180,215,254))
  */
 function ChipTrailingSpacer() {
   return (
@@ -98,23 +103,30 @@ function ChipTrailingSpacer() {
 }
 
 /**
- * Chip 内联图标的统一包裹层。
+ * Unified wrapper for chip inline icons.
  *
- * Chromium 不给 inline SVG 画选区背景（svgwg#894 规范未定）；透明 <img> 的 replaced
- * tint 实测是半透明叠加且画在图标之上（选中后图标发灰），高度也只能对齐自身盒子而非
- * 文字行带。因此改为「隐形文本」方案：图标前放一个透明表意空格文本 run——
- * 选区底色由浏览器按普通文本行带绘制，颜色/高度/垂直位置与同行 plain text 天然一致
- * （同一绘制路径），图标 svg 画在底色之上保持锐利。
+ * Chromium does not paint a selection background for inline SVG (svgwg#894, spec undecided); a
+ * transparent <img>'s replaced tint is measured to be a semi-transparent overlay painted on top of
+ * the icon (the icon grays out when selected), and its height can only align to its own box rather
+ * than the text line band. Hence the "invisible text" approach: a transparent ideographic-space
+ * text run is placed before the icon — the selection tint is painted by the browser as a normal
+ * text line band, with color/height/vertical position naturally consistent with adjacent plain
+ * text (same paint path), while the icon svg is painted above the tint and stays sharp.
  *
- * - spacer 宽度 = 左 margin（--chip-mx）+ 左 padding（--chip-pad）+ 图标槽（1em）+ 图标与
- *   label 间距（4px）：U+3000 advance 恒为 1em，超出部分用 letter-spacing 补足；不要用
- *   font-size 撑宽——实测选区底色 = 行带 ∪ 文本 run 自身字体盒，font-size 放大会让底色
- *   上缘探出行带；line-height: 0 把 spacer 的行内盒高度归零，彻底排除该影响
- * - 无图标 chip 的左 margin/padding 由 ChipLeadingSpacer 单独覆盖（不可与 ChipIcon 叠加）
- * - slot 用负 margin 回叠到 spacer 的图标区上方，margin-right 提供与 label 的 4px 间距；
- *   verticalAlign 负值在 Chromium 内联布局中会下移元素（实测 -2.5px 导致图标下垂 1.75css），
- *   校准值为 -0.75px 使 slot 与 label 垂直中心重合
- * - chip 右 padding 的选区底色由 ChipShell 末尾的 ChipTrailingSpacer 负责
+ * - spacer width = left margin (--chip-mx) + left padding (--chip-pad) + icon slot (1em) + the 4px
+ *   gap between icon and label: U+3000 advance is always 1em, the excess is made up with
+ *   letter-spacing; do not widen it with font-size — the selection tint is measured as line band ∪
+ *   the text run's own font box, so a larger font-size would push the tint's top edge out of the
+ *   line band; line-height: 0 zeroes out the spacer's inline-box height, eliminating that effect
+ *   entirely
+ * - The left margin/padding of icon-less chips is covered separately by ChipLeadingSpacer (must
+ *   not stack with ChipIcon)
+ * - The slot folds back over the spacer's icon area with a negative margin; margin-right provides
+ *   the 4px gap to the label; a negative verticalAlign moves the element down in Chromium inline
+ *   layout (measured: -2.5px makes the icon sag by 1.75css); the calibrated value is -0.75px so the
+ *   slot and the label share the same vertical center
+ * - The selection tint for the chip's right padding is handled by ChipTrailingSpacer at the end of
+ *   ChipShell
  */
 
 export function ChipIcon({ className, children }: { className?: string; children: ReactNode }) {

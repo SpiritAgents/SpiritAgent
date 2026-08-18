@@ -2,28 +2,28 @@
 applyTo: "apps/cli/**/*.rs"
 ---
 
-# Spirit Agent — Rust CLI（`apps/cli`）
+# Spirit Agent — Rust CLI (`apps/cli`)
 
-## 代码风格
+## Code Style
 
-- 优先沿用现有 Rust 风格：`anyhow::Result`、显式错误上下文、清晰的枚举分发和 `match` 结构。
-- 保持改动局部化，避免为格式化而重排无关代码。
-- 参考这些文件中的现有模式：`apps/cli/src/main.rs`、`apps/cli/src/host_runtime.rs`、`apps/cli/src/ports.rs`、`apps/cli/src/daemon/`、`apps/cli/src/runtime_sync.rs`、`apps/cli/src/tui.rs`、`apps/cli/src/ui.rs`。
+- Prefer the existing Rust style: `anyhow::Result`, explicit error context, clear enum dispatch and `match` structures.
+- Keep changes localized; avoid rearranging unrelated code for formatting.
+- Refer to existing patterns in these files: `apps/cli/src/main.rs`, `apps/cli/src/host_runtime.rs`, `apps/cli/src/ports.rs`, `apps/cli/src/daemon/`, `apps/cli/src/runtime_sync.rs`, `apps/cli/src/tui.rs`, `apps/cli/src/ui.rs`.
 
-## 架构（本目录内）
+## Architecture (within this directory)
 
-- `apps/cli/src/ports.rs` 定义核心抽象接口；优先通过端口扩展能力，而不是把实现细节散落到上层。
-- `apps/cli/src/daemon/` 承载 CLI 与 `@spiritagent/server` 的 WebSocket 连接；`apps/cli/src/host_protocol/` 定义 daemon 事件/快照协议类型；`apps/cli/src/runtime_sync.rs` 将协议投影为 TUI 状态；`apps/cli/src/host_runtime.rs` 负责宿主仍需复用的运行时事件与工具 UI 格式化。
-- `apps/cli/src/main.rs` 负责 CLI 入口与子命令分发；`apps/cli/src/tui.rs` 与 `apps/cli/src/ui.rs` 负责交互界面。
-- MCP 主链路与协议实现以 `packages/agent-core` 为准；`apps/cli/src/tool_runtime.rs` 等负责内置工具执行，Rust 侧保留与宿主、桥接相关的配合代码。
+- `apps/cli/src/ports.rs` defines the core abstraction interfaces; prefer extending capabilities through ports instead of scattering implementation details into upper layers.
+- `apps/cli/src/daemon/` carries the WebSocket connection between the CLI and `@spiritagent/server`; `apps/cli/src/host_protocol/` defines the daemon event/snapshot protocol types; `apps/cli/src/runtime_sync.rs` projects the protocol into TUI state; `apps/cli/src/host_runtime.rs` handles runtime events and tool UI formatting that the host still reuses.
+- `apps/cli/src/main.rs` is the CLI entry point and subcommand dispatch; `apps/cli/src/tui.rs` and `apps/cli/src/ui.rs` handle the interactive interface.
+- The MCP main path and protocol implementation live in `packages/agent-core`; `apps/cli/src/tool_runtime.rs` and friends handle built-in tool execution, while the Rust side keeps the glue code related to the host and bridging.
 
-## 构建与测试
+## Build and Test
 
-- 默认在仓库根目录执行 Rust 命令：`cargo check -p spirit-agent`、`cargo test -p spirit-agent`（或先 `cd apps/cli` 使用本地 `cargo check`）。
-- 该仓库默认启用 `tui` feature；涉及界面代码时，确保修改不会破坏默认构建路径。
-- 修改 CLI、运行时或工具链后，优先补一次 `cargo test`，必要时 `cargo check` 做验证。
+- Run Rust commands from the repo root by default: `cargo check -p spirit-agent`, `cargo test -p spirit-agent` (or `cd apps/cli` first and use the local `cargo check`).
+- This repo enables the `tui` feature by default; when touching UI code, make sure your changes do not break the default build path.
+- After modifying the CLI, runtime, or toolchain, prefer running `cargo test` once, with `cargo check` for verification when needed.
 
-## 约定
+## Conventions
 
-- 优先保持跨平台兼容，尤其是 Windows 相关分支和条件编译。
-- 修改异步流、轮询循环或工具执行路径时，避免引入阻塞等待或不必要的全局状态。
+- Prefer cross-platform compatibility, especially Windows-related branches and conditional compilation.
+- When modifying async streams, polling loops, or tool execution paths, avoid introducing blocking waits or unnecessary global state.

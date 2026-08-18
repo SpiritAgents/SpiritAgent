@@ -1,4 +1,4 @@
-//! 与 `packages/host-internal/src/model-provider-presets.json` 同源（TUI 预设根 URL 与顺序）。
+//! Same source as `packages/host-internal/src/model-provider-presets.json` (TUI preset root URLs and order).
 
 use crate::model_registry::ModelTransportKind;
 use serde::Deserialize;
@@ -25,7 +25,7 @@ fn presets() -> &'static ModelProviderPresetsFile {
     })
 }
 
-/// `selected` 与底部表单「提供商」选项索引一致，且与 JSON 中 `pickerOrder` 对齐。
+/// `selected` matches the bottom form "Provider" option index and aligns with `pickerOrder` in the JSON.
 pub(crate) fn model_add_preset_api_base_by_choice_index(selected: usize) -> Option<String> {
     let p = presets();
     let id = p.picker_order.get(selected)?;
@@ -47,7 +47,7 @@ pub(crate) fn model_add_preset_api_base_by_provider(
         .cloned()
 }
 
-/// 与 `model-provider-presets.json` 中 `presetApiBaseByTransport.kimi-code` 对齐。
+/// Aligned with `presetApiBaseByTransport.kimi-code` in `model-provider-presets.json`.
 pub(crate) fn model_add_kimi_code_api_base(transport_kind: ModelTransportKind) -> Option<String> {
     match transport_kind {
         ModelTransportKind::OpenAiCompatible => Some("https://api.kimi.com/coding/v1".to_string()),
@@ -171,7 +171,7 @@ pub(crate) fn model_add_picker_order_ids() -> &'static [String] {
     &presets().picker_order
 }
 
-/// 与 `model-provider-presets.json` 中 `providerSiteSelection.siliconflow` 对齐。
+/// Aligned with `providerSiteSelection.siliconflow` in `model-provider-presets.json`.
 pub(crate) fn model_add_siliconflow_site_api_base(site: &str) -> Option<String> {
     match site.trim().to_ascii_lowercase().as_str() {
         "cn" => Some("https://api.siliconflow.cn/v1".to_string()),
@@ -184,7 +184,7 @@ pub(crate) fn model_add_siliconflow_site_id_from_choice(selected: usize) -> &'st
     if selected == 0 { "cn" } else { "intl" }
 }
 
-/// 与 `model-provider-presets.json` 中 `providerSiteSelection.moonshot-ai` 对齐。
+/// Aligned with `providerSiteSelection.moonshot-ai` in `model-provider-presets.json`.
 pub(crate) fn model_add_moonshot_site_api_base(site: &str) -> Option<String> {
     match site.trim().to_ascii_lowercase().as_str() {
         "cn" => Some("https://api.moonshot.cn/v1".to_string()),
@@ -197,7 +197,7 @@ pub(crate) fn model_add_moonshot_site_id_from_choice(selected: usize) -> &'stati
     if selected == 0 { "cn" } else { "intl" }
 }
 
-/// 与 `model-provider-presets.json` 中 `providerSiteSelection.tencent-tokenhub` 对齐。
+/// Aligned with `providerSiteSelection.tencent-tokenhub` in `model-provider-presets.json`.
 pub(crate) fn model_add_tencent_tokenhub_site_api_base(site: &str) -> Option<String> {
     match site.trim().to_ascii_lowercase().as_str() {
         "cn" => Some("https://tokenhub.tencentmaas.com/v1".to_string()),
@@ -210,7 +210,7 @@ pub(crate) fn model_add_tencent_tokenhub_site_id_from_choice(selected: usize) ->
     if selected == 0 { "cn" } else { "intl" }
 }
 
-/// 与 `model-provider-presets.json` 中 `providerSiteSelection.minimax` 对齐。
+/// Aligned with `providerSiteSelection.minimax` in `model-provider-presets.json`.
 pub(crate) fn model_add_minimax_site_api_base(
     site: &str,
     transport_kind: ModelTransportKind,
@@ -230,7 +230,7 @@ pub(crate) fn model_add_minimax_site_id_from_choice(selected: usize) -> &'static
     if selected == 0 { "cn" } else { "intl" }
 }
 
-/// 与 `model-provider-presets.json` 中 `providerSiteSelection.alibaba` 对齐。
+/// Aligned with `providerSiteSelection.alibaba` in `model-provider-presets.json`.
 pub(crate) fn model_add_alibaba_site_ids() -> &'static [&'static str] {
     &[
         "cn-beijing",
@@ -254,17 +254,17 @@ pub(crate) fn model_add_alibaba_site_requires_workspace_id(site: &str) -> bool {
     )
 }
 
-/// 与 `model-provider-presets.json` 中 `alibabaTokenPlan.compatibleApiBase` 对齐。
+/// Aligned with `alibabaTokenPlan.compatibleApiBase` in `model-provider-presets.json`.
 const ALIBABA_TOKEN_PLAN_COMPATIBLE_API_BASE: &str =
     "https://token-plan.cn-beijing.maas.aliyuncs.com/compatible-mode/v1";
 
-/// 与 `model-provider-presets.json` 中 `stepfunStepPlan.compatibleApiBase` 对齐。
+/// Aligned with `stepfunStepPlan.compatibleApiBase` in `model-provider-presets.json`.
 const STEPFUN_STEP_PLAN_COMPATIBLE_API_BASE: &str = "https://api.stepfun.com/step_plan/v1";
 
-/// 与 `model-provider-presets.json` 中 `zAiGlmCodingPlan.compatibleApiBase` 对齐。
+/// Aligned with `zAiGlmCodingPlan.compatibleApiBase` in `model-provider-presets.json`.
 const Z_AI_GLM_CODING_PLAN_COMPATIBLE_API_BASE: &str = "https://api.z.ai/api/coding/paas/v4";
 
-/// 与 `model-provider-presets.json` 中 `zhipuAiGlmCodingPlan.compatibleApiBase` 对齐。
+/// Aligned with `zhipuAiGlmCodingPlan.compatibleApiBase` in `model-provider-presets.json`.
 const ZHIPU_AI_GLM_CODING_PLAN_COMPATIBLE_API_BASE: &str =
     "https://open.bigmodel.cn/api/coding/paas/v4";
 
@@ -400,7 +400,7 @@ pub(crate) fn model_add_requires_manual_single_provider(
     )
 }
 
-/// 与 Desktop `resolveProfileApiBase` 对齐：托管提供商按 `providerSite` 等重算端点，而非盲读 `apiBase`。
+/// Aligned with Desktop `resolveProfileApiBase`: hosted providers recompute the endpoint from `providerSite` etc. instead of blindly reading `apiBase`.
 pub(crate) fn resolve_profile_api_base(profile: &crate::model_registry::ModelProfile) -> String {
     use crate::model_registry::{DEFAULT_API_BASE, ModelProvider};
 

@@ -2,253 +2,253 @@
 applyTo: "**/*"
 ---
 
-# Spirit Agent 能力边界说明
+# Spirit Agent Capability Boundary
 
-## 目的
+## Purpose
 
-这份说明用于统一 `agent-core`、宿主内部库、以及最终应用层的职责边界，避免 CLI 与 Desktop 各自复制一套语义、提示词、工具契约与宿主细节。
+This document unifies the responsibility boundaries across `agent-core`, the host-internal library, and the final app layer, so that CLI and Desktop do not each duplicate semantics, prompts, tool contracts, and host details.
 
-核心原则只有一条：
+There is only one core principle:
 
-`agent-core` 是唯一的 Agent 能力库；宿主内部库负责宿主侧发现、管理与执行细节；应用层只做薄适配与 UI。
+`agent-core` is the single Agent capability library; the host-internal library owns host-side discovery, management, and execution details; the app layer only does thin adaptation and UI.
 
-## 提供商内置工具（Open Responses）
+## Provider Built-in Tools (Open Responses)
 
-- **不在** `host-internal` 注册可执行 `web_search` 宿主工具（Moonshot `$web_search` 亦不在范围内）。
-- **OpenAI / xAI 官方 Responses**：`@ai-sdk/openai` / `@ai-sdk/xai` 的 `tools.webSearch()`。
-- **Vercel AI Gateway（`vercel-ai-gateway`）Open Responses**：`@ai-sdk/gateway` 的 `createGateway().tools.perplexitySearch()` 注入为 `web_search`；语言模型须走 Gateway v3 `language-model`（`createGateway().languageModel()`），因 `@ai-sdk/open-responses` 会丢弃 provider tools。
-- **Alibaba（`alibaba`）双路径**（`alibaba-built-in-tools` + `web-search-eligibility`）：
-  - **Chat Completions**：经 `extra_body`（`enable_search`、`enable_thinking`、`enable_code_interpreter`、`search_options` 等）；代码解释器在 Chat API 上要求流式。抓取指定 URL 正文用宿主 `web_fetch`。
-  - **Open Responses**：经 HTTP `tools` 注入 `{ type: web_search }`、`code_interpreter`（不含 `web_extractor`；URL 正文用宿主 `web_fetch`）。
-- 可见性由 eligibility 与 fetch 层门控。**勿**在 system message 追加 provider built-in 使用说明（模型已从请求 `tools` 看见）；Chat Completions 能力经 `extra_body`，亦无 function 名可声明时**不**写 system 小作文。细则见 `llm-visible-copy.instructions.md`。
+- **Do not** register an executable `web_search` host tool in `host-internal` (Moonshot `$web_search` is also out of scope).
+- **OpenAI / xAI official Responses**: `tools.webSearch()` from `@ai-sdk/openai` / `@ai-sdk/xai`.
+- **Vercel AI Gateway (`vercel-ai-gateway`) Open Responses**: `createGateway().tools.perplexitySearch()` from `@ai-sdk/gateway`, injected as `web_search`; the language model must go through Gateway v3 `language-model` (`createGateway().languageModel()`), because `@ai-sdk/open-responses` drops provider tools.
+- **Alibaba (`alibaba`) dual path** (`alibaba-built-in-tools` + `web-search-eligibility`):
+  - **Chat Completions**: via `extra_body` (`enable_search`, `enable_thinking`, `enable_code_interpreter`, `search_options`, etc.); the code interpreter requires streaming on the Chat API. Use the host `web_fetch` to fetch the body of a specific URL.
+  - **Open Responses**: inject `{ type: web_search }` and `code_interpreter` via HTTP `tools` (no `web_extractor`; use the host `web_fetch` for URL bodies).
+- Visibility is gated by the eligibility and fetch layers. **Do not** append provider built-in usage instructions to the system message (the model already sees them from the request `tools`); when Chat Completions capabilities go through `extra_body` and there is no function name to declare, **do not** write system essays either. Details: `llm-visible-copy.instructions.md`.
 
-## Moonshot Formula（Chat Completions）
+## Moonshot Formula (Chat Completions)
 
-- **Moonshot AI 直连**（`llmVendor: moonshot-ai`，`openai-compatible`）：经 Formula API 注入 `moonshot/web-search:latest` 远端 schema，模型触发 `web_search` 时由 `agent-core` 调用 `/formulas/{uri}/fibers` 并将 `encrypted_output` 写回 tool message。
-- **不在范围**：Kimi Code（`kimi-code`）、Vercel Gateway 路由的 Moonshot、遗留 `$web_search` builtin_function。
-- **不在** `host-internal` 注册可执行 `web_search`；Formula 执行留在 `agent-core` `moonshot/formula/`。
-- UI：`encrypted_output` 不可展示；Moonshot Formula `web_search` 卡片经 `_spiritUi.suppressExpand` 禁止展开。
+- **Moonshot AI direct** (`llmVendor: moonshot-ai`, `openai-compatible`): injects the remote schema `moonshot/web-search:latest` via the Formula API; when the model triggers `web_search`, `agent-core` calls `/formulas/{uri}/fibers` and writes `encrypted_output` back into the tool message.
+- **Out of scope**: Kimi Code (`kimi-code`), Moonshot routed via Vercel Gateway, legacy `$web_search` builtin_function.
+- **Do not** register an executable `web_search` in `host-internal`; Formula execution stays in `agent-core` `moonshot/formula/`.
+- UI: `encrypted_output` is not displayable; Moonshot Formula `web_search` cards are barred from expansion via `_spiritUi.suppressExpand`.
 
-## Kimi Code / StepFun 托管 `web_search`（非 Formula）
+## Kimi Code / StepFun Managed `web_search` (non-Formula)
 
-- **Kimi Code**（`llmVendor: kimi-code` 或 `api.kimi.com`）：`agent-core` 注入本地 `web_search` function schema，执行时 `POST https://api.kimi.com/coding/v1/search`（body `text_query`），结果写回 tool message。
-- **StepFun**（`llmVendor: stepfun` 或 `api.stepfun.com`）：同类托管工具，执行时打固定 `https://api.stepfun.com/v1/search`（可选 `n`）。
-- **不在** `host-internal` 注册可执行 `web_search`；执行留在 `agent-core`（`kimi-code/`、`stepfun/`），经 managed provider turn handler。
-- UI：可展开 preview（与 StepFun 共用 `_spiritUi`，无 `suppressExpand`）。
+- **Kimi Code** (`llmVendor: kimi-code` or `api.kimi.com`): `agent-core` injects a local `web_search` function schema; on execution it `POST https://api.kimi.com/coding/v1/search` (body `text_query`) and writes the result back into the tool message.
+- **StepFun** (`llmVendor: stepfun` or `api.stepfun.com`): same kind of managed tool; on execution it hits the fixed `https://api.stepfun.com/v1/search` (optional `n`).
+- **Do not** register an executable `web_search` in `host-internal`; execution stays in `agent-core` (`kimi-code/`, `stepfun/`), via the managed provider turn handler.
+- UI: expandable preview (shares `_spiritUi` with StepFun, no `suppressExpand`).
 
-## MiniMax Server Tools（Anthropic Messages）
+## MiniMax Server Tools (Anthropic Messages)
 
-- **MiniMax 直连**（`llmVendor: minimax`，`transportKind: anthropic`）：经 Messages API 注入 Server Tool `{ type: web_search_20250305, name: web_search }`（文档来源 [minimax.io server-tools](https://platform.minimaxi.io/docs/guides/server-tools.md)，版本 `20250305`）；**仅 Messages API**，不走 Chat Completions。
-- 响应块 `server_tool_use` / `web_search_tool_result` 由 `agent-core` `anthropic/minimax-web-search-stream.ts` 解析；服务端执行搜索，宿主**不**回传 `tool_result`。
-- **不在** `host-internal` 注册可执行 `web_search`；注入与流映射留在 `agent-core` `anthropic/minimax-server-tools.ts`。
-- UI：复用 Responses built-in `web_search` 卡（`toolName: web_search` + `_spiritUi`）；Detail 显示搜索关键词，展开 Input/Output 与 Vercel AI Gateway 联网搜索卡片一致。
+- **MiniMax direct** (`llmVendor: minimax`, `transportKind: anthropic`): injects the Server Tool `{ type: web_search_20250305, name: web_search }` via the Messages API (source: [minimax.io server-tools](https://platform.minimaxi.io/docs/guides/server-tools.md), version `20250305`); **Messages API only**, not Chat Completions.
+- Response blocks `server_tool_use` / `web_search_tool_result` are parsed by `agent-core` `anthropic/minimax-web-search-stream.ts`; the search executes server-side and the host **does not** send back a `tool_result`.
+- **Do not** register an executable `web_search` in `host-internal`; injection and stream mapping stay in `agent-core` `anthropic/minimax-server-tools.ts`.
+- UI: reuses the Responses built-in `web_search` card (`toolName: web_search` + `_spiritUi`); Detail shows the search keywords, and expanded Input/Output matches the Vercel AI Gateway web search card.
 
-## 术语
+## Terminology
 
-### 工具定义
+### Tool Definition
 
-这里的“工具定义”只指模型可见的工具契约，不指宿主执行实现。
+"Tool definition" here means only the model-visible tool contract, not the host execution implementation.
 
-它只包含这些内容：
+It contains only:
 
-- 工具名
-- 工具用途描述
-- JSON Schema 参数定义
+- Tool name
+- Tool purpose description
+- JSON Schema parameter definition
 
-它不包含这些内容：
+It does not contain:
 
-- 宿主内部请求类型
-- 参数解析实现
-- 审批与授权实现
-- shell / 文件 / 搜索 / 网络 等实际执行实现
+- Host-internal request types
+- Parameter parsing implementation
+- Approval and authorization implementation
+- Actual execution implementations for shell / file / search / network
 
-### 工具实现
+### Tool Implementation
 
-“工具实现”指宿主为了兑现工具契约而提供的本地能力，包括：
+"Tool implementation" means the local capabilities the host provides to fulfill the tool contract, including:
 
-- function call 到宿主请求对象的解析
-- 参数校验与错误文案
-- 授权、审批、提问流程
-- 具体执行逻辑
-- 平台相关适配
+- Parsing function calls into host request objects
+- Parameter validation and error copy
+- Authorization, approval, and question flows
+- Concrete execution logic
+- Platform-specific adaptation
 
-## 分层边界
+## Layering Boundaries
 
 ### 1. agent-core
 
-`agent-core` 是唯一的 Agent 能力库，也是唯一允许承载模型语义资产的地方。
+`agent-core` is the single Agent capability library and the only place allowed to carry model-semantic assets.
 
-它负责：
+It owns:
 
-- 主系统提示词
-- Rules / Skills catalog、Agent mode、Extensions、Dreams、Basic info 等系统段落的语义与拼装
-- 用户显式激活的 Skill 全文经用户消息 `<active_skill>` meta 注入（非 system 段）
-- 内建工具的模型可见定义：名称、描述、JSON Schema
-- MCP 协议、MCP 工具 / resource / prompt 语义与运行时接入
-- 梦境工具的模型可见契约与收集者系统提示语义
-- Agent runtime、turn machine、streaming、tool round 等通用编排能力
-- 面向宿主的接口定义
+- The main system prompt
+- Semantics and assembly of system sections such as Rules / Skills catalog, Agent mode, Extensions, Dreams, Basic info
+- The full text of a user-explicitly-activated Skill injected via the `<active_skill>` meta of a user message (not a system section)
+- Model-visible definitions of built-in tools: name, description, JSON Schema
+- MCP protocol, MCP tool / resource / prompt semantics and runtime integration
+- Model-visible contracts of dream tools and collector system prompt semantics
+- Generic orchestration capabilities such as Agent runtime, turn machine, streaming, tool rounds
+- Host-facing interface definitions
 
-它不负责：
+It does not own:
 
-- 扫描工作区、用户目录、AppData、Keyring
-- 发现和启用 `rules`、`skills`、`plan` 文件
-- 管理这些宿主元数据的持久化状态
-- 直接执行 shell、文件系统、网页抓取、搜索
-- UI 表单、窗口、TUI、Electron、Rust 宿主交互
+- Scanning the workspace, user directories, AppData, Keyring
+- Discovering and enabling `rules`, `skills`, `plan` files
+- Managing persisted state of this host metadata
+- Directly executing shell, filesystem, web fetching, search
+- UI forms, windows, TUI, Electron, Rust host interactions
 
-结论：
+Conclusion:
 
-`agent-core` 负责“让模型看见什么”和“运行时如何消费这些能力”，不负责“宿主怎样把这些能力接到本机上”。
+`agent-core` owns "what the model sees" and "how the runtime consumes these capabilities", not "how the host wires these capabilities to the local machine".
 
-### 2. 宿主内部库
+### 2. Host-Internal Library
 
-宿主内部库是 Host / UI 层的共享实现，不是公共 Agent SDK。
+The host-internal library is the shared implementation of the Host / UI layer, not a public Agent SDK.
 
-它负责：
+It owns:
 
-- `rules`、`skills`、`plan` 的发现逻辑
-- 这些元数据的启用、禁用、状态持久化与解析
-- 内建工具的宿主实现注册表
-- 工具请求类型、参数解析、参数校验
-- 授权、审批、追问、宿主错误文案
-- 搜索、文件读写、网页抓取、shell 执行等宿主能力实现
-- Agent Hooks（`hooks.json`）配置加载、command 脚本 spawn 与超时/failClosed 执行
-- 梦境工具的宿主执行、文件存储、过期清理与日志落盘
-- 与平台、路径、权限、配置、用户目录相关的细节
+- Discovery logic for `rules`, `skills`, `plan`
+- Enabling, disabling, state persistence, and parsing of this metadata
+- The registry of host implementations for built-in tools
+- Tool request types, parameter parsing, parameter validation
+- Authorization, approval, follow-up questions, host error copy
+- Host capability implementations such as search, file read/write, web fetch, shell execution
+- Agent Hooks (`hooks.json`) config loading, command script spawn, and timeout/failClosed execution
+- Host execution of dream tools, file storage, expiry cleanup, and log persistence
+- Platform, path, permission, configuration, and user-directory details
 
-它不负责：
+It does not own:
 
-- 再定义一份模型可见的工具名、工具描述、JSON Schema
-- 再复制一份系统提示词文本
-- 再解释一遍 Rules / Skills / Plan 对模型的语义
-- 取代 `agent-core` 成为第二个“能力库”
+- Redefining a second set of model-visible tool names, tool descriptions, JSON Schemas
+- Duplicating the system prompt text
+- Re-explaining the semantics of Rules / Skills / Plan to the model
+- Replacing `agent-core` as a second "capability library"
 
-结论：
+Conclusion:
 
-宿主内部库是 `agent-core` 的实现侧配套，不是第二个 Agent Core。
+The host-internal library is the implementation-side companion of `agent-core`, not a second Agent Core.
 
 ### 3. apps
 
-最终应用层只保留宿主接线和 UI。
+The final app layer keeps only host wiring and UI.
 
-它负责：
+It owns:
 
-- Rust CLI、Electron、Desktop Web、TUI 等最终入口
-- 将平台事件、UI 交互、权限确认结果接到宿主内部库
-- 将宿主内部库接到 `agent-core`
-- Desktop 梦境设置页、后台调度器与 Commit 等宿主消费入口
+- Final entry points such as Rust CLI, Electron, Desktop Web, TUI
+- Wiring platform events, UI interactions, and permission confirmation results into the host-internal library
+- Wiring the host-internal library into `agent-core`
+- Host consumption entry points such as the Desktop dreams settings page, background scheduler, and Commit
 
-它不负责：
+It does not own:
 
-- 自己维护一份工具契约
-- 自己维护一份系统提示词
-- 自己维护一份共享发现 / 管理逻辑
+- Maintaining its own tool contracts
+- Maintaining its own system prompt
+- Maintaining its own shared discovery / management logic
 
-结论：
+Conclusion:
 
-apps 必须尽量薄，避免 CLI 与 Desktop 再次分叉。
+Apps must stay as thin as possible to avoid CLI and Desktop diverging again.
 
-### 2.5 server（daemon 层）
+### 2.5 server (daemon layer)
 
-`packages/server` 是可选的共享后端：把 `agent-core` runtime 与宿主内部库的执行面跑在一个长期驻留的 daemon 进程里，CLI / Desktop / Web 以 WebSocket（JSON-RPC 2.0）作为 thin client 连接。
+`packages/server` is the optional shared backend: it runs the `agent-core` runtime and the host-internal execution surface in a long-lived daemon process, with CLI / Desktop / Web connecting as thin clients over WebSocket (JSON-RPC 2.0).
 
-它负责：
+It owns:
 
-- 会话生命周期与 turn 编排（每会话一个 `AgentRuntime`，daemon 内 25ms 泵驱动 `poll`）
-- 流式事件与 snapshot 的推送（`runtime.event` / `session.snapshot` / `session.turnFinished`）
-- 审批 / 提问 / 工作区能力信任的客户端路由（广播，先到先得；末客户端断连自动 deny/skip）
-- 工具在 daemon 进程内执行（`NodeHostToolService` + 按 workspace 共享的 `McpService`）
-- 宿主配置与凭证的进程内读取（`config.json` + OS keyring，密钥不过 WS）
-- `host.*` 工作区/配置管理 RPC（rules/skills/hooks/extensions/marketplace/todos/MCP 管理）
-- instance registry（随机端口 + `{spiritDataDir}/server/instances/`）与 home 级 bearer token
+- Session lifecycle and turn orchestration (one `AgentRuntime` per session, a 25ms pump drives `poll` inside the daemon)
+- Streaming events and snapshot push (`runtime.event` / `session.snapshot` / `session.turnFinished`)
+- Client routing of approvals / questions / workspace capability trust (broadcast, first-come-first-served; auto deny/skip when the last client disconnects)
+- Tool execution inside the daemon process (`NodeHostToolService` + per-workspace shared `McpService`)
+- In-process reading of host config and credentials (`config.json` + OS keyring; secrets never cross WS)
+- `host.*` workspace/config management RPCs (rules/skills/hooks/extensions/marketplace/todos/MCP management)
+- Instance registry (random port + `{spiritDataDir}/server/instances/`) and home-level bearer token
 
-它不负责：
+It does not own:
 
-- 再定义一份模型可见语义（工具契约、系统提示词仍在 `agent-core`）
-- 再实现一份宿主执行（调用宿主内部库，不 fork）
-- 客户端 UI 与平台能力（窗口、TUI 渲染、文件选择器等仍在 apps）
+- Redefining model-visible semantics (tool contracts and system prompts stay in `agent-core`)
+- Reimplementing host execution (it calls the host-internal library, no fork)
+- Client UI and platform capabilities (windows, TUI rendering, file pickers stay in apps)
 
-结论：
+Conclusion:
 
-server 是 runtime 的宿主位置，不是第四个语义层；apps 退化为 client 后仍须保持薄。
+Server is where the runtime is hosted, not a fourth semantic layer; apps must stay thin after degrading into clients.
 
-## 所有权表
+## Ownership Table
 
-| 资产 | 归属 |
+| Asset | Owner |
 | --- | --- |
-| 主系统提示词 | `agent-core` |
-| Rules / Skills catalog 等系统段落语义 | `agent-core` |
-| 用户回合 `<active_skill>` meta（显式激活的 Skill 全文） | `agent-core`（`user-turn-timestamp` 拼装） |
-| 内建工具名称、描述、JSON Schema | `agent-core` |
-| 梦境工具名称、描述、JSON Schema 与收集者系统提示 | `agent-core` |
-| 会话 TODO 工具名称、描述、JSON Schema（无独立 todos system 段） | `agent-core` |
-| LSP 工具契约、`get_diagnostics` Schema（按后缀路由至多语言 server）与诊断格式化 | `agent-core` |
-| MCP 协议、MCP tool / resource / prompt 运行时 | `agent-core` |
-| Host 接口定义 | `agent-core` |
-| Agent Hooks schema、runtime 挂点与 `HookRunner` 端口 | `agent-core` |
-| Rules / Skills / Plan 的发现与管理 | 宿主内部库 |
-| Agent Hooks 配置 merge、command 执行与 `createHookRunner` | 宿主内部库 |
-| 宿主工具请求类型、解析、校验、审批、执行 | 宿主内部库 |
-| 梦境文件存储、过期清理与运行日志 | 宿主内部库 |
-| 会话 TODO 存储、`replaceAll` 与工具执行 | 宿主内部库 |
-| LSP 多 provider 进程、PATH/安装探测、文档同步、写后 append 与 workspace cache | 宿主内部库 |
-| shell / search / file / web fetch 的平台适配 | 宿主内部库 |
-| CLI / Desktop UI 与平台接线 | apps |
-| Desktop 梦境设置页、后台调度与 Commit 消费 | apps |
-| Desktop / CLI Composer TODO 卡片与条带 UI | apps |
-| 共享后端的会话/turn/审批单一真相源 | `packages/server` |
-| 共享后端的 instance registry、client 鉴权与 WS 传输 | `packages/server` |
+| Main system prompt | `agent-core` |
+| Semantics of system sections such as Rules / Skills catalog | `agent-core` |
+| User-turn `<active_skill>` meta (full text of explicitly activated Skill) | `agent-core` (assembled by `user-turn-timestamp`) |
+| Built-in tool names, descriptions, JSON Schemas | `agent-core` |
+| Dream tool names, descriptions, JSON Schemas, and collector system prompt | `agent-core` |
+| Session TODO tool name, description, JSON Schema (no separate todos system section) | `agent-core` |
+| LSP tool contract, `get_diagnostics` Schema (routed to per-language servers by extension), and diagnostic formatting | `agent-core` |
+| MCP protocol, MCP tool / resource / prompt runtime | `agent-core` |
+| Host interface definitions | `agent-core` |
+| Agent Hooks schema, runtime attachment points, and `HookRunner` port | `agent-core` |
+| Discovery and management of Rules / Skills / Plan | host-internal library |
+| Agent Hooks config merge, command execution, and `createHookRunner` | host-internal library |
+| Host tool request types, parsing, validation, approval, execution | host-internal library |
+| Dream file storage, expiry cleanup, and run logs | host-internal library |
+| Session TODO storage, `replaceAll`, and tool execution | host-internal library |
+| LSP multi-provider processes, PATH/install detection, document sync, post-write append, and workspace cache | host-internal library |
+| Platform adaptation for shell / search / file / web fetch | host-internal library |
+| CLI / Desktop UI and platform wiring | apps |
+| Desktop dreams settings page, background scheduling, and Commit consumption | apps |
+| Desktop / CLI Composer TODO cards and strip UI | apps |
+| Single source of truth for sessions/turns/approvals in the shared backend | `packages/server` |
+| Shared-backend instance registry, client auth, and WS transport | `packages/server` |
 
-## 强约束
+## Hard Constraints
 
-为了避免后续再次漂移，约束如下：
+To prevent future drift, the constraints are:
 
-1. 任意模型可见文本，如果它描述的是工具契约或系统规则语义，只能在 `agent-core` 定义。
-2. 任意宿主扫描、路径、权限、状态持久化逻辑，不进入 `agent-core`。
-3. 任意应用入口都不能再定义一份新的工具 Schema 或系统提示词副本。
-4. 宿主内部库只能实现 `agent-core` 暴露的契约，不能重写契约语义。
+1. Any model-visible text that describes tool contracts or system rule semantics must be defined only in `agent-core`.
+2. Any host scanning, path, permission, or state persistence logic must not enter `agent-core`.
+3. No app entry point may define a new copy of tool Schemas or system prompts.
+4. The host-internal library may only implement the contracts exposed by `agent-core`; it must not rewrite contract semantics.
 
-## 当前仓库对应解释
+## How the Current Repo Maps to This
 
-按这个边界解释，当前仓库应这样理解：
+Under this boundary, the current repo should be understood as:
 
-- `packages/agent-core` 继续承载 runtime、MCP、系统提示词、工具契约。
-- `packages/agent-core` 承载梦境工具契约与收集者系统提示，不承载 Desktop 会话扫描或文件存储。
-- `packages/host-internal` 承载梦境工具执行、dream store 与日志目录等宿主能力。
-- `packages/host-internal/src/lsp/` 承载 LSP 宿主实现（多语言 server 进程、`LspOrchestrator` 按后缀路由、provider 发现/安装、写后诊断 append、workspace cache）。
-- `packages/agent-core/src/lsp/` 仅保留 LSP 工具契约（`get_diagnostics` 按路径后缀自动路由）、支持后缀常量与 LLM 可见诊断格式化。
-- `packages/server` 承载共享 daemon：会话/turn/审批的单一真相源、WS 传输与 instance registry；CLI 与 Desktop 主会话、Automation、Dream Collector 均无 in-process 回退
-- `packages/host-internal/src/credentials/` 承载共享配置与凭证读取（`config.json` + OS keyring，`group::{groupId}` 为规范账号方案），供 server 与 acp-server 进程内解析 transport。
-- `apps/desktop` 承载梦境设置、后台调度与 Commit 消费。
-- CLI 与 Desktop 当前重复的宿主工具实现、rules / skills / plan 发现与管理逻辑，应收敛到宿主内部库。
-- `agent-core` 不应吸收这些发现与管理实现，因为那会把 Host / UI 责任错误抬升成 Agent SDK 的一部分。
+- `packages/agent-core` continues to carry the runtime, MCP, system prompts, and tool contracts.
+- `packages/agent-core` carries dream tool contracts and the collector system prompt, but not Desktop session scanning or file storage.
+- `packages/host-internal` carries dream tool execution, the dream store, log directories, and other host capabilities.
+- `packages/host-internal/src/lsp/` carries the LSP host implementation (multi-language server processes, `LspOrchestrator` routing by extension, provider discovery/install, post-write diagnostic append, workspace cache).
+- `packages/agent-core/src/lsp/` keeps only the LSP tool contract (`get_diagnostics` auto-routed by path extension), supported-extension constants, and LLM-visible diagnostic formatting.
+- `packages/server` carries the shared daemon: single source of truth for sessions/turns/approvals, WS transport, and instance registry; CLI and Desktop main sessions, Automation, and Dream Collector all have no in-process fallback
+- `packages/host-internal/src/credentials/` carries shared config and credential reading (`config.json` + OS keyring, with `group::{groupId}` as the canonical account scheme), used by server and acp-server to resolve transports in-process.
+- `apps/desktop` carries dreams settings, background scheduling, and Commit consumption.
+- Host tool implementations and rules / skills / plan discovery and management currently duplicated between CLI and Desktop should converge into the host-internal library.
+- `agent-core` should not absorb these discovery and management implementations, because that would incorrectly lift Host / UI responsibilities into the Agent SDK.
 
-## LLM 传输族（transportKind）
+## LLM Transport Families (transportKind)
 
-宿主通过 `LlmTransportConfig` 选择底层协议，**不得**把 Chat Completions 与 Responses 混为同一配置默认值：
+The host selects the underlying protocol via `LlmTransportConfig`; **do not** conflate Chat Completions and Responses into the same config default:
 
-| `transportKind` | 协议族 | 典型 SDK |
+| `transportKind` | Protocol family | Typical SDK |
 | --- | --- | --- |
-| `openai-compatible` | OpenAI Chat Completions 兼容 | `@ai-sdk/openai-compatible` 等 |
-| `open-responses` | Responses / Open Responses | OpenAI 官方：`@ai-sdk/openai` 的 `responses`；xAI：`@ai-sdk/xai` 的 `responses`；Azure：`@ai-sdk/azure` 默认 Responses callable（`provider=azure` 固定此 transport，须 `azureResourceName` + 部署名，本版仅 API Key）；其它兼容 endpoint：`@ai-sdk/open-responses` |
+| `openai-compatible` | OpenAI Chat Completions compatible | `@ai-sdk/openai-compatible`, etc. |
+| `open-responses` | Responses / Open Responses | OpenAI official: `responses` from `@ai-sdk/openai`; xAI: `responses` from `@ai-sdk/xai`; Azure: `@ai-sdk/azure` Responses callable by default (`provider=azure` is pinned to this transport, requires `azureResourceName` + deployment name, API Key only in this version); other compatible endpoints: `@ai-sdk/open-responses` |
 | `anthropic` | Anthropic Messages | `@ai-sdk/anthropic` |
 
-- `provider=openai` **固定** `open-responses`（存量缺省或显式 `openai-compatible` 静默升级），不提供 Chat Completions transport 选择。
-- `provider=azure` **固定** `open-responses`，不提供 transport 选择；Azure 无 `/models` 端点，部署名写入 `ModelProfile.name`。
-- OpenAI / Azure 官方 Responses 默认 `store: true`，并通过 `previous_response_id` 做增量续聊；`agent-core` 在支持远端存储的 provider 上仅发送 delta input
-- Open Responses 兼容 endpoint 是否支持服务端存储取决于用户配置的上游；未支持时 transport 回退为全量 input
+- `provider=openai` is **pinned to** `open-responses` (existing defaults or explicit `openai-compatible` are silently upgraded); no Chat Completions transport choice is offered.
+- `provider=azure` is **pinned to** `open-responses`; no transport choice is offered. Azure has no `/models` endpoint; the deployment name is written to `ModelProfile.name`.
+- OpenAI / Azure official Responses default to `store: true` and use `previous_response_id` for incremental continuation; on providers that support remote storage, `agent-core` sends only delta input
+- Whether an Open Responses compatible endpoint supports server-side storage depends on the user-configured upstream; when unsupported, the transport falls back to full input
 
-## 设计判断
+## Design Rationale
 
-“把 Rules / Skills / Plan 的发现与管理留在宿主内部库”并不违背 `agent-core` 作为唯一能力库的目标。
+"Keeping the discovery and management of Rules / Skills / Plan in the host-internal library" does not contradict the goal of `agent-core` as the single capability library.
 
-恰恰相反，这样才能保证：
+On the contrary, this ensures:
 
-- `agent-core` 只表达能力契约与运行时语义
-- 宿主内部库只表达本机如何提供这些能力
-- apps 不再重复造轮子
+- `agent-core` only expresses capability contracts and runtime semantics
+- The host-internal library only expresses how the local machine provides these capabilities
+- Apps stop reinventing the wheel
 
-如果未来第三方接入 `agent-core`，他们应自行实现宿主发现与管理逻辑，而不是把本仓库的宿主扫描策略当成 SDK 强绑定的一部分。
+If third parties integrate `agent-core` in the future, they should implement their own host discovery and management logic, rather than treating this repo's host scanning strategy as a hard-bound part of the SDK.
 
-这正是 SDK 与 Host 之间应该有的边界。
+This is exactly the boundary that should exist between an SDK and a Host.

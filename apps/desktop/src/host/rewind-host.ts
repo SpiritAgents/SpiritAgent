@@ -254,7 +254,7 @@ export function restoreBeforeRewindCheckpoint(
   );
   ctx.activeBundle().loopEnabled = archive.loopEnabled === true;
   const pruned = pruneRewindMetadataAfterCheckpoint(ctx.activeBundle().rewind, checkpointSequence);
-  // 元数据裁剪后同步清理对应 sidecar 文件；失败不影响回退流程（下次会话删除仍会整目录清理）
+  // After metadata trimming, clean up the corresponding sidecar files in sync; failures do not affect the rewind flow (the next session deletion still cleans the whole directory)
   void deleteRewindSidecarFiles(spiritAgentDataDir(), ctx.activeBundle().rewind.sessionId, pruned);
   ctx.activeBundle().pendingUnboundFileChangeIds = [];
   ctx.activeBundle().messageIdCounter = nextMessageIdFromMessages(ctx.activeBundle().messages);

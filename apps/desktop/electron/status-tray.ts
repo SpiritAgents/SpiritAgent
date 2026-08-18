@@ -22,9 +22,9 @@ export type StatusTrayDeps = {
 let tray: Tray | undefined;
 let depsStore: StatusTrayDeps | undefined;
 let syncInFlight: Promise<void> | undefined;
-/** 退出后为 true；进行中的 sync 在 await 后不得再 ensureTray。 */
+/** True after quit; an in-flight sync must not ensureTray after awaiting. */
 let disposed = false;
-/** dispose 时递增，使过期的 sync 在完成前失效。 */
+/** Incremented on dispose to invalidate stale syncs before they complete. */
 let syncGeneration = 0;
 
 function resolveTrayIconPath(): string | undefined {

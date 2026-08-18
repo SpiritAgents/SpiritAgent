@@ -12,7 +12,7 @@ import {
   isOpenResponsesTransportConfig,
 } from "../provider-config.js";
 
-/** 经 `thinking.type` 关闭 extended thinking 的 OpenAI-compatible 直连厂商（后续 Phase 逐步扩展）。 */
+/** OpenAI-compatible direct vendors that disable extended thinking via `thinking.type` (to be expanded in later phases). */
 const OPENAI_COMPAT_THINKING_TYPE_VENDORS = new Set<OpenAiLlmVendor>([
   "deepseek",
   "moonshot-ai",
@@ -36,7 +36,7 @@ function withCodeCompletionProfile<T extends LlmTransportConfig>(config: T): T {
   };
 }
 
-/** 经 reasoningEffort none 关闭 Gemini thinking 的 OpenAI-compatible 直连厂商。 */
+/** OpenAI-compatible direct vendors that disable Gemini thinking via reasoningEffort none. */
 const OPENAI_COMPAT_GOOGLE_REASONING_NONE_VENDORS = new Set<OpenAiLlmVendor>([
   "google",
   "google-vertex-ai",
@@ -72,7 +72,7 @@ function applyOpenAiCompatibleCodeCompletionProfile(
       vendor === "deepinfra" ||
       (vendor === "meituan" && config.supportsThinkingSwitch === true))
   ) {
-    // Moonshot/DeepSeek 等与 thinking.type 互斥，补全路径不写 reasoning_effort（default → 不传）。
+    // Moonshot/DeepSeek etc. are mutually exclusive with thinking.type; the completion path does not send reasoning_effort (default → omitted).
     return {
       ...profiled,
       reasoningEffort: "default",
@@ -130,7 +130,7 @@ function applyBedrockCodeCompletionProfile(config: BedrockTransportConfig): Bedr
   };
 }
 
-/** 将任意 transport config 标记为代码补全请求画像，并按 transportKind / llmVendor 写入关闭思考所需字段。 */
+/** Marks any transport config as a code-completion request profile and writes the fields needed to disable thinking per transportKind / llmVendor. */
 export function applyCodeCompletionTransportProfile(
   config: LlmTransportConfig,
 ): LlmTransportConfig {

@@ -1,7 +1,7 @@
 import path from "node:path";
 
 /**
- * 主会话首条 Worktree 消息的非阻塞 bootstrap：先入 timeline，再在 poll tick 中完成 git/LLM 命名并 gate LLM turn。
+ * Non-blocking bootstrap for the main session's first Worktree message: enters the timeline first, then completes git/LLM naming in poll ticks and gates the LLM turn.
  */
 import type { PendingWorkspaceFile } from "@spiritagent/agent-core";
 import { cloneActiveSkills } from "./runtime.js";
@@ -233,7 +233,7 @@ export function shouldAdvanceWorktreeBootstrap(bundle: SessionBundle): boolean {
   return isWorktreeBootstrapInFlight(bundle.pendingWorktreeBootstrap);
 }
 
-/** 切换/重置会话时终止 in-flight bootstrap；卡片标记 failed，不持久化 pending 状态。 */
+/** Terminates in-flight bootstraps on session switch/reset; the card is marked failed and the pending state is not persisted. */
 export function cancelPendingWorktreeBootstrapOnBundle(bundle: SessionBundle): void {
   const pending = bundle.pendingWorktreeBootstrap;
   if (!isWorktreeBootstrapInFlight(pending)) {

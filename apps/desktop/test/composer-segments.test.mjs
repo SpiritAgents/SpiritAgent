@@ -96,18 +96,18 @@ test("segmentsToMessageText keeps document order", () => {
 test("segmentsToMessageText does not double-newline inline text after element", () => {
   const segs = [
     { kind: "element", attachment: sampleAttachment },
-    { kind: "text", value: "你好啊\n这是什么" },
-  ];
+    { kind: "text", value: "hi there\nwhat is this" },
+  ]);
   const message = segmentsToMessageText(segs);
-  assert.ok(!message.includes("```\n\n你好"));
-  assert.match(message, /```\n你好啊/);
+  assert.ok(!message.includes("```\n\nhi"));
+  assert.match(message, /```\nhi there/);
 });
 
 test("messageSegmentSeparator uses single newline between element and inline text", () => {
   assert.equal(
     messageSegmentSeparator(
       { kind: "element", attachment: sampleAttachment },
-      { kind: "text", value: "你好" },
+      { kind: "text", value: "hi" },
     ),
     "\n",
   );
@@ -147,8 +147,8 @@ test("segmentsToMessageText does not double-newline terminal chip after element"
 });
 
 test("trimMessageTextAroundElements removes one structural newline after element", () => {
-  assert.equal(trimMessageTextAroundElements("\n你好啊", { afterElement: true }), "你好啊");
-  assert.equal(trimMessageTextAroundElements("你好啊\n", { beforeElement: true }), "你好啊");
+  assert.equal(trimMessageTextAroundElements("\nhi there", { afterElement: true }), "hi there");
+  assert.equal(trimMessageTextAroundElements("hi there\n", { beforeElement: true }), "hi there");
 });
 
 test("caretToPlainTextOffset skips element segments in plain text", () => {
@@ -187,32 +187,32 @@ test("insertSegmentAtCaret splits text and leaves trailing text segment", () => 
 });
 
 test("parseMessageContentParts treats loose @path as plain text", () => {
-  const parts = parseMessageContentParts("@apps/cli/src/main.rs 你好");
-  assert.deepEqual(parts, [{ kind: "text", value: "@apps/cli/src/main.rs 你好" }]);
+  const parts = parseMessageContentParts("@apps/cli/src/main.rs hello");
+  assert.deepEqual(parts, [{ kind: "text", value: "@apps/cli/src/main.rs hello" }]);
 });
 
 test("messageContentToRichSegments rebuilds workspace file chips from wire text", () => {
   const wire = segmentsToMessageText([
     { kind: "workspaceFile", path: "apps/cli/src/main.rs" },
-    { kind: "text", value: " 你好" },
+    { kind: "text", value: " hello" },
   ]);
   const segments = messageContentToRichSegments(wire, "msg-file");
   assert.equal(segments.length, 2);
   assert.equal(segments[0]?.kind, "workspaceFile");
   assert.equal(segments[0]?.kind === "workspaceFile" && segments[0].path, "apps/cli/src/main.rs");
-  assert.equal(segments[1]?.kind === "text" && segments[1].value, " 你好");
+  assert.equal(segments[1]?.kind === "text" && segments[1].value, " hello");
 });
 
 test("messageContentToRichSegments rebuilds skill chips from wire text", () => {
   const wire = segmentsToMessageText([
     { kind: "skill", alias: "/create-skill" },
-    { kind: "text", value: " 你好" },
+    { kind: "text", value: " hello" },
   ]);
   const segments = messageContentToRichSegments(wire, "msg-skill");
   assert.equal(segments.length, 2);
   assert.equal(segments[0]?.kind, "skill");
   assert.equal(segments[0]?.kind === "skill" && segments[0].alias, "/create-skill");
-  assert.equal(segments[1]?.kind === "text" && segments[1].value, " 你好");
+  assert.equal(segments[1]?.kind === "text" && segments[1].value, " hello");
 });
 
 test("parseMessageContentParts parses explicit workspace file and skill wire blocks", () => {
@@ -253,12 +253,12 @@ test("parseMessageContentParts does not treat URL path segments as skill chips",
 test("messageContentToRichSegments rebuilds element chips from wire text", () => {
   const wire = segmentsToMessageText([
     { kind: "element", attachment: sampleAttachment },
-    { kind: "text", value: "你好" },
+    { kind: "text", value: "hello" },
   ]);
   const segments = messageContentToRichSegments(wire, "msg-1");
   assert.equal(segments.length, 2);
   assert.equal(segments[0]?.kind, "element");
-  assert.equal(segments[1]?.kind === "text" && segments[1].value, "你好");
+  assert.equal(segments[1]?.kind === "text" && segments[1].value, "hello");
 });
 
 test("insertSegmentAtCaret adds trailing space after element at caret", () => {

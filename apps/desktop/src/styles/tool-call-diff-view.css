@@ -1,4 +1,4 @@
-/* unified diff：限定在工具卡 / PR review 容器内，与 Spirit Desktop 背景/淡雅 diff 对齐 */
+/* unified diff: scoped to tool card / PR review containers, aligned with Spirit Desktop's background and subtle diff styling */
 .tool-call-diff {
   --diff-background-color: var(--background);
   --diff-text-color: var(--foreground);

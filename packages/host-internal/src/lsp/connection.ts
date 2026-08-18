@@ -14,7 +14,7 @@ import {
 } from "vscode-jsonrpc/node.js";
 import type { InitializeParams, InitializeResult } from "vscode-languageserver-protocol";
 
-/** Windows 上 .cmd/.bat 须 shell:true，否则 spawn 会同步抛出 EINVAL。 */
+/** On Windows, .cmd/.bat requires shell:true, otherwise spawn throws EINVAL synchronously. */
 export function buildLanguageServerSpawnOptions(command: string, cwd: string): SpawnOptions {
   const options: SpawnOptions = {
     cwd,
@@ -121,7 +121,7 @@ export class LspConnection {
       rootUri,
       capabilities: {
         textDocument: {
-          // TLS 5.x：未声明 publishDiagnostics 时 diagnosticsSupport=false，不会推送诊断。
+          // TLS 5.x: when publishDiagnostics is not declared, diagnosticsSupport=false and no diagnostics are pushed.
           publishDiagnostics: {
             relatedInformation: true,
           },

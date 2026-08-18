@@ -89,7 +89,7 @@ pub(in crate::ui) fn draw_subagent_viewer(
     let (status_label, status_style) = subagent_status_badge(view.summary.status, false);
     let mut header_lines = vec![Line::from(vec![
         Span::styled(
-            "状态: ",
+            t!("tui.subagents.view.status_label").into_owned(),
             patch_style_foreground(
                 subtle_aux_text_style(),
                 cli_ui_foreground_color(approval_panel_slot),
@@ -111,7 +111,7 @@ pub(in crate::ui) fn draw_subagent_viewer(
     if let Some(latest) = view.summary.latest_message.as_deref() {
         header_lines.push(Line::from(Span::styled(
             truncate_to_width(
-                &format!("最新进展: {}", latest),
+                &t!("tui.subagents.view.latest_progress", text = latest).into_owned(),
                 chunks[0].width.saturating_sub(1) as usize,
             ),
             patch_style_foreground(
@@ -156,7 +156,8 @@ pub(in crate::ui) fn draw_subagent_viewer(
                         .or(cli_ui_accent_color(approval_panel_slot)),
                 ))
                 .title(Line::from(Span::styled(
-                    format!("审批意见: {}", approval.tool_name),
+                    t!("tui.subagents.view.approval_input_title", tool = approval.tool_name)
+                        .into_owned(),
                     panel_title_style,
                 ))),
         );
@@ -172,22 +173,23 @@ pub(in crate::ui) fn draw_subagent_viewer(
     }
 
     let footer_text = if active_approval.is_some() && approval_input.is_some() {
-        "Esc 取消输入  |  Enter 提交意见  |  Y 允许  |  N 拒绝  |  T 信任  |  Ctrl+O 详情"
-            .to_string()
+        t!("tui.subagents.view.footer_input").into_owned()
     } else if active_approval.is_some() {
-        "Esc 关闭  |  Enter 输入意见  |  Y 允许  |  N 拒绝  |  T 信任  |  Ctrl+O 详情  |  滚轮 / PgUp/PgDn 滚动".to_string()
+        t!("tui.subagents.view.footer_approval").into_owned()
     } else if let Some(error) = view.error.as_deref() {
-        format!(
-            "Esc 关闭  |  Ctrl+O 详情  |  滚轮 / PgUp/PgDn 滚动  |  {}",
-            truncate_to_width(error, footer_chunk.width.saturating_sub(32) as usize)
+        t!(
+            "tui.subagents.view.footer_info",
+            info = truncate_to_width(error, footer_chunk.width.saturating_sub(32) as usize)
         )
+        .into_owned()
     } else if let Some(output) = view.final_output.as_deref() {
-        format!(
-            "Esc 关闭  |  Ctrl+O 详情  |  滚轮 / PgUp/PgDn 滚动  |  {}",
-            truncate_to_width(output, footer_chunk.width.saturating_sub(32) as usize)
+        t!(
+            "tui.subagents.view.footer_info",
+            info = truncate_to_width(output, footer_chunk.width.saturating_sub(32) as usize)
         )
+        .into_owned()
     } else {
-        "Esc 关闭  |  Ctrl+O 详情  |  滚轮 / PgUp/PgDn 滚动".to_string()
+        t!("tui.subagents.view.footer").into_owned()
     };
     frame.render_widget(
         Paragraph::new(Line::from(Span::styled(
@@ -221,7 +223,7 @@ pub(in crate::ui) fn build_subagent_history_lines(
         }
 
         return vec![Line::from(Span::styled(
-            "子会话尚未产生可见消息。",
+            t!("tui.subagents.view.empty").into_owned(),
             subtle_aux_text_style(),
         ))];
     }

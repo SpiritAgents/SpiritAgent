@@ -80,8 +80,8 @@ test("runGitHubMatchesAndCollectConsumed consumes all matches when runs complete
 });
 
 test("runGitHubMatchesAndCollectConsumed consumes blocked and failed runs to advance watermark", async () => {
-  // blocked/failed 已产生 run（等待用户 / 留下失败记录）：事件视为已消费，
-  // 否则每个 tick 都会为同一事件重建 run 与会话文件
+  // blocked/failed runs were created (waiting for the user / leaving a failure record): the event is treated as consumed,
+  // otherwise every tick would rebuild a run and session file for the same event
   for (const status of ["blocked", "failed"]) {
     const matches = [fakeMatch(1), fakeMatch(2)];
     const consumed = await runGitHubMatchesAndCollectConsumed(matches, async () => fakeRun(status));
@@ -134,10 +134,10 @@ test("failDanglingAutomationRuns marks crash-leftover running runs as failed", a
     assert.equal(recovered?.status, "failed");
     assert.equal(recovered?.error, "interrupted");
     assert.ok(recovered?.completedAtUnixMs);
-    // blocked run 不受影响
+    // the blocked run is unaffected
     assert.equal(loaded?.runs.find((run) => run.id === "run-blocked")?.status, "blocked");
 
-    // 无残留 running run 时为空操作
+    // no-op when there is no leftover running run
     assert.deepEqual(await failDanglingAutomationRuns(store, "interrupted"), []);
   } finally {
     await rm(spiritDataDir, { recursive: true, force: true });

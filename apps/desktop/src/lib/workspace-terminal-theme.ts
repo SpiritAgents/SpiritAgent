@@ -29,7 +29,7 @@ function cssVar(name: string): string | undefined {
   return value || undefined;
 }
 
-/** 从 document 根上的 CSS 变量读取 xterm ITheme。 */
+/** Reads the xterm ITheme from CSS variables on the document root. */
 export function readTerminalThemeFromDocument(): ITheme {
   const theme: ITheme = {};
   for (const [key, varName] of Object.entries(TERMINAL_CSS)) {

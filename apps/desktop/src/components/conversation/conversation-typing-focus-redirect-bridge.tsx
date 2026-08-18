@@ -22,9 +22,10 @@ export function ConversationTypingFocusRedirectBridge({
       if (!shouldRedirectKeydownToComposer(event)) {
         return;
       }
-      // 只同步聚焦、不 preventDefault、不手动注入字符：让原生按键管线把字符送进
-      // 刚聚焦的 contenteditable；首字符因 OS 已完成分发只能落原始字母，
-      // 后续按键才能被 IME 正常接管。
+      // Only focus synchronously; do not preventDefault or inject characters manually: let the
+      // native key pipeline deliver the character into the just-focused contenteditable. The first
+      // character can only land as the raw letter because the OS has already dispatched it;
+      // subsequent keys are then taken over by the IME normally.
       getControls()?.focusComposer();
     };
     window.addEventListener("keydown", onKeyDown);

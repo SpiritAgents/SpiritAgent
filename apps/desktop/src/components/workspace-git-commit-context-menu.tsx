@@ -16,7 +16,7 @@ export type WorkspaceGitCommitContextMenuContentProps = {
   addToSessionDisabled?: boolean;
 };
 
-/** 面板级单一 ContextMenu 的 Content（对齐 session-sidebar 列表 capture 模式）。 */
+/** Content of the panel-level single ContextMenu (aligned with the session-sidebar list capture pattern). */
 export function WorkspaceGitCommitContextMenuContent({
   commit,
   commitRef,

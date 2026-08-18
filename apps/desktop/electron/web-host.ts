@@ -38,7 +38,8 @@ const webHost = createDesktopHttpHost({
   auth: {
     getTokenHash: () => webHostConfig.authTokenHash,
     getPairingCode: () => pairingCode,
-    // 配对失败达上限：作废配对码；须重启 web-host 进程重新生成。
+    // Pairing failure limit reached: void the pairing code; the web-host process must be
+    // restarted to generate a new one.
     onPairingLockout: () => {
       console.warn(
         "Spirit desktop web pairing locked after too many failures; restart web host to get a new code.",

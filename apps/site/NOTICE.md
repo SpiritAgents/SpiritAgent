@@ -204,8 +204,8 @@ are used in this project.
 - [d3-scale@4.0.2](https://github.com/d3/d3-scale) - ISC
 - [d3-scale-chromatic@3.1.0](https://github.com/d3/d3-scale-chromatic) - ISC
 - [d3-selection@3.0.0](https://github.com/d3/d3-selection) - ISC
-- [d3-shape@1.3.7](https://github.com/d3/d3-shape) - BSD-3-Clause
-- [d3-shape@3.2.0](https://github.com/d3/d3-shape) - BSD-3-Clause
+- [d3-shape@1.3.7](https://github.com/d3/d3-shape) - ISC
+- [d3-shape@3.2.0](https://github.com/d3/d3-shape) - ISC
 - [d3-time@3.1.0](https://github.com/d3/d3-time) - ISC
 - [d3-time-format@4.1.0](https://github.com/d3/d3-time-format) - ISC
 - [d3-timer@3.0.1](https://github.com/d3/d3-timer) - ISC
@@ -337,7 +337,7 @@ are used in this project.
 - [motion-dom@13.0.0](https://github.com/motiondivision/motion) - MIT
 - [motion-utils@13.0.0](https://github.com/motiondivision/motion) - MIT
 - [ms@2.1.3](vercel/ms) - MIT
-- [nanoid@3.3.17](ai/nanoid) - MIT
+- [nanoid@3.3.18](ai/nanoid) - MIT
 - [next@16.3.1](vercel/next.js) - MIT
 - [next-themes@0.4.6](https://github.com/pacocoursey/next-themes) - MIT
 - [npm-to-yarn@3.2.0](https://github.com/nebrelbug/npm-to-yarn) - MIT

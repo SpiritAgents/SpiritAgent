@@ -82,7 +82,7 @@ impl DaemonRuntime {
             .get("sessionId")
             .and_then(Value::as_str)
             .map(str::to_string)
-            .ok_or_else(|| anyhow!("session.create 未返回 sessionId"))?;
+            .ok_or_else(|| anyhow!("session.create did not return sessionId"))?;
         runtime.session_id = Some(session_id.clone());
         runtime
             .client
@@ -123,9 +123,9 @@ impl DaemonRuntime {
         // The daemon greets each connection with server.connected.
         let hello = client
             .next_notification(Duration::from_secs(5))?
-            .ok_or_else(|| anyhow!("daemon 握手超时：未收到 server.connected"))?;
+            .ok_or_else(|| anyhow!("daemon handshake timed out: server.connected not received"))?;
         if hello.get("method").and_then(Value::as_str) != Some("server.connected") {
-            return Err(anyhow!("daemon 握手失败：首帧不是 server.connected"));
+            return Err(anyhow!("daemon handshake failed: first frame was not server.connected"));
         }
 
         client.call(
@@ -144,7 +144,7 @@ impl DaemonRuntime {
             .unwrap_or("");
         if health_instance_id != instance.instance_id {
             return Err(anyhow!(
-                "daemon health instanceId 不匹配 registry: expected {}, got {}",
+                "daemon health instanceId does not match registry: expected {}, got {}",
                 instance.instance_id,
                 health_instance_id
             ));
@@ -186,7 +186,7 @@ impl DaemonRuntime {
             .client
             .call("session.detach", json!({ "sessionId": session_id }))
         {
-            logging::log_event(&format!("[daemon-runtime] session.detach 失败: {err}"));
+            logging::log_event(&format!("[daemon-runtime] session.detach failed: {err}"));
         }
     }
 
@@ -200,7 +200,7 @@ impl DaemonRuntime {
             .and_then(|session| session.get("sessionId"))
             .and_then(Value::as_str)
             .map(str::to_string)
-            .ok_or_else(|| anyhow!("session.attach 未返回 sessionId"))?;
+            .ok_or_else(|| anyhow!("session.attach did not return sessionId"))?;
         self.session_id = Some(session_id);
         let snapshot = value.get("snapshot").cloned().unwrap_or(Value::Null);
         self.sync
@@ -225,7 +225,7 @@ impl DaemonRuntime {
             .get("sessionId")
             .and_then(Value::as_str)
             .map(str::to_string)
-            .ok_or_else(|| anyhow!("session.create 未返回 sessionId"))?;
+            .ok_or_else(|| anyhow!("session.create did not return sessionId"))?;
         self.session_id = Some(session_id);
         self.client.call(
             "session.attach",
@@ -240,7 +240,7 @@ impl DaemonRuntime {
         self.apply_live_session_plan_metadata(&archive.llm_history);
         if let Err(err) = self.set_todo_session_key(conversation_key) {
             logging::log_event(&format!(
-                "[daemon-runtime] set_todo_session_key 失败: {err}"
+                "[daemon-runtime] set_todo_session_key failed: {err}"
             ));
         }
     }
@@ -260,7 +260,7 @@ impl DaemonRuntime {
     fn apply_attached_live_session_metadata(&mut self, conversation_key: &str) -> Result<()> {
         if let Err(err) = self.set_todo_session_key(conversation_key) {
             logging::log_event(&format!(
-                "[daemon-runtime] set_todo_session_key 失败: {err}"
+                "[daemon-runtime] set_todo_session_key failed: {err}"
             ));
         }
         let live = self.export_chat_archive(&[], &[])?;
@@ -271,7 +271,7 @@ impl DaemonRuntime {
     /// Bind the active daemon session to a stable chat file path.
     pub fn migrate_conversation_key(&mut self, conversation_key: &str) -> Result<()> {
         if self.daemon_failed {
-            return Err(anyhow!("daemon 连接已处于失败状态。"));
+            return Err(anyhow!("daemon connection is already in a failed state."));
         }
         self.call_daemon(
             "session.migrateConversationKey",
@@ -287,7 +287,7 @@ impl DaemonRuntime {
         archive: &ChatArchive,
     ) -> Result<AttachChatSessionOutcome> {
         if self.daemon_failed {
-            return Err(anyhow!("daemon 连接已处于失败状态。"));
+            return Err(anyhow!("daemon connection is already in a failed state."));
         }
         let conversation_key = Self::conversation_key_for_path(chat_path);
         self.detach_current_session();
@@ -305,7 +305,7 @@ impl DaemonRuntime {
             }
             Err(err) => {
                 self.handle_daemon_error(err);
-                Err(anyhow!("session.attach 失败"))
+                Err(anyhow!("session.attach failed"))
             }
         }
     }
@@ -350,14 +350,14 @@ impl DaemonRuntime {
 
     pub(crate) fn call_daemon(&mut self, method: &str, params: Option<Value>) -> Result<Value> {
         if self.daemon_failed {
-            return Err(anyhow!("daemon 连接已处于失败状态。"));
+            return Err(anyhow!("daemon connection is already in a failed state."));
         }
         let mut params = params.unwrap_or(Value::Null);
         if method.starts_with("session.") {
             let session_id = self
                 .session_id
                 .as_deref()
-                .ok_or_else(|| anyhow!("当前连接没有会话（host-only）"))?;
+                .ok_or_else(|| anyhow!("current connection has no session (host-only)"))?;
             if let Value::Object(ref mut map) = params {
                 map.insert("sessionId".to_string(), json!(session_id));
             } else {
@@ -414,9 +414,9 @@ impl DaemonRuntime {
             .push_back(RuntimeEvent::PushMessage(ChatMessage::new(
                 crate::view::MessageRole::Agent,
                 if fatal {
-                    format!("daemon 连接失败: {}", summary)
+                    format!("daemon connection failed: {}", summary)
                 } else {
-                    format!("daemon 执行失败: {}", summary)
+                    format!("daemon execution failed: {}", summary)
                 },
             )));
     }
@@ -450,7 +450,7 @@ impl DaemonRuntime {
                 match serde_json::from_value::<BridgeRuntimeEvent>(event_value) {
                     Ok(event) => self.sync.apply_bridge_events(vec![event]),
                     Err(err) => logging::log_event(&format!(
-                        "[daemon-runtime] 无法解析 runtime.event: {err}"
+                        "[daemon-runtime] failed to parse runtime.event: {err}"
                     )),
                 }
             }
@@ -460,7 +460,7 @@ impl DaemonRuntime {
                 ) {
                     Ok(snapshot) => self.sync.apply_snapshot(snapshot),
                     Err(err) => logging::log_event(&format!(
-                        "[daemon-runtime] 无法解析 session.snapshot: {err}"
+                        "[daemon-runtime] failed to parse session.snapshot: {err}"
                     )),
                 }
             }
@@ -481,12 +481,12 @@ impl DaemonRuntime {
                     Ok(change) => {
                         if let Err(err) = self.record_host_file_change(change) {
                             logging::log_event(&format!(
-                                "[daemon-runtime] record_host_file_change 失败: {err}"
+                                "[daemon-runtime] record_host_file_change failed: {err}"
                             ));
                         }
                     }
                     Err(err) => logging::log_event(&format!(
-                        "[daemon-runtime] 无法解析 session.fileChanged: {err}"
+                        "[daemon-runtime] failed to parse session.fileChanged: {err}"
                     )),
                 }
             }
@@ -526,7 +526,7 @@ impl DaemonRuntime {
                                 .sync
                                 .apply_subagent_bridge_events(child_session_id, events),
                             Err(err) => logging::log_event(&format!(
-                                "[daemon-runtime] 无法解析 session.subagentEvents: {err}"
+                                "[daemon-runtime] failed to parse session.subagentEvents: {err}"
                             )),
                         }
                     }
@@ -550,7 +550,7 @@ impl DaemonRuntime {
                 Ok(request) => request,
                 Err(err) => {
                     logging::log_event(&format!(
-                        "[daemon-runtime] 无法解析 workspace.trustRequested: {err}"
+                        "[daemon-runtime] failed to parse workspace.trustRequested: {err}"
                     ));
                     return;
                 }
@@ -617,7 +617,7 @@ impl DaemonRuntime {
 
     pub fn continue_assistant_completion(&mut self) -> Result<()> {
         if self.daemon_failed {
-            return Err(anyhow!("daemon 已失效，无法继续补全回复"));
+            return Err(anyhow!("daemon is no longer available; cannot continue completing the reply"));
         }
         self.call_daemon("session.continueAssistantCompletion", None)?;
         self.sync.is_busy_cache = true;
@@ -626,7 +626,7 @@ impl DaemonRuntime {
 
     pub fn run_session_start(&mut self, source: &str) -> Result<()> {
         if self.daemon_failed {
-            return Err(anyhow!("daemon 已失效，无法运行 sessionStart"));
+            return Err(anyhow!("daemon is no longer available; cannot run sessionStart"));
         }
         self.call_daemon("session.runSessionStart", Some(json!({ "source": source })))?;
         self.sync_snapshot_remote()?;
@@ -635,7 +635,7 @@ impl DaemonRuntime {
 
     pub fn reset_session(&mut self) -> Result<()> {
         if self.daemon_failed {
-            return Err(anyhow!("daemon 已失效，无法开始新会话"));
+            return Err(anyhow!("daemon is no longer available; cannot start a new session"));
         }
         self.call_daemon("session.reset", None)?;
         self.rewind = rewind::create_desktop_rewind_metadata();
@@ -707,7 +707,7 @@ impl DaemonRuntime {
 
     pub(crate) fn apply_llm_http_version_from_config(&mut self) -> Result<()> {
         if self.daemon_failed {
-            return Err(anyhow!("daemon 已处于失败状态。"));
+            return Err(anyhow!("daemon is already in a failed state."));
         }
         let version = self.config.networks.llm_http_version.clone();
         self.set_llm_http_version(&version)
@@ -715,14 +715,14 @@ impl DaemonRuntime {
 
     pub(crate) fn apply_llm_client_version_from_build(&mut self) -> Result<()> {
         if self.daemon_failed {
-            return Err(anyhow!("daemon 已处于失败状态。"));
+            return Err(anyhow!("daemon is already in a failed state."));
         }
         self.set_llm_client_version(env!("CARGO_PKG_VERSION"))
     }
 
     pub(crate) fn apply_attribution_to_daemon(&mut self) -> Result<()> {
         if self.daemon_failed {
-            return Err(anyhow!("daemon 已处于失败状态。"));
+            return Err(anyhow!("daemon is already in a failed state."));
         }
         let (commit_attribution, pr_attribution) =
             crate::model_registry::resolve_cli_attribution(&self.config);
@@ -740,7 +740,7 @@ impl DaemonRuntime {
 
     pub fn set_llm_http_version(&mut self, llm_http_version: &str) -> Result<()> {
         if self.daemon_failed {
-            return Err(anyhow!("daemon 已处于失败状态。"));
+            return Err(anyhow!("daemon is already in a failed state."));
         }
         let normalized = normalize_llm_http_version(llm_http_version);
         self.client.call(
@@ -752,7 +752,7 @@ impl DaemonRuntime {
 
     pub fn set_llm_client_version(&mut self, client_version: &str) -> Result<()> {
         if self.daemon_failed {
-            return Err(anyhow!("daemon 已处于失败状态。"));
+            return Err(anyhow!("daemon is already in a failed state."));
         }
         self.client.call(
             "server.setLlmClientVersion",
@@ -783,7 +783,7 @@ impl DaemonRuntime {
 
     pub fn activate_skill(&mut self, skill: ActiveSkillPayload) -> Result<()> {
         if self.daemon_failed {
-            return Err(anyhow!("daemon 已失效，无法激活 skill"));
+            return Err(anyhow!("daemon is no longer available; cannot activate skill"));
         }
         self.call_daemon("session.activateSkill", Some(json!({ "skill": skill })))?;
         Ok(())
@@ -870,7 +870,7 @@ impl DaemonRuntime {
         )?;
         let path = value
             .as_str()
-            .ok_or_else(|| anyhow!("host.writeRuleState 返回值无效"))?;
+            .ok_or_else(|| anyhow!("host.writeRuleState returned an invalid value"))?;
         Ok(PathBuf::from(path))
     }
 
@@ -887,7 +887,7 @@ impl DaemonRuntime {
         )?;
         let path = value
             .as_str()
-            .ok_or_else(|| anyhow!("host.writeSkillState 返回值无效"))?;
+            .ok_or_else(|| anyhow!("host.writeSkillState returned an invalid value"))?;
         Ok(PathBuf::from(path))
     }
 
@@ -1055,7 +1055,7 @@ impl DaemonRuntime {
         explicit_images: Option<Vec<String>>,
     ) -> Result<()> {
         if self.daemon_failed {
-            return Err(anyhow!("daemon 已处于失败状态。"));
+            return Err(anyhow!("daemon is already in a failed state."));
         }
         let client_turn_id = uuid::Uuid::new_v4().to_string();
         self.pending_local_client_turn_ids
@@ -1170,7 +1170,7 @@ impl DaemonRuntime {
         let session_id = self
             .session_id
             .clone()
-            .ok_or_else(|| anyhow!("当前连接没有会话（host-only）"))?;
+            .ok_or_else(|| anyhow!("current connection has no session (host-only)"))?;
         let value = self
             .client
             .call("host.listSessionTodos", json!({ "sessionId": session_id }))?;
@@ -1182,7 +1182,7 @@ impl DaemonRuntime {
         let session_id = self
             .session_id
             .clone()
-            .ok_or_else(|| anyhow!("当前连接没有会话（host-only）"))?;
+            .ok_or_else(|| anyhow!("current connection has no session (host-only)"))?;
         self.client.call(
             "host.replaceSessionTodos",
             json!({ "sessionId": session_id, "records": records }),
@@ -1217,14 +1217,14 @@ impl DaemonRuntime {
             .rewind
             .checkpoint_for_message_id(message_id)
             .cloned()
-            .ok_or_else(|| anyhow!("该消息没有可用的回溯检查点。"))?;
+            .ok_or_else(|| anyhow!("This message has no rewind checkpoint available."))?;
         let spirit_data_dir = crate::mcp::spirit_agent_data_dir();
         let snapshot = rewind::load_rewind_checkpoint_snapshot(
             &spirit_data_dir,
             &self.rewind.session_id,
             &checkpoint.id,
         )?
-        .ok_or_else(|| anyhow!("回溯检查点文件不存在，无法回溯。"))?;
+        .ok_or_else(|| anyhow!("The rewind checkpoint file does not exist; cannot rewind."))?;
 
         let changes_to_restore = self
             .rewind
@@ -1247,7 +1247,7 @@ impl DaemonRuntime {
                     change_id: Some(metadata.id.clone()),
                     path: metadata.resolved_path.clone(),
                     action: metadata.kind.clone(),
-                    message: "文件变更快照缺失，已跳过该项回溯。".to_string(),
+                    message: "File change snapshot is missing; this rewind item was skipped.".to_string(),
                 });
             }
         }
@@ -1308,7 +1308,7 @@ impl DaemonRuntime {
 
     pub fn set_loop_enabled(&mut self, enabled: bool) -> Result<()> {
         if self.daemon_failed {
-            return Err(anyhow!("daemon 已处于失败状态。"));
+            return Err(anyhow!("daemon is already in a failed state."));
         }
         self.call_daemon(
             "session.setLoopEnabled",
@@ -1324,7 +1324,7 @@ impl DaemonRuntime {
 
     pub fn set_approval_level(&mut self, approval_level: &str) -> Result<()> {
         if self.daemon_failed {
-            return Err(anyhow!("daemon 已处于失败状态。"));
+            return Err(anyhow!("daemon is already in a failed state."));
         }
         let normalized = normalize_approval_level(approval_level);
         self.call_daemon(
@@ -1520,7 +1520,7 @@ impl DaemonRuntime {
         let label = value
             .get("label")
             .and_then(Value::as_str)
-            .ok_or_else(|| anyhow!("session.attachMcpResource 未返回 label"))?
+            .ok_or_else(|| anyhow!("session.attachMcpResource did not return label"))?
             .to_string();
         self.sync_snapshot_remote()?;
         Ok(label)
@@ -1559,7 +1559,7 @@ impl DaemonRuntime {
         let notice = value
             .get("notice")
             .and_then(Value::as_str)
-            .ok_or_else(|| anyhow!("session.applyMcpPrompt 未返回 notice"))?
+            .ok_or_else(|| anyhow!("session.applyMcpPrompt did not return notice"))?
             .to_string();
         Ok(notice)
     }
@@ -1809,7 +1809,7 @@ impl DaemonRuntime {
             .client
             .call("session.detach", json!({ "sessionId": session_id }))
         {
-            logging::log_event(&format!("[daemon-runtime] session.detach 失败: {err}"));
+            logging::log_event(&format!("[daemon-runtime] session.detach failed: {err}"));
         }
         self.client.close();
     }

@@ -33,7 +33,7 @@ const multilineSegments = [
   {
     kind: "text",
     value:
-      "滚滚长江东逝水\n长江黄河还有黑龙江\n男人女人还有变性人\n这里我准备引用一句话，光标就在这里：",
+      "First line of the verse\nSecond line of the verse\nThird line of the verse\nHere I want to quote a sentence, caret goes right here:",
   },
 ];
 
@@ -107,6 +107,6 @@ test("insertSegmentAtCaret uses segment-model caret after multiline end selectio
   const chipIndex = segments.findIndex((segment) => segment.kind === "fileSnippet");
   assert.ok(chipIndex >= 0);
   const textBeforeChip = segmentsToPlainText(segments.slice(0, chipIndex));
-  assert.ok(textBeforeChip.endsWith("光标就在这里："));
-  assert.equal(textBeforeChip.includes("长江黄河还有黑龙江\n[file:"), false);
+  assert.ok(textBeforeChip.endsWith("caret goes right here:"));
+  assert.equal(textBeforeChip.includes("Second line of the verse\n[file:"), false);
 });

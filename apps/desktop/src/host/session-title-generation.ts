@@ -1,4 +1,4 @@
-// Desktop 首批消费方：首条用户消息后异步生成会话标题；CLI 待产品定义后再接入。
+// Desktop is the first consumer: generates the session title asynchronously after the first user message; CLI integration awaits product definition.
 import { buildSpiritAgentCoreHostPrompt, createJsonSchemaTransport } from "@spiritagent/agent-core";
 import {
   buildSessionTitlePrompt,

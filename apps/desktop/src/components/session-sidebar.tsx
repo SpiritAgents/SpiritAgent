@@ -100,7 +100,7 @@ import {
   useOptionalSessionListGitTooltipContext,
 } from "@/components/session-list-git-tooltip";
 
-/** 平台快捷键提示，模块加载时计算（平台不会运行时变化）。 */
+/** Platform shortcut hint, computed at module load (the platform does not change at runtime). */
 const newSessionShortcutLabel = shortcutLabel("N");
 const settingsShortcutLabelText = settingsShortcutLabel();
 
@@ -114,10 +114,10 @@ function samePath(a: string, b: string): boolean {
 
 type SessionSidebarProps = {
   className?: string;
-  /** 窄轨：只换样式/折叠列表，不切换整棵子树，避免与外层 width 动画错拍 */
+  /** Narrow rail: only swap styles / collapse the list without replacing the whole subtree, avoiding a beat mismatch with the outer width animation */
   narrow: boolean;
   mode?: "sessions" | "settings";
-  /** 用户主目录，用于将主目录会话划入「无工作区」区。 */
+  /** User home directory, used to group home-directory sessions into the "no workspace" section. */
   userHomeDirectory?: string | null;
   sessions: SessionListItem[];
   activeFilePath: string | null;
@@ -138,7 +138,7 @@ type SessionSidebarProps = {
   }>;
   onSettingsTabChange?: (tab: SettingsSidebarTab) => void;
   onExtensionSettingsChange?: (extensionId: string) => void;
-  /** Windows 云母：侧栏需半透明+blur，避免透出窗后内容发花 */
+  /** Windows Mica: the sidebar needs translucency + blur so content behind the window does not show through and look smeared */
   translucency?: boolean;
   newSessionBusy?: boolean;
   sessionNavigationBusy?: boolean;
@@ -149,7 +149,7 @@ type SessionSidebarProps = {
   deleteWorkspaceBusy?: boolean;
   onDeleteWorkspace?: (workspacePath: string) => void | Promise<void>;
   disabled?: boolean;
-  /** 后台会话完成后、用户尚未打开前显示蓝色圆点。 */
+  /** Shows a blue dot after a background session completes and before the user opens it. */
   unseenCompletedSessionPaths?: ReadonlySet<string>;
 };
 
@@ -1000,8 +1000,10 @@ function WorkspaceListNav({
     isWorkspaceTarget && canOpenWorkspaceDirectory && Boolean(workspaceTarget?.rootPath);
   const showDeleteWorkspace = isWorkspaceTarget && canDeleteWorkspace;
 
-  // 不在 onOpenChange(false) 清 target：Radix exit 动画（duration-100）未结束时 Content 仍挂载，
-  // 立刻清空会让 isWorkspaceTarget 变 false，退场末帧闪成「删除会话」。capture / 删除确认时再更新即可。
+  // Do not clear target in onOpenChange(false): the Content is still mounted while the Radix exit
+  // animation (duration-100) runs, and clearing it immediately would flip isWorkspaceTarget to
+  // false, making the final exit frames flash into "delete session". Updating on capture / delete
+  // confirmation is enough.
   return (
     <ContextMenu>
       <ContextMenuTrigger asChild>{inner}</ContextMenuTrigger>
@@ -1176,19 +1178,19 @@ const settingsConnectTabs: Array<{
 const sidebarInteractionMotionClass =
   "!transition-[opacity,transform,box-shadow] duration-150 active:!translate-y-0";
 
-/** 侧栏交互项默认字色/图标色；hover 与选中回到 sidebar-foreground */
+/** Sidebar interactive items' default text/icon color; hover and selection return to sidebar-foreground */
 const sidebarItemDefaultTextClass = "text-sidebar-action-foreground";
 
 const sidebarItemActiveTextClass = "!text-sidebar-foreground";
 
-/** 侧栏菜单/会话行 hover：统一半透明铺底，嵌套按钮不再叠实心 accent */
+/** Sidebar menu/session row hover: a unified semi-transparent wash, so nested buttons no longer stack a solid accent */
 const sidebarMenuHoverClass = cn(
   "hover:!bg-foreground/[0.06] focus-visible:!bg-foreground/[0.06]",
   "dark:hover:!bg-white/[0.06] dark:focus-visible:!bg-white/[0.06]",
   "hover:!text-sidebar-foreground focus-visible:!text-sidebar-foreground",
 );
 
-/** 侧栏菜单/会话行选中：与 hover 同色半透明铺底，不因选中加深 */
+/** Sidebar menu/session row selected: the same semi-transparent wash as hover, not deepened by selection */
 const sidebarMenuSelectedClass = cn(
   "!bg-foreground/[0.06] hover:!bg-foreground/[0.06] focus-visible:!bg-foreground/[0.06]",
   "dark:!bg-white/[0.06] dark:hover:!bg-white/[0.06] dark:focus-visible:!bg-white/[0.06]",
@@ -1244,7 +1246,7 @@ function sessionRowHoverClass(_translucency?: boolean) {
   return sidebarMenuHoverClass;
 }
 
-/** 重命名编辑态：与 hover 同色半透明铺底，常驻显示 */
+/** Rename editing state: the same semi-transparent wash as hover, shown permanently */
 function sessionRowRenamingClass(_translucency?: boolean) {
   return cn("!bg-foreground/[0.06]", "dark:!bg-white/[0.06]");
 }

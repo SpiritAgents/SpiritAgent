@@ -9,9 +9,9 @@ export type LocalListeningEndpoint = {
   port: number;
   address?: string;
   processName?: string;
-  /** 探测到的可访问 URL（http 或 https） */
+  /** Reachable URL discovered by probing (http or https) */
   url?: string;
-  /** 探测时从 HTML <title> 提取的标题 */
+  /** Title extracted from the HTML <title> during probing */
   title?: string;
 };
 
@@ -173,7 +173,7 @@ export function probeHttpUrl(
   });
 }
 
-/** 依次尝试 http / https，返回首个像网页的 URL。 */
+/** Try http / https in order and return the first URL that looks like a web page. */
 export async function probeLocalHttpPort(
   port: number,
 ): Promise<{ url: string; title?: string } | null> {
@@ -471,25 +471,25 @@ export async function listLocalListeningEndpoints(): Promise<LocalListeningEndpo
   }
 }
 
-/** 模块级缓存 */
+/** Module-level cache */
 let cachedEndpoints: LocalListeningEndpoint[] | null = null;
 let scanningPromise: Promise<LocalListeningEndpoint[]> | null = null;
 
-/** 返回上一次扫描的缓存结果（可能为 null 表示尚未完成首次扫描） */
+/** Return the cached result of the last scan (may be null if the first scan has not finished) */
 export function getCachedLocalListeningEndpoints(): LocalListeningEndpoint[] | null {
   return cachedEndpoints;
 }
 
-/** 返回正在进行的扫描 promise（无扫描时为 null） */
+/** Return the in-flight scan promise (null when no scan is running) */
 export function getScanningPromise(): Promise<LocalListeningEndpoint[]> | null {
   return scanningPromise;
 }
 
 /**
- * 启动一轮新扫描。
- * onFound 每发现一个可访问端口立即回调（流式）；
- * 扫描完成后 promise resolve 并更新缓存。
- * 若已有扫描正在进行，先等它结束再启动新一轮。
+ * Start a new scan.
+ * onFound is invoked immediately for each reachable port found (streaming);
+ * the promise resolves and updates the cache when the scan completes.
+ * If a scan is already in progress, wait for it to finish before starting a new one.
  */
 export async function startLocalListenersScan(
   onFound?: (item: LocalListeningEndpoint) => void,
@@ -521,7 +521,7 @@ export async function startLocalListenersScan(
   return scanningPromise;
 }
 
-/** 应用启动时预热：后台静默扫描一次，结果存入缓存 */
+/** Warm-up at app startup: silently scan once in the background and store the result in the cache */
 scanningPromise = startLocalListenersScan();
 
 export function isAllowedExternalUrl(url: string): boolean {

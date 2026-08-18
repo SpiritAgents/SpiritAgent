@@ -148,10 +148,10 @@ export function handleStreamStallTimeout<Config, State, ToolRequest, TrustTarget
   if (!runtime.pendingAssistantTextStore.trim()) {
     runtime.emitEvent({
       kind: "replace-pending-assistant",
-      text: "流式响应超时，连接已中断。",
+      text: "Streaming response timed out; the connection was interrupted.",
     });
   } else {
-    const suffix = "\n\n[stream timeout] 响应长时间无数据，已自动停止等待。";
+    const suffix = "\n\n[stream timeout] No data for a long time; stopped waiting automatically.";
     runtime.pendingAssistantTextStore += suffix;
     runtime.emitEvent({
       kind: "assistant-chunk",
@@ -517,9 +517,10 @@ export async function handlePendingStreamEvent<Config, State, ToolRequest, Trust
         authorize: (request) => runtime.options.toolExecutor.authorize(request),
       });
     }
-    // 提前执行准入须与 startEarlyToolExecution 内部的参数解析一致：
-    // ls/read_file/delete_file 允许在路径完整、JSON 未闭合时就提前启动；
-    // 若只认完整 JSON，它们的审批会落到流式结束后的 formal pass，展示顺序被后置工具反超。
+    // Early-execution admission must match the argument parsing inside startEarlyToolExecution:
+    // ls/read_file/delete_file may start early once the path is complete, even with unclosed JSON;
+    // if only complete JSON were accepted, their approvals would fall to the formal pass after
+    // streaming ends, and their display order would be overtaken by later tools.
     const earlyExecutable =
       resolveEarlyToolCallArguments(event.toolName, event.argumentsJson) !== undefined;
     if (

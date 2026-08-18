@@ -13,7 +13,7 @@ let monacoShikiReadyPromise: Promise<void> | null = null;
 
 export { isMonacoShikiReady } from "@/lib/monaco-shiki-state";
 
-/** 与 Streamdown 相同：Shiki TextMate 引擎 + dark-plus / light-plus 主题。 */
+/** Same as Streamdown: Shiki TextMate engine + dark-plus / light-plus themes. */
 export function ensureMonacoShikiReady(): Promise<void> {
   if (isMonacoShikiReady()) {
     return Promise.resolve();

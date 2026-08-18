@@ -175,10 +175,7 @@ impl TuiShell {
         let chat_repository: Box<dyn ChatRepository> = Box::new(JsonChatRepository);
         let config_path = app_paths.config_file();
         let config = config_store.load().with_context(|| {
-            format!(
-                "读取 CLI 配置失败: {}。请检查 JSON 是否损坏；若需重置，可先备份后删除该文件再重试",
-                config_path.display()
-            )
+            t!("tui.config.read_failed", path = config_path.display()).into_owned()
         })?;
         locale::apply_ui_locale(&config);
         let workspace_root = app_paths.workspace_root();
@@ -187,15 +184,15 @@ impl TuiShell {
             Arc::clone(&secret_store),
             workspace_root.clone(),
         )
-        .context("初始化 TypeScript runtime bridge 失败")?;
+        .context("Failed to initialize TypeScript runtime bridge")?;
         let cli_metadata = runtime
             .load_cli_host_metadata("agent")
-            .context("读取共享宿主 metadata 失败")?;
+            .context("Failed to read shared host metadata")?;
         let rule_entries = cli_metadata.rule_entries;
         let skill_entries = cli_metadata.skill_entries;
         let plan_metadata = cli_metadata.plan_metadata;
         let extension_entries = runtime.list_extensions().unwrap_or_else(|err| {
-            logging::log_event(&format!("[extensions] 初始化列表失败: {err:#}"));
+            logging::log_event(&format!("[extensions] failed to initialize list: {err:#}"));
             Vec::new()
         });
         let cli_ui_hooks = compile_cli_ui_hooks(&extension_entries);
@@ -255,7 +252,7 @@ impl TuiShell {
             extension_entries,
             marketplace: MarketplaceState::default(),
             cli_ui_hooks,
-            // 内嵌 TUI 画在主屏，不能探测图片协议（会往 stdout 打 kitty/sixel 查询）。
+            // The inline TUI draws on the main screen and must not probe image protocols (that would emit kitty/sixel queries to stdout).
             ui_runtime_state: if inline_mode {
                 UiRuntimeState::default()
             } else {
@@ -270,7 +267,7 @@ impl TuiShell {
         };
 
         if let Err(err) = shell.runtime.prime_workspace_file_reference_index() {
-            logging::log_event(&format!("[file-reference] 启动预热索引失败: {err:#}"));
+            logging::log_event(&format!("[file-reference] failed to warm up index: {err:#}"));
         }
 
         shell.refresh_prompt_slash_commands(&initial_mcp_status);
@@ -305,11 +302,11 @@ impl TuiShell {
     pub fn refresh_rules_from_disk(&mut self) -> Result<()> {
         self.runtime
             .reload_host_metadata(self.spirit_agent_mode())
-            .context("刷新共享规则 runtime metadata 失败")?;
+            .context("Failed to refresh shared rule runtime metadata")?;
         let metadata = self
             .runtime
             .load_cli_host_metadata(self.spirit_agent_mode())
-            .context("读取共享规则 metadata 失败")?;
+            .context("Failed to read shared rule metadata")?;
         self.rule_entries = metadata.rule_entries;
         self.skill_entries = metadata.skill_entries;
         self.plan_metadata = metadata.plan_metadata;
@@ -319,11 +316,11 @@ impl TuiShell {
     pub fn refresh_skills_from_disk(&mut self) -> Result<()> {
         self.runtime
             .reload_host_metadata(self.spirit_agent_mode())
-            .context("刷新共享技能 runtime metadata 失败")?;
+            .context("Failed to refresh shared skill runtime metadata")?;
         let metadata = self
             .runtime
             .load_cli_host_metadata(self.spirit_agent_mode())
-            .context("读取共享技能 metadata 失败")?;
+            .context("Failed to read shared skill metadata")?;
         self.rule_entries = metadata.rule_entries;
         self.skill_entries = metadata.skill_entries;
         self.plan_metadata = metadata.plan_metadata;
@@ -334,7 +331,7 @@ impl TuiShell {
     }
 
     pub fn refresh_extensions_from_disk(&mut self) -> Result<()> {
-        self.extension_entries = self.runtime.list_extensions().context("读取扩展列表失败")?;
+        self.extension_entries = self.runtime.list_extensions().context("Failed to read extension list")?;
         self.cli_ui_hooks = compile_cli_ui_hooks(&self.extension_entries);
         if self.current_slash_query().is_some() {
             self.refresh_suggestions();
@@ -363,7 +360,7 @@ impl TuiShell {
                 }
                 Err(err) => {
                     self.file_reference_index_loading = false;
-                    logging::log_event(&format!("[file-reference] 查询候选失败: {err:#}"));
+                    logging::log_event(&format!("[file-reference] failed to query candidates: {err:#}"));
                     self.slash.suggestions.clear();
                 }
             };
@@ -529,7 +526,7 @@ impl TuiShell {
         self.model_picker_active
     }
 
-    /// Any full-screen model list overlay (切换当前模型).
+    /// Any full-screen model list overlay (switching the current model).
     pub fn is_model_list_overlay_active(&self) -> bool {
         self.model_picker_active
     }
@@ -690,7 +687,7 @@ impl TuiShell {
                     let conversation_key = chat_store::conversation_key_for_path(&saved_path);
                     if let Err(err) = self.runtime.migrate_conversation_key(&conversation_key) {
                         logging::log_event(&format!(
-                            "[tui-session] migrateConversationKey 失败 path={conversation_key} err={err:#}"
+                            "[tui-session] migrateConversationKey failed path={conversation_key} err={err:#}"
                         ));
                     }
                     self.push_session_notice(
@@ -1403,7 +1400,7 @@ mod tests {
     #[test]
     fn user_turn_text_for_agent_mode_keeps_raw_input() {
         let workspace_root = PathBuf::from("C:/workspace/demo");
-        let raw_message = "实现计划模式";
+        let raw_message = "implement plan mode";
 
         let runtime_turn =
             user_turn_text_for_mode(&workspace_root, MainInputMode::Agent, raw_message);
@@ -1414,7 +1411,7 @@ mod tests {
     #[test]
     fn user_turn_text_for_plan_mode_keeps_only_user_text() {
         let workspace_root = PathBuf::from("C:/workspace/demo");
-        let raw_message = "实现计划模式";
+        let raw_message = "implement plan mode";
 
         let runtime_turn =
             user_turn_text_for_mode(&workspace_root, MainInputMode::Plan, raw_message);
@@ -1435,7 +1432,7 @@ mod tests {
         assert!(!is_standalone_subagent_status_aux(&PendingAssistantAux {
             kind: AssistantAuxKind::Thinking,
             status_text: "| Thinking...".to_string(),
-            detail_text: Some("继续处理中".to_string()),
+            detail_text: Some("Still working".to_string()),
         }));
     }
 
@@ -1443,7 +1440,7 @@ mod tests {
     fn standalone_subagent_status_aux_detection_accepts_named_status_text() {
         assert!(is_standalone_subagent_status_aux(&PendingAssistantAux {
             kind: AssistantAuxKind::Thinking,
-            status_text: "| 子代理任务: 成功".to_string(),
+            status_text: "| Subagent task: Done".to_string(),
             detail_text: None,
         }));
     }
@@ -1452,7 +1449,7 @@ mod tests {
     fn completed_subagent_status_survives_parent_completion_while_busy() {
         let persisted = PendingAssistantAux {
             kind: AssistantAuxKind::Thinking,
-            status_text: "| 子代理任务: 成功".to_string(),
+            status_text: "| Subagent task: Done".to_string(),
             detail_text: None,
         };
 
@@ -1469,7 +1466,7 @@ mod tests {
     fn live_subagent_status_captures_pending_assistant_anchor() {
         let live = PendingAssistantAux {
             kind: AssistantAuxKind::Thinking,
-            status_text: "| 子代理任务: 执行中".to_string(),
+            status_text: "| Subagent task: Running".to_string(),
             detail_text: None,
         };
 
@@ -1483,7 +1480,7 @@ mod tests {
     fn live_subagent_status_captures_last_completed_assistant_anchor() {
         let live = PendingAssistantAux {
             kind: AssistantAuxKind::Thinking,
-            status_text: "| 子代理任务: 执行中".to_string(),
+            status_text: "| Subagent task: Running".to_string(),
             detail_text: None,
         };
 
@@ -1497,12 +1494,12 @@ mod tests {
     fn begin_assistant_response_reanchors_persisted_subagent_status_after_agent_message() {
         let persisted = PendingAssistantAux {
             kind: AssistantAuxKind::Thinking,
-            status_text: "| 子代理任务: 成功".to_string(),
+            status_text: "| Subagent task: Done".to_string(),
             detail_text: None,
         };
 
         let should_reanchor = should_reanchor_persisted_subagent_status_on_begin_assistant_response(
-            Some(&ChatMessage::new(MessageRole::Agent, "上一段父回复")),
+            Some(&ChatMessage::new(MessageRole::Agent, "previous parent reply")),
             Some(&persisted),
         );
 
@@ -1513,12 +1510,12 @@ mod tests {
     fn begin_assistant_response_does_not_reanchor_persisted_subagent_status_after_user_message() {
         let persisted = PendingAssistantAux {
             kind: AssistantAuxKind::Thinking,
-            status_text: "| 子代理任务: 成功".to_string(),
+            status_text: "| Subagent task: Done".to_string(),
             detail_text: None,
         };
 
         let should_reanchor = should_reanchor_persisted_subagent_status_on_begin_assistant_response(
-            Some(&ChatMessage::new(MessageRole::User, "新用户输入")),
+            Some(&ChatMessage::new(MessageRole::User, "new user input")),
             Some(&persisted),
         );
 
@@ -1529,7 +1526,7 @@ mod tests {
     fn live_subagent_status_keeps_existing_anchor_after_parent_completion() {
         let live = PendingAssistantAux {
             kind: AssistantAuxKind::Thinking,
-            status_text: "| 子代理任务: 成功".to_string(),
+            status_text: "| Subagent task: Done".to_string(),
             detail_text: None,
         };
 
@@ -1543,7 +1540,7 @@ mod tests {
     fn completed_subagent_status_keeps_existing_anchor() {
         let persisted = PendingAssistantAux {
             kind: AssistantAuxKind::Thinking,
-            status_text: "| 子代理任务: 成功".to_string(),
+            status_text: "| Subagent task: Done".to_string(),
             detail_text: None,
         };
 

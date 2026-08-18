@@ -579,48 +579,48 @@ export class NodeHostToolService<
     const raw = message.startsWith("/tool") ? message.slice("/tool".length).trim() : "";
     if (!raw) {
       throw new Error(
-        "用法:\n/tool shell <command>\n/tool web <url>\n/tool ls <absolute-dir>\n/tool glob <pattern>\n/tool read <path> [start] [end]\n/tool search <query>",
+        "Usage:\n/tool shell <command>\n/tool web <url>\n/tool ls <absolute-dir>\n/tool glob <pattern>\n/tool read <path> [start] [end]\n/tool search <query>",
       );
     }
 
     const tokens = tokenize(raw);
     const subcommand = tokens[0];
     if (!subcommand) {
-      throw new Error("缺少子命令");
+      throw new Error("Missing subcommand");
     }
 
     switch (subcommand) {
       case "shell": {
         const command = raw.slice("shell".length).trim();
         if (!command) {
-          throw new Error("用法: /tool shell <command>");
+          throw new Error("Usage: /tool shell <command>");
         }
         return {
           name: "shell",
           command,
-          reason: "用户手动执行",
+          reason: "Manually executed by user",
         };
       }
       case "web":
         if (tokens.length < 2) {
-          throw new Error("用法: /tool web <url>");
+          throw new Error("Usage: /tool web <url>");
         }
         return { name: "web_fetch", url: tokens[1]! };
       case "ls":
         if (tokens.length < 2) {
-          throw new Error("用法: /tool ls <absolute-dir>");
+          throw new Error("Usage: /tool ls <absolute-dir>");
         }
         return { name: "ls", path: tokens[1]! };
       case "glob": {
         const pattern = raw.slice("glob".length).trim();
         if (!pattern) {
-          throw new Error("用法: /tool glob <pattern>");
+          throw new Error("Usage: /tool glob <pattern>");
         }
         return { name: "glob", pattern };
       }
       case "read": {
         if (tokens.length < 2) {
-          throw new Error("用法: /tool read <path> [offset] [limit]");
+          throw new Error("Usage: /tool read <path> [offset] [limit]");
         }
         const offset = parseOptionalManualLine(tokens[2], "offset");
         const limit = parseOptionalManualLine(tokens[3], "limit");
@@ -637,7 +637,7 @@ export class NodeHostToolService<
           searchInput.startsWith("--regexp ") || searchInput.startsWith("--regex ");
         const query = usesRegexp ? searchInput.replace(/^--regex(p)?\s+/u, "").trim() : searchInput;
         if (!query) {
-          throw new Error("用法: /tool search [--regexp] <query>");
+          throw new Error("Usage: /tool search [--regexp] <query>");
         }
         return {
           name: "grep",
@@ -647,7 +647,7 @@ export class NodeHostToolService<
       }
       default:
         throw new Error(
-          `未知 /tool 子命令: ${subcommand}\n可用: shell | web | list | glob | read | search`,
+          `Unknown /tool subcommand: ${subcommand}\nAvailable: shell | web | list | glob | read | search`,
         );
     }
   }
@@ -909,19 +909,19 @@ export class NodeHostToolService<
         return {
           kind: "need-approval",
           prompt:
-            `理由: ${request.reason}\n` +
-            `高风险工具调用: shell\n终端: ${shell.shellDisplayName}\n命令: ${request.command}`,
+            `Reason: ${request.reason}\n` +
+            `High-risk tool call: shell\nTerminal: ${shell.shellDisplayName}\nCommand: ${request.command}`,
           trustTarget: `shell:${request.command}`,
         };
       }
       case "web_fetch":
         return {
           kind: "need-approval",
-          prompt: `高风险工具调用: 抓取网页\nURL: ${request.url}\n\n正文将进入对话；请确认来源可信，恶意页面可能提示词注入。`,
+          prompt: `High-risk tool call: fetch web page\nURL: ${request.url}\n\nThe body will enter the conversation; confirm the source is trustworthy — malicious pages may attempt prompt injection.`,
         };
       case "ls": {
         const canonical = await this.resolveExistingAbsoluteDirectory(request.path);
-        return this.authorizeExternalReadPath(canonical, "遍历工作目录外目录");
+        return this.authorizeExternalReadPath(canonical, "List directory outside the workspace");
       }
       case "read_file": {
         const target = await this.resolveReadFileTarget(request.path);
@@ -929,17 +929,17 @@ export class NodeHostToolService<
           return { kind: "allowed" };
         }
         const canonical = target.canonicalPath;
-        return this.authorizeExternalReadPath(canonical, "读取工作目录外文件");
+        return this.authorizeExternalReadPath(canonical, "Read file outside the workspace");
       }
       case "create_file":
         return {
           kind: "need-approval",
-          prompt: `高风险工具调用: 创建文件\n路径: ${request.path}\n内容长度: ${[...request.content].length} 字符`,
+          prompt: `High-risk tool call: create file\nPath: ${request.path}\nContent length: ${[...request.content].length} chars`,
         };
       case "create_plan":
         return {
           kind: "need-approval",
-          prompt: `高风险工具调用: 创建计划\n名称: ${request.plan_name}\n内容长度: ${[...request.content].length} 字符`,
+          prompt: `High-risk tool call: create plan\nName: ${request.plan_name}\nContent length: ${[...request.content].length} chars`,
         };
       case CREATE_AUTOMATION_TOOL_NAME:
         return {
@@ -949,12 +949,12 @@ export class NodeHostToolService<
       case "edit_file":
         return {
           kind: "need-approval",
-          prompt: `高风险工具调用: 编辑文件（精确替换）\n路径: ${request.path}\n旧文本长度: ${[...request.old_text].length} 字符\n新文本长度: ${[...request.new_text].length} 字符`,
+          prompt: `High-risk tool call: edit file (exact replacement)\nPath: ${request.path}\nOld text length: ${[...request.old_text].length} chars\nNew text length: ${[...request.new_text].length} chars`,
         };
       case "delete_file":
         return {
           kind: "need-approval",
-          prompt: `高风险工具调用: 删除文件\n路径: ${request.path}`,
+          prompt: `High-risk tool call: delete file\nPath: ${request.path}`,
         };
       case APPLY_PATCH_HOST_TOOL_NAME: {
         const diffLines =
@@ -962,9 +962,9 @@ export class NodeHostToolService<
         return {
           kind: "need-approval",
           prompt:
-            `高风险工具调用: apply_patch (${request.operation.type})\n` +
-            `路径: ${request.operation.path}` +
-            (request.operation.type === "update_file" ? `\nDiff 行数: ${diffLines}` : ""),
+            `High-risk tool call: apply_patch (${request.operation.type})\n` +
+            `Path: ${request.operation.path}` +
+            (request.operation.type === "update_file" ? `\nDiff lines: ${diffLines}` : ""),
         };
       }
       case "dream_list":
@@ -1002,7 +1002,7 @@ export class NodeHostToolService<
       return;
     }
 
-    throw new Error(`未知 trust target: ${target}`);
+    throw new Error(`Unknown trust target: ${target}`);
   }
 
   async execute(request: HostToolRequest<QuestionSpec>): Promise<HostToolExecutionOutput | string> {
@@ -1202,7 +1202,7 @@ export class NodeHostToolService<
     if (request.name !== "extension_tool" || request.execution_mode !== "background") {
       return undefined;
     }
-    return `扩展工具执行中: ${request.tool_name}`;
+    return `Running extension tool: ${request.tool_name}`;
   }
 
   startMcpBackgroundRefresh(): void {
@@ -1315,7 +1315,7 @@ export class NodeHostToolService<
 
     return {
       kind: "need-approval",
-      prompt: `高风险工具调用: ${promptTitle}\n路径: ${canonical}`,
+      prompt: `High-risk tool call: ${promptTitle}\nPath: ${canonical}`,
       trustTarget: `external-read:${canonical}`,
     };
   }
@@ -1755,7 +1755,7 @@ export class NodeHostToolService<
 
           retained.push({ path: filePath, mtimeMs: metadata.mtimeMs });
         } catch {
-          // 清理失败不应影响本次工具结果。
+          // Cleanup failure must not affect this tool result.
         }
       }
 
@@ -1764,11 +1764,11 @@ export class NodeHostToolService<
         try {
           await unlink(stale.path);
         } catch {
-          // 清理失败不应影响本次工具结果。
+          // Cleanup failure must not affect this tool result.
         }
       }
     } catch {
-      // 清理失败不应影响本次工具结果。
+      // Cleanup failure must not affect this tool result.
     }
   }
 
@@ -2444,7 +2444,7 @@ function buildExtensionApprovalPrompt<QuestionSpec>(
   request: Extract<HostToolRequest<QuestionSpec>, { name: "extension_tool" }>,
 ): string {
   const preview = truncateChars(JSON.stringify(request.arguments, null, 2), 1_200);
-  return `扩展工具需要确认\n扩展: ${request.extension_id}\n工具: ${request.tool_name}\n\n参数\n${preview}`;
+  return `Extension tool requires confirmation\nExtension: ${request.extension_id}\nTool: ${request.tool_name}\n\nArguments\n${preview}`;
 }
 
 function buildExtensionQuestionsAuthorization<QuestionSpec>(
@@ -2453,11 +2453,11 @@ function buildExtensionQuestionsAuthorization<QuestionSpec>(
   return {
     kind: "need-questions",
     questions: {
-      title: `补充扩展工具执行信息: ${request.tool_name}`,
+      title: `Additional execution info for extension tool: ${request.tool_name}`,
       questions: [
         {
           id: "execution_note",
-          title: "补充执行说明",
+          title: "Additional execution notes",
           allowMultiple: false,
           options: [],
         } as QuestionSpec,
@@ -2794,7 +2794,7 @@ function parseOptionalManualLine(value: string | undefined, label: string): numb
   }
   const parsed = Number.parseInt(value, 10);
   if (!Number.isFinite(parsed) || parsed < 0) {
-    throw new Error(`${label} 非法: ${value}`);
+    throw new Error(`${label} is invalid: ${value}`);
   }
   return parsed;
 }

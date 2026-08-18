@@ -42,18 +42,18 @@ export async function runGenerateVideoCase(): Promise<RuntimeParityCaseResult> {
     DEFAULT_VIDEO_GENERATION_DURATION,
   );
 
-  const nonStreamingResult = await nonStreamingRuntime.submitUserTurn("生成一段视频");
+  const nonStreamingResult = await nonStreamingRuntime.submitUserTurn("Generate a video");
   if (
     nonStreamingResult.kind !== "completed" ||
     nonStreamingResult.assistantText !== GENERATE_VIDEO_ASSISTANT_TEXT
   ) {
-    throw new Error("generate_video 非流式 smoke 未完成。");
+    throw new Error("generate_video non-streaming smoke did not complete.");
   }
   assertTerminalGenerateVideoResult(
     nonStreamingResult.toolExecutions,
     nonStreamingTransport.rounds,
     nonStreamingExecutor.executedCalls,
-    "generate_video 非流式 smoke",
+    "generate_video non-streaming smoke",
   );
 
   const streamingTransport = new GenerateVideoTerminalTransport(
@@ -72,13 +72,13 @@ export async function runGenerateVideoCase(): Promise<RuntimeParityCaseResult> {
     "720p",
   );
 
-  await streamingRuntime.startUserTurnStreaming("生成一段视频");
+  await streamingRuntime.startUserTurnStreaming("Generate a video");
   for (let index = 0; index < 24 && streamingRuntime.isBusy(); index += 1) {
     await flushMicrotasks(8);
     await streamingRuntime.poll();
   }
   if (streamingRuntime.isBusy()) {
-    throw new Error("generate_video 流式 smoke 未在预期轮次内完成。");
+    throw new Error("generate_video streaming smoke did not finish within the expected rounds.");
   }
 
   const streamingResult = streamingRuntime.takeCompletedTurnResult();
@@ -87,13 +87,13 @@ export async function runGenerateVideoCase(): Promise<RuntimeParityCaseResult> {
     streamingResult.kind !== "completed" ||
     streamingResult.assistantText !== GENERATE_VIDEO_ASSISTANT_TEXT
   ) {
-    throw new Error("generate_video 流式 smoke 未完成。");
+    throw new Error("generate_video streaming smoke did not complete.");
   }
   assertTerminalGenerateVideoResult(
     streamingResult.toolExecutions,
     streamingTransport.rounds,
     streamingExecutor.executedCalls,
-    "generate_video 流式 smoke",
+    "generate_video streaming smoke",
   );
 
   return {
@@ -120,16 +120,16 @@ function createGenerateVideoRuntime(
     extractAssistantText: extractScriptedAssistantText,
     generateVideo: async (request): Promise<ToolExecutionOutput> => {
       if (!request.prompt.includes(expectedPromptSnippet)) {
-        throw new Error("generate_video smoke 未收到模型重写后的最终 prompt。");
+        throw new Error("generate_video smoke did not receive the final prompt rewritten by the model.");
       }
       if (request.duration !== expectedDuration) {
-        throw new Error(`generate_video smoke 未解析出预期 duration：${request.duration}`);
+        throw new Error(`generate_video smoke did not parse the expected duration: ${request.duration}`);
       }
       if (expectedAspectRatio && request.aspectRatio !== expectedAspectRatio) {
-        throw new Error(`generate_video smoke 未解析出预期 aspect_ratio：${request.aspectRatio}`);
+        throw new Error(`generate_video smoke did not parse the expected aspect_ratio: ${request.aspectRatio}`);
       }
       if (expectedResolution && request.resolution !== expectedResolution) {
-        throw new Error(`generate_video smoke 未解析出预期 resolution：${request.resolution}`);
+        throw new Error(`generate_video smoke did not parse the expected resolution: ${request.resolution}`);
       }
 
       const markdownRef = "spirit://generated/video/courtyard-clip.mp4";
@@ -165,10 +165,10 @@ function assertTerminalGenerateVideoResult(
   label: string,
 ): void {
   if (rounds !== 2) {
-    throw new Error(`${label} 应在 generate_video 完成后继续到最终 assistant 轮次。`);
+    throw new Error(`${label} should continue to the final assistant round after generate_video completes.`);
   }
   if (executedCalls !== 0) {
-    throw new Error(`${label} 不应落到宿主 execute。`);
+    throw new Error(`${label} should not fall through to host execute.`);
   }
 
   const execution = toolExecutions.find((item) => item.toolName === "generate_video");
@@ -177,10 +177,10 @@ function assertTerminalGenerateVideoResult(
     execution.failed ||
     !execution.output.includes("spirit://generated/video/courtyard-clip.mp4")
   ) {
-    throw new Error(`${label} 未记录正确的 generate_video 工具结果。`);
+    throw new Error(`${label} did not record the correct generate_video tool result.`);
   }
   if (!execution.artifacts?.some((artifact) => artifact.path === "generated/courtyard-clip.mp4")) {
-    throw new Error(`${label} 未把生成视频路径放入 structured artifacts。`);
+    throw new Error(`${label} did not put the generated video path into structured artifacts.`);
   }
 }
 
@@ -198,7 +198,7 @@ class GenerateVideoTerminalTransport implements LlmTransport<undefined, Scripted
     _tools: JsonValue,
   ): Promise<ToolAgentRoundCompletion<ScriptedState>> {
     if (this.mode !== "non-streaming") {
-      throw new Error("generate_video streaming smoke 应走 streaming transport。");
+      throw new Error("generate_video streaming smoke should use the streaming transport.");
     }
 
     return this.nextRound(state);
@@ -210,7 +210,7 @@ class GenerateVideoTerminalTransport implements LlmTransport<undefined, Scripted
     _tools: JsonValue,
   ): Promise<StartedToolAgentRound<ScriptedState>> {
     if (this.mode !== "streaming") {
-      throw new Error("generate_video non-streaming smoke 不应走 streaming transport。");
+      throw new Error("generate_video non-streaming smoke should not use the streaming transport.");
     }
 
     this.rounds += 1;
@@ -302,7 +302,7 @@ class GenerateVideoTerminalTransport implements LlmTransport<undefined, Scripted
             ...state.messages,
             {
               role: "assistant",
-              content: "准备生成视频。",
+              content: "Preparing to generate the video.",
               tool_calls: [
                 {
                   id: "call-generate-video",

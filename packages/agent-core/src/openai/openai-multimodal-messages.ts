@@ -95,7 +95,7 @@ export function llmMessageToOpenAiMessage(message: LlmMessage, assetRoot: string
   };
 }
 
-/** Moonshot AI：将本地视频路径上传为 Files API（purpose=video），并改写为 ms:// 引用。 */
+/** Moonshot AI: uploads local video paths via the Files API (purpose=video) and rewrites them as ms:// references. */
 export async function resolveMoonshotVideoUrlsInOpenAiMessages(
   config: OpenAiTransportConfig,
   messages: JsonValue[],

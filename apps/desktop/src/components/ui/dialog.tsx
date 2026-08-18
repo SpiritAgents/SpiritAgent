@@ -12,7 +12,7 @@ type DialogOutsideEvent = {
   preventDefault(): void;
 };
 
-/** 嵌套 Select/Dropdown 的 disableOutsidePointerEvents 会使 content 穿透点击落到 overlay。 */
+/** A nested Select/Dropdown's disableOutsidePointerEvents would let clicks fall through the content onto the overlay. */
 function preventDialogDismissForOverlayPassthrough(
   event: DialogOutsideEvent,
   contentEl: HTMLElement | null,

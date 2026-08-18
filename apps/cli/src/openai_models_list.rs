@@ -68,27 +68,27 @@ pub fn list_openai_compatible_model_ids(
     let client = reqwest::blocking::Client::builder()
         .timeout(std::time::Duration::from_secs(60))
         .build()
-        .map_err(|e| format!("HTTP 客户端初始化失败：{e}"))?;
+        .map_err(|e| format!("Failed to initialize HTTP client: {e}"))?;
 
     let mut request = client.get(&url);
     if !key.is_empty() {
         request = request.header("Authorization", format!("Bearer {key}"));
     }
-    let response = request.send().map_err(|e| format!("列模型请求失败：{e}"))?;
+    let response = request.send().map_err(|e| format!("List models request failed: {e}"))?;
 
     let status = response.status();
     let text = response
         .text()
-        .map_err(|e| format!("列模型响应读取失败：{e}"))?;
+        .map_err(|e| format!("Failed to read list models response: {e}"))?;
 
     let json: Value = if text.trim().is_empty() {
         Value::Object(Default::default())
     } else {
         serde_json::from_str(&text).map_err(|_| {
             if status.is_success() {
-                "列模型响应不是合法 JSON。".to_string()
+                "List models response is not valid JSON.".to_string()
             } else {
-                format!("列模型失败（HTTP {}）。", status.as_u16())
+                format!("List models failed (HTTP {}).", status.as_u16())
             }
         })?
     };
@@ -101,8 +101,8 @@ pub fn list_openai_compatible_model_ids(
             .map(str::trim)
             .filter(|s| !s.is_empty());
         return Err(match err_msg {
-            Some(m) => format!("列模型失败（HTTP {}）：{}", status.as_u16(), m),
-            None => format!("列模型失败（HTTP {}）。", status.as_u16()),
+            Some(m) => format!("List models failed (HTTP {}): {}", status.as_u16(), m),
+            None => format!("List models failed (HTTP {}).", status.as_u16()),
         });
     }
 
@@ -116,7 +116,7 @@ pub fn list_anthropic_model_ids(api_base: &str, api_key: &str) -> Result<Vec<Str
     let client = reqwest::blocking::Client::builder()
         .timeout(std::time::Duration::from_secs(60))
         .build()
-        .map_err(|e| format!("HTTP 客户端初始化失败：{e}"))?;
+        .map_err(|e| format!("Failed to initialize HTTP client: {e}"))?;
 
     let mut request = client
         .get(&url)
@@ -124,21 +124,21 @@ pub fn list_anthropic_model_ids(api_base: &str, api_key: &str) -> Result<Vec<Str
     if !key.is_empty() {
         request = request.header("x-api-key", key);
     }
-    let response = request.send().map_err(|e| format!("列模型请求失败：{e}"))?;
+    let response = request.send().map_err(|e| format!("List models request failed: {e}"))?;
 
     let status = response.status();
     let text = response
         .text()
-        .map_err(|e| format!("列模型响应读取失败：{e}"))?;
+        .map_err(|e| format!("Failed to read list models response: {e}"))?;
 
     let json: Value = if text.trim().is_empty() {
         Value::Object(Default::default())
     } else {
         serde_json::from_str(&text).map_err(|_| {
             if status.is_success() {
-                "列模型响应不是合法 JSON。".to_string()
+                "List models response is not valid JSON.".to_string()
             } else {
-                format!("列模型失败（HTTP {}）。", status.as_u16())
+                format!("List models failed (HTTP {}).", status.as_u16())
             }
         })?
     };
@@ -155,8 +155,8 @@ pub fn list_anthropic_model_ids(api_base: &str, api_key: &str) -> Result<Vec<Str
             .map(str::trim)
             .filter(|s| !s.is_empty());
         return Err(match err_msg {
-            Some(m) => format!("列模型失败（HTTP {}）：{}", status.as_u16(), m),
-            None => format!("列模型失败（HTTP {}）。", status.as_u16()),
+            Some(m) => format!("List models failed (HTTP {}): {}", status.as_u16(), m),
+            None => format!("List models failed (HTTP {}).", status.as_u16()),
         });
     }
 
@@ -197,11 +197,11 @@ pub fn list_cloudflare_ai_gateway_model_ids(
 ) -> Result<Vec<String>, String> {
     let account = account_id.trim();
     if account.len() != 32 || !account.bytes().all(|byte| byte.is_ascii_hexdigit()) {
-        return Err("Cloudflare Account ID 须为 32 位十六进制字符串。".to_string());
+        return Err("Cloudflare Account ID must be a 32-character hexadecimal string.".to_string());
     }
     let key = api_key.trim();
     if key.is_empty() {
-        return Err("API Token 不能为空。".to_string());
+        return Err("API Token cannot be empty.".to_string());
     }
 
     let url = format!(
@@ -210,27 +210,27 @@ pub fn list_cloudflare_ai_gateway_model_ids(
     let client = reqwest::blocking::Client::builder()
         .timeout(std::time::Duration::from_secs(60))
         .build()
-        .map_err(|e| format!("HTTP 客户端初始化失败：{e}"))?;
+        .map_err(|e| format!("Failed to initialize HTTP client: {e}"))?;
 
     let response = client
         .get(&url)
         .header("Authorization", format!("Bearer {key}"))
         .send()
-        .map_err(|e| format!("列模型请求失败：{e}"))?;
+        .map_err(|e| format!("List models request failed: {e}"))?;
 
     let status = response.status();
     let text = response
         .text()
-        .map_err(|e| format!("列模型响应读取失败：{e}"))?;
+        .map_err(|e| format!("Failed to read list models response: {e}"))?;
 
     let json: Value = if text.trim().is_empty() {
         Value::Object(Default::default())
     } else {
         serde_json::from_str(&text).map_err(|_| {
             if status.is_success() {
-                "列模型响应不是合法 JSON。".to_string()
+                "List models response is not valid JSON.".to_string()
             } else {
-                format!("列模型失败（HTTP {}）。", status.as_u16())
+                format!("List models failed (HTTP {}).", status.as_u16())
             }
         })?
     };
@@ -250,8 +250,8 @@ pub fn list_cloudflare_ai_gateway_model_ids(
             .map(str::trim)
             .filter(|message| !message.is_empty());
         return Err(match err_msg {
-            Some(message) => format!("列模型失败（HTTP {}）：{}", status.as_u16(), message),
-            None => format!("列模型失败（HTTP {}）。", status.as_u16()),
+            Some(message) => format!("List models failed (HTTP {}): {}", status.as_u16(), message),
+            None => format!("List models failed (HTTP {}).", status.as_u16()),
         });
     }
 
@@ -279,7 +279,7 @@ pub fn list_model_ids(
             }
         }
         ModelTransportKind::Bedrock => Err(
-            "Amazon Bedrock 模型列表请使用 Desktop 连接向导导入，或读取 Desktop 写入的 catalog cache"
+            "To list Amazon Bedrock models, import via the Desktop connect wizard or read the catalog cache written by Desktop"
                 .to_string(),
         ),
     }

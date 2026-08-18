@@ -9,7 +9,7 @@ export type SpiritRemarkPluginsOptions = {
   singleLineBreaks?: boolean;
 };
 
-/** Streamdown：保留默认 remark 插件，可选追加 remark-breaks。 */
+/** Streamdown: keep the default remark plugins and optionally append remark-breaks. */
 export function createSpiritRemarkPluginsForStreamdown(
   options: SpiritRemarkPluginsOptions = {},
 ): Pluggable[] {

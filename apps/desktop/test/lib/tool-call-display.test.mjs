@@ -424,11 +424,11 @@ test("getToolCallSummaryParts: todo_write keeps snapshot detail when before snap
       headlineDetail: "完成 5 个",
       outputExcerpt: JSON.stringify({
         todos: [
-          { title: "任务 01", status: "completed" },
-          { title: "任务 02", status: "completed" },
-          { title: "任务 03", status: "completed" },
-          { title: "任务 04", status: "completed" },
-          { title: "任务 05", status: "completed" },
+          { title: "Task 01", status: "completed" },
+          { title: "Task 02", status: "completed" },
+          { title: "Task 03", status: "completed" },
+          { title: "Task 04", status: "completed" },
+          { title: "Task 05", status: "completed" },
         ],
       }),
       detailLines: [],
@@ -444,13 +444,13 @@ test("getToolCallSummaryParts: todo_write preview prefers snapshot over unreliab
       phase: "preview",
       headline: "写入 TODO",
       headlineDetail: "完成 5 个",
-      argsExcerpt: '{"todos":[{"title":"任务 01","status":"completed"',
+      argsExcerpt: '{"todos":[{"title":"Task 01","status":"completed"',
       todoWriteBeforeTodos: [
-        { title: "任务 01", status: "pending" },
-        { title: "任务 02", status: "pending" },
-        { title: "任务 03", status: "pending" },
-        { title: "任务 04", status: "pending" },
-        { title: "任务 05", status: "pending" },
+        { title: "Task 01", status: "pending" },
+        { title: "Task 02", status: "pending" },
+        { title: "Task 03", status: "pending" },
+        { title: "Task 04", status: "pending" },
+        { title: "Task 05", status: "pending" },
       ],
       detailLines: [],
     }),
@@ -465,13 +465,13 @@ test("getToolCallSummaryParts: built-in create_automation preview uses streaming
     headline: "Running: tool_call",
     argsExcerpt: '{"provider":"built-in"',
     streamingArgumentsJson:
-      '{"provider":"built-in","server":"desktop","tool":"create_automation","arguments":{"title":"AI 新闻日报","trigger":{"kind":"time","schedule":{"kind":"daily","hour":8,"minute":0}}}}',
+      '{"provider":"built-in","server":"desktop","tool":"create_automation","arguments":{"title":"AI news daily","trigger":{"kind":"time","schedule":{"kind":"daily","hour":8,"minute":0}}}}',
     detailLines: [],
   };
 
   assert.deepEqual(getToolCallSummaryParts(previewTool), {
     headline: "创建自动化",
-    detail: "AI 新闻日报 · 每天 08:00",
+    detail: "AI news daily · 每天 08:00",
   });
 });
 

@@ -19,7 +19,7 @@ export type ToolCallDiffViewProps = {
   languageId: string;
   original: string;
   modified: string;
-  /** 流式写入时滚到末行 */
+  /** Scrolls to the last line while streaming writes */
   followTail?: boolean;
 };
 

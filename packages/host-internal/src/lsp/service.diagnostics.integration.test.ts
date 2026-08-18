@@ -29,7 +29,7 @@ test(
       );
       assert.match(first.formatted, /error/i);
 
-      // 第二次调用须重新等待，不得命中「文件尚干净」时的空缓存。
+      // The second call must wait again; it must not hit the empty cache from when the file was still clean.
       await writeFile(absolutePath, 'export const broken: number = "still-wrong";\n', "utf8");
       const second = await lsp.getDiagnosticsForPath(relativePath, 12_000);
       assert.ok(

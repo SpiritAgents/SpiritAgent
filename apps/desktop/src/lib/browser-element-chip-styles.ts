@@ -4,7 +4,7 @@ import {
   COMPOSER_INLINE_CHIP_ICON_CLASS,
 } from "@/lib/composer-inline-chip-styles";
 
-/** 输入框 chip、消息气泡共用 */
+/** Shared by the composer chip and message bubbles */
 export const BROWSER_ELEMENT_CHIP_CLASS = COMPOSER_INLINE_CHIP_CLASS;
 
 export const BROWSER_ELEMENT_CHIP_ICON_CLASS = COMPOSER_INLINE_CHIP_ICON_CLASS;

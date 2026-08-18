@@ -95,7 +95,7 @@ import {
 
 const DEFAULT_XAI_BASE_URL = "https://api.x.ai/v1";
 
-/** 本地 contract smoke 将 …/v1 mock 映射到 Gateway SDK 的 …/v3/ai。 */
+/** The local contract smoke maps the …/v1 mock to the Gateway SDK's …/v3/ai. */
 function resolveGatewaySdkBaseUrl(config: OpenResponsesTransportConfig): string | undefined {
   const baseUrl = config.baseUrl?.trim();
   if (!baseUrl) {
@@ -164,7 +164,7 @@ export function createResponsesLanguageModel(config: OpenResponsesTransportConfi
   if (provider === "openai") {
     const openai = createOpenAIResponsesProvider(config);
     if (!openai) {
-      throw new Error("OpenAI Responses provider 未配置。");
+      throw new Error("OpenAI Responses provider is not configured.");
     }
     return openai.responses(languageModelId);
   }
@@ -177,7 +177,7 @@ export function createResponsesLanguageModel(config: OpenResponsesTransportConfi
     return createAzureResponsesProvider(config)(languageModelId);
   }
 
-  // Gateway Perplexity 须走 @ai-sdk/gateway v3 language-model；fetch 仍须走 responsesFetchForConfig 以剥离 apply_patch 响应
+  // Gateway Perplexity must use @ai-sdk/gateway v3 language-model; fetch must still go through responsesFetchForConfig to strip apply_patch responses
   if (shouldUseGatewayWebSearch(config)) {
     const gatewayBaseUrl = resolveGatewaySdkBaseUrl(config);
     return createGateway({
@@ -309,7 +309,7 @@ export function buildResponsesProviderOptions(
     if (isGatewayZaiModel(config.llmVendor, config.model)) {
       const zaiOptions = buildGatewayZaiProviderOptions(config);
       if (Object.keys(zaiOptions).length > 0) {
-        // Gateway Z.ai 在 open-responses transport 下上游不返回可展示思考流；见 #169。
+        // Gateway Z.ai does not return a displayable thinking stream upstream under the open-responses transport; see #169.
         return zaiOptions;
       }
     }
@@ -324,7 +324,7 @@ export function buildResponsesProviderOptions(
     if (isGatewayMinimaxModel(config.llmVendor, config.model)) {
       const minimaxOptions = buildGatewayMinimaxProviderOptions(config);
       if (Object.keys(minimaxOptions).length > 0) {
-        // Gateway MiniMax M3 在 open-responses 下不返回可展示思考流；见 #170。
+        // Gateway MiniMax M3 does not return a displayable thinking stream under open-responses; see #170.
         return minimaxOptions;
       }
     }
@@ -340,7 +340,7 @@ export function buildResponsesProviderOptions(
       }
     }
 
-    // Gateway v3 language-model 原样转发 providerOptions；OpenAI 路由模型须用 openai 命名空间（见 Vercel AI Gateway reasoning 文档）。
+    // Gateway v3 language-model forwards providerOptions as-is; OpenAI-routed models must use the openai namespace (see Vercel AI Gateway reasoning docs).
     const openaiOptions: JsonObject = {
       ...(reasoningEffort !== undefined ? { reasoningEffort } : {}),
       ...(reasoningSummary !== undefined ? { reasoningSummary } : {}),

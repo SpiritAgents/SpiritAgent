@@ -23,7 +23,7 @@ function createRuntimeStub(
 
 test("currentAuxKind suppresses thinking aux during pre-tool body streaming", () => {
   const runtime = createRuntimeStub({
-    pendingAssistantTextStore: "好的，我去搜搜。",
+    pendingAssistantTextStore: "OK, let me search for it.",
     thinkingTextStore: "",
   });
 
@@ -32,7 +32,7 @@ test("currentAuxKind suppresses thinking aux during pre-tool body streaming", ()
 
 test("currentAuxKind surfaces thinking aux after terminal provider built-in tool with pre-tool body", () => {
   const runtime = createRuntimeStub({
-    pendingAssistantTextStore: "好的，我去搜搜。",
+    pendingAssistantTextStore: "OK, let me search for it.",
     thinkingTextStore: "",
     providerBuiltinToolTerminalSeenInStreamRoundStore: true,
   });

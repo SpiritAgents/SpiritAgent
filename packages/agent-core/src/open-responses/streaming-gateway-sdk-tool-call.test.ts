@@ -150,7 +150,7 @@ test("gateway sdk stream merges final step text after executed web_search", asyn
 
 test("gateway sdk stream persists provider search results before synthesis follow-up", async () => {
   async function* stream(): AsyncGenerator<TextStreamPart<any>> {
-    yield { type: "text-delta", id: "text-0", text: "好的，让我搜一下。" };
+    yield { type: "text-delta", id: "text-0", text: "OK, let me search." };
     yield {
       type: "tool-call",
       toolCallId: "call_search",
@@ -172,8 +172,8 @@ test("gateway sdk stream persists provider search results before synthesis follo
   const state: ToolAgentState = { messages: [{ role: "user", content: "search" }], steps: 0 };
   const completion = createDeferred<ToolAgentRoundCompletion<ToolAgentState>>();
   const usageSource = {
-    text: Promise.resolve("好的，让我搜一下。"),
-    steps: Promise.resolve([{ text: "好的，让我搜一下。" }]),
+    text: Promise.resolve("OK, let me search."),
+    steps: Promise.resolve([{ text: "OK, let me search." }]),
   } as Parameters<typeof responsesEventStreamToRuntimeEvents>[2];
 
   for await (const _event of responsesEventStreamToRuntimeEvents(
@@ -196,7 +196,7 @@ test("gateway sdk stream persists provider search results before synthesis follo
   assert.equal(result.result.state.messages.length, 3);
   const assistantMessage = result.result.state.messages.at(1);
   assert.ok(isJsonObject(assistantMessage));
-  assert.equal(assistantMessage.content, "好的，让我搜一下。");
+  assert.equal(assistantMessage.content, "OK, let me search.");
   const toolMessage = result.result.state.messages.at(-1);
   assert.ok(isJsonObject(toolMessage));
   assert.equal(toolMessage.role, "tool");
@@ -205,7 +205,7 @@ test("gateway sdk stream persists provider search results before synthesis follo
 
 test("gateway sdk stream skips resume when answer text follows web_search in same stream", async () => {
   async function* stream(): AsyncGenerator<TextStreamPart<any>> {
-    yield { type: "text-delta", id: "text-0", text: "好的，让我搜一下。" };
+    yield { type: "text-delta", id: "text-0", text: "OK, let me search." };
     yield {
       type: "tool-call",
       toolCallId: "call_search",
@@ -222,14 +222,14 @@ test("gateway sdk stream skips resume when answer text follows web_search in sam
         id: "search-1",
       },
     };
-    yield { type: "text-delta", id: "text-1", text: "\n\n最终答案在这里。" };
+    yield { type: "text-delta", id: "text-1", text: "\n\nThe final answer is here." };
   }
 
   const state: ToolAgentState = { messages: [{ role: "user", content: "search" }], steps: 0 };
   const completion = createDeferred<ToolAgentRoundCompletion<ToolAgentState>>();
   const usageSource = {
-    text: Promise.resolve("好的，让我搜一下。\n\n最终答案在这里。"),
-    steps: Promise.resolve([{ text: "好的，让我搜一下。\n\n最终答案在这里。" }]),
+    text: Promise.resolve("OK, let me search.\n\nThe final answer is here."),
+    steps: Promise.resolve([{ text: "OK, let me search.\n\nThe final answer is here." }]),
   } as Parameters<typeof responsesEventStreamToRuntimeEvents>[2];
 
   for await (const _event of responsesEventStreamToRuntimeEvents(
@@ -251,7 +251,7 @@ test("gateway sdk stream skips resume when answer text follows web_search in sam
   assert.equal(result.result.resumeStreamingAfterProviderSearch, undefined);
   assert.equal(
     extractLastAssistantText(result.result.state),
-    "好的，让我搜一下。\n\n最终答案在这里。",
+    "OK, let me search.\n\nThe final answer is here.",
   );
   assert.deepEqual(
     result.result.state.messages.map((message) =>

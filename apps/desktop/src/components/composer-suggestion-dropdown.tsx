@@ -72,7 +72,8 @@ export function ComposerSuggestionDropdown({
 }: ComposerSuggestionDropdownProps) {
   const [mounted, setMounted] = useState(false);
   const [radixOpen, setRadixOpen] = useState(false);
-  // 打开动画落位前临时压成 text 光标，避免菜单在指针下展开时闪手型；落位后恢复设置页手型/默认规则
+  // Temporarily force a text cursor until the open animation lands, avoiding a pointer-cursor flash
+  // when the menu expands under the pointer; afterwards restore the settings-page pointer/default rules
   const [openCursorSettling, setOpenCursorSettling] = useState(false);
   const stickyAnchorRef = useRef<DOMRect | null>(null);
   const frozenChildrenRef = useRef<ReactNode>(null);
@@ -106,7 +107,8 @@ export function ComposerSuggestionDropdown({
     return () => window.clearTimeout(timeout);
   }, [radixOpen]);
 
-  // 若仍被抢到 menu（如 menuitem leave → content.focus），立刻还回 Composer
+  // If focus is still grabbed by the menu (e.g. menuitem leave → content.focus), return it to the
+  // Composer immediately
   useEffect(() => {
     if (!active || !radixOpen) {
       return;
@@ -182,7 +184,8 @@ export function ComposerSuggestionDropdown({
         onOpenAutoFocus={(event) => event.preventDefault()}
         onCloseAutoFocus={(event) => event.preventDefault()}
         onEntryFocus={(event) => {
-          // 键盘打开时 Radix 默认会把焦点移到首个 menuitem；建议菜单用 Composer 快捷键导航，须阻止
+          // When opened by keyboard, Radix moves focus to the first menuitem by default; the
+          // suggestion menu is navigated via Composer shortcuts, so this must be prevented
           event.preventDefault();
         }}
         onPointerDownOutside={preventComposerOutsideDismiss}

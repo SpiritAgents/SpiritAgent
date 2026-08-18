@@ -23,8 +23,9 @@ export function scrollAreaToBottom(viewport: HTMLElement, behavior: ScrollBehavi
 }
 
 /**
- * 缓动滚向「当前」底部：每帧重读 scrollHeight，流式增高时终点跟着走，
- * 避免原生 scrollTo(smooth) 锁死点击瞬间的高度、结束后再瞬跳。
+ * Eased scroll toward the "current" bottom: re-reads scrollHeight every frame so the target
+ * follows streaming height growth, avoiding native scrollTo(smooth) locking onto the height at
+ * click time and then jumping at the end.
  */
 export function scrollAreaAnimateToLiveBottom(
   viewport: HTMLElement,
@@ -75,7 +76,7 @@ export function isScrollNearBottom(viewport: HTMLElement, thresholdPx = 48): boo
   return scrollDistanceFromBottom(viewport) <= thresholdPx;
 }
 
-/** 在 ScrollArea viewport 内滚动元素，保留 paddingHost 的 padding 留白（scrollIntoView 不会计入） */
+/** Scrolls an element within the ScrollArea viewport while preserving the paddingHost padding (scrollIntoView does not account for it) */
 export function scrollIntoViewportWithPadding(
   viewport: HTMLElement,
   item: HTMLElement,

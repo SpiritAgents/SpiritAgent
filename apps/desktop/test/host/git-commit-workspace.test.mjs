@@ -25,7 +25,7 @@ test("commitWorkspaceChanges preserves multi-line commit message format", async 
 
   try {
     await writeFile(path.join(repoRoot, "a.txt"), "hello", "utf8");
-    const message = "feat(scope): 概述一行\n\n- 第一条 body\n- 第二条 body";
+    const message = "feat(scope): one-line summary\n\n- first body item\n- second body item";
     await commitWorkspaceChanges(repoRoot, message);
 
     const { stdout } = await git("log", "-1", "--format=%B");

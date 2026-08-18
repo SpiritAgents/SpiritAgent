@@ -136,7 +136,7 @@ export function resolveProfileApiBase(
     if (trimmed) {
       return trimmed;
     }
-    throw new Error("Azure 模型缺少 azureResourceName 配置。");
+    throw new Error("Azure model is missing the azureResourceName configuration.");
   }
 
   if (profile.provider === "cloudflare-ai-gateway") {
@@ -148,7 +148,7 @@ export function resolveProfileApiBase(
     if (trimmed) {
       return trimmed;
     }
-    throw new Error("Cloudflare AI Gateway 模型缺少 cloudflareAccountId 配置。");
+    throw new Error("Cloudflare AI Gateway model is missing the cloudflareAccountId configuration.");
   }
 
   if (profile.provider && profile.provider !== "custom") {
@@ -377,7 +377,7 @@ export function buildPrimaryTransportConfig(input: {
   if (input.profile?.provider === "amazon-bedrock" && isBedrockMantleOpenAiModel(input.model)) {
     const region = input.profile.awsRegion?.trim();
     if (!region) {
-      throw new Error("Amazon Bedrock 模型缺少 AWS 区域配置。");
+      throw new Error("Amazon Bedrock model is missing the AWS region configuration.");
     }
     const bedrockCredentials = input.bedrockCredentials;
     const apiKey = input.apiKey.trim() || bedrockCredentials?.apiKey?.trim();
@@ -385,7 +385,7 @@ export function buildPrimaryTransportConfig(input: {
     const secretAccessKey = bedrockCredentials?.secretAccessKey?.trim();
     const sessionToken = bedrockCredentials?.sessionToken?.trim();
     if (!apiKey && !(accessKeyId && secretAccessKey)) {
-      throw new Error("Amazon Bedrock Mantle 模型需要 Bearer API Key 或 IAM 凭证。");
+      throw new Error("Amazon Bedrock Mantle model requires a Bearer API Key or IAM credentials.");
     }
     const normalizedReasoningEffort = resolveOpenAiTransportReasoningEffortForContext(
       input.profile?.reasoningEffort,
@@ -528,7 +528,7 @@ export function buildPrimaryTransportConfig(input: {
   if (transportKind === "bedrock") {
     const region = input.profile?.awsRegion?.trim();
     if (!region) {
-      throw new Error("Amazon Bedrock 模型缺少 AWS 区域配置。");
+      throw new Error("Amazon Bedrock model is missing the AWS region configuration.");
     }
     const bedrockCredentials = input.bedrockCredentials;
     const apiKey = input.apiKey.trim() || bedrockCredentials?.apiKey?.trim();
@@ -599,7 +599,7 @@ export function buildPrimaryTransportConfig(input: {
   };
 }
 
-/** 代码补全走轻量模型；关闭思考策略由 agent-core transport-profile 统一处理。 */
+/** Code completion uses a lightweight model; disabling the thinking policy is handled centrally by the agent-core transport-profile. */
 export function buildCodeCompletionTransportConfig(
   input: Parameters<typeof buildPrimaryTransportConfig>[0],
 ): LlmTransportConfig {
@@ -838,7 +838,7 @@ export async function loadPreviewModelsForTransport(input: {
     input.provider,
     input.transportKind,
   );
-  // 目录缓存文件已更新，失效快照侧的内存 memo，下次 buildSnapshot 重读新目录
+  // The catalog cache file was updated; invalidate the snapshot-side in-memory memo so the next buildSnapshot re-reads the new catalog
   invalidateModelCatalogHintsMemo();
   return {
     modelIds,

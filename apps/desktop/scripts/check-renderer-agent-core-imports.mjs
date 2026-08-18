@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 /**
- * Desktop renderer 仅允许从 agent-core 的 renderer-safe 子路径做 value import。
- * 主入口 @spiritagent/agent-core 的 value import 会拉入 AI SDK / Node 依赖链。
+ * The Desktop renderer may only do value imports from agent-core's renderer-safe subpaths.
+ * A value import of the main entry @spiritagent/agent-core pulls in the AI SDK / Node dependency chain.
  */
 import { readFileSync, readdirSync, statSync } from "node:fs";
 import { join, relative } from "node:path";
@@ -10,7 +10,7 @@ import { fileURLToPath } from "node:url";
 const repoRoot = join(fileURLToPath(new URL(".", import.meta.url)), "..", "..", "..");
 const desktopSrc = join(repoRoot, "apps", "desktop", "src");
 
-/** value import 允许的 agent-core 子路径（须零 Node 传递依赖）。 */
+/** agent-core subpaths allowed for value import (must have zero transitive Node dependencies). */
 const RENDERER_SAFE_AGENT_CORE_SUBPATHS = new Set([
   "reasoning-effort",
   "shell-tool-result",
@@ -63,7 +63,7 @@ function scanFile(filePath) {
         violations.push({
           file: relative(repoRoot, filePath),
           line: index + 1,
-          reason: "禁止从 @spiritagent/agent-core 主入口做 value import",
+          reason: "value import from the @spiritagent/agent-core main entry is not allowed",
         });
         continue;
       }
@@ -71,7 +71,7 @@ function scanFile(filePath) {
         violations.push({
           file: relative(repoRoot, filePath),
           line: index + 1,
-          reason: `子路径 "${subpath}" 不在 renderer-safe allowlist`,
+          reason: `subpath "${subpath}" is not in the renderer-safe allowlist`,
         });
       }
     }
@@ -85,11 +85,11 @@ const files = RENDERER_SCAN_ROOTS.flatMap((entry) => collectSourceFiles(join(des
 const violations = files.flatMap(scanFile);
 
 if (violations.length > 0) {
-  console.error("renderer agent-core import 检查失败:\n");
+  console.error("renderer agent-core import check failed:\n");
   for (const item of violations) {
     console.error(`  ${item.file}:${item.line} — ${item.reason}`);
   }
   process.exit(1);
 }
 
-console.log("renderer agent-core import 检查通过");
+console.log("renderer agent-core import check passed");

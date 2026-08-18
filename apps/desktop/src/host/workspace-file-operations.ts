@@ -30,7 +30,7 @@ export function isDescendantOrSelf(ancestorRel: string, candidateRel: string): b
   if (ancestor === candidate) {
     return true;
   }
-  // 空 ancestor 仅匹配自身；moveIntoSelf 校验时 sourceRel 已保证非空。
+  // An empty ancestor only matches itself; sourceRel is guaranteed non-empty when moveIntoSelf is validated.
   if (ancestor === "") {
     return false;
   }
@@ -110,9 +110,9 @@ export async function renameWorkspaceEntry(
   const newAbs = await resolveWorkspaceRelativePath(workspaceRoot, newRel);
 
   if (newRel.toLowerCase() === sourceRel.toLowerCase()) {
-    // 仅大小写变化的重命名：大小写不敏感文件系统上 stat(newAbs) 命中的
-    // 是源文件自身，不能视为「目标已存在」；用 inode 判断是否真为另一文件
-    // （大小写敏感文件系统上可能确实并存两个大小写变体）。
+    // Case-only rename: on a case-insensitive filesystem stat(newAbs) hits the
+    // source file itself and must not count as "target exists"; use the inode to tell
+    // whether it is truly another file (case-sensitive filesystems may hold both case variants).
     const sourceStat = await stat(absPath, { bigint: true });
     let targetStat;
     try {

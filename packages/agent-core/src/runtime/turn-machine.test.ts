@@ -777,7 +777,7 @@ test("processToolCalls emits tool-execution-finished when requestFromFunctionCal
       toolExecutor: {
         toolDefinitionsJson: () => [],
         requestFromFunctionCall: async () => {
-          throw new Error("未知工具: finish_task");
+          throw new Error("Unknown tool: finish_task");
         },
         authorize: async () => {
           throw new Error("unused");
@@ -815,7 +815,7 @@ test("processToolCalls emits tool-execution-finished when requestFromFunctionCal
     runtime,
     state,
     "call finish_task",
-    [{ id: "call_finish", name: "finish_task", argumentsJson: '{"summary":"再次确认"}' }],
+    [{ id: "call_finish", name: "finish_task", argumentsJson: '{"summary":"confirm again"}' }],
     turn,
   );
 
@@ -1043,7 +1043,7 @@ test("processToolCalls auto-approval reviewer allow skips manual approval", asyn
         }),
         authorize: async () => ({
           kind: "need-approval",
-          prompt: "高风险工具调用: shell\n命令: echo hi",
+          prompt: "High-risk tool call: shell\nCommand: echo hi",
         }),
         execute: async () => ({ content: [], summaryText: "ok" }),
       },
@@ -1116,7 +1116,7 @@ test("processToolCalls auto-approval reviewer block requires manual approval wit
         }),
         authorize: async () => ({
           kind: "need-approval",
-          prompt: "高风险工具调用: shell\n命令: rm -rf /",
+          prompt: "High-risk tool call: shell\nCommand: rm -rf /",
         }),
         execute: async () => ({ content: [], summaryText: "ok" }),
       },
@@ -1166,7 +1166,7 @@ test("processToolCalls auto-approval reviewer block requires manual approval wit
 
 test("processToolCalls auto-approval reviews multiple tools concurrently then executes in order", async () => {
   const state = { messages: [] as Array<{ role: string; content: string }>, steps: 0 };
-  /** 异步回调里递增；用对象字段避免 oxlint 误报循环条件未修改。 */
+  /** Incremented in async callbacks; object fields avoid an oxlint false positive about the loop condition not being modified. */
   const reviewProgress = { started: 0, inFlight: 0, maxInFlight: 0 };
   const releaseGates: Array<() => void> = [];
   const executionOrder: string[] = [];
@@ -1727,7 +1727,7 @@ test("AgentRuntime rejects finish_task when Loop is disabled", async () => {
       {
         requestFromFunctionCall: async (name: string) => {
           if (name === "finish_task") {
-            throw new Error(`未知工具: ${name}`);
+            throw new Error(`Unknown tool: ${name}`);
           }
           return { name };
         },
@@ -2238,10 +2238,11 @@ test("startEarlyToolExecution invalidates queued approval when arguments change"
   assert.equal(outcome?.kind, "rejected");
 });
 
-// 回归：P0-5 并行审批卡死。并行 tool call 中，参数后完成的调用（典型如 shell）经
-// early-stream 路径先占了审批槽位；formal 闸门绝不能覆盖它——被覆盖审批的
-// resolveEarlyDecision 永远不再被调用，其执行 promise 永不 settle，后续 continuation
-// 会永远 await（Agent 整体卡死）。
+// Regression: P0-5 parallel approval deadlock. In parallel tool calls, a call whose arguments
+// complete later (typically shell) may occupy the approval slot first via the early-stream path;
+// the formal gate must never overwrite it — the overwritten approval's resolveEarlyDecision would
+// never be called, its execution promise would never settle, and later continuations would await
+// forever (the whole Agent deadlocks).
 test("processToolCallsAsync parks the formal approval gate behind a pending early-stream approval", async () => {
   type ShellRequest = { name: string; command?: string; path?: string };
   const events: RuntimeEvent<ShellRequest>[] = [];
@@ -2307,7 +2308,7 @@ test("processToolCallsAsync parks the formal approval gate behind a pending earl
     new Map(),
   );
 
-  // 槽位被 early-stream 审批占用期间：formal 闸门挂起等待，不得覆盖、不得弹第二个框
+  // While the slot is occupied by the early-stream approval: the formal gate stays suspended and must not overwrite it or pop a second dialog
   await new Promise((resolve) => setImmediate(resolve));
   await new Promise((resolve) => setImmediate(resolve));
   assert.equal(runtime.pendingApproval?.toolCallId, "call-shell");
@@ -2318,7 +2319,7 @@ test("processToolCallsAsync parks the formal approval gate behind a pending earl
     false,
   );
 
-  // 用户批准了 early-stream 审批：槽位释放，pump 唤醒 formal 闸门
+  // The user approved the early-stream approval: the slot is released and pump wakes the formal gate
   runtime.pendingApproval = undefined;
   pumpEarlyApprovalQueue(runtime);
   await gate;
@@ -2335,8 +2336,9 @@ test("processToolCallsAsync parks the formal approval gate behind a pending earl
   );
 });
 
-// 回归：P0-5 的镜像时序——formal 审批在位时第二个调用的 early 审批只能排队；
-// formal 决议释放槽位后必须把排队 waiter 泵出来，否则其 promise 永远无人 settle。
+// Regression: the mirror timing of P0-5 — while a formal approval is active, the second call's
+// early approval can only queue; once the formal decision releases the slot, the queued waiter
+// must be pumped out, otherwise its promise is never settled.
 test("continuePendingApproval pumps the queued early approval after resolving a formal approval", async () => {
   const runtime = new AgentRuntime(
     buildAgentRuntimeOptions(
@@ -2378,12 +2380,13 @@ test("continuePendingApproval pumps the queued early approval after resolving a 
   await runtime.continuePendingApproval({ kind: "allow" });
 
   assert.equal(runtime.currentPendingApproval()?.toolCallId, "call_shell");
-  // 提升不等于决议：仍等待用户下一次审批
+  // Promotion is not a decision: it still waits for the user's next approval
   assert.equal(queuedDecision, undefined);
 });
 
-// 回归：审批卡片必须按参数完成（early 启动）顺序展示，而非授权竞速顺序。
-// 先到者 authorize 更慢时（如外部路径 realpath 的 ls），后到者不得抢占审批槽位。
+// Regression: approval cards must be shown in argument-completion (early-start) order, not
+// authorization-race order. When the earlier call's authorize is slower (e.g. ls doing realpath
+// on an external path), a later call must not preempt the approval slot.
 test("startEarlyToolExecution shows approvals in start order even when a later authorize resolves first", async () => {
   type ShellRequest = { name: string; command: string };
   const turn = createTurnContext<ShellRequest>();
@@ -2431,7 +2434,7 @@ test("startEarlyToolExecution shows approvals in start order even when a later a
   assert.ok(first);
   assert.ok(second);
 
-  // 后到者授权先完成也不得上卡：顺序链要求等先到者完成审批判定
+  // The later call finishing authorization first must not get a card: the order chain requires waiting for the earlier call's approval decision
   await new Promise((resolve) => setImmediate(resolve));
   await new Promise((resolve) => setImmediate(resolve));
   const pendingBeforeSlowAuthorize = (
@@ -2446,7 +2449,7 @@ test("startEarlyToolExecution shows approvals in start order even when a later a
   assert.equal(runtime.pendingApproval?.toolCallId, "call-1");
   assert.equal(runtime.earlyApprovalQueue[0]?.toolCallId, "call-2");
 
-  // 决议第一个后第二个才弹出
+  // The second card only pops after the first is decided
   runtime.pendingApproval?.resolveEarlyDecision?.({ kind: "allow" });
   runtime.pendingApproval = undefined;
   pumpEarlyApprovalQueue(runtime);

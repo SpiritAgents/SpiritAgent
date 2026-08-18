@@ -164,7 +164,7 @@ export function writePrOverviewPaneRatio(_ratio: number, _containerHeightPx?: nu
   // Demo window layout is session-only; do not persist.
 }
 
-/** `false` = 收起；缺省或 `true` = 展开（与 SessionSidebar AnimatedCollapse 一致）。 */
+/** `false` = collapsed; missing or `true` = expanded (aligned with the SessionSidebar AnimatedCollapse). */
 export type WorkspaceSidebarExpandedById = Record<string, boolean>;
 
 export function readWorkspaceSidebarExpandedById(): WorkspaceSidebarExpandedById {

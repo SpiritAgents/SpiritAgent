@@ -1,10 +1,10 @@
-/** Gemini API（AI Studio）@ai-sdk/google 默认 base。 */
+/** Gemini API (AI Studio) default base for @ai-sdk/google. */
 export const GOOGLE_GEMINI_API_BASE = "https://generativelanguage.googleapis.com/v1beta";
 
-/** Gemini API 原生 REST root（模型目录等）。 */
+/** Gemini API native REST root (model catalog, etc.). */
 export const GOOGLE_GEMINI_NATIVE_API_ROOT = GOOGLE_GEMINI_API_BASE;
 
-// 本机/CI 通常无法直连 generativelanguage.googleapis.com；联调需在有网络的环境手动验证连接向导。
+// Local machines/CI usually cannot reach generativelanguage.googleapis.com directly; verify the connection wizard manually in an environment with network access.
 
 const GOOGLE_GEMINI_HOST = "generativelanguage.googleapis.com";
 
@@ -12,7 +12,7 @@ function trimTrailingSlashes(value: string): string {
   return value.trim().replace(/\/+$/, "");
 }
 
-/** 是否为 Gemini API（generativelanguage.googleapis.com）端点。 */
+/** Whether the endpoint is the Gemini API (generativelanguage.googleapis.com). */
 export function isGoogleGeminiGenerativeLanguageApiBase(baseUrl: string): boolean {
   const trimmed = baseUrl.trim();
   if (trimmed.length === 0) {
@@ -26,10 +26,10 @@ export function isGoogleGeminiGenerativeLanguageApiBase(baseUrl: string): boolea
   }
 }
 
-/** @throws 非 Gemini API 主机时抛出中文错误。 */
+/** @throws Throws when the host is not the Gemini API. */
 export function assertGoogleGeminiApiBase(baseUrl: string): void {
   if (!isGoogleGeminiGenerativeLanguageApiBase(baseUrl)) {
-    throw new Error("Google 提供商端点必须是 generativelanguage.googleapis.com（Gemini API）。");
+    throw new Error("The Google provider endpoint must be generativelanguage.googleapis.com (Gemini API).");
   }
 }
 
@@ -42,7 +42,7 @@ function resolveGoogleNativeApiRoot(apiBase: string): string {
   return GOOGLE_GEMINI_NATIVE_API_ROOT;
 }
 
-/** 由 apiBase 派生原生 `GET /v1beta/models` URL。 */
+/** Derives the native `GET /v1beta/models` URL from apiBase. */
 export function googleNativeModelsListUrl(apiBase: string, pageToken?: string): string {
   const root = resolveGoogleNativeApiRoot(apiBase);
   const url = new URL(`${root}/models`);

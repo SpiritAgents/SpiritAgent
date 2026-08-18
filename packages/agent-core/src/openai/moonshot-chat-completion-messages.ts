@@ -2,9 +2,9 @@ import type { JsonValue } from "../ports.js";
 import { cloneJsonValue } from "../tool-agent.js";
 
 /**
- * Moonshot AI 视频输入兼容：AI SDK 的 OpenAI-compatible 适配层不会把 `video_url` 传给上游。
- * 在发起 chat.completions 前暂存已解析的 OpenAI 形态 messages（含 `ms://` 视频引用），
- * 由 Moonshot 专用 fetch 包装器在真正 HTTP 请求发出时写回 `messages` 字段。
+ * Moonshot AI video input compatibility: the AI SDK's OpenAI-compatible adapter does not pass `video_url` upstream.
+ * Before issuing chat.completions, stash the resolved OpenAI-form messages (including `ms://` video references);
+ * the Moonshot-specific fetch wrapper writes the `messages` field back when the actual HTTP request is sent.
  */
 let pendingMoonshotChatCompletionMessages: JsonValue[] | undefined;
 

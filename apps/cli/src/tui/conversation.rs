@@ -180,7 +180,7 @@ impl TuiShell {
         self.conversation.clear_selection();
     }
 
-    /// `column`, `row`：crossterm 终端坐标（与 ratatui 一致）。
+    /// `column`, `row`: crossterm terminal coordinates (same as ratatui).
     pub fn conversation_pointer_from_mouse(&self, column: u16, row: u16) -> Option<(usize, usize)> {
         self.conversation.pointer_from_mouse(column, row)
     }

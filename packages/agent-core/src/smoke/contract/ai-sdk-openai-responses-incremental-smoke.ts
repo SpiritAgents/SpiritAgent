@@ -68,7 +68,7 @@ async function main(): Promise<void> {
   const address = server.address();
   if (!address || typeof address === "string") {
     server.close();
-    throw new Error("无法获取本地 smoke server 端口。");
+    throw new Error("Unable to get the local smoke server port.");
   }
 
   const transport = new AiSdkOpenResponsesTransport();
@@ -96,13 +96,13 @@ async function main(): Promise<void> {
 
   if (firstRound.kind !== "success" || firstRound.result.step.kind !== "tool-calls") {
     server.close();
-    throw new Error("incremental smoke step 1 未进入 tool-calls。");
+    throw new Error("incremental smoke step 1 did not reach tool-calls.");
   }
 
   const firstCall = firstRound.result.step.calls.at(0);
   if (!firstCall) {
     server.close();
-    throw new Error("incremental smoke step 1 没有任何 tool call。");
+    throw new Error("incremental smoke step 1 did not produce any tool call.");
   }
 
   const resumedState = appendOpenAiToolResultMessage(
@@ -116,18 +116,18 @@ async function main(): Promise<void> {
   server.close();
 
   if (secondRound.kind !== "success" || secondRound.result.step.kind !== "final-response-ready") {
-    throw new Error("incremental smoke step 2 未进入 final-response-ready。");
+    throw new Error("incremental smoke step 2 did not reach final-response-ready.");
   }
 
   const assistantText = extractLastOpenAiAssistantText(secondRound.result.state)?.trim();
   if (assistantText !== "INCREMENTAL_OK") {
     throw new Error(
-      `incremental smoke step 2 未拿到预期最终 assistant 文本。实际: ${assistantText ?? "<empty>"}`,
+      `incremental smoke step 2 did not get the expected final assistant text. Actual: ${assistantText ?? "<empty>"}`,
     );
   }
 
   if (capturedBodies.length !== 2) {
-    throw new Error(`incremental smoke 预期 2 次 HTTP 请求，实际 ${capturedBodies.length}。`);
+    throw new Error(`incremental smoke expected 2 HTTP requests, got ${capturedBodies.length}.`);
   }
 
   const firstBody = capturedBodies[0]!;
@@ -136,12 +136,12 @@ async function main(): Promise<void> {
   const secondInputCount = inputItemCount(secondBody);
 
   if (firstInputCount === 0 || secondInputCount === 0) {
-    throw new Error("incremental smoke 未能从请求体解析 input 数组。");
+    throw new Error("incremental smoke could not parse the input array from the request body.");
   }
 
   if (secondInputCount >= firstInputCount) {
     throw new Error(
-      `incremental smoke 第二轮 input 未缩小：first=${firstInputCount}, second=${secondInputCount}`,
+      `incremental smoke second-round input did not shrink: first=${firstInputCount}, second=${secondInputCount}`,
     );
   }
 
@@ -151,21 +151,21 @@ async function main(): Promise<void> {
       : undefined;
   if (previousResponseId !== "resp-tool-call") {
     throw new Error(
-      `incremental smoke 第二轮缺少 previous_response_id。实际: ${previousResponseId ?? "<missing>"}`,
+      `incremental smoke second round is missing previous_response_id. Actual: ${previousResponseId ?? "<missing>"}`,
     );
   }
 
   if (secondBody.store !== true) {
-    throw new Error("incremental smoke 第二轮未设置 store=true。");
+    throw new Error("incremental smoke second round did not set store=true.");
   }
 
   const trace = secondRound.result.requestTrace[0];
   if (!isJsonObject(trace) || !Array.isArray(trace.input)) {
-    throw new Error("incremental smoke 第二轮 trace 未记录切片后的 input。");
+    throw new Error("incremental smoke second-round trace did not record the sliced input.");
   }
 
   if (trace.input.length >= initialState.messages.length + 2) {
-    throw new Error("incremental smoke trace input 未相对全量 state 缩小。");
+    throw new Error("incremental smoke trace input did not shrink relative to the full state.");
   }
 }
 

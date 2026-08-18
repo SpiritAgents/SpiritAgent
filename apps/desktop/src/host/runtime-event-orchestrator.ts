@@ -90,14 +90,14 @@ export interface DesktopRuntimeEventOrchestratorOptions {
     messageId: number,
   ) => void;
   onTodoStoreMutated?: () => void;
-  /** todo_write 工具卡增量文案：返回执行前的会话 TODO。 */
+  /** Incremental copy for the todo_write tool card: returns the session TODOs from before execution. */
   todoItemsBeforeWrite?: () => ReadonlyArray<{
     title: string;
     status: "pending" | "in_progress" | "completed";
   }>;
-  /** delete_file：删除前按路径读取磁盘并统计行数 */
+  /** delete_file: reads the file from disk by path before deletion and counts lines */
   lineDeltaForDeleteFile?: (inputPath: string) => EditFileLineDelta | undefined;
-  /** delete_file：删除前按路径读取磁盘全文 baseline */
+  /** delete_file: reads the full file from disk by path before deletion as the baseline */
   deleteFileBaselineForPath?: (inputPath: string) => string | undefined;
   resolveActiveModel?: () => ContextUsageModelProfile | undefined;
   resolveCatalogHints?: () => DesktopModelCatalogHint[] | undefined;
@@ -115,8 +115,9 @@ export class DesktopRuntimeEventOrchestrator {
   private activeGenerateImageTools = new Map<string, ToolBlockSnapshot>();
   private activeGenerateVideoTools = new Map<string, ToolBlockSnapshot>();
   /**
-   * 无工具回合里 after-stream 思考暂不拆行：先留在当前 assistant 行的 aux 上，等正文到来在
-   * 同一个 AnimatedCollapse 实例上收起；本段 completed 时再拆成独立思考行。
+   * In a tool-less turn, defer splitting the after-stream thinking into its own row: keep it on the
+   * current assistant row's aux until body text arrives and collapses within the same AnimatedCollapse
+   * instance; split it into a standalone thinking row when this segment completes.
    */
   private deferredAfterStreamThinking: string | undefined;
   private turnErrorRetryMessageId: number | undefined;
@@ -203,7 +204,7 @@ export class DesktopRuntimeEventOrchestrator {
     this.deferredAfterStreamThinking = undefined;
   }
 
-  /** 无工具回合里暂挂的 after-stream 思考：在 completed / 空正文收尾时拆成独立思考行。 */
+  /** After-stream thinking deferred in a tool-less turn: split into a standalone thinking row when the segment completes or ends with an empty body. */
   private flushDeferredAfterStreamThinking(
     placement: "after-stream" | "before-next-tool" = "after-stream",
   ): void {
@@ -216,7 +217,7 @@ export class DesktopRuntimeEventOrchestrator {
   }
 
   /**
-   * 用户中断流式思考：先 drain 再定稿 deferred aux，避免拆行与 pending 行重复、布局下移。
+   * User interrupted a streaming thought: drain first, then finalize the deferred aux, to avoid duplicating the split row with the pending row and shifting the layout down.
    */
   finalizeInterruptedDeferredThinking(
     input: {
@@ -295,8 +296,8 @@ export class DesktopRuntimeEventOrchestrator {
             .messageTimeline?.()
             ?.materializeCompletedAssistantText(result.assistantText, aux);
         } else {
-          // 流式 done 在正文为空时只 remove-pending-assistant，随后 clearStreamingUiState 才定稿思考；
-          // 不会发 assistant-response-completed，须在此消费 deferred 并拆行。
+          // On streaming done with an empty body, only remove-pending-assistant runs, then clearStreamingUiState
+          // finalizes the thinking; no assistant-response-completed is emitted, so consume the deferred aux and split the row here.
           this.flushDeferredAfterStreamThinking();
           this.options.messageTimeline?.()?.completeActiveAssistantSegment();
         }
@@ -463,7 +464,7 @@ export class DesktopRuntimeEventOrchestrator {
       if (event.kind === "assistant-response-completed") {
         this.finalizeResponsesBuiltInToolPreviews(messages);
         this.options.assistantMessages.completePendingAssistantMessage();
-        // 收起动画此时已在同一实例上播完，再把思考拆成独立行（与持久化结构一致）。
+        // The collapse animation has already finished on the same instance; now split the thinking into its own row (consistent with the persisted structure).
         this.flushDeferredAfterStreamThinking();
         this.options.messageTimeline?.()?.completeActiveAssistantSegment();
         continue;
@@ -499,8 +500,9 @@ export class DesktopRuntimeEventOrchestrator {
             if (timeline.hasFinalizedAuxInActiveSegment("thinking", event.text)) {
               continue;
             }
-            // 无工具：暂不拆行。把思考挂在当前 assistant 行 aux 上，正文到来后在同一个
-            // AnimatedCollapse 实例上由展开过渡到收起；本段 completed 再拆行。
+            // Tool-less: do not split the row yet. Keep the thinking on the current assistant row's aux;
+            // when body text arrives it transitions from expanded to collapsed within the same
+            // AnimatedCollapse instance; split the row when this segment completes.
             timeline.updatePendingAssistantAux("thinking", event.text);
             this.deferredAfterStreamThinking = event.text;
           } else {
@@ -637,7 +639,7 @@ export class DesktopRuntimeEventOrchestrator {
       if (this.shouldSuppressMainTimelineChildToolSurface(event.toolName)) {
         continue;
       }
-      // 工具预览前先把 defer 在正文 aux 上的思考固化为独立行（before-tools），避免插入工具后 strip 抹掉。
+      // Before the tool preview, materialize the thinking deferred on the body aux into its own row (before-tools), so inserting the tool does not strip it away.
       this.flushDeferredAfterStreamThinking("before-next-tool");
       const isResponsesBuiltIn = isResponsesBuiltInToolName(event.toolName);
       const formulaUi = isResponsesBuiltIn
@@ -707,7 +709,7 @@ export class DesktopRuntimeEventOrchestrator {
           },
           summaryCopy,
         ),
-        // preview: 每个参数增量批次都会重算行数增删；大编辑跳过 LCS，完成事件再全量算
+        // preview: every argument delta batch recomputes line additions/removals; large edits skip LCS and are fully recomputed on the completion event
         { argumentsJson: event.argumentsJson, preview: true },
       );
       this.options.assistantMessages.upsertToolMessage(event.toolCallId, runningTool, batchId);
@@ -717,8 +719,8 @@ export class DesktopRuntimeEventOrchestrator {
         (toolPhase === "succeeded" || toolPhase === "failed") &&
         this.options.runtime()?.isBusy()
       ) {
-        // Gateway resume 且轮次带工具前正文时不发 remove-pending-assistant（正文非空），
-        // 占位行不能只挂在该事件上；内建工具终态落地即预置 after-tools Thinking 占位。
+        // On Gateway resume with pre-tool body text, remove-pending-assistant is not emitted (body non-empty),
+        // so the placeholder row cannot hang off that event alone; seed the after-tools Thinking placeholder as soon as a built-in tool's final state lands.
         this.options.messageTimeline?.()?.ensureAfterToolsThinkingPlaceholderRow();
       }
     }
@@ -1303,9 +1305,9 @@ export function runtimeEventsIncludeAppliedResponsesBuiltInToolPreview(
     if (event.kind !== "streaming-tool-preview" || !isResponsesBuiltInToolName(event.toolName)) {
       return false;
     }
-    // Gateway 流式 preview 的 argumentsJson 常为空/不完整 JSON（tool-input-start/delta），
-    // phase 解析为 undefined；UI 与 split 均按 preview 处理，登记「已见 preview」须一致，
-    // 否则终态事件会因 previewSeenCallIds 缺失被永久 defer。
+    // Gateway streaming preview argumentsJson is often empty/incomplete JSON (tool-input-start/delta),
+    // so phase parses as undefined; both UI and split treat it as preview, and registering "preview seen" must stay consistent,
+    // otherwise the final-state event is deferred forever due to the missing previewSeenCallIds entry.
     const phase = resolveResponsesBuiltInToolStreamPhaseFromArgumentsJson(event.argumentsJson);
     return phase !== "succeeded" && phase !== "failed";
   });

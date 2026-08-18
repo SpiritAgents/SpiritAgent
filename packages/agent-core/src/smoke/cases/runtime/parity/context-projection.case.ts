@@ -32,11 +32,11 @@ export async function runContextProjectionCase(): Promise<RuntimeParityCaseResul
 
     const referencedFiles = await pendingWorkspaceFilesFromInput(
       workspaceRoot,
-      "@src/runtime.ts 请参考 @README.md 和 @missing.rs 以及 @large.txt",
+      "@src/runtime.ts please refer to @README.md and @missing.rs as well as @large.txt",
     );
     const referencedPaths = referencedFiles.map((file) => file.path);
     if (referencedPaths.join("|") !== "src/runtime.ts|README.md|large.txt") {
-      throw new Error("workspace file helper smoke 未按预期提取现有引用。");
+      throw new Error("workspace file helper smoke did not extract existing references as expected.");
     }
 
     const largeFile = referencedFiles.find((file) => file.path === "large.txt");
@@ -44,9 +44,9 @@ export async function runContextProjectionCase(): Promise<RuntimeParityCaseResul
       !largeFile ||
       largeFile.kind !== "text" ||
       !largeFile.truncated ||
-      !largeFile.content.endsWith("...<文件内容已截断>")
+      !largeFile.content.endsWith("...<file content truncated>")
     ) {
-      throw new Error("workspace file helper smoke 未按预期截断超长文件。");
+      throw new Error("workspace file helper smoke did not truncate the oversized file as expected.");
     }
 
     const workspaceRuntime = new AgentRuntime({
@@ -61,13 +61,13 @@ export async function runContextProjectionCase(): Promise<RuntimeParityCaseResul
     });
 
     const workspaceResult = await workspaceRuntime.submitUserTurn(
-      "@src/runtime.ts 请结合 @README.md 总结",
+      "@src/runtime.ts please summarize together with @README.md",
     );
     if (
       workspaceResult.kind !== "completed" ||
       workspaceResult.assistantText !== "WORKSPACE_CONTEXT_OK"
     ) {
-      throw new Error("workspace file context smoke 未完成闭环。");
+      throw new Error("workspace file context smoke did not complete the turn loop.");
     }
 
     const injectedContexts = workspaceRuntime
@@ -78,7 +78,7 @@ export async function runContextProjectionCase(): Promise<RuntimeParityCaseResul
           llmMessageTextContent(message.content).startsWith("[WORKSPACE_FILE]"),
       );
     if (injectedContexts.length !== 2) {
-      throw new Error("workspace file context smoke 注入的 system context 数量不正确。");
+      throw new Error("workspace file context smoke injected an incorrect number of system contexts.");
     }
 
     workspaceFileSmoke = {
@@ -103,12 +103,12 @@ export async function runContextProjectionCase(): Promise<RuntimeParityCaseResul
   });
 
   const toolImageProjectionResult =
-    await toolImageProjectionRuntime.submitUserTurn("请读取图片后继续分析。");
+    await toolImageProjectionRuntime.submitUserTurn("Please read the image, then continue the analysis.");
   if (
     toolImageProjectionResult.kind !== "completed" ||
     toolImageProjectionResult.assistantText !== "TOOL_IMAGE_PROJECTION_OK"
   ) {
-    throw new Error("tool image projection smoke 未完成闭环。");
+    throw new Error("tool image projection smoke did not complete the turn loop.");
   }
 
   return { workspaceFileSmoke, toolImageProjectionResult };

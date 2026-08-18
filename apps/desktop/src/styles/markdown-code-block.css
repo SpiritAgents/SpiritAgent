@@ -1,4 +1,4 @@
-/* Streamdown 代码块：单层细边框对齐旧 pre */
+/* Streamdown code block: single thin border aligned with the legacy pre */
 
 [data-streamdown="code-block"] {
   position: relative;
@@ -11,10 +11,11 @@
   background: color-mix(in oklab, var(--muted) 30%, transparent) !important;
   padding: 0 !important;
   gap: 0 !important;
-  /* Streamdown 以内联样式写 content-visibility:auto + contain-intrinsic-size:auto 200px，
-     不加 !important 压不过（此前两行静默无效）。skipped 态的 200px 占位会在虚拟行
-     ref 时刻被同步实测采到，paint 后又被 RO 修正为真实高度，缓存被交替污染引发
-     滚动跳变；消息列表已虚拟化，无需嵌套 content-visibility 跳渲染。 */
+  /* Streamdown writes content-visibility:auto + contain-intrinsic-size:auto 200px via inline styles,
+     which cannot be overridden without !important (the previous two lines were silently ineffective).
+     The skipped-state 200px placeholder gets measured synchronously at the virtual row ref moment,
+     then corrected to the real height by the RO after paint; the alternating cache pollution causes
+     scroll jumps. The message list is already virtualized, so no nested content-visibility render skipping is needed. */
   content-visibility: visible !important;
   contain-intrinsic-size: auto !important;
 }
@@ -36,12 +37,12 @@
   display: none !important;
 }
 
-/* copy/download 均关时 Streamdown 仍渲染空 actions 壳（带 border/padding），呈右侧黑点 */
+/* When both copy/download are off, Streamdown still renders an empty actions shell (with border/padding), appearing as a black dot on the right */
 [data-streamdown="code-block"] > div:has(> [data-streamdown="code-block-actions"]:empty) {
   display: none !important;
 }
 
-/* 去掉 Streamdown 内层第二道边框，对齐旧 pre 单层容器 */
+/* Remove Streamdown's inner second border, matching the legacy single-layer pre container */
 [data-streamdown="code-block-body"] {
   border: none !important;
   background: transparent !important;
@@ -60,7 +61,7 @@
   white-space: pre;
 }
 
-/* lineNumbers=false 时行 span 须 block 才能每行独占一行；空行勿再塞 \\n，否则会叠成两行高 */
+/* With lineNumbers=false, row spans must be block so each line occupies its own row; do not add \\n to empty lines, or they stack into two-line height */
 [data-streamdown="code-block-body"] pre code > span {
   display: block;
   min-height: 1lh;

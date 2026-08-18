@@ -1,4 +1,4 @@
-/* Streamdown Mermaid：单层细边框对齐旧 pre 代码块；操作钮悬停浮现 */
+/* Streamdown Mermaid: single thin border aligned with the legacy pre code block; action buttons appear on hover */
 
 [data-streamdown="mermaid-block"] {
   position: relative;
@@ -23,7 +23,7 @@
   margin-bottom: 0;
 }
 
-/* Streamdown 内层图表容器：加载中与渲染后均去掉第二层 border（:has(mermaid) 加载态匹配不到） */
+/* Streamdown's inner diagram container: remove the second border both while loading and after rendering (:has(mermaid) does not match the loading state) */
 [data-streamdown="mermaid-block"] > div:last-child {
   border: none !important;
   background: transparent !important;
@@ -31,7 +31,7 @@
   border-radius: 0 !important;
 }
 
-/* Mermaid chunk 懒加载骨架（Suspense fallback Oe）：对齐单层 pre 边框，去掉假顶栏 */
+/* Mermaid chunk lazy-load skeleton (Suspense fallback Oe): align with the single-layer pre border, remove the fake top bar */
 .min-w-0.break-words > div.w-full.overflow-hidden.rounded-xl.border:has(> div.h-\[46px\]) {
   margin-block: 0.5rem;
   border-radius: var(--radius-md) !important;
@@ -61,17 +61,17 @@
   background: color-mix(in oklab, var(--muted) 20%, transparent) !important;
 }
 
-/* 压掉 Streamdown 默认 rounded-xl，与旧 pre 的 rounded-md 一致 */
+/* Override Streamdown's default rounded-xl to match the legacy pre's rounded-md */
 [data-streamdown="mermaid-block"].rounded-xl {
   border-radius: var(--radius-md) !important;
 }
 
-/* 隐藏 "mermaid" 语言顶栏（占布局且无信息量） */
+/* Hide the "mermaid" language top bar (takes layout space and carries no information) */
 [data-streamdown="mermaid-block"] > div:first-child:has([class*="lowercase"]) {
   display: none;
 }
 
-/* 放大：absolute 钉右上角（actions 即定位层，勿设 position: static） */
+/* Expand: absolute-pinned to the top-right corner (actions is the positioning layer; do not set position: static) */
 [data-streamdown="mermaid-block"] > [data-streamdown="mermaid-block-actions"],
 [data-streamdown="mermaid-block"] > div:has([data-streamdown="mermaid-block-actions"]) {
   position: absolute !important;
@@ -95,7 +95,7 @@
   pointer-events: auto;
 }
 
-/* 放大：单枚圆形 FAB，hover 浮现（对齐预览关闭钮 spirit-floating-action-button） */
+/* Expand: a single circular FAB that appears on hover (aligned with the preview close button spirit-floating-action-button) */
 [data-streamdown="mermaid-block-actions"] {
   display: block !important;
   margin: 0 !important;
@@ -114,7 +114,7 @@
   pointer-events: auto;
 }
 
-/* 缩放控件：合页竖条，同套边框/模糊 */
+/* Zoom controls: joined vertical strip with the same border/blur */
 [data-streamdown="mermaid-block"] [data-streamdown="mermaid"] .spirit-mermaid-pan-zoom-controls {
   position: absolute !important;
   bottom: 0.5rem !important;
@@ -205,7 +205,7 @@
   opacity: 0.5;
 }
 
-/* 预览 Dialog：pan-zoom 参照 preview 外框（勿相对 mermaid / pan-zoom-host），间距对齐关闭钮 top-3 */
+/* Preview Dialog: pan-zoom references the preview outer frame (not mermaid / pan-zoom-host); spacing aligned with the close button's top-3 */
 [data-spirit-mermaid-preview] .spirit-mermaid-pan-zoom-host {
   position: static !important;
 }
@@ -258,14 +258,14 @@
   color: var(--foreground);
 }
 
-/* 勿设 relative：否则 pan-zoom 参照 mermaid 而非 mermaid-block，会多叠一层 padding */
+/* Do not set relative: otherwise pan-zoom would reference mermaid instead of mermaid-block, adding an extra layer of padding */
 [data-streamdown="mermaid"] {
   position: static;
   min-height: 8rem;
   font-family: var(--font-sans);
 }
 
-/* Mermaid SVG 默认易落宋体；强制跟应用 UI 栈 */
+/* Mermaid SVG easily falls back to a serif (Song) font by default; force it to follow the app UI stack */
 [data-streamdown="mermaid"] svg,
 [data-streamdown="mermaid"] svg text,
 [data-streamdown="mermaid"] svg tspan,

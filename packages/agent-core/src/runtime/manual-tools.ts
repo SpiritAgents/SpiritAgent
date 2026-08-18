@@ -43,7 +43,7 @@ export async function startManualToolCommand<Config, State, ToolRequest, TrustTa
   message: string,
 ): Promise<RuntimeManualToolCommandStartResult<State, ToolRequest, TrustTarget>> {
   if (runtime.isBusy()) {
-    throw new Error("当前已有响应或审批在处理中，请稍候。");
+    throw new Error("A response or approval is already being processed; please wait.");
   }
 
   runtime.completedManualToolCommandResultStore = undefined;
@@ -59,7 +59,7 @@ export async function startManualToolCommand<Config, State, ToolRequest, TrustTa
   } catch (error) {
     return {
       kind: "failed",
-      error: `工具命令解析失败: ${renderError(error)}`,
+      error: `Failed to parse tool command: ${renderError(error)}`,
     };
   }
 
@@ -71,7 +71,7 @@ export async function startManualToolCommand<Config, State, ToolRequest, TrustTa
   } catch (error) {
     return {
       kind: "failed",
-      error: `工具权限检查失败: ${renderError(error)}`,
+      error: `Tool authorization check failed: ${renderError(error)}`,
       request,
     };
   }
@@ -130,7 +130,7 @@ export async function startManualToolCommand<Config, State, ToolRequest, TrustTa
   if (authorization.kind === "need-questions") {
     return {
       kind: "failed",
-      error: "手动工具命令不支持 ask_questions 交互。",
+      error: "Manual tool commands do not support ask_questions interaction.",
       request,
     };
   }
@@ -149,7 +149,7 @@ export async function continuePendingManualToolApproval<
 ): Promise<RuntimeManualToolCommandStartResult<State, ToolRequest, TrustTarget>> {
   const pending = runtime.pendingManualApproval;
   if (!pending) {
-    throw new Error("当前没有待确认的手动工具调用。");
+    throw new Error("There is no pending manual tool call to confirm.");
   }
 
   runtime.pendingManualApproval = undefined;
@@ -170,7 +170,7 @@ export async function continuePendingManualToolApproval<
         kind: "denied",
         request: pending.request,
         toolName: pending.toolName,
-        message: "已拒绝本次工具调用。",
+        message: "This tool call was denied.",
       };
     }
 
@@ -185,7 +185,7 @@ export async function continuePendingManualToolApproval<
     kind: "denied",
     request: pending.request,
     toolName: pending.toolName,
-    message: "已拒绝本次工具调用。",
+    message: "This tool call was denied.",
   };
 }
 
@@ -254,7 +254,7 @@ export async function waitForCompletedManualToolCommandResult<
     }
 
     if (!runtime.isBusy()) {
-      throw new Error("runtime 在未产出手动工具结果时提前进入空闲状态。");
+      throw new Error("runtime went idle before producing a manual tool result.");
     }
 
     await runtime.poll();
@@ -265,7 +265,7 @@ export async function waitForCompletedManualToolCommandResult<
     }
 
     if (!runtime.isBusy()) {
-      throw new Error("runtime 在未产出手动工具结果时提前进入空闲状态。");
+      throw new Error("runtime went idle before producing a manual tool result.");
     }
 
     await waitForImmediate();

@@ -3,7 +3,7 @@ import type { OpenAiTransportConfig } from "./openai-compat.js";
 import { openAiReasoningEffort } from "./openai-compat.js";
 import { parseGatewayUpstreamSlug } from "./gateway-code-completion-thinking.js";
 
-/** 文档：https://docs.z.ai/guides/capabilities/thinking — GLM-4.5+ 支持 thinking.type。 */
+/** Docs: https://docs.z.ai/guides/capabilities/thinking — GLM-4.5+ supports thinking.type. */
 function normalizeZaiModelId(model: string): string {
   const normalized = model.trim().toLowerCase();
   const slashIndex = normalized.lastIndexOf("/");
@@ -27,7 +27,7 @@ function parseGlmModelVersion(model: string): { major: number; minor: number } |
   return { major, minor };
 }
 
-/** GLM-4.5 及以上（含未来 glm-5+）支持 thinking.type 开关。 */
+/** GLM-4.5 and above (including future glm-5+) support the thinking.type switch. */
 export function isZaiThinkingSwitchEligibleModel(model: string): boolean {
   const version = parseGlmModelVersion(model);
   if (version === undefined) {
@@ -43,7 +43,7 @@ export function isGatewayZaiModel(llmVendor: string | undefined, model: string):
   return llmVendor === "vercel-ai-gateway" && parseGatewayUpstreamSlug(model) === "zai";
 }
 
-/** Gateway Z.ai：经 zai 命名空间注入 thinking.type；reasoning_effort 仍走 openai 命名空间。 */
+/** Gateway Z.ai: injects thinking.type via the zai namespace; reasoning_effort still goes through the openai namespace. */
 export function buildGatewayZaiProviderOptions(
   config: Pick<
     OpenAiTransportConfig,

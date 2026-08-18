@@ -10,7 +10,7 @@ import {
 } from "../../src/lib/desktop-notification-copy.ts";
 
 test("formatSessionPrefixedTitle prefixes session name", () => {
-  assert.equal(formatSessionPrefixedTitle("My chat", "任务已完成"), "[My chat] 任务已完成");
+  assert.equal(formatSessionPrefixedTitle("My chat", "Task completed"), "[My chat] Task completed");
   assert.equal(formatSessionPrefixedTitle("  ", "Done"), "[Session] Done");
 });
 
@@ -21,14 +21,14 @@ test("truncateNotificationBody shortens long text", () => {
 });
 
 test("stripShellReasonLine removes reason header", () => {
-  const prompt = "理由: deploy\nnpm run build";
-  assert.equal(stripShellReasonLine(prompt, "理由:"), "npm run build");
+  const prompt = "Reason: deploy\nnpm run build";
+  assert.equal(stripShellReasonLine(prompt, "Reason:"), "npm run build");
 });
 
 test("shellApprovalNotificationBody includes reason and command", () => {
-  const prompt = "理由: deploy\nnpm run build";
-  assert.match(shellApprovalNotificationBody(prompt, "理由:"), /理由: deploy/);
-  assert.match(shellApprovalNotificationBody(prompt, "理由:"), /npm run build/);
+  const prompt = "Reason: deploy\nnpm run build";
+  assert.match(shellApprovalNotificationBody(prompt, "Reason:"), /Reason: deploy/);
+  assert.match(shellApprovalNotificationBody(prompt, "Reason:"), /npm run build/);
 });
 
 test("genericApprovalNotificationBody includes tool and prompt", () => {

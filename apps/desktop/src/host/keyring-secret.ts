@@ -34,8 +34,8 @@ export function splitKeyringPassword(
     ) {
       end += 1;
     }
-    // 不在代理对中间切分：孤立代理写入 keyring 时会被替换成 U+FFFD，
-    // 读回拼接后与原文不符。整个代理对留给下一分片。
+    // Never split inside a surrogate pair: a lone surrogate is replaced with U+FFFD when
+    // written to the keyring, so reassembly would not match the original. Leave the whole pair for the next shard.
     if (
       end < password.length &&
       end - offset > 1 &&
@@ -113,7 +113,7 @@ export function setKeyringPassword(service: string, account: string, password: s
     return;
   }
 
-  // 先写分片再写 primary 标记，避免崩溃后 primary 指向缺失 shard。
+  // Write shards before the primary marker so a crash cannot leave primary pointing at a missing shard.
   for (let index = 0; index < chunks.length; index += 1) {
     new Entry(service, shardKeyringAccount(account, index)).setPassword(chunks[index]!);
   }
@@ -129,7 +129,7 @@ export function deleteKeyringPassword(service: string, account: string): void {
       try {
         new Entry(service, shardKeyringAccount(account, index)).deletePassword();
       } catch {
-        /* 无条目时忽略 */
+        /* ignore when there are no entries */
       }
     }
   }
@@ -137,6 +137,6 @@ export function deleteKeyringPassword(service: string, account: string): void {
   try {
     new Entry(service, account).deletePassword();
   } catch {
-    /* 无条目时忽略 */
+    /* ignore when there are no entries */
   }
 }

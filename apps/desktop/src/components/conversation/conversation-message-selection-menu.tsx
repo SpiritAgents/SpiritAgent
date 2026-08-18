@@ -16,7 +16,7 @@ function makeMessageQuoteAttachment(selectedText: string): MessageQuoteAttachmen
   };
 }
 
-/** Rewind 内联编辑器等 contenteditable 内的选区不触发引用菜单。 */
+/** Selections inside contenteditable such as the Rewind inline editor do not trigger the quote menu. */
 function isSelectionOutsideEditable(selection: Selection): boolean {
   for (const node of [selection.anchorNode, selection.focusNode]) {
     const element = node instanceof Element ? node : (node?.parentElement ?? null);

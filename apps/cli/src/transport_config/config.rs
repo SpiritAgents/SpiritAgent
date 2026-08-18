@@ -286,7 +286,7 @@ pub(crate) fn resolve_transport_config_json_for(
                     &api_base,
                 )
                 .ok_or_else(|| {
-                    anyhow!("Azure 模型缺少 azureResourceName 配置，请使用 Desktop 连接向导导入或 spirit model add --azure-resource-name")
+                    anyhow!("Azure model is missing azureResourceName; import via the Desktop connect wizard or spirit model add --azure-resource-name")
                 })?;
             let azure_base = azure_api_base_from_resource_name(&resource_name);
             if let Some(obj) = transport.as_object_mut() {
@@ -301,7 +301,7 @@ pub(crate) fn resolve_transport_config_json_for(
             && crate::bedrock_mantle::is_bedrock_mantle_openai_model(&active.name)
         {
             let region = active.aws_region().ok_or_else(|| {
-                    anyhow!("Amazon Bedrock 模型缺少 awsRegion 配置，请使用 Desktop 连接向导导入或手动写入 config.json")
+                    anyhow!("Amazon Bedrock model is missing awsRegion; import via the Desktop connect wizard or write config.json manually")
                 })?;
             let mantle_base = crate::bedrock_mantle::bedrock_mantle_api_base_from_region(&region);
             let mut transport = serde_json::json!({
@@ -340,7 +340,7 @@ pub(crate) fn resolve_transport_config_json_for(
             transport
         } else {
             let region = active.aws_region().ok_or_else(|| {
-                anyhow!("Amazon Bedrock 模型缺少 awsRegion 配置，请使用 Desktop 连接向导导入或手动写入 config.json")
+                anyhow!("Amazon Bedrock model is missing awsRegion; import via the Desktop connect wizard or write config.json manually")
             })?;
             let mut transport = serde_json::json!({
                 "transportKind": "bedrock",

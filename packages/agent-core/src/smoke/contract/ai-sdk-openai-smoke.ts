@@ -94,7 +94,7 @@ async function main(): Promise<void> {
   const address = server.address();
   if (!address || typeof address === "string") {
     server.close();
-    throw new Error("无法获取本地 smoke server 端口。");
+    throw new Error("Unable to get the local smoke server port.");
   }
 
   const transport = new AiSdkOpenAiCompatibleTransport();
@@ -118,15 +118,15 @@ async function main(): Promise<void> {
   printSmokeSection("ai-sdk openai smoke step 1", firstRound);
 
   if (firstRound.kind !== "success" || firstRound.result.step.kind !== "tool-calls") {
-    throw new Error("ai-sdk openai smoke step 1 未进入 tool-calls。");
+    throw new Error("ai-sdk openai smoke step 1 did not reach tool-calls.");
   }
   if (firstRound.result.usage?.inputTokens !== 1 || firstRound.result.usage.outputTokens !== 1) {
-    throw new Error("ai-sdk openai smoke step 1 未附带 usage。");
+    throw new Error("ai-sdk openai smoke step 1 did not include usage.");
   }
 
   const firstCall = firstRound.result.step.calls.at(0);
   if (!firstCall) {
-    throw new Error("ai-sdk openai smoke step 1 没有任何 tool call。");
+    throw new Error("ai-sdk openai smoke step 1 did not produce any tool call.");
   }
 
   const resumedState = appendOpenAiToolResultMessage(
@@ -140,23 +140,23 @@ async function main(): Promise<void> {
   server.close();
 
   if (secondRound.kind !== "success" || secondRound.result.step.kind !== "final-response-ready") {
-    throw new Error("ai-sdk openai smoke step 2 未进入 final-response-ready。");
+    throw new Error("ai-sdk openai smoke step 2 did not reach final-response-ready.");
   }
   if (secondRound.result.usage?.inputTokens !== 1 || secondRound.result.usage.outputTokens !== 1) {
-    throw new Error("ai-sdk openai smoke step 2 未附带 usage。");
+    throw new Error("ai-sdk openai smoke step 2 did not include usage.");
   }
 
   const assistantText = extractLastOpenAiAssistantText(secondRound.result.state)?.trim();
   if (assistantText !== "AI_SDK_OK") {
     throw new Error(
-      `ai-sdk openai smoke step 2 未拿到预期最终 assistant 文本。实际: ${assistantText ?? "<empty>"}`,
+      `ai-sdk openai smoke step 2 did not get the expected final assistant text. Actual: ${assistantText ?? "<empty>"}`,
     );
   }
 
   const tracedAssistantMessage = findLastAssistantWithToolCalls(secondRound.result.requestTrace);
   if (!isJsonObject(tracedAssistantMessage) || tracedAssistantMessage.reasoning_content !== "") {
     throw new Error(
-      "ai-sdk openai smoke 未在 request trace 的 assistant tool_call message 上保留空 reasoning_content。",
+      "ai-sdk openai smoke did not preserve an empty reasoning_content on the assistant tool_call message in the request trace.",
     );
   }
 }

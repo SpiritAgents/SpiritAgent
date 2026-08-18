@@ -81,8 +81,8 @@ const statusSuffixToneClass: Record<ToolSummaryStatusSuffixTone, string> = {
 };
 
 /**
- * 短工具卡摘要灰阶：主 100% + 次级 {@link toolCardSecondaryTextClass}；
- * shell 命令另保留更浅的 {@link toolCardFileNameDetailClass}。
+ * Short tool-card summary grayscale: primary 100% + secondary {@link toolCardSecondaryTextClass};
+ * shell commands additionally keep the lighter {@link toolCardFileNameDetailClass}.
  */
 const summaryDetailToneClass: Record<ToolSummaryDetailTone, string> = {
   default: toolCardSecondaryTextClass,

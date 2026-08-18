@@ -12,7 +12,7 @@ import { applySpiritMonacoEditorTheme, syncMonacoThemeFromDocument } from "@/lib
 import { useMonacoCodeCompletion } from "@/hooks/use-monaco-code-completion";
 
 export type WorkspaceMonacoEditorHandle = {
-  /** 将当前缓冲区写入磁盘；成功后会清除脏标记。 */
+  /** Writes the current buffer to disk; clears the dirty marker on success. */
   save: () => Promise<void>;
   getEditor: () => monaco.editor.IStandaloneCodeEditor | null;
 };
@@ -136,7 +136,7 @@ export const WorkspaceMonacoEditor = forwardRef<
       onTextChangeRef.current?.(value);
       onDirtyChangeRef.current?.(false);
     } catch {
-      /* 由上层展示错误；不更新 baseline */
+      /* Error is surfaced by the upper layer; do not update the baseline */
     }
   }, []);
 
@@ -183,7 +183,7 @@ export const WorkspaceMonacoEditor = forwardRef<
       try {
         await ensureMonacoShikiReady();
       } catch {
-        /* initMonacoShiki 已记录错误；回退为 Monaco 内置 tokenizer + Shiki 主题色 */
+        /* initMonacoShiki already logged the error; fall back to Monaco's built-in tokenizer + Shiki theme colors */
       }
       if (disposed || !containerRef.current) {
         return;

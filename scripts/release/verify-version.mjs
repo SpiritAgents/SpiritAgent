@@ -35,7 +35,7 @@ async function readCargoVersion(relativePath) {
   const content = await readFile(filePath, 'utf8');
   const match = content.match(/^\s*version\s*=\s*"([^"]+)"/m);
   if (!match) {
-    throw new Error(`未在 ${relativePath} 中找到 package version`);
+    throw new Error(`package version not found in ${relativePath}`);
   }
   return match[1];
 }
@@ -45,7 +45,7 @@ async function readMcpClientVersion(relativePath) {
   const content = await readFile(filePath, 'utf8');
   const match = content.match(/DEFAULT_MCP_CLIENT_INFO[\s\S]*?version:\s*['"]([^'"]+)['"]/);
   if (!match) {
-    throw new Error(`未在 ${relativePath} 中找到 DEFAULT_MCP_CLIENT_INFO.version`);
+    throw new Error(`DEFAULT_MCP_CLIENT_INFO.version not found in ${relativePath}`);
   }
   return match[1];
 }
@@ -79,7 +79,7 @@ if (!PURE_VERSION_RE.test(baseline)) {
 const mismatches = versions.filter(([, , version]) => version !== baseline);
 
 if (mismatches.length > 0) {
-  console.error(`版本不一致，期望 ${baseline}:`);
+  console.error(`Version mismatch, expected ${baseline}:`);
   for (const [name, file, version] of versions) {
     console.error(`- ${name}: ${version} (${file})`);
   }

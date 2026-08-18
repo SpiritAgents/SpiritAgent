@@ -38,7 +38,7 @@ impl TuiShell {
         self.marketplace.catalog = self
             .runtime
             .list_marketplace_extensions()
-            .context("读取 marketplace 目录失败")?;
+            .context(t!("tui.marketplace.catalog_read_failed").into_owned())?;
         logging::log_event(&format!(
             "[marketplace] catalog refreshed items={}",
             self.marketplace.catalog.len()
@@ -258,20 +258,23 @@ impl TuiShell {
         }
     }
 
-    fn marketplace_detail_action_items(&self) -> Vec<&'static str> {
+    fn marketplace_detail_action_items(&self) -> Vec<String> {
         let query = self.marketplace.detail_action_filter.trim().to_lowercase();
-        ["安装扩展"]
+        [t!("tui.marketplace.install_action").into_owned()]
             .into_iter()
             .filter(|item| query.is_empty() || item.to_lowercase().contains(&query))
             .collect()
     }
 
-    fn marketplace_confirmation_items(&self) -> Vec<&'static str> {
+    fn marketplace_confirmation_items(&self) -> Vec<String> {
         let query = self.marketplace.confirm_filter.trim().to_lowercase();
-        ["继续安装", "取消"]
-            .into_iter()
-            .filter(|item| query.is_empty() || item.to_lowercase().contains(&query))
-            .collect()
+        [
+            t!("tui.marketplace.confirm_continue").into_owned(),
+            t!("tui.marketplace.confirm_cancel").into_owned(),
+        ]
+        .into_iter()
+        .filter(|item| query.is_empty() || item.to_lowercase().contains(&query))
+        .collect()
     }
 
     fn marketplace_filtered_catalog_indices(&self) -> Vec<usize> {
@@ -376,7 +379,9 @@ impl TuiShell {
             let detail = self
                 .runtime
                 .get_marketplace_extension_detail(&extension_id)
-                .with_context(|| format!("读取 marketplace 详情失败: {}", extension_id))?;
+                .with_context(|| {
+                    t!("tui.marketplace.detail_read_failed", id = extension_id).into_owned()
+                })?;
             self.marketplace
                 .detail_cache
                 .insert(extension_id.clone(), detail);
@@ -443,16 +448,22 @@ impl TuiShell {
             .as_ref()
             .is_some_and(|current| current == &install_key)
         {
-            self.marketplace.error = Some(format!(
-                "已提交过安装请求: {}@{}。如需重试，请切换到其他版本再切回。",
-                prepared.extension_id, prepared.version
-            ));
+            self.marketplace.error = Some(
+                t!(
+                    "tui.marketplace.install_already_submitted",
+                    id = prepared.extension_id,
+                    version = prepared.version
+                )
+                .into_owned(),
+            );
             self.messages.push(ChatMessage {
                 role: MessageRole::Agent,
-                content: format!(
-                    "已忽略重复安装请求: {} {}",
-                    prepared.display_name, prepared.version
-                ),
+                content: t!(
+                    "tui.marketplace.install_duplicate_ignored",
+                    name = prepared.display_name,
+                    version = prepared.version
+                )
+                .into_owned(),
                 tool_block: None,
             });
             return Ok(());
@@ -465,7 +476,7 @@ impl TuiShell {
             review_acknowledged,
         )?;
         self.refresh_extensions_from_disk()
-            .context("刷新已安装扩展列表失败")?;
+            .context(t!("tui.marketplace.refresh_installed_failed").into_owned())?;
         self.marketplace.error = None;
         self.marketplace.confirm_filter.clear();
         self.marketplace.confirm_selected_index = 0;
@@ -484,10 +495,12 @@ impl TuiShell {
         }
         self.messages.push(ChatMessage {
             role: MessageRole::Agent,
-            content: format!(
-                "已安装 marketplace 扩展: {} {}",
-                installed.display_name, installed.version
-            ),
+            content: t!(
+                "tui.marketplace.installed",
+                name = installed.display_name,
+                version = installed.version
+            )
+            .into_owned(),
             tool_block: None,
         });
         Ok(())
@@ -517,7 +530,7 @@ impl TuiShell {
 
     fn marketplace_open_version_picker(&mut self) {
         if self.marketplace_selected_detail().is_none() {
-            self.marketplace.error = Some("当前扩展详情尚未加载完成。".to_string());
+            self.marketplace.error = Some(t!("tui.marketplace.detail_not_loaded").into_owned());
             return;
         }
         if self.marketplace.step_stack.last().copied() != Some(MarketplaceFlowStep::VersionPicker) {
@@ -540,10 +553,14 @@ impl TuiShell {
             .as_ref()
             .is_some_and(|current| current == &install_key)
         {
-            self.marketplace.error = Some(format!(
-                "已提交过安装请求: {}@{}。如需重试，请切换到其他版本再切回。",
-                install_key.0, install_key.1
-            ));
+            self.marketplace.error = Some(
+                t!(
+                    "tui.marketplace.install_already_submitted",
+                    id = install_key.0,
+                    version = install_key.1
+                )
+                .into_owned(),
+            );
             return;
         }
 
@@ -552,10 +569,14 @@ impl TuiShell {
         };
 
         if !prepared.supports_current_host {
-            self.marketplace.error = Some(format!(
-                "扩展 {}@{} 不支持当前宿主。",
-                prepared.display_name, prepared.version
-            ));
+            self.marketplace.error = Some(
+                t!(
+                    "tui.marketplace.host_unsupported",
+                    name = prepared.display_name,
+                    version = prepared.version
+                )
+                .into_owned(),
+            );
             return;
         }
 
@@ -581,9 +602,11 @@ impl TuiShell {
         let choice = self
             .marketplace_confirmation_items()
             .get(self.marketplace.confirm_selected_index)
-            .copied();
+            .cloned();
+        let continue_label = t!("tui.marketplace.confirm_continue").into_owned();
+        let cancel_label = t!("tui.marketplace.confirm_cancel").into_owned();
         match choice {
-            Some("继续安装") => {
+            Some(item) if item == continue_label => {
                 let Some(prepared) = self.prepare_selected_marketplace_install() else {
                     return;
                 };
@@ -591,7 +614,7 @@ impl TuiShell {
                     self.marketplace.error = Some(err.to_string());
                 }
             }
-            Some("取消") => self.marketplace_go_back(),
+            Some(item) if item == cancel_label => self.marketplace_go_back(),
             _ => {}
         }
     }
@@ -746,13 +769,13 @@ impl TuiShell {
             .unwrap_or(MarketplaceFlowStep::CatalogPicker)
         {
             MarketplaceFlowStep::CatalogPicker => SlashFlowView {
-                title: "扩展".to_string(),
+                title: t!("tui.marketplace.extensions_title").into_owned(),
                 subtitle: None,
                 search: Some(crate::view::SlashFlowSearchView {
                     value: self.marketplace.catalog_filter.clone(),
-                    placeholder: "输入扩展名称、作者或关键词".to_string(),
+                    placeholder: t!("tui.marketplace.search_placeholder").into_owned(),
                 }),
-                empty_text: "没有匹配的扩展。".to_string(),
+                empty_text: t!("tui.marketplace.no_matching_extensions").into_owned(),
                 selected_index: self
                     .marketplace
                     .catalog_selected_index
@@ -768,15 +791,13 @@ impl TuiShell {
                     })
                     .collect(),
                 compact_items: true,
-                footer_hint:
-                    "↑/↓ 选择  Enter 打开  直接输入过滤  Backspace 删除  Ctrl+L 清空  Ctrl+R 刷新  Esc 关闭"
-                        .to_string(),
+                footer_hint: t!("tui.marketplace.extensions_footer").into_owned(),
             },
             MarketplaceFlowStep::DetailActions => SlashFlowView {
-                title: "操作".to_string(),
+                title: t!("tui.marketplace.actions_title").into_owned(),
                 subtitle: None,
                 search: None,
-                empty_text: "没有匹配的操作。".to_string(),
+                empty_text: t!("tui.marketplace.no_matching_actions").into_owned(),
                 selected_index: self.marketplace.detail_action_selected_index,
                 items: self
                     .marketplace_detail_action_items()
@@ -790,9 +811,7 @@ impl TuiShell {
                     })
                     .collect(),
                 compact_items: false,
-                footer_hint:
-                    "↑/↓ 选择  Enter 继续  PageUp/Down 滚动 README  Esc 返回"
-                        .to_string(),
+                footer_hint: t!("tui.marketplace.actions_footer").into_owned(),
             },
             MarketplaceFlowStep::VersionPicker => {
                 let items = detail
@@ -817,15 +836,13 @@ impl TuiShell {
                                     Self::marketplace_channel_text(&version.channel),
                                     Self::marketplace_review_text(&version.review_status)
                                 ),
-                                details: vec![
-                                    if installed {
-                                        "已安装".to_string()
-                                    } else if supported {
-                                        "支持 CLI".to_string()
-                                    } else {
-                                        "不支持 CLI".to_string()
-                                    },
-                                ],
+                                details: vec![if installed {
+                                    t!("tui.marketplace.badge_installed").into_owned()
+                                } else if supported {
+                                    t!("tui.marketplace.badge_cli_supported").into_owned()
+                                } else {
+                                    t!("tui.marketplace.badge_cli_unsupported").into_owned()
+                                }],
                                 disabled: !supported,
                                 muted: !supported,
                             }
@@ -834,69 +851,68 @@ impl TuiShell {
                     })
                     .unwrap_or_default();
                 SlashFlowView {
-                    title: "版本".to_string(),
+                    title: t!("tui.marketplace.versions_title").into_owned(),
                     subtitle: None,
                     search: Some(crate::view::SlashFlowSearchView {
                         value: self.marketplace.version_filter.clone(),
-                        placeholder: "输入版本、通道或状态".to_string(),
+                        placeholder: t!("tui.marketplace.version_placeholder").into_owned(),
                     }),
-                    empty_text: "没有匹配的版本。".to_string(),
+                    empty_text: t!("tui.marketplace.no_matching_versions").into_owned(),
                     selected_index: self
                         .marketplace
                         .version_selected_index
                         .min(items.len().saturating_sub(1)),
                     items,
                     compact_items: false,
-                    footer_hint:
-                        "↑/↓ 选择  Enter 安装  PageUp/Down 滚动 README  直接输入过滤  Backspace 删除  Ctrl+L 清空  Esc 返回"
-                            .to_string(),
+                    footer_hint: t!("tui.marketplace.versions_footer").into_owned(),
                 }
             }
             MarketplaceFlowStep::UnverifiedConfirm => SlashFlowView {
-                title: "确认".to_string(),
+                title: t!("tui.marketplace.confirm_title").into_owned(),
                 subtitle: None,
                 search: None,
-                empty_text: "没有匹配的选项。".to_string(),
+                empty_text: t!("tui.marketplace.no_matching_options").into_owned(),
                 selected_index: self
                     .marketplace
                     .confirm_selected_index
                     .min(self.marketplace_confirmation_items().len().saturating_sub(1)),
-                items: self
-                    .marketplace_confirmation_items()
-                    .into_iter()
-                    .map(|item| SlashFlowItemView {
-                        label: item.to_string(),
-                        summary: if item == "继续安装" {
-                            "我已知晓该版本尚未验证".to_string()
-                        } else {
-                            "返回版本选择".to_string()
-                        },
-                        details: Vec::new(),
-                        disabled: false,
-                        muted: item == "取消",
-                    })
-                    .collect(),
+                items: {
+                    let continue_label = t!("tui.marketplace.confirm_continue").into_owned();
+                    let cancel_label = t!("tui.marketplace.confirm_cancel").into_owned();
+                    self.marketplace_confirmation_items()
+                        .into_iter()
+                        .map(|item| SlashFlowItemView {
+                            summary: if item == continue_label {
+                                t!("tui.marketplace.confirm_ack_unverified").into_owned()
+                            } else {
+                                t!("tui.marketplace.confirm_back_to_versions").into_owned()
+                            },
+                            muted: item == cancel_label,
+                            label: item,
+                            details: Vec::new(),
+                            disabled: false,
+                        })
+                        .collect()
+                },
                 compact_items: false,
-                footer_hint:
-                    "↑/↓ 选择  Enter 确认  PageUp/Down 滚动 README  Esc 返回"
-                        .to_string(),
+                footer_hint: t!("tui.marketplace.confirm_footer").into_owned(),
             },
         }
     }
 
-    fn marketplace_review_text(status: &str) -> &'static str {
+    fn marketplace_review_text(status: &str) -> String {
         match status.trim() {
-            "verified" => "已验证",
-            "revoked" => "已撤销",
-            _ => "未验证",
+            "verified" => t!("tui.marketplace.status_verified").into_owned(),
+            "revoked" => t!("tui.marketplace.status_revoked").into_owned(),
+            _ => t!("tui.marketplace.status_unverified").into_owned(),
         }
     }
 
     fn marketplace_channel_text(channel: &str) -> String {
         match channel.trim() {
-            "stable" => "稳定".to_string(),
-            "preview" => "预览".to_string(),
-            "experimental" => "实验".to_string(),
+            "stable" => t!("tui.marketplace.channel_stable").into_owned(),
+            "preview" => t!("tui.marketplace.channel_preview").into_owned(),
+            "experimental" => t!("tui.marketplace.channel_experimental").into_owned(),
             other => other.to_string(),
         }
     }

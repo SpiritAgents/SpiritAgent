@@ -61,7 +61,7 @@ test("workspaceTextFileResultFromBuffer returns image for validated png", () => 
 });
 
 test("isBinaryTextFileBuffer tolerates multi-byte UTF-8 cut at the 8192-byte scan boundary", () => {
-  // 前 8191 字节为 ASCII，第 8192 字节起是「中」(3 字节)：扫描窗口正好把它切成两半
+  // The first 8191 bytes are ASCII; byte 8192 starts "中" (3 bytes): the scan window cuts it in half
   const text = `${"a".repeat(8191)}${"中文文本".repeat(64)}`;
   const buffer = Buffer.from(text, "utf8");
   assert.ok(buffer.length > 8192);
@@ -74,9 +74,9 @@ test("isBinaryTextFileBuffer tolerates multi-byte UTF-8 cut at the 8192-byte sca
 });
 
 test("isBinaryTextFileBuffer still flags invalid UTF-8 and truncated whole files", () => {
-  // 文件中间的非法字节仍视为二进制
+  // Invalid bytes in the middle of the file are still treated as binary
   assert.equal(isBinaryTextFileBuffer(Buffer.from([0x61, 0xff, 0xfe, 0x62])), true);
-  // 整个文件在多字节序列中间被截断（未达扫描窗口）：解码须完全终结，视为二进制
+  // The whole file is truncated in the middle of a multi-byte sequence (below the scan window): decoding must fail completely, treated as binary
   const truncated = Buffer.from("中", "utf8").subarray(0, 2);
   assert.equal(isBinaryTextFileBuffer(truncated), true);
 });

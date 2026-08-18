@@ -557,7 +557,7 @@ pub fn read_host_file_snapshot(resolved_path: &Path) -> Result<HostFileSnapshot>
     }
 
     let metadata = fs::metadata(resolved_path)
-        .with_context(|| format!("读取文件 metadata 失败: {}", resolved_path.display()))?;
+        .with_context(|| format!("Failed to read file metadata: {}", resolved_path.display()))?;
     let modified = metadata
         .modified()
         .ok()
@@ -575,7 +575,7 @@ pub fn read_host_file_snapshot(resolved_path: &Path) -> Result<HostFileSnapshot>
     }
 
     let content = fs::read_to_string(resolved_path)
-        .with_context(|| format!("读取文件失败: {}", resolved_path.display()))?;
+        .with_context(|| format!("Failed to read file: {}", resolved_path.display()))?;
     Ok(HostFileSnapshot {
         exists: true,
         file: true,
@@ -633,16 +633,17 @@ fn restore_create_file_change(
     if !current.file {
         return Ok(Err(skipped_warning(
             change,
-            "目标路径已存在但不是文件，已跳过删除。",
+            "Target path already exists and is not a file; deletion skipped.",
         )));
     }
     if current.content == change.after.content {
-        fs::remove_file(&target).with_context(|| format!("删除文件失败: {}", target.display()))?;
+        fs::remove_file(&target)
+            .with_context(|| format!("Failed to delete file: {}", target.display()))?;
         return Ok(Ok(()));
     }
     Ok(Err(skipped_warning(
         change,
-        "文件在创建后已被修改，已跳过删除以避免覆盖用户改动。",
+        "File was modified after creation; deletion skipped to avoid overwriting user changes.",
     )))
 }
 
@@ -652,25 +653,25 @@ fn restore_edit_file_change(
     let Some(before_content) = change.before.content.as_deref() else {
         return Ok(Err(skipped_warning(
             change,
-            "缺少编辑前文件快照，无法回溯。",
+            "Missing pre-edit file snapshot; cannot rewind.",
         )));
     };
     if !change.before.file {
         return Ok(Err(skipped_warning(
             change,
-            "缺少编辑前文件快照，无法回溯。",
+            "Missing pre-edit file snapshot; cannot rewind.",
         )));
     }
     let Some(after_content) = change.after.content.as_deref() else {
         return Ok(Err(skipped_warning(
             change,
-            "缺少编辑后文件快照，无法回溯。",
+            "Missing post-edit file snapshot; cannot rewind.",
         )));
     };
     if !change.after.file {
         return Ok(Err(skipped_warning(
             change,
-            "缺少编辑后文件快照，无法回溯。",
+            "Missing post-edit file snapshot; cannot rewind.",
         )));
     }
 
@@ -680,12 +681,12 @@ fn restore_edit_file_change(
         if !current.exists {
             return Ok(Err(skipped_warning(
                 change,
-                "目标文件已不存在，无法应用编辑回溯。",
+                "Target file no longer exists; cannot apply edit rewind.",
             )));
         }
         return Ok(Err(skipped_warning(
             change,
-            "目标路径已存在但不是文件，无法应用编辑回溯。",
+            "Target path exists but is not a file; cannot apply edit rewind.",
         )));
     };
 
@@ -694,20 +695,20 @@ fn restore_edit_file_change(
     }
     if current_content == after_content {
         fs::write(&target, before_content)
-            .with_context(|| format!("写入文件失败: {}", target.display()))?;
+            .with_context(|| format!("Failed to write file: {}", target.display()))?;
         return Ok(Ok(()));
     }
 
     let Some(hunk) = build_single_text_hunk(before_content, after_content) else {
         return Ok(Err(skipped_warning(
             change,
-            "无法定位唯一编辑片段，已跳过以避免覆盖用户改动。",
+            "Could not locate a unique edit hunk; skipped to avoid overwriting user changes.",
         )));
     };
     if hunk.after_text.is_empty() {
         return Ok(Err(skipped_warning(
             change,
-            "无法定位唯一编辑片段，已跳过以避免覆盖用户改动。",
+            "Could not locate a unique edit hunk; skipped to avoid overwriting user changes.",
         )));
     }
 
@@ -715,7 +716,10 @@ fn restore_edit_file_change(
     if hits != 1 {
         return Ok(Err(skipped_warning(
             change,
-            format!("编辑片段当前命中 {} 处，已跳过以避免覆盖用户改动。", hits),
+            format!(
+                "Edit hunk currently matches {} locations; skipped to avoid overwriting user changes.",
+                hits
+            ),
         )));
     }
 
@@ -723,7 +727,7 @@ fn restore_edit_file_change(
         &target,
         current_content.replacen(&hunk.after_text, &hunk.before_text, 1),
     )
-    .with_context(|| format!("写入文件失败: {}", target.display()))?;
+    .with_context(|| format!("Failed to write file: {}", target.display()))?;
     Ok(Ok(()))
 }
 
@@ -733,13 +737,13 @@ fn restore_delete_file_change(
     let Some(before_content) = change.before.content.as_deref() else {
         return Ok(Err(skipped_warning(
             change,
-            "缺少删除前文件快照，无法重建文件。",
+            "Missing pre-delete file snapshot; cannot rebuild file.",
         )));
     };
     if !change.before.file {
         return Ok(Err(skipped_warning(
             change,
-            "缺少删除前文件快照，无法重建文件。",
+            "Missing pre-delete file snapshot; cannot rebuild file.",
         )));
     }
 
@@ -748,16 +752,16 @@ fn restore_delete_file_change(
     if current.exists {
         return Ok(Err(skipped_warning(
             change,
-            "目标路径已重新存在，已跳过重建以避免覆盖用户改动。",
+            "Target path exists again; rebuild skipped to avoid overwriting user changes.",
         )));
     }
 
     if let Some(parent) = target.parent() {
         fs::create_dir_all(parent)
-            .with_context(|| format!("创建目录失败: {}", parent.display()))?;
+            .with_context(|| format!("Failed to create directory: {}", parent.display()))?;
     }
     fs::write(&target, before_content)
-        .with_context(|| format!("写入文件失败: {}", target.display()))?;
+        .with_context(|| format!("Failed to write file: {}", target.display()))?;
     Ok(Ok(()))
 }
 
@@ -873,11 +877,11 @@ fn session_rewind_dir(spirit_data_dir: &Path, session_id: &str) -> PathBuf {
 fn write_sidecar_json(path: &Path, value: &impl Serialize) -> Result<()> {
     if let Some(parent) = path.parent() {
         fs::create_dir_all(parent)
-            .with_context(|| format!("创建回溯目录失败: {}", parent.display()))?;
+            .with_context(|| format!("Failed to create rewind directory: {}", parent.display()))?;
     }
     let content = serde_json::to_string_pretty(value)?;
     fs::write(path, format!("{}\n", content))
-        .with_context(|| format!("写入回溯 sidecar 失败: {}", path.display()))
+        .with_context(|| format!("Failed to write rewind sidecar: {}", path.display()))
 }
 
 fn read_sidecar_json<T>(path: &Path) -> Result<Option<T>>
@@ -888,9 +892,9 @@ where
         return Ok(None);
     }
     let text = fs::read_to_string(path)
-        .with_context(|| format!("读取回溯 sidecar 失败: {}", path.display()))?;
+        .with_context(|| format!("Failed to read rewind sidecar: {}", path.display()))?;
     let value = serde_json::from_str(&text)
-        .with_context(|| format!("解析回溯 sidecar 失败: {}", path.display()))?;
+        .with_context(|| format!("Failed to parse rewind sidecar: {}", path.display()))?;
     Ok(Some(value))
 }
 

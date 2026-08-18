@@ -34,8 +34,8 @@ test("splitKeyringPassword shards Bedrock-scale bearer tokens by UTF-16 bytes", 
 });
 
 test("splitKeyringPassword never splits surrogate pairs across shards", () => {
-  // 每个 🎉 占 2 个 code unit（4 字节）；上限 10 字节 = 5 unit，
-  // 逐字节切分会在第 5 个 unit 处把代理对切成两半
+  // Each 🎉 takes 2 code units (4 bytes); a 10-byte limit = 5 units,
+  // so byte-wise splitting would cut the surrogate pair in half at the 5th unit
   const password = `a${"🎉".repeat(6)}`;
   const chunks = splitKeyringPassword(password, 10);
   assert.ok(chunks.length > 1);

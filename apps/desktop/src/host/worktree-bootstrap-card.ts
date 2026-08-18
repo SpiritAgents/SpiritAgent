@@ -48,7 +48,7 @@ export function isWorktreeBootstrapInFlight(
   return pending?.phase === "running";
 }
 
-/** Subagent 会话是否启用了 worktree 委派（仅此类会话应展示 worktree bootstrap 卡片）。 */
+/** Whether the Subagent session has worktree delegation enabled (only such sessions should show the worktree bootstrap card). */
 export function isWorktreeSubagentSession(summary: {
   status: SubagentSessionStatus;
   worktreePath?: string;

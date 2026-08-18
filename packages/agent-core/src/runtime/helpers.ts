@@ -164,7 +164,7 @@ function assistantToolCallIdsMissingResults(history: readonly LlmMessage[]): str
   return missing;
 }
 
-/** history 中 assistant 已声明的 tool call 是否都已有对应 tool 消息（与 AI SDK MissingToolResults 校验一致）。 */
+/** Whether every tool call declared by assistant messages in history has a corresponding tool message (consistent with the AI SDK MissingToolResults check). */
 export function hasUnansweredAssistantToolCalls(history: readonly LlmMessage[]): boolean {
   return assistantToolCallIdsMissingResults(history).length > 0;
 }
@@ -386,7 +386,7 @@ export async function pendingWorkspaceFilesFromInput(
     try {
       files.push(await pendingWorkspaceFileFromPath(workspaceRoot, path));
     } catch {
-      // 与 Rust 保持一致：忽略不存在、不可读或不支持的引用。
+      // Consistent with Rust: ignore references that do not exist, are unreadable, or are unsupported.
     }
   }
 
@@ -414,7 +414,7 @@ export function pendingMcpResourceFromReadResult(
   const contents =
     isJsonObject(value) && Array.isArray(value.contents) ? value.contents : undefined;
   if (!contents || contents.length === 0) {
-    throw new Error(`MCP resource 返回为空: ${requestedUri}`);
+    throw new Error(`MCP resource returned empty: ${requestedUri}`);
   }
 
   const renderedSections: string[] = [];
@@ -478,12 +478,12 @@ export function promptMessagesFromValue(value: JsonValue): LlmMessage[] {
   const messages =
     isJsonObject(value) && Array.isArray(value.messages) ? value.messages : undefined;
   if (!messages) {
-    throw new Error("MCP prompt 返回格式异常：缺少 messages");
+    throw new Error("MCP prompt returned an invalid format: missing messages");
   }
 
   return messages.map((message) => {
     if (!isJsonObject(message)) {
-      throw new Error("MCP prompt message 格式异常");
+      throw new Error("MCP prompt message has an invalid format");
     }
 
     return normalizeStoredLlmMessage({
@@ -545,19 +545,19 @@ async function pendingWorkspaceFileFromPath(
     normalizedReference.startsWith("/") ||
     normalizedReference.split("/").some((segment) => segment === "..")
   ) {
-    throw new Error(`不支持引用工作区外文件: ${referencePath}`);
+    throw new Error(`Referencing files outside the workspace is not supported: ${referencePath}`);
   }
 
   const workspaceRootResolved = resolve(workspaceRoot);
   const target = resolve(workspaceRootResolved, referencePath);
   const relativeTarget = relative(workspaceRootResolved, target);
   if (relativeTarget.startsWith("..") || isAbsolute(relativeTarget)) {
-    throw new Error(`不支持引用工作区外文件: ${referencePath}`);
+    throw new Error(`Referencing files outside the workspace is not supported: ${referencePath}`);
   }
 
   const metadata = await stat(target);
   if (!metadata.isFile()) {
-    throw new Error(`不是可引用的文件: ${target}`);
+    throw new Error(`Not a referenceable file: ${target}`);
   }
 
   const bytes = await readFile(target);
@@ -570,7 +570,7 @@ async function pendingWorkspaceFileFromPath(
   }
 
   if (hasPendingWorkspaceImageExtension(target)) {
-    throw new Error(`图片文件校验失败: ${referencePath}`);
+    throw new Error(`Image file validation failed: ${referencePath}`);
   }
 
   if (detectPendingWorkspaceVideoFile(target, bytes)) {
@@ -582,18 +582,18 @@ async function pendingWorkspaceFileFromPath(
   }
 
   if (hasPendingWorkspaceVideoExtension(target)) {
-    throw new Error(`视频文件校验失败: ${referencePath}`);
+    throw new Error(`Video file validation failed: ${referencePath}`);
   }
 
   if (bytes.includes(0)) {
-    throw new Error(`暂不支持引用二进制文件: ${referencePath}`);
+    throw new Error(`Referencing binary files is not supported yet: ${referencePath}`);
   }
 
   const text = bytes.toString("utf8");
   const chars = Array.from(text);
   const truncated = chars.length > PENDING_WORKSPACE_FILE_MAX_CHARS;
   const content = truncated
-    ? `${chars.slice(0, PENDING_WORKSPACE_FILE_MAX_CHARS).join("")}\n\n...<文件内容已截断>`
+    ? `${chars.slice(0, PENDING_WORKSPACE_FILE_MAX_CHARS).join("")}\n\n...<file content truncated>`
     : text;
 
   return {

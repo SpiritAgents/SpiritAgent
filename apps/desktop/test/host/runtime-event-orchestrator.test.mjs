@@ -169,11 +169,11 @@ test("runtime events are mirrored into continuation timeline segments", () => {
 
 test("deferred after-stream thinking is materialized before the first tool preview", () => {
   const harness = createHarness();
-  harness.pushUser("制造一个错误");
+  harness.pushUser("cause an error");
 
   harness.orchestrator.applyRuntimeHostEvents([
     { kind: "begin-assistant-response" },
-    { kind: "assistant-chunk", text: "先看看文件结尾。" },
+    { kind: "assistant-chunk", text: "Let me check the end of the file first." },
     {
       kind: "assistant-thinking-segment-finalized",
       text: "Plan to read the file end first.",
@@ -263,31 +263,31 @@ test("completed turn result reuses the finalized assistant text row instead of d
   ]);
 });
 
-test("completed Chinese greeting keeps finalized thinking above the final assistant text", () => {
+test("completed greeting keeps finalized thinking above the final assistant text", () => {
   const harness = createHarness();
-  harness.pushUser("你好啊");
+  harness.pushUser("hello there");
 
   harness.orchestrator.applyRuntimeHostEvents([
     { kind: "begin-assistant-response" },
-    { kind: "assistant-chunk", text: "你好！有什么可以帮你的吗？" },
+    { kind: "assistant-chunk", text: "Hi! How can I help you?" },
     {
       kind: "assistant-thinking-segment-finalized",
-      text: 'The user is just greeting me with "你好啊" (Hello).',
+      text: 'The user is just greeting me with "hello there".',
     },
     { kind: "assistant-response-completed" },
   ]);
 
   harness.setCompletedTurnResult({
     kind: "completed",
-    assistantText: "你好！有什么可以帮你的吗？",
+    assistantText: "Hi! How can I help you?",
     toolExecutions: [],
   });
   harness.orchestrator.consumeCompletedTurnResult();
 
   assert.deepEqual(harness.timeline.toMessages().map(rowToken), [
     "user",
-    'thinking:The user is just greeting me with "你好啊" (Hello).',
-    "assistant:你好！有什么可以帮你的吗？",
+    'thinking:The user is just greeting me with "hello there".',
+    "assistant:Hi! How can I help you?",
   ]);
 });
 
@@ -450,7 +450,7 @@ test("tool previews do not clone the first thinking block when multiple tool pre
 
   harness.orchestrator.applyRuntimeHostEvents([
     { kind: "begin-assistant-response" },
-    { kind: "replace-pending-assistant", text: "好的，我先并发调用两个工具，然后执行 echo。" },
+    { kind: "replace-pending-assistant", text: "OK, I'll call two tools concurrently, then run echo." },
     {
       kind: "update-pending-assistant-thinking",
       text: "The user is asking me to call a few tools.",
@@ -477,7 +477,7 @@ test("tool previews do not clone the first thinking block when multiple tool pre
   const assistantRows = messages.filter((message) => message.role === "assistant" && !message.tool);
 
   assert.equal(assistantRows.length, 1);
-  assert.equal(assistantRows[0].content, "好的，我先并发调用两个工具，然后执行 echo。");
+  assert.equal(assistantRows[0].content, "OK, I'll call two tools concurrently, then run echo.");
   assert.equal(
     assistantRows[0].aux?.thinking,
     "The user is asking me to call a few tools (preferably concurrently).",
@@ -496,21 +496,21 @@ test("finish_task streaming preview updates finishTaskNotice on assistant text r
     { kind: "begin-assistant-response" },
     {
       kind: "replace-pending-assistant",
-      text: "明白，我会在每条回复末尾调用 finish_task。",
+      text: "Understood, I will call finish_task at the end of each reply.",
     },
     {
       kind: "streaming-tool-preview",
       toolCallId: "call-finish",
       toolName: "finish_task",
-      argumentsJson: '{"summary":"确认每条',
+      argumentsJson: '{"summary":"verified each',
     },
   ]);
 
   const assistantRow = harness.timeline
     .toMessages()
     .find((message) => message.role === "assistant" && !message.tool);
-  assert.equal(assistantRow?.content, "明白，我会在每条回复末尾调用 finish_task。");
-  assert.equal(assistantRow?.aux?.finishTaskNotice, "任务以 确认每条");
+  assert.equal(assistantRow?.content, "Understood, I will call finish_task at the end of each reply.");
+  assert.equal(assistantRow?.aux?.finishTaskNotice, "Task completed: verified each");
   assert.equal(
     harness.timeline.toMessages().some((message) => message.tool?.toolName === "finish_task"),
     false,
@@ -521,7 +521,7 @@ test("finish_task streaming preview updates finishTaskNotice on assistant text r
       kind: "streaming-tool-preview",
       toolCallId: "call-finish",
       toolName: "finish_task",
-      argumentsJson: '{"summary":"确认每条消息输出完毕后调用 finish_task。"}',
+      argumentsJson: '{"summary":"called finish_task after verifying every message"}',
     },
   ]);
 
@@ -530,33 +530,33 @@ test("finish_task streaming preview updates finishTaskNotice on assistant text r
     .find((message) => message.role === "assistant" && !message.tool);
   assert.equal(
     updatedAssistantRow?.aux?.finishTaskNotice,
-    "任务以 确认每条消息输出完毕后调用 finish_task。 完成。",
+    "Task completed: called finish_task after verifying every message.",
   );
 });
 
 test("failed finish_task clears streaming finishTaskNotice preview", () => {
   const harness = createHarness();
-  harness.pushUser("再调用一次");
+  harness.pushUser("call it again");
 
   harness.orchestrator.applyRuntimeHostEvents([
     { kind: "begin-assistant-response" },
     {
       kind: "replace-pending-assistant",
-      text: "这次报错了：未知工具 finish_task。",
+      text: "This time it errored: unknown tool finish_task.",
     },
     {
       kind: "streaming-tool-preview",
       toolCallId: "call-finish",
       toolName: "finish_task",
-      argumentsJson: '{"summary":"按用户要求再次调用"}',
+      argumentsJson: '{"summary":"calling again per user request"}',
     },
     {
       kind: "tool-execution-finished",
       execution: {
         toolCallId: "call-finish",
         toolName: "finish_task",
-        request: { name: "finish_task", summary: "按用户要求再次调用" },
-        output: "[tool schema error] 未知工具: finish_task",
+        request: { name: "finish_task", summary: "calling again per user request" },
+        output: "[tool schema error] Unknown tool: finish_task",
         failed: true,
       },
     },
@@ -565,13 +565,13 @@ test("failed finish_task clears streaming finishTaskNotice preview", () => {
   const assistantRow = harness.timeline
     .toMessages()
     .find((message) => message.role === "assistant" && !message.tool);
-  assert.equal(assistantRow?.content, "这次报错了：未知工具 finish_task。");
+  assert.equal(assistantRow?.content, "This time it errored: unknown tool finish_task.");
   assert.equal(assistantRow?.aux?.finishTaskNotice, undefined);
 });
 
 test("failed finish_task clears notice when preview and tool-finished are split across batches", () => {
   const harness = createHarness();
-  harness.pushUser("再调用一次");
+  harness.pushUser("call it again");
 
   harness.orchestrator.applyRuntimeHostEvents([
     { kind: "begin-assistant-response" },
@@ -579,14 +579,14 @@ test("failed finish_task clears notice when preview and tool-finished are split 
       kind: "streaming-tool-preview",
       toolCallId: "call-finish",
       toolName: "finish_task",
-      argumentsJson: '{"summary":"再次确认 finish_task 可用"}',
+      argumentsJson: '{"summary":"reconfirmed finish_task works"}',
     },
   ]);
 
   const afterPreview = harness.timeline
     .toMessages()
     .find((message) => message.role === "assistant" && !message.tool);
-  assert.equal(afterPreview?.aux?.finishTaskNotice, "任务以 再次确认 finish_task 可用 完成。");
+  assert.equal(afterPreview?.aux?.finishTaskNotice, "Task completed: reconfirmed finish_task works.");
 
   harness.orchestrator.applyRuntimeHostEvents([
     {
@@ -594,21 +594,21 @@ test("failed finish_task clears notice when preview and tool-finished are split 
       execution: {
         toolCallId: "call-finish",
         toolName: "finish_task",
-        request: { name: "finish_task", summary: "再次确认 finish_task 可用" },
-        output: "[tool schema error] 未知工具: finish_task",
+        request: { name: "finish_task", summary: "reconfirmed finish_task works" },
+        output: "[tool schema error] Unknown tool: finish_task",
         failed: true,
       },
     },
     {
       kind: "replace-pending-assistant",
-      text: "这次调用失败了——返回了 `未知工具: finish_task`。",
+      text: "This call failed — it returned `Unknown tool: finish_task`.",
     },
   ]);
 
   const assistantRow = harness.timeline
     .toMessages()
     .find((message) => message.role === "assistant" && !message.tool);
-  assert.equal(assistantRow?.content, "这次调用失败了——返回了 `未知工具: finish_task`。");
+  assert.equal(assistantRow?.content, "This call failed — it returned `Unknown tool: finish_task`.");
   assert.equal(assistantRow?.aux?.finishTaskNotice, undefined);
 });
 
@@ -962,8 +962,8 @@ test("Moonshot Formula web_search tool-execution-finished preserves preview supp
   const argumentsJson = JSON.stringify({
     status: "completed",
     _spiritUi: {
-      inputExcerpt: "DeepSeek 是什么",
-      headlineDetail: "DeepSeek 是什么",
+      inputExcerpt: "What is DeepSeek",
+      headlineDetail: "What is DeepSeek",
       suppressExpand: true,
     },
   });
@@ -981,7 +981,7 @@ test("Moonshot Formula web_search tool-execution-finished preserves preview supp
       execution: {
         toolCallId: "ws_formula_1",
         toolName: "web_search",
-        request: { name: "web_search", argumentsJson: '{"query":"DeepSeek 是什么"}' },
+        request: { name: "web_search", argumentsJson: '{"query":"What is DeepSeek"}' },
         output: "[moonshot formula web_search] completed",
         failed: false,
       },
@@ -993,8 +993,8 @@ test("Moonshot Formula web_search tool-execution-finished preserves preview supp
     .find((message) => message.tool?.toolCallId === "ws_formula_1")?.tool;
   assert.equal(tool?.phase, "succeeded");
   assert.equal(tool?.suppressExpand, true);
-  assert.equal(tool?.argsExcerpt, "DeepSeek 是什么");
-  assert.equal(tool?.headlineDetail, "DeepSeek 是什么");
+  assert.equal(tool?.argsExcerpt, "What is DeepSeek");
+  assert.equal(tool?.headlineDetail, "What is DeepSeek");
 });
 
 test("failed llm turn reuses streamed error text instead of duplicating assistant rows", () => {
@@ -1150,7 +1150,7 @@ test("interleaved built-in web_search shows Thinking placeholder after last term
 
   harness.orchestrator.applyRuntimeHostEvents([
     { kind: "begin-assistant-response" },
-    { kind: "assistant-chunk", text: "好，试试就试试！" },
+    { kind: "assistant-chunk", text: "Fine, let's give it a try!" },
     {
       kind: "streaming-tool-preview",
       toolCallId: "find-1",
@@ -1160,7 +1160,7 @@ test("interleaved built-in web_search shows Thinking placeholder after last term
         _spiritUi: { inputExcerpt: "spirit.fast", internalActionType: "find_in_page" },
       }),
     },
-    { kind: "assistant-chunk", text: "失败了，再试一次：" },
+    { kind: "assistant-chunk", text: "It failed, trying again:" },
     {
       kind: "streaming-tool-preview",
       toolCallId: "find-2",

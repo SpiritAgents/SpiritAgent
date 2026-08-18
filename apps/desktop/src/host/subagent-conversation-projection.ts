@@ -192,7 +192,7 @@ export function ensureSubagentConversationProjection(
   return projection;
 }
 
-/** @returns 是否应用了子会话事件（供 tick 决定是否请求节流推送）。 */
+/** @returns Whether a sub-session event was applied (lets the tick decide whether to request a throttled push). */
 export function syncSubagentConversationProjections(
   bundle: SessionBundle,
   runtime: DesktopHostRuntime | undefined,

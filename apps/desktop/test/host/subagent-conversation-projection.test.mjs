@@ -20,7 +20,7 @@ function buildSubagentSession(overrides = {}) {
     llmHistory: [
       {
         role: "user",
-        content: "输出你好",
+        content: "Say hello",
       },
     ],
     ...overrides,

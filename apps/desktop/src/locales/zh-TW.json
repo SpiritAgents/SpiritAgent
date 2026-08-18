@@ -802,7 +802,10 @@
     "enterAnswer": "請輸入您的回答",
     "customInput": "自訂輸入",
     "customAnswerPlaceholder": "新增詳細資料或未列出的選項",
-    "supplementOption": "補充未列出的選項"
+    "supplementOption": "補充未列出的選項",
+    "exportSessionOpenFailed": "自動開啟匯出檔案失敗: {{error}}",
+    "saveImageAsUnsupportedFormat": "目前僅支援另存常見圖片格式。",
+    "saveImageAsFileMissing": "要另存的圖片檔案不存在。"
   },
   "workspace": {
     "planNotCreated": "計劃尚未建立。",
@@ -1248,6 +1251,9 @@
     "autoWorktreeNameFailedInvalidBranchName": "自動產生 Worktree 名稱失敗：branchName 格式無效（{{branchName}}）。",
     "autoWorktreeNameFailedNotObject": "自動產生 Worktree 名稱失敗：模型回傳的 JSON 不是物件。"
   },
+  "rules": {
+    "templatePlaceholder": "在此補充短、硬、可執行的約束，供後續 agent 讀取。"
+  },
   "notification": {
     "defaultSessionName": "會話",
     "taskComplete": {
@@ -1446,5 +1452,14 @@
     "alwaysTrust": "永遠信任",
     "hooksSection": "將執行的鉤子",
     "openHookScript": "在預設編輯器中開啟腳本"
+  },
+  "webHost": {
+    "error": {
+      "missingPath": "缺少請求路徑",
+      "pairingLocked": "配對失敗次數過多，請重新啟動 Web Host 以產生新的配對碼。",
+      "pairingFailed": "配對碼不正確。",
+      "pairingRequired": "需要先完成首次配對。",
+      "invalidProvider": "無效的提供商參數。"
+    }
   }
 }

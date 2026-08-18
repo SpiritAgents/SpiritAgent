@@ -1,4 +1,5 @@
 use anyhow::{Context, Result, anyhow};
+use rust_i18n::t;
 use serde::{Deserialize, Serialize};
 use std::{
     collections::BTreeMap,
@@ -126,8 +127,8 @@ struct ParsedSkillFrontmatter {
     description: Option<String>,
 }
 
-pub fn skills_usage() -> &'static str {
-    "用法: /skills"
+pub fn skills_usage() -> String {
+    t!("tui.skills.usage").into_owned()
 }
 
 pub fn workspace_spirit_skills_dir(workspace_root: &Path) -> PathBuf {
@@ -162,19 +163,21 @@ pub fn load_skill_state() -> Result<SkillStateFile> {
     }
 
     let content = fs::read_to_string(&path)
-        .with_context(|| format!("读取技能状态失败: {}", path.display()))?;
-    serde_json::from_str(&content).with_context(|| format!("解析技能状态失败: {}", path.display()))
+        .with_context(|| format!("Failed to read skill state: {}", path.display()))?;
+    serde_json::from_str(&content)
+        .with_context(|| format!("Failed to parse skill state: {}", path.display()))
 }
 
 pub fn save_skill_state(state: &SkillStateFile) -> Result<PathBuf> {
     let path = skills_state_file_path();
     if let Some(parent) = path.parent() {
         fs::create_dir_all(parent)
-            .with_context(|| format!("创建技能状态目录失败: {}", parent.display()))?;
+            .with_context(|| format!("Failed to create skill state directory: {}", parent.display()))?;
     }
 
     let content = serde_json::to_string_pretty(state)?;
-    fs::write(&path, content).with_context(|| format!("写入技能状态失败: {}", path.display()))?;
+    fs::write(&path, content)
+        .with_context(|| format!("Failed to write skill state: {}", path.display()))?;
     Ok(path)
 }
 
@@ -242,7 +245,7 @@ pub fn build_active_skill_payload(entry: &SkillEntry) -> Result<ActiveSkillPaylo
         .source
         .path
         .parent()
-        .ok_or_else(|| anyhow!("skill 路径缺少父目录: {}", entry.source.path.display()))?;
+        .ok_or_else(|| anyhow!("skill path has no parent directory: {}", entry.source.path.display()))?;
     let (content, truncated) = truncate_active_skill_content(&entry.content);
     let (resources, resources_truncated) = collect_skill_resources(skill_root)?;
 
@@ -262,7 +265,7 @@ pub fn build_active_skill_payload(entry: &SkillEntry) -> Result<ActiveSkillPaylo
 pub fn build_activate_skill_user_turn(skill_name: &str, extra_note: &str) -> String {
     let trimmed = extra_note.trim();
     if trimmed.is_empty() {
-        return format!("请按已激活的 skill \"{}\" 处理当前任务。", skill_name);
+        return format!("Handle the current task according to the activated skill \"{}\".", skill_name);
     }
 
     trimmed.to_string()
@@ -271,21 +274,23 @@ pub fn build_activate_skill_user_turn(skill_name: &str, extra_note: &str) -> Str
 pub fn validate_skill_name(name: &str) -> Result<()> {
     if name.is_empty() || name.chars().count() > SKILL_NAME_MAX_CHARS {
         return Err(anyhow!(
-            "skill-name 必须为 1-{} 个字符",
+            "skill-name must be 1-{} characters",
             SKILL_NAME_MAX_CHARS
         ));
     }
     if name.starts_with('-') || name.ends_with('-') {
-        return Err(anyhow!("skill-name 不能以连字符开头或结尾"));
+        return Err(anyhow!("skill-name cannot start or end with a hyphen"));
     }
     if name.contains("--") {
-        return Err(anyhow!("skill-name 不能包含连续连字符"));
+        return Err(anyhow!("skill-name cannot contain consecutive hyphens"));
     }
     if !name
         .chars()
         .all(|ch| ch.is_ascii_lowercase() || ch.is_ascii_digit() || ch == '-')
     {
-        return Err(anyhow!("skill-name 仅允许小写字母、数字和连字符"));
+        return Err(anyhow!(
+            "skill-name only allows lowercase letters, digits, and hyphens"
+        ));
     }
     Ok(())
 }
@@ -308,7 +313,7 @@ fn discover_skills_in_root(
     }
 
     let mut directories = fs::read_dir(root)
-        .with_context(|| format!("读取技能目录失败: {}", root.display()))?
+        .with_context(|| format!("Failed to read skill directory: {}", root.display()))?
         .filter_map(|entry| entry.ok())
         .filter_map(|entry| match entry.file_type() {
             Ok(kind) if kind.is_dir() => Some(entry.path()),
@@ -352,7 +357,7 @@ fn discover_skills_in_root(
 
 fn parse_skill_document(path: &Path) -> Result<Option<ParsedSkillDocument>> {
     let raw = fs::read_to_string(path)
-        .with_context(|| format!("读取 skill 文件失败: {}", path.display()))?;
+        .with_context(|| format!("Failed to read skill file: {}", path.display()))?;
     let Some((frontmatter, body)) = split_skill_frontmatter(&raw) else {
         logging::log_event(&format!(
             "[skills] skipped missing frontmatter path={}",
@@ -611,7 +616,7 @@ fn collect_skill_resources(skill_root: &Path) -> Result<(Vec<ActiveSkillResource
         let mut stack = vec![root.clone()];
         while let Some(current) = stack.pop() {
             let mut entries = fs::read_dir(&current)
-                .with_context(|| format!("读取 skill 资源目录失败: {}", current.display()))?
+                .with_context(|| format!("Failed to read skill resource directory: {}", current.display()))?
                 .filter_map(|entry| entry.ok())
                 .collect::<Vec<_>>();
             entries.sort_by_key(|entry| entry.path());
@@ -767,7 +772,7 @@ mod tests {
             &sample_skill(
                 "code-review",
                 "Review code paths. Use when auditing diffs.",
-                "# Workspace Spirit\n优先使用工作区原生 skill",
+                "# Workspace Spirit\nPrefer the workspace-native skill",
             ),
         );
         write_skill(
@@ -776,13 +781,13 @@ mod tests {
             &sample_skill(
                 "code-review",
                 "Fallback review skill.",
-                "# Workspace Agents\n兼容根",
+                "# Workspace Agents\nCompatibility root",
             ),
         );
         write_skill(
             &user_skills_dir(),
             "code-review",
-            &sample_skill("code-review", "User review skill.", "# User\n用户级"),
+            &sample_skill("code-review", "User review skill.", "# User\nUser level"),
         );
 
         let entries = discover_skill_entries(&workspace_root, &SkillStateFile::default())
@@ -790,7 +795,7 @@ mod tests {
 
         assert_eq!(entries.len(), 1);
         assert_eq!(entries[0].source.root_kind, SkillRootKind::WorkspaceSpirit);
-        assert!(entries[0].content.contains("工作区原生"));
+        assert!(entries[0].content.contains("workspace-native"));
     }
 
     #[test]
@@ -970,8 +975,8 @@ mod tests {
     fn build_activate_skill_user_turn_falls_back_when_note_is_empty() {
         assert!(build_activate_skill_user_turn("code-review", "  ").contains("code-review"));
         assert_eq!(
-            build_activate_skill_user_turn("code-review", "聚焦风险与回归"),
-            "聚焦风险与回归"
+            build_activate_skill_user_turn("code-review", "Focus on risks and regressions"),
+            "Focus on risks and regressions"
         );
     }
 }

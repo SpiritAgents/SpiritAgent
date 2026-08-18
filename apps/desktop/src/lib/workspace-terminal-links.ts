@@ -38,7 +38,7 @@ function activateTerminalLink(event: MouseEvent, uri: string): void {
   openTerminalLink(uri);
 }
 
-/** 为集成终端启用 URL 检测与 OSC 8 超链接（需 Ctrl/Cmd+单击）。 */
+/** Enables URL detection and OSC 8 hyperlinks for the integrated terminal (requires Ctrl/Cmd+click). */
 export function configureWorkspaceTerminalLinks(term: Terminal): void {
   term.options.linkHandler = {
     activate: (event, text) => {

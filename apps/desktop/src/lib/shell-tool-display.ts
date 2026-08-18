@@ -15,7 +15,7 @@ export function parseShellToolResult(outputExcerpt: string | undefined): ShellTo
 
 const COMMAND_LINE_PREFIX = i18n.t("tool.commandPrefix");
 
-/** 展开区优先用完整 command（argsExcerpt / detailLines），摘要 headlineDetail 仅作回退。 */
+/** The expanded area prefers the full command (argsExcerpt / detailLines); the summary headlineDetail is only a fallback. */
 export function resolveShellToolExpandedCommand(
   tool: Pick<ToolBlockSnapshot, "argsExcerpt" | "detailLines" | "headlineDetail">,
 ): string | undefined {

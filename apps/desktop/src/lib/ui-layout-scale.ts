@@ -42,9 +42,11 @@ export function setStoredUiLayoutScale(scale: number): void {
 }
 
 /*
- * macOS 红绿灯簇几何：hiddenInset 默认 margin (12, 11)（Electron native_window_mac.mm），
- * 按钮簇 54×14px。scale=1 时簇水平居中于 78px 预留区（--spirit-macos-traffic-lights-inset-left）、
- * 垂直中线与 28px 侧栏切换按钮中线（18px）重合；缩放后按同一关系重算，s=1 正好还原 (12, 11)。
+ * macOS traffic lights cluster geometry: hiddenInset default margin (12, 11) (Electron native_window_mac.mm),
+ * cluster 54×14px. At scale=1 the cluster is horizontally centered in the 78px reserved zone
+ * (--spirit-macos-traffic-lights-inset-left), and its vertical center coincides with the 28px
+ * sidebar toggle button center (18px); after scaling it is recomputed from the same relation,
+ * and s=1 exactly restores (12, 11).
  */
 const DARWIN_TRAFFIC_LIGHTS_ZONE_WIDTH = 78;
 const DARWIN_TRAFFIC_LIGHTS_CLUSTER_WIDTH = 54;
@@ -64,10 +66,12 @@ export function computeDarwinTrafficLightPosition(scale: number): { x: number; y
 let darwinTrafficLightSyncFrame: number | null = null;
 
 /**
- * CSS 缩放写入 DOM 后布局要等渲染主线程空闲才真正上屏（React 重渲染约 60–90ms），
- * 而原生 setWindowButtonPosition 几毫秒内即生效；故延到 CSS 生效后的首个 rAF
- * （新布局所在帧的起点）再发 IPC，使红绿灯与布局在同一帧切换。
- * 单个 pending rAF 同时合并同一次按键内 updater/useLayoutEffect 的重复调用。
+ * After CSS scaling is written to the DOM, the layout only actually paints once the renderer
+ * main thread is idle (React re-render takes ~60–90ms), while native setWindowButtonPosition
+ * takes effect within a few milliseconds; so the IPC is deferred to the first rAF after the CSS
+ * takes effect (the start of the frame containing the new layout), switching the traffic lights
+ * and the layout in the same frame.
+ * A single pending rAF also coalesces duplicate updater/useLayoutEffect calls within the same keypress.
  */
 function syncDarwinTrafficLightPosition(scale: number): void {
   if (typeof window === "undefined") {
@@ -94,7 +98,7 @@ function shouldApplyWin32TitleBarCounterZoom(): boolean {
   if (!electron) {
     return false;
   }
-  // 与 isWin32ElectronShell 对齐：preload platform 优先，否则 UA 回退
+  // Aligned with isWin32ElectronShell: preload platform first, otherwise UA fallback
   return window.spiritDesktop?.platform === "win32" || /Windows/i.test(navigator.userAgent);
 }
 
@@ -105,7 +109,7 @@ function getScaleRoot(): HTMLElement | null {
   return document.getElementById(UI_LAYOUT_SCALE_ROOT_ID);
 }
 
-/** Radix 浮层须挂入与主 UI 相同的缩放根，避免 body transform 导致 fixed 定位偏移。 */
+/** Radix overlays must be portaled into the same scale root as the main UI, otherwise a body transform offsets fixed positioning. */
 export function getUiLayoutPortalContainer(): HTMLElement | undefined {
   return getScaleRoot() ?? undefined;
 }
@@ -121,7 +125,7 @@ export function getCurrentUiLayoutScale(): number {
   return Number.isFinite(parsed) ? parsed : DEFAULT_UI_LAYOUT_SCALE;
 }
 
-/** 缩放根是否带 transform（`.spirit-ui-layout-scaled`）；无 transform 时其内 fixed 走视口坐标。 */
+/** Whether the scale root carries a transform (`.spirit-ui-layout-scaled`); without a transform, fixed elements inside it use viewport coordinates. */
 export function isUiLayoutScaleTransformActive(): boolean {
   const scaleRoot = getScaleRoot();
   if (!scaleRoot) {
@@ -130,7 +134,7 @@ export function isUiLayoutScaleTransformActive(): boolean {
   return scaleRoot.classList.contains(UI_LAYOUT_SCALED_BODY_CLASS);
 }
 
-/** 视口坐标 → 缩放根内 position:fixed 本地坐标（仅 transform 激活时需换算）。 */
+/** Viewport coordinates → position:fixed local coordinates inside the scale root (conversion only needed when the transform is active). */
 export function viewportPointToScaleRootLocal(
   viewportTop: number,
   viewportLeft: number,
@@ -155,7 +159,7 @@ export type ViewportBox = {
   height: number;
 };
 
-/** 视口矩形 → 缩放根内 fixed 锚点盒（自定义 Radix trigger 须与 tooltip 同源换算）。 */
+/** Viewport rect → fixed anchor box inside the scale root (custom Radix triggers must use the same conversion as tooltip). */
 export function viewportRectToScaleRootLocal(rect: ViewportBox): ViewportBox {
   if (!isUiLayoutScaleTransformActive()) {
     return rect;
@@ -170,7 +174,7 @@ export function viewportRectToScaleRootLocal(rect: ViewportBox): ViewportBox {
   };
 }
 
-/** 同一缩放根内 getBoundingClientRect 差值 / 边长 → 本地 CSS 长度（shell 分割线定位用）。 */
+/** getBoundingClientRect deltas / edge lengths within the same scale root → local CSS lengths (for shell divider positioning). */
 export function viewportLengthToScaleRootLocal(length: number): number {
   if (!isUiLayoutScaleTransformActive()) {
     return length;

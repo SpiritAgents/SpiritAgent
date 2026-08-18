@@ -52,7 +52,7 @@ test("lexical bridge round-trips plain text segments", () => {
 });
 
 test("lexical bridge keeps trailing newline in text segment", () => {
-  const segments = [{ kind: "text", value: "你好\n" }];
+  const segments = [{ kind: "text", value: "Hello\n" }];
   const roundTripped = richSegmentsRoundTrip(segments);
-  assert.equal(segmentsToPlainText(roundTripped), "你好\n");
+  assert.equal(segmentsToPlainText(roundTripped), "Hello\n");
 });

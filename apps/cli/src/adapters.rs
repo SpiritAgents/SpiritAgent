@@ -87,7 +87,7 @@ impl SecretStore for KeyringSecretStore {
         match entry.get_password() {
             Ok(value) if !value.trim().is_empty() => Ok(Some(value)),
             Ok(_) | Err(keyring::Error::NoEntry) => Ok(None),
-            Err(err) => Err(anyhow!("读取 keyring 中的 API Key 失败: {}", err)),
+            Err(err) => Err(anyhow!("Failed to read API Key from keyring: {}", err)),
         }
     }
 
@@ -95,25 +95,25 @@ impl SecretStore for KeyringSecretStore {
         let entry = keyring_entry()?;
         entry
             .set_password(api_key.trim())
-            .context("写入 keyring 失败")
+            .context("Failed to write to keyring")
     }
 
     fn remove_global_api_key(&self) -> Result<()> {
         let entry = keyring_entry()?;
         match entry.delete_password() {
             Ok(_) | Err(keyring::Error::NoEntry) => Ok(()),
-            Err(err) => Err(anyhow!("删除 keyring API Key 失败: {}", err)),
+            Err(err) => Err(anyhow!("Failed to delete keyring API Key: {}", err)),
         }
     }
 
     fn load_model_api_key(&self, model_name: &str) -> Result<Option<String>> {
         let account = format!("model::{}", model_name);
         let entry = keyring::Entry::new("SpiritAgent", &account)
-            .with_context(|| format!("初始化 keyring 条目失败: {}", account))?;
+            .with_context(|| format!("Failed to initialize keyring entry: {}", account))?;
         match entry.get_password() {
             Ok(value) if !value.trim().is_empty() => Ok(Some(value)),
             Ok(_) | Err(keyring::Error::NoEntry) => Ok(None),
-            Err(err) => Err(anyhow!("读取模型 {} 的 API Key 失败: {}", model_name, err)),
+            Err(err) => Err(anyhow!("Failed to read API Key for model {}: {}", model_name, err)),
         }
     }
 

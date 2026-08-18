@@ -327,7 +327,7 @@ function findOrCreateProviderGroup(
   const existing = findProviderGroup(config, groupId);
   if (existing) {
     Object.assign(existing, connect);
-    // Object.assign 不会删除 connect 上缺省的键；标准计费依赖字段缺失，须再同步一次。
+    // Object.assign does not delete keys missing from connect; standard billing depends on those fields, so sync once more.
     applyManagedProviderConnectFields(existing, {
       provider: connect.provider,
       providerSite: connect.providerSite,
@@ -1569,7 +1569,7 @@ export async function removeProviderGroupCommand(
   });
 }
 
-/** @deprecated 使用 {@link removeProviderGroupCommand} */
+/** @deprecated use {@link removeProviderGroupCommand} */
 export async function removeProviderModelsCommand(
   ctx: HostModelCommandContext,
   request: RemoveProviderModelsRequest,

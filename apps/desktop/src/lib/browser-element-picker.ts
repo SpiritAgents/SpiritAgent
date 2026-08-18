@@ -143,7 +143,7 @@ export function buildPickerInjectScript(): string {
     }
 
     if (!overlayMotionEnabled) {
-      // 首次进入：几何瞬间落位 + 仅 opacity 渐显，避免从 (0,0) 飞入（对齐 WebView 时 host overlay 行为）
+      // First entry: snap geometry into place instantly and fade in opacity only, avoiding a fly-in from (0,0) (matches the host overlay behavior when aligned to a WebView)
       overlayEl.style.transition = 'none';
       paintOverlayGeometry(rect);
       overlayEl.style.opacity = '0';

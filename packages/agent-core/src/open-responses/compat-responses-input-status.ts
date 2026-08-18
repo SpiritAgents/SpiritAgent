@@ -9,7 +9,7 @@ export function shouldPatchArkResponsesInputItemStatus(
   return isArkLlmVendor(config.llmVendor);
 }
 
-/** Ark Responses 重放历史时要求每条 input item 带 status，缺省按 completed 补齐。 */
+/** Ark Responses requires every input item to carry a status when replaying history; missing ones default to completed. */
 export function patchArkResponsesInputItemStatus(body: JsonObject): void {
   const input = body.input;
   if (!Array.isArray(input)) {

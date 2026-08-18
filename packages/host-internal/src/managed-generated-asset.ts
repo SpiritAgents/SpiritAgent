@@ -54,24 +54,24 @@ export function parseManagedGeneratedAssetReference(
     url.search.length > 0 ||
     url.hash.length > 0
   ) {
-    throw new Error(`无效的 Spirit 托管资源引用: ${trimmed}`);
+    throw new Error(`Invalid Spirit managed asset reference: ${trimmed}`);
   }
 
   const segments = url.pathname.replace(/^\/+/, "").split("/").filter(Boolean);
   if (segments.length !== 2) {
-    throw new Error(`无效的 Spirit 托管资源引用: ${trimmed}`);
+    throw new Error(`Invalid Spirit managed asset reference: ${trimmed}`);
   }
 
   const kindSegment = segments[0]?.toLowerCase();
   if (kindSegment !== "image" && kindSegment !== "video") {
-    throw new Error(`无效的 Spirit 托管资源引用: ${trimmed}`);
+    throw new Error(`Invalid Spirit managed asset reference: ${trimmed}`);
   }
 
   let basename: string;
   try {
     basename = decodeURIComponent(segments[1] ?? "").trim();
   } catch {
-    throw new Error(`无效的 Spirit 托管资源引用: ${trimmed}`);
+    throw new Error(`Invalid Spirit managed asset reference: ${trimmed}`);
   }
 
   if (
@@ -82,7 +82,7 @@ export function parseManagedGeneratedAssetReference(
     basename.includes("/") ||
     basename.includes("\\")
   ) {
-    throw new Error(`无效的 Spirit 托管资源引用: ${trimmed}`);
+    throw new Error(`Invalid Spirit managed asset reference: ${trimmed}`);
   }
 
   return {

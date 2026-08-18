@@ -1,12 +1,13 @@
 import { useCallback, useLayoutEffect, useState } from "react";
 
 /**
- * 观测元素 border-box 高度（px，向上取整），供叠层与滚动区 padding 对齐。
+ * Observe an element's border-box height (px, rounded up) for aligning overlays and scroll-area padding.
  *
- * 必须在 layout effect 中同步量取：滚动床 padding 由该高度推导，若等 paint 后
- * 才更新（useEffect / RO 回调），换页首帧会用陈旧高度布局，随后 padding 收缩
- * 引发 scrollHeight 突变与可见位移。`remeasureKey` 变化（如空会话 ↔ 有内容
- * 会话的 composer 布局切换）时在同一 commit 内 pre-paint 重测。
+ * Must measure synchronously in a layout effect: the scroll bed padding is derived from this height;
+ * updating after paint (useEffect / RO callback) would lay out the first frame of a page switch with a
+ * stale height, then the padding shrink causes a scrollHeight jump and a visible shift. When
+ * `remeasureKey` changes (e.g. the composer layout switch between empty session and session with
+ * content), re-measure pre-paint within the same commit.
  */
 export function useElementBoxHeight<T extends HTMLElement>(remeasureKey?: unknown) {
   const [element, setElement] = useState<T | null>(null);

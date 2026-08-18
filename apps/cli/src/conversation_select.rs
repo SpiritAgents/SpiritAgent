@@ -1,4 +1,4 @@
-//! 对话区折行、选区归一化与按「显示列」切片——使用 ratatui 公开 API（WordWrapper）。
+//! Conversation area wrapping, selection normalization, and slicing by "display column" — using ratatui's public API (WordWrapper).
 
 use ratatui::{
     layout::Alignment,
@@ -20,7 +20,7 @@ pub struct NormRange {
     pub line_start: usize,
     pub col_start: usize,
     pub line_end: usize,
-    /// 最后一列的 **不包含** 上界（显示列坐标）。
+    /// The upper bound of the last column is **exclusive** (display column coordinates).
     pub col_end_excl: usize,
 }
 
@@ -178,7 +178,7 @@ fn build_hanging_indent(line: &[StyledGrapheme<'_>]) -> HangingIndent {
     indent
 }
 
-/// 与 `Paragraph::wrap(Wrap { trim: false })` 相同管线：按宽度折成若干视口行。
+/// Same pipeline as `Paragraph::wrap(Wrap { trim: false })`: wraps into viewport rows by width.
 pub fn flatten_wrapped_history(
     logical_lines: Vec<Line<'static>>,
     width: u16,

@@ -15,7 +15,7 @@ function isContainerMeasurable(container: HTMLElement): boolean {
 }
 
 export type WorkspaceTerminalResizeController = {
-  /** 在布局稳定后触发一次 fit（例如侧栏拖拽结束）。 */
+  /** Triggers a fit once the layout is stable (e.g. after a sidebar drag ends). */
   scheduleFit: () => void;
   dispose: () => void;
 };
@@ -25,7 +25,7 @@ export function attachWorkspaceTerminalResizeObserver(options: {
   terminal: Terminal;
   fitAddon: FitAddon;
   webglAddon?: WebglAddon | null;
-  /** 为 true 时忽略 ResizeObserver（例如侧栏仍在拖拽中）。 */
+  /** When true, ResizeObserver events are ignored (e.g. while the sidebar is still being dragged). */
   isSuspended?: () => boolean;
 }): WorkspaceTerminalResizeController {
   const { container, terminal, fitAddon, webglAddon, isSuspended } = options;

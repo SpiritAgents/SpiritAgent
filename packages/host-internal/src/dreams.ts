@@ -158,7 +158,7 @@ export class HostDreamStore {
     const file = await this.loadFile();
     const index = file.records.findIndex((record) => record.id === input.id);
     if (index < 0) {
-      throw new Error(`梦境不存在: ${input.id}`);
+      throw new Error(`Dream does not exist: ${input.id}`);
     }
 
     const now = Date.now();
@@ -201,7 +201,7 @@ export class HostDreamStore {
     const file = await this.loadFile();
     const index = file.records.findIndex((record) => record.id === id);
     if (index < 0) {
-      throw new Error(`梦境不存在: ${id}`);
+      throw new Error(`Dream does not exist: ${id}`);
     }
     const now = Date.now();
     file.records[index] = {
@@ -406,7 +406,7 @@ function normalizeRequiredSessionProgressInput(
 ): HostDreamSessionProgress {
   const normalized = normalizeSessionProgress(value);
   if (!normalized) {
-    throw new Error("会话进度无效");
+    throw new Error("Invalid session progress");
   }
   return normalized;
 }
@@ -418,7 +418,7 @@ function normalizeTags(tags: string[]): string[] {
 function normalizeNonEmpty(value: unknown, field: string): string {
   const normalized = normalizeOptionalText(value);
   if (!normalized) {
-    throw new Error(`${field} 不能为空`);
+    throw new Error(`${field} must not be empty`);
   }
   return normalized;
 }

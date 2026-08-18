@@ -78,8 +78,8 @@ test("buildWindowsJumpListCategories omits custom group when no sessions", () =>
 
 test("buildWindowsJumpListCategories builds recent custom group before tasks", () => {
   const categories = buildWindowsJumpListCategories({
-    recentLabel: "最近",
-    newAgentLabel: "新会话",
+    recentLabel: "Recent",
+    newAgentLabel: "New Session",
     sessions: [session("s1", "Chat One", 10), session("s2", "Chat Two", 20)],
     execPath: "C:\\Spirit.exe",
     iconPath: "C:\\Spirit.ico",
@@ -87,12 +87,12 @@ test("buildWindowsJumpListCategories builds recent custom group before tasks", (
   });
   assert.equal(categories.length, 2);
   assert.equal(categories[0]?.type, "custom");
-  assert.equal(categories[0]?.name, "最近");
+  assert.equal(categories[0]?.name, "Recent");
   assert.equal(categories[0]?.items.length, 2);
   assert.match(categories[0]?.items[0]?.args ?? "", /"C:\\main.ts"/);
   assert.match(categories[0]?.items[0]?.args ?? "", /open-session/);
   assert.equal(categories[1]?.type, "tasks");
-  assert.equal(categories[1]?.items[0]?.title, "新会话");
+  assert.equal(categories[1]?.items[0]?.title, "New Session");
 });
 
 test("truncateJumpListTitle shortens long display names", () => {

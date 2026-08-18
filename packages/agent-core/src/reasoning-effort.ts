@@ -107,9 +107,9 @@ export interface ModelReasoningEffortContext {
   model?: string;
   transportKind?: ModelReasoningTransportKind;
   supportedEfforts?: readonly ModelReasoningEffort[];
-  /** Kimi Code `supports_thinking_type`；`only` 表示思考常开且隐藏 Thinking 开关。 */
+  /** Kimi Code `supports_thinking_type`; `only` means thinking is always on and the Thinking switch is hidden. */
   supportsThinkingType?: ModelSupportsThinkingType;
-  /** 目录标记：模型支持 `thinking.type` 开关（如 Meituan LongCat）。 */
+  /** Catalog flag: the model supports the `thinking.type` switch (e.g. Meituan LongCat). */
   supportsThinkingSwitch?: boolean;
 }
 
@@ -329,7 +329,7 @@ export function defaultModelReasoningEffort(
 export function modelReasoningEffortOptions(
   context?: ModelReasoningEffortContext,
 ): ReadonlyArray<ModelReasoningEffortOption<ModelReasoningEffort>> {
-  // DeepSeek 路由（直连或 Gateway deepseek/*）仅 V4 在 thinking 模式下有 reasoning_effort。
+  // DeepSeek routes (direct or Gateway deepseek/*) only expose reasoning_effort in thinking mode on V4.
   if (isDeepSeekRouteContext(context) && !isDeepSeekV4ReasoningEffortModel(context)) {
     return [{ value: "default", label: "Default" }];
   }
@@ -339,7 +339,7 @@ export function modelReasoningEffortOptions(
   }
 
   if (isMoonshotK3ReasoningEffortModel(context)) {
-    // K3 档位由模型文档固定为 low/high/max；不信任目录残留的 K2.x efforts。
+    // K3 tiers are fixed by the model documentation to low/high/max; do not trust leftover K2.x efforts from the catalog.
     return MOONSHOT_K3_REASONING_EFFORT_OPTIONS;
   }
 
@@ -440,7 +440,7 @@ export function resolveOpenAiTransportReasoningEffortForContext(
   }
 }
 
-/** Groq Qwen 须向 API 显式传 default；不可沿用 OpenAI 兼容 transport 的 default→undefined 映射。 */
+/** Groq Qwen must send default explicitly to the API; the OpenAI-compatible transport's default→undefined mapping must not be reused. */
 export function resolveGroqTransportReasoningEffortForContext(
   value: unknown,
   context?: ModelReasoningEffortContext,
@@ -502,7 +502,7 @@ export function isMoonshotReasoningEffortModel(context?: ModelReasoningEffortCon
   return context?.provider === "moonshot-ai";
 }
 
-/** Moonshot kimi-k3 与 Gateway moonshotai/kimi-k3：顶层 reasoning_effort，无 thinking.type。 */
+/** Moonshot kimi-k3 and Gateway moonshotai/kimi-k3: top-level reasoning_effort, no thinking.type. */
 export function isMoonshotK3ReasoningEffortModel(context?: ModelReasoningEffortContext): boolean {
   if (!isMoonshotKimiK3Model(context?.model ?? "")) {
     return false;

@@ -481,7 +481,7 @@ export class AiSdkOpenAiCompatibleTransport
 
     const abortController = new AbortController();
 
-    // Moonshot 视频：须在 streamText 异步发起 HTTP 之后再清理 stash，不可在同步 finally 里清理。
+    // Moonshot video: the stash must be cleaned up only after streamText has asynchronously issued the HTTP request, not in a synchronous finally.
     prepareMoonshotChatCompletionRequest(config, requestMessages);
     try {
       const result: any = streamText({
@@ -617,7 +617,7 @@ export class AiSdkOpenAiCompatibleTransport
 
     const normalizedSummary = summary.trim();
     if (!normalizedSummary) {
-      throw new Error("AI SDK 压缩返回为空，无法生成摘要。");
+      throw new Error("AI SDK compaction returned empty; cannot generate summary.");
     }
 
     history.splice(0, history.length, {
@@ -795,7 +795,7 @@ function createAiSdkLanguageModel(config: OpenAiTransportConfig): any {
 
 function createAiSdkImageModel(config: OpenAiImageGenerationConfig): any {
   if (isVercelAiGatewayImageConfig(config)) {
-    // Gateway 生图走 v3 image-model 协议，不能复用 chat 预设的 /v1 baseUrl。
+    // Gateway image generation uses the v3 image-model protocol; it cannot reuse the chat-preset /v1 baseUrl.
     return createGateway({ apiKey: config.apiKey, fetch: getLlmFetch() }).image(config.model);
   }
 
@@ -854,8 +854,8 @@ function createAiSdkOpenAiCompatibleProvider(
     transportConfig.cloudflareGatewayId,
     fetchWrapper ?? getLlmFetch(),
   );
-  // TokenHub Chat `web_search_options` 与 Responses `/v1/responses` 联网搜索均未接入：
-  // 前者实测注入后上游仍无有效实时检索；后者仅少数模型支持且与现有 Chat Completions 矩阵不匹配，维护成本不划算。
+  // Neither TokenHub Chat `web_search_options` nor Responses `/v1/responses` web search is integrated:
+  // the former was tested and the upstream still performed no effective real-time retrieval after injection; the latter is supported by only a few models and does not match the existing Chat Completions matrix, so the maintenance cost is not worthwhile.
 
   return createOpenAICompatible({
     apiKey: config.apiKey,
@@ -1009,7 +1009,7 @@ function createAiSdkFireworksProvider(config: OpenAiTransportConfig) {
 function createAiSdkTogetherProvider(
   config: Pick<OpenAiTransportConfig, "apiKey" | "baseUrl"> | OpenAiImageGenerationConfig,
 ) {
-  // SDK 默认 api.together.xyz；连接配置的 api.together.ai/v1 必须显式覆盖。
+  // The SDK defaults to api.together.xyz; the connection config's api.together.ai/v1 must explicitly override it.
   return createTogetherAI({
     apiKey: config.apiKey,
     ...(config.baseUrl ? { baseURL: config.baseUrl } : {}),
@@ -1026,7 +1026,7 @@ function createAiSdkBasetenProvider(config: Pick<OpenAiTransportConfig, "apiKey"
 }
 
 function createAiSdkGroqProvider(config: Pick<OpenAiTransportConfig, "apiKey" | "baseUrl">) {
-  // SDK 默认 https://api.groq.com/openai/v1；连接配置须显式覆盖 baseURL。
+  // The SDK defaults to https://api.groq.com/openai/v1; the connection config must explicitly override baseURL.
   return createGroq({
     apiKey: config.apiKey,
     ...(config.baseUrl ? { baseURL: config.baseUrl } : {}),
@@ -1035,9 +1035,9 @@ function createAiSdkGroqProvider(config: Pick<OpenAiTransportConfig, "apiKey" | 
 }
 
 /**
- * baseURL 双轨：连接配置存 OpenAI 兼容根（如 https://api.deepinfra.com/v1/openai），
- * 而 @ai-sdk/deepinfra 的 baseURL 期望 https://api.deepinfra.com/v1（SDK 语言模型自拼 /openai/...）。
- * 故剥掉尾部 /openai 后缀；自定义根不带该后缀时原样透传。
+ * baseURL dual-track: the connection config stores the OpenAI-compatible root (e.g. https://api.deepinfra.com/v1/openai),
+ * while @ai-sdk/deepinfra's baseURL expects https://api.deepinfra.com/v1 (the SDK language model appends /openai/... itself).
+ * So strip the trailing /openai suffix; custom roots without that suffix are passed through unchanged.
  */
 function normalizeDeepInfraSdkBaseUrl(baseUrl: string | undefined): string | undefined {
   const trimmed = baseUrl?.trim().replace(/\/+$/, "");
@@ -1058,8 +1058,8 @@ const DEEPINFRA_REASONING_EFFORTS = new Set([
 ]);
 
 /**
- * 仅用户显式选择档位时注入；未设置时不带字段走服务端默认
- * （不用 openAiReasoningEffort 的 medium 兜底，避免对非 reasoning 模型误传）。
+ * Injected only when the user explicitly selects an effort level; when unset, the field is omitted so the server default applies
+ * (no medium fallback via openAiReasoningEffort, to avoid sending it to non-reasoning models by mistake).
  */
 function resolveDeepInfraReasoningEffort(
   config: Pick<OpenAiTransportConfig, "reasoningEffort">,
@@ -1076,7 +1076,7 @@ function createAiSdkDeepInfraProvider(config: OpenAiTransportConfig) {
   const isCodeCompletion = isCodeCompletionTransportProfile(config);
   const reasoningEffort = isCodeCompletion ? undefined : resolveDeepInfraReasoningEffort(config);
   const thinkingDisabled = isCodeCompletion || config.vendorExtendedThinking === false;
-  // deepinfra 走官方 SDK 而非 createAiSdkOpenAiCompatibleProvider，stash 还原须在本 wrapper 内兼任。
+  // deepinfra uses the official SDK instead of createAiSdkOpenAiCompatibleProvider, so stash restoration must also happen inside this wrapper.
   const needsVideoStash = usesOpenAiCompatibleVideoMessageStash(config.llmVendor);
   const needsFetchWrapper = needsVideoStash || reasoningEffort !== undefined || thinkingDisabled;
   const fetchWrapper = !needsFetchWrapper
@@ -1093,8 +1093,8 @@ function createAiSdkDeepInfraProvider(config: OpenAiTransportConfig) {
           return getLlmFetch()(input, init);
         }
 
-        // DeepInfra OpenAPI 支持扁平 reasoning_effort 与 reasoning.enabled 关思考；
-        // 以运行时字段为准（比 /models/list 的 can-disable-reasoning tag 可靠），故不读 tag。
+        // DeepInfra OpenAPI supports flat reasoning_effort and reasoning.enabled to disable thinking;
+        // runtime fields are authoritative (more reliable than the can-disable-reasoning tag from /models/list), so the tag is not read.
         const stashedMessages = needsVideoStash ? takeMoonshotChatCompletionMessages() : undefined;
         return getLlmFetch()(input, {
           ...init,
@@ -1135,7 +1135,7 @@ function createAiSdkAlibabaProvider(config: OpenAiTransportConfig) {
 }
 
 function createAiSdkGatewayProvider(config: OpenAiTransportConfig) {
-  // Gateway chat 走 v3 AI 协议（默认 …/v3/ai/language-model），不能用模型目录预设的 /v1 baseUrl。
+  // Gateway chat uses the v3 AI protocol (default …/v3/ai/language-model); it cannot use the model catalog's preset /v1 baseUrl.
   return createGateway({
     apiKey: config.apiKey,
     fetch: getLlmFetch(),
@@ -1353,7 +1353,7 @@ function buildAiSdkProviderOptions(config: OpenAiTransportConfig): Record<string
       model: config.model,
     })
   ) {
-    // GPT-5.6+ reasoning 经 fetch 包装器写入嵌套 reasoning 对象；勿再通过 AI SDK openai.* 注入顶层 reasoning_effort。
+    // GPT-5.6+ reasoning is written as a nested reasoning object via the fetch wrapper; do not inject top-level reasoning_effort via AI SDK openai.* anymore.
     return {};
   }
 
@@ -1479,7 +1479,7 @@ function openAiUserContentToAiSdkContent(
         }
         break;
       case "video_url":
-        // Moonshot AI 视频：AI SDK 会丢弃 video_url，由 fetch 包装器写回完整 messages（见 moonshot-chat-completion-messages.ts）。
+        // Moonshot AI video: the AI SDK drops video_url; the fetch wrapper writes the full messages back (see moonshot-chat-completion-messages.ts).
         break;
       default:
         break;
@@ -1747,7 +1747,7 @@ async function* aiSdkEventStreamToRuntimeEvents(
     if (!sawAnswerOrToolOutput && !reasoningContent.trim()) {
       const preview = rawPreview.length === 0 ? "<empty stream body>" : rawPreview.join("\n");
       throw new Error(
-        `流式响应无任何 delta（无 content / tool_calls）。预览:\n${truncateChars(preview, 600)}`,
+        `Streaming response contained no delta (no content / tool_calls). Preview:\n${truncateChars(preview, 600)}`,
       );
     }
 
@@ -1845,7 +1845,7 @@ function accumulateStreamingToolCallProgressFromRawChunk(
         readyPreviewEmitted: false,
       };
 
-      // Alibaba/Qwen 的流式 tool_call delta 可能先给合法 id，随后又回传空字符串；这里只接受非空更新，避免把已存在的稳定 id 覆盖掉。
+      // Alibaba/Qwen streaming tool_call deltas may first provide a valid id and then send an empty string; only non-empty updates are accepted here to avoid overwriting an existing stable id.
       const nextToolCallId = nonEmptyToolCallIdOrUndefined(delta.id);
       if (nextToolCallId) {
         current.id = nextToolCallId;
@@ -2079,8 +2079,8 @@ function sanitizeMessageForCompatibility(
     content = content.filter((part) => !(isJsonObject(part) && part.type === "video_url"));
   }
 
-  // filter 恒产生新数组，引用变化不代表真有 part 被裁；
-  // 仅在确有 part 被裁时收敛，且收敛保留未被裁减的 part（如仍受支持的 video_url），而非只留文本。
+  // filter always produces a new array, so a reference change does not mean a part was actually dropped;
+  // only collapse when parts were truly dropped, and the collapse keeps parts that were not dropped (e.g. a still-supported video_url), not just text.
   if (content.length !== cloned.content.length) {
     return {
       ...cloned,
@@ -2131,7 +2131,7 @@ function resolveGroqProviderReasoningEffort(
     return undefined;
   }
 
-  // Groq Qwen 须显式传 default；不可经 openAiReasoningEffort 把 default 映射为 undefined。
+  // Groq Qwen requires passing default explicitly; do not map default to undefined via openAiReasoningEffort.
   const normalized = typeof raw === "string" ? raw.trim().toLowerCase() : "";
   switch (normalized) {
     case "none":

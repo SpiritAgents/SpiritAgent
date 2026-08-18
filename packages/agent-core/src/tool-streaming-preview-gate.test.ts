@@ -153,12 +153,12 @@ test("resolveStreamingToolPreviewEmit repeats edit_file when line delta changes"
 });
 
 test("web_search early preview extracts query from incomplete JSON", () => {
-  const partial = '{"query":"Spirit Agent 是什么项目"';
-  assert.equal(tryExtractPartialWebSearchQuery(partial), "Spirit Agent 是什么项目");
+  const partial = '{"query":"what is the Spirit Agent project"';
+  assert.equal(tryExtractPartialWebSearchQuery(partial), "what is the Spirit Agent project");
   assert.equal(hostToolArgumentsReadyForEarlyStreamingPreview("web_search", partial), true);
   assert.equal(hostToolArgumentsReadyForPreview("web_search", partial), false);
   assert.deepEqual(previewRequestFromStreamingArguments("web_search", partial), {
-    query: "Spirit Agent 是什么项目",
+    query: "what is the Spirit Agent project",
   });
 });
 
@@ -213,12 +213,12 @@ test("resolveStreamingToolPreviewEmit repeats tool_call when lazy gateway fields
   assert.equal(first.emit, true);
 
   const withTitle =
-    '{"provider":"built-in","server":"desktop","tool":"create_automation","arguments":{"title":"AI 新闻日报"';
+    '{"provider":"built-in","server":"desktop","tool":"create_automation","arguments":{"title":"AI daily news briefing"';
   const second = resolveStreamingToolPreviewEmit("tool_call", withTitle, first.nextState);
   assert.equal(second.emit, true);
 
   const withTrigger =
-    '{"provider":"built-in","server":"desktop","tool":"create_automation","arguments":{"title":"AI 新闻日报","trigger":{"kind":"time","schedule":{"kind":"daily","hour":8,"minute":0}}}}';
+    '{"provider":"built-in","server":"desktop","tool":"create_automation","arguments":{"title":"AI daily news briefing","trigger":{"kind":"time","schedule":{"kind":"daily","hour":8,"minute":0}}}}';
   const third = resolveStreamingToolPreviewEmit("tool_call", withTrigger, second.nextState);
   assert.equal(third.emit, true);
 

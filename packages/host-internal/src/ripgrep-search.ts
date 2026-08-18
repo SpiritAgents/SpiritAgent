@@ -5,10 +5,10 @@ import { resolveBundledRipgrepPath } from "./bundled-ripgrep-env.js";
 
 const MAX_SEARCH_FILE_SIZE = "1M";
 
-/** 工作区内容搜索（Desktop 文件面板）最多返回的命中条数 */
+/** Maximum number of matches returned by workspace content search (Desktop file panel) */
 export const WORKSPACE_CONTENT_SEARCH_MAX_MATCHES = 5000;
 
-/** 任意路径下的 .git 目录均不参与搜索（含 --hidden 全文模式） */
+/** .git directories at any path are excluded from search (including --hidden full-text mode) */
 const RIPGREP_EXCLUDED_GLOBS = ["!**/.git/**"] as const;
 
 export type RipgrepSearchOptions = {
@@ -55,7 +55,7 @@ type RipgrepJsonLine =
       data?: unknown;
     };
 
-/** 去掉 rg JSON 行尾换行；保留行首缩进，submatch 字节偏移与 lineText 对齐。 */
+/** Strip the trailing newline from rg JSON lines; keep leading indentation so submatch byte offsets stay aligned with lineText. */
 export function normalizeSearchLine(line: string): string {
   return line.replace(/\r?\n$/u, "");
 }
@@ -64,7 +64,7 @@ function readRipgrepMatchLineText(lines: RipgrepMatchLine["lines"]): string | un
   if (typeof lines.text === "string") {
     return lines.text;
   }
-  // 二进制命中仅有 lines.bytes；工作区文本搜索跳过
+  // Binary matches only have lines.bytes; workspace text search skips them
   return undefined;
 }
 
@@ -131,10 +131,10 @@ function toRelativePath(workspaceRoot: string, filePath: string): string {
 function mapRipgrepRegexError(stderr: string): Error {
   const trimmed = stderr.trim();
   if (!trimmed) {
-    return new Error("无效正则");
+    return new Error("Invalid regex");
   }
   const message = trimmed.split(/\r?\n/u).find((line) => line.trim().length > 0) ?? trimmed;
-  return new Error(`无效正则: ${message}`);
+  return new Error(`Invalid regex: ${message}`);
 }
 
 function parseRipgrepJsonMatchLine(line: string, workspaceRoot: string): RipgrepMatch | null {

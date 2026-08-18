@@ -71,7 +71,7 @@ test("late-finalized pre-tool thinking stays above tool preview inserted mid-str
   timeline.finalizeThinkingSegment("Plan to read the full file without speaking.", "after-stream");
   timeline.updatePendingAssistantAux("thinking", "Finished reading the file.");
   timeline.finalizeThinkingSegment("Finished reading the file.", "after-stream");
-  timeline.appendAssistantTextChunk("已读取完毕。");
+  timeline.appendAssistantTextChunk("Finished reading.");
   timeline.completeActiveAssistantSegment();
 
   assert.deepEqual(visibleRowTokens(timeline.toMessages()), [
@@ -79,7 +79,7 @@ test("late-finalized pre-tool thinking stays above tool preview inserted mid-str
     "thinking:Plan to read the full file without speaking.",
     "tool:read-1:preview",
     "thinking:Finished reading the file.",
-    "assistant:已读取完毕。",
+    "assistant:Finished reading.",
   ]);
 });
 
@@ -139,7 +139,7 @@ test("post-tool thinking in the same segment stays below provider tool rows", ()
   });
   timeline.updatePendingAssistantAux("thinking", "Based on search results, DeepSeek is at V4.");
   timeline.finalizeThinkingSegment("Based on search results, DeepSeek is at V4.", "after-stream");
-  timeline.appendAssistantTextChunk("DeepSeek 目前出到第 4 代。");
+  timeline.appendAssistantTextChunk("DeepSeek is currently at generation 4.");
   timeline.completeActiveAssistantSegment();
 
   assert.deepEqual(visibleRowTokens(timeline.toMessages()), [
@@ -147,7 +147,7 @@ test("post-tool thinking in the same segment stays below provider tool rows", ()
     "thinking:Need web search for current DeepSeek versions.",
     "tool:web-1:preview",
     "thinking:Based on search results, DeepSeek is at V4.",
-    "assistant:DeepSeek 目前出到第 4 代。",
+    "assistant:DeepSeek is currently at generation 4.",
   ]);
 });
 
@@ -155,9 +155,9 @@ test("post-tool thinking aux routes to after-tools row when before-tools body al
   const timeline = createTimeline();
   timeline.beginUserTurn("search again");
   timeline.beginAssistantSegment("initial");
-  timeline.updatePendingAssistantAux("thinking", "好的，让我试试修复后的 search。");
-  timeline.appendAssistantTextChunk("好的，让我试试修复后的 search。");
-  timeline.finalizeThinkingSegment("好的，让我试试修复后的 search。", "before-next-tool");
+  timeline.updatePendingAssistantAux("thinking", "OK, let me try the fixed search.");
+  timeline.appendAssistantTextChunk("OK, let me try the fixed search.");
+  timeline.finalizeThinkingSegment("OK, let me try the fixed search.", "before-next-tool");
   timeline.upsertToolMessage("web-1", {
     toolCallId: "web-1",
     toolName: "web_search",
@@ -174,15 +174,15 @@ test("post-tool thinking aux routes to after-tools row when before-tools body al
   const messages = timeline.toMessages();
   const preToolBody = messages.find(
     (message) =>
-      message.content.includes("让我试试") && !message.aux?.thinking?.includes("summarizing"),
+      message.content.includes("let me try") && !message.aux?.thinking?.includes("summarizing"),
   );
   assert.ok(preToolBody);
   assert.equal(preToolBody.aux?.thinking?.includes("summarizing"), undefined);
 
   assert.deepEqual(visibleRowTokens(messages), [
     "user:search again",
-    "thinking:好的，让我试试修复后的 search。",
-    "assistant:好的，让我试试修复后的 search。",
+    "thinking:OK, let me try the fixed search.",
+    "assistant:OK, let me try the fixed search.",
     "tool:web-1:succeeded",
     "thinking:Search is fixed; summarizing results.",
     "assistant:Here is the summary.",
@@ -316,56 +316,56 @@ test("built-in tool round-trip keeps interleaved body-tool-body order in one seg
   const timeline = createTimeline();
   timeline.beginUserTurn("find in page");
   timeline.beginAssistantSegment("initial");
-  timeline.appendAssistantTextChunk("好，试试就试试！");
+  timeline.appendAssistantTextChunk("Fine, let us give it a try!");
   timeline.upsertToolMessage("find-1", {
     toolCallId: "find-1",
     toolName: "web_search",
     phase: "failed",
-    headline: "页内查找 spirit.fast failed",
+    headline: "Find in page spirit.fast failed",
     detailLines: [],
     argsExcerpt: "{}",
   });
-  timeline.appendAssistantTextChunk("失败了，再试一次：");
+  timeline.appendAssistantTextChunk("It failed, trying again:");
   timeline.upsertToolMessage("find-2", {
     toolCallId: "find-2",
     toolName: "web_search",
     phase: "succeeded",
-    headline: "页内查找 https://spirit.fast",
+    headline: "Find in page https://spirit.fast",
     detailLines: [],
     argsExcerpt: "{}",
   });
-  timeline.appendAssistantTextChunk("第二次调用成功了。");
+  timeline.appendAssistantTextChunk("The second call succeeded.");
   timeline.completeActiveAssistantSegment();
 
   assert.deepEqual(timeline.toMessages().map(rowToken), [
     "user:find in page",
-    "assistant:好，试试就试试！",
+    "assistant:Fine, let us give it a try!",
     "tool:find-1:failed",
-    "assistant:失败了，再试一次：",
+    "assistant:It failed, trying again:",
     "tool:find-2:succeeded",
-    "assistant:第二次调用成功了。",
+    "assistant:The second call succeeded.",
   ]);
 });
 
 test("finish_task notice clears duplicate completion text instead of adding a second row", () => {
   const timeline = createTimeline();
-  timeline.beginUserTurn("你好啊");
+  timeline.beginUserTurn("Hello there");
   timeline.beginAssistantSegment("initial");
-  timeline.appendAssistantTextChunk("你好！我是 Spirit Agent，有什么可以帮你的吗？");
+  timeline.appendAssistantTextChunk("Hello! I am Spirit Agent, how can I help you?");
   timeline.completeActiveAssistantSegment();
 
   timeline.beginAssistantSegment("continuation");
-  timeline.appendAssistantTextChunk("用户打招呼，已问候回复，无后续任务。");
+  timeline.appendAssistantTextChunk("greeted the user, no follow-up task");
   timeline.completeActiveAssistantSegment();
   timeline.materializeFinishTaskNotice(
-    "任务以 用户打招呼，已问候回复，无后续任务。 完成。",
-    "用户打招呼，已问候回复，无后续任务。",
+    "Task completed: greeted the user, no follow-up task.",
+    "greeted the user, no follow-up task",
   );
 
   assert.deepEqual(timeline.toMessages().map(rowToken), [
-    "user:你好啊",
-    "assistant:你好！我是 Spirit Agent，有什么可以帮你的吗？",
-    "finish:任务以 用户打招呼，已问候回复，无后续任务。 完成。",
+    "user:Hello there",
+    "assistant:Hello! I am Spirit Agent, how can I help you?",
+    "finish:Task completed: greeted the user, no follow-up task.",
   ]);
 });
 
@@ -373,20 +373,20 @@ test("finish_task notice preview updates the active assistant text row", () => {
   const timeline = createTimeline();
   timeline.beginUserTurn("loop");
   timeline.beginAssistantSegment("initial");
-  timeline.appendAssistantTextChunk("明白，我会在每条回复末尾调用 finish_task。");
+  timeline.appendAssistantTextChunk("Understood, I will call finish_task at the end of each reply.");
 
-  timeline.updateFinishTaskNoticePreview("任务以 确认每条");
+  timeline.updateFinishTaskNoticePreview("Task completed: verified each");
   assert.equal(
     timeline.toMessages().find((message) => message.role === "assistant" && !message.tool)?.aux
       ?.finishTaskNotice,
-    "任务以 确认每条",
+    "Task completed: verified each",
   );
 
-  timeline.updateFinishTaskNoticePreview("任务以 确认每条消息输出完毕后调用 finish_task。 完成。");
+  timeline.updateFinishTaskNoticePreview("Task completed: called finish_task after verifying every message.");
   assert.equal(
     timeline.toMessages().find((message) => message.role === "assistant" && !message.tool)?.aux
       ?.finishTaskNotice,
-    "任务以 确认每条消息输出完毕后调用 finish_task。 完成。",
+    "Task completed: called finish_task after verifying every message.",
   );
 });
 
@@ -394,15 +394,15 @@ test("updatePendingAssistantAux preserves finish_task notice preview on assistan
   const timeline = createTimeline();
   timeline.beginUserTurn("loop");
   timeline.beginAssistantSegment("initial");
-  timeline.appendAssistantTextChunk("正文内容。");
-  timeline.updateFinishTaskNoticePreview("任务以 确认每条");
+  timeline.appendAssistantTextChunk("Body content.");
+  timeline.updateFinishTaskNoticePreview("Task completed: verified each");
 
   timeline.updatePendingAssistantAux("thinking", "Still reasoning about the reply.");
 
   assert.equal(
-    timeline.toMessages().find((message) => message.content.includes("正文内容"))?.aux
+    timeline.toMessages().find((message) => message.content.includes("Body content."))?.aux
       ?.finishTaskNotice,
-    "任务以 确认每条",
+    "Task completed: verified each",
   );
 });
 
@@ -424,44 +424,44 @@ test("appendAssistantTextChunk keeps no-tool thinking on the same row as the bod
 
 test("finalized thinking stays above completed assistant text in the same segment", () => {
   const timeline = createTimeline();
-  timeline.beginUserTurn("你好啊");
+  timeline.beginUserTurn("Hello there");
   timeline.beginAssistantSegment("initial");
-  timeline.appendAssistantTextChunk("你好！有什么可以帮你的吗？");
+  timeline.appendAssistantTextChunk("Hello! How can I help you?");
   timeline.finalizeThinkingSegment("The user is greeting me.");
   timeline.completeActiveAssistantSegment();
-  timeline.materializeCompletedAssistantText("你好！有什么可以帮你的吗？");
+  timeline.materializeCompletedAssistantText("Hello! How can I help you?");
 
   assert.deepEqual(timeline.toMessages().map(rowToken), [
-    "user:你好啊",
+    "user:Hello there",
     "thinking:The user is greeting me.",
-    "assistant:你好！有什么可以帮你的吗？",
+    "assistant:Hello! How can I help you?",
   ]);
 });
 
 test("materializeCompletedAssistantText does not duplicate before-tools preamble after web search", () => {
   const timeline = createTimeline();
-  timeline.beginUserTurn("Anomaly 团队还写了 OpenNext？");
+  timeline.beginUserTurn("Did the Anomaly team also write OpenNext?");
   timeline.beginAssistantSegment("initial");
-  timeline.appendAssistantTextChunk("让我搜一下确认这几个项目的归属。");
+  timeline.appendAssistantTextChunk("Let me search to confirm who owns these projects.");
   timeline.upsertToolMessage("search-1", {
     toolCallId: "search-1",
     toolName: "web_search",
     phase: "succeeded",
-    headline: "已联网搜索",
+    headline: "Searched online",
     detailLines: [],
     argsExcerpt: "OpenNext Anomaly SST",
   });
-  timeline.appendAssistantTextChunk("对，三样全是 Anomaly（SST 团队）的东西。");
+  timeline.appendAssistantTextChunk("Right, all three are Anomaly (the SST team) projects.");
   timeline.completeActiveAssistantSegment();
   timeline.materializeCompletedAssistantText(
-    "让我搜一下确认这几个项目的归属。对，三样全是 Anomaly（SST 团队）的东西。",
+    "Let me search to confirm who owns these projects.Right, all three are Anomaly (the SST team) projects.",
   );
 
   assert.deepEqual(timeline.toMessages().map(rowToken), [
-    "user:Anomaly 团队还写了 OpenNext？",
-    "assistant:让我搜一下确认这几个项目的归属。",
+    "user:Did the Anomaly team also write OpenNext?",
+    "assistant:Let me search to confirm who owns these projects.",
     "tool:search-1:succeeded",
-    "assistant:对，三样全是 Anomaly（SST 团队）的东西。",
+    "assistant:Right, all three are Anomaly (the SST team) projects.",
   ]);
 });
 
@@ -483,7 +483,7 @@ test("tool previews do not duplicate a thinking row after assistant prefix text 
   const timeline = createTimeline();
   timeline.beginUserTurn("parallel tools");
   timeline.beginAssistantSegment("initial");
-  timeline.replaceAssistantText("好的，我先并发调用两个工具，然后执行 echo。");
+  timeline.replaceAssistantText("OK, I will call two tools concurrently, then run echo.");
   timeline.updatePendingAssistantAux("thinking", "The user is asking me to call a few tools.");
   timeline.upsertToolMessage("call-1", toolBlock("call-1"));
   timeline.updatePendingAssistantAux(
@@ -496,7 +496,7 @@ test("tool previews do not duplicate a thinking row after assistant prefix text 
   const assistantRows = messages.filter((message) => message.role === "assistant" && !message.tool);
 
   assert.equal(assistantRows.length, 1);
-  assert.equal(assistantRows[0].content, "好的，我先并发调用两个工具，然后执行 echo。");
+  assert.equal(assistantRows[0].content, "OK, I will call two tools concurrently, then run echo.");
   assert.equal(
     assistantRows[0].aux?.thinking,
     "The user is asking me to call a few tools (preferably concurrently).",
@@ -559,7 +559,7 @@ test("hydrating flat messages preserves a later thinking segment after a tool ro
       {
         id: 5,
         role: "assistant",
-        content: "README.md 内容（第 1-11 行）：Spirit Agent 是一个开源 AI Agent。",
+        content: "README.md content (lines 1-11): Spirit Agent is an open-source AI Agent.",
         pending: false,
       },
     ],
@@ -578,7 +578,7 @@ test("hydrating flat messages preserves a later thinking segment after a tool ro
     "thinking:Need to inspect README.md first.",
     "tool:call-1:succeeded",
     "thinking:I have read README.md and can summarize it.",
-    "assistant:README.md 内容（第 1-11 行）：Spirit Agent 是一个开源 AI Agent。",
+    "assistant:README.md content (lines 1-11): Spirit Agent is an open-source AI Agent.",
   ]);
 });
 
@@ -643,7 +643,7 @@ test("timeline snapshot round-trip preserves finishTaskNotice on assistant text 
   timeline.beginUserTurn("loop");
   timeline.beginAssistantSegment("initial");
   timeline.appendAssistantTextChunk("done for this turn");
-  timeline.updateFinishTaskNoticePreview("任务以 确认每条 完成。");
+  timeline.updateFinishTaskNoticePreview("Task completed: verified each.");
   timeline.completeActiveAssistantSegment();
 
   const snapshot = timeline.snapshot();
@@ -660,7 +660,7 @@ test("timeline snapshot round-trip preserves finishTaskNotice on assistant text 
   assert.equal(
     restored.toMessages().find((message) => message.role === "assistant" && !message.tool)?.aux
       ?.finishTaskNotice,
-    "任务以 确认每条 完成。",
+    "Task completed: verified each.",
   );
 });
 
@@ -674,7 +674,7 @@ test("timeline snapshot round-trip preserves segment boundaries across restore",
   timeline.beginAssistantSegment("continuation");
   timeline.finalizeThinkingSegment("I have read README.md and can summarize it.");
   timeline.materializeCompletedAssistantText(
-    "README.md 内容（第 1-11 行）：Spirit Agent 是一个开源 AI Agent。",
+    "README.md content (lines 1-11): Spirit Agent is an open-source AI Agent.",
   );
 
   const snapshot = timeline.snapshot();
@@ -693,7 +693,7 @@ test("timeline snapshot round-trip preserves segment boundaries across restore",
     "thinking:Need to inspect README.md first.",
     "tool:call-1:succeeded",
     "thinking:I have read README.md and can summarize it.",
-    "assistant:README.md 内容（第 1-11 行）：Spirit Agent 是一个开源 AI Agent。",
+    "assistant:README.md content (lines 1-11): Spirit Agent is an open-source AI Agent.",
   ]);
 });
 
@@ -789,7 +789,7 @@ test("interrupted deferred thinking finalizes to one row without duplicate pendi
 
 test("user local file attachments survive timeline snapshot restore", () => {
   const timeline = createTimeline();
-  timeline.beginUserTurn("哈哈哈", {
+  timeline.beginUserTurn("hahaha", {
     localFileAttachments: [
       { path: "D:\\project\\ReadmeHero_en.png", name: "ReadmeHero_en.png", isImage: true },
     ],
@@ -837,7 +837,7 @@ test("approval guidance user reply stays after pending tool within the same turn
     argsExcerpt: "{}",
   });
 
-  timeline.insertApprovalGuidanceUserReply("换成 echo nihao", "shell-1");
+  timeline.insertApprovalGuidanceUserReply("switch to echo nihao", "shell-1");
   timeline.upsertToolMessage("shell-1", {
     toolCallId: "shell-1",
     toolName: "shell",
@@ -862,8 +862,8 @@ test("approval guidance user reply stays after pending tool within the same turn
   assert.equal(timeline.snapshot().length, 1);
   assert.equal(tokens.filter((token) => token.startsWith("tool:ask-1")).length, 1);
   assert.equal(tokens.filter((token) => token.startsWith("tool:shell-1")).length, 1);
-  assert.ok(tokens.indexOf("user:换成 echo nihao") > tokens.indexOf("tool:shell-1:failed"));
-  assert.ok(tokens.indexOf("tool:shell-2:succeeded") > tokens.indexOf("user:换成 echo nihao"));
+  assert.ok(tokens.indexOf("user:switch to echo nihao") > tokens.indexOf("tool:shell-1:failed"));
+  assert.ok(tokens.indexOf("tool:shell-2:succeeded") > tokens.indexOf("user:switch to echo nihao"));
   assert.equal(tokens.at(-1), "assistant:done");
 });
 
@@ -888,7 +888,7 @@ test("fromMessages hydrates mid-turn approval guidance without starting a new tu
     detailLines: ["echo nb"],
     argsExcerpt: "{}",
   });
-  source.insertApprovalGuidanceUserReply("换成 echo nihao", "shell-1");
+  source.insertApprovalGuidanceUserReply("switch to echo nihao", "shell-1");
 
   let restoredCounter = 0;
   const restored = DesktopMessageTimeline.fromMessages(source.toMessages(), {

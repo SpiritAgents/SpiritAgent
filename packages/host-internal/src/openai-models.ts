@@ -26,7 +26,7 @@ export interface ProviderListedModelVideoDurationPricing {
   audio?: boolean;
 }
 
-/** Together 等：示例价 + 适用规格说明（如 720x1280、1080p / 5s）。 */
+/** Together etc.: example price plus applicable spec notes (e.g. 720x1280, 1080p / 5s). */
 export interface ProviderListedModelExamplePricing {
   priceUsd: string;
   description: string;
@@ -57,15 +57,15 @@ export interface ProviderListedModelEntry {
   supportsVideoGeneration?: boolean;
   supportsImageGeneration?: boolean;
   supportsReasoning?: boolean;
-  /** LongCat 等：`supported_parameters` 含 `thinking` 时可开关 extended thinking。 */
+  /** LongCat etc.: when `supported_parameters` includes `thinking`, extended thinking can be toggled. */
   supportsThinkingSwitch?: boolean;
   supportsThinkingType?: KimiCodeSupportsThinkingType;
   contextLength?: number;
   maxCompletionTokens?: number;
   supportedReasoningEfforts?: string[];
-  /** Hugging Face Hub 媒体模型：Inference Providers 路由 hint（供 backend 可选使用）。 */
+  /** Hugging Face Hub media models: Inference Providers routing hint (optional for backend use). */
   inferenceProvider?: string;
-  /** DeepInfra `is_partner`：partner 模型（数据转发第三方）；首版仅作 catalog metadata，不过滤。 */
+  /** DeepInfra `is_partner`: partner models (data forwarded to third parties); kept as catalog metadata only in this first version, not filtered. */
   isPartner?: boolean;
 }
 
@@ -355,7 +355,7 @@ export function parseMoonshotModelEntriesPayload(body: unknown): ProviderListedM
   return entries;
 }
 
-/** Kimi Code `GET /v1/models`：Moonshot 形态 trait + `display_name` + `supports_thinking_type`。 */
+/** Kimi Code `GET /v1/models`: Moonshot-shaped traits + `display_name` + `supports_thinking_type`. */
 export function parseKimiCodeModelEntriesPayload(body: unknown): ProviderListedModelEntry[] {
   if (typeof body !== "object" || body === null || !("data" in body)) {
     return [];
@@ -422,7 +422,7 @@ function readKimiCodeSupportsThinkingType(
 
 export type SiliconFlowModelListKind = "chat" | "image" | "video";
 
-/** SiliconFlow `GET /v1/models`：OpenAI-shaped list；能力由请求 query 来源标注。 */
+/** SiliconFlow `GET /v1/models`: OpenAI-shaped list; capabilities are annotated from the request query source. */
 export function parseSiliconFlowModelEntriesPayload(
   body: unknown,
   kind: SiliconFlowModelListKind,
@@ -524,7 +524,7 @@ async function fetchSiliconFlowModelsPayload(
   const url = `${baseListUrl}?${query}`;
   const key = options.apiKey.trim();
   if (!key) {
-    throw new Error("API Key 不能为空。");
+    throw new Error("API Key must not be empty.");
   }
 
   const init: RequestInit = {
@@ -555,7 +555,7 @@ export async function listSiliconFlowModels(
   return mergeSiliconFlowListedModelEntries(allEntries).sort((a, b) => a.id.localeCompare(b.id));
 }
 
-/** Fireworks Gateway API root（模型目录与 inference base 不同）。 */
+/** Fireworks Gateway API root (the model catalog differs from the inference base). */
 export const FIREWORKS_AI_GATEWAY_API_ROOT = "https://api.fireworks.ai";
 
 const FIREWORKS_AI_SERVERLESS_MODELS_FILTER = "supports_serverless=true";
@@ -680,7 +680,7 @@ async function fetchFireworksAiGatewayModelsPage(
   const url = fireworksAiGatewayModelsListUrl(pageToken);
   const key = options.apiKey.trim();
   if (!key) {
-    throw new Error("API Key 不能为空。");
+    throw new Error("API Key must not be empty.");
   }
 
   const init: RequestInit = {
@@ -713,7 +713,7 @@ export async function listFireworksAiModels(
   return mergeFireworksAiGatewayModelPages(pages);
 }
 
-/** Cohere 模型目录 API root（v1/models；与 Chat v2 base 不同）。 */
+/** Cohere model catalog API root (v1/models; differs from the Chat v2 base). */
 export const COHERE_CATALOG_API_ROOT = "https://api.cohere.com";
 
 const COHERE_MODELS_PAGE_SIZE = "1000";
@@ -799,7 +799,7 @@ async function fetchCohereModelsPage(
   const url = cohereModelsListUrl(pageToken);
   const key = options.apiKey.trim();
   if (!key) {
-    throw new Error("API Key 不能为空。");
+    throw new Error("API Key must not be empty.");
   }
 
   const init: RequestInit = {
@@ -964,7 +964,7 @@ export async function listTogetherAiModels(
   const url = openAiCompatibleModelsListUrl(options.baseUrl);
   const key = options.apiKey.trim();
   if (!key) {
-    throw new Error("API Key 不能为空。");
+    throw new Error("API Key must not be empty.");
   }
 
   const init: RequestInit = {
@@ -1149,7 +1149,7 @@ export async function listBasetenModels(
   const url = openAiCompatibleModelsListUrl(options.baseUrl);
   const key = options.apiKey.trim();
   if (!key) {
-    throw new Error("API Key 不能为空。");
+    throw new Error("API Key must not be empty.");
   }
 
   const init: RequestInit = {
@@ -1279,7 +1279,7 @@ export async function listGroqModels(
   const url = openAiCompatibleModelsListUrl(options.baseUrl);
   const key = options.apiKey.trim();
   if (!key) {
-    throw new Error("API Key 不能为空。");
+    throw new Error("API Key must not be empty.");
   }
 
   const init: RequestInit = {
@@ -1294,16 +1294,16 @@ export async function listGroqModels(
   return dedupeProviderListedModelEntries(entries).sort((a, b) => a.id.localeCompare(b.id));
 }
 
-/** DeepInfra 模型目录 `GET /models/list`（无鉴权）；不以其 `/v1/openai/models` 子集作主 catalog 源。 */
+/** DeepInfra model catalog `GET /models/list` (no auth); its `/v1/openai/models` subset is not used as the primary catalog source. */
 export const DEEPINFRA_MODELS_LIST_URL = "https://api.deepinfra.com/models/list";
 
 const DEEPINFRA_CHAT_MODEL_TYPE = "text-generation";
 const DEEPINFRA_IMAGE_GENERATION_TYPES = new Set(["text-to-image"]);
-// `world-model` 仅 2 条，按 text-to-video 处理。
+// `world-model` has only 2 entries; treated as text-to-video.
 const DEEPINFRA_VIDEO_GENERATION_TYPES = new Set(["text-to-video", "world-model"]);
 
 function deepInfraModelsListUrl(baseUrl: string): string {
-  // `/models/list` 挂在站点根而非 `/v1/openai` 下，按 origin 推导；baseUrl 异常时回退官方常量。
+  // `/models/list` hangs off the site root rather than `/v1/openai`, so it is derived from the origin; falls back to the official constant when baseUrl is malformed.
   try {
     return new URL("/models/list", baseUrl).toString();
   } catch {
@@ -1334,7 +1334,7 @@ function readDeepInfraTags(value: unknown): ReadonlySet<string> {
   return tags;
 }
 
-/** DeepInfra pricing 数值单位为「小数 cents」（如 0.0003 cents/token = $3/M），÷100 转 USD。 */
+/** DeepInfra pricing values are in fractional cents (e.g. 0.0003 cents/token = $3/M); divide by 100 to get USD. */
 function readDeepInfraPositiveNumber(value: unknown): number | undefined {
   if (typeof value !== "number" || !Number.isFinite(value) || value <= 0) {
     return undefined;
@@ -1342,7 +1342,7 @@ function readDeepInfraPositiveNumber(value: unknown): number | undefined {
   return value;
 }
 
-/** USD 金额格式化为普通十进制字符串，避免浮点噪声与科学计数法（同 Baseten 格式化思路）。 */
+/** Format a USD amount as a plain decimal string, avoiding floating-point noise and scientific notation (same approach as the Baseten formatting). */
 function formatDeepInfraUsdAmount(value: number): string {
   return value.toFixed(12).replace(/\.?0+$/, "");
 }
@@ -1352,7 +1352,7 @@ function readDeepInfraCentsAsUsd(value: unknown): string | undefined {
   return cents !== undefined ? formatDeepInfraUsdAmount(cents / 100) : undefined;
 }
 
-/** `rate_per_input_token_cached` 是 input 价倍率（非绝对 cents），须乘 `cents_per_input_token` 再 ÷100。 */
+/** `rate_per_input_token_cached` is a multiplier of the input price (not absolute cents); multiply by `cents_per_input_token`, then divide by 100. */
 function readDeepInfraCachedInputUsd(pricing: Record<string, unknown>): string | undefined {
   const inputCents = readDeepInfraPositiveNumber(pricing.cents_per_input_token);
   const rate = readDeepInfraPositiveNumber(pricing.rate_per_input_token_cached);
@@ -1396,7 +1396,7 @@ function readDeepInfraPricing(
     );
   }
 
-  // 未知 pricing.type：跳过 pricing，不阻塞 catalog。
+  // Unknown pricing.type: skip pricing without blocking the catalog.
   return undefined;
 }
 
@@ -1408,7 +1408,7 @@ export function parseDeepInfraModelEntriesPayload(body: unknown): ProviderListed
     if (!isJsonObject(item)) {
       continue;
     }
-    // `deprecated` 为 Unix 时间戳或 null，truthy 即跳过。
+    // `deprecated` is a Unix timestamp or null; any truthy value skips the model.
     if (item.deprecated) {
       continue;
     }
@@ -1422,7 +1422,7 @@ export function parseDeepInfraModelEntriesPayload(body: unknown): ProviderListed
     const isChat = type === DEEPINFRA_CHAT_MODEL_TYPE;
     const isImageGeneration = type !== undefined && DEEPINFRA_IMAGE_GENERATION_TYPES.has(type);
     const isVideoGeneration = type !== undefined && DEEPINFRA_VIDEO_GENERATION_TYPES.has(type);
-    // 其余 type（embeddings / TTS / ASR / reranker / …）首版不进选择器。
+    // Other types (embeddings / TTS / ASR / reranker / …) are not offered in the picker in this first version.
     if (!isChat && !isImageGeneration && !isVideoGeneration) {
       continue;
     }
@@ -1446,7 +1446,7 @@ export function parseDeepInfraModelEntriesPayload(body: unknown): ProviderListed
       modelEntry.supportsVideoGeneration = true;
     }
 
-    // Chat 能力仅认 tags，不从 tag 推断 reasoning（以运行时 reasoning API 为准）。
+    // Chat capabilities only trust tags; reasoning is not inferred from tags (the runtime reasoning API is authoritative).
     if (isChat) {
       const tags = readDeepInfraTags(item.tags);
       if (tags.has("multimodal")) {
@@ -1476,7 +1476,7 @@ export function parseDeepInfraModelEntriesPayload(body: unknown): ProviderListed
 export async function listDeepInfraModels(
   options: ListOpenAiCompatibleModelIdsOptions,
 ): Promise<ProviderListedModelEntry[]> {
-  // `/models/list` 无需鉴权；有 key 时仍带 Bearer（`bearerAuthHeaders` 空 key 自动省略）。
+  // `/models/list` needs no auth; when a key exists, Bearer is still sent (`bearerAuthHeaders` omits empty keys automatically).
   const url = deepInfraModelsListUrl(options.baseUrl);
   const init: RequestInit = {
     method: "GET",
@@ -1792,7 +1792,7 @@ async function fetchHuggingFaceHubMediaModelsPage(
     response = await fetch(url, init);
   } catch (cause) {
     const message = cause instanceof Error ? cause.message : String(cause);
-    throw new Error(`列模型请求失败：${message}`, { cause: cause });
+    throw new Error(`Model list request failed: ${message}`, { cause: cause });
   }
 
   const text = await response.text();
@@ -1801,12 +1801,12 @@ async function fetchHuggingFaceHubMediaModelsPage(
     json = text.length > 0 ? (JSON.parse(text) as unknown) : [];
   } catch {
     throw new Error(
-      response.ok ? "列模型响应不是合法 JSON。" : `列模型失败（HTTP ${String(response.status)}）。`,
+      response.ok ? "Model list response is not valid JSON." : `Model listing failed (HTTP ${String(response.status)}).`,
     );
   }
 
   if (!response.ok) {
-    throw new Error(`列模型失败（HTTP ${String(response.status)}）。`);
+    throw new Error(`Model listing failed (HTTP ${String(response.status)}).`);
   }
 
   const nextUrl = parseHuggingFaceHubLinkHeaderNextUrl(response.headers.get("link"));
@@ -1856,7 +1856,7 @@ export async function listHuggingFaceModels(
   );
 }
 
-/** Xiaomi Mimo：上游 /models 不返回能力字段，多模态模型需维护 allowlist。 */
+/** Xiaomi Mimo: upstream /models returns no capability fields; multimodal models require a maintained allowlist. */
 const XIAOMI_MULTIMODAL_MODEL_IDS = new Set(["mimo-v2.5", "mimo-v2-omni"]);
 
 export function parseXiaomiModelEntriesPayload(body: unknown): ProviderListedModelEntry[] {
@@ -1889,7 +1889,7 @@ export function parseXiaomiModelEntriesPayload(body: unknown): ProviderListedMod
   return entries;
 }
 
-/** MiniMax：上游 /models 不返回多模态能力字段；仅 M3 支持图片与视频输入。 */
+/** MiniMax: upstream /models returns no multimodal capability fields; only M3 supports image and video input. */
 function isMinimaxM3MultimodalModelId(modelId: string): boolean {
   const normalized = modelId.trim().toLowerCase();
   const slashIndex = normalized.lastIndexOf("/");
@@ -2017,8 +2017,8 @@ export function parseArkModelEntriesPayload(body: unknown): ProviderListedModelE
 }
 
 /**
- * Gemini API 原生 `GET /v1beta/models` 列表。
- * 仅保留 `supportedGenerationMethods` 含 `generateContent` 的模型。
+ * Native Gemini API `GET /v1beta/models` listing.
+ * Only models whose `supportedGenerationMethods` include `generateContent` are kept.
  */
 export function parseGoogleModelEntriesPayload(body: unknown): ProviderListedModelEntry[] {
   if (typeof body !== "object" || body === null || !("models" in body)) {
@@ -2228,7 +2228,7 @@ function readOpenRouterSupportedReasoningEfforts(
     }
   }
 
-  // OpenRouter 显式返回 [] 表示不支持 effort 选择，须与字段缺失（undefined → 可兜底）区分。
+  // OpenRouter explicitly returns [] to indicate effort selection is unsupported; this must be distinguished from a missing field (undefined → fallback allowed).
   return efforts;
 }
 
@@ -2338,7 +2338,7 @@ function readOpenRouterModalities(value: unknown): string[] {
   return modalities;
 }
 
-/** OpenRouter 列表项：`architecture.output_modalities` 优先，其次顶层 `output_modalities`。 */
+/** OpenRouter list item: `architecture.output_modalities` takes precedence, then top-level `output_modalities`. */
 function readOpenRouterOutputModalities(record: Record<string, unknown>): string[] {
   const architecture = asRecord(record.architecture);
   const fromArchitecture = readOpenRouterModalities(architecture?.output_modalities);
@@ -2349,8 +2349,8 @@ function readOpenRouterOutputModalities(record: Record<string, unknown>): string
 }
 
 /**
- * OpenRouter /models：仅以 output_modalities 区分对话与生图；不用模型 id 或 pricing 推断。
- * 含 image 且不含 text → 生图；含 text → 对话；二者皆无 → 跳过；缺失 → 默认对话。
+ * OpenRouter /models: distinguishes chat vs image generation solely via output_modalities; model id and pricing are not used for inference.
+ * Contains image but not text → image generation; contains text → chat; neither → skip; missing → defaults to chat.
  */
 export function parseOpenRouterModelEntriesPayload(body: unknown): ProviderListedModelEntry[] {
   if (typeof body !== "object" || body === null || !("data" in body)) {
@@ -2474,7 +2474,7 @@ export interface ListProviderModelIdsOptions {
 
 function requireApiKeyForModelListing(apiKey: string, provider?: ModelProviderId): void {
   if (!apiKey.trim() && provider !== "custom") {
-    throw new Error("API Key 不能为空。");
+    throw new Error("API Key must not be empty.");
   }
 }
 
@@ -2485,7 +2485,7 @@ function bearerAuthHeaders(apiKey: string): Record<string, string> {
 
 /**
  * `GET {baseUrl}/models` with Bearer auth; returns sorted unique ids.
- * @throws Error with a short Chinese message on network/HTTP/parse failure.
+ * @throws Error with a short message on network/HTTP/parse failure.
  */
 export async function listOpenAiCompatibleModelIds(
   options: ListOpenAiCompatibleModelIdsOptions,
@@ -2493,7 +2493,7 @@ export async function listOpenAiCompatibleModelIds(
   const url = openAiCompatibleModelsListUrl(options.baseUrl);
   const key = options.apiKey.trim();
   if (!key) {
-    throw new Error("API Key 不能为空。");
+    throw new Error("API Key must not be empty.");
   }
 
   const headers: Record<string, string> = {
@@ -2516,7 +2516,7 @@ async function fetchModelsListJson(url: string, init: RequestInit): Promise<unkn
     response = await fetch(url, init);
   } catch (cause) {
     const message = cause instanceof Error ? cause.message : String(cause);
-    throw new Error(`列模型请求失败：${message}`, { cause: cause });
+    throw new Error(`Model list request failed: ${message}`, { cause: cause });
   }
 
   const text = await response.text();
@@ -2525,7 +2525,7 @@ async function fetchModelsListJson(url: string, init: RequestInit): Promise<unkn
     json = text.length > 0 ? (JSON.parse(text) as unknown) : {};
   } catch {
     throw new Error(
-      response.ok ? "列模型响应不是合法 JSON。" : `列模型失败（HTTP ${String(response.status)}）。`,
+      response.ok ? "Model list response is not valid JSON." : `Model listing failed (HTTP ${String(response.status)}).`,
     );
   }
 
@@ -2539,8 +2539,8 @@ async function fetchModelsListJson(url: string, init: RequestInit): Promise<unkn
         : undefined;
     throw new Error(
       errMsg && errMsg.trim().length > 0
-        ? `列模型失败（HTTP ${String(response.status)}）：${errMsg.trim()}`
-        : `列模型失败（HTTP ${String(response.status)}）。`,
+        ? `Model listing failed (HTTP ${String(response.status)}): ${errMsg.trim()}`
+        : `Model listing failed (HTTP ${String(response.status)}).`,
     );
   }
 
@@ -2600,7 +2600,7 @@ export async function listAnthropicModels(
     response = await fetch(url, init);
   } catch (cause) {
     const message = cause instanceof Error ? cause.message : String(cause);
-    throw new Error(`列模型请求失败：${message}`, { cause: cause });
+    throw new Error(`Model list request failed: ${message}`, { cause: cause });
   }
 
   const text = await response.text();
@@ -2609,7 +2609,7 @@ export async function listAnthropicModels(
     json = text.length > 0 ? (JSON.parse(text) as unknown) : {};
   } catch {
     throw new Error(
-      response.ok ? "列模型响应不是合法 JSON。" : `列模型失败（HTTP ${String(response.status)}）。`,
+      response.ok ? "Model list response is not valid JSON." : `Model listing failed (HTTP ${String(response.status)}).`,
     );
   }
 
@@ -2627,8 +2627,8 @@ export async function listAnthropicModels(
           : undefined;
     throw new Error(
       errMsg && errMsg.trim().length > 0
-        ? `列模型失败（HTTP ${String(response.status)}）：${errMsg.trim()}`
-        : `列模型失败（HTTP ${String(response.status)}）。`,
+        ? `Model listing failed (HTTP ${String(response.status)}): ${errMsg.trim()}`
+        : `Model listing failed (HTTP ${String(response.status)}).`,
     );
   }
 
@@ -2733,7 +2733,7 @@ export async function listProviderModels(
 
   if (options.provider === "cloudflare-ai-gateway") {
     throw new Error(
-      "Cloudflare AI Gateway 无模型目录 API，请手动填写模型 ID（如 openai/gpt-4.1-mini 或 @cf/meta/llama-3.1-8b-instruct）。",
+      "Cloudflare AI Gateway has no model catalog API; enter the model ID manually (e.g. openai/gpt-4.1-mini or @cf/meta/llama-3.1-8b-instruct).",
     );
   }
 
@@ -2770,7 +2770,7 @@ export async function listProviderModels(
   }
 
   if (options.provider === "azure") {
-    throw new Error("Azure 无 /models 端点，请手动填写部署名。");
+    throw new Error("Azure has no /models endpoint; enter the deployment name manually.");
   }
 
   return listOpenAiCompatibleModels(options);
@@ -2783,7 +2783,7 @@ export async function listGoogleVertexProviderModels(
   const project = options.vertexProject?.trim() || extracted.project;
   const location = options.vertexLocation?.trim() || extracted.location;
   if (!project || !location) {
-    throw new Error("Google Vertex 列模型需要填写 GCP 项目 ID 与区域（location）。");
+    throw new Error("Listing Google Vertex models requires a GCP project ID and location.");
   }
 
   try {
@@ -2802,7 +2802,7 @@ export async function listGoogleVertexProviderModels(
     });
   } catch (error) {
     const message = error instanceof Error ? error.message : String(error);
-    throw new Error(`列模型失败（Google Vertex AI）：${message}`, { cause: error });
+    throw new Error(`Model listing failed (Google Vertex AI): ${message}`, { cause: error });
   }
 }
 
@@ -2811,7 +2811,7 @@ export async function listBedrockProviderModels(
 ): Promise<ProviderListedModelEntry[]> {
   const region = options.awsRegion?.trim() || extractAwsRegionFromBedrockApiBase(options.baseUrl);
   if (!region) {
-    throw new Error("Amazon Bedrock 列模型需要填写 AWS 区域。");
+    throw new Error("Listing Amazon Bedrock models requires an AWS region.");
   }
 
   try {
@@ -2828,7 +2828,7 @@ export async function listBedrockProviderModels(
     });
   } catch (error) {
     const message = error instanceof Error ? error.message : String(error);
-    throw new Error(`列模型失败（Amazon Bedrock）：${message}`, { cause: error });
+    throw new Error(`Model listing failed (Amazon Bedrock): ${message}`, { cause: error });
   }
 }
 
@@ -2898,8 +2898,8 @@ export async function listVolcengineModels(
 }
 
 /**
- * Meituan LongCat：`GET /models` 列表仅含 id，元数据需逐模型 `GET /models/{id}`。
- * 当前模型数量少可并行拉取；若日后模型增多需考虑批量化或上游改进。
+ * Meituan LongCat: the `GET /models` list contains only ids; metadata requires a per-model `GET /models/{id}`.
+ * The current model count is small enough to fetch in parallel; if the count grows, batching or upstream improvements may be needed.
  */
 export async function listMeituanModels(
   options: ListOpenAiCompatibleModelIdsOptions,
@@ -2907,7 +2907,7 @@ export async function listMeituanModels(
   const url = openAiCompatibleModelsListUrl(options.baseUrl);
   const key = options.apiKey.trim();
   if (!key) {
-    throw new Error("API Key 不能为空。");
+    throw new Error("API Key must not be empty.");
   }
 
   const headers: Record<string, string> = {
@@ -2941,8 +2941,8 @@ export async function listMeituanModels(
 }
 
 /**
- * Google Gemini：模型目录走原生 `/v1beta/models`（非 OpenAI 兼容 `/openai/models`）。
- * 本机/CI 通常无法直连 generativelanguage.googleapis.com；联调需在有网络的环境手动验证。
+ * Google Gemini: the model catalog uses the native `/v1beta/models` (not the OpenAI-compatible `/openai/models`).
+ * Local machines / CI usually cannot reach generativelanguage.googleapis.com directly; integration must be verified manually in an environment with network access.
  */
 export async function listGoogleModels(
   options: ListOpenAiCompatibleModelIdsOptions,
@@ -2950,7 +2950,7 @@ export async function listGoogleModels(
   assertGoogleGeminiApiBase(options.baseUrl);
   const key = options.apiKey.trim();
   if (!key) {
-    throw new Error("API Key 不能为空。");
+    throw new Error("API Key must not be empty.");
   }
 
   const allEntries: ProviderListedModelEntry[] = [];
@@ -3233,7 +3233,7 @@ function readMeituanSupportedParameters(record: Record<string, unknown>): string
     .filter((item) => item.length > 0);
 }
 
-/** LongCat 定价字段为 USD/M tokens；转为内部 per-token USD 字符串供 UI 统一展示。 */
+/** LongCat pricing fields are USD/M tokens; converted to internal per-token USD strings for uniform UI display. */
 function convertMeituanPerMillionUsdToPerToken(value: string | undefined): string | undefined {
   if (!value) {
     return undefined;
@@ -3258,7 +3258,7 @@ function readMeituanPricing(
   const outputPerTokenUsd = convertMeituanPerMillionUsdToPerToken(
     readPricingField(pricing, "completion"),
   );
-  // pricing.cached_tokens 暂无内部字段，不持久化
+  // pricing.cached_tokens has no internal field yet; not persisted
   return buildProviderListedModelPricing({
     ...(inputPerTokenUsd ? { inputPerTokenUsd } : {}),
     ...(outputPerTokenUsd ? { outputPerTokenUsd } : {}),

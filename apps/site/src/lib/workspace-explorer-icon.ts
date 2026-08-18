@@ -15,7 +15,7 @@ import {
 import { workspaceFileBasename } from "@/lib/file-picker-path";
 import type { WorkspaceExplorerEntryKind } from "@/types/spirit-desktop";
 
-/** 按扩展名/常见文件名选图标（按名称启发式，非主题引擎映射）。 */
+/** Pick an icon by extension / common filename (name heuristics, not a theme-engine mapping). */
 export function workspaceExplorerIcon(name: string, kind: WorkspaceExplorerEntryKind): LucideIcon {
   if (kind === "dir") {
     return Folder;

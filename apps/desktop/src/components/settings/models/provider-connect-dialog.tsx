@@ -80,7 +80,7 @@ import {
 import { vertexApiBaseFromProjectAndLocation } from "@spiritagent/host-internal/google-vertex-endpoints";
 
 export type ProviderConnectDialogProps = {
-  /** 要连接的提供商；父组件在每次发起连接时用新的 key 重挂载本组件以重置表单。 */
+  /** Provider to connect; the parent remounts this component with a new key on each connection attempt to reset the form. */
   provider: DesktopModelProvider;
   open: boolean;
   onOpenChange: (open: boolean) => void;
@@ -92,8 +92,9 @@ export type ProviderConnectDialogProps = {
 };
 
 /**
- * Provider 连接对话框：设置页与 OOBE 向导共用。
- * 表单状态归本组件所有；父组件通过更换 key 重置（关闭时保持状态直到退场动画结束）。
+ * Provider connection dialog: shared by the settings page and the OOBE wizard.
+ * Form state is owned by this component; the parent resets it by changing the key (on close, state
+ * is kept until the exit animation finishes).
  */
 export function ProviderConnectDialog({
   provider,

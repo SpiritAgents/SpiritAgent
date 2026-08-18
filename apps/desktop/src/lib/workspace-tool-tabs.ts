@@ -7,15 +7,15 @@ export const BROWSER_NEW_TAB_SENTINEL = "__spirit_browser_new_tab__";
 export type WorkspaceToolTab = {
   id: string;
   kind: WorkspaceToolTabKind;
-  /** 仅 kind === "browser" 时使用；sentinel 表示内置新标签页 */
+  /** Only used when kind === "browser"; the sentinel represents the built-in new tab page */
   browserUrl?: string;
-  /** 由各子 Tab 组件上报的当前标题（文件名 / 网页标题 / 终端标题）；空时仅显示图标 */
+  /** Current title reported by each child Tab component (file name / page title / terminal title); only the icon is shown when empty */
   tabTitle?: string;
-  /** 仅 kind === "files" 时使用；表示当前打开文件有未保存编辑 */
+  /** Only used when kind === "files"; indicates the currently open file has unsaved edits */
   tabDirty?: boolean;
-  /** 仅 kind === "files" 时使用；当前打开的工作区相对路径（用于跨选项卡复用） */
+  /** Only used when kind === "files"; workspace-relative path of the currently open file (for reuse across tabs) */
   filesWorkspacePath?: string;
-  /** 仅 kind === "pr" 时使用；表示当前 PR 详情页的状态，用于切换选项卡图标 */
+  /** Only used when kind === "pr"; the status of the current PR detail page, used to switch the tab icon */
   prStatus?: PullRequestChipStatus;
 };
 
@@ -47,11 +47,11 @@ export function createWorkspaceToolTab(kind: WorkspaceToolTabKind): WorkspaceToo
 }
 
 export type WorkspaceToolTabsDefaultsOptions = {
-  /** Electron 桌面版默认包含浏览器选项卡；Web 宿主仅文件 / Shell / Git。 */
+  /** The Electron desktop app includes a browser tab by default; the Web host only has Files / Shell / Git. */
   includeBrowser?: boolean;
 };
 
-/** 默认工作区选项卡：文件、Shell、Git；Electron 可额外包含浏览器。 */
+/** Default workspace tabs: Files, Shell, Git; Electron may additionally include Browser. */
 export function createDefaultWorkspaceToolTabs(
   options: WorkspaceToolTabsDefaultsOptions = {},
 ): WorkspaceToolTab[] {
@@ -89,7 +89,7 @@ export function workspaceToolTabLabel(
   return `${base} ${index + 1}`;
 }
 
-/** Chip 显示名：优先 OSC 终端标题，否则 i18n 默认 Terminal（多 tab 加序号）。 */
+/** Chip display name: prefers the OSC terminal title, otherwise the i18n default Terminal (numbered when multiple tabs). */
 export function workspaceTerminalChipDisplayName(
   tab: WorkspaceToolTab,
   tabs: readonly WorkspaceToolTab[],
@@ -135,7 +135,7 @@ export function addWorkspaceToolTab(
   return { tabs: [...tabs, tab], activeId: tab.id };
 }
 
-/** 打开 URL：优先复用无标题的空浏览器 tab，否则新建。 */
+/** Opens a URL: prefers reusing an untitled empty browser tab, otherwise creates a new one. */
 export function openBrowserUrlInWorkspaceTabs(
   tabs: readonly WorkspaceToolTab[],
   url: string,
@@ -150,7 +150,7 @@ export function openBrowserUrlInWorkspaceTabs(
   return addWorkspaceBrowserTabWithUrl(tabs, url);
 }
 
-/** 新建浏览器子标签并直接带上目标 URL（避免先落在新标签页 sentinel 再二次更新）。 */
+/** Creates a browser sub-tab with the target URL directly (avoiding landing on the new-tab sentinel first and updating a second time). */
 export function addWorkspaceBrowserTabWithUrl(
   tabs: readonly WorkspaceToolTab[],
   url: string,
@@ -160,7 +160,7 @@ export function addWorkspaceBrowserTabWithUrl(
   return { tabs: [...tabs, tab], activeId: tab.id };
 }
 
-/** 按宿主能力补齐或移除浏览器选项卡，并修正 activeId。 */
+/** Adds or removes the browser tab according to host capabilities, and fixes activeId. */
 export function normalizeWorkspaceToolTabsForHost(
   tabs: readonly WorkspaceToolTab[],
   activeId: string,

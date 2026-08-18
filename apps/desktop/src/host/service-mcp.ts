@@ -32,8 +32,8 @@ export function sharedMcpServiceForWorkspace(
 }
 
 /**
- * 与 LSP 的 disposeLspServicesExcept 对应：workspace 切换时收缩 MCP 目录缓存。
- * McpService 无持久连接（每次调用 connect→close），删除 Map 条目即可释放内存。
+ * Counterpart of LSP's disposeLspServicesExcept: shrinks the MCP directory cache on workspace switch.
+ * McpService has no persistent connection (connect→close per call), so deleting Map entries frees the memory.
  */
 export function disposeMcpServicesExcept(
   cache: Map<string, McpService>,

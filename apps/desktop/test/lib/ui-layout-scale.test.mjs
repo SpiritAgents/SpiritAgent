@@ -78,10 +78,10 @@ test("computeDarwinTrafficLightPosition restores Electron hiddenInset default at
 });
 
 test("computeDarwinTrafficLightPosition scales with the UI layout scale", () => {
-  // x = (78s − 54) / 2，y = 18s − 7（与钉位切换按钮中线对齐）
+  // x = (78s − 54) / 2, y = 18s − 7 (aligned with the pin toggle button centerline)
   assert.deepEqual(computeDarwinTrafficLightPosition(1.25), { x: 22, y: 16 });
   assert.deepEqual(computeDarwinTrafficLightPosition(0.8), { x: 4, y: 7 });
-  // 超界输入先 clamp 再计算
+  // Out-of-range input is clamped before computing
   assert.deepEqual(computeDarwinTrafficLightPosition(9), computeDarwinTrafficLightPosition(1.25));
 });
 

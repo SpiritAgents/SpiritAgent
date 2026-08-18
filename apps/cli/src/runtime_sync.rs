@@ -1,6 +1,7 @@
 //! Shared runtime-sync state for CLI daemon backend. Projects daemon
 //! `BridgeRuntimeEvent` / `BridgeRuntimeSnapshot` shapes into TUI-facing state.
 
+use rust_i18n::t;
 use serde_json::Value;
 use std::collections::{HashMap, VecDeque};
 
@@ -115,10 +116,12 @@ impl RuntimeSyncState {
                                 session_id,
                                 ChatMessage::new(
                                     MessageRole::Agent,
-                                    format!(
-                                        "待确认工具调用（解析失败）: {}\n{}",
-                                        err, approval.prompt
-                                    ),
+                                    t!(
+                                        "tui.tool.approval_parse_failed",
+                                        err = err,
+                                        prompt = approval.prompt
+                                    )
+                                    .into_owned(),
                                 ),
                             ),
                         }
@@ -163,13 +166,16 @@ impl RuntimeSyncState {
                     dropped_messages,
                     summary_preview,
                 } => {
-                    let summary = summary_preview.unwrap_or_else(|| "<无摘要内容>".to_string());
+                    let summary = summary_preview
+                        .unwrap_or_else(|| t!("tui.session.compact_summary_empty").into_owned());
                     self.events.push_back(RuntimeEvent::PushMessage(ChatMessage::new(
                         MessageRole::Agent,
-                        format!(
-                            "检测到上下文超限，已调用模型生成/更新压缩摘要并重试（本轮合并 {} 条历史消息）。\n\n压缩摘要预览:\n{}",
-                            dropped_messages, summary
-                        ),
+                        t!(
+                            "tui.session.compacted",
+                            count = dropped_messages,
+                            summary = summary
+                        )
+                        .into_owned(),
                     )));
                 }
                 BridgeRuntimeEvent::BackgroundToolStatus { .. } => {}
@@ -186,7 +192,8 @@ impl RuntimeSyncState {
                                 ChatMessage::with_tool_block(
                                     MessageRole::Agent,
                                     if execution.failed {
-                                        format!("工具执行失败: {}", execution.output)
+                                        t!("tui.tool.failed", output = execution.output)
+                                            .into_owned()
                                     } else {
                                         format_tool_ui_message(
                                             &request,
@@ -198,7 +205,7 @@ impl RuntimeSyncState {
                                         tool_failed_block(
                                             &execution.tool_name,
                                             Some(execution.tool_call_id.as_str()),
-                                            "工具执行失败",
+                                            &t!("tui.tool.failed_headline"),
                                             &execution.output,
                                         )
                                     } else {
@@ -217,28 +224,31 @@ impl RuntimeSyncState {
                                 ChatMessage::with_tool_block(
                                     MessageRole::Agent,
                                     if execution.failed {
-                                        format!(
-                                            "工具执行失败（请求解析失败）: {}",
-                                            execution.output
+                                        t!(
+                                            "tui.tool.failed_request_parse",
+                                            output = execution.output
                                         )
+                                        .into_owned()
                                     } else {
-                                        format!(
-                                            "工具执行完成（请求解析失败）: {}\n{}",
-                                            err, execution.output
+                                        t!(
+                                            "tui.tool.done_request_parse_failed",
+                                            err = err,
+                                            output = execution.output
                                         )
+                                        .into_owned()
                                     },
                                     if execution.failed {
                                         tool_failed_block(
                                             &execution.tool_name,
                                             Some(execution.tool_call_id.as_str()),
-                                            "工具执行失败",
+                                            &t!("tui.tool.failed_headline"),
                                             &execution.output,
                                         )
                                     } else {
                                         tool_failed_block(
                                             &execution.tool_name,
                                             Some(execution.tool_call_id.as_str()),
-                                            "工具执行完成但请求解析失败",
+                                            &t!("tui.tool.done_request_parse_failed_headline"),
                                             &err.to_string(),
                                         )
                                     },
@@ -412,12 +422,12 @@ impl RuntimeSyncState {
                     .push_back(RuntimeEvent::PushMessage(ChatMessage::with_tool_block(
                         MessageRole::Agent,
                         if failed {
-                            format!("工具执行失败: {}", output)
+                            t!("tui.tool.failed", output = output).into_owned()
                         } else {
                             format_tool_ui_message(&request, tool_name, output)
                         },
                         if failed {
-                            tool_failed_block(tool_name, None, "工具执行失败", output)
+                            tool_failed_block(tool_name, None, &t!("tui.tool.failed_headline"), output)
                         } else {
                             build_tool_result_block(&request, tool_name, None, output)
                         },
@@ -428,9 +438,10 @@ impl RuntimeSyncState {
                     .push_back(RuntimeEvent::PushMessage(ChatMessage::new(
                         MessageRole::Agent,
                         if failed {
-                            format!("工具执行失败（请求解析失败）: {}", output)
+                            t!("tui.tool.failed_request_parse", output = output).into_owned()
                         } else {
-                            format!("工具执行完成（请求解析失败）: {}\n{}", err, output)
+                            t!("tui.tool.done_request_parse_failed", err = err, output = output)
+                                .into_owned()
                         },
                     )));
             }
@@ -444,8 +455,8 @@ impl RuntimeSyncState {
             self.events
                 .push_back(RuntimeEvent::PushMessage(ChatMessage::with_tool_block(
                     MessageRole::Agent,
-                    format!("工具执行失败: {}", error),
-                    tool_failed_block(&request.name, None, "工具执行失败", error),
+                    t!("tui.tool.failed", output = error).into_owned(),
+                    tool_failed_block(&request.name, None, &t!("tui.tool.failed_headline"), error),
                 )));
             return;
         }
@@ -453,7 +464,7 @@ impl RuntimeSyncState {
         self.events
             .push_back(RuntimeEvent::PushMessage(ChatMessage::new(
                 MessageRole::Agent,
-                format!("工具执行失败: {}", error),
+                t!("tui.tool.failed", output = error).into_owned(),
             )));
     }
 }

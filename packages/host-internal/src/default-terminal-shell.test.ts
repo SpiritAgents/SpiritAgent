@@ -18,14 +18,14 @@ import { detectShellForTools } from "./tools.js";
 const exec = promisify(execCallback);
 
 test(
-  "defaultShellForPty: Windows 优先 pwsh 或 powershell，而非仅 cmd",
+  "defaultShellForPty: Windows prefers pwsh or powershell, not just cmd",
   { skip: process.platform !== "win32" },
   () => {
     const prev = process.env.SPIRIT_TERMINAL_SHELL;
     delete process.env.SPIRIT_TERMINAL_SHELL;
     try {
       const { file } = defaultShellForPty();
-      assert.ok(existsSync(file), `shell 路径应存在: ${file}`);
+      assert.ok(existsSync(file), `shell path should exist: ${file}`);
       const base = path.basename(file).toLowerCase();
       assert.ok(
         base === "pwsh.exe" || base === "powershell.exe" || base === "cmd.exe",
@@ -47,7 +47,7 @@ test(
 );
 
 test(
-  "detectShellForTools: Windows 与 defaultShellForPty 解析结果一致",
+  "detectShellForTools: Windows result matches defaultShellForPty resolution",
   { skip: process.platform !== "win32" },
   () => {
     const prev = process.env.SPIRIT_TERMINAL_SHELL;
@@ -74,7 +74,7 @@ test(
 );
 
 test(
-  "prepareShellForHostExecution: PowerShell 子进程可输出 UTF-8 中文",
+  "prepareShellForHostExecution: PowerShell subprocess can output UTF-8 Chinese",
   { skip: process.platform !== "win32" },
   async () => {
     const { file } = defaultShellForPty();
@@ -93,7 +93,7 @@ test(
 );
 
 test(
-  "decodeShellHostOutput: cmd 子进程 GBK 输出可解码为中文",
+  "decodeShellHostOutput: cmd subprocess GBK output can be decoded as Chinese",
   { skip: process.platform !== "win32" },
   async () => {
     const systemRoot = process.env.SystemRoot || "C:\\Windows";

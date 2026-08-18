@@ -25,10 +25,10 @@ export const FILE_DIFF_TOOL_NAMES = new Set([
   "delete_file",
 ]);
 
-/** 与 delete-file-line-delta / readWorkspaceTextFile 一致。 */
+/** Consistent with delete-file-line-delta / readWorkspaceTextFile. */
 export const FILE_TOOL_DIFF_MAX_BYTES = 2 * 1024 * 1024;
 
-/** 会话中持久化文件工具完整参数 JSON 的上限（约为两侧 diff 文本上限之和）。 */
+/** Upper bound for the full argument JSON of a file tool persisted in the conversation (roughly the sum of the two diff-side text limits). */
 export const FILE_TOOL_DIFF_ARGUMENTS_JSON_MAX_BYTES = 8 * 1024 * 1024;
 
 export function serializeFileToolDiffArgumentsJson(request: unknown): string | undefined {
@@ -46,7 +46,7 @@ function fileToolDiffArgumentsJsonForTool(tool: ToolBlockSnapshot): string | und
   return tool.fileToolDiffArgumentsJson ?? tool.streamingArgumentsJson;
 }
 
-/** 审批/执行阶段 upsert 时保留 preview 流式参数或既有完整 JSON，避免只剩截断 argsExcerpt。 */
+/** On upsert during the approval/execution phases, keep the preview streaming arguments or the existing full JSON, so we are not left with only a truncated argsExcerpt. */
 export function preserveFileToolDiffArguments(
   toolName: string,
   attached: ToolBlockSnapshot,
@@ -90,7 +90,7 @@ export function planRelativePath(planName: string): string {
   return `plans/${slug}.md`;
 }
 
-/** 从工具快照或流式 JSON 解析 create_plan 的 plans/{name}.md 路径。 */
+/** Resolve the plans/{name}.md path of create_plan from the tool snapshot or streaming JSON. */
 export function resolvePlanRelativePath(
   tool: ToolBlockSnapshot,
   argumentsJson?: string,
@@ -201,7 +201,7 @@ function parsePartialRequestRecord(
   return undefined;
 }
 
-/** 从工具快照解析 create/edit/delete/plan 类工具的相对或绝对路径。 */
+/** Resolve the relative or absolute path of create/edit/delete/plan tools from the tool snapshot. */
 export function resolvePathFromFileDiffToolSnapshot(
   tool: ToolBlockSnapshot,
   argumentsJson?: string,

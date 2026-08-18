@@ -69,7 +69,7 @@ export interface HostRuleDiscoveryResult {
   discovered: number;
   enabled: number;
   enabledRules: HostEnabledRule[];
-  /** 全部发现项（含未创建），供宿主设置页等列清单。 */
+  /** All discovered entries (including ones not yet created), for listing in host settings pages. */
   entries: readonly HostRuleEntry[];
 }
 
@@ -107,7 +107,7 @@ export interface HostSkillDiscoveryResult {
   discovered: number;
   enabled: number;
   enabledSkillCatalog: HostEnabledSkillCatalogEntry[];
-  /** 全部发现项（含未启用），供宿主设置页等列清单。 */
+  /** All discovered entries (including ones not enabled), for listing in host settings pages. */
   entries: readonly HostSkillEntry[];
 }
 
@@ -188,21 +188,21 @@ export async function discoverRuleEntries(
           paths.workspaceSpiritRuleFile,
           "workspace",
           "workspaceSpirit",
-          "工作区 Spirit 规则",
+          "Workspace Spirit rules",
           WORKSPACE_SPIRIT_RULE_FILE_NAME.replace(/\\/gu, "/"),
         ),
         buildRuleSource(
           paths.workspaceAgentsRuleFile,
           "workspace",
           "workspaceAgents",
-          "工作区 AGENTS 规则",
+          "Workspace AGENTS rules",
           WORKSPACE_RULE_FILE_NAME,
         ),
       ]
     : [];
   const sources = await Promise.all([
     ...workspaceSources,
-    buildRuleSource(paths.userRuleFile, "user", "user", "用户规则", USER_RULE_FILE_NAME),
+    buildRuleSource(paths.userRuleFile, "user", "user", "User rules", USER_RULE_FILE_NAME),
   ]);
 
   return Promise.all(
@@ -368,9 +368,9 @@ export function buildStartImplementingUserTurn(
 ): string {
   const trimmed = activePlanPath?.trim();
   if (!trimmed) {
-    return "用户已确认方案并要求开始实现。本会话尚未记录可用的实施计划路径；请先使用 create_plan 创建计划后再开始实现。";
+    return "The user has approved the plan and asked to start implementing. No usable implementation plan path is recorded for this session; create one with create_plan before implementing.";
   }
-  return `用户已确认方案并要求开始实现。开始实现前，先读取 Spirit 托管的计划文件 ${trimmed}，理解其中执行方案后再开始编码与验证。若该文件不存在、无法读取，或内容与当前需求明显不一致，先明确说明并请求用户重新生成或确认计划，不要假设计划内容。`;
+  return `The user has approved the plan and asked to start implementing. Before implementing, read the Spirit-managed plan file ${trimmed} and follow its execution plan for coding and verification. If the file does not exist, cannot be read, or clearly does not match the current request, say so explicitly and ask the user to regenerate or confirm the plan; do not assume its contents.`;
 }
 
 async function buildRuleSource(
@@ -491,16 +491,16 @@ async function parseSkillDocument(
 
 export function validateSkillName(name: string): string | undefined {
   if (!name || [...name].length > SKILL_NAME_MAX_CHARS) {
-    return `skill-name 必须为 1-${SKILL_NAME_MAX_CHARS} 个字符`;
+    return `skill-name must be 1-${SKILL_NAME_MAX_CHARS} characters`;
   }
   if (name.startsWith("-") || name.endsWith("-")) {
-    return "skill-name 不能以连字符开头或结尾";
+    return "skill-name must not start or end with a hyphen";
   }
   if (name.includes("--")) {
-    return "skill-name 不能包含连续连字符";
+    return "skill-name must not contain consecutive hyphens";
   }
   if (![...name].every((character) => /[a-z0-9-]/u.test(character))) {
-    return "skill-name 仅允许小写字母、数字和连字符";
+    return "skill-name only allows lowercase letters, digits, and hyphens";
   }
 
   return undefined;

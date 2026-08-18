@@ -14,7 +14,7 @@ const ENV_API_KEY: &str = "SPIRIT_API_KEY";
 const KEYRING_SERVICE: &str = "SpiritAgent";
 const KEYRING_ACCOUNT_API_KEY: &str = "openai_api_key";
 
-/// 与 Desktop `DesktopModelProvider` 及 `config.json` 的 `provider` 字段对齐。
+/// Aligned with Desktop `DesktopModelProvider` and the `provider` field in `config.json`.
 #[derive(Debug, Clone, Copy, Serialize, Deserialize, PartialEq, Eq)]
 #[serde(rename_all = "lowercase")]
 pub enum ModelProvider {
@@ -144,7 +144,7 @@ impl FromStr for ModelProvider {
             "amazon-bedrock" => Ok(Self::AmazonBedrock),
             "azure" => Ok(Self::Azure),
             "custom" => Ok(Self::Custom),
-            other => Err(format!("不支持的 provider: {other}")),
+            other => Err(format!("Unsupported provider: {other}")),
         }
     }
 }
@@ -177,7 +177,7 @@ impl FromStr for ModelTransportKind {
             "open-responses" => Ok(Self::OpenResponses),
             "anthropic" => Ok(Self::Anthropic),
             "bedrock" => Ok(Self::Bedrock),
-            other => Err(format!("不支持的 transport kind: {other}")),
+            other => Err(format!("Unsupported transport kind: {other}")),
         }
     }
 }
@@ -672,10 +672,11 @@ pub struct AgentsConfig {
     pub extra: Map<String, Value>,
 }
 
-/// CLI 解析 Attribution 开关。
+/// CLI-side parsing of the Attribution switches.
 ///
-/// 字段缺失时两者均为 false（关闭）。CLI 没有 Desktop OOBE，若缺省按开启会
-/// 在用户不知情时往 commit / PR 注入署名，故必须显式在 config.json 中 opt-in。
+/// Both are false (off) when the fields are missing. The CLI has no Desktop OOBE;
+/// defaulting to on would inject attribution into commits / PRs without the user's
+/// knowledge, so it must be explicitly opted in via config.json.
 pub fn resolve_cli_attribution(config: &AppConfig) -> (bool, bool) {
     let Some(attribution) = config.agents.attribution.as_ref() else {
         return (false, false);
@@ -1279,7 +1280,7 @@ impl ProviderGroupConnectDraft {
         if let Some(value) = normalize_optional_string(self.stepfun_billing_mode.clone()) {
             group.stepfun_billing_mode = Some(value);
         }
-        // Z.ai / 智谱：标准模式以字段缺失表示；重连时须用 None 清掉既有 glm-coding-plan。
+        // Z.ai / Zhipu: standard mode is represented by a missing field; on reconnect, None must clear any existing glm-coding-plan.
         match group.provider {
             ModelProvider::ZAi => {
                 group.z_ai_billing_mode = normalize_optional_string(self.z_ai_billing_mode.clone());
@@ -1364,15 +1365,15 @@ pub fn load_config() -> Result<AppConfig> {
         return Ok(cfg);
     }
 
-    let content =
-        fs::read_to_string(&path).with_context(|| format!("读取配置失败: {}", path.display()))?;
+    let content = fs::read_to_string(&path)
+        .with_context(|| format!("Failed to read config: {}", path.display()))?;
 
     deserialize_config(&content, &path)
 }
 
 fn deserialize_config(content: &str, path: &Path) -> Result<AppConfig> {
     let raw: Value = serde_json::from_str(content)
-        .with_context(|| format!("解析配置失败: {}", path.display()))?;
+        .with_context(|| format!("Failed to parse config: {}", path.display()))?;
 
     let version = raw
         .get("schemaVersion")
@@ -1380,13 +1381,13 @@ fn deserialize_config(content: &str, path: &Path) -> Result<AppConfig> {
         .and_then(Value::as_u64);
     if version != Some(SPIRIT_CONFIG_SCHEMA_VERSION) {
         return Err(anyhow::anyhow!(
-            "config.json 须为 schemaVersion {}；请删除旧版配置后重新连接提供商。",
+            "config.json must be schemaVersion {}; delete the legacy config and reconnect the provider.",
             SPIRIT_CONFIG_SCHEMA_VERSION
         ));
     }
 
-    let mut cfg: AppConfig =
-        serde_json::from_value(raw).with_context(|| format!("解析配置失败: {}", path.display()))?;
+    let mut cfg: AppConfig = serde_json::from_value(raw)
+        .with_context(|| format!("Failed to parse config: {}", path.display()))?;
     normalize_config(&mut cfg);
     Ok(cfg)
 }
@@ -1395,11 +1396,11 @@ pub fn save_config(cfg: &AppConfig) -> Result<()> {
     let path = config_file_path();
     if let Some(parent) = path.parent() {
         fs::create_dir_all(parent)
-            .with_context(|| format!("创建配置目录失败: {}", parent.display()))?;
+            .with_context(|| format!("Failed to create config directory: {}", parent.display()))?;
     }
 
     let content = serialize_config(cfg)?;
-    fs::write(&path, content).with_context(|| format!("写入配置失败: {}", path.display()))?;
+    fs::write(&path, content).with_context(|| format!("Failed to write config: {}", path.display()))?;
     Ok(())
 }
 
@@ -1716,12 +1717,13 @@ fn is_deepseek_v4_reasoning_model(model: &str) -> bool {
 }
 
 pub fn keyring_entry() -> Result<keyring::Entry> {
-    keyring::Entry::new(KEYRING_SERVICE, KEYRING_ACCOUNT_API_KEY).context("初始化 keyring 条目失败")
+    keyring::Entry::new(KEYRING_SERVICE, KEYRING_ACCOUNT_API_KEY)
+        .context("Failed to initialize keyring entry")
 }
 
 fn keyring_entry_for_account(account: &str) -> Result<keyring::Entry> {
     keyring::Entry::new(KEYRING_SERVICE, account)
-        .with_context(|| format!("初始化 keyring 条目失败: {}", account))
+        .with_context(|| format!("Failed to initialize keyring entry: {}", account))
 }
 
 fn model_key_account(model_name: &str) -> String {
@@ -1752,21 +1754,21 @@ pub fn load_group_api_key_from_keyring(group_id: &str) -> Result<String> {
     let entry = keyring_entry_for_account(&group_key_account(group_id))?;
     entry
         .get_password()
-        .with_context(|| format!("读取 provider group {} 的 API Key 失败", group_id))
+        .with_context(|| format!("Failed to read API Key for provider group {}", group_id))
 }
 
 pub fn load_group_access_key_id_from_keyring(group_id: &str) -> Result<String> {
     let entry = keyring_entry_for_account(&group_access_key_id_account(group_id))?;
     entry
         .get_password()
-        .with_context(|| format!("读取 provider group {group_id} 的 IAM Access Key ID 失败"))
+        .with_context(|| format!("Failed to read IAM Access Key ID for provider group {group_id}"))
 }
 
 pub fn load_group_secret_access_key_from_keyring(group_id: &str) -> Result<String> {
     let entry = keyring_entry_for_account(&group_secret_access_key_account(group_id))?;
     entry
         .get_password()
-        .with_context(|| format!("读取 provider group {group_id} 的 IAM Secret Access Key 失败"))
+        .with_context(|| format!("Failed to read IAM Secret Access Key for provider group {group_id}"))
 }
 
 pub fn has_bedrock_runtime_credentials_in_keyring(group_id: &str) -> Result<bool> {
@@ -1790,14 +1792,14 @@ pub fn load_group_vertex_client_email_from_keyring(group_id: &str) -> Result<Str
     let entry = keyring_entry_for_account(&group_vertex_client_email_account(group_id))?;
     entry
         .get_password()
-        .with_context(|| format!("读取 provider group {group_id} 的 Vertex client email 失败"))
+        .with_context(|| format!("Failed to read Vertex client email for provider group {group_id}"))
 }
 
 pub fn load_group_vertex_private_key_from_keyring(group_id: &str) -> Result<String> {
     let entry = keyring_entry_for_account(&group_vertex_private_key_account(group_id))?;
     entry
         .get_password()
-        .with_context(|| format!("读取 provider group {group_id} 的 Vertex private key 失败"))
+        .with_context(|| format!("Failed to read Vertex private key for provider group {group_id}"))
 }
 
 pub fn has_google_vertex_service_account_in_keyring(group_id: &str) -> Result<bool> {
@@ -1836,13 +1838,13 @@ pub fn save_group_api_key(group_id: &str, api_key: &str) -> Result<()> {
         match entry.delete_password() {
             Ok(_) | Err(keyring::Error::NoEntry) => Ok(()),
             Err(err) => Err(anyhow::anyhow!(
-                "删除 provider group {group_id} 的 API Key 失败: {err}"
+                "Failed to delete API Key for provider group {group_id}: {err}"
             )),
         }
     } else {
         entry
             .set_password(api_key.trim())
-            .with_context(|| format!("保存 provider group {group_id} 的 API Key 失败"))
+            .with_context(|| format!("Failed to save API Key for provider group {group_id}"))
     }
 }
 
@@ -1856,18 +1858,18 @@ pub fn save_group_vertex_credentials(
     let email_entry = keyring_entry_for_account(&group_vertex_client_email_account(group_id))?;
     email_entry
         .set_password(client_email)
-        .with_context(|| format!("保存 provider group {group_id} 的 Vertex client email 失败"))?;
+        .with_context(|| format!("Failed to save Vertex client email for provider group {group_id}"))?;
     let key_entry = keyring_entry_for_account(&group_vertex_private_key_account(group_id))?;
     key_entry
         .set_password(private_key)
-        .with_context(|| format!("保存 provider group {group_id} 的 Vertex private key 失败"))
+        .with_context(|| format!("Failed to save Vertex private key for provider group {group_id}"))
 }
 
 pub fn save_model_api_key(model_name: &str, api_key: &str) -> Result<()> {
     let entry = keyring_entry_for_account(&model_key_account(model_name))?;
     entry
         .set_password(api_key.trim())
-        .with_context(|| format!("保存模型 {} 的 API Key 失败", model_name))
+        .with_context(|| format!("Failed to save API Key for model {}", model_name))
 }
 
 pub fn remove_model_api_key(model_name: &str) -> Result<()> {
@@ -1875,7 +1877,7 @@ pub fn remove_model_api_key(model_name: &str) -> Result<()> {
     match entry.delete_password() {
         Ok(_) | Err(keyring::Error::NoEntry) => Ok(()),
         Err(err) => Err(anyhow::anyhow!(
-            "删除模型 {} 的 API Key 失败: {}",
+            "Failed to delete API Key for model {}: {}",
             model_name,
             err
         )),
@@ -1888,7 +1890,7 @@ pub fn has_model_api_key(model_name: &str) -> Result<bool> {
         Ok(v) => Ok(!v.trim().is_empty()),
         Err(keyring::Error::NoEntry) => Ok(false),
         Err(err) => Err(anyhow::anyhow!(
-            "读取模型 {} 的 API Key 失败: {}",
+            "Failed to read API Key for model {}: {}",
             model_name,
             err
         )),
@@ -1921,14 +1923,14 @@ fn load_api_key_from_keyring() -> Result<String> {
     let entry = keyring_entry()?;
     entry
         .get_password()
-        .context("读取 keyring 中的 API Key 失败")
+        .context("Failed to read API Key from keyring")
 }
 
 fn load_model_api_key_from_keyring(model_name: &str) -> Result<String> {
     let entry = keyring_entry_for_account(&model_key_account(model_name))?;
     entry
         .get_password()
-        .with_context(|| format!("读取模型 {} 的 API Key 失败", model_name))
+        .with_context(|| format!("Failed to read API Key for model {}", model_name))
 }
 
 #[cfg(test)]

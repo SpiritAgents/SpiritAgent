@@ -56,20 +56,20 @@ pub(crate) fn resolve_key_from_store(
 
     if provider == Some(ModelProvider::AmazonBedrock) {
         return Err(anyhow!(
-            "未检测到 Amazon Bedrock 凭证。请在 Desktop 连接向导配置 Bearer API Key 或 IAM 凭证，或设置环境变量 {}",
+            "No Amazon Bedrock credentials detected. Configure a Bearer API Key or IAM credentials in the Desktop connect wizard, or set the {} environment variable",
             ENV_API_KEY
         ));
     }
 
     if provider == Some(ModelProvider::GoogleVertexAi) {
         return Err(anyhow!(
-            "未检测到 Google Vertex AI 凭证。请配置 Express API Key、服务账号（client email + private key）、或 ADC（填写 project/location 并设置 GOOGLE_APPLICATION_CREDENTIALS / gcloud 默认凭证），或设置环境变量 {}",
+            "No Google Vertex AI credentials detected. Configure an Express API Key, a service account (client email + private key), or ADC (fill in project/location and set GOOGLE_APPLICATION_CREDENTIALS / gcloud default credentials), or set the {} environment variable",
             ENV_API_KEY
         ));
     }
 
     Err(anyhow!(
-        "未检测到模型 {} 的 API Key。可执行 `spirit model add {} --api-base <url> --key <api_key>` 或设置环境变量 {}",
+        "No API Key detected for model {}. Run `spirit model add {} --api-base <url> --key <api_key>` or set the {} environment variable",
         model_name,
         model_name,
         ENV_API_KEY

@@ -1,4 +1,4 @@
-// 备用：@ai-sdk/open-responses 会丢弃 provider tools。Gateway Web Search 主路径已改走 createGateway v3 language-model。
+// Fallback: @ai-sdk/open-responses drops provider tools. The main Gateway Web Search path now uses createGateway v3 language-model.
 import { getLlmFetch } from "../llm-fetch.js";
 import type { JsonObject, JsonValue } from "../ports.js";
 import { isJsonObject } from "../tool-agent.js";

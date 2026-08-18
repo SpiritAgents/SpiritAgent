@@ -136,7 +136,7 @@ export async function deleteSkillDir(
     throw new Error(i18n.t("error.skillNotFound", { name }));
   }
 
-  // 先写墓碑再删：避免 unlink 成功后状态未落盘导致内置 skill 回种。
+  // Write the tombstone before deleting: prevents a successful unlink without persisted state from re-seeding the built-in skill.
   if (rootKind === "user" && isBuiltInSkillName(name)) {
     await noteBuiltInSkillRemoved(spiritAgentDataDir(), name);
   }

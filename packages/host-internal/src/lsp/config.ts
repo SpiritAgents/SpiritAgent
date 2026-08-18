@@ -1,4 +1,4 @@
-// 后续：设置页 / SPIRIT_LSP_* 环境变量覆盖 server 启动命令。
+// TODO: allow the settings page / SPIRIT_LSP_* env vars to override the server launch command.
 
 export interface LspTimingConfig {
   diagnosticsWaitMs: number;
@@ -8,7 +8,7 @@ export interface LspTimingConfig {
 
 export const DEFAULT_LSP_TIMING: LspTimingConfig = {
   diagnosticsWaitMs: 4_000,
-  // 写后 append 需等 TLS publishDiagnostics；1.5s 实测常拿不到结果，与 agent 主动 get_diagnostics 对齐为 4s
+  // Appends after a write must wait for TLS publishDiagnostics; 1.5s often returned no results in practice, so this is aligned to 4s with the agent-initiated get_diagnostics
   writeAppendDiagnosticsWaitMs: 4_000,
   syncDebounceMs: 300,
 };

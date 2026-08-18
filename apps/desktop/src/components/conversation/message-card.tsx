@@ -119,11 +119,11 @@ function MessageCardImpl({
 }: {
   composerSessionKey: string;
   conversationListScopeKey: string;
-  /** 仅当本行 message.pending 时传入；live aux 只与 pending 行相关，避免其余行随流式 delta 重渲 */
+  /** Passed only when this row's message.pending is true; live aux only concerns pending rows, preventing other rows from re-rendering with each streaming delta */
   pendingAuxState?: PendingAssistantAux;
   message: ConversationMessageSnapshot;
   listIndex: number;
-  /** 以下派生布尔由父级依据整表 messages 计算；本组件不持有整表引用以便 memo 短路 */
+  /** The derived booleans below are computed by the parent from the full messages list; this component does not hold a full-list reference so memo can short-circuit */
   showThinkingCollapsible: boolean;
   thinkingReasoningLive: boolean;
   collapseThinkingDuringToolPreview: boolean;
@@ -132,7 +132,7 @@ function MessageCardImpl({
   canCopyTurn: boolean;
   onCopyTurn(listIndex: number): void;
   hiddenByProcessGroup?: boolean;
-  /** 行间距由虚拟行 paddingTop 承担时去掉 pb-3 / 负 margin 折叠。 */
+  /** Removes pb-3 / negative-margin collapsing when the row gap is carried by the virtual row's paddingTop. */
   externalRowGap?: boolean;
   compactAfterPrevious: boolean;
   tightenAfterPreviousMeta: boolean;
@@ -419,8 +419,10 @@ function MessageCardImpl({
 }
 
 /**
- * 虚拟列表行级 memo：流式 delta 只应重渲实际变化的行。前提是所有 props 引用稳定——
- * message/pendingAuxState 由 useConversationViewState 结构共享，回调由 ConversationList
- * 收敛为稳定引用，整表派生值以布尔 props 传入（本组件不持有 messages 数组引用）。
+ * Virtual-list row-level memo: streaming deltas should only re-render the rows that actually
+ * changed. The precondition is that all props are reference-stable — message/pendingAuxState are
+ * structurally shared by useConversationViewState, callbacks are converged into stable references
+ * by ConversationList, and whole-list derived values are passed in as boolean props (this
+ * component does not hold a reference to the messages array).
  */
 export const MessageCard = memo(MessageCardImpl);

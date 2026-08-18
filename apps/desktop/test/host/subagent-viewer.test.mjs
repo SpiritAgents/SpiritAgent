@@ -94,8 +94,8 @@ test("buildSubagentConversationSnapshots maps assistant reasoning to thinking au
       { role: "user", content: "Say hello" },
       {
         role: "assistant",
-        content: "你好",
-        providerState: { reasoning_content: "子智能体输出你好" },
+        content: "Hello",
+        providerState: { reasoning_content: "The subagent outputs hello" },
       },
     ],
     { sessionStatus: "completed" },
@@ -105,8 +105,8 @@ test("buildSubagentConversationSnapshots maps assistant reasoning to thinking au
   assert.equal(messages[0]?.role, "user");
   assert.equal(messages[1]?.role, "assistant");
   assert.equal(messages[1]?.content, "");
-  assert.equal(messages[1]?.aux?.thinking, "子智能体输出你好");
-  assert.equal(messages[2]?.content, "你好");
+  assert.equal(messages[1]?.aux?.thinking, "The subagent outputs hello");
+  assert.equal(messages[2]?.content, "Hello");
 });
 
 test("resolveSubagentPromptFromTaskFields prefers task then context summary", () => {

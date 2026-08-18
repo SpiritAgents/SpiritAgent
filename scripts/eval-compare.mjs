@@ -59,7 +59,7 @@ async function main() {
     const [baselineResult, candidateResult] = await Promise.all([
       runCandidate({
         candidateId: 'baseline',
-        label: '修改前',
+        label: 'Before',
         runtimeSourcePath: baselineRuntimeSource,
         workspacePath: baselineWorkspace,
         repoRoot,
@@ -72,7 +72,7 @@ async function main() {
       }),
       runCandidate({
         candidateId: 'candidate',
-        label: '修改后',
+        label: 'After',
         runtimeSourcePath: candidateRuntimeSource,
         workspacePath: candidateWorkspace,
         repoRoot,
@@ -109,26 +109,26 @@ async function main() {
     await writeJsonFile(artifactPath, artifact);
 
     console.log('');
-    console.log('Compare 运行完成。');
-    console.log(`运行 ID: ${runId}`);
-    console.log(`场景: ${scenario.id} | ${scenario.title}`);
-    console.log(`输出目录: ${outputDir}`);
-    console.log(`工作区来源: ${options.workspaceSource ?? 'empty'}`);
-    console.log(`修改前工作区: ${baselineWorkspace}`);
-    console.log(`修改后工作区: ${candidateWorkspace}`);
-    console.log(`评审产物: ${artifactPath}`);
-    console.log(`比较来源: ${renderComparisonMode(comparison.mode)}`);
-    console.log(`基线 ref: ${comparison.baselineRef}`);
+    console.log('Compare run completed.');
+    console.log(`Run ID: ${runId}`);
+    console.log(`Scenario: ${scenario.id} | ${scenario.title}`);
+    console.log(`Output directory: ${outputDir}`);
+    console.log(`Workspace source: ${options.workspaceSource ?? 'empty'}`);
+    console.log(`Baseline workspace: ${baselineWorkspace}`);
+    console.log(`Candidate workspace: ${candidateWorkspace}`);
+    console.log(`Review artifact: ${artifactPath}`);
+    console.log(`Comparison source: ${renderComparisonMode(comparison.mode)}`);
+    console.log(`Baseline ref: ${comparison.baselineRef}`);
     console.log(
       comparison.candidateRef
-        ? `候选 ref: ${comparison.candidateRef}`
-        : `候选来源: 基于 ${comparison.baselineRef} 的 staged diff`,
+        ? `Candidate ref: ${comparison.candidateRef}`
+        : `Candidate source: staged diff on top of ${comparison.baselineRef}`,
     );
-    console.log(`差异指纹: ${comparison.diffFingerprint}`);
+    console.log(`Diff fingerprint: ${comparison.diffFingerprint}`);
   } catch (error) {
-    console.error('Compare 运行失败。');
+    console.error('Compare run failed.');
     console.error(renderError(error));
-    console.error(`输出目录已保留，便于人工检查: ${outputDir}`);
+    console.error(`Output directory kept for manual inspection: ${outputDir}`);
     process.exitCode = 1;
   }
 }
@@ -213,7 +213,7 @@ function parseArgs(argv) {
         options.bypassApprove = false;
         break;
       default:
-        throw new Error(`未知参数: ${arg}`);
+        throw new Error(`Unknown argument: ${arg}`);
     }
   }
 
@@ -222,18 +222,18 @@ function parseArgs(argv) {
 
 function assertRequiredOptions(options) {
   if (!options.outputDir) {
-    throw new Error('缺少输出目录。请通过 --output-dir 指定本次 compare 的产物目录，例如 d:\\eval-runs\\spirit-eval-compare-001。');
+    throw new Error('Missing output directory. Specify the artifact directory for this compare via --output-dir, e.g. d:\\eval-runs\\spirit-eval-compare-001.');
   }
 }
 
 async function resolveComparison(repoRoot, options) {
   if (options.commit && (options.baselineRef || options.candidateRef)) {
-    throw new Error('--commit 不能与 --baseline-ref / --candidate-ref 同时使用。');
+    throw new Error('--commit cannot be used together with --baseline-ref / --candidate-ref.');
   }
 
   if (options.baselineRef || options.candidateRef) {
     if (!options.baselineRef || !options.candidateRef) {
-      throw new Error('--baseline-ref 与 --candidate-ref 必须一起使用。');
+      throw new Error('--baseline-ref and --candidate-ref must be used together.');
     }
     return resolveGitRefComparison(repoRoot, options.baselineRef, options.candidateRef);
   }
@@ -249,7 +249,7 @@ async function resolveStagedComparison(repoRoot) {
   const baselineRef = await resolveGitRef(repoRoot, 'HEAD');
   const patchText = (await git(repoRoot, ['diff', '--cached', '--binary', '--no-ext-diff'])).stdout;
   if (!patchText.trim()) {
-    throw new Error('暂存区为空。先把候选改动加入 staged，再运行 compare runner。');
+    throw new Error('Staging area is empty. Stage the candidate changes first, then run the compare runner.');
   }
 
   return {
@@ -273,7 +273,7 @@ async function resolveGitRefComparison(repoRoot, rawBaselineRef, rawCandidateRef
     candidateRef,
   ])).stdout;
   if (!diffText.trim()) {
-    throw new Error(`指定的 git refs 没有差异: ${rawBaselineRef} -> ${rawCandidateRef}`);
+      throw new Error(`The specified git refs have no differences: ${rawBaselineRef} -> ${rawCandidateRef}`);
   }
 
   return {
@@ -290,11 +290,11 @@ async function resolveCommitComparison(repoRoot, rawCommitRef) {
   const candidateRef = await resolveGitCommitRef(repoRoot, rawCommitRef);
   const parents = await listGitCommitParents(repoRoot, candidateRef);
   if (parents.length === 0) {
-    throw new Error('--commit 当前仅支持有父提交的 commit；root commit 请改用 --baseline-ref / --candidate-ref。');
+    throw new Error('--commit currently only supports commits with a parent; for a root commit use --baseline-ref / --candidate-ref instead.');
   }
 
   if (parents.length > 1) {
-    console.warn(`--commit ${rawCommitRef} 是 merge commit，默认使用 first-parent ${parents[0]} 作为 baseline。`);
+    console.warn(`--commit ${rawCommitRef} is a merge commit; using first-parent ${parents[0]} as baseline by default.`);
   }
 
   return resolveGitRefComparison(repoRoot, parents[0], candidateRef);
@@ -318,12 +318,12 @@ async function prepareOutputDirectory(outputDir) {
   if (existsSync(outputDir)) {
     const stats = await stat(outputDir);
     if (!stats.isDirectory()) {
-      throw new Error(`--output-dir 必须指向目录路径；当前已存在且不是目录: ${outputDir}`);
+      throw new Error(`--output-dir must point to a directory path; it already exists and is not a directory: ${outputDir}`);
     }
 
     const entries = await readdir(outputDir);
     if (entries.length > 0) {
-      throw new Error(`--output-dir 指向的目录非空，请提供一个不存在的新路径或空目录: ${outputDir}`);
+      throw new Error(`--output-dir points to a non-empty directory; provide a new non-existent path or an empty directory: ${outputDir}`);
     }
 
     return outputDir;
@@ -335,19 +335,19 @@ async function prepareOutputDirectory(outputDir) {
 
 async function validateWorkspaceSource(sourcePath) {
   if (!existsSync(sourcePath)) {
-    throw new Error(`--workspace-source 指向的目录不存在: ${sourcePath}`);
+      throw new Error(`--workspace-source points to a directory that does not exist: ${sourcePath}`);
   }
 
   const stats = await stat(sourcePath);
   if (!stats.isDirectory()) {
-    throw new Error(`--workspace-source 必须指向目录: ${sourcePath}`);
+      throw new Error(`--workspace-source must point to a directory: ${sourcePath}`);
   }
 }
 
 function requiredArgValue(argv, index, flag) {
   const value = argv[index];
   if (!value) {
-    throw new Error(`${flag} 需要一个值。`);
+    throw new Error(`${flag} requires a value.`);
   }
   return value;
 }
@@ -404,7 +404,7 @@ function resolveScenario(options) {
   const scenario = evalScenarios.find((entry) => entry.id === options.scenarioId);
   if (!scenario) {
     const ids = evalScenarios.map((entry) => entry.id).join(', ');
-    throw new Error(`未知场景: ${options.scenarioId}。可用场景: ${ids}`);
+    throw new Error(`Unknown scenario: ${options.scenarioId}. Available scenarios: ${ids}`);
   }
   return scenario;
 }
@@ -412,12 +412,12 @@ function resolveScenario(options) {
 function resolveModelConfig(options) {
   const apiKey = options.apiKey ?? process.env.OPENAI_API_KEY;
   if (!apiKey) {
-    throw new Error('缺少 API Key。请设置 OPENAI_API_KEY，或通过 --api-key 传入。');
+    throw new Error('Missing API key. Set OPENAI_API_KEY or pass --api-key.');
   }
 
   const model = options.model ?? process.env.OPENAI_MODEL;
   if (!model) {
-    throw new Error('缺少模型配置。请设置 OPENAI_MODEL，或通过 --model 传入。');
+    throw new Error('Missing model configuration. Set OPENAI_MODEL or pass --model.');
   }
 
   return {
@@ -440,9 +440,9 @@ async function runCandidate(params) {
   await mkdir(spiritDataDir, { recursive: true });
 
   const tracker = new CandidateTracker(params.candidateId, params.label);
-  tracker.info(`进行中 | 工作区: ${params.workspacePath}`);
-  tracker.info(`运行时代码源: ${params.runtimeSourcePath}`);
-  tracker.info('构建隔离 runtime 源');
+  tracker.info(`in progress | workspace: ${params.workspacePath}`);
+  tracker.info(`runtime source: ${params.runtimeSourcePath}`);
+  tracker.info('building isolated runtime source');
 
   const modules = await loadWorkspaceRuntimeModules(params.runtimeSourcePath);
   const {
@@ -564,9 +564,9 @@ async function runCandidate(params) {
 
   const normalized = normalizeRuntimeResult(result);
   if (normalized.status === 'completed') {
-    tracker.info('已完成');
+    tracker.info('completed');
   } else {
-    tracker.info('已失败');
+    tracker.info('failed');
   }
 
   const assistantPath = path.join(params.artifactsDir, `${params.candidateId}-assistant.txt`);
@@ -688,7 +688,7 @@ class EvalHostToolExecutor {
       return decision;
     }
 
-    // TODO: 当前 compare runner 只支持“阻塞”或“绕过审批”两种模式；后续可补交互式 y/n 审批或更细粒度 allowlist。
+    // TODO: the compare runner currently only supports "block" or "bypass approvals"; interactive y/n approval or a finer-grained allowlist could be added later.
     this.tracker.recordApprovalBypass(request.name, decision.prompt);
     return { kind: 'allowed' };
   }
@@ -825,28 +825,28 @@ class CandidateTracker {
     switch (event.kind) {
       case 'tool-call-started':
         this.toolCallCount += 1;
-        this.info(`工具调用: ${event.toolName}`);
+        this.info(`tool call: ${event.toolName}`);
         break;
       case 'tool-execution-finished':
         this.info(
-          `${event.execution.failed ? '工具失败' : '工具完成'}: ${event.execution.toolName} | ${truncate(event.execution.output, 180)}`,
+          `${event.execution.failed ? 'tool failed' : 'tool finished'}: ${event.execution.toolName} | ${truncate(event.execution.output, 180)}`,
         );
         break;
       case 'approval-requested':
         this.approvalRequestCount += 1;
-        this.info(`等待审批: ${event.approval.toolName}`);
+        this.info(`awaiting approval: ${event.approval.toolName}`);
         break;
       case 'background-tool-status':
         if (event.phase === 'started') {
           this.backgroundToolCount += 1;
         }
         this.info(
-          `后台工具${event.phase === 'started' ? '开始' : '结束'}: ${event.toolName}${event.failed ? ' | failed' : ''}`,
+          `background tool ${event.phase === 'started' ? 'started' : 'finished'}: ${event.toolName}${event.failed ? ' | failed' : ''}`,
         );
         break;
       case 'history-compacted':
         this.compactionCount += 1;
-        this.info(`上下文压缩: dropped=${event.droppedMessages}`);
+        this.info(`context compaction: dropped=${event.droppedMessages}`);
         break;
       case 'assistant-chunk':
       case 'update-pending-assistant-thinking':
@@ -861,7 +861,7 @@ class CandidateTracker {
   recordApprovalBypass(toolName, prompt) {
     this.bypassApproveCount += 1;
     this.warnings.push(`bypass-approved risky tool ${toolName}`);
-    this.info(`绕过审批: ${toolName} | ${truncate(prompt, 120)}`);
+    this.info(`approval bypassed: ${toolName} | ${truncate(prompt, 120)}`);
   }
 
   buildTraceSummary() {
@@ -961,10 +961,10 @@ async function extractArchiveWithNodeTar(repoRoot, archivePath, workspacePath) {
   try {
     tar = repoRequire('tar');
   } catch {
-    throw new Error('缺少 Node tar 依赖，无法解包 git archive。请先在仓库根目录执行 pnpm install。');
+    throw new Error('Missing the Node tar dependency, cannot unpack git archive. Run pnpm install in the repo root first.');
   }
   if (!tar || typeof tar.x !== 'function') {
-    throw new Error('无法加载 tar.x()，compare runner 无法解包快照。');
+    throw new Error('Cannot load tar.x(); compare runner cannot unpack the snapshot.');
   }
 
   await tar.x({
@@ -979,7 +979,7 @@ async function linkWorkspaceNodeModules(repoRoot, workspacePath) {
   const targetRootNodeModules = path.join(workspacePath, 'node_modules');
 
   if (!existsSync(rootNodeModules)) {
-    throw new Error(`当前仓库缺少 node_modules，无法为隔离工作区复用依赖: ${rootNodeModules}`);
+    throw new Error(`node_modules is missing in this repo, cannot reuse dependencies for the isolated workspace: ${rootNodeModules}`);
   }
 
   if (!existsSync(targetRootNodeModules)) {
@@ -1179,35 +1179,35 @@ function renderError(error) {
 }
 
 function printScenarioList() {
-  console.log('可用场景:');
+  console.log('Available scenarios:');
   for (const scenario of evalScenarios) {
     console.log(`- ${scenario.id}: ${scenario.title}`);
   }
 }
 
 function printHelp() {
-  console.log('用法: pnpm run eval:compare -- [options]');
+  console.log('Usage: pnpm run eval:compare -- [options]');
   console.log('');
-  console.log('默认比较来源: 当前 HEAD 与 staged diff。');
-  console.log('也可通过 --commit 或 --baseline-ref/--candidate-ref 显式指定 before / after。');
+  console.log('Default comparison source: current HEAD vs staged diff.');
+  console.log('Use --commit or --baseline-ref/--candidate-ref to specify before / after explicitly.');
   console.log('');
-  console.log('选项:');
-  console.log('  --list-scenarios          列出内建场景');
-  console.log('  --scenario <id>          选择内建场景，默认 tool-heavy-code-edit');
-  console.log('  --prompt <text>          直接指定自定义用户提示词');
-  console.log('  --title <text>           自定义场景标题，仅配合 --prompt 使用');
-  console.log('  --objective <text>       自定义场景目标，仅配合 --prompt 使用');
-  console.log('  --commit <ref>           比较指定 commit 与其 first-parent');
-  console.log('  --baseline-ref <ref>     显式指定基线 git ref；必须与 --candidate-ref 一起使用');
-  console.log('  --candidate-ref <ref>    显式指定候选 git ref；必须与 --baseline-ref 一起使用');
-  console.log('  --api-key <key>          覆盖 OPENAI_API_KEY');
-  console.log('  --base-url <url>         覆盖 OPENAI_BASE_URL');
-  console.log('  --model <id>             覆盖 OPENAI_MODEL；未传时直接读取环境变量');
-  console.log('  --llm-vendor <vendor>    例如 deepseek / moonshot-ai / custom');
-  console.log('  --reasoning-effort <v>   例如 low / medium / high');
-  console.log('  --output-dir <dir>       必填；本次 compare 的输出根目录，可为一个不存在的新路径或已存在的空目录');
-  console.log('  --workspace-source <dir> 复制指定工作区目录到输出目录；默认使用空工作区');
-  console.log('  --bypass-approve         绕过高风险工具审批；默认阻塞并将结果记入 artifact');
+  console.log('Options:');
+  console.log('  --list-scenarios          List built-in scenarios');
+  console.log('  --scenario <id>          Select a built-in scenario, default tool-heavy-code-edit');
+  console.log('  --prompt <text>          Provide a custom user prompt directly');
+  console.log('  --title <text>           Custom scenario title, only with --prompt');
+  console.log('  --objective <text>       Custom scenario objective, only with --prompt');
+  console.log('  --commit <ref>           Compare the given commit against its first-parent');
+  console.log('  --baseline-ref <ref>     Explicit baseline git ref; must be used with --candidate-ref');
+  console.log('  --candidate-ref <ref>    Explicit candidate git ref; must be used with --baseline-ref');
+  console.log('  --api-key <key>          Overrides OPENAI_API_KEY');
+  console.log('  --base-url <url>         Overrides OPENAI_BASE_URL');
+  console.log('  --model <id>             Overrides OPENAI_MODEL; falls back to the environment variable');
+  console.log('  --llm-vendor <vendor>    e.g. deepseek / moonshot-ai / custom');
+  console.log('  --reasoning-effort <v>   e.g. low / medium / high');
+  console.log('  --output-dir <dir>       Required; output root for this compare, either a new non-existent path or an existing empty directory');
+  console.log('  --workspace-source <dir> Copy the given workspace directory into the output directory; defaults to an empty workspace');
+  console.log('  --bypass-approve         Bypass high-risk tool approvals; default blocks and records the outcome in the artifact');
 }
 
 function renderComparisonMode(mode) {

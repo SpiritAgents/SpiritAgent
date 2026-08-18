@@ -1,24 +1,24 @@
 import type { SessionBundle } from "./session-bundle.js";
 import { shouldAdvanceWorktreeBootstrap } from "./worktree-bootstrap-orchestrator.js";
 
-/** 泵 tick 间隔：决定流式事件消费与 UI 推送的最小节奏。 */
+/** Pump tick interval: sets the minimum cadence for streaming-event consumption and UI pushes. */
 export const SESSION_PUMP_INTERVAL_MS = 25;
 
-/** live snapshot 节流推送间隔（leading+trailing）。 */
+/** Throttled push interval for live snapshots (leading+trailing). */
 export const LIVE_SNAPSHOT_EMIT_THROTTLE_MS = 33;
 
-/** busy 但无变更时的心跳推送间隔（spinner / 计时等宿主态动画依赖推送刷新）。 */
+/** Heartbeat push interval while busy with no changes (host-state animations like the spinner / timer depend on pushes to refresh). */
 export const LIVE_SNAPSHOT_BUSY_HEARTBEAT_MS = 150;
 
-/** 后台会话 busy 时侧边栏 listSessions 刷新间隔。 */
+/** Sidebar listSessions refresh interval while background sessions are busy. */
 export const SESSION_LIST_NOTIFY_INTERVAL_MS = 1_000;
 
-/** 与 pollCommand 的 tick 条件一致：runtime busy 或 worktree bootstrap 待推进。 */
+/** Same tick condition as pollCommand: runtime busy or a worktree bootstrap pending advancement. */
 export function sessionBundleNeedsPumpTick(bundle: SessionBundle): boolean {
   return bundle.runtime?.isBusy() === true || shouldAdvanceWorktreeBootstrap(bundle);
 }
 
-/** 环境变量 `SPIRIT_DESKTOP_PUMP_DEBUG`：设为 1/true/on 时输出泵的启停、tick 频率与推送频率统计。 */
+/** Env var `SPIRIT_DESKTOP_PUMP_DEBUG`: when set to 1/true/on, logs pump start/stop, tick rate, and push rate statistics. */
 export function pumpDebugEnabled(): boolean {
   const raw = process.env.SPIRIT_DESKTOP_PUMP_DEBUG?.trim().toLowerCase() ?? "";
   return raw === "1" || raw === "true" || raw === "on" || raw === "yes";
@@ -36,8 +36,8 @@ export interface SessionPumpOptions {
 }
 
 /**
- * 主进程自驱泵：busy 会话的回合推进不再依赖 renderer 的 poll 循环。
- * 任一入口命令使会话变 busy 后调用 ensureRunning()，泵以固定间隔 tick 直到全部空闲。
+ * Self-driven main-process pump: turn advancement for busy sessions no longer depends on the renderer poll loop.
+ * Any entry command that makes a session busy calls ensureRunning(), and the pump ticks at a fixed interval until everything is idle.
  */
 export class SessionPump {
   private timer: ReturnType<typeof setTimeout> | undefined;
@@ -86,7 +86,7 @@ export class SessionPump {
       this.timer = undefined;
       void this.tick();
     }, delayMs);
-    // 泵不应阻止主进程退出（Electron quit / 测试进程结束）。
+    // The pump must not keep the main process alive (Electron quit / test process exit).
     timer.unref?.();
     this.timer = timer;
   }

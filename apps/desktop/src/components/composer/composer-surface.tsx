@@ -96,7 +96,7 @@ export type ComposerSurfaceProps = {
   agentModeChipDismissed?: boolean;
   onAgentModeChipDismissChange?(dismissed: boolean): void;
   saveLocalImageAs?: SaveLocalImageAs;
-  /** translucency 开启时输入框用实色底，避免 CSS blur 透出滚动消息 */
+  /** With translucency enabled, the input box uses a solid background to avoid scrolling messages showing through the CSS blur */
   useTranslucency?: boolean;
 };
 
@@ -240,7 +240,7 @@ export function ComposerSurface({
             !e.ctrlKey &&
             !e.metaKey &&
             !e.nativeEvent.isComposing;
-          // slash/file 建议已 preventDefault 时不得再提交
+          // When a slash/file suggestion already preventDefault'ed, submission must not proceed
           if (plainEnter) {
             if (e.defaultPrevented) {
               return;

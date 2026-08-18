@@ -61,7 +61,7 @@ export function resolveComposerDropAbsolutePaths(
         pushUniquePath(joinWorkspaceAbsolutePath(workspaceRoot, payload.relativePath));
       }
     } catch {
-      // 无效 payload 与空 drop 一致：静默忽略
+      // An invalid payload is treated the same as an empty drop: silently ignored
     }
     return paths;
   }

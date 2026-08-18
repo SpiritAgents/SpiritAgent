@@ -6,7 +6,7 @@ const root = join(dirname(fileURLToPath(import.meta.url)), "..");
 const from = join(root, "dist-electron", "electron", "preload.js");
 const to = join(root, "dist-electron", "electron", "preload.cjs");
 
-/** 并发跑两次 build:electron 时，先结束的一方已 rename，另一方只见得到 preload.cjs —— 视为成功 */
+/** When build:electron runs twice concurrently, the first finisher already renamed it and the other only sees preload.cjs — treat as success */
 if (existsSync(to) && !existsSync(from)) {
   console.log("[build] preload.cjs already present (skip rename)");
   process.exit(0);

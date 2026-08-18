@@ -1,4 +1,4 @@
-/** Renderer-safe provider credential predicates（无 keyring / host 依赖）。 */
+/** Renderer-safe provider credential predicates (no keyring / host dependencies). */
 
 export function hasBedrockIamCredentials(credentials: {
   accessKeyId?: string;

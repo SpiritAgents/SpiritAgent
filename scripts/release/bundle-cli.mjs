@@ -75,7 +75,7 @@ function detectHostTarget() {
   if (process.platform === 'linux') {
     return process.arch === 'arm64' ? 'aarch64-unknown-linux-gnu' : 'x86_64-unknown-linux-gnu';
   }
-  throw new Error(`不支持的宿主平台: ${process.platform}/${process.arch}`);
+  throw new Error(`Unsupported host platform: ${process.platform}/${process.arch}`);
 }
 
 async function pathExists(filePath) {
@@ -94,7 +94,7 @@ async function readJson(relativePath) {
 async function downloadFile(url, destination) {
   const response = await fetch(url);
   if (!response.ok || !response.body) {
-    throw new Error(`下载失败 ${response.status}: ${url}`);
+    throw new Error(`Download failed ${response.status}: ${url}`);
   }
   await mkdir(path.dirname(destination), { recursive: true });
   await writeFile(destination, Buffer.from(await response.arrayBuffer()));
@@ -105,7 +105,7 @@ async function readNvmrcMajor() {
   const spec = content.trim().split('\n')[0].trim().replace(/^v/, '');
   const major = spec.split('.')[0];
   if (!/^\d+$/.test(major)) {
-    throw new Error(`.nvmrc 必须包含数字主版本，当前为: ${spec}`);
+    throw new Error(`.nvmrc must contain a numeric major version, got: ${spec}`);
   }
   return major;
 }
@@ -118,12 +118,12 @@ async function resolveNodeReleaseVersion() {
   const major = process.env.SPIRIT_RELEASE_NODE_MAJOR ?? (await readNvmrcMajor());
   const response = await fetch('https://nodejs.org/dist/index.json');
   if (!response.ok) {
-    throw new Error(`无法查询 Node.js ${major}.x 版本: ${response.status}`);
+    throw new Error(`Failed to query Node.js ${major}.x versions: ${response.status}`);
   }
   const releases = await response.json();
   const latest = releases.find((item) => item.version?.startsWith(`v${major}.`));
   if (!latest) {
-    throw new Error(`未找到 Node.js ${major}.x 发布版本`);
+    throw new Error(`No Node.js ${major}.x release found`);
   }
   return latest.version.replace(/^v/, '');
 }
@@ -135,7 +135,7 @@ function run(command, args, options = {}) {
     ...options,
   });
   if (result.status !== 0) {
-    throw new Error(`命令失败: ${command} ${args.join(' ')}`);
+    throw new Error(`Command failed: ${command} ${args.join(' ')}`);
   }
 }
 
@@ -229,7 +229,7 @@ async function main() {
   const target = readArg('--target') ?? process.env.SPIRIT_RELEASE_TARGET ?? detectHostTarget();
   const targetInfo = targetMap[target];
   if (!targetInfo) {
-    throw new Error(`不支持的 CLI release target: ${target}`);
+    throw new Error(`Unsupported CLI release target: ${target}`);
   }
 
   const desktopPackage = await readJson('apps/desktop/package.json');
@@ -241,7 +241,7 @@ async function main() {
   const binaryPath = (await pathExists(targetBinaryPath)) ? targetBinaryPath : hostBinaryPath;
 
   if (!(await pathExists(binaryPath))) {
-    throw new Error(`未找到 CLI release 二进制: ${targetBinaryPath}`);
+    throw new Error(`CLI release binary not found: ${targetBinaryPath}`);
   }
 
   const bundleName = `SpiritAgent-CLI-${version}-${targetInfo.packageTarget}`;
@@ -278,7 +278,7 @@ async function main() {
     )}\n`,
   );
 
-  // 必须早于 createArchive：归档一旦生成，再签名也只是改了归档外的副本。
+  // Must run before createArchive: once the archive is created, signing afterwards only changes the copy outside the archive.
   if (targetInfo.nodePlatform === 'darwin') {
     await signCliBundle(bundleRoot);
   }

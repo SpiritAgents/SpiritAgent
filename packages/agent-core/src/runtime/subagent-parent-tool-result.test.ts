@@ -5,8 +5,8 @@ import { buildParentSubagentToolResultText } from "./subagent-parent-tool-result
 
 test("buildParentSubagentToolResultText includes sessionId and sessionTranscript", () => {
   const text = buildParentSubagentToolResultText(
-    "输出“你好”。不要执行其他操作，不要修改任何文件。",
-    "你好",
+    "Output \"Hello\". Do not perform any other actions and do not modify any files.",
+    "Hello",
     false,
     "subagent-1785129948357-1",
     "/data/transcripts/session-1/subagents/subagent-1785129948357-1.json",
@@ -15,11 +15,11 @@ test("buildParentSubagentToolResultText includes sessionId and sessionTranscript
     text,
     [
       "[subagent completed]",
-      "title=输出“你好”。不要执行其他操作，不要修改任何文件。",
+      "title=Output \"Hello\". Do not perform any other actions and do not modify any files.",
       "sessionId=subagent-1785129948357-1",
       "sessionTranscript=/data/transcripts/session-1/subagents/subagent-1785129948357-1.json",
       "final_output:",
-      "你好",
+      "Hello",
     ].join("\n"),
   );
 });

@@ -136,7 +136,7 @@ function textSegmentOffsetToLexical(
   return null;
 }
 
-/** SpiritChipNode 不能作 RangeSelection 锚点（text/element 均会抛错），chip 段 caret 映射到邻文本。 */
+/** SpiritChipNode cannot be a RangeSelection anchor (both text and element anchors throw), so a chip-segment caret maps to the adjacent text. */
 function caretAdjacentToChip(segs: RichSegment[], chipIndex: number): SegmentCaret {
   const merged = mergeAdjacentTextSegments(segs);
   const textAfter = merged.findIndex((s, i) => i > chipIndex && s.kind === "text");

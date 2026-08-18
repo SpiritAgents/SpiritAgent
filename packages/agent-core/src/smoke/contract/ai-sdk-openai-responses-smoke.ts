@@ -10,9 +10,9 @@ import { demoLookupToolDefinition, printSmokeSection } from "../shared/index.js"
 import { buildOpenResponsesToolCallBody } from "./open-responses-mock.js";
 
 /**
- * 验证 @ai-sdk/openai 的 responses 分支（单轮 tool call）。
- * 双轮续聊在 open-responses-compatible smoke 中覆盖；OpenAI 官方 SDK 与 mock 的
- * 多轮 tool result 形态在 live/集成环境再验证。
+ * Verifies the @ai-sdk/openai responses branch (single-round tool call).
+ * Two-round continuation is covered by the open-responses-compatible smoke; the
+ * multi-round tool result shape between the official OpenAI SDK and the mock is verified in live/integration environments.
  */
 async function main(): Promise<void> {
   const server = createServer(async (request, response) => {
@@ -34,7 +34,7 @@ async function main(): Promise<void> {
   const address = server.address();
   if (!address || typeof address === "string") {
     server.close();
-    throw new Error("无法获取本地 smoke server 端口。");
+    throw new Error("Unable to get the local smoke server port.");
   }
 
   const transport = new AiSdkOpenResponsesTransport();
@@ -62,12 +62,12 @@ async function main(): Promise<void> {
   server.close();
 
   if (firstRound.kind !== "success" || firstRound.result.step.kind !== "tool-calls") {
-    throw new Error("ai-sdk openai responses smoke step 1 未进入 tool-calls。");
+    throw new Error("ai-sdk openai responses smoke step 1 did not reach tool-calls.");
   }
 
   const traceKind = firstRound.result.requestTrace[0];
   if (!isJsonObject(traceKind) || traceKind.kind !== "openai_sdk_responses") {
-    throw new Error("ai-sdk openai responses smoke 未写入 openai_sdk_responses trace。");
+    throw new Error("ai-sdk openai responses smoke did not write an openai_sdk_responses trace.");
   }
 
   const assistantMessage = firstRound.result.state.messages.at(-1);
@@ -77,7 +77,7 @@ async function main(): Promise<void> {
     !isJsonObject(assistantMessage.providerState.openAiResponses) ||
     typeof assistantMessage.providerState.openAiResponses.responseId !== "string"
   ) {
-    throw new Error("ai-sdk openai responses smoke 未在 providerState 中保留 responseId。");
+    throw new Error("ai-sdk openai responses smoke did not preserve responseId in providerState.");
   }
 }
 

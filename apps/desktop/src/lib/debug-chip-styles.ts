@@ -1,9 +1,9 @@
 import { FONT_WEIGHT_NORMAL } from "@/lib/desktop-typography";
 
-// 半透明底色试点：与 Composer 磨砂 surface 混叠，避免 opaque 色块与底色调不齐
-// 必须为 inline（非 inline-flex）：label 文本才能并入外层行盒，选区带与 plain text 同高同色
-// --chip-pad 须等于根 px、--chip-mx 须等于根 mx：供两个 spacer 伸出覆盖 padding 与
-// margin 的选区带（见 chip-shell.tsx）
+// Semi-transparent background pilot: blends with the Composer frosted surface, avoiding opaque blocks that clash with the base tone
+// Must be inline (not inline-flex): the label text merges into the outer line box so the selection band matches plain text in height and color
+// --chip-pad must equal the root px, --chip-mx must equal the root mx: lets the two spacers extend to cover the
+// padding and margin selection band (see chip-shell.tsx)
 export const DEBUG_CHIP_CLASS = `inline whitespace-nowrap rounded-md bg-red-500/10 px-1.5 py-0.5 text-xs ${FONT_WEIGHT_NORMAL} leading-none text-red-700 mx-0.5 [--chip-pad:6px] [--chip-mx:2px] dark:bg-red-500/15 dark:text-red-400`;
 
 export function makeDebugChipNode(doc: Document, label = "Debug"): HTMLElement {

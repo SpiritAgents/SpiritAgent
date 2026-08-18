@@ -8,7 +8,7 @@ import "@xterm/xterm/css/xterm.css";
 import { readShellToolMonochromeTheme, stripAnsiSgrSequences } from "@/lib/shell-tool-xterm-theme";
 import { cn } from "@/lib/utils";
 
-/** 对齐工具卡 `font-mono text-xs leading-relaxed`。 */
+/** Matches the tool card's `font-mono text-xs leading-relaxed`. */
 const SHELL_TOOL_XTERM_FONT_FAMILY =
   'ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace';
 const SHELL_TOOL_XTERM_FONT_SIZE = 12;
@@ -18,8 +18,10 @@ const SHELL_TOOL_XTERM_MAX_HEIGHT_PX = 384;
 const SHELL_TOOL_XTERM_MIN_HEIGHT_PX = 96;
 const SHELL_TOOL_XTERM_SCROLLBACK = 50_000;
 /**
- * 展示缓冲上限（字符）：约等于 scrollback×宽列的量级，避免流式全量重扫与无界字符串驻留。
- * 宿主 stdout 收集另有 8MiB 封顶；流式 chunk 路径可能更长，UI 只保留尾部。
+ * Display buffer cap (characters): roughly on the order of scrollback × column width, avoiding a
+ * full re-scan on every streaming chunk and unbounded string retention.
+ * The host-side stdout collection is separately capped at 8MiB; the streaming chunk path can be
+ * longer, so the UI keeps only the tail.
  */
 const SHELL_TOOL_XTERM_DISPLAY_MAX_CHARS = 512 * 1024;
 
@@ -45,7 +47,7 @@ function clampHeightPx(height: number): number {
   );
 }
 
-/** 只保留尾部展示窗口，防止长输出在 React/xterm 路径上无界增长。 */
+/** Keeps only the tail display window, preventing long output from growing unbounded on the React/xterm path. */
 function takeDisplayTail(text: string): string {
   if (text.length <= SHELL_TOOL_XTERM_DISPLAY_MAX_CHARS) {
     return text;
@@ -53,7 +55,7 @@ function takeDisplayTail(text: string): string {
   return text.slice(text.length - SHELL_TOOL_XTERM_DISPLAY_MAX_CHARS);
 }
 
-/** 按可见文本行数估算高度增量（只扫 delta，避免每次全量 split）。 */
+/** Estimates the height delta from the number of visible text lines (scans only the delta, avoiding a full split every time). */
 function estimateHeightDeltaPx(deltaText: string, cols: number): number {
   if (deltaText.length === 0) {
     return 0;
@@ -64,7 +66,7 @@ function estimateHeightDeltaPx(deltaText: string, cols: number): number {
   for (const line of lines) {
     rows += Math.max(1, Math.ceil(Math.max(line.length, 1) / safeCols));
   }
-  // split 在无尾换行时多计一段空行起点；纯增量用行数即可
+  // split counts an extra empty-line start when there is no trailing newline; a pure delta only needs the line count
   return rows * SHELL_TOOL_XTERM_FONT_SIZE * SHELL_TOOL_XTERM_LINE_HEIGHT;
 }
 
@@ -79,9 +81,11 @@ function isXtermViewportAtBottom(term: Terminal): boolean {
 }
 
 /**
- * Shell 工具卡只读输出：用 xterm 消费 ANSI / CR，主题强制单色以匹配卡片字色。
+ * Read-only output for the Shell tool card: uses xterm to consume ANSI / CR, with the theme forced
+ * to monochrome to match the card's text color.
  *
- * followTail 为 sticky：仅在用户仍贴底时自动滚到最新；上滚后暂停，回到底部再恢复。
+ * followTail is sticky: it auto-scrolls to the latest output only while the user is still at the
+ * bottom; it pauses after scrolling up and resumes upon returning to the bottom.
  */
 export function ShellToolXtermOutput({
   text,
@@ -91,7 +95,7 @@ export function ShellToolXtermOutput({
   const hostRef = useRef<HTMLDivElement>(null);
   const termRef = useRef<Terminal | null>(null);
   const fitRef = useRef<FitAddon | null>(null);
-  /** 已写入终端的展示窗口（可能是全量 text 的尾部）。 */
+  /** Display window already written to the terminal (may be the tail of the full text). */
   const writtenDisplayRef = useRef<string>("");
   const followTailRef = useRef(followTail);
   const stickToBottomRef = useRef(true);
@@ -152,14 +156,15 @@ export function ShellToolXtermOutput({
     });
     resizeObserver.observe(host);
 
-    // 解除 stick 只认用户输入（与会话流式定底同思路）：内容增长触发的 scroll 不解除。
+    // Releasing stick only counts user input (same approach as the conversation streaming bottom
+    // anchor): scrolls triggered by content growth do not release it.
     const onWheel = (event: WheelEvent): void => {
       if (event.deltaY < 0) {
         stickToBottomRef.current = false;
       }
     };
     const scrollDisposable = term.onScroll(() => {
-      // 仅恢复，不解除：回到底部后继续跟尾
+      // Restore only, never release: keep following the tail after returning to the bottom
       if (isXtermViewportAtBottom(term)) {
         stickToBottomRef.current = true;
       }
@@ -217,7 +222,7 @@ export function ShellToolXtermOutput({
     if (appendDelta) {
       const deltaRaw = nextDisplay.slice(previousDisplay.length);
       const deltaWrite = stripAnsiSgrSequences(deltaRaw);
-      // write 异步：未达上限时按 delta 抬高，避免全量重估。
+      // write is async: below the cap, raise the height by the delta to avoid full re-estimation.
       if (!atMaxHeight && deltaWrite.length > 0) {
         const currentHeight =
           Number.parseFloat(host.style.height) || SHELL_TOOL_XTERM_MIN_HEIGHT_PX;

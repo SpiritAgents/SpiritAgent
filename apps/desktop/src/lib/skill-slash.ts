@@ -29,7 +29,7 @@ export interface SkillSlashSuggestion {
   id: string;
   alias: string;
   name: string;
-  /** Ctrl+Shift+P 等命令面板标题；缺省回退 name（斜杠菜单始终用 name）。 */
+  /** Title for command palettes such as Ctrl+Shift+P; falls back to name when absent (the slash menu always uses name). */
   paletteName?: string;
   description?: string;
   descriptionKey?: string;

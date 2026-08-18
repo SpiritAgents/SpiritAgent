@@ -26,7 +26,7 @@ export {
  */
 export const instantHoverMotionClass = "!transition-[opacity,transform,box-shadow] duration-150";
 
-/** 半透明 hover 铺底，背景色不参与 transition（不含字色变化） */
+/** Translucent hover underlay; background-color does not participate in transitions (text color changes excluded) */
 export const DESKTOP_INSTANT_HOVER_OVERLAY = cn(
   "bg-transparent hover:!bg-foreground/[0.06] focus-visible:!bg-foreground/[0.06]",
   "dark:hover:!bg-white/[0.06] dark:focus-visible:!bg-white/[0.06]",
@@ -35,36 +35,36 @@ export const DESKTOP_INSTANT_HOVER_OVERLAY = cn(
   "active:!translate-y-0",
 );
 
-/** ghost 图标/紧凑按钮：侧栏同源半透明 hover + 字色变亮 */
+/** Ghost icon/compact button: sidebar-sourced translucent hover + brighter text color */
 export const DESKTOP_INSTANT_HOVER_GHOST_BTN = cn(
   DESKTOP_INSTANT_HOVER_OVERLAY,
   "hover:!text-sidebar-foreground focus-visible:!text-sidebar-foreground aria-expanded:!text-sidebar-foreground",
 );
 
-/** 侧栏壳层 / 顶栏槽位宽度过渡，与 SessionSidebarShell 一致 */
+/** Sidebar shell / title-bar slot width transition, consistent with SessionSidebarShell */
 export const DESKTOP_SHELL_LAYOUT_TRANSITION =
   "transition-[width,margin,opacity] duration-300 ease-[cubic-bezier(0.22,1,0.36,1)] motion-reduce:transition-none motion-reduce:duration-0";
 
-/** 顶栏默认字色/图标色，与侧栏 `sidebarItemDefaultTextClass` 对齐 */
+/** Default title-bar text/icon color, aligned with the sidebar's `sidebarItemDefaultTextClass` */
 export const DESKTOP_CHROME_MUTED_TEXT = "text-sidebar-action-foreground";
 
-/** 会话标题内联重命名 input：ghost、无边框，字色与侧栏/顶栏会话名一致 */
+/** Inline session-title rename input: ghost, borderless, text color matches the sidebar/title-bar session name */
 export const SESSION_TITLE_RENAME_INPUT_CLASS = cn(
   "min-w-0 rounded-none border-0 bg-transparent p-0 shadow-none outline-none ring-0 focus-visible:ring-0",
   DESKTOP_SIDEBAR_TEXT_CLASS,
   DESKTOP_CHROME_MUTED_TEXT,
 );
 
-/** 顶栏会话标题 hover：仅字色变亮，无半透明铺底 */
+/** Title-bar session title hover: only the text color brightens, no translucent underlay */
 export const DESKTOP_SESSION_TITLE_HOVER_CLASS = cn(
   "hover:!text-sidebar-foreground focus-visible:!text-sidebar-foreground",
   instantHoverMotionClass,
 );
 
-/** 顶栏 hover/focus/当前项字色，与侧栏 `sidebarItemActiveTextClass` 对齐 */
+/** Title-bar hover/focus/current-item text color, aligned with the sidebar's `sidebarItemActiveTextClass` */
 export const DESKTOP_CHROME_ACTIVE_TEXT = "text-sidebar-foreground";
 
-/** ghost 在 aria-expanded 时默认带 bg-muted，顶栏图标按钮需全透明底 */
+/** ghost defaults to bg-muted when aria-expanded; title-bar icon buttons need a fully transparent background */
 export const DESKTOP_CHROME_TOGGLE_ICON_BTN = cn(
   "electron-no-drag size-7 shrink-0 bg-transparent",
   DESKTOP_CHROME_MUTED_TEXT,
@@ -76,7 +76,7 @@ export const DESKTOP_CHROME_TOGGLE_ICON_BTN = cn(
   instantHoverMotionClass,
 );
 
-/** 文件侧栏工具栏切换图标：字色对齐会话区 Thought（text-muted-foreground） */
+/** File-sidebar toolbar toggle icon: text color aligned with the conversation area's Thought (text-muted-foreground) */
 export const DESKTOP_FILES_EXPLORER_TOOLBAR_ICON_BTN = cn(
   DESKTOP_CHROME_TOGGLE_ICON_BTN,
   "text-muted-foreground hover:text-muted-foreground focus-visible:text-muted-foreground aria-expanded:text-muted-foreground aria-pressed:text-muted-foreground",
@@ -88,46 +88,47 @@ export const DESKTOP_CHROME_COMMIT_BTN = cn(
   instantHoverMotionClass,
 );
 
-/** Git 更改区 primary 按钮（ButtonGroup 分段，配合 `size="xs"`）；`border-r-0` 避免透明右边框叠在分割线上显得过粗 */
+/** Primary button of the Git changes area (ButtonGroup segment, paired with `size="xs"`); `border-r-0` prevents the transparent right border from stacking on the divider and looking too thick */
 export const DESKTOP_GIT_ACTION_BTN = cn("border-r-0 shadow-none", instantHoverMotionClass);
 
-/** Git ButtonGroup 中间竖线（`ButtonGroupSeparator`）；`!bg-*` 覆盖 Separator 默认的 bg-border / bg-input */
+/** Middle vertical line of the Git ButtonGroup (`ButtonGroupSeparator`); `!bg-*` overrides the Separator default bg-border / bg-input */
 export const DESKTOP_GIT_ACTION_SPLIT = cn(
   "!my-0 !mx-0 h-auto w-px min-w-px max-w-px shrink-0 self-stretch !border-0 !bg-border-0 !bg-[var(--git-action-split)] !p-0",
 );
 
-/** Git ButtonGroup 右侧下拉触发器 */
+/** Dropdown trigger on the right side of the Git ButtonGroup */
 export const DESKTOP_GIT_ACTION_MENU_TRIGGER = cn(
   DESKTOP_GIT_ACTION_BTN,
   "w-6 min-w-6 max-w-6 rounded-l-none rounded-r-md px-0",
 );
 
 /**
- * 浮层菜单密度：统一使用 LIST 密度（text-xs / py-2），与模型 / 工作区选择器对齐。
- * SHORT 系列仅保留给仍需要 text-sm 密度的局部场景。
+ * Overlay menu density: uniformly use the LIST density (text-xs / py-2), aligned with the
+ * model / workspace pickers.
+ * The SHORT series is kept only for local cases that still need text-sm density.
  */
 
-/** 浮层阴影：浅色扩散 + 深色沿用 md */
+/** Overlay shadow: light-mode diffuse + dark-mode keeps md */
 export const DESKTOP_OVERLAY_SHADOW = cn(DESKTOP_OVERLAY_LIGHT_SHADOW, "dark:shadow-md");
 
-/** 浮层阴影：浅色扩散 + 深色沿用 lg（Tooltip / Popover / HoverCard 等） */
+/** Overlay shadow: light-mode diffuse + dark-mode keeps lg (Tooltip / Popover / HoverCard, etc.) */
 export const DESKTOP_OVERLAY_SHADOW_LG = cn(DESKTOP_OVERLAY_LIGHT_SHADOW, "dark:shadow-lg");
 
-/** Ctrl+P / Ctrl+Shift+P 命令面板列表图标与标题：浅色略淡，深色提亮 */
+/** Ctrl+P / Ctrl+Shift+P command palette list icons and titles: slightly muted in light mode, brightened in dark mode */
 export const DESKTOP_COMMAND_PALETTE_ITEM_TONE = "opacity-70 dark:opacity-90";
 
-/** Ctrl+P / Ctrl+Shift+P 命令面板列表行：统一行高，避免单行标题显得挤 */
+/** Ctrl+P / Ctrl+Shift+P command palette list row: uniform row height so single-line titles don't look cramped */
 export const DESKTOP_COMMAND_PALETTE_ITEM_CLASS = cn(
   "min-h-9 min-w-0 cursor-pointer py-2 [&>svg:last-child]:hidden",
   instantHoverMotionClass,
 );
 
-/** 短列表：轻外壳（仅局部场景使用） */
+/** Short list: lightweight shell (used only in local cases) */
 export const DESKTOP_OVERLAY_SHORT_SHELL = cn("rounded-lg ring-0", DESKTOP_OVERLAY_SHADOW);
 
 export const DESKTOP_OVERLAY_SHORT_CONTENT = cn(DESKTOP_OVERLAY_SHORT_SHELL, "p-1 text-sm");
 
-/** Dropdown 基元：短列表壳 + popover 面 */
+/** Dropdown primitive: short-list shell + popover face */
 export const DESKTOP_OVERLAY_SHORT_DROPDOWN_SURFACE = cn(
   DESKTOP_OVERLAY_SHORT_SHELL,
   "border border-border/80 bg-popover p-1 text-sm text-popover-foreground",
@@ -144,15 +145,15 @@ export const DESKTOP_OVERLAY_SHORT_LIST_PADDING = "p-1";
 
 export const DESKTOP_OVERLAY_SHORT_LIST_GAP = "gap-0.5";
 
-/** 仅补最小宽度等业务局部 class */
+/** Only adds local business classes such as a minimum width */
 export const DESKTOP_OVERLAY_SHORT_MENU_MIN_WIDTH = "min-w-[8.5rem]";
 
-/** 长列表：关掉基类 overflow-y-auto，由内层 ScrollArea 独占滚动 */
+/** Long list: disable the base class overflow-y-auto so the inner ScrollArea owns scrolling exclusively */
 export const DESKTOP_OVERLAY_LIST_CONTENT = "max-h-none overflow-hidden p-0 text-xs";
 
 export const DESKTOP_OVERLAY_LIST_SHELL = cn("min-w-0 rounded-lg ring-0", DESKTOP_OVERLAY_SHADOW);
 
-/** Dropdown 基元：长列表壳 + popover 面（密度对齐模型 / 工作区选择器） */
+/** Dropdown primitive: long-list shell + popover face (density aligned with the model / workspace pickers) */
 export const DESKTOP_OVERLAY_LIST_DROPDOWN_SURFACE = cn(
   DESKTOP_OVERLAY_LIST_SHELL,
   "border border-border/80 bg-popover p-0 text-xs text-popover-foreground backdrop-blur-sm",
@@ -163,32 +164,32 @@ export const DESKTOP_OVERLAY_LIST_WIDTH =
 
 export const DESKTOP_OVERLAY_LIST_FILTER_HEADER = "shrink-0 border-b border-border/40 p-1.5";
 
-/** 表单控件默认边框：与扩展卡片 border-border/60 对齐（无 transition，hover/focus 即时切换） */
+/** Form control default border: aligned with the extension card border-border/60 (no transition; hover/focus switch instantly) */
 export const DESKTOP_CONTROL_BORDER = "border border-control-border transition-none";
 
-/** 表单控件 hover：与扩展卡片一致 */
+/** Form control hover: consistent with the extension card */
 export const DESKTOP_CONTROL_BORDER_HOVER = "hover:border-border hover:bg-muted/30";
 
-/** 鼠标点击 focus：保持 hover 边框，无 ring */
+/** Mouse-click focus: keep the hover border, no ring */
 export const DESKTOP_CONTROL_BORDER_FOCUSED = "focus:border-border focus:bg-muted/30";
 
-/** 键盘 Tab focus-visible：shadcn ring（鼠标点击不触发 focus-visible） */
+/** Keyboard Tab focus-visible: shadcn ring (mouse clicks do not trigger focus-visible) */
 export const DESKTOP_CONTROL_BORDER_FOCUS_VISIBLE =
   "focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50";
 
-/** Select 触发器：略小的 ring，与 shadcn Select 默认一致 */
+/** Select trigger: slightly smaller ring, consistent with the shadcn Select default */
 export const DESKTOP_CONTROL_BORDER_FOCUS_VISIBLE_SELECT =
   "focus-visible:border-ring focus-visible:ring-2 focus-visible:ring-ring/50";
 
-/** Shell：内层任意 focus 时保持边框 */
+/** Shell: keep the border whenever an inner element has focus */
 export const DESKTOP_CONTROL_BORDER_FOCUS_WITHIN =
   "focus-within:border-border focus-within:bg-muted/30";
 
-/** Shell：仅内层键盘 focus-visible 时 ring */
+/** Shell: ring only on inner keyboard focus-visible */
 export const DESKTOP_CONTROL_BORDER_FOCUS_WITHIN_KEYBOARD =
   "focus-within:has(:focus-visible):border-ring focus-within:has(:focus-visible):ring-2 focus-within:has(:focus-visible):ring-ring/50";
 
-/** 与 PendingApprovalCard 指引输入一致：外壳细边框，内层 Input 无 ring */
+/** Consistent with the PendingApprovalCard guided input: thin-border shell, inner Input without ring */
 export const DESKTOP_OVERLAY_LIST_FILTER_INPUT_SHELL = cn(
   "overflow-hidden rounded-md bg-transparent",
   DESKTOP_CONTROL_BORDER,
@@ -200,13 +201,13 @@ export const DESKTOP_OVERLAY_LIST_FILTER_INPUT_SHELL = cn(
 export const DESKTOP_OVERLAY_LIST_FILTER_INPUT =
   "h-7 min-h-7 w-full min-w-0 rounded-none border-0 bg-transparent px-2.5 py-1 text-xs shadow-none focus-visible:border-transparent focus-visible:ring-0";
 
-/** ghost：透明底与 popover 一致；覆盖 Input 基类 hover/focus 的 bg-muted/30（浅色焦点尤其明显） */
+/** ghost: transparent background consistent with popover; overrides the Input base class hover/focus bg-muted/30 (especially noticeable on light-mode focus) */
 export const DESKTOP_OVERLAY_LIST_FILTER_INPUT_GHOST = cn(
   DESKTOP_OVERLAY_LIST_FILTER_INPUT,
   "rounded-md hover:!bg-transparent focus:!bg-transparent focus-visible:!bg-transparent dark:!bg-transparent",
 );
 
-/** 标准表单输入：与 PendingApprovalCard 指引输入一致（h-8） */
+/** Standard form input: consistent with the PendingApprovalCard guided input (h-8) */
 export const DESKTOP_FORM_INPUT_SHELL = DESKTOP_OVERLAY_LIST_FILTER_INPUT_SHELL;
 
 export const DESKTOP_FORM_INPUT_INNER =
@@ -215,11 +216,11 @@ export const DESKTOP_FORM_INPUT_INNER =
 export const DESKTOP_FORM_TEXTAREA_INNER =
   "min-h-9 w-full min-w-0 flex-1 resize-none rounded-none border-0 bg-transparent px-2.5 py-2 text-sm shadow-none focus-visible:border-transparent focus-visible:ring-0 dark:bg-transparent";
 
-/** 置于 DESKTOP_FORM_INPUT_SHELL 内的 Select / 自定义触发器 */
+/** Select / custom trigger placed inside DESKTOP_FORM_INPUT_SHELL */
 export const DESKTOP_FORM_FIELD_TRIGGER_INNER =
   "h-8 min-h-8 w-full rounded-none border-0 bg-transparent px-2.5 shadow-none focus-visible:border-transparent focus-visible:ring-0 dark:bg-transparent";
 
-/** Root 与 viewport 同步 max-h：仅约束 viewport 时 Root 会随内容撑高，滚动条轨道 h-full 失真 */
+/** Root and viewport share max-h: constraining only the viewport lets Root grow with content and distorts the h-full scrollbar track */
 export const DESKTOP_OVERLAY_LIST_SCROLL_AREA =
   "max-h-[min(17rem,var(--radix-dropdown-menu-content-available-height))] [&>[data-radix-scroll-area-viewport]]:max-h-[min(17rem,var(--radix-dropdown-menu-content-available-height))] [&>[data-radix-scroll-area-viewport]]:overscroll-contain";
 
@@ -235,25 +236,25 @@ export const DESKTOP_OVERLAY_LIST_GROUP_LABEL = cn(
   DESKTOP_OVERLAY_GROUP_LABEL_CLASS,
 );
 
-/** 详情 Popover 内嵌标签（无额外 padding，配合 DESKTOP_OVERLAY_LIST_DETAIL_* 使用） */
+/** Label embedded in a detail Popover (no extra padding; used with DESKTOP_OVERLAY_LIST_DETAIL_*) */
 export const DESKTOP_OVERLAY_LIST_DETAIL_LABEL = DESKTOP_OVERLAY_GROUP_LABEL_CLASS;
 
 export const DESKTOP_OVERLAY_LIST_ITEM = "px-2 py-1.5";
 
-/** 长列表 DropdownMenuItem 基元；模型 / 工作区 / 审批等浮层列表项共用 */
+/** Long-list DropdownMenuItem primitive; shared by overlay list items such as model / workspace / approval */
 export const DESKTOP_OVERLAY_LIST_DROPDOWN_ITEM =
   "relative flex w-full cursor-pointer select-none items-center rounded-sm px-2 py-1.5 text-xs outline-none focus:bg-accent focus:text-accent-foreground data-disabled:pointer-events-none data-disabled:opacity-50";
 
-/** Select 下拉项：与 DropdownMenuItem 同密度 + 右侧 ItemIndicator 留白 */
+/** Select dropdown item: same density as DropdownMenuItem + right-side space for the ItemIndicator */
 export const DESKTOP_SELECT_ITEM = cn(DESKTOP_OVERLAY_LIST_DROPDOWN_ITEM, "pr-8");
 
-/** Select 下拉面板：与 Dropdown 同壳；滚动由 Radix Viewport 承担，外层保持 overflow-hidden */
+/** Select dropdown panel: same shell as Dropdown; scrolling is handled by the Radix Viewport while the outer layer stays overflow-hidden */
 export const DESKTOP_SELECT_CONTENT = cn(
   DESKTOP_OVERLAY_LIST_DROPDOWN_SURFACE,
   "relative z-50 max-h-[min(24rem,var(--radix-select-content-available-height))] overflow-hidden",
 );
 
-/** 独立边框 Select 触发器（设置页等） */
+/** Standalone bordered Select trigger (settings pages, etc.) */
 export const DESKTOP_SELECT_TRIGGER = cn(
   "flex h-8 min-h-8 w-full min-w-0 cursor-pointer items-center justify-between gap-2 rounded-md bg-background px-2.5 py-1 text-sm outline-none",
   DESKTOP_CONTROL_BORDER,
@@ -266,7 +267,7 @@ export const DESKTOP_SELECT_TRIGGER = cn(
 
 export const DESKTOP_SELECT_LABEL = DESKTOP_OVERLAY_LIST_GROUP_LABEL;
 
-/** 长列表底部单行操作（添加工作区等），密度对齐 LIST 而非 Dropdown 默认 SHORT */
+/** Single-line action at the bottom of a long list (add workspace, etc.); density aligned with LIST rather than the Dropdown default SHORT */
 export const DESKTOP_OVERLAY_LIST_ACTION_ITEM = "px-2 py-1.5 text-xs text-popover-foreground";
 
 export const DESKTOP_OVERLAY_LIST_ITEM_PRIMARY = DESKTOP_OVERLAY_ITEM_PRIMARY_CLASS;
@@ -275,7 +276,7 @@ export const DESKTOP_OVERLAY_LIST_ITEM_SECONDARY = "truncate text-[11px] text-mu
 
 export const DESKTOP_OVERLAY_LIST_SUB_TRIGGER = "items-center gap-1.5 px-2.5 py-1.5 pr-2 text-xs";
 
-/** 长列表配套详情 Popover：密度与 DESKTOP_OVERLAY_LIST_* 对齐 */
+/** Detail Popover paired with a long list: density aligned with DESKTOP_OVERLAY_LIST_* */
 export const DESKTOP_OVERLAY_LIST_DETAIL_SURFACE = cn(
   DESKTOP_OVERLAY_LIST_SHELL,
   "border border-border/80 bg-popover p-0 text-xs text-popover-foreground backdrop-blur-sm",
@@ -284,25 +285,25 @@ export const DESKTOP_OVERLAY_LIST_DETAIL_SURFACE = cn(
 export const DESKTOP_OVERLAY_LIST_DETAIL_WIDTH =
   "w-max min-w-72 max-w-[min(19rem,calc(100vw-1.25rem))]";
 
-/** 工作区选择器全高面板 */
+/** Full-height panel of the workspace picker */
 export const DESKTOP_OVERLAY_LIST_WORKSPACE_PANEL =
   "flex h-[min(24rem,var(--radix-dropdown-menu-content-available-height))] w-[min(24rem,calc(100vw-1.25rem))] max-w-[min(19rem,calc(100vw-1.25rem))] flex-col overflow-hidden p-0 text-xs";
 
-/** Composer 胶囊小卡片（Changes 等）：非 translucency 玻璃底；translucency 请用 {@link desktopComposerChipSurfaceClass} */
+/** Composer pill card (Changes, etc.): non-translucency glass background; for translucency use {@link desktopComposerChipSurfaceClass} */
 export const DESKTOP_COMPOSER_CHIP_SURFACE = desktopComposerChipSurfaceClass(false);
 
-/** 阻止滚轮穿透到背后会话/列表 */
+/** Prevents the wheel from propagating to the conversation/list behind the overlay */
 export function stopOverlayScrollPropagation(event: { stopPropagation(): void }): void {
   event.stopPropagation();
 }
 
-/** 可拖拽下限：默认宽度与之对齐，首次打开更紧凑 */
+/** Draggable lower bound: the default width matches it, so first open is more compact */
 export const SESSION_SIDEBAR_MIN_WIDTH_PX = 200;
 
-/** 左侧会话侧栏默认宽度 */
+/** Default width of the left session sidebar */
 export const SESSION_SIDEBAR_DEFAULT_WIDTH_PX = SESSION_SIDEBAR_MIN_WIDTH_PX;
 
-/** 可拖拽上限：相对默认仅略放宽（右侧工具区勿用视口大比例） */
+/** Draggable upper bound: only slightly wider than the default (do not use large viewport ratios for the right-side tool area) */
 export const SESSION_SIDEBAR_MAX_WIDTH_PX = 288;
 
 const SESSION_SIDEBAR_VIEWPORT_MAX_RATIO = 0.4;

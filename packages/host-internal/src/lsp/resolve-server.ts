@@ -19,7 +19,7 @@ export interface ResolvedLanguageServerCommand {
   args: string[];
 }
 
-/** Windows 上 where/PATH 常先命中无扩展名的 npm Unix shim；须改用 .cmd 等可 spawn 目标。 */
+/** On Windows, where/PATH often resolves to the extensionless npm Unix shim first; a spawnable target such as .cmd must be used instead. */
 export async function preferWindowsSpawnableCommand(
   command: string,
   platform: NodeJS.Platform = process.platform,

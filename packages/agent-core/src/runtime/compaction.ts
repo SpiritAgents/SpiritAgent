@@ -1,6 +1,6 @@
 import { setImmediate as waitForImmediate } from "node:timers/promises";
 
-import { MANUAL_COMPACTION_SKIPPED_STATUS_ZH } from "../compaction-ui-status.js";
+import { MANUAL_COMPACTION_SKIPPED_STATUS } from "../compaction-ui-status.js";
 import type { CompactHistoryManualContext, LlmMessage } from "../ports.js";
 import { resolveHookSessionContext } from "../hooks/integration.js";
 import {
@@ -274,13 +274,13 @@ export async function pollPendingHistoryCompaction<
     if (pending.failure !== undefined) {
       runtime.emitEvent({
         kind: "replace-pending-assistant",
-        text: `压缩失败: ${pending.failure}`,
+        text: `Compaction failed: ${pending.failure}`,
       });
       runtime.emitEvent({ kind: "assistant-response-completed" });
       runtime.compactionTextStore = "";
       runtime.completedManualHistoryCompactionResultStore = {
         kind: "failed",
-        error: `压缩失败: ${pending.failure}`,
+        error: `Compaction failed: ${pending.failure}`,
       };
       return;
     }
@@ -290,13 +290,13 @@ export async function pollPendingHistoryCompaction<
     if (!result || !compactedHistory) {
       runtime.emitEvent({
         kind: "replace-pending-assistant",
-        text: "压缩失败: 未产生有效结果",
+        text: "Compaction failed: no valid result produced",
       });
       runtime.emitEvent({ kind: "assistant-response-completed" });
       runtime.compactionTextStore = "";
       runtime.completedManualHistoryCompactionResultStore = {
         kind: "failed",
-        error: "压缩失败: 未产生有效结果",
+        error: "Compaction failed: no valid result was produced",
       };
       return;
     }
@@ -314,8 +314,8 @@ export async function pollPendingHistoryCompaction<
       kind: "replace-pending-assistant",
       text:
         result.droppedMessages === 0
-          ? MANUAL_COMPACTION_SKIPPED_STATUS_ZH
-          : `压缩完成：上下文消息 ${result.beforeLength} -> ${result.afterLength}，已合并 ${result.droppedMessages} 条历史消息。`,
+          ? MANUAL_COMPACTION_SKIPPED_STATUS
+          : `Compaction complete: context messages ${result.beforeLength} -> ${result.afterLength}, merged ${result.droppedMessages} history messages.`,
     });
     runtime.emitEvent({ kind: "assistant-response-completed" });
     runtime.compactionTextStore = "";
@@ -330,13 +330,13 @@ export async function pollPendingHistoryCompaction<
     if (pending.resumeAsStreaming) {
       runtime.emitEvent({
         kind: "replace-pending-assistant",
-        text: `上下文压缩失败: ${pending.failure} | 原始错误: ${pending.originalError}`,
+        text: `Context compaction failed: ${pending.failure} | Original error: ${pending.originalError}`,
       });
       runtime.emitEvent({ kind: "assistant-response-completed" });
     } else {
       runtime.completeTurn({
         kind: "failed",
-        error: `上下文压缩失败: ${pending.failure} | 原始错误: ${pending.originalError}`,
+        error: `Context compaction failed: ${pending.failure} | Original error: ${pending.originalError}`,
         state: pending.retryState,
         requestTrace: [...pending.turn.requestTrace],
         toolExecutions: [...pending.turn.toolExecutions],
@@ -352,13 +352,13 @@ export async function pollPendingHistoryCompaction<
     if (pending.resumeAsStreaming) {
       runtime.emitEvent({
         kind: "replace-pending-assistant",
-        text: `上下文压缩失败: 未产生有效结果 | 原始错误: ${pending.originalError}`,
+        text: `Context compaction failed: no valid result was produced | Original error: ${pending.originalError}`,
       });
       runtime.emitEvent({ kind: "assistant-response-completed" });
     } else {
       runtime.completeTurn({
         kind: "failed",
-        error: `上下文压缩失败: 未产生有效结果 | 原始错误: ${pending.originalError}`,
+        error: `Context compaction failed: no valid result was produced | Original error: ${pending.originalError}`,
         state: pending.retryState,
         requestTrace: [...pending.turn.requestTrace],
         toolExecutions: [...pending.turn.toolExecutions],
@@ -382,13 +382,13 @@ export async function pollPendingHistoryCompaction<
     if (pending.resumeAsStreaming) {
       runtime.emitEvent({
         kind: "replace-pending-assistant",
-        text: `检测到上下文超限，但历史已无法继续压缩。原始错误: ${pending.originalError}`,
+        text: `Context limit detected, but history cannot be compacted further. Original error: ${pending.originalError}`,
       });
       runtime.emitEvent({ kind: "assistant-response-completed" });
     } else {
       runtime.completeTurn({
         kind: "failed",
-        error: `检测到上下文超限，但历史已无法继续压缩。原始错误: ${pending.originalError}`,
+        error: `Context limit detected, but history cannot be compacted further. Original error: ${pending.originalError}`,
         state: pending.retryState,
         requestTrace: [...pending.turn.requestTrace],
         toolExecutions: [...pending.turn.toolExecutions],
@@ -437,7 +437,7 @@ export async function waitForCompletedManualHistoryCompactionResult<
     }
 
     if (!runtime.isBusy()) {
-      throw new Error("runtime 在未产出手动压缩结果时提前进入空闲状态。");
+      throw new Error("runtime went idle before producing a manual compaction result.");
     }
 
     await runtime.poll();
@@ -448,7 +448,7 @@ export async function waitForCompletedManualHistoryCompactionResult<
     }
 
     if (!runtime.isBusy()) {
-      throw new Error("runtime 在未产出手动压缩结果时提前进入空闲状态。");
+      throw new Error("runtime went idle before producing a manual compaction result.");
     }
 
     await waitForImmediate();

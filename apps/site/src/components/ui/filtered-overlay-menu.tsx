@@ -33,9 +33,9 @@ type FilteredOverlayMenuProps = {
   filterValue?: string;
   onFilterChange?(value: string): void;
   filterPlaceholder?: string;
-  /** 默认 `ghost`（透明底与 popover 一致）；`default` 为带边框搜索框 */
+  /** Default `ghost` (transparent background matching the popover); `default` is a bordered search box */
   filterVariant?: "default" | "ghost";
-  /** `workspace-panel`：flex 列 + 弹性 ScrollArea，供 footer 使用 */
+  /** `workspace-panel`: flex column + elastic ScrollArea, for footers */
   variant?: "filtered-list" | "workspace-panel";
   contentClassName?: string;
   footer?: ReactNode;

@@ -184,8 +184,8 @@ export async function openEmbeddedDevtools(
   if (!opened) {
     return;
   }
-  // Win32 titleBarOverlay 会强制原生 dock 变 detach（electron/electron#42079），
-  // 故用 setDevToolsWebContents 将 DevTools 画进右侧 webview。
+  // On Win32, titleBarOverlay forces native dock to become detach (electron/electron#42079),
+  // so setDevToolsWebContents is used to draw DevTools into the webview on the right.
   try {
     await devtoolsWv.executeJavaScript("window.location.reload()");
   } catch {

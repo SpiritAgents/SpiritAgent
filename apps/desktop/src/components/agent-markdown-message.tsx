@@ -70,12 +70,14 @@ export type StreamBlockCache = { content: string; blocks: string[] };
 const FOOTNOTE_SYNTAX = /\[\^/;
 
 /**
- * 流式内容只会尾部追加：复用上一次已完成的非尾块，只重解析上次尾块起点之后的
- * 文本，避免每个 delta 对全文做第二次 marked lexer 解析（Streamdown 内部已为渲染
- * 解析过一次，此处仅为动画记账）。
+ * Streaming content only appends at the tail: reuse the previously completed non-tail blocks and
+ * only re-parse the text after the previous tail block's start, avoiding a second full marked
+ * lexer pass per delta (Streamdown already parsed once internally for rendering; this is only for
+ * animation bookkeeping).
  *
- * 含脚注语法（[^…]）时 streamdown 的 parseMarkdownIntoBlocks 会把整个文档作为
- * 单块返回（与前缀无关），此时回退全量解析以保持与其内部分块一致。
+ * When footnote syntax ([^…]) is present, streamdown's parseMarkdownIntoBlocks returns the whole
+ * document as a single block (regardless of the prefix); in that case fall back to full parsing to
+ * stay consistent with its internal block splitting.
  */
 export function parseStreamBlocksIncrementally(
   cache: StreamBlockCache | null,
@@ -93,8 +95,9 @@ export function parseStreamBlocksIncrementally(
   ) {
     const tailBlock = cache.blocks[cache.blocks.length - 1]!;
     const tailStart = cache.content.length - tailBlock.length;
-    // marked 个别结构的 token.raw 覆盖可能不连续（blocks 拼接 ≠ 原文），
-    // 尾块对不上末尾时放弃增量路径，退回全量解析。
+    // marked's token.raw coverage for some structures may be non-contiguous (joined blocks ≠ the
+    // original text); when the tail block does not line up with the end, abandon the incremental
+    // path and fall back to full parsing.
     if (tailStart >= 0 && cache.content.slice(tailStart) === tailBlock) {
       return {
         content,
@@ -223,8 +226,10 @@ function AgentMarkdownMessageImpl({
 }
 
 /**
- * Markdown 渲染是 props 的纯函数（content 字符串 + 稳定回调）；多轮流式期间每次轮询会重渲
- * 整个会话列表，未变消息若重跑 streamdown + shiki 高亮成本极高。按 props 浅比较跳过即可。
+ * Markdown rendering is a pure function of props (content string + stable callbacks); during
+ * multi-turn streaming, each poll re-renders the entire conversation list, and re-running
+ * streamdown + shiki highlighting for unchanged messages is extremely expensive. A shallow props
+ * comparison to skip them is enough.
  */
 export const AgentMarkdownMessage = memo(AgentMarkdownMessageImpl);
 

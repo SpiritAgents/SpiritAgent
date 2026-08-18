@@ -1,7 +1,8 @@
 /**
- * Tauri `frame_chrome::apply_dwm_chrome_if_any` 在 Win32 上显式设置
- * `DWMWA_USE_IMMERSIVE_DARK_MODE`。Electron 的 `nativeTheme` + `setBackgroundMaterial`
- * 在「系统浅色 / 应用深色」组合下仍常把 translucency（Mica）合成成浅色块；必须对 HWND 写入 DWM 属性。
+ * Tauri `frame_chrome::apply_dwm_chrome_if_any` explicitly sets
+ * `DWMWA_USE_IMMERSIVE_DARK_MODE` on Win32. Electron's `nativeTheme` + `setBackgroundMaterial`
+ * still often composites translucency (Mica) as a light-colored block under the "light OS /
+ * dark app" combination; the DWM attribute must be written to the HWND directly.
  */
 import type { BrowserWindow } from "electron";
 import koffi from "koffi";
@@ -36,7 +37,7 @@ function ensureWin32Api(): boolean {
   }
   try {
     const dwm = koffi.load("dwmapi.dll");
-    // HWND 用 uintptr_t，避免 void* 与 JS BigInt 转换歧义
+    // Use uintptr_t for HWND to avoid void* / JS BigInt conversion ambiguity
     dwmSetWindowAttribute = dwm.func(
       "int __stdcall DwmSetWindowAttribute(uintptr_t hwnd, uint32_t dwAttribute, void *pvAttribute, uint32_t cbAttribute)",
     ) as typeof dwmSetWindowAttribute;
@@ -67,7 +68,7 @@ function hwndFromBrowserWindow(window: BrowserWindow): bigint | undefined {
   return BigInt(raw.readUInt32LE(0));
 }
 
-/** 将云母 / 标题栏非客户区的「深浅」与页面 `html.dark` 对齐（不跟系统设置走）。 */
+/** Align the Mica / title-bar non-client area light-or-dark with the page's `html.dark` (does not follow the OS setting). */
 export function syncWindowsImmersiveDarkMode(window: BrowserWindow, darkContent: boolean): void {
   if (!ensureWin32Api() || !dwmSetWindowAttribute || !setWindowPos) {
     return;

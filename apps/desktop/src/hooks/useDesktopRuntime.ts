@@ -143,7 +143,7 @@ type BusyAction =
 
 const DREAM_IDLE_POLL_INTERVAL_MS = 30_000;
 const GIT_STATE_POLL_INTERVAL_MS = 5_000;
-/** 远程 Web 客户端 busy 时的快照 poll 间隔；回合推进由宿主泵驱动，poll 只取快照。 */
+/** Snapshot poll interval while a remote Web client is busy; turn advancement is driven by the host pump, poll only fetches snapshots. */
 const WEB_BUSY_POLL_INTERVAL_MS = 150;
 const COMPOSER_DRAFT_PERSIST_DEBOUNCE_MS = 400;
 
@@ -478,7 +478,7 @@ export function useDesktopRuntime() {
   }, []);
   const translucencySaveSeqRef = useRef(0);
   const translucencyInFlightRef = useRef(0);
-  /** Host API 尚未就绪时累积的设置 patch，api 可用后一次性落盘。 */
+  /** Settings patches accumulated while the Host API is not ready, persisted in one go once the api is available. */
   const pendingSettingsPatchRef = useRef<Partial<SettingsFormState>>({});
   const sessionUiCacheRef = useRef(new Map<string, SessionUiState>());
 
@@ -786,7 +786,7 @@ export function useDesktopRuntime() {
           ),
         );
         const configAgentMode = (effectiveNext.config.agentMode ?? "agent") as DesktopAgentMode;
-        // 回合进行中 poll 可能仍带旧 config.agentMode；勿覆盖用户 dismiss Chip 后 saveSettingsPatch 的乐观 agentMode。
+        // While a turn is in flight, poll may still carry the old config.agentMode; do not overwrite the optimistic agentMode set by saveSettingsPatch after the user dismissed the Chip.
         const turnInFlight =
           effectiveNext.conversation.isBusy === true || busyActionRef.current === "send";
         const chipDismissed = agentModeChipDismissedRef.current;
@@ -794,7 +794,7 @@ export function useDesktopRuntime() {
           turnInFlight && current.agentMode !== configAgentMode
             ? current.agentMode
             : configAgentMode;
-        // saveSettingsPatch 乐观更新后、poll 快照尚未追上时，勿覆盖本地 chip 模式。
+        // After saveSettingsPatch's optimistic update, while the poll snapshot has not caught up, do not overwrite the local chip mode.
         if (
           !chipDismissed &&
           isAgentModeChipKind(current.agentMode) &&
@@ -802,7 +802,7 @@ export function useDesktopRuntime() {
         ) {
           agentMode = current.agentMode;
         }
-        // 用户 Backspace 去掉 chip 后，poll 不得再把 settings.agentMode 设回 ask/plan（否则 agentMode effect 会重插 chip）。
+        // After the user removed the chip with Backspace, poll must not set settings.agentMode back to ask/plan (otherwise the agentMode effect would re-insert the chip).
         if (chipDismissed && isAgentModeChipKind(agentMode)) {
           agentMode = "agent";
         }
@@ -1425,8 +1425,8 @@ export function useDesktopRuntime() {
   }, [pendingQuestions]);
 
   /**
-   * 仅远程 Web 客户端：busy 时以固定间隔 poll 取快照（回合推进由宿主泵驱动，poll 不再驱动运行时）。
-   * Electron 下流式更新全部走宿主节流推送（subscribeDreamUpdates），无 poll 循环。
+   * Remote Web clients only: poll for snapshots at a fixed interval while busy (turn advancement is driven by the host pump; poll no longer drives the runtime).
+   * Under Electron, streaming updates all go through host-throttled pushes (subscribeDreamUpdates), with no poll loop.
    */
   useEffect(() => {
     if (!api || !isRemoteWebHostClient(api.kind) || snapshot?.conversation.isBusy !== true) {
@@ -1612,7 +1612,7 @@ export function useDesktopRuntime() {
           applySnapshot(next);
         }
       } catch {
-        // 后台轮询失败不打断主流程；用户操作触发的 Git API 仍会 surfacing 错误。
+        // Background polling failures do not interrupt the main flow; Git APIs triggered by user actions still surface errors.
       } finally {
         inFlight = false;
         if (!cancelled) {

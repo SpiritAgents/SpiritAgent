@@ -1,6 +1,6 @@
 /**
- * Amazon Bedrock 模型目录：AWS SDK `ListFoundationModels`（控制面 API）。
- * ListFoundationModels 不返回 context length，故 ProviderListedModelEntry.contextLength 留空。
+ * Amazon Bedrock model catalog: AWS SDK `ListFoundationModels` (control-plane API).
+ * ListFoundationModels does not return context length, so ProviderListedModelEntry.contextLength is left empty.
  */
 
 import {
@@ -87,7 +87,7 @@ function resolveBedrockClientConfig(options: ListBedrockModelsOptions): {
 } {
   const region = normalizeAwsRegion(options.region);
   if (!region) {
-    throw new Error("AWS 区域不能为空。");
+    throw new Error("AWS region must not be empty.");
   }
 
   const accessKeyId = options.accessKeyId?.trim();
@@ -103,7 +103,7 @@ function resolveBedrockClientConfig(options: ListBedrockModelsOptions): {
     };
   }
 
-  // Bearer API Key 仅用于 inference（@ai-sdk/amazon-bedrock）；ListFoundationModels 不支持 Bearer。
+  // Bearer API Key is only used for inference (@ai-sdk/amazon-bedrock); ListFoundationModels does not support Bearer.
   if (options.apiKey?.trim()) {
     throw new Error(
       "Bearer API Key cannot list Bedrock models. Provide IAM Access Key ID and Secret Access Key.",
@@ -118,7 +118,7 @@ export async function listBedrockModels(
 ): Promise<ProviderListedModelEntry[]> {
   const region = normalizeAwsRegion(options.region);
   if (!region) {
-    throw new Error("AWS 区域不能为空。");
+    throw new Error("AWS region must not be empty.");
   }
 
   const client = new BedrockClient(resolveBedrockClientConfig(options));

@@ -25,7 +25,7 @@ function providerUsesUpstreamModelDisplayName(provider: DesktopModelProvider | u
   return provider === "vercel-ai-gateway" || provider === "openrouter";
 }
 
-/** 是否可调用上游 `GET /models`（或等价）列模型；Azure 无目录端点，custom 视 transport 而定。 */
+/** Whether the upstream `GET /models` (or equivalent) can be called to list models; Azure has no catalog endpoint, and custom depends on the transport. */
 export function providerSupportsModelCatalogListing(input: {
   provider?: DesktopModelProvider;
   transportKind?: DesktopTransportKind;
@@ -234,7 +234,7 @@ function resolvePreviewSupportedReasoningEffortsForEntry(
   provider: DesktopModelProvider | undefined,
   entry: ProviderListedModelEntry,
 ): { supportedReasoningEfforts?: DesktopModelReasoningEffort[] } {
-  // 目录缓存可能仍是 K2.x 的 minimal/low/medium/high；K3 固定文档档位。
+  // The catalog cache may still hold the K2.x minimal/low/medium/high values; K3 uses the fixed documented tiers.
   if (isMoonshotKimiK3CatalogModelId(entry.id)) {
     return {
       supportedReasoningEfforts: normalizePreviewSupportedReasoningEfforts(

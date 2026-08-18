@@ -14,7 +14,7 @@ import {
   isOpenRouterAnthropicClaudeModel,
 } from "./openrouter-anthropic-reasoning.js";
 
-/** 与宿主 `ModelProfile.provider` 对齐；用于在 OpenAI 形态 API 上附加厂商扩展字段。 */
+/** Aligned with the host's `ModelProfile.provider`; used to attach vendor extension fields on OpenAI-form APIs. */
 export type OpenAiLlmVendor =
   | "deepseek"
   | "xai"
@@ -52,15 +52,15 @@ export type OpenAiModelCapabilities = LlmModelCapabilities;
 
 export interface OpenAiModelCompatibilityProfile {
   /**
-   * 仅当这里为 `true` 时，compat 层才会主动按 capabilities 裁剪请求。
+   * Only when this is `true` does the compat layer proactively trim requests based on capabilities.
    *
-   * 这里不能只依赖 AI SDK 的 warning：
-   * 1. warning 发生在请求已经构造并发出之后，拦截时机太晚；
-   * 2. provider 返回的 `file` 能力告警过于宽泛，无法稳定映射到自己的 image/audio/video 输入语义；
-   * 3. 一旦不受支持的内容留在历史里，后续每轮请求都会重复触发同类告警。
+   * Relying solely on the AI SDK's warning is not enough here:
+   * 1. the warning happens after the request has already been constructed and sent, too late to intercept;
+   * 2. the provider's `file` capability warning is too broad to map reliably onto our own image/audio/video input semantics;
+   * 3. once unsupported content stays in the history, every subsequent request triggers the same warning again.
    *
-   * 所以对已知兼容性敏感的 provider/model，维护显式 capabilities 表，
-   * 在序列化前就做前置裁剪；未知模型则保持现状，不做武断降级。
+   * So for providers/models with known compatibility sensitivity, maintain an explicit capabilities table
+   * and trim upfront before serialization; unknown models are left as-is, with no arbitrary downgrade.
    */
   hasExplicitCapabilities: boolean;
   capabilities: OpenAiModelCapabilities;
@@ -74,7 +74,7 @@ export interface OpenAiImageGenerationConfig {
   project?: string;
   llmVendor?: OpenAiLlmVendor;
   modelCapabilities?: OpenAiModelCapabilities;
-  /** Hugging Face Inference Providers 路由 hint（Hub catalog 解析）。 */
+  /** Hugging Face Inference Providers routing hint (resolved from the Hub catalog). */
   inferenceProvider?: string;
 }
 
@@ -86,7 +86,7 @@ export interface OpenAiVideoGenerationConfig {
   project?: string;
   llmVendor?: OpenAiLlmVendor;
   modelCapabilities?: OpenAiModelCapabilities;
-  /** Hugging Face Inference Providers 路由 hint（Hub catalog 解析）。 */
+  /** Hugging Face Inference Providers routing hint (resolved from the Hub catalog). */
   inferenceProvider?: string;
 }
 
@@ -100,7 +100,7 @@ export interface OpenAiTransportConfig {
   compactModel?: string;
   workspaceRoot?: string;
   /**
-   * 当前模型在配置中的提供方（小写）。缺省时不附加任何厂商专有请求体字段。
+   * The provider of the current model in the config (lowercase). When unset, no vendor-specific request body fields are attached.
    */
   llmVendor?: OpenAiLlmVendor;
   /**
@@ -117,38 +117,39 @@ export interface OpenAiTransportConfig {
    */
   videoGeneration?: OpenAiVideoGenerationConfig;
   /**
-   * 抽象推理强度；`default` 表示不指定，交给上游或模型默认行为。
-   * 非 `default` 时直接走 OpenAI chat.completions 官方字段 `reasoning_effort`。
+   * Abstract reasoning effort; `default` means unspecified, leaving it to the upstream or the model's default behavior.
+   * When not `default`, it maps directly to the official OpenAI chat.completions field `reasoning_effort`.
    */
   reasoningEffort?: "default" | "minimal" | "none" | "low" | "medium" | "high" | "xhigh" | "max";
   reasoningMode?: ModelReasoningMode;
   /**
-   * 仅对 `deepseek` / `moonshot-ai`：是否在所有经本 transport 的 chat.completions 请求体中加入
-   * `thinking: { type: 'enabled' | 'disabled' }`（含主对话、工具轮与历史压缩）。
-   * 缺省为 `true`（enabled）；设为 `false` 时发送 `disabled`。
+   * Only for `deepseek` / `moonshot-ai`: whether to include
+   * `thinking: { type: 'enabled' | 'disabled' }` in every chat.completions request body through this transport
+   * (main conversation, tool rounds, and history compaction).
+   * Defaults to `true` (enabled); when set to `false`, `disabled` is sent.
    */
   vendorExtendedThinking?: boolean;
   /**
-   * 目录标记：模型支持 `thinking.type` 开关（如 Meituan LongCat）。
-   * 仅在为 true 时对 `meituan` 发送 thinking 参数。
+   * Catalog flag: the model supports the `thinking.type` switch (e.g. Meituan LongCat).
+   * The thinking parameter is sent to `meituan` only when this is true.
    */
   supportsThinkingSwitch?: boolean;
-  /** Google Vertex AI 项目 ID（Express 模式可省略）。 */
+  /** Google Vertex AI project ID (may be omitted in Express mode). */
   vertexProject?: string;
-  /** Google Vertex AI 区域，如 `us-central1`（Express 模式可省略）。 */
+  /** Google Vertex AI region, e.g. `us-central1` (may be omitted in Express mode). */
   vertexLocation?: string;
-  /** 服务账号 `client_email`（与 `vertexPrivateKey` 成对）。 */
+  /** Service account `client_email` (paired with `vertexPrivateKey`). */
   vertexClientEmail?: string;
-  /** 服务账号 `private_key`（与 `vertexClientEmail` 成对）。 */
+  /** Service account `private_key` (paired with `vertexClientEmail`). */
   vertexPrivateKey?: string;
-  /** 代码补全等非 Agent 轻量请求的策略画像；缺省为 agent 路径默认行为。 */
+  /** Policy profile for non-Agent lightweight requests such as code completion; defaults to the agent path behavior. */
   transportRequestProfile?: TransportRequestProfile;
   /**
-   * 透传 `createVertex` 的 `googleAuthOptions`（如 ADC 自定义或测试用 `authClient`）。
-   * 若已设置 `vertexClientEmail` / `vertexPrivateKey`，宿主构建的 credentials 优先于此字段。
+   * Pass-through of `createVertex`'s `googleAuthOptions` (e.g. ADC customization or a test `authClient`).
+   * If `vertexClientEmail` / `vertexPrivateKey` are set, the host-built credentials take precedence over this field.
    */
   vertexGoogleAuthOptions?: Record<string, unknown>;
-  /** Cloudflare AI Gateway 名称；请求时注入 `cf-aig-gateway-id`。 */
+  /** Cloudflare AI Gateway name; injected as `cf-aig-gateway-id` on requests. */
   cloudflareGatewayId?: string;
 }
 
@@ -163,12 +164,12 @@ export interface OpenAiRequestTrace extends JsonObject {
   stepIndex: number;
   model: string;
   stream: boolean;
-  /** OpenAI 兼容 chat.completions 请求字段。 */
+  /** OpenAI-compatible chat.completions request field. */
   reasoning_effort?: JsonValue;
   toolChoice?: "auto";
   messages: JsonValue[];
   tools?: JsonValue[];
-  /** 与 SDK 请求体一并发送的真正厂商扩展（若有），例如 DeepSeek/Moonshot 的 `thinking`。 */
+  /** Genuine vendor extension sent alongside the SDK request body (if any), e.g. DeepSeek/Moonshot's `thinking`. */
   vendorExtras?: JsonValue;
 }
 
@@ -231,7 +232,7 @@ export function resolveOpenAiModelCompatibilityProfile(
 }
 
 /**
- * OpenAI 官方 chat.completions 推理强度字段。
+ * OpenAI's official chat.completions reasoning effort field.
  */
 export function openAiReasoningEffort(
   config: Pick<OpenAiTransportConfig, "llmVendor" | "model" | "reasoningEffort">,
@@ -328,7 +329,7 @@ export function openAiVendorChatCompletionBodyExtras(
   return extras;
 }
 
-/** Ark 流式 Chat Completions 须在请求体携带 stream_options 才会在末 chunk 返回 usage。 */
+/** Ark streaming Chat Completions only returns usage in the final chunk when the request body carries stream_options. */
 export function openAiStreamingUsageBodyExtras(
   config: Pick<OpenAiTransportConfig, "llmVendor">,
   stream: boolean,

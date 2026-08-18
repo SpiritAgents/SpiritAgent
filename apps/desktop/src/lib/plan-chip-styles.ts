@@ -1,9 +1,9 @@
 import { FONT_WEIGHT_NORMAL } from "@/lib/desktop-typography";
 
-// 半透明底色：与 Composer 磨砂 surface 混叠，避免 opaque 色块与底色调不齐
-// 必须为 inline（非 inline-flex）：label 文本才能并入外层行盒，选区带与 plain text 同高同色
-// --chip-pad 须等于根 px、--chip-mx 须等于根 mx：供两个 spacer 伸出覆盖 padding 与
-// margin 的选区带（见 chip-shell.tsx）
+// Translucent background: blends with the Composer frosted surface, avoiding opaque blocks mismatching the background tone
+// Must be inline (not inline-flex): only then can the label text merge into the outer line box, giving the selection band the same height and color as plain text
+// --chip-pad must equal the root px and --chip-mx the root mx: lets the two spacers extend over the selection
+// band covering padding and margin (see chip-shell.tsx)
 export const PLAN_CHIP_CLASS = `inline whitespace-nowrap rounded-md bg-orange-300/20 px-1.5 py-0.5 text-xs ${FONT_WEIGHT_NORMAL} leading-none text-yellow-600 mx-0.5 [--chip-pad:6px] [--chip-mx:2px] dark:bg-orange-300/15 dark:text-orange-300`;
 
 export function makePlanChipNode(doc: Document, label = "Plan"): HTMLElement {

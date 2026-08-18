@@ -56,7 +56,7 @@ async function resolveMinimaxVideoUrlsInMessages(
   }
 }
 
-/** MiniMax Anthropic Messages API：本地视频上传为 mm_file:// 引用。 */
+/** MiniMax Anthropic Messages API: uploads local videos as mm_file:// references. */
 export async function resolveMinimaxVideoInAnthropicMessages(
   config: Pick<
     AnthropicTransportConfig,

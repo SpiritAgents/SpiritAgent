@@ -869,7 +869,7 @@ impl TuiShell {
             (Err(err), _) | (_, Err(err)) => {
                 self.messages.push(ChatMessage {
                     role: MessageRole::Agent,
-                    content: format!("应用 MCP prompt 失败: {}", err),
+                    content: t!("tui.mcp.prompt_apply_failed", err = err).into_owned(),
                     tool_block: None,
                 });
             }

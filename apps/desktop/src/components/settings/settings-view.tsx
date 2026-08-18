@@ -97,7 +97,8 @@ export function SettingsView({
   );
 
   const { t } = useTranslation();
-  // theme 就地订阅：切主题只重渲染设置面板子树，App 无需下传（避免全树重渲染）
+  // The theme is subscribed in place: switching themes only re-renders the settings panel subtree,
+  // and App does not need to pass it down (avoiding a full-tree re-render)
   const { theme, setTheme: onThemeChange } = useTheme();
   const extensionSettingsItem = extensionSettingsId
     ? snapshot?.extensionsList.find((item) => item.id === extensionSettingsId)

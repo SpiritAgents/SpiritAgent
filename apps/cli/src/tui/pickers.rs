@@ -318,7 +318,10 @@ impl TuiShell {
 
     pub fn add_pending_image_with_feedback(&mut self, path: std::path::PathBuf) {
         if !path.exists() {
-            super::logging::log_event(&format!("[clipboard] 图片文件不存在: {}", path.display()));
+            super::logging::log_event(&format!(
+                "[clipboard] image file does not exist: {}",
+                path.display()
+            ));
             return;
         }
         let path_str = path.to_string_lossy().to_string();
@@ -396,8 +399,7 @@ impl TuiShell {
         if self.runtime.config().flatten_models().is_empty() {
             self.messages.push(ChatMessage {
                 role: MessageRole::Agent,
-                content: "当前没有可选模型，请先 `/model add` 添加（或一行 `/model add <name> <api_base> <api_key>`）。"
-                    .to_string(),
+                content: t!("tui.model_picker.empty").into_owned(),
                 tool_block: None,
             });
             return;
@@ -500,8 +502,7 @@ impl TuiShell {
                 if files.is_empty() {
                     self.messages.push(ChatMessage {
                         role: MessageRole::Agent,
-                        content: "没有已保存会话。可先使用 /sessions save 保存当前会话。"
-                            .to_string(),
+                        content: t!("tui.session_picker.empty").into_owned(),
                         tool_block: None,
                     });
                     return;
@@ -514,7 +515,7 @@ impl TuiShell {
             Err(err) => {
                 self.messages.push(ChatMessage {
                     role: MessageRole::Agent,
-                    content: format!("读取会话列表失败: {}", err),
+                    content: t!("tui.session_picker.read_failed", err = err).into_owned(),
                     tool_block: None,
                 });
             }
@@ -527,9 +528,7 @@ impl TuiShell {
                 if files.is_empty() {
                     self.messages.push(ChatMessage {
                         role: MessageRole::Agent,
-                        content:
-                            "当前目录未发现图片文件。可直接用 /image <path> 添加绝对或相对路径。"
-                                .to_string(),
+                        content: t!("tui.image_picker.empty").into_owned(),
                         tool_block: None,
                     });
                     return;
@@ -542,7 +541,7 @@ impl TuiShell {
             Err(err) => {
                 self.messages.push(ChatMessage {
                     role: MessageRole::Agent,
-                    content: format!("读取图片列表失败: {}", err),
+                    content: t!("tui.image_picker.read_failed", err = err).into_owned(),
                     tool_block: None,
                 });
             }

@@ -1,4 +1,4 @@
-//! 读取 Desktop 共用的 `model-catalog-cache`，为 Gateway/OpenRouter 模型解析展示名。
+//! Reads the `model-catalog-cache` shared with Desktop to resolve display names for Gateway/OpenRouter models.
 
 use std::{
     collections::{HashMap, HashSet},
@@ -52,12 +52,12 @@ fn resolve_host_internal_model_display_name_path() -> Result<PathBuf, String> {
         let model_display_name = candidate
             .parent()
             .map(|parent| parent.join("model-display-name.js"))
-            .ok_or_else(|| "host-internal 模块路径无效".to_string())?;
+            .ok_or_else(|| "Invalid host-internal module path".to_string())?;
         if model_display_name.exists() {
             return Ok(model_display_name);
         }
         return Err(format!(
-            "环境变量 SPIRIT_HOST_INTERNAL_MODULE_PATH 旁未找到 model-display-name.js: {}",
+            "model-display-name.js not found next to the SPIRIT_HOST_INTERNAL_MODULE_PATH environment variable: {}",
             model_display_name.display()
         ));
     }
@@ -74,7 +74,7 @@ fn resolve_host_internal_model_display_name_path() -> Result<PathBuf, String> {
     }
 
     Err(format!(
-        "未找到 host-internal model-display-name.js。请先在 packages/host-internal 执行 pnpm run build。默认查找路径: {}",
+        "host-internal model-display-name.js not found. Run pnpm run build in packages/host-internal first. Default lookup path: {}",
         from_crate.display()
     ))
 }
@@ -89,7 +89,7 @@ fn format_model_display_names_via_host_internal(
     let module_path = resolve_host_internal_model_display_name_path()?;
     let module_url = module_path
         .to_str()
-        .ok_or_else(|| "host-internal 模块路径无效".to_string())?
+        .ok_or_else(|| "Invalid host-internal module path".to_string())?
         .replace('\\', "/");
     let module_url = if module_url.starts_with('/') {
         format!("file://{module_url}")
@@ -97,8 +97,8 @@ fn format_model_display_names_via_host_internal(
         format!("file:///{module_url}")
     };
 
-    let payload =
-        serde_json::to_string(model_ids).map_err(|err| format!("序列化模型 id 列表失败：{err}"))?;
+    let payload = serde_json::to_string(model_ids)
+        .map_err(|err| format!("Failed to serialize the model id list: {err}"))?;
 
     let script = format!(
         r#"
@@ -114,22 +114,22 @@ console.log(JSON.stringify(buildFormattedDisplayTitlesFromIds(modelIds)));
         .arg(script)
         .arg(payload)
         .output()
-        .map_err(|err| format!("启动 Node 格式化模型展示名进程失败：{err}"))?;
+        .map_err(|err| format!("Failed to start the Node format model display name process: {err}"))?;
 
     if !output.status.success() {
         let stderr = String::from_utf8_lossy(&output.stderr).trim().to_string();
         let stdout = String::from_utf8_lossy(&output.stdout).trim().to_string();
         let detail = if !stderr.is_empty() { stderr } else { stdout };
         return Err(if detail.is_empty() {
-            "格式化模型展示名失败。".to_string()
+            "Failed to format model display names.".to_string()
         } else {
-            format!("格式化模型展示名失败：{detail}")
+            format!("Failed to format model display names: {detail}")
         });
     }
 
     let stdout = String::from_utf8_lossy(&output.stdout);
     let parsed: HashMap<String, String> = serde_json::from_str(stdout.trim())
-        .map_err(|err| format!("解析模型展示名响应失败：{err}"))?;
+        .map_err(|err| format!("Failed to parse the model display name response: {err}"))?;
     Ok(parsed)
 }
 
@@ -173,7 +173,7 @@ fn read_display_names_for_hint(hint_key: &str) -> HashMap<String, String> {
     titles
 }
 
-/// 按 config 批量读缓存；每个 `(provider, transport, apiBase)` 组合最多读盘一次。
+/// Reads the cache in bulk per config; each `(provider, transport, apiBase)` combination reads from disk at most once.
 pub fn build_model_display_titles(models: &[ModelProfile]) -> HashMap<String, String> {
     let mut titles = HashMap::new();
     let mut cache_by_hint: HashMap<String, HashMap<String, String>> = HashMap::new();

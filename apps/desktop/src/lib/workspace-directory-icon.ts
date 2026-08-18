@@ -5,10 +5,10 @@ import { Folder } from "lucide-react";
 import { cn } from "@/lib/utils";
 import type { WorkspaceFileIconColorMode } from "@/lib/workspace-file-icon-sizes";
 
-/** 与 slash / @ 下拉 Lucide 图标一致（见 skill-slash-menu）。 */
+/** Matches the Lucide icons in the slash / @ dropdowns (see skill-slash-menu). */
 export const WORKSPACE_DIRECTORY_LIST_ICON_CLASS = "size-3.5 shrink-0 opacity-70";
 
-/** Chip inherit 目录图标，与 main 及其它 composer chip 一致（10px）。 */
+/** Chip inherit directory icon, consistent with main and other composer chips (10px). */
 export const WORKSPACE_DIRECTORY_CHIP_ICON_CLASS = "size-[10px] shrink-0";
 
 export function workspaceDirectoryIconClassName(

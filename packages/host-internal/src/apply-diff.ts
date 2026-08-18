@@ -80,7 +80,7 @@ function parseCreateDiff(lines: string[], newline: string): string {
   while (!isDone(parser, SECTION_TERMINATORS)) {
     const line = parser.lines[parser.index] ?? "";
     parser.index += 1;
-    // 模型常在 create_file diff 首行带 bare @@ 锚（与 update 一致）；上游 parseCreateDiff 未跳过
+    // Models often put a bare @@ anchor on the first line of a create_file diff (same as update); upstream parseCreateDiff does not skip it
     if (line === "@@" || line.startsWith("@@ ")) {
       continue;
     }

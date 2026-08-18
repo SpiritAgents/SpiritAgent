@@ -27,7 +27,7 @@ async function main() {
   const artifact = await loadArtifact(artifactPath);
   if (artifact.judgeReview?.status === 'completed' && !options.force) {
     throw new Error(
-      `artifact 已包含已完成的 judgeReview。若要覆盖，请使用 --force: ${artifactPath}`,
+      `artifact already contains a completed judgeReview. To overwrite, use --force: ${artifactPath}`,
     );
   }
 
@@ -100,7 +100,7 @@ async function main() {
     await writeJsonFile(artifactPath, nextArtifact);
 
     console.log('');
-    console.log('Judge 运行完成。');
+    console.log('Judge run completed.');
     console.log(`artifact: ${artifactPath}`);
     console.log(`outcome: ${normalized.outcome}`);
     console.log(`confidence: ${normalized.confidence.toFixed(2)}`);
@@ -172,7 +172,7 @@ function parseArgs(argv) {
         options.force = true;
         break;
       default:
-        throw new Error(`未知参数: ${arg}`);
+        throw new Error(`Unknown argument: ${arg}`);
     }
   }
 
@@ -180,33 +180,33 @@ function parseArgs(argv) {
 }
 
 function printHelp() {
-  console.log('用法: pnpm run eval:judge -- [options]');
+  console.log('Usage: pnpm run eval:judge -- [options]');
   console.log('');
-  console.log('选项:');
-  console.log('  --artifact <path>        必填；compare runner 产出的 review-artifact.json');
-  console.log('  --api-key <key>          覆盖 OPENAI_API_KEY');
-  console.log('  --base-url <url>         覆盖 OPENAI_BASE_URL');
-  console.log('  --model <id>             覆盖 OPENAI_MODEL；未传时直接读取环境变量');
-  console.log('  --llm-vendor <vendor>    例如 deepseek / moonshot-ai / custom');
-  console.log('  --reasoning-effort <v>   例如 low / medium / high');
-  console.log('  --force                  覆盖已有的已完成 judgeReview');
+  console.log('Options:');
+  console.log('  --artifact <path>        Required; review-artifact.json produced by the compare runner');
+  console.log('  --api-key <key>          Overrides OPENAI_API_KEY');
+  console.log('  --base-url <url>         Overrides OPENAI_BASE_URL');
+  console.log('  --model <id>             Overrides OPENAI_MODEL; falls back to the environment variable');
+  console.log('  --llm-vendor <vendor>    e.g. deepseek / moonshot-ai / custom');
+  console.log('  --reasoning-effort <v>   e.g. low / medium / high');
+  console.log('  --force                  Overwrites an existing completed judgeReview');
 }
 
 function assertRequiredOptions(options) {
   if (!options.artifactPath) {
-    throw new Error('缺少 artifact 路径。请通过 --artifact 指定 review-artifact.json。');
+    throw new Error('Missing artifact path. Specify review-artifact.json via --artifact.');
   }
 }
 
 function resolveModelConfig(options) {
   const apiKey = options.apiKey ?? process.env.OPENAI_API_KEY;
   if (!apiKey) {
-    throw new Error('缺少 API Key。请设置 OPENAI_API_KEY，或通过 --api-key 传入。');
+    throw new Error('Missing API key. Set OPENAI_API_KEY or pass --api-key.');
   }
 
   const model = options.model ?? process.env.OPENAI_MODEL;
   if (!model) {
-    throw new Error('缺少模型配置。请设置 OPENAI_MODEL，或通过 --model 传入。');
+    throw new Error('Missing model configuration. Set OPENAI_MODEL or pass --model.');
   }
 
   return {
@@ -226,14 +226,14 @@ function resolveModelConfig(options) {
 
 async function loadArtifact(artifactPath) {
   if (!existsSync(artifactPath)) {
-    throw new Error(`artifact 不存在: ${artifactPath}`);
+    throw new Error(`artifact does not exist: ${artifactPath}`);
   }
 
   let parsed;
   try {
     parsed = JSON.parse(await readFile(artifactPath, 'utf8'));
   } catch (error) {
-    throw new Error(`artifact 不是合法 JSON: ${artifactPath}\n${renderError(error)}`);
+    throw new Error(`artifact is not valid JSON: ${artifactPath}\n${renderError(error)}`);
   }
 
   validateEvalRunArtifact(parsed);
@@ -244,7 +244,7 @@ function resolveBlindVariants(artifact) {
   const baseline = artifact.candidates.find((candidate) => candidate.id === 'baseline');
   const candidate = artifact.candidates.find((entry) => entry.id === 'candidate');
   if (!baseline || !candidate) {
-    throw new Error('judge runner 当前要求 artifact 中包含 baseline 与 candidate 两个候选。');
+    throw new Error('judge runner currently requires the artifact to contain both baseline and candidate candidates.');
   }
 
   const seed = sha256(`${artifact.runId}:${artifactDiffFingerprint(artifact)}`);
@@ -430,40 +430,40 @@ function buildJudgeSchema(criteria) {
 
 function normalizeJudgeOutput(output, criteria, blindVariants) {
   if (!isRecord(output)) {
-    throw new Error('judge 输出必须是对象。');
+    throw new Error('judge output must be an object.');
   }
 
   const rationale = typeof output.rationale === 'string' ? output.rationale.trim() : '';
   if (!rationale) {
-    throw new Error('judge 输出缺少 rationale。');
+    throw new Error('judge output is missing rationale.');
   }
 
   if (typeof output.confidence !== 'number' || !Number.isFinite(output.confidence)) {
-    throw new Error('judge 输出缺少合法 confidence。');
+    throw new Error('judge output is missing a valid confidence.');
   }
 
   if (output.confidence < 0 || output.confidence > 1) {
-    throw new Error('judge 输出 confidence 必须位于 0 到 1 之间。');
+    throw new Error('judge output confidence must be between 0 and 1.');
   }
 
   const criterionMap = new Map(criteria.map((criterion) => [criterion.id, criterion]));
   if (!Array.isArray(output.criterionScores) || output.criterionScores.length !== criteria.length) {
-    throw new Error('judge 输出 criterionScores 数量必须与 rubric criteria 一致。');
+    throw new Error('judge output criterionScores count must match the rubric criteria.');
   }
 
   const seen = new Set();
   const criterionScores = output.criterionScores.map((entry) => {
     if (!isRecord(entry) || typeof entry.criterionId !== 'string') {
-      throw new Error('judge 输出中的 criterion score 缺少 criterionId。');
+      throw new Error('criterion score in judge output is missing criterionId.');
     }
 
     const criterion = criterionMap.get(entry.criterionId);
     if (!criterion) {
-      throw new Error(`judge 输出包含未知 criterionId: ${entry.criterionId}`);
+      throw new Error(`judge output contains unknown criterionId: ${entry.criterionId}`);
     }
 
     if (seen.has(entry.criterionId)) {
-      throw new Error(`judge 输出中 criterionId 重复: ${entry.criterionId}`);
+      throw new Error(`duplicate criterionId in judge output: ${entry.criterionId}`);
     }
     seen.add(entry.criterionId);
 
@@ -480,7 +480,7 @@ function normalizeJudgeOutput(output, criteria, blindVariants) {
   });
 
   if (seen.size !== criteria.length) {
-    throw new Error('judge 输出缺少部分 rubric criteria。');
+    throw new Error('judge output is missing some rubric criteria.');
   }
 
   return {
@@ -494,12 +494,12 @@ function normalizeJudgeOutput(output, criteria, blindVariants) {
 
 function readCriterionScore(value, criterion, fieldName) {
   if (typeof value !== 'number' || !Number.isFinite(value)) {
-    throw new Error(`judge 输出中的 ${criterion.id}.${fieldName} 必须是数字。`);
+    throw new Error(`${criterion.id}.${fieldName} in judge output must be a number.`);
   }
 
   if (value < criterion.scale.min || value > criterion.scale.max) {
     throw new Error(
-      `judge 输出中的 ${criterion.id}.${fieldName} 超出范围 ${criterion.scale.min}-${criterion.scale.max}。`,
+      `${criterion.id}.${fieldName} in judge output is out of range ${criterion.scale.min}-${criterion.scale.max}.`,
     );
   }
 
@@ -519,7 +519,7 @@ function mapJudgeOutcome(outcome, blindVariants) {
     return blindVariants.variantB.id;
   }
 
-  throw new Error(`judge 输出包含未知 outcome: ${String(outcome)}`);
+  throw new Error(`judge output contains unknown outcome: ${String(outcome)}`);
 }
 
 async function writeJsonFile(filePath, value) {
@@ -580,7 +580,7 @@ function takeLastChars(text, count) {
 function requiredArgValue(argv, index, flag) {
   const value = argv[index];
   if (!value) {
-    throw new Error(`${flag} 需要一个值。`);
+    throw new Error(`${flag} requires a value.`);
   }
   return value;
 }
@@ -601,7 +601,7 @@ function isRecord(value) {
 }
 
 void main().catch((error) => {
-  console.error('Judge 运行失败。');
+  console.error('Judge run failed.');
   console.error(renderError(error));
   process.exitCode = 1;
 });

@@ -1,33 +1,35 @@
-/** translucency 开启时主内容区背景不透明度（仅 tint，不叠加 CSS backdrop-blur）。 */
+/** Background opacity of the main content area when translucency is on (tint only; no CSS backdrop-blur stacked). */
 export const DESKTOP_TRANSLUCENCY_CONTENT_TINT_CLASS = "bg-background/70";
 
-/** Composer 输入框半透明底（暗色叠加 input 淡层）；非 translucency 浮层同源 */
+/** Translucent background of the Composer input (dark mode overlays a faint input layer); shared source for non-translucency overlays */
 export const DESKTOP_COMPOSER_SURFACE_BACKDROP =
   "bg-background/55 backdrop-blur-xl dark:bg-input/30 supports-[backdrop-filter]:bg-background/40 dark:supports-[backdrop-filter]:bg-input/25";
 
 /**
- * translucency 开启时 Composer 半透明 tint（不叠 CSS blur，透出窗级系统材质）。
- * 消息叠穿由视口形状 mask 裁掉；深色用纯黑 background 带 alpha。
+ * Translucent Composer tint when translucency is on (no CSS blur stacked, letting the
+ * window-level system material show through).
+ * Message bleed-through is clipped by the viewport shape mask; dark mode uses a pure black
+ * background with alpha.
  */
 export const DESKTOP_COMPOSER_SURFACE_TRANSLUCENCY_TINT = "bg-background/30";
 
-/** @deprecated 使用 {@link DESKTOP_COMPOSER_SURFACE_TRANSLUCENCY_TINT} */
+/** @deprecated Use {@link DESKTOP_COMPOSER_SURFACE_TRANSLUCENCY_TINT} */
 export const DESKTOP_COMPOSER_SURFACE_SOLID = DESKTOP_COMPOSER_SURFACE_TRANSLUCENCY_TINT;
 
-/** 浅色模式浮层 / 抬起表面扩散阴影；深色勿放大，由调用方配 dark:shadow-* */
+/** Diffuse shadow for light-mode overlays / elevated surfaces; do not enlarge in dark mode — callers pair it with dark:shadow-* */
 export const DESKTOP_OVERLAY_LIGHT_SHADOW = "shadow-[0_2px_20px_-4px_rgb(0_0_0/0.06)]";
 
-/** 抬起表面阴影：浅色扩散 + 深色沿用 sm（Composer / Changes / 消息气泡等） */
+/** Elevated surface shadow: light-mode diffuse + dark-mode keeps sm (Composer / Changes / message bubbles, etc.) */
 export const DESKTOP_ELEVATION_SHADOW_SM = `${DESKTOP_OVERLAY_LIGHT_SHADOW} dark:shadow-sm`;
 
-/** translucency 下半透明 tint；关闭时保持玻璃拟态 */
+/** Translucent tint under translucency; keeps the glassmorphism look when off */
 export function desktopComposerSurfaceBackdropClass(useTranslucency: boolean): string {
   return useTranslucency
     ? DESKTOP_COMPOSER_SURFACE_TRANSLUCENCY_TINT
     : DESKTOP_COMPOSER_SURFACE_BACKDROP;
 }
 
-/** Composer 胶囊（Changes 等）：边框 / hover / 阴影对齐输入框，随 translucency 切换底 */
+/** Composer pill (Changes, etc.): border / hover / shadow aligned with the input; background switches with translucency */
 export function desktopComposerChipSurfaceClass(useTranslucency: boolean): string {
   return [
     "border border-ring/30 dark:border-white/10",
@@ -37,68 +39,70 @@ export function desktopComposerChipSurfaceClass(useTranslucency: boolean): strin
   ].join(" ");
 }
 
-/** 侧边栏：translucency 下轻 tint，比内容区更浅，保留系统材质可读性。 */
+/** Sidebar: a light tint under translucency, lighter than the content area, keeping the system material legible. */
 export const DESKTOP_TRANSLUCENCY_SIDEBAR_TINT_CLASS = "bg-background/45";
 
-/** Windows 自绘顶栏：translucency 下整栏 tint，与侧栏同不透明度；独立于侧栏宽度布局。 */
+/** Windows custom-drawn title bar: full-bar tint under translucency, same opacity as the sidebar; independent of the sidebar-width layout. */
 export const DESKTOP_TRANSLUCENCY_TITLE_BAR_TINT_CLASS = DESKTOP_TRANSLUCENCY_SIDEBAR_TINT_CLASS;
 
-/** 工作区浏览器页槽：略高于主区，减轻 WebView 透底闪烁。 */
+/** Workspace browser page slot: slightly more opaque than the main area to reduce WebView show-through flicker. */
 export const DESKTOP_TRANSLUCENCY_BROWSER_TINT_CLASS = "bg-background/80";
 
-/** 工作区终端：保留较高不透明度以保证 ANSI 可读性。 */
+/** Workspace terminal: keeps higher opacity for ANSI legibility. */
 export const DESKTOP_TRANSLUCENCY_TERMINAL_TINT_CLASS = "bg-background/87";
 
-/** 工作区面板选中 tab：与面板底色衔接。 */
+/** Selected tab of the workspace panel: blends into the panel background. */
 export const DESKTOP_TRANSLUCENCY_WORKSPACE_TAB_SELECTED_TINT_CLASS = "bg-background/60";
 
-/** 文件详情预览区（translucency 关）：轻 tint 与文件树区分。 */
+/** File detail preview area (translucency off): light tint to distinguish it from the file tree. */
 export const DESKTOP_FILES_DETAIL_PREVIEW_TINT_CLASS = "bg-background/30";
 
 const SOLID_BACKGROUND_CLASS = "bg-background";
 const TRANSPARENT_BACKGROUND_CLASS = "bg-transparent";
 
-/** 主内容区外层：translucency 下半透明主题底色，否则实心背景。 */
+/** Outer layer of the main content area: translucent theme tint under translucency, solid background otherwise. */
 export function desktopTranslucencyTintClass(useTranslucency: boolean): string {
   return useTranslucency ? DESKTOP_TRANSLUCENCY_CONTENT_TINT_CLASS : SOLID_BACKGROUND_CLASS;
 }
 
 /**
- * LaunchSplash / OOBE 全屏覆盖层 tint。
- * 退场时整层（含背景 tint）随 opacity 淡出，背景本身参与渐隐，故 tint 全程保持，不做透明切换。
+ * LaunchSplash / OOBE fullscreen overlay tint.
+ * On exit the whole layer (including the background tint) fades out with opacity — the
+ * background itself participates in the fade, so the tint stays constant and never switches
+ * to transparent mid-way.
  */
 export function desktopFullscreenOverlayTintClass(useTranslucency: boolean): string {
   return desktopTranslucencyTintClass(useTranslucency);
 }
 
-/** 主内容区内层：translucency 下透明以避免多层 alpha 叠深，否则实心背景。 */
+/** Inner layer of the main content area: transparent under translucency to avoid stacking multiple alpha layers darker, solid background otherwise. */
 export function desktopTranslucencyTintInnerClass(useTranslucency: boolean): string {
   return useTranslucency ? TRANSPARENT_BACKGROUND_CLASS : SOLID_BACKGROUND_CLASS;
 }
 
-/** 工作区浏览器全屏页槽。 */
+/** Fullscreen page slot of the workspace browser. */
 export function desktopTranslucencyBrowserTintClass(useTranslucency: boolean): string {
   return useTranslucency ? DESKTOP_TRANSLUCENCY_BROWSER_TINT_CLASS : SOLID_BACKGROUND_CLASS;
 }
 
-/** 工作区集成终端容器。 */
+/** Workspace integrated terminal container. */
 export function desktopTranslucencyTerminalTintClass(useTranslucency: boolean): string {
   return useTranslucency ? DESKTOP_TRANSLUCENCY_TERMINAL_TINT_CLASS : SOLID_BACKGROUND_CLASS;
 }
 
-/** 工作区面板选中 tab：translucency 下轻 tint 以衔接面板底色。 */
+/** Selected tab of the workspace panel: light tint under translucency to blend into the panel background. */
 export function desktopTranslucencyWorkspaceTabSelectedClass(useTranslucency: boolean): string {
   return useTranslucency
     ? DESKTOP_TRANSLUCENCY_WORKSPACE_TAB_SELECTED_TINT_CLASS
     : SOLID_BACKGROUND_CLASS;
 }
 
-/** 文件详情预览/编辑槽：translucency 下透明以避免与面板 tint 叠深，否则轻 tint。 */
+/** File detail preview/edit slot: transparent under translucency to avoid stacking darker with the panel tint, light tint otherwise. */
 export function desktopTranslucencyFileDetailSurfaceClass(useTranslucency: boolean): string {
   return useTranslucency ? TRANSPARENT_BACKGROUND_CLASS : DESKTOP_FILES_DETAIL_PREVIEW_TINT_CLASS;
 }
 
-/** Windows 自绘顶栏：translucency 下整栏半透明底，否则实心侧栏色。 */
+/** Windows custom-drawn title bar: full-bar translucent background under translucency, solid sidebar color otherwise. */
 export function desktopTranslucencyTitleBarTintClass(useTranslucency: boolean): string {
   return useTranslucency ? DESKTOP_TRANSLUCENCY_TITLE_BAR_TINT_CLASS : "bg-sidebar";
 }

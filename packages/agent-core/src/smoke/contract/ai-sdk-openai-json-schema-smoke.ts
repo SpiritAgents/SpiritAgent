@@ -98,7 +98,7 @@ async function main(): Promise<void> {
   const address = server.address();
   if (!address || typeof address === "string") {
     server.close();
-    throw new Error("无法获取本地 smoke server 端口。");
+    throw new Error("Unable to get the local smoke server port.");
   }
 
   const host = `http://127.0.0.1:${(address as AddressInfo).port}`;
@@ -143,10 +143,10 @@ async function main(): Promise<void> {
   printSmokeSection("ai-sdk deepseek json-schema smoke", deepseekResult);
 
   if (openAiResult.output.message !== "AI_SDK_JSON_SCHEMA_OK") {
-    throw new Error("ai-sdk openai json-schema smoke 未拿到预期的 OpenAI-compatible 结构化输出。");
+    throw new Error("ai-sdk openai json-schema smoke did not get the expected OpenAI-compatible structured output.");
   }
   if (deepseekResult.output.message !== "AI_SDK_DEEPSEEK_JSON_OK") {
-    throw new Error("ai-sdk deepseek json-schema smoke 未拿到预期的 DeepSeek 结构化输出。");
+    throw new Error("ai-sdk deepseek json-schema smoke did not get the expected DeepSeek structured output.");
   }
 
   const openAiRequest = chatRequestBodies[0];
@@ -156,13 +156,13 @@ async function main(): Promise<void> {
     openAiRequest.response_format.type !== "json_schema"
   ) {
     throw new Error(
-      "ai-sdk openai json-schema smoke 未在 OpenAI-compatible 请求上发送 json_schema response_format。",
+      "ai-sdk openai json-schema smoke did not send a json_schema response_format on the OpenAI-compatible request.",
     );
   }
 
   const deepseekRequest = responsesRequestBodies[0];
   if (!isJsonObject(deepseekRequest)) {
-    throw new Error("ai-sdk deepseek json-schema smoke 未捕获 Responses 请求体。");
+    throw new Error("ai-sdk deepseek json-schema smoke did not capture the Responses request body.");
   }
   const textConfig = isJsonObject(deepseekRequest.text as JsonValue)
     ? (deepseekRequest.text as Record<string, JsonValue>).format
@@ -172,17 +172,17 @@ async function main(): Promise<void> {
     (textConfig as { type?: string }).type !== "json_schema"
   ) {
     throw new Error(
-      "ai-sdk deepseek json-schema smoke 未在 Responses 请求上发送 json_schema text.format。",
+      "ai-sdk deepseek json-schema smoke did not send a json_schema text.format on the Responses request.",
     );
   }
 
   const openAiTrace = openAiResult.requestTrace[0];
   if (!isJsonObject(openAiTrace) || openAiTrace.kind !== "openai_sdk_chat_completions") {
-    throw new Error("ai-sdk openai json-schema smoke 未写入 OpenAI-compatible request trace。");
+    throw new Error("ai-sdk openai json-schema smoke did not write an OpenAI-compatible request trace.");
   }
   const deepseekTrace = deepseekResult.requestTrace[0];
   if (!isJsonObject(deepseekTrace) || deepseekTrace.kind !== "deepseek_open_responses") {
-    throw new Error("ai-sdk deepseek json-schema smoke 未写入 deepseek_open_responses trace。");
+    throw new Error("ai-sdk deepseek json-schema smoke did not write a deepseek_open_responses trace.");
   }
 }
 

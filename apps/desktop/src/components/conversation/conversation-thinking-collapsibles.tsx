@@ -22,7 +22,7 @@ import {
 import { cn } from "@/lib/utils";
 import type { ConversationMessageSnapshot, PendingAssistantAux } from "@/types";
 
-/** 随 `active` 切换 `.spirit-thinking-shimmer-text`（样式与动画在 `styles.css`）。 */
+/** Toggles `.spirit-thinking-shimmer-text` with `active` (styles and animation in `styles.css`). */
 export function ReasoningLabelWithShimmer({
   active,
   activeLabel,
@@ -72,7 +72,7 @@ export function AssistantThinkingCollapsible({
   localImageAllowedRootDir,
 }: {
   message: ConversationMessageSnapshot;
-  /** 由父级依据 messages/listIndex 计算（isAssistantReasoningLive），本组件不再持有整表引用 */
+  /** Computed by the parent from messages/listIndex (isAssistantReasoningLive); this component no longer holds a full-list reference */
   reasoningLive: boolean;
   collapseDuringToolPreview: boolean;
   readManagedImagePreviewDataUrl: ReadManagedImagePreview;

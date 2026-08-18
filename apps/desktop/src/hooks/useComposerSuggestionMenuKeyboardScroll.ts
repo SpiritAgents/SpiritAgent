@@ -6,7 +6,7 @@ type ComposerSuggestionItemDataAttribute =
   | "data-skill-slash-index"
   | "data-workspace-file-reference-index";
 
-/** Composer 建议菜单焦点留在输入框，须手动把键盘选中项滚入 ScrollArea 可视区 */
+/** The Composer suggestion menu keeps focus in the input, so the keyboard-selected item must be scrolled into the ScrollArea viewport manually */
 export function useComposerSuggestionMenuKeyboardScroll(
   selectedIndex: number,
   menuRef: RefObject<HTMLElement | null>,

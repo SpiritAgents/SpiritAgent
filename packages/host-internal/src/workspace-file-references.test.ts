@@ -196,11 +196,11 @@ test("resolve workspace file attachments truncates oversized content and ignores
     assert.equal(attachments[0]?.kind, "text");
     assert.equal(attachments[0]?.path, "README.md");
     if (!attachments[0] || attachments[0].kind !== "text") {
-      throw new Error("README.md 应返回 text 附件。");
+      throw new Error("README.md should return a text attachment.");
     }
     assert.equal(attachments[0].totalChars, oversizedText.length);
     assert.equal(attachments[0].truncated, true);
-    assert.match(attachments[0].content, /文件内容已截断/u);
+    assert.match(attachments[0].content, /file content truncated/u);
   } finally {
     await rm(workspaceRoot, { recursive: true, force: true });
   }

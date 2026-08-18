@@ -46,7 +46,7 @@ async function main(): Promise<void> {
   const address = server.address();
   if (!address || typeof address === "string") {
     server.close();
-    throw new Error("无法获取本地 smoke server 端口。");
+    throw new Error("Unable to get the local smoke server port.");
   }
 
   const transport = new AiSdkOpenResponsesTransport();
@@ -73,12 +73,12 @@ async function main(): Promise<void> {
   printSmokeSection("ai-sdk open-responses smoke step 1", firstRound);
 
   if (firstRound.kind !== "success" || firstRound.result.step.kind !== "tool-calls") {
-    throw new Error("ai-sdk open-responses smoke step 1 未进入 tool-calls。");
+    throw new Error("ai-sdk open-responses smoke step 1 did not reach tool-calls.");
   }
 
   const firstCall = firstRound.result.step.calls.at(0);
   if (!firstCall) {
-    throw new Error("ai-sdk open-responses smoke step 1 没有任何 tool call。");
+    throw new Error("ai-sdk open-responses smoke step 1 did not produce any tool call.");
   }
 
   const resumedState = appendOpenAiToolResultMessage(
@@ -92,19 +92,19 @@ async function main(): Promise<void> {
   server.close();
 
   if (secondRound.kind !== "success" || secondRound.result.step.kind !== "final-response-ready") {
-    throw new Error("ai-sdk open-responses smoke step 2 未进入 final-response-ready。");
+    throw new Error("ai-sdk open-responses smoke step 2 did not reach final-response-ready.");
   }
 
   const assistantText = extractLastOpenAiAssistantText(secondRound.result.state)?.trim();
   if (assistantText !== "OPEN_RESPONSES_OK") {
     throw new Error(
-      `ai-sdk open-responses smoke step 2 未拿到预期最终 assistant 文本。实际: ${assistantText ?? "<empty>"}`,
+      `ai-sdk open-responses smoke step 2 did not get the expected final assistant text. Actual: ${assistantText ?? "<empty>"}`,
     );
   }
 
   const traceKind = secondRound.result.requestTrace[0];
   if (!isJsonObject(traceKind) || traceKind.kind !== "open_responses_sdk_responses") {
-    throw new Error("ai-sdk open-responses smoke 未写入 open_responses_sdk_responses trace。");
+    throw new Error("ai-sdk open-responses smoke did not write an open_responses_sdk_responses trace.");
   }
 }
 

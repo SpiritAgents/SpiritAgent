@@ -121,7 +121,7 @@ function nextAssistantBodyIndexInTurn(
   return undefined;
 }
 
-/** Continue 等场景：turn 内已有正文，thinking 紧跟下一段正文且无工具夹在中间。 */
+/** Continue and similar scenarios: the turn already has body text, and thinking directly precedes the next body segment with no tool in between. */
 function shouldExposeSandwichedThinkingAsMessage(
   messages: readonly ConversationMessageSnapshot[],
   messageIndices: readonly number[],

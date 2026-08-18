@@ -84,7 +84,7 @@ pub fn workspace_rule_path(workspace_root: &Path) -> PathBuf {
     workspace_root.join(WORKSPACE_RULE_FILE_NAME)
 }
 
-/// Spirit 专用仓库级规则路径（创建 `/create-rule` 与规则 UI 的默认工作区目标）。
+/// Spirit-specific repo-level rule path (default workspace target for `/create-rule` and the rules UI).
 pub fn workspace_spirit_rule_path(workspace_root: &Path) -> PathBuf {
     workspace_root
         .join(SPIRIT_DIR_NAME)
@@ -102,13 +102,14 @@ pub fn rule_path_for_scope(workspace_root: &Path, scope: RuleScope) -> PathBuf {
     }
 }
 
-/// 确保存在 `.spirit` 目录，便于后续写入 `workspace_spirit_rule_path`。
+/// Ensures the `.spirit` directory exists so `workspace_spirit_rule_path` can be written later.
 pub fn ensure_workspace_spirit_dir(workspace_root: &Path) -> Result<()> {
     let dir = workspace_root.join(SPIRIT_DIR_NAME);
     if dir.exists() {
         return Ok(());
     }
-    fs::create_dir_all(&dir).with_context(|| format!("创建 .spirit 目录失败: {}", dir.display()))
+    fs::create_dir_all(&dir)
+        .with_context(|| format!("Failed to create .spirit directory: {}", dir.display()))
 }
 
 pub fn rules_state_file_path() -> PathBuf {
@@ -152,19 +153,20 @@ pub fn load_rule_state() -> Result<RuleStateFile> {
     }
 
     let content = fs::read_to_string(&path)
-        .with_context(|| format!("读取规则状态失败: {}", path.display()))?;
-    serde_json::from_str(&content).with_context(|| format!("解析规则状态失败: {}", path.display()))
+        .with_context(|| format!("Failed to read rule state: {}", path.display()))?;
+    serde_json::from_str(&content)
+        .with_context(|| format!("Failed to parse rule state: {}", path.display()))
 }
 
 pub fn save_rule_state(state: &RuleStateFile) -> Result<PathBuf> {
     let path = rules_state_file_path();
     if let Some(parent) = path.parent() {
         fs::create_dir_all(parent)
-            .with_context(|| format!("创建规则状态目录失败: {}", parent.display()))?;
+            .with_context(|| format!("Failed to create rule state directory: {}", parent.display()))?;
     }
 
     let content = serde_json::to_string_pretty(state)?;
-    fs::write(&path, content).with_context(|| format!("写入规则状态失败: {}", path.display()))?;
+    fs::write(&path, content).with_context(|| format!("Failed to write rule state: {}", path.display()))?;
     Ok(path)
 }
 
@@ -194,10 +196,10 @@ pub fn enabled_rules(entries: &[RuleEntry]) -> Vec<EnabledRule> {
         .collect()
 }
 
-pub fn rule_scope_label(scope: RuleScope) -> &'static str {
+pub fn rule_scope_label(scope: RuleScope) -> String {
     match scope {
-        RuleScope::Workspace => "工作区",
-        RuleScope::User => "用户",
+        RuleScope::Workspace => t!("tui.rules.scope.workspace").into_owned(),
+        RuleScope::User => t!("tui.rules.scope.user").into_owned(),
     }
 }
 
@@ -213,7 +215,7 @@ fn discover_rule_entry(source: RuleSource, state: &RuleStateFile) -> Result<Rule
     }
 
     let content = fs::read_to_string(&source.path)
-        .with_context(|| format!("读取规则文件失败: {}", source.path.display()))?;
+        .with_context(|| format!("Failed to read rule file: {}", source.path.display()))?;
     let enabled = state.enabled_override(&source.id).unwrap_or(true);
     let preview = Some(build_rule_preview(&content));
 
@@ -478,7 +480,7 @@ mod tests {
                 source: RuleSource {
                     id: "repo".to_string(),
                     scope: RuleScope::Workspace,
-                    title: "工作区规则".to_string(),
+                    title: "Workspace rule".to_string(),
                     short_label: ".spirit/rule.md".to_string(),
                     path: PathBuf::from("C:/workspace/.spirit/rule.md"),
                 },
@@ -491,7 +493,7 @@ mod tests {
                 source: RuleSource {
                     id: "user".to_string(),
                     scope: RuleScope::User,
-                    title: "用户规则".to_string(),
+                    title: "User rule".to_string(),
                     short_label: "rule.md".to_string(),
                     path: PathBuf::from("C:/users/demo/AppData/Roaming/SpiritAgent/rule.md"),
                 },
@@ -504,7 +506,7 @@ mod tests {
                 source: RuleSource {
                     id: "missing".to_string(),
                     scope: RuleScope::Workspace,
-                    title: "缺失规则".to_string(),
+                    title: "Missing rule".to_string(),
                     short_label: "AGENTS.md".to_string(),
                     path: PathBuf::from("C:/workspace/MISSING.md"),
                 },

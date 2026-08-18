@@ -7,7 +7,8 @@ import { Button } from "@/components/ui/button";
 import { Dialog, DialogClose, DialogContent } from "@/components/ui/dialog";
 import { cn } from "@/lib/utils";
 
-// backdrop-filter 在祖先 opacity 动画期间无法正确合成；卡片 hover 渐显须与 blur 写在同一元素上。
+// backdrop-filter cannot composite correctly during an ancestor opacity animation; the card's
+// hover fade-in and the blur must live on the same element.
 export const LOCAL_IMAGE_FLOATING_ACTION_BUTTON_CLASS = "spirit-floating-action-button";
 
 /**
@@ -113,7 +114,7 @@ export function LocalImagePreviewDialog({
       >
         {previewDataUrl ? (
           <div
-            // box-content：width/height 为内容盒，避免 1px border 吃掉 DPR 对齐尺寸
+            // box-content: width/height refer to the content box, avoiding the 1px border eating into DPR-aligned sizes
             className="pointer-events-auto relative box-content inline-flex items-center justify-center overflow-hidden rounded-[1.1rem] border border-border/45"
             style={viewerFrameStyle}
           >

@@ -802,7 +802,10 @@
     "enterAnswer": "Por favor, insira sua resposta",
     "customInput": "Entrada Personalizada",
     "customAnswerPlaceholder": "Adicione detalhes ou uma opção não listada",
-    "supplementOption": "Suplementar uma opção não listada"
+    "supplementOption": "Suplementar uma opção não listada",
+    "exportSessionOpenFailed": "Falha ao abrir automaticamente o arquivo exportado: {{error}}",
+    "saveImageAsUnsupportedFormat": "Somente formatos de imagem comuns podem ser salvos.",
+    "saveImageAsFileMissing": "O arquivo de imagem a ser salvo não existe."
   },
   "workspace": {
     "planNotCreated": "O plano ainda não foi criado.",
@@ -1248,6 +1251,9 @@
     "autoWorktreeNameFailedInvalidBranchName": "Falha ao gerar automaticamente nome do Worktree: formato de branchName inválido ({{branchName}}).",
     "autoWorktreeNameFailedNotObject": "Falha ao gerar automaticamente nome do Worktree: modelo retornou JSON que não é um objeto."
   },
+  "rules": {
+    "templatePlaceholder": "Adicione aqui restrições curtas, claras e acionáveis para os agentes lerem."
+  },
   "notification": {
     "defaultSessionName": "Sessão",
     "taskComplete": {
@@ -1446,5 +1452,14 @@
     "alwaysTrust": "Sempre confiar",
     "hooksSection": "Hooks que serão executados",
     "openHookScript": "Abrir script no editor padrão"
+  },
+  "webHost": {
+    "error": {
+      "missingPath": "O caminho da solicitação está ausente.",
+      "pairingLocked": "Muitas falhas de pareamento. Reinicie o host da Web para gerar um novo código de pareamento.",
+      "pairingFailed": "Código de pareamento incorreto.",
+      "pairingRequired": "Conclua primeiro o pareamento inicial.",
+      "invalidProvider": "Argumento de provedor inválido."
+    }
   }
 }

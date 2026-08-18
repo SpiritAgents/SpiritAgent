@@ -12,7 +12,7 @@ function makeRequest({ method, url, host = "127.0.0.1:7788", body }) {
   return {
     method,
     url,
-    // host 传 null 表示请求缺失 Host 头
+    // host: null means the request is missing the Host header
     headers: host === null ? {} : { host },
     async *[Symbol.asyncIterator]() {
       for (const chunk of chunks) {
@@ -69,7 +69,7 @@ async function postPairing(handler, code, host = "127.0.0.1:7788") {
   return response;
 }
 
-test("配对码正确时返回 token 并完成配对", async () => {
+test("returns a token and completes pairing when the pairing code is correct", async () => {
   const { handler, state } = makePairingHandler();
   const response = await postPairing(handler, "123456");
   assert.equal(response.statusCode, 200);
@@ -80,12 +80,12 @@ test("配对码正确时返回 token 并完成配对", async () => {
   assert.equal(state.lockoutCalls, 0);
 });
 
-test("连续失败达上限后锁定：正确配对码也拒绝，且触发 onPairingLockout 一次", async () => {
+test("locks out after failures reach the limit: even the correct code is rejected and onPairingLockout fires once", async () => {
   const { handler, state } = makePairingHandler();
 
   for (let attempt = 1; attempt <= MAX_PAIRING_FAILURES; attempt += 1) {
     const response = await postPairing(handler, "000000");
-    assert.equal(response.statusCode, 401, `第 ${attempt} 次失败应为 401`);
+      assert.equal(response.statusCode, 401, `failure #${attempt} should be 401`);
     assert.equal(JSON.parse(response.body).code, "PAIRING_FAILED");
   }
   assert.equal(state.lockoutCalls, 1);
@@ -97,7 +97,7 @@ test("连续失败达上限后锁定：正确配对码也拒绝，且触发 onPa
   assert.equal(state.lockoutCalls, 1);
 });
 
-test("未达上限时正确配对码仍可完成配对", async () => {
+test("correct pairing code still completes pairing below the failure limit", async () => {
   const { handler, state } = makePairingHandler();
 
   for (let attempt = 1; attempt < MAX_PAIRING_FAILURES; attempt += 1) {
@@ -111,14 +111,14 @@ test("未达上限时正确配对码仍可完成配对", async () => {
   assert.equal(typeof state.tokenHash, "string");
 });
 
-test("配对码已作废（空串）时不接受任意输入", async () => {
+test("rejects any input when the pairing code is revoked (empty string)", async () => {
   const { handler, state } = makePairingHandler({ pairingCode: "" });
   const response = await postPairing(handler, "");
   assert.equal(response.statusCode, 401);
   assert.equal(state.tokenHash, undefined);
 });
 
-test("API 请求校验 Host 头：非法 Host 返回 403，合法 Host 放行", async () => {
+test("API requests validate the Host header: invalid Host gets 403, valid Host is allowed", async () => {
   const { handler } = makePairingHandler();
 
   const rejected = makeResponse();
@@ -138,11 +138,11 @@ test("API 请求校验 Host 头：非法 Host 返回 403，合法 Host 放行", 
       makeRequest({ method: "GET", url: "/api/pairing/status", host: allowedHost }),
       accepted,
     );
-    assert.equal(accepted.statusCode, 200, `Host ${allowedHost} 应放行`);
+    assert.equal(accepted.statusCode, 200, `Host ${allowedHost} should be allowed`);
   }
 });
 
-test("isAllowedRequestHostHeader：配置 host 与回环形式", () => {
+test("isAllowedRequestHostHeader: configured host and loopback forms", () => {
   assert.equal(isAllowedRequestHostHeader("127.0.0.1:7788", "127.0.0.1"), true);
   assert.equal(isAllowedRequestHostHeader("localhost", "127.0.0.1"), true);
   assert.equal(isAllowedRequestHostHeader("[::1]:7788", "127.0.0.1"), true);
@@ -156,7 +156,7 @@ test("isAllowedRequestHostHeader：配置 host 与回环形式", () => {
   assert.equal(isAllowedRequestHostHeader("", "127.0.0.1"), false);
 });
 
-test("isAllowedRequestHostHeader：绑定通配地址时放行 IP 字面量、拒绝域名", () => {
+test("isAllowedRequestHostHeader: allows IP literals and rejects domains when bound to a wildcard address", () => {
   assert.equal(isAllowedRequestHostHeader("192.168.1.5:7788", "0.0.0.0"), true);
   assert.equal(isAllowedRequestHostHeader("[fe80::1]:7788", "::"), true);
   assert.equal(isAllowedRequestHostHeader("attacker.com:7788", "0.0.0.0"), false);

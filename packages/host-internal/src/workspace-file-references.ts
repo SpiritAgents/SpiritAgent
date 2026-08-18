@@ -149,7 +149,7 @@ export async function clearWorkspaceFileReferenceIndexCache(workspaceRoot?: stri
   try {
     workspaceFileIndexCache.delete(await realpath(resolved));
   } catch {
-    // 与 canonicalWorkspaceRoot 一致：路径不存在时 resolved 就是缓存 key。
+    // Consistent with canonicalWorkspaceRoot: when the path does not exist, resolved is the cache key.
   }
 }
 
@@ -198,7 +198,7 @@ export async function resolveWorkspaceFileReferenceAttachmentsFromInput(
         await workspaceFileReferenceAttachmentFromPath(workspaceRoot, referencePath, options),
       );
     } catch {
-      // 与现有 agent-core / CLI 行为保持一致：忽略不存在、不可读或不支持的引用。
+      // Consistent with existing agent-core / CLI behavior: ignore references that do not exist, are unreadable, or are unsupported.
     }
   }
 
@@ -228,7 +228,7 @@ export async function classifyLocalFileComposerRoute(
     const attachment = await localFileAttachmentFromPath(absolutePath);
     return attachment.kind === "image" || attachment.kind === "video" ? "media" : "reference";
   } catch {
-    // 二进制/校验失败等同 @ 引用：UI 仍展示 chip，发送时静默忽略（与现有 @ 行为一致）
+    // Binary/validation failures are treated the same as @ references: the UI still shows the chip and silently ignores them on send (consistent with existing @ behavior)
     return "reference";
   }
 }
@@ -248,7 +248,7 @@ async function localFileAttachmentFromAbsolutePath(
 ): Promise<WorkspaceFileReferenceAttachment> {
   const metadata = await stat(absolutePath);
   if (!metadata.isFile()) {
-    throw new Error(`不是可引用的文件: ${attachmentPath}`);
+    throw new Error(`Not a referenceable file: ${attachmentPath}`);
   }
 
   const bytes = await readFile(absolutePath);
@@ -262,7 +262,7 @@ async function localFileAttachmentFromAbsolutePath(
   }
 
   if (hasSupportedImageExtension(absolutePath)) {
-    throw new Error(`图片文件校验失败: ${attachmentPath}`);
+    throw new Error(`Image file validation failed: ${attachmentPath}`);
   }
 
   const video = detectSupportedVideoFile(absolutePath, bytes);
@@ -275,11 +275,11 @@ async function localFileAttachmentFromAbsolutePath(
   }
 
   if (hasSupportedVideoExtension(absolutePath)) {
-    throw new Error(`视频文件校验失败: ${attachmentPath}`);
+    throw new Error(`Video file validation failed: ${attachmentPath}`);
   }
 
   if (bytes.includes(0)) {
-    throw new Error(`暂不支持引用二进制文件: ${attachmentPath}`);
+    throw new Error(`Referencing binary files is not supported yet: ${attachmentPath}`);
   }
 
   const text = bytes.toString("utf8");
@@ -287,7 +287,7 @@ async function localFileAttachmentFromAbsolutePath(
   const maxContentChars = options.maxContentChars ?? DEFAULT_MAX_CONTENT_CHARS;
   const truncated = chars.length > maxContentChars;
   const content = truncated
-    ? `${chars.slice(0, maxContentChars).join("")}\n\n...<文件内容已截断>`
+    ? `${chars.slice(0, maxContentChars).join("")}\n\n...<file content truncated>`
     : text;
 
   return {
@@ -397,7 +397,7 @@ async function resolveWorkspaceFileReferencePath(
 ): Promise<{ absolutePath: string; relativePath: string }> {
   const normalizedReferencePath = referencePath.replace(/\0/gu, "").replace(/\\/gu, "/").trim();
   if (!normalizedReferencePath) {
-    throw new Error("未指定文件路径");
+    throw new Error("No file path specified");
   }
   if (
     isAbsolute(referencePath) ||
@@ -414,7 +414,7 @@ async function resolveWorkspaceFileReferencePath(
   const segments = normalizedReferencePath.split("/").filter((segment) => segment.length > 0);
   for (const segment of segments) {
     if (segment === "." || segment === "..") {
-      throw new Error(`不支持引用工作区外文件: ${referencePath}`);
+      throw new Error(`Referencing files outside the workspace is not supported: ${referencePath}`);
     }
   }
 
@@ -422,13 +422,13 @@ async function resolveWorkspaceFileReferencePath(
   const targetPath = resolve(workspaceRootResolved, ...segments);
   const relativeTarget = relative(workspaceRootResolved, targetPath);
   if (relativeTarget.startsWith("..") || isAbsolute(relativeTarget)) {
-    throw new Error(`不支持引用工作区外文件: ${referencePath}`);
+    throw new Error(`Referencing files outside the workspace is not supported: ${referencePath}`);
   }
 
   const canonicalTarget = await realpath(targetPath);
   const canonicalRelativeTarget = relative(workspaceRootResolved, canonicalTarget);
   if (canonicalRelativeTarget.startsWith("..") || isAbsolute(canonicalRelativeTarget)) {
-    throw new Error(`不支持引用工作区外文件: ${referencePath}`);
+    throw new Error(`Referencing files outside the workspace is not supported: ${referencePath}`);
   }
 
   return {

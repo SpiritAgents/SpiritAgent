@@ -10,25 +10,29 @@ const LAUNCH_LOGO_WIDTH_PX = 72;
 
 const EXIT_MS = 520;
 
-/** 加载结束后延迟再播退场（毫秒），0 表示立即退场 */
+/** Delay after loading ends before playing the exit animation (milliseconds); 0 means exit immediately */
 const EXIT_DELAY_BEFORE_MS = 0;
 
 type Phase = "running" | "leaving" | "gone";
 
 type LaunchSplashProps = {
-  /** 为 true 时显示加载态；变为 false 时播放退场后卸载 */
+  /** When true the loading state is shown; when it becomes false, the exit animation plays and then it unmounts */
   active: boolean;
-  /** translucency（Win Mica / macOS Vibrancy）：与 app-shell / 会话主区一致，开启时用主区半透明 tint。 */
+  /** translucency (Win Mica / macOS Vibrancy): consistent with app-shell / the conversation main area; when enabled, uses the main-area semi-transparent tint. */
   useTranslucency?: boolean;
-  /** 挂载周期内 phase 变化（供宿主在 leaving 前勿提前露出 app-body）。 */
+  /** Phase changes during the mount lifetime (so the host does not reveal app-body early, before leaving). */
   onPhaseChange?: (phase: ShellOverlayPhase) => void;
 };
 
 /**
- * 首屏启动：居中品牌图标 + 骨架屏式线性闪光，宿主就绪后淡出。
- * Blur 开启时使用与会话页相同的主区半透明 tint（`bg-background/70`）。
- * 退场时整层（含背景 tint）随容器 opacity 淡出；下方 app-body 由 styles.css 规则提前以
- * opacity 隐藏并保持栅格化，退场时以补偿曲线淡入就位——背景与主内容由此完成交叉衔接，而非硬切。
+ * First-screen launch: centered brand icon + skeleton-style linear shimmer, fading out once the
+ * host is ready.
+ * When Blur is enabled, uses the same main-area semi-transparent tint as the conversation page
+ * (`bg-background/70`).
+ * On exit, the whole layer (including the background tint) fades out with the container opacity;
+ * the app-body below is hidden early by a styles.css rule via opacity and kept rasterized, fading
+ * in with a compensation curve during the exit — background and main content thus cross-fade into
+ * place instead of a hard cut.
  */
 export function LaunchSplash({
   active,
