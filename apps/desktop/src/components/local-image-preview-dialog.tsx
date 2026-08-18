@@ -1,7 +1,7 @@
 import { useEffect, useState, type CSSProperties } from "react";
 import { useTranslation } from "react-i18next";
 
-import { Download, LoaderCircle, X } from "lucide-react";
+import { Check, Copy, Download, LoaderCircle, X } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogClose, DialogContent } from "@/components/ui/dialog";
@@ -10,6 +10,30 @@ import { cn } from "@/lib/utils";
 // backdrop-filter cannot composite correctly during an ancestor opacity animation; the card's
 // hover fade-in and the blur must live on the same element.
 export const LOCAL_IMAGE_FLOATING_ACTION_BUTTON_CLASS = "spirit-floating-action-button";
+
+/** The async clipboard API only accepts image/png; other formats are re-encoded through a canvas. */
+async function copyImageDataUrlToClipboard(dataUrl: string): Promise<void> {
+  const source = await (await fetch(dataUrl)).blob();
+  let png = source;
+  if (source.type !== "image/png") {
+    const bitmap = await createImageBitmap(source);
+    const canvas = document.createElement("canvas");
+    canvas.width = bitmap.width;
+    canvas.height = bitmap.height;
+    const context = canvas.getContext("2d");
+    if (!context) {
+      throw new Error("Canvas 2D context unavailable");
+    }
+    context.drawImage(bitmap, 0, 0);
+    png = await new Promise<Blob>((resolve, reject) => {
+      canvas.toBlob(
+        (encoded) => (encoded ? resolve(encoded) : reject(new Error("PNG encode failed"))),
+        "image/png",
+      );
+    });
+  }
+  await navigator.clipboard.write([new ClipboardItem({ "image/png": png })]);
+}
 
 /**
  * Cap preview CSS size at natural/devicePixelRatio (1:1 device pixels).
@@ -104,6 +128,25 @@ export function LocalImagePreviewDialog({
 }) {
   const { t } = useTranslation();
   const viewerFrameStyle = useImagePreviewAspectRatio(previewDataUrl);
+  const [copied, setCopied] = useState(false);
+
+  useEffect(() => {
+    setCopied(false);
+  }, [previewDataUrl]);
+
+  const handleCopyImage = () => {
+    if (!previewDataUrl) {
+      return;
+    }
+    void copyImageDataUrlToClipboard(previewDataUrl)
+      .then(() => {
+        setCopied(true);
+        window.setTimeout(() => setCopied(false), 1500);
+      })
+      .catch((error: unknown) => {
+        console.error("[spirit-desktop] copy image to clipboard failed:", error);
+      });
+  };
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -124,7 +167,7 @@ export function LocalImagePreviewDialog({
                 variant="ghost"
                 size="icon"
                 className={cn(
-                  "absolute top-3 right-3 z-20",
+                  "absolute top-3 left-3 z-20",
                   LOCAL_IMAGE_FLOATING_ACTION_BUTTON_CLASS,
                 )}
                 title={t("app.closeImagePreview")}
@@ -140,8 +183,23 @@ export function LocalImagePreviewDialog({
               className="block size-full max-w-none object-fill"
               draggable={false}
             />
-            {onSave ? (
-              <div className="pointer-events-none absolute top-3 left-3 z-10">
+            <div className="pointer-events-none absolute top-3 right-3 z-10 flex gap-2">
+              <Button
+                type="button"
+                size="icon"
+                variant="ghost"
+                className={cn("pointer-events-auto", LOCAL_IMAGE_FLOATING_ACTION_BUTTON_CLASS)}
+                onClick={handleCopyImage}
+                title={copied ? t("app.imageCopied") : t("app.copyImage")}
+                aria-label={copied ? t("app.imageCopied") : t("app.copyImage")}
+              >
+                {copied ? (
+                  <Check className="size-4" aria-hidden />
+                ) : (
+                  <Copy className="size-4" aria-hidden />
+                )}
+              </Button>
+              {onSave ? (
                 <Button
                   type="button"
                   size="icon"
@@ -158,8 +216,8 @@ export function LocalImagePreviewDialog({
                     <Download className="size-4" aria-hidden />
                   )}
                 </Button>
-              </div>
-            ) : null}
+              ) : null}
+            </div>
           </div>
         ) : null}
       </DialogContent>

@@ -700,6 +700,8 @@
     "noWorkspaceBindingHint": "Workspace-Bindung ist aus; nur benutzerspezifische MCP und Skills gelten.",
     "previewUnavailable": "Vorschau nicht verfügbar",
     "downloadImage": "Bild herunterladen",
+    "copyImage": "Bild kopieren",
+    "imageCopied": "Bild kopiert",
     "downloadVideo": "Video herunterladen",
     "viewLargeImage": "Großes Bild anzeigen",
     "closeImagePreview": "Bildvorschau schließen",

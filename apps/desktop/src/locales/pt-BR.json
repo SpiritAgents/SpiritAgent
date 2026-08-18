@@ -700,6 +700,8 @@
     "noWorkspaceBindingHint": "A vinculação de workspace está desligada; apenas MCP e Skills de nível de usuário se aplicam.",
     "previewUnavailable": "Pré-visualização indisponível",
     "downloadImage": "Baixar Imagem",
+    "copyImage": "Copiar Imagem",
+    "imageCopied": "Imagem Copiada",
     "downloadVideo": "Baixar Vídeo",
     "viewLargeImage": "Visualizar Imagem Grande",
     "closeImagePreview": "Fechar Pré-visualização de Imagem",

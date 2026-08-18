@@ -700,6 +700,8 @@
     "noWorkspaceBindingHint": "工作區綁定已關閉，僅套用使用者層級的 MCP 與技能。",
     "previewUnavailable": "無法預覽",
     "downloadImage": "下載圖片",
+    "copyImage": "複製圖片",
+    "imageCopied": "已複製圖片",
     "downloadVideo": "下載影片",
     "viewLargeImage": "檢視大圖",
     "closeImagePreview": "關閉圖片預覽",

@@ -700,6 +700,8 @@
     "noWorkspaceBindingHint": "Workspace binding is off; only user-level MCP and Skills apply.",
     "previewUnavailable": "Preview unavailable",
     "downloadImage": "Download Image",
+    "copyImage": "Copy Image",
+    "imageCopied": "Image Copied",
     "downloadVideo": "Download Video",
     "viewLargeImage": "View Large Image",
     "closeImagePreview": "Close Image Preview",

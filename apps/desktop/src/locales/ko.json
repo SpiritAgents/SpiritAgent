@@ -700,6 +700,8 @@
     "noWorkspaceBindingHint": "작업 공간 바인딩이 꺼져 있습니다. 사용자 수준 MCP와 Skills만 적용됩니다.",
     "previewUnavailable": "미리보기를 사용할 수 없음",
     "downloadImage": "이미지 다운로드",
+    "copyImage": "이미지 복사",
+    "imageCopied": "이미지를 복사했습니다",
     "downloadVideo": "비디오 다운로드",
     "viewLargeImage": "큰 이미지 보기",
     "closeImagePreview": "이미지 미리보기 닫기",

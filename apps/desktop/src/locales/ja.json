@@ -700,6 +700,8 @@
     "noWorkspaceBindingHint": "ワークスペースバインドはオフです。ユーザーレベルの MCP とスキルのみが適用されます。",
     "previewUnavailable": "プレビュー不可",
     "downloadImage": "画像をダウンロード",
+    "copyImage": "画像をコピー",
+    "imageCopied": "画像をコピーしました",
     "downloadVideo": "動画をダウンロード",
     "viewLargeImage": "拡大表示",
     "closeImagePreview": "画像プレビューを閉じる",
