@@ -388,6 +388,14 @@ export const ComposerDock = forwardRef<HTMLDivElement, ComposerDockProps>(functi
   const showChangesCard = shouldShowComposerChangesCard(snapshot?.git);
   const changesLineDelta = snapshot?.git.workingTreeLineDelta;
   const hasComposerTodos = Boolean(snapshot?.conversation.todos);
+  // Content cards above the composer are mutually exclusive by priority:
+  // approval/questions > TODO > Changes. Hidden cards unmount entirely and
+  // reappear automatically once the higher-priority card is gone.
+  const showBlockingCard =
+    (showPendingApprovalInComposer && pendingApproval != null) ||
+    (showPendingQuestionsInComposer && pendingQuestions != null);
+  const showTodoCard = hasComposerTodos && !showBlockingCard;
+  const showChangesCardEffective = showChangesCard && !showBlockingCard && !showTodoCard;
   const workspaceControlsDisabled =
     useIsolatedPaneWorkspace && paneSessionPath
       ? runtime.paneWorkspaceBusySessionPath === normalizePaneSessionPathKey(paneSessionPath)
@@ -591,7 +599,7 @@ export const ComposerDock = forwardRef<HTMLDivElement, ComposerDockProps>(functi
                 (toggling with followingTail won't change padding, avoiding a "hitch" when sliding
                 to the bottom).
               */}
-              {!isEmptySession && showChangesCard && changesLineDelta ? (
+              {!isEmptySession && showChangesCardEffective && changesLineDelta ? (
                 <div
                   className={cn(
                     "relative z-20 mb-2 flex shrink-0 items-center gap-2 self-start",
@@ -610,7 +618,7 @@ export const ComposerDock = forwardRef<HTMLDivElement, ComposerDockProps>(functi
                   />
                 </div>
               ) : null}
-              {!isEmptySession && !(showChangesCard && changesLineDelta) ? (
+              {!isEmptySession && !(showChangesCardEffective && changesLineDelta) ? (
                 <div
                   className="pointer-events-none absolute inset-x-0 bottom-full z-20 mb-2 flex justify-center"
                   data-spirit-layout="composer-scroll-to-bottom-overlay"
@@ -624,7 +632,7 @@ export const ComposerDock = forwardRef<HTMLDivElement, ComposerDockProps>(functi
                   </div>
                 </div>
               ) : null}
-              {snapshot?.conversation.todos ? (
+              {snapshot?.conversation.todos && showTodoCard ? (
                 <div className="relative z-20 mx-4 -mb-px shrink-0">
                   <ComposerTodoCard
                     todos={snapshot.conversation.todos}
