@@ -1,5 +1,5 @@
 import assert from "node:assert/strict";
-import test from "node:test";
+import { test } from "vitest";
 
 import { SubagentConversationProjection } from "../../dist-electron/src/host/subagent-conversation-projection.js";
 import {

@@ -1,5 +1,5 @@
 import assert from "node:assert/strict";
-import test from "node:test";
+import { test } from "vitest";
 
 import i18n from "../../src/lib/i18n.ts";
 import { skillRootKindLabel } from "../../src/components/settings/skill-rule-labels.ts";

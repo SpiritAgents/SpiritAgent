@@ -1,5 +1,5 @@
 import assert from "node:assert/strict";
-import { test } from "node:test";
+import { test } from "vitest";
 
 import { isSubagentStatusSurfaceText } from "../../dist-electron/src/lib/subagent-display.js";
 import {

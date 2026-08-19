@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import { existsSync } from "node:fs";
 import path from "node:path";
-import test from "node:test";
+import { test } from "vitest";
 import { fileURLToPath } from "node:url";
 
 import { defaultShellForPty } from "../../dist-electron/electron/workspace-pty.js";
@@ -9,9 +9,8 @@ import { defaultShellForPty } from "../../dist-electron/electron/workspace-pty.j
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const desktopRoot = path.resolve(__dirname, "../..");
 
-test(
+test.skipIf(process.platform !== "win32")(
   "defaultShellForPty: Windows prefers pwsh or powershell, not just cmd",
-  { skip: process.platform !== "win32" },
   () => {
     const prev = process.env.SPIRIT_TERMINAL_SHELL;
     delete process.env.SPIRIT_TERMINAL_SHELL;

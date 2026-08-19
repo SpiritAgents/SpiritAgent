@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import path from "node:path";
-import { test } from "node:test";
+import { test } from "vitest";
 
 import { openSessionCommand } from "../../dist-electron/src/host/session-activation.js";
 import { splitPaneSessionPath } from "../../dist-electron/src/host/storage.js";

@@ -1,5 +1,5 @@
 import assert from "node:assert/strict";
-import test from "node:test";
+import { test } from "vitest";
 
 import {
   LOCAL_FILE_PREVIEW_CACHE_MAX_ENTRIES,

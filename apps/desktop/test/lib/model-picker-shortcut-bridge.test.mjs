@@ -1,5 +1,5 @@
 import assert from "node:assert/strict";
-import test, { afterEach } from "node:test";
+import { afterEach, test } from "vitest";
 
 import {
   notifyModelPickerFocused,

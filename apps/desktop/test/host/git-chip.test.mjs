@@ -1,5 +1,5 @@
 import assert from "node:assert/strict";
-import test from "node:test";
+import { test } from "vitest";
 
 import i18n from "../../dist-electron/src/lib/i18n-host.js";
 import {

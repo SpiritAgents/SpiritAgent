@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import path from "node:path";
-import { test } from "node:test";
+import { test } from "vitest";
 
 import { closeSplitPaneSessionCommand } from "../../dist-electron/src/host/session-split.js";
 import { SessionRegistry } from "../../dist-electron/src/host/session-registry.js";

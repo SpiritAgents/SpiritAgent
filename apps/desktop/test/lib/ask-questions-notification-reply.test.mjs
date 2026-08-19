@@ -1,5 +1,5 @@
 import assert from "node:assert/strict";
-import test from "node:test";
+import { test } from "vitest";
 
 import { buildSingleTextQuestionNotificationReplyResult } from "../../src/lib/ask-questions-notification-reply.ts";
 

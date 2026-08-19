@@ -1,5 +1,5 @@
 import assert from "node:assert/strict";
-import test from "node:test";
+import { test } from "vitest";
 
 import { isSessionBundleBusy } from "../../dist-electron/src/host/direct-media-turn.js";
 import {

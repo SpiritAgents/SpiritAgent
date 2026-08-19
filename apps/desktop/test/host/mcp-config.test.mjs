@@ -1,5 +1,5 @@
 import assert from "node:assert/strict";
-import { test } from "node:test";
+import { test } from "vitest";
 
 import { buildMcpServerConfigFromRequest } from "../../dist-electron/src/host/mcp-config.js";
 

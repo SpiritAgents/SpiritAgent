@@ -1,5 +1,5 @@
 import assert from "node:assert/strict";
-import { test } from "node:test";
+import { test } from "vitest";
 
 import { buildGitChangesMenuItemIds } from "../../dist-electron/src/lib/git-changes-menu-items.js";
 
