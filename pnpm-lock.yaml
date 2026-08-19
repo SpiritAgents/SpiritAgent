@@ -232,9 +232,6 @@ importers:
       tailwindcss:
         specifier: 4.3.3
         version: 4.3.3
-      tsx:
-        specifier: 4.23.7
-        version: 4.23.7
       typescript:
         specifier: 5.9.3
         version: 5.9.3
@@ -466,9 +463,6 @@ importers:
       license-checker-rseidelsohn:
         specifier: 5.0.1
         version: 5.0.1
-      tsx:
-        specifier: 4.23.7
-        version: 4.23.7
       typescript:
         specifier: 5.9.3
         version: 5.9.3
