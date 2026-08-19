@@ -26,7 +26,7 @@ import type {
 import type {
   WorkspaceCapabilityTrustDecision,
   WorkspaceCapabilityTrustRequest,
-} from "@spiritagent/host-internal";
+} from "@spiritagent/host-internal/hooks/trust";
 
 export type {
   ApprovalLevel,
