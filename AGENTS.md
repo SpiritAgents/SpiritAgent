@@ -59,6 +59,7 @@ EOF
 
 ## General Conventions
 
+- Run repo-local tools (`tsx`, `tsc`, `oxfmt`, `oxlint`, etc.) via `pnpm exec`, never `npx` — `npx` may hit the network; `pnpm exec` resolves from workspace `node_modules/.bin`.
 - Prefer cross-platform compatibility (including Windows branches and conditional compilation).
 - User-visible UI copy uses Title Case for short label-style text (labels, buttons, dialog titles, settings entries, menu items, etc.): capitalize the first and last word and all major words; short words (≤3 letters) are capitalized when they are content words (verbs, nouns, adverbs — e.g. `Log In`, `Sign Out`) and kept lowercase when they are function words (such as `at` / `in` / `for` / `of` / `to` / `on`) in the middle.
 - Full sentences (confirmation prompts, descriptions, toast/notification messages, etc.) use Sentence case: capitalize only the first word and proper nouns.
