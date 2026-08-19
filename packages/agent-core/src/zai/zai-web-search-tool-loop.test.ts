@@ -33,7 +33,10 @@ test("executeZaiWebSearchToolCall forwards query and clamped count to the provid
   const { captured, fetchImpl } = createCapturingFetch();
   const execution = await executeZaiWebSearchToolCall(
     ZAI_CONFIG,
-    { name: "web_search", argumentsJson: JSON.stringify({ query: "latest news", max_results: 30 }) },
+    {
+      name: "web_search",
+      argumentsJson: JSON.stringify({ query: "latest news", max_results: 30 }),
+    },
     fetchImpl,
   );
 

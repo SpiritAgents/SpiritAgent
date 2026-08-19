@@ -9,10 +9,7 @@ import {
 import { buildZaiWebSearchToolDefinition } from "./zai-web-search-tool.js";
 
 test("shouldUseZaiWebSearch matches z-ai and zhipu-ai vendors", () => {
-  assert.equal(
-    shouldUseZaiWebSearch({ apiKey: "k", model: "glm-5.2", llmVendor: "z-ai" }),
-    true,
-  );
+  assert.equal(shouldUseZaiWebSearch({ apiKey: "k", model: "glm-5.2", llmVendor: "z-ai" }), true);
   assert.equal(
     shouldUseZaiWebSearch({ apiKey: "k", model: "glm-5.2", llmVendor: "zhipu-ai" }),
     true,
