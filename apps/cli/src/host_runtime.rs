@@ -315,7 +315,7 @@ pub(crate) fn tool_approval_block(
     tool_name: &str,
     tool_call_id: Option<&str>,
     prompt: &str,
-    supports_trust: bool,
+    supports_remember: bool,
     auto_review_block_reason: Option<&str>,
 ) -> ToolUiBlock {
     let (shell_reason, mut detail_lines) = if tool_name == "shell" {
@@ -335,8 +335,8 @@ pub(crate) fn tool_approval_block(
     {
         detail_lines.push(t!("tui.tool.approval.block_reason", reason = reason).into_owned());
     }
-    detail_lines.push(if supports_trust {
-        t!("tui.tool.approval.shortcuts_trust").into_owned()
+    detail_lines.push(if supports_remember {
+        t!("tui.tool.approval.shortcuts_remember").into_owned()
     } else {
         t!("tui.tool.approval.shortcuts").into_owned()
     });
@@ -910,7 +910,7 @@ mod tests {
                 "High-risk tool call: shell".to_string(),
                 "Terminal: Command Prompt (cmd.exe)".to_string(),
                 "Command: echo hi".to_string(),
-                t!("tui.tool.approval.shortcuts_trust").into_owned(),
+                t!("tui.tool.approval.shortcuts_remember").into_owned(),
             ]
         );
     }

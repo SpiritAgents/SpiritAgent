@@ -7,7 +7,8 @@ pub(crate) fn approval_decision_from_input(message: &str) -> Value {
     let decision = message.trim().to_lowercase();
     match decision.as_str() {
         "y" => json!({ "kind": "allow" }),
-        "t" => json!({ "kind": "allow", "persistTrust": true }),
+        "a" => json!({ "kind": "allow", "remember": "session" }),
+        "s" => json!({ "kind": "allow", "remember": "config" }),
         "n" => json!({ "kind": "deny" }),
         _ => json!({
             "kind": "guidance",
@@ -162,15 +163,32 @@ mod tests {
     }
 
     #[test]
-    fn retired_builtin_host_methods_stay_on_host_internal_side() {
-        fn is_retired(method: &str) -> bool {
+    fn approval_decision_from_input_maps_remember_keys() {
+        assert_eq!(approval_decision_from_input("y"), json!({ "kind": "allow" }));
+        assert_eq!(
+            approval_decision_from_input("a"),
+            json!({ "kind": "allow", "remember": "session" })
+        );
+        assert_eq!(
+            approval_decision_from_input("s"),
+            json!({ "kind": "allow", "remember": "config" })
+        );
+        assert_eq!(approval_decision_from_input("n"), json!({ "kind": "deny" }));
+        assert_eq!(
+            approval_decision_from_input("try a smaller diff"),
+            json!({ "kind": "guidance", "userMessage": "try a smaller diff" })
+        );
+    }
+
+    #[test]
+    fn retired_builtin_host_methods_stay_on_host_internal_side() {        fn is_retired(method: &str) -> bool {
             matches!(
                 method,
                 "host.builtinToolDefinitionEnvironment"
                     | "host.parseCommand"
                     | "host.requestFromFunctionCall"
                     | "host.authorize"
-                    | "host.trust"
+                    | "host.rememberApproval"
                     | "host.execute"
             )
         }
@@ -180,7 +198,7 @@ mod tests {
             "host.parseCommand",
             "host.requestFromFunctionCall",
             "host.authorize",
-            "host.trust",
+            "host.rememberApproval",
             "host.execute",
         ] {
             assert!(

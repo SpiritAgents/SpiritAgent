@@ -113,6 +113,12 @@ pub fn handle_hooks_cli(action: HookCommand) -> Result<()> {
     crate::hooks::handle_hooks_cli(action)
 }
 
+pub use crate::permissions::PermissionCommand;
+
+pub fn handle_permissions_cli(action: PermissionCommand) -> Result<()> {
+    crate::permissions::handle_permissions_cli(action)
+}
+
 pub enum ExtensionCommand {
     List,
     Import { archive: String },

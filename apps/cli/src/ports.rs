@@ -299,7 +299,6 @@ pub trait AppPaths: Send + Sync {
     fn workspace_root(&self) -> PathBuf;
     fn config_file(&self) -> PathBuf;
     fn chats_dir(&self) -> PathBuf;
-    fn permissions_file(&self) -> PathBuf;
     fn log_file(&self) -> PathBuf;
 }
 

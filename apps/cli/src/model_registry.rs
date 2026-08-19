@@ -3,6 +3,7 @@ use anyhow::{Context, Result};
 use serde::{Deserialize, Serialize};
 use serde_json::{Map, Value};
 use std::{
+    collections::HashMap,
     env, fs,
     path::{Path, PathBuf},
     str::FromStr,
@@ -672,6 +673,26 @@ pub struct AgentsConfig {
     pub extra: Map<String, Value>,
 }
 
+/// Action a single permission rule applies when its pattern matches; values are
+/// the lowercase strings stored in config.json.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "lowercase")]
+pub enum PermissionRuleAction {
+    Allow,
+    Ask,
+    Deny,
+}
+
+/// Three-state permission allowlist stored in config.json under `permission`.
+/// The CLI only round-trips the shape; rule evaluation stays daemon-side.
+#[derive(Debug, Clone, Serialize, Deserialize, Default)]
+pub struct PermissionConfig {
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub shell: Option<HashMap<String, PermissionRuleAction>>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub read_file: Option<HashMap<String, PermissionRuleAction>>,
+}
+
 /// CLI-side parsing of the Attribution switches.
 ///
 /// Both are false (off) when the fields are missing. The CLI has no Desktop OOBE;
@@ -730,6 +751,8 @@ pub struct AppConfig {
     pub networks: NetworksConfig,
     #[serde(default)]
     pub agents: AgentsConfig,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub permission: Option<PermissionConfig>,
     #[serde(flatten, default, skip_serializing_if = "Map::is_empty")]
     pub extra: Map<String, Value>,
 }
@@ -755,6 +778,7 @@ impl Default for AppConfig {
             tui: default_tui_mode(),
             networks: NetworksConfig::default(),
             agents: AgentsConfig::default(),
+            permission: None,
             extra: Map::new(),
         }
     }
@@ -1936,7 +1960,7 @@ fn load_model_api_key_from_keyring(model_name: &str) -> Result<String> {
 #[cfg(test)]
 mod tests {
     use super::{
-        AppConfig, ModelEntry, ModelProvider, ModelRef, ModelTransportKind,
+        AppConfig, ModelEntry, ModelProvider, ModelRef, ModelTransportKind, PermissionRuleAction,
         ProviderGroupConnectDraft, SPIRIT_CONFIG_SCHEMA_VERSION, deserialize_config,
         normalize_reasoning_effort_value, normalize_reasoning_mode_value, resolve_cli_attribution,
         serialize_config,
@@ -2799,6 +2823,45 @@ mod tests {
         assert_eq!(model.alibaba_billing_mode().as_deref(), Some("token-plan"));
         assert!(model.provider_site().is_none());
         assert!(model.alibaba_workspace_id().is_none());
+    }
+
+    #[test]
+    fn deserializes_permission_config_and_round_trips() {
+        let raw = r#"{
+          "schemaVersion": 2,
+          "providerGroups": [],
+          "activeModel": { "groupId": "g", "name": "m" },
+          "permission": {
+            "shell": { "git push *": "ask", "rm -rf /": "deny" },
+            "read_file": { "~/.ssh/**": "deny", "src/**": "allow" }
+          }
+        }"#;
+        let parsed = deserialize_config(raw, Path::new("config.json")).expect("parse config");
+        let permission = parsed.permission.as_ref().expect("permission config");
+        assert_eq!(
+            permission
+                .shell
+                .as_ref()
+                .and_then(|rules| rules.get("git push *")),
+            Some(&PermissionRuleAction::Ask)
+        );
+        assert_eq!(
+            permission
+                .read_file
+                .as_ref()
+                .and_then(|rules| rules.get("src/**")),
+            Some(&PermissionRuleAction::Allow)
+        );
+
+        let serialized = serde_json::to_value(&parsed).expect("serialize config");
+        assert_eq!(
+            serialized["permission"]["shell"]["rm -rf /"],
+            serde_json::json!("deny")
+        );
+        assert_eq!(
+            serialized["permission"]["read_file"]["~/.ssh/**"],
+            serde_json::json!("deny")
+        );
     }
 
     #[test]
