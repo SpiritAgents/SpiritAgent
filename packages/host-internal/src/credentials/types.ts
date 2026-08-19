@@ -33,6 +33,22 @@ export interface SpiritModelProfile {
   contextLength?: number;
 }
 
+/** Action a single permission rule applies when its pattern matches. */
+export type PermissionRuleAction = "allow" | "ask" | "deny";
+
+/** Rules of one permission domain: pattern (map key) -> action. */
+export type PermissionDomainRules = Record<string, PermissionRuleAction>;
+
+/**
+ * Three-state permission allowlist stored in `config.json` under `permission`.
+ * Domains may grow later (edit, web_fetch, MCP, ...); unknown domains are
+ * ignored with a lint warning at load time.
+ */
+export interface PermissionConfig {
+  shell?: PermissionDomainRules;
+  read_file?: PermissionDomainRules;
+}
+
 /** Minimal `config.json` fields read/written by hosts; other Desktop fields are preserved on merge. */
 export interface SpiritConfigFile {
   schemaVersion: SpiritConfigSchemaVersion;
@@ -41,6 +57,7 @@ export interface SpiritConfigFile {
   imageGenerationModel?: ModelRef;
   videoGenerationModel?: ModelRef;
   lightweightChatModel?: ModelRef;
+  permission?: PermissionConfig;
   [key: string]: unknown;
 }
 
