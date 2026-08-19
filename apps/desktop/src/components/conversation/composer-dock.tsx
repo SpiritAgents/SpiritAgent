@@ -600,12 +600,7 @@ export const ComposerDock = forwardRef<HTMLDivElement, ComposerDockProps>(functi
                 to the bottom).
               */}
               {!isEmptySession && showChangesCardEffective && changesLineDelta ? (
-                <div
-                  className={cn(
-                    "relative z-20 mb-2 flex shrink-0 items-center gap-2 self-start",
-                    hasComposerTodos && "mx-4",
-                  )}
-                >
+                <div className="relative z-20 mb-2 flex shrink-0 items-center gap-2 self-start">
                   <ComposerChangesCard
                     delta={changesLineDelta}
                     onOpenGitTab={onOpenGitTab}
