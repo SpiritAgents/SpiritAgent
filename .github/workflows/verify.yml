@@ -65,6 +65,9 @@ jobs:
       - name: Test TypeScript packages and Desktop (Vitest)
         run: pnpm test
 
+      - name: Typecheck TypeScript packages (includes test files)
+        run: pnpm turbo run typecheck
+
       - name: Lint TypeScript (Oxlint)
         run: pnpm exec oxlint --deny-warnings packages apps/desktop apps/site
 
