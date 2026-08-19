@@ -1,7 +1,7 @@
-import test from "node:test";
+import { test } from "vitest";
 import assert from "node:assert/strict";
 import { execFile } from "node:child_process";
-import { mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
+import { mkdtemp, readFile, realpath, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { promisify } from "node:util";
@@ -221,13 +221,16 @@ test("readGitBranchLabelForBasicInfo reports non-git workspace label", async () 
   }
 });
 
-test("resolveWorkspaceGroupingRoot maps linked worktrees to primary repo", () => {
-  assert.equal(
-    resolveWorkspaceGroupingRoot("D:\\SpiritAgent.worktrees\\spirit-hello-test"),
-    "D:\\SpiritAgent",
-  );
-  assert.equal(resolveWorkspaceGroupingRoot("D:\\SpiritAgent"), "D:\\SpiritAgent");
-});
+test.skipIf(process.platform !== "win32")(
+  "resolveWorkspaceGroupingRoot maps linked worktrees to primary repo",
+  () => {
+    assert.equal(
+      resolveWorkspaceGroupingRoot("D:\\SpiritAgent.worktrees\\spirit-hello-test"),
+      "D:\\SpiritAgent",
+    );
+    assert.equal(resolveWorkspaceGroupingRoot("D:\\SpiritAgent"), "D:\\SpiritAgent");
+  },
+);
 
 test("spirit worktree and branch name validation", () => {
   assert.equal(isSpiritWorktreeName("spirit-add-worktree-ui"), true);
@@ -263,8 +266,10 @@ test("addGitWorktree, readWorktreeContext, and mergeSpiritBranchToMain work in a
       },
     );
     const defaultBranch = defaultBranchOutput.trim();
+    // git rev-parse resolves symlinks (macOS /var -> /private/var), so compare real paths.
+    const realRepoRoot = await realpath(repoRoot);
     const primaryRepoRoot = await resolvePrimaryRepoRoot(repoRoot);
-    assert.equal(primaryRepoRoot, repoRoot);
+    assert.equal(primaryRepoRoot, realRepoRoot);
 
     const worktreePath = buildWorktreeRootPath(repoRoot, worktreeName);
     await addGitWorktree(repoRoot, {
@@ -274,14 +279,15 @@ test("addGitWorktree, readWorktreeContext, and mergeSpiritBranchToMain work in a
     });
 
     const worktrees = await listGitWorktrees(repoRoot);
+    const realWorktreePath = await realpath(worktreePath);
     assert.equal(
-      worktrees.some((entry) => entry.path === worktreePath),
+      worktrees.some((entry) => entry.path === realWorktreePath),
       true,
     );
 
     const context = await readWorktreeContext(worktreePath);
     assert.equal(context.isWorktree, true);
-    assert.equal(context.repoRoot, repoRoot);
+    assert.equal(context.repoRoot, realRepoRoot);
     assert.equal(context.worktreeName, worktreeName);
     assert.equal(context.branch, branchName);
 

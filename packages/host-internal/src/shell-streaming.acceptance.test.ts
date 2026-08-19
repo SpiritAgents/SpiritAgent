@@ -2,7 +2,7 @@ import assert from "node:assert/strict";
 import { mkdtemp, rm } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import test from "node:test";
+import { test } from "vitest";
 
 import { NodeHostToolService } from "./tools.js";
 
@@ -73,6 +73,8 @@ test("NodeHostToolService.abortRunningShell kills in-flight shell", async () => 
       command: "sleep 30",
       reason: "abort-test",
     };
+    // Kill registration requires a toolCallId (production attaches one per tool call).
+    service.attachRequestMetadata?.(request, { toolCallId: "abort-test" });
 
     const execution = service.execute(request);
     await new Promise((resolve) => {

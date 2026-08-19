@@ -2,7 +2,7 @@ import assert from "node:assert/strict";
 import { mkdtemp, readdir, readFile, rm, unlink, utimes, writeFile } from "node:fs/promises";
 import { homedir, tmpdir } from "node:os";
 import { join } from "node:path";
-import test from "node:test";
+import { test } from "vitest";
 
 import { SPIRIT_CONFIG_SCHEMA_VERSION } from "../config-v2.js";
 import { configFilePath } from "../credentials/spirit-config.js";
