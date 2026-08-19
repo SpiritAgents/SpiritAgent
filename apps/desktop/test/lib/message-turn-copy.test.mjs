@@ -115,7 +115,7 @@ test("formatToolCallSummaryPlainText: failed tools append settings.failed suffix
       headlineDetail: "TODO",
       detailLines: [],
     }),
-    `Search TODO ${i18n.t("settings.failed")}`,
+    `搜索 TODO ${i18n.t("settings.failed")}`,
   );
 });
 

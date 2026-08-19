@@ -88,7 +88,7 @@ test("buildPrimaryTransportConfig wires Gateway Claude budget thinking off via v
   });
   assert.equal(config.transportKind, "open-responses");
   assert.equal(config.vendorExtendedThinking, false);
-  assert.equal(config.reasoningEffort, "medium");
+  assert.equal(config.reasoningEffort, undefined);
 });
 
 test("buildPrimaryTransportConfig wires Gateway Claude adaptive thinking off via vendorExtendedThinking", () => {

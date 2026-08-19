@@ -36,6 +36,7 @@ function createOpenSessionContext(overrides = {}) {
     runSerialized: async (work) => work(),
     syncHostWorkspaceRootToActiveBundle: async () => false,
     syncPlanStateForBundle: async () => {},
+    syncHostActiveModelToActiveBundle: async () => {},
     resetStreamingPlacementState: () => {},
     ensureToolExecutor: async () => {},
     refreshTodoSnapshotForBundle: async () => {},

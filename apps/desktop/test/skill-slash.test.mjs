@@ -51,7 +51,7 @@ test("buildSkillSlashSuggestions matches side via btw search alias", () => {
   const suggestions = buildSkillSlashSuggestions("/btw", []);
   const side = suggestions.find((item) => item.kind === "side-chat");
   assert.ok(side);
-  assert.equal(side.name, "side");
+  assert.equal(side.name, "Side");
   assert.equal(side.alias, "/side");
 });
 

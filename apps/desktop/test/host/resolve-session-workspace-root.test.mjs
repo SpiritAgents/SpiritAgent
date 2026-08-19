@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { execFile } from "node:child_process";
-import { mkdtemp, rm, writeFile } from "node:fs/promises";
+import { mkdtemp, realpath, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { promisify } from "node:util";
@@ -61,7 +61,10 @@ test("resolveStoredSessionWorkspaceRoot keeps linked worktree path as-is", async
 });
 
 test("resolveStoredSessionWorkspaceRoot maps stored primary repo root to existing spirit worktree", async () => {
-  const repoRoot = await mkdtemp(join(tmpdir(), "spirit-resolve-session-root-"));
+  // realpath: macOS tmpdir is a symlink (/var → /private/var); git resolves symlinks in
+  // worktree/rev-parse output, and production compares resolved paths, so the fixture
+  // must use the canonical path to exercise the mapping instead of the symlink artifact.
+  const repoRoot = await realpath(await mkdtemp(join(tmpdir(), "spirit-resolve-session-root-")));
   const worktreeName = "spirit-resolve-fallback";
   const branchName = "spirit/resolve-fallback";
 

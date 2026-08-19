@@ -11,20 +11,30 @@ import {
   shouldUseComposerDirectMediaTurn,
 } from "../../dist-electron/src/host/direct-media-turn.js";
 
+const openAiGroupId = "openai";
+
+const imageRef = { groupId: openAiGroupId, name: "dall-e-3" };
+
 const imageModel = {
   name: "dall-e-3",
-  apiBase: "https://api.openai.com/v1",
   capabilities: ["imageGeneration"],
 };
 
 const config = {
-  activeModel: "dall-e-3",
-  models: [imageModel],
-  imageGenerationModel: "dall-e-3",
+  providerGroups: [
+    {
+      id: openAiGroupId,
+      provider: "openai",
+      apiBase: "https://api.openai.com/v1",
+      models: [imageModel],
+    },
+  ],
+  activeModel: imageRef,
+  imageGenerationModel: imageRef,
 };
 
 test("shouldUseComposerDirectMediaTurn returns null when attachments are present", () => {
-  assert.equal(shouldUseComposerDirectMediaTurn(config, "dall-e-3", 1), null);
+  assert.equal(shouldUseComposerDirectMediaTurn(config, imageRef, 1), null);
 });
 
 function createDirectMediaHarness() {
@@ -54,6 +64,7 @@ function createDirectMediaHarness() {
       currentPendingQuestions: () => undefined,
       pendingAssistantText: () => "",
       history: () => [],
+      isBusy: () => false,
     }),
     messages: () => messages,
     allocateMessageId: () => nextMessageId++,
@@ -134,6 +145,8 @@ function createDirectMediaHarness() {
     flushDeferredRuntimeRefreshIfIdle: async () => {},
     refreshTodoSnapshotForBundle: async () => {},
     rebuildMessageTimelineFromMessages: () => {},
+    requestLiveSnapshotEmit: () => {},
+    notifySessionListUpdated: () => {},
   };
 
   return { bundle, ctx, messages: () => messages };
