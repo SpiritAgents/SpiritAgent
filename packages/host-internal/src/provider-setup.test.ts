@@ -12,10 +12,7 @@ test("resolveProfileApiBase routes z-ai glm-coding-plan profiles to the coding e
     resolveProfileApiBase({ provider: "z-ai", zAiBillingMode: "glm-coding-plan" }),
     "https://api.z.ai/api/coding/paas/v4",
   );
-  assert.equal(
-    resolveProfileApiBase({ provider: "z-ai" }),
-    "https://api.z.ai/api/paas/v4",
-  );
+  assert.equal(resolveProfileApiBase({ provider: "z-ai" }), "https://api.z.ai/api/paas/v4");
 });
 
 test("resolveProfileApiBase routes zhipu-ai glm-coding-plan profiles to the coding endpoint", () => {

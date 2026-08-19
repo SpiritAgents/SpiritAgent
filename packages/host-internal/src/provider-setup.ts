@@ -110,7 +110,9 @@ export function resolveProfileApiBase(profile: {
     return resolveProviderConnectApiBase(profile.provider, transportKind, {
       ...(profile.alibabaBillingMode === "token-plan" ? { billingMode: "token-plan" } : {}),
       ...(profile.stepfunBillingMode === "step-plan" ? { stepfunBillingMode: "step-plan" } : {}),
-      ...(profile.zAiBillingMode === "glm-coding-plan" ? { zAiBillingMode: "glm-coding-plan" } : {}),
+      ...(profile.zAiBillingMode === "glm-coding-plan"
+        ? { zAiBillingMode: "glm-coding-plan" }
+        : {}),
       ...(profile.zhipuBillingMode === "glm-coding-plan"
         ? { zhipuBillingMode: "glm-coding-plan" }
         : {}),
