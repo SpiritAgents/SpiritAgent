@@ -1,5 +1,5 @@
 import assert from "node:assert/strict";
-import test from "node:test";
+import { test } from "vitest";
 
 import { buildJdtlsServerCommand, jdtlsInstallHint } from "./resolve-server-jdtls.js";
 import { resolveOmnisharpOnPath } from "./resolve-server-omnisharp.js";

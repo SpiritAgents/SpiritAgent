@@ -1,5 +1,5 @@
 import assert from "node:assert/strict";
-import test from "node:test";
+import { test } from "vitest";
 
 import { unwrapCompactSummaryBlock, wrapCompactSummaryBlock } from "../llm-context-block.js";
 import { truncateLlmHistoryForCompaction } from "../llm-tool-agent.js";

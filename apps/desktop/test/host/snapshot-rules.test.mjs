@@ -1,5 +1,5 @@
 import assert from "node:assert/strict";
-import { test } from "node:test";
+import { test } from "vitest";
 
 import { buildDesktopSnapshot } from "../../dist-electron/src/host/snapshot.js";
 
@@ -8,7 +8,8 @@ test("buildDesktopSnapshot maps rulesList from metadata entries", () => {
     workspaceRoot: "C:/workspace/demo",
     config: {
       models: [],
-      activeModel: "",
+      providerGroups: [],
+      activeModel: { groupId: "", name: "" },
       recentWorkspaces: [],
       dreams: {},
       networks: { llmHttpVersion: "http2" },

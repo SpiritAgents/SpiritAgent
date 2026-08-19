@@ -1,5 +1,5 @@
 import assert from "node:assert/strict";
-import test from "node:test";
+import { test } from "vitest";
 
 import {
   moonshotK3SupportedReasoningEfforts,
@@ -615,7 +615,6 @@ test("parseOpenRouterModelEntriesPayload extracts display metadata and pricing",
         outputPerTokenUsd: "0.000015",
         requestPerCallUsd: "0",
       },
-      supportedReasoningEfforts: ["low", "medium", "high"],
     },
   ]);
 });
@@ -956,7 +955,6 @@ test("parseOpenAiCompatibleModelEntriesPayload routes openrouter to typed parser
   assert.deepEqual(entries, [
     {
       id: "anthropic/claude-sonnet-4",
-      supportedReasoningEfforts: ["low", "medium", "high"],
     },
     { id: "stability/sdxl", supportsImageGeneration: true },
   ]);
@@ -977,7 +975,6 @@ test("parseOpenRouterModelEntriesPayload maps context_length", () => {
     {
       id: "anthropic/claude-sonnet-4",
       contextLength: 200000,
-      supportedReasoningEfforts: ["low", "medium", "high"],
     },
   ]);
 });

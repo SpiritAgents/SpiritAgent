@@ -1,5 +1,5 @@
 import assert from "node:assert/strict";
-import { test } from "node:test";
+import { test } from "vitest";
 
 import { mapPendingToolApproval } from "../../dist-electron/src/host/snapshot-mappers.js";
 

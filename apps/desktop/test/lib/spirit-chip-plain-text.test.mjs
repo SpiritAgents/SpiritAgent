@@ -1,5 +1,5 @@
 import assert from "node:assert/strict";
-import { test } from "node:test";
+import { test } from "vitest";
 
 const { spiritChipPlainText } =
   await import("../../src/lib/composer-lexical/spirit-chip-payload.ts");

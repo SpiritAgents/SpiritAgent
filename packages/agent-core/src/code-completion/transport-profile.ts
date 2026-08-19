@@ -120,6 +120,15 @@ function applyOpenResponsesCodeCompletionProfile(
       reasoningSummary: "off",
     };
   }
+  if (profiled.llmVendor === "deepseek") {
+    // DeepSeek Responses maps vendorExtendedThinking:false to reasoning effort "none"
+    // (resolveDeepSeekResponsesReasoningEffort); mirror the chat-completions profile shape.
+    return {
+      ...profiled,
+      reasoningEffort: "default",
+      vendorExtendedThinking: false,
+    };
+  }
   return profiled;
 }
 

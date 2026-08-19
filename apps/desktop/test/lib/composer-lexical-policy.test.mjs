@@ -1,5 +1,5 @@
 import assert from "node:assert/strict";
-import { test } from "node:test";
+import { test } from "vitest";
 
 import { normalizeComposerSegmentsPolicy } from "../../src/lib/composer-lexical/composer-lexical-policy.ts";
 import { emptySegments } from "../../src/lib/composer-segment-model.ts";

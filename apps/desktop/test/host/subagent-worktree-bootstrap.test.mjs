@@ -4,7 +4,7 @@ import { mkdtemp, realpath, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { promisify } from "node:util";
-import test from "node:test";
+import { test } from "vitest";
 
 import { createDesktopSubagentWorkspaceBootstrap } from "../../dist-electron/src/host/subagent-worktree-bootstrap.js";
 

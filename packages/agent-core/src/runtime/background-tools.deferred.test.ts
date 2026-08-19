@@ -1,10 +1,11 @@
 import assert from "node:assert/strict";
-import test from "node:test";
+import { test } from "vitest";
 
 import {
   createToolExecutionTextOutput,
   type AuthorizationDecision,
   type JsonValue,
+  type LlmMessage,
   type ToolExecutionOutput,
   type ToolExecutor,
 } from "../ports.js";
@@ -117,6 +118,20 @@ test("scheduleBackgroundToolExecutionAsync defers while background slot is busy"
   const runtime = {
     options: {
       toolExecutor: executor,
+      // Production rebuilds the continuation state from historyStore; the mock
+      // mirrors that by re-deriving state.messages from synced tool results.
+      createContinuationState: (history: readonly LlmMessage[]) => {
+        state.messages = history
+          .filter((message) => message.role === "tool")
+          .map(
+            (message) =>
+              `${message.toolCallId}:${message.content
+                .filter((part) => part.type === "text")
+                .map((part) => part.text)
+                .join("")}`,
+          );
+        return state;
+      },
       appendToolResultMessage: (currentState: TestState, toolCallId: string, content: string) => {
         currentState.messages.push(`${toolCallId}:${content}`);
         return currentState;

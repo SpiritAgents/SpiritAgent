@@ -45,6 +45,10 @@
       "types": "./dist/github/types.d.ts",
       "default": "./dist/github/types.js"
     },
+    "./hooks/trust": {
+      "types": "./dist/hooks/trust.d.ts",
+      "default": "./dist/hooks/trust.js"
+    },
     "./config-v2": {
       "types": "./dist/config-v2.d.ts",
       "default": "./dist/config-v2.js"
@@ -150,13 +154,14 @@
     "access": "public"
   },
   "scripts": {
-    "build": "tsc -p tsconfig.json",
+    "build": "tsc -p tsconfig.build.json",
     "build:tsc": "tsc -p tsconfig.json",
-    "test:workspace-file-references": "npm run build && node --test dist/workspace-file-references.test.js",
-    "test:lsp": "npm run build && node --test dist/lsp/providers.test.js dist/lsp/resolve-server.test.js dist/lsp/resolve-server-jdtls.test.js dist/lsp/install.test.js dist/lsp/orchestrator.test.js dist/lsp/ready-providers.test.js dist/lsp/service-probe.test.js dist/lsp/write-append.test.js",
+    "test": "vitest run",
+    "test:workspace-file-references": "vitest run src/workspace-file-references.test.ts",
+    "test:lsp": "vitest run src/lsp",
     "smoke:lsp": "npm run build && node dist/smoke/lsp-typescript-smoke.js",
     "typecheck": "tsc -p tsconfig.json --noEmit",
-    "smoke:openai-models-parse": "npm run build && node dist/smoke/openai-models-parse-smoke.js && node --test dist/bedrock-models.test.js dist/google-vertex-endpoints.test.js dist/google-vertex-models.test.js",
+    "smoke:openai-models-parse": "npm run build && node dist/smoke/openai-models-parse-smoke.js && vitest run src/bedrock-models.test.ts src/google-vertex-endpoints.test.ts src/google-vertex-models.test.ts",
     "notice": "node scripts/gen-notice.mjs",
     "notice:production": "node scripts/gen-notice.mjs --production",
     "prepublishOnly": "pnpm run build && node ../../scripts/publish/assert-no-workspace-deps.mjs"
@@ -184,7 +189,8 @@
     "@types/node": "25.9.5",
     "@types/turndown": "5.0.6",
     "license-checker-rseidelsohn": "5.0.1",
-    "typescript": "5.9.3"
+    "typescript": "5.9.3",
+    "vitest": "^4.1.11"
   },
   "engines": {
     "node": ">=24"

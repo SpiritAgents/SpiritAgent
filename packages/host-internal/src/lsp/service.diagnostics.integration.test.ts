@@ -2,16 +2,15 @@ import assert from "node:assert/strict";
 import { rm, writeFile } from "node:fs/promises";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import test from "node:test";
+import { test } from "vitest";
 
 import { LspService } from "./service.js";
 import { resolveTypescriptLanguageServerOnPath } from "./resolve-server.js";
 
 const workspaceRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "../../../..");
 
-test(
+test.skipIf(!(await resolveTypescriptLanguageServerOnPath()))(
   "getDiagnosticsForPath reports a type error after document sync",
-  { skip: !(await resolveTypescriptLanguageServerOnPath()) },
   async () => {
     const relativePath = "packages/agent-core/src/lsp/.diag-integration-temp.ts";
     const absolutePath = path.join(workspaceRoot, relativePath);

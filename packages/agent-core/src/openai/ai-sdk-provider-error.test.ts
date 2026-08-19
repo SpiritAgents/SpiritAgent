@@ -1,5 +1,5 @@
 import assert from "node:assert/strict";
-import test from "node:test";
+import { test } from "vitest";
 
 import { renderResponsesTransportError } from "../open-responses/ai-sdk-message-bridge.js";
 import { renderAiSdkProviderError } from "./ai-sdk-provider-error.js";

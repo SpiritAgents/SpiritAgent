@@ -1,5 +1,5 @@
 import assert from "node:assert/strict";
-import test from "node:test";
+import { test } from "vitest";
 
 import { createResponsesStoredStateAwareFetch } from "./responses-stored-state-fetch.js";
 import { runWithResponsesStoredStateRequestContext } from "./responses-incremental-input.js";

@@ -1,5 +1,5 @@
 import assert from "node:assert/strict";
-import test from "node:test";
+import { test } from "vitest";
 
 import { createToolExecutionTextOutput } from "@spiritagent/agent-core";
 import { DEFAULT_LSP_TIMING } from "./config.js";

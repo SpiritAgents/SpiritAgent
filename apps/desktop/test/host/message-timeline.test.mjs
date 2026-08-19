@@ -1,5 +1,5 @@
 import assert from "node:assert/strict";
-import { test } from "node:test";
+import { test } from "vitest";
 
 import { DesktopMessageTimeline } from "../../dist-electron/src/host/message-timeline.js";
 import { buildVisibleMessageSnapshots } from "../../dist-electron/src/host/message-snapshots.js";

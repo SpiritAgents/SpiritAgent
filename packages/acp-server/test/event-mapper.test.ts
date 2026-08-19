@@ -1,5 +1,5 @@
 import assert from "node:assert/strict";
-import test from "node:test";
+import { test } from "vitest";
 
 import { mapRuntimeEventToUpdate, createEventMapperState } from "../src/event-mapper.js";
 import type { RuntimeEvent, JsonValue } from "@spiritagent/agent-core";

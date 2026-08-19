@@ -1,5 +1,5 @@
 import assert from "node:assert/strict";
-import { test } from "node:test";
+import { test } from "vitest";
 
 import { DesktopAssistantMessageStateMachine } from "../../dist-electron/src/host/assistant-message-state.js";
 import { DesktopConversationSnapshotView } from "../../dist-electron/src/host/conversation-snapshot.js";

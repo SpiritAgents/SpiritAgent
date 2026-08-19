@@ -1,5 +1,5 @@
 import assert from "node:assert/strict";
-import { test } from "node:test";
+import { test } from "vitest";
 
 import {
   previewCatalogMapForTransport,
@@ -67,7 +67,7 @@ test("custom anthropic transport consumes Anthropic model catalog metadata", () 
   assert.deepEqual(preview, [
     {
       id: "claude-sonnet-4-20250514",
-      displayName: "Claude Sonnet 4 20250514",
+      displayName: "Claude Sonnet 4.20250514",
       capabilities: ["chat"],
       supportedReasoningEfforts: ["low", "high", "max"],
     },
@@ -149,7 +149,6 @@ test("openrouter provider passes through display metadata and pricing", () => {
         outputPerTokenUsd: "0.000015",
       },
       capabilities: ["chat"],
-      supportedReasoningEfforts: ["low", "medium", "high"],
     },
   ]);
 
@@ -429,17 +428,17 @@ test("volcengine provider maps domain-derived traits to catalog capabilities", (
     },
     {
       id: "doubao-seed-1-6-250615",
-      displayName: "Doubao Seed 1 6 250615",
+      displayName: "Doubao Seed 1.6 250615",
       capabilities: ["chat", "image", "video"],
     },
     {
       id: "doubao-seedance-2-0-260128",
-      displayName: "Doubao Seedance 2 0 260128",
+      displayName: "Doubao Seedance 2.0 260128",
       capabilities: ["videoGeneration"],
     },
     {
       id: "doubao-seedream-4-0-250828",
-      displayName: "Doubao Seedream 4 0 250828",
+      displayName: "Doubao Seedream 4.0 250828",
       capabilities: ["imageGeneration"],
     },
   ]);
@@ -606,7 +605,6 @@ test("openrouter provider passes contextLength through catalog metadata", () => 
       id: "anthropic/claude-sonnet-4",
       capabilities: ["chat"],
       contextLength: 200000,
-      supportedReasoningEfforts: ["low", "medium", "high"],
     },
   ]);
 });

@@ -1,5 +1,5 @@
 import assert from "node:assert/strict";
-import test from "node:test";
+import { test } from "vitest";
 
 import { setLlmFetchTransportOverrideForTests } from "../llm-fetch.js";
 import { isDeepInfraApiBase, resolveVideoGenerationBackend } from "./router.js";

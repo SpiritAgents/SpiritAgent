@@ -1,5 +1,5 @@
 import assert from "node:assert/strict";
-import test from "node:test";
+import { test } from "vitest";
 
 import type { JsonObject } from "../ports.js";
 import { openAiMessagesToResponsesAiSdkMessages } from "./ai-sdk-message-bridge.js";

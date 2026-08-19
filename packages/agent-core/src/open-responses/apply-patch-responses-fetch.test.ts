@@ -1,5 +1,5 @@
 import assert from "node:assert/strict";
-import test from "node:test";
+import { test } from "vitest";
 
 import { createApplyPatchAwareFetch } from "./apply-patch-responses-fetch.js";
 import type { OpenResponsesTransportConfig } from "./responses-compat.js";

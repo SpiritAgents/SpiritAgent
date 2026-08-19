@@ -1,5 +1,5 @@
 import assert from "node:assert/strict";
-import { test } from "node:test";
+import { test } from "vitest";
 
 import { resolveSubagentViewerMessages } from "../../dist-electron/src/host/subagent-viewer.js";
 import { WORKTREE_BOOTSTRAP_TOOL_NAME } from "../../dist-electron/src/host/worktree-bootstrap-card.js";

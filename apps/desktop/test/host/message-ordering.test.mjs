@@ -1,5 +1,5 @@
 import assert from "node:assert/strict";
-import { test } from "node:test";
+import { test } from "vitest";
 
 import { isSubagentStatusSurfaceText } from "../../dist-electron/src/lib/subagent-display.js";
 import {
@@ -110,7 +110,7 @@ test("toolCallSummaryCopyForResponsesBuiltInTool: web_search preserves query det
       headlineDetail: "What is the Spirit Agent project",
     }),
     {
-      headline: "联网搜索",
+      headline: "联网搜索中",
       headlineDetail: "What is the Spirit Agent project",
     },
   );
@@ -125,7 +125,7 @@ test("toolCallSummaryCopyForResponsesBuiltInTool: web_search preserves query det
       },
     ),
     {
-      headline: "联网搜索",
+      headline: "已联网搜索",
       headlineDetail: "What is the Spirit Agent project",
     },
   );
@@ -140,7 +140,7 @@ test("toolCallSummaryCopyForResponsesBuiltInTool: web_search prefers query over 
       { sourceCount: 5 },
     ),
     {
-      headline: "联网搜索",
+      headline: "已联网搜索",
       headlineDetail: "latest models",
     },
   );
@@ -155,7 +155,7 @@ test("toolCallSummaryCopyForResponsesBuiltInTool: web_search falls back to sourc
       { sourceCount: 2 },
     ),
     {
-      headline: "联网搜索",
+      headline: "已联网搜索",
       headlineDetail: "2 个来源",
     },
   );

@@ -1,5 +1,5 @@
 import assert from "node:assert/strict";
-import { test } from "node:test";
+import { test } from "vitest";
 
 import { currentWorkspaceFileReferenceQuery } from "@spiritagent/host-internal/workspace-file-reference-query";
 
@@ -51,7 +51,7 @@ test("buildSkillSlashSuggestions matches side via btw search alias", () => {
   const suggestions = buildSkillSlashSuggestions("/btw", []);
   const side = suggestions.find((item) => item.kind === "side-chat");
   assert.ok(side);
-  assert.equal(side.name, "side");
+  assert.equal(side.name, "Side");
   assert.equal(side.alias, "/side");
 });
 

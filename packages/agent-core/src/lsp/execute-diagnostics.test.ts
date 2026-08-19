@@ -1,5 +1,5 @@
 import assert from "node:assert/strict";
-import test from "node:test";
+import { test } from "vitest";
 
 import { executeGetDiagnostics } from "./execute-diagnostics.js";
 import type { LspHostServiceInstance } from "../host-bridge/lsp-host-bindings.js";

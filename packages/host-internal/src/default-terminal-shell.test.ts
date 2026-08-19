@@ -2,7 +2,7 @@ import assert from "node:assert/strict";
 import { exec as execCallback } from "node:child_process";
 import { existsSync } from "node:fs";
 import path from "node:path";
-import test from "node:test";
+import { test } from "vitest";
 import { promisify } from "node:util";
 
 import {
@@ -17,9 +17,8 @@ import { detectShellForTools } from "./tools.js";
 
 const exec = promisify(execCallback);
 
-test(
+test.skipIf(process.platform !== "win32")(
   "defaultShellForPty: Windows prefers pwsh or powershell, not just cmd",
-  { skip: process.platform !== "win32" },
   () => {
     const prev = process.env.SPIRIT_TERMINAL_SHELL;
     delete process.env.SPIRIT_TERMINAL_SHELL;
@@ -46,9 +45,8 @@ test(
   },
 );
 
-test(
+test.skipIf(process.platform !== "win32")(
   "detectShellForTools: Windows result matches defaultShellForPty resolution",
-  { skip: process.platform !== "win32" },
   () => {
     const prev = process.env.SPIRIT_TERMINAL_SHELL;
     delete process.env.SPIRIT_TERMINAL_SHELL;
@@ -73,9 +71,8 @@ test(
   },
 );
 
-test(
+test.skipIf(process.platform !== "win32")(
   "prepareShellForHostExecution: PowerShell subprocess can output UTF-8 Chinese",
-  { skip: process.platform !== "win32" },
   async () => {
     const { file } = defaultShellForPty();
     if (!isWindowsPowerShellExecutable(file)) {
@@ -92,9 +89,8 @@ test(
   },
 );
 
-test(
+test.skipIf(process.platform !== "win32")(
   "decodeShellHostOutput: cmd subprocess GBK output can be decoded as Chinese",
-  { skip: process.platform !== "win32" },
   async () => {
     const systemRoot = process.env.SystemRoot || "C:\\Windows";
     const cmd = path.join(systemRoot, "System32", "cmd.exe");

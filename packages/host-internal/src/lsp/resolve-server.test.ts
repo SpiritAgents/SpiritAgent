@@ -1,8 +1,8 @@
 import assert from "node:assert/strict";
-import { mkdtemp, writeFile } from "node:fs/promises";
+import { chmod, mkdtemp, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import path from "node:path";
-import test from "node:test";
+import { test } from "vitest";
 
 import {
   isRustAnalyzerVersionOutputHealthy,
@@ -63,6 +63,8 @@ test("resolveCommandOnPath prefers Windows .cmd sibling for extensionless comman
   const cmd = `${shim}.cmd`;
   await writeFile(shim, "#!/bin/sh\n");
   await writeFile(cmd, "@echo off\r\n");
+  // resolveCommandOnPath checks X_OK, which is a no-op on Windows but requires the execute bit on POSIX.
+  await chmod(cmd, 0o755);
   const result = await resolveCommandOnPath(shim, {}, "win32", ["--stdio"]);
   assert.equal(result?.command, cmd);
   assert.deepEqual(result?.args, ["--stdio"]);

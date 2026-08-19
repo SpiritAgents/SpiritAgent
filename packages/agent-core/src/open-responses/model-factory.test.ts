@@ -1,5 +1,5 @@
 import assert from "node:assert/strict";
-import test from "node:test";
+import { test } from "vitest";
 
 import { buildResponsesGenerateTools, buildResponsesProviderOptions } from "./model-factory.js";
 import { applyCodeCompletionTransportProfile } from "../code-completion/transport-profile.js";

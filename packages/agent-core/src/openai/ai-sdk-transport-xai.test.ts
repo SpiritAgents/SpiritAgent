@@ -1,5 +1,5 @@
 import assert from "node:assert/strict";
-import { test } from "node:test";
+import { test } from "vitest";
 
 import { setLlmFetchTransportOverrideForTests } from "../llm-fetch.js";
 import { applyCodeCompletionTransportProfile } from "../code-completion/transport-profile.js";
@@ -61,7 +61,7 @@ test("xAI chat transport uses official provider, base URL, reasoning options, an
   }
 });
 
-test("xAI code-completion profile omits reasoning options", async () => {
+test("xAI code-completion profile disables reasoning via reasoning_effort none", async () => {
   let capturedBody: Record<string, unknown> | undefined;
   setLlmFetchTransportOverrideForTests(async (_input, init) => {
     capturedBody = JSON.parse(String(init?.body)) as Record<string, unknown>;
@@ -104,7 +104,7 @@ test("xAI code-completion profile omits reasoning options", async () => {
     );
 
     assert.equal(result.kind, "success");
-    assert.equal(capturedBody?.reasoning_effort, undefined);
+    assert.equal(capturedBody?.reasoning_effort, "none");
   } finally {
     setLlmFetchTransportOverrideForTests(undefined);
   }
