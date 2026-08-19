@@ -54,12 +54,7 @@ import { createNoopPeer } from "./noop-peer.js";
 import { resolveTransportConfig } from "@spiritagent/host-internal";
 import type { AcpServerConfig } from "./types.js";
 
-export type AcpHostRuntime = AgentRuntime<
-  LlmTransportConfig,
-  LlmToolAgentState,
-  JsonValue,
-  JsonValue
->;
+export type AcpHostRuntime = AgentRuntime<LlmTransportConfig, LlmToolAgentState, JsonValue>;
 
 export interface AcpRuntimeResult {
   runtime: AcpHostRuntime;
@@ -213,7 +208,7 @@ export async function createAcpRuntime(
   const llmTransport = createLlmTransport(transportConfig);
 
   // 9. Assemble AgentRuntime
-  const runtime = new AgentRuntime<LlmTransportConfig, LlmToolAgentState, JsonValue, JsonValue>({
+  const runtime = new AgentRuntime<LlmTransportConfig, LlmToolAgentState, JsonValue>({
     config: transportConfig,
     llmTransport,
     toolExecutor,
@@ -269,6 +264,8 @@ export async function createAcpRuntime(
         return saveGeneratedVideo.call(service, saveRequest);
       }),
     resolveWorkspaceFilesFromInput: (text) => pendingWorkspaceFilesFromInput(workspaceRoot, text),
+    // Pre-existing gap: ACP wires no hookRunner, so the hookSessionContext
+    // below is inert and session/tool hooks never fire in ACP mode.
     ...(sessionKey
       ? {
           hookSessionContext: {

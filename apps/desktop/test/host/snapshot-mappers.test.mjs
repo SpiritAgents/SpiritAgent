@@ -8,12 +8,13 @@ test("mapPendingToolApproval forwards subagentSessionId when present", () => {
     toolName: "shell",
     request: { command: "git status" },
     prompt: "Run git status?",
-    trustTarget: "shell:git status",
+    rememberTarget: { kind: "shell", command: "git status" },
     subagentSessionId: "subagent-123",
   });
 
   assert.equal(mapped.subagentSessionId, "subagent-123");
   assert.equal(mapped.toolName, "shell");
+  assert.deepEqual(mapped.rememberTarget, { kind: "shell", command: "git status" });
 });
 
 test("mapPendingToolApproval omits blank subagentSessionId", () => {

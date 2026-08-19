@@ -19,14 +19,14 @@ export const DEFAULT_HOOK_SESSION_CONTEXT: HookSessionContext = {
   model: undefined,
 };
 
-export function resolveHookSessionContext<Config, State, ToolRequest, TrustTarget = string>(
-  options: AgentRuntimeOptions<Config, State, ToolRequest, TrustTarget>,
+export function resolveHookSessionContext<Config, State, ToolRequest>(
+  options: AgentRuntimeOptions<Config, State, ToolRequest>,
 ): HookSessionContext {
   return options.hookSessionContext ?? DEFAULT_HOOK_SESSION_CONTEXT;
 }
 
-export function resolveHookRunner<Config, State, ToolRequest, TrustTarget = string>(
-  options: AgentRuntimeOptions<Config, State, ToolRequest, TrustTarget>,
+export function resolveHookRunner<Config, State, ToolRequest>(
+  options: AgentRuntimeOptions<Config, State, ToolRequest>,
 ): HookRunner | undefined {
   return options.hookRunner;
 }
@@ -108,8 +108,8 @@ export async function runSessionEndHook(
   });
 }
 
-export async function runPreToolUseHook<Config, State, ToolRequest, TrustTarget = string>(
-  options: AgentRuntimeOptions<Config, State, ToolRequest, TrustTarget>,
+export async function runPreToolUseHook<Config, State, ToolRequest>(
+  options: AgentRuntimeOptions<Config, State, ToolRequest>,
   call: ToolCallRequest,
   toolInput: JsonObject,
 ): Promise<HookRunResult> {
@@ -139,8 +139,8 @@ export async function runPreToolUseHook<Config, State, ToolRequest, TrustTarget 
   return result;
 }
 
-export async function runPostToolUseHook<Config, State, ToolRequest, TrustTarget = string>(
-  options: AgentRuntimeOptions<Config, State, ToolRequest, TrustTarget>,
+export async function runPostToolUseHook<Config, State, ToolRequest>(
+  options: AgentRuntimeOptions<Config, State, ToolRequest>,
   input: Omit<PostToolUseHookInput, "hookEventName" | "timestamp" | keyof HookSessionContext>,
 ): Promise<HookRunResult> {
   const hookRunner = resolveHookRunner(options);
@@ -163,8 +163,8 @@ export async function runPostToolUseHook<Config, State, ToolRequest, TrustTarget
   });
 }
 
-export async function runSubmitPromptHook<Config, State, ToolRequest, TrustTarget = string>(
-  options: AgentRuntimeOptions<Config, State, ToolRequest, TrustTarget>,
+export async function runSubmitPromptHook<Config, State, ToolRequest>(
+  options: AgentRuntimeOptions<Config, State, ToolRequest>,
   prompt: string,
   messageId: string | undefined = undefined,
 ): Promise<HookRunResult> {
@@ -190,8 +190,8 @@ export async function runSubmitPromptHook<Config, State, ToolRequest, TrustTarge
   return result;
 }
 
-export async function applyUpdatedToolRequest<ToolRequest, TrustTarget = string>(
-  toolExecutor: AgentRuntimeOptions<unknown, unknown, ToolRequest, TrustTarget>["toolExecutor"],
+export async function applyUpdatedToolRequest<ToolRequest>(
+  toolExecutor: AgentRuntimeOptions<unknown, unknown, ToolRequest>["toolExecutor"],
   call: ToolCallRequest,
   updatedInput: JsonObject,
 ): Promise<ToolRequest> {

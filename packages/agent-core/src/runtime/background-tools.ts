@@ -19,8 +19,8 @@ import type {
   RuntimeTurnContext,
 } from "./types.js";
 
-export interface BackgroundToolsRuntime<Config, State, ToolRequest, TrustTarget = string> {
-  options: AgentRuntimeOptions<Config, State, ToolRequest, TrustTarget>;
+export interface BackgroundToolsRuntime<Config, State, ToolRequest> {
+  options: AgentRuntimeOptions<Config, State, ToolRequest>;
   historyStore: LlmMessage[];
   pendingBackgroundToolStatusStore: string | undefined;
   pendingBackgroundToolExecution: PendingBackgroundToolExecution<State, ToolRequest> | undefined;
@@ -68,8 +68,8 @@ export interface BackgroundToolsRuntime<Config, State, ToolRequest, TrustTarget 
   resolveTurnToolState?: (turn: RuntimeTurnContext<ToolRequest>, fallback: State) => State;
 }
 
-function hasOutstandingToolTurnWork<Config, State, ToolRequest, TrustTarget = string>(
-  runtime: BackgroundToolsRuntime<Config, State, ToolRequest, TrustTarget>,
+function hasOutstandingToolTurnWork<Config, State, ToolRequest>(
+  runtime: BackgroundToolsRuntime<Config, State, ToolRequest>,
 ): boolean {
   const flags = runtime.readOutstandingToolTurnFlags?.();
   if (!flags) {
@@ -84,8 +84,8 @@ function hasOutstandingToolTurnWork<Config, State, ToolRequest, TrustTarget = st
 }
 
 /** persistAssistantToolCalls only writes historyStore; the resumed LLM run must rebuild state from history, avoiding pending.state missing assistant tool_calls. */
-function buildBackgroundToolContinuationState<Config, State, ToolRequest, TrustTarget = string>(
-  runtime: BackgroundToolsRuntime<Config, State, ToolRequest, TrustTarget>,
+function buildBackgroundToolContinuationState<Config, State, ToolRequest>(
+  runtime: BackgroundToolsRuntime<Config, State, ToolRequest>,
   pendingUserInput: string,
 ): State {
   return buildToolContinuationStateFromHistory(
@@ -95,8 +95,8 @@ function buildBackgroundToolContinuationState<Config, State, ToolRequest, TrustT
   );
 }
 
-export function startBackgroundToolExecutionAsync<Config, State, ToolRequest, TrustTarget = string>(
-  runtime: BackgroundToolsRuntime<Config, State, ToolRequest, TrustTarget>,
+export function startBackgroundToolExecutionAsync<Config, State, ToolRequest>(
+  runtime: BackgroundToolsRuntime<Config, State, ToolRequest>,
   pendingUserInput: string,
   state: State,
   request: ToolRequest,
@@ -172,13 +172,8 @@ export function startBackgroundToolExecutionAsync<Config, State, ToolRequest, Tr
     });
 }
 
-export function scheduleBackgroundToolExecutionAsync<
-  Config,
-  State,
-  ToolRequest,
-  TrustTarget = string,
->(
-  runtime: BackgroundToolsRuntime<Config, State, ToolRequest, TrustTarget>,
+export function scheduleBackgroundToolExecutionAsync<Config, State, ToolRequest>(
+  runtime: BackgroundToolsRuntime<Config, State, ToolRequest>,
   pendingUserInput: string,
   state: State,
   request: ToolRequest,
@@ -224,8 +219,8 @@ export function scheduleBackgroundToolExecutionAsync<
   );
 }
 
-function startNextDeferredBackgroundToolExecution<Config, State, ToolRequest, TrustTarget = string>(
-  runtime: BackgroundToolsRuntime<Config, State, ToolRequest, TrustTarget>,
+function startNextDeferredBackgroundToolExecution<Config, State, ToolRequest>(
+  runtime: BackgroundToolsRuntime<Config, State, ToolRequest>,
   resumedState: State,
 ): void {
   const next = runtime.deferredBackgroundToolExecutions.shift();
@@ -250,13 +245,8 @@ function startNextDeferredBackgroundToolExecution<Config, State, ToolRequest, Tr
   );
 }
 
-export function startManualBackgroundToolExecution<
-  Config,
-  State,
-  ToolRequest,
-  TrustTarget = string,
->(
-  runtime: BackgroundToolsRuntime<Config, State, ToolRequest, TrustTarget>,
+export function startManualBackgroundToolExecution<Config, State, ToolRequest>(
+  runtime: BackgroundToolsRuntime<Config, State, ToolRequest>,
   request: ToolRequest,
   toolName: string,
 ): string | undefined {
@@ -312,12 +302,9 @@ export function startManualBackgroundToolExecution<
   return statusText;
 }
 
-export async function pollPendingBackgroundToolExecution<
-  Config,
-  State,
-  ToolRequest,
-  TrustTarget = string,
->(runtime: BackgroundToolsRuntime<Config, State, ToolRequest, TrustTarget>): Promise<void> {
+export async function pollPendingBackgroundToolExecution<Config, State, ToolRequest>(
+  runtime: BackgroundToolsRuntime<Config, State, ToolRequest>,
+): Promise<void> {
   const pending = runtime.pendingBackgroundToolExecution;
   if (!pending || pending.output === undefined || pending.failed === undefined) {
     return;
@@ -354,7 +341,7 @@ export async function pollPendingBackgroundToolExecution<
     failed: pending.failed,
   });
   await runPostToolUseSideEffects(
-    runtime as unknown as TurnMachineRuntime<Config, State, ToolRequest, TrustTarget>,
+    runtime as unknown as TurnMachineRuntime<Config, State, ToolRequest>,
     {
       id: pending.toolCallId,
       name: pending.toolName,

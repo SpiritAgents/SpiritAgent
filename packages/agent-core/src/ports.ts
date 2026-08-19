@@ -443,7 +443,6 @@ export interface AppPaths {
   workspaceRoot(): string;
   configFile(): string;
   chatsDir(): string;
-  permissionsFile(): string;
   logFile(): string;
 }
 
@@ -565,10 +564,15 @@ export interface SubagentRequest {
   worktree?: boolean;
 }
 
-export type AuthorizationDecision<TrustTarget = string> =
+export type PermissionMemoryTarget =
+  | { kind: "shell"; command: string }
+  | { kind: "read_file"; path: string };
+
+export type AuthorizationDecision =
   | { kind: "allowed" }
-  | { kind: "need-approval"; prompt: string; trustTarget?: TrustTarget }
-  | { kind: "need-questions"; questions: AskQuestionsRequest };
+  | { kind: "need-approval"; prompt: string; rememberTarget?: PermissionMemoryTarget }
+  | { kind: "need-questions"; questions: AskQuestionsRequest }
+  | { kind: "denied"; reason: string };
 
 export interface ToolRequestExecutionMetadata {
   toolCallId?: string;
@@ -582,7 +586,6 @@ export interface ToolRequestExecutionMetadata {
 
 export interface ToolExecutor<
   ToolRequest = unknown,
-  TrustTarget = string,
   McpServer = unknown,
   McpTool = unknown,
   McpResource = unknown,
@@ -597,8 +600,8 @@ export interface ToolExecutor<
   setPlanModeToolExposure?(planMode: boolean): void;
   parseCommand(message: string): Promise<ToolRequest>;
   requestFromFunctionCall(name: string, argumentsJson: string): Promise<ToolRequest>;
-  authorize(request: ToolRequest): Promise<AuthorizationDecision<TrustTarget>>;
-  trust(target: TrustTarget): Promise<void>;
+  authorize(request: ToolRequest): Promise<AuthorizationDecision>;
+  rememberApproval(target: PermissionMemoryTarget, scope: "session" | "config"): Promise<void>;
   execute(request: ToolRequest): Promise<ToolExecutionOutput>;
   attachRequestMetadata?(request: ToolRequest, metadata: ToolRequestExecutionMetadata): ToolRequest;
   continueAfterQuestions?(

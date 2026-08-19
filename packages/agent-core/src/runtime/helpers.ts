@@ -37,14 +37,9 @@ export function createTurnContext<ToolRequest>(): RuntimeTurnContext<ToolRequest
   };
 }
 
-export function buildToolContinuationStateFromHistory<
-  Config,
-  State,
-  ToolRequest,
-  TrustTarget = string,
->(
+export function buildToolContinuationStateFromHistory<Config, State, ToolRequest>(
   options: Pick<
-    AgentRuntimeOptions<Config, State, ToolRequest, TrustTarget>,
+    AgentRuntimeOptions<Config, State, ToolRequest>,
     "createContinuationState" | "createToolAgentState"
   >,
   historyStore: readonly LlmMessage[],
@@ -55,14 +50,9 @@ export function buildToolContinuationStateFromHistory<
     : options.createToolAgentState([...historyStore], pendingUserInput);
 }
 
-export function resolveFinalAssistantHistoryMessage<
-  Config,
-  State,
-  ToolRequest,
-  TrustTarget = string,
->(
+export function resolveFinalAssistantHistoryMessage<Config, State, ToolRequest>(
   options: Pick<
-    AgentRuntimeOptions<Config, State, ToolRequest, TrustTarget>,
+    AgentRuntimeOptions<Config, State, ToolRequest>,
     "finalAssistantHistoryMessageFromState"
   >,
   state: State,
@@ -76,18 +66,18 @@ export function resolveFinalAssistantHistoryMessage<
   );
 }
 
-interface DeferredUserGuidanceRuntime<State, ToolRequest, TrustTarget = string> {
+interface DeferredUserGuidanceRuntime<State, ToolRequest> {
   options: Pick<
-    AgentRuntimeOptions<unknown, State, ToolRequest, TrustTarget>,
+    AgentRuntimeOptions<unknown, State, ToolRequest>,
     "appendUserLlmMessage" | "appendUserMessage" | "createToolAgentState"
   >;
   historyStore: LlmMessage[];
   pendingUserTurnStore: string | undefined;
 }
 
-interface LoopContinuationGuidanceRuntime<State, ToolRequest, TrustTarget = string> {
+interface LoopContinuationGuidanceRuntime<State, ToolRequest> {
   options: Pick<
-    AgentRuntimeOptions<unknown, State, ToolRequest, TrustTarget>,
+    AgentRuntimeOptions<unknown, State, ToolRequest>,
     "appendUserMessage" | "createToolAgentState"
   >;
   historyStore: LlmMessage[];
@@ -233,8 +223,8 @@ export function toolArtifactsFromOutput(
   return artifacts.length > 0 ? artifacts : undefined;
 }
 
-export function applyDeferredUserGuidance<State, ToolRequest, TrustTarget = string>(
-  runtime: DeferredUserGuidanceRuntime<State, ToolRequest, TrustTarget>,
+export function applyDeferredUserGuidance<State, ToolRequest>(
+  runtime: DeferredUserGuidanceRuntime<State, ToolRequest>,
   state: State,
   pendingUserInput: string,
   turn: RuntimeTurnContext<ToolRequest>,
@@ -292,8 +282,8 @@ export function applyDeferredUserGuidance<State, ToolRequest, TrustTarget = stri
   };
 }
 
-export function appendLoopContinuationGuidance<State, ToolRequest, TrustTarget = string>(
-  runtime: LoopContinuationGuidanceRuntime<State, ToolRequest, TrustTarget>,
+export function appendLoopContinuationGuidance<State, ToolRequest>(
+  runtime: LoopContinuationGuidanceRuntime<State, ToolRequest>,
   state: State,
   originalUserInput: string,
 ): State {

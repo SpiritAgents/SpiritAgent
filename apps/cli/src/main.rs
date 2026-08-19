@@ -23,9 +23,10 @@ use spirit_agent::tui::InlineRecreate;
 use spirit_agent::view::MarketplaceFlowStep;
 use spirit_agent::{
     ConfigCommand, ExtensionCommand, GlobalCliOptions, HookCommand, KeyCommand, MarketplaceCommand,
-    McpCommand, ModelAddCommand, ModelCommand, TuiShell, bootstrap_config, handle_config_cli,
-    handle_extension_cli, handle_hooks_cli, handle_mcp_cli, handle_model_cli, logging,
-    print_skills_stub, resolve_session_tui_mode, run_headless_prompt, run_serve, tui, ui,
+    McpCommand, ModelAddCommand, ModelCommand, PermissionCommand, TuiShell, bootstrap_config,
+    handle_config_cli, handle_extension_cli, handle_hooks_cli, handle_mcp_cli, handle_model_cli,
+    handle_permissions_cli, logging, print_skills_stub, resolve_session_tui_mode,
+    run_headless_prompt, run_serve, tui, ui,
 };
 
 const MAX_EVENT_BATCH_PER_TICK: usize = 2048;
@@ -104,6 +105,10 @@ enum Commands {
     Hooks {
         #[command(subcommand)]
         action: HookAction,
+    },
+    Permissions {
+        #[command(subcommand)]
+        action: PermissionAction,
     },
 }
 
@@ -249,6 +254,25 @@ enum HookAction {
 }
 
 #[derive(Subcommand)]
+enum PermissionAction {
+    /// Check a shell command or read_file path against the permission allowlist.
+    /// Rule evaluation runs daemon-side, so a reachable Spirit daemon is required.
+    Check {
+        /// Shell command to check
+        #[arg(
+            long,
+            value_name = "command",
+            conflicts_with = "read_file",
+            required_unless_present = "read_file"
+        )]
+        shell: Option<String>,
+        /// read_file path to check
+        #[arg(long, value_name = "path")]
+        read_file: Option<String>,
+    },
+}
+
+#[derive(Subcommand)]
 enum ExtensionAction {
     List,
     Import {
@@ -324,6 +348,9 @@ fn main() -> Result<()> {
         Some(Commands::Config { action }) => handle_config_cli(into_config_command(action))?,
         Some(Commands::Mcp { action }) => handle_mcp_cli(into_mcp_command(action))?,
         Some(Commands::Hooks { action }) => handle_hooks_cli(into_hook_command(action))?,
+        Some(Commands::Permissions { action }) => {
+            handle_permissions_cli(into_permission_command(action))?
+        }
         Some(Commands::Extension { action }) => {
             handle_extension_cli(into_extension_command(action))?
         }
@@ -455,6 +482,14 @@ fn into_hook_command(action: HookAction) -> HookCommand {
     match action {
         HookAction::List { workspace } => HookCommand::List { workspace },
         HookAction::Validate { workspace } => HookCommand::Validate { workspace },
+    }
+}
+
+fn into_permission_command(action: PermissionAction) -> PermissionCommand {
+    match action {
+        PermissionAction::Check { shell, read_file } => {
+            PermissionCommand::Check { shell, read_file }
+        }
     }
 }
 

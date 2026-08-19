@@ -3,7 +3,6 @@ use std::{env, path::PathBuf};
 
 use crate::{
     chat_store, logging,
-    mcp::spirit_agent_data_dir,
     model_registry::{
         AppConfig, config_file_path, has_model_api_key, keyring_entry, load_config,
         load_group_api_key_from_keyring, remove_model_api_key, save_config, save_group_api_key,
@@ -11,8 +10,6 @@ use crate::{
     },
     ports::{AppPaths, ChatArchive, ChatRepository, ConfigStore, SecretStore},
 };
-
-const PERMISSIONS_FILE: &str = "tool-permissions.json";
 
 pub struct DefaultAppPaths {
     workspace_root: PathBuf,
@@ -43,10 +40,6 @@ impl AppPaths for DefaultAppPaths {
 
     fn chats_dir(&self) -> PathBuf {
         chat_store::chat_dir_path()
-    }
-
-    fn permissions_file(&self) -> PathBuf {
-        spirit_agent_data_dir().join(PERMISSIONS_FILE)
     }
 
     fn log_file(&self) -> PathBuf {

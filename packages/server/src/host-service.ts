@@ -1,3 +1,7 @@
+import { realpathSync } from "node:fs";
+import { homedir } from "node:os";
+import path from "node:path";
+
 import type { JsonValue } from "@spiritagent/agent-core";
 import type { SpiritAgentMode } from "@spiritagent/agent-core";
 import {
@@ -7,14 +11,18 @@ import {
   deleteHookEntry,
   discoverRuleEntries,
   discoverSkillEntries,
+  evaluateReadFilePermission,
+  evaluateShellPermission,
   listCachedWorkspaceFileReferenceSuggestions,
   listHookListItems,
+  loadPermissionConfig,
   planMetadataSnapshot,
   primeWorkspaceFileReferenceIndexCache,
   resolveInstructionPaths,
   saveHookEntry,
   saveToggleState,
   validateHooksConfig,
+  type PermissionEvalResult,
 } from "@spiritagent/host-internal";
 
 import {
@@ -157,6 +165,38 @@ export class HostService {
         }
         await deleteHookEntry({ ...context, workspaceBinding }, request);
         return { ok: true };
+      }
+
+      // --------------------------------------------------------- permissions
+      case "host.checkPermission": {
+        const domain = params["domain"];
+        if (domain !== "shell" && domain !== "read_file") {
+          throw new Error('invalid domain (expected "shell" | "read_file")');
+        }
+        const value = typeof params["value"] === "string" ? params["value"].trim() : "";
+        if (!value) {
+          throw new Error("missing value");
+        }
+        const workspaceRoot =
+          typeof params["workspaceRoot"] === "string" && params["workspaceRoot"].trim()
+            ? params["workspaceRoot"]
+            : undefined;
+        const { config, warnings } = loadPermissionConfig(this.spiritDataDir);
+        if (domain === "shell") {
+          const result: HostCheckPermissionResult = {
+            ...evaluateShellPermission(value, config.shell ?? {}),
+            warnings,
+          };
+          return result;
+        }
+        const filePath = normalizeReadFileCheckPath(value, workspaceRoot);
+        const result: HostCheckPermissionResult = {
+          ...evaluateReadFilePermission(filePath, config.read_file ?? {}, {
+            workspaceRoot: workspaceRoot ?? process.cwd(),
+          }),
+          warnings,
+        };
+        return result;
       }
 
       // --------------------------------------------------------- extensions
@@ -319,6 +359,29 @@ export class HostService {
   }
 }
 
+export type HostCheckPermissionResult = PermissionEvalResult & { warnings: string[] };
+
+/**
+ * Best-effort path normalization for the offline read_file checker (NOT the
+ * enforcement path): expands a leading `~`, resolves relative input against
+ * the workspace root (or cwd), and canonicalizes via realpath when the path
+ * exists. Non-existent paths keep the resolved form.
+ */
+function normalizeReadFileCheckPath(value: string, workspaceRoot: string | undefined): string {
+  let normalized = value;
+  if (normalized === "~" || normalized.startsWith("~/") || normalized.startsWith("~\\")) {
+    normalized = homedir() + normalized.slice(1);
+  }
+  if (!path.isAbsolute(normalized)) {
+    normalized = path.resolve(workspaceRoot ?? process.cwd(), normalized);
+  }
+  try {
+    return realpathSync.native(normalized);
+  } catch {
+    return normalized;
+  }
+}
+
 export const HOST_METHODS = new Set([
   "host.loadCliMetadata",
   "host.loadPlanMetadata",
@@ -330,6 +393,7 @@ export const HOST_METHODS = new Set([
   "host.listHookEntries",
   "host.saveHookEntry",
   "host.deleteHookEntry",
+  "host.checkPermission",
   "host.listExtensions",
   "host.importExtension",
   "host.deleteExtension",

@@ -3,6 +3,7 @@ import type {
   PendingMcpResource,
   PendingToolApprovalSnapshot,
 } from "../types.js";
+import type { PermissionMemoryTarget } from "@spiritagent/agent-core";
 import type { DesktopToolRequest } from "./contracts.js";
 import { displayTitleForTool, stripReasonLineFromShellPrompt } from "./message-ordering.js";
 
@@ -36,14 +37,14 @@ export function mapPendingToolApproval(input: {
   toolName: string;
   request: DesktopToolRequest;
   prompt: string;
-  trustTarget?: unknown;
+  rememberTarget?: PermissionMemoryTarget;
   subagentSessionId?: string;
   autoReviewBlockReason?: string;
 }): PendingToolApprovalSnapshot {
   return {
     toolName: displayTitleForTool(input.toolName, input.request),
     prompt: stripReasonLineFromShellPrompt(input.toolName, input.prompt),
-    ...(typeof input.trustTarget === "string" ? { trustTarget: input.trustTarget } : {}),
+    ...(input.rememberTarget !== undefined ? { rememberTarget: input.rememberTarget } : {}),
     ...(typeof input.subagentSessionId === "string" && input.subagentSessionId.trim()
       ? { subagentSessionId: input.subagentSessionId.trim() }
       : {}),

@@ -1423,9 +1423,7 @@ function displayPathForReadFile(path: string): string {
 }
 
 export function toolMessageKey(
-  pending:
-    | RuntimePendingApproval<DesktopToolRequest, string>
-    | RuntimePendingQuestions<DesktopToolRequest>,
+  pending: RuntimePendingApproval<DesktopToolRequest> | RuntimePendingQuestions<DesktopToolRequest>,
 ): string {
   return "toolCallId" in pending && pending.toolCallId
     ? pending.toolCallId

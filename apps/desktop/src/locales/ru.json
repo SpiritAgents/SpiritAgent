@@ -788,7 +788,7 @@
     "submitAnswers": "Отправить ответы",
     "allow": "Разрешить",
     "autoReviewBlockReason": "Заблокировано: {{reason}}",
-    "alwaysTrust": "Всегда доверять",
+    "alwaysAllow": "Всегда разрешать",
     "deny": "Запретить",
     "approvalGuidancePlaceholder": "Инструкции для модели при необходимости корректировок",
     "sendGuidance": "Отправить указания",

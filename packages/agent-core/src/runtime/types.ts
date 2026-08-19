@@ -9,6 +9,7 @@ import type {
   LlmTokenUsage,
   LlmStreamEvent,
   LlmTransport,
+  PermissionMemoryTarget,
   SubagentSessionArchiveEntry,
   SubagentSessionStatus,
   ToolAgentRoundCompletion,
@@ -85,12 +86,12 @@ export interface PendingEarlyToolExecution<ToolRequest> {
 }
 
 /** Single-slot early approval: head shows as pendingApproval; rest wait here. */
-export interface EarlyStreamApprovalQueueItem<State, ToolRequest, TrustTarget = string> {
+export interface EarlyStreamApprovalQueueItem<State, ToolRequest> {
   pendingUserInput: string;
   state: State;
   request: ToolRequest;
   prompt: string;
-  trustTarget?: TrustTarget;
+  rememberTarget?: PermissionMemoryTarget;
   autoReviewBlockReason?: string;
   toolCallId: string;
   toolName: string;
@@ -176,7 +177,7 @@ export type RuntimeEvent<ToolRequest> =
     }
   | {
       kind: "approval-requested";
-      approval: RuntimePendingApproval<ToolRequest, unknown>;
+      approval: RuntimePendingApproval<ToolRequest>;
     }
   | {
       kind: "questions-requested";
@@ -234,10 +235,10 @@ export type RuntimeEvent<ToolRequest> =
       kind: "turn-error-retry-cleared";
     };
 
-export interface RuntimePendingApproval<ToolRequest, TrustTarget> {
+export interface RuntimePendingApproval<ToolRequest> {
   prompt: string;
   request: ToolRequest;
-  trustTarget?: TrustTarget;
+  rememberTarget?: PermissionMemoryTarget;
   toolCallId?: string;
   toolName: string;
   subagentSessionId?: string;
@@ -317,11 +318,11 @@ export interface PendingAssistantAux {
 }
 
 export type RuntimeApprovalDecision =
-  | { kind: "allow"; persistTrust?: boolean }
+  | { kind: "allow"; remember?: "session" | "config" }
   | { kind: "deny"; resultText?: string }
   | { kind: "guidance"; userMessage: string; resultText?: string };
 
-export type RuntimeTurnResult<State, ToolRequest, TrustTarget> =
+export type RuntimeTurnResult<State, ToolRequest> =
   | {
       kind: "completed";
       assistantText: string;
@@ -332,7 +333,7 @@ export type RuntimeTurnResult<State, ToolRequest, TrustTarget> =
     }
   | {
       kind: "requires-approval";
-      approval: RuntimePendingApproval<ToolRequest, TrustTarget>;
+      approval: RuntimePendingApproval<ToolRequest>;
       requestTrace: JsonValue[];
       toolExecutions: RuntimeToolExecution<ToolRequest>[];
       compactions: RuntimeCompactionRecord[];
@@ -362,11 +363,11 @@ export interface RuntimeCompletedManualToolCommandResult<ToolRequest> {
   backgroundExecution: boolean;
 }
 
-export type RuntimeManualToolCommandResult<State, ToolRequest, TrustTarget> =
+export type RuntimeManualToolCommandResult<State, ToolRequest> =
   | RuntimeCompletedManualToolCommandResult<ToolRequest>
   | {
       kind: "requires-approval";
-      approval: RuntimePendingApproval<ToolRequest, TrustTarget>;
+      approval: RuntimePendingApproval<ToolRequest>;
     }
   | {
       kind: "denied";
@@ -377,7 +378,7 @@ export type RuntimeManualToolCommandResult<State, ToolRequest, TrustTarget> =
   | {
       kind: "submitted-user-turn";
       userMessage: string;
-      result: RuntimeTurnResult<State, ToolRequest, TrustTarget>;
+      result: RuntimeTurnResult<State, ToolRequest>;
     }
   | {
       kind: "failed";
@@ -385,7 +386,7 @@ export type RuntimeManualToolCommandResult<State, ToolRequest, TrustTarget> =
       request?: ToolRequest;
     };
 
-export type RuntimeManualToolCommandStartResult<_State, ToolRequest, TrustTarget> =
+export type RuntimeManualToolCommandStartResult<_State, ToolRequest> =
   | RuntimeCompletedManualToolCommandResult<ToolRequest>
   | {
       kind: "started-background";
@@ -399,7 +400,7 @@ export type RuntimeManualToolCommandStartResult<_State, ToolRequest, TrustTarget
     }
   | {
       kind: "requires-approval";
-      approval: RuntimePendingApproval<ToolRequest, TrustTarget>;
+      approval: RuntimePendingApproval<ToolRequest>;
     }
   | {
       kind: "denied";
@@ -423,10 +424,10 @@ export type RuntimeManualHistoryCompactionResult =
       error: string;
     };
 
-export interface AgentRuntimeOptions<Config, State, ToolRequest, TrustTarget = string> {
+export interface AgentRuntimeOptions<Config, State, ToolRequest> {
   config: Config;
   llmTransport: LlmTransport<Config, State>;
-  toolExecutor: ToolExecutor<ToolRequest, TrustTarget>;
+  toolExecutor: ToolExecutor<ToolRequest>;
   createToolAgentState: (history: LlmMessage[], userInput: string) => State;
   createContinuationState?: (history: LlmMessage[]) => State;
   appendToolResultMessage: (state: State, toolCallId: string, content: string) => State;
@@ -483,7 +484,7 @@ export interface AgentRuntimeOptions<Config, State, ToolRequest, TrustTarget = s
     workspaceRoot: string,
     userInput: string,
   ) => Promise<PendingWorkspaceFile[]> | PendingWorkspaceFile[];
-  bootstrapSubagentWorkspace?: SubagentWorkspaceBootstrap<ToolRequest, TrustTarget>;
+  bootstrapSubagentWorkspace?: SubagentWorkspaceBootstrap<ToolRequest>;
   getApprovalLevel?: () => import("../auto-approval/types.js").SessionApprovalLevel;
   reviewToolApproval?: import("../auto-approval/types.js").ToolAutoReviewer;
 }
@@ -495,18 +496,18 @@ export interface SubagentWorkspaceBootstrapInput {
   parentWorkspaceRoot: string;
 }
 
-export type SubagentWorkspaceBootstrapResult<ToolRequest = unknown, TrustTarget = string> =
+export type SubagentWorkspaceBootstrapResult<ToolRequest = unknown> =
   | {
       workspaceRoot: string;
       worktreePath?: string;
       branchName?: string;
-      toolExecutor?: ToolExecutor<ToolRequest, TrustTarget>;
+      toolExecutor?: ToolExecutor<ToolRequest>;
     }
   | { error: string };
 
-export type SubagentWorkspaceBootstrap<ToolRequest = unknown, TrustTarget = string> = (
+export type SubagentWorkspaceBootstrap<ToolRequest = unknown> = (
   input: SubagentWorkspaceBootstrapInput,
-) => Promise<SubagentWorkspaceBootstrapResult<ToolRequest, TrustTarget>>;
+) => Promise<SubagentWorkspaceBootstrapResult<ToolRequest>>;
 
 export interface RuntimeTurnContext<ToolRequest> {
   requestTrace: JsonValue[];
@@ -518,12 +519,12 @@ export interface RuntimeTurnContext<ToolRequest> {
   autoReviewCache: AutoReviewCache;
 }
 
-export interface PendingApprovalState<State, ToolRequest, TrustTarget> {
+export interface PendingApprovalState<State, ToolRequest> {
   pendingUserInput: string;
   state: State;
   request: ToolRequest;
   prompt: string;
-  trustTarget?: TrustTarget;
+  rememberTarget?: PermissionMemoryTarget;
   autoReviewBlockReason?: string;
   toolCallId: string;
   toolName: string;
@@ -564,10 +565,10 @@ export interface PendingToolCallContinuation<State, ToolRequest> {
   earlyToolExecutions?: Map<string, PendingEarlyToolExecution<ToolRequest>>;
 }
 
-export interface PendingManualApprovalState<ToolRequest, TrustTarget> {
+export interface PendingManualApprovalState<ToolRequest> {
   request: ToolRequest;
   prompt: string;
-  trustTarget?: TrustTarget;
+  rememberTarget?: PermissionMemoryTarget;
   toolName: string;
   autoReviewBlockReason?: string;
 }

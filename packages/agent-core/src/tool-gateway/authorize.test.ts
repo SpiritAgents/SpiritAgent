@@ -35,7 +35,8 @@ test("authorizeLazyToolGatewayRequest requires approval for tool_call under defa
   if (decision.kind === "need-approval") {
     assert.match(decision.prompt, /msftlearn/u);
     assert.match(decision.prompt, /microsoft_docs_search/u);
-    assert.equal(decision.trustTarget, "mcp:msftlearn:microsoft_docs_search");
+    // No MCP permission domain in v1: lazy-gateway approvals carry no remember target.
+    assert.equal(decision.rememberTarget, undefined);
   }
 });
 
@@ -65,7 +66,7 @@ test("authorizeLazyToolGatewayRequest requires approval for built-in tool_call u
   if (decision.kind === "need-approval") {
     assert.match(decision.prompt, /built-in tool_call/u);
     assert.match(decision.prompt, /create_automation/u);
-    assert.equal(decision.trustTarget, "built-in:desktop:create_automation");
+    assert.equal(decision.rememberTarget, undefined);
   }
 });
 

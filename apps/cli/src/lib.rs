@@ -26,6 +26,8 @@ pub mod model_catalog_display;
 pub mod model_provider_presets;
 pub mod model_registry;
 pub mod openai_models_list;
+pub mod permissions;
+pub mod permissions_types;
 pub mod plan;
 pub mod ports;
 #[cfg(feature = "tui")]
@@ -58,8 +60,8 @@ rust_i18n::i18n!("locales", fallback = "en");
 
 pub use cli::{
     ConfigCommand, ExtensionCommand, HookCommand, KeyCommand, MarketplaceCommand, McpCommand,
-    ModelAddCommand, ModelCommand, handle_config_cli, handle_extension_cli, handle_hooks_cli,
-    handle_mcp_cli, handle_model_cli,
+    ModelAddCommand, ModelCommand, PermissionCommand, handle_config_cli, handle_extension_cli,
+    handle_hooks_cli, handle_mcp_cli, handle_model_cli, handle_permissions_cli,
 };
 pub use cli_bootstrap::{
     GlobalCliOptions, bootstrap_config, print_skills_stub, resolve_session_tui_mode,

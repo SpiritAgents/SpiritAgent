@@ -30,6 +30,7 @@ export * from "./bedrock-mantle.js";
 export * from "./model-provider-presets.js";
 export * from "./config-v2.js";
 export * from "./credentials/index.js";
+export * from "./permissions/index.js";
 export * from "./provider-setup.js";
 export * from "./resolve-transport.js";
 export * from "./model-display-name.js";

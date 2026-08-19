@@ -37,8 +37,8 @@ export function createAiSdkOpenAiDemoRuntime(options: {
   });
 }
 
-export async function pollRuntimeUntilIdle<Config, State, ToolRequest, TrustTarget = string>(
-  runtime: AgentRuntime<Config, State, ToolRequest, TrustTarget>,
+export async function pollRuntimeUntilIdle<Config, State, ToolRequest>(
+  runtime: AgentRuntime<Config, State, ToolRequest>,
   timeoutMs = 60_000,
   pollIntervalMs = 50,
 ): Promise<boolean> {

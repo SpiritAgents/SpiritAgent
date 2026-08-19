@@ -693,8 +693,8 @@ class EvalHostToolExecutor {
     return { kind: 'allowed' };
   }
 
-  trust(target) {
-    return this.service.trust(target);
+  rememberApproval(target, scope) {
+    return this.service.rememberApproval(target, scope);
   }
 
   async execute(request) {

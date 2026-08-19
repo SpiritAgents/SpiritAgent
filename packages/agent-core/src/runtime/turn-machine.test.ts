@@ -934,7 +934,7 @@ function createStubHookRunner(preToolUse: HookRunner["runPreToolUse"]): HookRunn
   };
 }
 
-test("processToolCalls hook allow bypasses host need-approval", async () => {
+test("processToolCalls hook allow does not bypass host need-approval", async () => {
   const state = { messages: [] as Array<{ role: string; content: string }>, steps: 0 };
   let performExecutionCount = 0;
   const runtime = {
@@ -1016,8 +1016,9 @@ test("processToolCalls hook allow bypasses host need-approval", async () => {
     createTurnContext(),
   );
 
-  assert.equal(result.kind, "completed");
-  assert.equal(performExecutionCount, 1);
+  // Hook "allow" can only tighten or keep the host decision, never skip host approval.
+  assert.equal(result.kind, "requires-approval");
+  assert.equal(performExecutionCount, 0);
 });
 
 test("processToolCalls auto-approval reviewer allow skips manual approval", async () => {
@@ -1869,7 +1870,7 @@ function buildAgentRuntimeOptions(
       ...(JSON.parse(argumentsJson || "{}") as { summary?: string }),
     }),
     authorize: async () => ({ kind: "allowed" as const }),
-    trust: async () => {},
+    rememberApproval: async () => {},
     execute: async () => ({ content: [], summaryText: "" }),
     startMcpBackgroundRefresh: () => {},
     mcpStatusSnapshot: () => ({
@@ -2468,4 +2469,62 @@ test("startEarlyToolExecution shows approvals in start order even when a later a
   runtime.pendingApproval = undefined;
   assert.equal((await first!.outcome)?.kind, "completed");
   assert.equal((await second!.outcome)?.kind, "completed");
+});
+
+test("processToolCalls commits a synthetic failure when the permission rule denies the call", async () => {
+  const runtime = new AgentRuntime(
+    buildAgentRuntimeOptions(
+      [
+        { kind: "tool", id: "call_shell", name: "shell", argumentsJson: '{"command":"rm -rf /"}' },
+        { kind: "final", text: "done" },
+      ],
+      {
+        authorize: async () => ({
+          kind: "denied" as const,
+          reason: "shell is disabled by rule",
+        }),
+      },
+    ),
+  );
+
+  const result = await runtime.submitUserTurn("cleanup");
+  assert.equal(result.kind, "completed");
+  if (result.kind !== "completed") {
+    return;
+  }
+  const denial = result.toolExecutions.find((execution) => execution.toolCallId === "call_shell");
+  assert.ok(denial);
+  assert.equal(denial.failed, true);
+  assert.equal(denial.output, "[denied by permission rule] shell is disabled by rule");
+});
+
+test("continuePendingApproval routes remember session/config into rememberApproval", async () => {
+  for (const scope of ["session", "config"] as const) {
+    const remembered: Array<{ target: unknown; scope: string }> = [];
+    const runtime = new AgentRuntime(
+      buildAgentRuntimeOptions(
+        [
+          { kind: "tool", id: "call_ls", name: "ls", argumentsJson: '{"path":"/tmp"}' },
+          { kind: "final", text: "done" },
+        ],
+        {
+          authorize: async () => ({
+            kind: "need-approval" as const,
+            prompt: "approve ls",
+            rememberTarget: { kind: "read_file", path: "/tmp" },
+          }),
+          rememberApproval: async (target: unknown, rememberScope: string) => {
+            remembered.push({ target, scope: rememberScope });
+          },
+        },
+      ),
+    );
+
+    const result = await runtime.submitUserTurn("list tmp");
+    assert.equal(result.kind, "requires-approval");
+
+    await runtime.continuePendingApproval({ kind: "allow", remember: scope });
+
+    assert.deepEqual(remembered, [{ target: { kind: "read_file", path: "/tmp" }, scope }]);
+  }
 });

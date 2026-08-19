@@ -9,12 +9,15 @@ import {
 import { HookDeniedError } from "./errors.js";
 import type { HookRunner } from "./types.js";
 
-test("resolveApprovalGateAfterAuthorize skips host approval when hook allow bypasses", () => {
+test("resolveApprovalGateAfterAuthorize keeps host approval when hook allows", () => {
   const gate = resolveApprovalGateAfterAuthorize(
-    { kind: "ready", request: { name: "grep" }, hookBypassApproval: true },
+    { kind: "ready", request: { name: "grep" } },
     { kind: "need-approval", prompt: "approve grep?" },
   );
-  assert.equal(gate, null);
+  assert.deepEqual(gate, {
+    kind: "needs-approval",
+    gate: { prompt: "approve grep?", rememberTarget: undefined },
+  });
 });
 
 test("resolveApprovalGateAfterAuthorize keeps host approval without hook bypass", () => {
@@ -22,7 +25,10 @@ test("resolveApprovalGateAfterAuthorize keeps host approval without hook bypass"
     { kind: "ready", request: { name: "grep" } },
     { kind: "need-approval", prompt: "approve grep?" },
   );
-  assert.deepEqual(gate, { prompt: "approve grep?", trustTarget: undefined });
+  assert.deepEqual(gate, {
+    kind: "needs-approval",
+    gate: { prompt: "approve grep?", rememberTarget: undefined },
+  });
 });
 
 test("resolveApprovalGateAfterAuthorize prefers hook ask prompt", () => {
@@ -30,7 +36,52 @@ test("resolveApprovalGateAfterAuthorize prefers hook ask prompt", () => {
     { kind: "needs-approval", request: { name: "grep" }, prompt: "hook says ask" },
     { kind: "allowed" },
   );
-  assert.deepEqual(gate, { prompt: "hook says ask", trustTarget: undefined });
+  assert.deepEqual(gate, {
+    kind: "needs-approval",
+    gate: { prompt: "hook says ask", rememberTarget: undefined },
+  });
+});
+
+test("resolveApprovalGateAfterAuthorize keeps hook ask prompt when both hook and allowlist ask", () => {
+  const gate = resolveApprovalGateAfterAuthorize(
+    { kind: "needs-approval", request: { name: "grep" }, prompt: "hook says ask" },
+    {
+      kind: "need-approval",
+      prompt: "host prompt",
+      rememberTarget: { kind: "shell", command: "grep x" },
+    },
+  );
+  assert.deepEqual(gate, {
+    kind: "needs-approval",
+    gate: {
+      prompt: "hook says ask",
+      rememberTarget: { kind: "shell", command: "grep x" },
+    },
+  });
+});
+
+test("resolveApprovalGateAfterAuthorize denies on allowlist deny even when hook allows", () => {
+  const gate = resolveApprovalGateAfterAuthorize(
+    { kind: "ready", request: { name: "shell" } },
+    { kind: "denied", reason: "shell is denied by rule" },
+  );
+  assert.deepEqual(gate, { kind: "denied", reason: "shell is denied by rule" });
+});
+
+test("resolveApprovalGateAfterAuthorize denies on allowlist deny when hook asks", () => {
+  const gate = resolveApprovalGateAfterAuthorize(
+    { kind: "needs-approval", request: { name: "shell" }, prompt: "hook says ask" },
+    { kind: "denied", reason: "shell is denied by rule" },
+  );
+  assert.deepEqual(gate, { kind: "denied", reason: "shell is denied by rule" });
+});
+
+test("resolveApprovalGateAfterAuthorize proceeds when hook and allowlist both allow", () => {
+  const gate = resolveApprovalGateAfterAuthorize(
+    { kind: "ready", request: { name: "grep" } },
+    { kind: "allowed" },
+  );
+  assert.equal(gate, null);
 });
 
 test("runPreToolUseGate maps hook ask to needs-approval", async () => {
@@ -90,7 +141,7 @@ test("runPreToolUseGate maps hook ask to needs-approval", async () => {
   }
 });
 
-test("runPreToolUseGate maps hook allow to bypass approval", async () => {
+test("runPreToolUseGate maps hook allow to ready without bypassing host approval", async () => {
   const runner: HookRunner = {
     runSessionStart: async () => {
       throw new Error("unused");
@@ -143,7 +194,9 @@ test("runPreToolUseGate maps hook allow to bypass approval", async () => {
 
   assert.equal(gate.kind, "ready");
   if (gate.kind === "ready") {
-    assert.equal(gate.hookBypassApproval, true);
+    // The hook-allow bypass flag was removed: a ready gate must carry no
+    // approval-skipping marker, only the kind and the tool request.
+    assert.deepEqual(Object.keys(gate).sort(), ["kind", "request"]);
   }
 });
 

@@ -5,13 +5,8 @@ import { syncPreparedToolResultContentToHistory } from "./tool-execution.js";
 import type { AgentRuntimeOptions } from "./types.js";
 import type { LlmMessage } from "../ports.js";
 
-export async function prepareRuntimeToolResultContentForAppend<
-  Config,
-  State,
-  ToolRequest,
-  TrustTarget = string,
->(
-  options: AgentRuntimeOptions<Config, State, ToolRequest, TrustTarget>,
+export async function prepareRuntimeToolResultContentForAppend<Config, State, ToolRequest>(
+  options: AgentRuntimeOptions<Config, State, ToolRequest>,
   toolCallId: string,
   content: string,
 ): Promise<string> {
@@ -26,14 +21,9 @@ export async function prepareRuntimeToolResultContentForAppend<
   });
 }
 
-export async function prepareAndSyncRuntimeToolResultToHistory<
-  Config,
-  State,
-  ToolRequest,
-  TrustTarget = string,
->(
+export async function prepareAndSyncRuntimeToolResultToHistory<Config, State, ToolRequest>(
   runtime: {
-    options: AgentRuntimeOptions<Config, State, ToolRequest, TrustTarget>;
+    options: AgentRuntimeOptions<Config, State, ToolRequest>;
     historyStore: LlmMessage[];
   },
   toolCallId: string,

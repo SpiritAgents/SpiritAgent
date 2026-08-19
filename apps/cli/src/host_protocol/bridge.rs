@@ -146,12 +146,23 @@ pub(crate) struct BridgeAssistantAuxEntry {
     pub(crate) finish_task_notice: Option<String>,
 }
 
+/// Target the user can remember when approving a tool call (wire field
+/// `rememberTarget`); tagged union mirroring the daemon's `PermissionMemoryTarget`.
+#[derive(Clone, Debug, Serialize, Deserialize)]
+#[serde(tag = "kind")]
+pub(crate) enum BridgePermissionMemoryTarget {
+    #[serde(rename = "shell")]
+    Shell { command: String },
+    #[serde(rename = "read_file")]
+    ReadFile { path: String },
+}
+
 #[derive(Clone, Debug, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub(crate) struct BridgePendingApproval {
     pub(crate) prompt: String,
     pub(crate) request: Value,
-    pub(crate) trust_target: Option<Value>,
+    pub(crate) remember_target: Option<BridgePermissionMemoryTarget>,
     pub(crate) tool_call_id: Option<String>,
     pub(crate) tool_name: String,
     pub(crate) subagent_session_id: Option<String>,

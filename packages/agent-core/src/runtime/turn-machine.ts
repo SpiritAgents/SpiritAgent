@@ -6,6 +6,7 @@ import type {
   JsonObject,
   JsonValue,
   LlmMessage,
+  PermissionMemoryTarget,
   ToolExecutionOutput,
   ToolAgentRoundCompletion,
   ToolCallRequest,
@@ -85,7 +86,7 @@ export type EarlyInternalToolCallResult =
     }
   | { kind: "defer-to-formal" };
 
-export interface InternalToolCallRuntime<_Config, State, ToolRequest, TrustTarget = string> {
+export interface InternalToolCallRuntime<_Config, State, ToolRequest> {
   maybeExecuteInternalToolCall?: (
     pendingUserInput: string,
     state: State,
@@ -96,7 +97,7 @@ export interface InternalToolCallRuntime<_Config, State, ToolRequest, TrustTarge
     turn: RuntimeTurnContext<ToolRequest>,
     resumeAsStreaming?: boolean,
     streamingEmitBeginResponse?: boolean,
-  ) => Promise<RuntimeTurnResult<State, ToolRequest, TrustTarget> | undefined>;
+  ) => Promise<RuntimeTurnResult<State, ToolRequest> | undefined>;
   maybeContinueInternalToolCallAsync?: (
     pendingUserInput: string,
     state: State,
@@ -115,19 +116,18 @@ export interface InternalToolCallRuntime<_Config, State, ToolRequest, TrustTarge
   ) => Promise<EarlyInternalToolCallResult | undefined>;
 }
 
-export interface TurnMachineRuntime<
+export interface TurnMachineRuntime<Config, State, ToolRequest> extends InternalToolCallRuntime<
   Config,
   State,
-  ToolRequest,
-  TrustTarget = string,
-> extends InternalToolCallRuntime<Config, State, ToolRequest, TrustTarget> {
-  options: AgentRuntimeOptions<Config, State, ToolRequest, TrustTarget>;
+  ToolRequest
+> {
+  options: AgentRuntimeOptions<Config, State, ToolRequest>;
   historyStore: LlmMessage[];
   requestTraceStore: JsonValue[];
   pendingUserTurnStore: string | undefined;
-  pendingApproval: PendingApprovalState<State, ToolRequest, TrustTarget> | undefined;
+  pendingApproval: PendingApprovalState<State, ToolRequest> | undefined;
   /** Single-slot overflow for early-stream approvals while pendingApproval is busy. */
-  earlyApprovalQueue: EarlyStreamApprovalQueueItem<State, ToolRequest, TrustTarget>[];
+  earlyApprovalQueue: EarlyStreamApprovalQueueItem<State, ToolRequest>[];
   /** Suspension point while the formal approval gate waits for the slot; canProceed=false means this turn was terminated (abort/history replacement). */
   pendingApprovalSlotWaiters: Array<(canProceed: boolean) => void>;
   /** FIFO chain tail linking early executions in start order: approval cards are shown in argument-completion order, not authorization-race order. */
@@ -136,7 +136,7 @@ export interface TurnMachineRuntime<
   pendingToolAgentRound: PendingToolAgentRound<State, ToolRequest> | undefined;
   appendTrace(trace: JsonValue[], turn: RuntimeTurnContext<ToolRequest>): void;
   clearStreamingUiState(): void;
-  completeTurn(result: RuntimeTurnResult<State, ToolRequest, TrustTarget>): void;
+  completeTurn(result: RuntimeTurnResult<State, ToolRequest>): void;
   emitEvent(event: RuntimeEvent<ToolRequest>): void;
   recordContextMessage?(role: "system" | "user" | "assistant", content: string): void;
   performToolExecution(
@@ -197,7 +197,7 @@ export interface TurnMachineRuntime<
     streamingEmitBeginResponse?: boolean,
     earlyToolExecutions?: Map<string, PendingEarlyToolExecution<ToolRequest>>,
   ): void;
-  takeCompletedTurnResult(): RuntimeTurnResult<State, ToolRequest, TrustTarget> | undefined;
+  takeCompletedTurnResult(): RuntimeTurnResult<State, ToolRequest> | undefined;
   compactHistoryImmediate(): Promise<RuntimeCompactionRecord>;
   loopEnabled(): boolean;
   isBusy(): boolean;
@@ -212,10 +212,10 @@ export interface EarlyToolExecutionContext<State, ToolRequest> {
   streamingEmitBeginResponse?: boolean;
 }
 
-export async function resumePendingApproval<Config, State, ToolRequest, TrustTarget = string>(
-  runtime: TurnMachineRuntime<Config, State, ToolRequest, TrustTarget>,
+export async function resumePendingApproval<Config, State, ToolRequest>(
+  runtime: TurnMachineRuntime<Config, State, ToolRequest>,
   decision: RuntimeApprovalDecision,
-): Promise<RuntimeTurnResult<State, ToolRequest, TrustTarget>> {
+): Promise<RuntimeTurnResult<State, ToolRequest>> {
   const pending = runtime.pendingApproval;
   if (!pending) {
     throw new Error("There is no pending tool call to confirm.");
@@ -231,8 +231,11 @@ export async function resumePendingApproval<Config, State, ToolRequest, TrustTar
   });
 
   if (decision.kind === "allow") {
-    if (decision.persistTrust && pending.trustTarget !== undefined) {
-      await runtime.options.toolExecutor.trust(pending.trustTarget);
+    if (decision.remember && pending.rememberTarget !== undefined) {
+      await runtime.options.toolExecutor.rememberApproval(
+        pending.rememberTarget,
+        decision.remember,
+      );
     }
 
     return executeAuthorizedToolCall(
@@ -311,10 +314,10 @@ export async function resumePendingApproval<Config, State, ToolRequest, TrustTar
   );
 }
 
-export async function resumePendingQuestions<Config, State, ToolRequest, TrustTarget = string>(
-  runtime: TurnMachineRuntime<Config, State, ToolRequest, TrustTarget>,
+export async function resumePendingQuestions<Config, State, ToolRequest>(
+  runtime: TurnMachineRuntime<Config, State, ToolRequest>,
   result: AskQuestionsResult,
-): Promise<RuntimeTurnResult<State, ToolRequest, TrustTarget>> {
+): Promise<RuntimeTurnResult<State, ToolRequest>> {
   const pending = runtime.pendingQuestions;
   if (!pending) {
     throw new Error("There is no pending question form to answer.");
@@ -335,7 +338,7 @@ export async function resumePendingQuestions<Config, State, ToolRequest, TrustTa
       );
     }
 
-    let authorization: AuthorizationDecision<TrustTarget>;
+    let authorization: AuthorizationDecision;
     try {
       authorization = await runtime.options.toolExecutor.authorize(continuedRequest);
     } catch (error) {
@@ -347,6 +350,15 @@ export async function resumePendingQuestions<Config, State, ToolRequest, TrustTa
       );
     }
 
+    if (authorization.kind === "denied") {
+      return continueAfterQuestionsFailure(
+        runtime,
+        pending,
+        continuedRequest,
+        `[denied by permission rule] ${authorization.reason}`,
+      );
+    }
+
     if (authorization.kind === "need-approval") {
       const activeGate = await applyAutoReviewToApprovalGate(
         runtime.options.getApprovalLevel?.(),
@@ -355,7 +367,7 @@ export async function resumePendingQuestions<Config, State, ToolRequest, TrustTa
         { name: pending.toolName, argumentsJson: pending.argumentsJson },
         {
           prompt: authorization.prompt,
-          trustTarget: authorization.trustTarget,
+          rememberTarget: authorization.rememberTarget,
         },
         undefined,
         pending.toolCallId,
@@ -367,7 +379,7 @@ export async function resumePendingQuestions<Config, State, ToolRequest, TrustTa
           continuedRequest,
           pending.toolCallId,
           pending.toolName,
-          activeGate.trustTarget,
+          activeGate.rememberTarget,
           activeGate.autoReviewBlockReason,
         );
         runtime.pendingApproval = {
@@ -375,7 +387,9 @@ export async function resumePendingQuestions<Config, State, ToolRequest, TrustTa
           state: pending.state,
           request: continuedRequest,
           prompt: activeGate.prompt,
-          ...(activeGate.trustTarget !== undefined ? { trustTarget: activeGate.trustTarget } : {}),
+          ...(activeGate.rememberTarget !== undefined
+            ? { rememberTarget: activeGate.rememberTarget }
+            : {}),
           ...(activeGate.autoReviewBlockReason !== undefined
             ? { autoReviewBlockReason: activeGate.autoReviewBlockReason }
             : {}),
@@ -462,12 +476,12 @@ export async function resumePendingQuestions<Config, State, ToolRequest, TrustTa
   return runTurnLoop(runtime, resumedState, pending.pendingUserInput, pending.turn);
 }
 
-export async function runTurnLoop<Config, State, ToolRequest, TrustTarget = string>(
-  runtime: TurnMachineRuntime<Config, State, ToolRequest, TrustTarget>,
+export async function runTurnLoop<Config, State, ToolRequest>(
+  runtime: TurnMachineRuntime<Config, State, ToolRequest>,
   state: State,
   pendingUserInput: string,
   turn: RuntimeTurnContext<ToolRequest>,
-): Promise<RuntimeTurnResult<State, ToolRequest, TrustTarget>> {
+): Promise<RuntimeTurnResult<State, ToolRequest>> {
   let currentPendingUserInput = pendingUserInput;
   let currentState = state;
   ({ state: currentState, pendingUserInput: currentPendingUserInput } = applyDeferredUserGuidance(
@@ -597,13 +611,13 @@ export async function runTurnLoop<Config, State, ToolRequest, TrustTarget = stri
   }
 }
 
-export async function processToolCalls<Config, State, ToolRequest, TrustTarget = string>(
-  runtime: TurnMachineRuntime<Config, State, ToolRequest, TrustTarget>,
+export async function processToolCalls<Config, State, ToolRequest>(
+  runtime: TurnMachineRuntime<Config, State, ToolRequest>,
   state: State,
   pendingUserInput: string,
   calls: ToolCallRequest[],
   turn: RuntimeTurnContext<ToolRequest>,
-): Promise<RuntimeTurnResult<State, ToolRequest, TrustTarget>> {
+): Promise<RuntimeTurnResult<State, ToolRequest>> {
   let currentState = state;
   const remaining = [...calls];
 
@@ -679,7 +693,7 @@ export async function processToolCalls<Config, State, ToolRequest, TrustTarget =
       continue;
     }
 
-    let authorization: AuthorizationDecision<TrustTarget>;
+    let authorization: AuthorizationDecision;
     try {
       authorization = await runtime.options.toolExecutor.authorize(request);
     } catch (error) {
@@ -689,7 +703,14 @@ export async function processToolCalls<Config, State, ToolRequest, TrustTarget =
       continue;
     }
 
-    const initialGate = resolveApprovalGateAfterAuthorize(preGate, authorization);
+    const gateResolution = resolveApprovalGateAfterAuthorize(preGate, authorization);
+    if (gateResolution?.kind === "denied") {
+      const output = `[denied by permission rule] ${gateResolution.reason}`;
+      commitSyntheticToolExecutionFailure(runtime, turn, request, call.id, call.name, output);
+      currentState = runtime.options.appendToolResultMessage(currentState, call.id, output);
+      continue;
+    }
+    const initialGate = gateResolution?.kind === "needs-approval" ? gateResolution.gate : null;
     const approvalGate = initialGate
       ? await applyAutoReviewToApprovalGate(
           runtime.options.getApprovalLevel?.(),
@@ -708,7 +729,7 @@ export async function processToolCalls<Config, State, ToolRequest, TrustTarget =
         request,
         call.id,
         call.name,
-        approvalGate.trustTarget,
+        approvalGate.rememberTarget,
         approvalGate.autoReviewBlockReason,
       );
       runtime.pendingApproval = {
@@ -716,8 +737,8 @@ export async function processToolCalls<Config, State, ToolRequest, TrustTarget =
         state: currentState,
         request,
         prompt: approvalGate.prompt,
-        ...(approvalGate.trustTarget !== undefined
-          ? { trustTarget: approvalGate.trustTarget }
+        ...(approvalGate.rememberTarget !== undefined
+          ? { rememberTarget: approvalGate.rememberTarget }
           : {}),
         ...(approvalGate.autoReviewBlockReason !== undefined
           ? { autoReviewBlockReason: approvalGate.autoReviewBlockReason }
@@ -790,8 +811,8 @@ export async function processToolCalls<Config, State, ToolRequest, TrustTarget =
   return runTurnLoop(runtime, currentState, pendingUserInput, turn);
 }
 
-async function runPostToolUseForTurnExecution<Config, State, ToolRequest, TrustTarget = string>(
-  runtime: TurnMachineRuntime<Config, State, ToolRequest, TrustTarget>,
+async function runPostToolUseForTurnExecution<Config, State, ToolRequest>(
+  runtime: TurnMachineRuntime<Config, State, ToolRequest>,
   turn: RuntimeTurnContext<ToolRequest>,
   toolCallId: string,
   toolName: string,
@@ -820,8 +841,8 @@ async function runPostToolUseForTurnExecution<Config, State, ToolRequest, TrustT
   );
 }
 
-export async function executeAuthorizedToolCall<Config, State, ToolRequest, TrustTarget = string>(
-  runtime: TurnMachineRuntime<Config, State, ToolRequest, TrustTarget>,
+export async function executeAuthorizedToolCall<Config, State, ToolRequest>(
+  runtime: TurnMachineRuntime<Config, State, ToolRequest>,
   pendingUserInput: string,
   state: State,
   request: ToolRequest,
@@ -831,7 +852,7 @@ export async function executeAuthorizedToolCall<Config, State, ToolRequest, Trus
   turn: RuntimeTurnContext<ToolRequest>,
   toolArgumentsJson = "{}",
   postHookToolInput?: JsonObject,
-): Promise<RuntimeTurnResult<State, ToolRequest, TrustTarget>> {
+): Promise<RuntimeTurnResult<State, ToolRequest>> {
   const startedAt = Date.now();
   const internal = await runtime.maybeExecuteInternalToolCall?.(
     pendingUserInput,
@@ -891,8 +912,8 @@ export async function executeAuthorizedToolCall<Config, State, ToolRequest, Trus
   return runTurnLoop(runtime, resumedState, pendingUserInput, turn);
 }
 
-async function appendToolResultForRoundAsync<Config, State, ToolRequest, TrustTarget = string>(
-  runtime: TurnMachineRuntime<Config, State, ToolRequest, TrustTarget>,
+async function appendToolResultForRoundAsync<Config, State, ToolRequest>(
+  runtime: TurnMachineRuntime<Config, State, ToolRequest>,
   state: State,
   toolCallId: string,
   toolName: string,
@@ -920,12 +941,12 @@ async function appendToolResultForRoundAsync<Config, State, ToolRequest, TrustTa
   return runtime.options.appendToolResultMessage(state, toolCallId, content);
 }
 
-async function continueAfterQuestionsFailure<Config, State, ToolRequest, TrustTarget = string>(
-  runtime: TurnMachineRuntime<Config, State, ToolRequest, TrustTarget>,
+async function continueAfterQuestionsFailure<Config, State, ToolRequest>(
+  runtime: TurnMachineRuntime<Config, State, ToolRequest>,
   pending: PendingQuestionsState<State, ToolRequest>,
   request: ToolRequest,
   output: string,
-): Promise<RuntimeTurnResult<State, ToolRequest, TrustTarget>> {
+): Promise<RuntimeTurnResult<State, ToolRequest>> {
   commitSyntheticToolExecutionFailure(
     runtime,
     pending.turn,
@@ -953,8 +974,8 @@ async function continueAfterQuestionsFailure<Config, State, ToolRequest, TrustTa
   return runTurnLoop(runtime, resumedState, pending.pendingUserInput, pending.turn);
 }
 
-export function startToolAgentRoundAsync<Config, State, ToolRequest, TrustTarget = string>(
-  runtime: TurnMachineRuntime<Config, State, ToolRequest, TrustTarget>,
+export function startToolAgentRoundAsync<Config, State, ToolRequest>(
+  runtime: TurnMachineRuntime<Config, State, ToolRequest>,
   state: State,
   pendingUserInput: string,
   turn: RuntimeTurnContext<ToolRequest>,
@@ -995,8 +1016,8 @@ export function startToolAgentRoundAsync<Config, State, ToolRequest, TrustTarget
     });
 }
 
-export async function pollPendingToolAgentRound<Config, State, ToolRequest, TrustTarget = string>(
-  runtime: TurnMachineRuntime<Config, State, ToolRequest, TrustTarget>,
+export async function pollPendingToolAgentRound<Config, State, ToolRequest>(
+  runtime: TurnMachineRuntime<Config, State, ToolRequest>,
 ): Promise<void> {
   const pending = runtime.pendingToolAgentRound;
   if (!pending || pending.completionHandled || !pending.completion) {
@@ -1008,13 +1029,8 @@ export async function pollPendingToolAgentRound<Config, State, ToolRequest, Trus
   await handlePendingToolAgentRoundCompletion(runtime, pending, pending.completion);
 }
 
-export async function handlePendingToolAgentRoundCompletion<
-  Config,
-  State,
-  ToolRequest,
-  TrustTarget = string,
->(
-  runtime: TurnMachineRuntime<Config, State, ToolRequest, TrustTarget>,
+export async function handlePendingToolAgentRoundCompletion<Config, State, ToolRequest>(
+  runtime: TurnMachineRuntime<Config, State, ToolRequest>,
   pending: PendingToolAgentRound<State, ToolRequest>,
   completion: ToolAgentRoundCompletion<State>,
 ): Promise<void> {
@@ -1110,8 +1126,8 @@ export async function handlePendingToolAgentRoundCompletion<
   });
 }
 
-export async function processToolCallsAsync<Config, State, ToolRequest, TrustTarget = string>(
-  runtime: TurnMachineRuntime<Config, State, ToolRequest, TrustTarget>,
+export async function processToolCallsAsync<Config, State, ToolRequest>(
+  runtime: TurnMachineRuntime<Config, State, ToolRequest>,
   state: State,
   pendingUserInput: string,
   calls: ToolCallRequest[],
@@ -1396,7 +1412,7 @@ export async function processToolCallsAsync<Config, State, ToolRequest, TrustTar
       continue;
     }
 
-    let authorization: AuthorizationDecision<TrustTarget>;
+    let authorization: AuthorizationDecision;
     try {
       authorization = await runtime.options.toolExecutor.authorize(request);
     } catch (error) {
@@ -1420,7 +1436,28 @@ export async function processToolCallsAsync<Config, State, ToolRequest, TrustTar
       continue;
     }
 
-    const initialGate = resolveApprovalGateAfterAuthorize(preGate, authorization);
+    const gateResolution = resolveApprovalGateAfterAuthorize(preGate, authorization);
+    if (gateResolution?.kind === "denied") {
+      const output = `[denied by permission rule] ${gateResolution.reason}`;
+      commitSyntheticToolExecutionFailure(runtime, turn, request, call.id, call.name, output);
+      currentState = runtime.options.appendToolResultMessage(currentState, call.id, output);
+      if (
+        queueRemainingToolCallsAsync(
+          runtime,
+          currentState,
+          pendingUserInput,
+          remaining,
+          turn,
+          resumeAsStreaming,
+          streamingEmitBeginResponse,
+          earlyToolExecutions,
+        )
+      ) {
+        return;
+      }
+      continue;
+    }
+    const initialGate = gateResolution?.kind === "needs-approval" ? gateResolution.gate : null;
     const approvalGate = initialGate
       ? await applyAutoReviewToApprovalGate(
           runtime.options.getApprovalLevel?.(),
@@ -1450,7 +1487,7 @@ export async function processToolCallsAsync<Config, State, ToolRequest, TrustTar
         request,
         call.id,
         call.name,
-        approvalGate.trustTarget,
+        approvalGate.rememberTarget,
         approvalGate.autoReviewBlockReason,
       );
       runtime.pendingApproval = {
@@ -1458,8 +1495,8 @@ export async function processToolCallsAsync<Config, State, ToolRequest, TrustTar
         state: currentState,
         request,
         prompt: approvalGate.prompt,
-        ...(approvalGate.trustTarget !== undefined
-          ? { trustTarget: approvalGate.trustTarget }
+        ...(approvalGate.rememberTarget !== undefined
+          ? { rememberTarget: approvalGate.rememberTarget }
           : {}),
         ...(approvalGate.autoReviewBlockReason !== undefined
           ? { autoReviewBlockReason: approvalGate.autoReviewBlockReason }
@@ -1685,11 +1722,8 @@ export function shouldSkipPersistAssistantToolCalls(
   return false;
 }
 
-function persistAssistantToolCalls<Config, State, ToolRequest, TrustTarget = string>(
-  runtime: Pick<
-    TurnMachineRuntime<Config, State, ToolRequest, TrustTarget>,
-    "historyStore" | "options"
-  >,
+function persistAssistantToolCalls<Config, State, ToolRequest>(
+  runtime: Pick<TurnMachineRuntime<Config, State, ToolRequest>, "historyStore" | "options">,
   state: State,
   calls: ToolCallRequest[],
 ): void {
@@ -1734,16 +1768,8 @@ function persistAssistantToolCalls<Config, State, ToolRequest, TrustTarget = str
   });
 }
 
-export function persistProviderBuiltinToolRoundToHistoryStore<
-  Config,
-  State,
-  ToolRequest,
-  TrustTarget = string,
->(
-  runtime: Pick<
-    TurnMachineRuntime<Config, State, ToolRequest, TrustTarget>,
-    "historyStore" | "options"
-  >,
+export function persistProviderBuiltinToolRoundToHistoryStore<Config, State, ToolRequest>(
+  runtime: Pick<TurnMachineRuntime<Config, State, ToolRequest>, "historyStore" | "options">,
   state: State,
   round: {
     calls: ToolCallRequest[];
@@ -1772,11 +1798,8 @@ function requestStubFromToolCall(call: ToolCallRequest): Record<string, unknown>
   }
 }
 
-export function commitToolCallSchemaError<Config, State, ToolRequest, TrustTarget = string>(
-  runtime: Pick<
-    TurnMachineRuntime<Config, State, ToolRequest, TrustTarget>,
-    "emitEvent" | "historyStore"
-  >,
+export function commitToolCallSchemaError<Config, State, ToolRequest>(
+  runtime: Pick<TurnMachineRuntime<Config, State, ToolRequest>, "emitEvent" | "historyStore">,
   turn: RuntimeTurnContext<ToolRequest>,
   call: ToolCallRequest,
   error: unknown,
@@ -1792,16 +1815,8 @@ export function commitToolCallSchemaError<Config, State, ToolRequest, TrustTarge
   );
 }
 
-export function commitSyntheticToolExecutionFailure<
-  Config,
-  State,
-  ToolRequest,
-  TrustTarget = string,
->(
-  runtime: Pick<
-    TurnMachineRuntime<Config, State, ToolRequest, TrustTarget>,
-    "emitEvent" | "historyStore"
-  >,
+export function commitSyntheticToolExecutionFailure<Config, State, ToolRequest>(
+  runtime: Pick<TurnMachineRuntime<Config, State, ToolRequest>, "emitEvent" | "historyStore">,
   turn: RuntimeTurnContext<ToolRequest>,
   request: ToolRequest,
   toolCallId: string,
@@ -1827,8 +1842,8 @@ export function commitSyntheticToolExecutionFailure<
   });
 }
 
-export function commitToolExecutionOutput<Config, State, ToolRequest, TrustTarget = string>(
-  runtime: Pick<TurnMachineRuntime<Config, State, ToolRequest, TrustTarget>, "emitEvent">,
+export function commitToolExecutionOutput<Config, State, ToolRequest>(
+  runtime: Pick<TurnMachineRuntime<Config, State, ToolRequest>, "emitEvent">,
   turn: RuntimeTurnContext<ToolRequest>,
   options: CommitToolExecutionOutputOptions<ToolRequest>,
 ): RuntimeToolExecution<ToolRequest> {
@@ -1836,8 +1851,8 @@ export function commitToolExecutionOutput<Config, State, ToolRequest, TrustTarge
   return commitPreparedToolExecution(runtime, turn, finished, options.output, true);
 }
 
-export function commitPreparedToolExecution<Config, State, ToolRequest, TrustTarget = string>(
-  runtime: Pick<TurnMachineRuntime<Config, State, ToolRequest, TrustTarget>, "emitEvent">,
+export function commitPreparedToolExecution<Config, State, ToolRequest>(
+  runtime: Pick<TurnMachineRuntime<Config, State, ToolRequest>, "emitEvent">,
   turn: RuntimeTurnContext<ToolRequest>,
   execution: RuntimeToolExecution<ToolRequest>,
   output: ToolExecutionOutput,
@@ -1886,8 +1901,8 @@ export function resolveEarlyToolCallArguments(
   return { argumentsJson: builtArgumentsJson, canonicalArgumentsJson: builtCanonical };
 }
 
-export function startEarlyToolExecution<Config, State, ToolRequest, TrustTarget = string>(
-  runtime: TurnMachineRuntime<Config, State, ToolRequest, TrustTarget>,
+export function startEarlyToolExecution<Config, State, ToolRequest>(
+  runtime: TurnMachineRuntime<Config, State, ToolRequest>,
   call: ToolCallRequest,
   earlyToolExecutions: Map<string, PendingEarlyToolExecution<ToolRequest>>,
   context?: EarlyToolExecutionContext<State, ToolRequest>,
@@ -1940,8 +1955,8 @@ export function startEarlyToolExecution<Config, State, ToolRequest, TrustTarget 
   return record;
 }
 
-async function runEarlyToolExecution<Config, State, ToolRequest, TrustTarget = string>(
-  runtime: TurnMachineRuntime<Config, State, ToolRequest, TrustTarget>,
+async function runEarlyToolExecution<Config, State, ToolRequest>(
+  runtime: TurnMachineRuntime<Config, State, ToolRequest>,
   call: ToolCallRequest,
   earlyToolExecutions: Map<string, PendingEarlyToolExecution<ToolRequest>>,
   context: EarlyToolExecutionContext<State, ToolRequest> | undefined,
@@ -1968,14 +1983,19 @@ async function runEarlyToolExecution<Config, State, ToolRequest, TrustTarget = s
   }
   request = preGate.request;
 
-  let authorization: AuthorizationDecision<TrustTarget>;
+  let authorization: AuthorizationDecision;
   try {
     authorization = await runtime.options.toolExecutor.authorize(request);
   } catch {
     return { kind: "deferred", reason: "authorization-error", preGate };
   }
 
-  const initialGate = resolveApprovalGateAfterAuthorize(preGate, authorization);
+  const gateResolution = resolveApprovalGateAfterAuthorize(preGate, authorization);
+  if (gateResolution?.kind === "denied") {
+    // Defer to the formal path, which re-authorizes and commits the permission-rule denial.
+    return { kind: "deferred", reason: "authorization-error", preGate };
+  }
+  const initialGate = gateResolution?.kind === "needs-approval" ? gateResolution.gate : null;
   const approvalGate = initialGate
     ? await applyAutoReviewToApprovalGate(
         runtime.options.getApprovalLevel?.(),
@@ -2005,7 +2025,9 @@ async function runEarlyToolExecution<Config, State, ToolRequest, TrustTarget = s
       state: context.state,
       request,
       prompt: approvalGate.prompt,
-      ...(approvalGate.trustTarget !== undefined ? { trustTarget: approvalGate.trustTarget } : {}),
+      ...(approvalGate.rememberTarget !== undefined
+        ? { rememberTarget: approvalGate.rememberTarget }
+        : {}),
       ...(approvalGate.autoReviewBlockReason !== undefined
         ? { autoReviewBlockReason: approvalGate.autoReviewBlockReason }
         : {}),
@@ -2022,8 +2044,11 @@ async function runEarlyToolExecution<Config, State, ToolRequest, TrustTarget = s
     const decision = await decisionPromise;
 
     if (decision.kind === "allow") {
-      if (decision.persistTrust && approvalGate.trustTarget !== undefined) {
-        await runtime.options.toolExecutor.trust(approvalGate.trustTarget);
+      if (decision.remember && approvalGate.rememberTarget !== undefined) {
+        await runtime.options.toolExecutor.rememberApproval(
+          approvalGate.rememberTarget,
+          decision.remember,
+        );
       }
     } else if (decision.kind === "guidance") {
       const guidanceText = decision.resultText?.trim()
@@ -2140,8 +2165,8 @@ async function runEarlyToolExecution<Config, State, ToolRequest, TrustTarget = s
  * Suspends the formal approval gate until the single approval slot is released.
  * Returns false when this turn was terminated (abort / history replacement); the caller should exit silently.
  */
-function waitForPendingApprovalSlot<Config, State, ToolRequest, TrustTarget = string>(
-  runtime: TurnMachineRuntime<Config, State, ToolRequest, TrustTarget>,
+function waitForPendingApprovalSlot<Config, State, ToolRequest>(
+  runtime: TurnMachineRuntime<Config, State, ToolRequest>,
 ): Promise<boolean> {
   if (!Array.isArray(runtime.pendingApprovalSlotWaiters)) {
     runtime.pendingApprovalSlotWaiters = [];
@@ -2152,8 +2177,8 @@ function waitForPendingApprovalSlot<Config, State, ToolRequest, TrustTarget = st
 }
 
 /** Wakes all formal gate waiters to re-check after a slot state change; canProceed=false means this turn was terminated. */
-function notifyPendingApprovalSlotWaiters<Config, State, ToolRequest, TrustTarget = string>(
-  runtime: TurnMachineRuntime<Config, State, ToolRequest, TrustTarget>,
+function notifyPendingApprovalSlotWaiters<Config, State, ToolRequest>(
+  runtime: TurnMachineRuntime<Config, State, ToolRequest>,
   canProceed: boolean,
 ): void {
   if (
@@ -2169,8 +2194,8 @@ function notifyPendingApprovalSlotWaiters<Config, State, ToolRequest, TrustTarge
   }
 }
 
-export function pumpEarlyApprovalQueue<Config, State, ToolRequest, TrustTarget = string>(
-  runtime: TurnMachineRuntime<Config, State, ToolRequest, TrustTarget>,
+export function pumpEarlyApprovalQueue<Config, State, ToolRequest>(
+  runtime: TurnMachineRuntime<Config, State, ToolRequest>,
 ): void {
   ensureEarlyApprovalQueue(runtime);
   // Regardless of this pump's outcome, wake formal gate waiters to re-check the slot.
@@ -2188,8 +2213,8 @@ export function pumpEarlyApprovalQueue<Config, State, ToolRequest, TrustTarget =
   }
 }
 
-export function clearEarlyApprovalWaiters<Config, State, ToolRequest, TrustTarget = string>(
-  runtime: TurnMachineRuntime<Config, State, ToolRequest, TrustTarget>,
+export function clearEarlyApprovalWaiters<Config, State, ToolRequest>(
+  runtime: TurnMachineRuntime<Config, State, ToolRequest>,
   resultText = "[aborted] tool approval cancelled",
 ): void {
   ensureEarlyApprovalQueue(runtime);
@@ -2207,21 +2232,21 @@ export function clearEarlyApprovalWaiters<Config, State, ToolRequest, TrustTarge
   notifyPendingApprovalSlotWaiters(runtime, false);
 }
 
-function ensureEarlyApprovalQueue<Config, State, ToolRequest, TrustTarget = string>(
-  runtime: TurnMachineRuntime<Config, State, ToolRequest, TrustTarget>,
+function ensureEarlyApprovalQueue<Config, State, ToolRequest>(
+  runtime: TurnMachineRuntime<Config, State, ToolRequest>,
 ): void {
   if (!Array.isArray(runtime.earlyApprovalQueue)) {
     runtime.earlyApprovalQueue = [];
   }
 }
 
-function waitForEarlyStreamApprovalDecision<Config, State, ToolRequest, TrustTarget = string>(
-  runtime: TurnMachineRuntime<Config, State, ToolRequest, TrustTarget>,
-  item: Omit<EarlyStreamApprovalQueueItem<State, ToolRequest, TrustTarget>, "resolveDecision">,
+function waitForEarlyStreamApprovalDecision<Config, State, ToolRequest>(
+  runtime: TurnMachineRuntime<Config, State, ToolRequest>,
+  item: Omit<EarlyStreamApprovalQueueItem<State, ToolRequest>, "resolveDecision">,
 ): Promise<RuntimeApprovalDecision> {
   ensureEarlyApprovalQueue(runtime);
   return new Promise((resolve) => {
-    const queued: EarlyStreamApprovalQueueItem<State, ToolRequest, TrustTarget> = {
+    const queued: EarlyStreamApprovalQueueItem<State, ToolRequest> = {
       ...item,
       resolveDecision: resolve,
     };
@@ -2233,9 +2258,9 @@ function waitForEarlyStreamApprovalDecision<Config, State, ToolRequest, TrustTar
   });
 }
 
-function showEarlyStreamApproval<Config, State, ToolRequest, TrustTarget = string>(
-  runtime: TurnMachineRuntime<Config, State, ToolRequest, TrustTarget>,
-  item: EarlyStreamApprovalQueueItem<State, ToolRequest, TrustTarget>,
+function showEarlyStreamApproval<Config, State, ToolRequest>(
+  runtime: TurnMachineRuntime<Config, State, ToolRequest>,
+  item: EarlyStreamApprovalQueueItem<State, ToolRequest>,
 ): void {
   const state = runtime.resolveTurnToolState?.(item.turn, item.state) ?? item.state;
   const approval = createApproval(
@@ -2243,7 +2268,7 @@ function showEarlyStreamApproval<Config, State, ToolRequest, TrustTarget = strin
     item.request,
     item.toolCallId,
     item.toolName,
-    item.trustTarget,
+    item.rememberTarget,
     item.autoReviewBlockReason,
   );
   runtime.pendingApproval = {
@@ -2252,7 +2277,7 @@ function showEarlyStreamApproval<Config, State, ToolRequest, TrustTarget = strin
     state,
     request: item.request,
     prompt: item.prompt,
-    ...(item.trustTarget !== undefined ? { trustTarget: item.trustTarget } : {}),
+    ...(item.rememberTarget !== undefined ? { rememberTarget: item.rememberTarget } : {}),
     ...(item.autoReviewBlockReason !== undefined
       ? { autoReviewBlockReason: item.autoReviewBlockReason }
       : {}),
@@ -2272,13 +2297,8 @@ function showEarlyStreamApproval<Config, State, ToolRequest, TrustTarget = strin
   });
 }
 
-function tryInvalidateUnapprovedEarlyToolExecution<
-  Config,
-  State,
-  ToolRequest,
-  TrustTarget = string,
->(
-  runtime: TurnMachineRuntime<Config, State, ToolRequest, TrustTarget>,
+function tryInvalidateUnapprovedEarlyToolExecution<Config, State, ToolRequest>(
+  runtime: TurnMachineRuntime<Config, State, ToolRequest>,
   toolCallId: string,
   earlyToolExecutions: Map<string, PendingEarlyToolExecution<ToolRequest>>,
 ): boolean {
@@ -2315,8 +2335,8 @@ function tryInvalidateUnapprovedEarlyToolExecution<
   return true;
 }
 
-async function performEarlyExternalToolExecution<Config, State, ToolRequest, TrustTarget = string>(
-  runtime: TurnMachineRuntime<Config, State, ToolRequest, TrustTarget>,
+async function performEarlyExternalToolExecution<Config, State, ToolRequest>(
+  runtime: TurnMachineRuntime<Config, State, ToolRequest>,
   request: ToolRequest,
 ): Promise<ToolExecutionResult> {
   try {
@@ -2453,9 +2473,9 @@ function stableJsonValue(value: JsonValue): JsonValue {
   return value;
 }
 
-export async function waitForCompletedTurnResult<Config, State, ToolRequest, TrustTarget = string>(
-  runtime: TurnMachineRuntime<Config, State, ToolRequest, TrustTarget>,
-): Promise<RuntimeTurnResult<State, ToolRequest, TrustTarget>> {
+export async function waitForCompletedTurnResult<Config, State, ToolRequest>(
+  runtime: TurnMachineRuntime<Config, State, ToolRequest>,
+): Promise<RuntimeTurnResult<State, ToolRequest>> {
   while (true) {
     const existing = runtime.takeCompletedTurnResult();
     if (existing) {
@@ -2481,18 +2501,18 @@ export async function waitForCompletedTurnResult<Config, State, ToolRequest, Tru
   }
 }
 
-function createApproval<ToolRequest, TrustTarget>(
+function createApproval<ToolRequest>(
   prompt: string,
   request: ToolRequest,
   toolCallId: string,
   toolName: string,
-  trustTarget: TrustTarget | undefined,
+  rememberTarget: PermissionMemoryTarget | undefined,
   autoReviewBlockReason?: string,
-): RuntimePendingApproval<ToolRequest, TrustTarget> {
+): RuntimePendingApproval<ToolRequest> {
   return {
     prompt,
     request,
-    ...(trustTarget !== undefined ? { trustTarget } : {}),
+    ...(rememberTarget !== undefined ? { rememberTarget } : {}),
     ...(autoReviewBlockReason !== undefined ? { autoReviewBlockReason } : {}),
     toolCallId,
     toolName,
@@ -2513,8 +2533,8 @@ function createQuestions<ToolRequest>(
   };
 }
 
-function queueRemainingToolCallsAsync<Config, State, ToolRequest, TrustTarget = string>(
-  runtime: TurnMachineRuntime<Config, State, ToolRequest, TrustTarget>,
+function queueRemainingToolCallsAsync<Config, State, ToolRequest>(
+  runtime: TurnMachineRuntime<Config, State, ToolRequest>,
   state: State,
   pendingUserInput: string,
   remaining: ToolCallRequest[],

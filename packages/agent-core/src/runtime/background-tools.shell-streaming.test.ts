@@ -37,7 +37,7 @@ class StreamingShellExecutor implements ToolExecutor<ShellToolRequest> {
     return { kind: "allowed" };
   }
 
-  async trust(): Promise<void> {}
+  async rememberApproval(): Promise<void> {}
 
   attachRequestMetadata(
     request: ShellToolRequest,

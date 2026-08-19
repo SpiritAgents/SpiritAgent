@@ -788,7 +788,7 @@
     "submitAnswers": "Enviar Respostas",
     "allow": "Permitir",
     "autoReviewBlockReason": "Bloqueado: {{reason}}",
-    "alwaysTrust": "Sempre Confiar",
+    "alwaysAllow": "Sempre permitir",
     "deny": "Negar",
     "approvalGuidancePlaceholder": "Instruções para o modelo quando ajustes forem necessários",
     "sendGuidance": "Enviar Orientação",

@@ -28,7 +28,7 @@ export type DesktopSubagentWorktreeBootstrapDeps = {
 
 export function createDesktopSubagentWorkspaceBootstrap(
   deps: DesktopSubagentWorktreeBootstrapDeps,
-): SubagentWorkspaceBootstrap<DesktopToolRequest, string> {
+): SubagentWorkspaceBootstrap<DesktopToolRequest> {
   return async (input) => {
     if (!input.worktree) {
       return { workspaceRoot: input.parentWorkspaceRoot || deps.parentWorkspaceRoot };

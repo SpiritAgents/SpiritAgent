@@ -45,8 +45,28 @@ Core fields:
 - `providerGroups` — connected houses, API base, transport, models
 - `activeModel`
 - `imageGenerationModel` / `videoGenerationModel` / `lightweightChatModel`
+- `permission` — permission allowlist rules
 
 Keys are **not** in this file. They live in the [keyring](./security.mdx).
+
+### permission
+
+`permission` pins down what individual shell commands and file paths may do, on top of the session [approval level](./agent/approvals.mdx). Keys are tool names (`shell`, `read_file`); values map wildcard patterns to `allow`, `ask`, or `deny`.
+
+```json
+{
+  "permission": {
+    "shell": {
+      "git *": "allow",
+      "rm -rf *": "deny"
+    }
+  }
+}
+```
+
+`deny` is absolute — no approval level, hook, or session memory overrides it. Pattern syntax, path semantics, and the full action list are in [Approvals](./agent/approvals.mdx). Verify rules without running anything: `spirit permissions check --shell "git status"`.
+
+The old `tool-permissions.json` (written by the "Always Trust" button) is deprecated: the code no longer reads or writes it, and there is no automatic migration. Leftover files are inert — delete them manually.
 
 ## Workspace `.spirit/`
 

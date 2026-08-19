@@ -22,7 +22,7 @@ type PendingApprovalCardProps = {
   onApprovalGuidanceChange(value: string): void;
   onSubmitApproval(decision: {
     kind: "allow" | "deny" | "guidance";
-    persistTrust?: boolean;
+    remember?: "session" | "config";
     userMessage?: string;
   }): void;
 };
@@ -87,11 +87,11 @@ export function PendingApprovalCard({
             size="sm"
             variant="outline"
             className="h-8 w-full justify-start px-2.5"
-            onClick={() => onSubmitApproval({ kind: "allow", persistTrust: true })}
-            disabled={approveBusy || !pendingApproval.trustTarget}
+            onClick={() => onSubmitApproval({ kind: "allow", remember: "config" })}
+            disabled={approveBusy || !pendingApproval.rememberTarget}
           >
             <ShieldCheck data-icon="inline-start" />
-            {t("app.alwaysTrust")}
+            {t("app.alwaysAllow")}
           </Button>
           <Button
             size="sm"

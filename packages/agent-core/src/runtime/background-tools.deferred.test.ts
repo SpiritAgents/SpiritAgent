@@ -41,7 +41,7 @@ class DeferredShellExecutor implements ToolExecutor<ShellToolRequest> {
     return { kind: "allowed" };
   }
 
-  async trust(): Promise<void> {}
+  async rememberApproval(): Promise<void> {}
 
   async execute(request: ShellToolRequest): Promise<ToolExecutionOutput> {
     await new Promise<void>((resolve) => {

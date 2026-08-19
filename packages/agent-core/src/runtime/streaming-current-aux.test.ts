@@ -4,7 +4,7 @@ import { test } from "node:test";
 import { currentAuxKind, type StreamingRuntime } from "./streaming.js";
 
 type CurrentAuxRuntime = Pick<
-  StreamingRuntime<unknown, unknown, unknown, string>,
+  StreamingRuntime<unknown, unknown, unknown>,
   | "pendingHistoryCompaction"
   | "pendingStreamingRound"
   | "pendingToolAgentRound"
@@ -18,7 +18,7 @@ type CurrentAuxRuntime = Pick<
 
 function mockStreamingRuntime(
   overrides: Partial<CurrentAuxRuntime> = {},
-): StreamingRuntime<unknown, unknown, unknown, string> {
+): StreamingRuntime<unknown, unknown, unknown> {
   return {
     pendingHistoryCompaction: undefined,
     pendingStreamingRound: {},
@@ -30,7 +30,7 @@ function mockStreamingRuntime(
     pendingBackgroundToolStatusStore: undefined,
     awaitingPostBuiltInToolStreamDeltaStore: false,
     ...overrides,
-  } as StreamingRuntime<unknown, unknown, unknown, string>;
+  } as StreamingRuntime<unknown, unknown, unknown>;
 }
 
 test("currentAuxKind suppresses thinking while assistant body streams in the same round", () => {

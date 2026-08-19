@@ -61,7 +61,7 @@ export interface BridgeRuntimeSnapshot {
   hasPendingApproval: boolean;
   hasPendingManualApproval: boolean;
   hasPendingQuestions: boolean;
-  currentPendingApproval?: RuntimePendingApproval<JsonValue, JsonValue>;
+  currentPendingApproval?: RuntimePendingApproval<JsonValue>;
   currentPendingQuestions?: RuntimePendingQuestions<JsonValue>;
   childSessions: RuntimeSubagentSessionSummary[];
   isBusy: boolean;

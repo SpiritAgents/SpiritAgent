@@ -420,6 +420,7 @@ import {
   modelSecretKeyPresence,
   resolveApiKeyForConfigModel,
   createDesktopExtensionStateStore,
+  loadConfig,
   saveConfig,
   removeModelApiKey,
   spiritAgentDataDir,
@@ -2300,10 +2301,27 @@ class DesktopHostService {
           await replyPendingApprovalCommand(this.sessionTurnContext(), request.decision);
         },
       );
+      await this.refreshConfigAfterRememberedApproval(request.decision);
       await this.ensureInitialized(undefined, { fastPath: true });
       return this.buildSnapshot();
     }
-    return replyPendingApprovalCommand(this.sessionTurnContext(), request.decision);
+    const snapshot = await replyPendingApprovalCommand(this.sessionTurnContext(), request.decision);
+    await this.refreshConfigAfterRememberedApproval(request.decision);
+    return snapshot;
+  }
+
+  /**
+   * A config-scope remembered approval is written to config.json inside the host-internal tool
+   * service (`savePermissionRule`), bypassing desktop storage. Reload the in-memory config so
+   * later desktop saves do not clobber the new rule.
+   */
+  private async refreshConfigAfterRememberedApproval(
+    decision: DesktopApprovalDecision,
+  ): Promise<void> {
+    if (decision.kind !== "allow" || decision.remember !== "config") {
+      return;
+    }
+    this.requireState().config = await loadConfig();
   }
 
   async replyPendingQuestions(request: ReplyPendingQuestionsRequest): Promise<DesktopSnapshot> {
@@ -3542,7 +3560,7 @@ class DesktopHostService {
               toolName: pendingApproval.toolName,
               request: pendingApproval.request as DesktopToolRequest,
               prompt: pendingApproval.prompt,
-              trustTarget: pendingApproval.trustTarget,
+              rememberTarget: pendingApproval.rememberTarget,
               subagentSessionId: pendingApproval.subagentSessionId,
               autoReviewBlockReason: pendingApproval.autoReviewBlockReason,
             },
@@ -3683,7 +3701,7 @@ class DesktopHostService {
                 toolName: pendingApproval.toolName,
                 request: pendingApproval.request as DesktopToolRequest,
                 prompt: pendingApproval.prompt,
-                trustTarget: pendingApproval.trustTarget,
+                rememberTarget: pendingApproval.rememberTarget,
                 subagentSessionId: pendingApproval.subagentSessionId,
                 autoReviewBlockReason: pendingApproval.autoReviewBlockReason,
               }),
@@ -3807,7 +3825,7 @@ class DesktopHostService {
                 toolName: pendingApproval.toolName,
                 request: pendingApproval.request as DesktopToolRequest,
                 prompt: pendingApproval.prompt,
-                trustTarget: pendingApproval.trustTarget,
+                rememberTarget: pendingApproval.rememberTarget,
                 subagentSessionId: pendingApproval.subagentSessionId,
                 autoReviewBlockReason: pendingApproval.autoReviewBlockReason,
               },
@@ -4705,7 +4723,7 @@ function normalizeApprovalDecision(
     case "allow":
       return {
         kind: "allow",
-        ...(decision.persistTrust ? { persistTrust: true } : {}),
+        ...(decision.remember ? { remember: decision.remember } : {}),
       };
     case "deny":
       return {

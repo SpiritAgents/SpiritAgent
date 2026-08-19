@@ -1,6 +1,6 @@
 ---
 title: Approvals
-description: Default, auto-approval, and bypass-approval. What each level still stops.
+description: Approval levels and the permission allowlist. What allow, ask, and deny mean.
 ---
 
 Every risky tool call can wait for you. Spirit has three approval levels. Desktop shows them as **Default Approval**, **Auto Approval**, and **Bypass Approval**. The CLI uses `/approval` or `-a`.
@@ -9,20 +9,111 @@ Every risky tool call can wait for you. Spirit has three approval levels. Deskto
 | ---------------- | ----------------- | ------------------------------------------------------------------------------------------------------ |
 | Default Approval | `default`         | You approve file edits, shell, and other high-risk tools yourself.                                     |
 | Auto Approval    | `auto-approval`   | A lightweight model reviews high-risk calls. You are not prompted unless that review (or a hook) asks. |
-| Bypass Approval  | `bypass-approval` | High-risk tools run without the approval prompt.                                                       |
+| Bypass Approval  | `bypass-approval` | High-risk tools run without the approval prompt. `deny` rules still apply.                             |
+
+## Permission allowlist
+
+On top of the approval level, `config.json` can pin down what individual commands and paths may do. Rules live under the top-level `permission` field, grouped by tool name:
+
+```json
+{
+  "schemaVersion": 2,
+  "permission": {
+    "shell": {
+      "git *": "allow",
+      "git push *": "ask",
+      "rm -rf *": "deny",
+      "sudo *": "deny"
+    },
+    "read_file": {
+      "*": "allow",
+      "*/.env*": "ask",
+      "~/.ssh/*": "deny"
+    }
+  }
+}
+```
+
+Each key is a pattern, each value an action:
+
+| Action  | Effect                                                                                           |
+| ------- | ------------------------------------------------------------------------------------------------ |
+| `allow` | Run without prompting                                                                            |
+| `ask`   | Show the approval prompt                                                                         |
+| `deny`  | Refuse outright. No prompt; the model gets a `[denied by permission rule] …` tool-failure result |
+
+`read_file` rules also cover the external-path checks of `ls`. More domains may come later.
+
+### Pattern syntax
+
+- `*` matches zero or more of any character, including `/`. Every other character is literal. No `?`, `[]`, or `{}`.
+- Full-string match, case-sensitive.
+- A pattern ending in `" *"` also matches the bare command: `"git *"` matches both `git` and `git status`.
+
+Rule order does not matter: any matching `deny` wins, then `ask`, then `allow`. When nothing matches, shell falls back to `ask` (fail-safe). Beware that a `"*": "ask"` entry matches everything and therefore outranks every `allow` rule — the fail-safe already asks on no match, so a match-all `ask` entry is only useful as documentation, not as a fallback.
+
+### deny is absolute
+
+A `deny` rule cannot be overridden by rule order, session memory, a hook returning `allow`, the `bypass-approval` level, or a tool run you start yourself.
+
+### Composite shell commands
+
+Spirit splits a shell command into the simple commands that would execute — respecting quotes and escapes, across `&&`, `||`, `;`, `|`, `|&`, `&`, newlines, and subshells, including `$(...)` and backtick contents — and evaluates each segment. One denied segment denies the whole command. A command Spirit cannot parse conservatively asks.
+
+### read_file paths
+
+Patterns match the canonical (realpath) absolute path. `~/` at the start expands to your home directory. Patterns starting with `*` count as absolute — the leading wildcard absorbs the root separator, so `*` and `"*/.env*"` match canonical paths anywhere. A pattern starting with a literal relative segment (for example `"src/*.ts"`) has workspace-relative semantics: it matches only paths inside the current workspace, never outside paths, and produces a config lint warning.
+
+When no rule matches, a built-in location fallback applies: workspace-internal and Spirit-managed paths allow, other external paths ask. Rules can tighten workspace-internal paths too — `"*/.env*": "ask"` works inside the workspace.
+
+Invalid entries (empty patterns, unknown actions, non-object blocks) are dropped with lint warnings.
+
+## Remembering approvals
+
+The approval prompt offers three choices:
+
+- **Allow once** — run this call only.
+- **Always Allow** — append an exact-match `allow` rule (the verbatim command or canonical path) to `permission.shell` / `permission.read_file` in config.json. No wildcard inference.
+- **Deny** — refuse, with optional free-text guidance the model reads.
+
+MCP and built-in lazy-gateway tool approvals are one-shot; no remember is offered. Over [ACP](../acp.mdx), "allow always" is session-scoped and persisting to config.json is not exposed; session memory never overrides a `deny` rule.
+
+## Hooks tighten, never loosen
+
+[preToolUse hooks](../customize/hooks.mdx) run before allowlist evaluation and can only tighten or block. A hook `deny` or an allowlist `deny` denies; a hook `ask` or an allowlist `ask` prompts; a hook returning `allow` does not skip host approval.
 
 ## What bypass does not skip
 
-`bypass-approval` still stops for:
+`bypass-approval` (and tool runs you start yourself) only folds `ask` into `allow`. It still stops for:
 
+- `deny` rules in the allowlist
 - [ask_questions](./ask-questions.mdx)
 - Extension flows that need questions
 - A hook that returns `ask` on `preToolUse`
 
 Auto-approval also cannot override a hook `ask`.
 
+## Test rules offline
+
+```bash
+spirit permissions check --shell "git push origin main"
+spirit permissions check --read-file ~/.ssh/id_rsa
+```
+
+Prints the verdict, the matched rule, and per-segment detail without running anything. Evaluation runs daemon-side, so a reachable Spirit daemon is required.
+
+There is no settings UI for rules yet. Edit `config.json` and verify with `spirit permissions check`.
+
+## Deprecated: tool-permissions.json
+
+<Callout type="warn" title="Deprecated">
+
+`tool-permissions.json`, the exact-match store written by the old "Always Trust" button, is no longer read or written. Leftover files are inert; delete them manually. There is no automatic migration — recreate the rules you still want under `permission` in `config.json`.
+
+</Callout>
+
 ## When to use which
 
 Stay on **default** until you have seen the agent make a few good edits. Use **auto-approval** when you want speed but still want a second check. Use **bypass** only on a throwaway branch or a task you are watching.
 
-Headless `spirit -p` fails if a call needs approval. Pass `-a auto-approval` or `-a bypass-approval`, or use the TUI.
+Headless `spirit -p` fails if a call needs approval. Pass `-a auto-approval` or `-a bypass-approval`, or use the TUI. Rules that `allow` run without prompting there too.

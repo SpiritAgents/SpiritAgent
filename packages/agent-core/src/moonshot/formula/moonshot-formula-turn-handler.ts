@@ -87,8 +87,8 @@ function managedProviderToolSummaryText(
   return `[provider tool ${toolName}] completed`;
 }
 
-async function executeAndCommitManagedProviderToolCall<Config, State, ToolRequest, TrustTarget>(
-  runtime: TurnMachineRuntime<Config, State, ToolRequest, TrustTarget>,
+async function executeAndCommitManagedProviderToolCall<Config, State, ToolRequest>(
+  runtime: TurnMachineRuntime<Config, State, ToolRequest>,
   state: State,
   call: ToolCallRequest,
   turn: RuntimeTurnContext<ToolRequest>,
@@ -173,10 +173,10 @@ function isManagedProviderToolCall(toolName: string, config: unknown): boolean {
   );
 }
 
-export type ManagedProviderToolCallOutcome<State, ToolRequest, TrustTarget> =
+export type ManagedProviderToolCallOutcome<State, ToolRequest> =
   | { kind: "not-handled" }
   | { kind: "advance"; state: State }
-  | { kind: "turn-result"; result: RuntimeTurnResult<State, ToolRequest, TrustTarget> };
+  | { kind: "turn-result"; result: RuntimeTurnResult<State, ToolRequest> };
 
 function providerFormulaToolRequestStub<ToolRequest>(call: ToolCallRequest): ToolRequest {
   return {
@@ -185,14 +185,14 @@ function providerFormulaToolRequestStub<ToolRequest>(call: ToolCallRequest): Too
   } as ToolRequest;
 }
 
-export async function handleManagedProviderToolCallInTurn<Config, State, ToolRequest, TrustTarget>(
-  runtime: TurnMachineRuntime<Config, State, ToolRequest, TrustTarget>,
+export async function handleManagedProviderToolCallInTurn<Config, State, ToolRequest>(
+  runtime: TurnMachineRuntime<Config, State, ToolRequest>,
   pendingUserInput: string,
   state: State,
   call: ToolCallRequest,
   remainingCalls: ToolCallRequest[],
   turn: RuntimeTurnContext<ToolRequest>,
-): Promise<ManagedProviderToolCallOutcome<State, ToolRequest, TrustTarget>> {
+): Promise<ManagedProviderToolCallOutcome<State, ToolRequest>> {
   if (!isManagedProviderToolCall(call.name, runtime.options.config)) {
     return { kind: "not-handled" };
   }
@@ -217,13 +217,8 @@ export async function handleManagedProviderToolCallInTurn<Config, State, ToolReq
   };
 }
 
-export async function handleManagedProviderToolCallInTurnAsync<
-  Config,
-  State,
-  ToolRequest,
-  TrustTarget,
->(
-  runtime: TurnMachineRuntime<Config, State, ToolRequest, TrustTarget>,
+export async function handleManagedProviderToolCallInTurnAsync<Config, State, ToolRequest>(
+  runtime: TurnMachineRuntime<Config, State, ToolRequest>,
   pendingUserInput: string,
   state: State,
   call: ToolCallRequest,

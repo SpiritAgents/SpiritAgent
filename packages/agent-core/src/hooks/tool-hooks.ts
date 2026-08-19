@@ -1,6 +1,7 @@
 import type {
   AuthorizationDecision,
   JsonObject,
+  PermissionMemoryTarget,
   ToolCallRequest,
   ToolExecutionOutput,
 } from "../ports.js";
@@ -19,7 +20,6 @@ export type PreToolUseGateResult<ToolRequest> =
   | {
       kind: "ready";
       request: ToolRequest;
-      hookBypassApproval?: boolean;
       effectiveToolInput?: JsonObject;
     }
   | {
@@ -30,29 +30,45 @@ export type PreToolUseGateResult<ToolRequest> =
     }
   | { kind: "denied"; error: HookDeniedError };
 
-export interface ToolApprovalGate<TrustTarget = string> {
+export interface ToolApprovalGate {
   prompt: string;
-  trustTarget: TrustTarget | undefined;
+  rememberTarget: PermissionMemoryTarget | undefined;
 }
 
-export function resolveApprovalGateAfterAuthorize<ToolRequest, TrustTarget>(
+export type ToolApprovalGateResolution =
+  | { kind: "needs-approval"; gate: ToolApprovalGate }
+  | { kind: "denied"; reason: string };
+
+export function resolveApprovalGateAfterAuthorize<ToolRequest>(
   preGate: PreToolUseGateResult<ToolRequest>,
-  authorization: AuthorizationDecision<TrustTarget>,
-): ToolApprovalGate<TrustTarget> | null {
+  authorization: AuthorizationDecision,
+): ToolApprovalGateResolution | null {
+  // A hook returning permission "allow" no longer skips host approval: hooks can only
+  // tighten (allow -> ask/deny) or block, never loosen the host authorization outcome.
+  // An allowlist deny denies outright; hook ask or an allowlist ask both end in
+  // needs-approval (a hook ask keeps its own prompt); only allow + allow proceeds.
+  if (authorization.kind === "denied") {
+    return { kind: "denied", reason: authorization.reason };
+  }
+
   if (preGate.kind === "needs-approval") {
     return {
-      prompt: preGate.prompt,
-      trustTarget: authorization.kind === "need-approval" ? authorization.trustTarget : undefined,
+      kind: "needs-approval",
+      gate: {
+        prompt: preGate.prompt,
+        rememberTarget:
+          authorization.kind === "need-approval" ? authorization.rememberTarget : undefined,
+      },
     };
   }
 
   if (authorization.kind === "need-approval") {
-    if (preGate.kind === "ready" && preGate.hookBypassApproval) {
-      return null;
-    }
     return {
-      prompt: authorization.prompt,
-      trustTarget: authorization.trustTarget,
+      kind: "needs-approval",
+      gate: {
+        prompt: authorization.prompt,
+        rememberTarget: authorization.rememberTarget,
+      },
     };
   }
 
@@ -76,12 +92,11 @@ function preToolUseGateFromHookResult<ToolRequest>(
   return {
     kind: "ready",
     request,
-    ...(permission === "allow" ? { hookBypassApproval: true } : {}),
   };
 }
 
-export async function runPreToolUseGate<Config, State, ToolRequest, TrustTarget = string>(
-  runtime: TurnMachineRuntime<Config, State, ToolRequest, TrustTarget>,
+export async function runPreToolUseGate<Config, State, ToolRequest>(
+  runtime: TurnMachineRuntime<Config, State, ToolRequest>,
   call: ToolCallRequest,
   request: ToolRequest,
 ): Promise<PreToolUseGateResult<ToolRequest>> {
@@ -129,8 +144,8 @@ export async function runPreToolUseGate<Config, State, ToolRequest, TrustTarget 
   }
 }
 
-export async function runPostToolUseSideEffects<Config, State, ToolRequest, TrustTarget = string>(
-  runtime: TurnMachineRuntime<Config, State, ToolRequest, TrustTarget>,
+export async function runPostToolUseSideEffects<Config, State, ToolRequest>(
+  runtime: TurnMachineRuntime<Config, State, ToolRequest>,
   call: Pick<ToolCallRequest, "id" | "name" | "argumentsJson">,
   toolInput: JsonObject,
   output: ToolExecutionOutput,

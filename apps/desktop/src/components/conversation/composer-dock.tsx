@@ -536,7 +536,7 @@ export const ComposerDock = forwardRef<HTMLDivElement, ComposerDockProps>(functi
                   void runtime.submitApproval(
                     {
                       kind: "allow",
-                      ...(decision.persistTrust ? { persistTrust: true } : {}),
+                      ...(decision.remember ? { remember: decision.remember } : {}),
                     },
                     approvalSessionPath,
                   );

@@ -948,6 +948,25 @@ impl DaemonRuntime {
         Ok(())
     }
 
+    pub fn check_permission(
+        &mut self,
+        domain: &str,
+        value: &str,
+        workspace_root: Option<&str>,
+    ) -> Result<crate::permissions_types::PermissionCheckResult> {
+        let response = self.client.call(
+            "host.checkPermission",
+            json!({
+                "domain": domain,
+                "value": value,
+                "workspaceRoot": workspace_root
+                    .map(str::to_string)
+                    .unwrap_or_else(|| self.workspace_root.to_string_lossy().into_owned()),
+            }),
+        )?;
+        Ok(serde_json::from_value(response)?)
+    }
+
     // --------------------------------------------------------- extensions
 
     pub fn list_extensions(&mut self) -> Result<Vec<CliExtensionEntry>> {
