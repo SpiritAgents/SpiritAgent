@@ -139,7 +139,10 @@ function mapPermissionResponse(
     case "allow":
       return { kind: "allow" };
     case "allow-always":
-      return { kind: "allow", remember: "config" };
+      // Session-scoped on purpose: ACP has no third allow-kind option, so
+      // "save to config.json" is intentionally not exposed over ACP this
+      // iteration; allow-always only remembers for this session.
+      return { kind: "allow", remember: "session" };
     case "reject":
       return { kind: "deny", resultText: "User rejected this operation." };
     default:

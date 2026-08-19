@@ -264,6 +264,8 @@ export async function createAcpRuntime(
         return saveGeneratedVideo.call(service, saveRequest);
       }),
     resolveWorkspaceFilesFromInput: (text) => pendingWorkspaceFilesFromInput(workspaceRoot, text),
+    // Pre-existing gap: ACP wires no hookRunner, so the hookSessionContext
+    // below is inert and session/tool hooks never fire in ACP mode.
     ...(sessionKey
       ? {
           hookSessionContext: {
