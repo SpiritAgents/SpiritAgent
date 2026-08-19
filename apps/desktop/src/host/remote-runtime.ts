@@ -314,7 +314,7 @@ export class RemoteDesktopRuntime {
   private snapshot: BridgeRuntimeSnapshot = { ...EMPTY_SNAPSHOT };
   private archive: ChatArchive;
   private events: RuntimeEvent<DesktopToolRequest>[] = [];
-  private completedTurnResult: RuntimeTurnResult<unknown, DesktopToolRequest, string> | undefined;
+  private completedTurnResult: RuntimeTurnResult<unknown, DesktopToolRequest> | undefined;
   private pendingAssistantTextStore = "";
   private thinkingTextStore = "";
   private compactionTextStore = "";
@@ -527,7 +527,7 @@ export class RemoteDesktopRuntime {
     return events;
   }
 
-  takeCompletedTurnResult(): RuntimeTurnResult<unknown, DesktopToolRequest, string> | undefined {
+  takeCompletedTurnResult(): RuntimeTurnResult<unknown, DesktopToolRequest> | undefined {
     const result = this.completedTurnResult;
     this.completedTurnResult = undefined;
     return result;
@@ -567,9 +567,9 @@ export class RemoteDesktopRuntime {
     return this.snapshot.hasPendingQuestions;
   }
 
-  currentPendingApproval(): RuntimePendingApproval<DesktopToolRequest, string> | undefined {
+  currentPendingApproval(): RuntimePendingApproval<DesktopToolRequest> | undefined {
     return this.snapshot.currentPendingApproval as
-      | RuntimePendingApproval<DesktopToolRequest, string>
+      | RuntimePendingApproval<DesktopToolRequest>
       | undefined;
   }
 

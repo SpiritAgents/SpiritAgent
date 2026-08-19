@@ -52,8 +52,8 @@ function streamingRoundWillContinueWithToolCalls<State>(
   return completion?.kind === "success" && completion.result.step.kind === "tool-calls";
 }
 
-function syncProviderBuiltinSearchRoundToHistory<Config, State, ToolRequest, TrustTarget = string>(
-  runtime: StreamingRuntime<Config, State, ToolRequest, TrustTarget>,
+function syncProviderBuiltinSearchRoundToHistory<Config, State, ToolRequest>(
+  runtime: StreamingRuntime<Config, State, ToolRequest>,
   state: State,
 ): void {
   const toolRound = findLatestProviderBuiltinToolRoundInState(state as ToolAgentState);
@@ -62,8 +62,8 @@ function syncProviderBuiltinSearchRoundToHistory<Config, State, ToolRequest, Tru
   }
 }
 
-export interface StreamingRuntime<Config, State, ToolRequest, TrustTarget = string> {
-  options: AgentRuntimeOptions<Config, State, ToolRequest, TrustTarget>;
+export interface StreamingRuntime<Config, State, ToolRequest> {
+  options: AgentRuntimeOptions<Config, State, ToolRequest>;
   historyStore: LlmMessage[];
   pendingUserTurnStore: string | undefined;
   pendingStreamingRound: PendingStreamingRound<State, ToolRequest> | undefined;
@@ -85,7 +85,7 @@ export interface StreamingRuntime<Config, State, ToolRequest, TrustTarget = stri
   streamChunkCounterStore: number;
   emitEvent(event: RuntimeEvent<ToolRequest>): void;
   appendTrace(trace: unknown[], turn: RuntimeTurnContext<ToolRequest>): void;
-  storeCompletedTurnResult(result: RuntimeTurnResult<State, ToolRequest, TrustTarget>): void;
+  storeCompletedTurnResult(result: RuntimeTurnResult<State, ToolRequest>): void;
   startHistoryCompactionAsync(
     retryState: State,
     pendingUserInput: string,
@@ -126,8 +126,8 @@ export interface StreamingRuntime<Config, State, ToolRequest, TrustTarget = stri
   loopEnabled(): boolean;
 }
 
-export function handleStreamStallTimeout<Config, State, ToolRequest, TrustTarget = string>(
-  runtime: StreamingRuntime<Config, State, ToolRequest, TrustTarget>,
+export function handleStreamStallTimeout<Config, State, ToolRequest>(
+  runtime: StreamingRuntime<Config, State, ToolRequest>,
   nowMs = Date.now(),
   stallTimeoutMs = STREAM_STALL_TIMEOUT_MS,
 ): void {
@@ -164,8 +164,8 @@ export function handleStreamStallTimeout<Config, State, ToolRequest, TrustTarget
   runtime.emitEvent({ kind: "assistant-response-completed" });
 }
 
-export async function startStreamingRound<Config, State, ToolRequest, TrustTarget = string>(
-  runtime: StreamingRuntime<Config, State, ToolRequest, TrustTarget>,
+export async function startStreamingRound<Config, State, ToolRequest>(
+  runtime: StreamingRuntime<Config, State, ToolRequest>,
   state: State,
   pendingUserInput: string,
   turn: RuntimeTurnContext<ToolRequest>,
@@ -288,8 +288,8 @@ export async function startStreamingRound<Config, State, ToolRequest, TrustTarge
   );
 }
 
-export async function pollPendingStreamingRound<Config, State, ToolRequest, TrustTarget = string>(
-  runtime: StreamingRuntime<Config, State, ToolRequest, TrustTarget>,
+export async function pollPendingStreamingRound<Config, State, ToolRequest>(
+  runtime: StreamingRuntime<Config, State, ToolRequest>,
 ): Promise<void> {
   const pending = runtime.pendingStreamingRound;
   if (!pending) {
@@ -328,8 +328,8 @@ export async function pollPendingStreamingRound<Config, State, ToolRequest, Trus
   await handlePendingStreamingCompletion(runtime, pending, pending.completion);
 }
 
-export function currentAuxKind<Config, State, ToolRequest, TrustTarget = string>(
-  runtime: StreamingRuntime<Config, State, ToolRequest, TrustTarget>,
+export function currentAuxKind<Config, State, ToolRequest>(
+  runtime: StreamingRuntime<Config, State, ToolRequest>,
 ): AssistantAuxKind | undefined {
   if (runtime.pendingHistoryCompaction) {
     return "compressing";
@@ -371,8 +371,8 @@ export function currentAuxKind<Config, State, ToolRequest, TrustTarget = string>
   return undefined;
 }
 
-export function currentAuxText<Config, State, ToolRequest, TrustTarget = string>(
-  runtime: StreamingRuntime<Config, State, ToolRequest, TrustTarget>,
+export function currentAuxText<Config, State, ToolRequest>(
+  runtime: StreamingRuntime<Config, State, ToolRequest>,
 ): string | undefined {
   if (runtime.pendingBackgroundToolStatusStore?.trim()) {
     return runtime.pendingBackgroundToolStatusStore;
@@ -394,8 +394,8 @@ export function currentAuxText<Config, State, ToolRequest, TrustTarget = string>
   return undefined;
 }
 
-function finalizeInFlightStreamThinking<Config, State, ToolRequest, TrustTarget = string>(
-  runtime: StreamingRuntime<Config, State, ToolRequest, TrustTarget>,
+function finalizeInFlightStreamThinking<Config, State, ToolRequest>(
+  runtime: StreamingRuntime<Config, State, ToolRequest>,
 ): void {
   if (!runtime.thinkingTextStore.trim()) {
     return;
@@ -409,19 +409,16 @@ function finalizeInFlightStreamThinking<Config, State, ToolRequest, TrustTarget 
   runtime.thinkingTextStore = "";
 }
 
-function discardPendingAssistantBubbleOnTurnFailure<
-  Config,
-  State,
-  ToolRequest,
-  TrustTarget = string,
->(runtime: StreamingRuntime<Config, State, ToolRequest, TrustTarget>): void {
+function discardPendingAssistantBubbleOnTurnFailure<Config, State, ToolRequest>(
+  runtime: StreamingRuntime<Config, State, ToolRequest>,
+): void {
   runtime.pendingAssistantTextStore = "";
   runtime.emitEvent({ kind: "replace-pending-assistant", text: "" });
   runtime.emitEvent({ kind: "remove-pending-assistant" });
 }
 
-export function clearStreamingUiState<Config, State, ToolRequest, TrustTarget = string>(
-  runtime: StreamingRuntime<Config, State, ToolRequest, TrustTarget>,
+export function clearStreamingUiState<Config, State, ToolRequest>(
+  runtime: StreamingRuntime<Config, State, ToolRequest>,
 ): void {
   finalizeInFlightStreamThinking(runtime);
   runtime.pendingStartedAtStore = undefined;
@@ -435,16 +432,16 @@ export function clearStreamingUiState<Config, State, ToolRequest, TrustTarget = 
   runtime.awaitingPostBuiltInToolStreamDeltaStore = false;
 }
 
-export function clearPendingStreamingState<Config, State, ToolRequest, TrustTarget = string>(
-  runtime: StreamingRuntime<Config, State, ToolRequest, TrustTarget>,
+export function clearPendingStreamingState<Config, State, ToolRequest>(
+  runtime: StreamingRuntime<Config, State, ToolRequest>,
 ): void {
   runtime.pendingStreamingRound?.cancel?.();
   runtime.pendingStreamingRound = undefined;
   clearStreamingUiState(runtime);
 }
 
-export async function consumeStreamEvents<Config, State, ToolRequest, TrustTarget = string>(
-  runtime: StreamingRuntime<Config, State, ToolRequest, TrustTarget>,
+export async function consumeStreamEvents<Config, State, ToolRequest>(
+  runtime: StreamingRuntime<Config, State, ToolRequest>,
   pending: PendingStreamingRound<State, ToolRequest>,
   eventStream: AsyncIterable<LlmStreamEvent>,
 ): Promise<void> {
@@ -462,8 +459,8 @@ export async function consumeStreamEvents<Config, State, ToolRequest, TrustTarge
   }
 }
 
-export async function handlePendingStreamEvent<Config, State, ToolRequest, TrustTarget = string>(
-  runtime: StreamingRuntime<Config, State, ToolRequest, TrustTarget>,
+export async function handlePendingStreamEvent<Config, State, ToolRequest>(
+  runtime: StreamingRuntime<Config, State, ToolRequest>,
   pending: PendingStreamingRound<State, ToolRequest>,
   event: LlmStreamEvent,
 ): Promise<boolean> {
@@ -529,7 +526,7 @@ export async function handlePendingStreamEvent<Config, State, ToolRequest, Trust
       earlyExecutable
     ) {
       startEarlyToolExecution(
-        runtime as unknown as TurnMachineRuntime<Config, State, ToolRequest, TrustTarget>,
+        runtime as unknown as TurnMachineRuntime<Config, State, ToolRequest>,
         {
           id: event.toolCallId,
           name: event.toolName,
@@ -709,13 +706,8 @@ export async function handlePendingStreamEvent<Config, State, ToolRequest, Trust
   return true;
 }
 
-export async function handlePendingStreamingCompletion<
-  Config,
-  State,
-  ToolRequest,
-  TrustTarget = string,
->(
-  runtime: StreamingRuntime<Config, State, ToolRequest, TrustTarget>,
+export async function handlePendingStreamingCompletion<Config, State, ToolRequest>(
+  runtime: StreamingRuntime<Config, State, ToolRequest>,
   pending: PendingStreamingRound<State, ToolRequest>,
   completion: ToolAgentRoundCompletion<State>,
 ): Promise<void> {
@@ -802,7 +794,7 @@ export async function handlePendingStreamingCompletion<
     return;
   }
 
-  const completedResult: RuntimeTurnResult<State, ToolRequest, TrustTarget> = {
+  const completedResult: RuntimeTurnResult<State, ToolRequest> = {
     kind: "completed",
     assistantText,
     state: round.state,

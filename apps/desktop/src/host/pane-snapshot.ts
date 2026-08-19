@@ -26,7 +26,7 @@ export function buildPaneSessionSlice(input: {
     toolName: string;
     request: DesktopToolRequest;
     prompt?: string;
-    trustTarget?: string;
+    rememberTarget?: import("@spiritagent/agent-core").PermissionMemoryTarget;
     subagentSessionId?: string;
     autoReviewBlockReason?: string;
   };
@@ -74,8 +74,8 @@ export function buildPaneSessionSlice(input: {
             ...(input.pendingApproval.prompt !== undefined
               ? { prompt: input.pendingApproval.prompt }
               : { prompt: "" }),
-            ...(input.pendingApproval.trustTarget
-              ? { trustTarget: input.pendingApproval.trustTarget }
+            ...(input.pendingApproval.rememberTarget
+              ? { rememberTarget: input.pendingApproval.rememberTarget }
               : {}),
             ...(input.pendingApproval.subagentSessionId
               ? { subagentSessionId: input.pendingApproval.subagentSessionId }

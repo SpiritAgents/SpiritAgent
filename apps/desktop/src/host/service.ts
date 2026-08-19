@@ -3542,7 +3542,7 @@ class DesktopHostService {
               toolName: pendingApproval.toolName,
               request: pendingApproval.request as DesktopToolRequest,
               prompt: pendingApproval.prompt,
-              trustTarget: pendingApproval.trustTarget,
+              rememberTarget: pendingApproval.rememberTarget,
               subagentSessionId: pendingApproval.subagentSessionId,
               autoReviewBlockReason: pendingApproval.autoReviewBlockReason,
             },
@@ -3683,7 +3683,7 @@ class DesktopHostService {
                 toolName: pendingApproval.toolName,
                 request: pendingApproval.request as DesktopToolRequest,
                 prompt: pendingApproval.prompt,
-                trustTarget: pendingApproval.trustTarget,
+                rememberTarget: pendingApproval.rememberTarget,
                 subagentSessionId: pendingApproval.subagentSessionId,
                 autoReviewBlockReason: pendingApproval.autoReviewBlockReason,
               }),
@@ -3807,7 +3807,7 @@ class DesktopHostService {
                 toolName: pendingApproval.toolName,
                 request: pendingApproval.request as DesktopToolRequest,
                 prompt: pendingApproval.prompt,
-                trustTarget: pendingApproval.trustTarget,
+                rememberTarget: pendingApproval.rememberTarget,
                 subagentSessionId: pendingApproval.subagentSessionId,
                 autoReviewBlockReason: pendingApproval.autoReviewBlockReason,
               },
@@ -4705,7 +4705,7 @@ function normalizeApprovalDecision(
     case "allow":
       return {
         kind: "allow",
-        ...(decision.persistTrust ? { persistTrust: true } : {}),
+        ...(decision.remember ? { remember: decision.remember } : {}),
       };
     case "deny":
       return {

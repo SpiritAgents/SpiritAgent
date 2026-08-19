@@ -23,7 +23,7 @@ export interface AcpServerConfig {
  */
 export interface AcpSessionState {
   readonly sessionId: string;
-  readonly runtime: AgentRuntime<LlmTransportConfig, unknown, JsonValue, JsonValue>;
+  readonly runtime: AgentRuntime<LlmTransportConfig, unknown, JsonValue>;
   readonly toolExecutor: HostToolExecutorProxy;
   readonly workspaceRoot: string;
   currentMode: SpiritAgentMode;

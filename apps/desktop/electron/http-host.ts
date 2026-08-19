@@ -1746,7 +1746,9 @@ function normalizeApprovalDecisionPayload(value: unknown): unknown {
     case "allow":
       return {
         kind: "allow",
-        ...(value.persistTrust === true ? { persistTrust: true } : {}),
+        ...(value.remember === "session" || value.remember === "config"
+          ? { remember: value.remember }
+          : {}),
       };
     case "deny":
       return {

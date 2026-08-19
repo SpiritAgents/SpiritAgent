@@ -83,7 +83,7 @@ export async function disposeDreamCollectorRuntime(
 export async function submitDreamCollectorTurn(
   runtime: DesktopHostRuntime,
   text: string,
-): Promise<RuntimeTurnResult<unknown, DesktopToolRequest, string>> {
+): Promise<RuntimeTurnResult<unknown, DesktopToolRequest>> {
   await runtime.startUserTurnStreaming(text);
   return waitForDreamCollectorTurnResult(runtime);
 }
@@ -91,14 +91,14 @@ export async function submitDreamCollectorTurn(
 export async function resumeDreamCollectorTurn(
   runtime: DesktopHostRuntime,
   resume: () => Promise<void>,
-): Promise<RuntimeTurnResult<unknown, DesktopToolRequest, string>> {
+): Promise<RuntimeTurnResult<unknown, DesktopToolRequest>> {
   await resume();
   return waitForDreamCollectorTurnResult(runtime);
 }
 
 async function waitForDreamCollectorTurnResult(
   runtime: DesktopHostRuntime,
-): Promise<RuntimeTurnResult<unknown, DesktopToolRequest, string>> {
+): Promise<RuntimeTurnResult<unknown, DesktopToolRequest>> {
   while (true) {
     const completed = runtime.takeCompletedTurnResult();
     if (completed) {

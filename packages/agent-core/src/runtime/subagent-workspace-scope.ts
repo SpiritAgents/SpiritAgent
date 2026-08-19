@@ -28,15 +28,10 @@ function patchStateWorkspaceRoot<State>(state: State, scopedRoot: string): State
 }
 
 /** Child subagent runtimes must not inherit the parent workspace in system basic info or transport config. */
-export function scopeAgentRuntimeOptionsForSubagentWorkspace<
-  Config,
-  State,
-  ToolRequest,
-  TrustTarget,
->(
-  options: AgentRuntimeOptions<Config, State, ToolRequest, TrustTarget>,
+export function scopeAgentRuntimeOptionsForSubagentWorkspace<Config, State, ToolRequest>(
+  options: AgentRuntimeOptions<Config, State, ToolRequest>,
   scopedWorkspaceRoot: string,
-): AgentRuntimeOptions<Config, State, ToolRequest, TrustTarget> {
+): AgentRuntimeOptions<Config, State, ToolRequest> {
   const scopedRoot = scopedWorkspaceRoot.trim();
   if (!scopedRoot) {
     return options;

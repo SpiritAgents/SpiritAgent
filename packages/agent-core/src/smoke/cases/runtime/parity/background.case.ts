@@ -102,9 +102,7 @@ export async function runBackgroundCase(): Promise<RuntimeParityCaseResult> {
   }
 
   pollingBackgroundExecutor.finish('background result for {"query":"runtime parity"}');
-  let pollingBackgroundResult:
-    | RuntimeTurnResult<ScriptedState, ScriptedToolRequest, string>
-    | undefined;
+  let pollingBackgroundResult: RuntimeTurnResult<ScriptedState, ScriptedToolRequest> | undefined;
   for (let index = 0; index < 8; index += 1) {
     await flushMicrotasks(4);
     await pollingBackgroundRuntime.poll();

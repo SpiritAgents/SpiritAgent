@@ -9,7 +9,7 @@ import type {
   SpiritConfigSchemaVersion,
 } from "@spiritagent/host-internal/config-v2";
 import type { ModelReasoningEffort } from "@spiritagent/agent-core/reasoning-effort";
-import type { LspWriteDiagnosticsUi } from "@spiritagent/agent-core";
+import type { LspWriteDiagnosticsUi, PermissionMemoryTarget } from "@spiritagent/agent-core";
 
 import type { DesktopAgentMode } from "./lib/agent-mode.js";
 import type { DesktopAutomationTrigger } from "./lib/automation-trigger.js";
@@ -1595,13 +1595,13 @@ export interface MessageAuxSnapshot {
 export interface PendingToolApprovalSnapshot {
   toolName: string;
   prompt: string;
-  trustTarget?: string;
+  rememberTarget?: PermissionMemoryTarget;
   subagentSessionId?: string;
   autoReviewBlockReason?: string;
 }
 
 export type DesktopApprovalDecision =
-  | { kind: "allow"; persistTrust?: boolean }
+  | { kind: "allow"; remember?: "session" | "config" }
   | { kind: "deny"; resultText?: string }
   | { kind: "guidance"; userMessage: string; resultText?: string };
 

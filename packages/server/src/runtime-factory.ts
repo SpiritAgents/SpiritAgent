@@ -86,12 +86,7 @@ import {
 import { joinHostPromptSections, normalizeHostUiPromptSection } from "./host-ui-prompt.js";
 import { createNoopPeer } from "./noop-peer.js";
 
-export type ServerHostRuntime = AgentRuntime<
-  LlmTransportConfig,
-  LlmToolAgentState,
-  JsonValue,
-  JsonValue
->;
+export type ServerHostRuntime = AgentRuntime<LlmTransportConfig, LlmToolAgentState, JsonValue>;
 
 export type ServerClientKind = "cli" | "desktop" | "web";
 
@@ -447,7 +442,7 @@ export async function createServerRuntime(
     },
   });
 
-  const runtime = new AgentRuntime<LlmTransportConfig, LlmToolAgentState, JsonValue, JsonValue>({
+  const runtime = new AgentRuntime<LlmTransportConfig, LlmToolAgentState, JsonValue>({
     config: transportConfig,
     llmTransport,
     toolExecutor,

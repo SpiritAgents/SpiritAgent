@@ -21,14 +21,14 @@ import type {
   RuntimeTurnResult,
 } from "./types.js";
 
-export interface CompactionRuntime<Config, State, ToolRequest, TrustTarget = string> {
-  options: AgentRuntimeOptions<Config, State, ToolRequest, TrustTarget>;
+export interface CompactionRuntime<Config, State, ToolRequest> {
+  options: AgentRuntimeOptions<Config, State, ToolRequest>;
   historyStore: LlmMessage[];
   compactionTextStore: string;
   pendingHistoryCompaction: PendingHistoryCompaction<State, ToolRequest> | undefined;
   completedManualHistoryCompactionResultStore: RuntimeManualHistoryCompactionResult | undefined;
   emitEvent(event: RuntimeEvent<ToolRequest>): void;
-  completeTurn(result: RuntimeTurnResult<State, ToolRequest, TrustTarget>): void;
+  completeTurn(result: RuntimeTurnResult<State, ToolRequest>): void;
   startToolAgentRoundAsync(
     state: State,
     pendingUserInput: string,
@@ -65,8 +65,8 @@ function buildCompactionRecord(
   };
 }
 
-function shouldPrepareToolOutputTruncation<Config, State, ToolRequest, TrustTarget = string>(
-  runtime: CompactionRuntime<Config, State, ToolRequest, TrustTarget>,
+function shouldPrepareToolOutputTruncation<Config, State, ToolRequest>(
+  runtime: CompactionRuntime<Config, State, ToolRequest>,
 ): boolean {
   return (
     runtime.options.truncateHistoryForCompaction !== undefined ||
@@ -74,13 +74,8 @@ function shouldPrepareToolOutputTruncation<Config, State, ToolRequest, TrustTarg
   );
 }
 
-export async function prepareStateForContextRetryAsync<
-  Config,
-  State,
-  ToolRequest,
-  TrustTarget = string,
->(
-  options: AgentRuntimeOptions<Config, State, ToolRequest, TrustTarget>,
+export async function prepareStateForContextRetryAsync<Config, State, ToolRequest>(
+  options: AgentRuntimeOptions<Config, State, ToolRequest>,
   state: State,
 ): Promise<{ state: State; changed: boolean }> {
   if (!options.truncateStateForContextRetry && !options.persistToolOutputArchive) {
@@ -100,8 +95,8 @@ export async function prepareStateForContextRetryAsync<
   }>;
 }
 
-async function prepareHistoryForCompaction<Config, State, ToolRequest, TrustTarget = string>(
-  runtime: CompactionRuntime<Config, State, ToolRequest, TrustTarget>,
+async function prepareHistoryForCompaction<Config, State, ToolRequest>(
+  runtime: CompactionRuntime<Config, State, ToolRequest>,
   archiveSourceHistory: LlmMessage[],
 ): Promise<LlmMessage[]> {
   if (!shouldPrepareToolOutputTruncation(runtime)) {
@@ -122,8 +117,8 @@ async function prepareHistoryForCompaction<Config, State, ToolRequest, TrustTarg
   return cloneHistory(prepared.history);
 }
 
-export async function compactHistoryImmediate<Config, State, ToolRequest, TrustTarget = string>(
-  runtime: CompactionRuntime<Config, State, ToolRequest, TrustTarget>,
+export async function compactHistoryImmediate<Config, State, ToolRequest>(
+  runtime: CompactionRuntime<Config, State, ToolRequest>,
 ): Promise<RuntimeCompactionRecord> {
   const archiveSourceHistory = cloneHistory(runtime.historyStore);
   const transcriptDirPath = await runtime.syncSessionTranscriptFromHistory(archiveSourceHistory);
@@ -143,8 +138,8 @@ export async function compactHistoryImmediate<Config, State, ToolRequest, TrustT
   return buildCompactionRecord(result, summary, transcriptDirPath);
 }
 
-export function startHistoryCompactionAsync<Config, State, ToolRequest, TrustTarget = string>(
-  runtime: CompactionRuntime<Config, State, ToolRequest, TrustTarget>,
+export function startHistoryCompactionAsync<Config, State, ToolRequest>(
+  runtime: CompactionRuntime<Config, State, ToolRequest>,
   retryState: State,
   pendingUserInput: string,
   turn: RuntimeTurnContext<ToolRequest>,
@@ -184,8 +179,8 @@ export function startHistoryCompactionAsync<Config, State, ToolRequest, TrustTar
   })();
 }
 
-export function startManualHistoryCompactionAsync<Config, State, ToolRequest, TrustTarget = string>(
-  runtime: CompactionRuntime<Config, State, ToolRequest, TrustTarget>,
+export function startManualHistoryCompactionAsync<Config, State, ToolRequest>(
+  runtime: CompactionRuntime<Config, State, ToolRequest>,
 ): void {
   runtime.compactionTextStore = "";
   const pending: PendingManualHistoryCompaction = {
@@ -211,8 +206,8 @@ export function startManualHistoryCompactionAsync<Config, State, ToolRequest, Tr
   })();
 }
 
-export function launchHistoryCompaction<Config, State, ToolRequest, TrustTarget = string>(
-  runtime: CompactionRuntime<Config, State, ToolRequest, TrustTarget>,
+export function launchHistoryCompaction<Config, State, ToolRequest>(
+  runtime: CompactionRuntime<Config, State, ToolRequest>,
   pending: PendingHistoryCompaction<State, ToolRequest>,
   history: LlmMessage[],
   archiveSourceHistory: LlmMessage[],
@@ -258,12 +253,9 @@ export function launchHistoryCompaction<Config, State, ToolRequest, TrustTarget 
   })();
 }
 
-export async function pollPendingHistoryCompaction<
-  Config,
-  State,
-  ToolRequest,
-  TrustTarget = string,
->(runtime: CompactionRuntime<Config, State, ToolRequest, TrustTarget>): Promise<void> {
+export async function pollPendingHistoryCompaction<Config, State, ToolRequest>(
+  runtime: CompactionRuntime<Config, State, ToolRequest>,
+): Promise<void> {
   const pending = runtime.pendingHistoryCompaction;
   if (!pending || (pending.result === undefined && pending.failure === undefined)) {
     return;
@@ -422,13 +414,8 @@ export async function pollPendingHistoryCompaction<
   runtime.startToolAgentRoundAsync(nextState, pending.pendingUserInput, pending.turn);
 }
 
-export async function waitForCompletedManualHistoryCompactionResult<
-  Config,
-  State,
-  ToolRequest,
-  TrustTarget = string,
->(
-  runtime: CompactionRuntime<Config, State, ToolRequest, TrustTarget>,
+export async function waitForCompletedManualHistoryCompactionResult<Config, State, ToolRequest>(
+  runtime: CompactionRuntime<Config, State, ToolRequest>,
 ): Promise<RuntimeManualHistoryCompactionResult> {
   while (true) {
     const existing = runtime.takeCompletedManualHistoryCompactionResult();

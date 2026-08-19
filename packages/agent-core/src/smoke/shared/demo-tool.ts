@@ -2,6 +2,7 @@ import type {
   AuthorizationDecision,
   JsonValue,
   McpStatusSnapshot,
+  PermissionMemoryTarget,
   ToolExecutionOutput,
   ToolExecutor,
 } from "../../ports.js";
@@ -57,7 +58,10 @@ export class DemoToolExecutor implements ToolExecutor<DemoToolRequest> {
     return { kind: "allowed" };
   }
 
-  async trust(_target: string): Promise<void> {}
+  async rememberApproval(
+    _target: PermissionMemoryTarget,
+    _scope: "session" | "config",
+  ): Promise<void> {}
 
   async execute(request: DemoToolRequest): Promise<ToolExecutionOutput> {
     if (request.name !== "demo_lookup") {

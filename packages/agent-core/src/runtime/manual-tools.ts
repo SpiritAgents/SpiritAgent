@@ -16,9 +16,9 @@ import type {
   RuntimeTurnResult,
 } from "./types.js";
 
-export interface ManualToolsRuntime<Config, State, ToolRequest, TrustTarget = string> {
-  options: AgentRuntimeOptions<Config, State, ToolRequest, TrustTarget>;
-  pendingManualApproval: PendingManualApprovalState<ToolRequest, TrustTarget> | undefined;
+export interface ManualToolsRuntime<Config, State, ToolRequest> {
+  options: AgentRuntimeOptions<Config, State, ToolRequest>;
+  pendingManualApproval: PendingManualApprovalState<ToolRequest> | undefined;
   completedManualToolCommandResultStore:
     | RuntimeCompletedManualToolCommandResult<ToolRequest>
     | undefined;
@@ -34,14 +34,14 @@ export interface ManualToolsRuntime<Config, State, ToolRequest, TrustTarget = st
   takeCompletedManualToolCommandResult():
     | RuntimeCompletedManualToolCommandResult<ToolRequest>
     | undefined;
-  waitForCompletedTurnResult(): Promise<RuntimeTurnResult<State, ToolRequest, TrustTarget>>;
+  waitForCompletedTurnResult(): Promise<RuntimeTurnResult<State, ToolRequest>>;
   poll(): Promise<void>;
 }
 
-export async function startManualToolCommand<Config, State, ToolRequest, TrustTarget = string>(
-  runtime: ManualToolsRuntime<Config, State, ToolRequest, TrustTarget>,
+export async function startManualToolCommand<Config, State, ToolRequest>(
+  runtime: ManualToolsRuntime<Config, State, ToolRequest>,
   message: string,
-): Promise<RuntimeManualToolCommandStartResult<State, ToolRequest, TrustTarget>> {
+): Promise<RuntimeManualToolCommandStartResult<State, ToolRequest>> {
   if (runtime.isBusy()) {
     throw new Error("A response or approval is already being processed; please wait.");
   }
@@ -65,7 +65,7 @@ export async function startManualToolCommand<Config, State, ToolRequest, TrustTa
 
   const toolName = toolNameFromRequest(request);
 
-  let authorization: AuthorizationDecision<TrustTarget>;
+  let authorization: AuthorizationDecision;
   try {
     authorization = await runtime.options.toolExecutor.authorize(request);
   } catch (error) {
@@ -73,6 +73,15 @@ export async function startManualToolCommand<Config, State, ToolRequest, TrustTa
       kind: "failed",
       error: `Tool authorization check failed: ${renderError(error)}`,
       request,
+    };
+  }
+
+  if (authorization.kind === "denied") {
+    return {
+      kind: "denied",
+      request,
+      toolName,
+      message: `[denied by permission rule] ${authorization.reason}`,
     };
   }
 
@@ -87,14 +96,16 @@ export async function startManualToolCommand<Config, State, ToolRequest, TrustTa
       },
       {
         prompt: authorization.prompt,
-        trustTarget: authorization.trustTarget,
+        rememberTarget: authorization.rememberTarget,
       },
     );
     if (activeGate) {
       runtime.pendingManualApproval = {
         request,
         prompt: activeGate.prompt,
-        ...(activeGate.trustTarget !== undefined ? { trustTarget: activeGate.trustTarget } : {}),
+        ...(activeGate.rememberTarget !== undefined
+          ? { rememberTarget: activeGate.rememberTarget }
+          : {}),
         ...(activeGate.autoReviewBlockReason !== undefined
           ? { autoReviewBlockReason: activeGate.autoReviewBlockReason }
           : {}),
@@ -105,7 +116,9 @@ export async function startManualToolCommand<Config, State, ToolRequest, TrustTa
         approval: {
           prompt: activeGate.prompt,
           request,
-          ...(activeGate.trustTarget !== undefined ? { trustTarget: activeGate.trustTarget } : {}),
+          ...(activeGate.rememberTarget !== undefined
+            ? { rememberTarget: activeGate.rememberTarget }
+            : {}),
           ...(activeGate.autoReviewBlockReason !== undefined
             ? { autoReviewBlockReason: activeGate.autoReviewBlockReason }
             : {}),
@@ -117,7 +130,9 @@ export async function startManualToolCommand<Config, State, ToolRequest, TrustTa
         approval: {
           prompt: activeGate.prompt,
           request,
-          ...(activeGate.trustTarget !== undefined ? { trustTarget: activeGate.trustTarget } : {}),
+          ...(activeGate.rememberTarget !== undefined
+            ? { rememberTarget: activeGate.rememberTarget }
+            : {}),
           ...(activeGate.autoReviewBlockReason !== undefined
             ? { autoReviewBlockReason: activeGate.autoReviewBlockReason }
             : {}),
@@ -138,15 +153,10 @@ export async function startManualToolCommand<Config, State, ToolRequest, TrustTa
   return startManualToolRequest(runtime, request, toolName);
 }
 
-export async function continuePendingManualToolApproval<
-  Config,
-  State,
-  ToolRequest,
-  TrustTarget = string,
->(
-  runtime: ManualToolsRuntime<Config, State, ToolRequest, TrustTarget>,
+export async function continuePendingManualToolApproval<Config, State, ToolRequest>(
+  runtime: ManualToolsRuntime<Config, State, ToolRequest>,
   decision: RuntimeApprovalDecision,
-): Promise<RuntimeManualToolCommandStartResult<State, ToolRequest, TrustTarget>> {
+): Promise<RuntimeManualToolCommandStartResult<State, ToolRequest>> {
   const pending = runtime.pendingManualApproval;
   if (!pending) {
     throw new Error("There is no pending manual tool call to confirm.");
@@ -156,8 +166,11 @@ export async function continuePendingManualToolApproval<
   runtime.completedManualToolCommandResultStore = undefined;
 
   if (decision.kind === "allow") {
-    if (decision.persistTrust && pending.trustTarget !== undefined) {
-      await runtime.options.toolExecutor.trust(pending.trustTarget);
+    if (decision.remember && pending.rememberTarget !== undefined) {
+      await runtime.options.toolExecutor.rememberApproval(
+        pending.rememberTarget,
+        decision.remember,
+      );
     }
 
     return startManualToolRequest(runtime, pending.request, pending.toolName);
@@ -189,11 +202,11 @@ export async function continuePendingManualToolApproval<
   };
 }
 
-export async function startManualToolRequest<Config, State, ToolRequest, TrustTarget = string>(
-  runtime: ManualToolsRuntime<Config, State, ToolRequest, TrustTarget>,
+export async function startManualToolRequest<Config, State, ToolRequest>(
+  runtime: ManualToolsRuntime<Config, State, ToolRequest>,
   request: ToolRequest,
   toolName: string,
-): Promise<RuntimeManualToolCommandStartResult<State, ToolRequest, TrustTarget>> {
+): Promise<RuntimeManualToolCommandStartResult<State, ToolRequest>> {
   if (runtime.options.toolExecutor.shouldExecuteInBackground?.(request) ?? false) {
     const statusText = runtime.startManualBackgroundToolExecution(request, toolName);
     return {
@@ -215,15 +228,10 @@ export async function startManualToolRequest<Config, State, ToolRequest, TrustTa
   };
 }
 
-export async function waitForStartedManualToolCommandResult<
-  Config,
-  State,
-  ToolRequest,
-  TrustTarget = string,
->(
-  runtime: ManualToolsRuntime<Config, State, ToolRequest, TrustTarget>,
-  result: RuntimeManualToolCommandStartResult<State, ToolRequest, TrustTarget>,
-): Promise<RuntimeManualToolCommandResult<State, ToolRequest, TrustTarget>> {
+export async function waitForStartedManualToolCommandResult<Config, State, ToolRequest>(
+  runtime: ManualToolsRuntime<Config, State, ToolRequest>,
+  result: RuntimeManualToolCommandStartResult<State, ToolRequest>,
+): Promise<RuntimeManualToolCommandResult<State, ToolRequest>> {
   if (result.kind === "started-background") {
     return waitForCompletedManualToolCommandResult(runtime);
   }
@@ -239,13 +247,8 @@ export async function waitForStartedManualToolCommandResult<
   return result;
 }
 
-export async function waitForCompletedManualToolCommandResult<
-  Config,
-  State,
-  ToolRequest,
-  TrustTarget = string,
->(
-  runtime: ManualToolsRuntime<Config, State, ToolRequest, TrustTarget>,
+export async function waitForCompletedManualToolCommandResult<Config, State, ToolRequest>(
+  runtime: ManualToolsRuntime<Config, State, ToolRequest>,
 ): Promise<RuntimeCompletedManualToolCommandResult<ToolRequest>> {
   while (true) {
     const existing = runtime.takeCompletedManualToolCommandResult();

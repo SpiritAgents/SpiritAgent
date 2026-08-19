@@ -10,9 +10,7 @@ import type { AuthorizationDecision, JsonValue, ToolCallRequest } from "../ports
 import type { PreToolUseGateResult } from "../hooks/tool-hooks.js";
 import type { ToolApprovalGate } from "../hooks/tool-hooks.js";
 
-export interface ResolvedToolApprovalGate<
-  TrustTarget = string,
-> extends ToolApprovalGate<TrustTarget> {
+export interface ResolvedToolApprovalGate extends ToolApprovalGate {
   autoReviewBlockReason?: string;
 }
 
@@ -38,10 +36,10 @@ export function buildToolAutoReviewInput(input: {
   };
 }
 
-function gateFromAutoReviewOutcome<TrustTarget>(
-  gate: ToolApprovalGate<TrustTarget>,
+function gateFromAutoReviewOutcome(
+  gate: ToolApprovalGate,
   outcome: ToolAutoReviewGateOutcome,
-): ResolvedToolApprovalGate<TrustTarget> | null {
+): ResolvedToolApprovalGate | null {
   if (outcome.kind === "allowed") {
     return null;
   }
@@ -54,16 +52,16 @@ function gateFromAutoReviewOutcome<TrustTarget>(
   return gate;
 }
 
-export async function applyAutoReviewToApprovalGate<TrustTarget, ToolRequest>(
+export async function applyAutoReviewToApprovalGate<ToolRequest>(
   approvalLevel: SessionApprovalLevel | undefined,
   reviewToolApproval: ToolAutoReviewer | undefined,
   toolDefinitions: JsonValue,
   call: { name: string; argumentsJson: string },
-  gate: ToolApprovalGate<TrustTarget>,
+  gate: ToolApprovalGate,
   preGate?: PreToolUseGateResult<ToolRequest>,
   toolCallId?: string,
   reviewCache?: AutoReviewCache,
-): Promise<ResolvedToolApprovalGate<TrustTarget> | null> {
+): Promise<ResolvedToolApprovalGate | null> {
   if (!reviewToolApproval || approvalLevel !== "auto-approval") {
     return gate;
   }
@@ -102,14 +100,14 @@ export async function applyAutoReviewToApprovalGate<TrustTarget, ToolRequest>(
  * Skips PreToolUse hooks here to avoid double side effects — hook ask is still
  * honored in applyAutoReviewToApprovalGate before consuming cache.
  */
-export function prefetchAutoReviewsForToolCalls<ToolRequest, TrustTarget = string>(input: {
+export function prefetchAutoReviewsForToolCalls<ToolRequest>(input: {
   calls: readonly ToolCallRequest[];
   approvalLevel: SessionApprovalLevel | undefined;
   reviewToolApproval: ToolAutoReviewer | undefined;
   toolDefinitions: JsonValue;
   reviewCache: AutoReviewCache;
   requestFromFunctionCall(name: string, argumentsJson: string): Promise<ToolRequest>;
-  authorize(request: ToolRequest): Promise<AuthorizationDecision<TrustTarget>>;
+  authorize(request: ToolRequest): Promise<AuthorizationDecision>;
 }): void {
   const { approvalLevel, reviewToolApproval, reviewCache } = input;
   if (!reviewToolApproval || approvalLevel !== "auto-approval") {
@@ -138,7 +136,7 @@ export function prefetchAutoReviewsForToolCalls<ToolRequest, TrustTarget = strin
  * Streaming preview path: start (or restart) auto-review for one tool when its
  * arguments fingerprint changes. Uses the same AutoReviewCache as formal tool processing.
  */
-export function prefetchAutoReviewForToolCallIfNeeded<ToolRequest, TrustTarget = string>(input: {
+export function prefetchAutoReviewForToolCallIfNeeded<ToolRequest>(input: {
   call: ToolCallRequest;
   canonicalArgumentsJson: string;
   argFingerprints: Map<string, string>;
@@ -147,7 +145,7 @@ export function prefetchAutoReviewForToolCallIfNeeded<ToolRequest, TrustTarget =
   toolDefinitions: JsonValue;
   reviewCache: AutoReviewCache;
   requestFromFunctionCall(name: string, argumentsJson: string): Promise<ToolRequest>;
-  authorize(request: ToolRequest): Promise<AuthorizationDecision<TrustTarget>>;
+  authorize(request: ToolRequest): Promise<AuthorizationDecision>;
 }): void {
   const { approvalLevel, reviewToolApproval, reviewCache, call, canonicalArgumentsJson } = input;
   if (!reviewToolApproval || approvalLevel !== "auto-approval") {
@@ -177,13 +175,13 @@ export function prefetchAutoReviewForToolCallIfNeeded<ToolRequest, TrustTarget =
   );
 }
 
-function startAutoReviewPromise<ToolRequest, TrustTarget>(input: {
+function startAutoReviewPromise<ToolRequest>(input: {
   call: ToolCallRequest;
   approvalLevel: SessionApprovalLevel;
   reviewToolApproval: ToolAutoReviewer;
   toolDefinitions: JsonValue;
   requestFromFunctionCall(name: string, argumentsJson: string): Promise<ToolRequest>;
-  authorize(request: ToolRequest): Promise<AuthorizationDecision<TrustTarget>>;
+  authorize(request: ToolRequest): Promise<AuthorizationDecision>;
 }): Promise<ToolAutoReviewGateOutcome> {
   return (async (): Promise<ToolAutoReviewGateOutcome> => {
     try {

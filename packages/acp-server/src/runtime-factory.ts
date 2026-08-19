@@ -54,12 +54,7 @@ import { createNoopPeer } from "./noop-peer.js";
 import { resolveTransportConfig } from "@spiritagent/host-internal";
 import type { AcpServerConfig } from "./types.js";
 
-export type AcpHostRuntime = AgentRuntime<
-  LlmTransportConfig,
-  LlmToolAgentState,
-  JsonValue,
-  JsonValue
->;
+export type AcpHostRuntime = AgentRuntime<LlmTransportConfig, LlmToolAgentState, JsonValue>;
 
 export interface AcpRuntimeResult {
   runtime: AcpHostRuntime;
@@ -213,7 +208,7 @@ export async function createAcpRuntime(
   const llmTransport = createLlmTransport(transportConfig);
 
   // 9. Assemble AgentRuntime
-  const runtime = new AgentRuntime<LlmTransportConfig, LlmToolAgentState, JsonValue, JsonValue>({
+  const runtime = new AgentRuntime<LlmTransportConfig, LlmToolAgentState, JsonValue>({
     config: transportConfig,
     llmTransport,
     toolExecutor,

@@ -14,15 +14,15 @@ export interface ToolExecutionResult {
   backgroundExecution: boolean;
 }
 
-export interface ToolExecutionRuntime<Config, State, ToolRequest, TrustTarget = string> {
-  options: AgentRuntimeOptions<Config, State, ToolRequest, TrustTarget>;
+export interface ToolExecutionRuntime<Config, State, ToolRequest> {
+  options: AgentRuntimeOptions<Config, State, ToolRequest>;
   historyStore: LlmMessage[];
   pendingBackgroundToolStatusStore: string | undefined;
   emitEvent(event: RuntimeEvent<ToolRequest>): void;
 }
 
-export async function performToolExecution<Config, State, ToolRequest, TrustTarget = string>(
-  runtime: ToolExecutionRuntime<Config, State, ToolRequest, TrustTarget>,
+export async function performToolExecution<Config, State, ToolRequest>(
+  runtime: ToolExecutionRuntime<Config, State, ToolRequest>,
   request: ToolRequest,
   toolName: string,
   _toolCallId?: string,
@@ -76,13 +76,8 @@ export async function performToolExecution<Config, State, ToolRequest, TrustTarg
   };
 }
 
-export function syncPreparedToolResultContentToHistory<
-  Config,
-  State,
-  ToolRequest,
-  TrustTarget = string,
->(
-  runtime: Pick<ToolExecutionRuntime<Config, State, ToolRequest, TrustTarget>, "historyStore">,
+export function syncPreparedToolResultContentToHistory<Config, State, ToolRequest>(
+  runtime: Pick<ToolExecutionRuntime<Config, State, ToolRequest>, "historyStore">,
   toolCallId: string,
   preparedContent: string,
 ): void {

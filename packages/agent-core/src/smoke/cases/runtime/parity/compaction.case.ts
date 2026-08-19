@@ -121,9 +121,7 @@ export async function runCompactionCase(): Promise<RuntimeParityCaseResult> {
   }
 
   pollingCompactTransport.finishCompaction();
-  let pollingCompactResult:
-    | RuntimeTurnResult<ScriptedState, ScriptedToolRequest, string>
-    | undefined;
+  let pollingCompactResult: RuntimeTurnResult<ScriptedState, ScriptedToolRequest> | undefined;
   for (let index = 0; index < 8; index += 1) {
     await flushMicrotasks(4);
     await pollingCompactRuntime.poll();

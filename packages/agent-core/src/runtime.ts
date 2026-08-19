@@ -171,20 +171,20 @@ export type {
   SubagentWorkspaceBootstrapResult,
 } from "./runtime/types.js";
 
-interface PendingSubagentExecution<Config, State, ToolRequest, TrustTarget> {
+interface PendingSubagentExecution<Config, State, ToolRequest> {
   parentRequest: ToolRequest;
   parentToolCallId: string;
   parentPendingUserInput: string;
   parentState: State;
   parentRemainingCalls: ToolCallRequest[];
   parentTurn: RuntimeTurnContext<ToolRequest>;
-  childRuntime: AgentRuntime<Config, State, ToolRequest, TrustTarget>;
+  childRuntime: AgentRuntime<Config, State, ToolRequest>;
   childRecord: RuntimeSubagentSessionArchiveEntry;
   resumeAsStreaming: boolean;
   streamingEmitBeginResponse: boolean;
 }
 
-interface PendingSubagentWorktreeBootstrap<State, ToolRequest, _TrustTarget> {
+interface PendingSubagentWorktreeBootstrap<State, ToolRequest> {
   parentRequest: ToolRequest;
   parentToolCallId: string;
   parentPendingUserInput: string;
@@ -206,7 +206,7 @@ interface PendingSubagentBatchContinuation<State, ToolRequest> {
   streamingEmitBeginResponse: boolean;
 }
 
-type SubagentToolExecutionResult<ToolRequest, TrustTarget> =
+type SubagentToolExecutionResult<ToolRequest> =
   | { kind: "not-handled" }
   | { kind: "started" }
   | {
@@ -218,15 +218,15 @@ type SubagentToolExecutionResult<ToolRequest, TrustTarget> =
     }
   | {
       kind: "requires-approval";
-      approval: RuntimePendingApproval<ToolRequest, TrustTarget>;
+      approval: RuntimePendingApproval<ToolRequest>;
     }
   | {
       kind: "requires-questions";
       questions: RuntimePendingQuestions<ToolRequest>;
     };
 
-export class AgentRuntime<Config, State, ToolRequest, TrustTarget = string> {
-  private readonly options: AgentRuntimeOptions<Config, State, ToolRequest, TrustTarget>;
+export class AgentRuntime<Config, State, ToolRequest> {
+  private readonly options: AgentRuntimeOptions<Config, State, ToolRequest>;
   private historyStore: LlmMessage[];
   private requestTraceStore: JsonValue[];
   private eventQueueStore: RuntimeEvent<ToolRequest>[];
@@ -240,12 +240,12 @@ export class AgentRuntime<Config, State, ToolRequest, TrustTarget = string> {
   private awaitingPostBuiltInToolStreamDeltaStore = false;
   private compactionTextStore: string;
   private pendingUserTurnStore: string | undefined;
-  private pendingApproval: PendingApprovalState<State, ToolRequest, TrustTarget> | undefined;
-  private earlyApprovalQueue: EarlyStreamApprovalQueueItem<State, ToolRequest, TrustTarget>[] = [];
+  private pendingApproval: PendingApprovalState<State, ToolRequest> | undefined;
+  private earlyApprovalQueue: EarlyStreamApprovalQueueItem<State, ToolRequest>[] = [];
   private pendingApprovalSlotWaiters: Array<(canProceed: boolean) => void> = [];
   private earlyApprovalOrderChain: Promise<void> | undefined;
   private pendingQuestions: PendingQuestionsState<State, ToolRequest> | undefined;
-  private pendingManualApproval: PendingManualApprovalState<ToolRequest, TrustTarget> | undefined;
+  private pendingManualApproval: PendingManualApprovalState<ToolRequest> | undefined;
   private pendingStreamingRound: PendingStreamingRound<State, ToolRequest> | undefined;
   private pendingToolAgentRound: PendingToolAgentRound<State, ToolRequest> | undefined;
   private pendingToolCallContinuation: PendingToolCallContinuation<State, ToolRequest> | undefined;
@@ -261,18 +261,18 @@ export class AgentRuntime<Config, State, ToolRequest, TrustTarget = string> {
   private childSessionsStore: RuntimeSubagentSessionArchiveEntry[];
   private pendingSubagentExecutions = new Map<
     string,
-    PendingSubagentExecution<Config, State, ToolRequest, TrustTarget>
+    PendingSubagentExecution<Config, State, ToolRequest>
   >();
   private pendingSubagentWorktreeBootstraps = new Map<
     string,
-    PendingSubagentWorktreeBootstrap<State, ToolRequest, TrustTarget>
+    PendingSubagentWorktreeBootstrap<State, ToolRequest>
   >();
   private pendingSubagentBatchContinuation:
     | PendingSubagentBatchContinuation<State, ToolRequest>
     | undefined;
   /** pendingToolCallContinuation is already cleared during a synchronous await of performToolExecution, so these are counted separately */
   private inFlightSynchronousToolExecutionsStore = 0;
-  private completedTurnResultStore: RuntimeTurnResult<State, ToolRequest, TrustTarget> | undefined;
+  private completedTurnResultStore: RuntimeTurnResult<State, ToolRequest> | undefined;
   private completedManualToolCommandResultStore:
     | RuntimeCompletedManualToolCommandResult<ToolRequest>
     | undefined;
@@ -289,7 +289,7 @@ export class AgentRuntime<Config, State, ToolRequest, TrustTarget = string> {
   private sealedTranscriptMessagesStore: SessionTranscriptMessage[] = [];
 
   constructor(
-    options: AgentRuntimeOptions<Config, State, ToolRequest, TrustTarget>,
+    options: AgentRuntimeOptions<Config, State, ToolRequest>,
     initialHistory: LlmMessage[] = [],
     runtimeDepth = 0,
   ) {
@@ -448,7 +448,7 @@ export class AgentRuntime<Config, State, ToolRequest, TrustTarget = string> {
     return events;
   }
 
-  takeCompletedTurnResult(): RuntimeTurnResult<State, ToolRequest, TrustTarget> | undefined {
+  takeCompletedTurnResult(): RuntimeTurnResult<State, ToolRequest> | undefined {
     const result = this.completedTurnResultStore;
     this.completedTurnResultStore = undefined;
     return result;
@@ -547,13 +547,13 @@ export class AgentRuntime<Config, State, ToolRequest, TrustTarget = string> {
     );
   }
 
-  currentPendingApproval(): RuntimePendingApproval<ToolRequest, TrustTarget> | undefined {
+  currentPendingApproval(): RuntimePendingApproval<ToolRequest> | undefined {
     if (this.pendingApproval) {
       return {
         prompt: this.pendingApproval.prompt,
         request: this.pendingApproval.request,
-        ...(this.pendingApproval.trustTarget !== undefined
-          ? { trustTarget: this.pendingApproval.trustTarget }
+        ...(this.pendingApproval.rememberTarget !== undefined
+          ? { rememberTarget: this.pendingApproval.rememberTarget }
           : {}),
         ...(this.pendingApproval.autoReviewBlockReason !== undefined
           ? { autoReviewBlockReason: this.pendingApproval.autoReviewBlockReason }
@@ -567,8 +567,8 @@ export class AgentRuntime<Config, State, ToolRequest, TrustTarget = string> {
       return {
         prompt: this.pendingManualApproval.prompt,
         request: this.pendingManualApproval.request,
-        ...(this.pendingManualApproval.trustTarget !== undefined
-          ? { trustTarget: this.pendingManualApproval.trustTarget }
+        ...(this.pendingManualApproval.rememberTarget !== undefined
+          ? { rememberTarget: this.pendingManualApproval.rememberTarget }
           : {}),
         ...(this.pendingManualApproval.autoReviewBlockReason !== undefined
           ? { autoReviewBlockReason: this.pendingManualApproval.autoReviewBlockReason }
@@ -623,14 +623,14 @@ export class AgentRuntime<Config, State, ToolRequest, TrustTarget = string> {
   }
 
   private cachePendingSubagentExecution(
-    pending: PendingSubagentExecution<Config, State, ToolRequest, TrustTarget>,
+    pending: PendingSubagentExecution<Config, State, ToolRequest>,
   ): void {
     this.pendingSubagentExecutions.set(pending.parentToolCallId, pending);
   }
 
   private findPendingSubagentBySessionId(
     sessionId: string,
-  ): PendingSubagentExecution<Config, State, ToolRequest, TrustTarget> | undefined {
+  ): PendingSubagentExecution<Config, State, ToolRequest> | undefined {
     for (const pending of this.pendingSubagentExecutions.values()) {
       if (pending.childRecord.summary.sessionId === sessionId) {
         return pending;
@@ -640,7 +640,7 @@ export class AgentRuntime<Config, State, ToolRequest, TrustTarget = string> {
   }
 
   private findPendingSubagentWithApproval():
-    | PendingSubagentExecution<Config, State, ToolRequest, TrustTarget>
+    | PendingSubagentExecution<Config, State, ToolRequest>
     | undefined {
     for (const pending of this.pendingSubagentExecutions.values()) {
       if (pending.childRuntime.hasPendingApproval()) {
@@ -651,7 +651,7 @@ export class AgentRuntime<Config, State, ToolRequest, TrustTarget = string> {
   }
 
   private findPendingSubagentWithQuestions():
-    | PendingSubagentExecution<Config, State, ToolRequest, TrustTarget>
+    | PendingSubagentExecution<Config, State, ToolRequest>
     | undefined {
     for (const pending of this.pendingSubagentExecutions.values()) {
       if (pending.childRuntime.hasPendingQuestions()) {
@@ -662,7 +662,7 @@ export class AgentRuntime<Config, State, ToolRequest, TrustTarget = string> {
   }
 
   private firstPendingSubagentExecution():
-    | PendingSubagentExecution<Config, State, ToolRequest, TrustTarget>
+    | PendingSubagentExecution<Config, State, ToolRequest>
     | undefined {
     return this.pendingSubagentExecutions.values().next().value;
   }
@@ -701,11 +701,11 @@ export class AgentRuntime<Config, State, ToolRequest, TrustTarget = string> {
     parentState: State,
     parentRemainingCalls: ToolCallRequest[],
     parentTurn: RuntimeTurnContext<ToolRequest>,
-    childRuntime: AgentRuntime<Config, State, ToolRequest, TrustTarget>,
+    childRuntime: AgentRuntime<Config, State, ToolRequest>,
     childRecord: RuntimeSubagentSessionArchiveEntry,
     resumeAsStreaming: boolean,
     streamingEmitBeginResponse: boolean,
-  ): PendingSubagentExecution<Config, State, ToolRequest, TrustTarget> {
+  ): PendingSubagentExecution<Config, State, ToolRequest> {
     return {
       parentRequest,
       parentToolCallId,
@@ -784,9 +784,7 @@ export class AgentRuntime<Config, State, ToolRequest, TrustTarget = string> {
     }
 
     this.pendingUserTurnStore = undefined;
-    clearEarlyApprovalWaiters(
-      this as unknown as TurnMachineRuntime<Config, State, ToolRequest, TrustTarget>,
-    );
+    clearEarlyApprovalWaiters(this as unknown as TurnMachineRuntime<Config, State, ToolRequest>);
     this.pendingApproval = undefined;
     this.pendingManualApproval = undefined;
     this.pendingQuestions = undefined;
@@ -808,9 +806,7 @@ export class AgentRuntime<Config, State, ToolRequest, TrustTarget = string> {
   replaceHistory(history: LlmMessage[]): void {
     this.historyStore = repairMissingToolResultsInHistory(cloneHistory(history));
     // Keep sealedTranscriptMessagesStore: durable transcript must survive compaction reloads.
-    clearEarlyApprovalWaiters(
-      this as unknown as TurnMachineRuntime<Config, State, ToolRequest, TrustTarget>,
-    );
+    clearEarlyApprovalWaiters(this as unknown as TurnMachineRuntime<Config, State, ToolRequest>);
     this.clearPendingStreamingState();
     this.clearPendingNonStreamingState();
     this.pendingBackgroundToolStatusStore = undefined;
@@ -831,9 +827,7 @@ export class AgentRuntime<Config, State, ToolRequest, TrustTarget = string> {
     this.loopEnabledStore = archive.loopEnabled === true;
     this.options.toolExecutor.setLoopToolExposure?.(this.loopEnabledStore);
     this.requestTraceStore = [];
-    clearEarlyApprovalWaiters(
-      this as unknown as TurnMachineRuntime<Config, State, ToolRequest, TrustTarget>,
-    );
+    clearEarlyApprovalWaiters(this as unknown as TurnMachineRuntime<Config, State, ToolRequest>);
     this.clearPendingStreamingState();
     this.clearPendingNonStreamingState();
     this.pendingBackgroundToolStatusStore = undefined;
@@ -919,7 +913,7 @@ export class AgentRuntime<Config, State, ToolRequest, TrustTarget = string> {
     sessionId: string | undefined,
     text: string,
     failed: boolean,
-  ): Extract<SubagentToolExecutionResult<ToolRequest, TrustTarget>, { kind: "completed" }> {
+  ): Extract<SubagentToolExecutionResult<ToolRequest>, { kind: "completed" }> {
     const sessionTranscript = sessionId ? this.resolveSubagentTranscriptPath(sessionId) : undefined;
     return {
       kind: "completed",
@@ -938,7 +932,7 @@ export class AgentRuntime<Config, State, ToolRequest, TrustTarget = string> {
     record: RuntimeSubagentSessionArchiveEntry,
     request: SubagentRequest,
     failed: string,
-  ): Extract<SubagentToolExecutionResult<ToolRequest, TrustTarget>, { kind: "completed" }> {
+  ): Extract<SubagentToolExecutionResult<ToolRequest>, { kind: "completed" }> {
     const childUserTurn = buildSubagentUserTurn(request);
     record.llmHistory = [
       {
@@ -1046,7 +1040,7 @@ export class AgentRuntime<Config, State, ToolRequest, TrustTarget = string> {
     userMessage?: string,
   ): Promise<{
     notice: string;
-    result: RuntimeTurnResult<State, ToolRequest, TrustTarget>;
+    result: RuntimeTurnResult<State, ToolRequest>;
   }> {
     const started = await this.prepareMcpPromptTurn(server, prompt, argsJson, userMessage);
     this.startToolAgentRoundAsync(
@@ -1099,7 +1093,7 @@ export class AgentRuntime<Config, State, ToolRequest, TrustTarget = string> {
 
   private async compactHistoryImmediate(): Promise<RuntimeCompactionRecord> {
     return compactHistoryImmediateInternal(
-      this as unknown as CompactionRuntime<Config, State, ToolRequest, TrustTarget>,
+      this as unknown as CompactionRuntime<Config, State, ToolRequest>,
     );
   }
 
@@ -1107,7 +1101,7 @@ export class AgentRuntime<Config, State, ToolRequest, TrustTarget = string> {
     userInput: string,
     explicitImages: string[] = [],
     explicitWorkspaceFiles: PendingWorkspaceFile[] = [],
-  ): Promise<RuntimeTurnResult<State, ToolRequest, TrustTarget>> {
+  ): Promise<RuntimeTurnResult<State, ToolRequest>> {
     await this.startUserTurn(userInput, explicitImages, explicitWorkspaceFiles);
     return this.waitForCompletedTurnResult();
   }
@@ -1217,7 +1211,7 @@ export class AgentRuntime<Config, State, ToolRequest, TrustTarget = string> {
 
   handleStreamStallTimeout(nowMs = Date.now(), stallTimeoutMs = STREAM_STALL_TIMEOUT_MS): void {
     handleStreamStallTimeoutInternal(
-      this as unknown as StreamingRuntime<Config, State, ToolRequest, TrustTarget>,
+      this as unknown as StreamingRuntime<Config, State, ToolRequest>,
       nowMs,
       stallTimeoutMs,
     );
@@ -1225,18 +1219,18 @@ export class AgentRuntime<Config, State, ToolRequest, TrustTarget = string> {
 
   async resumePendingApproval(
     decision: RuntimeApprovalDecision,
-  ): Promise<RuntimeTurnResult<State, ToolRequest, TrustTarget>> {
+  ): Promise<RuntimeTurnResult<State, ToolRequest>> {
     return resumePendingApprovalInternal(
-      this as unknown as TurnMachineRuntime<Config, State, ToolRequest, TrustTarget>,
+      this as unknown as TurnMachineRuntime<Config, State, ToolRequest>,
       decision,
     );
   }
 
   async resumePendingQuestions(
     result: AskQuestionsResult,
-  ): Promise<RuntimeTurnResult<State, ToolRequest, TrustTarget>> {
+  ): Promise<RuntimeTurnResult<State, ToolRequest>> {
     return resumePendingQuestionsInternal(
-      this as unknown as TurnMachineRuntime<Config, State, ToolRequest, TrustTarget>,
+      this as unknown as TurnMachineRuntime<Config, State, ToolRequest>,
       result,
     );
   }
@@ -1267,16 +1261,14 @@ export class AgentRuntime<Config, State, ToolRequest, TrustTarget = string> {
     // Whether this decision came from early-stream or a formal approval, once the slot is
     // released the queued early approval must be promoted: if the formal branch does not pump,
     // the queued waiter's promise would never be settled.
-    pumpEarlyApprovalQueue(
-      this as unknown as TurnMachineRuntime<Config, State, ToolRequest, TrustTarget>,
-    );
+    pumpEarlyApprovalQueue(this as unknown as TurnMachineRuntime<Config, State, ToolRequest>);
     if (pending.source === "early-stream") {
       return;
     }
 
     if (decision.kind === "allow") {
-      if (decision.persistTrust && pending.trustTarget !== undefined) {
-        await this.options.toolExecutor.trust(pending.trustTarget);
+      if (decision.remember && pending.rememberTarget !== undefined) {
+        await this.options.toolExecutor.rememberApproval(pending.rememberTarget, decision.remember);
       }
 
       if (this.options.toolExecutor.shouldExecuteInBackground?.(pending.request) ?? false) {
@@ -1362,7 +1354,7 @@ export class AgentRuntime<Config, State, ToolRequest, TrustTarget = string> {
         : "[denied by user] tool call rejected by user guidance";
       const guidanceMessage = decision.userMessage.trim();
       commitSyntheticToolExecutionFailure(
-        this as unknown as TurnMachineRuntime<Config, State, ToolRequest, TrustTarget>,
+        this as unknown as TurnMachineRuntime<Config, State, ToolRequest>,
         pending.turn,
         pending.request,
         pending.toolCallId,
@@ -1427,7 +1419,7 @@ export class AgentRuntime<Config, State, ToolRequest, TrustTarget = string> {
       ? decision.resultText
       : "[denied by user] tool call rejected by user approval policy";
     commitSyntheticToolExecutionFailure(
-      this as unknown as TurnMachineRuntime<Config, State, ToolRequest, TrustTarget>,
+      this as unknown as TurnMachineRuntime<Config, State, ToolRequest>,
       pending.turn,
       pending.request,
       pending.toolCallId,
@@ -1530,7 +1522,7 @@ export class AgentRuntime<Config, State, ToolRequest, TrustTarget = string> {
         return;
       }
 
-      let authorization: AuthorizationDecision<TrustTarget>;
+      let authorization: AuthorizationDecision;
       try {
         authorization = await this.options.toolExecutor.authorize(continuedRequest);
       } catch (error) {
@@ -1538,12 +1530,17 @@ export class AgentRuntime<Config, State, ToolRequest, TrustTarget = string> {
         return;
       }
 
+      if (authorization.kind === "denied") {
+        await resumeAfterToolOutput(`[denied by permission rule] ${authorization.reason}`);
+        return;
+      }
+
       if (authorization.kind === "need-approval") {
         const approval = {
           prompt: authorization.prompt,
           request: continuedRequest,
-          ...(authorization.trustTarget !== undefined
-            ? { trustTarget: authorization.trustTarget }
+          ...(authorization.rememberTarget !== undefined
+            ? { rememberTarget: authorization.rememberTarget }
             : {}),
           toolCallId: pending.toolCallId,
           toolName: pending.toolName,
@@ -1553,8 +1550,8 @@ export class AgentRuntime<Config, State, ToolRequest, TrustTarget = string> {
           state: pending.state,
           request: continuedRequest,
           prompt: authorization.prompt,
-          ...(authorization.trustTarget !== undefined
-            ? { trustTarget: authorization.trustTarget }
+          ...(authorization.rememberTarget !== undefined
+            ? { rememberTarget: authorization.rememberTarget }
             : {}),
           toolCallId: pending.toolCallId,
           toolName: pending.toolName,
@@ -1707,16 +1704,16 @@ export class AgentRuntime<Config, State, ToolRequest, TrustTarget = string> {
 
   async executeManualToolCommand(
     message: string,
-  ): Promise<RuntimeManualToolCommandResult<State, ToolRequest, TrustTarget>> {
+  ): Promise<RuntimeManualToolCommandResult<State, ToolRequest>> {
     const result = await this.startManualToolCommand(message);
     return this.waitForStartedManualToolCommandResult(result);
   }
 
   async startManualToolCommand(
     message: string,
-  ): Promise<RuntimeManualToolCommandStartResult<State, ToolRequest, TrustTarget>> {
+  ): Promise<RuntimeManualToolCommandStartResult<State, ToolRequest>> {
     return startManualToolCommandInternal(
-      this as unknown as ManualToolsRuntime<Config, State, ToolRequest, TrustTarget>,
+      this as unknown as ManualToolsRuntime<Config, State, ToolRequest>,
       message,
     );
   }
@@ -1724,22 +1721,22 @@ export class AgentRuntime<Config, State, ToolRequest, TrustTarget = string> {
   async startManualToolRequestDirect(
     request: ToolRequest,
     toolName: string,
-  ): Promise<RuntimeManualToolCommandStartResult<State, ToolRequest, TrustTarget>> {
+  ): Promise<RuntimeManualToolCommandStartResult<State, ToolRequest>> {
     return this.startManualToolRequest(request, toolName);
   }
 
   async resumePendingManualToolApproval(
     decision: RuntimeApprovalDecision,
-  ): Promise<RuntimeManualToolCommandResult<State, ToolRequest, TrustTarget>> {
+  ): Promise<RuntimeManualToolCommandResult<State, ToolRequest>> {
     const result = await this.continuePendingManualToolApproval(decision);
     return this.waitForStartedManualToolCommandResult(result);
   }
 
   async continuePendingManualToolApproval(
     decision: RuntimeApprovalDecision,
-  ): Promise<RuntimeManualToolCommandStartResult<State, ToolRequest, TrustTarget>> {
+  ): Promise<RuntimeManualToolCommandStartResult<State, ToolRequest>> {
     return continuePendingManualToolApprovalInternal(
-      this as unknown as ManualToolsRuntime<Config, State, ToolRequest, TrustTarget>,
+      this as unknown as ManualToolsRuntime<Config, State, ToolRequest>,
       decision,
     );
   }
@@ -1748,9 +1745,9 @@ export class AgentRuntime<Config, State, ToolRequest, TrustTarget = string> {
     state: State,
     pendingUserInput: string,
     turn: RuntimeTurnContext<ToolRequest>,
-  ): Promise<RuntimeTurnResult<State, ToolRequest, TrustTarget>> {
+  ): Promise<RuntimeTurnResult<State, ToolRequest>> {
     return runTurnLoopInternal(
-      this as unknown as TurnMachineRuntime<Config, State, ToolRequest, TrustTarget>,
+      this as unknown as TurnMachineRuntime<Config, State, ToolRequest>,
       state,
       pendingUserInput,
       turn,
@@ -1762,9 +1759,9 @@ export class AgentRuntime<Config, State, ToolRequest, TrustTarget = string> {
     pendingUserInput: string,
     calls: ToolCallRequest[],
     turn: RuntimeTurnContext<ToolRequest>,
-  ): Promise<RuntimeTurnResult<State, ToolRequest, TrustTarget>> {
+  ): Promise<RuntimeTurnResult<State, ToolRequest>> {
     return processToolCallsInternal(
-      this as unknown as TurnMachineRuntime<Config, State, ToolRequest, TrustTarget>,
+      this as unknown as TurnMachineRuntime<Config, State, ToolRequest>,
       state,
       pendingUserInput,
       calls,
@@ -1780,9 +1777,9 @@ export class AgentRuntime<Config, State, ToolRequest, TrustTarget = string> {
     toolName: string,
     remainingCalls: ToolCallRequest[],
     turn: RuntimeTurnContext<ToolRequest>,
-  ): Promise<RuntimeTurnResult<State, ToolRequest, TrustTarget>> {
+  ): Promise<RuntimeTurnResult<State, ToolRequest>> {
     return executeAuthorizedToolCallInternal(
-      this as unknown as TurnMachineRuntime<Config, State, ToolRequest, TrustTarget>,
+      this as unknown as TurnMachineRuntime<Config, State, ToolRequest>,
       pendingUserInput,
       state,
       request,
@@ -1801,7 +1798,7 @@ export class AgentRuntime<Config, State, ToolRequest, TrustTarget = string> {
     _toolName: string,
     remainingCalls: ToolCallRequest[],
     turn: RuntimeTurnContext<ToolRequest>,
-  ): Promise<RuntimeTurnResult<State, ToolRequest, TrustTarget> | undefined> {
+  ): Promise<RuntimeTurnResult<State, ToolRequest> | undefined> {
     const finishSummary = extractFinishTaskSummary(request);
     if (finishSummary !== undefined && this.loopEnabled()) {
       return this.completeFinishTaskToolCall(state, request, toolCallId, finishSummary, turn);
@@ -2112,7 +2109,7 @@ export class AgentRuntime<Config, State, ToolRequest, TrustTarget = string> {
     toolCallId: string,
     summary: string,
     turn: RuntimeTurnContext<ToolRequest>,
-  ): RuntimeTurnResult<State, ToolRequest, TrustTarget> {
+  ): RuntimeTurnResult<State, ToolRequest> {
     const output = summary.trim() || "Task marked complete.";
     const content = createLlmMessageContentFromText(output);
     this.historyStore.push({
@@ -2160,7 +2157,7 @@ export class AgentRuntime<Config, State, ToolRequest, TrustTarget = string> {
     emptyAssistantRetries = 0,
   ): void {
     startToolAgentRoundAsyncInternal(
-      this as unknown as TurnMachineRuntime<Config, State, ToolRequest, TrustTarget>,
+      this as unknown as TurnMachineRuntime<Config, State, ToolRequest>,
       state,
       pendingUserInput,
       turn,
@@ -2170,7 +2167,7 @@ export class AgentRuntime<Config, State, ToolRequest, TrustTarget = string> {
 
   private async pollPendingToolAgentRound(): Promise<void> {
     return pollPendingToolAgentRoundInternal(
-      this as unknown as TurnMachineRuntime<Config, State, ToolRequest, TrustTarget>,
+      this as unknown as TurnMachineRuntime<Config, State, ToolRequest>,
     );
   }
 
@@ -2179,7 +2176,7 @@ export class AgentRuntime<Config, State, ToolRequest, TrustTarget = string> {
     completion: ToolAgentRoundCompletion<State>,
   ): Promise<void> {
     return handlePendingToolAgentRoundCompletionInternal(
-      this as unknown as TurnMachineRuntime<Config, State, ToolRequest, TrustTarget>,
+      this as unknown as TurnMachineRuntime<Config, State, ToolRequest>,
       pending,
       completion,
     );
@@ -2195,7 +2192,7 @@ export class AgentRuntime<Config, State, ToolRequest, TrustTarget = string> {
     earlyToolExecutions?: Map<string, PendingEarlyToolExecution<ToolRequest>>,
   ): Promise<void> {
     return processToolCallsAsyncInternal(
-      this as unknown as TurnMachineRuntime<Config, State, ToolRequest, TrustTarget>,
+      this as unknown as TurnMachineRuntime<Config, State, ToolRequest>,
       state,
       pendingUserInput,
       calls,
@@ -2242,7 +2239,7 @@ export class AgentRuntime<Config, State, ToolRequest, TrustTarget = string> {
     postHookToolInput?: import("./ports.js").JsonObject,
   ): void {
     startBackgroundToolExecutionAsyncInternal(
-      this as unknown as BackgroundToolsRuntime<Config, State, ToolRequest, TrustTarget>,
+      this as unknown as BackgroundToolsRuntime<Config, State, ToolRequest>,
       pendingUserInput,
       state,
       request,
@@ -2272,7 +2269,7 @@ export class AgentRuntime<Config, State, ToolRequest, TrustTarget = string> {
     postHookToolInput?: import("./ports.js").JsonObject,
   ): void {
     scheduleBackgroundToolExecutionAsyncInternal(
-      this as unknown as BackgroundToolsRuntime<Config, State, ToolRequest, TrustTarget>,
+      this as unknown as BackgroundToolsRuntime<Config, State, ToolRequest>,
       pendingUserInput,
       state,
       request,
@@ -2310,7 +2307,7 @@ export class AgentRuntime<Config, State, ToolRequest, TrustTarget = string> {
     toolName: string,
   ): string | undefined {
     return startManualBackgroundToolExecutionInternal(
-      this as unknown as BackgroundToolsRuntime<Config, State, ToolRequest, TrustTarget>,
+      this as unknown as BackgroundToolsRuntime<Config, State, ToolRequest>,
       request,
       toolName,
     );
@@ -2318,7 +2315,7 @@ export class AgentRuntime<Config, State, ToolRequest, TrustTarget = string> {
 
   private async pollPendingBackgroundToolExecution(): Promise<void> {
     return pollPendingBackgroundToolExecutionInternal(
-      this as unknown as BackgroundToolsRuntime<Config, State, ToolRequest, TrustTarget>,
+      this as unknown as BackgroundToolsRuntime<Config, State, ToolRequest>,
     );
   }
 
@@ -2332,7 +2329,7 @@ export class AgentRuntime<Config, State, ToolRequest, TrustTarget = string> {
     streamingEmitBeginResponse = true,
   ): void {
     startHistoryCompactionAsyncInternal(
-      this as unknown as CompactionRuntime<Config, State, ToolRequest, TrustTarget>,
+      this as unknown as CompactionRuntime<Config, State, ToolRequest>,
       retryState,
       pendingUserInput,
       turn,
@@ -2345,17 +2342,17 @@ export class AgentRuntime<Config, State, ToolRequest, TrustTarget = string> {
 
   private startManualHistoryCompactionAsync(): void {
     startManualHistoryCompactionAsyncInternal(
-      this as unknown as CompactionRuntime<Config, State, ToolRequest, TrustTarget>,
+      this as unknown as CompactionRuntime<Config, State, ToolRequest>,
     );
   }
 
   private async pollPendingHistoryCompaction(): Promise<void> {
     return pollPendingHistoryCompactionInternal(
-      this as unknown as CompactionRuntime<Config, State, ToolRequest, TrustTarget>,
+      this as unknown as CompactionRuntime<Config, State, ToolRequest>,
     );
   }
 
-  private completeTurn(result: RuntimeTurnResult<State, ToolRequest, TrustTarget>): void {
+  private completeTurn(result: RuntimeTurnResult<State, ToolRequest>): void {
     this.completedTurnResultStore = result;
     this.emitSyncTurnResultEvents(result);
     if (this.runtimeDepthStore === 0) {
@@ -2363,17 +2360,13 @@ export class AgentRuntime<Config, State, ToolRequest, TrustTarget = string> {
     }
   }
 
-  private completedViaFinishTask(
-    result: RuntimeTurnResult<State, ToolRequest, TrustTarget>,
-  ): boolean {
+  private completedViaFinishTask(result: RuntimeTurnResult<State, ToolRequest>): boolean {
     return result.toolExecutions.some(
       (execution) => execution.toolName === "finish_task" && !execution.failed,
     );
   }
 
-  private storeCompletedTurnResult(
-    result: RuntimeTurnResult<State, ToolRequest, TrustTarget>,
-  ): void {
+  private storeCompletedTurnResult(result: RuntimeTurnResult<State, ToolRequest>): void {
     this.completedTurnResultStore = result;
     // Streaming turns complete here (not via completeTurn); keep transcript in sync.
     if (this.runtimeDepthStore === 0) {
@@ -2381,9 +2374,9 @@ export class AgentRuntime<Config, State, ToolRequest, TrustTarget = string> {
     }
   }
 
-  async waitForCompletedTurnResult(): Promise<RuntimeTurnResult<State, ToolRequest, TrustTarget>> {
+  async waitForCompletedTurnResult(): Promise<RuntimeTurnResult<State, ToolRequest>> {
     return waitForCompletedTurnResultInternal(
-      this as unknown as TurnMachineRuntime<Config, State, ToolRequest, TrustTarget>,
+      this as unknown as TurnMachineRuntime<Config, State, ToolRequest>,
     );
   }
 
@@ -2394,7 +2387,7 @@ export class AgentRuntime<Config, State, ToolRequest, TrustTarget = string> {
     activeSkillsForTurn: ToolAgentActiveSkill[] = [],
   ): Promise<State> {
     return prepareSubmittedUserTurnInternal(
-      this as unknown as ContextRuntime<Config, State, ToolRequest, TrustTarget>,
+      this as unknown as ContextRuntime<Config, State, ToolRequest>,
       userInput,
       explicitImages,
       explicitWorkspaceFiles,
@@ -2481,7 +2474,7 @@ export class AgentRuntime<Config, State, ToolRequest, TrustTarget = string> {
     emitBeginResponse: boolean,
   ): Promise<void> {
     return startStreamingRoundInternal(
-      this as unknown as StreamingRuntime<Config, State, ToolRequest, TrustTarget>,
+      this as unknown as StreamingRuntime<Config, State, ToolRequest>,
       state,
       pendingUserInput,
       turn,
@@ -2494,7 +2487,7 @@ export class AgentRuntime<Config, State, ToolRequest, TrustTarget = string> {
     eventStream: AsyncIterable<LlmStreamEvent>,
   ): Promise<void> {
     return consumeStreamEventsInternal(
-      this as unknown as StreamingRuntime<Config, State, ToolRequest, TrustTarget>,
+      this as unknown as StreamingRuntime<Config, State, ToolRequest>,
       pending,
       eventStream,
     );
@@ -2502,7 +2495,7 @@ export class AgentRuntime<Config, State, ToolRequest, TrustTarget = string> {
 
   private async pollPendingStreamingRound(): Promise<void> {
     return pollPendingStreamingRoundInternal(
-      this as unknown as StreamingRuntime<Config, State, ToolRequest, TrustTarget>,
+      this as unknown as StreamingRuntime<Config, State, ToolRequest>,
     );
   }
 
@@ -2511,7 +2504,7 @@ export class AgentRuntime<Config, State, ToolRequest, TrustTarget = string> {
     event: LlmStreamEvent,
   ): Promise<boolean> {
     return handlePendingStreamEventInternal(
-      this as unknown as StreamingRuntime<Config, State, ToolRequest, TrustTarget>,
+      this as unknown as StreamingRuntime<Config, State, ToolRequest>,
       pending,
       event,
     );
@@ -2522,15 +2515,13 @@ export class AgentRuntime<Config, State, ToolRequest, TrustTarget = string> {
     completion: ToolAgentRoundCompletion<State>,
   ): Promise<void> {
     return handlePendingStreamingCompletionInternal(
-      this as unknown as StreamingRuntime<Config, State, ToolRequest, TrustTarget>,
+      this as unknown as StreamingRuntime<Config, State, ToolRequest>,
       pending,
       completion,
     );
   }
 
-  private emitSyncTurnResultEvents(
-    result: RuntimeTurnResult<State, ToolRequest, TrustTarget>,
-  ): void {
+  private emitSyncTurnResultEvents(result: RuntimeTurnResult<State, ToolRequest>): void {
     if (result.kind === "completed") {
       if (this.completedViaFinishTask(result)) {
         return;
@@ -2583,9 +2574,7 @@ export class AgentRuntime<Config, State, ToolRequest, TrustTarget = string> {
       return "thinking";
     }
 
-    return currentAuxKindInternal(
-      this as unknown as StreamingRuntime<Config, State, ToolRequest, TrustTarget>,
-    );
+    return currentAuxKindInternal(this as unknown as StreamingRuntime<Config, State, ToolRequest>);
   }
 
   private currentAuxText(): string | undefined {
@@ -2593,9 +2582,7 @@ export class AgentRuntime<Config, State, ToolRequest, TrustTarget = string> {
       return undefined;
     }
 
-    return currentAuxTextInternal(
-      this as unknown as StreamingRuntime<Config, State, ToolRequest, TrustTarget>,
-    );
+    return currentAuxTextInternal(this as unknown as StreamingRuntime<Config, State, ToolRequest>);
   }
 
   private currentSubagentStatusText(): string {
@@ -2655,33 +2642,31 @@ export class AgentRuntime<Config, State, ToolRequest, TrustTarget = string> {
   }
 
   private clearStreamingUiState(): void {
-    clearStreamingUiStateInternal(
-      this as unknown as StreamingRuntime<Config, State, ToolRequest, TrustTarget>,
-    );
+    clearStreamingUiStateInternal(this as unknown as StreamingRuntime<Config, State, ToolRequest>);
   }
 
   private clearPendingStreamingState(): void {
     clearPendingStreamingStateInternal(
-      this as unknown as StreamingRuntime<Config, State, ToolRequest, TrustTarget>,
+      this as unknown as StreamingRuntime<Config, State, ToolRequest>,
     );
   }
 
   private async startManualToolRequest(
     request: ToolRequest,
     toolName: string,
-  ): Promise<RuntimeManualToolCommandStartResult<State, ToolRequest, TrustTarget>> {
+  ): Promise<RuntimeManualToolCommandStartResult<State, ToolRequest>> {
     return startManualToolRequestInternal(
-      this as unknown as ManualToolsRuntime<Config, State, ToolRequest, TrustTarget>,
+      this as unknown as ManualToolsRuntime<Config, State, ToolRequest>,
       request,
       toolName,
     );
   }
 
   private async waitForStartedManualToolCommandResult(
-    result: RuntimeManualToolCommandStartResult<State, ToolRequest, TrustTarget>,
-  ): Promise<RuntimeManualToolCommandResult<State, ToolRequest, TrustTarget>> {
+    result: RuntimeManualToolCommandStartResult<State, ToolRequest>,
+  ): Promise<RuntimeManualToolCommandResult<State, ToolRequest>> {
     return waitForStartedManualToolCommandResultInternal(
-      this as unknown as ManualToolsRuntime<Config, State, ToolRequest, TrustTarget>,
+      this as unknown as ManualToolsRuntime<Config, State, ToolRequest>,
       result,
     );
   }
@@ -2690,13 +2675,13 @@ export class AgentRuntime<Config, State, ToolRequest, TrustTarget = string> {
     RuntimeCompletedManualToolCommandResult<ToolRequest>
   > {
     return waitForCompletedManualToolCommandResultInternal(
-      this as unknown as ManualToolsRuntime<Config, State, ToolRequest, TrustTarget>,
+      this as unknown as ManualToolsRuntime<Config, State, ToolRequest>,
     );
   }
 
   private async waitForCompletedManualHistoryCompactionResult(): Promise<RuntimeManualHistoryCompactionResult> {
     return waitForCompletedManualHistoryCompactionResultInternal(
-      this as unknown as CompactionRuntime<Config, State, ToolRequest, TrustTarget>,
+      this as unknown as CompactionRuntime<Config, State, ToolRequest>,
     );
   }
 
@@ -2712,7 +2697,7 @@ export class AgentRuntime<Config, State, ToolRequest, TrustTarget = string> {
     this.inFlightSynchronousToolExecutionsStore += 1;
     try {
       return await performToolExecutionInternal(
-        this as unknown as ToolExecutionRuntime<Config, State, ToolRequest, TrustTarget>,
+        this as unknown as ToolExecutionRuntime<Config, State, ToolRequest>,
         request,
         toolName,
         toolCallId,
@@ -2811,7 +2796,7 @@ export class AgentRuntime<Config, State, ToolRequest, TrustTarget = string> {
     parentTurn: RuntimeTurnContext<ToolRequest>,
     resumeAsStreaming = false,
     streamingEmitBeginResponse = true,
-  ): Promise<SubagentToolExecutionResult<ToolRequest, TrustTarget>> {
+  ): Promise<SubagentToolExecutionResult<ToolRequest>> {
     const subagent = extractSubagentRequest(request);
     if (!subagent) {
       return { kind: "not-handled" };
@@ -2836,7 +2821,7 @@ export class AgentRuntime<Config, State, ToolRequest, TrustTarget = string> {
     toolName: string,
     state: State,
     turn: RuntimeTurnContext<ToolRequest>,
-  ): Promise<RuntimeTurnResult<State, ToolRequest, TrustTarget> | undefined> {
+  ): Promise<RuntimeTurnResult<State, ToolRequest> | undefined> {
     const imageRequest = extractGenerateImageRequest(request);
     if (imageRequest === undefined) {
       return undefined;
@@ -2911,7 +2896,7 @@ export class AgentRuntime<Config, State, ToolRequest, TrustTarget = string> {
     toolName: string,
     state: State,
     turn: RuntimeTurnContext<ToolRequest>,
-  ): Promise<RuntimeTurnResult<State, ToolRequest, TrustTarget> | undefined> {
+  ): Promise<RuntimeTurnResult<State, ToolRequest> | undefined> {
     const videoRequest = extractGenerateVideoRequest(request);
     if (videoRequest === undefined) {
       return undefined;
@@ -3006,7 +2991,7 @@ export class AgentRuntime<Config, State, ToolRequest, TrustTarget = string> {
     error: string,
     state: State,
     turn: RuntimeTurnContext<ToolRequest>,
-  ): RuntimeTurnResult<State, ToolRequest, TrustTarget> {
+  ): RuntimeTurnResult<State, ToolRequest> {
     return {
       kind: "failed",
       error,
@@ -3027,7 +3012,7 @@ export class AgentRuntime<Config, State, ToolRequest, TrustTarget = string> {
     parentTurn: RuntimeTurnContext<ToolRequest>,
     resumeAsStreaming = false,
     streamingEmitBeginResponse = true,
-  ): Promise<SubagentToolExecutionResult<ToolRequest, TrustTarget>> {
+  ): Promise<SubagentToolExecutionResult<ToolRequest>> {
     if (this.runtimeDepthStore >= 1) {
       return this.completedSubagentToolOutcome(
         undefined,
@@ -3051,7 +3036,7 @@ export class AgentRuntime<Config, State, ToolRequest, TrustTarget = string> {
     };
 
     let childToolExecutor:
-      | AgentRuntimeOptions<Config, State, ToolRequest, TrustTarget>["toolExecutor"]
+      | AgentRuntimeOptions<Config, State, ToolRequest>["toolExecutor"]
       | undefined;
     let childWorkspaceRoot: string | undefined;
     if (request.worktree === true) {
@@ -3263,7 +3248,7 @@ export class AgentRuntime<Config, State, ToolRequest, TrustTarget = string> {
 
   private refreshChildSessionRecord(
     record: RuntimeSubagentSessionArchiveEntry,
-    childRuntime: AgentRuntime<Config, State, ToolRequest, TrustTarget>,
+    childRuntime: AgentRuntime<Config, State, ToolRequest>,
   ): void {
     record.llmHistory = childRuntime
       .history()
@@ -3336,7 +3321,7 @@ export class AgentRuntime<Config, State, ToolRequest, TrustTarget = string> {
   }
 
   private async completePendingSubagentWorktreeBootstrap(
-    pending: PendingSubagentWorktreeBootstrap<State, ToolRequest, TrustTarget>,
+    pending: PendingSubagentWorktreeBootstrap<State, ToolRequest>,
   ): Promise<void> {
     const bootstrap = this.options.bootstrapSubagentWorkspace;
     if (!bootstrap) {
@@ -3410,7 +3395,7 @@ export class AgentRuntime<Config, State, ToolRequest, TrustTarget = string> {
   }
 
   private async finishFailedSubagentWorktreeBootstrap(
-    pending: PendingSubagentWorktreeBootstrap<State, ToolRequest, TrustTarget>,
+    pending: PendingSubagentWorktreeBootstrap<State, ToolRequest>,
     errorText: string,
   ): Promise<void> {
     const failed = `[subagent failed] ${errorText}`;
@@ -3543,11 +3528,8 @@ export class AgentRuntime<Config, State, ToolRequest, TrustTarget = string> {
   }
 
   private async finishPendingSubagentExecution(
-    pending: PendingSubagentExecution<Config, State, ToolRequest, TrustTarget>,
-    result: Extract<
-      RuntimeTurnResult<State, ToolRequest, TrustTarget>,
-      { kind: "completed" | "failed" }
-    >,
+    pending: PendingSubagentExecution<Config, State, ToolRequest>,
+    result: Extract<RuntimeTurnResult<State, ToolRequest>, { kind: "completed" | "failed" }>,
   ): Promise<void> {
     this.pendingSubagentExecutions.delete(pending.parentToolCallId);
 
@@ -3658,14 +3640,9 @@ export class AgentRuntime<Config, State, ToolRequest, TrustTarget = string> {
   private createChildRuntime(
     subagentSessionId: string,
     subagentTitle: string,
-    childToolExecutor?: AgentRuntimeOptions<
-      Config,
-      State,
-      ToolRequest,
-      TrustTarget
-    >["toolExecutor"],
+    childToolExecutor?: AgentRuntimeOptions<Config, State, ToolRequest>["toolExecutor"],
     childWorkspaceRoot?: string,
-  ): AgentRuntime<Config, State, ToolRequest, TrustTarget> {
+  ): AgentRuntime<Config, State, ToolRequest> {
     const baseExecutor = childToolExecutor ?? this.options.toolExecutor;
     const scopedOptions = childWorkspaceRoot?.trim()
       ? scopeAgentRuntimeOptionsForSubagentWorkspace(this.options, childWorkspaceRoot)
@@ -3680,7 +3657,7 @@ export class AgentRuntime<Config, State, ToolRequest, TrustTarget = string> {
       onEvent: _omitOnEvent,
       ...childRuntimeOptions
     } = scopedOptions;
-    return new AgentRuntime<Config, State, ToolRequest, TrustTarget>(
+    return new AgentRuntime<Config, State, ToolRequest>(
       {
         ...childRuntimeOptions,
         toolExecutor: createSubagentToolExecutor(baseExecutor, subagentSessionId, subagentTitle),
@@ -3729,7 +3706,7 @@ export class AgentRuntime<Config, State, ToolRequest, TrustTarget = string> {
   }
 
   private async subagentEndHook<
-    Pending extends PendingSubagentExecution<Config, State, ToolRequest, TrustTarget>,
+    Pending extends PendingSubagentExecution<Config, State, ToolRequest>,
   >(
     pending: Pending,
     output: { text: string; failed: boolean },
@@ -4025,18 +4002,18 @@ function normalizeSubagentStatusProgress(
   return normalized;
 }
 
-function createSubagentToolExecutor<ToolRequest, TrustTarget>(
-  base: AgentRuntimeOptions<unknown, unknown, ToolRequest, TrustTarget>["toolExecutor"],
+function createSubagentToolExecutor<ToolRequest>(
+  base: AgentRuntimeOptions<unknown, unknown, ToolRequest>["toolExecutor"],
   subagentSessionId: string,
   subagentTitle: string,
-): AgentRuntimeOptions<unknown, unknown, ToolRequest, TrustTarget>["toolExecutor"] {
+): AgentRuntimeOptions<unknown, unknown, ToolRequest>["toolExecutor"] {
   return {
     toolDefinitionsJson: () => filterSubagentToolDefinitions(base.toolDefinitionsJson()),
     parseCommand: (message) => base.parseCommand(message),
     requestFromFunctionCall: (name, argumentsJson) =>
       base.requestFromFunctionCall(name, argumentsJson),
     authorize: (request) => base.authorize(request),
-    trust: (target) => base.trust(target),
+    rememberApproval: (target, scope) => base.rememberApproval(target, scope),
     execute: (request) => base.execute(request),
     startMcpBackgroundRefresh: () => base.startMcpBackgroundRefresh(),
     mcpStatusSnapshot: () => base.mcpStatusSnapshot(),

@@ -16,7 +16,7 @@ import { mapToolNameToKind } from "./tool-call-mapper.js";
 export async function handleApprovalRequest(
   connection: AgentSideConnection,
   sessionId: string,
-  approval: RuntimePendingApproval<JsonValue, JsonValue>,
+  approval: RuntimePendingApproval<JsonValue>,
 ): Promise<RuntimeApprovalDecision> {
   try {
     const toolCallId = approval.toolCallId ?? `approval_${Date.now()}`;
@@ -92,10 +92,10 @@ export async function handleQuestionsRequest(
 }
 
 /**
- * Builds permission options based on whether the tool has a trust target.
+ * Builds permission options based on whether the tool has a remember target.
  */
 function buildPermissionOptions(
-  approval: RuntimePendingApproval<JsonValue, JsonValue>,
+  approval: RuntimePendingApproval<JsonValue>,
 ): schema.PermissionOption[] {
   const options: schema.PermissionOption[] = [
     {
@@ -105,8 +105,8 @@ function buildPermissionOptions(
     },
   ];
 
-  // If there's a trust target, offer "always allow"
-  if (approval.trustTarget !== undefined) {
+  // If there's a remember target, offer "always allow"
+  if (approval.rememberTarget !== undefined) {
     options.push({
       optionId: "allow-always",
       name: "Always Allow",
@@ -139,7 +139,7 @@ function mapPermissionResponse(
     case "allow":
       return { kind: "allow" };
     case "allow-always":
-      return { kind: "allow", persistTrust: true };
+      return { kind: "allow", remember: "config" };
     case "reject":
       return { kind: "deny", resultText: "User rejected this operation." };
     default:

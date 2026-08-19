@@ -13,8 +13,8 @@ import type { AgentRuntimeOptions, PendingMcpResource, PendingWorkspaceFile } fr
 
 type ContextMessageRole = "system" | "user" | "assistant";
 
-export interface ContextRuntime<Config, State, ToolRequest, TrustTarget = string> {
-  options: AgentRuntimeOptions<Config, State, ToolRequest, TrustTarget>;
+export interface ContextRuntime<Config, State, ToolRequest> {
+  options: AgentRuntimeOptions<Config, State, ToolRequest>;
   historyStore: LlmMessage[];
   pendingUserTurnStore: string | undefined;
   takePendingImages(): string[];
@@ -22,8 +22,8 @@ export interface ContextRuntime<Config, State, ToolRequest, TrustTarget = string
   recordContextMessage(role: ContextMessageRole, content: string): void;
 }
 
-export async function prepareSubmittedUserTurn<Config, State, ToolRequest, TrustTarget = string>(
-  runtime: ContextRuntime<Config, State, ToolRequest, TrustTarget>,
+export async function prepareSubmittedUserTurn<Config, State, ToolRequest>(
+  runtime: ContextRuntime<Config, State, ToolRequest>,
   userInput: string,
   explicitImages: string[],
   explicitWorkspaceFiles: PendingWorkspaceFile[] = [],

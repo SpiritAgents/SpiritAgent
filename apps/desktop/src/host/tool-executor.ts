@@ -44,6 +44,7 @@ import {
   type LazyToolGatewayToolRequest,
   type BuiltInLazyToolIndexEntry,
   type McpToolRequest,
+  type PermissionMemoryTarget,
   type ToolAgentMcpToolCatalogSnapshot,
   type ToolExecutionOutput,
   ToolRequestExecutionMetadata,
@@ -104,7 +105,7 @@ function includesLazyToolGatewayDefinitions(definitions: JsonValue[]): boolean {
   return toolNamesFromDefinitions(definitions).some((name) => isLazyToolGatewayToolName(name));
 }
 
-export class DesktopToolExecutor implements ToolExecutor<DesktopToolRequest, string> {
+export class DesktopToolExecutor implements ToolExecutor<DesktopToolRequest> {
   private readonly tools: NodeHostToolService<AskQuestionsQuestionSpec>;
   private readonly mcp: McpService;
   private readonly lsp: LspService | undefined;
@@ -326,7 +327,7 @@ export class DesktopToolExecutor implements ToolExecutor<DesktopToolRequest, str
     }
   }
 
-  async authorize(request: DesktopToolRequest): Promise<AuthorizationDecision<string>> {
+  async authorize(request: DesktopToolRequest): Promise<AuthorizationDecision> {
     if (this.mcp.isFetchMcpResourceToolRequest(request as JsonValue)) {
       return { kind: "allowed" };
     }
@@ -344,8 +345,11 @@ export class DesktopToolExecutor implements ToolExecutor<DesktopToolRequest, str
     return this.tools.authorize(request);
   }
 
-  async trust(target: string): Promise<void> {
-    await this.tools.trust(target);
+  async rememberApproval(
+    target: PermissionMemoryTarget,
+    scope: "session" | "config",
+  ): Promise<void> {
+    await this.tools.rememberApproval(target, scope);
   }
 
   async execute(request: DesktopToolRequest): Promise<ToolExecutionOutput> {
@@ -561,9 +565,7 @@ export class DesktopToolExecutor implements ToolExecutor<DesktopToolRequest, str
     });
   }
 
-  private authorizeLazyToolGateway(
-    request: LazyToolGatewayToolRequest,
-  ): AuthorizationDecision<string> {
+  private authorizeLazyToolGateway(request: LazyToolGatewayToolRequest): AuthorizationDecision {
     if (request.name === TOOL_CALL_TOOL_NAME && this.approvalLevel !== "bypass-approval") {
       const parsed = parseLazyToolGatewayArguments(request.name, request.argumentsJson);
       if (
@@ -579,7 +581,6 @@ export class DesktopToolExecutor implements ToolExecutor<DesktopToolRequest, str
           return {
             kind: "need-approval",
             prompt: buildCreateAutomationApprovalPrompt(preview),
-            trustTarget: `built-in:${parsed.server}:${parsed.tool}`,
           };
         } catch {
           // Fall through to generic lazy gateway authorization.

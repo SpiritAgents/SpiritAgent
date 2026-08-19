@@ -11,6 +11,7 @@ import {
   throwUnknownToolError,
   toolNamesFromDefinitions,
   type JsonValue,
+  type PermissionMemoryTarget,
 } from "@spiritagent/agent-core";
 
 import { applyDiff } from "./apply-diff.js";
@@ -292,8 +293,9 @@ export type HostToolRequest<QuestionSpec = HostAskQuestionsQuestionSpec> =
 
 export type HostAuthorizationDecision<QuestionSpec = HostAskQuestionsQuestionSpec> =
   | { kind: "allowed" }
-  | { kind: "need-approval"; prompt: string; trustTarget?: string }
-  | { kind: "need-questions"; questions: HostAskQuestionsRequest<QuestionSpec> };
+  | { kind: "need-approval"; prompt: string; rememberTarget?: PermissionMemoryTarget }
+  | { kind: "need-questions"; questions: HostAskQuestionsRequest<QuestionSpec> }
+  | { kind: "denied"; reason: string };
 
 export type HostMcpStatusState = "idle" | "loading" | "ready" | "error";
 
@@ -336,7 +338,7 @@ export interface HostBuiltinToolService<QuestionSpec = HostAskQuestionsQuestionS
   authorize(
     request: HostToolRequest<QuestionSpec>,
   ): Promise<HostAuthorizationDecision<QuestionSpec>>;
-  trust(target: string): Promise<void>;
+  rememberApproval(target: PermissionMemoryTarget, scope: "session" | "config"): Promise<void>;
   execute(request: HostToolRequest<QuestionSpec>): Promise<HostToolExecutionOutput | string>;
   attachRequestMetadata?(
     request: HostToolRequest<QuestionSpec>,
@@ -911,7 +913,7 @@ export class NodeHostToolService<
           prompt:
             `Reason: ${request.reason}\n` +
             `High-risk tool call: shell\nTerminal: ${shell.shellDisplayName}\nCommand: ${request.command}`,
-          trustTarget: `shell:${request.command}`,
+          rememberTarget: { kind: "shell", command: request.command },
         };
       }
       case "web_fetch":
@@ -978,31 +980,29 @@ export class NodeHostToolService<
     }
   }
 
-  async trust(target: string): Promise<void> {
+  // Legacy trust-store bridge: both scopes persist into the legacy tool-permissions store
+  // for now; Phase 3 replaces the store with the three-state allowlist.
+  async rememberApproval(
+    target: PermissionMemoryTarget,
+    _scope: "session" | "config",
+  ): Promise<void> {
     const permissions = await this.loadPermissions();
-    if (target.startsWith("shell:")) {
-      const command = target.slice("shell:".length);
+    if (target.kind === "shell") {
       const trusted = permissions.trusted_shell_commands ?? [];
-      if (!trusted.includes(command)) {
-        trusted.push(command);
+      if (!trusted.includes(target.command)) {
+        trusted.push(target.command);
       }
       permissions.trusted_shell_commands = trusted;
       await this.savePermissions(permissions);
       return;
     }
 
-    if (target.startsWith("external-read:")) {
-      const externalPath = target.slice("external-read:".length);
-      const trusted = permissions.trusted_external_read_paths ?? [];
-      if (!trusted.includes(externalPath)) {
-        trusted.push(externalPath);
-      }
-      permissions.trusted_external_read_paths = trusted;
-      await this.savePermissions(permissions);
-      return;
+    const trusted = permissions.trusted_external_read_paths ?? [];
+    if (!trusted.includes(target.path)) {
+      trusted.push(target.path);
     }
-
-    throw new Error(`Unknown trust target: ${target}`);
+    permissions.trusted_external_read_paths = trusted;
+    await this.savePermissions(permissions);
   }
 
   async execute(request: HostToolRequest<QuestionSpec>): Promise<HostToolExecutionOutput | string> {
@@ -1316,7 +1316,7 @@ export class NodeHostToolService<
     return {
       kind: "need-approval",
       prompt: `High-risk tool call: ${promptTitle}\nPath: ${canonical}`,
-      trustTarget: `external-read:${canonical}`,
+      rememberTarget: { kind: "read_file", path: canonical },
     };
   }
 

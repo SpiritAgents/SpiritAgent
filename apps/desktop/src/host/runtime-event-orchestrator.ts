@@ -256,7 +256,7 @@ export class DesktopRuntimeEventOrchestrator {
     return true;
   }
 
-  applyCompletedTurnResult(result: RuntimeTurnResult<unknown, DesktopToolRequest, string>): void {
+  applyCompletedTurnResult(result: RuntimeTurnResult<unknown, DesktopToolRequest>): void {
     this.integrateToolExecutions(result.toolExecutions, "turn-result");
     switch (result.kind) {
       case "completed": {

@@ -110,7 +110,7 @@ export class AutomationConversationProjection {
     }
   }
 
-  applyCompletedTurnResult(result: RuntimeTurnResult<unknown, DesktopToolRequest, string>): void {
+  applyCompletedTurnResult(result: RuntimeTurnResult<unknown, DesktopToolRequest>): void {
     this.runtimeEvents.applyCompletedTurnResult(result);
     this.runtimeEvents.syncTurnTailState();
     this.nextTimelineAssistantSegmentKind = "initial";
@@ -146,7 +146,7 @@ export async function runAutomationStreamingTurn(
   runtime: DesktopHostRuntime,
   projection: AutomationConversationProjection,
   startTurn: () => Promise<void>,
-): Promise<RuntimeTurnResult<unknown, DesktopToolRequest, string>> {
+): Promise<RuntimeTurnResult<unknown, DesktopToolRequest>> {
   await startTurn();
   while (true) {
     const completed = runtime.takeCompletedTurnResult();

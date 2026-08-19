@@ -9,7 +9,7 @@ export type LazyToolGatewayApprovalLevel = "default" | "auto-approval" | "bypass
 export function authorizeLazyToolGatewayRequest(
   request: LazyToolGatewayToolRequest,
   approvalLevel: LazyToolGatewayApprovalLevel,
-): AuthorizationDecision<string> {
+): AuthorizationDecision {
   if (request.name === TOOL_DESCRIBE_TOOL_NAME) {
     return { kind: "allowed" };
   }
@@ -26,18 +26,11 @@ export function authorizeLazyToolGatewayRequest(
     request.name,
     request.argumentsJson,
   ) as LazyToolCallRequest;
+  // There is no MCP permission domain in v1, so lazy-gateway approvals offer no "remember" target.
   return {
     kind: "need-approval",
     prompt: buildLazyToolCallApprovalPrompt(parsed),
-    trustTarget: lazyToolCallTrustTarget(parsed),
   };
-}
-
-function lazyToolCallTrustTarget(request: LazyToolCallRequest): string {
-  if (request.provider === LAZY_TOOL_PROVIDER_BUILT_IN) {
-    return `built-in:${request.server}:${request.tool}`;
-  }
-  return `mcp:${request.server}:${request.tool}`;
 }
 
 function buildLazyToolCallApprovalPrompt(request: LazyToolCallRequest): string {

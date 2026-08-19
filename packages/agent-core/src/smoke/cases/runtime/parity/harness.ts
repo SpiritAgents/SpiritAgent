@@ -4,6 +4,7 @@ import { join } from "node:path";
 
 import type {
   AuthorizationDecision,
+  PermissionMemoryTarget,
   ToolExecutionOutput,
   JsonValue,
   LlmMessage,
@@ -93,7 +94,10 @@ export class ApprovalExecutor implements ToolExecutor<ScriptedToolRequest> {
     return { kind: "allowed" };
   }
 
-  async trust(_target: string): Promise<void> {}
+  async rememberApproval(
+    _target: PermissionMemoryTarget,
+    _scope: "session" | "config",
+  ): Promise<void> {}
 
   async execute(_request: ScriptedToolRequest): Promise<ToolExecutionOutput> {
     this.executedCalls += 1;
@@ -301,7 +305,10 @@ export class CompactExecutor implements ToolExecutor<ScriptedToolRequest> {
     return { kind: "allowed" };
   }
 
-  async trust(_target: string): Promise<void> {}
+  async rememberApproval(
+    _target: PermissionMemoryTarget,
+    _scope: "session" | "config",
+  ): Promise<void> {}
 
   async execute(request: ScriptedToolRequest): Promise<ToolExecutionOutput> {
     return createToolExecutionTextOutput(`search result for ${request.argumentsJson}`);
@@ -601,7 +608,10 @@ export class BackgroundExecutor implements ToolExecutor<ScriptedToolRequest> {
     return { kind: "allowed" };
   }
 
-  async trust(_target: string): Promise<void> {}
+  async rememberApproval(
+    _target: PermissionMemoryTarget,
+    _scope: "session" | "config",
+  ): Promise<void> {}
 
   async execute(request: ScriptedToolRequest): Promise<ToolExecutionOutput> {
     await Promise.resolve();
@@ -1581,7 +1591,10 @@ export class StreamingApprovalExecutor implements ToolExecutor<ScriptedToolReque
     return { kind: "allowed" };
   }
 
-  async trust(_target: string): Promise<void> {}
+  async rememberApproval(
+    _target: PermissionMemoryTarget,
+    _scope: "session" | "config",
+  ): Promise<void> {}
 
   async execute(request: ScriptedToolRequest): Promise<ToolExecutionOutput> {
     this.executedCalls += 1;
@@ -2289,7 +2302,10 @@ export class HostExecutor implements ToolExecutor<ScriptedToolRequest> {
     return { kind: "allowed" };
   }
 
-  async trust(_target: string): Promise<void> {}
+  async rememberApproval(
+    _target: PermissionMemoryTarget,
+    _scope: "session" | "config",
+  ): Promise<void> {}
 
   async execute(request: ScriptedToolRequest): Promise<ToolExecutionOutput> {
     return createToolExecutionTextOutput(`manual output for ${request.name}`);

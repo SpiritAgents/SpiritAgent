@@ -5,6 +5,7 @@ import type {
   GeneratedImageSaveRequest,
   JsonValue,
   McpStatusSnapshot,
+  PermissionMemoryTarget,
   ToolExecutionOutput,
   ToolRequestExecutionMetadata,
   ToolExecutor,
@@ -63,8 +64,8 @@ export interface LocalHostToolService {
   operatingSystemInfo?(): { name: string; version: string };
   parseCommand(message: string): Promise<JsonValue>;
   requestFromFunctionCall(name: string, argumentsJson: string): Promise<JsonValue>;
-  authorize(request: JsonValue): Promise<AuthorizationDecision<JsonValue>>;
-  trust(target: string): Promise<void>;
+  authorize(request: JsonValue): Promise<AuthorizationDecision>;
+  rememberApproval(target: PermissionMemoryTarget, scope: "session" | "config"): Promise<void>;
   execute(request: JsonValue): Promise<ToolExecutionOutput | string>;
   saveGeneratedImage?(request: GeneratedImageSaveRequest): Promise<GeneratedImageFile>;
   saveGeneratedVideo?(
@@ -77,7 +78,7 @@ export interface LocalHostToolService {
   setTodoScope?(scope: { sessionKey: string } | undefined): void;
 }
 
-export class HostToolExecutorProxy implements ToolExecutor<JsonValue, JsonValue> {
+export class HostToolExecutorProxy implements ToolExecutor<JsonValue> {
   private hostToolDefinitionsCache: JsonValue = [];
   private extensionToolDefinitionsCache: JsonValue[] = [];
   private todoToolDefinitionsCache: JsonValue[] = [];
@@ -263,7 +264,7 @@ export class HostToolExecutorProxy implements ToolExecutor<JsonValue, JsonValue>
     }
   }
 
-  async authorize(request: JsonValue): Promise<AuthorizationDecision<JsonValue>> {
+  async authorize(request: JsonValue): Promise<AuthorizationDecision> {
     if (this.mcp.isFetchMcpResourceToolRequest(request)) {
       return { kind: "allowed" };
     }
@@ -283,18 +284,21 @@ export class HostToolExecutorProxy implements ToolExecutor<JsonValue, JsonValue>
       return this.localHostService.authorize(request);
     }
 
-    return this.peer.call<AuthorizationDecision<JsonValue>>("host.authorize", {
+    return this.peer.call<AuthorizationDecision>("host.authorize", {
       request: this.serializeRequest(request),
     });
   }
 
-  async trust(target: JsonValue): Promise<void> {
-    if (this.localHostService && typeof target === "string") {
-      await this.localHostService.trust(target);
+  async rememberApproval(
+    target: PermissionMemoryTarget,
+    scope: "session" | "config",
+  ): Promise<void> {
+    if (this.localHostService) {
+      await this.localHostService.rememberApproval(target, scope);
       return;
     }
 
-    await this.peer.call("host.trust", { target });
+    await this.peer.call("host.rememberApproval", { target, scope });
   }
 
   async execute(request: JsonValue): Promise<ToolExecutionOutput> {

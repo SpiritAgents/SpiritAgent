@@ -94,10 +94,10 @@ test("applyAutoReviewToApprovalGate skips auto review when hook requested approv
     async () => ({ allow: true, reason: "would allow" }),
     [],
     { name: "grep", argumentsJson: "{}" },
-    { prompt: "hook confirmation required", trustTarget: undefined },
+    { prompt: "hook confirmation required", rememberTarget: undefined },
     { kind: "needs-approval", request: { name: "grep" }, prompt: "hook confirmation required" },
   );
-  assert.deepEqual(gate, { prompt: "hook confirmation required", trustTarget: undefined });
+  assert.deepEqual(gate, { prompt: "hook confirmation required", rememberTarget: undefined });
 });
 
 test("prefetchAutoReviewForToolCallIfNeeded starts review and skips unchanged fingerprint", async () => {
@@ -235,7 +235,7 @@ test("applyAutoReviewToApprovalGate reuses streaming prefetch cache without seco
     reviewer,
     [],
     call,
-    { prompt: "review me", trustTarget: undefined },
+    { prompt: "review me", rememberTarget: undefined },
     { kind: "ready", request: { name: "shell" } },
     call.id,
     reviewCache,
@@ -272,7 +272,7 @@ test("applyAutoReviewToApprovalGate still blocks auto allow when hook ask after 
     async () => ({ allow: true, reason: "would allow" }),
     [],
     call,
-    { prompt: "hook confirmation required", trustTarget: undefined },
+    { prompt: "hook confirmation required", rememberTarget: undefined },
     {
       kind: "needs-approval",
       request: { name: "shell" },
@@ -284,6 +284,6 @@ test("applyAutoReviewToApprovalGate still blocks auto allow when hook ask after 
 
   assert.deepEqual(gate, {
     prompt: "hook confirmation required",
-    trustTarget: undefined,
+    rememberTarget: undefined,
   });
 });
