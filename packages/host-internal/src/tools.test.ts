@@ -509,13 +509,7 @@ test("read_file reports canonical path for non-managed files", async () => {
   }
 });
 
-// Skipped: pre-existing product bug, unrelated to the permission work. The bundled
-// ripgrep 15.0.0 no longer matches a relative --glob (e.g. "src/**/*.ts") when the
-// search root is passed as an absolute path, so the grep tool reports "No files
-// found" for glob-limited searches (reproduced directly against the bundled binary:
-// absolute root -> 0 matches, "." -> 1 match). Fixing ripgrep-search.ts changes
-// model-visible search output and is tracked as its own change with an eval.
-test.skip("grep limits search to files matched by glob", async () => {
+test("grep limits search to files matched by glob", async () => {
   const workspaceRoot = await mkdtemp(join(tmpdir(), "spirit-host-tools-search-glob-"));
   const spiritDataDir = join(workspaceRoot, ".spirit-data");
 

@@ -96,7 +96,7 @@ function appendQueryArgs(args: string[], options: RipgrepSearchOptions): void {
 }
 
 export function buildRipgrepArgs(options: RipgrepSearchOptions): string[] {
-  const { globPattern, workspaceRoot } = options;
+  const { globPattern } = options;
   const args: string[] = [
     "--json",
     "--no-heading",
@@ -119,13 +119,19 @@ export function buildRipgrepArgs(options: RipgrepSearchOptions): string[] {
   }
 
   appendQueryArgs(args, options);
-  args.push(workspaceRoot);
+  // Search "." (cwd is already workspaceRoot): with an absolute path arg, rg matches
+  // workspace-relative -g globs like "src/**/*.ts" against the absolute file path,
+  // so they never match. With "." the reported paths are cwd-relative and globs work.
+  args.push(".");
   return args;
 }
 
 function toRelativePath(workspaceRoot: string, filePath: string): string {
-  const rel = path.relative(workspaceRoot, filePath).replace(/\\/gu, "/");
-  return rel || ".";
+  // rg prefixes cwd-relative results with "./" (or ".\" on Windows).
+  const stripped =
+    filePath.startsWith("./") || filePath.startsWith(".\\") ? filePath.slice(2) : filePath;
+  const rel = path.isAbsolute(stripped) ? path.relative(workspaceRoot, stripped) : stripped;
+  return rel.replace(/\\/gu, "/") || ".";
 }
 
 function mapRipgrepRegexError(stderr: string): Error {
