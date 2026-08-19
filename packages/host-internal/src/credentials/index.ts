@@ -30,6 +30,9 @@ export {
 export type {
   BedrockSetupCredentials,
   GoogleVertexSetupCredentials,
+  PermissionConfig,
+  PermissionDomainRules,
+  PermissionRuleAction,
   ProviderSetupResult,
   SpiritConfigFile,
   SpiritModelCapability,

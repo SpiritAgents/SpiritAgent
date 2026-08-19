@@ -35,7 +35,9 @@ import {
   type HostSkillDiscoveryResult,
   type ModelEntryV2,
   type ModelRef,
+  type PermissionConfig,
   type ProviderGroupV2,
+  type SpiritConfigFile,
   resolveSessionTranscriptFilePath,
 } from "@spiritagent/host-internal";
 
@@ -162,6 +164,8 @@ export interface DesktopConfigFile {
   dreams: DesktopDreamConfigFile;
   agents: DesktopAgentsConfigFile;
   networks: DesktopNetworksConfigFile;
+  /** Three-state permission allowlist; written by host-internal `savePermissionRule`. Desktop round-trips this so saves do not drop it. */
+  permission?: PermissionConfig;
   /** CLI TUI layout; omitted means inline. Desktop round-trips this so saves do not drop it. */
   tui?: "inline" | "fullscreen";
 }
@@ -1209,6 +1213,13 @@ function normalizeConfig(raw: Partial<DesktopConfigFile>): DesktopConfigFile {
     dreams,
     agents: normalizeAgentsConfig(raw.agents),
     networks: normalizeNetworksConfig(raw.networks),
+    // Rule-level validation lives in host-internal permissions/config-io; desktop only
+    // round-trips the block so saves do not strip it.
+    ...(typeof raw.permission === "object" &&
+    raw.permission !== null &&
+    !Array.isArray(raw.permission)
+      ? { permission: raw.permission }
+      : {}),
     ...(raw.tui === "inline" || raw.tui === "fullscreen" ? { tui: raw.tui } : {}),
   };
 }
