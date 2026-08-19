@@ -1,4 +1,4 @@
-import { Check, CornerDownLeft, MessageSquareText, Save, ShieldCheck, X } from "lucide-react";
+import { Check, CornerDownLeft, MessageSquareText, ShieldCheck, X } from "lucide-react";
 import { useTranslation } from "react-i18next";
 
 import { Button } from "@/components/ui/button";
@@ -87,21 +87,11 @@ export function PendingApprovalCard({
             size="sm"
             variant="outline"
             className="h-8 w-full justify-start px-2.5"
-            onClick={() => onSubmitApproval({ kind: "allow", remember: "session" })}
-            disabled={approveBusy || !pendingApproval.rememberTarget}
-          >
-            <ShieldCheck data-icon="inline-start" />
-            {t("app.alwaysForSession")}
-          </Button>
-          <Button
-            size="sm"
-            variant="outline"
-            className="h-8 w-full justify-start px-2.5"
             onClick={() => onSubmitApproval({ kind: "allow", remember: "config" })}
             disabled={approveBusy || !pendingApproval.rememberTarget}
           >
-            <Save data-icon="inline-start" />
-            {t("app.saveToConfig")}
+            <ShieldCheck data-icon="inline-start" />
+            {t("app.alwaysAllow")}
           </Button>
           <Button
             size="sm"

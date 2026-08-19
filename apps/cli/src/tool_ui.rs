@@ -7,8 +7,7 @@ pub(crate) fn approval_decision_from_input(message: &str) -> Value {
     let decision = message.trim().to_lowercase();
     match decision.as_str() {
         "y" => json!({ "kind": "allow" }),
-        "a" => json!({ "kind": "allow", "remember": "session" }),
-        "s" => json!({ "kind": "allow", "remember": "config" }),
+        "a" => json!({ "kind": "allow", "remember": "config" }),
         "n" => json!({ "kind": "deny" }),
         _ => json!({
             "kind": "guidance",
@@ -167,10 +166,6 @@ mod tests {
         assert_eq!(approval_decision_from_input("y"), json!({ "kind": "allow" }));
         assert_eq!(
             approval_decision_from_input("a"),
-            json!({ "kind": "allow", "remember": "session" })
-        );
-        assert_eq!(
-            approval_decision_from_input("s"),
             json!({ "kind": "allow", "remember": "config" })
         );
         assert_eq!(approval_decision_from_input("n"), json!({ "kind": "deny" }));

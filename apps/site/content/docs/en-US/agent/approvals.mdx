@@ -70,16 +70,13 @@ Invalid entries (empty patterns, unknown actions, non-object blocks) are dropped
 
 ## Remembering approvals
 
-The approval prompt offers four choices:
+The approval prompt offers three choices:
 
 - **Allow once** — run this call only.
-- **Always for this session** — keep the exact command or path in per-session memory. Gone on a new session.
-- **Save to config.json** — append an exact-match `allow` rule (the verbatim command or canonical path) to `permission.shell` / `permission.read_file`. No wildcard inference.
+- **Always Allow** — append an exact-match `allow` rule (the verbatim command or canonical path) to `permission.shell` / `permission.read_file` in config.json. No wildcard inference.
 - **Deny** — refuse, with optional free-text guidance the model reads.
 
-Session memory never overrides a `deny` rule.
-
-MCP and built-in lazy-gateway tool approvals are one-shot; no remember is offered. Over [ACP](../acp.mdx), "allow always" is session-scoped and saving to config.json is not exposed.
+MCP and built-in lazy-gateway tool approvals are one-shot; no remember is offered. Over [ACP](../acp.mdx), "allow always" is session-scoped and persisting to config.json is not exposed; session memory never overrides a `deny` rule.
 
 ## Hooks tighten, never loosen
 
