@@ -34,3 +34,5 @@ export { shouldUseStepfunWebSearch } from "./stepfun/stepfun-eligibility.js";
 export { buildStepfunWebSearchToolDefinition } from "./stepfun/stepfun-web-search-tool.js";
 export { shouldUseKimiCodeWebSearch } from "./kimi-code/kimi-code-eligibility.js";
 export { buildKimiCodeWebSearchToolDefinition } from "./kimi-code/kimi-code-web-search-tool.js";
+export { shouldUseZaiWebSearch } from "./zai/zai-eligibility.js";
+export { buildZaiWebSearchToolDefinition } from "./zai/zai-web-search-tool.js";

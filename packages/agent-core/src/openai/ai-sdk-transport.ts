@@ -155,6 +155,7 @@ import { shouldUseMoonshotFormulaWebSearch } from "../moonshot/formula/formula-e
 import { buildMoonshotFormulaStreamingToolPreviewArgumentsJson } from "../moonshot/formula/moonshot-formula-tool-loop.js";
 import { buildStepfunWebSearchStreamingPreviewArgumentsJson } from "../stepfun/stepfun-web-search-tool-loop.js";
 import { buildKimiCodeWebSearchStreamingPreviewArgumentsJson } from "../kimi-code/kimi-code-web-search-tool-loop.js";
+import { buildZaiWebSearchStreamingPreviewArgumentsJson } from "../zai/zai-web-search-tool-loop.js";
 import {
   buildJsonSchemaCompletionMessages,
   stringifyJsonSchemaCompletionOutput,
@@ -1806,6 +1807,7 @@ function resolveStreamingToolPreviewArgumentsJson(
     buildMoonshotFormulaStreamingToolPreviewArgumentsJson(config, toolName, argumentsJson) ??
     buildStepfunWebSearchStreamingPreviewArgumentsJson(config, toolName, argumentsJson) ??
     buildKimiCodeWebSearchStreamingPreviewArgumentsJson(config, toolName, argumentsJson) ??
+    buildZaiWebSearchStreamingPreviewArgumentsJson(config, toolName, argumentsJson) ??
     argumentsJson
   );
 }

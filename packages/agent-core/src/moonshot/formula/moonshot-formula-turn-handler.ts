@@ -30,11 +30,17 @@ import {
   readKimiCodeWebSearchQuery,
 } from "../../kimi-code/kimi-code-web-search-tool-loop.js";
 import { isKimiCodeManagedWebSearchToolCall } from "../../kimi-code/kimi-code-eligibility.js";
+import {
+  executeZaiWebSearchToolCall,
+  readZaiWebSearchQuery,
+} from "../../zai/zai-web-search-tool-loop.js";
+import { isZaiManagedWebSearchToolCall } from "../../zai/zai-eligibility.js";
 
 function isLocalManagedWebSearchToolCall(toolName: string, config: unknown): boolean {
   return (
     isStepfunManagedWebSearchToolCall(toolName, config) ||
-    isKimiCodeManagedWebSearchToolCall(toolName, config)
+    isKimiCodeManagedWebSearchToolCall(toolName, config) ||
+    isZaiManagedWebSearchToolCall(toolName, config)
   );
 }
 
@@ -44,6 +50,9 @@ function readPreviewQuery(argumentsJson: string, toolName: string, config: unkno
   }
   if (isKimiCodeManagedWebSearchToolCall(toolName, config)) {
     return readKimiCodeWebSearchQuery(argumentsJson);
+  }
+  if (isZaiManagedWebSearchToolCall(toolName, config)) {
+    return readZaiWebSearchQuery(argumentsJson);
   }
   return readMoonshotFormulaWebSearchQuery(argumentsJson);
 }
@@ -104,7 +113,9 @@ async function executeAndCommitManagedProviderToolCall<Config, State, ToolReques
     ? await executeStepfunWebSearchToolCall(config, call)
     : isKimiCodeManagedWebSearchToolCall(call.name, config)
       ? await executeKimiCodeWebSearchToolCall(config, call)
-      : await executeMoonshotFormulaToolCall(config as OpenAiTransportConfig, call);
+      : isZaiManagedWebSearchToolCall(call.name, config)
+        ? await executeZaiWebSearchToolCall(config, call)
+        : await executeMoonshotFormulaToolCall(config as OpenAiTransportConfig, call);
 
   runtime.emitEvent({
     kind: "streaming-tool-preview",
@@ -157,7 +168,8 @@ function isManagedProviderToolCall(toolName: string, config: unknown): boolean {
   return (
     isMoonshotFormulaManagedToolCall(toolName, config) ||
     isStepfunManagedWebSearchToolCall(toolName, config) ||
-    isKimiCodeManagedWebSearchToolCall(toolName, config)
+    isKimiCodeManagedWebSearchToolCall(toolName, config) ||
+    isZaiManagedWebSearchToolCall(toolName, config)
   );
 }
 

@@ -56,6 +56,12 @@ test("buildStepfunWebSearchToolDefinition exposes query and optional max_results
   assert.equal(definition.function.name, "web_search");
   assert.deepEqual(definition.function.parameters.required, ["query"]);
   assert.ok(definition.function.parameters.properties.query);
-  assert.ok(definition.function.parameters.properties.max_results);
+  const maxResults = definition.function.parameters.properties.max_results as {
+    minimum: number;
+    maximum: number;
+  };
+  assert.ok(maxResults);
+  assert.equal(maxResults.minimum, 1);
+  assert.equal(maxResults.maximum, 20);
   assert.equal(definition.function.parameters.properties.category, undefined);
 });

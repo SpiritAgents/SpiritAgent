@@ -10,21 +10,34 @@ export const WEB_SEARCH_QUERY_PARAMETER: JsonObject = {
   description: "Search query.",
 };
 
-const WEB_SEARCH_MAX_RESULTS_PARAMETER: JsonObject = {
-  type: "integer",
-  minimum: 1,
-  maximum: 20,
-  description: "Maximum number of results to return (default 10).",
+export type WebSearchMaxResultsRange = {
+  min: number;
+  max: number;
+  default: number;
 };
+
+const DEFAULT_MAX_RESULTS_RANGE: WebSearchMaxResultsRange = { min: 1, max: 20, default: 10 };
+
+function buildMaxResultsParameter(range: WebSearchMaxResultsRange): JsonObject {
+  return {
+    type: "integer",
+    minimum: range.min,
+    maximum: range.max,
+    description: `Maximum number of results to return (default ${range.default}).`,
+  };
+}
 
 export function buildWebSearchToolDefinition(options: {
   includeMaxResults: boolean;
+  maxResults?: WebSearchMaxResultsRange;
 }): JsonObject {
   const properties: JsonObject = {
     query: WEB_SEARCH_QUERY_PARAMETER,
   };
   if (options.includeMaxResults) {
-    properties.max_results = WEB_SEARCH_MAX_RESULTS_PARAMETER;
+    properties.max_results = buildMaxResultsParameter(
+      options.maxResults ?? DEFAULT_MAX_RESULTS_RANGE,
+    );
   }
 
   return {
