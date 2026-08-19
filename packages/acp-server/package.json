@@ -23,7 +23,7 @@
   },
   "scripts": {
     "build": "tsc -p tsconfig.json",
-    "test": "npm run build && node --test dist/test/*.test.js",
+    "test": "vitest run",
     "prepublishOnly": "pnpm run build && node ../../scripts/publish/assert-no-workspace-deps.mjs",
     "notice": "node scripts/gen-notice.mjs",
     "notice:production": "node scripts/gen-notice.mjs --production"
@@ -37,7 +37,8 @@
   "devDependencies": {
     "@types/node": "25.9.5",
     "license-checker-rseidelsohn": "5.0.1",
-    "typescript": "5.9.3"
+    "typescript": "5.9.3",
+    "vitest": "^4.1.11"
   },
   "engines": {
     "node": ">=24"
