@@ -50,6 +50,10 @@ export function resolveProfileApiBase(profile: {
   apiBase?: string;
   providerSite?: string;
   alibabaWorkspaceId?: string;
+  alibabaBillingMode?: "token-plan" | undefined;
+  stepfunBillingMode?: "step-plan" | undefined;
+  zAiBillingMode?: "glm-coding-plan" | undefined;
+  zhipuBillingMode?: "glm-coding-plan" | undefined;
   awsRegion?: string;
   azureResourceName?: string;
   cloudflareAccountId?: string;
@@ -104,6 +108,12 @@ export function resolveProfileApiBase(profile: {
   if (profile.provider && profile.provider !== "custom") {
     const transportKind = resolveSetupTransportKind(profile.provider, profile.transportKind);
     return resolveProviderConnectApiBase(profile.provider, transportKind, {
+      ...(profile.alibabaBillingMode === "token-plan" ? { billingMode: "token-plan" } : {}),
+      ...(profile.stepfunBillingMode === "step-plan" ? { stepfunBillingMode: "step-plan" } : {}),
+      ...(profile.zAiBillingMode === "glm-coding-plan" ? { zAiBillingMode: "glm-coding-plan" } : {}),
+      ...(profile.zhipuBillingMode === "glm-coding-plan"
+        ? { zhipuBillingMode: "glm-coding-plan" }
+        : {}),
       ...(profile.providerSite ? { site: profile.providerSite } : {}),
       ...(profile.alibabaWorkspaceId?.trim()
         ? { workspaceId: profile.alibabaWorkspaceId.trim() }

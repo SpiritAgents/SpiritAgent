@@ -24,6 +24,10 @@ export interface SpiritModelProfile {
   transportKind?: ProviderModelTransportKind;
   providerSite?: string;
   alibabaWorkspaceId?: string;
+  alibabaBillingMode?: ProviderGroupV2["alibabaBillingMode"];
+  stepfunBillingMode?: ProviderGroupV2["stepfunBillingMode"];
+  zAiBillingMode?: ProviderGroupV2["zAiBillingMode"];
+  zhipuBillingMode?: ProviderGroupV2["zhipuBillingMode"];
   awsRegion?: string;
   azureResourceName?: string;
   cloudflareAccountId?: string;
