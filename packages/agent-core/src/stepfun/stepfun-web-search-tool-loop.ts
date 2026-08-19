@@ -18,11 +18,11 @@ function readStepfunWebSearchResultCount(argumentsJson: string): number | undefi
     if (!isJsonObject(parsed)) {
       return undefined;
     }
-    const n = parsed.n;
-    if (typeof n !== "number" || !Number.isFinite(n)) {
+    const maxResults = parsed.max_results;
+    if (typeof maxResults !== "number" || !Number.isFinite(maxResults)) {
       return undefined;
     }
-    const truncated = Math.trunc(n);
+    const truncated = Math.trunc(maxResults);
     if (truncated < 1 || truncated > 20) {
       return undefined;
     }

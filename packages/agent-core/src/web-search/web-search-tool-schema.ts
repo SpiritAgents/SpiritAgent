@@ -10,7 +10,7 @@ export const WEB_SEARCH_QUERY_PARAMETER: JsonObject = {
   description: "Search query.",
 };
 
-const WEB_SEARCH_RESULT_COUNT_N_PARAMETER: JsonObject = {
+const WEB_SEARCH_MAX_RESULTS_PARAMETER: JsonObject = {
   type: "integer",
   minimum: 1,
   maximum: 20,
@@ -18,13 +18,13 @@ const WEB_SEARCH_RESULT_COUNT_N_PARAMETER: JsonObject = {
 };
 
 export function buildWebSearchToolDefinition(options: {
-  includeResultCountN: boolean;
+  includeMaxResults: boolean;
 }): JsonObject {
   const properties: JsonObject = {
     query: WEB_SEARCH_QUERY_PARAMETER,
   };
-  if (options.includeResultCountN) {
-    properties.n = WEB_SEARCH_RESULT_COUNT_N_PARAMETER;
+  if (options.includeMaxResults) {
+    properties.max_results = WEB_SEARCH_MAX_RESULTS_PARAMETER;
   }
 
   return {

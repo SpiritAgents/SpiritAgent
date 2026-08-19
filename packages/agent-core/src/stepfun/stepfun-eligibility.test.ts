@@ -46,7 +46,7 @@ test("isStepfunManagedWebSearchToolCall matches web_search only when eligible", 
   assert.equal(isStepfunManagedWebSearchToolCall("read_file", config), false);
 });
 
-test("buildStepfunWebSearchToolDefinition exposes query and optional n", () => {
+test("buildStepfunWebSearchToolDefinition exposes query and optional max_results", () => {
   const definition = buildStepfunWebSearchToolDefinition() as {
     function: {
       name: string;
@@ -56,6 +56,6 @@ test("buildStepfunWebSearchToolDefinition exposes query and optional n", () => {
   assert.equal(definition.function.name, "web_search");
   assert.deepEqual(definition.function.parameters.required, ["query"]);
   assert.ok(definition.function.parameters.properties.query);
-  assert.ok(definition.function.parameters.properties.n);
+  assert.ok(definition.function.parameters.properties.max_results);
   assert.equal(definition.function.parameters.properties.category, undefined);
 });
