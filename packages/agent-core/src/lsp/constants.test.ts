@@ -1,5 +1,5 @@
 import assert from "node:assert/strict";
-import test from "node:test";
+import { test } from "vitest";
 
 import { isLspSupportedExtension, LSP_SUPPORTED_EXTENSIONS } from "./constants.js";
 import { buildLspHostToolDefinitions } from "./tool-definitions.js";

@@ -1,5 +1,5 @@
 import assert from "node:assert/strict";
-import test from "node:test";
+import { test } from "vitest";
 
 import { createLlmMessageContentFromText, llmMessageTextContent } from "../ports.js";
 import { TOOL_OUTPUT_TRUNCATION_LABEL } from "../tool-agent.js";

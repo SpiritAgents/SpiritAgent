@@ -1,5 +1,5 @@
 import assert from "node:assert/strict";
-import test from "node:test";
+import { test } from "vitest";
 
 import {
   ASK_MODE_EXCLUDED_HOST_TOOL_NAMES,

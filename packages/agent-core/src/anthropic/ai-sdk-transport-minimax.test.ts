@@ -1,5 +1,5 @@
 import assert from "node:assert/strict";
-import { test } from "node:test";
+import { test } from "vitest";
 
 import { applyCodeCompletionTransportProfile } from "../code-completion/transport-profile.js";
 import { setLlmFetchTransportOverrideForTests } from "../llm-fetch.js";

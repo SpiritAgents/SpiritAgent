@@ -2,7 +2,7 @@ import assert from "node:assert/strict";
 import { mkdtemp, rm, writeFile } from "node:fs/promises";
 import { join } from "node:path";
 import { tmpdir } from "node:os";
-import { test } from "node:test";
+import { test } from "vitest";
 
 import { setLlmFetchTransportOverrideForTests } from "../llm-fetch.js";
 import { clearMoonshotChatCompletionMessages } from "./moonshot-chat-completion-messages.js";

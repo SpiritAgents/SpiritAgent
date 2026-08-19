@@ -1,5 +1,5 @@
 import assert from "node:assert/strict";
-import test from "node:test";
+import { test } from "vitest";
 
 import { normalizeGeneratedImageMarkdownRef } from "./ai-sdk-transport.js";
 import { renderAiSdkProviderError } from "./ai-sdk-provider-error.js";

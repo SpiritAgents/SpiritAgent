@@ -1,5 +1,5 @@
 import assert from "node:assert/strict";
-import test from "node:test";
+import { test } from "vitest";
 
 import type { OpenAiTransportConfig } from "../openai/openai-compat.js";
 import { createAlibabaChatCompletionsAwareFetch } from "./alibaba-chat-completions-fetch.js";

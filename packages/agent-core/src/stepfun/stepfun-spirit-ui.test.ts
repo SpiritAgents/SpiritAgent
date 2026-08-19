@@ -1,5 +1,5 @@
 import assert from "node:assert/strict";
-import test from "node:test";
+import { test } from "vitest";
 import { moonshotFormulaSpiritUiSuppressesExpand } from "../moonshot/formula/formula-spirit-ui.js";
 import { parseResponsesBuiltInToolUiFromArgumentsJson } from "../open-responses/responses-built-in-tools.js";
 import { buildStepfunWebSearchToolPreviewArgumentsJson } from "./stepfun-spirit-ui.js";

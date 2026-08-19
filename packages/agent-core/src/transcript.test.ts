@@ -1,5 +1,5 @@
 import assert from "node:assert/strict";
-import test from "node:test";
+import { test } from "vitest";
 
 import { buildSessionTranscript } from "./transcript.js";
 import { MANUAL_COMPACTION_SKIPPED_STATUS } from "./compaction-ui-status.js";

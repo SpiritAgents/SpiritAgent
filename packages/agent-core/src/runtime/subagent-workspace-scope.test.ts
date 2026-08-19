@@ -1,5 +1,5 @@
 import assert from "node:assert/strict";
-import test from "node:test";
+import { test } from "vitest";
 
 import { scopeAgentRuntimeOptionsForSubagentWorkspace } from "./subagent-workspace-scope.js";
 import type { AgentRuntimeOptions, PendingWorkspaceFile } from "./types.js";

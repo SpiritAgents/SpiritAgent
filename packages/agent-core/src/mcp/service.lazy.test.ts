@@ -1,5 +1,5 @@
 import assert from "node:assert/strict";
-import test from "node:test";
+import { test } from "vitest";
 
 import { McpRegistry } from "./registry.js";
 import type { McpToolIndexEntry, ResolvedMcpServerConfig } from "./types.js";
