@@ -191,6 +191,7 @@ Server is where the runtime is hosted, not a fourth semantic layer; apps must st
 | Discovery and management of Rules / Skills / Plan                                                                    | host-internal library                             |
 | Agent Hooks config merge, command execution, and `createHookRunner`                                                  | host-internal library                             |
 | Host tool request types, parsing, validation, approval, execution                                                    | host-internal library                             |
+| Host UI capability facts (`hostUiPromptSection`, `hostToolDescriptionHints` — e.g. Desktop Mermaid rendering)        | apps author the facts; `agent-core` owns assembly (system section / tool description merge) |
 | Dream file storage, expiry cleanup, and run logs                                                                     | host-internal library                             |
 | Session TODO storage, `replaceAll`, and tool execution                                                               | host-internal library                             |
 | LSP multi-provider processes, PATH/install detection, document sync, post-write append, and workspace cache          | host-internal library                             |
@@ -206,6 +207,7 @@ Server is where the runtime is hosted, not a fourth semantic layer; apps must st
 To prevent future drift, the constraints are:
 
 1. Any model-visible text that describes tool contracts or system rule semantics must be defined only in `agent-core`.
+   Host UI capability facts (e.g. "the host renders Mermaid") are the one exception: apps author them, but they reach the model only through `agent-core`-owned assembly points — `hostUiPromptSection` (system section) or `hostToolDescriptionHints` (merged into tool/parameter descriptions).
 2. Any host scanning, path, permission, or state persistence logic must not enter `agent-core`.
 3. No app entry point may define a new copy of tool Schemas or system prompts.
 4. The host-internal library may only implement the contracts exposed by `agent-core`; it must not rewrite contract semantics.

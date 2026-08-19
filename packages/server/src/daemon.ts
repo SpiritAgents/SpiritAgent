@@ -86,7 +86,10 @@ import {
 } from "./protocol/index.js";
 import { SessionManager } from "./session-manager.js";
 import { HostService, HOST_METHODS } from "./host-service.js";
-import { normalizeHostUiPromptSection } from "./host-ui-prompt.js";
+import {
+  normalizeHostToolDescriptionHints,
+  normalizeHostUiPromptSection,
+} from "./host-ui-prompt.js";
 
 const SESSION_METHODS = new Set([
   SESSION_CREATE,
@@ -396,6 +399,9 @@ export async function startDaemon(options: DaemonOptions): Promise<RunningDaemon
         const dreamScopeRaw = params["dreamScope"];
         const dreamSourceSessionRaw = params["dreamSourceSession"];
         const hostUiPromptSection = normalizeHostUiPromptSection(params["hostUiPromptSection"]);
+        const hostToolDescriptionHints = normalizeHostToolDescriptionHints(
+          params["hostToolDescriptionHints"],
+        );
         const basicInfoHostRaw = params["basicInfoHost"];
         let basicInfoHost: { kind: "Desktop" | "CLI" | "Web"; url?: string } | undefined;
         if (basicInfoHostRaw && typeof basicInfoHostRaw === "object") {
@@ -466,6 +472,7 @@ export async function startDaemon(options: DaemonOptions): Promise<RunningDaemon
           ...(dreamScope ? { dreamScope } : {}),
           ...(dreamSourceSession ? { dreamSourceSession } : {}),
           ...(hostUiPromptSection ? { hostUiPromptSection } : {}),
+          ...(hostToolDescriptionHints ? { hostToolDescriptionHints } : {}),
           ...(basicInfoHost ? { basicInfoHost } : {}),
         });
         return info;

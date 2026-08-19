@@ -25,6 +25,7 @@ import {
   runSessionStartHookAndApply,
   type ContributedHostToolDefinition,
   type GeneratedImageSaveRequest,
+  type HostToolDescriptionHint,
   type JsonValue,
   type LlmMessage,
   type LlmTransportConfig,
@@ -128,6 +129,11 @@ export interface ServerRuntimeOptions {
    * Appended as a plain system section; CLI / ACP omit this.
    */
   hostUiPromptSection?: string;
+  /**
+   * Host-contributed, tool-targeted description hints (e.g. Desktop Mermaid on
+   * create_plan content). Merged into tool definitions by agent-core.
+   */
+  hostToolDescriptionHints?: HostToolDescriptionHint[];
   /**
    * Optional `<basic_info>` host override (e.g. Web + page URL).
    * When omitted, derived from the session's ClientKind via the session manager.
@@ -265,6 +271,9 @@ export async function createServerRuntime(
   );
   toolExecutor.setLocalHostService(service as unknown as LocalHostToolService);
   toolExecutor.setTransportConfigForToolDefinitions(transportConfig);
+  if (options.hostToolDescriptionHints) {
+    toolExecutor.setHostToolDescriptionHints(options.hostToolDescriptionHints);
+  }
   toolExecutor.setApprovalLevel(currentApprovalLevel);
   if (isDreamCollector) {
     toolExecutor.setDreamToolDefinitions(buildDreamHostToolDefinitions());

@@ -1,6 +1,7 @@
 import { randomUUID } from "node:crypto";
 
 import type {
+  HostToolDescriptionHint,
   JsonValue,
   LlmActiveSkill,
   PendingWorkspaceFile,
@@ -160,6 +161,8 @@ export interface CreateSessionParams {
   dreamSourceSession?: HostDreamSourceSessionRef;
   /** Host UI Markdown / rendering hints (Desktop Mermaid). CLI omits. */
   hostUiPromptSection?: string;
+  /** Host-contributed tool description hints (Desktop Mermaid on create_plan). CLI omits. */
+  hostToolDescriptionHints?: HostToolDescriptionHint[];
   /** Optional `<basic_info>` host override (e.g. Desktop Web + page URL). */
   basicInfoHost?: {
     kind: "Desktop" | "CLI" | "Web";
@@ -310,6 +313,9 @@ export class SessionManager {
       ...(params.dreamScope ? { dreamScope: params.dreamScope } : {}),
       ...(params.dreamSourceSession ? { dreamSourceSession: params.dreamSourceSession } : {}),
       ...(params.hostUiPromptSection ? { hostUiPromptSection: params.hostUiPromptSection } : {}),
+      ...(params.hostToolDescriptionHints
+        ? { hostToolDescriptionHints: params.hostToolDescriptionHints }
+        : {}),
       basicInfoHost: resolveBasicInfoHost(params),
       onEvent: (event) => this.handleRuntimeEvent(sessionId, event),
       onFileChange: (change) => this.callbacks.broadcastFileChange(sessionId, change),
@@ -1015,6 +1021,9 @@ export class SessionManager {
       approvalLevel: session.info.approvalLevel,
       ...(session.createParams.hostUiPromptSection
         ? { hostUiPromptSection: session.createParams.hostUiPromptSection }
+        : {}),
+      ...(session.createParams.hostToolDescriptionHints
+        ? { hostToolDescriptionHints: session.createParams.hostToolDescriptionHints }
         : {}),
       basicInfoHost: resolveBasicInfoHost(session.createParams),
       onEvent: (event) => this.handleRuntimeEvent(sessionId, event),

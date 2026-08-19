@@ -40,7 +40,10 @@ import {
 } from "../lib/subagent-display.js";
 import type { DesktopToolRequest } from "./contracts.js";
 import type { PersistedDesktopTimelineTurnSnapshot } from "./chat-schema.js";
-import { buildDesktopUiMarkdownPromptSection } from "./desktop-ui-markdown-prompt.js";
+import {
+  buildDesktopToolDescriptionHints,
+  buildDesktopUiMarkdownPromptSection,
+} from "./desktop-ui-markdown-prompt.js";
 import { sameWorkspaceRoot } from "./service-utils.js";
 
 interface RemoteDesktopRuntimeInput {
@@ -282,7 +285,10 @@ export async function createRemoteDesktopRuntime(
     ...(input.dreamSourceSession ? { dreamSourceSession: input.dreamSourceSession } : {}),
     ...(input.sessionKind === "dream-collector"
       ? {}
-      : { hostUiPromptSection: buildDesktopUiMarkdownPromptSection() }),
+      : {
+          hostUiPromptSection: buildDesktopUiMarkdownPromptSection(),
+          hostToolDescriptionHints: buildDesktopToolDescriptionHints(),
+        }),
     ...(input.basicInfoHost ? { basicInfoHost: input.basicInfoHost } : {}),
   });
   await client.call("session.attach", { sessionId: created.sessionId });

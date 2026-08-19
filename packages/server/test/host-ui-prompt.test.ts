@@ -2,8 +2,10 @@ import assert from "node:assert/strict";
 import test from "node:test";
 
 import {
+  HOST_TOOL_DESCRIPTION_HINT_TEXT_MAX_CHARS,
   HOST_UI_PROMPT_SECTION_MAX_CHARS,
   joinHostPromptSections,
+  normalizeHostToolDescriptionHints,
   normalizeHostUiPromptSection,
 } from "../src/host-ui-prompt.js";
 
@@ -27,4 +29,34 @@ test("normalizeHostUiPromptSection rejects oversized payload", () => {
 test("joinHostPromptSections skips blanks and joins with blank line", () => {
   assert.equal(joinHostPromptSections(undefined, "  ", undefined), undefined);
   assert.equal(joinHostPromptSections("a", undefined, "b"), "a\n\nb");
+});
+
+test("normalizeHostToolDescriptionHints trims and keeps valid entries", () => {
+  assert.deepEqual(
+    normalizeHostToolDescriptionHints([
+      { toolName: " create_plan ", parameterName: " content ", text: "  hint  " },
+      { toolName: "shell", text: "tool-level" },
+    ]),
+    [
+      { toolName: "create_plan", parameterName: "content", text: "hint" },
+      { toolName: "shell", text: "tool-level" },
+    ],
+  );
+});
+
+test("normalizeHostToolDescriptionHints rejects malformed payloads", () => {
+  assert.equal(normalizeHostToolDescriptionHints("nope"), undefined);
+  assert.equal(normalizeHostToolDescriptionHints([]), undefined);
+  assert.equal(normalizeHostToolDescriptionHints([{ text: "missing toolName" }]), undefined);
+  assert.equal(normalizeHostToolDescriptionHints([{ toolName: "shell", text: "  " }]), undefined);
+  assert.equal(
+    normalizeHostToolDescriptionHints([
+      { toolName: "shell", text: "x".repeat(HOST_TOOL_DESCRIPTION_HINT_TEXT_MAX_CHARS + 1) },
+    ]),
+    undefined,
+  );
+  assert.deepEqual(
+    normalizeHostToolDescriptionHints([{ toolName: "shell", parameterName: 1, text: "ok" }]),
+    [{ toolName: "shell", text: "ok" }],
+  );
 });

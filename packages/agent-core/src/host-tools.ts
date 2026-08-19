@@ -75,6 +75,96 @@ export function readHostFunctionToolName(definition: JsonValue): string | undefi
   return typeof fn.name === "string" ? fn.name : undefined;
 }
 
+/**
+ * Host-contributed, tool-targeted description hint (e.g. a host UI rendering
+ * capability such as Desktop Mermaid). The host owns the fact; agent-core owns
+ * the merge point and the surrounding tool contract.
+ */
+export interface HostToolDescriptionHint {
+  /** Function tool name the hint targets (e.g. "create_plan"). */
+  toolName: string;
+  /** When set, the hint extends this parameter's description instead of the tool's. */
+  parameterName?: string;
+  text: string;
+}
+
+/**
+ * Appends host-contributed description hints to matching function tool
+ * definitions. Matched definitions are copied; unmatched ones pass through by
+ * reference. Hints matching no tool (or no such parameter) are ignored.
+ */
+export function applyHostToolDescriptionHints(
+  definitions: JsonValue,
+  hints: readonly HostToolDescriptionHint[],
+): JsonValue {
+  if (!Array.isArray(definitions) || hints.length === 0) {
+    return definitions;
+  }
+  return definitions.map((definition) => {
+    let result = definition;
+    for (const hint of hints) {
+      result = applyHostToolDescriptionHint(result, hint);
+    }
+    return result;
+  });
+}
+
+function applyHostToolDescriptionHint(
+  definition: JsonValue,
+  hint: HostToolDescriptionHint,
+): JsonValue {
+  if (readHostFunctionToolName(definition) !== hint.toolName) {
+    return definition;
+  }
+  const text = hint.text.trim();
+  if (!text) {
+    return definition;
+  }
+  const fn = (definition as JsonObject).function as JsonObject;
+  if (hint.parameterName) {
+    const parameters = fn.parameters;
+    if (typeof parameters !== "object" || parameters === null || Array.isArray(parameters)) {
+      return definition;
+    }
+    const properties = (parameters as JsonObject).properties;
+    if (typeof properties !== "object" || properties === null || Array.isArray(properties)) {
+      return definition;
+    }
+    const property = (properties as JsonObject)[hint.parameterName];
+    if (typeof property !== "object" || property === null || Array.isArray(property)) {
+      return definition;
+    }
+    const description = (property as JsonObject).description;
+    if (typeof description !== "string" || !description.trim()) {
+      return definition;
+    }
+    return {
+      ...(definition as JsonObject),
+      function: {
+        ...fn,
+        parameters: {
+          ...(parameters as JsonObject),
+          properties: {
+            ...(properties as JsonObject),
+            [hint.parameterName]: {
+              ...(property as JsonObject),
+              description: `${description}\n\n${text}`,
+            },
+          },
+        },
+      },
+    };
+  }
+  const description = fn.description;
+  if (typeof description !== "string" || !description.trim()) {
+    return definition;
+  }
+  return {
+    ...(definition as JsonObject),
+    function: { ...fn, description: `${description}\n\n${text}` },
+  };
+}
+
 export function filterHostToolDefinitionsForAgentMode(
   definitions: JsonValue,
   agentMode: SpiritAgentMode,

@@ -19,6 +19,7 @@ import {
 import { isOpenResponsesTransportConfig } from "../provider-config.js";
 import type { SpiritAgentMode } from "../ports.js";
 import {
+  applyHostToolDescriptionHints,
   assertAgentModeAllowsHostTool,
   assertFinishTaskToolAllowed,
   buildBuiltinHostToolDefinitions,
@@ -27,6 +28,7 @@ import {
   filterHostToolDefinitionsForAgentMode,
   isPlanAgentMode,
   type BuiltinHostToolDefinitionEnvironment,
+  type HostToolDescriptionHint,
 } from "../host-tools.js";
 import { enrichUnknownToolError, toolNamesFromDefinitions } from "../unknown-tool-error.js";
 import { shouldUseStepfunWebSearch } from "../stepfun/stepfun-eligibility.js";
@@ -101,6 +103,7 @@ export class HostToolExecutorProxy implements ToolExecutor<JsonValue> {
   private videoGenerationAvailable = false;
   private approvalLevel: LazyToolGatewayApprovalLevel = "default";
   private transportConfigForToolDefinitions: LlmTransportConfig | undefined;
+  private hostToolDescriptionHints: HostToolDescriptionHint[] = [];
 
   constructor(
     protected readonly peer: JsonRpcPeer,
@@ -113,6 +116,12 @@ export class HostToolExecutorProxy implements ToolExecutor<JsonValue> {
 
   setTransportConfigForToolDefinitions(config: LlmTransportConfig | undefined): void {
     this.transportConfigForToolDefinitions = config;
+    this.refreshMergedToolDefinitions();
+  }
+
+  /** Host-contributed description hints (e.g. Desktop Mermaid), merged at assembly. */
+  setHostToolDescriptionHints(hints: HostToolDescriptionHint[] | undefined): void {
+    this.hostToolDescriptionHints = Array.isArray(hints) ? [...hints] : [];
     this.refreshMergedToolDefinitions();
   }
 
@@ -594,7 +603,10 @@ export class HostToolExecutorProxy implements ToolExecutor<JsonValue> {
 
   private refreshMergedToolDefinitions(): void {
     if (this.dreamOnlyToolSurface) {
-      this.toolDefinitionsCache = [...this.dreamToolDefinitionsCache];
+      this.toolDefinitionsCache = applyHostToolDescriptionHints(
+        [...this.dreamToolDefinitionsCache],
+        this.hostToolDescriptionHints,
+      );
       return;
     }
     let hostDefinitions = this.hostToolDefinitionsCache;
@@ -646,13 +658,16 @@ export class HostToolExecutorProxy implements ToolExecutor<JsonValue> {
           ],
       this.agentMode,
     );
-    this.toolDefinitionsCache = mergeToolDefinitions(
-      mergedHostDefinitions,
-      this.extensionToolDefinitionsCache,
-      this.mcp.toolDefinitionsJson(),
-      this.lsp?.enabled
-        ? buildLspHostToolDefinitions(this.lsp.readyProvidersForToolDefinitions())
-        : [],
+    this.toolDefinitionsCache = applyHostToolDescriptionHints(
+      mergeToolDefinitions(
+        mergedHostDefinitions,
+        this.extensionToolDefinitionsCache,
+        this.mcp.toolDefinitionsJson(),
+        this.lsp?.enabled
+          ? buildLspHostToolDefinitions(this.lsp.readyProvidersForToolDefinitions())
+          : [],
+      ),
+      this.hostToolDescriptionHints,
     );
   }
 

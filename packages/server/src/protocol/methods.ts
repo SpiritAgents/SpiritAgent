@@ -181,6 +181,12 @@ export interface SessionCreateParams {
    * Plain English; appended to the tool-agent system message. CLI / ACP omit this.
    */
   hostUiPromptSection?: string;
+  /**
+   * Host-contributed, tool-targeted description hints (e.g. Desktop Mermaid
+   * rendering on create_plan content). agent-core merges them into the matching
+   * tool / parameter descriptions; CLI / ACP omit this.
+   */
+  hostToolDescriptionHints?: Array<{ toolName: string; parameterName?: string; text: string }>;
   /** Optional override for `<basic_info>` Current host (e.g. Desktop Web + page URL). */
   basicInfoHost?: SessionBasicInfoHost;
 }
