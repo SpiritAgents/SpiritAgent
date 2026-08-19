@@ -145,6 +145,11 @@ function runGitCheckIgnoreStdin(workspaceRoot: string, stdin: string): Promise<s
       reject(new Error(stderr.trim() || `git check-ignore exited with code ${String(code)}`));
     });
 
+    // If git exits without reading stdin (e.g. "not a git repository"), the
+    // pending write raises EPIPE on the stdin stream. The promise outcome is
+    // already owned by the close/error handlers above, so swallow it here to
+    // keep the stream error from surfacing as an uncaught exception.
+    child.stdin.on("error", () => {});
     child.stdin.write(stdin);
     child.stdin.end();
   });
