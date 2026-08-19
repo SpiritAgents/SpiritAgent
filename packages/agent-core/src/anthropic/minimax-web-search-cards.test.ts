@@ -20,17 +20,17 @@ import {
 const liveProbeResults = [
   {
     type: "web_search_result",
-    title: "【北京今天天气预报】北京天气预报24小时详情_北京天气网",
-    url: "https://beijing.tianqi.com/beijing/today/",
+    title: "Release Notes for the Example Engine",
+    url: "https://example.dev/docs/engine/release-notes",
     page_age: "2026-06-09 02:31:19",
-    content: "微信公众号 扫码随时看天气 北京24小时天气 18 ℃ 晴",
+    content: "Highlights of the latest engine release and upgrade notes.",
   },
   {
     type: "web_search_result",
-    title: "北京天气预报,北京7天天气预报",
-    url: "http://www.weather.com.cn/weather/101010100.shtml",
+    title: "Engine Changelog",
+    url: "http://docs.example.dev/engine/changelog",
     page_age: "2026-07-20 18:05:00",
-    content: "全国 > 北京 > 城区 20日(今天) 雷阵雨",
+    content: "Full changelog covering every engine version.",
   },
 ];
 
@@ -66,33 +66,33 @@ test("mapMinimaxWebSearchResultsToActionSources maps title url snippet", () => {
   );
   assert.equal(sources.length, 2);
   assert.equal(sources[0]?.type, "url");
-  assert.equal(sources[0]?.url, "https://beijing.tianqi.com/beijing/today/");
-  assert.match(String(sources[0]?.title), /北京/);
-  assert.match(String(sources[0]?.snippet), /扫码/);
+  assert.equal(sources[0]?.url, "https://example.dev/docs/engine/release-notes");
+  assert.match(String(sources[0]?.title), /Release Notes/);
+  assert.match(String(sources[0]?.snippet), /engine release/);
 });
 
 test("buildMinimaxWebSearchSucceededArgumentsJson produces Gateway-compatible _spiritUi", () => {
   const argumentsJson = buildMinimaxWebSearchSucceededArgumentsJson(
-    "Beijing weather today",
+    "engine release notes",
     parseMinimaxWebSearchResults(liveProbeResults),
   );
   const parsed = JSON.parse(argumentsJson) as { query?: string; action?: { query?: string } };
 
-  assert.equal(parsed.query, "Beijing weather today");
-  assert.equal(parsed.action?.query, "Beijing weather today");
+  assert.equal(parsed.query, "engine release notes");
+  assert.equal(parsed.action?.query, "engine release notes");
   assert.equal(resolveResponsesBuiltInToolStreamPhaseFromArgumentsJson(argumentsJson), "succeeded");
 
   const ui = parseResponsesBuiltInToolUiFromArgumentsJson(argumentsJson);
   assert.ok(ui);
-  assert.match(ui!.inputExcerpt, /Beijing weather today/);
+  assert.match(ui!.inputExcerpt, /engine release notes/);
   assert.equal(ui!.sourceCount, 2);
-  assert.ok(ui!.outputExcerpt?.includes("beijing.tianqi.com"));
+  assert.ok(ui!.outputExcerpt?.includes("example.dev"));
   assert.ok(ui!.detailLines && ui!.detailLines.length >= 2);
 });
 
 test("buildMinimaxWebSearchPreviewArgumentsJson exposes query for streaming preview", () => {
   assert.equal(
-    buildMinimaxWebSearchPreviewArgumentsJson("Shanghai weather today"),
-    '{"query":"Shanghai weather today"}',
+    buildMinimaxWebSearchPreviewArgumentsJson("engine release notes"),
+    '{"query":"engine release notes"}',
   );
 });
