@@ -79,6 +79,14 @@ import {
 } from "./managed-generated-asset.js";
 import { detectSupportedVideoFile, hasSupportedVideoExtension } from "./video-file-support.js";
 import { filterWorkspaceFilePathsByIgnore } from "./workspace-ignore.js";
+import type { PermissionConfig } from "./credentials/types.js";
+import {
+  createPermissionConfigLoader,
+  evaluateReadFilePermission,
+  evaluateShellPermission,
+  savePermissionRule,
+  type PermissionConfigLoadResult,
+} from "./permissions/index.js";
 import { buildShellToolResult, serializeShellToolResult } from "@spiritagent/agent-core";
 import {
   convertFetchedPageToToolText,
@@ -88,7 +96,6 @@ import {
 } from "./web-fetch/index.js";
 import { normalizeMimeType } from "./web-fetch/resolve-url.js";
 
-const PERMISSIONS_FILE = "tool-permissions.json";
 const MAX_READ_LINES_DEFAULT = 200;
 const WEB_FETCH_IMAGE_CACHE_DIR = "tool-web-fetch-images";
 const WEB_FETCH_IMAGE_RETENTION_MS = 24 * 60 * 60 * 1000;
@@ -425,11 +432,6 @@ export interface NodeHostToolServiceOptions {
   availableToolDefinitions?: () => JsonValue;
 }
 
-interface ToolPermissionStore {
-  trusted_shell_commands?: string[];
-  trusted_external_read_paths?: string[];
-}
-
 export function createNoopMcpAdapter(): HostMcpAdapter {
   return {
     startBackgroundRefresh() {},
@@ -511,14 +513,16 @@ export class NodeHostToolService<
 > implements HostBuiltinToolService<QuestionSpec> {
   private readonly workspaceRoot: string;
   private readonly spiritDataDir: string;
-  private readonly permissionStorePath: string;
   private readonly mcp: HostMcpAdapter;
   private readonly fileChangeObserver: HostFileChangeObserver | undefined;
   private readonly extensions: HostExtensionRuntimeBinding<unknown> | undefined;
   private readonly dreamStore: HostDreamStore | undefined;
   private readonly dreamSourceSession: HostDreamSourceSessionRef | undefined;
   private todoStore: HostTodoStore | undefined;
-  private permissionsPromise: Promise<ToolPermissionStore> | undefined;
+  private readonly permissionConfigLoader: () => PermissionConfigLoadResult;
+  private lastLoggedPermissionWarnings: string[] | undefined;
+  /** Session-scoped remembered approvals; keys from {@link sessionApprovalKey}. */
+  private readonly sessionApprovals = new Set<string>();
   private readonly requestMetadata = new WeakMap<object, HostToolRequestMetadata>();
   private readonly activeShellKills = new Map<string, () => void>();
   private availableToolDefinitions: (() => JsonValue) | undefined;
@@ -529,7 +533,7 @@ export class NodeHostToolService<
   ) {
     this.workspaceRoot = path.resolve(context.workspaceRoot);
     this.spiritDataDir = path.resolve(context.spiritDataDir);
-    this.permissionStorePath = path.join(this.spiritDataDir, PERMISSIONS_FILE);
+    this.permissionConfigLoader = createPermissionConfigLoader(this.spiritDataDir);
     this.mcp = options.mcp ?? createNoopMcpAdapter();
     this.fileChangeObserver = options.fileChangeObserver;
     this.extensions = options.extensions;
@@ -860,7 +864,15 @@ export class NodeHostToolService<
       this.getApprovalLevel?.() === "bypass-approval" &&
       request.name !== "ask_questions" &&
       !isExtensionQuestions;
-    if (bypassHighRiskApproval) {
+    // shell / ls / read_file evaluate permission rules first and fold the
+    // bypass themselves: a deny rule is absolute and must win over
+    // bypass-approval, so these tools never short-circuit here.
+    if (
+      bypassHighRiskApproval &&
+      request.name !== "shell" &&
+      request.name !== "ls" &&
+      request.name !== "read_file"
+    ) {
       return { kind: "allowed" };
     }
 
@@ -898,15 +910,32 @@ export class NodeHostToolService<
         return { kind: "allowed" };
       case "shell": {
         const metadata = this.requestMetadataFor(request);
-        if (metadata?.userInitiated) {
+        const evaluation = evaluateShellPermission(
+          request.command,
+          this.loadPermissionRules().shell ?? {},
+        );
+        // Deny is absolute: bypass-approval, userInitiated and session memory
+        // never override it.
+        if (evaluation.verdict === "deny") {
+          const segment = evaluation.segments?.find((candidate) => candidate.verdict === "deny");
+          return {
+            kind: "denied",
+            reason: `command segment "${segment?.segment ?? request.command}" matched deny rule "${evaluation.matched?.pattern ?? ""}" in permission.shell`,
+          };
+        }
+        if (
+          this.sessionApprovals.has(sessionApprovalKey({ kind: "shell", command: request.command }))
+        ) {
           return { kind: "allowed" };
         }
-
-        const permissions = await this.loadPermissions();
-        if ((permissions.trusted_shell_commands ?? []).includes(request.command)) {
+        if (evaluation.verdict === "allow") {
           return { kind: "allowed" };
         }
-
+        // Verdict "ask": an explicit ask rule, no matching rule (fail-safe), or
+        // a command line the splitter could not parse (also fail-safe ask).
+        if (bypassHighRiskApproval || metadata?.userInitiated) {
+          return { kind: "allowed" };
+        }
         const shell = this.toolDefinitionEnvironment();
         return {
           kind: "need-approval",
@@ -923,7 +952,11 @@ export class NodeHostToolService<
         };
       case "ls": {
         const canonical = await this.resolveExistingAbsoluteDirectory(request.path);
-        return this.authorizeExternalReadPath(canonical, "List directory outside the workspace");
+        return this.authorizeExternalReadPath(
+          canonical,
+          "List directory outside the workspace",
+          bypassHighRiskApproval || this.requestMetadataFor(request)?.userInitiated === true,
+        );
       }
       case "read_file": {
         const target = await this.resolveReadFileTarget(request.path);
@@ -931,7 +964,11 @@ export class NodeHostToolService<
           return { kind: "allowed" };
         }
         const canonical = target.canonicalPath;
-        return this.authorizeExternalReadPath(canonical, "Read file outside the workspace");
+        return this.authorizeExternalReadPath(
+          canonical,
+          "Read file outside the workspace",
+          bypassHighRiskApproval || this.requestMetadataFor(request)?.userInitiated === true,
+        );
       }
       case "create_file":
         return {
@@ -980,29 +1017,21 @@ export class NodeHostToolService<
     }
   }
 
-  // Legacy trust-store bridge: both scopes persist into the legacy tool-permissions store
-  // for now; Phase 3 replaces the store with the three-state allowlist.
   async rememberApproval(
     target: PermissionMemoryTarget,
-    _scope: "session" | "config",
+    scope: "session" | "config",
   ): Promise<void> {
-    const permissions = await this.loadPermissions();
-    if (target.kind === "shell") {
-      const trusted = permissions.trusted_shell_commands ?? [];
-      if (!trusted.includes(target.command)) {
-        trusted.push(target.command);
-      }
-      permissions.trusted_shell_commands = trusted;
-      await this.savePermissions(permissions);
+    if (scope === "session") {
+      this.sessionApprovals.add(sessionApprovalKey(target));
       return;
     }
-
-    const trusted = permissions.trusted_external_read_paths ?? [];
-    if (!trusted.includes(target.path)) {
-      trusted.push(target.path);
-    }
-    permissions.trusted_external_read_paths = trusted;
-    await this.savePermissions(permissions);
+    // Config scope persists the exact value as an allow rule; no wildcard inference.
+    await savePermissionRule(
+      this.spiritDataDir,
+      target.kind,
+      target.kind === "shell" ? target.command : target.path,
+      "allow",
+    );
   }
 
   async execute(request: HostToolRequest<QuestionSpec>): Promise<HostToolExecutionOutput | string> {
@@ -1290,36 +1319,68 @@ export class NodeHostToolService<
     return this.todoStore;
   }
 
-  private async loadPermissions(): Promise<ToolPermissionStore> {
-    this.permissionsPromise ??= loadPermissions(this.permissionStorePath);
-    return this.permissionsPromise;
+  /**
+   * Current permission rules from `config.json`. The loader caches by file
+   * mtime, so calling it on every authorize is cheap; lint warnings are
+   * logged once per actual load (a reload returns a new warnings array).
+   */
+  private loadPermissionRules(): PermissionConfig {
+    const { config, warnings } = this.permissionConfigLoader();
+    if (warnings.length > 0 && warnings !== this.lastLoggedPermissionWarnings) {
+      this.lastLoggedPermissionWarnings = warnings;
+      for (const warning of warnings) {
+        console.warn(`[permission] ${warning}`);
+      }
+    }
+    return config;
   }
 
-  private async savePermissions(store: ToolPermissionStore): Promise<void> {
-    this.permissionsPromise = Promise.resolve(store);
-    await savePermissions(this.permissionStorePath, store);
-  }
-
-  private async authorizeExternalReadPath(
+  /**
+   * Authorization for ls / read_file once the target is canonicalized.
+   * Order: deny rules (absolute; bypass-approval, userInitiated and session
+   * memory never override) -> session memory -> matched ask / allow rules ->
+   * built-in location fallback when NO rule matched. `foldAskToAllow` folds
+   * every ask (rule or fallback) to allow under bypass-approval / userInitiated.
+   */
+  private authorizeExternalReadPath(
     canonical: string,
     promptTitle: string,
-  ): Promise<HostAuthorizationDecision<QuestionSpec>> {
-    if (this.isAllowedReadLocation(canonical)) {
+    foldAskToAllow: boolean,
+  ): HostAuthorizationDecision<QuestionSpec> {
+    const evaluation = evaluateReadFilePermission(
+      canonical,
+      this.loadPermissionRules().read_file ?? {},
+      { workspaceRoot: this.workspaceRoot },
+    );
+    if (evaluation.verdict === "deny") {
+      return {
+        kind: "denied",
+        reason: `path "${canonical}" matched deny rule "${evaluation.matched?.pattern ?? ""}" in permission.read_file`,
+      };
+    }
+    if (this.sessionApprovals.has(sessionApprovalKey({ kind: "read_file", path: canonical }))) {
       return { kind: "allowed" };
     }
-
-    const permissions = await this.loadPermissions();
-    if ((permissions.trusted_external_read_paths ?? []).includes(canonical)) {
+    if (evaluation.matched !== undefined) {
+      if (evaluation.verdict === "ask" && !foldAskToAllow) {
+        return needReadPathApproval(canonical, promptTitle);
+      }
       return { kind: "allowed" };
     }
-
-    return {
-      kind: "need-approval",
-      prompt: `High-risk tool call: ${promptTitle}\nPath: ${canonical}`,
-      rememberTarget: { kind: "read_file", path: canonical },
-    };
+    // No rule matched: built-in location fallback. Workspace-internal and
+    // Spirit-managed reads did not prompt before permission rules existed, so
+    // the fail-safe ask lands only on paths outside those locations.
+    if (this.isAllowedReadLocation(canonical) || foldAskToAllow) {
+      return { kind: "allowed" };
+    }
+    return needReadPathApproval(canonical, promptTitle);
   }
 
+  /**
+   * Built-in no-rule fallback for reads: locations that were always readable
+   * without prompting (workspace, Spirit-managed user area, Spirit data
+   * internal dirs). Only consulted when no read_file rule matches.
+   */
   private isAllowedReadLocation(canonical: string): boolean {
     return (
       isWithinRoot(canonical, this.workspaceRoot) ||
@@ -2124,26 +2185,20 @@ function summarizeFileToolRequest<QuestionSpec>(
   }
 }
 
-async function loadPermissions(filePath: string): Promise<ToolPermissionStore> {
-  if (!existsSync(filePath)) {
-    return {};
-  }
-
-  try {
-    const raw = await readFile(filePath, "utf8");
-    const parsed = JSON.parse(raw) as ToolPermissionStore;
-    return {
-      trusted_shell_commands: parsed.trusted_shell_commands ?? [],
-      trusted_external_read_paths: parsed.trusted_external_read_paths ?? [],
-    };
-  } catch {
-    return {};
-  }
+/** Session-memory key: exact shell command text or canonical read path, domain-prefixed. */
+function sessionApprovalKey(target: PermissionMemoryTarget): string {
+  return target.kind === "shell" ? `shell:${target.command}` : `read_file:${target.path}`;
 }
 
-async function savePermissions(filePath: string, store: ToolPermissionStore): Promise<void> {
-  await mkdir(path.dirname(filePath), { recursive: true });
-  await writeFile(filePath, JSON.stringify(store, null, 2), "utf8");
+function needReadPathApproval<QuestionSpec>(
+  canonical: string,
+  promptTitle: string,
+): HostAuthorizationDecision<QuestionSpec> {
+  return {
+    kind: "need-approval",
+    prompt: `High-risk tool call: ${promptTitle}\nPath: ${canonical}`,
+    rememberTarget: { kind: "read_file", path: canonical },
+  };
 }
 
 function parseJsonObject(argumentsJson: string): HostJsonObject {
@@ -2717,6 +2772,8 @@ function isWithinRoot(candidate: string, root: string): boolean {
 }
 
 function isSpiritDataInternalReadPath(resolvedPath: string, spiritDataDir: string): boolean {
+  // Part of the built-in no-rule read fallback (see isAllowedReadLocation):
+  // Spirit's own transcripts / tool-output archives stay readable without a rule.
   const resolvedSpiritDataDir = path.resolve(spiritDataDir);
   const allowedRoots = [
     resolveTranscriptsDir(resolvedSpiritDataDir),
@@ -2729,6 +2786,8 @@ function isInsideSpiritManagedUserArea(
   resolvedPath: string,
   context: InstructionDiscoveryContext,
 ): boolean {
+  // Shared by the built-in no-rule read fallback and the write-path check:
+  // user rules, plans and user skills are Spirit-managed locations.
   const paths = resolveInstructionPaths({
     workspaceRoot: context.workspaceRoot,
     spiritDataDir: context.spiritDataDir,
