@@ -82,11 +82,23 @@ test("loadPermissionConfig drops empty patterns and invalid actions", async () =
 
 test("loadPermissionConfig keeps relative read_file patterns with a workspace warning", async () => {
   await withTempDir(async (dir) => {
-    await writeConfig(dir, baseConfig({ permission: { read_file: { "*.env": "allow" } } }));
+    await writeConfig(dir, baseConfig({ permission: { read_file: { "src/*.ts": "allow" } } }));
     const { config, warnings } = loadPermissionConfig(dir);
-    assert.deepEqual(config.read_file, { "*.env": "allow" });
+    assert.deepEqual(config.read_file, { "src/*.ts": "allow" });
     assert.equal(warnings.length, 1);
     assert.match(warnings[0]!, /only matches paths inside the workspace/u);
+  });
+});
+
+test("loadPermissionConfig treats leading-wildcard read_file patterns as absolute-form", async () => {
+  await withTempDir(async (dir) => {
+    await writeConfig(
+      dir,
+      baseConfig({ permission: { read_file: { "*": "allow", "*/.env*": "ask" } } }),
+    );
+    const { config, warnings } = loadPermissionConfig(dir);
+    assert.deepEqual(config.read_file, { "*": "allow", "*/.env*": "ask" });
+    assert.deepEqual(warnings, []);
   });
 });
 
@@ -192,9 +204,8 @@ test("savePermissionRule creates a minimal config when none exists", async () =>
     await savePermissionRule(dir, "read_file", "*.env", "deny");
     const { config, warnings } = loadPermissionConfig(dir);
     assert.deepEqual(config.read_file, { "*.env": "deny" });
-    // Relative pattern warning is expected; nothing else.
-    assert.equal(warnings.length, 1);
-    assert.match(warnings[0]!, /relative/u);
+    // Leading-wildcard patterns are absolute-form, so no warning is produced.
+    assert.deepEqual(warnings, []);
   });
 });
 

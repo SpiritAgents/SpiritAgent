@@ -7,8 +7,9 @@
  * collected, then any deny wins over any ask wins over any allow. This is a
  * deliberate anti-goal against last-match-wins semantics: with rules
  * `{ "rm -rf *": "deny", "*": "allow" }` (in that JSON order), `rm -rf /`
- * must deny. `matched` reports the first rule in config order at the winning
- * priority so results are stable regardless of evaluation strategy.
+ * must deny. `matched` reports the most specific (longest) pattern at the
+ * winning priority, breaking ties by config order, so results are stable
+ * regardless of evaluation strategy.
  */
 import path from "node:path";
 
@@ -40,19 +41,39 @@ export interface PermissionEvalResult {
 
 /** deny > ask > allow over every matching rule; no match at all is a fail-safe ask. */
 function pickVerdict(matches: PermissionMatch[]): PermissionEvalResult {
-  const deny = matches.find((m) => m.action === "deny");
+  const deny = mostSpecific(matches, "deny");
   if (deny) {
     return { verdict: "deny", matched: deny };
   }
-  const ask = matches.find((m) => m.action === "ask");
+  const ask = mostSpecific(matches, "ask");
   if (ask) {
     return { verdict: "ask", matched: ask };
   }
-  const allow = matches.find((m) => m.action === "allow");
+  const allow = mostSpecific(matches, "allow");
   if (allow) {
     return { verdict: "allow", matched: allow };
   }
   return { verdict: "ask" };
+}
+
+/**
+ * Among matches at the winning action, report the longest (most specific)
+ * pattern; ties keep config order, so results stay deterministic.
+ */
+function mostSpecific(
+  matches: PermissionMatch[],
+  action: PermissionRuleAction,
+): PermissionMatch | undefined {
+  let winner: PermissionMatch | undefined;
+  for (const match of matches) {
+    if (match.action !== action) {
+      continue;
+    }
+    if (!winner || match.pattern.length > winner.pattern.length) {
+      winner = match;
+    }
+  }
+  return winner;
 }
 
 function collectMatches(value: string, rules: PermissionDomainRules): PermissionMatch[] {

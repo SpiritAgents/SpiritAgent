@@ -37,7 +37,6 @@ import {
   type ModelRef,
   type PermissionConfig,
   type ProviderGroupV2,
-  type SpiritConfigFile,
   resolveSessionTranscriptFilePath,
 } from "@spiritagent/host-internal";
 

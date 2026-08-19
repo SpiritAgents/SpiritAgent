@@ -194,7 +194,9 @@ test("runPreToolUseGate maps hook allow to ready without bypassing host approval
 
   assert.equal(gate.kind, "ready");
   if (gate.kind === "ready") {
-    assert.equal("hookBypassApproval" in gate, false);
+    // The hook-allow bypass flag was removed: a ready gate must carry no
+    // approval-skipping marker, only the kind and the tool request.
+    assert.deepEqual(Object.keys(gate).sort(), ["kind", "request"]);
   }
 });
 

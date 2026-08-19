@@ -82,10 +82,21 @@ test("deny beats ask and allow; ask beats allow", () => {
   assert.equal(evaluateShellPermission("ls", rules).verdict, "allow");
 });
 
-test("matched is the first rule in config order at the winning priority", () => {
+test("matched is the most specific (longest) pattern at the winning priority", () => {
   const rules: PermissionDomainRules = { "rm *": "deny", "rm -rf *": "deny" };
   const result = evaluateShellPermission("rm -rf /", rules);
-  assert.deepEqual(result.matched, { pattern: "rm *", action: "deny" });
+  assert.deepEqual(result.matched, { pattern: "rm -rf *", action: "deny" });
+});
+
+test("matched prefers the specific ask rule over a match-all ask rule, order-independently", () => {
+  for (const rules of [
+    { "*": "ask", "git push *": "ask" },
+    { "git push *": "ask", "*": "ask" },
+  ] satisfies PermissionDomainRules[]) {
+    const result = evaluateShellPermission("git push origin main", rules);
+    assert.equal(result.verdict, "ask");
+    assert.deepEqual(result.matched, { pattern: "git push *", action: "ask" });
+  }
 });
 
 test("composite shell aggregation: any deny -> deny, else any ask -> ask, else allow", () => {
@@ -165,13 +176,13 @@ test("read_file: tilde expansion produces an absolute pattern that matches the h
 
 test("read_file: relative patterns match workspace-internal paths only", () => {
   const workspaceRoot = abs("tmp", "perm-test-workspace");
-  const rules: PermissionDomainRules = { "*.env": "allow", "secrets/*": "deny" };
+  const rules: PermissionDomainRules = { ".env": "allow", "secrets/*": "deny" };
 
   const inside = evaluateReadFilePermission(path.join(workspaceRoot, ".env"), rules, {
     workspaceRoot,
   });
   assert.equal(inside.verdict, "allow");
-  assert.deepEqual(inside.matched, { pattern: "*.env", action: "allow" });
+  assert.deepEqual(inside.matched, { pattern: ".env", action: "allow" });
 
   const nestedDeny = evaluateReadFilePermission(
     path.join(workspaceRoot, "secrets", "key.pem"),
@@ -191,7 +202,7 @@ test("read_file: relative patterns match workspace-internal paths only", () => {
   assert.equal(outside.matched, undefined);
 });
 
-test("read_file: star-slash-dotenv style patterns match nested workspace files", () => {
+test("read_file: leading-wildcard patterns match canonical paths anywhere", () => {
   const workspaceRoot = abs("tmp", "perm-test-workspace");
   const rules: PermissionDomainRules = { "*/.env*": "deny" };
 
@@ -204,11 +215,25 @@ test("read_file: star-slash-dotenv style patterns match nested workspace files",
   );
   assert.equal(nested.verdict, "deny");
 
+  // A leading `*` absorbs the root separator, so the pattern is absolute-form
+  // and also denies paths outside the workspace.
   const outside = evaluateReadFilePermission(abs("var", "config", ".env"), rules, {
     workspaceRoot,
   });
-  assert.equal(outside.verdict, "ask");
-  assert.equal(outside.matched, undefined);
+  assert.equal(outside.verdict, "deny");
+  assert.deepEqual(outside.matched, { pattern: "*/.env*", action: "deny" });
+});
+
+test("read_file: a bare * pattern matches external absolute paths", () => {
+  const result = evaluateReadFilePermission(
+    abs("etc", "hosts"),
+    { "*": "allow" },
+    {
+      workspaceRoot: abs("tmp", "perm-test-workspace"),
+    },
+  );
+  assert.equal(result.verdict, "allow");
+  assert.deepEqual(result.matched, { pattern: "*", action: "allow" });
 });
 
 test("read_file: absolute patterns match canonical paths anywhere", () => {

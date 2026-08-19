@@ -127,9 +127,19 @@ export function normalizeReadFilePattern(pattern: string): NormalizedReadFilePat
   return { pattern: normalized };
 }
 
-/** Absolute path form: POSIX root, Windows drive letter, or UNC share. */
+/**
+ * Absolute path form: POSIX root, Windows drive letter, UNC share, or a
+ * leading wildcard. A leading `*` absorbs the root separator because the
+ * matcher lets `*` cross `/`, so star-leading patterns match canonical
+ * absolute paths directly instead of being workspace-relative.
+ */
 export function isAbsolutePathPattern(pattern: string): boolean {
-  return pattern.startsWith("/") || pattern.startsWith("\\\\") || /^[a-zA-Z]:[\\/]/u.test(pattern);
+  return (
+    pattern.startsWith("*") ||
+    pattern.startsWith("/") ||
+    pattern.startsWith("\\\\") ||
+    /^[a-zA-Z]:[\\/]/u.test(pattern)
+  );
 }
 
 /**
