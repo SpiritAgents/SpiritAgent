@@ -863,6 +863,9 @@ function createAiSdkOpenAiCompatibleProvider(
     name: "openai",
     baseURL: config.baseUrl ?? DEFAULT_OPENAI_COMPATIBLE_BASE_URL,
     supportsStructuredOutputs: true,
+    // api.kimi.com/coding omits usage from streaming responses unless the request carries
+    // stream_options.include_usage; without usage the host cannot track context usage.
+    ...(transportConfig.llmVendor === "kimi-code" ? { includeUsage: true } : {}),
     ...(Object.keys(headers).length === 0 ? {} : { headers }),
     fetch: resolvedFetch,
   });
