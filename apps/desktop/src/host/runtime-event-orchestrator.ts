@@ -1244,7 +1244,7 @@ function truncateText(value: string, maxChars: number): string {
 function diagnosticsCheckingSummary(request: unknown): ToolCallSummaryCopy {
   const detail = diagnosticsPathsHeadlineDetail(parseDiagnosticsPathsFromRequest(request));
   return {
-    headline: i18n.t("tool.diagnosticsChecking"),
+    headline: i18n.t("tool.diagnosticsCheck", { context: "running" }),
     ...(detail ? { headlineDetail: detail } : {}),
   };
 }

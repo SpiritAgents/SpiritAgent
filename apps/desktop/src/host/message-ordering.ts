@@ -428,7 +428,7 @@ export function toolCallSummaryCopyForRequest(
       const paths = parseDiagnosticsPathsFromRequest(record);
       const detail = diagnosticsPathsHeadlineDetail(paths);
       return {
-        headline: i18n.t("tool.diagnosticsChecking"),
+        headline: i18n.t("tool.diagnosticsCheck", tOpts),
         ...(detail ? { headlineDetail: detail } : {}),
       };
     }
@@ -1277,7 +1277,7 @@ export function toolCallSummaryForStreamingPreview(
   if (toolName === "get_diagnostics" && request && typeof request === "object") {
     const detail = diagnosticsPathsHeadlineDetail(parseDiagnosticsPathsFromRequest(request));
     return {
-      headline: i18n.t("tool.diagnosticsChecking"),
+      headline: i18n.t("tool.diagnosticsCheck", { context: "running" }),
       ...(detail ? { headlineDetail: detail } : {}),
     };
   }

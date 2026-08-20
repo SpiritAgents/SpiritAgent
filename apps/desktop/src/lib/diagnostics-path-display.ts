@@ -4,7 +4,7 @@ function displayBasename(filePath: string): string {
   return filePath.split(/[\\/]/).filter(Boolean).pop() ?? filePath;
 }
 
-function truncateSummaryDetail(value: string, max = SUMMARY_DETAIL_MAX): string {
+export function truncateSummaryDetail(value: string, max = SUMMARY_DETAIL_MAX): string {
   if (value.length <= max) {
     return value;
   }

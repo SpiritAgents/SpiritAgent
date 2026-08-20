@@ -89,10 +89,20 @@ const summaryDetailToneClass: Record<ToolSummaryDetailTone, string> = {
   "shell-command": toolCardFileNameDetailClass,
 };
 
+export type ToolSummaryResultDetailTone = "default" | "failed";
+
+/** Result segment (e.g. diagnostics outcome) sits below detail in the grayscale hierarchy. */
+const summaryResultDetailToneClass: Record<ToolSummaryResultDetailTone, string> = {
+  default: toolCardFileNameDetailClass,
+  failed: toolCardFailedStatusClass,
+};
+
 function ToolCallSummaryRow({
   tool,
   headline,
   detail,
+  resultDetail,
+  resultDetailTone,
   shellSummary,
   shimmerActive = false,
   detailTone = "default",
@@ -102,6 +112,8 @@ function ToolCallSummaryRow({
   tool: ToolBlockSnapshot;
   headline: string;
   detail?: string;
+  resultDetail?: string;
+  resultDetailTone?: ToolSummaryResultDetailTone;
   shellSummary?: ShellToolSummaryParts;
   shimmerActive?: boolean;
   detailTone?: ToolSummaryDetailTone;
@@ -133,6 +145,8 @@ function ToolCallSummaryRow({
         <MinimalToolSummary
           headline={headline}
           detail={detail}
+          resultDetail={resultDetail}
+          resultDetailTone={resultDetailTone}
           shellSummary={shellSummary}
           shimmerActive={shimmerActive}
           detailTone={detailTone}
@@ -157,6 +171,8 @@ function ToolCallSummaryRow({
 export function MinimalToolSummary({
   headline,
   detail,
+  resultDetail,
+  resultDetailTone = "default",
   shellSummary,
   shimmerActive = false,
   detailTone = "default",
@@ -165,6 +181,8 @@ export function MinimalToolSummary({
 }: {
   headline: string;
   detail?: string;
+  resultDetail?: string;
+  resultDetailTone?: ToolSummaryResultDetailTone;
   shellSummary?: ShellToolSummaryParts;
   shimmerActive?: boolean;
   detailTone?: ToolSummaryDetailTone;
@@ -195,6 +213,12 @@ export function MinimalToolSummary({
         <>
           {" "}
           <span className={summaryDetailToneClass[detailTone]}>{detail}</span>
+        </>
+      ) : null}
+      {resultDetail ? (
+        <>
+          {" "}
+          <span className={summaryResultDetailToneClass[resultDetailTone]}>{resultDetail}</span>
         </>
       ) : null}
       {statusSuffix ? (
@@ -531,6 +555,8 @@ export function MinimalToolCallCard({
       tool={tool}
       headline={summary.headline}
       detail={summary.detail}
+      resultDetail={summary.resultDetail}
+      resultDetailTone={summary.resultDetailTone}
       shellSummary={summary.shellSummary}
       shimmerActive={shimmerActive}
       detailTone={isShell ? "shell-command" : "default"}

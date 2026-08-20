@@ -666,9 +666,16 @@ test("toolCallSummaryForStreamingPreview: ls uses relative path within workspace
   );
 });
 
-test("toolCallSummaryForPhase: get_diagnostics failed uses checking headline and basename", () => {
+test("toolCallSummaryForPhase: get_diagnostics failed uses base check verb and basename", () => {
   assert.deepEqual(
     toolCallSummaryForPhase("failed", "get_diagnostics", { paths: ["src/App.tsx"] }),
+    { headline: "检查", headlineDetail: "App.tsx" },
+  );
+});
+
+test("toolCallSummaryForPhase: get_diagnostics running uses progressive check verb", () => {
+  assert.deepEqual(
+    toolCallSummaryForPhase("running", "get_diagnostics", { paths: ["src/App.tsx"] }),
     { headline: "检查中", headlineDetail: "App.tsx" },
   );
 });

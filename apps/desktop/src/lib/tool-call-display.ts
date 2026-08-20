@@ -14,6 +14,7 @@ import {
   storedReadFileHeadlineUsesSkillVerb,
 } from "@/lib/read-file-skill-display";
 import { readFileToolHeadlineDetail, readFileVerbKey } from "@/lib/read-file-tool-display";
+import { truncateSummaryDetail } from "@/lib/diagnostics-path-display";
 import { phaseToVerbContext } from "@/lib/tool-verb-context";
 import { grepToolHeadlineDetail, parseGrepRequestFromArgsExcerpt } from "@/lib/grep-tool-display";
 import { buildAutomationTriggerFormatLabels } from "./automation-trigger-i18n.js";
@@ -30,6 +31,12 @@ export type ShellToolSummaryParts = {
 export type ToolCallSummaryParts = {
   headline: string;
   detail?: string;
+  /**
+   * Third summary segment after detail (e.g. get_diagnostics result), rendered
+   * lighter than detail; "failed" tone marks an execution failure reason.
+   */
+  resultDetail?: string;
+  resultDetailTone?: "default" | "failed";
   /** When set, headline is split into verb (darkest) + reason (mid) for shell. */
   shellSummary?: ShellToolSummaryParts;
 };
@@ -152,6 +159,23 @@ function diagnosticsOutputIsAllClean(output: string): boolean {
   return sections.every((section) => section.startsWith("No errors or warnings"));
 }
 
+/**
+ * Failed get_diagnostics executions store the LLM-facing `[tool error] …` text in
+ * outputExcerpt; strip that prefix and keep a single truncated summary line.
+ */
+function diagnosticsFailureReason(outputExcerpt: string | undefined): string | undefined {
+  const trimmed = outputExcerpt?.trim() ?? "";
+  if (!trimmed) {
+    return undefined;
+  }
+  const firstLine =
+    trimmed
+      .replace(/^\[tool error\]\s*/u, "")
+      .split("\n")[0]
+      ?.trim() ?? "";
+  return firstLine ? truncateSummaryDetail(firstLine) : undefined;
+}
+
 function readFileToolSummaryParts(tool: ToolBlockSnapshot): ToolCallSummaryParts {
   const ctx = phaseToVerbContext(tool.phase);
   const tOpts = ctx ? { context: ctx } : {};
@@ -217,38 +241,35 @@ export function getToolCallSummaryParts(tool: ToolBlockSnapshot): ToolCallSummar
   }
 
   if (tool.toolName === "get_diagnostics") {
-    if (tool.phase === "preview" || tool.phase === "running" || tool.phase === "pending-approval") {
+    const ctx = phaseToVerbContext(tool.phase);
+    const headline = i18n.t("tool.diagnosticsCheck", ctx ? { context: ctx } : {});
+    if (tool.phase === "succeeded") {
+      const output = tool.outputExcerpt?.trim() ?? "";
+      let resultDetail = i18n.t("tool.diagnosticsNoIssues");
+      if (!diagnosticsOutputIsAllClean(output)) {
+        const issueCount = countDiagnosticsIssues(tool.outputExcerpt);
+        if (issueCount > 0) {
+          resultDetail = i18n.t("tool.diagnosticsIssueCount", { count: issueCount });
+        }
+      }
       return {
-        headline: i18n.t("tool.diagnosticsChecking"),
+        headline,
         ...(snapshotDetail ? { detail: snapshotDetail } : {}),
+        resultDetail,
       };
     }
     if (tool.phase === "failed") {
+      const reason = diagnosticsFailureReason(tool.outputExcerpt);
       return {
-        headline: i18n.t("tool.diagnosticsChecking"),
+        headline,
         ...(snapshotDetail ? { detail: snapshotDetail } : {}),
+        ...(reason ? { resultDetail: reason, resultDetailTone: "failed" as const } : {}),
       };
     }
-    if (tool.phase === "succeeded") {
-      const output = tool.outputExcerpt?.trim() ?? "";
-      if (diagnosticsOutputIsAllClean(output)) {
-        return {
-          headline: i18n.t("tool.diagnosticsNoIssues"),
-          ...(snapshotDetail ? { detail: snapshotDetail } : {}),
-        };
-      }
-      const issueCount = countDiagnosticsIssues(tool.outputExcerpt);
-      if (issueCount === 0) {
-        return {
-          headline: i18n.t("tool.diagnosticsNoIssues"),
-          ...(snapshotDetail ? { detail: snapshotDetail } : {}),
-        };
-      }
-      return {
-        headline: i18n.t("tool.diagnosticsIssueCount", { count: issueCount }),
-        ...(snapshotDetail ? { detail: snapshotDetail } : {}),
-      };
-    }
+    return {
+      headline,
+      ...(snapshotDetail ? { detail: snapshotDetail } : {}),
+    };
   }
 
   if (tool.toolName === "tool_call") {
@@ -363,6 +384,9 @@ export function formatToolCallSummaryPlainText(tool: ToolBlockSnapshot): string 
       : `${summary.shellSummary.verb} ${summary.shellSummary.reason}`;
   } else {
     text = summary.detail ? `${summary.headline} ${summary.detail}` : summary.headline;
+  }
+  if (summary.resultDetail) {
+    text = `${text} ${summary.resultDetail}`;
   }
   if (tool.phase === "failed") {
     text = `${text} ${i18n.t("settings.failed")}`;

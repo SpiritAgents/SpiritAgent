@@ -342,12 +342,46 @@ test('getToolCallSummaryParts: legacy Chinese "查看" headline still parsed and
   );
 });
 
-test("getToolCallSummaryParts: get_diagnostics failed uses checking headline not tool.failed passthrough", () => {
+test("getToolCallSummaryParts: get_diagnostics failed shows base verb and failure reason as result detail", () => {
   assert.deepEqual(
     getToolCallSummaryParts({
       toolName: "get_diagnostics",
       phase: "failed",
       headline: "工具执行失败: get_diagnostics",
+      headlineDetail: "App.tsx",
+      detailLines: [],
+      outputExcerpt:
+        "[tool error] get_diagnostics is not available because no language server is installed for this workspace",
+    }),
+    {
+      headline: "检查",
+      detail: "App.tsx",
+      resultDetail:
+        "get_diagnostics is not available because no language server is installed for th…",
+      resultDetailTone: "failed",
+    },
+  );
+});
+
+test("getToolCallSummaryParts: get_diagnostics failed without error output omits result detail", () => {
+  assert.deepEqual(
+    getToolCallSummaryParts({
+      toolName: "get_diagnostics",
+      phase: "failed",
+      headline: "工具执行失败: get_diagnostics",
+      headlineDetail: "App.tsx",
+      detailLines: [],
+    }),
+    { headline: "检查", detail: "App.tsx" },
+  );
+});
+
+test("getToolCallSummaryParts: get_diagnostics running shows progressive verb with path detail only", () => {
+  assert.deepEqual(
+    getToolCallSummaryParts({
+      toolName: "get_diagnostics",
+      phase: "running",
+      headline: "检查中",
       headlineDetail: "App.tsx",
       detailLines: [],
     }),
@@ -375,7 +409,7 @@ test("getToolCallSummaryParts: get_diagnostics sums issues across multiple files
       outputExcerpt: output,
       detailLines: [],
     }),
-    { headline: "6 个问题", detail: "a.ts +2" },
+    { headline: "已检查", detail: "a.ts +2", resultDetail: "6 个问题" },
   );
 });
 
@@ -394,7 +428,7 @@ test("getToolCallSummaryParts: get_diagnostics all-clean multi-file shows no iss
       outputExcerpt: output,
       detailLines: [],
     }),
-    { headline: "没有问题", detail: "a.ts, b.ts" },
+    { headline: "已检查", detail: "a.ts, b.ts", resultDetail: "没有问题" },
   );
 });
 
