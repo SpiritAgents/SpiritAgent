@@ -113,6 +113,14 @@ export function useMonacoCodeCompletion(options: {
       deletePreviewActiveRef.current = null;
       return;
     }
+    // The editor arrives via React state, which lags its real lifecycle: the owning effect in
+    // WorkspaceMonacoEditor disposes the instance synchronously while the state update that would
+    // clear this prop only lands in a later render, so this effect can mount against an editor
+    // that is already disposed. A disposed standalone editor detaches its model; skip it and wait
+    // for the live instance instead of throwing inside a passive effect (which unmounts the tree).
+    if (editor.getModel() === null) {
+      return;
+    }
     deletePreviewActiveRef.current = editor.createContextKey<boolean>(
       DELETE_PREVIEW_CONTEXT_KEY,
       false,
