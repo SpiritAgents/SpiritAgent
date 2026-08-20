@@ -1255,6 +1255,11 @@
     "autoWorktreeNameFailedInvalidBranchName": "自動產生 Worktree 名稱失敗：branchName 格式無效（{{branchName}}）。",
     "autoWorktreeNameFailedNotObject": "自動產生 Worktree 名稱失敗：模型回傳的 JSON 不是物件。"
   },
+  "crashPage": {
+    "title": "Spirit Agent 已當機",
+    "description": "轉譯程序意外終止。以下記錄可能有助於找出原因。",
+    "reportOnGitHub": "在 GitHub 上回報"
+  },
   "rules": {
     "templatePlaceholder": "在此補充短、硬、可執行的約束，供後續 agent 讀取。"
   },

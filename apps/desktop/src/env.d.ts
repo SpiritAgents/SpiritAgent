@@ -54,6 +54,12 @@ import type {
 declare global {
   interface SpiritDesktopApi {
     platform: NodeJS.Platform;
+    /** Reports an uncaught renderer error/rejection for the crash page log (fire-and-forget). */
+    reportRendererError(report: {
+      kind: "error" | "unhandledrejection";
+      message: string;
+      stack?: string;
+    }): void;
     /** Synchronously reads on-disk `translucency`; aligns with the Electron window material before the first snapshot is ready. */
     readTranslucency(): boolean;
     /** Synchronously reads the OS dark preference tracked by the main process; matchMedia misreports while themeSource is overridden, so this is authoritative. */

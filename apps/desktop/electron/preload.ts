@@ -36,6 +36,10 @@ ipcRenderer.on("desktop:open-settings", () => {
 
 contextBridge.exposeInMainWorld("spiritDesktop", {
   platform: process.platform,
+  /** Fire-and-forget uncaught error report (installed by the renderer itself, main world). */
+  reportRendererError(report: unknown) {
+    ipcRenderer.send("desktop:renderer-error", report);
+  },
   readTranslucency() {
     return ipcRenderer.sendSync("desktop:read-translucency") as boolean;
   },

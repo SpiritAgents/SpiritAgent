@@ -2,6 +2,7 @@ import "./load-env.js";
 
 import { existsSync, readFileSync, statSync } from "node:fs";
 import { copyFile, lstat, mkdir, readFile, realpath, stat, writeFile } from "node:fs/promises";
+import os from "node:os";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 
@@ -75,6 +76,16 @@ import {
   unregisterBrowserGuestF12,
 } from "./workspace-browser-guest.js";
 import { toggleBrowserWindowFullScreen } from "./window-fullscreen.js";
+import {
+  buildCrashLogText,
+  buildIssueFeedbackUrl,
+  crashPageDataUrl,
+  installMainStderrCapture,
+  recordCrashLog,
+  recordRendererError,
+  type CrashSceneDetails,
+  type RendererErrorReport,
+} from "./crash-report.js";
 
 import type { DesktopSnapshot } from "../src/types.js";
 
@@ -189,6 +200,7 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
 configureElectronProductDisplayName();
+installMainStderrCapture();
 
 const DEV_SERVER_URL = process.env.VITE_DEV_SERVER_URL;
 
@@ -747,6 +759,134 @@ function applyNativeWindowBackdrop(
   }
 }
 
+/** Grace period for an unresponsive renderer to recover before it is replaced by the crash page. */
+const RENDERER_UNRESPONSIVE_GRACE_MS = 10_000;
+
+function showRendererCrashPage(window: BrowserWindow, details: CrashSceneDetails): void {
+  if (window.isDestroyed() || window.webContents.isDestroyed()) {
+    return;
+  }
+  const logText = buildCrashLogText(details);
+  console.error(
+    `[spirit-desktop] renderer ${details.trigger} (reason=${details.reason}); showing crash page`,
+  );
+  const feedbackUrl = buildIssueFeedbackUrl({
+    trigger: details.trigger,
+    reason: details.reason,
+    exitCode: details.exitCode,
+    logText,
+    env: {
+      version: app.getVersion(),
+      electronVersion: process.versions.electron,
+      platform: process.platform,
+      arch: process.arch,
+      osRelease: os.release(),
+      packaged: app.isPackaged,
+    },
+  });
+  const url = crashPageDataUrl(
+    {
+      title: i18nHost.t("crashPage.title"),
+      description: i18nHost.t("crashPage.description"),
+      reportLabel: i18nHost.t("crashPage.reportOnGitHub"),
+      lang: i18nHost.language,
+    },
+    logText,
+    { translucency: nativeTranslucencyActive(readTranslucencyFromDisk()) },
+    { url: feedbackUrl },
+  );
+  // The crash page has no scripts, so the feedback link navigates in-window; intercept it
+  // and hand the issue URL to the external browser instead. All other navigations (e.g.
+  // reloading back into the app) pass through untouched.
+  const interceptFeedbackNavigation = (event: Electron.Event, navUrl: string): void => {
+    if (navUrl !== feedbackUrl) {
+      return;
+    }
+    event.preventDefault();
+    void shell.openExternal(feedbackUrl).catch((err) => {
+      console.error("[spirit-desktop] failed to open crash feedback URL", err);
+    });
+  };
+  window.webContents.on("will-navigate", interceptFeedbackNavigation);
+  window.webContents.once("destroyed", () => {
+    window.webContents.removeListener("will-navigate", interceptFeedbackNavigation);
+  });
+  window.webContents.loadURL(url).catch((err) => {
+    window.webContents.removeListener("will-navigate", interceptFeedbackNavigation);
+    console.error("[spirit-desktop] failed to load crash page", err);
+  });
+}
+
+/** Replaces the blank post-crash window with the crash page; returns cleanup for the listeners. */
+function registerRendererCrashPage(window: BrowserWindow): void {
+  let crashPageShown = false;
+  let forceCrashedForUnresponsive = false;
+  let unresponsiveTimer: NodeJS.Timeout | undefined;
+
+  window.webContents.on("render-process-gone", (_event, details) => {
+    recordCrashLog(
+      "main",
+      `render-process-gone reason=${details.reason} exitCode=${details.exitCode}`,
+    );
+    const unexpected =
+      details.reason !== "clean-exit" &&
+      // "killed" is intentional teardown, except when we force-killed a hung renderer below
+      (details.reason !== "killed" || forceCrashedForUnresponsive);
+    if (!unexpected || crashPageShown) {
+      return;
+    }
+    crashPageShown = true;
+    showRendererCrashPage(window, {
+      trigger: forceCrashedForUnresponsive ? "unresponsive" : "render-process-gone",
+      reason: forceCrashedForUnresponsive ? "unresponsive" : details.reason,
+      exitCode: details.exitCode,
+    });
+  });
+
+  window.webContents.on("unresponsive", () => {
+    recordCrashLog("main", "renderer became unresponsive");
+    if (crashPageShown || unresponsiveTimer) {
+      return;
+    }
+    unresponsiveTimer = setTimeout(() => {
+      unresponsiveTimer = undefined;
+      if (window.isDestroyed() || window.webContents.isDestroyed() || crashPageShown) {
+        return;
+      }
+      // A hung renderer cannot navigate by itself; force-kill it so the
+      // render-process-gone handler above loads the crash page.
+      forceCrashedForUnresponsive = true;
+      try {
+        window.webContents.forcefullyCrashRenderer();
+      } catch (err) {
+        console.error("[spirit-desktop] forcefullyCrashRenderer failed", err);
+      }
+    }, RENDERER_UNRESPONSIVE_GRACE_MS);
+  });
+
+  window.webContents.on("responsive", () => {
+    if (unresponsiveTimer) {
+      clearTimeout(unresponsiveTimer);
+      unresponsiveTimer = undefined;
+    }
+  });
+
+  window.webContents.on("console-message", (event) => {
+    if (event.level !== "warning" && event.level !== "error") {
+      return;
+    }
+    const location = event.sourceId ? ` (${event.sourceId}:${event.lineNumber})` : "";
+    recordCrashLog("renderer", `${event.message}${location}`);
+  });
+
+  window.once("closed", () => {
+    if (unresponsiveTimer) {
+      clearTimeout(unresponsiveTimer);
+      unresponsiveTimer = undefined;
+    }
+  });
+}
+
 async function createMainWindow(): Promise<BrowserWindow> {
   const translucencyOnDisk = readTranslucencyFromDisk();
   const initialDark = nativeTheme.shouldUseDarkColors;
@@ -847,6 +987,7 @@ async function createMainWindow(): Promise<BrowserWindow> {
   window.webContents.on("render-process-gone", () => {
     workspacePtyManager.disposeAllForWebContents(webContentsId);
   });
+  registerRendererCrashPage(window);
   window.webContents.on("did-start-navigation", (details) => {
     if (details.isMainFrame && !details.isSameDocument) {
       workspacePtyManager.disposeAllForWebContents(webContentsId);
@@ -1279,6 +1420,18 @@ if (gotSpiritSingleInstanceLock) {
         });
       },
     );
+
+    // Preload forwards uncaught renderer errors/rejections (with stacks) for the crash page log.
+    ipcMain.on("desktop:renderer-error", (_event, report: RendererErrorReport) => {
+      if (!report || typeof report !== "object") {
+        return;
+      }
+      recordRendererError({
+        kind: report.kind === "unhandledrejection" ? "unhandledrejection" : "error",
+        message: String(report.message ?? ""),
+        ...(typeof report.stack === "string" ? { stack: report.stack } : {}),
+      });
+    });
 
     ipcMain.handle("desktop:sync-language", async (_event, lang: string) => {
       console.warn("[spirit-desktop] language synced:", lang);

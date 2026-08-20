@@ -1255,6 +1255,11 @@
     "autoWorktreeNameFailedInvalidBranchName": "Automatische Worktree-Namensgenerierung fehlgeschlagen: branchName-Format ungültig ({{branchName}}).",
     "autoWorktreeNameFailedNotObject": "Automatische Worktree-Namensgenerierung fehlgeschlagen: Modell hat kein JSON-Objekt zurückgegeben."
   },
+  "crashPage": {
+    "title": "Spirit Agent ist abgestürzt",
+    "description": "Der Renderer-Prozess wurde unerwartet beendet. Das folgende Protokoll kann bei der Diagnose der Ursache helfen.",
+    "reportOnGitHub": "Auf GitHub melden"
+  },
   "rules": {
     "templatePlaceholder": "Fügen Sie hier kurze, klare und umsetzbare Regeln für künftige Agents ein."
   },

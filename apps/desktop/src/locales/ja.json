@@ -1255,6 +1255,11 @@
     "autoWorktreeNameFailedInvalidBranchName": "ワークツリー名の自動生成に失敗しました：branchNameの形式が無効です（{{branchName}}）。",
     "autoWorktreeNameFailedNotObject": "ワークツリー名の自動生成に失敗しました：モデルがオブジェクトではないJSONを返しました。"
   },
+  "crashPage": {
+    "title": "Spirit Agent がクラッシュしました",
+    "description": "レンダラープロセスが予期せず終了しました。以下のログが原因の特定に役立つ可能性があります。",
+    "reportOnGitHub": "GitHub で報告"
+  },
   "rules": {
     "templatePlaceholder": "今後のエージェントが読むための、短く明確で実行可能な制約をここに記入してください。"
   },

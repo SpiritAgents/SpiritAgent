@@ -1255,6 +1255,11 @@
     "autoWorktreeNameFailedInvalidBranchName": "Worktree 이름 자동 생성 실패: branchName 형식이 잘못되었습니다 ({{branchName}}).",
     "autoWorktreeNameFailedNotObject": "Worktree 이름 자동 생성 실패: 모델이 객체가 아닌 JSON을 반환했습니다."
   },
+  "crashPage": {
+    "title": "Spirit Agent가 충돌했습니다",
+    "description": "렌더러 프로세스가 예기치 않게 종료되었습니다. 아래 로그가 원인 파악에 도움이 될 수 있습니다.",
+    "reportOnGitHub": "GitHub에서 보고"
+  },
   "rules": {
     "templatePlaceholder": "이후 에이전트가 읽을 수 있도록 짧고 명확하며 실행 가능한 제약을 여기에 작성하세요."
   },

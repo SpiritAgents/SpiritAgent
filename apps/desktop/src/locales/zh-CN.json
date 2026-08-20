@@ -1252,6 +1252,11 @@
     "autoWorktreeNameFailedInvalidBranchName": "自动生成 Worktree 名称失败：branchName 格式无效（{{branchName}}）。",
     "autoWorktreeNameFailedNotObject": "自动生成 Worktree 名称失败：模型返回的 JSON 不是对象。"
   },
+  "crashPage": {
+    "title": "Spirit Agent 已崩溃",
+    "description": "渲染进程意外终止。以下日志可能有助于定位原因。",
+    "reportOnGitHub": "在 GitHub 上报告"
+  },
   "rules": {
     "templatePlaceholder": "在此补充短、硬、可执行的约束，供后续 agent 读取。"
   },

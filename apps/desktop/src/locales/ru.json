@@ -1255,6 +1255,11 @@
     "autoWorktreeNameFailedInvalidBranchName": "Авто-генерация имени Worktree не удалась: неверный формат branchName ({{branchName}}).",
     "autoWorktreeNameFailedNotObject": "Авто-генерация имени Worktree не удалась: модель вернула JSON, не являющийся объектом."
   },
+  "crashPage": {
+    "title": "Spirit Agent аварийно завершился",
+    "description": "Процесс отрисовки неожиданно завершился. Журнал ниже может помочь определить причину.",
+    "reportOnGitHub": "Сообщить на GitHub"
+  },
   "rules": {
     "templatePlaceholder": "Добавьте сюда короткие, чёткие и выполнимые ограничения для чтения агентами."
   },

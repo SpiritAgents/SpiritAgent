@@ -1,3 +1,6 @@
+// Must be the first import: self-installs uncaught-error reporting so that even
+// errors thrown by the import side effects below reach the main-process crash log.
+import "./lib/renderer-error-reporting";
 import { StrictMode } from "react";
 import { createRoot } from "react-dom/client";
 
