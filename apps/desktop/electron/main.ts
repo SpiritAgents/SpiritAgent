@@ -87,7 +87,7 @@ import {
   type RendererErrorReport,
 } from "./crash-report.js";
 
-import type { DesktopSnapshot } from "../src/types.js";
+import type { DesktopLiveUpdate, DesktopSnapshot } from "../src/types.js";
 
 registerSpiritGeneratedAssetPrivilegedScheme();
 registerSpiritNotificationProtocolClient();
@@ -165,6 +165,7 @@ import {
   type DesktopWebHostConfigFile,
 } from "../src/host/storage.js";
 import { setDesktopWebHostRuntimeStatus } from "../src/host/web-host-state.js";
+import { diffLiveSnapshots } from "../src/lib/live-update.js";
 import {
   type ApplicationMenuSection,
   popupApplicationMenuSection,
@@ -213,6 +214,8 @@ let quittingAfterDesktopWebHostStop = false;
 let unsubscribeDesktopDreamUpdates: (() => void) | undefined;
 let unsubscribeDesktopAutomationsUpdates: (() => void) | undefined;
 let unsubscribeDesktopSessionListUpdates: (() => void) | undefined;
+/** Last snapshot pushed to each webContents; basis for incremental (delta) live updates. Reset on renderer reload. */
+const lastLivePushByWebContents = new WeakMap<Electron.WebContents, DesktopSnapshot>();
 let desktopHostShutdownComplete = false;
 let desktopHostShutdownPromise: Promise<void> | undefined;
 
@@ -988,6 +991,11 @@ async function createMainWindow(): Promise<BrowserWindow> {
     workspacePtyManager.disposeAllForWebContents(webContentsId);
   });
   registerRendererCrashPage(window);
+  window.webContents.on("did-finish-load", () => {
+    // A freshly loaded renderer bootstraps its own full snapshot; drop the delta baseline so
+    // the next push is a full snapshot and no delta is applied against bootstrapping state.
+    lastLivePushByWebContents.delete(window.webContents);
+  });
   window.webContents.on("did-start-navigation", (details) => {
     if (details.isMainFrame && !details.isSameDocument) {
       workspacePtyManager.disposeAllForWebContents(webContentsId);
@@ -1075,8 +1083,28 @@ if (gotSpiritSingleInstanceLock) {
 
     unsubscribeDesktopDreamUpdates = subscribeDesktopDreamUpdates((snapshot) => {
       for (const window of BrowserWindow.getAllWindows()) {
-        if (!window.isDestroyed()) {
-          window.webContents.send("desktop:dream-updated", snapshot);
+        // A crashed webContents cannot receive IPC (sending throws EPIPE); the crash page
+        // reload re-enables delivery, so skipping here is safe.
+        if (window.isDestroyed() || window.webContents.isCrashed()) {
+          continue;
+        }
+        // Incremental push: send only the changed conversation tail when the rest of the
+        // snapshot is unchanged, keeping the per-push cost O(delta) at a constant cadence
+        // regardless of transcript length. A full snapshot is sent whenever the delta is
+        // not applicable (first push, renderer reload, session switch, top-level change).
+        const webContents = window.webContents;
+        const previous = lastLivePushByWebContents.get(webContents);
+        const delta = previous ? diffLiveSnapshots(previous, snapshot) : undefined;
+        const payload: DesktopLiveUpdate = delta ?? { kind: "full", snapshot };
+        try {
+          webContents.send("desktop:dream-updated", payload);
+          // Advance the diff baseline only after a successful send; a failed send keeps the
+          // older baseline so the next push's delta covers the missed range.
+          lastLivePushByWebContents.set(webContents, snapshot);
+        } catch {
+          // The renderer may die between the isCrashed() check above and the send; the next
+          // emit retries against the unchanged baseline, and a reloaded renderer resets the
+          // baseline via did-finish-load.
         }
       }
     });

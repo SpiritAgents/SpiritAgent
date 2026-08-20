@@ -28,6 +28,7 @@ import type {
   DeleteSkillRequest,
   DesktopMcpServerInspection,
   DesktopModelProvider,
+  DesktopLiveUpdate,
   DesktopSnapshot,
   ImportExtensionRequest,
   InstallMarketplaceExtensionRequest,
@@ -220,7 +221,7 @@ export interface HostApi {
   ): Promise<DesktopSnapshot>;
   deleteAutomation(automationId: string): Promise<DesktopSnapshot>;
   setAutomationEnabled(automationId: string, enabled: boolean): Promise<DesktopSnapshot>;
-  subscribeDreamUpdates?(callback: (snapshot: DesktopSnapshot) => void): () => void;
+  subscribeDreamUpdates?(callback: (update: DesktopLiveUpdate) => void): () => void;
   subscribeAutomationsUpdates?(callback: (snapshot: DesktopSnapshot) => void): () => void;
   subscribeSessionListUpdates?(callback: () => void): () => void;
   replyPendingApproval(request: ReplyPendingApprovalRequest): Promise<DesktopSnapshot>;

@@ -19,6 +19,7 @@ import type {
   DeleteSkillRequest,
   DesktopMcpServerInspection,
   DesktopModelProvider,
+  DesktopLiveUpdate,
   DesktopSnapshot,
   ImportExtensionRequest,
   InstallMarketplaceExtensionRequest,
@@ -149,7 +150,7 @@ declare global {
     ): Promise<DesktopSnapshot>;
     deleteAutomation(automationId: string): Promise<DesktopSnapshot>;
     setAutomationEnabled(automationId: string, enabled: boolean): Promise<DesktopSnapshot>;
-    dreamSubscribe(callback: (snapshot: DesktopSnapshot) => void): () => void;
+    dreamSubscribe(callback: (update: DesktopLiveUpdate) => void): () => void;
     automationsSubscribe(callback: (snapshot: DesktopSnapshot) => void): () => void;
     sessionListSubscribe(callback: () => void): () => void;
     replyPendingApproval(

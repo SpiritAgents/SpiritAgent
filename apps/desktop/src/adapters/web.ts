@@ -430,7 +430,11 @@ export function createWebHostApi(): HostApi {
     },
     subscribeDreamUpdates(callback) {
       const controller = new AbortController();
-      void consumeSnapshotStream(baseUrl, callback, controller.signal);
+      void consumeSnapshotStream(
+        baseUrl,
+        (snapshot) => callback({ kind: "full", snapshot }),
+        controller.signal,
+      );
       return () => controller.abort();
     },
     replyPendingApproval(request) {

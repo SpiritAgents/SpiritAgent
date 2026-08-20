@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { buildSingleTextQuestionNotificationReplyResult } from "@/lib/ask-questions-notification-reply";
+import { applyConversationDelta } from "@/lib/live-update";
 import {
   resolvePendingApprovalSessionPath,
   resolvePendingQuestionsSessionPath,
@@ -1481,7 +1482,38 @@ export function useDesktopRuntime() {
       return;
     }
 
-    return api.subscribeDreamUpdates((next) => {
+    // A delta that cannot be applied (stale base revision after renderer-side skips, fresh
+    // bootstrap still in flight, ...) must trigger exactly one full-snapshot resync.
+    let resyncInFlight = false;
+    const resyncFromFullSnapshot = () => {
+      if (resyncInFlight) {
+        return;
+      }
+      resyncInFlight = true;
+      void api
+        .poll()
+        .then((full) => {
+          applySnapshot(full);
+        })
+        .catch(() => {
+          // The next delta failure retries the resync.
+        })
+        .finally(() => {
+          resyncInFlight = false;
+        });
+    };
+
+    return api.subscribeDreamUpdates((update) => {
+      let next: DesktopSnapshot | undefined;
+      if (update.kind === "conversation-delta") {
+        next = applyConversationDelta(snapshotRef.current ?? undefined, update);
+        if (!next) {
+          resyncFromFullSnapshot();
+          return;
+        }
+      } else {
+        next = update.snapshot;
+      }
       const previous = snapshotRef.current;
       const prevPath = previous?.activeSession?.filePath;
       const nextPath = next.activeSession?.filePath;

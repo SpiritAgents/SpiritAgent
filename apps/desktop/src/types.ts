@@ -1051,6 +1051,50 @@ export interface DesktopSnapshot {
   pendingWorkspaceCapabilityTrust?: WorkspaceCapabilityTrustRequest;
 }
 
+/** Tail-replacement delta for one conversation message list (foreground or a split-pane projection). */
+export interface ConversationMessagesDelta {
+  /** Revision the receiver must currently hold for this conversation; guards against missed pushes. */
+  baseRevision: number;
+  revision: number;
+  /** All conversation fields except messages/revision, sent wholesale (small). */
+  conversationHead: Omit<ConversationSnapshot, "messages" | "revision">;
+  fromIndex: number;
+  /** Replacement messages covering [fromIndex, totalCount). */
+  tailMessages: ConversationMessageSnapshot[];
+  totalCount: number;
+}
+
+/**
+ * Incremental live update for the Electron push channel: carries the conversation head
+ * wholesale plus only the changed message tail, so a streaming push costs O(delta) instead
+ * of structured-cloning the entire transcript on every emit. Messages before `fromIndex`
+ * are unchanged and keep their object identity on the receiver (renderer memo stays effective).
+ */
+export interface DesktopConversationDelta {
+  kind: "conversation-delta";
+  composerSessionKey: string;
+  /** Foreground conversation delta fields. */
+  baseRevision: number;
+  revision: number;
+  /** All conversation fields except messages/revision, sent wholesale (small). */
+  conversationHead: Omit<ConversationSnapshot, "messages" | "revision">;
+  fromIndex: number;
+  /** Replacement messages covering [fromIndex, totalCount). */
+  tailMessages: ConversationMessageSnapshot[];
+  totalCount: number;
+  /**
+   * Changed split-pane projections (keyed by session file path), each applied with the same
+   * tail-replacement rules. Panes whose slices did not change are omitted; opening/closing a
+   * pane or changing a pane's non-conversation fields forces a full push instead.
+   */
+  paneDeltas?: Record<string, ConversationMessagesDelta>;
+}
+
+/** Push payload on the desktop live-update channel: either a full snapshot or a conversation delta. */
+export type DesktopLiveUpdate =
+  | { kind: "full"; snapshot: DesktopSnapshot }
+  | DesktopConversationDelta;
+
 export type SubagentViewerSessionStatus =
   | "bootstrapping"
   | "running"
