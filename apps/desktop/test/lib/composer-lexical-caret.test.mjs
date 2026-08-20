@@ -87,6 +87,37 @@ test("segment caret on chip segment maps to adjacent text without Lexical throw"
   assert.equal(caret?.offset, 1);
 });
 
+test("element-type anchor on empty line maps to the empty line, not the end", async () => {
+  // Caret on an empty line has no text node, so Lexical reports an element-type anchor on
+  // the paragraph with anchorOffset = child index (paste-at-end regression).
+  const segments = [{ kind: "text", value: "```测试\n\n```" }];
+  const editor = createComposerLexicalEditor();
+  richSegmentsToEditorState(segments, editor);
+
+  const { $createRangeSelection, $getRoot, $setSelection } = await import("lexical");
+  editor.update(
+    () => {
+      const paragraph = $getRoot().getFirstChild();
+      // children: [text("```测试"), br, br, text("```")]; caret before the second br.
+      const selection = $createRangeSelection();
+      selection.anchor.set(paragraph.getKey(), 2, "element");
+      selection.focus.set(paragraph.getKey(), 2, "element");
+      $setSelection(selection);
+    },
+    { discrete: true },
+  );
+
+  const caret = lexicalSelectionToSegmentCaret(editor, segments);
+  assert.deepEqual(caret, { segmentIndex: 0, offset: 6 });
+
+  const { segments: next, caret: nextCaret } = insertSegmentAtCaret(segments, caret, {
+    kind: "text",
+    value: "粘贴",
+  });
+  assert.equal(segmentsToPlainText(next), "```测试\n粘贴\n```");
+  assert.deepEqual(nextCaret, { segmentIndex: 0, offset: 8 });
+});
+
 test("insertSegmentAtCaret uses segment-model caret after multiline end selection", () => {
   const editor = createComposerLexicalEditor();
   richSegmentsToEditorState(multilineSegments, editor);

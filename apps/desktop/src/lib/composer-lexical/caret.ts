@@ -251,6 +251,31 @@ function lexicalAnchorToSegmentCaret(
 ): SegmentCaret | null {
   const merged = mergeAdjacentTextSegments(segments);
   const children = paragraph.getChildren();
+
+  // Element-type anchor: the caret sits on an empty line, which has no text node to anchor
+  // to, so Lexical anchors on the paragraph itself and anchorOffset is the child index
+  // before which the caret sits. Convert it to a plain-text offset by summing the
+  // preceding children (same accounting as lexicalSelectionToPlainTextOffset).
+  if (anchorNode === paragraph) {
+    let plain = 0;
+    const stop = Math.min(Math.max(anchorOffset, 0), children.length);
+    for (let index = 0; index < stop; index += 1) {
+      const child = children[index]!;
+      if ($isTextNode(child)) {
+        plain += child.getTextContentSize();
+        continue;
+      }
+      if ($isLineBreakNode(child)) {
+        plain += 1;
+        continue;
+      }
+      if ($isSpiritChipNode(child)) {
+        plain += chipPlainTextLength(child.getPayload());
+      }
+    }
+    return plainTextOffsetToCaret(merged, plain);
+  }
+
   const anchorKey = anchorNode.getKey();
   let childIndex = 0;
 
