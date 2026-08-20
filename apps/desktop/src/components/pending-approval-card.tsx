@@ -41,16 +41,18 @@ export function PendingApprovalCard({
     <Card
       data-spirit-surface="pending-approval-card"
       className={cn(
-        "border border-ring/30 text-sm ring-0 dark:border-white/10",
+        "gap-2 border border-ring/30 py-3 text-sm ring-0 dark:border-white/10",
         DESKTOP_ELEVATION_SHADOW_SM,
         desktopComposerSurfaceBackdropClass(useTranslucency),
       )}
     >
-      <CardHeader className="space-y-1.5 px-3 py-2.5">
+      {/* gap-2 compensates for the description's leading-relaxed half-leading, keeping the
+          visual rhythm aligned with the 12px card padding. */}
+      <CardHeader className="gap-2 px-3 py-0">
         <CardTitle className="min-w-0 truncate text-sm leading-tight">
           {pendingApproval.toolName}
         </CardTitle>
-        <CardDescription className="text-xs leading-relaxed">
+        <CardDescription className="text-xs leading-normal">
           <ScrollArea
             type="always"
             className="pr-3 [&>[data-radix-scroll-area-viewport]]:max-h-24 [&>[data-radix-scroll-area-viewport]]:overscroll-contain"
@@ -66,7 +68,7 @@ export function PendingApprovalCard({
           </ScrollArea>
         </CardDescription>
       </CardHeader>
-      <CardContent className="grid gap-2 px-3 pb-3 pt-0">
+      <CardContent className="grid gap-2 px-3 pb-0 pt-0">
         <div className="grid gap-1.5">
           <Button
             size="sm"
