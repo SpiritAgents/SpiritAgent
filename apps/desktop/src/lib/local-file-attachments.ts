@@ -151,6 +151,24 @@ export function snapshotsToComposerAttachmentViews(
   );
 }
 
+/**
+ * Display attribution: `@` workspace-file references are already rendered as inline chips in the
+ * message bubble, so their attachment snapshots must not also render as upload cards above the
+ * bubble. Snapshots produced from `@` references carry the same normalized path recorded in the
+ * chip (workspace-relative), while uploaded files keep their absolute paths.
+ */
+export function uploadOnlyLocalFileAttachmentSnapshots(
+  snapshots: readonly ConversationLocalFileAttachmentSnapshot[] | undefined,
+  referencedWorkspaceFilePathKeys: ReadonlySet<string>,
+): ConversationLocalFileAttachmentSnapshot[] | undefined {
+  if (!snapshots?.length || referencedWorkspaceFilePathKeys.size === 0) {
+    return snapshots ? [...snapshots] : undefined;
+  }
+  return snapshots.filter(
+    (snapshot) => !referencedWorkspaceFilePathKeys.has(normalizeSlashPath(snapshot.path)),
+  );
+}
+
 const ATTACHMENT_ONLY_DISPLAY_TEXT_PATTERN = /^(已附加文件|Attached files):\s*.+$/u;
 
 export function isAttachmentOnlyDisplayText(

@@ -19,7 +19,9 @@ import {
   isAttachmentOnlyDisplayText,
   localFileAttachmentsSnapshotKey,
   mergeComposerAttachmentViews,
+  normalizeSlashPath,
   snapshotsToComposerAttachmentViews,
+  uploadOnlyLocalFileAttachmentSnapshots,
   type ComposerLocalFileAttachmentView,
 } from "@/lib/local-file-attachments";
 import {
@@ -278,9 +280,26 @@ export function UserMessageBubble({
   readLocalImagePreviewDataUrl,
   saveLocalImageAs,
 }: UserMessageBubbleProps) {
-  const attachmentSnapshotKey = localFileAttachmentsSnapshotKey(message.localFileAttachments);
+  const contentParts = useMemo(() => parseMessageContentParts(message.content), [message.content]);
+  // `@` workspace-file references render as inline chips; their attachment snapshots are
+  // attributed by matching the chip-recorded path and excluded from the upload card strip.
+  const referencedFilePathKeys = useMemo(() => {
+    const keys = new Set<string>();
+    for (const part of contentParts) {
+      if (part.kind === "workspaceFile") {
+        keys.add(normalizeSlashPath(part.path));
+      }
+    }
+    return keys;
+  }, [contentParts]);
+  const uploadAttachmentSnapshots = useMemo(
+    () =>
+      uploadOnlyLocalFileAttachmentSnapshots(message.localFileAttachments, referencedFilePathKeys),
+    [message.localFileAttachments, referencedFilePathKeys],
+  );
+  const attachmentSnapshotKey = localFileAttachmentsSnapshotKey(uploadAttachmentSnapshots);
   const initialViews = useMemo(
-    () => snapshotsToComposerAttachmentViews(message.localFileAttachments),
+    () => snapshotsToComposerAttachmentViews(uploadAttachmentSnapshots),
     [attachmentSnapshotKey],
   );
   const [attachmentViews, setAttachmentViews] =
@@ -291,8 +310,6 @@ export function UserMessageBubble({
   }, [message.id, attachmentSnapshotKey, initialViews]);
 
   useLocalFileAttachmentPreviews(attachmentViews, setAttachmentViews, readLocalImagePreviewDataUrl);
-
-  const contentParts = useMemo(() => parseMessageContentParts(message.content), [message.content]);
   const visibleText = contentParts
     .filter((p) => p.kind === "text")
     .map((p) => p.value)
@@ -311,7 +328,7 @@ export function UserMessageBubble({
           p.kind === "fileSnippet" ||
           p.kind === "messageQuote",
       )) &&
-    !isAttachmentOnlyDisplayText(message.content, message.localFileAttachments);
+    !isAttachmentOnlyDisplayText(message.content, uploadAttachmentSnapshots);
   const hasAttachments = attachmentViews.length > 0;
 
   if (!showText && !hasAttachments) {
