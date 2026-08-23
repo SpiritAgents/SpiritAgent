@@ -1488,7 +1488,6 @@ if (gotSpiritSingleInstanceLock) {
     });
 
     ipcMain.handle("desktop:sync-language", async (_event, lang: string) => {
-      console.warn("[spirit-desktop] language synced:", lang);
       try {
         await i18nHost.changeLanguage(lang);
       } catch {
