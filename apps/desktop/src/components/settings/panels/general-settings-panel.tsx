@@ -2,8 +2,24 @@ import { useTranslation } from "react-i18next";
 
 import { SettingsRow } from "@/components/settings/settings-row";
 import type { SettingsViewProps } from "@/components/settings/types";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
 import { desktopShellPlatform } from "@/lib/desktop-shell";
+import {
+  changeLanguage,
+  isLanguagePreference,
+  LANGUAGE_PREFERENCE_OPTIONS,
+  LOCALE_LABEL_KEYS,
+  SYSTEM_LANGUAGE,
+} from "@/lib/i18n";
+
+const generalSelectTriggerClassName = "w-full sm:w-fit sm:max-w-full";
 
 function platformKey(base: string): string {
   const platform = desktopShellPlatform();
@@ -20,6 +36,30 @@ export function GeneralSettingsPanel({
   const { t } = useTranslation();
   return (
     <div className="divide-y divide-border/35 rounded-lg border border-border/40 bg-background/80 px-4 sm:px-5">
+      <SettingsRow
+        label={t("settings.uiLocale")}
+        description={t("settings.uiLocaleDescription")}
+        htmlFor="settings-locale"
+      >
+        <Select
+          value={isLanguagePreference(settings.uiLocale) ? settings.uiLocale : SYSTEM_LANGUAGE}
+          onValueChange={(value) => {
+            void changeLanguage(value);
+            void onSavePatch({ uiLocale: value });
+          }}
+        >
+          <SelectTrigger id="settings-locale" className={generalSelectTriggerClassName}>
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent>
+            {LANGUAGE_PREFERENCE_OPTIONS.map((lang) => (
+              <SelectItem key={lang} value={lang}>
+                {t(LOCALE_LABEL_KEYS[lang])}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+      </SettingsRow>
       <SettingsRow
         label={t("settings.systemNotifications")}
         description={t("settings.systemNotificationsDescription")}

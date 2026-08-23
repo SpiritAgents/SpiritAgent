@@ -189,6 +189,7 @@
     "themeLight": "라이트",
     "themeDark": "다크",
     "font": "글꼴",
+    "typographySection": "타이포그래피",
     "translucency": "반투명",
     "fontDescription": "기본값은 Geist입니다.",
     "fontSystem": "시스템",

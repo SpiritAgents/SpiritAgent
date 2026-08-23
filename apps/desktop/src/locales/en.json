@@ -189,6 +189,7 @@
     "themeLight": "Light",
     "themeDark": "Dark",
     "font": "Font",
+    "typographySection": "Typography",
     "translucency": "Translucency",
     "fontDescription": "Defaults to Geist.",
     "fontSystem": "System",
