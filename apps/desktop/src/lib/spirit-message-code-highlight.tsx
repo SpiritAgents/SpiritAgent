@@ -1,4 +1,4 @@
-import type { CSSProperties } from "react";
+import { Fragment, type CSSProperties } from "react";
 import type { TokensResult } from "shiki";
 
 import { cn } from "@/lib/utils";
@@ -107,21 +107,20 @@ function parseRootStyle(rootStyle: HighlightResult["rootStyle"]): CSSProperties 
   ) as CSSProperties;
 }
 
-export function renderHighlightedCodeLines(
-  result: HighlightResult,
-  options?: { firstLineInline?: boolean },
-) {
+export function renderHighlightedCodeLines(result: HighlightResult) {
   const lines = dropTrailingEmptyTokenLines(result.tokens);
 
   return lines.map((line, lineIndex) => (
-    <span
-      key={lineIndex}
-      className={options?.firstLineInline && lineIndex === 0 ? undefined : "block"}
-    >
+    <Fragment key={lineIndex}>
+      {lineIndex > 0 ? "\n" : null}
       {isEmptyTokenLine(line)
         ? null
-        : line.map((token, tokenIndex) => renderHighlightToken(token, tokenIndex))}
-    </span>
+        : (
+            <span>
+              {line.map((token, tokenIndex) => renderHighlightToken(token, tokenIndex))}
+            </span>
+          )}
+    </Fragment>
   ));
 }
 

@@ -61,8 +61,9 @@
   white-space: pre;
 }
 
-/* With lineNumbers=false, row spans must be block so each line occupies its own row; do not add \\n to empty lines, or they stack into two-line height */
+/* Line breaks come from explicit newlines between token spans. Row spans must stay
+   inline: display:block + min-height:1lh plus a real \n stacks a blank line into two rows. */
 [data-streamdown="code-block-body"] pre code > span {
-  display: block;
-  min-height: 1lh;
+  display: inline;
+  min-height: 0;
 }
