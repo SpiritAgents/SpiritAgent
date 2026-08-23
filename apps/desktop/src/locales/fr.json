@@ -192,6 +192,8 @@
     "typographySection": "Typographie",
     "translucency": "Translucidité",
     "fontDescription": "Par défaut Geist.",
+    "fontSmoothing": "Lissage des polices",
+    "fontSmoothingDescription": "Utiliser l'anticrénelage natif de macOS.",
     "fontSystem": "Système",
     "selectTheme": "Choisir un thème",
     "themeDescription": "Appliqué immédiatement.",

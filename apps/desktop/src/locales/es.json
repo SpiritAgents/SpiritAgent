@@ -192,6 +192,8 @@
     "typographySection": "Tipografía",
     "translucency": "Traslucidez",
     "fontDescription": "Por defecto Geist.",
+    "fontSmoothing": "Suavizado de fuentes",
+    "fontSmoothingDescription": "Usar el suavizado nativo de macOS.",
     "fontSystem": "Sistema",
     "selectTheme": "Seleccionar tema",
     "themeDescription": "Se aplica de inmediato.",

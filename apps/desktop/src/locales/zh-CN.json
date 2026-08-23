@@ -192,6 +192,8 @@
     "typographySection": "排版",
     "translucency": "半透明",
     "fontDescription": "默认 Geist。",
+    "fontSmoothing": "字体平滑",
+    "fontSmoothingDescription": "使用 macOS 原生抗锯齿。",
     "fontSystem": "跟随系统",
     "selectTheme": "选择主题",
     "themeDescription": "立即生效。",

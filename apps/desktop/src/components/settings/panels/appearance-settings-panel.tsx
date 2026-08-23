@@ -5,7 +5,7 @@ import { SettingsRow } from "@/components/settings/settings-row";
 import type { SettingsViewProps } from "@/components/settings/types";
 import { ThemePreviewPicker } from "@/components/theme-preview-picker";
 import { Switch } from "@/components/ui/switch";
-import { isNativeTranslucencySupported } from "@/lib/desktop-shell";
+import { isMacDesktopPlatform, isNativeTranslucencySupported } from "@/lib/desktop-shell";
 import type { ThemePreference } from "@/lib/theme";
 
 const appearanceSelectTriggerClassName = "w-full sm:w-fit sm:max-w-full";
@@ -17,6 +17,8 @@ export function AppearanceSettingsPanel({
   onFontChange,
   clickablePointerCursor,
   onClickablePointerCursorChange,
+  fontSmoothing,
+  onFontSmoothingChange,
   settings,
   onSavePatch,
 }: Pick<
@@ -25,6 +27,8 @@ export function AppearanceSettingsPanel({
   | "onFontChange"
   | "clickablePointerCursor"
   | "onClickablePointerCursorChange"
+  | "fontSmoothing"
+  | "onFontSmoothingChange"
   | "settings"
   | "onSavePatch"
 > & {
@@ -97,6 +101,21 @@ export function AppearanceSettingsPanel({
               triggerClassName={appearanceSelectTriggerClassName}
             />
           </SettingsRow>
+          {isMacDesktopPlatform() ? (
+            <SettingsRow
+              label={t("settings.fontSmoothing")}
+              description={t("settings.fontSmoothingDescription")}
+              htmlFor="settings-font-smoothing"
+            >
+              <div className="flex justify-end">
+                <Switch
+                  id="settings-font-smoothing"
+                  checked={fontSmoothing}
+                  onCheckedChange={(value) => onFontSmoothingChange(value === true)}
+                />
+              </div>
+            </SettingsRow>
+          ) : null}
         </div>
       </div>
     </div>

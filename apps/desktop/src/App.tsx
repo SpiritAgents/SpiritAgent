@@ -25,6 +25,7 @@ import { WorkspaceMarkdownLinkProvider } from "@/components/workspace-markdown-l
 import { useAppSurfaceNavigation } from "@/hooks/useAppSurfaceNavigation";
 import { useClickablePointerCursor } from "@/hooks/useClickablePointerCursor";
 import { useCompactionUiDemo } from "@/hooks/useCompactionUiDemo";
+import { useFontSmoothing } from "@/hooks/useFontSmoothing";
 import { useLongConversationListDemo } from "@/hooks/useLongConversationListDemo";
 import { useComposerController } from "@/hooks/useComposerController";
 import { ConversationSessionFocusComposerBridge } from "@/components/conversation/conversation-session-focus-composer-bridge";
@@ -78,6 +79,7 @@ export default function App() {
   useThemeSetter();
   const { font, setFont } = useFont();
   const { clickablePointerCursor, setClickablePointerCursor } = useClickablePointerCursor();
+  const { fontSmoothing, setFontSmoothing } = useFontSmoothing();
   const uiLayoutScale = useUiLayoutScale();
   const runtime = useDesktopRuntime();
   useDesktopRuntimeErrorToast(runtime.runtimeError);
@@ -499,6 +501,8 @@ export default function App() {
                           onFontChange={setFont}
                           clickablePointerCursor={clickablePointerCursor}
                           onClickablePointerCursorChange={setClickablePointerCursor}
+                          fontSmoothing={fontSmoothing}
+                          onFontSmoothingChange={setFontSmoothing}
                           settings={runtime.settings}
                           snapshot={snapshot}
                           apiReady={runtime.apiReady}

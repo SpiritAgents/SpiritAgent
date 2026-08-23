@@ -498,6 +498,9 @@ html.spirit-launch-splash-exiting
   html.dark {
     color-scheme: dark;
   }
+  html.spirit-font-smoothing {
+    -webkit-font-smoothing: antialiased;
+  }
   /* WebView2: `<pre>` by default easily triggers the Chinese serif fallback, inconsistent with the UI sans stack */
   pre {
     @apply font-sans;

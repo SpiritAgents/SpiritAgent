@@ -16,6 +16,7 @@ import {
 } from "./lib/clickable-pointer-cursor";
 import { applyDesktopNativeChromeToDocument } from "./lib/desktop-shell";
 import { applyFontToDocument, getStoredFont } from "./lib/font";
+import { applyFontSmoothingToDocument, getStoredFontSmoothing } from "./lib/font-smoothing";
 import { applyThemeToDocument, getStoredTheme } from "./lib/theme";
 import {
   DEFAULT_UI_LAYOUT_SCALE,
@@ -31,6 +32,7 @@ if (typeof document !== "undefined") {
   applyThemeToDocument(getStoredTheme());
   applyDesktopNativeChromeToDocument();
   applyFontToDocument(getStoredFont());
+  applyFontSmoothingToDocument(getStoredFontSmoothing());
   applyClickablePointerCursorToDocument(getStoredClickablePointerCursor());
   const initialUiLayoutScale = getStoredUiLayoutScale();
   if (initialUiLayoutScale !== DEFAULT_UI_LAYOUT_SCALE) {

@@ -192,6 +192,8 @@
     "typographySection": "Tipografia",
     "translucency": "Translucidez",
     "fontDescription": "Padrão: Geist.",
+    "fontSmoothing": "Suavização de Fonte",
+    "fontSmoothingDescription": "Usar o anti-aliasing nativo do macOS.",
     "fontSystem": "Sistema",
     "selectTheme": "Selecionar tema",
     "themeDescription": "Aplicado imediatamente.",

@@ -84,6 +84,8 @@ test("AppearanceSettingsPanel groups Theme and Typography without UI locale", as
   assert.doesNotMatch(source, /settings\.themeSection/);
   assert.match(source, /settings\.typographySection/);
   assert.match(source, /settings\.clickablePointerCursor/);
+  assert.match(source, /settings\.fontSmoothing/);
+  assert.match(source, /isMacDesktopPlatform/);
   assert.doesNotMatch(source, /settings\.uiLocale/);
 });
 

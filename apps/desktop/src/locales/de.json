@@ -192,6 +192,8 @@
     "typographySection": "Typografie",
     "translucency": "Transluzenz",
     "fontDescription": "Standardmäßig Geist.",
+    "fontSmoothing": "Schriftglättung",
+    "fontSmoothingDescription": "Natives macOS-Antialiasing verwenden.",
     "fontSystem": "System",
     "selectTheme": "Design auswählen",
     "themeDescription": "Wird sofort übernommen.",

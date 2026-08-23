@@ -192,6 +192,8 @@
     "typographySection": "Типографика",
     "translucency": "Полупрозрачность",
     "fontDescription": "По умолчанию Geist.",
+    "fontSmoothing": "Сглаживание шрифта",
+    "fontSmoothingDescription": "Использовать встроенное сглаживание macOS.",
     "fontSystem": "Системный",
     "selectTheme": "Выбрать тему",
     "themeDescription": "Применяется сразу.",

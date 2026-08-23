@@ -192,6 +192,8 @@
     "typographySection": "Typography",
     "translucency": "Translucency",
     "fontDescription": "Defaults to Geist.",
+    "fontSmoothing": "Font Smoothing",
+    "fontSmoothingDescription": "Use native macOS anti-aliasing.",
     "fontSystem": "System",
     "selectTheme": "Select Theme",
     "themeDescription": "Applied immediately.",
