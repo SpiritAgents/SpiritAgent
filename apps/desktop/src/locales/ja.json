@@ -203,7 +203,7 @@
     "llmHttpVersionHttp11": "HTTP/1.1",
     "llmHttpVersionHttp2": "HTTP/2",
     "translucencyUnsupported": "現在のホストはこのオプションをサポートしていません。",
-    "clickablePointerCursor": "ホバー時に手のカーソル",
+    "clickablePointerCursor": "ポインターカーソルを使用",
     "clickablePointerCursorDescription": "ボタン、リンク、その他のクリック可能なコントロール上で手のカーソルを表示します。",
     "langSystem": "システム",
     "langZhCN": "简体中文",

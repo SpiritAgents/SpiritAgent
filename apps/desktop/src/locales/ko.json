@@ -203,7 +203,7 @@
     "llmHttpVersionHttp11": "HTTP/1.1",
     "llmHttpVersionHttp2": "HTTP/2",
     "translucencyUnsupported": "현재 호스트가 이 옵션을 지원하지 않습니다.",
-    "clickablePointerCursor": "호버 시 손 모양 커서",
+    "clickablePointerCursor": "포인터 커서 사용",
     "clickablePointerCursorDescription": "버튼, 링크 및 기타 클릭 가능한 컨트롤 위에 손 모양 커서를 표시합니다.",
     "langSystem": "시스템",
     "langZhCN": "简体中文",

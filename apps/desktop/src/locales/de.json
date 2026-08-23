@@ -203,7 +203,7 @@
     "llmHttpVersionHttp11": "HTTP/1.1",
     "llmHttpVersionHttp2": "HTTP/2",
     "translucencyUnsupported": "Der aktuelle Host unterstützt diese Option nicht.",
-    "clickablePointerCursor": "Handcursor bei Hover",
+    "clickablePointerCursor": "Zeigercursor verwenden",
     "clickablePointerCursorDescription": "Zeigt einen Handcursor über Schaltflächen, Links und anderen klickbaren Steuerelementen an.",
     "langSystem": "System",
     "langZhCN": "简体中文",

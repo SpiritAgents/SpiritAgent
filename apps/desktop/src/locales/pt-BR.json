@@ -203,7 +203,7 @@
     "llmHttpVersionHttp11": "HTTP/1.1",
     "llmHttpVersionHttp2": "HTTP/2",
     "translucencyUnsupported": "O host atual não suporta esta opção.",
-    "clickablePointerCursor": "Cursor de mão ao passar o mouse",
+    "clickablePointerCursor": "Usar Cursores de Ponteiro",
     "clickablePointerCursorDescription": "Mostra um cursor de mão sobre botões, links e outros controles clicáveis.",
     "langSystem": "Sistema",
     "langZhCN": "简体中文",

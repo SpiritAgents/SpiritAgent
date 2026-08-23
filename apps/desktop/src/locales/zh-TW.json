@@ -203,7 +203,7 @@
     "llmHttpVersionHttp11": "HTTP/1.1",
     "llmHttpVersionHttp2": "HTTP/2",
     "translucencyUnsupported": "目前主機不支援此選項。",
-    "clickablePointerCursor": "懸停時顯示手型游標",
+    "clickablePointerCursor": "使用指標游標",
     "clickablePointerCursorDescription": "按鈕、連結和其他可點擊的控制項上顯示手型游標。",
     "langSystem": "系統",
     "langZhCN": "简体中文",
