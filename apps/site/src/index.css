@@ -550,7 +550,11 @@ body {
 
 /* Landing preview: macOS hiddenInset top-bar safe area (aligned with Desktop `spirit-desktop-darwin`) */
 [data-spirit-preview-shell="darwin"] {
-  --spirit-macos-titlebar-inset: 2rem;
+  --spirit-macos-titlebar-chrome-top: 1rem;
+  --spirit-macos-titlebar-control-pad: calc((1.75rem - 0.875rem) / 2);
+  --spirit-macos-titlebar-inset: calc(
+    var(--spirit-macos-titlebar-chrome-top) - var(--spirit-macos-titlebar-control-pad) + 1.75rem
+  );
   --spirit-macos-traffic-lights-inset-left: 4.875rem;
 }
 
@@ -575,6 +579,12 @@ body {
 }
 
 [data-spirit-preview-shell="darwin"] [data-spirit-surface="layout-chrome"] {
+  box-sizing: border-box;
+  height: var(--spirit-macos-titlebar-inset);
+  padding-top: calc(
+    var(--spirit-macos-titlebar-chrome-top) - var(--spirit-macos-titlebar-control-pad)
+  );
+  align-items: flex-start;
   transition: padding-left 300ms cubic-bezier(0.22, 1, 0.36, 1);
 }
 

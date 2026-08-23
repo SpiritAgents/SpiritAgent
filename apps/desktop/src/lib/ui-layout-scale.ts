@@ -42,24 +42,23 @@ export function setStoredUiLayoutScale(scale: number): void {
 }
 
 /*
- * macOS traffic lights cluster geometry: hiddenInset default margin (12, 11) (Electron native_window_mac.mm),
- * cluster 54×14px. At scale=1 the cluster is horizontally centered in the 78px reserved zone
- * (--spirit-macos-traffic-lights-inset-left), and its vertical center coincides with the 28px
- * sidebar toggle button center (18px); after scaling it is recomputed from the same relation,
- * and s=1 exactly restores (12, 11).
+ * macOS traffic lights: the native cluster is 54×14px and does not follow CSS layout scale.
+ * Electron hiddenInset defaults to (12, 11), which sits tighter to the frame than Apple apps
+ * and places the red button left of the sidebar item icons.
+ * At scale=1, origin (16, 16) matches typical Apple chrome inset and puts the red button on
+ * the same vertical axis as those icons (container px-1.5 + sm button px-2.5 + size-3.5/2).
+ * After scaling, x keeps that red-button/icon alignment; y scales the top inset.
  */
-const DARWIN_TRAFFIC_LIGHTS_ZONE_WIDTH = 78;
-const DARWIN_TRAFFIC_LIGHTS_CLUSTER_WIDTH = 54;
-const DARWIN_TRAFFIC_LIGHTS_BUTTON_HEIGHT = 14;
-const DARWIN_PINNED_SIDEBAR_TOGGLE_CENTER_Y = 18;
+const DARWIN_TRAFFIC_LIGHTS_BUTTON_SIZE = 14;
+/** Sidebar item icon center at scale=1. */
+const DARWIN_SIDEBAR_ITEM_ICON_CENTER_X = 23;
+const DARWIN_TRAFFIC_LIGHTS_INSET_Y = 16;
 
 export function computeDarwinTrafficLightPosition(scale: number): { x: number; y: number } {
   const s = clampUiLayoutScale(scale);
   return {
-    x: Math.round((DARWIN_TRAFFIC_LIGHTS_ZONE_WIDTH * s - DARWIN_TRAFFIC_LIGHTS_CLUSTER_WIDTH) / 2),
-    y: Math.round(
-      DARWIN_PINNED_SIDEBAR_TOGGLE_CENTER_Y * s - DARWIN_TRAFFIC_LIGHTS_BUTTON_HEIGHT / 2,
-    ),
+    x: Math.round(DARWIN_SIDEBAR_ITEM_ICON_CENTER_X * s - DARWIN_TRAFFIC_LIGHTS_BUTTON_SIZE / 2),
+    y: Math.round(DARWIN_TRAFFIC_LIGHTS_INSET_Y * s),
   };
 }
 

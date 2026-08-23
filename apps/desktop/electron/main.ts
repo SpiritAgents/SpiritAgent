@@ -673,7 +673,7 @@ function readTrafficLightPositionFromDisk(): { x: number; y: number } | undefine
       return { x: parsed.x, y: parsed.y };
     }
   } catch {
-    // First launch or missing cache: keep the hiddenInset default position (equivalent to scale=1)
+    // First launch or missing cache: use the scale=1 inset (see computeDarwinTrafficLightPosition)
   }
   return undefined;
 }
@@ -948,7 +948,11 @@ async function createMainWindow(): Promise<BrowserWindow> {
           visualEffectState: "followWindow",
         }
       : {}),
-    ...(storedTrafficLightPosition ? { trafficLightPosition: storedTrafficLightPosition } : {}),
+    ...(process.platform === "darwin"
+      ? {
+          trafficLightPosition: storedTrafficLightPosition ?? { x: 16, y: 16 },
+        }
+      : {}),
     titleBarStyle:
       process.platform === "darwin"
         ? "hiddenInset"
