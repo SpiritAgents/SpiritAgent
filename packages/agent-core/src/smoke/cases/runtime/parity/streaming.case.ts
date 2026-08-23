@@ -12,6 +12,7 @@ import {
   StreamingBackgroundRoundTransport,
   StreamingCompactionTransport,
   StreamingFailureTransport,
+  StreamingStartRejectTransport,
   StreamingFinalTransport,
   StreamingTimeoutTransport,
   StreamingToolRoundTransport,
@@ -458,6 +459,48 @@ export async function runStreamingCase(): Promise<RuntimeParityCaseResult> {
     !drainedStreamingFailureEvents.some((event) => event.kind === "assistant-response-completed")
   ) {
     throw new Error("streaming failure smoke is missing the completed event.");
+  }
+
+  const streamingStartRejectEvents: RuntimeEvent<ScriptedToolRequest>[] = [];
+  const streamingStartRejectRuntime = new AgentRuntime({
+    config: undefined,
+    llmTransport: new StreamingStartRejectTransport(),
+    toolExecutor: new HostExecutor(),
+    createToolAgentState: createScriptedState,
+    appendToolResultMessage: appendScriptedToolResult,
+    appendUserMessage: appendScriptedUserMessage,
+    extractAssistantText: extractScriptedAssistantText,
+    onEvent: (event) => streamingStartRejectEvents.push(event),
+  });
+
+  await streamingStartRejectRuntime.startUserTurnStreaming("Please trigger a start rejection");
+  for (let index = 0; index < 8 && streamingStartRejectRuntime.isBusy(); index += 1) {
+    await flushMicrotasks(4);
+    await streamingStartRejectRuntime.poll();
+  }
+  if (streamingStartRejectRuntime.isBusy()) {
+    throw new Error("streaming start-reject smoke stayed busy after the transport rejected.");
+  }
+  if (streamingStartRejectRuntime.pendingUserTurn() !== undefined) {
+    throw new Error(
+      "streaming start-reject smoke did not clear the pending user turn after finishing.",
+    );
+  }
+  const drainedStreamingStartRejectEvents = streamingStartRejectRuntime.drainEvents();
+  const streamingStartRejectResult = streamingStartRejectRuntime.takeCompletedTurnResult();
+  if (
+    !streamingStartRejectResult ||
+    streamingStartRejectResult.kind !== "failed" ||
+    !streamingStartRejectResult.error.includes("Video upload failed (400)")
+  ) {
+    throw new Error("streaming start-reject smoke did not surface the transport start error.");
+  }
+  if (
+    !drainedStreamingStartRejectEvents.some(
+      (event) => event.kind === "assistant-response-completed",
+    )
+  ) {
+    throw new Error("streaming start-reject smoke is missing the completed event.");
   }
 
   const streamingApprovalExecutor = new StreamingApprovalExecutor();

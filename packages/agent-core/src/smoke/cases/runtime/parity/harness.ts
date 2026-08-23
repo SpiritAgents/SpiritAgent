@@ -1353,6 +1353,51 @@ export class StreamingFailureTransport implements LlmTransport<undefined, Script
   }
 }
 
+export class StreamingStartRejectTransport implements LlmTransport<undefined, ScriptedState> {
+  async startToolAgentRound(
+    _config: undefined,
+    _state: ScriptedState,
+    _tools: JsonValue,
+  ): Promise<ToolAgentRoundCompletion<ScriptedState>> {
+    throw new Error("StreamingStartRejectTransport should use the streaming path.");
+  }
+
+  async startToolAgentRoundStreaming(
+    _config: undefined,
+    _state: ScriptedState,
+    _tools: JsonValue,
+  ): Promise<StartedToolAgentRound<ScriptedState>> {
+    throw new Error("Video upload failed (400): invalid file");
+  }
+
+  async compactHistoryManual(
+    _config: undefined,
+    history: LlmMessage[],
+  ): Promise<{ droppedMessages: number; beforeLength: number; afterLength: number }> {
+    return {
+      droppedMessages: 0,
+      beforeLength: history.length,
+      afterLength: history.length,
+    };
+  }
+
+  compactSummaryText(): string | undefined {
+    return undefined;
+  }
+
+  isContextOverflowError(error: string): boolean {
+    return error.includes("context");
+  }
+
+  llmHistoryAsApiMessages(history: LlmMessage[]): JsonValue[] {
+    return history.map((message) => ({ role: message.role, content: message.content }));
+  }
+
+  llmSystemPromptsForExport(): JsonValue {
+    return {};
+  }
+}
+
 export class StreamingToolRoundTransport implements LlmTransport<undefined, ScriptedState> {
   private resolveCompletion:
     | ((completion: ToolAgentRoundCompletion<ScriptedState>) => void)
