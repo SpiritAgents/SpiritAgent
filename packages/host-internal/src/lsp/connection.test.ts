@@ -7,7 +7,7 @@ test.skipIf(process.platform !== "win32")(
   "buildLanguageServerSpawnOptions enables shell for Windows cmd shims",
   () => {
     const options = buildLanguageServerSpawnOptions(
-      "D:\\Cache\\.npm-global\\typescript-language-server.cmd",
+      "D:\\Cache\\.npm-global\\pyright-langserver.cmd",
       "D:\\SpiritAgent",
     );
     assert.equal(options.shell, true);
@@ -15,9 +15,6 @@ test.skipIf(process.platform !== "win32")(
 );
 
 test("buildLanguageServerSpawnOptions leaves POSIX spawn without shell", () => {
-  const options = buildLanguageServerSpawnOptions(
-    "/usr/bin/typescript-language-server",
-    "/tmp/workspace",
-  );
+  const options = buildLanguageServerSpawnOptions("/usr/bin/pyright-langserver", "/tmp/workspace");
   assert.equal(options.shell, undefined);
 });

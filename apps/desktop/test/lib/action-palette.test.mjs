@@ -22,6 +22,7 @@ const EN_LABELS = {
   "settings.themeSystem": "System",
   "settings.themeLight": "Light",
   "settings.themeDark": "Dark",
+  "settings.langSystem": "System",
   "settings.langZhCN": "简体中文",
   "settings.langEn": "English",
   "settings.langZhTW": "繁體中文",
@@ -41,6 +42,7 @@ const ZH_LABELS = {
   "settings.themeSystem": "跟随系统",
   "settings.themeLight": "浅色",
   "settings.themeDark": "深色",
+  "settings.langSystem": "跟随系统",
   "settings.langZhCN": "简体中文",
   "settings.langEn": "English",
   "settings.langZhTW": "繁體中文",
@@ -132,6 +134,7 @@ test("buildActionPaletteItems theme view filters by option label", () => {
 test("buildActionPaletteItems locale view only returns locale options", () => {
   const items = buildActionPaletteItems("", tEn, "locale");
   assert.ok(items.every((item) => item.kind === "locale-option"));
+  assert.equal(items[0]?.value, "system");
   assert.ok(items.some((item) => item.kind === "locale-option" && item.value === "en"));
 });
 
@@ -142,6 +145,10 @@ test("buildActionPaletteItems locale view filters by language label", () => {
     byEnglish.some((item) => item.kind === "locale-option" && item.value === "zh-CN"),
     false,
   );
+
+  const bySystem = buildActionPaletteItems("system", tEn, "locale");
+  assert.equal(bySystem.length, 1);
+  assert.equal(bySystem[0]?.value, "system");
 
   const byEndonym = buildActionPaletteItems("日本語", tEn, "locale");
   assert.ok(byEndonym.some((item) => item.kind === "locale-option" && item.value === "ja"));

@@ -7,7 +7,7 @@ import { LspDocumentStore } from "./document-store.js";
 
 test("LspDocumentStore tracks versions on open and replace", () => {
   const workspaceRoot = path.join(os.tmpdir(), "spirit-lsp-test");
-  const resolvedPath = path.join(workspaceRoot, "src", "a.ts");
+  const resolvedPath = path.join(workspaceRoot, "src", "a.py");
   const store = new LspDocumentStore();
   const first = store.open({ workspaceRoot, resolvedPath, text: "a" });
   assert.equal(first.version, 1);

@@ -25,6 +25,7 @@ import { WorkspaceMarkdownLinkProvider } from "@/components/workspace-markdown-l
 import { useAppSurfaceNavigation } from "@/hooks/useAppSurfaceNavigation";
 import { useClickablePointerCursor } from "@/hooks/useClickablePointerCursor";
 import { useCompactionUiDemo } from "@/hooks/useCompactionUiDemo";
+import { useFontSmoothing } from "@/hooks/useFontSmoothing";
 import { useLongConversationListDemo } from "@/hooks/useLongConversationListDemo";
 import { useComposerController } from "@/hooks/useComposerController";
 import { ConversationSessionFocusComposerBridge } from "@/components/conversation/conversation-session-focus-composer-bridge";
@@ -53,6 +54,7 @@ import {
   isDarwinElectronShell,
   isElectronChrome,
   isWin32ElectronShell,
+  readStoredOnboardingCompleted,
   resolveUseTranslucency,
   syncLaunchSplashChromeToDocument,
   type ShellOverlayPhase,
@@ -64,7 +66,11 @@ import {
 } from "@spiritagent/host-internal/workspace-file-reference-query";
 import { tryHandleDesktopWorkspaceLink } from "@/lib/workspace-navigation-link";
 import { applyUiLayoutScaleToDocument, UI_LAYOUT_SCALE_ROOT_ID } from "@/lib/ui-layout-scale";
-import { resolveOnboardingVisible } from "@/lib/onboarding";
+import {
+  resolveLaunchSplashActive,
+  resolveOnboardingCompletedKnown,
+  resolveOnboardingVisible,
+} from "@/lib/onboarding";
 import { cn } from "@/lib/utils";
 
 export default function App() {
@@ -73,6 +79,7 @@ export default function App() {
   useThemeSetter();
   const { font, setFont } = useFont();
   const { clickablePointerCursor, setClickablePointerCursor } = useClickablePointerCursor();
+  const { fontSmoothing, setFontSmoothing } = useFontSmoothing();
   const uiLayoutScale = useUiLayoutScale();
   const runtime = useDesktopRuntime();
   useDesktopRuntimeErrorToast(runtime.runtimeError);
@@ -215,14 +222,25 @@ export default function App() {
   const [onboardingDismissed, setOnboardingDismissed] = useState(false);
   const [launchSplashPhase, setLaunchSplashPhase] = useState<ShellOverlayPhase>("gone");
   const [onboardingPhase, setOnboardingPhase] = useState<ShellOverlayPhase>("gone");
-  // While the snapshot is not ready, settings.onboardingCompleted is still the default false; it must not be used to skip LaunchSplash / mount OOBE.
-  const onboardingVisible = resolveOnboardingVisible({
+  // Snapshot is the source of truth once ready. Before that, a sync on-disk read (same pattern as
+  // translucency) is the only allowed source: the settings default onboardingCompleted:false must
+  // not flash OOBE for returning users, but first-run must not wait for snapshot behind LaunchSplash.
+  const onboardingCompletedKnown = resolveOnboardingCompletedKnown({
     snapshotReady: snapshot != null,
-    onboardingCompleted: runtime.settings.onboardingCompleted,
+    snapshotOnboardingCompleted: runtime.settings.onboardingCompleted,
+    storedOnboardingCompleted: snapshot == null ? readStoredOnboardingCompleted() : undefined,
+  });
+  const onboardingVisible = resolveOnboardingVisible({
+    snapshotReady: onboardingCompletedKnown.known,
+    onboardingCompleted: onboardingCompletedKnown.completed,
     dismissedThisSession: onboardingDismissed,
   });
-  const launchSplashActive =
-    snapshot === null && !runtime.hostConnectionError.trim() && !runtime.runtimeError.trim();
+  const launchSplashActive = resolveLaunchSplashActive({
+    snapshotReady: snapshot != null,
+    onboardingVisible,
+    hasHostError: Boolean(runtime.hostConnectionError.trim()),
+    hasRuntimeError: Boolean(runtime.runtimeError.trim()),
+  });
   const pairingGateBlocksLaunchSplash =
     runtime.webHostPairingRequired && runtime.hostKind === "web" && !snapshot;
   /**
@@ -483,6 +501,8 @@ export default function App() {
                           onFontChange={setFont}
                           clickablePointerCursor={clickablePointerCursor}
                           onClickablePointerCursorChange={setClickablePointerCursor}
+                          fontSmoothing={fontSmoothing}
+                          onFontSmoothingChange={setFontSmoothing}
                           settings={runtime.settings}
                           snapshot={snapshot}
                           apiReady={runtime.apiReady}

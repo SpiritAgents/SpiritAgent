@@ -64,15 +64,14 @@ Diese Chips injizieren einen festen Prompt. Der Agent verwendet dann [Workspace-
 
 Aktiviere Sprachserver in **Settings → Agents** und installiere dann einen Anbieter, falls er fehlt. Sobald ein Server bereit ist, kann der Agent [`get_diagnostics`](./agent/tools.mdx) aufrufen.
 
-| ID                           | Sprachen               | Installationsmethode                        |
-| ---------------------------- | ---------------------- | ------------------------------------------- |
-| `typescript-language-server` | TypeScript, JavaScript | npm (`typescript-language-server`)          |
-| `pyright`                    | Python                 | npm (`pyright`)                             |
-| `gopls`                      | Go                     | Go-Toolchain                                |
-| `rust-analyzer`              | Rust                   | rustup                                      |
-| `clangd`                     | C, C++                 | Plattformpaket (z. B. Homebrew oder winget) |
-| `jdtls`                      | Java                   | Manuell                                     |
-| `omnisharp`                  | C#                     | .NET                                        |
+| ID              | Sprachen | Installationsmethode                        |
+| --------------- | -------- | ------------------------------------------- |
+| `pyright`       | Python   | npm (`pyright`)                             |
+| `gopls`         | Go       | Go-Toolchain                                |
+| `rust-analyzer` | Rust     | rustup                                      |
+| `clangd`        | C, C++   | Plattformpaket (z. B. Homebrew oder winget) |
+| `jdtls`         | Java     | Manuell                                     |
+| `omnisharp`     | C#       | .NET                                        |
 
 clangd und jdtls sind nicht gebündelt. Installiere sie selbst und kehre dann zu Settings → Agents zurück.
 

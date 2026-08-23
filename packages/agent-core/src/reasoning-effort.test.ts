@@ -60,6 +60,26 @@ test("gateway deepseek v4 models use deepseek v4 reasoning effort options", () =
   );
 });
 
+test("deepseek v4 family ids including vision-exp expose high/max reasoning effort", () => {
+  const expected = ["default", "high", "max"];
+  for (const model of [
+    "deepseek-v4-flash",
+    "deepseek-v4-flash-vision-exp",
+    "deepseek/deepseek-v4-flash-vision-exp",
+  ]) {
+    const options = modelReasoningEffortOptions({
+      provider: model.includes("/") ? "vercel-ai-gateway" : "deepseek",
+      model,
+      transportKind: "openai-compatible",
+    });
+    assert.deepEqual(
+      options.map((option) => option.value),
+      expected,
+      model,
+    );
+  }
+});
+
 test("anthropic models normalize max to high transport effort", () => {
   assert.equal(
     resolveAnthropicTransportReasoningEffortForContext("max", {

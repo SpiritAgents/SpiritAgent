@@ -59,6 +59,8 @@ export type SettingsViewProps = {
   onFontChange: (value: FontPreference) => void;
   clickablePointerCursor: boolean;
   onClickablePointerCursorChange: (enabled: boolean) => void;
+  fontSmoothing: boolean;
+  onFontSmoothingChange: (enabled: boolean) => void;
   settings: SettingsFormState;
   snapshot: DesktopSnapshot | null;
   apiReady: boolean;

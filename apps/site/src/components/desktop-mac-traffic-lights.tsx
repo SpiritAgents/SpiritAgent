@@ -9,7 +9,7 @@ export function DesktopMacTrafficLights({ className }: DesktopMacTrafficLightsPr
   return (
     <div
       className={cn(
-        "pointer-events-none absolute top-0 left-0 z-30 flex h-8 w-[4.875rem] items-center gap-2 pl-3",
+        "pointer-events-none absolute top-0 left-0 z-30 flex h-8 w-[4.875rem] items-start gap-2 pt-4 pl-4",
         className,
       )}
       aria-hidden

@@ -78,3 +78,23 @@ test("AgentsSettingsPanel includes LSP section label and Attribution rows", asyn
   assert.match(source, /settings-commit-attribution/);
   assert.match(source, /settings-pr-attribution/);
 });
+
+test("AppearanceSettingsPanel groups Theme and Typography without UI locale", async () => {
+  const source = await readFile(join(srcRoot, "panels/appearance-settings-panel.tsx"), "utf8");
+  assert.doesNotMatch(source, /settings\.themeSection/);
+  assert.match(source, /settings\.typographySection/);
+  assert.match(source, /settings\.clickablePointerCursor/);
+  assert.match(source, /settings\.fontSmoothing/);
+  assert.match(source, /isMacDesktopPlatform/);
+  assert.doesNotMatch(source, /settings\.uiLocale/);
+});
+
+test("GeneralSettingsPanel places UI locale above notifications and tray", async () => {
+  const source = await readFile(join(srcRoot, "panels/general-settings-panel.tsx"), "utf8");
+  const localeIndex = source.indexOf("settings.uiLocale");
+  const notificationsIndex = source.indexOf("settings.systemNotifications");
+  const trayIndex = source.indexOf("settings.trayIcon");
+  assert.notEqual(localeIndex, -1);
+  assert.ok(notificationsIndex > localeIndex);
+  assert.ok(trayIndex > notificationsIndex);
+});

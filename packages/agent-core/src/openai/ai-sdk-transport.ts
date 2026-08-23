@@ -465,12 +465,25 @@ export class AiSdkOpenAiCompatibleTransport
       steps: state.steps + 1,
     };
 
-    await resolveOpenAiCompatibleVideoInputsInMessages(
-      config,
-      nextState.messages,
-      openAiTransportAssetRoot(config),
-    );
-    const requestMessages = normalizeMessagesForRequest(config, nextState.messages);
+    let requestMessages: JsonValue[];
+    try {
+      await resolveOpenAiCompatibleVideoInputsInMessages(
+        config,
+        nextState.messages,
+        openAiTransportAssetRoot(config),
+      );
+      requestMessages = normalizeMessagesForRequest(config, nextState.messages);
+    } catch (error) {
+      return {
+        eventStream: emptyAiSdkEventStream(),
+        completion: Promise.resolve({
+          kind: "failure",
+          error: renderAiSdkOpenAiError(error),
+          requestTrace: [],
+        }),
+        cancel: () => {},
+      };
+    }
     const normalizedTools = normalizeToolDefinitions(tools);
     const requestTrace = buildAiSdkRequestTrace(
       config,

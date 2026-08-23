@@ -3,15 +3,12 @@ import { useTranslation } from "react-i18next";
 
 import { ChevronDown, LoaderCircle } from "lucide-react";
 
+import { DropdownMenuItem } from "@/components/ui/dropdown-menu";
 import {
   FilteredOverlayMenu,
   FilteredOverlayMenuTrigger,
 } from "@/components/ui/filtered-overlay-menu";
-import {
-  DESKTOP_OVERLAY_LIST_ITEM_PRIMARY,
-  DESKTOP_OVERLAY_LIST_SUB_TRIGGER,
-  DESKTOP_SELECT_TRIGGER,
-} from "@/lib/desktop-chrome";
+import { DESKTOP_OVERLAY_LIST_ITEM_PRIMARY, DESKTOP_SELECT_TRIGGER } from "@/lib/desktop-chrome";
 import {
   DEFAULT_FONT_ID,
   DEFAULT_FONT_LABEL,
@@ -202,28 +199,16 @@ export function FontSelect({
           filteredOptions.map((option) => {
             const selected = option.id === value;
             return (
-              <div
+              <DropdownMenuItem
                 key={option.id}
-                role="menuitem"
-                tabIndex={-1}
-                className={cn(
-                  DESKTOP_OVERLAY_LIST_SUB_TRIGGER,
-                  "cursor-pointer outline-none focus:bg-accent focus:text-accent-foreground",
-                  selected && "bg-accent/40",
-                )}
+                className={cn(selected && "bg-accent/40")}
                 style={option.fontFamily ? { fontFamily: option.fontFamily } : undefined}
-                onClick={() => selectValue(option.id)}
-                onKeyDown={(event) => {
-                  if (event.key === "Enter" || event.key === " ") {
-                    event.preventDefault();
-                    selectValue(option.id);
-                  }
-                }}
+                onSelect={() => selectValue(option.id)}
               >
                 <span className={cn(DESKTOP_OVERLAY_LIST_ITEM_PRIMARY, "min-w-0 truncate")}>
                   {option.label}
                 </span>
-              </div>
+              </DropdownMenuItem>
             );
           })
         )}

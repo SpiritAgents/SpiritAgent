@@ -1,15 +1,10 @@
 import path from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
 
-import { isLspSupportedExtension, TYPESCRIPT_JS_EXTENSIONS } from "@spiritagent/agent-core";
+import { isLspSupportedExtension } from "@spiritagent/agent-core";
 import type { LspFileChangeNotification, LspFileSnapshot } from "@spiritagent/agent-core";
 import { LspPathError } from "./errors.js";
 import { routeLspProviderForPath } from "./providers.js";
-
-export function isTypescriptJavascriptPath(filePath: string): boolean {
-  const extension = path.extname(filePath).toLowerCase();
-  return TYPESCRIPT_JS_EXTENSIONS.has(extension);
-}
 
 export function isLspSupportedPath(filePath: string): boolean {
   const extension = path.extname(filePath).toLowerCase();
@@ -84,7 +79,7 @@ function normalizeWindowsDriveLetter(filePath: string): string {
   return filePath.replace(/^([a-zA-Z]):/, (_match, letter: string) => `${letter.toUpperCase()}:`);
 }
 
-/** Normalize file URIs (on Windows, TLS may return `file:///d%3A/...` or inconsistent drive-letter casing). */
+/** Normalize file URIs (on Windows, language servers may return `file:///d%3A/...` or inconsistent drive-letter casing). */
 export function normalizeLspFileUri(uri: string): string {
   if (!uri.startsWith("file:")) {
     return uri;

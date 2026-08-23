@@ -2,9 +2,9 @@
 import { readFile } from 'node:fs/promises';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { isReleaseVersion, parseReleaseVersion } from './version.mjs';
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..', '..');
-const PURE_VERSION_RE = /^\d+\.\d+\.\d+$/;
 
 function readArg(name) {
   const index = process.argv.indexOf(name);
@@ -15,13 +15,12 @@ function resolveExpectedVersion(raw) {
   if (!raw) {
     return undefined;
   }
-  if (!PURE_VERSION_RE.test(raw)) {
-    console.error(
-      `Invalid release version ${JSON.stringify(raw)}. Expected a pure semver patch form X.Y.Z (no "v" prefix).`,
-    );
+  try {
+    return parseReleaseVersion(raw).version;
+  } catch (error) {
+    console.error(error instanceof Error ? error.message : error);
     process.exit(1);
   }
-  return raw;
 }
 
 async function readJsonVersion(relativePath) {
@@ -55,7 +54,7 @@ const legacyVersion = process.env.RELEASE_TAG ?? process.env.GITHUB_REF_NAME;
 const expectedVersion =
   explicitVersion !== undefined
     ? resolveExpectedVersion(explicitVersion)
-    : legacyVersion && PURE_VERSION_RE.test(legacyVersion)
+    : legacyVersion && isReleaseVersion(legacyVersion)
       ? legacyVersion
       : undefined;
 
@@ -69,10 +68,10 @@ const versions = [
 ];
 
 const baseline = expectedVersion ?? versions[0][2];
-if (!PURE_VERSION_RE.test(baseline)) {
-  console.error(
-    `Invalid baseline version ${JSON.stringify(baseline)}. Package versions must use pure X.Y.Z (no "v" prefix).`,
-  );
+try {
+  parseReleaseVersion(baseline);
+} catch (error) {
+  console.error(error instanceof Error ? error.message : error);
   process.exit(1);
 }
 

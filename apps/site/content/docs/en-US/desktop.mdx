@@ -64,15 +64,14 @@ Those chips inject a fixed prompt. The agent then uses [workspace and `shell` to
 
 Turn language servers on in **Settings → Agents**, then install a provider if it is missing. Once a server is ready, the agent can call [`get_diagnostics`](./agent/tools.mdx).
 
-| Id                           | Languages              | How it is installed                               |
-| ---------------------------- | ---------------------- | ------------------------------------------------- |
-| `typescript-language-server` | TypeScript, JavaScript | npm (`typescript-language-server`)                |
-| `pyright`                    | Python                 | npm (`pyright`)                                   |
-| `gopls`                      | Go                     | Go toolchain                                      |
-| `rust-analyzer`              | Rust                   | rustup                                            |
-| `clangd`                     | C, C++                 | Platform package (for example Homebrew or winget) |
-| `jdtls`                      | Java                   | Manual                                            |
-| `omnisharp`                  | C#                     | .NET                                              |
+| Id              | Languages | How it is installed                               |
+| --------------- | --------- | ------------------------------------------------- |
+| `pyright`       | Python    | npm (`pyright`)                                   |
+| `gopls`         | Go        | Go toolchain                                      |
+| `rust-analyzer` | Rust      | rustup                                            |
+| `clangd`        | C, C++    | Platform package (for example Homebrew or winget) |
+| `jdtls`         | Java      | Manual                                            |
+| `omnisharp`     | C#        | .NET                                              |
 
 clangd and jdtls are not bundled. Install them yourself, then come back to Settings → Agents.
 

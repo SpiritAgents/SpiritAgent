@@ -176,31 +176,31 @@ Server is where the runtime is hosted, not a fourth semantic layer; apps must st
 
 ## Ownership Table
 
-| Asset                                                                                                                | Owner                                             |
-| -------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------- |
-| Main system prompt                                                                                                   | `agent-core`                                      |
-| Semantics of system sections such as Rules / Skills catalog                                                          | `agent-core`                                      |
-| User-turn `<active_skill>` meta (full text of explicitly activated Skill)                                            | `agent-core` (assembled by `user-turn-timestamp`) |
-| Built-in tool names, descriptions, JSON Schemas                                                                      | `agent-core`                                      |
-| Dream tool names, descriptions, JSON Schemas, and collector system prompt                                            | `agent-core`                                      |
-| Session TODO tool name, description, JSON Schema (no separate todos system section)                                  | `agent-core`                                      |
-| LSP tool contract, `get_diagnostics` Schema (routed to per-language servers by extension), and diagnostic formatting | `agent-core`                                      |
-| MCP protocol, MCP tool / resource / prompt runtime                                                                   | `agent-core`                                      |
-| Host interface definitions                                                                                           | `agent-core`                                      |
-| Agent Hooks schema, runtime attachment points, and `HookRunner` port                                                 | `agent-core`                                      |
-| Discovery and management of Rules / Skills / Plan                                                                    | host-internal library                             |
-| Agent Hooks config merge, command execution, and `createHookRunner`                                                  | host-internal library                             |
-| Host tool request types, parsing, validation, approval, execution                                                    | host-internal library                             |
+| Asset                                                                                                                | Owner                                                                                       |
+| -------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------- |
+| Main system prompt                                                                                                   | `agent-core`                                                                                |
+| Semantics of system sections such as Rules / Skills catalog                                                          | `agent-core`                                                                                |
+| User-turn `<active_skill>` meta (full text of explicitly activated Skill)                                            | `agent-core` (assembled by `user-turn-timestamp`)                                           |
+| Built-in tool names, descriptions, JSON Schemas                                                                      | `agent-core`                                                                                |
+| Dream tool names, descriptions, JSON Schemas, and collector system prompt                                            | `agent-core`                                                                                |
+| Session TODO tool name, description, JSON Schema (no separate todos system section)                                  | `agent-core`                                                                                |
+| LSP tool contract, `get_diagnostics` Schema (routed to per-language servers by extension), and diagnostic formatting | `agent-core`                                                                                |
+| MCP protocol, MCP tool / resource / prompt runtime                                                                   | `agent-core`                                                                                |
+| Host interface definitions                                                                                           | `agent-core`                                                                                |
+| Agent Hooks schema, runtime attachment points, and `HookRunner` port                                                 | `agent-core`                                                                                |
+| Discovery and management of Rules / Skills / Plan                                                                    | host-internal library                                                                       |
+| Agent Hooks config merge, command execution, and `createHookRunner`                                                  | host-internal library                                                                       |
+| Host tool request types, parsing, validation, approval, execution                                                    | host-internal library                                                                       |
 | Host UI capability facts (`hostUiPromptSection`, `hostToolDescriptionHints` — e.g. Desktop Mermaid rendering)        | apps author the facts; `agent-core` owns assembly (system section / tool description merge) |
-| Dream file storage, expiry cleanup, and run logs                                                                     | host-internal library                             |
-| Session TODO storage, `replaceAll`, and tool execution                                                               | host-internal library                             |
-| LSP multi-provider processes, PATH/install detection, document sync, post-write append, and workspace cache          | host-internal library                             |
-| Platform adaptation for shell / search / file / web fetch                                                            | host-internal library                             |
-| CLI / Desktop UI and platform wiring                                                                                 | apps                                              |
-| Desktop dreams settings page, background scheduling, and Commit consumption                                          | apps                                              |
-| Desktop / CLI Composer TODO cards and strip UI                                                                       | apps                                              |
-| Single source of truth for sessions/turns/approvals in the shared backend                                            | `packages/server`                                 |
-| Shared-backend instance registry, client auth, and WS transport                                                      | `packages/server`                                 |
+| Dream file storage, expiry cleanup, and run logs                                                                     | host-internal library                                                                       |
+| Session TODO storage, `replaceAll`, and tool execution                                                               | host-internal library                                                                       |
+| LSP multi-provider processes, PATH/install detection, document sync, post-write append, and workspace cache          | host-internal library                                                                       |
+| Platform adaptation for shell / search / file / web fetch                                                            | host-internal library                                                                       |
+| CLI / Desktop UI and platform wiring                                                                                 | apps                                                                                        |
+| Desktop dreams settings page, background scheduling, and Commit consumption                                          | apps                                                                                        |
+| Desktop / CLI Composer TODO cards and strip UI                                                                       | apps                                                                                        |
+| Single source of truth for sessions/turns/approvals in the shared backend                                            | `packages/server`                                                                           |
+| Shared-backend instance registry, client auth, and WS transport                                                      | `packages/server`                                                                           |
 
 ## Hard Constraints
 

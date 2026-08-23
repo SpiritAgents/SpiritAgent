@@ -9,9 +9,9 @@ import {
   objectKeyFor,
   publicUrlFor,
 } from './selfhosted-paths.mjs';
+import { parseReleaseVersion } from './version.mjs';
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..', '..');
-const PURE_VERSION_RE = /^\d+\.\d+\.\d+$/;
 const R2_REGION = 'auto';
 const R2_SERVICE = 's3';
 
@@ -23,7 +23,7 @@ function readArg(name) {
 function usage() {
   console.error(
     [
-      'Usage: node scripts/release/publish-selfhosted.mjs --input <dir> --version <X.Y.Z>',
+      'Usage: node scripts/release/publish-selfhosted.mjs --input <dir> --version <X.Y.Z[-alpha.N|-beta.N|-rc.N]>',
       'Env: SPIRIT_CLOUDFLARE_ACCOUNT_ID, SPIRIT_CLOUDFLARE_ACCESS_KEY_ID,',
       '     SPIRIT_CLOUDFLARE_SECRET_ACCESS_KEY, SPIRIT_CLOUDFLARE_BUCKET_NAME',
     ].join('\n'),
@@ -178,9 +178,18 @@ const accessKeyId = process.env.SPIRIT_CLOUDFLARE_ACCESS_KEY_ID?.trim() ?? '';
 const secretAccessKey = process.env.SPIRIT_CLOUDFLARE_SECRET_ACCESS_KEY?.trim() ?? '';
 const bucketName = process.env.SPIRIT_CLOUDFLARE_BUCKET_NAME?.trim() ?? '';
 
-if (!version || !PURE_VERSION_RE.test(version)) {
+if (!version) {
   usage();
-  console.error(`Invalid or missing --version. Expected pure X.Y.Z, got ${JSON.stringify(version)}`);
+  console.error('Invalid or missing --version.');
+  process.exit(1);
+}
+
+let parsed;
+try {
+  parsed = parseReleaseVersion(version);
+} catch (error) {
+  usage();
+  console.error(error instanceof Error ? error.message : error);
   process.exit(1);
 }
 
@@ -249,6 +258,11 @@ async function uploadPhase(phase) {
 }
 
 await uploadPhase('version');
-await uploadPhase('latest');
-
-console.log(`Self-hosted upload complete: ${primaries.length} primaries × 2 (version then latest)`);
+if (parsed.prerelease) {
+  console.log(
+    `Self-hosted upload complete: ${primaries.length} primaries (version keys only; skipped latest because ${parsed.channel} prerelease)`,
+  );
+} else {
+  await uploadPhase('latest');
+  console.log(`Self-hosted upload complete: ${primaries.length} primaries × 2 (version then latest)`);
+}

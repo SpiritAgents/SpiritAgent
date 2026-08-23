@@ -12,9 +12,9 @@ import {
   publicUrlFor,
   PUBLIC_DOWNLOAD_HOST,
 } from './selfhosted-paths.mjs';
+import { parseReleaseVersion } from './version.mjs';
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..', '..');
-const PURE_VERSION_RE = /^\d+\.\d+\.\d+$/;
 
 function readArg(name) {
   const index = process.argv.indexOf(name);
@@ -24,7 +24,7 @@ function readArg(name) {
 function usage() {
   console.error(
     [
-      'Usage: node scripts/release/prepare-approval-report.mjs --input <dir> --output-dir <dir> --version <X.Y.Z> [--sha <commit>]',
+      'Usage: node scripts/release/prepare-approval-report.mjs --input <dir> --output-dir <dir> --version <X.Y.Z[-alpha.N|-beta.N|-rc.N]> [--sha <commit>]',
       'Env: RELEASE_VERSION, GITHUB_SHA, GITHUB_REPOSITORY, GH_TOKEN / GITHUB_TOKEN',
     ].join('\n'),
   );
@@ -146,9 +146,18 @@ const outputDir = path.resolve(readArg('--output-dir') ?? path.join(inputDir, 'a
 const version = readArg('--version') ?? process.env.RELEASE_VERSION;
 const sha = readArg('--sha') ?? process.env.GITHUB_SHA ?? '';
 
-if (!version || !PURE_VERSION_RE.test(version)) {
+if (!version) {
   usage();
-  console.error(`Invalid or missing --version. Expected pure X.Y.Z, got ${JSON.stringify(version)}`);
+  console.error('Invalid or missing --version.');
+  process.exit(1);
+}
+
+let parsed;
+try {
+  parsed = parseReleaseVersion(version);
+} catch (error) {
+  usage();
+  console.error(error instanceof Error ? error.message : error);
   process.exit(1);
 }
 
@@ -227,15 +236,28 @@ if (selfhostedRows.length !== EXPECTED_PRIMARY_ASSET_COUNT) {
 const selfhostedTable = [
   '| Source (GitHub asset) | Version URL | Latest URL |',
   '| --- | --- | --- |',
-  ...selfhostedRows.map(
-    (row) => `| \`${row.source}\` | \`${row.versionUrl}\` | \`${row.latestUrl}\` |`,
-  ),
+  ...selfhostedRows.map((row) => {
+    const latestCell = parsed.prerelease ? '— (not updated)' : `\`${row.latestUrl}\``;
+    return `| \`${row.source}\` | \`${row.versionUrl}\` | ${latestCell} |`;
+  }),
 ].join('\n');
+
+const githubChannelNote = parsed.prerelease
+  ? `Channel status: **Will publish after approval** as a GitHub **pre-release** (\`${parsed.channel}\`).`
+  : 'Channel status: **Will publish after approval**';
+const npmChannelNote = parsed.prerelease
+  ? `Channel status: **Will publish after approval** (OIDC trusted publishing) with \`--tag ${parsed.npmTag}\` (will not update \`latest\`).`
+  : 'Channel status: **Will publish after approval** (OIDC trusted publishing)';
+const selfhostedChannelNote = parsed.prerelease
+  ? 'Prerelease: versioned object keys only; `latest` keys are **not** updated.'
+  : 'Primary installers only (darwin `.dmg`, windows `.exe`, linux `.AppImage` for Desktop; CLI archives). All version paths are written first, then each `latest` key.';
 
 const report = [
   `# Release approval — ${version}`,
   '',
   `Target commit: \`${sha || '(local)'}\``,
+  '',
+  `Release channel: \`${parsed.channel}\`${parsed.prerelease ? ' (prerelease)' : ''}`,
   '',
   '## Changelog',
   '',
@@ -243,13 +265,13 @@ const report = [
   '',
   '## GitHub Release',
   '',
-  'Channel status: **Will publish after approval**',
+  githubChannelNote,
   '',
   table,
   '',
   '## npm',
   '',
-  'Channel status: **Will publish after approval** (OIDC trusted publishing)',
+  npmChannelNote,
   '',
   'Publish order: `agent-core` → `host-internal` → `acp-server`',
   '',
@@ -259,7 +281,7 @@ const report = [
   '',
   'Channel status: **Will publish after approval** (Cloudflare R2 via S3 API)',
   '',
-  'Primary installers only (darwin `.dmg`, windows `.exe`, linux `.AppImage` for Desktop; CLI archives). All version paths are written first, then each `latest` key.',
+  selfhostedChannelNote,
   '',
   selfhostedRows.length > 0 ? selfhostedTable : '_No primary installers found in assets._',
   '',
@@ -273,14 +295,17 @@ await writeFile(reportPath, report);
 
 const manifest = {
   version,
+  channel: parsed.channel,
+  prerelease: parsed.prerelease,
   sha: sha || null,
   generatedAt: new Date().toISOString(),
   channels: {
-    github: { publish: true },
-    npm: { publish: true, packages: npmPackages },
+    github: { publish: true, prerelease: parsed.prerelease },
+    npm: { publish: true, tag: parsed.npmTag, packages: npmPackages },
     selfhosted: {
       publish: true,
       host: PUBLIC_DOWNLOAD_HOST,
+      updateLatest: !parsed.prerelease,
       uploads: selfhostedRows,
     },
   },

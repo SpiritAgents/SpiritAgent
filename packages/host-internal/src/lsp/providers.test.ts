@@ -14,31 +14,23 @@ import {
 } from "./providers.js";
 import { isLspSupportedPath } from "./paths.js";
 
-async function writeFakeTypescriptLanguageServer(
+async function writeFakePyrightLangserver(
   binDir: string,
   platform: NodeJS.Platform,
 ): Promise<void> {
   if (platform === "win32") {
-    await writeFile(path.join(binDir, "typescript-language-server.cmd"), "@echo off\r\n");
+    await writeFile(path.join(binDir, "pyright-langserver.cmd"), "@echo off\r\n");
     return;
   }
 
-  const executable = path.join(binDir, "typescript-language-server");
+  const executable = path.join(binDir, "pyright-langserver");
   await writeFile(executable, "#!/bin/sh\n");
   await chmod(executable, 0o755);
 }
 
 test("LSP_PROVIDERS registers all in-scope language servers", () => {
   const ids = LSP_PROVIDERS.map((provider) => provider.id);
-  assert.deepEqual(ids, [
-    "typescript-language-server",
-    "pyright",
-    "gopls",
-    "rust-analyzer",
-    "clangd",
-    "jdtls",
-    "omnisharp",
-  ]);
+  assert.deepEqual(ids, ["pyright", "gopls", "rust-analyzer", "clangd", "jdtls", "omnisharp"]);
 });
 
 test("findLspProvider returns descriptor by id", () => {
@@ -48,8 +40,8 @@ test("findLspProvider returns descriptor by id", () => {
 });
 
 test("routeLspProviderForExtension maps extensions to providers", () => {
-  assert.equal(routeLspProviderForExtension(".ts"), "typescript-language-server");
-  assert.equal(routeLspProviderForExtension("tsx"), "typescript-language-server");
+  assert.equal(routeLspProviderForExtension(".ts"), undefined);
+  assert.equal(routeLspProviderForExtension("tsx"), undefined);
   assert.equal(routeLspProviderForExtension(".py"), "pyright");
   assert.equal(routeLspProviderForExtension(".go"), "gopls");
   assert.equal(routeLspProviderForExtension(".rs"), "rust-analyzer");
@@ -61,18 +53,19 @@ test("routeLspProviderForExtension maps extensions to providers", () => {
 
 test("routeLspProviderForPath and isLspSupportedPath use file extension", () => {
   assert.equal(routeLspProviderForPath("/workspace/src/main.py"), "pyright");
-  assert.equal(isLspSupportedPath("/workspace/src/index.ts"), true);
+  assert.equal(isLspSupportedPath("/workspace/src/index.ts"), false);
+  assert.equal(isLspSupportedPath("/workspace/src/main.py"), true);
   assert.equal(isLspSupportedPath("/workspace/README.md"), false);
 });
 
 test("discoverLspProvider returns not_found when PATH has no server", async () => {
-  const result = await discoverLspProvider("typescript-language-server", { PATH: "" }, "linux");
+  const result = await discoverLspProvider("pyright", { PATH: "" }, "linux");
   assert.equal(result.status, "not_found");
   assert.equal(result.command, undefined);
 });
 
 test("discoverLspProvider returns not_found for providers without PATH match", async () => {
-  const result = await discoverLspProvider("pyright", { PATH: "" }, "linux");
+  const result = await discoverLspProvider("gopls", { PATH: "" }, "linux");
   assert.equal(result.status, "not_found");
 });
 
@@ -81,11 +74,11 @@ test("discoverLspProvider returns ready when a PATH candidate is executable", as
   const platform = process.platform;
 
   try {
-    await writeFakeTypescriptLanguageServer(binDir, platform);
+    await writeFakePyrightLangserver(binDir, platform);
     const env =
       platform === "win32" ? { Path: binDir, PATHEXT: ".COM;.EXE;.BAT;.CMD" } : { PATH: binDir };
 
-    const result = await discoverLspProvider("typescript-language-server", env, platform);
+    const result = await discoverLspProvider("pyright", env, platform);
     assert.equal(result.status, "ready");
     assert.ok(result.command);
     assert.deepEqual(result.args, ["--stdio"]);
@@ -97,5 +90,5 @@ test("discoverLspProvider returns ready when a PATH candidate is executable", as
 test("discoverAllLspProviders returns one entry per registered provider", async () => {
   const results = await discoverAllLspProviders({ PATH: "" }, "linux");
   assert.equal(results.length, LSP_PROVIDERS.length);
-  assert.equal(results[0]?.id, "typescript-language-server");
+  assert.equal(results[0]?.id, "pyright");
 });

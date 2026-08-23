@@ -2,7 +2,10 @@ import assert from "node:assert/strict";
 import { test } from "vitest";
 
 import { applyCodeCompletionTransportProfile } from "../code-completion/transport-profile.js";
-import { openAiVendorChatCompletionBodyExtras } from "./openai-compat.js";
+import {
+  openAiVendorChatCompletionBodyExtras,
+  resolveOpenAiModelCompatibilityProfile,
+} from "./openai-compat.js";
 
 test("DeepInfra code-completion profile disables thinking via vendorExtendedThinking", () => {
   const config = applyCodeCompletionTransportProfile({
@@ -202,4 +205,26 @@ test("TokenHub code-completion profile disables thinking via vendorExtendedThink
       thinking: { type: "disabled" },
     },
   );
+});
+
+test("deepseek-v4-flash-vision-exp declares image input; other V4 models do not", () => {
+  const vision = resolveOpenAiModelCompatibilityProfile({
+    llmVendor: "deepseek",
+    model: "deepseek-v4-flash-vision-exp",
+  });
+  assert.equal(vision.hasExplicitCapabilities, true);
+  assert.equal(vision.capabilities.imageInput, true);
+
+  const gatewayVision = resolveOpenAiModelCompatibilityProfile({
+    llmVendor: "deepseek",
+    model: "deepseek/deepseek-v4-flash-vision-exp",
+  });
+  assert.equal(gatewayVision.capabilities.imageInput, true);
+
+  const flash = resolveOpenAiModelCompatibilityProfile({
+    llmVendor: "deepseek",
+    model: "deepseek-v4-flash",
+  });
+  assert.equal(flash.hasExplicitCapabilities, true);
+  assert.equal(flash.capabilities.imageInput, undefined);
 });

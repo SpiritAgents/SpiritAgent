@@ -64,15 +64,14 @@ description: Карта настроек, Файлы / Git / Браузер, м�
 
 Включите языковые серверы в **Настройки → Агенты**, затем установите провайдера, если его нет. Когда сервер готов, агент может вызывать [`get_diagnostics`](./agent/tools.mdx).
 
-| Идентификатор                | Языки                  | Как установлен                                  |
-| ---------------------------- | ---------------------- | ----------------------------------------------- |
-| `typescript-language-server` | TypeScript, JavaScript | npm (`typescript-language-server`)              |
-| `pyright`                    | Python                 | npm (`pyright`)                                 |
-| `gopls`                      | Go                     | Инструментарий Go                               |
-| `rust-analyzer`              | Rust                   | rustup                                          |
-| `clangd`                     | C, C++                 | Пакет платформы (например, Homebrew или winget) |
-| `jdtls`                      | Java                   | Вручную                                         |
-| `omnisharp`                  | C#                     | .NET                                            |
+| Идентификатор   | Языки  | Как установлен                                  |
+| --------------- | ------ | ----------------------------------------------- |
+| `pyright`       | Python | npm (`pyright`)                                 |
+| `gopls`         | Go     | Инструментарий Go                               |
+| `rust-analyzer` | Rust   | rustup                                          |
+| `clangd`        | C, C++ | Пакет платформы (например, Homebrew или winget) |
+| `jdtls`         | Java   | Вручную                                         |
+| `omnisharp`     | C#     | .NET                                            |
 
 clangd и jdtls не входят в комплект. Установите их самостоятельно, затем вернитесь в Настройки → Агенты.
 

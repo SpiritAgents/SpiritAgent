@@ -1,5 +1,6 @@
 import { spawn } from "node:child_process";
 
+import { resolveLspInstallArgv } from "./install-command.js";
 import { findLspProvider, type LspProviderId } from "./providers.js";
 import { jdtlsInstallHint } from "./resolve-server-jdtls.js";
 
@@ -47,21 +48,15 @@ export async function installLspProvider(providerId: LspProviderId): Promise<voi
     throw new LspInstallError(`Unknown LSP provider: ${providerId}`);
   }
 
+  const argv = resolveLspInstallArgv(provider);
+  if (argv) {
+    await runCommand(argv.command, argv.args);
+    return;
+  }
+
   switch (provider.installKind) {
     case "npm": {
-      if (!provider.npmPackage) {
-        throw new LspInstallError(`npm package not configured for ${providerId}`);
-      }
-      await runCommand("npm", ["install", "-g", provider.npmPackage]);
-      return;
-    }
-    case "go": {
-      await runCommand("go", ["install", "golang.org/x/tools/gopls@latest"]);
-      return;
-    }
-    case "rustup": {
-      await runCommand("rustup", ["component", "add", "rust-analyzer"]);
-      return;
+      throw new LspInstallError(`npm package not configured for ${providerId}`);
     }
     case "platform": {
       throw new LspInstallError(
@@ -75,6 +70,10 @@ export async function installLspProvider(providerId: LspProviderId): Promise<voi
       throw new LspInstallError(
         "OmniSharp requires the .NET SDK and the official OmniSharp release. Install dotnet, then download OmniSharp from the official releases page.",
       );
+    }
+    case "go":
+    case "rustup": {
+      throw new LspInstallError(`install command missing for ${providerId}`);
     }
     default: {
       const _exhaustive: never = provider.installKind;

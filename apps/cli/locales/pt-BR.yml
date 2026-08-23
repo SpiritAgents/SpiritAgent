@@ -791,8 +791,8 @@ cli.hooks.entries_header: "Entradas de hook:"
 cli.hooks.scope.workspace: "Workspace"
 cli.hooks.scope.user: "Usuário"
 cli.permissions.check.verdict: "veredito: %{verdict}"
-cli.permissions.check.matched: "correspondência: %{rule} \"%{pattern}\" = %{action}"
-cli.permissions.check.segment_ref: " (segmento %{index}: \"%{segment}\")"
+cli.permissions.check.matched: 'correspondência: %{rule} "%{pattern}" = %{action}'
+cli.permissions.check.segment_ref: ' (segmento %{index}: "%{segment}")'
 cli.permissions.check.segments: "segmentos: %{count} (%{details})"
 cli.permissions.check.warning: "aviso: %{warning}"
 cli.permissions.check.daemon_unreachable: "Não foi possível conectar ao daemon do Spirit. `spirit permissions check` avalia as regras de permissão no daemon e requer um daemon em execução."

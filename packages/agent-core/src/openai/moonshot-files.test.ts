@@ -4,6 +4,8 @@ import { join } from "node:path";
 import { tmpdir } from "node:os";
 import { test } from "vitest";
 
+import { FormData as UndiciFormData } from "undici";
+
 import { configureLlmClientVersion, setLlmFetchTransportOverrideForTests } from "../llm-fetch.js";
 import { clearMoonshotVideoUploadCache, uploadMoonshotVideoFile } from "./moonshot-files.js";
 
@@ -34,8 +36,9 @@ test("uploadMoonshotVideoFile posts multipart with purpose=video, User-Agent, an
     );
 
     assert.equal(url, "ms://file-abc123");
-    assert.equal(capturedBody?.get("purpose"), "video");
-    assert.ok(capturedBody?.get("file"));
+    assert.ok(capturedBody instanceof UndiciFormData);
+    assert.equal(capturedBody.get("purpose"), "video");
+    assert.ok(capturedBody.get("file"));
     assert.equal(capturedUserAgent, "SpiritAgent/1.2.3");
 
     const cached = await uploadMoonshotVideoFile(

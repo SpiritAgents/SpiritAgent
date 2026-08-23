@@ -1,19 +1,11 @@
 import { useTranslation } from "react-i18next";
 
 import { FontSelect } from "@/components/font-select";
-import { themeSelectOptions } from "@/components/settings/constants";
 import { SettingsRow } from "@/components/settings/settings-row";
 import type { SettingsViewProps } from "@/components/settings/types";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
+import { ThemePreviewPicker } from "@/components/theme-preview-picker";
 import { Switch } from "@/components/ui/switch";
-import { changeLanguage, LOCALE_LABEL_KEYS, VALID_LANGUAGES } from "@/lib/i18n";
-import { isNativeTranslucencySupported } from "@/lib/desktop-shell";
+import { isMacDesktopPlatform, isNativeTranslucencySupported } from "@/lib/desktop-shell";
 import type { ThemePreference } from "@/lib/theme";
 
 const appearanceSelectTriggerClassName = "w-full sm:w-fit sm:max-w-full";
@@ -25,6 +17,8 @@ export function AppearanceSettingsPanel({
   onFontChange,
   clickablePointerCursor,
   onClickablePointerCursorChange,
+  fontSmoothing,
+  onFontSmoothingChange,
   settings,
   onSavePatch,
 }: Pick<
@@ -33,6 +27,8 @@ export function AppearanceSettingsPanel({
   | "onFontChange"
   | "clickablePointerCursor"
   | "onClickablePointerCursorChange"
+  | "fontSmoothing"
+  | "onFontSmoothingChange"
   | "settings"
   | "onSavePatch"
 > & {
@@ -41,99 +37,87 @@ export function AppearanceSettingsPanel({
 }) {
   const { t } = useTranslation();
   return (
-    <div className="divide-y divide-border/35 rounded-lg border border-border/40 bg-background/80 px-4 sm:px-5">
-      <SettingsRow
-        label={t("settings.theme")}
-        description={t("settings.themeDescription")}
-        htmlFor="settings-theme-select"
-      >
-        <Select value={theme} onValueChange={(v) => onThemeChange(v as ThemePreference)}>
-          <SelectTrigger id="settings-theme-select" className={appearanceSelectTriggerClassName}>
-            <SelectValue placeholder={t("settings.selectTheme")} />
-          </SelectTrigger>
-          <SelectContent>
-            {themeSelectOptions.map((opt) => (
-              <SelectItem key={opt.value} value={opt.value}>
-                {t(opt.labelKey)}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-      </SettingsRow>
+    <div className="space-y-6">
+      <div className="divide-y divide-border/35 rounded-lg border border-border/40 bg-background/80 px-4 sm:px-5">
+        <SettingsRow label={t("settings.theme")} description={t("settings.themeDescription")}>
+          <ThemePreviewPicker
+            value={theme}
+            onValueChange={onThemeChange}
+            size="compact"
+            ariaLabel={t("settings.theme")}
+            className="shrink-0 justify-end"
+          />
+        </SettingsRow>
 
-      <SettingsRow
-        label={t("settings.font")}
-        description={t("settings.fontDescription")}
-        htmlFor="settings-font-select"
-      >
-        <FontSelect
-          id="settings-font-select"
-          value={font}
-          onValueChange={onFontChange}
-          triggerClassName={appearanceSelectTriggerClassName}
-        />
-      </SettingsRow>
-
-      <SettingsRow
-        label={t("settings.uiLocale")}
-        description={t("settings.uiLocaleDescription")}
-        htmlFor="settings-locale"
-      >
-        <Select
-          value={settings.uiLocale}
-          onValueChange={(value) => {
-            void changeLanguage(value);
-            void onSavePatch({ uiLocale: value });
-          }}
+        <SettingsRow
+          label={t("settings.translucency")}
+          description={
+            isNativeTranslucencySupported()
+              ? t("settings.translucencyDescription")
+              : t("settings.translucencyUnsupported")
+          }
+          htmlFor="settings-blur-effect"
         >
-          <SelectTrigger id="settings-locale" className={appearanceSelectTriggerClassName}>
-            <SelectValue />
-          </SelectTrigger>
-          <SelectContent>
-            {VALID_LANGUAGES.map((lang) => (
-              <SelectItem key={lang} value={lang}>
-                {t(LOCALE_LABEL_KEYS[lang])}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-      </SettingsRow>
+          {isNativeTranslucencySupported() ? (
+            <div className="flex justify-end">
+              <Switch
+                id="settings-blur-effect"
+                checked={settings.translucency}
+                onCheckedChange={(value) => void onSavePatch({ translucency: value === true })}
+              />
+            </div>
+          ) : (
+            <p className="text-sm text-muted-foreground sm:text-right">—</p>
+          )}
+        </SettingsRow>
 
-      <SettingsRow
-        label={t("settings.translucency")}
-        description={
-          isNativeTranslucencySupported()
-            ? t("settings.translucencyDescription")
-            : t("settings.translucencyUnsupported")
-        }
-        htmlFor="settings-blur-effect"
-      >
-        {isNativeTranslucencySupported() ? (
+        <SettingsRow
+          label={t("settings.clickablePointerCursor")}
+          description={t("settings.clickablePointerCursorDescription")}
+          htmlFor="settings-clickable-pointer-cursor"
+        >
           <div className="flex justify-end">
             <Switch
-              id="settings-blur-effect"
-              checked={settings.translucency}
-              onCheckedChange={(value) => void onSavePatch({ translucency: value === true })}
+              id="settings-clickable-pointer-cursor"
+              checked={clickablePointerCursor}
+              onCheckedChange={(value) => onClickablePointerCursorChange(value === true)}
             />
           </div>
-        ) : (
-          <p className="text-sm text-muted-foreground sm:text-right">—</p>
-        )}
-      </SettingsRow>
+        </SettingsRow>
+      </div>
 
-      <SettingsRow
-        label={t("settings.clickablePointerCursor")}
-        description={t("settings.clickablePointerCursorDescription")}
-        htmlFor="settings-clickable-pointer-cursor"
-      >
-        <div className="flex justify-end">
-          <Switch
-            id="settings-clickable-pointer-cursor"
-            checked={clickablePointerCursor}
-            onCheckedChange={(value) => onClickablePointerCursorChange(value === true)}
-          />
+      <div className="space-y-3">
+        <p className="text-xs text-muted-foreground">{t("settings.typographySection")}</p>
+        <div className="divide-y divide-border/35 rounded-lg border border-border/40 bg-background/80 px-4 sm:px-5">
+          <SettingsRow
+            label={t("settings.font")}
+            description={t("settings.fontDescription")}
+            htmlFor="settings-font-select"
+          >
+            <FontSelect
+              id="settings-font-select"
+              value={font}
+              onValueChange={onFontChange}
+              triggerClassName={appearanceSelectTriggerClassName}
+            />
+          </SettingsRow>
+          {isMacDesktopPlatform() ? (
+            <SettingsRow
+              label={t("settings.fontSmoothing")}
+              description={t("settings.fontSmoothingDescription")}
+              htmlFor="settings-font-smoothing"
+            >
+              <div className="flex justify-end">
+                <Switch
+                  id="settings-font-smoothing"
+                  checked={fontSmoothing}
+                  onCheckedChange={(value) => onFontSmoothingChange(value === true)}
+                />
+              </div>
+            </SettingsRow>
+          ) : null}
         </div>
-      </SettingsRow>
+      </div>
     </div>
   );
 }

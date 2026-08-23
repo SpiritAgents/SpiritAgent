@@ -45,7 +45,7 @@ export function ShellToolCommandHighlight({ command }: { command: string }) {
     >
       <code>
         <span className="select-none text-muted-foreground/75">$ </span>
-        {renderHighlightedCodeLines(result, { firstLineInline: true })}
+        {renderHighlightedCodeLines(result)}
       </code>
     </pre>
   );

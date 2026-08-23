@@ -20,8 +20,8 @@ const sample: LspDiagnostic[] = [
     severity: 1,
     message: "Type mismatch",
     range: { start: { line: 1, character: 0 }, end: { line: 1, character: 3 } },
-    source: "ts",
-    code: 2322,
+    source: "pyright",
+    code: "reportAssignmentType",
   },
   {
     severity: 4,
@@ -31,34 +31,34 @@ const sample: LspDiagnostic[] = [
 ];
 
 test("formatDiagnosticsForLlm sorts errors before warnings and omits hints by default", () => {
-  const text = formatDiagnosticsForLlm("src/a.ts", sample);
-  assert.match(text, /error src\/a\.ts:2:1/);
-  assert.match(text, /warning src\/a\.ts:5:3/);
+  const text = formatDiagnosticsForLlm("src/a.py", sample);
+  assert.match(text, /error src\/a\.py:2:1/);
+  assert.match(text, /warning src\/a\.py:5:3/);
   assert.doesNotMatch(text, /hint/);
 });
 
 test("formatDiagnosticsSummaryBlock returns undefined when only clean", () => {
-  assert.equal(formatDiagnosticsSummaryBlock("src/a.ts", []), undefined);
+  assert.equal(formatDiagnosticsSummaryBlock("src/a.py", []), undefined);
 });
 
 test("formatDiagnosticsSummaryBlock wraps non-empty output", () => {
-  const block = formatDiagnosticsSummaryBlock("src/a.ts", sample);
+  const block = formatDiagnosticsSummaryBlock("src/a.py", sample);
   assert.ok(block?.startsWith("\n\n[lsp]\n"));
 });
 
 test("formatDiagnosticsBatchForLlm joins non-empty sections", () => {
   const output = formatDiagnosticsBatchForLlm([
-    "No errors or warnings reported for src/a.ts.",
+    "No errors or warnings reported for src/a.py.",
     "",
-    "Diagnostics for src/b.ts (1 shown):",
+    "Diagnostics for src/b.py (1 shown):",
   ]);
   assert.equal(output.split("\n\n").length, 2);
 });
 
 test("buildLspWriteDiagnosticsUi maps severity and 1-based positions", () => {
-  const ui = buildLspWriteDiagnosticsUi("src/a.ts", sample);
+  const ui = buildLspWriteDiagnosticsUi("src/a.py", sample);
   assert.ok(ui);
-  assert.equal(ui?.relativePath, "src/a.ts");
+  assert.equal(ui?.relativePath, "src/a.py");
   assert.equal(ui?.items.length, 2);
   assert.equal(ui?.items[0]?.severity, "error");
   assert.equal(ui?.items[0]?.line, 2);

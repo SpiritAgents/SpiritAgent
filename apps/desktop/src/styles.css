@@ -224,8 +224,14 @@ html.spirit-desktop-win32 #spirit-ui-scale-root.spirit-ui-layout-scaled {
 /* The Windows custom-drawn title bar sits outside the scale root (inside desktop-chrome-root); the native titleBarOverlay is unaffected */
 /* macOS hiddenInset: transparent drag band along the top edge; section backgrounds extend to the window top, content uses padding to avoid the traffic lights */
 html.spirit-desktop-darwin {
-  --spirit-macos-titlebar-inset: 2rem;
-  /* Width occupied by the hiddenInset traffic lights (about 12px margin + three buttons + spacing) */
+  /* Native traffic-light origin y (14px cluster at 16px). Chrome uses size-7 hit targets with
+     size-3.5 icons; pad the row so the 14px glyph top matches the lights, not the 28px box. */
+  --spirit-macos-titlebar-chrome-top: 1rem;
+  --spirit-macos-titlebar-control-pad: calc((1.75rem - 0.875rem) / 2);
+  --spirit-macos-titlebar-inset: calc(
+    var(--spirit-macos-titlebar-chrome-top) - var(--spirit-macos-titlebar-control-pad) + 1.75rem
+  );
+  /* Width occupied by the hiddenInset traffic lights (about 16px margin + three buttons + spacing) */
   --spirit-macos-traffic-lights-inset-left: 4.875rem;
   /* Sidebar toggle: right edge of the traffic lights + small gap (used for fixed pinning; does not change the drag region geometry) */
   --spirit-macos-sidebar-toggle-inset-left: calc(
@@ -258,15 +264,24 @@ html.spirit-desktop-darwin [data-darwin-pinned-sidebar-toggle] {
   left: var(--spirit-macos-sidebar-toggle-inset-left);
   z-index: 50;
   display: flex;
+  box-sizing: border-box;
   height: var(--spirit-macos-titlebar-inset);
-  align-items: flex-end;
+  padding-top: calc(
+    var(--spirit-macos-titlebar-chrome-top) - var(--spirit-macos-titlebar-control-pad)
+  );
+  align-items: flex-start;
 }
 
 /* Top bar blank area is draggable; only buttons/links are no-drag (same as the Windows custom-drawn title bar) */
 html.spirit-desktop-darwin [data-spirit-surface="layout-chrome"] {
   -webkit-app-region: drag;
   transition: padding-left 300ms cubic-bezier(0.22, 1, 0.36, 1);
-  align-items: flex-end;
+  box-sizing: border-box;
+  height: var(--spirit-macos-titlebar-inset);
+  padding-top: calc(
+    var(--spirit-macos-titlebar-chrome-top) - var(--spirit-macos-titlebar-control-pad)
+  );
+  align-items: flex-start;
 }
 
 html.spirit-desktop-darwin [data-spirit-surface="layout-chrome"] button,
@@ -276,6 +291,10 @@ html.spirit-desktop-darwin [data-spirit-surface="layout-chrome"] a {
 
 html.spirit-desktop-darwin [data-spirit-surface="workspace-panel"] > div:first-child {
   -webkit-app-region: drag;
+  box-sizing: border-box;
+  /* Tab buttons use py-2 (0.5rem) above size-3.5 icons */
+  padding-top: calc(var(--spirit-macos-titlebar-chrome-top) - 0.5rem);
+  align-items: flex-start;
 }
 
 html.spirit-desktop-darwin [data-spirit-surface="workspace-panel"] > div:first-child button,
@@ -295,10 +314,10 @@ html.spirit-desktop-darwin
   padding-left: var(--spirit-macos-traffic-lights-inset-left);
 }
 
-/* With the sidebar open, align the top bar title's left padding with the flex-end top padding (titlebar height − text-xs line height 1rem; leftmost anchor pane only) */
+/* With the sidebar open, match the title-row left padding to the traffic-light top inset */
 html.spirit-desktop-darwin:not(.spirit-desktop-darwin-fullscreen)
   [data-spirit-surface="layout-chrome"][data-session-sidebar-open="true"][data-macos-leading-inset="true"] {
-  padding-left: calc(var(--spirit-macos-titlebar-inset) - 1rem);
+  padding-left: var(--spirit-macos-titlebar-chrome-top);
 }
 
 /* Split non-anchor pane: does not avoid the traffic lights, but keeps the same title-row left padding as the anchor with the sidebar open */
@@ -306,11 +325,13 @@ html.spirit-desktop-darwin:not(
     .spirit-desktop-darwin-fullscreen
   ).spirit-desktop-darwin-conversation-split
   [data-spirit-surface="layout-chrome"][data-macos-leading-inset="false"] {
-  padding-left: calc(var(--spirit-macos-titlebar-inset) - 1rem);
+  padding-left: var(--spirit-macos-titlebar-chrome-top);
 }
 
 /* In fullscreen the traffic lights are hidden; drop the top-bar/sidebar safe-area padding and the drag band */
 html.spirit-desktop-darwin.spirit-desktop-darwin-fullscreen {
+  --spirit-macos-titlebar-chrome-top: 0px;
+  --spirit-macos-titlebar-control-pad: 0px;
   --spirit-macos-titlebar-inset: 0px;
   --spirit-macos-traffic-lights-inset-left: 0px;
   --spirit-macos-sidebar-toggle-inset-left: 0.375rem;
@@ -476,6 +497,9 @@ html.spirit-launch-splash-exiting
   }
   html.dark {
     color-scheme: dark;
+  }
+  html.spirit-font-smoothing {
+    -webkit-font-smoothing: antialiased;
   }
   /* WebView2: `<pre>` by default easily triggers the Chinese serif fallback, inconsistent with the UI sans stack */
   pre {

@@ -2,22 +2,8 @@ import { APPLY_PATCH_HOST_TOOL_NAME } from "../open-responses/apply-patch-eligib
 
 export const GET_DIAGNOSTICS_TOOL_NAME = "get_diagnostics";
 
-export const TYPESCRIPT_LANGUAGE_SERVER_COMMAND = "typescript-language-server";
-
-export const TYPESCRIPT_JS_EXTENSIONS = new Set([
-  ".ts",
-  ".tsx",
-  ".mts",
-  ".cts",
-  ".js",
-  ".jsx",
-  ".mjs",
-  ".cjs",
-]);
-
 /** File extensions routed to an in-scope language server (HTML/CSS excluded). */
 export const LSP_SUPPORTED_EXTENSIONS = new Set([
-  ...TYPESCRIPT_JS_EXTENSIONS,
   ".py",
   ".pyi",
   ".go",

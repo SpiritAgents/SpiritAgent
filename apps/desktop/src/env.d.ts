@@ -63,6 +63,8 @@ declare global {
     }): void;
     /** Synchronously reads on-disk `translucency`; aligns with the Electron window material before the first snapshot is ready. */
     readTranslucency(): boolean;
+    /** Synchronously reads on-disk `onboardingCompleted`; used to skip LaunchSplash on first-run OOBE before the snapshot is ready. */
+    readOnboardingCompleted(): boolean;
     /** Synchronously reads the OS dark preference tracked by the main process; matchMedia misreports while themeSource is overridden, so this is authoritative. */
     readOsPrefersDark(): boolean;
     bootstrap(request?: BootstrapRequest): Promise<DesktopSnapshot>;

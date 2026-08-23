@@ -1,6 +1,7 @@
 import {
   LSP_PROVIDERS,
   discoverAllLspProviders,
+  formatLspInstallCommandLine,
   type LspProviderDescriptor,
   type LspProviderId,
 } from "@spiritagent/host-internal/lsp";
@@ -13,6 +14,7 @@ function snapshotFromProvider(
   status: DesktopLspProviderSnapshot["status"],
   command?: string,
 ): DesktopLspProviderSnapshot {
+  const installCommand = formatLspInstallCommandLine(provider);
   return {
     id: provider.id,
     displayName: provider.displayName,
@@ -20,6 +22,7 @@ function snapshotFromProvider(
     status,
     installKind: provider.installKind,
     ...(provider.npmPackage ? { npmPackage: provider.npmPackage } : {}),
+    ...(installCommand ? { installCommand } : {}),
     ...(command ? { command } : {}),
   };
 }

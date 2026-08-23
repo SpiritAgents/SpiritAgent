@@ -16,17 +16,19 @@ import {
 } from "./model-thinking-controls.js";
 
 test("DeepSeek V4 supports thinking switch and effort while thinking", () => {
-  const context = {
-    provider: "deepseek" as const,
-    model: "deepseek-v4-pro",
-    transportKind: "openai-compatible" as const,
-  };
-  assert.equal(modelUsesReasoningEffortPrimaryControl(context), false);
-  assert.equal(modelSupportsThinkingSwitch(context), true);
-  assert.equal(modelSupportsReasoningEffortWhileThinking(context), true);
-  assert.equal(shouldPinReasoningEffortToDefault(true, context), false);
-  assert.equal(modelShowsReasoningEffortControl(context, true), true);
-  assert.equal(modelShowsReasoningEffortControl(context, false), false);
+  for (const model of ["deepseek-v4-pro", "deepseek-v4-flash-vision-exp"] as const) {
+    const context = {
+      provider: "deepseek" as const,
+      model,
+      transportKind: "openai-compatible" as const,
+    };
+    assert.equal(modelUsesReasoningEffortPrimaryControl(context), false);
+    assert.equal(modelSupportsThinkingSwitch(context), true);
+    assert.equal(modelSupportsReasoningEffortWhileThinking(context), true);
+    assert.equal(shouldPinReasoningEffortToDefault(true, context), false);
+    assert.equal(modelShowsReasoningEffortControl(context, true), true);
+    assert.equal(modelShowsReasoningEffortControl(context, false), false);
+  }
 });
 
 test("DeepSeek non-V4 has no thinking switch or reasoning effort control", () => {

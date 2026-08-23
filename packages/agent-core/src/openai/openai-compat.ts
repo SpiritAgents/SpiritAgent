@@ -8,7 +8,10 @@ import {
   type ModelReasoningMode,
 } from "../openai/gpt-reasoning-controls.js";
 import { cloneJsonValue } from "../tool-agent.js";
-import { isThinkingSwitchDisabledModel } from "./thinking-switch-disabled-models.js";
+import {
+  isThinkingSwitchDisabledModel,
+  normalizeUpstreamModelId,
+} from "./thinking-switch-disabled-models.js";
 import {
   buildOpenRouterClaudeReasoningBody,
   isOpenRouterAnthropicClaudeModel,
@@ -186,7 +189,7 @@ export function resolveOpenAiModelCompatibilityProfile(
   if (config.llmVendor === "deepseek") {
     return {
       hasExplicitCapabilities: true,
-      capabilities: {},
+      capabilities: isDeepSeekV4VisionModelId(config.model) ? { imageInput: true } : {},
     };
   }
 
@@ -229,6 +232,11 @@ export function resolveOpenAiModelCompatibilityProfile(
     hasExplicitCapabilities: false,
     capabilities: {},
   };
+}
+
+/** Official experimental vision model; GA names will not keep a `-vision` suffix. */
+export function isDeepSeekV4VisionModelId(model: string): boolean {
+  return normalizeUpstreamModelId(model) === "deepseek-v4-flash-vision-exp";
 }
 
 /**

@@ -64,15 +64,14 @@ CLI 沒有內嵌 PTY 面板。指令仍會透過共享 daemon 上的相同 `shel
 
 在**設定 → Agents**中開啟語言伺服器，如果缺少提供者則安裝。伺服器就緒後，Agent 可以呼叫 [`get_diagnostics`](./agent/tools.mdx)。
 
-| ID                           | 語言                   | 安裝方式                            |
-| ---------------------------- | ---------------------- | ----------------------------------- |
-| `typescript-language-server` | TypeScript、JavaScript | npm（`typescript-language-server`） |
-| `pyright`                    | Python                 | npm（`pyright`）                    |
-| `gopls`                      | Go                     | Go 工具鏈                           |
-| `rust-analyzer`              | Rust                   | rustup                              |
-| `clangd`                     | C、C++                 | 平台套件（例如 Homebrew 或 winget） |
-| `jdtls`                      | Java                   | 手動                                |
-| `omnisharp`                  | C#                     | .NET                                |
+| ID              | 語言   | 安裝方式                            |
+| --------------- | ------ | ----------------------------------- |
+| `pyright`       | Python | npm（`pyright`）                    |
+| `gopls`         | Go     | Go 工具鏈                           |
+| `rust-analyzer` | Rust   | rustup                              |
+| `clangd`        | C、C++ | 平台套件（例如 Homebrew 或 winget） |
+| `jdtls`         | Java   | 手動                                |
+| `omnisharp`     | C#     | .NET                                |
 
 clangd 和 jdtls 未隨附。請自行安裝，然後回到設定 → Agents。
 

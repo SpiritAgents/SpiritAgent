@@ -1,11 +1,13 @@
 /** Shared GitHub artifact → download.spirit.fast path mapping (primary installers only). */
 
+import { VERSION_IN_FILENAME_RE } from './version.mjs';
+
 export const PUBLIC_DOWNLOAD_HOST = 'download.spirit.fast';
 
 const PRIMARY_PATTERNS = [
   {
     channel: 'desktop',
-    re: /^SpiritAgent-Desktop-(?<version>\d+\.\d+\.\d+)-darwin-(?<arch>x64|arm64)\.dmg$/,
+    re: new RegExp(`^SpiritAgent-Desktop-(?<version>${VERSION_IN_FILENAME_RE})-darwin-(?<arch>x64|arm64)\\.dmg$`),
     toKey: ({ arch, version }) => ({
       os: 'darwin',
       arch,
@@ -15,7 +17,7 @@ const PRIMARY_PATTERNS = [
   },
   {
     channel: 'desktop',
-    re: /^SpiritAgent-Desktop-(?<version>\d+\.\d+\.\d+)-win-(?<arch>x64|arm64)\.exe$/,
+    re: new RegExp(`^SpiritAgent-Desktop-(?<version>${VERSION_IN_FILENAME_RE})-win-(?<arch>x64|arm64)\\.exe$`),
     toKey: ({ arch, version }) => ({
       os: 'windows',
       arch,
@@ -26,7 +28,9 @@ const PRIMARY_PATTERNS = [
   {
     channel: 'desktop',
     // electron-builder AppImage uses x86_64 for linux x64 (arm64 stays arm64).
-    re: /^SpiritAgent-Desktop-(?<version>\d+\.\d+\.\d+)-linux-(?<arch>x64|x86_64|arm64)\.AppImage$/,
+    re: new RegExp(
+      `^SpiritAgent-Desktop-(?<version>${VERSION_IN_FILENAME_RE})-linux-(?<arch>x64|x86_64|arm64)\\.AppImage$`,
+    ),
     toKey: ({ arch, version }) => {
       const normalizedArch = arch === 'x86_64' ? 'x64' : arch;
       return {
@@ -39,7 +43,7 @@ const PRIMARY_PATTERNS = [
   },
   {
     channel: 'cli',
-    re: /^SpiritAgent-CLI-(?<version>\d+\.\d+\.\d+)-darwin-(?<arch>x64|arm64)\.tar\.gz$/,
+    re: new RegExp(`^SpiritAgent-CLI-(?<version>${VERSION_IN_FILENAME_RE})-darwin-(?<arch>x64|arm64)\\.tar\\.gz$`),
     toKey: ({ arch, version }) => ({
       os: 'darwin',
       arch,
@@ -49,7 +53,7 @@ const PRIMARY_PATTERNS = [
   },
   {
     channel: 'cli',
-    re: /^SpiritAgent-CLI-(?<version>\d+\.\d+\.\d+)-windows-(?<arch>x64|arm64)\.zip$/,
+    re: new RegExp(`^SpiritAgent-CLI-(?<version>${VERSION_IN_FILENAME_RE})-windows-(?<arch>x64|arm64)\\.zip$`),
     toKey: ({ arch, version }) => ({
       os: 'windows',
       arch,
@@ -59,7 +63,7 @@ const PRIMARY_PATTERNS = [
   },
   {
     channel: 'cli',
-    re: /^SpiritAgent-CLI-(?<version>\d+\.\d+\.\d+)-linux-(?<arch>x64|arm64)\.tar\.gz$/,
+    re: new RegExp(`^SpiritAgent-CLI-(?<version>${VERSION_IN_FILENAME_RE})-linux-(?<arch>x64|arm64)\\.tar\\.gz$`),
     toKey: ({ arch, version }) => ({
       os: 'linux',
       arch,

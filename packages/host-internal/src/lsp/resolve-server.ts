@@ -3,8 +3,6 @@ import { access } from "node:fs/promises";
 import { constants } from "node:fs";
 import { promisify } from "node:util";
 
-import { TYPESCRIPT_LANGUAGE_SERVER_COMMAND } from "@spiritagent/agent-core";
-
 import {
   buildWindowsCommandCandidates,
   isWindowsPlatform,
@@ -221,19 +219,4 @@ export async function resolveGoplsOnPath(
   platform: NodeJS.Platform = process.platform,
 ): Promise<ResolvedLanguageServerCommand | undefined> {
   return resolveCommandOnPath("gopls", env, platform, []);
-}
-
-export async function resolveTypescriptLanguageServerOnPath(
-  env: NodeJS.ProcessEnv = process.env,
-  platform: NodeJS.Platform = process.platform,
-): Promise<ResolvedLanguageServerCommand | undefined> {
-  return resolveCommandOnPath(TYPESCRIPT_LANGUAGE_SERVER_COMMAND, env, platform, ["--stdio"]);
-}
-
-/** @deprecated Use buildCommandCandidates */
-export function buildTypescriptLanguageServerCandidates(
-  env: NodeJS.ProcessEnv,
-  platform: NodeJS.Platform,
-): string[] {
-  return buildCommandCandidates(TYPESCRIPT_LANGUAGE_SERVER_COMMAND, env, platform);
 }

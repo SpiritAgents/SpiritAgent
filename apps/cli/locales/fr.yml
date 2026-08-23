@@ -791,8 +791,8 @@ cli.hooks.entries_header: "Entrées de hook :"
 cli.hooks.scope.workspace: "Espace de travail"
 cli.hooks.scope.user: "Utilisateur"
 cli.permissions.check.verdict: "verdict : %{verdict}"
-cli.permissions.check.matched: "correspondance : %{rule} \"%{pattern}\" = %{action}"
-cli.permissions.check.segment_ref: " (segment %{index} : \"%{segment}\")"
+cli.permissions.check.matched: 'correspondance : %{rule} "%{pattern}" = %{action}'
+cli.permissions.check.segment_ref: ' (segment %{index} : "%{segment}")'
 cli.permissions.check.segments: "segments : %{count} (%{details})"
 cli.permissions.check.warning: "avertissement : %{warning}"
 cli.permissions.check.daemon_unreachable: "Impossible de joindre le démon Spirit. `spirit permissions check` évalue les règles de permission côté démon et nécessite un démon en cours d'exécution."

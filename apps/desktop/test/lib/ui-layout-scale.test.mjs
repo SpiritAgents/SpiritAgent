@@ -73,14 +73,14 @@ test("resolveUiLayoutZoomShortcutAction ignores non-mod and defaultPrevented", (
   );
 });
 
-test("computeDarwinTrafficLightPosition restores Electron hiddenInset default at scale 1", () => {
-  assert.deepEqual(computeDarwinTrafficLightPosition(1), { x: 12, y: 11 });
+test("computeDarwinTrafficLightPosition uses a native-like inset at scale 1", () => {
+  assert.deepEqual(computeDarwinTrafficLightPosition(1), { x: 16, y: 16 });
 });
 
 test("computeDarwinTrafficLightPosition scales with the UI layout scale", () => {
-  // x = (78s − 54) / 2, y = 18s − 7 (aligned with the pin toggle button centerline)
-  assert.deepEqual(computeDarwinTrafficLightPosition(1.25), { x: 22, y: 16 });
-  assert.deepEqual(computeDarwinTrafficLightPosition(0.8), { x: 4, y: 7 });
+  // x = 23s − 7 (red button aligned with sidebar item icons), y = 16s
+  assert.deepEqual(computeDarwinTrafficLightPosition(1.25), { x: 22, y: 20 });
+  assert.deepEqual(computeDarwinTrafficLightPosition(0.8), { x: 11, y: 13 });
   // Out-of-range input is clamped before computing
   assert.deepEqual(computeDarwinTrafficLightPosition(9), computeDarwinTrafficLightPosition(1.25));
 });

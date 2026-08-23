@@ -5,16 +5,16 @@ import { fileURLToPath } from "node:url";
 import { test } from "vitest";
 
 import { LspService } from "./service.js";
-import { resolveTypescriptLanguageServerOnPath } from "./resolve-server.js";
+import { resolvePyrightOnPath } from "./resolve-server.js";
 
 const workspaceRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "../../../..");
 
-test.skipIf(!(await resolveTypescriptLanguageServerOnPath()))(
+test.skipIf(!(await resolvePyrightOnPath()))(
   "getDiagnosticsForPath reports a type error after document sync",
   async () => {
-    const relativePath = "packages/agent-core/src/lsp/.diag-integration-temp.ts";
+    const relativePath = "packages/agent-core/src/lsp/.diag-integration-temp.py";
     const absolutePath = path.join(workspaceRoot, relativePath);
-    await writeFile(absolutePath, 'export const broken: number = "not-a-number";\n', "utf8");
+    await writeFile(absolutePath, 'x: int = "not-a-number"\n', "utf8");
 
     const lsp = new LspService(workspaceRoot);
     await lsp.probe();
@@ -29,7 +29,7 @@ test.skipIf(!(await resolveTypescriptLanguageServerOnPath()))(
       assert.match(first.formatted, /error/i);
 
       // The second call must wait again; it must not hit the empty cache from when the file was still clean.
-      await writeFile(absolutePath, 'export const broken: number = "still-wrong";\n', "utf8");
+      await writeFile(absolutePath, 'x: int = "still-wrong"\n', "utf8");
       const second = await lsp.getDiagnosticsForPath(relativePath, 12_000);
       assert.ok(
         second.diagnostics.some((item) => (item.severity ?? 1) === 1),

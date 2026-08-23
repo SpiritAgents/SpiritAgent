@@ -791,8 +791,8 @@ cli.hooks.entries_header: "Hook-Einträge:"
 cli.hooks.scope.workspace: "Arbeitsbereich"
 cli.hooks.scope.user: "Benutzer"
 cli.permissions.check.verdict: "Ergebnis: %{verdict}"
-cli.permissions.check.matched: "Treffer: %{rule} \"%{pattern}\" = %{action}"
-cli.permissions.check.segment_ref: " (Segment %{index}: \"%{segment}\")"
+cli.permissions.check.matched: 'Treffer: %{rule} "%{pattern}" = %{action}'
+cli.permissions.check.segment_ref: ' (Segment %{index}: "%{segment}")'
 cli.permissions.check.segments: "Segmente: %{count} (%{details})"
 cli.permissions.check.warning: "Warnung: %{warning}"
 cli.permissions.check.daemon_unreachable: "Spirit-Daemon nicht erreichbar. `spirit permissions check` wertet Berechtigungsregeln im Daemon aus und benötigt einen laufenden Daemon."

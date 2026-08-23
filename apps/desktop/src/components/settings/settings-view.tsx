@@ -33,6 +33,8 @@ export function SettingsView({
   onFontChange,
   clickablePointerCursor,
   onClickablePointerCursorChange,
+  fontSmoothing,
+  onFontSmoothingChange,
   settings,
   snapshot,
   apiReady,
@@ -223,6 +225,8 @@ export function SettingsView({
                 onFontChange={onFontChange}
                 clickablePointerCursor={clickablePointerCursor}
                 onClickablePointerCursorChange={onClickablePointerCursorChange}
+                fontSmoothing={fontSmoothing}
+                onFontSmoothingChange={onFontSmoothingChange}
                 settings={settings}
                 onSavePatch={onSavePatch}
               />

@@ -159,7 +159,7 @@
     "test": "vitest run",
     "test:workspace-file-references": "vitest run src/workspace-file-references.test.ts",
     "test:lsp": "vitest run src/lsp",
-    "smoke:lsp": "npm run build && node dist/smoke/lsp-typescript-smoke.js",
+    "smoke:lsp": "npm run build && node dist/smoke/lsp-pyright-smoke.js",
     "typecheck": "tsc -p tsconfig.json --noEmit",
     "smoke:openai-models-parse": "npm run build && node dist/smoke/openai-models-parse-smoke.js && vitest run src/bedrock-models.test.ts src/google-vertex-endpoints.test.ts src/google-vertex-models.test.ts",
     "notice": "node scripts/gen-notice.mjs",

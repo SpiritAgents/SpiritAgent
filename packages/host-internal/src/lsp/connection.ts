@@ -121,7 +121,7 @@ export class LspConnection {
       rootUri,
       capabilities: {
         textDocument: {
-          // TLS 5.x: when publishDiagnostics is not declared, diagnosticsSupport=false and no diagnostics are pushed.
+          // Some servers skip pushing diagnostics unless publishDiagnostics is declared.
           publishDiagnostics: {
             relatedInformation: true,
           },

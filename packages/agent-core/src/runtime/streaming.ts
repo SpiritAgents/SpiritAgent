@@ -250,6 +250,7 @@ export async function startStreamingRound<Config, State, ToolRequest>(
               error: renderError(error),
               requestTrace: [],
             };
+            pending.streamConsumerFinished = true;
           });
         return;
       }

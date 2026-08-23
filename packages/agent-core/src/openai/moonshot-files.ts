@@ -1,6 +1,8 @@
 import { readFile, stat } from "node:fs/promises";
 import { basename } from "node:path";
 
+import { FormData } from "undici";
+
 import { getLlmFetch } from "../llm-fetch.js";
 import type { OpenAiTransportConfig } from "./openai-compat.js";
 
@@ -44,7 +46,11 @@ export async function uploadOpenAiCompatibleVideoFile(
     headers: {
       Authorization: `Bearer ${config.apiKey}`,
     },
-    body: form,
+    // Must use undici's FormData: getLlmFetch uses the undici package's fetch, which is not the same
+    // implementation as the global FormData; the global FormData would be stringified as a plain object,
+    // losing the multipart boundary header (Moonshot reports Content-Type isn't multipart/form-data).
+    // The global fetch types do not accept undici FormData, so this assertion bridges the gap.
+    body: form as unknown as BodyInit,
   });
 
   if (!response.ok) {

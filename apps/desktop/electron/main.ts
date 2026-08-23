@@ -188,6 +188,7 @@ import { listSystemFonts } from "./system-fonts.js";
 import { syncWindowsImmersiveDarkMode } from "./win-dwm.js";
 import { configureElectronProductDisplayName } from "./product-display-name.js";
 import i18nHost from "../src/lib/i18n-host.js";
+import { resolveUiLocalePreference } from "../src/lib/ui-locale.js";
 
 /** Must match `titleBarOverlay.height` and the custom title bar CSS height (px) */
 const TITLE_BAR_OVERLAY_HEIGHT = 32;
@@ -581,16 +582,22 @@ function electronRootBackgroundForBackdrop(
   return darkContent ? WIN32_APP_BACKGROUND_DARK : WIN32_APP_BACKGROUND_LIGHT;
 }
 
-/** Config key `translucency`: native window translucent material per platform (Win Mica / macOS Vibrancy). */
-let cachedTranslucency: { mtimeMs: number; size: number; value: boolean } | undefined;
+/** Config keys read synchronously for first-frame renderer IPC (Win Mica / macOS Vibrancy, OOBE). */
+let cachedDesktopConfigFlags:
+  | { mtimeMs: number; size: number; translucency: boolean; onboardingCompleted: boolean }
+  | undefined;
 
 /**
- * This value is exposed to the renderer via the `desktop:read-translucency` sync IPC: the
- * inline first-frame script in index.html must get it synchronously before rendering and
- * cannot be made async. To avoid reading and parsing the entire config file on every sync
- * IPC, it is cached by mtime/size and only re-read when the config file changes.
+ * This value is exposed to the renderer via sync IPC (`desktop:read-translucency` /
+ * `desktop:read-onboarding-completed`): the first React frame must get it before the host
+ * snapshot is ready, and cannot be made async. To avoid reading and parsing the entire
+ * config file on every sync IPC, it is cached by mtime/size and only re-read when the
+ * config file changes.
  */
-function readTranslucencyFromDisk(): boolean {
+function readDesktopConfigFlagsFromDisk(): {
+  translucency: boolean;
+  onboardingCompleted: boolean;
+} {
   const filePath = configFilePath();
   let mtimeMs: number;
   let size: number;
@@ -599,27 +606,42 @@ function readTranslucencyFromDisk(): boolean {
     mtimeMs = stats.mtimeMs;
     size = stats.size;
   } catch {
-    return true;
+    return { translucency: true, onboardingCompleted: false };
   }
   if (
-    cachedTranslucency &&
-    cachedTranslucency.mtimeMs === mtimeMs &&
-    cachedTranslucency.size === size
+    cachedDesktopConfigFlags &&
+    cachedDesktopConfigFlags.mtimeMs === mtimeMs &&
+    cachedDesktopConfigFlags.size === size
   ) {
-    return cachedTranslucency.value;
+    return {
+      translucency: cachedDesktopConfigFlags.translucency,
+      onboardingCompleted: cachedDesktopConfigFlags.onboardingCompleted,
+    };
   }
 
-  let value = true;
+  let translucency = true;
+  let onboardingCompleted = false;
   try {
     const parsed = JSON.parse(readFileSync(filePath, "utf8")) as {
       translucency?: boolean;
+      onboardingCompleted?: boolean;
     };
-    value = parsed.translucency !== false;
+    translucency = parsed.translucency !== false;
+    onboardingCompleted = parsed.onboardingCompleted === true;
   } catch {
-    value = true;
+    translucency = true;
+    onboardingCompleted = false;
   }
-  cachedTranslucency = { mtimeMs, size, value };
-  return value;
+  cachedDesktopConfigFlags = { mtimeMs, size, translucency, onboardingCompleted };
+  return { translucency, onboardingCompleted };
+}
+
+function readTranslucencyFromDisk(): boolean {
+  return readDesktopConfigFlagsFromDisk().translucency;
+}
+
+function readOnboardingCompletedFromDisk(): boolean {
+  return readDesktopConfigFlagsFromDisk().onboardingCompleted;
 }
 
 const MACOS_WINDOW_VIBRANCY = "under-window" as const;
@@ -651,7 +673,7 @@ function readTrafficLightPositionFromDisk(): { x: number; y: number } | undefine
       return { x: parsed.x, y: parsed.y };
     }
   } catch {
-    // First launch or missing cache: keep the hiddenInset default position (equivalent to scale=1)
+    // First launch or missing cache: use the scale=1 inset (see computeDarwinTrafficLightPosition)
   }
   return undefined;
 }
@@ -926,7 +948,11 @@ async function createMainWindow(): Promise<BrowserWindow> {
           visualEffectState: "followWindow",
         }
       : {}),
-    ...(storedTrafficLightPosition ? { trafficLightPosition: storedTrafficLightPosition } : {}),
+    ...(process.platform === "darwin"
+      ? {
+          trafficLightPosition: storedTrafficLightPosition ?? { x: 16, y: 16 },
+        }
+      : {}),
     titleBarStyle:
       process.platform === "darwin"
         ? "hiddenInset"
@@ -1375,6 +1401,10 @@ if (gotSpiritSingleInstanceLock) {
       event.returnValue = readTranslucencyFromDisk();
     });
 
+    ipcMain.on("desktop:read-onboarding-completed", (event) => {
+      event.returnValue = readOnboardingCompletedFromDisk();
+    });
+
     // Tracked value of the OS-level dark preference. While themeSource is overridden to
     // light/dark, shouldUseDarkColors / prefers-color-scheme on both the main and renderer
     // sides follow the override instead of the OS, so the true value cannot be read; take
@@ -1462,7 +1492,6 @@ if (gotSpiritSingleInstanceLock) {
     });
 
     ipcMain.handle("desktop:sync-language", async (_event, lang: string) => {
-      console.warn("[spirit-desktop] language synced:", lang);
       try {
         await i18nHost.changeLanguage(lang);
       } catch {
@@ -1676,9 +1705,16 @@ if (gotSpiritSingleInstanceLock) {
     });
     try {
       const config = await loadConfig();
-      if (typeof config.uiLocale === "string" && config.uiLocale.trim()) {
-        await i18nHost.changeLanguage(config.uiLocale.trim());
-      }
+      const preference =
+        typeof config.uiLocale === "string" && config.uiLocale.trim()
+          ? config.uiLocale.trim()
+          : undefined;
+      await i18nHost.changeLanguage(
+        resolveUiLocalePreference(preference, [
+          ...app.getPreferredSystemLanguages(),
+          app.getLocale(),
+        ]),
+      );
     } catch {
       // ignore locale bootstrap errors
     }
