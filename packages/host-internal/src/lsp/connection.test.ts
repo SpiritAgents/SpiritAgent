@@ -15,9 +15,6 @@ test.skipIf(process.platform !== "win32")(
 );
 
 test("buildLanguageServerSpawnOptions leaves POSIX spawn without shell", () => {
-  const options = buildLanguageServerSpawnOptions(
-    "/usr/bin/pyright-langserver",
-    "/tmp/workspace",
-  );
+  const options = buildLanguageServerSpawnOptions("/usr/bin/pyright-langserver", "/tmp/workspace");
   assert.equal(options.shell, undefined);
 });

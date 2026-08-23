@@ -21,10 +21,7 @@ test("resolveLspInstallArgv returns go argv for gopls", () => {
     command: "go",
     args: ["install", "golang.org/x/tools/gopls@latest"],
   });
-  assert.equal(
-    formatLspInstallCommandLine(provider),
-    "go install golang.org/x/tools/gopls@latest",
-  );
+  assert.equal(formatLspInstallCommandLine(provider), "go install golang.org/x/tools/gopls@latest");
 });
 
 test("resolveLspInstallArgv returns rustup argv for rust-analyzer", () => {

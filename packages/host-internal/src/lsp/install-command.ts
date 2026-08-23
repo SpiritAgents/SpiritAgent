@@ -26,9 +26,7 @@ export function resolveLspInstallArgv(
   }
 }
 
-export function formatLspInstallCommandLine(
-  provider: LspInstallCommandSource,
-): string | undefined {
+export function formatLspInstallCommandLine(provider: LspInstallCommandSource): string | undefined {
   const argv = resolveLspInstallArgv(provider);
   if (!argv) {
     return undefined;

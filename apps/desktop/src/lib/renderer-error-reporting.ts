@@ -25,9 +25,7 @@ if (typeof window !== "undefined") {
     reportRendererError({
       kind: "error",
       message: event.message,
-      ...(event.error instanceof Error && event.error.stack
-        ? { stack: event.error.stack }
-        : {}),
+      ...(event.error instanceof Error && event.error.stack ? { stack: event.error.stack } : {}),
     });
   });
   window.addEventListener("unhandledrejection", (event) => {

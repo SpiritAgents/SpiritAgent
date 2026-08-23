@@ -64,14 +64,14 @@ CLI에는 임베디드 PTY 패널이 없습니다. 명령은 여전히 공유 �
 
 **설정 → 에이전트**에서 언어 서버를 켜고, 누락된 경우 공급자를 설치하세요. 서버가 준비되면 에이전트는 [`get_diagnostics`](./agent/tools.mdx)를 호출할 수 있습니다.
 
-| ID                           | 언어                   | 설치 방법                                |
-| ---------------------------- | ---------------------- | ---------------------------------------- |
-| `pyright`                    | Python                 | npm (`pyright`)                          |
-| `gopls`                      | Go                     | Go 도구 체인                             |
-| `rust-analyzer`              | Rust                   | rustup                                   |
-| `clangd`                     | C, C++                 | 플랫폼 패키지 (예: Homebrew 또는 winget) |
-| `jdtls`                      | Java                   | 수동                                     |
-| `omnisharp`                  | C#                     | .NET                                     |
+| ID              | 언어   | 설치 방법                                |
+| --------------- | ------ | ---------------------------------------- |
+| `pyright`       | Python | npm (`pyright`)                          |
+| `gopls`         | Go     | Go 도구 체인                             |
+| `rust-analyzer` | Rust   | rustup                                   |
+| `clangd`        | C, C++ | 플랫폼 패키지 (예: Homebrew 또는 winget) |
+| `jdtls`         | Java   | 수동                                     |
+| `omnisharp`     | C#     | .NET                                     |
 
 clangd 및 jdtls는 번들로 제공되지 않습니다. 직접 설치한 후 설정 → 에이전트로 돌아오세요.
 

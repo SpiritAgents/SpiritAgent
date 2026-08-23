@@ -64,14 +64,14 @@ Esses chips injetam um prompt fixo. O agente então usa as ferramentas [workspac
 
 Ative os servidores de linguagem em **Configurações → Agentes** e instale um provedor se estiver faltando. Quando o servidor estiver pronto, o agente pode chamar [`get_diagnostics`](./agent/tools.mdx).
 
-| ID                           | Linguagens             | Como é instalado                                       |
-| ---------------------------- | ---------------------- | ------------------------------------------------------ |
-| `pyright`                    | Python                 | npm (`pyright`)                                        |
-| `gopls`                      | Go                     | Ferramentas Go                                         |
-| `rust-analyzer`              | Rust                   | rustup                                                 |
-| `clangd`                     | C, C++                 | Pacote da plataforma (por exemplo, Homebrew ou winget) |
-| `jdtls`                      | Java                   | Manual                                                 |
-| `omnisharp`                  | C#                     | .NET                                                   |
+| ID              | Linguagens | Como é instalado                                       |
+| --------------- | ---------- | ------------------------------------------------------ |
+| `pyright`       | Python     | npm (`pyright`)                                        |
+| `gopls`         | Go         | Ferramentas Go                                         |
+| `rust-analyzer` | Rust       | rustup                                                 |
+| `clangd`        | C, C++     | Pacote da plataforma (por exemplo, Homebrew ou winget) |
+| `jdtls`         | Java       | Manual                                                 |
+| `omnisharp`     | C#         | .NET                                                   |
 
 clangd e jdtls não estão incluídos. Instale-os você mesmo e depois volte para Configurações → Agentes.
 

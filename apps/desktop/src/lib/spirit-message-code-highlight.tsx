@@ -113,13 +113,9 @@ export function renderHighlightedCodeLines(result: HighlightResult) {
   return lines.map((line, lineIndex) => (
     <Fragment key={lineIndex}>
       {lineIndex > 0 ? "\n" : null}
-      {isEmptyTokenLine(line)
-        ? null
-        : (
-            <span>
-              {line.map((token, tokenIndex) => renderHighlightToken(token, tokenIndex))}
-            </span>
-          )}
+      {isEmptyTokenLine(line) ? null : (
+        <span>{line.map((token, tokenIndex) => renderHighlightToken(token, tokenIndex))}</span>
+      )}
     </Fragment>
   ));
 }

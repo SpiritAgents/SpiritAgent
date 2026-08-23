@@ -948,7 +948,8 @@ test("edit_file tool-execution-finished preserves lspWriteDiagnostics on tool sn
                 severity: "error",
                 line: 81,
                 column: 7,
-                message: 'Expression of type "Literal[\'1\']" cannot be assigned to declared type "int"',
+                message:
+                  'Expression of type "Literal[\'1\']" cannot be assigned to declared type "int"',
                 code: "reportAssignmentType",
                 source: "pyright",
               },

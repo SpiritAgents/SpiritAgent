@@ -64,14 +64,14 @@ Chip 会注入固定提示。随后 Agent 用[工作区和 `shell` 工具](./age
 
 到 **设置 → 智能体** 打开语言服务器，缺哪个提供商就装哪个。装好后 Agent 可用 [`get_diagnostics`](./agent/tools.mdx)。
 
-| Id                           | 语言                   | 安装方式                            |
-| ---------------------------- | ---------------------- | ----------------------------------- |
-| `pyright`                    | Python                 | npm（`pyright`）                    |
-| `gopls`                      | Go                     | Go 工具链                           |
-| `rust-analyzer`              | Rust                   | rustup                              |
-| `clangd`                     | C、C++                 | 平台包（例如 Homebrew 或 winget）   |
-| `jdtls`                      | Java                   | 手动                                |
-| `omnisharp`                  | C#                     | .NET                                |
+| Id              | 语言   | 安装方式                          |
+| --------------- | ------ | --------------------------------- |
+| `pyright`       | Python | npm（`pyright`）                  |
+| `gopls`         | Go     | Go 工具链                         |
+| `rust-analyzer` | Rust   | rustup                            |
+| `clangd`        | C、C++ | 平台包（例如 Homebrew 或 winget） |
+| `jdtls`         | Java   | 手动                              |
+| `omnisharp`     | C#     | .NET                              |
 
 clangd 和 jdtls 不随包装。自己装好，再回到 **设置 → 智能体**。
 

@@ -64,14 +64,14 @@ CLIには組み込みPTYパネルはありません。コマンドは共有デ�
 
 **設定→エージェント**で言語サーバーを有効にし、不足しているプロバイダーをインストールします。サーバーが準備できると、エージェントは[`get_diagnostics`](./agent/tools.mdx)を呼び出せます。
 
-| ID                           | 言語                   | インストール方法                                   |
-| ---------------------------- | ---------------------- | -------------------------------------------------- |
-| `pyright`                    | Python                 | npm（`pyright`）                                   |
-| `gopls`                      | Go                     | Goツールチェーン                                   |
-| `rust-analyzer`              | Rust                   | rustup                                             |
-| `clangd`                     | C、C++                 | プラットフォームパッケージ（例：Homebrewやwinget） |
-| `jdtls`                      | Java                   | 手動                                               |
-| `omnisharp`                  | C#                     | .NET                                               |
+| ID              | 言語   | インストール方法                                   |
+| --------------- | ------ | -------------------------------------------------- |
+| `pyright`       | Python | npm（`pyright`）                                   |
+| `gopls`         | Go     | Goツールチェーン                                   |
+| `rust-analyzer` | Rust   | rustup                                             |
+| `clangd`        | C、C++ | プラットフォームパッケージ（例：Homebrewやwinget） |
+| `jdtls`         | Java   | 手動                                               |
+| `omnisharp`     | C#     | .NET                                               |
 
 clangdとjdtlsはバンドルされていません。自分でインストールしてから、設定→エージェントに戻ってください。
 

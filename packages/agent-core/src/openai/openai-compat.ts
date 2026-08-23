@@ -8,7 +8,10 @@ import {
   type ModelReasoningMode,
 } from "../openai/gpt-reasoning-controls.js";
 import { cloneJsonValue } from "../tool-agent.js";
-import { isThinkingSwitchDisabledModel, normalizeUpstreamModelId } from "./thinking-switch-disabled-models.js";
+import {
+  isThinkingSwitchDisabledModel,
+  normalizeUpstreamModelId,
+} from "./thinking-switch-disabled-models.js";
 import {
   buildOpenRouterClaudeReasoningBody,
   isOpenRouterAnthropicClaudeModel,

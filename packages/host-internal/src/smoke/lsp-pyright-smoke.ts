@@ -7,7 +7,10 @@ import { resolvePyrightOnPath } from "../lsp/resolve-server.js";
 
 const here = path.dirname(fileURLToPath(import.meta.url));
 const workspaceRoot = path.resolve(here, "../../../..");
-const sampleFile = path.join(workspaceRoot, "packages/host-internal/src/lsp/.smoke-pyright-temp.py");
+const sampleFile = path.join(
+  workspaceRoot,
+  "packages/host-internal/src/lsp/.smoke-pyright-temp.py",
+);
 
 async function main(): Promise<void> {
   const resolved = await resolvePyrightOnPath();
