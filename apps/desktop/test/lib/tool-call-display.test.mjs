@@ -73,8 +73,11 @@ test("getToolCallSummaryParts: shell prefixes reason and keeps command as detail
       detailLines: [],
     }),
     {
-      headline: "运行中 执行并发命令",
-      shellSummary: { verb: "运行中", reason: "执行并发命令" },
+      headline: `${i18n.t("tool.runShellVerb", { context: "running" })} 执行并发命令`,
+      shellSummary: {
+        verb: i18n.t("tool.runShellVerb", { context: "running" }),
+        reason: "执行并发命令",
+      },
       detail: "echo abc",
     },
   );

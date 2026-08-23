@@ -50,7 +50,9 @@ test("formatAssistantTurnCopyText preserves body and tool order without thinking
 
   assert.equal(
     formatAssistantTurnCopyText(messages, 3),
-    ["已读取 foo.txt", "Here is the summary."].join("\n\n"),
+    [`${i18n.t("tool.read", { context: "succeeded" })} foo.txt`, "Here is the summary."].join(
+      "\n\n",
+    ),
   );
 });
 
@@ -89,7 +91,7 @@ test("formatToolCallSummaryPlainText: read_file uses headline and detail", () =>
       headlineDetail: "foo.txt",
       detailLines: [],
     }),
-    "已读取 foo.txt",
+    `${i18n.t("tool.read", { context: "succeeded" })} foo.txt`,
   );
 });
 
@@ -102,7 +104,7 @@ test("formatToolCallSummaryPlainText: shell with reason and command", () => {
       headlineDetail: "echo abc",
       detailLines: [],
     }),
-    "运行中 run concurrent commands echo abc",
+    `${i18n.t("tool.runShellVerb", { context: "running" })} run concurrent commands echo abc`,
   );
 });
 
@@ -115,7 +117,7 @@ test("formatToolCallSummaryPlainText: failed tools append settings.failed suffix
       headlineDetail: "TODO",
       detailLines: [],
     }),
-    `搜索 TODO ${i18n.t("settings.failed")}`,
+    `${i18n.t("tool.search")} TODO ${i18n.t("settings.failed")}`,
   );
 });
 
