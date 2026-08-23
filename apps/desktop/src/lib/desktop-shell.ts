@@ -46,6 +46,26 @@ export function resolveUseTranslucency(translucency: boolean | undefined): boole
   return translucency !== false;
 }
 
+/**
+ * Aligned with Electron's `readOnboardingCompletedFromDisk`.
+ * `undefined` means the sync API is missing (Web): keep the snapshot gate so the settings default
+ * `onboardingCompleted: false` cannot flash OOBE for returning users.
+ */
+export function readStoredOnboardingCompleted(): boolean | undefined {
+  if (typeof window === "undefined") {
+    return undefined;
+  }
+  try {
+    const read = window.spiritDesktop?.readOnboardingCompleted;
+    if (typeof read !== "function") {
+      return undefined;
+    }
+    return read() === true;
+  } catch {
+    return undefined;
+  }
+}
+
 /** Writes the Desktop native shell classes before first paint, so the launch layer never uses translucency transparent styles before the snapshot is ready. */
 export function applyDesktopNativeChromeToDocument(): void {
   if (typeof document === "undefined") {

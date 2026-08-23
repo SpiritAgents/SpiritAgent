@@ -1,7 +1,12 @@
 import assert from "node:assert/strict";
 import { test } from "vitest";
 
-import { resolveOnboardingExpected, resolveOnboardingVisible } from "../../src/lib/onboarding.ts";
+import {
+  resolveLaunchSplashActive,
+  resolveOnboardingCompletedKnown,
+  resolveOnboardingExpected,
+  resolveOnboardingVisible,
+} from "../../src/lib/onboarding.ts";
 
 test("resolveOnboardingExpected shows wizard before snapshot is ready", () => {
   assert.equal(
@@ -72,6 +77,83 @@ test("resolveOnboardingVisible never re-shows after dismissal in the same sessio
       snapshotReady: true,
       onboardingCompleted: false,
       dismissedThisSession: true,
+    }),
+    false,
+  );
+});
+
+test("resolveOnboardingCompletedKnown uses snapshot once ready", () => {
+  assert.deepEqual(
+    resolveOnboardingCompletedKnown({
+      snapshotReady: true,
+      snapshotOnboardingCompleted: true,
+      storedOnboardingCompleted: false,
+    }),
+    { known: true, completed: true },
+  );
+});
+
+test("resolveOnboardingCompletedKnown uses on-disk flag before snapshot", () => {
+  assert.deepEqual(
+    resolveOnboardingCompletedKnown({
+      snapshotReady: false,
+      snapshotOnboardingCompleted: false,
+      storedOnboardingCompleted: false,
+    }),
+    { known: true, completed: false },
+  );
+  assert.deepEqual(
+    resolveOnboardingCompletedKnown({
+      snapshotReady: false,
+      snapshotOnboardingCompleted: false,
+      storedOnboardingCompleted: true,
+    }),
+    { known: true, completed: true },
+  );
+});
+
+test("resolveOnboardingCompletedKnown stays unknown without snapshot or disk read", () => {
+  assert.deepEqual(
+    resolveOnboardingCompletedKnown({
+      snapshotReady: false,
+      snapshotOnboardingCompleted: false,
+      storedOnboardingCompleted: undefined,
+    }),
+    { known: false, completed: false },
+  );
+});
+
+test("resolveLaunchSplashActive skips splash when OOBE is visible before snapshot", () => {
+  assert.equal(
+    resolveLaunchSplashActive({
+      snapshotReady: false,
+      onboardingVisible: true,
+      hasHostError: false,
+      hasRuntimeError: false,
+    }),
+    false,
+  );
+});
+
+test("resolveLaunchSplashActive keeps splash for returning users before snapshot", () => {
+  assert.equal(
+    resolveLaunchSplashActive({
+      snapshotReady: false,
+      onboardingVisible: false,
+      hasHostError: false,
+      hasRuntimeError: false,
+    }),
+    true,
+  );
+});
+
+test("resolveLaunchSplashActive hides splash once snapshot is ready", () => {
+  assert.equal(
+    resolveLaunchSplashActive({
+      snapshotReady: true,
+      onboardingVisible: false,
+      hasHostError: false,
+      hasRuntimeError: false,
     }),
     false,
   );

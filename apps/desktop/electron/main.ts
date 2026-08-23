@@ -581,16 +581,22 @@ function electronRootBackgroundForBackdrop(
   return darkContent ? WIN32_APP_BACKGROUND_DARK : WIN32_APP_BACKGROUND_LIGHT;
 }
 
-/** Config key `translucency`: native window translucent material per platform (Win Mica / macOS Vibrancy). */
-let cachedTranslucency: { mtimeMs: number; size: number; value: boolean } | undefined;
+/** Config keys read synchronously for first-frame renderer IPC (Win Mica / macOS Vibrancy, OOBE). */
+let cachedDesktopConfigFlags:
+  | { mtimeMs: number; size: number; translucency: boolean; onboardingCompleted: boolean }
+  | undefined;
 
 /**
- * This value is exposed to the renderer via the `desktop:read-translucency` sync IPC: the
- * inline first-frame script in index.html must get it synchronously before rendering and
- * cannot be made async. To avoid reading and parsing the entire config file on every sync
- * IPC, it is cached by mtime/size and only re-read when the config file changes.
+ * This value is exposed to the renderer via sync IPC (`desktop:read-translucency` /
+ * `desktop:read-onboarding-completed`): the first React frame must get it before the host
+ * snapshot is ready, and cannot be made async. To avoid reading and parsing the entire
+ * config file on every sync IPC, it is cached by mtime/size and only re-read when the
+ * config file changes.
  */
-function readTranslucencyFromDisk(): boolean {
+function readDesktopConfigFlagsFromDisk(): {
+  translucency: boolean;
+  onboardingCompleted: boolean;
+} {
   const filePath = configFilePath();
   let mtimeMs: number;
   let size: number;
@@ -599,27 +605,42 @@ function readTranslucencyFromDisk(): boolean {
     mtimeMs = stats.mtimeMs;
     size = stats.size;
   } catch {
-    return true;
+    return { translucency: true, onboardingCompleted: false };
   }
   if (
-    cachedTranslucency &&
-    cachedTranslucency.mtimeMs === mtimeMs &&
-    cachedTranslucency.size === size
+    cachedDesktopConfigFlags &&
+    cachedDesktopConfigFlags.mtimeMs === mtimeMs &&
+    cachedDesktopConfigFlags.size === size
   ) {
-    return cachedTranslucency.value;
+    return {
+      translucency: cachedDesktopConfigFlags.translucency,
+      onboardingCompleted: cachedDesktopConfigFlags.onboardingCompleted,
+    };
   }
 
-  let value = true;
+  let translucency = true;
+  let onboardingCompleted = false;
   try {
     const parsed = JSON.parse(readFileSync(filePath, "utf8")) as {
       translucency?: boolean;
+      onboardingCompleted?: boolean;
     };
-    value = parsed.translucency !== false;
+    translucency = parsed.translucency !== false;
+    onboardingCompleted = parsed.onboardingCompleted === true;
   } catch {
-    value = true;
+    translucency = true;
+    onboardingCompleted = false;
   }
-  cachedTranslucency = { mtimeMs, size, value };
-  return value;
+  cachedDesktopConfigFlags = { mtimeMs, size, translucency, onboardingCompleted };
+  return { translucency, onboardingCompleted };
+}
+
+function readTranslucencyFromDisk(): boolean {
+  return readDesktopConfigFlagsFromDisk().translucency;
+}
+
+function readOnboardingCompletedFromDisk(): boolean {
+  return readDesktopConfigFlagsFromDisk().onboardingCompleted;
 }
 
 const MACOS_WINDOW_VIBRANCY = "under-window" as const;
@@ -1373,6 +1394,10 @@ if (gotSpiritSingleInstanceLock) {
 
     ipcMain.on("desktop:read-translucency", (event) => {
       event.returnValue = readTranslucencyFromDisk();
+    });
+
+    ipcMain.on("desktop:read-onboarding-completed", (event) => {
+      event.returnValue = readOnboardingCompletedFromDisk();
     });
 
     // Tracked value of the OS-level dark preference. While themeSource is overridden to

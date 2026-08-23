@@ -43,6 +43,9 @@ contextBridge.exposeInMainWorld("spiritDesktop", {
   readTranslucency() {
     return ipcRenderer.sendSync("desktop:read-translucency") as boolean;
   },
+  readOnboardingCompleted() {
+    return ipcRenderer.sendSync("desktop:read-onboarding-completed") as boolean;
+  },
   readOsPrefersDark() {
     return ipcRenderer.sendSync("desktop:read-os-prefers-dark") as boolean;
   },
