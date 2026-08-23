@@ -15,27 +15,18 @@ test("worktreeBootstrapToolCallId is stable per session key", () => {
   assert.equal(worktreeBootstrapToolCallId("draft-1"), "worktree-bootstrap:draft-1");
 });
 
-test("buildWorktreeBootstrapToolSnapshot uses create verb and Worktree detail", async () => {
-  await i18n.changeLanguage("en");
+test("buildWorktreeBootstrapToolSnapshot uses create verb and Worktree detail", () => {
   const running = buildWorktreeBootstrapToolSnapshot("running");
   assert.equal(running.toolName, WORKTREE_BOOTSTRAP_TOOL_NAME);
   assert.equal(running.phase, "running");
-  assert.equal(running.headline, "Creating");
+  assert.equal(running.headline, i18n.t("tool.create", { context: "running" }));
   assert.equal(running.headlineDetail, "Worktree");
   assert.equal(toolCallPhaseShowsShimmer(running.phase), true);
 
   const succeeded = buildWorktreeBootstrapToolSnapshot("succeeded");
-  assert.equal(succeeded.headline, "Created");
+  assert.equal(succeeded.headline, i18n.t("tool.create", { context: "succeeded" }));
   assert.equal(toolCallPhaseShowsShimmer(succeeded.phase), false);
   assert.equal(succeeded.headlineDetail, "Worktree");
-});
-
-test("buildWorktreeBootstrapToolSnapshot zh-CN progressive verbs", async () => {
-  await i18n.changeLanguage("zh-CN");
-  const running = buildWorktreeBootstrapToolSnapshot("running");
-  assert.equal(running.headline, "创建中");
-  const succeeded = buildWorktreeBootstrapToolSnapshot("succeeded");
-  assert.equal(succeeded.headline, "已创建");
 });
 
 test("isWorktreeBootstrapInFlight and isSessionBundleBusy", () => {

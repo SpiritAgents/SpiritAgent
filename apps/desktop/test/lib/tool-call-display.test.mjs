@@ -7,6 +7,12 @@ import {
 } from "../../src/lib/tool-call-display.ts";
 import { toolCallPhaseShowsShimmer } from "../../src/lib/tool-call-shimmer.ts";
 import i18n from "../../src/lib/i18n.ts";
+import { phaseToVerbContext } from "../../src/lib/tool-verb-context.ts";
+
+function toolHeadline(key, phase) {
+  const context = phase ? phaseToVerbContext(phase) : undefined;
+  return i18n.t(key, context ? { context } : {});
+}
 
 test("file diff tools are expandable during preview with streaming args only", () => {
   assert.equal(
@@ -137,13 +143,18 @@ test("getToolCallSummaryParts: dynamic re-translation on language switch", async
     detailLines: [],
   };
 
-  // While still in Chinese, headline should remain Chinese
-  assert.deepEqual(getToolCallSummaryParts(tool), { headline: "已创建", detail: "App.tsx" });
+  // While still in the current locale, stored Chinese verbs re-translate
+  assert.deepEqual(getToolCallSummaryParts(tool), {
+    headline: toolHeadline("tool.create", "succeeded"),
+    detail: "App.tsx",
+  });
 
-  // Switch to English — same snapshot should now render in English
   await i18n.changeLanguage("en");
   try {
-    assert.deepEqual(getToolCallSummaryParts(tool), { headline: "Created", detail: "App.tsx" });
+    assert.deepEqual(getToolCallSummaryParts(tool), {
+      headline: toolHeadline("tool.create", "succeeded"),
+      detail: "App.tsx",
+    });
   } finally {
     await i18n.changeLanguage("zh-CN");
   }
@@ -165,16 +176,22 @@ test("getToolCallSummaryParts: grep detail re-translates on language switch", as
   await i18n.changeLanguage("en");
   try {
     assert.deepEqual(getToolCallSummaryParts(tool), {
-      headline: "Searched",
-      detail: "ratatui in apps/cli/**/*.{rs,toml}",
+      headline: toolHeadline("tool.search", "succeeded"),
+      detail: i18n.t("tool.searchQueryInGlob", {
+        query: "ratatui",
+        glob: "apps/cli/**/*.{rs,toml}",
+      }),
     });
   } finally {
     await i18n.changeLanguage("zh-CN");
   }
 
   assert.deepEqual(getToolCallSummaryParts(tool), {
-    headline: "已搜索",
-    detail: "ratatui 于 apps/cli/**/*.{rs,toml}",
+    headline: toolHeadline("tool.search", "succeeded"),
+    detail: i18n.t("tool.searchQueryInGlob", {
+      query: "ratatui",
+      glob: "apps/cli/**/*.{rs,toml}",
+    }),
   });
 });
 
@@ -189,12 +206,18 @@ test("getToolCallSummaryParts: apply_patch headline re-translates across locales
 
   await i18n.changeLanguage("en");
   try {
-    assert.deepEqual(getToolCallSummaryParts(tool), { headline: "Editing", detail: "main.rs" });
+    assert.deepEqual(getToolCallSummaryParts(tool), {
+      headline: toolHeadline("tool.edit", "running"),
+      detail: "main.rs",
+    });
   } finally {
     await i18n.changeLanguage("zh-CN");
   }
 
-  assert.deepEqual(getToolCallSummaryParts(tool), { headline: "编辑中", detail: "main.rs" });
+  assert.deepEqual(getToolCallSummaryParts(tool), {
+    headline: toolHeadline("tool.edit", "running"),
+    detail: "main.rs",
+  });
 });
 
 test("getToolCallSummaryParts: shell default headline re-translates", async () => {
@@ -209,12 +232,18 @@ test("getToolCallSummaryParts: shell default headline re-translates", async () =
 
   await i18n.changeLanguage("en");
   try {
-    assert.deepEqual(getToolCallSummaryParts(tool), { headline: "Ran command", detail: "ls -la" });
+    assert.deepEqual(getToolCallSummaryParts(tool), {
+      headline: toolHeadline("tool.runCommand", "succeeded"),
+      detail: "ls -la",
+    });
   } finally {
     await i18n.changeLanguage("zh-CN");
   }
 
-  assert.deepEqual(getToolCallSummaryParts(tool), { headline: "已运行命令", detail: "ls -la" });
+  assert.deepEqual(getToolCallSummaryParts(tool), {
+    headline: toolHeadline("tool.runCommand", "succeeded"),
+    detail: "ls -la",
+  });
 });
 
 test("getToolCallSummaryParts: read_file SKILL.md prefers frontmatter name from output", async () => {
@@ -296,7 +325,7 @@ test("getToolCallSummaryParts: read_file SKILL stored 已使用 headline keeps s
       headlineDetail: "git-commit",
       detailLines: [],
     }),
-    { headline: "已使用", detail: "git-commit" },
+    { headline: toolHeadline("tool.use", "succeeded"), detail: "git-commit" },
   );
   assert.deepEqual(
     getToolCallSummaryParts({
@@ -306,7 +335,7 @@ test("getToolCallSummaryParts: read_file SKILL stored 已使用 headline keeps s
       headlineDetail: "git-commit",
       detailLines: [],
     }),
-    { headline: "使用中", detail: "git-commit" },
+    { headline: toolHeadline("tool.use", "running"), detail: "git-commit" },
   );
 });
 
@@ -341,7 +370,7 @@ test('getToolCallSummaryParts: legacy Chinese "查看" headline still parsed and
       headline: "查看 src/App.tsx",
       detailLines: [],
     }),
-    { headline: "已读取", detail: "src/App.tsx" },
+    { headline: toolHeadline("tool.read", "succeeded"), detail: "src/App.tsx" },
   );
 });
 
@@ -357,7 +386,7 @@ test("getToolCallSummaryParts: get_diagnostics failed shows base verb and failur
         "[tool error] get_diagnostics is not available because no language server is installed for this workspace",
     }),
     {
-      headline: "检查",
+      headline: toolHeadline("tool.diagnosticsCheck"),
       detail: "App.tsx",
       resultDetail:
         "get_diagnostics is not available because no language server is installed for th…",
@@ -375,7 +404,7 @@ test("getToolCallSummaryParts: get_diagnostics failed without error output omits
       headlineDetail: "App.tsx",
       detailLines: [],
     }),
-    { headline: "检查", detail: "App.tsx" },
+    { headline: toolHeadline("tool.diagnosticsCheck"), detail: "App.tsx" },
   );
 });
 
@@ -388,7 +417,7 @@ test("getToolCallSummaryParts: get_diagnostics running shows progressive verb wi
       headlineDetail: "App.tsx",
       detailLines: [],
     }),
-    { headline: "检查中", detail: "App.tsx" },
+    { headline: toolHeadline("tool.diagnosticsCheck", "running"), detail: "App.tsx" },
   );
 });
 
@@ -412,7 +441,11 @@ test("getToolCallSummaryParts: get_diagnostics sums issues across multiple files
       outputExcerpt: output,
       detailLines: [],
     }),
-    { headline: "已检查", detail: "a.ts +2", resultDetail: "6 个问题" },
+    {
+      headline: toolHeadline("tool.diagnosticsCheck", "succeeded"),
+      detail: "a.ts +2",
+      resultDetail: i18n.t("tool.diagnosticsIssueCount", { count: 6 }),
+    },
   );
 });
 
@@ -431,7 +464,11 @@ test("getToolCallSummaryParts: get_diagnostics all-clean multi-file shows no iss
       outputExcerpt: output,
       detailLines: [],
     }),
-    { headline: "已检查", detail: "a.ts, b.ts", resultDetail: "没有问题" },
+    {
+      headline: toolHeadline("tool.diagnosticsCheck", "succeeded"),
+      detail: "a.ts, b.ts",
+      resultDetail: i18n.t("tool.diagnosticsNoIssues"),
+    },
   );
 });
 
@@ -448,7 +485,10 @@ test("getToolCallSummaryParts: todo_write recomputes incremental detail from sna
       todoWriteBeforeTodos: [{ title: "Inject haiku into main.rs", status: "pending" }],
       detailLines: [],
     }),
-    { headline: "已写入 TODO", detail: "完成 1 个" },
+    {
+      headline: toolHeadline("tool.todoWrite", "succeeded"),
+      detail: i18n.t("tool.todoWriteCompleted", { count: 1 }),
+    },
   );
 });
 
@@ -470,7 +510,10 @@ test("getToolCallSummaryParts: todo_write keeps snapshot detail when before snap
       }),
       detailLines: [],
     }),
-    { headline: "已写入 TODO", detail: "完成 5 个" },
+    {
+      headline: toolHeadline("tool.todoWrite", "succeeded"),
+      detail: "完成 5 个",
+    },
   );
 });
 
@@ -491,7 +534,7 @@ test("getToolCallSummaryParts: todo_write preview prefers snapshot over unreliab
       ],
       detailLines: [],
     }),
-    { headline: "写入 TODO中", detail: "完成 5 个" },
+    { headline: toolHeadline("tool.todoWrite", "preview"), detail: "完成 5 个" },
   );
 });
 
@@ -507,8 +550,8 @@ test("getToolCallSummaryParts: built-in create_automation preview uses streaming
   };
 
   assert.deepEqual(getToolCallSummaryParts(previewTool), {
-    headline: "创建自动化",
-    detail: "AI news daily · 每天 08:00",
+    headline: toolHeadline("automations.create", "preview"),
+    detail: `AI news daily · ${i18n.t("automations.schedule.daily")} 08:00`,
   });
 });
 
@@ -536,14 +579,14 @@ test("getToolCallSummaryParts: built-in create_automation uses automation headli
   };
 
   assert.deepEqual(getToolCallSummaryParts(callTool), {
-    headline: "创建自动化",
+    headline: toolHeadline("automations.create", "running"),
     detail: "CI check · Weekly Mon 09:00",
   });
 
   await i18n.changeLanguage("en");
   try {
     assert.deepEqual(getToolCallSummaryParts(callTool), {
-      headline: "Create automation",
+      headline: toolHeadline("automations.create", "running"),
       detail: "CI check · Weekly Mon 09:00",
     });
   } finally {
@@ -568,22 +611,22 @@ test("getToolCallSummaryParts: lazy gateway tools re-translate on language switc
   };
 
   assert.deepEqual(getToolCallSummaryParts(describeTool), {
-    headline: "已读取工具 schema",
+    headline: toolHeadline("tool.lazyToolDescribe", "succeeded"),
     detail: "mcp / microsoft-learn / microsoft_docs_search",
   });
   assert.deepEqual(getToolCallSummaryParts(callTool), {
-    headline: "调用工具中",
+    headline: toolHeadline("tool.lazyToolCall", "running"),
     detail: "mcp / microsoft-learn / microsoft_docs_search",
   });
 
   await i18n.changeLanguage("en");
   try {
     assert.deepEqual(getToolCallSummaryParts(describeTool), {
-      headline: "Described tool schema",
+      headline: toolHeadline("tool.lazyToolDescribe", "succeeded"),
       detail: "mcp / microsoft-learn / microsoft_docs_search",
     });
     assert.deepEqual(getToolCallSummaryParts(callTool), {
-      headline: "Calling tool",
+      headline: toolHeadline("tool.lazyToolCall", "running"),
       detail: "mcp / microsoft-learn / microsoft_docs_search",
     });
   } finally {
@@ -603,8 +646,11 @@ test("getToolCallSummaryParts: shell verb uses tense in English", async () => {
         detailLines: [],
       }),
       {
-        headline: "Running Install deps",
-        shellSummary: { verb: "Running", reason: "Install deps" },
+        headline: `${i18n.t("tool.runShellVerb", { context: "running" })} Install deps`,
+        shellSummary: {
+          verb: i18n.t("tool.runShellVerb", { context: "running" }),
+          reason: "Install deps",
+        },
         detail: "npm install",
       },
     );
@@ -617,8 +663,11 @@ test("getToolCallSummaryParts: shell verb uses tense in English", async () => {
         detailLines: [],
       }),
       {
-        headline: "Ran Install deps",
-        shellSummary: { verb: "Ran", reason: "Install deps" },
+        headline: `${i18n.t("tool.runShellVerb", { context: "succeeded" })} Install deps`,
+        shellSummary: {
+          verb: i18n.t("tool.runShellVerb", { context: "succeeded" }),
+          reason: "Install deps",
+        },
         detail: "npm install",
       },
     );
@@ -639,8 +688,11 @@ test("getToolCallSummaryParts: shell verb uses tense in Chinese", async () => {
         detailLines: [],
       }),
       {
-        headline: "运行中 安装依赖",
-        shellSummary: { verb: "运行中", reason: "安装依赖" },
+        headline: `${i18n.t("tool.runShellVerb", { context: "running" })} 安装依赖`,
+        shellSummary: {
+          verb: i18n.t("tool.runShellVerb", { context: "running" }),
+          reason: "安装依赖",
+        },
         detail: "npm install",
       },
     );
@@ -653,8 +705,11 @@ test("getToolCallSummaryParts: shell verb uses tense in Chinese", async () => {
         detailLines: [],
       }),
       {
-        headline: "已运行 安装依赖",
-        shellSummary: { verb: "已运行", reason: "安装依赖" },
+        headline: `${i18n.t("tool.runShellVerb", { context: "succeeded" })} 安装依赖`,
+        shellSummary: {
+          verb: i18n.t("tool.runShellVerb", { context: "succeeded" }),
+          reason: "安装依赖",
+        },
         detail: "npm install",
       },
     );

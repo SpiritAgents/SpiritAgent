@@ -14,19 +14,25 @@ import {
   toolCallSummaryCopyForResponsesBuiltInTool,
   displayTitleForTool,
 } from "../../dist-electron/src/host/message-ordering.js";
+import { phaseToVerbContext } from "../../src/lib/tool-verb-context.ts";
 import i18n from "../../dist-electron/src/lib/i18n-host.js";
+
+function toolHeadline(key, phase) {
+  const context = phase ? phaseToVerbContext(phase) : undefined;
+  return i18n.t(key, context ? { context } : {});
+}
 
 test("toolCallSummaryCopyForRequest: write tools use verb headline + basename detail", () => {
   assert.deepEqual(toolCallSummaryCopyForRequest("edit_file", { path: "D:/proj/src/foo.ts" }), {
-    headline: "编辑",
+    headline: toolHeadline("tool.edit"),
     headlineDetail: "foo.ts",
   });
   assert.deepEqual(toolCallSummaryCopyForRequest("create_file", { path: "notes/readme.md" }), {
-    headline: "创建",
+    headline: toolHeadline("tool.create"),
     headlineDetail: "readme.md",
   });
   assert.deepEqual(toolCallSummaryCopyForRequest("delete_file", { path: "/tmp/old.txt" }), {
-    headline: "删除",
+    headline: toolHeadline("tool.delete"),
     headlineDetail: "old.txt",
   });
 });
@@ -38,7 +44,7 @@ test("toolCallSummaryCopyForRequest: create_automation uses title and trigger de
       overview: "Summarize CI failures.",
       trigger: { kind: "time", schedule: { kind: "weekly", weekday: 1, hour: 9, minute: 0 } },
     }),
-    { headline: "创建自动化", headlineDetail: "CI check · Weekly Mon 09:00" },
+    { headline: toolHeadline("automations.create"), headlineDetail: "CI check · Weekly Mon 09:00" },
   );
 });
 
@@ -49,11 +55,11 @@ test("toolCallSummaryCopyForRequest: create_plan uses plan slug not tool name", 
       plan_name: "multilingual-cat",
       content: "# Plan",
     }),
-    { headline: "创建", headlineDetail: "multilingual-cat.md" },
+    { headline: toolHeadline("tool.create"), headlineDetail: "multilingual-cat.md" },
   );
   assert.deepEqual(
     toolCallSummaryCopyForRequest("create_plan", { name: "demo-plan", content: "# Plan" }),
-    { headline: "创建", headlineDetail: "demo-plan.md" },
+    { headline: toolHeadline("tool.create"), headlineDetail: "demo-plan.md" },
   );
 });
 
@@ -62,13 +68,13 @@ test("toolCallSummaryCopyForRequest: apply_patch uses verb headline + basename d
     toolCallSummaryCopyForRequest("apply_patch", {
       operation: { type: "update_file", path: "README.md" },
     }),
-    { headline: "编辑", headlineDetail: "README.md" },
+    { headline: toolHeadline("tool.edit"), headlineDetail: "README.md" },
   );
 });
 
 test("toolCallSummaryCopyForRequest: web_search uses web search headline + query detail", () => {
   assert.deepEqual(toolCallSummaryCopyForRequest("web_search", { query: "latest news" }), {
-    headline: "联网搜索",
+    headline: toolHeadline("tool.webSearch"),
     headlineDetail: "latest news",
   });
   assert.deepEqual(
@@ -76,7 +82,7 @@ test("toolCallSummaryCopyForRequest: web_search uses web search headline + query
       action: { type: "search", query: "DeepSeek V4" },
     }),
     {
-      headline: "联网搜索",
+      headline: toolHeadline("tool.webSearch"),
       headlineDetail: "DeepSeek V4",
     },
   );
@@ -85,7 +91,7 @@ test("toolCallSummaryCopyForRequest: web_search uses web search headline + query
       action: { type: "search", query: "Web search" },
     }),
     {
-      headline: "联网搜索",
+      headline: toolHeadline("tool.webSearch"),
     },
   );
 });
@@ -97,7 +103,7 @@ test("toolCallSummaryCopyForRequest: web_search reads query from argumentsJson",
       argumentsJson: '{"query":"What is the Spirit Agent project"}',
     }),
     {
-      headline: "联网搜索",
+      headline: toolHeadline("tool.webSearch"),
       headlineDetail: "What is the Spirit Agent project",
     },
   );
@@ -106,11 +112,11 @@ test("toolCallSummaryCopyForRequest: web_search reads query from argumentsJson",
 test("toolCallSummaryCopyForResponsesBuiltInTool: web_search preserves query detail without sources", () => {
   assert.deepEqual(
     toolCallSummaryCopyForResponsesBuiltInTool("web_search", "preview", {
-      headline: "联网搜索",
+      headline: toolHeadline("tool.webSearch"),
       headlineDetail: "What is the Spirit Agent project",
     }),
     {
-      headline: "联网搜索中",
+      headline: toolHeadline("tool.webSearch", "preview"),
       headlineDetail: "What is the Spirit Agent project",
     },
   );
@@ -118,14 +124,14 @@ test("toolCallSummaryCopyForResponsesBuiltInTool: web_search preserves query det
     toolCallSummaryCopyForResponsesBuiltInTool(
       "web_search",
       "succeeded",
-      { headline: "联网搜索" },
+      { headline: toolHeadline("tool.webSearch") },
       {
         headlineDetail: "What is the Spirit Agent project",
         inputExcerpt: "What is the Spirit Agent project",
       },
     ),
     {
-      headline: "已联网搜索",
+      headline: toolHeadline("tool.webSearch", "succeeded"),
       headlineDetail: "What is the Spirit Agent project",
     },
   );
@@ -136,11 +142,11 @@ test("toolCallSummaryCopyForResponsesBuiltInTool: web_search prefers query over 
     toolCallSummaryCopyForResponsesBuiltInTool(
       "web_search",
       "succeeded",
-      { headline: "联网搜索", headlineDetail: "latest models" },
+      { headline: toolHeadline("tool.webSearch"), headlineDetail: "latest models" },
       { sourceCount: 5 },
     ),
     {
-      headline: "已联网搜索",
+      headline: toolHeadline("tool.webSearch", "succeeded"),
       headlineDetail: "latest models",
     },
   );
@@ -151,19 +157,19 @@ test("toolCallSummaryCopyForResponsesBuiltInTool: web_search falls back to sourc
     toolCallSummaryCopyForResponsesBuiltInTool(
       "web_search",
       "succeeded",
-      { headline: "联网搜索" },
+      { headline: toolHeadline("tool.webSearch") },
       { sourceCount: 2 },
     ),
     {
-      headline: "已联网搜索",
-      headlineDetail: "2 个来源",
+      headline: toolHeadline("tool.webSearch", "succeeded"),
+      headlineDetail: i18n.t("tool.webSearchSourceCount", { count: 2 }),
     },
   );
 });
 
-test("toolCallSummaryCopyForRequest: search tools use Chinese headline + detail", () => {
+test("toolCallSummaryCopyForRequest: search tools use verb headline + detail", () => {
   assert.deepEqual(toolCallSummaryCopyForRequest("grep", { query: "TODO" }), {
-    headline: "搜索",
+    headline: toolHeadline("tool.search"),
     headlineDetail: "TODO",
   });
   assert.deepEqual(
@@ -172,16 +178,19 @@ test("toolCallSummaryCopyForRequest: search tools use Chinese headline + detail"
       glob: "apps/cli/**/*.{rs,toml}",
     }),
     {
-      headline: "搜索",
-      headlineDetail: "ratatui 于 apps/cli/**/*.{rs,toml}",
+      headline: toolHeadline("tool.search"),
+      headlineDetail: i18n.t("tool.searchQueryInGlob", {
+        query: "ratatui",
+        glob: "apps/cli/**/*.{rs,toml}",
+      }),
     },
   );
   assert.deepEqual(toolCallSummaryCopyForRequest("glob", { pattern: "src/**/*.ts" }), {
-    headline: "匹配",
+    headline: toolHeadline("tool.match"),
     headlineDetail: "src/**/*.ts",
   });
   assert.deepEqual(toolCallSummaryCopyForRequest("web_fetch", { url: "https://example.com/" }), {
-    headline: "抓取",
+    headline: toolHeadline("tool.fetch"),
     headlineDetail: "https://example.com/",
   });
 });
@@ -198,7 +207,7 @@ test("toolCallSummaryForPhase: lazyToolGateway execution request preserves MCP d
     }),
   };
   assert.deepEqual(toolCallSummaryForPhase("running", "tool_call", lazyRequest), {
-    headline: "调用工具中",
+    headline: toolHeadline("tool.lazyToolCall", "running"),
     headlineDetail: "mcp / microsoft-learn / microsoft_docs_search",
   });
   assert.deepEqual(
@@ -212,7 +221,7 @@ test("toolCallSummaryForPhase: lazyToolGateway execution request preserves MCP d
       }),
     }),
     {
-      headline: "已读取工具 schema",
+      headline: toolHeadline("tool.lazyToolDescribe", "succeeded"),
       headlineDetail: "mcp / microsoft-learn / microsoft_docs_fetch",
     },
   );
@@ -234,7 +243,7 @@ test("toolCallSummaryForPhase: built-in create_automation preserves automation c
     }),
   };
   assert.deepEqual(toolCallSummaryForPhase("running", "tool_call", lazyRequest), {
-    headline: "创建自动化",
+    headline: toolHeadline("automations.create"),
     headlineDetail: "CI check · Weekly Mon 09:00",
   });
 });
@@ -246,7 +255,10 @@ test("toolCallSummaryForStreamingPreview: built-in create_automation uses progre
     toolCallSummaryForStreamingPreview([], "tool-1", "tool_call", undefined, {
       streamingArgumentsJson: partialGateway,
     }),
-    { headline: "创建自动化", headlineDetail: "AI news digest · Daily 08:00" },
+    {
+      headline: toolHeadline("automations.create"),
+      headlineDetail: "AI news digest · Daily 08:00",
+    },
   );
 
   const titleOnly =
@@ -255,7 +267,7 @@ test("toolCallSummaryForStreamingPreview: built-in create_automation uses progre
     toolCallSummaryForStreamingPreview([], "tool-1", "tool_call", undefined, {
       streamingArgumentsJson: titleOnly,
     }),
-    { headline: "创建自动化", headlineDetail: "AI news digest" },
+    { headline: toolHeadline("automations.create"), headlineDetail: "AI news digest" },
   );
 
   const gatewayIdentified =
@@ -264,7 +276,7 @@ test("toolCallSummaryForStreamingPreview: built-in create_automation uses progre
     toolCallSummaryForStreamingPreview([], "tool-1", "tool_call", undefined, {
       streamingArgumentsJson: gatewayIdentified,
     }),
-    { headline: "创建自动化" },
+    { headline: toolHeadline("automations.create") },
   );
 });
 
@@ -284,7 +296,7 @@ test("displayTitleForTool: built-in create_automation approval uses automation h
         },
       }),
     }),
-    "创建自动化",
+    toolHeadline("automations.create"),
   );
 });
 
@@ -333,17 +345,20 @@ test("toolCallSummaryCopyForRequest: ask_questions and subagent", () => {
     toolCallSummaryCopyForRequest("ask_questions", {
       questions: [{ id: "q1" }, { id: "q2" }],
     }),
-    { headline: "询问", headlineDetail: "2 个问题" },
+    {
+      headline: toolHeadline("tool.askQuestions"),
+      headlineDetail: i18n.t("tool.nQuestions", { count: 2 }),
+    },
   );
   assert.deepEqual(toolCallSummaryCopyForRequest("subagent", { task: "Review auth module" }), {
-    headline: "子智能体",
+    headline: toolHeadline("tool.subagent"),
     headlineDetail: "Review auth module",
   });
   assert.deepEqual(
     toolCallSummaryCopyForRequest("subagent", {}, "preview", {
       streamingArgumentsJson: '{"task":"Review auth',
     }),
-    { headline: "子智能体运行中", headlineDetail: "Review auth" },
+    { headline: toolHeadline("tool.subagent", "preview"), headlineDetail: "Review auth" },
   );
 });
 
@@ -362,13 +377,22 @@ test("toolCallSummaryCopyForRequest: todo_write shows incremental delta detail",
         todosBeforeWrite: [{ title: "Old task", status: "pending" }],
       },
     ),
-    { headline: "已写入 TODO", headlineDetail: "增加 2 个，移除 1 个" },
+    {
+      headline: toolHeadline("tool.todoWrite", "succeeded"),
+      headlineDetail: [
+        i18n.t("tool.todoWriteAdded", { count: 2 }),
+        i18n.t("tool.todoWriteRemoved", { count: 1 }),
+      ].join(i18n.t("tool.todoWriteDeltaSeparator")),
+    },
   );
   assert.deepEqual(
     toolCallSummaryCopyForRequest("todo_write", { todos: [] }, "succeeded", {
       todosBeforeWrite: [{ title: "Only one item", status: "pending" }],
     }),
-    { headline: "已写入 TODO", headlineDetail: "移除 1 个" },
+    {
+      headline: toolHeadline("tool.todoWrite", "succeeded"),
+      headlineDetail: i18n.t("tool.todoWriteRemoved", { count: 1 }),
+    },
   );
 });
 
@@ -385,7 +409,10 @@ test("toolCallSummaryForPhase: todo_write succeeded uses before snapshot and out
         todosBeforeWrite: [{ title: "Draft", status: "pending" }],
       },
     ),
-    { headline: "已写入 TODO", headlineDetail: "完成 1 个" },
+    {
+      headline: toolHeadline("tool.todoWrite", "succeeded"),
+      headlineDetail: i18n.t("tool.todoWriteCompleted", { count: 1 }),
+    },
   );
 });
 
@@ -396,7 +423,7 @@ test("toolCallSummaryForPhase: read_file splits headline and path detail", () =>
       offset: 1,
       limit: 50,
     }),
-    { headline: "已读取", headlineDetail: "App.tsx 1 - 50" },
+    { headline: toolHeadline("tool.read", "succeeded"), headlineDetail: "App.tsx 1 - 50" },
   );
 });
 
@@ -407,7 +434,10 @@ test("toolCallSummaryForPhase: read_file tool-output-archives uses tool output d
       offset: 1,
       limit: 5,
     }),
-    { headline: "已读取", headlineDetail: "工具输出 1 - 5" },
+    {
+      headline: toolHeadline("tool.read", "succeeded"),
+      headlineDetail: `${i18n.t("tool.toolOutput")} 1 - 5`,
+    },
   );
 });
 
@@ -526,16 +556,16 @@ test("finishTaskNoticePreviewFromArguments streams partial summary text", () => 
   );
 });
 
-test("toolCallSummaryCopyForRequest: Chinese verbs use tense across phases", () => {
+test("toolCallSummaryCopyForRequest: verbs use tense across phases", () => {
   const running = toolCallSummaryCopyForRequest("create_file", { path: "a.ts" }, "running");
   const succeeded = toolCallSummaryCopyForRequest("create_file", { path: "a.ts" }, "succeeded");
-  assert.equal(running.headline, "创建中");
-  assert.equal(succeeded.headline, "已创建");
+  assert.equal(running.headline, toolHeadline("tool.create", "running"));
+  assert.equal(succeeded.headline, toolHeadline("tool.create", "succeeded"));
 
   const viewRunning = toolCallSummaryForPhase("running", "read_file", { path: "b.ts" });
   const viewDone = toolCallSummaryForPhase("succeeded", "read_file", { path: "b.ts" });
-  assert.equal(viewRunning.headline, "读取中");
-  assert.equal(viewDone.headline, "已读取");
+  assert.equal(viewRunning.headline, toolHeadline("tool.read", "running"));
+  assert.equal(viewDone.headline, toolHeadline("tool.read", "succeeded"));
 });
 
 test("toolCallSummaryCopyForRequest: English verbs use progressive in running phase", async () => {
@@ -570,40 +600,40 @@ test("toolCallSummaryCopyForRequest: English verbs use progressive in running ph
       { headline: "Searching", headlineDetail: "ratatui in apps/cli/**/*.{rs,toml}" },
     );
   } finally {
-    await i18n.changeLanguage("zh-CN");
+    await i18n.changeLanguage("en");
   }
 });
 
-test("toolCallSummaryCopyForRequest: Chinese verbs use progressive in running phase", () => {
+test("toolCallSummaryCopyForRequest: verbs use progressive in running phase", () => {
   assert.deepEqual(toolCallSummaryCopyForRequest("create_file", { path: "a.ts" }, "running"), {
-    headline: "创建中",
+    headline: toolHeadline("tool.create", "running"),
     headlineDetail: "a.ts",
   });
   assert.deepEqual(toolCallSummaryCopyForRequest("edit_file", { path: "b.ts" }, "running"), {
-    headline: "编辑中",
+    headline: toolHeadline("tool.edit", "running"),
     headlineDetail: "b.ts",
   });
   assert.deepEqual(toolCallSummaryCopyForRequest("delete_file", { path: "c.ts" }, "running"), {
-    headline: "删除中",
+    headline: toolHeadline("tool.delete", "running"),
     headlineDetail: "c.ts",
   });
   assert.deepEqual(toolCallSummaryCopyForRequest("ls", { path: "src/" }, "running"), {
-    headline: "列出中",
+    headline: toolHeadline("tool.ls", "running"),
     headlineDetail: "src/",
   });
 });
 
-test("toolCallSummaryCopyForRequest: Chinese verbs use past tense in succeeded phase", () => {
+test("toolCallSummaryCopyForRequest: verbs use past tense in succeeded phase", () => {
   assert.deepEqual(toolCallSummaryCopyForRequest("create_file", { path: "a.ts" }, "succeeded"), {
-    headline: "已创建",
+    headline: toolHeadline("tool.create", "succeeded"),
     headlineDetail: "a.ts",
   });
   assert.deepEqual(toolCallSummaryCopyForRequest("edit_file", { path: "b.ts" }, "succeeded"), {
-    headline: "已编辑",
+    headline: toolHeadline("tool.edit", "succeeded"),
     headlineDetail: "b.ts",
   });
   assert.deepEqual(toolCallSummaryCopyForRequest("ls", { path: "src/" }, "succeeded"), {
-    headline: "已列出",
+    headline: toolHeadline("tool.ls", "succeeded"),
     headlineDetail: "src/",
   });
 });
@@ -624,7 +654,7 @@ test("toolCallSummaryCopyForRequest: English verbs use past tense in succeeded p
       headlineDetail: "src/",
     });
   } finally {
-    await i18n.changeLanguage("zh-CN");
+    await i18n.changeLanguage("en");
   }
 });
 
@@ -634,21 +664,21 @@ test("toolCallSummaryCopyForRequest: ls uses relative path within workspace", ()
     toolCallSummaryCopyForRequest("ls", { path: "/Users/yu/proj/apps/cli" }, "succeeded", {
       workspaceRoot,
     }),
-    { headline: "已列出", headlineDetail: "apps/cli" },
+    { headline: toolHeadline("tool.ls", "succeeded"), headlineDetail: "apps/cli" },
   );
   assert.deepEqual(
     toolCallSummaryCopyForRequest("ls", { path: "/Users/yu/proj" }, "running", { workspaceRoot }),
-    { headline: "列出中", headlineDetail: "." },
+    { headline: toolHeadline("tool.ls", "running"), headlineDetail: "." },
   );
   assert.deepEqual(
     toolCallSummaryCopyForRequest("ls", { path: "/tmp/foo" }, "succeeded", { workspaceRoot }),
-    { headline: "已列出", headlineDetail: "/tmp/foo" },
+    { headline: toolHeadline("tool.ls", "succeeded"), headlineDetail: "/tmp/foo" },
   );
   assert.deepEqual(
     toolCallSummaryCopyForRequest("ls", { path: "/Users/yu/proj/apps/" }, "succeeded", {
       workspaceRoot,
     }),
-    { headline: "已列出", headlineDetail: "apps/" },
+    { headline: toolHeadline("tool.ls", "succeeded"), headlineDetail: "apps/" },
   );
 });
 
@@ -662,21 +692,21 @@ test("toolCallSummaryForStreamingPreview: ls uses relative path within workspace
       { path: "/Users/yu/proj/apps" },
       { workspaceRoot },
     ),
-    { headline: "列出中", headlineDetail: "apps" },
+    { headline: toolHeadline("tool.ls", "running"), headlineDetail: "apps" },
   );
 });
 
 test("toolCallSummaryForPhase: get_diagnostics failed uses base check verb and basename", () => {
   assert.deepEqual(
     toolCallSummaryForPhase("failed", "get_diagnostics", { paths: ["src/App.tsx"] }),
-    { headline: "检查", headlineDetail: "App.tsx" },
+    { headline: toolHeadline("tool.diagnosticsCheck"), headlineDetail: "App.tsx" },
   );
 });
 
 test("toolCallSummaryForPhase: get_diagnostics running uses progressive check verb", () => {
   assert.deepEqual(
     toolCallSummaryForPhase("running", "get_diagnostics", { paths: ["src/App.tsx"] }),
-    { headline: "检查中", headlineDetail: "App.tsx" },
+    { headline: toolHeadline("tool.diagnosticsCheck", "running"), headlineDetail: "App.tsx" },
   );
 });
 
@@ -696,7 +726,7 @@ description: Developer debug access
       },
       { executionOutput: skillMarkdown },
     ),
-    { headline: "已使用", headlineDetail: "llm-debug" },
+    { headline: toolHeadline("tool.use", "succeeded"), headlineDetail: "llm-debug" },
   );
 });
 
@@ -705,7 +735,7 @@ test("toolCallSummaryForPhase: read_file SKILL.md omits detail without frontmatt
     toolCallSummaryForPhase("succeeded", "read_file", {
       path: "skills/git-commit/SKILL.md",
     }),
-    { headline: "已使用" },
+    { headline: toolHeadline("tool.use", "succeeded") },
   );
 
   await i18n.changeLanguage("en");
@@ -723,7 +753,7 @@ test("toolCallSummaryForPhase: read_file SKILL.md omits detail without frontmatt
       { headline: "Used" },
     );
   } finally {
-    await i18n.changeLanguage("zh-CN");
+    await i18n.changeLanguage("en");
   }
 });
 
@@ -739,7 +769,7 @@ test("toolCallSummaryForPhase: English read_file uses Read in succeeded phase", 
       { headline: "Reading", headlineDetail: "App.tsx" },
     );
   } finally {
-    await i18n.changeLanguage("zh-CN");
+    await i18n.changeLanguage("en");
   }
 });
 

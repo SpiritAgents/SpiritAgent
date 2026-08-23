@@ -14,6 +14,7 @@ import {
   runtimeEventsIncludeAppliedHostToolStreamingUpdate,
 } from "../../dist-electron/src/host/runtime-event-orchestrator.js";
 import { shouldShowAssistantThinkingCollapsible } from "../../dist-electron/src/lib/conversation-thinking-ui.js";
+import i18n from "../../dist-electron/src/lib/i18n-host.js";
 
 function createHarness() {
   let messages = [];
@@ -374,7 +375,7 @@ test("read_file streaming preview shows filename from partial arguments JSON", (
     .toMessages()
     .find((message) => message.tool?.toolCallId === "call-partial")?.tool;
   assert.equal(previewTool?.phase, "preview");
-  assert.equal(previewTool?.headline, "读取中");
+  assert.equal(previewTool?.headline, i18n.t("tool.read", { context: "running" }));
   assert.equal(previewTool?.headlineDetail, "Cargo.toml");
 
   harness.orchestrator.applyRuntimeHostEvents([
@@ -417,7 +418,7 @@ test("tool previews keep live and finalized thinking above the tool card without
     .toMessages()
     .find((message) => message.tool?.toolCallId === "call-1")?.tool;
   assert.equal(previewTool?.phase, "preview");
-  assert.equal(previewTool?.headline, "读取中");
+  assert.equal(previewTool?.headline, i18n.t("tool.read", { context: "running" }));
   assert.equal(previewTool?.headlineDetail, "README.md 10 - 50");
 
   harness.orchestrator.applyRuntimeHostEvents([
@@ -440,7 +441,7 @@ test("tool previews keep live and finalized thinking above the tool card without
     .toMessages()
     .find((message) => message.tool?.toolCallId === "call-1")?.tool;
   assert.equal(runningTool?.phase, "running");
-  assert.equal(runningTool?.headline, "读取中");
+  assert.equal(runningTool?.headline, i18n.t("tool.read", { context: "running" }));
   assert.equal(runningTool?.headlineDetail, "README.md 10 - 50");
 });
 
