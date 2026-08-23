@@ -202,6 +202,7 @@
     "translucencyUnsupported": "L'hôte actuel ne supporte pas cette option.",
     "clickablePointerCursor": "Curseur main au survol",
     "clickablePointerCursorDescription": "Afficher un curseur main sur les boutons, liens et autres contrôles cliquables.",
+    "langSystem": "Système",
     "langZhCN": "简体中文",
     "langEn": "English",
     "langZhTW": "繁體中文",

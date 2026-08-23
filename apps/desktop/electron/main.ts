@@ -188,6 +188,7 @@ import { listSystemFonts } from "./system-fonts.js";
 import { syncWindowsImmersiveDarkMode } from "./win-dwm.js";
 import { configureElectronProductDisplayName } from "./product-display-name.js";
 import i18nHost from "../src/lib/i18n-host.js";
+import { resolveUiLocalePreference } from "../src/lib/ui-locale.js";
 
 /** Must match `titleBarOverlay.height` and the custom title bar CSS height (px) */
 const TITLE_BAR_OVERLAY_HEIGHT = 32;
@@ -1701,9 +1702,16 @@ if (gotSpiritSingleInstanceLock) {
     });
     try {
       const config = await loadConfig();
-      if (typeof config.uiLocale === "string" && config.uiLocale.trim()) {
-        await i18nHost.changeLanguage(config.uiLocale.trim());
-      }
+      const preference =
+        typeof config.uiLocale === "string" && config.uiLocale.trim()
+          ? config.uiLocale.trim()
+          : undefined;
+      await i18nHost.changeLanguage(
+        resolveUiLocalePreference(preference, [
+          ...app.getPreferredSystemLanguages(),
+          app.getLocale(),
+        ]),
+      );
     } catch {
       // ignore locale bootstrap errors
     }

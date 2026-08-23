@@ -202,6 +202,7 @@
     "translucencyUnsupported": "Der aktuelle Host unterstützt diese Option nicht.",
     "clickablePointerCursor": "Handcursor bei Hover",
     "clickablePointerCursorDescription": "Zeigt einen Handcursor über Schaltflächen, Links und anderen klickbaren Steuerelementen an.",
+    "langSystem": "System",
     "langZhCN": "简体中文",
     "langEn": "English",
     "langZhTW": "繁體中文",

@@ -21,7 +21,12 @@ import {
   type ActionPaletteItem,
   type ActionPaletteView,
 } from "@/lib/action-palette";
-import { changeLanguage, getStoredLanguage, LOCALE_LABEL_KEYS, isValidLanguage } from "@/lib/i18n";
+import {
+  changeLanguage,
+  getStoredLanguagePreference,
+  isLanguagePreference,
+  LOCALE_LABEL_KEYS,
+} from "@/lib/i18n";
 import { DESKTOP_COMMAND_PALETTE_ITEM_CLASS } from "@/lib/desktop-chrome";
 import { RADIX_OVERLAY_CLOSE_MS } from "@/lib/overlay-motion";
 import { cn } from "@/lib/utils";
@@ -47,15 +52,16 @@ export function ActionPickerDialog({
   isItemDisabled,
   shouldIncludeItem,
 }: ActionPickerDialogProps) {
-  const { t, i18n } = useTranslation();
+  const { t } = useTranslation();
   const { theme, setTheme } = useTheme();
   const [query, setQuery] = useState("");
   const [view, setView] = useState<ActionPaletteView>("root");
   const [commandValue, setCommandValue] = useState("");
-  const currentLocale = isValidLanguage(i18n.language) ? i18n.language : getStoredLanguage();
+  const [localePreference, setLocalePreference] = useState(getStoredLanguagePreference);
 
   useEffect(() => {
     if (open) {
+      setLocalePreference(getStoredLanguagePreference());
       return;
     }
     const timeoutId = window.setTimeout(() => {
@@ -123,6 +129,7 @@ export function ActionPickerDialog({
       return;
     }
     if (isLocaleOptionAction(item)) {
+      setLocalePreference(item.value);
       void changeLanguage(item.value);
       void onSavePatch({ uiLocale: item.value });
       return;
@@ -137,15 +144,15 @@ export function ActionPickerDialog({
         ? "settings.themeLight"
         : "settings.themeDark",
   );
-  const localeCurrentLabel = isValidLanguage(currentLocale)
-    ? t(LOCALE_LABEL_KEYS[currentLocale])
-    : currentLocale;
+  const localeCurrentLabel = isLanguagePreference(localePreference)
+    ? t(LOCALE_LABEL_KEYS[localePreference])
+    : localePreference;
 
   const renderItem = (item: ActionPaletteItem) => {
     const disabled = isItemDisabled?.(item) ?? false;
     const selected =
       (isThemeOptionAction(item) && item.value === theme) ||
-      (isLocaleOptionAction(item) && item.value === currentLocale);
+      (isLocaleOptionAction(item) && item.value === localePreference);
     const showCheck = isThemeOptionAction(item) || isLocaleOptionAction(item);
 
     return (

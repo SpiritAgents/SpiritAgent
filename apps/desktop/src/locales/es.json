@@ -202,6 +202,7 @@
     "translucencyUnsupported": "El host actual no admite esta opción.",
     "clickablePointerCursor": "Cursor de mano al pasar",
     "clickablePointerCursorDescription": "Muestra un cursor de mano sobre botones, enlaces y otros controles cliqueables.",
+    "langSystem": "Sistema",
     "langZhCN": "简体中文",
     "langEn": "English",
     "langZhTW": "繁體中文",

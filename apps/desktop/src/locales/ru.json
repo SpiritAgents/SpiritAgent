@@ -202,6 +202,7 @@
     "translucencyUnsupported": "Текущий хост не поддерживает эту опцию.",
     "clickablePointerCursor": "Курсор-рука при наведении",
     "clickablePointerCursorDescription": "Показывать курсор-руку над кнопками, ссылками и другими кликабельными элементами.",
+    "langSystem": "Системный",
     "langZhCN": "简体中文",
     "langEn": "English",
     "langZhTW": "繁體中文",

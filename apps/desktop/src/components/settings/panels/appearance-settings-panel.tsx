@@ -12,7 +12,13 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
-import { changeLanguage, LOCALE_LABEL_KEYS, VALID_LANGUAGES } from "@/lib/i18n";
+import {
+  changeLanguage,
+  isLanguagePreference,
+  LANGUAGE_PREFERENCE_OPTIONS,
+  LOCALE_LABEL_KEYS,
+  SYSTEM_LANGUAGE,
+} from "@/lib/i18n";
 import { isNativeTranslucencySupported } from "@/lib/desktop-shell";
 import type { ThemePreference } from "@/lib/theme";
 
@@ -71,7 +77,7 @@ export function AppearanceSettingsPanel({
         htmlFor="settings-locale"
       >
         <Select
-          value={settings.uiLocale}
+          value={isLanguagePreference(settings.uiLocale) ? settings.uiLocale : SYSTEM_LANGUAGE}
           onValueChange={(value) => {
             void changeLanguage(value);
             void onSavePatch({ uiLocale: value });
@@ -81,7 +87,7 @@ export function AppearanceSettingsPanel({
             <SelectValue />
           </SelectTrigger>
           <SelectContent>
-            {VALID_LANGUAGES.map((lang) => (
+            {LANGUAGE_PREFERENCE_OPTIONS.map((lang) => (
               <SelectItem key={lang} value={lang}>
                 {t(LOCALE_LABEL_KEYS[lang])}
               </SelectItem>

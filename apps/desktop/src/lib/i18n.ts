@@ -11,103 +11,70 @@ import ptBR from "../locales/pt-BR.json";
 import ru from "../locales/ru.json";
 import zhCN from "../locales/zh-CN.json";
 import zhTW from "../locales/zh-TW.json";
+import {
+  FALLBACK_LANGUAGE,
+  isLanguagePreference,
+  resolveUiLocalePreference,
+  SYSTEM_LANGUAGE,
+  type LanguagePreference,
+  type ValidLanguage,
+} from "./ui-locale";
 
-export const DEFAULT_LANGUAGE = "zh-CN";
-export const VALID_LANGUAGES = [
-  "zh-CN",
-  "en",
-  "zh-TW",
-  "ja",
-  "ko",
-  "de",
-  "fr",
-  "es",
-  "pt-BR",
-  "ru",
-] as const;
-export type ValidLanguage = (typeof VALID_LANGUAGES)[number];
-export const LOCALE_LABEL_KEYS: Record<ValidLanguage, string> = {
-  "zh-CN": "settings.langZhCN",
-  en: "settings.langEn",
-  "zh-TW": "settings.langZhTW",
-  ja: "settings.langJa",
-  ko: "settings.langKo",
-  de: "settings.langDe",
-  fr: "settings.langFr",
-  es: "settings.langEs",
-  "pt-BR": "settings.langPtBR",
-  ru: "settings.langRu",
-};
+export {
+  FALLBACK_LANGUAGE,
+  LANGUAGE_PREFERENCE_OPTIONS,
+  LOCALE_LABEL_KEYS,
+  SYSTEM_LANGUAGE,
+  VALID_LANGUAGES,
+  detectSystemLanguage,
+  isLanguagePreference,
+  isValidLanguage,
+  resolveUiLocalePreference,
+} from "./ui-locale";
+export type { LanguagePreference, ValidLanguage } from "./ui-locale";
+
 export const LANGUAGE_STORAGE_KEY = "spirit-agent-desktop-language" as const;
 
-export function isValidLanguage(v: string): v is ValidLanguage {
-  return VALID_LANGUAGES.includes(v as ValidLanguage);
-}
-
-export function detectSystemLanguage(): string {
-  if (typeof navigator === "undefined") {
-    return DEFAULT_LANGUAGE;
-  }
-  const lang = navigator.language;
-  if (isValidLanguage(lang)) {
-    return lang;
-  }
-  if (lang.startsWith("zh-TW-")) {
-    return "zh-TW";
-  }
-  if (lang.startsWith("zh")) {
-    return "zh-CN";
-  }
-  if (lang.startsWith("ja-")) {
-    return "ja";
-  }
-  if (lang.startsWith("ko-")) {
-    return "ko";
-  }
-  if (lang.startsWith("de-")) {
-    return "de";
-  }
-  if (lang.startsWith("fr-")) {
-    return "fr";
-  }
-  if (lang.startsWith("es-")) {
-    return "es";
-  }
-  if (lang.startsWith("pt-BR-")) {
-    return "pt-BR";
-  }
-  if (lang.startsWith("ru-")) {
-    return "ru";
-  }
-  return DEFAULT_LANGUAGE;
-}
-
-export function getStoredLanguage(): string {
+export function getStoredLanguagePreference(): LanguagePreference {
   if (typeof localStorage === "undefined") {
-    return detectSystemLanguage();
+    return SYSTEM_LANGUAGE;
   }
   const raw = localStorage.getItem(LANGUAGE_STORAGE_KEY);
-  if (raw && isValidLanguage(raw)) {
+  if (raw && isLanguagePreference(raw)) {
     return raw;
   }
-  return detectSystemLanguage();
+  return SYSTEM_LANGUAGE;
+}
+
+export function getStoredLanguage(): ValidLanguage {
+  return resolveUiLocalePreference(getStoredLanguagePreference());
 }
 
 export function setStoredLanguage(lang: string): void {
   localStorage.setItem(LANGUAGE_STORAGE_KEY, lang);
 }
 
-export async function changeLanguage(lang: string): Promise<void> {
-  if (!isValidLanguage(lang)) {
-    return;
-  }
-  setStoredLanguage(lang);
-  await i18n.changeLanguage(lang);
+function syncHostLanguage(lang: ValidLanguage): void {
   if (typeof window !== "undefined" && window.spiritDesktop) {
     window.spiritDesktop.syncLanguage?.(lang).catch(() => {
       // ignore IPC errors
     });
   }
+}
+
+async function applyResolvedLanguage(preference: LanguagePreference): Promise<ValidLanguage> {
+  const resolved = resolveUiLocalePreference(preference);
+  await i18n.changeLanguage(resolved);
+  syncHostLanguage(resolved);
+  return resolved;
+}
+
+export async function changeLanguage(lang: string): Promise<void> {
+  if (!isLanguagePreference(lang)) {
+    return;
+  }
+  setStoredLanguage(lang);
+  await applyResolvedLanguage(lang);
 }
 
 i18n.use(initReactI18next).init({
@@ -124,10 +91,18 @@ i18n.use(initReactI18next).init({
     ru: { translation: ru },
   },
   lng: getStoredLanguage(),
-  fallbackLng: DEFAULT_LANGUAGE,
+  fallbackLng: FALLBACK_LANGUAGE,
   interpolation: {
     escapeValue: false,
   },
 });
+
+if (typeof window !== "undefined") {
+  window.addEventListener("languagechange", () => {
+    if (getStoredLanguagePreference() === SYSTEM_LANGUAGE) {
+      void applyResolvedLanguage(SYSTEM_LANGUAGE);
+    }
+  });
+}
 
 export default i18n;

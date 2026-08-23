@@ -202,6 +202,7 @@
     "translucencyUnsupported": "現在のホストはこのオプションをサポートしていません。",
     "clickablePointerCursor": "ホバー時に手のカーソル",
     "clickablePointerCursorDescription": "ボタン、リンク、その他のクリック可能なコントロール上で手のカーソルを表示します。",
+    "langSystem": "システム",
     "langZhCN": "简体中文",
     "langEn": "English",
     "langZhTW": "繁體中文",

@@ -6,7 +6,7 @@ import {
   resolvePendingQuestionsSessionPath,
   resolvePendingQuestionsSnapshot,
 } from "@/lib/pane-pending-turn-routing";
-import i18n, { getStoredLanguage } from "@/lib/i18n";
+import i18n, { getStoredLanguagePreference } from "@/lib/i18n";
 
 import type { SettingsFormState } from "@/components/settings/types";
 import { useHostApi } from "@/hooks/useHostApi";
@@ -420,7 +420,7 @@ export function useDesktopRuntime() {
     videoGenerationModel: undefined,
     lightweightChatModel: undefined,
     apiBase: "",
-    uiLocale: getStoredLanguage(),
+    uiLocale: getStoredLanguagePreference(),
     apiKey: "",
     translucency: true,
     systemNotifications: true,
@@ -820,7 +820,7 @@ export function useDesktopRuntime() {
           videoGenerationModel: effectiveNext.config.videoGenerationModel,
           lightweightChatModel: effectiveNext.config.lightweightChatModel,
           apiBase: activeModelProfile?.apiBase ?? current.apiBase,
-          uiLocale: next.config.uiLocale ?? getStoredLanguage(),
+          uiLocale: next.config.uiLocale ?? getStoredLanguagePreference(),
           apiKey: current.apiKey,
           translucency,
           systemNotifications: next.config.systemNotifications !== false,

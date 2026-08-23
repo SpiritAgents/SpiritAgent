@@ -31,6 +31,7 @@
     "src/lib/automation-schedule.ts",
     "src/lib/tool-verb-context.ts",
     "src/lib/i18n-host.ts",
+    "src/lib/ui-locale.ts",
     "src/lib/spirit-notification-protocol.ts",
     "src/lib/windows-jump-list-build.ts",
     "electron/sync-windows-jump-list.ts",

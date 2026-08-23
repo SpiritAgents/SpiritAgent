@@ -1,5 +1,9 @@
 import en from "../locales/en.json";
-import { LOCALE_LABEL_KEYS, VALID_LANGUAGES, type ValidLanguage } from "@/lib/i18n";
+import {
+  LANGUAGE_PREFERENCE_OPTIONS,
+  LOCALE_LABEL_KEYS,
+  type LanguagePreference,
+} from "@/lib/ui-locale";
 import { STATIC_SLASH_COMMANDS, type SkillSlashSuggestion } from "@/lib/skill-slash";
 import type { ThemePreference } from "@/lib/theme";
 
@@ -56,9 +60,9 @@ export type ThemeOptionActionPaletteItem = {
 };
 
 export type LocaleOptionActionPaletteItem = {
-  id: `action:locale:${ValidLanguage}`;
+  id: `action:locale:${LanguagePreference}`;
   kind: "locale-option";
-  value: ValidLanguage;
+  value: LanguagePreference;
   labelKey: string;
 };
 
@@ -118,15 +122,18 @@ const THEME_OPTION_ITEMS: ThemeOptionActionPaletteItem[] = THEME_OPTION_DEFS.map
   labelKey: opt.labelKey,
 }));
 
-const LOCALE_OPTION_ITEMS: LocaleOptionActionPaletteItem[] = VALID_LANGUAGES.map((lang) => ({
-  id: `action:locale:${lang}`,
-  kind: "locale-option",
-  value: lang,
-  labelKey: LOCALE_LABEL_KEYS[lang],
-}));
+const LOCALE_OPTION_ITEMS: LocaleOptionActionPaletteItem[] = LANGUAGE_PREFERENCE_OPTIONS.map(
+  (lang) => ({
+    id: `action:locale:${lang}`,
+    kind: "locale-option",
+    value: lang,
+    labelKey: LOCALE_LABEL_KEYS[lang],
+  }),
+);
 
 /** English search aliases for endonym labels in the command palette. */
-const LOCALE_SEARCH_ALIASES: Record<ValidLanguage, string> = {
+const LOCALE_SEARCH_ALIASES: Record<LanguagePreference, string> = {
+  system: "System OS default",
   "zh-CN": "Simplified Chinese Chinese",
   en: "English",
   "zh-TW": "Traditional Chinese Chinese",

@@ -12,7 +12,13 @@ import {
 import { Switch } from "@/components/ui/switch";
 import { isNativeTranslucencySupported } from "@/lib/desktop-shell";
 import { DESKTOP_SETTINGS_LABEL_CLASS } from "@/lib/desktop-typography";
-import { changeLanguage, LOCALE_LABEL_KEYS, VALID_LANGUAGES } from "@/lib/i18n";
+import {
+  changeLanguage,
+  isLanguagePreference,
+  LANGUAGE_PREFERENCE_OPTIONS,
+  LOCALE_LABEL_KEYS,
+  SYSTEM_LANGUAGE,
+} from "@/lib/i18n";
 import type { ThemePreference } from "@/lib/theme";
 
 type OnboardingAppearanceControlsProps = {
@@ -62,7 +68,7 @@ export function OnboardingAppearanceControls({
           {t("settings.uiLocale")}
         </label>
         <Select
-          value={settings.uiLocale}
+          value={isLanguagePreference(settings.uiLocale) ? settings.uiLocale : SYSTEM_LANGUAGE}
           onValueChange={(value) => {
             void changeLanguage(value);
             void onSavePatch({ uiLocale: value });
@@ -72,7 +78,7 @@ export function OnboardingAppearanceControls({
             <SelectValue />
           </SelectTrigger>
           <SelectContent>
-            {VALID_LANGUAGES.map((lang) => (
+            {LANGUAGE_PREFERENCE_OPTIONS.map((lang) => (
               <SelectItem key={lang} value={lang}>
                 {t(LOCALE_LABEL_KEYS[lang])}
               </SelectItem>

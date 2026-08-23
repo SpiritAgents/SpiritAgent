@@ -10,6 +10,7 @@ import ptBR from "../locales/pt-BR.json" with { type: "json" };
 import ru from "../locales/ru.json" with { type: "json" };
 import zhCN from "../locales/zh-CN.json" with { type: "json" };
 import zhTW from "../locales/zh-TW.json" with { type: "json" };
+import { detectSystemLanguage, FALLBACK_LANGUAGE } from "./ui-locale.js";
 
 const resources = {
   "zh-CN": { translation: zhCN },
@@ -28,8 +29,8 @@ const instance = i18n.createInstance();
 
 instance.init({
   resources,
-  lng: "zh-CN",
-  fallbackLng: "zh-CN",
+  lng: detectSystemLanguage(),
+  fallbackLng: FALLBACK_LANGUAGE,
   interpolation: {
     escapeValue: false,
   },

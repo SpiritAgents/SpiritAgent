@@ -202,6 +202,7 @@
     "translucencyUnsupported": "当前宿主不支持此选项。",
     "clickablePointerCursor": "悬停显示手型",
     "clickablePointerCursorDescription": "开启后，悬停在按钮、链接等可点击元素上时显示手型光标。",
+    "langSystem": "跟随系统",
     "langZhCN": "简体中文",
     "langEn": "English",
     "langZhTW": "繁體中文",
