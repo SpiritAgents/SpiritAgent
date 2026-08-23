@@ -1,9 +1,9 @@
 import { useTranslation } from "react-i18next";
 
 import { FontSelect } from "@/components/font-select";
-import { themeSelectOptions } from "@/components/settings/constants";
 import { SettingsRow } from "@/components/settings/settings-row";
 import type { SettingsViewProps } from "@/components/settings/types";
+import { ThemePreviewPicker } from "@/components/theme-preview-picker";
 import {
   Select,
   SelectContent,
@@ -42,23 +42,14 @@ export function AppearanceSettingsPanel({
   const { t } = useTranslation();
   return (
     <div className="divide-y divide-border/35 rounded-lg border border-border/40 bg-background/80 px-4 sm:px-5">
-      <SettingsRow
-        label={t("settings.theme")}
-        description={t("settings.themeDescription")}
-        htmlFor="settings-theme-select"
-      >
-        <Select value={theme} onValueChange={(v) => onThemeChange(v as ThemePreference)}>
-          <SelectTrigger id="settings-theme-select" className={appearanceSelectTriggerClassName}>
-            <SelectValue placeholder={t("settings.selectTheme")} />
-          </SelectTrigger>
-          <SelectContent>
-            {themeSelectOptions.map((opt) => (
-              <SelectItem key={opt.value} value={opt.value}>
-                {t(opt.labelKey)}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
+      <SettingsRow label={t("settings.theme")} description={t("settings.themeDescription")}>
+        <ThemePreviewPicker
+          value={theme}
+          onValueChange={onThemeChange}
+          size="compact"
+          ariaLabel={t("settings.theme")}
+          className="shrink-0 justify-end"
+        />
       </SettingsRow>
 
       <SettingsRow
