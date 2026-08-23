@@ -217,8 +217,6 @@ export const ANTHROPIC_REASONING_EFFORT_OPTIONS: ReadonlyArray<
   { value: "max", label: "Max" },
 ];
 
-const DEEPSEEK_V4_REASONING_MODEL_IDS = new Set(["deepseek-v4-pro", "deepseek-v4-flash"]);
-
 const ALL_REASONING_EFFORT_OPTIONS = dedupeReasoningEffortOptions([
   ...OPENAI_COMPATIBLE_REASONING_EFFORT_OPTIONS,
   ...GPT56_REASONING_EFFORT_OPTIONS,
@@ -495,7 +493,7 @@ export function isDeepSeekV4ReasoningEffortModel(context?: ModelReasoningEffortC
   if (!isDeepSeekRouteContext(context)) {
     return false;
   }
-  return DEEPSEEK_V4_REASONING_MODEL_IDS.has(normalizeDeepSeekModelId(context?.model ?? ""));
+  return isDeepSeekV4ModelId(context?.model ?? "");
 }
 
 export function isMoonshotReasoningEffortModel(context?: ModelReasoningEffortContext): boolean {
@@ -586,6 +584,11 @@ function normalizeDeepSeekModelId(model: string): string {
   const normalized = normalizeModelId(model);
   const slashIndex = normalized.lastIndexOf("/");
   return slashIndex >= 0 ? normalized.slice(slashIndex + 1) : normalized;
+}
+
+function isDeepSeekV4ModelId(model: string): boolean {
+  // Direct + Gateway `deepseek/deepseek-v4-*` (pro, flash, flash-vision-exp, …).
+  return normalizeDeepSeekModelId(model).startsWith("deepseek-v4-");
 }
 
 function isDeepSeekRouteContext(context?: ModelReasoningEffortContext): boolean {
