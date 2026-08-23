@@ -933,24 +933,24 @@ test("edit_file tool-execution-finished preserves lspWriteDiagnostics on tool sn
         toolName: "edit_file",
         request: {
           name: "edit_file",
-          path: "packages/agent-core/src/a.ts",
-          old_text: "const x = 1",
-          new_text: 'const x = "1"',
+          path: "packages/agent-core/src/a.py",
+          old_text: "x = 1",
+          new_text: 'x = "1"',
         },
         output:
-          "[write]\naction: edit_file\n\n[lsp]\nDiagnostics for packages/agent-core/src/a.ts (1 shown):",
+          "[write]\naction: edit_file\n\n[lsp]\nDiagnostics for packages/agent-core/src/a.py (1 shown):",
         failed: false,
         hostUi: {
           lspWriteDiagnostics: {
-            relativePath: "packages/agent-core/src/a.ts",
+            relativePath: "packages/agent-core/src/a.py",
             items: [
               {
                 severity: "error",
                 line: 81,
                 column: 7,
-                message: "Type 'string' is not assignable to type 'number'.",
-                code: 2322,
-                source: "typescript",
+                message: 'Expression of type "Literal[\'1\']" cannot be assigned to declared type "int"',
+                code: "reportAssignmentType",
+                source: "pyright",
               },
             ],
           },

@@ -197,7 +197,7 @@ export function AgentsSettingsPanel({
             <DialogTitle>{t("settings.lspInstallConfirmTitle")}</DialogTitle>
             <DialogDescription>
               {t("settings.lspInstallConfirmDescription", {
-                package: installTarget?.npmPackage ?? "typescript-language-server",
+                package: installTarget?.npmPackage ?? "pyright",
               })}
             </DialogDescription>
           </DialogHeader>

@@ -49,7 +49,7 @@ test("resolveClangdOnPath passes --background-index when found", async () => {
 
 test("preferWindowsSpawnableCommand prefers .cmd over extensionless npm shim", async () => {
   const binDir = await mkdtemp(path.join(tmpdir(), "spirit-lsp-bin-"));
-  const shim = path.join(binDir, "typescript-language-server");
+  const shim = path.join(binDir, "pyright-langserver");
   const cmd = `${shim}.cmd`;
   await writeFile(shim, "#!/bin/sh\n");
   await writeFile(cmd, "@echo off\r\n");
@@ -59,7 +59,7 @@ test("preferWindowsSpawnableCommand prefers .cmd over extensionless npm shim", a
 
 test("resolveCommandOnPath prefers Windows .cmd sibling for extensionless command path", async () => {
   const binDir = await mkdtemp(path.join(tmpdir(), "spirit-lsp-path-"));
-  const shim = path.join(binDir, "typescript-language-server");
+  const shim = path.join(binDir, "pyright-langserver");
   const cmd = `${shim}.cmd`;
   await writeFile(shim, "#!/bin/sh\n");
   await writeFile(cmd, "@echo off\r\n");

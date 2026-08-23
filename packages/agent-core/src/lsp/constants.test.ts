@@ -5,7 +5,7 @@ import { isLspSupportedExtension, LSP_SUPPORTED_EXTENSIONS } from "./constants.j
 import { buildLspHostToolDefinitions } from "./tool-definitions.js";
 
 test("LSP_SUPPORTED_EXTENSIONS covers in-scope languages and excludes HTML", () => {
-  assert.ok(LSP_SUPPORTED_EXTENSIONS.has(".ts"));
+  assert.equal(LSP_SUPPORTED_EXTENSIONS.has(".ts"), false);
   assert.ok(LSP_SUPPORTED_EXTENSIONS.has(".py"));
   assert.ok(LSP_SUPPORTED_EXTENSIONS.has(".go"));
   assert.ok(LSP_SUPPORTED_EXTENSIONS.has(".rs"));
@@ -19,9 +19,9 @@ test("LSP_SUPPORTED_EXTENSIONS covers in-scope languages and excludes HTML", () 
 test("buildLspHostToolDefinitions lists only ready providers", () => {
   const tools = buildLspHostToolDefinitions([
     {
-      displayName: "TypeScript Language Server",
-      languageLabels: ["TypeScript", "JavaScript"],
-      extensions: [".ts", ".tsx", ".js", ".jsx"],
+      displayName: "Pyright",
+      languageLabels: ["Python"],
+      extensions: [".py", ".pyi"],
     },
     {
       displayName: "rust-analyzer",
@@ -38,12 +38,12 @@ test("buildLspHostToolDefinitions lists only ready providers", () => {
   };
   const description = tool.function?.description ?? "";
   const pathsDescription = tool.function?.parameters?.properties?.paths?.description ?? "";
-  assert.match(description, /TypeScript Language Server/);
+  assert.match(description, /Pyright/);
   assert.match(description, /rust-analyzer/);
-  assert.doesNotMatch(description, /pyright|gopls|clangd|OmniSharp|JDT/i);
-  assert.match(pathsDescription, /TypeScript\/JavaScript/);
+  assert.doesNotMatch(description, /gopls|clangd|OmniSharp|JDT/i);
+  assert.match(pathsDescription, /Python/);
   assert.match(pathsDescription, /Rust/);
-  assert.doesNotMatch(pathsDescription, /Python|\.go|Java \(|C#/i);
+  assert.doesNotMatch(pathsDescription, /\.go|Java \(|C#/i);
 });
 
 test("buildLspHostToolDefinitions without ready providers avoids catalog listing", () => {

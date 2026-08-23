@@ -86,11 +86,6 @@ export class LspOrchestrator {
           }
           return { command: discovery.command, args: discovery.args ?? [] };
         });
-        if (!ready && provider.id === "typescript-language-server") {
-          console.error(
-            "[lsp] typescript-language-server not found on PATH; TypeScript diagnostics disabled",
-          );
-        }
         if (!ready && provider.id === "rust-analyzer") {
           console.error(
             "[lsp] rust-analyzer is unavailable; run `rustup component add rust-analyzer` or install from settings",
@@ -110,7 +105,13 @@ export class LspOrchestrator {
   }
 
   getResolvedServer(): { command: string; args: string[] } | undefined {
-    return this.sessions.get("typescript-language-server")?.getResolvedServer();
+    for (const session of this.sessions.values()) {
+      const resolved = session.getResolvedServer();
+      if (resolved) {
+        return resolved;
+      }
+    }
+    return undefined;
   }
 
   async syncFromRecordedChange(change: unknown): Promise<void> {

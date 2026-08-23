@@ -4,13 +4,11 @@ import {
   resolveGoplsOnPath,
   resolvePyrightOnPath,
   resolveRustAnalyzerOnPath,
-  resolveTypescriptLanguageServerOnPath,
 } from "./resolve-server.js";
 import { resolveJdtlsOnPath } from "./resolve-server-jdtls.js";
 import { resolveOmnisharpOnPath } from "./resolve-server-omnisharp.js";
 
 export type LspProviderId =
-  | "typescript-language-server"
   | "pyright"
   | "gopls"
   | "rust-analyzer"
@@ -40,14 +38,6 @@ export interface LspProviderDiscoveryResult {
 }
 
 export const LSP_PROVIDERS: readonly LspProviderDescriptor[] = [
-  {
-    id: "typescript-language-server",
-    displayName: "TypeScript Language Server",
-    languageLabels: ["TypeScript", "JavaScript"],
-    extensions: [".ts", ".tsx", ".mts", ".cts", ".js", ".jsx", ".mjs", ".cjs"],
-    installKind: "npm",
-    npmPackage: "typescript-language-server",
-  },
   {
     id: "pyright",
     displayName: "Pyright",
@@ -133,7 +123,6 @@ type ProviderResolver = (
 ) => Promise<{ command: string; args: string[] } | undefined>;
 
 const PROVIDER_RESOLVERS: Partial<Record<LspProviderId, ProviderResolver>> = {
-  "typescript-language-server": resolveTypescriptLanguageServerOnPath,
   pyright: resolvePyrightOnPath,
   gopls: resolveGoplsOnPath,
   "rust-analyzer": resolveRustAnalyzerOnPath,

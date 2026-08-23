@@ -10,12 +10,12 @@ test("LspOrchestrator.probe returns false when userConfig.enabled is false", asy
   assert.equal(orchestrator.enabled, false);
 });
 
-test("LspOrchestrator routes TypeScript paths to typescript-language-server session", async () => {
+test("LspOrchestrator routes Python paths to pyright session", async () => {
   const orchestrator = new LspOrchestrator(process.cwd(), undefined, { enabled: true });
   await orchestrator.probe();
-  const session = orchestrator.getSession("typescript-language-server");
+  const session = orchestrator.getSession("pyright");
   assert.ok(session);
-  assert.equal(session.providerId, "typescript-language-server");
+  assert.equal(session.providerId, "pyright");
 });
 
 test("LspProviderSession supportsPath respects provider routing", () => {
