@@ -181,7 +181,13 @@ export function parseOpenAiCompatibleModelEntriesPayload(
     }
     const id = (entry as { id?: unknown }).id;
     if (typeof id === "string" && id.trim().length > 0) {
-      entries.push({ id: id.trim() });
+      const modelId = id.trim();
+      entries.push({
+        id: modelId,
+        ...(provider === "deepseek" && isDeepSeekV4VisionListedModelId(modelId)
+          ? { supportsImageInput: true }
+          : {}),
+      });
     }
   }
   return entries.map(attachGatewayModelReasoningEfforts);
@@ -1860,6 +1866,14 @@ export async function listHuggingFaceModels(
 
 /** Xiaomi Mimo: upstream /models returns no capability fields; multimodal models require a maintained allowlist. */
 const XIAOMI_MULTIMODAL_MODEL_IDS = new Set(["mimo-v2.5", "mimo-v2-omni"]);
+
+/** DeepSeek `/models` has no modality fields; only `deepseek-v4-flash-vision-exp` takes image input. */
+function isDeepSeekV4VisionListedModelId(modelId: string): boolean {
+  const normalized = modelId.trim().toLowerCase();
+  const slashIndex = normalized.lastIndexOf("/");
+  const id = slashIndex >= 0 ? normalized.slice(slashIndex + 1) : normalized;
+  return id === "deepseek-v4-flash-vision-exp";
+}
 
 export function parseXiaomiModelEntriesPayload(body: unknown): ProviderListedModelEntry[] {
   if (typeof body !== "object" || body === null || !("data" in body)) {

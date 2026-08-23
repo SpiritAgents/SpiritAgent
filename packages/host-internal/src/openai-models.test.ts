@@ -767,6 +767,26 @@ test("parseOpenAiCompatibleModelEntriesPayload without provider omits minimax mu
   assert.deepEqual(entries, [{ id: "MiniMax-M3" }]);
 });
 
+test("parseOpenAiCompatibleModelEntriesPayload marks deepseek-v4-flash-vision-exp as image input", () => {
+  const entries = parseOpenAiCompatibleModelEntriesPayload(
+    {
+      object: "list",
+      data: [
+        { id: "deepseek-v4-flash", object: "model" },
+        { id: "deepseek-v4-flash-vision-exp", object: "model" },
+        { id: "deepseek-v4-pro", object: "model" },
+      ],
+    },
+    "deepseek",
+  );
+
+  assert.deepEqual(entries, [
+    { id: "deepseek-v4-flash" },
+    { id: "deepseek-v4-flash-vision-exp", supportsImageInput: true },
+    { id: "deepseek-v4-pro" },
+  ]);
+});
+
 test("parseSiliconFlowModelEntriesPayload marks capabilities by list kind", () => {
   const chatEntries = parseSiliconFlowModelEntriesPayload(
     {
