@@ -175,7 +175,7 @@
     "lspInstall": "インストール",
     "lspInstalling": "インストール中…",
     "lspInstallConfirmTitle": "言語サーバーをインストールしますか？",
-    "lspInstallConfirmDescription": "このマシンで npm install -g {{package}} を実行します。管理者権限が必要な場合があります。",
+    "lspInstallConfirmDescription": "次のコマンドをこのマシンで実行します。",
     "lspInstallConfirmAction": "インストール",
     "uiLocale": "UI 言語",
     "uiLocaleDescription": "インターフェースの表示言語を選択します。",

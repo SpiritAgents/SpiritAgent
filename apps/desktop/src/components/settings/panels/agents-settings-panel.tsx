@@ -1,4 +1,4 @@
-import { useState, type ReactNode } from "react";
+import { useCallback, useState, type ReactNode } from "react";
 
 import { LoaderCircle } from "lucide-react";
 import { useTranslation } from "react-i18next";
@@ -16,9 +16,11 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
+import { ShellToolCommandHighlight } from "@/components/shell-tool-command-highlight";
 import { cn } from "@/lib/utils";
 import type { DesktopLspProviderSnapshot, DesktopSnapshot } from "@/types";
 import { isDesktopInstallableProvider } from "@/lib/lsp-provider-install";
+import { runAfterRadixOverlayClose } from "@/lib/overlay-motion";
 import {
   DESKTOP_LIST_ITEM_PRIMARY_CLASS,
   DESKTOP_SETTINGS_LABEL_CLASS,
@@ -77,6 +79,14 @@ export function AgentsSettingsPanel({
   const lsp = snapshot?.lsp;
   const listDisabled = !settings.lspEnabled;
   const [installTarget, setInstallTarget] = useState<DesktopLspProviderSnapshot | null>(null);
+  const [installDialogOpen, setInstallDialogOpen] = useState(false);
+
+  const dismissInstallDialog = useCallback(() => {
+    setInstallDialogOpen(false);
+    runAfterRadixOverlayClose(() => {
+      setInstallTarget(null);
+    });
+  }, []);
 
   return (
     <div className="space-y-6">
@@ -131,7 +141,13 @@ export function AgentsSettingsPanel({
                   size="sm"
                   className="shrink-0"
                   disabled={lspInstallBusy}
-                  onClick={() => setInstallTarget(provider)}
+                  onClick={() => {
+                    if (!provider.installCommand) {
+                      return;
+                    }
+                    setInstallTarget(provider);
+                    setInstallDialogOpen(true);
+                  }}
                 >
                   {lspInstallBusy ? (
                     <>
@@ -185,29 +201,36 @@ export function AgentsSettingsPanel({
       </div>
 
       <Dialog
-        open={installTarget !== null}
+        open={installDialogOpen}
         onOpenChange={(open: boolean) => {
-          if (!open) {
-            setInstallTarget(null);
+          if (open) {
+            setInstallDialogOpen(true);
+          } else if (!lspInstallBusy) {
+            dismissInstallDialog();
           }
         }}
       >
-        <DialogContent className="sm:max-w-md" showCloseButton>
+        <DialogContent className="sm:max-w-lg" showCloseButton={!lspInstallBusy}>
           <DialogHeader>
             <DialogTitle>{t("settings.lspInstallConfirmTitle")}</DialogTitle>
-            <DialogDescription>
-              {t("settings.lspInstallConfirmDescription", {
-                package: installTarget?.npmPackage ?? "pyright",
-              })}
-            </DialogDescription>
+            <DialogDescription>{t("settings.lspInstallConfirmDescription")}</DialogDescription>
           </DialogHeader>
+          {installTarget?.installCommand ? (
+            <div className="overflow-hidden rounded-md border border-border/20 bg-muted/15 p-2 text-xs leading-relaxed text-muted-foreground">
+              <ShellToolCommandHighlight command={installTarget.installCommand} />
+            </div>
+          ) : null}
           <DialogFooter>
             <DialogFooterActions>
               <Button
                 type="button"
                 variant="outline"
                 size="sm"
-                onClick={() => setInstallTarget(null)}
+                onClick={() => {
+                  if (!lspInstallBusy) {
+                    dismissInstallDialog();
+                  }
+                }}
                 disabled={lspInstallBusy}
               >
                 {t("common.cancel")}
@@ -215,12 +238,14 @@ export function AgentsSettingsPanel({
               <Button
                 type="button"
                 size="sm"
-                disabled={lspInstallBusy || !installTarget}
+                disabled={lspInstallBusy || !installTarget?.installCommand}
                 onClick={() => {
-                  if (!installTarget) {
+                  if (!installTarget?.installCommand) {
                     return;
                   }
-                  void onInstallLspProvider(installTarget.id).finally(() => setInstallTarget(null));
+                  void onInstallLspProvider(installTarget.id).finally(() => {
+                    dismissInstallDialog();
+                  });
                 }}
               >
                 {lspInstallBusy ? <LoaderCircle className="size-4 animate-spin" /> : null}

@@ -175,7 +175,7 @@
     "lspInstall": "Установить",
     "lspInstalling": "Установка…",
     "lspInstallConfirmTitle": "Установить language server?",
-    "lspInstallConfirmDescription": "Запустить npm install -g {{package}} на этом компьютере. Может потребоваться права администратора.",
+    "lspInstallConfirmDescription": "На этом компьютере будет выполнена следующая команда.",
     "lspInstallConfirmAction": "Установить",
     "uiLocale": "Язык интерфейса",
     "uiLocaleDescription": "Выберите язык отображения интерфейса.",

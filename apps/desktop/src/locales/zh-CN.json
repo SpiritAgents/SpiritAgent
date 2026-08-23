@@ -175,7 +175,7 @@
     "lspInstall": "安装",
     "lspInstalling": "安装中…",
     "lspInstallConfirmTitle": "安装语言服务器？",
-    "lspInstallConfirmDescription": "将在本机执行 npm install -g {{package}}。可能需要管理员权限。",
+    "lspInstallConfirmDescription": "将在本机执行下列命令。",
     "lspInstallConfirmAction": "安装",
     "uiLocale": "界面语言",
     "uiLocaleDescription": "选择界面显示语言。",

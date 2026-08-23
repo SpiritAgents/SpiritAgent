@@ -175,7 +175,7 @@
     "lspInstall": "Install",
     "lspInstalling": "Installing…",
     "lspInstallConfirmTitle": "Install language server?",
-    "lspInstallConfirmDescription": "Run npm install -g {{package}} on this machine. You may need administrator privileges.",
+    "lspInstallConfirmDescription": "The following command will run on this machine.",
     "lspInstallConfirmAction": "Install",
     "uiLocale": "UI Language",
     "uiLocaleDescription": "Select the interface display language.",

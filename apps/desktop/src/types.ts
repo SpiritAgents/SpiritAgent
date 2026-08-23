@@ -143,6 +143,8 @@ export interface DesktopLspProviderSnapshot {
   status: DesktopLspProviderStatus;
   installKind: "npm" | "go" | "rustup" | "platform" | "manual" | "dotnet";
   npmPackage?: string;
+  /** Command line that Settings will run if the user confirms Install. */
+  installCommand?: string;
   command?: string;
 }
 

@@ -175,7 +175,7 @@
     "lspInstall": "安裝",
     "lspInstalling": "正在安裝⋯",
     "lspInstallConfirmTitle": "安裝語言伺服器？",
-    "lspInstallConfirmDescription": "將在此機器上執行 npm install -g {{package}}。您可能需要管理員權限。",
+    "lspInstallConfirmDescription": "將在此機器上執行下列命令。",
     "lspInstallConfirmAction": "安裝",
     "uiLocale": "UI 語言",
     "uiLocaleDescription": "選擇介面顯示語言。",
