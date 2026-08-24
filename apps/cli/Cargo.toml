@@ -1,6 +1,6 @@
 [package]
 name = "spirit-agent"
-version = "0.3.3"
+version = "1.0.0-alpha.0"
 edition = "2024"
 rust-version = "1.85"
 license = "MIT"

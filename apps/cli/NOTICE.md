@@ -702,7 +702,7 @@
   - https://github.com/rust-lang/socket2
 - **socket2** 0.6.3 — MIT OR Apache-2.0
   - https://github.com/rust-lang/socket2
-- **spirit-agent** 0.3.3 — MIT
+- **spirit-agent** 1.0.0-alpha.0 — MIT
   - https://crates.io/crates/spirit-agent
 - **stable_deref_trait** 1.2.1 — MIT OR Apache-2.0
   - https://github.com/storyyeller/stable_deref_trait
@@ -10661,7 +10661,7 @@ SOFTWARE.
 ### MIT License (MIT)
 
 **Used by:**
-- spirit-agent 0.3.3
+- spirit-agent 1.0.0-alpha.0
 - base64-simd 0.8.0
 - fax 0.2.6
 - fax_derive 0.2.0

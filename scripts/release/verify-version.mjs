@@ -49,6 +49,16 @@ async function readMcpClientVersion(relativePath) {
   return match[1];
 }
 
+async function readAcpAgentVersion(relativePath) {
+  const filePath = path.join(repoRoot, relativePath);
+  const content = await readFile(filePath, 'utf8');
+  const match = content.match(/agentInfo:\s*\{[\s\S]*?version:\s*['"]([^'"]+)['"]/);
+  if (!match) {
+    throw new Error(`agentInfo.version not found in ${relativePath}`);
+  }
+  return match[1];
+}
+
 const explicitVersion = readArg('--version') ?? process.env.RELEASE_VERSION;
 const legacyVersion = process.env.RELEASE_TAG ?? process.env.GITHUB_REF_NAME;
 const expectedVersion =
@@ -63,8 +73,10 @@ const versions = [
   ['agent-core', 'packages/agent-core/package.json', await readJsonVersion('packages/agent-core/package.json')],
   ['host-internal', 'packages/host-internal/package.json', await readJsonVersion('packages/host-internal/package.json')],
   ['acp-server', 'packages/acp-server/package.json', await readJsonVersion('packages/acp-server/package.json')],
+  ['server', 'packages/server/package.json', await readJsonVersion('packages/server/package.json')],
   ['cli', 'apps/cli/Cargo.toml', await readCargoVersion('apps/cli/Cargo.toml')],
   ['mcp-client-info', 'packages/agent-core/src/mcp/config.ts', await readMcpClientVersion('packages/agent-core/src/mcp/config.ts')],
+  ['acp-agent-info', 'packages/acp-server/src/acp-agent.ts', await readAcpAgentVersion('packages/acp-server/src/acp-agent.ts')],
 ];
 
 const baseline = expectedVersion ?? versions[0][2];
