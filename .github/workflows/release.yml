@@ -561,11 +561,6 @@ jobs:
     permissions:
       contents: write
       id-token: write
-    env:
-      SPIRIT_CLOUDFLARE_ACCOUNT_ID: ${{ secrets.SPIRIT_CLOUDFLARE_ACCOUNT_ID }}
-      SPIRIT_CLOUDFLARE_ACCESS_KEY_ID: ${{ secrets.SPIRIT_CLOUDFLARE_ACCESS_KEY_ID }}
-      SPIRIT_CLOUDFLARE_SECRET_ACCESS_KEY: ${{ secrets.SPIRIT_CLOUDFLARE_SECRET_ACCESS_KEY }}
-      SPIRIT_CLOUDFLARE_BUCKET_NAME: ${{ secrets.SPIRIT_CLOUDFLARE_BUCKET_NAME }}
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -608,16 +603,21 @@ jobs:
           cat release-assets/approval/approval-report.md >> "$GITHUB_STEP_SUMMARY"
           cat release-assets/approval/approval-report.md
 
-      - name: Require Cloudflare secrets
+      # Self-hosted first: R2 failures must not leave GitHub Release / npm already public.
+      # Keep R2 credentials on this step only. Job-level env would expose them to later
+      # `pnpm install` / `pnpm publish` (dependency postinstall can read process.env).
+      - name: Publish self-hosted downloads
+        env:
+          SPIRIT_CLOUDFLARE_ACCOUNT_ID: ${{ secrets.SPIRIT_CLOUDFLARE_ACCOUNT_ID }}
+          SPIRIT_CLOUDFLARE_ACCESS_KEY_ID: ${{ secrets.SPIRIT_CLOUDFLARE_ACCESS_KEY_ID }}
+          SPIRIT_CLOUDFLARE_SECRET_ACCESS_KEY: ${{ secrets.SPIRIT_CLOUDFLARE_SECRET_ACCESS_KEY }}
+          SPIRIT_CLOUDFLARE_BUCKET_NAME: ${{ secrets.SPIRIT_CLOUDFLARE_BUCKET_NAME }}
         run: |
+          set -euo pipefail
           if [ -z "$SPIRIT_CLOUDFLARE_ACCOUNT_ID" ] || [ -z "$SPIRIT_CLOUDFLARE_ACCESS_KEY_ID" ] || [ -z "$SPIRIT_CLOUDFLARE_SECRET_ACCESS_KEY" ] || [ -z "$SPIRIT_CLOUDFLARE_BUCKET_NAME" ]; then
             echo "::error::Environment secrets SPIRIT_CLOUDFLARE_ACCOUNT_ID, SPIRIT_CLOUDFLARE_ACCESS_KEY_ID, SPIRIT_CLOUDFLARE_SECRET_ACCESS_KEY, and SPIRIT_CLOUDFLARE_BUCKET_NAME are required (R2 S3 API credentials)."
             exit 1
           fi
-
-      # Self-hosted first: R2 failures must not leave GitHub Release / npm already public.
-      - name: Publish self-hosted downloads
-        run: |
           pnpm run release:publish-selfhosted -- \
             --input release-assets \
             --version "$RELEASE_VERSION"
