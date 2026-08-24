@@ -5,15 +5,17 @@ artifactName: SpiritAgent-Desktop-${version}-${os}-${arch}.${ext}
 directories:
   buildResources: build
   output: release
+beforeBuild: scripts/electron-builder-before-build.mjs
 files:
   - package.json
   - .env
   - dist/**/*
   - dist-electron/**/*
   - build/tray/**/*
-  - node_modules/**/*
   - "!**/target/**/*"
-  - from: node_modules/@vscode
+  - from: ../.desktop-pack-node-modules/node_modules
+    to: node_modules
+  - from: ../.desktop-pack-node-modules/node_modules/@vscode
     to: node_modules/@vscode
     filter:
       - ripgrep/**
