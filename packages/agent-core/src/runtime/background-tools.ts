@@ -310,7 +310,10 @@ export async function pollPendingBackgroundToolExecution<Config, State, ToolRequ
     return;
   }
 
-  runtime.pendingBackgroundToolExecution = undefined;
+  // Keep the finished execution occupying the slot for the whole async commit below.
+  // The slot is released only synchronously with starting the next deferred execution;
+  // clearing it earlier would open a window where a concurrently-scheduled early execution
+  // starts in the free slot and is then overwritten by the deferred start, losing its result.
   runtime.pendingBackgroundToolStatusStore = undefined;
   runtime.emitEvent({
     kind: "background-tool-status",
@@ -322,6 +325,7 @@ export async function pollPendingBackgroundToolExecution<Config, State, ToolRequ
   });
 
   if (pending.kind === "manual") {
+    runtime.pendingBackgroundToolExecution = undefined;
     runtime.completedManualToolCommandResultStore = {
       kind: "completed",
       request: pending.request,
@@ -340,26 +344,38 @@ export async function pollPendingBackgroundToolExecution<Config, State, ToolRequ
     output: pending.output,
     failed: pending.failed,
   });
-  await runPostToolUseSideEffects(
-    runtime as unknown as TurnMachineRuntime<Config, State, ToolRequest>,
-    {
-      id: pending.toolCallId,
-      name: pending.toolName,
-      argumentsJson: pending.argumentsJson,
-    },
-    pending.postHookToolInput ?? toolInputFromArgumentsJson(pending.argumentsJson),
-    pending.output,
-    Math.max(0, Date.now() - pending.startedAtUnixMs),
-    pending.failed,
-  );
+  try {
+    await runPostToolUseSideEffects(
+      runtime as unknown as TurnMachineRuntime<Config, State, ToolRequest>,
+      {
+        id: pending.toolCallId,
+        name: pending.toolName,
+        argumentsJson: pending.argumentsJson,
+      },
+      pending.postHookToolInput ?? toolInputFromArgumentsJson(pending.argumentsJson),
+      pending.output,
+      Math.max(0, Date.now() - pending.startedAtUnixMs),
+      pending.failed,
+    );
 
-  await prepareAndSyncRuntimeToolResultToHistory(
-    runtime,
-    pending.toolCallId,
-    pending.output.summaryText,
-  );
+    await prepareAndSyncRuntimeToolResultToHistory(
+      runtime,
+      pending.toolCallId,
+      pending.output.summaryText,
+    );
+  } catch (error) {
+    // On commit failure, release the slot so the finished execution is not re-committed on
+    // the next poll; the result is lost either way, so surface the error unchanged.
+    if (runtime.pendingBackgroundToolExecution === pending) {
+      runtime.pendingBackgroundToolExecution = undefined;
+    }
+    throw error;
+  }
   const continuationState = buildBackgroundToolContinuationState(runtime, pending.pendingUserInput);
   runtime.advanceTurnToolState?.(pending.turn, continuationState);
+  // Release the slot and hand off to the next deferred execution atomically (no await in
+  // between), so no concurrently-scheduled execution can slip into the free slot here.
+  runtime.pendingBackgroundToolExecution = undefined;
   if (runtime.deferredBackgroundToolExecutions.length > 0) {
     startNextDeferredBackgroundToolExecution(runtime, continuationState);
     return;
