@@ -2,7 +2,7 @@ import assert from "node:assert/strict";
 import { test } from "vitest";
 
 import { AgentRuntime } from "../runtime.js";
-import { llmMessageTextContent } from "../ports.js";
+import { createLlmMessageContentFromText, llmMessageTextContent } from "../ports.js";
 import { assistantToolCallMessageFromState } from "../tool-agent.js";
 import {
   createTurnContext,
@@ -1741,6 +1741,33 @@ test("AgentRuntime rejects finish_task when Loop is disabled", async () => {
   assert.equal(result.kind, "completed");
   assert.equal(result.kind === "completed" ? result.assistantText : "", "done without finish_task");
   assert.equal(runtime.loopEnabled(), false);
+});
+
+test("continueAssistantCompletionStreaming repairs unanswered tool calls left by an abort", async () => {
+  const runtime = new AgentRuntime(
+    buildAgentRuntimeOptions([{ kind: "final", text: "continued" }]),
+    [
+      { role: "user", content: createLlmMessageContentFromText("run something") },
+      {
+        role: "assistant",
+        content: createLlmMessageContentFromText("running a tool"),
+        toolCalls: [{ id: "call_shell", name: "shell", argumentsJson: "{}" }],
+      },
+    ],
+  );
+
+  await runtime.continueAssistantCompletionStreaming();
+  for (let index = 0; index < 24 && runtime.isBusy(); index += 1) {
+    await runtime.poll();
+  }
+
+  // The dangling tool call must have a (placeholder) result before the continue request is built.
+  const toolResultIds = runtime
+    .history()
+    .filter((message) => message.role === "tool")
+    .map((message) => message.toolCallId);
+  assert.ok(toolResultIds.includes("call_shell"));
+  assert.equal(hasUnansweredAssistantToolCalls(runtime.history()), false);
 });
 
 type LoopTestRound =

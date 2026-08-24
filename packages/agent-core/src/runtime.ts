@@ -1167,6 +1167,10 @@ export class AgentRuntime<Config, State, ToolRequest> {
       throw new Error("A response or approval is already being processed; please wait.");
     }
 
+    // Abort can leave assistant tool calls unanswered (in-flight background executions are
+    // discarded without a result). Repair before building the request, matching the other
+    // entry points that read history (prepareSubmittedUserTurn / replaceHistory).
+    this.historyStore = repairMissingToolResultsInHistory(this.historyStore);
     const history = cloneHistory(this.historyStore);
     const lastHistoryMessage = [...history].reverse().find((message) => {
       if (message.role === "tool") {
