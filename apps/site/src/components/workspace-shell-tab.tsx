@@ -86,7 +86,7 @@ function mockCommandOutput(
       "Mode                LastWriteTime         Name",
       "d----        2026/04/07     09:00         public",
       "d----        2026/04/07     09:00         src",
-      "d----        2026/04/07     09:00         SPIRITAGENT",
+      "d----        2026/04/07     09:00         SPIRIT",
       "-a---        2026/04/07     09:00         package.json",
       "-a---        2026/04/07     09:00         vite.config.ts",
     ];
@@ -103,7 +103,7 @@ function mockCommandOutput(
       "|   `-- components",
       "|       |-- hero.tsx",
       "|       `-- spirit-desktop-window.tsx",
-      "`-- SPIRITAGENT",
+      "`-- SPIRIT",
     ];
   }
 

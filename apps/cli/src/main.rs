@@ -42,7 +42,7 @@ use windows_sys::Win32::UI::Input::KeyboardAndMouse::{GetAsyncKeyState, VK_LSHIF
 #[command(name = "spirit")]
 #[command(version)]
 #[command(disable_version_flag = true)]
-#[command(about = "Spirit Agent — AI productivity agent", long_about = None)]
+#[command(about = "Spirit — AI productivity agent", long_about = None)]
 struct Cli {
     /// Print version
     #[arg(short = 'v', long = "version", action = ArgAction::SetTrue)]

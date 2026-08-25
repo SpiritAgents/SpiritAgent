@@ -94,7 +94,7 @@
     "custom": "Custom"
   },
   "onboarding": {
-    "welcomeTitle": "Spirit Agent",
+    "welcomeTitle": "Spirit",
     "continue": "Continue",
     "back": "Back",
     "done": "Done",
@@ -164,9 +164,9 @@
     "lspEnabledDescription": "When off, lint diagnostics and automatic error checks after file edits are disabled.",
     "attributionSection": "Attribution",
     "commitAttribution": "Commit attribution",
-    "commitAttributionDescription": "Credit Spirit Agent on agent commits.",
+    "commitAttributionDescription": "Credit Spirit on agent commits.",
     "prAttribution": "PR attribution",
-    "prAttributionDescription": "Credit Spirit Agent on agent pull requests.",
+    "prAttributionDescription": "Credit Spirit on agent pull requests.",
     "editorTabCompletion": "Editor Tab completion",
     "editorTabCompletionDescription": "Use inline completion in the file editor.",
     "lspStatusReady": "Ready",
@@ -535,10 +535,10 @@
     "recent": "Recent",
     "more": "More",
     "newSession": "New Session",
-    "openApp": "Open Spirit Agent",
+    "openApp": "Open Spirit",
     "settings": "Settings",
-    "quitApp": "Quit Spirit Agent",
-    "tooltip": "Spirit Agent"
+    "quitApp": "Quit Spirit",
+    "tooltip": "Spirit"
   },
   "titleBar": {
     "file": "File",
@@ -567,7 +567,7 @@
     "close": "Close",
     "zoom": "Zoom",
     "bringAllToFront": "Bring All to Front",
-    "about": "About Spirit Agent",
+    "about": "About Spirit",
     "settings": "Settings",
     "services": "Services",
     "hideApp": "Hide {{appName}}",
@@ -1260,7 +1260,7 @@
     "autoWorktreeNameFailedNotObject": "Auto-generating Worktree name failed: model returned JSON that is not an object."
   },
   "crashPage": {
-    "title": "Spirit Agent has Crashed",
+    "title": "Spirit has Crashed",
     "description": "The renderer process terminated unexpectedly. The log below may help diagnose the cause.",
     "reportOnGitHub": "Report on GitHub"
   },

@@ -61,7 +61,7 @@
         "planPath": "plans/landing-hero-refresh.md",
         "generatingImage": "Generiere Bild…"
       },
-      "manualAssistantResponse": "Spirit Agent herunterladen.",
+      "manualAssistantResponse": "Spirit herunterladen.",
       "demoUserPrompt": "Prüfe die aktuelle Landing Page und sag mir, was ich als Nächstes verbessern soll.",
       "demoThinkingText": "Prüfe die aktuelle Hero-Struktur.\nSuche nach den sichtbarsten Lücken in der Konversationsfläche.\nBereite eine kurze Implementierungsübersicht vor.",
       "demoAssistantResponse": "Hier ist der nächste Schritt, den ich machen würde.\n\n- Ersetze die leere Konversationsfläche durch eine echte Streaming-Demo.\n- Halte das Hero-Fenster unterbrechbar, damit Besucher sofort die Kontrolle übernehmen können.\n- Verwende die Desktop-Nachrichtenstile für Denken und Tool-Aufrufe, statt sie anzunähern.",
@@ -195,7 +195,7 @@
       "exited": "[beendet, Code {{exitCode}}]"
     },
     "previews": {
-      "siteReadmeDescription": "Marketing-Website-Vorschau für das Spirit Agent Desktop-Produkt.",
+      "siteReadmeDescription": "Marketing-Website-Vorschau für das Spirit Desktop-Produkt.",
       "desktopReadmeDescription": "Electron-Shell und Web-Renderer für das Desktop-Produkt.",
       "generatedWorkspaceDescription": "Simulierter Arbeitsbereich, generiert für die Vorschau der Landingpage {{label}}.",
       "generatedWorkspaceOverview": "Arbeitsbereichsroot: {{root}}\\n\\nDieser simulierte Arbeitsbereich hält die Dateiregisterkarte interaktiv, ohne die vollständige Desktop-Laufzeit zu mounten.",
@@ -207,17 +207,17 @@
     }
   },
   "meta": {
-    "title": "Spirit Agent",
-    "description": "Spirit Agent ist ein Open-Source-KI-Agent, den Sie mit Ihren Modellen, Ihren Schlüsseln und Ihrem Workflow ausführen."
+    "title": "Spirit",
+    "description": "Spirit ist ein Open-Source-KI-Agent, den Sie mit Ihren Modellen, Ihren Schlüsseln und Ihrem Workflow ausführen."
   },
   "common": {
-    "brand": "Spirit Agent",
+    "brand": "Spirit",
     "download": "Herunterladen",
     "downloadForPlatform": "Herunterladen für {{platform}}"
   },
   "hero": {
-    "sectionAria": "Spirit Agent",
-    "homeAria": "Spirit Agent Startseite",
+    "sectionAria": "Spirit",
+    "homeAria": "Spirit Startseite",
     "primaryNavAria": "Primär",
     "nav": {
       "features": "Funktionen",
@@ -238,8 +238,8 @@
     "headline": "Ein Open-Source-KI-Agent,\nder Ihre Produktivität vervielfacht."
   },
   "download": {
-    "metaTitle": "Spirit Agent herunterladen",
-    "metaDescription": "Laden Sie Spirit Agent für Desktop herunter, installieren Sie die CLI oder warten Sie auf ACP.",
+    "metaTitle": "Spirit herunterladen",
+    "metaDescription": "Laden Sie Spirit für Desktop herunter, installieren Sie die CLI oder warten Sie auf ACP.",
     "title": "Derselbe Agent, überall in Ihrer Arbeit.",
     "sectionAria": "Derselbe Agent, überall in Ihrer Arbeit.",
     "desktop": "Desktop",
@@ -249,7 +249,7 @@
     "copied": "Kopiert",
     "comingSoonJoke": "Demnächst™",
     "listingInProgress": "Wird gelistet...",
-    "cliLogoTitle": "Spirit Agent",
+    "cliLogoTitle": "Spirit",
     "cliUserMessage": "Überprüfe auth.ts und behebe den Session-Refresh-Bug.",
     "cliAssistantMessage": "Ich werde auth.ts inspizieren und den fehlerhaften Session-Check patchen.",
     "cliUserFollowUp": "Füge auch einen Regressionstest hinzu.",
@@ -257,11 +257,11 @@
     "cliFooter": "Agent  |  Standardfreigabe  |  Schleife aus          gpt-5"
   },
   "landing": {
-    "sectionAria": "Spirit Agent Inhalt",
+    "sectionAria": "Spirit Inhalt",
     "featureHeading": ["Deine Modelle.", "Deine Schlüssel.", "Deine Kontrolle."],
     "featureBody": "Spirit sperrt dich nicht in einen gehosteten Stack ein. Bring einen Schlüssel von einem beliebigen Anbieter mit, füge ihn einmal hinzu und verwende denselben Agent-Workflow überall.",
     "agent": {
-      "sectionAria": "Spirit Agent Produktivität",
+      "sectionAria": "Spirit Produktivität",
       "featureHeading": [
         "Plane mit Kontext.",
         "Führe mit Tools aus.",
@@ -269,7 +269,7 @@
       ],
       "featureBody": "Spirit plant, bevor es handelt: Generiere Mockups, schreibe strukturierte Pläne und arbeite direkt gegen dein Repo – ohne die Desktop-Shell zu verlassen."
     },
-    "ctaSectionAria": "Spirit Agent herunterladen",
+    "ctaSectionAria": "Spirit herunterladen",
     "ctaTitle": "Probier Spirit aus.",
     "trio": {
       "sectionAria": "Fähigkeitsvorschauen",
@@ -308,12 +308,12 @@
     "linkHome": "Startseite",
     "changelog": "Changelog",
     "openSourceLicenses": "Open-Source-Lizenzen",
-    "copyrightLine": "© {{year}} Spirit Agent. Open-Source-KI-Agent."
+    "copyrightLine": "© {{year}} Spirit. Open-Source-KI-Agent."
   },
   "docs": {
     "title": "Dokumentation",
-    "metaTitle": "Spirit Agent Dokumentation",
-    "metaDescription": "Installieren Sie Spirit Agent, verbinden Sie einen Anbieter mit Ihrem eigenen Schlüssel und nutzen Sie denselben Agenten auf Desktop und CLI.",
+    "metaTitle": "Spirit Dokumentation",
+    "metaDescription": "Installieren Sie Spirit, verbinden Sie einen Anbieter mit Ihrem eigenen Schlüssel und nutzen Sie denselben Agenten auf Desktop und CLI.",
     "comingSoon": "Demnächst verfügbar.",
     "sectionAria": "Dokumentation",
     "search": "Suchen",

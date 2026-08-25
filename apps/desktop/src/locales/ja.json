@@ -94,7 +94,7 @@
     "custom": "カスタム"
   },
   "onboarding": {
-    "welcomeTitle": "Spirit Agent",
+    "welcomeTitle": "Spirit",
     "continue": "続ける",
     "back": "戻る",
     "done": "完了",
@@ -164,9 +164,9 @@
     "lspEnabledDescription": "オフにすると、lint 診断とファイル編集後の自動エラーチェックが無効になります。",
     "attributionSection": "アトリビューション",
     "commitAttribution": "コミットのアトリビューション",
-    "commitAttributionDescription": "エージェントのコミットに Spirit Agent をクレジットします。",
+    "commitAttributionDescription": "エージェントのコミットに Spirit をクレジットします。",
     "prAttribution": "PR のアトリビューション",
-    "prAttributionDescription": "エージェントのプルリクエストに Spirit Agent をクレジットします。",
+    "prAttributionDescription": "エージェントのプルリクエストに Spirit をクレジットします。",
     "editorTabCompletion": "エディタの Tab 補完",
     "editorTabCompletionDescription": "ファイルエディタでインライン補完を使用します。",
     "lspStatusReady": "準備完了",
@@ -535,10 +535,10 @@
     "recent": "最近",
     "more": "さらに表示",
     "newSession": "新規セッション",
-    "openApp": "Spirit Agentを開く",
+    "openApp": "Spiritを開く",
     "settings": "設定",
-    "quitApp": "Spirit Agentを終了",
-    "tooltip": "Spirit Agent"
+    "quitApp": "Spiritを終了",
+    "tooltip": "Spirit"
   },
   "titleBar": {
     "file": "ファイル",
@@ -567,7 +567,7 @@
     "close": "閉じる",
     "zoom": "ズーム",
     "bringAllToFront": "すべてを前面に表示",
-    "about": "Spirit Agentについて",
+    "about": "Spiritについて",
     "settings": "設定",
     "services": "サービス",
     "hideApp": "{{appName}}を隠す",
@@ -1260,7 +1260,7 @@
     "autoWorktreeNameFailedNotObject": "ワークツリー名の自動生成に失敗しました：モデルがオブジェクトではないJSONを返しました。"
   },
   "crashPage": {
-    "title": "Spirit Agent がクラッシュしました",
+    "title": "Spirit がクラッシュしました",
     "description": "レンダラープロセスが予期せず終了しました。以下のログが原因の特定に役立つ可能性があります。",
     "reportOnGitHub": "GitHub で報告"
   },

@@ -94,7 +94,7 @@
     "custom": "Personalizado"
   },
   "onboarding": {
-    "welcomeTitle": "Spirit Agent",
+    "welcomeTitle": "Spirit",
     "continue": "Continuar",
     "back": "Atrás",
     "done": "Listo",
@@ -164,9 +164,9 @@
     "lspEnabledDescription": "Al desactivarlo, se deshabilitan los diagnósticos y la verificación automática de errores tras editar archivos.",
     "attributionSection": "Atribución",
     "commitAttribution": "Atribución en commits",
-    "commitAttributionDescription": "Acreditar a Spirit Agent en los commits del agente.",
+    "commitAttributionDescription": "Acreditar a Spirit en los commits del agente.",
     "prAttribution": "Atribución en PR",
-    "prAttributionDescription": "Acreditar a Spirit Agent en los pull requests del agente.",
+    "prAttributionDescription": "Acreditar a Spirit en los pull requests del agente.",
     "editorTabCompletion": "Autocompletar con tabulador en el editor",
     "editorTabCompletionDescription": "Usar autocompletado en línea en el editor de archivos.",
     "lspStatusReady": "Listo",
@@ -535,10 +535,10 @@
     "recent": "Recientes",
     "more": "Más",
     "newSession": "Nueva sesión",
-    "openApp": "Abrir Spirit Agent",
+    "openApp": "Abrir Spirit",
     "settings": "Ajustes",
-    "quitApp": "Salir de Spirit Agent",
-    "tooltip": "Spirit Agent"
+    "quitApp": "Salir de Spirit",
+    "tooltip": "Spirit"
   },
   "titleBar": {
     "file": "Archivo",
@@ -567,7 +567,7 @@
     "close": "Cerrar",
     "zoom": "Zoom",
     "bringAllToFront": "Traer todo al frente",
-    "about": "Acerca de Spirit Agent",
+    "about": "Acerca de Spirit",
     "settings": "Ajustes",
     "services": "Servicios",
     "hideApp": "Ocultar {{appName}}",
@@ -1260,7 +1260,7 @@
     "autoWorktreeNameFailedNotObject": "Error al generar nombre de Worktree automáticamente: el modelo devolvió un JSON que no es un objeto."
   },
   "crashPage": {
-    "title": "Spirit Agent se ha bloqueado",
+    "title": "Spirit se ha bloqueado",
     "description": "El proceso de renderizado finalizó inesperadamente. El registro siguiente puede ayudar a diagnosticar la causa.",
     "reportOnGitHub": "Informar en GitHub"
   },

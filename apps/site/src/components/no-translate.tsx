@@ -9,7 +9,7 @@ export function NoTranslate({ children }: { children: ReactNode }) {
   );
 }
 
-const BRAND_TOKEN_PATTERN = /Spirit Agent|Spirit|BYOK/g;
+const BRAND_TOKEN_PATTERN = /Spirit|BYOK/g;
 
 /**
  * Wrap brand / product tokens so browser page translation leaves them intact

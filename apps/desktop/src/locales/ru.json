@@ -94,7 +94,7 @@
     "custom": "Пользовательский"
   },
   "onboarding": {
-    "welcomeTitle": "Spirit Agent",
+    "welcomeTitle": "Spirit",
     "continue": "Продолжить",
     "back": "Назад",
     "done": "Готово",
@@ -164,9 +164,9 @@
     "lspEnabledDescription": "Если выключено, отключает диагностику lint и автоматические проверки ошибок после редактирования файлов.",
     "attributionSection": "Атрибуция",
     "commitAttribution": "Атрибуция коммитов",
-    "commitAttributionDescription": "Указывать Spirit Agent в коммитах агента.",
+    "commitAttributionDescription": "Указывать Spirit в коммитах агента.",
     "prAttribution": "Атрибуция PR",
-    "prAttributionDescription": "Указывать Spirit Agent в pull request агента.",
+    "prAttributionDescription": "Указывать Spirit в pull request агента.",
     "editorTabCompletion": "Автодополнение по Tab в редакторе",
     "editorTabCompletionDescription": "Использовать встроенное автодополнение в редакторе файлов.",
     "lspStatusReady": "Готов",
@@ -535,10 +535,10 @@
     "recent": "Недавние",
     "more": "Ещё",
     "newSession": "Новый сеанс",
-    "openApp": "Открыть Spirit Agent",
+    "openApp": "Открыть Spirit",
     "settings": "Настройки",
-    "quitApp": "Выйти из Spirit Agent",
-    "tooltip": "Spirit Agent"
+    "quitApp": "Выйти из Spirit",
+    "tooltip": "Spirit"
   },
   "titleBar": {
     "file": "Файл",
@@ -567,7 +567,7 @@
     "close": "Закрыть",
     "zoom": "Масштаб",
     "bringAllToFront": "На передний план",
-    "about": "О Spirit Agent",
+    "about": "О Spirit",
     "settings": "Настройки",
     "services": "Сервисы",
     "hideApp": "Скрыть {{appName}}",
@@ -1260,7 +1260,7 @@
     "autoWorktreeNameFailedNotObject": "Авто-генерация имени Worktree не удалась: модель вернула JSON, не являющийся объектом."
   },
   "crashPage": {
-    "title": "Spirit Agent аварийно завершился",
+    "title": "Spirit аварийно завершился",
     "description": "Процесс отрисовки неожиданно завершился. Журнал ниже может помочь определить причину.",
     "reportOnGitHub": "Сообщить на GitHub"
   },

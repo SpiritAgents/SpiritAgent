@@ -94,7 +94,7 @@
     "custom": "Personalizado"
   },
   "onboarding": {
-    "welcomeTitle": "Spirit Agent",
+    "welcomeTitle": "Spirit",
     "continue": "Continuar",
     "back": "Voltar",
     "done": "Concluído",
@@ -164,9 +164,9 @@
     "lspEnabledDescription": "Quando desligado, diagnósticos de lint e verificações automáticas de erro após edições são desativados.",
     "attributionSection": "Atribuição",
     "commitAttribution": "Atribuição em commits",
-    "commitAttributionDescription": "Creditar o Spirit Agent em commits do agente.",
+    "commitAttributionDescription": "Creditar o Spirit em commits do agente.",
     "prAttribution": "Atribuição em PRs",
-    "prAttributionDescription": "Creditar o Spirit Agent em pull requests do agente.",
+    "prAttributionDescription": "Creditar o Spirit em pull requests do agente.",
     "editorTabCompletion": "Preenchimento com Tab no Editor",
     "editorTabCompletionDescription": "Usar preenchimento inline no editor de arquivos.",
     "lspStatusReady": "Pronto",
@@ -535,10 +535,10 @@
     "recent": "Recentes",
     "more": "Mais",
     "newSession": "Nova Sessão",
-    "openApp": "Abrir Spirit Agent",
+    "openApp": "Abrir Spirit",
     "settings": "Configurações",
-    "quitApp": "Sair do Spirit Agent",
-    "tooltip": "Spirit Agent"
+    "quitApp": "Sair do Spirit",
+    "tooltip": "Spirit"
   },
   "titleBar": {
     "file": "Arquivo",
@@ -567,7 +567,7 @@
     "close": "Fechar",
     "zoom": "Zoom",
     "bringAllToFront": "Trazer Tudo para a Frente",
-    "about": "Sobre o Spirit Agent",
+    "about": "Sobre o Spirit",
     "settings": "Configurações",
     "services": "Serviços",
     "hideApp": "Ocultar {{appName}}",
@@ -1260,7 +1260,7 @@
     "autoWorktreeNameFailedNotObject": "Falha ao gerar automaticamente nome do Worktree: modelo retornou JSON que não é um objeto."
   },
   "crashPage": {
-    "title": "Spirit Agent travou",
+    "title": "Spirit travou",
     "description": "O processo de renderização foi encerrado inesperadamente. O registro abaixo pode ajudar a diagnosticar a causa.",
     "reportOnGitHub": "Relatar no GitHub"
   },

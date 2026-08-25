@@ -94,7 +94,7 @@
     "custom": "自訂"
   },
   "onboarding": {
-    "welcomeTitle": "Spirit Agent",
+    "welcomeTitle": "Spirit",
     "continue": "繼續",
     "back": "返回",
     "done": "完成",
@@ -164,9 +164,9 @@
     "lspEnabledDescription": "關閉時，將停用 lint 診斷和檔案編輯後的自動錯誤檢查。",
     "attributionSection": "署名",
     "commitAttribution": "提交署名",
-    "commitAttributionDescription": "在智能體建立的提交中標註 Spirit Agent。",
+    "commitAttributionDescription": "在智能體建立的提交中標註 Spirit。",
     "prAttribution": "PR 署名",
-    "prAttributionDescription": "在智能體建立的 Pull Request 中標註 Spirit Agent。",
+    "prAttributionDescription": "在智能體建立的 Pull Request 中標註 Spirit。",
     "editorTabCompletion": "編輯器 Tab 補全",
     "editorTabCompletionDescription": "在檔案編輯器中使用行內補全。",
     "lspStatusReady": "就緒",
@@ -535,10 +535,10 @@
     "recent": "最近",
     "more": "更多",
     "newSession": "新增工作階段",
-    "openApp": "開啟 Spirit Agent",
+    "openApp": "開啟 Spirit",
     "settings": "設定",
-    "quitApp": "結束 Spirit Agent",
-    "tooltip": "Spirit Agent"
+    "quitApp": "結束 Spirit",
+    "tooltip": "Spirit"
   },
   "titleBar": {
     "file": "檔案",
@@ -567,7 +567,7 @@
     "close": "關閉",
     "zoom": "縮放",
     "bringAllToFront": "全部移至最前",
-    "about": "關於 Spirit Agent",
+    "about": "關於 Spirit",
     "settings": "設定",
     "services": "服務",
     "hideApp": "隱藏 {{appName}}",
@@ -1260,7 +1260,7 @@
     "autoWorktreeNameFailedNotObject": "自動產生 Worktree 名稱失敗：模型回傳的 JSON 不是物件。"
   },
   "crashPage": {
-    "title": "Spirit Agent 已當機",
+    "title": "Spirit 已當機",
     "description": "轉譯程序意外終止。以下記錄可能有助於找出原因。",
     "reportOnGitHub": "在 GitHub 上回報"
   },

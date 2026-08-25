@@ -94,7 +94,7 @@
     "custom": "Personnalisé"
   },
   "onboarding": {
-    "welcomeTitle": "Spirit Agent",
+    "welcomeTitle": "Spirit",
     "continue": "Continuer",
     "back": "Retour",
     "done": "Terminé",
@@ -164,9 +164,9 @@
     "lspEnabledDescription": "Désactivé, les diagnostics lint et les vérifications automatiques d'erreurs après modification de fichiers sont désactivés.",
     "attributionSection": "Attribution",
     "commitAttribution": "Attribution des commits",
-    "commitAttributionDescription": "Créditer Spirit Agent sur les commits de l'agent.",
+    "commitAttributionDescription": "Créditer Spirit sur les commits de l'agent.",
     "prAttribution": "Attribution des PR",
-    "prAttributionDescription": "Créditer Spirit Agent sur les pull requests de l'agent.",
+    "prAttributionDescription": "Créditer Spirit sur les pull requests de l'agent.",
     "editorTabCompletion": "Complétion par Tab dans l'éditeur",
     "editorTabCompletionDescription": "Utiliser la complétion en ligne dans l'éditeur de fichiers.",
     "lspStatusReady": "Prêt",
@@ -535,10 +535,10 @@
     "recent": "Récent",
     "more": "Plus",
     "newSession": "Nouvelle session",
-    "openApp": "Ouvrir Spirit Agent",
+    "openApp": "Ouvrir Spirit",
     "settings": "Réglages",
-    "quitApp": "Quitter Spirit Agent",
-    "tooltip": "Spirit Agent"
+    "quitApp": "Quitter Spirit",
+    "tooltip": "Spirit"
   },
   "titleBar": {
     "file": "Fichier",
@@ -567,7 +567,7 @@
     "close": "Fermer",
     "zoom": "Zoom",
     "bringAllToFront": "Tout ramener au premier plan",
-    "about": "À propos de Spirit Agent",
+    "about": "À propos de Spirit",
     "settings": "Réglages",
     "services": "Services",
     "hideApp": "Masquer {{appName}}",
@@ -1260,7 +1260,7 @@
     "autoWorktreeNameFailedNotObject": "La génération automatique du nom de Worktree a échoué : le modèle a renvoyé un JSON qui n'est pas un objet."
   },
   "crashPage": {
-    "title": "Spirit Agent a planté",
+    "title": "Spirit a planté",
     "description": "Le processus de rendu s'est terminé de manière inattendue. Le journal ci-dessous peut aider à en diagnostiquer la cause.",
     "reportOnGitHub": "Signaler sur GitHub"
   },

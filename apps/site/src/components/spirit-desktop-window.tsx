@@ -91,7 +91,7 @@ type WorkspacePreviewState = {
 };
 
 const SITE_WORKSPACE_ROOT = "D:\\spiritagent.app";
-const DESKTOP_WORKSPACE_ROOT = "D:\\spiritagent.app\\SPIRITAGENT\\desktop";
+const DESKTOP_WORKSPACE_ROOT = "D:\\spiritagent.app\\SPIRIT\\desktop";
 
 const CONVERSATION_MAX_W = "max-w-[min(84vw,38rem)]";
 
@@ -257,7 +257,7 @@ function createDesktopPreview(copy: Messages["desktop"]["previews"]): WorkspaceP
   "private": true,
   "type": "module"
 }`,
-      "README.md": `# Spirit Agent Desktop
+      "README.md": `# Spirit Desktop
 
 ${copy.desktopReadmeDescription}
 `,
