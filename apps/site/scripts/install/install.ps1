@@ -44,6 +44,61 @@ function Get-CliDownloadUrl([string]$Arch, [string]$Version) {
   return "https://$SpiritDownloadHost/cli/windows/$Arch/$Version/$fileName"
 }
 
+function Get-GithubChecksumsUrl([string]$Version) {
+  if ($Version -eq 'latest') {
+    return 'https://github.com/SpiritAgents/spirit/releases/latest/download/SHA256SUMS.txt'
+  }
+  return "https://github.com/SpiritAgents/spirit/releases/download/$Version/SHA256SUMS.txt"
+}
+
+function Get-GithubCliAssetName([string]$Arch, [string]$Version) {
+  return "Spirit-CLI-$Version-windows-$Arch.zip"
+}
+
+function Get-ExpectedSha256FromSums([string]$Sums, [string]$Arch, [string]$Version) {
+  $versionRe = '\d+\.\d+\.\d+(?:-(?:alpha|beta|rc)\.\d+)?'
+  $nameRe = "^Spirit-CLI-$versionRe-windows-$([regex]::Escape($Arch))\.zip$"
+  $pinnedName = Get-GithubCliAssetName -Arch $Arch -Version $Version
+  $found = New-Object System.Collections.Generic.List[string]
+
+  foreach ($rawLine in ($Sums -split '\r?\n')) {
+    $line = $rawLine.Trim()
+    if ($line -eq '' -or $line.StartsWith('#')) {
+      continue
+    }
+
+    $tokens = $line -split '\s+'
+    if ($tokens.Count -lt 2) {
+      continue
+    }
+
+    $hash = $tokens[0]
+    $name = $tokens[$tokens.Count - 1].TrimStart('*')
+
+    $isMatch = $false
+    if ($Version -eq 'latest') {
+      $isMatch = $name -match $nameRe
+    } else {
+      $isMatch = $name -eq $pinnedName
+    }
+
+    if ($isMatch) {
+      [void]$found.Add($hash)
+    }
+  }
+
+  if ($found.Count -eq 0) {
+    if ($Version -eq 'latest') {
+      throw "SHA256SUMS.txt has no CLI entry for windows/$Arch"
+    }
+    throw "SHA256SUMS.txt has no entry for $pinnedName"
+  }
+  if ($found.Count -gt 1) {
+    throw "SHA256SUMS.txt has multiple CLI entries for windows/$Arch"
+  }
+  return $found[0]
+}
+
 function Ensure-UserPath([string]$BinDir) {
   $userPath = [Environment]::GetEnvironmentVariable('Path', 'User')
   if (-not $userPath) {
@@ -110,6 +165,7 @@ function Install-SpiritShim([string]$SourceExe, [string]$BinDir) {
 
 $arch = Get-SpiritArch
 $url = Get-CliDownloadUrl -Arch $arch -Version $SpiritVersion
+$checksumsUrl = Get-GithubChecksumsUrl -Version $SpiritVersion
 $binDir = Join-Path $SpiritHome 'bin'
 $cliDir = Join-Path $SpiritHome 'cli'
 $currentDir = Join-Path $cliDir 'current'
@@ -120,6 +176,19 @@ Write-Info "Platform: windows/$arch"
 Write-Info "SPIRIT_HOME: $SpiritHome"
 Write-Info "Version: $SpiritVersion"
 Write-Info "Download: $url"
+Write-Info "Checksums: $checksumsUrl"
+
+Write-Info 'Fetching checksums...'
+try {
+  $sumsResponse = Invoke-WebRequest -Uri $checksumsUrl -UseBasicParsing
+} catch {
+  throw "failed to fetch SHA256SUMS.txt from GitHub ($checksumsUrl)"
+}
+$sums = [string]$sumsResponse.Content
+if ([string]::IsNullOrWhiteSpace($sums)) {
+  throw 'SHA256SUMS.txt from GitHub was empty'
+}
+$expected = Get-ExpectedSha256FromSums -Sums $sums -Arch $arch -Version $SpiritVersion
 
 $tmpRoot = Join-Path ([System.IO.Path]::GetTempPath()) ("spirit-install-" + [guid]::NewGuid().ToString('N'))
 $archivePath = Join-Path $tmpRoot 'cli.zip'
@@ -130,6 +199,12 @@ try {
 
   Write-Info 'Downloading...'
   Invoke-WebRequest -Uri $url -OutFile $archivePath -UseBasicParsing
+
+  Write-Info 'Verifying checksum...'
+  $actual = (Get-FileHash -LiteralPath $archivePath -Algorithm SHA256).Hash
+  if ($actual.ToLowerInvariant() -ne $expected.ToLowerInvariant()) {
+    throw "SHA-256 mismatch for windows/$arch (expected $expected, got $actual)"
+  }
 
   Write-Info 'Extracting...'
   Expand-Archive -LiteralPath $archivePath -DestinationPath $extractRoot -Force

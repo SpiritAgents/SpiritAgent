@@ -19,7 +19,7 @@ Windows (PowerShell):
 irm https://spirit.fast/install.ps1 | iex
 ```
 
-スクリプトは `download.spirit.fast` からビルドをダウンロードし、解凍して、`spirit` を `PATH` に配置します。
+スクリプトは `download.spirit.fast` からビルドをダウンロードし、対応する GitHub Release の `SHA256SUMS.txt` と SHA-256 を照合します（不一致なら中止）。その後解凍して `spirit` を `PATH` に配置します。
 
 新しいターミナルを開いて、次のコマンドを実行します:
 

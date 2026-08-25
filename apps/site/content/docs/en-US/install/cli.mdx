@@ -19,7 +19,7 @@ Windows (PowerShell):
 irm https://spirit.fast/install.ps1 | iex
 ```
 
-The script downloads a build from `download.spirit.fast`, unpacks it, and puts `spirit` on your `PATH`.
+The script downloads a build from `download.spirit.fast`, verifies its SHA-256 against the matching GitHub Release `SHA256SUMS.txt` (aborting on mismatch), unpacks it, and puts `spirit` on your `PATH`.
 
 Open a new terminal, then:
 
