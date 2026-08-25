@@ -36,7 +36,7 @@ function Get-SpiritArch {
 }
 
 function Get-CliArchiveName([string]$Arch) {
-  return "SpiritAgent-CLI-windows-$Arch.zip"
+  return "Spirit-CLI-windows-$Arch.zip"
 }
 
 function Get-CliDownloadUrl([string]$Arch, [string]$Version) {

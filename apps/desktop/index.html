@@ -4,7 +4,7 @@
     <meta charset="UTF-8" />
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Spirit Agent</title>
+    <title>Spirit</title>
     <script>
       (function () {
         if (!/\bElectron\//.test(navigator.userAgent)) return;
@@ -19,7 +19,7 @@
         if (translucency) root.classList.add("spirit-desktop-translucency");
         var themeRaw = null;
         try {
-          themeRaw = localStorage.getItem("spirit-agent-desktop-theme");
+          themeRaw = localStorage.getItem("spirit-desktop-theme");
         } catch (_err2) {}
         var pref =
           themeRaw === "dark" || themeRaw === "light" || themeRaw === "system"

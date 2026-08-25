@@ -65,8 +65,8 @@ export class SpiritAcpAgent implements acp.Agent {
         },
       },
       agentInfo: {
-        name: "spirit-agent",
-        title: "Spirit Agent",
+        name: "spirit",
+        title: "Spirit",
         version: "1.0.0-alpha.0",
       },
       authMethods,

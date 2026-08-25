@@ -28,7 +28,7 @@ import type {
 import type { EphemeralSessionRecord } from "./sessions.js";
 import { ensureBuiltInSkills } from "@spiritagent/host-internal";
 import { resolveWorkspaceBindingForRequestedRoot, sameWorkspaceRoot } from "./service-utils.js";
-import { spiritAgentDataDir } from "./storage.js";
+import { spiritDataDir } from "./storage.js";
 import type { ExtensionWarmupTrigger } from "./extension-warmup.js";
 
 export interface InitializationState {
@@ -82,7 +82,7 @@ export async function ensureInitializedCommand(
   const loadedConfig = await loadConfig();
   applyLlmHttpVersionFromConfig(loadedConfig);
   applyLlmClientVersionFromApp();
-  await ensureBuiltInSkills(spiritAgentDataDir());
+  await ensureBuiltInSkills(spiritDataDir());
   await ctx.seedBuiltInExtensions();
   const previousState = ctx.state();
   const previousBinding = normalizeWorkspaceBinding(

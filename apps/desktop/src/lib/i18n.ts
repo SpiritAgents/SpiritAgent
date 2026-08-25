@@ -33,7 +33,7 @@ export {
 } from "./ui-locale";
 export type { LanguagePreference, ValidLanguage } from "./ui-locale";
 
-export const LANGUAGE_STORAGE_KEY = "spirit-agent-desktop-language" as const;
+export const LANGUAGE_STORAGE_KEY = "spirit-desktop-language" as const;
 
 export function getStoredLanguagePreference(): LanguagePreference {
   if (typeof localStorage === "undefined") {

@@ -16,7 +16,7 @@ import {
 import {
   isProvisionalSessionPath,
   provisionalNewSessionPath,
-  spiritAgentDataDir,
+  spiritDataDir,
 } from "../../dist-electron/src/host/storage.js";
 import { DesktopToolExecutor } from "../../dist-electron/src/host/tool-executor.js";
 
@@ -84,7 +84,7 @@ test("replaceAll restores rewind todo snapshot per session", async () => {
   try {
     process.env.APPDATA = tempRoot;
     const store = createHostTodoStore({
-      spiritDataDir: spiritAgentDataDir(),
+      spiritDataDir: spiritDataDir(),
       scope: { sessionKey },
     });
     await store.write([{ title: "Before rewind", status: "pending" }]);

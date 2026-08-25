@@ -85,7 +85,7 @@ import {
 } from "@spiritagent/host-internal";
 
 import type { AskQuestionsQuestionSpec } from "../types.js";
-import { spiritAgentDataDir } from "./storage.js";
+import { spiritDataDir } from "./storage.js";
 import type { DesktopAgentMode } from "../lib/agent-mode.js";
 import type { DesktopToolRequest } from "./contracts.js";
 
@@ -159,7 +159,7 @@ export class DesktopToolExecutor implements ToolExecutor<DesktopToolRequest> {
     this.tools = new NodeHostToolService<AskQuestionsQuestionSpec>(
       {
         workspaceRoot,
-        spiritDataDir: spiritAgentDataDir(),
+        spiritDataDir: spiritDataDir(),
       },
       {
         mcp: createNoopMcpAdapter(),

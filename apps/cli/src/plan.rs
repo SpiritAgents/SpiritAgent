@@ -1,7 +1,7 @@
 use serde::{Deserialize, Serialize};
 use std::path::{Path, PathBuf};
 
-use crate::{llm_types::LlmMessage, mcp::spirit_agent_data_dir, ports::ArchivedLlmMessage};
+use crate::{llm_types::LlmMessage, mcp::spirit_data_dir, ports::ArchivedLlmMessage};
 
 pub const PLANS_DIR_NAME: &str = "plans";
 
@@ -30,11 +30,11 @@ pub(crate) fn bootstrap_plan_metadata() -> PlanMetadata {
 }
 
 pub fn user_plans_dir() -> PathBuf {
-    spirit_agent_data_dir().join(PLANS_DIR_NAME)
+    spirit_data_dir().join(PLANS_DIR_NAME)
 }
 
 impl PlanMetadata {
-    pub fn spirit_agent_mode(&self) -> &str {
+    pub fn agent_mode(&self) -> &str {
         match self.agent_mode.as_str() {
             "agent" | "plan" | "ask" | "debug" => self.agent_mode.as_str(),
             _ if self.plan_mode => "plan",
@@ -129,7 +129,7 @@ mod tests {
         let _lock = shared_env_lock();
         let spirit_data_dir = unique_spirit_data_dir("snapshot");
         unsafe {
-            env::set_var("SPIRIT_AGENT_DATA_DIR", &spirit_data_dir);
+            env::set_var("SPIRIT_DATA_DIR", &spirit_data_dir);
         }
         let plan_path = user_plans_dir().join("demo-plan.md");
         fs::create_dir_all(plan_path.parent().expect("plans parent")).expect("create plans dir");
@@ -140,7 +140,7 @@ mod tests {
         assert!(metadata.exists);
 
         unsafe {
-            env::remove_var("SPIRIT_AGENT_DATA_DIR");
+            env::remove_var("SPIRIT_DATA_DIR");
         }
     }
 

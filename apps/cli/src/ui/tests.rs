@@ -1348,7 +1348,7 @@ fn shell_pending_approval_title_line_shows_reason_instead_of_call_id() {
             headline: "check build output".to_string(),
             detail_lines: vec![
                 "High-risk tool call: shell".to_string(),
-                "Command: cargo test -p spirit-agent".to_string(),
+                "Command: cargo test -p spirit".to_string(),
             ],
             image_paths: Vec::new(),
             video_paths: Vec::new(),
@@ -1379,12 +1379,12 @@ fn generate_image_tool_card_shows_structured_path_when_aux_details_collapsed() {
             headline: "Image generated".to_string(),
             detail_lines: Vec::new(),
             image_paths: vec![
-                "C:/Users/pc/AppData/Roaming/SpiritAgent/generated-images/example.png"
+                "C:/Users/pc/AppData/Roaming/Spirit/generated-images/example.png"
                     .to_string(),
             ],
             video_paths: Vec::new(),
             args_excerpt: Some("{\n  \"prompt\": \"draw a picture\"\n}".to_string()),
-            output_excerpt: Some("[generated image]\npath: C:/Users/pc/AppData/Roaming/SpiritAgent/generated-images/example.png".to_string()),
+            output_excerpt: Some("[generated image]\npath: C:/Users/pc/AppData/Roaming/Spirit/generated-images/example.png".to_string()),
             suppress_expand: None,
         },
     ));
@@ -1397,7 +1397,7 @@ fn generate_image_tool_card_shows_structured_path_when_aux_details_collapsed() {
         line.contains(
             t!(
                 "tui.tool.detail.path",
-                path = "C:/Users/pc/AppData/Roaming/SpiritAgent/generated-images/example.png"
+                path = "C:/Users/pc/AppData/Roaming/Spirit/generated-images/example.png"
             )
             .as_ref()
         )
@@ -1457,7 +1457,7 @@ fn generate_image_tool_card_keeps_rail_on_wrapped_path_lines() {
             phase: ToolUiPhase::Succeeded,
             headline: "Image generated".to_string(),
             detail_lines: vec![
-                t!("tui.tool.detail.path", path = "C:/Users/pc/AppData/Roaming/SpiritAgent/generated-images/this-is-a-very-long-image-name-that-must-wrap/example-output.png")
+                t!("tui.tool.detail.path", path = "C:/Users/pc/AppData/Roaming/Spirit/generated-images/this-is-a-very-long-image-name-that-must-wrap/example-output.png")
                     .into_owned(),
             ],
             image_paths: Vec::new(),
@@ -1499,7 +1499,7 @@ fn generate_image_tool_card_selection_highlights_wrapped_rail_consistently() {
             phase: ToolUiPhase::Succeeded,
             headline: "Image generated".to_string(),
             detail_lines: vec![
-                t!("tui.tool.detail.path", path = "C:/Users/pc/AppData/Roaming/SpiritAgent/generated-images/this-is-a-very-long-image-name-that-must-wrap/example-output.png")
+                t!("tui.tool.detail.path", path = "C:/Users/pc/AppData/Roaming/Spirit/generated-images/this-is-a-very-long-image-name-that-must-wrap/example-output.png")
                     .into_owned(),
             ],
             image_paths: Vec::new(),

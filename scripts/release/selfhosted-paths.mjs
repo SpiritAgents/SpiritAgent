@@ -7,29 +7,29 @@ export const PUBLIC_DOWNLOAD_HOST = 'download.spirit.fast';
 const PRIMARY_PATTERNS = [
   {
     channel: 'desktop',
-    re: new RegExp(`^SpiritAgent-Desktop-(?<version>${VERSION_IN_FILENAME_RE})-darwin-(?<arch>x64|arm64)\\.dmg$`),
+    re: new RegExp(`^Spirit-Desktop-(?<version>${VERSION_IN_FILENAME_RE})-darwin-(?<arch>x64|arm64)\\.dmg$`),
     toKey: ({ arch, version }) => ({
       os: 'darwin',
       arch,
       version,
-      fileName: `SpiritAgent-darwin-${arch}.dmg`,
+      fileName: `Spirit-darwin-${arch}.dmg`,
     }),
   },
   {
     channel: 'desktop',
-    re: new RegExp(`^SpiritAgent-Desktop-(?<version>${VERSION_IN_FILENAME_RE})-win-(?<arch>x64|arm64)\\.exe$`),
+    re: new RegExp(`^Spirit-Desktop-(?<version>${VERSION_IN_FILENAME_RE})-win-(?<arch>x64|arm64)\\.exe$`),
     toKey: ({ arch, version }) => ({
       os: 'windows',
       arch,
       version,
-      fileName: `SpiritAgent-windows-${arch}.exe`,
+      fileName: `Spirit-windows-${arch}.exe`,
     }),
   },
   {
     channel: 'desktop',
     // electron-builder AppImage uses x86_64 for linux x64 (arm64 stays arm64).
     re: new RegExp(
-      `^SpiritAgent-Desktop-(?<version>${VERSION_IN_FILENAME_RE})-linux-(?<arch>x64|x86_64|arm64)\\.AppImage$`,
+      `^Spirit-Desktop-(?<version>${VERSION_IN_FILENAME_RE})-linux-(?<arch>x64|x86_64|arm64)\\.AppImage$`,
     ),
     toKey: ({ arch, version }) => {
       const normalizedArch = arch === 'x86_64' ? 'x64' : arch;
@@ -37,38 +37,38 @@ const PRIMARY_PATTERNS = [
         os: 'linux',
         arch: normalizedArch,
         version,
-        fileName: `SpiritAgent-linux-${normalizedArch}.AppImage`,
+        fileName: `Spirit-linux-${normalizedArch}.AppImage`,
       };
     },
   },
   {
     channel: 'cli',
-    re: new RegExp(`^SpiritAgent-CLI-(?<version>${VERSION_IN_FILENAME_RE})-darwin-(?<arch>x64|arm64)\\.tar\\.gz$`),
+    re: new RegExp(`^Spirit-CLI-(?<version>${VERSION_IN_FILENAME_RE})-darwin-(?<arch>x64|arm64)\\.tar\\.gz$`),
     toKey: ({ arch, version }) => ({
       os: 'darwin',
       arch,
       version,
-      fileName: `SpiritAgent-CLI-darwin-${arch}.tar.gz`,
+      fileName: `Spirit-CLI-darwin-${arch}.tar.gz`,
     }),
   },
   {
     channel: 'cli',
-    re: new RegExp(`^SpiritAgent-CLI-(?<version>${VERSION_IN_FILENAME_RE})-windows-(?<arch>x64|arm64)\\.zip$`),
+    re: new RegExp(`^Spirit-CLI-(?<version>${VERSION_IN_FILENAME_RE})-windows-(?<arch>x64|arm64)\\.zip$`),
     toKey: ({ arch, version }) => ({
       os: 'windows',
       arch,
       version,
-      fileName: `SpiritAgent-CLI-windows-${arch}.zip`,
+      fileName: `Spirit-CLI-windows-${arch}.zip`,
     }),
   },
   {
     channel: 'cli',
-    re: new RegExp(`^SpiritAgent-CLI-(?<version>${VERSION_IN_FILENAME_RE})-linux-(?<arch>x64|arm64)\\.tar\\.gz$`),
+    re: new RegExp(`^Spirit-CLI-(?<version>${VERSION_IN_FILENAME_RE})-linux-(?<arch>x64|arm64)\\.tar\\.gz$`),
     toKey: ({ arch, version }) => ({
       os: 'linux',
       arch,
       version,
-      fileName: `SpiritAgent-CLI-linux-${arch}.tar.gz`,
+      fileName: `Spirit-CLI-linux-${arch}.tar.gz`,
     }),
   },
 ];

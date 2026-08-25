@@ -1,9 +1,9 @@
-export type SpiritAgentMode = "agent" | "plan" | "ask" | "debug";
+export type AgentMode = "agent" | "plan" | "ask" | "debug";
 
-export function normalizeSpiritAgentMode(input?: {
+export function normalizeAgentMode(input?: {
   agentMode?: unknown;
   planMode?: boolean;
-}): SpiritAgentMode {
+}): AgentMode {
   if (
     input?.agentMode === "agent" ||
     input?.agentMode === "plan" ||
@@ -15,16 +15,16 @@ export function normalizeSpiritAgentMode(input?: {
   return input?.planMode === true ? "plan" : "agent";
 }
 
-export function readSpiritAgentModeFromTransportConfig(
-  config: { spiritAgentMode?: SpiritAgentMode; planMode?: boolean } | undefined,
-): SpiritAgentMode {
+export function readAgentModeFromTransportConfig(
+  config: { agentMode?: AgentMode; planMode?: boolean } | undefined,
+): AgentMode {
   if (
-    config?.spiritAgentMode === "agent" ||
-    config?.spiritAgentMode === "plan" ||
-    config?.spiritAgentMode === "ask" ||
-    config?.spiritAgentMode === "debug"
+    config?.agentMode === "agent" ||
+    config?.agentMode === "plan" ||
+    config?.agentMode === "ask" ||
+    config?.agentMode === "debug"
   ) {
-    return config.spiritAgentMode;
+    return config.agentMode;
   }
   return config?.planMode === true ? "plan" : "agent";
 }
@@ -595,7 +595,7 @@ export interface ToolExecutor<
   toolDefinitionsJson(): JsonValue;
   /** When Loop is off, omit finish_task from toolDefinitionsJson(). */
   setLoopToolExposure?(loopEnabled: boolean): void;
-  setAgentModeToolExposure?(agentMode: SpiritAgentMode): void;
+  setAgentModeToolExposure?(agentMode: AgentMode): void;
   /** @deprecated Use {@link setAgentModeToolExposure}. */
   setPlanModeToolExposure?(planMode: boolean): void;
   parseCommand(message: string): Promise<ToolRequest>;

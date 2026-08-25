@@ -39,7 +39,7 @@ test("uploadMoonshotVideoFile posts multipart with purpose=video, User-Agent, an
     assert.ok(capturedBody instanceof UndiciFormData);
     assert.equal(capturedBody.get("purpose"), "video");
     assert.ok(capturedBody.get("file"));
-    assert.equal(capturedUserAgent, "SpiritAgent/1.2.3");
+    assert.equal(capturedUserAgent, "Spirit/1.2.3");
 
     const cached = await uploadMoonshotVideoFile(
       { apiKey: "test-key", baseUrl: "https://api.moonshot.cn/v1" },

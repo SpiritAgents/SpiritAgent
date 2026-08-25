@@ -7,7 +7,7 @@ import {
   scanSessionReferenceWireBlocks,
   sessionReferenceContextText,
 } from "../lib/session-reference-wire-text.js";
-import { spiritAgentDataDir } from "./storage.js";
+import { spiritDataDir } from "./storage.js";
 
 const TRANSCRIPT_UNAVAILABLE_BODY = "[session transcript unavailable: file missing or unreadable]";
 /** Model-visible truncation marker when a referenced transcript exceeds the budget. */
@@ -16,7 +16,7 @@ const TRANSCRIPT_TRUNCATED_SUFFIX = "\n\n[session transcript truncated]";
 const SESSION_REFERENCE_TRANSCRIPT_MAX_BYTES = 64 * 1024;
 
 function isPathInsideTranscriptsRoot(candidatePath: string): boolean {
-  const transcriptsRoot = path.resolve(resolveTranscriptsDir(spiritAgentDataDir()));
+  const transcriptsRoot = path.resolve(resolveTranscriptsDir(spiritDataDir()));
   const resolved = path.resolve(candidatePath);
   const relative = path.relative(transcriptsRoot, resolved);
   return relative !== "" && !relative.startsWith("..") && !path.isAbsolute(relative);

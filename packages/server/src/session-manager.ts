@@ -6,7 +6,7 @@ import type {
   LlmActiveSkill,
   PendingWorkspaceFile,
   RuntimeEvent,
-  SpiritAgentMode,
+  AgentMode,
 } from "@spiritagent/agent-core";
 import type { BridgeRuntimeSnapshot } from "@spiritagent/agent-core/host-bridge";
 import {
@@ -151,7 +151,7 @@ export interface CreateSessionParams {
   hostKind: ServerClientKind;
   approvalLevel?: ApprovalLevel;
   modelRef?: ModelRef;
-  agentMode?: SpiritAgentMode;
+  agentMode?: AgentMode;
   /** Todo store scope override (defaults to the new session id). */
   todoSessionKey?: string;
   /** Stable chat file path for multi-host attach. */
@@ -748,7 +748,7 @@ export class SessionManager {
     session.info.approvalLevel = level;
   }
 
-  async setAgentMode(sessionId: string, mode: SpiritAgentMode): Promise<void> {
+  async setAgentMode(sessionId: string, mode: AgentMode): Promise<void> {
     const session = this.requireSession(sessionId);
     await session.runtimeResult.setAgentMode(mode);
     session.createParams.agentMode = mode;
@@ -1041,7 +1041,7 @@ export class SessionManager {
     await fresh.runSessionStart("resume");
   }
 
-  async reloadHostMetadata(sessionId: string, mode: SpiritAgentMode): Promise<void> {
+  async reloadHostMetadata(sessionId: string, mode: AgentMode): Promise<void> {
     const session = this.requireSession(sessionId);
     await session.runtimeResult.reloadHostMetadata(mode);
     session.runtimeResult.toolExecutor.setAgentModeToolExposure(mode);

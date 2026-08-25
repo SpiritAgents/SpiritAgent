@@ -17,7 +17,7 @@ import { isEphemeralDebugSessionPath } from "./sessions.js";
 import {
   deleteStoredSession,
   isSplitProvisionalSessionPath,
-  spiritAgentDataDir,
+  spiritDataDir,
 } from "./storage.js";
 
 export interface SessionDeleteContext
@@ -140,7 +140,7 @@ export async function deleteSessionCommand(
       await deleteStoredSession(resolvedPath);
     }
     if (rewindSessionId) {
-      await deleteSessionRewindData(spiritAgentDataDir(), rewindSessionId);
+      await deleteSessionRewindData(spiritDataDir(), rewindSessionId);
     }
     await deleteDesktopTranscriptSessionDirForChatPath(resolvedPath);
     ctx.clearSessionTitleGeneration(resolvedPath);

@@ -3469,7 +3469,7 @@ mod tests {
                 "user-rule",
                 "User Rule",
                 "rule.md",
-                PathBuf::from("C:/users/demo/AppData/Roaming/SpiritAgent/rule.md"),
+                PathBuf::from("C:/users/demo/AppData/Roaming/Spirit/rule.md"),
             ),
         };
 
@@ -3529,7 +3529,7 @@ mod tests {
                 "Analyze datasets and summarize findings.",
                 "skills/data-analysis/SKILL.md",
                 PathBuf::from(
-                    "C:/users/demo/AppData/Roaming/SpiritAgent/skills/data-analysis/SKILL.md",
+                    "C:/users/demo/AppData/Roaming/Spirit/skills/data-analysis/SKILL.md",
                 ),
                 SkillRootKind::User,
             ),

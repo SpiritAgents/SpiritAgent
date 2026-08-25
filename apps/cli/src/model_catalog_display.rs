@@ -10,7 +10,7 @@ use std::{
 use serde::Deserialize;
 use sha2::{Digest, Sha256};
 
-use crate::mcp::spirit_agent_data_dir;
+use crate::mcp::spirit_data_dir;
 use crate::model_registry::{ModelProfile, ModelProvider};
 
 const CACHE_DIR_NAME: &str = "model-catalog-cache";
@@ -31,7 +31,7 @@ fn model_catalog_cache_file_path(hint_key: &str) -> PathBuf {
         .take(16)
         .map(|byte| format!("{byte:02x}"))
         .collect::<String>();
-    spirit_agent_data_dir()
+    spirit_data_dir()
         .join(CACHE_DIR_NAME)
         .join(format!("{hex}.json"))
 }
@@ -242,7 +242,7 @@ mod tests {
     fn with_isolated_data_dir(label: &str) -> PathBuf {
         let data_dir = temp_test_dir(label);
         unsafe {
-            env::set_var("SPIRIT_AGENT_DATA_DIR", &data_dir);
+            env::set_var("SPIRIT_DATA_DIR", &data_dir);
             env::remove_var("APPDATA");
         }
         data_dir
@@ -251,9 +251,9 @@ mod tests {
     fn restore_data_dir_env(previous_data_dir: Option<String>, previous_appdata: Option<String>) {
         unsafe {
             if let Some(value) = previous_data_dir {
-                env::set_var("SPIRIT_AGENT_DATA_DIR", value);
+                env::set_var("SPIRIT_DATA_DIR", value);
             } else {
-                env::remove_var("SPIRIT_AGENT_DATA_DIR");
+                env::remove_var("SPIRIT_DATA_DIR");
             }
             if let Some(value) = previous_appdata {
                 env::set_var("APPDATA", value);
@@ -276,7 +276,7 @@ mod tests {
         let _guard = shared_env_lock()
             .lock()
             .unwrap_or_else(|err| err.into_inner());
-        let previous_data_dir = env::var("SPIRIT_AGENT_DATA_DIR").ok();
+        let previous_data_dir = env::var("SPIRIT_DATA_DIR").ok();
         let previous_appdata = env::var("APPDATA").ok();
         let data_dir = with_isolated_data_dir("openrouter-catalog");
         let hint = "openrouter::openai-compatible::https://openrouter.ai/api/v1";
@@ -331,7 +331,7 @@ mod tests {
         let _guard = shared_env_lock()
             .lock()
             .unwrap_or_else(|err| err.into_inner());
-        let previous_data_dir = env::var("SPIRIT_AGENT_DATA_DIR").ok();
+        let previous_data_dir = env::var("SPIRIT_DATA_DIR").ok();
         let previous_appdata = env::var("APPDATA").ok();
         let data_dir = with_isolated_data_dir("google-catalog");
         let hint = "google::openai-compatible::https://generativelanguage.googleapis.com/v1beta";

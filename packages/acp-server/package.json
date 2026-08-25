@@ -9,7 +9,7 @@
     "directory": "packages/acp-server"
   },
   "bin": {
-    "spirit-agent-acp": "./dist/src/stdio-entry.js"
+    "spirit-acp": "./dist/src/stdio-entry.js"
   },
   "files": [
     "dist",

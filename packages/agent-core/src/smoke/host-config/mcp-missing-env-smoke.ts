@@ -20,7 +20,7 @@ async function runMcpMissingEnvSmoke(): Promise<void> {
 
   try {
     const appData = join(tempRoot, "AppData");
-    const dataDir = join(appData, "SpiritAgent");
+    const dataDir = join(appData, "Spirit");
     await mkdir(dataDir, { recursive: true });
     await writeFile(
       join(dataDir, "mcp.json"),

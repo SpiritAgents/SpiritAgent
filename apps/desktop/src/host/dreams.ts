@@ -27,7 +27,7 @@ import {
   loadStoredSession,
   resolveApiKeyForConfigModel,
   saveStoredSession,
-  spiritAgentDataDir,
+  spiritDataDir,
   type DesktopConfigFile,
 } from "./storage.js";
 import {
@@ -64,7 +64,7 @@ async function listActiveDreams(input: {
   }
 
   const dreamStore = createHostDreamStore({
-    spiritDataDir: spiritAgentDataDir(),
+    spiritDataDir: spiritDataDir(),
     scope: {
       workspaceRoot: input.workspaceRoot,
       gitBranch,
@@ -169,7 +169,7 @@ export async function runDesktopDreamCollectorOnce(
       .filter((session) => session.modifiedAtUnixMs >= cutoffUnixMs)
       .sort((left, right) => left.modifiedAtUnixMs - right.modifiedAtUnixMs);
 
-    const dreamStore = createHostDreamStore({ spiritDataDir: spiritAgentDataDir(), scope });
+    const dreamStore = createHostDreamStore({ spiritDataDir: spiritDataDir(), scope });
     await dreamStore.pruneExpired(now);
     const sessionProgressList = await dreamStore.listSessionProgress();
     const sessionProgressMap = new Map(sessionProgressList.map((entry) => [entry.path, entry]));
@@ -573,7 +573,7 @@ interface DesktopDreamCollectorRunLog {
 }
 
 async function writeDreamCollectorRunLog(log: DesktopDreamCollectorRunLog): Promise<void> {
-  const logsDir = dreamLogsDirPath(spiritAgentDataDir());
+  const logsDir = dreamLogsDirPath(spiritDataDir());
   await mkdir(logsDir, { recursive: true });
   const fileName = `${log.startedAtUnixMs}-${log.runId}.json`;
   await writeFile(path.join(logsDir, fileName), `${JSON.stringify(log, null, 2)}\n`, "utf8");

@@ -1,4 +1,4 @@
-use crate::mcp::spirit_agent_data_dir;
+use crate::mcp::spirit_data_dir;
 use anyhow::{Context, Result};
 use serde::{Deserialize, Serialize};
 use serde_json::{Map, Value};
@@ -12,7 +12,7 @@ use std::{
 pub const DEFAULT_API_BASE: &str = "https://api.openai.com/v1";
 pub const SPIRIT_CONFIG_SCHEMA_VERSION: u64 = 2;
 const ENV_API_KEY: &str = "SPIRIT_API_KEY";
-const KEYRING_SERVICE: &str = "SpiritAgent";
+const KEYRING_SERVICE: &str = "Spirit";
 const KEYRING_ACCOUNT_API_KEY: &str = "openai_api_key";
 
 /// Aligned with Desktop `DesktopModelProvider` and the `provider` field in `config.json`.
@@ -1378,7 +1378,7 @@ pub fn make_test_app_config_with_models(
 }
 
 pub fn config_file_path() -> PathBuf {
-    spirit_agent_data_dir().join("config.json")
+    spirit_data_dir().join("config.json")
 }
 
 pub fn load_config() -> Result<AppConfig> {

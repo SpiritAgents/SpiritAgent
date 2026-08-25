@@ -35,7 +35,7 @@ import {
 import { cloneHostTodoRecords, listSessionTodos, replaceSessionTodos } from "./todos.js";
 import {
   loadHostMetadata,
-  spiritAgentDataDir,
+  spiritDataDir,
   type DesktopConfigFile,
   type DesktopWorkspaceBinding,
   type HostMetadataSummary,
@@ -116,7 +116,7 @@ export async function recordHostFileChange(
   }
 
   const stored = toDesktopFileChange(change, nextDesktopRewindSequence(bundle.rewind));
-  await saveRewindFileChange(spiritAgentDataDir(), bundle.rewind.sessionId, stored);
+  await saveRewindFileChange(spiritDataDir(), bundle.rewind.sessionId, stored);
   const metadata = fileChangeMetadata(stored);
   bundle.rewind.fileChanges.push(metadata);
   if (!metadata.toolCallId) {
@@ -173,7 +173,7 @@ export async function recordRewindCheckpoint(
     ctx.activeBundle().messageTimeline.snapshot(),
   );
   await saveRewindCheckpointSnapshot(
-    spiritAgentDataDir(),
+    spiritDataDir(),
     ctx.activeBundle().rewind.sessionId,
     checkpoint.id,
     {
@@ -255,7 +255,7 @@ export function restoreBeforeRewindCheckpoint(
   ctx.activeBundle().loopEnabled = archive.loopEnabled === true;
   const pruned = pruneRewindMetadataAfterCheckpoint(ctx.activeBundle().rewind, checkpointSequence);
   // After metadata trimming, clean up the corresponding sidecar files in sync; failures do not affect the rewind flow (the next session deletion still cleans the whole directory)
-  void deleteRewindSidecarFiles(spiritAgentDataDir(), ctx.activeBundle().rewind.sessionId, pruned);
+  void deleteRewindSidecarFiles(spiritDataDir(), ctx.activeBundle().rewind.sessionId, pruned);
   ctx.activeBundle().pendingUnboundFileChangeIds = [];
   ctx.activeBundle().messageIdCounter = nextMessageIdFromMessages(ctx.activeBundle().messages);
   ctx.activeBundle().conversationRevision += 1;

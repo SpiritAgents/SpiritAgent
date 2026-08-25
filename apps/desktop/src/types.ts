@@ -1141,7 +1141,7 @@ export interface DesktopConfigSnapshot {
   onboardingCompleted?: boolean;
   /** Run mode: affects host instruction metadata, tool exposure, and SPIRIT_AGENT_MODE. */
   agentMode: DesktopAgentMode;
-  /** Aligned with `spiritAgentDataDir()/model-catalog-cache`; an empty array when there is no cache. */
+  /** Aligned with `spiritDataDir()/model-catalog-cache`; an empty array when there is no cache. */
   modelCatalogHints?: DesktopModelCatalogHint[];
   networks: {
     llmHttpVersion: "http1.1" | "http2";

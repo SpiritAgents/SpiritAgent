@@ -1,8 +1,8 @@
 import { homedir } from "node:os";
 import { join } from "node:path";
 
-const APP_DATA_DIR_NAME = "SpiritAgent";
-const ENV_SPIRIT_AGENT_DATA_DIR = "SPIRIT_AGENT_DATA_DIR";
+const APP_DATA_DIR_NAME = "Spirit";
+const ENV_SPIRIT_DATA_DIR = "SPIRIT_DATA_DIR";
 
 import { McpConfigError } from "./errors.js";
 import type {
@@ -41,7 +41,7 @@ function resolveHomeDirectory(): string | undefined {
   return home || undefined;
 }
 
-export function resolveDefaultSpiritAgentDataDir(): string {
+export function resolveDefaultSpiritDataDir(): string {
   const appData = process.env.APPDATA?.trim();
   if (appData) {
     return join(appData, APP_DATA_DIR_NAME);
@@ -59,24 +59,24 @@ export function resolveDefaultSpiritAgentDataDir(): string {
       }
       return join(home, ".local", "share", APP_DATA_DIR_NAME);
     }
-    return join(home, ".spirit-agent");
+    return join(home, ".spirit-data");
   }
 
   const userProfile = process.env.USERPROFILE?.trim();
   if (userProfile) {
-    return join(userProfile, ".spirit-agent");
+    return join(userProfile, ".spirit-data");
   }
 
-  return join(homedir(), ".spirit-agent");
+  return join(homedir(), ".spirit-data");
 }
 
-export function spiritAgentDataDir(): string {
-  const envOverride = process.env[ENV_SPIRIT_AGENT_DATA_DIR]?.trim();
+export function spiritDataDir(): string {
+  const envOverride = process.env[ENV_SPIRIT_DATA_DIR]?.trim();
   if (envOverride) {
     return envOverride;
   }
 
-  return resolveDefaultSpiritAgentDataDir();
+  return resolveDefaultSpiritDataDir();
 }
 
 export function mergeMcpConfigFiles(user: McpConfigFile, workspace: McpConfigFile): McpConfigFile {

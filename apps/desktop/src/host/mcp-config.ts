@@ -21,7 +21,7 @@ import type {
   DesktopMcpServerListItem,
   DesktopSnapshot,
 } from "../types.js";
-import { spiritAgentDataDir } from "./storage.js";
+import { spiritDataDir } from "./storage.js";
 
 const MCP_DEFAULT_TIMEOUT_MS = 20_000;
 
@@ -38,7 +38,7 @@ export function emptyMcpStatusSnapshot(): DesktopSnapshot["mcpStatus"] {
 }
 
 export function desktopUserMcpConfigPath(): string {
-  return mcpUserConfigPath(spiritAgentDataDir());
+  return mcpUserConfigPath(spiritDataDir());
 }
 
 export function desktopWorkspaceMcpConfigPath(workspaceRoot: string): string {

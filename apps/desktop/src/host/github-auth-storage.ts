@@ -1,6 +1,6 @@
 import { deleteKeyringPassword, getKeyringPassword, setKeyringPassword } from "./keyring-secret.js";
 
-const KEYRING_SERVICE = "SpiritAgent";
+const KEYRING_SERVICE = "Spirit";
 const GITHUB_OAUTH_ACCESS_TOKEN_ACCOUNT = "github::oauth_access_token";
 const GITHUB_OAUTH_LOGIN_ACCOUNT = "github::oauth_login";
 

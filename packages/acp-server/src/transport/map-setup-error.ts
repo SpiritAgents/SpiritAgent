@@ -4,7 +4,7 @@ import { RequestError } from "@agentclientprotocol/sdk";
 export function mapSessionSetupError(err: unknown): RequestError {
   const message = err instanceof Error ? err.message : String(err);
   if (
-    message.includes("Run spirit-agent-acp --setup") ||
+    message.includes("Run spirit-acp --setup") ||
     message.includes("Run --setup") ||
     message.includes("No active model configured") ||
     message.includes("No API key found") ||

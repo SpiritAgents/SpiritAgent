@@ -42,7 +42,7 @@ detect_arch() {
 
 cli_archive_name() {
   local os="$1" arch="$2"
-  printf 'SpiritAgent-CLI-%s-%s.tar.gz' "$os" "$arch"
+  printf 'Spirit-CLI-%s-%s.tar.gz' "$os" "$arch"
 }
 
 cli_download_url() {

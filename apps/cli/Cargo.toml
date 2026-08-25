@@ -1,5 +1,5 @@
 [package]
-name = "spirit-agent"
+name = "spirit"
 version = "1.0.0-alpha.0"
 edition = "2024"
 rust-version = "1.85"

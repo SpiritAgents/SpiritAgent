@@ -6,9 +6,9 @@ import {
   type JsonObject,
   type JsonValue,
   type LlmMessage,
-  type SpiritAgentMode,
+  type AgentMode,
   type ToolCallRequest,
-  normalizeSpiritAgentMode,
+  normalizeAgentMode,
 } from "./ports.js";
 import type { ToolAgentMcpToolCatalogSnapshot } from "./mcp/types.js";
 import {
@@ -219,7 +219,7 @@ export interface ToolAgentActiveSkill {
 export interface ToolAgentPlanMetadata {
   path: string;
   exists: boolean;
-  agentMode?: SpiritAgentMode;
+  agentMode?: AgentMode;
   /** @deprecated Use agentMode. Still accepted from older hosts. */
   planMode?: boolean;
 }
@@ -270,7 +270,7 @@ function hostModelIdentityLabel(value: string | undefined): string {
   return trimmed.length > 0 ? trimmed : "(not configured)";
 }
 
-export function buildSpiritAgentCoreHostPrompt(model: string, providerId?: string): string {
+export function buildSpiritCoreHostPrompt(model: string, providerId?: string): string {
   const modelLabel = hostModelIdentityLabel(model);
   const providerLabel = hostModelIdentityLabel(providerId);
   return [
@@ -285,7 +285,7 @@ export function buildSpiritAgentCoreHostPrompt(model: string, providerId?: strin
 
 export function buildToolAgentHostPrompt(model: string, providerId?: string): string {
   return [
-    buildSpiritAgentCoreHostPrompt(model, providerId),
+    buildSpiritCoreHostPrompt(model, providerId),
     "Available tools are defined only by the tools field in this request.",
     "Only call declared functions.",
     "Do not invent tools or capabilities that are not present in the request.",
@@ -766,7 +766,7 @@ export function buildMcpCatalogSystemMessage(
 }
 
 export function buildAgentModeSystemMessage(planMetadata?: ToolAgentPlanMetadata): string {
-  const agentMode = normalizeSpiritAgentMode(planMetadata);
+  const agentMode = normalizeAgentMode(planMetadata);
   const lines = [`You are in ${agentModeLabel(agentMode)} mode.`, ""];
 
   if (agentMode === "plan") {
@@ -810,7 +810,7 @@ export function buildAgentModeSystemMessage(planMetadata?: ToolAgentPlanMetadata
   return wrapLlmContextBlock(LLM_CONTEXT_TAGS.agent_mode, lines.join("\n"));
 }
 
-function agentModeLabel(agentMode: SpiritAgentMode): string {
+function agentModeLabel(agentMode: AgentMode): string {
   switch (agentMode) {
     case "plan":
       return "Plan";

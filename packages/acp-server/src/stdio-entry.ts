@@ -12,7 +12,7 @@
  *
  * Environment variables:
  *   SPIRIT_ACP_WORKSPACE — Optional. Workspace root (default: cwd).
- *   SPIRIT_ACP_DATA_DIR  — Optional. Spirit data directory (same as SPIRIT_AGENT_DATA_DIR).
+ *   SPIRIT_ACP_DATA_DIR  — Optional. Spirit data directory (same as SPIRIT_DATA_DIR).
  */
 
 import { Readable, Writable } from "node:stream";

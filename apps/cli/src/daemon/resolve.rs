@@ -14,7 +14,7 @@ use std::{
 };
 
 use crate::daemon::entry::{resolve_node_path, resolve_server_entry};
-use crate::mcp::spirit_agent_data_dir;
+use crate::mcp::spirit_data_dir;
 
 const SPAWN_TIMEOUT: Duration = Duration::from_secs(15);
 const SPAWN_POLL_INTERVAL: Duration = Duration::from_millis(100);
@@ -121,7 +121,7 @@ pub(crate) fn read_server_token(data_dir: &Path) -> Result<String> {
 /// Attaches to a running daemon or spawns one (`node entry.js serve`,
 /// detached, stderr → `{dataDir}/server/daemon.log`).
 pub(crate) fn ensure_daemon(workspace_root: &Path) -> Result<(DaemonInstance, String)> {
-    let data_dir = spirit_agent_data_dir();
+    let data_dir = spirit_data_dir();
     if let Some(instance) = find_live_instance(&data_dir) {
         return Ok((instance, read_server_token(&data_dir)?));
     }

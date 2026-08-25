@@ -88,7 +88,7 @@ export {
 export const DEFAULT_API_BASE = "https://api.openai.com/v1";
 export const DEFAULT_DESKTOP_WEB_HOST = "127.0.0.1";
 export const DEFAULT_DESKTOP_WEB_PORT = 7788;
-const APP_DATA_DIR_NAME = "SpiritAgent";
+const APP_DATA_DIR_NAME = "Spirit";
 const CONFIG_FILE_NAME = "config.json";
 const CHATS_DIR_NAME = "chats";
 const PROVISIONAL_CHATS_DIR_NAME = "__provisional__";
@@ -185,7 +185,7 @@ export interface DesktopWebHostConfigFile {
 }
 
 /** Matches the keyring naming in `apps/cli/src/model_registry.rs`. */
-const KEYRING_SERVICE = "SpiritAgent";
+const KEYRING_SERVICE = "Spirit";
 const KEYRING_GLOBAL_ACCOUNT = "openai_api_key";
 
 function modelKeyAccount(modelName: string): string {
@@ -200,12 +200,12 @@ export type RuleDiscoveryResult = HostRuleDiscoveryResult;
 export type SkillDiscoveryResult = HostSkillDiscoveryResult;
 export type HostMetadataSummary = HostInstructionMetadataSummary;
 
-const ENV_SPIRIT_AGENT_DATA_DIR = "SPIRIT_AGENT_DATA_DIR";
+const ENV_SPIRIT_DATA_DIR = "SPIRIT_DATA_DIR";
 
-let spiritAgentDataDirOverride: string | undefined;
+let spiritDataDirOverride: string | undefined;
 
-export function setSpiritAgentDataDirOverride(dir: string | undefined): void {
-  spiritAgentDataDirOverride = dir;
+export function setSpiritDataDirOverride(dir: string | undefined): void {
+  spiritDataDirOverride = dir;
 }
 
 function resolveHomeDirectory(): string | undefined {
@@ -213,7 +213,7 @@ function resolveHomeDirectory(): string | undefined {
   return home || undefined;
 }
 
-export function resolveDefaultSpiritAgentDataDir(): string {
+export function resolveDefaultSpiritDataDir(): string {
   const appData = process.env.APPDATA?.trim();
   if (appData) {
     return path.join(appData, APP_DATA_DIR_NAME);
@@ -231,40 +231,40 @@ export function resolveDefaultSpiritAgentDataDir(): string {
       }
       return path.join(home, ".local", "share", APP_DATA_DIR_NAME);
     }
-    return path.join(home, ".spirit-agent");
+    return path.join(home, ".spirit-data");
   }
 
   const userProfile = process.env.USERPROFILE?.trim();
   if (userProfile) {
-    return path.join(userProfile, ".spirit-agent");
+    return path.join(userProfile, ".spirit-data");
   }
 
-  return path.join(homedir(), ".spirit-agent");
+  return path.join(homedir(), ".spirit-data");
 }
 
-export function resolveConfiguredSpiritAgentDataDir(): string {
-  const envOverride = process.env[ENV_SPIRIT_AGENT_DATA_DIR]?.trim();
+export function resolveConfiguredSpiritDataDir(): string {
+  const envOverride = process.env[ENV_SPIRIT_DATA_DIR]?.trim();
   if (envOverride) {
     return envOverride;
   }
 
-  return resolveDefaultSpiritAgentDataDir();
+  return resolveDefaultSpiritDataDir();
 }
 
-export function spiritAgentDataDir(): string {
-  if (spiritAgentDataDirOverride) {
-    return spiritAgentDataDirOverride;
+export function spiritDataDir(): string {
+  if (spiritDataDirOverride) {
+    return spiritDataDirOverride;
   }
 
-  return resolveConfiguredSpiritAgentDataDir();
+  return resolveConfiguredSpiritDataDir();
 }
 
 export function chatsDirPath(): string {
-  return path.join(spiritAgentDataDir(), CHATS_DIR_NAME);
+  return path.join(spiritDataDir(), CHATS_DIR_NAME);
 }
 
 export function configFilePath(): string {
-  return path.join(spiritAgentDataDir(), CONFIG_FILE_NAME);
+  return path.join(spiritDataDir(), CONFIG_FILE_NAME);
 }
 
 function readModelKeyFromKeyring(modelName: string): string | undefined {
@@ -645,7 +645,7 @@ export async function removeModelApiKey(modelName: string): Promise<void> {
 
 export function createDesktopExtensionStateStore(
   context: ExtensionManagementContext = {
-    spiritDataDir: spiritAgentDataDir(),
+    spiritDataDir: spiritDataDir(),
     hostKind: "desktop",
   },
 ): ExtensionStateStore {
@@ -685,7 +685,7 @@ export async function loadHostMetadata(
   return loadHostInstructionMetadata(
     {
       workspaceRoot,
-      spiritDataDir: spiritAgentDataDir(),
+      spiritDataDir: spiritDataDir(),
       includeWorkspaceScope: workspaceBinding === "project",
     },
     {
@@ -798,10 +798,7 @@ export async function listStoredSessions(): Promise<SessionListItem[]> {
             resolveStoredWorkspaceRoot(parsed.workspaceRoot) ?? discoverWorkspaceRoot(),
           ...(gitBranch ? { gitBranch } : {}),
           modifiedAtUnixMs,
-          transcriptPath: resolveSessionTranscriptFilePath(
-            spiritAgentDataDir(),
-            path.resolve(filePath),
-          ),
+          transcriptPath: resolveSessionTranscriptFilePath(spiritDataDir(), path.resolve(filePath)),
         } satisfies SessionListItem;
       } catch (error) {
         console.warn(`[desktop-host] skip unreadable session file: ${filePath}`, error);

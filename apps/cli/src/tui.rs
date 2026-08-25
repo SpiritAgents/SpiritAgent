@@ -301,11 +301,11 @@ impl TuiShell {
 
     pub fn refresh_rules_from_disk(&mut self) -> Result<()> {
         self.runtime
-            .reload_host_metadata(self.spirit_agent_mode())
+            .reload_host_metadata(self.agent_mode())
             .context("Failed to refresh shared rule runtime metadata")?;
         let metadata = self
             .runtime
-            .load_cli_host_metadata(self.spirit_agent_mode())
+            .load_cli_host_metadata(self.agent_mode())
             .context("Failed to read shared rule metadata")?;
         self.rule_entries = metadata.rule_entries;
         self.skill_entries = metadata.skill_entries;
@@ -315,11 +315,11 @@ impl TuiShell {
 
     pub fn refresh_skills_from_disk(&mut self) -> Result<()> {
         self.runtime
-            .reload_host_metadata(self.spirit_agent_mode())
+            .reload_host_metadata(self.agent_mode())
             .context("Failed to refresh shared skill runtime metadata")?;
         let metadata = self
             .runtime
-            .load_cli_host_metadata(self.spirit_agent_mode())
+            .load_cli_host_metadata(self.agent_mode())
             .context("Failed to read shared skill metadata")?;
         self.rule_entries = metadata.rule_entries;
         self.skill_entries = metadata.skill_entries;
@@ -1131,7 +1131,7 @@ impl TuiShell {
     }
 
     fn refresh_plan_metadata_from_disk(&mut self) {
-        let Ok(next) = self.runtime.load_plan_metadata(self.spirit_agent_mode()) else {
+        let Ok(next) = self.runtime.load_plan_metadata(self.agent_mode()) else {
             return;
         };
         if next == self.plan_metadata {
@@ -1143,7 +1143,7 @@ impl TuiShell {
     }
 
     fn push_plan_metadata_snapshot(&mut self) {
-        let Ok(next) = self.runtime.load_plan_metadata(self.spirit_agent_mode()) else {
+        let Ok(next) = self.runtime.load_plan_metadata(self.agent_mode()) else {
             return;
         };
         if next == self.plan_metadata {

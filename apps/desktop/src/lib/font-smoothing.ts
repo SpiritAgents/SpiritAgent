@@ -1,6 +1,6 @@
 import { isMacDesktopPlatform } from "./desktop-shell";
 
-export const FONT_SMOOTHING_STORAGE_KEY = "spirit-agent-desktop-font-smoothing" as const;
+export const FONT_SMOOTHING_STORAGE_KEY = "spirit-desktop-font-smoothing" as const;
 
 export const FONT_SMOOTHING_CLASS = "spirit-font-smoothing" as const;
 

@@ -14,7 +14,7 @@ use crate::chat_timeline::{
 };
 use crate::rewind::ConversationMessageSnapshot;
 
-use crate::mcp::spirit_agent_data_dir;
+use crate::mcp::spirit_data_dir;
 
 const CHAT_DIR_NAME: &str = "chats";
 
@@ -82,7 +82,7 @@ pub struct LoadedChat {
 }
 
 pub fn chat_dir_path() -> PathBuf {
-    spirit_agent_data_dir().join(CHAT_DIR_NAME)
+    spirit_data_dir().join(CHAT_DIR_NAME)
 }
 
 pub fn list_chat_sessions() -> Result<Vec<crate::ports::ChatSessionListItem>> {

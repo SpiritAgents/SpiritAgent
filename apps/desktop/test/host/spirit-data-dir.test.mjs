@@ -5,8 +5,8 @@ import path from "node:path";
 import { test } from "vitest";
 
 import {
-  resolveConfiguredSpiritAgentDataDir,
-  resolveDefaultSpiritAgentDataDir,
+  resolveConfiguredSpiritDataDir,
+  resolveDefaultSpiritDataDir,
 } from "../../dist-electron/src/host/storage.js";
 
 async function withEnv(vars, run) {
@@ -32,7 +32,7 @@ async function withEnv(vars, run) {
   }
 }
 
-test("resolveDefaultSpiritAgentDataDir uses Application Support on macOS", async () => {
+test("resolveDefaultSpiritDataDir uses Application Support on macOS", async () => {
   if (process.platform !== "darwin") {
     return;
   }
@@ -44,12 +44,12 @@ test("resolveDefaultSpiritAgentDataDir uses Application Support on macOS", async
         APPDATA: undefined,
         HOME: home,
         USERPROFILE: undefined,
-        SPIRIT_AGENT_DATA_DIR: undefined,
+        SPIRIT_DATA_DIR: undefined,
       },
       async () => {
         assert.equal(
-          resolveDefaultSpiritAgentDataDir(),
-          path.join(home, "Library", "Application Support", "SpiritAgent"),
+          resolveDefaultSpiritDataDir(),
+          path.join(home, "Library", "Application Support", "Spirit"),
         );
       },
     );
@@ -58,15 +58,15 @@ test("resolveDefaultSpiritAgentDataDir uses Application Support on macOS", async
   }
 });
 
-test("resolveConfiguredSpiritAgentDataDir honors SPIRIT_AGENT_DATA_DIR", async () => {
+test("resolveConfiguredSpiritDataDir honors SPIRIT_DATA_DIR", async () => {
   await withEnv(
     {
-      SPIRIT_AGENT_DATA_DIR: "/tmp/spirit-agent-custom-data-dir",
+      SPIRIT_DATA_DIR: "/tmp/spirit-agent-custom-data-dir",
       APPDATA: "/tmp/spirit-agent-appdata",
       HOME: "/tmp/spirit-agent-home",
     },
     async () => {
-      assert.equal(resolveConfiguredSpiritAgentDataDir(), "/tmp/spirit-agent-custom-data-dir");
+      assert.equal(resolveConfiguredSpiritDataDir(), "/tmp/spirit-agent-custom-data-dir");
     },
   );
 });

@@ -26,14 +26,14 @@ async function collectFiles(dir) {
   return files;
 }
 
-test("index.html title is Spirit Agent without Desktop/MVP", async () => {
+test("index.html title is Spirit without Desktop/MVP", async () => {
   const html = await readFile(join(desktopRoot, "index.html"), "utf8");
-  assert.match(html, /<title>Spirit Agent<\/title>/);
+  assert.match(html, /<title>Spirit<\/title>/);
   assert.doesNotMatch(html, /MVP/);
   assert.doesNotMatch(html, /Spirit Agent Desktop/);
 });
 
-test("about dialog message is Spirit Agent without Desktop/MVP", async () => {
+test("about dialog message is Spirit without Desktop/MVP", async () => {
   const source = await readFile(join(desktopRoot, "electron/application-menu.ts"), "utf8");
   assert.match(source, /message:\s*PRODUCT_DISPLAY_NAME/);
   assert.doesNotMatch(source, /message:\s*'Spirit Agent Desktop/);

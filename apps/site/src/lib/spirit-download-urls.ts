@@ -8,33 +8,33 @@ export type SpiritDownloadArch = "x64" | "arm64" | "ia32";
 
 const DESKTOP_FILENAMES: Record<SpiritDownloadOs, Partial<Record<SpiritDownloadArch, string>>> = {
   darwin: {
-    x64: "SpiritAgent-darwin-x64.dmg",
-    arm64: "SpiritAgent-darwin-arm64.dmg",
+    x64: "Spirit-darwin-x64.dmg",
+    arm64: "Spirit-darwin-arm64.dmg",
   },
   windows: {
-    x64: "SpiritAgent-windows-x64.exe",
-    ia32: "SpiritAgent-windows-ia32.exe",
-    arm64: "SpiritAgent-windows-arm64.exe",
+    x64: "Spirit-windows-x64.exe",
+    ia32: "Spirit-windows-ia32.exe",
+    arm64: "Spirit-windows-arm64.exe",
   },
   linux: {
-    x64: "SpiritAgent-linux-x64.AppImage",
-    arm64: "SpiritAgent-linux-arm64.AppImage",
+    x64: "Spirit-linux-x64.AppImage",
+    arm64: "Spirit-linux-arm64.AppImage",
   },
 };
 
 const CLI_FILENAMES: Record<SpiritDownloadOs, Partial<Record<SpiritDownloadArch, string>>> = {
   darwin: {
-    x64: "SpiritAgent-CLI-darwin-x64.tar.gz",
-    arm64: "SpiritAgent-CLI-darwin-arm64.tar.gz",
+    x64: "Spirit-CLI-darwin-x64.tar.gz",
+    arm64: "Spirit-CLI-darwin-arm64.tar.gz",
   },
   windows: {
-    x64: "SpiritAgent-CLI-windows-x64.zip",
-    ia32: "SpiritAgent-CLI-windows-ia32.zip",
-    arm64: "SpiritAgent-CLI-windows-arm64.zip",
+    x64: "Spirit-CLI-windows-x64.zip",
+    ia32: "Spirit-CLI-windows-ia32.zip",
+    arm64: "Spirit-CLI-windows-arm64.zip",
   },
   linux: {
-    x64: "SpiritAgent-CLI-linux-x64.tar.gz",
-    arm64: "SpiritAgent-CLI-linux-arm64.tar.gz",
+    x64: "Spirit-CLI-linux-x64.tar.gz",
+    arm64: "Spirit-CLI-linux-arm64.tar.gz",
   },
 };
 

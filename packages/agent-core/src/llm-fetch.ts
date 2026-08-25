@@ -6,7 +6,7 @@ import { observeLlmFetchResponse } from "./llm-retry.js";
 
 export type LlmHttpVersion = "http1.1" | "http2";
 
-export const SPIRIT_AGENT_UA_PRODUCT = "SpiritAgent";
+export const SPIRIT_UA_PRODUCT = "Spirit";
 
 const require = createRequire(import.meta.url);
 const defaultClientVersion = (require("../package.json") as { version: string }).version;
@@ -23,8 +23,8 @@ export function setLlmFetchTransportOverrideForTests(fetchImpl: typeof fetch | u
   llmFetchTransportOverride = fetchImpl;
 }
 
-export function buildSpiritAgentUserAgent(version: string): string {
-  return `${SPIRIT_AGENT_UA_PRODUCT}/${version.trim()}`;
+export function buildSpiritUserAgent(version: string): string {
+  return `${SPIRIT_UA_PRODUCT}/${version.trim()}`;
 }
 
 export function getLlmClientVersion(): string {
@@ -40,7 +40,7 @@ export function configureLlmClientVersion(version: string): void {
 }
 
 export function mergeLlmFetchInit(init?: RequestInit): RequestInit {
-  const userAgent = buildSpiritAgentUserAgent(configuredClientVersion);
+  const userAgent = buildSpiritUserAgent(configuredClientVersion);
   const sourceHeaders = init?.headers;
 
   if (sourceHeaders instanceof Headers) {

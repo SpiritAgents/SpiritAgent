@@ -31,7 +31,7 @@ import {
   type LlmTransportConfig,
   isBedrockTransportConfig,
   type RuntimeEvent,
-  type SpiritAgentMode,
+  type AgentMode,
 } from "@spiritagent/agent-core";
 import {
   appendLlmToolResultMessage,
@@ -153,7 +153,7 @@ export interface ServerRuntimeResult {
   enabledSkillCatalog: LlmEnabledSkillCatalogEntry[];
   /** Mutable array reference — turn handlers read it, slash activation mutates it. */
   activeSkills: LlmActiveSkill[];
-  setAgentMode: (mode: SpiritAgentMode) => Promise<void>;
+  setAgentMode: (mode: AgentMode) => Promise<void>;
   setApprovalLevel: (level: ApprovalLevel) => void;
   approvalLevelSnapshot: () => ApprovalLevel;
   setLoopEnabled: (enabled: boolean) => void;
@@ -164,7 +164,7 @@ export interface ServerRuntimeResult {
   /** sessionEnd hook (switch/close). */
   runSessionEnd: (reason: "abort" | "switch" | "close") => Promise<void>;
   /** Re-run rules/skills/plan discovery (mode switch or file changes). */
-  reloadHostMetadata: (mode: SpiritAgentMode) => Promise<void>;
+  reloadHostMetadata: (mode: AgentMode) => Promise<void>;
   /** Export api messages + request trace + assembled system prompts. */
   exportState: () => Promise<unknown>;
   /** Attribution toggles captured by state factory closures. */
@@ -527,7 +527,7 @@ export async function createServerRuntime(
     onEvent,
   });
 
-  const setAgentMode = async (mode: SpiritAgentMode): Promise<void> => {
+  const setAgentMode = async (mode: AgentMode): Promise<void> => {
     if (isDreamCollector) {
       return;
     }

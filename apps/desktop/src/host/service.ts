@@ -423,7 +423,7 @@ import {
   loadConfig,
   saveConfig,
   removeModelApiKey,
-  spiritAgentDataDir,
+  spiritDataDir,
   normalizeWorkspaceBinding,
   resolveDesktopHomeDirectory,
   mergeRecentWorkspaceRoots,
@@ -571,11 +571,11 @@ class DesktopHostService {
   private readonly invokeDispatch = createHostInvokeDispatch(this);
   private runtimeTransport: SpiritLlmTransport = createLlmTransport();
   private readonly extensionStateStore = createDesktopExtensionStateStore({
-    spiritDataDir: spiritAgentDataDir(),
+    spiritDataDir: spiritDataDir(),
     hostKind: "desktop",
   });
   private readonly hostExtensionManager = createHostExtensionManager({
-    spiritDataDir: spiritAgentDataDir(),
+    spiritDataDir: spiritDataDir(),
     hostKind: "desktop",
     stateStore: this.extensionStateStore,
   });
@@ -1317,7 +1317,7 @@ class DesktopHostService {
       refreshExtensionsList: (options) => this.refreshExtensionsList(options),
       seedBuiltInExtensions: async () => {
         await ensureBuiltInExtensions({
-          spiritDataDir: spiritAgentDataDir(),
+          spiritDataDir: spiritDataDir(),
           hostKind: "desktop",
           manager: this.extensionManager(),
         });
@@ -1384,12 +1384,12 @@ class DesktopHostService {
         bundle.cachedTodoSnapshot?.items.map(({ title, status }) => ({ title, status })) ?? [],
       lineDeltaForDeleteFile: (inputPath) =>
         lineDeltaForDeleteFilePath(
-          { workspaceRoot: bundle.workspaceRoot, spiritDataDir: spiritAgentDataDir() },
+          { workspaceRoot: bundle.workspaceRoot, spiritDataDir: spiritDataDir() },
           inputPath,
         ),
       deleteFileBaselineForPath: (inputPath) =>
         deleteFileBaselineTextForPath(
-          { workspaceRoot: bundle.workspaceRoot, spiritDataDir: spiritAgentDataDir() },
+          { workspaceRoot: bundle.workspaceRoot, spiritDataDir: spiritDataDir() },
           inputPath,
         ),
       resolveActiveModel: () => {
@@ -1688,7 +1688,7 @@ class DesktopHostService {
         buildStartImplementingUserTurn(
           {
             workspaceRoot: state.workspaceRoot,
-            spiritDataDir: spiritAgentDataDir(),
+            spiritDataDir: spiritDataDir(),
           },
           bundle.activePlanPath,
         ),
@@ -2055,7 +2055,7 @@ class DesktopHostService {
       }
 
       const snapshot = await loadRewindCheckpointSnapshot(
-        spiritAgentDataDir(),
+        spiritDataDir(),
         this.activeBundle().rewind.sessionId,
         checkpoint.id,
       );
@@ -2070,7 +2070,7 @@ class DesktopHostService {
       const missingWarnings: FileRewindWarning[] = [];
       for (const metadata of changesToRestore) {
         const stored = await loadRewindFileChange(
-          spiritAgentDataDir(),
+          spiritDataDir(),
           this.activeBundle().rewind.sessionId,
           metadata.id,
         );
@@ -2884,7 +2884,7 @@ class DesktopHostService {
       ? path.resolve(bundle.activeSession.filePath)
       : undefined;
     const remoteRuntimeInput = {
-      dataDir: spiritAgentDataDir(),
+      dataDir: spiritDataDir(),
       workspaceRoot: bundle.workspaceRoot || state.workspaceRoot,
       modelRef: effectiveActiveModel,
       agentMode: resolveDesktopAgentMode(state.config),
@@ -4066,7 +4066,7 @@ class DesktopHostService {
     if (!this.hostExtensionMarketplace) {
       this.hostExtensionMarketplace = createHostExtensionMarketplace(
         {
-          spiritDataDir: spiritAgentDataDir(),
+          spiritDataDir: spiritDataDir(),
           hostKind: "desktop",
         },
         this.hostExtensionMarketplaceFetchImpl

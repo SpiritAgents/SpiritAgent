@@ -116,11 +116,11 @@ jobs:
 
       - name: Build CLI
         if: matrix.builder == 'cargo'
-        run: cargo build -p spirit-agent --release --target ${{ matrix.rust_target }}
+        run: cargo build -p spirit --release --target ${{ matrix.rust_target }}
 
       - name: Build CLI with cross
         if: matrix.builder == 'cross'
-        run: cross build -p spirit-agent --release --target ${{ matrix.rust_target }}
+        run: cross build -p spirit --release --target ${{ matrix.rust_target }}
 
       # Bundle CLI signs the embedded Mach-O binaries when it sees these two vars, so the identity
       # has to be in place before bundling rather than after the archive exists.
@@ -163,12 +163,12 @@ jobs:
           APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
         run: |
           set -euo pipefail
-          archive="dist/release/SpiritAgent-CLI-$RELEASE_VERSION-${{ matrix.package_target }}.tar.gz"
+          archive="dist/release/Spirit-CLI-$RELEASE_VERSION-${{ matrix.package_target }}.tar.gz"
           workdir="$RUNNER_TEMP/cli-verify"
           rm -rf "$workdir"
           mkdir -p "$workdir"
           tar -xzf "$archive" -C "$workdir"
-          root="$workdir/SpiritAgent-CLI-$RELEASE_VERSION-${{ matrix.package_target }}"
+          root="$workdir/Spirit-CLI-$RELEASE_VERSION-${{ matrix.package_target }}"
           for relative in bin/spirit node/bin/node; do
             binary="$root/$relative"
             if [ ! -f "$binary" ]; then
@@ -206,7 +206,7 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: cli-${{ matrix.package_target }}
-          path: dist/release/SpiritAgent-CLI-*
+          path: dist/release/Spirit-CLI-*
           if-no-files-found: error
 
   desktop:

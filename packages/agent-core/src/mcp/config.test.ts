@@ -10,8 +10,8 @@ import {
   mcpServerScopesFromFiles,
   mcpWorkspaceConfigPath,
   mergeMcpConfigFiles,
-  resolveDefaultSpiritAgentDataDir,
-  spiritAgentDataDir,
+  resolveDefaultSpiritDataDir,
+  spiritDataDir,
 } from "./config.js";
 import type { McpConfigFile } from "./types.js";
 
@@ -42,24 +42,21 @@ function withEnv(vars: Record<string, string | undefined>, run: () => void): voi
   }
 }
 
-test("resolveDefaultSpiritAgentDataDir uses APPDATA on Windows-style hosts", () => {
+test("resolveDefaultSpiritDataDir uses APPDATA on Windows-style hosts", () => {
   withEnv(
     {
       APPDATA: "/tmp/spirit-agent-appdata",
       HOME: "/tmp/should-not-use",
       USERPROFILE: undefined,
-      SPIRIT_AGENT_DATA_DIR: undefined,
+      SPIRIT_DATA_DIR: undefined,
     },
     () => {
-      assert.equal(
-        resolveDefaultSpiritAgentDataDir(),
-        join("/tmp/spirit-agent-appdata", "SpiritAgent"),
-      );
+      assert.equal(resolveDefaultSpiritDataDir(), join("/tmp/spirit-agent-appdata", "Spirit"));
     },
   );
 });
 
-test("resolveDefaultSpiritAgentDataDir uses Application Support on macOS", () => {
+test("resolveDefaultSpiritDataDir uses Application Support on macOS", () => {
   if (process.platform !== "darwin") {
     return;
   }
@@ -71,12 +68,12 @@ test("resolveDefaultSpiritAgentDataDir uses Application Support on macOS", () =>
         APPDATA: undefined,
         HOME: home,
         USERPROFILE: undefined,
-        SPIRIT_AGENT_DATA_DIR: undefined,
+        SPIRIT_DATA_DIR: undefined,
       },
       () => {
         assert.equal(
-          resolveDefaultSpiritAgentDataDir(),
-          join(home, "Library", "Application Support", "SpiritAgent"),
+          resolveDefaultSpiritDataDir(),
+          join(home, "Library", "Application Support", "Spirit"),
         );
       },
     );
@@ -85,14 +82,14 @@ test("resolveDefaultSpiritAgentDataDir uses Application Support on macOS", () =>
   }
 });
 
-test("spiritAgentDataDir honors SPIRIT_AGENT_DATA_DIR override", () => {
+test("spiritDataDir honors SPIRIT_DATA_DIR override", () => {
   withEnv(
     {
-      SPIRIT_AGENT_DATA_DIR: "/tmp/spirit-agent-override",
+      SPIRIT_DATA_DIR: "/tmp/spirit-agent-override",
       APPDATA: "/tmp/spirit-agent-appdata",
     },
     () => {
-      assert.equal(spiritAgentDataDir(), "/tmp/spirit-agent-override");
+      assert.equal(spiritDataDir(), "/tmp/spirit-agent-override");
     },
   );
 });
