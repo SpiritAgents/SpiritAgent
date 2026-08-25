@@ -1,6 +1,6 @@
 /**
  * Generates all packaging/runtime icons from the @spiritagent/brand SVG sources (outputs are not committed, see .gitignore):
- * - build/icon.png (512)          — macOS packaging icon + Windows window/taskbar icon; source logo-dark.svg, natively opaque black canvas
+ * - build/icon.png (512)          — macOS packaging icon + Windows window/taskbar icon; source app-icon.svg, natively opaque canvas
  * - build/icon.ico (16/32/48/256) — Windows/Linux electron-builder; same source
  * - build/tray/iconTemplate.png (22) / @2x (44) / -32 (32) — macOS Template + Windows tray; source glyph constant
  * - build/background.png (540x408) / @2x (1080x816) — DMG window background; source dmg-background.svg (540x380)
@@ -26,7 +26,7 @@ const buildDir = path.join(desktopRoot, "build");
 const trayDir = path.join(buildDir, "tray");
 
 const brandAssetsDir = path.join(desktopRoot, "..", "..", "packages", "brand", "assets");
-const logoDarkSvg = path.join(brandAssetsDir, "logo-dark.svg");
+const appIconSvg = path.join(brandAssetsDir, "app-icon.svg");
 const dmgBackgroundSvg = path.join(brandAssetsDir, "dmg-background.svg");
 
 const ICO_SIZES = [16, 32, 48, 256];
@@ -52,7 +52,7 @@ function buildTraySquareSvg(size) {
 
 async function genPackagerIcons() {
   const iconPngPath = path.join(buildDir, "icon.png");
-  await sharp(logoDarkSvg).png().toFile(iconPngPath);
+  await sharp(appIconSvg).png().toFile(iconPngPath);
   console.log(`Wrote ${path.relative(desktopRoot, iconPngPath)} (512x512)`);
 
   const source = await readPNG(iconPngPath);
