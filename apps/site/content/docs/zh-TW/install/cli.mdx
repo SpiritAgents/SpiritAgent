@@ -19,7 +19,7 @@ Windows（PowerShell）：
 irm https://spirit.fast/install.ps1 | iex
 ```
 
-該腳本從 `download.spirit.fast` 下載構建，解壓縮，並將 `spirit` 放入您的 `PATH`。
+該腳本從 `download.spirit.fast` 下載構建，以 GitHub 同 Release 的 `SHA256SUMS.txt` 核對 SHA-256（不一致則中止），再解壓縮並將 `spirit` 放入您的 `PATH`。
 
 打開一個新的終端，然後：
 

@@ -19,7 +19,7 @@ Windows (PowerShell):
 irm https://spirit.fast/install.ps1 | iex
 ```
 
-스크립트는 `download.spirit.fast`에서 빌드를 다운로드하고 압축을 풀어 `spirit`을 `PATH`에 추가합니다.
+스크립트는 `download.spirit.fast`에서 빌드를 다운로드한 뒤, 같은 GitHub Release의 `SHA256SUMS.txt`로 SHA-256을 검증합니다(불일치 시 중단). 통과하면 압축을 풀어 `spirit`을 `PATH`에 추가합니다.
 
 새 터미널을 연 다음:
 

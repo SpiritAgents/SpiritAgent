@@ -19,7 +19,7 @@ Windows (PowerShell):
 irm https://spirit.fast/install.ps1 | iex
 ```
 
-Скрипт загружает сборку с `download.spirit.fast`, распаковывает её и добавляет `spirit` в ваш `PATH`.
+Скрипт загружает сборку с `download.spirit.fast`, сверяет SHA-256 с `SHA256SUMS.txt` соответствующего GitHub Release (при несовпадении установка прерывается), распаковывает её и добавляет `spirit` в ваш `PATH`.
 
 Откройте новый терминал, затем:
 

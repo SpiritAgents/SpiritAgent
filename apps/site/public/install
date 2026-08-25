@@ -51,6 +51,76 @@ cli_download_url() {
     "$SPIRIT_DOWNLOAD_HOST" "$os" "$arch" "$version" "$(cli_archive_name "$os" "$arch")"
 }
 
+github_checksums_url() {
+  local version="$1"
+  if [ "$version" = latest ]; then
+    printf 'https://github.com/SpiritAgents/spirit/releases/latest/download/SHA256SUMS.txt'
+  else
+    printf 'https://github.com/SpiritAgents/spirit/releases/download/%s/SHA256SUMS.txt' "$version"
+  fi
+}
+
+github_cli_asset_name() {
+  local os="$1" arch="$2" version="$3"
+  printf 'Spirit-CLI-%s-%s-%s.tar.gz' "$version" "$os" "$arch"
+}
+
+file_sha256() {
+  local file="$1" out
+  if command -v sha256sum >/dev/null 2>&1; then
+    out="$(sha256sum -- "$file")" || die "failed to hash $file"
+  elif command -v shasum >/dev/null 2>&1; then
+    out="$(shasum -a 256 -- "$file")" || die "failed to hash $file"
+  else
+    die "required command not found: sha256sum or shasum"
+  fi
+  printf '%s\n' "${out%% *}"
+}
+
+# Prints the expected SHA-256 hex for this OS/arch from an in-memory SHA256SUMS.txt body.
+expected_sha256_from_sums() {
+  local sums="$1" os="$2" arch="$3" version="$4"
+  local line hash name found_hash="" found_count=0
+  local version_re='[0-9]+\.[0-9]+\.[0-9]+(-(alpha|beta|rc)\.[0-9]+)?'
+  local name_re pinned_name
+  name_re="^Spirit-CLI-${version_re}-${os}-${arch}\\.tar\\.gz$"
+  pinned_name="$(github_cli_asset_name "$os" "$arch" "$version")"
+
+  while IFS= read -r line || [ -n "$line" ]; do
+    line="${line%$'\r'}"
+    [ -n "$line" ] || continue
+    case "$line" in
+      \#*) continue ;;
+    esac
+
+    hash="${line%% *}"
+    name="${line##* }"
+    name="${name#\*}"
+
+    if [ "$version" = latest ]; then
+      # Right-hand side of =~ must be unquoted so bash treats it as a regex.
+      if [[ "$name" =~ $name_re ]]; then
+        found_count=$((found_count + 1))
+        found_hash="$hash"
+      fi
+    elif [ "$name" = "$pinned_name" ]; then
+      found_count=$((found_count + 1))
+      found_hash="$hash"
+    fi
+  done <<< "$sums"
+
+  if [ "$found_count" -eq 0 ]; then
+    if [ "$version" = latest ]; then
+      die "SHA256SUMS.txt has no CLI entry for $os/$arch"
+    fi
+    die "SHA256SUMS.txt has no entry for $pinned_name"
+  fi
+  if [ "$found_count" -gt 1 ]; then
+    die "SHA256SUMS.txt has multiple CLI entries for $os/$arch"
+  fi
+  printf '%s\n' "$found_hash"
+}
+
 ensure_path_line() {
   local file="$1" line="$2" marker="$3"
   if [ ! -f "$file" ]; then
@@ -72,16 +142,24 @@ main() {
   require_cmd uname
   require_cmd mktemp
 
-  local os arch url archive tmp extract_root bundle_root bin_dir current_dir
+  local os arch url checksums_url sums expected actual archive tmp extract_root bundle_root bin_dir current_dir
   os="$(detect_os)"
   arch="$(detect_arch)"
   url="$(cli_download_url "$os" "$arch" "$SPIRIT_VERSION")"
+  checksums_url="$(github_checksums_url "$SPIRIT_VERSION")"
 
   info "Installing Spirit CLI"
   info "Platform: $os/$arch"
   info "SPIRIT_HOME: $SPIRIT_HOME"
   info "Version: $SPIRIT_VERSION"
   info "Download: $url"
+  info "Checksums: $checksums_url"
+
+  info "Fetching checksums..."
+  sums="$(curl -fsSL --proto '=https' --tlsv1.2 "$checksums_url")" \
+    || die "failed to fetch SHA256SUMS.txt from GitHub ($checksums_url)"
+  [ -n "$sums" ] || die "SHA256SUMS.txt from GitHub was empty"
+  expected="$(expected_sha256_from_sums "$sums" "$os" "$arch" "$SPIRIT_VERSION")" || exit 1
 
   tmp="$(mktemp -d "${TMPDIR:-/tmp}/spirit-install.XXXXXX")"
   # Expand path at registration time: `tmp` is function-local and unbound after main returns under `set -u`.
@@ -94,6 +172,14 @@ main() {
 
   info "Downloading..."
   curl -fsSL --proto '=https' --tlsv1.2 -o "$archive" "$url"
+
+  info "Verifying checksum..."
+  actual="$(file_sha256 "$archive")"
+  actual="$(printf '%s' "$actual" | tr '[:upper:]' '[:lower:]')"
+  expected="$(printf '%s' "$expected" | tr '[:upper:]' '[:lower:]')"
+  if [ "$actual" != "$expected" ]; then
+    die "SHA-256 mismatch for $os/$arch (expected $expected, got $actual)"
+  fi
 
   info "Extracting..."
   tar -xzf "$archive" -C "$extract_root"

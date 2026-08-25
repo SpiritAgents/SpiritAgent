@@ -19,7 +19,7 @@ Windows (PowerShell):
 irm https://spirit.fast/install.ps1 | iex
 ```
 
-O script baixa um build de `download.spirit.fast`, descompacta e coloca `spirit` no seu `PATH`.
+O script baixa um build de `download.spirit.fast`, verifica o SHA-256 com o `SHA256SUMS.txt` do Release correspondente no GitHub (aborta se não coincidir), descompacta e coloca `spirit` no seu `PATH`.
 
 Abra um novo terminal e então:
 
