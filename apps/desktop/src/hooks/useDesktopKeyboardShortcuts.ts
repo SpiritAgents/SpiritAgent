@@ -79,6 +79,9 @@ export function useDesktopKeyboardShortcuts({
     return () => window.removeEventListener("keydown", onKeyDown);
   }, []);
 
+  // Cmd+B must run in capture: Lexical's $handleKeyDown preventDefaults exact
+  // Mod+B (bold) on the editor root before any window bubble listener can toggle.
+  // Other host shortcuts stay on bubble so inner surfaces can veto via preventDefault.
   useEffect(() => {
     const onKeyDown = (event: KeyboardEvent) => {
       if (event.defaultPrevented) {
@@ -91,12 +94,15 @@ export function useDesktopKeyboardShortcuts({
         return;
       }
       event.preventDefault();
+      event.stopPropagation();
       sessionSidebarChromeApiRef.current?.toggle();
     };
-    window.addEventListener("keydown", onKeyDown);
-    return () => window.removeEventListener("keydown", onKeyDown);
+    window.addEventListener("keydown", onKeyDown, { capture: true });
+    return () => window.removeEventListener("keydown", onKeyDown, { capture: true });
   }, [sessionSidebarChromeApiRef]);
 
+  // Cmd+Opt+B is not stolen by Lexical (isBold requires an exact modifier match).
+  // Capture here is pairing with Cmd+B, not a necessity for the same bug.
   useEffect(() => {
     const onKeyDown = (event: KeyboardEvent) => {
       if (event.defaultPrevented) {
@@ -112,10 +118,11 @@ export function useDesktopKeyboardShortcuts({
         return;
       }
       event.preventDefault();
+      event.stopPropagation();
       setWorkspaceToolsOpen((current) => !current);
     };
-    window.addEventListener("keydown", onKeyDown);
-    return () => window.removeEventListener("keydown", onKeyDown);
+    window.addEventListener("keydown", onKeyDown, { capture: true });
+    return () => window.removeEventListener("keydown", onKeyDown, { capture: true });
   }, [activeSurfaceRef, setWorkspaceToolsOpen]);
 
   useEffect(() => {
