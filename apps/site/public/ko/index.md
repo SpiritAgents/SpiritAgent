@@ -43,6 +43,6 @@ Spirit은 호스팅 스택에 당신을 가두지 않습니다. 어떤 제공업
 - [변경 로그](https://github.com/SpiritAgents/SpiritAgent/releases)
 - [오픈소스 라이선스](/notice.md)
 
-© 2026 Spirit Agent. 오픈소스 AI 에이전트.
+© 2026 Spirit. 오픈소스 AI 에이전트.
 
 [GitHub](https://github.com/SpiritAgents/SpiritAgent)

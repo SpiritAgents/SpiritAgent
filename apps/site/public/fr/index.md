@@ -43,6 +43,6 @@ Espace réservé pour l'instant.
 - [Journal des modifications](https://github.com/SpiritAgents/SpiritAgent/releases)
 - [Licences open source](/notice.md)
 
-© 2026 Spirit Agent. Agent IA open source.
+© 2026 Spirit. Agent IA open source.
 
 [GitHub](https://github.com/SpiritAgents/SpiritAgent)

@@ -3,9 +3,9 @@ title: ACP
 description: Implementado para clientes ACP. La página de descarga aún no lista un canal.
 ---
 
-ACP (Protocolo de Cliente Agente) está implementado como `spirit-agent-acp` (`@spiritagent/acp-server`). Habla stdio ndJSON, comparte el mismo directorio de datos y llavero que Desktop y CLI, y puede ejecutar `--setup` para conectar un proveedor.
+ACP (Protocolo de Cliente Agente) está implementado como `spirit-acp` (`@spiritagent/acp-server`). Habla stdio ndJSON, comparte el mismo directorio de datos y llavero que Desktop y CLI, y puede ejecutar `--setup` para conectar un proveedor.
 
-**La página pública de descarga aún no lista ACP.** Spirit Agent todavía se está preparando para listarlo en el registro de ACP.
+**La página pública de descarga aún no lista ACP.** Spirit todavía se está preparando para listarlo en el registro de ACP.
 
 ## Configuración temporal antes del listado
 
@@ -19,7 +19,7 @@ O apunte un cliente ACP (por ejemplo, Zed) a la entrada stdio:
 
 ```json
 "agent_servers": {
-  "Spirit Agent": {
+  "Spirit": {
     "command": "node",
     "args": ["path/to/packages/acp-server/dist/src/stdio-entry.js"]
   }
@@ -31,4 +31,4 @@ Autentique con **Ejecutar en terminal**, complete `--setup`, luego `authenticate
 | Variable               | Rol                                                                                                      |
 | ---------------------- | -------------------------------------------------------------------------------------------------------- |
 | `SPIRIT_ACP_WORKSPACE` | Raíz del espacio de trabajo (por defecto, el cwd del cliente)                                            |
-| `SPIRIT_ACP_DATA_DIR`  | Directorio de datos; de lo contrario, `SPIRIT_AGENT_DATA_DIR` y luego el predeterminado de la plataforma |
+| `SPIRIT_ACP_DATA_DIR`  | Directorio de datos; de lo contrario, `SPIRIT_DATA_DIR` y luego el predeterminado de la plataforma |

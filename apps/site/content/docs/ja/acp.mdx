@@ -3,9 +3,9 @@ title: ACP
 description: ACPクライアント向けに実装されています。ダウンロードページにはまだチャンネルが記載されていません。
 ---
 
-ACP（エージェント・クライアント・プロトコル）は `spirit-agent-acp`（`@spiritagent/acp-server`）として実装されています。これは stdio の ndJSON を使用し、Desktop や CLI と同じデータディレクトリとキーリングを共有し、`--setup` を実行してプロバイダーに接続できます。
+ACP（エージェント・クライアント・プロトコル）は `spirit-acp`（`@spiritagent/acp-server`）として実装されています。これは stdio の ndJSON を使用し、Desktop や CLI と同じデータディレクトリとキーリングを共有し、`--setup` を実行してプロバイダーに接続できます。
 
-**公開ダウンロードページにはまだ ACP が記載されていません。** Spirit Agent は、ACP レジストリに掲載する準備を進めています。
+**公開ダウンロードページにはまだ ACP が記載されていません。** Spirit は、ACP レジストリに掲載する準備を進めています。
 
 ## 掲載前の一時的なセットアップ
 
@@ -19,7 +19,7 @@ npx @spiritagent/acp-server --setup
 
 ```json
 "agent_servers": {
-  "Spirit Agent": {
+  "Spirit": {
     "command": "node",
     "args": ["path/to/packages/acp-server/dist/src/stdio-entry.js"]
   }
@@ -31,4 +31,4 @@ npx @spiritagent/acp-server --setup
 | 変数                   | 役割                                                                                             |
 | ---------------------- | ------------------------------------------------------------------------------------------------ |
 | `SPIRIT_ACP_WORKSPACE` | ワークスペースルート（デフォルトはクライアントのカレントディレクトリ）                           |
-| `SPIRIT_ACP_DATA_DIR`  | データディレクトリ。それ以外の場合は `SPIRIT_AGENT_DATA_DIR`、次にプラットフォームのデフォルト。 |
+| `SPIRIT_ACP_DATA_DIR`  | データディレクトリ。それ以外の場合は `SPIRIT_DATA_DIR`、次にプラットフォームのデフォルト。 |

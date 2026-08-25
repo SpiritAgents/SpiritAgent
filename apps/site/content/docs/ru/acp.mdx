@@ -3,9 +3,9 @@ title: ACP
 description: Реализовано для ACP-клиентов. На странице загрузки канал пока не указан.
 ---
 
-ACP (Agent Client Protocol) реализован как `spirit-agent-acp` (`@spiritagent/acp-server`). Он работает через stdio ndJSON, использует ту же директорию данных и связку ключей, что Desktop и CLI, и может запускаться с `--setup` для подключения провайдера.
+ACP (Agent Client Protocol) реализован как `spirit-acp` (`@spiritagent/acp-server`). Он работает через stdio ndJSON, использует ту же директорию данных и связку ключей, что Desktop и CLI, и может запускаться с `--setup` для подключения провайдера.
 
-**На публичной странице загрузки ACP пока не указан.** Spirit Agent всё ещё готовится к размещению в реестре ACP.
+**На публичной странице загрузки ACP пока не указан.** Spirit всё ещё готовится к размещению в реестре ACP.
 
 ## Временная настройка до размещения
 
@@ -19,7 +19,7 @@ npx @spiritagent/acp-server --setup
 
 ```json
 "agent_servers": {
-  "Spirit Agent": {
+  "Spirit": {
     "command": "node",
     "args": ["path/to/packages/acp-server/dist/src/stdio-entry.js"]
   }
@@ -31,4 +31,4 @@ npx @spiritagent/acp-server --setup
 | Переменная             | Роль                                                                                           |
 | ---------------------- | ---------------------------------------------------------------------------------------------- |
 | `SPIRIT_ACP_WORKSPACE` | Корень рабочей области (по умолчанию — текущая рабочая директория клиента)                     |
-| `SPIRIT_ACP_DATA_DIR`  | Директория данных; в противном случае `SPIRIT_AGENT_DATA_DIR`, затем стандартная для платформы |
+| `SPIRIT_ACP_DATA_DIR`  | Директория данных; в противном случае `SPIRIT_DATA_DIR`, затем стандартная для платформы |

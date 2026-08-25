@@ -43,6 +43,6 @@ Placeholder for now.
 - [Changelog](https://github.com/SpiritAgents/SpiritAgent/releases)
 - [Open source licenses](/notice.md)
 
-© 2026 Spirit Agent. Open source AI agent.
+© 2026 Spirit. Open source AI agent.
 
 [GitHub](https://github.com/SpiritAgents/SpiritAgent)

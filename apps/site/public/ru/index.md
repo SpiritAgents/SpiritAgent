@@ -43,6 +43,6 @@ Spirit не привязывает вас к облачному стеку. Пр
 - [История изменений](https://github.com/SpiritAgents/SpiritAgent/releases)
 - [Лицензии с открытым исходным кодом](/notice.md)
 
-© 2026 Spirit Agent. ИИ-агент с открытым исходным кодом.
+© 2026 Spirit. ИИ-агент с открытым исходным кодом.
 
 [GitHub](https://github.com/SpiritAgents/SpiritAgent)

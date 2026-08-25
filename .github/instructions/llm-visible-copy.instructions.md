@@ -6,7 +6,7 @@ applyTo: "packages/agent-core/**"
 
 Follow these rules when modifying system messages, tool descriptions, or `*PromptSection` in `packages/agent-core`.
 
-In Spirit Agent, **tool definitions (name / description / schema) and the system message share the same context**. When the model **can already see the `tools` field** in a function-calling / Responses request, do not re-list, paraphrase, or "teach again" the same capabilities in the system message.
+In Spirit, **tool definitions (name / description / schema) and the system message share the same context**. When the model **can already see the `tools` field** in a function-calling / Responses request, do not re-list, paraphrase, or "teach again" the same capabilities in the system message.
 
 **Principle**: the system message only carries host policies that **tool definitions cannot express**; capability usage goes into **tool descriptions** or **API `tools` injection**. English, short sentences, delete when in doubt. Run an eval after larger changes.
 

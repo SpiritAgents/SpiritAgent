@@ -43,6 +43,6 @@ Marcador de posición por ahora.
 - [Registro de cambios](https://github.com/SpiritAgents/SpiritAgent/releases)
 - [Licencias de código abierto](/notice.md)
 
-© 2026 Spirit Agent. Agente de IA de código abierto.
+© 2026 Spirit. Agente de IA de código abierto.
 
 [GitHub](https://github.com/SpiritAgents/SpiritAgent)

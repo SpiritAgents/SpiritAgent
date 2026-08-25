@@ -1,6 +1,6 @@
 # @spiritagent/server
 
-**Spirit Server** — the shared daemon backend for [Spirit Agent](https://github.com/SpiritAgents/SpiritAgent). It owns the agent runtime, sessions, streaming, tool execution, and approvals; hosts (CLI, Desktop, Web) attach as thin WebSocket clients instead of embedding a runtime in-process.
+**Spirit Server** — the shared daemon backend for [Spirit](https://github.com/SpiritAgents/SpiritAgent). It owns the agent runtime, sessions, streaming, tool execution, and approvals; hosts (CLI, Desktop, Web) attach as thin WebSocket clients instead of embedding a runtime in-process.
 
 ## What it provides
 
@@ -42,7 +42,7 @@ Each daemon writes `{spiritDataDir}/server/instances/{instanceId}.json`:
 }
 ```
 
-Clients resolve a daemon by reading the registry, pruning records whose pid is dead, and attaching to a survivor — otherwise they spawn a new one. The registry lives in the shared Spirit data directory (`%APPDATA%/SpiritAgent`, `~/Library/Application Support/SpiritAgent`, `$XDG_DATA_HOME/SpiritAgent`, or `~/.spirit-agent`; override with `SPIRIT_AGENT_DATA_DIR`).
+Clients resolve a daemon by reading the registry, pruning records whose pid is dead, and attaching to a survivor — otherwise they spawn a new one. The registry lives in the shared Spirit data directory (`%APPDATA%/Spirit`, `~/Library/Application Support/Spirit`, `$XDG_DATA_HOME/Spirit`, or `~/.spirit-data`; override with `SPIRIT_DATA_DIR`).
 
 ## Protocol
 
@@ -112,4 +112,4 @@ Remote access is **off by default**: the daemon binds loopback and requires the 
 
 ## License
 
-MIT — see the [Spirit Agent repository](https://github.com/SpiritAgents/SpiritAgent).
+MIT — see the [Spirit repository](https://github.com/SpiritAgents/SpiritAgent).

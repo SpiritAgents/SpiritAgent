@@ -1,6 +1,6 @@
 # Third-Party Notices
 
-Spirit Agent site includes open source software. The following production dependencies
+Spirit site includes open source software. The following production dependencies
 are used in this project.
 
 - [@antfu/install-pkg@1.1.0](https://github.com/antfu/install-pkg) - MIT

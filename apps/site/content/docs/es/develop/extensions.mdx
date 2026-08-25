@@ -29,7 +29,7 @@ example-extension/
 {
   "name": "@example/spirit-extension",
   "version": "0.1.0",
-  "description": "Example Spirit Agent extension.",
+  "description": "Example Spirit extension.",
   "author": { "name": "example" },
   "homepage": "https://example.com/spirit-extension",
   "main": "dist/index.js",
@@ -352,7 +352,7 @@ El `package.json` publicado es la fuente de verdad, especialmente `spiritExtensi
 
 También lee `name`, `version`, `description`, `author`, `repository`, `homepage`, `keywords` y el opcional `spiritExtension.icon`. Si estableces `icon`, incluye ese archivo en el paquete publicado. Un objeto `spiritExtension` faltante hace que la compilación del registro falle para esa versión.
 
-Ejemplo oficial: [`@spiritagent/extension-system-message-demo`](https://www.npmjs.com/package/@spiritagent/extension-system-message-demo) (`spiritagent.system-message-demo`).
+Ejemplo oficial: [`@spiritagent/extension-system-message-demo`](https://www.npmjs.com/package/@spiritagent/extension-system-message-demo) (`spirit.system-message-demo`).
 
 ### 2. Lista el paquete
 
@@ -368,7 +368,7 @@ No edites estos archivos manualmente (regéralos):
 - `registry/catalog.json`
 - `registry/extensions/<extension-id>/detail.json`
 
-`extensionId` necesita al menos dos segmentos separados por puntos, letras minúsculas y dígitos, con puntos o guiones dentro de un segmento. Ejemplos: `spiritagent.system-message-demo`, `yourteam.some-extension`. `packageName` y `extensionId` deben ser únicos en el repositorio.
+`extensionId` necesita al menos dos segmentos separados por puntos, letras minúsculas y dígitos, con puntos o guiones dentro de un segmento. Ejemplos: `spirit.system-message-demo`, `yourteam.some-extension`. `packageName` y `extensionId` deben ser únicos en el repositorio.
 
 ### `entry.json`
 

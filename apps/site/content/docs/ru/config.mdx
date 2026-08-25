@@ -7,14 +7,14 @@ Spirit хранит исполняемые файлы и данные в раз�
 
 ## Каталог данных
 
-Переопределяется с помощью `SPIRIT_AGENT_DATA_DIR`. Сервер также может использовать `SPIRIT_SERVER_DATA_DIR` (имеет приоритет над первым).
+Переопределяется с помощью `SPIRIT_DATA_DIR`. Сервер также может использовать `SPIRIT_SERVER_DATA_DIR` (имеет приоритет над первым).
 
 | ОС               | По умолчанию                                                  |
 | ---------------- | ------------------------------------------------------------- |
-| macOS            | `~/Library/Application Support/SpiritAgent`                   |
-| Windows          | `%APPDATA%\SpiritAgent`                                       |
-| Linux            | `$XDG_DATA_HOME/SpiritAgent` или `~/.local/share/SpiritAgent` |
-| Запасной вариант | `~/.spirit-agent`                                             |
+| macOS            | `~/Library/Application Support/Spirit`                   |
+| Windows          | `%APPDATA%\Spirit`                                       |
+| Linux            | `$XDG_DATA_HOME/Spirit` или `~/.local/share/Spirit` |
+| Запасной вариант | `~/.spirit-data`                                             |
 
 Типичные файлы:
 
@@ -63,7 +63,7 @@ Spirit хранит исполняемые файлы и данные в раз�
 
 | Переменная                                                        | Роль                                           |
 | ----------------------------------------------------------------- | ---------------------------------------------- |
-| `SPIRIT_AGENT_DATA_DIR`                                           | Каталог данных                                 |
+| `SPIRIT_DATA_DIR`                                           | Каталог данных                                 |
 | `SPIRIT_SERVER_DATA_DIR`                                          | Каталог данных сервера (приоритет)             |
 | `SPIRIT_ACP_DATA_DIR` / `SPIRIT_ACP_WORKSPACE`                    | [ACP](./acp.mdx)                               |
 | `SPIRIT_HOME` / `SPIRIT_VERSION` / `SPIRIT_DOWNLOAD_HOST`         | Установщик CLI                                 |

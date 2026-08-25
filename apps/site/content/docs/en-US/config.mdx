@@ -7,14 +7,14 @@ Spirit keeps binaries and data in different places. Mixing them up is the usual 
 
 ## Data directory
 
-Override with `SPIRIT_AGENT_DATA_DIR`. The server can also use `SPIRIT_SERVER_DATA_DIR` (wins over the former).
+Override with `SPIRIT_DATA_DIR`. The server can also use `SPIRIT_SERVER_DATA_DIR` (wins over the former).
 
 | OS       | Default                                                      |
 | -------- | ------------------------------------------------------------ |
-| macOS    | `~/Library/Application Support/SpiritAgent`                  |
-| Windows  | `%APPDATA%\SpiritAgent`                                      |
-| Linux    | `$XDG_DATA_HOME/SpiritAgent` or `~/.local/share/SpiritAgent` |
-| Fallback | `~/.spirit-agent`                                            |
+| macOS    | `~/Library/Application Support/Spirit`                  |
+| Windows  | `%APPDATA%\Spirit`                                      |
+| Linux    | `$XDG_DATA_HOME/Spirit` or `~/.local/share/Spirit` |
+| Fallback | `~/.spirit-data`                                            |
 
 Typical files:
 
@@ -83,7 +83,7 @@ Also used: `{workspace}/AGENTS.md`, `{workspace}/.agents/skills/`, `{workspace}/
 
 | Variable                                                          | Role                               |
 | ----------------------------------------------------------------- | ---------------------------------- |
-| `SPIRIT_AGENT_DATA_DIR`                                           | Data directory                     |
+| `SPIRIT_DATA_DIR`                                           | Data directory                     |
 | `SPIRIT_SERVER_DATA_DIR`                                          | Server data directory (wins)       |
 | `SPIRIT_ACP_DATA_DIR` / `SPIRIT_ACP_WORKSPACE`                    | [ACP](./acp.mdx)                   |
 | `SPIRIT_HOME` / `SPIRIT_VERSION` / `SPIRIT_DOWNLOAD_HOST`         | CLI installer                      |

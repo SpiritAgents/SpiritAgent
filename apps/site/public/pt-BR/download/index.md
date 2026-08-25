@@ -1,6 +1,6 @@
 # O mesmo agente, em todo o seu trabalho.
 
-Baixe o Spirit Agent para Desktop, instale o CLI ou fique atento para ACP.
+Baixe o Spirit para Desktop, instale o CLI ou fique atento para ACP.
 
 ## Desktop
 
@@ -18,4 +18,4 @@ curl -fsSL https://spirit.fast/install | bash
 
 Em breve™
 
-[Spirit Agent](/pt-BR) · [Baixar](/pt-BR/download)
+[Spirit](/pt-BR) · [Baixar](/pt-BR/download)

@@ -7,14 +7,14 @@ Spirit conserve les binaires et les données à des endroits différents. Les m�
 
 ## Répertoire de données
 
-Remplacez avec `SPIRIT_AGENT_DATA_DIR`. Le serveur peut aussi utiliser `SPIRIT_SERVER_DATA_DIR` (prioritaire sur le premier).
+Remplacez avec `SPIRIT_DATA_DIR`. Le serveur peut aussi utiliser `SPIRIT_SERVER_DATA_DIR` (prioritaire sur le premier).
 
 | OS      | Valeur par défaut                                            |
 | ------- | ------------------------------------------------------------ |
-| macOS   | `~/Library/Application Support/SpiritAgent`                  |
-| Windows | `%APPDATA%\SpiritAgent`                                      |
-| Linux   | `$XDG_DATA_HOME/SpiritAgent` ou `~/.local/share/SpiritAgent` |
-| Repli   | `~/.spirit-agent`                                            |
+| macOS   | `~/Library/Application Support/Spirit`                  |
+| Windows | `%APPDATA%\Spirit`                                      |
+| Linux   | `$XDG_DATA_HOME/Spirit` ou `~/.local/share/Spirit` |
+| Repli   | `~/.spirit-data`                                            |
 
 Fichiers typiques :
 
@@ -63,7 +63,7 @@ Les clés ne sont **pas** dans ce fichier. Elles vivent dans le [trousseau](./se
 
 | Variable                                                          | Rôle                                           |
 | ----------------------------------------------------------------- | ---------------------------------------------- |
-| `SPIRIT_AGENT_DATA_DIR`                                           | Répertoire de données                          |
+| `SPIRIT_DATA_DIR`                                           | Répertoire de données                          |
 | `SPIRIT_SERVER_DATA_DIR`                                          | Répertoire de données du serveur (prioritaire) |
 | `SPIRIT_ACP_DATA_DIR` / `SPIRIT_ACP_WORKSPACE`                    | [ACP](./acp.mdx)                               |
 | `SPIRIT_HOME` / `SPIRIT_VERSION` / `SPIRIT_DOWNLOAD_HOST`         | Programme d'installation CLI                   |

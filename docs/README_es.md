@@ -1,6 +1,6 @@
 <div align="center">
 
-# Spirit Agent
+# Spirit
 
 Un agente de IA de código abierto diseñado para multiplicar tu productividad.
 
@@ -10,13 +10,13 @@ Un agente de IA de código abierto diseñado para multiplicar tu productividad.
 
 [English](../README.md)
 
-<img width="1552" height="1032" alt="Spirit Agent Desktop" src="https://github.com/user-attachments/assets/7b07e79d-c800-405a-bee6-40dda9d75b13" />
+<img width="1552" height="1032" alt="Spirit Desktop" src="https://github.com/user-attachments/assets/7b07e79d-c800-405a-bee6-40dda9d75b13" />
 
 </div>
 
 ## Descripción general
 
-Spirit Agent es un **agente de codificación basado en herramientas** que se ejecuta sobre la raíz de un proyecto real. El mismo runtime impulsa un workspace Desktop nativo y una interfaz de terminal. La lógica compartida vive en paquetes TypeScript; los hosts añaden ejecución, descubrimiento e interfaz específicos de plataforma.
+Spirit es un **agente de codificación basado en herramientas** que se ejecuta sobre la raíz de un proyecto real. El mismo runtime impulsa un workspace Desktop nativo y una interfaz de terminal. La lógica compartida vive en paquetes TypeScript; los hosts añaden ejecución, descubrimiento e interfaz específicos de plataforma.
 
 ```
 ┌───────────────────────────────────────────────────────┐
@@ -116,12 +116,12 @@ Consulta [apps/site/README.md](../apps/site/README.md) para desarrollo local y e
 
 ## CLI
 
-<img width="1014" height="744" alt="Spirit Agent CLI" src="https://github.com/user-attachments/assets/ecf4fcec-6a9b-4562-b0da-cc14816f36d3" />
+<img width="1014" height="744" alt="Spirit CLI" src="https://github.com/user-attachments/assets/ecf4fcec-6a9b-4562-b0da-cc14816f36d3" />
 
-La [CLI en Rust](../apps/cli) (`spirit-agent`) ofrece un host orientado a terminal con UI Ratatui opcional. Se conecta al daemon compartido Spirit Server por WebSocket, ideal para scripts, sesiones SSH y entornos mínimos.
+La [CLI en Rust](../apps/cli) (`spirit`) ofrece un host orientado a terminal con UI Ratatui opcional. Se conecta al daemon compartido Spirit Server por WebSocket, ideal para scripts, sesiones SSH y entornos mínimos.
 
 ```bash
-pnpm run dev:cli    # cargo run -p spirit-agent
+pnpm run dev:cli    # cargo run -p spirit
 ```
 
 ## Server
@@ -137,9 +137,9 @@ pnpm run dev:cli    # cargo run -p spirit-agent
 
 ## ACP Server
 
-[`packages/acp-server`](../packages/acp-server) es un adaptador ligero que expone Spirit Agent como servidor [Agent Client Protocol](https://agentclientprotocol.com) (ACP) vía stdio / ndJSON. Cualquier editor compatible con ACP — como **Zed** o **JetBrains Junie** — puede conectar Spirit Agent como motor de codificación IA sin integración personalizada.
+[`packages/acp-server`](../packages/acp-server) es un adaptador ligero que expone Spirit como servidor [Agent Client Protocol](https://agentclientprotocol.com) (ACP) vía stdio / ndJSON. Cualquier editor compatible con ACP — como **Zed** o **JetBrains Junie** — puede conectar Spirit como motor de codificación IA sin integración personalizada.
 
-- **Terminal Auth** — `initialize` anuncia auth `type: "terminal"`; los clientes ejecutan `spirit-agent-acp --setup` para configuración interactiva del provider, luego `authenticate` antes de `session/new`.
+- **Terminal Auth** — `initialize` anuncia auth `type: "terminal"`; los clientes ejecutan `spirit-acp --setup` para configuración interactiva del provider, luego `authenticate` antes de `session/new`.
 - **Superficie del protocolo** — `initialize`, `authenticate`, `logout`, `session/new`, `session/prompt`, `session/cancel`, `session/close`, `session/set_mode`.
 - **Streaming y razonamiento** — `agent_message_chunk` en tiempo real y `agent_thought_chunk` para la salida de razonamiento del modelo.
 - **Puente de permisos** — aprobación de herramientas vía ACP `request_permission` (allow-once / always-allow / reject).
@@ -153,7 +153,7 @@ pnpm run dev:cli    # cargo run -p spirit-agent
 
 ```json
 "agent_servers": {
-  "Spirit Agent": {
+  "Spirit": {
     "command": "node",
     "args": ["path/to/packages/acp-server/dist/src/stdio-entry.js"]
   }
@@ -172,7 +172,7 @@ node path/to/packages/acp-server/dist/src/stdio-entry.js --setup
 | Variable de entorno    | Requerida | Descripción                                                                              |
 | ---------------------- | --------- | ---------------------------------------------------------------------------------------- |
 | `SPIRIT_ACP_WORKSPACE` | No        | Raíz del workspace (predeterminado: `cwd` del cliente)                                   |
-| `SPIRIT_ACP_DATA_DIR`  | No        | Directorio de datos Spirit (predeterminado: `%APPDATA%/SpiritAgent` o `~/.spirit-agent`) |
+| `SPIRIT_ACP_DATA_DIR`  | No        | Directorio de datos Spirit (predeterminado: `%APPDATA%/Spirit` o `~/.spirit-data`) |
 
 ## Desarrollo
 

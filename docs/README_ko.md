@@ -1,6 +1,6 @@
 <div align="center">
 
-# Spirit Agent
+# Spirit
 
 생산성을 배가시키기 위해 만들어진 오픈소스 AI 에이전트.
 
@@ -10,13 +10,13 @@
 
 [English](../README.md)
 
-<img width="1552" height="1032" alt="Spirit Agent Desktop" src="https://github.com/user-attachments/assets/7b07e79d-c800-405a-bee6-40dda9d75b13" />
+<img width="1552" height="1032" alt="Spirit Desktop" src="https://github.com/user-attachments/assets/7b07e79d-c800-405a-bee6-40dda9d75b13" />
 
 </div>
 
 ## 개요
 
-Spirit Agent는 실제 프로젝트 루트를 컨텍스트로 동작하는 **도구 기반 코딩 에이전트**입니다. 동일한 런타임이 네이티브 Desktop 워크스페이스와 터미널 UI를 모두 구동합니다. 공유 로직은 TypeScript 패키지에 있으며, 각 호스트가 플랫폼별 실행·탐색·UI를 추가합니다.
+Spirit는 실제 프로젝트 루트를 컨텍스트로 동작하는 **도구 기반 코딩 에이전트**입니다. 동일한 런타임이 네이티브 Desktop 워크스페이스와 터미널 UI를 모두 구동합니다. 공유 로직은 TypeScript 패키지에 있으며, 각 호스트가 플랫폼별 실행·탐색·UI를 추가합니다.
 
 ```
 ┌───────────────────────────────────────────────────────┐
@@ -116,12 +116,12 @@ pnpm run dev:site
 
 ## CLI
 
-<img width="1014" height="744" alt="Spirit Agent CLI" src="https://github.com/user-attachments/assets/ecf4fcec-6a9b-4562-b0da-cc14816f36d3" />
+<img width="1014" height="744" alt="Spirit CLI" src="https://github.com/user-attachments/assets/ecf4fcec-6a9b-4562-b0da-cc14816f36d3" />
 
-[Rust CLI](../apps/cli)(`spirit-agent`)는 터미널 우선 호스트로 선택적 Ratatui UI를 제공합니다. WebSocket으로 공유 Spirit Server 데몬에 연결하며, 스크립팅, SSH 세션, 최소 환경에 적합합니다.
+[Rust CLI](../apps/cli)(`spirit`)는 터미널 우선 호스트로 선택적 Ratatui UI를 제공합니다. WebSocket으로 공유 Spirit Server 데몬에 연결하며, 스크립팅, SSH 세션, 최소 환경에 적합합니다.
 
 ```bash
-pnpm run dev:cli    # cargo run -p spirit-agent
+pnpm run dev:cli    # cargo run -p spirit
 ```
 
 ## Server
@@ -137,9 +137,9 @@ pnpm run dev:cli    # cargo run -p spirit-agent
 
 ## ACP Server
 
-[`packages/acp-server`](../packages/acp-server)는 얇은 어댑터로, stdio / ndJSON을 통해 Spirit Agent를 [Agent Client Protocol](https://agentclientprotocol.com)(ACP) 서버로 노출합니다. **Zed**나 **JetBrains Junie** 같은 ACP 호환 에디터가 맞춤 통합 없이 Spirit Agent를 AI 코딩 엔진으로 연결할 수 있습니다.
+[`packages/acp-server`](../packages/acp-server)는 얇은 어댑터로, stdio / ndJSON을 통해 Spirit를 [Agent Client Protocol](https://agentclientprotocol.com)(ACP) 서버로 노출합니다. **Zed**나 **JetBrains Junie** 같은 ACP 호환 에디터가 맞춤 통합 없이 Spirit를 AI 코딩 엔진으로 연결할 수 있습니다.
 
-- **Terminal Auth** — `initialize`가 `type: "terminal"` 인증 선언; 클라이언트는 `spirit-agent-acp --setup`으로 대화형 provider 구성 후 `authenticate` → `session/new`.
+- **Terminal Auth** — `initialize`가 `type: "terminal"` 인증 선언; 클라이언트는 `spirit-acp --setup`으로 대화형 provider 구성 후 `authenticate` → `session/new`.
 - **프로토콜 표면** — `initialize`, `authenticate`, `logout`, `session/new`, `session/prompt`, `session/cancel`, `session/close`, `session/set_mode`.
 - **스트리밍 및 사고** — 실시간 `agent_message_chunk`와 추론 출력용 `agent_thought_chunk`.
 - **권한 브리지** — ACP `request_permission`으로 도구 승인(allow-once / always-allow / reject).
@@ -153,7 +153,7 @@ pnpm run dev:cli    # cargo run -p spirit-agent
 
 ```json
 "agent_servers": {
-  "Spirit Agent": {
+  "Spirit": {
     "command": "node",
     "args": ["path/to/packages/acp-server/dist/src/stdio-entry.js"]
   }
@@ -172,7 +172,7 @@ node path/to/packages/acp-server/dist/src/stdio-entry.js --setup
 | 환경 변수              | 필수   | 설명                                                                         |
 | ---------------------- | ------ | ---------------------------------------------------------------------------- |
 | `SPIRIT_ACP_WORKSPACE` | 아니오 | 워크스페이스 루트(기본: 클라이언트 `cwd`)                                    |
-| `SPIRIT_ACP_DATA_DIR`  | 아니오 | Spirit 데이터 디렉터리(기본: `%APPDATA%/SpiritAgent` 또는 `~/.spirit-agent`) |
+| `SPIRIT_ACP_DATA_DIR`  | 아니오 | Spirit 데이터 디렉터리(기본: `%APPDATA%/Spirit` 또는 `~/.spirit-data`) |
 
 ## 개발
 

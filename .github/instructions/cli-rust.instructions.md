@@ -2,7 +2,7 @@
 applyTo: "apps/cli/**/*.rs"
 ---
 
-# Spirit Agent — Rust CLI (`apps/cli`)
+# Spirit — Rust CLI (`apps/cli`)
 
 ## Code Style
 

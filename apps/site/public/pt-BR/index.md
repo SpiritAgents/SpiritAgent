@@ -43,6 +43,6 @@ Placeholder por enquanto.
 - [Changelog](https://github.com/SpiritAgents/SpiritAgent/releases)
 - [Licenças de código aberto](/notice.md)
 
-© 2026 Spirit Agent. Agente de IA de código aberto.
+© 2026 Spirit. Agente de IA de código aberto.
 
 [GitHub](https://github.com/SpiritAgents/SpiritAgent)

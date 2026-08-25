@@ -1,6 +1,6 @@
 # @spiritagent/agent-core
 
-TypeScript core runtime for [Spirit Agent](https://github.com/SpiritAgents/SpiritAgent) — the **single source of agent semantics** in the project. Desktop, CLI, and ACP hosts consume this package; they supply platform-specific execution and UI.
+TypeScript core runtime for [Spirit](https://github.com/SpiritAgents/SpiritAgent) — the **single source of agent semantics** in the project. Desktop, CLI, and ACP hosts consume this package; they supply platform-specific execution and UI.
 
 ## What it provides
 
@@ -22,4 +22,4 @@ TypeScript core runtime for [Spirit Agent](https://github.com/SpiritAgents/Spiri
 
 ## License
 
-MIT — see [LICENSE](LICENSE) and the [Spirit Agent repository](https://github.com/SpiritAgents/SpiritAgent).
+MIT — see [LICENSE](LICENSE) and the [Spirit repository](https://github.com/SpiritAgents/SpiritAgent).

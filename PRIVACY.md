@@ -2,7 +2,7 @@
 
 Last updated: 2026-07-25
 
-Spirit Agent is an open-source application that runs locally on your device. This policy describes how the software handles information.
+Spirit is an open-source application that runs locally on your device. This policy describes how the software handles information.
 
 ## Summary
 
@@ -12,7 +12,7 @@ Spirit Agent is an open-source application that runs locally on your device. Thi
 
 ## Data stored on your device
 
-Depending on how you use Spirit Agent, the app may store locally:
+Depending on how you use Spirit, the app may store locally:
 
 - Application and workspace settings
 - Model provider configuration and API credentials you supply
@@ -23,7 +23,7 @@ You control this data through your device, OS backups, and the app’s own delet
 
 ## Third-party services
 
-Spirit Agent does not provide the model APIs themselves. If you configure and use a model provider, MCP server, or similar external service, prompts, conversation content, tool-related context, and other data required for that request may be sent to that provider.
+Spirit does not provide the model APIs themselves. If you configure and use a model provider, MCP server, or similar external service, prompts, conversation content, tool-related context, and other data required for that request may be sent to that provider.
 
 We do not control how third parties process that data. Review each provider’s privacy policy before use.
 
@@ -37,4 +37,4 @@ We may update this policy as the project evolves. The latest version will be in 
 
 ## Contact
 
-For privacy questions about this project, open an issue in the Spirit Agent GitHub repository.
+For privacy questions about this project, open an issue in the Spirit GitHub repository.

@@ -1,6 +1,6 @@
 ---
 title: Установка CLI
-description: Установите CLI Spirit Agent с помощью скрипта установки, SPIRIT_HOME и SPIRIT_VERSION.
+description: Установите CLI Spirit с помощью скрипта установки, SPIRIT_HOME и SPIRIT_VERSION.
 ---
 
 CLI — это терминальный хост с TUI и неинтерактивным режимом `-p`. Он общается с тем же локальным демоном, что и [Desktop](./desktop.mdx).
@@ -29,12 +29,12 @@ spirit --version
 
 ## Куда это устанавливается
 
-Корень установки **не** является каталогом данных Spirit Agent.
+Корень установки **не** является каталогом данных Spirit.
 
 |                                                     | По умолчанию                                                                                                                | Переопределение         |
 | --------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------- | ----------------------- |
 | Бинарные файлы CLI                                  | Unix: `~/.spirit` · Windows: `%LOCALAPPDATA%\Spirit`                                                                        | `SPIRIT_HOME`           |
-| Сессии, конфигурация, указатели на хранилище ключей | macOS: `~/Library/Application Support/SpiritAgent` · Windows: `%APPDATA%\SpiritAgent` · Linux: `~/.local/share/SpiritAgent` | `SPIRIT_AGENT_DATA_DIR` |
+| Сессии, конфигурация, указатели на хранилище ключей | macOS: `~/Library/Application Support/Spirit` · Windows: `%APPDATA%\Spirit` · Linux: `~/.local/share/Spirit` | `SPIRIT_DATA_DIR` |
 
 В Unix скрипт создаёт ссылку `$SPIRIT_HOME/bin/spirit` → `$SPIRIT_HOME/cli/current/bin/spirit` и добавляет `export PATH="$SPIRIT_HOME/bin:$PATH"` в `~/.profile`, `~/.bashrc` и `~/.zshrc` (маркер `# spirit-agent cli`).
 

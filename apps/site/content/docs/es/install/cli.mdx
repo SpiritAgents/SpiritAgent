@@ -1,6 +1,6 @@
 ---
 title: Instalar CLI
-description: Instala el CLI de Spirit Agent con el script de instalación, SPIRIT_HOME y SPIRIT_VERSION.
+description: Instala el CLI de Spirit con el script de instalación, SPIRIT_HOME y SPIRIT_VERSION.
 ---
 
 El CLI es un host de terminal con una TUI y un modo no interactivo `-p`. Se comunica con el mismo daemon local que [Desktop](./desktop.mdx).
@@ -29,12 +29,12 @@ spirit --version
 
 ## Dónde se instala
 
-La raíz de instalación **no** es el directorio de datos de Spirit Agent.
+La raíz de instalación **no** es el directorio de datos de Spirit.
 
 |                                              | Predeterminado                                                                                                              | Anulación               |
 | -------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------- | ----------------------- |
 | Binarios del CLI                             | Unix: `~/.spirit` · Windows: `%LOCALAPPDATA%\Spirit`                                                                        | `SPIRIT_HOME`           |
-| Sesiones, configuración, punteros de llavero | macOS: `~/Library/Application Support/SpiritAgent` · Windows: `%APPDATA%\SpiritAgent` · Linux: `~/.local/share/SpiritAgent` | `SPIRIT_AGENT_DATA_DIR` |
+| Sesiones, configuración, punteros de llavero | macOS: `~/Library/Application Support/Spirit` · Windows: `%APPDATA%\Spirit` · Linux: `~/.local/share/Spirit` | `SPIRIT_DATA_DIR` |
 
 En Unix, el script enlaza `$SPIRIT_HOME/bin/spirit` → `$SPIRIT_HOME/cli/current/bin/spirit` y agrega `export PATH="$SPIRIT_HOME/bin:$PATH"` a `~/.profile`, `~/.bashrc` y `~/.zshrc` (marcador `# spirit-agent cli`).
 

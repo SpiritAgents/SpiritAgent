@@ -43,6 +43,6 @@ Spirit 不會將你鎖定在託管堆疊中。從任何供應商取得金鑰，�
 - [變更日誌](https://github.com/SpiritAgents/SpiritAgent/releases)
 - [開放原始碼授權](/notice.md)
 
-© 2026 Spirit Agent。開放原始碼 AI 智慧體。
+© 2026 Spirit。開放原始碼 AI 智慧體。
 
 [GitHub](https://github.com/SpiritAgents/SpiritAgent)

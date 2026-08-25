@@ -43,6 +43,6 @@ Spirit はホスト型スタックに縛り付けません。任意のプロバ�
 - [チェンジログ](https://github.com/SpiritAgents/SpiritAgent/releases)
 - [オープンソースライセンス](/notice.md)
 
-© 2026 Spirit Agent. オープンソース AI エージェント。
+© 2026 Spirit. オープンソース AI エージェント。
 
 [GitHub](https://github.com/SpiritAgents/SpiritAgent)

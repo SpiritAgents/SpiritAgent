@@ -29,7 +29,7 @@ example-extension/
 {
   "name": "@example/spirit-extension",
   "version": "0.1.0",
-  "description": "Example Spirit Agent extension.",
+  "description": "Example Spirit extension.",
   "author": { "name": "example" },
   "homepage": "https://example.com/spirit-extension",
   "main": "dist/index.js",
@@ -352,7 +352,7 @@ export function activate(ctx) {
 
 また、`name`、`version`、`description`、`author`、`repository`、`homepage`、`keywords`、およびオプションの `spiritExtension.icon` も読み取ります。`icon` を設定する場合は、そのファイルを公開パッケージに含めてください。`spiritExtension` オブジェクトがないと、そのバージョンのレジストリビルドは失敗します。
 
-公式例：[`@spiritagent/extension-system-message-demo`](https://www.npmjs.com/package/@spiritagent/extension-system-message-demo)（`spiritagent.system-message-demo`）。
+公式例：[`@spiritagent/extension-system-message-demo`](https://www.npmjs.com/package/@spiritagent/extension-system-message-demo)（`spirit.system-message-demo`）。
 
 ### 2. パッケージをリストする
 
@@ -368,7 +368,7 @@ export function activate(ctx) {
 - `registry/catalog.json`
 - `registry/extensions/<extension-id>/detail.json`
 
-`extensionId` は、少なくとも2つのドット区切りのセグメント、小文字の英数字、セグメント内にドットまたはハイフンを使用する必要があります。例：`spiritagent.system-message-demo`、`yourteam.some-extension`。`packageName` と `extensionId` はリポジトリ内で一意である必要があります。
+`extensionId` は、少なくとも2つのドット区切りのセグメント、小文字の英数字、セグメント内にドットまたはハイフンを使用する必要があります。例：`spirit.system-message-demo`、`yourteam.some-extension`。`packageName` と `extensionId` はリポジトリ内で一意である必要があります。
 
 ### `entry.json`
 

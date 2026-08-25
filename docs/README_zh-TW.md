@@ -1,6 +1,6 @@
 <div align="center">
 
-# Spirit Agent
+# Spirit
 
 一款開源 AI 智能體，旨在成倍提升你的生產力。
 
@@ -10,13 +10,13 @@
 
 [English](../README.md)
 
-<img width="1552" height="1032" alt="Spirit Agent Desktop" src="https://github.com/user-attachments/assets/7b07e79d-c800-405a-bee6-40dda9d75b13" />
+<img width="1552" height="1032" alt="Spirit Desktop" src="https://github.com/user-attachments/assets/7b07e79d-c800-405a-bee6-40dda9d75b13" />
 
 </div>
 
 ## 概覽
 
-Spirit Agent 是一款**工具型程式設計智能體**，以真實專案根目錄為執行上下文。同一套執行時同時驅動原生桌面工作區與終端介面。共享邏輯位於 TypeScript 套件中；各宿主在此基礎上疊加平台相關的執行、探索與 UI。
+Spirit 是一款**工具型程式設計智能體**，以真實專案根目錄為執行上下文。同一套執行時同時驅動原生桌面工作區與終端介面。共享邏輯位於 TypeScript 套件中；各宿主在此基礎上疊加平台相關的執行、探索與 UI。
 
 ```
 ┌───────────────────────────────────────────────────────┐
@@ -116,12 +116,12 @@ pnpm run dev:site
 
 ## CLI
 
-<img width="1014" height="744" alt="Spirit Agent CLI" src="https://github.com/user-attachments/assets/ecf4fcec-6a9b-4562-b0da-cc14816f36d3" />
+<img width="1014" height="744" alt="Spirit CLI" src="https://github.com/user-attachments/assets/ecf4fcec-6a9b-4562-b0da-cc14816f36d3" />
 
-[Rust CLI](../apps/cli)（`spirit-agent`）提供終端優先的宿主，可選 Ratatui 介面。透過 WebSocket 連接共享 Spirit Server daemon，適合腳本化、SSH 工作階段與極簡環境。
+[Rust CLI](../apps/cli)（`spirit`）提供終端優先的宿主，可選 Ratatui 介面。透過 WebSocket 連接共享 Spirit Server daemon，適合腳本化、SSH 工作階段與極簡環境。
 
 ```bash
-pnpm run dev:cli    # cargo run -p spirit-agent
+pnpm run dev:cli    # cargo run -p spirit
 ```
 
 ## Server
@@ -137,9 +137,9 @@ pnpm run dev:cli    # cargo run -p spirit-agent
 
 ## ACP Server
 
-[`packages/acp-server`](../packages/acp-server) 是一個薄適配層，透過 stdio / ndJSON 將 Spirit Agent 以 [Agent Client Protocol](https://agentclientprotocol.com)（ACP）伺服器的形式對外暴露。任何相容 ACP 的編輯器 — 如 **Zed** 或 **JetBrains Junie** — 都可以直接接入 Spirit Agent 作為其 AI 編碼引擎，無需客製整合。
+[`packages/acp-server`](../packages/acp-server) 是一個薄適配層，透過 stdio / ndJSON 將 Spirit 以 [Agent Client Protocol](https://agentclientprotocol.com)（ACP）伺服器的形式對外暴露。任何相容 ACP 的編輯器 — 如 **Zed** 或 **JetBrains Junie** — 都可以直接接入 Spirit 作為其 AI 編碼引擎，無需客製整合。
 
-- **Terminal Auth** — `initialize` 宣告 `type: "terminal"` 認證方式；用戶端可 spawn `spirit-agent-acp --setup` 進行互動式 provider 設定，隨後 `authenticate`，再 `session/new`。
+- **Terminal Auth** — `initialize` 宣告 `type: "terminal"` 認證方式；用戶端可 spawn `spirit-acp --setup` 進行互動式 provider 設定，隨後 `authenticate`，再 `session/new`。
 - **協議表面** — `initialize`、`authenticate`、`logout`、`session/new`、`session/prompt`、`session/cancel`、`session/close`、`session/set_mode`。
 - **串流與思考** — 即時 `agent_message_chunk` 串流輸出，以及 `agent_thought_chunk` 用於模型推理過程展示。
 - **權限橋接** — 透過 ACP `request_permission` 進行工具審批，支援 allow-once / always-allow / reject 選項。
@@ -153,7 +153,7 @@ pnpm run dev:cli    # cargo run -p spirit-agent
 
 ```json
 "agent_servers": {
-  "Spirit Agent": {
+  "Spirit": {
     "command": "node",
     "args": ["path/to/packages/acp-server/dist/src/stdio-entry.js"]
   }
@@ -172,7 +172,7 @@ node path/to/packages/acp-server/dist/src/stdio-entry.js --setup
 | 環境變數               | 必填 | 說明                                                                  |
 | ---------------------- | ---- | --------------------------------------------------------------------- |
 | `SPIRIT_ACP_WORKSPACE` | 否   | 工作區根路徑（預設：用戶端 `cwd`）                                    |
-| `SPIRIT_ACP_DATA_DIR`  | 否   | Spirit 資料目錄（預設：`%APPDATA%/SpiritAgent` 或 `~/.spirit-agent`） |
+| `SPIRIT_ACP_DATA_DIR`  | 否   | Spirit 資料目錄（預設：`%APPDATA%/Spirit` 或 `~/.spirit-data`） |
 
 ## 開發
 

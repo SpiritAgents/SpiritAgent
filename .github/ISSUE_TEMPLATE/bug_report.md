@@ -1,6 +1,6 @@
 ---
 name: Bug report
-about: Report a reproducible problem in Spirit Agent
+about: Report a reproducible problem in Spirit
 title: ""
 labels: bug
 ---
@@ -35,7 +35,7 @@ labels: bug
 ## Environment
 
 - OS / platform: <!-- e.g. macOS 15.5 arm64, Windows 11 23H2 -->
-- Spirit Agent version: <!-- e.g. 0.1.0, or commit hash for dev builds -->
+- Spirit version: <!-- e.g. 0.1.0, or commit hash for dev builds -->
 - Install source: <!-- packaged build / built from source / pnpm dev -->
 
 ## Additional Context

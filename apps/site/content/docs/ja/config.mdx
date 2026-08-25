@@ -7,14 +7,14 @@ Spirit はバイナリとデータを別の場所に保存します。これら�
 
 ## データディレクトリ
 
-`SPIRIT_AGENT_DATA_DIR` で上書きできます。サーバーは `SPIRIT_SERVER_DATA_DIR` も使用でき（前者よりも優先されます）。
+`SPIRIT_DATA_DIR` で上書きできます。サーバーは `SPIRIT_SERVER_DATA_DIR` も使用でき（前者よりも優先されます）。
 
 | OS             | デフォルト                                                       |
 | -------------- | ---------------------------------------------------------------- |
-| macOS          | `~/Library/Application Support/SpiritAgent`                      |
-| Windows        | `%APPDATA%\SpiritAgent`                                          |
-| Linux          | `$XDG_DATA_HOME/SpiritAgent` または `~/.local/share/SpiritAgent` |
-| フォールバック | `~/.spirit-agent`                                                |
+| macOS          | `~/Library/Application Support/Spirit`                      |
+| Windows        | `%APPDATA%\Spirit`                                          |
+| Linux          | `$XDG_DATA_HOME/Spirit` または `~/.local/share/Spirit` |
+| フォールバック | `~/.spirit-data`                                                |
 
 一般的なファイル:
 
@@ -63,7 +63,7 @@ CLI バイナリは `SPIRIT_HOME`（`~/.spirit` または `%LOCALAPPDATA%\Spirit
 
 | 変数                                                              | 役割                               |
 | ----------------------------------------------------------------- | ---------------------------------- |
-| `SPIRIT_AGENT_DATA_DIR`                                           | データディレクトリ                 |
+| `SPIRIT_DATA_DIR`                                           | データディレクトリ                 |
 | `SPIRIT_SERVER_DATA_DIR`                                          | サーバーデータディレクトリ（優先） |
 | `SPIRIT_ACP_DATA_DIR` / `SPIRIT_ACP_WORKSPACE`                    | [ACP](./acp.mdx)                   |
 | `SPIRIT_HOME` / `SPIRIT_VERSION` / `SPIRIT_DOWNLOAD_HOST`         | CLI インストーラー                 |

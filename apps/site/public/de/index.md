@@ -43,6 +43,6 @@ Platzhalter vorerst.
 - [Changelog](https://github.com/SpiritAgents/SpiritAgent/releases)
 - [Open-Source-Lizenzen](/notice.md)
 
-© 2026 Spirit Agent. Open-Source-KI-Agent.
+© 2026 Spirit. Open-Source-KI-Agent.
 
 [GitHub](https://github.com/SpiritAgents/SpiritAgent)

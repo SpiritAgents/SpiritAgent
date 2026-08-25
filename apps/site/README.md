@@ -1,6 +1,6 @@
 # @spiritagent/site
 
-Marketing and docs site for Spirit Agent (Next.js + Fumadocs).
+Marketing and docs site for Spirit (Next.js + Fumadocs).
 
 Preview: https://next.spirit.fast
 

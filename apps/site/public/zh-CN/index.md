@@ -43,6 +43,6 @@ Spirit 不会把你锁进托管栈。你可以接入任意提供商的密钥，�
 - [更新日志](https://github.com/SpiritAgents/SpiritAgent/releases)
 - [开源许可](/notice.md)
 
-© 2026 Spirit Agent。开源 AI 智能体。
+© 2026 Spirit。开源 AI 智能体。
 
 [GitHub](https://github.com/SpiritAgents/SpiritAgent)

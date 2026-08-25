@@ -2,7 +2,7 @@
 
 Last updated: 2026-08-06
 
-Spirit Agent is a local, tool-using coding agent (Desktop, CLI, server, and shared runtime packages). If you find a security vulnerability in this project, please report it privately.
+Spirit is a local, tool-using coding agent (Desktop, CLI, server, and shared runtime packages). If you find a security vulnerability in this project, please report it privately.
 
 ## Reporting a vulnerability
 

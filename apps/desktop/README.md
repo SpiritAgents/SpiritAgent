@@ -1,8 +1,8 @@
-# Spirit Agent Desktop
+# Spirit Desktop
 
 **An AI agent built to multiply your productivity** — a native desktop workspace where models read your repo, run tools, and ship changes alongside you.
 
-Spirit Agent Desktop is the graphical host for [Spirit Agent](https://github.com/SpiritAgents/SpiritAgent). It pairs a conversational agent with an integrated development surface: file explorer, terminal, Git panel, in-app browser, and Monaco-based editor — all bound to a workspace root so context stays grounded in your project.
+Spirit Desktop is the graphical host for [Spirit](https://github.com/SpiritAgents/SpiritAgent). It pairs a conversational agent with an integrated development surface: file explorer, terminal, Git panel, in-app browser, and Monaco-based editor — all bound to a workspace root so context stays grounded in your project.
 
 ## Features
 
