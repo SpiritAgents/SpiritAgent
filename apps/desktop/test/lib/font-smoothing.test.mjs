@@ -9,6 +9,18 @@ import {
   setStoredFontSmoothing,
 } from "../../src/lib/font-smoothing.ts";
 
+function withDesktopPlatform(platform, run) {
+  const previousWindow = globalThis.window;
+  globalThis.window = {
+    spiritDesktop: { platform },
+  };
+  try {
+    return run();
+  } finally {
+    globalThis.window = previousWindow;
+  }
+}
+
 function withLocalStorage(run) {
   const previous = globalThis.localStorage;
   const store = new Map();
@@ -59,27 +71,39 @@ function withDocumentClassList(run) {
   }
 }
 
-test("getStoredFontSmoothing defaults to off", () => {
-  withLocalStorage(() => {
-    assert.equal(getStoredFontSmoothing(), false);
+test("getStoredFontSmoothing defaults to on on macOS", () => {
+  withDesktopPlatform("darwin", () => {
+    withLocalStorage(() => {
+      assert.equal(getStoredFontSmoothing(), true);
+    });
   });
 });
 
-test("getStoredFontSmoothing is on only when stored as true", () => {
-  withLocalStorage((store) => {
-    store.set(FONT_SMOOTHING_STORAGE_KEY, "false");
-    assert.equal(getStoredFontSmoothing(), false);
-    store.set(FONT_SMOOTHING_STORAGE_KEY, "true");
-    assert.equal(getStoredFontSmoothing(), true);
+test("getStoredFontSmoothing defaults to off outside macOS", () => {
+  withDesktopPlatform("win32", () => {
+    withLocalStorage(() => {
+      assert.equal(getStoredFontSmoothing(), false);
+    });
   });
 });
 
-test("setStoredFontSmoothing writes true and clears when off", () => {
+test("getStoredFontSmoothing follows stored true and false", () => {
+  withDesktopPlatform("darwin", () => {
+    withLocalStorage((store) => {
+      store.set(FONT_SMOOTHING_STORAGE_KEY, "false");
+      assert.equal(getStoredFontSmoothing(), false);
+      store.set(FONT_SMOOTHING_STORAGE_KEY, "true");
+      assert.equal(getStoredFontSmoothing(), true);
+    });
+  });
+});
+
+test("setStoredFontSmoothing writes true and false", () => {
   withLocalStorage((store) => {
     setStoredFontSmoothing(true);
     assert.equal(store.get(FONT_SMOOTHING_STORAGE_KEY), "true");
     setStoredFontSmoothing(false);
-    assert.equal(store.has(FONT_SMOOTHING_STORAGE_KEY), false);
+    assert.equal(store.get(FONT_SMOOTHING_STORAGE_KEY), "false");
   });
 });
 

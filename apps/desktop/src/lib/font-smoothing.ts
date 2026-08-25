@@ -1,23 +1,30 @@
+import { isMacDesktopPlatform } from "./desktop-shell";
+
 export const FONT_SMOOTHING_STORAGE_KEY = "spirit-agent-desktop-font-smoothing" as const;
 
 export const FONT_SMOOTHING_CLASS = "spirit-font-smoothing" as const;
 
+/** macOS defaults on; other platforms stay off until explicitly enabled. */
+export function defaultFontSmoothing(): boolean {
+  return isMacDesktopPlatform();
+}
+
 export function getStoredFontSmoothing(): boolean {
   if (typeof localStorage === "undefined") {
-    return false;
+    return defaultFontSmoothing();
   }
-  return localStorage.getItem(FONT_SMOOTHING_STORAGE_KEY) === "true";
+  const stored = localStorage.getItem(FONT_SMOOTHING_STORAGE_KEY);
+  if (stored === null) {
+    return defaultFontSmoothing();
+  }
+  return stored === "true";
 }
 
 export function setStoredFontSmoothing(enabled: boolean): void {
   if (typeof localStorage === "undefined") {
     return;
   }
-  if (enabled) {
-    localStorage.setItem(FONT_SMOOTHING_STORAGE_KEY, "true");
-    return;
-  }
-  localStorage.removeItem(FONT_SMOOTHING_STORAGE_KEY);
+  localStorage.setItem(FONT_SMOOTHING_STORAGE_KEY, enabled ? "true" : "false");
 }
 
 export function applyFontSmoothingToDocument(enabled: boolean): void {
