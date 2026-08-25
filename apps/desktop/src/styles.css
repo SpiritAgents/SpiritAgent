@@ -341,6 +341,15 @@ html.spirit-desktop-darwin.spirit-desktop-darwin-fullscreen #session-sidebar-pan
   content: none;
 }
 
+/*
+ * Fullscreen zeros --spirit-macos-titlebar-inset so the sidebar loses the traffic-light
+ * safe area. layout-chrome reuses that token as its height, which would collapse the
+ * title row to 0 and let conversation-stage cover the overflowing buttons.
+ */
+html.spirit-desktop-darwin.spirit-desktop-darwin-fullscreen [data-spirit-surface="layout-chrome"] {
+  height: 2rem;
+}
+
 /* On Desktop with native window-level translucent material enabled: make the root layers transparent so the host window can draw the system material; the Web version stays opaque. */
 html.spirit-desktop-native.spirit-desktop-translucency,
 html.spirit-desktop-native.spirit-desktop-translucency body,
