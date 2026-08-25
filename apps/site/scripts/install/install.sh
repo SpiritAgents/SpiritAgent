@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Spirit Agent CLI installer for macOS and Linux.
+# Spirit CLI installer for macOS and Linux.
 # Usage: curl -fsSL https://spirit.fast/install | bash
 #
 # Optional environment variables:
@@ -77,7 +77,7 @@ main() {
   arch="$(detect_arch)"
   url="$(cli_download_url "$os" "$arch" "$SPIRIT_VERSION")"
 
-  info "Installing Spirit Agent CLI"
+  info "Installing Spirit CLI"
   info "Platform: $os/$arch"
   info "SPIRIT_HOME: $SPIRIT_HOME"
   info "Version: $SPIRIT_VERSION"
@@ -127,7 +127,7 @@ main() {
 
   local path_line marker
   path_line="export PATH=\"$SPIRIT_HOME/bin:\$PATH\""
-  marker="# spirit-agent cli"
+  marker="# spirit cli"
   ensure_path_line "$HOME/.profile" "$path_line" "$marker"
   ensure_path_line "$HOME/.bashrc" "$path_line" "$marker"
   ensure_path_line "$HOME/.zshrc" "$path_line" "$marker"

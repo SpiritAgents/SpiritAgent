@@ -253,7 +253,7 @@ function createDesktopPreview(copy: Messages["desktop"]["previews"]): WorkspaceP
     },
     texts: {
       "package.json": `{
-  "name": "spirit-agent-desktop",
+  "name": "spirit-desktop",
   "private": true,
   "type": "module"
 }`,

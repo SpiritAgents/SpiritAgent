@@ -24,14 +24,14 @@ function createMemoryStorage() {
 
 test("normalizeComposerSessionKey normalizes Windows-style paths", () => {
   assert.equal(
-    normalizeComposerSessionKey("D:\\SpiritAgent\\Chats\\A.json"),
-    "d:/spiritagent/chats/a.json",
+    normalizeComposerSessionKey("D:\\Spirit\\Chats\\A.json"),
+    "d:/spirit/chats/a.json",
   );
 });
 
 test("writeComposerDraft and readComposerDraft round-trip text attachments and segments", () => {
   const storage = createMemoryStorage();
-  const sessionKey = "D:/SpiritAgent/chats/session-a.json";
+  const sessionKey = "D:/Spirit/chats/session-a.json";
   const segments = [
     { kind: "text", value: "fix " },
     { kind: "workspaceFile", path: "src/App.tsx" },

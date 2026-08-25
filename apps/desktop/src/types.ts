@@ -1139,7 +1139,7 @@ export interface DesktopConfigSnapshot {
   trayIcon?: boolean;
   /** Whether first-launch onboarding (OOBE) has completed; treated as false when the field is absent. */
   onboardingCompleted?: boolean;
-  /** Run mode: affects host instruction metadata, tool exposure, and SPIRIT_AGENT_MODE. */
+  /** Run mode: affects host instruction metadata, tool exposure, and agentMode. */
   agentMode: DesktopAgentMode;
   /** Aligned with `spiritDataDir()/model-catalog-cache`; an empty array when there is no cache. */
   modelCatalogHints?: DesktopModelCatalogHint[];

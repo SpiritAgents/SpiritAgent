@@ -596,7 +596,7 @@ mod tests {
 
     #[test]
     fn workspace_config_path_lives_under_spirit_dir() {
-        let workspace_root = PathBuf::from("C:/workspace/spirit-agent");
+        let workspace_root = PathBuf::from("C:/workspace/spirit");
         let path = workspace_mcp_config_path(&workspace_root);
 
         assert_eq!(
@@ -627,6 +627,6 @@ mod tests {
             .duration_since(std::time::UNIX_EPOCH)
             .expect("time ok")
             .as_nanos();
-        std::env::temp_dir().join(format!("spirit-agent-{tag}-{nanos}"))
+        std::env::temp_dir().join(format!("spirit-{tag}-{nanos}"))
     }
 }

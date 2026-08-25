@@ -6,7 +6,7 @@ import { finishSessionActivationCommand } from "../../dist-electron/src/host/ses
 function createMinimalBundle(overrides = {}) {
   return {
     id: "session-a",
-    workspaceRoot: "D:\\SpiritAgent.worktrees\\spirit-a",
+    workspaceRoot: "D:\\Spirit.worktrees\\spirit-a",
     messages: [],
     messageTimeline: { toMessages: () => [] },
     runtime: undefined,
@@ -49,7 +49,7 @@ test("finishSessionActivationCommand syncs host workspace root before plan state
     },
     requireState: () => ({
       config: { activeModel: "test-model", models: [{ name: "test-model" }] },
-      workspaceRoot: "D:\\SpiritAgent",
+      workspaceRoot: "D:\\Spirit",
     }),
   };
 
@@ -86,7 +86,7 @@ test("finishSessionActivationCommand still syncs host workspace root when runtim
     },
     requireState: () => ({
       config: { activeModel: "test-model", models: [{ name: "test-model" }] },
-      workspaceRoot: "D:\\SpiritAgent",
+      workspaceRoot: "D:\\Spirit",
     }),
   };
 
@@ -135,7 +135,7 @@ test("finishSessionActivationCommand skips plan sync when host workspace root wa
     },
     requireState: () => ({
       config: { activeModel: "test-model", models: [{ name: "test-model" }] },
-      workspaceRoot: "D:\\SpiritAgent.worktrees\\spirit-a",
+      workspaceRoot: "D:\\Spirit.worktrees\\spirit-a",
     }),
   };
 

@@ -19,7 +19,7 @@ test("serializeShellToolResult returns compact JSON for LLM context", () => {
   const json = serializeShellToolResult(
     buildShellToolResult({
       terminal: "Command Prompt (cmd.exe)",
-      workspace: "D:\\SpiritAgent",
+      workspace: "D:\\Spirit",
       command: "echo hello",
       exitCode: 0,
       stdout: "hello\n",
@@ -30,7 +30,7 @@ test("serializeShellToolResult returns compact JSON for LLM context", () => {
   assert.equal(json.includes("\n"), false);
   assert.deepEqual(JSON.parse(json), {
     terminal: "Command Prompt (cmd.exe)",
-    workspace: "D:\\SpiritAgent",
+    workspace: "D:\\Spirit",
     command: "echo hello",
     exitCode: 0,
     output: "hello\n",

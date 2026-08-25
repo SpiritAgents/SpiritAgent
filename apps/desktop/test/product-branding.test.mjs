@@ -7,9 +7,16 @@ import { test } from "vitest";
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const desktopRoot = join(__dirname, "..");
 
-const FORBIDDEN_PATTERNS = [/Spirit Agent Desktop MVP/, /Spirit Agent Desktop/];
+const FORBIDDEN_PATTERNS = [/Spirit Agent Desktop MVP/, /Spirit Agent Desktop/, /Spirit Agent/];
 const SCAN_SKIP_DIRS = new Set(["node_modules", "dist", "out", "dist-electron", ".dev-electron"]);
 const SCAN_SKIP_FILES = new Set(["README.md", "test/product-branding.test.mjs"]);
+
+/** Commit/PR trailers still credit the agent as "Spirit Agent", not the product name. */
+function stripAllowedAgentAttribution(content) {
+  return content
+    .replace(/"commitAttributionDescription":\s*"[^"]*"/g, '""')
+    .replace(/"prAttributionDescription":\s*"[^"]*"/g, '""');
+}
 
 async function collectFiles(dir) {
   const entries = await readdir(dir, { withFileTypes: true });
@@ -48,7 +55,7 @@ test("apps/desktop has no forbidden product-name strings outside README", async 
     const rel = relative(desktopRoot, filePath);
     if (SCAN_SKIP_FILES.has(rel)) continue;
 
-    const content = await readFile(filePath, "utf8");
+    const content = stripAllowedAgentAttribution(await readFile(filePath, "utf8"));
     for (const pattern of FORBIDDEN_PATTERNS) {
       if (pattern.test(content)) {
         violations.push(`${rel} matches ${pattern}`);

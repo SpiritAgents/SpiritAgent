@@ -46,7 +46,7 @@ async function main(): Promise<void> {
       sseEvent({
         type: "response.function_call_arguments.delta",
         item_id: "fc_stream_1",
-        delta: ':"Spirit Agent streaming"}',
+        delta: ':"Spirit streaming"}',
       }),
       sseEvent({
         type: "response.output_item.done",
@@ -55,7 +55,7 @@ async function main(): Promise<void> {
           id: "fc_stream_1",
           call_id: "call_open_responses_stream_1",
           name: "demo_lookup",
-          arguments: '{"query":"Spirit Agent streaming"}',
+          arguments: '{"query":"Spirit streaming"}',
           status: "completed",
         },
       }),

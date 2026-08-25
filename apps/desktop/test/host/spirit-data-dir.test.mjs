@@ -37,7 +37,7 @@ test("resolveDefaultSpiritDataDir uses Application Support on macOS", async () =
     return;
   }
 
-  const home = await mkdtemp(path.join(tmpdir(), "spirit-agent-home-"));
+  const home = await mkdtemp(path.join(tmpdir(), "spirit-home-"));
   try {
     await withEnv(
       {
@@ -61,12 +61,12 @@ test("resolveDefaultSpiritDataDir uses Application Support on macOS", async () =
 test("resolveConfiguredSpiritDataDir honors SPIRIT_DATA_DIR", async () => {
   await withEnv(
     {
-      SPIRIT_DATA_DIR: "/tmp/spirit-agent-custom-data-dir",
-      APPDATA: "/tmp/spirit-agent-appdata",
-      HOME: "/tmp/spirit-agent-home",
+      SPIRIT_DATA_DIR: "/tmp/spirit-custom-data-dir",
+      APPDATA: "/tmp/spirit-appdata",
+      HOME: "/tmp/spirit-home",
     },
     async () => {
-      assert.equal(resolveConfiguredSpiritDataDir(), "/tmp/spirit-agent-custom-data-dir");
+      assert.equal(resolveConfiguredSpiritDataDir(), "/tmp/spirit-custom-data-dir");
     },
   );
 });

@@ -28,7 +28,7 @@ function bedrockConverseToolResponse(): JsonValue {
             toolUse: {
               toolUseId: BEDROCK_TOOL_USE_ID,
               name: "demo_lookup",
-              input: { query: "Spirit Agent bedrock" },
+              input: { query: "Spirit bedrock" },
             },
           },
         ],
@@ -120,7 +120,7 @@ async function main(): Promise<void> {
   const resumedState = appendToolResultMessage(
     firstCompletion.result.state,
     BEDROCK_TOOL_USE_ID,
-    '{"query":"Spirit Agent bedrock","result":"official provider ok"}',
+    '{"query":"Spirit bedrock","result":"official provider ok"}',
   );
 
   const secondCompletion = await transport.startToolAgentRound(

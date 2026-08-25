@@ -2090,7 +2090,7 @@ mod tests {
   "imageGenerationModel": { "groupId": "custom", "name": "agent-test-model" },
   "uiLocale": "zh-CN",
   "translucency": true,
-  "recentWorkspaces": ["D:/SpiritAgent", "D:/Other"],
+  "recentWorkspaces": ["D:/Spirit", "D:/Other"],
   "dreams": {
     "enabled": true,
     "collectorModel": "collector-test-model",

@@ -348,7 +348,7 @@ export async function runStreamingCase(): Promise<RuntimeParityCaseResult> {
               toolCall.id === "call-stream-auth-fail" &&
               toolCall.name === "read_file" &&
               toolCall.argumentsJson ===
-                '{"path":"D:\\SpiritAgent\\apps\\cli\\src\\tool_runtime.rs"}',
+                '{"path":"D:\\Spirit\\apps\\cli\\src\\tool_runtime.rs"}',
           ),
       )
   ) {
@@ -384,7 +384,7 @@ export async function runStreamingCase(): Promise<RuntimeParityCaseResult> {
               toolCall.id === "call-stream-auth-fail" &&
               toolCall.name === "read_file" &&
               toolCall.argumentsJson ===
-                '{"path":"D:\\SpiritAgent\\apps\\cli\\src\\tool_runtime.rs"}',
+                '{"path":"D:\\Spirit\\apps\\cli\\src\\tool_runtime.rs"}',
           ),
       )
   ) {
@@ -1436,7 +1436,7 @@ class AuthorizationFailureTransport implements LlmTransport<undefined, ScriptedS
                     type: "function",
                     function: {
                       name: "read_file",
-                      arguments: '{"path":"D:\\SpiritAgent\\apps\\cli\\src\\tool_runtime.rs"}',
+                      arguments: '{"path":"D:\\Spirit\\apps\\cli\\src\\tool_runtime.rs"}',
                     },
                   },
                 ],
@@ -1450,7 +1450,7 @@ class AuthorizationFailureTransport implements LlmTransport<undefined, ScriptedS
               {
                 id: "call-stream-auth-fail",
                 name: "read_file",
-                argumentsJson: '{"path":"D:\\SpiritAgent\\apps\\cli\\src\\tool_runtime.rs"}',
+                argumentsJson: '{"path":"D:\\Spirit\\apps\\cli\\src\\tool_runtime.rs"}',
               },
             ],
           },
@@ -1520,9 +1520,9 @@ class AuthorizationFailureExecutor extends HostExecutor {
   override async authorize(request: ScriptedToolRequest): Promise<{ kind: "allowed" }> {
     if (
       request.name === "read_file" &&
-      request.argumentsJson.includes("D:\\SpiritAgent\\apps\\cli\\src\\tool_runtime.rs")
+      request.argumentsJson.includes("D:\\Spirit\\apps\\cli\\src\\tool_runtime.rs")
     ) {
-      throw new Error("path not found: D:\\SpiritAgent\\apps\\cli\\src\\tool_runtime.rs");
+      throw new Error("path not found: D:\\Spirit\\apps\\cli\\src\\tool_runtime.rs");
     }
 
     return { kind: "allowed" };

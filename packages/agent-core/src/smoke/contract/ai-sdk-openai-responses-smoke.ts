@@ -50,7 +50,7 @@ async function main(): Promise<void> {
 
   const initialState = startOpenAiToolAgentState(
     [],
-    'Call demo_lookup exactly once with query "Spirit Agent migration".',
+    'Call demo_lookup exactly once with query "Spirit migration".',
     process.cwd(),
     [],
     [],

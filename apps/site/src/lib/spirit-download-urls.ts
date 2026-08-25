@@ -1,4 +1,4 @@
-/** Mirrors SpiritAgent `scripts/release/selfhosted-paths.mjs` public CDN layout. */
+/** Mirrors Spirit `scripts/release/selfhosted-paths.mjs` public CDN layout. */
 
 export const SPIRIT_DOWNLOAD_HOST = "download.spirit.fast";
 

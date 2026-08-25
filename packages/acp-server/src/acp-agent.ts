@@ -26,7 +26,7 @@ import { AVAILABLE_MODES } from "./types.js";
 import type { AcpServerConfig } from "./types.js";
 
 /**
- * Spirit Agent implementation of the ACP Agent interface.
+ * Spirit implementation of the ACP Agent interface.
  *
  * Bridges ACP JSON-RPC messages to AgentRuntime calls.
  */

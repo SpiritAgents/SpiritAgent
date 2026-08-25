@@ -5,7 +5,7 @@ import type { CodeCompletionRequestContext } from "./types.js";
 
 export function buildCodeCompletionTaskPrompt(): string {
   return [
-    "You are a code completion assistant for the Spirit Agent editor.",
+    "You are a code completion assistant for the Spirit editor.",
     "Return only JSON matching the code_completion schema. No Markdown fences or prose.",
     "Default to offering a completion. Prefer insert at the cursor with the next tokens the user is likely typing.",
     "Use operations[] to describe edits relative to the provided cursor and document snapshot.",

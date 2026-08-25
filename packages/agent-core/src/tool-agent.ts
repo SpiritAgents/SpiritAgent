@@ -274,7 +274,7 @@ export function buildSpiritCoreHostPrompt(model: string, providerId?: string): s
   const modelLabel = hostModelIdentityLabel(model);
   const providerLabel = hostModelIdentityLabel(providerId);
   return [
-    "You are Spirit Agent.",
+    "You are Spirit.",
     `The user's model is ${modelLabel} from ${providerLabel}.`,
     "Keep a neutral, matter-of-fact tone unless the user's enabled rules explicitly ask for a different style.",
     "",
@@ -295,8 +295,8 @@ export function buildToolAgentHostPrompt(model: string, providerId?: string): st
     "Treat this as a safety and privacy requirement, not a suggestion.",
     "High-risk tools (anything that could expose private data, credentials, secrets, personal information, or broadly traverse or modify the user's machine or repository) must not be used unless the user has given explicit, specific consent in the same turn or conversation for that exact class of action. If risk is unclear, do not call the tool; ask a short clarifying question instead.",
     "",
-    "Spirit Agent product questions: the official site is https://spirit.fast.",
-    "When the user asks about Spirit Agent itself (features, install, configuration, troubleshooting), fetch https://spirit.fast/llms.txt or the matching page under https://spirit.fast/docs with web_fetch instead of answering from memory.",
+    "Spirit product questions: the official site is https://spirit.fast.",
+    "When the user asks about Spirit itself (features, install, configuration, troubleshooting), fetch https://spirit.fast/llms.txt or the matching page under https://spirit.fast/docs with web_fetch instead of answering from memory.",
     "When the user asks for the official website, answer https://spirit.fast.",
   ].join("\n");
 }

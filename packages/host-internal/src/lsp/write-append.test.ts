@@ -36,7 +36,7 @@ test("appendLspDiagnosticsAfterWriteIfNeeded leaves non-write tools unchanged", 
 test("appendLspDiagnosticsAfterWriteIfNeeded attaches hostUi for write tools", async () => {
   const lsp = writeAppendLspMock({
     enabled: true,
-    workspaceRoot: "D:\\SpiritAgent",
+    workspaceRoot: "D:\\Spirit",
     getDiagnosticsForPath: async () => ({
       relativePath: "packages/agent-core/src/a.py",
       diagnostics: [
@@ -75,7 +75,7 @@ test("appendLspDiagnosticsAfterWriteIfNeeded skips unsupported extensions", asyn
   let called = false;
   const lsp = writeAppendLspMock({
     enabled: true,
-    workspaceRoot: "D:\\SpiritAgent",
+    workspaceRoot: "D:\\Spirit",
     hasReadyProviderForPath: () => false,
     getDiagnosticsForPath: async () => {
       called = true;
@@ -101,7 +101,7 @@ test("appendLspDiagnosticsAfterWriteIfNeeded skips in-scope paths when provider 
   let called = false;
   const lsp = writeAppendLspMock({
     enabled: true,
-    workspaceRoot: "D:\\SpiritAgent",
+    workspaceRoot: "D:\\Spirit",
     hasReadyProviderForPath: () => false,
     getDiagnosticsForPath: async () => {
       called = true;
@@ -126,7 +126,7 @@ test("appendLspDiagnosticsAfterWriteIfNeeded routes Python writes when provider 
   let called = false;
   const lsp = writeAppendLspMock({
     enabled: true,
-    workspaceRoot: "D:\\SpiritAgent",
+    workspaceRoot: "D:\\Spirit",
     hasReadyProviderForPath: () => true,
     getDiagnosticsForPath: async () => {
       called = true;
@@ -150,7 +150,7 @@ test("appendLspDiagnosticsAfterWriteIfNeeded waits with writeAppendDiagnosticsWa
   let waitMs: number | undefined;
   const lsp = writeAppendLspMock({
     enabled: true,
-    workspaceRoot: "D:\\SpiritAgent",
+    workspaceRoot: "D:\\Spirit",
     getDiagnosticsForPath: async (_path: string, timeoutMs?: number) => {
       waitMs = timeoutMs;
       return {
@@ -173,7 +173,7 @@ test("appendLspDiagnosticsAfterWriteIfNeeded waits with writeAppendDiagnosticsWa
 test("appendLspDiagnosticsAfterWriteIfNeeded appends pending note only on timeout", async () => {
   const lsp = writeAppendLspMock({
     enabled: true,
-    workspaceRoot: "D:\\SpiritAgent",
+    workspaceRoot: "D:\\Spirit",
     getDiagnosticsForPath: async () => {
       throw new LspTimeoutError("diagnostics timed out");
     },
@@ -190,7 +190,7 @@ test("appendLspDiagnosticsAfterWriteIfNeeded appends pending note only on timeou
 test("appendLspDiagnosticsAfterWriteIfNeeded leaves output unchanged on disabled provider errors", async () => {
   const lsp = writeAppendLspMock({
     enabled: true,
-    workspaceRoot: "D:\\SpiritAgent",
+    workspaceRoot: "D:\\Spirit",
     getDiagnosticsForPath: async () => {
       throw new LspDisabledError("no language server is available for .py files");
     },

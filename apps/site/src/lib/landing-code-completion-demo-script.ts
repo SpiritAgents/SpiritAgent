@@ -60,7 +60,7 @@ export type LandingEditorTreeNode = {
 };
 
 export const COMPLETION_DEMO_FILE_TREE: LandingEditorTreeNode = {
-  name: "SpiritAgent",
+  name: "Spirit",
   kind: "dir",
   children: [
     {

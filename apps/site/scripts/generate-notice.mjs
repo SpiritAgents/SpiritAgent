@@ -149,7 +149,7 @@ for (const item of packages) {
 
 const notice = `# Third-Party Notices
 
-Spirit Agent site includes open source software. The following production dependencies
+Spirit site includes open source software. The following production dependencies
 are used in this project.
 
 ${lines.join('\n')}

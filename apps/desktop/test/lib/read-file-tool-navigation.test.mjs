@@ -9,7 +9,7 @@ import {
 
 test("tryResolveWorkspaceRelativePath maps workspace absolute paths", () => {
   assert.equal(
-    tryResolveWorkspaceRelativePath("D:\\SpiritAgent", "D:\\SpiritAgent\\README.md"),
+    tryResolveWorkspaceRelativePath("D:\\Spirit", "D:\\Spirit\\README.md"),
     "README.md",
   );
   assert.equal(tryResolveWorkspaceRelativePath("/proj", "/proj"), ".");
@@ -32,7 +32,7 @@ test("resolveReadFileEditorTarget: markdown uses preview view mode", () => {
 });
 
 test("resolveReadFileEditorTarget: absolute path under workspace becomes relative", () => {
-  assert.deepEqual(resolveReadFileEditorTarget("D:\\SpiritAgent\\README.md", "D:\\SpiritAgent"), {
+  assert.deepEqual(resolveReadFileEditorTarget("D:\\Spirit\\README.md", "D:\\Spirit"), {
     scope: "workspace",
     relativePath: "README.md",
     viewMode: "preview",
@@ -40,7 +40,7 @@ test("resolveReadFileEditorTarget: absolute path under workspace becomes relativ
 });
 
 test("resolveReadFileEditorTarget: path outside workspace uses external scope", () => {
-  assert.deepEqual(resolveReadFileEditorTarget("C:\\outside\\note.txt", "D:\\SpiritAgent"), {
+  assert.deepEqual(resolveReadFileEditorTarget("C:\\outside\\note.txt", "D:\\Spirit"), {
     scope: "external",
     absolutePath: "C:\\outside\\note.txt",
     viewMode: "edit",
@@ -59,7 +59,7 @@ test("resolveReadFileTargetFromTool parses args excerpt", () => {
         detailLines: [],
         argsExcerpt: '{"path":"apps/desktop/package.json"}',
       },
-      "D:\\SpiritAgent",
+      "D:\\Spirit",
     ),
     {
       scope: "workspace",

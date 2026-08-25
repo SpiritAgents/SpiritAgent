@@ -22,7 +22,7 @@ const APP_DATA_DIR_NAME = "Spirit";
 export { SpiritConfigSchemaError };
 
 /**
- * Resolves the shared Spirit Agent data directory. Hosts with their own env
+ * Resolves the shared Spirit data directory. Hosts with their own env
  * override (e.g. SPIRIT_ACP_DATA_DIR, SPIRIT_SERVER_DATA_DIR) should check it
  * before falling back to this function.
  */

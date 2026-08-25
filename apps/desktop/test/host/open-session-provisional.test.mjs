@@ -9,7 +9,7 @@ function createOpenSessionContext(overrides = {}) {
   const splitPath = splitPaneSessionPath("pane-a");
   const bundle = {
     id: splitPath,
-    workspaceRoot: "D:\\SpiritAgent",
+    workspaceRoot: "D:\\Spirit",
     activeSession: { filePath: splitPath, displayName: "New session", kind: "provisional" },
     messageTimeline: { toMessages: () => [] },
     messages: [],
@@ -45,7 +45,7 @@ function createOpenSessionContext(overrides = {}) {
     syncActiveRuntimePointer: () => {},
     requireState: () => ({
       config: { activeModel: "test-model", models: [{ name: "test-model" }] },
-      workspaceRoot: "D:\\SpiritAgent",
+      workspaceRoot: "D:\\Spirit",
     }),
     ...overrides,
   };

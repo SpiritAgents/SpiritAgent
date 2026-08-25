@@ -29,7 +29,7 @@ export function buildV2StoredSession(overrides = {}) {
     desktopMessageTimeline,
     savedAtUnixMs: overrides.savedAtUnixMs ?? Date.now(),
     sessionDisplayName: overrides.sessionDisplayName ?? "hello",
-    workspaceRoot: overrides.workspaceRoot ?? "D:/SpiritAgent",
+    workspaceRoot: overrides.workspaceRoot ?? "D:/Spirit",
     rewind: overrides.rewind,
     contextUsage: overrides.contextUsage,
     ...overrides,

@@ -2689,7 +2689,7 @@ mod tests {
     #[test]
     fn parse_header_metadata_supports_colon_syntax() {
         let parsed = parse_metadata_map(
-            "Authorization: Bearer ${env:GITHUB_TOKEN}; X-Client: spirit-agent",
+            "Authorization: Bearer ${env:GITHUB_TOKEN}; X-Client: spirit",
             MetadataFieldKind::Header,
         )
         .expect("headers parse");
@@ -2698,7 +2698,7 @@ mod tests {
             parsed.get("Authorization"),
             Some(&"Bearer ${env:GITHUB_TOKEN}".to_string())
         );
-        assert_eq!(parsed.get("X-Client"), Some(&"spirit-agent".to_string()));
+        assert_eq!(parsed.get("X-Client"), Some(&"spirit".to_string()));
     }
 
     #[test]
@@ -3560,7 +3560,7 @@ mod tests {
             display_name: "Basic Metadata Demo".to_string(),
             version: "0.1.0".to_string(),
             description: Some("A metadata-only extension fixture.".to_string()),
-            author: Some("Spirit Agent".to_string()),
+            author: Some("Spirit".to_string()),
             homepage: Some("https://example.com/extensions/basic-metadata-demo".to_string()),
             main: Some("dist/index.js".to_string()),
             supported_hosts: vec!["cli".to_string(), "desktop".to_string()],

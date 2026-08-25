@@ -24,7 +24,7 @@ test("buildSubagentConversationSnapshots maps user, assistant text, and tool res
       {
         role: "tool",
         toolCallId: "call_read_1",
-        content: "# Spirit Agent",
+        content: "# Spirit",
       },
       { role: "assistant", content: "README mentions Desktop host." },
     ],
@@ -38,7 +38,7 @@ test("buildSubagentConversationSnapshots maps user, assistant text, and tool res
   assert.equal(messages[1]?.content, "I will read README first.");
   assert.equal(messages[2]?.tool?.toolName, "read_file");
   assert.equal(messages[2]?.tool?.phase, "succeeded");
-  assert.match(messages[2]?.tool?.outputExcerpt ?? "", /Spirit Agent/);
+  assert.match(messages[2]?.tool?.outputExcerpt ?? "", /Spirit/);
   assert.equal(messages[3]?.content, "README mentions Desktop host.");
 });
 

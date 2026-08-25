@@ -3,7 +3,7 @@
 /**
  * ACP Server stdio entry point.
  *
- * Launches the Spirit Agent ACP server using ndJSON over stdin/stdout.
+ * Launches the Spirit ACP server using ndJSON over stdin/stdout.
  * All logging is redirected to stderr to avoid polluting the ndJSON stream.
  *
  * Usage:

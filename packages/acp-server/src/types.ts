@@ -38,7 +38,7 @@ export interface AcpSessionState {
 }
 
 /**
- * Available ACP session modes advertised by Spirit Agent.
+ * Available ACP session modes advertised by Spirit.
  */
 export const AVAILABLE_MODES = [
   { id: "agent" as const, name: "Agent", description: "Full tool access, autonomous coding" },

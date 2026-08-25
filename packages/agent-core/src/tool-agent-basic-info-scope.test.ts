@@ -59,7 +59,7 @@ test("patchBasicInfoWorkspaceRootInMessages rewrites Current workspace line", ()
         "Basic information",
         "",
         "Current workspace:",
-        "- D:\\\\SpiritAgent",
+        "- D:\\\\Spirit",
         "",
         "Current terminal:",
         "- powershell",
@@ -70,12 +70,12 @@ test("patchBasicInfoWorkspaceRootInMessages rewrites Current workspace line", ()
 
   const patched = patchBasicInfoWorkspaceRootInMessages(
     messages,
-    "D:\\SpiritAgent.worktrees\\spirit-read-readme",
+    "D:\\Spirit.worktrees\\spirit-read-readme",
   );
 
   assert.match(
     String((patched[0] as { content: string }).content),
-    /Current workspace:\n- D:\\SpiritAgent\.worktrees\\spirit-read-readme/,
+    /Current workspace:\n- D:\\Spirit\.worktrees\\spirit-read-readme/,
   );
 });
 
@@ -85,12 +85,12 @@ test("patchBasicInfoWorkspaceRootInSystemText handles CRLF workspace lines", () 
     "Basic information",
     "",
     "Current workspace:",
-    "- D:\\SpiritAgent",
+    "- D:\\Spirit",
     "</basic_info>",
   ].join("\r\n");
   const patched = patchBasicInfoWorkspaceRootInSystemText(
     content,
-    "D:\\SpiritAgent.worktrees\\spirit-read-readme",
+    "D:\\Spirit.worktrees\\spirit-read-readme",
   );
-  assert.match(patched, /Current workspace:\r?\n- D:\\SpiritAgent\.worktrees\\spirit-read-readme/);
+  assert.match(patched, /Current workspace:\r?\n- D:\\Spirit\.worktrees\\spirit-read-readme/);
 });

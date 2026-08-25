@@ -10,10 +10,10 @@ import { chatsDirPath, deleteStoredSession } from "../../dist-electron/src/host/
 
 test("SessionRegistry.removeBySessionPath evicts a loaded non-active bundle", () => {
   const registry = new SessionRegistry();
-  const workspaceRoot = "D:/SpiritAgent/repo";
+  const workspaceRoot = "D:/Spirit/repo";
   const first = registry.beginNewActive(workspaceRoot);
   first.messages.push({ id: 1, role: "user", content: "hello", pending: false });
-  const sessionPath = path.resolve("D:/SpiritAgent/chats/chat-delete-me.json");
+  const sessionPath = path.resolve("D:/Spirit/chats/chat-delete-me.json");
   first.activeSession = {
     filePath: sessionPath,
     displayName: "chat-delete-me",
@@ -34,7 +34,7 @@ test("removeEphemeralSessionRecord drops matching ephemeral session", () => {
     {
       path: "ephemeral://commit-message/1",
       displayName: "Commit draft",
-      workspaceRoot: "D:/SpiritAgent/repo",
+      workspaceRoot: "D:/Spirit/repo",
       modifiedAtUnixMs: 1,
       messages: [],
       llmHistory: [],

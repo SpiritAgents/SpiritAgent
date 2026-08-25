@@ -77,7 +77,7 @@ test("desktop todo tools are exposed on the main agent executor", () => {
 });
 
 test("replaceAll restores rewind todo snapshot per session", async () => {
-  const tempRoot = await mkdtemp(path.join(tmpdir(), "spirit-agent-todos-rewind-"));
+  const tempRoot = await mkdtemp(path.join(tmpdir(), "spirit-todos-rewind-"));
   const previousAppData = process.env.APPDATA;
   const sessionKey = path.join(tempRoot, "session-rewind.json");
 

@@ -40,7 +40,7 @@ async function main(): Promise<void> {
                     type: "function",
                     function: {
                       name: "demo_lookup",
-                      arguments: '{"query":"Spirit Agent migration"}',
+                      arguments: '{"query":"Spirit migration"}',
                     },
                   },
                 ],
@@ -101,7 +101,7 @@ async function main(): Promise<void> {
     });
 
     const result = await runtime.submitUserTurn(
-      'First call demo_lookup exactly once with query "Spirit Agent migration". After the tool result is returned, answer with exactly "RUNTIME_OK" and nothing else.',
+      'First call demo_lookup exactly once with query "Spirit migration". After the tool result is returned, answer with exactly "RUNTIME_OK" and nothing else.',
     );
 
     printSmokeSection("ai-sdk openai runtime smoke result", result);

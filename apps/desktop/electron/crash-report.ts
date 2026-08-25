@@ -229,7 +229,7 @@ ${truncatedLog}
 ## Environment
 
 - OS / platform: ${input.env.platform} ${input.env.arch} (${input.env.osRelease})
-- Spirit Agent version: ${input.env.version} (Electron ${input.env.electronVersion})
+- Spirit version: ${input.env.version} (Electron ${input.env.electronVersion})
 - Install source: ${input.env.packaged ? "packaged build" : "pnpm dev"}
 
 ## Additional Context

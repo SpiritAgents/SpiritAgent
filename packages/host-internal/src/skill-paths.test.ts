@@ -15,27 +15,27 @@ test("isSkillMarkdownPath matches SKILL_FILE_NAME case-sensitively", () => {
 });
 
 test("lsToolDisplayPath relativizes paths within workspace root", () => {
-  const root = "/Users/yu/SpiritAgent";
-  assert.equal(lsToolDisplayPath("/Users/yu/SpiritAgent/apps", root, "Directory"), "apps");
-  assert.equal(lsToolDisplayPath("/Users/yu/SpiritAgent/apps/", root, "Directory"), "apps/");
+  const root = "/Users/yu/Spirit";
+  assert.equal(lsToolDisplayPath("/Users/yu/Spirit/apps", root, "Directory"), "apps");
+  assert.equal(lsToolDisplayPath("/Users/yu/Spirit/apps/", root, "Directory"), "apps/");
   assert.equal(
-    lsToolDisplayPath("/Users/yu/SpiritAgent/apps/cli/src", root, "Directory"),
+    lsToolDisplayPath("/Users/yu/Spirit/apps/cli/src", root, "Directory"),
     "apps/cli/src",
   );
-  assert.equal(lsToolDisplayPath("/Users/yu/SpiritAgent", root, "Directory"), ".");
-  assert.equal(lsToolDisplayPath("/Users/yu/SpiritAgent/", root, "Directory"), ".");
+  assert.equal(lsToolDisplayPath("/Users/yu/Spirit", root, "Directory"), ".");
+  assert.equal(lsToolDisplayPath("/Users/yu/Spirit/", root, "Directory"), ".");
 });
 
 test("lsToolDisplayPath keeps absolute paths outside workspace", () => {
-  const root = "/Users/yu/SpiritAgent";
+  const root = "/Users/yu/Spirit";
   assert.equal(lsToolDisplayPath("/tmp/foo", root, "Directory"), "/tmp/foo");
   assert.equal(lsToolDisplayPath("", root, "Directory"), "Directory");
 });
 
 test("lsToolDisplayPath without workspace root keeps absolute path", () => {
   assert.equal(
-    lsToolDisplayPath("/Users/yu/SpiritAgent/apps", undefined, "Directory"),
-    "/Users/yu/SpiritAgent/apps",
+    lsToolDisplayPath("/Users/yu/Spirit/apps", undefined, "Directory"),
+    "/Users/yu/Spirit/apps",
   );
 });
 

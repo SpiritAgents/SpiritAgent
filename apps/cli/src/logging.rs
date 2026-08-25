@@ -10,14 +10,14 @@ use std::{
 };
 
 /// When set to `1` or `true`, appends the full JSON request body sent to the LLM (matching
-/// `reqwest::RequestBuilder::json` serialization) to spirit-agent.log for byte-level comparison
+/// `reqwest::RequestBuilder::json` serialization) to spirit.log for byte-level comparison
 /// with packet captures / C# clients. Secrets are not written here, only the body.
 const ENV_LOG_HTTP_BODY: &str = "SPIRIT_LOG_HTTP_BODY";
 
 static LOG_FILE: OnceLock<Mutex<std::fs::File>> = OnceLock::new();
 
 pub fn log_file_path() -> PathBuf {
-    env::temp_dir().join("spirit-agent.log")
+    env::temp_dir().join("spirit.log")
 }
 
 pub fn init_logging() {

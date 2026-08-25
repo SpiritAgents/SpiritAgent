@@ -697,7 +697,7 @@ mod tests {
             .duration_since(UNIX_EPOCH)
             .expect("system time")
             .as_nanos();
-        let dir = env::temp_dir().join(format!("spirit-agent-skills-{label}-{unique}"));
+        let dir = env::temp_dir().join(format!("spirit-skills-{label}-{unique}"));
         fs::create_dir_all(&dir).expect("create temp dir");
         dir
     }

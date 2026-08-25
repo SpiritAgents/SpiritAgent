@@ -13,7 +13,7 @@ runMcpMissingEnvSmoke().catch((error: unknown) => {
 });
 
 async function runMcpMissingEnvSmoke(): Promise<void> {
-  const tempRoot = await mkdtemp(join(tmpdir(), "spirit-agent-mcp-missing-env-"));
+  const tempRoot = await mkdtemp(join(tmpdir(), "spirit-mcp-missing-env-"));
   const originalAppData = process.env.APPDATA;
   const originalUserProfile = process.env.USERPROFILE;
   const originalMissingEnv = process.env[MISSING_ENV_NAME];

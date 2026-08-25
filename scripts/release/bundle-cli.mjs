@@ -258,7 +258,7 @@ async function main() {
     path.join(bundleRoot, 'release-manifest.json'),
     `${JSON.stringify(
       {
-        name: 'Spirit Agent CLI',
+        name: 'Spirit CLI',
         version,
         target,
         packageTarget: targetInfo.packageTarget,

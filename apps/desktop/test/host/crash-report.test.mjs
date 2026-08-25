@@ -73,13 +73,13 @@ test("recordCrashLog drops empty entries and truncates long lines", () => {
 test("crash page html contains title, description, and escaped log text", () => {
   const html = buildCrashPageHtml(
     {
-      title: "Spirit Agent has Crashed",
+      title: "Spirit has Crashed",
       description: "The renderer process terminated unexpectedly.",
       lang: "zh-CN",
     },
     "Reason: crashed\n<script>alert(1)</script>",
   );
-  assert.match(html, /<h1>Spirit Agent has Crashed<\/h1>/);
+  assert.match(html, /<h1>Spirit has Crashed<\/h1>/);
   assert.match(html, /The renderer process terminated unexpectedly\./);
   assert.match(html, /<pre>Reason: crashed/);
   assert.match(html, /lang="zh-CN"/);
@@ -150,7 +150,7 @@ test("buildIssueFeedbackUrl prefills the bug report template with logs and envir
   assert.match(body, /Reason: crashed\nExit code: 11/);
   assert.match(body, /trigger=render-process-gone, reason=crashed, exit code 11/);
   assert.match(body, /OS \/ platform: darwin arm64 \(25\.0\.0\)/);
-  assert.match(body, /Spirit Agent version: 0\.1\.0 \(Electron 43\.3\.0\)/);
+  assert.match(body, /Spirit version: 0\.1\.0 \(Electron 43\.3\.0\)/);
   assert.match(body, /Install source: pnpm dev/);
   assert.match(body, /## Description/);
   assert.match(body, /## Steps to Reproduce/);
@@ -184,10 +184,10 @@ test("crash page body follows the translucency appearance", () => {
 });
 
 test("crashPageDataUrl is a self-contained encoded data URL", () => {
-  const url = crashPageDataUrl({ title: "Spirit Agent 已崩溃", description: "d" }, "line");
+  const url = crashPageDataUrl({ title: "Spirit 已崩溃", description: "d" }, "line");
   assert.ok(url.startsWith("data:text/html;charset=utf-8,"));
   const decoded = decodeURIComponent(url.slice("data:text/html;charset=utf-8,".length));
-  assert.match(decoded, /Spirit Agent 已崩溃/);
+  assert.match(decoded, /Spirit 已崩溃/);
   assert.match(decoded, /<pre>line<\/pre>/);
 });
 

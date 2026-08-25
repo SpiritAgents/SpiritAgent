@@ -1767,7 +1767,7 @@ class DesktopHostService {
       const exportedAtUnixSecs = Math.floor(Date.now() / 1000);
       const filePath = path.join(
         tmpdir(),
-        `spirit-agent-llm-export-${exportedAtUnixSecs}-${process.pid}.json`,
+        `spirit-llm-export-${exportedAtUnixSecs}-${process.pid}.json`,
       );
       const exportPayload = {
         export_version: 2,

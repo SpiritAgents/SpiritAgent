@@ -45,13 +45,13 @@ function withEnv(vars: Record<string, string | undefined>, run: () => void): voi
 test("resolveDefaultSpiritDataDir uses APPDATA on Windows-style hosts", () => {
   withEnv(
     {
-      APPDATA: "/tmp/spirit-agent-appdata",
+      APPDATA: "/tmp/spirit-appdata",
       HOME: "/tmp/should-not-use",
       USERPROFILE: undefined,
       SPIRIT_DATA_DIR: undefined,
     },
     () => {
-      assert.equal(resolveDefaultSpiritDataDir(), join("/tmp/spirit-agent-appdata", "Spirit"));
+      assert.equal(resolveDefaultSpiritDataDir(), join("/tmp/spirit-appdata", "Spirit"));
     },
   );
 });
@@ -61,7 +61,7 @@ test("resolveDefaultSpiritDataDir uses Application Support on macOS", () => {
     return;
   }
 
-  const home = mkdtempSync(join(tmpdir(), "spirit-agent-home-"));
+  const home = mkdtempSync(join(tmpdir(), "spirit-home-"));
   try {
     withEnv(
       {
@@ -85,11 +85,11 @@ test("resolveDefaultSpiritDataDir uses Application Support on macOS", () => {
 test("spiritDataDir honors SPIRIT_DATA_DIR override", () => {
   withEnv(
     {
-      SPIRIT_DATA_DIR: "/tmp/spirit-agent-override",
-      APPDATA: "/tmp/spirit-agent-appdata",
+      SPIRIT_DATA_DIR: "/tmp/spirit-override",
+      APPDATA: "/tmp/spirit-appdata",
     },
     () => {
-      assert.equal(spiritDataDir(), "/tmp/spirit-agent-override");
+      assert.equal(spiritDataDir(), "/tmp/spirit-override");
     },
   );
 });

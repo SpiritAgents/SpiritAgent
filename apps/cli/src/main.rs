@@ -1611,7 +1611,7 @@ fn load_clipboard_image() -> Option<std::path::PathBuf> {
     };
 
     let temp_dir = std::env::temp_dir()
-        .join("spirit-agent")
+        .join("spirit")
         .join("clipboard-images");
     if let Err(e) = fs::create_dir_all(&temp_dir) {
         logging::log_event(&format!("[clipboard] cannot create temp directory: {}", e));

@@ -101,7 +101,7 @@ export function probeHttpUrl(
         rejectUnauthorized: false,
         headers: {
           Accept: "text/html,application/xhtml+xml,*/*",
-          "User-Agent": "SpiritAgent-Desktop-LocalProbe/1.0",
+          "User-Agent": "Spirit-Desktop-LocalProbe/1.0",
         },
       },
       (res) => {

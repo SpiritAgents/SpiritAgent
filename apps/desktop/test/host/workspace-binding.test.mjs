@@ -50,7 +50,7 @@ test("resolveWorkspaceBindingForRequestedRoot uses none for homedir even when pe
 test("resolveWorkspaceBindingForRequestedRoot uses project for real workspace roots", () => {
   assert.equal(
     resolveWorkspaceBindingForRequestedRoot({
-      requestedWorkspaceRoot: "D:/SpiritAgent",
+      requestedWorkspaceRoot: "D:/Spirit",
       previousBinding: "none",
       persistedBinding: "none",
     }),
@@ -60,16 +60,16 @@ test("resolveWorkspaceBindingForRequestedRoot uses project for real workspace ro
 
 test("buildAvailableWorkspaces excludes homedir when workspace binding is none", () => {
   const home = resolveDesktopHomeDirectory();
-  const recent = [home, "D:/SpiritAgent"];
+  const recent = [home, "D:/Spirit"];
   const items = buildAvailableWorkspaces(home, recent, "none");
   const paths = items.map((item) => item.path.replace(/\\/g, "/").toLowerCase());
   assert.ok(!paths.includes(home.replace(/\\/g, "/").toLowerCase()));
-  assert.ok(paths.some((entry) => entry.endsWith("/spiritagent")));
+  assert.ok(paths.some((entry) => entry.endsWith("/spirit")));
 });
 
 test("buildAvailableWorkspaces excludes homedir when workspace binding is project", () => {
   const home = resolveDesktopHomeDirectory();
-  const recent = [home, "D:/SpiritAgent"];
+  const recent = [home, "D:/Spirit"];
   const items = buildAvailableWorkspaces(home, recent, "project");
   const paths = items.map((item) => item.path.replace(/\\/g, "/").toLowerCase());
   assert.ok(!paths.includes(home.replace(/\\/g, "/").toLowerCase()));

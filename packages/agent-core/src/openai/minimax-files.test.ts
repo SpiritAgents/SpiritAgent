@@ -31,7 +31,7 @@ test("normalizeMinimaxFilesApiBase strips anthropic suffix", () => {
 });
 
 test("uploadMinimaxVideoFile posts multipart with purpose=video_understanding and returns mm_file url", async () => {
-  const workspaceRoot = await mkdtemp(join(tmpdir(), "spirit-agent-core-minimax-upload-"));
+  const workspaceRoot = await mkdtemp(join(tmpdir(), "spirit-core-minimax-upload-"));
   const videoPath = join(workspaceRoot, "clip.mp4");
   let capturedUrl = "";
   let capturedBody: FormData | undefined;
@@ -70,7 +70,7 @@ test("uploadMinimaxVideoFile posts multipart with purpose=video_understanding an
 });
 
 test("uploadMinimaxVideoFile reads nested numeric file.file_id from MiniMax CN response", async () => {
-  const workspaceRoot = await mkdtemp(join(tmpdir(), "spirit-agent-core-minimax-upload-nested-"));
+  const workspaceRoot = await mkdtemp(join(tmpdir(), "spirit-core-minimax-upload-nested-"));
 
   try {
     const videoPath = join(workspaceRoot, "clip.mp4");

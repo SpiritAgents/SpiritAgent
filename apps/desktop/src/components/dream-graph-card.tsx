@@ -284,7 +284,7 @@ function DreamLogoNode({ data }: NodeProps<Node<DreamLogoNodeData>>) {
       />
       <img
         src={data.iconSrc}
-        alt="Spirit Agent"
+        alt="Spirit"
         className="h-16 w-16 object-contain"
         draggable={false}
       />

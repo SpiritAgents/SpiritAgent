@@ -819,7 +819,7 @@ export function buildDreamCollectorSystemMessage(): string {
   return wrapLlmContextBlock(
     LLM_CONTEXT_TAGS.dream_collector,
     [
-      "You are the dream collector for Spirit Agent.",
+      "You are the dream collector for Spirit.",
       "Dreams are short-lived summaries of recent work movement, not permanent memory.",
       "The host has already scoped this collection run to one workspace and one Git branch.",
       "First call dream_list to inspect existing dreams in this scope.",

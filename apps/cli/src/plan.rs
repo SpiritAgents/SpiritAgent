@@ -119,14 +119,16 @@ mod tests {
             .map(|duration| duration.as_nanos())
             .unwrap_or(0);
         env::temp_dir().join(format!(
-            "spirit-agent-plan-test-{label}-{nanos}-{}",
+            "spirit-plan-test-{label}-{nanos}-{}",
             std::process::id()
         ))
     }
 
     #[test]
     fn plan_metadata_snapshot_uses_active_plan_path() {
-        let _lock = shared_env_lock();
+        let _guard = shared_env_lock()
+            .lock()
+            .unwrap_or_else(|err| err.into_inner());
         let spirit_data_dir = unique_spirit_data_dir("snapshot");
         unsafe {
             env::set_var("SPIRIT_DATA_DIR", &spirit_data_dir);
@@ -136,12 +138,11 @@ mod tests {
         fs::write(&plan_path, "# Demo").expect("write plan");
 
         let metadata = plan_metadata_snapshot("agent", Some(&plan_path));
-        assert_eq!(metadata.path, plan_path);
-        assert!(metadata.exists);
-
         unsafe {
             env::remove_var("SPIRIT_DATA_DIR");
         }
+        assert_eq!(metadata.path, plan_path);
+        assert!(metadata.exists);
     }
 
     fn llm_tool_message(content: &str) -> LlmMessage {

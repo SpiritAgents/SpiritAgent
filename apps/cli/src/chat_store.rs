@@ -684,11 +684,11 @@ mod tests {
                             "phase": "succeeded",
                             "headline": "图片生成完成",
                             "detailLines": [
-                                "path: C:\\\\Users\\\\pc\\\\AppData\\\\Roaming\\\\SpiritAgent\\\\generated-images\\\\demo.png"
+                                "path: C:\\\\Users\\\\pc\\\\AppData\\\\Roaming\\\\Spirit\\\\generated-images\\\\demo.png"
                             ],
                             "outputExcerpt": "[generated image]",
                             "imagePaths": [
-                                "C:\\\\Users\\\\pc\\\\AppData\\\\Roaming\\\\SpiritAgent\\\\generated-images\\\\demo.png"
+                                "C:\\\\Users\\\\pc\\\\AppData\\\\Roaming\\\\Spirit\\\\generated-images\\\\demo.png"
                             ]
                         }
                     }]
@@ -724,7 +724,7 @@ mod tests {
     #[test]
     fn list_chat_sessions_uses_display_name_and_sorts_by_saved_at() {
         let dir = env::temp_dir().join(format!(
-            "spirit-agent-chat-list-{}-{}",
+            "spirit-chat-list-{}-{}",
             std::process::id(),
             current_unix_millis()
         ));
@@ -811,7 +811,7 @@ mod tests {
 
     fn test_file_path(label: &str) -> PathBuf {
         let file_name = format!(
-            "spirit-agent-chat-store-{}-{}.json",
+            "spirit-chat-store-{}-{}.json",
             label,
             current_unix_millis()
         );

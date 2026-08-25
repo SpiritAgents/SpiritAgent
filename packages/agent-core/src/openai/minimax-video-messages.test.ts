@@ -13,7 +13,7 @@ const MINIMAL_MP4_HEADER = Buffer.from([
 ]);
 
 test("resolveMinimaxVideoInAnthropicMessages uploads local video_url to mm_file reference", async () => {
-  const workspaceRoot = await mkdtemp(join(tmpdir(), "spirit-agent-core-minimax-video-msg-"));
+  const workspaceRoot = await mkdtemp(join(tmpdir(), "spirit-core-minimax-video-msg-"));
   const videoPath = join(workspaceRoot, "clip.mp4");
 
   try {
