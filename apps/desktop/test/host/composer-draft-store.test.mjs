@@ -23,10 +23,7 @@ function createMemoryStorage() {
 }
 
 test("normalizeComposerSessionKey normalizes Windows-style paths", () => {
-  assert.equal(
-    normalizeComposerSessionKey("D:\\Spirit\\Chats\\A.json"),
-    "d:/spirit/chats/a.json",
-  );
+  assert.equal(normalizeComposerSessionKey("D:\\Spirit\\Chats\\A.json"), "d:/spirit/chats/a.json");
 });
 
 test("writeComposerDraft and readComposerDraft round-trip text attachments and segments", () => {

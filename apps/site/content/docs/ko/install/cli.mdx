@@ -31,9 +31,9 @@ spirit --version
 
 설치 루트는 Spirit 데이터 디렉터리가 **아닙니다**.
 
-|                         | 기본값                                                                                                                      | 재정의                  |
-| ----------------------- | --------------------------------------------------------------------------------------------------------------------------- | ----------------------- |
-| CLI 바이너리            | Unix: `~/.spirit` · Windows: `%LOCALAPPDATA%\Spirit`                                                                        | `SPIRIT_HOME`           |
+|                         | 기본값                                                                                                       | 재정의            |
+| ----------------------- | ------------------------------------------------------------------------------------------------------------ | ----------------- |
+| CLI 바이너리            | Unix: `~/.spirit` · Windows: `%LOCALAPPDATA%\Spirit`                                                         | `SPIRIT_HOME`     |
 | 세션, 구성, 키링 포인터 | macOS: `~/Library/Application Support/Spirit` · Windows: `%APPDATA%\Spirit` · Linux: `~/.local/share/Spirit` | `SPIRIT_DATA_DIR` |
 
 Unix에서 스크립트는 `$SPIRIT_HOME/bin/spirit` → `$SPIRIT_HOME/cli/current/bin/spirit` 링크를 만들고 `~/.profile`, `~/.bashrc`, `~/.zshrc`에 `export PATH="$SPIRIT_HOME/bin:$PATH"`를 추가합니다 (마커 `# spirit cli`).

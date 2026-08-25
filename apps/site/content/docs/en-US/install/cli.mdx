@@ -31,9 +31,9 @@ spirit --version
 
 The install root is **not** the Spirit data directory.
 
-|                                    | Default                                                                                                                     | Override                |
-| ---------------------------------- | --------------------------------------------------------------------------------------------------------------------------- | ----------------------- |
-| CLI binaries                       | Unix: `~/.spirit` · Windows: `%LOCALAPPDATA%\Spirit`                                                                        | `SPIRIT_HOME`           |
+|                                    | Default                                                                                                      | Override          |
+| ---------------------------------- | ------------------------------------------------------------------------------------------------------------ | ----------------- |
+| CLI binaries                       | Unix: `~/.spirit` · Windows: `%LOCALAPPDATA%\Spirit`                                                         | `SPIRIT_HOME`     |
 | Sessions, config, keyring pointers | macOS: `~/Library/Application Support/Spirit` · Windows: `%APPDATA%\Spirit` · Linux: `~/.local/share/Spirit` | `SPIRIT_DATA_DIR` |
 
 On Unix the script links `$SPIRIT_HOME/bin/spirit` → `$SPIRIT_HOME/cli/current/bin/spirit` and appends `export PATH="$SPIRIT_HOME/bin:$PATH"` to `~/.profile`, `~/.bashrc`, and `~/.zshrc` (marker `# spirit cli`).

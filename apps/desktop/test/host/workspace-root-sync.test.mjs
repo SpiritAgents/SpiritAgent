@@ -45,10 +45,7 @@ test("needsHostWorkspaceRootSync is false when paths match case-insensitively", 
 
 test("needsHostWorkspaceRootSync is false when both use primary repo", () => {
   assert.equal(
-    needsHostWorkspaceRootSync(
-      { workspaceRoot: "D:\\Spirit" },
-      { workspaceRoot: "D:\\Spirit" },
-    ),
+    needsHostWorkspaceRootSync({ workspaceRoot: "D:\\Spirit" }, { workspaceRoot: "D:\\Spirit" }),
     false,
   );
 });

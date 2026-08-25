@@ -347,8 +347,7 @@ export async function runStreamingCase(): Promise<RuntimeParityCaseResult> {
             (toolCall) =>
               toolCall.id === "call-stream-auth-fail" &&
               toolCall.name === "read_file" &&
-              toolCall.argumentsJson ===
-                '{"path":"D:\\Spirit\\apps\\cli\\src\\tool_runtime.rs"}',
+              toolCall.argumentsJson === '{"path":"D:\\Spirit\\apps\\cli\\src\\tool_runtime.rs"}',
           ),
       )
   ) {
@@ -383,8 +382,7 @@ export async function runStreamingCase(): Promise<RuntimeParityCaseResult> {
             (toolCall) =>
               toolCall.id === "call-stream-auth-fail" &&
               toolCall.name === "read_file" &&
-              toolCall.argumentsJson ===
-                '{"path":"D:\\Spirit\\apps\\cli\\src\\tool_runtime.rs"}',
+              toolCall.argumentsJson === '{"path":"D:\\Spirit\\apps\\cli\\src\\tool_runtime.rs"}',
           ),
       )
   ) {

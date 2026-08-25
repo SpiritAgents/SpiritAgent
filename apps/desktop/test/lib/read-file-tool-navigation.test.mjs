@@ -8,10 +8,7 @@ import {
 } from "../../src/lib/read-file-tool-navigation.ts";
 
 test("tryResolveWorkspaceRelativePath maps workspace absolute paths", () => {
-  assert.equal(
-    tryResolveWorkspaceRelativePath("D:\\Spirit", "D:\\Spirit\\README.md"),
-    "README.md",
-  );
+  assert.equal(tryResolveWorkspaceRelativePath("D:\\Spirit", "D:\\Spirit\\README.md"), "README.md");
   assert.equal(tryResolveWorkspaceRelativePath("/proj", "/proj"), ".");
 });
 

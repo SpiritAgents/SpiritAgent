@@ -1,9 +1,6 @@
 export type AgentMode = "agent" | "plan" | "ask" | "debug";
 
-export function normalizeAgentMode(input?: {
-  agentMode?: unknown;
-  planMode?: boolean;
-}): AgentMode {
+export function normalizeAgentMode(input?: { agentMode?: unknown; planMode?: boolean }): AgentMode {
   if (
     input?.agentMode === "agent" ||
     input?.agentMode === "plan" ||

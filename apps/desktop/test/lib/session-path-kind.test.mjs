@@ -9,8 +9,7 @@ import {
 } from "../../src/lib/session-path-kind.ts";
 
 test("isProvisionalSessionPromotion detects first-send promotion", () => {
-  const provisional =
-    "/Users/me/Library/Application Support/Spirit/chats/__provisional__/abc.json";
+  const provisional = "/Users/me/Library/Application Support/Spirit/chats/__provisional__/abc.json";
   const stable = "/Users/me/Library/Application Support/Spirit/chats/chat-1783507820.json";
 
   assert.equal(isForegroundProvisionalSessionPath(provisional), true);

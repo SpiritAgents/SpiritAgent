@@ -31,9 +31,9 @@ spirit --version
 
 安装根目录 **不是** Spirit 的数据目录。
 
-|                        | 默认                                                                                                                        | 覆盖                    |
-| ---------------------- | --------------------------------------------------------------------------------------------------------------------------- | ----------------------- |
-| CLI 二进制             | Unix：`~/.spirit` · Windows：`%LOCALAPPDATA%\Spirit`                                                                        | `SPIRIT_HOME`           |
+|                        | 默认                                                                                                         | 覆盖              |
+| ---------------------- | ------------------------------------------------------------------------------------------------------------ | ----------------- |
+| CLI 二进制             | Unix：`~/.spirit` · Windows：`%LOCALAPPDATA%\Spirit`                                                         | `SPIRIT_HOME`     |
 | 会话、配置、钥匙串指针 | macOS：`~/Library/Application Support/Spirit` · Windows：`%APPDATA%\Spirit` · Linux：`~/.local/share/Spirit` | `SPIRIT_DATA_DIR` |
 
 在 Unix 上，脚本把 `$SPIRIT_HOME/bin/spirit` 链到 `$SPIRIT_HOME/cli/current/bin/spirit`，并在 `~/.profile`、`~/.bashrc`、`~/.zshrc` 追加 `export PATH="$SPIRIT_HOME/bin:$PATH"`（标记 `# spirit cli`）。

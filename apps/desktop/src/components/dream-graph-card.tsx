@@ -282,12 +282,7 @@ function DreamLogoNode({ data }: NodeProps<Node<DreamLogoNodeData>>) {
         position={Position.Right}
         className="!h-2 !w-2 !border-0 !bg-transparent !opacity-0"
       />
-      <img
-        src={data.iconSrc}
-        alt="Spirit"
-        className="h-16 w-16 object-contain"
-        draggable={false}
-      />
+      <img src={data.iconSrc} alt="Spirit" className="h-16 w-16 object-contain" draggable={false} />
     </div>
   );
 }

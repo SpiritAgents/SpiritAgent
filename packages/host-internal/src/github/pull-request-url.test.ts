@@ -4,14 +4,11 @@ import assert from "node:assert/strict";
 import { parseGitHubPullRequestUrl } from "./pull-request-url.js";
 
 test("parseGitHubPullRequestUrl parses canonical pull request URLs", () => {
-  assert.deepEqual(
-    parseGitHubPullRequestUrl("https://github.com/SpiritAgents/spirit/pull/100"),
-    {
-      owner: "SpiritAgents",
-      repo: "spirit",
-      number: 100,
-    },
-  );
+  assert.deepEqual(parseGitHubPullRequestUrl("https://github.com/SpiritAgents/spirit/pull/100"), {
+    owner: "SpiritAgents",
+    repo: "spirit",
+    number: 100,
+  });
 });
 
 test("parseGitHubPullRequestUrl ignores trailing segments and hash", () => {

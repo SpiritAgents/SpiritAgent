@@ -6,8 +6,7 @@ import { homedir } from "node:os";
 import { join } from "node:path";
 
 const DATA_DIR =
-  process.env.SPIRIT_DATA_DIR ||
-  join(homedir(), "Library", "Application Support", "Spirit");
+  process.env.SPIRIT_DATA_DIR || join(homedir(), "Library", "Application Support", "Spirit");
 const ENTRY = new URL("../dist/src/entry.js", import.meta.url).pathname;
 const WORKSPACE = process.cwd();
 

@@ -31,9 +31,9 @@ spirit --version
 
 Das Installationsverzeichnis ist **nicht** das Spirit-Datenverzeichnis.
 
-|                                                    | Standard                                                                                                                    | Überschreiben           |
-| -------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------- | ----------------------- |
-| CLI-Binärdateien                                   | Unix: `~/.spirit` · Windows: `%LOCALAPPDATA%\Spirit`                                                                        | `SPIRIT_HOME`           |
+|                                                    | Standard                                                                                                     | Überschreiben     |
+| -------------------------------------------------- | ------------------------------------------------------------------------------------------------------------ | ----------------- |
+| CLI-Binärdateien                                   | Unix: `~/.spirit` · Windows: `%LOCALAPPDATA%\Spirit`                                                         | `SPIRIT_HOME`     |
 | Sitzungen, Konfiguration, Schlüsselbund-Referenzen | macOS: `~/Library/Application Support/Spirit` · Windows: `%APPDATA%\Spirit` · Linux: `~/.local/share/Spirit` | `SPIRIT_DATA_DIR` |
 
 Auf Unix verlinkt das Skript `$SPIRIT_HOME/bin/spirit` → `$SPIRIT_HOME/cli/current/bin/spirit` und fügt `export PATH="$SPIRIT_HOME/bin:$PATH"` zu `~/.profile`, `~/.bashrc` und `~/.zshrc` hinzu (Markierung `# spirit cli`).

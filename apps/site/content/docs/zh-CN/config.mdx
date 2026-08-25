@@ -9,12 +9,12 @@ Spirit 把二进制和数据放在不同地方。混在一起，通常就是「C
 
 用 `SPIRIT_DATA_DIR` 覆盖。Server 还可以用 `SPIRIT_SERVER_DATA_DIR`（优先于前者）。
 
-| 系统    | 默认                                                         |
-| ------- | ------------------------------------------------------------ |
-| macOS   | `~/Library/Application Support/Spirit`                  |
-| Windows | `%APPDATA%\Spirit`                                      |
+| 系统    | 默认                                               |
+| ------- | -------------------------------------------------- |
+| macOS   | `~/Library/Application Support/Spirit`             |
+| Windows | `%APPDATA%\Spirit`                                 |
 | Linux   | `$XDG_DATA_HOME/Spirit` 或 `~/.local/share/Spirit` |
-| 回退    | `~/.spirit-data`                                            |
+| 回退    | `~/.spirit-data`                                   |
 
 常见文件：
 
@@ -63,7 +63,7 @@ Key **不在**这个文件里。它们在[钥匙串](./security.mdx)。
 
 | 变量                                                              | 作用                      |
 | ----------------------------------------------------------------- | ------------------------- |
-| `SPIRIT_DATA_DIR`                                           | 数据目录                  |
+| `SPIRIT_DATA_DIR`                                                 | 数据目录                  |
 | `SPIRIT_SERVER_DATA_DIR`                                          | Server 数据目录（优先）   |
 | `SPIRIT_ACP_DATA_DIR` / `SPIRIT_ACP_WORKSPACE`                    | [ACP](./acp.mdx)          |
 | `SPIRIT_HOME` / `SPIRIT_VERSION` / `SPIRIT_DOWNLOAD_HOST`         | CLI 安装脚本              |

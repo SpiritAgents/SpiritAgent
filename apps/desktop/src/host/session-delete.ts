@@ -14,11 +14,7 @@ import type { SessionBundle } from "./session-bundle.js";
 import { sameSessionPath } from "./session-path.js";
 import type { SessionSplitHostContext } from "./session-split.js";
 import { isEphemeralDebugSessionPath } from "./sessions.js";
-import {
-  deleteStoredSession,
-  isSplitProvisionalSessionPath,
-  spiritDataDir,
-} from "./storage.js";
+import { deleteStoredSession, isSplitProvisionalSessionPath, spiritDataDir } from "./storage.js";
 
 export interface SessionDeleteContext
   extends
